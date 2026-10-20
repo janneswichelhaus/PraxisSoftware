@@ -1091,6 +1091,96 @@
           "vermerk": "Antwort auf Frage 5 der PR #273 (wie empfohlen); ADR-017 Punkt 74 Vermerk (Fassung 9); ANN-654; alles nur im Arbeitsspeicher (Punkt 33)"
         },
         {
+          "id": "team-006",
+          "name": "TEAM-006 Farbe je Person im Teamchat: acht Farben, vergeben mit dem Mitarbeiterdatensatz, selbst gewählt in Mein Konto, Initialen auf der Farbe vor jeder Nachricht und in jeder Liste",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223100000_team_006_farbe_je_person.sql, supabase/tests/teamchat-profil.test.ts, src/lib/kontrast.test.ts und designsystem.test.ts (Farben nur als Fläche und Umriss), src/features/teamchat/TeamChat.test.tsx, src/features/account/MeinKontoPage.test.tsx, tests/e2e/authenticated/profilbild.spec.ts, Zweitreview",
+          "vermerk": "Auftrag Jannes 19.10.2026 (Chat noch nicht zufrieden: Farbe je Mitarbeiter:in); ANN-666; Baustein Personenbild; keine Farbe im Rot, Orange oder Gelb der Statusfarben"
+        },
+        {
+          "id": "team-007",
+          "name": "TEAM-007 Profilbild im Teamchat: nur für sich selbst, auf dem Gerät zu 256 × 256 gerechnet, am Inhalt geprüft, in der Datenbank, fällt mit Entfernen, Ersetzen und Ausscheiden",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223110000_team_007_profilbild.sql, supabase/tests/teamchat-profil.test.ts (Prüfung am Inhalt, Rechte, Löschjournal, Wiederherstellung) und testumgebung.test.ts, src/features/teamchat/profilbild.test.ts, MeinKontoPage.test.tsx, TeamChat.test.tsx, tests/e2e/authenticated/profilbild.spec.ts (Foto mit Ortsangabe aus dem echten Browser), Zweitreview",
+          "vermerk": "Auftrag Jannes 19.10.2026; ADR-017 Fassung 10 Abschnitt O angenommen (Umkehr von Punkt 1, Fragen 35 bis 37 wie empfohlen); ANN-667 im Prüfpaket; Vorschläge für mehr Übersicht in product/ideen/referenz-slack.md"
+        },
+        {
+          "id": "team-008",
+          "name": "TEAM-008 Bilder auch in den Listen des Teamchats: Für dich, Threads, Suche, Für später und Angeheftetes zeigen Bild oder Farbe der Person, die schrieb",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223120000_team_008_bilder_in_listen.sql, supabase/tests/teamchat-profil.test.ts (alle fünf Listen, entfernte Nachricht ohne Verfasser:in, Rechte), TeamChat.test.tsx",
+          "vermerk": "Antwort auf Frage 5 der PR zu TEAM-006 und TEAM-007 (wie empfohlen); Threads nennen jetzt auch den Namen neben dem Bild (DESIGN.md Regel 5)"
+        },
+        {
+          "id": "team-009",
+          "name": "TEAM-009 Personenkarte im Teamchat: Tipp auf ein Bild zeigt Bild, Name, Praxisrollen und Direktnachricht - keine Anwesenheit, kein Status, keine Kontaktdaten",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223130000_team_009_personenkarte.sql, supabase/tests/teamchat-profil.test.ts (Rollen, Ausgeschiedene, fremde Praxis, Rechte, kein Audit), TeamChat.test.tsx, tests/e2e/authenticated/profilbild.spec.ts",
+          "vermerk": "Antwort auf Frage 5 der PR zu TEAM-006 und TEAM-007 (wie empfohlen); ANN-668"
+        },
+        {
+          "id": "bef-183",
+          "name": "BEF-183 Reiterleiste: „›“ als 44-px-Knopf neben der Liste holt den ersten ganz verdeckten Reiter nach vorn",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, src/components/ui/Objektkopf.test.tsx, PatientRecordLayout.test.tsx, tests/e2e/authenticated/ernaehrung.spec.ts (Reiter über reiterAntippen, „›“ zählt mit), Design-Review",
+          "vermerk": "Entscheidung Jannes 2026-10-18; nur rechts ein Knopf, damit „Behandlungsgrundlagen“ bei 375 px ganz hineinpasst"
+        },
+        {
+          "id": "bef-150",
+          "name": "BEF-150 Ränder der Entwürfe auf dem Diensttelefon: erneut senden, unlesbare mitzählen, Rückfrage vor dem Verwerfen, Tagesplan bei Rollenwegfall räumen",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, src/features/offline-documentation/entwuerfe.test.ts, AufDemGeraet.test.tsx, ohneEmpfang.test.tsx, tagesplan.test.ts",
+          "vermerk": "/weiter aus STATUS „Danach“; Entwürfe fallen nie still (§13)"
+        },
+        {
+          "id": "bef-147",
+          "name": "BEF-147 Benachrichtigungen im eigenen Datenexport: Wahl, Geräte ohne Schlüssel, Tagebuch-Erinnerungen, Zustellaufträge",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223140000_bef_147_export_benachrichtigungen.sql, supabase/tests/platform-export.test.ts, Zweitreview",
+          "vermerk": "Die Praxis sieht die Wahl weiter nicht (ANN-344)"
+        },
+        {
+          "id": "bef-148",
+          "name": "BEF-148 Zustellaufträge meldet nur, wer den Anspruch hält; Löschlauf räumt Push-Registrierungen beendeter Zugänge",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223150000_bef_148_zustellung_mit_anspruch.sql, supabase/tests/benachrichtigungen.test.ts, supabase/functions/notifications/*.test.ts, Zweitreview",
+          "vermerk": "Vor dem Scharfschalten des Versands (OPS-001)"
+        },
+        {
+          "id": "bef-146",
+          "name": "BEF-146 Vollständigkeitstest der Auskunft sieht auch den Plattformzugang; Anhänge an Rückfragen in der Auskunft",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223160000_bef_146_rueckfrageanhaenge_in_der_auskunft.sql, supabase/tests/betroffenenrechte.test.ts, Zweitreview",
+          "vermerk": "Vier Tabellen bewusst außerhalb der Auskunft der Praxis (ANN-344), im eigenen Export"
+        },
+        {
+          "id": "bef-182",
+          "name": "BEF-182 Auskunft nach Art. 15 je Trainingsverhältnis: export_training_record und Seite in den Stammdaten",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-20",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223170000_bef_182_auskunft_trainingsverhaeltnis.sql, supabase/tests/auskunft-training.test.ts, src/features/datenschutz/TrainingAuskunftPage.test.tsx, Zweitreview",
+          "vermerk": "Nur owner; dieselbe Auditaktion wie an der Akte, Gegenstand das Verhältnis"
+        },
+        {
           "id": "url-001",
           "name": "URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine",
           "gewicht": 1,

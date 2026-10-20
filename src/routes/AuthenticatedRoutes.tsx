@@ -24,6 +24,7 @@ import {
 import { ALTE_AKTENBEREICHE } from '@/features/patients/akte';
 import { PatientMasterDataPage } from '@/features/patients/PatientMasterDataPage';
 import { BetroffenenrechtePage } from '@/features/datenschutz/BetroffenenrechtePage';
+import { TrainingAuskunftPage } from '@/features/datenschutz/TrainingAuskunftPage';
 import { ZusammenfuehrenPage } from '@/features/patients/ZusammenfuehrenPage';
 import { AufnahmeblaetterPage } from '@/features/datenschutz/AufnahmeblaetterPage';
 import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
@@ -80,6 +81,7 @@ import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
 import { PraxisAblage } from '@/features/offline-documentation/PraxisAblage';
 import { AufDemGeraetPage } from '@/features/offline-documentation/AufDemGeraetPage';
 import { EntwurfAbmeldewache } from '@/features/offline-documentation/EntwurfAbmeldewache';
+import { TagesplanRaeumen } from '@/features/offline-documentation/TagesplanRaeumen';
 import { AusgangAbmeldewache } from '@/features/teamchat/AusgangAbmeldewache';
 import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/offline-documentation/servicePhone';
 import { ProtokollPage } from '@/features/preview/ProtokollPage';
@@ -261,6 +263,9 @@ export function AuthenticatedRoutes({
             {/* Abmelden mit Entwürfen auf dem Gerät: Zahl und Wahl (ADR-024 Punkt 6). */}
             <EntwurfAbmeldewache besitzer={user.profile.id} />
           </>
+        ) : ABLAGE_FUER_PRAXISKONTEN ? (
+          // Ohne Dokumentationsrecht kein Tagesplan auf dem Gerät (BEF-150).
+          <TagesplanRaeumen besitzer={user.profile.id} />
         ) : null}
         {einsicht ? (
           <PlattformEinsicht />
@@ -866,6 +871,14 @@ export function AuthenticatedRoutes({
                       path="/training/:relationshipId"
                       element={<TrainingClientPage user={user} />}
                     />
+                    {/* BEF-182: die Auskunft zum Training neben dem Verhältnis, wie an
+                  der Akte - nur `owner`, verbindlich prüft der Server (ADR-004). */}
+                    {showSecurity ? (
+                      <Route
+                        path="/training/:relationshipId/auskunft"
+                        element={<TrainingAuskunftPage />}
+                      />
+                    ) : null}
                     {/* ERN-001: die Formulare der Ernährungsberatung im Training. */}
                     {showNutrition ? (
                       <>

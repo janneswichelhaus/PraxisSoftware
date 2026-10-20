@@ -1648,3 +1648,89 @@ eingeklappt.
 **Beobachtung.** Ohne Netz schiebt der Hinweis oben die Seite um gut 70 px nach unten. „Senden“ bleibt über der Tableiste (gemessen: 16 px bei 375 × 812 und 375 × 667), die Zeile „Befunde und Diagnosen gehören in die Akte.“ darunter liegt aber halb hinter ihr. Ohne Hinweis bleiben unter der Eingabe rund 60 px frei. **Erwartet.** Die Fläche endet mit und ohne Hinweis an der Oberkante der Tableiste; Ablauftest mit `context.setOffline(true)` bei 375 × 667.
 
 **Ursache.** Die Fläche maß nur neu, wenn die ganze Seite ihre Größe änderte. Die ist aber mindestens bildschirmhoch: Fiel die Unterleiste der Liste beim Öffnen eines Gesprächs weg (61 px) oder ging der Hinweis wieder weg, blieb die alte Höhe stehen - am Telefon fehlten in jedem Gespräch 61 px, und der Hinweis schob das Kleingedruckte dann hinter die Tableiste. Am Rechner blieb nach dem Wiederverbinden unten eine Lücke.
+
+### BEF-150 — Ränder der Entwürfe auf dem Diensttelefon
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-12 |
+| Bereich | Dokumentation ohne Empfang: „Auf dem Gerät“ (OFF-EPIC-001) |
+| Quelle  | Zweitreview OFF-EPIC-001 (Hinweise H1, H4, H6, H7) |
+| Status  | erledigt 2026-10-19 (Branch `ccr-37917f35-emdjjp`): „Erneut senden“ an der Abweisung, `unlesbar` zählt mit und wird genannt, Rückfrage vor „Verwerfen und abmelden“, `TagesplanRaeumen` bei Wegfall des Dokumentationsrechts; Tests in `entwuerfe.test.ts`, `AufDemGeraet.test.tsx`, `ohneEmpfang.test.tsx`, `tagesplan.test.ts` |
+| Berührt | `src/features/offline-documentation/entwuerfe.ts`, `AufDemGeraet.tsx`, `EntwurfAbmeldewache.tsx`, `PraxisAblage.tsx` |
+
+**Beobachtung.** (1) Ein abgewiesener Entwurf lässt sich nur kopieren oder verwerfen, nicht erneut senden – auch wenn das Recht inzwischen wieder besteht. (2) Einträge, die eine spätere Fassung der Anwendung nicht lesen kann (`unlesbar`), bleiben liegen, zählen aber weder im Hinweis noch beim Abmelden mit; „Verwerfen und abmelden“ nimmt sie ungenannt mit. (3) „Verwerfen und abmelden“ ist ein Tipp ohne zweite Bestätigung. (4) Fällt nur das Dokumentationsrecht weg (Zugang bleibt aktiv), bleibt der Tagesplan bis Tagesende oder Abmelden auf dem Gerät. Daneben: Bei zwei Tabs kann eine Änderung der Dauerablage die andere überholen (Lesen und Schreiben in getrennten Transaktionen); im Zustand „halten“ der Sperre kann ein Wieder-online übertragen, bevor die Oberfläche entsperrt ist (der Server weist mit 28000 ab).
+
+**Erwartet.** Einzel-Story-Loop vor dem Scharfschalten mit echten Daten: „Erneut senden“ an der Abweisung, `unlesbar` mitzählen, Rückfrage vor dem Verwerfen beim Abmelden, Tagesplan auch bei Rollenwegfall räumen.
+
+### BEF-183 — Reiterleiste: der letzte Reiter liegt bei 375 px hinter einem Wisch
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-18 |
+| Bereich | Akte, Trainingsverhältnis (`src/components/ui/Reiterleiste.tsx`) |
+| Quelle  | Praxis-Review ERN-EPIC-001 |
+| Status  | erledigt 2026-10-19 (Branch `ccr-37917f35-emdjjp`): „›“ als 44-px-Knopf neben der Liste holt den ersten ganz verdeckten Reiter nach vorn (nicht über dem Verlauf, Design-Review); Ablauftests über `reiterAntippen`, Ernährung an der Akte in 4 Tipps mit gezähltem „›“ |
+| Berührt | `Reiterleiste.tsx` (Zeichen „›“ mit `aria-hidden`), Ablauftests der Akte |
+
+**Beobachtung.** Mit fünf Reitern (owner, ERN-EPIC-001) liegen „Ernährung“ und „Stammdaten“ bei 375 px rechts außerhalb; das „›“ ist nur Zeichen. Mit Handschuh trifft der Wisch oft den Reiter daneben; Playwright scrollt von selbst und zählt den Wisch nicht. **Erwartet.** „›“ als Knopf, der zum nächsten verdeckten Reiter schiebt; Ablauftests prüfen vor dem Tippen, ob der Reiter sichtbar ist.
+
+**Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: fünf Reiter bestätigt, die Leiste wird verbessert.
+
+### BEF-146 — Der Vollständigkeitstest der Auskunft sieht nur Tabellen mit `patient_id`
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-11 |
+| Bereich | Datenschutz: Auskunft (Art. 15) |
+| Quelle  | Zweitreview BEF-145 (Hinweis H6) |
+| Status  | erledigt 2026-10-19 (Branch `ccr-37917f35-emdjjp`): Test nimmt auch `access_id`; fand die Anhänge an Rückfragen (jetzt in `export_patient_record`) und die Tagebuch-Erinnerungen (jetzt im eigenen Export); vier Tabellen bewusst außen mit Grund (ANN-344) |
+| Berührt | `supabase/tests/betroffenenrechte.test.ts` („enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id …“) |
+
+**Beobachtung.** Seit BEF-145 nimmt der Test jede Tabelle des Aufbewahrungsplans mit `patient_id`. Tabellen, die die Person über eine andere Spalte tragen (`person_id`, `subject_id` mit `subject_type = 'patient'`, über einen Elterndatensatz), erfasst er nur, wenn sie zur Klasse `patientenakte` oder `personenstammdaten` gehören; heute fehlt dadurch nichts Bekanntes.
+
+**Erwartet.** Prüfen, ob der Test auch solche Spalten erfassen kann, ohne eine lange Ausnahmeliste zu brauchen; sonst als bewusst offen schließen. Nur Test, Einzel-Story-Loop, niedrige Priorität.
+
+### BEF-147 — Wahl, Geräte und Zustellaufträge der Benachrichtigungen fehlen im eigenen Datenexport
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-12 |
+| Bereich | Plattform: „Ich → Meine Daten“ (Art. 15, Art. 20) |
+| Quelle  | Zweitreview KOM-EPIC-003 (Hinweis H4) |
+| Status  | erledigt 2026-10-19 (Branch `ccr-37917f35-emdjjp`): `platform_export` trägt `notifications` - Wahl, Geräte nur „seit wann“, Tagebuch-Erinnerungen, Zustellaufträge; Test in `platform-export.test.ts` |
+| Berührt | `platform_notification_settings`, `platform_push_subscriptions`, `notification_deliveries`; `public.platform_export` (POR-018) |
+
+**Beobachtung.** Die drei Tabellen hängen am Zugang (`access_id`), nicht an `patient_id`; der Vollständigkeitstest der Auskunft (BEF-145, BEF-146) sieht sie nicht. Weder der eigene Export der Person noch die Auskunft der Praxis enthalten heute die Wahl, die eingetragenen Geräte oder die Zustellaufträge der letzten 30 Tage.
+
+**Erwartet.** In den eigenen Export der Person aufnehmen (die Praxis sieht die Wahl bewusst nicht, ANN-344); ohne Endpunkt und Schlüssel des Geräts, nur „ein Gerät seit …“. Einzel-Story-Loop.
+
+### BEF-148 — Ein Zustellauftrag kann nach einem gescheiterten Melden doppelt zugestellt werden
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-12 |
+| Bereich | Benachrichtigungen: Versand (Edge Function `notifications`) |
+| Quelle  | Zweitreview KOM-EPIC-003 (Hinweise H1, H2) |
+| Status  | erledigt 2026-10-19 (Branch `ccr-37917f35-emdjjp`): Anspruch `claimed_at` (Millisekunden) beim Abholen, Melden verlangt ihn; Versand meldet bis zu dreimal; Löschlauf räumt Push-Registrierungen beendeter Zugänge; Tests in `benachrichtigungen.test.ts` und `supabase/functions/notifications` |
+| Berührt | `public.finish_notification_delivery`, `supabase/functions/notifications/zustellen.ts`; `app.drop_push_subscriptions_on_access_end` |
+
+**Beobachtung.** Scheitert das Melden nach erfolgreichem Versand oder dauert ein Lauf länger als 15 Minuten, holt der nächste Lauf den Auftrag erneut ab, und die Person bekommt die Mitteilung zweimal; `finish_notification_delivery` prüft nicht, ob der Aufrufer den aktuellen Anspruch hält. Daneben fällt die Push-Registrierung nur beim Widerruf des Zugangs, nicht beim zeitlichen Ende (Lesefrist, Volljährigkeit) – geschickt wird dann nichts mehr, die Zeile bleibt aber bis zur Löschung des Zugangs.
+
+**Erwartet.** Abholen gibt einen Anspruchszeitpunkt zurück, Melden verlangt ihn; das zeitliche Ende räumt die Registrierung im Löschlauf mit ab. Vor dem Scharfschalten des Versands (OPS-001), Einzel-Story-Loop.
+
+### BEF-182 — Training: keine Auskunft nach Art. 15 auf Seiten der Praxis
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-18 |
+| Bereich | Trainingsverhältnis, Betroffenenrechte (`/datenschutz/betroffenenrechte`) |
+| Quelle  | Zweitreview ERN-EPIC-001 |
+| Status  | erledigt 2026-10-20 (Branch `ccr-37917f35-emdjjp`): `export_training_record`, Seite „Auskunft zum Training“ in den Stammdaten, nur owner |
+| Berührt | `public.export_patient_record` (nur Akte), `public.platform_export` |
+
+**Beobachtung.** Die Auskunft der Praxis geht nur von der Akte aus. Für eine Person, die nur trainiert, gibt es keine vollständige Kopie; der Export der Plattform trägt die Schlüsselliste der Plattform (ohne Notizen der Beratung, ohne Verlauf der Einwilligung) und fehlt ohne Zugang ganz. Seit ERN-EPIC-001 betrifft das auch Gesundheitsdaten nach Art. 9 (ADR-027 Punkt 6: „Auskunft und Export enthalten alles“). **Erwartet.** Eine Auskunft je Trainingsverhältnis für owner, wie `export_patient_record`, mit Protokolleintrag nach dem Katalog. Pfad A.
+
+**Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: ein kleiner Pfad-A-Auftrag vor M3.
+
+**Umsetzung (2026-10-20).** `public.export_training_record` gibt owner eine Kopie aller Daten eines Trainingsverhältnisses (Prüfung `app.auskunft_organisation_training`, Protokoll `patient_record.exported` mit Gegenstand `training_relationship`, keine neue Aktion). Tabellen des Verhältnisses gehen Zeile für Zeile mit, Kennungen fallen nach Muster heraus (`app.auskunft_ohne_kennungen`); Messwerte, Nachträge und Einladungen stehen an ihrem Elterndatensatz, Verfasser beim Namen. Seite `/training/:id/auskunft` wie an der Akte: Kopie erst auf Knopfdruck. Migration `20261223170000`, Tests in `auskunft-training.test.ts` (Gegenprobe gegen die erste Fassung rot) und `TrainingAuskunftPage.test.tsx`. Zweitreview: Messwerte, Nachträge, Einladungen und ein zu enger Vollständigkeitstest eingearbeitet.

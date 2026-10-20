@@ -31,6 +31,9 @@ const api = {
   fetchThreads: vi.fn(),
   fetchNachrichten: vi.fn(),
   fetchPersonen: vi.fn(),
+  fetchAvatare: vi.fn(),
+  ladeProfilbild: vi.fn(),
+  fetchPersonenkarte: vi.fn(),
   fetchMitglieder: vi.fn(),
   fetchZaehler: vi.fn(),
   fetchGemerkt: vi.fn(),
@@ -241,7 +244,21 @@ beforeEach(() => {
     { staff_member_id: ANNA, name: 'Anna Beispiel', active: true },
     { staff_member_id: TIM, name: 'Tim Teamleitung', active: true },
   ]);
+  api.fetchAvatare.mockResolvedValue([
+    { staff_member_id: ANNA, color: 'ozean', picture_id: null, own: true },
+    { staff_member_id: TIM, color: 'moos', picture_id: null },
+    { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null },
+  ]);
   api.fetchZaehler.mockResolvedValue(ZAEHLER);
+  api.fetchPersonenkarte.mockImplementation((id: string) =>
+    Promise.resolve({
+      staff_member_id: id,
+      name: id === TIM ? 'Tim Teamleitung' : 'Anna Beispiel',
+      roles: id === TIM ? ['team_lead', 'therapist'] : ['therapist'],
+      active: true,
+      own: id === ANNA,
+    }),
+  );
   api.fetchGemerkt.mockResolvedValue([]);
   api.fetchGeplant.mockResolvedValue([]);
   api.fetchAngeheftet.mockResolvedValue([]);
@@ -357,6 +374,286 @@ describe('Teamchat: Gespräche (ANN-647)', () => {
     await nutzer.selectOptions(von, TIM);
     expect(screen.getByText('Nach einer Person nur mit Suchwort.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Suchen' })).toBeDisabled();
+  });
+});
+
+describe('Teamchat: Bild und Farbe je Person (TEAM-006)', () => {
+  it('setzt vor eine Nachricht die Initialen auf der Farbe der Person, angehängte ohne Bild', async () => {
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({}),
+      nachricht({ id: 'n2', body: 'Und Rad 4 auch.', created_at: '2026-10-17T07:01:00Z' }),
+      nachricht({
+        id: 'n3',
+        author_staff_member_id: OLIVIA,
+        author_name: 'Olivia Office',
+        body: 'Danke!',
+        created_at: '2026-10-17T07:02:00Z',
+      }),
+    ]);
+    zeige('/team/k-planung');
+    await screen.findByText('Und Rad 4 auch.');
+    await vi.waitFor(() =>
+      expect(document.querySelector('.bg-person-pflaume')).toHaveTextContent('OO'),
+    );
+    const bilder = [...document.querySelectorAll('[data-nachricht] [data-personenbild]')];
+    expect(bilder.map((b) => b.textContent)).toEqual(['TT', 'OO']);
+    expect(bilder[0]).toHaveClass('bg-person-moos');
+    // Vorlesesoftware hört den Namen einmal, nicht zweimal.
+    for (const bild of bilder) expect(bild).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('zeigt in der Liste das Bild der anderen Person und bei Gruppen die Zahl', async () => {
+    api.fetchKanaele.mockResolvedValue([
+      ...KANAELE,
+      kanal({
+        id: 'k-gruppe',
+        kind: 'group',
+        name: null,
+        description: null,
+        member_names: ['Olivia Office', 'Tim Teamleitung'],
+        member_count: 3,
+      }),
+    ]);
+    zeige('/team');
+    const direkt = (await screen.findByRole('heading', { name: 'Direktnachrichten' })).closest(
+      'section',
+    )!;
+    const tim = within(direkt).getByRole('link', { name: /^Tim Teamleitung/ });
+    await vi.waitFor(() =>
+      expect(tim.querySelector('[data-personenbild]')).toHaveClass('bg-person-moos'),
+    );
+    expect(tim.querySelector('[data-personenbild]')).toHaveTextContent('TT');
+    const gruppe = within(direkt).getByRole('link', { name: /^Olivia Office, Tim Teamleitung/ });
+    expect(gruppe.querySelector('[data-personenbild="gruppe"]')).toHaveTextContent('3');
+  });
+
+  it('führt über das eigene Bild zu Bild und Farbe in „Mein Konto“', async () => {
+    zeige('/team');
+    const ich = await screen.findByRole('link', { name: 'Eigenes Bild und eigene Farbe ändern' });
+    expect(ich).toHaveAttribute('href', '/mein-konto');
+    await vi.waitFor(() =>
+      expect(ich.querySelector('[data-personenbild]')).toHaveClass('bg-person-ozean'),
+    );
+  });
+
+  it('zeigt ein Profilbild statt der Initialen, umrahmt von der Farbe der Person', async () => {
+    api.fetchAvatare.mockResolvedValue([
+      { staff_member_id: TIM, color: 'moos', picture_id: 'bild-tim' },
+    ]);
+    api.ladeProfilbild.mockResolvedValue('blob:tim');
+    api.fetchNachrichten.mockResolvedValue([nachricht({})]);
+    zeige('/team/k-planung');
+    await vi.waitFor(() =>
+      expect(document.querySelector('[data-nachricht] [data-personenbild]')).toHaveAttribute(
+        'src',
+        'blob:tim',
+      ),
+    );
+    const bild = document.querySelector('[data-nachricht] [data-personenbild]')!;
+    expect(bild).toHaveClass('outline-person-moos');
+    expect(bild).toHaveAttribute('alt', '');
+    expect(api.ladeProfilbild).toHaveBeenCalledWith('bild-tim');
+  });
+
+  it('bleibt ohne Farben lesbar: Initialen auf Schiefer', async () => {
+    api.fetchAvatare.mockRejectedValue(new TeamchatFehler('Kein Netz', true));
+    api.fetchNachrichten.mockResolvedValue([nachricht({})]);
+    zeige('/team/k-planung');
+    expect(await screen.findByText('Rad 3 steht im Depot Süd.')).toBeInTheDocument();
+    expect(document.querySelector('[data-nachricht] [data-personenbild]')).toHaveClass(
+      'bg-person-schiefer',
+    );
+  });
+});
+
+describe('Teamchat: Bilder in den Listen (TEAM-008)', () => {
+  /** Das Bild in der Zeile, die den Text trägt. */
+  function bildIn(zeile: HTMLElement) {
+    return zeile.querySelector('[data-personenbild]');
+  }
+
+  it('setzt in „Für dich“ vor Erinnerung und Erwähnung das Bild der Person, die schrieb', async () => {
+    api.fetchGemerkt.mockResolvedValue([
+      {
+        id: 'g1',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        parent_id: null,
+        author_staff_member_id: TIM,
+        author_name: 'Tim Teamleitung',
+        body: 'Belege bis Freitag',
+        created_at: '2026-10-17T07:00:00Z',
+        remind_at: '2026-10-18T06:00:00Z',
+        done: false,
+        due: true,
+      },
+    ]);
+    api.fetchAktivitaet.mockResolvedValue([
+      {
+        id: 'antwort',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        parent_id: 'wurzel',
+        author_staff_member_id: OLIVIA,
+        author_name: 'Olivia Office',
+        body: 'Rad 2 ist frei.',
+        created_at: '2026-10-17T07:00:00Z',
+        reason: 'mention',
+        unread: true,
+      },
+    ]);
+    zeige('/fuer-dich');
+    const erwaehnung = await screen.findByRole('link', { name: /Rad 2 ist frei/ });
+    await vi.waitFor(() => expect(bildIn(erwaehnung)).toHaveClass('bg-person-pflaume'));
+    expect(bildIn(erwaehnung)).toHaveTextContent('OO');
+    expect(bildIn(erwaehnung)).toHaveAttribute('aria-hidden', 'true');
+    const erinnerung = screen.getByRole('link', { name: /Belege bis Freitag/ });
+    expect(bildIn(erinnerung)).toHaveClass('bg-person-moos');
+  });
+
+  it('zeigt an Threads Bild und Namen der Person, die fragte - an entfernten niemanden', async () => {
+    api.fetchThreads.mockResolvedValue([
+      {
+        id: 'wurzel',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        author_staff_member_id: TIM,
+        author_name: 'Tim Teamleitung',
+        body: 'Kette Rad 3',
+        removed_kind: null,
+        reply_count: 3,
+        last_reply_at: '2026-10-17T07:00:00Z',
+        new_replies: 2,
+      },
+      {
+        id: 'weg',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        author_staff_member_id: null,
+        author_name: null,
+        body: null,
+        removed_kind: 'owner',
+        reply_count: 1,
+        last_reply_at: '2026-10-16T07:00:00Z',
+        new_replies: 0,
+      },
+    ]);
+    zeige('/team/threads');
+    const zeile = await screen.findByRole('link', { name: /Kette Rad 3/ });
+    expect(
+      within(zeile).getByText(/^# Planung · Tim Teamleitung · 3 Antworten/),
+    ).toBeInTheDocument();
+    await vi.waitFor(() => expect(bildIn(zeile)).toHaveTextContent('TT'));
+    const entfernt = screen.getByRole('link', { name: /entfernt/i });
+    expect(bildIn(entfernt)).toBeNull();
+    expect(within(entfernt).queryByText(/Ehemaliges Teammitglied/)).toBeNull();
+  });
+
+  it('zeigt Treffer der Suche und Gemerktes mit dem Bild der Person', async () => {
+    api.sucheNachrichten.mockResolvedValue([
+      {
+        id: 'treffer',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        parent_id: null,
+        author_staff_member_id: OLIVIA,
+        author_name: 'Olivia Office',
+        body: 'Schlüssel liegt im Büro.',
+        created_at: '2026-10-17T07:00:00Z',
+      },
+    ]);
+    const nutzer = userEvent.setup();
+    zeige('/team');
+    await screen.findByRole('heading', { name: 'Kanäle' });
+    await nutzer.type(
+      screen.getByRole('searchbox', { name: 'In Nachrichten suchen' }),
+      'Schlü{Enter}',
+    );
+    const treffer = await screen.findByRole('link', { name: /Schlüssel liegt im Büro/ });
+    await vi.waitFor(() => expect(bildIn(treffer)).toHaveClass('bg-person-pflaume'));
+  });
+
+  it('setzt vor Angeheftetes in den Details das kleine Bild', async () => {
+    api.fetchAngeheftet.mockResolvedValue([
+      {
+        id: 'n1',
+        parent_id: null,
+        author_staff_member_id: TIM,
+        author_name: 'Tim Teamleitung',
+        body: 'Schlüssel für Rad 3 im Büro',
+        created_at: '2026-10-17T07:00:00Z',
+      },
+    ]);
+    const nutzer = userEvent.setup();
+    zeige('/team/k-planung');
+    await nutzer.click(await screen.findByRole('button', { name: 'Details' }));
+    const zeile = await screen.findByRole('button', { name: /Schlüssel für Rad 3 im Büro/ });
+    await vi.waitFor(() => expect(bildIn(zeile)).toHaveClass('bg-person-moos', 'size-6'));
+  });
+});
+
+describe('Teamchat: Personenkarte (TEAM-009, ANN-668)', () => {
+  it('öffnet mit einem Tipp auf das Bild die Karte und von dort die Direktnachricht', async () => {
+    api.fetchNachrichten.mockResolvedValue([nachricht({})]);
+    const nutzer = userEvent.setup();
+    const { router } = zeige('/team/k-planung');
+    await nutzer.click(await screen.findByRole('button', { name: 'Karte von Tim Teamleitung' }));
+    const karte = await screen.findByRole('dialog', { name: 'Tim Teamleitung' });
+    expect(await within(karte).findByText('Teamleitung · Therapeut:in')).toBeInTheDocument();
+    expect(karte.querySelector('[data-personenbild]')).toHaveClass('size-24', 'bg-person-moos');
+    // Nichts über das Verhalten der Person (§20).
+    expect(within(karte).queryByText(/aktiv|online|zuletzt|abwesend/i)).toBeNull();
+    await nutzer.click(within(karte).getByRole('button', { name: 'Direktnachricht' }));
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/team/k-direkt'));
+    expect(api.oeffneDirekt).toHaveBeenCalledWith(TIM);
+    expect(screen.queryByRole('dialog', { name: 'Tim Teamleitung' })).toBeNull();
+  });
+
+  it('führt von der eigenen Karte zu Bild und Farbe, nicht in eine Direktnachricht', async () => {
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({ author_staff_member_id: ANNA, author_name: 'Anna Beispiel', own: true }),
+    ]);
+    const nutzer = userEvent.setup();
+    zeige('/team/k-planung');
+    await nutzer.click(await screen.findByRole('button', { name: 'Karte von Anna Beispiel' }));
+    const karte = await screen.findByRole('dialog', { name: 'Anna Beispiel' });
+    expect(
+      await within(karte).findByRole('link', { name: 'Bild und Farbe ändern' }),
+    ).toHaveAttribute('href', '/mein-konto');
+    expect(within(karte).queryByRole('button', { name: 'Direktnachricht' })).toBeNull();
+  });
+
+  it('sagt bei Ausgeschiedenen nur, dass sie nicht mehr teilnehmen', async () => {
+    // Wer nicht teilnimmt, kommt vom Server ohne Namen: Die Karte trägt den
+    // Namen, der an der Nachricht stand.
+    api.fetchPersonenkarte.mockResolvedValue({
+      staff_member_id: TIM,
+      name: null,
+      roles: [],
+      active: false,
+      own: false,
+    });
+    api.fetchNachrichten.mockResolvedValue([nachricht({})]);
+    const nutzer = userEvent.setup();
+    zeige('/team/k-planung');
+    await nutzer.click(await screen.findByRole('button', { name: 'Karte von Tim Teamleitung' }));
+    const karte = await screen.findByRole('dialog', { name: 'Tim Teamleitung' });
+    expect(await within(karte).findByText('Nimmt nicht am Teamchat teil.')).toBeInTheDocument();
+    expect(within(karte).queryByRole('button', { name: 'Direktnachricht' })).toBeNull();
+    await nutzer.click(within(karte).getByRole('button', { name: 'Schließen' }));
+    expect(screen.queryByRole('dialog', { name: 'Tim Teamleitung' })).toBeNull();
+  });
+
+  it('öffnet die Karte auch aus den Mitgliedern in den Details', async () => {
+    const nutzer = userEvent.setup();
+    const { router } = zeige('/team/k-planung');
+    await nutzer.click(await screen.findByRole('button', { name: 'Details' }));
+    await nutzer.click(await screen.findByRole('button', { name: /^Tim Teamleitung/ }));
+    const karte = await screen.findByRole('dialog', { name: 'Tim Teamleitung' });
+    await nutzer.click(await within(karte).findByRole('button', { name: 'Direktnachricht' }));
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/team/k-direkt'));
+    // Mit der Direktnachricht schließen auch die Details.
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 });
 

@@ -54,6 +54,7 @@ Entscheidung, die ihn aufheben würde.
 | Apps | Drittdienste (S) | nein | nein | jeder Drittdienst ist ein neuer Anbieter (ADR-002) |
 | KI | Zusammenfassen, Recaps, Suche (S) | nein | nein | ADR-005 (Gateway, kein Produktionsanbieter), §20 (verdichtet Verhalten), Patientendaten im Chat – Entscheidung mit DSFA |
 | Status | Text, abwesend automatisch (S) | nein | nein | automatische Abwesenheit nie (§20); ein Status von Hand nur auf Auftrag |
+| Profilbild, Farbe | Bild im Profil, vor jeder Nachricht (S) | Name | Bild nur für sich selbst, 256 × 256 auf dem Gerät gerechnet, in der Datenbank; Farbe je Person (acht, selbst gewählt) hinter den Initialen oder um das Bild | ADR-017 Abschnitt O (Fassung 10), ANN-666, ANN-667 – TEAM-006, TEAM-007 (Auftrag Jannes 2026-10-19) |
 
 ## Etappen
 
@@ -65,3 +66,19 @@ Entscheidung, die ihn aufheben würde.
 | E4 Dateien | Anhänge, Dateien je Gespräch, Clips | Entscheidung ADR-017; ohne Virenprüfung (Fassung 7) | TEAM-003 (ADR-017 Abschnitt M); Sprachnachrichten TEAM-004 (Abschnitt N), Senden während des Hochladens TEAM-005; Video bleibt aus |
 | E5 Benachrichtigung außerhalb der App | Push, Mail, Ruhezeiten | eigener ADR (ADR-024 nimmt den Teamchat aus) | zurückgestellt (Jannes, 2026-10-18): erst bei Bedarf aus dem Alltag (ANN-647) |
 | E6 Weiteres | Huddles, KI, Canvas, Workflows, Apps | eigener ADR je Thema | zurückgestellt (Jannes, 2026-10-18): je Thema erst bei konkretem Bedarf |
+
+## Vorschläge für mehr Übersicht (2026-10-19, nicht beauftragt)
+
+Antwort auf Jannes' Frage nach weiteren Ideen (PR zu TEAM-006 und TEAM-007). Keine davon braucht
+Präsenz, Lesebestätigung oder eine Auswertung über Personen (§20, ANN-609). Die ersten beiden sind
+auf Jannes' Antwort gebaut (TEAM-008, TEAM-009); die Karte ohne Nummer (ANN-668).
+
+| Vorschlag | Was es bringt | Aufwand |
+| --- | --- | --- |
+| Bilder auch in „Für dich“, Threads, Suche und „Für später“ | dieselbe Person überall gleich erkennbar; vier Abfragen liefern dafür die Kennung der Verfasser:in | gebaut (TEAM-008) |
+| Personenkarte beim Tipp auf Bild oder Namen | großes Bild, Name, Rolle, dienstliche Nummer (`tel:`), „Direktnachricht“ in einem Tipp | gebaut ohne Nummer (TEAM-009, ANN-668) |
+| Letzte Nachricht als zweite Zeile in der Liste | „Anna: Kannst du heute …“ - am Telefon wissen, worum es geht, ohne zu öffnen | mittel, Migration |
+| Bilder der Antwortenden am Thread („3 Antworten“ mit zwei, drei kleinen Bildern) | sehen, wer schon geantwortet hat | klein, Migration |
+| Sprung zum ersten Ungelesenen und klebende Tagestrenner | nach der Tour dort weiterlesen, wo man aufgehört hat; beim Rollen wissen, welcher Tag | klein |
+| Filter „Nur Ungelesenes“ und einklappbare Abschnitte in der Liste | lange Listen am Telefon kurz halten | klein |
+| Status von Hand („Auf Tour bis 14 Uhr“) | sagen, wann man antworten kann - nur selbst gesetzt, nie automatisch (§20) | mittel, Entscheidung Jannes |

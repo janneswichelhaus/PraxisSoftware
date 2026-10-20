@@ -98,6 +98,13 @@ test.describe('LOE-002b: Aufbewahrungsübersicht', () => {
   });
 
   test('zeigt den leeren Zustand als Text, nicht als leere Fläche', async ({ page }) => {
+    // Das Löschjournal ist geteilter Zustand: Entfernt eine Spezifikation
+    // davor etwas mit Journal - etwa ein Profilbild (TEAM-007) -, ist es nicht
+    // mehr leer, und dieser Test hinge an der Reihenfolge. Der leere Zustand
+    // kommt deshalb aus einer leeren Antwort; die Löschsperre bleibt echt.
+    await page.route('**/rest/v1/rpc/list_deletion_runs', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
+    );
     await anmelden(page, KONTEN.owner);
     await page.goto('/praxis/sicherheit/aufbewahrung');
 

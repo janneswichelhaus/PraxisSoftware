@@ -73,6 +73,65 @@ const BEWUSST_AUSSEN = new Map<string, string>([
     'patient_file_access_grants',
     'Technische Freigabe eines signierten Verweises, hoechstens 60 Sekunden gueltig; sie sagt etwas ueber das lesende Konto, nicht ueber die Patientin (ADR-017).',
   ],
+  [
+    'platform_message_attachments',
+    'Die Fotos und Videos einer Rueckfrage stehen als `attachments` an ihrem Vorgang in `platform_messages` (BEF-146).',
+  ],
+  // Zweitreview BEF-146: Tabellen am Plattformzugang (`platform_access_id`).
+  [
+    'platform_access_invitations',
+    'Die Einladungen stehen als `invitations` an ihrem Zugang in `platform_accesses`.',
+  ],
+  [
+    'nutrition_consent_records',
+    'Die Einwilligungen zur Ernaehrungsberatung stehen als `consent_history` an ihrem Profil in `nutrition_profiles` (ERN-001).',
+  ],
+  [
+    'nutrition_weight_entries',
+    'Die Gewichte stehen als `weights` an ihrem Profil in `nutrition_profiles` (ERN-001).',
+  ],
+  [
+    'nutrition_diary_entries',
+    'Die Tagebucheintraege stehen unter `diary` an ihrem Profil in `nutrition_profiles` (ERN-007).',
+  ],
+  [
+    'nutrition_water_days',
+    'Das Wasser je Tag steht unter `diary` an seinem Profil in `nutrition_profiles` (ERN-007).',
+  ],
+  [
+    'nutrition_diary_favorites',
+    'Die Favoriten stehen unter `diary` an ihrem Profil in `nutrition_profiles` (ERN-008).',
+  ],
+  [
+    'custom_foods',
+    'Die eigenen Lebensmittel stehen als `own_foods` an ihrem Profil in `nutrition_profiles` (ERN-005); die der Praxis sind keine Daten der Person.',
+  ],
+  [
+    'training_consent_records',
+    'Training ist ein eigenes Rechtsverhaeltnis; seine Einwilligungen stehen in der Auskunft zum Training (BEF-182).',
+  ],
+  [
+    'training_contracts',
+    'Training ist ein eigenes Rechtsverhaeltnis; seine Vertraege stehen in der Auskunft zum Training (BEF-182).',
+  ],
+  // BEF-146: je Zugang selbst gewaehlt und fuer die Praxis unsichtbar
+  // (ANN-344) - im eigenen Export der Plattform unter `notifications` (BEF-147).
+  [
+    'platform_notification_settings',
+    'Die eigene Wahl zu Benachrichtigungen; die Praxis sieht sie nicht (ANN-344), der eigene Export traegt sie (BEF-147).',
+  ],
+  [
+    'platform_push_subscriptions',
+    'Push-Registrierungen eines Geraets; die Praxis sieht sie nicht (ANN-344), der eigene Export nennt je Geraet „seit wann" (BEF-147).',
+  ],
+  [
+    'notification_deliveries',
+    'Zustellauftraege der gewaehlten Benachrichtigungen; die Praxis sieht sie nicht (ANN-344), der eigene Export traegt sie (BEF-147).',
+  ],
+  [
+    'nutrition_diary_reminders',
+    'Erinnerungen an das Ernaehrungstagebuch, je Zugang gewaehlt; die Praxis sieht sie nicht (ANN-344), der eigene Export traegt sie (BEF-147).',
+  ],
 ]);
 
 /**
@@ -125,9 +184,13 @@ describe('export_patient_record', () => {
     expect(tabellen['appointments']![0]!['staff_member']).toBe('Anna Beispiel');
   });
 
-  it('enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id, gleich welcher Klasse (BEF-145)', async () => {
+  it('enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id oder am Plattformzugang, gleich welcher Klasse (BEF-145, BEF-146)', async () => {
     // Nicht nur `patientenakte` und `personenstammdaten`: Eine Tabelle mit
     // eigener Klasse (`terminwunsch`, BEF-144) fiel sonst unbemerkt heraus.
+    // Seit BEF-146 auch Tabellen am Plattformzugang (`access_id`) - so fielen
+    // die Anhaenge an Rueckfragen auf, seit dem Zweitreview auch ueber
+    // `platform_access_id` - so fielen die Einladungen auf. Was ueber einen
+    // Elterndatensatz haengt, steht als Teil seines Abschnitts in BEWUSST_AUSSEN.
     const { rows: zugeordnet } = await asPostgres<{ table_name: string }>(
       `select distinct ra.table_name from public.retention_assignments ra
        where ra.class_key in ('patientenakte', 'personenstammdaten')
@@ -135,7 +198,7 @@ describe('export_patient_record', () => {
             select 1 from information_schema.columns c
             where c.table_schema = 'public'
               and c.table_name = ra.table_name
-              and c.column_name = 'patient_id'
+              and c.column_name in ('patient_id', 'access_id', 'platform_access_id')
           )
        order by ra.table_name`,
     );
@@ -154,6 +217,153 @@ describe('export_patient_record', () => {
       );
 
     expect(fehlend).toEqual([]);
+  });
+
+  it('nennt die Einladungen zum Plattformzugang ohne Code, fremde Adressen nicht (Zweitreview BEF-146)', async () => {
+    // Je eine eingeloeste Einladung per Mail an Erikas eigenen Zugang und an
+    // Paulas Begleitung fuer Max.
+    const code = 'f'.repeat(64);
+    for (const [zugang, adresse, hash] of [
+      [platformAccesses.erikaBehandlung, 'erika.e@patient.invalid', code],
+      [platformAccesses.paulaBegleitungMax, 'paula.p@patient.invalid', 'e'.repeat(64)],
+    ] as const) {
+      await asPostgres(
+        `insert into public.platform_access_invitations
+           (organization_id, platform_access_id, purpose, channel, code_hash, email,
+            address_confirmed_by, address_confirmed_at, status, expires_at, sent_at, redeemed_at,
+            created_by)
+         values ($1, $2, 'activate', 'email', $3, $4, $5, now(), 'redeemed',
+                 now() + interval '7 days', now(), now(), $5)`,
+        [SEED.organizationId, zugang, hash, adresse, users.office],
+      );
+    }
+    async function einladungen(patient: string) {
+      const { rows } = await asUser<{ daten: Record<string, unknown> }>(
+        users.ownerTherapist,
+        AUSKUNFT,
+        [patient],
+      );
+      const zugaenge = (rows[0]!.daten['tabellen'] as Record<string, unknown[]>)[
+        'platform_accesses'
+      ] as { access_kind: string; invitations: Record<string, unknown>[] }[];
+      return { text: JSON.stringify(rows[0]!.daten), zugaenge };
+    }
+
+    const erika = await einladungen(patients.erika);
+    const eigene = erika.zugaenge.find((z) => z.access_kind === 'self')!;
+    expect(eigene.invitations).toEqual([
+      expect.objectContaining({
+        purpose: 'activate',
+        channel: 'email',
+        email: 'erika.e@patient.invalid',
+        status: 'redeemed',
+      }),
+    ]);
+    expect(erika.text).not.toContain(code);
+    expect(erika.text).not.toContain('code_hash');
+
+    // Die Adresse der Begleitung ist ihr Datum; ihr Name steht am Zugang.
+    const max = await einladungen(patients.max);
+    const begleitung = max.zugaenge.find((z) => z.access_kind === 'companion')!;
+    expect(begleitung.invitations).toEqual([
+      expect.objectContaining({ channel: 'email', email: null, status: 'redeemed' }),
+    ]);
+    expect(max.text).not.toContain('paula.p@patient.invalid');
+  });
+
+  it('nennt die Fotos und Videos an Rueckfragen, ohne Inhalt und Schluessel (BEF-146)', async () => {
+    // Die Anhaenge entstehen direkt in der Datenbank, als haette die Person
+    // sie selbst hochgeladen: an Erikas Behandlung einer bestaetigt, einer noch
+    // unbestaetigt und einer unter Legal Hold gesperrt - alle drei stehen in
+    // ihrer Auskunft (Art. 15 erfasst, was gespeichert ist). Ihr Anhang am
+    // Training und Tinas Anhang gehoeren nicht hinein (ADR-021).
+    async function vorgangMitAnhaengen(
+      konto: string,
+      zugang: string,
+      anhaenge: { status: 'ready' | 'pending'; gesperrt?: boolean }[],
+    ): Promise<void> {
+      const { rows } = await asUserCommitted<{ id: string }>(
+        konto,
+        'select public.start_platform_message($1::uuid, $2, $3, null, null) as id',
+        [zugang, 'organisational', 'Ist das so richtig?'],
+      );
+      for (const anhang of anhaenge) {
+        await asPostgres(
+          `insert into public.platform_message_attachments
+             (organization_id, message_id, media_kind, mime_type, byte_size, checksum_sha256, status,
+              confirmed_at, locked_at, access_id, author_kind, created_by)
+           values ($1, $2, 'photo', 'image/jpeg', 1000, $3, $4,
+                   case when $4 = 'ready' then now() end, case when $5 then now() end,
+                   $6, 'self', $7)`,
+          [
+            SEED.organizationId,
+            rows[0]!.id,
+            'a'.repeat(64),
+            anhang.status,
+            anhang.gesperrt ?? false,
+            zugang,
+            konto,
+          ],
+        );
+      }
+    }
+    await vorgangMitAnhaengen(users.plattformErika, platformAccesses.erikaBehandlung, [
+      { status: 'ready' },
+      { status: 'pending' },
+      { status: 'ready', gesperrt: true },
+    ]);
+    await vorgangMitAnhaengen(users.plattformErika, platformAccesses.erikaTraining, [
+      { status: 'ready' },
+    ]);
+    await vorgangMitAnhaengen(users.plattformTina, platformAccesses.tinaTraining, [
+      { status: 'ready' },
+    ]);
+
+    const { rows } = await asUser<{ daten: Record<string, unknown> }>(
+      users.ownerTherapist,
+      AUSKUNFT,
+      [patients.erika],
+    );
+    const vorgaenge = (rows[0]!.daten['tabellen'] as Record<string, unknown[]>)[
+      'platform_messages'
+    ] as { attachments: Record<string, unknown>[] }[];
+    const anhaenge = vorgaenge.flatMap((v) => v.attachments);
+    expect(anhaenge).toHaveLength(3);
+    expect(anhaenge.map((a) => [a['status'], a['locked_at'] !== null]).sort()).toEqual([
+      ['pending', false],
+      ['ready', false],
+      ['ready', true],
+    ]);
+    // Genau diese Angaben - kein Inhalt, kein Objektschluessel, keine
+    // Pruefsumme, keine Kennung von Anhang, Zugang oder Konto.
+    for (const anhang of anhaenge) {
+      expect(Object.keys(anhang).sort()).toEqual([
+        'author_kind',
+        'author_label',
+        'byte_size',
+        'created_at',
+        'duration_seconds',
+        'locked_at',
+        'media_kind',
+        'mime_type',
+        'status',
+      ]);
+    }
+    // Was die Kopie nicht geben kann, sagt sie (Zweitreview): gesperrte
+    // Anhaenge und die Benachrichtigungen je Zugang.
+    const hinweise = rows[0]!.daten['nicht_enthalten'] as { was: string; grund: string }[];
+    expect(hinweise).toEqual(
+      expect.arrayContaining([
+        {
+          was: 'Inhalt der Fotos und Videos an Rueckfragen',
+          grund: expect.stringContaining('BEF-188') as unknown,
+        },
+        {
+          was: 'Benachrichtigungen je Zugang',
+          grund: expect.stringContaining('BEF-189') as unknown,
+        },
+      ]),
+    );
   });
 
   it('enthaelt die patientenbezogenen Abrechnungsdaten', async () => {

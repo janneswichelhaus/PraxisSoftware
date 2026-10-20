@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { PERSONENFARBEN } from './components/ui/personenfarben';
 import { GRENZEN } from './designsystem.grenzen';
 
 /**
@@ -398,6 +399,35 @@ describe('Farben des Übungsbilds (ANN-381)', () => {
     expect(finden("linie: 'bg-figur-band'")).toEqual(['bg-figur-band']);
     expect(finden("linie: 'stroke-figur-bewegung'")).toEqual([]);
     expect(finden('  --color-figur-fern: oklch(62% 0.06 158);')).toEqual([]);
+  });
+});
+
+describe('Farben der Personen im Teamchat (TEAM-006, ANN-666)', () => {
+  /**
+   * Die Farbe einer Person ist Fläche hinter den Initialen oder Umriss um das
+   * Profilbild - nie Text, nie Rahmen einer Karte. Der Wächter hält sie aus
+   * jeder Utility außer `bg-` und `outline-` heraus; gesetzt werden sie nur im
+   * Baustein `Personenbild`.
+   */
+  it('verwendet person-* nur als Fläche und Umriss, nur im Baustein', () => {
+    for (const farbe of PERSONENFARBEN) {
+      expect(css).toContain(`--color-person-${farbe}: oklch(`);
+    }
+    const FREMD = /(?<![\w-])(?!bg-|outline-)[a-z][a-z-]*-person-[a-z]+\b/g;
+    const finden = (zeile: string) => Array.from(zeile.matchAll(FREMD), (f) => f[0]);
+    expect(funde(finden)).toEqual([]);
+    const ORT = /(?<![\w-])(?:bg|outline)-person-[a-z]+\b/;
+    const orte = quelldateien(join(stamm, 'src'))
+      .filter((datei) => ORT.test(readFileSync(datei, 'utf8')))
+      .map((datei) => relative(join(stamm, 'src'), datei));
+    expect(orte).toEqual([join('components', 'ui', 'Personenbild.tsx')]);
+    // Gegenprobe
+    expect(finden('className="text-person-ozean"')).toEqual(['text-person-ozean']);
+    expect(finden("rand: 'border-person-moos'")).toEqual(['border-person-moos']);
+    expect(finden("tanne: 'bg-person-tanne'")).toEqual([]);
+    expect(finden("tanne: 'outline-person-tanne'")).toEqual([]);
+    expect(finden("tanne: 'ring-person-tanne'")).toEqual(['ring-person-tanne']);
+    expect(finden('  --color-person-tanne: oklch(50% 0.11 155);')).toEqual([]);
   });
 });
 

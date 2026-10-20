@@ -6864,3 +6864,51 @@ Datenschutz · offen · 2026-10-19 · Claude (ERN-011) · Prüfpaket · Wiedervo
 **Anker.** Spalte `occasion` in `public.list_appointments`.
 
 **Änderungspfad.** Anlass für Rollen ohne Fähigkeit maskieren (`app.can_counsel_nutrition()`) in `list_appointments`, `list_day_plan`, `get_training_appointment`, `list_open_billable_appointments` und `appointment_directory` · Aufwand `mittel`.
+
+### ANN-666 — Farbe je Person im Teamchat: vergeben, selbst gewählt, doppelt erlaubt
+
+Praxisprozess · offen · 2026-10-19 · — · — · Wiedervorlage: —
+
+**Annahme.** Jede Person bekommt mit dem Mitarbeiterdatensatz eine von acht Farben (die erste, die keine andere aktive Person trägt). Ändern kann sie nur die Person selbst in „Mein Konto“; dieselbe Farbe darf zweimal vorkommen, die Wahl zeigt, wer sie noch trägt. Die Farbe steht nur am Personenbild im Teamchat, nie als Text und nie ohne Namen.
+
+**Begründung.** Auftrag Jannes (19.10.): „eine Farbe pro Mitarbeiter könnte helfen“. Selbst gewählt wie ein Profil; Rot, Orange und Gelb bleiben den Statusfarben (im Kalender las sich eine Personenfarbe wie eine Warnung).
+
+**Anker.** `app.staff_color_palette()`, `app.next_staff_color()` (Migration TEAM-006), `--color-person-*` in `src/index.css`.
+
+**Änderungspfad.** Vergabe durch die Praxisleitung: `set_own_team_color` um eine Funktion für `owner` ergänzen · Aufwand `klein`.
+
+### ANN-667 — Profilbild: Einwilligung durch das eigene Hochladen, fällt mit dem Ausscheiden
+
+Datenschutz · entschieden (Jannes) · 2026-10-19 · Jannes (bestätigt 2026-10-19, wie empfohlen) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Ein Profilbild setzt nur die Person selbst; das Hochladen ist ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), freiwillig im Sinne von § 26 Abs. 2 BDSG: ohne Bild keinerlei Nachteil, Entfernen jederzeit. Sehen darf es nur das Team im Teamchat. Es fällt beim Entfernen, Ersetzen und Ausscheiden sofort, mit Löschjournal.
+
+**Begründung.** ADR-017 Abschnitt O; Fotos von Beschäftigten im Intranet gelten verbreitet als einwilligungsbedürftig, eine selbst gesetzte, folgenlos entfernbare Angabe ist der freiwilligste Weg. Unsicher: § 26 BDSG nach EuGH C-34/21.
+
+**Anker.** Klasse `profilbild`, `public.set_own_profile_picture` (Migration TEAM-007).
+
+**Änderungspfad.** Schriftliche Einwilligung als Vermerk vor dem ersten Bild · Aufwand `mittel`.
+
+### ANN-668 — Personenkarte im Teamchat: wer jemand in der Praxis ist, nicht was sie tut
+
+Datenschutz · offen · 2026-10-19 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Ein Tipp auf das Bild einer Person öffnet ihre Karte: Bild, Name, Praxisrollen, „Direktnachricht“. Damit sieht das Team die Rollen der anderen Teilnehmenden; bisher sah nur `owner` fremde Rollen (`user_roles_select_scoped` bleibt). Wer nicht teilnimmt, kommt ohne Namen und Rollen. Nicht auf der Karte: Anwesenheit, „zuletzt aktiv“, Status, Telefonnummer, Mail.
+
+**Begründung.** Auftrag Jannes (Frage 5, wie empfohlen: „Name, Rolle“). Die Rolle sagt, wen man fragt; Verhalten wäre Leistungs- oder Verhaltenskontrolle (§20), Kontaktdaten eine eigene Freigabe.
+
+**Anker.** `public.get_team_person` (Migration TEAM-009).
+
+**Änderungspfad.** Rollen aus `get_team_person` nehmen · Aufwand `klein`.
+
+### ANN-669 — Benachrichtigungen im eigenen Export, Push-Registrierung fällt mit dem Ende des Zugangs
+
+Datenschutz · offen · 2026-10-19 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Der eigene Export der Plattform trägt je Zugang die Wahl zu Benachrichtigungen, die Tagebuch-Erinnerungen und die Zustellaufträge; Geräte nur mit „seit wann“, ohne Endpunkt und Schlüssel (Zugangsdaten zum Push-Dienst). Eine Vertretung exportiert ihre eigene Wahl. Push-Registrierungen fallen beim Widerruf sofort, mit dem zeitlichen Ende des Zugangs im täglichen Lauf; eine Sperre lässt sie stehen.
+
+**Begründung.** BEF-147, BEF-148; ergänzt ANN-265 (sonst nur, was die Plattform zeigt). Die Praxis sieht die Wahl weiter nicht (ANN-344).
+
+**Anker.** `platform_export` (Migration BEF-147), `purge_notification_deliveries` (Migration BEF-148).
+
+**Änderungspfad.** Auch Wahl und Erinnerungen beendeter Zugänge im Lauf räumen · Aufwand `klein`.

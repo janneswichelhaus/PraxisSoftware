@@ -33,7 +33,8 @@ const WAEHLEN =
 const LESEN = 'select * from public.platform_notification_settings($1::uuid, $2)';
 const REGISTRIEREN = 'select public.register_platform_push_subscription($1::uuid, $2, $3, $4)';
 const ABHOLEN = 'select * from public.claim_notification_deliveries(50)';
-const MELDEN = 'select public.finish_notification_delivery($1::uuid, $2, $3::text[])';
+const MELDEN =
+  'select public.finish_notification_delivery($1::uuid, $2::timestamptz, $3, $4::text[])';
 const SCHALTEN = 'select public.set_notification_kind_enabled($1, $2)';
 
 const ENDPUNKT = 'https://fcm.googleapis.com/fcm/send/geraet-eins';
@@ -472,12 +473,14 @@ describe('Versand: abholen und melden (Punkt 16)', () => {
         time_zone: 'Europe/Berlin',
         email: expect.stringContaining('@') as unknown,
         push_targets: null,
+        // BEF-148: der Anspruch, den Melden zurückverlangt.
+        claimed_at: expect.any(Date) as unknown,
       },
     ]);
     // Abgeholt ist vergeben.
     expect((await asServiceRole(ABHOLEN)).rows).toEqual([]);
 
-    await asServiceRole(MELDEN, [rows[0]!.id, 'sent', []]);
+    await asServiceRole(MELDEN, [rows[0]!.id, rows[0]!.claimed_at, 'sent', []]);
     expect(await auftraege()).toEqual([expect.objectContaining({ state: 'sent' })]);
   });
 
@@ -486,7 +489,12 @@ describe('Versand: abholen und melden (Punkt 16)', () => {
     expect(await fehlercode(asUser(users.ownerTherapist, ABHOLEN))).toBe('42501');
     expect(
       await fehlercode(
-        asUser(users.ownerTherapist, MELDEN, ['00000000-0000-4000-8000-000000000000', 'sent', []]),
+        asUser(users.ownerTherapist, MELDEN, [
+          '00000000-0000-4000-8000-000000000000',
+          new Date(),
+          'sent',
+          [],
+        ]),
       ),
     ).toBe('42501');
     expect(
@@ -634,9 +642,11 @@ describe('Versand: abholen und melden (Punkt 16)', () => {
       `select app.enqueue_notification($1, 'treatment', $2, 'plan_assigned', null, null)`,
       [organizationId, patients.erika],
     );
-    const [auftrag] = (await asServiceRole<{ id: string; push_targets: unknown }>(ABHOLEN)).rows;
+    const [auftrag] = (
+      await asServiceRole<{ id: string; push_targets: unknown; claimed_at: Date }>(ABHOLEN)
+    ).rows;
     expect(auftrag!.push_targets).toEqual([{ endpoint: ENDPUNKT, p256dh: P256DH, auth: AUTH }]);
-    await asServiceRole(MELDEN, [auftrag!.id, 'gone', [ENDPUNKT]]);
+    await asServiceRole(MELDEN, [auftrag!.id, auftrag!.claimed_at, 'gone', [ENDPUNKT]]);
     expect(await auftraege()).toEqual([
       expect.objectContaining({ state: 'dropped', drop_reason: 'no_device' }),
     ]);
@@ -652,14 +662,97 @@ describe('Versand: abholen und melden (Punkt 16)', () => {
       await asPostgres(
         `update public.notification_deliveries set due_at = now() - interval '1 minute'`,
       );
-      const [a] = (await asServiceRole<{ id: string }>(ABHOLEN)).rows;
+      const [a] = (await asServiceRole<{ id: string; claimed_at: Date }>(ABHOLEN)).rows;
       expect(a, `Versuch ${versuch}`).toBeDefined();
-      await asServiceRole(MELDEN, [a!.id, 'failed', []]);
+      await asServiceRole(MELDEN, [a!.id, a!.claimed_at, 'failed', []]);
     }
     expect(await auftraege()).toEqual([expect.objectContaining({ state: 'failed', attempts: 3 })]);
-    expect(await fehlercode(asServiceRole(MELDEN, [(await auftraege())[0]!.id, 'sent', []]))).toBe(
-      'P0002',
+    expect(
+      await fehlercode(asServiceRole(MELDEN, [(await auftraege())[0]!.id, new Date(), 'sent', []])),
+    ).toBe('P0002');
+  });
+
+  it('meldet nur, wer den Anspruch von jetzt hält (BEF-148)', async () => {
+    await waehlen(['plan_assigned']);
+    await asPostgres(
+      `select app.enqueue_notification($1, 'treatment', $2, 'plan_assigned', null, null)`,
+      [organizationId, patients.erika],
     );
+    const [erster] = (await asServiceRole<{ id: string; claimed_at: Date }>(ABHOLEN)).rows;
+    // Der erste Lauf braucht länger als 15 Minuten: Der Auftrag ist wieder frei,
+    // ein zweiter Lauf holt ihn ab.
+    await asPostgres(
+      `update public.notification_deliveries set claimed_at = claimed_at - interval '16 minutes'`,
+    );
+    const [zweiter] = (await asServiceRole<{ id: string; claimed_at: Date }>(ABHOLEN)).rows;
+    expect(zweiter!.id).toBe(erster!.id);
+    expect(zweiter!.claimed_at).not.toEqual(erster!.claimed_at);
+
+    // Das späte Melden des ersten überschreibt nichts.
+    expect(
+      await fehlercode(asServiceRole(MELDEN, [erster!.id, erster!.claimed_at, 'sent', []])),
+    ).toBe('P0002');
+    expect(await auftraege()).toEqual([expect.objectContaining({ state: 'pending' })]);
+    // Ohne Anspruch auch nicht.
+    expect(await fehlercode(asServiceRole(MELDEN, [erster!.id, null, 'sent', []]))).toBe('P0002');
+
+    await asServiceRole(MELDEN, [zweiter!.id, zweiter!.claimed_at, 'sent', []]);
+    expect(await auftraege()).toEqual([expect.objectContaining({ state: 'sent', attempts: 2 })]);
+    // Zweimal melden geht nicht.
+    expect(
+      await fehlercode(asServiceRole(MELDEN, [zweiter!.id, zweiter!.claimed_at, 'failed', []])),
+    ).toBe('P0002');
+  });
+
+  it('räumt im Löschlauf Push-Registrierungen von Zugängen, die zeitlich geendet haben (BEF-148)', async () => {
+    await asUserCommitted(erika.konto, REGISTRIEREN, [erika.zugang, ENDPUNKT, P256DH, AUTH]);
+    const tina = platformAccesses.tinaTraining;
+    await asUserCommitted(users.plattformTina, REGISTRIEREN, [
+      tina,
+      'https://fcm.googleapis.com/fcm/send/geraet-tina',
+      P256DH,
+      AUTH,
+    ]);
+    // Erikas Versorgung endete vor 60 Tagen: Die Lesefrist (30 Tage) ist
+    // vorbei, der Zugang steht weiter auf „active" - kein Widerruf.
+    await asPostgres(
+      `update public.patients
+          set care_started_on = least(care_started_on, current_date - 90),
+              care_concluded_on = current_date - 60,
+              care_concluded_at = now(),
+              care_concluded_by = $2
+        where id = $1`,
+      [patients.erika, users.ownerTherapist],
+    );
+    const zaehlen = async () =>
+      Number(
+        (
+          await asPostgres<{ n: string }>(
+            'select count(*) n from public.platform_push_subscriptions',
+          )
+        ).rows[0]!.n,
+      );
+    // Bis zum Löschlauf liegt die Registrierung noch da.
+    expect(await zaehlen()).toBe(2);
+    await asPostgres('select public.purge_notification_deliveries()');
+    const { rows } = await asPostgres<{ access_id: string }>(
+      'select access_id from public.platform_push_subscriptions',
+    );
+    expect(rows).toEqual([{ access_id: tina }]);
+  });
+
+  it('lässt im Löschlauf die Registrierung eines nur gesperrten Zugangs stehen (Zweitreview)', async () => {
+    await asUserCommitted(erika.konto, REGISTRIEREN, [erika.zugang, ENDPUNKT, P256DH, AUTH]);
+    // Eine Sperre lässt sich aufheben - das Gerät soll danach nicht still sein.
+    await asPostgres(
+      `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
+      [erika.zugang],
+    );
+    await asPostgres('select public.purge_notification_deliveries()');
+    const { rows } = await asPostgres<{ access_id: string }>(
+      'select access_id from public.platform_push_subscriptions',
+    );
+    expect(rows).toEqual([{ access_id: erika.zugang }]);
   });
 
   it('löscht abgeschlossene Aufträge nach 30 Tagen', async () => {

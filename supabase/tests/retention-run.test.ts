@@ -830,6 +830,10 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       // POR-002: Regel in app.delete_due_platform_accesses und
       // app.delete_due_platform_accounts, Tests in platform-accesses.test.ts.
       'plattformzugang',
+      // TEAM-007: Regel in app.forget_profile_picture (Entfernen, Ersetzen,
+      // Ausscheiden) und reapply_deletion_journal, Tests in
+      // teamchat-profil.test.ts.
+      'profilbild',
       // FLT-001: Regel in app.delete_due_fleet_records, Tests in fleet.test.ts.
       'radflotte_ereignis',
       // KOM-005: Regel in app.remove_message_attachments, Tests in

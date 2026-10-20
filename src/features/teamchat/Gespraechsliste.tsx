@@ -9,6 +9,7 @@ import { Disclosure } from '@/components/ui/Card';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Gruppenbild } from '@/components/ui/Personenbild';
 import { SearchField } from '@/components/ui/SearchField';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { CurrentUser } from '@/features/session/types';
@@ -32,6 +33,8 @@ import type { Spalten } from './flaeche';
 import { ENTWUERFE, GEMERKT, NEU, SUCHE, TEAMCHAT, THREADS, gespraechPfad } from './pfade';
 import { standardGespraech } from './speicher';
 import { LEERE_SUCHE, sucheSetzen } from './suche';
+import { Teambild } from './Teambild';
+import { eigenerAvatar, useAvatare } from './teambilder';
 import { Schloss } from './Zeichen';
 
 /**
@@ -87,10 +90,38 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
       Neu
     </ButtonLink>
   );
+  // TEAM-007: Das eigene Bild ist der Weg zu Bild und Farbe - wie bei Slack am
+  // Telefon oben neben „Neu“, am Rechner am Fuß der Spalte, wo das Suchfeld
+  // seine Breite behält. Die eigene Zeile markiert der Server, auch für die
+  // Trainingsbetreuung.
+  const avatare = useAvatare();
+  const ich = eigenerAvatar(avatare.data);
+  const eigenesBild = ich ? (
+    <Teambild
+      staffMemberId={ich.staff_member_id}
+      name={user.profile.display_name}
+      groesse="klein"
+    />
+  ) : null;
+  const ICH = 'Eigenes Bild und eigene Farbe ändern';
 
   return (
     <div className={telefon ? 'px-4 pt-4 pb-6 sm:px-6' : 'px-4 pt-4 pb-6'}>
-      {telefon ? <PageHeader title="Teamchat" actions={neu} /> : null}
+      {telefon ? (
+        <PageHeader
+          title="Teamchat"
+          actions={
+            <>
+              {eigenesBild ? (
+                <ButtonLink to="/mein-konto" variant="quiet" groesse="kompakt" aria-label={ICH}>
+                  {eigenesBild}
+                </ButtonLink>
+              ) : null}
+              {neu}
+            </>
+          }
+        />
+      ) : null}
       <div className="flex items-end gap-2">
         {sucheOffen && !telefon ? (
           <div className="min-w-0 flex-1" />
@@ -217,6 +248,18 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
                   </Disclosure>
                 </div>
               ) : null}
+              {eigenesBild && !telefon ? (
+                <Listenabschnitt titel="Du">
+                  <ListRow
+                    dicht
+                    to="/mein-konto"
+                    uebergang={false}
+                    bild={eigenesBild}
+                    titel={user.profile.display_name}
+                    meta="Bild und Farbe"
+                  />
+                </Listenabschnitt>
+              ) : null}
             </>
           );
         }}
@@ -242,12 +285,29 @@ function Gespraechszeile({
       : kanal.notify === 'none'
         ? 'Stumm'
         : undefined;
+  // TEAM-006: Direktnachrichten tragen das Bild der anderen Person, Gruppen
+  // die Zahl ihrer Mitglieder; Kanäle bleiben beim „#“.
+  const groesse = telefon ? 'zeile' : 'klein';
+  const bild =
+    kanal.kind === 'direct' ? (
+      <Teambild
+        staffMemberId={kanal.partner_staff_member_id}
+        name={kanal.partner_name}
+        groesse={groesse}
+      />
+    ) : kanal.kind === 'group' ? (
+      <Gruppenbild
+        anzahl={kanal.member_count ?? kanal.member_names?.length ?? 0}
+        groesse={groesse}
+      />
+    ) : undefined;
   return (
     <ListRow
       dicht={!telefon}
       to={gespraechPfad(kanal)}
       aktiv={aktiv}
       uebergang={telefon}
+      bild={bild}
       titel={
         <span className="inline-flex max-w-full min-w-0 items-center gap-1.5">
           {kanal.kind === 'private' ? <Schloss /> : null}

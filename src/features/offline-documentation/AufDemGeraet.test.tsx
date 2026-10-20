@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test-utils';
-import { fachAendern, speicherImSpeicher, speicherSetzen } from '@/lib/geraeteablage';
+import {
+  dauerfachAendern,
+  fachAendern,
+  speicherImSpeicher,
+  speicherSetzen,
+} from '@/lib/geraeteablage';
 import { AufDemGeraet, type Serverwege } from './AufDemGeraet';
 import {
   entwuerfeLesen,
@@ -158,6 +163,42 @@ describe('AufDemGeraet', () => {
     expect(await entwuerfeLesen(ANNA)).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'Endgültig verwerfen' }));
     await waitFor(async () => expect(await entwuerfeLesen(ANNA)).toHaveLength(0));
+  });
+
+  it('abgewiesen: mit Verbindung erneut senden, ohne Verbindung nicht (BEF-150)', async () => {
+    const user = userEvent.setup();
+    await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: abgesagt.');
+    const { EntwurfAbgewiesen, ENTWURF_ABWEISUNG } = await import('./api');
+    await uebertragenAls(() => Promise.reject(new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.abgesagt)));
+    const { unmount } = renderWithProviders(<AufDemGeraet besitzer={ANNA} ohneVerbindung />);
+    expect(await screen.findByText(/Der Termin wurde abgesagt/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Erneut senden' })).toBeNull();
+    unmount();
+    const wege: Serverwege = {
+      zurDokumentation: (t) => `/termine/${t}/dokumentation`,
+      alsNachtrag: vi.fn(),
+      inKorrektur: vi.fn(),
+      fassungLesen: vi.fn(),
+    };
+    renderWithProviders(<AufDemGeraet besitzer={ANNA} ohneVerbindung={false} serverwege={wege} />);
+    await user.click(await screen.findByRole('button', { name: 'Erneut senden' }));
+    await waitFor(async () =>
+      expect((await entwuerfeLesen(ANNA))[0]).toMatchObject({ zustand: 'wartet', grund: null }),
+    );
+    // Wieder wartend: der Grund der Abweisung ist weg, der Text bleibt.
+    await waitFor(() => expect(screen.queryByText(/Der Termin wurde abgesagt/)).toBeNull());
+    expect(screen.getByText('Synthetisch: abgesagt.')).toBeInTheDocument();
+  });
+
+  it('nennt Einträge, die diese Fassung nicht lesen kann (BEF-150)', async () => {
+    await dauerfachAendern(ANNA, 'entwuerfe', () => ({ entwuerfe: [], unlesbar: [{ x: 1 }, {}] }));
+    renderWithProviders(<AufDemGeraet besitzer={ANNA} ohneVerbindung />);
+    expect(
+      await screen.findByText(/2 Einträge, die diese Fassung der Anwendung nicht lesen kann/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Nicht alles ist übertragen. Bitte unten ansehen.'),
+    ).toBeInTheDocument();
   });
 
   it('ohne Tagesplan bleiben Entwürfe lesbar (Kopf am Entwurf)', async () => {

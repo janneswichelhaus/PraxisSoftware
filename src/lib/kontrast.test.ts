@@ -8,6 +8,7 @@ import {
   relativeHelligkeit,
   tokensAusCss,
 } from './kontrast';
+import { PERSONENFARBEN, type Personenfarbe } from '@/components/ui/personenfarben';
 import { PIN_COLORS } from '@/features/fleet/bike3d/zones';
 
 // Unter jsdom traegt import.meta.url kein file:-Schema; der Pfad kommt
@@ -317,5 +318,59 @@ describe('Nadeln am 3D-Rad (FLT-EPIC-001, Handoff Lastenrad 3D Abschnitt 3)', ()
     expect(alsHex('nadel-beobachten')).toBe(PIN_COLORS.beobachten.fill);
     expect(alsHex('nadel-beobachten-ink')).toBe(PIN_COLORS.beobachten.ink);
     expect(PIN_COLORS.beobachten.kontur).toBe(PIN_COLORS.beobachten.ink);
+  });
+});
+
+describe('Farben der Personen im Teamchat (TEAM-006, ANN-666)', () => {
+  const weiss = { L: 1, C: 0, H: 0 };
+  const farbe = (name: Personenfarbe) => {
+    const wert = tokens[`person-${name}`];
+    if (!wert) throw new Error(`Token --color-person-${name} fehlt in src/index.css.`);
+    return wert;
+  };
+  const oklab = ({ L, C, H }: { L: number; C: number; H: number }) => {
+    const h = (H * Math.PI) / 180;
+    return [L, C * Math.cos(h), C * Math.sin(h)] as const;
+  };
+
+  it.each(PERSONENFARBEN.map((name) => [name]))(
+    'setzt weiße Initialen auf %s mit mindestens 4,5:1 und hebt sich als Fläche ab',
+    (name) => {
+      expect(kontrastverhaeltnis(weiss, farbe(name))).toBeGreaterThanOrEqual(4.5);
+      expect(schlechtesterKontrast(`person-${name}`)).toBeGreaterThanOrEqual(3);
+      expect(gamutAbweichung(farbe(name))).toBeLessThan(0.001);
+    },
+  );
+
+  it('hält die acht Farben auseinander und von den Statusfarben weg (Oklab-Abstand mindestens 0,08)', () => {
+    const status = ['danger', 'warnung', 'warnung-mittel'] as const;
+    for (const name of PERSONENFARBEN) {
+      for (const s of status) {
+        const [l1, a1, b1] = oklab(farbe(name));
+        const [l2, a2, b2] = oklab(tokens[s]!);
+        expect(Math.hypot(l1 - l2, a1 - a2, b1 - b2), `${name} gegen ${s}`).toBeGreaterThanOrEqual(
+          0.08,
+        );
+      }
+    }
+    for (const [i, a] of PERSONENFARBEN.entries()) {
+      for (const b of PERSONENFARBEN.slice(i + 1)) {
+        const [l1, a1, b1] = oklab(farbe(a));
+        const [l2, a2, b2] = oklab(farbe(b));
+        expect(Math.hypot(l1 - l2, a1 - a2, b1 - b2), `${a} gegen ${b}`).toBeGreaterThanOrEqual(
+          0.08,
+        );
+      }
+    }
+  });
+
+  it('meidet die Töne der Statusfarben: kein Rot, Orange oder Gelb mit Buntheit', () => {
+    // Rot bis Gelb liegen in Oklch etwa zwischen 345 und 110 Grad; die
+    // Statusfarben `danger` (31) und `warnung` (86) mittendrin.
+    for (const name of PERSONENFARBEN) {
+      const { C, H } = farbe(name);
+      const warm = H >= 345 || H <= 110;
+      expect(warm && C > 0.03, name).toBe(false);
+    }
   });
 });

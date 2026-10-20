@@ -19,6 +19,7 @@ import { vorschau } from './formatierung';
 import { TEAMCHAT, THREADS, threadPfad } from './pfade';
 import { useTeamchat } from './rahmen';
 import { Rand } from './Rand';
+import { Verfasserbild } from './Teambild';
 import { nachrichtenzeit } from './zeit';
 
 /**
@@ -68,12 +69,17 @@ export function ThreadsPage() {
                   THREADS,
                 )}
                 gedaempft={t.new_replies === 0}
+                bild={
+                  <Verfasserbild staffMemberId={t.author_staff_member_id} name={t.author_name} />
+                }
                 titel={
                   <span className="line-clamp-2">
                     {t.body === null ? ohneInhalt(t) : vorschau(t.body)}
                   </span>
                 }
-                meta={`${titel(t.channel_id)} · ${t.reply_count === 1 ? '1 Antwort' : `${t.reply_count} Antworten`}${
+                meta={`${titel(t.channel_id)}${
+                  t.removed_kind === null ? ` · ${t.author_name ?? 'Ehemaliges Teammitglied'}` : ''
+                } · ${t.reply_count === 1 ? '1 Antwort' : `${t.reply_count} Antworten`}${
                   t.last_reply_at ? ` · zuletzt ${nachrichtenzeit(t.last_reply_at, zeitzone)}` : ''
                 }`}
                 status={

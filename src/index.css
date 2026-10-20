@@ -170,6 +170,25 @@
   --color-reihe-5: oklch(64% 0.11 150);
   --color-reihe-6: oklch(50% 0.105 320);
 
+  /* --- Personen im Teamchat (TEAM-006, ANN-666) ------------------------------
+     Acht Farben, je Person eine: Fläche hinter den weißen Initialen oder Umriss
+     um das Profilbild (`Personenbild`). Dunkel genug für weiße Initialen
+     (>= 4,5:1), als Fläche >= 3:1 auf jedem Grund, untereinander unterscheidbar
+     (Oklab-Abstand >= 0,08) - geprüft in `src/lib/kontrast.test.ts`. Keine
+     Farbe im Rot, Orange oder Gelb der Statusfarben: Eine Person ist keine
+     Warnung (der Kalender trug deshalb keine Farbe je Person mehr). Nie
+     Textfarbe, nie allein: Der Name steht immer daneben
+     (`src/designsystem.test.ts`). Schlüssel und Reihenfolge der Vergabe wie
+     `app.staff_color_palette()`. */
+  --color-person-tanne: oklch(44% 0.11 150);
+  --color-person-ozean: oklch(46% 0.15 260);
+  --color-person-pflaume: oklch(43% 0.15 335);
+  --color-person-moos: oklch(52% 0.1 125);
+  --color-person-veilchen: oklch(53% 0.16 300);
+  --color-person-petrol: oklch(52% 0.09 212);
+  --color-person-schiefer: oklch(40% 0.015 250);
+  --color-person-nacht: oklch(33% 0.07 275);
+
   /* --- Übungsbild (ANN-381) -------------------------------------------------
      Die Linienfigur der Übungsbibliothek: die nahe Körperseite in der
      Hauptfarbe (`accent`), die ferne in Figur fern, Hilfsmittel in

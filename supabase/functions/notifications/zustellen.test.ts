@@ -18,6 +18,7 @@ const AUFTRAG: Faellig = {
   time_zone: 'Europe/Berlin',
   email: 'erika@example.invalid',
   push_targets: null,
+  claimed_at: '2026-10-12T15:00:00.123456+00:00',
 };
 
 function buchMit(faellig: Faellig[]) {
@@ -29,10 +30,12 @@ function buchMit(faellig: Faellig[]) {
       gegeben = true;
       return Promise.resolve(faellig);
     }),
-    melden: vi.fn((id: string, ausgang: string, weg: readonly string[]) => {
-      meldungen.push([id, ausgang, weg]);
-      return Promise.resolve(true);
-    }),
+    melden: vi.fn(
+      (auftrag: Pick<Faellig, 'id' | 'claimed_at'>, ausgang: string, weg: readonly string[]) => {
+        meldungen.push([auftrag.id, ausgang, weg]);
+        return Promise.resolve(true);
+      },
+    ),
   };
   return { buch, meldungen };
 }
@@ -104,8 +107,30 @@ describe('zustellen', () => {
     expect(gesendet).toHaveLength(1);
     expect(gesendet[0]!.an).toBe('erika@example.invalid');
     expect(meldungen).toEqual([[AUFTRAG.id, 'sent', []]]);
+    // Gemeldet wird mit dem Anspruch aus dem Abholen (BEF-148).
+    expect(vi.mocked(buch.melden).mock.calls[0]![0]).toMatchObject({
+      id: AUFTRAG.id,
+      claimed_at: AUFTRAG.claimed_at,
+    });
     expect(protokoll).toEqual([{ auftrag: AUFTRAG.id, weg: 'email', ergebnis: 'sent' }]);
     expect(JSON.stringify(protokoll)).not.toContain('@');
+  });
+
+  it('meldet bis zu dreimal, wenn nur das Melden scheitert (BEF-148)', async () => {
+    const { buch } = buchMit([AUFTRAG]);
+    vi.mocked(buch.melden)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    const { wege } = mailweg();
+    await zustellen(buch, wege, 'https://app.invalid');
+    expect(buch.melden).toHaveBeenCalledTimes(3);
+
+    const zwei = buchMit([AUFTRAG]);
+    vi.mocked(zwei.buch.melden).mockResolvedValue(false);
+    await zustellen(zwei.buch, mailweg().wege, 'https://app.invalid');
+    // Höchstens dreimal - dann holt der nächste Lauf ihn wieder ab.
+    expect(zwei.buch.melden).toHaveBeenCalledTimes(3);
   });
 
   it('meldet failed, wenn der Weg fehlt oder die Art unbekannt ist', async () => {

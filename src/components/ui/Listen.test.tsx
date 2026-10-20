@@ -79,7 +79,9 @@ describe('ListRow mit Bild, Betrag und Aktion (Design-Fundament)', () => {
     const ziel = screen.getByRole('link', { name: /Wandsitz/ });
     expect(klassenVon(ziel)).toContain('grid-cols-[auto_minmax(0,1fr)_auto]');
     const platz = ziel.firstElementChild!;
-    expect(klassenVon(platz)).toEqual(expect.arrayContaining(['size-14', 'shrink-0']));
+    // Die Größe bringt das Bild mit (TEAM-006: auch ein Personenbild passt).
+    expect(klassenVon(platz)).toContain('shrink-0');
+    expect(platz.querySelector('.size-14')).not.toBeNull();
     expect(within(platz as HTMLElement).getByRole('img')).toBeInTheDocument();
   });
 

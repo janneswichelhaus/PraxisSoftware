@@ -23,6 +23,7 @@ import { vorschau } from './formatierung';
 import { GEMERKT, TEAMCHAT, stellePfad } from './pfade';
 import { useTeamchat } from './rahmen';
 import { Rand } from './Rand';
+import { Verfasserbild } from './Teambild';
 import { geplantFuer, nachrichtenzeit } from './zeit';
 
 const ANSICHTEN = [
@@ -93,6 +94,7 @@ export function GemerktPage() {
               key={g.id}
               to={mitRueckweg(stellePfad({ id: g.channel_id, kind: g.channel_kind }, g), GEMERKT)}
               gedaempft={g.done}
+              bild={<Verfasserbild staffMemberId={g.author_staff_member_id} name={g.author_name} />}
               titel={<span className="line-clamp-2">{vorschau(g.body)}</span>}
               meta={[
                 // Die Erinnerung steht in der Nebenzeile, nicht rechts neben

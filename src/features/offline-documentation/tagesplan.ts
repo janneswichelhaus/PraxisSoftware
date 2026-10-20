@@ -131,6 +131,16 @@ export async function tagesplanLesen(
 }
 
 /**
+ * Räumt den abgelegten Tagesplan sofort (BEF-150): wenn das Konto nicht mehr
+ * dokumentieren darf, der Zugang aber bleibt - sonst läge die Liste mit
+ * Namen, Adressen und Telefonnummern bis zum Ende des Tages auf dem Gerät.
+ * Entwürfe bleiben; die fallen nie still (§13).
+ */
+export async function tagesplanVerwerfen(besitzer: string): Promise<void> {
+  await fachAendern(besitzer, FACH, () => undefined);
+}
+
+/**
  * Legt jede Antwort auf die eigene Tagesliste von heute ab, die in offener
  * Sitzung ankommt - gleich, welche Seite sie geladen hat. Die eine Stelle für
  * den Tagesplan; die Übersicht lädt wie bisher (Schlüssel `['day-plan', tag,

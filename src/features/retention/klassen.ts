@@ -189,6 +189,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Nachrichten in Kanälen und Direktnachrichten. Zwölf Monate ab ihrem Tag, dann endgültig gelöscht; Dauerhaftes gehört in den Fachprozess.',
   },
+  profilbild: {
+    label: 'Profilbild im Teamchat',
+    beschreibung:
+      'Das Bild, das sich eine Person im Teamchat selbst gibt. Fällt, wenn sie es entfernt oder ersetzt, und mit dem Ausscheiden - sofort.',
+  },
   ernaehrungsberatung: {
     label: 'Ernährungsberatung',
     beschreibung:

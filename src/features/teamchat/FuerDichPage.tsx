@@ -22,6 +22,7 @@ import {
 } from './api';
 import { vorschau } from './formatierung';
 import { FUER_DICH, stellePfad } from './pfade';
+import { Verfasserbild } from './Teambild';
 import { nachrichtenzeit } from './zeit';
 
 /**
@@ -76,6 +77,9 @@ export function FuerDichPage({ user }: { user: CurrentUser }) {
                     stellePfad({ id: g.channel_id, kind: g.channel_kind }, g),
                     FUER_DICH,
                   )}
+                  bild={
+                    <Verfasserbild staffMemberId={g.author_staff_member_id} name={g.author_name} />
+                  }
                   titel={<span className="line-clamp-2">{vorschau(g.body)}</span>}
                   meta={`${titel(g.channel_id)} · ${g.author_name ?? 'Ehemaliges Teammitglied'}`}
                   aktion={
@@ -115,6 +119,12 @@ export function FuerDichPage({ user }: { user: CurrentUser }) {
                     FUER_DICH,
                   )}
                   gedaempft={!eintrag.unread}
+                  bild={
+                    <Verfasserbild
+                      staffMemberId={eintrag.author_staff_member_id}
+                      name={eintrag.author_name}
+                    />
+                  }
                   titel={<span className="line-clamp-2">{vorschau(eintrag.body)}</span>}
                   meta={`${eintrag.reason === 'mention' ? 'Erwähnung' : 'Antwort'} · ${titel(
                     eintrag.channel_id,

@@ -2,7 +2,7 @@
 
 ## Status
 
-**Angenommen, Fassung 8; Fassung 9 vorgeschlagen** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+**Angenommen, Fassungen 8 und 10; Fassung 9 vorgeschlagen** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
 alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
 Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
 Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
@@ -12,7 +12,17 @@ Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
 Punkte 29 und 69 für Anhänge an Rückfragen); **Fassung 7** am 2026-10-18 von
 Jannes entschieden (Umkehr von Punkt 29 für jeden Upload); **Fassung 8** am 2026-10-18
 bestätigt, die Fragen 30 bis 32 wie empfohlen (Abschnitt M); **Fassung 9** am 2026-10-18
-vorgeschlagen, im Kern von Jannes entschieden (Abschnitt N, Bestätigungsfragen 33 und 34).
+vorgeschlagen, im Kern von Jannes entschieden (Abschnitt N, Bestätigungsfragen 33 und 34);
+**Fassung 10** am 2026-10-19 von Jannes beauftragt und am selben Tag bestätigt, die Fragen 35
+bis 37 wie empfohlen (Abschnitt O).
+**Fassung 10 (2026-10-19, am selben Tag angenommen).** Anlass ist Jannes' Auftrag: „Bitte füge Profilbilder
+pro Mitarbeiter ein beziehungsweise die Möglichkeit, Profilbilder festzulegen.“ **Abschnitt O
+(Punkte 88 bis 95)** gibt Profilbilder im Teamchat frei: ein Bild, das sich jede Person selbst
+gibt, auf dem Gerät zum Quadrat gerechnet, am Inhalt geprüft. Das ist die **Umkehr eines
+einzelnen Punktes** nach der Fassungsregel in `README.md`: Punkt 1 („Dateien liegen in Supabase
+Storage“) gilt für Profilbilder nicht, sie liegen als Zeile in der Datenbank (Punkt 91); der alte
+Wortlaut bleibt. Vermerke an den Punkten 1, 15, 50 und 51. Gebaut wird mit synthetischen
+Bildern (§15.2).
 **Fassung 9 (2026-10-18, vorgeschlagen).** Anlass sind Jannes' Antworten auf die Fragen der PR
 #273: „Fragen wie empfohlen, außer Sprachnachrichten – die möchte ich ermöglichen.“ **Abschnitt N
 (Punkte 82 bis 87)** gibt Sprachnachrichten im Teamchat frei; Video bleibt ausgeschlossen. Das
@@ -124,7 +134,7 @@ ADR trotzdem jetzt geschrieben wird, steht im Kontext.
 2026-10-02 (Fassung 3, am selben Tag angenommen); 2026-10-09 (Fassung 4);
 2026-10-10 (Fassung 5, am selben Tag angenommen); 2026-10-15 (Fassung 6);
 2026-10-18 (Fassung 7); 2026-10-18 (Fassung 8, am selben Tag angenommen); 2026-10-18
-(Fassung 9, vorgeschlagen)
+(Fassung 9, vorgeschlagen); 2026-10-19 (Fassung 10, am selben Tag angenommen)
 
 ## Kontext
 
@@ -213,6 +223,8 @@ tut; Punkt 33 entscheidet es hier.
    in derselben ausdrücklich freigegebenen EU-Region (ADR-015 Punkt 10 und 19).
    Kein zweiter Anbieter, kein fremdes CDN, **kein öffentlicher Bucket** —
    auch nicht „nur für ein Logo".
+   *Vermerk 2026-10-19 (Fassung 10, Umkehr für Profilbilder): Ein Profilbild im Teamchat liegt
+   als Zeile in der Datenbank, nicht in einem Bucket (Punkt 91).*
 2. **Storage ist kein neuer Dienstleister** und bekommt deshalb keine eigene
    Providerprüfung, sondern **fünf zusätzliche Punkte im Katalog von OPS-001**
    (Abschnitt „Was OPS-001 zusätzlich prüfen muss"). **Bis OPS-001 positiv
@@ -323,6 +335,8 @@ tut; Punkt 33 entscheidet es hier.
     *Vermerk 2026-10-02 (Fassung 3): Für alle Arten trägt der
     Verweis zum Anzeigen keinen Downloadnamen (Punkt 54); den Downloadnamen
     trägt nur der Verweis der eigenen Aktion „Herunterladen" (Punkt 55).*
+    *Vermerk 2026-10-19 (Fassung 10): Ein Profilbild hat keinen Verweis; es kommt mit der
+    Antwort an die angemeldete Sitzung (Punkt 92).*
 16. **Objekte werden mit `cacheControl: '0'` hochgeladen.** Der Standardwert
     der Bibliothek ist `3600`. Grund, belegt aus der Anbieterdokumentation:
     Eine am CDN zwischengespeicherte Antwort zu einem signierten Verweis kann
@@ -877,6 +891,8 @@ bleiben erhalten.
     gelöscht, Auditeintrag, Meldung) ist derselbe wie in Punkt 52.
     *Vermerk 2026-10-18 (Fassung 7): Eine Virenprüfung läuft hier nie
     (Punkt 29); die Function prüft nur am Inhalt.*
+    *Vermerk 2026-10-19 (Fassung 10): Ein Profilbild prüft die Datenbank selbst, in der
+    Transaktion, die es ablegt (Punkt 90).*
 51. **Bis zur Prüfung ist eine Datei als „nicht serverseitig geprüft"
     gekennzeichnet**, sichtbar an der Datei. In Umgebungen ohne Edge Runtime
     — die Cloud-Entwicklungsumgebung, die Test-Umgebung mit synthetischen
@@ -886,6 +902,8 @@ bleiben erhalten.
     (ADR-007 Punkt 5) gehört, wie der Schalter des Kartendienstes (ANN-094).
     Ohne ihn wäre die Prüfung eine Zusage, die eine ausgefallene Function
     still bricht.
+    *Vermerk 2026-10-19 (Fassung 10): Für Profilbilder gibt es diesen Zustand nicht; sie sind
+    von Anfang an geprüft (Punkt 90).*
 52. **Ein Befund der Prüfung heißt Verwerfen, nicht Nachbessern.** Passt der
     Typ nicht, weicht die Prüfsumme ab oder stehen Metadaten außerhalb der
     Erlaubnisliste im Bild, wird die Datei nicht `ready` (oder gesperrt, wenn
@@ -1213,6 +1231,61 @@ Absprache, nie einer Auswertung.
 87. **Scharf erst nach** OPS-001 und OPS-003 wie jeder Anhang (Punkt 81). Die Datenschutzprüfung
     vor dem Go-live (ADR-007) nimmt Sprachnachrichten als eigene Verarbeitung auf (ANN-655).
     Gebaut wird mit dem künstlichen Mikrofon von Chromium (Punkt 41).
+
+### O. Profilbilder im Teamchat (Fassung 10)
+
+**Anlass.** Auftrag Jannes vom 2026-10-19 (TEAM-007): Profilbilder pro Mitarbeiter:in und die
+Möglichkeit, sie festzulegen. Ein Profilbild ist ein Bild einer beschäftigten Person, das sie
+sich selbst gibt - ein Datum über Beschäftigte (§20), kein Dokument und nie ein Bild von
+Patient:innen. Es steht vor jeder Nachricht und in jeder Liste von Personen; daran hängt der
+Zuschnitt dieses Abschnitts.
+
+88. **Was freigegeben wird.** Wer am Teamchat teilnimmt (ANN-611), gibt **sich selbst** ein
+    Profilbild - freiwillig, jederzeit ersetzbar und entfernbar. Niemand setzt oder entfernt das
+    Bild einer anderen Person, auch `owner` nicht. Es erscheint im Teamchat und in „Mein Konto“;
+    nicht auf der Plattform, nicht in Dokumenten, Rechnungen oder Exporten. Was auf dem Bild
+    steht, prüft die Anwendung nicht; Patient:innen gehören nicht darauf (Punkt 72 sinngemäß).
+89. **Auf dem Gerät gerechnet.** Aus einem Foto - Dateiwähler, die Mediathek ist hier gewollt
+    (Punkt 74 sinngemäß) - rechnet das Gerät ein **Quadrat von 256 × 256 Bildpunkten** als JPEG
+    aus Pixeln, **höchstens 64 KiB**. Das Original verlässt das Gerät nie und liegt nur im
+    Arbeitsspeicher der Seite (Punkt 33); Aufnahmemetadaten entstehen nicht, und was der
+    Kodierer an Segmenten mitgibt, entfernt das Gerät (Punkt 34). Der Ausschnitt ist fest - die
+    Mitte, beim Hochformat der obere Teil -, ohne Gesichtserkennung, ohne Bearbeitung, nie an
+    das AI Gateway (Punkt 39 sinngemäß, ADR-005).
+90. **Prüfung am Inhalt in derselben Transaktion.** Der Server läuft das ganze JPEG ab -
+    Signatur, Aufbau bis zum Bildende, nichts dahinter - und lässt nur Segmente der Bilddaten und
+    das Adobe-Segment in seiner festen Länge zu: kein EXIF, XMP, IPTC, ICC, kein Kommentar, kein
+    Vorschaubild, auch nicht hinter dem ersten Scan; dazu genau ein Bildrahmen von 256 × 256 und
+    die Größe. Belegt ist damit „kein Segment mit Metadaten“, nicht „kein Byte außer Pixeln“: In
+    Tabellen und Bilddaten lassen sich Bytes nicht als Inhalt prüfen. Ein Befund lehnt ab, ohne
+    Bytes umzuschreiben (Punkt 52). Anders als Punkt 50 keine Edge Function: Die Bytes liegen
+    in der Datenbank, also prüft sie selbst, und die Prüfung ist ab dem ersten Bild scharf.
+91. **In der Datenbank, nicht im Bucket - Umkehr von Punkt 1 für diese eine Art.** Gründe:
+    (a) Ein Bild, das in jeder Liste von Personen steht, bräuchte im Bucket einen Verweis je
+    Person und Liste - genau das schließt Punkt 15 aus. (b) Eine Zeile unter den Rechten des
+    Teamchats hat keinen Verweis, der sich weitergeben, zwischenspeichern oder nicht widerrufen
+    ließe (Punkte 16 und 17). (c) Löschen ist das der Zeile, mit Löschjournal, ohne Löschauftrag
+    und Quittung; Sicherung und Wiederherstellung laufen mit der Datenbank (Punkt 26 entfällt).
+    (d) Klein und begrenzt: ein Bild je Person, höchstens 64 KiB. Sonst wie jede Datei: eine
+    eigene Tabelle, deren Zeile die Wahrheit ist (Punkt 6), Bezugsdatensatz der
+    Mitarbeiterdatensatz (Punkt 10), **unveränderlich** (Punkt 8) - ein neues Bild ist eine
+    neue Zeile, das alte fällt.
+92. **Wer sieht.** Wer am Teamchat der Praxis teilnimmt; nie ein Konto von Patient:innen,
+    Kund:innen oder der Plattform, nie eine andere Praxis. Der Server prüft bei jedem Abruf.
+    Ausgeschiedene zeigen kein Bild. Das Bild kommt als Text in der Antwort an die angemeldete
+    Sitzung und wird aus einer Objekt-URL im Arbeitsspeicher der Seite gezeigt (Punkt 40
+    sinngemäß); einen Knopf zum Herunterladen gibt es nicht. In Listen steht es ausdrücklich -
+    es ist das Bild der Person für ihr Team, kein Inhalt einer Datei.
+93. **Frist und Löschung.** Eigene Klasse **`profilbild`**: Das Bild fällt, wenn die Person es
+    entfernt oder ersetzt, und mit dem Ausscheiden (Mitarbeiterdatensatz inaktiv) - sofort, mit
+    Eintrag im Löschjournal, nach einer Wiederherstellung erneut angewandt (ADR-008 Punkt 8).
+    Keine Frist nach Zeit.
+94. **Nichts Neues im Protokoll** (ADR-010 Punkte 15 bis 17): Die Zeile zeigt, wann ein Bild
+    gesetzt wurde; Anzeigen ist kein Ereignis.
+95. **Scharf** wie jede Zeile der Datenbank mit OPS-001. Grundlage ist die Einwilligung durch das
+    eigene Hochladen (ANN-667); die Datenschutzprüfung vor dem Go-live (ADR-007) nimmt
+    Profilbilder als eigene Verarbeitung auf. Gebaut wird mit synthetischen Bildern; ein Foto
+    einer echten Person gehört nicht in Tests, Bildstrecke oder Test-Umgebung (Punkt 41).
 
 ## Was OPS-001 zusätzlich prüfen muss
 
@@ -1661,6 +1734,23 @@ Frist und Einordnung des Videos gehen in B2; den Prüfer wählt ein eigener ADR
     Messung (Punkt 39). *Alternative:* `IDEA-KOM-004` vollständig — dann als
     eigene Fassung, nicht nebenbei.
 
+## Bestätigungsfragen zu Fassung 10 — beantwortet am 2026-10-19
+
+Den Kern hat Jannes am 2026-10-19 beauftragt (Anlass von Abschnitt O); die Einzelheiten hat er am
+selben Abend wie empfohlen beantwortet („handle nach den empfohlenen Antworten“). Die Nummerierung
+setzt die der Fassung 9 fort.
+
+35. **Profilbilder als Zeile in der Datenbank statt im Bucket** (Punkt 91)?
+    *Empfehlung: ja.* Ein Bild in jeder Liste braucht so keinen Verweis, die Prüfung ist sofort
+    scharf, und Löschen ist eine Zeile. *Alternative:* ein Bucket `profilbilder` mit Verweisen
+    für die ganze Liste - dann Umkehr von Punkt 15, Löschaufträge und eine Edge Function.
+36. **Nur die Person selbst setzt und entfernt ihr Bild, `owner` nicht** (Punkt 88)?
+    *Empfehlung: ja.* Freiwillig heißt: Niemand sonst entscheidet über das eigene Gesicht.
+    *Alternative:* `owner` darf ein Bild entfernen, nicht setzen - etwa bei einem unpassenden.
+37. **256 × 256, höchstens 64 KiB, fester Ausschnitt** (Punkte 89 und 90)?
+    *Empfehlung: ja.* Scharf bis 96 px auf jedem Telefon, wenige Kilobyte je Person.
+    *Alternative:* Ausschnitt zum Verschieben und Vergrößern - eine eigene Bedienung.
+
 ## Bestätigungsfragen zu Fassung 9 — offen
 
 Den Kern hat Jannes am 2026-10-18 entschieden (Anlass von Abschnitt N). Offen sind die
@@ -1816,3 +1906,4 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
 | 7 | 2026-10-18 | **Entschieden von Jannes:** „Keine Virenprüfung in der gesamten Anwendung!“ Umkehr von Punkt 29 für jeden Upload, auch künftige von außen (Portal, Formular, Teamchat); eine Freigabe nach Punkt 30 braucht keine Virenprüfung. Vermerke an den Punkten 28, 29, 30, 42, 50 und 69, an den Konsequenzen und an „Bewusst nicht Bestandteil“. Alle übrigen Punkte bleiben, auch die Kennzeichnung „nicht auf Schadsoftware geprüft“ und der ausgeschaltete Schalter `app.message_attachment_scan_required()`. Anlass: Antwort auf Frage 1 der PR #272 (TEAM-002) |
 | 8 | 2026-10-18 | **Angenommen am selben Tag, im Kern von Jannes entschieden, Fragen 30 bis 32 wie empfohlen:** Abschnitt M (Punkte 71 bis 81) — Fotos (JPEG, PNG) und PDF an Teamchat-Nachrichten, bis zu fünf je Nachricht, ohne Virenprüfung, Klasse `teamchat`, Frist der Nachricht, derselbe Weg wie jede Datei, Anzeige ohne Vorschaubild und ohne Download, nichts Neues im Protokoll, Dateien je Gespräch. Schränkt für diese Anhänge die Punkte 30 und 42 ein, je mit Vermerk; Vermerk an „Bewusst nicht Bestandteil“. Anlass: TEAM-003 |
 | 9 | 2026-10-18 | **Vorgeschlagen, im Kern von Jannes entschieden:** Abschnitt N (Punkte 82 bis 87) — Sprachnachrichten im Teamchat, aufgenommen nur in der Anwendung (ausdrücklich, sichtbar, höchstens zwei Minuten), WebM (Opus) oder MP4 (AAC) nur mit Ton, Prüfung der Struktur am Server, Abspielen ohne Herunterladen, keine Transkription; Umkehr für das Mikrofon in Punkt 33 (`microphone=(self)`) und für „kein Ton“ in Punkt 71; Punkt 74 nimmt Senden während des Hochladens auf (Frage 5 der PR #273). Vermerke an den Punkten 18, 19, 33, 42, 62, 71, 74 und 77 und an „Bewusst nicht Bestandteil“. Bestätigungsfragen 33 und 34 offen. Anlass: Antworten auf die Fragen der PR #273, TEAM-004 und TEAM-005 |
+| 10 | 2026-10-19 | **Angenommen am selben Tag, im Kern von Jannes beauftragt, Fragen 35 bis 37 wie empfohlen:** Abschnitt O (Punkte 88 bis 95) - Profilbilder im Teamchat, nur für sich selbst gesetzt, auf dem Gerät zu 256 × 256 JPEG ohne Metadaten gerechnet, am Inhalt in derselben Transaktion geprüft, Klasse `profilbild` (fällt mit Entfernen, Ersetzen, Ausscheiden). **Umkehr von Punkt 1** für Profilbilder: Zeile in der Datenbank statt Bucket. Vermerke an den Punkten 1, 15, 50 und 51. Anlass: Auftrag Jannes, TEAM-007 |

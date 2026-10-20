@@ -22,22 +22,25 @@ const verlaufKlassen =
  * 13.10.2026, A1: bei 375 px standen Reste wie „Stammd" oder „oku" ohne
  * Hinweis auf weitere Reiter).
  *
- * Steht im `nav` der Reihe, das dafür `relative` ist; `links` und `rechts`
- * misst `useRandVerlauf`. Rein dekorativ und nicht klickbar: Was dahinter
- * liegt, erreicht man durch Wischen, Vorlesesoftware liest die ganze Liste.
- * Von Weiß (`surface`), weil die Reihe in der Karte des `Objektkopf`s steht;
- * nur unter 640 px, darüber bricht die Reihe um. `immer` zeigt ihn auf jeder
- * Breite - für eine Leiste, die auch am Rechner rollt, etwa die Kacheln der
- * Behandlungsgrundlagen (Nachprüfung A9).
+ * Steht im `relative` Behälter der Reihe; `links` und `rechts` misst
+ * `useRandVerlauf`. Rein dekorativ und nicht klickbar: Ein Tipp auf das
+ * angeschnittene Ende eines Reiters öffnet ihn. Von Weiß (`surface`), weil die
+ * Reihe in der Karte des `Objektkopf`s steht; nur unter 640 px, darüber
+ * bricht die Reihe um. `immer` zeigt ihn auf jeder Breite - für eine Leiste,
+ * die auch am Rechner rollt, etwa die Kacheln der Behandlungsgrundlagen
+ * (Nachprüfung A9). `rechtsOhneZeichen`, wo rechts daneben der Blätterknopf
+ * steht (BEF-183).
  */
 export function Randverlauf({
   links,
   rechts,
   immer = false,
+  rechtsOhneZeichen = false,
 }: {
   links: boolean;
   rechts: boolean;
   immer?: boolean;
+  rechtsOhneZeichen?: boolean;
 }) {
   const klassen = immer ? verlaufKlassen : `${verlaufKlassen} sm:hidden`;
   return (
@@ -57,10 +60,71 @@ export function Randverlauf({
           data-verlauf="rechts"
           className={`${klassen} right-0 justify-end bg-linear-to-l pr-1`}
         >
-          ›
+          {rechtsOhneZeichen ? null : '›'}
         </span>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Der Blätterknopf rechts neben der rollenden Reihe (BEF-183): „›" holt den
+ * nächsten verdeckten Reiter nach vorn. Mit fünf Reitern lag bei 375 px der
+ * letzte hinter einem Wisch, und mit Handschuh traf der Wisch oft den Reiter
+ * daneben.
+ *
+ *   * **Neben der Liste, nicht über ihr** (Design-Review): Läge er auf dem
+ *     Verlauf, finge er den Tipp auf das angeschnittene Ende eines Reiters ab.
+ *     Sein Platz steht, sobald die Reihe rollt; am Ende ist er blass und ohne
+ *     Wirkung - so springt die Reihe nicht.
+ *   * **Nur rechts:** Ein zweiter Platz links nähme der Reihe bei 375 px so
+ *     viel Breite, dass ein langer Reiter wie „Behandlungsgrundlagen" nicht
+ *     mehr ganz hineinpasst. Zurück geht es wie bisher mit dem Wisch; der
+ *     offene Reiter rollt ohnehin ins Bild.
+ *   * 44 px breit, so hoch wie die Reihe.
+ *   * Für Vorlesesoftware und Tastatur unsichtbar (`aria-hidden`,
+ *     `tabIndex={-1}`): Sie erreichen jeden Reiter ohnehin, ein zweiter Weg
+ *     wäre dort nur Lärm. Ein Tipp nimmt ihm deshalb auch den Fokus nicht ab.
+ */
+function Blaetterknopf({ aktiv, liste }: { aktiv: boolean; liste: RefObject<HTMLElement | null> }) {
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      aria-hidden="true"
+      data-verlauf-knopf="rechts"
+      disabled={!aktiv}
+      onPointerDown={(ereignis) => ereignis.preventDefault()}
+      onClick={() => holeVerdecktenNachVorn(liste.current)}
+      className="text-ink disabled:text-line-strong flex w-11 shrink-0 items-center justify-center text-2xl leading-none sm:hidden"
+    >
+      ›
+    </button>
+  );
+}
+
+/**
+ * Holt den ersten Reiter, der rechts ganz verdeckt ist (er beginnt erst unter
+ * dem Verlauf oder dahinter), an den linken Rand - dahinter kommt, was
+ * passt. Gibt es keinen ganz verdeckten mehr, den ersten angeschnittenen. Die
+ * gleitende Pille (`data-gleitanzeiger`) ist kein Eintrag.
+ */
+function holeVerdecktenNachVorn(element: HTMLElement | null) {
+  if (!element) return;
+  const rahmen = element.getBoundingClientRect();
+  const frei = rahmen.right - VERLAUF_FREI_PX;
+  const eintraege = [...element.children].filter(
+    (kind): kind is HTMLElement =>
+      kind instanceof HTMLElement && !kind.hasAttribute('data-gleitanzeiger'),
+  );
+  const ziel =
+    eintraege.find((e) => e.getBoundingClientRect().left >= frei) ??
+    eintraege.find((e) => e.getBoundingClientRect().right > frei);
+  if (!ziel) return;
+  const links = ziel.getBoundingClientRect().left - rahmen.left + element.scrollLeft;
+  element.scrollLeft = Math.max(
+    0,
+    Math.min(links - VERLAUF_FREI_PX, element.scrollWidth - element.clientWidth),
   );
 }
 
@@ -182,29 +246,34 @@ function Reiterreihe({
   }, [offen]);
   // Nach dem Rollen gemessen: Erst dann steht fest, was links und rechts fehlt.
   const rand = useRandVerlauf(liste, offen);
+  // Rollt die Reihe überhaupt, steht rechts der Blätterknopf (BEF-183).
+  const rollt = rand.links || rand.rechts;
   // Die Pille gleitet zum neuen Reiter (ANN-567); in Ruhe liegt sie genau
   // dort, wo bisher die Fläche des offenen Reiters lag.
   const { kasten, phase } = useGleitanzeiger(liste, offen);
 
   return (
-    <nav aria-label={label} className="border-line relative border-t">
-      <ul
-        ref={liste}
-        className={`relative flex gap-1 overflow-x-auto px-2 py-1.5 sm:flex-wrap sm:overflow-visible sm:px-3 ${kasten ? 'gleitet-pille' : ''}`}
-      >
-        {/* Vor den Reitern, damit sie darüber liegen. */}
-        {kasten ? (
-          <li
-            aria-hidden="true"
-            data-gleitanzeiger=""
-            data-phase={phase}
-            className="gleitanzeiger bg-accent-soft rounded-pill"
-            style={anzeigerStil(kasten, 'flaeche')}
-          />
-        ) : null}
-        {children}
-      </ul>
-      <Randverlauf {...rand} />
+    <nav aria-label={label} className="border-line flex items-stretch border-t">
+      <div className="relative min-w-0 flex-1">
+        <ul
+          ref={liste}
+          className={`relative flex gap-1 overflow-x-auto px-2 py-1.5 sm:flex-wrap sm:overflow-visible sm:px-3 ${kasten ? 'gleitet-pille' : ''}`}
+        >
+          {/* Vor den Reitern, damit sie darüber liegen. */}
+          {kasten ? (
+            <li
+              aria-hidden="true"
+              data-gleitanzeiger=""
+              data-phase={phase}
+              className="gleitanzeiger bg-accent-soft rounded-pill"
+              style={anzeigerStil(kasten, 'flaeche')}
+            />
+          ) : null}
+          {children}
+        </ul>
+        <Randverlauf {...rand} rechtsOhneZeichen={rollt} />
+      </div>
+      {rollt ? <Blaetterknopf aktiv={rand.rechts} liste={liste} /> : null}
     </nav>
   );
 }

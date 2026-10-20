@@ -7,8 +7,11 @@ import {
 import { nachSrgb } from '@/features/files/farbe';
 import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
 import { bereinigeTon, tontyp } from '@/features/platform/videometadaten';
+import { istPersonenfarbe, type Personenfarbe } from '@/components/ui/personenfarben';
+import { roleKeySchema } from '@/features/session/types';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
+import { alsBase64, ausBase64 } from './profilbild';
 import { dauerSekunden } from './sprachnachricht';
 
 /**
@@ -151,6 +154,8 @@ const trefferSchema = z.object({
   channel_id: z.string(),
   channel_kind: artSchema,
   parent_id: z.string().nullable(),
+  /** TEAM-008: für Bild und Farbe vor dem Eintrag; leer, wenn entfernt. */
+  author_staff_member_id: z.string().nullable().default(null),
   author_name: z.string().nullable(),
   body: z.string(),
   created_at: z.string(),
@@ -162,6 +167,8 @@ const aktivitaetSchema = z.object({
   channel_id: z.string(),
   channel_kind: artSchema,
   parent_id: z.string().nullable(),
+  /** TEAM-008: für Bild und Farbe vor dem Eintrag; leer, wenn entfernt. */
+  author_staff_member_id: z.string().nullable().default(null),
   author_name: z.string().nullable(),
   body: z.string(),
   created_at: z.string(),
@@ -174,6 +181,8 @@ const threadSchema = z.object({
   id: z.string(),
   channel_id: z.string(),
   channel_kind: artSchema,
+  /** TEAM-008: für Bild und Farbe vor dem Eintrag; leer, wenn entfernt. */
+  author_staff_member_id: z.string().nullable().default(null),
   author_name: z.string().nullable(),
   body: z.string().nullable(),
   removed_kind: z.enum(['author', 'owner', 'retention']).nullable(),
@@ -188,6 +197,8 @@ const gemerktSchema = z.object({
   channel_id: z.string(),
   channel_kind: artSchema,
   parent_id: z.string().nullable(),
+  /** TEAM-008: für Bild und Farbe vor dem Eintrag; leer, wenn entfernt. */
+  author_staff_member_id: z.string().nullable().default(null),
   author_name: z.string().nullable(),
   body: z.string(),
   created_at: z.string(),
@@ -209,6 +220,8 @@ export type Geplant = z.infer<typeof geplantSchema>;
 const angeheftetSchema = z.object({
   id: z.string(),
   parent_id: z.string().nullable(),
+  /** TEAM-008: für Bild und Farbe vor dem Eintrag; leer, wenn entfernt. */
+  author_staff_member_id: z.string().nullable().default(null),
   author_name: z.string().nullable(),
   body: z.string(),
   created_at: z.string(),
@@ -246,6 +259,14 @@ const SAETZE: readonly (readonly [string, string])[] = [
   ['at most 50 pinned', 'Höchstens 50 angeheftete Nachrichten je Gespräch.'],
   ['only a reply can', 'Nur eine Antwort kann zusätzlich im Gespräch stehen.'],
   ['leave the channel instead', 'Selbst gehst du über „Kanal verlassen“.'],
+  // TEAM-006, TEAM-007 - vor dem allgemeinen „not found“.
+  ['unknown color', 'Diese Farbe gibt es nicht.'],
+  [
+    'profile picture rejected',
+    'Dieses Bild nimmt der Server nicht an. Bitte ein anderes Foto wählen.',
+  ],
+  ['profile picture not found', 'Dieses Profilbild gibt es nicht mehr.'],
+  ['team person not found', 'Diese Person gibt es im Team nicht.'],
   // TEAM-003: Anhänge - vor dem allgemeinen „not found“.
   ['too many attachments', 'Höchstens fünf Anhänge je Nachricht.'],
   ['too many unsent attachments', 'Zu viele Anhänge warten. Erst senden oder entfernen.'],
@@ -434,6 +455,115 @@ const LADEN_PERSONEN = 'Das Team konnte nicht geladen werden.';
 export async function fetchPersonen(): Promise<Person[]> {
   const data = await rufe('list_team_people', {}, LADEN_PERSONEN);
   return antwort(z.array(personSchema), data, LADEN_PERSONEN);
+}
+
+// -----------------------------------------------------------------------------
+// Farbe und Profilbild je Person (TEAM-006, TEAM-007, ANN-666, ANN-667)
+// -----------------------------------------------------------------------------
+
+/**
+ * Außerhalb von `TEAMCHAT_KEY`: Jede Nachricht frischt den Teamchat auf, Farbe
+ * und Bild ändern sich nur, wenn jemand die eigenen ändert.
+ */
+export const AVATARE_KEY = ['teambilder'] as const;
+
+/** Ein Bild je Kennung: Ein neues Bild hat eine neue Kennung (ADR-017 Punkt 8). */
+export function profilbildKey(pictureId: string) {
+  return [...AVATARE_KEY, 'bild', pictureId] as const;
+}
+
+const avatarSchema = z.object({
+  staff_member_id: z.string(),
+  // Eine Farbe, die diese Fassung nicht kennt, wird zu `schiefer`, statt die
+  // ganze Liste zu verwerfen.
+  color: z.string().transform((farbe) => (istPersonenfarbe(farbe) ? farbe : 'schiefer')),
+  /** Kennung des Profilbilds - zugleich seine Fassung; ohne Bild `null`. */
+  picture_id: z.string().nullable().default(null),
+  /** Die eigene Zeile - der Server kennt den eigenen Datensatz für jede Rolle. */
+  own: z.boolean().default(false),
+});
+export type Avatar = z.infer<typeof avatarSchema>;
+
+const LADEN_AVATARE = 'Bilder und Farben des Teams konnten nicht geladen werden.';
+
+export async function fetchAvatare(): Promise<Avatar[]> {
+  const data = await rufe('list_team_avatars', {}, LADEN_AVATARE);
+  return antwort(z.array(avatarSchema), data, LADEN_AVATARE);
+}
+
+export async function waehleFarbe(farbe: Personenfarbe): Promise<void> {
+  await rufe(
+    'set_own_team_color',
+    { p_color: farbe },
+    'Die Farbe konnte nicht gespeichert werden.',
+  );
+}
+
+/**
+ * Geladene Bilder als Objekt-URL, je Kennung genau eine: Ein Bild ändert sich
+ * nie, eine Liste mit 50 Nachrichten zeigt dieselbe Adresse 50-mal. Wenige
+ * Kilobyte je Person; freigegeben wird mit dem Neuladen der Seite.
+ */
+const geladeneBilder = new Map<string, string>();
+
+const LADEN_BILD = 'Das Profilbild konnte nicht geladen werden.';
+
+export async function ladeProfilbild(pictureId: string): Promise<string> {
+  const bekannt = geladeneBilder.get(pictureId);
+  if (bekannt) return bekannt;
+  const data = await rufe('get_team_profile_picture', { p_picture: pictureId }, LADEN_BILD);
+  const bild = ausBase64(antwort(z.string().min(1), data, LADEN_BILD));
+  const adresse = URL.createObjectURL(bild);
+  geladeneBilder.set(pictureId, adresse);
+  return adresse;
+}
+
+/** Das eigene Profilbild setzen - das gerechnete Quadrat aus `rechneProfilbild`. */
+export async function setzeProfilbild(bild: Blob): Promise<string> {
+  const SPEICHERN = 'Das Profilbild konnte nicht gespeichert werden.';
+  const data = await rufe(
+    'set_own_profile_picture',
+    { p_image: alsBase64(await alleBytes(bild)) },
+    SPEICHERN,
+  );
+  return antwort(z.string(), data, SPEICHERN);
+}
+
+export async function entferneProfilbild(): Promise<void> {
+  await rufe('remove_own_profile_picture', {}, 'Das Profilbild konnte nicht entfernt werden.');
+}
+
+// -----------------------------------------------------------------------------
+// Personenkarte (TEAM-009, ANN-668)
+// -----------------------------------------------------------------------------
+
+/** Unter `AVATARE_KEY`: Rollen ändern sich so selten wie Bild und Farbe. */
+export function personenkarteKey(staffMemberId: string) {
+  return [...AVATARE_KEY, 'karte', staffMemberId] as const;
+}
+
+const personenkarteSchema = z.object({
+  staff_member_id: z.string(),
+  name: z.string().nullable(),
+  // Eine Rolle, die diese Fassung nicht kennt, fällt weg.
+  roles: z.array(z.string()).transform((rollen) =>
+    rollen.flatMap((rolle) => {
+      const bekannt = roleKeySchema.safeParse(rolle);
+      return bekannt.success ? [bekannt.data] : [];
+    }),
+  ),
+  /** Nimmt am Teamchat teil; sonst ausgeschieden oder noch ohne Zugang. */
+  active: z.boolean(),
+  own: z.boolean(),
+});
+export type Personenkarte = z.infer<typeof personenkarteSchema>;
+
+const LADEN_KARTE = 'Die Personenkarte konnte nicht geladen werden.';
+
+export async function fetchPersonenkarte(staffMemberId: string): Promise<Personenkarte> {
+  const data = await rufe('get_team_person', { p_staff: staffMemberId }, LADEN_KARTE);
+  const [karte] = antwort(z.array(personenkarteSchema).length(1), data, LADEN_KARTE);
+  return karte!;
 }
 
 const LADEN_MITGLIEDER = 'Die Mitglieder konnten nicht geladen werden.';

@@ -56,8 +56,9 @@ export function ListRows({
  *
  * Seit dem Design-Fundament (DESIGN.md „Listen“) drei Plätze mehr:
  *
- *   * `bild` vorn, 56 × 56 px - ein `Medienbild` mit `vorschau`, etwa die
- *     Zeichnung einer Übung;
+ *   * `bild` vorn - ein `Medienbild` mit `vorschau` (56 × 56 px), etwa die
+ *     Zeichnung einer Übung, oder ein `Personenbild` (TEAM-006); die Größe
+ *     bringt das Bild mit;
  *   * `betrag` rechts, tabellarisch und rechtsbündig, über dem Status;
  *   * `aktion` **neben** dem Ziel, nicht darin (Leitfaden L3: die Arbeit an
  *     jeder Zeile) - ein kompakter Knopf oder `Symbolknopf`. Ein Knopf in
@@ -86,7 +87,7 @@ export function ListRow({
    * Spalte - für Listen ohne Zeitbezug wie die Übungsbibliothek (UEB-001).
    */
   zeit?: ReactNode;
-  /** Vorschaubild vorn, 56 × 56 px (`Medienbild vorschau`). */
+  /** Bild vorn: `Medienbild vorschau` (56 × 56 px) oder `Personenbild`. */
   bild?: ReactNode;
   titel: ReactNode;
   /** Nebenzeile unter dem Titel. */
@@ -148,7 +149,7 @@ export function ListRow({
 
   const inhalt = (
     <>
-      {bild === undefined ? null : <span className="block size-14 shrink-0">{bild}</span>}
+      {bild === undefined ? null : <span className="flex shrink-0 items-center">{bild}</span>}
       {zeit === undefined ? null : (
         <span
           className={`font-semibold tabular-nums ${dicht ? 'text-sm' : 'text-liste'} ${

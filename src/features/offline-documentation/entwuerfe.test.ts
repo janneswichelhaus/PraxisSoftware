@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ablageLeeren, speicherImSpeicher, speicherSetzen } from '@/lib/geraeteablage';
+import {
+  ablageLeeren,
+  dauerfachAendern,
+  speicherImSpeicher,
+  speicherSetzen,
+} from '@/lib/geraeteablage';
 import {
   EntwurfAbgewiesen,
   EntwurfNichtAngekommen,
@@ -10,9 +15,13 @@ import {
   entwuerfeLesen,
   entwuerfeUebertragen,
   entwuerfeZuruecksetzen,
+  alleEntwuerfeVerwerfen,
   entwurfAmTermin,
+  entwurfErneutSenden,
   entwurfSchreiben,
   entwurfVerwerfen,
+  unlesbareZaehlen,
+  uebertragungAnmelden,
   type Entwurf,
   type EntwurfSender,
 } from './entwuerfe';
@@ -187,5 +196,67 @@ describe('Übertragung (OFF-002)', () => {
     freigeben();
     await erste;
     expect(s.mock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Ränder der Entwürfe (BEF-150)', () => {
+  async function abgewiesen(terminId: string, text: string) {
+    await entwurfSchreiben(ANNA, terminId, KOPF, text);
+    await uebertragenAls(
+      sender(() => Promise.reject(new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.abgesagt))),
+    );
+    return (await entwuerfeLesen(ANNA)).find((e) => e.terminId === terminId)!;
+  }
+
+  it('sendet einen abgewiesenen Entwurf erneut, wenn das Recht wieder besteht', async () => {
+    const e = await abgewiesen('t1', 'Synthetisch: nach der Vertretung.');
+    const anstoss = vi.fn();
+    const abmelden = uebertragungAnmelden(anstoss);
+    expect(await entwurfErneutSenden(ANNA, e.id)).toBe(true);
+    abmelden();
+    expect(anstoss).toHaveBeenCalledTimes(1);
+    expect(await entwurfAmTermin(ANNA, 't1')).toMatchObject({
+      id: e.id,
+      zustand: 'wartet',
+      grund: null,
+      text: 'Synthetisch: nach der Vertretung.',
+    });
+    // Jetzt nimmt der Server ihn an: er fällt vom Gerät.
+    await uebertragenAls(sender(() => Promise.resolve({ status: 'created', note_id: 'n-1' })));
+    expect(await entwuerfeLesen(ANNA)).toEqual([]);
+  });
+
+  it('lässt ihn abgewiesen, wenn am Termin schon ein neuer Entwurf wartet', async () => {
+    const e = await abgewiesen('t1', 'Synthetisch: alt.');
+    await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: neu.');
+    expect(await entwurfErneutSenden(ANNA, e.id)).toBe(false);
+    const liste = await entwuerfeLesen(ANNA);
+    expect(liste.find((x) => x.id === e.id)).toMatchObject({ zustand: 'abgewiesen' });
+    expect(liste.filter((x) => x.zustand === 'wartet')).toHaveLength(1);
+  });
+
+  it('sendet nur Abgewiesenes erneut, keinen Konflikt', async () => {
+    await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: Konflikt.');
+    await uebertragenAls(
+      sender(() => Promise.resolve({ status: 'conflict', note_id: 'n', note_status: 'final' })),
+    );
+    const [e] = await entwuerfeLesen(ANNA);
+    expect(await entwurfErneutSenden(ANNA, e!.id)).toBe(false);
+    expect((await entwuerfeLesen(ANNA))[0]).toMatchObject({ zustand: 'konflikt' });
+  });
+
+  it('zählt, was diese Fassung nicht lesen kann, und verwirft es nur ausdrücklich mit', async () => {
+    await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: lesbar.');
+    await dauerfachAendern(ANNA, 'entwuerfe', (alt) => ({
+      ...(alt as object),
+      unlesbar: [{ aus: 'einer späteren Fassung' }, { auch: 'das' }],
+    }));
+    expect(await unlesbareZaehlen(ANNA)).toBe(2);
+    expect(await entwuerfeLesen(ANNA)).toHaveLength(1);
+    // Ein lesbarer Entwurf fällt, die unlesbaren bleiben.
+    await entwurfVerwerfen(ANNA, (await entwuerfeLesen(ANNA))[0]!.id);
+    expect(await unlesbareZaehlen(ANNA)).toBe(2);
+    await alleEntwuerfeVerwerfen(ANNA);
+    expect(await unlesbareZaehlen(ANNA)).toBe(0);
   });
 });

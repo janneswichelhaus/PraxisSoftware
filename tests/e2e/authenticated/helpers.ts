@@ -627,3 +627,32 @@ export async function kalenderOptionenOeffnen(page: Page): Promise<void> {
     await ohneRaster.locator('summary').click();
   }
 }
+
+/**
+ * Tippt einen Reiter einer rollenden Reiterleiste an, wie es eine Hand am
+ * Telefon tut (BEF-183): Liegt er rechts außer Sicht oder angeschnitten, erst
+ * „›" neben der Liste; liegt er links, ein Wisch zurück (es gibt dort keinen
+ * Knopf) - beides zählt als Tipp. Playwright rollte sonst von selbst und
+ * zählte nichts. Gibt die Tipps zurück, den Reiter mitgezählt.
+ */
+export async function reiterAntippen(leiste: Locator, name: string): Promise<number> {
+  const reiter = leiste.getByRole('link', { name, exact: true });
+  await expect(reiter).toBeAttached();
+  let tipps = 0;
+  for (let versuch = 0; versuch < 6; versuch++) {
+    const lage = await reiter.evaluate((el) => {
+      const nav = el.closest('nav')!;
+      const r = el.getBoundingClientRect();
+      const liste = el.closest('ul')!.getBoundingClientRect();
+      const knopf = nav.querySelector('[data-verlauf-knopf="rechts"]')?.getBoundingClientRect();
+      const rechts = Math.min(knopf?.left ?? liste.right, liste.right);
+      return r.right > rechts + 0.5 ? 'rechts' : r.left < liste.left - 0.5 ? 'links' : 'frei';
+    });
+    if (lage === 'frei') break;
+    if (lage === 'rechts') await leiste.locator('[data-verlauf-knopf="rechts"]').click();
+    else await reiter.evaluate((el) => el.scrollIntoView({ block: 'nearest', inline: 'end' }));
+    tipps += 1;
+  }
+  await reiter.click();
+  return tipps + 1;
+}

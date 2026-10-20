@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as TrainingApi from './api';
+import type * as ZugangApi from '@/features/platform-access/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -24,6 +25,7 @@ const findPossibleTrainingDuplicates = vi.fn();
 const listTrainingBases = vi.fn();
 const listTrainingClientAppointments = vi.fn();
 const navigate = vi.fn();
+const getPlatformAccess = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof TrainingApi>();
@@ -50,6 +52,15 @@ vi.mock('./api', async (importOriginal) => {
     listTrainingConsents: () => Promise.resolve([]),
   };
 });
+
+// Der Abschnitt „Plattform" hat eigene Tests (POR-002); hier nur, wo Sperren
+// und Entziehen stehen.
+vi.mock('@/features/platform-access/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof ZugangApi>()),
+  getPlatformAccess: (...args: unknown[]) => getPlatformAccess(...args) as Promise<unknown>,
+  listPlatformRepresentations: () => Promise.resolve([]),
+  getPlatformOnboarding: () => Promise.resolve(null),
+}));
 
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),
@@ -90,9 +101,11 @@ beforeEach(() => {
     listTrainingBases,
     listTrainingClientAppointments,
     navigate,
+    getPlatformAccess,
   ]) {
     f.mockReset();
   }
+  getPlatformAccess.mockResolvedValue(null);
   findPossibleTrainingDuplicates.mockResolvedValue([]);
   listTrainingBases.mockResolvedValue([]);
   listTrainingClientAppointments.mockResolvedValue([]);
@@ -260,6 +273,63 @@ describe('TrainingClientPage', () => {
     expect(screen.queryByText(/Akte|Patient/)).toBeNull();
     // Der Reiterwechsel lädt die Kundin nicht neu - kein zweites Öffnen (ANN-175).
     expect(getTrainingClient).toHaveBeenCalledTimes(1);
+  });
+
+  it('führt owner aus den Stammdaten zur Auskunft zum Training, andere nicht (BEF-182)', async () => {
+    getTrainingClient.mockResolvedValue(tina);
+    const { unmount } = renderWithProviders(
+      <TrainingClientPage user={testUser(['owner', 'therapist'])} />,
+      '/?bereich=stammdaten',
+    );
+    const link = await screen.findByRole('link', { name: 'Auskunft zum Training' });
+    expect(link.getAttribute('href')).toMatch(new RegExp(`^/training/${TINA}/auskunft\\?zurueck=`));
+    unmount();
+    for (const rolle of ['office', 'trainer'] as const) {
+      const { unmount: weg } = renderWithProviders(
+        <TrainingClientPage user={testUser([rolle])} />,
+        '/?bereich=stammdaten',
+      );
+      expect(
+        await screen.findByRole('link', { name: 'tina@beispiel.invalid' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Auskunft zum Training' })).toBeNull();
+      weg();
+    }
+  });
+
+  it('setzt Sperren und Entziehen des Plattformzugangs leise ans Ende der Stammdaten', async () => {
+    getTrainingClient.mockResolvedValue(tina);
+    getPlatformAccess.mockResolvedValue({
+      id: 'cafecafe-cafe-4afe-8afe-000000000001',
+      status: 'active',
+      created_at: '2026-10-01T08:00:00+00:00',
+      activated_at: '2026-10-02T08:00:00+00:00',
+      locked_at: null,
+      revoked_at: null,
+      revoked_reason: null,
+      invitation_id: null,
+      invitation_purpose: null,
+      invitation_channel: null,
+      invitation_expires_at: null,
+      invitation_sent_at: null,
+      relationship_email: 'tina@beispiel.invalid',
+      ended_at: null,
+    });
+    renderWithProviders(
+      <TrainingClientPage user={testUser(['owner', 'therapist'])} />,
+      '/?bereich=stammdaten',
+    );
+    const ende = await screen.findByRole('heading', { name: 'Beenden' });
+    const abschnitt = ende.closest('section')!;
+    expect(
+      await within(abschnitt).findByRole('button', { name: 'Plattformzugang sperren' }),
+    ).toBeInTheDocument();
+    expect(
+      within(abschnitt).getByRole('button', { name: 'Plattformzugang entziehen' }),
+    ).toBeInTheDocument();
+    // Im Abschnitt „Plattform" stehen sie nicht mehr (wie an der Akte).
+    expect(screen.queryByRole('button', { name: 'Sperren' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Entziehen' })).toBeNull();
   });
 
   it('beendet den Vertrag erst nach der Rückfrage mit dem gewählten Tag', async () => {

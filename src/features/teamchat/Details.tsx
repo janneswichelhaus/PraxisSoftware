@@ -36,6 +36,8 @@ import {
 import { DateienDesGespraechs } from './Anhaenge';
 import { vorschau } from './formatierung';
 import { TEAMCHAT, stellePfad } from './pfade';
+import { Personenkarte } from './Personenkarte';
+import { NameMitBild, Teambild, Verfasserbild } from './Teambild';
 import { nachrichtenzeit } from './zeit';
 
 const ARTEN: Record<Kanal['kind'], string> = {
@@ -89,6 +91,7 @@ export function Details({
   });
   const privat = kanal.kind === 'private';
   const mitMitgliedern = privat || kanal.kind === 'group';
+  const [karte, setKarte] = useState<{ id: string; name: string } | null>(null);
 
   return (
     <Dialogfenster
@@ -142,6 +145,13 @@ export function Details({
                 <ListRow
                   key={a.id}
                   dicht
+                  bild={
+                    <Verfasserbild
+                      staffMemberId={a.author_staff_member_id}
+                      name={a.author_name}
+                      groesse="klein"
+                    />
+                  }
                   titel={vorschau(a.body)}
                   meta={`${a.author_name ?? 'Ehemaliges Teammitglied'} · ${nachrichtenzeit(a.created_at, zeitzone)}`}
                   onClick={() => {
@@ -171,8 +181,13 @@ export function Details({
                 <ListRow
                   key={m.staff_member_id}
                   dicht
+                  bild={
+                    <Teambild staffMemberId={m.staff_member_id} name={m.name} groesse="klein" />
+                  }
                   titel={m.staff_member_id === eigeneId ? `${m.name} (du)` : m.name}
                   meta={m.active ? undefined : 'Nicht mehr im Team'}
+                  // TEAM-009: Ein Tipp öffnet die Karte der Person.
+                  onClick={() => setKarte({ id: m.staff_member_id, name: m.name })}
                   darunter={
                     // Unter der Zeile: in ihr bräche die Rückfrage bei 375 px.
                     privat &&
@@ -221,6 +236,14 @@ export function Details({
           </Button>
         </Formularfuss>
       </div>
+      {karte ? (
+        <Personenkarte
+          staffMemberId={karte.id}
+          name={karte.name}
+          onSchliessen={() => setKarte(null)}
+          onGeoeffnet={onSchliessen}
+        />
+      ) : null}
     </Dialogfenster>
   );
 }
@@ -282,7 +305,7 @@ function Hinzufuegen({ kanalId, vorhanden }: { kanalId: string; vorhanden: reado
             {frei.map((p) => (
               <Checkbox
                 key={p.staff_member_id}
-                label={p.name}
+                label={<NameMitBild staffMemberId={p.staff_member_id} name={p.name} />}
                 checked={gewaehlt.includes(p.staff_member_id)}
                 onChange={(e) =>
                   setGewaehlt(

@@ -1,17 +1,15 @@
-# Status · Stand 2026-10-19
+# Status · Stand 2026-10-20
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
 
-Beratung abrechnen (19.10., Branch `ccr-9e05f8f5-xs89bc`, ERN-011/-012): Beratungstermin als Anlass am
-Verhältnis des Profils, ohne Doku und Ausfallhonorar; mit dem Haken entsteht die Position, Rechnung im
-Bereich des Profils. ANN-664, ANN-665 (Anlass für Büro und Therapie sichtbar).
-
-ERN-EPIC-003 Tagebuch (19.10., Branch `ccr-c4be3f12-d8jik0`): Mahlzeiten, Wasser mit einem Tipp, „zuletzt“
-(2 Tipps) und Suche (4 Tipps), Favoriten, kopieren, „Zahlen ausblenden“, Erinnerungen je Mahlzeit als neue
-Art im Katalog; die Beratung liest mit. ANN-660 bis ANN-662; ANN-656 bis ANN-659 bestätigt.
+Profilbild und Farbe im Teamchat (19.10., Branch `ccr-37917f35-emdjjp`, TEAM-006 bis -009): Farbe je
+Person, Profilbild nur für sich selbst (256 px auf dem Gerät, am Inhalt geprüft, in der Datenbank),
+Bilder in allen Listen, Personenkarte ohne Anwesenheit; ADR-017 Fassung 10, ANN-666 bis ANN-668.
+Dazu BEF-183 (Blätterknopf), BEF-150 (Entwürfe), BEF-146 bis -148 (Auskunft, Export, Versand) und
+BEF-182 (Auskunft je Trainingsverhältnis); neu offen BEF-188, BEF-189 (Lücken der Auskunft).
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
@@ -27,13 +25,12 @@ Rückfrage vor dem Verlassen als Fenster (ANN-566); Vorbereitung der Überholung
 
 Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Runde (`claude/sweet-gauss-z8te7o`), Monatsabrechnung
 (`ccr-92feaef7-zkxssj`), Übersicht (`claude/practical-curie-1jy88f`), Intro
-(`claude/eloquent-newton-p38ihe`). Gemergt: Richtung der Bewegung (#276, ANN-663), ERN-EPIC-003 (#275), ERN-EPIC-001 und -002 (#274), BEF-124 (#255), Check-Up geführt (#256), Radflotte-Meldungen und
+(`claude/eloquent-newton-p38ihe`). Gemergt: Beratung abrechnen (#277, ANN-664, ANN-665), Richtung der Bewegung (#276, ANN-663), ERN-EPIC-003 (#275), ERN-EPIC-001 und -002 (#274), BEF-124 (#255), Check-Up geführt (#256), Radflotte-Meldungen und
 Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
-Eine Politurrunde;
-BEF-146, -147, -148, -150, -183; BEF-182 vor M3.
+Eine Politurrunde; BEF-189 nach Jannes' Wahl (Frage im Bericht), BEF-188.
 
 ## Bei Jannes
 
@@ -60,5 +57,5 @@ BEF-146, -147, -148, -150, -183; BEF-182 vor M3.
 
 ## Letzte Session
 
-19.10.2026, Branch `ccr-9e05f8f5-xs89bc`: Migration `20261222100000_ern_011_beratung_am_termin`.
-**Lokal:** `git pull`, `supabase db reset`.
+19.10.2026, PR #278: Migrationen `20261223100000` bis `20261223160000` (TEAM-006 bis -009,
+BEF-146 bis -148). **Lokal:** `git pull`, `supabase db reset`.

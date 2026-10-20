@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-10-17
+Stand: 2026-10-20
 
 ## Zweck
 
@@ -456,63 +456,6 @@ Marke vorsieht.
 
 **Frage an Jannes.** Der Text ist ein Einwilligungstext an die Person – soll er lauten „… alle Fotos, die als Arbeitshilfe entstanden sind; Fotos, die zur Behandlungsdokumentation gehören, bleiben in der Akte“? Eine Änderung braucht eine neue Fassung des Textes.
 
-### BEF-146 — Der Vollständigkeitstest der Auskunft sieht nur Tabellen mit `patient_id`
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-11 |
-| Bereich | Datenschutz: Auskunft (Art. 15) |
-| Quelle  | Zweitreview BEF-145 (Hinweis H6) |
-| Status  | offen |
-| Berührt | `supabase/tests/betroffenenrechte.test.ts` („enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id …“) |
-
-**Beobachtung.** Seit BEF-145 nimmt der Test jede Tabelle des Aufbewahrungsplans mit `patient_id`. Tabellen, die die Person über eine andere Spalte tragen (`person_id`, `subject_id` mit `subject_type = 'patient'`, über einen Elterndatensatz), erfasst er nur, wenn sie zur Klasse `patientenakte` oder `personenstammdaten` gehören; heute fehlt dadurch nichts Bekanntes.
-
-**Erwartet.** Prüfen, ob der Test auch solche Spalten erfassen kann, ohne eine lange Ausnahmeliste zu brauchen; sonst als bewusst offen schließen. Nur Test, Einzel-Story-Loop, niedrige Priorität.
-
-
-### BEF-147 — Wahl, Geräte und Zustellaufträge der Benachrichtigungen fehlen im eigenen Datenexport
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-12 |
-| Bereich | Plattform: „Ich → Meine Daten“ (Art. 15, Art. 20) |
-| Quelle  | Zweitreview KOM-EPIC-003 (Hinweis H4) |
-| Status  | offen |
-| Berührt | `platform_notification_settings`, `platform_push_subscriptions`, `notification_deliveries`; `public.platform_export` (POR-018) |
-
-**Beobachtung.** Die drei Tabellen hängen am Zugang (`access_id`), nicht an `patient_id`; der Vollständigkeitstest der Auskunft (BEF-145, BEF-146) sieht sie nicht. Weder der eigene Export der Person noch die Auskunft der Praxis enthalten heute die Wahl, die eingetragenen Geräte oder die Zustellaufträge der letzten 30 Tage.
-
-**Erwartet.** In den eigenen Export der Person aufnehmen (die Praxis sieht die Wahl bewusst nicht, ANN-344); ohne Endpunkt und Schlüssel des Geräts, nur „ein Gerät seit …“. Einzel-Story-Loop.
-
-### BEF-148 — Ein Zustellauftrag kann nach einem gescheiterten Melden doppelt zugestellt werden
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-12 |
-| Bereich | Benachrichtigungen: Versand (Edge Function `notifications`) |
-| Quelle  | Zweitreview KOM-EPIC-003 (Hinweise H1, H2) |
-| Status  | offen |
-| Berührt | `public.finish_notification_delivery`, `supabase/functions/notifications/zustellen.ts`; `app.drop_push_subscriptions_on_access_end` |
-
-**Beobachtung.** Scheitert das Melden nach erfolgreichem Versand oder dauert ein Lauf länger als 15 Minuten, holt der nächste Lauf den Auftrag erneut ab, und die Person bekommt die Mitteilung zweimal; `finish_notification_delivery` prüft nicht, ob der Aufrufer den aktuellen Anspruch hält. Daneben fällt die Push-Registrierung nur beim Widerruf des Zugangs, nicht beim zeitlichen Ende (Lesefrist, Volljährigkeit) – geschickt wird dann nichts mehr, die Zeile bleibt aber bis zur Löschung des Zugangs.
-
-**Erwartet.** Abholen gibt einen Anspruchszeitpunkt zurück, Melden verlangt ihn; das zeitliche Ende räumt die Registrierung im Löschlauf mit ab. Vor dem Scharfschalten des Versands (OPS-001), Einzel-Story-Loop.
-
-### BEF-150 — Ränder der Entwürfe auf dem Diensttelefon
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-12 |
-| Bereich | Dokumentation ohne Empfang: „Auf dem Gerät“ (OFF-EPIC-001) |
-| Quelle  | Zweitreview OFF-EPIC-001 (Hinweise H1, H4, H6, H7) |
-| Status  | offen |
-| Berührt | `src/features/offline-documentation/entwuerfe.ts`, `AufDemGeraet.tsx`, `EntwurfAbmeldewache.tsx`, `PraxisAblage.tsx` |
-
-**Beobachtung.** (1) Ein abgewiesener Entwurf lässt sich nur kopieren oder verwerfen, nicht erneut senden – auch wenn das Recht inzwischen wieder besteht. (2) Einträge, die eine spätere Fassung der Anwendung nicht lesen kann (`unlesbar`), bleiben liegen, zählen aber weder im Hinweis noch beim Abmelden mit; „Verwerfen und abmelden“ nimmt sie ungenannt mit. (3) „Verwerfen und abmelden“ ist ein Tipp ohne zweite Bestätigung. (4) Fällt nur das Dokumentationsrecht weg (Zugang bleibt aktiv), bleibt der Tagesplan bis Tagesende oder Abmelden auf dem Gerät. Daneben: Bei zwei Tabs kann eine Änderung der Dauerablage die andere überholen (Lesen und Schreiben in getrennten Transaktionen); im Zustand „halten“ der Sperre kann ein Wieder-online übertragen, bevor die Oberfläche entsperrt ist (der Server weist mit 28000 ab).
-
-**Erwartet.** Einzel-Story-Loop vor dem Scharfschalten mit echten Daten: „Erneut senden“ an der Abweisung, `unlesbar` mitzählen, Rückfrage vor dem Verwerfen beim Abmelden, Tagesplan auch bei Rollenwegfall räumen.
-
 ### BEF-153 — Spracheingabe auf der Schreibseite
 
 |         |   |
@@ -665,34 +608,6 @@ Marke vorsieht.
 
 **Beobachtung.** Zurücknehmen geht beim Freizeitausgleich nur vor seinem Tag (`on_date > heute`); wer heute doch bleibt, kann den Eintrag für heute nicht zurücknehmen. **Erwartet.** Zurücknehmen auch am Tag selbst, solange die freie Zeit noch nicht begonnen hat; die Abweichung im Kalender fällt mit dem Eintrag. Pfad A: Prüfung am Server, Negativtests.
 
-### BEF-182 — Training: keine Auskunft nach Art. 15 auf Seiten der Praxis
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-18 |
-| Bereich | Trainingsverhältnis, Betroffenenrechte (`/datenschutz/betroffenenrechte`) |
-| Quelle  | Zweitreview ERN-EPIC-001 |
-| Status  | eingeplant: kleiner Auftrag (Pfad A) vor M3, Entscheidung Jannes 2026-10-18 |
-| Berührt | `public.export_patient_record` (nur Akte), `public.platform_export` |
-
-**Beobachtung.** Die Auskunft der Praxis geht nur von der Akte aus. Für eine Person, die nur trainiert, gibt es keine vollständige Kopie; der Export der Plattform trägt die Schlüsselliste der Plattform (ohne Notizen der Beratung, ohne Verlauf der Einwilligung) und fehlt ohne Zugang ganz. Seit ERN-EPIC-001 betrifft das auch Gesundheitsdaten nach Art. 9 (ADR-027 Punkt 6: „Auskunft und Export enthalten alles“). **Erwartet.** Eine Auskunft je Trainingsverhältnis für owner, wie `export_patient_record`, mit Protokolleintrag nach dem Katalog. Pfad A.
-
-**Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: ein kleiner Pfad-A-Auftrag vor M3.
-
-### BEF-183 — Reiterleiste: der letzte Reiter liegt bei 375 px hinter einem Wisch
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-18 |
-| Bereich | Akte, Trainingsverhältnis (`src/components/ui/Reiterleiste.tsx`) |
-| Quelle  | Praxis-Review ERN-EPIC-001 |
-| Status  | eingeplant: Entscheidung Jannes 2026-10-18 (mit ANN-620) |
-| Berührt | `Reiterleiste.tsx` (Zeichen „›“ mit `aria-hidden`), Ablauftests der Akte |
-
-**Beobachtung.** Mit fünf Reitern (owner, ERN-EPIC-001) liegen „Ernährung“ und „Stammdaten“ bei 375 px rechts außerhalb; das „›“ ist nur Zeichen. Mit Handschuh trifft der Wisch oft den Reiter daneben; Playwright scrollt von selbst und zählt den Wisch nicht. **Erwartet.** „›“ als Knopf, der zum nächsten verdeckten Reiter schiebt; Ablauftests prüfen vor dem Tippen, ob der Reiter sichtbar ist.
-
-**Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: fünf Reiter bestätigt, die Leiste wird verbessert.
-
 ### BEF-184 — Einwilligung „Ernährungsberatung“: das unterschriebene Blatt bleibt außerhalb der Anwendung
 
 |         |   |
@@ -704,3 +619,27 @@ Marke vorsieht.
 | Berührt | `ProfilFormular.tsx`, Dateiablage der Akte |
 
 **Beobachtung.** Das Anlegen verlangt die Einwilligung „auf Papier unterschrieben“; den Wortlaut zeigt das Formular seit dem Review, ein Foto des Blatts lässt sich aber nicht ablegen wie beim Anmeldebogen. Der Nachweis nach Art. 7 Abs. 1 liegt im Ordner. **Erwartet.** „Unterschriebenes Blatt fotografieren“ am Kästchen, abgelegt als Dokument der Akte bzw. des Verhältnisses mit der Frist der Ernährungsberatung.
+
+### BEF-188 — Gesperrte Anhänge an Rückfragen lassen sich nicht herausgeben
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-20 |
+| Bereich | Akte, Rückfragen der Plattform; Betroffenenrechte |
+| Quelle  | Zweitreview BEF-146 |
+| Status  | offen: Vorschlag (ADR-017 Abschnitt L, Pfad A) |
+| Berührt | `public.issue_message_attachment_link`, `app.message_attachment_visible` |
+
+**Beobachtung.** Die Auskunft nennt jeden Anhang an einer Rückfrage, auch gesperrte (Legal Hold). Öffnen kann die Praxis aber nur bestätigte, nicht gesperrte und höchstens 30 Tage alte Anhänge; ein Gegenstück zu `hand_out_patient_photo` gibt es nur für Fotos der Akte. `nicht_enthalten` sagt das seit dem Zweitreview. **Erwartet.** Eine protokollierte Herausgabe gesperrter Anhänge für owner, wie bei den Fotos der Akte.
+
+### BEF-189 — Benachrichtigungsdaten ohne Auskunftsweg nach der Lesefrist und für Begleitungen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-20 |
+| Bereich | Plattform, Benachrichtigungen; Betroffenenrechte |
+| Quelle  | Zweitreview BEF-146 |
+| Status  | offen: Frage an Jannes (ANN-669, ANN-261, ANN-344) |
+| Berührt | `public.platform_export`, `public.purge_notification_deliveries`, `export_patient_record`, `export_training_record` |
+
+**Beobachtung.** Wahl zu Benachrichtigungen, Tagebuch-Erinnerungen, Push-Registrierungen und Zustellaufträge stehen nur im eigenen Export der Plattform, und den gibt es nur für die Person und ihre rechtliche Vertretung in der Lesezeit. Nach der Lesefrist bleiben Wahl und Erinnerungen bis zum Ende des Zugangs stehen, Zustellaufträge 30 Tage; Begleitungen wählen eigene Benachrichtigungen, exportieren aber nie. Die Auskunft der Praxis nennt die Lücke seit dem Zweitreview in `nicht_enthalten`. **Erwartet.** Eine der drei Lösungen: (a) Wahl und Erinnerungen räumt der tägliche Lauf mit dem Ende der Lesezeit (Änderungspfad ANN-669; ohne Zeile ist alles aus, ein neues Verhältnis beginnt also ohne Benachrichtigungen); (b) der Teil `notifications` des Exports bleibt dem eigenen Zugang auch nach der Lesefrist offen, wie der Widerruf (ANN-261); (c) die Daten kommen in die Auskunft der Praxis (berührt ANN-344). Für Begleitungen eine eigene Antwort.

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { Badge } from './Badge';
@@ -197,25 +198,35 @@ describe('Reiterleiste (Design-Fundament)', () => {
     }
     afterEach(() => vi.restoreAllMocks());
 
-    it('zeigt rechts „›", solange dort Reiter außer Sicht liegen, und links „‹", wenn gerollt', () => {
+    it('zeigt rechts den Verlauf, solange dort Reiter außer Sicht liegen, und links, wenn gerollt', () => {
       geometrie();
       renderWithProviders(<Reiterleiste label="Teile" reiter={VIER} />, '/patienten/1/termine');
       const liste = screen.getByRole('list');
+      const knopf = (seite: string) =>
+        document.querySelector<HTMLButtonElement>(`[data-verlauf-knopf="${seite}"]`)!;
       expect(document.querySelector('[data-verlauf="links"]')).toBeNull();
       const rechts = document.querySelector('[data-verlauf="rechts"]')!;
       expect(rechts).not.toBeNull();
-      expect(rechts).toHaveTextContent('›');
-      // Dekorativ, auf der weißen Karte, nur wo die Leiste rollt, nicht klickbar.
+      // Dekorativ, auf der weißen Karte, nur wo die Leiste rollt, nicht klickbar:
+      // Ein Tipp auf das angeschnittene Ende eines Reiters öffnet ihn. Das
+      // Zeichen steht im Blätterknopf daneben (BEF-183).
       expect(rechts).toHaveAttribute('aria-hidden', 'true');
+      expect(rechts).toHaveTextContent('');
       expect(klassenVon(rechts)).toEqual(
-        expect.arrayContaining(['from-surface', 'sm:hidden', 'pointer-events-none']),
+        expect.arrayContaining(['from-surface', 'sm:hidden', 'pointer-events-none', 'w-10']),
       );
+      expect(knopf('rechts')).toBeEnabled();
+      // Nur rechts ein Knopf; links zurück mit dem Wisch.
+      expect(knopf('links')).toBeNull();
 
       // Ans Ende gerollt: rechts nichts mehr, links liegt jetzt etwas.
       liste.scrollLeft = VIER.length * 120 - 300;
       fireEvent.scroll(liste);
       expect(document.querySelector('[data-verlauf="rechts"]')).toBeNull();
+      // Links ist der Verlauf dekorativ mit „‹", rechts bleibt der Platz des
+      // Knopfs stehen, blass - die Reihe springt nicht.
       expect(document.querySelector('[data-verlauf="links"]')).toHaveTextContent('‹');
+      expect(knopf('rechts')).toBeDisabled();
     });
 
     it('rollt den offenen Reiter so weit, dass er nicht unter dem Verlauf liegt', () => {
@@ -224,6 +235,30 @@ describe('Reiterleiste (Design-Fundament)', () => {
       // „Stammdaten" liegt bei 240-360 px; rechts bleiben 48 px frei (Verlauf 40).
       expect(screen.getByRole('list').scrollLeft).toBe(360 + 48 - 300);
       expect(document.querySelector('[data-verlauf="links"]')).not.toBeNull();
+    });
+
+    it('holt mit „›" neben der Liste den nächsten verdeckten Reiter nach vorn (BEF-183)', async () => {
+      geometrie();
+      const user = userEvent.setup();
+      renderWithProviders(<Reiterleiste label="Teile" reiter={VIER} />, '/patienten/1/termine');
+      const liste = screen.getByRole('list');
+      const knopf = document.querySelector<HTMLButtonElement>('[data-verlauf-knopf="rechts"]')!;
+      // 44 px breit, so hoch wie die Reihe, neben der Liste und nicht über ihr
+      // (Design-Review): kein Reiter liegt unter ihm.
+      expect(klassenVon(knopf)).toEqual(expect.arrayContaining(['w-11', 'shrink-0', 'sm:hidden']));
+      expect(liste.contains(knopf)).toBe(false);
+      expect(document.querySelector('[data-verlauf="rechts"]')!.contains(knopf)).toBe(false);
+      // Tastatur und Vorlesesoftware erreichen jeden Reiter ohnehin.
+      expect(knopf).toHaveAttribute('tabindex', '-1');
+      expect(knopf).toHaveTextContent('›');
+      expect(screen.queryAllByRole('button')).toEqual([]);
+
+      // „Grundlagen" (360-480) beginnt erst hinter dem Verlauf: Er kommt an den
+      // linken Rand (360 - 48), höchstens so weit, wie die Reihe reicht (480 - 300).
+      await user.click(knopf);
+      expect(liste.scrollLeft).toBe(480 - 300);
+      fireEvent.scroll(liste);
+      expect(knopf).toBeDisabled();
     });
 
     it('zeigt keinen Verlauf, wo die Leiste umbricht und alles zu sehen ist', () => {
