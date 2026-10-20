@@ -1207,6 +1207,23 @@
           "nachweis": "Branch ccr-37917f35-emdjjp, src/features/teamchat/teambilder.test.tsx, tests/e2e/authenticated/profilbild.spec.ts"
         },
         {
+          "id": "bef-175",
+          "name": "BEF-175 Geführter Ablauf: Fokus ohne Rollen, Rollfläche, Sperre in allen Fensterzielen, Zurückgeste",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-20",
+          "nachweis": "Branch ccr-c66528c5-m3o7aq, src/components/ui/Dialogfenster.test.tsx, src/components/ui/GefuehrterAblauf.test.tsx, src/features/documentation/Textverlustschutz.test.tsx, tests/e2e/radflotte.spec.ts",
+          "vermerk": "Politurrunde, ANN-671"
+        },
+        {
+          "id": "politur-ernaehrung",
+          "name": "Politurrunde Ernährungsberatung: Akte, Formulare, Tagebuch und Lebensmittel nach DESIGN.md",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-20",
+          "nachweis": "Branch ccr-c66528c5-m3o7aq, Bildstrecke vorher/nachher, tests/e2e/plattform-barrierefreiheit.spec.ts, tests/e2e/authenticated/tagebuch.spec.ts, tests/e2e/authenticated/ernaehrung.spec.ts"
+        },
+        {
           "id": "url-001",
           "name": "URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine",
           "gewicht": 1,

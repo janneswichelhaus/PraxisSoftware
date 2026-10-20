@@ -1780,3 +1780,19 @@ eingeklappt.
 **Beobachtung.** „Das Profilbild wird im Chat bei bereits bestehenden Nachrichten nicht aktualisiert.“ Nachgestellt mit zwei Konten: Jannes sah Annas Initialen auch 45 s nach ihrem neuen Foto und nach einer neuen Nachricht. Ursache: Die Liste der Bilder galt fünf Minuten als frisch, Fokus lädt in der Anwendung nicht nach, und an Folgenachrichten wird nichts neu eingehängt.
 
 **Umsetzung (2026-10-20).** `useAvatare` lädt im Takt der Zähler (`ZAEHLER_MS`, 30 s) nach; alle Bilder lesen dieselbe Liste und folgen ohne Neuladen. Das Bild selbst lädt nur bei neuer Kennung. Tests in `teambilder.test.tsx` und im E2E-Test mit zwei Konten (Gegenprobe ohne Änderung: nach 75 s weiter Initialen).
+
+### BEF-175 — Geführter Ablauf: Fokus rollt die Frage weg, Rollfläche ohne Tastaturweg, `inert` nur am body
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-16 |
+| Bereich | Baustein `GefuehrterAblauf` / `Dialogfenster` (alle geführten Abläufe der Überholung 6) |
+| Quelle  | Oberflächen-Agenten der Überholung 6 (G3 bis G6), Playwright bei 375 × 667 und axe |
+| Status  | erledigt 2026-10-20 (Politurrunde, Branch `ccr-c66528c5-m3o7aq`): alle fünf Punkte, Grammatik, Tokens, Baustein `Anrufknoepfe`; ANN-671 |
+| Berührt | `src/components/ui/Dialogfenster.tsx`, `src/components/ui/GefuehrterAblauf.tsx`, `src/components/ui/ListRow.tsx`, `src/features/documentation/Textverlustschutz.tsx` |
+
+**Beobachtung.** (1) Das Fenster fokussiert `[data-autofocus]` ohne `preventScroll`: Ein hohes Fokusziel (Liste, Zusammenfassung) rollt die Frage aus dem Bild; Panne, Einrichten und Plattform helfen sich mit einem kleinen Fokusanker. (2) Die rollende Fläche einer Abschlussseite ohne Bedienelement ist per Tastatur nicht erreichbar (axe `scrollable-region-focusable`); die Abläufe setzen selbst `tabIndex={0}`. (3) `inert` greift nur, wenn der Schleier direkt am body hängt - nicht im Ziel der Sitzungssperre (in Produktion also für alle Fenster) und nicht im Plattformziel (ANN-584); aria-modal, Fokuskreis und Schleier bleiben. (4) `ListRow` nimmt kein `data-autofocus` an. (5) Die Zurückgeste geht im Textverlustschutz nur dann einen Schritt zurück, wenn etwas als ungespeichert gilt. Dazu: „ein Foto sind noch nicht übertragen“ in der Rückfrage von Panne und Check-Up.
+
+**Erwartet.** Ein eigener Auftrag am Baustein: Fokus mit `preventScroll` oder auf die Frage, `tabIndex` an der Rollfläche des Bausteins, `inert` auch für Portalziele, danach die Umgehungen in den Abläufen entfernen; Grammatik der Rückfrage. Aus dem Design-Review dazu: freie Maße im Baustein (`max-h-[60%]`, `lg:w-96`) als Tokens, der `tel:`-Knopf (zweimal von Hand in G1 und G2) als Baustein in `src/components/ui`, Laden und Fehler der Rufnummer über `Abfragezustand`.
+
+**Umsetzung (2026-10-20).** (1) Das Fenster fokussiert mit `preventScroll`. (2) Die Rollfläche des Bausteins ist eine Region nach der Frage mit `tabIndex={0}`; die eigene Umgehung der Panne fällt weg. (3) `sperreDarunter` sperrt auch in den Zielen der Sitzungssperre und der Plattform (`data-fensterziel`), ein Fenster in einer verborgenen Seite sperrt nichts (ANN-671). (4) `ListRow fokusbeginn`; der Schlüsselablauf braucht kein Hüllelement mehr. (5) Die Zurückgeste geht im Ablauf immer einen Schritt zurück; der Schlüsselablauf hält dafür nichts mehr als ungespeichert an. Dazu „Ein Foto ist …“, die Tokens `ablaufspalte` und `ablauf-knapp`, `Anrufknoepfe` für G1 und G2, die Rufnummer im Hausbesuch über `Abfragezustand`. Die kleinen Fokusanker in Einrichtung und Plattform bleiben: Ein Enter läuft dort sonst ungesehen durch die Seiten. Tests in `Dialogfenster.test.tsx`, `GefuehrterAblauf.test.tsx`, `Textverlustschutz.test.tsx`, `Listen.test.tsx`, `Anrufknoepfe.test.tsx`, `fotoauftraege.test.ts`; E2E Radflotte, Besuch, Termin, G2, G9 grün.
