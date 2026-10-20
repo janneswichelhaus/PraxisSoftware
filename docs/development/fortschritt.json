@@ -1181,6 +1181,15 @@
           "vermerk": "Nur owner; dieselbe Auditaktion wie an der Akte, Gegenstand das Verhältnis"
         },
         {
+          "id": "bef-189",
+          "name": "BEF-189 Benachrichtigungsdaten fallen mit dem Ende der Lesezeit; Begleitung exportiert ihre eigene Wahl",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-20",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223180000_bef_189_benachrichtigungen_mit_dem_ende.sql, supabase/tests/benachrichtigungen.test.ts, supabase/tests/platform-export.test.ts, Zweitreview",
+          "vermerk": "ADR-023 Fassung 6, ANN-669 entschieden"
+        },
+        {
           "id": "url-001",
           "name": "URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine",
           "gewicht": 1,

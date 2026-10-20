@@ -1736,3 +1736,19 @@ eingeklappt.
 **Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: ein kleiner Pfad-A-Auftrag vor M3.
 
 **Umsetzung (2026-10-20).** `public.export_training_record` gibt owner eine Kopie aller Daten eines Trainingsverhältnisses (Prüfung `app.auskunft_organisation_training`, Protokoll `patient_record.exported` mit Gegenstand `training_relationship`, keine neue Aktion). Tabellen des Verhältnisses gehen Zeile für Zeile mit, Kennungen fallen nach Muster heraus (`app.auskunft_ohne_kennungen`); Messwerte, Nachträge und Einladungen stehen an ihrem Elterndatensatz, Verfasser beim Namen. Seite `/training/:id/auskunft` wie an der Akte: Kopie erst auf Knopfdruck. Migration `20261223170000`, Tests in `auskunft-training.test.ts` (Gegenprobe gegen die erste Fassung rot) und `TrainingAuskunftPage.test.tsx`. Zweitreview: Messwerte, Nachträge, Einladungen und ein zu enger Vollständigkeitstest eingearbeitet.
+
+### BEF-189 — Benachrichtigungsdaten ohne Auskunftsweg nach der Lesefrist und für Begleitungen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-20 |
+| Bereich | Plattform, Benachrichtigungen; Betroffenenrechte |
+| Quelle  | Zweitreview BEF-146 |
+| Status  | erledigt 2026-10-20 (Branch `ccr-37917f35-emdjjp`): Option (a) und Export der Begleitung, Entscheidung Jannes wie empfohlen; ADR-023 Fassung 6, ANN-669 entschieden |
+| Berührt | `public.platform_export`, `public.purge_notification_deliveries`, `export_patient_record`, `export_training_record` |
+
+**Beobachtung.** Wahl zu Benachrichtigungen, Tagebuch-Erinnerungen, Push-Registrierungen und Zustellaufträge stehen nur im eigenen Export der Plattform, und den gibt es nur für die Person und ihre rechtliche Vertretung in der Lesezeit. Nach der Lesefrist bleiben Wahl und Erinnerungen bis zum Ende des Zugangs stehen, Zustellaufträge 30 Tage; Begleitungen wählen eigene Benachrichtigungen, exportieren aber nie. Die Auskunft der Praxis nennt die Lücke seit dem Zweitreview in `nicht_enthalten`. **Erwartet.** Eine der drei Lösungen: (a) Wahl und Erinnerungen räumt der tägliche Lauf mit dem Ende der Lesezeit (Änderungspfad ANN-669; ohne Zeile ist alles aus, ein neues Verhältnis beginnt also ohne Benachrichtigungen); (b) der Teil `notifications` des Exports bleibt dem eigenen Zugang auch nach der Lesefrist offen, wie der Widerruf (ANN-261); (c) die Daten kommen in die Auskunft der Praxis (berührt ANN-344). Für Begleitungen eine eigene Antwort.
+
+**Entscheidung (Jannes, 2026-10-20).** Wie empfohlen: (a), und die Begleitung bekommt im eigenen Export nur ihre eigene Wahl.
+
+**Umsetzung (2026-10-20).** Der tägliche Lauf `purge_notification_deliveries` räumt Wahl und Tagebuch-Erinnerungen eines Zugangs, der zeitlich geendet hat oder entzogen ist; der Widerruf räumt sie sofort (Trigger), eine Sperre lässt sie stehen. Eine Begleitung lädt unter „Ich“ ihre eigene Wahl herunter (`platform_export_notifications`), nichts von der Person, protokolliert wie jeder Export. Die Liste steht an einer Stelle (`app.platform_notifications_json`). Migration `20261223180000`, Tests in `benachrichtigungen.test.ts` und `platform-export.test.ts` (Gegenprobe ohne Migration: 6 rot), `Datenexport.test.tsx`, `PlattformApp.test.tsx`.
