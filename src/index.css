@@ -389,9 +389,12 @@
 /* Bei 200 % Vergrößerung bleibt am Telefon kaum Breite (375 px werden
    188): Knöpfe brechen um statt hinauszuragen, Gruppen schrumpfen mit
    (`fieldset` ist sonst so breit wie sein Inhalt). */
-/* In der Basisschicht: Eine `max-w-*`-Angabe am Element geht vor. */
+/* In der Basisschicht: Eine `max-w-*`-Angabe am Element geht vor. Das Ziel
+   einer Zeile (`listenzeile`) nicht: Es reicht absichtlich über den
+   Innenabstand der Karte hinaus und ist so breit wie die Karte, nie wie sein
+   Inhalt; gekappt stand sein Betrag 32 px vor dem Rand. */
 @layer base {
-  .plattform-schrift :is(button, a) {
+  .plattform-schrift :is(button, a):not(.listenzeile) {
     max-width: 100%;
   }
   .plattform-schrift fieldset {

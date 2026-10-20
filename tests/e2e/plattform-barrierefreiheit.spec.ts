@@ -61,6 +61,10 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'vertrag', merkmal: 'Trainingsvertrag' },
   // ERN-002: Ernährung mit Gewicht, Zielwerten und den eingeklappten Einstellungen.
   { seite: 'ernaehrung', merkmal: 'Ernährung' },
+  // Politurrunde 2026-10-20: Tagebuch und Lebensmittel, die täglichen Seiten.
+  { seite: 'tagebuch', merkmal: 'Tagebuch' },
+  { seite: 'lebensmittel', merkmal: 'Lebensmittel' },
+  { seite: 'lebensmittel-neu', merkmal: /Lebensmittel/ },
 ];
 
 async function oeffne(page: Page, seite: string, merkmal: RegExp | string, fenster = false) {
