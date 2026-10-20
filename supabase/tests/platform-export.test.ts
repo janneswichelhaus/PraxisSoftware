@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   SEED,
   abgefangen,
+  asAnon,
   asPostgres,
   asUser,
   asUserCommitted,
@@ -33,6 +34,24 @@ async function exportieren(konto: string, zugang: string): Promise<Record<string
     zugang,
   ]);
   return rows[0]!.daten;
+}
+
+/** Bernd als rechtliche Vertretung für Max (wie im Test zur Vertretung). */
+async function vertretungFuerMax(): Promise<void> {
+  await asPostgres(
+    `insert into auth.users (id, aud, role, email) values ($1, 'authenticated', 'authenticated', 'bernd.e@patient.invalid')`,
+    [KONTO_BERND],
+  );
+  await asPostgres(
+    `insert into public.platform_accesses
+       (id, organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
+        status, activated_at, access_kind, legal_basis, representative_name, proof_documents,
+        health_scope, finance_scope, proof_recorded_by, proof_recorded_at, created_by)
+     values ($1, $2, 'treatment', $3, $3, $4, 'active', now(), 'legal_representative',
+             'guardianship', 'Bernd Betreuer', array['identity_document', 'guardianship_certificate'],
+             true, false, $5, now(), $5)`,
+    [BERND, organizationId, patients.max, KONTO_BERND, users.office],
+  );
 }
 
 /** Erikas Ernährungsberatung aus dem Seed (ERN-001). */
@@ -371,4 +390,175 @@ describe('Datenexport der Plattform (POR-018)', () => {
     const fehler = await abgefangen(asUser(users.plattformErika, EXPORT, [ERIKA]));
     expect(fehler?.message).toContain('not allowed');
   }, 360_000);
+});
+
+/**
+ * Der Export einer Begleitung (BEF-189, ADR-023 Punkt 13 Fassung 6): nur ihre
+ * eigene Wahl zu Benachrichtigungen, nichts von der Person, für die sie
+ * begleitet. Negativfälle nach Punkt 23.
+ */
+describe('Export der Begleitung (BEF-189)', () => {
+  const EIGENE = 'select public.platform_export_notifications($1::uuid) as daten';
+
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('gibt der Begleitung nur ihre eigene Wahl und protokolliert den Export', async () => {
+    // Bernd vertritt Max rechtlich und hat eine eigene Wahl und Zustellung -
+    // sie gehören nicht in Paulas Export (Zweitreview).
+    await vertretungFuerMax();
+    await asUserCommitted(
+      KONTO_BERND,
+      'select public.set_platform_notification_settings($1::uuid, $2::text[], $3::text[], $4::smallint, $5::smallint)',
+      [BERND, ['plan_assigned'], ['plan_assigned'], 22, 6],
+    );
+    await asPostgres(
+      `insert into public.notification_deliveries
+         (organization_id, access_id, kind, channel, due_at, state, finished_at)
+       values ($1, $2, 'plan_assigned', 'push', now(), 'sent', now())`,
+      [organizationId, BERND],
+    );
+    await asUserCommitted(
+      users.plattformPaula,
+      'select public.set_platform_notification_settings($1::uuid, $2::text[], $3::text[], $4::smallint, $5::smallint)',
+      [PAULA, ['appointment_cancelled'], [], 20, 8],
+    );
+    const { rows } = await asUserCommitted<{ daten: Record<string, unknown> }>(
+      users.plattformPaula,
+      EIGENE,
+      [PAULA],
+    );
+    const daten = rows[0]!.daten;
+    expect(Object.keys(daten).sort()).toEqual([
+      'exported_at',
+      'exported_by',
+      'format',
+      'format_version',
+      'notifications',
+      'organization',
+      'relationship',
+    ]);
+    expect(daten['exported_by']).toBe('companion');
+    expect(daten['notifications']).toEqual({
+      settings: expect.objectContaining({
+        email_kinds: ['appointment_cancelled'],
+        push_kinds: [],
+        quiet_from: 20,
+        quiet_until: 8,
+      }) as unknown,
+      devices: [],
+      // Ohne Tagebuch-Erinnerungen: Von der Ernährungsberatung sieht eine
+      // Begleitung nichts (ADR-027 Punkt 3).
+      deliveries: [],
+    });
+    // Nichts von Max: kein Name, keine Kennung der Akte, keine Termine.
+    const text = JSON.stringify(daten);
+    for (const verboten of [
+      'Mustermann',
+      patients.max,
+      '"appointments"',
+      '"person"',
+      'plan_assigned',
+    ]) {
+      expect(text, verboten).not.toContain(verboten);
+    }
+    expect(await protokoll()).toEqual([
+      {
+        actor_user_id: users.plattformPaula,
+        actor_kind: 'representative',
+        subject_type: 'patient',
+        subject_id: patients.max,
+        context: {
+          surface: 'platform',
+          purpose: 'platform_export',
+          platform_access_id: PAULA,
+          access_kind: 'companion',
+          part: 'notifications',
+        },
+      },
+    ]);
+    // In der Auskunft an Max' Akte steht der Eintrag mit seinem Umfang: kein
+    // Export der Akte durch eine Vertretung (Zweitreview).
+    const { rows: auskunft } = await asUser<{ daten: { tabellen: Record<string, unknown[]> } }>(
+      users.ownerTherapist,
+      'select public.export_patient_record($1::uuid) as daten',
+      [patients.max],
+    );
+    expect(auskunft[0]!.daten.tabellen['access_log']).toContainEqual(
+      expect.objectContaining({
+        aktion: 'patient_record.exported',
+        durch: 'vertretung',
+        umfang: 'nur_eigene_benachrichtigungen',
+      }),
+    );
+  });
+
+  it('nur die Begleitung, nur ihr eigener Zugang: Person, fremde Konten, Praxis abgewiesen', async () => {
+    const fremd = await fremdeOrganisation();
+    await vertretungFuerMax();
+    for (const [konto, zugang] of [
+      // Die Person selbst und die rechtliche Vertretung haben den ganzen Export.
+      [users.plattformErika, ERIKA],
+      [users.plattformTina, TINA],
+      [KONTO_BERND, BERND],
+      // Fremder Zugang, Praxis, andere Organisation.
+      [users.plattformTina, PAULA],
+      [users.plattformErika, PAULA],
+      [users.office, PAULA],
+      [users.ownerTherapist, PAULA],
+      [fremd.owner, PAULA],
+    ] as const) {
+      const fehler = await abgefangen(asUserCommitted(konto, EIGENE, [zugang]));
+      expect(fehler?.message, `${konto} ${zugang}`).toContain('not allowed');
+    }
+    expect((await abgefangen(asAnon(EIGENE, [PAULA])))?.message).toMatch(/permission denied/i);
+    expect(await protokoll()).toEqual([]);
+  });
+
+  it('gesperrt, entzogen, eingeladen, nach der Lesefrist: abgewiesen (ANN-261)', async () => {
+    const faelle = [
+      `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
+      `update public.platform_accesses set status = 'revoked', revoked_at = now(),
+              revoked_reason = 'practice', revoked_by = created_by where id = $1`,
+      `update public.platform_accesses set status = 'invited', account_user_id = null where id = $1`,
+    ];
+    for (const fall of faelle) {
+      await resetDatabase();
+      await asPostgres(fall, [PAULA]);
+      const fehler = await abgefangen(asUserCommitted(users.plattformPaula, EIGENE, [PAULA]));
+      expect(fehler?.message).toContain('not allowed');
+    }
+    await resetDatabase();
+    await asPostgres(
+      `update public.patients
+          set care_started_on = least(care_started_on, current_date - 90),
+              care_concluded_on = current_date - 40, care_concluded_at = now(),
+              care_concluded_by = $2::uuid
+        where id = $1`,
+      [patients.max, users.ownerTherapist],
+    );
+    const fehler = await abgefangen(asUserCommitted(users.plattformPaula, EIGENE, [PAULA]));
+    expect(fehler?.message).toContain('not allowed');
+    expect(await protokoll()).toEqual([]);
+  }, 360_000);
+
+  it('liefert dieselbe Liste wie der ganze Export (eine Stelle, app.platform_notifications_json)', async () => {
+    await asUserCommitted(
+      users.plattformErika,
+      'select public.set_platform_notification_settings($1::uuid, $2::text[], $3::text[], $4::smallint, $5::smallint)',
+      [ERIKA, ['plan_assigned'], ['plan_assigned'], 21, 7],
+    );
+    const ganz = await exportieren(users.plattformErika, ERIKA);
+    const { rows } = await asPostgres<{ liste: unknown }>(
+      'select app.platform_notifications_json($1::uuid) as liste',
+      [ERIKA],
+    );
+    expect(ganz['notifications']).toEqual(rows[0]!.liste);
+    const { rows: rechte } = await asPostgres<{ anon: boolean; angemeldet: boolean }>(
+      `select has_function_privilege('anon', 'app.platform_notifications_json(uuid)', 'EXECUTE') as anon,
+              has_function_privilege('authenticated', 'app.platform_notifications_json(uuid)', 'EXECUTE') as angemeldet`,
+    );
+    expect(rechte).toEqual([{ anon: false, angemeldet: false }]);
+  });
 });

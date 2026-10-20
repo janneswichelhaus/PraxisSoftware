@@ -305,13 +305,22 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     expect(screen.getByText(/bekommen Sie\s+jetzt bei der Praxis/)).toBeInTheDocument();
   });
 
-  it('einer Begleitung weder Einwilligungen noch Export', () => {
-    zeige(
-      [{ ...BEHANDLUNG, access_kind: 'companion', represented_name: 'Max Mustermann' }],
-      '/p/ich',
-    );
+  it('einer Begleitung keine Einwilligungen und vom Export nur ihre eigene Wahl (BEF-189)', () => {
+    const begleitung = {
+      ...BEHANDLUNG,
+      access_kind: 'companion' as const,
+      represented_name: 'Max Mustermann',
+    };
+    const { unmount } = zeige([begleitung], '/p/ich');
     expect(screen.queryByRole('link', { name: /Einwilligungen/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Meine Daten/ })).toBeNull();
+    expect(
+      screen.getByRole('link', { name: 'Meine Benachrichtigungen herunterladen' }),
+    ).toHaveAttribute('href', `/p/daten?zugang=${BEHANDLUNG.access_id}`);
+    unmount();
+    // Nach der Lesefrist nicht mehr (ANN-261).
+    zeige([{ ...begleitung, readable: false, read_until: '2026-09-01T00:00:00Z' }], '/p/ich');
+    expect(screen.queryByRole('link', { name: /Meine Benachrichtigungen/ })).toBeNull();
   });
 
   // POR-019 (IDEA-LZK-005): der Einstieg vor der Übersicht.

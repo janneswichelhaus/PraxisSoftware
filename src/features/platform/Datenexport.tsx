@@ -8,8 +8,13 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { BENACHRICHTIGUNGEN, istBenachrichtigungsart } from '@/lib/begriffe';
 import { formatEuro } from '@/lib/geld';
-import { type Datenexport as Daten, type Plattformzugang } from './api';
+import {
+  type Benachrichtigungsexport,
+  type Datenexport as Daten,
+  type Plattformzugang,
+} from './api';
 import { usePlattformApi } from './einsicht';
 import { EINWILLIGUNGSTEXTE } from './einwilligungstexte';
 import { THEMA_NAME } from './nachrichtentexte';
@@ -25,8 +30,19 @@ import { datum, tagLang, zeitraum } from './zeit';
  * (maschinenlesbar, Art. 20 DSGVO) oder lesbar ansehen und drucken. Der
  * Inhalt ist, was die Plattform zeigt, nicht die Akte; die Kopie der Akte
  * gibt die Praxis (ADR-023 Punkt 12). Das steht vorher da.
+ *
+ * Eine Begleitung bekommt nur ihre eigene Wahl zu Benachrichtigungen
+ * (BEF-189, ADR-023 Punkt 13 Fassung 6); verbindlich prüft der Server.
  */
 export function Datenexport({ zugang }: { zugang: Plattformzugang }) {
+  return zugang.access_kind === 'companion' ? (
+    <EigeneBenachrichtigungen zugang={zugang} />
+  ) : (
+    <GanzerExport zugang={zugang} />
+  );
+}
+
+function GanzerExport({ zugang }: { zugang: Plattformzugang }) {
   const api = usePlattformApi();
   const [ergebnis, setErgebnis] = useState<{ daten: Daten; roh: unknown } | null>(null);
   const abrufen = useMutation({
@@ -75,12 +91,12 @@ export function Datenexport({ zugang }: { zugang: Plattformzugang }) {
 }
 
 /** Die Datei: genau die Antwort des Servers, eingerückt. */
-function speichern(roh: unknown, daten: Daten) {
+function speichern(roh: unknown, exportiertAm: string, name = 'meine-daten') {
   const blob = new Blob([JSON.stringify(roh, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `meine-daten-${daten.exported_at.slice(0, 10)}.json`;
+  link.download = `${name}-${exportiertAm.slice(0, 10)}.json`;
   link.click();
   // Erst später freigeben: Manche Browser (älteres Safari) brechen den
   // Download sonst ab (Zweitreview).
@@ -118,7 +134,7 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
         Ihre Daten sind zusammengestellt.
       </Statusmeldung>
       <div className="mt-4 flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto print:hidden">
-        <Button type="button" onClick={() => speichern(roh, daten)}>
+        <Button type="button" onClick={() => speichern(roh, daten.exported_at)}>
           Als Datei speichern
         </Button>
         <Button type="button" variant="secondary" onClick={() => window.print()}>
@@ -244,6 +260,96 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
           </Zeile>
         ))}
       </Abschnitt>
+    </>
+  );
+}
+
+/**
+ * Der Export einer Begleitung (BEF-189): ihre eigene Wahl, die Geräte nur als
+ * Anzahl, die Zustellungen als Anzahl - wie im ganzen Export. Daten der
+ * Person gibt es hier nicht.
+ */
+function EigeneBenachrichtigungen({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
+  const [ergebnis, setErgebnis] = useState<{
+    daten: Benachrichtigungsexport;
+    roh: unknown;
+  } | null>(null);
+  const abrufen = useMutation({
+    mutationFn: () => api.ladeBenachrichtigungsexport(zugang.access_id),
+    onSuccess: setErgebnis,
+  });
+  const wahl = ergebnis?.daten.notifications.settings ?? null;
+  const arten = (liste: string[] | undefined) =>
+    liste && liste.length > 0
+      ? liste
+          .map((art) => (istBenachrichtigungsart(art) ? BENACHRICHTIGUNGEN[art].name : art))
+          .join(', ')
+      : 'keine';
+
+  return (
+    <>
+      <Rueckweg
+        standard={`${PLATTFORM_PFAD}/ich`}
+        beschriftung="Zu „Ich“"
+        className="print:hidden"
+      />
+      <PageHeader title="Meine Benachrichtigungen" />
+      {ergebnis ? (
+        <>
+          <Statusmeldung ton="erfolg" className="print:hidden">
+            Ihre Daten sind zusammengestellt.
+          </Statusmeldung>
+          <div className="mt-4 flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto print:hidden">
+            <Button
+              type="button"
+              onClick={() =>
+                speichern(ergebnis.roh, ergebnis.daten.exported_at, 'meine-benachrichtigungen')
+              }
+            >
+              Als Datei speichern
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => window.print()}>
+              Drucken
+            </Button>
+          </div>
+          <Kleingedrucktes className="mt-3 print:hidden">
+            Die Datei ist im Format JSON. Andere Programme können sie lesen.
+          </Kleingedrucktes>
+          <p className="text-ink mt-6 text-base">
+            Stand {datum(ergebnis.daten.exported_at)} · {ergebnis.daten.organization}
+          </p>
+          <Abschnitt titel="Benachrichtigungen">
+            <Zeile label="Per E-Mail">{arten(wahl?.email_kinds)}</Zeile>
+            <Zeile label="Per Push">{arten(wahl?.push_kinds)}</Zeile>
+            <Zeile label="Ruhezeit">
+              {wahl && wahl.quiet_from !== null && wahl.quiet_until !== null
+                ? `${wahl.quiet_from} bis ${wahl.quiet_until} Uhr`
+                : 'keine eigene'}
+            </Zeile>
+            <Zeile label="Geräte">{ergebnis.daten.notifications.devices.length}</Zeile>
+            <Zeile label="Zustellungen">{ergebnis.daten.notifications.deliveries.length}</Zeile>
+          </Abschnitt>
+        </>
+      ) : (
+        <>
+          <p className="text-ink max-w-prose text-base leading-relaxed">
+            Sie bekommen Ihre eigene Wahl zu Benachrichtigungen: Arten und Wege, Ruhezeit, Geräte
+            und Zustellungen. Die Daten von {zugang.represented_name ?? 'der Person'} bekommen Sie
+            hier nicht.
+          </p>
+          {abrufen.error ? (
+            <Statusmeldung ton="fehler" className="mt-6">
+              {abrufen.error.message}
+            </Statusmeldung>
+          ) : null}
+          <Formularfuss>
+            <Button type="button" onClick={() => abrufen.mutate()} disabled={abrufen.isPending}>
+              {abrufen.isPending ? 'Wird zusammengestellt …' : 'Daten zusammenstellen'}
+            </Button>
+          </Formularfuss>
+        </>
+      )}
     </>
   );
 }

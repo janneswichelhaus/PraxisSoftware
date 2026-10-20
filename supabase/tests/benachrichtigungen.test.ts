@@ -36,6 +36,7 @@ const ABHOLEN = 'select * from public.claim_notification_deliveries(50)';
 const MELDEN =
   'select public.finish_notification_delivery($1::uuid, $2::timestamptz, $3, $4::text[])';
 const SCHALTEN = 'select public.set_notification_kind_enabled($1, $2)';
+const ERINNERN = 'select public.set_platform_diary_reminders($1::uuid, $2::jsonb, $3, $4)';
 
 const ENDPUNKT = 'https://fcm.googleapis.com/fcm/send/geraet-eins';
 const P256DH = 'B'.padEnd(87, 'A');
@@ -50,6 +51,20 @@ interface Auftrag {
   drop_reason: string | null;
   subject_at: Date | null;
   due_at: Date;
+}
+
+/** Welche Zugänge noch eine Wahl bzw. Tagebuch-Erinnerungen tragen (BEF-189). */
+async function wahlUndErinnerungen(): Promise<{ wahl: string[]; erinnerungen: string[] }> {
+  const zugaenge = async (tabelle: string) =>
+    (
+      await asPostgres<{ access_id: string }>(
+        `select distinct access_id from public.${tabelle} order by 1`,
+      )
+    ).rows.map((z) => z.access_id);
+  return {
+    wahl: await zugaenge('platform_notification_settings'),
+    erinnerungen: await zugaenge('nutrition_diary_reminders'),
+  };
 }
 
 async function waehlen(
@@ -753,6 +768,75 @@ describe('Versand: abholen und melden (Punkt 16)', () => {
       'select access_id from public.platform_push_subscriptions',
     );
     expect(rows).toEqual([{ access_id: erika.zugang }]);
+  });
+
+  it('räumt im Löschlauf Wahl und Tagebuch-Erinnerungen von Zugängen, die zeitlich geendet haben (BEF-189)', async () => {
+    // Erika wählt Benachrichtigungen und eine Tagebuch-Erinnerung, Tina nur
+    // Benachrichtigungen.
+    await waehlen(['plan_assigned']);
+    await asUserCommitted(erika.konto, ERINNERN, [
+      erika.zugang,
+      JSON.stringify([{ meal: 'breakfast', time: '07:30' }]),
+      true,
+      false,
+    ]);
+    const tina = platformAccesses.tinaTraining;
+    await waehlen(['plan_assigned'], [], [0, 0], users.plattformTina, tina);
+    expect(await wahlUndErinnerungen()).toEqual({
+      wahl: [erika.zugang, tina].sort(),
+      erinnerungen: [erika.zugang],
+    });
+
+    // Erikas Versorgung endete vor 60 Tagen: Die Lesezeit (30 Tage) ist vorbei.
+    await asPostgres(
+      `update public.patients
+          set care_started_on = least(care_started_on, current_date - 90),
+              care_concluded_on = current_date - 60,
+              care_concluded_at = now(),
+              care_concluded_by = $2
+        where id = $1`,
+      [patients.erika, users.ownerTherapist],
+    );
+    // Bis zum Löschlauf liegt alles noch da.
+    expect((await wahlUndErinnerungen()).wahl).toHaveLength(2);
+    await asPostgres('select public.purge_notification_deliveries()');
+    expect(await wahlUndErinnerungen()).toEqual({ wahl: [tina], erinnerungen: [] });
+  });
+
+  it('lässt Wahl und Erinnerungen eines nur gesperrten Zugangs stehen (BEF-189)', async () => {
+    await waehlen(['plan_assigned']);
+    await asUserCommitted(erika.konto, ERINNERN, [
+      erika.zugang,
+      JSON.stringify([{ meal: 'lunch', time: '12:00' }]),
+      true,
+      false,
+    ]);
+    await asPostgres(
+      `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
+      [erika.zugang],
+    );
+    await asPostgres('select public.purge_notification_deliveries()');
+    expect(await wahlUndErinnerungen()).toEqual({
+      wahl: [erika.zugang],
+      erinnerungen: [erika.zugang],
+    });
+  });
+
+  it('räumt Wahl und Erinnerungen beim Widerruf sofort (BEF-189)', async () => {
+    await waehlen(['plan_assigned']);
+    await asUserCommitted(erika.konto, ERINNERN, [
+      erika.zugang,
+      JSON.stringify([{ meal: 'dinner', time: '18:00' }]),
+      true,
+      false,
+    ]);
+    await asPostgres(
+      `update public.platform_accesses
+          set status = 'revoked', revoked_at = now(), revoked_by = $2, revoked_reason = 'practice'
+        where id = $1`,
+      [erika.zugang, users.ownerTherapist],
+    );
+    expect(await wahlUndErinnerungen()).toEqual({ wahl: [], erinnerungen: [] });
   });
 
   it('löscht abgeschlossene Aufträge nach 30 Tagen', async () => {

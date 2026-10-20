@@ -105,6 +105,7 @@ export type PlattformApi = Pick<
   | 'ladeMeinePakete'
   | 'ladeAngebote'
   | 'ladeDatenexport'
+  | 'ladeBenachrichtigungsexport'
   | 'ladeEinstieg'
   | 'einstiegBeenden'
   | 'ladeAbo'
@@ -196,6 +197,7 @@ export function einsichtsApi(zugangId: string, quelle: Einsichtsquelle): Plattfo
     ladeDokumentHerunter: gesperrt,
     einwilligungSchreiben: gesperrt,
     ladeDatenexport: gesperrt,
+    ladeBenachrichtigungsexport: gesperrt,
     einstiegBeenden: gesperrt,
     aboKuendigen: gesperrt,
     angebotAnnehmen: gesperrt,

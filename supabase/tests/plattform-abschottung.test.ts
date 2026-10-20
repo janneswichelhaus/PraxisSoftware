@@ -82,6 +82,8 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Eigenen Einstieg beenden (POR-019); ohne lesbaren Zugang abgewiesen (42501)',
   'public.platform_export':
     'Eigene Daten herunterladen (POR-018); ohne Recht export abgewiesen (42501), Negativfälle in platform-export.test.ts',
+  'public.platform_export_notifications':
+    'Eigene Wahl zu Benachrichtigungen einer Begleitung herunterladen (BEF-189, ADR-023 Punkt 13); nur eigener lesbarer Zugang einer Begleitung, Negativfälle in platform-export.test.ts',
   'public.platform_aftercare':
     'Eigenes Nachsorge-Abo (ANG-003); Negativfälle in aftercare-cancellation.test.ts',
   'public.cancel_platform_aftercare':

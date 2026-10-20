@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
-import type { Datenexport as Daten, Plattformzugang } from './api';
+import type { Benachrichtigungsexport, Datenexport as Daten, Plattformzugang } from './api';
 import { renderWithProviders } from '@/test-utils';
 
 /**
@@ -12,11 +12,17 @@ import { renderWithProviders } from '@/test-utils';
  */
 
 const ladeDatenexport = vi.fn();
+const ladeBenachrichtigungsexport = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladeDatenexport: (...args: unknown[]) =>
     ladeDatenexport(...args) as Promise<{ daten: Daten; roh: unknown }>,
+  ladeBenachrichtigungsexport: (...args: unknown[]) =>
+    ladeBenachrichtigungsexport(...args) as Promise<{
+      daten: Benachrichtigungsexport;
+      roh: unknown;
+    }>,
 }));
 
 const { Datenexport } = await import('./Datenexport');
@@ -155,5 +161,56 @@ describe('Datenexport (POR-018)', () => {
       />,
     );
     expect(screen.getByText(/die Daten von Max Mustermann/)).toBeInTheDocument();
+  });
+});
+
+/**
+ * Die Begleitung (BEF-189, ADR-023 Punkt 13 Fassung 6): nur ihre eigene Wahl
+ * zu Benachrichtigungen, nie der ganze Export.
+ */
+describe('Datenexport der Begleitung (BEF-189)', () => {
+  const BEGLEITUNG: Plattformzugang = {
+    ...ZUGANG,
+    access_id: 'cafecafe-cafe-4afe-8afe-000000000004',
+    access_kind: 'companion',
+    represented_name: 'Max Mustermann',
+  };
+  const EIGENE: Benachrichtigungsexport = {
+    format: 'plattform-export',
+    format_version: 1,
+    exported_at: '2026-10-20T08:00:00.000+00:00',
+    organization: 'Test Praxis Tuebingen',
+    relationship: 'treatment',
+    exported_by: 'companion',
+    notifications: {
+      settings: {
+        email_kinds: ['appointment_reminder'],
+        push_kinds: [],
+        quiet_from: 20,
+        quiet_until: 8,
+        chosen_at: '2026-10-19T08:00:00.000+00:00',
+      },
+      devices: [{ registered_at: '2026-10-19T08:00:00.000+00:00' }],
+      deliveries: [],
+    },
+  };
+
+  it('holt nur die eigene Wahl, sagt das vorher und zeigt sie lesbar', async () => {
+    const nutzer = userEvent.setup();
+    ladeBenachrichtigungsexport.mockResolvedValue({ daten: EIGENE, roh: EIGENE });
+    renderWithProviders(<Datenexport zugang={BEGLEITUNG} />);
+    expect(screen.getByRole('heading', { name: 'Meine Benachrichtigungen' })).toBeInTheDocument();
+    expect(
+      screen.getByText(/Die Daten von Max Mustermann bekommen Sie hier nicht/),
+    ).toBeInTheDocument();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Daten zusammenstellen' }));
+    await waitFor(() =>
+      expect(ladeBenachrichtigungsexport).toHaveBeenCalledWith(BEGLEITUNG.access_id),
+    );
+    expect(ladeDatenexport).not.toHaveBeenCalled();
+    expect(await screen.findByText('Ihre Daten sind zusammengestellt.')).toBeInTheDocument();
+    expect(screen.getByText('Erinnerung an einen Termin')).toBeInTheDocument();
+    expect(screen.getByText('20 bis 8 Uhr')).toBeInTheDocument();
   });
 });

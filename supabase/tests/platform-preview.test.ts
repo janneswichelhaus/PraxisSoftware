@@ -492,6 +492,14 @@ const SCHREIBWEGE: Record<string, Schreibweg> = {
     params: () => [E],
     gelingtDerPerson: true,
   },
+  // BEF-189: der Export einer Begleitung - schreibt ins Protokoll. Der Person
+  // gelingt er nie (nur die Begleitung), der Einsicht ebenso wenig (42501).
+  platform_export_notifications: {
+    sql: 'select public.platform_export_notifications($1::uuid)',
+    params: () => [platformAccesses.paulaBegleitungMax],
+    gelingtDerPerson: false,
+    zugang: platformAccesses.paulaBegleitungMax,
+  },
   // ERN-002: die Ernährung an Erikas Akte (Seed: laufend, mit Einwilligung).
   record_platform_nutrition_weight: {
     sql: `select public.record_platform_nutrition_weight($1::uuid,

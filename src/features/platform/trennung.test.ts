@@ -158,6 +158,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:platform_exercise_plans',
       // POR-018: die eigenen Daten herunterladen.
       'rpc:platform_export',
+      // BEF-189: der Export einer Begleitung, nur ihre eigene Wahl.
+      'rpc:platform_export_notifications',
       'rpc:platform_files',
       'rpc:platform_habits',
       // POR-013: eigene Rechnungen.
