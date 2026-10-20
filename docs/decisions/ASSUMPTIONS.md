@@ -6907,7 +6907,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-19 · Jannes (2026-10-20, BEF-189
 
 **Annahme.** Der eigene Export trägt je Zugang die Wahl zu Benachrichtigungen, die Tagebuch-Erinnerungen und die Zustellaufträge; Geräte nur mit „seit wann“, ohne Endpunkt und Schlüssel. Jede Vertretung exportiert ihre eigene Wahl, eine Begleitung nur diese (ADR-023 Fassung 6). Wahl, Erinnerungen und Push-Registrierungen fallen beim Widerruf sofort und mit dem Ende der Lesezeit im täglichen Lauf; eine Sperre lässt sie stehen. Zustellaufträge fallen 30 Tage nach dem Versand.
 
-**Begründung.** BEF-147, BEF-148, BEF-189; ergänzt ANN-265. Die Praxis sieht die Wahl weiter nicht (ANN-344); nach der Lesezeit bleibt nichts, worüber Auskunft zu geben wäre.
+**Begründung.** BEF-147, BEF-148, BEF-189; ergänzt ANN-265. Die Praxis sieht die Wahl weiter nicht (ANN-344); nach der Lesezeit bleiben nur Zustellaufträge, bis 30 Tage nach dem Versand. Während einer Sperre exportiert niemand; die Auskunft sagt das.
 
 **Anker.** Migration `20261223180000_bef_189_benachrichtigungen_mit_dem_ende.sql` (`platform_export_notifications`, `purge_notification_deliveries`).
 

@@ -270,7 +270,9 @@ begin
     'organization', (select o.name from public.organizations o where o.id = v_zugang.organization_id),
     'relationship', v_zugang.relationship_kind,
     'exported_by', v_zugang.access_kind,
-    'notifications', app.platform_notifications_json(p_access_id)
+    -- Ohne die Tagebuch-Erinnerungen: Von der Ernaehrungsberatung sieht eine
+    -- Begleitung nichts (ADR-027 Punkt 3) - auch nicht, wann sie lief.
+    'notifications', app.platform_notifications_json(p_access_id) - 'diary_reminders'
   );
 
   -- Wie jeder Export (ADR-023 Punkt 24, ANN-265): ein Eintrag, keine neue
@@ -369,8 +371,9 @@ update public.retention_assignments
 
 -- -----------------------------------------------------------------------------
 -- 6. Die Auskunft der Praxis sagt, wo die Benachrichtigungen stehen
---    (aus 20261223160000 und 20261223170000; neu ist nur der Text des
---    Eintrags 'Benachrichtigungen je Zugang' in nicht_enthalten).
+--    (aus 20261223160000 und 20261223170000; neu sind nur der Text des
+--    Eintrags 'Benachrichtigungen je Zugang' in nicht_enthalten und, im
+--    Zugriffsprotokoll, der Umfang beim Export einer Begleitung).
 -- -----------------------------------------------------------------------------
 
 create or replace function public.export_patient_record(p_patient_id uuid)
@@ -649,7 +652,13 @@ begin
                    when 'platform' then 'person_selbst'
                    when 'representative' then 'vertretung'
                  end
-      ) order by al.occurred_at)
+      )
+      -- BEF-189 (Zweitreview): Der Export einer Begleitung umfasst nur ihre
+      -- eigene Wahl zu Benachrichtigungen, nicht die Daten der Person.
+      || case when al.context ->> 'part' = 'notifications'
+              then jsonb_build_object('umfang', 'nur_eigene_benachrichtigungen')
+              else '{}'::jsonb end
+      order by al.occurred_at)
       from public.audit_log al
       where al.organization_id = v_org
         -- LOG-EPIC-001: Zugriffe, keine Abweisungen. Die Aktionen sind seit
@@ -1207,7 +1216,7 @@ begin
       ),
       jsonb_build_object(
         'was', 'Benachrichtigungen je Zugang',
-        'grund', 'Wahl, Geraete, Zustellungen und Tagebuch-Erinnerungen waehlt jede Person fuer ihren Zugang; die Praxis sieht sie nicht (ANN-344). Jede Person findet ihre eigene Wahl im Export der Plattform, solange der Zugang lesen kann, auch eine Begleitung (ADR-023 Punkt 13). Danach fallen Wahl, Erinnerungen und Geraete im taeglichen Lauf, Zustellungen 30 Tage nach dem Versand (ANN-669, BEF-189).'
+        'grund', 'Wahl, Geraete, Zustellungen und Tagebuch-Erinnerungen waehlt jede Person fuer ihren Zugang; die Praxis sieht sie nicht (ANN-344). Jede Person findet ihre eigene Wahl im Export der Plattform, solange der Zugang lesen kann (in der Lesezeit, nicht gesperrt), auch eine Begleitung (ADR-023 Punkt 13). Danach fallen Wahl, Erinnerungen und Geraete im taeglichen Lauf, Zustellungen 30 Tage nach dem Versand (ANN-669, BEF-189).'
       ),
       jsonb_build_object(
         'was', 'Namen der Beschaeftigten im Zugriffsprotokoll',
@@ -1413,7 +1422,13 @@ begin
                    when 'platform' then 'person_selbst'
                    when 'representative' then 'vertretung'
                  end
-      ) order by al.occurred_at)
+      )
+      -- BEF-189 (Zweitreview): Der Export einer Begleitung umfasst nur ihre
+      -- eigene Wahl zu Benachrichtigungen, nicht die Daten der Person.
+      || case when al.context ->> 'part' = 'notifications'
+              then jsonb_build_object('umfang', 'nur_eigene_benachrichtigungen')
+              else '{}'::jsonb end
+      order by al.occurred_at)
       from public.audit_log al
       where al.organization_id = v_org
         and al.outcome = 'success'
@@ -1703,7 +1718,7 @@ begin
       ),
       jsonb_build_object(
         'was', 'Benachrichtigungen je Zugang',
-        'grund', 'Wahl, Geraete, Zustellungen und Tagebuch-Erinnerungen waehlt jede Person fuer ihren Zugang; die Praxis sieht sie nicht (ANN-344). Jede Person findet ihre eigene Wahl im Export der Plattform, solange der Zugang lesen kann, auch eine Begleitung (ADR-023 Punkt 13). Danach fallen Wahl, Erinnerungen und Geraete im taeglichen Lauf, Zustellungen 30 Tage nach dem Versand (ANN-669, BEF-189).'
+        'grund', 'Wahl, Geraete, Zustellungen und Tagebuch-Erinnerungen waehlt jede Person fuer ihren Zugang; die Praxis sieht sie nicht (ANN-344). Jede Person findet ihre eigene Wahl im Export der Plattform, solange der Zugang lesen kann (in der Lesezeit, nicht gesperrt), auch eine Begleitung (ADR-023 Punkt 13). Danach fallen Wahl, Erinnerungen und Geraete im taeglichen Lauf, Zustellungen 30 Tage nach dem Versand (ANN-669, BEF-189).'
       ),
       jsonb_build_object(
         'was', 'Interne Kennungen bearbeitender Konten',

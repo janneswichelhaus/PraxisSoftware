@@ -36,6 +36,24 @@ async function exportieren(konto: string, zugang: string): Promise<Record<string
   return rows[0]!.daten;
 }
 
+/** Bernd als rechtliche Vertretung für Max (wie im Test zur Vertretung). */
+async function vertretungFuerMax(): Promise<void> {
+  await asPostgres(
+    `insert into auth.users (id, aud, role, email) values ($1, 'authenticated', 'authenticated', 'bernd.e@patient.invalid')`,
+    [KONTO_BERND],
+  );
+  await asPostgres(
+    `insert into public.platform_accesses
+       (id, organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
+        status, activated_at, access_kind, legal_basis, representative_name, proof_documents,
+        health_scope, finance_scope, proof_recorded_by, proof_recorded_at, created_by)
+     values ($1, $2, 'treatment', $3, $3, $4, 'active', now(), 'legal_representative',
+             'guardianship', 'Bernd Betreuer', array['identity_document', 'guardianship_certificate'],
+             true, false, $5, now(), $5)`,
+    [BERND, organizationId, patients.max, KONTO_BERND, users.office],
+  );
+}
+
 /** Erikas Ernährungsberatung aus dem Seed (ERN-001). */
 async function beratungVonErika(): Promise<{ id: string; started_on: string }> {
   const { rows } = await asPostgres<{ id: string; started_on: string }>(
@@ -387,6 +405,20 @@ describe('Export der Begleitung (BEF-189)', () => {
   }, 120_000);
 
   it('gibt der Begleitung nur ihre eigene Wahl und protokolliert den Export', async () => {
+    // Bernd vertritt Max rechtlich und hat eine eigene Wahl und Zustellung -
+    // sie gehören nicht in Paulas Export (Zweitreview).
+    await vertretungFuerMax();
+    await asUserCommitted(
+      KONTO_BERND,
+      'select public.set_platform_notification_settings($1::uuid, $2::text[], $3::text[], $4::smallint, $5::smallint)',
+      [BERND, ['plan_assigned'], ['plan_assigned'], 22, 6],
+    );
+    await asPostgres(
+      `insert into public.notification_deliveries
+         (organization_id, access_id, kind, channel, due_at, state, finished_at)
+       values ($1, $2, 'plan_assigned', 'push', now(), 'sent', now())`,
+      [organizationId, BERND],
+    );
     await asUserCommitted(
       users.plattformPaula,
       'select public.set_platform_notification_settings($1::uuid, $2::text[], $3::text[], $4::smallint, $5::smallint)',
@@ -416,12 +448,19 @@ describe('Export der Begleitung (BEF-189)', () => {
         quiet_until: 8,
       }) as unknown,
       devices: [],
-      diary_reminders: [],
+      // Ohne Tagebuch-Erinnerungen: Von der Ernährungsberatung sieht eine
+      // Begleitung nichts (ADR-027 Punkt 3).
       deliveries: [],
     });
     // Nichts von Max: kein Name, keine Kennung der Akte, keine Termine.
     const text = JSON.stringify(daten);
-    for (const verboten of ['Mustermann', patients.max, '"appointments"', '"person"']) {
+    for (const verboten of [
+      'Mustermann',
+      patients.max,
+      '"appointments"',
+      '"person"',
+      'plan_assigned',
+    ]) {
       expect(text, verboten).not.toContain(verboten);
     }
     expect(await protokoll()).toEqual([
@@ -439,14 +478,30 @@ describe('Export der Begleitung (BEF-189)', () => {
         },
       },
     ]);
+    // In der Auskunft an Max' Akte steht der Eintrag mit seinem Umfang: kein
+    // Export der Akte durch eine Vertretung (Zweitreview).
+    const { rows: auskunft } = await asUser<{ daten: { tabellen: Record<string, unknown[]> } }>(
+      users.ownerTherapist,
+      'select public.export_patient_record($1::uuid) as daten',
+      [patients.max],
+    );
+    expect(auskunft[0]!.daten.tabellen['access_log']).toContainEqual(
+      expect.objectContaining({
+        aktion: 'patient_record.exported',
+        durch: 'vertretung',
+        umfang: 'nur_eigene_benachrichtigungen',
+      }),
+    );
   });
 
   it('nur die Begleitung, nur ihr eigener Zugang: Person, fremde Konten, Praxis abgewiesen', async () => {
     const fremd = await fremdeOrganisation();
+    await vertretungFuerMax();
     for (const [konto, zugang] of [
       // Die Person selbst und die rechtliche Vertretung haben den ganzen Export.
       [users.plattformErika, ERIKA],
       [users.plattformTina, TINA],
+      [KONTO_BERND, BERND],
       // Fremder Zugang, Praxis, andere Organisation.
       [users.plattformTina, PAULA],
       [users.plattformErika, PAULA],
@@ -461,11 +516,12 @@ describe('Export der Begleitung (BEF-189)', () => {
     expect(await protokoll()).toEqual([]);
   });
 
-  it('gesperrt, entzogen, nach der Lesefrist: abgewiesen (ANN-261)', async () => {
+  it('gesperrt, entzogen, eingeladen, nach der Lesefrist: abgewiesen (ANN-261)', async () => {
     const faelle = [
       `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
       `update public.platform_accesses set status = 'revoked', revoked_at = now(),
               revoked_reason = 'practice', revoked_by = created_by where id = $1`,
+      `update public.platform_accesses set status = 'invited', account_user_id = null where id = $1`,
     ];
     for (const fall of faelle) {
       await resetDatabase();

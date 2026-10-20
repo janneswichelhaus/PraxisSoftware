@@ -492,6 +492,14 @@ const SCHREIBWEGE: Record<string, Schreibweg> = {
     params: () => [E],
     gelingtDerPerson: true,
   },
+  // BEF-189: der Export einer Begleitung - schreibt ins Protokoll. Der Person
+  // gelingt er nie (nur die Begleitung), der Einsicht ebenso wenig (42501).
+  platform_export_notifications: {
+    sql: 'select public.platform_export_notifications($1::uuid)',
+    params: () => [platformAccesses.paulaBegleitungMax],
+    gelingtDerPerson: false,
+    zugang: platformAccesses.paulaBegleitungMax,
+  },
   // ERN-002: die Ernährung an Erikas Akte (Seed: laufend, mit Einwilligung).
   record_platform_nutrition_weight: {
     sql: `select public.record_platform_nutrition_weight($1::uuid,
@@ -586,8 +594,6 @@ const SCHREIBWEGE: Record<string, Schreibweg> = {
  */
 const KEIN_SCHREIBWEG_DER_PERSON: Readonly<Record<string, string>> = {
   platform_preview: 'der Verteiler selbst',
-  platform_export_notifications:
-    'Export einer Begleitung (BEF-189): nur ihr eigenes Konto, kein Weg der Person; die Einsicht der Praxis kommt nicht hinein (42501, platform-export.test.ts)',
   platform_notification_settings: 'lesend, aber nicht in der Einsicht (Gerät der Person)',
   get_platform_onboarding: 'Praxisseite, eigene Rollenprüfung',
   skip_platform_onboarding: 'Praxisseite, eigene Rollenprüfung',
