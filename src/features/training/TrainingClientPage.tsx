@@ -56,7 +56,11 @@ import {
 import { TrainingClientFields } from './TrainingClientFields';
 import { TrainingTermine, TrainingVereinbarungen } from './TrainingClientSections';
 import { TrainingEinheiten } from './TrainingProtocol';
-import { PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
+import {
+  PlattformAbschnitt,
+  PlattformzugangBeenden,
+} from '@/features/platform-access/PlattformAbschnitt';
+import { usePlattformzugang, zugangBeendbar } from '@/features/platform-access/zustand';
 import { RueckfragenAbschnitt } from '@/features/messages/RueckfragenAbschnitt';
 import { TrainingEinwilligung } from './TrainingEinwilligung';
 import { TrainingProfil } from './TrainingProfil';
@@ -187,6 +191,14 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
     BEREICH_PARAM,
     bereiche.map((bereich) => bereich.wert),
   );
+  // Derselbe Zugang wie im Abschnitt „Plattform“ (ein Abfrageschlüssel);
+  // gelesen erst, wenn die Stammdaten offen sind.
+  const plattformzugang = usePlattformzugang(
+    'training',
+    kundin.id,
+    darfSchreiben && Boolean(zone) && offen === 'stammdaten',
+  );
+  const beendenZugang = darfSchreiben && Boolean(zone) && zugangBeendbar(plattformzugang);
 
   return (
     <>
@@ -294,73 +306,87 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
           // Ab 900 px Inhaltsbreite stehen Zugang und Rückfragen als
           // Kontextspalte neben Kontakt und Voraussetzungen (DESIGN.md
           // „Objekt“, `Zweispalter schmal`); darunter folgen sie.
-          <Zweispalter
-            kontextBreite="schmal"
-            kontext={
-              <>
-                {/* POR-002: der eigene Zugang zur Plattform, getrennt von einem
+          <>
+            <Zweispalter
+              kontextBreite="schmal"
+              kontext={
+                <>
+                  {/* POR-002: der eigene Zugang zur Plattform, getrennt von einem
                     Zugang zur Behandlung (§4.8, ADR-023 Punkt 4). */}
-                {zone ? (
-                  <PlattformAbschnitt
-                    art="training"
-                    verhaeltnisId={kundin.id}
-                    darfVerwalten={darfSchreiben}
-                    zeitzone={zone}
-                    praxis={user.organizationName ?? 'der Praxis'}
-                    einsichtFuer={isOwner(user.roles) ? kundin.given_name : null}
-                  />
-                ) : null}
-                {/* KOM-003: Rückfragen dieses Trainingsverhältnisses; das Büro
+                  {zone ? (
+                    <PlattformAbschnitt
+                      art="training"
+                      verhaeltnisId={kundin.id}
+                      darfVerwalten={darfSchreiben}
+                      zeitzone={zone}
+                      praxis={user.organizationName ?? 'der Praxis'}
+                      beendenAmEnde
+                      einsichtFuer={isOwner(user.roles) ? kundin.given_name : null}
+                    />
+                  ) : null}
+                  {/* KOM-003: Rückfragen dieses Trainingsverhältnisses; das Büro
                     liest alle und antwortet auf Termin, Rechnung und Sonstiges
                     (ANN-311 Fassung 3), verbindlich entscheidet der Server. */}
-                <RueckfragenAbschnitt art="training" verhaeltnisId={kundin.id} />
-              </>
-            }
-          >
-            {gespeichert > 0 ? (
-              <Rueckmeldung key={gespeichert} className="mb-6">
-                Gespeichert.
-              </Rueckmeldung>
-            ) : null}
-            <Kontakt
-              kundin={kundin}
-              aktion={
-                darfSchreiben ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    groesse="kompakt"
-                    onClick={() => setBearbeiten(true)}
-                  >
-                    Bearbeiten
-                  </Button>
-                ) : null
+                  <RueckfragenAbschnitt art="training" verhaeltnisId={kundin.id} />
+                </>
               }
-            />
-            {/* KND-005: Voraussetzungen und Übernahmen aus der Behandlung.
-                Schreiben owner und Trainingsbetreuung (ANN-287), lesen dazu das
-                Büro (ABN-030, BEF-137). */}
-            {canReadTrainingContent(user.roles) ? (
-              <TrainingProfil
-                relationshipId={kundin.id}
-                darfSchreiben={
-                  canWriteTrainingProtocols(user.roles) && kundin.contract_ended_on === null
+            >
+              {gespeichert > 0 ? (
+                <Rueckmeldung key={gespeichert} className="mb-6">
+                  Gespeichert.
+                </Rueckmeldung>
+              ) : null}
+              <Kontakt
+                kundin={kundin}
+                aktion={
+                  darfSchreiben ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      groesse="kompakt"
+                      onClick={() => setBearbeiten(true)}
+                    >
+                      Bearbeiten
+                    </Button>
+                  ) : null
                 }
               />
-            ) : null}
-            {/* BEF-182: die Auskunft zum Training, wie „Betroffenenrechte“ an der
+              {/* KND-005: Voraussetzungen und Übernahmen aus der Behandlung.
+                Schreiben owner und Trainingsbetreuung (ANN-287), lesen dazu das
+                Büro (ABN-030, BEF-137). */}
+              {canReadTrainingContent(user.roles) ? (
+                <TrainingProfil
+                  relationshipId={kundin.id}
+                  darfSchreiben={
+                    canWriteTrainingProtocols(user.roles) && kundin.contract_ended_on === null
+                  }
+                />
+              ) : null}
+              {/* BEF-182: die Auskunft zum Training, wie „Betroffenenrechte“ an der
                 Akte - nur owner; verbindlich prüft der Server (ADR-004). */}
-            {isOwner(user.roles) ? (
-              <Section titel="Betroffenenrechte">
-                <ButtonLink
-                  to={mitRueckweg(`/training/${kundin.id}/auskunft`, hier)}
-                  variant="secondary"
-                >
-                  Auskunft zum Training
-                </ButtonLink>
+              {isOwner(user.roles) ? (
+                <Section titel="Betroffenenrechte">
+                  <ButtonLink
+                    to={mitRueckweg(`/training/${kundin.id}/auskunft`, hier)}
+                    variant="secondary"
+                  >
+                    Auskunft zum Training
+                  </ButtonLink>
+                </Section>
+              ) : null}
+            </Zweispalter>
+            {/* Sperren und Entziehen leise am Ende des Reiters, wie an der Akte
+              (DESIGN.md, Objekt-Rezeptur und 9.16; Design-Review BEF-182). */}
+            {beendenZugang ? (
+              <Section titel="Beenden">
+                {/* 12 px zwischen den Auslösern: Mit Handschuhen liegt „sperren“
+                  sonst zu dicht an „entziehen“ (Grundsatz 3). */}
+                <div className="flex flex-col items-start gap-3">
+                  <PlattformzugangBeenden art="training" verhaeltnisId={kundin.id} />
+                </div>
               </Section>
             ) : null}
-          </Zweispalter>
+          </>
         )}
       </div>
     </>
