@@ -20,9 +20,17 @@ die Person über die Plattform wird nicht protokolliert (neu Punkt 22, Punkt 16
 eingeschränkt). Die Menge der Aktionen bleibt gleich; alles Übrige gilt
 unverändert.
 
+**Fassung 5 (2026-10-20, BEF-188, vorgeschlagen)** — begrenzte Ergänzung:
+Punkt 16 nennt unter „Exporte“ auch die Kopie eines Fotos oder Videos an
+einer Rückfrage an die Person (`message_attachment.handed_out`, Gegenstand
+`platform_message_attachment`; ADR-017 Punkt 96). Der Katalog wächst von 26
+auf 27 Aktionen. Freigabe nach Punkt 17: Label `freigabe-audit` am Pull
+Request. Alles Übrige gilt unverändert.
+
 ## Datum
 
-2026-08-28 · Fassung 2: 2026-09-13 · Fassung 3: 2026-10-03 · Fassung 4: 2026-10-09
+2026-08-28 · Fassung 2: 2026-09-13 · Fassung 3: 2026-10-03 · Fassung 4: 2026-10-09 ·
+Fassung 5: 2026-10-20
 
 ## Kontext
 
@@ -126,14 +134,16 @@ Dieser ADR schließt die offenen Punkte C3, C4, C5 und E4.
     `issued_by`, `cancelled_by`, die Versionstabelle der Dokumentation nach
     [ADR-016](ADR-016-clinical-documentation-record.md)). Das Auditlog hält
     nur, was das Datenmodell nicht abbildet.
-16. **Abschließender Katalog** (`supabase/audit-aktionen.txt`, 26 Aktionen):
+16. **Abschließender Katalog** (`supabase/audit-aktionen.txt`, 27 Aktionen;
+    Fassung 5):
     - Akte geöffnet: höchstens ein Eintrag je Person, Akte und Kalendertag der
       Praxis (`patient_record.viewed`); ebenso für Trainingskund:innen
       (`training_relationship.viewed`).
     - Datei heruntergeladen (`patient_file.downloaded`), durch ein
       Praxiskonto; der Abruf über die Plattform nicht (Punkt 22, Fassung 4).
     - Exporte: Auskunft nach Art. 15 DSGVO, Therapiebericht drucken oder
-      exportieren, Foto an die Person herausgeben.
+      exportieren, Foto an die Person herausgeben; ebenso ein Foto oder Video
+      an einer Rückfrage (Fassung 5, ADR-017 Punkt 96).
     - Portal: Vertretung liest (einmal je Tag und Akte); Zugang eingeladen,
       aktiviert, gesperrt, entsperrt, entzogen.
     - Konten und Rechte: `staff_account.*`, `account.*`,
@@ -281,3 +291,4 @@ Dieser ADR schließt die offenen Punkte C3, C4, C5 und E4.
 | 2 | 2026-09-13 | Punkte 13 (Lesepfad: `owner`, `list_audit_events`, jedes Lesen protokolliert) und 14 (Verweisausstellung gilt als Download) ergänzen eigene Folgefragen; Konsequenz aus E15 (Office) nachgetragen; Erledigungsvermerke. Punkte 1–12 unverändert. |
 | 3 | 2026-10-03 | LOG-EPIC-001, Entscheidung des Projektinhabers: Umkehr der Punkte 2 (Katalog), 6 (Monatsreport), 13 (Lesen des Protokolls protokolliert) und 14 (Verweis gilt als Download); neu Punkte 15–21 (Leitprinzip, Katalog, Freigabe, Fristen, Auswertung bei Anlass, Zweckbindung, Art.-32-Abwägung). Punkte 1, 3–5, 7–12 unverändert. |
 | 4 | 2026-10-09 | BEF-138, Entscheidung des Projektinhabers in der Abnahme vom 2026-10-09 (ANN-249): neu Punkt 22, der Abruf eines freigegebenen Dokuments über die Plattform wird nicht protokolliert; eine Vertretung bleibt beim täglichen Eintrag „Vertretung liest"; Punkt 16 entsprechend eingeschränkt. Aktionsmenge unverändert. |
+| 5 | 2026-10-20 | BEF-188, vorgeschlagen: Punkt 16 nennt die Kopie eines Fotos oder Videos an einer Rückfrage an die Person (`message_attachment.handed_out`, Gegenstand `platform_message_attachment`, ADR-017 Punkt 96, ANN-672); 27 Aktionen. Freigabe nach Punkt 17 mit dem Label `freigabe-audit`. |

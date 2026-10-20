@@ -2,7 +2,7 @@
 
 ## Status
 
-**Angenommen, Fassungen 8, 10 und 11; Fassung 9 vorgeschlagen** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+**Angenommen, Fassungen 8, 10 und 11; Fassungen 9 und 12 vorgeschlagen** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
 alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
 Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
 Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
@@ -15,7 +15,14 @@ bestätigt, die Fragen 30 bis 32 wie empfohlen (Abschnitt M); **Fassung 9** am 2
 vorgeschlagen, im Kern von Jannes entschieden (Abschnitt N, Bestätigungsfragen 33 und 34);
 **Fassung 10** am 2026-10-19 von Jannes beauftragt und am selben Tag bestätigt, die Fragen 35
 bis 37 wie empfohlen (Abschnitt O); **Fassung 11** am 2026-10-20 von Jannes entschieden
-(Befund, Punkt 89).
+(Befund, Punkt 89); **Fassung 12** am 2026-10-20 vorgeschlagen (BEF-188, Abschnitt P).
+**Fassung 12 (2026-10-20, vorgeschlagen).** Anlass ist BEF-188 aus dem Zweitreview zu BEF-146:
+Die Auskunft nennt jeden Anhang an einer Rückfrage, die Datei selbst konnte die Praxis aber
+nicht herausgeben - einen gesperrten gar nicht, einen sichtbaren nur ansehen. **Abschnitt P
+(Punkt 96)** gibt owner die Kopie je Anhang, wie Punkt 40 für die Fotos der Akte (ANN-128,
+ABN-017). Das ist eine **begrenzte Ergänzung**: Punkt 67 („protokolliert wird nichts Neues“)
+gilt weiter für das Ansehen; neu protokolliert wird nur die Herausgabe, nach ADR-010
+Fassung 5. Vermerk an Punkt 67.
 **Fassung 11 (2026-10-20, Jannes).** Anlass ist Jannes' Befund: „Profilbilder können beim
 Auswählen nicht zugeschnitten werden. Das soll möglich sein.“ Das ist die **Umkehr eines
 einzelnen Punktes** nach der Fassungsregel in `README.md`: In Punkt 89 entfällt „Der Ausschnitt
@@ -1100,6 +1107,8 @@ K; neu ist nur, was ein Upload von außen und ein Video verlangen.
     Löschen: die Person **jederzeit**; in der Praxis, wer auf die Rückfrage
     antworten darf, etwa bei einem Anhang, der Dritte zeigt — nachgewiesen
     am Löschauftrag (`ordered_by`).
+    *Vermerk 2026-10-20 (Fassung 12): Die Kopie an die Person nach Art. 15
+    Abs. 3 DSGVO ist kein Ansehen; sie regelt Punkt 96 und wird protokolliert.*
 68. **Antwort mit Zeitmarke, ohne Bewegungsurteil.** Die Antwort der Praxis
     kann auf eine Stelle im Video zeigen („bei 0:12“); auf der Plattform
     springt ein Tipp dorthin. Mehr nicht: **keine Zeichnung ins Bild, kein
@@ -1300,6 +1309,26 @@ Zuschnitt dieses Abschnitts.
     eigene Hochladen (ANN-667); die Datenschutzprüfung vor dem Go-live (ADR-007) nimmt
     Profilbilder als eigene Verarbeitung auf. Gebaut wird mit synthetischen Bildern; ein Foto
     einer echten Person gehört nicht in Tests, Bildstrecke oder Test-Umgebung (Punkt 41).
+
+### P. Herausgabe der Anhänge an Rückfragen (Fassung 12)
+
+96. **Die Kopie an die Person, je Anhang, durch owner.** Verlangt die Person
+    eine Kopie (Art. 15 Abs. 3 DSGVO) oder ihre Daten zum Mitnehmen (Art. 20,
+    die Einwilligung aus Punkt 61 ist die Grundlage), gibt `owner` jeden
+    bestätigten Anhang ihrer Rückfragen als Einzeldatei heraus — auf der Seite
+    der Betroffenenrechte, an der Akte und am Trainingsverhältnis, mit derselben
+    Prüfung wie die jeweilige Auskunft. **Auch einen gesperrten:** Die Sperre
+    unter Legal Hold (ANN-335) gilt der Arbeit mit dem Anhang, nicht der
+    Auskunft an die Person selbst (wie Punkt 40 seit ABN-017). Unbestätigte
+    bleiben außen vor (Punkt 7); die Auskunft nennt sie. Jede Kopie steht im
+    Protokoll als `message_attachment.handed_out` am Gegenstand
+    `platform_message_attachment`, mit der Akte oder dem Verhältnis und ob der
+    Anhang gesperrt war (ADR-010 Fassung 5, ANN-672). Der Weg ist der aus
+    Punkt 21: eine einmalige Freigabe für genau diesen Anhang und dieses Konto,
+    ein Verweis ohne Downloadnamen; den Dateinamen setzt die Seite, ohne Namen
+    der Person. An der Rückfrage selbst bleibt es beim Ansehen (Punkte 54, 67);
+    „Die Praxis schickt keine Anhänge zurück“ (Punkt 59) meint die Antwort,
+    nicht die Auskunft.
 
 ## Was OPS-001 zusätzlich prüfen muss
 
@@ -1924,3 +1953,4 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
 | 9 | 2026-10-18 | **Vorgeschlagen, im Kern von Jannes entschieden:** Abschnitt N (Punkte 82 bis 87) — Sprachnachrichten im Teamchat, aufgenommen nur in der Anwendung (ausdrücklich, sichtbar, höchstens zwei Minuten), WebM (Opus) oder MP4 (AAC) nur mit Ton, Prüfung der Struktur am Server, Abspielen ohne Herunterladen, keine Transkription; Umkehr für das Mikrofon in Punkt 33 (`microphone=(self)`) und für „kein Ton“ in Punkt 71; Punkt 74 nimmt Senden während des Hochladens auf (Frage 5 der PR #273). Vermerke an den Punkten 18, 19, 33, 42, 62, 71, 74 und 77 und an „Bewusst nicht Bestandteil“. Bestätigungsfragen 33 und 34 offen. Anlass: Antworten auf die Fragen der PR #273, TEAM-004 und TEAM-005 |
 | 10 | 2026-10-19 | **Angenommen am selben Tag, im Kern von Jannes beauftragt, Fragen 35 bis 37 wie empfohlen:** Abschnitt O (Punkte 88 bis 95) - Profilbilder im Teamchat, nur für sich selbst gesetzt, auf dem Gerät zu 256 × 256 JPEG ohne Metadaten gerechnet, am Inhalt in derselben Transaktion geprüft, Klasse `profilbild` (fällt mit Entfernen, Ersetzen, Ausscheiden). **Umkehr von Punkt 1** für Profilbilder: Zeile in der Datenbank statt Bucket. Vermerke an den Punkten 1, 15, 50 und 51. Anlass: Auftrag Jannes, TEAM-007 |
 | 11 | 2026-10-20 | **Entschieden von Jannes (Befund):** Der Ausschnitt des Profilbilds ist wählbar - verschieben und bis dreifach vergrößern, auf dem Gerät, Standard wie bisher. Umkehr von „Der Ausschnitt ist fest … ohne Bearbeitung“ in Punkt 89 (Alternative der Bestätigungsfrage 37). Vermerke an Punkt 89 und Frage 37 |
+| 12 | 2026-10-20 | **Vorgeschlagen (BEF-188):** Abschnitt P (Punkt 96) - owner gibt jeden bestätigten Anhang an einer Rückfrage als Kopie an die Person heraus, auch gesperrte, protokolliert als `message_attachment.handed_out` (ADR-010 Fassung 5, ANN-672). Vermerk an Punkt 67 |

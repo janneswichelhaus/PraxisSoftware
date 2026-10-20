@@ -343,3 +343,72 @@ export function kurzesDatum(iso: string, zeitzone: string): string {
     timeZone: zeitzone,
   }).format(new Date(iso));
 }
+
+const herausgabeAnhangSchema = z.object({
+  id: z.string(),
+  media_kind: z.enum(['photo', 'video']),
+  mime_type: z.string(),
+  duration_seconds: z.number().int().nullable(),
+  taken_at: z.string(),
+  author_kind: z.enum(['self', 'legal_representative']),
+  locked: z.boolean(),
+  object_missing: z.boolean(),
+});
+export type HerausgabeAnhang = z.infer<typeof herausgabeAnhangSchema>;
+
+/**
+ * Die Fotos und Videos an Rückfragen für die Auskunft (BEF-188): auch
+ * gesperrte, solange sie vorhanden sind - nur für owner, wie die Auskunft.
+ */
+export async function fetchAnhaengeZurHerausgabe(
+  art: Verhaeltnisart,
+  verhaeltnisId: string,
+): Promise<HerausgabeAnhang[]> {
+  const satz = 'Die Fotos und Videos konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_message_attachments_for_access_request', {
+    p_relationship_kind: art,
+    p_relationship_id: verhaeltnisId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(z.array(herausgabeAnhangSchema), data ?? [], satz);
+}
+
+/**
+ * Die Kopie eines Anhangs für die Person selbst (BEF-188, ADR-017 Punkt 96):
+ * nach Art. 15 Abs. 3 und Art. 20 DSGVO, durch `owner`, als Einzeldatei, im
+ * Protokoll als `message_attachment.handed_out`. Der Verweis bleibt ohne
+ * Downloadnamen; den Dateinamen setzt die Seite beim Sichern.
+ */
+export async function gibRueckfrageAnhangHeraus(anhangId: string): Promise<Blob> {
+  const satz = 'Die Aufnahme konnte nicht herausgegeben werden. Fehlt die Berechtigung?';
+  const { data, error } = (await getSupabase().rpc('hand_out_message_attachment', {
+    p_attachment_id: anhangId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  const freigabe = antwort(
+    z.array(z.object({ bucket_id: z.string(), object_key: z.string(), mime_type: z.string() })),
+    data ?? [],
+    satz,
+  )[0];
+  if (!freigabe) throw new Error(satz);
+  const { data: signiert, error: signaturFehler } = await getSupabase()
+    .storage.from(freigabe.bucket_id)
+    .createSignedUrl(freigabe.object_key, 60);
+  if (signaturFehler || !signiert?.signedUrl) {
+    throw new Error('Die Aufnahme ist in der Ablage nicht auffindbar.');
+  }
+  const geladen = await fetch(signiert.signedUrl, { cache: 'no-store' });
+  if (!geladen.ok) throw new Error('Die Aufnahme konnte nicht geladen werden.');
+  return new Blob([await geladen.arrayBuffer()], { type: freigabe.mime_type });
+}
+
+/** Ein Dateiname ohne Namen der Person: Art, Tag der Aufnahme, Kurzkennung. */
+export function anhangDateiname(anhang: HerausgabeAnhang, zeitzone: string): string {
+  const tag = new Intl.DateTimeFormat('sv-SE', { timeZone: zeitzone }).format(
+    new Date(anhang.taken_at),
+  );
+  const endung =
+    anhang.mime_type === 'image/jpeg' ? 'jpg' : anhang.mime_type === 'video/mp4' ? 'mp4' : 'webm';
+  const art = anhang.media_kind === 'photo' ? 'Foto' : 'Video';
+  return `Rueckfrage-${art}-${tag}-${anhang.id.slice(0, 8)}.${endung}`;
+}

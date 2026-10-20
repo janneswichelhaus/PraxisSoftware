@@ -14,10 +14,12 @@ export const AUDIT_ACTIONS = [
   'platform_representation.read',
   // Herunterladen einer Datei; das Anzeigen steht nicht im Protokoll.
   'patient_file.downloaded',
-  // Exporte: Auskunft nach Art. 15 DSGVO, Therapiebericht, Foto an die Person.
+  // Exporte: Auskunft nach Art. 15 DSGVO, Therapiebericht, Foto der Akte und
+  // Foto oder Video einer Rückfrage an die Person (BEF-188).
   'patient_record.exported',
   'therapy_report.exported',
   'patient_file.handed_out',
+  'message_attachment.handed_out',
   // Portalzugang (ADR-023).
   'platform_access.invited',
   'platform_access.activated',
@@ -63,7 +65,12 @@ export const AUDIT_ACTION_GROUPS: readonly { titel: string; aktionen: readonly A
   },
   {
     titel: 'Herausgabe',
-    aktionen: ['patient_record.exported', 'therapy_report.exported', 'patient_file.handed_out'],
+    aktionen: [
+      'patient_record.exported',
+      'therapy_report.exported',
+      'patient_file.handed_out',
+      'message_attachment.handed_out',
+    ],
   },
   {
     titel: 'Abweisungen und Löschlauf',
@@ -106,6 +113,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'patient_record.exported': 'Auskunft aus der Akte erteilt',
   'therapy_report.exported': 'Therapiebericht gedruckt',
   'patient_file.handed_out': 'Foto an die Person herausgegeben',
+  'message_attachment.handed_out': 'Anhang einer Rückfrage an die Person herausgegeben',
   'platform_access.invited': 'Zur Plattform eingeladen',
   'platform_access.activated': 'Plattformzugang eingerichtet',
   'platform_access.locked': 'Plattformzugang gesperrt',
@@ -227,6 +235,7 @@ export const auditSubjectLabels: Record<string, string> = {
   patient: 'Patient:in',
   training_relationship: 'Trainingsverhältnis',
   patient_file: 'Datei der Akte',
+  platform_message_attachment: 'Anhang einer Rückfrage',
   therapy_report: 'Therapiebericht',
   platform_access: 'Plattformzugang',
   staff_member: 'Mitarbeiter:in',

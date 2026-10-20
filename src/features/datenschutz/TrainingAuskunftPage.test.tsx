@@ -32,6 +32,13 @@ vi.mock('@/features/training/api', async (importOriginal) => {
   return { ...actual, getTrainingClient: (id: string) => getTrainingClient(id) as unknown };
 });
 
+// Die Herausgabe der Anhaenge an Rueckfragen hat ihre eigenen Tests
+// (AnhangHerausgabe.test.tsx).
+vi.mock('@/features/messages/api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchAnhaengeZurHerausgabe: () => Promise.resolve([]),
+}));
+
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),
   useParams: () => ({ relationshipId: VERHAELTNIS }),

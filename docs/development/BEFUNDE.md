@@ -606,18 +606,6 @@ Marke vorsieht.
 
 **Beobachtung.** Das Anlegen verlangt die Einwilligung „auf Papier unterschrieben“; den Wortlaut zeigt das Formular seit dem Review, ein Foto des Blatts lässt sich aber nicht ablegen wie beim Anmeldebogen. Der Nachweis nach Art. 7 Abs. 1 liegt im Ordner. **Erwartet.** „Unterschriebenes Blatt fotografieren“ am Kästchen, abgelegt als Dokument der Akte bzw. des Verhältnisses mit der Frist der Ernährungsberatung.
 
-### BEF-188 — Gesperrte Anhänge an Rückfragen lassen sich nicht herausgeben
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-20 |
-| Bereich | Akte, Rückfragen der Plattform; Betroffenenrechte |
-| Quelle  | Zweitreview BEF-146 |
-| Status  | offen: Vorschlag (ADR-017 Abschnitt L, Pfad A) |
-| Berührt | `public.issue_message_attachment_link`, `app.message_attachment_visible` |
-
-**Beobachtung.** Die Auskunft nennt jeden Anhang an einer Rückfrage, auch gesperrte (Legal Hold). Öffnen kann die Praxis aber nur bestätigte, nicht gesperrte und höchstens 30 Tage alte Anhänge; ein Gegenstück zu `hand_out_patient_photo` gibt es nur für Fotos der Akte. `nicht_enthalten` sagt das seit dem Zweitreview. **Erwartet.** Eine protokollierte Herausgabe gesperrter Anhänge für owner, wie bei den Fotos der Akte.
-
 ### BEF-192 — Tag umplanen: Anrufknöpfe über, „Erreicht“ unter dem Daumen; „Anrufen“ ruft nicht an
 
 |         |   |

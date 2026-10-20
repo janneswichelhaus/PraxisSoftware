@@ -1190,6 +1190,15 @@
           "vermerk": "ADR-023 Fassung 6, ANN-669 entschieden"
         },
         {
+          "id": "bef-188",
+          "name": "BEF-188 Fotos und Videos an Rückfragen an die Person herausgeben, auch gesperrte",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-20",
+          "nachweis": "Branch claude/cool-allen-m2aaci, Migration 20261223190000_bef_188_herausgabe_rueckfrageanhaenge.sql, supabase/tests/message-attachments.test.ts, src/features/messages/AnhangHerausgabe.test.tsx",
+          "vermerk": "ADR-017 Fassung 12, ADR-010 Fassung 5, ANN-672; Merge erst mit Label freigabe-audit"
+        },
+        {
           "id": "bef-190",
           "name": "BEF-190 Profilbild: Ausschnitt beim Auswählen verschieben und vergrößern",
           "gewicht": 1,
