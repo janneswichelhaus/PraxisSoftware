@@ -115,8 +115,10 @@ export function GefuehrterAblauf({
   const sperre = gesperrt ? 'pointer-events-none' : '';
   // Die Fläche, die rollt, erreicht auch die Tastatur - auf einer Seite ohne
   // Bedienelement darin sonst nicht (axe `scrollable-region-focusable`,
-  // BEF-175). Sie heißt nach der Frage.
-  const rollflaeche = { tabIndex: 0, role: 'region', 'aria-label': titel } as const;
+  // BEF-175). Ohne eigene Rolle und ohne Namen: Das Fenster heißt schon nach
+  // der Frage, und ein zweiter Name träfe jede Suche nach einem Feld, dessen
+  // Beschriftung in der Frage steht („Wofür?“ in „Wie viel und wofür?“).
+  const rollflaeche = { tabIndex: 0 } as const;
   const mitFuss = fuss !== undefined && fuss !== null && fuss !== false;
 
   const kopf = (

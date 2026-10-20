@@ -123,9 +123,12 @@ describe('GefuehrterAblauf', () => {
         <p>Nur Text, kein Feld.</p>
       </GefuehrterAblauf>,
     );
-    const flaeche = screen.getByRole('region', { name: 'Gemeldet' });
-    expect(flaeche).toHaveAttribute('tabindex', '0');
-    expect(within(flaeche).getByText('Nur Text, kein Feld.')).toBeInTheDocument();
+    const flaeche = screen.getByText('Nur Text, kein Feld.').closest('[tabindex="0"]');
+    expect(flaeche).toHaveClass('overflow-y-auto');
+    // Kein zweiter Name neben dem des Fensters: Er träfe die Suche nach einem
+    // Feld, dessen Beschriftung in der Frage steht.
+    expect(flaeche).not.toHaveAttribute('aria-label');
+    expect(screen.queryByRole('region')).toBeNull();
     await pruefeBarrierefreiheit(document.body);
   });
 
