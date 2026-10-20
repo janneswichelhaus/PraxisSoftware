@@ -81,6 +81,8 @@ describe('TrainingAuskunftPage', () => {
     expect(screen.getByText('2 Einträge')).toBeInTheDocument();
     expect(screen.getByText('Trainingsverträge')).toBeInTheDocument();
     expect(screen.getByText('Daten einer Behandlung:')).toBeInTheDocument();
+    // Was nicht enthalten ist, steht auf Abruf (Regel 6, Design-Review).
+    expect(screen.getByText('Nicht enthalten').closest('details')).not.toHaveAttribute('open');
     expect(fetchTrainingAuskunft).toHaveBeenCalledWith(VERHAELTNIS);
     // Nach dem Erstellen tritt der Knopf zurück; die Datei trägt die Kennung
     // des Verhältnisses, keinen Namen.

@@ -647,6 +647,14 @@ export const ROUTEN = Object.freeze([
     etikett: 'Trainingskund:in (Tina)',
     konten: ['owner', 'trainer'],
   },
+  // BEF-182: die Auskunft nach Art. 15 zum Trainingsverhältnis, wie an der Akte.
+  {
+    muster: '/training/:relationshipId/auskunft',
+    pfad: `/training/${IDS.trainingTina}/auskunft`,
+    bereich: 'Übungen und Training',
+    etikett: 'Auskunft zum Training',
+    konten: ['owner'],
+  },
   // ERN-001: die Formulare der Ernährungsberatung im Training (Tina hat keine).
   {
     muster: '/training/:relationshipId/ernaehrung/neu',

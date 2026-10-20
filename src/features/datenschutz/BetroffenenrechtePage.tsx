@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { Card, DataList, DataRow, Inhaltsflaeche } from '@/components/ui/Card';
+import { Card, DataList, DataRow, Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ErrorState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -88,8 +89,9 @@ export function AuskunftErgebnis({
       </Card>
 
       {/* Nach dem Erstellen der einzige Hauptknopf (PAT-23). Er heißt, was er
-          tut: Die Datei wird heruntergeladen (WRT-10). */}
-      <div className="mt-4">
+          tut: Die Datei wird heruntergeladen (WRT-10). Am Telefon in voller
+          Breite (DESIGN.md 9.5). */}
+      <Formularfuss>
         <Button
           type="button"
           onClick={() =>
@@ -101,17 +103,21 @@ export function AuskunftErgebnis({
         >
           Kopie herunterladen
         </Button>
-      </div>
+      </Formularfuss>
 
-      <Section titel="Nicht enthalten" ebene={3}>
-        <ul className="text-ink-muted space-y-2 text-sm leading-relaxed">
-          {auskunft.nicht_enthalten.map((hinweis) => (
-            <li key={hinweis.was}>
-              <span className="text-ink font-medium">{hinweis.was}:</span> {hinweis.grund}
-            </li>
-          ))}
-        </ul>
-      </Section>
+      {/* Was die Kopie nicht enthält, steht in der Datei und hier auf Abruf
+          (Regel 6, Design-Review BEF-182) - in Lesebreite. */}
+      <div className="mt-6">
+        <Disclosure summary="Nicht enthalten" anzahl={auskunft.nicht_enthalten.length}>
+          <ul className="text-ink-muted max-w-prose space-y-2 text-sm leading-relaxed">
+            {auskunft.nicht_enthalten.map((hinweis) => (
+              <li key={hinweis.was}>
+                <span className="text-ink font-medium">{hinweis.was}:</span> {hinweis.grund}
+              </li>
+            ))}
+          </ul>
+        </Disclosure>
+      </div>
     </div>
   );
 }
@@ -129,14 +135,20 @@ function AuskunftAbschnitt({ patient }: { patient: Patient }) {
       {/* Nach dem Erstellen tritt der Knopf zurück (PAT-23): Jeder weitere Tipp
           ist ein neuer, protokollierter Export, und zwei gleich starke Knöpfe
           ließen offen, was als Nächstes zu tun ist. */}
-      <Button
-        type="button"
-        variant={erstellt ? 'quiet' : 'primary'}
-        disabled={mutation.isPending}
-        onClick={() => mutation.mutate()}
-      >
-        {mutation.isPending ? 'Wird erstellt …' : erstellt ? 'Neu erstellen' : 'Auskunft erstellen'}
-      </Button>
+      <Formularfuss dicht>
+        <Button
+          type="button"
+          variant={erstellt ? 'quiet' : 'primary'}
+          disabled={mutation.isPending}
+          onClick={() => mutation.mutate()}
+        >
+          {mutation.isPending
+            ? 'Wird erstellt …'
+            : erstellt
+              ? 'Neu erstellen'
+              : 'Auskunft erstellen'}
+        </Button>
+      </Formularfuss>
 
       {mutation.isError ? (
         <div className="mt-4">

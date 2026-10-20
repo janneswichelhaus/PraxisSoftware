@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -65,18 +66,20 @@ export function TrainingAuskunftPage() {
               <Section titel="Auskunft nach Art. 15 DSGVO">
                 {/* Wie an der Akte (PAT-23): Nach dem Erstellen tritt der Knopf
                     zurück - jeder weitere Tipp ist ein neuer, protokollierter Export. */}
-                <Button
-                  type="button"
-                  variant={erstellt ? 'quiet' : 'primary'}
-                  disabled={auskunft.isPending}
-                  onClick={() => auskunft.mutate()}
-                >
-                  {auskunft.isPending
-                    ? 'Wird erstellt …'
-                    : erstellt
-                      ? 'Neu erstellen'
-                      : 'Auskunft erstellen'}
-                </Button>
+                <Formularfuss dicht>
+                  <Button
+                    type="button"
+                    variant={erstellt ? 'quiet' : 'primary'}
+                    disabled={auskunft.isPending}
+                    onClick={() => auskunft.mutate()}
+                  >
+                    {auskunft.isPending
+                      ? 'Wird erstellt …'
+                      : erstellt
+                        ? 'Neu erstellen'
+                        : 'Auskunft erstellen'}
+                  </Button>
+                </Formularfuss>
                 {auskunft.isError ? (
                   <div className="mt-4">
                     <ErrorState
@@ -93,8 +96,7 @@ export function TrainingAuskunftPage() {
                 <Kleingedrucktes>
                   Vorgang nach dem Verfahren für Betroffenenrechte, vorbehalten der Rolle „
                   {roleLabel('owner')}“. Jede Auskunft erstellt eine Kopie aller Daten dieses
-                  Trainingsverhältnisses und wird protokolliert; die Daten einer Behandlung stehen
-                  in der Auskunft an der Akte. Die Anwendung verschickt nichts.
+                  Trainingsverhältnisses und wird protokolliert. Die Anwendung verschickt nichts.
                 </Kleingedrucktes>
               </div>
             </>
