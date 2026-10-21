@@ -6183,11 +6183,11 @@ Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervor
 
 Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** owner weist einen Eintrag mit Grund zurück, nie im eigenen Konto; er bleibt sichtbar und zählt nicht. Zurücknehmen kann, wer eingetragen hat, solange er gilt – einen Freizeitausgleich nur vor seinem Tag. owner und Büro tragen für andere ein und buchen Korrekturen (Minuten mit Grund, ohne Lage); im eigenen Konto bucht nur owner eine Korrektur. Die Teamleitung entscheidet nicht.
+**Annahme.** owner weist einen Eintrag mit Grund zurück, nie im eigenen Konto; er bleibt sichtbar und zählt nicht. Zurücknehmen kann, wer eingetragen hat, solange er gilt – einen Freizeitausgleich, bis seine freie Zeit beginnt, auch am Tag selbst (BEF-180). owner und Büro tragen für andere ein und buchen Korrekturen (Minuten mit Grund, ohne Lage); im eigenen Konto bucht nur owner eine Korrektur. Die Teamleitung entscheidet nicht.
 
-**Begründung.** BEF-066 Option 2 mit Büro; Entscheiden wie ANN-576. Genommene Zeit soll niemand durch Zurücknehmen zurückholen.
+**Begründung.** BEF-066 Option 2 mit Büro; Entscheiden wie ANN-576. Genommene Zeit holt niemand durch Zurücknehmen zurück (Jannes 2026-10-17).
 
-**Anker.** `public.reject_time_account_entry`, `public.withdraw_time_account_entry`.
+**Anker.** `public.reject_time_account_entry`, `public.withdraw_time_account_entry`, `app.time_off_started`.
 
 **Änderungspfad.** Teamleitung weist zurück: `app.can_decide_staff_requests` · Aufwand `klein`.
 

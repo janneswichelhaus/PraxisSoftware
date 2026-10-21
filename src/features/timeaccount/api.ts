@@ -112,6 +112,8 @@ const SENTENCES: readonly (readonly [string, string])[] = [
     'time account entry not found',
     'Diesen Eintrag gibt es nicht mehr, oder er ist schon zurückgenommen oder zurückgewiesen.',
   ],
+  // BEF-180: Zurücknehmen geht bis zum Beginn der freien Zeit, auch am Tag selbst.
+  ['time off has begun', 'Die freie Zeit hat schon begonnen – zurücknehmen geht nur vorher.'],
   ['time account not found', 'Dieses Zeitkonto gibt es nicht.'],
   ['rejection needs a reason', 'Bitte einen Grund angeben.'],
   ['not allowed to reject own entry', 'Eigene Einträge weisen Sie nicht zurück.'],

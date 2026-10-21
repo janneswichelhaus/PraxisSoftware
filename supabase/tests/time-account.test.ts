@@ -43,6 +43,7 @@ const VORSCHAU =
 const ZURUECKNEHMEN = 'select public.withdraw_time_account_entry($1::uuid)';
 const ZURUECKWEISEN = 'select public.reject_time_account_entry($1::uuid, $2) as daten';
 const KONTO = 'select public.list_time_account($1::uuid) as daten';
+const BEGONNEN = 'select app.time_off_started($1::date, $2::time, $3, $4::timestamptz) as ja';
 const ABGEDECKT =
   'select app.is_within_working_hours($1::uuid, $2::uuid, $3::date, $4::time, $5::time) as ja';
 const AENDERUNG_BEANTRAGEN =
@@ -112,6 +113,8 @@ interface Konto {
 }
 
 let HEUTE = '';
+/** Die Uhrzeit der Praxis beim Start der Tests, `HH:MI`. */
+let JETZT = '';
 
 function plusTage(tag: string, tage: number): string {
   const d = new Date(`${tag}T00:00:00Z`);
@@ -217,11 +220,41 @@ async function abgedeckt(staff: string, tag: string, von: string, bis: string) {
 }
 
 beforeAll(async () => {
-  const { rows } = await asPostgres<{ heute: string }>(
-    `select to_char((now() at time zone 'Europe/Berlin')::date, 'YYYY-MM-DD') as heute`,
+  const { rows } = await asPostgres<{ heute: string; jetzt: string }>(
+    `select to_char((now() at time zone 'Europe/Berlin')::date, 'YYYY-MM-DD') as heute,
+            to_char(now() at time zone 'Europe/Berlin', 'HH24:MI') as jetzt`,
   );
   HEUTE = rows[0]!.heute;
+  JETZT = rows[0]!.jetzt;
 });
+
+/**
+ * Ein Freizeitausgleich von Anna, direkt geschrieben: für Tage und Zeiten, die
+ * das Eintragen zu dieser Uhrzeit oder an diesem Wochentag nicht zuließe.
+ * Zurückgewiesen von Jannes, mit Grund.
+ */
+async function freizeitDirekt(
+  tag: string,
+  von: string,
+  bis: string,
+  status: 'valid' | 'rejected' | 'withdrawn' = 'valid',
+): Promise<string> {
+  const { rows } = await asPostgres<{ id: string }>(
+    `insert into public.staff_time_account_entries
+       (organization_id, staff_member_id, kind, on_date, starts_at, ends_at, minutes, entered_by,
+        status, rejected_by, rejected_at, rejection_note, withdrawn_at)
+     values ($1, $2, 'time_off', $3::date, $4::time, $5::time,
+             -(extract(epoch from ($5::time - $4::time)) / 60)::integer, $6,
+             $7::text,
+             case when $7::text = 'rejected' then $8::uuid end,
+             case when $7::text = 'rejected' then now() end,
+             case when $7::text = 'rejected' then 'An dem Tag ist Teamsitzung.' end,
+             case when $7::text = 'withdrawn' then now() end)
+     returning id`,
+    [organizationId, STAFF.anna, tag, von, bis, users.therapist, status, users.ownerTherapist],
+  );
+  return rows[0]!.id;
+}
 
 beforeEach(resetDatabase);
 
@@ -639,7 +672,7 @@ describe('Freizeitausgleich in den Arbeitszeiten (ANN-595)', () => {
 });
 
 describe('Zurücknehmen und zurückweisen (ANN-594)', () => {
-  it('nimmt die eigene Eingabe zurück; einen Freizeitausgleich nur vor seinem Tag', async () => {
+  it('nimmt die eigene Eingabe zurück; einen Freizeitausgleich, bis seine freie Zeit beginnt', async () => {
     const mehr = await eingetragen(
       users.therapist,
       null,
@@ -661,7 +694,7 @@ describe('Zurücknehmen und zurückweisen (ANN-594)', () => {
     expect(stand.account?.entries.map((e) => e.status)).toEqual(['withdrawn', 'withdrawn']);
 
     // Genommene Zeit holt niemand zurück: ein Freizeitausgleich von gestern
-    // bleibt stehen.
+    // bleibt stehen (BEF-180: Wer ihn eingetragen hat, erfährt, warum).
     const gestern = werktagVorHeute();
     const genommen = await eingetragen(
       users.therapist,
@@ -671,7 +704,12 @@ describe('Zurücknehmen und zurückweisen (ANN-594)', () => {
       '16:00',
       '18:00',
     );
-    expect((await fehler(users.therapist, ZURUECKNEHMEN, [genommen.id]))?.code).toBe('P0002');
+    expect(await fehler(users.therapist, ZURUECKNEHMEN, [genommen.id])).toEqual(
+      expect.objectContaining({ code: '55000', message: 'time off has begun' }),
+    );
+    expect(
+      (await konto(users.therapist)).account!.entries.find((e) => e.id === genommen.id),
+    ).toEqual(expect.objectContaining({ status: 'valid', can_withdraw: false }));
   });
 
   it('lässt fremde Eingaben nicht zurücknehmen', async () => {
@@ -755,6 +793,86 @@ describe('Zurücknehmen und zurückweisen (ANN-594)', () => {
     expect((await fehler(users.ownerTherapist, ZURUECKWEISEN, [mehr.id, 'Nein']))?.code).toBe(
       'P0002',
     );
+  });
+});
+
+describe('Zurücknehmen am Tag selbst (BEF-180)', () => {
+  it('misst den Beginn in Ortszeit der Praxis, auch über die Zeitumstellung', async () => {
+    const faelle: [tag: string, von: string, zeitpunkt: string, begonnen: boolean][] = [
+      // Sommerzeit: 08:00 in Berlin ist 06:00 UTC.
+      ['2026-10-21', '08:00', '2026-10-21T05:59:59Z', false],
+      ['2026-10-21', '08:00', '2026-10-21T06:00:00Z', true],
+      // Nach der Umstellung am 25.10.: 08:00 ist 07:00 UTC.
+      ['2026-10-26', '08:00', '2026-10-26T06:59:59Z', false],
+      ['2026-10-26', '08:00', '2026-10-26T07:00:00Z', true],
+      // Vor Mitternacht der Praxis hat der nächste Tag nicht begonnen.
+      ['2026-10-22', '00:00', '2026-10-21T21:59:59Z', false],
+      ['2026-10-21', '23:59', '2026-10-22T00:00:00Z', true],
+    ];
+    for (const [tag, von, zeitpunkt, begonnen] of faelle) {
+      const { rows } = await asPostgres<{ ja: boolean }>(BEGONNEN, [
+        tag,
+        von,
+        'Europe/Berlin',
+        zeitpunkt,
+      ]);
+      expect(rows[0]!.ja, `${tag} ${von} um ${zeitpunkt}`).toBe(begonnen);
+    }
+  });
+
+  it('nimmt einen Freizeitausgleich für heute zurück, solange seine freie Zeit nicht begonnen hat', async () => {
+    // Die Uhr der Datenbank läuft mit: In den letzten Minuten des Tages gibt
+    // es heute kein Später mehr. Die Grenze selbst prüft der Fall darüber
+    // mit festem Zeitpunkt.
+    if (JETZT >= '23:57') return;
+    const frei = await freizeitDirekt(HEUTE, '23:58', '23:59');
+    // Die Abweichung des Tages hängt am Eintrag (ANN-595).
+    await asPostgres(
+      'delete from public.staff_working_hour_exceptions where staff_member_id = $1 and on_date = $2',
+      [STAFF.anna, HEUTE],
+    );
+    await asPostgres(
+      `insert into public.staff_working_hour_exceptions
+         (organization_id, staff_member_id, on_date, kind, starts_at, ends_at, created_by,
+          time_account_entry_id)
+       values ($1, $2, $3::date, 'block', '08:00', '12:00', $4, $5)`,
+      [organizationId, STAFF.anna, HEUTE, users.therapist, frei],
+    );
+
+    expect((await konto(users.therapist)).account!.entries.find((e) => e.id === frei)).toEqual(
+      expect.objectContaining({ status: 'valid', can_withdraw: true }),
+    );
+    await asUserCommitted(users.therapist, ZURUECKNEHMEN, [frei]);
+    expect(await abweichungen(STAFF.anna, HEUTE)).toEqual([]);
+    expect((await konto(users.therapist)).account!.entries.find((e) => e.id === frei)).toEqual(
+      expect.objectContaining({ status: 'withdrawn', can_withdraw: false }),
+    );
+  });
+
+  it('lässt begonnene freie Zeit stehen; wer nicht eingetragen hat, erfährt davon nichts', async () => {
+    const begonnen = await freizeitDirekt(HEUTE, '00:00', '00:30');
+    expect((await konto(users.therapist)).account!.entries.find((e) => e.id === begonnen)).toEqual(
+      expect.objectContaining({ status: 'valid', can_withdraw: false }),
+    );
+    expect(await fehler(users.therapist, ZURUECKNEHMEN, [begonnen])).toEqual(
+      expect.objectContaining({ code: '55000', message: 'time off has begun' }),
+    );
+
+    // Fremde Einträge bleiben von unbekannten nicht zu unterscheiden.
+    for (const k of [users.office, users.ownerTherapist, users.teamLead, users.trainer]) {
+      expect((await fehler(k, ZURUECKNEHMEN, [begonnen]))?.code, k).toBe('P0002');
+    }
+    const fremd = await fremdeOrganisation();
+    expect((await fehler(fremd.owner, ZURUECKNEHMEN, [begonnen]))?.code).toBe('P0002');
+    for (const k of [users.patientMax, users.plattformTina, null]) {
+      expect((await fehler(k, ZURUECKNEHMEN, [begonnen]))?.code, `${k}`).toBe('42501');
+    }
+
+    const { rows } = await asPostgres<{ status: string }>(
+      'select status from public.staff_time_account_entries where id = $1',
+      [begonnen],
+    );
+    expect(rows[0]!.status).toBe('valid');
   });
 });
 
