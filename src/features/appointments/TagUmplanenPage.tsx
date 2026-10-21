@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Anrufknoepfe } from '@/components/ui/Anrufknoepfe';
+import { knopfKlassen } from '@/components/ui/buttonStile';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -115,7 +116,10 @@ function name(termin: DayPlanEntry): string {
   return `${termin.patient_given_name} ${termin.patient_family_name}`;
 }
 
-/** Eine Person der Anrufliste: wann abgesagt, der Weg in die Akte, die Rufnummern. */
+/**
+ * Eine Person der Anrufliste: wann abgesagt, der Weg in die Akte. Die
+ * Rufnummern stehen im Fuß, der Anruf ist dort der Hauptknopf (BEF-192).
+ */
 function Anrufseite({
   termin,
   rueckweg,
@@ -139,7 +143,9 @@ function Anrufseite({
           Akte
         </Textlink>
       </div>
-      <Anrufknoepfe nummern={rufnummern(termin)} />
+      {rufnummern(termin).length === 0 ? (
+        <p className="text-ink-muted text-sm">Keine Rufnummer hinterlegt.</p>
+      ) : null}
     </div>
   );
 }
@@ -467,17 +473,34 @@ function Ablauf({
             </Button>
           </div>
         ) : seite.art === 'anruf' ? (
+          // Der Anruf ist die Haupthandlung, die Antwort danach sekundär:
+          // Ein Tipp ohne Anruf soll nicht zur nächsten Person führen
+          // (BEF-192, wie BEF-176 für G1).
           <div className="flex flex-col gap-2">
-            <Button className="w-full" onClick={() => antworte(seite.id, 'erreicht')}>
-              Erreicht
-            </Button>
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={() => antworte(seite.id, 'nicht')}
-            >
-              Nicht erreicht
-            </Button>
+            {aktuell ? (
+              <Anrufknoepfe
+                nummern={rufnummern(aktuell)}
+                hauptknopf
+                fokusbeginn
+                ohneNummer={null}
+              />
+            ) : null}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => antworte(seite.id, 'erreicht')}
+              >
+                Erreicht
+              </Button>
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => antworte(seite.id, 'nicht')}
+              >
+                Nicht erreicht
+              </Button>
+            </div>
           </div>
         ) : (
           // Nach dem letzten Anruf der Weg zum freien Tag (KAL-19).
@@ -575,24 +598,37 @@ function Ablauf({
         <div className="flex flex-col gap-4">
           {nichtErreicht.length > 0 ? (
             <ListRows rahmen={false} beschriftung="Noch nicht erreicht">
-              {nichtErreicht.map((termin) => (
-                <ListRow
-                  key={termin.id}
-                  zeit={formatLocalTime(termin.starts_at, termin.organization_time_zone)}
-                  titel={name(termin)}
-                  meta={rufnummern(termin)[0]?.anzeige ?? 'Keine Rufnummer hinterlegt.'}
-                  aktion={
-                    <Button
-                      variant="secondary"
-                      groesse="kompakt"
-                      aria-label={`${name(termin)} noch einmal anrufen`}
-                      onClick={() => setAbfolge(aendern(abfolge, { art: 'anruf', id: termin.id }))}
-                    >
-                      Anrufen
-                    </Button>
-                  }
-                />
-              ))}
+              {nichtErreicht.map((termin) => {
+                const nummer = rufnummern(termin)[0];
+                const zurPerson = () =>
+                  setAbfolge(aendern(abfolge, { art: 'anruf', id: termin.id }));
+                return (
+                  <ListRow
+                    key={termin.id}
+                    zeit={formatLocalTime(termin.starts_at, termin.organization_time_zone)}
+                    titel={name(termin)}
+                    meta={nummer?.anzeige ?? 'Keine Rufnummer hinterlegt.'}
+                    // Die Zeile führt zur Seite der Person, etwa um die
+                    // Antwort zu ändern.
+                    onClick={zurPerson}
+                    aktion={
+                      nummer ? (
+                        // „Anrufen“ wählt gleich (BEF-192) und stellt
+                        // dahinter die Seite der Person, die nach dem Anruf
+                        // fragt, ob sie erreicht ist: zwei Tipps statt drei.
+                        <a
+                          href={nummer.href}
+                          className={knopfKlassen('secondary', 'kompakt')}
+                          aria-label={`${name(termin)} noch einmal anrufen`}
+                          onClick={zurPerson}
+                        >
+                          Anrufen
+                        </a>
+                      ) : null
+                    }
+                  />
+                );
+              })}
             </ListRows>
           ) : null}
           <p className="text-ink text-sm">

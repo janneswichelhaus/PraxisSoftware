@@ -605,27 +605,3 @@ Marke vorsieht.
 | Berührt | `ProfilFormular.tsx`, Dateiablage der Akte |
 
 **Beobachtung.** Das Anlegen verlangt die Einwilligung „auf Papier unterschrieben“; den Wortlaut zeigt das Formular seit dem Review, ein Foto des Blatts lässt sich aber nicht ablegen wie beim Anmeldebogen. Der Nachweis nach Art. 7 Abs. 1 liegt im Ordner. **Erwartet.** „Unterschriebenes Blatt fotografieren“ am Kästchen, abgelegt als Dokument der Akte bzw. des Verhältnisses mit der Frist der Ernährungsberatung.
-
-### BEF-192 — Tag umplanen: Anrufknöpfe über, „Erreicht“ unter dem Daumen; „Anrufen“ ruft nicht an
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-20 |
-| Bereich | Kalender, „Tag umplanen“ (G2), Anrufseite und Abschluss |
-| Quelle  | Praxis-Review der Politurrunde 2026-10-20 |
-| Status  | offen (Vorschlag) |
-| Berührt | `src/features/appointments/TagUmplanenPage.tsx` (`Anrufseite`, Abschluss „noch nicht erreicht“) |
-
-**Beobachtung.** Auf der Anrufseite stehen „Mobil/Telefon anrufen“ oben im Inhalt, der gefüllte Hauptknopf „Erreicht“ im Fuß unter dem Daumen: Ein Tipp ohne Anruf führt zur nächsten Person. Im Abschluss öffnet „Anrufen“ an der Zeile nur wieder die Anrufseite, die Nummer steht als Text. Ein zweiter Anruf kostet so drei Tipps statt zwei. **Erwartet.** Wie BEF-176 (5) für G1: der Anruf als Hauptknopf im Fuß, „Erreicht“ und „Nicht erreicht“ sekundär; an der Zeile im Abschluss direkt wählen (`Anrufknoepfe`).
-
-### BEF-193 — Plattform „Ich“: die Beschreibung im Kopf läuft über drei Zeilen
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-20 |
-| Bereich | Plattform, „Ich“ (`/p/ich`) |
-| Quelle  | Design-Review der Politurrunde 2026-10-20 |
-| Status  | offen (Vorschlag) |
-| Berührt | `src/features/platform/PlattformApp.tsx` (Kopf der Seite „Ich“) |
-
-**Beobachtung.** „Angemeldet als … · Zugang von …“ bricht bei 375 px in drei, bei 1280 px in zwei Zeilen um; DESIGN.md Regel 6 erlaubt eine. **Erwartet.** Der Kopf ohne Beschreibung oder nur mit „Zugang von …“, die Adresse als Zeile unter „Konto“.

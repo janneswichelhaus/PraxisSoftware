@@ -1208,6 +1208,22 @@
           "vermerk": "ADR-017 Fassung 11, ANN-670"
         },
         {
+          "id": "bef-192",
+          "name": "BEF-192 Tag umplanen: Anruf als Hauptknopf, „Anrufen“ im Abschluss wählt direkt",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-20",
+          "nachweis": "Branch ccr-9f54aa20-cgnb8q, src/features/appointments/TagUmplanenPage.test.tsx, src/components/ui/Anrufknoepfe.test.tsx, Bildstrecke vorher/nachher"
+        },
+        {
+          "id": "bef-193",
+          "name": "BEF-193 Plattform „Ich“: Kopf in einer Zeile, Adresse unter „Konto“",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-20",
+          "nachweis": "Branch ccr-9f54aa20-cgnb8q, src/features/platform/PlattformApp.test.tsx, Bildstrecke vorher/nachher"
+        },
+        {
           "id": "bef-191",
           "name": "BEF-191 Teamchat: neues Profilbild an Nachrichten, die schon dastehen",
           "gewicht": 1,

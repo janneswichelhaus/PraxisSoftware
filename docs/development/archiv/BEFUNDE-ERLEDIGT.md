@@ -1781,6 +1781,34 @@ eingeklappt.
 
 **Umsetzung (2026-10-20).** Nach der Fotowahl steht das Foto in einem Quadrat, der Kreis zeigt das Bild im Chat. Ziehen oder Pfeiltasten verschieben, „−“, Regler und „+“ vergrößern bis zum Dreifachen, das Quadrat bleibt im Foto (`ProfilbildZuschnitt.tsx`). Ohne Eingriff gilt der bisherige Ausschnitt; gerechnet wird erst beim Speichern, auf dem Gerät (`rechneProfilbild`). Keine neue Abhängigkeit. Tests in `profilbild.test.ts`, `ProfilbildZuschnitt.test.tsx`, `MeinKontoPage.test.tsx` und `tests/e2e/authenticated/profilbild.spec.ts` (Rot/Blau-Foto, Pixel in der Mitte des gespeicherten Bilds).
 
+### BEF-192 — Tag umplanen: Anrufknöpfe über, „Erreicht“ unter dem Daumen; „Anrufen“ ruft nicht an
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-20 |
+| Bereich | Kalender, „Tag umplanen“ (G2), Anrufseite und Abschluss |
+| Quelle  | Praxis-Review der Politurrunde 2026-10-20 |
+| Status  | erledigt 2026-10-20 (Branch `ccr-9f54aa20-cgnb8q`): Anruf als Hauptknopf im Fuß, „Anrufen“ im Abschluss wählt direkt |
+| Berührt | `src/features/appointments/TagUmplanenPage.tsx` (`Anrufseite`, Abschluss „noch nicht erreicht“) |
+
+**Beobachtung.** Auf der Anrufseite stehen „Mobil/Telefon anrufen“ oben im Inhalt, der gefüllte Hauptknopf „Erreicht“ im Fuß unter dem Daumen: Ein Tipp ohne Anruf führt zur nächsten Person. Im Abschluss öffnet „Anrufen“ an der Zeile nur wieder die Anrufseite, die Nummer steht als Text. Ein zweiter Anruf kostet so drei Tipps statt zwei. **Erwartet.** Wie BEF-176 (5) für G1: der Anruf als Hauptknopf im Fuß, „Erreicht“ und „Nicht erreicht“ sekundär; an der Zeile im Abschluss direkt wählen (`Anrufknoepfe`).
+
+**Umsetzung (2026-10-20).** Die Rufnummern stehen im Fuß der Anrufseite, die erste als Hauptknopf (`Anrufknoepfe hauptknopf`), darunter „Erreicht“ und „Nicht erreicht“ sekundär nebeneinander. Im Abschluss ist „Anrufen“ ein `tel:`-Knopf, der zugleich die Seite der Person dahinterstellt: nach dem Anruf ein Tipp auf die Antwort. Die Zeile selbst führt ohne Anruf zur Seite der Person. Tests in `TagUmplanenPage.test.tsx` und `Anrufknoepfe.test.tsx`.
+
+### BEF-193 — Plattform „Ich“: die Beschreibung im Kopf läuft über drei Zeilen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-20 |
+| Bereich | Plattform, „Ich“ (`/p/ich`) |
+| Quelle  | Design-Review der Politurrunde 2026-10-20 |
+| Status  | erledigt 2026-10-20 (Branch `ccr-9f54aa20-cgnb8q`): Kopf nur „Zugang von …“, Adresse unter „Konto“ |
+| Berührt | `src/features/platform/PlattformApp.tsx` (Kopf der Seite „Ich“) |
+
+**Beobachtung.** „Angemeldet als … · Zugang von …“ bricht bei 375 px in drei, bei 1280 px in zwei Zeilen um; DESIGN.md Regel 6 erlaubt eine. **Erwartet.** Der Kopf ohne Beschreibung oder nur mit „Zugang von …“, die Adresse als Zeile unter „Konto“.
+
+**Umsetzung (2026-10-20).** Der Kopf trägt nur noch „Zugang von …“ (bei 375 und 1280 px eine Zeile); „Angemeldet als“ mit der Adresse ist die erste Zeile unter „Konto“. Test in `PlattformApp.test.tsx`.
+
 ### BEF-191 — Teamchat: ein neues Profilbild erscheint nicht an Nachrichten, die schon dastehen
 
 |         |   |

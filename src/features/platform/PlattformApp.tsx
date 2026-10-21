@@ -802,15 +802,9 @@ function Ich({
   const [fehler, setFehler] = useState<string | undefined>(undefined);
   return (
     <>
-      <PageHeader
-        title="Ich"
-        description={
-          <>
-            Angemeldet als <span className="font-medium wrap-anywhere">{email ?? 'Ihr Konto'}</span>
-            {praxis ? ` · Zugang von ${praxis}` : null}
-          </>
-        }
-      />
+      {/* Der Kopf hat eine Zeile (DESIGN.md Regel 6); die Adresse steht
+          unter „Konto“ (BEF-193). */}
+      <PageHeader title="Ich" description={praxis ? `Zugang von ${praxis}` : undefined} />
       {bereiche.map((z) => (
         <IchBereich
           key={z.access_id}
@@ -825,6 +819,10 @@ function Ich({
       <Section titel="Konto">
         {/* POR-020: Schriftgröße und was die Praxis eingestellt hat. */}
         <ListRows>
+          <ListRow
+            titel="Angemeldet als"
+            meta={<span className="wrap-anywhere">{email ?? 'Ihr Konto'}</span>}
+          />
           <ListRow
             // E-001: Geräteeinstellungen und Abmelden der Person gibt es in
             // der Einsicht nicht - die Zeile steht, wie die Person sie sieht.
