@@ -6981,6 +6981,6 @@ Datenschutz · offen · 2026-10-21 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Begründung.** BEF-179, Entscheidung Jannes 2026-10-17. Die Übersicht steht in der Halterung, auch vor Patient:innen; sie zeigt, was der nächste Schritt braucht (PROJECT_PRINCIPLES.md 2.2), der Grund ist einen Tipp weiter. Nur der Freizeitausgleich ändert den Tag (ANN-595).
 
-**Anker.** `public.list_rejected_time_off`, `src/features/today/NochOffen.tsx`.
+**Anker.** `public.list_rejected_time_off`.
 
 **Änderungspfad.** Grund in der Übersicht: ein Feld in `list_rejected_time_off` und in der Zeile · Aufwand `klein`.

@@ -114,8 +114,6 @@ interface Konto {
 }
 
 let HEUTE = '';
-/** Die Uhrzeit der Praxis beim Start der Tests, `HH:MI`. */
-let JETZT = '';
 
 function plusTage(tag: string, tage: number): string {
   const d = new Date(`${tag}T00:00:00Z`);
@@ -221,12 +219,10 @@ async function abgedeckt(staff: string, tag: string, von: string, bis: string) {
 }
 
 beforeAll(async () => {
-  const { rows } = await asPostgres<{ heute: string; jetzt: string }>(
-    `select to_char((now() at time zone 'Europe/Berlin')::date, 'YYYY-MM-DD') as heute,
-            to_char(now() at time zone 'Europe/Berlin', 'HH24:MI') as jetzt`,
+  const { rows } = await asPostgres<{ heute: string }>(
+    `select to_char((now() at time zone 'Europe/Berlin')::date, 'YYYY-MM-DD') as heute`,
   );
   HEUTE = rows[0]!.heute;
-  JETZT = rows[0]!.jetzt;
 });
 
 /**
@@ -822,10 +818,13 @@ describe('Zurücknehmen am Tag selbst (BEF-180)', () => {
   });
 
   it('nimmt einen Freizeitausgleich für heute zurück, solange seine freie Zeit nicht begonnen hat', async () => {
-    // Die Uhr der Datenbank läuft mit: In den letzten Minuten des Tages gibt
-    // es heute kein Später mehr. Die Grenze selbst prüft der Fall darüber
-    // mit festem Zeitpunkt.
-    if (JETZT >= '23:57') return;
+    // Die Uhr der Datenbank läuft mit, gelesen erst hier: In den letzten
+    // Minuten des Tages gibt es heute kein Später mehr. Die Grenze selbst
+    // prüft der Fall darüber mit festem Zeitpunkt.
+    const { rows: uhr } = await asPostgres<{ jetzt: string }>(
+      `select to_char(now() at time zone 'Europe/Berlin', 'HH24:MI') as jetzt`,
+    );
+    if (uhr[0]!.jetzt >= '23:57') return;
     const frei = await freizeitDirekt(HEUTE, '23:58', '23:59');
     // Die Abweichung des Tages hängt am Eintrag (ANN-595).
     await asPostgres(
@@ -1106,6 +1105,19 @@ describe('Für andere eintragen (ANN-594)', () => {
       -30,
       'Übertrag',
     );
+    // Ein Freizeitausgleich für Tim, dessen freie Zeit begonnen hat (BEF-180):
+    // Solange Olivia für andere buchen darf, erfährt sie den Grund.
+    const { rows: begonnen } = await asPostgres<{ id: string }>(
+      `insert into public.staff_time_account_entries
+         (organization_id, staff_member_id, kind, on_date, starts_at, ends_at, minutes,
+          entered_by, entered_for_other)
+       values ($1, $2, 'time_off', $3::date, '00:00', '00:30', -30, $4, true)
+       returning id`,
+      [organizationId, STAFF.tim, HEUTE, users.office],
+    );
+    const freiFuerTim = begonnen[0]!.id;
+    expect((await fehler(users.office, ZURUECKNEHMEN, [freiFuerTim]))?.code).toBe('55000');
+
     // Olivia wechselt vom Büro in die Therapie: Ihr Konto bleibt, das Recht
     // für andere nicht.
     await asPostgres(
@@ -1113,12 +1125,15 @@ describe('Für andere eintragen (ANN-594)', () => {
         where user_id = $1 and organization_id = $2 and role_key = 'office'`,
       [users.office, organizationId],
     );
-    for (const id of [fuerTim.id, korrektur.id]) {
+    // Danach ist ihre Buchung von einer unbekannten nicht zu unterscheiden -
+    // auch die begonnene nicht.
+    for (const id of [fuerTim.id, korrektur.id, freiFuerTim]) {
       expect((await fehler(users.office, ZURUECKNEHMEN, [id]))?.code, id).toBe('P0002');
     }
     const olivia = await konto(users.office);
     expect(olivia.can_book_others).toBe(false);
-    expect((await konto(users.ownerTherapist, STAFF.tim)).account?.balance_minutes).toBe(30);
+    // Alles bleibt stehen: 60 Überstunden, 30 Minusstunden, 30 Freizeitausgleich.
+    expect((await konto(users.ownerTherapist, STAFF.tim)).account?.balance_minutes).toBe(0);
   });
 });
 

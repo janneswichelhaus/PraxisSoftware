@@ -162,10 +162,16 @@ describe('NochOffen: zurückgewiesener Freizeitausgleich (BEF-179)', () => {
     expect(zeilen).toHaveLength(4);
     // Erst die Besuche, wie bisher (K15).
     expect(zeilen[0]).toHaveTextContent('Erika Beispiel');
-    expect(zeilen[1]).toHaveTextContent('16:00Freizeitausgleich zurückgewiesen');
-    expect(zeilen[1]).toHaveTextContent('Heute · 16:00–18:00 wieder Arbeitszeit');
-    expect(zeilen[2]).toHaveTextContent('Morgen · 08:00–10:00 wieder Arbeitszeit');
-    expect(zeilen[3]).toHaveTextContent('Am Do., 22.10. · 13:00–14:30 wieder Arbeitszeit');
+    // Heute die Uhrzeit wie an den Besuchen, sonst der Tag - kurz, zweizeilig.
+    expect(zeilen[1]).toHaveTextContent(
+      /^16:00Freizeitausgleich zurückgewiesen! 16:00–18:00 wieder Arbeitszeit$/,
+    );
+    expect(zeilen[2]).toHaveTextContent(
+      /^Mi14\.10\.Freizeitausgleich zurückgewiesen! 08:00–10:00 wieder Arbeitszeit$/,
+    );
+    expect(zeilen[3]).toHaveTextContent(
+      /^Do22\.10\.Freizeitausgleich zurückgewiesen! 13:00–14:30 wieder Arbeitszeit$/,
+    );
     for (const zeile of zeilen.slice(1)) {
       expect(within(zeile).getByRole('link')).toHaveAttribute('href', '/betrieb/zeitkonto');
       expect(within(zeile).queryByRole('button')).toBeNull();

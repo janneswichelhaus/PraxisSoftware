@@ -1247,7 +1247,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-21",
-          "nachweis": "Branch ccr-fc77ad4b-t5zz1m, Migrationen 20261223210000_bef_180_zuruecknehmen_am_tag.sql und 20261223220000_bef_179_zurueckweisung_in_der_uebersicht.sql, supabase/tests/time-account.test.ts, src/features/today/NochOffen.test.tsx, src/features/today/MyDayPage.test.tsx, src/features/timeaccount/api.test.ts, Bildstrecke vorher/nachher, Zweitreview",
+          "nachweis": "Branch ccr-fc77ad4b-t5zz1m, Migrationen 20261223210000_bef_180_zuruecknehmen_am_tag.sql und 20261223220000_bef_179_zurueckweisung_in_der_uebersicht.sql, supabase/tests/time-account.test.ts, src/features/today/NochOffen.test.tsx, src/features/today/MyDayPage.test.tsx, src/features/timeaccount/api.test.ts, tests/e2e/authenticated/zeitkonto.spec.ts, Bildstrecke vorher/nachher, Zweitreview",
           "vermerk": "ANN-594 geändert, ANN-675; ohne Auditeintrag und ohne Benachrichtigung"
         },
         {

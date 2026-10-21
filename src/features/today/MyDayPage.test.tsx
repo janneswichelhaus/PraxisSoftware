@@ -2477,7 +2477,8 @@ describe('Übersicht: zurückgewiesener Freizeitausgleich (BEF-179)', () => {
       'section',
     )!;
     expect(offen).toHaveTextContent('Freizeitausgleich zurückgewiesen');
-    expect(offen).toHaveTextContent('Morgen · 08:00–10:00 wieder Arbeitszeit');
+    expect(offen).toHaveTextContent('Freizeitausgleich zurückgewiesen');
+    expect(offen).toHaveTextContent('08:00–10:00 wieder Arbeitszeit');
     // Nur die Zurückweisung: Die Besuche stehen weiter im Strahl.
     expect(within(offen).getAllByRole('listitem')).toHaveLength(1);
     const karte = await findeKarte();

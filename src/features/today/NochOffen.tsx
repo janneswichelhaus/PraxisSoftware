@@ -19,7 +19,6 @@ import {
 } from './api';
 import { schreibseite } from './besuchswege';
 import { nichtAbgeschlossen, terminName } from './tagesstart';
-import { TagesWort } from './tageswahl';
 
 /**
  * Was an einem Besuch noch fehlt, als Wort - oder `null`, wenn nichts fehlt.
@@ -83,21 +82,37 @@ function Warnung({ children }: { children: ReactNode }) {
   );
 }
 
+const WOCHENTAG = new Intl.DateTimeFormat('de-DE', { weekday: 'short', timeZone: 'UTC' });
+// Zweistellig: So ist die Spalte so breit wie die Uhrzeiten der Besuche.
+const DATUM = new Intl.DateTimeFormat('de-DE', {
+  day: '2-digit',
+  month: '2-digit',
+  timeZone: 'UTC',
+});
+
 /**
  * Ein zurückgewiesener Freizeitausgleich (BEF-179, ANN-675): Die Zeit ist
  * wieder Arbeitszeit. Ohne Grund - die ganze Zeile führt ins Zeitkonto, wo er
- * steht.
+ * steht. Heute steht vorn die Uhrzeit wie an den Besuchen; an einem anderen
+ * Tag der Tag, kurz und zweizeilig - unter „Heute noch offen“ läse sich eine
+ * nackte Uhrzeit als heute (Praxis-Review).
  */
 function ZurueckgewieseneFreizeit({ eintrag, heute }: { eintrag: RejectedTimeOff; heute: string }) {
+  const tag = new Date(`${eintrag.on_date}T12:00:00Z`);
   return (
     <ListRow
-      zeit={eintrag.starts_at}
-      titel="Freizeitausgleich zurückgewiesen"
-      meta={
-        <Warnung>
-          {`${TagesWort(eintrag.on_date, heute)} · ${eintrag.starts_at}–${eintrag.ends_at} wieder Arbeitszeit`}
-        </Warnung>
+      zeit={
+        eintrag.on_date === heute ? (
+          eintrag.starts_at
+        ) : (
+          <span className="flex flex-col leading-tight">
+            <span>{WOCHENTAG.format(tag)}</span>
+            <span className="text-sm font-medium">{DATUM.format(tag)}</span>
+          </span>
+        )
       }
+      titel="Freizeitausgleich zurückgewiesen"
+      meta={<Warnung>{`${eintrag.starts_at}–${eintrag.ends_at} wieder Arbeitszeit`}</Warnung>}
       to={TIME_ACCOUNT_HOME}
     />
   );
