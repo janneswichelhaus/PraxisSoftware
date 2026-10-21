@@ -647,6 +647,10 @@ async function bild(page: Page, name: string, breit = false) {
  * Gesamtzahl, die Herkunft der Vorlage, kein Scrollen und jede Antwort im
  * Fuß mindestens 44 px hoch.
  */
+/** Ein Mittwoch (Ruhetag der Vorlage) und ein Freitag, je 12 Uhr in Berlin. */
+const MITTWOCH = new Date('2026-10-21T12:00:00+02:00');
+const FREITAG = new Date('2026-10-23T12:00:00+02:00');
+
 async function panneSeite(page: Page, frage: string, schritt: number, antworten: string[]) {
   const seite = fenster(page, frage);
   await expect(seite.getByText(`Schritt ${schritt}`, { exact: true })).toBeVisible();
@@ -729,6 +733,8 @@ test('G3: Panne bis „Rad zurückgelassen“ in elf Tipps wie vorher, jede Seit
   page,
 }) => {
   test.setTimeout(90_000);
+  // Mittwoch, der Ruhetag der Vorlage: Die Panne weiß ihn (BEF-176).
+  await page.clock.setFixedTime(MITTWOCH);
   const server = nachbildung();
   await oeffne(page, server);
   await page.setViewportSize({ width: 375, height: 667 });
@@ -741,21 +747,16 @@ test('G3: Panne bis „Rad zurückgelassen“ in elf Tipps wie vorher, jede Seit
   for (const [schritt, frage, antworten, antwort, name] of [
     [2, 'Ist die Weiterfahrt gehindert?', ['Ja', 'Nein'], 'Ja', null],
     [3, 'Wie groß ist der Schaden?', ['Klein', 'Groß'], 'Groß', 'panne-07-groesse'],
-    [4, 'Ist heute Mittwoch?', ['Ja', 'Nein'], 'Ja', 'panne-08-ruhetag'],
-    [
-      5,
-      'War das die letzte Behandlung am Tag und ist das Raddepot 15–30 Minuten entfernt?',
-      ['Ja', 'Nein'],
-      'Nein',
-      'panne-09-depot',
-    ],
+    // Je Bedingung eine Frage (BEF-176), die Ruhetagsfrage entfällt.
+    [4, 'War das die letzte Behandlung am Tag?', ['Ja', 'Nein'], 'Ja', 'panne-08-letzte'],
+    [5, 'Ist das Raddepot 15–30 Minuten entfernt?', ['Ja', 'Nein'], 'Nein', 'panne-09-depot'],
   ] as const) {
     const seite = await panneSeite(page, frage, schritt, [...antworten]);
     if (name) await bild(page, name);
     await z.tippe(seite.getByRole('button', { name: antwort, exact: true }));
   }
 
-  // Der längste Schritt: Standort, Anruf, Nachricht, Akku und Liege.
+  // Der längste Schritt: Standort, Anrufe, Akku und Liege.
   const zuruecklassen = await panneSeite(page, 'Fahrrad zurücklassen. Wo genau steht es?', 6, [
     'Weiter',
   ]);
@@ -794,7 +795,8 @@ test('G3: Panne bis „Rad zurückgelassen“ in elf Tipps wie vorher, jede Seit
 
   await expect(
     page.getByText(
-      'Panne gemeldet. Lastenrad 1 ist in Reparatur und steht nicht mehr in der Planung.',
+      'Panne gemeldet. Lastenrad 1 ist in Reparatur und steht nicht mehr in der Planung. ' +
+        'Bis zur Freigabe',
     ),
   ).toBeVisible({ timeout: NACH_DEM_SPEICHERN });
   expect(server.aufrufe.record_fleet_breakdown![0]).toEqual(
@@ -812,6 +814,7 @@ test('G3: auch die übrigen Seiten der Panne stehen bei 375 × 667 ohne Scrollen
   page,
 }) => {
   test.setTimeout(90_000);
+  await page.clock.setFixedTime(MITTWOCH);
   const server = nachbildung();
   await oeffne(page, server, `?pfad=${encodeURIComponent('/betrieb/flotte/panne?rad=rad-1')}`);
   await page.setViewportSize({ width: 375, height: 667 });
@@ -840,44 +843,53 @@ test('G3: auch die übrigen Seiten der Panne stehen bei 375 × 667 ohne Scrollen
   await zurueck('Anruf Werkstatt: Reparatur direkt vor Ort möglich?');
   await zurueck('Werkstatt in der Nähe (15–30 Minuten Fußweg)?');
   await tippe('Wie groß ist der Schaden?', 'Groß');
-  await tippe('Ist heute Mittwoch?', 'Ja');
-  await tippe(
-    'War das die letzte Behandlung am Tag und ist das Raddepot 15–30 Minuten entfernt?',
-    'Ja',
-  );
+  await tippe('War das die letzte Behandlung am Tag?', 'Ja');
+  await tippe('Ist das Raddepot 15–30 Minuten entfernt?', 'Ja');
   await panneSeite(page, 'Lastenrad ins Raddepot bringen.', 6, [
     'Rad als „In Reparatur“ markieren',
   ]);
   await bild(page, 'panne-17-depot-bringen');
+  expect(server.aufrufe.record_fleet_breakdown).toBeUndefined();
+});
 
-  // Kein Ruhetag: zur Vertragswerkstatt.
-  await zurueck('Lastenrad ins Raddepot bringen.');
-  await zurueck(
-    'War das die letzte Behandlung am Tag und ist das Raddepot 15–30 Minuten entfernt?',
-  );
-  await tippe('Ist heute Mittwoch?', 'Nein');
-  const nah = 'Vertragswerkstatt (noch nicht hinterlegt) in der Nähe (15–30 Minuten Fußweg)?';
-  await panneSeite(page, nah, 5, ['Ja', 'Nein']);
+test('G3: ohne Ruhetag zur Vertragswerkstatt, jede Seite bei 375 × 667 ohne Scrollen', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await page.clock.setFixedTime(FREITAG);
+  const server = nachbildung();
+  await oeffne(page, server, `?pfad=${encodeURIComponent('/betrieb/flotte/panne?rad=rad-1')}`);
+  await page.setViewportSize({ width: 375, height: 667 });
+  const tippe = (frage: string, antwort: string) =>
+    fenster(page, frage).getByRole('button', { name: antwort, exact: true }).click();
+  const zurueck = (frage: string) =>
+    fenster(page, frage).getByRole('button', { name: '← Zurück' }).click();
+  await tippe('Wo ist der Schaden?', 'Weiter');
+  await tippe('Ist die Weiterfahrt gehindert?', 'Ja');
+  // Groß, kein Ruhetag: gleich zur Vertragswerkstatt (BEF-176).
+  await tippe('Wie groß ist der Schaden?', 'Groß');
+  const nah = 'Vertragswerkstatt in der Nähe (15–30 Minuten Fußweg)?';
+  await panneSeite(page, nah, 4, ['Ja', 'Nein']);
   await bild(page, 'panne-18-vertragswerkstatt-nah');
   await tippe(nah, 'Ja');
-  await panneSeite(page, 'Reparatur direkt vor Ort möglich?', 6, ['Ja', 'Nein']);
+  await panneSeite(page, 'Reparatur direkt vor Ort möglich?', 5, ['Ja', 'Nein']);
   await bild(page, 'panne-19-vertragswerkstatt-kontakt');
   await tippe('Reparatur direkt vor Ort möglich?', 'Ja');
-  await panneSeite(page, 'Reparatur durchführen lassen.', 7, [
+  await panneSeite(page, 'Reparatur durchführen lassen.', 6, [
     'Erledigt – Rad als „In Reparatur“ markieren',
   ]);
   await bild(page, 'panne-20-vertragswerkstatt-reparieren');
   await zurueck('Reparatur durchführen lassen.');
   await tippe('Reparatur direkt vor Ort möglich?', 'Nein');
   const uebergabe = 'Teamleitung informieren und mit dem Ersatzrad weiterarbeiten.';
-  await panneSeite(page, uebergabe, 7, ['Weiter']);
+  await panneSeite(page, uebergabe, 6, ['Weiter']);
   await bild(page, 'panne-21-uebergabe');
   await tippe(uebergabe, 'Weiter');
   await tippe('Haben Sie einen Autoführerschein?', 'Nein');
 
   const abschluss = fenster(page, 'Zusammenfassung – bitte prüfen:');
   await expect(abschluss.getByRole('list', { name: 'Zusammenfassung' })).toContainText(
-    'Vertragswerkstatt (noch nicht hinterlegt) kontaktiert – Rad übergeben',
+    'Vertragswerkstatt kontaktiert – Rad übergeben',
   );
   await expect(abschluss.getByRole('button', { name: /^Bestätigen/ })).toBeInViewport({
     ratio: 1,

@@ -23,6 +23,7 @@ const SCHRITTE: SchrittId[] = [
   'werkstattVorOrt',
   'werkstattReparieren',
   'ruhetag',
+  'letzteBehandlung',
   'depotErreichbar',
   'depotBringen',
   'radZuruecklassen',
@@ -119,6 +120,16 @@ describe('Panne im Fenster – weiter, Schritt, zurück', () => {
     // Andere Ziele lassen den Text, wie er ist.
     const ja = { art: 'weiter', ziel: 'schadensgroesse' } as const;
     expect(weiterMit(start, ja, 'Bremse').freitext).toBe('');
+  });
+
+  it('geht an der Ruhetagsweiche ohne Frage weiter, nach dem Tag (BEF-176)', () => {
+    const start = gehe(ablaufStarten('r1'), 'schadensgroesse');
+    const gross = { art: 'weiter', ziel: 'ruhetag' } as const;
+    const amRuhetag = weiterMit(start, gross, '', true);
+    expect(amRuhetag.schritt).toBe('letzteBehandlung');
+    // Die Weiche steht nicht im Verlauf: „← Zurück“ führt zur Frage davor.
+    expect(amRuhetag.verlauf).toEqual(['weiterfahrt', 'schadensgroesse']);
+    expect(weiterMit(start, gross, '', false).schritt).toBe('vertragswerkstattNah');
   });
 
   it('legt Herkunft und Transport mit dem Schritt ab', () => {

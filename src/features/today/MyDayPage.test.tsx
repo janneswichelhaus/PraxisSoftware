@@ -1909,6 +1909,16 @@ describe('Übersicht', () => {
       expect(text).not.toMatch(/Erika|Beispiel|Behandlung/);
       expect(within(gruppe).getAllByRole('link')).toHaveLength(3);
     });
+
+    it('meldet eine Panne vom Weg zum Hausbesuch aus (BEF-176)', async () => {
+      fetchDayPlan.mockResolvedValue([tagesEintrag({ id: 't1' })]);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      const karte = await findeKarte();
+      expect(within(karte).getByRole('link', { name: 'Panne melden' })).toHaveAttribute(
+        'href',
+        '/betrieb/flotte/panne?zurueck=%2F',
+      );
+    });
   });
 
   describe('UBK-EPIC-001: die Uhr statt des Hakens, die Liege am Hausbesuch', () => {

@@ -1781,6 +1781,22 @@ eingeklappt.
 
 **Umsetzung (2026-10-20).** Nach der Fotowahl steht das Foto in einem Quadrat, der Kreis zeigt das Bild im Chat. Ziehen oder Pfeiltasten verschieben, „−“, Regler und „+“ vergrößern bis zum Dreifachen, das Quadrat bleibt im Foto (`ProfilbildZuschnitt.tsx`). Ohne Eingriff gilt der bisherige Ausschnitt; gerechnet wird erst beim Speichern, auf dem Gerät (`rechneProfilbild`). Keine neue Abhängigkeit. Tests in `profilbild.test.ts`, `ProfilbildZuschnitt.test.tsx`, `MeinKontoPage.test.tsx` und `tests/e2e/authenticated/profilbild.spec.ts` (Rot/Blau-Foto, Pixel in der Mitte des gespeicherten Bilds).
 
+### BEF-176 — Panne und Einstiege am Lastenrad: Platzhalter statt Anruf, Frage nach dem Wochentag, Weg zur Radflotte
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-17 |
+| Bereich | Radflotte (G3, G4), Hausbesuch (G1) |
+| Quelle  | Praxis- und Design-Review der Überholung 6 |
+| Status  | erledigt 2026-10-21 (Branch `ccr-4626bc96-m83ovf`): Anrufknöpfe ohne Platzhalter, Ruhetag aus dem Datum, Depotfrage geteilt, „Panne melden“ an der Karte des nächsten Wegs und „Schlüssel übergeben“ am Rad, Zusammenfassung kürzer, Ersatzrad in der Meldung, G1 Anruf als Hauptknopf (ANN-673) |
+| Berührt | `src/features/fleet/standortvorlage.ts`, `src/features/fleet/Pannenfenster.tsx`, `src/features/fleet/FleetPage.tsx`, `src/features/appointments/HomeVisitFlow.tsx` |
+
+**Beobachtung.** (1) „Rad zurücklassen“ verlangt den Anruf bei der Werkstatt (Platzhalter „noch nicht hinterlegt“, fest in der Köln-Vorlage) und eine Nachricht im Team-Kanal „Flotte“, den es nicht gibt; die Zusammenfassung lässt beides als erledigt bestätigen. (2) „Ist heute Mittwoch?“ fragt, was die App weiß („Heute ist Freitag.“). (3) „Panne melden“ und „Schlüssel übergeben“ beginnen nur auf der Radflotte, drei Tipps vom Rad entfernt. (4) Die Zusammenfassung der Panne rollt bei 375 × 667; der Satz zum Ersatzrad steht nur dort, nicht in der Meldung danach. (5) G1 Seite „Angerufen?“: der Anrufknopf oben, „Erreicht – Besuch findet statt“ im Daumenbereich direkt unter der Antwort. (6) Zwei Bedingungen in einer Ja/Nein-Frage (Depot), Titel und Kasten wiederholen sich (Reparieren).
+
+**Erwartet.** Mit der Tübinger Vorlage (ANN-554): Werkstatt und Teamleitung als Anrufknopf, die Ruhetagsfrage aus dem Datum, „Panne melden“ an der Karte des nächsten Wegs, die Zusammenfassung kürzer und das Ersatzrad in der Meldung; bei G1 der Anruf als Hauptknopf.
+
+**Vermerk TEAM-001 (2026-10-17).** Statt eines Team-Kanals „Flotte“ hat die Radflotte jetzt die Ansicht „Nachrichten“ (ANN-613); die Panne kann darauf verweisen. Der Rest bleibt offen.
+
 ### BEF-192 — Tag umplanen: Anrufknöpfe über, „Erreicht“ unter dem Daumen; „Anrufen“ ruft nicht an
 
 |         |   |

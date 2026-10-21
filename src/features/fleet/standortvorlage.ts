@@ -1,3 +1,6 @@
+import type { Anrufnummer } from '@/components/ui/Anrufknoepfe';
+import { telHref } from '@/lib/telefon';
+
 /**
  * Standortabhängige Inhalte des Pannenablaufs an einer Stelle.
  *
@@ -56,7 +59,13 @@ export interface Standortvorlage {
   transport: Transportoption[];
   /** Wer bei einer Panne zur Koordination informiert wird - als Rolle, nicht als Person. */
   zustaendigeRolle: string;
-  /** Wo diese Information hingeht. Die Vorlage nannte hier einen externen Dienst. */
+  /** Die Rufnummer dieser Rolle (Diensttelefon), nicht die einer Person (ANN-673). */
+  zustaendigeRufnummer: string;
+  /**
+   * Wo diese Information sonst hingeht. Die Vorlage nannte hier einen
+   * externen Dienst, dann einen Team-Kanal „Flotte“; seit TEAM-001 die
+   * Nachrichten der Radflotte (ANN-613).
+   */
   meldeweg: string;
   /** Was vom Rad mitzunehmen ist, bevor es zurückgelassen wird. */
   mitnehmen: string[];
@@ -80,7 +89,7 @@ export const standortvorlageKoeln: Standortvorlage = {
     'Depot, Transportoptionen und Zuständigkeiten sind Platzhalter und keine ' +
     'freigegebene Betriebsanweisung.',
   werkstatt: {
-    name: `Vertragswerkstatt (${PLATZHALTER})`,
+    name: 'Vertragswerkstatt',
     telefon: PLATZHALTER,
     mobil: PLATZHALTER,
     ruhetag: 'Mittwoch',
@@ -104,7 +113,8 @@ export const standortvorlageKoeln: Standortvorlage = {
     },
   ],
   zustaendigeRolle: 'Teamleitung',
-  meldeweg: 'Team-Kanal „Flotte“',
+  zustaendigeRufnummer: PLATZHALTER,
+  meldeweg: 'Nachrichten der Radflotte',
   mitnehmen: ['Fahrradakku', 'Behandlungsliege'],
 };
 
@@ -112,16 +122,54 @@ export const standortvorlageKoeln: Standortvorlage = {
 export const aktiveStandortvorlage = standortvorlageKoeln;
 
 /**
- * Die Rufnummern der Werkstatt als eine Angabe - `null`, solange keine
- * hinterlegt ist: Dann nennt der Schritt nur die Werkstatt, statt zweimal
- * „noch nicht hinterlegt“ zu wiederholen.
+ * Eine Rufnummer der Vorlage als Knopf zum Wählen - keiner, solange sie ein
+ * Platzhalter ist: Der Schritt sagt dann, dass sie fehlt, statt einen Anruf
+ * zu verlangen, der nicht geht (BEF-176).
  */
-export function werkstattRufnummern(werkstatt: Werkstatt): string | null {
-  const nummern = [
-    werkstatt.telefon === PLATZHALTER ? null : `Telefon: ${werkstatt.telefon}`,
-    werkstatt.mobil === PLATZHALTER ? null : `Mobil: ${werkstatt.mobil}`,
-  ].filter((nummer): nummer is string => nummer !== null);
-  return nummern.length > 0 ? nummern.join(' · ') : null;
+function alsAnruf(label: string, nummer: string): Anrufnummer[] {
+  return nummer === PLATZHALTER || nummer.trim() === ''
+    ? []
+    : [{ label, anzeige: nummer, href: telHref(nummer) }];
+}
+
+/** Die Rufnummern der Werkstatt, Telefon vor Mobil. */
+export function werkstattNummern(werkstatt: Werkstatt): Anrufnummer[] {
+  return [
+    ...alsAnruf('Werkstatt', werkstatt.telefon),
+    ...alsAnruf('Werkstatt mobil', werkstatt.mobil),
+  ];
+}
+
+/** Die Rufnummer der zuständigen Rolle („Teamleitung anrufen“). */
+export function zustaendigeNummern(vorlage: Standortvorlage): Anrufnummer[] {
+  return alsAnruf(vorlage.zustaendigeRolle, vorlage.zustaendigeRufnummer);
+}
+
+const WOCHENTAGE = [
+  'Sonntag',
+  'Montag',
+  'Dienstag',
+  'Mittwoch',
+  'Donnerstag',
+  'Freitag',
+  'Samstag',
+] as const;
+
+/** Der Wochentag eines Zeitpunkts in der Zeit der Praxis, etwa „Mittwoch“. */
+export function wochentag(zeitpunkt: Date, zeitzone: string): string {
+  const kurz = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: zeitzone }).format(
+    zeitpunkt,
+  );
+  const index = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(kurz);
+  return WOCHENTAGE[index] ?? '';
+}
+
+/**
+ * Hat die Werkstatt heute Ruhetag? Die App weiß den Tag - die Panne fragt
+ * nicht danach, sondern verzweigt selbst (BEF-176).
+ */
+export function istRuhetag(vorlage: Standortvorlage, zeitpunkt: Date, zeitzone: string): boolean {
+  return wochentag(zeitpunkt, zeitzone) === vorlage.werkstatt.ruhetag;
 }
 
 export function transportLabel(vorlage: Standortvorlage, id: string): string {

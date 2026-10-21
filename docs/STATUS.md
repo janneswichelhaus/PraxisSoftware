@@ -1,9 +1,13 @@
-# Status · Stand 2026-10-20
+# Status · Stand 2026-10-21
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
+
+BEF-176 (21.10., Branch `ccr-4626bc96-m83ovf`): Panne mit Anrufknöpfen statt Platzhaltern, Ruhetag aus
+dem Datum, Depotfrage geteilt, kürzere Zusammenfassung, Ersatzrad in der Meldung; „Panne melden“ an
+der Karte des nächsten Wegs, „Schlüssel übergeben“ am Rad; G1 Anruf als Hauptknopf (ANN-673).
 
 BEF-192 und BEF-193 (20.10., Branch `ccr-9f54aa20-cgnb8q`): In „Tag umplanen“ ist der Anruf der Hauptknopf im Fuß,
 „Erreicht“ und „Nicht erreicht“ sekundär; „Anrufen“ im Abschluss wählt direkt. Kopf von „Ich“ in
@@ -30,7 +34,7 @@ Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Ru
 
 ## Danach
 
-BEF-176 (Panne und Einstiege am Lastenrad; bei G1 der Anruf als Hauptknopf wie BEF-192).
+BEF-178 (Löschsperre für Beschäftigtendaten, Pfad A; Label `freigabe-audit` an der PR).
 
 ## Bei Jannes
 

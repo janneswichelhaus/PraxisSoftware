@@ -159,6 +159,11 @@ describe('Niemand öffnet - geführt (G1, ANN-573)', () => {
       'href',
       'tel:+491600000005',
     );
+    // Der Anruf ist der Hauptknopf, die Antworten danach sekundär (BEF-176).
+    expect(anruf.getByRole('link', { name: /Mobil anrufen/ })).toHaveClass('bg-accent');
+    expect(anruf.getByRole('button', { name: 'Angerufen, niemand erreicht' })).not.toHaveClass(
+      'bg-accent',
+    );
     fireEvent.click(anruf.getByRole('button', { name: 'Erreicht – Besuch findet statt' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(recordNoShow).not.toHaveBeenCalled();

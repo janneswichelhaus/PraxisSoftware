@@ -41,4 +41,9 @@ describe('Anrufknoepfe (BEF-175)', () => {
     expect(screen.getByText('Keine Rufnummer hinterlegt.')).toBeInTheDocument();
     expect(screen.queryByRole('link')).toBeNull();
   });
+
+  it('zeigt mit `ohneNummer={null}` ohne Nummer nichts (BEF-176)', () => {
+    const { container } = render(<Anrufknoepfe nummern={[]} ohneNummer={null} />);
+    expect(container).toBeEmptyDOMElement();
+  });
 });

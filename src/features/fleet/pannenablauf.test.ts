@@ -7,6 +7,7 @@ import {
   frage,
   gehe,
   kannZurueck,
+  weiche,
   zurueck,
   zusammenfassungspunkte,
   type Abschlusskontext,
@@ -57,8 +58,10 @@ describe('Pannenablauf – Verzweigungen', () => {
     ['werkstattNah', 'Ja', 'werkstattVorOrt'],
     ['werkstattNah', 'Nein', 'ruhetag'],
     ['werkstattVorOrt', 'Ja', 'werkstattReparieren'],
-    ['ruhetag', 'Ja', 'depotErreichbar'],
+    ['ruhetag', 'Ja', 'letzteBehandlung'],
     ['ruhetag', 'Nein', 'vertragswerkstattNah'],
+    ['letzteBehandlung', 'Ja', 'depotErreichbar'],
+    ['letzteBehandlung', 'Nein', 'radZuruecklassen'],
     ['depotErreichbar', 'Ja', 'depotBringen'],
     ['depotErreichbar', 'Nein', 'radZuruecklassen'],
     ['fuehrerschein', 'Ja', 'fahrzeugErreichbar'],
@@ -86,6 +89,7 @@ describe('Pannenablauf – Verzweigungen', () => {
       'werkstattVorOrt',
       'werkstattReparieren',
       'ruhetag',
+      'letzteBehandlung',
       'depotErreichbar',
       'depotBringen',
       'radZuruecklassen',
@@ -106,6 +110,17 @@ describe('Pannenablauf – Verzweigungen', () => {
     expect(frage('ruhetag', vorlage)).toContain(vorlage.werkstatt.ruhetag);
     const andere = { ...vorlage, werkstatt: { ...vorlage.werkstatt, ruhetag: 'Montag' } };
     expect(frage('ruhetag', andere)).toContain('Montag');
+  });
+
+  it('beantwortet die Ruhetagsweiche aus dem Tag, statt zu fragen (BEF-176)', () => {
+    expect(weiche('ruhetag', true)).toBe('letzteBehandlung');
+    expect(weiche('ruhetag', false)).toBe('vertragswerkstattNah');
+    expect(weiche('werkstattNah', true)).toBe('werkstattNah');
+  });
+
+  it('fragt je Seite nur eine Bedingung (BEF-176)', () => {
+    expect(frage('letzteBehandlung', vorlage)).not.toContain(' und ');
+    expect(frage('depotErreichbar', vorlage)).not.toContain(' und ');
   });
 });
 
@@ -176,9 +191,23 @@ describe('Pannenablauf – Abschluesse', () => {
     const punkteUebergabe = zusammenfassungspunkte(kontext(uebergabe));
 
     expect(punkteZuruecklassen.join(' ')).toContain('Hinterhof Beispielweg 3');
-    expect(punkteZuruecklassen.join(' ')).toContain('angekettet');
-    expect(punkteUebergabe.join(' ')).not.toContain('angekettet');
+    expect(punkteZuruecklassen.join(' ')).toContain('Carsharing');
     expect(punkteUebergabe.join(' ')).toContain(vorlage.werkstatt.name);
+  });
+
+  it('bestaetigt keine Anrufe und Handgriffe als erledigt (BEF-176)', () => {
+    const zustand = {
+      ...ablaufStarten('r1'),
+      herkunft: 'zuruecklassen' as const,
+      standort: 'Hinterhof Beispielweg 3',
+      transport: 'fahrdienst',
+    };
+    const punkte = zusammenfassungspunkte(kontext(zustand));
+    expect(punkte).toHaveLength(3);
+    expect(punkte.join(' ')).not.toMatch(/informiert|angekettet|entfernt/);
+    expect(abschluss('transportFortsetzung', kontext(zustand)).text).not.toMatch(
+      /informiert|durchgegeben|angekettet/,
+    );
   });
 
   it('benennt einen fehlenden Standort, statt ihn zu verschweigen', () => {
@@ -235,11 +264,11 @@ describe('Pannenablauf – Abschluesse', () => {
 describe('Pannenablauf – Wortlaut', () => {
   it('siezt und betont ohne Versalien (VOR-08, WRT-13)', () => {
     expect(frage('fuehrerschein', vorlage)).toBe('Haben Sie einen Autoführerschein?');
-    expect(frage('depotErreichbar', vorlage)).toContain('letzte Behandlung am Tag und ist');
+    expect(frage('letzteBehandlung', vorlage)).toBe('War das die letzte Behandlung am Tag?');
   });
 
   it('spricht in Frage und Abschluss von Behandlung, nicht von Therapie', () => {
-    expect(frage('depotErreichbar', vorlage)).not.toMatch(/Therapie|UND/);
+    expect(frage('letzteBehandlung', vorlage)).not.toMatch(/Therapie|UND/);
     expect(abschluss('depotAbgestellt', kontext()).text).toContain('letzte Behandlung des Tages');
   });
 });

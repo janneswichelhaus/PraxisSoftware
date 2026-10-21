@@ -23,6 +23,7 @@ export type SchrittId =
   | 'werkstattVorOrt'
   | 'werkstattReparieren'
   | 'ruhetag'
+  | 'letzteBehandlung'
   | 'depotErreichbar'
   | 'depotBringen'
   | 'radZuruecklassen'
@@ -149,9 +150,16 @@ export function antworten(schritt: SchrittId): Antwort[] {
     case 'werkstattVorOrt':
       return [{ label: 'Ja', ziel: 'werkstattReparieren' }];
     case 'ruhetag':
+      // Eine Weiche, keine Frage: Den Tag weiß die App (`weiche`, BEF-176).
+      return [
+        { label: 'Ja', ziel: 'letzteBehandlung' },
+        { label: 'Nein', ziel: 'vertragswerkstattNah' },
+      ];
+    // Bis BEF-176 eine Frage mit zwei Bedingungen; jetzt je Bedingung eine.
+    case 'letzteBehandlung':
       return [
         { label: 'Ja', ziel: 'depotErreichbar' },
-        { label: 'Nein', ziel: 'vertragswerkstattNah' },
+        { label: 'Nein', ziel: 'radZuruecklassen' },
       ];
     case 'depotErreichbar':
       return [
@@ -175,6 +183,17 @@ export function antworten(schritt: SchrittId): Antwort[] {
   }
 }
 
+/**
+ * Schritte, die der Ablauf selbst beantwortet: „Ist heute Ruhetag?“ aus dem
+ * Datum (BEF-176). Die Verzweigung bleibt in der Tabelle; angezeigt wird die
+ * Weiche nie, sie steht deshalb auch nicht im Verlauf.
+ */
+export function weiche(ziel: SchrittId, heuteRuhetag: boolean): SchrittId {
+  if (ziel !== 'ruhetag') return ziel;
+  const [ja, nein] = antworten('ruhetag');
+  return (heuteRuhetag ? ja : nein)?.ziel ?? ziel;
+}
+
 export function frage(schritt: SchrittId, vorlage: Standortvorlage): string {
   switch (schritt) {
     case 'radwahl':
@@ -193,8 +212,10 @@ export function frage(schritt: SchrittId, vorlage: Standortvorlage): string {
       return 'Rad vor Ort reparieren lassen.';
     case 'ruhetag':
       return `Ist heute ${vorlage.werkstatt.ruhetag}?`;
+    case 'letzteBehandlung':
+      return 'War das die letzte Behandlung am Tag?';
     case 'depotErreichbar':
-      return `War das die letzte Behandlung am Tag und ist das ${vorlage.depot.bezeichnung} 15–30 Minuten entfernt?`;
+      return `Ist das ${vorlage.depot.bezeichnung} 15–30 Minuten entfernt?`;
     case 'depotBringen':
       return `Lastenrad ins ${vorlage.depot.bezeichnung} bringen.`;
     case 'radZuruecklassen':
@@ -284,14 +305,15 @@ export function abschluss(art: Abschlussart, kontext: Abschlusskontext): Abschlu
             'das Rad wieder freigibt.',
         };
       }
+      // Nur, was feststeht (VOR-08, BEF-176): Ob Werkstatt und Teamleitung
+      // erreicht wurden, weiß die App nicht - der Verlauf behauptet es nicht.
       return {
         art,
         sperrt: true,
         text:
           `Fahrrad zurückgelassen${zustand.standort.trim() ? ` – Standort: ${zustand.standort.trim()}` : ''}. ` +
-          `Standort an ${vorlage.werkstatt.name} durchgegeben, ${rolle} über ${vorlage.meldeweg} ` +
-          `informiert. ${vorlage.mitnehmen.join(' und ')} entfernt, Rad angekettet. ${transport}. ` +
-          `Ab dem nächsten Werktag wird ${ersatzrad} genutzt, bis die ${rolle} das Rad wieder freigibt.`,
+          `${transport}. Ab dem nächsten Werktag wird ${ersatzrad} genutzt, bis die ${rolle} ` +
+          'das Rad wieder freigibt.',
       };
     }
   }
@@ -307,7 +329,12 @@ export interface Zusammenfassungszeile {
   aendern?: SchrittId;
 }
 
-/** Die Zeilen der Zusammenfassung vor dem Abschluss. */
+/**
+ * Die Zeilen der Zusammenfassung vor dem Abschluss: nur die Angaben und die
+ * Folge. Anrufe und Handgriffe stehen auf der Seite davor als Anweisung und
+ * werden hier nicht als erledigt bestätigt (BEF-176) - so passt die
+ * Zusammenfassung bei 375 × 667 ohne Rollen.
+ */
 export function zusammenfassungszeilen(kontext: Abschlusskontext): Zusammenfassungszeile[] {
   const { vorlage, ersatzrad, zustand } = kontext;
   const transport: Zusammenfassungszeile = {
@@ -329,9 +356,6 @@ export function zusammenfassungszeilen(kontext: Abschlusskontext): Zusammenfassu
       text: `Standort: ${zustand.standort.trim() || '– nicht angegeben –'}`,
       aendern: 'radZuruecklassen',
     },
-    { text: `Werkstatt informiert: ${vorlage.werkstatt.name}` },
-    { text: `${vorlage.zustaendigeRolle} über ${vorlage.meldeweg} informiert` },
-    { text: `${vorlage.mitnehmen.join(' und ')} entfernt, Rad angekettet` },
     transport,
     { text: ersatz },
   ];
