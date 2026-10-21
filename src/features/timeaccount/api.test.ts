@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Zeitkonto: Antworten des Servers in Sätzen der Praxis (BEF-180).
+ * Zeitkonto: Antworten des Servers in Sätzen der Praxis und die schmale
+ * Abfrage für die Übersicht (BEF-179, BEF-180).
  */
 
 const rpc = vi.fn();
 vi.mock('@/lib/supabase', () => ({ getSupabase: () => ({ rpc }) }));
 
-const { withdrawEntry } = await import('./api');
+const { fetchRejectedTimeOff, withdrawEntry } = await import('./api');
 
 beforeEach(() => {
   rpc.mockReset();
@@ -32,6 +33,22 @@ describe('withdrawEntry (BEF-180)', () => {
     });
     await expect(withdrawEntry('eintrag-1')).rejects.toThrow(
       'Diesen Eintrag gibt es nicht mehr, oder er ist schon zurückgenommen oder zurückgewiesen.',
+    );
+  });
+});
+
+describe('fetchRejectedTimeOff (BEF-179)', () => {
+  it('liest Tag und Zeiten der eigenen Zurückweisungen ohne Angaben', async () => {
+    const zeilen = [{ id: 'z1', on_date: '2026-10-22', starts_at: '08:00', ends_at: '10:00' }];
+    rpc.mockResolvedValueOnce({ data: zeilen, error: null });
+    await expect(fetchRejectedTimeOff()).resolves.toEqual(zeilen);
+    expect(rpc).toHaveBeenCalledWith('list_rejected_time_off', {});
+  });
+
+  it('wirft bei unerwarteter Form einen Satz statt der Zod-Meldung', async () => {
+    rpc.mockResolvedValueOnce({ data: [{ id: 'z1' }], error: null });
+    await expect(fetchRejectedTimeOff()).rejects.toThrow(
+      'Zurückgewiesene Freizeitausgleiche konnten nicht geladen werden.',
     );
   });
 });

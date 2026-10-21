@@ -6972,3 +6972,15 @@ Recht · offen · 2026-10-21 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 **Anker.** `public.place_staff_legal_hold` und die vier Löschregeln in `20261223200000_bef_178_loeschsperre_beschaeftigte.sql`.
 
 **Änderungspfad.** Teamchat oder Radflotte dazu: die Prüfung in deren Löschregel · Aufwand `klein`.
+
+### ANN-675 — Zeitkonto: Zurückweisung in der Übersicht ohne Grund, nur beim Freizeitausgleich
+
+Datenschutz · offen · 2026-10-21 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Ein zurückgewiesener Freizeitausgleich steht bei der Person in der Übersicht unter „noch offen“, bis sein Tag vorbei ist: Tag und Zeiten, ohne Grund und ohne wer; die Zeile führt ins Zeitkonto. Zurückgewiesene Überstunden und Minusstunden stehen dort nicht. Keine Benachrichtigung, kein Push, kein „gelesen“.
+
+**Begründung.** BEF-179, Entscheidung Jannes 2026-10-17. Die Übersicht steht in der Halterung, auch vor Patient:innen; sie zeigt, was der nächste Schritt braucht (PROJECT_PRINCIPLES.md 2.2), der Grund ist einen Tipp weiter. Nur der Freizeitausgleich ändert den Tag (ANN-595).
+
+**Anker.** `public.list_rejected_time_off`, `src/features/today/NochOffen.tsx`.
+
+**Änderungspfad.** Grund in der Übersicht: ein Feld in `list_rejected_time_off` und in der Zeile · Aufwand `klein`.

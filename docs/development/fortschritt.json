@@ -1242,6 +1242,15 @@
           "vermerk": "ANN-674; ohne Auditeintrag, Katalog unverändert"
         },
         {
+          "id": "bef-179-180",
+          "name": "BEF-179 und BEF-180 Zeitkonto: Zurückweisung unter „noch offen“ in der Übersicht, Freizeitausgleich am Tag selbst zurücknehmen",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-21",
+          "nachweis": "Branch ccr-fc77ad4b-t5zz1m, Migrationen 20261223210000_bef_180_zuruecknehmen_am_tag.sql und 20261223220000_bef_179_zurueckweisung_in_der_uebersicht.sql, supabase/tests/time-account.test.ts, src/features/today/NochOffen.test.tsx, src/features/today/MyDayPage.test.tsx, src/features/timeaccount/api.test.ts, Bildstrecke vorher/nachher, Zweitreview",
+          "vermerk": "ANN-594 geändert, ANN-675; ohne Auditeintrag und ohne Benachrichtigung"
+        },
+        {
           "id": "bef-191",
           "name": "BEF-191 Teamchat: neues Profilbild an Nachrichten, die schon dastehen",
           "gewicht": 1,

@@ -43,6 +43,7 @@ const VORSCHAU =
 const ZURUECKNEHMEN = 'select public.withdraw_time_account_entry($1::uuid)';
 const ZURUECKWEISEN = 'select public.reject_time_account_entry($1::uuid, $2) as daten';
 const KONTO = 'select public.list_time_account($1::uuid) as daten';
+const ZURUECKGEWIESEN = 'select public.list_rejected_time_off() as daten';
 const BEGONNEN = 'select app.time_off_started($1::date, $2::time, $3, $4::timestamptz) as ja';
 const ABGEDECKT =
   'select app.is_within_working_hours($1::uuid, $2::uuid, $3::date, $4::time, $5::time) as ja';
@@ -873,6 +874,65 @@ describe('Zurücknehmen am Tag selbst (BEF-180)', () => {
       [begonnen],
     );
     expect(rows[0]!.status).toBe('valid');
+  });
+});
+
+describe('Zurückweisung in der Übersicht (BEF-179)', () => {
+  interface Zeile {
+    id: string;
+    on_date: string;
+    starts_at: string;
+    ends_at: string;
+  }
+
+  it('nennt der Person ihre zurückgewiesenen Freizeitausgleiche, bis ihr Tag vorbei ist - ohne Grund', async () => {
+    const tag = werktagNach(8);
+    const frei = await eingetragen(users.therapist, null, 'time_off', tag, '16:00', '18:00');
+    await asUserCommitted(users.ownerTherapist, ZURUECKWEISEN, [frei.id, 'Teamsitzung.']);
+    const heute = await freizeitDirekt(HEUTE, '08:00', '09:00', 'rejected');
+
+    // Was nicht in die Übersicht gehört: ein vergangener Tag, ein gültiger,
+    // ein zurückgenommener Freizeitausgleich und zurückgewiesene Überstunden.
+    await freizeitDirekt(werktagVorHeute(), '16:00', '18:00', 'rejected');
+    await freizeitDirekt(werktagNach(9), '16:00', '18:00', 'withdrawn');
+    await eingetragen(users.therapist, null, 'time_off', werktagNach(10), '16:00', '18:00');
+    const mehr = await eingetragen(users.therapist, null, 'overtime', HEUTE, '22:00', '23:00');
+    await asUserCommitted(users.ownerTherapist, ZURUECKWEISEN, [mehr.id, 'Nicht abgesprochen.']);
+
+    const liste = await daten<Zeile[]>(users.therapist, ZURUECKGEWIESEN);
+    expect(liste).toEqual([
+      { id: heute, on_date: HEUTE, starts_at: '08:00', ends_at: '09:00' },
+      { id: frei.id, on_date: tag, starts_at: '16:00', ends_at: '18:00' },
+    ]);
+    // Nur Tag und Zeiten: Den Grund und wer zurückgewiesen hat, liest das
+    // Zeitkonto.
+    for (const zeile of liste) {
+      expect(Object.keys(zeile).sort()).toEqual(['ends_at', 'id', 'on_date', 'starts_at']);
+    }
+  });
+
+  it('zeigt jeder Person nur ihr eigenes Konto', async () => {
+    const tag = werktagNach(8);
+    const frei = await eingetragen(users.therapist, null, 'time_off', tag, '16:00', '18:00');
+    await asUserCommitted(users.ownerTherapist, ZURUECKWEISEN, [frei.id, 'Teamsitzung.']);
+
+    // Wer zurückweist oder fremde Konten sieht, liest hier trotzdem nur sein
+    // eigenes; ebenso Teamleitung und Trainingsbetreuung.
+    for (const k of [users.ownerTherapist, users.office, users.teamLead, users.trainer]) {
+      expect(await daten<Zeile[]>(k, ZURUECKGEWIESEN), k).toEqual([]);
+    }
+    const fremd = await fremdeOrganisation();
+    expect(await daten<Zeile[]>(fremd.owner, ZURUECKGEWIESEN)).toEqual([]);
+  });
+
+  it('weist Patienten-, Plattformkonten und Anonyme ab; Tabellenrecht gibt es nicht', async () => {
+    for (const k of [users.patientMax, users.plattformTina, null]) {
+      expect((await fehler(k, ZURUECKGEWIESEN))?.code, `${k}`).toBe('42501');
+    }
+    const { rows } = await asPostgres<{ anon: boolean }>(
+      "select has_function_privilege('anon', 'public.list_rejected_time_off()', 'execute') as anon",
+    );
+    expect(rows[0]!.anon).toBe(false);
   });
 });
 

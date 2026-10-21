@@ -135,6 +135,63 @@ describe('Nachzuholen (Auftrag C1, ANN-478)', () => {
   });
 });
 
+describe('NochOffen: zurückgewiesener Freizeitausgleich (BEF-179)', () => {
+  const morgen = tagePlus(HEUTE, 1);
+  const spaeter = '2026-10-22';
+
+  it('steht unter den Besuchen, bis sein Tag vorbei ist - ohne Grund, die Zeile führt ins Zeitkonto', async () => {
+    renderMitVorschau(
+      <NochOffen
+        plan={[eintrag({ id: 'doku-offen' })]}
+        tagWort="Heute"
+        heute={HEUTE}
+        darfDokumentieren
+        jetzt={Date.parse('2026-10-13T18:00:00.000Z')}
+        zeitzone={ZONE}
+        zurueckgewiesen={[
+          { id: 'z-heute', on_date: HEUTE, starts_at: '16:00', ends_at: '18:00' },
+          { id: 'z-morgen', on_date: morgen, starts_at: '08:00', ends_at: '10:00' },
+          { id: 'z-spaeter', on_date: spaeter, starts_at: '13:00', ends_at: '14:30' },
+        ]}
+      />,
+    );
+    const abschnitt = (
+      await screen.findByRole('heading', { name: 'Heute noch offen (4)' })
+    ).closest('section')!;
+    const zeilen = within(abschnitt).getAllByRole('listitem');
+    expect(zeilen).toHaveLength(4);
+    // Erst die Besuche, wie bisher (K15).
+    expect(zeilen[0]).toHaveTextContent('Erika Beispiel');
+    expect(zeilen[1]).toHaveTextContent('16:00Freizeitausgleich zurückgewiesen');
+    expect(zeilen[1]).toHaveTextContent('Heute · 16:00–18:00 wieder Arbeitszeit');
+    expect(zeilen[2]).toHaveTextContent('Morgen · 08:00–10:00 wieder Arbeitszeit');
+    expect(zeilen[3]).toHaveTextContent('Am Do., 22.10. · 13:00–14:30 wieder Arbeitszeit');
+    for (const zeile of zeilen.slice(1)) {
+      expect(within(zeile).getByRole('link')).toHaveAttribute('href', '/betrieb/zeitkonto');
+      expect(within(zeile).queryByRole('button')).toBeNull();
+    }
+  });
+
+  it('steht auch allein, wenn an den Besuchen nichts fehlt', async () => {
+    renderMitVorschau(
+      <NochOffen
+        plan={[eintrag({ status: 'documented', documentation_status: 'final' })]}
+        tagWort="Heute"
+        heute={HEUTE}
+        darfDokumentieren
+        jetzt={Date.parse('2026-10-13T18:00:00.000Z')}
+        zeitzone={ZONE}
+        zurueckgewiesen={[{ id: 'z', on_date: morgen, starts_at: '08:00', ends_at: '10:00' }]}
+      />,
+    );
+    const abschnitt = (
+      await screen.findByRole('heading', { name: 'Heute noch offen (1)' })
+    ).closest('section')!;
+    expect(within(abschnitt).getAllByRole('listitem')).toHaveLength(1);
+    expect(abschnitt).toHaveTextContent('Freizeitausgleich zurückgewiesen');
+  });
+});
+
 describe('NochOffen (Auftrag C1, B4, B7)', () => {
   it('nennt eine festgeschriebene Doku ohne Haken „Haken fehlt“ und bietet den Haken an', async () => {
     renderMitVorschau(
@@ -156,6 +213,7 @@ describe('NochOffen (Auftrag C1, B4, B7)', () => {
           }),
         ]}
         tagWort="Heute"
+        heute={HEUTE}
         darfDokumentieren
         jetzt={Date.parse('2026-10-12T18:00:00.000Z')}
         zeitzone={ZONE}
@@ -193,6 +251,7 @@ describe('NochOffen (Auftrag C1, B4, B7)', () => {
           }),
         ]}
         tagWort="Heute"
+        heute={HEUTE}
         darfDokumentieren
         jetzt={Date.parse('2026-10-12T18:00:00.000Z')}
         zeitzone={ZONE}
@@ -213,6 +272,7 @@ describe('NochOffen (Auftrag C1, B4, B7)', () => {
       <NochOffen
         plan={[eintrag({ id: 'a', documentation_status: 'draft' })]}
         tagWort="Heute"
+        heute={HEUTE}
         darfDokumentieren={false}
         jetzt={Date.parse('2026-10-12T18:00:00.000Z')}
         zeitzone={ZONE}
