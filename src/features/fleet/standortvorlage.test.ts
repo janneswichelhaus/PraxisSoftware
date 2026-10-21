@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { standortvorlageKoeln, werkstattRufnummern } from './standortvorlage';
+import {
+  istRuhetag,
+  standortvorlageKoeln,
+  werkstattNummern,
+  wochentag,
+  zustaendigeNummern,
+} from './standortvorlage';
 
 /**
  * Die Standortvorlage des Pannenablaufs (bis FLT-EPIC-001 in
@@ -26,18 +32,26 @@ describe('Standortvorlage', () => {
     expect(werte).toMatch(/nicht hinterlegt|nicht in der Anwendung gespeichert/);
   });
 
-  it('nennt Rufnummern erst, wenn eine hinterlegt ist', () => {
-    expect(werkstattRufnummern(standortvorlageKoeln.werkstatt)).toBeNull();
+  it('waehlt erst, wenn eine Rufnummer hinterlegt ist (BEF-176)', () => {
+    expect(werkstattNummern(standortvorlageKoeln.werkstatt)).toEqual([]);
+    expect(zustaendigeNummern(standortvorlageKoeln)).toEqual([]);
     expect(
-      werkstattRufnummern({ ...standortvorlageKoeln.werkstatt, telefon: '07071 000000' }),
-    ).toBe('Telefon: 07071 000000');
+      werkstattNummern({ ...standortvorlageKoeln.werkstatt, telefon: '07071 000000' }),
+    ).toEqual([{ label: 'Werkstatt', anzeige: '07071 000000', href: 'tel:07071000000' }]);
     expect(
-      werkstattRufnummern({
-        ...standortvorlageKoeln.werkstatt,
-        telefon: '07071 000000',
-        mobil: '0170 0000000',
-      }),
-    ).toBe('Telefon: 07071 000000 · Mobil: 0170 0000000');
+      zustaendigeNummern({ ...standortvorlageKoeln, zustaendigeRufnummer: '0170 0000000' }),
+    ).toEqual([{ label: 'Teamleitung', anzeige: '0170 0000000', href: 'tel:01700000000' }]);
+  });
+
+  it('kennt den Ruhetag aus dem Datum in der Zeit der Praxis (BEF-176)', () => {
+    // Mittwoch, 21.10.2026, 00:30 in Berlin - in UTC noch Dienstag.
+    const kurzNachMitternacht = new Date('2026-10-20T22:30:00Z');
+    expect(wochentag(kurzNachMitternacht, 'Europe/Berlin')).toBe('Mittwoch');
+    expect(wochentag(kurzNachMitternacht, 'UTC')).toBe('Dienstag');
+    expect(istRuhetag(standortvorlageKoeln, kurzNachMitternacht, 'Europe/Berlin')).toBe(true);
+    expect(
+      istRuhetag(standortvorlageKoeln, new Date('2026-10-23T10:00:00Z'), 'Europe/Berlin'),
+    ).toBe(false);
   });
 
   it('benennt Zustaendigkeit als Rolle, nicht als Person', () => {

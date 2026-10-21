@@ -12,7 +12,7 @@ export interface Anrufnummer {
  * Die Rufnummern einer Person als Knöpfe, je Nummer einer - groß genug für
  * den Daumen, denn Kontakt ist eine Aktion (BEF-175). Ein `tel:`-Link in
  * Gestalt eines Knopfs: „Mobil anrufen“ mit der Nummer daneben. Ohne Nummer
- * steht `ohneNummer` da, sonst „Keine Rufnummer hinterlegt.“
+ * steht `ohneNummer` da, sonst „Keine Rufnummer hinterlegt.“; `null` zeigt nichts.
  *
  * Mit `hauptknopf` ist die erste Nummer der Hauptknopf einer Seite, deren
  * Haupthandlung der Anruf ist, die übrigen bleiben sekundär (BEF-192).
@@ -31,7 +31,12 @@ export function Anrufknoepfe({
   ohneNummer?: ReactNode;
 }) {
   if (nummern.length === 0) {
-    return ohneNummer ?? <p className="text-ink-muted text-sm">Keine Rufnummer hinterlegt.</p>;
+    // `null` heißt: nichts zeigen - die Seite sagt es schon (BEF-176).
+    return ohneNummer === undefined ? (
+      <p className="text-ink-muted text-sm">Keine Rufnummer hinterlegt.</p>
+    ) : (
+      ohneNummer
+    );
   }
   return (
     <div className="flex flex-col gap-2">

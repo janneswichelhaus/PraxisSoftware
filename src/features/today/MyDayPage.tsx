@@ -773,9 +773,23 @@ function MeinTag({
     // Weg, „Ausfall“ ab dem Beginn (Auftrag C1, Analyse Rang 9; B12) - am
     // Hausbesuch derselbe Ablauf wie im Terminfenster, an der Tür mit der Uhr.
     // Eine Verspätung gibt es nur heute; an einem künftigen Tag wartet alles.
+    // Auf dem Weg zum Hausbesuch auch „Panne melden“: Wer mit dem Lastenrad
+    // liegen bleibt, beginnt hier, nicht drei Tipps entfernt in der Radflotte
+    // (BEF-176). Das Rad wählt die Seite danach, das eigene vorbelegt.
     const nebenaktionen =
       fokus.art !== 'besuch' || !istHeute ? null : phase === 'wartet' ? (
-        <SpaeterDa termin={termin} praxis={praxis} />
+        <>
+          <SpaeterDa termin={termin} praxis={praxis} />
+          {termin.appointment_type === 'home_visit' ? (
+            <ButtonLink
+              to={mitRueckweg('/betrieb/flotte/panne', '/')}
+              variant="quiet"
+              groesse="kompakt"
+            >
+              Panne melden
+            </ButtonLink>
+          ) : null}
+        </>
       ) : (
         ausfall(termin, 'tuer')
       );

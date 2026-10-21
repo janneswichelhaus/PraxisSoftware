@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { Anrufknoepfe, type Anrufnummer } from '@/components/ui/Anrufknoepfe';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
@@ -41,7 +42,12 @@ import {
 import { ersatzradName } from './rad';
 import { Stellenbuehne, Stellenflaeche } from './Stellenerfassung';
 import { useStellenerfassung, type Stelle } from './stellen';
-import { aktiveStandortvorlage, werkstattRufnummern } from './standortvorlage';
+import {
+  aktiveStandortvorlage,
+  istRuhetag,
+  werkstattNummern,
+  zustaendigeNummern,
+} from './standortvorlage';
 
 /**
  * Die Panne im Fenster des geführten Ablaufs (Überholung 6, G3; vorher eine
@@ -68,11 +74,14 @@ export function Pannenfenster({
   flotte,
   detail,
   zurueck,
+  zeitzone,
 }: {
   flotte: Fleet;
   detail: BikeDetail;
   /** Wohin ✕ führt: dorthin, woher die Panne geöffnet wurde. */
   zurueck: string;
+  /** Die Zeit der Praxis: Ihr Wochentag entscheidet die Ruhetagsweiche. */
+  zeitzone: string;
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -82,6 +91,8 @@ export function Pannenfenster({
   const offen = detail.spots.filter((spot) => spot.resolved_at === null);
 
   const [ablauf, setAblauf] = useState<Ablaufzustand>(() => ablaufStarten(bike.id));
+  // Der Tag beim Öffnen gilt für die ganze Panne, auch über Mitternacht.
+  const [heuteRuhetag] = useState(() => istRuhetag(vorlage, new Date(), zeitzone));
   // „Wo ist der Schaden?“ liegt vor dem Ablauf der Vorlage.
   const [amRad, setAmRad] = useState(true);
   const erfassung = useStellenerfassung({ art: 'panne' });
@@ -129,8 +140,11 @@ export function Pannenfenster({
         )
         .filter((auftrag) => auftrag.spotId !== null);
       const uebertragung = await uebertrageFotos(auftraege);
+      // Das Ersatzrad steht auch in der Meldung danach, nicht nur in der
+      // Zusammenfassung (BEF-176).
       const satz = meldung.blocked
-        ? `Panne gemeldet. ${bike.name} ist in Reparatur und steht nicht mehr in der Planung.`
+        ? `Panne gemeldet. ${bike.name} ist in Reparatur und steht nicht mehr in der Planung.` +
+          (bike.is_spare ? '' : ` Bis zur Freigabe ${ersatzrad} nutzen.`)
         : `Panne gemeldet. ${bike.name} bleibt in der Planung.`;
       return { satz, anzahl: auftraege.length, ...uebertragung };
     },
@@ -217,7 +231,7 @@ export function Pannenfenster({
       return;
     }
     melden.reset();
-    setAblauf((aktuell) => weiterMit(aktuell, wirkung, textAusStellen(stellen)));
+    setAblauf((aktuell) => weiterMit(aktuell, wirkung, textAusStellen(stellen), heuteRuhetag));
   }
 
   const kopf = {
@@ -386,16 +400,6 @@ function textAusStellen(stellen: readonly Stelle[]): string {
     .join('; ');
 }
 
-const wochentagNamen = [
-  'Sonntag',
-  'Montag',
-  'Dienstag',
-  'Mittwoch',
-  'Donnerstag',
-  'Freitag',
-  'Samstag',
-];
-
 /** Wo der Fokus auf einer Seite der Vorlage beginnt. */
 type Fokus = 'feld' | 'anfang' | 'antwort';
 
@@ -405,15 +409,14 @@ type Fokus = 'feld' | 'anfang' | 'antwort';
  */
 const ANFANG = { tabIndex: -1, 'data-autofocus': true } as const;
 
-/** Ein Hinweis im Schritt als Zeile auf Fläche, ohne Rahmen (Leitfaden L2). */
-function Hinweiskasten({ anfang = false, children }: { anfang?: boolean; children: ReactNode }) {
+/**
+ * Wen der Schritt anruft, als Knöpfe; ohne hinterlegte Rufnummer ein Satz
+ * statt eines Anrufs, der nicht geht (BEF-176, ANN-554).
+ */
+function Anrufe({ nummern, fehlt }: { nummern: Anrufnummer[]; fehlt: string }) {
+  // In Tinte, nicht als Kleingedrucktes: Es sagt, was für die Handlung fehlt.
   return (
-    <div
-      {...(anfang ? ANFANG : {})}
-      className="rounded-card bg-accent-soft text-accent px-4 py-3 text-sm focus:outline-none"
-    >
-      {children}
-    </div>
+    <Anrufknoepfe nummern={nummern} ohneNummer={<p className="text-ink text-sm">{fehlt}</p>} />
   );
 }
 
@@ -446,9 +449,10 @@ function Schrittinhalt({
   onAendern: (ziel: SchrittId | 'schaden') => void;
 }) {
   const vorlage = aktiveStandortvorlage;
-  const rufnummern = werkstattRufnummern(vorlage.werkstatt);
+  const werkstatt = werkstattNummern(vorlage.werkstatt);
+  const zustaendig = zustaendigeNummern(vorlage);
+  const rolle = vorlage.zustaendigeRolle;
   const anfang = fokus === 'anfang';
-  const heuteName = wochentagNamen[new Date().getDay()] ?? '';
 
   switch (ablauf.schritt) {
     case 'weiterfahrtMoeglich':
@@ -478,21 +482,20 @@ function Schrittinhalt({
       );
 
     case 'werkstattReparieren':
+      // Der Titel sagt schon „reparieren lassen“; kein Kasten, der ihn
+      // wiederholt (BEF-176).
       return (
-        <div className="flex flex-col gap-3">
-          <Hinweiskasten anfang={anfang}>Rad bitte vor Ort reparieren lassen.</Hinweiskasten>
-          <p className="text-ink text-liste">
-            Behandlung, die nicht mehr zu schaffen ist, telefonisch absagen. Eintrag im Kalender und
-            kurze Information an Praxismanagement und {vorlage.zustaendigeRolle}.
-          </p>
-        </div>
+        <p {...(anfang ? ANFANG : {})} className="text-ink text-liste focus:outline-none">
+          Behandlung, die nicht mehr zu schaffen ist, telefonisch absagen. Eintrag im Kalender und
+          kurze Information an Praxismanagement und {rolle}.
+        </p>
       );
 
-    case 'ruhetag':
+    case 'letzteBehandlung':
+      // Hierher führt nur der Ruhetag - die App weiß ihn (BEF-176).
       return (
         <p className="text-ink-muted text-sm">
-          {vorlage.werkstatt.name} hat {vorlage.werkstatt.ruhetag}s geschlossen.
-          {heuteName ? ` Heute ist ${heuteName}.` : ''}
+          Heute ist {vorlage.werkstatt.ruhetag}: Ruhetag der {vorlage.werkstatt.name}.
         </p>
       );
 
@@ -500,9 +503,9 @@ function Schrittinhalt({
       return (
         <div className="flex flex-col gap-3">
           <p {...(anfang ? ANFANG : {})} className="text-ink text-liste focus:outline-none">
-            {vorlage.zustaendigeRolle} kurz über den Schaden informieren, damit die Reparatur
-            koordiniert werden kann.
+            {rolle} kurz über den Schaden informieren, damit die Reparatur koordiniert werden kann.
           </p>
+          <Anrufe nummern={zustaendig} fehlt={`Rufnummer der ${rolle} noch nicht hinterlegt.`} />
           <p className="text-ink text-liste">
             Bis auf Weiteres bitte <strong>{ersatzrad}</strong> nutzen – so lange, bis das defekte
             Rad wieder freigegeben ist.
@@ -528,18 +531,17 @@ function Schrittinhalt({
               setAblauf((aktuell) => ({ ...aktuell, standort: event.target.value }))
             }
           />
-          {/* Fließend statt mit Umbruch, ein Absatz statt zwei, ohne Zeile
-              für fehlende Rufnummern und ein einzeiliger Feldhinweis: So
-              steht der längste Schritt bei 375 × 667 mit Luft ohne Rollen -
-              auch mit Schriften, die eine Zeile früher umbrechen (CI). */}
-          <Hinweiskasten>
-            Standort telefonisch an {vorlage.werkstatt.name} durchgeben.
-            {rufnummern ? ` ${rufnummern}` : null}
-          </Hinweiskasten>
+          {/* Werkstatt und Teamleitung als Anruf, nicht als Aufgabe, die
+              die Zusammenfassung abhakt (BEF-176). Ohne Rufnummer ein
+              Satz - so steht der längste Schritt bei 375 × 667 ohne Rollen. */}
+          <Anrufe
+            nummern={[...werkstatt, ...zustaendig]}
+            fehlt={`Rufnummern von ${vorlage.werkstatt.name} und ${rolle} noch nicht hinterlegt.`}
+          />
           <p className="text-ink text-liste">
-            Zusätzlich kurze Nachricht an die {vorlage.zustaendigeRolle} über {vorlage.meldeweg}.{' '}
-            {vorlage.mitnehmen.join(' und ')} vom Rad entfernen und mitnehmen. Rad an einem festen
-            Gegenstand anketten.
+            Standort an die {vorlage.werkstatt.name} durchgeben und der {rolle} Bescheid geben, auch
+            über die {vorlage.meldeweg}. {vorlage.mitnehmen.join(' und ')} mitnehmen, Rad an einem
+            festen Gegenstand anketten.
           </p>
         </div>
       );
@@ -589,21 +591,26 @@ function Schrittinhalt({
             Kontakt zu {vorlage.werkstatt.name} aufnehmen: Bescheid geben, dass Sie aus der Praxis
             kommen und in etwa 15 Minuten mit einem Schaden vorbeikommen.
           </p>
-          <Hinweiskasten>
-            {vorlage.werkstatt.name}
-            <br />
-            Telefon: {vorlage.werkstatt.telefon} · Mobil: {vorlage.werkstatt.mobil}
-          </Hinweiskasten>
+          <Anrufe
+            nummern={werkstatt}
+            fehlt={`Rufnummer der ${vorlage.werkstatt.name} noch nicht hinterlegt.`}
+          />
         </div>
       );
 
     case 'vertragswerkstattReparieren':
-      return <Hinweiskasten anfang={anfang}>Reparatur durchführen lassen.</Hinweiskasten>;
+      // Kein Kasten, der den Titel wiederholt (BEF-176): nur, was danach gilt.
+      return (
+        <p {...(anfang ? ANFANG : {})} className="text-ink text-liste focus:outline-none">
+          Ist das Rad fertig, hier abschließen.
+        </p>
+      );
 
     case 'vertragswerkstattUebergabe':
       return (
         <div className="flex flex-col gap-3">
-          <p className="text-ink text-liste">{vorlage.zustaendigeRolle} Bescheid geben.</p>
+          <p className="text-ink text-liste">{rolle} Bescheid geben.</p>
+          <Anrufe nummern={zustaendig} fehlt={`Rufnummer der ${rolle} noch nicht hinterlegt.`} />
           <p className="text-ink text-liste">
             Am nächsten Werktag <strong>{ersatzrad}</strong> nutzen, so lange, bis das andere Rad
             wieder freigegeben ist.

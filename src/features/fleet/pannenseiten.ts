@@ -1,6 +1,7 @@
 import {
   antworten,
   gehe,
+  weiche,
   kannZurueck,
   zurueck,
   type Ablaufzustand,
@@ -131,7 +132,8 @@ export function istAbschluss(schritt: SchrittId): boolean {
 }
 
 /**
- * Eine Antwort, die weiterführt. Im Zweig „weiter fahrbar“ steht der Text aus
+ * Eine Antwort, die weiterführt. Führt sie zur Ruhetagsweiche, geht es mit
+ * `heuteRuhetag` gleich dahinter weiter. Im Zweig „weiter fahrbar“ steht der Text aus
  * den markierten Stellen schon da (`ausStellen`) - außer es wurde schon etwas
  * geschrieben.
  */
@@ -139,6 +141,7 @@ export function weiterMit(
   zustand: Ablaufzustand,
   wirkung: Extract<Wirkung, { art: 'weiter' }>,
   ausStellen: string,
+  heuteRuhetag = false,
 ): Ablaufzustand {
   const vorbelegt =
     wirkung.ziel === 'weiterfahrtMoeglich' && zustand.freitext.trim() === ''
@@ -151,7 +154,8 @@ export function weiterMit(
       ...(wirkung.transport ? { transport: wirkung.transport } : {}),
       ...(wirkung.herkunft ? { herkunft: wirkung.herkunft } : {}),
     },
-    wirkung.ziel,
+    // Die Ruhetagsweiche beantwortet der Tag (BEF-176).
+    weiche(wirkung.ziel, heuteRuhetag),
   );
 }
 

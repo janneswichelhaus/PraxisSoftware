@@ -87,6 +87,7 @@ async function antworte(nutzer: ReturnType<typeof userEvent.setup>, ...antworten
 }
 
 beforeEach(() => {
+  vi.useRealTimers();
   vi.clearAllMocks();
   fetchFleet.mockResolvedValue(testFlotte());
   fetchBike.mockResolvedValue(
@@ -237,6 +238,9 @@ describe('Panne melden', () => {
   });
 
   it('hält den Ort des zurückgelassenen Rads aus dem Abschluss heraus (ANN-558)', async () => {
+    // Mittwoch, der Ruhetag der Vorlage: Die Panne fragt nicht danach.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-21T10:00:00Z'));
     const nutzer = userEvent.setup();
     recordBreakdown.mockResolvedValue({ breakdownId: 'p', spotIds: [], blocked: true });
     oeffne();
@@ -244,9 +248,22 @@ describe('Panne melden', () => {
       within(await fenster('Wo ist der Schaden?')).getByRole('button', { name: 'Weiter' }),
     );
     await fenster('Ist die Weiterfahrt gehindert?');
-    // gehindert, groß, Ruhetag, Depot nicht erreichbar
-    await antworte(nutzer, 'Ja', 'Groß', 'Ja', 'Nein');
+    // gehindert, groß - der Ruhetag kommt aus dem Datum (BEF-176)
+    await antworte(nutzer, 'Ja', 'Groß');
+    const letzte = within(await fenster('War das die letzte Behandlung am Tag?'));
+    expect(letzte.getByText('Heute ist Mittwoch: Ruhetag der Vertragswerkstatt.')).toBeVisible();
+    // letzte Behandlung, Depot nicht erreichbar
+    await antworte(nutzer, 'Ja', 'Nein');
     const zuruecklassen = within(await fenster('Fahrrad zurücklassen. Wo genau steht es?'));
+    // Ohne hinterlegte Rufnummer kein Anruf, der nicht geht, und kein
+    // Team-Kanal, den es nicht gibt (BEF-176).
+    expect(
+      zuruecklassen.getByText(
+        'Rufnummern von Vertragswerkstatt und Teamleitung noch nicht hinterlegt.',
+      ),
+    ).toBeVisible();
+    expect(zuruecklassen.queryByRole('link', { name: /anrufen/ })).not.toBeInTheDocument();
+    expect(zuruecklassen.queryByText(/Team-Kanal/)).not.toBeInTheDocument();
     await nutzer.type(
       zuruecklassen.getByLabelText('Standort / Adresse'),
       'Hinterhof Beispielweg 3',
@@ -278,9 +295,28 @@ describe('Panne melden', () => {
     expect(eingabe.summary).not.toContain('Hinterhof');
     expect(eingabe.locationNote).toBe('Hinterhof Beispielweg 3');
     expect(eingabe.transport).toBe('fahrdienst');
+    expect(eingabe.summary).not.toMatch(/informiert|durchgegeben/);
+    // Das Ersatzrad steht auch in der Meldung danach (BEF-176).
     expect(await screen.findByTestId('ziel-meldung')).toHaveTextContent(
-      'Panne gemeldet. Lastenrad 1 ist in Reparatur und steht nicht mehr in der Planung.',
+      'Panne gemeldet. Lastenrad 1 ist in Reparatur und steht nicht mehr in der Planung. ' +
+        'Bis zur Freigabe Lastenrad 5 (Ersatz) nutzen.',
     );
+  });
+
+  it('geht an einem anderen Tag ohne Frage zur Vertragswerkstatt (BEF-176)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-23T10:00:00Z'));
+    const nutzer = userEvent.setup();
+    oeffne();
+    await nutzer.click(
+      within(await fenster('Wo ist der Schaden?')).getByRole('button', { name: 'Weiter' }),
+    );
+    await fenster('Ist die Weiterfahrt gehindert?');
+    await antworte(nutzer, 'Ja', 'Groß');
+    const nah = within(await fenster('Vertragswerkstatt in der Nähe (15–30 Minuten Fußweg)?'));
+    // „← Zurück“ führt zur Frage davor, nicht zu einer Weiche.
+    await nutzer.click(nah.getByRole('button', { name: /Zurück/ }));
+    expect(await fenster('Wie groß ist der Schaden?')).toBeInTheDocument();
   });
 
   it('meldet „Reparatur vor Ort nicht möglich“ gleich mit der Antwort', async () => {

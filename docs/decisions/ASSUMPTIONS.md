@@ -6948,3 +6948,15 @@ Datenschutz · entschieden (Jannes) · 2026-10-20 · Jannes (2026-10-20, BEF-188
 **Anker.** `public.hand_out_message_attachment` in `supabase/migrations/20261223190000_bef_188_herausgabe_rueckfrageanhaenge.sql`.
 
 **Änderungspfad.** Ohne eigene Aktion: `patient_file.handed_out` mit dem neuen Gegenstand schreiben und die Aktion aus Katalog und Constraint nehmen · Aufwand `klein`. Gesperrte ausnehmen: `app.message_attachment_visible` in Liste, Herausgabe und Freigabe verlangen · Aufwand `klein`.
+
+### ANN-673 — Panne: Rufnummern als Rolle in der Vorlage, letzte Behandlung bleibt eine Frage
+
+Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: Tübinger Standortvorlage (ANN-554)
+
+**Annahme.** Werkstatt und Teamleitung stehen in der Standortvorlage mit je einer Rufnummer der Stelle (Diensttelefon), nie einer Person; solange ein Platzhalter steht, zeigt die Panne statt eines Anrufknopfs „noch nicht hinterlegt“, und Zusammenfassung wie Abschluss bestätigen keine Anrufe. Der Ruhetag gilt nach dem Wochentag in der Zeit der Praxis beim Öffnen der Panne. „Letzte Behandlung am Tag?“ bleibt eine Frage.
+
+**Begründung.** BEF-176; ANN-554 lässt die Vorlage nur lesen. Die Tagesliste kennt nur geplante Termine, nicht, ob danach noch gearbeitet wird.
+
+**Anker.** `zustaendigeRufnummer` und `istRuhetag` in `src/features/fleet/standortvorlage.ts`.
+
+**Änderungspfad.** Letzte Behandlung aus der Tagesliste ableiten: Weiche wie `weiche` in `pannenablauf.ts` · Aufwand `klein`.

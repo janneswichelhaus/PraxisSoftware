@@ -32,7 +32,8 @@ import { aktiveStandortvorlage } from './standortvorlage';
 export function BreakdownPage({ user }: { user: CurrentUser }) {
   const [parameter, setParameter] = useSearchParams();
   const radId = parameter.get('rad');
-  const montag = montagDerWoche(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
+  const zeitzone = user.organizationTimeZone ?? 'Europe/Berlin';
+  const montag = montagDerWoche(todayInTimeZone(zeitzone));
   const flotte = useQuery({
     queryKey: flotteSchluessel(montag),
     queryFn: () => fetchFleet(montag),
@@ -54,7 +55,9 @@ export function BreakdownPage({ user }: { user: CurrentUser }) {
             fehler="Die Radflotte konnte nicht geladen werden."
             inKarte
           >
-            {(daten) => <MitRad key={radId} flotte={daten} radId={radId} zurueck={ziel} />}
+            {(daten) => (
+              <MitRad key={radId} flotte={daten} radId={radId} zurueck={ziel} zeitzone={zeitzone} />
+            )}
           </Abfragezustand>
         </>
       ) : (
@@ -85,7 +88,17 @@ export function BreakdownPage({ user }: { user: CurrentUser }) {
 }
 
 /** Das gewählte Rad: erst geladen, dann das Fenster. */
-function MitRad({ flotte, radId, zurueck }: { flotte: Fleet; radId: string; zurueck: string }) {
+function MitRad({
+  flotte,
+  radId,
+  zurueck,
+  zeitzone,
+}: {
+  flotte: Fleet;
+  radId: string;
+  zurueck: string;
+  zeitzone: string;
+}) {
   const bekannt = flotte.bikes.some((rad) => rad.id === radId);
   const detail = useQuery({
     queryKey: radSchluessel(radId),
@@ -110,7 +123,9 @@ function MitRad({ flotte, radId, zurueck }: { flotte: Fleet; radId: string; zuru
       fehler="Das Rad konnte nicht geladen werden."
       inKarte
     >
-      {(daten) => <Pannenfenster flotte={flotte} detail={daten} zurueck={zurueck} />}
+      {(daten) => (
+        <Pannenfenster flotte={flotte} detail={daten} zurueck={zurueck} zeitzone={zeitzone} />
+      )}
     </Abfragezustand>
   );
 }

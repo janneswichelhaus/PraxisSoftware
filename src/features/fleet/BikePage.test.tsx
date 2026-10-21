@@ -68,6 +68,20 @@ describe('Rad', () => {
     await pruefeBarrierefreiheit(container);
   });
 
+  it('beginnt Panne und Schlüsselübergabe am freien Rad selbst (BEF-176)', async () => {
+    const frei = testFlotte().bikes[0]!;
+    fetchBike.mockResolvedValue(testDetail({ bike: frei, spots: [] }));
+    oeffne(`/betrieb/flotte/rad/${frei.id}`);
+    expect(await screen.findByRole('link', { name: 'Panne melden' })).toHaveAttribute(
+      'href',
+      expect.stringContaining(`/betrieb/flotte/panne?rad=${frei.id}`),
+    );
+    expect(screen.getByRole('link', { name: 'Schlüssel übergeben' })).toHaveAttribute(
+      'href',
+      expect.stringContaining(`/betrieb/flotte/schluessel?rad=${frei.id}`),
+    );
+  });
+
   it('nummeriert Nadeln und Liste gleich und ordnet die Stellen ihrem Ereignis zu (AC 5)', async () => {
     oeffne();
     expect(await screen.findByTestId('nadeln')).toHaveTextContent(

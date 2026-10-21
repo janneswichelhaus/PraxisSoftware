@@ -230,6 +230,13 @@ function Rad({
               >
                 Panne melden
               </ButtonLink>
+              {/* Vom Rad aus, nicht nur aus der Radflotte (BEF-176). */}
+              <ButtonLink
+                to={mitRueckweg(`/betrieb/flotte/schluessel?rad=${bike.id}`, hier)}
+                variant="secondary"
+              >
+                Schlüssel übergeben
+              </ButtonLink>
             </>
           )
         }

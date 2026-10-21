@@ -1224,6 +1224,15 @@
           "nachweis": "Branch ccr-9f54aa20-cgnb8q, src/features/platform/PlattformApp.test.tsx, Bildstrecke vorher/nachher"
         },
         {
+          "id": "bef-176",
+          "name": "BEF-176 Panne und Einstiege am Lastenrad: Anrufknöpfe statt Platzhalter, Ruhetag aus dem Datum, Depotfrage geteilt, Panne an der Karte des nächsten Wegs, G1 Anruf als Hauptknopf",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-21",
+          "nachweis": "Branch ccr-4626bc96-m83ovf, src/features/fleet/BreakdownPage.test.tsx, src/features/fleet/pannenablauf.test.ts, src/features/fleet/standortvorlage.test.ts, src/features/appointments/HomeVisitFlow.test.tsx, tests/e2e/radflotte.spec.ts, Bildstrecke vorher/nachher",
+          "vermerk": "ANN-673"
+        },
+        {
           "id": "bef-191",
           "name": "BEF-191 Teamchat: neues Profilbild an Nachrichten, die schon dastehen",
           "gewicht": 1,

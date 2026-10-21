@@ -56,22 +56,31 @@ export type NiemandOeffnetTermin = Pick<
  * Gelesen wird sie erst, wenn der Ablauf offen ist, und unter demselben
  * Schlüssel wie in der Übersicht - wer von dort kommt, wartet nicht.
  */
-function Rufnummern({ appointment }: { appointment: NiemandOeffnetTermin }) {
+function useRufnummern(appointment: NiemandOeffnetTermin) {
   const tag = dayKey(appointment.starts_at, appointment.organization_time_zone);
   const abfrage = useQuery({
     queryKey: ['day-plan', tag, appointment.staff_member_id],
     queryFn: () => fetchDayPlan(tag, appointment.staff_member_id),
     retry: false,
   });
+  const nummernAus = (plan: Awaited<ReturnType<typeof fetchDayPlan>>) => {
+    const eintrag = plan.find((termin) => termin.id === appointment.id);
+    return eintrag ? rufnummern(eintrag) : [];
+  };
+  return { abfrage, nummernAus };
+}
+
+/**
+ * Im Inhalt nur, was gegen den Anruf steht: Laden, Fehler, keine Nummer -
+ * mit dem Weg zu den Stammdaten. Die Nummern selbst stehen im Fuß.
+ */
+function Rufnummern({ appointment }: { appointment: NiemandOeffnetTermin }) {
+  const { abfrage, nummernAus } = useRufnummern(appointment);
   const stammdaten = appointment.patient_id ? (
     <Textlink alleinstehend to={`/patienten/${appointment.patient_id}/stammdaten`}>
       Zu den Stammdaten
     </Textlink>
   ) : undefined;
-  const nummernAus = (plan: Awaited<ReturnType<typeof fetchDayPlan>>) => {
-    const eintrag = plan.find((termin) => termin.id === appointment.id);
-    return eintrag ? rufnummern(eintrag) : [];
-  };
 
   return (
     <Abfragezustand
@@ -85,9 +94,19 @@ function Rufnummern({ appointment }: { appointment: NiemandOeffnetTermin }) {
         aktion: stammdaten,
       }}
     >
-      {(plan) => <Anrufknoepfe nummern={nummernAus(plan)} fokusbeginn />}
+      {() => null}
     </Abfragezustand>
   );
+}
+
+/**
+ * Der Anruf als Hauptknopf im Fuß (BEF-176): Ein Tipp ohne Anruf soll nicht
+ * gleich zum Warten führen. Unter demselben Schlüssel wie im Inhalt gelesen.
+ */
+function Anrufe({ appointment }: { appointment: NiemandOeffnetTermin }) {
+  const { abfrage, nummernAus } = useRufnummern(appointment);
+  const nummern = abfrage.data ? nummernAus(abfrage.data) : [];
+  return <Anrufknoepfe nummern={nummern} hauptknopf fokusbeginn ohneNummer={null} />;
 }
 
 /**
@@ -226,8 +245,11 @@ function NiemandOeffnetFenster({
             Ja, geklingelt
           </Button>
         ) : seite === 'angerufen' ? (
+          // Der Anruf ist die Haupthandlung, die Antworten danach sekundär
+          // (BEF-176, wie BEF-192 in „Tag umplanen“).
           <div className="flex flex-col gap-2">
-            <Button className="w-full" onClick={bestaetigt}>
+            <Anrufe appointment={appointment} />
+            <Button variant="secondary" className="w-full" onClick={bestaetigt}>
               Angerufen, niemand erreicht
             </Button>
             {/* Geht doch jemand ran, findet der Besuch statt: zurück zur Tür. */}
