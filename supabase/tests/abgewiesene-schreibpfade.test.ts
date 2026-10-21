@@ -71,6 +71,13 @@ const FAELLE: Fall[] = [
     'legal_hold.placed',
   ],
   [
+    // BEF-178: dieselbe Rechtepruefung fuer die Beschaeftigtendaten (ANN-674).
+    'place_staff_legal_hold',
+    'select public.place_staff_legal_hold($1::uuid, $2) as id',
+    [ANNA, 'Grund'],
+    'legal_hold.placed',
+  ],
+  [
     'release_legal_hold',
     'select public.release_legal_hold($1::uuid)',
     [IRGENDEINE],

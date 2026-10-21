@@ -247,6 +247,38 @@ describe('AufbewahrungPage', () => {
     expect(screen.getByText('Jannes Test')).toBeInTheDocument();
   });
 
+  it('trennt eine Sperre an Beschaeftigtendaten von einer an der Akte (BEF-178)', async () => {
+    fetchLegalHolds.mockResolvedValue([
+      {
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001',
+        subject_type: 'patient',
+        subject_id: '66666666-6666-4666-8666-000000000001',
+        subject_name: 'Max Mustermann',
+        reason: 'Honorarstreit',
+        placed_at: '2026-09-01T08:00:00Z',
+        placed_by_name: 'Jannes Test',
+      },
+      {
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000002',
+        subject_type: 'staff_member',
+        subject_id: '55555555-5555-4555-8555-000000000002',
+        subject_name: 'Anna Beispiel',
+        reason: 'Klage auf Urlaubsabgeltung',
+        placed_at: '2026-10-19T08:00:00Z',
+        placed_by_name: 'Jannes Test',
+      },
+    ]);
+
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+    const akte = (await screen.findByText('Max Mustermann')).closest('li');
+    const team = screen.getByText('Anna Beispiel').closest('li');
+    expect(akte).not.toBeNull();
+    expect(team).not.toBeNull();
+    expect(within(akte!).getByText(/^Akte · seit/)).toBeInTheDocument();
+    expect(within(team!).getByText(/^Beschäftigtendaten · seit/)).toBeInTheDocument();
+  });
+
   it('sagt als Text, dass noch nichts geloescht wurde', async () => {
     renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
     expect(await screen.findByText('Es wurde noch nichts gelöscht')).toBeInTheDocument();

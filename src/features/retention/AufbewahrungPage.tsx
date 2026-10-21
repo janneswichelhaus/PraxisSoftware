@@ -247,6 +247,15 @@ function Klassendetail({ schluessel }: { schluessel: string }) {
   );
 }
 
+/**
+ * Worauf eine Sperre wirkt: eine Akte (ANN-033) oder die Beschäftigtendaten
+ * einer Person des Teams (BEF-178, ANN-674). Ohne die Angabe wären eine
+ * Patientin und eine Kollegin gleichen Namens in der Liste nicht zu trennen.
+ */
+function sperrgegenstand(subjectType: string): string {
+  return subjectType === 'staff_member' ? 'Beschäftigtendaten' : 'Akte';
+}
+
 function Loeschsperren() {
   const abfrage = useQuery({
     queryKey: ['retention', 'legal-holds'],
@@ -269,12 +278,13 @@ function Loeschsperren() {
             {daten.map((sperre) => (
               <ListRow
                 key={sperre.id}
-                titel={sperre.subject_name ?? 'Akte'}
+                titel={sperre.subject_name ?? sperrgegenstand(sperre.subject_type)}
                 meta={
                   <>
                     <span className="block">{sperre.reason}</span>
                     <span className="block">
-                      Seit {formatZeitpunkt(sperre.placed_at)} · gesetzt von{' '}
+                      {sperrgegenstand(sperre.subject_type)} · seit{' '}
+                      {formatZeitpunkt(sperre.placed_at)} · gesetzt von{' '}
                       <span>{sperre.placed_by_name ?? 'Unbekannt'}</span>
                     </span>
                   </>
@@ -683,9 +693,10 @@ function Grundlagen() {
         <ul className="text-ink-muted list-inside list-disc space-y-1 text-sm">
           <li>Datenklassen, Fristen und Löschsperren: ADR-008 (Aufbewahrung und Löschung).</li>
           <li>
-            Eine Löschsperre hält eine Akte von der automatischen Löschung zurück, solange ein
-            rechtlicher Vorgang läuft. Eine gesperrte Akte wird nicht gelöscht, bleibt aber
-            vollständig benutzbar.
+            Eine Löschsperre hält eine Akte oder die Beschäftigtendaten einer Person – Urlaub,
+            Arbeitszeit, Zeitkonto, Erstattungen – von der automatischen Löschung zurück, solange
+            ein rechtlicher Vorgang läuft. Gesperrtes wird nicht gelöscht, bleibt aber vollständig
+            benutzbar.
           </li>
           <li>
             Fristen auf Annahme: Annahmenregister (Kennung ANN-NNN), bestätigt erst durch die

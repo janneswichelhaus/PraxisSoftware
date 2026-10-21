@@ -1233,6 +1233,15 @@
           "vermerk": "ANN-673"
         },
         {
+          "id": "bef-178",
+          "name": "BEF-178 Löschsperre für Beschäftigtendaten: owner sperrt eine Person, Urlaub, Arbeitszeit, Zeitkonto und Erstattungen fallen nicht, solange sie läuft",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-21",
+          "nachweis": "Branch ccr-24200d06-dhr3ze, Migration 20261223200000_bef_178_loeschsperre_beschaeftigte.sql, supabase/tests/legal-hold-staff.test.ts, supabase/tests/abgewiesene-schreibpfade.test.ts, src/features/retention/AufbewahrungPage.test.tsx, Bildstrecke vorher/nachher, Zweitreview",
+          "vermerk": "ANN-674; ohne Auditeintrag, Katalog unverändert"
+        },
+        {
           "id": "bef-191",
           "name": "BEF-191 Teamchat: neues Profilbild an Nachrichten, die schon dastehen",
           "gewicht": 1,
@@ -1282,7 +1291,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-17",
           "nachweis": "Branch ccr-350340fc-pnh5ti-zeitkonto, Migration 20261126100000_zk_001_zeitkonto.sql, supabase/tests/time-account.test.ts, src/features/timeaccount/*.test.ts(x), tests/e2e/authenticated/zeitkonto.spec.ts, Zweitreview in zwei Runden",
-          "vermerk": "Bereichsüberholung 9 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-593 bis ANN-597; Fristen mit Übertrag; Löschsperre für Beschäftigtendaten offen (BEF-178); Sichtung per Bildstrecke im PR"
+          "vermerk": "Bereichsüberholung 9 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-593 bis ANN-597; Fristen mit Übertrag; Löschsperre für Beschäftigtendaten seit BEF-178 (ANN-674); Sichtung per Bildstrecke im PR"
         },
         {
           "id": "ers-001",
@@ -1291,7 +1300,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-17",
           "nachweis": "Branch ccr-350340fc-pnh5ti-erstattungen, Migration 20261127100000_ers_001_erstattungen.sql, supabase/tests/reimbursements.test.ts, src/features/reimbursements/*.test.ts(x), tests/e2e/authenticated/erstattungen.spec.ts, Zweitreview",
-          "vermerk": "Bereichsüberholung 10 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-598 bis ANN-602; Belege im Bucket erstattungsbelege mit nachgelagerter Prüfung; Löschsperre für Beschäftigtendaten offen (BEF-178); Sichtung per Bildstrecke im PR"
+          "vermerk": "Bereichsüberholung 10 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-598 bis ANN-602; Belege im Bucket erstattungsbelege mit nachgelagerter Prüfung; Löschsperre für Beschäftigtendaten seit BEF-178 (ANN-674); Sichtung per Bildstrecke im PR"
         },
         {
           "id": "org-001",
