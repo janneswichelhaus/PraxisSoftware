@@ -414,7 +414,10 @@ const ANFANG = { tabIndex: -1, 'data-autofocus': true } as const;
  * statt eines Anrufs, der nicht geht (BEF-176, ANN-554).
  */
 function Anrufe({ nummern, fehlt }: { nummern: Anrufnummer[]; fehlt: string }) {
-  return <Anrufknoepfe nummern={nummern} ohneNummer={<Kleingedrucktes>{fehlt}</Kleingedrucktes>} />;
+  // In Tinte, nicht als Kleingedrucktes: Es sagt, was für die Handlung fehlt.
+  return (
+    <Anrufknoepfe nummern={nummern} ohneNummer={<p className="text-ink text-sm">{fehlt}</p>} />
+  );
 }
 
 /** Wofür „Ändern“ in der Zusammenfassung steht - für Vorlesesoftware. */
@@ -599,8 +602,7 @@ function Schrittinhalt({
       // Kein Kasten, der den Titel wiederholt (BEF-176): nur, was danach gilt.
       return (
         <p {...(anfang ? ANFANG : {})} className="text-ink text-liste focus:outline-none">
-          Ist das Rad fertig, hier abschließen. Es bleibt „In Reparatur“, bis die {rolle} es
-          freigibt.
+          Ist das Rad fertig, hier abschließen.
         </p>
       );
 

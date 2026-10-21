@@ -94,7 +94,7 @@ function Rufnummern({ appointment }: { appointment: NiemandOeffnetTermin }) {
         aktion: stammdaten,
       }}
     >
-      {() => <p className="text-ink-muted text-sm">Nach dem Anruf unten antworten.</p>}
+      {() => null}
     </Abfragezustand>
   );
 }
