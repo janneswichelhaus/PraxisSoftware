@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-19.
+Zuletzt aktualisiert: 2026-10-21.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -500,7 +500,7 @@ Recht · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wiedervor
 
 **Anker.** `public.legal_holds`, `app.under_legal_hold()` und `app.can_manage_legal_hold()` in `supabase/migrations/20260911170000_legal_hold.sql`; Tests in `supabase/tests/legal-hold.test.ts` und der Haltefall in `supabase/tests/retention-run.test.ts`.
 
-**Änderungspfad.** Weiterer Gegenstand (etwa `staff_member` oder `invoice`): `subject_type` erweitern und die Prüfung in die betreffende Löschregel aufnehmen · Aufwand `klein`. Pflegeoberfläche: eine Seite mit zwei Aktionen auf den bestehenden Funktionen · Aufwand `klein`, bewusst nicht in diesem Epic.
+**Änderungspfad.** Weiterer Gegenstand (etwa `staff_member` oder `invoice`): `subject_type` erweitern und die Prüfung in die betreffende Löschregel aufnehmen · Aufwand `klein`. Pflegeoberfläche: eine Seite mit zwei Aktionen auf den bestehenden Funktionen · Aufwand `klein`, bewusst nicht in diesem Epic. Für `staff_member` umgesetzt mit ANN-674 (BEF-178).
 
 ### ANN-034 — Absagegrund als codierte Auswahl aus vier Werten, kein Freitext
 
@@ -6219,7 +6219,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wie
 
 Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Gültige Einträge löscht der Lauf drei Jahre ab Ende ihres Jahres (`zeitkonto`); ihr Saldo bleibt als Übertrag je Person und Jahr stehen, ohne Lage und Grund, Frist offen (ANN-030). Zurückgewiesene und zurückgenommene ein Jahr nach ihrem Ende (`zeitkonto_kurz`). Journal und erneutes Löschen nach einem Restore; die Abweichung fällt mit. Eine Löschsperre gibt es nur für Akten (ANN-033, BEF-178).
+**Annahme.** Gültige Einträge löscht der Lauf drei Jahre ab Ende ihres Jahres (`zeitkonto`); ihr Saldo bleibt als Übertrag je Person und Jahr stehen, ohne Lage und Grund, Frist offen (ANN-030). Zurückgewiesene und zurückgenommene ein Jahr nach ihrem Ende (`zeitkonto_kurz`). Journal und erneutes Löschen nach einem Restore; die Abweichung fällt mit. Eine Löschsperre an der Person hält alle Einträge (ANN-674).
 
 **Begründung.** Spezifikation: drei Jahre ab Jahresende (§§ 195, 199 BGB); § 16 Abs. 2 ArbZG verlangt mindestens zwei. Der Übertrag entsteht beim Löschen selbst, auch beim Nachziehen.
 
@@ -6281,7 +6281,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wie
 
 Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Ausgezahlte Anträge mit Belegen löscht der Lauf acht Jahre ab Ende des Jahres der Auszahlung (`erstattung`), abgelehnte und zurückgezogene ein Jahr nach ihrem Ende (`erstattung_kurz`); beantragte und genehmigte bleiben. Journal und erneutes Löschen nach einem Restore; die IBAN bleibt Beschäftigtendatum (ANN-030). Eine Löschsperre gibt es nur für Akten (BEF-178).
+**Annahme.** Ausgezahlte Anträge mit Belegen löscht der Lauf acht Jahre ab Ende des Jahres der Auszahlung (`erstattung`), abgelehnte und zurückgezogene ein Jahr nach ihrem Ende (`erstattung_kurz`); beantragte und genehmigte bleiben. Journal und erneutes Löschen nach einem Restore; die IBAN bleibt Beschäftigtendatum (ANN-030). Eine Löschsperre an der Person hält alle Anträge (ANN-674).
 
 **Begründung.** § 147 Abs. 1 Nr. 4, Abs. 3 AO: Buchungsbelege acht Jahre (seit 2025); unsicher, ob die Praxis die Belege zusätzlich in der Buchhaltung aufbewahrt.
 
@@ -6960,3 +6960,15 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: Tübinger S
 **Anker.** `zustaendigeRufnummer` und `istRuhetag` in `src/features/fleet/standortvorlage.ts`.
 
 **Änderungspfad.** Letzte Behandlung aus der Tagesliste ableiten: Weiche wie `weiche` in `pannenablauf.ts` · Aufwand `klein`.
+
+### ANN-674 — Löschsperre auch für Beschäftigtendaten: Urlaub, Arbeitszeit, Zeitkonto, Erstattungen
+
+Recht · offen · 2026-10-21 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)
+
+**Annahme.** owner sperrt die Beschäftigtendaten einer Person wie eine Akte: Pflichtgrund, Aufheben schreibt fort, kein Auditeintrag. Solange eine Sperre läuft, löscht der Lauf von dieser Person keinen Urlaub, keine Arbeitszeitänderung, keinen Zeitkonto-Eintrag und keine Erstattung, auch abgelehnte und zurückgezogene nicht. Teamchat, Radflotte und Rückmeldungen hält sie nicht.
+
+**Begründung.** BEF-178, ADR-008 Punkt 7; Zuschnitt von Jannes am 17.10. Ein Streit braucht gerade die Ablehnung. Rückmeldungen sind ohne Personenbezug gespeichert (§20.2).
+
+**Anker.** `public.place_staff_legal_hold` und die vier Löschregeln in `20261223200000_bef_178_loeschsperre_beschaeftigte.sql`.
+
+**Änderungspfad.** Teamchat oder Radflotte dazu: die Prüfung in deren Löschregel · Aufwand `klein`.

@@ -5,13 +5,11 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-BEF-176 (21.10., Branch `ccr-4626bc96-m83ovf`): Panne mit Anrufknöpfen statt Platzhaltern, Ruhetag aus
-dem Datum, Depotfrage geteilt, kürzere Zusammenfassung, Ersatzrad in der Meldung; „Panne melden“ an
-der Karte des nächsten Wegs, „Schlüssel übergeben“ am Rad; G1 Anruf als Hauptknopf (ANN-673).
+BEF-178 (21.10., Branch `ccr-24200d06-dhr3ze`, Pfad A): owner sperrt die Beschäftigtendaten einer
+Person (`place_staff_legal_hold`); Urlaub, Arbeitszeit, Zeitkonto und Erstattungen fallen dann nicht,
+auch Abgelehntes nicht; ohne Auditeintrag, Katalog unverändert (ANN-674).
 
-BEF-192 und BEF-193 (20.10., Branch `ccr-9f54aa20-cgnb8q`): In „Tag umplanen“ ist der Anruf der Hauptknopf im Fuß,
-„Erreicht“ und „Nicht erreicht“ sekundär; „Anrufen“ im Abschluss wählt direkt. Kopf von „Ich“ in
-einer Zeile, die Adresse unter „Konto“.
+Gemergt am 21.10.: BEF-176 (#284, ANN-673), BEF-192 und BEF-193 (#283).
 
 Gemergt am 20.10.: BEF-188 (#282, ANN-672), Politurrunde mit BEF-175 (#281, ANN-671), BEF-190 und
 BEF-191 (#280, ANN-670), BEF-189 (#279).
@@ -34,7 +32,7 @@ Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Ru
 
 ## Danach
 
-BEF-178 (Löschsperre für Beschäftigtendaten, Pfad A; Label `freigabe-audit` an der PR).
+BEF-179 und BEF-180 (Zeitkonto: Zurückweisung unter „Noch offen“, Zurücknehmen am Tag selbst; Pfad A).
 
 ## Bei Jannes
 
@@ -61,5 +59,5 @@ BEF-178 (Löschsperre für Beschäftigtendaten, Pfad A; Label `freigabe-audit` a
 
 ## Letzte Session
 
-19.10.2026, PR #278: Migrationen `20261223100000` bis `20261223160000` (TEAM-006 bis -009,
-BEF-146 bis -148). Lokal: `git pull`, `supabase db reset`.
+21.10.2026, Branch `ccr-24200d06-dhr3ze`: Migration `20261223200000` (BEF-178). Lokal: `git pull`,
+`supabase db reset`.

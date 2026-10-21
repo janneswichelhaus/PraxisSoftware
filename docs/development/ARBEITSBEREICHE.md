@@ -31,8 +31,8 @@ Ansicht sagt das.
 Offen bleiben in der Vorschau: aggregierte Auswertungen über Beschäftigte (§20, B6). Die
 Speicherfrist des Teamchats steht seit TEAM-001 fest (ADR-008 Fassung 5 Punkt 12, ANN-610). Diese Punkte blockieren nur die echten Aktionen, nicht die
 Ansicht. Fristen für Urlaub, Arbeitszeit, Zeitkonto und Erstattungen stehen seit den Überholungen 7
-bis 10 fest (ANN-579, ANN-591, ANN-597, ANN-602); offen ist die Löschsperre für Beschäftigtendaten
-(BEF-178).
+bis 10 fest (ANN-579, ANN-591, ANN-597, ANN-602); eine Löschsperre an der Person hält sie
+(ANN-674).
 
 ## Regeln
 

@@ -1854,3 +1854,19 @@ eingeklappt.
 **Erwartet.** Ein eigener Auftrag am Baustein: Fokus mit `preventScroll` oder auf die Frage, `tabIndex` an der Rollfläche des Bausteins, `inert` auch für Portalziele, danach die Umgehungen in den Abläufen entfernen; Grammatik der Rückfrage. Aus dem Design-Review dazu: freie Maße im Baustein (`max-h-[60%]`, `lg:w-96`) als Tokens, der `tel:`-Knopf (zweimal von Hand in G1 und G2) als Baustein in `src/components/ui`, Laden und Fehler der Rufnummer über `Abfragezustand`.
 
 **Umsetzung (2026-10-20).** (1) Das Fenster fokussiert mit `preventScroll`. (2) Die Rollfläche des Bausteins trägt `tabIndex={0}`, ohne eigene Rolle und ohne Namen (ein Name nach der Frage traf `getByLabel` für Felder, deren Beschriftung in der Frage steht); die eigene Umgehung der Panne fällt weg. (3) `sperreDarunter` sperrt auch in den Zielen der Sitzungssperre und der Plattform (`data-fensterziel`), ein Fenster in einer verborgenen Seite sperrt nichts (ANN-671). (4) `ListRow fokusbeginn`; der Schlüsselablauf braucht kein Hüllelement mehr. (5) Die Zurückgeste geht im Ablauf immer einen Schritt zurück; der Schlüsselablauf hält dafür nichts mehr als ungespeichert an. Dazu „Ein Foto ist …“, die Tokens `ablaufspalte` und `ablauf-knapp`, `Anrufknoepfe` für G1 und G2, die Rufnummer im Hausbesuch über `Abfragezustand`. Die kleinen Fokusanker in Einrichtung und Plattform bleiben: Ein Enter läuft dort sonst ungesehen durch die Seiten. Nach dem Zweitreview: ein Zähler je gesperrtem Element (Fenster schließen in beliebiger Reihenfolge), ein Fenster aus der verborgenen Seite holt Fokus und Sperre nach dem Entsperren nach, die Sitzungssperre zeichnet ihre Seite erst mit ihrem Fensterziel; „Tag umplanen“ gibt nach der Absage nichts mehr frei, damit die Zurückgeste auch dort einen Schritt zurückgeht. Tests in `Dialogfenster.test.tsx`, `Sitzungssperre.test.tsx`, `GefuehrterAblauf.test.tsx`, `Textverlustschutz.test.tsx`, `Listen.test.tsx`, `Anrufknoepfe.test.tsx`, `fotoauftraege.test.ts`; der G2-Ablauftest prüft die Zurückgeste nach der Absage.
+
+### BEF-178 — Beschäftigtendaten werden automatisch gelöscht, eine Löschsperre gibt es nur für Patientenakten
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-17 |
+| Bereich | Aufbewahrung und Löschung (ADR-008), Urlaub, Arbeitszeit, Zeitkonto |
+| Quelle  | Zweitreview der Überholung 9 (ZK-001), gilt seit Überholung 7 |
+| Status  | erledigt 2026-10-21 (Branch `ccr-24200d06-dhr3ze`): `place_staff_legal_hold` für owner, Prüfung in den vier Löschregeln, Gegenstand in der Sperrliste; ANN-674; ohne Auditeintrag, Katalog unverändert |
+| Berührt | `app.delete_due_staff_leave` (URL-001), `app.delete_due_working_time_requests` (AZ-001), `app.delete_due_time_account_entries` (ZK-001), `public.legal_holds` |
+
+**Beobachtung.** ANN-033 lässt die Löschsperre nur für Patientenakten zu, weil es für Beschäftigtendaten keine automatische Löschung gab. Seit URL-001 löscht der Lauf Urlaubsanträge und -ansprüche, seit AZ-001 Arbeitszeitänderungen, mit ZK-001 auch gültige Zeitkonto-Einträge – jeweils an der Verjährungsgrenze, an der ein laufender Streit sie bräuchte. ADR-008 Punkt 7 verlangt, dass eine Sperre automatische Löschung während laufender Vorgänge verhindert.
+
+**Erwartet.** Änderungspfad von ANN-033: Gegenstand `staff_member` zulassen (owner setzt und hebt auf wie bei Akten) und in den drei Löschregeln `app.under_legal_hold(…, 'staff_member', …)` prüfen. Das schreibt Auditeinträge zu einem neuen Gegenstand und braucht deshalb Jannes' Freigabe (ADR-010, Label `freigabe-audit`); bis dahin nichts gebaut. Genehmigtes und Gültiges fällt frühestens Anfang 2030.
+
+**Entscheidung (Jannes, 2026-10-17).** Wie empfohlen: ein eigener kleiner Pfad-A-Auftrag für Urlaub, Arbeitszeit, Zeitkonto und Erstattungen zusammen; die Auditeinträge zum neuen Gegenstand brauchen an dessen PR weiter das Label `freigabe-audit`.
