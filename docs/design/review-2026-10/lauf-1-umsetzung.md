@@ -9,6 +9,8 @@ px), `plattform-barrierefreiheit.spec.ts`, Ratsche in `src/designsystem.test.ts`
 
 ## Schritt 0 – Politur ohne Entwurf (Art a, sofort, unabhängig)
 
+**Erledigt:** 0a bis 0c in einem Pull Request, #288 (gemergt 22.10.2026, DRP-001 bis DRP-003).
+
 Nur, was ein Entwurf nicht ohnehin neu fasst. Drei kleine Pull Requests, in beliebiger Reihenfolge:
 
 | PR  | Inhalt                                                                                                                                                                                                                                                                                                               | Befunde                                                                           |
