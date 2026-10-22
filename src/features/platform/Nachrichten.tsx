@@ -24,16 +24,9 @@ import {
   type Plattformzugang,
 } from './api';
 import { useNurLesen, usePlattformApi } from './einsicht';
-import {
-  NICHT_AKUT,
-  OHNE_EINWILLIGUNG,
-  THEMA_NAME,
-  THEMEN,
-  zusage,
-  type Thema,
-} from './nachrichtentexte';
+import { OHNE_EINWILLIGUNG, THEMA_NAME, THEMEN, type Thema } from './nachrichtentexte';
 import { AnhaengeAbschnitt } from './Anhaenge';
-import { Notfallsatz } from './Notfallsatz';
+import { Notfallkarte } from './Notfallkarte';
 import { zeitmarke, type Ansicht } from './anhangtexte';
 import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
@@ -89,7 +82,7 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
       {gesendet === '1' ? (
         <Rueckmeldung className="mb-4">Ihre Nachricht ist bei der Praxis angekommen.</Rueckmeldung>
       ) : null}
-      <Notfallhinweis werktage={response_workdays} />
+      <Notfallkarte werktage={response_workdays} />
       {!can_write ? (
         <p className="text-ink mt-4 max-w-prose text-base leading-relaxed">
           Sie können Ihre Nachrichten hier noch lesen. Neue Fragen stellen Sie bitte direkt bei der
@@ -140,33 +133,6 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
         </div>
       ) : null}
     </>
-  );
-}
-
-/**
- * Zusage und Notfallhinweis (IDEA-KOM-002, DSN-001 4.1): an jedem
- * Eingabefeld, dauerhaft, ohne Schließen-Knopf. Eine Zeile mit Linie links
- * statt eines Kastens (DESIGN.md, Regel 2) - dieselbe Form wie die
- * Meldungen des Systems.
- */
-export function Notfallhinweis({
-  werktage,
-  className = '',
-}: {
-  werktage: number;
-  className?: string;
-}) {
-  return (
-    <div
-      role="note"
-      aria-label="Hinweis zu Antwortzeit und Notfällen"
-      className={`border-line-strong bg-surface-sunken border-l-4 py-3 pr-4 pl-4 text-base leading-relaxed ${className}`.trim()}
-    >
-      <p className="text-ink">{zusage(werktage)}</p>
-      <p className="text-ink mt-1">
-        <strong>{NICHT_AKUT}</strong> <Notfallsatz />
-      </p>
-    </div>
   );
 }
 
@@ -374,7 +340,7 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
 
           <div className="flex flex-col gap-3">
             <p className="text-ink text-base font-semibold">2. Ihre Frage</p>
-            <Notfallhinweis werktage={response_workdays} />
+            <Notfallkarte werktage={response_workdays} />
             <TextArea
               label="Text"
               hint={`${text.trim().length} von ${NACHRICHT_MAX} Zeichen`}
@@ -574,7 +540,7 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
 
       {offen ? (
         <form onSubmit={absenden} noValidate className="mt-8 flex flex-col gap-4">
-          <Notfallhinweis werktage={daten.data.response_workdays} />
+          <Notfallkarte werktage={daten.data.response_workdays} />
           <TextArea
             label="Noch etwas ergänzen"
             hint={`${text.trim().length} von ${NACHRICHT_MAX} Zeichen`}

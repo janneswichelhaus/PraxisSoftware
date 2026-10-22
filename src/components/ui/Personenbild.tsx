@@ -25,9 +25,12 @@ const UMRISS: Record<Personenfarbe, string> = {
 };
 
 const MASSE = {
-  klein: 'size-6 text-leiste',
-  zeile: 'size-9 text-sm',
-  gross: 'size-24 text-h2',
+  klein: 'size-6 text-leiste font-semibold',
+  zeile: 'size-9 text-sm font-semibold',
+  gross: 'size-24 text-h2 font-semibold',
+  // Plattform (Handoff 2026-10-22, Abschnitt 3): Initialen 20/700, in rem,
+  // damit Bild und Schrift unter „Sehr groß“ mitwachsen.
+  karte: 'size-14 text-initialen font-bold',
 } as const;
 
 /**
@@ -41,8 +44,9 @@ const MASSE = {
  *   * **Nie allein** (DESIGN.md Regel 5): Der Name steht immer daneben. Das
  *     Bild ist deshalb für Vorlesesoftware unsichtbar (`aria-hidden`), sonst
  *     hörte man jeden Namen zweimal.
- *   * Drei Größen: `klein` 24 px (dichte Zeilen), `zeile` 36 px (Nachricht,
- *     Liste), `gross` 96 px (das eigene Bild in „Mein Konto“).
+ *   * Vier Größen: `klein` 24 px (dichte Zeilen), `zeile` 36 px (Nachricht,
+ *     Liste), `karte` 56 px (Hero- und Besuchskarte der Plattform), `gross`
+ *     96 px (das eigene Bild in „Mein Konto“).
  *   * Ohne Farbe (noch nicht geladen, fremd) `schiefer`, ohne Namen „?“.
  */
 export function Personenbild({
@@ -73,7 +77,7 @@ export function Personenbild({
     <span
       aria-hidden="true"
       data-personenbild="initialen"
-      className={`${MASSE[groesse]} ${FLAECHE[f]} text-surface rounded-pill inline-flex shrink-0 items-center justify-center leading-none font-semibold select-none`}
+      className={`${MASSE[groesse]} ${FLAECHE[f]} text-surface rounded-pill inline-flex shrink-0 items-center justify-center leading-none select-none`}
     >
       {initialen(name)}
     </span>

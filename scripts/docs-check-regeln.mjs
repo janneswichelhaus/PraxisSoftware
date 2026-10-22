@@ -226,6 +226,9 @@ export const OBERGRENZEN = [
   { pfad: 'docs/STATUS.md', bytes: 4 * 1024 },
   { pfad: 'docs/development/ARBEITSBEREICHE.md', bytes: 8 * 1024 },
   { pfad: 'docs/design/DESIGN.md', bytes: 12.5 * 1024, optional: true },
+  // Die Sprache der Plattform (Handoff 2026-10-22): eigene Datei, weil DESIGN.md an
+  // seiner Grenze steht; mit eigener Grenze, damit sie nicht DESIGN.md wird.
+  { pfad: 'docs/design/PLATTFORM.md', bytes: 8 * 1024 },
   { pfad: 'docs/decisions/OPEN_DECISIONS.md', zeilen: 400 },
 ];
 

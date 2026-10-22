@@ -19,6 +19,11 @@ const TAG_LANG = new Intl.DateTimeFormat('de-DE', {
   month: 'long',
   year: 'numeric',
 });
+const TAG_OHNE_JAHR = new Intl.DateTimeFormat('de-DE', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
 const UHR = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
 const DATUM = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' });
 
@@ -30,6 +35,11 @@ export function tagKurz(zeitpunkt: string): string {
 /** „Dienstag, 14. Oktober 2026" */
 export function tagLang(zeitpunkt: string): string {
   return TAG_LANG.format(new Date(zeitpunkt));
+}
+
+/** „Samstag, 24. Oktober" - der Tag eines nahen Termins, ohne Jahr. */
+export function tagOhneJahr(zeitpunkt: string): string {
+  return TAG_OHNE_JAHR.format(new Date(zeitpunkt));
 }
 
 /** „9:30" bzw. „09:30" nach den Regeln des Geräts. */

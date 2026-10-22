@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { Button } from './Button';
+import { Laufrad } from './Laufrad';
 import { istVersprechen } from './versprechen';
 
 /** Ladezustand mit Textalternative statt reiner Animation. */
@@ -52,19 +53,49 @@ export function LoadingState({
  * `ButtonLink` „Zahlung erfassen" oder ein `Textlink` (UIK-16). Bis UXR-001
  * setzten Seiten ihn als eigenen Link unter den Zustand oder nannten den Ort
  * nur im Satz.
+ *
+ * `markenform` ist die Fassung der Plattform (Handoff 2026-10-22,
+ * Abschnitt 3): das Laufrad im tiefgrünen Kreis, darunter der Titel und ein
+ * Satz, was als Nächstes kommt - in einer Karte, linksbündig.
  */
 export function EmptyState({
   title,
   description,
   aktion,
   inKarte = false,
+  markenform = false,
 }: {
   title: string;
   description?: string | undefined;
   aktion?: ReactNode;
   /** In einer weißen Karte (Design-Handoff 2026-10-01, Abschnitt 3). */
   inKarte?: boolean;
+  /** Mit der Markenform der Plattform; in einer Karte nur mit `inKarte`. */
+  markenform?: boolean;
 }) {
+  if (markenform) {
+    // Linksbündig wie die Plattform. Die Karte nur auf Wunsch: Steht der
+    // Leerzustand schon in einer Karte, wäre es ein Kasten im Kasten.
+    return (
+      <div
+        className={`flex flex-col items-start gap-4 ${
+          inKarte ? 'rounded-card border-line bg-surface border p-6' : ''
+        }`.trim()}
+      >
+        <span
+          aria-hidden="true"
+          className="bg-surface-inverse rounded-pill flex size-16 shrink-0 items-center justify-center"
+        >
+          <Laufrad kraeftig className="text-salbei size-11" />
+        </span>
+        <span className="flex flex-col gap-1">
+          <span className="text-ink text-liste font-semibold">{title}</span>
+          {description ? <span className="text-ink">{description}</span> : null}
+        </span>
+        {aktion ? <div className="flex flex-wrap gap-3">{aktion}</div> : null}
+      </div>
+    );
+  }
   return (
     <div
       className={

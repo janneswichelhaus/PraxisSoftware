@@ -61,7 +61,7 @@ export function Datenliste<Z>({
     >
       <div
         aria-hidden="true"
-        className={`text-ink-muted tracking-label border-line hidden border-b py-2 text-xs font-semibold uppercase ${zeilenRaster}`}
+        className={`text-ink-muted tracking-label border-line hidden border-b py-2 text-xs font-semibold uppercase [.plattform-schrift_&]:tracking-normal [.plattform-schrift_&]:normal-case ${zeilenRaster}`}
       >
         {spalten.map((spalte) => (
           <span key={spalte.titel} className={spalte.rechts ? 'text-right' : undefined}>

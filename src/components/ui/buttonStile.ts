@@ -7,7 +7,21 @@
  * wie eine aussieht, sollen nach der nächsten Änderung immer noch gleich
  * aussehen.
  */
-export type Variant = 'primary' | 'secondary' | 'quiet';
+export type Variant = 'primary' | 'secondary' | 'quiet' | 'marke';
+
+/**
+ * Druck auf der Plattform (DR-117, Handoff 2026-10-22 Abschnitte 3 und 7):
+ * Der Knopf gibt beim Antippen nach - 98 % in 120 ms, dazu die gedrückte
+ * Fläche der Variante. Bei „Bewegung reduzieren“ bleibt nur die Fläche. Nur
+ * unter `.plattform-schrift`: Die Praxis-App bleibt, wie sie ist (Lauf 2).
+ *
+ * Der Maßstab steht unter `motion-safe:`, statt ihn unter `motion-reduce:`
+ * zurückzunehmen: `not-disabled` ist eine Pseudoklasse mehr, und die
+ * Rücknahme verlor gegen den Druck (Design-Review 1a).
+ */
+const druck =
+  'motion-safe:[.plattform-schrift_&]:not-disabled:active:scale-98 ' +
+  '[.plattform-schrift_&]:transition-[color,background-color,border-color,scale] [.plattform-schrift_&]:duration-120 [.plattform-schrift_&]:ease-druck';
 
 // `nicht-drucken`: eine Schaltflaeche ist auf Papier nutzlos und kostet Platz.
 // Hier statt in der Druckregel, weil ButtonLink ein <a> erzeugt - die Regel
@@ -30,7 +44,7 @@ export type Variant = 'primary' | 'secondary' | 'quiet';
 // deshalb an der Variante, nicht an der Basis (ANN-252).
 const basis =
   'nicht-drucken inline-flex h-12 items-center justify-center gap-2 rounded-button px-5 ' +
-  'text-base font-bold transition-colors disabled:cursor-not-allowed';
+  `text-base font-bold transition-colors disabled:cursor-not-allowed ${druck}`;
 
 const varianten: Record<Variant, string> = {
   // Der helle Text auf der Hauptfarbe ist Papier, nicht Weiss
@@ -40,15 +54,27 @@ const varianten: Record<Variant, string> = {
   // als Link nicht traefe).
   primary:
     'border border-transparent bg-accent text-surface not-disabled:hover:bg-accent-hover ' +
+    '[.plattform-schrift_&]:not-disabled:active:bg-accent-hover ' +
     'disabled:border-dashed disabled:border-line-strong disabled:bg-transparent disabled:text-ink-muted',
   // Sekundaer traegt keinen eigenen Grund, nur Rahmen und Hauptfarbe; der
   // Rahmen ist `line-strong`, weil er ein Bedienelement umrandet (3:1).
   secondary:
     'border border-line-strong bg-transparent text-accent not-disabled:hover:bg-accent-soft ' +
+    '[.plattform-schrift_&]:not-disabled:active:bg-surface-sunken ' +
     'disabled:border-dashed disabled:text-ink-muted',
   // Leise gesperrt: keine Flaeche - sonst bekaeme „Abbrechen" neben einem
   // gesperrten Hauptknopf ploetzlich einen Kasten.
-  quiet: 'text-accent not-disabled:hover:bg-surface-sunken disabled:text-ink-muted',
+  quiet:
+    'text-accent not-disabled:hover:bg-surface-sunken ' +
+    '[.plattform-schrift_&]:not-disabled:active:bg-surface-sunken disabled:text-ink-muted',
+  // Auf der Markenfläche der Plattform (Hero-Karte, Handoff 2026-10-22
+  // Abschnitt 3): Papier auf Tiefgrün, Schrift in Tiefgrün - 15,2:1 in beide
+  // Richtungen. Der Fokusring in Papier, sonst verschwände er auf Tiefgrün.
+  // Nur auf `surface-inverse`.
+  marke:
+    'border border-transparent bg-surface text-surface-inverse not-disabled:hover:bg-surface-sunken ' +
+    'not-disabled:active:bg-surface-sunken focus-visible:outline-surface ' +
+    'disabled:border-dashed disabled:border-salbei disabled:bg-transparent disabled:text-salbei',
 };
 
 export function buttonKlassen(variant: Variant = 'primary', zusatz = ''): string {
@@ -70,7 +96,7 @@ export function buttonKlassen(variant: Variant = 'primary', zusatz = ''): string
  */
 const kompakt =
   'nicht-drucken inline-flex min-h-11 items-center justify-center gap-2 rounded-button px-4 ' +
-  'text-sm font-bold transition-colors disabled:cursor-not-allowed';
+  `text-sm font-bold transition-colors disabled:cursor-not-allowed ${druck}`;
 
 export function kartenAktionKlassen(variant: Variant = 'secondary', zusatz = ''): string {
   return `${kompakt} ${varianten[variant]} ${zusatz}`.trim();
@@ -100,7 +126,7 @@ export function knopfKlassen(variant: Variant, groesse: Groesse = 'normal', zusa
  */
 const symbol =
   'nicht-drucken inline-flex shrink-0 items-center justify-center rounded-button ' +
-  'transition-colors disabled:cursor-not-allowed';
+  `transition-colors disabled:cursor-not-allowed ${druck}`;
 
 /**
  * `gross` (48 px) nur für den Hauptknopf einer Karte - den Haken neben
