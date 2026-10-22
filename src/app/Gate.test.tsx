@@ -103,6 +103,24 @@ describe('Gate ohne Sitzung', () => {
     expect(document.querySelector('[data-startbild]')).toBeNull();
   });
 
+  it.each(['/p', '/p/termine?bereich=treatment', '/einladung'])(
+    'zeigt auf dem Plattformweg %s kein Startbild (ANN-680)',
+    (pfad) => {
+      oeffne(pfad);
+
+      expect(document.querySelector('[data-startbild]')).toBeNull();
+      // Ohne Intro bleibt auch kein Merker zurück: Die Anmeldeseite im
+      // selben Tab bekäme es noch.
+      expect(window.sessionStorage.getItem('startbild-gezeigt')).toBeNull();
+    },
+  );
+
+  it('zeigt das Startbild auf Praxiswegen weiter, auch wenn sie mit „/p“ beginnen', () => {
+    oeffne('/patienten');
+
+    expect(document.querySelector('[data-startbild]')).not.toBeNull();
+  });
+
   it('führt auch eine Seite mit Patientendaten auf die Anmeldemaske, ohne sie zu erwähnen', () => {
     oeffne('/patienten');
 

@@ -382,3 +382,47 @@ test.describe('Titel der Plattform in rem', () => {
     });
   }
 });
+
+/**
+ * Markenmoment B statt Startbild (Handoff 2026-10-22, Abschnitt 7; ANN-680):
+ * beim ersten Erscheinen der Übersicht je Tab gestaffelt, nach 0,7 s steht
+ * alles; nicht beim Neuladen im selben Tab, nicht bei „Bewegung reduzieren“.
+ * Die Uhr der Seite steht, damit der Moment nicht vor der Prüfung endet.
+ */
+test.describe('Markenmoment B auf der Übersicht', () => {
+  async function bewegungen(page: Page) {
+    return page.evaluate(() =>
+      document
+        .getAnimations()
+        .filter((bewegung) => (bewegung as CSSAnimation).animationName?.startsWith('markenmoment'))
+        .map((bewegung) => Number(bewegung.effect?.getComputedTiming().endTime ?? 0)),
+    );
+  }
+
+  test('staffelt Gruß und Abschnitte einmal je Tab, nach 0,7 s steht alles', async ({ page }) => {
+    await page.clock.install();
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${PRUEFSEITE}?seite=geruest`);
+    await expect(page.getByRole('heading', { level: 1, name: 'Guten Tag' })).toBeVisible();
+    await expect(page.locator('.markenmoment')).toHaveCount(1);
+    const enden = await bewegungen(page);
+    expect(enden.length).toBeGreaterThan(1);
+    expect(Math.max(...enden)).toBeLessThanOrEqual(700);
+    await page.clock.runFor(1000);
+    await expect(page.locator('.markenmoment')).toHaveCount(0);
+
+    // Neuladen im selben Tab: kein zweiter Moment.
+    await page.reload();
+    await expect(page.getByRole('heading', { level: 1, name: 'Guten Tag' })).toBeVisible();
+    await expect(page.locator('.markenmoment')).toHaveCount(0);
+  });
+
+  test('steht bei „Bewegung reduzieren“ sofort da', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${PRUEFSEITE}?seite=geruest`);
+    await expect(page.getByRole('heading', { level: 1, name: 'Guten Tag' })).toBeVisible();
+    await expect(page.locator('.markenmoment')).toHaveCount(0);
+    expect(await bewegungen(page)).toEqual([]);
+  });
+});

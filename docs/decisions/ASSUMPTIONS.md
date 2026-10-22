@@ -7033,6 +7033,18 @@ Technik · entschieden (Jannes) · 2026-10-22 · Jannes · erledigt · Wiedervor
 
 **Änderungspfad.** Andere Luft oder Schwelle in `reiterstufe` und der Messreihe · Aufwand `klein`.
 
+### ANN-680 — Plattform: Markenmoment B statt Startbild, entschieden an der Adresse beim Öffnen
+
+Technik · entschieden (Jannes) · 2026-10-23 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Wer `/p`, einen Weg darunter oder `/einladung` öffnet, sieht kein Startbild; die Seite steht sofort. Beim ersten Erscheinen der Übersicht je Tab kommen Gruß und Abschnitte gestaffelt (nach 0,7 s steht alles), nie beim Zurückkehren, nie bei „Bewegung reduzieren“; gemerkt in `sessionStorage`, beim Abmelden nicht gelöscht. Wer die installierte App über `/` öffnet, sieht das Startbild weiter: Die Kontoart steht erst nach dem Profil fest.
+
+**Begründung.** Handoff 2026-10-22, Entscheidung 1 und Abschnitt 7; Jannes am 22.10.2026 (Variante B). DR-116: Das Startbild landete auf der Plattform ohne Landeplatz. Der Merker bleibt beim Abmelden, weil sein Löschen die Sitzungsverwaltung berührte.
+
+**Anker.** `StartbildBeimOeffnen` in `src/app/App.tsx`; `useMarkenmoment` in `src/features/platform/markenmoment.ts`.
+
+**Änderungspfad.** Plattformwege aus der Prüfung nehmen, Klasse `markenmoment` entfernen · Aufwand `klein`.
+
 ### ANN-681 — Offene Tastatur auf der Plattform: zurück tritt, was unten fest steht oder nur schmückt
 
 Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritt 1c (Türseiten)

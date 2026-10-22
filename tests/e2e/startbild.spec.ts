@@ -84,3 +84,14 @@ test('läuft beim Öffnen der Anwendung über der Anmeldemaske und landet auf ih
   await expect(page.getByRole('heading', { name: 'Anmelden' })).toBeVisible();
   await expect(intro).toHaveCount(0);
 });
+
+test('läuft auf Plattformwegen nicht - die Seite steht sofort (ANN-680)', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  // Ohne Sitzung führt `/p` auf die Anmeldemaske; entschieden wird an der Adresse beim Öffnen.
+  for (const pfad of ['/p', '/einladung']) {
+    await page.goto(pfad);
+    await expect(page.locator('main')).toBeVisible();
+    await expect(page.locator('[data-startbild]')).toHaveCount(0);
+    expect(await page.evaluate(() => sessionStorage.getItem('startbild-gezeigt'))).toBeNull();
+  }
+});
