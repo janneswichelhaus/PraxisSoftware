@@ -103,7 +103,7 @@ describe('Gate ohne Sitzung', () => {
     expect(document.querySelector('[data-startbild]')).toBeNull();
   });
 
-  it.each(['/p', '/p/termine?bereich=treatment', '/einladung'])(
+  it.each(['/p', '/p/termine?bereich=treatment', '/einladung', '/einladung/'])(
     'zeigt auf dem Plattformweg %s kein Startbild (ANN-680)',
     (pfad) => {
       oeffne(pfad);

@@ -45,17 +45,21 @@ function markenmomentVormerken(): void {
 
 /**
  * Läuft der Moment gerade? Beim ersten Erscheinen der Übersicht in diesem Tab
- * ja, eine Sekunde lang; danach, beim Zurückkehren und bei „Bewegung
- * reduzieren“ nie - dann steht alles sofort. Gemerkt wird schon beim
- * Erscheinen, damit ein Wechsel mitten im Moment ihn nicht wiederholt.
+ * ja; danach, beim Zurückkehren und bei „Bewegung reduzieren“ nie - dann
+ * steht alles sofort. Gemerkt wird schon beim Erscheinen, damit ein Wechsel
+ * mitten im Moment ihn nicht wiederholt. Er endet eine Sekunde, nachdem die
+ * Übersicht `bereit` ist: Abschnitte, die erst mit den Daten kommen, laufen
+ * so noch ein, statt mitten in der Bewegung abgeschnitten zu werden.
  */
-export function useMarkenmoment(): boolean {
+export function useMarkenmoment(bereit = true): boolean {
   const [moment, setMoment] = useState(() => markenmomentFaellig() && bewegungErlaubt());
   useEffect(() => {
     markenmomentVormerken();
-    if (!moment) return;
+  }, []);
+  useEffect(() => {
+    if (!moment || !bereit) return;
     const ende = window.setTimeout(() => setMoment(false), MARKENMOMENT_DAUER_MS);
     return () => window.clearTimeout(ende);
-  }, [moment]);
+  }, [moment, bereit]);
   return moment;
 }

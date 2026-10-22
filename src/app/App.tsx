@@ -18,7 +18,8 @@ import { ZugangEinrichtenPage } from '@/features/staff/ZugangEinrichtenPage';
 import { EinladungPage } from '@/features/platform/EinladungPage';
 import { EINLADUNG_PFAD } from '@/features/platform/einladung';
 import { KONTEXT_SCHLUESSEL, ladePlattformkontext } from '@/features/platform/api';
-import { PLATTFORM_PFAD, PlattformApp } from '@/features/platform/PlattformApp';
+import { PlattformApp } from '@/features/platform/PlattformApp';
+import { PLATTFORM_PFAD } from '@/features/platform/pfade';
 import { PlattformAblage } from '@/features/platform/PlattformAblage';
 import { ohneNetzFuer } from './ohneNetz';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
@@ -366,9 +367,7 @@ function StartbildBeimOeffnen() {
   return startbild ? <Startbild onFertig={startbildFertig} /> : null;
 }
 
-/** `/p`, alles darunter und die Einladung - nicht `/patienten`. */
+/** `/p`, die Einladung und alles darunter - nicht `/patienten`. */
 function aufPlattformweg(pfad: string): boolean {
-  return (
-    pfad === PLATTFORM_PFAD || pfad.startsWith(`${PLATTFORM_PFAD}/`) || pfad === EINLADUNG_PFAD
-  );
+  return [PLATTFORM_PFAD, EINLADUNG_PFAD].some((weg) => pfad === weg || pfad.startsWith(`${weg}/`));
 }

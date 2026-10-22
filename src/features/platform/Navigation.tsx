@@ -1,4 +1,13 @@
-import { useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menueknopf } from '@/components/ui/Menueknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
@@ -121,7 +130,7 @@ const MIT_SCHALTER = new Set([
  * unten; am Rechner trennt eine Linie die Navigation vom Inhalt.
  */
 export function Kopf({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechner: boolean }) {
-  const { pathname, search } = useLocation();
+  const { pathname } = useLocation();
   const gewaehlt = useWahl(bereiche);
   const ziele = useZiele(bereiche);
   const ich = pathname === `${PLATTFORM_PFAD}/ich`;
@@ -157,8 +166,7 @@ export function Kopf({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechn
           </span>
           Ich
         </Link>
-        {/* Ein Seitenwechsel schließt das Menü: Es beginnt mit jeder Adresse neu. */}
-        {rechner ? null : <Menue key={`${pathname}${search}`} ziele={ziele} ich={ich} />}
+        {rechner ? null : <Menue ziele={ziele} ich={ich} />}
       </div>
       {/* D6: der Schalter nur bei zwei lesbaren Zugängen - eigene Bereiche
           und Vertretungen (POR-006). */}
@@ -224,27 +232,53 @@ function Rechnernavigation({ ziele }: { ziele: Ziel[] }) {
  * Die Grenze ist eine Media Query in rem: Sie bezieht sich auf die
  * Standardschrift des Browsers und greift deshalb beim Zoom, nicht bei der
  * Schrift-Einstellung „Sehr groß“ - dort stehen zwei Reihen (Stufe 2).
+ *
+ * Offen ist das Menü für genau eine Adresse (`location.key`): Jeder
+ * Seitenwechsel schließt es, auch Zurück und ein Tipp auf die Seite, auf der
+ * man schon steht. Verlässt der Fokus es mit Tab, schließt es ebenfalls - es
+ * verdeckte sonst, wo der Fokus steht (WCAG 2.4.11).
  */
 function Menue({ ziele, ich }: { ziele: Ziel[]; ich: boolean }) {
-  const [offen, setOffen] = useState(false);
+  const { key: adresse } = useLocation();
+  const [offenAuf, setOffenAuf] = useState<string | null>(null);
+  const offen = offenAuf === adresse;
   const knopf = useRef<HTMLButtonElement>(null);
   const id = useId();
 
-  function schliessen() {
-    setOffen(false);
+  const schliessen = useCallback(() => {
+    setOffenAuf(null);
     knopf.current?.focus();
-  }
+  }, []);
+
+  // Esc schließt, wo der Fokus auch steht: Safari fokussiert einen
+  // angetippten Knopf nicht.
+  useEffect(() => {
+    if (!offen) return;
+    const taste = (ereignis: KeyboardEvent) => {
+      if (ereignis.key === 'Escape') schliessen();
+    };
+    document.addEventListener('keydown', taste);
+    return () => document.removeEventListener('keydown', taste);
+  }, [offen, schliessen]);
 
   return (
     <div
       className="hidden max-[23rem]:block"
-      onKeyDown={(ereignis) => {
-        if (ereignis.key !== 'Escape' || !offen) return;
-        ereignis.stopPropagation();
-        schliessen();
+      onBlur={(ereignis) => {
+        // Nur ein Fokus, der woanders hingeht: Ein Tipp daneben trifft die
+        // Fläche unten, die selbst schließt.
+        const ziel = ereignis.relatedTarget;
+        if (offen && ziel instanceof Node && !ereignis.currentTarget.contains(ziel)) {
+          setOffenAuf(null);
+        }
       }}
     >
-      <Menueknopf ref={knopf} offen={offen} steuert={id} onClick={() => setOffen(!offen)} />
+      <Menueknopf
+        ref={knopf}
+        offen={offen}
+        steuert={id}
+        onClick={() => setOffenAuf(offen ? null : adresse)}
+      />
       {/* Ein Tipp daneben schließt das Menü und öffnet nichts darunter. */}
       {offen ? (
         <div
@@ -263,11 +297,23 @@ function Menue({ ziele, ich }: { ziele: Ziel[]; ich: boolean }) {
         <ul className="py-1">
           {ziele.map((z) => (
             <li key={z.wort}>
-              <Menuezeile to={z.to} aktuell={z.aktuell} zeichen={z.zeichen} wort={z.wort} />
+              <Menuezeile
+                to={z.to}
+                aktuell={z.aktuell}
+                zeichen={z.zeichen}
+                wort={z.wort}
+                onWahl={schliessen}
+              />
             </li>
           ))}
           <li className="border-line mt-1 border-t pt-1">
-            <Menuezeile to={`${PLATTFORM_PFAD}/ich`} aktuell={ich} zeichen={PERSON} wort="Ich" />
+            <Menuezeile
+              to={`${PLATTFORM_PFAD}/ich`}
+              aktuell={ich}
+              zeichen={PERSON}
+              wort="Ich"
+              onWahl={schliessen}
+            />
           </li>
         </ul>
       </nav>
@@ -275,25 +321,33 @@ function Menue({ ziele, ich }: { ziele: Ziel[]; ich: boolean }) {
   );
 }
 
-/** Eine Zeile im Menü: 56 hoch, Zeichen 24 und Wort; aktiv Strich 3 links. */
+/**
+ * Eine Zeile im Menü: 56 hoch, Zeichen 24 und Wort; aktiv Strich 3 links.
+ * Zeichen und Abstände in px, nur das Wort wächst mit der Schrift - sonst
+ * bräche „Nachrichten“ bei 188 px und „Sehr groß“ mitten im Wort (ANN-679).
+ * Die Wahl schließt das Menü und gibt den Fokus an „Menü“ zurück.
+ */
 function Menuezeile({
   to,
   aktuell,
   zeichen,
   wort,
+  onWahl,
 }: {
   to: string;
   aktuell: boolean;
   zeichen: ReactNode;
   wort: string;
+  onWahl: () => void;
 }) {
   return (
     <Link
       to={to}
       aria-current={aktuell ? 'page' : undefined}
-      className={`text-ink aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 items-center gap-3 border-l-3 border-transparent px-3 font-medium aria-[current=page]:font-bold ${DRUCK}`}
+      onClick={onWahl}
+      className={`text-ink aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 items-center gap-[10px] border-l-3 border-transparent px-[10px] font-medium whitespace-nowrap aria-[current=page]:font-bold ${DRUCK}`}
     >
-      <Zeichen className="size-6 shrink-0">{zeichen}</Zeichen>
+      <Zeichen className="size-[24px] shrink-0">{zeichen}</Zeichen>
       {wort}
     </Link>
   );
@@ -315,10 +369,13 @@ function useReiterstufe(
     const flaeche = leiste.current;
     const woerter = messreihe.current;
     if (!flaeche || !woerter) return;
-    const messen = () =>
-      setStufe(
-        reiterstufe(woerter.getBoundingClientRect().width, flaeche.getBoundingClientRect().width),
-      );
+    const messen = () => {
+      // Ausgeblendet (offene Tastatur, unter 23rem) misst die Leiste 0 -
+      // dann bleibt die Stufe, statt beim Zurückkommen kurz zu springen.
+      const verfuegbar = flaeche.getBoundingClientRect().width;
+      if (verfuegbar === 0) return;
+      setStufe(reiterstufe(woerter.getBoundingClientRect().width, verfuegbar));
+    };
     messen();
     if (typeof ResizeObserver === 'undefined') return;
     const beobachter = new ResizeObserver(messen);
@@ -332,8 +389,13 @@ function useReiterstufe(
 /** Stufe 1: Zeichen 24 über dem Wort, mindestens 68 hoch, aktiv mit Strich 3 oben. */
 const REITER_EINE_REIHE = `text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent -mt-px flex min-h-17 grow flex-col items-center justify-center gap-0.5 border-t-3 border-transparent px-0.5 pt-1.5 pb-2 font-medium whitespace-nowrap aria-[current=page]:font-bold ${DRUCK}`;
 
-/** Stufe 2: Zeichen 28 neben dem Wort, mindestens 56 hoch, aktiv auf `accent-soft`. */
-const REITER_ZWEI_REIHEN = `text-ink-muted aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent rounded-button flex min-h-14 grow items-center gap-2 p-1.5 font-medium whitespace-nowrap aria-[current=page]:font-bold ${DRUCK}`;
+/**
+ * Stufe 2: Zeichen 28 neben dem Wort, mindestens 56 hoch, aktiv auf
+ * `accent-soft`. Zeichen, Abstand und Innenrand in px wie in der Zeichnung:
+ * Nur das Wort wächst mit „Groß“ und „Sehr groß“ - so passt „Nachrichten“
+ * auch bei 360 px in seine Hälfte (ANN-679).
+ */
+const REITER_ZWEI_REIHEN = `text-ink-muted aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent rounded-button flex min-h-14 grow items-center gap-[8px] p-[6px] font-medium whitespace-nowrap aria-[current=page]:font-bold ${DRUCK}`;
 
 /**
  * Die Reiterleiste unten (DSN-001 Abschnitt 3, Handoff Abschnitt 3), am
@@ -358,7 +420,7 @@ export function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
         className={
           stufe === 1
             ? 'max-w-formular mx-auto flex px-1'
-            : 'max-w-formular mx-auto grid grid-cols-2 gap-1 px-1 pt-1.5 pb-2'
+            : 'max-w-formular mx-auto grid grid-cols-2 gap-[4px] px-[4px] pt-[6px] pb-[8px]'
         }
       >
         {ziele.map((z) => (
@@ -368,7 +430,9 @@ export function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
               aria-current={z.aktuell ? 'page' : undefined}
               className={stufe === 1 ? REITER_EINE_REIHE : REITER_ZWEI_REIHEN}
             >
-              <Zeichen className={stufe === 1 ? 'size-6' : 'size-7 shrink-0'}>{z.zeichen}</Zeichen>
+              <Zeichen className={stufe === 1 ? 'size-6' : 'size-[28px] shrink-0'}>
+                {z.zeichen}
+              </Zeichen>
               {z.wort}
             </Link>
           </li>

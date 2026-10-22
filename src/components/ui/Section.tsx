@@ -40,7 +40,9 @@ export function Section({
 }) {
   const Ueberschrift = ebene === 3 ? 'h3' : 'h2';
   return (
-    <section className="mt-8 first:mt-0">
+    // Auf der Plattform 40 zwischen Abschnitten, am Rechner 48 (Handoff
+    // 2026-10-22, Abschnitt 4; ANN-683).
+    <section className="mt-8 first:mt-0 [.plattform-schrift_&]:not-first:mt-10 [.plattform-schrift[data-rechner]_&]:not-first:mt-12">
       {/* Kopfzeile mindestens 32 px (Design-Handoff 2026-10-01, Abschnitt 3):
           genug für die Überschrift und einen Textlink daneben, ohne dass ein
           leerer Kopf die Liste nach unten schiebt. Das Tippziel eines

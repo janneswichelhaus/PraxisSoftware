@@ -177,13 +177,57 @@ describe('Menü unter 23rem (Stufe 3, ANN-682)', () => {
     expect(screen.getByTestId('ort')).toHaveTextContent(/^\/p$/);
   });
 
-  it('führt zum Ziel und ist danach zu', async () => {
+  it('führt zum Ziel, ist danach zu und gibt den Fokus an „Menü“ zurück', async () => {
     const nutzer = userEvent.setup();
     zeigeKopf();
-    await nutzer.click(screen.getByRole('button', { name: 'Menü' }));
+    const menue = screen.getByRole('button', { name: 'Menü' });
+    await nutzer.click(menue);
     await nutzer.click(screen.getByRole('link', { name: 'Termine' }));
     expect(screen.getByTestId('ort')).toHaveTextContent('/p/termine');
-    expect(screen.getByRole('button', { name: 'Menü' })).toHaveAttribute('aria-expanded', 'false');
+    expect(menue).toHaveAttribute('aria-expanded', 'false');
+    expect(menue).toHaveFocus();
+  });
+
+  it('schließt auch mit einem Tipp auf die Seite, auf der man schon steht', async () => {
+    const nutzer = userEvent.setup();
+    zeigeKopf('/p');
+    const menue = screen.getByRole('button', { name: 'Menü' });
+    await nutzer.click(menue);
+    await nutzer.click(screen.getByRole('link', { name: 'Übersicht', current: 'page' }));
+    expect(screen.getByTestId('ort')).toHaveTextContent(/^\/p$/);
+    expect(menue).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('schließt, wenn der Fokus es mit Tab verlässt - es verdeckte sonst den Fokus', async () => {
+    const nutzer = userEvent.setup();
+    renderWithProviders(
+      <>
+        <Kopf bereiche={[BEHANDLUNG]} rechner={false} />
+        <button type="button">Darunter</button>
+      </>,
+      '/p',
+    );
+    const menue = screen.getByRole('button', { name: 'Menü' });
+    await nutzer.click(menue);
+    // „Ich“ ist das letzte Ziel im Menü; danach kommt die Seite darunter.
+    within(screen.getByRole('navigation', { name: 'Plattform' }))
+      .getByRole('link', { name: 'Ich' })
+      .focus();
+    await nutzer.tab();
+    expect(screen.getByRole('button', { name: 'Darunter' })).toHaveFocus();
+    expect(menue).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('schließt mit Esc auch dann, wenn der Fokus nicht im Menü steht', async () => {
+    const nutzer = userEvent.setup();
+    zeigeKopf();
+    const menue = screen.getByRole('button', { name: 'Menü' });
+    await nutzer.click(menue);
+    // Safari fokussiert einen angetippten Knopf nicht.
+    menue.blur();
+    await nutzer.keyboard('{Escape}');
+    expect(menue).toHaveAttribute('aria-expanded', 'false');
+    expect(menue).toHaveFocus();
   });
 });
 

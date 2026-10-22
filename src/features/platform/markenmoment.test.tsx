@@ -12,8 +12,8 @@ import {
  * beim ersten Erscheinen der Übersicht, nie beim Zurückkehren, bei
  * „Bewegung reduzieren“ gar nicht.
  */
-function Probe() {
-  const moment = useMarkenmoment();
+function Probe({ bereit = true }: { bereit?: boolean }) {
+  const moment = useMarkenmoment(bereit);
   return <output data-testid="moment">{moment ? 'läuft' : 'steht'}</output>;
 }
 
@@ -43,6 +43,21 @@ describe('Markenmoment B (ANN-680)', () => {
     // Ein Wahrheitswert im Sitzungsspeicher - kein Inhalt, kein localStorage.
     expect(window.sessionStorage.getItem(MARKENMOMENT_MERKER)).toBe('1');
     expect(window.localStorage.getItem(MARKENMOMENT_MERKER)).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(MARKENMOMENT_DAUER_MS);
+    });
+    expect(screen.getByTestId('moment')).toHaveTextContent('steht');
+  });
+
+  it('endet erst eine Sekunde, nachdem die Übersicht bereit ist', () => {
+    vi.useFakeTimers();
+    const { rerender } = render(<Probe bereit={false} />);
+    act(() => {
+      vi.advanceTimersByTime(3 * MARKENMOMENT_DAUER_MS);
+    });
+    // Solange die Daten fehlen, läuft er weiter - Abschnitte kommen noch.
+    expect(screen.getByTestId('moment')).toHaveTextContent('läuft');
+    rerender(<Probe bereit />);
     act(() => {
       vi.advanceTimersByTime(MARKENMOMENT_DAUER_MS);
     });

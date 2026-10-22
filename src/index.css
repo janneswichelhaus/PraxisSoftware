@@ -494,6 +494,15 @@
     display: none;
   }
 }
+/* Die Reiterleiste steht unten über dem Inhalt (`sticky`, bis 164 px hoch in
+   zwei Reihen): Was den Fokus bekommt, rollt über sie hinaus ins Bild, statt
+   unter ihr zu liegen (WCAG 2.4.11, ANN-679). */
+html:has(.reiterleiste[data-stufe='1']) {
+  scroll-padding-bottom: 5rem;
+}
+html:has(.reiterleiste[data-stufe='2']) {
+  scroll-padding-bottom: 9.5rem;
+}
 /* Zeit, Titel und Zustand nebeneinander brauchen Platz (ListRow trägt dafür
    `listenzeile`): Am Telefon steht der Zustand unter dem Titel, bei sehr
    wenig Breite (200 %) steht alles untereinander. */

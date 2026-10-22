@@ -71,7 +71,6 @@ export function Uebersicht({
   const [suche] = useSearchParams();
   const nachCheckin = useEinmaligeRueckmeldung('checkin');
   const nachBogen = useEinmaligeRueckmeldung('bogen');
-  const markenmoment = useMarkenmoment();
   const bereich = bereichParameter(suche);
   const mit = (pfad: string) => `${PLATTFORM_PFAD}${pfad}${bereich ? `?${bereich}` : ''}`;
   const eigen = zugang.access_kind === 'self';
@@ -185,6 +184,8 @@ export function Uebersicht({
   const abfragen = [termine, wuensche, rechnungen, bogen];
   const gescheitert = abfragen.some((a) => a.isError);
   const geladen = termine.data !== undefined && !gescheitert;
+  // Der Moment endet erst, wenn die Übersicht steht (ANN-680).
+  const markenmoment = useMarkenmoment(geladen || gescheitert);
 
   // Markenmoment B statt Startbild (ANN-680): beim ersten Erscheinen je Tab
   // kommen Gruß und Abschnitte gestaffelt (`index.css`).

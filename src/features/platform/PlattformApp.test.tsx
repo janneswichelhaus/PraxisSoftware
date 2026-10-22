@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
 import type { Plattformzugang } from './api';
 import { renderWithProviders } from '@/test-utils';
+import { RECHNER_ABFRAGE } from './geruestbreite';
 
 /**
  * Das Gerüst der Plattform (POR-004, DSN-001 Abschnitt 3 und D6).
@@ -426,7 +427,7 @@ describe('Tab-Titel und Verbindung im Gerüst (DR-115, DR-118)', () => {
 describe('Rechneransicht ab 1024 px (DR-113)', () => {
   beforeEach(() => {
     vi.stubGlobal('matchMedia', (abfrage: string) => ({
-      matches: abfrage === '(min-width: 1024px)',
+      matches: abfrage === RECHNER_ABFRAGE,
       media: abfrage,
       addEventListener: () => undefined,
       removeEventListener: () => undefined,

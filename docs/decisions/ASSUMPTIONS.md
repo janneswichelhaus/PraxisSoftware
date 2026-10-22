@@ -7025,9 +7025,9 @@ Technik · entschieden (Jannes) · 2026-10-22 · Jannes · erledigt · Wiedervor
 
 Technik · entschieden (Jannes) · 2026-10-22 · Jannes · erledigt · Wiedervorlage: —
 
-**Annahme.** Die Reiterleiste steht in einer Reihe, solange die vier Wörter in 700 mit je 4 px Luft nebeneinander passen; sonst in zwei Reihen, das Zeichen neben dem Wort. Gemessen wird mit `ResizeObserver` an der Leiste und an einer unsichtbaren Messreihe, nicht an der Schrift-Einstellung. Unter 23rem steht statt der Leiste „Menü“ im Kopf (ANN-682), ab 1024 px die Navigation im Kopf; die Einsicht der Praxis behält das Telefon.
+**Annahme.** Die Reiterleiste steht in einer Reihe, solange die vier Wörter in 700 mit je 4 px Luft nebeneinander passen; sonst in zwei Reihen, das Zeichen neben dem Wort. Gemessen wird mit `ResizeObserver` an der Leiste und an einer unsichtbaren Messreihe, nicht an der Schrift-Einstellung. In zwei Reihen und im Menü wachsen nur die Wörter, Zeichen und Abstände bleiben in px; `scroll-padding` hebt, was den Fokus bekommt, über die Leiste. Unter 23rem steht statt der Leiste „Menü“ im Kopf (ANN-682), ab 64rem die Navigation im Kopf; die Einsicht der Praxis behält das Telefon.
 
-**Begründung.** DR-112: Bei 200 % waren „Übungen“ und „Nachrichten“ abgeschnitten, bei „Sehr groß“ gekappt, bei „Groß“ stießen die Wörter aneinander. Handoff 2026-10-22, Abschnitt 3; Jannes am 22.10.2026, Entscheidung 2 („nur Zeichen“ verworfen). Gemessen, damit auch Systemschrift und Übersetzung greifen; bei 375 px ist „Normal“ eine Reihe, „Groß“ zwei.
+**Begründung.** DR-112: Bei 200 % waren „Übungen“ und „Nachrichten“ abgeschnitten, bei „Sehr groß“ gekappt, bei „Groß“ stießen die Wörter aneinander. Handoff 2026-10-22, Abschnitt 3; Jannes am 22.10.2026, Entscheidung 2 („nur Zeichen“ verworfen). Gemessen, damit auch Systemschrift und Übersetzung greifen; bei 375 px ist „Normal“ eine Reihe, „Groß“ zwei. Mit mitwachsenden Abständen passte „Nachrichten“ bei „Sehr groß“ ab 360 px nicht in seine Hälfte (Zweitreview).
 
 **Anker.** `reiterstufe` in `src/features/platform/geruestbreite.ts` (Messung in `Navigation.tsx`).
 
@@ -7061,7 +7061,7 @@ Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritt 1c (Türs
 
 Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritte 1c und 1d
 
-**Annahme.** Unter 23rem Fensterbreite (200 % Zoom am Telefon) hat die Plattform keine Reiterleiste; im Kopf steht der Zweitknopf „Menü“ und öffnet unter dem Kopf die vier Ziele und „Ich“ - Esc und ein Tipp daneben schließen, der Fokus geht zurück. Kopf und Inhalt haben 12 px Rand. Die Grenze ist eine Media Query in rem: Sie greift beim Zoom, nicht bei „Sehr groß“. Fotos auf Türseiten und im Einstieg entfallen, der Fuß geführter Abläufe steht am Ende des Inhalts (1c, 1d).
+**Annahme.** Unter 23rem Fensterbreite (200 % Zoom am Telefon) hat die Plattform keine Reiterleiste; im Kopf steht der Zweitknopf „Menü“ und öffnet unter dem Kopf die vier Ziele und „Ich“ - Esc und ein Tipp daneben schließen, der Fokus geht zurück. Kopf und Inhalt haben 12 px Rand, der Kopf ist 60 statt 72 hoch (Zeichnung „Reiterleiste bei 200 %“). Die Grenze ist eine Media Query in rem: Sie greift beim Zoom, nicht bei „Sehr groß“. Fotos auf Türseiten und im Einstieg entfallen, der Fuß geführter Abläufe steht am Ende des Inhalts (1c, 1d).
 
 **Begründung.** DR-112; Handoff 2026-10-22, Abschnitte 0, 3 und 4. Bei 188 px passen vier Ziele nicht nebeneinander, und zwei Reihen nähmen ein Drittel der Höhe.
 
@@ -7069,11 +7069,11 @@ Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritte 1c und 1
 
 **Änderungspfad.** Andere Grenze an `max-[23rem]:`, ohne Menü die Leiste in zwei Reihen · Aufwand `klein`.
 
-### ANN-683 — Plattform: Seitentitel und Abschnittstitel aller Seiten in der Skala in rem
+### ANN-683 — Plattform: Seiten- und Abschnittstitel in der Skala in rem, 40 und 48 zwischen Abschnitten
 
 Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
-**Annahme.** Auf jeder Seite unter `/p` steht der Seitentitel (`PageHeader`) in `text-plattform-titel` 28/800, am Rechner 32, und jeder Abschnittstitel (`Section`, damit auch `Listenabschnitt`) in `text-abschnitt` 22/700 in Tinte. Beide wachsen mit „Groß“ und „Sehr groß“; die Praxis-App behält ihre Rollen in px.
+**Annahme.** Unter `.plattform-schrift` - jede Seite unter `/p` und jede Türseite (`Vollseite`, seit Schritt 0; dort sehen es auch Beschäftigte bei der Einrichtung) - steht der Seitentitel (`PageHeader`) in `text-plattform-titel` 28/800, am Rechner 32, jeder Abschnittstitel (`Section`, damit `Listenabschnitt`) in `text-abschnitt` 22/700 in Tinte, und zwischen Abschnitten liegen 40, am Rechner 48. Beides wächst mit „Groß“ und „Sehr groß“; die übrige Praxis-App behält ihre Rollen in px.
 
 **Begründung.** Offen aus Schritt 1a: Abschnitte standen in 18/600 `ink-muted`, Titel in px und bei „Sehr groß“ kaum größer als der Text. Der Handoff 2026-10-22 (Abschnitt 2) nennt `text-abschnitt` nur für einzelne Titel der Übersicht; die Leinwand zeigt jeden Abschnitt so. Eine Stufe für alle Abschnitte hält die Rangfolge Seite, Abschnitt, Zeile auf jeder Seite gleich.
 

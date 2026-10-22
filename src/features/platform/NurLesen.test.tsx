@@ -11,6 +11,7 @@ import {
 } from './einsicht';
 import { PlattformApp, type Einsicht } from './PlattformApp';
 import { eigenerPlan } from './testdaten';
+import { RECHNER_ABFRAGE } from './geruestbreite';
 
 /**
  * Die Plattform in der Einsicht der Praxis (E-001, DSN-001 D7): dasselbe
@@ -340,7 +341,7 @@ describe('Einsicht am breiten Bildschirm (DR-113)', () => {
 
   it('zeigt im Telefon der Einsicht die Reiterleiste, nicht die Navigation des Rechners', async () => {
     vi.stubGlobal('matchMedia', (abfrage: string) => ({
-      matches: abfrage === '(min-width: 1024px)',
+      matches: abfrage === RECHNER_ABFRAGE,
       media: abfrage,
       addEventListener: () => undefined,
       removeEventListener: () => undefined,

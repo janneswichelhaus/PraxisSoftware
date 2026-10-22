@@ -207,16 +207,34 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
     }, groesse);
   }
 
-  /** Ziele, deren Wort nicht ganz hineinpasst. */
+  /**
+   * Ziele, deren Wort nicht ganz hineinpasst: Es läuft in den Innenrand des Ziels
+   * oder darüber hinaus oder bricht in eine zweite Zeile („Nachrichte|n“).
+   */
   async function gekappt(page: Page, auswahl: string): Promise<string[]> {
-    return page.evaluate(
-      (sel) =>
-        [...document.querySelectorAll<HTMLElement>(sel)]
-          .filter((ziel) => ziel.getBoundingClientRect().width > 0)
-          .filter((ziel) => ziel.scrollWidth > ziel.clientWidth + 1)
-          .map((ziel) => ziel.textContent?.trim() ?? ''),
-      auswahl,
-    );
+    return page.evaluate((sel) => {
+      const funde: string[] = [];
+      for (const ziel of document.querySelectorAll<HTMLElement>(sel)) {
+        const box = ziel.getBoundingClientRect();
+        if (box.width === 0) continue;
+        // Die Fläche für das Wort: das Ziel ohne seinen Innenrand.
+        const stil = getComputedStyle(ziel);
+        const links = box.left + parseFloat(stil.paddingLeft);
+        const rechts = box.right - parseFloat(stil.paddingRight);
+        for (const knoten of ziel.childNodes) {
+          const wort = knoten.textContent?.trim();
+          if (knoten.nodeType !== Node.TEXT_NODE || !wort) continue;
+          const bereich = document.createRange();
+          bereich.selectNodeContents(knoten);
+          const flaeche = bereich.getBoundingClientRect();
+          const zeilen = bereich.getClientRects().length;
+          if (zeilen > 1 || flaeche.left < links - 0.5 || flaeche.right > rechts + 0.5) {
+            funde.push(`${wort}: ${zeilen} Zeilen, ${Math.round(flaeche.right - rechts)} px über`);
+          }
+        }
+      }
+      return funde;
+    }, auswahl);
   }
 
   /** Jedes Ziel liegt im Bild und wird nicht verdeckt - es lässt sich antippen. */
@@ -251,12 +269,17 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
     expect((await kopfzeile.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(71.5);
   });
 
-  for (const groesse of ['gross', 'sehr-gross'] as const) {
-    test(`375 px, „${groesse === 'gross' ? 'Groß' : 'Sehr groß'}“: zwei Reihen, alle vier Ziele erreichbar`, async ({
+  for (const { breite, groesse } of [
+    { breite: 375, groesse: 'gross' },
+    { breite: 375, groesse: 'sehr-gross' },
+    // Die schmalste Breite mit Leiste: 23rem, darunter steht das Menü.
+    { breite: 368, groesse: 'sehr-gross' },
+  ] as const) {
+    test(`${breite} px, „${groesse === 'gross' ? 'Groß' : 'Sehr groß'}“: zwei Reihen, alle vier Ziele erreichbar`, async ({
       page,
     }) => {
       await mitSchrift(page, groesse);
-      await page.setViewportSize({ width: 375, height: 900 });
+      await page.setViewportSize({ width: breite, height: 900 });
       await oeffne(page, 'geruest', 'Guten Tag');
       await expect(leiste(page)).toHaveAttribute('data-stufe', '2');
       const ziele = leiste(page).getByRole('link');
@@ -294,6 +317,8 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
         expect((await ziel.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(55.5);
       }
       await bewegungAbwarten(page);
+      // Auch bei „Sehr groß“ bricht kein Wort - „Nachrichten“ bleibt ganz.
+      expect(await gekappt(page, 'nav[aria-label="Plattform"]:not([hidden]) a')).toEqual([]);
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page), 'axe').toEqual([]);
 
@@ -303,6 +328,24 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
       await expect(navigation).toBeHidden();
     });
   }
+
+  test('375 px, „Sehr groß“: was den Fokus bekommt, liegt über der Leiste, nicht unter ihr', async ({
+    page,
+  }) => {
+    await mitSchrift(page, 'sehr-gross');
+    await page.setViewportSize({ width: 375, height: 700 });
+    await oeffne(page, 'ich', 'Ich');
+    await expect(leiste(page)).toHaveAttribute('data-stufe', '2');
+    const zuletzt = page.locator('main a').last();
+    await zuletzt.focus();
+    await bewegungAbwarten(page);
+    const verdeckt = await zuletzt.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const treffer = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return treffer === null || !el.contains(treffer);
+    });
+    expect(verdeckt).toBe(false);
+  });
 
   test('1280 px: Navigation im Kopf, keine Leiste, der Inhalt an der Kante der Marke', async ({
     page,
@@ -352,16 +395,27 @@ test.describe('Titel der Plattform in rem', () => {
       return {
         seite: werte(document.querySelector('main h1')),
         abschnitt: werte(document.querySelector('main section h2')),
+        // Der erste Abschnitt steht unter dem Seitenkopf, also mit Abstand.
+        abstand: parseFloat(
+          getComputedStyle(document.querySelector('main section') ?? document.body).marginTop,
+        ),
       };
     });
   }
 
-  for (const { name, breite, schrift, seite, abschnitt } of [
-    { name: '375 px', breite: 375, schrift: null, seite: 28, abschnitt: 22 },
-    { name: '375 px „Sehr groß“', breite: 375, schrift: 'sehr-gross', seite: 35, abschnitt: 27.5 },
-    { name: '1280 px', breite: 1280, schrift: null, seite: 32, abschnitt: 22 },
+  for (const { name, breite, schrift, seite, abschnitt, abstand } of [
+    { name: '375 px', breite: 375, schrift: null, seite: 28, abschnitt: 22, abstand: 40 },
+    {
+      name: '375 px „Sehr groß“',
+      breite: 375,
+      schrift: 'sehr-gross',
+      seite: 35,
+      abschnitt: 27.5,
+      abstand: 50,
+    },
+    { name: '1280 px', breite: 1280, schrift: null, seite: 32, abschnitt: 22, abstand: 48 },
   ] as const) {
-    test(`${name}: Seitentitel ${seite}/800, Abschnitt ${abschnitt}/700 ohne Versalien`, async ({
+    test(`${name}: Seitentitel ${seite}/800, Abschnitt ${abschnitt}/700 ohne Versalien, ${abstand} dazwischen`, async ({
       page,
     }) => {
       if (schrift) {
@@ -371,7 +425,7 @@ test.describe('Titel der Plattform in rem', () => {
       }
       await page.setViewportSize({ width: breite, height: 900 });
       await oeffne(page, 'ich', 'Ich');
-      const { seite: h1, abschnitt: h2 } = await titel(page);
+      const { seite: h1, abschnitt: h2, abstand: zwischen } = await titel(page);
       expect(h1?.groesse).toBeCloseTo(seite, 1);
       expect(h1?.gewicht).toBe('800');
       expect(h1?.laufweite).toBeCloseTo(-0.03, 3);
@@ -379,6 +433,7 @@ test.describe('Titel der Plattform in rem', () => {
       expect(h2?.gewicht).toBe('700');
       expect(h2?.laufweite).toBeCloseTo(-0.01, 3);
       expect(h2?.versalien).toBe('none');
+      expect(zwischen).toBeCloseTo(abstand, 0);
     });
   }
 });
