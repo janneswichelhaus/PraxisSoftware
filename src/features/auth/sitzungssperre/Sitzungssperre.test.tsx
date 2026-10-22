@@ -164,7 +164,7 @@ describe('Sitzungssperre: erst prüfen, dann zeigen (Punkt 5)', () => {
     let antworten: (s: Sperrstand) => void = () => undefined;
     ladeSperrstand.mockReturnValue(new Promise((fertig) => (antworten = fertig)));
     zeichne();
-    expect(screen.getByText('Sitzung wird geprüft …')).toBeInTheDocument();
+    expect(screen.getByText('Einen Moment …')).toBeInTheDocument();
     expect(screen.queryByText('Akte von Max Mustermann')).toBeNull();
     expect(ladeSperrstand).toHaveBeenCalledWith(false);
 
@@ -190,7 +190,10 @@ describe('Sitzungssperre: erst prüfen, dann zeigen (Punkt 5)', () => {
     ladeSperrstand.mockRejectedValueOnce(new Error('offline'));
     zeichne();
     await warte();
-    expect(screen.getByText('Die Sitzung konnte nicht geprüft werden.')).toBeInTheDocument();
+    // DR-106: ohne das Fachwort „Sitzung“.
+    expect(screen.getByRole('heading', { level: 1, name: 'Keine Verbindung' })).toBeInTheDocument();
+    expect(screen.getByText('Own Motion ist gerade nicht erreichbar.')).toBeInTheDocument();
+    expect(screen.queryByText(/Sitzung/)).toBeNull();
     expect(screen.queryByText('Akte von Max Mustermann')).toBeNull();
 
     ladeSperrstand.mockResolvedValue(offen());
@@ -248,7 +251,7 @@ describe('Sitzungssperre: sperren zur Frist (Punkte 1 bis 3)', () => {
     act(() => {
       window.dispatchEvent(new Event('focus'));
     });
-    expect(screen.getByText('Sitzung wird geprüft …')).toBeInTheDocument();
+    expect(screen.getByText('Einen Moment …')).toBeInTheDocument();
     expect(screen.getByText('Akte von Max Mustermann')).not.toBeVisible();
     expect(screen.getByTestId('sitzung-inhalt')).toHaveAttribute('inert');
   });

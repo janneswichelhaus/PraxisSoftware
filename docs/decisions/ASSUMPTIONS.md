@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-21.
+Zuletzt aktualisiert: 2026-10-22.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -6183,11 +6183,11 @@ Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervor
 
 Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** owner weist einen Eintrag mit Grund zurück, nie im eigenen Konto; er bleibt sichtbar und zählt nicht. Zurücknehmen kann, wer eingetragen hat, solange er gilt – einen Freizeitausgleich nur vor seinem Tag. owner und Büro tragen für andere ein und buchen Korrekturen (Minuten mit Grund, ohne Lage); im eigenen Konto bucht nur owner eine Korrektur. Die Teamleitung entscheidet nicht.
+**Annahme.** owner weist einen Eintrag mit Grund zurück, nie im eigenen Konto; er bleibt sichtbar und zählt nicht. Zurücknehmen kann, wer eingetragen hat, solange er gilt – einen Freizeitausgleich, bis seine freie Zeit beginnt, auch am Tag selbst (BEF-180). owner und Büro tragen für andere ein und buchen Korrekturen (Minuten mit Grund, ohne Lage); im eigenen Konto bucht nur owner eine Korrektur. Die Teamleitung entscheidet nicht.
 
-**Begründung.** BEF-066 Option 2 mit Büro; Entscheiden wie ANN-576. Genommene Zeit soll niemand durch Zurücknehmen zurückholen.
+**Begründung.** BEF-066 Option 2 mit Büro; Entscheiden wie ANN-576. Genommene Zeit holt niemand durch Zurücknehmen zurück (Jannes 2026-10-17).
 
-**Anker.** `public.reject_time_account_entry`, `public.withdraw_time_account_entry`.
+**Anker.** `public.reject_time_account_entry`, `public.withdraw_time_account_entry`, `app.time_off_started`.
 
 **Änderungspfad.** Teamleitung weist zurück: `app.can_decide_staff_requests` · Aufwand `klein`.
 
@@ -6972,3 +6972,39 @@ Recht · offen · 2026-10-21 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 **Anker.** `public.place_staff_legal_hold` und die vier Löschregeln in `20261223200000_bef_178_loeschsperre_beschaeftigte.sql`.
 
 **Änderungspfad.** Teamchat oder Radflotte dazu: die Prüfung in deren Löschregel · Aufwand `klein`.
+
+### ANN-675 — Zeitkonto: Zurückweisung in der Übersicht ohne Grund, nur beim Freizeitausgleich
+
+Datenschutz · offen · 2026-10-21 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Ein zurückgewiesener Freizeitausgleich steht bei der Person in der Übersicht unter „noch offen“, bis sein Tag vorbei ist: Tag und Zeiten, ohne Grund und ohne wer; die Zeile führt ins Zeitkonto. Zurückgewiesene Überstunden und Minusstunden stehen dort nicht. Keine Benachrichtigung, kein Push, kein „gelesen“.
+
+**Begründung.** BEF-179, Entscheidung Jannes 2026-10-17. Die Übersicht steht in der Halterung, auch vor Patient:innen; sie zeigt, was der nächste Schritt braucht (PROJECT_PRINCIPLES.md 2.2), der Grund ist einen Tipp weiter. Nur der Freizeitausgleich ändert den Tag (ANN-595).
+
+**Anker.** `public.list_rejected_time_off`.
+
+**Änderungspfad.** Grund in der Übersicht: ein Feld in `list_rejected_time_off` und in der Zeile · Aufwand `klein`.
+
+### ANN-676 — Bildschirmtastatur: erkannt am Fokus eines Tippfelds bei Fingerbedienung
+
+Technik · offen · 2026-10-22 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Reiterleiste der Plattform tritt zurück, solange bei Fingerbedienung (`pointer: coarse`) ein Feld zum Tippen den Fokus hat: Textfeld, Textbereich, `contenteditable`. Auswahl, Datum und Uhrzeit öffnen einen Wähler und zählen nicht.
+
+**Begründung.** DR-120: Die feste Leiste verdeckte bei offener Tastatur den Sendeknopf. Der Browser meldet die Tastatur nicht verlässlich; der Fokus ist das Zeichen, das es überall gibt, und kommt ohne Skript aus.
+
+**Anker.** `src/index.css`, Regel `.reiterleiste`.
+
+**Änderungspfad.** Andere Erkennung (`visualViewport`) an derselben Stelle · Aufwand `klein`.
+
+### ANN-677 — Quellenangabe der Nährwerte: Titel und Lizenz als Kopf, Zitierung auf Abruf
+
+Recht · offen · 2026-10-22 · — · Prüfpaket · Wiedervorlage: Rechtsberatung vor dem Start (wie ANN-657)
+
+**Annahme.** Je Quelle stehen Titel und Lizenz sichtbar im Kopf eines Aufklappers; die volle Zitierung mit DOI, dem Hinweis auf Änderungen und dem Link zum Lizenztext steht darunter auf Abruf. Das genügt CC BY 4.0 und ODbL 1.0.
+
+**Begründung.** DR-146: Dieselbe Zeile stand zweimal. CC BY 4.0 Abschnitt 3(a)(2) erlaubt die Nennung „in any reasonable manner“, auch über einen Verweis; ODbL 1.0 Abschnitt 4.3 verlangt einen Hinweis dort, wo man ihn erwartet. Unsicher bleibt, ob der Link zum Lizenztext sichtbar stehen muss.
+
+**Anker.** `Quellenangabe` in `src/features/nutrition/LebensmittelSuche.tsx`.
+
+**Änderungspfad.** Lizenzlink wieder in den Kopf, als Zeile über dem Aufklapper · Aufwand `klein`.

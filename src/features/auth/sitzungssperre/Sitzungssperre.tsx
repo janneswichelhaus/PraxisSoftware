@@ -28,8 +28,8 @@ import { freigabeOhneNetzMoeglich } from '../freigabeOhneNetz';
  * wie Plattform (Punkt 8). Sie
  *
  *   * **prüft zuerst** (Punkt 5): Beim Öffnen, Neuladen und bei jeder
- *     Rückkehr mit abgelaufener Frist steht nichts als „Sitzung wird geprüft“
- *     da, bis der Server geantwortet hat;
+ *     Rückkehr mit abgelaufener Frist steht nichts als „Einen Moment …“ da,
+ *     bis der Server geantwortet hat;
  *   * **sperrt** zur früheren der beiden Fristen, die der Server meldet - 30
  *     Minuten nach der letzten Bedienung, 60 nach der Anmeldung (Punkte 1, 2) -,
  *     mit `VORLAUF_MS` Vorsprung, damit offene Texte noch als Entwurf auf den
@@ -391,15 +391,17 @@ export function Sitzungssperre({
 
   return (
     <SperrsicherungKontext.Provider value={sicherung}>
+      {/* DR-106: Ohne das Fachwort „Sitzung“ - die Person sieht nur, dass es
+          einen Moment dauert oder keine Antwort kam. */}
       {phase === 'start' || phase === 'pruefen' ? (
         <Vollseite>
-          <LoadingState label="Sitzung wird geprüft …" />
+          <LoadingState label="Einen Moment …" />
         </Vollseite>
       ) : null}
       {phase === 'fehler' ? (
-        <Vollseite titel="Sitzung nicht geprüft">
+        <Vollseite titel="Keine Verbindung">
           <ErrorState
-            title="Die Sitzung konnte nicht geprüft werden."
+            title="Own Motion ist gerade nicht erreichbar."
             description="Bitte die Verbindung prüfen und erneut versuchen."
             onErneut={() => {
               phaseRef.current = 'start';

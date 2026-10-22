@@ -1,18 +1,20 @@
-# Status · Stand 2026-10-21
+# Status · Stand 2026-10-22
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
 
-BEF-178 (21.10., Branch `ccr-24200d06-dhr3ze`, Pfad A): owner sperrt die Beschäftigtendaten einer
-Person (`place_staff_legal_hold`); Urlaub, Arbeitszeit, Zeitkonto und Erstattungen fallen dann nicht,
-auch Abgelehntes nicht; ohne Auditeintrag, Katalog unverändert (ANN-674).
+Design-Review Lauf 1, Schritt 0 (22.10., Branch `claude/plattform-schritt-0`, Pfad A, DRP-001 bis
+-003): Bestätigungen wandern nicht mit; Türen in 18 px, Tab-Titel, Verbindungszeile, Überschriften;
+Texte der Plattform (ANN-676, ANN-677). Schritt 1: Handoff auf `claude/design-review-lauf-1`.
 
-Gemergt am 21.10.: BEF-176 (#284, ANN-673), BEF-192 und BEF-193 (#283).
+BEF-179 und BEF-180 (21.10., Branch `ccr-fc77ad4b-t5zz1m`, Pfad A): Ein zurückgewiesener
+Freizeitausgleich steht bei der Person unter „noch offen“, bis sein Tag vorbei ist, ohne Grund
+(ANN-675); Zurücknehmen auch am Tag selbst, bis die freie Zeit beginnt (ANN-594).
 
-Gemergt am 20.10.: BEF-188 (#282, ANN-672), Politurrunde mit BEF-175 (#281, ANN-671), BEF-190 und
-BEF-191 (#280, ANN-670), BEF-189 (#279).
+Gemergt am 20. und 21.10.: BEF-178 (#286), BEF-176 (#284), BEF-192 und -193 (#283), BEF-188 (#282),
+BEF-175 (#281), BEF-190 und -191 (#280), BEF-189 (#279).
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
@@ -32,7 +34,7 @@ Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Ru
 
 ## Danach
 
-BEF-179 und BEF-180 (Zeitkonto: Zurückweisung unter „Noch offen“, Zurücknehmen am Tag selbst; Pfad A).
+BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederherstellung; Pfad A).
 
 ## Bei Jannes
 
@@ -59,5 +61,4 @@ BEF-179 und BEF-180 (Zeitkonto: Zurückweisung unter „Noch offen“, Zurückne
 
 ## Letzte Session
 
-21.10.2026, Branch `ccr-24200d06-dhr3ze`: Migration `20261223200000` (BEF-178). Lokal: `git pull`,
-`supabase db reset`.
+22.10.2026, Branch `claude/plattform-schritt-0`: ohne Migration und Seed. Lokal: `git pull`.

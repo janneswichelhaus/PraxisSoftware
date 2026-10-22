@@ -8,6 +8,8 @@ import { tagePlus } from '@/features/appointments/calendar';
 import { formatLocalTime } from '@/features/appointments/api';
 import { hakenFehlt } from '@/features/appointments/haken';
 import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
+import type { RejectedTimeOff } from '@/features/timeaccount/api';
+import { TIME_ACCOUNT_HOME } from '@/features/timeaccount/paths';
 import {
   fetchDayPlan,
   nachUhrzeit,
@@ -70,11 +72,61 @@ function DokuKnopf({ termin }: { termin: DayPlanEntry }) {
   );
 }
 
+/** Das Warnzeichen vor einem Grund, wie an den Besuchen. */
+function Warnung({ children }: { children: ReactNode }) {
+  return (
+    <span className="text-warnung font-medium">
+      <span aria-hidden="true">! </span>
+      {children}
+    </span>
+  );
+}
+
+const WOCHENTAG = new Intl.DateTimeFormat('de-DE', { weekday: 'short', timeZone: 'UTC' });
+// Zweistellig: So ist die Spalte so breit wie die Uhrzeiten der Besuche.
+const DATUM = new Intl.DateTimeFormat('de-DE', {
+  day: '2-digit',
+  month: '2-digit',
+  timeZone: 'UTC',
+});
+
+/**
+ * Ein zurückgewiesener Freizeitausgleich (BEF-179, ANN-675): Die Zeit ist
+ * wieder Arbeitszeit. Ohne Grund - die ganze Zeile führt ins Zeitkonto, wo er
+ * steht. Heute steht vorn die Uhrzeit wie an den Besuchen; an einem anderen
+ * Tag der Tag, kurz und zweizeilig - unter „Heute noch offen“ läse sich eine
+ * nackte Uhrzeit als heute (Praxis-Review).
+ */
+function ZurueckgewieseneFreizeit({ eintrag, heute }: { eintrag: RejectedTimeOff; heute: string }) {
+  const tag = new Date(`${eintrag.on_date}T12:00:00Z`);
+  return (
+    <ListRow
+      zeit={
+        eintrag.on_date === heute ? (
+          eintrag.starts_at
+        ) : (
+          <span className="flex flex-col leading-tight">
+            <span>{WOCHENTAG.format(tag)}</span>
+            <span className="text-sm font-medium">{DATUM.format(tag)}</span>
+          </span>
+        )
+      }
+      titel="Freizeitausgleich zurückgewiesen"
+      meta={<Warnung>{`${eintrag.starts_at}–${eintrag.ends_at} wieder Arbeitszeit`}</Warnung>}
+      to={TIME_ACCOUNT_HOME}
+    />
+  );
+}
+
 /**
  * Der Tagesabschluss als Liste (Auftrag C1, Analyse „Alltag unterwegs“
  * Rang 13): erst was heute noch offen ist - Haken und Doku -, dann kommt
  * „Morgen“. Seit B7 (BEF-157) gibt es keine Heilmittel mehr zu bestätigen:
  * Mit Haken und Doku entsteht die Leistung von selbst (ANN-513).
+ *
+ * Unter den Besuchen ein zurückgewiesener Freizeitausgleich, bis sein Tag
+ * vorbei ist (BEF-179) - ohne Benachrichtigung; die Übersicht fragt ihn nur
+ * für heute ab.
  */
 export function NochOffen({
   plan,
@@ -83,6 +135,8 @@ export function NochOffen({
   jetzt,
   zeitzone,
   ausfall,
+  zurueckgewiesen = [],
+  heute,
 }: {
   plan: readonly DayPlanEntry[];
   /** „Heute“, „Gestern“ … am Satzanfang. */
@@ -92,29 +146,34 @@ export function NochOffen({
   zeitzone: string;
   /** „Ausfall“ zu einem Termin, wo er passt, sonst `null` (B12). */
   ausfall?: (termin: DayPlanEntry) => ReactNode;
+  /** Zurückgewiesene Freizeitausgleiche, deren Tag noch kommt (BEF-179). */
+  zurueckgewiesen?: readonly RejectedTimeOff[];
+  /** Der heutige Tag der Praxis - für „Heute“, „Morgen“ an diesen Zeilen. */
+  heute: string;
 }) {
   const zeilen = plan.flatMap((termin) => {
     const grund = fehlt(termin, darfDokumentieren, jetzt);
     return grund ? [{ termin, grund }] : [];
   });
-  if (zeilen.length === 0) return null;
+  if (zeilen.length === 0 && zurueckgewiesen.length === 0) return null;
 
   return (
-    <Listenabschnitt titel={`${tagWort} noch offen`} anzahl={zeilen.length}>
+    <Listenabschnitt
+      titel={`${tagWort} noch offen`}
+      anzahl={zeilen.length + zurueckgewiesen.length}
+    >
       {zeilen.map(({ termin, grund }) => (
         <ListRow
           key={termin.id}
           zeit={formatLocalTime(termin.starts_at, zeitzone)}
           titel={terminName(termin)}
-          meta={
-            <span className="text-warnung font-medium">
-              <span aria-hidden="true">! </span>
-              {grund}
-            </span>
-          }
+          meta={<Warnung>{grund}</Warnung>}
           aktion={<ZeilenAktion termin={termin} darfDokumentieren={darfDokumentieren} />}
           darunter={ausfall ? ausfallZeile(ausfall(termin)) : undefined}
         />
+      ))}
+      {zurueckgewiesen.map((eintrag) => (
+        <ZurueckgewieseneFreizeit key={eintrag.id} eintrag={eintrag} heute={heute} />
       ))}
     </Listenabschnitt>
   );

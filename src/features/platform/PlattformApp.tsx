@@ -1,7 +1,8 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
 import { Profilhinweis } from '@/app/Profilhinweis';
+import { MARKE, tabName, tabTitel } from '@/app/tabtitel';
 import { Button } from '@/components/ui/Button';
 import { FENSTERZIEL, PortalZielKontext } from '@/components/ui/portalZiel';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
@@ -11,6 +12,7 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Wortmarke } from '@/components/ui/Wortmarke';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { RECHTSGRUNDLAGE, VERTRETUNGSART } from '@/lib/vertretung';
 import {
   BEREICHSNAME,
@@ -50,10 +52,11 @@ import { Datenexport } from './Datenexport';
 import { Einstieg } from './Einstieg';
 import { Einstellungen } from './Einstellungen';
 import { Einwilligungen } from './Einwilligungen';
-import { PLATTFORM_PFAD } from './pfade';
+import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { Rechnung, Rechnungen } from './Rechnungen';
 import { useSchriftgroesseAnwenden } from './schriftgroesse';
 import { Termine } from './Termine';
+import { Verbindungszeile } from './Verbindungszeile';
 import { NachrichtDetail, Nachrichten, NeueNachricht } from './Nachrichten';
 import { Uebersicht } from './Uebersicht';
 import { PlanblattPlattform, Uebungen } from './Uebungen';
@@ -168,7 +171,10 @@ function Geruest({
           Gerüst. In der Einsicht gilt die Wahl der Person, nicht die dieses
           Geräts - sie bleibt dort bei 18 px. */}
       {nurLesen ? null : <SchriftgroesseDesGeraets />}
+      {/* Den Tab und die Verbindung zeigt in der Einsicht die Praxis selbst. */}
+      {nurLesen ? null : <TabtitelDerPlattform bereiche={lesbar} />}
       <Kopf praxis={praxis} bereiche={lesbar} />
+      {nurLesen ? null : <Verbindungszeile />}
       {/* Gescheitertes Nachladen des Zugangs (BEF-046): Die Plattform bleibt
           stehen, die Zeile sagt es. */}
       <Profilhinweis />
@@ -574,6 +580,22 @@ function SchriftgroesseDesGeraets() {
 }
 
 /**
+ * Der Titel des Tabs je Seite (DR-115): fest aus `tabtitel.ts`, nie mit
+ * Daten. Bis dahin hieß hier jeder Tab „Own Motion“, und Vorlesesoftware sagte
+ * nach einem Reiterwechsel denselben Titel an. Im Training heißt der Reiter
+ * „Training“ (DSN-001 Abschnitt 5) - der Tab auch.
+ */
+function TabtitelDerPlattform({ bereiche }: { bereiche: Plattformzugang[] }) {
+  const { pathname } = useLocation();
+  const training = useWahl(bereiche)?.relationship_kind === 'training';
+  useEffect(() => {
+    document.title =
+      training && tabName(pathname) === 'Übungen' ? `Training – ${MARKE}` : tabTitel(pathname);
+  }, [pathname, training]);
+  return null;
+}
+
+/**
  * POR-019: Steht der Einstieg für den gewählten Zugang aus, kommt er vor der
  * Übersicht - sonst die Übersicht. Lädt der Stand nicht, gilt die Übersicht:
  * Ein Einstieg darf nie den Zugang zu den eigenen Daten versperren.
@@ -832,8 +854,12 @@ function Ich({
           />
         </ListRows>
         {nurLesen ? null : (
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button onClick={onAbmelden}>Abmelden</Button>
+          // DR-150: Abmelden ist nicht die Hauptsache dieser Seite - eine
+          // leise Zeile am Ende, „Überall abmelden“ mit Rückfrage darunter.
+          <div className="mt-6 flex flex-col items-start gap-3">
+            <Button variant="quiet" onClick={onAbmelden}>
+              Abmelden
+            </Button>
             <Rueckfrage
               ausloeser="Überall abmelden"
               ausloeserVariante="quiet"
@@ -856,8 +882,10 @@ function Ich({
         )}
       </Section>
       <Kleingedrucktes className="mt-8">
-        Ihr Zugang gehört nur Ihnen. Bitte geben Sie Adresse und Kennwort nicht weiter. Angehörige,
-        die Ihnen helfen, bekommen von der Praxis einen eigenen Zugang.
+        {/* DR-104: Ein Kennwort gibt es nicht; was sich weitergeben ließe, ist
+            das entsperrte Telefon. */}
+        Ihr Zugang gehört nur Ihnen. Geben Sie Ihr entsperrtes Telefon nicht weiter. Angehörige, die
+        Ihnen helfen, bekommen von der Praxis einen eigenen Zugang.
       </Kleingedrucktes>
     </>
   );
@@ -894,8 +922,14 @@ function IchBereich({
         <ListRow to={ziel('dokumente')} titel="Dokumente" />
       ) : null}
       {lesbar ? <ListRow to={ziel('angaben')} titel="Antworten aus dem Check-in" /> : null}
-      {/* ALT-003: die eigenen Gewohnheiten, auch ohne Kachel erreichbar. */}
-      {lesbar ? <ListRow to={ziel('gewohnheiten')} titel="Gewohnheiten" /> : null}
+      {/* ALT-003: die eigenen Gewohnheiten, auch ohne Kachel erreichbar. Von
+          hier führt der Rückweg wieder unter „Ich“, nicht zur Übersicht (DR-144). */}
+      {lesbar ? (
+        <ListRow
+          to={mitRueckweg(ziel('gewohnheiten'), `${PLATTFORM_PFAD}/ich?${wahlSuche(z)}`)}
+          titel="Gewohnheiten"
+        />
+      ) : null}
       {/* ERN-002: nur mit laufender Beratung - die Zeile fragt den Server. */}
       {lesbar && z.access_kind !== 'companion' ? <ErnaehrungZeile zugang={z} /> : null}
       {lesbar && z.relationship_kind === 'treatment' ? <AboZeile zugang={z} /> : null}
@@ -1129,15 +1163,20 @@ function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
   // DSN-001 Abschnitt 5: im Training heißt der Reiter „Training", weil dort
   // Einheiten und Plan zusammenkommen.
   const training = useWahl(bereiche)?.relationship_kind === 'training';
+  // DR-160: Ein Reiter trägt nur den gewählten Bereich weiter, nie eine
+  // Bestätigung wie `gesendet=1` - die gehört zu der Seite, die sie zeigt.
+  const bereich = bereichParameter(new URLSearchParams(search));
+  const anhang = bereich ? `?${bereich}` : '';
   return (
+    // `reiterleiste`: Bei offener Bildschirmtastatur tritt sie zurück (DR-120, `index.css`).
     <nav
       aria-label="Plattform"
-      className="border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur"
+      className="reiterleiste border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur"
     >
       <ul className="max-w-formular mx-auto flex">
         <li className="flex-1">
           <Link
-            to={`${PLATTFORM_PFAD}${search}`}
+            to={`${PLATTFORM_PFAD}${anhang}`}
             aria-current={pathname === PLATTFORM_PFAD ? 'page' : undefined}
             className={REITER}
           >
@@ -1156,7 +1195,7 @@ function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
         </li>
         <li className="flex-1">
           <Link
-            to={`${PLATTFORM_PFAD}/termine${search}`}
+            to={`${PLATTFORM_PFAD}/termine${anhang}`}
             aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/termine`) ? 'page' : undefined}
             className={REITER}
           >
@@ -1176,7 +1215,7 @@ function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
         </li>
         <li className="flex-1">
           <Link
-            to={`${PLATTFORM_PFAD}/uebungen${search}`}
+            to={`${PLATTFORM_PFAD}/uebungen${anhang}`}
             aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/uebungen`) ? 'page' : undefined}
             className={REITER}
           >
@@ -1195,7 +1234,7 @@ function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
         </li>
         <li className="flex-1">
           <Link
-            to={`${PLATTFORM_PFAD}/nachrichten${search}`}
+            to={`${PLATTFORM_PFAD}/nachrichten${anhang}`}
             aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/nachrichten`) ? 'page' : undefined}
             className={REITER}
           >

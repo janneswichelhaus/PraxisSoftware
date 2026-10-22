@@ -47,7 +47,7 @@ export function Dokumente({ zugang }: { zugang: Plattformzugang }) {
   });
   return (
     <>
-      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
       <PageHeader title="Dokumente" />
       {zugang.relationship_kind !== 'treatment' ? (
         <EmptyState inKarte title="Im Training gibt es keine Dokumente." />

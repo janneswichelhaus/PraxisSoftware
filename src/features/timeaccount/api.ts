@@ -93,6 +93,12 @@ export type Recorded = z.infer<typeof recordedSchema>;
 const rejectedSchema = z.object({ status: z.literal('rejected'), freed: z.boolean() });
 export type Rejected = z.infer<typeof rejectedSchema>;
 
+// BEF-179 (ANN-675): nur Tag und Zeiten, ohne Grund - den liest das Zeitkonto.
+const rejectedTimeOffSchema = z.array(
+  z.object({ id: z.string(), on_date: z.string(), starts_at: z.string(), ends_at: z.string() }),
+);
+export type RejectedTimeOff = z.infer<typeof rejectedTimeOffSchema>[number];
+
 // -----------------------------------------------------------------------------
 // Fehler in Sätzen der Praxis
 // -----------------------------------------------------------------------------
@@ -112,6 +118,8 @@ const SENTENCES: readonly (readonly [string, string])[] = [
     'time account entry not found',
     'Diesen Eintrag gibt es nicht mehr, oder er ist schon zurückgenommen oder zurückgewiesen.',
   ],
+  // BEF-180: Zurücknehmen geht bis zum Beginn der freien Zeit, auch am Tag selbst.
+  ['time off has begun', 'Die freie Zeit hat schon begonnen – zurücknehmen geht nur vorher.'],
   ['time account not found', 'Dieses Zeitkonto gibt es nicht.'],
   ['rejection needs a reason', 'Bitte einen Grund angeben.'],
   ['not allowed to reject own entry', 'Eigene Einträge weisen Sie nicht zurück.'],
@@ -165,6 +173,21 @@ const LOAD = 'Das Zeitkonto konnte nicht geladen werden.';
 export async function fetchTimeAccount(staffMemberId: string | null): Promise<TimeAccount> {
   const data = await call('list_time_account', { p_staff_member_id: staffMemberId }, LOAD);
   return antwort(timeAccountSchema, data, LOAD);
+}
+
+/**
+ * Die eigenen zurückgewiesenen Freizeitausgleiche, deren Tag noch kommt - für
+ * „noch offen“ in der Übersicht (BEF-179). Unter dem Schlüssel des
+ * Zeitkontos: Was dort eingetragen, zurückgenommen oder zurückgewiesen wird,
+ * lädt sie mit.
+ */
+export const REJECTED_TIME_OFF_KEY = [...TIME_ACCOUNT_KEY, 'rejected-time-off'] as const;
+
+const LOAD_REJECTED = 'Zurückgewiesene Freizeitausgleiche konnten nicht geladen werden.';
+
+export async function fetchRejectedTimeOff(): Promise<RejectedTimeOff[]> {
+  const data = await call('list_rejected_time_off', {}, LOAD_REJECTED);
+  return antwort(rejectedTimeOffSchema, data, LOAD_REJECTED);
 }
 
 /** Der Satz, wenn die Vorschau ohne Antwort des Servers nicht lädt. */

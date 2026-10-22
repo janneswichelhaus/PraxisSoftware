@@ -25,6 +25,7 @@ import {
   abweisungGelesen,
   useWarteschlange,
 } from './ablage';
+import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { WOCHENTAGE, tageText } from './uebungstage';
 import { Uebungsinhalt, type DosisZumAblesen } from './Uebungsinhalt';
@@ -44,6 +45,7 @@ import { Uebungsinhalt, type DosisZumAblesen } from './Uebungsinhalt';
 export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
   const api = usePlattformApi();
   const [suche] = useSearchParams();
+  const gespeichert = useEinmaligeRueckmeldung('gespeichert');
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
     queryFn: () => api.ladePlaene(zugang.access_id),
@@ -54,10 +56,10 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
   return (
     <>
       <PageHeader title={training ? 'Training' : 'Übungen'} />
-      {suche.get('gespeichert') === '1' ? (
+      {gespeichert === '1' ? (
         // Eine Bestätigung, kein Lob (DSN-001 4.1).
         <Rueckmeldung className="mb-4">Ihre Einheit ist gespeichert.</Rueckmeldung>
-      ) : suche.get('gespeichert') === 'geraet' ? (
+      ) : gespeichert === 'geraet' ? (
         // TRK-008: ehrlich, wo sie liegt (ADR-024 Punkt 8).
         <Statusmeldung ton="warnung" className="mb-4">
           Ihre Einheit liegt auf diesem Gerät und ist noch nicht bei der Praxis. Sie wird
@@ -375,6 +377,12 @@ export function PlanblattPlattform({
             Drucken oder als PDF sichern
           </Button>
         ) : null}
+      </div>
+      {/* Das Blatt selbst beginnt mit `h2`, weil es in der Praxis unter einem
+          Seitentitel steht; hier fehlte die `h1` (DR-158). Sichtbar trägt das
+          Blatt seinen Titel selbst, der Seitentitel ist nur für Vorlesesoftware. */}
+      <div className="sr-only">
+        <PageHeader title="Ihr Plan" />
       </div>
       {plaene.isPending ? (
         <LoadingState label="Ihr Plan wird geladen …" />

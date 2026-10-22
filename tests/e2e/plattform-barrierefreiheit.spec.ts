@@ -39,7 +39,7 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'rechnungen', merkmal: 'Rechnungen' },
   { seite: 'rechnung', merkmal: 'Rechnung RG-2026-0007' },
   { seite: 'dokumente', merkmal: 'Dokumente' },
-  { seite: 'befundbogen', merkmal: /Anamnesebogen/ },
+  { seite: 'befundbogen', merkmal: 'Fragebogen vor dem ersten Termin' },
   { seite: 'ich', merkmal: 'Ich' },
   { seite: 'einwilligungen', merkmal: 'Einwilligungen' },
   { seite: 'daten', merkmal: 'Meine Daten' },

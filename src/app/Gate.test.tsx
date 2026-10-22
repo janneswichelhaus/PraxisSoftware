@@ -69,7 +69,7 @@ describe('Gate waehrend der Pruefung der Sitzung', () => {
 
     const hauptbereich = screen.getByRole('main');
     expect(hauptbereich).toContainElement(screen.getByRole('img', { name: 'Own Motion' }));
-    expect(hauptbereich).toContainElement(screen.getByText('Sitzung wird geprüft …'));
+    expect(hauptbereich).toContainElement(screen.getByText('Einen Moment …'));
   });
 });
 

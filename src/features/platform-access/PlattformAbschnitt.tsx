@@ -255,8 +255,8 @@ function Zustand({
             >
               <p>
                 Ein Code erscheint auf diesem Gerät. Die Person scannt ihn mit dem eigenen Telefon
-                und legt dort Adresse und Kennwort fest. Die Übergabe ist die Prüfung, dass sie es
-                selbst ist – bitte nur an die Person selbst zeigen.
+                und richtet dort ihren Zugang mit Gesicht oder Finger ein. Die Übergabe ist die
+                Prüfung, dass sie es selbst ist – bitte nur an die Person selbst zeigen.
               </p>
             </Rueckfrage>
           ) : null}
@@ -482,7 +482,8 @@ export function EinladungVorOrt({
       <p className="text-ink max-w-prose text-sm">
         {einladung.purpose === 'reset'
           ? `Bitte ${wer} diesen Code mit dem eigenen Telefon scannen lassen. Dort entsteht ein neues Kennwort.`
-          : `Bitte ${wer} diesen Code mit dem eigenen Telefon scannen lassen. Dort entstehen Adresse und Kennwort.`}
+          : // DR-104: Ein Kennwort gibt es nicht (ADR-025); die Einladung sagt dasselbe.
+            `Bitte ${wer} diesen Code mit dem eigenen Telefon scannen lassen. Dort entsteht der Zugang – mit Gesicht oder Finger, ohne Kennwort.`}
         {fuer ? ' Es ist ein eigenes Konto, nie das der Person.' : ''}
       </p>
       <QrCode inhalt={adresse} bezeichnung="Code zum Einlösen der Einladung" />

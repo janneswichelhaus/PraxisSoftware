@@ -342,6 +342,10 @@ describe('Panne melden', () => {
   });
 
   it('sagt einen Fehler des Servers im Fuß und bleibt auf der Seite', async () => {
+    // Mittwoch, der Ruhetag der Vorlage: „Groß“ führt ins Raddepot (BEF-176).
+    // Ohne festes Datum lief der Test nur mittwochs grün.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-21T10:00:00Z'));
     const nutzer = userEvent.setup();
     recordBreakdown.mockRejectedValue(new Error('Das Rad ist schon gesperrt.'));
     oeffne();

@@ -21,6 +21,7 @@ import {
   type Terminwunsch,
 } from './api';
 import { TAGE_NUR_DIE_PERSON, useNurLesen, usePlattformApi } from './einsicht';
+import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import { PLATTFORM_PFAD } from './pfade';
 import { terminBeschreibung, wunschText } from './terminbeschreibung';
 import { datum, kalendertag, kuenftig, tagKurz, zeitraum } from './zeit';
@@ -45,6 +46,7 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
   // E-001: In der Einsicht kein Wunsch, kein Ändern, kein Zurückziehen.
   const nurLesen = useNurLesen();
   const [suche] = useSearchParams();
+  const gesendet = useEinmaligeRueckmeldung('gesendet');
   const termine = useQuery({
     queryKey: termineSchluessel(zugang.access_id),
     queryFn: () => api.ladeTermine(zugang.access_id),
@@ -78,7 +80,7 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
   return (
     <>
       <PageHeader title="Termine" />
-      {suche.get('gesendet') === '1' ? (
+      {gesendet === '1' ? (
         <Rueckmeldung className="mb-6">
           Ihr Wunsch ist bei der Praxis angekommen. Sie meldet sich bei Ihnen.
         </Rueckmeldung>

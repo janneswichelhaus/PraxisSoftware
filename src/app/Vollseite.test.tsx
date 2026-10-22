@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import { useSchriftgroesseAnwenden } from '@/features/platform/schriftgroesse';
+import { EINLADUNG_TITEL } from './tabtitel';
 import { Vollseite } from './Vollseite';
 
 /**
@@ -56,6 +58,61 @@ describe('Vollseite', () => {
     // Auch die Türseiten nach dem Abmelden: Der Titel der letzten Seite
     // bleibt nicht am Tab stehen.
     expect(document.title).toBe('Anmelden – Own Motion');
+  });
+
+  it('nennt die Einladung „Einladung – Own Motion" (DR-115)', () => {
+    render(
+      <Vollseite titel="Ihr Zugang" tabtitel={EINLADUNG_TITEL}>
+        <p>Inhalt</p>
+      </Vollseite>,
+    );
+    expect(document.title).toBe('Einladung – Own Motion');
+  });
+
+  describe('Schrift der Plattform auf den Türen (DR-102)', () => {
+    afterEach(() => {
+      window.localStorage.removeItem('plattform-schriftgroesse');
+    });
+
+    it('setzt 18 px und die Schriftgröße dieses Geräts - und nimmt sie beim Gehen zurück', () => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+      const { unmount } = render(
+        <Vollseite titel="Ihr Zugang">
+          <p>Inhalt</p>
+        </Vollseite>,
+      );
+      expect(screen.getByRole('main').className).toContain('plattform-schrift');
+      expect(document.documentElement.dataset.schrift).toBe('sehr-gross');
+      unmount();
+      expect(document.documentElement.dataset.schrift).toBeUndefined();
+    });
+
+    it('lässt die Größe stehen, wenn die Sperrseite über dem Gerüst geht', () => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'gross');
+      function Geruest({ gesperrt }: { gesperrt: boolean }) {
+        useSchriftgroesseAnwenden();
+        return gesperrt ? (
+          <Vollseite titel="Gesperrt">
+            <p>Inhalt</p>
+          </Vollseite>
+        ) : null;
+      }
+      const { rerender, unmount } = render(<Geruest gesperrt />);
+      expect(document.documentElement.dataset.schrift).toBe('gross');
+      rerender(<Geruest gesperrt={false} />);
+      expect(document.documentElement.dataset.schrift).toBe('gross');
+      unmount();
+      expect(document.documentElement.dataset.schrift).toBeUndefined();
+    });
+
+    it('lässt „Normal“ ohne Angabe', () => {
+      render(
+        <Vollseite titel="Anmelden">
+          <p>Inhalt</p>
+        </Vollseite>,
+      );
+      expect(document.documentElement.dataset.schrift).toBeUndefined();
+    });
   });
 
   it('ist für Vorlesesoftware sauber', async () => {

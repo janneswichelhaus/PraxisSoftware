@@ -299,7 +299,7 @@ function Einheit({
           </Button>
         </div>
       ))}
-      <Uebungsinhalt position={position} />
+      <Uebungsinhalt position={position} ebene={2} />
 
       <ul className="mt-6 flex flex-col gap-3" aria-label="Durchgänge">
         {Array.from({ length: position.sets }, (_, i) => i + 1).map((durchgang) => {

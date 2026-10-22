@@ -66,7 +66,7 @@ test.describe('Plattform', () => {
 
       // Die Übersicht trägt Befundbogen, nächsten Termin und offene Rechnung.
       await page.goto(`${PRUEFSEITE}?seite=geruest`);
-      await expect(page.getByText('Befundbogen ausfüllen')).toBeVisible();
+      await expect(page.getByText('Fragebogen ausfüllen')).toBeVisible();
       await expect(page.getByText('Nächster Termin')).toBeVisible();
       await expect(page.getByText('Offene Rechnung')).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
@@ -111,7 +111,7 @@ test.describe('Plattform', () => {
 
       await page.goto(`${PRUEFSEITE}?seite=befundbogen`);
       await expect(
-        page.getByRole('heading', { name: 'Anamnesebogen Version 8 (DIGOTOR)' }),
+        page.getByRole('heading', { name: 'Fragebogen vor dem ersten Termin' }),
       ).toBeVisible();
       // In Schritten mit sichtbarem Fortschritt (ANN-467); „Absenden“ im letzten.
       await expect(page.getByText(/^Schritt 1 von \d+$/)).toBeVisible();
@@ -156,7 +156,8 @@ test.describe('Plattform', () => {
       // POR-006: „Sie handeln für …" steht über dem Inhalt, der Schalter
       // trennt eigenen Bereich und Begleitung.
       await page.goto(`${PRUEFSEITE}?seite=handeln-fuer`);
-      await expect(page.getByRole('status')).toContainText(
+      // Seit DR-118 steht im Gerüst auch die (leere) Verbindungszeile als Live-Region.
+      await expect(page.getByRole('status').filter({ hasText: 'Sie handeln für' })).toContainText(
         'Sie handeln für Maximilian Mustermann-Langenscheidt',
       );
       const fuer = page.getByRole('link', { name: 'Für Maximilian Mustermann-Langenscheidt' });

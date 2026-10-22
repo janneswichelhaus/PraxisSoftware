@@ -3,8 +3,52 @@ import userEvent from '@testing-library/user-event';
 import { useLocation } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test-utils';
-import type { Lebensmittel } from './lebensmittel';
-import { LebensmittelSuche } from './LebensmittelSuche';
+import type { Lebensmittel, Quelle } from './lebensmittel';
+import { LebensmittelSuche, Quellenangabe } from './LebensmittelSuche';
+
+/** Synthetische Quellen in der Form von `public.food_sources` (ANN-657). */
+const QUELLEN: Quelle[] = [
+  {
+    source: 'bls',
+    title: 'Bundeslebensmittelschlüssel (BLS), Version 4.0',
+    license: 'CC BY 4.0',
+    license_url: 'https://creativecommons.org/licenses/by/4.0/deed.de',
+    attribution: 'Max Rubner-Institut (2025): BLS 4.0. DOI: 10.0000/beispiel. Lizenz CC BY 4.0.',
+    source_url: 'https://www.blsdb.de',
+    version: null,
+  },
+  {
+    source: 'off',
+    title: 'Open Food Facts, Auszug Deutschland',
+    license: 'ODbL 1.0',
+    license_url: 'https://opendatacommons.org/licenses/odbl/1-0/',
+    attribution: 'Enthält Daten von Open Food Facts (ODbL 1.0).',
+    source_url: 'https://world.openfoodfacts.org',
+    version: '2026-10',
+  },
+];
+
+describe('Quellenangabe (ANN-657, DR-146)', () => {
+  it('nennt Titel und Lizenz einmal als Kopf, die Zitierung mit Lizenztext auf Abruf', async () => {
+    renderWithProviders(<Quellenangabe laden={() => Promise.resolve(QUELLEN)} />);
+    const kopf = await screen.findByText(
+      'Nährwerte: Bundeslebensmittelschlüssel (BLS), Version 4.0 (CC BY 4.0) · Open Food Facts, Auszug Deutschland (ODbL 1.0)',
+    );
+    expect(kopf.closest('summary')).not.toBeNull();
+    // Keine zweite Zeile mit denselben Namen und kein Aufklapper „Quellenangabe“.
+    expect(screen.queryByText('Quellenangabe')).toBeNull();
+    expect(screen.getAllByText(/Bundeslebensmittelschlüssel \(BLS\), Version 4\.0/)).toHaveLength(
+      1,
+    );
+    const lizenzen = screen.getAllByText('Lizenz im Wortlaut');
+    expect(lizenzen.map((link) => link.getAttribute('href'))).toEqual([
+      QUELLEN[0]!.license_url,
+      QUELLEN[1]!.license_url,
+    ]);
+    expect(screen.getByText(/DOI: 10\.0000\/beispiel/)).toBeInTheDocument();
+    expect(screen.getByText(/Stand: 2026-10\./)).toBeInTheDocument();
+  });
+});
 
 /**
  * Lebensmittel suchen und nachschlagen (ERN-EPIC-002): erst ab zwei

@@ -41,7 +41,7 @@ export function Rechnungen({ zugang }: { zugang: Plattformzugang }) {
   });
   return (
     <>
-      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
       <PageHeader title="Rechnungen" />
       <Abfragezustand
         abfrage={rechnungen}
@@ -109,6 +109,9 @@ export function Rechnung({ zugang }: { zugang: Plattformzugang }) {
   return (
     <>
       <Rueckweg standard={zurueck} beschriftung="Zu den Rechnungen" className="nicht-drucken" />
+      {/* Solange das Blatt mit seinem Titel fehlt, trägt die Seite einen
+          eigenen (DR-158). */}
+      {rechnung.data ? null : <PageHeader title="Rechnung" />}
       {rechnung.isPending ? (
         <LoadingState label="Die Rechnung wird geladen …" />
       ) : rechnung.data === undefined ? (

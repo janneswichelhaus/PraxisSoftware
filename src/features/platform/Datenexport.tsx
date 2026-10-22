@@ -53,11 +53,7 @@ function GanzerExport({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Rueckweg
-        standard={`${PLATTFORM_PFAD}/ich`}
-        beschriftung="Zu „Ich“"
-        className="print:hidden"
-      />
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" className="print:hidden" />
       <PageHeader title="Meine Daten" />
       {ergebnis ? null : (
         <>
@@ -65,7 +61,7 @@ function GanzerExport({ zugang }: { zugang: Plattformzugang }) {
           <p className="text-ink max-w-prose text-base leading-relaxed">
             {fuer ? `Sie holen hier die Daten von ${fuer}. ` : ''}
             Sie bekommen alles, was Sie hier auf der Plattform sehen: Ihre Angaben zur Person,
-            Termine, Wünsche, {zugang.relationship_kind === 'treatment' ? 'Befundbogen, ' : ''}
+            Termine, Wünsche, {zugang.relationship_kind === 'treatment' ? 'Fragebogen, ' : ''}
             Rechnungen, Dokumente und Einwilligungen.
           </p>
           <p className="text-ink mt-3 max-w-prose text-base leading-relaxed">
@@ -141,8 +137,9 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
           Drucken
         </Button>
       </div>
+      {/* DR-153: das Technikwort nur in Klammern, hinter dem, was es bedeutet. */}
       <Kleingedrucktes className="mt-3 print:hidden">
-        Die Datei ist im Format JSON. Andere Programme können sie lesen.
+        Andere Programme können die Datei lesen (Format JSON).
       </Kleingedrucktes>
 
       <p className="text-ink mt-6 text-base">
@@ -195,7 +192,7 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
 
       {daten.relationship === 'treatment' ? (
         <Abschnitt
-          titel={`Befundbogen (${daten.questionnaires.length})`}
+          titel={`Fragebogen (${daten.questionnaires.length})`}
           leer={daten.questionnaires.length === 0}
         >
           {daten.questionnaires.map((b) => (
@@ -289,11 +286,7 @@ function EigeneBenachrichtigungen({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Rueckweg
-        standard={`${PLATTFORM_PFAD}/ich`}
-        beschriftung="Zu „Ich“"
-        className="print:hidden"
-      />
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" className="print:hidden" />
       <PageHeader title="Meine Benachrichtigungen" />
       {ergebnis ? (
         <>
@@ -314,7 +307,7 @@ function EigeneBenachrichtigungen({ zugang }: { zugang: Plattformzugang }) {
             </Button>
           </div>
           <Kleingedrucktes className="mt-3 print:hidden">
-            Die Datei ist im Format JSON. Andere Programme können sie lesen.
+            Andere Programme können die Datei lesen (Format JSON).
           </Kleingedrucktes>
           <p className="text-ink mt-6 text-base">
             Stand {datum(ergebnis.daten.exported_at)} · {ergebnis.daten.organization}
