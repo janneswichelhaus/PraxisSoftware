@@ -41,8 +41,19 @@ const KORRIGIERT = 'Synthetisch: Belastung in vier Stufen gesteigert.';
 const BEGRUENDUNG = 'Zahlendreher bei der Stufenzahl.';
 const NACHTRAG = 'Synthetisch: Heimprogramm auf zwei Einheiten taeglich gesetzt.';
 
+/**
+ * Jeder Versuch legt seine Termine vier Stunden nach dem vorigen an.
+ *
+ * Wiederholt Playwright die serielle Gruppe, startet es sie in einem neuen
+ * Worker mit neuem `LAUF` - und der kann einen Tag treffen, auf dem der erste
+ * Versuch schon einen Termin angelegt hat. In derselben Datenbank greift dann
+ * zu Recht der Überschneidungsschutz (CI-Lauf 39842106004: „bereits einen
+ * Termin“ am 2034-01-20 um 08:00). Diese Spezifikation legt je Tag einen
+ * Termin von 60 Minuten an, zwischen 08:00 und 08:55; vier Stunden später
+ * liegt keiner davon im Weg.
+ */
 const terminAnlegen = (page: Page, tag: string) =>
-  terminUeberOberflaeche(page, { tag, von: zeit(0) });
+  terminUeberOberflaeche(page, { tag, von: zeit(test.info().retry * 240) });
 
 /** Termin mit finalisierter Dokumentation. */
 async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
@@ -157,8 +168,14 @@ test.describe('DOK-002: Nachtragen', () => {
     const terminId = await finalisierterEintrag(page, laufTag(3));
 
     await page.getByRole('link', { name: 'Nachtrag hinzufügen' }).click();
-    // Der Ursprungseintrag steht zur Orientierung darueber.
-    await expect(page.getByText(ENTWURF)).toBeVisible();
+    // Der Ursprungseintrag steht zur Orientierung darüber: zugeklappt mit
+    // seiner ersten Zeile, ein Tipp zeigt ihn vollständig. Gezielt über den
+    // Aufklapper statt über den Text: Die Seite trägt ihn zweimal (Vorschau im
+    // Kopf, Absatz im Aufklapper), und die Suche nach dem Text traf je nach
+    // Ladezustand noch die vorige Seite oder beide (CI-Lauf 39842106004).
+    await page.getByText('Ursprünglicher Eintrag', { exact: true }).click();
+    await expect(page.getByTestId('ursprung')).toBeVisible();
+    await expect(page.getByTestId('ursprung')).toHaveText(ENTWURF);
 
     await page.getByLabel('Nachtrag').fill(NACHTRAG);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
