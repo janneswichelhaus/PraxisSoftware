@@ -5,16 +5,12 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 1a (22.10., Branch `claude/plattform-1a-sprache`, Pfad A, DRP-004
-bis -006): Skala in rem, keine Versalien, 18 px; Hero-, Aufgaben-, Besuchs- und Notfallkarte,
-Skelett, Knopf `marke`, Druck; `design/PLATTFORM.md` und Prüfseite (ANN-678). Schritt 0 gemergt
-(#288); Handoff und Bericht in PR #289.
+Design-Review Lauf 1, Datenschritt (22.10., Branch `claude/plattform-daten-n1-n2`, Pfad A, DRP-N1/N2):
+Der Plattformkontext trägt den eigenen Namen, nur am lesbaren Zugang (ANN-690), und die Rufnummer
+der Praxis aus dem Absender der Rechnungen (ANN-691); die Oberfläche dazu bauen 1b, 1c und 1e.
 
-BEF-179 und BEF-180 (21.10., Branch `ccr-fc77ad4b-t5zz1m`, Pfad A): Ein zurückgewiesener
-Freizeitausgleich steht bei der Person unter „noch offen“, bis sein Tag vorbei ist, ohne Grund
-(ANN-675); Zurücknehmen auch am Tag selbst, bis die freie Zeit beginnt (ANN-594).
-
-Gemergt am 20. und 21.10.: BEF-178 (#286), BEF-176 (#284), BEF-192 und -193 (#283), BEF-188 (#282),
+Gemergt am 22.10.: Design-Review Schritt 0 (#288), Handoff und Bericht (#289), Schritt 1a (#290,
+ANN-678); BEF-179 und -180 (#287, ANN-675). Gemergt am 20. und 21.10.: BEF-178 (#286), BEF-176 (#284), BEF-192 und -193 (#283), BEF-188 (#282),
 BEF-175 (#281), BEF-190 und -191 (#280), BEF-189 (#279).
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
@@ -63,4 +59,5 @@ ins Löschjournal, Test mit Wiederherstellung; Pfad A).
 
 ## Letzte Session
 
-22.10.2026, Branch `claude/plattform-1a-sprache`: ohne Migration und Seed. Lokal: `git pull`.
+22.10.2026, Branch `claude/plattform-daten-n1-n2`: eine Migration, kein Seed. Lokal: `git pull`,
+`pnpm dlx supabase@2.116.0 db reset`.
