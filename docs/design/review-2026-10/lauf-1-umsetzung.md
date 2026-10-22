@@ -1,6 +1,6 @@
 # Design-Review Lauf 1 – Reihenfolge der Umsetzung
 
-Stand 21.10.2026. Vorschlag zum [Bericht](lauf-1-bericht.md); verbindlich wird jeder Schritt erst
+Stand 21.10.2026, ergänzt am 22.10.2026. Vorschlag zum [Bericht](lauf-1-bericht.md); verbindlich wird jeder Schritt erst
 mit Jannes' Freigabe und – ab Schritt 1 – mit dem Handoff aus Claude Design. Je Schritt ein Pull
 Request, nach K1 alles **Pfad S** (nur Oberfläche), soweit nicht anders vermerkt. Prüfung je
 Schritt: Bildstrecke vorher und nachher (`pnpm bildstrecke --nur=plattform,anmeldung`, 375 und 1280
@@ -10,20 +10,23 @@ px), `plattform-barrierefreiheit.spec.ts`, Ratsche in `src/designsystem.test.ts`
 
 Nur, was ein Entwurf nicht ohnehin neu fasst. Drei kleine Pull Requests, in beliebiger Reihenfolge:
 
-| PR  | Inhalt                                                                                                                                                                                                                                                                                                                                                      | Befunde                                                                           |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| 0a  | **Falsche Bestätigung:** Reiter tragen nur `bereich`/`zugang` weiter, Bestätigungs-Parameter werden verbraucht; Test „Wechsel nach dem Senden zeigt keine fremde Rückmeldung“.                                                                                                                                                                              | DR-160 (S1), Teil von DR-157                                                      |
-| 0b  | **Barrierefreiheit Gerüst und Türen:** Türseiten in der Plattform-Schrift (18 px, Schriftgröße des Geräts); Silbentrennung nur für lange Wörter, nie in Namen und Adressen; Tab-Titel je Plattformseite; Reiterleiste bei Tastatur ausblenden; Verbindungszeile im Plattformkopf; Startbild-Landeplatz im Plattformkopf; `h1` und Überschriftenfolge (axe). | DR-102, DR-114, DR-115, DR-116, DR-118, DR-120, DR-158                            |
-| 0c  | **Texte:** „Kennwort“ und „Mein Konto“ auf Plattformwegen, „Sitzung …“, „Anamnesebogen Version 8 (DIGOTOR)“ → „Fragebogen vor dem ersten Termin“, Zustandswörter der Nachrichten, ein Wort für „senden“, Rückweg „← Ich“ und nach Herkunft, „JSON“, Lizenzzeile einmal, „Abmelden“ leise.                                                                   | DR-104 bis DR-106, DR-125, DR-138, DR-140, DR-144, DR-146, DR-149, DR-150, DR-153 |
+| PR  | Inhalt                                                                                                                                                                                                                                                                                                               | Befunde                                                                           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 0a  | **Falsche Bestätigung:** Reiter tragen nur `bereich`/`zugang` weiter, Bestätigungs-Parameter werden verbraucht; Test „Wechsel nach dem Senden zeigt keine fremde Rückmeldung“.                                                                                                                                       | DR-160 (S1), Teil von DR-157                                                      |
+| 0b  | **Barrierefreiheit Gerüst und Türen:** Türseiten in der Plattform-Schrift (18 px, Schriftgröße des Geräts); Silbentrennung nur für lange Wörter, nie in Namen und Adressen; Tab-Titel je Plattformseite; Reiterleiste bei Tastatur ausblenden; Verbindungszeile im Plattformkopf; `h1` und Überschriftenfolge (axe). | DR-102, DR-114, DR-115, DR-118, DR-120, DR-158                                    |
+| 0c  | **Texte:** „Kennwort“ und „Mein Konto“ auf Plattformwegen, „Sitzung …“, „Anamnesebogen Version 8 (DIGOTOR)“ → „Fragebogen vor dem ersten Termin“, Zustandswörter der Nachrichten, ein Wort für „senden“, Rückweg „← Ich“ und nach Herkunft, „JSON“, Lizenzzeile einmal, „Abmelden“ leise.                            | DR-104 bis DR-106, DR-125, DR-138, DR-140, DR-144, DR-146, DR-149, DR-150, DR-153 |
 
 Bewusst **nicht** in Schritt 0: Typografie und Versalien (DR-154, DR-131), Reiterleiste bei 200 %
 (DR-112), Druckzustand (DR-117, betrifft auch die Praxis-App – mit Lauf 2 abstimmen), Abstände
-(DR-156) – das fasst Handoff 1 neu.
+(DR-156) – das fasst Handoff 1 neu. Ebenso der Startbild-Landeplatz (DR-116): Seit Jannes am
+22.10.2026 Markenmoment B entschieden hat, läuft auf der Plattform kein Startbild mehr; das kommt
+mit 1b.
 
 ## Schritt 1 – Handoff 1: Erster Eindruck und Plattform-Sprache
 
-Voraussetzung: Briefing 1 in Claude Design entworfen und von Jannes freigegeben. Fünf Pull Requests,
-in dieser Reihenfolge:
+Grundlage: der Handoff [handoff-2026-10-22-plattform-erster-eindruck.md](../handoff-2026-10-22-plattform-erster-eindruck.md)
+(Entwurf vom 22.10.2026 mit Jannes' Entscheidungen; freigegeben mit seinem Merge). Fünf Pull
+Requests, in dieser Reihenfolge:
 
 1. **1a Sprache:** `docs/design/PLATTFORM.md` (Entwurf im Bericht) und Verweis in DESIGN.md (Art c,
    DESIGN.md steht an seiner Größengrenze); Tokens der Plattform (Schriftskala, Schattenstufe,
@@ -57,8 +60,8 @@ sie unabhängig und können in zwei Strängen laufen. Reihenfolge nach Hebel:
 
 Name der Person, Rufnummer der Praxis und Bild der behandelnden Person auf der Plattform (Nebenbei
 N1 bis N3) ändern Projektionen und Rechte – nach K1 **Pfad A** mit `pnpm test:db`. Die Entwürfe
-zeigen dafür Varianten „wenn vorhanden“ mit Rückfall; gebaut wird zuerst ohne. Ob und wann, entscheidet
-Jannes.
+zeigen dafür Varianten „wenn vorhanden“ mit Rückfall; gebaut wird zuerst ohne. Entschieden am 22.10.2026: N1 und N2 kommen als
+eigener Schritt nach Pfad A, N3 später.
 
 ## Abgleich mit Lauf 2
 
