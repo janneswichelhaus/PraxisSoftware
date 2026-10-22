@@ -2,7 +2,8 @@
 
 Stand 21.10.2026, ergänzt am 22.10.2026. Vorschlag zum [Bericht](lauf-1-bericht.md); verbindlich wird jeder Schritt erst
 mit Jannes' Freigabe und – ab Schritt 1 – mit dem Handoff aus Claude Design. Je Schritt ein Pull
-Request, nach K1 alles **Pfad S** (nur Oberfläche), soweit nicht anders vermerkt. Prüfung je
+Request über den Feature-Loop (K1: **Pfad A**; einen Sandbox-Pfad gibt es nicht mehr); Checkliste
+und Zweitreview nur, wo der Diff einen Auslöser aus ADR-013 Punkt 9 berührt. Prüfung je
 Schritt: Bildstrecke vorher und nachher (`pnpm bildstrecke --nur=plattform,anmeldung`, 375 und 1280
 px), `plattform-barrierefreiheit.spec.ts`, Ratsche in `src/designsystem.test.ts`.
 

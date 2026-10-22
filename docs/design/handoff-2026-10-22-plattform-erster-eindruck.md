@@ -464,7 +464,8 @@ Knopfebene (DR-109, DR-110). Titel `text-plattform-titel`, „Willkommen“ und 
 
 ## 9 · Reihenfolge der Umsetzung
 
-Je Schritt ein Pull Request, nach K1 Pfad S, soweit nicht anders vermerkt (Umsetzung, Schritt 1).
+Je Schritt ein Pull Request über den Feature-Loop (K1: Pfad A; Checkliste und Zweitreview nur, wo
+der Diff einen Auslöser aus ADR-013 Punkt 9 berührt).
 Schritt 0 (0a, 0b, 0c) geht voraus oder läuft parallel ohne Überschneidung.
 
 1. **1a Sprache:** `docs/design/PLATTFORM.md` (Entwurf im Bericht, mit den Werten dieses Handoffs) und
