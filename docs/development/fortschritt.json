@@ -1467,6 +1467,15 @@
           "fertig_am": "2026-10-22",
           "nachweis": "DRP-001 bis DRP-003, Branch `claude/plattform-schritt-0`",
           "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 0 (DR-102 bis DR-160 ohne Entwurf); ANN-676, ANN-677"
+        },
+        {
+          "id": "drp-epic-002",
+          "name": "DRP-EPIC-002 Plattform: eigene Sprache aus dem Design-Review (Schritt 1a – Skala in rem, keine Versalien, Bausteine, PLATTFORM.md)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-22",
+          "nachweis": "DRP-004 bis DRP-006, Branch `claude/plattform-1a-sprache`, tests/e2e/plattform-bausteine.spec.ts",
+          "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1a (Handoff 2026-10-22); ANN-678"
         }
       ]
     },
