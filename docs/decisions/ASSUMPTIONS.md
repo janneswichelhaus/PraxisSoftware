@@ -7008,3 +7008,15 @@ Recht · offen · 2026-10-22 · — · Prüfpaket · Wiedervorlage: Rechtsberatu
 **Anker.** `Quellenangabe` in `src/features/nutrition/LebensmittelSuche.tsx`.
 
 **Änderungspfad.** Lizenzlink wieder in den Kopf, als Zeile über dem Aufklapper · Aufwand `klein`.
+
+### ANN-678 — Plattform: eine Tiefenstufe für Karten, die man antippt (Ausnahme von DS-001)
+
+Technik · entschieden (Jannes) · 2026-10-22 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Auf der Plattform tragen Hero-, Aufgaben- und Besuchskarte einen leichten Schatten `shadow-plattform` (0 1px 2px und 0 6px 20px, Tinte zu 6 und 8 %). Sonst gilt DS-001 „keine Schatten“, auch für Listen auf der Plattform.
+
+**Begründung.** Design-Review Lauf 1 (DR-157): Was man antippen kann, sah aus wie eine Liste. Handoff 2026-10-22, Abschnitt 2; Jannes am 22.10.2026: nur für diese drei Karten.
+
+**Anker.** `--shadow-plattform` in `src/index.css`; der Wächter „Keine Schatten“ in `src/designsystem.test.ts` lässt die Klasse nur in den drei Bausteinen zu.
+
+**Änderungspfad.** Token und drei Klassen entfernen, die Ausnahme im Wächter streichen · Aufwand `klein`.

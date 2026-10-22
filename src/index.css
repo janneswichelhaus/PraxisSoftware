@@ -314,6 +314,16 @@
   /* Schieben ohne Überschwung (ANN-663): Seiten der Leiste und Fenster -
      eine ganze Fläche, die über die Kante hinausschwänge, zeigte eine Lücke. */
   --ease-schieben: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Druck auf der Plattform (DR-117, Handoff 2026-10-22 Abschnitt 7): Knopf,
+     Zeile und Karte geben in 120 ms nach, ohne Überschwung. */
+  --ease-druck: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Die eine Tiefenstufe der Plattform (ANN-678, Handoff 2026-10-22,
+     Abschnitt 2): nur für Karten, die man antippt - Hero-, Aufgaben- und
+     Besuchskarte. Listen bleiben Linie. Sonst gilt DS-001, „keine Schatten“;
+     `src/designsystem.test.ts` lässt die Klasse nur in diesen drei Bausteinen
+     zu. Tinte #14181b zu 6 und 8 %. */
+  --shadow-plattform: 0 1px 2px rgb(20 24 27 / 0.06), 0 6px 20px rgb(20 24 27 / 0.08);
 
   /* Bedienhöhen. Das Mindestziel bleibt 44 px (WCAG 2.5.8). */
   --spacing-bedienhoehe: 48px;
@@ -516,6 +526,39 @@ html[data-schrift='gross'] {
 }
 html[data-schrift='sehr-gross'] {
   font-size: 125%;
+}
+
+/* Bewegung der Plattform (Handoff 2026-10-22, Abschnitt 7). Der Markenmoment:
+   Die Hero-Karte läuft 12 px von unten ein (0,12 bis 0,40 s) und das Laufrad
+   dreht eine Achtel zurück auf null (0,12 bis 0,72 s) - einmal, beim ersten
+   Erscheinen der Übersicht. Das Skelett pulsiert ruhig. Bei „Bewegung
+   reduzieren“ steht alles sofort, ohne Drehung und ohne Puls. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-erscheint {
+    animation: hero-erscheinen 0.28s var(--ease-feder-weich) 0.12s both;
+  }
+  .laufrad-dreht {
+    animation: laufrad-drehen 0.6s var(--ease-feder-weich) 0.12s both;
+  }
+  .skelett-puls {
+    animation: skelett-puls 1.6s ease-in-out infinite;
+  }
+}
+@keyframes hero-erscheinen {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+@keyframes laufrad-drehen {
+  from {
+    rotate: -45deg;
+  }
+}
+@keyframes skelett-puls {
+  50% {
+    opacity: 0.55;
+  }
 }
 
 /* Schraffur für Flächen, die nicht zur Verfügung stehen - im Kalender die

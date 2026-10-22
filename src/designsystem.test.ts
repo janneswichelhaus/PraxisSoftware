@@ -77,6 +77,25 @@ function schattenFunde(zeile: string): string[] {
 }
 
 /**
+ * Die eine Ausnahme (ANN-678, Jannes 2026-10-22): Die Plattform hebt Karten,
+ * die man antippt, mit `shadow-plattform` ab - nur in diesen drei Bausteinen.
+ * Überall sonst meldet der Wächter auch diese Klasse, und in den dreien jeden
+ * anderen Schatten.
+ */
+const PLATTFORM_SCHATTEN = /(?<=[\s"'`:])shadow-plattform(?![\w-])/g;
+const MIT_PLATTFORM_SCHATTEN: ReadonlySet<string> = new Set([
+  'src/components/ui/Aufgabenkarte.tsx',
+  'src/components/ui/HeroKarte.tsx',
+  'src/features/platform/Besuchskarte.tsx',
+]);
+
+function schattenFundeIn(zeile: string, datei: string): string[] {
+  return schattenFunde(
+    MIT_PLATTFORM_SCHATTEN.has(datei) ? zeile.replace(PLATTFORM_SCHATTEN, '') : zeile,
+  );
+}
+
+/**
  * Radien ausserhalb des Systems (DS-001, TOK-01).
  *
  * Geprueft wird die ganze Klasse: `rounded`, beliebig viele Segmente, dazu
@@ -194,7 +213,25 @@ describe('Keine Schatten', () => {
    * nicht mit `ring` (UXR-001).
    */
   it('verwendet nirgends eine Schatten-Utility, auch nicht ring oder drop-shadow', () => {
-    expect(funde(schattenFunde)).toEqual([]);
+    expect(funde(schattenFundeIn)).toEqual([]);
+  });
+
+  it('lässt `shadow-plattform` nur in den drei Karten der Plattform zu (ANN-678, Gegenprobe)', () => {
+    const zeile = 'className="rounded-card border shadow-plattform"';
+    expect(schattenFundeIn(zeile, 'src/components/ui/HeroKarte.tsx')).toEqual([]);
+    expect(schattenFundeIn(zeile, 'src/features/platform/Besuchskarte.tsx')).toEqual([]);
+    expect(schattenFundeIn(zeile, 'src/components/ui/Card.tsx')).toEqual(['shadow']);
+    expect(schattenFundeIn(zeile, 'src/features/platform/Uebersicht.tsx')).toEqual(['shadow']);
+    expect(schattenFundeIn('className="shadow-md"', 'src/components/ui/HeroKarte.tsx')).toEqual([
+      'shadow',
+    ]);
+    expect(css).toMatch(/--shadow-plattform:/);
+    // Keine Ausnahme ohne Grund: Jede der drei Karten trägt die Stufe auch.
+    // `match` beginnt auch mit dem globalen Muster vorn.
+    for (const datei of MIT_PLATTFORM_SCHATTEN) {
+      const inhalt = readFileSync(join(stamm, datei), 'utf8');
+      expect(inhalt.match(PLATTFORM_SCHATTEN), datei).not.toBeNull();
+    }
   });
 
   /**
