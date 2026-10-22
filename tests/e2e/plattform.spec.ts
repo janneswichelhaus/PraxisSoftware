@@ -156,7 +156,8 @@ test.describe('Plattform', () => {
       // POR-006: „Sie handeln für …" steht über dem Inhalt, der Schalter
       // trennt eigenen Bereich und Begleitung.
       await page.goto(`${PRUEFSEITE}?seite=handeln-fuer`);
-      await expect(page.getByRole('status')).toContainText(
+      // Seit DR-118 steht im Gerüst auch die (leere) Verbindungszeile als Live-Region.
+      await expect(page.getByRole('status').filter({ hasText: 'Sie handeln für' })).toContainText(
         'Sie handeln für Maximilian Mustermann-Langenscheidt',
       );
       const fuer = page.getByRole('link', { name: 'Für Maximilian Mustermann-Langenscheidt' });

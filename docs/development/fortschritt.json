@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-17",
+  "stand": "2026-10-22",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -1458,6 +1458,15 @@
           "nachweis": "PRs #241, #242, #243, #244, BEF-151 bis BEF-163, Bericht mit Bildpaaren",
           "gesichtet_am": "2026-10-15",
           "vermerk": "Auftrag Jannes (14.10.2026); nach dem Bericht mit Bildpaaren gemergt, alle Annahmen bestätigt; Anbieter für die Spracheingabe offen"
+        },
+        {
+          "id": "drp-epic-001",
+          "name": "DRP-EPIC-001 Plattform: Politur aus dem Design-Review (Schritt 0 – Bestätigungen, Gerüst und Türen für alle lesbar, Texte)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-22",
+          "nachweis": "DRP-001 bis DRP-003, Branch `claude/plattform-schritt-0`",
+          "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 0 (DR-102 bis DR-160 ohne Entwurf); ANN-676, ANN-677"
         }
       ]
     },

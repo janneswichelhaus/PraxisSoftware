@@ -223,7 +223,8 @@ export function LebensmittelDetail({ f }: { f: Lebensmittel }) {
  *
  * Einmal (DR-146): Titel und Lizenz sind der Kopf des Aufklappers. Bis dahin
  * stand dieselbe Zeile als Kleingedrucktes und darunter noch ein Aufklapper
- * „Quellenangabe“ mit denselben Namen.
+ * „Quellenangabe“ mit denselben Namen. Dass die Lizenzen das so zulassen, ist
+ * ANN-677 (Prüfpaket).
  */
 export function Quellenangabe({ laden }: { laden: () => Promise<Quelle[]> }) {
   const { data } = useQuery({
