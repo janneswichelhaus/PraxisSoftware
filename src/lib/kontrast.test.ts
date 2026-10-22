@@ -274,6 +274,24 @@ describe('Farbtokens erfuellen WCAG AA', () => {
     // waere die hellere keine eigene Stufe.
     expect(tokens['warnung-mittel']!.L - tokens.warnung!.L).toBeGreaterThanOrEqual(0.15);
   });
+
+  // Die Paare der Plattform (Handoff 2026-10-22, Abschnitt 6) an einer
+  // Stelle: Hero-Karte und Knopf `marke` (Papier und Tiefgrün in beide
+  // Richtungen), Etikett in Salbei, Initialen und Ziffern in accent auf
+  // accent-soft, das Begleitband, Leise auf Papier, die Warnung der Lesefrist
+  // und die Spur des Schalters (3:1 für Bedienelemente).
+  it.each([
+    ['surface', 'surface-inverse', 4.5],
+    ['surface-inverse', 'surface', 4.5],
+    ['salbei', 'surface-inverse', 4.5],
+    ['accent', 'accent-soft', 4.5],
+    ['surface', 'accent', 4.5],
+    ['ink-muted', 'surface', 4.5],
+    ['warnung', 'warnung-soft', 4.5],
+    ['line-strong', 'surface', 3],
+  ] as const)('hält auf der Plattform %s auf %s über %s:1', (vorne, hinten, mindestens) => {
+    expect(kontrastverhaeltnis(tokens[vorne]!, tokens[hinten]!)).toBeGreaterThanOrEqual(mindestens);
+  });
 });
 
 describe('Nadeln am 3D-Rad (FLT-EPIC-001, Handoff Lastenrad 3D Abschnitt 3)', () => {

@@ -37,5 +37,5 @@ export const aufklappKoepfe = {
   betont:
     'text-ink-muted hover:text-ink group-open:text-ink text-sm font-semibold transition-[color,font-weight] duration-200 group-open:font-bold',
   label:
-    'text-ink-muted hover:text-ink group-open:text-ink tracking-label text-xs font-semibold uppercase transition-colors duration-200',
+    'text-ink-muted hover:text-ink group-open:text-ink tracking-label text-xs font-semibold uppercase [.plattform-schrift_&]:normal-case [.plattform-schrift_&]:tracking-normal transition-colors duration-200',
 } as const;

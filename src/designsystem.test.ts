@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, join, relative } from 'node:path';
+import { basename, join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PERSONENFARBEN } from './components/ui/personenfarben';
 import { GRENZEN } from './designsystem.grenzen';
@@ -38,12 +38,14 @@ function quelldateien(verzeichnis: string): string[] {
  * „datei:zeile: fund". Die Zeilennummer macht eine Meldung ohne Suche
  * behebbar.
  */
-function funde(pruefen: (zeile: string) => string[]): string[] {
+function funde(pruefen: (zeile: string, datei: string) => string[]): string[] {
   const treffer: string[] = [];
   for (const datei of quelldateien(join(stamm, 'src'))) {
+    // Der Pfad mit `/`, wie er in Ausnahmelisten steht - auch unter Windows.
+    const pfad = relative(stamm, datei).split(sep).join('/');
     const zeilen = readFileSync(datei, 'utf8').split('\n');
     zeilen.forEach((zeile, index) => {
-      for (const fund of pruefen(zeile)) {
+      for (const fund of pruefen(zeile, pfad)) {
         treffer.push(`${relative(stamm, datei)}:${index + 1}: ${fund}`);
       }
     });
@@ -498,6 +500,117 @@ describe('Tokens aus dem Handoff Rahmen vom 2026-10-05 (RAH-001)', () => {
     expect(css).toMatch(/Fläche #ffffff — Grund der Seite/);
     const html = readFileSync(join(stamm, 'index.html'), 'utf8');
     expect(html).toContain('<meta name="theme-color" content="#ffffff" />');
+  });
+});
+
+describe('Sprache der Plattform (Handoff 2026-10-22, PLATTFORM.md)', () => {
+  /**
+   * Die Schriftskala der Plattform steht in rem: Unter „Groß“ und „Sehr groß“
+   * wachsen Titel mit dem Text. Die Rollen der Praxis bleiben in px.
+   */
+  it('führt Gruß, Seitentitel, Hero und Abschnitt in rem, mit Gewicht und Laufweite', () => {
+    const stufen = new Map(
+      Array.from(css.matchAll(/(--text-[\w-]+):\s*([^;]+);/g), (f) => [f[1], f[2]] as const),
+    );
+    for (const [rolle, groesse, gewicht] of [
+      ['gruss', '2.125rem', '800'],
+      ['gruss-rechner', '2.5rem', '800'],
+      ['plattform-titel', '1.75rem', '800'],
+      ['plattform-titel-rechner', '2rem', '800'],
+      ['hero', '1.625rem', '800'],
+      ['hero-rechner', '2rem', '800'],
+      ['hero-schmal', '1.375rem', '800'],
+      ['abschnitt', '1.375rem', '700'],
+    ] as const) {
+      expect(stufen.get(`--text-${rolle}`), rolle).toBe(groesse);
+      expect(stufen.get(`--text-${rolle}--font-weight`), rolle).toBe(gewicht);
+      expect(stufen.get(`--text-${rolle}--letter-spacing`), rolle).toMatch(/^-0\.0[123]em$/);
+    }
+  });
+
+  /**
+   * Keine Versalien auf der Plattform (DR-154): Etiketten in Großbuchstaben
+   * sind eine Form der Praxis-App - Abschnitte, Kicker, Spaltenköpfe. Wer
+   * bis 78 am eigenen Telefon liest, liest Satzschreibung leichter. Jeder
+   * geteilte Baustein, der `uppercase` setzt, hebt es unter
+   * `.plattform-schrift` wieder auf; Plattformcode setzt es gar nicht.
+   */
+  const VERSALIEN = /(?<![\w-])uppercase(?![\w-])/;
+  it('hebt jede Versalie eines Bausteins unter .plattform-schrift auf', () => {
+    expect(
+      funde((zeile, datei) =>
+        datei.startsWith('src/components/ui/') &&
+        VERSALIEN.test(zeile) &&
+        !zeile.includes('[.plattform-schrift_&]:normal-case')
+          ? ['uppercase ohne [.plattform-schrift_&]:normal-case']
+          : [],
+      ),
+    ).toEqual([]);
+  });
+
+  it('setzt in Plattformcode keine Versalien', () => {
+    expect(
+      funde((zeile, datei) =>
+        datei.startsWith('src/features/platform/') && VERSALIEN.test(zeile) ? ['uppercase'] : [],
+      ),
+    ).toEqual([]);
+  });
+
+  it('erkennt die Versalie, aber nicht das Wort in einer Kennung (Gegenprobe)', () => {
+    expect(VERSALIEN.test('className="text-xs font-semibold uppercase"')).toBe(true);
+    expect(VERSALIEN.test('className="normal-case"')).toBe(false);
+    expect(VERSALIEN.test('const istUppercase = true;')).toBe(false);
+  });
+
+  /**
+   * Keine Schrift unter 18 px (Handoff 2026-10-22, Abschnitt 8):
+   * `.plattform-schrift` hebt jede kleinere Stufe auf 18 px - die von
+   * Tailwind und die eigenen. Nur die Absenderzeile bleibt klein; sie steht
+   * im Briefkopf auf Papier. Freie Größen darunter setzt Plattformcode nicht.
+   */
+  const px = (wert: string) => parseFloat(wert) * (wert.endsWith('rem') ? 16 : 1);
+  const groessen = (text: string) =>
+    new Map(
+      Array.from(
+        text.matchAll(/(--text-[a-z0-9-]+):\s*([\d.]+(?:rem|px));/g),
+        (f) => [f[1] ?? '', f[2] ?? ''] as const,
+      ),
+    );
+  it('hebt unter .plattform-schrift jede Textstufe unter 18 px auf 18 px', () => {
+    const theme = groessen(/@theme \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '');
+    const plattform = groessen(/\n\.plattform-schrift \{([^}]*)\}/.exec(css)?.[1] ?? '');
+    const klein = [
+      // Die Stufen von Tailwind, die `@theme` nicht selbst führt.
+      '--text-xs',
+      '--text-sm',
+      '--text-base',
+      ...Array.from(theme)
+        .filter(([stufe, wert]) => px(wert) < 18 && stufe !== '--text-absenderzeile')
+        .map(([stufe]) => stufe),
+    ];
+    expect(klein).toContain('--text-liste');
+    for (const stufe of klein) {
+      expect(px(plattform.get(stufe) ?? '0px'), stufe).toBeGreaterThanOrEqual(18);
+    }
+  });
+
+  const KLEINE_SCHRIFT = /text-\[(\d*\.?\d+)(rem|px)\]|(?<![\w-])text-absenderzeile(?![\w-])/g;
+  const unter18 = (zeile: string) =>
+    Array.from(zeile.matchAll(KLEINE_SCHRIFT), (f) => f)
+      .filter((f) => f[1] === undefined || px(`${f[1]}${f[2] ?? ''}`) < 18)
+      .map((f) => f[0]);
+
+  it('setzt in Plattformcode keine Schrift unter 18 px', () => {
+    expect(
+      funde((zeile, datei) => (datei.startsWith('src/features/platform/') ? unter18(zeile) : [])),
+    ).toEqual([]);
+  });
+
+  it('erkennt freie Größen unter 18 px und die Absenderzeile (Gegenprobe)', () => {
+    expect(unter18('className="text-[0.875rem] font-medium"')).toEqual(['text-[0.875rem]']);
+    expect(unter18('className="text-[17px]"')).toEqual(['text-[17px]']);
+    expect(unter18('className="text-absenderzeile"')).toEqual(['text-absenderzeile']);
+    expect(unter18('className="text-[1.25rem] text-[18px] text-sm"')).toEqual([]);
   });
 });
 

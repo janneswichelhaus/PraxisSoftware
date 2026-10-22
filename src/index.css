@@ -241,6 +241,46 @@
   --text-h3--line-height: 1.25;
   --text-h4: 20px;
   --text-h4--line-height: 1.25;
+
+  /* Schriftskala der Plattform (Handoff 2026-10-22, Abschnitt 2;
+     `docs/design/PLATTFORM.md`). Anders als die Rollen darüber in rem: Unter
+     „Groß“ und „Sehr groß“ (`html[data-schrift]`) wachsen Titel mit dem Text,
+     sonst stünde ein Seitentitel bei 125 % kaum größer da als der Fließtext.
+     Nur unter `.plattform-schrift`. Je Rolle eine Fassung für den Rechner (ab
+     1024 px) und, wo der Handoff sie nennt, eine für sehr schmale Fenster
+     (unter 23rem, 200 % am Telefon). */
+  --text-gruss: 2.125rem;
+  --text-gruss--line-height: 1.1;
+  --text-gruss--letter-spacing: -0.03em;
+  --text-gruss--font-weight: 800;
+  --text-gruss-rechner: 2.5rem;
+  --text-gruss-rechner--line-height: 1.1;
+  --text-gruss-rechner--letter-spacing: -0.03em;
+  --text-gruss-rechner--font-weight: 800;
+  --text-plattform-titel: 1.75rem;
+  --text-plattform-titel--line-height: 1.1;
+  --text-plattform-titel--letter-spacing: -0.03em;
+  --text-plattform-titel--font-weight: 800;
+  --text-plattform-titel-rechner: 2rem;
+  --text-plattform-titel-rechner--line-height: 1.1;
+  --text-plattform-titel-rechner--letter-spacing: -0.03em;
+  --text-plattform-titel-rechner--font-weight: 800;
+  --text-hero: 1.625rem;
+  --text-hero--line-height: 1.15;
+  --text-hero--letter-spacing: -0.02em;
+  --text-hero--font-weight: 800;
+  --text-hero-rechner: 2rem;
+  --text-hero-rechner--line-height: 1.1;
+  --text-hero-rechner--letter-spacing: -0.02em;
+  --text-hero-rechner--font-weight: 800;
+  --text-hero-schmal: 1.375rem;
+  --text-hero-schmal--line-height: 1.2;
+  --text-hero-schmal--letter-spacing: -0.02em;
+  --text-hero-schmal--font-weight: 800;
+  --text-abschnitt: 1.375rem;
+  --text-abschnitt--line-height: 1.25;
+  --text-abschnitt--letter-spacing: -0.01em;
+  --text-abschnitt--font-weight: 700;
   /* Inhalt von Listen, Karten, Detail- und Trefferzeilen: 15 px (TOK-06).
      Der Wert stand bis UXR-001 an 158 Stellen als arbiträrer Wert in
      eckigen Klammern, ohne Namen und damit ohne Rolle. Das Token benennt
