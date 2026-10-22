@@ -173,6 +173,8 @@ describe('rueckwegBeschriftung', () => {
     ['/team/threads', 'Zurück zu den Threads'],
     ['/fuer-dich', 'Zurück zu „Für dich“'],
     ['/mein-konto', 'Zurück zu „Mein Konto“'],
+    // DR-144: von „Ich“ der Plattform zurück dorthin, wie der Kopf ihn nennt.
+    ['/p/ich', 'Ich'],
   ])('beschriftet %s mit %s (UXR-002)', (pfad, erwartet) => {
     expect(rueckwegBeschriftung(pfad)).toBe(erwartet);
   });

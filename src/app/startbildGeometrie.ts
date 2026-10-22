@@ -189,7 +189,7 @@ export function landeplatz(geraet: Geraet): Lage {
 
 /**
  * Wo die Marke landet, wenn unter dem Intro kein Rahmen steht, sondern eine
- * Vollseite - Anmeldung, „Sitzung wird geprüft", Ladezustand (`Vollseite`,
+ * Vollseite - Anmeldung, „Einen Moment …", Ladezustand (`Vollseite`,
  * `data-startbild-ziel="vollseite"`). Das Intro läuft beim Öffnen der
  * Anwendung, vor der Anmeldung (Jannes 2026-10-15, ANN-243 Fassung 2). Auf
  * jedem Gerät wandert dann die ganze Marke; ohne Vollseite `null`.

@@ -50,7 +50,7 @@ export function Einwilligungen({
     <>
       {einstieg ? null : (
         <>
-          <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+          <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
           <PageHeader title="Einwilligungen" />
         </>
       )}

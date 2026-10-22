@@ -58,7 +58,12 @@ describe('Befundbogen (POR-012)', () => {
       ladeBefundbogen.mockResolvedValue([]);
       renderWithProviders(<Befundbogen zugang={ZUGANG} />, '/p/befundbogen?bereich=treatment');
       expect(
-        await screen.findByRole('heading', { name: 'Anamnesebogen Version 8 (DIGOTOR)' }),
+        await screen.findByRole('heading', { name: 'Fragebogen vor dem ersten Termin' }),
+      ).toBeInTheDocument();
+      // DR-125: Name und Fassung der Vorlage nur im Kleingedruckten.
+      expect(screen.queryByText(/Anamnesebogen Version 8/)).toBeNull();
+      expect(
+        screen.getByText('Vorlage der Fragen: DIGOTOR GbR, Version 8, 07/2026.'),
       ).toBeInTheDocument();
       await nutzer.type(screen.getByLabelText(/^Beruf/), 'Lehrerin');
       // In Schritten bis zum letzten; erst dort steht „Absenden“ (ANN-467).
@@ -173,7 +178,7 @@ describe('Befundbogen (POR-012)', () => {
         },
       ]);
       renderWithProviders(<Befundbogen zugang={ZUGANG} />, '/p/befundbogen');
-      expect(await screen.findByText(/Ihr Befundbogen liegt der Praxis vor/)).toBeInTheDocument();
+      expect(await screen.findByText(/Ihr Fragebogen liegt der Praxis vor/)).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Absenden' })).not.toBeInTheDocument();
       expect(screen.queryByLabelText(/^Beruf/)).not.toBeInTheDocument();
     },
@@ -188,7 +193,7 @@ describe('Befundbogen (POR-012)', () => {
       '/p/befundbogen?bereich=treatment',
     );
     expect(
-      await screen.findByText(/Den Befundbogen füllt Max Mustermann selbst aus/),
+      await screen.findByText(/Den Fragebogen füllt Max Mustermann selbst aus/),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Absenden' })).not.toBeInTheDocument();
   });

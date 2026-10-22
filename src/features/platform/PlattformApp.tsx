@@ -12,6 +12,7 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Wortmarke } from '@/components/ui/Wortmarke';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { RECHTSGRUNDLAGE, VERTRETUNGSART } from '@/lib/vertretung';
 import {
   BEREICHSNAME,
@@ -853,8 +854,12 @@ function Ich({
           />
         </ListRows>
         {nurLesen ? null : (
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button onClick={onAbmelden}>Abmelden</Button>
+          // DR-150: Abmelden ist nicht die Hauptsache dieser Seite - eine
+          // leise Zeile am Ende, „Überall abmelden“ mit Rückfrage darunter.
+          <div className="mt-6 flex flex-col items-start gap-1">
+            <Button variant="quiet" onClick={onAbmelden}>
+              Abmelden
+            </Button>
             <Rueckfrage
               ausloeser="Überall abmelden"
               ausloeserVariante="quiet"
@@ -877,8 +882,10 @@ function Ich({
         )}
       </Section>
       <Kleingedrucktes className="mt-8">
-        Ihr Zugang gehört nur Ihnen. Bitte geben Sie Adresse und Kennwort nicht weiter. Angehörige,
-        die Ihnen helfen, bekommen von der Praxis einen eigenen Zugang.
+        {/* DR-104: Ein Kennwort gibt es nicht; was sich weitergeben ließe, ist
+            das entsperrte Telefon. */}
+        Ihr Zugang gehört nur Ihnen. Geben Sie Ihr entsperrtes Telefon nicht weiter. Angehörige, die
+        Ihnen helfen, bekommen von der Praxis einen eigenen Zugang.
       </Kleingedrucktes>
     </>
   );
@@ -915,8 +922,14 @@ function IchBereich({
         <ListRow to={ziel('dokumente')} titel="Dokumente" />
       ) : null}
       {lesbar ? <ListRow to={ziel('angaben')} titel="Antworten aus dem Check-in" /> : null}
-      {/* ALT-003: die eigenen Gewohnheiten, auch ohne Kachel erreichbar. */}
-      {lesbar ? <ListRow to={ziel('gewohnheiten')} titel="Gewohnheiten" /> : null}
+      {/* ALT-003: die eigenen Gewohnheiten, auch ohne Kachel erreichbar. Von
+          hier führt der Rückweg wieder unter „Ich“, nicht zur Übersicht (DR-144). */}
+      {lesbar ? (
+        <ListRow
+          to={mitRueckweg(ziel('gewohnheiten'), `${PLATTFORM_PFAD}/ich?${wahlSuche(z)}`)}
+          titel="Gewohnheiten"
+        />
+      ) : null}
       {/* ERN-002: nur mit laufender Beratung - die Zeile fragt den Server. */}
       {lesbar && z.access_kind !== 'companion' ? <ErnaehrungZeile zugang={z} /> : null}
       {lesbar && z.relationship_kind === 'treatment' ? <AboZeile zugang={z} /> : null}

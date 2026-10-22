@@ -173,9 +173,10 @@ export function Notfallhinweis({
 // Jeder Zustand mit Zeichen und Wort (Regel 5; Sichtung 13.10.2026, A6):
 // „neutral“ und „akzent“ tragen kein eigenes, deshalb `zeichen` (ANN-485).
 // „erledigt“ nennt das Zeichen seines Tons noch einmal - für die Zeile im
-// Kopf einer Nachricht, die ohne `Badge` auskommt (L9).
+// Kopf einer Nachricht, die ohne `Badge` auskommt (L9). „wartet auf Antwort“
+// statt „bei der Praxis“ (DR-138): Das sagt, was die Person wissen will.
 const ZUSTAND: Record<Nachricht['status'], { wort: string; ton: Ton; zeichen: string }> = {
-  open: { wort: 'bei der Praxis', ton: 'neutral', zeichen: STATUSZEICHEN.wartet },
+  open: { wort: 'wartet auf Antwort', ton: 'neutral', zeichen: STATUSZEICHEN.wartet },
   answered: { wort: 'beantwortet', ton: 'akzent', zeichen: STATUSZEICHEN.antwort },
   closed: { wort: 'erledigt', ton: 'positiv', zeichen: '✓' },
 };
@@ -386,8 +387,9 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
           {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
 
           <Formularfuss>
+            {/* DR-140: ein Wort für dieselbe Handlung, wie beim Ergänzen. */}
             <Button type="submit" disabled={senden.isPending}>
-              {senden.isPending ? 'Wird gesendet …' : 'Nachricht senden'}
+              {senden.isPending ? 'Wird gesendet …' : 'Senden'}
             </Button>
             <Button type="button" variant="quiet" onClick={() => void navigate(zurueck)}>
               Abbrechen

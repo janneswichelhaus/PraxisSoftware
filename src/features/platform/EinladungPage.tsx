@@ -183,6 +183,8 @@ export function EinladungPage() {
           )
         }
         onSpaeter={kennwortTestzugang() ? () => void navigate('/', { replace: true }) : undefined}
+        // DR-105: Auf der Plattform heißt der Ort nicht „Mein Konto“.
+        weitererPasskey="unter „Ich → Einstellungen → Passkey und PIN“"
       />
     );
   }

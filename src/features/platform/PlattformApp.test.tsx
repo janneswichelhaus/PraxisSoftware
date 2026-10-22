@@ -168,7 +168,16 @@ describe('PlattformApp', () => {
     // Die Adresse steht unter „Konto“, nicht im Kopf (BEF-193).
     const konto = screen.getByRole('heading', { name: 'Konto' }).closest('section')!;
     expect(within(konto).getByText('tina.plattform@patient.invalid')).toBeInTheDocument();
-    await nutzer.click(screen.getByRole('button', { name: 'Abmelden' }));
+    // DR-150: Abmelden ist eine leise Zeile, kein Hauptknopf der Seite.
+    const knopf = screen.getByRole('button', { name: 'Abmelden' });
+    expect(knopf.className).toContain('text-accent');
+    expect(knopf.className).not.toContain('bg-accent');
+    // DR-104: Ein Kennwort gibt es nicht; weitergeben ließe sich das Telefon.
+    expect(
+      screen.getByText(/Geben Sie Ihr entsperrtes Telefon nicht weiter\./),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Kennwort/)).toBeNull();
+    await nutzer.click(knopf);
     expect(abmelden).toHaveBeenCalled();
 
     await nutzer.click(screen.getByRole('button', { name: 'Überall abmelden' }));
@@ -302,6 +311,17 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
       '/p/einwilligungen?bereich=treatment',
     );
     expect(screen.getByRole('link', { name: 'Meine Daten herunterladen' })).toBeInTheDocument();
+  });
+
+  it('schickt die Gewohnheiten unter Ich mit dem Rückweg zu Ich los (DR-144)', () => {
+    zeige([BEHANDLUNG], '/p/ich');
+    const ziel = new URL(
+      screen.getByRole('link', { name: 'Gewohnheiten' }).getAttribute('href')!,
+      'http://test.invalid',
+    );
+    expect(ziel.pathname).toBe('/p/gewohnheiten');
+    expect(ziel.searchParams.get('bereich')).toBe('treatment');
+    expect(ziel.searchParams.get('zurueck')).toBe('/p/ich?bereich=treatment');
   });
 
   it('nach der Lesefrist: Einwilligungen ja, Export bei der Praxis', () => {

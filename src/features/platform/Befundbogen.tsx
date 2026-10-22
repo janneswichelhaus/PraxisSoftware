@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
@@ -20,7 +21,7 @@ import type { Formularfehler } from '@/lib/formularfehler';
 import { befundbogenSchluessel, type Bogenstand, type Plattformzugang } from './api';
 import { usePlattformApi } from './einsicht';
 import { bogenschritte, schrittTitel } from './bogenschritte';
-import { fuerDiePlattform } from './instrumentwahl';
+import { BOGEN_TITEL, bogenVorlage, fuerDiePlattform } from './instrumentwahl';
 import { PLATTFORM_PFAD } from './pfade';
 import { datum } from './zeit';
 
@@ -37,6 +38,9 @@ import { datum } from './zeit';
  * Welche Bögen hier stehen, sagt die Definition (`ausgefuellt_von: patient`,
  * aktiv); heute ist das der Anamnesebogen. Ein Entwurf wird auf dem Server
  * gesichert, nie im Browser (ADR-001).
+ *
+ * Auf der Plattform heißt er nach seinem Zweck „Fragebogen vor dem ersten
+ * Termin“ (DR-125); Name und Fassung der Vorlage stehen im Kleingedruckten.
  */
 export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
   const api = usePlattformApi();
@@ -55,16 +59,16 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
     <>
       <Rueckweg standard={zurueck} beschriftung="Zur Übersicht" />
       {stand.isPending ? (
-        <LoadingState label="Ihr Befundbogen wird geladen …" inKarte />
+        <LoadingState label="Ihr Fragebogen wird geladen …" inKarte />
       ) : stand.data === undefined ? (
         <ErrorState
-          title="Ihr Befundbogen konnte nicht geladen werden."
+          title="Ihr Fragebogen konnte nicht geladen werden."
           description={VERBINDUNG_PRUEFEN}
           onErneut={() => stand.refetch()}
         />
       ) : !instrument || zugang.relationship_kind !== 'treatment' ? (
         <>
-          <PageHeader title="Befundbogen" />
+          <PageHeader title={BOGEN_TITEL} />
           <p className="text-ink max-w-prose text-base leading-relaxed">
             Hier gibt es zurzeit nichts auszufüllen.
           </p>
@@ -73,9 +77,9 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
         // ANN-248: Angaben zur eigenen Gesundheit macht die Person selbst; der
         // Server weist eine Begleitung ab, hier steht der Grund als Satz.
         <>
-          <PageHeader title={instrument.meta.name_de} />
+          <PageHeader title={BOGEN_TITEL} />
           <p className="text-ink max-w-prose text-base leading-relaxed">
-            Den Befundbogen füllt {zugang.represented_name ?? 'die Person'} selbst aus. Als
+            Den Fragebogen füllt {zugang.represented_name ?? 'die Person'} selbst aus. Als
             Begleitung lesen Sie mit, machen aber keine Angaben zur Gesundheit.
           </p>
         </>
@@ -107,9 +111,9 @@ function Bogen({
   if (abgeschlossen) {
     return (
       <>
-        <PageHeader title={definition.meta.name_de} />
+        <PageHeader title={BOGEN_TITEL} />
         <Statusmeldung ton="erfolg">
-          Ihr Befundbogen liegt der Praxis vor
+          Ihr Fragebogen liegt der Praxis vor
           {abgeschlossen.completed_at ? ` (seit ${datum(abgeschlossen.completed_at)})` : ''}. Danke!
           Ihre Therapeut:in sieht Ihre Angaben beim nächsten Termin.
         </Statusmeldung>
@@ -165,6 +169,7 @@ function Formular({
   const ersterWechsel = useRef(true);
   const fragen = schritte[schritt] ?? [];
   const letzter = schritt === schritte.length - 1;
+  const vorlage = bogenVorlage(definition);
 
   // Nach jedem Wechsel des Schritts steht dessen Anfang im Bild und hat den
   // Fokus - sonst ginge es am Telefon unten weiter, wo der Knopf war.
@@ -269,10 +274,7 @@ function Formular({
 
   return (
     <>
-      <PageHeader
-        kicker={`Schritt ${schritt + 1} von ${schritte.length}`}
-        title={definition.meta.name_de}
-      />
+      <PageHeader kicker={`Schritt ${schritt + 1} von ${schritte.length}`} title={BOGEN_TITEL} />
       <div className="-mt-4 mb-6">
         <ProgressBar wert={schritt + 1} von={schritte.length} />
       </div>
@@ -358,6 +360,7 @@ function Formular({
           )}
         </Formularfuss>
       </form>
+      {vorlage ? <Kleingedrucktes className="mt-8">{vorlage}</Kleingedrucktes> : null}
     </>
   );
 }

@@ -211,7 +211,7 @@ export function Uebersicht({
       ) : null}
       {nachBogen === '1' ? (
         <Rueckmeldung className="mb-4">
-          Danke. Ihr Befundbogen ist bei der Praxis. Ihre Therapeut:in sieht Ihre Angaben beim
+          Danke. Ihr Fragebogen ist bei der Praxis. Ihre Therapeut:in sieht Ihre Angaben beim
           nächsten Termin.
         </Rueckmeldung>
       ) : null}
@@ -257,9 +257,10 @@ export function Uebersicht({
           {bogenOffen ? (
             <ListRow
               {...(nurLesen ? {} : { to: mit('/befundbogen') })}
-              titel={bogenEntwurf ? 'Befundbogen weiter ausfüllen' : 'Befundbogen ausfüllen'}
+              // DR-125: der Fragebogen nach seinem Zweck, ohne Name und
+              // Fassung der Vorlage.
+              titel={bogenEntwurf ? 'Fragebogen weiter ausfüllen' : 'Fragebogen ausfüllen'}
               meta={[
-                instrument?.meta.name_de ?? 'Befundbogen',
                 naechster
                   ? `vor Ihrem ersten Termin am ${tagLang(naechster.starts_at)}`
                   : 'vor Ihrem ersten Termin',

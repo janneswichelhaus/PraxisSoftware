@@ -40,7 +40,7 @@ export function Paket({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
       <PageHeader title="Trainingspaket" />
       {pakete.isPending || angebote.isPending ? (
         <LoadingState label="Ihr Paket und die Preise werden geladen …" inKarte />

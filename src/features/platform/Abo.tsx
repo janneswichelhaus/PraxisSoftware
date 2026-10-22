@@ -39,11 +39,7 @@ export function Abo({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Rueckweg
-        standard={`${PLATTFORM_PFAD}/ich`}
-        beschriftung="Zu „Ich“"
-        className="print:hidden"
-      />
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" className="print:hidden" />
       <PageHeader title="Nachsorge-Abo" />
       {abo.isPending ? <LoadingState label="Ihr Abo wird geladen …" inKarte /> : null}
       {abo.isError ? (

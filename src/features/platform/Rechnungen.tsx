@@ -41,7 +41,7 @@ export function Rechnungen({ zugang }: { zugang: Plattformzugang }) {
   });
   return (
     <>
-      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
       <PageHeader title="Rechnungen" />
       <Abfragezustand
         abfrage={rechnungen}

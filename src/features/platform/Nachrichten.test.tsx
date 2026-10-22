@@ -202,13 +202,13 @@ describe('Nachrichten (KOM-001)', () => {
       '/p/nachrichten/neu',
     );
     hinweisPruefen(document.body);
-    expect(screen.getByText('bei der Praxis')).toBeInTheDocument();
+    expect(screen.getByText('wartet auf Antwort')).toBeInTheDocument();
     expect(screen.getByText(/^Antwort bis 13\.10\.2026\./)).toBeInTheDocument();
     expect(screen.getByText('Übung · Kniebeuge am Geländer')).toBeInTheDocument();
     expect(screen.getByText('beantwortet')).toBeInTheDocument();
     // Jeder Zustand mit Zeichen und Wort (Regel 5, ANN-485).
     expect(screen.getByText('beantwortet')).toHaveTextContent('↩beantwortet');
-    expect(screen.getByText('bei der Praxis')).toHaveTextContent('…bei der Praxis');
+    expect(screen.getByText('wartet auf Antwort')).toHaveTextContent('…wartet auf Antwort');
     // Erledigtes steht auf Abruf, mit der Zahl im Kopf (DESIGN.md, Regel 6).
     expect(screen.getByText('Erledigt').closest('summary')).toHaveTextContent('Erledigt (1)');
   });
@@ -238,10 +238,10 @@ describe('Neue Nachricht (KOM-001)', () => {
     for (const name of ['Übung', 'Beschwerden', 'Termin oder Rechnung', 'Sonstiges']) {
       expect(screen.getByRole('radio', { name })).toBeInTheDocument();
     }
-    await nutzer.click(screen.getByRole('button', { name: 'Nachricht senden' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Bitte wählen Sie, worum es geht.');
     await nutzer.click(screen.getByRole('radio', { name: 'Sonstiges' }));
-    await nutzer.click(screen.getByRole('button', { name: 'Nachricht senden' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Bitte schreiben Sie Ihre Frage.');
     expect(nachrichtStellen).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Abbrechen' })).toBeInTheDocument();
@@ -266,7 +266,7 @@ describe('Neue Nachricht (KOM-001)', () => {
       'Kniebeuge am Geländer',
     );
     await nutzer.type(screen.getByLabelText('Text'), 'Wie tief soll ich gehen?');
-    await nutzer.click(screen.getByRole('button', { name: 'Nachricht senden' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     await waitFor(() =>
       expect(nachrichtStellen).toHaveBeenCalledWith({
         zugangId: ZUGANG.access_id,
@@ -285,7 +285,7 @@ describe('Neue Nachricht (KOM-001)', () => {
     await nutzer.click(await screen.findByRole('radio', { name: 'Termin oder Rechnung' }));
     expect(screen.queryByLabelText('Zu welchem Plan? (freiwillig)')).not.toBeInTheDocument();
     await nutzer.type(screen.getByLabelText('Text'), 'Rechnung doppelt?');
-    await nutzer.click(screen.getByRole('button', { name: 'Nachricht senden' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     await waitFor(() =>
       expect(nachrichtStellen).toHaveBeenCalledWith(
         expect.objectContaining({ thema: 'organisational', planId: null, positionId: null }),
@@ -312,7 +312,7 @@ describe('Neue Nachricht (KOM-001)', () => {
     renderWithProviders(<NeueNachricht zugang={ZUGANG} />, '/p/nachrichten/neu');
     await nutzer.click(await screen.findByRole('radio', { name: 'Sonstiges' }));
     await nutzer.type(screen.getByLabelText('Text'), 'Frage');
-    await nutzer.click(screen.getByRole('button', { name: 'Nachricht senden' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Ihr Zugang erlaubt das gerade nicht.',
     );
@@ -346,8 +346,8 @@ describe('Eine Nachricht (KOM-001)', () => {
     await screen.findByLabelText('Noch etwas ergänzen');
     hinweisPruefen(document.body);
     // Zustand und Frist als eine Zeile unter dem Titel, nicht als Abzeichen (L9).
-    const zustand = screen.getByText('bei der Praxis').parentElement!;
-    expect(zustand).toHaveTextContent('… bei der Praxis · Antwort bis 13.10.2026');
+    const zustand = screen.getByText('wartet auf Antwort').parentElement!;
+    expect(zustand).toHaveTextContent('… wartet auf Antwort · Antwort bis 13.10.2026');
     expect(zustand.className).not.toContain('rounded-pill');
     await nutzer.type(screen.getByLabelText('Noch etwas ergänzen'), 'Oder Montag?');
     await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
