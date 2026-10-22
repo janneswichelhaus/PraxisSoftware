@@ -353,3 +353,20 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     await waitFor(() => expect(einstiegBeenden).toHaveBeenCalled());
   });
 });
+
+describe('Bestätigungen wandern nicht mit (DR-160)', () => {
+  it('trägt in den Reitern nur den Bereich weiter, keine Bestätigung', async () => {
+    // Auf der Übersicht verbraucht niemand `gesendet` - stünde es im Reiter,
+    // zeigte „Termine" eine Bestätigung für einen Wunsch, der nie gesendet wurde.
+    zeige([BEHANDLUNG], '/p?bereich=treatment&gesendet=1');
+    const reiter = await screen.findByRole('navigation', { name: 'Plattform' });
+    expect(within(reiter).getByRole('link', { name: 'Termine' })).toHaveAttribute(
+      'href',
+      '/p/termine?bereich=treatment',
+    );
+    expect(within(reiter).getByRole('link', { name: 'Nachrichten' })).toHaveAttribute(
+      'href',
+      '/p/nachrichten?bereich=treatment',
+    );
+  });
+});

@@ -28,6 +28,7 @@ import {
 } from './api';
 import { useNurLesen, usePlattformApi } from './einsicht';
 import { nachDemCheckin } from './checkintexte';
+import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import { fuerDiePlattform } from './instrumentwahl';
 import { NICHT_AKUT, THEMA_NAME } from './nachrichtentexte';
 import { Notfallsatz } from './Notfallsatz';
@@ -67,6 +68,8 @@ export function Uebersicht({
   // E-001: In der Einsicht führt keine Zeile auf eine Seite, die nur schreibt.
   const nurLesen = useNurLesen();
   const [suche] = useSearchParams();
+  const nachCheckin = useEinmaligeRueckmeldung('checkin');
+  const nachBogen = useEinmaligeRueckmeldung('bogen');
   const bereich = bereichParameter(suche);
   const mit = (pfad: string) => `${PLATTFORM_PFAD}${pfad}${bereich ? `?${bereich}` : ''}`;
   const eigen = zugang.access_kind === 'self';
@@ -203,10 +206,10 @@ export function Uebersicht({
             : `Als rechtliche Vertretung handeln Sie in allem, was ${name} hier tun kann.`}
         </p>
       )}
-      {suche.get('checkin') === '1' ? (
+      {nachCheckin === '1' ? (
         <Rueckmeldung className="mb-4">{nachDemCheckin(zugang)}</Rueckmeldung>
       ) : null}
-      {suche.get('bogen') === '1' ? (
+      {nachBogen === '1' ? (
         <Rueckmeldung className="mb-4">
           Danke. Ihr Befundbogen ist bei der Praxis. Ihre Therapeut:in sieht Ihre Angaben beim
           nächsten Termin.

@@ -35,6 +35,7 @@ import {
 import { AnhaengeAbschnitt } from './Anhaenge';
 import { Notfallsatz } from './Notfallsatz';
 import { zeitmarke, type Ansicht } from './anhangtexte';
+import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { datum, tagKurz, uhrzeit } from './zeit';
 
@@ -54,6 +55,7 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
   // E-001: In der Einsicht wird keine Nachricht geschrieben.
   const nurLesen = useNurLesen();
   const [suche] = useSearchParams();
+  const gesendet = useEinmaligeRueckmeldung('gesendet');
   const bereich = bereichParameter(suche);
   const mit = (pfad: string) => `${PLATTFORM_PFAD}${pfad}${bereich ? `?${bereich}` : ''}`;
   const daten = useQuery({
@@ -84,7 +86,7 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
   return (
     <>
       {kopf}
-      {suche.get('gesendet') === '1' ? (
+      {gesendet === '1' ? (
         <Rueckmeldung className="mb-4">Ihre Nachricht ist bei der Praxis angekommen.</Rueckmeldung>
       ) : null}
       <Notfallhinweis werktage={response_workdays} />

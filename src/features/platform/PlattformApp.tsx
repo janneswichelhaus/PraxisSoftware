@@ -50,7 +50,7 @@ import { Datenexport } from './Datenexport';
 import { Einstieg } from './Einstieg';
 import { Einstellungen } from './Einstellungen';
 import { Einwilligungen } from './Einwilligungen';
-import { PLATTFORM_PFAD } from './pfade';
+import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { Rechnung, Rechnungen } from './Rechnungen';
 import { useSchriftgroesseAnwenden } from './schriftgroesse';
 import { Termine } from './Termine';
@@ -1129,6 +1129,10 @@ function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
   // DSN-001 Abschnitt 5: im Training heißt der Reiter „Training", weil dort
   // Einheiten und Plan zusammenkommen.
   const training = useWahl(bereiche)?.relationship_kind === 'training';
+  // DR-160: Ein Reiter trägt nur den gewählten Bereich weiter, nie eine
+  // Bestätigung wie `gesendet=1` - die gehört zu der Seite, die sie zeigt.
+  const bereich = bereichParameter(new URLSearchParams(search));
+  const anhang = bereich ? `?${bereich}` : '';
   return (
     <nav
       aria-label="Plattform"
@@ -1137,7 +1141,7 @@ function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
       <ul className="max-w-formular mx-auto flex">
         <li className="flex-1">
           <Link
-            to={`${PLATTFORM_PFAD}${search}`}
+            to={`${PLATTFORM_PFAD}${anhang}`}
             aria-current={pathname === PLATTFORM_PFAD ? 'page' : undefined}
             className={REITER}
           >
@@ -1156,7 +1160,7 @@ function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
         </li>
         <li className="flex-1">
           <Link
-            to={`${PLATTFORM_PFAD}/termine${search}`}
+            to={`${PLATTFORM_PFAD}/termine${anhang}`}
             aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/termine`) ? 'page' : undefined}
             className={REITER}
           >
@@ -1176,7 +1180,7 @@ function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
         </li>
         <li className="flex-1">
           <Link
-            to={`${PLATTFORM_PFAD}/uebungen${search}`}
+            to={`${PLATTFORM_PFAD}/uebungen${anhang}`}
             aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/uebungen`) ? 'page' : undefined}
             className={REITER}
           >
@@ -1195,7 +1199,7 @@ function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
         </li>
         <li className="flex-1">
           <Link
-            to={`${PLATTFORM_PFAD}/nachrichten${search}`}
+            to={`${PLATTFORM_PFAD}/nachrichten${anhang}`}
             aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/nachrichten`) ? 'page' : undefined}
             className={REITER}
           >
