@@ -125,6 +125,11 @@ describe('EinladungPage', () => {
     await nutzer.click(
       await screen.findByRole('button', { name: 'Passkey auf diesem Gerät einrichten' }),
     );
+    // DR-105: der Ort für einen zweiten Passkey in den Wörtern der Plattform.
+    expect(
+      screen.getByText(/unter „Ich → Einstellungen → Passkey und PIN“ einen zweiten Passkey ein/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Mein Konto/)).toBeNull();
     expect(passkeyEinrichten).toHaveBeenCalledTimes(1);
     await nutzer.type(await screen.findByLabelText(/^Neue PIN/), '483920');
     await nutzer.type(screen.getByLabelText('PIN wiederholen'), '483920');

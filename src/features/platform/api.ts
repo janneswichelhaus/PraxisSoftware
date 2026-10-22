@@ -340,7 +340,7 @@ export async function ladeBefundbogen(
   zugangId: string,
   verbindung: Verbindung = DIREKT,
 ): Promise<Bogenstand[]> {
-  const satz = 'Ihr Befundbogen konnte nicht geladen werden.';
+  const satz = 'Ihr Fragebogen konnte nicht geladen werden.';
   const ergebnis = await verbindung.rpc('platform_questionnaire', {
     p_access_id: zugangId,
   });
@@ -351,7 +351,7 @@ export async function ladeBefundbogen(
 function bogenfehler(meldung: string | undefined): string {
   const m = meldung ?? '';
   if (m.includes('already completed'))
-    return 'Ihr Befundbogen liegt der Praxis schon vor. Änderungen besprechen Sie beim Termin.';
+    return 'Ihr Fragebogen liegt der Praxis schon vor. Änderungen besprechen Sie beim Termin.';
   if (m.includes('not available'))
     return 'Dieser Bogen lässt sich zurzeit nicht ausfüllen. Bitte wenden Sie sich an die Praxis.';
   if (m.includes('not allowed'))

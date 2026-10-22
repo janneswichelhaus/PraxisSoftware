@@ -60,7 +60,7 @@ test.describe('Nachrichten auf der Plattform und Rückfragen in der Praxis', () 
       const feld = page.getByLabel('Text');
       expect((await hinweis.boundingBox())!.y).toBeLessThan((await feld.boundingBox())!.y);
       expect(
-        (await page.getByRole('button', { name: 'Nachricht senden' }).boundingBox())!.height,
+        (await page.getByRole('button', { name: 'Senden', exact: true }).boundingBox())!.height,
       ).toBeGreaterThanOrEqual(48);
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);

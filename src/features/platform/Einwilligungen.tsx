@@ -50,7 +50,7 @@ export function Einwilligungen({
     <>
       {einstieg ? null : (
         <>
-          <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+          <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
           <PageHeader title="Einwilligungen" />
         </>
       )}
@@ -134,7 +134,7 @@ function Zweck({
 
   return (
     <li className="border-line border-t py-4 first:border-t-0">
-      <Zwischentitel>{text.titel}</Zwischentitel>
+      <Zwischentitel ebene={2}>{text.titel}</Zwischentitel>
       <p className="text-ink max-w-prose text-base leading-relaxed">{text.text}</p>
       <p className="text-ink mt-3 text-base font-semibold">{standText(e)}</p>
       {/* E-001: In der Einsicht wird weder eingewilligt noch widerrufen. */}

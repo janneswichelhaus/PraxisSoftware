@@ -26,6 +26,10 @@ const ERLAUBT: readonly RegExp[] = [
   // BEF-046: die Zeile nach einem gescheiterten Nachladen - Rahmen ohne
   // Datenzugriff; was nachgeladen wird, entscheidet `App.tsx`.
   /^@\/app\/Profilhinweis$/,
+  // DR-115, DR-118: die feste Tabelle der Tab-Titel (nie mit Daten) und der
+  // Verbindungszustand des Geräts (allein `navigator.onLine`, ANN-015) -
+  // Rahmen ohne Datenzugriff und ohne Import aus einem Praxisfeature.
+  /^@\/app\/(tabtitel|verbindung)$/,
   // Anmeldung und Sitzung gelten für Praxis- und Plattformkonten gleich (Punkt 17).
   /^@\/features\/auth\/(eigeneAbmeldung|fokus|fremdeSitzung|sessionContext)$/,
   // SEC-EPIC-002: Passkey, App-PIN und ihre Einrichtung - die Anmeldung ohne

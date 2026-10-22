@@ -138,7 +138,7 @@ describe('Sperre ohne Verbindung (TRK-009)', () => {
     freigabeOhneNetzMoeglich.mockResolvedValue(false);
     zeichne();
     await warte();
-    expect(screen.getByText('Die Sitzung konnte nicht geprüft werden.')).toBeInTheDocument();
+    expect(screen.getByText('Own Motion ist gerade nicht erreichbar.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Mit Passkey öffnen' })).toBeNull();
   });
 

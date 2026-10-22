@@ -228,6 +228,18 @@ describe('Rechnungen (POR-013)', () => {
       '/p/rechnungen/ffffffff-ffff-4fff-8fff-000000000009',
     );
     expect(await screen.findByText('Diese Rechnung wurde nicht gefunden.')).toBeInTheDocument();
+    // Auch ohne Blatt hat die Seite einen Titel (DR-158, axe `page-has-heading-one`).
+    expect(screen.getByRole('heading', { level: 1, name: 'Rechnung' })).toBeInTheDocument();
+  });
+
+  it('trägt genau eine h1 - beim Laden und mit dem Blatt (DR-158)', async () => {
+    ladeRechnung.mockResolvedValue(BLATT);
+    renderWithProviders(<Rechnung zugang={ZUGANG} />, `/p/rechnungen/${ZEILE.id}`);
+    expect(screen.getByRole('heading', { level: 1, name: 'Rechnung' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Rechnung RG-2026-0001' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 
   it('formt Zahlungsstand und Positionen', () => {

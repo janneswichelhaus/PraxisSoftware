@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ANMELDEN_TITEL, MARKE, TAB_NAMEN, tabName, tabTitel } from './tabtitel';
+import { ANMELDEN_TITEL, EINLADUNG_TITEL, MARKE, TAB_NAMEN, tabName, tabTitel } from './tabtitel';
 
 /**
  * Tab-Titel je Route (BEF-050, Option 1; RAH-008).
@@ -50,19 +50,51 @@ describe('tabTitel', () => {
     ['/mein-konto', 'Mein Konto – Own Motion'],
     ['/bereiche', 'Alle Bereiche – Own Motion'],
     ['/vorschau/protokoll', 'Vorschau-Protokoll – Own Motion'],
+    // Die Plattform der Patient:innen (DR-115).
+    ['/p', 'Übersicht – Own Motion'],
+    ['/p/', 'Übersicht – Own Motion'],
+    ['/p/termine', 'Termine – Own Motion'],
+    ['/p/termine/wunsch', 'Termine – Own Motion'],
+    ['/p/termine/77777777-7777-4777-8777-000000000001', 'Termine – Own Motion'],
+    ['/p/nachrichten', 'Nachrichten – Own Motion'],
+    ['/p/nachrichten/neu', 'Nachrichten – Own Motion'],
+    ['/p/uebungen', 'Übungen – Own Motion'],
+    ['/p/uebungen/einheit/p1', 'Übungen – Own Motion'],
+    ['/p/uebungen/blatt/p1', 'Übungen – Own Motion'],
+    ['/p/checkin', 'Check-in – Own Motion'],
+    ['/p/angaben', 'Meine Angaben – Own Motion'],
+    ['/p/befundbogen', 'Fragebogen – Own Motion'],
+    ['/p/gewohnheiten', 'Gewohnheiten – Own Motion'],
+    ['/p/ernaehrung', 'Ernährung – Own Motion'],
+    ['/p/ernaehrung/tagebuch/eintragen', 'Ernährung – Own Motion'],
+    ['/p/rechnungen', 'Rechnungen – Own Motion'],
+    ['/p/rechnungen/0f0fede1-842c-4168-b66f-9004ff4c6516', 'Rechnung – Own Motion'],
+    ['/p/dokumente', 'Dokumente – Own Motion'],
+    ['/p/einwilligungen', 'Einwilligungen – Own Motion'],
+    ['/p/daten', 'Meine Daten – Own Motion'],
+    ['/p/abo', 'Nachsorge-Abo – Own Motion'],
+    ['/p/angebot', 'Angebot – Own Motion'],
+    ['/p/vertrag', 'Trainingsvertrag – Own Motion'],
+    ['/p/paket', 'Trainingspaket – Own Motion'],
+    ['/p/einstellungen', 'Einstellungen – Own Motion'],
+    ['/p/ich', 'Ich – Own Motion'],
+    // Die Praxis bleibt, was sie war: `/patienten` und `/praxis` sind nicht `/p`.
+    ['/patienten', 'Patient:innen – Own Motion'],
+    ['/praxis/team', 'Organisation – Own Motion'],
   ])('%s → %s', (pfad, titel) => {
     expect(tabTitel(pfad)).toBe(titel);
   });
 
   it('bleibt bei der Marke, wo keine Regel greift', () => {
-    expect(tabTitel('/p')).toBe(MARKE);
     expect(tabTitel('/p/zugaenge')).toBe(MARKE);
+    expect(tabTitel('/p/gibt-es-nicht')).toBe(MARKE);
     expect(tabTitel('/gibt-es-nicht')).toBe(MARKE);
-    expect(tabName('/p')).toBeUndefined();
+    expect(tabName('/p/zugaenge')).toBeUndefined();
   });
 
-  it('nennt die Türseiten „Anmelden"', () => {
+  it('nennt die Türseiten „Anmelden", die Einladung „Einladung" (DR-115)', () => {
     expect(ANMELDEN_TITEL).toBe('Anmelden – Own Motion');
+    expect(EINLADUNG_TITEL).toBe('Einladung – Own Motion');
   });
 
   it('trägt nie Daten: jeder Titel kommt aus der festen Menge, nichts aus dem Pfad', () => {
@@ -78,6 +110,10 @@ describe('tabTitel', () => {
       ['/abrechnung/rechnungen/R-2026-0001', ['R-2026-0001', '2026']],
       ['/training/Erika', ['Erika']],
       ['/kalender/Erika', ['Erika']],
+      ['/p/termine/77777777-7777-4777-8777-000000000001', ['77777777', '000000000001']],
+      ['/p/nachrichten/Erika', ['Erika']],
+      ['/p/rechnungen/R-2026-0001', ['R-2026-0001', '2026']],
+      ['/p/uebungen/blatt/Knie-links', ['Knie', 'links']],
     ];
     for (const [pfad, daten] of pfade) {
       const titel = tabTitel(pfad);

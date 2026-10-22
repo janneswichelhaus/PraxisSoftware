@@ -33,7 +33,7 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
   const [groesse, setzen] = useSchriftgroesse();
   return (
     <>
-      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
       <PageHeader title="Einstellungen" />
       <Section titel="Schriftgröße" rahmen>
         <Schriftwahl groesse={groesse} onWahl={setzen} />

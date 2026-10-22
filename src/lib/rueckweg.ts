@@ -138,6 +138,8 @@ export function rueckwegBeschriftung(pfad: string): string {
   if (ohneSuche === '/fuer-dich') return 'Zurück zu „Für dich“';
   if (ohneSuche.startsWith('/team/')) return 'Zurück zum Gespräch';
   if (ohneSuche === '/mein-konto') return 'Zurück zu „Mein Konto“';
+  // Die Plattform: „Ich“ ist der Name des Orts, wie im Kopf (DR-144, DR-149).
+  if (ohneSuche === '/p/ich') return 'Ich';
   if (ohneSuche === '/training') return `Zurück zu den ${BEGRIFFE.trainingskundInnen}`;
   if (ohneSuche.startsWith('/training/')) return `Zurück zur ${BEGRIFFE.trainingskundIn}`;
   // UEB-EPIC-001: die Übungsbibliothek und eine Übung darin.

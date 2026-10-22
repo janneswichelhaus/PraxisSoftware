@@ -204,7 +204,7 @@ export function MeineAngaben({ zugang }: { zugang: Plattformzugang }) {
     <>
       <Rueckweg
         standard={`${PLATTFORM_PFAD}/ich${bereich ? `?${bereich}` : ''}`}
-        beschriftung="Zu „Ich“"
+        beschriftung="Ich"
       />
       <PageHeader
         title="Meine Angaben"

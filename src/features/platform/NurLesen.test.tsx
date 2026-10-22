@@ -190,9 +190,9 @@ describe('Plattform in der Einsicht (E-001)', () => {
     expect(await screen.findByText('Einstieg steht aus')).toBeInTheDocument();
     expect(screen.queryByText(/Der Einstieg steht noch aus/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Schritt 1 von/)).not.toBeInTheDocument();
-    // Der Befundbogen steht da, wie die Person ihn sieht - ohne Weg hinein.
-    expect(await screen.findByText('Befundbogen ausfüllen')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Befundbogen/ })).not.toBeInTheDocument();
+    // Der Fragebogen steht da, wie die Person ihn sieht - ohne Weg hinein.
+    expect(await screen.findByText('Fragebogen ausfüllen')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Fragebogen/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Der Praxis schreiben/ })).not.toBeInTheDocument();
     expect(quelle).toHaveBeenCalled();
     for (const [funktion] of quelle.mock.calls) expect(EINSICHT_LESEN).toContain(funktion);

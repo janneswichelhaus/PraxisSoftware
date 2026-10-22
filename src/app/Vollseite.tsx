@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { Wortmarke } from '@/components/ui/Wortmarke';
+import { useSchriftgroesseAnwenden } from '@/features/platform/schriftgroesse';
 import { ANMELDEN_TITEL } from './tabtitel';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
@@ -22,8 +23,12 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
  *     Hauptfarbe wie jeder Seitentitel. Nur Ladezustände haben keinen Titel -
  *     sie stehen einen Augenblick da und sagen, was geschieht.
  *   * **Ein `main`**, senkrecht zentriert, höchstens `max-w-sm` breit.
- *   * **Kleingedrucktes** unten über den Baustein `Kleingedrucktes`, 14 px
+ *   * **Kleingedrucktes** unten über den Baustein `Kleingedrucktes`
  *     (Jannes 2026-10-06, Variante K-A; TOK-04 entschieden).
+ *   * **Die Schrift der Plattform** (DR-102): Die Türen sehen auch
+ *     Patient:innen, oft zuerst - deshalb 18 px für alle Texte und die
+ *     Schriftgröße, die auf diesem Gerät gewählt ist. Die gemeinsame
+ *     Anmeldung hat damit für alle 18 px.
  *
  * Eigentlich ein Baustein für `src/components/ui`; er steht hier, weil der
  * Bereich des Rahmens ihn zuerst braucht.
@@ -33,6 +38,7 @@ export function Vollseite({
   titel,
   einleitung,
   kleingedrucktes,
+  tabtitel = ANMELDEN_TITEL,
   children,
 }: {
   /** Marke, Titel und Inhalt waagerecht mittig (Anmeldung, Jannes 2026-10-11). */
@@ -43,18 +49,22 @@ export function Vollseite({
   einleitung?: ReactNode;
   /** Der Hinweis am Fuß der Seite. */
   kleingedrucktes?: ReactNode;
+  /** Der Titel des Tabs, ein fester aus `tabtitel.ts` - nie mit Daten. */
+  tabtitel?: string;
   children: ReactNode;
 }) {
   // Der Tab heißt außerhalb des Rahmens „Anmelden – Own Motion" (BEF-050,
   // RAH-008) - auf der Anmeldemaske wie auf jeder Türseite davor und danach.
-  // Nach dem Abmelden löst das den Titel der letzten Seite ab.
+  // Nach dem Abmelden löst das den Titel der letzten Seite ab. Nur die
+  // Einladung heißt anders (DR-115): Wer sie öffnet, meldet sich nicht an.
   useEffect(() => {
-    document.title = ANMELDEN_TITEL;
-  }, []);
+    document.title = tabtitel;
+  }, [tabtitel]);
+  useSchriftgroesseAnwenden();
 
   return (
     <main
-      className={`mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-10 ${mittig ? 'text-center' : ''}`}
+      className={`plattform-schrift mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-10 ${mittig ? 'text-center' : ''}`}
     >
       {/* Landeplatz des Startbilds, wenn es über dieser Seite läuft (ANN-243). */}
       <div

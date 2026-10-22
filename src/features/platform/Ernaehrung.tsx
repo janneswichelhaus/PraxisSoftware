@@ -42,7 +42,7 @@ export function Ernaehrung({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
       <PageHeader title="Ernährung" />
       <Abfragezustand
         abfrage={abfrage}

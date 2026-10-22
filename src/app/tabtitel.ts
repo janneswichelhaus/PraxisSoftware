@@ -25,6 +25,9 @@ export const MARKE = 'Own Motion';
 /** Anmeldemaske und Vollseiten außerhalb des Rahmens. */
 export const ANMELDEN_TITEL = `Anmelden – ${MARKE}`;
 
+/** Die Einladung zur Plattform (DR-115): Wer sie öffnet, meldet sich noch nicht an. */
+export const EINLADUNG_TITEL = `Einladung – ${MARKE}`;
+
 /** Die festen Namen, aus denen ein Titel bestehen darf. */
 export const TAB_NAMEN = [
   'Übersicht',
@@ -45,6 +48,25 @@ export const TAB_NAMEN = [
   'Alle Bereiche',
   'Vorschau-Protokoll',
   'Anmelden',
+  // Die Plattform der Patient:innen (DR-115), mit den Wörtern ihrer Seiten.
+  'Einladung',
+  'Termine',
+  'Übungen',
+  'Check-in',
+  'Meine Angaben',
+  'Fragebogen',
+  'Gewohnheiten',
+  'Ernährung',
+  'Rechnungen',
+  'Dokumente',
+  'Einwilligungen',
+  'Meine Daten',
+  'Nachsorge-Abo',
+  'Angebot',
+  'Trainingsvertrag',
+  'Trainingspaket',
+  'Einstellungen',
+  'Ich',
 ] as const;
 
 export type TabName = (typeof TAB_NAMEN)[number];
@@ -71,6 +93,30 @@ const REGELN: readonly [RegExp, TabName][] = [
   [/^\/mein-konto$/, 'Mein Konto'],
   [/^\/bereiche$/, 'Alle Bereiche'],
   [/^\/vorschau\/protokoll$/, 'Vorschau-Protokoll'],
+  // Die Plattform unter `/p` (DR-115): Bis dahin hieß dort jeder Tab nur
+  // „Own Motion“. Der Reiter „Training“ steht in `PlattformApp`, weil der
+  // Pfad derselbe ist wie für „Übungen“.
+  [/^\/p\/?$/, 'Übersicht'],
+  [/^\/p\/termine(\/|$)/, 'Termine'],
+  [/^\/p\/nachrichten(\/|$)/, 'Nachrichten'],
+  [/^\/p\/uebungen(\/|$)/, 'Übungen'],
+  [/^\/p\/checkin$/, 'Check-in'],
+  [/^\/p\/angaben$/, 'Meine Angaben'],
+  // „Befundbogen“ ist ein Wort der Praxis; die Person füllt einen Fragebogen aus.
+  [/^\/p\/befundbogen$/, 'Fragebogen'],
+  [/^\/p\/gewohnheiten$/, 'Gewohnheiten'],
+  [/^\/p\/ernaehrung(\/|$)/, 'Ernährung'],
+  [/^\/p\/rechnungen\//, 'Rechnung'],
+  [/^\/p\/rechnungen$/, 'Rechnungen'],
+  [/^\/p\/dokumente$/, 'Dokumente'],
+  [/^\/p\/einwilligungen$/, 'Einwilligungen'],
+  [/^\/p\/daten$/, 'Meine Daten'],
+  [/^\/p\/abo$/, 'Nachsorge-Abo'],
+  [/^\/p\/angebot$/, 'Angebot'],
+  [/^\/p\/vertrag$/, 'Trainingsvertrag'],
+  [/^\/p\/paket$/, 'Trainingspaket'],
+  [/^\/p\/einstellungen$/, 'Einstellungen'],
+  [/^\/p\/ich$/, 'Ich'],
 ];
 
 /** Der feste Name zu einem Pfad - oder `undefined`, wo keine Regel greift. */
@@ -79,9 +125,8 @@ export function tabName(pathname: string): TabName | undefined {
 }
 
 /**
- * Der ganze Titel: „Kalender – Own Motion". Wo keine Regel greift - die
- * Plattformoberfläche unter `/p`, ein unbekannter Pfad vor der Weiterleitung -,
- * bleibt es bei der Marke allein.
+ * Der ganze Titel: „Kalender – Own Motion". Wo keine Regel greift - ein
+ * unbekannter Pfad vor der Weiterleitung -, bleibt es bei der Marke allein.
  */
 export function tabTitel(pathname: string): string {
   const name = tabName(pathname);

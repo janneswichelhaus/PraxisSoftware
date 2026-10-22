@@ -371,10 +371,11 @@
   font-size: 1.125rem;
   line-height: 1.5;
   /* Lange deutsche Wörter („Lendenwirbelsäule") brechen bei großer Schrift
-     um, statt die Seite zu verbreitern - mit Trennstrich, wo der Browser
-     ihn kennt. */
+     um, statt die Seite zu verbreitern. Mit Trennstrich nur im Fließtext und
+     nur in langen Wörtern (Regel darunter); Namen, Orte, Überschriften und
+     Knöpfe trennt der Browser nie (DR-114: „Anna Bei-spiel“, „Pra-xis“). */
   overflow-wrap: anywhere;
-  hyphens: auto;
+  hyphens: manual;
   --text-xs: 1.125rem;
   --text-xs--line-height: 1.4;
   --text-sm: 1.125rem;
@@ -399,6 +400,42 @@
   }
   .plattform-schrift fieldset {
     min-width: 0;
+  }
+  /* DR-114: Trennstrich nur im Fließtext und erst ab zwölf Buchstaben, je
+     Teil mindestens fünf - „Lendenwirbelsäule“ ja, „Beispiel“, „Praxis“,
+     „Gewohnheit“, „Tübingen“ nie. Ein Browser ohne `hyphenate-limit-chars`
+     trennt hier weiter wie bisher. */
+  .plattform-schrift :is(p, li, dd, td, blockquote) {
+    hyphens: auto;
+    hyphenate-limit-chars: 12 5 5;
+  }
+  .plattform-schrift :is(h1, h2, h3, h4, h5, h6, button, a, label, legend, th, dt, strong) {
+    hyphens: manual;
+  }
+}
+/* DR-120: Bei offener Bildschirmtastatur verdeckte die feste Reiterleiste den
+   Sendeknopf. Solange ein Feld zum Tippen den Fokus hat, tritt sie zurück - nur
+   bei Fingerbedienung, am Rechner bleibt sie stehen. Auswahl, Datum und Uhrzeit
+   öffnen keine Tastatur, sondern einen Wähler; dort bleibt sie (ANN-676). */
+@media (pointer: coarse) {
+  body:has(
+      :is(
+        input:not([type]),
+        input:is(
+          [type='text'],
+          [type='email'],
+          [type='tel'],
+          [type='search'],
+          [type='url'],
+          [type='number'],
+          [type='password']
+        ),
+        textarea,
+        [contenteditable='true']
+      ):focus
+    )
+    .reiterleiste {
+    display: none;
   }
 }
 /* Zeit, Titel und Zustand nebeneinander brauchen Platz (ListRow trägt dafür

@@ -23,12 +23,20 @@ export function AnmeldungEinrichten({
   onFertig,
   onAbmelden,
   onSpaeter,
+  weitererPasskey = 'in den Einstellungen Ihres Kontos',
 }: {
   stand: Einrichtungsstand;
   onFertig: () => void;
   onAbmelden: () => void;
   /** Nur außerhalb der Produktion. */
   onSpaeter?: (() => void) | undefined;
+  /**
+   * Wo sich später ein zweiter Passkey einrichten lässt, in den Wörtern der
+   * Oberfläche (DR-105): Die Plattform heißt es anders als die Praxis. Ohne
+   * Angabe ein Satz, der für beide stimmt - die `Einrichtungspflicht` weiß
+   * noch nicht, welche Oberfläche danach kommt.
+   */
+  weitererPasskey?: string;
 }) {
   const [passkeyDa, setPasskeyDa] = useState(stand.passkeys > 0);
   const [fehler, setFehler] = useState<string | null>(null);
@@ -82,8 +90,8 @@ export function AnmeldungEinrichten({
       ) : null}
 
       <Kleingedrucktes className="mt-6">
-        Richten Sie später in „Mein Konto“ einen zweiten Passkey ein, etwa auf dem Rechner. Geht der
-        Passkey verloren, gibt Ihnen die Praxis eine neue Einladung.
+        Richten Sie später {weitererPasskey} einen zweiten Passkey ein, etwa auf dem Rechner. Geht
+        der Passkey verloren, gibt Ihnen die Praxis eine neue Einladung.
       </Kleingedrucktes>
 
       {onSpaeter ? (

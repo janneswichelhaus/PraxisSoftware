@@ -277,9 +277,10 @@ function Gate() {
   const kennung = session?.user.id;
   const ohneNetz = useMemo(() => (kennung ? ohneNetzFuer(kennung) : undefined), [kennung]);
   if (initialising) {
+    // DR-106: „Sitzung“ ist ein Fachwort; gemeint ist nur ein Augenblick.
     return (
       <Vollseite>
-        <LoadingState label="Sitzung wird geprüft …" />
+        <LoadingState label="Einen Moment …" />
       </Vollseite>
     );
   }
@@ -349,7 +350,7 @@ export function App() {
  * Es liegt **über** allem, was darunter entsteht, und hält nichts an: Die
  * Sitzung wird geprüft, die Anmeldemaske oder Profil und Tagesliste laden
  * weiter. Deshalb steht es neben dem Router und nicht im `Gate` - ein
- * Wechsel von „Sitzung wird geprüft" zur Anmeldung oder zur Anwendung
+ * Wechsel von „Einen Moment …" zur Anmeldung oder zur Anwendung
  * startet es nicht neu. Nach der Anmeldung kommt es nicht noch einmal.
  */
 function StartbildBeimOeffnen() {

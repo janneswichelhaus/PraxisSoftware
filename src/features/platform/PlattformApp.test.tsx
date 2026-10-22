@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
@@ -168,7 +168,16 @@ describe('PlattformApp', () => {
     // Die Adresse steht unter „Konto“, nicht im Kopf (BEF-193).
     const konto = screen.getByRole('heading', { name: 'Konto' }).closest('section')!;
     expect(within(konto).getByText('tina.plattform@patient.invalid')).toBeInTheDocument();
-    await nutzer.click(screen.getByRole('button', { name: 'Abmelden' }));
+    // DR-150: Abmelden ist eine leise Zeile, kein Hauptknopf der Seite.
+    const knopf = screen.getByRole('button', { name: 'Abmelden' });
+    expect(knopf.className).toContain('text-accent');
+    expect(knopf.className).not.toContain('bg-accent');
+    // DR-104: Ein Kennwort gibt es nicht; weitergeben ließe sich das Telefon.
+    expect(
+      screen.getByText(/Geben Sie Ihr entsperrtes Telefon nicht weiter\./),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Kennwort/)).toBeNull();
+    await nutzer.click(knopf);
     expect(abmelden).toHaveBeenCalled();
 
     await nutzer.click(screen.getByRole('button', { name: 'Überall abmelden' }));
@@ -230,7 +239,11 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     // Der eigene Bereich zuerst: kein Band.
     expect(screen.queryByText(/Sie handeln für/)).toBeNull();
     await user.click(screen.getByRole('link', { name: 'Für Max Mustermann' }));
-    expect(screen.getByRole('status')).toHaveTextContent('Sie handeln für Max Mustermann');
+    // Seit DR-118 steht im Gerüst auch die Verbindungszeile als (leere) Live-Region.
+    const band = screen
+      .getAllByRole('status')
+      .find((s) => s.textContent?.includes('Sie handeln für'));
+    expect(band).toHaveTextContent('Sie handeln für Max Mustermann');
     expect(screen.getByRole('link', { name: 'Für Max Mustermann' })).toHaveAttribute(
       'aria-current',
       'page',
@@ -300,6 +313,17 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     expect(screen.getByRole('link', { name: 'Meine Daten herunterladen' })).toBeInTheDocument();
   });
 
+  it('schickt die Gewohnheiten unter Ich mit dem Rückweg zu Ich los (DR-144)', () => {
+    zeige([BEHANDLUNG], '/p/ich');
+    const ziel = new URL(
+      screen.getByRole('link', { name: 'Gewohnheiten' }).getAttribute('href')!,
+      'http://test.invalid',
+    );
+    expect(ziel.pathname).toBe('/p/gewohnheiten');
+    expect(ziel.searchParams.get('bereich')).toBe('treatment');
+    expect(ziel.searchParams.get('zurueck')).toBe('/p/ich?bereich=treatment');
+  });
+
   it('nach der Lesefrist: Einwilligungen ja, Export bei der Praxis', () => {
     zeige([{ ...BEHANDLUNG, readable: false, read_until: '2026-09-01T00:00:00Z' }], '/p/ich');
     expect(screen.getByRole('link', { name: 'Einwilligungen' })).toBeInTheDocument();
@@ -351,5 +375,45 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     expect(screen.getByRole('heading', { name: 'Fertig' })).toBeInTheDocument();
     await nutzer.click(screen.getByRole('button', { name: 'Zur Übersicht' }));
     await waitFor(() => expect(einstiegBeenden).toHaveBeenCalled());
+  });
+});
+
+describe('Bestätigungen wandern nicht mit (DR-160)', () => {
+  it('trägt in den Reitern nur den Bereich weiter, keine Bestätigung', async () => {
+    // Auf der Übersicht verbraucht niemand `gesendet` - stünde es im Reiter,
+    // zeigte „Termine" eine Bestätigung für einen Wunsch, der nie gesendet wurde.
+    zeige([BEHANDLUNG], '/p?bereich=treatment&gesendet=1');
+    const reiter = await screen.findByRole('navigation', { name: 'Plattform' });
+    expect(within(reiter).getByRole('link', { name: 'Termine' })).toHaveAttribute(
+      'href',
+      '/p/termine?bereich=treatment',
+    );
+    expect(within(reiter).getByRole('link', { name: 'Nachrichten' })).toHaveAttribute(
+      'href',
+      '/p/nachrichten?bereich=treatment',
+    );
+  });
+});
+
+describe('Tab-Titel und Verbindung im Gerüst (DR-115, DR-118)', () => {
+  afterEach(() => {
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  it('nennt den Tab nach der Seite', async () => {
+    document.title = 'Anmelden – Own Motion';
+    zeige([BEHANDLUNG], '/p/termine?bereich=treatment');
+    await waitFor(() => expect(document.title).toBe('Termine – Own Motion'));
+  });
+
+  it('nennt die Übungen im Training „Training“ - wie den Reiter', async () => {
+    zeige([TRAINING], '/p/uebungen');
+    await waitFor(() => expect(document.title).toBe('Training – Own Motion'));
+  });
+
+  it('sagt ohne Netz unter dem Kopf, dass keine Verbindung besteht', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    zeige([BEHANDLUNG]);
+    expect(await screen.findByText(/^Keine Verbindung\./)).toBeInTheDocument();
   });
 });

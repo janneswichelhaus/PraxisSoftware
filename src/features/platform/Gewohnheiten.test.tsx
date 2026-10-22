@@ -66,6 +66,24 @@ beforeEach(() => {
 });
 
 describe('Gewohnheiten auf der Plattform (ALT-003)', () => {
+  it('führt zurück, woher man kam: aus „Ich“ nach „Ich“, sonst zur Übersicht (DR-144)', async () => {
+    const { unmount } = renderWithProviders(
+      <Gewohnheiten zugang={ZUGANG} />,
+      `/p/gewohnheiten?bereich=treatment&zurueck=${encodeURIComponent('/p/ich?bereich=treatment')}`,
+    );
+    expect(await screen.findByRole('link', { name: '← Ich' })).toHaveAttribute(
+      'href',
+      '/p/ich?bereich=treatment',
+    );
+    unmount();
+
+    renderWithProviders(<Gewohnheiten zugang={ZUGANG} />, '/p/gewohnheiten?bereich=treatment');
+    expect(await screen.findByRole('link', { name: '← Zur Übersicht' })).toHaveAttribute(
+      'href',
+      '/p?bereich=treatment',
+    );
+  });
+
   it('zeigt die Tage ab dem Beginn zum Antippen, ohne Serie oder Zählwerk', async () => {
     const { container } = renderWithProviders(<Gewohnheiten zugang={ZUGANG} />, '/p/gewohnheiten');
     const tage = await screen.findByRole('group', { name: 'Tage für „zwei Minuten Mobilität“' });

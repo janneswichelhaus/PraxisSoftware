@@ -134,6 +134,9 @@ describe('Plan als Blatt auf der Plattform (ANN-303)', () => {
     expect(blatt).toHaveTextContent('Ihr Übungsplan');
     expect(blatt).not.toHaveTextContent(' für ');
     expect(blatt).toHaveTextContent('Hinweis: Langsam ablassen.');
+    // Das Blatt beginnt mit h2; die Seite trägt die h1 (DR-158).
+    expect(screen.getByRole('heading', { level: 1, name: 'Ihr Plan' })).toBeInTheDocument();
+    expect(within(blatt).getByRole('heading', { level: 2 })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Drucken oder als PDF sichern' }));
     expect(print).toHaveBeenCalled();
     print.mockRestore();

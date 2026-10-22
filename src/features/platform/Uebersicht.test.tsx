@@ -144,7 +144,7 @@ describe('Uebersicht (POR-015)', () => {
       },
     ]);
     zeige();
-    expect(await screen.findByText('Befundbogen ausfüllen')).toBeInTheDocument();
+    expect(await screen.findByText('Fragebogen ausfüllen')).toBeInTheDocument();
     // Was zu tun ist, in der Reihenfolge aus DSN-001; der Termin darunter.
     const ziele = screen
       .getAllByRole('link')
@@ -155,7 +155,7 @@ describe('Uebersicht (POR-015)', () => {
       '/p/rechnungen/ffffffff-ffff-4fff-8fff-000000000001?bereich=treatment',
       '/p/termine?bereich=treatment',
     ]);
-    expect(screen.getByRole('link', { name: /^Befundbogen ausfüllen/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /^Fragebogen ausfüllen/ })).toHaveAttribute(
       'href',
       '/p/befundbogen?bereich=treatment',
     );
@@ -178,7 +178,7 @@ describe('Uebersicht (POR-015)', () => {
       represented_name: 'Max Mustermann',
     });
     expect(await screen.findByText('Nächster Termin')).toBeInTheDocument();
-    expect(screen.queryByText('Befundbogen ausfüllen')).not.toBeInTheDocument();
+    expect(screen.queryByText('Fragebogen ausfüllen')).not.toBeInTheDocument();
 
     ladeRechnungen.mockRejectedValue(new Error('Netz weg'));
     zeige();
@@ -205,7 +205,7 @@ describe('Uebersicht (POR-015)', () => {
     zeige();
     expect(await screen.findByText(/Gerade ist nichts zu tun/)).toBeInTheDocument();
     expect(screen.getByText(/Zurzeit ist kein Termin vereinbart/)).toBeInTheDocument();
-    expect(screen.queryByText('Befundbogen ausfüllen')).not.toBeInTheDocument();
+    expect(screen.queryByText('Fragebogen ausfüllen')).not.toBeInTheDocument();
   });
 
   it('zeigt die Antwort der Praxis auf einen Wunsch und im Training keinen Befundbogen', async () => {
@@ -228,7 +228,7 @@ describe('Uebersicht (POR-015)', () => {
       await screen.findByText('Ihr Terminwunsch war leider nicht möglich.'),
     ).toBeInTheDocument();
     expect(screen.getByText('Antwort der Praxis: Diese Woche ist voll.')).toBeInTheDocument();
-    expect(screen.queryByText('Befundbogen ausfüllen')).not.toBeInTheDocument();
+    expect(screen.queryByText('Fragebogen ausfüllen')).not.toBeInTheDocument();
     expect(ladeBefundbogen).not.toHaveBeenCalled();
   });
 
@@ -248,7 +248,7 @@ describe('Uebersicht (POR-015)', () => {
       checkin({ due: false, can_answer: false, due_on: '2026-10-19' }),
     );
     zeige();
-    expect(await screen.findByText('Befundbogen ausfüllen')).toBeInTheDocument();
+    expect(await screen.findByText('Fragebogen ausfüllen')).toBeInTheDocument();
     await waitFor(() => expect(ladeCheckins).toHaveBeenCalled());
     expect(screen.queryByText(/Check-in/)).not.toBeInTheDocument();
     expect(screen.queryByText(/verpasst|überfällig|vergessen/i)).not.toBeInTheDocument();
@@ -303,7 +303,7 @@ describe('Uebersicht (POR-015)', () => {
 
   it('bestaetigt den abgeschickten Befundbogen', async () => {
     zeige(ZUGANG, '/p?bereich=treatment&bogen=1');
-    expect(await screen.findByText(/Ihr Befundbogen ist bei der Praxis/)).toBeInTheDocument();
+    expect(await screen.findByText(/Ihr Fragebogen ist bei der Praxis/)).toBeInTheDocument();
   });
 
   it('nennt nach einem gekündigten Nachsorge-Abo dessen Ende und die Lesezeit (ANG-004)', async () => {

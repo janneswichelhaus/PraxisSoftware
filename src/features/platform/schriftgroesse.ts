@@ -63,17 +63,27 @@ export function useSchriftgroesse(): [Schriftgroesse, (groesse: Schriftgroesse) 
   return [groesse, setzen];
 }
 
+/** Wie viele Stellen die Größe gerade anwenden: Gerüst, Türseite oder beide. */
+let anwendende = 0;
+
 /**
  * Wendet die Größe an, solange das Plattformgerüst steht - genau eine Stelle
  * (`PlattformApp`), damit das Verlassen einer Unterseite sie nicht abschaltet.
+ * Seit DR-102 auch jede Türseite (`Vollseite`). Steht die Sperrseite über dem
+ * Gerüst, wenden beide an; erst wenn die letzte Stelle geht, gilt wieder
+ * „Normal“.
  */
 export function useSchriftgroesseAnwenden(): void {
   const [groesse] = useSchriftgroesse();
   useEffect(() => {
+    anwendende += 1;
+    return () => {
+      anwendende -= 1;
+      if (anwendende === 0) delete document.documentElement.dataset.schrift;
+    };
+  }, []);
+  useEffect(() => {
     if (groesse === 'normal') delete document.documentElement.dataset.schrift;
     else document.documentElement.dataset.schrift = groesse;
-    return () => {
-      delete document.documentElement.dataset.schrift;
-    };
   }, [groesse]);
 }

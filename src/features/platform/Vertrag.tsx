@@ -42,11 +42,7 @@ export function Vertrag({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Rueckweg
-        standard={`${PLATTFORM_PFAD}/ich`}
-        beschriftung="Zu „Ich“"
-        className="print:hidden"
-      />
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" className="print:hidden" />
       <PageHeader title="Trainingsvertrag" />
       {vertrag.isPending ? <LoadingState label="Ihr Vertrag wird geladen …" inKarte /> : null}
       {vertrag.isError ? (

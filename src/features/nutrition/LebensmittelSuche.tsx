@@ -217,9 +217,14 @@ export function LebensmittelDetail({ f }: { f: Lebensmittel }) {
 }
 
 /**
- * Die Quellenangabe, die BLS (CC BY 4.0) und Open Food Facts (ODbL) verlangen:
- * je Quelle Titel, Herausgeber und Lizenz sichtbar, die volle Zitierung mit
- * DOI und dem Hinweis auf Änderungen auf Abruf (DESIGN.md Regel 6).
+ * Die Quellenangabe, die BLS (CC BY 4.0) und Open Food Facts (ODbL) verlangen
+ * (ANN-657): je Quelle Titel und Lizenz sichtbar, die volle Zitierung mit DOI,
+ * dem Hinweis auf Änderungen und dem Lizenztext auf Abruf (DESIGN.md Regel 6).
+ *
+ * Einmal (DR-146): Titel und Lizenz sind der Kopf des Aufklappers. Bis dahin
+ * stand dieselbe Zeile als Kleingedrucktes und darunter noch ein Aufklapper
+ * „Quellenangabe“ mit denselben Namen. Dass die Lizenzen das so zulassen, ist
+ * ANN-677 (Prüfpaket).
  */
 export function Quellenangabe({ laden }: { laden: () => Promise<Quelle[]> }) {
   const { data } = useQuery({
@@ -229,25 +234,17 @@ export function Quellenangabe({ laden }: { laden: () => Promise<Quelle[]> }) {
   });
   if (!data || data.length === 0) return null;
   return (
-    <div className="mt-8 flex flex-col gap-2">
-      <Kleingedrucktes>
-        Nährwerte:{' '}
-        {data.map((q, i) => (
-          <span key={q.source}>
-            {i > 0 ? ' · ' : ''}
-            {q.title} (
-            <Textlink href={q.license_url} target="_blank" rel="noreferrer">
-              {q.license}
-            </Textlink>
-            )
-          </span>
-        ))}
-      </Kleingedrucktes>
-      <Disclosure summary="Quellenangabe">
+    <div className="mt-8">
+      <Disclosure
+        summary={`Nährwerte: ${data.map((q) => `${q.title} (${q.license})`).join(' · ')}`}
+      >
         {data.map((q) => (
           <Kleingedrucktes key={q.source} className="mb-2">
             {q.attribution}
-            {q.version ? ` Stand: ${q.version}.` : ''}
+            {q.version ? ` Stand: ${q.version}.` : ''}{' '}
+            <Textlink href={q.license_url} target="_blank" rel="noreferrer">
+              Lizenz im Wortlaut
+            </Textlink>
           </Kleingedrucktes>
         ))}
       </Disclosure>
