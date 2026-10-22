@@ -175,6 +175,8 @@ function Geruest({
   return (
     <div
       className={`plattform-schrift bg-canvas flex flex-col ${nurLesen ? 'min-h-full' : 'min-h-dvh'}`}
+      // Am Rechner wachsen die Seitentitel auf 32 (`PageHeader`, ANN-683).
+      data-rechner={rechner ? '' : undefined}
     >
       {/* POR-020 (ANN-267): Schriftgröße des Geräts; mindestens 18 px am
           Gerüst. In der Einsicht gilt die Wahl der Person, nicht die dieses

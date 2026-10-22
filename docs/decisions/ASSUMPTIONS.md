@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-22.
+Zuletzt aktualisiert: 2026-10-23.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -7056,3 +7056,15 @@ Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritte 1c und 1
 **Anker.** `Menue` in `src/features/platform/Navigation.tsx`; Rand in `geruestSpalte` (`geruestbreite.ts`).
 
 **Änderungspfad.** Andere Grenze an `max-[23rem]:`, ohne Menü die Leiste in zwei Reihen · Aufwand `klein`.
+
+### ANN-683 — Plattform: Seitentitel und Abschnittstitel aller Seiten in der Skala in rem
+
+Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
+
+**Annahme.** Auf jeder Seite unter `/p` steht der Seitentitel (`PageHeader`) in `text-plattform-titel` 28/800, am Rechner 32, und jeder Abschnittstitel (`Section`, damit auch `Listenabschnitt`) in `text-abschnitt` 22/700 in Tinte. Beide wachsen mit „Groß“ und „Sehr groß“; die Praxis-App behält ihre Rollen in px.
+
+**Begründung.** Offen aus Schritt 1a: Abschnitte standen in 18/600 `ink-muted`, Titel in px und bei „Sehr groß“ kaum größer als der Text. Der Handoff 2026-10-22 (Abschnitt 2) nennt `text-abschnitt` nur für einzelne Titel der Übersicht; die Leinwand zeigt jeden Abschnitt so. Eine Stufe für alle Abschnitte hält die Rangfolge Seite, Abschnitt, Zeile auf jeder Seite gleich.
+
+**Anker.** Die Klassen `[.plattform-schrift_&]:` am Titel in `src/components/ui/Section.tsx` und `PageHeader.tsx`.
+
+**Änderungspfad.** Die Klassen entfernen oder einzelnen Abschnitten eine leisere Stufe geben · Aufwand `klein`.

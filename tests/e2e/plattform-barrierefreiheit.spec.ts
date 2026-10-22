@@ -330,3 +330,55 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
     expect(await axeVerstoesse(page), 'axe').toEqual([]);
   });
 });
+
+/**
+ * Seiten- und Abschnittstitel in der Skala der Plattform (Handoff 2026-10-22,
+ * Abschnitt 2; ANN-683): in rem, damit sie mit „Groß“ und „Sehr groß“
+ * wachsen; am Rechner der Seitentitel 32.
+ */
+test.describe('Titel der Plattform in rem', () => {
+  async function titel(page: Page) {
+    return page.evaluate(() => {
+      const werte = (el: Element | null) => {
+        if (!el) return null;
+        const stil = getComputedStyle(el);
+        return {
+          groesse: parseFloat(stil.fontSize),
+          gewicht: stil.fontWeight,
+          laufweite: parseFloat(stil.letterSpacing) / parseFloat(stil.fontSize),
+          versalien: stil.textTransform,
+        };
+      };
+      return {
+        seite: werte(document.querySelector('main h1')),
+        abschnitt: werte(document.querySelector('main section h2')),
+      };
+    });
+  }
+
+  for (const { name, breite, schrift, seite, abschnitt } of [
+    { name: '375 px', breite: 375, schrift: null, seite: 28, abschnitt: 22 },
+    { name: '375 px „Sehr groß“', breite: 375, schrift: 'sehr-gross', seite: 35, abschnitt: 27.5 },
+    { name: '1280 px', breite: 1280, schrift: null, seite: 32, abschnitt: 22 },
+  ] as const) {
+    test(`${name}: Seitentitel ${seite}/800, Abschnitt ${abschnitt}/700 ohne Versalien`, async ({
+      page,
+    }) => {
+      if (schrift) {
+        await page.addInitScript((wert) => {
+          window.localStorage.setItem('plattform-schriftgroesse', wert);
+        }, schrift);
+      }
+      await page.setViewportSize({ width: breite, height: 900 });
+      await oeffne(page, 'ich', 'Ich');
+      const { seite: h1, abschnitt: h2 } = await titel(page);
+      expect(h1?.groesse).toBeCloseTo(seite, 1);
+      expect(h1?.gewicht).toBe('800');
+      expect(h1?.laufweite).toBeCloseTo(-0.03, 3);
+      expect(h2?.groesse).toBeCloseTo(abschnitt, 1);
+      expect(h2?.gewicht).toBe('700');
+      expect(h2?.laufweite).toBeCloseTo(-0.01, 3);
+      expect(h2?.versalien).toBe('none');
+    });
+  }
+});
