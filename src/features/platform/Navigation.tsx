@@ -1,5 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Menueknopf } from '@/components/ui/Menueknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import type { Plattformzugang } from './api';
 import { geruestSpalte, reiterstufe } from './geruestbreite';
@@ -243,19 +244,7 @@ function Menue({ ziele, ich }: { ziele: Ziel[]; ich: boolean }) {
         schliessen();
       }}
     >
-      <button
-        ref={knopf}
-        type="button"
-        aria-expanded={offen}
-        aria-controls={id}
-        onClick={() => setOffen(!offen)}
-        className={`nicht-drucken border-line-strong text-accent hover:bg-accent-soft rounded-button inline-flex min-h-12 items-center gap-1 border px-2 font-semibold ${DRUCK}`}
-      >
-        <Zeichen className="size-5">
-          {offen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
-        </Zeichen>
-        Menü
-      </button>
+      <Menueknopf ref={knopf} offen={offen} steuert={id} onClick={() => setOffen(!offen)} />
       {/* Ein Tipp daneben schließt das Menü und öffnet nichts darunter. */}
       {offen ? (
         <div
