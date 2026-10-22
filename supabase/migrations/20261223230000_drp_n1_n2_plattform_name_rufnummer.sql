@@ -68,12 +68,19 @@ comment on function app.platform_own_name(uuid) is
 -- die jede Rechnung an die Person schon traegt. Keine zweite Nummer, keine
 -- neue Spalte. Ohne Absender oder ohne Nummer: null, dann bietet die Plattform
 -- keinen Anruf an.
+--
+-- SECURITY INVOKER: Sie prueft weder Konto noch Organisation selbst und
+-- bekommt deshalb auch keine eigenen Rechte. Sie laeuft mit denen des
+-- Aufrufers - als Definer public.platform_context (nur die eigenen Zugaenge)
+-- und public.platform_preview (nur der freigegebene Zugang). Ein Fehler beim
+-- Entzug der Rechte oeffnet so keinen Weg zur Nummer einer fremden Praxis:
+-- Direkt aufgerufen gilt die Policy von practice_billing_profiles.
 -- -----------------------------------------------------------------------------
 create function app.platform_practice_phone(p_organization_id uuid)
 returns text
 language sql
 stable
-security definer
+security invoker
 set search_path = ''
 as $$
   select b.phone
@@ -84,7 +91,7 @@ $$;
 revoke all on function app.platform_practice_phone(uuid) from public, anon, authenticated;
 
 comment on function app.platform_practice_phone(uuid) is
-  'DRP-N2 (ANN-691): die Rufnummer der Praxis fuer die Plattform ("Praxis anrufen"), aus dem Absender der Rechnungen. Ohne Absender oder Nummer null. Enthaelt keine Daten einer Person.';
+  'DRP-N2 (ANN-691): die Rufnummer der Praxis fuer die Plattform ("Praxis anrufen"), aus dem Absender der Rechnungen. Ohne Absender oder Nummer null. Enthaelt keine Daten einer Person. SECURITY INVOKER: laeuft mit den Rechten der aufrufenden Projektion, prueft selbst nichts.';
 
 -- -----------------------------------------------------------------------------
 -- 3. platform_context mit eigenem Namen und Rufnummer der Praxis

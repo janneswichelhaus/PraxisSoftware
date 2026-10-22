@@ -32,6 +32,8 @@ const RUFNUMMER = '+49 7071 0000000';
 /** Ein Konto und ein Zugang der fremden Praxis (`fremdeOrganisation()`). */
 const FREMD_KONTO = '99999999-9999-4999-8999-0000000000f1';
 const FREMD_ZUGANG = 'cafecafe-cafe-4afe-8afe-0000000000f1';
+/** Eine rechtliche Vertretung (Vorsorgevollmacht) für Max, mit eigenem Konto. */
+const VOLLMACHT_KONTO = '99999999-9999-4999-8999-0000000000f2';
 
 interface Zeile {
   access_id: string;
@@ -161,6 +163,32 @@ describe('platform_context: eigener Name (DRP-N1, ANN-690)', () => {
         access_kind: 'companion',
         own_name: 'Paula Mustermann',
         represented_name: 'Max Mustermann',
+      }),
+    ]);
+  });
+
+  it('rechtliche Vertretung: ebenso ihr eigener Name aus dem Nachweis', async () => {
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email) values
+         ($1, 'authenticated', 'authenticated', 'vera.vollmacht@patient.invalid')`,
+      [VOLLMACHT_KONTO],
+    );
+    await asPostgres(
+      `insert into public.platform_accesses
+         (organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
+          status, created_by, activated_at, access_kind, legal_basis, representative_name,
+          proof_documents, health_scope, finance_scope, proof_recorded_by, proof_recorded_at)
+       values ($1, 'treatment', $2, $2, $3, 'active', $4, now(), 'legal_representative',
+               'power_of_attorney', 'Vera Vollmacht',
+               array['identity_document', 'power_of_attorney'], true, false, $4, now())`,
+      [SEED.organizationId, patients.max, VOLLMACHT_KONTO, users.office],
+    );
+    expect(await kontext(VOLLMACHT_KONTO)).toEqual([
+      expect.objectContaining({
+        access_kind: 'legal_representative',
+        own_name: 'Vera Vollmacht',
+        represented_name: 'Max Mustermann',
+        practice_phone: RUFNUMMER,
       }),
     ]);
   });
@@ -390,5 +418,21 @@ describe('Hilfsfunktionen von DRP-N1 und DRP-N2', () => {
         ]),
       ),
     ).toBe('42501');
+  });
+
+  it('nur der Name prüft selbst; die Rufnummer läuft mit den Rechten des Aufrufers', async () => {
+    // ADR-013 Punkt 9 Nr. 2 (Zweitreview): Wer nichts prüft, bekommt keine
+    // eigenen Rechte - direkt aufgerufen gälte die Policy des Absenders.
+    const { rows } = await asPostgres<{ funktion: string; definer: boolean }>(
+      `select p.oid::regprocedure::text as funktion, p.prosecdef as definer
+         from pg_proc p
+        where p.oid in ('app.platform_own_name(uuid)'::regprocedure,
+                        'app.platform_practice_phone(uuid)'::regprocedure)
+        order by 1`,
+    );
+    expect(rows).toEqual([
+      { funktion: 'app.platform_own_name(uuid)', definer: true },
+      { funktion: 'app.platform_practice_phone(uuid)', definer: false },
+    ]);
   });
 });
