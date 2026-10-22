@@ -107,14 +107,19 @@ describe('PlattformApp', () => {
     // Ein Reiter erscheint erst mit dem Loop, der ihn füllt (ANN-112): seit
     // POR-008 die Termine, seit UEB-009 das Training (hier statt „Übungen"),
     // seit KOM-001 die Nachrichten.
-    expect(screen.getByRole('link', { name: 'Übersicht' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Termine' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Übungen' })).not.toBeInTheDocument();
-    expect(
-      within(screen.getByRole('navigation', { name: 'Plattform' })).getByRole('link', {
-        name: 'Nachrichten',
-      }),
-    ).toHaveAttribute('href', '/p/nachrichten');
+    const reiter = within(screen.getByRole('navigation', { name: 'Plattform' }));
+    expect(reiter.getByRole('link', { name: 'Übersicht' })).toHaveAttribute('aria-current', 'page');
+    expect(reiter.getByRole('link', { name: 'Termine' })).toBeInTheDocument();
+    expect(reiter.queryByRole('link', { name: 'Übungen' })).not.toBeInTheDocument();
+    expect(reiter.getByRole('link', { name: 'Nachrichten' })).toHaveAttribute(
+      'href',
+      '/p/nachrichten',
+    );
+    // Die Wortmarke im Kopf führt zur Übersicht (Handoff 2026-10-22, Abschnitt 3).
+    expect(screen.getByRole('img', { name: 'Own Motion' }).closest('a')).toHaveAttribute(
+      'href',
+      '/p',
+    );
   });
 
   it('schaltet bei zwei Verhaeltnissen zwischen Behandlung und Training (D6)', async () => {
@@ -417,3 +422,53 @@ describe('Tab-Titel und Verbindung im Gerüst (DR-115, DR-118)', () => {
     expect(await screen.findByText(/^Keine Verbindung\./)).toBeInTheDocument();
   });
 });
+
+describe('Rechneransicht ab 1024 px (DR-113)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', (abfrage: string) => ({
+      matches: abfrage === '(min-width: 1024px)',
+      media: abfrage,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('führt die vier Ziele im Kopf und zeigt keine Reiterleiste', async () => {
+    zeige([BEHANDLUNG], '/p/termine?bereich=treatment');
+    const kopf = geruestKopf();
+    const navigation = within(kopf).getByRole('navigation', { name: 'Plattform' });
+    expect(
+      within(navigation)
+        .getAllByRole('link')
+        .map((ziel) => ziel.textContent),
+    ).toEqual(['Übersicht', 'Termine', 'Übungen', 'Nachrichten']);
+    expect(within(navigation).getByRole('link', { name: 'Termine' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(kopf).getByRole('link', { name: 'Ich' })).toHaveAttribute('href', '/p/ich');
+    // Eine Navigation, nicht zwei: unten keine Leiste, im Kopf kein Menü.
+    expect(screen.getAllByRole('navigation', { name: 'Plattform' })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Menü' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Termine' })).toBeInTheDocument();
+  });
+
+  it('nennt im Training auch im Kopf „Training“', () => {
+    zeige([TRAINING], '/p');
+    const navigation = within(geruestKopf()).getByRole('navigation', {
+      name: 'Plattform',
+    });
+    expect(within(navigation).getByRole('link', { name: 'Training' })).toHaveAttribute(
+      'href',
+      '/p/uebungen',
+    );
+  });
+});
+
+/** Der Kopf des Gerüsts - neben ihm ist auch der Seitenkopf ein `header`. */
+function geruestKopf(): HTMLElement {
+  return screen.getByRole('img', { name: 'Own Motion' }).closest('header') as HTMLElement;
+}

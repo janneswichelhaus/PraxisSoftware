@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useIstVerbunden } from '@/app/verbindung';
+import { geruestSpalte } from './geruestbreite';
 import { uhrzeit } from './zeit';
 
 /**
@@ -17,7 +18,7 @@ import { uhrzeit } from './zeit';
  * Quelle ist wie in der Praxis allein `navigator.onLine` (ANN-015); die Zeile
  * sagt deshalb nur, was das Gerät meldet.
  */
-export function Verbindungszeile() {
+export function Verbindungszeile({ rechner = false }: { rechner?: boolean }) {
   const verbunden = useIstVerbunden();
   const queryClient = useQueryClient();
   // Beim Abreißen einmal ermittelt: Was ohne Netz noch in den Speicher kommt,
@@ -34,7 +35,7 @@ export function Verbindungszeile() {
     <div role="status" className="nicht-drucken">
       {verbunden ? null : (
         <div className="bg-surface-sunken text-ink">
-          <p className="max-w-formular mx-auto flex items-start gap-3 px-5 py-2.5">
+          <p className={`${geruestSpalte(rechner)} flex items-start gap-3 py-2.5`}>
             <OhneNetzSymbol />
             <span>
               Keine Verbindung.

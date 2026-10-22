@@ -74,6 +74,23 @@ async function oeffne(page: Page, seite: string, merkmal: RegExp | string, fenst
       ? page.getByRole('dialog', { name: merkmal })
       : page.getByRole('heading', { level: 1, name: merkmal }).first(),
   ).toBeVisible();
+  await bewegungAbwarten(page);
+}
+
+/**
+ * Bis die Bewegung steht: Mitten in einer Einblendung mit Deckkraft rechnete
+ * axe einen zu schwachen Kontrast, und ein Ziel stünde noch nicht an seinem
+ * Platz. Endlose Bewegungen (der Puls des Skeletts) zählen nicht.
+ */
+async function bewegungAbwarten(page: Page) {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((bewegung) => bewegung.effect?.getTiming().iterations !== Infinity)
+        .map((bewegung) => bewegung.finished.catch(() => undefined)),
+    ),
+  );
 }
 
 async function ueberlaeuft(page: Page): Promise<boolean> {
@@ -172,5 +189,144 @@ test.describe('Plattform für 78-Jährige (POR-020, DSN-001 Abschnitt 7)', () =>
     // Nach dem Neuladen gilt sie weiter.
     await page.reload();
     await expect(page.getByRole('radio', { name: 'Sehr groß' })).toBeChecked();
+  });
+});
+
+/**
+ * Das Gerüst in seinen Breiten (Handoff 2026-10-22, Abschnitte 3, 4 und 8):
+ * die Reiterleiste in drei Stufen (ANN-679, ANN-682) und die Rechneransicht.
+ * Gemessen wird hier, was jsdom nicht kann - Breiten, die Media Query unter
+ * 23rem und die Schrift „Groß“ und „Sehr groß“.
+ */
+test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
+  const leiste = (page: Page) => page.locator('nav[data-stufe]');
+
+  async function mitSchrift(page: Page, groesse: 'gross' | 'sehr-gross') {
+    await page.addInitScript((wert) => {
+      window.localStorage.setItem('plattform-schriftgroesse', wert);
+    }, groesse);
+  }
+
+  /** Ziele, deren Wort nicht ganz hineinpasst. */
+  async function gekappt(page: Page, auswahl: string): Promise<string[]> {
+    return page.evaluate(
+      (sel) =>
+        [...document.querySelectorAll<HTMLElement>(sel)]
+          .filter((ziel) => ziel.getBoundingClientRect().width > 0)
+          .filter((ziel) => ziel.scrollWidth > ziel.clientWidth + 1)
+          .map((ziel) => ziel.textContent?.trim() ?? ''),
+      auswahl,
+    );
+  }
+
+  /** Jedes Ziel liegt im Bild und wird nicht verdeckt - es lässt sich antippen. */
+  async function erreichbar(ziele: ReturnType<Page['locator']>) {
+    for (const ziel of await ziele.all()) {
+      await expect(ziel).toBeInViewport();
+      const oben = await ziel.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        const treffer = document.elementFromPoint(
+          box.left + box.width / 2,
+          box.top + box.height / 2,
+        );
+        return treffer !== null && el.contains(treffer);
+      });
+      expect(oben, (await ziel.textContent()) ?? '').toBe(true);
+    }
+  }
+
+  test('375 px: eine Reihe, vier Wörter ungekappt, Ziele 68 hoch, Kopf 72', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await oeffne(page, 'geruest', 'Guten Tag');
+    await expect(leiste(page)).toHaveAttribute('data-stufe', '1');
+    const ziele = leiste(page).getByRole('link');
+    await expect(ziele).toHaveCount(4);
+    for (const ziel of await ziele.all()) {
+      expect((await ziel.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(67.5);
+    }
+    expect(await gekappt(page, 'nav[data-stufe] a')).toEqual([]);
+    await erreichbar(ziele);
+    await expect(page.getByRole('button', { name: 'Menü' })).toBeHidden();
+    const kopfzeile = page.locator('header > div').first();
+    expect((await kopfzeile.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(71.5);
+  });
+
+  for (const groesse of ['gross', 'sehr-gross'] as const) {
+    test(`375 px, „${groesse === 'gross' ? 'Groß' : 'Sehr groß'}“: zwei Reihen, alle vier Ziele erreichbar`, async ({
+      page,
+    }) => {
+      await mitSchrift(page, groesse);
+      await page.setViewportSize({ width: 375, height: 900 });
+      await oeffne(page, 'geruest', 'Guten Tag');
+      await expect(leiste(page)).toHaveAttribute('data-stufe', '2');
+      const ziele = leiste(page).getByRole('link');
+      await expect(ziele).toHaveCount(4);
+      for (const ziel of await ziele.all()) {
+        expect((await ziel.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(55.5);
+      }
+      expect(await gekappt(page, 'nav[data-stufe] a')).toEqual([]);
+      await erreichbar(ziele);
+      expect(await ueberlaeuft(page)).toBe(false);
+      expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    });
+  }
+
+  for (const groesse of ['normal', 'sehr-gross'] as const) {
+    test(`188 px (200 %), „${groesse === 'normal' ? 'Normal' : 'Sehr groß'}“: der Knopf „Menü“ statt der Leiste`, async ({
+      page,
+    }) => {
+      if (groesse !== 'normal') await mitSchrift(page, groesse);
+      await page.setViewportSize({ width: 188, height: 406 });
+      await oeffne(page, 'geruest', 'Guten Tag');
+      await expect(leiste(page)).toBeHidden();
+      const menue = page.getByRole('button', { name: 'Menü' });
+      await expect(menue).toBeVisible();
+      await expect(menue).toHaveAttribute('aria-expanded', 'false');
+      expect(await ueberlaeuft(page)).toBe(false);
+
+      await menue.click();
+      await expect(menue).toHaveAttribute('aria-expanded', 'true');
+      const navigation = page.getByRole('navigation', { name: 'Plattform' });
+      await expect(navigation).toBeVisible();
+      const ziele = navigation.getByRole('link');
+      await expect(ziele).toHaveText(['Übersicht', 'Termine', 'Übungen', 'Nachrichten', 'Ich']);
+      for (const ziel of await ziele.all()) {
+        expect((await ziel.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(55.5);
+      }
+      await bewegungAbwarten(page);
+      expect(await ueberlaeuft(page)).toBe(false);
+      expect(await axeVerstoesse(page), 'axe').toEqual([]);
+
+      await page.keyboard.press('Escape');
+      await expect(menue).toHaveAttribute('aria-expanded', 'false');
+      await expect(menue).toBeFocused();
+      await expect(navigation).toBeHidden();
+    });
+  }
+
+  test('1280 px: Navigation im Kopf, keine Leiste, der Inhalt an der Kante der Marke', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 840 });
+    await oeffne(page, 'geruest', 'Guten Tag');
+    await expect(leiste(page)).toHaveCount(0);
+    const navigation = page.locator('header').getByRole('navigation', { name: 'Plattform' });
+    const ziele = navigation.getByRole('link');
+    await expect(ziele).toHaveText(['Übersicht', 'Termine', 'Übungen', 'Nachrichten']);
+    await expect(navigation.getByRole('link', { name: 'Übersicht' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    for (const ziel of await ziele.all()) {
+      expect((await ziel.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(47.5);
+    }
+    await expect(page.getByRole('button', { name: 'Menü' })).toBeHidden();
+    const marke = await page.getByRole('link', { name: 'Übersicht' }).first().boundingBox();
+    const titel = await page.getByRole('heading', { level: 1, name: 'Guten Tag' }).boundingBox();
+    expect(Math.abs((titel?.x ?? 0) - (marke?.x ?? 0))).toBeLessThanOrEqual(1);
+    // Einspaltig in `max-w-spalte` (48rem), nicht über die ganze Breite.
+    const spalte = await page.locator('main > div').first().boundingBox();
+    expect(spalte?.width ?? 0).toBeLessThanOrEqual(768.5);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
   });
 });

@@ -566,6 +566,25 @@ html[data-schrift='sehr-gross'] {
     opacity: 0.55;
   }
 }
+/* Das Menü unter 23rem (Stufe 3 der Reiterleiste, `Navigation.tsx`): Es
+   kommt in 160 ms 8 px von oben und geht ebenso; das `hidden` am Menü
+   schaltet erst nach der Bewegung ab. Ohne Deckkraft wie die übrigen
+   Einblendungen; bei „Bewegung reduzieren“ steht es sofort da. */
+@media (prefers-reduced-motion: no-preference) {
+  .menue-geht-auf {
+    transition:
+      translate 160ms var(--ease-schieben),
+      display 160ms allow-discrete;
+  }
+  .menue-geht-auf[hidden] {
+    translate: 0 -8px;
+  }
+  @starting-style {
+    .menue-geht-auf:not([hidden]) {
+      translate: 0 -8px;
+    }
+  }
+}
 
 /* Schraffur für Flächen, die nicht zur Verfügung stehen - im Kalender die
    Zeit außerhalb der Arbeitszeit (UX-005c). Feine Linien in `line` auf der
