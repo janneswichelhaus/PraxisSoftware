@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
@@ -230,7 +230,11 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     // Der eigene Bereich zuerst: kein Band.
     expect(screen.queryByText(/Sie handeln für/)).toBeNull();
     await user.click(screen.getByRole('link', { name: 'Für Max Mustermann' }));
-    expect(screen.getByRole('status')).toHaveTextContent('Sie handeln für Max Mustermann');
+    // Seit DR-118 steht im Gerüst auch die Verbindungszeile als (leere) Live-Region.
+    const band = screen
+      .getAllByRole('status')
+      .find((s) => s.textContent?.includes('Sie handeln für'));
+    expect(band).toHaveTextContent('Sie handeln für Max Mustermann');
     expect(screen.getByRole('link', { name: 'Für Max Mustermann' })).toHaveAttribute(
       'aria-current',
       'page',
@@ -368,5 +372,28 @@ describe('Bestätigungen wandern nicht mit (DR-160)', () => {
       'href',
       '/p/nachrichten?bereich=treatment',
     );
+  });
+});
+
+describe('Tab-Titel und Verbindung im Gerüst (DR-115, DR-118)', () => {
+  afterEach(() => {
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  });
+
+  it('nennt den Tab nach der Seite', async () => {
+    document.title = 'Anmelden – Own Motion';
+    zeige([BEHANDLUNG], '/p/termine?bereich=treatment');
+    await waitFor(() => expect(document.title).toBe('Termine – Own Motion'));
+  });
+
+  it('nennt die Übungen im Training „Training“ - wie den Reiter', async () => {
+    zeige([TRAINING], '/p/uebungen');
+    await waitFor(() => expect(document.title).toBe('Training – Own Motion'));
+  });
+
+  it('sagt ohne Netz unter dem Kopf, dass keine Verbindung besteht', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    zeige([BEHANDLUNG]);
+    expect(await screen.findByText(/^Keine Verbindung\./)).toBeInTheDocument();
   });
 });

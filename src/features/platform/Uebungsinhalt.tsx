@@ -11,13 +11,20 @@ import type { Ablageplan } from './ablage';
  * Durchführung gleich. Eine Zeichnung gibt es nicht (ANN-539); Bilder und
  * Videos dreht die Praxis selbst, bis dahin erklärt der Text.
  */
-export function Uebungsinhalt({ position }: { position: Ablageplan['items'][number] }) {
+export function Uebungsinhalt({
+  position,
+  ebene = 3,
+}: {
+  position: Ablageplan['items'][number];
+  /** h2 in der Durchführung, wo die Übung selbst der Seitentitel ist (DR-158). */
+  ebene?: 2 | 3;
+}) {
   return (
     <>
       <Dosierungskacheln dosis={position} />
       {position.instruction ? (
         <div className="mt-6">
-          <Zwischentitel>So geht’s</Zwischentitel>
+          <Zwischentitel ebene={ebene}>So geht’s</Zwischentitel>
           <div className="mt-2">
             <Schrittliste text={position.instruction} />
           </div>

@@ -1,7 +1,8 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
 import { Profilhinweis } from '@/app/Profilhinweis';
+import { MARKE, tabName, tabTitel } from '@/app/tabtitel';
 import { Button } from '@/components/ui/Button';
 import { FENSTERZIEL, PortalZielKontext } from '@/components/ui/portalZiel';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
@@ -54,6 +55,7 @@ import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { Rechnung, Rechnungen } from './Rechnungen';
 import { useSchriftgroesseAnwenden } from './schriftgroesse';
 import { Termine } from './Termine';
+import { Verbindungszeile } from './Verbindungszeile';
 import { NachrichtDetail, Nachrichten, NeueNachricht } from './Nachrichten';
 import { Uebersicht } from './Uebersicht';
 import { PlanblattPlattform, Uebungen } from './Uebungen';
@@ -168,7 +170,10 @@ function Geruest({
           Gerüst. In der Einsicht gilt die Wahl der Person, nicht die dieses
           Geräts - sie bleibt dort bei 18 px. */}
       {nurLesen ? null : <SchriftgroesseDesGeraets />}
+      {/* Den Tab und die Verbindung zeigt in der Einsicht die Praxis selbst. */}
+      {nurLesen ? null : <TabtitelDerPlattform bereiche={lesbar} />}
       <Kopf praxis={praxis} bereiche={lesbar} />
+      {nurLesen ? null : <Verbindungszeile />}
       {/* Gescheitertes Nachladen des Zugangs (BEF-046): Die Plattform bleibt
           stehen, die Zeile sagt es. */}
       <Profilhinweis />
@@ -570,6 +575,22 @@ function MitFensterZiel({ children }: { children: ReactNode }) {
 /** Wendet die Schriftgröße dieses Geräts an, solange das Gerüst steht. */
 function SchriftgroesseDesGeraets() {
   useSchriftgroesseAnwenden();
+  return null;
+}
+
+/**
+ * Der Titel des Tabs je Seite (DR-115): fest aus `tabtitel.ts`, nie mit
+ * Daten. Bis dahin hieß hier jeder Tab „Own Motion“, und Vorlesesoftware sagte
+ * nach einem Reiterwechsel denselben Titel an. Im Training heißt der Reiter
+ * „Training“ (DSN-001 Abschnitt 5) - der Tab auch.
+ */
+function TabtitelDerPlattform({ bereiche }: { bereiche: Plattformzugang[] }) {
+  const { pathname } = useLocation();
+  const training = useWahl(bereiche)?.relationship_kind === 'training';
+  useEffect(() => {
+    document.title =
+      training && tabName(pathname) === 'Übungen' ? `Training – ${MARKE}` : tabTitel(pathname);
+  }, [pathname, training]);
   return null;
 }
 
@@ -1134,9 +1155,10 @@ function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
   const bereich = bereichParameter(new URLSearchParams(search));
   const anhang = bereich ? `?${bereich}` : '';
   return (
+    // `reiterleiste`: Bei offener Bildschirmtastatur tritt sie zurück (DR-120, `index.css`).
     <nav
       aria-label="Plattform"
-      className="border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur"
+      className="reiterleiste border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur"
     >
       <ul className="max-w-formular mx-auto flex">
         <li className="flex-1">

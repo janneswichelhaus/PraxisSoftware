@@ -166,4 +166,13 @@ describe('Einwilligungen - Barrierefreiheit (POR-020)', () => {
     await screen.findByText('Nachrichten per E-Mail');
     await pruefeBarrierefreiheit(container);
   });
+
+  it('stellt jede Einwilligung als h2 unter den Seitentitel (DR-158)', async () => {
+    ladeEinwilligungen.mockResolvedValue([stand('email_contact', 'granted')]);
+    renderWithProviders(<Einwilligungen zugang={ZUGANG} />);
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Nachrichten per E-Mail' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Einwilligungen' })).toBeInTheDocument();
+  });
 });

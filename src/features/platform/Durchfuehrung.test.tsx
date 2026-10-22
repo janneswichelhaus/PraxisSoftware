@@ -101,6 +101,14 @@ beforeEach(() => {
 });
 
 describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
+  it('hält die Überschriftenfolge: die Übung als h1, „So geht’s“ als h2 (DR-158)', async () => {
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Am Geländer in die Hocke' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'So geht’s' })).toBeInTheDocument();
+  });
+
   it('führt Übung für Übung, hakt ab und überträgt sofort', async () => {
     const user = userEvent.setup();
     zeige(<Durchfuehrung zugang={ZUGANG} />);

@@ -6,6 +6,7 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Vollseite } from '@/app/Vollseite';
+import { EINLADUNG_TITEL } from '@/app/tabtitel';
 import { kennwortTestzugang } from '@/lib/env';
 import { getSupabase } from '@/lib/supabase';
 import { hatPin } from '@/features/auth/appPin';
@@ -189,6 +190,7 @@ export function EinladungPage() {
   return (
     <Vollseite
       titel="Ihr Zugang"
+      tabtitel={EINLADUNG_TITEL}
       kleingedrucktes="Der Zugang gehört nur Ihnen. Angehörige bekommen auf Wunsch einen eigenen Zugang von der Praxis."
     >
       {meldung ? (

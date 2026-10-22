@@ -13,8 +13,9 @@ import type { ReactNode } from 'react';
  *
  * Der Abschnittstitel darüber bleibt `Section` (12 px Versalien, Leise); der
  * Seitentitel bleibt `PageHeader` bzw. `Objektkopf`. `ebene` wählt nur das
- * Element (h3 unter einem `Section` mit h2, h4 eine Stufe tiefer), nie die
- * Größe. `aktion` steht rechts daneben, etwa ein Textlink „Bearbeiten“.
+ * Element (h3 unter einem `Section` mit h2, h4 eine Stufe tiefer, h2 direkt
+ * unter dem Seitentitel ohne `Section` dazwischen, DR-158), nie die Größe.
+ * `aktion` steht rechts daneben, etwa ein Textlink „Bearbeiten“.
  */
 export function Zwischentitel({
   children,
@@ -23,12 +24,12 @@ export function Zwischentitel({
   id,
 }: {
   children: ReactNode;
-  ebene?: 3 | 4;
+  ebene?: 2 | 3 | 4;
   aktion?: ReactNode;
   /** Für `aria-labelledby` einer Gruppe darunter. */
   id?: string;
 }) {
-  const Element = ebene === 4 ? 'h4' : 'h3';
+  const Element = ebene === 4 ? 'h4' : ebene === 2 ? 'h2' : 'h3';
   const titel = (
     <Element id={id} className="text-ink text-base font-semibold">
       {children}

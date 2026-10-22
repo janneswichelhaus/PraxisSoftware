@@ -378,6 +378,12 @@ export function PlanblattPlattform({
           </Button>
         ) : null}
       </div>
+      {/* Das Blatt selbst beginnt mit `h2`, weil es in der Praxis unter einem
+          Seitentitel steht; hier fehlte die `h1` (DR-158). Sichtbar trägt das
+          Blatt seinen Titel selbst, der Seitentitel ist nur für Vorlesesoftware. */}
+      <div className="sr-only">
+        <PageHeader title="Ihr Plan" />
+      </div>
       {plaene.isPending ? (
         <LoadingState label="Ihr Plan wird geladen …" />
       ) : plaene.data === undefined ? (
