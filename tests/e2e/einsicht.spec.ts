@@ -33,6 +33,8 @@ const ANTWORTEN: Record<string, unknown> = {
       read_until: null,
       access_kind: 'self',
       represented_name: null,
+      own_name: 'Erika Beispiel',
+      practice_phone: '+49 7071 0000000',
       relationship_id: ERIKA,
       person_name: 'Erika Beispiel',
     },

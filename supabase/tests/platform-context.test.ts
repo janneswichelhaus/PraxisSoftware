@@ -36,6 +36,8 @@ async function kontext(konto: string) {
     read_until: string | null;
     access_kind: string;
     represented_name: string | null;
+    own_name: string | null;
+    practice_phone: string | null;
   }>(konto, KONTEXT);
   return rows;
 }
@@ -76,14 +78,20 @@ describe('platform_context', () => {
         read_until: null,
         access_kind: 'self',
         represented_name: null,
+        own_name: 'Tina Trainingskundin',
+        practice_phone: '+49 7071 0000000',
       },
     ]);
-    // Keine Kennung des Verhältnisses, keine Anschrift (Punkt 22); ein Name
-    // nur bei einer Vertretung (POR-006).
+    // Keine Kennung des Verhältnisses, keine Anschrift (Punkt 22); der Name
+    // der vertretenen Person nur bei einer Vertretung (POR-006), der eigene
+    // und die Rufnummer der Praxis seit DRP-N1/N2 (Negativfälle in
+    // platform-own-name-phone.test.ts).
     expect(Object.keys(tina[0]!).sort()).toEqual([
       'access_id',
       'access_kind',
       'organization_name',
+      'own_name',
+      'practice_phone',
       'read_until',
       'readable',
       'relationship_kind',

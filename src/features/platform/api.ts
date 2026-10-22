@@ -43,6 +43,14 @@ const kontextSchema = z.object({
   access_kind: z.enum(['self', 'legal_representative', 'companion']),
   /** Nur an einer lesbaren Vertretung: für wen sie handelt (Punkt 14). */
   represented_name: z.string().nullable(),
+  /**
+   * DRP-N1: der eigene Name für Gruß und Initialen (`initialen` aus
+   * `@/components/ui/personenfarben`), nur an einem lesbaren Zugang. Eine
+   * Vertretung bekommt ihren eigenen, nie den der vertretenen Person.
+   */
+  own_name: z.string().nullable(),
+  /** DRP-N2: die Rufnummer der Praxis für „Praxis anrufen“, wo sie eine führt. */
+  practice_phone: z.string().nullable(),
 });
 export type Plattformzugang = z.infer<typeof kontextSchema>;
 export type Bereich = Plattformzugang['relationship_kind'];

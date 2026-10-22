@@ -126,6 +126,8 @@ function Ansicht({ zugangId, kontext }: { zugangId: string; kontext: Einsichtsko
         read_until: kontext.read_until,
         access_kind: kontext.access_kind,
         represented_name: kontext.represented_name,
+        own_name: kontext.own_name,
+        practice_phone: kontext.practice_phone,
       },
     ],
     [kontext],

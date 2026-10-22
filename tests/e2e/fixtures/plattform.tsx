@@ -135,6 +135,8 @@ const zugaenge: Plattformzugang[] = [
     read_until: null,
     access_kind: 'self',
     represented_name: null,
+    own_name: 'Erika Beispiel',
+    practice_phone: '+49 7071 0000000',
   },
   {
     access_id: 'cafecafe-cafe-4afe-8afe-000000000003',
@@ -145,6 +147,8 @@ const zugaenge: Plattformzugang[] = [
     read_until: null,
     access_kind: 'self',
     represented_name: null,
+    own_name: 'Erika Beispiel',
+    practice_phone: '+49 7071 0000000',
   },
 ];
 

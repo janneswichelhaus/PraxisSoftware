@@ -50,6 +50,8 @@ const zugang: Plattformzugang = {
   read_until: null,
   access_kind: 'self',
   represented_name: null,
+  own_name: 'Erika Beispiel',
+  practice_phone: '+49 7071 0000000',
 };
 
 function vorTagen(tage: number, stunde = 9): string {

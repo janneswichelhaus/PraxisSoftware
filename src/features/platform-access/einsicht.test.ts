@@ -30,6 +30,8 @@ const kontext = {
   read_until: null,
   access_kind: 'self',
   represented_name: null,
+  own_name: 'Erika Beispiel',
+  practice_phone: '+49 7071 0000000',
   relationship_id: ERIKA,
   person_name: 'Erika Beispiel',
 };
@@ -64,6 +66,9 @@ describe('Einsicht der Praxis (E-001)', () => {
     rpc.mockResolvedValue({ data: [kontext], error: null, status: 200 });
     const geladen = await ladeEinsichtskontext(ZUGANG);
     expect(geladen.person_name).toBe('Erika Beispiel');
+    // DRP-N1, DRP-N2: wie die Person sie sieht.
+    expect(geladen.own_name).toBe('Erika Beispiel');
+    expect(geladen.practice_phone).toBe('+49 7071 0000000');
     expect(rueckwegAusDerEinsicht(geladen)).toEqual({
       ziel: `/patienten/${ERIKA}/stammdaten`,
       beschriftung: 'Zurück zur Akte',
