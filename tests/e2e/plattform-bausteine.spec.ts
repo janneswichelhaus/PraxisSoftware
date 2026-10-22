@@ -121,12 +121,15 @@ test('gibt beim Drücken nach - bei „Bewegung reduzieren“ nur die Fläche (D
   page,
 }) => {
   await oeffne(page, 375);
-  const aufgabe = page.getByRole('link', { name: /^Eine kleine Gewohnheit/ });
-  expect(await gedrueckt(page, aufgabe)).toBe('0.98');
-  const zeile = page.getByRole('link', { name: /^Antwort der Praxis/ });
-  expect(await gedrueckt(page, zeile)).toBe('0.98');
+  const ziele = [
+    page.getByRole('link', { name: /^Eine kleine Gewohnheit/ }),
+    page.getByRole('link', { name: /^Antwort der Praxis/ }),
+    page.getByRole('button', { name: 'Termin wünschen' }),
+  ];
+  for (const ziel of ziele) expect(await gedrueckt(page, ziel)).toBe('0.98');
 
+  // Auch der Knopf: Seine Rücknahme verlor einmal gegen `not-disabled`.
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await oeffne(page, 375);
-  expect(['none', '1']).toContain(await gedrueckt(page, aufgabe));
+  for (const ziel of ziele) expect(['none', '1']).toContain(await gedrueckt(page, ziel));
 });

@@ -14,9 +14,13 @@ export type Variant = 'primary' | 'secondary' | 'quiet' | 'marke';
  * Der Knopf gibt beim Antippen nach - 98 % in 120 ms, dazu die gedrückte
  * Fläche der Variante. Bei „Bewegung reduzieren“ bleibt nur die Fläche. Nur
  * unter `.plattform-schrift`: Die Praxis-App bleibt, wie sie ist (Lauf 2).
+ *
+ * Der Maßstab steht unter `motion-safe:`, statt ihn unter `motion-reduce:`
+ * zurückzunehmen: `not-disabled` ist eine Pseudoklasse mehr, und die
+ * Rücknahme verlor gegen den Druck (Design-Review 1a).
  */
 const druck =
-  '[.plattform-schrift_&]:not-disabled:active:scale-98 motion-reduce:[.plattform-schrift_&]:active:scale-100 ' +
+  'motion-safe:[.plattform-schrift_&]:not-disabled:active:scale-98 ' +
   '[.plattform-schrift_&]:transition-[color,background-color,border-color,scale] [.plattform-schrift_&]:duration-120 [.plattform-schrift_&]:ease-druck';
 
 // `nicht-drucken`: eine Schaltflaeche ist auf Papier nutzlos und kostet Platz.

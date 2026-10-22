@@ -20,7 +20,7 @@ export function Notfallkarte({
     <div
       role="note"
       aria-label="Hinweis zu Antwortzeit und Notfällen"
-      className={`bg-surface-sunken rounded-card text-ink flex gap-3.5 p-5 ${className}`.trim()}
+      className={`bg-surface-sunken rounded-card text-ink flex gap-3 p-5 ${className}`.trim()}
     >
       <svg
         viewBox="0 0 24 24"

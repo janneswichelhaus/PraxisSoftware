@@ -101,9 +101,11 @@ describe('Aufgabenkarte', () => {
     expect(karte).toHaveAttribute('href', '/p/gewohnheiten');
     expect(karte.className).toContain('min-h-20');
     expect(karte.className).toContain('shadow-plattform');
-    // Gedrückt vertieft und 98 %, bei reduzierter Bewegung nur vertieft.
-    expect(karte.className).toContain('active:scale-98');
-    expect(karte.className).toContain('motion-reduce:active:scale-100');
+    // Gedrückt vertieft und 98 %, bei reduzierter Bewegung nur vertieft:
+    // der Maßstab nur unter `motion-safe:`.
+    expect(karte.className.split(' ').filter((k) => k.includes('scale-98'))).toEqual([
+      'motion-safe:active:scale-98',
+    ]);
     expect(karte.querySelector('[data-pfeil]')).toHaveAttribute('aria-hidden', 'true');
     // Bei „Sehr groß“ fällt der Pfeil weg (Handoff, Abschnitt 0).
     expect(karte.querySelector('[data-pfeil]')!.getAttribute('class')).toContain(
@@ -148,6 +150,16 @@ describe('Leerzustand mit Markenform', () => {
     const rad = container.querySelector('[data-laufrad]')!;
     expect(rad).toHaveAttribute('aria-hidden', 'true');
     expect(rad.parentElement!.className).toContain('bg-surface-inverse');
+    // Ohne `inKarte` keine eigene Karte - sonst Kasten im Kasten.
+    const wurzel = rad.parentElement!.parentElement!;
+    expect(wurzel.className).toContain('flex-col');
+    expect(wurzel.className).not.toContain('rounded-card');
+  });
+
+  it('steht mit inKarte in einer Karte', () => {
+    const { container } = zeige(<EmptyState markenform inKarte title="Noch keine Termine" />);
+    const rad = container.querySelector('[data-laufrad]')!;
+    expect(rad.parentElement!.parentElement!.className).toContain('rounded-card');
   });
 
   it('bleibt ohne markenform, wie es war', () => {
@@ -168,8 +180,12 @@ describe('Knopf marke und Druck auf der Plattform', () => {
   it('lässt Knöpfe und Zeilen nur unter .plattform-schrift nachgeben (DR-117)', () => {
     for (const variante of ['primary', 'secondary', 'quiet'] as const) {
       const klassen = buttonKlassen(variante);
-      expect(klassen, variante).toContain('[.plattform-schrift_&]:not-disabled:active:scale-98');
-      expect(klassen, variante).toContain('motion-reduce:[.plattform-schrift_&]:active:scale-100');
+      // Der Maßstab nur unter `motion-safe:`: Eine Rücknahme unter
+      // `motion-reduce:` verlor gegen `not-disabled` (Design-Review 1a).
+      expect(
+        klassen.split(' ').filter((k) => k.includes('scale-98')),
+        variante,
+      ).toEqual(['motion-safe:[.plattform-schrift_&]:not-disabled:active:scale-98']);
       // Ohne Plattform kein Druck: Kein `active:` ohne den Vorsatz.
       expect(
         klassen.split(' ').filter((k) => k.startsWith('active:')),
@@ -182,7 +198,9 @@ describe('Knopf marke und Druck auf der Plattform', () => {
       </ListRows>,
     );
     const zeile = screen.getByRole('link', { name: 'Rechnungen' });
-    expect(zeile.className).toContain('[.plattform-schrift_&]:active:scale-98');
+    expect(zeile.className.split(' ').filter((k) => k.includes('scale-98'))).toEqual([
+      'motion-safe:[.plattform-schrift_&]:active:scale-98',
+    ]);
     expect(zeile.className).toContain('[.plattform-schrift_&]:active:bg-surface-sunken');
   });
 
@@ -207,7 +225,7 @@ describe('Personenbild in der Karte', () => {
     );
     const bild = container.querySelector('[data-personenbild]')!;
     expect(bild.className).toContain('size-14');
-    expect(bild.className).toContain('text-[1.25rem]');
+    expect(bild.className).toContain('text-initialen');
     expect(bild.className).toContain('font-bold');
     expect(bild).toHaveTextContent('AB');
   });

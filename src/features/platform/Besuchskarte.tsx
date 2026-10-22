@@ -19,7 +19,7 @@ export function Besuchskarte({ termin, to }: { termin: Termin; to: string }) {
   return (
     <Link
       to={to}
-      className="border-line bg-surface text-ink rounded-card shadow-plattform hover:bg-surface-sunken active:bg-surface-sunken ease-druck flex flex-col border p-5 no-underline transition-[background-color,scale] duration-120 active:scale-98 motion-reduce:active:scale-100"
+      className="border-line bg-surface text-ink rounded-card shadow-plattform hover:bg-surface-sunken active:bg-surface-sunken ease-druck flex flex-col border p-5 no-underline transition-[background-color,scale] duration-120 motion-safe:active:scale-98"
     >
       {/* Die Leerzeichen trennen die Zeilen im Namen des Links; sichtbar
           trennt sie das Layout. */}

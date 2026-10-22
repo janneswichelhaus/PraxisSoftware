@@ -70,12 +70,18 @@ export function EmptyState({
   aktion?: ReactNode;
   /** In einer weißen Karte (Design-Handoff 2026-10-01, Abschnitt 3). */
   inKarte?: boolean;
-  /** Mit der Markenform der Plattform, immer in einer Karte. */
+  /** Mit der Markenform der Plattform; in einer Karte nur mit `inKarte`. */
   markenform?: boolean;
 }) {
   if (markenform) {
+    // Linksbündig wie die Plattform. Die Karte nur auf Wunsch: Steht der
+    // Leerzustand schon in einer Karte, wäre es ein Kasten im Kasten.
     return (
-      <div className="rounded-card border-line bg-surface flex flex-col items-start gap-4 border p-6">
+      <div
+        className={`flex flex-col items-start gap-4 ${
+          inKarte ? 'rounded-card border-line bg-surface border p-6' : ''
+        }`.trim()}
+      >
         <span
           aria-hidden="true"
           className="bg-surface-inverse rounded-pill flex size-16 shrink-0 items-center justify-center"

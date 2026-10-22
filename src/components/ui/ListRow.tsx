@@ -139,7 +139,7 @@ export function ListRow({
   // vertiefte Fläche und 98 % in 120 ms, bei „Bewegung reduzieren“ nur die
   // Fläche. Die Praxis-App bleibt, wie sie ist.
   const druck =
-    '[.plattform-schrift_&]:active:bg-surface-sunken [.plattform-schrift_&]:active:scale-98 motion-reduce:[.plattform-schrift_&]:active:scale-100 [.plattform-schrift_&]:transition-[color,background-color,scale] [.plattform-schrift_&]:ease-druck';
+    '[.plattform-schrift_&]:active:bg-surface-sunken motion-safe:[.plattform-schrift_&]:active:scale-98 [.plattform-schrift_&]:transition-[color,background-color,scale] [.plattform-schrift_&]:ease-druck';
   const ziel = aktion
     ? `${raster} hover:bg-surface-sunken ${auswahl} ${druck} -ml-4 min-w-0 flex-1 pr-2 pl-4 transition-colors duration-120 focus-visible:-outline-offset-2`
     : `${raster} hover:bg-surface-sunken ${auswahl} ${druck} -mx-4 w-[calc(100%+2rem)] px-4 transition-colors duration-120 focus-visible:-outline-offset-2`;

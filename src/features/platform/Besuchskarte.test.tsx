@@ -44,7 +44,7 @@ describe('Besuchskarte', () => {
     expect(bild).toHaveTextContent('AB');
     expect(bild.className).toContain('size-14');
     expect(karte.className).toContain('shadow-plattform');
-    expect(karte.className).toContain('active:scale-98');
+    expect(karte.className.split(' ')).toContain('motion-safe:active:scale-98');
   });
 
   it('zeigt ohne Namen kein Bild', () => {

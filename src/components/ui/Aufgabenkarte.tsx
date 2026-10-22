@@ -26,7 +26,7 @@ export function Aufgabenkarte({
   return (
     <Link
       to={to}
-      className="border-line bg-surface text-ink rounded-card shadow-plattform hover:bg-surface-sunken active:bg-surface-sunken ease-druck flex min-h-20 items-center gap-4 border p-4 no-underline transition-[background-color,scale] duration-120 active:scale-98 motion-reduce:active:scale-100"
+      className="border-line bg-surface text-ink rounded-card shadow-plattform hover:bg-surface-sunken active:bg-surface-sunken ease-druck flex min-h-20 items-center gap-4 border p-4 no-underline transition-[background-color,scale] duration-120 motion-safe:active:scale-98"
     >
       <span
         aria-hidden="true"

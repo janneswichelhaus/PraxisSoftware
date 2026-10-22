@@ -30,7 +30,7 @@ const MASSE = {
   gross: 'size-24 text-h2 font-semibold',
   // Plattform (Handoff 2026-10-22, Abschnitt 3): Initialen 20/700, in rem,
   // damit Bild und Schrift unter „Sehr groß“ mitwachsen.
-  karte: 'size-14 text-[1.25rem] font-bold',
+  karte: 'size-14 text-initialen font-bold',
 } as const;
 
 /**

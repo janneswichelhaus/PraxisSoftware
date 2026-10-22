@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PERSONENFARBEN } from './components/ui/personenfarben';
@@ -563,6 +563,9 @@ describe('Sprache der Plattform (Handoff 2026-10-22, PLATTFORM.md)', () => {
       expect(stufen.get(`--text-${rolle}--font-weight`), rolle).toBe(gewicht);
       expect(stufen.get(`--text-${rolle}--letter-spacing`), rolle).toMatch(/^-0\.0[123]em$/);
     }
+    // Initialen im Personenbild der Karten und die Breite des Hero-Titels.
+    expect(stufen.get('--text-initialen')).toBe('1.25rem');
+    expect(css).toMatch(/--container-hero-titel:\s*11em;/);
   });
 
   /**
@@ -589,6 +592,42 @@ describe('Sprache der Plattform (Handoff 2026-10-22, PLATTFORM.md)', () => {
     expect(
       funde((zeile, datei) =>
         datei.startsWith('src/features/platform/') && VERSALIEN.test(zeile) ? ['uppercase'] : [],
+      ),
+    ).toEqual([]);
+  });
+
+  /**
+   * Die Plattform zeigt auch, was sie aus anderen Bereichen einbindet:
+   * Fragebogen, Anmeldung, Planblatt, Ernährung (`platform/trennung.test.ts`).
+   * Gefunden über die Importe des Plattformcodes, damit ein neuer Import
+   * nicht unbemerkt an der Regel vorbeigeht (Design-Review 1a).
+   */
+  function vonDerPlattformEingebunden(): string[] {
+    const eingebunden = new Set<string>();
+    for (const datei of quelldateien(join(stamm, 'src/features/platform'))) {
+      const text = readFileSync(datei, 'utf8');
+      for (const [, ziel] of text.matchAll(/from\s+'@\/((?:app|components|features)\/[^']+)'/g)) {
+        if (!ziel || /^(features\/platform|components\/ui)\//.test(ziel)) continue;
+        const pfad = ['.tsx', '.ts']
+          .map((endung) => `src/${ziel}${endung}`)
+          .find((kandidat) => existsSync(join(stamm, kandidat)));
+        if (pfad) eingebunden.add(pfad);
+      }
+    }
+    return [...eingebunden];
+  }
+
+  it('hebt Versalien auch in dem auf, was die Plattform aus anderen Bereichen zeigt', () => {
+    const eingebunden = vonDerPlattformEingebunden();
+    expect(eingebunden).toContain('src/features/assessments/FragebogenFelder.tsx');
+    expect(eingebunden).toContain('src/features/exercise-plans/Planblatt.tsx');
+    expect(
+      funde((zeile, datei) =>
+        eingebunden.includes(datei) &&
+        VERSALIEN.test(zeile) &&
+        !zeile.includes('[.plattform-schrift_&]:normal-case')
+          ? ['uppercase ohne [.plattform-schrift_&]:normal-case']
+          : [],
       ),
     ).toEqual([]);
   });

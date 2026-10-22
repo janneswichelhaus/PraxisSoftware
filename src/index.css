@@ -281,6 +281,9 @@
   --text-abschnitt--line-height: 1.25;
   --text-abschnitt--letter-spacing: -0.01em;
   --text-abschnitt--font-weight: 700;
+  /* Initialen im Personenbild der Karten (56 px, Handoff 2026-10-22,
+     Abschnitt 3): 20/700 in rem, damit Bild und Schrift mitwachsen. */
+  --text-initialen: 1.25rem;
   /* Inhalt von Listen, Karten, Detail- und Trefferzeilen: 15 px (TOK-06).
      Der Wert stand bis UXR-001 an 158 Stellen als arbiträrer Wert in
      eckigen Klammern, ohne Namen und damit ohne Rolle. Das Token benennt
@@ -404,6 +407,9 @@
      Bildschirm ein Telefon von 390 px, so breit, wie die Person die
      Plattform meist sieht. */
   --container-telefon: 24.375rem;
+  /* Titel der Hero-Karte höchstens 11 Zeichenbreiten (Handoff 2026-10-22,
+     Abschnitt 3): in em, damit die Grenze mit der Schrift wächst. */
+  --container-hero-titel: 11em;
 }
 
 /* Schrift der Plattform (POR-020, DSN-001 Abschnitt 7 Punkt 1,

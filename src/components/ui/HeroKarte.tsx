@@ -48,7 +48,7 @@ export function HeroKarte({
       <p className="text-salbei relative font-semibold">{etikett}</p>
       <h2
         id={titelId}
-        className="text-hero lg:text-hero-rechner max-[23rem]:text-hero-schmal relative max-w-[11em]"
+        className="text-hero lg:text-hero-rechner max-[23rem]:text-hero-schmal max-w-hero-titel relative"
       >
         {titel}
       </h2>
@@ -62,7 +62,7 @@ export function HeroKarte({
       <ButtonLink
         variant="marke"
         to={aktion.to}
-        className="relative mt-4 w-full lg:w-auto lg:self-start lg:px-7"
+        className="relative mt-2 w-full lg:w-auto lg:self-start lg:px-7"
       >
         {aktion.text}
       </ButtonLink>

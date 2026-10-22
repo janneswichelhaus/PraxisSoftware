@@ -50,9 +50,17 @@ const UHR = (
     <path d="M12 9v4l2.5 2.5M9 2h6" />
   </svg>
 );
-const HAKEN = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-    <path d="M5 12.5 10 17l9-10" />
+/** Eine Sprechblase für den Check-in - der Haken heißt sonst „erledigt“. */
+const FRAGE = (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M5 5h14v10h-8l-4 4v-4H5z" />
   </svg>
 );
 
@@ -87,7 +95,7 @@ export function Seite() {
             to="/p/gewohnheiten"
           />
           <Aufgabenkarte
-            zeichen={HAKEN}
+            zeichen={FRAGE}
             titel="Check-in"
             satz="Wie geht es Ihnen seit dem letzten Termin?"
             to="/p/checkin"
@@ -109,6 +117,7 @@ export function Seite() {
       <Section titel="Ohne Termin">
         <EmptyState
           markenform
+          inKarte
           title="Noch keine Termine"
           description="Die Praxis trägt Ihren ersten Termin hier ein."
         />
