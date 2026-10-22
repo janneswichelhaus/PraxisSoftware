@@ -135,9 +135,14 @@ export function ListRow({
   // braucht der Knopf, der sonst nur so breit würde wie sein Inhalt. Mit
   // Aktion reicht es nur links hinaus und endet vor ihr.
   const auswahl = 'aria-[current=page]:bg-accent-soft';
+  // Druck auf der Plattform (DR-117): Die Zeile gibt beim Antippen nach -
+  // vertiefte Fläche und 98 % in 120 ms, bei „Bewegung reduzieren“ nur die
+  // Fläche. Die Praxis-App bleibt, wie sie ist.
+  const druck =
+    '[.plattform-schrift_&]:active:bg-surface-sunken motion-safe:[.plattform-schrift_&]:active:scale-98 [.plattform-schrift_&]:transition-[color,background-color,scale] [.plattform-schrift_&]:ease-druck';
   const ziel = aktion
-    ? `${raster} hover:bg-surface-sunken ${auswahl} -ml-4 min-w-0 flex-1 pr-2 pl-4 transition-colors duration-120 focus-visible:-outline-offset-2`
-    : `${raster} hover:bg-surface-sunken ${auswahl} -mx-4 w-[calc(100%+2rem)] px-4 transition-colors duration-120 focus-visible:-outline-offset-2`;
+    ? `${raster} hover:bg-surface-sunken ${auswahl} ${druck} -ml-4 min-w-0 flex-1 pr-2 pl-4 transition-colors duration-120 focus-visible:-outline-offset-2`
+    : `${raster} hover:bg-surface-sunken ${auswahl} ${druck} -mx-4 w-[calc(100%+2rem)] px-4 transition-colors duration-120 focus-visible:-outline-offset-2`;
 
   const hinten =
     betrag !== undefined ? (

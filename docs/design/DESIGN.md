@@ -57,9 +57,8 @@ nichts vergessen werden darf oder einhändig am Rad; nicht für Tägliches im Bu
 Tabellen und eigene Überschriften erlaubt, Bedienung `nicht-drucken`. Geprüft im Druckbild; die
 Ratsche zählt dort weder Überschriften noch Tabellen.
 
-**Plattform** (`/p`, Patient:innen bis 78): dieselben Bausteine, das Gerüst hebt alles auf **18 px**
-(`.plattform-schrift`). Titel über `PageHeader`, keine handgesetzten `h1`; Knöpfe in voller Größe;
-eine Aufgabe je Seite; `plattform-barrierefreiheit.spec.ts` wacht.
+**Plattform** (`/p`, Patient:innen bis 78): eigene Sprache in [PLATTFORM.md](PLATTFORM.md): **18 px**
+(`.plattform-schrift`), Skala in rem, keine Versalien, eine Tiefenstufe für Karten.
 
 ## Welcher Baustein wann
 

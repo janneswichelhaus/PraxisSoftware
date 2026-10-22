@@ -122,7 +122,7 @@ export function TravelBar({
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <Ueberschrift
           id={titelId}
-          className="text-ink-muted tracking-label text-xs font-semibold uppercase"
+          className="text-ink-muted tracking-label text-xs font-semibold uppercase [.plattform-schrift_&]:tracking-normal [.plattform-schrift_&]:normal-case"
         >
           {titel}
         </Ueberschrift>

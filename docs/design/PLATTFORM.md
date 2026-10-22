@@ -1,0 +1,73 @@
+# Plattform – so sieht eine Seite unter `/p` aus
+
+Gleiche Marke, gleiche Farben, gleiche Bausteine, eigene Sprache. Für Patient:innen und Kund:innen
+bis 78, am eigenen Telefon, zuhause. Gilt für `/p`, `/einladung` und die Türseiten (`Vollseite`); es
+gilt [DESIGN.md](DESIGN.md), soweit hier nichts anderes steht. Werte und Bildschirme:
+[Handoff 2026-10-22](handoff-2026-10-22-plattform-erster-eindruck.md); Befunde:
+[Design-Review Lauf 1](review-2026-10/lauf-1-bericht.md); Inhalt und Reihenfolge der Ansichten:
+DSN-001 (`docs/development/PLATTFORM-ANSICHTEN.md`).
+
+## Grundsätze
+
+1. **Vertrauen vor Dichte:** genau eine Hauptsache je Bildschirm, der Mensch hinter der Praxis sichtbar.
+2. **Wärme aus Bild, Raum und Marke** – keine eigene Farbwelt (DESIGN.md 9.12).
+3. **Lesbar für alle:** nichts unter 18 px; 200 % Zoom und „Sehr groß“ ohne Verlust.
+4. **Telefon zuerst;** ab 1024 px eine eigene Rechneransicht, kein gestrecktes Telefon.
+5. **Ruhig:** keine Bewertung, keine Serie, kein Lob, kein Countdown (DSN-001 Abschnitt 7).
+
+## Was aus DESIGN.md gilt
+
+Alle Bausteine und die Ratsche; Status = Zeichen + Wort; kein Kasten im Kasten; ein Hauptknopf je
+Ansicht, Zerstörendes leise am Ende mit `Rueckfrage`; Zustände über `Abfragezustand`; Links
+unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
+
+## Was auf der Plattform anders gilt
+
+| DESIGN.md                   | Plattform                                                                                                                                                                                                                                     |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Keine Schatten              | Eine Tiefenstufe `shadow-plattform`, nur für Hero-, Aufgaben- und Besuchskarte (ANN-678). Listen bleiben Linie.                                                                                                                               |
+| Schriftrollen in px         | Skala in rem: Gruß `text-gruss` 34/800 (Rechner 40), Seitentitel `text-plattform-titel` 28/800 (32), Hero `text-hero` 26/800 (32, unter 23rem 22), Abschnitt `text-abschnitt` 22/700; Zeile 18/600, Text 18/400, Leise 18/400 in `ink-muted`. |
+| Etiketten in Versalien      | Keine Versalien. Die Bausteine heben `uppercase` unter `.plattform-schrift` auf (DR-154).                                                                                                                                                     |
+| Keine Erklärsätze           | Ein Satz Orientierung, wo sonst unklar bleibt, was passiert (leer, nach dem Absenden, wer meine Angaben sieht); nie eine Gebrauchsanweisung der Oberfläche.                                                                                   |
+| Silbentrennung im Fließtext | Nur lange Wörter ab zwölf Buchstaben; nie in Namen, Anschriften, Überschriften, Knöpfen und Reitern (DR-114).                                                                                                                                 |
+| Ziele ≥ 44 px               | Knöpfe 48, antippbare Karten ≥ 80, Zeilen und Textlinks ≥ 44; Abstand zwischen Zielen ≥ 8.                                                                                                                                                    |
+| Rhythmus 4/8/12/16/24/32    | Dazu 40 (Telefon) und 48 (Rechner) zwischen Abschnitten; Seitenrand 20, Türseiten 24.                                                                                                                                                         |
+| Hover 120 ms                | Druck an Knopf, Zeile und Karte: 98 % und vertiefte Fläche in 120 ms; bei „Bewegung reduzieren“ nur die Fläche (DR-117).                                                                                                                      |
+| Bilder `Medienbild` 4:3     | Eigene Fotos der Praxis, keine KI-Bilder; 4:3 oder 16:9 im Radius 16, Personen rund (`Personenbild` `karte`, 56). Markenform ist das Laufrad, nie neben der Wortmarke.                                                                        |
+| Liste in Karte              | Die Hauptsache als Hero-Karte (Tiefgrün, Papier-Schrift), höchstens drei Aufgabenkarten; alles Weitere als `ListRow`, jede Zeile ganz das Ziel.                                                                                               |
+
+## Bausteine der Plattform
+
+`HeroKarte` (eine Markenfläche je Bildschirm) · `Aufgabenkarte` · `Besuchskarte` · `Notfallkarte`
+(über jedem Eingabefeld für Nachrichten) · `Skelett` mit `SkelettBereich` statt „wird geladen …“ ·
+`EmptyState` mit `markenform` · `Button`/`ButtonLink` Variante `marke` (nur auf Tiefgrün) ·
+`Personenbild` Größe `karte` · `Laufrad` · `Verbindungszeile`. Zu sehen auf der Prüfseite
+`tests/e2e/fixtures/plattform-bausteine.html`.
+
+## Seitentypen und Gerüst
+
+**Seitentypen:** Heute (Übersicht: Hauptsache, Heute, Nächster Besuch, Neu für Sie) · Liste · Objekt ·
+geführter Ablauf (Einladung, Einstieg, Wunsch, Absage, Check-in, Fragebogen) · Durchführung (Übung im
+Vollbild, Hauptknopf fest unten, ohne Reiterleiste) · Tür (Einladung, Anmeldung, Einrichten, Sperre,
+Zugang beendet) · Blatt (Planblatt, Rechnung).
+
+**Gerüst:** Kopf mit Wortmarke 28 und „Ich“ mit Initialen. Reiterleiste in drei Stufen: eine Reihe,
+solange die Wörter passen; zwei Reihen bei „Groß“ und „Sehr groß“; unter 23rem der Knopf „Menü“ im
+Kopf. Bei offener Tastatur tritt sie zurück (ANN-676). Ab 1024 px Navigation im Kopf. Kein Startbild
+auf Plattformwegen, stattdessen der kurze Markenmoment beim ersten Erscheinen der Übersicht.
+Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit Daten.
+
+## Begriffe
+
+Übersicht, Termine, Übungen bzw. Training, Nachrichten, Ich · „Termin wünschen“ · „Fragebogen vor dem
+ersten Termin“ · Türen sprechen von „Zugang“ · „mit Gesicht oder Finger“ · Technikwörter nur in
+Klammern hinter einer Erklärung („Format JSON“). Nie: Sitzung, Projektion, Instrument, Mein Konto,
+Kennwort (außer „kein Kennwort“), Passwort, „Version“ oder „DIGOTOR“ im Titel, Workout, Drill,
+„Kunde“ allein, PT, Mein Tag.
+
+## Prüfliste
+
+Wie DESIGN.md, dazu: 375 und 1280 px, 200 % (188 px), „Sehr groß“ und offene Tastatur; Tab-Titel;
+ein Bild oder eine Markenfläche je Hauptseite; keine Versalien; keine Trennung in Namen.
+Automatisch: `plattform-barrierefreiheit.spec.ts`, `plattform-bausteine.spec.ts`, die Ratsche in
+`src/designsystem.test.ts` und die Paare der Plattform in `src/lib/kontrast.test.ts`.

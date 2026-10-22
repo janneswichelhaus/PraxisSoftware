@@ -5,9 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 0 (22.10., Branch `claude/plattform-schritt-0`, Pfad A, DRP-001 bis
--003): Bestätigungen wandern nicht mit; Türen in 18 px, Tab-Titel, Verbindungszeile, Überschriften;
-Texte der Plattform (ANN-676, ANN-677). Schritt 1: Handoff auf `claude/design-review-lauf-1`.
+Design-Review Lauf 1, Schritt 1a (22.10., Branch `claude/plattform-1a-sprache`, Pfad A, DRP-004
+bis -006): Skala in rem, keine Versalien, 18 px; Hero-, Aufgaben-, Besuchs- und Notfallkarte,
+Skelett, Knopf `marke`, Druck; `design/PLATTFORM.md` und Prüfseite (ANN-678). Schritt 0 gemergt
+(#288); Handoff und Bericht in PR #289.
 
 BEF-179 und BEF-180 (21.10., Branch `ccr-fc77ad4b-t5zz1m`, Pfad A): Ein zurückgewiesener
 Freizeitausgleich steht bei der Person unter „noch offen“, bis sein Tag vorbei ist, ohne Grund
@@ -34,7 +35,8 @@ Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Ru
 
 ## Danach
 
-BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederherstellung; Pfad A).
+Design-Review Schritt 1b Gerüst (Handoff, Abschnitt 9). BEF-170 (Akte: einzeln gelöschte Dateien
+ins Löschjournal, Test mit Wiederherstellung; Pfad A).
 
 ## Bei Jannes
 
@@ -61,4 +63,4 @@ BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederhers
 
 ## Letzte Session
 
-22.10.2026, Branch `claude/plattform-schritt-0`: ohne Migration und Seed. Lokal: `git pull`.
+22.10.2026, Branch `claude/plattform-1a-sprache`: ohne Migration und Seed. Lokal: `git pull`.

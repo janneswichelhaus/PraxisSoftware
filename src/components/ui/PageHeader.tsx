@@ -63,7 +63,7 @@ export function PageHeader({
   const kopf = (
     <div className={kompakt ? 'flex min-w-0 flex-wrap items-baseline gap-x-3' : 'min-w-0'}>
       {kicker ? (
-        <p className="text-ink-muted tracking-label mb-1 text-xs font-semibold uppercase">
+        <p className="text-ink-muted tracking-label mb-1 text-xs font-semibold uppercase [.plattform-schrift_&]:tracking-normal [.plattform-schrift_&]:normal-case">
           {kicker}
         </p>
       ) : null}

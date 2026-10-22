@@ -241,6 +241,49 @@
   --text-h3--line-height: 1.25;
   --text-h4: 20px;
   --text-h4--line-height: 1.25;
+
+  /* Schriftskala der Plattform (Handoff 2026-10-22, Abschnitt 2;
+     `docs/design/PLATTFORM.md`). Anders als die Rollen darüber in rem: Unter
+     „Groß“ und „Sehr groß“ (`html[data-schrift]`) wachsen Titel mit dem Text,
+     sonst stünde ein Seitentitel bei 125 % kaum größer da als der Fließtext.
+     Nur unter `.plattform-schrift`. Je Rolle eine Fassung für den Rechner (ab
+     1024 px) und, wo der Handoff sie nennt, eine für sehr schmale Fenster
+     (unter 23rem, 200 % am Telefon). */
+  --text-gruss: 2.125rem;
+  --text-gruss--line-height: 1.1;
+  --text-gruss--letter-spacing: -0.03em;
+  --text-gruss--font-weight: 800;
+  --text-gruss-rechner: 2.5rem;
+  --text-gruss-rechner--line-height: 1.1;
+  --text-gruss-rechner--letter-spacing: -0.03em;
+  --text-gruss-rechner--font-weight: 800;
+  --text-plattform-titel: 1.75rem;
+  --text-plattform-titel--line-height: 1.1;
+  --text-plattform-titel--letter-spacing: -0.03em;
+  --text-plattform-titel--font-weight: 800;
+  --text-plattform-titel-rechner: 2rem;
+  --text-plattform-titel-rechner--line-height: 1.1;
+  --text-plattform-titel-rechner--letter-spacing: -0.03em;
+  --text-plattform-titel-rechner--font-weight: 800;
+  --text-hero: 1.625rem;
+  --text-hero--line-height: 1.15;
+  --text-hero--letter-spacing: -0.02em;
+  --text-hero--font-weight: 800;
+  --text-hero-rechner: 2rem;
+  --text-hero-rechner--line-height: 1.1;
+  --text-hero-rechner--letter-spacing: -0.02em;
+  --text-hero-rechner--font-weight: 800;
+  --text-hero-schmal: 1.375rem;
+  --text-hero-schmal--line-height: 1.2;
+  --text-hero-schmal--letter-spacing: -0.02em;
+  --text-hero-schmal--font-weight: 800;
+  --text-abschnitt: 1.375rem;
+  --text-abschnitt--line-height: 1.25;
+  --text-abschnitt--letter-spacing: -0.01em;
+  --text-abschnitt--font-weight: 700;
+  /* Initialen im Personenbild der Karten (56 px, Handoff 2026-10-22,
+     Abschnitt 3): 20/700 in rem, damit Bild und Schrift mitwachsen. */
+  --text-initialen: 1.25rem;
   /* Inhalt von Listen, Karten, Detail- und Trefferzeilen: 15 px (TOK-06).
      Der Wert stand bis UXR-001 an 158 Stellen als arbiträrer Wert in
      eckigen Klammern, ohne Namen und damit ohne Rolle. Das Token benennt
@@ -274,6 +317,16 @@
   /* Schieben ohne Überschwung (ANN-663): Seiten der Leiste und Fenster -
      eine ganze Fläche, die über die Kante hinausschwänge, zeigte eine Lücke. */
   --ease-schieben: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Druck auf der Plattform (DR-117, Handoff 2026-10-22 Abschnitt 7): Knopf,
+     Zeile und Karte geben in 120 ms nach, ohne Überschwung. */
+  --ease-druck: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Die eine Tiefenstufe der Plattform (ANN-678, Handoff 2026-10-22,
+     Abschnitt 2): nur für Karten, die man antippt - Hero-, Aufgaben- und
+     Besuchskarte. Listen bleiben Linie. Sonst gilt DS-001, „keine Schatten“;
+     `src/designsystem.test.ts` lässt die Klasse nur in diesen drei Bausteinen
+     zu. Tinte #14181b zu 6 und 8 %. */
+  --shadow-plattform: 0 1px 2px rgb(20 24 27 / 0.06), 0 6px 20px rgb(20 24 27 / 0.08);
 
   /* Bedienhöhen. Das Mindestziel bleibt 44 px (WCAG 2.5.8). */
   --spacing-bedienhoehe: 48px;
@@ -354,6 +407,9 @@
      Bildschirm ein Telefon von 390 px, so breit, wie die Person die
      Plattform meist sieht. */
   --container-telefon: 24.375rem;
+  /* Titel der Hero-Karte höchstens 11 Zeichenbreiten (Handoff 2026-10-22,
+     Abschnitt 3): in em, damit die Grenze mit der Schrift wächst. */
+  --container-hero-titel: 11em;
 }
 
 /* Schrift der Plattform (POR-020, DSN-001 Abschnitt 7 Punkt 1,
@@ -476,6 +532,39 @@ html[data-schrift='gross'] {
 }
 html[data-schrift='sehr-gross'] {
   font-size: 125%;
+}
+
+/* Bewegung der Plattform (Handoff 2026-10-22, Abschnitt 7). Der Markenmoment:
+   Die Hero-Karte läuft 12 px von unten ein (0,12 bis 0,40 s) und das Laufrad
+   dreht eine Achtel zurück auf null (0,12 bis 0,72 s) - einmal, beim ersten
+   Erscheinen der Übersicht. Das Skelett pulsiert ruhig. Bei „Bewegung
+   reduzieren“ steht alles sofort, ohne Drehung und ohne Puls. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-erscheint {
+    animation: hero-erscheinen 0.28s var(--ease-feder-weich) 0.12s both;
+  }
+  .laufrad-dreht {
+    animation: laufrad-drehen 0.6s var(--ease-feder-weich) 0.12s both;
+  }
+  .skelett-puls {
+    animation: skelett-puls 1.6s ease-in-out infinite;
+  }
+}
+@keyframes hero-erscheinen {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+@keyframes laufrad-drehen {
+  from {
+    rotate: -45deg;
+  }
+}
+@keyframes skelett-puls {
+  50% {
+    opacity: 0.55;
+  }
 }
 
 /* Schraffur für Flächen, die nicht zur Verfügung stehen - im Kalender die
