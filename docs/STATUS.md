@@ -1,14 +1,14 @@
-# Status · Stand 2026-10-22
+# Status · Stand 2026-10-23
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 1a (22.10., Branch `claude/plattform-1a-sprache`, Pfad A, DRP-004
-bis -006): Skala in rem, keine Versalien, 18 px; Hero-, Aufgaben-, Besuchs- und Notfallkarte,
-Skelett, Knopf `marke`, Druck; `design/PLATTFORM.md` und Prüfseite (ANN-678). Schritt 0 gemergt
-(#288); Handoff und Bericht in PR #289.
+Design-Review Lauf 1, Schritt 1b (23.10., Branch `claude/plattform-1b-geruest`, Pfad A ohne
+Auslöser, DRP-007 bis -009): Kopf 72, Reiterleiste in drei Stufen mit „Menü“ unter 23rem,
+Rechneransicht ab 1024 px, Titel in rem, Markenmoment B statt Startbild (ANN-679 bis ANN-683).
+Gemergt: Schritt 0 (#288), Handoff (#289), Schritt 1a (#290).
 
 BEF-179 und BEF-180 (21.10., Branch `ccr-fc77ad4b-t5zz1m`, Pfad A): Ein zurückgewiesener
 Freizeitausgleich steht bei der Person unter „noch offen“, bis sein Tag vorbei ist, ohne Grund
@@ -35,8 +35,9 @@ Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Ru
 
 ## Danach
 
-Design-Review Schritt 1b Gerüst (Handoff, Abschnitt 9). BEF-170 (Akte: einzeln gelöschte Dateien
-ins Löschjournal, Test mit Wiederherstellung; Pfad A).
+Design-Review Schritte 1c Türen und 1d Einstieg (parallel möglich), dann 1e Übersicht (Handoff,
+Abschnitt 9). BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederherstellung;
+Pfad A).
 
 ## Bei Jannes
 
@@ -63,4 +64,4 @@ ins Löschjournal, Test mit Wiederherstellung; Pfad A).
 
 ## Letzte Session
 
-22.10.2026, Branch `claude/plattform-1a-sprache`: ohne Migration und Seed. Lokal: `git pull`.
+23.10.2026, Branch `claude/plattform-1b-geruest`: ohne Migration und Seed. Lokal: `git pull`.

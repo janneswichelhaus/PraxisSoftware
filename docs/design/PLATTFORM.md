@@ -41,8 +41,8 @@ unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
 `HeroKarte` (eine Markenfläche je Bildschirm) · `Aufgabenkarte` · `Besuchskarte` · `Notfallkarte`
 (über jedem Eingabefeld für Nachrichten) · `Skelett` mit `SkelettBereich` statt „wird geladen …“ ·
 `EmptyState` mit `markenform` · `Button`/`ButtonLink` Variante `marke` (nur auf Tiefgrün) ·
-`Personenbild` Größe `karte` · `Laufrad` · `Verbindungszeile`. Zu sehen auf der Prüfseite
-`tests/e2e/fixtures/plattform-bausteine.html`.
+`Personenbild` Größe `karte` · `Laufrad` · `Verbindungszeile` · `Menueknopf`. Zu sehen auf der
+Prüfseite `tests/e2e/fixtures/plattform-bausteine.html`.
 
 ## Seitentypen und Gerüst
 
@@ -51,11 +51,14 @@ geführter Ablauf (Einladung, Einstieg, Wunsch, Absage, Check-in, Fragebogen) ·
 Vollbild, Hauptknopf fest unten, ohne Reiterleiste) · Tür (Einladung, Anmeldung, Einrichten, Sperre,
 Zugang beendet) · Blatt (Planblatt, Rechnung).
 
-**Gerüst:** Kopf mit Wortmarke 28 und „Ich“ mit Initialen. Reiterleiste in drei Stufen: eine Reihe,
-solange die Wörter passen; zwei Reihen bei „Groß“ und „Sehr groß“; unter 23rem der Knopf „Menü“ im
-Kopf. Bei offener Tastatur tritt sie zurück (ANN-676). Ab 1024 px Navigation im Kopf. Kein Startbild
-auf Plattformwegen, stattdessen der kurze Markenmoment beim ersten Erscheinen der Übersicht.
-Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit Daten.
+**Gerüst** (`src/features/platform/Navigation.tsx`): Kopf 72 mit Wortmarke 28 und „Ich“ mit
+Initialen (bis N1 das Zeichen der Person). Reiterleiste in drei Stufen (ANN-679): eine Reihe,
+solange die Wörter passen - gemessen, nicht aus der Einstellung gelesen -, sonst zwei; unter 23rem
+der `Menueknopf` im Kopf (ANN-682). Bei offener Tastatur tritt sie zurück (ANN-676, ANN-681). Ab
+1024 px Navigation im Kopf, Inhalt `max-w-inhalt`, jede Seite einspaltig in `max-w-spalte`; die
+Einsicht der Praxis behält das Telefon. Seitentitel 28 (Rechner 32) und Abschnitte 22 in rem
+(ANN-683). Kein Startbild auf Plattformwegen, stattdessen Markenmoment B beim ersten Erscheinen der
+Übersicht je Tab (ANN-680). Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit Daten.
 
 ## Begriffe
 

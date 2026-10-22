@@ -1476,6 +1476,15 @@
           "fertig_am": "2026-10-22",
           "nachweis": "DRP-004 bis DRP-006, Branch `claude/plattform-1a-sprache`, tests/e2e/plattform-bausteine.spec.ts",
           "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1a (Handoff 2026-10-22); ANN-678"
+        },
+        {
+          "id": "drp-epic-003",
+          "name": "DRP-EPIC-003 Plattform: Gerüst aus dem Design-Review (Schritt 1b – Kopf, Reiterleiste in drei Stufen, Rechneransicht, Markenmoment B)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-23",
+          "nachweis": "DRP-007 bis DRP-009, Branch `claude/plattform-1b-geruest`, tests/e2e/plattform-barrierefreiheit.spec.ts",
+          "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1b (Handoff 2026-10-22); ANN-679 bis ANN-683"
         }
       ]
     },
