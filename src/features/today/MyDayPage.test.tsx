@@ -12,6 +12,7 @@ import type * as StartortModule from '@/features/tours/startort';
 import type * as FunktionModule from '@/lib/location/funktion';
 import type * as LeistungenModule from '@/features/appointments/leistungenAmTermin';
 import type * as NochOffenModule from './NochOffen';
+import type * as TimeAccountApiModule from '@/features/timeaccount/api';
 import { renderMitVorschau, testUser } from '@/test-utils';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { tagePlus } from '@/features/appointments/calendar';
@@ -213,6 +214,15 @@ const completeAppointment = vi.fn();
 const reopenAppointment = vi.fn();
 const recordNoShow = vi.fn();
 
+// BEF-179: zurückgewiesene Freizeitausgleiche; ohne Angabe keine.
+const fetchRejectedTimeOff = vi.fn(() =>
+  Promise.resolve([] as TimeAccountApiModule.RejectedTimeOff[]),
+);
+vi.mock('@/features/timeaccount/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof TimeAccountApiModule>()),
+  fetchRejectedTimeOff: () => fetchRejectedTimeOff(),
+}));
+
 // PRX-013: offene Erstaufnahmen; ohne Angabe keine.
 const fetchOpenIntakes = vi.fn(() => Promise.resolve([] as unknown[]));
 vi.mock('@/features/open-points/intake-api', async (importOriginal) => ({
@@ -397,6 +407,7 @@ describe('Übersicht', () => {
     fetchLeistungenAmTermin.mockReset();
     fetchLeistungenAmTermin.mockResolvedValue(null);
     nachzuholen.mockClear();
+    fetchRejectedTimeOff.mockClear();
   });
 
   it('zeigt „Nachzuholen" heute für die, die schreiben - nicht an anderen Tagen (ANN-478)', async () => {
@@ -2429,5 +2440,85 @@ describe('Übersicht', () => {
       expect(zeile).toHaveTextContent('Fahrzeit nicht verfügbar – Adresse am Termin veraltet');
       expect(zeile).not.toHaveTextContent('Anfahrt ≈');
     });
+  });
+});
+
+// BEF-179 (ANN-675): Ein zurückgewiesener Freizeitausgleich steht unter „noch
+// offen“, bis sein Tag vorbei ist - die Zeilen selbst prüft `NochOffen.test.tsx`.
+describe('Übersicht: zurückgewiesener Freizeitausgleich (BEF-179)', () => {
+  const ZURUECKGEWIESEN: TimeAccountApiModule.RejectedTimeOff = {
+    id: 'z1',
+    on_date: tagePlus(todayInTimeZone(ZONE), 1),
+    starts_at: '08:00',
+    ends_at: '10:00',
+  };
+
+  beforeEach(() => {
+    fetchDayPlan.mockReset();
+    fetchAppointments.mockReset();
+    fetchAppointments.mockResolvedValue([]);
+    fetchAbrechnungslage.mockReset();
+    fetchAbrechnungslage.mockResolvedValue(null);
+    fetchDayRoute.mockReset();
+    fetchDayRoute.mockResolvedValue([]);
+    fetchStandorte.mockReset();
+    fetchStandorte.mockResolvedValue([]);
+    fetchLeistungenAmTermin.mockReset();
+    fetchLeistungenAmTermin.mockResolvedValue(null);
+    fetchRejectedTimeOff.mockReset();
+    fetchRejectedTimeOff.mockResolvedValue([ZURUECKGEWIESEN]);
+  });
+
+  it('steht unter dem Strahl, solange ein Besuch aussteht - der nächste Weg bleibt oben', async () => {
+    fetchDayPlan.mockResolvedValue(tagesplan());
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+    const offen = (await screen.findByRole('heading', { name: 'Heute noch offen (1)' })).closest(
+      'section',
+    )!;
+    expect(offen).toHaveTextContent('Freizeitausgleich zurückgewiesen');
+    expect(offen).toHaveTextContent('Freizeitausgleich zurückgewiesen');
+    expect(offen).toHaveTextContent('08:00–10:00 wieder Arbeitszeit');
+    // Nur die Zurückweisung: Die Besuche stehen weiter im Strahl.
+    expect(within(offen).getAllByRole('listitem')).toHaveLength(1);
+    const karte = await findeKarte();
+    const strahl = screen.getByRole('heading', { name: STRAHL }).closest('section')!;
+    for (const davor of [karte, strahl]) {
+      expect(davor.compareDocumentPosition(offen) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+
+  it('steht am Tagesende unter den Besuchen im selben Abschnitt', async () => {
+    const heute = todayInTimeZone(ZONE);
+    const plan = [
+      tagesEintrag({
+        id: 't1',
+        starts_at: inMinuten(-240),
+        ends_at: inMinuten(-195),
+        status: 'completed',
+        documentation_status: 'none',
+      }),
+    ];
+    fetchDayPlan.mockImplementation((tag: string) => Promise.resolve(tag < heute ? [] : plan));
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+    const offen = (await screen.findByRole('heading', { name: 'Heute noch offen (2)' })).closest(
+      'section',
+    )!;
+    const zeilen = within(offen).getAllByRole('listitem');
+    expect(zeilen[0]).toHaveTextContent('Erika Beispiel');
+    expect(zeilen[1]).toHaveTextContent('Freizeitausgleich zurückgewiesen');
+    expect(screen.getAllByRole('heading', { name: /noch offen/ })).toHaveLength(1);
+  });
+
+  it('fragt an einem anderen Tag nicht und zeigt nichts', async () => {
+    fetchDayPlan.mockResolvedValue([]);
+    renderMitVorschau(
+      <MyDayPage user={testUser(['therapist'])} />,
+      `/?tag=${tagePlus(todayInTimeZone(ZONE), 1)}`,
+    );
+    await screen.findByText(/^Morgen sind Ihnen keine Besuche zugeordnet/);
+    expect(fetchRejectedTimeOff).not.toHaveBeenCalled();
+    expect(screen.queryByText('Freizeitausgleich zurückgewiesen')).toBeNull();
   });
 });

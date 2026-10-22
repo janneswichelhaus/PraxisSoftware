@@ -89,6 +89,7 @@ import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
 import { OpenPointsSummary } from '@/features/open-points/OpenPointsSummary';
 import { OPEN_INTAKES_KEY, fetchOpenIntakes } from '@/features/open-points/intake-api';
 import { useBarometerHinweise } from '@/features/feedback/barometerHinweis';
+import { REJECTED_TIME_OFF_KEY, fetchRejectedTimeOff } from '@/features/timeaccount/api';
 import { HinweisZwischendurch } from './HinweisZwischendurch';
 
 /**
@@ -665,6 +666,18 @@ function MeinTag({
     retry: false,
   });
 
+  // BEF-179 (ANN-675): Ein zurückgewiesener Freizeitausgleich steht unter
+  // „noch offen“, bis sein Tag vorbei ist - nur heute, ohne Benachrichtigung.
+  // Lädt er nicht, fehlt die Zeile; das Zeitkonto bleibt der Ort dafür.
+  const { data: zurueckgewieseneDaten } = useQuery({
+    queryKey: REJECTED_TIME_OFF_KEY,
+    queryFn: fetchRejectedTimeOff,
+    enabled: istHeute,
+    retry: false,
+  });
+  // An einem anderen Tag nicht - auch nicht aus dem Zwischenspeicher.
+  const zurueckgewiesen = istHeute ? (zurueckgewieseneDaten ?? []) : [];
+
   if (isPending) return <Ladegeruest />;
 
   // Nur wenn es NICHTS zu zeigen gibt, tritt der Fehler an die Stelle der
@@ -962,10 +975,12 @@ function MeinTag({
         <NochOffen
           plan={sortiert}
           tagWort={TagesWort(datum, heute)}
+          heute={heute}
           darfDokumentieren={darfDokumentieren}
           jetzt={jetzt}
           zeitzone={zeitzone}
           ausfall={(termin) => ausfall(termin, 'zeile')}
+          zurueckgewiesen={zurueckgewiesen}
         />
       ) : null}
       {istHeute && !stehtBesuchAus && darfDokumentieren ? (
@@ -990,6 +1005,21 @@ function MeinTag({
       ) : null}
 
       {ohneBesuch || stehtBesuchAus ? null : strahl}
+
+      {/* Steht ein Besuch aus, bleibt „noch offen“ für die Besuche weg; ein
+          zurückgewiesener Freizeitausgleich steht trotzdem da - unter dem
+          Strahl, der nächste Weg bleibt auf dem ersten Bildschirm (BEF-179). */}
+      {istHeute && stehtBesuchAus ? (
+        <NochOffen
+          plan={[]}
+          tagWort={TagesWort(datum, heute)}
+          heute={heute}
+          darfDokumentieren={darfDokumentieren}
+          jetzt={jetzt}
+          zeitzone={zeitzone}
+          zurueckgewiesen={zurueckgewiesen}
+        />
+      ) : null}
 
       {/* Liegengebliebenes der letzten Tage, unter dem eigenen Tag: Der
           nächste Weg bleibt auf dem ersten Bildschirm (Auftrag C1). */}

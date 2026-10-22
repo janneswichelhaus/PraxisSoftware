@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-10-20
+Stand: 2026-10-21
 
 ## Zweck
 
@@ -537,30 +537,6 @@ Marke vorsieht.
 | Berührt | `supabase/migrations/20260830120100_working_hours.sql` (Tabellenrecht), `src/features/scheduling/api.ts` |
 
 **Beobachtung.** Der Wochenplan ist mit Tabellenrecht lesbar (seit CAL-005), also auch `created_by` und `created_at`. Seit den Fassungen (ANN-589) zeigt das, wer eine genehmigte dauerhafte Änderung eingetragen hat und wann – jeder Praxisrolle, solange die Fassung gilt. Die Abweichungen haben dafür seit URL-001 ein Spaltenrecht (ANN-580). **Erwartet.** Wie bei den Abweichungen nur die Spalten, die Kalender und Planung brauchen (`id`, `organization_id`, `staff_member_id`, `weekday`, `starts_at`, `ends_at`, `valid_from`, `valid_until`); Pfad A, eine Migration mit Negativtest.
-
-### BEF-179 — Zeitkonto: Eine Zurückweisung erreicht die Person nicht von selbst
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-17 |
-| Bereich | Zeitkonto (`/betrieb/zeitkonto`), Übersicht „Noch offen“ |
-| Quelle  | Praxis-Review der Überholung 9 (ZK-001), Frage an Jannes |
-| Status  | eingeplant: Folge-Story im Zeitkonto, Entscheidung Jannes 2026-10-17 |
-| Berührt | `list_time_account`, `src/features/today/NochOffen.tsx` |
-
-**Beobachtung.** Weist owner einen Freizeitausgleich zurück, ist die Zeit sofort wieder Arbeitszeit; die Person sieht das nur, wenn sie ins Zeitkonto schaut. **Erwartet.** Ein zurückgewiesener Eintrag mit kommendem Tag steht bei der Person unter „Noch offen“ in der Übersicht, bis der Tag vorbei ist – ohne Benachrichtigung, Push bleibt aus.
-
-### BEF-180 — Zeitkonto: Ein Freizeitausgleich für heute lässt sich nicht zurücknehmen
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-17 |
-| Bereich | Zeitkonto (`/betrieb/zeitkonto`) |
-| Quelle  | Praxis-Review der Überholung 9 (ZK-001), Runde 2 |
-| Status  | eingeplant: eigener kleiner Auftrag (Pfad A), Entscheidung Jannes 2026-10-17 |
-| Berührt | `public.withdraw_time_account_entry` und `can_withdraw` in `list_time_account` (`20261126100000_zk_001_zeitkonto.sql`), `TimeAccountPage.tsx` |
-
-**Beobachtung.** Zurücknehmen geht beim Freizeitausgleich nur vor seinem Tag (`on_date > heute`); wer heute doch bleibt, kann den Eintrag für heute nicht zurücknehmen. **Erwartet.** Zurücknehmen auch am Tag selbst, solange die freie Zeit noch nicht begonnen hat; die Abweichung im Kalender fällt mit dem Eintrag. Pfad A: Prüfung am Server, Negativtests.
 
 ### BEF-184 — Einwilligung „Ernährungsberatung“: das unterschriebene Blatt bleibt außerhalb der Anwendung
 

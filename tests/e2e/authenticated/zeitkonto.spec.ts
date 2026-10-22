@@ -377,6 +377,30 @@ test('G9 Freizeitausgleich und G9b: Anna nimmt frei, Jannes weist mit Grund zur�
   await expect(zurueckgewiesen).toHaveCount(1);
   await expect(zurueckgewiesen).toContainText(/Zurückgewiesen von .+: Teamsitzung/);
   await bild(page, 'b9-g9b-04-anna-sieht-375');
+
+  // BEF-179: Anna erfährt es auch ohne Blick ins Zeitkonto - in der Übersicht
+  // unter „noch offen“, ohne Grund; die Zeile führt ins Zeitkonto.
+  await page.goto('/');
+  // Vorn der Tag, kurz: Wochentag über „05.11.“.
+  const datum = new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'UTC',
+  }).format(new Date(`${DONNERSTAG}T12:00:00Z`));
+  const offen = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: /noch offen \(\d+\)$/ }) });
+  const hinweis = offen
+    .getByRole('link')
+    .filter({ hasText: 'Freizeitausgleich zurückgewiesen' })
+    .filter({ hasText: datum })
+    .filter({ hasText: '16:00–18:00 wieder Arbeitszeit' })
+    .first();
+  await expect(hinweis).toBeVisible();
+  await expect(page.getByText(`Teamsitzung (Lauf ${LAUF})`)).toHaveCount(0);
+  await bild(page, 'b9-g9b-05-uebersicht-375');
+  await hinweis.click();
+  await expect(page).toHaveURL(/\/betrieb\/zeitkonto$/);
   await inhaber.close();
 });
 

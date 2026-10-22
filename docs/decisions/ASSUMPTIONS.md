@@ -6183,11 +6183,11 @@ Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervor
 
 Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** owner weist einen Eintrag mit Grund zurück, nie im eigenen Konto; er bleibt sichtbar und zählt nicht. Zurücknehmen kann, wer eingetragen hat, solange er gilt – einen Freizeitausgleich nur vor seinem Tag. owner und Büro tragen für andere ein und buchen Korrekturen (Minuten mit Grund, ohne Lage); im eigenen Konto bucht nur owner eine Korrektur. Die Teamleitung entscheidet nicht.
+**Annahme.** owner weist einen Eintrag mit Grund zurück, nie im eigenen Konto; er bleibt sichtbar und zählt nicht. Zurücknehmen kann, wer eingetragen hat, solange er gilt – einen Freizeitausgleich, bis seine freie Zeit beginnt, auch am Tag selbst (BEF-180). owner und Büro tragen für andere ein und buchen Korrekturen (Minuten mit Grund, ohne Lage); im eigenen Konto bucht nur owner eine Korrektur. Die Teamleitung entscheidet nicht.
 
-**Begründung.** BEF-066 Option 2 mit Büro; Entscheiden wie ANN-576. Genommene Zeit soll niemand durch Zurücknehmen zurückholen.
+**Begründung.** BEF-066 Option 2 mit Büro; Entscheiden wie ANN-576. Genommene Zeit holt niemand durch Zurücknehmen zurück (Jannes 2026-10-17).
 
-**Anker.** `public.reject_time_account_entry`, `public.withdraw_time_account_entry`.
+**Anker.** `public.reject_time_account_entry`, `public.withdraw_time_account_entry`, `app.time_off_started`.
 
 **Änderungspfad.** Teamleitung weist zurück: `app.can_decide_staff_requests` · Aufwand `klein`.
 
@@ -6972,3 +6972,15 @@ Recht · offen · 2026-10-21 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 **Anker.** `public.place_staff_legal_hold` und die vier Löschregeln in `20261223200000_bef_178_loeschsperre_beschaeftigte.sql`.
 
 **Änderungspfad.** Teamchat oder Radflotte dazu: die Prüfung in deren Löschregel · Aufwand `klein`.
+
+### ANN-675 — Zeitkonto: Zurückweisung in der Übersicht ohne Grund, nur beim Freizeitausgleich
+
+Datenschutz · offen · 2026-10-21 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Ein zurückgewiesener Freizeitausgleich steht bei der Person in der Übersicht unter „noch offen“, bis sein Tag vorbei ist: Tag und Zeiten, ohne Grund und ohne wer; die Zeile führt ins Zeitkonto. Zurückgewiesene Überstunden und Minusstunden stehen dort nicht. Keine Benachrichtigung, kein Push, kein „gelesen“.
+
+**Begründung.** BEF-179, Entscheidung Jannes 2026-10-17. Die Übersicht steht in der Halterung, auch vor Patient:innen; sie zeigt, was der nächste Schritt braucht (PROJECT_PRINCIPLES.md 2.2), der Grund ist einen Tipp weiter. Nur der Freizeitausgleich ändert den Tag (ANN-595).
+
+**Anker.** `public.list_rejected_time_off`.
+
+**Änderungspfad.** Grund in der Übersicht: ein Feld in `list_rejected_time_off` und in der Zeile · Aufwand `klein`.
