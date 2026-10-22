@@ -91,7 +91,8 @@ eine Aufgabe je Seite; `plattform-barrierefreiheit.spec.ts` wacht.
 ## Regeln
 
 1. **Überschriften nur über Bausteine:** `PageHeader`/`Objektkopf` (h1), `Section` (h2/h3),
-   `Spaltenkopf` (h2), `Zwischentitel` (h3/h4). Kein `<h2 className=…>`.
+   `Spaltenkopf` (h2), `Zwischentitel` (h3/h4; h2 direkt unter dem Seitentitel ohne `Section`,
+   DR-158). Kein `<h2 className=…>`.
 2. **Kein Kasten im Kasten.** Gruppen in einer Karte trennt ein `Zwischentitel` oder eine Linie;
    Meldungen sind Zeilen (Fläche oder Linie links).
 3. **Listen nur über `ListRow`/`Listenabschnitt`, Tabellen nur über `Datenliste`.** Kein

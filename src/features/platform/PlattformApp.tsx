@@ -856,7 +856,7 @@ function Ich({
         {nurLesen ? null : (
           // DR-150: Abmelden ist nicht die Hauptsache dieser Seite - eine
           // leise Zeile am Ende, „Überall abmelden“ mit Rückfrage darunter.
-          <div className="mt-6 flex flex-col items-start gap-1">
+          <div className="mt-6 flex flex-col items-start gap-3">
             <Button variant="quiet" onClick={onAbmelden}>
               Abmelden
             </Button>
