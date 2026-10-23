@@ -360,7 +360,8 @@ function Willkommen({
  * und nichts vorgewählt. Die Wahl gilt sofort, wie bisher der Knopf: Ein Ja
  * erteilt mit der Fassung des Texts, ein Nein danach widerruft es wieder. Ein
  * Nein zu einer offenen Einwilligung lässt sie offen - gespeichert wird es
- * nicht (ANN-693). Scheitert das Speichern, steht die Wahl wieder, wie sie war.
+ * nicht (ANN-693). Scheitert das Speichern, steht die Wahl wieder, wie sie war -
+ * auch wenn die Person schon weitergetippt hat; deshalb am Hook, nicht am Aufruf.
  */
 function Einwilligungsfrage({
   zugang,
@@ -377,24 +378,22 @@ function Einwilligungsfrage({
   const queryClient = useQueryClient();
   const text = EINWILLIGUNGSTEXTE[zweck];
   const schreiben = useMutation({
-    mutationFn: (erteilen: boolean) =>
+    mutationFn: ({ erteilen }: { erteilen: boolean; vorher: JaNein | undefined }) =>
       api.einwilligungSchreiben({
         zugangId: zugang.access_id,
         zweck,
         erteilen,
         fassung: EINWILLIGUNGSFASSUNG,
       }),
+    onError: (_fehler, { vorher }) => onWahl(vorher),
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: einwilligungenSchluessel(zugang.access_id) }),
   });
 
   const waehlen = (neu: JaNein) => {
     if (schreiben.isPending || neu === wahl) return;
-    const vorher = wahl;
     onWahl(neu);
-    if (neu === 'ja' || vorher === 'ja') {
-      schreiben.mutate(neu === 'ja', { onError: () => onWahl(vorher) });
-    }
+    if (neu === 'ja' || wahl === 'ja') schreiben.mutate({ erteilen: neu === 'ja', vorher: wahl });
   };
 
   return (

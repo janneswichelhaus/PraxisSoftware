@@ -344,6 +344,26 @@ describe('Einstieg: Einwilligungen (DRP-017)', () => {
     expect(within(mail).getByRole('radio', { name: 'Ja, erlauben' })).not.toBeChecked();
   });
 
+  it('nimmt die Wahl auch zurück, wenn das Speichern erst nach „Weiter“ scheitert', async () => {
+    const nutzer = userEvent.setup();
+    let scheitern: (fehler: Error) => void = () => undefined;
+    einwilligungSchreiben.mockReturnValue(
+      new Promise<void>((_, ablehnen) => {
+        scheitern = ablehnen;
+      }),
+    );
+    const fenster = await zuDenEinwilligungen(nutzer);
+    const mail = within(fenster).getByRole('group', { name: 'Nachrichten per E-Mail' });
+    await nutzer.click(within(mail).getByText('Ja, erlauben'));
+    await tippe(nutzer, 'Weiter');
+    await screen.findByRole('dialog', { name: 'Sollen wir Ihnen Bescheid geben?' });
+    scheitern(new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.'));
+    await waitFor(() => expect(ladeEinwilligungen).toHaveBeenCalledTimes(2));
+    await tippe(nutzer, '← Zurück');
+    const wieder = await screen.findByRole('group', { name: 'Nachrichten per E-Mail' });
+    expect(within(wieder).getByRole('radio', { name: 'Ja, erlauben' })).not.toBeChecked();
+  });
+
   it('lässt die Seite weg, wenn nichts offen ist - dann noch eine Frage', async () => {
     ladeEinwilligungen.mockResolvedValue([
       einwilligung('email_contact', 'granted'),
