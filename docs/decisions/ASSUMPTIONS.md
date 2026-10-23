@@ -7080,3 +7080,27 @@ Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 **Anker.** Die Klassen `[.plattform-schrift_&]:` am Titel in `src/components/ui/Section.tsx` und `PageHeader.tsx`.
 
 **Änderungspfad.** Die Klassen entfernen oder einzelnen Abschnitten eine leisere Stufe geben · Aufwand `klein`.
+
+### ANN-690 — Plattform: der eigene Name nur am lesbaren Zugang, die Vertretung mit ihrem eigenen
+
+Datenschutz · offen · 2026-10-22 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)
+
+**Annahme.** Der Plattformkontext nennt an jedem lesbaren Zugang den eigenen Namen des Kontos: die Person mit Vor- und Nachnamen aus ihrem Verhältnis, eine Vertretung mit dem Namen aus ihrem Nachweis, nie dem der vertretenen Person. Gesperrt, nach der Lesefrist und in gesperrter Sitzung bleibt er leer; die Initialen bildet die Oberfläche daraus.
+
+**Begründung.** Handoff 2026-10-22, Entscheidung 3 (Gruß, Initialen). Der eigene Name ist kein Inhalt der Akte (ADR-023 Punkt 22) und geht an niemand Dritten. Unsicher: ob der Name aus dem Nachweis (ANN-203) dafür genutzt werden darf.
+
+**Anker.** `app.platform_own_name` in `20261223230000_drp_n1_n2_plattform_name_rufnummer.sql`.
+
+**Änderungspfad.** Nur der Vorname oder kein Name für Vertretungen: diese eine Funktion · Aufwand `klein`.
+
+### ANN-691 — Plattform: „Praxis anrufen“ mit der Rufnummer aus dem Absender der Rechnungen
+
+Praxisprozess · offen · 2026-10-22 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Plattform nennt als Rufnummer der Praxis die, die sie als Absender ihrer Rechnungen führt (`practice_billing_profiles.phone`). Sie steht an jedem Zugang des eigenen Kontos, auch gesperrt und nach der Lesefrist, wie der Praxisname; ohne Absender oder Nummer gibt es keinen Anruf.
+
+**Begründung.** Handoff 2026-10-22 (N2, DR-133). Dieselbe Nummer trägt jede Rechnung an die Person; eine zweite Nummer bräuchte eine Einstellung, die heute niemand pflegt. Gerade ein gesperrter Zugang braucht den Weg zur Praxis.
+
+**Anker.** `app.platform_practice_phone` in `20261223230000_drp_n1_n2_plattform_name_rufnummer.sql`.
+
+**Änderungspfad.** Eigene Nummer für die Plattform: Spalte mit Pflege in den Praxiseinstellungen, gelesen in dieser einen Funktion · Aufwand `mittel`.

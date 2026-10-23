@@ -42,7 +42,7 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
   'public.list_food_sources':
     'Quellenangabe der Lebensmitteldaten (ERN-004, ADR-027 Punkt 8): Lizenz und Stand, Inhalt ohne Personenbezug; Negativfälle in food-catalog.test.ts',
   'public.platform_context':
-    'Praxisname und eigene Zugänge; Negativfälle in platform-context.test.ts',
+    'Praxisname und -rufnummer, eigene Zugänge mit eigenem Namen (DRP-N1, DRP-N2); Negativfälle in platform-context.test.ts und platform-own-name-phone.test.ts',
   'public.platform_representatives':
     'Wer für die Person Zugang hat (POR-007); Negativfälle in platform-own-representatives.test.ts',
   'public.end_platform_companion':

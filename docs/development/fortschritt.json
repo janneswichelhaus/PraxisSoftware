@@ -1485,6 +1485,15 @@
           "fertig_am": "2026-10-23",
           "nachweis": "DRP-007 bis DRP-009, Branch `claude/plattform-1b-geruest`, tests/e2e/plattform-barrierefreiheit.spec.ts",
           "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1b (Handoff 2026-10-22); ANN-679 bis ANN-683"
+        },
+        {
+          "id": "drp-daten",
+          "name": "DRP-DATEN Plattform: eigener Name und Rufnummer der Praxis in der Projektion (Handoff 2026-10-22, Abschnitt 9: N1, N2)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-22",
+          "nachweis": "DRP-N1, DRP-N2, Branch `claude/plattform-daten-n1-n2`, Migration 20261223230000_drp_n1_n2_plattform_name_rufnummer.sql, supabase/tests/platform-own-name-phone.test.ts",
+          "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1, Datenschritt nach Pfad A; ANN-690, ANN-691"
         }
       ]
     },

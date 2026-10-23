@@ -35,6 +35,8 @@ const ZUGANG: Plattformzugang = {
   read_until: '2026-11-06',
   access_kind: 'self',
   represented_name: null,
+  own_name: null,
+  practice_phone: null,
 };
 
 const ANGEBOT: Trainingsangebot = {

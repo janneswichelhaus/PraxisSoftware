@@ -32,6 +32,8 @@ const ZUGANG: Plattformzugang = {
   read_until: null,
   access_kind: 'self',
   represented_name: null,
+  own_name: null,
+  practice_phone: null,
 };
 
 const LAUFEND: Nachsorgeabo = {

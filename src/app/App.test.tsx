@@ -173,6 +173,8 @@ describe('App: Plattformkonto (POR-004, ADR-023 Punkt 25)', () => {
         read_until: null,
         access_kind: 'self',
         represented_name: null,
+        own_name: null,
+        practice_phone: null,
       },
     ];
     window.history.pushState(null, '', '/patienten');

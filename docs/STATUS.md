@@ -5,15 +5,13 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 1b (23.10., Branch `claude/plattform-1b-geruest`, Pfad A ohne
-Auslöser, DRP-007 bis -009): Kopf 72, Reiterleiste in drei Stufen mit „Menü“ unter 23rem,
-Rechneransicht ab 1024 px, Titel in rem, Markenmoment B statt Startbild (ANN-679 bis ANN-683).
-Gemergt: Schritt 0 (#288), Handoff (#289), Schritt 1a (#290).
+Design-Review Lauf 1, Datenschritt (22.10., PR #292, Branch `claude/plattform-daten-n1-n2`, Pfad A,
+DRP-N1/N2): Der Plattformkontext trägt den eigenen Namen, nur am lesbaren Zugang (ANN-690), und die
+Rufnummer der Praxis aus dem Absender der Rechnungen (ANN-691); Gruß, Initialen im Kopf und „Praxis
+anrufen“ folgen mit 1c bis 1e.
 
-BEF-179 und BEF-180 (21.10., Branch `ccr-fc77ad4b-t5zz1m`, Pfad A): Ein zurückgewiesener
-Freizeitausgleich steht bei der Person unter „noch offen“, bis sein Tag vorbei ist, ohne Grund
-(ANN-675); Zurücknehmen auch am Tag selbst, bis die freie Zeit beginnt (ANN-594).
-
+Gemergt am 22. und 23.10.: Design-Review Schritt 0 (#288), Handoff und Bericht (#289), Schritt 1a
+(#290, ANN-678), Schritt 1b Gerüst (#293, ANN-679 bis ANN-683); BEF-179 und -180 (#287, ANN-675).
 Gemergt am 20. und 21.10.: BEF-178 (#286), BEF-176 (#284), BEF-192 und -193 (#283), BEF-188 (#282),
 BEF-175 (#281), BEF-190 und -191 (#280), BEF-189 (#279).
 
@@ -64,4 +62,5 @@ Pfad A).
 
 ## Letzte Session
 
-23.10.2026, Branch `claude/plattform-1b-geruest`: ohne Migration und Seed. Lokal: `git pull`.
+23.10.2026, Branch `claude/plattform-daten-n1-n2` (mit `main` nach #293): eine Migration, kein Seed.
+Lokal: `git pull`, `pnpm dlx supabase@2.116.0 db reset`.

@@ -63,6 +63,9 @@ const kontextSchema = z.object({
   read_until: z.string().nullable(),
   access_kind: z.literal('self'),
   represented_name: z.null(),
+  /** DRP-N1, DRP-N2: wie die Person sie sieht. */
+  own_name: z.string().nullable(),
+  practice_phone: z.string().nullable(),
   /** Nur für die Leiste und den Rückweg in die Praxis. */
   relationship_id: z.string().uuid(),
   person_name: z.string(),
