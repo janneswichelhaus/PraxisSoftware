@@ -1,0 +1,339 @@
+import { createRequire } from 'node:module';
+import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
+import type AxeCore from 'axe-core';
+
+/**
+ * Der Einstieg nach der ersten Anmeldung im Browser (DRP-EPIC-005; Handoff
+ * 2026-10-22, Abschnitte 5.3, 6 und 8): vier Seiten mit einem Hauptknopf,
+ * Schrift, Ziele, Kontrast und axe je Seite, 200 % ohne waagerechtes Rollen
+ * und mit dem Fuß im Fluss, „Sehr groß“, der Rechner und die Begleitung.
+ *
+ * Die Prüfseite spricht mit keinem Server; was der Einstieg sendet, beantwortet
+ * hier eine Nachbildung und zählt mit. Alles synthetisch.
+ */
+const PRUEFSEITE = '/tests/e2e/fixtures/plattform.html';
+const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
+
+function nachbildung() {
+  const aufrufe: Record<string, Record<string, unknown>[]> = {};
+  let erteilt = false;
+  let mail: string[] = [];
+  const antworten: Record<string, (p: Record<string, unknown>) => unknown> = {
+    record_platform_consent: (p) => {
+      if (p.p_purpose === 'email_contact') erteilt = p.p_grant === true;
+      return null;
+    },
+    platform_consents: () => [
+      {
+        purpose: 'email_contact',
+        state: erteilt ? 'granted' : 'open',
+        occurred_on: null,
+        source: erteilt ? 'platform' : null,
+        can_grant: true,
+      },
+      {
+        purpose: 'prescriber_report',
+        state: 'open',
+        occurred_on: null,
+        source: null,
+        can_grant: true,
+      },
+    ],
+    set_platform_notification_settings: (p) => {
+      mail = p.p_email_kinds as string[];
+      return null;
+    },
+    platform_notification_settings: () => [
+      {
+        email_kinds: mail,
+        push_kinds: [],
+        quiet_from: 20,
+        quiet_until: 8,
+        chosen_at: null,
+        disabled_kinds: ['plan_assigned'],
+        device_registered: false,
+      },
+    ],
+    finish_platform_onboarding: () => null,
+    platform_onboarding: () => [{ pending: false, finished_at: null, skipped_at: null }],
+  };
+
+  async function beantworte(route: Route) {
+    const name = new URL(route.request().url()).pathname.split('/rpc/')[1] ?? '';
+    const parameter = (route.request().postDataJSON() ?? {}) as Record<string, unknown>;
+    (aufrufe[name] ??= []).push(parameter);
+    const antwort = antworten[name];
+    if (antwort) await route.fulfill({ json: antwort(parameter) });
+    else await route.fulfill({ status: 404, json: { message: 'nicht nachgebildet' } });
+  }
+
+  return { aufrufe, beantworte };
+}
+
+async function oeffne(
+  page: Page,
+  ansicht: string,
+  breite = 375,
+  hoehe = 812,
+): Promise<ReturnType<typeof nachbildung>> {
+  const server = nachbildung();
+  await page.setViewportSize({ width: breite, height: hoehe });
+  await page.route('**/rest/v1/**', (route) => server.beantworte(route));
+  await page.goto(`${PRUEFSEITE}?seite=${ansicht}`);
+  return server;
+}
+
+/** Das Fenster des Einstiegs; sein Name ist die Frage der Seite. */
+function fenster(page: Page, name: string | RegExp): Locator {
+  return page.getByRole('dialog', { name });
+}
+
+/** Tippt, sobald die Tippsperre nach dem Seitenwechsel vorbei ist. */
+async function tippe(ziel: Locator) {
+  await expect(ziel).toBeVisible();
+  await expect(async () => {
+    const gesperrt = await ziel.evaluate((el) => el.closest('.pointer-events-none') !== null);
+    expect(gesperrt).toBe(false);
+  }).toPass();
+  await ziel.click();
+}
+
+async function bewegungAbwarten(page: Page) {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((bewegung) => bewegung.effect?.getTiming().iterations !== Infinity)
+        .map((bewegung) => bewegung.finished.catch(() => undefined)),
+    ),
+  );
+}
+
+async function ueberlaeuft(page: Page): Promise<boolean> {
+  return page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  );
+}
+
+/** Sichtbarer Text im Fenster unter 18 px - ohne Inhalte nur für Vorlesesoftware. */
+async function kleineSchrift(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const funde: string[] = [];
+    const dialog = document.querySelector('[role="dialog"]');
+    if (!dialog) return ['kein Fenster'];
+    const gehen = document.createTreeWalker(dialog, NodeFilter.SHOW_TEXT);
+    for (let knoten = gehen.nextNode(); knoten; knoten = gehen.nextNode()) {
+      const text = knoten.textContent?.trim();
+      const element = knoten.parentElement;
+      if (!text || !element || element.closest('svg, .sr-only, [aria-hidden="true"]')) continue;
+      const box = element.getBoundingClientRect();
+      if (box.width === 0 || box.height === 0) continue;
+      const groesse = parseFloat(getComputedStyle(element).fontSize);
+      if (groesse < 17.9) funde.push(`${groesse}px: ${text.slice(0, 40)}`);
+    }
+    return funde;
+  });
+}
+
+/** Bedienelemente im Fenster unter 44 px Höhe; eine Wahl zählt mit ihrer Fläche. */
+async function kleineZiele(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const funde: string[] = [];
+    for (const el of document.querySelectorAll<HTMLElement>(
+      '[role="dialog"] :is(a, button, input, select, textarea, summary)',
+    )) {
+      const ziel = el.matches('input[type="radio"], input[type="checkbox"]')
+        ? (el.closest('label') ?? el)
+        : el;
+      const box = ziel.getBoundingClientRect();
+      if (box.width === 0 || box.height === 0) continue;
+      if (box.height < 43.5) {
+        funde.push(`${Math.round(box.height)}px: ${(ziel.textContent ?? '').trim().slice(0, 40)}`);
+      }
+    }
+    return funde;
+  });
+}
+
+async function axeVerstoesse(page: Page): Promise<string[]> {
+  await page.addScriptTag({ path: AXE });
+  return page.evaluate(async () => {
+    const axe = (window as unknown as { axe: typeof AxeCore }).axe;
+    const ergebnis = await axe.run(document, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
+    });
+    return ergebnis.violations.map(
+      (v) => `${v.id}: ${v.help} – ${v.nodes.map((n) => n.html.slice(0, 80)).join(' | ')}`,
+    );
+  });
+}
+
+async function pruefeSeite(page: Page, seite: Locator, name: string) {
+  await expect(seite).toBeVisible();
+  await bewegungAbwarten(page);
+  expect(await kleineSchrift(page), `${name}: Schrift unter 18 px`).toEqual([]);
+  expect(await kleineZiele(page), `${name}: Ziele unter 44 px`).toEqual([]);
+  expect(await axeVerstoesse(page), `${name}: axe`).toEqual([]);
+  expect(await ueberlaeuft(page), `${name}: waagerechtes Rollen`).toBe(false);
+}
+
+test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
+  test('375 px: vier Seiten, je ein Hauptknopf; ganz eingerichtet in sieben Tipps', async ({
+    page,
+  }) => {
+    const server = await oeffne(page, 'einstieg');
+    let tipps = 0;
+    const tippeGezaehlt = async (ziel: Locator) => {
+      tipps += 1;
+      await tippe(ziel);
+    };
+
+    const willkommen = fenster(page, /^Willkommen,\s+Erika Beispiel$/);
+    await pruefeSeite(page, willkommen, 'Willkommen');
+    await expect(willkommen.getByText('Schritt 1 von 3', { exact: true })).toBeVisible();
+    await expect(page).toHaveTitle('Willkommen – Own Motion');
+    await tippeGezaehlt(willkommen.getByRole('button', { name: 'Weiter' }));
+
+    const daten = fenster(page, 'Zwei Fragen zu Ihren Daten');
+    await pruefeSeite(page, daten, 'Einwilligungen');
+    const mail = daten.getByRole('group', { name: 'Nachrichten per E-Mail' });
+    await tippeGezaehlt(mail.getByText('Ja, erlauben'));
+    await expect(mail.getByText('Gespeichert.')).toBeVisible();
+    expect(server.aufrufe['record_platform_consent']).toEqual([
+      expect.objectContaining({
+        p_purpose: 'email_contact',
+        p_grant: true,
+        p_wording_version: expect.any(String),
+      }),
+    ]);
+    const bericht = daten.getByRole('group', { name: 'Bericht an Ihre Ärztin oder Ihren Arzt' });
+    await tippeGezaehlt(bericht.getByText('Ja, erlauben'));
+    await expect(bericht.getByText('Gespeichert.')).toBeVisible();
+    await tippeGezaehlt(daten.getByRole('button', { name: 'Weiter' }));
+
+    const mitteilungen = fenster(page, 'Sollen wir Ihnen Bescheid geben?');
+    await pruefeSeite(page, mitteilungen, 'Mitteilungen');
+    // Im Prüfbrowser gibt es keinen Push-Schlüssel: der Schalter für die E-Mail.
+    const schalter = mitteilungen.getByRole('switch', { name: 'Mitteilungen per E-Mail' });
+    await expect(schalter).toHaveAttribute('aria-checked', 'false');
+    await tippeGezaehlt(schalter);
+    await expect(schalter).toHaveAttribute('aria-checked', 'true');
+    expect(server.aufrufe['set_platform_notification_settings']?.at(-1)).toMatchObject({
+      p_email_kinds: [
+        'appointment_reminder',
+        'appointment_changed',
+        'appointment_cancelled',
+        'message_answered',
+        'request_answered',
+      ],
+    });
+    await tippeGezaehlt(mitteilungen.getByRole('button', { name: 'Weiter' }));
+
+    const bereit = fenster(page, 'Alles bereit');
+    await pruefeSeite(page, bereit, 'Alles bereit');
+    await expect(
+      bereit.getByText(
+        'Als Nächstes: Ihr Fragebogen vor dem ersten Termin. Er dauert etwa 10 Minuten.',
+      ),
+    ).toBeVisible();
+    await expect(bereit.getByRole('button', { name: 'Später' })).toHaveCount(0);
+    await tippeGezaehlt(bereit.getByRole('button', { name: 'Zur Übersicht' }));
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect(server.aufrufe['finish_platform_onboarding']).toHaveLength(1);
+    // Vorher: je Einwilligung „Einwilligen“ und „Ja, ich willige ein“, je Art
+    // ein Kästchen und „Speichern“ - 10 Tipps für eine Art und zwei Ja.
+    expect(tipps).toBe(7);
+  });
+
+  test('188 px (200 %): kein Wort gebrochen, kein Bild, der Fuß rollt mit', async ({ page }) => {
+    await oeffne(page, 'einstieg', 188, 406);
+    const willkommen = fenster(page, /^Willkommen/);
+    await expect(willkommen).toBeVisible();
+    await expect(page.locator('[data-willkommensbild]')).toBeHidden();
+    expect(await ueberlaeuft(page)).toBe(false);
+    await tippe(willkommen.getByRole('button', { name: 'Weiter' }));
+
+    const daten = fenster(page, 'Zwei Fragen zu Ihren Daten');
+    await expect(daten).toBeVisible();
+    await bewegungAbwarten(page);
+    // „← Zurück“ und „Später“ stehen je in einer Zeile, zur Not untereinander.
+    for (const name of ['← Zurück', 'Später']) {
+      const box = await daten.getByRole('button', { name }).boundingBox();
+      expect(box?.height ?? 0, name).toBeLessThan(60);
+    }
+    // Der Fuß steht am Ende des Inhalts: Er liegt mit ihm in derselben Rollfläche.
+    const fussRollt = await daten.getByRole('button', { name: 'Weiter' }).evaluate((knopf) => {
+      const flaeche = knopf.closest('[class*="max-[23rem]:overflow-y-auto"]');
+      return flaeche !== null && getComputedStyle(flaeche).overflowY === 'auto';
+    });
+    expect(fussRollt).toBe(true);
+    expect(await ueberlaeuft(page)).toBe(false);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+  });
+
+  test('„Sehr groß“: die Wahl bleibt gleich gewichtet, nichts läuft über', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+    });
+    await oeffne(page, 'einstieg');
+    await tippe(fenster(page, /^Willkommen/).getByRole('button', { name: 'Weiter' }));
+    const daten = fenster(page, 'Zwei Fragen zu Ihren Daten');
+    await pruefeSeite(page, daten, 'Einwilligungen, Sehr groß');
+    const mail = daten.getByRole('group', { name: 'Nachrichten per E-Mail' });
+    const ja = await mail.locator('label', { hasText: 'Ja, erlauben' }).boundingBox();
+    const nein = await mail.locator('label', { hasText: 'Nein' }).boundingBox();
+    expect(ja?.height ?? 0).toBeGreaterThanOrEqual(47.5);
+    expect(Math.abs((ja?.width ?? 0) - (nein?.width ?? 0))).toBeLessThan(1);
+  });
+
+  test('1280 px: Titel in der Stufe des Rechners, der Kopf an der Kante des Inhalts', async ({
+    page,
+  }) => {
+    await oeffne(page, 'einstieg', 1280, 800);
+    const willkommen = fenster(page, /^Willkommen/);
+    await expect(willkommen).toBeVisible();
+    const gruss = willkommen.getByRole('heading', { level: 2 });
+    expect(await gruss.evaluate((el) => getComputedStyle(el).fontSize)).toBe('40px');
+    const bild = await page.locator('[data-willkommensbild]').boundingBox();
+    const spaeter = await willkommen.getByRole('button', { name: 'Später' }).boundingBox();
+    // „Später“ steht an der rechten Kante der Spalte, nicht am Rand des Fensters.
+    expect(
+      Math.abs((spaeter?.x ?? 0) + (spaeter?.width ?? 0) - ((bild?.x ?? 0) + (bild?.width ?? 0))),
+    ).toBeLessThan(16);
+    await tippe(willkommen.getByRole('button', { name: 'Weiter' }));
+    const titel = fenster(page, 'Zwei Fragen zu Ihren Daten').getByRole('heading', { level: 2 });
+    expect(await titel.evaluate((el) => getComputedStyle(el).fontSize)).toBe('32px');
+  });
+
+  test('Begleitung: zwei Seiten mit dem Band, keine Einwilligungen, zur Übersicht', async ({
+    page,
+  }) => {
+    await oeffne(page, 'einstieg-begleitung');
+    const willkommen = fenster(page, /^Willkommen,\s+Paula Mustermann-Langenscheidt$/);
+    await pruefeSeite(page, willkommen, 'Willkommen, Begleitung');
+    await expect(willkommen.getByText('Schritt 1 von 2', { exact: true })).toBeVisible();
+    await expect(willkommen.getByRole('status')).toContainText(
+      'Sie handeln für Maximilian Mustermann-Langenscheidt',
+    );
+    await tippe(willkommen.getByRole('button', { name: 'Weiter' }));
+    const mitteilungen = fenster(page, 'Sollen wir Ihnen Bescheid geben?');
+    await pruefeSeite(page, mitteilungen, 'Mitteilungen, Begleitung');
+    await expect(mitteilungen.getByText('Schritt 2 von 2', { exact: true })).toBeVisible();
+    await tippe(mitteilungen.getByRole('button', { name: 'Weiter' }));
+    const bereit = fenster(page, 'Alles bereit');
+    await expect(
+      bereit.getByText('Die Übersicht zeigt, was für Maximilian Mustermann-Langenscheidt ansteht.'),
+    ).toBeVisible();
+    await expect(bereit.getByRole('button')).toHaveText(['← Zurück', 'Zur Übersicht']);
+  });
+
+  test('nach der Einrichtung einmal „Anmeldung eingerichtet“, der Parameter geht', async ({
+    page,
+  }) => {
+    await oeffne(page, 'einstieg-eingerichtet');
+    const willkommen = fenster(page, /^Willkommen/);
+    await expect(willkommen.getByText('Anmeldung eingerichtet')).toBeVisible();
+    await expect.poll(() => new URL(page.url()).searchParams.has('eingerichtet')).toBe(false);
+    await pruefeSeite(page, willkommen, 'Willkommen nach der Einrichtung');
+  });
+});

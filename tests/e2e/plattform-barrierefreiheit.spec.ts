@@ -29,6 +29,7 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'geruest', merkmal: 'Guten Tag' },
   // DRP-EPIC-005: Der Einstieg ist ein geführter Ablauf im Fenster.
   { seite: 'einstieg', merkmal: /^Willkommen/, fenster: true },
+  { seite: 'einstieg-begleitung', merkmal: /^Willkommen/, fenster: true },
   { seite: 'termine', merkmal: 'Termine' },
   // Überholung 6 (G6): Wünschen, Ändern und Absagen sind geführte Abläufe im
   // Fenster - geprüft wird die erste Seite und die nach `?art=`; die übrigen

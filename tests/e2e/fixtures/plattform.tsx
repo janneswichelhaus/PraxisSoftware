@@ -13,6 +13,7 @@ import {
   angeboteSchluessel,
   benachrichtigungSchluessel,
   befundbogenSchluessel,
+  plaeneSchluessel,
   checkinsSchluessel,
   gewohnheitenSchluessel,
   dokumenteSchluessel,
@@ -85,7 +86,10 @@ import '@/index.css';
  * `gewohnheiten` (die Seite der Person) und in `zwischen` die Gewohnheiten
  * der Praxisseite. Seit Überholung 6 (G6) `termin-absagen` und
  * `termin-aendern` (der geführte Ablauf mit `?art=`), und `&kurzfristig`
- * legt den Hausbesuch in weniger als 24 Stunden (`late_notice`). Die Daten
+ * legt den Hausbesuch in weniger als 24 Stunden (`late_notice`). Seit
+ * DRP-EPIC-005 der Einstieg als geführter Ablauf: `einstieg` (zwei offene
+ * Einwilligungen, der Fragebogen steht aus), `einstieg-eingerichtet` (nach
+ * „PIN speichern“) und `einstieg-begleitung` (für Maximilian). Die Daten
  * liegen vorab im Cache; gesprochen wird mit keinem Server - was eine Seite
  * sendet, beantwortet der Test über abgefangene Anfragen. Alles ist
  * synthetisch.
@@ -206,6 +210,8 @@ const begleitung: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000004',
   access_kind: 'companion',
   represented_name: 'Maximilian Mustermann-Langenscheidt',
+  // ANN-690: Eine Vertretung trägt ihren eigenen Namen, nie den der Person.
+  own_name: 'Paula Mustermann-Langenscheidt',
 };
 
 const client = new QueryClient({
@@ -526,7 +532,25 @@ const einwilligungenBehandlung: Einwilligung[] = [
     can_grant: true,
   },
 ];
-client.setQueryData(einwilligungenSchluessel(zugaenge[0]!.access_id), einwilligungenBehandlung);
+// DRP-017: Der Einstieg fragt nur Offenes - dort sind beide noch offen.
+const einstieg = seite.startsWith('einstieg');
+client.setQueryData(
+  einwilligungenSchluessel(zugaenge[0]!.access_id),
+  einstieg
+    ? einwilligungenBehandlung.map((e) =>
+        e.purpose === 'email_contact'
+          ? { ...e, state: 'open' as const, occurred_on: null, source: null }
+          : e,
+      )
+    : einwilligungenBehandlung,
+);
+// DRP-019: „Alles bereit“ fragt nach den Übungen für heute - hier ohne Plan.
+if (einstieg) {
+  client.setQueryData(plaeneSchluessel(zugaenge[0]!.access_id), {
+    today: inTagen(0, 0).slice(0, 10),
+    plans: [],
+  });
+}
 client.setQueryData(einwilligungenSchluessel(zugaenge[1]!.access_id), [
   {
     purpose: 'training_health_data',
@@ -536,10 +560,11 @@ client.setQueryData(einwilligungenSchluessel(zugaenge[1]!.access_id), [
     can_grant: true,
   },
 ]);
+const eigenerEinstieg = seite === 'einstieg' || seite === 'einstieg-eingerichtet';
 client.setQueryData(einstiegSchluessel(zugaenge[0]!.access_id), {
-  pending: seite === 'einstieg',
+  pending: eigenerEinstieg,
   finished_at: null,
-  skipped_at: seite === 'einstieg' ? null : inTagen(-5, 9),
+  skipped_at: eigenerEinstieg ? null : inTagen(-5, 9),
 });
 client.setQueryData(einstiegSchluessel(zugaenge[1]!.access_id), {
   pending: false,
@@ -547,8 +572,8 @@ client.setQueryData(einstiegSchluessel(zugaenge[1]!.access_id), {
   skipped_at: null,
 });
 client.setQueryData(einstiegSchluessel(begleitung.access_id), {
-  pending: false,
-  finished_at: inTagen(-4, 9),
+  pending: seite === 'einstieg-begleitung',
+  finished_at: seite === 'einstieg-begleitung' ? null : inTagen(-4, 9),
   skipped_at: null,
 });
 // KOM-011: Benachrichtigungen unter „Ich → Einstellungen" und im Einstieg.
@@ -557,7 +582,8 @@ client.setQueryData(einstiegSchluessel(begleitung.access_id), {
 // Prüfbrowser ohne VAPID-Schlüssel).
 client.setQueryData(['push-endpoint'], null);
 for (const z of [...zugaenge, begleitung]) {
-  const behandlung = z.access_id === zugaenge[0]!.access_id;
+  // Im Einstieg ist noch nichts gewählt (ADR-024 Punkt 15: von Anfang an aus).
+  const behandlung = z.access_id === zugaenge[0]!.access_id && !einstieg;
   client.setQueryData(benachrichtigungSchluessel(z.access_id, null), {
     email_kinds: behandlung ? ['appointment_reminder', 'appointment_cancelled'] : [],
     push_kinds: [],
@@ -1191,6 +1217,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
         ),
       };
     case 'handeln-fuer':
+    case 'einstieg-begleitung':
       return {
         pfad: `/p?zugang=${begleitung.access_id}`,
         element: (
@@ -1205,6 +1232,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'daten':
     case 'einstellungen':
     case 'einstieg':
+    case 'einstieg-eingerichtet':
     case 'termine':
     case 'wunsch':
     case 'termin':
@@ -1254,6 +1282,8 @@ function inhalt(): { pfad: string; element: ReactNode } {
         daten: '/p/daten?bereich=treatment',
         einstellungen: '/p/einstellungen',
         einstieg: '/p?bereich=treatment',
+        // DRP-016: nach „PIN speichern“ (Schritt 1c) einmal „Anmeldung eingerichtet“.
+        'einstieg-eingerichtet': '/p?bereich=treatment&eingerichtet=1',
         checkin: '/p/checkin?bereich=treatment',
         'checkin-uebersicht': '/p?bereich=treatment',
         'checkin-danke': '/p?bereich=treatment&checkin=1',
