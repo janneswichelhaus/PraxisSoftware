@@ -169,7 +169,9 @@ export function GefuehrterAblauf({
         // des Inhalts. Wird es eng (200 %), rückt der Schritt unter den Balken.
         <div className={`shrink-0 pt-2 ${rand}`}>
           <div className="max-w-formular mx-auto w-full">
-            <div className="flex min-h-12 items-center gap-3">
+            {/* Wird es eng (200 %), rückt „Später“ in eine eigene Reihe, statt
+                beide Wörter mitten im Wort zu brechen. */}
+            <div className="flex min-h-12 flex-wrap items-center gap-x-3">
               {zurueckGehen ? (
                 <Button variant="quiet" className="-ml-3" onClick={zurueckGehen}>
                   ← Zurück
