@@ -77,11 +77,11 @@ describe('Einrichtungspflicht', () => {
     hatPin.mockResolvedValue(false);
     zeichne(true);
     expect(
-      await screen.findByRole('heading', { name: 'Anmeldung einrichten' }),
+      await screen.findByRole('heading', { name: 'Mit Gesicht oder Finger anmelden' }),
     ).toBeInTheDocument();
     expect(screen.queryByText('Tagesplan')).toBeNull();
     // Erst der Passkey, die PIN danach.
-    expect(screen.queryByLabelText(/^Neue PIN/)).toBeNull();
+    expect(screen.queryByLabelText(/^PIN/)).toBeNull();
     // In Produktion gibt es kein „Später“.
     expect(screen.queryByRole('button', { name: /Später/ })).toBeNull();
   });
@@ -89,19 +89,16 @@ describe('Einrichtungspflicht', () => {
   it('führt durch Passkey und PIN und öffnet dann die Anwendung', async () => {
     ladePasskeys.mockResolvedValueOnce([]);
     hatPin.mockResolvedValueOnce(false);
-    const user = userEvent.setup();
+    // Die Tippsperre nach jedem Schritt des geführten Ablaufs (FLT-005).
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
     zeichne(true);
-    await user.click(
-      await screen.findByRole('button', { name: 'Passkey auf diesem Gerät einrichten' }),
-    );
+    await user.click(await screen.findByRole('button', { name: 'Jetzt einrichten' }));
     expect(passkeyEinrichten).toHaveBeenCalledTimes(1);
-    expect(
-      await screen.findByText('Auf diesem Konto ist ein Passkey eingerichtet.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Eine PIN festlegen' })).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/^Neue PIN/), '483920');
-    await user.type(screen.getByLabelText('PIN wiederholen'), '483920');
-    await user.click(screen.getByRole('button', { name: 'PIN festlegen und fertig' }));
+    await user.type(screen.getByLabelText(/^PIN/, { selector: '#pin-neu' }), '483920');
+    await user.type(screen.getByLabelText('PIN noch einmal'), '483920');
+    await user.click(screen.getByRole('button', { name: 'PIN speichern' }));
     await waitFor(() => expect(setzePin).toHaveBeenCalledWith('483920'));
     expect(await screen.findByText('Tagesplan')).toBeInTheDocument();
   });
@@ -109,10 +106,8 @@ describe('Einrichtungspflicht', () => {
   it('verlangt die PIN auch, wenn nur sie fehlt', async () => {
     hatPin.mockResolvedValue(false);
     zeichne(true);
-    expect(
-      await screen.findByText('Auf diesem Konto ist ein Passkey eingerichtet.'),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText(/^Neue PIN/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Eine PIN festlegen' })).toBeInTheDocument();
+    expect(screen.getByText('Schritt 2 von 2')).toBeInTheDocument();
   });
 
   it('lässt ohne Antwort niemanden durch und bietet Abmelden an', async () => {

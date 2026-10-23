@@ -63,7 +63,7 @@ function oeffne(fragment: string) {
 }
 
 async function ausfuellen(email = 'max@patient.invalid') {
-  const nutzer = userEvent.setup();
+  const nutzer = userEvent.setup({ pointerEventsCheck: 0 });
   await nutzer.type(screen.getByLabelText('E-Mail-Adresse'), email);
   await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
 }
@@ -112,7 +112,8 @@ describe('EinladungPage', () => {
   });
 
   it('löst ein, meldet mit der Einmal-Anmeldung an und richtet Passkey und PIN ein', async () => {
-    const nutzer = userEvent.setup();
+    // Die Tippsperre nach jedem Schritt des geführten Ablaufs (FLT-005).
+    const nutzer = userEvent.setup({ pointerEventsCheck: 0 });
     oeffne(`#code=${CODE}`);
     await ausfuellen(' Max@Patient.invalid ');
     expect(invoke).toHaveBeenCalledWith('platform-access', {
@@ -122,20 +123,28 @@ describe('EinladungPage', () => {
       expect(verifyOtp).toHaveBeenCalledWith({ token_hash: 'einmal-hash', type: 'magiclink' }),
     );
 
-    await nutzer.click(
-      await screen.findByRole('button', { name: 'Passkey auf diesem Gerät einrichten' }),
-    );
-    // DR-105: der Ort für einen zweiten Passkey in den Wörtern der Plattform.
+    // Schritt 2 von 3: Gesicht oder Finger (Handoff 2026-10-22, Abschnitt 5.2).
     expect(
-      screen.getByText(/unter „Ich → Einstellungen → Passkey und PIN“ einen zweiten Passkey ein/),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/Mein Konto/)).toBeNull();
+      await screen.findByRole('heading', { name: 'Mit Gesicht oder Finger anmelden' }),
+    ).toBeVisible();
+    expect(screen.getByText('Schritt 2 von 3')).toBeInTheDocument();
+    expect(screen.queryByText(/Mein Konto|Konto/)).toBeNull();
+    await nutzer.click(screen.getByRole('button', { name: 'Jetzt einrichten' }));
     expect(passkeyEinrichten).toHaveBeenCalledTimes(1);
-    await nutzer.type(await screen.findByLabelText(/^Neue PIN/), '483920');
-    await nutzer.type(screen.getByLabelText('PIN wiederholen'), '483920');
-    await nutzer.click(screen.getByRole('button', { name: 'PIN festlegen und fertig' }));
+    // Schritt 3 von 3: die PIN, der Knopf im Fuß.
+    expect(await screen.findByRole('heading', { name: 'Eine PIN festlegen' })).toBeVisible();
+    expect(screen.getByText('Schritt 3 von 3')).toBeInTheDocument();
+    const pin = screen.getByLabelText(/^PIN/, { selector: '#pin-neu' });
+    expect(pin).toHaveAttribute('autocomplete', 'new-password');
+    expect(pin).toHaveAttribute('inputmode', 'numeric');
+    await nutzer.type(pin, '483920');
+    await nutzer.type(screen.getByLabelText('PIN noch einmal'), '483920');
+    await nutzer.click(screen.getByRole('button', { name: 'PIN speichern' }));
     await waitFor(() => expect(setzePin).toHaveBeenCalledWith('483920'));
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/', { replace: true }));
+    // Keine Fertig-Seite: weiter zu „Willkommen“, das es einmal sagt (ANN-685).
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith('/p?eingerichtet=1', { replace: true }),
+    );
   });
 
   it('richtet beim verlorenen Passkey einen neuen auf diesem Gerät ein, die PIN bleibt', async () => {
@@ -147,30 +156,37 @@ describe('EinladungPage', () => {
       },
       error: null,
     });
-    const nutzer = userEvent.setup();
+    const nutzer = userEvent.setup({ pointerEventsCheck: 0 });
     oeffne(`#code=${CODE}`);
     await ausfuellen();
-    await nutzer.click(
-      await screen.findByRole('button', { name: 'Passkey auf diesem Gerät einrichten' }),
+    await nutzer.click(await screen.findByRole('button', { name: 'Jetzt einrichten' }));
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith('/p?eingerichtet=1', { replace: true }),
     );
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/', { replace: true }));
     expect(setzePin).not.toHaveBeenCalled();
   });
 
   it('sagt ohne Code dasselbe wie bei einem ungueltigen', async () => {
     oeffne('');
-    expect(await screen.findByText('Diese Einladung lässt sich nicht verwenden.')).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { name: 'Diese Einladung lässt sich nicht verwenden' }),
+    ).toBeVisible();
+    // Vor der Anmeldung gibt es keine Rufnummer der Praxis: nur die Anmeldung.
+    expect(screen.getByRole('link', { name: 'Zur Anmeldung' })).toHaveAttribute('href', '/');
+    expect(screen.queryByRole('link', { name: 'Praxis anrufen' })).toBeNull();
   });
 
   it('zeigt fuer einen abgelehnten Code dieselbe Auskunft', async () => {
     invoke.mockResolvedValue(antwort({ ok: false, error: 'invitation_invalid' }, 400));
     oeffne(`#code=${CODE}`);
     await ausfuellen();
-    expect(await screen.findByText('Diese Einladung lässt sich nicht verwenden.')).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { name: 'Diese Einladung lässt sich nicht verwenden' }),
+    ).toBeVisible();
     expect(verifyOtp).not.toHaveBeenCalled();
   });
 
-  it('führt bei einer vergebenen Adresse über den Passkey zum eigenen Konto', async () => {
+  it('führt bei einer vergebenen Adresse über den Passkey zum eigenen Zugang', async () => {
     invoke
       .mockResolvedValueOnce(antwort({ ok: false, error: 'email_taken' }, 409))
       .mockResolvedValueOnce({
@@ -179,7 +195,10 @@ describe('EinladungPage', () => {
       });
     oeffne(`#code=${CODE}`);
     await ausfuellen();
-    expect(await screen.findByText(/gibt es schon ein Konto/)).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { name: 'Für diese Adresse gibt es schon einen Zugang' }),
+    ).toBeVisible();
+    expect(screen.getByText('max@patient.invalid')).toBeVisible();
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: 'Mit Passkey anmelden und einlösen' }));
@@ -199,18 +218,40 @@ describe('EinladungPage', () => {
     oeffne(`#code=${CODE}`);
     await ausfuellen();
     expect(
-      await screen.findByText('Der Zugang ist eingerichtet, die Anmeldung gelang aber nicht.'),
+      await screen.findByRole('heading', { name: 'Die Anmeldung gelang nicht' }),
     ).toBeVisible();
+    expect(screen.getByText(/Einladung damit verbraucht/)).toBeVisible();
   });
 
   it('sagt bei einem nicht erreichbaren Dienst, dass der Code nicht verbraucht ist', async () => {
     invoke.mockResolvedValue({ data: null, error: new Error('Netz') });
     oeffne(`#code=${CODE}`);
-    await ausfuellen();
-    expect(await screen.findByText(/nicht verbraucht/)).toBeVisible();
+    await ausfuellen('max@patient.invalid');
+    expect(await screen.findByText(/Ihre Einladung ist deswegen nicht verbraucht/)).toBeVisible();
+    // Das Feld behält die Adresse; der Knopf sagt, was jetzt geht.
+    expect(screen.getByLabelText('E-Mail-Adresse')).toHaveValue('max@patient.invalid');
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 
-  it('löst mit bestehender Sitzung für dieses Konto ein oder meldet ab', async () => {
+  it('zeigt die drei Schritte und nennt kein Konto und keine Sitzung', async () => {
+    oeffne(`#code=${CODE}`);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Own Motion lädt Sie ein' }),
+    ).toBeVisible();
+    const schritte = screen.getByRole('heading', { name: 'Drei Schritte, etwa 2 Minuten' });
+    // Bei offener Tastatur treten die Schritte zurück (ANN-681).
+    expect(schritte.closest('section')).toHaveClass('tastatur-zurueck');
+    expect(screen.getAllByRole('listitem').map((li) => li.lastElementChild?.textContent)).toEqual([
+      'Ihre E-Mail-Adresse',
+      'Gesicht oder Finger bestätigen',
+      'Eine PIN festlegen',
+    ]);
+    expect(screen.getByText('Ein Kennwort brauchen Sie nicht.')).toBeVisible();
+    expect(document.body.textContent).not.toMatch(/Konto|Sitzung/);
+    expect(document.title).toBe('Einladung – Own Motion');
+  });
+
+  it('löst mit bestehender Anmeldung für diesen Zugang ein oder meldet ab', async () => {
     sitzung = { user: { id: 'x', email: 'max@patient.invalid' } };
     invoke.mockResolvedValue({
       data: { ok: true, value: { purpose: 'activate', organizationName: 'T', tokenHash: null } },
@@ -218,14 +259,14 @@ describe('EinladungPage', () => {
     });
     oeffne(`#code=${CODE}`);
     // Ohne Adresse: Die Seite liegt vor der Sitzungssperre (ADR-025 Punkt 3).
-    expect(await screen.findByText(/bereits ein Konto angemeldet/)).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'Sie sind schon angemeldet' })).toBeVisible();
     expect(screen.queryByText(/max@patient.invalid/)).toBeNull();
     expect(
-      screen.getByRole('button', { name: 'Abmelden und neues Konto einrichten' }),
+      screen.getByRole('button', { name: 'Abmelden und neuen Zugang einrichten' }),
     ).toBeInTheDocument();
     await userEvent
       .setup()
-      .click(screen.getByRole('button', { name: 'Für dieses Konto einlösen' }));
+      .click(screen.getByRole('button', { name: 'Für diesen Zugang einlösen' }));
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/', { replace: true }));
   });
 
@@ -235,7 +276,7 @@ describe('EinladungPage', () => {
     oeffne(`#code=${CODE}`);
     await userEvent
       .setup()
-      .click(await screen.findByRole('button', { name: 'Für dieses Konto einlösen' }));
+      .click(await screen.findByRole('button', { name: 'Für diesen Zugang einlösen' }));
     expect(await screen.findByText(/auf diesem Gerät gesperrt/)).toBeVisible();
     expect(navigate).not.toHaveBeenCalled();
   });

@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, type ReactNode, type Ref } from 'react';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { useSchriftgroesseAnwenden } from '@/features/platform/schriftgroesse';
 import { ANMELDEN_TITEL } from './tabtitel';
@@ -44,6 +44,7 @@ export function Vollseite({
   einleitung,
   kleingedrucktes,
   tabtitel = ANMELDEN_TITEL,
+  titelRef,
   children,
 }: {
   /** Der Seitentitel. Ohne ihn - nur für Ladezustände - steht keine Überschrift da. */
@@ -58,6 +59,11 @@ export function Vollseite({
   kleingedrucktes?: ReactNode;
   /** Der Titel des Tabs, ein fester aus `tabtitel.ts` - nie mit Daten. */
   tabtitel?: string;
+  /**
+   * Für den Fokus nach einem Wechsel des Zustands (AUTH-06): Der Titel sagt,
+   * was jetzt gilt, und Vorlesesoftware liest von dort weiter.
+   */
+  titelRef?: Ref<HTMLHeadingElement>;
   children: ReactNode;
 }) {
   // Der Tab heißt außerhalb des Rahmens „Anmelden – Own Motion" (BEF-050,
@@ -104,7 +110,13 @@ export function Vollseite({
             </span>
           ) : null}
           {titel ? (
-            <h1 className={`text-accent [hyphens:manual] ${titelStufe}`}>{titel}</h1>
+            <h1
+              ref={titelRef}
+              tabIndex={titelRef ? -1 : undefined}
+              className={`text-accent [hyphens:manual] focus:outline-none ${titelStufe}`}
+            >
+              {titel}
+            </h1>
           ) : null}
           {einleitung ? <p className="text-ink text-base">{einleitung}</p> : null}
         </div>

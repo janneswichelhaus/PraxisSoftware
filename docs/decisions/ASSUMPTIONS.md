@@ -7053,7 +7053,7 @@ Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritt 1c (Türs
 
 **Begründung.** DR-120; Handoff 2026-10-22, Festlegungen aus dem Entwurf. In zwei Reihen ist die Leiste bis zu 164 px hoch (gemessen bei „Sehr groß“, 375 px); über der Tastatur bliebe dem Feld kaum Platz.
 
-**Anker.** Regel `.reiterleiste` in `src/index.css`, gesetzt an der `Reiterleiste` in `src/features/platform/Navigation.tsx`.
+**Anker.** Regel `.reiterleiste` und `.tastatur-zurueck` in `src/index.css`, gesetzt an der `Reiterleiste` in `src/features/platform/Navigation.tsx` und an den Schritten der Einladung (`EinladungPage.tsx`, Schritt 1c).
 
 **Änderungspfad.** Weitere Teile über dieselbe Regel zurücktreten lassen oder die Leiste stehen lassen · Aufwand `klein`.
 
@@ -7116,3 +7116,27 @@ Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
 **Anker.** `Vollseite` in `src/app/Vollseite.tsx`.
 
 **Änderungspfad.** Für die Praxis wieder mittig: eine Prop an `Vollseite`, gesetzt in `LoginPage` und `Sperrseite` · Aufwand `klein`.
+
+### ANN-685 — Einrichtung ohne eigene Fertig-Seite: „Willkommen“ sagt es einmal
+
+Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
+
+**Annahme.** Nach „PIN speichern“ (oder dem Passkey, wenn die PIN schon besteht) führt die Einladung direkt zur Plattform, mit `eingerichtet=1` an der Adresse. Der Einstieg zeigt daraufhin auf „Willkommen“ einmal „Anmeldung eingerichtet“ und nimmt den Parameter aus der Adresse. Eine Seite „Fertig“ dazwischen gibt es nicht.
+
+**Begründung.** Handoff 2026-10-22, Abschnitt 0 (Festlegungen aus dem Entwurf) und 5.2: Eine Fertig-Seite kostet einen Tipp und sagt nichts, was „Willkommen“ nicht auch sagen kann. Die Bestätigung gilt wie jede einmalige Rückmeldung genau einmal (DR-160).
+
+**Anker.** `NACH_DER_EINRICHTUNG` in `src/features/platform/pfade.ts`, gelesen von `useEinmaligeRueckmeldung('eingerichtet')` im Einstieg (Schritt 1d).
+
+**Änderungspfad.** Eine Fertig-Seite in `AnmeldungEinrichten` vor `onFertig` · Aufwand `klein`.
+
+### ANN-686 — Einrichtung abbrechen: das ✕ fragt nach, statt abzumelden
+
+Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
+
+**Annahme.** In der Einrichtung von Passkey und PIN meldet das ✕ (und Esc) nicht sofort ab. Es fragt: „Einrichtung abbrechen?“ mit dem Satz, was danach gilt (ohne Passkey nur mit neuer Einladung, mit Passkey die PIN beim nächsten Anmelden), und bietet „Abbrechen und abmelden“ und „Weiter einrichten“. Ohne Passkey-Browser steht „Abmelden“ als einziger Knopf.
+
+**Begründung.** Die Einladung ist nach dem E-Mail-Schritt verbraucht (`redeem_platform_invitation` vor der Einmal-Anmeldung, Zweitreview POR-003). Ein versehentlicher Tipp aufs ✕ kostete sonst eine neue Einladung. Der geführte Ablauf (ANN-572) verlangt ein ✕; der Handoff nennt dafür kein Verhalten.
+
+**Anker.** `abbrechen` in `src/features/auth/einrichtung/AnmeldungEinrichten.tsx`.
+
+**Änderungspfad.** Ohne Rückfrage: `onSchliessen={onAbmelden}` · Aufwand `klein`.

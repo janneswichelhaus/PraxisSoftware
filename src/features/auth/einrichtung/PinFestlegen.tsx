@@ -21,13 +21,21 @@ function nurZiffern(wert: string): string {
  * Der Server nimmt eine PIN nur kurz nach einer Anmeldung an (ANN-325). Liegt
  * sie länger zurück, bestätigt sich die Person hier mit dem Passkey, und die
  * eingegebene PIN wird danach gesetzt - ohne erneutes Tippen.
+ *
+ * In der Einrichtung nach der Einladung (`formular`) heißen die Felder wie
+ * im Handoff 2026-10-22 (Abschnitt 5.2): „PIN“ und „PIN noch einmal“, groß
+ * und mittig wie ein Ziffernfeld. Der Hauptknopf steht dann im Fuß des
+ * geführten Ablaufs und sendet über `form` dieses Formular ab.
  */
 export function PinFestlegen({
   onGesetzt,
   knopf = 'PIN festlegen',
+  formular,
 }: {
   onGesetzt: () => void;
   knopf?: string;
+  /** Kennung des Formulars, wenn der Knopf außerhalb steht (Einrichtung). */
+  formular?: string;
 }) {
   const [pin, setPin] = useState('');
   const [wiederholung, setWiederholung] = useState('');
@@ -102,21 +110,36 @@ export function PinFestlegen({
     await setzen();
   }
 
+  const einrichtung = formular !== undefined;
+  // 56 hoch, Ziffern 28 mittig mit Laufweite (Handoff Abschnitt 5.2).
+  const zifferfeld = einrichtung ? 'h-14 text-center text-[1.75rem] tracking-[0.6em]' : '';
+
   return (
-    <form onSubmit={absenden} noValidate aria-label="PIN festlegen" className="flex flex-col gap-4">
+    <form
+      id={formular}
+      onSubmit={absenden}
+      noValidate
+      aria-label="PIN festlegen"
+      className="flex flex-col gap-4"
+    >
       {fehler ? (
         <div ref={fehlerkasten} tabIndex={-1}>
           <ErrorState title={fehler} />
         </div>
       ) : null}
       <Field
-        label="Neue PIN"
-        hint={`${PIN_LAENGE} Ziffern, keine gleichen Ziffern und keine Reihe. Nicht die PIN des Telefons.`}
+        label={einrichtung ? 'PIN' : 'Neue PIN'}
+        hint={
+          einrichtung
+            ? 'Nicht die PIN Ihrer Bankkarte.'
+            : `${PIN_LAENGE} Ziffern, keine gleichen Ziffern und keine Reihe. Nicht die PIN des Telefons.`
+        }
         type="password"
         geheimnis="PIN"
         name="pin-neu"
         inputMode="numeric"
-        autoComplete="off"
+        autoComplete={einrichtung ? 'new-password' : 'off'}
+        className={zifferfeld}
         maxLength={PIN_LAENGE}
         feldId={FELD_PIN}
         value={pin}
@@ -127,12 +150,13 @@ export function PinFestlegen({
         }}
       />
       <Field
-        label="PIN wiederholen"
+        label={einrichtung ? 'PIN noch einmal' : 'PIN wiederholen'}
         type="password"
         geheimnis="PIN"
         name="pin-neu-wiederholung"
         inputMode="numeric"
-        autoComplete="off"
+        autoComplete={einrichtung ? 'new-password' : 'off'}
+        className={zifferfeld}
         maxLength={PIN_LAENGE}
         feldId={FELD_WIEDERHOLUNG}
         value={wiederholung}
@@ -149,7 +173,7 @@ export function PinFestlegen({
             {laeuft ? 'Wird geprüft …' : 'Mit Passkey bestätigen'}
           </Button>
         </div>
-      ) : (
+      ) : einrichtung ? null : (
         <Button type="submit" disabled={laeuft}>
           {laeuft ? 'Wird gespeichert …' : knopf}
         </Button>
