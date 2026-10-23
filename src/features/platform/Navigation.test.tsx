@@ -23,6 +23,8 @@ const BEHANDLUNG: Plattformzugang = {
   read_until: null,
   access_kind: 'self',
   represented_name: null,
+  own_name: null,
+  practice_phone: null,
 };
 
 function Ort() {
