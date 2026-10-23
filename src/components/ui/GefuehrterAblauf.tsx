@@ -53,7 +53,7 @@ export const TIPPSPERRE_MS = 700;
  *
  * **Zusätzlich und abschaltbar** (Handoff 2026-10-22, Abschnitt 5.3; der
  * Einstieg der Plattform): `spaeter` statt der Zeile mit ✕, `balkenJeSchritt`,
- * `titelStufe`, `vorDemTitel` und `fussSchmalImFluss`. Ohne sie bleibt jeder
+ * `titelStufe`, `vorDemTitel` und `plattformSchmal`. Ohne sie bleibt jeder
  * Ablauf, wie er ist.
  */
 export function GefuehrterAblauf({
@@ -76,7 +76,7 @@ export function GefuehrterAblauf({
   balkenJeSchritt = false,
   titelStufe,
   vorDemTitel,
-  fussSchmalImFluss = false,
+  plattformSchmal = false,
   children,
 }: {
   /** Die Frage der Seite: Überschrift und Name des Fensters. */
@@ -125,10 +125,11 @@ export function GefuehrterAblauf({
   /** Über der Frage, im Inhalt: etwa ein Bild und eine Bestätigung. Nicht mit Bühne. */
   vorDemTitel?: ReactNode;
   /**
-   * Unter 23rem (200 % Zoom am Telefon) steht der Fuß am Ende des Inhalts und
-   * rollt mit, statt fest unten ein Drittel der Höhe zu nehmen (ANN-682).
+   * Unter 23rem (200 % Zoom am Telefon) wie die übrige Plattform (ANN-682):
+   * 12 px Rand statt 16, und der Fuß steht am Ende des Inhalts und rollt mit,
+   * statt fest unten ein Drittel der Höhe zu nehmen. Nicht mit Bühne.
    */
-  fussSchmalImFluss?: boolean;
+  plattformSchmal?: boolean;
   children?: ReactNode;
 }) {
   const gesperrt = useTippsperre(seite, tippsperre);
@@ -148,6 +149,7 @@ export function GefuehrterAblauf({
   // Beschriftung in der Frage steht („Wofür?“ in „Wie viel und wofür?“).
   const rollflaeche = { tabIndex: 0 } as const;
   const mitFuss = fuss !== undefined && fuss !== null && fuss !== false;
+  const rand = plattformSchmal ? 'px-4 max-[23rem]:px-3' : 'px-4';
   const balken = stand?.von ? (
     balkenJeSchritt ? (
       <Schrittbalken wert={stand.wert ?? 0} von={stand.von} />
@@ -163,29 +165,32 @@ export function GefuehrterAblauf({
       </p>
       {spaeter ? (
         // Der Kopf ohne ✕-Zeile (5.3): „← Zurück“ und „Später“ in einer
-        // Reihe, darunter der Balken mit dem Schritt daneben.
-        <div className="shrink-0 px-4 pt-2">
-          <div className="flex min-h-12 items-center gap-3">
-            {zurueckGehen ? (
-              <Button variant="quiet" className="-ml-3" onClick={zurueckGehen}>
-                ← Zurück
-              </Button>
-            ) : null}
-            {abschluss ? null : (
-              <Button variant="quiet" className="-mr-3 ml-auto" onClick={onSchliessen}>
-                Später
-              </Button>
-            )}
-          </div>
-          {stand ? (
-            <div className="flex items-center gap-3">
-              {balken}
-              <p className="text-ink-muted ml-auto shrink-0 text-sm">{stand.text}</p>
+        // Reihe, darunter der Balken mit dem Schritt daneben - an der Kante
+        // des Inhalts. Wird es eng (200 %), rückt der Schritt unter den Balken.
+        <div className={`shrink-0 pt-2 ${rand}`}>
+          <div className="max-w-formular mx-auto w-full">
+            <div className="flex min-h-12 items-center gap-3">
+              {zurueckGehen ? (
+                <Button variant="quiet" className="-ml-3" onClick={zurueckGehen}>
+                  ← Zurück
+                </Button>
+              ) : null}
+              {abschluss ? null : (
+                <Button variant="quiet" className="-mr-3 ml-auto" onClick={onSchliessen}>
+                  Später
+                </Button>
+              )}
             </div>
-          ) : null}
+            {stand ? (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                {balken}
+                <p className="text-ink-muted ml-auto shrink-0 text-sm">{stand.text}</p>
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : (
-        <div className="shrink-0 px-4 pt-2">
+        <div className={`shrink-0 pt-2 ${rand}`}>
           <div className="flex min-h-11 items-center gap-3">
             {zurueckGehen ? (
               <Button variant="quiet" groesse="kompakt" onClick={zurueckGehen}>
@@ -204,7 +209,7 @@ export function GefuehrterAblauf({
   );
 
   const fussLeiste = mitFuss ? (
-    <div className={`shrink-0 px-4 pt-2 pb-4 ${abschluss ? 'border-line border-t' : ''}`.trim()}>
+    <div className={`shrink-0 pt-2 pb-4 ${rand} ${abschluss ? 'border-line border-t' : ''}`.trim()}>
       {fuss}
     </div>
   ) : null;
@@ -273,7 +278,7 @@ export function GefuehrterAblauf({
   }
 
   // Unter 23rem rollt die ganze Seite samt Fuß, nicht nur ihr Inhalt.
-  const schmal = fussSchmalImFluss
+  const schmal = plattformSchmal
     ? {
         seite: 'max-[23rem]:overflow-y-auto',
         inhalt: 'max-[23rem]:flex-none max-[23rem]:overflow-visible',
@@ -299,7 +304,7 @@ export function GefuehrterAblauf({
         className={`flex min-h-0 flex-1 flex-col ${schmal.seite} ${sperre}`.trim()}
       >
         <div
-          className={`min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-4 ${schmal.inhalt} ${ROLLFLAECHE}`}
+          className={`min-h-0 flex-1 overflow-y-auto pt-3 pb-4 ${rand} ${schmal.inhalt} ${ROLLFLAECHE}`}
           {...rollflaeche}
         >
           <div className="max-w-formular mx-auto flex w-full flex-col gap-4">
@@ -323,7 +328,7 @@ export function GefuehrterAblauf({
  */
 function Schrittbalken({ wert, von }: { wert: number; von: number }) {
   return (
-    <span aria-hidden="true" className="flex min-w-0 flex-1 gap-1">
+    <span aria-hidden="true" className="flex min-w-24 flex-1 gap-1">
       {Array.from({ length: von }, (_, i) => (
         <span
           key={i}

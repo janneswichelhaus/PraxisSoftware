@@ -250,7 +250,7 @@ describe('GefuehrterAblauf mit „Später“ und Balken je Schritt (5.3)', () =>
         balkenJeSchritt
         titelStufe={seite === 1 ? 'gruss' : 'seite'}
         vorDemTitel={<p>Bild der Praxis</p>}
-        fussSchmalImFluss
+        plattformSchmal
         abschluss={abschluss}
         fuss={
           <Button className="w-full" data-autofocus>
@@ -309,10 +309,14 @@ describe('GefuehrterAblauf mit „Später“ und Balken je Schritt (5.3)', () =>
     expect(screen.queryByRole('button', { name: '← Zurück' })).toBeNull();
   });
 
-  it('lässt unter 23rem die ganze Seite samt Fuß rollen', () => {
+  it('lässt unter 23rem die ganze Seite samt Fuß rollen, mit 12 px Rand (ANN-682)', () => {
     render(<Einstieg seite={1} onSchliessen={vi.fn()} />);
     const inhalt = screen.getByText('Inhalt').closest('[tabindex="0"]');
-    expect(inhalt).toHaveClass('max-[23rem]:overflow-visible', 'max-[23rem]:flex-none');
+    expect(inhalt).toHaveClass(
+      'max-[23rem]:overflow-visible',
+      'max-[23rem]:flex-none',
+      'max-[23rem]:px-3',
+    );
     expect(inhalt!.parentElement).toHaveClass('max-[23rem]:overflow-y-auto');
     expect(screen.getByRole('button', { name: 'Weiter' }).closest('.shrink-0')).not.toBeNull();
   });
