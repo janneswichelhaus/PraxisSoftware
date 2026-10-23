@@ -29,16 +29,10 @@ import { datum } from './zeit';
  *
  * Wer hier entscheiden darf, sagt der Server: die Person selbst und ihre
  * rechtliche Vertretung, nie eine Begleitung. Nach der Lesefrist bleibt der
- * Person nur das Widerrufen (D2, ANN-261).
+ * Person nur das Widerrufen (D2, ANN-261). Im Einstieg fragt `Einstieg.tsx`
+ * die offenen Einwilligungen selbst (DRP-017).
  */
-export function Einwilligungen({
-  zugang,
-  einstieg = false,
-}: {
-  zugang: Plattformzugang;
-  /** Im Einstieg (POR-019) ohne Rückweg zu „Ich" und ohne eigene Überschrift. */
-  einstieg?: boolean;
-}) {
+export function Einwilligungen({ zugang }: { zugang: Plattformzugang }) {
   const api = usePlattformApi();
   const einwilligungen = useQuery({
     queryKey: einwilligungenSchluessel(zugang.access_id),
@@ -48,12 +42,8 @@ export function Einwilligungen({
 
   return (
     <>
-      {einstieg ? null : (
-        <>
-          <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
-          <PageHeader title="Einwilligungen" />
-        </>
-      )}
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
+      <PageHeader title="Einwilligungen" />
       {/* Freiwillig und ohne Nachteil - vor jeder Entscheidung (Art. 7 DSGVO). */}
       <p className="text-ink max-w-prose text-base leading-relaxed">
         {fuer ? `Sie entscheiden hier für ${fuer}. ` : ''}

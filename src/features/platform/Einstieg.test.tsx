@@ -5,7 +5,8 @@ import { useLocation } from 'react-router-dom';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { renderWithProviders } from '@/test-utils';
 import type * as PlattformApi from './api';
-import type { Plattformzugang } from './api';
+import type { Einwilligung, Plattformzugang } from './api';
+import { EINWILLIGUNGSFASSUNG, FREIWILLIG } from './einwilligungstexte';
 
 /**
  * Der Einstieg nach der ersten Anmeldung (POR-019; Handoff 2026-10-22,
@@ -17,6 +18,7 @@ import type { Plattformzugang } from './api';
 const ladeEinstieg = vi.fn();
 const einstiegBeenden = vi.fn();
 const ladeEinwilligungen = vi.fn();
+const einwilligungSchreiben = vi.fn();
 const ladeBenachrichtigungen = vi.fn();
 const ladeTermine = vi.fn();
 const ladeWuensche = vi.fn();
@@ -28,6 +30,7 @@ vi.mock('./api', async (importOriginal) => ({
   ladeEinstieg: (...args: unknown[]) => ladeEinstieg(...args) as Promise<unknown>,
   einstiegBeenden: (...args: unknown[]) => einstiegBeenden(...args) as Promise<void>,
   ladeEinwilligungen: (...args: unknown[]) => ladeEinwilligungen(...args) as Promise<unknown[]>,
+  einwilligungSchreiben: (...args: unknown[]) => einwilligungSchreiben(...args) as Promise<void>,
   ladeBenachrichtigungen: (...args: unknown[]) =>
     ladeBenachrichtigungen(...args) as Promise<unknown>,
   ladeTermine: (...args: unknown[]) => ladeTermine(...args) as Promise<unknown[]>,
@@ -60,6 +63,21 @@ const BEGLEITUNG: Plattformzugang = {
   own_name: 'Paula Mustermann',
 };
 
+/** Der Stand je Zweck, wie `platform_consents` ihn liefert. */
+function einwilligung(
+  purpose: Einwilligung['purpose'],
+  state: Einwilligung['state'] = 'open',
+): Einwilligung {
+  return { purpose, state, occurred_on: null, source: null, can_grant: true };
+}
+
+/** Zwei offene Einwilligungen der Behandlung; Fotos in der Praxis abgelehnt. */
+const OFFEN = [
+  einwilligung('email_contact'),
+  einwilligung('prescriber_report'),
+  einwilligung('patient_photos', 'refused'),
+];
+
 /** Zeigt die Adresse, wie der Router sie gerade hat. */
 function Adresse() {
   const { pathname, search } = useLocation();
@@ -90,7 +108,8 @@ beforeEach(() => {
   document.title = 'Übersicht – Own Motion';
   ladeEinstieg.mockResolvedValue({ pending: true, finished_at: null, skipped_at: null });
   einstiegBeenden.mockResolvedValue(undefined);
-  ladeEinwilligungen.mockResolvedValue([]);
+  ladeEinwilligungen.mockResolvedValue(OFFEN);
+  einwilligungSchreiben.mockResolvedValue(undefined);
   ladeBenachrichtigungen.mockResolvedValue({
     email_kinds: [],
     push_kinds: [],
@@ -193,5 +212,107 @@ describe('Einstieg: Willkommen (DRP-016)', () => {
     expect(within(fenster).getByRole('status')).toHaveTextContent(
       'Sie handeln für Max Mustermann · Begleitung',
     );
+  });
+});
+
+describe('Einstieg: Einwilligungen (DRP-017)', () => {
+  async function zuDenEinwilligungen(nutzer: ReturnType<typeof userEvent.setup>) {
+    zeige(MIT_NAMEN);
+    await screen.findByRole('dialog', { name: /^Willkommen/ });
+    await tippe(nutzer, 'Weiter');
+    return screen.findByRole('dialog', { name: 'Zwei Fragen zu Ihren Daten' });
+  }
+
+  it('fragt je offene Einwilligung in einer Karte, gleich gewichtet und nichts vorgewählt', async () => {
+    const nutzer = userEvent.setup();
+    const fenster = await zuDenEinwilligungen(nutzer);
+    expect(within(fenster).getByText('Schritt 2 von 3')).toBeInTheDocument();
+    expect(
+      within(fenster).getByText('Beides ist freiwillig. Ihre Behandlung hängt nicht davon ab.'),
+    ).toBeInTheDocument();
+    // Abgelehnt ist entschieden: keine Karte zu den Fotos.
+    expect(
+      within(fenster)
+        .getAllByRole('heading', { level: 3 })
+        .map((titel) => titel.textContent),
+    ).toEqual(['Nachrichten per E-Mail', 'Bericht an Ihre Ärztin oder Ihren Arzt']);
+    for (const gruppe of within(fenster).getAllByRole('group')) {
+      expect(within(gruppe).getByRole('radio', { name: 'Ja, erlauben' })).not.toBeChecked();
+      expect(within(gruppe).getByRole('radio', { name: 'Nein' })).not.toBeChecked();
+    }
+    // Keine eigenen Knöpfe je Einwilligung mehr, keine zweite Knopfebene.
+    expect(within(fenster).queryByRole('button', { name: /Einwilligen|Widerrufen/ })).toBeNull();
+    expect(within(fenster).getByText(FREIWILLIG)).toBeInTheDocument();
+    await pruefeBarrierefreiheit(document.body);
+  });
+
+  it('speichert ein Ja sofort mit der Fassung des Texts und nimmt es mit Nein zurück', async () => {
+    const nutzer = userEvent.setup();
+    const fenster = await zuDenEinwilligungen(nutzer);
+    const mail = within(fenster).getByRole('group', { name: 'Nachrichten per E-Mail' });
+    ladeEinwilligungen.mockResolvedValue([
+      einwilligung('email_contact', 'granted'),
+      ...OFFEN.slice(1),
+    ]);
+    await nutzer.click(within(mail).getByText('Ja, erlauben'));
+    expect(einwilligungSchreiben).toHaveBeenCalledWith({
+      zugangId: MIT_NAMEN.access_id,
+      zweck: 'email_contact',
+      erteilen: true,
+      fassung: EINWILLIGUNGSFASSUNG,
+    });
+    expect(await within(mail).findByText('Gespeichert.')).toBeInTheDocument();
+    // Die Karte bleibt, auch wenn die Einwilligung jetzt erteilt ist.
+    expect(within(mail).getByRole('radio', { name: 'Ja, erlauben' })).toBeChecked();
+    await nutzer.click(within(mail).getByText('Nein'));
+    await waitFor(() =>
+      expect(einwilligungSchreiben).toHaveBeenLastCalledWith(
+        expect.objectContaining({ zweck: 'email_contact', erteilen: false }),
+      ),
+    );
+    expect(within(mail).getByRole('radio', { name: 'Nein' })).toBeChecked();
+  });
+
+  it('speichert ein Nein zu einer offenen Einwilligung nicht und behält es über „Zurück“', async () => {
+    const nutzer = userEvent.setup();
+    const fenster = await zuDenEinwilligungen(nutzer);
+    const bericht = within(fenster).getByRole('group', {
+      name: 'Bericht an Ihre Ärztin oder Ihren Arzt',
+    });
+    await nutzer.click(within(bericht).getByText('Nein'));
+    expect(einwilligungSchreiben).not.toHaveBeenCalled();
+    await tippe(nutzer, 'Weiter');
+    await tippe(nutzer, '← Zurück');
+    const wieder = await screen.findByRole('group', {
+      name: 'Bericht an Ihre Ärztin oder Ihren Arzt',
+    });
+    expect(within(wieder).getByRole('radio', { name: 'Nein' })).toBeChecked();
+  });
+
+  it('nimmt die Wahl zurück und sagt es, wenn das Speichern scheitert', async () => {
+    const nutzer = userEvent.setup();
+    einwilligungSchreiben.mockRejectedValue(
+      new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.'),
+    );
+    const fenster = await zuDenEinwilligungen(nutzer);
+    const mail = within(fenster).getByRole('group', { name: 'Nachrichten per E-Mail' });
+    await nutzer.click(within(mail).getByText('Ja, erlauben'));
+    expect(
+      await within(mail).findByText('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.'),
+    ).toBeInTheDocument();
+    expect(within(mail).getByRole('radio', { name: 'Ja, erlauben' })).not.toBeChecked();
+  });
+
+  it('lässt die Seite weg, wenn nichts offen ist - dann noch eine Frage', async () => {
+    ladeEinwilligungen.mockResolvedValue([
+      einwilligung('email_contact', 'granted'),
+      einwilligung('prescriber_report', 'refused'),
+    ]);
+    zeige(MIT_NAMEN);
+    const fenster = await screen.findByRole('dialog', { name: /^Willkommen/ });
+    expect(within(fenster).getByText('Schritt 1 von 2')).toBeInTheDocument();
+    expect(
+      within(fenster).getByText('Noch eine kurze Frage, dann sind Sie fertig.'),
+    ).toBeInTheDocument();
   });
 });

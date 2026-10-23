@@ -1,25 +1,35 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MARKE } from '@/app/tabtitel';
 import { Button } from '@/components/ui/Button';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Laufrad } from '@/components/ui/Laufrad';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Wahlreihe } from '@/components/ui/Wahlreihe';
 import { VERTRETUNGSART } from '@/lib/vertretung';
-import { einstiegSchluessel, type Plattformzugang } from './api';
+import {
+  einstiegSchluessel,
+  einwilligungenSchluessel,
+  type Einwilligung,
+  type Plattformzugang,
+} from './api';
 import { usePlattformApi } from './einsicht';
 import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import {
   einstiegsseiten,
+  einwilligungstitel,
+  freiwilligkeit,
   nochFragen,
+  offeneEinwilligungen,
   vertretenePerson,
   willkommenssatz,
   willkommenstitel,
   type Einstiegsseite,
 } from './einstiegsablauf';
+import { EINWILLIGUNGSFASSUNG, EINWILLIGUNGSTEXTE, FREIWILLIG } from './einwilligungstexte';
 import { Benachrichtigungen } from './Benachrichtigungen';
-import { Einwilligungen } from './Einwilligungen';
 
 /**
  * Der Einstieg nach der ersten Anmeldung (POR-019, DSN-001 4.3,
@@ -41,16 +51,57 @@ import { Einwilligungen } from './Einwilligungen';
 /** Der Tab während des Einstiegs (DR-115): fest, nie mit dem Namen. */
 const TABTITEL = `Willkommen – ${MARKE}`;
 
-const TITEL: Record<Exclude<Einstiegsseite, 'willkommen'>, string> = {
-  einwilligungen: 'Ihre Einwilligungen',
+const TITEL: Record<Exclude<Einstiegsseite, 'willkommen' | 'einwilligungen'>, string> = {
   mitteilungen: 'Benachrichtigungen',
   bereit: 'Alles bereit',
 };
 
+type Zweck = Einwilligung['purpose'];
+type JaNein = 'ja' | 'nein';
+
+const JA_NEIN = [
+  { wert: 'ja', text: 'Ja, erlauben' },
+  { wert: 'nein', text: 'Nein' },
+] as const;
+
 export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: string }) {
   const api = usePlattformApi();
+  const begleitung = zugang.access_kind === 'companion';
+  // Wie viele Fragen kommen, hängt an den offenen Einwilligungen (ANN-693):
+  // erst laden, dann zählen. Lädt es nicht, entfällt die Seite - einwilligen
+  // geht auch unter „Ich“, und der Einstieg versperrt nichts.
+  const einwilligungen = useQuery({
+    queryKey: einwilligungenSchluessel(zugang.access_id),
+    queryFn: () => api.ladeEinwilligungen(zugang.access_id),
+    enabled: !begleitung,
+  });
+  if (!begleitung && einwilligungen.isPending) return null;
+  return (
+    <Ablauf
+      zugang={zugang}
+      praxis={praxis}
+      offen={begleitung ? [] : offeneEinwilligungen(einwilligungen.data ?? [])}
+    />
+  );
+}
+
+function Ablauf({
+  zugang,
+  praxis,
+  offen,
+}: {
+  zugang: Plattformzugang;
+  praxis: string;
+  offen: Zweck[];
+}) {
+  const api = usePlattformApi();
   const queryClient = useQueryClient();
-  const seiten = einstiegsseiten(zugang);
+  // Die Fragen stehen fest, sobald der Einstieg beginnt: Ein Ja macht aus der
+  // offenen eine erteilte Einwilligung - die Karte bleibt trotzdem stehen.
+  const [fragen] = useState(offen);
+  // Die Wahl je Zweck überdauert „Zurück“ und „Weiter“; ein Nein bleibt nur hier.
+  const [wahlen, setWahlen] = useState<Partial<Record<Zweck, JaNein>>>({});
+  const seiten = einstiegsseiten(zugang, fragen.length);
   // „Alles bereit“ ist das Ende, kein Schritt.
   const schritte = seiten.length - 1;
   const [nummer, setNummer] = useState(0);
@@ -83,7 +134,12 @@ export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: 
     setNummer((n) => Math.min(n + 1, seiten.length - 1));
   };
 
-  const titel = seite === 'willkommen' ? willkommenstitel(zugang) : TITEL[seite];
+  const titel =
+    seite === 'willkommen'
+      ? willkommenstitel(zugang)
+      : seite === 'einwilligungen'
+        ? einwilligungstitel(fragen.length, zugang)
+        : TITEL[seite];
   const fehler = beenden.error ? (
     <Statusmeldung ton="fehler" className="mb-3">
       {beenden.error.message}
@@ -141,7 +197,21 @@ export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: 
       {seite === 'willkommen' ? (
         <Willkommen zugang={zugang} praxis={praxis} fragen={schritte - 1} />
       ) : null}
-      {seite === 'einwilligungen' ? <Einwilligungen zugang={zugang} einstieg /> : null}
+      {seite === 'einwilligungen' ? (
+        <>
+          <p className="text-ink max-w-prose">{freiwilligkeit(fragen.length, zugang)}</p>
+          {fragen.map((zweck) => (
+            <Einwilligungsfrage
+              key={zweck}
+              zugang={zugang}
+              zweck={zweck}
+              wahl={wahlen[zweck]}
+              onWahl={(wahl) => setWahlen((bisher) => ({ ...bisher, [zweck]: wahl }))}
+            />
+          ))}
+          <Kleingedrucktes>{FREIWILLIG}</Kleingedrucktes>
+        </>
+      ) : null}
       {seite === 'mitteilungen' ? <Benachrichtigungen zugaenge={[zugang]} einstieg /> : null}
       {seite === 'bereit' ? (
         <p className="text-ink max-w-prose">
@@ -176,6 +246,75 @@ function Willkommen({
           : nochFragen(fragen)}
       </p>
     </>
+  );
+}
+
+/**
+ * Eine Einwilligung als Frage (5.3): Titel, Text unverändert aus
+ * `einwilligungstexte.ts`, darunter „Ja, erlauben“ und „Nein“ gleich gewichtet
+ * und nichts vorgewählt. Die Wahl gilt sofort, wie bisher der Knopf: Ein Ja
+ * erteilt mit der Fassung des Texts, ein Nein danach widerruft es wieder. Ein
+ * Nein zu einer offenen Einwilligung lässt sie offen - gespeichert wird es
+ * nicht (ANN-693). Scheitert das Speichern, steht die Wahl wieder, wie sie war.
+ */
+function Einwilligungsfrage({
+  zugang,
+  zweck,
+  wahl,
+  onWahl,
+}: {
+  zugang: Plattformzugang;
+  zweck: Zweck;
+  wahl: JaNein | undefined;
+  onWahl: (wahl: JaNein | undefined) => void;
+}) {
+  const api = usePlattformApi();
+  const queryClient = useQueryClient();
+  const text = EINWILLIGUNGSTEXTE[zweck];
+  const schreiben = useMutation({
+    mutationFn: (erteilen: boolean) =>
+      api.einwilligungSchreiben({
+        zugangId: zugang.access_id,
+        zweck,
+        erteilen,
+        fassung: EINWILLIGUNGSFASSUNG,
+      }),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: einwilligungenSchluessel(zugang.access_id) }),
+  });
+
+  const waehlen = (neu: JaNein) => {
+    if (schreiben.isPending || neu === wahl) return;
+    const vorher = wahl;
+    onWahl(neu);
+    if (neu === 'ja' || vorher === 'ja') {
+      schreiben.mutate(neu === 'ja', { onError: () => onWahl(vorher) });
+    }
+  };
+
+  return (
+    // Eine Karte mit Linie, ohne Schatten; die Wahl darin ist die benannte Gruppe.
+    <div className="border-line rounded-card flex flex-col gap-3 border p-5">
+      <h3 className="text-ink text-abschnitt">{text.titel}</h3>
+      <p className="text-ink max-w-prose">{text.text}</p>
+      <Wahlreihe
+        legende={text.titel}
+        legendeSichtbar={false}
+        wahlen={JA_NEIN}
+        gewaehlt={wahl ?? null}
+        onWaehlen={waehlen}
+        gleichgewichtet
+        zusatz={
+          schreiben.isPending ? (
+            <Statusmeldung>Wird gespeichert …</Statusmeldung>
+          ) : schreiben.isError ? (
+            <Statusmeldung ton="fehler">{schreiben.error.message}</Statusmeldung>
+          ) : schreiben.isSuccess ? (
+            <Statusmeldung ton="erfolg">Gespeichert.</Statusmeldung>
+          ) : null
+        }
+      />
+    </div>
   );
 }
 

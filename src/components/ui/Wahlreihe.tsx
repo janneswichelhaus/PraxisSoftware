@@ -31,6 +31,7 @@ export function Wahlreihe<W extends string>({
   onWaehlen,
   legendeSichtbar = true,
   zusatz,
+  gleichgewichtet = false,
 }: {
   /** Name der Gruppe, etwa der Prüfpunkt „Bremsen“. */
   legende: ReactNode;
@@ -42,6 +43,13 @@ export function Wahlreihe<W extends string>({
   legendeSichtbar?: boolean;
   /** Eine Zeile unter der Wahl, etwa „Am Rad markiert: Stelle 1“. */
   zusatz?: ReactNode;
+  /**
+   * Jede Wahl gleich breit und 48 hoch, das Wort mittig - für eine
+   * Entscheidung, bei der keine Antwort näher liegen darf als die andere:
+   * „Ja, erlauben“ / „Nein“ einer Einwilligung (Handoff 2026-10-22,
+   * Abschnitt 5.3). Wird es eng, steht jede Wahl in einer eigenen Zeile.
+   */
+  gleichgewichtet?: boolean;
 }) {
   const name = useId();
   return (
@@ -55,7 +63,9 @@ export function Wahlreihe<W extends string>({
           return (
             <label
               key={wahl.wert}
-              className={`rounded-button has-[:focus-visible]:outline-accent inline-flex min-h-11 cursor-pointer items-center gap-1.5 border px-3 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
+              className={`rounded-button has-[:focus-visible]:outline-accent inline-flex cursor-pointer items-center gap-1.5 border px-3 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
+                gleichgewichtet ? 'min-h-12 flex-1 basis-36 justify-center text-center' : 'min-h-11'
+              } ${
                 an
                   ? 'border-accent bg-accent-soft text-accent font-medium'
                   : 'border-line-strong bg-surface text-ink-muted'

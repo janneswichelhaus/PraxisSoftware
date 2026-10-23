@@ -1,4 +1,6 @@
-import type { Plattformzugang } from './api';
+import { einwilligungAngeboten } from '@/lib/einwilligung';
+import type { Einwilligung, Plattformzugang } from './api';
+import { OHNE_NACHTEIL } from './einwilligungstexte';
 
 /**
  * Der Einstieg nach der ersten Anmeldung als reine Rechnung (POR-019,
@@ -9,14 +11,63 @@ import type { Plattformzugang } from './api';
 export type Einstiegsseite = 'willkommen' | 'einwilligungen' | 'mitteilungen' | 'bereit';
 
 /**
- * Die Seiten des Einstiegs. Eine Begleitung entscheidet keine Einwilligungen
- * (ADR-023 Punkt 13) und hat deshalb eine Frage weniger. „Alles bereit“ ist
- * das Ende und zählt nicht als Schritt („Schritt 2 von 3“).
+ * Die Seiten des Einstiegs. Die Einwilligungen nur, wenn eine offen ist: Eine
+ * Begleitung entscheidet keine (ADR-023 Punkt 13) und hat deshalb eine Frage
+ * weniger. „Alles bereit“ ist das Ende und zählt nicht als Schritt („Schritt
+ * 2 von 3“).
  */
-export function einstiegsseiten(zugang: Pick<Plattformzugang, 'access_kind'>): Einstiegsseite[] {
-  return zugang.access_kind === 'companion'
-    ? ['willkommen', 'mitteilungen', 'bereit']
-    : ['willkommen', 'einwilligungen', 'mitteilungen', 'bereit'];
+export function einstiegsseiten(
+  zugang: Pick<Plattformzugang, 'access_kind'>,
+  offeneEinwilligungen: number,
+): Einstiegsseite[] {
+  const fragen = zugang.access_kind !== 'companion' && offeneEinwilligungen > 0;
+  return fragen
+    ? ['willkommen', 'einwilligungen', 'mitteilungen', 'bereit']
+    : ['willkommen', 'mitteilungen', 'bereit'];
+}
+
+/**
+ * Was der Einstieg zu Einwilligungen fragt (ANN-693): nur, was offen ist, die
+ * Person jetzt erteilen kann und angeboten wird - Fotos und Anhänge stehen nur
+ * zum Widerruf (`einwilligungAngeboten`). Erteilt, widerrufen oder in der
+ * Praxis abgelehnt ist entschieden; ändern geht unter „Ich“ mit Rückfrage.
+ */
+export function offeneEinwilligungen(liste: readonly Einwilligung[]): Einwilligung['purpose'][] {
+  return liste
+    .filter((e) => e.state === 'open' && e.can_grant && einwilligungAngeboten(e.purpose, false))
+    .map((e) => e.purpose);
+}
+
+/** „Zwei Fragen zu Ihren Daten“ - die Zahl folgt den offenen Einwilligungen. */
+export function einwilligungstitel(
+  anzahl: number,
+  zugang: Pick<Plattformzugang, 'access_kind' | 'represented_name'>,
+): string {
+  const fragen = anzahl === 1 ? 'Eine Frage' : `${gross(zahlwort(anzahl))} Fragen`;
+  return zugang.access_kind === 'legal_representative'
+    ? `${fragen} zu den Daten von ${vertretenePerson(zugang)}`
+    : `${fragen} zu Ihren Daten`;
+}
+
+/**
+ * Freiwillig und ohne Nachteil - vor jeder Entscheidung (Art. 7 DSGVO):
+ * „Beides ist freiwillig. Ihre Behandlung hängt nicht davon ab.“ Eine
+ * rechtliche Vertretung hört zuerst, für wen sie entscheidet.
+ */
+export function freiwilligkeit(
+  anzahl: number,
+  zugang: Pick<Plattformzugang, 'access_kind' | 'relationship_kind' | 'represented_name'>,
+): string {
+  const was = anzahl === 1 ? 'Das ist' : anzahl === 2 ? 'Beides ist' : 'Alles ist';
+  const fuer =
+    zugang.access_kind === 'legal_representative'
+      ? `Sie entscheiden hier für ${vertretenePerson(zugang)}. `
+      : '';
+  return `${fuer}${was} freiwillig. ${OHNE_NACHTEIL[zugang.relationship_kind]}`;
+}
+
+function gross(wort: string): string {
+  return wort.charAt(0).toUpperCase() + wort.slice(1);
 }
 
 /** „eine“ bis „fünf“ - Zahlen, die man im Satz ausschreibt. */

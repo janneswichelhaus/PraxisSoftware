@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { Plattformzugang } from './api';
+import type { Einwilligung, Plattformzugang } from './api';
 import {
   einstiegsseiten,
+  einwilligungstitel,
+  freiwilligkeit,
   nochFragen,
+  offeneEinwilligungen,
   willkommenssatz,
   willkommenstitel,
   zahlwort,
@@ -23,19 +26,71 @@ const SELBST: Plattformzugang = {
 };
 
 describe('Seiten des Einstiegs (5.3)', () => {
-  it('fragt die Person nach Einwilligungen, eine Begleitung nie (ADR-023 Punkt 13)', () => {
-    expect(einstiegsseiten(SELBST)).toEqual([
+  it('fragt nach Einwilligungen, wenn eine offen ist - eine Begleitung nie (ADR-023 Punkt 13)', () => {
+    expect(einstiegsseiten(SELBST, 2)).toEqual([
       'willkommen',
       'einwilligungen',
       'mitteilungen',
       'bereit',
     ]);
-    expect(einstiegsseiten({ access_kind: 'legal_representative' })).toContain('einwilligungen');
-    expect(einstiegsseiten({ access_kind: 'companion' })).toEqual([
+    expect(einstiegsseiten({ access_kind: 'legal_representative' }, 1)).toContain('einwilligungen');
+    expect(einstiegsseiten(SELBST, 0)).toEqual(['willkommen', 'mitteilungen', 'bereit']);
+    expect(einstiegsseiten({ access_kind: 'companion' }, 2)).toEqual([
       'willkommen',
       'mitteilungen',
       'bereit',
     ]);
+  });
+});
+
+describe('Einwilligungen im Einstieg (ANN-693)', () => {
+  const zeile = (
+    purpose: Einwilligung['purpose'],
+    state: Einwilligung['state'],
+    can_grant = true,
+  ) => ({ purpose, state, occurred_on: null, source: null, can_grant }) satisfies Einwilligung;
+
+  it('fragt nur, was offen ist, erteilt werden kann und angeboten wird', () => {
+    expect(
+      offeneEinwilligungen([
+        zeile('email_contact', 'open'),
+        zeile('prescriber_report', 'granted'),
+        // Fotos und Anhänge stehen nur zum Widerruf (ANN-316, ANN-333).
+        zeile('patient_photos', 'open'),
+        zeile('message_attachments', 'open'),
+        zeile('training_health_data', 'withdrawn'),
+      ]),
+    ).toEqual(['email_contact']);
+    // In der Praxis abgelehnt ist entschieden; nach der Lesefrist geht kein Ja.
+    expect(
+      offeneEinwilligungen([
+        zeile('email_contact', 'refused'),
+        zeile('prescriber_report', 'open', false),
+      ]),
+    ).toEqual([]);
+  });
+
+  it('zählt die Fragen im Titel und sagt, dass sie freiwillig sind', () => {
+    expect(einwilligungstitel(2, SELBST)).toBe('Zwei Fragen zu Ihren Daten');
+    expect(einwilligungstitel(1, SELBST)).toBe('Eine Frage zu Ihren Daten');
+    expect(freiwilligkeit(2, SELBST)).toBe(
+      'Beides ist freiwillig. Ihre Behandlung hängt nicht davon ab.',
+    );
+    expect(freiwilligkeit(1, { ...SELBST, relationship_kind: 'training' })).toBe(
+      'Das ist freiwillig. Ihr Vertrag hängt nicht davon ab.',
+    );
+  });
+
+  it('sagt einer rechtlichen Vertretung, für wen sie entscheidet', () => {
+    const vertretung = {
+      ...SELBST,
+      access_kind: 'legal_representative' as const,
+      represented_name: 'Max Mustermann',
+    };
+    expect(einwilligungstitel(2, vertretung)).toBe('Zwei Fragen zu den Daten von Max Mustermann');
+    expect(freiwilligkeit(2, vertretung)).toBe(
+      'Sie entscheiden hier für Max Mustermann. Beides ist freiwillig. Ihre Behandlung hängt nicht davon ab.',
+    );
   });
 });
 

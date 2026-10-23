@@ -54,6 +54,36 @@ describe('Wahlreihe', () => {
     expect(screen.getByText('Beobachten').closest('label')?.textContent).toBe('✓Beobachten');
   });
 
+  it('gleich gewichtet: jede Wahl gleich breit und 48 hoch, nichts vorgewählt (5.3)', async () => {
+    const nutzer = userEvent.setup();
+    function Einwilligung() {
+      const [wert, setWert] = useState<'ja' | 'nein' | null>(null);
+      return (
+        <Wahlreihe
+          legende="Nachrichten per E-Mail"
+          legendeSichtbar={false}
+          wahlen={[
+            { wert: 'ja', text: 'Ja, erlauben' },
+            { wert: 'nein', text: 'Nein' },
+          ]}
+          gewaehlt={wert}
+          onWaehlen={setWert}
+          gleichgewichtet
+        />
+      );
+    }
+    renderWithProviders(<Einwilligung />);
+    const ja = screen.getByRole('radio', { name: 'Ja, erlauben' });
+    const nein = screen.getByRole('radio', { name: 'Nein' });
+    expect(ja).not.toBeChecked();
+    expect(nein).not.toBeChecked();
+    for (const radio of [ja, nein]) {
+      expect(radio.closest('label')).toHaveClass('min-h-12', 'flex-1', 'basis-36');
+    }
+    await nutzer.click(screen.getByText('Nein'));
+    expect(nein).toBeChecked();
+  });
+
   it('hält jede Fläche bei 44 px (Regel 3)', () => {
     renderWithProviders(<Bremsen />);
     for (const radio of screen.getAllByRole('radio')) {

@@ -7104,3 +7104,15 @@ Praxisprozess · offen · 2026-10-22 · — · — · Wiedervorlage: —
 **Anker.** `app.platform_practice_phone` in `20261223230000_drp_n1_n2_plattform_name_rufnummer.sql`.
 
 **Änderungspfad.** Eigene Nummer für die Plattform: Spalte mit Pflege in den Praxiseinstellungen, gelesen in dieser einen Funktion · Aufwand `mittel`.
+
+### ANN-693 — Einstieg: Einwilligung als gleich gewichtete Wahl, gespeichert beim Wählen, nur offene
+
+Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)
+
+**Annahme.** Der Einstieg fragt nur offene Einwilligungen, die jetzt erteilt werden können; Entschiedenes ändert man unter „Ich“ mit Rückfrage. „Ja, erlauben“ und „Nein“ stehen gleich gewichtet, nichts vorgewählt. Ein Ja gilt beim Wählen, mit der Fassung des Texts; ein Nein danach widerruft es, ein Nein zu Offenem bleibt ungespeichert.
+
+**Begründung.** Handoff 2026-10-22, Abschnitt 5.3. Ausdrücklich ist die Wahl unter dem vollen Text (Art. 9 Abs. 2 lit. a DSGVO; EDSA-Leitlinien 05/2020). Eine Ablehnung kennt `record_platform_consent` nicht. Unsicher: ob die Prüfung eine zweite Bestätigung verlangt.
+
+**Anker.** `offeneEinwilligungen` in `src/features/platform/einstiegsablauf.ts`, `Einwilligungsfrage` in `Einstieg.tsx`.
+
+**Änderungspfad.** Rückfrage vor dem Ja wie unter „Ich“ (`klein`) oder ein Nein als Ablehnung speichern (RPC, `mittel`).
