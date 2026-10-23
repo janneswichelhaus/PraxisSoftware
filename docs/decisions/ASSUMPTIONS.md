@@ -7053,7 +7053,7 @@ Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritt 1c (Türs
 
 **Begründung.** DR-120; Handoff 2026-10-22, Festlegungen aus dem Entwurf. In zwei Reihen ist die Leiste bis zu 164 px hoch (gemessen bei „Sehr groß“, 375 px); über der Tastatur bliebe dem Feld kaum Platz.
 
-**Anker.** Regel `.reiterleiste` und `.tastatur-zurueck` in `src/index.css`, gesetzt an der `Reiterleiste` in `src/features/platform/Navigation.tsx` und an den Schritten der Einladung (`EinladungPage.tsx`, Schritt 1c).
+**Anker.** Regel `.reiterleiste` in `src/index.css`, gesetzt an der `Reiterleiste` in `src/features/platform/Navigation.tsx`; auf der Einladung `tippt` in `EinladungPage.tsx` (Schritt 1c): Die Schritte bleiben nach dem ersten Fokus im Feld weg, sonst rückte „Weiter“ beim Antippen unter dem Finger weg.
 
 **Änderungspfad.** Weitere Teile über dieselbe Regel zurücktreten lassen oder die Leiste stehen lassen · Aufwand `klein`.
 

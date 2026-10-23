@@ -472,8 +472,7 @@
 /* DR-120: Bei offener Bildschirmtastatur verdeckte die feste Reiterleiste den
    Sendeknopf. Solange ein Feld zum Tippen den Fokus hat, tritt sie zurück - nur
    bei Fingerbedienung, am Rechner bleibt sie stehen. Auswahl, Datum und Uhrzeit
-   öffnen keine Tastatur, sondern einen Wähler; dort bleibt sie (ANN-676). Auf
-   Türseiten treten so Foto und Schritte zurück (`.tastatur-zurueck`, ANN-681). */
+   öffnen keine Tastatur, sondern einen Wähler; dort bleibt sie (ANN-676). */
 @media (pointer: coarse) {
   body:has(
       :is(
@@ -491,7 +490,7 @@
         [contenteditable='true']
       ):focus
     )
-    :is(.reiterleiste, .tastatur-zurueck) {
+    .reiterleiste {
     display: none;
   }
 }

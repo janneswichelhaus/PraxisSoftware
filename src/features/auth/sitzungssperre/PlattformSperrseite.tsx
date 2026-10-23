@@ -37,10 +37,12 @@ function restSatz(uebrig: number): string {
   return `Die PIN passt nicht. Noch ${uebrig} Versuche.`;
 }
 
-const HOECHSTDAUER =
-  SPERRFRISTEN.hoechstMinuten === 60 ? 'eine Stunde' : `${SPERRFRISTEN.hoechstMinuten} Minuten`;
+/** „eine Stunde“ statt „60 Minuten“, wie der Handoff es sagt. */
+function dauer(minuten: number): string {
+  return minuten === 60 ? 'eine Stunde' : `${minuten} Minuten`;
+}
 
-const KLEINGEDRUCKTES = `Die Plattform sperrt sich nach ${SPERRFRISTEN.inaktivMinuten} Minuten ohne Bedienung und spätestens ${HOECHSTDAUER} nach der Anmeldung. Das schützt Ihre Daten, wenn das Telefon liegen bleibt.`;
+const KLEINGEDRUCKTES = `Die Plattform sperrt sich nach ${SPERRFRISTEN.inaktivMinuten} Minuten ohne Bedienung und spätestens ${dauer(SPERRFRISTEN.hoechstMinuten)} nach der Anmeldung. Das schützt Ihre Daten, wenn das Telefon liegen bleibt.`;
 
 export function PlattformSperrseite({
   haelt,

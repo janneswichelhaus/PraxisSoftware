@@ -239,8 +239,7 @@ describe('EinladungPage', () => {
       await screen.findByRole('heading', { level: 1, name: 'Own Motion lädt Sie ein' }),
     ).toBeVisible();
     const schritte = screen.getByRole('heading', { name: 'Drei Schritte, etwa 2 Minuten' });
-    // Bei offener Tastatur treten die Schritte zurück (ANN-681).
-    expect(schritte.closest('section')).toHaveClass('tastatur-zurueck');
+    expect(schritte).toBeVisible();
     expect(screen.getAllByRole('listitem').map((li) => li.lastElementChild?.textContent)).toEqual([
       'Ihre E-Mail-Adresse',
       'Gesicht oder Finger bestätigen',
@@ -279,6 +278,29 @@ describe('EinladungPage', () => {
       .click(await screen.findByRole('button', { name: 'Für diesen Zugang einlösen' }));
     expect(await screen.findByText(/auf diesem Gerät gesperrt/)).toBeVisible();
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('lässt bei Fingerbedienung die Schritte zurücktreten - und nicht wiederkommen (ANN-681)', async () => {
+    vi.stubGlobal('matchMedia', (abfrage: string) => ({
+      matches: abfrage === '(pointer: coarse)',
+      media: abfrage,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    try {
+      oeffne(`#code=${CODE}`);
+      const schritte = await screen.findByTestId('einladung-schritte');
+      expect(schritte).toBeVisible();
+      const nutzer = userEvent.setup();
+      await nutzer.click(screen.getByLabelText('E-Mail-Adresse'));
+      expect(schritte).not.toBeVisible();
+      // Der Finger verlässt das Feld zum Knopf: nichts rückt nach.
+      await nutzer.tab();
+      expect(schritte).not.toBeVisible();
+      expect(screen.getByRole('heading', { level: 1 })).toBeVisible();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('kennt eine Fehlerklasse als Eigenschaft', () => {

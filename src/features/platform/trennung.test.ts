@@ -30,6 +30,9 @@ const ERLAUBT: readonly RegExp[] = [
   // Verbindungszustand des Geräts (allein `navigator.onLine`, ANN-015) -
   // Rahmen ohne Datenzugriff und ohne Import aus einem Praxisfeature.
   /^@\/app\/(tabtitel|verbindung)$/,
+  // Schritt 1c (Handoff 2026-10-22, 5.2): die Zeichen der Türseiten - nur
+  // Zeichnungen, ohne Datenzugriff.
+  /^@\/app\/tuerzeichen$/,
   // Anmeldung und Sitzung gelten für Praxis- und Plattformkonten gleich (Punkt 17).
   /^@\/features\/auth\/(eigeneAbmeldung|fokus|fremdeSitzung|sessionContext)$/,
   // SEC-EPIC-002: Passkey, App-PIN und ihre Einrichtung - die Anmeldung ohne
