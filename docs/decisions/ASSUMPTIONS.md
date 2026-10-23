@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-22.
+Zuletzt aktualisiert: 2026-10-23.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -7020,3 +7020,63 @@ Technik · entschieden (Jannes) · 2026-10-22 · Jannes · erledigt · Wiedervor
 **Anker.** `--shadow-plattform` in `src/index.css`; der Wächter „Keine Schatten“ in `src/designsystem.test.ts` lässt die Klasse nur in den drei Bausteinen zu.
 
 **Änderungspfad.** Token und drei Klassen entfernen, die Ausnahme im Wächter streichen · Aufwand `klein`.
+
+### ANN-679 — Reiterleiste der Plattform in drei Stufen: gemessen, nicht aus der Einstellung gelesen
+
+Technik · entschieden (Jannes) · 2026-10-22 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Die Reiterleiste steht in einer Reihe, solange die vier Wörter in 700 mit je 4 px Luft nebeneinander passen; sonst in zwei Reihen, das Zeichen neben dem Wort. Gemessen wird mit `ResizeObserver` an der Leiste und an einer unsichtbaren Messreihe, nicht an der Schrift-Einstellung. In zwei Reihen und im Menü wachsen nur die Wörter, Zeichen und Abstände bleiben in px; `scroll-padding` hebt, was den Fokus bekommt, über die Leiste. Unter 23rem steht statt der Leiste „Menü“ im Kopf (ANN-682), ab 64rem die Navigation im Kopf; die Einsicht der Praxis behält das Telefon.
+
+**Begründung.** DR-112: Bei 200 % waren „Übungen“ und „Nachrichten“ abgeschnitten, bei „Sehr groß“ gekappt, bei „Groß“ stießen die Wörter aneinander. Handoff 2026-10-22, Abschnitt 3; Jannes am 22.10.2026, Entscheidung 2 („nur Zeichen“ verworfen). Gemessen, damit auch Systemschrift und Übersetzung greifen; bei 375 px ist „Normal“ eine Reihe, „Groß“ zwei. Mit mitwachsenden Abständen passte „Nachrichten“ bei „Sehr groß“ ab 360 px nicht in seine Hälfte (Zweitreview).
+
+**Anker.** `reiterstufe` in `src/features/platform/geruestbreite.ts` (Messung in `Navigation.tsx`).
+
+**Änderungspfad.** Andere Luft oder Schwelle in `reiterstufe` und der Messreihe · Aufwand `klein`.
+
+### ANN-680 — Plattform: Markenmoment B statt Startbild, entschieden an der Adresse beim Öffnen
+
+Technik · entschieden (Jannes) · 2026-10-23 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Wer `/p`, einen Weg darunter oder `/einladung` öffnet, sieht kein Startbild; die Seite steht sofort. Beim ersten Erscheinen der Übersicht je Tab kommen Gruß und Abschnitte gestaffelt (nach 0,7 s steht alles), nie beim Zurückkehren, nie bei „Bewegung reduzieren“; gemerkt in `sessionStorage`, beim Abmelden nicht gelöscht. Wer die installierte App über `/` öffnet, sieht das Startbild weiter: Die Kontoart steht erst nach dem Profil fest.
+
+**Begründung.** Handoff 2026-10-22, Entscheidung 1 und Abschnitt 7; Jannes am 22.10.2026 (Variante B). DR-116: Das Startbild landete auf der Plattform ohne Landeplatz. Der Merker bleibt beim Abmelden, weil sein Löschen die Sitzungsverwaltung berührte.
+
+**Anker.** `StartbildBeimOeffnen` in `src/app/App.tsx`; `useMarkenmoment` in `src/features/platform/markenmoment.ts`.
+
+**Änderungspfad.** Plattformwege aus der Prüfung nehmen, Klasse `markenmoment` entfernen · Aufwand `klein`.
+
+### ANN-681 — Offene Tastatur auf der Plattform: zurück tritt, was unten fest steht oder nur schmückt
+
+Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritt 1c (Türseiten)
+
+**Annahme.** Bei offener Bildschirmtastatur tritt die Reiterleiste in einer wie in zwei Reihen zurück, auf Türseiten treten Foto und Schritte zurück (Schritt 1c); Titel, Feld und Hauptknopf bleiben über der Tastatur. Erkannt wird die Tastatur wie in ANN-676 am Fokus eines Tippfelds bei Fingerbedienung. Der Knopf „Menü“ unter 23rem bleibt im Kopf - er rollt mit der Seite und verdeckt nichts.
+
+**Begründung.** DR-120; Handoff 2026-10-22, Festlegungen aus dem Entwurf. In zwei Reihen ist die Leiste bis zu 164 px hoch (gemessen bei „Sehr groß“, 375 px); über der Tastatur bliebe dem Feld kaum Platz.
+
+**Anker.** Regel `.reiterleiste` in `src/index.css`, gesetzt an der `Reiterleiste` in `src/features/platform/Navigation.tsx`.
+
+**Änderungspfad.** Weitere Teile über dieselbe Regel zurücktreten lassen oder die Leiste stehen lassen · Aufwand `klein`.
+
+### ANN-682 — Plattform unter 23rem: Menü statt Leiste, 12 px Rand, Foto und fester Fuß entfallen
+
+Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritte 1c und 1d
+
+**Annahme.** Unter 23rem Fensterbreite (200 % Zoom am Telefon) hat die Plattform keine Reiterleiste; im Kopf steht der Zweitknopf „Menü“ und öffnet unter dem Kopf die vier Ziele und „Ich“ - Esc und ein Tipp daneben schließen, der Fokus geht zurück. Kopf und Inhalt haben 12 px Rand, der Kopf ist 60 statt 72 hoch (Zeichnung „Reiterleiste bei 200 %“). Die Grenze ist eine Media Query in rem: Sie greift beim Zoom, nicht bei „Sehr groß“. Fotos auf Türseiten und im Einstieg entfallen, der Fuß geführter Abläufe steht am Ende des Inhalts (1c, 1d).
+
+**Begründung.** DR-112; Handoff 2026-10-22, Abschnitte 0, 3 und 4. Bei 188 px passen vier Ziele nicht nebeneinander, und zwei Reihen nähmen ein Drittel der Höhe.
+
+**Anker.** `Menue` in `src/features/platform/Navigation.tsx`; Rand in `geruestSpalte` (`geruestbreite.ts`).
+
+**Änderungspfad.** Andere Grenze an `max-[23rem]:`, ohne Menü die Leiste in zwei Reihen · Aufwand `klein`.
+
+### ANN-683 — Plattform: Seiten- und Abschnittstitel in der Skala in rem, 40 und 48 zwischen Abschnitten
+
+Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
+
+**Annahme.** Unter `.plattform-schrift` - jede Seite unter `/p` und jede Türseite (`Vollseite`, seit Schritt 0; dort sehen es auch Beschäftigte bei der Einrichtung) - steht der Seitentitel (`PageHeader`) in `text-plattform-titel` 28/800, am Rechner 32, jeder Abschnittstitel (`Section`, damit `Listenabschnitt`) in `text-abschnitt` 22/700 in Tinte, und zwischen Abschnitten liegen 40, am Rechner 48. Beides wächst mit „Groß“ und „Sehr groß“; die übrige Praxis-App behält ihre Rollen in px.
+
+**Begründung.** Offen aus Schritt 1a: Abschnitte standen in 18/600 `ink-muted`, Titel in px und bei „Sehr groß“ kaum größer als der Text. Der Handoff 2026-10-22 (Abschnitt 2) nennt `text-abschnitt` nur für einzelne Titel der Übersicht; die Leinwand zeigt jeden Abschnitt so. Eine Stufe für alle Abschnitte hält die Rangfolge Seite, Abschnitt, Zeile auf jeder Seite gleich.
+
+**Anker.** Die Klassen `[.plattform-schrift_&]:` am Titel in `src/components/ui/Section.tsx` und `PageHeader.tsx`.
+
+**Änderungspfad.** Die Klassen entfernen oder einzelnen Abschnitten eine leisere Stufe geben · Aufwand `klein`.
