@@ -71,12 +71,14 @@ export function PageHeader({
           ist die einzige Stelle, an der die Marke im Inhalt vorkommt —
           deshalb Hauptfarbe statt Tinte. Unter 640 px 26 statt 32 px
           (Design-Handoff 2026-10-01): Am Telefon passt der Titel damit
-          in eine Zeile. */}
+          in eine Zeile. Auf der Plattform der Seitentitel ihrer Skala in
+          rem, 28 und am Rechner 32 - er wächst mit „Groß“ und „Sehr groß“
+          (ANN-683). */}
       <h1
         className={
           kompakt
             ? 'text-accent text-h4 font-bold'
-            : 'text-accent text-h2-mobil sm:text-h2 tracking-display font-extrabold'
+            : 'text-accent text-h2-mobil sm:text-h2 tracking-display [.plattform-schrift_&]:text-plattform-titel [.plattform-schrift[data-rechner]_&]:text-plattform-titel-rechner font-extrabold'
         }
       >
         {title}

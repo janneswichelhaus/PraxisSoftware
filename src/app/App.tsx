@@ -19,6 +19,7 @@ import { EinladungPage } from '@/features/platform/EinladungPage';
 import { EINLADUNG_PFAD } from '@/features/platform/einladung';
 import { KONTEXT_SCHLUESSEL, ladePlattformkontext } from '@/features/platform/api';
 import { PlattformApp } from '@/features/platform/PlattformApp';
+import { PLATTFORM_PFAD } from '@/features/platform/pfade';
 import { PlattformAblage } from '@/features/platform/PlattformAblage';
 import { ohneNetzFuer } from './ohneNetz';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
@@ -352,9 +353,21 @@ export function App() {
  * weiter. Deshalb steht es neben dem Router und nicht im `Gate` - ein
  * Wechsel von „Einen Moment …" zur Anmeldung oder zur Anwendung
  * startet es nicht neu. Nach der Anmeldung kommt es nicht noch einmal.
+ *
+ * Nicht auf Plattformwegen (ANN-680, Jannes 2026-10-22): Wer `/p…` oder die
+ * Einladung öffnet, sieht die Seite sofort; die Plattform hat ihren kurzen
+ * Markenmoment auf der Übersicht. Entschieden wird an der Adresse beim
+ * Öffnen - die Kontoart steht erst nach dem Profil fest.
  */
 function StartbildBeimOeffnen() {
-  const [startbild, setStartbild] = useState(startbildFaellig);
+  const [startbild, setStartbild] = useState(
+    () => startbildFaellig() && !aufPlattformweg(window.location.pathname),
+  );
   const startbildFertig = useCallback(() => setStartbild(false), []);
   return startbild ? <Startbild onFertig={startbildFertig} /> : null;
+}
+
+/** `/p`, die Einladung und alles darunter - nicht `/patienten`. */
+function aufPlattformweg(pfad: string): boolean {
+  return [PLATTFORM_PFAD, EINLADUNG_PFAD].some((weg) => pfad === weg || pfad.startsWith(`${weg}/`));
 }

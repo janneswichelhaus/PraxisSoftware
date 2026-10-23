@@ -40,15 +40,18 @@ export function Section({
 }) {
   const Ueberschrift = ebene === 3 ? 'h3' : 'h2';
   return (
-    <section className="mt-8 first:mt-0">
+    // Auf der Plattform 40 zwischen Abschnitten, am Rechner 48 (Handoff
+    // 2026-10-22, Abschnitt 4; ANN-683).
+    <section className="mt-8 first:mt-0 [.plattform-schrift_&]:not-first:mt-10 [.plattform-schrift[data-rechner]_&]:not-first:mt-12">
       {/* Kopfzeile mindestens 32 px (Design-Handoff 2026-10-01, Abschnitt 3):
           genug für die Überschrift und einen Textlink daneben, ohne dass ein
           leerer Kopf die Liste nach unten schiebt. Das Tippziel eines
           Textlinks bleibt 44 px (`Textlink alleinstehend`). */}
       <div className="flex min-h-8 flex-wrap items-center justify-between gap-3">
         {/* Abschnittstitel als `--type-label`: 12 px in 600, Versalien mit
-            0.14em Laufweite (DS-001). */}
-        <Ueberschrift className="text-ink-muted tracking-label text-xs font-semibold uppercase [.plattform-schrift_&]:tracking-normal [.plattform-schrift_&]:normal-case">
+            0.14em Laufweite (DS-001). Auf der Plattform `text-abschnitt`
+            22/700 in Tinte, ohne Versalien (PLATTFORM.md, ANN-683). */}
+        <Ueberschrift className="text-ink-muted tracking-label [.plattform-schrift_&]:text-abschnitt [.plattform-schrift_&]:text-ink text-xs font-semibold uppercase [.plattform-schrift_&]:font-bold [.plattform-schrift_&]:tracking-(--text-abschnitt--letter-spacing) [.plattform-schrift_&]:normal-case">
           {titel}
         </Ueberschrift>
         {aktion}

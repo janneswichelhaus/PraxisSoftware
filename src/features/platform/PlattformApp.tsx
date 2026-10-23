@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Profilhinweis } from '@/app/Profilhinweis';
 import { MARKE, tabName, tabTitel } from '@/app/tabtitel';
 import { Button } from '@/components/ui/Button';
@@ -11,7 +11,6 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Wortmarke } from '@/components/ui/Wortmarke';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { RECHTSGRUNDLAGE, VERTRETUNGSART } from '@/lib/vertretung';
 import {
@@ -52,7 +51,9 @@ import { Datenexport } from './Datenexport';
 import { Einstieg } from './Einstieg';
 import { Einstellungen } from './Einstellungen';
 import { Einwilligungen } from './Einwilligungen';
-import { PLATTFORM_PFAD, bereichParameter } from './pfade';
+import { geruestSpalte, useRechner } from './geruestbreite';
+import { Kopf, Reiterleiste } from './Navigation';
+import { PLATTFORM_PFAD } from './pfade';
 import { Rechnung, Rechnungen } from './Rechnungen';
 import { useSchriftgroesseAnwenden } from './schriftgroesse';
 import { Termine } from './Termine';
@@ -64,6 +65,7 @@ import { Durchfuehrung } from './Durchfuehrung';
 import { datum, kalendertag } from './zeit';
 import { Terminaenderung } from './Terminaenderung';
 import { Terminwunsch } from './Terminwunsch';
+import { useWahl, wahlAdresse, wahlName } from './wahl';
 
 /**
  * Das Gerüst der Plattform (POR-004, DSN-001 Abschnitt 3, ADR-023 Punkt 25).
@@ -85,6 +87,10 @@ import { Terminwunsch } from './Terminwunsch';
  * Seit POR-EPIC-001b kann ein Konto auch für andere handeln (ADR-023 Punkt
  * 13). Jede Vertretung ist ein eigener Eintrag im Schalter, und solange sie
  * gewählt ist, steht oben dauerhaft „Sie handeln für …" (Punkt 14).
+ *
+ * Seit DRP-EPIC-003 (Handoff 2026-10-22) stehen Kopf und Reiter in
+ * `Navigation.tsx`: die Leiste in drei Stufen, am Rechner die Navigation im
+ * Kopf (DR-112, DR-113).
  */
 export { PLATTFORM_PFAD };
 
@@ -161,11 +167,16 @@ function Geruest({
     ...lesbar.filter((z) => z.access_kind === 'companion'),
   ];
   const praxis = zugaenge[0]?.organization_name ?? '';
+  // DR-113: ab 1024 px die Rechneransicht. Die Einsicht zeigt die Plattform
+  // in einem Telefon und behält dessen Ansicht (`geruestbreite.ts`).
+  const rechner = useRechner() && !nurLesen;
 
   // In der Einsicht füllt das Gerüst den Rahmen der Praxisseite, nicht das Fenster.
   return (
     <div
       className={`plattform-schrift bg-canvas flex flex-col ${nurLesen ? 'min-h-full' : 'min-h-dvh'}`}
+      // Am Rechner wachsen die Seitentitel auf 32 (`PageHeader`, ANN-683).
+      data-rechner={rechner ? '' : undefined}
     >
       {/* POR-020 (ANN-267): Schriftgröße des Geräts; mindestens 18 px am
           Gerüst. In der Einsicht gilt die Wahl der Person, nicht die dieses
@@ -173,375 +184,384 @@ function Geruest({
       {nurLesen ? null : <SchriftgroesseDesGeraets />}
       {/* Den Tab und die Verbindung zeigt in der Einsicht die Praxis selbst. */}
       {nurLesen ? null : <TabtitelDerPlattform bereiche={lesbar} />}
-      <Kopf praxis={praxis} bereiche={lesbar} />
-      {nurLesen ? null : <Verbindungszeile />}
+      <Kopf bereiche={lesbar} rechner={rechner} />
+      {nurLesen ? null : <Verbindungszeile rechner={rechner} />}
       {/* Gescheitertes Nachladen des Zugangs (BEF-046): Die Plattform bleibt
           stehen, die Zeile sagt es. */}
       <Profilhinweis />
-      <HandelnFuer bereiche={lesbar} />
+      <HandelnFuer bereiche={lesbar} rechner={rechner} />
+      {/* Handoff 2026-10-22, Abschnitt 4: am Telefon 20 px Rand und 12 oben,
+          unter 23rem 12 px; am Rechner `max-w-inhalt` mit 40 px. Darin steht
+          jede Seite einspaltig in `max-w-spalte`, an der Kante der Marke.
+          Unten bleibt Luft statt Platz für eine feste Leiste: Die
+          Reiterleiste steht am Ende der Seite (`Navigation.tsx`). */}
       <main
         id="inhalt"
         tabIndex={-1}
-        className="max-w-formular mx-auto w-full flex-1 px-5 pt-5 pb-28 focus:outline-none"
+        className={`${geruestSpalte(rechner)} w-full flex-1 focus:outline-none ${
+          rechner ? 'pt-12 pb-16' : 'pt-3 pb-10'
+        }`}
       >
-        <Routes>
-          <Route
-            path={PLATTFORM_PFAD}
-            element={
-              lesbar.length > 0 ? (
-                <MitZugang
-                  bereiche={lesbar}
-                  zugaenge={zugaenge}
-                  seite={(z) => (
-                    <UebersichtOderEinstieg
-                      praxis={praxis}
-                      zugang={z}
-                      eigeneBereiche={lesbar.filter((x) => x.access_kind === 'self').length}
-                    />
-                  )}
-                />
-              ) : (
-                <OhneLesbarenZugang zugaenge={zugaenge} />
-              )
-            }
-          />
-          <Route
-            path={`${PLATTFORM_PFAD}/termine`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Termine zugang={z} />}
-              />
-            }
-          />
-          {nurLesen ? null : (
+        <div className={rechner ? 'max-w-spalte' : undefined}>
+          <Routes>
             <Route
-              path={`${PLATTFORM_PFAD}/termine/wunsch`}
+              path={PLATTFORM_PFAD}
+              element={
+                lesbar.length > 0 ? (
+                  <MitZugang
+                    bereiche={lesbar}
+                    zugaenge={zugaenge}
+                    seite={(z) => (
+                      <UebersichtOderEinstieg
+                        praxis={praxis}
+                        zugang={z}
+                        eigeneBereiche={lesbar.filter((x) => x.access_kind === 'self').length}
+                      />
+                    )}
+                  />
+                ) : (
+                  <OhneLesbarenZugang zugaenge={zugaenge} />
+                )
+              }
+            />
+            <Route
+              path={`${PLATTFORM_PFAD}/termine`}
               element={
                 <MitZugang
                   bereiche={lesbar}
                   zugaenge={zugaenge}
-                  seite={(z) => <Terminwunsch zugang={z} />}
+                  seite={(z) => <Termine zugang={z} />}
                 />
               }
             />
-          )}
-          {nurLesen ? null : (
+            {nurLesen ? null : (
+              <Route
+                path={`${PLATTFORM_PFAD}/termine/wunsch`}
+                element={
+                  <MitZugang
+                    bereiche={lesbar}
+                    zugaenge={zugaenge}
+                    seite={(z) => <Terminwunsch zugang={z} />}
+                  />
+                }
+              />
+            )}
+            {nurLesen ? null : (
+              <Route
+                path={`${PLATTFORM_PFAD}/termine/:terminId`}
+                element={
+                  <MitZugang
+                    bereiche={lesbar}
+                    zugaenge={zugaenge}
+                    seite={(z) => <Terminaenderung zugang={z} />}
+                  />
+                }
+              />
+            )}
+            {/* KOM-001: Reiter „Nachrichten" - Fragen an die Praxis. */}
             <Route
-              path={`${PLATTFORM_PFAD}/termine/:terminId`}
+              path={`${PLATTFORM_PFAD}/nachrichten`}
               element={
                 <MitZugang
                   bereiche={lesbar}
                   zugaenge={zugaenge}
-                  seite={(z) => <Terminaenderung zugang={z} />}
+                  seite={(z) => <Nachrichten zugang={z} />}
                 />
               }
             />
-          )}
-          {/* KOM-001: Reiter „Nachrichten" - Fragen an die Praxis. */}
-          <Route
-            path={`${PLATTFORM_PFAD}/nachrichten`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Nachrichten zugang={z} />}
-              />
-            }
-          />
-          {/* E-001: In der Einsicht führt „neu“ zurück zur Übersicht - ohne
+            {/* E-001: In der Einsicht führt „neu“ zurück zur Übersicht - ohne
               diese Route nähme die Nachricht darunter es als Kennung. */}
-          <Route
-            path={`${PLATTFORM_PFAD}/nachrichten/neu`}
-            element={
-              nurLesen ? (
-                <Navigate to={PLATTFORM_PFAD} replace />
-              ) : (
-                <MitZugang
-                  bereiche={lesbar}
-                  zugaenge={zugaenge}
-                  seite={(z) => <NeueNachricht zugang={z} />}
-                />
-              )
-            }
-          />
-          <Route
-            path={`${PLATTFORM_PFAD}/nachrichten/:nachrichtId`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <NachrichtDetail zugang={z} />}
-              />
-            }
-          />
-          {/* UEB-009: Reiter „Übungen" bzw. „Training" und der Plan als Blatt. */}
-          <Route
-            path={`${PLATTFORM_PFAD}/uebungen`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Uebungen zugang={z} />}
-              />
-            }
-          />
-          {nurLesen ? null : (
             <Route
-              path={`${PLATTFORM_PFAD}/uebungen/einheit/:planId`}
+              path={`${PLATTFORM_PFAD}/nachrichten/neu`}
+              element={
+                nurLesen ? (
+                  <Navigate to={PLATTFORM_PFAD} replace />
+                ) : (
+                  <MitZugang
+                    bereiche={lesbar}
+                    zugaenge={zugaenge}
+                    seite={(z) => <NeueNachricht zugang={z} />}
+                  />
+                )
+              }
+            />
+            <Route
+              path={`${PLATTFORM_PFAD}/nachrichten/:nachrichtId`}
               element={
                 <MitZugang
                   bereiche={lesbar}
                   zugaenge={zugaenge}
-                  seite={(z) => <Durchfuehrung zugang={z} />}
+                  seite={(z) => <NachrichtDetail zugang={z} />}
                 />
               }
             />
-          )}
-          <Route
-            path={`${PLATTFORM_PFAD}/uebungen/blatt/:planId`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <PlanblattPlattform zugang={z} praxis={praxis} />}
-              />
-            }
-          />
-          {/* TRK-003: Check-in und „Meine Angaben" (DSN-001 4.1). */}
-          {nurLesen ? null : (
+            {/* UEB-009: Reiter „Übungen" bzw. „Training" und der Plan als Blatt. */}
             <Route
-              path={`${PLATTFORM_PFAD}/checkin`}
+              path={`${PLATTFORM_PFAD}/uebungen`}
               element={
                 <MitZugang
                   bereiche={lesbar}
                   zugaenge={zugaenge}
-                  seite={(z) => <Checkin zugang={z} />}
+                  seite={(z) => <Uebungen zugang={z} />}
                 />
               }
             />
-          )}
-          {/* ALT-003: Gewohnheiten mit den letzten sieben Tagen (ANN-370). */}
-          <Route
-            path={`${PLATTFORM_PFAD}/gewohnheiten`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Gewohnheiten zugang={z} />}
+            {nurLesen ? null : (
+              <Route
+                path={`${PLATTFORM_PFAD}/uebungen/einheit/:planId`}
+                element={
+                  <MitZugang
+                    bereiche={lesbar}
+                    zugaenge={zugaenge}
+                    seite={(z) => <Durchfuehrung zugang={z} />}
+                  />
+                }
               />
-            }
-          />
-          {/* ERN-002: die eigene Ernährungsberatung (ADR-027) - ohne Beratung oder
+            )}
+            <Route
+              path={`${PLATTFORM_PFAD}/uebungen/blatt/:planId`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <PlanblattPlattform zugang={z} praxis={praxis} />}
+                />
+              }
+            />
+            {/* TRK-003: Check-in und „Meine Angaben" (DSN-001 4.1). */}
+            {nurLesen ? null : (
+              <Route
+                path={`${PLATTFORM_PFAD}/checkin`}
+                element={
+                  <MitZugang
+                    bereiche={lesbar}
+                    zugaenge={zugaenge}
+                    seite={(z) => <Checkin zugang={z} />}
+                  />
+                }
+              />
+            )}
+            {/* ALT-003: Gewohnheiten mit den letzten sieben Tagen (ANN-370). */}
+            <Route
+              path={`${PLATTFORM_PFAD}/gewohnheiten`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Gewohnheiten zugang={z} />}
+                />
+              }
+            />
+            {/* ERN-002: die eigene Ernährungsberatung (ADR-027) - ohne Beratung oder
               für eine Begleitung gibt der Server nichts. */}
-          <Route
-            path={`${PLATTFORM_PFAD}/ernaehrung`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Ernaehrung zugang={z} />}
-              />
-            }
-          />
-          {/* ERN-EPIC-003: das Tagebuch - ein Tag, Wasser, Mahlzeiten. */}
-          <Route
-            path={`${PLATTFORM_PFAD}/ernaehrung/tagebuch`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Tagebuch zugang={z} />}
-              />
-            }
-          />
-          {nurLesen ? null : (
             <Route
-              path={`${PLATTFORM_PFAD}/ernaehrung/tagebuch/eintragen`}
+              path={`${PLATTFORM_PFAD}/ernaehrung`}
               element={
                 <MitZugang
                   bereiche={lesbar}
                   zugaenge={zugaenge}
-                  seite={(z) => <TagebuchEintragen zugang={z} />}
+                  seite={(z) => <Ernaehrung zugang={z} />}
                 />
               }
             />
-          )}
-          {/* ERN-EPIC-002: Lebensmittel nachschlagen und eigene anlegen. */}
-          <Route
-            path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Lebensmittel zugang={z} />}
-              />
-            }
-          />
-          {nurLesen ? null : (
-            <>
-              <Route
-                path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel/neu`}
-                element={
-                  <MitZugang
-                    bereiche={lesbar}
-                    zugaenge={zugaenge}
-                    seite={(z) => <EigenesLebensmittelNeu zugang={z} />}
-                  />
-                }
-              />
-              <Route
-                path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel/:foodId`}
-                element={
-                  <MitZugang
-                    bereiche={lesbar}
-                    zugaenge={zugaenge}
-                    seite={(z) => <EigenesLebensmittelAendern zugang={z} />}
-                  />
-                }
-              />
-            </>
-          )}
-          <Route
-            path={`${PLATTFORM_PFAD}/angaben`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <MeineAngaben zugang={z} />}
-              />
-            }
-          />
-          {nurLesen ? null : (
+            {/* ERN-EPIC-003: das Tagebuch - ein Tag, Wasser, Mahlzeiten. */}
             <Route
-              path={`${PLATTFORM_PFAD}/befundbogen`}
+              path={`${PLATTFORM_PFAD}/ernaehrung/tagebuch`}
               element={
                 <MitZugang
                   bereiche={lesbar}
                   zugaenge={zugaenge}
-                  seite={(z) => <Befundbogen zugang={z} />}
+                  seite={(z) => <Tagebuch zugang={z} />}
                 />
               }
             />
-          )}
-          <Route
-            path={`${PLATTFORM_PFAD}/rechnungen`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Rechnungen zugang={z} />}
+            {nurLesen ? null : (
+              <Route
+                path={`${PLATTFORM_PFAD}/ernaehrung/tagebuch/eintragen`}
+                element={
+                  <MitZugang
+                    bereiche={lesbar}
+                    zugaenge={zugaenge}
+                    seite={(z) => <TagebuchEintragen zugang={z} />}
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path={`${PLATTFORM_PFAD}/rechnungen/:rechnungId`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Rechnung zugang={z} />}
-              />
-            }
-          />
-          <Route
-            path={`${PLATTFORM_PFAD}/dokumente`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Dokumente zugang={z} />}
-              />
-            }
-          />
-          <Route
-            path={`${PLATTFORM_PFAD}/einwilligungen`}
-            element={
-              <MitZugang
-                bereiche={entscheidend}
-                zugaenge={zugaenge}
-                seite={(z) => <Einwilligungen zugang={z} />}
-              />
-            }
-          />
-          {nurLesen ? null : (
+            )}
+            {/* ERN-EPIC-002: Lebensmittel nachschlagen und eigene anlegen. */}
             <Route
-              path={`${PLATTFORM_PFAD}/daten`}
+              path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel`}
               element={
                 <MitZugang
-                  bereiche={exportierbar}
+                  bereiche={lesbar}
                   zugaenge={zugaenge}
-                  seite={(z) => <Datenexport zugang={z} />}
+                  seite={(z) => <Lebensmittel zugang={z} />}
                 />
               }
             />
-          )}
-          <Route
-            path={`${PLATTFORM_PFAD}/abo`}
-            element={
-              <MitZugang
-                bereiche={lesbar.filter((z) => z.relationship_kind === 'treatment')}
-                zugaenge={zugaenge}
-                seite={(z) => <Abo zugang={z} />}
+            {nurLesen ? null : (
+              <>
+                <Route
+                  path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel/neu`}
+                  element={
+                    <MitZugang
+                      bereiche={lesbar}
+                      zugaenge={zugaenge}
+                      seite={(z) => <EigenesLebensmittelNeu zugang={z} />}
+                    />
+                  }
+                />
+                <Route
+                  path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel/:foodId`}
+                  element={
+                    <MitZugang
+                      bereiche={lesbar}
+                      zugaenge={zugaenge}
+                      seite={(z) => <EigenesLebensmittelAendern zugang={z} />}
+                    />
+                  }
+                />
+              </>
+            )}
+            <Route
+              path={`${PLATTFORM_PFAD}/angaben`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <MeineAngaben zugang={z} />}
+                />
+              }
+            />
+            {nurLesen ? null : (
+              <Route
+                path={`${PLATTFORM_PFAD}/befundbogen`}
+                element={
+                  <MitZugang
+                    bereiche={lesbar}
+                    zugaenge={zugaenge}
+                    seite={(z) => <Befundbogen zugang={z} />}
+                  />
+                }
               />
-            }
-          />
-          {/* KND-003: das Angebot aus dem Abschlussgespräch - nur über einen
+            )}
+            <Route
+              path={`${PLATTFORM_PFAD}/rechnungen`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Rechnungen zugang={z} />}
+                />
+              }
+            />
+            <Route
+              path={`${PLATTFORM_PFAD}/rechnungen/:rechnungId`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Rechnung zugang={z} />}
+                />
+              }
+            />
+            <Route
+              path={`${PLATTFORM_PFAD}/dokumente`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Dokumente zugang={z} />}
+                />
+              }
+            />
+            <Route
+              path={`${PLATTFORM_PFAD}/einwilligungen`}
+              element={
+                <MitZugang
+                  bereiche={entscheidend}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Einwilligungen zugang={z} />}
+                />
+              }
+            />
+            {nurLesen ? null : (
+              <Route
+                path={`${PLATTFORM_PFAD}/daten`}
+                element={
+                  <MitZugang
+                    bereiche={exportierbar}
+                    zugaenge={zugaenge}
+                    seite={(z) => <Datenexport zugang={z} />}
+                  />
+                }
+              />
+            )}
+            <Route
+              path={`${PLATTFORM_PFAD}/abo`}
+              element={
+                <MitZugang
+                  bereiche={lesbar.filter((z) => z.relationship_kind === 'treatment')}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Abo zugang={z} />}
+                />
+              }
+            />
+            {/* KND-003: das Angebot aus dem Abschlussgespräch - nur über einen
               Zugang zur Behandlung; ob er es sieht, sagt der Server. */}
-          <Route
-            path={`${PLATTFORM_PFAD}/angebot`}
-            element={
-              <MitZugang
-                bereiche={lesbar.filter((z) => z.relationship_kind === 'treatment')}
-                zugaenge={zugaenge}
-                seite={(z) => <Angebot zugang={z} />}
-              />
-            }
-          />
-          {/* KND-003: der im Konto geschlossene Vertrag - nur im Training. */}
-          <Route
-            path={`${PLATTFORM_PFAD}/vertrag`}
-            element={
-              <MitZugang
-                bereiche={lesbar.filter((z) => z.relationship_kind === 'training')}
-                zugaenge={zugaenge}
-                seite={(z) => <Vertrag zugang={z} />}
-              />
-            }
-          />
-          <Route
-            path={`${PLATTFORM_PFAD}/paket`}
-            element={
-              <MitZugang
-                bereiche={lesbar.filter((z) => z.relationship_kind === 'training')}
-                zugaenge={zugaenge}
-                seite={(z) => <Paket zugang={z} />}
-              />
-            }
-          />
-          {nurLesen ? null : (
             <Route
-              path={`${PLATTFORM_PFAD}/einstellungen`}
-              element={<Einstellungen zugaenge={lesbar} />}
+              path={`${PLATTFORM_PFAD}/angebot`}
+              element={
+                <MitZugang
+                  bereiche={lesbar.filter((z) => z.relationship_kind === 'treatment')}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Angebot zugang={z} />}
+                />
+              }
             />
-          )}
-          <Route
-            path={`${PLATTFORM_PFAD}/ich`}
-            element={
-              <Ich
-                email={email}
-                praxis={praxis}
-                zugaenge={lesbar}
-                entscheidend={entscheidend}
-                onAbmelden={onAbmelden}
+            {/* KND-003: der im Konto geschlossene Vertrag - nur im Training. */}
+            <Route
+              path={`${PLATTFORM_PFAD}/vertrag`}
+              element={
+                <MitZugang
+                  bereiche={lesbar.filter((z) => z.relationship_kind === 'training')}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Vertrag zugang={z} />}
+                />
+              }
+            />
+            <Route
+              path={`${PLATTFORM_PFAD}/paket`}
+              element={
+                <MitZugang
+                  bereiche={lesbar.filter((z) => z.relationship_kind === 'training')}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Paket zugang={z} />}
+                />
+              }
+            />
+            {nurLesen ? null : (
+              <Route
+                path={`${PLATTFORM_PFAD}/einstellungen`}
+                element={<Einstellungen zugaenge={lesbar} />}
               />
-            }
-          />
-          <Route path="*" element={<Navigate to={PLATTFORM_PFAD} replace />} />
-        </Routes>
+            )}
+            <Route
+              path={`${PLATTFORM_PFAD}/ich`}
+              element={
+                <Ich
+                  email={email}
+                  praxis={praxis}
+                  zugaenge={lesbar}
+                  entscheidend={entscheidend}
+                  onAbmelden={onAbmelden}
+                />
+              }
+            />
+            <Route path="*" element={<Navigate to={PLATTFORM_PFAD} replace />} />
+          </Routes>
+        </div>
       </main>
-      <Reiterleiste bereiche={lesbar} />
+      {rechner ? null : <Reiterleiste bereiche={lesbar} />}
     </div>
   );
 }
@@ -650,112 +670,11 @@ function MitZugang({
 }
 
 /**
- * Welcher Zugang gewählt ist. Steht in der Adresse, damit Zurück und
- * Neuladen ihn behalten: ein eigener Bereich als `?bereich=training`, eine
- * Vertretung als `?zugang=<Kennung>`; ohne Angabe der erste lesbare. Gewählt
- * wird nur unter den eigenen Zugängen - der Server zeigt ohnehin nur diese
- * (Punkt 19).
- */
-function useWahl(bereiche: Plattformzugang[]): Plattformzugang | null {
-  const [suche] = useSearchParams();
-  const zugang = suche.get('zugang');
-  const bereich = suche.get('bereich');
-  return (
-    bereiche.find((z) => z.access_id === zugang) ??
-    bereiche.find((z) => z.access_kind === 'self' && z.relationship_kind === bereich) ??
-    bereiche[0] ??
-    null
-  );
-}
-
-/** Die Adresse eines Zugangs im Schalter. */
-function wahlAdresse(z: Plattformzugang): string {
-  return z.access_kind === 'self'
-    ? `${PLATTFORM_PFAD}?bereich=${z.relationship_kind}`
-    : `${PLATTFORM_PFAD}?zugang=${z.access_id}`;
-}
-
-/** Die Beschriftung im Schalter: der eigene Bereich oder „Für …". */
-function wahlName(z: Plattformzugang): string {
-  if (z.access_kind === 'self') return BEREICHSNAME[z.relationship_kind];
-  return `Für ${z.represented_name ?? 'eine andere Person'}`;
-}
-
-/** Seiten, die je Bereich etwas anderes zeigen - dort steht der Schalter (D6). */
-const MIT_SCHALTER = new Set([
-  PLATTFORM_PFAD,
-  `${PLATTFORM_PFAD}/termine`,
-  `${PLATTFORM_PFAD}/rechnungen`,
-]);
-
-function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[] }) {
-  const { pathname } = useLocation();
-  const gewaehlt = useWahl(bereiche);
-  return (
-    <header className="nicht-drucken border-line bg-surface border-b">
-      <div className="max-w-formular mx-auto flex items-center justify-between gap-3 px-5 py-2">
-        <Link
-          to={PLATTFORM_PFAD}
-          className="rounded-button inline-flex min-h-11 items-center"
-          aria-label={praxis ? `Übersicht – ${praxis}` : 'Übersicht'}
-        >
-          <Wortmarke hoehe={28} />
-        </Link>
-        <Link
-          to={`${PLATTFORM_PFAD}/ich`}
-          aria-current={pathname === `${PLATTFORM_PFAD}/ich` ? 'page' : undefined}
-          className="text-ink hover:text-accent aria-[current=page]:text-accent aria-[current=page]:border-accent inline-flex min-h-11 items-center gap-2 border-b-2 border-transparent px-2 text-base font-medium whitespace-nowrap"
-        >
-          <span
-            aria-hidden="true"
-            className="bg-accent-soft text-accent rounded-pill inline-flex size-8 items-center justify-center"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="size-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
-            </svg>
-          </span>
-          Ich
-        </Link>
-      </div>
-      {/* D6: der Schalter nur bei zwei lesbaren Zugängen - eigene Bereiche
-          und Vertretungen (POR-006). */}
-      {bereiche.length > 1 && MIT_SCHALTER.has(pathname) ? (
-        <nav aria-label="Bereich" className="max-w-formular mx-auto px-5 pb-3">
-          <ul className="bg-surface-sunken rounded-button flex flex-wrap gap-1 p-1">
-            {bereiche.map((z) => (
-              // POR-020: Bei 200 % am Telefon stehen die Bereiche untereinander,
-              // statt mitten im Wort zu trennen.
-              <li key={z.access_id} className="min-w-0 flex-1 max-[23rem]:basis-full">
-                <Link
-                  to={wahlAdresse(z)}
-                  replace
-                  aria-current={gewaehlt?.access_id === z.access_id ? 'page' : undefined}
-                  className="text-ink-muted aria-[current=page]:bg-surface aria-[current=page]:text-ink rounded-button flex min-h-11 items-center justify-center px-3 text-center text-base font-medium"
-                >
-                  {wahlName(z)}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      ) : null}
-    </header>
-  );
-}
-
-/**
  * „Sie handeln für …" (ADR-023 Punkt 14, DSN-001 Abschnitt 10): dauerhaft
  * über dem Inhalt, solange eine Vertretung gewählt ist. Unter „Ich" steht es
  * nicht - dort geht es um das eigene Konto.
  */
-function HandelnFuer({ bereiche }: { bereiche: Plattformzugang[] }) {
+function HandelnFuer({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechner: boolean }) {
   const { pathname } = useLocation();
   const gewaehlt = useWahl(bereiche);
   if (!gewaehlt || gewaehlt.access_kind === 'self' || pathname === `${PLATTFORM_PFAD}/ich`) {
@@ -763,7 +682,7 @@ function HandelnFuer({ bereiche }: { bereiche: Plattformzugang[] }) {
   }
   return (
     <div role="status" className="bg-accent text-surface">
-      <p className="max-w-formular mx-auto px-5 py-2 text-base">
+      <p className={`${geruestSpalte(rechner)} py-2 text-base`}>
         Sie handeln für <strong>{gewaehlt.represented_name ?? 'eine andere Person'}</strong>
         <span className="opacity-90"> · {VERTRETUNGSART[gewaehlt.access_kind]}</span>
       </p>
@@ -1145,113 +1064,5 @@ function VertretungZeile({
         <p className="text-ink-muted mt-1 text-sm">Beenden kann diese Vertretung nur die Praxis.</p>
       )}
     </li>
-  );
-}
-
-/**
- * Die Reiterleiste unten (DSN-001 Abschnitt 3): höchstens fünf, jeder mit
- * Symbol und Wort. Ein Reiter erscheint erst mit dem Loop, der ihn füllt
- * (ANN-112): Übersicht, Termine (POR-008), Übungen bzw. Training (UEB-009),
- * Nachrichten (KOM-001).
- */
-// KOM-001: vier Reiter bei 375 px - das Wort bricht nie um („Nachrichten").
-const REITER =
-  'text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 flex-col items-center justify-center gap-0.5 border-t-3 border-transparent px-0.5 text-xs whitespace-nowrap aria-[current=page]:font-semibold';
-
-function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
-  const { pathname, search } = useLocation();
-  // DSN-001 Abschnitt 5: im Training heißt der Reiter „Training", weil dort
-  // Einheiten und Plan zusammenkommen.
-  const training = useWahl(bereiche)?.relationship_kind === 'training';
-  // DR-160: Ein Reiter trägt nur den gewählten Bereich weiter, nie eine
-  // Bestätigung wie `gesendet=1` - die gehört zu der Seite, die sie zeigt.
-  const bereich = bereichParameter(new URLSearchParams(search));
-  const anhang = bereich ? `?${bereich}` : '';
-  return (
-    // `reiterleiste`: Bei offener Bildschirmtastatur tritt sie zurück (DR-120, `index.css`).
-    <nav
-      aria-label="Plattform"
-      className="reiterleiste border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur"
-    >
-      <ul className="max-w-formular mx-auto flex">
-        <li className="flex-1">
-          <Link
-            to={`${PLATTFORM_PFAD}${anhang}`}
-            aria-current={pathname === PLATTFORM_PFAD ? 'page' : undefined}
-            className={REITER}
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="size-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />
-            </svg>
-            Übersicht
-          </Link>
-        </li>
-        <li className="flex-1">
-          <Link
-            to={`${PLATTFORM_PFAD}/termine${anhang}`}
-            aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/termine`) ? 'page' : undefined}
-            className={REITER}
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="size-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="3" y="5" width="18" height="16" rx="2" />
-              <path d="M3 10h18M8 3v4M16 3v4" />
-            </svg>
-            Termine
-          </Link>
-        </li>
-        <li className="flex-1">
-          <Link
-            to={`${PLATTFORM_PFAD}/uebungen${anhang}`}
-            aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/uebungen`) ? 'page' : undefined}
-            className={REITER}
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="size-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11" />
-            </svg>
-            {training ? 'Training' : 'Übungen'}
-          </Link>
-        </li>
-        <li className="flex-1">
-          <Link
-            to={`${PLATTFORM_PFAD}/nachrichten${anhang}`}
-            aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/nachrichten`) ? 'page' : undefined}
-            className={REITER}
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              className="size-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z" />
-            </svg>
-            Nachrichten
-          </Link>
-        </li>
-      </ul>
-    </nav>
   );
 }

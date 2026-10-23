@@ -327,3 +327,19 @@ describe('Uebersicht (POR-015)', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('Markenmoment B auf der Übersicht (ANN-680)', () => {
+  it('staffelt Gruß und Abschnitte beim ersten Erscheinen je Tab, beim Zurückkehren nicht', async () => {
+    const erstes = zeige();
+    const gruss = await screen.findByRole('heading', { level: 1, name: 'Guten Tag' });
+    const moment = erstes.container.querySelector('.markenmoment');
+    expect(moment).not.toBeNull();
+    // Der Gruß kommt zuerst, die Abschnitte darunter danach (`index.css`).
+    expect(moment?.firstElementChild).toContainElement(gruss);
+    erstes.unmount();
+
+    const zweites = zeige();
+    await screen.findByRole('heading', { level: 1, name: 'Guten Tag' });
+    expect(zweites.container.querySelector('.markenmoment')).toBeNull();
+  });
+});

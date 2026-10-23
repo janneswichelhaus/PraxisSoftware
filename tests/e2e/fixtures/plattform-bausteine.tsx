@@ -6,6 +6,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
 import { HeroKarte } from '@/components/ui/HeroKarte';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Menueknopf } from '@/components/ui/Menueknopf';
 import { Section } from '@/components/ui/Section';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import type { Termin } from '@/features/platform/api';
@@ -149,6 +150,12 @@ export function Seite() {
               Übungen beginnen
             </ButtonLink>
           </div>
+          {/* Der Knopf „Menü“ unter 23rem (Stufe 3), zu und offen. */}
+          <div className="flex gap-3">
+            <Menueknopf offen={false} steuert="menue-probe" />
+            <Menueknopf offen steuert="menue-probe" />
+          </div>
+          <nav id="menue-probe" aria-label="Menü der Prüfseite" hidden />
         </div>
       </Section>
     </main>

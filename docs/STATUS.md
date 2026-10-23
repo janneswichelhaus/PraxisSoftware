@@ -1,16 +1,18 @@
-# Status · Stand 2026-10-22
+# Status · Stand 2026-10-23
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
 
-Design-Review Lauf 1, Datenschritt (22.10., Branch `claude/plattform-daten-n1-n2`, Pfad A, DRP-N1/N2):
-Der Plattformkontext trägt den eigenen Namen, nur am lesbaren Zugang (ANN-690), und die Rufnummer
-der Praxis aus dem Absender der Rechnungen (ANN-691); die Oberfläche dazu bauen 1b, 1c und 1e.
+Design-Review Lauf 1, Datenschritt (22.10., PR #292, Branch `claude/plattform-daten-n1-n2`, Pfad A,
+DRP-N1/N2): Der Plattformkontext trägt den eigenen Namen, nur am lesbaren Zugang (ANN-690), und die
+Rufnummer der Praxis aus dem Absender der Rechnungen (ANN-691); Gruß, Initialen im Kopf und „Praxis
+anrufen“ folgen mit 1c bis 1e.
 
-Gemergt am 22.10.: Design-Review Schritt 0 (#288), Handoff und Bericht (#289), Schritt 1a (#290,
-ANN-678); BEF-179 und -180 (#287, ANN-675). Gemergt am 20. und 21.10.: BEF-178 (#286), BEF-176 (#284), BEF-192 und -193 (#283), BEF-188 (#282),
+Gemergt am 22. und 23.10.: Design-Review Schritt 0 (#288), Handoff und Bericht (#289), Schritt 1a
+(#290, ANN-678), Schritt 1b Gerüst (#293, ANN-679 bis ANN-683); BEF-179 und -180 (#287, ANN-675).
+Gemergt am 20. und 21.10.: BEF-178 (#286), BEF-176 (#284), BEF-192 und -193 (#283), BEF-188 (#282),
 BEF-175 (#281), BEF-190 und -191 (#280), BEF-189 (#279).
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
@@ -31,8 +33,9 @@ Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Ru
 
 ## Danach
 
-Design-Review Schritt 1b Gerüst (Handoff, Abschnitt 9). BEF-170 (Akte: einzeln gelöschte Dateien
-ins Löschjournal, Test mit Wiederherstellung; Pfad A).
+Design-Review Schritte 1c Türen und 1d Einstieg (parallel möglich), dann 1e Übersicht (Handoff,
+Abschnitt 9). BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederherstellung;
+Pfad A).
 
 ## Bei Jannes
 
@@ -59,5 +62,5 @@ ins Löschjournal, Test mit Wiederherstellung; Pfad A).
 
 ## Letzte Session
 
-22.10.2026, Branch `claude/plattform-daten-n1-n2`: eine Migration, kein Seed. Lokal: `git pull`,
-`pnpm dlx supabase@2.116.0 db reset`.
+23.10.2026, Branch `claude/plattform-daten-n1-n2` (mit `main` nach #293): eine Migration, kein Seed.
+Lokal: `git pull`, `pnpm dlx supabase@2.116.0 db reset`.

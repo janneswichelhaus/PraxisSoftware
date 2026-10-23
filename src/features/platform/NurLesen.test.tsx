@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import { useLocation } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
@@ -11,6 +11,7 @@ import {
 } from './einsicht';
 import { PlattformApp, type Einsicht } from './PlattformApp';
 import { eigenerPlan } from './testdaten';
+import { RECHNER_ABFRAGE } from './geruestbreite';
 
 /**
  * Die Plattform in der Einsicht der Praxis (E-001, DSN-001 D7): dasselbe
@@ -334,3 +335,28 @@ describe('Plattform in der Einsicht (E-001)', () => {
     expect(screen.getByTestId('ort')).toHaveTextContent('/p/termine/wunsch');
   });
 });
+
+describe('Einsicht am breiten Bildschirm (DR-113)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('zeigt im Telefon der Einsicht die Reiterleiste, nicht die Navigation des Rechners', async () => {
+    vi.stubGlobal('matchMedia', (abfrage: string) => ({
+      matches: abfrage === RECHNER_ABFRAGE,
+      media: abfrage,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    zeige(`/p?zugang=${ZUGANG}`);
+    expect(await screen.findByText('Einstieg steht aus')).toBeInTheDocument();
+    const navigation = screen.getByRole('navigation', { name: 'Plattform' });
+    expect(navigation).toHaveAttribute('data-stufe', '1');
+    expect(within(geruestKopf()).queryByRole('navigation', { name: 'Plattform' })).toBeNull();
+  });
+});
+
+/** Der Kopf des Gerüsts - neben ihm ist auch der Seitenkopf ein `header`. */
+function geruestKopf(): HTMLElement {
+  return screen.getByRole('img', { name: 'Own Motion' }).closest('header') as HTMLElement;
+}

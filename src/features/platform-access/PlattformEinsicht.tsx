@@ -169,8 +169,9 @@ function Ansicht({ zugangId, kontext }: { zugangId: string; kontext: Einsichtsko
         </Link>
       </section>
       <div className="min-h-0 flex-1 sm:px-4 sm:py-6">
-        {/* `transform-gpu` macht den Rahmen zum Bezug der festen Reiterleiste:
-            Sie steht unten im Telefon, nicht unten im Fenster. */}
+        {/* `transform-gpu` macht den Rahmen zum Bezug fester Teile der
+            Plattform: Sie stehen im Telefon, nicht im Fenster. Die
+            Reiterleiste steht am Ende der Rollfläche (DRP-007). */}
         <div className="sm:max-w-telefon sm:border-line sm:rounded-card relative mx-auto h-full w-full transform-gpu overflow-hidden sm:border">
           <div ref={rollbereich} className="h-full overflow-y-auto">
             <PlattformApp

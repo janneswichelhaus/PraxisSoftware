@@ -30,6 +30,7 @@ import { useNurLesen, usePlattformApi } from './einsicht';
 import { nachDemCheckin } from './checkintexte';
 import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import { fuerDiePlattform } from './instrumentwahl';
+import { useMarkenmoment } from './markenmoment';
 import { NICHT_AKUT, THEMA_NAME } from './nachrichtentexte';
 import { Notfallsatz } from './Notfallsatz';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
@@ -183,9 +184,13 @@ export function Uebersicht({
   const abfragen = [termine, wuensche, rechnungen, bogen];
   const gescheitert = abfragen.some((a) => a.isError);
   const geladen = termine.data !== undefined && !gescheitert;
+  // Der Moment endet erst, wenn die Übersicht steht (ANN-680).
+  const markenmoment = useMarkenmoment(geladen || gescheitert);
 
+  // Markenmoment B statt Startbild (ANN-680): beim ersten Erscheinen je Tab
+  // kommen Gruß und Abschnitte gestaffelt (`index.css`).
   return (
-    <>
+    <div className={markenmoment ? 'markenmoment' : undefined}>
       <PageHeader
         title="Guten Tag"
         {...(eigen
@@ -389,6 +394,6 @@ export function Uebersicht({
           </Textlink>
         )}
       </Section>
-    </>
+    </div>
   );
 }
