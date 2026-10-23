@@ -3,7 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Profilhinweis } from '@/app/Profilhinweis';
 import { MARKE, tabName, tabTitel } from '@/app/tabtitel';
+import { Anrufknoepfe } from '@/components/ui/Anrufknoepfe';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Laufrad } from '@/components/ui/Laufrad';
 import { FENSTERZIEL, PortalZielKontext } from '@/components/ui/portalZiel';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
@@ -12,6 +15,7 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { mitRueckweg } from '@/lib/rueckweg';
+import { telHref } from '@/lib/telefon';
 import { RECHTSGRUNDLAGE, VERTRETUNGSART } from '@/lib/vertretung';
 import {
   BEREICHSNAME,
@@ -561,7 +565,8 @@ function Geruest({
           </Routes>
         </div>
       </main>
-      {rechner ? null : <Reiterleiste bereiche={lesbar} />}
+      {/* Ohne lesbaren Zugang führt kein Reiter irgendwohin (Handoff 5.2). */}
+      {rechner || lesbar.length === 0 ? null : <Reiterleiste bereiche={lesbar} />}
     </div>
   );
 }
@@ -690,17 +695,42 @@ function HandelnFuer({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechn
   );
 }
 
-/** Gesperrt oder Lesefrist vorbei: sagen, was los ist (§13), und nur „Ich" anbieten (D2). */
+/**
+ * Gesperrt oder Lesefrist vorbei: sagen, was los ist (§13), und nur „Ich"
+ * anbieten (D2). Seit Schritt 1c (Handoff 2026-10-22, Abschnitt 5.2) mit der
+ * Markenfläche statt einer leeren Seite, ohne Reiterleiste, und gesperrt mit
+ * „Praxis anrufen“, wenn die Praxis eine Nummer führt (ANN-691, ANN-688).
+ */
 function OhneLesbarenZugang({ zugaenge }: { zugaenge: Plattformzugang[] }) {
   const gesperrt = zugaenge.some((z) => z.status === 'locked');
+  const telefon = zugaenge.find((z) => z.practice_phone)?.practice_phone ?? null;
   return (
     <>
+      {/* Markenfläche mit Laufrad; unter 23rem entfällt sie wie ein Foto (ANN-682). */}
+      <div
+        aria-hidden="true"
+        className="bg-surface-inverse rounded-image relative mb-8 h-40 overflow-hidden max-[23rem]:hidden"
+      >
+        <Laufrad className="text-accent absolute -top-12 -right-12 size-55" />
+      </div>
       <PageHeader title={gesperrt ? 'Ihr Zugang ist gesperrt' : 'Ihr Zugang ist beendet'} />
       <p className="text-ink max-w-prose text-base leading-relaxed">
         {gesperrt
           ? 'Hier ist gerade nichts zu sehen. Bitte wenden Sie sich an die Praxis.'
           : 'Die Zeit, in der Sie hier noch lesen konnten, ist abgelaufen. Unter „Ich" können Sie Einwilligungen widerrufen und sich abmelden.'}
       </p>
+      <div className="max-w-formular mt-6 flex flex-col gap-3">
+        {gesperrt && telefon ? (
+          <Anrufknoepfe
+            hauptknopf
+            ohneNummer={null}
+            nummern={[{ label: 'Praxis', anzeige: telefon, href: telHref(telefon) }]}
+          />
+        ) : null}
+        <ButtonLink to={`${PLATTFORM_PFAD}/ich`} variant="secondary">
+          Zu „Ich“
+        </ButtonLink>
+      </div>
     </>
   );
 }

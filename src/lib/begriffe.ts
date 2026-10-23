@@ -159,6 +159,21 @@ export interface AbgeloesterBegriff {
   nurIn?: readonly string[];
 }
 
+/** Die Seiten der Patient:innen unter `/p` (DSN-001). */
+const PLATTFORM = ['src/features/platform/'] as const;
+
+/**
+ * Die Türen der Plattform: Einladung, Einrichtung nach der Einladung und die
+ * Sperre in ihrer Plattform-Fassung (Handoff 2026-10-22, Abschnitt 5.2). Die
+ * Anmeldung und die Sperre der Praxis teilen sich Beschäftigte und
+ * Patient:innen; sie stehen nicht in dieser Liste.
+ */
+const TUEREN = [
+  'src/features/platform/EinladungPage.tsx',
+  'src/features/auth/einrichtung/AnmeldungEinrichten.tsx',
+  'src/features/auth/sitzungssperre/PlattformSperrseite.tsx',
+] as const;
+
 export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
   {
     muster: /\bAuditlogs?\b/,
@@ -237,6 +252,47 @@ export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
     statt: `${BEGRIFFE.inVersorgung} / ${BEGRIFFE.nichtInVersorgung}`,
     quelle: 'BEF-067, Jannes 2026-10-09; ANN-111',
     nurIn: ['src/features/patients/', 'src/app/Funktionssuche.tsx'],
+  },
+  // Die Plattform der Patient:innen spricht nicht die Sprache der Technik und
+  // nicht die der Praxis (Handoff 2026-10-22, Abschnitt 1; ANN-111). Ihre
+  // Türen - Einladung, Einrichtung, Sperre - sagen „Zugang“ (Abschnitt 0).
+  {
+    muster: /\bSitzung(en)?\b/,
+    statt: 'Zugang bzw. Anmeldung',
+    quelle: 'Handoff 2026-10-22, Abschnitte 0 und 1; DR-106',
+    nurIn: [...PLATTFORM, ...TUEREN],
+  },
+  {
+    muster: /\bKont(o|os|en)\b/,
+    statt: 'Zugang',
+    quelle: 'Handoff 2026-10-22, Abschnitt 0 („Türen sprechen von Zugang“)',
+    nurIn: TUEREN,
+  },
+  {
+    // „Kein Kennwort“ und „Ein Kennwort brauchen Sie nicht“ sagen, dass es
+    // keins gibt - das darf stehen.
+    muster: /(?<![Kk]ein(en)? )\bKennw(o|ö)rt(e|er)?\b(?!-| brauchen Sie nicht)/,
+    statt: 'Passkey bzw. PIN',
+    quelle: 'Handoff 2026-10-22, Abschnitt 1',
+    nurIn: [...PLATTFORM, ...TUEREN],
+  },
+  {
+    muster: /\bMein(em)? Konto\b/,
+    statt: '„Ich“',
+    quelle: 'Handoff 2026-10-22, Abschnitt 1; DR-105',
+    nurIn: PLATTFORM,
+  },
+  {
+    muster: /\b(Projektion(en)?|Instrument(e|en)?)\b/,
+    statt: 'Ihre Angaben bzw. Fragebogen',
+    quelle: 'Handoff 2026-10-22, Abschnitt 1',
+    nurIn: PLATTFORM,
+  },
+  {
+    muster: /\b(Workouts?|Drills?|Kunden?|PT)\b/,
+    statt: 'Training, Übung bzw. Sie',
+    quelle: 'Handoff 2026-10-22, Abschnitt 1',
+    nurIn: PLATTFORM,
   },
 ];
 

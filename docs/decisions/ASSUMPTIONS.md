@@ -7152,3 +7152,27 @@ Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 **Anker.** `istPlattformpfad` in `src/features/platform/pfade.ts`, gefragt in `Sitzungssperre.tsx`.
 
 **Änderungspfad.** Nach dem Konto statt nach der Adresse: ein Merker in `sessionStorage` beim Öffnen der Plattform · Aufwand `klein`.
+
+### ANN-688 — Zugang gesperrt oder beendet: nur „Ich“, gesperrt dazu der Anruf bei der Praxis
+
+Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
+
+**Annahme.** Ohne lesbaren Zugang zeigt die Plattform den Kopf mit „Ich“ (auch unter 23rem, wo sonst „Menü“ steht), keine Reiterleiste, kein Menü und am Rechner keine Navigation; darunter die Markenfläche, Titel und Satz wie bisher und „Zu „Ich““. Ist der Zugang gesperrt und führt die Praxis eine Nummer, steht davor „Praxis anrufen“ als Hauptknopf; nach der Lesefrist nicht, dort ist „Ich“ der Weg (Widerruf, Abmelden).
+
+**Begründung.** Handoff 2026-10-22, Abschnitt 5.2; ANN-691 („Gerade ein gesperrter Zugang braucht den Weg zur Praxis“). Jeder Reiter führte auf dieselbe Auskunft zurück.
+
+**Anker.** `OhneLesbarenZugang` in `src/features/platform/PlattformApp.tsx`; `ohneZiele` in `Kopf` (`Navigation.tsx`).
+
+**Änderungspfad.** Den Anruf auch nach der Lesefrist: die Bedingung `gesperrt` streichen · Aufwand `klein`.
+
+### ANN-689 — Ungültige Einladung ohne „Praxis anrufen“
+
+Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: Frage 1 in PR #292
+
+**Annahme.** Eine unbekannte, abgelaufene oder benutzte Einladung bekommt keinen Knopf „Praxis anrufen“, nur „Zur Anmeldung“ als Hauptknopf. Der Satz „Die Praxis stellt Ihnen gern eine neue aus.“ bleibt.
+
+**Begründung.** Die Rufnummer kommt aus dem Plattformkontext, und den gibt es erst nach der Anmeldung (ANN-691). Sie am Code abzufragen, verriete einem Fremden mit einem geratenen oder alten Code die Praxis und gäbe ungültigen Codes eine andere Auskunft als gültigen (ADR-023 Punkt 8).
+
+**Anker.** Zustand `ungueltig` in `src/features/platform/EinladungPage.tsx`.
+
+**Änderungspfad.** Eine feste Nummer der Organisation ohne Code (öffentliche Angabe, wie im Impressum) als zweiter Knopf · Aufwand `mittel`.
