@@ -36,7 +36,11 @@ describe('Schalter', () => {
       container.querySelector('[data-zustand]')!.closest('[aria-hidden="true"]'),
     ).not.toBeNull();
     // Die ganze Karte ist das Ziel: mindestens 80 hoch, Spur 56 × 32 aus `line-strong`.
-    expect(schalter).toHaveClass('min-h-20', 'rounded-card', 'w-full');
+    expect(schalter).toHaveClass('min-h-20', 'rounded-card', 'w-full', 'flex-wrap');
+    // Wird es eng, rücken Zustand und Spur unter die Beschriftung (mindestens 10rem).
+    expect(screen.getByText('Mitteilungen auf diesem Telefon').parentElement).toHaveClass(
+      'basis-40',
+    );
     expect(container.querySelector('[data-spur]')).toHaveClass('h-8', 'w-14', 'bg-line-strong');
     await pruefeBarrierefreiheit(container);
   });

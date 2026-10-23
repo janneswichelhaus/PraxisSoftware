@@ -521,7 +521,13 @@ function Mitteilungen({ zugang }: { zugang: Plattformzugang }) {
         <div className="flex flex-col gap-2">
           <Schalter
             beschriftung={
-              weg === 'push' ? `Mitteilungen auf diesem ${telefon}` : 'Mitteilungen per E-Mail'
+              weg === 'push' ? (
+                `Mitteilungen auf diesem ${telefon}`
+              ) : (
+                <>
+                  Mitteilungen per <span className="whitespace-nowrap">E-Mail</span>
+                </>
+              )
             }
             hinweis={
               weg === 'push'

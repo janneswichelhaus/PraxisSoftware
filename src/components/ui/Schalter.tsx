@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 
 /**
  * Ein Schalter als Karte (Handoff 2026-10-22, Abschnitt 5.3): links, was er
@@ -7,7 +7,9 @@ import { useId } from 'react';
  * `role="switch"` und `aria-checked` - der Zustand steht als Wort und als
  * Lage, nie nur als Farbe (DESIGN.md Regel 5). Spur 56 × 32, aus in
  * `line-strong` (4,2:1 gegen Papier), an in `accent`; der Knopf darin Papier,
- * 24. Alles in rem, damit es mit „Groß“ und „Sehr groß“ wächst.
+ * 24. Alles in rem, damit es mit „Groß“ und „Sehr groß“ wächst; wird es eng
+ * (200 %, „Sehr groß“), rücken Zustand und Spur unter die Beschriftung, statt
+ * sie Buchstabe für Buchstabe umzubrechen.
  *
  * Für eine Wahl, die sofort gilt - eine Einstellung, kein Feld eines
  * Formulars, das man erst absendet. Solange der Wechsel läuft (`laeuft`, etwa
@@ -21,7 +23,8 @@ export function Schalter({
   onUmschalten,
   laeuft = false,
 }: {
-  beschriftung: string;
+  /** Was er schaltet; ein Wort, das nicht brechen soll, in `whitespace-nowrap`. */
+  beschriftung: ReactNode;
   /** Ein Satz unter der Beschriftung, als Beschreibung vorgelesen. */
   hinweis?: string | undefined;
   an: boolean;
@@ -42,9 +45,9 @@ export function Schalter({
       onClick={() => {
         if (!laeuft) onUmschalten(!an);
       }}
-      className="border-line bg-surface rounded-card [.plattform-schrift_&]:ease-druck [.plattform-schrift_&]:active:bg-surface-sunken flex min-h-20 w-full items-center gap-4 border px-5 py-4 text-left transition-colors aria-disabled:cursor-progress [.plattform-schrift_&]:duration-120"
+      className="border-line bg-surface rounded-card [.plattform-schrift_&]:ease-druck [.plattform-schrift_&]:active:bg-surface-sunken flex min-h-20 w-full flex-wrap items-center gap-x-4 gap-y-3 border px-5 py-4 text-left transition-colors aria-disabled:cursor-progress [.plattform-schrift_&]:duration-120"
     >
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
+      <span className="flex min-w-0 flex-1 basis-40 flex-col gap-1">
         <span id={titelId} className="text-ink font-semibold">
           {beschriftung}
         </span>
@@ -54,7 +57,7 @@ export function Schalter({
           </span>
         ) : null}
       </span>
-      <span aria-hidden="true" className="flex shrink-0 items-center gap-3">
+      <span aria-hidden="true" className="ml-auto flex shrink-0 items-center gap-3">
         <span data-zustand="" className="text-ink font-semibold">
           {an ? 'An' : 'Aus'}
         </span>

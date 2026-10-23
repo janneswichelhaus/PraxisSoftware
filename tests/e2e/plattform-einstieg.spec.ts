@@ -269,6 +269,14 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
     expect(fussRollt).toBe(true);
     expect(await ueberlaeuft(page)).toBe(false);
     expect(await axeVerstoesse(page), 'axe').toEqual([]);
+
+    // Der Schalter: Zustand und Spur rücken unter die Beschriftung, statt sie
+    // Buchstabe für Buchstabe umzubrechen (vorher 1550 px hoch).
+    await tippe(daten.getByRole('button', { name: 'Weiter' }));
+    const schalter = fenster(page, 'Sollen wir Ihnen Bescheid geben?').getByRole('switch');
+    await schalter.scrollIntoViewIfNeeded();
+    expect((await schalter.boundingBox())?.height ?? 0).toBeLessThan(320);
+    expect(await ueberlaeuft(page)).toBe(false);
   });
 
   test('„Sehr groß“: die Wahl bleibt gleich gewichtet, nichts läuft über', async ({ page }) => {
