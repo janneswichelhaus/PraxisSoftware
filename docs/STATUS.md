@@ -5,13 +5,13 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1, Datenschritt (22.10., PR #292, Branch `claude/plattform-daten-n1-n2`, Pfad A,
-DRP-N1/N2): Der Plattformkontext trägt den eigenen Namen, nur am lesbaren Zugang (ANN-690), und die
-Rufnummer der Praxis aus dem Absender der Rechnungen (ANN-691); Gruß, Initialen im Kopf und „Praxis
-anrufen“ folgen mit 1c bis 1e.
+Design-Review Lauf 1, Schritt 1d Einstieg (23.10., Branch `claude/lucid-keller-zholly`, DRP-015 bis
+-019): geführter Ablauf mit „Später“, Einwilligungen als Wahl (ANN-693), ein Schalter für
+Mitteilungen (ANN-694), „Alles bereit“ mit der ersten Aufgabe aus `hauptsache.ts` (ANN-692, -695).
 
 Gemergt am 22. und 23.10.: Design-Review Schritt 0 (#288), Handoff und Bericht (#289), Schritt 1a
-(#290, ANN-678), Schritt 1b Gerüst (#293, ANN-679 bis ANN-683); BEF-179 und -180 (#287, ANN-675).
+(#290, ANN-678), 1b Gerüst (#293, ANN-679 bis -683), Daten N1/N2 (#292, ANN-690, -691);
+BEF-179/-180 (#287).
 Gemergt am 20. und 21.10.: BEF-178 (#286), BEF-176 (#284), BEF-192 und -193 (#283), BEF-188 (#282),
 BEF-175 (#281), BEF-190 und -191 (#280), BEF-189 (#279).
 
@@ -33,8 +33,7 @@ Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Ru
 
 ## Danach
 
-Design-Review Schritte 1c Türen und 1d Einstieg (parallel möglich), dann 1e Übersicht (Handoff,
-Abschnitt 9). BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederherstellung;
+Design-Review Schritt 1c Türen (läuft parallel), dann 1e Übersicht (Handoff, Abschnitt 9). BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederherstellung;
 Pfad A).
 
 ## Bei Jannes
@@ -62,5 +61,4 @@ Pfad A).
 
 ## Letzte Session
 
-23.10.2026, Branch `claude/plattform-daten-n1-n2` (mit `main` nach #293): eine Migration, kein Seed.
-Lokal: `git pull`, `pnpm dlx supabase@2.116.0 db reset`.
+23.10.2026, Branch `claude/lucid-keller-zholly`: keine Migration, kein Seed. Lokal: `git pull`.

@@ -1494,6 +1494,15 @@
           "fertig_am": "2026-10-22",
           "nachweis": "DRP-N1, DRP-N2, Branch `claude/plattform-daten-n1-n2`, Migration 20261223230000_drp_n1_n2_plattform_name_rufnummer.sql, supabase/tests/platform-own-name-phone.test.ts",
           "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1, Datenschritt nach Pfad A; ANN-690, ANN-691"
+        },
+        {
+          "id": "drp-epic-005",
+          "name": "DRP-EPIC-005 Plattform: Einstieg aus dem Design-Review (Schritt 1d – geführter Ablauf mit „Später“, Einwilligungen als Wahl, ein Schalter für Mitteilungen, „Alles bereit“)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-23",
+          "nachweis": "DRP-015 bis DRP-019, Branch `claude/lucid-keller-zholly`, src/features/platform/Einstieg.test.tsx, tests/e2e/plattform-einstieg.spec.ts",
+          "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1d (Handoff 2026-10-22, Abschnitt 5.3), parallel zu 1c; ANN-692 bis ANN-695"
         }
       ]
     },
