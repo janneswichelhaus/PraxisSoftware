@@ -357,32 +357,16 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     expect(screen.queryByRole('link', { name: /Meine Benachrichtigungen/ })).toBeNull();
   });
 
-  // POR-019 (IDEA-LZK-005): der Einstieg vor der Übersicht.
+  // POR-019 (IDEA-LZK-005): der Einstieg vor der Übersicht. Seine Seiten
+  // prüft `Einstieg.test.tsx`.
   it('zeigt den ausstehenden Einstieg vor der Übersicht; Später beendet ihn', async () => {
     const nutzer = userEvent.setup();
     ladeEinstieg.mockResolvedValue({ pending: true, finished_at: null, skipped_at: null });
     zeige([BEHANDLUNG]);
-    expect(await screen.findByRole('heading', { name: 'Willkommen' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'Willkommen' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Guten Tag' })).toBeNull();
-    await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
-    expect(screen.getByRole('heading', { name: 'Ihre Einwilligungen' })).toBeInTheDocument();
-    expect(screen.getByText(/Sie müssen hier nichts entscheiden/)).toBeInTheDocument();
     await nutzer.click(screen.getByRole('button', { name: 'Später' }));
     await waitFor(() => expect(einstiegBeenden).toHaveBeenCalledWith(BEHANDLUNG.access_id));
-  });
-
-  it('einer Begleitung ohne den Schritt Einwilligungen', async () => {
-    const nutzer = userEvent.setup();
-    ladeEinstieg.mockResolvedValue({ pending: true, finished_at: null, skipped_at: null });
-    zeige([{ ...BEHANDLUNG, access_kind: 'companion', represented_name: 'Max Mustermann' }]);
-    expect(await screen.findByText('Schritt 1 von 3')).toBeInTheDocument();
-    await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
-    // KOM-011: auch die Begleitung wählt Benachrichtigungen für ihren Zugang.
-    expect(screen.getByRole('heading', { name: 'Benachrichtigungen' })).toBeInTheDocument();
-    await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
-    expect(screen.getByRole('heading', { name: 'Fertig' })).toBeInTheDocument();
-    await nutzer.click(screen.getByRole('button', { name: 'Zur Übersicht' }));
-    await waitFor(() => expect(einstiegBeenden).toHaveBeenCalled());
   });
 });
 
