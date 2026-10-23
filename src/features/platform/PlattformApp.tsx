@@ -575,9 +575,14 @@ function Geruest({
  * Die Seiten zeichnen erst, wenn es steht: Ein Fenster, das beim ersten
  * Zeichnen schon offen ist, zöge sonst um. Die Einsicht der Praxis behält
  * ihr Ziel - ihre Fenster liegen über der Praxisseite.
+ *
+ * Am Rechner trägt das Ziel `data-rechner` wie das Gerüst: Die Titel eines
+ * Fensters in der Stufe der Plattform wachsen dann mit (`Fenstertitel`,
+ * Einstieg, DRP-016) - nicht nach `lg:`, das in der Einsicht gälte.
  */
 function MitFensterZiel({ children }: { children: ReactNode }) {
   const [ziel, setZiel] = useState<HTMLDivElement | null>(null);
+  const rechner = useRechner();
   return (
     <>
       {ziel ? (
@@ -587,6 +592,7 @@ function MitFensterZiel({ children }: { children: ReactNode }) {
         ref={setZiel}
         className="plattform-schrift"
         data-testid="plattform-fenster"
+        data-rechner={rechner ? '' : undefined}
         {...{ [FENSTERZIEL]: '' }}
       />
     </>

@@ -469,6 +469,11 @@ describe('Rechneransicht ab 1024 px (DR-113)', () => {
       '/p/uebungen',
     );
   });
+
+  it('sagt auch dem Ziel der Fenster, dass es der Rechner ist (DRP-015)', () => {
+    zeige([BEHANDLUNG], '/p/termine?bereich=treatment');
+    expect(screen.getByTestId('plattform-fenster')).toHaveAttribute('data-rechner', '');
+  });
 });
 
 /** Der Kopf des Gerüsts - neben ihm ist auch der Seitenkopf ein `header`. */

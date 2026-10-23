@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { bewegungErlaubt } from './bewegung';
 import { Button } from './Button';
-import { Dialogfenster, Fenstertitel } from './Dialogfenster';
+import { Dialogfenster, Fenstertitel, type Titelstufe } from './Dialogfenster';
 import { ProgressBar } from './ProgressBar';
 
 /**
@@ -50,6 +50,11 @@ export const TIPPSPERRE_MS = 700;
  * Welche Seite auf welche folgt, steht nicht hier, sondern im Ablauf selbst
  * (`abfolge.ts` für den gemeinsamen Teil). Nicht für Tägliches: Dort kostet
  * ein Schritt je Frage nur Tipps (DESIGN.md).
+ *
+ * **Zusätzlich und abschaltbar** (Handoff 2026-10-22, Abschnitt 5.3; der
+ * Einstieg der Plattform): `spaeter` statt der Zeile mit ✕, `balkenJeSchritt`,
+ * `titelStufe`, `vorDemTitel` und `fussSchmalImFluss`. Ohne sie bleibt jeder
+ * Ablauf, wie er ist.
  */
 export function GefuehrterAblauf({
   titel,
@@ -67,6 +72,11 @@ export function GefuehrterAblauf({
   abschluss = false,
   fuss,
   tippsperre = true,
+  spaeter = false,
+  balkenJeSchritt = false,
+  titelStufe,
+  vorDemTitel,
+  fussSchmalImFluss = false,
   children,
 }: {
   /** Die Frage der Seite: Überschrift und Name des Fensters. */
@@ -101,6 +111,24 @@ export function GefuehrterAblauf({
   fuss?: ReactNode;
   /** Die Tippsperre nach jedem Wechsel; aus nur, wo nichts verwechselt werden kann. */
   tippsperre?: boolean;
+  /**
+   * Ein Ablauf, den man jederzeit auf später legen kann: Die Zeile mit ✕ und
+   * `objekt` entfällt, links steht „← Zurück“, rechts „Später“, beide 48 hoch.
+   * „Später“ schließt wie ✕ (`onSchliessen`), Escape und ein Tipp daneben
+   * ebenso. Auf dem Abschluss steht es nicht - sein Fuß führt ohnehin hinaus.
+   */
+  spaeter?: boolean;
+  /** Ein Balken je Schritt statt eines durchgehenden; braucht `stand.von`. */
+  balkenJeSchritt?: boolean;
+  /** Die Frage in einer Stufe der Plattform statt in der des Fensters. */
+  titelStufe?: Titelstufe | undefined;
+  /** Über der Frage, im Inhalt: etwa ein Bild und eine Bestätigung. Nicht mit Bühne. */
+  vorDemTitel?: ReactNode;
+  /**
+   * Unter 23rem (200 % Zoom am Telefon) steht der Fuß am Ende des Inhalts und
+   * rollt mit, statt fest unten ein Drittel der Höhe zu nehmen (ANN-682).
+   */
+  fussSchmalImFluss?: boolean;
   children?: ReactNode;
 }) {
   const gesperrt = useTippsperre(seite, tippsperre);
@@ -120,23 +148,55 @@ export function GefuehrterAblauf({
   // Beschriftung in der Frage steht („Wofür?“ in „Wie viel und wofür?“).
   const rollflaeche = { tabIndex: 0 } as const;
   const mitFuss = fuss !== undefined && fuss !== null && fuss !== false;
+  const balken = stand?.von ? (
+    balkenJeSchritt ? (
+      <Schrittbalken wert={stand.wert ?? 0} von={stand.von} />
+    ) : (
+      <ProgressBar wert={stand.wert ?? 0} von={stand.von} />
+    )
+  ) : null;
 
   const kopf = (
     <>
       <p className="sr-only" aria-live="polite">
         {ansage ?? (stand ? `${stand.text}: ${titel}` : titel)}
       </p>
-      <div className="shrink-0 px-4 pt-2">
-        <div className="flex min-h-11 items-center gap-3">
-          {zurueckGehen ? (
-            <Button variant="quiet" groesse="kompakt" onClick={zurueckGehen}>
-              ← Zurück
-            </Button>
+      {spaeter ? (
+        // Der Kopf ohne ✕-Zeile (5.3): „← Zurück“ und „Später“ in einer
+        // Reihe, darunter der Balken mit dem Schritt daneben.
+        <div className="shrink-0 px-4 pt-2">
+          <div className="flex min-h-12 items-center gap-3">
+            {zurueckGehen ? (
+              <Button variant="quiet" className="-ml-3" onClick={zurueckGehen}>
+                ← Zurück
+              </Button>
+            ) : null}
+            {abschluss ? null : (
+              <Button variant="quiet" className="-mr-3 ml-auto" onClick={onSchliessen}>
+                Später
+              </Button>
+            )}
+          </div>
+          {stand ? (
+            <div className="flex items-center gap-3">
+              {balken}
+              <p className="text-ink-muted ml-auto shrink-0 text-sm">{stand.text}</p>
+            </div>
           ) : null}
-          {stand ? <p className="text-ink-muted ml-auto text-sm">{stand.text}</p> : null}
         </div>
-        {stand?.von ? <ProgressBar wert={stand.wert ?? 0} von={stand.von} /> : null}
-      </div>
+      ) : (
+        <div className="shrink-0 px-4 pt-2">
+          <div className="flex min-h-11 items-center gap-3">
+            {zurueckGehen ? (
+              <Button variant="quiet" groesse="kompakt" onClick={zurueckGehen}>
+                ← Zurück
+              </Button>
+            ) : null}
+            {stand ? <p className="text-ink-muted ml-auto text-sm">{stand.text}</p> : null}
+          </div>
+          {balkenJeSchritt && balken ? <div className="mt-2 flex">{balken}</div> : balken}
+        </div>
+      )}
       {/* Die Rückfrage vor dem Weggehen, gleich unter dem Kopf: dort, wo das
           ✕ liegt, und auf jeder Seite ohne Rollen. */}
       {schutz ? <div className="shrink-0">{schutz}</div> : null}
@@ -165,6 +225,7 @@ export function GefuehrterAblauf({
         onSchliessen={onSchliessen}
         schliessenBeschriftung={schliessen}
         titelImInhalt
+        ohneKopfzeile={spaeter}
       >
         {kopf}
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
@@ -184,7 +245,7 @@ export function GefuehrterAblauf({
             {abschluss ? (
               <>
                 <div className="shrink-0 px-4 pt-3 lg:pt-4">
-                  <Fenstertitel />
+                  <Fenstertitel stufe={titelStufe} />
                 </div>
                 <div
                   className={`min-h-0 flex-1 overflow-y-auto px-4 pt-2 pb-4 lg:pt-4 ${ROLLFLAECHE}`}
@@ -199,7 +260,7 @@ export function GefuehrterAblauf({
                 {/* Die Überschrift unter der Bühne, direkt über den Antworten -
                     wo der Daumen ist und der Blick als Nächstes hinwill. */}
                 <div className="mb-3">
-                  <Fenstertitel />
+                  <Fenstertitel stufe={titelStufe} />
                 </div>
                 {children}
                 {fuss}
@@ -211,6 +272,14 @@ export function GefuehrterAblauf({
     );
   }
 
+  // Unter 23rem rollt die ganze Seite samt Fuß, nicht nur ihr Inhalt.
+  const schmal = fussSchmalImFluss
+    ? {
+        seite: 'max-[23rem]:overflow-y-auto',
+        inhalt: 'max-[23rem]:flex-none max-[23rem]:overflow-visible',
+      }
+    : { seite: '', inhalt: '' };
+
   return (
     <Dialogfenster
       vollbild
@@ -219,17 +288,23 @@ export function GefuehrterAblauf({
       onSchliessen={onSchliessen}
       schliessenBeschriftung={schliessen}
       titelImInhalt
+      ohneKopfzeile={spaeter}
     >
       {kopf}
       {/* Jede Seite beginnt neu (`key`): Eingaben einer anderen Seite stehen
           nicht im Weg, und der Fokus geht auf ihr `data-autofocus`. */}
-      <div key={seite} ref={schritt} className={`flex min-h-0 flex-1 flex-col ${sperre}`.trim()}>
+      <div
+        key={seite}
+        ref={schritt}
+        className={`flex min-h-0 flex-1 flex-col ${schmal.seite} ${sperre}`.trim()}
+      >
         <div
-          className={`min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-4 ${ROLLFLAECHE}`}
+          className={`min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-4 ${schmal.inhalt} ${ROLLFLAECHE}`}
           {...rollflaeche}
         >
           <div className="max-w-formular mx-auto flex w-full flex-col gap-4">
-            <Fenstertitel />
+            {vorDemTitel}
+            <Fenstertitel stufe={titelStufe} />
             {children}
           </div>
         </div>
@@ -238,6 +313,25 @@ export function GefuehrterAblauf({
         ) : null}
       </div>
     </Dialogfenster>
+  );
+}
+
+/**
+ * Ein Balken je Schritt (Handoff 2026-10-22, Abschnitt 5.3): 4 hoch, erledigt
+ * und aktuell in der Hauptfarbe, offen in der Spur. Für Vorlesesoftware
+ * ausgeblendet - „Schritt 2 von 3“ steht als Text daneben.
+ */
+function Schrittbalken({ wert, von }: { wert: number; von: number }) {
+  return (
+    <span aria-hidden="true" className="flex min-w-0 flex-1 gap-1">
+      {Array.from({ length: von }, (_, i) => (
+        <span
+          key={i}
+          data-schritt={i < wert ? 'erreicht' : 'offen'}
+          className={`rounded-pill h-1 flex-1 ${i < wert ? 'bg-accent' : 'bg-spur'}`}
+        />
+      ))}
+    </span>
   );
 }
 

@@ -69,6 +69,7 @@ export function Dialogfenster({
   beschreibung,
   schliessenBeschriftung = 'Schließen',
   titelImInhalt = false,
+  ohneKopfzeile = false,
   children,
 }: {
   /** Überschrift und zugängliche Bezeichnung des Fensters. */
@@ -100,6 +101,13 @@ export function Dialogfenster({
    * das Fenster heißt weiter nach ihm.
    */
   titelImInhalt?: boolean;
+  /**
+   * Im Vollbild ohne die Kopfzeile mit ✕: Der Inhalt trägt seinen eigenen
+   * Kopf, etwa „← Zurück“ und „Später“ im Einstieg der Plattform (Handoff
+   * 2026-10-22, Abschnitt 5.3). Nur mit `titelImInhalt` - sonst hieße das
+   * Fenster nach nichts. Escape und ein Klick daneben schließen weiter.
+   */
+  ohneKopfzeile?: boolean;
   children: ReactNode;
 }) {
   const titelId = useId();
@@ -248,38 +256,40 @@ export function Dialogfenster({
           // Kerbe und Wischleiste; ab 640 px ein Fenster mit Rand wie oben.
           className="fenster-kommt bg-surface sm:border-line-strong sm:rounded-card flex h-dvh w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-[min(52rem,calc(100dvh-4rem))] sm:max-w-5xl sm:border-2 sm:pt-0 sm:pb-0"
         >
-          <div className="border-line flex min-h-14 shrink-0 items-center gap-2 border-b py-1 pr-2 pl-4">
-            <div className="min-w-0 flex-1">
-              {titelImInhalt ? (
-                <p className="text-ink truncate font-semibold">{beschreibung}</p>
-              ) : (
-                <>
-                  <h2 id={titelId} className="text-ink text-h4 truncate font-bold">
-                    {titel}
-                  </h2>
-                  {beschreibung ? (
-                    <p className="text-ink-muted truncate text-sm">{beschreibung}</p>
-                  ) : null}
-                </>
-              )}
-            </div>
-            <Symbolknopf
-              beschriftung={schliessenBeschriftung}
-              onClick={() => schliessenRef.current()}
-            >
-              <svg
-                viewBox="0 0 20 20"
-                width="20"
-                height="20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
+          {ohneKopfzeile && titelImInhalt ? null : (
+            <div className="border-line flex min-h-14 shrink-0 items-center gap-2 border-b py-1 pr-2 pl-4">
+              <div className="min-w-0 flex-1">
+                {titelImInhalt ? (
+                  <p className="text-ink truncate font-semibold">{beschreibung}</p>
+                ) : (
+                  <>
+                    <h2 id={titelId} className="text-ink text-h4 truncate font-bold">
+                      {titel}
+                    </h2>
+                    {beschreibung ? (
+                      <p className="text-ink-muted truncate text-sm">{beschreibung}</p>
+                    ) : null}
+                  </>
+                )}
+              </div>
+              <Symbolknopf
+                beschriftung={schliessenBeschriftung}
+                onClick={() => schliessenRef.current()}
               >
-                <path d="M5 5l10 10M15 5L5 15" />
-              </svg>
-            </Symbolknopf>
-          </div>
+                <svg
+                  viewBox="0 0 20 20"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <path d="M5 5l10 10M15 5L5 15" />
+                </svg>
+              </Symbolknopf>
+            </div>
+          )}
           <TitelKontext.Provider value={{ id: titelId, titel }}>
             <div className="flex min-h-0 flex-1 flex-col">{children}</div>
           </TitelKontext.Provider>
@@ -550,16 +560,33 @@ export function Hinweisfenster({
 const TitelKontext = createContext<{ id: string; titel: string } | null>(null);
 
 /**
+ * Die Stufen der Plattform für die Überschrift eines Fensters (Handoff
+ * 2026-10-22, Abschnitte 2 und 5.3; der Einstieg): `seite` wie ein
+ * Seitentitel, 28 und am Rechner 32; `gruss` wie der Gruß, 34 und am Rechner
+ * 40, unter 23rem 28. Den Rechner sagt `data-rechner` am Fensterziel der
+ * Plattform (`PlattformApp`), nicht `lg:` - wie am Seitentitel (ANN-683).
+ * Ein Zeilenumbruch im Titel bleibt einer („Willkommen,“ und der Name).
+ */
+export type Titelstufe = 'seite' | 'gruss';
+
+const TITELSTUFE: Record<Titelstufe, string> = {
+  seite:
+    'text-accent text-plattform-titel [.plattform-schrift[data-rechner]_&]:text-plattform-titel-rechner whitespace-pre-line',
+  gruss:
+    'text-accent text-gruss max-[23rem]:text-plattform-titel [.plattform-schrift[data-rechner]_&]:text-gruss-rechner whitespace-pre-line',
+};
+
+/**
  * Die Überschrift eines Vollbild-Fensters an einer Stelle im Inhalt
  * (`titelImInhalt`): dieselbe Kennung, nach der das Fenster heißt, in der
- * Größe einer Seitenüberschrift am Telefon. Außerhalb eines solchen Fensters
- * zeichnet sie nichts.
+ * Größe einer Seitenüberschrift am Telefon - oder in einer `stufe` der
+ * Plattform. Außerhalb eines solchen Fensters zeichnet sie nichts.
  */
-export function Fenstertitel() {
+export function Fenstertitel({ stufe }: { stufe?: Titelstufe | undefined } = {}) {
   const kontext = useContext(TitelKontext);
   if (!kontext) return null;
   return (
-    <h2 id={kontext.id} className="text-ink text-h3 font-bold">
+    <h2 id={kontext.id} className={stufe ? TITELSTUFE[stufe] : 'text-ink text-h3 font-bold'}>
       {kontext.titel}
     </h2>
   );
