@@ -20,19 +20,25 @@ for (const breite of [375, 1280]) {
   test(`Einrichtung: erst Passkey, dann PIN (${breite} px)`, async ({ page }) => {
     await page.setViewportSize({ width: breite, height: 900 });
     await page.goto(`${PRUEFSEITE}?seite=einrichten`);
-    await expect(page.getByRole('heading', { name: 'Anmeldung einrichten' })).toBeVisible();
-    await expect(page.getByText(/kennt kein Kennwort/)).toBeVisible();
+    // Geführter Ablauf (Handoff 2026-10-22, Abschnitt 5.2): eine Frage je Seite.
     await expect(
-      page.getByRole('button', { name: 'Passkey auf diesem Gerät einrichten' }),
+      page.getByRole('heading', { name: 'Mit Gesicht oder Finger anmelden' }),
     ).toBeVisible();
-    await expect(page.getByLabel('Neue PIN')).toHaveCount(0);
+    await expect(page.getByText(/Own Motion bekommt sie nie/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Jetzt einrichten' })).toBeVisible();
+    await expect(page.getByLabel('PIN', { exact: true })).toHaveCount(0);
     await ohneQuerrollen(page);
 
     await page.goto(`${PRUEFSEITE}?seite=pin`);
-    const pin = page.getByLabel('Neue PIN', { exact: true });
+    await expect(page.getByRole('heading', { name: 'Eine PIN festlegen' })).toBeVisible();
+    const pin = page.getByLabel('PIN', { exact: true });
     await expect(pin).toHaveAttribute('inputmode', 'numeric');
+    await expect(pin).toHaveAttribute('autocomplete', 'new-password');
+    // 56 hoch, Ziffern groß (Handoff Abschnitt 5.2).
+    expect((await pin.boundingBox())!.height).toBeGreaterThanOrEqual(56);
     await expect(page.getByRole('button', { name: 'PIN anzeigen' }).first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Kennwort anzeigen' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'PIN speichern' })).toBeVisible();
     // Nur Ziffern kommen ins Feld.
     await pin.fill('48 3a9');
     await expect(pin).toHaveValue('4839');

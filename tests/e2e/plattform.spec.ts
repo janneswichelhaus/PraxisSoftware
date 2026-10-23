@@ -128,7 +128,9 @@ test.describe('Plattform', () => {
       await page.setViewportSize({ width: breite, height: 900 });
 
       await page.goto(`${PRUEFSEITE}?seite=einladung#code=AbCdEfGhIjKlMnOpQrStUvWxYz012345`);
-      await expect(page.getByRole('heading', { name: 'Ihr Zugang', level: 1 })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'Own Motion lädt Sie ein', level: 1 }),
+      ).toBeVisible();
       await expect(page.getByLabel('E-Mail-Adresse')).toBeVisible();
       // Kein Kennwort (ADR-025 Fassung 2, Punkt 13).
       await expect(page.getByLabel(/Kennwort/)).toHaveCount(0);

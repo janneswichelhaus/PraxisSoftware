@@ -47,6 +47,8 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'handeln-fuer', merkmal: 'Guten Tag' },
   { seite: 'gesperrt', merkmal: 'Ihr Zugang ist gesperrt' },
   { seite: 'ende', merkmal: 'Ich' },
+  // Schritt 1c (Handoff 2026-10-22, 5.2): nach der Lesefrist auf der Übersicht.
+  { seite: 'ende-uebersicht', merkmal: 'Ihr Zugang ist beendet' },
   // ANG-EPIC-001: das Nachsorge-Abo mit Kündigungsknopf und die Übersicht danach.
   { seite: 'abo', merkmal: 'Nachsorge-Abo' },
   { seite: 'abo-gekuendigt', merkmal: 'Guten Tag' },
