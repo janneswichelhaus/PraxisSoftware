@@ -231,6 +231,7 @@ export function EinladungPage() {
   }
 
   if (zustand === 'ungueltig') {
+    // Ohne „Praxis anrufen“: Vor der Anmeldung gibt es keine Rufnummer (ANN-689).
     return (
       <Vollseite
         tabtitel={EINLADUNG_TITEL}
