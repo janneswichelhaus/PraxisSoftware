@@ -651,3 +651,76 @@ describe('Sitzungssperre: Befunde aus dem Zweitreview', () => {
     expect(screen.getByText('Akte von Max Mustermann')).not.toBeVisible();
   });
 });
+
+describe('Sperrseite der Plattform (Handoff 2026-10-22, Abschnitt 5.2; ANN-687)', () => {
+  const vorher = window.location.pathname;
+  beforeEach(() => {
+    window.history.replaceState(null, '', '/p/termine');
+  });
+  afterEach(() => {
+    window.history.replaceState(null, '', vorher);
+  });
+
+  async function gesperrt(grund: 'inaktiv' | 'verbraucht' = 'inaktiv') {
+    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund });
+    zeichne();
+    await warte();
+  }
+
+  it('zeigt unter /p die Fassung der Plattform - ohne Angaben zur Person', async () => {
+    await gesperrt();
+    expect(screen.getByRole('heading', { name: 'Zum Schutz gesperrt' })).toBeInTheDocument();
+    expect(anmeldenMitPasskey).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Mit Passkey entsperren' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Mit PIN entsperren' })).toBeInTheDocument();
+    expect(
+      screen.getByText(/nach 30 Minuten ohne Bedienung und spätestens eine Stunde/),
+    ).toBeInTheDocument();
+    expect(document.title).toBe('Gesperrt – Own Motion');
+    // ADR-025 Punkt 3: kein Name, keine Adresse - auch nicht der eigene.
+    expect(screen.queryByText(/anna@example.test|Anna/)).toBeNull();
+    expect(screen.queryByText(/Sitzung|Konto/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Mit anderem Zugang anmelden' }));
+    expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('entsperrt auf eigener Seite mit der PIN und nennt die Versuche', async () => {
+    await gesperrt();
+    fireEvent.click(screen.getByRole('button', { name: 'Mit PIN entsperren' }));
+    const feld = screen.getByLabelText('PIN', { exact: true });
+    expect(feld).toHaveFocus();
+    expect(screen.getByText('Die PIN von Own Motion, nicht die Ihres Telefons.')).toBeVisible();
+    gibMitPinFrei.mockResolvedValueOnce({ art: 'falsch', versucheUebrig: 1 });
+    fireEvent.change(feld, { target: { value: '111222' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Entsperren' }));
+    await warte();
+    expect(
+      screen.getByText(
+        'Die PIN passt nicht. Noch ein Versuch – danach melden Sie sich mit dem Passkey neu an.',
+      ),
+    ).toBeInTheDocument();
+    gibMitPinFrei.mockResolvedValueOnce({ art: 'frei' });
+    ladeSperrstand.mockResolvedValue(offen());
+    fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
+      target: { value: '483920' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Entsperren' }));
+    await warte();
+    expect(screen.getByText('Akte von Max Mustermann')).toBeVisible();
+  });
+
+  it('führt nach zu vielen Versuchen zum Passkey', async () => {
+    await gesperrt('verbraucht');
+    expect(screen.getByRole('heading', { name: 'Bitte neu anmelden' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mit PIN entsperren' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Mit Passkey anmelden' }));
+    expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('behält auf Wegen der Praxis die Sperrseite der Praxis', async () => {
+    window.history.replaceState(null, '', '/patienten');
+    await gesperrt();
+    expect(screen.getByRole('heading', { name: 'Gesperrt' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Zum Schutz gesperrt' })).toBeNull();
+  });
+});

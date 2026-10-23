@@ -41,6 +41,8 @@ export function Vollseite({
   titel,
   gross = false,
   zeichen,
+  zeichenAufMarke = false,
+  oben,
   einleitung,
   kleingedrucktes,
   tabtitel = ANMELDEN_TITEL,
@@ -53,6 +55,10 @@ export function Vollseite({
   gross?: boolean;
   /** Ein Zeichen im Raster 24 für einen Zustand; im Kreis 64 über dem Titel. */
   zeichen?: ReactNode;
+  /** Der Kreis 72 auf der Markenfläche (`surface-inverse`): nur die Sperre der Plattform. */
+  zeichenAufMarke?: boolean;
+  /** Über dem Titel, etwa „← Zurück“. */
+  oben?: ReactNode;
   /** Ein Satz unter dem Titel. */
   einleitung?: ReactNode;
   /** Der Hinweis am Fuß der Seite. */
@@ -89,12 +95,17 @@ export function Vollseite({
       <div data-startbild-ziel="vollseite" className="mb-4 flex">
         <Wortmarke hoehe={40} />
       </div>
+      {oben}
       {zeichen || titel || einleitung ? (
         <div className="mt-4 mb-6 flex flex-col items-start gap-3">
           {zeichen ? (
             <span
               aria-hidden="true"
-              className="bg-accent-soft text-accent rounded-pill mb-1 inline-flex size-16 items-center justify-center"
+              className={`rounded-pill mb-1 inline-flex items-center justify-center ${
+                zeichenAufMarke
+                  ? 'bg-surface-inverse text-surface size-18'
+                  : 'bg-accent-soft text-accent size-16'
+              }`}
             >
               <svg
                 viewBox="0 0 24 24"

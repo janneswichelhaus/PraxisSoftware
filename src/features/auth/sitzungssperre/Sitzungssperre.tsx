@@ -17,6 +17,8 @@ import {
   type Sperrstand,
 } from './sperrstand';
 import { SperrsicherungKontext, type Sicherung, type Sperrsicherung } from './sperrsicherung';
+import { istPlattformpfad } from '@/features/platform/pfade';
+import { PlattformSperrseite } from './PlattformSperrseite';
 import { Sperrseite } from './Sperrseite';
 import { SperreOhneNetz } from './SperreOhneNetz';
 import { freigabeOhneNetzMoeglich } from '../freigabeOhneNetz';
@@ -437,12 +439,24 @@ export function Sitzungssperre({
           })
         : null}
       {phase === 'gesperrt' || phase === 'halten' ? (
-        <Sperrseite
-          grund={grund}
-          haelt={phase === 'halten'}
-          onEntsperrt={() => void pruefen()}
-          onAbmelden={() => void signOut()}
-        />
+        // Die Plattform hat ihre eigene Fassung (Handoff 2026-10-22, 5.2).
+        // Gesperrt gibt es keinen Kontext; es zählt die Adresse der Seite
+        // (ANN-687).
+        istPlattformpfad(window.location.pathname) ? (
+          <PlattformSperrseite
+            haelt={phase === 'halten'}
+            verbrauchtAnfangs={grund === 'verbraucht'}
+            onEntsperrt={() => void pruefen()}
+            onAbmelden={() => void signOut()}
+          />
+        ) : (
+          <Sperrseite
+            grund={grund}
+            haelt={phase === 'halten'}
+            onEntsperrt={() => void pruefen()}
+            onAbmelden={() => void signOut()}
+          />
+        )
       ) : null}
       {steht ? (
         // Immer dasselbe Element an derselben Stelle: Verbergen hängt die

@@ -11,6 +11,11 @@ export const PLATTFORM_PFAD = '/p';
  */
 export const NACH_DER_EINRICHTUNG = `${PLATTFORM_PFAD}?eingerichtet=1`;
 
+/** Liegt der Pfad unter `/p` - nicht `/patienten` oder `/praxis`? */
+export function istPlattformpfad(pfad: string): boolean {
+  return pfad === PLATTFORM_PFAD || pfad.startsWith(`${PLATTFORM_PFAD}/`);
+}
+
 /** Der gewählte Bereich als Suchparameter, damit Links ihn mitnehmen (D6). */
 export function bereichParameter(suche: URLSearchParams): string {
   return new URLSearchParams(

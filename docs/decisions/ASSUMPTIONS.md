@@ -7140,3 +7140,15 @@ Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
 **Anker.** `abbrechen` in `src/features/auth/einrichtung/AnmeldungEinrichten.tsx`.
 
 **Änderungspfad.** Ohne Rückfrage: `onSchliessen={onAbmelden}` · Aufwand `klein`.
+
+### ANN-687 — Sperre: die Fassung der Plattform nach der Adresse der gesperrten Seite
+
+Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
+
+**Annahme.** Ob die Sitzungssperre die Sperrseite der Plattform („Zum Schutz gesperrt“) oder die der Praxis zeigt, entscheidet allein die Adresse der Seite, die gesperrt wurde: unter `/p` die Plattform, sonst die Praxis. Die Plattform-Fassung zeigt keine Angaben zur Person, auch nicht den eigenen Namen; die PIN hat eine eigene Seite mit „Zurück“.
+
+**Begründung.** Handoff 2026-10-22, Abschnitt 5.2 („Plattform-Fassung für Plattformkonten“). Gesperrt ist der Abfragespeicher geräumt (ADR-025 Punkt 3); ein Merker, welche Oberfläche das Konto hat, wäre eine Angabe zur Person auf dem Gerät. Die Adresse steht ohnehin in der Adresszeile. Ein Plattformkonto liegt nie unter Praxiswegen (ADR-023 Punkt 25).
+
+**Anker.** `istPlattformpfad` in `src/features/platform/pfade.ts`, gefragt in `Sitzungssperre.tsx`.
+
+**Änderungspfad.** Nach dem Konto statt nach der Adresse: ein Merker in `sessionStorage` beim Öffnen der Plattform · Aufwand `klein`.
