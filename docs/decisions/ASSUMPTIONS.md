@@ -7104,3 +7104,15 @@ Praxisprozess · offen · 2026-10-22 · — · — · Wiedervorlage: —
 **Anker.** `app.platform_practice_phone` in `20261223230000_drp_n1_n2_plattform_name_rufnummer.sql`.
 
 **Änderungspfad.** Eigene Nummer für die Plattform: Spalte mit Pflege in den Praxiseinstellungen, gelesen in dieser einen Funktion · Aufwand `mittel`.
+
+### ANN-684 — Türseiten: oben und linksbündig, für Plattform und Praxis in derselben Hülle
+
+Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
+
+**Annahme.** Jede Seite außerhalb des Rahmens (`Vollseite`: Anmeldung, Einladung, Einrichtung, Sperre, Fehler- und Ladezustände) steht oben statt senkrecht zentriert und linksbündig: Wortmarke 40 oben links, Titel in `text-plattform-titel` (Einladung `text-gruss`), bei einem Zustand ein Zeichen im Kreis 64, das Kleingedruckte am Ende. Das gilt auch dort, wo Beschäftigte die Seite sehen (gemeinsame Anmeldung, Sperre der Praxis); deren Wortlaute bleiben.
+
+**Begründung.** Handoff 2026-10-22, Abschnitt 5.2 (DR-107) löst die mittige Anmeldung vom 11.10. ab. Zwei Hüllen ließen Marke und Titel beim Wechsel von der Anmeldung zur Sperre wieder springen (UXR-002); oben stehend bleibt der Titel bei offener Tastatur über dem Feld.
+
+**Anker.** `Vollseite` in `src/app/Vollseite.tsx`.
+
+**Änderungspfad.** Für die Praxis wieder mittig: eine Prop an `Vollseite`, gesetzt in `LoginPage` und `Sperrseite` · Aufwand `klein`.

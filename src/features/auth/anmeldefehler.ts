@@ -6,7 +6,7 @@ export const ANMELDESAETZE = {
   dienstGestoert:
     'Der Anmeldedienst ist gerade nicht erreichbar. Ihre Angaben wurden nicht geprüft. Bitte später erneut versuchen.',
   zuVieleVersuche: 'Zu viele Versuche. Bitte in einigen Minuten erneut versuchen.',
-  sitzungBeendet: 'Ihre Sitzung wurde beendet. Nicht gespeicherte Eingaben sind nicht erhalten.',
+  sitzungBeendet: 'Sie wurden abgemeldet. Nicht gespeicherte Eingaben sind nicht erhalten.',
 } as const;
 
 /**

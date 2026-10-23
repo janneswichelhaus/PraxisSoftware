@@ -3,48 +3,55 @@ import { Wortmarke } from '@/components/ui/Wortmarke';
 import { useSchriftgroesseAnwenden } from '@/features/platform/schriftgroesse';
 import { ANMELDEN_TITEL } from './tabtitel';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { useRechner } from '@/features/platform/geruestbreite';
 
 /**
  * Eine Seite außerhalb des Anwendungsrahmens (AUTH-12, AUTH-13).
  *
- * Anmeldung, neues Kennwort, Anmelden per Link, gesperrter Zugang, der
- * Absturz und die Ladezustände davor stehen ohne Kopfzeile und Navigation da.
- * Bis UXR-002 baute jede ihre Hülle selbst: senkrecht zentriert in zwei
- * Breiten oder oben mit Abstand, den Titel in 24 px/600 ohne Token oder gar
- * keinen. Beim Übergang von der Anmeldung zur Sperrseite sprangen Marke und
- * Titel, und Vorlesesoftware fand auf den Fehlerseiten keine Überschrift.
+ * Anmeldung, Einladung, Einrichtung, Sperre, Anmelden per Link, der Absturz
+ * und die Ladezustände davor stehen ohne Kopfzeile und Navigation da. Bis
+ * UXR-002 baute jede ihre Hülle selbst; beim Übergang von der Anmeldung zur
+ * Sperrseite sprangen Marke und Titel.
  *
- * Was die Hülle zusichert:
+ * Was die Hülle zusichert (Handoff 2026-10-22, Abschnitt 5.2; ANN-684):
  *
- *   * **Marke 40 px** über dem Titel. `mt-5` (20 px) hält den Schutzraum ein,
- *     den die MOTION-Zeile bei dieser Höhe verlangt (14,4 px), mit etwas Luft
- *     (MARKE-001).
- *   * **Ein `h1`** in der Rolle H3 des Systems (24 px, 700) und in der
- *     Hauptfarbe wie jeder Seitentitel. Nur Ladezustände haben keinen Titel -
- *     sie stehen einen Augenblick da und sagen, was geschieht.
- *   * **Ein `main`**, senkrecht zentriert, höchstens `max-w-sm` breit.
- *   * **Kleingedrucktes** unten über den Baustein `Kleingedrucktes`
- *     (Jannes 2026-10-06, Variante K-A; TOK-04 entschieden).
+ *   * **Marke 40 px oben links**, 20 oben, 24 seitlich, 16 darunter - der
+ *     Schutzraum der MOTION-Zeile bei dieser Höhe ist 14,4 px (MARKE-001).
+ *     Alles steht linksbündig an ihrer Kante (DR-107), oben statt senkrecht
+ *     zentriert: So steht der Titel bei offener Tastatur über dem Feld.
+ *   * **Ein `h1`** in `text-plattform-titel` (28, am Rechner 32) und der
+ *     Hauptfarbe; die Einladung grüßt größer (`gross`, `text-gruss`). Bei
+ *     einem Zustand ein Zeichen im Kreis 64 darüber (`zeichen`). Nur
+ *     Ladezustände haben keinen Titel - sie sagen, was geschieht.
+ *   * **Ein `main`**, höchstens `max-w-sm` breit; unter 23rem 12 px Rand.
+ *   * **Kleingedrucktes am Ende** der Seite über den Baustein
+ *     `Kleingedrucktes` (Variante K-A; TOK-04).
  *   * **Die Schrift der Plattform** (DR-102): Die Türen sehen auch
  *     Patient:innen, oft zuerst - deshalb 18 px für alle Texte und die
  *     Schriftgröße, die auf diesem Gerät gewählt ist. Die gemeinsame
  *     Anmeldung hat damit für alle 18 px.
  *
+ * Der Rechner zählt nach `useRechner()` (ab 64rem), wie im Gerüst der
+ * Plattform.
+ *
  * Eigentlich ein Baustein für `src/components/ui`; er steht hier, weil der
  * Bereich des Rahmens ihn zuerst braucht.
  */
 export function Vollseite({
-  mittig = false,
   titel,
+  gross = false,
+  zeichen,
   einleitung,
   kleingedrucktes,
   tabtitel = ANMELDEN_TITEL,
   children,
 }: {
-  /** Marke, Titel und Inhalt waagerecht mittig (Anmeldung, Jannes 2026-10-11). */
-  mittig?: boolean;
   /** Der Seitentitel. Ohne ihn - nur für Ladezustände - steht keine Überschrift da. */
   titel?: string;
+  /** Der Titel als Gruß (`text-gruss`): nur die Einladung. */
+  gross?: boolean;
+  /** Ein Zeichen im Raster 24 für einen Zustand; im Kreis 64 über dem Titel. */
+  zeichen?: ReactNode;
   /** Ein Satz unter dem Titel. */
   einleitung?: ReactNode;
   /** Der Hinweis am Fuß der Seite. */
@@ -55,31 +62,58 @@ export function Vollseite({
 }) {
   // Der Tab heißt außerhalb des Rahmens „Anmelden – Own Motion" (BEF-050,
   // RAH-008) - auf der Anmeldemaske wie auf jeder Türseite davor und danach.
-  // Nach dem Abmelden löst das den Titel der letzten Seite ab. Nur die
-  // Einladung heißt anders (DR-115): Wer sie öffnet, meldet sich nicht an.
+  // Nach dem Abmelden löst das den Titel der letzten Seite ab. Einladung und
+  // Sperre der Plattform heißen anders (DR-115).
   useEffect(() => {
     document.title = tabtitel;
   }, [tabtitel]);
   useSchriftgroesseAnwenden();
+  const rechner = useRechner();
+  const titelStufe = gross
+    ? rechner
+      ? 'text-gruss-rechner'
+      : 'text-gruss max-[23rem]:text-plattform-titel'
+    : rechner
+      ? 'text-plattform-titel-rechner'
+      : 'text-plattform-titel';
 
   return (
-    <main
-      className={`plattform-schrift mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-10 ${mittig ? 'text-center' : ''}`}
-    >
+    <main className="plattform-schrift mx-auto flex min-h-dvh w-full max-w-sm flex-col px-6 pt-5 pb-10 max-[23rem]:px-3">
       {/* Landeplatz des Startbilds, wenn es über dieser Seite läuft (ANN-243). */}
-      <div
-        data-startbild-ziel="vollseite"
-        className={`mb-8 ${mittig ? 'flex flex-col items-center' : ''}`}
-      >
+      <div data-startbild-ziel="vollseite" className="mb-4 flex">
         <Wortmarke hoehe={40} />
-        {titel ? <h1 className="text-accent text-h3 mt-5 font-bold">{titel}</h1> : null}
-        {einleitung ? <p className="text-ink-muted mt-2 text-sm">{einleitung}</p> : null}
       </div>
+      {zeichen || titel || einleitung ? (
+        <div className="mt-4 mb-6 flex flex-col items-start gap-3">
+          {zeichen ? (
+            <span
+              aria-hidden="true"
+              className="bg-accent-soft text-accent rounded-pill mb-1 inline-flex size-16 items-center justify-center"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="size-8"
+              >
+                {zeichen}
+              </svg>
+            </span>
+          ) : null}
+          {titel ? (
+            <h1 className={`text-accent [hyphens:manual] ${titelStufe}`}>{titel}</h1>
+          ) : null}
+          {einleitung ? <p className="text-ink text-base">{einleitung}</p> : null}
+        </div>
+      ) : null}
 
       {children}
 
       {kleingedrucktes ? (
-        <Kleingedrucktes className="mt-8">{kleingedrucktes}</Kleingedrucktes>
+        <Kleingedrucktes className="mt-auto pt-8">{kleingedrucktes}</Kleingedrucktes>
       ) : null}
     </main>
   );
