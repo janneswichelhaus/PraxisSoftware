@@ -6,12 +6,23 @@ import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Laufrad } from '@/components/ui/Laufrad';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { Schalter } from '@/components/ui/Schalter';
+import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
+import {
+  ENDPUNKT_SCHLUESSEL,
+  eigenerEndpunkt,
+  pushAbmelden,
+  pushErlauben,
+  pushStand,
+} from '@/lib/push';
 import { VERTRETUNGSART } from '@/lib/vertretung';
 import {
+  benachrichtigungSchluessel,
   einstiegSchluessel,
   einwilligungenSchluessel,
+  type Benachrichtigungswahl,
   type Einwilligung,
   type Plattformzugang,
 } from './api';
@@ -21,6 +32,9 @@ import {
   einstiegsseiten,
   einwilligungstitel,
   freiwilligkeit,
+  mitArten,
+  mitteilungenAn,
+  mitteilungsarten,
   nochFragen,
   offeneEinwilligungen,
   vertretenePerson,
@@ -29,7 +43,7 @@ import {
   type Einstiegsseite,
 } from './einstiegsablauf';
 import { EINWILLIGUNGSFASSUNG, EINWILLIGUNGSTEXTE, FREIWILLIG } from './einwilligungstexte';
-import { Benachrichtigungen } from './Benachrichtigungen';
+import { useRechner } from './geruestbreite';
 
 /**
  * Der Einstieg nach der ersten Anmeldung (POR-019, DSN-001 4.3,
@@ -52,7 +66,7 @@ import { Benachrichtigungen } from './Benachrichtigungen';
 const TABTITEL = `Willkommen – ${MARKE}`;
 
 const TITEL: Record<Exclude<Einstiegsseite, 'willkommen' | 'einwilligungen'>, string> = {
-  mitteilungen: 'Benachrichtigungen',
+  mitteilungen: 'Sollen wir Ihnen Bescheid geben?',
   bereit: 'Alles bereit',
 };
 
@@ -212,7 +226,7 @@ function Ablauf({
           <Kleingedrucktes>{FREIWILLIG}</Kleingedrucktes>
         </>
       ) : null}
-      {seite === 'mitteilungen' ? <Benachrichtigungen zugaenge={[zugang]} einstieg /> : null}
+      {seite === 'mitteilungen' ? <Mitteilungen zugang={zugang} /> : null}
       {seite === 'bereit' ? (
         <p className="text-ink max-w-prose">
           Sie finden alles in der Übersicht. Wenn Sie Fragen haben, wenden Sie sich an die Praxis.
@@ -315,6 +329,131 @@ function Einwilligungsfrage({
         }
       />
     </div>
+  );
+}
+
+/**
+ * „Sollen wir Ihnen Bescheid geben?“ (5.3): ein Schalter statt der Liste je Art
+ * mit Ruhezeit - die bleibt unter „Ich“ → „Einstellungen“ (DR-111). An schaltet
+ * die Arten aus `MITTEILUNGSARTEN` ein (ANN-694): auf diesem Telefon per Push,
+ * nach der einen Abfrage des Telefons; wo Push hier nicht geht, per E-Mail, dem
+ * Regelweg (ADR-024 Punkt 11). Aus nimmt das Telefon wieder heraus bzw. die
+ * Arten aus der Mail. Die Wahl gilt für den eigenen Zugang, auch einer
+ * Begleitung (Punkt 15).
+ */
+function Mitteilungen({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
+  const queryClient = useQueryClient();
+  const rechner = useRechner();
+  const endpunkt = useQuery({
+    queryKey: ENDPUNKT_SCHLUESSEL,
+    queryFn: eigenerEndpunkt,
+    retry: false,
+  });
+  const geraet = endpunkt.data ?? null;
+  const wahl = useQuery({
+    queryKey: benachrichtigungSchluessel(zugang.access_id, geraet),
+    queryFn: () => api.ladeBenachrichtigungen(zugang.access_id, geraet),
+    enabled: !endpunkt.isPending,
+    retry: false,
+  });
+  const weg = pushStand().moeglich || geraet !== null ? 'push' : 'email';
+  const daten = wahl.data ?? null;
+  const arten = mitteilungsarten(daten?.disabled_kinds ?? []);
+  const an =
+    daten !== null &&
+    (weg === 'push'
+      ? geraet !== null && daten.device_registered && mitteilungenAn(daten.push_kinds, arten)
+      : mitteilungenAn(daten.email_kinds, arten));
+
+  const umschalten = useMutation({
+    mutationFn: async ({
+      einschalten,
+      stand,
+    }: {
+      einschalten: boolean;
+      stand: Benachrichtigungswahl;
+    }) => {
+      const bisher = {
+        email_kinds: stand.email_kinds,
+        push_kinds: stand.push_kinds,
+        quiet_from: stand.quiet_from,
+        quiet_until: stand.quiet_until,
+      };
+      if (weg === 'email') {
+        await api.speichereBenachrichtigungen(zugang.access_id, {
+          ...bisher,
+          email_kinds: mitArten(stand.email_kinds, arten, einschalten),
+        });
+        return;
+      }
+      if (!einschalten) {
+        // Wie „Auf diesem Gerät ausschalten“ unter „Ich“: Das Telefon geht
+        // heraus; die Wahl je Art bleibt für andere Geräte des Zugangs.
+        if (geraet !== null) await api.entferneGeraet(geraet);
+        await pushAbmelden();
+        return;
+      }
+      if (geraet === null || !stand.device_registered) {
+        await api.registriereGeraet([zugang.access_id], await pushErlauben());
+      }
+      await api.speichereBenachrichtigungen(zugang.access_id, {
+        ...bisher,
+        push_kinds: mitArten(stand.push_kinds, arten, true),
+      });
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: ENDPUNKT_SCHLUESSEL });
+      await queryClient.invalidateQueries({ queryKey: ['platform-notifications'] });
+    },
+  });
+
+  const vertretung = zugang.access_kind !== 'self';
+  const telefon = rechner ? 'Gerät' : 'Telefon';
+  return (
+    <>
+      <p className="text-ink max-w-prose">
+        {vertretung
+          ? `Zum Beispiel am Vortag eines Termins von ${vertretenePerson(zugang)} oder wenn die Praxis antwortet.`
+          : 'Zum Beispiel am Vortag eines Termins oder wenn die Praxis antwortet.'}
+      </p>
+      {endpunkt.isPending || wahl.isPending ? (
+        <SkelettBereich beschriftung="Mitteilungen werden geladen">
+          <Skelett form="karte" />
+        </SkelettBereich>
+      ) : daten === null ? (
+        <Statusmeldung ton="fehler">
+          Ihre Mitteilungen lassen sich gerade nicht laden. Unter „Ich“ → „Einstellungen“ geht es
+          auch später.
+        </Statusmeldung>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <Schalter
+            beschriftung={
+              weg === 'push' ? `Mitteilungen auf diesem ${telefon}` : 'Mitteilungen per E-Mail'
+            }
+            hinweis={
+              weg === 'push'
+                ? `${rechner ? 'Ihr Browser' : 'Ihr Telefon'} fragt einmal um Erlaubnis.`
+                : 'An die Adresse, mit der Sie sich anmelden.'
+            }
+            an={an}
+            laeuft={umschalten.isPending}
+            onUmschalten={(einschalten) => umschalten.mutate({ einschalten, stand: daten })}
+          />
+          {umschalten.isError ? (
+            <Statusmeldung ton="fehler">{umschalten.error.message}</Statusmeldung>
+          ) : null}
+        </div>
+      )}
+      <p className="text-ink-muted max-w-prose">
+        {vertretung
+          ? 'Die Mitteilungen gelten für Ihren Zugang. Feinheiten stellen Sie später unter „Ich“ ein.'
+          : weg === 'push'
+            ? 'Welche Mitteilungen und ob auch per E-Mail, stellen Sie später unter „Ich“ ein.'
+            : 'Welche Mitteilungen, stellen Sie später unter „Ich“ ein.'}
+      </p>
+    </>
   );
 }
 

@@ -7116,3 +7116,15 @@ Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `offeneEinwilligungen` in `src/features/platform/einstiegsablauf.ts`, `Einwilligungsfrage` in `Einstieg.tsx`.
 
 **Änderungspfad.** Rückfrage vor dem Ja wie unter „Ich“ (`klein`) oder ein Nein als Ablehnung speichern (RPC, `mittel`).
+
+### ANN-694 — Einstieg: ein Schalter für Mitteilungen, Push auf diesem Telefon, sonst E-Mail
+
+Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, mit ADR-024 Punkt 18)
+
+**Annahme.** Der Schalter im Einstieg schaltet sechs Arten ein: Terminerinnerung, Termin verschoben oder abgesagt, Antwort auf eine Rückfrage, Terminwunsch beantwortet, neuer Plan - nicht die Erinnerung ans Tagebuch, nicht, was die Praxis abgeschaltet hat. Geht Push auf dem Gerät, gilt er für dieses Telefon; sonst für die E-Mail. Aus nimmt das Telefon heraus bzw. die sechs Arten aus der Mail.
+
+**Begründung.** Handoff 2026-10-22, Abschnitte 5.3 und 10. ADR-024 Punkt 15 (eingeschaltet im Einstieg, je Art feiner unter „Ich“), Punkt 11 (Mail ist der Regelweg; ohne Push bliebe der Schritt leer). Unsicher: ob eine Wahl für sechs Arten der Wahl je Art genügt.
+
+**Anker.** `MITTEILUNGSARTEN` in `src/features/platform/einstiegsablauf.ts`, `Mitteilungen` in `Einstieg.tsx`.
+
+**Änderungspfad.** Andere Arten in der Liste oder ohne Push ein Hinweis statt des Schalters · Aufwand `klein`.

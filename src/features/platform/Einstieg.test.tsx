@@ -4,8 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { useLocation } from 'react-router-dom';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { renderWithProviders } from '@/test-utils';
+import type * as Push from '@/lib/push';
 import type * as PlattformApi from './api';
 import type { Einwilligung, Plattformzugang } from './api';
+import { MITTEILUNGSARTEN } from './einstiegsablauf';
 import { EINWILLIGUNGSFASSUNG, FREIWILLIG } from './einwilligungstexte';
 
 /**
@@ -20,6 +22,9 @@ const einstiegBeenden = vi.fn();
 const ladeEinwilligungen = vi.fn();
 const einwilligungSchreiben = vi.fn();
 const ladeBenachrichtigungen = vi.fn();
+const speichereBenachrichtigungen = vi.fn();
+const registriereGeraet = vi.fn();
+const entferneGeraet = vi.fn();
 const ladeTermine = vi.fn();
 const ladeWuensche = vi.fn();
 const ladeRechnungen = vi.fn();
@@ -33,10 +38,28 @@ vi.mock('./api', async (importOriginal) => ({
   einwilligungSchreiben: (...args: unknown[]) => einwilligungSchreiben(...args) as Promise<void>,
   ladeBenachrichtigungen: (...args: unknown[]) =>
     ladeBenachrichtigungen(...args) as Promise<unknown>,
+  speichereBenachrichtigungen: (...args: unknown[]) =>
+    speichereBenachrichtigungen(...args) as Promise<void>,
+  registriereGeraet: (...args: unknown[]) => registriereGeraet(...args) as Promise<void>,
+  entferneGeraet: (...args: unknown[]) => entferneGeraet(...args) as Promise<void>,
   ladeTermine: (...args: unknown[]) => ladeTermine(...args) as Promise<unknown[]>,
   ladeWuensche: (...args: unknown[]) => ladeWuensche(...args) as Promise<unknown[]>,
   ladeRechnungen: (...args: unknown[]) => ladeRechnungen(...args) as Promise<unknown[]>,
   ladeBefundbogen: (...args: unknown[]) => ladeBefundbogen(...args) as Promise<unknown[]>,
+}));
+
+// Push auf diesem Gerät: im Test nachgebildet - jsdom kennt keinen Push-Dienst.
+const pushMoeglich = vi.fn(() => false);
+const eigenerEndpunkt = vi.fn();
+const pushErlauben = vi.fn();
+const pushAbmelden = vi.fn();
+vi.mock('@/lib/push', async (importOriginal) => ({
+  ...(await importOriginal<typeof Push>()),
+  pushStand: () =>
+    pushMoeglich() ? { moeglich: true } : { moeglich: false, grund: 'nicht_eingerichtet' },
+  eigenerEndpunkt: () => eigenerEndpunkt() as Promise<string | null>,
+  pushErlauben: () => pushErlauben() as Promise<unknown>,
+  pushAbmelden: () => pushAbmelden() as Promise<void>,
 }));
 
 const { PlattformApp } = await import('./PlattformApp');
@@ -78,6 +101,19 @@ const OFFEN = [
   einwilligung('patient_photos', 'refused'),
 ];
 
+/** Von Anfang an aus (ADR-024 Punkt 15); die Praxis hat „Neuer Übungsplan“ abgeschaltet. */
+const WAHL = {
+  email_kinds: ['nutrition_diary_reminder'],
+  push_kinds: [],
+  quiet_from: 20,
+  quiet_until: 8,
+  chosen_at: null,
+  disabled_kinds: ['plan_assigned'],
+  device_registered: false,
+};
+const ARTEN = MITTEILUNGSARTEN.filter((art) => art !== 'plan_assigned');
+const GERAET = { endpoint: 'https://push.invalid/geraet-1', p256dh: 'schluessel', auth: 'geheim' };
+
 /** Zeigt die Adresse, wie der Router sie gerade hat. */
 function Adresse() {
   const { pathname, search } = useLocation();
@@ -110,15 +146,14 @@ beforeEach(() => {
   einstiegBeenden.mockResolvedValue(undefined);
   ladeEinwilligungen.mockResolvedValue(OFFEN);
   einwilligungSchreiben.mockResolvedValue(undefined);
-  ladeBenachrichtigungen.mockResolvedValue({
-    email_kinds: [],
-    push_kinds: [],
-    quiet_from: 20,
-    quiet_until: 8,
-    chosen_at: null,
-    disabled_kinds: [],
-    device_registered: false,
-  });
+  ladeBenachrichtigungen.mockResolvedValue(WAHL);
+  speichereBenachrichtigungen.mockResolvedValue(undefined);
+  registriereGeraet.mockResolvedValue(undefined);
+  entferneGeraet.mockResolvedValue(undefined);
+  pushMoeglich.mockReturnValue(false);
+  eigenerEndpunkt.mockResolvedValue(null);
+  pushErlauben.mockResolvedValue(GERAET);
+  pushAbmelden.mockResolvedValue(undefined);
   ladeTermine.mockResolvedValue([]);
   ladeWuensche.mockResolvedValue([]);
   ladeRechnungen.mockResolvedValue([]);
@@ -313,6 +348,148 @@ describe('Einstieg: Einwilligungen (DRP-017)', () => {
     expect(within(fenster).getByText('Schritt 1 von 2')).toBeInTheDocument();
     expect(
       within(fenster).getByText('Noch eine kurze Frage, dann sind Sie fertig.'),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('Einstieg: Mitteilungen (DRP-018)', () => {
+  async function zuDenMitteilungen(
+    nutzer: ReturnType<typeof userEvent.setup>,
+    zugang: Plattformzugang = MIT_NAMEN,
+  ) {
+    zeige(zugang);
+    await screen.findByRole('dialog', { name: /^Willkommen/ });
+    await tippe(nutzer, 'Weiter');
+    if (zugang.access_kind !== 'companion') {
+      await screen.findByRole('dialog', { name: 'Zwei Fragen zu Ihren Daten' });
+      await tippe(nutzer, 'Weiter');
+    }
+    const fenster = await screen.findByRole('dialog', { name: 'Sollen wir Ihnen Bescheid geben?' });
+    await within(fenster).findByRole('switch');
+    return fenster;
+  }
+
+  it('fragt mit einem Schalter auf diesem Telefon; die Regeln bleiben unter „Ich“ (DR-111)', async () => {
+    const nutzer = userEvent.setup();
+    pushMoeglich.mockReturnValue(true);
+    const fenster = await zuDenMitteilungen(nutzer);
+    expect(within(fenster).getByText('Schritt 3 von 3')).toBeInTheDocument();
+    expect(
+      within(fenster).getByText(
+        'Zum Beispiel am Vortag eines Termins oder wenn die Praxis antwortet.',
+      ),
+    ).toBeInTheDocument();
+    const schalter = within(fenster).getByRole('switch', {
+      name: 'Mitteilungen auf diesem Telefon',
+    });
+    expect(schalter).toHaveAccessibleDescription('Ihr Telefon fragt einmal um Erlaubnis.');
+    expect(schalter).toHaveAttribute('aria-checked', 'false');
+    expect(
+      within(fenster).getByText(
+        'Welche Mitteilungen und ob auch per E-Mail, stellen Sie später unter „Ich“ ein.',
+      ),
+    ).toBeInTheDocument();
+    // Keine Liste je Art, keine Ruhezeit, kein „Speichern“: eine Knopfebene.
+    expect(within(fenster).queryByText(/Ruhezeit/)).toBeNull();
+    expect(within(fenster).queryByRole('checkbox')).toBeNull();
+    expect(within(fenster).queryByRole('button', { name: 'Speichern' })).toBeNull();
+    await pruefeBarrierefreiheit(document.body);
+  });
+
+  it('fragt beim Einschalten einmal das Telefon, trägt es ein und schaltet die Arten an', async () => {
+    const nutzer = userEvent.setup();
+    pushMoeglich.mockReturnValue(true);
+    const fenster = await zuDenMitteilungen(nutzer);
+    await nutzer.click(within(fenster).getByRole('switch'));
+    await waitFor(() =>
+      expect(speichereBenachrichtigungen).toHaveBeenCalledWith(MIT_NAMEN.access_id, {
+        email_kinds: ['nutrition_diary_reminder'],
+        push_kinds: ARTEN,
+        quiet_from: 20,
+        quiet_until: 8,
+      }),
+    );
+    expect(pushErlauben).toHaveBeenCalledTimes(1);
+    expect(registriereGeraet).toHaveBeenCalledWith([MIT_NAMEN.access_id], GERAET);
+  });
+
+  it('sagt, wenn das Telefon nicht erlaubt, und bleibt aus', async () => {
+    const nutzer = userEvent.setup();
+    pushMoeglich.mockReturnValue(true);
+    pushErlauben.mockRejectedValue(
+      new Error('Sie haben Mitteilungen auf diesem Gerät nicht erlaubt.'),
+    );
+    const fenster = await zuDenMitteilungen(nutzer);
+    await nutzer.click(within(fenster).getByRole('switch'));
+    expect(
+      await within(fenster).findByText('Sie haben Mitteilungen auf diesem Gerät nicht erlaubt.'),
+    ).toBeInTheDocument();
+    expect(within(fenster).getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    expect(speichereBenachrichtigungen).not.toHaveBeenCalled();
+  });
+
+  it('nimmt beim Ausschalten das Telefon heraus', async () => {
+    const nutzer = userEvent.setup();
+    pushMoeglich.mockReturnValue(true);
+    eigenerEndpunkt.mockResolvedValue(GERAET.endpoint);
+    ladeBenachrichtigungen.mockResolvedValue({
+      ...WAHL,
+      push_kinds: ARTEN,
+      device_registered: true,
+    });
+    const fenster = await zuDenMitteilungen(nutzer);
+    const schalter = within(fenster).getByRole('switch');
+    expect(schalter).toHaveAttribute('aria-checked', 'true');
+    await nutzer.click(schalter);
+    await waitFor(() => expect(entferneGeraet).toHaveBeenCalledWith(GERAET.endpoint));
+    expect(pushAbmelden).toHaveBeenCalled();
+  });
+
+  it('schaltet per E-Mail, wo Push hier nicht geht - die übrigen Arten bleiben', async () => {
+    const nutzer = userEvent.setup();
+    const fenster = await zuDenMitteilungen(nutzer);
+    const schalter = within(fenster).getByRole('switch', { name: 'Mitteilungen per E-Mail' });
+    expect(schalter).toHaveAccessibleDescription('An die Adresse, mit der Sie sich anmelden.');
+    expect(
+      within(fenster).getByText('Welche Mitteilungen, stellen Sie später unter „Ich“ ein.'),
+    ).toBeInTheDocument();
+    ladeBenachrichtigungen.mockResolvedValue({
+      ...WAHL,
+      email_kinds: ['nutrition_diary_reminder', ...ARTEN],
+    });
+    await nutzer.click(schalter);
+    await waitFor(() =>
+      expect(speichereBenachrichtigungen).toHaveBeenCalledWith(MIT_NAMEN.access_id, {
+        email_kinds: ['nutrition_diary_reminder', ...ARTEN],
+        push_kinds: [],
+        quiet_from: 20,
+        quiet_until: 8,
+      }),
+    );
+    await waitFor(() => expect(schalter).toHaveAttribute('aria-checked', 'true'));
+    expect(pushErlauben).not.toHaveBeenCalled();
+    await nutzer.click(schalter);
+    await waitFor(() =>
+      expect(speichereBenachrichtigungen).toHaveBeenLastCalledWith(
+        MIT_NAMEN.access_id,
+        expect.objectContaining({ email_kinds: ['nutrition_diary_reminder'] }),
+      ),
+    );
+  });
+
+  it('sagt einer Begleitung, dass es um Termine der Person geht und um ihren eigenen Zugang', async () => {
+    const nutzer = userEvent.setup();
+    const fenster = await zuDenMitteilungen(nutzer, BEGLEITUNG);
+    expect(within(fenster).getByText('Schritt 2 von 2')).toBeInTheDocument();
+    expect(
+      within(fenster).getByText(
+        'Zum Beispiel am Vortag eines Termins von Max Mustermann oder wenn die Praxis antwortet.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(fenster).getByText(
+        'Die Mitteilungen gelten für Ihren Zugang. Feinheiten stellen Sie später unter „Ich“ ein.',
+      ),
     ).toBeInTheDocument();
   });
 });

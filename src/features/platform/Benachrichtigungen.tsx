@@ -14,7 +14,14 @@ import {
   BENACHRICHTIGUNGSARTEN,
   type Benachrichtigungsart,
 } from '@/lib/begriffe';
-import { eigenerEndpunkt, pushAbmelden, pushErlauben, pushStand, type PushStand } from '@/lib/push';
+import {
+  ENDPUNKT_SCHLUESSEL,
+  eigenerEndpunkt,
+  pushAbmelden,
+  pushErlauben,
+  pushStand,
+  type PushStand,
+} from '@/lib/push';
 import {
   BEREICHSNAME,
   benachrichtigungSchluessel,
@@ -32,21 +39,14 @@ import { datum } from './zeit';
  * ist der Regelweg, Push eine Wahl auf diesem Gerät - und ihre Ruhezeit.
  * Abschalten kostet nichts, und die Übersicht zeigt alles auch ohne
  * Benachrichtigung. Was die Praxis für alle abgeschaltet hat, steht da und
- * ist nicht wählbar.
+ * ist nicht wählbar. Im Einstieg steht statt dieser Liste ein Schalter
+ * (`Einstieg.tsx`, DRP-018).
  */
 
-const ENDPUNKT_SCHLUESSEL = ['push-endpoint'] as const;
 const STUNDEN = Array.from({ length: 24 }, (_, i) => i);
 const stunde = (h: number) => `${String(h).padStart(2, '0')}:00 Uhr`;
 
-export function Benachrichtigungen({
-  zugaenge,
-  einstieg = false,
-}: {
-  zugaenge: Plattformzugang[];
-  /** Im Einstieg ohne eigenen Rahmen und ohne zweite Überschrift (POR-019). */
-  einstieg?: boolean;
-}) {
+export function Benachrichtigungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
   const stand = pushStand();
   const { data: endpunkt = null, isPending } = useQuery({
     queryKey: ENDPUNKT_SCHLUESSEL,
@@ -55,20 +55,6 @@ export function Benachrichtigungen({
   });
   const lesbar = zugaenge.filter((z) => z.readable);
   if (lesbar.length === 0) return null;
-  if (einstieg) {
-    return (
-      <div className="mt-6">
-        <GeraetAbschnitt stand={stand} endpunkt={endpunkt} zugaenge={lesbar} />
-        {isPending ? null : (
-          <div className="mt-6 flex flex-col gap-8">
-            {lesbar.map((z) => (
-              <WahlFuerZugang key={z.access_id} zugang={z} endpunkt={endpunkt} />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
   // Unter „Einstellungen“ die Wahl je Zugang auf Abruf (ANN-468): Sechs
   // Arten mit Ruhezeit sind je Zugang eine Bildschirmlänge; offen standen
   // sie bei zwei Zugängen über 3.000 px untereinander.

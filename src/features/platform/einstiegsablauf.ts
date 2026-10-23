@@ -1,3 +1,4 @@
+import type { Benachrichtigungsart } from '@/lib/begriffe';
 import { einwilligungAngeboten } from '@/lib/einwilligung';
 import type { Einwilligung, Plattformzugang } from './api';
 import { OHNE_NACHTEIL } from './einwilligungstexte';
@@ -64,6 +65,44 @@ export function freiwilligkeit(
       ? `Sie entscheiden hier für ${vertretenePerson(zugang)}. `
       : '';
   return `${fuer}${was} freiwillig. ${OHNE_NACHTEIL[zugang.relationship_kind]}`;
+}
+
+/**
+ * Was der eine Schalter im Einstieg einschaltet (ANN-694): die Termine
+ * (Erinnerung, verschoben, abgesagt), die Antworten der Praxis (Rückfrage,
+ * Terminwunsch) und ein neuer Plan. Die Erinnerung ans Tagebuch nicht - ihre
+ * Uhrzeiten wählt die Person im Tagebuch (ERN-009). Feiner geht es unter „Ich“.
+ */
+export const MITTEILUNGSARTEN = [
+  'appointment_reminder',
+  'appointment_changed',
+  'appointment_cancelled',
+  'message_answered',
+  'request_answered',
+  'plan_assigned',
+] as const satisfies readonly Benachrichtigungsart[];
+
+/** Die Arten des Schalters ohne die, die die Praxis für alle abgeschaltet hat. */
+export function mitteilungsarten(abgeschaltet: readonly string[]): Benachrichtigungsart[] {
+  return MITTEILUNGSARTEN.filter((art) => !abgeschaltet.includes(art));
+}
+
+/** Ist der Schalter an? Wenn eine seiner Arten auf diesem Weg kommt. */
+export function mitteilungenAn(
+  gewaehlt: readonly Benachrichtigungsart[],
+  arten: readonly Benachrichtigungsart[],
+): boolean {
+  return gewaehlt.some((art) => arten.includes(art));
+}
+
+/** Die Wahl mit den Arten des Schalters an oder aus; die übrigen bleiben. */
+export function mitArten(
+  gewaehlt: readonly Benachrichtigungsart[],
+  arten: readonly Benachrichtigungsart[],
+  an: boolean,
+): Benachrichtigungsart[] {
+  const ohne = gewaehlt.filter((art) => !arten.includes(art));
+  return an ? [...ohne, ...arten] : ohne;
 }
 
 function gross(wort: string): string {

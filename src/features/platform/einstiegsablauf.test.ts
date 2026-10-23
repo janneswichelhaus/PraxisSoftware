@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Einwilligung, Plattformzugang } from './api';
 import {
+  MITTEILUNGSARTEN,
   einstiegsseiten,
   einwilligungstitel,
   freiwilligkeit,
+  mitArten,
+  mitteilungenAn,
+  mitteilungsarten,
   nochFragen,
   offeneEinwilligungen,
   willkommenssatz,
@@ -121,5 +125,35 @@ describe('Sätze auf „Willkommen“', () => {
     expect(nochFragen(2)).toBe('Noch zwei kurze Fragen, dann sind Sie fertig.');
     expect(zahlwort(5)).toBe('fünf');
     expect(zahlwort(12)).toBe('12');
+  });
+});
+
+describe('Der eine Schalter für Mitteilungen (ANN-694)', () => {
+  it('schaltet Termine, Antworten und neue Pläne ein, nie die Erinnerung ans Tagebuch', () => {
+    expect(MITTEILUNGSARTEN).toEqual([
+      'appointment_reminder',
+      'appointment_changed',
+      'appointment_cancelled',
+      'message_answered',
+      'request_answered',
+      'plan_assigned',
+    ]);
+    expect(MITTEILUNGSARTEN).not.toContain('nutrition_diary_reminder');
+    // Was die Praxis für alle abgeschaltet hat, bleibt aus.
+    expect(mitteilungsarten(['plan_assigned'])).not.toContain('plan_assigned');
+  });
+
+  it('ist an, wenn eine seiner Arten kommt, und lässt beim Schalten die übrigen Arten stehen', () => {
+    const arten = mitteilungsarten([]);
+    expect(mitteilungenAn([], arten)).toBe(false);
+    expect(mitteilungenAn(['nutrition_diary_reminder'], arten)).toBe(false);
+    expect(mitteilungenAn(['message_answered'], arten)).toBe(true);
+    expect(mitArten(['nutrition_diary_reminder'], arten, true)).toEqual([
+      'nutrition_diary_reminder',
+      ...arten,
+    ]);
+    expect(mitArten(['nutrition_diary_reminder', ...arten], arten, false)).toEqual([
+      'nutrition_diary_reminder',
+    ]);
   });
 });

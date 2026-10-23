@@ -43,6 +43,9 @@ async function registrierung(): Promise<ServiceWorkerRegistration | null> {
   return (await navigator.serviceWorker.getRegistration()) ?? null;
 }
 
+/** Der Abfrageschlüssel für `eigenerEndpunkt` - ein Eintrag je Gerät, für alle Zugänge. */
+export const ENDPUNKT_SCHLUESSEL = ['push-endpoint'] as const;
+
 /** Der Endpunkt dieses Geräts, wenn es schon registriert ist. */
 export async function eigenerEndpunkt(): Promise<string | null> {
   try {
