@@ -25,6 +25,8 @@ const ladeBenachrichtigungen = vi.fn();
 const speichereBenachrichtigungen = vi.fn();
 const registriereGeraet = vi.fn();
 const entferneGeraet = vi.fn();
+const ladeCheckins = vi.fn();
+const ladePlaene = vi.fn();
 const ladeTermine = vi.fn();
 const ladeWuensche = vi.fn();
 const ladeRechnungen = vi.fn();
@@ -42,6 +44,8 @@ vi.mock('./api', async (importOriginal) => ({
     speichereBenachrichtigungen(...args) as Promise<void>,
   registriereGeraet: (...args: unknown[]) => registriereGeraet(...args) as Promise<void>,
   entferneGeraet: (...args: unknown[]) => entferneGeraet(...args) as Promise<void>,
+  ladeCheckins: (...args: unknown[]) => ladeCheckins(...args) as Promise<unknown>,
+  ladePlaene: (...args: unknown[]) => ladePlaene(...args) as Promise<unknown>,
   ladeTermine: (...args: unknown[]) => ladeTermine(...args) as Promise<unknown[]>,
   ladeWuensche: (...args: unknown[]) => ladeWuensche(...args) as Promise<unknown[]>,
   ladeRechnungen: (...args: unknown[]) => ladeRechnungen(...args) as Promise<unknown[]>,
@@ -154,6 +158,8 @@ beforeEach(() => {
   eigenerEndpunkt.mockResolvedValue(null);
   pushErlauben.mockResolvedValue(GERAET);
   pushAbmelden.mockResolvedValue(undefined);
+  ladeCheckins.mockResolvedValue(null);
+  ladePlaene.mockResolvedValue({ today: '2026-10-23', plans: [] });
   ladeTermine.mockResolvedValue([]);
   ladeWuensche.mockResolvedValue([]);
   ladeRechnungen.mockResolvedValue([]);
@@ -491,5 +497,93 @@ describe('Einstieg: Mitteilungen (DRP-018)', () => {
         'Die Mitteilungen gelten für Ihren Zugang. Feinheiten stellen Sie später unter „Ich“ ein.',
       ),
     ).toBeInTheDocument();
+  });
+});
+
+describe('Einstieg: Alles bereit (DRP-019)', () => {
+  async function bisAllesBereit(
+    nutzer: ReturnType<typeof userEvent.setup>,
+    zugang: Plattformzugang = MIT_NAMEN,
+    pfad = '/p',
+  ) {
+    zeige(zugang, pfad);
+    await screen.findByRole('dialog', { name: /^Willkommen/ });
+    const fragen = zugang.access_kind === 'companion' ? 1 : 2;
+    for (let i = 0; i < fragen; i += 1) await tippe(nutzer, 'Weiter');
+    await screen.findByRole('dialog', { name: 'Sollen wir Ihnen Bescheid geben?' });
+    await tippe(nutzer, 'Weiter');
+    return screen.findByRole('dialog', { name: 'Alles bereit' });
+  }
+
+  it('nennt die erste Aufgabe und bietet ihre Handlung an, darunter leise die Übersicht', async () => {
+    const nutzer = userEvent.setup();
+    const fenster = await bisAllesBereit(nutzer, MIT_NAMEN, '/p?bereich=treatment');
+    expect(within(fenster).getByRole('heading', { name: 'Alles bereit' })).toHaveClass(
+      'text-gruss',
+    );
+    expect(
+      within(fenster).getByText(
+        'Als Nächstes: Ihr Fragebogen vor dem ersten Termin. Er dauert etwa 10 Minuten.',
+      ),
+    ).toBeInTheDocument();
+    // Kein Schritt mehr und kein „Später“: Der Fuß führt hinaus.
+    expect(within(fenster).queryByText(/^Schritt/)).toBeNull();
+    expect(within(fenster).queryByRole('button', { name: 'Später' })).toBeNull();
+    expect(within(fenster).getByRole('button', { name: '← Zurück' })).toBeInTheDocument();
+    expect(within(fenster).getByRole('button', { name: 'Zur Übersicht' })).toHaveClass(
+      'text-accent',
+    );
+    await pruefeBarrierefreiheit(document.body);
+
+    await tippe(nutzer, 'Fragebogen beginnen');
+    await waitFor(() =>
+      expect(screen.getByTestId('adresse')).toHaveTextContent(
+        /^\/p\/befundbogen\?bereich=treatment$/,
+      ),
+    );
+    expect(einstiegBeenden).toHaveBeenCalledWith(MIT_NAMEN.access_id);
+  });
+
+  it('führt ohne Aufgabe nur zur Übersicht', async () => {
+    const nutzer = userEvent.setup();
+    // Der Fragebogen ist schon ausgefüllt; kein Check-in, kein Plan.
+    const { fuerDiePlattform } = await import('./instrumentwahl');
+    ladeBefundbogen.mockResolvedValue([
+      {
+        id: '00000000-0000-4000-8000-0000000000b1',
+        instrument_id: fuerDiePlattform()[0]!.meta.id,
+        definition_version: '8',
+        status: 'abgeschlossen',
+        recorded_on: '2026-10-20',
+        source: 'platform',
+        answers: null,
+        updated_at: '2026-10-20T08:00:00Z',
+        completed_at: '2026-10-20T08:00:00Z',
+      },
+    ]);
+    const fenster = await bisAllesBereit(nutzer);
+    expect(within(fenster).getByText('Die Übersicht zeigt, was ansteht.')).toBeInTheDocument();
+    expect(
+      within(fenster)
+        .getAllByRole('button')
+        .map((k) => k.textContent),
+    ).toEqual(['← Zurück', 'Zur Übersicht']);
+    ladeEinstieg.mockResolvedValue({ pending: false, finished_at: '2026-10-23', skipped_at: null });
+    await tippe(nutzer, 'Zur Übersicht');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Guten Tag' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('sagt einer Begleitung, dass die Übersicht zeigt, was für die Person ansteht', async () => {
+    const nutzer = userEvent.setup();
+    const fenster = await bisAllesBereit(nutzer, BEGLEITUNG);
+    expect(
+      within(fenster).getByText('Die Übersicht zeigt, was für Max Mustermann ansteht.'),
+    ).toBeInTheDocument();
+    expect(within(fenster).getByRole('button', { name: 'Zur Übersicht' })).toBeInTheDocument();
+    expect(within(fenster).queryByRole('button', { name: /beginnen/ })).toBeNull();
+    // Für eine Begleitung wird keine Aufgabe geladen.
+    expect(ladeBefundbogen).not.toHaveBeenCalled();
+    expect(ladeCheckins).not.toHaveBeenCalled();
   });
 });

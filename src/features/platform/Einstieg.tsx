@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MARKE } from '@/app/tabtitel';
 import { Button } from '@/components/ui/Button';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
+import { HakenSymbol } from '@/components/ui/HakenSymbol';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Laufrad } from '@/components/ui/Laufrad';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
@@ -19,16 +21,21 @@ import {
 } from '@/lib/push';
 import { VERTRETUNGSART } from '@/lib/vertretung';
 import {
+  befundbogenSchluessel,
   benachrichtigungSchluessel,
+  checkinsSchluessel,
   einstiegSchluessel,
   einwilligungenSchluessel,
+  plaeneSchluessel,
   type Benachrichtigungswahl,
+  type Einstiegsstand,
   type Einwilligung,
   type Plattformzugang,
 } from './api';
 import { usePlattformApi } from './einsicht';
 import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import {
+  bereitSatz,
   einstiegsseiten,
   einwilligungstitel,
   freiwilligkeit,
@@ -44,6 +51,9 @@ import {
 } from './einstiegsablauf';
 import { EINWILLIGUNGSFASSUNG, EINWILLIGUNGSTEXTE, FREIWILLIG } from './einwilligungstexte';
 import { useRechner } from './geruestbreite';
+import { ersteAufgabe, handlung, type Aufgabe } from './hauptsache';
+import { fuerDiePlattform } from './instrumentwahl';
+import { bereichParameter } from './pfade';
 
 /**
  * Der Einstieg nach der ersten Anmeldung (POR-019, DSN-001 4.3,
@@ -110,6 +120,8 @@ function Ablauf({
 }) {
   const api = usePlattformApi();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [suche] = useSearchParams();
   // Die Fragen stehen fest, sobald der Einstieg beginnt: Ein Ja macht aus der
   // offenen eine erteilte Einwilligung - die Karte bleibt trotzdem stehen.
   const [fragen] = useState(offen);
@@ -122,17 +134,66 @@ function Ablauf({
   const seite = seiten[nummer] ?? 'bereit';
   const vertretung = zugang.access_kind !== 'self';
 
-  // Einmal nach der Einrichtung (1c: `?eingerichtet=1`), nur bis zur nächsten Seite.
+  // Einmal nach der Einrichtung (1c: `?eingerichtet=1`), nur bis zur nächsten
+  // Seite - die Einrichtung hat keine eigene Fertig-Seite (ANN-695).
   const eingerichtet = useEinmaligeRueckmeldung('eingerichtet') === '1';
   const [ersterBlick, setErsterBlick] = useState(true);
 
-  const beenden = useMutation({
-    mutationFn: () => api.einstiegBeenden(zugang.access_id),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: einstiegSchluessel(zugang.access_id) }),
+  // Was „Alles bereit“ als erste Aufgabe nennt (ANN-692) - nur der Person
+  // selbst. Geladen wird gleich zu Beginn; bis zur letzten Seite steht es.
+  const selbst = zugang.access_kind === 'self';
+  const boegen = useQuery({
+    queryKey: befundbogenSchluessel(zugang.access_id),
+    queryFn: () => api.ladeBefundbogen(zugang.access_id),
+    enabled: selbst && zugang.relationship_kind === 'treatment',
   });
+  const checkins = useQuery({
+    queryKey: checkinsSchluessel(zugang.access_id),
+    queryFn: () => api.ladeCheckins(zugang.access_id),
+    enabled: selbst,
+  });
+  const plaene = useQuery({
+    queryKey: plaeneSchluessel(zugang.access_id),
+    queryFn: () => api.ladePlaene(zugang.access_id),
+    enabled: selbst,
+  });
+  const [aufgabe, setAufgabe] = useState<Aufgabe | null>(null);
+  /** Die Aufgabe beim Betreten von „Alles bereit“; lädt noch etwas, keine. */
+  const aufgabeJetzt = (): Aufgabe | null => {
+    const laedt = [boegen, checkins, plaene].some((a) => a.fetchStatus === 'fetching' && !a.data);
+    if (!selbst || laedt) return null;
+    return ersteAufgabe({
+      zugang,
+      bogenId: fuerDiePlattform()[0]?.meta.id,
+      boegen: boegen.data,
+      checkins: checkins.data,
+      plaene: plaene.data,
+    });
+  };
+
+  const beenden = useMutation({ mutationFn: () => api.einstiegBeenden(zugang.access_id) });
+  // Beendet ist beendet: Der Stand gilt sofort, bevor der Server ihn noch
+  // einmal sagt - sonst stünde der Einstieg kurz wieder da.
+  const beendet = () => {
+    queryClient.setQueryData<Einstiegsstand | null>(einstiegSchluessel(zugang.access_id), (alt) =>
+      alt ? { ...alt, pending: false } : alt,
+    );
+    void queryClient.invalidateQueries({ queryKey: einstiegSchluessel(zugang.access_id) });
+  };
   const spaeter = () => {
-    if (!beenden.isPending) beenden.mutate();
+    if (!beenden.isPending) beenden.mutate(undefined, { onSuccess: beendet });
+  };
+  // Die Handlung der künftigen Hauptsache: erst beenden, dann direkt dorthin -
+  // ohne Umweg über die Übersicht.
+  const beginnen = (ziel: string) => {
+    if (beenden.isPending) return;
+    const bereich = bereichParameter(suche);
+    beenden.mutate(undefined, {
+      onSuccess: () => {
+        void navigate(`${ziel}${bereich ? `?${bereich}` : ''}`);
+        beendet();
+      },
+    });
   };
 
   useEffect(() => {
@@ -145,8 +206,10 @@ function Ablauf({
 
   const weiter = () => {
     setErsterBlick(false);
+    if (seiten[nummer + 1] === 'bereit') setAufgabe(aufgabeJetzt());
     setNummer((n) => Math.min(n + 1, seiten.length - 1));
   };
+  const naechste = seite === 'bereit' && aufgabe ? handlung(aufgabe) : null;
 
   const titel =
     seite === 'willkommen'
@@ -185,12 +248,42 @@ function Ablauf({
             <Rueckmeldung>Anmeldung eingerichtet</Rueckmeldung>
           ) : null}
           {seite === 'willkommen' ? <Willkommensbild /> : null}
+          {seite === 'bereit' ? (
+            <span
+              aria-hidden="true"
+              className="bg-surface-inverse text-surface rounded-pill flex size-24 shrink-0 items-center justify-center"
+            >
+              <HakenSymbol className="size-12" />
+            </span>
+          ) : null}
         </>
       }
       fuss={
         <>
           {fehler}
-          {seite === 'bereit' ? (
+          {naechste ? (
+            // Ein Hauptknopf, darunter leise der Weg zur Übersicht (5.3).
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                className="w-full"
+                data-autofocus
+                onClick={() => beginnen(naechste.pfad)}
+                disabled={beenden.isPending}
+              >
+                {beenden.isPending ? 'Einen Moment …' : naechste.text}
+              </Button>
+              <Button
+                type="button"
+                variant="quiet"
+                className="w-full"
+                onClick={spaeter}
+                disabled={beenden.isPending}
+              >
+                Zur Übersicht
+              </Button>
+            </div>
+          ) : seite === 'bereit' ? (
             <Button
               type="button"
               className="w-full"
@@ -228,9 +321,7 @@ function Ablauf({
       ) : null}
       {seite === 'mitteilungen' ? <Mitteilungen zugang={zugang} /> : null}
       {seite === 'bereit' ? (
-        <p className="text-ink max-w-prose">
-          Sie finden alles in der Übersicht. Wenn Sie Fragen haben, wenden Sie sich an die Praxis.
-        </p>
+        <p className="text-ink max-w-prose">{bereitSatz(zugang, aufgabe)}</p>
       ) : null}
     </GefuehrterAblauf>
   );

@@ -2,6 +2,7 @@ import type { Benachrichtigungsart } from '@/lib/begriffe';
 import { einwilligungAngeboten } from '@/lib/einwilligung';
 import type { Einwilligung, Plattformzugang } from './api';
 import { OHNE_NACHTEIL } from './einwilligungstexte';
+import type { Aufgabe } from './hauptsache';
 
 /**
  * Der Einstieg nach der ersten Anmeldung als reine Rechnung (POR-019,
@@ -103,6 +104,32 @@ export function mitArten(
 ): Benachrichtigungsart[] {
   const ohne = gewaehlt.filter((art) => !arten.includes(art));
   return an ? [...ohne, ...arten] : ohne;
+}
+
+/**
+ * Der Satz auf „Alles bereit“ (5.3): die erste Aufgabe (`ersteAufgabe`,
+ * ANN-692), sonst wohin es jetzt geht. Einer Vertretung nennt er keine
+ * Aufgabe - die Übersicht zeigt, was für die Person ansteht.
+ */
+export function bereitSatz(
+  zugang: Pick<Plattformzugang, 'access_kind' | 'represented_name'>,
+  aufgabe: Aufgabe | null,
+): string {
+  if (zugang.access_kind !== 'self') {
+    return `Die Übersicht zeigt, was für ${vertretenePerson(zugang)} ansteht.`;
+  }
+  switch (aufgabe?.art) {
+    case 'fragebogen':
+      return 'Als Nächstes: Ihr Fragebogen vor dem ersten Termin. Er dauert etwa 10 Minuten.';
+    case 'checkin':
+      return 'Als Nächstes: Ihr Check-in für heute. Er dauert etwa eine Minute.';
+    case 'uebungen':
+      return `Als Nächstes: Ihre Übungen für heute, ${
+        aufgabe.uebungen === 1 ? 'eine Übung' : `${zahlwort(aufgabe.uebungen)} Übungen`
+      } aus Ihrem Plan.`;
+    default:
+      return 'Die Übersicht zeigt, was ansteht.';
+  }
 }
 
 function gross(wort: string): string {

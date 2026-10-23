@@ -7105,6 +7105,18 @@ Praxisprozess · offen · 2026-10-22 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Eigene Nummer für die Plattform: Spalte mit Pflege in den Praxiseinstellungen, gelesen in dieser einen Funktion · Aufwand `mittel`.
 
+### ANN-692 — Plattform: die erste Aufgabe an einer Stelle - Fragebogen, Check-in, Übungen für heute
+
+Technik · offen · 2026-10-23 · — · — · Wiedervorlage: Schritt 1e (Übersicht)
+
+**Annahme.** Die erste Aufgabe ist der Fragebogen vor dem ersten Termin, dann ein fälliger Check-in, dann die Übungen für heute (Übungstag, noch nicht geübt) - nie eine Antwort der Praxis oder eine offene Rechnung. In der Lesefrist und im Training gibt es keine; dort wird „Unterlagen sichern“ bzw. die nächste Einheit die Hauptsache. „Alles bereit“ nennt sie mit ihrer Handlung, ohne Aufgabe und für eine Vertretung nur „Zur Übersicht“.
+
+**Begründung.** Handoff 2026-10-22, Abschnitt 0 („Eine Hauptsache“, Abweichung von DSN-001 4.1: der Termin ist keine Aufgabe) und 5.1. An einer Stelle, damit Einstieg und Übersicht dieselbe Hauptsache meinen.
+
+**Anker.** `ersteAufgabe` in `src/features/platform/hauptsache.ts`.
+
+**Änderungspfad.** Reihenfolge oder Arten in `ersteAufgabe` · Aufwand `klein`.
+
 ### ANN-693 — Einstieg: Einwilligung als gleich gewichtete Wahl, gespeichert beim Wählen, nur offene
 
 Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)
@@ -7128,3 +7140,15 @@ Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `MITTEILUNGSARTEN` in `src/features/platform/einstiegsablauf.ts`, `Mitteilungen` in `Einstieg.tsx`.
 
 **Änderungspfad.** Andere Arten in der Liste oder ohne Push ein Hinweis statt des Schalters · Aufwand `klein`.
+
+### ANN-695 — Einrichtung ohne Fertig-Seite: „Anmeldung eingerichtet“ einmal auf „Willkommen“
+
+Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
+
+**Annahme.** Nach „PIN speichern“ folgt keine eigene Seite: Die Einrichtung führt mit `?eingerichtet=1` auf `/p` (Schritt 1c), und „Willkommen“ zeigt oben einmal „Anmeldung eingerichtet“ - bis zur nächsten Seite, nicht nach „Zurück“ oder Neuladen. Ist der Einstieg übersprungen oder beendet, liest die Übersicht den Parameter nicht.
+
+**Begründung.** Handoff 2026-10-22, Festlegungen aus dem Entwurf und Abschnitt 10; DR-160 (eine Bestätigung gilt einmal). Eine Fertig-Seite kostete einen Tipp ohne neue Auskunft.
+
+**Anker.** `useEinmaligeRueckmeldung('eingerichtet')` in `src/features/platform/Einstieg.tsx`.
+
+**Änderungspfad.** Eigene Seite nach „PIN speichern“ (1c) oder die Rückmeldung auch auf der Übersicht · Aufwand `klein`.
