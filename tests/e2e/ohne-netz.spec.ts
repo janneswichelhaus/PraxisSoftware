@@ -88,6 +88,8 @@ test.describe('Freigabe ohne Netz per Passkey (TRK-009)', () => {
 
       // Üben ohne Netz: der Haken von vorhin steht, ein neuer kommt dazu.
       await page.getByRole('button', { name: 'Jetzt üben' }).click();
+      // „Sperren“ bleibt auch beim Üben im Kopf der lokalen Ansicht (ADR-025 Punkt 16).
+      await expect(page.getByRole('button', { name: 'Sperren' })).toBeVisible();
       const erster = page.getByRole('button', { name: /^1\. Durchgang/ });
       await expect(erster).toHaveAttribute('aria-pressed', 'true');
       await page.getByRole('button', { name: /^2\. Durchgang/ }).click();

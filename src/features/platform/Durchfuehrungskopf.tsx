@@ -97,10 +97,13 @@ export function Durchfuehrungskopf({
       </div>
       <div role="status">
         {ohneNetz ? (
-          <p className="bg-surface-sunken text-ink flex items-start gap-3 px-5 py-2.5 max-[23rem]:px-3">
-            <OhneNetzSymbol />
-            Ohne Verbindung – Ihre Haken liegen auf diesem Gerät.
-          </p>
+          // Am Rechner in der Spalte des Kopfs (bis 960), nicht am Fensterrand.
+          <div className="bg-surface-sunken px-5 py-2.5 max-[23rem]:px-3">
+            <p className="text-ink [[data-rechner]_&]:max-w-durchfuehrung mx-auto flex items-start gap-3">
+              <OhneNetzSymbol />
+              Ohne Verbindung – Ihre Haken liegen auf diesem Gerät.
+            </p>
+          </div>
         ) : null}
       </div>
     </div>

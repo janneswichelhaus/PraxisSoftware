@@ -71,12 +71,17 @@ export function Durchfuehrungsfuss({
             </p>
           ) : null}
         </div>
+        {/* Je Art ein eigener Schlüssel: Würde aus „Zum Abschluss“ (Knopf)
+            derselbe DOM-Knopf mit `type="submit"`, schickte der Browser das
+            Formular mit genau diesem Klick ab - React schreibt den Knopf um,
+            bevor der Browser den Klick zu Ende führt. */}
         {'to' in aktion ? (
-          <ButtonLink to={aktion.to} groesse="gross" className={knopf}>
+          <ButtonLink key="link" to={aktion.to} groesse="gross" className={knopf}>
             {aktion.text}
           </ButtonLink>
         ) : 'form' in aktion ? (
           <Button
+            key="absenden"
             type="submit"
             form={aktion.form}
             groesse="gross"
@@ -87,6 +92,7 @@ export function Durchfuehrungsfuss({
           </Button>
         ) : (
           <Button
+            key="knopf"
             type="button"
             groesse="gross"
             className={knopf}

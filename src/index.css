@@ -548,10 +548,10 @@ html:has(.reiterleiste[data-stufe='2']) {
   .plattform-schrift .listenzeile > :nth-child(3) {
     grid-column: 1;
   }
-  /* Eine Skala (0–10) mit so vielen Stufen je Reihe, wie 44 px breit
+  /* Eine Skala (0–10) mit so vielen Stufen je Reihe, wie 48 px breit
      hineinpassen - Reihenfolge und Anker bleiben (ANN-258). */
   .plattform-schrift .skala {
-    grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
   }
   /* ANN-707 (Jannes, 24.10.2026): Bei 200 % passen „Treppengeländer“ oder
      „Totalendoprothese“ in keiner zulässigen Größe in die Zeile, und ohne

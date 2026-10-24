@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen, waitFor, within } from '@testing-library/react';
+import { onlineManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import type * as PlattformApi from './api';
@@ -584,5 +585,247 @@ describe('Durchführung im Vollbild (DRP-EPIC-008, Handoff 2026-10-24)', () => {
     // Ohne gewählte Übungstage keine Zeile dazu.
     expect(screen.queryByText(/Nächster Übungstag/)).not.toBeInTheDocument();
     expect(await wartendeEinheiten(KONTO)).toHaveLength(1);
+  });
+});
+
+describe('Befunde aus den Reviews zu Schritt 2b', () => {
+  const ANNA: Termin = {
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001',
+    starts_at: new Date(Date.now() + 86_400_000).toISOString(),
+    ends_at: new Date(Date.now() + 90_000_000).toISOString(),
+    appointment_type: 'home_visit',
+    status: 'confirmed',
+    staff_name: 'Anna Beispiel',
+    location_name: null,
+    visit_street: null,
+    visit_house_number: null,
+    visit_postal_code: null,
+    visit_city: null,
+    late_notice: false,
+    open_request_kind: null,
+  };
+
+  it('nach einem Ende ohne Netz beginnt eine neue Einheit, statt hinter das Ende zu schreiben (BEF-213)', async () => {
+    const X = 'cccccccc-0000-4000-8000-000000000009';
+    // Der Server kennt X noch offen; auf dem Gerät ist X beendet und wartet.
+    ladePlaene.mockResolvedValue({
+      today: geraetetag(),
+      plans: [
+        {
+          ...ZWEI,
+          open_session: { id: X, sets: [{ item_id: PLAN.items[0]!.id, set_number: 1 }] },
+        },
+      ],
+    });
+    await ereignisAblegen(
+      KONTO,
+      {
+        id: X,
+        zugangId: ZUGANG.access_id,
+        planId: PLAN.id,
+        tag: geraetetag(),
+        begonnenAm: new Date().toISOString(),
+      },
+      { id: 'e-ende', kind: 'finish', at: new Date().toISOString(), note: '', values: {} },
+    );
+    einheitUebertragen.mockRejectedValue(new Error('Nicht übertragen.'));
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    // Kein Haken der beendeten Einheit steht da; es geht bei Übung 1 los.
+    const erster = await screen.findByRole('button', { name: '1. Durchgang' });
+    expect(erster).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText('Übung 1 von 2')).toBeInTheDocument();
+    await user.click(erster);
+    await waitFor(async () => expect(await wartendeEinheiten(KONTO)).toHaveLength(2));
+    const [beendete, neue] = await wartendeEinheiten(KONTO);
+    expect(beendete!.id).toBe(X);
+    expect(beendete!.ereignisse.map((e) => e.kind)).toEqual(['finish']);
+    expect(neue!.id).not.toBe(X);
+    expect(neue!.ereignisse.map((e) => e.kind)).toEqual(['set']);
+  });
+
+  it('während des Beendens nimmt die Einheit keinen Haken mehr an (BEF-213)', async () => {
+    ladePlaene.mockResolvedValue({
+      today: geraetetag(),
+      plans: [{ ...ZWEI, service_area: 'training', note_allowed: false }],
+    });
+    let freigeben: () => void = () => undefined;
+    einheitUebertragen.mockImplementation((_z: string, e: Sendung) =>
+      e.ereignisse.some((x) => x.kind === 'finish')
+        ? new Promise((r) => {
+            freigeben = () => r({ session_id: e.id, status: 'ok', note_dropped: false });
+          })
+        : Promise.resolve({ session_id: e.id, status: 'ok', note_dropped: false }),
+    );
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={{ ...ZUGANG, relationship_kind: 'training' }} />);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    await waitFor(() => expect(gesendet()).toHaveLength(1));
+    await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
+    await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
+    expect(await screen.findByRole('button', { name: 'Wird gespeichert …' })).toBeDisabled();
+    const zweite = screen.getByRole('button', { name: '1. Durchgang' });
+    await user.click(zweite);
+    expect(zweite).toHaveAttribute('aria-pressed', 'false');
+    await act(async () => {
+      freigeben();
+      await Promise.resolve();
+    });
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Gespeichert' }),
+    ).toBeInTheDocument();
+    expect(gesendet().filter((e) => e.kind === 'set')).toHaveLength(1);
+    expect(await wartendeEinheiten(KONTO)).toEqual([]);
+  });
+
+  it('sagt nach dem ersten Haken ohne Übertragung nie „Übertragen an die Praxis“ (ADR-024 Punkt 8)', async () => {
+    einheitUebertragen.mockRejectedValue(new Error('Nicht übertragen.'));
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    expect(screen.queryByText('Übertragen an die Praxis')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('Auf diesem Gerät, noch nicht übertragen', {}, { timeout: 3000 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Übertragen an die Praxis')).not.toBeInTheDocument();
+  });
+
+  it('in der lokalen Ansicht sagt der Fuß nie „übertragen“, auch nicht kurz (ADR-025 Punkt 16)', async () => {
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={ZUGANG} />, { mitNetz: false });
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    expect(screen.queryByText('Übertragen an die Praxis')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /sobald Verbindung besteht und Sie die Anwendung entsperrt/,
+        {},
+        {
+          timeout: 3000,
+        },
+      ),
+    ).toBeInTheDocument();
+    // Der Stand bleibt beim Wechsel der Übung und zum Abschluss stehen (ANN-710).
+    await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
+    expect(screen.getByText(/Auf diesem Gerät, noch nicht übertragen/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
+    expect(screen.getByText(/Auf diesem Gerät, noch nicht übertragen/)).toBeInTheDocument();
+    expect(screen.queryByText('Übertragen an die Praxis')).not.toBeInTheDocument();
+  });
+
+  it('ohne Netz sagt der Fuß nicht „übertragen“, während der Kopf „auf diesem Gerät“ sagt', async () => {
+    const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      ladePlaene.mockResolvedValue({
+        today: geraetetag(),
+        plans: [
+          {
+            ...ZWEI,
+            open_session: {
+              id: 'cccccccc-0000-4000-8000-000000000009',
+              sets: [{ item_id: PLAN.items[0]!.id, set_number: 1 }],
+            },
+          },
+        ],
+      });
+      zeige(<Durchfuehrung zugang={ZUGANG} />);
+      expect(
+        await screen.findByText('Ohne Verbindung – Ihre Haken liegen auf diesem Gerät.'),
+      ).toBeInTheDocument();
+      await act(() => new Promise((r) => setTimeout(r, 50)));
+      expect(screen.queryByText('Übertragen an die Praxis')).not.toBeInTheDocument();
+    } finally {
+      onLine.mockRestore();
+    }
+  });
+
+  it('beim Wiederverbinden bleibt die Einheit am Plan vom Gerät stehen, mit ihrer Übung', async () => {
+    await plaeneAblegen(KONTO, ZUGANG.access_id, null, { today: geraetetag(), plans: [ZWEI] });
+    let antworten: (p: EigenePlaene) => void = () => undefined;
+    ladePlaene.mockImplementation(
+      () =>
+        new Promise<EigenePlaene>((r) => {
+          antworten = r;
+        }),
+    );
+    onlineManager.setOnline(false);
+    try {
+      const user = userEvent.setup();
+      zeige(<Durchfuehrung zugang={ZUGANG} />);
+      // Der erste Abruf hält an; geübt wird am Plan vom Gerät.
+      await user.click(await screen.findByRole('button', { name: 'Nächste Übung' }));
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Gelbes Band heranziehen' }),
+      ).toBeInTheDocument();
+      act(() => onlineManager.setOnline(true));
+      await waitFor(() => expect(ladePlaene).toHaveBeenCalled());
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Gelbes Band heranziehen' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Übung wird geladen')).not.toBeInTheDocument();
+      await act(async () => {
+        antworten({ today: geraetetag(), plans: [ZWEI] });
+        await Promise.resolve();
+      });
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Gelbes Band heranziehen' }),
+      ).toBeInTheDocument();
+      // Der Plan kommt jetzt vom Server: dieselbe Einheit, ohne die Warnung.
+      await waitFor(() =>
+        expect(screen.queryByText(/Die Praxis antwortet gerade nicht/)).not.toBeInTheDocument(),
+      );
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Gelbes Band heranziehen' }),
+      ).toBeInTheDocument();
+    } finally {
+      onlineManager.setOnline(true);
+    }
+  });
+
+  it('weist der Server das Ende ab, sagt die Ansicht warum und zeigt keine Endseite', async () => {
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    await waitFor(() => expect(gesendet()).toHaveLength(1));
+    einheitUebertragen.mockRejectedValue(new UebertragungAbgewiesen('Der Plan gilt nicht mehr.'));
+    await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
+    await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
+    expect(
+      await screen.findByText('Nicht übertragen: Der Plan gilt nicht mehr.'),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/Nicht übertragen/)).toHaveLength(1);
+    expect(screen.queryByRole('heading', { name: /gespeichert/i })).not.toBeInTheDocument();
+  });
+
+  it('nennt am freien Feld, wer den Satz sieht - wie die Endseite (ANN-712)', async () => {
+    ladeTermine.mockResolvedValue([ANNA]);
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
+    expect(await screen.findByText(/Anna Beispiel sieht diesen Satz\./)).toBeInTheDocument();
+    // „Zurück“ zur letzten Übung und wieder hin: der Satz bleibt.
+    await user.type(screen.getByLabelText('Das war schwierig, weil … (freiwillig)'), 'Knie');
+    await user.click(screen.getByRole('button', { name: 'Zurück' }));
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
+    expect(screen.getByLabelText('Das war schwierig, weil … (freiwillig)')).toHaveValue('Knie');
+  });
+
+  it('ein Tag im Link, den es nicht gibt, bringt die Endseite nicht zu Fall', async () => {
+    renderWithProviders(
+      <DurchfuehrungKontext.Provider
+        value={{ besitzer: KONTO, anstossen: () => uebertragen(KONTO) }}
+      >
+        <Durchfuehrung zugang={ZUGANG} />
+      </DurchfuehrungKontext.Provider>,
+      `${PFAD}?gespeichert=1&tag=2026-13-45`,
+    );
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Gespeichert' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/ist bei der Praxis\./).textContent).toBe(
+      `Ihre Einheit vom ${tagFest(geraetetag())} ist bei der Praxis.`,
+    );
   });
 });

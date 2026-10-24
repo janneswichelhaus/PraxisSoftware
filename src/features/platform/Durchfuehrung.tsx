@@ -16,7 +16,9 @@ import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { angabeGueltig, groessenImTakt } from '@/lib/erfassungsgroessen';
 import {
   abgelegterPlan,
+  abweisungFuer,
   abweisungGelesen,
+  aktuellerAblagestand,
   ereignisAblegen,
   geraetetag,
   useDurchfuehrungstraeger,
@@ -42,6 +44,7 @@ import {
 } from './Durchfuehrungsfuss';
 import { Durchfuehrungskopf } from './Durchfuehrungskopf';
 import { usePlattformApi } from './einsicht';
+import { useRechner } from './geruestbreite';
 import { Endseite } from './Endseite';
 import { naechsterTermin } from './hauptsache';
 import { hauptzahl } from './hauptzahl';
@@ -103,6 +106,16 @@ export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
     networkMode: 'always',
     gcTime: 0,
   });
+  // Wer die Einheit sieht (ANN-712): die Fachperson des nächsten Termins,
+  // sonst das Wort des Bereichs - am freien Feld und auf der Endseite.
+  const termine = useQuery({
+    queryKey: termineSchluessel(zugang.access_id),
+    queryFn: () => api.ladeTermine(zugang.access_id),
+  });
+  const name = termine.data ? naechsterTermin(termine.data)?.staff_name : null;
+  const wer =
+    name ??
+    (zugang.relationship_kind === 'training' ? 'Ihre Trainingsbetreuung' : 'Ihre Therapeut:in');
   const plan = plaene.data?.plans.find((p) => p.id === planId);
 
   // Nach „Einheit beenden“ (ANN-706): dieselbe Route mit dem Ziel im Link,
@@ -116,23 +129,35 @@ export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
   }
 
   if (ende) {
-    return <EndeDerEinheit zugang={zugang} plan={plan} ende={ende} zurueck={zurueck} />;
+    return (
+      <EndeDerEinheit
+        plan={plan}
+        ende={ende}
+        // Den Satz erst, wenn feststeht, wer ihn sieht - kein Springen des Namens.
+        wer={termine.isPending ? null : wer}
+        zurueck={zurueck}
+      />
+    );
+  }
+  // Übt die Person schon am Plan vom Gerät, bleibt die Einheit stehen, auch
+  // wenn der Abruf beim Wiederverbinden neu beginnt: Kommt der Plan vom
+  // Server, nimmt dieselbe Einheit ihn auf, mit ihren Haken und ihrer Übung.
+  if (plaene.data === undefined && abgelegt.data) {
+    return (
+      <EinheitMitWarteschlange
+        zugangId={zugang.access_id}
+        plan={abgelegt.data}
+        ohneVerbindung
+        zurueckPfad={zurueck}
+        werSieht={wer}
+        onBeendet={beendet}
+      />
+    );
   }
   if (ohneAntwort ? abgelegt.isPending : plaene.isPending) {
     return <EinheitLaedt spaeter={{ pfad: zurueck }} />;
   }
   if (plaene.data === undefined) {
-    if (abgelegt.data) {
-      return (
-        <EinheitMitWarteschlange
-          zugangId={zugang.access_id}
-          plan={abgelegt.data}
-          ohneVerbindung
-          zurueckPfad={zurueck}
-          onBeendet={beendet}
-        />
-      );
-    }
     return (
       <Ausweg pfad={zurueck}>
         <ErrorState
@@ -155,6 +180,7 @@ export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
       zugangId={zugang.access_id}
       plan={plan}
       zurueckPfad={zurueck}
+      werSieht={wer}
       onBeendet={(ziel, tag) => {
         // Neu laden, aber nicht darauf warten (BEF-210): Ohne Netz pausiert
         // die Abfrage bis zur nächsten Verbindung, und „Wird gespeichert …“
@@ -175,6 +201,13 @@ function endeAusSuche(suche: URLSearchParams): 'uebertragen' | 'geraet' | null {
   return wert === '1' ? 'uebertragen' : wert === 'geraet' ? 'geraet' : null;
 }
 
+/** Ein Kalendertag `YYYY-MM-DD` aus dem Link, nur wenn es ihn gibt. */
+function tagAusLink(wert: string | null): string | null {
+  if (!wert || !/^\d{4}-\d{2}-\d{2}$/.test(wert)) return null;
+  const tag = new Date(`${wert}T12:00:00`);
+  return Number.isNaN(tag.getTime()) || geraetetag(tag) !== wert ? null : wert;
+}
+
 interface EinheitProps {
   zugangId: string;
   plan: Ablageplan;
@@ -183,6 +216,8 @@ interface EinheitProps {
   /** „Später weiter“: in der Plattform ein Link, sonst ein Knopf. */
   zurueckPfad?: string;
   onZurueck?: () => void;
+  /** Wer den Satz am freien Feld sieht (ANN-712); ohne Angabe das Wort des Bereichs. */
+  werSieht?: string;
   /** `tag` ist der Kalendertag der Einheit (ANN-357). */
   onBeendet: (ziel: Beendetziel, tag: string) => void | Promise<void>;
 }
@@ -218,40 +253,57 @@ interface Einheitskopf {
   tag: string;
 }
 
+/** Hat die Einheit auf dem Gerät schon ihr Ende? */
+function istBeendet(einheit: WartendeEinheit): boolean {
+  return einheit.ereignisse.some((x) => x.kind === 'finish');
+}
+
+/** Der Server hat das Ende abgewiesen; die Einheit ist verworfen (ADR-024 Punkt 8). */
+class EndeAbgewiesen extends Error {
+  readonly einheitId: string;
+  constructor(einheitId: string, satz: string) {
+    super(`Nicht übertragen: ${satz}`);
+    this.einheitId = einheitId;
+  }
+}
+
 function Einheit({
   zugangId,
   plan,
   ohneVerbindung = false,
   zurueckPfad,
   onZurueck,
+  werSieht,
   onBeendet,
   wartend,
 }: EinheitProps & { wartend: WartendeEinheit[] }) {
   const { besitzer, anstossen } = useDurchfuehrungstraeger();
   const warteschlange = useWarteschlange(besitzer);
   const verbunden = useIstVerbunden();
+  const formId = useId();
 
   // Weiter mit der heute auf dem Gerät begonnenen Einheit, sonst mit der heute
   // beim Server offenen; eine neue entsteht mit dem ersten Haken.
   const [start] = useState(() => {
     const tag = geraetetag();
     const lokal = wartend.find(
-      (e) =>
-        e.zugangId === zugangId &&
-        e.planId === plan.id &&
-        e.tag === tag &&
-        !e.ereignisse.some((x) => x.kind === 'finish'),
+      (e) => e.zugangId === zugangId && e.planId === plan.id && e.tag === tag && !istBeendet(e),
     );
-    const haken = new Set(
-      (plan.open_session?.sets ?? []).map((x) => schluessel(x.item_id, x.set_number)),
-    );
+    // BEF-213: Ist die beim Server offene Einheit auf diesem Gerät schon
+    // beendet und nur noch nicht übertragen, gehören ihre Haken zu ihr - es
+    // beginnt eine neue, statt hinter ihr Ende zu schreiben.
+    const offen =
+      plan.open_session && !wartend.some((e) => e.id === plan.open_session?.id && istBeendet(e))
+        ? plan.open_session
+        : null;
+    const haken = new Set((offen?.sets ?? []).map((x) => schluessel(x.item_id, x.set_number)));
     for (const x of lokal?.ereignisse ?? []) {
       if (x.kind === 'set') {
         if (x.done) haken.add(schluessel(x.item_id, x.set_number));
         else haken.delete(schluessel(x.item_id, x.set_number));
       }
     }
-    const id = lokal?.id ?? plan.open_session?.id ?? null;
+    const id = lokal?.id ?? offen?.id ?? null;
     const kopf: Einheitskopf | null = id
       ? { id, begonnenAm: lokal?.begonnenAm ?? new Date().toISOString(), tag }
       : null;
@@ -259,7 +311,9 @@ function Einheit({
   });
   const einheit = useRef<Einheitskopf | null>(start.kopf);
 
-  const [index, setIndex] = useState(() => ersteOffeneUebung(plan.items, start.haken));
+  const [gewaehlt, setIndex] = useState(() => ersteOffeneUebung(plan.items, start.haken));
+  // Kommt der Plan nach dem Wiederverbinden vom Server, kann er kürzer sein.
+  const index = Math.min(gewaehlt, plan.items.length - 1);
   const [fertig, setFertig] = useState(false);
   const [haken, setHaken] = useState<ReadonlySet<string>>(start.haken);
   const [fehler, setFehler] = useState<string | null>(null);
@@ -270,6 +324,16 @@ function Einheit({
     nummer: number;
     durchgang: number;
   } | null>(null);
+  // Überblendet wird erst beim Wechsel, nicht beim ersten Zeigen (Abschnitt 7).
+  const [gewechselt, setGewechselt] = useState(false);
+  // Die freiwilligen Angaben des Abschlusses bleiben beim „Zurück“ stehen.
+  const [notiz, setNotiz] = useState('');
+  // TRK-001: Anstrengung und Schmerz, freiwillig, nichts vorausgewählt.
+  const [werte, setWerte] = useState<Record<string, number | null>>({});
+  // Was dieser Bildschirm abgelegt hat: wie viele Haken gerade auf dem Weg
+  // auf das Gerät sind, und bis zu welchem Stand der Ablage (ADR-024 Punkt 8).
+  const [schreibend, setSchreibend] = useState(0);
+  const [geschrieben, setGeschrieben] = useState(0);
 
   useBildschirmWach();
 
@@ -297,6 +361,11 @@ function Einheit({
     return einheit.current;
   }
 
+  const beenden = useEinheitBeenden({ zugangId, plan, einheitskopf, onBeendet });
+  // Während des Beendens nimmt die Einheit keinen Haken mehr an: Er käme
+  // hinter ihr Ende (BEF-213).
+  const beendetGerade = beenden.isPending || beenden.isSuccess;
+
   async function setzen(
     position: PlanPosition | Ablageplan['items'][number],
     durchgang: number,
@@ -305,9 +374,10 @@ function Einheit({
     setFehler(null);
     setHaken((alt) => umschalten(alt, schluessel(position.id, durchgang), erledigt));
     const kopf = einheitskopf();
+    setSchreibend((n) => n + 1);
     try {
       // Erst auf das Gerät (ADR-024 Punkt 5), dann zum Server.
-      await ereignisAblegen(
+      const abgelegtIn = await ereignisAblegen(
         besitzer,
         { ...kopf, zugangId, planId: plan.id },
         {
@@ -319,160 +389,197 @@ function Einheit({
           done: erledigt,
         },
       );
+      // War die Einheit auf dem Gerät schon beendet, liegt der Haken in
+      // einer neuen; die nächsten gehören dorthin (BEF-213).
+      if (abgelegtIn !== kopf.id) einheit.current = { ...kopf, id: abgelegtIn };
+      setGeschrieben((bis) => Math.max(bis, aktuellerAblagestand()));
     } catch {
       // Nicht einmal auf dem Gerät: zurücknehmen, was nicht gespeichert ist (ADR-001).
       setHaken((alt) => umschalten(alt, schluessel(position.id, durchgang), !erledigt));
       setFehler('Nicht gespeichert. Bitte erneut tippen.');
       setPause(null);
       return;
+    } finally {
+      setSchreibend((n) => n - 1);
     }
     void anstossen?.();
   }
 
-  const beenden = useEinheitBeenden({ zugangId, plan, einheitskopf, onBeendet });
-
   const position = plan.items[index]!;
   const letzte = index === plan.items.length - 1;
-  const wartet =
-    einheit.current !== null &&
-    warteschlange.einheiten.some((e) => e.id === einheit.current?.id && e.ereignisse.length > 0);
-  const stand: Uebertragungsstand = wartet
-    ? 'geraet'
-    : einheit.current && haken.size > 0
-      ? 'uebertragen'
-      : 'ohne';
-  const abgewiesen = warteschlange.abgewiesen.filter((a) => a.planId === plan.id);
+  // Der Stand im Fuß (ADR-024 Punkt 8, ANN-710): „übertragen“ nur, wenn die
+  // Warteschlange gelesen ist, nachdem der letzte Haken dieses Bildschirms auf
+  // dem Gerät lag, und nichts dieses Plans mehr wartet. Ohne Netz sagt der
+  // Fuß nicht „übertragen“, während der Kopf „Ihre Haken liegen auf diesem
+  // Gerät“ sagt.
+  const gelesen = schreibend === 0 && warteschlange.gelesenBis >= geschrieben;
+  const planWartet = warteschlange.einheiten.some(
+    (e) => e.zugangId === zugangId && e.planId === plan.id && e.ereignisse.length > 0,
+  );
+  const stand: Uebertragungsstand =
+    gelesen && !planWartet && haken.size === 0
+      ? 'ohne'
+      : !gelesen || planWartet
+        ? 'geraet'
+        : verbunden && einheit.current
+          ? 'uebertragen'
+          : 'ohne';
+  // Eine Abweisung des Endes steht über dem Fuß, nicht noch einmal oben.
+  const endeAbgewiesen = beenden.error instanceof EndeAbgewiesen ? beenden.error.einheitId : null;
+  const abgewiesen = warteschlange.abgewiesen.filter(
+    (a) => a.planId === plan.id && a.einheitId !== endeAbgewiesen,
+  );
   const spaeter = zurueckPfad ? { pfad: zurueckPfad } : { onSpaeter: onZurueck ?? (() => {}) };
+  const groessen = groessenImTakt('session');
+  const ungueltig = groessen.find((g) => {
+    const w = werte[g.key];
+    return w !== null && w !== undefined && !angabeGueltig(g, w);
+  });
 
   function wechseln(neu: number) {
     setPause(null);
+    setGewechselt(true);
     setIndex(neu);
   }
 
-  if (fertig) {
-    return (
-      <Abschluss
-        plan={plan}
-        tag={einheit.current?.tag ?? geraetetag()}
-        abgehakt={haken.size}
-        stand={stand}
-        gesperrt={!anstossen}
-        kopf={
-          <Durchfuehrungskopf
-            uebung={plan.items.length}
-            von={plan.items.length}
-            abschluss
-            onZurueck={() => setFertig(false)}
-            spaeter={spaeter}
-            ohneNetz={!verbunden}
-          />
-        }
-        titelRef={abschlusskopf}
-        beenden={beenden}
-        onZurueck={() => setFertig(false)}
-      />
-    );
-  }
-
   // Ohne Einwilligung im Training gibt es nichts zu fragen (ADR-021 Punkt 4):
-  // Die letzte Übung beendet direkt (Handoff, Abschnitt 0). Ohne einen Haken
-  // führt der Knopf zum Abschluss, der sagt, dass es nichts zu speichern gibt.
+  // Die letzte Übung beendet direkt (Handoff, Abschnitt 0; ANN-715). Ohne
+  // einen Haken führt der Knopf zum Abschluss, der sagt, dass es nichts zu
+  // speichern gibt.
   const direkt = letzte && !plan.note_allowed && haken.size > 0;
-  const aktion: Hauptaktion = direkt
-    ? {
-        text: beenden.isPending ? 'Wird gespeichert …' : 'Einheit beenden',
-        onClick: () => beenden.mutate({ notiz: '', werte: {} }),
-        disabled: beenden.isPending,
-      }
-    : {
-        text: letzte ? 'Zum Abschluss' : 'Nächste Übung',
-        onClick: () => {
-          if (letzte) {
+  const speichert = beenden.isPending ? 'Wird gespeichert …' : 'Einheit beenden';
+  const aktion: Hauptaktion = fertig
+    ? haken.size > 0
+      ? { text: speichert, form: formId, disabled: beendetGerade }
+      : { text: 'Zurück zu den Übungen', onClick: () => setFertig(false) }
+    : direkt
+      ? {
+          text: speichert,
+          onClick: () => beenden.mutate({ notiz: '', werte: {} }),
+          disabled: beendetGerade,
+        }
+      : {
+          text: letzte ? 'Zum Abschluss' : 'Nächste Übung',
+          onClick: () => {
+            if (!letzte) return wechseln(index + 1);
             setPause(null);
             setFertig(true);
-          } else wechseln(index + 1);
-        },
-      };
+          },
+        };
   const { zahl, einheit: zahleinheit } = hauptzahl(position);
 
+  // Ein Kopf und ein Fuß für Übung und Abschluss: Beim Wechsel bleibt der
+  // Stand im Fuß stehen, statt neu zu warten (ANN-710).
   return (
     <Rahmen
       kopf={
         <Durchfuehrungskopf
-          uebung={index + 1}
+          uebung={fertig ? plan.items.length : index + 1}
           von={plan.items.length}
-          onZurueck={index > 0 ? () => wechseln(index - 1) : undefined}
+          abschluss={fertig}
+          onZurueck={
+            fertig ? () => setFertig(false) : index > 0 ? () => wechseln(index - 1) : undefined
+          }
           spaeter={spaeter}
           ohneNetz={!verbunden}
         />
       }
       fuss={
         <>
-          {beenden.isError ? (
+          {beenden.isError || (fertig && ungueltig) ? (
             <Meldungsleiste>
-              <Statusmeldung ton="fehler">{beenden.error.message}</Statusmeldung>
+              {beenden.isError ? (
+                <Statusmeldung ton="fehler">{beenden.error.message}</Statusmeldung>
+              ) : null}
+              {fertig && ungueltig ? (
+                <Statusmeldung ton="fehler">
+                  {`„${ungueltig.kurz}“: bitte eine ganze Zahl von ${ungueltig.min} bis ${ungueltig.max}.`}
+                </Statusmeldung>
+              ) : null}
             </Meldungsleiste>
           ) : null}
           <Durchfuehrungsfuss aktion={aktion} stand={stand} gesperrt={!anstossen} />
         </>
       }
     >
-      {/* BEF-197: Meldet das Gerät Verbindung und antwortet der Server
-          nicht, sagt es diese Zeile; ohne Netz spricht der Kopf. */}
-      {ohneVerbindung && verbunden ? (
-        <Statusmeldung ton="warnung">
-          Die Praxis antwortet gerade nicht. Üben können Sie trotzdem – mit Ihrem Plan von diesem
-          Gerät.
-        </Statusmeldung>
-      ) : null}
-      {abgewiesen.map((a) => (
-        <div key={a.einheitId} className="flex flex-wrap items-center gap-x-3">
-          <Statusmeldung ton="fehler">{`Nicht übertragen: ${a.satz}`}</Statusmeldung>
-          <Button
-            type="button"
-            variant="quiet"
-            groesse="kompakt"
-            onClick={() => abweisungGelesen(a.einheitId)}
-          >
-            Ausblenden
-          </Button>
-        </div>
-      ))}
-      {/* Der Schlüssel blendet die neue Übung ein (Abschnitt 7). */}
-      <div key={position.id} className="uebung-wechsel flex flex-col gap-6">
-        <Buehne
-          name={position.variant_lay_name}
-          zahl={zahl}
-          einheit={zahleinheit}
-          titelRef={titel}
+      {fertig ? (
+        <Abschluss
+          plan={plan}
+          tag={einheit.current?.tag ?? geraetetag()}
+          abgehakt={haken.size}
+          werSieht={
+            werSieht ??
+            (plan.service_area === 'therapy' ? 'Ihre Therapeut:in' : 'Ihre Trainingsbetreuung')
+          }
+          formId={formId}
+          titelRef={abschlusskopf}
+          notiz={notiz}
+          onNotiz={setNotiz}
+          werte={werte}
+          onWert={(key, w) => setWerte((bisher) => ({ ...bisher, [key]: w }))}
+          onAbsenden={() => {
+            if (!ungueltig && haken.size > 0 && !beendetGerade) beenden.mutate({ notiz, werte });
+          }}
         />
-        <Dosierungsmarken dosis={position} />
-        <div className="flex flex-wrap gap-6">
-          <div className="min-w-0 flex-[1_1_21.25rem] empty:hidden">
-            <Anleitung position={position} />
+      ) : (
+        <>
+          {/* BEF-197, ANN-713: Meldet das Gerät Verbindung und antwortet der
+              Server nicht, sagt es diese Zeile; ohne Netz spricht der Kopf. */}
+          {ohneVerbindung && verbunden ? (
+            <Statusmeldung ton="warnung">
+              Die Praxis antwortet gerade nicht. Üben können Sie trotzdem – mit Ihrem Plan von
+              diesem Gerät.
+            </Statusmeldung>
+          ) : null}
+          {abgewiesen.map((a) => (
+            <div key={a.einheitId} className="flex flex-wrap items-center gap-x-3">
+              <Statusmeldung ton="fehler">{`Nicht übertragen: ${a.satz}`}</Statusmeldung>
+              <Button type="button" variant="quiet" onClick={() => abweisungGelesen(a.einheitId)}>
+                Ausblenden
+              </Button>
+            </div>
+          ))}
+          {/* Der Schlüssel blendet die neue Übung ein (Abschnitt 7). */}
+          <div
+            key={position.id}
+            className={`flex flex-col gap-6 ${gewechselt ? 'uebung-wechsel' : ''}`}
+          >
+            <Buehne
+              name={position.variant_lay_name}
+              zahl={zahl}
+              einheit={zahleinheit}
+              titelRef={titel}
+            />
+            <Dosierungsmarken dosis={position} />
+            <div className="flex flex-wrap gap-6">
+              <div className="min-w-0 flex-[1_1_21.25rem] empty:hidden">
+                <Anleitung position={position} />
+              </div>
+              <Durchgaenge
+                anzahl={position.sets}
+                erledigt={(d) => haken.has(schluessel(position.id, d))}
+                pause={pause}
+                fehler={fehler}
+                onUmschalten={(durchgang, erledigt) => {
+                  if (beendetGerade) return;
+                  void setzen(position, durchgang, !erledigt);
+                  if (!erledigt && position.rest_seconds && durchgang < position.sets) {
+                    const sekunden = position.rest_seconds;
+                    setPause((alt) => ({
+                      sekunden,
+                      nummer: (alt?.nummer ?? 0) + 1,
+                      durchgang: durchgang + 1,
+                    }));
+                  } else if (pause?.durchgang === durchgang) {
+                    setPause(null);
+                  }
+                }}
+                onPauseEnde={() => setPause(null)}
+              />
+            </div>
           </div>
-          <Durchgaenge
-            anzahl={position.sets}
-            erledigt={(d) => haken.has(schluessel(position.id, d))}
-            pause={pause}
-            fehler={fehler}
-            onUmschalten={(durchgang, erledigt) => {
-              void setzen(position, durchgang, !erledigt);
-              if (!erledigt && position.rest_seconds && durchgang < position.sets) {
-                const sekunden = position.rest_seconds;
-                setPause((alt) => ({
-                  sekunden,
-                  nummer: (alt?.nummer ?? 0) + 1,
-                  durchgang: durchgang + 1,
-                }));
-              } else if (pause?.durchgang === durchgang) {
-                setPause(null);
-              }
-            }}
-            onPauseEnde={() => setPause(null)}
-          />
-        </div>
-      </div>
+        </>
+      )}
     </Rahmen>
   );
 }
@@ -570,8 +677,9 @@ function useEinheitBeenden({
         Object.entries(werte).filter((e): e is [string, number] => e[1] !== null),
       );
       // Auch das Ende liegt zuerst auf dem Gerät (ADR-024 Punkt 5).
+      let id: string;
       try {
-        await ereignisAblegen(
+        id = await ereignisAblegen(
           besitzer,
           { ...kopf, zugangId, planId: plan.id },
           {
@@ -587,8 +695,12 @@ function useEinheitBeenden({
       }
       if (!anstossen) return { ziel: 'gespeichert=geraet', tag: kopf.tag };
       const ergebnis = await anstossen().catch(() => null);
+      // Weist der Server die Einheit ab, ist sie verworfen: keine Endseite,
+      // die sie „auf diesem Gerät“ nennt, sondern der Grund (ADR-024 Punkt 8).
+      const abweisung = abweisungFuer(id);
+      if (abweisung) throw new EndeAbgewiesen(id, abweisung.satz);
       return {
-        ziel: ergebnis?.angekommen.includes(kopf.id) ? 'gespeichert=1' : 'gespeichert=geraet',
+        ziel: ergebnis?.angekommen.includes(id) ? 'gespeichert=1' : 'gespeichert=geraet',
         tag: kopf.tag,
       };
     },
@@ -596,72 +708,41 @@ function useEinheitBeenden({
   });
 }
 
-/** Handoff 5.4: „Einheit beenden“ mit den freiwilligen Angaben und einem Hauptknopf. */
+/** Handoff 5.4: „Einheit beenden“ mit den freiwilligen Angaben; der Knopf steht im Fuß. */
 function Abschluss({
   plan,
   tag,
   abgehakt,
-  stand,
-  gesperrt,
-  kopf,
+  werSieht,
+  formId,
   titelRef,
-  beenden,
-  onZurueck,
+  notiz,
+  onNotiz,
+  werte,
+  onWert,
+  onAbsenden,
 }: {
   plan: Ablageplan;
   tag: string;
   /** Ohne einen Haken gibt es nichts zu beenden - „geübt" hieße sonst nichts. */
   abgehakt: number;
-  stand: Uebertragungsstand;
-  gesperrt: boolean;
-  kopf: ReactNode;
+  werSieht: string;
+  formId: string;
   /** Um den Titel: Beim Wechsel hierher geht der Fokus auf ihn. */
   titelRef: RefObject<HTMLDivElement | null>;
-  beenden: ReturnType<typeof useEinheitBeenden>;
-  onZurueck: () => void;
+  notiz: string;
+  onNotiz: (notiz: string) => void;
+  werte: Record<string, number | null>;
+  onWert: (key: string, wert: number | null) => void;
+  onAbsenden: () => void;
 }) {
-  const formId = useId();
   const fragenId = useId();
-  const [notiz, setNotiz] = useState('');
-  // TRK-001: Anstrengung und Schmerz, freiwillig, nichts vorausgewählt.
-  const [werte, setWerte] = useState<Record<string, number | null>>({});
-  const groessen = groessenImTakt('session');
-  const ungueltig = groessen.find((g) => {
-    const w = werte[g.key];
-    return w !== null && w !== undefined && !angabeGueltig(g, w);
-  });
   // TRK-001: Angaben zur Einheit - im Training nur mit Einwilligung
   // (ADR-021 Punkt 4), dieselbe Bedingung wie der Satz darunter.
   const fragen = plan.note_allowed && abgehakt > 0;
-  const aktion: Hauptaktion =
-    abgehakt > 0
-      ? {
-          text: beenden.isPending ? 'Wird gespeichert …' : 'Einheit beenden',
-          form: formId,
-          disabled: beenden.isPending,
-        }
-      : { text: 'Zurück zu den Übungen', onClick: onZurueck };
   return (
-    <Rahmen
-      kopf={kopf}
-      fuss={
-        <>
-          {beenden.isError || ungueltig ? (
-            <Meldungsleiste>
-              {beenden.isError ? (
-                <Statusmeldung ton="fehler">{beenden.error.message}</Statusmeldung>
-              ) : null}
-              {ungueltig ? (
-                <Statusmeldung ton="fehler">
-                  {`„${ungueltig.kurz}“: bitte eine ganze Zahl von ${ungueltig.min} bis ${ungueltig.max}.`}
-                </Statusmeldung>
-              ) : null}
-            </Meldungsleiste>
-          ) : null}
-          <Durchfuehrungsfuss aktion={aktion} stand={stand} gesperrt={gesperrt} />
-        </>
-      }
-    >
+    // Der Seitenkopf bringt seinen Abstand mit; darunter 24 wie im Rahmen.
+    <div>
       <div ref={titelRef}>
         <PageHeader
           title="Einheit beenden"
@@ -673,77 +754,78 @@ function Abschluss({
           }
         />
       </div>
-      {abgehakt > 0 ? null : (
-        <Statusmeldung>
-          Sie haben noch keinen Durchgang abgehakt. Ohne Haken gibt es nichts zu speichern.
-        </Statusmeldung>
-      )}
-      <form
-        id={formId}
-        noValidate
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!ungueltig && abgehakt > 0) beenden.mutate({ notiz, werte });
-        }}
-      >
-        {fragen ? (
-          <section aria-labelledby={fragenId} className="flex flex-col gap-4">
-            <div>
-              <Zwischentitel ebene={2} stufe="abschnitt" id={fragenId}>
-                Wie war es heute?
-              </Zwischentitel>
-              <p className="text-ink-muted">Alle Angaben sind freiwillig.</p>
-            </div>
-            {groessen.map((g) => (
-              <Angabefeld
-                key={g.key}
-                groesse={g}
-                wert={werte[g.key] ?? null}
-                onChange={(w) => setWerte((bisher) => ({ ...bisher, [g.key]: w }))}
+      <div className="flex flex-col gap-6">
+        {abgehakt > 0 ? null : (
+          <Statusmeldung>
+            Sie haben noch keinen Durchgang abgehakt. Ohne Haken gibt es nichts zu speichern.
+          </Statusmeldung>
+        )}
+        <form
+          id={formId}
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            onAbsenden();
+          }}
+        >
+          {fragen ? (
+            <section aria-labelledby={fragenId} className="flex flex-col gap-4">
+              <div>
+                <Zwischentitel ebene={2} stufe="abschnitt" id={fragenId}>
+                  Wie war es heute?
+                </Zwischentitel>
+                <p className="text-ink-muted">Alle Angaben sind freiwillig.</p>
+              </div>
+              {groessenImTakt('session').map((g) => (
+                <Angabefeld
+                  key={g.key}
+                  groesse={g}
+                  wert={werte[g.key] ?? null}
+                  onChange={(w) => onWert(g.key, w)}
+                />
+              ))}
+              <TextArea
+                label="Das war schwierig, weil … (freiwillig)"
+                hint={
+                  <>
+                    {werSieht} sieht diesen Satz. Er wird nicht laufend gelesen – bei akuten
+                    Beschwerden: <Notrufnummer nummer="112" /> oder <Notrufnummer nummer="116117" />
+                    .
+                  </>
+                }
+                maxLength={500}
+                rows={3}
+                value={notiz}
+                onChange={(e) => onNotiz(e.target.value)}
               />
-            ))}
-            <TextArea
-              label="Das war schwierig, weil … (freiwillig)"
-              hint={
-                <>
-                  {plan.service_area === 'therapy'
-                    ? 'Ihre Therapeut:in'
-                    : 'Ihre Trainingsbetreuung'}{' '}
-                  sieht diesen Satz. Er wird nicht laufend gelesen – bei akuten Beschwerden:{' '}
-                  <Notrufnummer nummer="112" /> oder <Notrufnummer nummer="116117" />.
-                </>
-              }
-              maxLength={500}
-              rows={3}
-              value={notiz}
-              onChange={(e) => setNotiz(e.target.value)}
-            />
-          </section>
-        ) : null}
-      </form>
-    </Rahmen>
+            </section>
+          ) : null}
+        </form>
+      </div>
+    </div>
   );
 }
 
 /**
  * Die Seite der Durchführung (Handoff, Abschnitt 4): Kopf und Fuß stehen fest,
- * dazwischen rollt der Inhalt in `max-w-spalte`. Unter 23rem rollen Kopf und
- * Fuß mit, der Fuß steht am Ende des Inhalts.
+ * dazwischen rollt der Inhalt in `max-w-spalte` - mit dem Rand außen wie im
+ * Fuß, damit Stand und Hauptknopf an den Kanten der Spalte stehen. Unter 23rem
+ * rollen Kopf und Fuß mit, der Fuß steht am Ende des Inhalts.
  */
 function Rahmen({
   kopf,
   fuss,
   children,
 }: {
-  kopf: ReactNode;
+  kopf?: ReactNode;
   fuss: ReactNode;
   children: ReactNode;
 }) {
   return (
     <div className="flex flex-1 flex-col">
-      <div className="sticky top-0 z-20 max-[23rem]:static">{kopf}</div>
-      <div className="max-w-spalte mx-auto flex w-full flex-1 flex-col gap-6 px-5 pt-5 pb-8 max-[23rem]:px-3">
-        {children}
+      {kopf ? <div className="sticky top-0 z-20 max-[23rem]:static">{kopf}</div> : null}
+      <div className="flex-1 px-5 pt-5 pb-8 max-[23rem]:px-3">
+        <div className="max-w-spalte mx-auto flex w-full flex-col gap-6">{children}</div>
       </div>
       <div className="sticky bottom-0 z-20 max-[23rem]:static">{fuss}</div>
     </div>
@@ -759,38 +841,38 @@ function Meldungsleiste({ children }: { children: ReactNode }) {
   );
 }
 
-/** Ein Kopf nur mit dem Ausweg: beim Laden, bei Fehlern und ohne Plan. */
+/** Der Kopf beim Laden: nur der Ausweg, an seinem Platz im Kopf der Durchführung. */
 function Notkopf({
   spaeter,
 }: {
   spaeter: { pfad: string } | { onSpaeter?: (() => void) | undefined };
 }) {
   return (
-    <div className="bg-surface border-line flex min-h-16 items-center justify-end border-b p-2">
-      {'pfad' in spaeter ? (
-        <ButtonLink variant="quiet" to={spaeter.pfad}>
-          Später weiter
-        </ButtonLink>
-      ) : (
-        <Button type="button" variant="quiet" onClick={spaeter.onSpaeter}>
-          Später weiter
-        </Button>
-      )}
+    <div className="bg-surface border-line border-b">
+      <div className="[[data-rechner]_&]:max-w-durchfuehrung mx-auto flex min-h-16 w-full items-center justify-end p-2">
+        {'pfad' in spaeter ? (
+          <ButtonLink variant="quiet" to={spaeter.pfad}>
+            Später weiter
+          </ButtonLink>
+        ) : (
+          <Button type="button" variant="quiet" onClick={spaeter.onSpaeter}>
+            Später weiter
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
 
-/** Fehler und „kann hier nicht üben“: der Satz und ein Weg zurück zu den Übungen. */
+/**
+ * Fehler und „kann hier nicht üben“: der Satz und als Hauptknopf im Fuß der
+ * Weg zurück zu den Übungen - ohne Reiterleiste der einzige (ANN-714).
+ */
 function Ausweg({ pfad, children }: { pfad: string; children: ReactNode }) {
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="bg-surface border-line flex min-h-16 items-center border-b p-2">
-        <ButtonLink variant="quiet" to={pfad}>
-          Zu den Übungen
-        </ButtonLink>
-      </div>
-      <div className="max-w-spalte mx-auto w-full px-5 pt-5 pb-8 max-[23rem]:px-3">{children}</div>
-    </div>
+    <Rahmen fuss={<Durchfuehrungsfuss aktion={{ text: 'Zu den Übungen', to: pfad }} />}>
+      {children}
+    </Rahmen>
   );
 }
 
@@ -803,19 +885,23 @@ function EinheitLaedt({
   return (
     <SkelettBereich beschriftung="Übung wird geladen" className="flex flex-1 flex-col">
       <Notkopf spaeter={spaeter} />
-      <div className="max-w-spalte mx-auto flex w-full flex-1 flex-col gap-6 px-5 pt-5 pb-8 max-[23rem]:px-3">
-        <Skelett form="buehne" />
-        <span className="flex gap-2">
-          <Skelett form="zeile" className="w-32" />
-          <Skelett form="zeile" className="w-40" />
-        </span>
-        <span className="flex flex-col gap-3">
-          <Skelett form="karte" />
-          <Skelett form="karte" />
-        </span>
+      <div className="flex-1 px-5 pt-5 pb-8 max-[23rem]:px-3">
+        <div className="max-w-spalte mx-auto flex w-full flex-col gap-6">
+          <Skelett form="buehne" />
+          <span className="flex gap-2">
+            <Skelett form="zeile" className="w-32" />
+            <Skelett form="zeile" className="w-40" />
+          </span>
+          <span className="flex flex-col gap-3">
+            <Skelett form="karte" />
+            <Skelett form="karte" />
+          </span>
+        </div>
       </div>
-      <div className="bg-surface border-line border-t px-5 pt-3 pb-4">
-        <Skelett form="knopf" className="max-w-spalte mx-auto" />
+      <div className="bg-surface border-line border-t px-5 pt-3 pb-4 max-[23rem]:px-3">
+        <div className="max-w-spalte mx-auto flex w-full justify-end">
+          <Skelett form="knopf" className="[[data-rechner]_&]:w-hauptknopf w-full" />
+        </div>
       </div>
     </SkelettBereich>
   );
@@ -823,44 +909,31 @@ function EinheitLaedt({
 
 /**
  * Die Endseite in der Plattform (Handoff 5.5, ANN-706): wer die Einheit
- * sieht - die Person des nächsten Termins, sonst „Ihre Therapeut:in“ bzw.
- * „Ihre Trainingsbetreuung“ (ANN-712) - und der nächste Übungstag aus dem
- * Plan, wenn der Server ihn geliefert hat. Ohne Netz steht die
- * Verbindungszeile darüber.
+ * sieht (ANN-712) und der nächste Übungstag aus dem Plan, wenn der Server
+ * ihn geliefert hat. Ohne Netz steht die Verbindungszeile darüber.
  */
 function EndeDerEinheit({
-  zugang,
   plan,
   ende,
+  wer,
   zurueck,
 }: {
-  zugang: Plattformzugang;
   plan: EigenerPlan | undefined;
   ende: 'uebertragen' | 'geraet';
+  wer: string | null;
   zurueck: string;
 }) {
-  const api = usePlattformApi();
   const [suche] = useSearchParams();
-  const termine = useQuery({
-    queryKey: termineSchluessel(zugang.access_id),
-    queryFn: () => api.ladeTermine(zugang.access_id),
-    enabled: ende === 'uebertragen',
-  });
+  const rechner = useRechner();
   const bereich = bereichParameter(suche);
-  const tagImLink = suche.get('tag');
-  const tag = tagImLink && /^\d{4}-\d{2}-\d{2}$/.test(tagImLink) ? tagImLink : geraetetag();
-  const name = termine.data ? naechsterTermin(termine.data)?.staff_name : null;
-  const wer =
-    name ??
-    (zugang.relationship_kind === 'training' ? 'Ihre Trainingsbetreuung' : 'Ihre Therapeut:in');
+  const tag = tagAusLink(suche.get('tag')) ?? geraetetag();
   return (
     <div className="flex flex-1 flex-col">
-      {ende === 'geraet' ? <Verbindungszeile /> : null}
+      {ende === 'geraet' ? <Verbindungszeile rechner={rechner} /> : null}
       <Endseite
         fassung={ende}
         tag={tag}
-        // Den Satz erst, wenn feststeht, wer ihn sieht - kein Springen des Namens.
-        wer={termine.isPending && ende === 'uebertragen' ? null : wer}
+        wer={wer}
         naechsterTag={plan ? naechsterUebungstag(plan, tag) : null}
         zurUebersicht={`${PLATTFORM_PFAD}${bereich ? `?${bereich}` : ''}`}
         zuDenUebungen={zurueck}

@@ -218,3 +218,47 @@ describe('Befunde aus dem Zweitreview', () => {
     expect(z!.plaene[0]!.open_session).toBeNull();
   });
 });
+
+describe('Das Ende bleibt das letzte Ereignis (BEF-213, DRP-EPIC-008)', () => {
+  const ENDE = {
+    id: 'ende-1',
+    kind: 'finish' as const,
+    at: '2026-10-12T06:10:00.000Z',
+    note: '',
+    values: {},
+  };
+
+  it('hängt nie hinter ein Ende: der Haken kommt in eine neue Einheit desselben Tages', async () => {
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    expect(await ereignisAblegen(KONTO, kopf(), ENDE)).toBe('einheit-1');
+    const neu = await ereignisAblegen(KONTO, kopf(), haken('h-2', 2));
+    expect(neu).not.toBe('einheit-1');
+    // Ein zweiter Haken findet dieselbe offene Einheit, statt noch eine anzulegen.
+    expect(await ereignisAblegen(KONTO, kopf(), haken('h-3', 3))).toBe(neu);
+    const [beendet, offen] = await wartendeEinheiten(KONTO);
+    expect(beendet!.ereignisse.map((e) => e.id)).toEqual(['h-1', 'ende-1']);
+    expect(offen).toMatchObject({ id: neu, zugangId: ZUGANG, planId: PLAN.id, tag: geraetetag() });
+    expect(offen!.ereignisse.map((e) => e.id)).toEqual(['h-2', 'h-3']);
+  });
+
+  it('so weist der Server nichts ab, und nichts geht verloren', async () => {
+    // Wie der Server (Migration TRK-007): Nach dem Ende kommt nichts mehr.
+    einheitUebertragen.mockImplementation(
+      (_z: string, e: { id: string; ereignisse: { kind: string }[] }) =>
+        e.ereignisse.findIndex((x) => x.kind === 'finish') === e.ereignisse.length - 1 ||
+        !e.ereignisse.some((x) => x.kind === 'finish')
+          ? Promise.resolve({ session_id: e.id, status: 'ok', note_dropped: false })
+          : Promise.reject(new UebertragungAbgewiesen('finish must be last')),
+    );
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    await ereignisAblegen(KONTO, kopf(), ENDE);
+    await ereignisAblegen(KONTO, kopf(), haken('h-2', 2));
+    const ergebnis = await uebertragen(KONTO);
+    expect(ergebnis.angekommen).toHaveLength(2);
+    expect(await wartendeEinheiten(KONTO)).toEqual([]);
+    const gesendet = einheitUebertragen.mock.calls.map((c) =>
+      (c[1] as { ereignisse: { id: string }[] }).ereignisse.map((e) => e.id),
+    );
+    expect(gesendet).toEqual([['h-1', 'ende-1'], ['h-2']]);
+  });
+});

@@ -168,9 +168,26 @@ export interface Abweisung {
 
 let abgewiesen: Abweisung[] = [];
 const hoerer = new Set<() => void>();
+/**
+ * Zählt jede Änderung an Warteschlange und Abweisungen. Eine Lesung, die bei
+ * Stand n beginnt, kennt alle Änderungen bis n - so weiß eine Ansicht, ob
+ * ihr letzter Haken schon in dem steckt, was `useWarteschlange` sagt.
+ */
+let ablagestand = 0;
 
 function melden() {
+  ablagestand += 1;
   for (const h of hoerer) h();
+}
+
+/** Der Stand der Ablage nach der letzten Änderung (`useWarteschlange`). */
+export function aktuellerAblagestand(): number {
+  return ablagestand;
+}
+
+/** Hat der Server diese Einheit abgewiesen? Dann mit seinem Grund (Punkt 8). */
+export function abweisungFuer(einheitId: string): Abweisung | undefined {
+  return abgewiesen.find((a) => a.einheitId === einheitId);
 }
 
 /** Nur für Tests: alles Gemerkte vergessen. */
@@ -286,21 +303,46 @@ export async function wartendeEinheiten(besitzer: string): Promise<WartendeEinhe
 
 /**
  * Ein Ereignis in die Warteschlange - erst hier, dann zum Server. Die
- * Einheit entsteht mit ihrem ersten Ereignis.
+ * Einheit entsteht mit ihrem ersten Ereignis. Gibt die Kennung der Einheit
+ * zurück, in der das Ereignis liegt.
+ *
+ * **Das Ende bleibt das letzte Ereignis** (BEF-213): Der Server weist eine
+ * Einheit ab, in der nach `finish` noch etwas kommt, und die Ablage verwürfe
+ * sie dann ganz, samt Haken und Ende. Ist die Einheit auf dem Gerät schon
+ * beendet - ein zweites Fenster, ein Tipp während des Beendens -, kommt das
+ * Ereignis in die offene Einheit desselben Tages oder in eine neue, so wie
+ * der Server nach einer anderswo beendeten Einheit („closed“) verfährt.
  */
 export async function ereignisAblegen(
   besitzer: string,
   einheit: Omit<WartendeEinheit, 'ereignisse'>,
   ereignis: Einheitsereignis,
-): Promise<void> {
+): Promise<string> {
+  let ziel = einheit.id;
   await fachAendern(besitzer, FACH, (alt) => {
     const f = fach(alt ?? LEER);
-    const da = f.einheiten.find((e) => e.id === einheit.id);
+    const beendet = (e: WartendeEinheit) => e.ereignisse.some((x) => x.kind === 'finish');
+    let da = f.einheiten.find((e) => e.id === einheit.id);
+    if (da && beendet(da)) {
+      da = f.einheiten.find(
+        (e) =>
+          e.zugangId === einheit.zugangId &&
+          e.planId === einheit.planId &&
+          e.tag === einheit.tag &&
+          !beendet(e),
+      );
+      if (!da) {
+        da = { ...einheit, id: crypto.randomUUID(), ereignisse: [] };
+        f.einheiten.push(da);
+      }
+    }
     if (da) da.ereignisse.push(ereignis);
     else f.einheiten.push({ ...einheit, ereignisse: [ereignis] });
+    ziel = da?.id ?? einheit.id;
     return f;
   });
   melden();
+  return ziel;
 }
 
 /** Ergebnis einer Übertragung für die Ansicht, die sie angestoßen hat. */
@@ -425,16 +467,33 @@ export interface Wartestand {
   /** Einheiten mit noch nicht übertragenen Ereignissen. */
   einheiten: WartendeEinheit[];
   abgewiesen: Abweisung[];
+  /**
+   * Bis zu welchem Stand der Ablage (`aktuellerAblagestand`) das gelesen ist;
+   * -1, solange noch nichts gelesen ist.
+   */
+  gelesenBis: number;
 }
 
 /** Was noch auf dem Gerät wartet und was der Server abgewiesen hat - live. */
 export function useWarteschlange(besitzer: string): Wartestand {
-  const [stand, setStand] = useState<Wartestand>({ einheiten: [], abgewiesen });
+  const [stand, setStand] = useState<Wartestand>({
+    einheiten: [],
+    abgewiesen,
+    gelesenBis: -1,
+  });
   useEffect(() => {
     let aktiv = true;
     function neu() {
+      const bis = ablagestand;
       void wartendeEinheiten(besitzer).then((einheiten) => {
-        if (aktiv) setStand({ einheiten, abgewiesen: [...abgewiesen] });
+        // Lesungen können sich überholen: Eine ältere überschreibt keine neuere.
+        if (aktiv) {
+          setStand((alt) =>
+            alt.gelesenBis > bis
+              ? alt
+              : { einheiten, abgewiesen: [...abgewiesen], gelesenBis: bis },
+          );
+        }
       });
     }
     neu();

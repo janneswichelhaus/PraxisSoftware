@@ -44,10 +44,21 @@ export function LokaleUebungen({
   return (
     <DurchfuehrungKontext.Provider value={traeger}>
       <div className="plattform-schrift bg-canvas flex min-h-dvh flex-col">
+        {/* Kopf mit „Sperren“ und der Hinweis bleiben auch beim Üben stehen
+            (ADR-025 Punkt 16); die Durchführung darunter in ganzer Breite. */}
+        <header className="border-line flex items-center justify-between gap-3 border-b px-5 py-3">
+          <Wortmarke hoehe={28} />
+          <Button variant="quiet" onClick={onSperren}>
+            Sperren
+          </Button>
+        </header>
+        <div className="max-w-formular mx-auto w-full px-5 pt-5 max-[23rem]:px-3">
+          <Statusmeldung ton="warnung">
+            Ohne Verbindung. Hier ist nur, was auf diesem Gerät liegt.
+          </Statusmeldung>
+        </div>
         {gewaehlt ? (
-          // Die Durchführung im Vollbild wie in der Plattform: Ihr Kopf sagt
-          // ohne Netz, wo die Haken liegen, „Später weiter“ führt zur Auswahl.
-          <main className="flex flex-1 flex-col">
+          <main className="flex flex-1 flex-col pt-4">
             <EinheitMitWarteschlange
               zugangId={gewaehlt.zugangId}
               plan={gewaehlt.plan}
@@ -59,29 +70,18 @@ export function LokaleUebungen({
             />
           </main>
         ) : (
-          <>
-            <header className="border-line flex items-center justify-between gap-3 border-b px-5 py-3">
-              <Wortmarke hoehe={28} />
-              <Button variant="quiet" onClick={onSperren}>
-                Sperren
-              </Button>
-            </header>
-            <main className="max-w-formular mx-auto w-full flex-1 px-5 pt-5 pb-10">
-              <Statusmeldung ton="warnung">
-                Ohne Verbindung. Hier ist nur, was auf diesem Gerät liegt.
-              </Statusmeldung>
-              <Auswahl
-                besitzer={besitzer}
-                zugaenge={zugaenge.data}
-                laedt={zugaenge.isPending}
-                beendet={beendet}
-                onWahl={(zugangId, plan) => {
-                  setBeendet(false);
-                  setGewaehlt({ zugangId, plan });
-                }}
-              />
-            </main>
-          </>
+          <main className="max-w-formular mx-auto w-full flex-1 px-5 pb-10">
+            <Auswahl
+              besitzer={besitzer}
+              zugaenge={zugaenge.data}
+              laedt={zugaenge.isPending}
+              beendet={beendet}
+              onWahl={(zugangId, plan) => {
+                setBeendet(false);
+                setGewaehlt({ zugangId, plan });
+              }}
+            />
+          </main>
         )}
       </div>
     </DurchfuehrungKontext.Provider>

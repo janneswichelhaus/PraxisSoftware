@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { TascheSymbol } from '@/components/ui/TascheSymbol';
 import type { DosisZumAblesen } from './Uebungsinhalt';
 
 /**
@@ -107,9 +108,4 @@ const UHR = (
   </Zeichen>
 );
 /** Eine Tasche: womit, etwa ein Rucksack mit 3 kg. */
-const LAST = (
-  <Zeichen>
-    <path d="M9 7a3 3 0 0 1 6 0" />
-    <path d="M6.5 9h11l1.5 11h-14z" />
-  </Zeichen>
-);
+const LAST = <TascheSymbol />;

@@ -66,6 +66,19 @@ test.describe('Übungen auf der Plattform', () => {
 
     test(`Durchführung im Vollbild bis zur Endseite bei ${breite} px`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 800 });
+      // Der Server nimmt jeden Haken und das Ende an (wie `ohne-netz.spec.ts`).
+      await page.route('**/rest/v1/rpc/sync_platform_exercise_session', async (route) => {
+        const daten = route.request().postDataJSON() as { p_session_id: string };
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            session_id: daten.p_session_id,
+            status: 'ok',
+            note_dropped: false,
+          }),
+        });
+      });
       await page.goto(`${PRUEFSEITE}?seite=einheit`);
       await expect(
         page.getByRole('heading', { level: 1, name: /^Am Treppengeländer/ }),
@@ -96,18 +109,25 @@ test.describe('Übungen auf der Plattform', () => {
       await page.getByRole('button', { name: 'Nächste Übung' }).click();
       await page.getByRole('button', { name: 'Zum Abschluss' }).click();
       await expect(page.getByRole('heading', { level: 1, name: 'Einheit beenden' })).toBeVisible();
+      // Der Klick auf „Zum Abschluss“ beendet nichts: Der Knopf darunter wartet.
+      await expect(page.getByRole('button', { name: 'Einheit beenden' })).toBeEnabled();
       expect(await hauptknoepfe(page)).toEqual(['Einheit beenden']);
+      // Die Skala: Stufen 48 hoch, 8 Abstand, zwei Reihen 0 bis 5 und 6 bis 10 (Handoff 5.4, 6).
+      const stufen = page
+        .getByRole('group', { name: 'Wie anstrengend war die Einheit?' })
+        .locator('label');
+      const [null_, eins, sechs] = await Promise.all(
+        [0, 1, 6].map(async (i) => (await stufen.nth(i).boundingBox())!),
+      );
+      expect(null_!.height).toBeGreaterThanOrEqual(48);
+      expect(eins!.x - (null_!.x + null_!.width)).toBeGreaterThanOrEqual(8);
+      expect(sechs!.y).toBeGreaterThan(null_!.y + null_!.height);
+      expect(sechs!.x).toBeCloseTo(null_!.x, 0);
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);
 
       await page.getByRole('button', { name: 'Einheit beenden' }).click();
-      // Ohne Server bleibt die Einheit auf dem Gerät - oder kommt an.
-      await expect(
-        page.getByRole('heading', {
-          level: 1,
-          name: /^(Gespeichert|Auf diesem Gerät gespeichert)$/,
-        }),
-      ).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1, name: 'Gespeichert' })).toBeVisible();
       expect(await hauptknoepfe(page)).toEqual(['Zur Übersicht']);
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);
@@ -158,6 +178,14 @@ test.describe('Übungen auf der Plattform', () => {
       await page.getByRole('button', { name: 'Zum Abschluss' }).click();
       await expect(page.getByRole('heading', { level: 1, name: 'Einheit beenden' })).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
+      // Die Enden der Skala stehen untereinander; „keine“ bricht nicht (BEF-214).
+      const keine = (await page.getByText('0 = keine', { exact: true }).boundingBox())!;
+      const staerkste = (await page.getByText(/^10 = stärkste/).boundingBox())!;
+      expect(staerkste.y).toBeGreaterThanOrEqual(keine.y + keine.height - 1);
+      const zeile = await page
+        .getByText('0 = keine', { exact: true })
+        .evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
+      expect(keine.height).toBeLessThan(zeile * 1.5);
     });
   }
 

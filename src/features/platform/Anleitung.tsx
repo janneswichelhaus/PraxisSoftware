@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Schrittliste } from '@/components/ui/Schrittliste';
+import { TascheSymbol } from '@/components/ui/TascheSymbol';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import type { Ablageplan } from './ablage';
 
@@ -75,12 +76,7 @@ function Zeichen({ children }: { children: ReactNode }) {
 }
 
 /** Eine Tasche: was man braucht. */
-const TASCHE = (
-  <Zeichen>
-    <path d="M9 7a3 3 0 0 1 6 0" />
-    <path d="M6.5 9h11l1.5 11h-14z" />
-  </Zeichen>
-);
+const TASCHE = <TascheSymbol className="text-accent mt-0.5 size-5.5 shrink-0" />;
 /** Ein Kreis mit „i“: der Hinweis der Fachperson. */
 const HINWEIS = (
   <Zeichen>

@@ -181,7 +181,8 @@ function Geruest({
   const breit = pathname === PLATTFORM_PFAD && lesbar.length > 0;
   // Die Durchführung steht im Vollbild (Handoff 2026-10-24, Abschnitt 4):
   // ohne Kopf, Verbindungszeile und Reiterleiste des Gerüsts - ihr eigener
-  // Kopf mit „Später weiter“ ist der Weg hinaus, ihr Fuß trägt den Hauptknopf.
+  // Kopf mit „Später weiter“ ist der Weg hinaus, ihr Fuß trägt den Hauptknopf
+  // (ANN-714).
   const vollbild =
     !nurLesen && matchPath(`${PLATTFORM_PFAD}/uebungen/einheit/:planId`, pathname) !== null;
 
