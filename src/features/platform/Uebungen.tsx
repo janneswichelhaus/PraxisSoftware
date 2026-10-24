@@ -670,7 +670,7 @@ function Fensterinhalt({
   const { zahl, einheit } = hauptzahl(position);
   return (
     <div className="plattform-schrift flex min-h-0 flex-1 flex-col">
-      <div className="border-line flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-3 border-b py-2 pr-2 pl-5">
+      <div className="border-line flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-3 border-b py-2 pr-2 pl-5 max-[23rem]:pl-3">
         <p className="text-ink-muted">
           Übung {nummer} von {anzahl}
         </p>
@@ -692,7 +692,9 @@ function Fensterinhalt({
           </span>
         </Button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-5 pb-8">
+      {/* Unter 23rem 12 Rand wie die Seite: Sonst passte ein Name wie
+          „heranziehen“ nicht in die Bühne und bräche ohne Strich (BEF-196). */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-5 pb-8 max-[23rem]:px-3">
         {/* Der Fokus steht am Anfang der Übung, nicht auf „Schließen“: So
             liegen Name und Zahl im Blick, und Vorlesesoftware beginnt dort. */}
         <span data-autofocus tabIndex={-1} className="block outline-none" />
