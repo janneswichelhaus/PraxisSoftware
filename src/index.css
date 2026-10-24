@@ -629,6 +629,41 @@ html[data-schrift='sehr-gross'] {
     opacity: 0.55;
   }
 }
+/* Die Durchführung (Handoff 2026-10-24, Abschnitt 7; `Hakenzeile.tsx`). Der
+   Ring der Pause füllt sich linear über die Pause der Fachperson; ihre Dauer
+   setzt das Element. Ein gesetzter Haken federt in 160 ms in seinen Kreis.
+   Bei „Bewegung reduzieren“ steht der Ring gestrichelt still, und der Haken
+   ist sofort da. */
+@media (prefers-reduced-motion: no-preference) {
+  .pausenring-fuellung {
+    animation-name: pausenring-fuellen;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+  }
+  .haken-gesetzt {
+    animation: haken-gesetzt 0.16s var(--ease-feder);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pausenring-fuellung {
+    stroke-dasharray: 4 4;
+    stroke-linecap: butt;
+    stroke-width: 3;
+  }
+}
+@keyframes pausenring-fuellen {
+  from {
+    stroke-dashoffset: 119.381;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes haken-gesetzt {
+  from {
+    scale: 0.6;
+  }
+}
 /* Das Menü unter 23rem (Stufe 3 der Reiterleiste, `Navigation.tsx`): Es
    kommt in 160 ms 8 px von oben und geht ebenso; das `hidden` am Menü
    schaltet erst nach der Bewegung ab. Ohne Deckkraft wie die übrigen

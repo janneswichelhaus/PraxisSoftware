@@ -289,6 +289,9 @@ describe('Farbtokens erfuellen WCAG AA', () => {
     ['ink-muted', 'surface', 4.5],
     ['warnung', 'warnung-soft', 4.5],
     ['line-strong', 'surface', 3],
+    // Die Übungen (Handoff 2026-10-24, Abschnitt 6): „1. Durchgang“ auf der
+    // erledigten Zeile in Salbei hell.
+    ['ink', 'accent-soft', 4.5],
   ] as const)('hält auf der Plattform %s auf %s über %s:1', (vorne, hinten, mindestens) => {
     expect(kontrastverhaeltnis(tokens[vorne]!, tokens[hinten]!)).toBeGreaterThanOrEqual(mindestens);
   });

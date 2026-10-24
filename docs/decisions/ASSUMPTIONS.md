@@ -7348,3 +7348,15 @@ Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 4) · er
 **Anker.** `.trennen-schmal` in `src/index.css`.
 
 **Änderungspfad.** Regel dort streichen oder auf weitere Rollen ausdehnen · Aufwand `klein`.
+
+### ANN-709 — Durchführung: die Pause als Ring statt als Uhr
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Pause zwischen zwei Durchgängen zeigt die Zeile des nächsten Durchgangs als Ring, der sich über die Pause füllt - ohne Zahl, die herunterzählt, ohne Ton. Tippen hakt ab und beendet sie; „Pause überspringen“ entfällt.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0; DSN-001 Abschnitt 7 Nr. 8 (kein Countdown-Druck).
+
+**Anker.** `Pausenring` in `src/components/ui/Hakenzeile.tsx`.
+
+**Änderungspfad.** Die Sekunden im Ring zeigen · Aufwand `klein`.
