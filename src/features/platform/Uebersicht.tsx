@@ -10,7 +10,7 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Personenbild } from '@/components/ui/Personenbild';
-import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { StatusMark } from '@/components/ui/StatusMark';
@@ -42,6 +42,7 @@ import {
   ersterTermin,
   handlung,
   hauptsache,
+  inLesefrist,
   naechsterTermin,
   terminPerson,
   terminTitel,
@@ -115,7 +116,6 @@ export function Uebersicht({
   const begleitung = zugang.access_kind === 'companion';
   const name = zugang.represented_name ?? 'die Person';
   const behandlung = zugang.relationship_kind === 'treatment';
-  const lesefrist = eigen && zugang.read_until !== null;
 
   const termine = useQuery({
     queryKey: termineSchluessel(id),
@@ -201,6 +201,8 @@ export function Uebersicht({
   // der Stand stehen.
   const laedt = abfragen.some((a) => a.isPending && a.fetchStatus !== 'idle');
   const gescheitert = abfragen.filter((a) => a.isError && a.data === undefined);
+  // Scheitert ein Nachladen, bleibt der Stand, darüber der Hinweis „veraltet“.
+  const veraltet = abfragen.filter((a) => a.isError && a.data !== undefined);
   // Der Moment endet erst, wenn die Übersicht steht (ANN-680).
   const markenmoment = useMarkenmoment(!laedt);
 
@@ -211,12 +213,17 @@ export function Uebersicht({
   const erster = naechster
     ? ersterTermin(alleTermine, naechster)
     : !alleTermine.some((t) => t.status !== 'cancelled');
+  // Ein gekündigtes Abo läuft bis zu seinem Ende - erst danach ist Lesefrist
+  // (ANN-274), auch wenn `read_until` schon steht.
+  const aboLaeuft = abo.data?.state === 'running' || abo.data?.state === 'ending';
+  const lesefrist = inLesefrist(zugang, aboLaeuft);
   const haupt = hauptsache({
     zugang,
     bogenId: fuerDiePlattform()[0]?.meta.id,
     boegen: bogen.data,
     checkins: checkin.data,
     plaene: plaene.data,
+    aboLaeuft,
     naechster,
   });
 
@@ -245,9 +252,11 @@ export function Uebersicht({
     </Kopfteil>
   );
 
+  // Laden und Fehler stehen am Rechner in der Spalte, nicht über die ganze
+  // Breite (Design-Review 1e).
   if (gescheitert.length > 0) {
     return (
-      <div className="flex flex-col gap-8">
+      <div className="[[data-rechner]_&]:max-w-spalte flex flex-col gap-8">
         {kopf}
         <ErrorState
           title="Die Übersicht lässt sich gerade nicht laden."
@@ -463,7 +472,7 @@ export function Uebersicht({
     if (zeitraum) {
       rechts.push(
         teil(
-          <Section titel={behandlung ? 'Ihre Behandlung' : 'Ihr Training'}>
+          <Section titel={behandlung ? 'Ihre Behandlung' : 'Ihr Training'} rahmen>
             <Rueckblick {...zeitraum} />
           </Section>,
           'rueckblick',
@@ -486,7 +495,11 @@ export function Uebersicht({
       teil(
         <Section titel="Ihr Paket">
           <ListRows rahmen>
-            <ListRow to={p('/paket')} titel={paket.label} meta={paketStand(paket)} />
+            <ListRow
+              to={p('/paket')}
+              titel={paket.label}
+              meta={`${paketStand(paket)} ${formatEuro(paket.price_cents, paket.currency)}, einmal zu Beginn berechnet.`}
+            />
           </ListRows>
         </Section>,
         'paket',
@@ -507,28 +520,14 @@ export function Uebersicht({
     );
   }
   // Was eine Vertretung hier darf, ist eine Auskunft über Rechte (ADR-023
-  // Punkt 13) - als Kleingedrucktes am Ende, nicht mehr als Absatz oben.
-  if (zugang.access_kind === 'legal_representative') {
-    rechts.push(
-      teil(
-        <Kleingedrucktes>
-          Als rechtliche Vertretung handeln Sie in allem, was {name} hier tun kann.
-        </Kleingedrucktes>,
-        'klein',
-      ),
-    );
-  }
-  if (begleitung) {
-    rechts.push(
-      teil(
-        <Kleingedrucktes>
-          Als Begleitung lesen Sie mit und können Terminwünsche und Nachrichten schreiben.
-          Einwilligungen gibt nur {name} selbst.
-        </Kleingedrucktes>,
-        'klein',
-      ),
-    );
-  }
+  // Punkt 13) - als Kleingedrucktes am Ende der Seite, unter beiden Spalten,
+  // nicht mehr als Absatz oben.
+  const rechte =
+    zugang.access_kind === 'legal_representative'
+      ? `Als rechtliche Vertretung handeln Sie in allem, was ${name} hier tun kann.`
+      : begleitung
+        ? `Als Begleitung lesen Sie mit und können Terminwünsche und Nachrichten schreiben. Einwilligungen gibt nur ${name} selbst.`
+        : null;
 
   const spalte = 'flex min-w-0 flex-col gap-10 [[data-rechner]_&]:gap-12';
   // Markenmoment B statt Startbild (ANN-680): beim ersten Erscheinen je Tab
@@ -538,6 +537,12 @@ export function Uebersicht({
       className={`flex flex-col gap-10 [[data-rechner]_&]:gap-12 ${markenmoment ? 'markenmoment' : ''}`.trim()}
     >
       {kopf}
+      {veraltet.length > 0 ? (
+        <NachladeHinweis
+          laeuft={veraltet.some((a) => a.isFetching)}
+          onErneut={() => void Promise.all(veraltet.map((a) => a.refetch()))}
+        />
+      ) : null}
       {rechts.length > 0 ? (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(420px,100%),1fr))] items-start gap-10 [[data-rechner]_&]:gap-12">
           <div className={spalte}>{links}</div>
@@ -546,6 +551,7 @@ export function Uebersicht({
       ) : (
         <div className={`${spalte} [[data-rechner]_&]:max-w-spalte`}>{links}</div>
       )}
+      {rechte ? teil(<Kleingedrucktes>{rechte}</Kleingedrucktes>, 'rechte') : null}
     </div>
   );
 }
@@ -749,16 +755,20 @@ function Heute({ titel, eintraege }: { titel: string; eintraege: Eintrag[] }) {
   );
 }
 
-/** „Ihre Behandlung“ in der Lesefrist: mit wem und von wann bis wann. */
+/**
+ * „Ihre Behandlung“ in der Lesefrist: mit wem und von wann bis wann - eine
+ * Auskunft im Rahmen des Abschnitts, keine Karte zum Antippen. Unter 23rem
+ * das Bild über dem Text.
+ */
 function Rueckblick({ person, von, bis }: { person: string | null; von: string; bis: string }) {
   return (
-    <div className="border-line bg-surface rounded-card flex items-center gap-4 border p-5">
+    <p className="flex items-center gap-4 hyphens-manual max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:gap-2">
       {person ? <Personenbild name={person} farbe={null} groesse="karte" /> : null}
-      <p className="flex min-w-0 flex-col">
+      <span className="flex min-w-0 flex-col">
         {person ? <span className="font-semibold">Mit {person}</span> : null}{' '}
         <span className="text-ink-muted">{zeitraumLang(von, bis)}</span>
-      </p>
-    </div>
+      </span>
+    </p>
   );
 }
 
@@ -793,11 +803,14 @@ function uebungenText(anzahl: number, verbunden: boolean): string {
  */
 function Ladezustand() {
   return (
-    <SkelettBereich beschriftung="Übersicht wird geladen" className="flex flex-col gap-10">
-      <span className="flex flex-col gap-2.5">
+    <SkelettBereich
+      beschriftung="Übersicht wird geladen"
+      className="[[data-rechner]_&]:max-w-spalte flex flex-col gap-10"
+    >
+      <span className="flex flex-col gap-2">
         <Skelett form="gruss" className="w-60 max-w-full" />
         <Skelett form="gruss" className="w-47.5 max-w-full" />
-        <Skelett form="zeile" className="mt-1.5 w-50 max-w-full" />
+        <Skelett form="zeile" className="mt-2 w-50 max-w-full" />
       </span>
       <Skelett form="hero" />
       <span className="flex flex-col gap-4">

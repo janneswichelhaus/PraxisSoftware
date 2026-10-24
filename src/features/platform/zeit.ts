@@ -59,10 +59,14 @@ export function tagUndMonat(wert: string, jetzt: Date = new Date()): string {
   return (d.getFullYear() === jetzt.getFullYear() ? TAG_MONAT : TAG_MONAT_JAHR).format(d);
 }
 
-/** „12. August bis 15. Oktober 2026" - ein abgeschlossener Zeitraum, das Jahr am Ende. */
+/**
+ * „12. August bis 15. Oktober 2026" - ein abgeschlossener Zeitraum, das Jahr
+ * am Ende; an einem Tag nur dieser („17. Oktober 2026").
+ */
 export function zeitraumLang(von: string, bis: string): string {
   const a = new Date(von);
   const b = new Date(bis);
+  if (kalendertag(a) === kalendertag(b)) return TAG_MONAT_JAHR.format(b);
   const anfang = (a.getFullYear() === b.getFullYear() ? TAG_MONAT : TAG_MONAT_JAHR).format(a);
   return `${anfang} bis ${TAG_MONAT_JAHR.format(b)}`;
 }

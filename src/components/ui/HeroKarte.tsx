@@ -64,7 +64,9 @@ export function HeroKarte({
       </h2>
       {satz ? <p className="relative">{satz}</p> : null}
       {person ? (
-        <p className="relative mt-2 flex items-center gap-4 font-semibold">
+        // Unter 23rem das Bild über der Zeile (wie Aufgaben- und Besuchskarte);
+        // ein Name wird nie getrennt (DR-114).
+        <p className="relative mt-2 flex items-center gap-4 font-semibold hyphens-manual max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:gap-2">
           <Personenbild name={person.name} farbe={person.farbe} groesse="karte" />
           <span className="min-w-0">{person.zeile}</span>
         </p>

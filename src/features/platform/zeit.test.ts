@@ -29,6 +29,8 @@ describe('tagUndMonat, zeitraumLang, tageBis', () => {
     expect(zeitraumLang('2025-12-12T09:00:00', '2026-01-15T09:00:00')).toBe(
       '12. Dezember 2025 bis 15. Januar 2026',
     );
+    // An einem Tag nur dieser, nicht „17. Oktober bis 17. Oktober“.
+    expect(zeitraumLang('2026-10-17T09:00:00', '2026-10-17T11:00:00')).toBe('17. Oktober 2026');
   });
 
   it('zählt Kalendertage, nicht Stunden', () => {

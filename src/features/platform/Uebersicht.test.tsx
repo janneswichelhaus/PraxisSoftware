@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
+import { focusManager } from '@tanstack/react-query';
 import type * as PlattformApi from './api';
 import type { Plattformzugang } from './api';
 import { renderWithProviders } from '@/test-utils';
@@ -156,6 +157,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  focusManager.setFocused(undefined);
 });
 
 describe('Gruß der Übersicht (Handoff 5.1)', () => {
@@ -510,6 +512,15 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(ladeErnaehrung).not.toHaveBeenCalled();
   });
 
+  it('sagt einer rechtlichen Vertretung am Ende, was sie darf', async () => {
+    zeige({ ...BEGLEITUNG, access_kind: 'legal_representative' });
+    expect(
+      await screen.findByText(
+        'Als rechtliche Vertretung handeln Sie in allem, was Max Mustermann hier tun kann.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('bietet in der Lesefrist „Unterlagen sichern“ an und nennt die Behandlung', async () => {
     ladeTermine.mockResolvedValue([
       {
@@ -539,6 +550,28 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(screen.getByText('12. August bis 15. Oktober 2026')).toBeInTheDocument();
     // In der Lesefrist ist nichts mehr zu tun - auch kein offener Fragebogen.
     expect(screen.queryByText(/Fragebogen/)).not.toBeInTheDocument();
+  });
+
+  it('kennt während eines gekündigten, noch laufenden Abos keine Lesefrist (ANN-274)', async () => {
+    ladeTermine.mockResolvedValue([TERMIN]);
+    ladeBefundbogen.mockResolvedValue(BOGEN_FERTIG);
+    ladeAbo.mockResolvedValue({
+      id: 'abababab-abab-4bab-8bab-000000000001',
+      starts_on: '2026-09-05',
+      ends_on: inTagen(27, 0).slice(0, 10),
+      state: 'ending',
+      next_month_start: null,
+      next_month_price_cents: null,
+      cancel_effective_on: null,
+      cancelled_at: '2026-10-07T09:30:00Z',
+      cancelled_via: 'platform',
+      can_cancel: false,
+    });
+    zeige({ ...ZUGANG, read_until: inTagen(58, 12) });
+    // Der Termin ist die Hauptsache, nicht „Unterlagen sichern“.
+    expect(await screen.findByRole('region', { name: /^Besuch / })).toBeInTheDocument();
+    expect(screen.queryByText('Unterlagen sichern')).not.toBeInTheDocument();
+    expect(screen.getByText(/Ihr Nachsorge-Abo endet am/)).toBeInTheDocument();
   });
 
   it('nennt nach einem gekündigten Nachsorge-Abo dessen Ende und die Lesezeit (ANG-004)', async () => {
@@ -581,6 +614,21 @@ describe('Zustände', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Guten Tag' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     expect(screen.queryByText(/Gerade ist nichts zu tun/)).not.toBeInTheDocument();
+  });
+
+  it('behält den Stand, wenn ein Nachladen scheitert, und sagt, dass er veraltet ist', async () => {
+    ladeRechnungen.mockResolvedValue([RECHNUNG]);
+    zeige();
+    await screen.findByRole('link', { name: /^Rechnung RG-2026-0001/ });
+    ladeRechnungen.mockRejectedValue(new Error('Netz weg'));
+    act(() => focusManager.setFocused(true));
+    expect(
+      await screen.findByText(/Der angezeigte Stand konnte nicht aktualisiert werden/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Rechnung RG-2026-0001/ })).toBeInTheDocument();
+    expect(
+      screen.queryByText('Die Übersicht lässt sich gerade nicht laden.'),
+    ).not.toBeInTheDocument();
   });
 
   it('sagt nach dem Absenden, was mit den Angaben geschieht (D5)', async () => {

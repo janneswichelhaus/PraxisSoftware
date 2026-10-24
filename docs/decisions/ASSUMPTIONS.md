@@ -7255,11 +7255,11 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
-**Annahme.** Oben steht eine Hero-Karte: in der Lesefrist „Unterlagen sichern“ (zu „Ich“), sonst die erste Aufgabe (ANN-692), sonst der nächste Termin - „Besuch heute/morgen/am Samstag“, über sechs Tage mit Datum, für eine Vertretung „Besuch bei {Name}“ mit dem Tag im Satz. Ohne alles der Leerzustand. Antwort und Rechnung nie; in der Einsicht ohne Knopf.
+**Annahme.** Oben steht eine Hero-Karte: in der Lesefrist (nach einem Abo erst nach dessen Ende) „Unterlagen sichern“, sonst die erste Aufgabe (ANN-692), sonst der nächste Termin - „Besuch morgen/am Samstag“, über sechs Tage mit Datum, für eine Vertretung „Besuch bei {Name}“. Sonst der Leerzustand. Antwort und Rechnung nie; in der Einsicht ohne Knopf.
 
 **Begründung.** Handoff 2026-10-22, Abschnitt 0 und 5.1; Abweichung von DSN-001 4.1: der Termin ist ein eigener Abschnitt „Nächster Besuch“. „heute“ und „morgen“ statt eines Wochentags, der in sechs Tagen wiederkäme.
 
-**Anker.** `hauptsache` und `terminTitel` in `src/features/platform/hauptsache.ts`.
+**Anker.** `hauptsache`, `inLesefrist` und `terminTitel` in `src/features/platform/hauptsache.ts`.
 
 **Änderungspfad.** Reihenfolge oder Wortlaut dort · Aufwand `klein`.
 

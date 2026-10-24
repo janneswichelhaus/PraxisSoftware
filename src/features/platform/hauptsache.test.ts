@@ -273,6 +273,18 @@ describe('hauptsache (ANN-698)', () => {
     expect(hauptsache({ ...ohneAufgabe, naechster: undefined })).toEqual({ art: 'nichts' });
   });
 
+  it('kennt keine Lesefrist, solange ein Abo noch läuft (ANN-274)', () => {
+    const naechster = termin('2026-10-24');
+    const lesefrist = { ...ZUGANG, read_until: '2026-12-31' };
+    const ohneAufgabe = { boegen: [bogen('abgeschlossen')], checkins: null, plaene: plaene() };
+    expect(
+      hauptsache({ ...lage({ zugang: lesefrist, ...ohneAufgabe }), aboLaeuft: true, naechster }),
+    ).toEqual({ art: 'termin', termin: naechster });
+    expect(ersteAufgabe({ ...lage({ zugang: lesefrist }), aboLaeuft: true })).toMatchObject({
+      art: 'fragebogen',
+    });
+  });
+
   it('nimmt im Training immer die nächste Einheit, auch mit Übungen für heute', () => {
     const naechster = termin('2026-10-24');
     const training = { ...ZUGANG, relationship_kind: 'training' as const };

@@ -30,15 +30,29 @@ export interface Aufgabenlage {
   boegen: readonly Bogenstand[] | undefined;
   checkins: EigeneCheckins | null | undefined;
   plaene: EigenePlaene | undefined;
+  /**
+   * Läuft ein Nachsorge-Abo noch (auch gekündigt bis zu seinem Ende)? Dann
+   * ist trotz `read_until` keine Lesefrist: Die Lesezeit zählt vom Ende des
+   * Abos (ANN-274). Der Einstieg kennt das Abo nicht und lässt es weg.
+   */
+  aboLaeuft?: boolean;
+}
+
+/**
+ * Die Lesefrist hat nur der eigene Zugang; an einer Vertretung ist
+ * `read_until` ihr Ende - etwa die Volljährigkeit -, auch mitten in der
+ * Behandlung. Solange ein Abo läuft, ist sie noch nicht da.
+ */
+export function inLesefrist(
+  zugang: Pick<Plattformzugang, 'access_kind' | 'read_until'>,
+  aboLaeuft = false,
+): boolean {
+  return zugang.access_kind === 'self' && zugang.read_until !== null && !aboLaeuft;
 }
 
 export function ersteAufgabe(lage: Aufgabenlage): Aufgabe | null {
   const { zugang, bogenId, boegen, checkins, plaene } = lage;
-  // Die Lesefrist hat nur der eigene Zugang; an einer Vertretung ist
-  // `read_until` ihr Ende - etwa die Volljährigkeit -, auch mitten in der
-  // Behandlung (wie die Übersicht es liest).
-  const lesefrist = zugang.access_kind === 'self' && zugang.read_until !== null;
-  if (lesefrist || zugang.relationship_kind === 'training') return null;
+  if (inLesefrist(zugang, lage.aboLaeuft) || zugang.relationship_kind === 'training') return null;
 
   // Eine Begleitung füllt den Bogen nicht aus (ANN-248).
   if (zugang.access_kind !== 'companion' && bogenId !== undefined && boegen !== undefined) {
@@ -148,7 +162,7 @@ export type Hauptsache =
 
 export function hauptsache(lage: Aufgabenlage & { naechster: Termin | undefined }): Hauptsache {
   const { zugang } = lage;
-  if (zugang.access_kind === 'self' && zugang.read_until !== null) {
+  if (inLesefrist(zugang, lage.aboLaeuft) && zugang.read_until !== null) {
     return { art: 'unterlagen', bis: zugang.read_until };
   }
   const aufgabe = ersteAufgabe(lage);
