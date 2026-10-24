@@ -19,34 +19,33 @@ für Inhalt; Abweichungen stehen in Abschnitt 0.
 
 ## 0 · Entscheidungen
 
-### Offen für Jannes (je mit Empfehlung)
+### Entschieden: alle vier wie empfohlen (Jannes, 24.10.2026)
 
-Gebaut wird bis zur Antwort die Fassung, die hier unter „bis dahin“ steht. Keine der Fragen hält
-einen Schritt aus Abschnitt 9 auf.
+Jannes hat nach dem Merge alle vier Fragen wie empfohlen entschieden; gebaut wird die Empfehlung.
 
 1. **Dauer der Einheit.** Das Datenmodell kennt keine Dauer (`eigenerPlanSchema`). _Empfehlung:_ aus
    der Dosierung schätzen und als „etwa 10 Minuten“ zeigen – reine Anzeige, keine neue Spalte, kein
    Auslöser aus ADR-013 Punkt 9. Rechnung je Übung: Durchgänge × (Wiederholungen bis × 4 s oder
    Dauer, mal 2 bei „je Seite“) + (Durchgänge − 1) × Pause + 30 s Vorbereitung; Summe auf volle
    5 Minuten gerundet, mindestens 5. Fehlt einer Übung beides, entfällt die Angabe. _Alternative:_ ein
-   Feld der Fachperson am Plan (Migration, Pfad A). _Bis dahin:_ ohne Dauer („3 Übungen“); das Layout
-   trägt beides (Tweak „Dauer“ auf der Leinwand).
+   Feld der Fachperson am Plan (Migration, Pfad A). _Entschieden:_ geschätzt wie empfohlen; die
+   Leinwand zeigt beide Fassungen (Tweak „Dauer“).
 2. **„Später weiter“ statt „Abbrechen“** im Kopf der Durchführung und beim Beenden. _Empfehlung:_
    ja. Die Haken bleiben, die Einheit des Tages geht später weiter („Weiter üben“); „Abbrechen“ klingt
    nach Verwerfen. DSN-001 Abschnitt 7 Nr. 7 („Abbrechen ist immer sichtbar“) bleibt erfüllt: Der
-   Ausweg steht in jedem Schritt im Kopf. _Bis dahin:_ „Später weiter“.
+   Ausweg steht in jedem Schritt im Kopf. _Entschieden:_ „Später weiter“.
 3. **Eigene Endseite** „Gespeichert“ bzw. „Auf diesem Gerät gespeichert“ statt der Rückkehr zum
    Reiter mit Rückmeldung. _Empfehlung:_ ja – ein ruhiger Abschluss, der sagt, wo die Einheit liegt
-   und wer sie sieht, mit dem nächsten Übungstag, ohne Lob. _Bis dahin:_ Endseite.
+   und wer sie sieht, mit dem nächsten Übungstag, ohne Lob. _Entschieden:_ Endseite.
 4. **Silbentrennung in Titeln unter 23rem.** Bei 200 % passen „Treppengeländer“ oder
    „Totalendoprothese“ in keiner zulässigen Größe in die Zeile; heute bricht das Wort ohne Strich
    (BEF-196). _Empfehlung:_ nur unter 23rem `hyphens: auto` mit `hyphenate-limit-chars: 12 5 5` für
    Plan- und Übungsnamen, Etiketten der Skala, Hinweise und Fließtext (Trennung an der Silbe mit
    Strich) – eine Ausnahme zu DR-114 nur für diese Breite. Personennamen, Anschriften, Knöpfe und
-   Reiter bleiben ungetrennt. _Bis dahin:_ die Ausnahme.
+   Reiter bleiben ungetrennt. _Entschieden:_ die Ausnahme.
 
-**Freigabe:** Mit dem Merge dieses Handoffs gibt Jannes Schritt 2 der Umsetzung frei (Abschnitt 9);
-die Antworten auf die vier Fragen können danach kommen.
+**Freigabe:** Mit dem Merge dieses Handoffs (#299, 24.10.2026) hat Jannes Schritt 2 der Umsetzung
+freigegeben (Abschnitt 9).
 
 ### Festlegungen aus dem Entwurf (beim Bauen als Annahmen eintragen)
 
@@ -152,10 +151,10 @@ wie gehabt.
 | mehrere Pläne      | der erste Plan mit heutigem Übungstag | wie die Lage             | „{Plan} · 3 Übungen · …“                                                                  | wie die Lage                     |
 
 Ohne Namen (N1) heißt es „Ihre Therapeut:in sieht …“. Der nächste Übungstag kommt aus `weekdays`
-und dem heutigen Tag; „Heute geübt“ aus `recent_sessions` mit `finished` am heutigen Tag. Fehlt die
-Dauer (Frage 1), steht nur „3 Übungen“.
+und dem heutigen Tag; „Heute geübt“ aus `recent_sessions` mit `finished` am heutigen Tag. Lässt
+sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen“.
 
-### Wochenleiste (_neu_, `src/features/platform/Wochenleiste.tsx`, ersetzt die Chips in `Uebungstage`)
+### Wochenleiste (_neu_, `src/components/ui/Wochenleiste.tsx`, ersetzt die Chips in `Uebungstage`)
 
 - `role="group"` mit `aria-labelledby` auf „Ihre Übungstage“ (_neu_, `h3` 18/600, statt „Meine
   Übungstage“); sieben `button` mit `aria-pressed`, sichtbar „Mo“, vorgelesen „Montag“.
@@ -166,7 +165,8 @@ Dauer (Frage 1), steht nur „3 Übungen“.
   sehen nur Sie.“ (_neu_; bei n = 1 „an einem Tag“, bei k = 1 „einmal pro Woche“); ohne gewählten Tag
   „Wählen Sie die Tage, an denen Sie üben möchten. Empfohlen: …“ (_neu_).
 - Ohne Netz: Zellen `disabled`, Linien gestrichelt, gewählt `accent-soft` mit `accent`, sonst
-  `ink-muted`; Satz „Sie üben an {n} Tagen. Ändern geht wieder mit Verbindung.“ (_neu_).
+  `ink-muted`; Satz „Sie üben an {n} Tagen. Ändern geht wieder mit Verbindung.“ (_neu_; ohne Tag „Noch
+  keine Tage gewählt. Wählen geht wieder mit Verbindung.“).
 - Unter 23rem: Raster mit 3 Spalten und Abstand 8; jede Zelle ein eigener Knopf, 48 hoch, Radius
   10, Linie `line-strong` bzw. `accent`.
 - Speichern wie heute (`uebungstageSetzen`, sofort, der Reihe nach, bei Fehler zurück und
@@ -183,7 +183,7 @@ Dauer (Frage 1), steht nur „3 Übungen“.
 - Lesefrist: Kreis `surface-sunken` mit `ink`. „Sehr groß“: ohne Pfeil (wie die Aufgabenkarte in
   Briefing 1), Kreis 50. Unter 23rem steht die Nummer über dem Text, innen 12, ohne Pfeil.
 
-### Bühne (_neu_, `src/features/platform/Buehne.tsx`)
+### Bühne (_neu_, `src/components/ui/Buehne.tsx`, Zahl und Einheit aus `hauptzahl`)
 
 - **Ohne Medium:** `section` mit `aria-labelledby` auf den Namen; Fläche `surface-inverse`,
   `rounded-image`, innen 24 (ab 1024 px 32, unter 23rem 16), Abstand 16, kein Schatten. Laufrad 200
@@ -193,7 +193,7 @@ Dauer (Frage 1), steht nur „3 Übungen“.
   Zeile die Einheit 18/600.
 - **Hauptzahl** aus der Dosierung (`Dosis`): mit Wiederholungen „8 bis 12“ bzw. „10“ und
   „Wiederholungen je Durchgang“ (_neu_; mit `per_side` „Wiederholungen je Seite“ _neu_); mit Dauer
-  „30“ und „Sekunden je Durchgang“ (_neu_; „Sekunde“ bei 1).
+  „30“ und „Sekunden je Durchgang“ (_neu_; „Sekunde“ bei 1; mit `per_side` „Sekunden je Seite“).
 - **Mit Video der Praxis** (nur Entwurf, gebaut erst mit Medien): Video 4:3 in `rounded-image` an
   der Stelle der Bühne, eigenes `poster`, Abspielknopf 72 rund (`accent`, Dreieck `surface`,
   `aria-label` „Video abspielen: {Name}“ _neu_), darunter „Video abspielen · 0:45“ (_neu_); kein
@@ -201,7 +201,7 @@ Dauer (Frage 1), steht nur „3 Übungen“.
   unter dem Video, Hauptzahl 40 in `ink` mit der Einheit daneben. Speicherort und Auslieferung der
   Videos sind eine eigene Entscheidung (ADR-017) und kein Teil dieses Handoffs.
 
-### Dosierungsmarken (geändert: `Dosierungskacheln` in `Uebungsinhalt.tsx`)
+### Dosierungsmarken (_neu_, `src/features/platform/Dosierungsmarken.tsx`, ersetzt `Dosierungskacheln`)
 
 - Statt der Kacheln eine Liste `ul` mit `aria-label` „Dosierung“: Marken mindestens 40 hoch, innen
   6/14, `rounded-pill`, Fläche `surface-sunken` ohne Rand (Angaben, keine Knöpfe), 18/600, Zeichen 20
@@ -211,7 +211,7 @@ Dauer (Frage 1), steht nur „3 Übungen“.
   …“ und die Steigerungsregel der Fachperson (`double_progression`), Wortlaut unverändert.
 - Unter 23rem: Marken als volle Zeilen mit `rounded-button`, innen 6/10.
 
-### Hakenzeile und Pausenring (geändert, `Durchfuehrung.tsx`, ersetzt `Pause`)
+### Hakenzeile und Pausenring (_neu_, `src/components/ui/Hakenzeile.tsx`, ersetzt `Pause`)
 
 - `button` mit `aria-pressed`, ganze Breite, mindestens 64 hoch, innen 10/14/10/20, Linie 2 `line`,
   `rounded-card`, 18/600, `flex-wrap: wrap`; das Wort „{n}. Durchgang“ mit `white-space: nowrap`.
@@ -224,19 +224,19 @@ Dauer (Frage 1), steht nur „3 Übungen“.
   Vibration. Die bestehende Live-Region sagt einmal „Pause: {s} Sekunden.“, am Ende nichts.
 - Nach dem letzten Durchgang einer Übung keine Pause (wie heute).
 
-### Kopf der Durchführung (_neu_, Muster wie `GefuehrterAblauf`)
+### Kopf der Durchführung (_neu_, `Durchfuehrungskopf.tsx`, Muster wie `GefuehrterAblauf`)
 
 - Zeile 64, innen 8: links „Zurück“ (ab Übung 2; vorige Übung; Zeichen 24 und Wort, 48 hoch), rechts
   „Später weiter“ (_neu_; verlässt die Durchführung zur Herkunft, die Einheit bleibt offen), beide
-  18/600 `accent`, Druck mit `surface-sunken`.
-- Darunter, innen 0/20/12: Balken je Übung (4 hoch, Abstand 6, `accent` bis zur aktuellen, sonst
+  18/700 `accent` wie im geführten Ablauf, Druck mit `surface-sunken`.
+- Darunter, innen 0/20/12: Balken je Übung (4 hoch, Abstand 4 wie im geführten Ablauf, `accent` bis zur aktuellen, sonst
   `spur`, `aria-hidden`), daneben „Übung {n} von {m}“ (besteht) bzw. „Abschluss“ (_neu_) 18 Leise.
 - Ohne Netz darunter `role="status"` auf `surface-sunken`, innen 10/20, mit dem WLAN-Zeichen:
   „Ohne Verbindung – Ihre Haken liegen auf diesem Gerät.“ (_neu_, Wortlaut aus dem Briefing).
 - Steht fest oben (Linie `line` unten). Unter 23rem rollt er mit; „Übung {n} von {m}“ steht dann über
   den Balken.
 
-### Fuß der Durchführung (_neu_)
+### Fuß der Durchführung (_neu_, `Durchfuehrungsfuss.tsx`)
 
 - Fest unten, Fläche `surface`, Linie `line` oben, innen 12/20/16 und `env(safe-area-inset-bottom)`.
   Genau ein Hauptknopf `groesse="gross"` (56), volle Breite; ab 1024 px bis 360 breit, rechts in der
@@ -248,7 +248,7 @@ Dauer (Frage 1), steht nur „3 Übungen“.
 - Knopf: „Nächste Übung“ (besteht), bei der letzten Übung „Zum Abschluss“ (_neu_, statt „Fertig“),
   beim Beenden „Einheit beenden“ (besteht). Unter 23rem steht der Fuß am Ende des Inhalts.
 
-### Endseite (_neu_, in `Durchfuehrung.tsx`, Muster „Alles bereit“ aus Briefing 1)
+### Endseite (_neu_, `Endseite.tsx` auf `Abschlussseite`, Muster „Alles bereit“ aus Briefing 1)
 
 - Ohne Kopf; Inhalt senkrecht mittig, innen 48/24, Abstand 24. Kreis 96: übertragen
   `surface-inverse` mit Haken 44 in `surface`; auf dem Gerät `surface-sunken` mit Telefon 44 in
@@ -270,8 +270,8 @@ Dauer (Frage 1), steht nur „3 Übungen“.
   Vorlesesoftware steht sie oben, am Rechner rechts. Abstand 48; Titel 32; Hero innen 32, Knopf so
   breit wie sein Text. Wochenleiste höchstens 560 breit. PDF und Frage als Textlinks mit Zeichen in
   einer Reihe.
-- „Sehr groß“ (125 %): alles in rem wächst; die Wochenleiste bleibt eine Reihe (die Breite bleibt
-  335); Reiterleiste in zwei Reihen (Briefing 1); Hakenzeilen brechen den rechten Teil um, wenn nötig.
+- „Sehr groß“ (125 %): alles in rem wächst; die Wochenleiste bleibt eine Reihe (je Zelle etwa 46 × 70, der Rand wächst
+  mit); Reiterleiste in zwei Reihen (Briefing 1); Hakenzeilen brechen den rechten Teil um, wenn nötig.
 
 ## 5 · Bildschirme
 
@@ -466,28 +466,32 @@ Kein Markenmoment in der Durchführung und auf der Endseite; das Laufrad steht s
 
 ## 9 · Reihenfolge der Umsetzung
 
-Je Schritt ein Pull Request über den Feature-Loop. K1: Kein Schritt berührt einen Auslöser aus
-ADR-013 Punkt 9 – solange die Dauer nicht als Feld kommt (Frage 1) und Videos nicht gespeichert
-werden. Standardprüfungen und Bildstrecke genügen.
+Je Schritt ein Pull Request über den Feature-Loop. Die Orte in Abschnitt 3 sind die gebauten aus 2a:
+Bausteine mit eigenem Knopf oder Titel liegen nach der Ratsche (`src/designsystem.test.ts`) in
+`src/components/ui/`. K1: Kein Schritt berührt einen Auslöser aus ADR-013 Punkt 9 – die Dauer wird
+geschätzt, nicht gespeichert (Frage 1), und Videos kommen erst mit einem eigenen Auftrag.
+Standardprüfungen und Bildstrecke genügen.
 
 1. **2a Bausteine:** `--text-hauptzahl`, Knopf `gross`, Bühne, Dosierungsmarken, Hakenzeile mit
-   Pausenring, Kopf und Fuß der Durchführung, Wochenleiste, Endseite; Ratsche und Kontraste.
+   Pausenring, Kopf und Fuß der Durchführung, Wochenleiste, Endseite; Schätzung der Dauer als reine
+   Funktion mit Tests (Frage 1); Trennung unter 23rem (Frage 4); Ratsche und Kontraste.
 2. **2b Durchführung:** Vollbild ohne Reiterleiste, Kopf und Fuß, Übertragungsstand, Pause, Wechsel
    der Übung, „Weiter üben“ an der offenen Übung, Beenden mit einem Hauptknopf, Endseite, ohne Netz.
-3. **2c Reiter:** Vorschau in allen Lagen, Plan mit Wochenleiste, Übungszeilen, „Zum Plan“, mehrere
-   Pläne, Lesefrist, kein Plan, Training; Skelett, Fehler, Plan vom Gerät, „Praxis antwortet nicht“
+3. **2c Reiter:** Vorschau in allen Lagen mit Dauer („3 Übungen · etwa 10 Minuten“, ebenso die
+   Übungskarte der Übersicht), Plan mit Wochenleiste, Übungszeilen, „Zum Plan“, mehrere Pläne,
+   Lesefrist, kein Plan, Training; Skelett, Fehler, Plan vom Gerät, „Praxis antwortet nicht“
    (BEF-197); Fenster „Übung zum Nachlesen“; Rechner zweispaltig. 2b und 2c können nach 2a parallel
    laufen.
 4. **2d Planblatt:** Bildschirm am Telefon und Rechner, Druck A4; die Praxis bekommt den Druck mit.
-5. **Nach Antwort auf Frage 1:** Dauer in Vorschau und Übersicht („3 Übungen · etwa 10 Minuten“).
-6. **Später, mit Medien:** Video in Bühne und Fenster nach Abschnitt 3 – eigener Auftrag mit
+5. **Später, mit Medien:** Video in Bühne und Fenster nach Abschnitt 3 – eigener Auftrag mit
    Entscheidung zu Speicherort und Auslieferung (ADR-017).
 
 ## 10 · Beim Bauen nachzutragen
 
-- `docs/decisions/ASSUMPTIONS.md`: je eine Annahme für die Festlegungen aus Abschnitt 0, insbesondere
-  die Wochenleiste ohne Abstand, die Pause als Ring, „Später weiter“, die Endseite, die getrennten
-  Meldungen für Netz und Server, den Rechner zweispaltig und die Trennung unter 23rem.
+- `docs/decisions/ASSUMPTIONS.md`: je eine Annahme für die Festlegungen aus Abschnitt 0,
+  insbesondere die Wochenleiste ohne Abstand, die Pause als Ring, die getrennten Meldungen für Netz
+  und Server und den Rechner zweispaltig; die vier Fragen als „entschieden (Jannes)“ vom 24.10.2026:
+  geschätzte Dauer, „Später weiter“, Endseite, Trennung unter 23rem.
 - `docs/design/PLATTFORM.md`: Seitentyp Durchführung mit Kopf (Zurück, Später weiter, Balken) und
   Fuß (ein Hauptknopf 56, Stand); Rechner zweispaltig für den Reiter „Übungen“; Wochenleiste als
   Segment; Trennung unter 23rem (nach Frage 4); Bausteine Bühne, Wochenleiste, Hakenzeile.

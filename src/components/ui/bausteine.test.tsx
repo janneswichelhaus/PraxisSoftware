@@ -297,6 +297,26 @@ describe('Button', () => {
     renderWithProviders(<Button type="button">Speichern</Button>);
     expect(screen.getByRole('button', { name: 'Speichern' }).className).toMatch(/\bh-12\b/);
   });
+
+  it('ist groß 3.5rem hoch, mit Schrift und Variante wie normal (Fuß der Durchführung)', () => {
+    renderWithProviders(
+      <>
+        <Button type="button" groesse="gross">
+          Nächste Übung
+        </Button>
+        <ButtonLink to="/p" groesse="gross">
+          Zur Übersicht
+        </ButtonLink>
+      </>,
+    );
+    for (const ziel of [
+      screen.getByRole('button', { name: 'Nächste Übung' }),
+      screen.getByRole('link', { name: 'Zur Übersicht' }),
+    ]) {
+      expect(ziel).toHaveClass('min-h-14', 'text-base', 'font-bold', 'bg-accent');
+      expect(ziel.className).not.toMatch(/\bh-12\b/);
+    }
+  });
 });
 
 describe('Symbolknopf', () => {

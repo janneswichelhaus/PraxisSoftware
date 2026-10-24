@@ -10,6 +10,7 @@ import type * as PlattformApi from './api';
 import type { Einwilligung, Plattformzugang } from './api';
 import { MITTEILUNGSARTEN } from './einstiegsablauf';
 import { EINWILLIGUNGSFASSUNG, FREIWILLIG } from './einwilligungstexte';
+import { grussNachTageszeit } from './zeit';
 
 /**
  * Der Einstieg nach der ersten Anmeldung (POR-019; Handoff 2026-10-22,
@@ -283,7 +284,10 @@ describe('Einstieg: Willkommen (DRP-016)', () => {
     ladeEinstieg.mockResolvedValue({ pending: false, finished_at: '2026-10-23', skipped_at: null });
     await tippe(nutzer, 'Später');
     await waitFor(() => expect(einstiegBeenden).toHaveBeenCalledWith(MIT_NAMEN.access_id));
-    expect(await screen.findByRole('heading', { level: 1, name: 'Guten Tag' })).toBeInTheDocument();
+    // Der Gruß folgt der Uhr des Laufs, nicht fest „Guten Tag“ (BEF-199).
+    expect(
+      await screen.findByRole('heading', { level: 1, name: grussNachTageszeit() }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(document.title).toBe('Übersicht – Own Motion');
   });
@@ -770,7 +774,9 @@ describe('Einstieg: Alles bereit (DRP-019)', () => {
     ).toEqual(['← Zurück', 'Zur Übersicht']);
     ladeEinstieg.mockResolvedValue({ pending: false, finished_at: '2026-10-23', skipped_at: null });
     await tippe(nutzer, 'Zur Übersicht');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Guten Tag' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: grussNachTageszeit() }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 

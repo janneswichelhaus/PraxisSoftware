@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useIstVerbunden } from '@/app/verbindung';
+import { OhneNetzSymbol } from '@/components/ui/OhneNetzSymbol';
 import { geruestSpalte } from './geruestbreite';
 import { uhrzeit } from './zeit';
 
@@ -58,27 +59,5 @@ function letzterAbruf(queryClient: QueryClient): number {
       .getQueryCache()
       .getAll()
       .map((abfrage) => abfrage.state.dataUpdatedAt),
-  );
-}
-
-/**
- * Das durchgestrichene WLAN-Zeichen, 22 px (Raster 20, Strich 1,75, wie
- * `MikrofonSymbol`). Für Vorlesesoftware ausgeblendet; der Satz sagt es.
- */
-function OhneNetzSymbol() {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-      className="mt-0.5 size-5.5 shrink-0"
-    >
-      <path d="M2.5 7.4a10.8 10.8 0 0 1 15 0M5 10.1a7.2 7.2 0 0 1 10 0M7.5 12.75a3.6 3.6 0 0 1 5 0M10 15.75h.01M3 3l14 14" />
-    </svg>
   );
 }

@@ -29,8 +29,8 @@ unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
 | Schriftrollen in px         | Skala in rem: Gruß `text-gruss` 34/800 (Rechner 40), Seitentitel `text-plattform-titel` 28/800 (32), Hero `text-hero` 26/800 (32, unter 23rem 22), Abschnitt `text-abschnitt` 22/700; Zeile 18/600, Text 18/400, Leise 18/400 in `ink-muted`. |
 | Etiketten in Versalien      | Keine Versalien. Die Bausteine heben `uppercase` unter `.plattform-schrift` auf (DR-154).                                                                                                                                                     |
 | Keine Erklärsätze           | Ein Satz Orientierung, wo sonst unklar bleibt, was passiert (leer, nach dem Absenden, wer meine Angaben sieht); nie eine Gebrauchsanweisung der Oberfläche.                                                                                   |
-| Silbentrennung im Fließtext | Nur lange Wörter ab zwölf Buchstaben; nie in Namen, Anschriften, Überschriften, Knöpfen und Reitern (DR-114).                                                                                                                                 |
-| Ziele ≥ 44 px               | Knöpfe 48, antippbare Karten ≥ 80, Zeilen und Textlinks ≥ 44; Abstand zwischen Zielen ≥ 8.                                                                                                                                                    |
+| Silbentrennung im Fließtext | Nur lange Wörter ab zwölf Buchstaben; nie in Namen, Anschriften, Überschriften, Knöpfen und Reitern (DR-114); unter 23rem auch Plan- und Übungsnamen (`trennen-schmal`, ANN-707).                                                             |
+| Ziele ≥ 44 px               | Knöpfe 48, antippbare Karten ≥ 80, Zeilen und Textlinks ≥ 44; Abstand zwischen Zielen ≥ 8, nicht in der Wochenleiste (ANN-708). Hauptknopf der Durchführung 56 (`gross`).                                                                     |
 | Rhythmus 4/8/12/16/24/32    | Dazu 40 (Telefon) und 48 (Rechner) zwischen Abschnitten; Seitenrand 20, Türseiten 24.                                                                                                                                                         |
 | Hover 120 ms                | Druck an Knopf, Zeile und Karte: 98 % und vertiefte Fläche in 120 ms; bei „Bewegung reduzieren“ nur die Fläche (DR-117).                                                                                                                      |
 | Bilder `Medienbild` 4:3     | Eigene Fotos der Praxis, keine KI-Bilder; 4:3 oder 16:9 im Radius 16, Personen rund (`Personenbild` `karte`, 56). Markenform ist das Laufrad, nie neben der Wortmarke.                                                                        |
@@ -44,8 +44,9 @@ unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
 `Personenbild` Größe `karte` · `Laufrad` · `Verbindungszeile` · `Menueknopf` · `Schalter` (eine
 Wahl, die sofort gilt; Zustand als Wort) · `Wahlreihe` mit `sofort` (Knöpfe statt Radios: Pfeiltasten
 wählen nichts, etwa eine Einwilligung) · `Zwischentitel` mit `stufe="abschnitt"` (Kartentitel 22) ·
-`Vertretungsband` („Sie handeln für …“ im Gerüst und im Einstieg). Zu sehen auf der
-Prüfseite `tests/e2e/fixtures/plattform-bausteine.html`.
+`Vertretungsband` („Sie handeln für …“ im Gerüst und im Einstieg). Übungen: `Buehne`,
+`Dosierungsmarken`, `Hakenzeile`, `Wochenleiste`, `Durchfuehrungskopf`/`-fuss`, `Abschlussseite`.
+Prüfseiten `tests/e2e/fixtures/plattform-bausteine.html` und `plattform-uebungsbausteine.html`.
 
 ## Seitentypen und Gerüst
 
@@ -65,7 +66,7 @@ solange die Wörter passen - gemessen, nicht aus der Einstellung gelesen -, sons
 der `Menueknopf` im Kopf (ANN-682). Bei offener Tastatur tritt sie zurück (ANN-676, ANN-681). Ab
 1024 px Navigation im Kopf, Inhalt `max-w-inhalt`, jede Seite einspaltig in `max-w-spalte` außer
 der Übersicht (ab 900 px Inhaltsbreite zwei Spalten); die Einsicht der Praxis behält das Telefon
-(`data-rechner`, nicht `lg:`). Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12. Seitentitel 28 (Rechner 32) und Abschnitte 22 in rem
+(`data-rechner`, nicht `lg:`). Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12; Titel in rem
 (ANN-683). Kein Startbild auf Plattformwegen, stattdessen Markenmoment B beim ersten Erscheinen der
 Übersicht je Tab (ANN-680). Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit Daten.
 

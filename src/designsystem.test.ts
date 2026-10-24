@@ -558,6 +558,10 @@ describe('Sprache der Plattform (Handoff 2026-10-22, PLATTFORM.md)', () => {
       ['hero-rechner', '2rem', '800'],
       ['hero-schmal', '1.375rem', '800'],
       ['abschnitt', '1.375rem', '700'],
+      // Die Hauptzahl der Bühne (Handoff 2026-10-24, Abschnitt 2).
+      ['hauptzahl', '3rem', '800'],
+      ['hauptzahl-rechner', '3.5rem', '800'],
+      ['hauptzahl-schmal', '2.25rem', '800'],
     ] as const) {
       expect(stufen.get(`--text-${rolle}`), rolle).toBe(groesse);
       expect(stufen.get(`--text-${rolle}--font-weight`), rolle).toBe(gewicht);
@@ -680,6 +684,24 @@ describe('Sprache der Plattform (Handoff 2026-10-22, PLATTFORM.md)', () => {
     expect(
       funde((zeile, datei) => (datei.startsWith('src/features/platform/') ? unter18(zeile) : [])),
     ).toEqual([]);
+  });
+
+  /**
+   * Silbentrennung in Titeln nur unter 23rem (ANN-707, Handoff 2026-10-24,
+   * Frage 4): `trennen-schmal` gilt allein in der Regel für sehr schmale
+   * Fenster. Stünde sie auch außerhalb, trennte ein Planname bei 375 px - die
+   * Ausnahme zu DR-114 wäre keine mehr.
+   */
+  it('trennt mit `trennen-schmal` nur unter 23rem', () => {
+    const regeln = Array.from(css.matchAll(/([^{};]*\.trennen-schmal[^{]*)\{([^}]*)\}/g));
+    expect(regeln).toHaveLength(1);
+    expect(regeln[0]?.[2]).toMatch(/hyphens:\s*auto;\s*hyphenate-limit-chars:\s*12 5 5;/);
+    const vorher = css.slice(0, regeln[0]?.index ?? 0);
+    const block = vorher.lastIndexOf('@media (max-width: 23rem) {');
+    expect(block).toBeGreaterThan(-1);
+    // Zwischen dem Anfang des Blocks und der Regel schließt er sich nicht.
+    const zwischen = vorher.slice(block);
+    expect(zwischen.split('{').length - zwischen.split('}').length).toBe(1);
   });
 
   it('erkennt freie Größen unter 18 px und die Absenderzeile (Gegenprobe)', () => {

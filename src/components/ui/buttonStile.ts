@@ -103,17 +103,28 @@ export function kartenAktionKlassen(variant: Variant = 'secondary', zusatz = '')
 }
 
 /**
- * Größe einer Schaltfläche: `normal` 48 px, `kompakt` 44 px mit 14 px Schrift
- * (die Klassen von `kartenAktionKlassen`). Die Variante bleibt davon
- * unberührt (UIK-14): Wer einen kompakten Knopf braucht, schreibt
- * `<Button groesse="kompakt">` statt eines rohen `<button>` mit Klassen.
+ * Größer, nur für den einen Hauptknopf im Fuß der Durchführung der Plattform
+ * (Handoff 2026-10-24, Abschnitt 2): 3.5rem (56 px) hoch statt 48, in rem,
+ * damit er mit „Groß“ und „Sehr groß“ wächst - getippt wird mit einem Finger,
+ * der gerade eine Übung gemacht hat. Schrift und Varianten wie `normal`.
  */
-export type Groesse = 'normal' | 'kompakt';
+const gross =
+  'nicht-drucken inline-flex min-h-14 items-center justify-center gap-2 rounded-button px-6 max-[23rem]:px-3 ' +
+  `text-base font-bold transition-colors disabled:cursor-not-allowed ${druck}`;
+
+/**
+ * Größe einer Schaltfläche: `normal` 48 px, `kompakt` 44 px mit 14 px Schrift
+ * (die Klassen von `kartenAktionKlassen`), `gross` 56 px nur im Fuß der
+ * Durchführung. Die Variante bleibt davon unberührt (UIK-14): Wer einen
+ * kompakten Knopf braucht, schreibt `<Button groesse="kompakt">` statt eines
+ * rohen `<button>` mit Klassen.
+ */
+export type Groesse = 'normal' | 'kompakt' | 'gross';
 
 export function knopfKlassen(variant: Variant, groesse: Groesse = 'normal', zusatz = ''): string {
-  return groesse === 'kompakt'
-    ? kartenAktionKlassen(variant, zusatz)
-    : buttonKlassen(variant, zusatz);
+  if (groesse === 'kompakt') return kartenAktionKlassen(variant, zusatz);
+  if (groesse === 'gross') return `${gross} ${varianten[variant]} ${zusatz}`.trim();
+  return buttonKlassen(variant, zusatz);
 }
 
 /**

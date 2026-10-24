@@ -281,6 +281,21 @@
   --text-abschnitt--line-height: 1.25;
   --text-abschnitt--letter-spacing: -0.01em;
   --text-abschnitt--font-weight: 700;
+  /* Die Hauptzahl der Bühne (Handoff 2026-10-24, Abschnitt 2): wie oft oder
+     wie lange je Durchgang, aus Armlänge lesbar - 48, am Rechner 56, unter
+     23rem 36. Ziffern gleich breit über `tabular-nums` am Element. */
+  --text-hauptzahl: 3rem;
+  --text-hauptzahl--line-height: 1;
+  --text-hauptzahl--letter-spacing: -0.02em;
+  --text-hauptzahl--font-weight: 800;
+  --text-hauptzahl-rechner: 3.5rem;
+  --text-hauptzahl-rechner--line-height: 1;
+  --text-hauptzahl-rechner--letter-spacing: -0.02em;
+  --text-hauptzahl-rechner--font-weight: 800;
+  --text-hauptzahl-schmal: 2.25rem;
+  --text-hauptzahl-schmal--line-height: 1;
+  --text-hauptzahl-schmal--letter-spacing: -0.02em;
+  --text-hauptzahl-schmal--font-weight: 800;
   /* Initialen im Personenbild der Karten (56 px, Handoff 2026-10-22,
      Abschnitt 3): 20/700 in rem, damit Bild und Schrift mitwachsen. */
   --text-initialen: 1.25rem;
@@ -410,6 +425,12 @@
   /* Titel der Hero-Karte höchstens 11 Zeichenbreiten (Handoff 2026-10-22,
      Abschnitt 3): in em, damit die Grenze mit der Schrift wächst. */
   --container-hero-titel: 11em;
+  /* Maße der Übungen (Handoff 2026-10-24, Abschnitte 3 und 4): die
+     Wochenleiste höchstens 560 breit, der Kopf der Durchführung am Rechner
+     bis 960, ihr Hauptknopf dort 360. In rem, damit sie mitwachsen. */
+  --container-wochenleiste: 35rem;
+  --container-durchfuehrung: 60rem;
+  --container-hauptknopf: 22.5rem;
 }
 
 /* Schrift der Plattform (POR-020, DSN-001 Abschnitt 7 Punkt 1,
@@ -532,6 +553,18 @@ html:has(.reiterleiste[data-stufe='2']) {
   .plattform-schrift .skala {
     grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
   }
+  /* ANN-707 (Jannes, 24.10.2026): Bei 200 % passen „Treppengeländer“ oder
+     „Totalendoprothese“ in keiner zulässigen Größe in die Zeile, und ohne
+     Trennstelle bräche das Wort ohne Strich (BEF-196). Plan- und
+     Übungsnamen und die Etiketten der Skala tragen `trennen-schmal` und
+     trennen hier an der Silbe mit Strich wie der Fließtext - ab zwölf
+     Buchstaben, je Teil mindestens fünf. Eine Ausnahme zu DR-114 nur für
+     diese Breite; Namen von Personen, Anschriften, Knöpfe und Reiter tragen
+     die Klasse nie. */
+  .plattform-schrift .trennen-schmal {
+    hyphens: auto;
+    hyphenate-limit-chars: 12 5 5;
+  }
 }
 /* Bewusst außerhalb der Schichten: Die feste Knopfhöhe `h-12` soll im
    Plattformgerüst wachsen dürfen, wenn der Text umbricht. */
@@ -600,6 +633,41 @@ html[data-schrift='sehr-gross'] {
 @keyframes skelett-puls {
   50% {
     opacity: 0.55;
+  }
+}
+/* Die Durchführung (Handoff 2026-10-24, Abschnitt 7; `Hakenzeile.tsx`). Der
+   Ring der Pause füllt sich linear über die Pause der Fachperson; ihre Dauer
+   setzt das Element. Ein gesetzter Haken federt in 160 ms in seinen Kreis.
+   Bei „Bewegung reduzieren“ steht der Ring gestrichelt still, und der Haken
+   ist sofort da. */
+@media (prefers-reduced-motion: no-preference) {
+  .pausenring-fuellung {
+    animation-name: pausenring-fuellen;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+  }
+  .haken-gesetzt {
+    animation: haken-gesetzt 0.16s var(--ease-feder);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pausenring-fuellung {
+    stroke-dasharray: 4 4;
+    stroke-linecap: butt;
+    stroke-width: 3;
+  }
+}
+@keyframes pausenring-fuellen {
+  from {
+    stroke-dashoffset: 119.381;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes haken-gesetzt {
+  from {
+    scale: 0.6;
   }
 }
 /* Das Menü unter 23rem (Stufe 3 der Reiterleiste, `Navigation.tsx`): Es

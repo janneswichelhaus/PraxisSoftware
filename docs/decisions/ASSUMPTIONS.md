@@ -7324,3 +7324,87 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Datenschutzprüfu
 **Anker.** `app.journal_patient_file_deletion` in `supabase/migrations/20261224100000_bef_170_dateien_ins_loeschjournal.sql`.
 
 **Änderungspfad.** Spalte für den Anlass (Lauf oder von Hand) in Journal und `list_deletion_runs` · Aufwand `mittel`.
+
+### ANN-704 — Übungen: Dauer der Einheit aus der Dosierung geschätzt
+
+Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 1) · erledigt · Wiedervorlage: —
+
+**Annahme.** Die Plattform nennt die Dauer einer Einheit als Schätzung („etwa 10 Minuten“): je Übung Durchgänge × (Wiederholungen bis × 4 s oder Dauer, je Seite doppelt) + Pausen dazwischen + 30 s, auf volle 5 Minuten gerundet, mindestens 5. Fehlen einer Übung Wiederholungen und Dauer, steht keine Dauer da. Gespeichert wird nichts.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0, Frage 1: Das Datenmodell kennt keine Dauer; ein Feld der Fachperson wäre eine Migration (Pfad A).
+
+**Anker.** `dauerDerEinheit` in `src/features/platform/dauer.ts`.
+
+**Änderungspfad.** Werte dort ändern · Aufwand `klein`; ein Feld am Plan stattdessen · Aufwand `mittel`.
+
+### ANN-705 — Durchführung: „Später weiter“ statt „Abbrechen“
+
+Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 2) · erledigt · Wiedervorlage: —
+
+**Annahme.** Der Ausweg aus der Durchführung heißt in jedem Schritt „Später weiter“: Die Haken bleiben, die Einheit des Tages geht mit „Weiter üben“ weiter. „Abbrechen“ entfällt, weil es nach Verwerfen klingt.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0, Frage 2; DSN-001 Abschnitt 7 Nr. 7 („Abbrechen ist immer sichtbar“) bleibt erfüllt, der Ausweg steht im Kopf.
+
+**Anker.** `Durchfuehrungskopf` in `src/features/platform/Durchfuehrungskopf.tsx`.
+
+**Änderungspfad.** Wort dort ändern · Aufwand `klein`.
+
+### ANN-706 — Durchführung: eigene Endseite nach „Einheit beenden“
+
+Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 3) · erledigt · Wiedervorlage: —
+
+**Annahme.** Nach dem Beenden folgt eine eigene Seite: „Gespeichert“ (bei der Praxis, wer sie sieht) oder „Auf diesem Gerät gespeichert“ (noch nicht übertragen), dazu der nächste Übungstag, ohne Lob. Sie ersetzt die Rückmeldung am Reiter.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0, Frage 3; ADR-001 und ADR-024 Punkt 8: Was nur auf dem Telefon liegt, darf nicht nach „bei der Praxis“ aussehen.
+
+**Anker.** `Endseite` in `src/features/platform/Endseite.tsx`.
+
+**Änderungspfad.** Zurück zur Rückmeldung am Reiter (`Beendetziel`) · Aufwand `klein`.
+
+### ANN-707 — Plattform: Plan- und Übungsnamen trennen unter 23rem an der Silbe
+
+Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 4) · erledigt · Wiedervorlage: —
+
+**Annahme.** Unter 23rem (200 % am Telefon) trennen Plan- und Übungsnamen und die Etiketten der Skala lange Wörter an der Silbe mit Strich (ab zwölf Buchstaben, je Teil fünf). Namen von Personen, Anschriften, Knöpfe und Reiter bleiben ungetrennt; darüber gilt DR-114 unverändert.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0, Frage 4: „Treppengeländer“ passt dort in keiner zulässigen Größe in die Zeile und bräche sonst ohne Strich (BEF-196).
+
+**Anker.** `.trennen-schmal` in `src/index.css`.
+
+**Änderungspfad.** Regel dort streichen oder auf weitere Rollen ausdehnen · Aufwand `klein`.
+
+### ANN-708 — Übungstage: die Wochenleiste als Segment ohne Abstand
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Die sieben Übungstage stehen als ein Segment aneinander, je knapp 48 × 56 bei 375 px, ohne die 8 px zwischen Zielen (PLATTFORM.md); unter 23rem ein Raster mit drei Spalten, 48 × 48 und 8 Abstand.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0 (DR-128: eine Zeile); mit Abstand blieben je Ziel 41 px. Dieselbe Ausnahme wie beim `Segment`.
+
+**Anker.** `Wochenleiste` in `src/components/ui/Wochenleiste.tsx`.
+
+**Änderungspfad.** Abstand dort setzen und in zwei Reihen umbrechen · Aufwand `klein`.
+
+### ANN-709 — Durchführung: die Pause als Ring statt als Uhr
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Pause zwischen zwei Durchgängen zeigt die Zeile des nächsten Durchgangs als Ring, der sich über die Pause füllt - ohne Zahl, die herunterzählt, ohne Ton. Tippen hakt ab und beendet sie; „Pause überspringen“ entfällt.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0; DSN-001 Abschnitt 7 Nr. 8 (kein Countdown-Druck).
+
+**Anker.** `Pausenring` in `src/components/ui/Hakenzeile.tsx`.
+
+**Änderungspfad.** Die Sekunden im Ring zeigen · Aufwand `klein`.
+
+### ANN-710 — Durchführung: der Übertragungsstand erst nach dem ersten Haken
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Der Fuß sagt erst nach dem ersten Haken, wo die Haken liegen: „Übertragen an die Praxis“ sofort, „Auf diesem Gerät, noch nicht übertragen“ erst nach einer Sekunde Warten, damit es beim normalen Übertragen nicht flackert.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0; ADR-024 Punkt 8 (die Ansicht zeigt „auf dem Gerät“ oder „übertragen“, bis nichts mehr wartet).
+
+**Anker.** `useRuhigerStand` in `src/features/platform/Durchfuehrungsfuss.tsx`.
+
+**Änderungspfad.** Wartezeit dort ändern oder streichen · Aufwand `klein`.

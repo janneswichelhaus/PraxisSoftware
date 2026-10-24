@@ -43,6 +43,30 @@ export function uebungstageAm(plaene: EigenerPlan[], kalendertag: string): Eigen
   );
 }
 
+/**
+ * Der Satz unter der `Wochenleiste` (Handoff 2026-10-24, Abschnitt 3): wie
+ * oft die Person übt, was die Praxis empfiehlt und dass nur sie die Tage
+ * sieht (ANN-307) - ohne Netz, wann Ändern wieder geht.
+ */
+export function wochenleisteSatz(
+  anzahl: number,
+  empfohlen: number | null,
+  gesperrt = false,
+): string {
+  const tage = anzahl === 1 ? 'an einem Tag' : `an ${anzahl} Tagen`;
+  if (gesperrt) {
+    return anzahl === 0
+      ? 'Noch keine Tage gewählt. Wählen geht wieder mit Verbindung.'
+      : `Sie üben ${tage}. Ändern geht wieder mit Verbindung.`;
+  }
+  // Ohne Umbruch nach dem Strich: nicht „3-“ am Ende der Zeile, „mal“ in der nächsten.
+  const mal = empfohlen === 1 ? 'einmal' : `${empfohlen}-\u2060mal`;
+  const empfehlung = empfohlen === null ? '' : ` Empfohlen: ${mal} pro Woche.`;
+  return anzahl === 0
+    ? `Wählen Sie die Tage, an denen Sie üben möchten.${empfehlung}`
+    : `Sie üben ${tage}.${empfehlung} Die Tage sehen nur Sie.`;
+}
+
 /** „Mo, Mi, Fr" */
 export function tageText(wochentage: number[]): string {
   return WOCHENTAGE.filter((w) => wochentage.includes(w.nummer))
