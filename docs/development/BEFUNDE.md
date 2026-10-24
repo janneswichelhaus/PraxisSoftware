@@ -632,3 +632,15 @@ Marke vorsieht.
 
 **Beobachtung.** Der Knopf „Erneut versuchen“ im `ErrorState` ist kompakt, also 44 hoch; auf der Plattform sind Knöpfe 48 (PLATTFORM.md, „Ziele ≥ 44 px“; Handoff 2026-10-24, Abschnitt 6). Das gilt für jede Seite mit Ladefehler, nicht nur für die Übungen. **Erwartet.** Unter `.plattform-schrift` die normale Größe (48), in der Praxis-App bleibt der kompakte Knopf; Prüfung in `plattform-barrierefreiheit.spec.ts`.
 
+### BEF-217 — Übungen: Bühne und Marken brechen bei 188 px und „Sehr groß“ zugleich mitten im Wort
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Übungen (Fenster „Übung zum Nachlesen“, Durchführung) |
+| Quelle  | Selbstsichtung DRP-EPIC-009, Prüfseite `plattform-uebungen.html` bei 188 px mit „Sehr groß“ |
+| Status  | offen (Vorschlag) |
+| Berührt | `Buehne` (`src/components/ui/Buehne.tsx`), `Dosierungsmarken` (`src/features/platform/Dosierungsmarken.tsx`) |
+
+**Beobachtung.** Einzeln (188 px oder „Sehr groß“) bricht kein Wort ohne Strich. Beides zugleich lässt für den Namen in der Bühne etwa 118 px: „heranziehen“ (elf Buchstaben, unter der Trenngrenze von ANN-707) bricht als „heranzie|hen“, die Marke „3 Durchgänge“ als „Durchgän|ge“. **Erwartet.** Entscheiden, ob die Kombination zu den Prüfpunkten gehört; wenn ja, dort die Trenngrenze senken oder Titel und Marken kleiner setzen.
+

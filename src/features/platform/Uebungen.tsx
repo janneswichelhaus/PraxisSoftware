@@ -689,12 +689,17 @@ function Fensterinhalt({
   return (
     <div className="plattform-schrift flex min-h-0 flex-1 flex-col">
       {/* Eine Zeile wie im Handoff, auch bei „Sehr groß“; erst unter 23rem
-          bricht „Schließen“ unter die Zählung. */}
+          rückt „Schließen“ unter die Zählung. */}
       <div className="border-line flex min-h-16 shrink-0 items-center justify-between gap-x-3 border-b py-2 pr-2 pl-5 max-[23rem]:flex-wrap max-[23rem]:pl-3">
-        <p className="text-ink-muted min-w-0">
-          Übung {nummer} von {anzahl}
-        </p>
-        <Button type="button" variant="quiet" onClick={onSchliessen}>
+        <p className="text-ink-muted min-w-0">{`Übung\u00a0${nummer} von\u00a0${anzahl}`}</p>
+        {/* Der Knopf schrumpft nie - sonst bräche „Schließen“ mitten im Wort;
+            bei „Sehr groß“ bricht die Zählung an ihrem Leerzeichen. */}
+        <Button
+          type="button"
+          variant="quiet"
+          className="shrink-0 max-[23rem]:px-2"
+          onClick={onSchliessen}
+        >
           <span className="inline-flex items-center gap-2">
             Schließen
             <svg
