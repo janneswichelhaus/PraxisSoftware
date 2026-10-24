@@ -281,6 +281,21 @@
   --text-abschnitt--line-height: 1.25;
   --text-abschnitt--letter-spacing: -0.01em;
   --text-abschnitt--font-weight: 700;
+  /* Die Hauptzahl der Bühne (Handoff 2026-10-24, Abschnitt 2): wie oft oder
+     wie lange je Durchgang, aus Armlänge lesbar - 48, am Rechner 56, unter
+     23rem 36. Ziffern gleich breit über `tabular-nums` am Element. */
+  --text-hauptzahl: 3rem;
+  --text-hauptzahl--line-height: 1;
+  --text-hauptzahl--letter-spacing: -0.02em;
+  --text-hauptzahl--font-weight: 800;
+  --text-hauptzahl-rechner: 3.5rem;
+  --text-hauptzahl-rechner--line-height: 1;
+  --text-hauptzahl-rechner--letter-spacing: -0.02em;
+  --text-hauptzahl-rechner--font-weight: 800;
+  --text-hauptzahl-schmal: 2.25rem;
+  --text-hauptzahl-schmal--line-height: 1;
+  --text-hauptzahl-schmal--letter-spacing: -0.02em;
+  --text-hauptzahl-schmal--font-weight: 800;
   /* Initialen im Personenbild der Karten (56 px, Handoff 2026-10-22,
      Abschnitt 3): 20/700 in rem, damit Bild und Schrift mitwachsen. */
   --text-initialen: 1.25rem;
@@ -531,6 +546,18 @@ html:has(.reiterleiste[data-stufe='2']) {
      hineinpassen - Reihenfolge und Anker bleiben (ANN-258). */
   .plattform-schrift .skala {
     grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
+  }
+  /* ANN-707 (Jannes, 24.10.2026): Bei 200 % passen „Treppengeländer“ oder
+     „Totalendoprothese“ in keiner zulässigen Größe in die Zeile, und ohne
+     Trennstelle bräche das Wort ohne Strich (BEF-196). Plan- und
+     Übungsnamen und die Etiketten der Skala tragen `trennen-schmal` und
+     trennen hier an der Silbe mit Strich wie der Fließtext - ab zwölf
+     Buchstaben, je Teil mindestens fünf. Eine Ausnahme zu DR-114 nur für
+     diese Breite; Namen von Personen, Anschriften, Knöpfe und Reiter tragen
+     die Klasse nie. */
+  .plattform-schrift .trennen-schmal {
+    hyphens: auto;
+    hyphenate-limit-chars: 12 5 5;
   }
 }
 /* Bewusst außerhalb der Schichten: Die feste Knopfhöhe `h-12` soll im

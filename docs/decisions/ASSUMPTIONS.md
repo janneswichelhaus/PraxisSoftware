@@ -7324,3 +7324,15 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Datenschutzprüfu
 **Anker.** `app.journal_patient_file_deletion` in `supabase/migrations/20261224100000_bef_170_dateien_ins_loeschjournal.sql`.
 
 **Änderungspfad.** Spalte für den Anlass (Lauf oder von Hand) in Journal und `list_deletion_runs` · Aufwand `mittel`.
+
+### ANN-707 — Plattform: Plan- und Übungsnamen trennen unter 23rem an der Silbe
+
+Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 4) · erledigt · Wiedervorlage: —
+
+**Annahme.** Unter 23rem (200 % am Telefon) trennen Plan- und Übungsnamen und die Etiketten der Skala lange Wörter an der Silbe mit Strich (ab zwölf Buchstaben, je Teil fünf). Namen von Personen, Anschriften, Knöpfe und Reiter bleiben ungetrennt; darüber gilt DR-114 unverändert.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0, Frage 4: „Treppengeländer“ passt dort in keiner zulässigen Größe in die Zeile und bräche sonst ohne Strich (BEF-196).
+
+**Anker.** `.trennen-schmal` in `src/index.css`.
+
+**Änderungspfad.** Regel dort streichen oder auf weitere Rollen ausdehnen · Aufwand `klein`.
