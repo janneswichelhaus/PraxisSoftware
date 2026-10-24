@@ -28,6 +28,9 @@ export const ANMELDEN_TITEL = `Anmelden – ${MARKE}`;
 /** Die Einladung zur Plattform (DR-115): Wer sie öffnet, meldet sich noch nicht an. */
 export const EINLADUNG_TITEL = `Einladung – ${MARKE}`;
 
+/** Die Sperre der Plattform (Handoff 2026-10-22, Abschnitt 5.4); die Praxis bleibt bei „Anmelden“. */
+export const GESPERRT_TITEL = `Gesperrt – ${MARKE}`;
+
 /** Die festen Namen, aus denen ein Titel bestehen darf. */
 export const TAB_NAMEN = [
   'Übersicht',
@@ -50,6 +53,7 @@ export const TAB_NAMEN = [
   'Anmelden',
   // Die Plattform der Patient:innen (DR-115), mit den Wörtern ihrer Seiten.
   'Einladung',
+  'Gesperrt',
   'Termine',
   'Übungen',
   'Check-in',

@@ -15,7 +15,10 @@ import '@/index.css';
  * Die Daten stehen vorab im Abfragespeicher; Knöpfe, die den Dienst bräuchten,
  * schlagen hier fehl - geprüft wird die Seite, nicht der Dienst.
  */
-const seite = new URLSearchParams(window.location.search).get('seite') ?? 'einrichten';
+const suche = new URLSearchParams(window.location.search);
+const seite = suche.get('seite') ?? 'einrichten';
+/** `?ohne-spaeter` zeigt die Einrichtung wie in Produktion, ohne den Knopf der Test-Umgebung. */
+const ohneSpaeter = suche.has('ohne-spaeter');
 
 const client = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
@@ -43,7 +46,7 @@ createRoot(document.getElementById('wurzel')!).render(
         stand={{ passkeys: seite === 'pin' ? 1 : 0, pin: false }}
         onFertig={() => undefined}
         onAbmelden={() => undefined}
-        onSpaeter={() => undefined}
+        onSpaeter={ohneSpaeter ? undefined : () => undefined}
       />
     )}
   </QueryClientProvider>,

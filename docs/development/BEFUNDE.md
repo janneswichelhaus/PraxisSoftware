@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-10-21
+Stand: 2026-10-24
 
 ## Zweck
 
@@ -549,3 +549,15 @@ Marke vorsieht.
 | Berührt | `ProfilFormular.tsx`, Dateiablage der Akte |
 
 **Beobachtung.** Das Anlegen verlangt die Einwilligung „auf Papier unterschrieben“; den Wortlaut zeigt das Formular seit dem Review, ein Foto des Blatts lässt sich aber nicht ablegen wie beim Anmeldebogen. Der Nachweis nach Art. 7 Abs. 1 liegt im Ordner. **Erwartet.** „Unterschriebenes Blatt fotografieren“ am Kästchen, abgelegt als Dokument der Akte bzw. des Verhältnisses mit der Frist der Ernährungsberatung.
+
+### BEF-194 — Ein Lookbehind im Fragebogen lässt ältere Safari das Modul nicht laden
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Fragebogen; Praxis, Erhebungen |
+| Quelle  | Design-Review 1c (PR #295), beim Beheben desselben Fehlers in `begriffe.ts` |
+| Status  | offen (Vorschlag) |
+| Berührt | `src/features/assessments/darstellung.ts` (Zeile 27, `split(/\s+\|(?<=-)(?=\p{L})/u)`) |
+
+**Beobachtung.** Ein regulärer Ausdruck mit Lookbehind ist in Safari vor iOS 16.4 ein Syntaxfehler; das ganze Modul lädt dann nicht. `darstellung.ts` steht im Fragebogen der Plattform (`trennung.test.ts` lässt es zu) und in der Praxis. Schritt 1d hat dasselbe in `Dialogfenster.tsx` und `Einstieg.tsx` behoben, 1c in `begriffe.ts`. **Erwartet.** Trennen ohne Lookbehind (etwa erst an Leerraum, dann je Teil nach `-` mit angehängtem Bindestrich) und ein Test, der Lookbehinds in ausgeliefertem Code unter `src/` findet.

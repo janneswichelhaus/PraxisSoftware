@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import type { Session } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Vollseite } from '@/app/Vollseite';
@@ -17,6 +18,7 @@ import {
   type Sperrstand,
 } from './sperrstand';
 import { SperrsicherungKontext, type Sicherung, type Sperrsicherung } from './sperrsicherung';
+import { PlattformSperrseite } from './PlattformSperrseite';
 import { Sperrseite } from './Sperrseite';
 import { SperreOhneNetz } from './SperreOhneNetz';
 import { freigabeOhneNetzMoeglich } from '../freigabeOhneNetz';
@@ -96,6 +98,20 @@ function mitFrist(sicherung: Sicherung, ms: number): Promise<boolean> {
       },
     );
   });
+}
+
+/**
+ * Ein Konto, das der Zugangsdienst für die Plattform angelegt hat: Es trägt
+ * die Marke `platform_account` beim Anmeldedienst (ANN-189). Sie steht in der
+ * Sitzung und ist deshalb auch gesperrt zu lesen, ohne Abfrage und ohne
+ * Merker auf dem Gerät (ANN-687). Praxiskonten tragen sie nie - auch nicht in
+ * der Einsicht unter `/p`.
+ */
+function istPlattformkonto(session: Session | null): boolean {
+  // Optional: Eine Sitzung aus einem Test oder einem alten Speicher kann ohne
+  // Metadaten kommen; dann ist es kein Plattformkonto.
+  const metadaten = session?.user.app_metadata as Record<string, unknown> | undefined;
+  return metadaten?.platform_account === true;
 }
 
 export function Sitzungssperre({
@@ -437,12 +453,24 @@ export function Sitzungssperre({
           })
         : null}
       {phase === 'gesperrt' || phase === 'halten' ? (
-        <Sperrseite
-          grund={grund}
-          haelt={phase === 'halten'}
-          onEntsperrt={() => void pruefen()}
-          onAbmelden={() => void signOut()}
-        />
+        // Die Plattform hat ihre eigene Fassung (Handoff 2026-10-22, 5.2).
+        // Gesperrt gibt es keinen Kontext; es zählt die Marke des Kontos in
+        // der Sitzung (ANN-687).
+        istPlattformkonto(session) ? (
+          <PlattformSperrseite
+            haelt={phase === 'halten'}
+            verbrauchtAnfangs={grund === 'verbraucht'}
+            onEntsperrt={() => void pruefen()}
+            onAbmelden={() => void signOut()}
+          />
+        ) : (
+          <Sperrseite
+            grund={grund}
+            haelt={phase === 'halten'}
+            onEntsperrt={() => void pruefen()}
+            onAbmelden={() => void signOut()}
+          />
+        )
       ) : null}
       {steht ? (
         // Immer dasselbe Element an derselben Stelle: Verbergen hängt die

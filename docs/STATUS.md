@@ -8,13 +8,12 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 Design-Review Lauf 1, Schritt 1d Einstieg (23./24.10., Branch `claude/lucid-keller-zholly`, DRP-015
 bis -019): geführter Ablauf mit „Später“, Einwilligungen als Wahl (ANN-693), ein Schalter für
 Mitteilungen (ANN-694), „Alles bereit“ mit der ersten Aufgabe aus `hauptsache.ts` (ANN-692, -695,
--696).
+-696); „Willkommen“ liest `eingerichtet=1` aus 1c.
 
+Gemergt am 24.10.: Schritt 1c Türen (#295, DRP-010 bis -014, ANN-684 bis -689), CI-Fix #296.
 Gemergt am 22. und 23.10.: Design-Review Schritt 0 (#288), Handoff und Bericht (#289), Schritt 1a
 (#290, ANN-678), 1b Gerüst (#293, ANN-679 bis -683), Daten N1/N2 (#292, ANN-690, -691);
 BEF-179/-180 (#287).
-Gemergt am 20. und 21.10.: BEF-178 (#286), BEF-176 (#284), BEF-192 und -193 (#283), BEF-188 (#282),
-BEF-175 (#281), BEF-190 und -191 (#280), BEF-189 (#279).
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
@@ -34,8 +33,8 @@ Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Ru
 
 ## Danach
 
-Design-Review Schritt 1c Türen (läuft parallel), dann 1e Übersicht (Handoff, Abschnitt 9). BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederherstellung;
-Pfad A).
+Design-Review Schritt 1e Übersicht (Handoff, Abschnitt 9). BEF-170 (Akte: einzeln gelöschte Dateien
+ins Löschjournal, Test mit Wiederherstellung; Pfad A).
 
 ## Bei Jannes
 

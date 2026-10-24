@@ -70,10 +70,10 @@ describe('LoginPage: Anmeldung per Passkey (ADR-025 Fassung 2)', () => {
     expect(screen.queryByLabelText('Kennwort')).toBeNull();
     expect(screen.queryByLabelText('E-Mail-Adresse')).toBeNull();
     expect(screen.queryByText(/Kennwort vergessen/)).toBeNull();
-    expect(screen.getByText(/Die Praxis gibt Ihnen eine neue Einladung/)).toBeInTheDocument();
+    expect(screen.getByText(/Wenden Sie sich an die Praxis/)).toBeInTheDocument();
     // Die Hilfe am Rechner auf Abruf, nicht als dritter grauer Satz (L8).
     expect(screen.getByText('Am Rechner anmelden').closest('summary')).not.toBeNull();
-    expect(screen.getByText(/„anderes Gerät“ wählen/)).not.toBeVisible();
+    expect(screen.getByText(/wählen Sie Ihr Telefon/)).not.toBeVisible();
   });
 
   it('meldet mit dem Passkey an', async () => {
@@ -119,7 +119,7 @@ describe('LoginPage: Anmeldung per Passkey (ADR-025 Fassung 2)', () => {
     render(<LoginPage testzugang={false} />);
     const titel = screen.getByRole('heading', { level: 1, name: 'Anmelden' });
     expect(screen.getByRole('main')).toContainElement(titel);
-    expect(titel.className).toContain('text-h3');
+    expect(titel.className).toContain('text-plattform-titel');
   });
 
   it('sagt nach einem Sitzungsende von außen, dass Eingaben nicht erhalten sind', () => {
@@ -129,7 +129,7 @@ describe('LoginPage: Anmeldung per Passkey (ADR-025 Fassung 2)', () => {
       </SitzungsendeContext.Provider>,
     );
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Ihre Sitzung wurde beendet. Nicht gespeicherte Eingaben sind nicht erhalten.',
+      'Sie wurden abgemeldet. Nicht gespeicherte Eingaben sind nicht erhalten.',
     );
   });
 
@@ -139,7 +139,7 @@ describe('LoginPage: Anmeldung per Passkey (ADR-025 Fassung 2)', () => {
         <LoginPage testzugang={false} />
       </SitzungsendeContext.Provider>,
     );
-    expect(screen.queryByText(/Sitzung wurde beendet/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Sie wurden abgemeldet/)).not.toBeInTheDocument();
   });
 
   it('ist für Vorlesesoftware sauber - mit und ohne Testzugang', async () => {
@@ -165,15 +165,10 @@ describe('LoginPage: Testzugang mit Kennwort, nur außerhalb der Produktion (Pun
     expect(screen.getByLabelText('E-Mail-Adresse')).not.toBeVisible();
     await user.click(kopf);
     expect(screen.getByLabelText('E-Mail-Adresse')).toBeVisible();
-    // Beide Köpfe mittig über den Baustein, nicht aus der Seite (L8); das
-    // Formular linksbündig wie die PIN auf der Sperrseite.
+    // Linksbündig wie jede Tür (Handoff 2026-10-22, DR-107): kein Kopf mittig.
     for (const titel of ['Testkonten', 'Am Rechner anmelden']) {
-      expect(screen.getByText(titel).className.split(' ')).toContain('justify-center');
+      expect(screen.getByText(titel).className.split(' ')).not.toContain('justify-center');
     }
-    expect(screen.getByRole('form', { name: 'Testzugang' })).toHaveClass('text-left');
-    expect(
-      screen.getByText(/Testkonten melden sich mit Kennwort an/).closest('.text-left'),
-    ).toBeNull();
   });
 
   it('stellt beschriftete Felder mit passenden Autocomplete-Werten bereit', () => {

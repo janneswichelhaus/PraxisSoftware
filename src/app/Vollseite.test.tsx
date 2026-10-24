@@ -19,23 +19,46 @@ describe('Vollseite', () => {
     const hauptbereich = screen.getByRole('main');
     expect(hauptbereich).toContainElement(screen.getByRole('img', { name: 'Own Motion' }));
     const titel = screen.getByRole('heading', { level: 1, name: 'Anmelden' });
-    // Token statt 24 px/600 ohne Namen; in der Hauptfarbe wie jeder Seitentitel.
-    expect(titel.className).toContain('text-h3');
-    expect(titel.className).toContain('font-bold');
+    // Die Stufe der Plattform (Handoff 2026-10-22, Abschnitt 2), in der
+    // Hauptfarbe wie jeder Seitentitel.
+    expect(titel.className).toContain('text-plattform-titel');
     expect(titel.className).toContain('text-accent');
-    expect(titel.className).not.toMatch(/tracking-\[|text-2xl|font-semibold/);
+    expect(titel.className).not.toMatch(/text-h3|text-2xl|font-semibold/);
     expect(screen.getByText('Ein Satz dazu.')).toBeInTheDocument();
     expect(screen.getByText('Ein Hinweis.')).toBeInTheDocument();
   });
 
-  it('steht für alle Türseiten gleich: zentriert, höchstens max-w-sm', () => {
+  it('steht für alle Türseiten gleich: oben und linksbündig, höchstens max-w-sm (DR-107)', () => {
     render(
-      <Vollseite titel="Zugang gesperrt">
+      <Vollseite titel="Zugang gesperrt" kleingedrucktes="Ein Hinweis.">
         <p>Inhalt</p>
       </Vollseite>,
     );
-    expect(screen.getByRole('main').className).toContain('max-w-sm');
-    expect(screen.getByRole('main').className).toContain('justify-center');
+    const hauptbereich = screen.getByRole('main');
+    expect(hauptbereich.className).toContain('max-w-sm');
+    expect(hauptbereich.className).not.toMatch(/justify-center|text-center/);
+    // Das Kleingedruckte steht am Ende der Seite.
+    expect(screen.getByText('Ein Hinweis.').className).toContain('mt-auto');
+  });
+
+  it('zeigt einen Zustand mit Zeichen im Kreis über dem Titel, nur als Schmuck', () => {
+    const { container } = render(
+      <Vollseite titel="Diese Einladung lässt sich nicht verwenden" zeichen={<path d="M3 3h18" />}>
+        <p>Inhalt</p>
+      </Vollseite>,
+    );
+    const kreis = container.querySelector('span[aria-hidden="true"]');
+    expect(kreis?.className).toContain('size-16');
+    expect(kreis?.querySelector('svg')).not.toBeNull();
+  });
+
+  it('grüßt auf der Einladung größer (`gross`)', () => {
+    render(
+      <Vollseite titel="Own Motion lädt Sie ein" gross>
+        <p>Inhalt</p>
+      </Vollseite>,
+    );
+    expect(screen.getByRole('heading', { level: 1 }).className).toContain('text-gruss');
   });
 
   it('kommt im Ladezustand ohne Überschrift aus', () => {

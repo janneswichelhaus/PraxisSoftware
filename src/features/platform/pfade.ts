@@ -4,6 +4,13 @@
  */
 export const PLATTFORM_PFAD = '/p';
 
+/**
+ * Wohin die Einladung nach „PIN speichern“ führt: Es gibt keine eigene
+ * Fertig-Seite, „Willkommen“ sagt einmal „Anmeldung eingerichtet“ (ANN-685,
+ * `useEinmaligeRueckmeldung('eingerichtet')`).
+ */
+export const NACH_DER_EINRICHTUNG = `${PLATTFORM_PFAD}?eingerichtet=1`;
+
 /** Der gewählte Bereich als Suchparameter, damit Links ihn mitnehmen (D6). */
 export function bereichParameter(suche: URLSearchParams): string {
   return new URLSearchParams(

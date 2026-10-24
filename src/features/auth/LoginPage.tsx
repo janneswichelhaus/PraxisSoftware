@@ -57,10 +57,7 @@ function KennwortTestzugang() {
   return (
     // Zugeklappt hinter „Testkonten" (Jannes, 2026-10-11): Die Seite zeigt so
     // schon das Bild des Betriebs, in dem es diesen Weg nicht gibt.
-    // Kopf und Satz mittig wie die Seite (Sichtung 13.10.2026, L8); das
-    // Formular steht linksbündig wie die PIN auf der Sperrseite - eine
-    // Beschriftung gehört an die Kante ihres Felds.
-    <Disclosure mittig summary="Testkonten">
+    <Disclosure summary="Testkonten">
       <Kleingedrucktes className="mb-4">
         Nur in Entwicklung und Test-Umgebung: Testkonten melden sich mit Kennwort an. Im Betrieb
         gibt es diesen Weg nicht.
@@ -69,7 +66,7 @@ function KennwortTestzugang() {
         onSubmit={(event) => void handleSubmit(event)}
         noValidate
         aria-label="Testzugang"
-        className="flex flex-col gap-4 text-left"
+        className="flex flex-col gap-4"
       >
         {error ? (
           <div ref={fehlerkasten} tabIndex={-1}>
@@ -147,15 +144,14 @@ export function LoginPage({
 
   return (
     // Die Anmeldemaske ist die Haustür — hier steht die Marke selbst, nicht
-    // ihr Name als Text (`Vollseite`, MARKE-001).
-    // Ein Satz zum Lesen statt drei grauer (Sichtung 13.10.2026, L8): Wer
-    // den Passkey verloren hat, liest den Weg in Tinte und 16 px; die Hilfe am
-    // Rechner steht auf Abruf; wer die Seite nutzen darf, sagt das
-    // Kleingedruckte am Fuß. Alles mittig wie Marke und Titel.
+    // ihr Name als Text (`Vollseite`, MARKE-001). Linksbündig wie jede Tür
+    // (Handoff 2026-10-22, Abschnitt 5.2; DR-107): Wer den Passkey verloren
+    // hat, liest den Weg in Tinte; die Hilfe am Rechner steht auf Abruf; wer
+    // die Seite nutzen darf, sagt das Kleingedruckte am Fuß.
     <Vollseite
-      mittig
       titel="Anmelden"
-      kleingedrucktes="Nur für Mitarbeitende und Patient:innen der Praxis, jede Person mit eigenem Konto."
+      einleitung="Mit Ihrem Gesicht, Ihrem Finger oder der Displaysperre."
+      kleingedrucktes="Nur für Mitarbeitende und Patient:innen der Praxis, jede Person mit eigenem Zugang."
     >
       <div className="flex flex-col gap-4">
         {/* Kein Grund, kein Name (BEF-047): Was eine Sperre oder ein
@@ -179,15 +175,19 @@ export function LoginPage({
           <Statusmeldung ton="warnung">{PASSKEY_SAETZE.nichtUnterstuetzt}</Statusmeldung>
         )}
 
+        {/* Allgemeiner als der Entwurf („… gibt Ihnen eine neue Einladung“):
+            Hier meldet sich auch das Team an. */}
         <p className="text-ink text-base">
-          Passkey verloren oder neues Telefon? Die Praxis gibt Ihnen eine neue Einladung.
+          <strong className="font-semibold">Passkey verloren?</strong> Wenden Sie sich an die
+          Praxis.
         </p>
       </div>
 
       <div className="mt-6">
-        <Disclosure mittig summary="Am Rechner anmelden">
+        <Disclosure summary="Am Rechner anmelden">
           <p className="text-ink text-base">
-            Im Passkey-Fenster „anderes Gerät“ wählen und den Code mit dem Telefon scannen.
+            Klicken Sie am Rechner auf „Mit Passkey anmelden“ und wählen Sie Ihr Telefon. Der
+            Rechner zeigt einen Code; scannen Sie ihn mit der Kamera dieses Telefons.
           </p>
         </Disclosure>
         {testzugang ? <KennwortTestzugang /> : null}

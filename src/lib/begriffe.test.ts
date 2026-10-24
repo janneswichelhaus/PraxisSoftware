@@ -93,6 +93,25 @@ describe('Begriffe', () => {
     expect(treffer).toEqual([false, false, false, true, true, true, true]);
   });
 
+  it('lässt auf der Plattform „kein Kennwort“ stehen, sonst kein Kennwort (Handoff 2026-10-22)', () => {
+    const kennwort = ABGELOESTE_BEGRIFFE.find((regel) => regel.statt === 'Passkey bzw. PIN')!;
+    const proben = [
+      'Ein Kennwort brauchen Sie nicht.',
+      'Diese Anwendung kennt kein Kennwort.',
+      'Ihr Kennwort ist abgelaufen.',
+      'Kennwort vergessen?',
+    ];
+    expect(proben.map((satz) => kennwort.muster.test(satz))).toEqual([false, false, true, true]);
+  });
+
+  it('kommt ohne Lookbehind aus: ältere Safari laden das Modul sonst nicht', () => {
+    // `begriffe.ts` geht mit der Anwendung aus (BEREICHE, BEGRIFFE). Ein
+    // Lookbehind in einem der Muster ist dort ein Syntaxfehler vor iOS 16.4.
+    for (const regel of ABGELOESTE_BEGRIFFE) {
+      expect(regel.muster.source).not.toMatch(/\(\?<[=!]/);
+    }
+  });
+
   it('nennt für jedes abgelöste Wort, was stattdessen gilt, und woher', () => {
     for (const regel of ABGELOESTE_BEGRIFFE) {
       expect(regel.statt.length).toBeGreaterThan(0);

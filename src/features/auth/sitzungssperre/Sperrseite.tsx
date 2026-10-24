@@ -155,7 +155,6 @@ export function Sperrseite({
 
   return (
     <Vollseite
-      mittig
       titel="Gesperrt"
       einleitung={`${anlass} Mit Passkey oder PIN geht es an derselben Stelle weiter.`}
       kleingedrucktes={
@@ -172,11 +171,7 @@ export function Sperrseite({
 
       <div className="flex flex-col gap-3">
         {pinDa ? (
-          <form
-            onSubmit={(event) => void mitPin(event)}
-            noValidate
-            className="flex flex-col gap-4 text-left"
-          >
+          <form onSubmit={(event) => void mitPin(event)} noValidate className="flex flex-col gap-4">
             <Field
               label="PIN"
               hint="Die PIN der Anwendung, nicht die des Telefons."

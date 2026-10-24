@@ -7053,7 +7053,7 @@ Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritt 1c (Türs
 
 **Begründung.** DR-120; Handoff 2026-10-22, Festlegungen aus dem Entwurf. In zwei Reihen ist die Leiste bis zu 164 px hoch (gemessen bei „Sehr groß“, 375 px); über der Tastatur bliebe dem Feld kaum Platz.
 
-**Anker.** Regel `.reiterleiste` in `src/index.css`, gesetzt an der `Reiterleiste` in `src/features/platform/Navigation.tsx`.
+**Anker.** Regel `.reiterleiste` in `src/index.css`, gesetzt an der `Reiterleiste` in `src/features/platform/Navigation.tsx`; auf der Einladung `tippt` in `EinladungPage.tsx` (Schritt 1c): Die Schritte bleiben nach dem ersten Fokus im Feld weg, sonst rückte „Weiter“ beim Antippen unter dem Finger weg.
 
 **Änderungspfad.** Weitere Teile über dieselbe Regel zurücktreten lassen oder die Leiste stehen lassen · Aufwand `klein`.
 
@@ -7061,11 +7061,11 @@ Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritt 1c (Türs
 
 Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritte 1c und 1d
 
-**Annahme.** Unter 23rem Fensterbreite (200 % Zoom am Telefon) hat die Plattform keine Reiterleiste; im Kopf steht der Zweitknopf „Menü“ und öffnet unter dem Kopf die vier Ziele und „Ich“ - Esc und ein Tipp daneben schließen, der Fokus geht zurück. Kopf und Inhalt haben 12 px Rand, der Kopf ist 60 statt 72 hoch (Zeichnung „Reiterleiste bei 200 %“). Die Grenze ist eine Media Query in rem: Sie greift beim Zoom, nicht bei „Sehr groß“. Fotos auf Türseiten und im Einstieg entfallen, der Fuß geführter Abläufe steht am Ende des Inhalts (1c, 1d).
+**Annahme.** Unter 23rem Fensterbreite (200 % Zoom am Telefon) hat die Plattform keine Reiterleiste; im Kopf steht der Zweitknopf „Menü“ und öffnet unter dem Kopf die vier Ziele und „Ich“ - Esc und ein Tipp daneben schließen, der Fokus geht zurück. Kopf und Inhalt haben 12 px Rand, der Kopf ist 60 statt 72 hoch (Zeichnung „Reiterleiste bei 200 %“). Die Grenze ist eine Media Query in rem: Sie greift beim Zoom, nicht bei „Sehr groß“. Fotos auf Türseiten und im Einstieg entfallen, der Fuß geführter Abläufe steht am Ende des Inhalts (1c, 1d). Die gezeichnete Abfrage der Einrichtung entfällt auch unter 48rem Höhe (Jannes 24.10.2026).
 
 **Begründung.** DR-112; Handoff 2026-10-22, Abschnitte 0, 3 und 4. Bei 188 px passen vier Ziele nicht nebeneinander, und zwei Reihen nähmen ein Drittel der Höhe.
 
-**Anker.** `Menue` in `src/features/platform/Navigation.tsx`; Rand in `geruestSpalte` (`geruestbreite.ts`).
+**Anker.** `Menue` in `src/features/platform/Navigation.tsx`; Rand in `geruestSpalte` (`geruestbreite.ts`); `gezeichnete-abfrage` in `AnmeldungEinrichten.tsx`.
 
 **Änderungspfad.** Andere Grenze an `max-[23rem]:`, ohne Menü die Leiste in zwei Reihen · Aufwand `klein`.
 
@@ -7104,6 +7104,78 @@ Praxisprozess · offen · 2026-10-22 · — · — · Wiedervorlage: —
 **Anker.** `app.platform_practice_phone` in `20261223230000_drp_n1_n2_plattform_name_rufnummer.sql`.
 
 **Änderungspfad.** Eigene Nummer für die Plattform: Spalte mit Pflege in den Praxiseinstellungen, gelesen in dieser einen Funktion · Aufwand `mittel`.
+
+### ANN-684 — Türseiten: oben und linksbündig, für Plattform und Praxis in derselben Hülle
+
+Praxisprozess · entschieden (Jannes) · 2026-10-24 · Jannes (PR #295, Frage 2) · — · Wiedervorlage: —
+
+**Annahme.** Jede Seite außerhalb des Rahmens (`Vollseite`: Anmeldung, Einladung, Einrichtung, Sperre, Fehler- und Ladezustände) steht oben statt senkrecht zentriert und linksbündig: Wortmarke 40 oben links, Titel in `text-plattform-titel` (Einladung `text-gruss`), bei einem Zustand ein Zeichen im Kreis 64, das Kleingedruckte am Ende. Das gilt auch dort, wo Beschäftigte die Seite sehen (gemeinsame Anmeldung, Sperre der Praxis); deren Wortlaute bleiben.
+
+**Begründung.** Handoff 2026-10-22, Abschnitt 5.2 (DR-107) löst die mittige Anmeldung vom 11.10. ab. Zwei Hüllen ließen Marke und Titel beim Wechsel von der Anmeldung zur Sperre wieder springen (UXR-002); oben stehend bleibt der Titel bei offener Tastatur über dem Feld.
+
+**Anker.** `Vollseite` in `src/app/Vollseite.tsx`.
+
+**Änderungspfad.** Für die Praxis wieder mittig: eine Prop an `Vollseite`, gesetzt in `LoginPage` und `Sperrseite` · Aufwand `klein`.
+
+### ANN-685 — Einrichtung ohne eigene Fertig-Seite: „Willkommen“ sagt es einmal
+
+Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
+
+**Annahme.** Nach „PIN speichern“ (oder dem Passkey, wenn die PIN schon besteht) führt die Einladung direkt zur Plattform, mit `eingerichtet=1` an der Adresse. Der Einstieg zeigt daraufhin auf „Willkommen“ einmal „Anmeldung eingerichtet“ und nimmt den Parameter aus der Adresse. Eine Seite „Fertig“ dazwischen gibt es nicht. Den Leser baut Schritt 1d (ANN-695).
+
+**Begründung.** Handoff 2026-10-22, Abschnitt 0 (Festlegungen aus dem Entwurf) und 5.2: Eine Fertig-Seite kostet einen Tipp und sagt nichts, was „Willkommen“ nicht auch sagen kann. Die Bestätigung gilt wie jede einmalige Rückmeldung genau einmal (DR-160).
+
+**Anker.** `NACH_DER_EINRICHTUNG` in `src/features/platform/pfade.ts`, gelesen von `useEinmaligeRueckmeldung('eingerichtet')` im Einstieg (Schritt 1d).
+
+**Änderungspfad.** Eine Fertig-Seite in `AnmeldungEinrichten` vor `onFertig` · Aufwand `klein`.
+
+### ANN-686 — Einrichtung abbrechen: das ✕ fragt nach, statt abzumelden
+
+Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
+
+**Annahme.** In der Einrichtung von Passkey und PIN meldet das ✕ (und Esc) nicht sofort ab. Es öffnet ein Fenster „Einrichtung abbrechen?“ mit dem Satz, was danach gilt (ohne Passkey nur mit neuer Einladung, mit Passkey die PIN beim nächsten Anmelden), und bietet „Weiter einrichten“ (Hauptknopf) und „Abbrechen und abmelden“; Esc und ein Tipp daneben richten weiter ein. Ohne Passkey-Browser steht „Abmelden“ als einziger Knopf.
+
+**Begründung.** Die Einladung ist nach dem E-Mail-Schritt verbraucht (`redeem_platform_invitation` vor der Einmal-Anmeldung, Zweitreview POR-003). Ein versehentlicher Tipp aufs ✕ kostete sonst eine neue Einladung. Der geführte Ablauf (ANN-572) verlangt ein ✕, der Handoff nennt dafür kein Verhalten; das Fenster folgt der Rückfrage vor dem Weggehen (ANN-566).
+
+**Anker.** `abbrechen` in `src/features/auth/einrichtung/AnmeldungEinrichten.tsx`.
+
+**Änderungspfad.** Ohne Rückfrage: `onSchliessen={onAbmelden}` · Aufwand `klein`.
+
+### ANN-687 — Sperre: die Fassung der Plattform nach der Marke des Kontos in der Sitzung
+
+Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Sitzungssperre zeigt die Sperrseite der Plattform („Zum Schutz gesperrt“) jedem Konto, das die Marke `platform_account` des Zugangsdienstes trägt (`app_metadata` der Sitzung, ANN-189), sonst die der Praxis - auch einem Praxiskonto in der Einsicht unter `/p`. Die Seiten-Adresse zählt nicht: Die Anwendung startet auf `/` und sperrt, bevor die Plattform nach `/p` leitet. Die Plattform-Fassung zeigt keine Angaben zur Person, auch nicht den eigenen Namen; die PIN hat eine eigene Seite mit „Zurück“. Die Plattformkonten im Seed tragen die Marke wie echte.
+
+**Begründung.** Handoff 2026-10-22, Abschnitt 5.2 („Plattform-Fassung für Plattformkonten“). Gesperrt ist der Abfragespeicher geräumt (ADR-025 Punkt 3); die Marke steht in der Sitzung, die die Sperre ohnehin hält, und setzt allein der Dienst. Ein Merker auf dem Gerät entfällt. Zweitreview 1c: die erste Fassung nach der Adresse traf Kaltstart und Einsicht falsch.
+
+**Anker.** `istPlattformkonto` in `src/features/auth/sitzungssperre/Sitzungssperre.tsx`; Marke in `supabase/seed.sql`.
+
+**Änderungspfad.** Ein Plattformkonto ohne Marke (etwa nachträglich angelegt) bekommt sie beim Anmeldedienst nachgetragen, oder die Sperre fragt `app.is_platform_account` über den Sperrstand · Aufwand `mittel`.
+
+### ANN-688 — „Praxis anrufen“ auf den Türen: gesperrter Zugang ja, Lesefrist vorbei und ungültige Einladung nein
+
+Praxisprozess · entschieden (Jannes) · 2026-10-24 · Jannes (PR #295, Fragen 3 und 5) · — · Wiedervorlage: —
+
+**Annahme.** Ohne lesbaren Zugang zeigt die Plattform nur „Ich“ im Kopf (keine Reiterleiste, kein Menü, keine Rechnernavigation), die Markenfläche, Titel, Satz und „Zu „Ich““. Ist der Zugang gesperrt und hat die Praxis eine Nummer, steht „Praxis anrufen“ als Hauptknopf davor; nach der Lesefrist und auf einer ungültigen Einladung nicht.
+
+**Begründung.** Handoff 2026-10-22, Abschnitt 5.2; ANN-691. Vor der Anmeldung gibt es keinen Kontext mit Nummer, und eine Abfrage am Code gäbe ungültigen Codes eine andere Auskunft (ADR-023 Punkt 8).
+
+**Anker.** `OhneLesbarenZugang` in `PlattformApp.tsx`; `ohneZiele` in `Navigation.tsx`; Zustand `ungueltig` in `EinladungPage.tsx`.
+
+**Änderungspfad.** Anruf auch nach der Lesefrist: Bedingung `gesperrt` streichen; für die Einladung eine öffentliche Nummer ohne Code · Aufwand `klein` bzw. `mittel`.
+
+### ANN-689 — PIN-Felder der Einrichtung ohne Passwortmanager (ADR-025 vor dem Handoff)
+
+Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: —
+
+**Annahme.** Die Felder „PIN“ und „PIN noch einmal“ in der Einrichtung tragen `autocomplete="off"`, nicht `new-password`, wie der Handoff sie nennt. Sie bleiben groß und mittig wie ein Ziffernfeld (`inputmode="numeric"`).
+
+**Begründung.** ADR-025 Punkt 11: die PIN „nie auf dem Gerät“. `new-password` nach einer Adresse mit `autocomplete="username"` liest jeder Passwortmanager als neues Konto und bietet an, die PIN zur Adresse zu speichern. Der ADR (Rang 2) geht dem Handoff (Rang 3) vor (`PROJECT_PRINCIPLES.md` §21). Zweitreview 1c.
+
+**Anker.** `PinFestlegen` in `src/features/auth/einrichtung/PinFestlegen.tsx`; Test „bietet die PIN auch in der Einrichtung keinem Passwortmanager an“.
+
+**Änderungspfad.** `new-password` nur mit Änderung von ADR-025 Punkt 11 (Freigabe Jannes) · Aufwand `klein`.
 
 ### ANN-692 — Plattform: die erste Aufgabe an einer Stelle - Fragebogen, Check-in, Übungen für heute
 
@@ -7145,13 +7217,14 @@ Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datens
 
 Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
-**Annahme.** Nach „PIN speichern“ folgt keine eigene Seite: Die Einrichtung führt mit `?eingerichtet=1` auf `/p` (Schritt 1c), und „Willkommen“ zeigt oben einmal „Anmeldung eingerichtet“ - bis zur nächsten Seite, nicht nach „Zurück“ oder Neuladen. Ist der Einstieg übersprungen oder beendet, liest die Übersicht den Parameter nicht.
+**Annahme.** Nach „PIN speichern“ folgt keine eigene Seite: Die Einrichtung führt mit `?eingerichtet=1` auf `/p` (Schritt 1c, ANN-685), und „Willkommen“ zeigt oben einmal „Anmeldung eingerichtet“ - bis zur nächsten Seite, nicht nach „Zurück“ oder Neuladen. Ist der Einstieg übersprungen oder beendet, liest die Übersicht den Parameter nicht.
 
 **Begründung.** Handoff 2026-10-22, Festlegungen aus dem Entwurf und Abschnitt 10; DR-160 (eine Bestätigung gilt einmal). Eine Fertig-Seite kostete einen Tipp ohne neue Auskunft.
 
 **Anker.** `useEinmaligeRueckmeldung('eingerichtet')` in `src/features/platform/Einstieg.tsx`.
 
 **Änderungspfad.** Eigene Seite nach „PIN speichern“ (1c) oder die Rückmeldung auch auf der Übersicht · Aufwand `klein`.
+
 ### ANN-696 — Plattform unter 23rem: ein Titel mit langem Wort in 22, damit kein Name bricht
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Schritt 1e (Gruß der Übersicht)
@@ -7163,4 +7236,3 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Schritt 1e (Gruß
 **Anker.** `titelklassen` in `src/components/ui/Dialogfenster.tsx`.
 
 **Änderungspfad.** Andere Grenze in `ZEICHEN_IN_28_SCHMAL` oder immer 28 mit Bruch im Wort · Aufwand `klein`.
-

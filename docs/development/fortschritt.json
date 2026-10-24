@@ -1487,6 +1487,15 @@
           "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1b (Handoff 2026-10-22); ANN-679 bis ANN-683"
         },
         {
+          "id": "drp-epic-004",
+          "name": "DRP-EPIC-004 Plattform: Türen aus dem Design-Review (Schritt 1c – Einladung, Einrichtung, Anmeldung, Sperre, Zugang beendet)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-23",
+          "nachweis": "DRP-010 bis DRP-014, Branch `claude/stoic-archimedes-520zje`, tests/e2e/tueren.spec.ts",
+          "vermerk": "Auftrag Jannes (23.10.2026), Design-Review Lauf 1 Schritt 1c (Handoff 2026-10-22, Abschnitt 5.2); ANN-684 bis ANN-689"
+        },
+        {
           "id": "drp-daten",
           "name": "DRP-DATEN Plattform: eigener Name und Rufnummer der Praxis in der Projektion (Handoff 2026-10-22, Abschnitt 9: N1, N2)",
           "gewicht": 1,
