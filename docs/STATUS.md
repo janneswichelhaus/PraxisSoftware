@@ -8,7 +8,8 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 Design-Review Lauf 1: **Schritt 1 ist abgenommen** (Jannes, 24.10.). Nacharbeit dazu auf Branch
 `ccr-c5a4a21f-ys0el3` (#298): die fünf Fragen aus #297 wie empfohlen entschieden, „Mitteilungen
 einschalten“ unter „Heute“ (ANN-702). Für Schritt 2 (Übungen) liegen Briefing 2 aufgefrischt und 22
-Ist-Bilder bereit; neu dabei BEF-196 und BEF-197.
+Ist-Bilder bereit; neu dabei BEF-196 und BEF-197. Im selben PR **BEF-170** (Pfad A): einzeln gelöschte
+Dateien der Akte stehen im Löschjournal (ANN-703), Zweitreview gelaufen; daraus BEF-198.
 
 Gemergt am 24.10.: Schritt 1e Übersicht (#297, DRP-020 bis -022) – damit ist Schritt 1 des Handoffs
 gebaut; 1d Einstieg (#294), 1c Türen (#295), CI-Fix #296. Gemergt am 22. und 23.10.: Schritt 0
@@ -19,7 +20,8 @@ Auf `origin` liegt sonst nichts Ungemergtes.
 
 Design-Review Schritte 2 bis 7 (Übungen, Termine, Selbstauskunft, Nachrichten, Unterlagen, Ich),
 je mit freigegebenem Handoff aus Claude Design; Briefings in `design/review-2026-10/`. Ohne Handoff:
-BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederherstellung; Pfad A).
+BEF-198 (Grundlage samt Verordnungsscan ins Löschjournal, übrige Löschwege von Hand durchsehen;
+Pfad A).
 
 ## Bei Jannes
 
