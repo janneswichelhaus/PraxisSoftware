@@ -44,10 +44,13 @@ export function Anrufknoepfe({
         <a
           key={nummer.href}
           href={nummer.href}
+          // Bei 200 % bricht der Knopf zwischen Wort und Nummer und zwischen den
+          // Ziffergruppen um, nie mitten darin (Handoff 2026-10-22, Abschnitt 6):
+          // Die Plattform erlaubt sonst Umbrüche überall (`overflow-wrap`).
           className={knopfKlassen(
             hauptknopf && index === 0 ? 'primary' : 'secondary',
             'normal',
-            'w-full',
+            'w-full flex-wrap gap-x-2 gap-y-0 text-center wrap-normal',
           )}
           {...(fokusbeginn && index === 0 ? { 'data-autofocus': true } : {})}
         >

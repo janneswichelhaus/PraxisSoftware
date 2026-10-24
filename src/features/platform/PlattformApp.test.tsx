@@ -158,11 +158,36 @@ describe('PlattformApp', () => {
   it('sagt, dass der Zugang gesperrt ist, wenn nichts lesbar ist', () => {
     zeige([{ ...TRAINING, status: 'locked', readable: false }]);
     expect(screen.getByRole('heading', { name: 'Ihr Zugang ist gesperrt' })).toBeInTheDocument();
+    // Ohne Nummer der Praxis kein Anruf, aber der Weg zu „Ich“ (Handoff 5.2).
+    expect(screen.queryByRole('link', { name: /Praxis anrufen/ })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Zu „Ich“' })).toHaveAttribute('href', '/p/ich');
+    // Keine Reiterleiste und kein Menü: Kein Reiter führte irgendwohin.
+    expect(screen.queryByRole('navigation', { name: 'Plattform' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Menü' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Ich' })).toBeInTheDocument();
+  });
+
+  it('bietet einem gesperrten Zugang den Anruf bei der Praxis an (ANN-691)', () => {
+    zeige([{ ...TRAINING, status: 'locked', readable: false, practice_phone: '+49 7071 000000' }]);
+    expect(screen.getByRole('link', { name: /Praxis anrufen/ })).toHaveAttribute(
+      'href',
+      'tel:+497071000000',
+    );
   });
 
   it('sagt nach der Lesefrist, dass der Zugang beendet ist (D2)', () => {
-    zeige([{ ...TRAINING, readable: false, read_until: '2026-09-01T00:00:00Z' }]);
+    zeige([
+      {
+        ...TRAINING,
+        readable: false,
+        read_until: '2026-09-01T00:00:00Z',
+        practice_phone: '+49 7071 000000',
+      },
+    ]);
     expect(screen.getByRole('heading', { name: 'Ihr Zugang ist beendet' })).toBeInTheDocument();
+    // Nach der Lesefrist ist „Ich“ der Weg; ein Anruf ist dafür nicht nötig.
+    expect(screen.queryByRole('link', { name: /Praxis anrufen/ })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Plattform' })).toBeNull();
   });
 
   it('nennt in der Lesefrist, bis wann gelesen werden kann', async () => {

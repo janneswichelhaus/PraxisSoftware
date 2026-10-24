@@ -134,6 +134,9 @@ export function Kopf({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechn
   const gewaehlt = useWahl(bereiche);
   const ziele = useZiele(bereiche);
   const ich = pathname === `${PLATTFORM_PFAD}/ich`;
+  // Ohne lesbaren Zugang (gesperrt, Lesefrist vorbei) gibt es nur „Ich“:
+  // keine Navigation, kein Menü (Handoff 2026-10-22, Abschnitt 5.2).
+  const ohneZiele = bereiche.length === 0;
   return (
     <header className={`nicht-drucken bg-surface ${rechner ? 'border-line border-b' : ''}`.trim()}>
       <div
@@ -150,12 +153,12 @@ export function Kopf({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechn
         >
           <Wortmarke hoehe={28} />
         </Link>
-        {rechner ? <Rechnernavigation ziele={ziele} /> : null}
+        {rechner && !ohneZiele ? <Rechnernavigation ziele={ziele} /> : null}
         <Link
           to={`${PLATTFORM_PFAD}/ich`}
           aria-current={ich ? 'page' : undefined}
           className={`text-ink hover:text-accent aria-[current=page]:text-accent aria-[current=page]:border-accent inline-flex min-h-12 items-center gap-2.5 border-b-2 border-transparent px-1 font-semibold whitespace-nowrap ${
-            rechner ? '' : 'max-[23rem]:hidden'
+            rechner || ohneZiele ? '' : 'max-[23rem]:hidden'
           }`.trim()}
         >
           <span
@@ -166,7 +169,7 @@ export function Kopf({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechn
           </span>
           Ich
         </Link>
-        {rechner ? null : <Menue ziele={ziele} ich={ich} />}
+        {rechner || ohneZiele ? null : <Menue ziele={ziele} ich={ich} />}
       </div>
       {/* D6: der Schalter nur bei zwei lesbaren Zugängen - eigene Bereiche
           und Vertretungen (POR-006). */}

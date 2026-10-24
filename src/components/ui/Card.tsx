@@ -135,7 +135,7 @@ export function Aufklappzeichen({ offen }: { offen?: boolean }) {
  *     was am Rechner Platz hat und am Telefon nur auf Wunsch steht.
  *
  * `mittig` setzt Zeichen und Titel in die Mitte der Linie - für eine Seite,
- * die selbst mittig steht (`Vollseite mittig`, die Anmeldung; Sichtung
+ * die selbst mittig steht (bis Handoff 2026-10-22 die Anmeldung; Sichtung
  * 13.10.2026, L8). Der Inhalt folgt der Ausrichtung der Seite.
  *
  * `onUmschalten` meldet jedes Auf- und Zuklappen - für Inhalt, der erst beim

@@ -106,12 +106,14 @@ values
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000006', 'authenticated', 'authenticated', 'erika.beispiel@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000007', 'authenticated', 'authenticated', 'tom.training@praxis.invalid',     extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
   -- Plattformkonten (POR-EPIC-001): ohne Profil und ohne Rolle, Zugriff nur
-  -- ueber ihre Zugaenge unten (ADR-023 Punkte 2 und 3).
-  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000008', 'authenticated', 'authenticated', 'tina.plattform@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000009', 'authenticated', 'authenticated', 'erika.plattform@patient.invalid', extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  -- ueber ihre Zugaenge unten (ADR-023 Punkte 2 und 3). Mit der Marke
+  -- `platform_account` wie jedes Konto, das der Zugangsdienst anlegt
+  -- (ANN-189); die Sitzungssperre waehlt danach ihre Fassung (ANN-687).
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000008', 'authenticated', 'authenticated', 'tina.plattform@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"],"platform_account":true}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000009', 'authenticated', 'authenticated', 'erika.plattform@patient.invalid', extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"],"platform_account":true}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
   -- POR-EPIC-001b: Paula begleitet ihren Vater Max (ADR-023 Punkt 13). Eigenes
   -- Konto, eigene Person; Max selbst hat keinen Zugang.
-  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000010', 'authenticated', 'authenticated', 'paula.begleitung@patient.invalid', extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', '');
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000010', 'authenticated', 'authenticated', 'paula.begleitung@patient.invalid', extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"],"platform_account":true}', '{}', now(), now(), '', '', '', '', '', '', '', '');
 
 -- -----------------------------------------------------------------------------
 -- Organisation und Standort

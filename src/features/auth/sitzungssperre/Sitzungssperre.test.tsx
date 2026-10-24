@@ -32,9 +32,11 @@ vi.mock('./sperrstand', async (importOriginal) => ({
 }));
 
 const signOut = vi.fn(() => Promise.resolve());
+/** Die Metadaten des Anmeldedienstes am Konto; ein Plattformkonto trägt `platform_account`. */
+let metadaten: Record<string, unknown> = {};
 vi.mock('../sessionContext', () => ({
   useSession: () => ({
-    session: { user: { id: 'konto-1', email: 'anna@example.test' } },
+    session: { user: { id: 'konto-1', email: 'anna@example.test', app_metadata: metadaten } },
     initialising: false,
     signOut,
   }),
@@ -649,5 +651,101 @@ describe('Sitzungssperre: Befunde aus dem Zweitreview', () => {
     vi.setSystemTime(Date.now() + 5 * 60_000);
     await warte(41_000);
     expect(screen.getByText('Akte von Max Mustermann')).not.toBeVisible();
+  });
+});
+
+describe('Sperrseite der Plattform (Handoff 2026-10-22, Abschnitt 5.2; ANN-687)', () => {
+  // Die Marke des Zugangsdienstes in der Sitzung entscheidet, nicht die Adresse.
+  beforeEach(() => {
+    metadaten = { provider: 'email', platform_account: true };
+  });
+  afterEach(() => {
+    metadaten = {};
+    window.history.replaceState(null, '', '/');
+  });
+
+  async function gesperrt(grund: 'inaktiv' | 'verbraucht' = 'inaktiv') {
+    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund });
+    zeichne();
+    await warte();
+  }
+
+  it('zeigt einem Plattformkonto die Fassung der Plattform - ohne Angaben zur Person', async () => {
+    // Kaltstart: Die Anwendung öffnet auf `/` (start_url) und sperrt, bevor
+    // die Plattform nach `/p` leiten kann.
+    window.history.replaceState(null, '', '/');
+    await gesperrt();
+    expect(screen.getByRole('heading', { name: 'Zum Schutz gesperrt' })).toBeInTheDocument();
+    expect(anmeldenMitPasskey).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Mit Passkey entsperren' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Mit PIN entsperren' })).toBeInTheDocument();
+    expect(
+      screen.getByText(/nach 30 Minuten ohne Bedienung und spätestens eine Stunde/),
+    ).toBeInTheDocument();
+    expect(document.title).toBe('Gesperrt – Own Motion');
+    // ADR-025 Punkt 3: kein Name, keine Adresse - auch nicht der eigene.
+    expect(screen.queryByText(/anna@example.test|Anna/)).toBeNull();
+    expect(screen.queryByText(/Sitzung|Konto/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Mit anderem Zugang anmelden' }));
+    expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('entsperrt auf eigener Seite mit der PIN und nennt die Versuche', async () => {
+    await gesperrt();
+    fireEvent.click(screen.getByRole('button', { name: 'Mit PIN entsperren' }));
+    const feld = screen.getByLabelText('PIN', { exact: true });
+    expect(feld).toHaveFocus();
+    expect(screen.getByText('Die PIN von Own Motion, nicht die Ihres Telefons.')).toBeVisible();
+    gibMitPinFrei.mockResolvedValueOnce({ art: 'falsch', versucheUebrig: 1 });
+    fireEvent.change(feld, { target: { value: '111222' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Entsperren' }));
+    await warte();
+    expect(
+      screen.getByText(
+        'Die PIN passt nicht. Noch ein Versuch – danach melden Sie sich mit dem Passkey neu an.',
+      ),
+    ).toBeInTheDocument();
+    gibMitPinFrei.mockResolvedValueOnce({ art: 'frei' });
+    ladeSperrstand.mockResolvedValue(offen());
+    fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
+      target: { value: '483920' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Entsperren' }));
+    await warte();
+    expect(screen.getByText('Akte von Max Mustermann')).toBeVisible();
+  });
+
+  it('fragt bei festgehaltener Eingabe nach, bevor ein anderer Zugang sie verwirft', async () => {
+    ladeSperrstand.mockResolvedValueOnce(offen(30, 3000));
+    zeichne(() => Promise.resolve(false));
+    await warte();
+    fireEvent.change(screen.getByLabelText('Befund'), { target: { value: 'Knie frei' } });
+    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'inaktiv' });
+    await warte(31_000);
+    expect(screen.getByRole('heading', { name: 'Zum Schutz gesperrt' })).toBeInTheDocument();
+    expect(
+      screen.getByText(/Wer sich mit einem anderen Zugang anmeldet, verwirft sie/),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Mit anderem Zugang anmelden' }));
+    expect(signOut).not.toHaveBeenCalled();
+    expect(screen.getByText(/geht dabei verloren/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Verwerfen und abmelden' }));
+    expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('führt nach zu vielen Versuchen zum Passkey', async () => {
+    await gesperrt('verbraucht');
+    expect(screen.getByRole('heading', { name: 'Bitte neu anmelden' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mit PIN entsperren' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Mit Passkey anmelden' }));
+    expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('zeigt einem Praxiskonto die Sperrseite der Praxis, auch in der Einsicht unter /p', async () => {
+    metadaten = { provider: 'email' };
+    window.history.replaceState(null, '', '/p?zugang=cafecafe-cafe-4afe-8afe-000000000002');
+    await gesperrt();
+    expect(screen.getByRole('heading', { name: 'Gesperrt' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Zum Schutz gesperrt' })).toBeNull();
   });
 });

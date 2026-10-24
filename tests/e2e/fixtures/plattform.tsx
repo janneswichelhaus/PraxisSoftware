@@ -1287,6 +1287,17 @@ function inhalt(): { pfad: string; element: ReactNode } {
           />
         ),
       };
+    case 'ende-uebersicht':
+      return {
+        pfad: '/p',
+        element: (
+          <PlattformApp
+            zugaenge={[{ ...zugaenge[0]!, readable: false, read_until: inTagen(-2, 12) }]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
     case 'abo-gekuendigt':
       return {
         pfad: '/p?bereich=treatment',

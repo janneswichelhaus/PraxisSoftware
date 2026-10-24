@@ -28,19 +28,22 @@ export class PasskeyFehler extends Error {
   }
 }
 
+/**
+ * Die Sätze erscheinen in Praxis und Plattform, auch auf den Türen der
+ * Plattform - deshalb ohne „Konto“ (Handoff 2026-10-22, Abschnitt 0).
+ */
 export const PASSKEY_SAETZE = {
   nichtUnterstuetzt:
     'Dieses Gerät oder dieser Browser unterstützt keine Passkeys. Bitte ein aktuelles Telefon oder einen aktuellen Browser verwenden.',
   abgebrochen: 'Nicht bestätigt. Bitte erneut versuchen.',
-  nichtAngenommen:
-    'Der Passkey wurde nicht angenommen. Ist er für dieses Konto auf diesem Gerät eingerichtet?',
+  nichtAngenommen: 'Der Passkey wurde nicht angenommen. Ist er auf diesem Gerät eingerichtet?',
   ausgeschaltet: 'Passkeys sind beim Anmeldedienst noch nicht eingeschaltet.',
-  schonEingerichtet: 'Auf diesem Gerät ist für dieses Konto schon ein Passkey eingerichtet.',
+  schonEingerichtet: 'Auf diesem Gerät ist schon ein Passkey für Sie eingerichtet.',
   zweiterFaktor: 'Bitte zuerst den zweiten Faktor bestätigen, dann den Passkey einrichten.',
-  hoechstzahl: 'Für dieses Konto sind schon so viele Passkeys eingerichtet, wie möglich sind.',
+  hoechstzahl: 'Sie haben schon so viele Passkeys eingerichtet, wie möglich sind.',
   geraet: 'Der Passkey ließ sich auf diesem Gerät nicht verwenden. Bitte erneut versuchen.',
   nichtFreigegeben:
-    'Der Passkey ist angelegt, aber nicht freigegeben und öffnet deshalb nichts. Bitte in „Mein Konto“ entfernen und neu einrichten.',
+    'Der Passkey ist angelegt, aber nicht freigegeben und öffnet deshalb nichts. Bitte noch einmal einrichten; den alten können Sie später unter Ihren Passkeys entfernen.',
 } as const;
 
 /** Kann dieser Browser überhaupt Passkeys? Ohne WebAuthn bietet die Seite sie nicht an. */
