@@ -207,6 +207,10 @@ export function Uebersicht({
   const jetzt = new Date();
   const alleTermine = termine.data ?? [];
   const naechster = naechsterTermin(alleTermine, jetzt);
+  // Vor dem ersten Termin: kein anderer, der stattfand oder stattfinden sollte.
+  const erster = naechster
+    ? ersterTermin(alleTermine, naechster)
+    : !alleTermine.some((t) => t.status !== 'cancelled');
   const haupt = hauptsache({
     zugang,
     bogenId: fuerDiePlattform()[0]?.meta.id,
@@ -330,7 +334,8 @@ export function Uebersicht({
       heute.push({
         schluessel: 'tagebuch',
         zeichen: ZEICHEN.tagebuch,
-        titel: 'Ernährungstagebuch',
+        // Weiche Trennstelle: Bei „Sehr groß“ brach das Wort sonst vor dem „h“.
+        titel: 'Ernährungs\u00ADtagebuch',
         satz: 'Mahlzeit eintragen',
         to: p('/ernaehrung/tagebuch'),
       });
@@ -359,15 +364,14 @@ export function Uebersicht({
   );
   const offenerWunsch = (wuensche.data ?? []).find((w) => w.status === 'open');
   if (antwort) {
-    const satz =
-      antwort.status === 'done'
-        ? 'Ihr Terminwunsch ist erledigt'
-        : 'Ihr Terminwunsch war leider nicht möglich';
+    // Jede Antwort nach ihrem Bezug benannt: Zwei Zeilen „Antwort der
+    // Praxis“ untereinander hielt man für eine (Persona-Review 1e).
+    const satz = antwort.status === 'done' ? 'Erledigt' : 'Leider nicht möglich';
     neu.push(
       <ListRow
         key="wunsch"
         to={p('/termine')}
-        titel="Antwort der Praxis"
+        titel="Antwort auf Ihren Terminwunsch"
         meta={antwort.answer ? `${satz}: ${antwort.answer}` : `${satz}.`}
       />,
     );
@@ -389,12 +393,10 @@ export function Uebersicht({
         to={p(beantwortet.length === 1 ? `/nachrichten/${beantwortet[0]!.id}` : '/nachrichten')}
         titel={
           beantwortet.length === 1
-            ? 'Antwort der Praxis'
-            : `${beantwortet.length} Antworten der Praxis`
+            ? 'Antwort auf Ihre Nachricht'
+            : `Antworten auf ${beantwortet.length} Nachrichten`
         }
-        meta={`Ihre ${beantwortet.length === 1 ? 'Nachricht' : 'Nachrichten'}: ${[
-          ...new Set(beantwortet.map((m) => THEMA_NAME[m.topic])),
-        ].join(' · ')}`}
+        meta={`Thema: ${[...new Set(beantwortet.map((m) => THEMA_NAME[m.topic]))].join(' · ')}`}
       />,
     );
   }
@@ -402,7 +404,10 @@ export function Uebersicht({
     (r) => !r.cancelled && r.outstanding_cents > 0,
   );
   if (offeneRechnung) {
+    // Keine Dringlichkeit aus Geld: Vor der Fälligkeit ohne Warnzeichen
+    // (ANN-701); überfällig sagt es die Rechnungsliste ebenso.
     const stand = zahlungsstand(offeneRechnung);
+    const ton = offeneRechnung.overdue ? stand.ton : 'neutral';
     neu.push(
       <ListRow
         key="rechnung"
@@ -410,7 +415,7 @@ export function Uebersicht({
         titel={`Rechnung ${offeneRechnung.invoice_number}`}
         meta={`Fällig am ${formatDate(offeneRechnung.due_on)}`}
         betrag={formatEuro(offeneRechnung.outstanding_cents, offeneRechnung.currency)}
-        status={<Badge ton={stand.ton}>{stand.wort}</Badge>}
+        status={<Badge ton={ton}>{stand.wort}</Badge>}
       />,
     );
   }
@@ -435,6 +440,7 @@ export function Uebersicht({
       haupt={haupt}
       zugang={zugang}
       naechster={naechster}
+      erster={erster}
       jetzt={jetzt}
       verbunden={verbunden}
       nurLesen={nurLesen}
@@ -467,9 +473,7 @@ export function Uebersicht({
   } else if (naechster && haupt.art !== 'termin') {
     rechts.push(
       teil(
-        <Section
-          titel={ersterTermin(alleTermine, naechster) ? 'Ihr erster Besuch' : 'Nächster Besuch'}
-        >
+        <Section titel={erster ? 'Ihr erster Besuch' : 'Nächster Besuch'}>
           <Besuchskarte termin={naechster} to={p('/termine')} />
         </Section>,
         'besuch',
@@ -502,9 +506,27 @@ export function Uebersicht({
       ),
     );
   }
+  // Was eine Vertretung hier darf, ist eine Auskunft über Rechte (ADR-023
+  // Punkt 13) - als Kleingedrucktes am Ende, nicht mehr als Absatz oben.
+  if (zugang.access_kind === 'legal_representative') {
+    rechts.push(
+      teil(
+        <Kleingedrucktes>
+          Als rechtliche Vertretung handeln Sie in allem, was {name} hier tun kann.
+        </Kleingedrucktes>,
+        'klein',
+      ),
+    );
+  }
   if (begleitung) {
     rechts.push(
-      teil(<Kleingedrucktes>Einwilligungen gibt nur {name} selbst.</Kleingedrucktes>, 'klein'),
+      teil(
+        <Kleingedrucktes>
+          Als Begleitung lesen Sie mit und können Terminwünsche und Nachrichten schreiben.
+          Einwilligungen gibt nur {name} selbst.
+        </Kleingedrucktes>,
+        'klein',
+      ),
     );
   }
 
@@ -591,6 +613,7 @@ function Hauptsachekarte({
   haupt,
   zugang,
   naechster,
+  erster,
   jetzt,
   verbunden,
   nurLesen,
@@ -600,6 +623,7 @@ function Hauptsachekarte({
   haupt: Hauptsache;
   zugang: Plattformzugang;
   naechster: Termin | undefined;
+  erster: boolean;
   jetzt: Date;
   verbunden: boolean;
   nurLesen: boolean;
@@ -642,8 +666,8 @@ function Hauptsachekarte({
       if (a.art === 'fragebogen') {
         return (
           <HeroKarte
-            titel="Fragebogen vor Ihrem ersten Termin"
-            satz={`Etwa 10 Minuten. ${naechster?.staff_name ?? 'Ihre Therapeut:in'} sieht Ihre Angaben beim ersten Termin.`}
+            titel={`Fragebogen vor Ihrem ${erster ? 'ersten' : 'nächsten'} Termin`}
+            satz={`Etwa 10 Minuten. ${naechster?.staff_name ?? 'Ihre Therapeut:in'} sieht Ihre Angaben beim ${erster ? 'ersten' : 'nächsten'} Termin.`}
             aktion={aktion}
             markenmoment={markenmoment}
           />

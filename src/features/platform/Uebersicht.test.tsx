@@ -219,6 +219,42 @@ describe('Hauptsache (ANN-698)', () => {
     expect(screen.queryByText(/Fragen an die Praxis|116117/)).not.toBeInTheDocument();
   });
 
+  it('sagt „nächsten“ statt „ersten“ Termin, wenn schon einer stattfand', async () => {
+    ladeTermine.mockResolvedValue([
+      TERMIN,
+      {
+        ...TERMIN,
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000009',
+        starts_at: inTagen(-7, 9),
+        ends_at: inTagen(-7, 10),
+        status: 'completed',
+      },
+    ]);
+    zeige();
+    const hero = await screen.findByRole('region', {
+      name: 'Fragebogen vor Ihrem nächsten Termin',
+    });
+    expect(within(hero).getByText(/sieht Ihre Angaben beim nächsten Termin\./)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Nächster Besuch' })).toBeInTheDocument();
+  });
+
+  it('zeigt eine Rechnung vor der Fälligkeit ohne Warnzeichen, überfällig mit (ANN-701)', async () => {
+    ladeRechnungen.mockResolvedValue([RECHNUNG]);
+    const erstes = zeige();
+    const offen = await screen.findByRole('link', { name: /^Rechnung RG-2026-0001/ });
+    expect(within(offen).getByText('offen').closest('[class*="rounded-pill"]')?.textContent).toBe(
+      'offen',
+    );
+    erstes.unmount();
+
+    ladeRechnungen.mockResolvedValue([{ ...RECHNUNG, overdue: true }]);
+    zeige();
+    const ueberfaellig = await screen.findByRole('link', { name: /^Rechnung RG-2026-0001/ });
+    expect(
+      within(ueberfaellig).getByText('überfällig').closest('[class*="rounded-pill"]')?.textContent,
+    ).not.toBe('überfällig');
+  });
+
   it('nimmt ohne Aufgabe den nächsten Termin, ohne zweite Besuchskarte', async () => {
     ladeBefundbogen.mockResolvedValue(BOGEN_FERTIG);
     ladeTermine.mockResolvedValue([TERMIN]);
@@ -363,9 +399,9 @@ describe('Heute und Neu für Sie', () => {
       },
     ]);
     zeige({ ...ZUGANG, relationship_kind: 'training' }, '/p?bereich=training');
-    const zeile = await screen.findByRole('link', { name: /^Antwort der Praxis/ });
+    const zeile = await screen.findByRole('link', { name: /^Antwort auf Ihren Terminwunsch/ });
     expect(
-      within(zeile).getByText('Ihr Terminwunsch war leider nicht möglich: Diese Woche ist voll.'),
+      within(zeile).getByText('Leider nicht möglich: Diese Woche ist voll.'),
     ).toBeInTheDocument();
     expect(ladeBefundbogen).not.toHaveBeenCalled();
   });
@@ -438,7 +474,8 @@ describe('Training, Begleitung, Lesefrist', () => {
       'href',
       '/p/uebungen?bereich=training',
     );
-    expect(screen.getByRole('link', { name: /^Ernährungstagebuch/ })).toHaveAttribute(
+    // Mit weicher Trennstelle, damit das Wort bei „Sehr groß“ nur dort bricht.
+    expect(screen.getByRole('link', { name: /^Ernährungs\u00ADtagebuch/ })).toHaveAttribute(
       'href',
       '/p/ernaehrung/tagebuch?bereich=training',
     );
@@ -463,7 +500,12 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: 'Für Max Mustermann' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Einwilligungen gibt nur Max Mustermann selbst.')).toBeInTheDocument();
+    // Was die Begleitung darf, steht als Kleingedrucktes am Ende (ADR-023 Punkt 13).
+    expect(
+      screen.getByText(
+        /^Als Begleitung lesen Sie mit .* Einwilligungen gibt nur Max Mustermann selbst\.$/,
+      ),
+    ).toBeInTheDocument();
     expect(ladeTrainingsangebot).not.toHaveBeenCalled();
     expect(ladeErnaehrung).not.toHaveBeenCalled();
   });

@@ -7293,10 +7293,10 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Briefing 6 (Unterlagen)
 
-**Annahme.** Die offene Rechnung steht unter „Neu für Sie“ mit Nummer, „Fällig am …“, offenem Betrag und dem Zustand aus `zahlungsstand` („offen“, „überfällig“, „teilweise bezahlt“) statt „Steht aus“.
+**Annahme.** Die offene Rechnung steht unter „Neu für Sie“ mit Nummer, „Fällig am …“, offenem Betrag und dem Wort aus `zahlungsstand` („offen“, „überfällig“) statt „Steht aus“ - vor der Fälligkeit ohne Warnzeichen, keine Dringlichkeit aus Geld.
 
 **Begründung.** Handoff 2026-10-22, 5.1 nennt „Steht aus“; die Liste der Rechnungen sagt „offen“. Zwei Wörter für denselben Stand derselben Rechnung verwirren; Briefing 6 kann beide zusammen umbenennen.
 
-**Anker.** `zahlungsstand` in `src/features/platform/zahlungsstand.ts`.
+**Anker.** `zahlungsstand` in `src/features/platform/zahlungsstand.ts`; der Ton in `Uebersicht.tsx`.
 
 **Änderungspfad.** Das Wort dort ändern, gilt dann für Liste und Übersicht · Aufwand `klein`.
