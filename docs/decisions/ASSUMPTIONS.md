@@ -7337,6 +7337,30 @@ Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 1) · er
 
 **Änderungspfad.** Werte dort ändern · Aufwand `klein`; ein Feld am Plan stattdessen · Aufwand `mittel`.
 
+### ANN-705 — Durchführung: „Später weiter“ statt „Abbrechen“
+
+Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 2) · erledigt · Wiedervorlage: —
+
+**Annahme.** Der Ausweg aus der Durchführung heißt in jedem Schritt „Später weiter“: Die Haken bleiben, die Einheit des Tages geht mit „Weiter üben“ weiter. „Abbrechen“ entfällt, weil es nach Verwerfen klingt.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0, Frage 2; DSN-001 Abschnitt 7 Nr. 7 („Abbrechen ist immer sichtbar“) bleibt erfüllt, der Ausweg steht im Kopf.
+
+**Anker.** `Durchfuehrungskopf` in `src/features/platform/Durchfuehrungskopf.tsx`.
+
+**Änderungspfad.** Wort dort ändern · Aufwand `klein`.
+
+### ANN-706 — Durchführung: eigene Endseite nach „Einheit beenden“
+
+Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 3) · erledigt · Wiedervorlage: —
+
+**Annahme.** Nach dem Beenden folgt eine eigene Seite: „Gespeichert“ (bei der Praxis, wer sie sieht) oder „Auf diesem Gerät gespeichert“ (noch nicht übertragen), dazu der nächste Übungstag, ohne Lob. Sie ersetzt die Rückmeldung am Reiter.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0, Frage 3; ADR-001 und ADR-024 Punkt 8: Was nur auf dem Telefon liegt, darf nicht nach „bei der Praxis“ aussehen.
+
+**Anker.** `Endseite` in `src/features/platform/Endseite.tsx`.
+
+**Änderungspfad.** Zurück zur Rückmeldung am Reiter (`Beendetziel`) · Aufwand `klein`.
+
 ### ANN-707 — Plattform: Plan- und Übungsnamen trennen unter 23rem an der Silbe
 
 Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 4) · erledigt · Wiedervorlage: —
@@ -7360,3 +7384,15 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 **Anker.** `Pausenring` in `src/components/ui/Hakenzeile.tsx`.
 
 **Änderungspfad.** Die Sekunden im Ring zeigen · Aufwand `klein`.
+
+### ANN-710 — Durchführung: der Übertragungsstand erst nach dem ersten Haken
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Der Fuß sagt erst nach dem ersten Haken, wo die Haken liegen: „Übertragen an die Praxis“ sofort, „Auf diesem Gerät, noch nicht übertragen“ erst nach einer Sekunde Warten, damit es beim normalen Übertragen nicht flackert.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0; ADR-024 Punkt 8 (die Ansicht zeigt „auf dem Gerät“ oder „übertragen“, bis nichts mehr wartet).
+
+**Anker.** `useRuhigerStand` in `src/features/platform/Durchfuehrungsfuss.tsx`.
+
+**Änderungspfad.** Wartezeit dort ändern oder streichen · Aufwand `klein`.
