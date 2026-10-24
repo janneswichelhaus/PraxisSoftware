@@ -29,7 +29,7 @@ export const PIN_SAETZE = {
     'Zum Festlegen der PIN bitte zuerst mit dem Passkey bestätigen. Danach bleiben zehn Minuten.',
   nichtGesetzt: 'Die PIN ließ sich nicht festlegen. Bitte erneut versuchen.',
   anderesKonto:
-    'Der Passkey gehört zu einem anderen Konto. Die PIN wurde nicht gesetzt; angemeldet ist jetzt das andere Konto.',
+    'Der Passkey gehört zu einem anderen Zugang. Die PIN wurde nicht gesetzt; angemeldet ist jetzt der andere Zugang.',
 } as const;
 
 /** Die Anmeldung liegt zu lange zurück: erst mit dem Passkey bestätigen (ANN-325). */

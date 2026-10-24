@@ -63,7 +63,7 @@ describe('PinFestlegen', () => {
       .mockResolvedValueOnce(sitzungVon('konto-1'))
       .mockResolvedValueOnce(sitzungVon('konto-2'));
     const onGesetzt = await bisZurBestaetigung();
-    expect(await screen.findByText(/gehört zu einem anderen Konto/)).toBeInTheDocument();
+    expect(await screen.findByText(/gehört zu einem anderen Zugang/)).toBeInTheDocument();
     expect(setzePin).toHaveBeenCalledTimes(1);
     expect(onGesetzt).not.toHaveBeenCalled();
   });
@@ -72,5 +72,16 @@ describe('PinFestlegen', () => {
     render(<PinFestlegen onGesetzt={vi.fn()} />);
     expect(screen.getByLabelText(/^Neue PIN/)).toHaveAttribute('autocomplete', 'off');
     expect(screen.getByLabelText('PIN wiederholen')).toHaveAttribute('autocomplete', 'off');
+  });
+
+  it('bietet die PIN auch in der Einrichtung keinem Passwortmanager an (ADR-025 Punkt 11, ANN-689)', () => {
+    render(<PinFestlegen onGesetzt={vi.fn()} formular="einrichtung-pin" />);
+    expect(screen.getByLabelText(/^PIN/, { selector: '#pin-neu' })).toHaveAttribute(
+      'autocomplete',
+      'off',
+    );
+    expect(screen.getByLabelText('PIN noch einmal')).toHaveAttribute('autocomplete', 'off');
+    // Der Knopf steht im Fuß des Ablaufs, nicht im Formular.
+    expect(screen.queryByRole('button', { name: /PIN festlegen/ })).toBeNull();
   });
 });

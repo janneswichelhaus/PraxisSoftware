@@ -78,6 +78,8 @@ describe('AnmeldungEinrichten', () => {
     );
     await nutzer.click(await screen.findByRole('button', { name: 'Einrichtung abbrechen' }));
     expect(onAbmelden).not.toHaveBeenCalled();
+    // Ein Fenster über dem Ablauf wie die Rückfrage vor dem Weggehen (ANN-566).
+    expect(screen.getByRole('dialog', { name: 'Einrichtung abbrechen?' })).toBeVisible();
     expect(screen.getByText(/nur mit einer neuen Einladung der Praxis hinein/)).toBeVisible();
     await nutzer.click(screen.getByRole('button', { name: 'Weiter einrichten' }));
     expect(screen.queryByText(/nur mit einer neuen Einladung/)).toBeNull();

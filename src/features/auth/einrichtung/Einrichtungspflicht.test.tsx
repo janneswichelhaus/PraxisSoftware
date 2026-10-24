@@ -115,7 +115,7 @@ describe('Einrichtungspflicht', () => {
     const user = userEvent.setup();
     zeichne(true);
     expect(
-      await screen.findByText('Die Anmeldung dieses Kontos konnte nicht geprüft werden.'),
+      await screen.findByText('Ihre Anmeldung konnte nicht geprüft werden.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('Tagesplan')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Abmelden' }));

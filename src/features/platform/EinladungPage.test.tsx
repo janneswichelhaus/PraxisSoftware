@@ -135,7 +135,8 @@ describe('EinladungPage', () => {
     expect(await screen.findByRole('heading', { name: 'Eine PIN festlegen' })).toBeVisible();
     expect(screen.getByText('Schritt 3 von 3')).toBeInTheDocument();
     const pin = screen.getByLabelText(/^PIN/, { selector: '#pin-neu' });
-    expect(pin).toHaveAttribute('autocomplete', 'new-password');
+    // Nie im Passwortmanager (ADR-025 Punkt 11, ANN-689).
+    expect(pin).toHaveAttribute('autocomplete', 'off');
     expect(pin).toHaveAttribute('inputmode', 'numeric');
     await nutzer.type(pin, '483920');
     await nutzer.type(screen.getByLabelText('PIN noch einmal'), '483920');

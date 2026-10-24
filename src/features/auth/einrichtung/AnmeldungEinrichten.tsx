@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { FENSTERZIEL, PortalZielKontext } from '@/components/ui/portalZiel';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Vollseite } from '@/app/Vollseite';
 import { ANMELDEN_TITEL, EINLADUNG_TITEL } from '@/app/tabtitel';
-import { TELEFON } from '@/app/tuerzeichen';
+import { SCHLOSS, TELEFON } from '@/app/tuerzeichen';
 import { useSchriftgroesseAnwenden } from '@/features/platform/schriftgroesse';
 import { useFokusNachWechsel } from '../fokus';
 import { PASSKEY_SAETZE, PasskeyFehler, passkeyEinrichten, passkeyMoeglich } from '../passkey';
@@ -115,23 +116,25 @@ export function AnmeldungEinrichten({
     </Button>
   ) : null;
 
-  // Das ✕ und Esc fragen nach, statt abzumelden (ANN-686).
+  // Das ✕ und Esc fragen nach, statt abzumelden (ANN-686) - als Fenster über
+  // dem Ablauf wie die Rückfrage vor dem Weggehen (ANN-566). Esc und ein Tipp
+  // daneben heißen „weiter einrichten“, nie „abmelden“.
   const rueckfrage = abbrechen ? (
-    <div className="max-w-formular mx-auto flex w-full flex-col gap-3 px-4 pt-2 pb-2">
-      <Statusmeldung ton="warnung">
+    <Dialogfenster titel="Einrichtung abbrechen?" onSchliessen={() => setAbbrechen(false)}>
+      <p className="text-ink text-base">
         {passkeyDa
-          ? 'Einrichtung abbrechen? Die PIN legen Sie dann beim nächsten Anmelden fest.'
-          : 'Einrichtung abbrechen? Ohne Passkey kommen Sie danach nur mit einer neuen Einladung der Praxis hinein.'}
-      </Statusmeldung>
-      <div className="flex flex-wrap gap-3">
+          ? 'Die PIN legen Sie dann beim nächsten Anmelden fest.'
+          : 'Ohne Passkey kommen Sie danach nur mit einer neuen Einladung der Praxis hinein.'}
+      </p>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Button data-autofocus onClick={() => setAbbrechen(false)}>
+          Weiter einrichten
+        </Button>
         <Button variant="secondary" onClick={onAbmelden}>
           Abbrechen und abmelden
         </Button>
-        <Button variant="quiet" onClick={() => setAbbrechen(false)}>
-          Weiter einrichten
-        </Button>
       </div>
-    </div>
+    </Dialogfenster>
   ) : null;
 
   const ablauf = pinSchritt ? (
@@ -193,9 +196,9 @@ export function AnmeldungEinrichten({
       <figure className="max-[23rem]:hidden">
         <div
           aria-hidden="true"
-          className="bg-surface-sunken rounded-image flex justify-center px-4 py-6"
+          className="bg-surface-sunken rounded-image flex justify-center px-4 py-4"
         >
-          <div className="bg-surface rounded-card flex w-60 max-w-full flex-col items-center gap-2 p-5 text-center">
+          <div className="bg-surface rounded-card flex w-60 max-w-full flex-col items-center gap-1.5 px-5 py-4 text-center">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -203,7 +206,7 @@ export function AnmeldungEinrichten({
               strokeWidth={1.5}
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-accent size-12"
+              className="text-accent size-10"
             >
               <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1M15 9v1M12 9v4h-1M9 16a4 4 0 0 0 6 0" />
             </svg>
@@ -211,7 +214,7 @@ export function AnmeldungEinrichten({
             {adresse ? (
               <span className="text-ink-muted w-full truncate text-base">{adresse}</span>
             ) : null}
-            <span className="bg-accent text-surface rounded-button mt-2 flex h-10 w-full items-center justify-center font-semibold">
+            <span className="bg-accent text-surface rounded-button mt-1 flex h-10 w-full items-center justify-center font-semibold">
               Fortfahren
             </span>
           </div>
@@ -231,8 +234,7 @@ export function AnmeldungEinrichten({
           strokeLinejoin="round"
           className="text-accent mt-0.5 size-6 shrink-0"
         >
-          <rect x="5" y="11" width="14" height="10" rx="2" />
-          <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          {SCHLOSS}
         </svg>
         Gesicht und Fingerabdruck bleiben auf Ihrem Telefon. Own Motion bekommt sie nie.
       </p>

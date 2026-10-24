@@ -174,6 +174,18 @@ const TUEREN = [
   'src/features/auth/sitzungssperre/PlattformSperrseite.tsx',
 ] as const;
 
+/**
+ * Sätze, die Praxis und Plattform teilen und die auf den Türen erscheinen:
+ * Fehler des Passkeys und der PIN, die Prüfung der Einrichtung. Sie sagen
+ * weder „Konto“ noch „Sitzung“ (Design-Review 1c).
+ */
+const GETEILTE_TUERSAETZE = [
+  'src/features/auth/passkey.ts',
+  'src/features/auth/appPin.ts',
+  'src/features/auth/einrichtung/PinFestlegen.tsx',
+  'src/features/auth/einrichtung/Einrichtungspflicht.tsx',
+] as const;
+
 export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
   {
     muster: /\bAuditlogs?\b/,
@@ -260,13 +272,13 @@ export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
     muster: /\bSitzung(en)?\b/,
     statt: 'Zugang bzw. Anmeldung',
     quelle: 'Handoff 2026-10-22, Abschnitte 0 und 1; DR-106',
-    nurIn: [...PLATTFORM, ...TUEREN],
+    nurIn: [...PLATTFORM, ...TUEREN, ...GETEILTE_TUERSAETZE],
   },
   {
     muster: /\bKont(o|os|en)\b/,
     statt: 'Zugang',
     quelle: 'Handoff 2026-10-22, Abschnitt 0 („Türen sprechen von Zugang“)',
-    nurIn: TUEREN,
+    nurIn: [...TUEREN, ...GETEILTE_TUERSAETZE],
   },
   {
     // „Kein Kennwort“ und „Ein Kennwort brauchen Sie nicht“ sagen, dass es

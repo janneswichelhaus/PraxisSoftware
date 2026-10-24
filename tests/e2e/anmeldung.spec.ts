@@ -33,7 +33,8 @@ for (const breite of [375, 1280]) {
     await expect(page.getByRole('heading', { name: 'Eine PIN festlegen' })).toBeVisible();
     const pin = page.getByLabel('PIN', { exact: true });
     await expect(pin).toHaveAttribute('inputmode', 'numeric');
-    await expect(pin).toHaveAttribute('autocomplete', 'new-password');
+    // Nie im Passwortmanager (ADR-025 Punkt 11, ANN-689).
+    await expect(pin).toHaveAttribute('autocomplete', 'off');
     // 56 hoch, Ziffern groß (Handoff Abschnitt 5.2).
     expect((await pin.boundingBox())!.height).toBeGreaterThanOrEqual(56);
     await expect(page.getByRole('button', { name: 'PIN anzeigen' }).first()).toBeVisible();

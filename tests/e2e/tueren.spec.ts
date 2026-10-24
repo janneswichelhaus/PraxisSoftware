@@ -49,6 +49,15 @@ const TUEREN: {
     },
   },
   {
+    name: 'Sperre mit festgehaltener Eingabe',
+    pfad: '/tests/e2e/fixtures/sperre.html?grund=inaktiv&fassung=plattform&halten=1',
+    titel: 'Zum Schutz gesperrt',
+    dann: async (page) => {
+      await page.getByRole('button', { name: 'Mit anderem Zugang anmelden' }).click();
+      await expect(page.getByText(/geht dabei verloren/)).toBeVisible();
+    },
+  },
+  {
     name: 'Sperre zu viele Versuche',
     pfad: '/tests/e2e/fixtures/sperre.html?grund=verbraucht&fassung=plattform',
     titel: 'Bitte neu anmelden',
@@ -114,6 +123,33 @@ for (const tuer of TUEREN) {
     expect(await ueberlaeuft(page)).toBe(false);
   });
 }
+
+test('Zugang gesperrt: „Praxis anrufen“ bricht bei 200 % nie mitten im Wort (Handoff 6)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 188, height: 406 });
+  await page.goto('/tests/e2e/fixtures/plattform.html?seite=gesperrt');
+  const knopf = page.getByRole('link', { name: /Praxis anrufen/ });
+  await expect(knopf).toBeVisible();
+  // Je Wort und je Ziffergruppe ein einziges Rechteck: Ein Wort, das über
+  // zwei Zeilen bricht, hätte zwei.
+  const gebrochen = await knopf.evaluate((a) => {
+    const funde: string[] = [];
+    const gehen = document.createTreeWalker(a, NodeFilter.SHOW_TEXT);
+    for (let knoten = gehen.nextNode(); knoten; knoten = gehen.nextNode()) {
+      const text = knoten.textContent ?? '';
+      for (const treffer of text.matchAll(/\S+/g)) {
+        const bereich = document.createRange();
+        bereich.setStart(knoten, treffer.index);
+        bereich.setEnd(knoten, treffer.index + treffer[0].length);
+        if (bereich.getClientRects().length > 1) funde.push(treffer[0]);
+      }
+    }
+    return funde;
+  });
+  expect(gebrochen).toEqual([]);
+  expect(await ueberlaeuft(page)).toBe(false);
+});
 
 test.describe('Einladung bei offener Tastatur (ANN-681)', () => {
   test.use({ hasTouch: true, isMobile: true });

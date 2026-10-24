@@ -57,7 +57,7 @@ export function Einrichtungspflicht({
     return (
       <Vollseite titel="Anmeldung nicht geprüft">
         <ErrorState
-          title="Die Anmeldung dieses Kontos konnte nicht geprüft werden."
+          title="Ihre Anmeldung konnte nicht geprüft werden."
           description="Bitte die Verbindung prüfen und erneut versuchen."
           onErneut={() => void stand.refetch()}
         />

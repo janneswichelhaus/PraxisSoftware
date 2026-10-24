@@ -32,9 +32,11 @@ vi.mock('./sperrstand', async (importOriginal) => ({
 }));
 
 const signOut = vi.fn(() => Promise.resolve());
+/** Die Metadaten des Anmeldedienstes am Konto; ein Plattformkonto trägt `platform_account`. */
+let metadaten: Record<string, unknown> = {};
 vi.mock('../sessionContext', () => ({
   useSession: () => ({
-    session: { user: { id: 'konto-1', email: 'anna@example.test' } },
+    session: { user: { id: 'konto-1', email: 'anna@example.test', app_metadata: metadaten } },
     initialising: false,
     signOut,
   }),
@@ -653,12 +655,13 @@ describe('Sitzungssperre: Befunde aus dem Zweitreview', () => {
 });
 
 describe('Sperrseite der Plattform (Handoff 2026-10-22, Abschnitt 5.2; ANN-687)', () => {
-  const vorher = window.location.pathname;
+  // Die Marke des Zugangsdienstes in der Sitzung entscheidet, nicht die Adresse.
   beforeEach(() => {
-    window.history.replaceState(null, '', '/p/termine');
+    metadaten = { provider: 'email', platform_account: true };
   });
   afterEach(() => {
-    window.history.replaceState(null, '', vorher);
+    metadaten = {};
+    window.history.replaceState(null, '', '/');
   });
 
   async function gesperrt(grund: 'inaktiv' | 'verbraucht' = 'inaktiv') {
@@ -667,7 +670,10 @@ describe('Sperrseite der Plattform (Handoff 2026-10-22, Abschnitt 5.2; ANN-687)'
     await warte();
   }
 
-  it('zeigt unter /p die Fassung der Plattform - ohne Angaben zur Person', async () => {
+  it('zeigt einem Plattformkonto die Fassung der Plattform - ohne Angaben zur Person', async () => {
+    // Kaltstart: Die Anwendung öffnet auf `/` (start_url) und sperrt, bevor
+    // die Plattform nach `/p` leiten kann.
+    window.history.replaceState(null, '', '/');
     await gesperrt();
     expect(screen.getByRole('heading', { name: 'Zum Schutz gesperrt' })).toBeInTheDocument();
     expect(anmeldenMitPasskey).toHaveBeenCalledTimes(1);
@@ -709,6 +715,24 @@ describe('Sperrseite der Plattform (Handoff 2026-10-22, Abschnitt 5.2; ANN-687)'
     expect(screen.getByText('Akte von Max Mustermann')).toBeVisible();
   });
 
+  it('fragt bei festgehaltener Eingabe nach, bevor ein anderer Zugang sie verwirft', async () => {
+    ladeSperrstand.mockResolvedValueOnce(offen(30, 3000));
+    zeichne(() => Promise.resolve(false));
+    await warte();
+    fireEvent.change(screen.getByLabelText('Befund'), { target: { value: 'Knie frei' } });
+    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'inaktiv' });
+    await warte(31_000);
+    expect(screen.getByRole('heading', { name: 'Zum Schutz gesperrt' })).toBeInTheDocument();
+    expect(
+      screen.getByText(/Wer sich mit einem anderen Zugang anmeldet, verwirft sie/),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Mit anderem Zugang anmelden' }));
+    expect(signOut).not.toHaveBeenCalled();
+    expect(screen.getByText(/geht dabei verloren/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Verwerfen und abmelden' }));
+    expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
   it('führt nach zu vielen Versuchen zum Passkey', async () => {
     await gesperrt('verbraucht');
     expect(screen.getByRole('heading', { name: 'Bitte neu anmelden' })).toBeInTheDocument();
@@ -717,8 +741,9 @@ describe('Sperrseite der Plattform (Handoff 2026-10-22, Abschnitt 5.2; ANN-687)'
     expect(signOut).toHaveBeenCalledTimes(1);
   });
 
-  it('behält auf Wegen der Praxis die Sperrseite der Praxis', async () => {
-    window.history.replaceState(null, '', '/patienten');
+  it('zeigt einem Praxiskonto die Sperrseite der Praxis, auch in der Einsicht unter /p', async () => {
+    metadaten = { provider: 'email' };
+    window.history.replaceState(null, '', '/p?zugang=cafecafe-cafe-4afe-8afe-000000000002');
     await gesperrt();
     expect(screen.getByRole('heading', { name: 'Gesperrt' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Zum Schutz gesperrt' })).toBeNull();

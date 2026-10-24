@@ -7119,9 +7119,9 @@ Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
 ### ANN-685 — Einrichtung ohne eigene Fertig-Seite: „Willkommen“ sagt es einmal
 
-Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
+Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: Schritt 1d (Einstieg)
 
-**Annahme.** Nach „PIN speichern“ (oder dem Passkey, wenn die PIN schon besteht) führt die Einladung direkt zur Plattform, mit `eingerichtet=1` an der Adresse. Der Einstieg zeigt daraufhin auf „Willkommen“ einmal „Anmeldung eingerichtet“ und nimmt den Parameter aus der Adresse. Eine Seite „Fertig“ dazwischen gibt es nicht.
+**Annahme.** Nach „PIN speichern“ (oder dem Passkey, wenn die PIN schon besteht) führt die Einladung direkt zur Plattform, mit `eingerichtet=1` an der Adresse. Der Einstieg zeigt daraufhin auf „Willkommen“ einmal „Anmeldung eingerichtet“ und nimmt den Parameter aus der Adresse. Eine Seite „Fertig“ dazwischen gibt es nicht. Den Leser baut Schritt 1d; bis er gemergt ist, bleibt der Parameter ungelesen in der Adresse (keine Angabe zur Person).
 
 **Begründung.** Handoff 2026-10-22, Abschnitt 0 (Festlegungen aus dem Entwurf) und 5.2: Eine Fertig-Seite kostet einen Tipp und sagt nichts, was „Willkommen“ nicht auch sagen kann. Die Bestätigung gilt wie jede einmalige Rückmeldung genau einmal (DR-160).
 
@@ -7133,46 +7133,46 @@ Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
 Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
-**Annahme.** In der Einrichtung von Passkey und PIN meldet das ✕ (und Esc) nicht sofort ab. Es fragt: „Einrichtung abbrechen?“ mit dem Satz, was danach gilt (ohne Passkey nur mit neuer Einladung, mit Passkey die PIN beim nächsten Anmelden), und bietet „Abbrechen und abmelden“ und „Weiter einrichten“. Ohne Passkey-Browser steht „Abmelden“ als einziger Knopf.
+**Annahme.** In der Einrichtung von Passkey und PIN meldet das ✕ (und Esc) nicht sofort ab. Es öffnet ein Fenster „Einrichtung abbrechen?“ mit dem Satz, was danach gilt (ohne Passkey nur mit neuer Einladung, mit Passkey die PIN beim nächsten Anmelden), und bietet „Weiter einrichten“ (Hauptknopf) und „Abbrechen und abmelden“; Esc und ein Tipp daneben richten weiter ein. Ohne Passkey-Browser steht „Abmelden“ als einziger Knopf.
 
-**Begründung.** Die Einladung ist nach dem E-Mail-Schritt verbraucht (`redeem_platform_invitation` vor der Einmal-Anmeldung, Zweitreview POR-003). Ein versehentlicher Tipp aufs ✕ kostete sonst eine neue Einladung. Der geführte Ablauf (ANN-572) verlangt ein ✕; der Handoff nennt dafür kein Verhalten.
+**Begründung.** Die Einladung ist nach dem E-Mail-Schritt verbraucht (`redeem_platform_invitation` vor der Einmal-Anmeldung, Zweitreview POR-003). Ein versehentlicher Tipp aufs ✕ kostete sonst eine neue Einladung. Der geführte Ablauf (ANN-572) verlangt ein ✕, der Handoff nennt dafür kein Verhalten; das Fenster folgt der Rückfrage vor dem Weggehen (ANN-566).
 
 **Anker.** `abbrechen` in `src/features/auth/einrichtung/AnmeldungEinrichten.tsx`.
 
 **Änderungspfad.** Ohne Rückfrage: `onSchliessen={onAbmelden}` · Aufwand `klein`.
 
-### ANN-687 — Sperre: die Fassung der Plattform nach der Adresse der gesperrten Seite
+### ANN-687 — Sperre: die Fassung der Plattform nach der Marke des Kontos in der Sitzung
 
 Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
-**Annahme.** Ob die Sitzungssperre die Sperrseite der Plattform („Zum Schutz gesperrt“) oder die der Praxis zeigt, entscheidet allein die Adresse der Seite, die gesperrt wurde: unter `/p` die Plattform, sonst die Praxis. Die Plattform-Fassung zeigt keine Angaben zur Person, auch nicht den eigenen Namen; die PIN hat eine eigene Seite mit „Zurück“.
+**Annahme.** Die Sitzungssperre zeigt die Sperrseite der Plattform („Zum Schutz gesperrt“) jedem Konto, das die Marke `platform_account` des Zugangsdienstes trägt (`app_metadata` der Sitzung, ANN-189), sonst die der Praxis - auch einem Praxiskonto in der Einsicht unter `/p`. Die Seiten-Adresse zählt nicht: Die Anwendung startet auf `/` und sperrt, bevor die Plattform nach `/p` leitet. Die Plattform-Fassung zeigt keine Angaben zur Person, auch nicht den eigenen Namen; die PIN hat eine eigene Seite mit „Zurück“. Die Plattformkonten im Seed tragen die Marke wie echte.
 
-**Begründung.** Handoff 2026-10-22, Abschnitt 5.2 („Plattform-Fassung für Plattformkonten“). Gesperrt ist der Abfragespeicher geräumt (ADR-025 Punkt 3); ein Merker, welche Oberfläche das Konto hat, wäre eine Angabe zur Person auf dem Gerät. Die Adresse steht ohnehin in der Adresszeile. Ein Plattformkonto liegt nie unter Praxiswegen (ADR-023 Punkt 25).
+**Begründung.** Handoff 2026-10-22, Abschnitt 5.2 („Plattform-Fassung für Plattformkonten“). Gesperrt ist der Abfragespeicher geräumt (ADR-025 Punkt 3); die Marke steht in der Sitzung, die die Sperre ohnehin hält, und setzt allein der Dienst. Ein Merker auf dem Gerät entfällt. Zweitreview 1c: die erste Fassung nach der Adresse traf Kaltstart und Einsicht falsch.
 
-**Anker.** `istPlattformpfad` in `src/features/platform/pfade.ts`, gefragt in `Sitzungssperre.tsx`.
+**Anker.** `istPlattformkonto` in `src/features/auth/sitzungssperre/Sitzungssperre.tsx`; Marke in `supabase/seed.sql`.
 
-**Änderungspfad.** Nach dem Konto statt nach der Adresse: ein Merker in `sessionStorage` beim Öffnen der Plattform · Aufwand `klein`.
+**Änderungspfad.** Ein Plattformkonto ohne Marke (etwa nachträglich angelegt) bekommt sie beim Anmeldedienst nachgetragen, oder die Sperre fragt `app.is_platform_account` über den Sperrstand · Aufwand `mittel`.
 
-### ANN-688 — Zugang gesperrt oder beendet: nur „Ich“, gesperrt dazu der Anruf bei der Praxis
-
-Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
-
-**Annahme.** Ohne lesbaren Zugang zeigt die Plattform den Kopf mit „Ich“ (auch unter 23rem, wo sonst „Menü“ steht), keine Reiterleiste, kein Menü und am Rechner keine Navigation; darunter die Markenfläche, Titel und Satz wie bisher und „Zu „Ich““. Ist der Zugang gesperrt und führt die Praxis eine Nummer, steht davor „Praxis anrufen“ als Hauptknopf; nach der Lesefrist nicht, dort ist „Ich“ der Weg (Widerruf, Abmelden).
-
-**Begründung.** Handoff 2026-10-22, Abschnitt 5.2; ANN-691 („Gerade ein gesperrter Zugang braucht den Weg zur Praxis“). Jeder Reiter führte auf dieselbe Auskunft zurück.
-
-**Anker.** `OhneLesbarenZugang` in `src/features/platform/PlattformApp.tsx`; `ohneZiele` in `Kopf` (`Navigation.tsx`).
-
-**Änderungspfad.** Den Anruf auch nach der Lesefrist: die Bedingung `gesperrt` streichen · Aufwand `klein`.
-
-### ANN-689 — Ungültige Einladung ohne „Praxis anrufen“
+### ANN-688 — „Praxis anrufen“ auf den Türen: gesperrter Zugang ja, Lesefrist vorbei und ungültige Einladung nein
 
 Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: Frage 1 in PR #292
 
-**Annahme.** Eine unbekannte, abgelaufene oder benutzte Einladung bekommt keinen Knopf „Praxis anrufen“, nur „Zur Anmeldung“ als Hauptknopf. Der Satz „Die Praxis stellt Ihnen gern eine neue aus.“ bleibt.
+**Annahme.** Ohne lesbaren Zugang zeigt die Plattform den Kopf mit „Ich“ (auch unter 23rem, wo sonst „Menü“ steht), keine Reiterleiste, kein Menü und am Rechner keine Navigation; darunter die Markenfläche, Titel und Satz wie bisher und „Zu „Ich““. Ist der Zugang gesperrt und führt die Praxis eine Nummer, steht davor „Praxis anrufen“ als Hauptknopf; nach der Lesefrist nicht, dort ist „Ich“ der Weg. Eine ungültige, abgelaufene oder benutzte Einladung bekommt keinen Anruf, nur „Zur Anmeldung“.
 
-**Begründung.** Die Rufnummer kommt aus dem Plattformkontext, und den gibt es erst nach der Anmeldung (ANN-691). Sie am Code abzufragen, verriete einem Fremden mit einem geratenen oder alten Code die Praxis und gäbe ungültigen Codes eine andere Auskunft als gültigen (ADR-023 Punkt 8).
+**Begründung.** Handoff 2026-10-22, Abschnitt 5.2; ANN-691 („Gerade ein gesperrter Zugang braucht den Weg zur Praxis“). Vor der Anmeldung gibt es keinen Plattformkontext, aus dem die Nummer käme; sie am Code abzufragen, gäbe ungültigen Codes eine andere Auskunft als gültigen (ADR-023 Punkt 8).
 
-**Anker.** Zustand `ungueltig` in `src/features/platform/EinladungPage.tsx`.
+**Anker.** `OhneLesbarenZugang` in `src/features/platform/PlattformApp.tsx`; `ohneZiele` in `Kopf` (`Navigation.tsx`); Zustand `ungueltig` in `EinladungPage.tsx`.
 
-**Änderungspfad.** Eine feste Nummer der Organisation ohne Code (öffentliche Angabe, wie im Impressum) als zweiter Knopf · Aufwand `mittel`.
+**Änderungspfad.** Den Anruf auch nach der Lesefrist: die Bedingung `gesperrt` streichen; für die Einladung eine öffentliche Nummer der Organisation ohne Code · Aufwand `klein` bzw. `mittel`.
+
+### ANN-689 — PIN-Felder der Einrichtung ohne Passwortmanager (ADR-025 vor dem Handoff)
+
+Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: —
+
+**Annahme.** Die Felder „PIN“ und „PIN noch einmal“ in der Einrichtung tragen `autocomplete="off"`, nicht `new-password`, wie der Handoff sie nennt. Sie bleiben groß und mittig wie ein Ziffernfeld (`inputmode="numeric"`).
+
+**Begründung.** ADR-025 Punkt 11: die PIN „nie auf dem Gerät“. `new-password` nach einer Adresse mit `autocomplete="username"` liest jeder Passwortmanager als neues Konto und bietet an, die PIN zur Adresse zu speichern. Der ADR (Rang 2) geht dem Handoff (Rang 3) vor (`PROJECT_PRINCIPLES.md` §21). Zweitreview 1c.
+
+**Anker.** `PinFestlegen` in `src/features/auth/einrichtung/PinFestlegen.tsx`; Test „bietet die PIN auch in der Einrichtung keinem Passwortmanager an“.
+
+**Änderungspfad.** `new-password` nur mit Änderung von ADR-025 Punkt 11 (Freigabe Jannes) · Aufwand `klein`.

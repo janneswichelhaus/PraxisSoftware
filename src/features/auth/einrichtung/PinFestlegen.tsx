@@ -15,6 +15,9 @@ function nurZiffern(wert: string): string {
   return wert.replace(/\D/g, '').slice(0, PIN_LAENGE);
 }
 
+/** Das Ziffernfeld der PIN: 56 hoch, Ziffern 28 mittig mit Laufweite (Handoff 5.2). */
+export const ZIFFERNFELD = 'min-h-14 text-center text-[1.75rem] tracking-[0.6em]';
+
 /**
  * Die App-PIN festlegen oder ändern (ADR-025 Punkt 11).
  *
@@ -26,6 +29,11 @@ function nurZiffern(wert: string): string {
  * im Handoff 2026-10-22 (Abschnitt 5.2): „PIN“ und „PIN noch einmal“, groß
  * und mittig wie ein Ziffernfeld. Der Hauptknopf steht dann im Fuß des
  * geführten Ablaufs und sendet über `form` dieses Formular ab.
+ *
+ * Die Felder bieten die PIN keinem Passwortmanager an (`autocomplete="off"`):
+ * Sie liegt nie auf dem Gerät (ADR-025 Punkt 11). Der Handoff nennt
+ * `new-password`; das hieße zusammen mit der Adresse davor „Konto anlegen“,
+ * und der Manager böte das Speichern an (ANN-689).
  */
 export function PinFestlegen({
   onGesetzt,
@@ -111,8 +119,7 @@ export function PinFestlegen({
   }
 
   const einrichtung = formular !== undefined;
-  // 56 hoch, Ziffern 28 mittig mit Laufweite (Handoff Abschnitt 5.2).
-  const zifferfeld = einrichtung ? 'h-14 text-center text-[1.75rem] tracking-[0.6em]' : '';
+  const zifferfeld = einrichtung ? ZIFFERNFELD : '';
 
   return (
     <form
@@ -138,7 +145,7 @@ export function PinFestlegen({
         geheimnis="PIN"
         name="pin-neu"
         inputMode="numeric"
-        autoComplete={einrichtung ? 'new-password' : 'off'}
+        autoComplete="off"
         className={zifferfeld}
         maxLength={PIN_LAENGE}
         feldId={FELD_PIN}
@@ -155,7 +162,7 @@ export function PinFestlegen({
         geheimnis="PIN"
         name="pin-neu-wiederholung"
         inputMode="numeric"
-        autoComplete={einrichtung ? 'new-password' : 'off'}
+        autoComplete="off"
         className={zifferfeld}
         maxLength={PIN_LAENGE}
         feldId={FELD_WIEDERHOLUNG}

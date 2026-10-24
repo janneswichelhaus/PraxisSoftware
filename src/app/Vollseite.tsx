@@ -97,7 +97,7 @@ export function Vollseite({
       </div>
       {oben}
       {zeichen || titel || einleitung ? (
-        <div className="mt-4 mb-6 flex flex-col items-start gap-3">
+        <div className="mb-6 flex flex-col items-start gap-3">
           {zeichen ? (
             <span
               aria-hidden="true"

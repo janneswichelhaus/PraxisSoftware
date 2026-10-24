@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Vollseite } from '@/app/Vollseite';
 import { GESPERRT_TITEL } from '@/app/tabtitel';
 import { SCHLOSS } from '@/app/tuerzeichen';
 import { ANMELDESAETZE } from '../anmeldefehler';
 import { PIN_LAENGE, gibMitPinFrei, hatPin } from '../appPin';
+import { ZIFFERNFELD } from '../einrichtung/PinFestlegen';
 import { useFokusNachWechsel } from '../fokus';
 import { PasskeyFehler, anmeldenMitPasskey, passkeyMoeglich } from '../passkey';
 import { usePasskeyVonSelbst } from '../passkeyVonSelbst';
@@ -23,9 +25,9 @@ import { SPERRFRISTEN } from './sperrstand';
  *
  * Was anders ist: Passkey und PIN stehen als zwei gleich sichtbare Wege
  * nebeneinander; die PIN hat eine eigene Seite mit „Zurück“, damit das Feld
- * über der Tastatur Platz hat. Welche Fassung gilt, entscheidet die Adresse
- * der gesperrten Seite (`istPlattformpfad`, ANN-687) - gesperrt gibt es keine
- * Daten, aus denen es sich sonst ablesen ließe.
+ * über der Tastatur Platz hat. Welche Fassung gilt, entscheidet die Marke
+ * des Kontos in der Sitzung (`platform_account`, ANN-687) - gesperrt gibt es
+ * keine Daten, aus denen es sich sonst ablesen ließe.
  */
 
 const PIN_FELD = 'sperre-pin';
@@ -194,7 +196,7 @@ export function PlattformSperrseite({
             maxLength={PIN_LAENGE}
             feldId={PIN_FELD}
             value={pin}
-            className="h-14 text-center text-[1.75rem] tracking-[0.6em]"
+            className={ZIFFERNFELD}
             onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, PIN_LAENGE))}
           />
           <Button type="submit" disabled={pinLaeuft || pin.length !== PIN_LAENGE}>
@@ -213,7 +215,7 @@ export function PlattformSperrseite({
       titel="Zum Schutz gesperrt"
       einleitung={
         haelt
-          ? 'Eine Eingabe ließ sich nicht sichern. Sie steht nach dem Entsperren wieder da – bitte dann speichern.'
+          ? 'Eine Eingabe ließ sich nicht sichern. Sie steht nach dem Entsperren wieder da – bitte dann speichern. Wer sich mit einem anderen Zugang anmeldet, verwirft sie.'
           : pinDa === false
             ? 'Offene Texte sind als Entwurf gesichert. Entsperren Sie mit Gesicht oder Finger.'
             : 'Offene Texte sind als Entwurf gesichert. Entsperren Sie mit Gesicht, Finger oder Ihrer PIN.'
@@ -246,10 +248,27 @@ export function PlattformSperrseite({
           </Button>
         ) : null}
         {/* Wer sich anders anmeldet, verwirft eine festgehaltene Eingabe
-            (ANN-257) - abgemeldet wird erst hier. */}
-        <Button variant="quiet" className="mt-2" onClick={onAbmelden}>
-          Mit anderem Zugang anmelden
-        </Button>
+            (ANN-257): dann erst nach einer Rückfrage (PLATTFORM.md,
+            Zerstörendes mit Rückfrage). Ohne sie ist alles als Entwurf
+            gesichert, und es geht gleich. */}
+        <div className="mt-2 flex flex-col">
+          {haelt ? (
+            <Rueckfrage
+              ausloeser="Mit anderem Zugang anmelden"
+              ausloeserVariante="quiet"
+              ausloeserBreit
+              bestaetigen="Verwerfen und abmelden"
+              abbrechen="Zurück"
+              onBestaetigen={onAbmelden}
+            >
+              Die Eingabe, die sich nicht sichern ließ, geht dabei verloren.
+            </Rueckfrage>
+          ) : (
+            <Button variant="quiet" onClick={onAbmelden}>
+              Mit anderem Zugang anmelden
+            </Button>
+          )}
+        </div>
       </div>
     </Vollseite>
   );
