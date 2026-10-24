@@ -88,6 +88,9 @@ als eigene Radiogruppe (DR-140).
 4. **Tastatur offen:** Reiterleiste weg, Sendeknopf über der Tastatur.
 5. **Begleitperson** („Sie handeln für …“) und **Training** (dieselben Seiten).
 6. **Rechner (1280 px):** Liste links, Gespräch rechts.
+7. **Neue Antwort am Reiter „Nachrichten“** (Entscheidung Jannes, PR #297 Frage 5): Seit der
+   Übersicht aus Schritt 1e steht eine Antwort der Praxis weiter unten. Hier entscheiden, ob der
+   Reiter dafür ein Zeichen trägt – ruhig, ohne Zahl, mit Wort für Vorlesesoftware; mit Empfehlung.
 
 ## Feste Grenzen
 
@@ -119,7 +122,8 @@ Laden/Fehler/Leer, Kleingedrucktes.
   Beschwerden. Im Notfall 112, außerhalb der Sprechzeiten der ärztliche Bereitschaftsdienst 116117.“
   Er steht dauerhaft und nicht wegklickbar über dem Eingabefeld; 112 und 116117 sind anrufbar.
 - Anhänge nur aus der Kamera der App, nie aus der Mediathek; kein Herunterladen.
-- Keine neuen Funktionen; die Person der Praxis nur als Variante „wenn vorhanden“.
+- Keine neuen Funktionen außer dem Zeichen am Reiter (Bildschirm 7); die Person der Praxis nur als
+  Variante „wenn vorhanden“.
 - Nur synthetische Daten.
 - „Bewegung reduzieren“: nur Farbe.
 

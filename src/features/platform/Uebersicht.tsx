@@ -21,6 +21,7 @@ import { nurFragen } from '@/lib/erfassungsgroessen';
 import {
   aboSchluessel,
   befundbogenSchluessel,
+  benachrichtigungSchluessel,
   checkinsSchluessel,
   ernaehrungSchluessel,
   gewohnheitenSchluessel,
@@ -38,6 +39,7 @@ import { Besuchskarte } from './Besuchskarte';
 import { useNurLesen, usePlattformApi } from './einsicht';
 import { nachDemCheckin } from './checkintexte';
 import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
+import { mitteilungenOffen } from './einstiegsablauf';
 import {
   ersterTermin,
   handlung,
@@ -54,7 +56,7 @@ import { fuerDiePlattform } from './instrumentwahl';
 import { useMarkenmoment } from './markenmoment';
 import { THEMA_NAME } from './nachrichtentexte';
 import { paketStand } from './paketbedingungen';
-import { PLATTFORM_PFAD, bereichParameter } from './pfade';
+import { BENACHRICHTIGUNGEN_ANKER, PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { zahlungsstand } from './zahlungsstand';
 import {
   datum,
@@ -182,6 +184,13 @@ export function Uebersicht({
     queryFn: () => api.ladeErnaehrung(id),
     enabled: !nurLesen && !begleitung,
   });
+  // ANN-702: ob die Person schon über Mitteilungen entschieden hat. Die
+  // Einsicht fragt das nicht - die Wahl ist Sache der Person (ADR-024 Punkt 15).
+  const mitteilungen = useQuery({
+    queryKey: benachrichtigungSchluessel(id, null),
+    queryFn: () => api.ladeBenachrichtigungen(id, null),
+    enabled: !nurLesen,
+  });
 
   // Nur, was die Übersicht hier selbst abfragt: Eine ausgeschaltete Abfrage
   // übernähme sonst den Fehler, den eine andere Seite unter demselben
@@ -200,6 +209,7 @@ export function Uebersicht({
       [plaene, true],
       [pakete, !behandlung],
       [ernaehrung, !nurLesen && !begleitung],
+      [mitteilungen, !nurLesen],
     ] as const
   )
     .filter(([, an]) => an)
@@ -358,6 +368,17 @@ export function Uebersicht({
         titel: 'Ernährungs\u00ADtagebuch',
         satz: 'Mahlzeit eintragen',
         to: p('/ernaehrung/tagebuch'),
+      });
+    }
+    // Wer im Einstieg nichts gewählt hat (etwa mit „Später“), findet hier den
+    // Weg dorthin - bis zur ersten Wahl (ANN-702). Immer zuletzt.
+    if (mitteilungenOffen(mitteilungen.data ?? null)) {
+      heute.push({
+        schluessel: 'mitteilungen',
+        zeichen: ZEICHEN.mitteilungen,
+        titel: 'Mitteilungen einschalten',
+        satz: 'Am Vortag eines Termins oder wenn die Praxis antwortet',
+        to: `${p('/einstellungen')}#${BENACHRICHTIGUNGEN_ANKER}`,
       });
     }
   }
@@ -894,6 +915,12 @@ const ZEICHEN = {
     <svg {...SVG}>
       <rect x="5" y="4" width="14" height="17" rx="2" />
       <path d="M9 4V3h6v1M9 13l2 2 4-4" />
+    </svg>
+  ),
+  mitteilungen: (
+    <svg {...SVG}>
+      <path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z" />
+      <path d="M10 20.5a2 2 0 0 0 4 0" />
     </svg>
   ),
 };

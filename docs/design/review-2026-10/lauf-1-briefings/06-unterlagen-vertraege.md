@@ -75,7 +75,10 @@ Freigaben einzeln ankreuzbar.
 
 1. **Rechnungen:** Liste mit Betrag, Empfänger („an Beihilfestelle Tübingen“), fällig am und
    Zustand (offen ohne Warnton, überfällig mit Warnzeichen und Wort, bezahlt, storniert). Zustände:
-   keine Rechnung, laden, Fehler, ohne Netz; Bereichsschalter Behandlung | Training.
+   keine Rechnung, laden, Fehler, ohne Netz; Bereichsschalter Behandlung | Training. Das Wort für
+   den Zustand gilt auch unter „Neu für Sie“ auf der Übersicht: heute „offen“ statt „Steht aus“
+   aus dem Handoff 2026-10-22 (ANN-701, Entscheidung Jannes, PR #297 Frage 3) – umbenennen nur
+   beide zusammen.
 2. **Eine Rechnung:** Betrag groß mit „fällig am“, Zahlungsangaben als Karte (IBAN, Verwendungszweck
    kopieren), Positionen, Steuerhinweis, Behandlungsgrundlage, „Drucken oder als PDF sichern“;
    bezahlt, überfällig, storniert.

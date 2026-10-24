@@ -29,6 +29,7 @@ import {
   type Plattformzugang,
 } from './api';
 import { usePlattformApi } from './einsicht';
+import { BENACHRICHTIGUNGEN_ANKER } from './pfade';
 import { datum } from './zeit';
 
 /**
@@ -46,7 +47,14 @@ import { datum } from './zeit';
 const STUNDEN = Array.from({ length: 24 }, (_, i) => i);
 const stunde = (h: number) => `${String(h).padStart(2, '0')}:00 Uhr`;
 
-export function Benachrichtigungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
+export function Benachrichtigungen({
+  zugaenge,
+  aufgeklappt,
+}: {
+  zugaenge: Plattformzugang[];
+  /** Von „Mitteilungen einschalten“ auf der Übersicht (ANN-702): die Wahl dieses Zugangs offen. */
+  aufgeklappt?: string | undefined;
+}) {
   const stand = pushStand();
   const { data: endpunkt = null, isPending } = useQuery({
     queryKey: ENDPUNKT_SCHLUESSEL,
@@ -60,6 +68,7 @@ export function Benachrichtigungen({ zugaenge }: { zugaenge: Plattformzugang[] }
   // sie bei zwei Zugängen über 3.000 px untereinander.
   return (
     <Section
+      id={BENACHRICHTIGUNGEN_ANKER}
       titel="Benachrichtigungen"
       hinweis="Von Anfang an aus. Alles, was zu tun ist, sehen Sie auch ohne Benachrichtigung in Ihrer Übersicht."
     >
@@ -74,6 +83,7 @@ export function Benachrichtigungen({ zugaenge }: { zugaenge: Plattformzugang[] }
                 key={z.access_id}
                 inKarte
                 kopf="betont"
+                offen={z.access_id === aufgeklappt}
                 summary={lesbar.length > 1 ? zugangsname(z) : 'Benachrichtigungen wählen'}
               >
                 <WahlFuerZugang zugang={z} endpunkt={endpunkt} />

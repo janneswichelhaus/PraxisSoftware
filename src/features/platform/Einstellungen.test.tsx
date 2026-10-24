@@ -80,6 +80,41 @@ describe('Einstellungen (POR-020)', () => {
     expect(gespeicherteSchriftgroesse()).toBe('sehr-gross');
   });
 
+  it('führt von „Mitteilungen einschalten“ zu den Benachrichtigungen, die Wahl offen (ANN-702)', async () => {
+    const gerollt = vi.spyOn(Element.prototype, 'scrollIntoView');
+    renderWithProviders(
+      <Einstellungen zugaenge={[ZUGANG]} />,
+      '/p/einstellungen?bereich=treatment#benachrichtigungen',
+    );
+    const wahl = await screen.findByText('Benachrichtigungen wählen');
+    expect(wahl.closest('details')).toHaveAttribute('open');
+    const abschnitt = screen.getByRole('heading', { level: 2, name: 'Benachrichtigungen' });
+    expect(gerollt.mock.contexts).toContain(abschnitt.closest('section'));
+  });
+
+  it('öffnet bei zwei Bereichen die Wahl des Bereichs, aus dem die Karte kam', async () => {
+    const training: Plattformzugang = {
+      ...ZUGANG,
+      access_id: 'cafecafe-cafe-4afe-8afe-000000000003',
+      relationship_kind: 'training',
+    };
+    renderWithProviders(
+      <Einstellungen zugaenge={[ZUGANG, training]} />,
+      '/p/einstellungen?bereich=training#benachrichtigungen',
+    );
+    const wahlTraining = await screen.findByText('Für Ihr Training');
+    expect(wahlTraining.closest('details')).toHaveAttribute('open');
+    expect(screen.getByText('Für Ihre Behandlung').closest('details')).not.toHaveAttribute('open');
+  });
+
+  it('lässt die Wahl ohne Sprungziel zu und rollt nicht', async () => {
+    const gerollt = vi.spyOn(Element.prototype, 'scrollIntoView');
+    renderWithProviders(<Einstellungen zugaenge={[ZUGANG]} />, '/p/einstellungen');
+    const wahl = await screen.findByText('Benachrichtigungen wählen');
+    expect(wahl.closest('details')).not.toHaveAttribute('open');
+    expect(gerollt).not.toHaveBeenCalled();
+  });
+
   it('ohne Speicher des Browsers gilt „Normal", und die Seite bleibt benutzbar', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('gesperrt');
