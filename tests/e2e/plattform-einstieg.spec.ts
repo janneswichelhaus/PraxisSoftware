@@ -99,14 +99,20 @@ async function tippe(ziel: Locator) {
 }
 
 async function bewegungAbwarten(page: Page) {
-  await page.evaluate(() =>
-    Promise.all(
-      document
-        .getAnimations()
-        .filter((bewegung) => bewegung.effect?.getTiming().iterations !== Infinity)
-        .map((bewegung) => bewegung.finished.catch(() => undefined)),
-    ),
-  );
+  // Abgefragt statt auf `finished` gewartet: Beginnt eine Einblendung erst
+  // nach dem Laden (eine Meldung, die mit den Daten kommt), löste Chromium
+  // dieses Versprechen ohne neues Bild nicht auf - die Bewegung stand längst,
+  // die Prüfung wartete bis zum Abbruch.
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        document
+          .getAnimations()
+          .filter((bewegung) => bewegung.effect?.getTiming().iterations !== Infinity)
+          .every((bewegung) => !bewegung.pending && bewegung.playState !== 'running'),
+      ),
+    )
+    .toBe(true);
 }
 
 async function ueberlaeuft(page: Page): Promise<boolean> {

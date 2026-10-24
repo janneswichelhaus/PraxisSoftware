@@ -64,11 +64,14 @@ test.describe('Plattform', () => {
     }) => {
       await page.setViewportSize({ width: breite, height: 900 });
 
-      // Die Übersicht trägt Befundbogen, nächsten Termin und offene Rechnung.
+      // Die Übersicht trägt den Fragebogen als Hauptsache, den nächsten
+      // Besuch und die offene Rechnung (Schritt 1e).
       await page.goto(`${PRUEFSEITE}?seite=geruest`);
-      await expect(page.getByText('Fragebogen ausfüllen')).toBeVisible();
-      await expect(page.getByText('Nächster Termin')).toBeVisible();
-      await expect(page.getByText('Offene Rechnung')).toBeVisible();
+      await expect(
+        page.getByRole('region', { name: 'Fragebogen vor Ihrem ersten Termin' }),
+      ).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Nächster Besuch' })).toBeVisible();
+      await expect(page.getByRole('link', { name: /^Rechnung RG-2026-0007/ })).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
 
       await page.goto(`${PRUEFSEITE}?seite=termine`);
@@ -139,7 +142,10 @@ test.describe('Plattform', () => {
       expect(await ueberlaeuft(page)).toBe(false);
 
       await page.goto(`${PRUEFSEITE}?seite=geruest`);
-      await expect(page.getByRole('heading', { name: 'Guten Tag' })).toBeVisible();
+      // Der Gruß hängt an der Tageszeit (Schritt 1e).
+      await expect(
+        page.getByRole('heading', { level: 1, name: /^Guten (Morgen|Tag|Abend)/ }),
+      ).toBeVisible();
       await expect(page.getByRole('navigation', { name: 'Bereich' })).toBeVisible();
       // Seit DRP-EPIC-003 heißt auch die Wortmarke im Kopf „Übersicht“ - jedes Ziel zählt.
       for (const name of ['Behandlung', 'Training', 'Ich', 'Übersicht']) {

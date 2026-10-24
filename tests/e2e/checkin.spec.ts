@@ -58,7 +58,7 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?seite=checkin-uebersicht`);
       await expect(page.getByText('3 kurze Fragen', { exact: false })).toBeVisible();
-      // Die ganze Zeile unter „Jetzt dran“ ist das Ziel (ANN-465).
+      // Seit Schritt 1e die Hauptsache: der ganze Knopf ist das Ziel.
       const zeile = page.getByRole('link', { name: /Check-in beantworten/ });
       await expect(zeile).toBeVisible();
       expect((await zeile.boundingBox())!.height).toBeGreaterThanOrEqual(56);

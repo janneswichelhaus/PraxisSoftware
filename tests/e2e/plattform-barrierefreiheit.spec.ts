@@ -19,6 +19,8 @@ import type AxeCore from 'axe-core';
  * Zeitdruck) prüft die Sichtung.
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/plattform.html';
+/** Der Gruß der Übersicht hängt an der Tageszeit (Handoff 2026-10-22, 5.1). */
+const GRUSS = /^Guten (Morgen|Tag|Abend)/;
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 
 /**
@@ -26,7 +28,12 @@ const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
  * Seitentitel, bei einem geführten Ablauf (`fenster`) der Name des Fensters.
  */
 const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] = [
-  { seite: 'geruest', merkmal: 'Guten Tag' },
+  { seite: 'geruest', merkmal: GRUSS },
+  // Schritt 1e: die Übersicht im Training, in der Lesefrist, beim Laden und
+  // mit Fehler - das Skelett hat keine Überschrift, nur seinen Satz.
+  { seite: 'uebersicht-training', merkmal: GRUSS },
+  { seite: 'uebersicht-lesefrist', merkmal: GRUSS },
+  { seite: 'uebersicht-fehler', merkmal: GRUSS },
   // DRP-EPIC-005: Der Einstieg ist ein geführter Ablauf im Fenster.
   { seite: 'einstieg', merkmal: /^Willkommen/, fenster: true },
   { seite: 'einstieg-begleitung', merkmal: /^Willkommen/, fenster: true },
@@ -46,14 +53,14 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'einwilligungen', merkmal: 'Einwilligungen' },
   { seite: 'daten', merkmal: 'Meine Daten' },
   { seite: 'einstellungen', merkmal: 'Einstellungen' },
-  { seite: 'handeln-fuer', merkmal: 'Guten Tag' },
+  { seite: 'handeln-fuer', merkmal: GRUSS },
   { seite: 'gesperrt', merkmal: 'Ihr Zugang ist gesperrt' },
   { seite: 'ende', merkmal: 'Ich' },
   // Schritt 1c (Handoff 2026-10-22, 5.2): nach der Lesefrist auf der Übersicht.
   { seite: 'ende-uebersicht', merkmal: 'Ihr Zugang ist beendet' },
   // ANG-EPIC-001: das Nachsorge-Abo mit Kündigungsknopf und die Übersicht danach.
   { seite: 'abo', merkmal: 'Nachsorge-Abo' },
-  { seite: 'abo-gekuendigt', merkmal: 'Guten Tag' },
+  { seite: 'abo-gekuendigt', merkmal: GRUSS },
   // ANG-EPIC-002: das eigene Trainingspaket mit Preisen, und die Preise ohne Paket.
   { seite: 'paket', merkmal: 'Trainingspaket' },
   { seite: 'preise', merkmal: 'Trainingspaket' },
@@ -61,7 +68,7 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'angebot', merkmal: 'Training nach Ihrer Behandlung' },
   { seite: 'angebot-frueh', merkmal: 'Training nach Ihrer Behandlung' },
   { seite: 'angebot-wartet', merkmal: 'Training nach Ihrer Behandlung' },
-  { seite: 'angebot-uebersicht', merkmal: 'Guten Tag' },
+  { seite: 'angebot-uebersicht', merkmal: GRUSS },
   { seite: 'vertrag', merkmal: 'Trainingsvertrag' },
   // ERN-002: Ernährung mit Gewicht, Zielwerten und den eingeklappten Einstellungen.
   { seite: 'ernaehrung', merkmal: 'Ernährung' },
@@ -87,14 +94,20 @@ async function oeffne(page: Page, seite: string, merkmal: RegExp | string, fenst
  * Platz. Endlose Bewegungen (der Puls des Skeletts) zählen nicht.
  */
 async function bewegungAbwarten(page: Page) {
-  await page.evaluate(() =>
-    Promise.all(
-      document
-        .getAnimations()
-        .filter((bewegung) => bewegung.effect?.getTiming().iterations !== Infinity)
-        .map((bewegung) => bewegung.finished.catch(() => undefined)),
-    ),
-  );
+  // Abgefragt statt auf `finished` gewartet: Beginnt eine Einblendung erst
+  // nach dem Laden (eine Meldung, die mit den Daten kommt), löste Chromium
+  // dieses Versprechen ohne neues Bild nicht auf - die Bewegung stand längst,
+  // die Prüfung wartete bis zum Abbruch.
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        document
+          .getAnimations()
+          .filter((bewegung) => bewegung.effect?.getTiming().iterations !== Infinity)
+          .every((bewegung) => !bewegung.pending && bewegung.playState !== 'running'),
+      ),
+    )
+    .toBe(true);
 }
 
 async function ueberlaeuft(page: Page): Promise<boolean> {
@@ -259,7 +272,7 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
 
   test('375 px: eine Reihe, vier Wörter ungekappt, Ziele 68 hoch, Kopf 72', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 900 });
-    await oeffne(page, 'geruest', 'Guten Tag');
+    await oeffne(page, 'geruest', GRUSS);
     await expect(leiste(page)).toHaveAttribute('data-stufe', '1');
     const ziele = leiste(page).getByRole('link');
     await expect(ziele).toHaveCount(4);
@@ -284,7 +297,7 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
     }) => {
       await mitSchrift(page, groesse);
       await page.setViewportSize({ width: breite, height: 900 });
-      await oeffne(page, 'geruest', 'Guten Tag');
+      await oeffne(page, 'geruest', GRUSS);
       await expect(leiste(page)).toHaveAttribute('data-stufe', '2');
       const ziele = leiste(page).getByRole('link');
       await expect(ziele).toHaveCount(4);
@@ -304,7 +317,7 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
     }) => {
       if (groesse !== 'normal') await mitSchrift(page, groesse);
       await page.setViewportSize({ width: 188, height: 406 });
-      await oeffne(page, 'geruest', 'Guten Tag');
+      await oeffne(page, 'geruest', GRUSS);
       await expect(leiste(page)).toBeHidden();
       const menue = page.getByRole('button', { name: 'Menü' });
       await expect(menue).toBeVisible();
@@ -355,7 +368,7 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 840 });
-    await oeffne(page, 'geruest', 'Guten Tag');
+    await oeffne(page, 'geruest', GRUSS);
     await expect(leiste(page)).toHaveCount(0);
     const navigation = page.locator('header').getByRole('navigation', { name: 'Plattform' });
     const ziele = navigation.getByRole('link');
@@ -369,12 +382,47 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
     }
     await expect(page.getByRole('button', { name: 'Menü' })).toBeHidden();
     const marke = await page.getByRole('link', { name: 'Übersicht' }).first().boundingBox();
-    const titel = await page.getByRole('heading', { level: 1, name: 'Guten Tag' }).boundingBox();
+    const titel = await page.getByRole('heading', { level: 1, name: GRUSS }).boundingBox();
     expect(Math.abs((titel?.x ?? 0) - (marke?.x ?? 0))).toBeLessThanOrEqual(1);
-    // Einspaltig in `max-w-spalte` (48rem), nicht über die ganze Breite.
+    // Schritt 1e: Die Übersicht steht ab 900 px Inhaltsbreite in zwei
+    // Spalten - links die Hauptsache, rechts der nächste Besuch - in
+    // `max-w-inhalt` (1200 mit 40 Rand).
+    const hauptsache = await page.getByRole('region', { name: /Fragebogen/ }).boundingBox();
+    const besuch = await page
+      .getByRole('heading', { level: 2, name: 'Nächster Besuch' })
+      .boundingBox();
+    expect(Math.abs((hauptsache?.x ?? 0) - (marke?.x ?? 0))).toBeLessThanOrEqual(1);
+    expect(besuch?.x ?? 0).toBeGreaterThan((hauptsache?.x ?? 0) + (hauptsache?.width ?? 0));
+    expect(Math.abs((besuch?.y ?? 0) - (hauptsache?.y ?? 0))).toBeLessThanOrEqual(24);
+    expect(
+      (await page.locator('main > div').first().boundingBox())?.width ?? 0,
+    ).toBeLessThanOrEqual(1120.5);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+
+    // Jede andere Seite einspaltig in `max-w-spalte` (48rem).
+    await oeffne(page, 'termine', 'Termine');
     const spalte = await page.locator('main > div').first().boundingBox();
     expect(spalte?.width ?? 0).toBeLessThanOrEqual(768.5);
-    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+  });
+
+  test('375 px: die Übersicht einspaltig, Hauptsache vor „Heute“ vor Besuch vor „Neu für Sie“', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await oeffne(page, 'geruest', GRUSS);
+    const oben = async (name: string | RegExp) =>
+      (await page.getByRole('heading', { level: 2, name }).first().boundingBox())?.y ?? 0;
+    const folge = [
+      await oben(/Fragebogen/),
+      await oben('Heute'),
+      await oben('Nächster Besuch'),
+      await oben('Neu für Sie'),
+    ];
+    expect(folge).toEqual([...folge].sort((a, b) => a - b));
+    // Höchstens drei Aufgabenkarten (PLATTFORM.md); hier zwei.
+    await expect(
+      page.getByRole('link', { name: /^(Ihre Übungen für heute|Eine kleine Gewohnheit)/ }),
+    ).toHaveCount(2);
   });
 });
 
@@ -462,7 +510,7 @@ test.describe('Markenmoment B auf der Übersicht', () => {
     await page.clock.install();
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto(`${PRUEFSEITE}?seite=geruest`);
-    await expect(page.getByRole('heading', { level: 1, name: 'Guten Tag' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: GRUSS })).toBeVisible();
     await expect(page.locator('.markenmoment')).toHaveCount(1);
     const enden = await bewegungen(page);
     expect(enden.length).toBeGreaterThan(1);
@@ -472,7 +520,7 @@ test.describe('Markenmoment B auf der Übersicht', () => {
 
     // Neuladen im selben Tab: kein zweiter Moment.
     await page.reload();
-    await expect(page.getByRole('heading', { level: 1, name: 'Guten Tag' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: GRUSS })).toBeVisible();
     await expect(page.locator('.markenmoment')).toHaveCount(0);
   });
 
@@ -480,7 +528,7 @@ test.describe('Markenmoment B auf der Übersicht', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto(`${PRUEFSEITE}?seite=geruest`);
-    await expect(page.getByRole('heading', { level: 1, name: 'Guten Tag' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: GRUSS })).toBeVisible();
     await expect(page.locator('.markenmoment')).toHaveCount(0);
     expect(await bewegungen(page)).toEqual([]);
   });

@@ -17,6 +17,7 @@ import {
   checkinsSchluessel,
   gewohnheitenSchluessel,
   dokumenteSchluessel,
+  nachrichtenSchluessel,
   einstiegSchluessel,
   einwilligungenSchluessel,
   ernaehrungSchluessel,
@@ -33,6 +34,8 @@ import {
   type EigeneErnaehrung,
   type EigeneGewohnheiten,
   type EigenesTagebuch,
+  type EigenePlaene,
+  type Nachrichten,
   type Einwilligung,
   type MeinPaket,
   type Nachsorgeabo,
@@ -89,7 +92,10 @@ import '@/index.css';
  * legt den Hausbesuch in weniger als 24 Stunden (`late_notice`). Seit
  * DRP-EPIC-005 der Einstieg als geführter Ablauf: `einstieg` (zwei offene
  * Einwilligungen, der Fragebogen steht aus), `einstieg-eingerichtet` (nach
- * „PIN speichern“) und `einstieg-begleitung` (für Maximilian). Die Daten
+ * „PIN speichern“) und `einstieg-begleitung` (für Maximilian). Seit Schritt
+ * 1e die Übersicht: `geruest` mit dem Fragebogen als Hauptsache,
+ * `uebersicht-training`, `uebersicht-lesefrist`, `uebersicht-laden` (eine
+ * Abfrage endet nie) und `uebersicht-fehler` (eine scheitert). Die Daten
  * liegen vorab im Cache; gesprochen wird mit keinem Server - was eine Seite
  * sendet, beantwortet der Test über abgefangene Anfragen. Alles ist
  * synthetisch.
@@ -505,9 +511,32 @@ const dokumente: Dokument[] = [
     released_at: inTagen(-2, 10),
   },
 ];
+// Schritt 1e: In der Lesefrist liegt die Behandlung hinter der Person -
+// zwei Termine, der erste vor neun Wochen, der letzte vor neun Tagen.
+const vergangeneTermine: Termin[] = [
+  {
+    ...termine[0]!,
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-0000000000e1',
+    starts_at: inTagen(-63, 9, 30),
+    ends_at: inTagen(-63, 10, 30),
+    status: 'completed',
+    late_notice: null,
+  },
+  {
+    ...termine[0]!,
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-0000000000e2',
+    starts_at: inTagen(-9, 9, 30),
+    ends_at: inTagen(-9, 10, 30),
+    status: 'completed',
+    late_notice: null,
+  },
+];
 for (const z of zugaenge) {
   const behandlung = z.relationship_kind === 'treatment';
-  client.setQueryData(termineSchluessel(z.access_id), behandlung ? termine : [termine[1]!]);
+  client.setQueryData(
+    termineSchluessel(z.access_id),
+    behandlung ? (seite === 'uebersicht-lesefrist' ? vergangeneTermine : termine) : [termine[1]!],
+  );
   client.setQueryData(wuenscheSchluessel(z.access_id), behandlung ? wuensche : []);
   client.setQueryData(rechnungenSchluessel(z.access_id), behandlung ? rechnungen : []);
   client.setQueryData(dokumenteSchluessel(z.access_id), behandlung ? dokumente : []);
@@ -659,7 +688,10 @@ const angebote: Paketangebote = {
     },
   ],
 };
-client.setQueryData(paketeSchluessel(zugaenge[1]!.access_id), seite === 'paket' ? [paket] : []);
+client.setQueryData(
+  paketeSchluessel(zugaenge[1]!.access_id),
+  seite === 'paket' || seite === 'uebersicht-training' ? [paket] : [],
+);
 client.setQueryData(angeboteSchluessel(zugaenge[1]!.access_id), angebote);
 // KND-EPIC-001: das Angebot aus der Akte und der eigene Vertrag im Training.
 const trainingsangebot: Trainingsangebot = {
@@ -735,6 +767,131 @@ client.setQueryData(termineSchluessel(begleitung.access_id), [termine[0]!]);
 client.setQueryData(wuenscheSchluessel(begleitung.access_id), []);
 client.setQueryData(rechnungenSchluessel(begleitung.access_id), []);
 client.setQueryData(befundbogenSchluessel(begleitung.access_id), []);
+
+// Schritt 1e (DR-126): Die Übersicht liest alle Bereiche in einem Zustand -
+// eine Abfrage ohne Stand wäre hier ein Fehler. Nachrichten mit einer Antwort
+// der Praxis in der Behandlung; im Training ein Plan für zu Hause; für die
+// Begleitung nichts davon.
+const beantwortet: Nachrichten['messages'][number] = {
+  id: 'dededede-dede-4ede-8ede-0000000000a1',
+  topic: 'exercise',
+  reference_label: 'Mini-Kniebeuge mit Halt',
+  status: 'answered',
+  due_on: null,
+  created_at: inTagen(-2, 18),
+  last_entry_at: inTagen(-1, 9),
+  closed_at: null,
+  closed_by_side: null,
+  entries: [
+    {
+      id: 'dededede-dede-4ede-8ede-0000000000b1',
+      side: 'person',
+      body: 'Darf ich die Kniebeuge auch abends machen?',
+      created_at: inTagen(-2, 18),
+      author: 'you',
+      author_label: null,
+    },
+    {
+      id: 'dededede-dede-4ede-8ede-0000000000b2',
+      side: 'practice',
+      body: 'Ja, gern - nur nicht direkt vor dem Schlafen.',
+      created_at: inTagen(-1, 9),
+      author: 'practice',
+      author_label: null,
+    },
+  ],
+  attachment_count: 0,
+  attachments: [],
+};
+for (const z of [...zugaenge, begleitung]) {
+  client.setQueryData(nachrichtenSchluessel(z.access_id), {
+    response_workdays: 2,
+    can_write: true,
+    health_topics: true,
+    messages: z === zugaenge[0] ? [beantwortet] : [],
+  } satisfies Nachrichten);
+}
+const trainingsplan: EigenePlaene = {
+  today: inTagen(0, 0).slice(0, 10),
+  plans: [
+    {
+      id: 'aeaeaeae-aeae-4eae-8eae-0000000000f2',
+      service_area: 'training',
+      title: 'Kraft für zu Hause',
+      status: 'assigned',
+      sessions_per_week: 2,
+      assigned_on: inTagen(-14, 0).slice(0, 10),
+      runs_from: inTagen(-14, 0).slice(0, 10),
+      runs_until: null,
+      ended_on: null,
+      can_exercise: true,
+      note_allowed: true,
+      open_session: null,
+      can_choose_days: true,
+      weekdays: [],
+      recent_sessions: [],
+      items: ['Kniebeuge', 'Ausfallschritt', 'Brücke'].map((name, i) => ({
+        id: `aeaeaeae-aeae-4eae-8eae-0000000001${i}0`,
+        position: i + 1,
+        variant_lay_name: name,
+        instruction: null,
+        equipment: [],
+        sets: 3,
+        reps_min: 10,
+        reps_max: 12,
+        duration_seconds: null,
+        hold_seconds: null,
+        per_side: false,
+        times_per_day: null,
+        load: null,
+        tempo: null,
+        rest_seconds: 60,
+        double_progression: false,
+        note: null,
+      })),
+    },
+  ],
+};
+client.setQueryData(plaeneSchluessel(zugaenge[1]!.access_id), trainingsplan);
+// In der Behandlung Übungen für heute: jeder Tag ist Übungstag, noch nicht
+// geübt (im Einstieg ohne Plan, siehe oben).
+if (!einstieg) {
+  client.setQueryData(plaeneSchluessel(zugaenge[0]!.access_id), {
+    ...trainingsplan,
+    plans: [
+      {
+        ...trainingsplan.plans[0]!,
+        id: 'aeaeaeae-aeae-4eae-8eae-000000000001',
+        service_area: 'therapy',
+        title: 'Heimübungen Knie',
+        weekdays: [1, 2, 3, 4, 5, 6, 7],
+      },
+    ],
+  } satisfies EigenePlaene);
+}
+client.setQueryData(plaeneSchluessel(begleitung.access_id), {
+  today: inTagen(0, 0).slice(0, 10),
+  plans: [],
+});
+client.setQueryData(checkinsSchluessel(begleitung.access_id), null);
+client.setQueryData(gewohnheitenSchluessel(begleitung.access_id), null);
+// `uebersicht-laden`: Die Nachrichten laden ohne Ende; `uebersicht-fehler`:
+// Sie scheitern, auch beim Erscheinen nicht noch einmal versucht.
+if (seite === 'uebersicht-laden') {
+  client.removeQueries({ queryKey: nachrichtenSchluessel(zugaenge[0]!.access_id) });
+  void client.prefetchQuery({
+    queryKey: nachrichtenSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => new Promise<Nachrichten>(() => undefined),
+  });
+}
+if (seite === 'uebersicht-fehler') {
+  client.removeQueries({ queryKey: nachrichtenSchluessel(zugaenge[0]!.access_id) });
+  client.setQueryDefaults(nachrichtenSchluessel(zugaenge[0]!.access_id), { retryOnMount: false });
+  void client.prefetchQuery({
+    queryKey: nachrichtenSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => Promise.reject(new Error('Ihre Nachrichten konnten nicht geladen werden.')),
+  });
+}
 
 // TRK-EPIC-001: Check-in der Behandlung, im Training keiner eingestellt.
 const checkinVerlauf: EigeneCheckins['history'] = [
@@ -967,7 +1124,20 @@ client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
   wording_version: '2026-10',
   target_weight_floor_kg: 52.3,
 } satisfies EigeneErnaehrung);
-client.setQueryData(ernaehrungSchluessel(zugaenge[1]!.access_id), null);
+// Schritt 1e: im Training dieselbe Beratung mit Tagebuch (ADR-027 Punkt 1:
+// je Person eine, hier am Trainingsverhältnis).
+const beratung = client.getQueryData<EigeneErnaehrung>(
+  ernaehrungSchluessel(zugaenge[0]!.access_id),
+);
+client.setQueryData(
+  ernaehrungSchluessel(zugaenge[1]!.access_id),
+  seite === 'uebersicht-training' && beratung
+    ? { ...beratung, profile: { ...beratung.profile, diary_enabled: true } }
+    : null,
+);
+if (seite === 'uebersicht-training') {
+  client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), null);
+}
 // Politurrunde 2026-10-20: das Tagebuch von heute - ein Frühstück, die übrigen
 // Mahlzeiten leer, zwei Gläser Wasser (wie im Seed bei Erika).
 const ohneSummen = { energy_kcal: 0, protein_g: 0, fat_g: 0, carbohydrate_g: 0 };
@@ -1323,6 +1493,32 @@ function inhalt(): { pfad: string; element: ReactNode } {
         element: (
           <PlattformApp
             zugaenge={[{ ...zugaenge[0]!, readable: false, read_until: inTagen(-2, 12) }]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    // Schritt 1e: die Übersicht im Training, in der Lesefrist, beim Laden
+    // und mit einem Fehler (Handoff 2026-10-22, 5.1).
+    case 'uebersicht-training':
+    case 'uebersicht-laden':
+    case 'uebersicht-fehler':
+      return {
+        pfad: seite === 'uebersicht-training' ? '/p?bereich=training' : '/p?bereich=treatment',
+        element: (
+          <PlattformApp
+            zugaenge={zugaenge}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    case 'uebersicht-lesefrist':
+      return {
+        pfad: '/p',
+        element: (
+          <PlattformApp
+            zugaenge={[{ ...zugaenge[0]!, read_until: inTagen(20, 0) }]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />

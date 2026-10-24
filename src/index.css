@@ -505,9 +505,11 @@ html:has(.reiterleiste[data-stufe='2']) {
 }
 /* Zeit, Titel und Zustand nebeneinander brauchen Platz (ListRow trägt dafür
    `listenzeile`): Am Telefon steht der Zustand unter dem Titel, bei sehr
-   wenig Breite (200 %) steht alles untereinander. */
+   wenig Breite (200 %) steht alles untereinander. Nur Zeilen mit drei
+   Teilen: Bei Titel und Betrag allein bekam sonst der Titel seine ganze
+   Breite und der Betrag ein Zeichen („Sehr groß“, Übersicht, Schritt 1e). */
 @media (max-width: 40rem) {
-  .plattform-schrift .listenzeile {
+  .plattform-schrift .listenzeile:has(> :nth-child(3)) {
     grid-template-columns: auto minmax(0, 1fr);
   }
   .plattform-schrift .listenzeile > :nth-child(3) {

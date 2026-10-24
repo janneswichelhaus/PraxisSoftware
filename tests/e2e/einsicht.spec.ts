@@ -171,7 +171,8 @@ test.describe('Einsicht der Praxis (E-001)', () => {
 
       // Die Übersicht statt des Einstiegs, mit dem Status, dass er aussteht.
       await expect(page.getByText('Einstieg steht aus')).toBeVisible();
-      await expect(page.getByText('Nächster Termin')).toBeVisible();
+      // Schritt 1e: die Hauptsache als Hero-Karte, wie Erika sie sieht.
+      await expect(page.getByText('Als Nächstes')).toBeVisible();
       await expect(page.getByText(/Schritt 1 von/)).toHaveCount(0);
 
       // Die Plattform in 18 px, die Reiterleiste unten im Rahmen.
