@@ -585,7 +585,13 @@ const ZEICHEN_IN_28_SCHMAL = 11;
 
 /** Das längste Stück, das nur am Leerzeichen oder nach einem Bindestrich bricht. */
 function laengstesWort(titel: string): number {
-  return Math.max(0, ...titel.split(/\s+|(?<=-)/).map((wort) => wort.length));
+  // Ohne Lookbehind: Ältere Safari (vor iOS 16.4) laden ein Modul damit nicht.
+  const stuecke = titel
+    .split(/\s+/)
+    .flatMap((wort) =>
+      wort.split('-').map((teil, i, alle) => (i < alle.length - 1 ? `${teil}-` : teil)),
+    );
+  return Math.max(0, ...stuecke.map((stueck) => stueck.length));
 }
 
 function titelklassen(stufe: Titelstufe, titel: string): string {

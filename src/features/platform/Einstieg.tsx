@@ -412,9 +412,24 @@ function Willkommen({
  * nicht in die Zeile passt, bricht, wo er muss.
  */
 function Adresse({ adresse }: { adresse: string }) {
+  // Teile ohne Lookbehind: Ältere Safari (vor iOS 16.4) laden ein Modul damit nicht.
+  const teile: string[] = [];
+  let teil = '';
+  for (const zeichen of adresse) {
+    if (zeichen === '.' && teil) {
+      teile.push(teil);
+      teil = '';
+    }
+    teil += zeichen;
+    if (zeichen === '@') {
+      teile.push(teil);
+      teil = '';
+    }
+  }
+  if (teil) teile.push(teil);
   return (
     <span className="wrap-break-word hyphens-manual">
-      {adresse.split(/(?<=@)|(?=\.)/).map((teil, index) => (
+      {teile.map((teil, index) => (
         <Fragment key={index}>
           {index > 0 ? <wbr /> : null}
           {teil}
