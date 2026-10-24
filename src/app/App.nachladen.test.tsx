@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { onlineManager } from '@tanstack/react-query';
 import type * as CurrentUserModul from '@/features/session/useCurrentUser';
 import type * as PlattformApi from '@/features/platform/api';
+import { grussNachTageszeit } from '@/features/platform/zeit';
 import type { CurrentUser } from '@/features/session/types';
 
 /**
@@ -164,7 +165,8 @@ describe('Plattform: gescheitertes Nachladen des Zugangs', () => {
     ]);
     window.history.pushState(null, '', '/p');
     render(<App />);
-    expect(await screen.findByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
+    // Der Gruß folgt der Uhr des Laufs, nicht fest „Guten Tag“ (BEF-199).
+    expect(await screen.findByRole('heading', { name: grussNachTageszeit() })).toBeInTheDocument();
 
     // Wieder online: Die Abfrage lädt nach, und das scheitert.
     ladePlattformkontext.mockRejectedValue(new Error('Failed to fetch'));
@@ -174,7 +176,7 @@ describe('Plattform: gescheitertes Nachladen des Zugangs', () => {
     expect(
       await screen.findByText(/Ihr Zugang ließ sich gerade nicht aktualisieren/),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: grussNachTageszeit() })).toBeInTheDocument();
     expect(screen.queryByText('Zugang nicht geladen')).not.toBeInTheDocument();
   });
 });

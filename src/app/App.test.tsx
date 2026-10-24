@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/react';
 import type * as CurrentUserModul from '@/features/session/useCurrentUser';
 import type * as KontoApi from '@/features/staff/konto-api';
 import type * as PlattformApi from '@/features/platform/api';
+import { grussNachTageszeit } from '@/features/platform/zeit';
 
 /**
  * Die Vollseiten nach der Anmeldung (MARKE-001): Erstladen gescheitert
@@ -180,7 +181,8 @@ describe('App: Plattformkonto (POR-004, ADR-023 Punkt 25)', () => {
     window.history.pushState(null, '', '/patienten');
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
+    // Der Gruß folgt der Uhr des Laufs, nicht fest „Guten Tag“ (BEF-199).
+    expect(await screen.findByRole('heading', { name: grussNachTageszeit() })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ich' })).toBeInTheDocument();
     // Keine Praxisbegriffe, keine Arbeitsbereiche, keine Einladungsannahme.
     expect(screen.queryByRole('navigation', { name: 'Arbeitsbereiche' })).not.toBeInTheDocument();

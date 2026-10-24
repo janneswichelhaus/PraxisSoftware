@@ -596,14 +596,14 @@ Marke vorsieht.
 
 **Beobachtung.** `delete_treatment_basis` löscht die Grundlage ohne Eintrag im Löschjournal; ihr Verordnungsscan fällt per `on delete cascade` mit, der Auslöser schreibt nur den Löschauftrag. Nach einer Wiederherstellung kämen Grundlage und Scan zurück. **Erwartet.** Journaleinträge für `treatment_bases` und die mitfallenden `patient_files`, Test mit Wiederherstellung (Pfad A). Dabei die übrigen Löschwege von Hand durchsehen, die ohne Journal löschen, etwa Leistungen, Vereinbarungen, Aufgaben und Tagebucheinträge.
 
-### BEF-199 — Vier Tests der Plattform scheitern ab 18 Uhr: sie erwarten „Guten Tag“
+### BEF-199 — Vier Tests der Plattform scheitern vor 11 und ab 18 Uhr: sie erwarten „Guten Tag“
 
 |         |   |
 | ------- | - |
 | Datum   | 2026-10-24 |
 | Bereich | Plattform: Gruß der Übersicht; `Einstieg.test.tsx`, `App.test.tsx`, `App.nachladen.test.tsx` |
 | Quelle  | Prüfsatz zu DRP-EPIC-007 um 18:51 UTC; auf `main` derselbe Befund |
-| Status  | offen (Vorschlag) |
+| Status  | erledigt in DRP-EPIC-007 (PR #300: die Tests lesen den Gruß aus `grussNachTageszeit()`) |
 | Berührt | `grussNachTageszeit` (`src/features/platform/zeit.ts`) und die vier Tests |
 
 **Beobachtung.** „Einstieg: Willkommen (DRP-016) … gibt den Tab der Übersicht zurück“, „Einstieg: Alles bereit (DRP-019) … nur zur Übersicht“, „App: Plattformkonto … Gerüst“ und „Plattform: gescheitertes Nachladen des Zugangs“ suchen die Überschrift „Guten Tag“. Der Gruß folgt der Uhr des Geräts (11 bis 18 Uhr „Guten Tag“); vor 11 und ab 18 Uhr Ortszeit des Laufs (CI: UTC) sind die vier rot, mit `TZ=America/New_York` grün. **Erwartet.** Die Tests stellen die Uhr fest (`vi.setSystemTime`, etwa 12:00) oder lesen den Gruß aus `grussNachTageszeit()`; dann laufen sie zu jeder Stunde.
