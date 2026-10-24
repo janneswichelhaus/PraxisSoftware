@@ -59,10 +59,9 @@ export function wochenleisteSatz(
       ? 'Noch keine Tage gewählt. Wählen geht wieder mit Verbindung.'
       : `Sie üben ${tage}. Ändern geht wieder mit Verbindung.`;
   }
-  const empfehlung =
-    empfohlen === null
-      ? ''
-      : ` Empfohlen: ${empfohlen === 1 ? 'einmal' : `${empfohlen}-mal`} pro Woche.`;
+  // Ohne Umbruch nach dem Strich: nicht „3-“ am Ende der Zeile, „mal“ in der nächsten.
+  const mal = empfohlen === 1 ? 'einmal' : `${empfohlen}-\u2060mal`;
+  const empfehlung = empfohlen === null ? '' : ` Empfohlen: ${mal} pro Woche.`;
   return anzahl === 0
     ? `Wählen Sie die Tage, an denen Sie üben möchten.${empfehlung}`
     : `Sie üben ${tage}.${empfehlung} Die Tage sehen nur Sie.`;

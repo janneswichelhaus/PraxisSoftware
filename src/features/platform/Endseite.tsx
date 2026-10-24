@@ -44,7 +44,7 @@ export function Endseite({
         naechsterTag ? (
           <p className="flex items-start gap-3">
             <KalenderSymbol />
-            Nächster Übungstag: {tagOhneJahr(`${naechsterTag}T12:00:00`)}
+            Nächster Übungstag: {tagFest(naechsterTag)}
           </p>
         ) : null
       }
@@ -57,7 +57,7 @@ export function Endseite({
     >
       {uebertragen ? (
         <>
-          <p>Ihre Einheit vom {tagOhneJahr(`${tag}T12:00:00`)} ist bei der Praxis.</p>
+          <p>Ihre Einheit vom {tagFest(tag)} ist bei der Praxis.</p>
           <p className="text-ink-muted">{wer} sieht sie beim nächsten Termin.</p>
         </>
       ) : (
@@ -71,6 +71,15 @@ export function Endseite({
       )}
     </Abschlussseite>
   );
+}
+
+/**
+ * „Samstag, 24. Oktober“ für einen Kalendertag `YYYY-MM-DD` - Tag und Monat
+ * mit geschütztem Leerzeichen, damit „24.“ und „Oktober“ nicht auf zwei
+ * Zeilen stehen.
+ */
+function tagFest(kalendertag: string): string {
+  return tagOhneJahr(`${kalendertag}T12:00:00`).replace(/(\d+\.) /, '$1\u00a0');
 }
 
 /** Der Kalender, 22 px in der Hauptfarbe - für Vorlesesoftware ausgeblendet. */

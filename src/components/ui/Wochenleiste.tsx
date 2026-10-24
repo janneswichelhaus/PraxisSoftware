@@ -22,6 +22,9 @@ export interface Wochentag {
  * nur innerhalb der Leiste. Unter 23rem (200 %) wird sie ein Raster mit drei
  * Spalten, jede Zelle ein eigener Knopf 48 hoch mit 8 Abstand.
  *
+ * Der Fokus ist ein Ring von 3 px innen: Tinte, auf einem gewählten Tag Papier
+ * (auf der Hauptfarbe läge Tinte bei 1,6:1).
+ *
  * `gesperrt` (ohne Netz): lesbar, aber gestrichelt und nicht bedienbar - der
  * Satz sagt, wann Ändern wieder geht, statt eines Tipps, der zurückspringt.
  * Speichern bleibt bei der Seite.
@@ -55,7 +58,7 @@ export function Wochenleiste({
       <div
         role="group"
         aria-labelledby={titelId}
-        className={`border-line-strong rounded-button grid max-w-140 grid-cols-7 overflow-hidden border max-[23rem]:grid-cols-3 max-[23rem]:gap-2 max-[23rem]:overflow-visible max-[23rem]:border-0 ${linie}`}
+        className={`border-line-strong rounded-button max-w-wochenleiste grid grid-cols-7 overflow-hidden border max-[23rem]:grid-cols-3 max-[23rem]:gap-2 max-[23rem]:overflow-visible max-[23rem]:border-0 ${linie}`}
       >
         {wochentage.map((w) => {
           const an = tage.includes(w.nummer);
@@ -66,7 +69,7 @@ export function Wochenleiste({
               aria-pressed={an}
               disabled={gesperrt}
               onClick={() => onUmschalten(w.nummer)}
-              className={`border-line-strong ease-druck focus-visible:outline-ink max-[23rem]:rounded-button flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 transition-colors duration-120 not-first:border-l focus-visible:outline-3 focus-visible:-outline-offset-3 disabled:cursor-not-allowed max-[23rem]:min-h-12 max-[23rem]:border ${linie} ${zelle(an, gesperrt)}`}
+              className={`border-line-strong ease-druck focus-visible:outline-ink aria-pressed:focus-visible:outline-surface max-[23rem]:rounded-button flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-1 transition-colors duration-120 not-first:border-l focus-visible:outline-3 focus-visible:-outline-offset-3 disabled:cursor-not-allowed max-[23rem]:min-h-12 max-[23rem]:border ${linie} ${zelle(an, gesperrt)}`}
             >
               {an ? <HakenSymbol className="size-4" /> : null}
               <span aria-hidden="true">{w.kurz}</span>

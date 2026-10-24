@@ -165,7 +165,8 @@ sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen�
   sehen nur Sie.“ (_neu_; bei n = 1 „an einem Tag“, bei k = 1 „einmal pro Woche“); ohne gewählten Tag
   „Wählen Sie die Tage, an denen Sie üben möchten. Empfohlen: …“ (_neu_).
 - Ohne Netz: Zellen `disabled`, Linien gestrichelt, gewählt `accent-soft` mit `accent`, sonst
-  `ink-muted`; Satz „Sie üben an {n} Tagen. Ändern geht wieder mit Verbindung.“ (_neu_).
+  `ink-muted`; Satz „Sie üben an {n} Tagen. Ändern geht wieder mit Verbindung.“ (_neu_; ohne Tag „Noch
+  keine Tage gewählt. Wählen geht wieder mit Verbindung.“).
 - Unter 23rem: Raster mit 3 Spalten und Abstand 8; jede Zelle ein eigener Knopf, 48 hoch, Radius
   10, Linie `line-strong` bzw. `accent`.
 - Speichern wie heute (`uebungstageSetzen`, sofort, der Reihe nach, bei Fehler zurück und
@@ -192,7 +193,7 @@ sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen�
   Zeile die Einheit 18/600.
 - **Hauptzahl** aus der Dosierung (`Dosis`): mit Wiederholungen „8 bis 12“ bzw. „10“ und
   „Wiederholungen je Durchgang“ (_neu_; mit `per_side` „Wiederholungen je Seite“ _neu_); mit Dauer
-  „30“ und „Sekunden je Durchgang“ (_neu_; „Sekunde“ bei 1).
+  „30“ und „Sekunden je Durchgang“ (_neu_; „Sekunde“ bei 1; mit `per_side` „Sekunden je Seite“).
 - **Mit Video der Praxis** (nur Entwurf, gebaut erst mit Medien): Video 4:3 in `rounded-image` an
   der Stelle der Bühne, eigenes `poster`, Abspielknopf 72 rund (`accent`, Dreieck `surface`,
   `aria-label` „Video abspielen: {Name}“ _neu_), darunter „Video abspielen · 0:45“ (_neu_); kein
@@ -227,8 +228,8 @@ sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen�
 
 - Zeile 64, innen 8: links „Zurück“ (ab Übung 2; vorige Übung; Zeichen 24 und Wort, 48 hoch), rechts
   „Später weiter“ (_neu_; verlässt die Durchführung zur Herkunft, die Einheit bleibt offen), beide
-  18/600 `accent`, Druck mit `surface-sunken`.
-- Darunter, innen 0/20/12: Balken je Übung (4 hoch, Abstand 6, `accent` bis zur aktuellen, sonst
+  18/700 `accent` wie im geführten Ablauf, Druck mit `surface-sunken`.
+- Darunter, innen 0/20/12: Balken je Übung (4 hoch, Abstand 4 wie im geführten Ablauf, `accent` bis zur aktuellen, sonst
   `spur`, `aria-hidden`), daneben „Übung {n} von {m}“ (besteht) bzw. „Abschluss“ (_neu_) 18 Leise.
 - Ohne Netz darunter `role="status"` auf `surface-sunken`, innen 10/20, mit dem WLAN-Zeichen:
   „Ohne Verbindung – Ihre Haken liegen auf diesem Gerät.“ (_neu_, Wortlaut aus dem Briefing).
@@ -269,8 +270,8 @@ sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen�
   Vorlesesoftware steht sie oben, am Rechner rechts. Abstand 48; Titel 32; Hero innen 32, Knopf so
   breit wie sein Text. Wochenleiste höchstens 560 breit. PDF und Frage als Textlinks mit Zeichen in
   einer Reihe.
-- „Sehr groß“ (125 %): alles in rem wächst; die Wochenleiste bleibt eine Reihe (die Breite bleibt
-  335); Reiterleiste in zwei Reihen (Briefing 1); Hakenzeilen brechen den rechten Teil um, wenn nötig.
+- „Sehr groß“ (125 %): alles in rem wächst; die Wochenleiste bleibt eine Reihe (je Zelle etwa 46 × 70, der Rand wächst
+  mit); Reiterleiste in zwei Reihen (Briefing 1); Hakenzeilen brechen den rechten Teil um, wenn nötig.
 
 ## 5 · Bildschirme
 

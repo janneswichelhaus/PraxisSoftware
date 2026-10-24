@@ -46,20 +46,21 @@ export function Durchfuehrungsfuss({
 }) {
   const angezeigt = useRuhigerStand(stand);
   const knopf =
-    'w-full [[data-rechner]_&]:ml-auto [[data-rechner]_&]:w-90 [[data-rechner]_&]:shrink-0';
+    'w-full [[data-rechner]_&]:ml-auto [[data-rechner]_&]:w-hauptknopf [[data-rechner]_&]:shrink-0';
   return (
     <div className="bg-surface border-line border-t px-5 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] max-[23rem]:px-3">
-      <div className="[[data-rechner]_&]:max-w-spalte mx-auto flex w-full flex-col gap-3 [[data-rechner]_&]:flex-row [[data-rechner]_&]:flex-wrap [[data-rechner]_&]:items-center">
+      <div className="[[data-rechner]_&]:max-w-spalte mx-auto flex w-full flex-col [[data-rechner]_&]:flex-row [[data-rechner]_&]:flex-wrap [[data-rechner]_&]:items-center [[data-rechner]_&]:gap-x-6 [[data-rechner]_&]:gap-y-3">
         {/* Immer im Baum, nur der Inhalt wechselt: Vorlesesoftware sagt
-            eine Live-Region, die erst mit ihrem Text entsteht, unzuverlässig an. */}
+            eine Live-Region, die erst mit ihrem Text entsteht, unzuverlässig an.
+            Den Abstand zum Knopf trägt der Satz, nicht die leere Region. */}
         <div role="status" className="[[data-rechner]_&]:min-w-60 [[data-rechner]_&]:flex-1">
           {angezeigt === 'uebertragen' ? (
-            <p className="flex items-start gap-2.5">
+            <p className="mb-3 flex items-start gap-3 [[data-rechner]_&]:mb-0">
               <UebertragenSymbol />
               Übertragen an die Praxis
             </p>
           ) : angezeigt === 'geraet' ? (
-            <p className="flex items-start gap-2.5">
+            <p className="mb-3 flex items-start gap-3 [[data-rechner]_&]:mb-0">
               <TelefonSymbol />
               <span>
                 Auf diesem Gerät, noch nicht übertragen
@@ -97,7 +98,7 @@ export function Durchfuehrungsfuss({
         )}
       </div>
       {zweit ? (
-        <div className="[[data-rechner]_&]:max-w-spalte mx-auto mt-1 flex w-full justify-center [[data-rechner]_&]:justify-end">
+        <div className="[[data-rechner]_&]:max-w-spalte mx-auto mt-2 flex w-full justify-center [[data-rechner]_&]:justify-end">
           {'to' in zweit ? (
             <ButtonLink variant="quiet" to={zweit.to}>
               {zweit.text}

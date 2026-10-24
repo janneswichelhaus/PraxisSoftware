@@ -174,3 +174,50 @@ test('füllt den Ring ohne Zahl - bei „Bewegung reduzieren“ steht er gestric
   expect(await still.evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
   expect(await still.evaluate((el) => getComputedStyle(el).strokeDasharray)).not.toMatch(/^119/);
 });
+
+test('hält Abstände und Fokus, die das Design-Review gemessen hat', async ({ page }) => {
+  await oeffne(page, 375);
+  // Zwischen Hauptknopf und leisem Zweitweg mindestens 8 px (PLATTFORM.md, Ziele).
+  const gespeichert = page.getByRole('group', { name: 'Gespeichert', exact: true });
+  const haupt = await box(gespeichert.getByRole('link', { name: 'Zur Übersicht' }));
+  const leise = await box(gespeichert.getByRole('link', { name: 'Zu den Übungen' }));
+  expect(leise.y - (haupt.y + haupt.height)).toBeGreaterThanOrEqual(7.5);
+
+  // Ohne Stand beginnt der Knopf 12 px unter der Linie des Fußes, nicht 24.
+  const abstand = await page
+    .getByRole('group', { name: 'Abschluss' })
+    .getByRole('button', { name: 'Einheit beenden' })
+    .evaluate((knopf) => {
+      let fuss: HTMLElement | null = knopf.parentElement;
+      while (fuss && parseFloat(getComputedStyle(fuss).borderTopWidth) === 0) {
+        fuss = fuss.parentElement;
+      }
+      if (!fuss) return -1;
+      return knopf.getBoundingClientRect().top - fuss.getBoundingClientRect().top;
+    });
+  expect(abstand).toBeGreaterThan(11);
+  expect(abstand).toBeLessThan(14);
+
+  // Auf einem gewählten Tag ist der Fokusring Papier, nicht Tinte auf der Hauptfarbe.
+  const montag = wochenleiste(page).nth(0);
+  await montag.focus();
+  // Papier ist oklch(100% 0 0); Chromium schreibt den Ring als oklab oder rgb aus.
+  expect(await montag.evaluate((el) => getComputedStyle(el).outlineColor)).toMatch(
+    /^(?:okl(?:ab|ch)\(1 0 0\)|rgb\(255, 255, 255\))$/,
+  );
+});
+
+test('stellt den Kopf am Rechner in eine Reihe: Zurück, Balken, Später weiter', async ({
+  page,
+}) => {
+  await oeffne(page, 1280);
+  const rahmen = page.getByRole('group', { name: 'Übung 2 von 3, übertragen' });
+  const zurueck = await box(rahmen.getByRole('button', { name: 'Zurück' }));
+  const spaeter = await box(rahmen.getByRole('button', { name: 'Später weiter' }));
+  const stand = await box(rahmen.getByText('Übung 2 von 3'));
+  const mitte = (b: { y: number; height: number }) => b.y + b.height / 2;
+  expect(Math.abs(mitte(stand) - mitte(zurueck))).toBeLessThan(8);
+  expect(Math.abs(mitte(spaeter) - mitte(zurueck))).toBeLessThan(8);
+  expect(stand.x).toBeGreaterThan(zurueck.x + zurueck.width);
+  expect(spaeter.x).toBeGreaterThan(stand.x + stand.width);
+});

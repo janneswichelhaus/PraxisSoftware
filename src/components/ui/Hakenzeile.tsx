@@ -43,7 +43,7 @@ export function Hakenzeile({
         setGetippt(true);
         onUmschalten();
       }}
-      className={`rounded-card border-line bg-surface aria-pressed:border-accent aria-pressed:bg-accent-soft not-aria-pressed:active:bg-surface-sunken ease-druck flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-2 border-2 py-2.5 pr-3.5 pl-5 text-left font-semibold transition-[background-color,border-color,scale] duration-120 motion-safe:active:scale-98 ${
+      className={`rounded-card border-line bg-surface aria-pressed:border-accent aria-pressed:bg-accent-soft active:bg-surface-sunken aria-pressed:active:bg-surface-sunken ease-druck flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-2 border-2 py-2.5 pr-3.5 pl-5 text-left font-semibold transition-[background-color,border-color,scale] duration-120 motion-safe:active:scale-98 ${
         inPause ? 'min-h-19' : 'min-h-16'
       }`}
     >
@@ -56,7 +56,7 @@ export function Hakenzeile({
         ) : null}
       </span>{' '}
       {erledigt ? (
-        <span className="inline-flex items-center gap-2.5">
+        <span className="inline-flex items-center gap-2">
           <span className="text-accent">erledigt</span>
           <span
             aria-hidden="true"

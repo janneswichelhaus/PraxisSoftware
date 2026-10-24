@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { OhneNetzSymbol } from '@/components/ui/OhneNetzSymbol';
 
 /**
  * Der Kopf der Durchführung (Handoff 2026-10-24, Abschnitt 3; Muster wie der
@@ -41,28 +42,46 @@ export function Durchfuehrungskopf({
   const erreicht = abschluss ? von : uebung;
   return (
     <div className="bg-surface border-line border-b">
-      <div className="mx-auto w-full [[data-rechner]_&]:max-w-240">
+      {/* Am Telefon zwei Reihen: die Knöpfe, darunter Balken und Stand. Am
+          Rechner eine Reihe mit dem Balken in der Mitte (Handoff 5.8): Die
+          Reihe der Knöpfe löst sich dort auf (`contents`), die Reihenfolge
+          legt `order` fest. */}
+      <div className="[[data-rechner]_&]:max-w-durchfuehrung mx-auto w-full [[data-rechner]_&]:flex [[data-rechner]_&]:min-h-16 [[data-rechner]_&]:items-center [[data-rechner]_&]:gap-6 [[data-rechner]_&]:p-2">
         {/* Wird es eng (200 %), rückt „Später weiter“ in eine eigene Reihe,
             statt beide Wörter mitten im Wort zu brechen. */}
-        <div className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-2 p-2">
+        <div className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-2 p-2 [[data-rechner]_&]:contents">
           {onZurueck ? (
-            <Button type="button" variant="quiet" className="gap-1.5 pl-2" onClick={onZurueck}>
+            <Button
+              type="button"
+              variant="quiet"
+              className="gap-1 pl-2 [[data-rechner]_&]:order-1"
+              onClick={onZurueck}
+            >
               <ZurueckSymbol />
               Zurück
             </Button>
           ) : null}
           {'pfad' in spaeter ? (
-            <ButtonLink variant="quiet" to={spaeter.pfad} className="ml-auto">
+            <ButtonLink
+              variant="quiet"
+              to={spaeter.pfad}
+              className="ml-auto [[data-rechner]_&]:order-3"
+            >
               Später weiter
             </ButtonLink>
           ) : (
-            <Button type="button" variant="quiet" className="ml-auto" onClick={spaeter.onSpaeter}>
+            <Button
+              type="button"
+              variant="quiet"
+              className="ml-auto [[data-rechner]_&]:order-3"
+              onClick={spaeter.onSpaeter}
+            >
               Später weiter
             </Button>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 pb-3 max-[23rem]:flex-col-reverse max-[23rem]:items-start max-[23rem]:px-3">
-          <span aria-hidden="true" className="flex min-w-24 flex-1 gap-1.5 max-[23rem]:w-full">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 pb-3 max-[23rem]:flex-col-reverse max-[23rem]:items-start max-[23rem]:px-3 [[data-rechner]_&]:order-2 [[data-rechner]_&]:flex-1 [[data-rechner]_&]:p-0">
+          <span aria-hidden="true" className="flex min-w-24 flex-1 gap-1 max-[23rem]:w-full">
             {Array.from({ length: von }, (_, i) => (
               <span
                 key={i}
@@ -103,25 +122,6 @@ function ZurueckSymbol() {
       className="size-6 shrink-0"
     >
       <path d="M15 6l-6 6 6 6" />
-    </svg>
-  );
-}
-
-/** Das durchgestrichene WLAN-Zeichen, 22 px wie in der `Verbindungszeile`. */
-function OhneNetzSymbol() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-      className="mt-0.5 size-5.5 shrink-0"
-    >
-      <path d="M2 8.8a15 15 0 0 1 4.2-2.6M10 5.2A15 15 0 0 1 22 8.8M5 12.5a10 10 0 0 1 3-1.9M15.4 10.9A10 10 0 0 1 19 12.5M8.5 16.1a5 5 0 0 1 7 0M12 20h.01M3 3l18 18" />
     </svg>
   );
 }

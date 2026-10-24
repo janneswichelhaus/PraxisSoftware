@@ -151,7 +151,7 @@ export function Seite() {
   return (
     <main
       data-rechner={rechner ? '' : undefined}
-      className="plattform-schrift bg-canvas max-w-formular [[data-rechner]_&]:max-w-spalte mx-auto flex flex-col gap-10 px-5 py-6 max-[23rem]:px-3"
+      className="plattform-schrift bg-canvas max-w-formular data-[rechner]:max-w-spalte mx-auto flex flex-col gap-10 px-5 py-6 max-[23rem]:px-3"
     >
       <h1 className="text-plattform-titel text-accent">Bausteine der Übungen</h1>
 
