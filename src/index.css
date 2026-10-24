@@ -563,29 +563,17 @@ html[data-schrift='sehr-gross'] {
    beim ersten Erscheinen der Übersicht je Tab erst der Gruß (0,06 bis
    0,30 s), dann die Abschnitte darunter, ab 0,18 s je 60 ms später - je
    0,28 s und 8 px von unten. Nach 0,7 s steht alles. Die Hero-Karte behält
-   ihre eigene Bewegung (`hero-erscheint`). */
+   ihre eigene Bewegung (`hero-erscheint`). Die Folge trägt jeder Teil selbst
+   (`--folge`, 1 für den ersten Abschnitt nach der Hero-Karte), weil die
+   Übersicht am Rechner in zwei Spalten steht und die Reihenfolge der
+   Elemente dort nicht die des Lesens ist. */
 @media (prefers-reduced-motion: no-preference) {
-  .markenmoment > * {
-    animation: markenmoment-erscheinen 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) 0.18s both;
+  .markenmoment .markenmoment-gruss {
+    animation: markenmoment-erscheinen 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) 0.06s both;
   }
-  .markenmoment > :first-child {
-    animation-duration: 0.24s;
-    animation-delay: 0.06s;
-  }
-  .markenmoment > :nth-child(3) {
-    animation-delay: 0.24s;
-  }
-  .markenmoment > :nth-child(4) {
-    animation-delay: 0.3s;
-  }
-  .markenmoment > :nth-child(5) {
-    animation-delay: 0.36s;
-  }
-  .markenmoment > :nth-child(n + 6) {
-    animation-delay: 0.42s;
-  }
-  .markenmoment > .hero-erscheint {
-    animation: hero-erscheinen 0.28s var(--ease-feder-weich) 0.12s both;
+  .markenmoment .markenmoment-folge {
+    animation: markenmoment-erscheinen 0.28s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(0.18s + min(var(--folge, 0), 4) * 0.06s);
   }
 }
 @keyframes markenmoment-erscheinen {

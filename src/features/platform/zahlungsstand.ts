@@ -7,7 +7,10 @@ import type { Rechnungsblatt, Rechnungsposition, Rechnungszeile } from './api';
  * und Zustände kommen vom Server (ADR-009 Punkt 12).
  */
 
-/** Der Zahlungsstand in der Sprache der Person, mit Ton und Zeichen. */
+/**
+ * Der Zahlungsstand in der Sprache der Person, mit Ton und Zeichen - in der
+ * Liste der Rechnungen und unter „Neu für Sie“ dasselbe Wort (ANN-701).
+ */
 export function zahlungsstand(z: {
   payment_state: Rechnungszeile['payment_state'];
   overdue: boolean;

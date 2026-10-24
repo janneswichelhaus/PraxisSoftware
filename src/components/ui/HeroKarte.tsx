@@ -15,6 +15,16 @@ import type { Personenfarbe } from './personenfarben';
  * Seitentitel) steht darüber. `markenmoment` lässt die Karte beim ersten
  * Erscheinen der Übersicht einlaufen und das Rad eine Achtel drehen
  * (Abschnitt 7); bei „Bewegung reduzieren“ steht beides sofort.
+ *
+ * Unter 23rem (200 %) innen 12 wie die Seite (Handoff, Abschnitt 4): Bei 24
+ * brach der Knopf „Fragebogen beginnen“ mitten im Wort.
+ *
+ * Die Rechnermaße (innen 32, Titel 32, Rad 300) gelten unter `data-rechner`
+ * wie Seitentitel und Abschnitte (ANN-683), nicht ab 1024 px Fenster: Die
+ * Einsicht der Praxis zeigt die Plattform in einem Telefon.
+ *
+ * Ohne `aktion` kein Knopf: in der Einsicht der Praxis, wo die Seite dahinter
+ * nur schreibt (E-001).
  */
 export function HeroKarte({
   etikett = 'Als Nächstes',
@@ -28,27 +38,27 @@ export function HeroKarte({
   titel: string;
   satz?: ReactNode;
   /** Wer kommt, mit Bild: „Anna Beispiel kommt zu Ihnen“. */
-  person?: { name: string; farbe?: Personenfarbe | null; zeile: string };
-  aktion: { text: string; to: string };
+  person?: { name: string; farbe?: Personenfarbe | null; zeile: string } | undefined;
+  aktion?: { text: string; to: string } | undefined;
   markenmoment?: boolean;
 }) {
   const titelId = useId();
   return (
     <section
       aria-labelledby={titelId}
-      className={`bg-surface-inverse text-surface rounded-image shadow-plattform relative flex flex-col gap-2 overflow-hidden p-6 lg:p-8 ${
+      className={`bg-surface-inverse text-surface rounded-image shadow-plattform relative flex flex-col gap-2 overflow-hidden p-6 max-[23rem]:p-3 [[data-rechner]_&]:p-8 ${
         markenmoment ? 'hero-erscheint' : ''
       }`}
     >
       <Laufrad
-        className={`text-accent pointer-events-none absolute -top-18 -right-18 size-55 lg:-top-22.5 lg:-right-22.5 lg:size-75 ${
+        className={`text-accent pointer-events-none absolute -top-18 -right-18 size-55 [[data-rechner]_&]:-top-22.5 [[data-rechner]_&]:-right-22.5 [[data-rechner]_&]:size-75 ${
           markenmoment ? 'laufrad-dreht' : ''
         }`}
       />
       <p className="text-salbei relative font-semibold">{etikett}</p>
       <h2
         id={titelId}
-        className="text-hero lg:text-hero-rechner max-[23rem]:text-hero-schmal max-w-hero-titel relative"
+        className="text-hero [[data-rechner]_&]:text-hero-rechner max-[23rem]:text-hero-schmal max-w-hero-titel relative"
       >
         {titel}
       </h2>
@@ -59,13 +69,15 @@ export function HeroKarte({
           <span className="min-w-0">{person.zeile}</span>
         </p>
       ) : null}
-      <ButtonLink
-        variant="marke"
-        to={aktion.to}
-        className="relative mt-2 w-full lg:w-auto lg:self-start lg:px-7"
-      >
-        {aktion.text}
-      </ButtonLink>
+      {aktion ? (
+        <ButtonLink
+          variant="marke"
+          to={aktion.to}
+          className="relative mt-2 w-full [[data-rechner]_&]:w-auto [[data-rechner]_&]:self-start [[data-rechner]_&]:px-7"
+        >
+          {aktion.text}
+        </ButtonLink>
+      ) : null}
     </section>
   );
 }

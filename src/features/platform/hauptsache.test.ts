@@ -6,8 +6,20 @@ import type {
   EigenerPlan,
   PlanPosition,
   Plattformzugang,
+  Termin,
 } from './api';
-import { ersteAufgabe, handlung, type Aufgabenlage } from './hauptsache';
+import {
+  ersteAufgabe,
+  ersterTermin,
+  handlung,
+  hauptsache,
+  naechsterTermin,
+  terminPerson,
+  terminTitel,
+  terminZeit,
+  uebungenHeute,
+  type Aufgabenlage,
+} from './hauptsache';
 
 /**
  * Die erste Aufgabe (ANN-692; Handoff 2026-10-22, Abschnitt 0): Reihenfolge
@@ -190,5 +202,141 @@ describe('handlung', () => {
       '/p/uebungen/einheit/a1',
     );
     expect(handlung({ art: 'uebungen', uebungen: 5, planId: null }).pfad).toBe('/p/uebungen');
+  });
+});
+
+/** Ein Termin um 9:30 Ortszeit am Tag `tag` (JJJJ-MM-TT), eine Stunde lang. */
+function termin(tag: string, aenderungen: Partial<Termin> = {}): Termin {
+  const beginn = new Date(`${tag}T09:30:00`);
+  return {
+    id: `00000000-0000-4000-8000-${tag.replaceAll('-', '').padStart(12, '0')}`,
+    starts_at: beginn.toISOString(),
+    ends_at: new Date(beginn.getTime() + 60 * 60 * 1000).toISOString(),
+    appointment_type: 'home_visit',
+    status: 'confirmed',
+    staff_name: 'Anna Beispiel',
+    location_name: null,
+    visit_street: 'Testweg',
+    visit_house_number: '7',
+    visit_postal_code: '72072',
+    visit_city: 'Tuebingen',
+    late_notice: false,
+    open_request_kind: null,
+    ...aenderungen,
+  };
+}
+
+/** Freitag, 23.10.2026, 8 Uhr auf der Uhr des Geräts. */
+const JETZT = new Date(2026, 9, 23, 8, 0);
+
+describe('naechsterTermin und ersterTermin', () => {
+  it('nimmt den frühesten bestätigten, der noch nicht vorbei ist', () => {
+    const liste = [
+      termin('2026-10-30'),
+      termin('2026-10-24'),
+      termin('2026-10-23', { status: 'cancelled' }),
+      termin('2026-10-20', { status: 'completed' }),
+    ];
+    expect(naechsterTermin(liste, JETZT)?.starts_at).toBe(liste[1]!.starts_at);
+    expect(naechsterTermin([], JETZT)).toBeUndefined();
+  });
+
+  it('nennt den nächsten Termin den ersten, wenn davor nur Abgesagtes liegt', () => {
+    const naechster = termin('2026-10-24');
+    expect(
+      ersterTermin([termin('2026-10-20', { status: 'cancelled' }), naechster], naechster),
+    ).toBe(true);
+    expect(
+      ersterTermin([termin('2026-10-20', { status: 'completed' }), naechster], naechster),
+    ).toBe(false);
+  });
+});
+
+describe('hauptsache (ANN-698)', () => {
+  it('nimmt in der Lesefrist die Unterlagen, sonst die Aufgabe, sonst den Termin, sonst nichts', () => {
+    const naechster = termin('2026-10-24');
+    const lesefrist = { ...ZUGANG, read_until: '2026-12-31' };
+    expect(hauptsache({ ...lage({ zugang: lesefrist }), naechster })).toEqual({
+      art: 'unterlagen',
+      bis: '2026-12-31',
+    });
+    expect(hauptsache({ ...lage(), naechster })).toMatchObject({
+      art: 'aufgabe',
+      aufgabe: { art: 'fragebogen' },
+    });
+    const ohneAufgabe = lage({
+      boegen: [bogen('abgeschlossen')],
+      checkins: null,
+      plaene: plaene(),
+    });
+    expect(hauptsache({ ...ohneAufgabe, naechster })).toEqual({ art: 'termin', termin: naechster });
+    expect(hauptsache({ ...ohneAufgabe, naechster: undefined })).toEqual({ art: 'nichts' });
+  });
+
+  it('nimmt im Training immer die nächste Einheit, auch mit Übungen für heute', () => {
+    const naechster = termin('2026-10-24');
+    const training = { ...ZUGANG, relationship_kind: 'training' as const };
+    expect(hauptsache({ ...lage({ zugang: training }), naechster })).toEqual({
+      art: 'termin',
+      termin: naechster,
+    });
+  });
+});
+
+describe('uebungenHeute', () => {
+  it('zählt die Übungen der Pläne mit heutigem Übungstag', () => {
+    expect(uebungenHeute(plaene(plan('a1')))).toEqual({
+      art: 'uebungen',
+      uebungen: 4,
+      planId: 'a1',
+    });
+    expect(uebungenHeute(plaene(plan('a1', { weekdays: [1] })))).toBeNull();
+    expect(uebungenHeute(undefined)).toBeNull();
+  });
+});
+
+describe('Texte eines Termins als Hauptsache', () => {
+  it('nennt den Tag beim Wort: heute, morgen, Wochentag, über sechs Tage das Datum', () => {
+    expect(terminTitel(termin('2026-10-23'), 'treatment', null, JETZT)).toBe('Besuch heute');
+    expect(terminTitel(termin('2026-10-24'), 'treatment', null, JETZT)).toBe('Besuch morgen');
+    expect(terminTitel(termin('2026-10-27'), 'treatment', null, JETZT)).toBe('Besuch am Dienstag');
+    expect(terminTitel(termin('2026-11-02'), 'treatment', null, JETZT)).toBe(
+      'Besuch am 2. November',
+    );
+    expect(terminTitel(termin('2027-01-04'), 'treatment', null, JETZT)).toBe(
+      'Besuch am 4. Januar 2027',
+    );
+  });
+
+  it('sagt im Training „Training“ und in der Praxis „Termin“', () => {
+    expect(terminTitel(termin('2026-10-27'), 'training', null, JETZT)).toBe('Training am Dienstag');
+    expect(
+      terminTitel(termin('2026-10-27', { appointment_type: 'practice' }), 'treatment', null, JETZT),
+    ).toBe('Termin am Dienstag');
+  });
+
+  it('nennt für eine Vertretung die Person statt des Tags; der Tag steht im Satz', () => {
+    const t = termin('2026-10-24');
+    expect(terminTitel(t, 'treatment', 'Max Mustermann', JETZT)).toBe('Besuch bei Max Mustermann');
+    expect(
+      terminTitel({ ...t, appointment_type: 'video' }, 'treatment', 'Max Mustermann', JETZT),
+    ).toBe('Videotermin für Max Mustermann');
+    expect(terminZeit(t, true, JETZT)).toBe('Samstag, 24. Oktober, 09:30 bis 10:30');
+    expect(terminZeit(t, false, JETZT)).toBe('24. Oktober, 09:30 bis 10:30');
+    // Über sechs Tage steht das Datum schon im Titel.
+    expect(terminZeit(termin('2026-11-02'), false, JETZT)).toBe('09:30 bis 10:30');
+  });
+
+  it('sagt, wer kommt - oder bei wem; ohne Namen nichts', () => {
+    const t = termin('2026-10-24');
+    expect(terminPerson(t, false)).toBe('Anna Beispiel kommt zu Ihnen');
+    expect(terminPerson(t, true)).toBe('Anna Beispiel kommt');
+    expect(terminPerson({ ...t, appointment_type: 'practice' }, false)).toBe(
+      'In der Praxis bei Anna Beispiel',
+    );
+    expect(terminPerson({ ...t, appointment_type: 'video' }, false)).toBe(
+      'Videotermin mit Anna Beispiel',
+    );
+    expect(terminPerson({ ...t, staff_name: null }, false)).toBeNull();
   });
 });

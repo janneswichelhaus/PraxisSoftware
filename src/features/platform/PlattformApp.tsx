@@ -175,6 +175,10 @@ function Geruest({
   // DR-113: ab 1024 px die Rechneransicht. Die Einsicht zeigt die Plattform
   // in einem Telefon und behält dessen Ansicht (`geruestbreite.ts`).
   const rechner = useRechner() && !nurLesen;
+  // Die Übersicht nutzt am Rechner die ganze Breite (zwei Spalten); ohne
+  // lesbaren Zugang steht dort die Tür in der Spalte.
+  const { pathname } = useLocation();
+  const breit = pathname === PLATTFORM_PFAD && lesbar.length > 0;
 
   // In der Einsicht füllt das Gerüst den Rahmen der Praxisseite, nicht das Fenster.
   return (
@@ -197,9 +201,10 @@ function Geruest({
       <HandelnFuer bereiche={lesbar} rechner={rechner} />
       {/* Handoff 2026-10-22, Abschnitt 4: am Telefon 20 px Rand und 12 oben,
           unter 23rem 12 px; am Rechner `max-w-inhalt` mit 40 px. Darin steht
-          jede Seite einspaltig in `max-w-spalte`, an der Kante der Marke.
-          Unten bleibt Luft statt Platz für eine feste Leiste: Die
-          Reiterleiste steht am Ende der Seite (`Navigation.tsx`). */}
+          jede Seite einspaltig in `max-w-spalte`, an der Kante der Marke -
+          außer der Übersicht, die ab 900 px Inhaltsbreite zwei Spalten hat
+          (`Uebersicht.tsx`). Unten bleibt Luft statt Platz für eine feste
+          Leiste: Die Reiterleiste steht am Ende der Seite (`Navigation.tsx`). */}
       <main
         id="inhalt"
         tabIndex={-1}
@@ -207,7 +212,7 @@ function Geruest({
           rechner ? 'pt-12 pb-16' : 'pt-3 pb-10'
         }`}
       >
-        <div className={rechner ? 'max-w-spalte' : undefined}>
+        <div className={rechner && !breit ? 'max-w-spalte' : undefined}>
           <Routes>
             <Route
               path={PLATTFORM_PFAD}
@@ -217,12 +222,7 @@ function Geruest({
                     bereiche={lesbar}
                     zugaenge={zugaenge}
                     seite={(z) => (
-                      <UebersichtOderEinstieg
-                        praxis={praxis}
-                        email={email}
-                        zugang={z}
-                        eigeneBereiche={lesbar.filter((x) => x.access_kind === 'self').length}
-                      />
+                      <UebersichtOderEinstieg praxis={praxis} email={email} zugang={z} />
                     )}
                   />
                 ) : (
@@ -637,13 +637,11 @@ function UebersichtOderEinstieg({
   praxis,
   email,
   zugang,
-  eigeneBereiche,
 }: {
   praxis: string;
   /** Die Adresse des Kontos - der Einstieg nennt sie am Schalter für die E-Mail. */
   email: string | undefined;
   zugang: Plattformzugang;
-  eigeneBereiche: number;
 }) {
   const api = usePlattformApi();
   const nurLesen = useNurLesen();
@@ -657,14 +655,7 @@ function UebersichtOderEinstieg({
   // E-001: Den Einstieg bedient nur die Person - die Einsicht zeigt die
   // Übersicht und sagt, dass er noch aussteht.
   if (steht && !nurLesen) return <Einstieg zugang={zugang} praxis={praxis} email={email} />;
-  return (
-    <Uebersicht
-      praxis={praxis}
-      zugang={zugang}
-      eigeneBereiche={eigeneBereiche}
-      einstiegSteht={steht && nurLesen}
-    />
-  );
+  return <Uebersicht zugang={zugang} einstiegSteht={steht && nurLesen} />;
 }
 
 /**
