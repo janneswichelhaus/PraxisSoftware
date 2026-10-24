@@ -5,9 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Schritt 1c Türen (23.10., Branch `claude/stoic-archimedes-520zje`, DRP-010 bis -014):
-Einladung, Einrichtung im geführten Ablauf, Anmeldung, Sperre der Plattform und „Zugang beendet“
-nach Handoff 5.2; keine Fertig-Seite, sondern `/p?eingerichtet=1` für 1d (ANN-684 bis ANN-689).
+Design-Review Schritt 1c Türen (PR #295, DRP-010 bis -014, Fragen am 24.10. entschieden): Türen nach
+Handoff 5.2, keine Fertig-Seite, sondern `/p?eingerichtet=1` für 1d (ANN-684 bis ANN-689). CI-Fix
+#296 (`zod` 4.6.7, Zeitumstellung der Übersichts-Prüfseite) vor #294 mergen.
 
 Gemergt am 22. und 23.10.: Design-Review Schritt 0 (#288), Handoff und Bericht (#289), Schritt 1a
 (#290, ANN-678), Schritt 1b Gerüst (#293, ANN-679 bis ANN-683), Name und Rufnummer N1/N2 (#292,
