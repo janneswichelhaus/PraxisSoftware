@@ -5,26 +5,28 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 2a Bausteine der Übungen (24.10., Branch `claude/new-session-27nejg`,
-DRP-023 bis -029): Bühne, Marken, Hakenzeile mit Pausenring, Kopf, Fuß und Endseite, Wochenleiste,
-geschätzte Dauer, Trennung unter 23rem; die Seiten stellen 2b und 2c um. Mit den Antworten aus #299
-(alle vier wie empfohlen, ANN-704 bis -710). Dazu BEF-199: Die Gruß-Tests laufen zu jeder Uhrzeit.
+Design-Review Lauf 1, Schritt 2 Übungen: 2a ist gemergt (#300, DRP-023 bis -029, mit BEF-199). 2b
+Durchführung und 2c Reiter laufen seit 24.10. abends parallel in zwei Sitzungen, mit getrennten
+Kennungen: 2b DRP-EPIC-008, DRP-030 bis -039, ANN-711 bis -719, BEF-210 bis -214; 2c DRP-EPIC-009,
+DRP-040 bis -049, ANN-720 bis -729, BEF-215 bis -219. Befunde aus archivierten Sitzungen: BEF-200
+(seit #297 erledigt), BEF-201, BEF-202.
 
-**Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24.10.: Handoff Übungen (#299), Nacharbeit
-#298 (Fragen aus #297 wie empfohlen, „Mitteilungen einschalten“ unter „Heute“, ANN-702; Briefing 2
-aufgefrischt, BEF-196 und BEF-197; BEF-170 Pfad A, ANN-703, daraus BEF-198), 1e Übersicht (#297,
-DRP-020 bis -022), 1d Einstieg (#294), 1c Türen (#295), CI-Fix #296. Gemergt am 22. und 23.10.:
-Schritt 0 (#288), Handoff und Bericht (#289), 1a (#290), 1b (#293), Daten N1/N2 (#292); BEF-179/-180
-(#287). Auf `origin` liegt sonst nichts Ungemergtes.
+**Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24.10.: 2a (#300), Handoff Übungen (#299),
+Nacharbeit #298 (Fragen aus #297 wie empfohlen, „Mitteilungen einschalten“ unter „Heute“, ANN-702;
+Briefing 2 aufgefrischt, BEF-196 und BEF-197; BEF-170 Pfad A, ANN-703, daraus BEF-198), 1e Übersicht
+(#297, DRP-020 bis -022), 1d Einstieg (#294), 1c Türen (#295), CI-Fix #296. Gemergt am 22. und
+23.10.: Schritt 0 (#288), Handoff und Bericht (#289), 1a (#290), 1b (#293), Daten N1/N2 (#292);
+BEF-179/-180 (#287). Auf `origin` liegt sonst nichts Ungemergtes.
 
 ## Danach
 
-Schritt 2 nach Abschnitt 9 des Handoffs: 2b Durchführung und 2c Reiter parallel, dann 2d Planblatt.
-Unabhängig davon die Unterlagen für Schritt 3 (Briefing 3 auffrischen, Ist-Bilder) für Claude
-Design. Danach Schritte 3 bis 7 (Termine, Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit
-freigegebenem Handoff aus Claude Design; Briefings in `design/review-2026-10/`. Ohne Handoff:
-BEF-198 (Grundlage samt Verordnungsscan ins Löschjournal, übrige Löschwege von Hand durchsehen; Pfad
-A).
+Schritt 2 nach Abschnitt 9 des Handoffs: nach 2b und 2c das Planblatt 2d. Unabhängig davon Schritt 3
+vorbereiten: zuerst das Designsystem in Claude Design auf Code-Stand bringen (Stand 22.10., vor 1a;
+Generator `build-ds.mjs` im lokalen Worktree `PraxisSoftware-design-review-1`, Memory „Claude
+Design: System und Leinwand“), dann Briefing 3 auffrischen, Ist-Bilder. Danach Schritte 3 bis 7
+(Termine, Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff aus Claude
+Design; Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198 (Grundlage samt
+Verordnungsscan ins Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A).
 
 ## Bei Jannes
 
@@ -51,5 +53,5 @@ A).
 
 ## Letzte Session
 
-24.10.2026, Branch `claude/new-session-27nejg`: Schritt 2a und die Antworten zum Handoff Übungen,
-keine Migration, kein Seed. Lokal: `git pull`.
+24.10.2026, Branch `claude/new-session-27nejg`: 2a gemergt; 2b und 2c in eigenen Sitzungen
+gestartet; Befunde BEF-200 bis -202. Keine Migration, kein Seed. Lokal: `git pull`.
