@@ -5,9 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 2 Übungen: Handoff gemergt (#299) und damit freigegeben. Die vier
-Fragen aus Abschnitt 0 hat Jannes am 24.10. wie empfohlen entschieden (Dauer geschätzt, „Später
-weiter“, Endseite, Trennung unter 23rem); eingetragen auf Branch `claude/new-session-27nejg`.
+Design-Review Lauf 1, Schritt 2a Bausteine der Übungen (24.10., Branch `claude/new-session-27nejg`,
+DRP-023 bis -029): Bühne, Marken, Hakenzeile mit Pausenring, Kopf, Fuß und Endseite, Wochenleiste,
+geschätzte Dauer, Trennung unter 23rem; die Seiten stellen 2b und 2c um. Mit den Antworten aus #299
+(alle vier wie empfohlen, ANN-704 bis -710).
 
 **Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24.10.: Handoff Übungen (#299), Nacharbeit
 #298 (Fragen aus #297 wie empfohlen, „Mitteilungen einschalten“ unter „Heute“, ANN-702; Briefing 2
@@ -18,12 +19,12 @@ Schritt 0 (#288), Handoff und Bericht (#289), 1a (#290), 1b (#293), Daten N1/N2 
 
 ## Danach
 
-Schritt 2 nach Abschnitt 9 des Handoffs: 2a Bausteine (mit Schätzung der Dauer und Trennung unter
-23rem), dann 2b Durchführung und 2c Reiter parallel, 2d Planblatt. Unabhängig davon die Unterlagen
-für Schritt 3 (Briefing 3 auffrischen, Ist-Bilder) für Claude Design. Danach Schritte 3 bis 7
-(Termine, Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff aus Claude
-Design; Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198 (Grundlage samt Verordnungsscan
-ins Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A).
+Schritt 2 nach Abschnitt 9 des Handoffs: 2b Durchführung und 2c Reiter parallel, dann 2d Planblatt.
+Unabhängig davon die Unterlagen für Schritt 3 (Briefing 3 auffrischen, Ist-Bilder) für Claude
+Design. Danach Schritte 3 bis 7 (Termine, Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit
+freigegebenem Handoff aus Claude Design; Briefings in `design/review-2026-10/`. Ohne Handoff:
+BEF-198 (Grundlage samt Verordnungsscan ins Löschjournal, übrige Löschwege von Hand durchsehen; Pfad
+A).
 
 ## Bei Jannes
 
@@ -50,5 +51,5 @@ ins Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A).
 
 ## Letzte Session
 
-24.10.2026, Branch `claude/new-session-27nejg`: Antworten zum Handoff Übungen eingetragen, nur Doku,
+24.10.2026, Branch `claude/new-session-27nejg`: Schritt 2a und die Antworten zum Handoff Übungen,
 keine Migration, kein Seed. Lokal: `git pull`.

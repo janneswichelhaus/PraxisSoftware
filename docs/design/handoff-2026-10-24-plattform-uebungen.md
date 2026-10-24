@@ -154,7 +154,7 @@ Ohne Namen (N1) heißt es „Ihre Therapeut:in sieht …“. Der nächste Übung
 und dem heutigen Tag; „Heute geübt“ aus `recent_sessions` mit `finished` am heutigen Tag. Lässt
 sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen“.
 
-### Wochenleiste (_neu_, `src/features/platform/Wochenleiste.tsx`, ersetzt die Chips in `Uebungstage`)
+### Wochenleiste (_neu_, `src/components/ui/Wochenleiste.tsx`, ersetzt die Chips in `Uebungstage`)
 
 - `role="group"` mit `aria-labelledby` auf „Ihre Übungstage“ (_neu_, `h3` 18/600, statt „Meine
   Übungstage“); sieben `button` mit `aria-pressed`, sichtbar „Mo“, vorgelesen „Montag“.
@@ -182,7 +182,7 @@ sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen�
 - Lesefrist: Kreis `surface-sunken` mit `ink`. „Sehr groß“: ohne Pfeil (wie die Aufgabenkarte in
   Briefing 1), Kreis 50. Unter 23rem steht die Nummer über dem Text, innen 12, ohne Pfeil.
 
-### Bühne (_neu_, `src/features/platform/Buehne.tsx`)
+### Bühne (_neu_, `src/components/ui/Buehne.tsx`, Zahl und Einheit aus `hauptzahl`)
 
 - **Ohne Medium:** `section` mit `aria-labelledby` auf den Namen; Fläche `surface-inverse`,
   `rounded-image`, innen 24 (ab 1024 px 32, unter 23rem 16), Abstand 16, kein Schatten. Laufrad 200
@@ -200,7 +200,7 @@ sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen�
   unter dem Video, Hauptzahl 40 in `ink` mit der Einheit daneben. Speicherort und Auslieferung der
   Videos sind eine eigene Entscheidung (ADR-017) und kein Teil dieses Handoffs.
 
-### Dosierungsmarken (geändert: `Dosierungskacheln` in `Uebungsinhalt.tsx`)
+### Dosierungsmarken (_neu_, `src/features/platform/Dosierungsmarken.tsx`, ersetzt `Dosierungskacheln`)
 
 - Statt der Kacheln eine Liste `ul` mit `aria-label` „Dosierung“: Marken mindestens 40 hoch, innen
   6/14, `rounded-pill`, Fläche `surface-sunken` ohne Rand (Angaben, keine Knöpfe), 18/600, Zeichen 20
@@ -210,7 +210,7 @@ sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen�
   …“ und die Steigerungsregel der Fachperson (`double_progression`), Wortlaut unverändert.
 - Unter 23rem: Marken als volle Zeilen mit `rounded-button`, innen 6/10.
 
-### Hakenzeile und Pausenring (geändert, `Durchfuehrung.tsx`, ersetzt `Pause`)
+### Hakenzeile und Pausenring (_neu_, `src/components/ui/Hakenzeile.tsx`, ersetzt `Pause`)
 
 - `button` mit `aria-pressed`, ganze Breite, mindestens 64 hoch, innen 10/14/10/20, Linie 2 `line`,
   `rounded-card`, 18/600, `flex-wrap: wrap`; das Wort „{n}. Durchgang“ mit `white-space: nowrap`.
@@ -223,7 +223,7 @@ sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen�
   Vibration. Die bestehende Live-Region sagt einmal „Pause: {s} Sekunden.“, am Ende nichts.
 - Nach dem letzten Durchgang einer Übung keine Pause (wie heute).
 
-### Kopf der Durchführung (_neu_, Muster wie `GefuehrterAblauf`)
+### Kopf der Durchführung (_neu_, `Durchfuehrungskopf.tsx`, Muster wie `GefuehrterAblauf`)
 
 - Zeile 64, innen 8: links „Zurück“ (ab Übung 2; vorige Übung; Zeichen 24 und Wort, 48 hoch), rechts
   „Später weiter“ (_neu_; verlässt die Durchführung zur Herkunft, die Einheit bleibt offen), beide
@@ -235,7 +235,7 @@ sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen�
 - Steht fest oben (Linie `line` unten). Unter 23rem rollt er mit; „Übung {n} von {m}“ steht dann über
   den Balken.
 
-### Fuß der Durchführung (_neu_)
+### Fuß der Durchführung (_neu_, `Durchfuehrungsfuss.tsx`)
 
 - Fest unten, Fläche `surface`, Linie `line` oben, innen 12/20/16 und `env(safe-area-inset-bottom)`.
   Genau ein Hauptknopf `groesse="gross"` (56), volle Breite; ab 1024 px bis 360 breit, rechts in der
@@ -247,7 +247,7 @@ sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen�
 - Knopf: „Nächste Übung“ (besteht), bei der letzten Übung „Zum Abschluss“ (_neu_, statt „Fertig“),
   beim Beenden „Einheit beenden“ (besteht). Unter 23rem steht der Fuß am Ende des Inhalts.
 
-### Endseite (_neu_, in `Durchfuehrung.tsx`, Muster „Alles bereit“ aus Briefing 1)
+### Endseite (_neu_, `Endseite.tsx` auf `Abschlussseite`, Muster „Alles bereit“ aus Briefing 1)
 
 - Ohne Kopf; Inhalt senkrecht mittig, innen 48/24, Abstand 24. Kreis 96: übertragen
   `surface-inverse` mit Haken 44 in `surface`; auf dem Gerät `surface-sunken` mit Telefon 44 in
@@ -465,9 +465,11 @@ Kein Markenmoment in der Durchführung und auf der Endseite; das Laufrad steht s
 
 ## 9 · Reihenfolge der Umsetzung
 
-Je Schritt ein Pull Request über den Feature-Loop. K1: Kein Schritt berührt einen Auslöser aus
-ADR-013 Punkt 9 – die Dauer wird geschätzt, nicht gespeichert (Frage 1), und Videos kommen erst mit
-einem eigenen Auftrag. Standardprüfungen und Bildstrecke genügen.
+Je Schritt ein Pull Request über den Feature-Loop. Die Orte in Abschnitt 3 sind die gebauten aus 2a:
+Bausteine mit eigenem Knopf oder Titel liegen nach der Ratsche (`src/designsystem.test.ts`) in
+`src/components/ui/`. K1: Kein Schritt berührt einen Auslöser aus ADR-013 Punkt 9 – die Dauer wird
+geschätzt, nicht gespeichert (Frage 1), und Videos kommen erst mit einem eigenen Auftrag.
+Standardprüfungen und Bildstrecke genügen.
 
 1. **2a Bausteine:** `--text-hauptzahl`, Knopf `gross`, Bühne, Dosierungsmarken, Hakenzeile mit
    Pausenring, Kopf und Fuß der Durchführung, Wochenleiste, Endseite; Schätzung der Dauer als reine
