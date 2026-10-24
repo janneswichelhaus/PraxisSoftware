@@ -583,3 +583,15 @@ Marke vorsieht.
 | Berührt | `OhneVerbindung` in `src/features/platform/Uebungen.tsx` |
 
 **Beobachtung.** Scheitert das Laden der Pläne bei bestehender Verbindung und liegt ein Plan auf dem Gerät, steht „Ohne Verbindung. Üben können Sie trotzdem …“ mit „Erneut laden“. Ohne Plan auf dem Gerät steht richtig „Ihre Übungen konnten nicht geladen werden.“ **Erwartet.** Der Satz unterscheidet „keine Verbindung“ von „die Praxis antwortet gerade nicht“; das Üben mit dem Plan vom letzten Laden bleibt in beiden Fällen.
+
+### BEF-198 — Eine gelöschte Grundlage samt Verordnungsscan fehlt im Löschjournal
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Akte, Behandlungsgrundlagen (`delete_treatment_basis`); Wiederherstellung |
+| Quelle  | Zweitreview BEF-170 (Subagent) |
+| Status  | offen (Vorschlag) |
+| Berührt | `public.delete_treatment_basis` (`20261121100000_bef_124_verordnung_mit_verlauf.sql`); ADR-008 Punkt 8 |
+
+**Beobachtung.** `delete_treatment_basis` löscht die Grundlage ohne Eintrag im Löschjournal; ihr Verordnungsscan fällt per `on delete cascade` mit, der Auslöser schreibt nur den Löschauftrag. Nach einer Wiederherstellung kämen Grundlage und Scan zurück. **Erwartet.** Journaleinträge für `treatment_bases` und die mitfallenden `patient_files`, Test mit Wiederherstellung (Pfad A). Dabei die übrigen Löschwege von Hand durchsehen, die ohne Journal löschen, etwa Leistungen, Vereinbarungen, Aufgaben und Tagebucheinträge.

@@ -7312,3 +7312,15 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Briefing 7 (Ich)
 **Anker.** `mitteilungenOffen` in `src/features/platform/einstiegsablauf.ts`.
 
 **Änderungspfad.** Auch nach „Aus“ zeigen oder den Schalter selbst auf die Übersicht · Aufwand `klein`.
+
+### ANN-703 — Löschjournal: Eine Löschung von Hand ist mit sich selbst fällig
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Datenschutzprüfung (Löschkonzept)
+
+**Annahme.** Löscht eine Person eine Datei der Akte von Hand oder verwirft die Prüfung sie, trägt der Eintrag im Löschjournal als Fälligkeit den Zeitpunkt der Löschung und eine eigene `run_id`. Wer von Hand gelöscht hat, steht am Löschauftrag (`ordered_by`), ein Verwerfen im Protokoll (`access.denied`) - nicht im Journal.
+
+**Begründung.** ADR-008 Punkt 8: jede wirksame Löschung nach einer Wiederherstellung erneut anwenden; eine Frist hat eine Löschung von Hand nicht. So schon bei den Fotos am Rad (FLT-002). Unsicher: ob die Prüfung den Anlass im Journal verlangt.
+
+**Anker.** `app.journal_patient_file_deletion` in `supabase/migrations/20261224100000_bef_170_dateien_ins_loeschjournal.sql`.
+
+**Änderungspfad.** Spalte für den Anlass (Lauf oder von Hand) in Journal und `list_deletion_runs` · Aufwand `mittel`.

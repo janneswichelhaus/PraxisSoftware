@@ -12,14 +12,15 @@
 --
 -- Datenklasse wie in `retention_assignments`: `patientenfoto` für die
 -- Foto-Arbeitshilfe, sonst `patientenakte`. Fällig ist eine Löschung von Hand
--- mit ihrem Zeitpunkt. Der Eintrag trägt Tabelle, Kennung, Klasse und Zeit -
--- keinen Namen, keinen Inhalt (ANN-031).
+-- mit ihrem Zeitpunkt, mit eigener `run_id` (ANN-703). Der Eintrag trägt
+-- Tabelle, Kennung, Klasse und Zeit - keinen Namen, keinen Inhalt (ANN-031).
 --
 -- Kein Auditeintrag (ADR-010 Punkt 15), keine neue Tabelle, keine Frist,
 -- Rechte und Prüfungen beider Funktionen unverändert.
 -- =============================================================================
 
--- Der Journaleintrag einer einzeln gelöschten Datei, an einer Stelle. Nur aus
+-- Der Journaleintrag einer einzeln gelöschten Datei, an einer Stelle (ANN-703).
+-- Nur aus
 -- Funktionen mit SECURITY DEFINER aufrufbar: Wer Einträge anlegen könnte,
 -- ließe nach einer Wiederherstellung beliebige Dateien löschen.
 create function app.journal_patient_file_deletion(
@@ -215,3 +216,6 @@ begin
   return 'rejected';
 end;
 $$;
+
+comment on function public.record_patient_file_verification(uuid, boolean, boolean, boolean) is
+  'Nur fuer den Dienst patient-file-verify (service_role): traegt das Ergebnis der Pruefung am Inhalt ein. Bestanden: verified_at, bei scharfer Pruefung ready. Befund: Zeile verworfen, Loeschauftrag fuer das Objekt, Eintrag im Loeschjournal (BEF-170) und access.denied mit operation patient_file.verification; unter Legal Hold bleibt die Datei (ADR-017 Punkte 24, 49 bis 52).';

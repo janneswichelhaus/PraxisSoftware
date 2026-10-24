@@ -222,15 +222,20 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
       );
       expect(rows).toEqual([{ authenticated: false, anon: false }]);
       const datei = await abgelegteDatei(users.therapist);
+      const { rows: org } = await asPostgres<{ organization_id: string }>(
+        'select organization_id from public.patient_files where id = $1',
+        [datei.file_id],
+      );
       const fehler = await abgefangen(
         asUserCommitted(
           users.ownerTherapist,
-          `select app.journal_patient_file_deletion(f.organization_id, f.id, f.document_type)
-             from public.patient_files f where f.id = $1`,
-          [datei.file_id],
+          "select app.journal_patient_file_deletion($1::uuid, $2::uuid, 'verordnungsscan')",
+          [org[0]!.organization_id, datei.file_id],
         ),
       );
-      expect(fehler?.message).toMatch(/permission denied/);
+      expect(fehler?.message).toMatch(
+        /permission denied for function journal_patient_file_deletion/,
+      );
       expect(await journal(datei.file_id)).toEqual([]);
     });
 
