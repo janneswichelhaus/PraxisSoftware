@@ -25,24 +25,36 @@ import { STAND_VERALTET } from './abfrageTexte';
  *
  * Eine neue Meldung ist eine neue Zeile: Die Seite setzt einen neuen `key`,
  * damit auch eine zweite, gleichlautende Bestätigung den Fokus wieder nimmt.
+ *
+ * `imFenster`: Steht sie in einem Fenster, das gerade aufgeht, gibt das
+ * Fenster ihr den Fokus (`data-autofocus`) - nähme sie ihn selbst, reichte
+ * das Fenster ihn gleich an seinen Hauptknopf weiter und merkte sich die
+ * Zeile als Ort für die Rückkehr (der Einstieg, Handoff 2026-10-22, 5.3).
  */
 export function Rueckmeldung({
   children,
   className = '',
+  imFenster = false,
 }: {
   children: ReactNode;
   className?: string;
+  imFenster?: boolean;
 }) {
   const zeile = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    zeile.current?.focus();
-  }, []);
+    if (!imFenster) zeile.current?.focus();
+  }, [imFenster]);
 
   return (
     // Fokussierbar, aber kein Bedienelement: ohne eigenen Fokusrahmen, wie die
     // Fehlerzusammenfassung, die ebenso von selbst den Fokus nimmt.
-    <div ref={zeile} tabIndex={-1} className={`outline-none ${className}`}>
+    <div
+      ref={zeile}
+      tabIndex={-1}
+      data-autofocus={imFenster ? '' : undefined}
+      className={`outline-none ${className}`}
+    >
       {/* Aussehen nach dem Design-Handoff vom 2026-10-01 (Abschnitt 3):
           Akzentfläche, Radius 14, innen 12/16, 15 px in 600 in der Hauptfarbe,
           das Häkchen vorn für Vorlesesoftware ausgeblendet - der Satz sagt es.

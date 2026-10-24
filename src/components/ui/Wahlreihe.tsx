@@ -31,6 +31,8 @@ export function Wahlreihe<W extends string>({
   onWaehlen,
   legendeSichtbar = true,
   zusatz,
+  gleichgewichtet = false,
+  sofort = false,
 }: {
   /** Name der Gruppe, etwa der Prüfpunkt „Bremsen“. */
   legende: ReactNode;
@@ -42,8 +44,33 @@ export function Wahlreihe<W extends string>({
   legendeSichtbar?: boolean;
   /** Eine Zeile unter der Wahl, etwa „Am Rad markiert: Stelle 1“. */
   zusatz?: ReactNode;
+  /**
+   * Jede Wahl gleich breit und 48 hoch, das Wort mittig - für eine
+   * Entscheidung, bei der keine Antwort näher liegen darf als die andere:
+   * „Ja, erlauben“ / „Nein“ einer Einwilligung (Handoff 2026-10-22,
+   * Abschnitt 5.3). Wird es eng, steht jede Wahl in einer eigenen Zeile -
+   * gemessen in der Schrift (7,5em), damit bei „Sehr groß“ kein Wort im
+   * Knopf umbricht.
+   */
+  gleichgewichtet?: boolean;
+  /**
+   * Die Wahl wirkt sofort - eine Einwilligung, die beim Wählen gilt (Handoff
+   * 2026-10-22, Abschnitt 5.3): Knöpfe mit `aria-pressed` statt Radios. In
+   * einer Radiogruppe wählen schon die Pfeiltasten, und wer sich die Wahlen
+   * nur anhört, hätte eingewilligt. So wählen nur Tippen, Enter und
+   * Leertaste; Tab geht von Wahl zu Wahl. Aussehen wie sonst.
+   */
+  sofort?: boolean;
 }) {
   const name = useId();
+  const flaeche = (an: boolean) =>
+    `rounded-button inline-flex cursor-pointer items-center gap-1.5 border px-3 text-sm ${
+      gleichgewichtet ? 'min-h-12 flex-1 basis-[7.5em] justify-center text-center' : 'min-h-11'
+    } ${
+      an
+        ? 'border-accent bg-accent-soft text-accent font-medium'
+        : 'border-line-strong bg-surface text-ink-muted'
+    }`;
   return (
     <fieldset className="min-w-0">
       <legend className={legendeSichtbar ? 'text-ink text-liste mb-2' : 'sr-only'}>
@@ -52,14 +79,27 @@ export function Wahlreihe<W extends string>({
       <div className="flex flex-wrap gap-2">
         {wahlen.map((wahl) => {
           const an = wahl.wert === gewaehlt;
+          if (sofort) {
+            return (
+              <button
+                key={wahl.wert}
+                type="button"
+                aria-pressed={an}
+                onClick={() => {
+                  if (!an) onWaehlen(wahl.wert);
+                }}
+                className={`${flaeche(an)} focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-2`}
+              >
+                {an ? <span aria-hidden="true">✓</span> : null}
+                {wahl.zeichen}
+                {wahl.text}
+              </button>
+            );
+          }
           return (
             <label
               key={wahl.wert}
-              className={`rounded-button has-[:focus-visible]:outline-accent inline-flex min-h-11 cursor-pointer items-center gap-1.5 border px-3 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
-                an
-                  ? 'border-accent bg-accent-soft text-accent font-medium'
-                  : 'border-line-strong bg-surface text-ink-muted'
-              }`}
+              className={`${flaeche(an)} has-[:focus-visible]:outline-accent has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2`}
             >
               <input
                 type="radio"

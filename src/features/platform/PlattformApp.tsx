@@ -62,6 +62,7 @@ import { Rechnung, Rechnungen } from './Rechnungen';
 import { useSchriftgroesseAnwenden } from './schriftgroesse';
 import { Termine } from './Termine';
 import { Verbindungszeile } from './Verbindungszeile';
+import { Vertretungsband } from './Vertretungsband';
 import { NachrichtDetail, Nachrichten, NeueNachricht } from './Nachrichten';
 import { Uebersicht } from './Uebersicht';
 import { PlanblattPlattform, Uebungen } from './Uebungen';
@@ -218,6 +219,7 @@ function Geruest({
                     seite={(z) => (
                       <UebersichtOderEinstieg
                         praxis={praxis}
+                        email={email}
                         zugang={z}
                         eigeneBereiche={lesbar.filter((x) => x.access_kind === 'self').length}
                       />
@@ -580,9 +582,14 @@ function Geruest({
  * Die Seiten zeichnen erst, wenn es steht: Ein Fenster, das beim ersten
  * Zeichnen schon offen ist, zöge sonst um. Die Einsicht der Praxis behält
  * ihr Ziel - ihre Fenster liegen über der Praxisseite.
+ *
+ * Am Rechner trägt das Ziel `data-rechner` wie das Gerüst: Die Titel eines
+ * Fensters in der Stufe der Plattform wachsen dann mit (`Fenstertitel`,
+ * Einstieg, DRP-016) - nicht nach `lg:`, das in der Einsicht gälte.
  */
 function MitFensterZiel({ children }: { children: ReactNode }) {
   const [ziel, setZiel] = useState<HTMLDivElement | null>(null);
+  const rechner = useRechner();
   return (
     <>
       {ziel ? (
@@ -592,6 +599,7 @@ function MitFensterZiel({ children }: { children: ReactNode }) {
         ref={setZiel}
         className="plattform-schrift"
         data-testid="plattform-fenster"
+        data-rechner={rechner ? '' : undefined}
         {...{ [FENSTERZIEL]: '' }}
       />
     </>
@@ -627,10 +635,13 @@ function TabtitelDerPlattform({ bereiche }: { bereiche: Plattformzugang[] }) {
  */
 function UebersichtOderEinstieg({
   praxis,
+  email,
   zugang,
   eigeneBereiche,
 }: {
   praxis: string;
+  /** Die Adresse des Kontos - der Einstieg nennt sie am Schalter für die E-Mail. */
+  email: string | undefined;
   zugang: Plattformzugang;
   eigeneBereiche: number;
 }) {
@@ -645,7 +656,7 @@ function UebersichtOderEinstieg({
   const steht = Boolean(einstieg.data?.pending);
   // E-001: Den Einstieg bedient nur die Person - die Einsicht zeigt die
   // Übersicht und sagt, dass er noch aussteht.
-  if (steht && !nurLesen) return <Einstieg zugang={zugang} praxis={praxis} />;
+  if (steht && !nurLesen) return <Einstieg zugang={zugang} praxis={praxis} email={email} />;
   return (
     <Uebersicht
       praxis={praxis}
@@ -685,14 +696,7 @@ function HandelnFuer({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechn
   if (!gewaehlt || gewaehlt.access_kind === 'self' || pathname === `${PLATTFORM_PFAD}/ich`) {
     return null;
   }
-  return (
-    <div role="status" className="bg-accent text-surface">
-      <p className={`${geruestSpalte(rechner)} py-2 text-base`}>
-        Sie handeln für <strong>{gewaehlt.represented_name ?? 'eine andere Person'}</strong>
-        <span className="opacity-90"> · {VERTRETUNGSART[gewaehlt.access_kind]}</span>
-      </p>
-    </div>
-  );
+  return <Vertretungsband zugang={gewaehlt} innen={geruestSpalte(rechner)} />;
 }
 
 /**

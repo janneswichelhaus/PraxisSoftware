@@ -7119,9 +7119,9 @@ Praxisprozess · entschieden (Jannes) · 2026-10-24 · Jannes (PR #295, Frage 2)
 
 ### ANN-685 — Einrichtung ohne eigene Fertig-Seite: „Willkommen“ sagt es einmal
 
-Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: Schritt 1d (Einstieg)
+Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
-**Annahme.** Nach „PIN speichern“ (oder dem Passkey, wenn die PIN schon besteht) führt die Einladung direkt zur Plattform, mit `eingerichtet=1` an der Adresse. Der Einstieg zeigt daraufhin auf „Willkommen“ einmal „Anmeldung eingerichtet“ und nimmt den Parameter aus der Adresse. Eine Seite „Fertig“ dazwischen gibt es nicht. Den Leser baut Schritt 1d; bis er gemergt ist, bleibt der Parameter ungelesen in der Adresse (keine Angabe zur Person).
+**Annahme.** Nach „PIN speichern“ (oder dem Passkey, wenn die PIN schon besteht) führt die Einladung direkt zur Plattform, mit `eingerichtet=1` an der Adresse. Der Einstieg zeigt daraufhin auf „Willkommen“ einmal „Anmeldung eingerichtet“ und nimmt den Parameter aus der Adresse. Eine Seite „Fertig“ dazwischen gibt es nicht. Den Leser baut Schritt 1d (ANN-695).
 
 **Begründung.** Handoff 2026-10-22, Abschnitt 0 (Festlegungen aus dem Entwurf) und 5.2: Eine Fertig-Seite kostet einen Tipp und sagt nichts, was „Willkommen“ nicht auch sagen kann. Die Bestätigung gilt wie jede einmalige Rückmeldung genau einmal (DR-160).
 
@@ -7176,3 +7176,63 @@ Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: —
 **Anker.** `PinFestlegen` in `src/features/auth/einrichtung/PinFestlegen.tsx`; Test „bietet die PIN auch in der Einrichtung keinem Passwortmanager an“.
 
 **Änderungspfad.** `new-password` nur mit Änderung von ADR-025 Punkt 11 (Freigabe Jannes) · Aufwand `klein`.
+
+### ANN-692 — Plattform: die erste Aufgabe an einer Stelle - Fragebogen, Check-in, Übungen für heute
+
+Technik · offen · 2026-10-23 · — · — · Wiedervorlage: Schritt 1e (Übersicht)
+
+**Annahme.** Die erste Aufgabe ist der Fragebogen vor dem ersten Termin, dann ein fälliger Check-in, dann die Übungen für heute (Übungstag, noch nicht geübt) - nie eine Antwort der Praxis oder eine offene Rechnung. In der Lesefrist und im Training gibt es keine; dort wird „Unterlagen sichern“ bzw. die nächste Einheit die Hauptsache. „Alles bereit“ nennt sie mit ihrer Handlung, ohne Aufgabe und für eine Vertretung nur „Zur Übersicht“.
+
+**Begründung.** Handoff 2026-10-22, Abschnitt 0 („Eine Hauptsache“, Abweichung von DSN-001 4.1: der Termin ist keine Aufgabe) und 5.1. An einer Stelle, damit Einstieg und Übersicht dieselbe Hauptsache meinen.
+
+**Anker.** `ersteAufgabe` in `src/features/platform/hauptsache.ts`.
+
+**Änderungspfad.** Reihenfolge oder Arten in `ersteAufgabe` · Aufwand `klein`.
+
+### ANN-693 — Einstieg: Einwilligung als gleich gewichtete Wahl, gespeichert beim Wählen, nur offene
+
+Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)
+
+**Annahme.** Der Einstieg fragt nur offene, jetzt erteilbare Einwilligungen. „Ja, erlauben“ und „Nein“ stehen gleich gewichtet als Knöpfe, nichts vorgewählt; Pfeiltasten wählen nichts. Ein Ja gilt beim Wählen mit der Fassung des Texts, ein Nein danach widerruft - je Zweck nacheinander, die letzte Wahl gilt. Ein Nein zu Offenem bleibt ungespeichert.
+
+**Begründung.** Handoff 2026-10-22, 5.3; Art. 9 Abs. 2 lit. a DSGVO, EDSA-Leitlinien 05/2020. `record_platform_consent` kennt keine Ablehnung. Unsicher: ob die Prüfung eine Bestätigung verlangt.
+
+**Anker.** `offeneEinwilligungen` in `src/features/platform/einstiegsablauf.ts`, `Einwilligungsfrage` in `Einstieg.tsx`.
+
+**Änderungspfad.** Rückfrage vor dem Ja wie unter „Ich“ (`klein`) oder ein Nein als Ablehnung speichern (RPC, `mittel`).
+
+### ANN-694 — Einstieg: ein Schalter für Mitteilungen, Push auf diesem Telefon, sonst E-Mail
+
+Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, mit ADR-024 Punkt 18)
+
+**Annahme.** Der Schalter schaltet für den eigenen Zugang sechs Arten ein: Terminerinnerung, verschoben, abgesagt, Antwort auf eine Rückfrage, Terminwunsch beantwortet, neuer Plan - ohne, was die Praxis abgeschaltet hat. Geht Push auf dem Gerät, per Push, sonst per E-Mail an die Adresse des Kontos. Aus nimmt die sechs Arten heraus; das Telefon bleibt für andere Zugänge eingetragen.
+
+**Begründung.** Handoff 2026-10-22, Abschnitte 5.3 und 10; ADR-024 Punkte 15 und 11 (Mail ist der Regelweg). Unsicher: ob eine Wahl für sechs Arten der Wahl je Art genügt.
+
+**Anker.** `MITTEILUNGSARTEN` in `src/features/platform/einstiegsablauf.ts`, `Mitteilungen` in `Einstieg.tsx`.
+
+**Änderungspfad.** Andere Arten in der Liste oder ohne Push ein Hinweis statt des Schalters · Aufwand `klein`.
+
+### ANN-695 — Einrichtung ohne Fertig-Seite: „Anmeldung eingerichtet“ einmal auf „Willkommen“
+
+Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
+
+**Annahme.** Nach „PIN speichern“ folgt keine eigene Seite: Die Einrichtung führt mit `?eingerichtet=1` auf `/p` (Schritt 1c, ANN-685), und „Willkommen“ zeigt oben einmal „Anmeldung eingerichtet“ - bis zur nächsten Seite, nicht nach „Zurück“ oder Neuladen. Ist der Einstieg übersprungen oder beendet, liest die Übersicht den Parameter nicht.
+
+**Begründung.** Handoff 2026-10-22, Festlegungen aus dem Entwurf und Abschnitt 10; DR-160 (eine Bestätigung gilt einmal). Eine Fertig-Seite kostete einen Tipp ohne neue Auskunft.
+
+**Anker.** `useEinmaligeRueckmeldung('eingerichtet')` in `src/features/platform/Einstieg.tsx`.
+
+**Änderungspfad.** Eigene Seite nach „PIN speichern“ (1c) oder die Rückmeldung auch auf der Übersicht · Aufwand `klein`.
+
+### ANN-696 — Plattform unter 23rem: ein Titel mit langem Wort in 22, damit kein Name bricht
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Schritt 1e (Gruß der Übersicht)
+
+**Annahme.** Unter 23rem steht die Überschrift eines Fensters der Plattform in 22 statt 28, sobald ein Wort darin länger als elf Zeichen ist - meist ein Name. Am Bindestrich darf er brechen, mitten im Wort nicht. Sonst bleibt es bei 28, auch für den Gruß.
+
+**Begründung.** Handoff 2026-10-22, Abschnitte 4 („Gruß in Größe des Seitentitels (28)“) und 6 („kein abgeschnittenes Wort“); DR-114. „Langenscheidt“ braucht in 28 173 px, bei 200 % sind 164 da; 22 ist die schmale Stufe des Hero-Titels.
+
+**Anker.** `titelklassen` in `src/components/ui/Dialogfenster.tsx`.
+
+**Änderungspfad.** Andere Grenze in `ZEICHEN_IN_28_SCHMAL` oder immer 28 mit Bruch im Wort · Aufwand `klein`.

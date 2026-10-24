@@ -49,6 +49,19 @@ describe('Zwischentitel (Design-Fundament, Lücke 9.2)', () => {
     );
     expect(titel.parentElement).toContainElement(screen.getByRole('link', { name: 'Bearbeiten' }));
   });
+
+  it('steht mit stufe="abschnitt" in der Stufe des Abschnittstitels der Plattform (DRP-017)', () => {
+    renderWithProviders(
+      <div className="plattform-schrift">
+        <Zwischentitel stufe="abschnitt">Nachrichten per E-Mail</Zwischentitel>
+      </div>,
+    );
+    const titel = screen.getByRole('heading', { level: 3, name: 'Nachrichten per E-Mail' });
+    expect(klassenVon(titel)).toEqual(['text-ink', 'text-abschnitt']);
+    expect(klassenVon(titel.parentElement)).toEqual(
+      expect.arrayContaining(['mt-4', 'mb-2', 'first:mt-0']),
+    );
+  });
 });
 
 describe('Formularfuss (Design-Fundament, Lücke 9.5)', () => {
