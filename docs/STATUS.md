@@ -11,7 +11,7 @@ Kennungen: 2b DRP-EPIC-008, DRP-030 bis -039, ANN-711 bis -719, BEF-210 bis -214
 DRP-040 bis -049, ANN-720 bis -729, BEF-215 bis -219. Befunde aus archivierten Sitzungen: BEF-200
 (seit #297 erledigt), BEF-201, BEF-202.
 
-2c (Branch `claude/uebungen-reiter-2c`, DRP-040 bis -043): Vorschau der Einheit in allen Lagen mit
+2c (Branch `claude/uebungen-reiter-2c`, DRP-040 bis -044): Vorschau der Einheit in allen Lagen mit
 Dauer, auch auf der Übersicht; Plan mit Wochenleiste, Übungszeilen und „Zum Plan“; Lesefrist,
 mehrere Pläne, Plan vom Gerät, „Praxis antwortet nicht“ (BEF-197); Fenster mit Bühne; Rechner
 zweispaltig (ANN-720 bis -727).

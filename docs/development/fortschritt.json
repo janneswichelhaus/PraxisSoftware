@@ -1546,7 +1546,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-24",
-          "nachweis": "DRP-040 bis DRP-043, Branch `claude/uebungen-reiter-2c`, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts",
+          "nachweis": "DRP-040 bis DRP-044, Branch `claude/uebungen-reiter-2c`, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts",
           "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2c (Handoff 2026-10-24, Abschnitt 9 Punkt 3), parallel zu 2b; ANN-720 bis ANN-727; BEF-197 erledigt, BEF-196 für den Reiter"
         }
       ]
