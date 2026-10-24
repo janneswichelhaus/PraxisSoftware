@@ -135,7 +135,7 @@ describe('HeroKarte', () => {
 });
 
 describe('Uebungszeile', () => {
-  it('ist ganz ein Knopf mit Nummer, Name und Dosierung; Kreis und Pfeil stumm', async () => {
+  it('ist ganz ein Knopf mit Nummer, Name und Dosierung; Kreis und Pfeil stumm', () => {
     const tipp = vi.fn();
     const { container } = zeige(
       <Uebungsliste beschriftung="Die Übungen">

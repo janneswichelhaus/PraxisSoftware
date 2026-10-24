@@ -448,7 +448,7 @@ describe('Kein Plan, Laden, Fehler (Handoff 5.1 und 5.6)', () => {
     ).toBeInTheDocument();
   });
 
-  it('zeigt beim Laden das Skelett mit Satz für Vorlesesoftware', async () => {
+  it('zeigt beim Laden das Skelett mit Satz für Vorlesesoftware', () => {
     ladePlaene.mockReturnValue(new Promise(() => undefined));
     const { container } = zeige(<Uebungen zugang={ZUGANG} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Übungen' })).toBeInTheDocument();
