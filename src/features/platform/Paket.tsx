@@ -14,9 +14,8 @@ import {
   type Plattformzugang,
 } from './api';
 import { usePlattformApi } from './einsicht';
-import { PAKETBEDINGUNGEN, steuerHinweis } from './paketbedingungen';
+import { PAKETBEDINGUNGEN, paketStand, steuerHinweis } from './paketbedingungen';
 import { PLATTFORM_PFAD } from './pfade';
-import { datum } from './zeit';
 
 /**
  * „Ich → Trainingspaket" (ANG-008, IDEA-ANG-004, PROJECT_PRINCIPLES.md 4.10).
@@ -66,12 +65,6 @@ export function Paket({ zugang }: { zugang: Plattformzugang }) {
   );
 }
 
-const STAND: Record<MeinPaket['state'], (paket: MeinPaket) => string> = {
-  planned: (k) => `Beginnt am ${datum(k.starts_on)}, läuft bis ${datum(k.ends_on)}.`,
-  running: (k) => `Läuft seit ${datum(k.starts_on)} bis ${datum(k.ends_on)}.`,
-  ended: (k) => `Vom ${datum(k.starts_on)} bis ${datum(k.ends_on)}.`,
-};
-
 function MeinePakete({ pakete }: { pakete: MeinPaket[] }) {
   const aktuell = pakete.filter((k) => k.state !== 'ended');
   const frueher = pakete.filter((k) => k.state === 'ended');
@@ -93,7 +86,7 @@ function MeinePakete({ pakete }: { pakete: MeinPaket[] }) {
           {aktuell.map((k) => (
             <li key={k.starts_on}>
               <p className="text-ink text-base font-medium">{k.label}</p>
-              <p className="text-ink text-base">{STAND[k.state](k)}</p>
+              <p className="text-ink text-base">{paketStand(k)}</p>
               <p className="text-ink-muted text-base">
                 {formatEuro(k.price_cents, k.currency)}, einmal zu Beginn berechnet.
               </p>
@@ -107,7 +100,7 @@ function MeinePakete({ pakete }: { pakete: MeinPaket[] }) {
           <ul className="mt-1 flex flex-col gap-1">
             {frueher.map((k) => (
               <li key={k.starts_on} className="text-ink-muted text-base">
-                {k.label}: {STAND.ended(k)}
+                {k.label}: {paketStand(k)}
               </li>
             ))}
           </ul>

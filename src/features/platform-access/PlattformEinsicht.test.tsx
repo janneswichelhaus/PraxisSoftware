@@ -155,7 +155,10 @@ describe('Einsicht der Praxis (E-001)', () => {
     );
     // Die Plattform selbst - mit ihren Reitern, ohne Praxisrahmen.
     expect(await screen.findByRole('navigation', { name: 'Plattform' })).toBeInTheDocument();
-    expect(await screen.findByText('Guten Tag')).toBeInTheDocument();
+    // Der Gruß der Übersicht hängt an der Tageszeit (Schritt 1e).
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /^Guten (Morgen|Tag|Abend)/ }),
+    ).toBeInTheDocument();
     expect(rpc).toHaveBeenCalled();
     for (const [name, argumente] of rpc.mock.calls as [string, Record<string, unknown>][]) {
       expect(name).toBe('platform_preview');

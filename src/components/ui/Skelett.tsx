@@ -1,10 +1,16 @@
 import type { ReactNode } from 'react';
 
 // Die Formen des Handoffs: Zeile Radius 6, Karte 14, Hero 16 (230 hoch).
+// Dazu die der Übersicht (Leinwand „Laden“): eine Zeile des Grußes (32 hoch;
+// die Leinwand rundet 8, das System kennt 6), ein Abschnittstitel (22) und
+// die Besuchskarte (120).
 const FORM = {
   zeile: 'h-4.5 rounded-[6px]',
+  gruss: 'h-8 rounded-[6px]',
+  titel: 'h-5.5 rounded-[6px]',
   kreis: 'size-12 rounded-pill',
   karte: 'min-h-20 rounded-card',
+  besuch: 'min-h-30 rounded-card',
   hero: 'h-57.5 rounded-image',
 } as const;
 

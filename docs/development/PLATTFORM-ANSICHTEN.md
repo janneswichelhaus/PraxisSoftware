@@ -113,38 +113,46 @@ trotzdem eine strukturierte Rückfrage mit Typ, Bezug und Zustand
 
 ### 4.1 Stufe 1 — während der Behandlung
 
-**Übersicht** ist eine kurze Liste dessen, was zu tun ist — keine Kennzahlen
-(`IDEA-ORG-001`). Leer heißt: „Gerade ist nichts zu tun. Ihr nächster Termin:
-…". Mögliche Einträge, in dieser Reihenfolge:
+**Übersicht** zeigt oben genau eine **Hauptsache** als Karte „Als Nächstes“,
+darunter „Heute“, „Nächster Besuch“ und „Neu für Sie“ — keine Kennzahlen
+(`IDEA-ORG-001`). Leer heißt: „Gerade ist nichts zu tun.“ *(Seit Schritt 1e des
+Design-Reviews, Handoff 2026-10-22, 5.1; ANN-698. Abweichung von der früheren
+Liste: Der nächste Termin ist keine Aufgabe, sondern Hauptsache, wenn keine
+ansteht, sonst ein eigener Abschnitt.)* Hauptsache wird die erste offene
+Aufgabe in dieser Reihenfolge:
 
 1. **Befundbogen ausfüllen** — vor dem ersten Termin, solange er offen ist
    (§7). Die Therapeut:in prüft ihn beim Termin.
-2. **Nächster Termin** — Datum, Uhrzeit, wer kommt, und bei Hausbesuch die
-   Anschrift, an die jemand kommt.
-3. **Check-in fällig** — im Takt, den die Therapeut:in eingestellt hat
+2. **Check-in fällig** — im Takt, den die Therapeut:in eingestellt hat
    (`IDEA-TRK-004`).
-4. **Übungen für heute** — ein Knopf in den Plan.
-5. **Antwort der Praxis** auf eine Nachricht.
-6. **Offene Rechnung** — Betrag, Fälligkeit, Knopf zur Rechnung.
+3. **Übungen für heute** — ein Knopf in den Plan.
+
+Steht keine an, ist der **nächste Termin** die Hauptsache — Datum, Uhrzeit,
+wer kommt; sonst steht er unter **„Nächster Besuch“** mit der Anschrift, an
+die jemand kommt. Weitere Aufgaben des Tages (Gewohnheit, Check-in) stehen
+unter **„Heute“**. **Antwort der Praxis** und **offene Rechnung** werden nie
+Hauptsache; sie stehen unter **„Neu für Sie“** (Rechnung mit Betrag,
+Fälligkeit und Zustand). In der Lesefrist ist die Hauptsache „Unterlagen
+sichern“. Der Notfallhinweis steht nicht auf der Übersicht, sondern über jedem
+Eingabefeld für Nachrichten (Entscheidung Jannes 2026-10-22).
 
 ```
 ┌─────────────────────────────────────┐
-│ [Wortmarke]            [Ich ◯ JW]   │
+│ [Wortmarke]            [EB]  Ich    │
 ├─────────────────────────────────────┤
-│ Guten Tag, Frau Beispiel            │
-│                                     │
-│ ┌─ Befundbogen ausfüllen ─────────┐ │
-│ │ Vor Ihrem ersten Termin am      │ │
-│ │ Di 14.10. · etwa 10 Minuten     │ │
-│ │ [ Jetzt ausfüllen ]             │ │
-│ └─────────────────────────────────┘ │
-│ ┌─ Nächster Termin ───────────────┐ │
-│ │ Di 14.10., 9:30 · Hausbesuch    │ │
-│ │ Jannes kommt zu Ihnen           │ │
-│ └─────────────────────────────────┘ │
-│ ┌─ Check-in ──────────────────────┐ │
-│ │ Drei kurze Fragen · 1 Minute    │ │
-│ └─────────────────────────────────┘ │
+│ Guten Morgen,                       │
+│ Erika Beispiel                      │
+│ Donnerstag, 22. Oktober             │
+│ ┏━ Als Nächstes ━━━━━━━━━━━━━━━━━━┓ │
+│ ┃ Fragebogen vor Ihrem ersten     ┃ │
+│ ┃ Termin · etwa 10 Minuten        ┃ │
+│ ┃ [ Fragebogen beginnen ]         ┃ │
+│ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ │
+│ Heute       ◯ Eine kleine Gewohnheit│
+│ Ihr erster Besuch                   │
+│   Samstag, 24. Oktober, 9:30        │
+│   Anna Beispiel kommt zu Ihnen      │
+│ Neu für Sie  Rechnung · 420,00 €    │
 ├─────────────────────────────────────┤
 │Übersicht Termine Übungen Nachrichten│
 └─────────────────────────────────────┘

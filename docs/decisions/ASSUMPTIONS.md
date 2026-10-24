@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-23.
+Zuletzt aktualisiert: 2026-10-24.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -4862,7 +4862,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 ### ANN-465 — Plattform-Übersicht: „Jetzt dran“ als Liste, nicht als Kacheln
 
-Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+Oberfläche · verworfen · 2026-10-24 · ANN-698 · erledigt · Wiedervorlage: keine
 
 **Annahme.** Die Übersicht der Plattform zeigt, was zu tun ist, als Zeilen unter „Jetzt dran“ (Befundbogen, Angebot, Check-in, Gewohnheiten, Antworten, offene Rechnung), jede Zeile ganz das Ziel; darunter der nächste Termin als Zeile wie unter „Termine“.
 
@@ -4871,6 +4871,8 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `Uebersicht` in `src/features/platform/Uebersicht.tsx`.
 
 **Änderungspfad.** Wieder `TileGrid` mit `Tile` je Punkt · Aufwand `klein`.
+
+**Ablösung.** abgelöst durch ANN-698 (Schritt 1e: eine Hauptsache, „Heute“, nächster Besuch, „Neu für Sie“)
 
 ### ANN-466 — Übung auf der Plattform: fester Bildplatz, Dosierung als Kacheln
 
@@ -7179,13 +7181,13 @@ Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: —
 
 ### ANN-692 — Plattform: die erste Aufgabe an einer Stelle - Fragebogen, Check-in, Übungen für heute
 
-Technik · offen · 2026-10-23 · — · — · Wiedervorlage: Schritt 1e (Übersicht)
+Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
 **Annahme.** Die erste Aufgabe ist der Fragebogen vor dem ersten Termin, dann ein fälliger Check-in, dann die Übungen für heute (Übungstag, noch nicht geübt) - nie eine Antwort der Praxis oder eine offene Rechnung. In der Lesefrist und im Training gibt es keine; dort wird „Unterlagen sichern“ bzw. die nächste Einheit die Hauptsache. „Alles bereit“ nennt sie mit ihrer Handlung, ohne Aufgabe und für eine Vertretung nur „Zur Übersicht“.
 
 **Begründung.** Handoff 2026-10-22, Abschnitt 0 („Eine Hauptsache“, Abweichung von DSN-001 4.1: der Termin ist keine Aufgabe) und 5.1. An einer Stelle, damit Einstieg und Übersicht dieselbe Hauptsache meinen.
 
-**Anker.** `ersteAufgabe` in `src/features/platform/hauptsache.ts`.
+**Anker.** `ersteAufgabe` in `src/features/platform/hauptsache.ts`; die Übersicht baut darauf (ANN-698).
 
 **Änderungspfad.** Reihenfolge oder Arten in `ersteAufgabe` · Aufwand `klein`.
 
@@ -7227,12 +7229,74 @@ Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
 ### ANN-696 — Plattform unter 23rem: ein Titel mit langem Wort in 22, damit kein Name bricht
 
-Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Schritt 1e (Gruß der Übersicht)
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Annahme.** Unter 23rem steht die Überschrift eines Fensters der Plattform in 22 statt 28, sobald ein Wort darin länger als elf Zeichen ist - meist ein Name. Am Bindestrich darf er brechen, mitten im Wort nicht. Sonst bleibt es bei 28, auch für den Gruß.
 
 **Begründung.** Handoff 2026-10-22, Abschnitte 4 („Gruß in Größe des Seitentitels (28)“) und 6 („kein abgeschnittenes Wort“); DR-114. „Langenscheidt“ braucht in 28 173 px, bei 200 % sind 164 da; 22 ist die schmale Stufe des Hero-Titels.
 
-**Anker.** `titelklassen` in `src/components/ui/Dialogfenster.tsx`.
+**Anker.** `titelklassen` in `src/components/ui/titelstufe.ts` (Fenstertitel und Gruß der Übersicht).
 
 **Änderungspfad.** Andere Grenze in `ZEICHEN_IN_28_SCHMAL` oder immer 28 mit Bruch im Wort · Aufwand `klein`.
+
+### ANN-697 — Gruß der Übersicht nach der Uhr des Geräts
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** „Guten Morgen“ von 5 bis 11 Uhr, „Guten Tag“ bis 18 Uhr, sonst „Guten Abend“ - gerechnet auf der Uhr des Telefons, nicht in der Zeitzone der Praxis, wie jede Zeit der Plattform. Das Datum darunter ebenso.
+
+**Begründung.** Handoff 2026-10-22, 5.1 nennt die Zeitzone der Praxis; die Plattform kennt sie nicht (Projektion) und rechnet überall in der des Geräts (`zeit.ts`). Für Kund:innen in Tübingen ist es dieselbe Uhr.
+
+**Anker.** `grussNachTageszeit` in `src/features/platform/zeit.ts`.
+
+**Änderungspfad.** Zeitzone der Praxis in den Plattformkontext und dort rechnen · Aufwand `mittel`.
+
+### ANN-698 — Übersicht: eine Hauptsache - Unterlagen, Aufgabe, nächster Termin, sonst nichts zu tun
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Oben steht eine Hero-Karte: in der Lesefrist (nach einem Abo erst nach dessen Ende) „Unterlagen sichern“, sonst die erste Aufgabe (ANN-692), sonst der nächste Termin - „Besuch morgen/am Samstag“, über sechs Tage mit Datum, für eine Vertretung „Besuch bei {Name}“. Sonst der Leerzustand. Antwort und Rechnung nie; in der Einsicht ohne Knopf.
+
+**Begründung.** Handoff 2026-10-22, Abschnitt 0 und 5.1; Abweichung von DSN-001 4.1: der Termin ist ein eigener Abschnitt „Nächster Besuch“. „heute“ und „morgen“ statt eines Wochentags, der in sechs Tagen wiederkäme.
+
+**Anker.** `hauptsache`, `inLesefrist` und `terminTitel` in `src/features/platform/hauptsache.ts`.
+
+**Änderungspfad.** Reihenfolge oder Wortlaut dort · Aufwand `klein`.
+
+**Ablösung.** ersetzt ANN-465
+
+### ANN-699 — Übersicht in einem Zustand: Skelett, bis alles da ist; ein Fehler gilt für die Seite
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Übersicht wartet auf alle Abfragen, die sie selbst stellt (Skelett), und zeigt den Fehler mit „Erneut versuchen“, sobald eine ohne Stand scheitert. Scheitert ein Nachladen, bleibt der Stand mit dem Hinweis „veraltet“. Ohne Netz wartet sie nur auf die Termine; was sonst ohne Stand pausiert, fehlt bis zum Netz.
+
+**Begründung.** DR-126: Abschnitte sprangen nach, Fehler von fünf der neun Abfragen erschienen nicht. Eine Übersicht mit fehlender Rechnung oder Antwort sähe vollständig aus.
+
+**Anker.** `laedt` und `gescheitert` in `src/features/platform/Uebersicht.tsx`.
+
+**Änderungspfad.** Einzelne Abfragen als „optional“ ausnehmen und den Abschnitt weglassen · Aufwand `klein`.
+
+### ANN-700 — Übersicht: was unter „Heute“ steht
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** „Heute“ (im Training „Zwischen den Einheiten“) zeigt als Aufgabenkarten: einen Check-in, der nicht Hauptsache ist, oder die Bitte um die Einwilligung dazu; die Übungen für heute bzw. im Training „Ihr Plan für zu Hause“; laufende Gewohnheiten; das Ernährungstagebuch einer laufenden Beratung mit Tagebuch - in beiden Bereichen. Höchstens drei Karten, der Rest als Zeile; in der Lesefrist nichts.
+
+**Begründung.** Handoff 2026-10-22, 5.1 und Abschnitt 3; ADR-027 Punkt 1 (Beratung an Behandlung oder Training).
+
+**Anker.** `heute` in `src/features/platform/Uebersicht.tsx`.
+
+**Änderungspfad.** Einträge oder Reihenfolge dort · Aufwand `klein`.
+
+### ANN-701 — „Neu für Sie“: die Rechnung mit dem Wort der Rechnungsliste
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Briefing 6 (Unterlagen)
+
+**Annahme.** Die offene Rechnung steht unter „Neu für Sie“ mit Nummer, „Fällig am …“, offenem Betrag und dem Wort aus `zahlungsstand` („offen“, „überfällig“) statt „Steht aus“ - vor der Fälligkeit ohne Warnzeichen, keine Dringlichkeit aus Geld.
+
+**Begründung.** Handoff 2026-10-22, 5.1 nennt „Steht aus“; die Liste der Rechnungen sagt „offen“. Zwei Wörter für denselben Stand derselben Rechnung verwirren; Briefing 6 kann beide zusammen umbenennen.
+
+**Anker.** `zahlungsstand` in `src/features/platform/zahlungsstand.ts`; der Ton in `Uebersicht.tsx`.
+
+**Änderungspfad.** Das Wort dort ändern, gilt dann für Liste und Übersicht · Aufwand `klein`.

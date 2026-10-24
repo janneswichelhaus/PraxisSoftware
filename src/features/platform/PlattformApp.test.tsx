@@ -17,12 +17,15 @@ import { RECHNER_ABFRAGE } from './geruestbreite';
 const ueberallAbmelden = vi.fn();
 const ladeMeineVertretungen = vi.fn();
 const begleitungBeenden = vi.fn();
-// POR-EPIC-002: die Übersicht fragt Termine, Wünsche, Rechnungen und den
-// Befundbogen ab - hier ohne Inhalt.
+// POR-EPIC-002 und Schritt 1e: die Übersicht fragt Termine, Wünsche,
+// Rechnungen, Bogen, Nachrichten, Check-in, Gewohnheiten, Pläne, Abo,
+// Angebot, Paket und Ernährung ab - hier ohne Inhalt. Scheitert eine, zeigt
+// sie den Fehler (DR-126).
 const ladeTermine = vi.fn();
 const ladeWuensche = vi.fn();
 const ladeRechnungen = vi.fn();
 const ladeBefundbogen = vi.fn();
+const ohneInhalt = vi.fn();
 // POR-019: der Einstieg - hier ohne, außer im eigenen Test.
 const ladeEinstieg = vi.fn();
 const einstiegBeenden = vi.fn();
@@ -38,6 +41,14 @@ vi.mock('./api', async (importOriginal) => ({
   ladeWuensche: (...args: unknown[]) => ladeWuensche(...args) as Promise<unknown[]>,
   ladeRechnungen: (...args: unknown[]) => ladeRechnungen(...args) as Promise<unknown[]>,
   ladeBefundbogen: (...args: unknown[]) => ladeBefundbogen(...args) as Promise<unknown[]>,
+  ladeNachrichten: () => Promise.resolve({ messages: [] }),
+  ladeCheckins: () => ohneInhalt() as Promise<null>,
+  ladeGewohnheiten: () => ohneInhalt() as Promise<null>,
+  ladePlaene: () => Promise.resolve({ today: '2026-10-12', plans: [] }),
+  ladeAbo: () => ohneInhalt() as Promise<null>,
+  ladeTrainingsangebot: () => ohneInhalt() as Promise<null>,
+  ladeMeinePakete: () => ohneInhalt() as Promise<null>,
+  ladeErnaehrung: () => ohneInhalt() as Promise<null>,
   ladeEinstieg: (...args: unknown[]) => ladeEinstieg(...args) as Promise<unknown>,
   einstiegBeenden: (...args: unknown[]) => einstiegBeenden(...args) as Promise<void>,
   ladeEinwilligungen: (...args: unknown[]) => ladeEinwilligungen(...args) as Promise<unknown[]>,
@@ -67,6 +78,9 @@ const BEHANDLUNG: Plattformzugang = {
 
 const abmelden = vi.fn();
 
+/** Der Gruß hängt an der Tageszeit (Handoff 2026-10-22, 5.1). */
+const GRUSS = /^Guten (Morgen|Tag|Abend)$/;
+
 function zeige(zugaenge: Plattformzugang[], pfad = '/p') {
   return renderWithProviders(
     <PlattformApp
@@ -87,6 +101,7 @@ beforeEach(() => {
   ladeWuensche.mockResolvedValue([]);
   ladeRechnungen.mockResolvedValue([]);
   ladeBefundbogen.mockResolvedValue([]);
+  ohneInhalt.mockResolvedValue(null);
   ladeEinstieg.mockResolvedValue({ pending: false, finished_at: '2026-10-01', skipped_at: null });
   einstiegBeenden.mockResolvedValue(undefined);
   ladeEinwilligungen.mockResolvedValue([]);
@@ -104,8 +119,9 @@ beforeEach(() => {
 describe('PlattformApp', () => {
   it('zeigt die Uebersicht ohne Bereichsschalter bei einem Verhaeltnis', async () => {
     zeige([TRAINING]);
-    expect(await screen.findByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
-    expect(screen.getByText(/Test Praxis Tuebingen angemeldet/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: GRUSS })).toBeInTheDocument();
+    // DR-122: kein Satz „Sie sind bei … angemeldet“ mehr.
+    expect(screen.queryByText(/angemeldet/)).not.toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Bereich' })).not.toBeInTheDocument();
     // Ein Reiter erscheint erst mit dem Loop, der ihn füllt (ANN-112): seit
     // POR-008 die Termine, seit UEB-009 das Training (hier statt „Übungen"),
@@ -142,7 +158,7 @@ describe('PlattformApp', () => {
         name: 'Training',
       }),
     ).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByText(/Bereich Training/)).toBeInTheDocument();
+    await waitFor(() => expect(ladeTermine).toHaveBeenCalledWith(TRAINING.access_id));
     expect(
       within(screen.getByRole('navigation', { name: 'Plattform' })).getByRole('link', {
         name: 'Training',
@@ -221,7 +237,7 @@ describe('PlattformApp', () => {
 
   it('fuehrt jeden anderen Pfad auf die Uebersicht', async () => {
     zeige([TRAINING], '/patienten/66666666-6666-4666-8666-000000000001');
-    expect(await screen.findByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: GRUSS })).toBeInTheDocument();
   });
 
   it('zeichnet Fenster in der Schrift der Plattform, nicht am Rand der Seite (Überholung 6)', async () => {
@@ -235,7 +251,7 @@ describe('PlattformApp', () => {
 
   it('kennt keine Praxisbegriffe', async () => {
     const { container } = zeige([BEHANDLUNG, TRAINING]);
-    await screen.findByRole('heading', { name: 'Guten Tag' });
+    await screen.findByRole('heading', { level: 1, name: GRUSS });
     for (const wort of ['Patient', 'Akte', 'Kalender', 'Dokumentation', 'Befund']) {
       expect(container.textContent).not.toContain(wort);
     }
@@ -389,7 +405,7 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     ladeEinstieg.mockResolvedValue({ pending: true, finished_at: null, skipped_at: null });
     zeige([BEHANDLUNG]);
     expect(await screen.findByRole('dialog', { name: 'Willkommen' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Guten Tag' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: GRUSS })).toBeNull();
     await nutzer.click(screen.getByRole('button', { name: 'Später' }));
     await waitFor(() => expect(einstiegBeenden).toHaveBeenCalledWith(BEHANDLUNG.access_id));
   });

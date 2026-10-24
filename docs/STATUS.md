@@ -1,40 +1,24 @@
-# Status · Stand 2026-10-23
+# Status · Stand 2026-10-24
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 1d Einstieg (23./24.10., Branch `claude/lucid-keller-zholly`, DRP-015
-bis -019): geführter Ablauf mit „Später“, Einwilligungen als Wahl (ANN-693), ein Schalter für
-Mitteilungen (ANN-694), „Alles bereit“ mit der ersten Aufgabe aus `hauptsache.ts` (ANN-692, -695,
--696); „Willkommen“ liest `eingerichtet=1` aus 1c.
+Design-Review Lauf 1, Schritt 1e Übersicht (24.10., Branch `ccr-c5a4a21f-ys0el3`, DRP-020 bis
+-022): Gruß nach Tageszeit mit Namen, Initialen im Kopf, eine Hauptsache (ANN-698), „Heute“,
+nächster Besuch, „Neu für Sie“; Training, Begleitung, Lesefrist; ein Zustand für alle Abfragen
+(ANN-699); zweispaltig ab 900 px. Damit ist Schritt 1 des Handoffs gebaut.
 
-Gemergt am 24.10.: Schritt 1c Türen (#295, DRP-010 bis -014, ANN-684 bis -689), CI-Fix #296.
-Gemergt am 22. und 23.10.: Design-Review Schritt 0 (#288), Handoff und Bericht (#289), Schritt 1a
-(#290, ANN-678), 1b Gerüst (#293, ANN-679 bis -683), Daten N1/N2 (#292, ANN-690, -691);
-BEF-179/-180 (#287).
-
-BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
-Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
-Büro ohne Kilometer und Betrag; ANN-615 bis ANN-617); Wochenplan mit einem Knopf, alle oder keiner.
-
-Teamchat-Anhänge (18.10., PR #273, TEAM-003 bis -005): Fotos und PDF bis fünf je Nachricht, ohne
-Herunterladen und Virenprüfung; Sprachnachrichten bis zwei Minuten (ADR-017 Fassung 9, Fragen 33,
-34: Mikrofon der eigenen Herkunft frei); Senden während des Hochladens; ANN-652 bis ANN-655.
-
-Branch `claude/nifty-carson-wnmatp`: Vermerk „ohne Behandlung“ ohne eigenen Eintrag (ANN-565),
-Rückfrage vor dem Verlassen als Fenster (ANN-566); Vorbereitung der Überholungen 6 bis 11
-(`product/gefuehrte-ablaeufe-und-antraege.md`, G1–G10).
-
-Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Runde (`claude/sweet-gauss-z8te7o`), Monatsabrechnung
-(`ccr-92feaef7-zkxssj`), Übersicht (`claude/practical-curie-1jy88f`), Intro
-(`claude/eloquent-newton-p38ihe`). Gemergt: Beratung abrechnen (#277, ANN-664, ANN-665), Richtung der Bewegung (#276, ANN-663), ERN-EPIC-003 (#275), ERN-EPIC-001 und -002 (#274).
+Gemergt am 24.10.: Schritt 1d Einstieg (#294, DRP-015 bis -019), 1c Türen (#295), CI-Fix #296.
+Gemergt am 22. und 23.10.: Schritt 0 (#288), Handoff und Bericht (#289), 1a (#290), 1b (#293),
+Daten N1/N2 (#292); BEF-179/-180 (#287). Auf `origin` liegt sonst nichts Ungemergtes.
 
 ## Danach
 
-Design-Review Schritt 1e Übersicht (Handoff, Abschnitt 9). BEF-170 (Akte: einzeln gelöschte Dateien
-ins Löschjournal, Test mit Wiederherstellung; Pfad A).
+Design-Review Schritte 2 bis 7 (Übungen, Termine, Selbstauskunft, Nachrichten, Unterlagen, Ich),
+je mit freigegebenem Handoff aus Claude Design; Briefings in `design/review-2026-10/`. Ohne Handoff:
+BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederherstellung; Pfad A).
 
 ## Bei Jannes
 
@@ -61,4 +45,4 @@ ins Löschjournal, Test mit Wiederherstellung; Pfad A).
 
 ## Letzte Session
 
-24.10.2026, Branch `claude/lucid-keller-zholly`: keine Migration, kein Seed. Lokal: `git pull`.
+24.10.2026, Branch `ccr-c5a4a21f-ys0el3`: keine Migration, kein Seed. Lokal: `git pull`.

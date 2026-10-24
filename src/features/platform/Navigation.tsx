@@ -11,6 +11,7 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 import { Menueknopf } from '@/components/ui/Menueknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
+import { initialen } from '@/components/ui/personenfarben';
 import type { Plattformzugang } from './api';
 import { geruestSpalte, reiterstufe } from './geruestbreite';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
@@ -124,8 +125,9 @@ const MIT_SCHALTER = new Set([
 
 /**
  * Der Kopf der Plattform (Handoff Abschnitt 3): mindestens 72 hoch, links die
- * Wortmarke zur Übersicht, rechts „Ich“ mit dem Zeichen der Person - die
- * Initialen kommen mit dem Namen (N1, DR-119). Unter 23rem steht dort der
+ * Wortmarke zur Übersicht, rechts „Ich“ mit den Initialen des eigenen Namens
+ * (N1, DR-119; ANN-690) - ohne Namen, etwa gesperrt, das Zeichen der Person.
+ * Unter 23rem steht dort der
  * Knopf „Menü“, am Rechner dazwischen die Navigation. Am Telefon ohne Linie
  * unten; am Rechner trennt eine Linie die Navigation vom Inhalt.
  */
@@ -134,6 +136,8 @@ export function Kopf({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechn
   const gewaehlt = useWahl(bereiche);
   const ziele = useZiele(bereiche);
   const ich = pathname === `${PLATTFORM_PFAD}/ich`;
+  // Der Name des Kontos; an einer Vertretung ihr eigener, nie der der Person.
+  const name = (gewaehlt ?? bereiche[0])?.own_name?.trim() || null;
   // Ohne lesbaren Zugang (gesperrt, Lesefrist vorbei) gibt es nur „Ich“:
   // keine Navigation, kein Menü (Handoff 2026-10-22, Abschnitt 5.2).
   const ohneZiele = bereiche.length === 0;
@@ -163,9 +167,9 @@ export function Kopf({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechn
         >
           <span
             aria-hidden="true"
-            className="bg-accent-soft text-accent rounded-pill inline-flex size-10 shrink-0 items-center justify-center"
+            className="bg-accent-soft text-accent rounded-pill inline-flex size-10 shrink-0 items-center justify-center font-bold"
           >
-            <Zeichen className="size-5.5">{PERSON}</Zeichen>
+            {name ? initialen(name) : <Zeichen className="size-5.5">{PERSON}</Zeichen>}
           </span>
           Ich
         </Link>

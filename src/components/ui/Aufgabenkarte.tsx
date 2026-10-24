@@ -9,7 +9,9 @@ import { Link } from 'react-router-dom';
  *
  * Antippbar und deshalb mit der Tiefenstufe `shadow-plattform` (ANN-678);
  * gedrückt vertieft und 98 % groß, bei „Bewegung reduzieren“ nur vertieft.
- * Bei „Sehr groß“ fällt der Pfeil weg, damit der Text Platz hat.
+ * Bei „Sehr groß“ fällt der Pfeil weg, damit der Text Platz hat; unter 23rem
+ * (200 %) dazu das Zeichen über den Text und innen 12 - neben Kreis und Pfeil
+ * blieben dort keine 30 px für ein Wort (Handoff, Abschnitt 4).
  */
 export function Aufgabenkarte({
   zeichen,
@@ -26,7 +28,7 @@ export function Aufgabenkarte({
   return (
     <Link
       to={to}
-      className="border-line bg-surface text-ink rounded-card shadow-plattform hover:bg-surface-sunken active:bg-surface-sunken ease-druck flex min-h-20 items-center gap-4 border p-4 no-underline transition-[background-color,scale] duration-120 motion-safe:active:scale-98"
+      className="border-line bg-surface text-ink rounded-card shadow-plattform hover:bg-surface-sunken active:bg-surface-sunken ease-druck flex min-h-20 items-center gap-4 border p-4 no-underline transition-[background-color,scale] duration-120 motion-safe:active:scale-98 max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:gap-2 max-[23rem]:p-3"
     >
       <span
         aria-hidden="true"
@@ -50,7 +52,7 @@ export function Aufgabenkarte({
         aria-hidden="true"
         focusable="false"
         data-pfeil=""
-        className="text-ink-muted size-6 shrink-0 [[data-schrift=sehr-gross]_&]:hidden"
+        className="text-ink-muted size-6 shrink-0 max-[23rem]:hidden [[data-schrift=sehr-gross]_&]:hidden"
       >
         <path d="M9 6l6 6-6 6" />
       </svg>

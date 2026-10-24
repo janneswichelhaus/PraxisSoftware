@@ -561,3 +561,15 @@ Marke vorsieht.
 | Berührt | `src/features/assessments/darstellung.ts` (Zeile 27, `split(/\s+\|(?<=-)(?=\p{L})/u)`) |
 
 **Beobachtung.** Ein regulärer Ausdruck mit Lookbehind ist in Safari vor iOS 16.4 ein Syntaxfehler; das ganze Modul lädt dann nicht. `darstellung.ts` steht im Fragebogen der Plattform (`trennung.test.ts` lässt es zu) und in der Praxis. Schritt 1d hat dasselbe in `Dialogfenster.tsx` und `Einstieg.tsx` behoben, 1c in `begriffe.ts`. **Erwartet.** Trennen ohne Lookbehind (etwa erst an Leerraum, dann je Teil nach `-` mit angehängtem Bindestrich) und ein Test, der Lookbehinds in ausgeliefertem Code unter `src/` findet.
+
+### BEF-195 — Der Bereichsschalter der Plattform bricht bei „Sehr groß“ mitten im Namen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Gerüst (Kopf) |
+| Quelle  | Design-Review 1e, Bildstrecke „Sehr groß“ der Begleitung (`handeln-fuer`) |
+| Status  | offen (Vorschlag) |
+| Berührt | `Kopf` in `src/features/platform/Navigation.tsx` (Schalter unter `nav aria-label="Bereich"`) |
+
+**Beobachtung.** Bei 375 px und „Sehr groß“ bricht im Schalter „Für Maximilian Mustermann-Langenscheidt“ zwischen „Musterman“ und „n-“, also mitten im Wort, weil die Plattform `overflow-wrap: anywhere` setzt und das Ziel halb so breit ist. **Erwartet.** Wie im Gruß nur am Bindestrich brechen (DR-114) - etwa zwei Reihen statt zwei Spalten, sobald ein Wort nicht passt, oder der Name in einer eigenen Zeile.

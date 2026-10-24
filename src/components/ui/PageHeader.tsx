@@ -1,5 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { KnopfGroesse } from './knopfGroesse';
+import { titelklassen, type Titelstufe } from './titelstufe';
 
 /**
  * Kopf einer Seite: Titel, erklärender Satz, Aktionen.
@@ -15,6 +16,7 @@ export function PageHeader({
   actions,
   kicker,
   kompakt = false,
+  stufe,
 }: {
   /**
    * Der Seitentitel. `ReactNode`, weil ein Titel den Gegenstand der Seite
@@ -59,6 +61,13 @@ export function PageHeader({
    * der falschen Akte zu schreiben. Gespart wird Höhe, nicht Identität.
    */
   kompakt?: boolean;
+  /**
+   * Eine Stufe der Plattform für einen Titel aus Text (`titelstufe.ts`): der
+   * Gruß der Übersicht in 34, am Rechner 40, unter 23rem 28 und ein langer
+   * Name in 22 (Handoff 2026-10-22, 5.1; ANN-696). Ein Zeilenumbruch im Text
+   * bleibt einer. Den Abstand nach unten setzt dann die Seite.
+   */
+  stufe?: Titelstufe | undefined;
 }) {
   const kopf = (
     <div className={kompakt ? 'flex min-w-0 flex-wrap items-baseline gap-x-3' : 'min-w-0'}>
@@ -76,9 +85,11 @@ export function PageHeader({
           (ANN-683). */}
       <h1
         className={
-          kompakt
-            ? 'text-accent text-h4 font-bold'
-            : 'text-accent text-h2-mobil sm:text-h2 tracking-display [.plattform-schrift_&]:text-plattform-titel [.plattform-schrift[data-rechner]_&]:text-plattform-titel-rechner font-extrabold'
+          stufe && typeof title === 'string'
+            ? titelklassen(stufe, title)
+            : kompakt
+              ? 'text-accent text-h4 font-bold'
+              : 'text-accent text-h2-mobil sm:text-h2 tracking-display [.plattform-schrift_&]:text-plattform-titel [.plattform-schrift[data-rechner]_&]:text-plattform-titel-rechner font-extrabold'
         }
       >
         {title}
@@ -89,7 +100,7 @@ export function PageHeader({
   );
 
   return (
-    <header className={kompakt ? 'mb-4' : 'mb-6'}>
+    <header className={stufe ? undefined : kompakt ? 'mb-4' : 'mb-6'}>
       {/* Titel und Aktionen in einer Zeile (Design-Review T1): Die Aktion
           steht neben dem Titel, nicht unter Titel und Beschreibung - das war
           das Anti-Muster „Anlegen unter dem Titel“ (DESIGN.md). Der Titel

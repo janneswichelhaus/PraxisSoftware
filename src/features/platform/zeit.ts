@@ -42,6 +42,67 @@ export function tagOhneJahr(zeitpunkt: string): string {
   return TAG_OHNE_JAHR.format(new Date(zeitpunkt));
 }
 
+const TAG_MONAT = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long' });
+const TAG_MONAT_JAHR = new Intl.DateTimeFormat('de-DE', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+/**
+ * „23. Oktober" - ein Tag ohne Wochentag; das Jahr nur, wenn es nicht das
+ * laufende ist („4. Januar 2027"). Ein Kalendertag `YYYY-MM-DD` gilt als
+ * dieser Tag auf dem Gerät.
+ */
+export function tagUndMonat(wert: string, jetzt: Date = new Date()): string {
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(wert) ? new Date(`${wert}T12:00:00`) : new Date(wert);
+  return (d.getFullYear() === jetzt.getFullYear() ? TAG_MONAT : TAG_MONAT_JAHR).format(d);
+}
+
+/**
+ * „12. August bis 15. Oktober 2026" - ein abgeschlossener Zeitraum, das Jahr
+ * am Ende; an einem Tag nur dieser („17. Oktober 2026").
+ */
+export function zeitraumLang(von: string, bis: string): string {
+  const a = new Date(von);
+  const b = new Date(bis);
+  if (kalendertag(a) === kalendertag(b)) return TAG_MONAT_JAHR.format(b);
+  const anfang = (a.getFullYear() === b.getFullYear() ? TAG_MONAT : TAG_MONAT_JAHR).format(a);
+  return `${anfang} bis ${TAG_MONAT_JAHR.format(b)}`;
+}
+
+/**
+ * Der letzte Tag vor einem Ende, das der Server als Mitternacht danach
+ * liefert (`read_until`, `app.retention_due_at`): „bis 12. November“, nicht
+ * bis zum 13., an dem schon nichts mehr geht.
+ */
+export function letzterTag(endeExklusiv: string): string {
+  return new Date(new Date(endeExklusiv).getTime() - 1).toISOString();
+}
+
+/**
+ * Wie viele Kalendertage bis zum Zeitpunkt? 0 heute, 1 morgen - gezählt auf
+ * der Uhr des Geräts, nicht in Stunden.
+ */
+export function tageBis(zeitpunkt: string, jetzt: Date = new Date()): number {
+  const ziel = new Date(zeitpunkt);
+  const a = Date.UTC(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate());
+  const b = Date.UTC(ziel.getFullYear(), ziel.getMonth(), ziel.getDate());
+  return Math.round((b - a) / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * Der Gruß der Übersicht nach der Tageszeit (Handoff 2026-10-22, 5.1):
+ * Morgen von 5 bis 11 Uhr, Tag bis 18 Uhr, dann Abend - auf der Uhr des
+ * Geräts wie jede Zeit der Plattform (ANN-697).
+ */
+export function grussNachTageszeit(jetzt: Date = new Date()): string {
+  const stunde = jetzt.getHours();
+  if (stunde >= 5 && stunde < 11) return 'Guten Morgen';
+  if (stunde >= 11 && stunde < 18) return 'Guten Tag';
+  return 'Guten Abend';
+}
+
 /** „9:30" bzw. „09:30" nach den Regeln des Geräts. */
 export function uhrzeit(zeitpunkt: string): string {
   return UHR.format(new Date(zeitpunkt));
