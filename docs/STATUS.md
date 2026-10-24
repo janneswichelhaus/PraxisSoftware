@@ -5,21 +5,20 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 2a Bausteine der Übungen (24.10., Branch `claude/new-session-27nejg`,
-DRP-023 bis -029): Bühne, Marken, Hakenzeile mit Pausenring, Kopf, Fuß und Endseite, Wochenleiste,
-geschätzte Dauer, Trennung unter 23rem; die Seiten stellen 2b und 2c um. Mit den Antworten aus #299
-(alle vier wie empfohlen, ANN-704 bis -710). Dazu BEF-199: Die Gruß-Tests laufen zu jeder Uhrzeit.
+Design-Review Lauf 1, Schritt 2c Reiter der Übungen (24.10., Branch `claude/uebungen-reiter-2c`,
+DRP-040 bis -043): Vorschau der Einheit in allen Lagen mit Dauer, auch auf der Übersicht; Plan mit
+Wochenleiste, Übungszeilen und „Zum Plan“; Lesefrist, mehrere Pläne, Plan vom Gerät, „Praxis
+antwortet nicht“ (BEF-197); Fenster mit Bühne; Rechner zweispaltig (ANN-720 bis -727). Parallel 2b.
 
-**Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24.10.: Handoff Übungen (#299), Nacharbeit
-#298 (Fragen aus #297 wie empfohlen, „Mitteilungen einschalten“ unter „Heute“, ANN-702; Briefing 2
-aufgefrischt, BEF-196 und BEF-197; BEF-170 Pfad A, ANN-703, daraus BEF-198), 1e Übersicht (#297,
-DRP-020 bis -022), 1d Einstieg (#294), 1c Türen (#295), CI-Fix #296. Gemergt am 22. und 23.10.:
-Schritt 0 (#288), Handoff und Bericht (#289), 1a (#290), 1b (#293), Daten N1/N2 (#292); BEF-179/-180
-(#287). Auf `origin` liegt sonst nichts Ungemergtes.
+**Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24.10.: 2a Bausteine der Übungen (#300),
+Handoff Übungen (#299), Nacharbeit #298, 1e Übersicht (#297), 1d Einstieg (#294), 1c Türen (#295),
+CI-Fix #296. Gemergt am 22. und 23.10.: Schritt 0 (#288), Handoff und Bericht (#289), 1a (#290), 1b
+(#293), Daten N1/N2 (#292); BEF-179/-180 (#287).
 
 ## Danach
 
-Schritt 2 nach Abschnitt 9 des Handoffs: 2b Durchführung und 2c Reiter parallel, dann 2d Planblatt.
+Nach 2b und 2c: BEF-215 (ein Inhalt für Fenster und Durchführung, alte Bausteine fort), dann 2d
+Planblatt.
 Unabhängig davon die Unterlagen für Schritt 3 (Briefing 3 auffrischen, Ist-Bilder) für Claude
 Design. Danach Schritte 3 bis 7 (Termine, Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit
 freigegebenem Handoff aus Claude Design; Briefings in `design/review-2026-10/`. Ohne Handoff:
@@ -51,5 +50,5 @@ A).
 
 ## Letzte Session
 
-24.10.2026, Branch `claude/new-session-27nejg`: Schritt 2a und die Antworten zum Handoff Übungen,
-keine Migration, kein Seed. Lokal: `git pull`.
+24.10.2026, Branch `claude/uebungen-reiter-2c`: Schritt 2c, keine Migration, kein Seed. Lokal:
+`git pull`.

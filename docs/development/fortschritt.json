@@ -1539,6 +1539,15 @@
           "fertig_am": "2026-10-24",
           "nachweis": "DRP-023 bis DRP-029, Branch `claude/new-session-27nejg`, tests/e2e/plattform-uebungsbausteine.spec.ts",
           "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2a (Handoff 2026-10-24, Abschnitt 9); Fragen 1 bis 4 wie empfohlen entschieden; ANN-704 bis ANN-710; die Seiten stellen 2b und 2c um"
+        },
+        {
+          "id": "drp-epic-009",
+          "name": "DRP-EPIC-009 Plattform: Reiter der Übungen aus dem Design-Review (Schritt 2c – Vorschau der Einheit in allen Lagen mit Dauer, Übungskarte der Übersicht, Plan mit Wochenleiste, Übungszeilen und „Zum Plan“, mehrere Pläne, Lesefrist, kein Plan, Training; Skelett, Fehler, Plan vom Gerät, „Praxis antwortet nicht“; Fenster „Übung zum Nachlesen“; Rechner zweispaltig)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-24",
+          "nachweis": "DRP-040 bis DRP-043, Branch `claude/uebungen-reiter-2c`, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts",
+          "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2c (Handoff 2026-10-24, Abschnitt 9 Punkt 3), parallel zu 2b; ANN-720 bis ANN-727; BEF-197 erledigt, BEF-196 für den Reiter"
         }
       ]
     },
