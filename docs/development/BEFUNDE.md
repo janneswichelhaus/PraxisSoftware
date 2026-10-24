@@ -584,17 +584,29 @@ Marke vorsieht.
 
 **Beobachtung.** `delete_treatment_basis` löscht die Grundlage ohne Eintrag im Löschjournal; ihr Verordnungsscan fällt per `on delete cascade` mit, der Auslöser schreibt nur den Löschauftrag. Nach einer Wiederherstellung kämen Grundlage und Scan zurück. **Erwartet.** Journaleinträge für `treatment_bases` und die mitfallenden `patient_files`, Test mit Wiederherstellung (Pfad A). Dabei die übrigen Löschwege von Hand durchsehen, die ohne Journal löschen, etwa Leistungen, Vereinbarungen, Aufgaben und Tagebucheinträge.
 
-### BEF-199 — Vier Tests der Plattform scheitern vor 11 und ab 18 Uhr: sie erwarten „Guten Tag“
+### BEF-201 — Plattform: „Löschen“ an einem Anhang löscht ohne Rückfrage
 
 |         |   |
 | ------- | - |
-| Datum   | 2026-10-24 |
-| Bereich | Plattform: Gruß der Übersicht; `Einstieg.test.tsx`, `App.test.tsx`, `App.nachladen.test.tsx` |
-| Quelle  | Prüfsatz zu DRP-EPIC-007 um 18:51 UTC; auf `main` derselbe Befund |
-| Status  | erledigt in DRP-EPIC-007 (PR #300: die Tests lesen den Gruß aus `grussNachTageszeit()`) |
-| Berührt | `grussNachTageszeit` (`src/features/platform/zeit.ts`) und die vier Tests |
+| Datum   | 2026-10-22 |
+| Bereich | Plattform, Rückfragen der Praxis mit Anhängen (`/p/nachrichten/:id`) |
+| Quelle  | Design-Review von Schritt 1a (#290); bestand schon vorher; aus der Sitzung „Design-Review Anwendung Lauf 1“ (archiviert 24.10.) übernommen |
+| Status  | offen (Vorschlag) |
+| Berührt | `src/features/platform/Anhaenge.tsx` (Knopf „Löschen“); Vorbild `src/features/messages/RueckfrageAnhaenge.tsx` |
 
-**Beobachtung.** „Einstieg: Willkommen (DRP-016) … gibt den Tab der Übersicht zurück“, „Einstieg: Alles bereit (DRP-019) … nur zur Übersicht“, „App: Plattformkonto … Gerüst“ und „Plattform: gescheitertes Nachladen des Zugangs“ suchen die Überschrift „Guten Tag“. Der Gruß folgt der Uhr des Geräts (11 bis 18 Uhr „Guten Tag“); vor 11 und ab 18 Uhr Ortszeit des Laufs (CI: UTC) sind die vier rot, mit `TZ=America/New_York` grün. **Erwartet.** Die Tests stellen die Uhr fest (`vi.setSystemTime`, etwa 12:00) oder lesen den Gruß aus `grussNachTageszeit()`; dann laufen sie zu jeder Stunde.
+**Beobachtung.** „Löschen“ steht als Zweitknopf gleichrangig neben „Ansehen“ und löscht den Anhang sofort (`onClick={() => loeschen.mutate(a.id)}`). DESIGN.md verlangt für Zerstörendes: leise am Ende, mit `Rueckfrage`; die Praxis macht es so. **Erwartet.** „Löschen“ leise ans Ende, erst nach `Rueckfrage` löschen, Wortlaut nach PLATTFORM.md („Begriffe“); am Löschpfad (RPC, Policy) nichts ändern. Komponententest für Abbrechen und Bestätigen, `nachrichten.spec.ts` grün.
+
+### BEF-202 — E2E hinter der Anmeldung: Eine Wiederholung in der CI kann Termine des ersten Versuchs treffen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-22 |
+| Bereich | E2E hinter der Anmeldung (`tests/e2e/authenticated/*.spec.ts`) |
+| Quelle  | CI-Lauf 39842106004; aus der Sitzung „Design-Review Anwendung Lauf 1“ (archiviert 24.10.) übernommen |
+| Status  | offen (Vorschlag) |
+| Berührt | `tests/e2e/authenticated/helpers.ts` (`tagImFenster`), `playwright.config.ts` (`retries`), 24 Spezifikationen mit `const LAUF = Date.now()` |
+
+**Beobachtung.** Die CI wiederholt einmal. Eine wiederholte serielle Gruppe läuft in einem neuen Worker mit neuem `LAUF` und kann einen Tag treffen, den der erste Versuch in derselben Datenbank schon belegt hat; der Überschneidungsschutz weist den Termin dann zu Recht ab. #291 löst das nur für `treatment-note-finalisation.spec.ts` (Versatz je Versuch). **Erwartet.** Ein `LAUF` je Testlauf für alle Worker (etwa `E2E_LAUF`, einmal in `playwright.config.ts` gesetzt) und ein Tagesversatz je Wiederholung (`test.info().retry` × N); die Streuung für lokale Läufe und die Reserve je Fenster bleiben, kein Test wird abgeschwächt.
 
 ### BEF-215 — Nach Schritt 2b: ein Inhalt für Fenster und Durchführung, alte Bausteine fort
 
