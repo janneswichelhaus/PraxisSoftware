@@ -26,6 +26,7 @@ export function Section({
   ebene = 2,
   aktion,
   rahmen = false,
+  id,
   children,
 }: {
   titel: string;
@@ -36,13 +37,18 @@ export function Section({
   aktion?: ReactNode;
   /** Stellt den Inhalt in einen weißen Rahmen (UI-002c). */
   rahmen?: boolean;
+  /** Sprungziel (`#…`) für einen Link von einer anderen Seite. */
+  id?: string;
   children: ReactNode;
 }) {
   const Ueberschrift = ebene === 3 ? 'h3' : 'h2';
   return (
     // Auf der Plattform 40 zwischen Abschnitten, am Rechner 48 (Handoff
     // 2026-10-22, Abschnitt 4; ANN-683).
-    <section className="mt-8 first:mt-0 [.plattform-schrift_&]:not-first:mt-10 [.plattform-schrift[data-rechner]_&]:not-first:mt-12">
+    <section
+      id={id}
+      className="mt-8 first:mt-0 [.plattform-schrift_&]:not-first:mt-10 [.plattform-schrift[data-rechner]_&]:not-first:mt-12"
+    >
       {/* Kopfzeile mindestens 32 px (Design-Handoff 2026-10-01, Abschnitt 3):
           genug für die Überschrift und einen Textlink daneben, ohne dass ein
           leerer Kopf die Liste nach unten schiebt. Das Tippziel eines

@@ -1894,3 +1894,17 @@ eingeklappt.
 | Berührt | `public.withdraw_time_account_entry` und `can_withdraw` in `list_time_account` (`20261126100000_zk_001_zeitkonto.sql`), `TimeAccountPage.tsx` |
 
 **Beobachtung.** Zurücknehmen geht beim Freizeitausgleich nur vor seinem Tag (`on_date > heute`); wer heute doch bleibt, kann den Eintrag für heute nicht zurücknehmen. **Erwartet.** Zurücknehmen auch am Tag selbst, solange die freie Zeit noch nicht begonnen hat; die Abweichung im Kalender fällt mit dem Eintrag. Pfad A: Prüfung am Server, Negativtests.
+
+### BEF-170 — Einzeln gelöschte Dateien der Akte fehlen im Löschjournal
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-16 |
+| Bereich | Akte, Dateien (`delete_patient_file`); Wiederherstellung |
+| Quelle  | Zweitreview FLT-EPIC-001 (Subagent), Vergleich mit den Fotos am Rad |
+| Status  | erledigt 2026-10-24 (Branch `ccr-c5a4a21f-ys0el3`): `delete_patient_file` und das Verwerfen nach der Prüfung schreiben ins Löschjournal über `app.journal_patient_file_deletion` (Klasse nach Art, fällig mit der Löschung); Test mit Wiederherstellung, Zweitreview |
+| Berührt | `supabase/migrations/20261006110100_log_001b_schreibpfade.sql` (`delete_patient_file`), `reapply_deletion_journal`; ADR-008 Punkt 8, ADR-017 Punkt 26 |
+
+**Beobachtung.** Der Löschlauf schreibt fällige Dateien ins Löschjournal, `delete_patient_file` aber nicht. Nach einer Wiederherstellung käme eine einzeln gelöschte Datei zurück, etwa ein falsch zugeordnetes Foto. Die Anhänge an Rückfragen (`app.remove_message_attachments`) und seit FLT-EPIC-001 die Fotos am Rad journalisieren jede Löschung.
+
+**Erwartet.** Ein Journaleintrag `patient_files` in `delete_patient_file`, dazu ein Test mit Wiederherstellung wie in `fleet-photos.test.ts` („Löschjournal“). Pfad A (Löschpfad).

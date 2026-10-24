@@ -440,6 +440,26 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
       page.getByRole('link', { name: /^(Ihre Übungen für heute|Eine kleine Gewohnheit)/ }),
     ).toHaveCount(2);
   });
+
+  test('375 px: „Mitteilungen einschalten“ führt zu den Benachrichtigungen des Bereichs (ANN-702)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    // Im Training ist noch nichts gewählt, in der Behandlung schon.
+    await oeffne(page, 'uebersicht-training', GRUSS);
+    // Ohne vorher zu rollen: Die neue Seite begänne sonst zufällig auf derselben Höhe.
+    await page.getByRole('link', { name: /^Mitteilungen einschalten/ }).dispatchEvent('click');
+    const abschnitt = page.getByRole('heading', { level: 2, name: 'Benachrichtigungen' });
+    await expect(abschnitt).toBeInViewport();
+    // Oben im Fenster, nicht irgendwo darin: Die Schriftgröße steht darüber.
+    expect((await abschnitt.boundingBox())?.y ?? 999).toBeLessThan(40);
+    await expect(
+      page.getByText('Für Ihr Training').locator('xpath=ancestor::details'),
+    ).toHaveAttribute('open', '');
+    await expect(
+      page.getByText('Für Ihre Behandlung').locator('xpath=ancestor::details'),
+    ).not.toHaveAttribute('open', '');
+  });
 });
 
 /**

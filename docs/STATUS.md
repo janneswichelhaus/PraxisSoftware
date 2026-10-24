@@ -9,16 +9,19 @@ Design-Review Lauf 1, Schritt 2 Übungen (24.10., Branch `claude/new-session-27n
 Claude Design liegt vor (`design/handoff-2026-10-24-plattform-uebungen.md`, Leinwand „Plattform –
 Übungen“), vier Fragen an Jannes in Abschnitt 0. Mit dem Merge ist Schritt 2 freigegeben (2a bis 2d).
 
-Gemergt am 24.10.: Schritt 1e Übersicht (#297, DRP-020 bis -022; Schritt 1 damit gebaut), 1d
-Einstieg (#294, DRP-015 bis -019), 1c Türen (#295), CI-Fix #296.
-Gemergt am 22. und 23.10.: Schritt 0 (#288), Handoff und Bericht (#289), 1a (#290), 1b (#293),
-Daten N1/N2 (#292); BEF-179/-180 (#287). Auf `origin` liegt sonst nichts Ungemergtes.
+**Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24.10.: Nacharbeit #298 (Fragen aus #297
+wie empfohlen, „Mitteilungen einschalten“ unter „Heute“, ANN-702; Briefing 2 aufgefrischt, BEF-196
+und BEF-197; BEF-170 Pfad A, ANN-703, daraus BEF-198), 1e Übersicht (#297, DRP-020 bis -022), 1d
+Einstieg (#294), 1c Türen (#295), CI-Fix #296. Gemergt am 22. und 23.10.: Schritt 0 (#288), Handoff
+und Bericht (#289), 1a (#290), 1b (#293), Daten N1/N2 (#292); BEF-179/-180 (#287). Auf `origin`
+liegt sonst nichts Ungemergtes.
 
 ## Danach
 
-Design-Review Schritte 2 bis 7 (Übungen, Termine, Selbstauskunft, Nachrichten, Unterlagen, Ich),
-je mit freigegebenem Handoff aus Claude Design; Briefings in `design/review-2026-10/`. Ohne Handoff:
-BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederherstellung; Pfad A).
+Schritt 2 nach Abschnitt 9 des Handoffs: 2a Bausteine, dann 2b Durchführung und 2c Reiter parallel,
+2d Planblatt. Danach Schritte 3 bis 7 (Termine, Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit
+freigegebenem Handoff aus Claude Design; Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198
+(Grundlage samt Verordnungsscan ins Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A).
 
 ## Bei Jannes
 

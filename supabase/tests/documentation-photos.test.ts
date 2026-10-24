@@ -263,6 +263,15 @@ describe('Dokumentationsfotos (ABN-023)', () => {
       expect(
         await anzahl('select count(*) from public.audit_log where subject_id = $1', [doku.file_id]),
       ).toBe(0);
+      // BEF-170: im Journal mit der Klasse der Akte - ein Dokumentationsfoto ist
+      // Dokumentation, keine Foto-Arbeitshilfe.
+      expect(
+        await anzahl(
+          `select count(*) from public.deletion_journal
+            where target_table = 'patient_files' and target_id = $1 and retention_class = 'patientenakte'`,
+          [doku.file_id],
+        ),
+      ).toBe(1);
     });
 
     it('erlaubt owner am Aufnahmetag, einer anderen Therapeut:in nicht', async () => {

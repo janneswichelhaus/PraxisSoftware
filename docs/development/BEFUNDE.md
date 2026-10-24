@@ -498,20 +498,6 @@ Marke vorsieht.
 
 **Erwartet.** Derselbe Abgleich und dasselbe Kennzeichen wie bei den Dateien der Akte; die Fotoreihe sagt, dass das Foto fehlt. Pfad A (Dateien).
 
-### BEF-170 — Einzeln gelöschte Dateien der Akte fehlen im Löschjournal
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-16 |
-| Bereich | Akte, Dateien (`delete_patient_file`); Wiederherstellung |
-| Quelle  | Zweitreview FLT-EPIC-001 (Subagent), Vergleich mit den Fotos am Rad |
-| Status  | offen |
-| Berührt | `supabase/migrations/20261006110100_log_001b_schreibpfade.sql` (`delete_patient_file`), `reapply_deletion_journal`; ADR-008 Punkt 8, ADR-017 Punkt 26 |
-
-**Beobachtung.** Der Löschlauf schreibt fällige Dateien ins Löschjournal, `delete_patient_file` aber nicht. Nach einer Wiederherstellung käme eine einzeln gelöschte Datei zurück, etwa ein falsch zugeordnetes Foto. Die Anhänge an Rückfragen (`app.remove_message_attachments`) und seit FLT-EPIC-001 die Fotos am Rad journalisieren jede Löschung.
-
-**Erwartet.** Ein Journaleintrag `patient_files` in `delete_patient_file`, dazu ein Test mit Wiederherstellung wie in `fleet-photos.test.ts` („Löschjournal“). Pfad A (Löschpfad).
-
 ### BEF-171 — Uberspace bricht die SSH-Verbindung der Auslieferung vor dem Handshake ab
 
 |         |   |
@@ -573,3 +559,39 @@ Marke vorsieht.
 | Berührt | `Kopf` in `src/features/platform/Navigation.tsx` (Schalter unter `nav aria-label="Bereich"`) |
 
 **Beobachtung.** Bei 375 px und „Sehr groß“ bricht im Schalter „Für Maximilian Mustermann-Langenscheidt“ zwischen „Musterman“ und „n-“, also mitten im Wort, weil die Plattform `overflow-wrap: anywhere` setzt und das Ziel halb so breit ist. **Erwartet.** Wie im Gruß nur am Bindestrich brechen (DR-114) - etwa zwei Reihen statt zwei Spalten, sobald ein Wort nicht passt, oder der Name in einer eigenen Zeile.
+
+### BEF-196 — Übungen: Übungs- und Plannamen brechen mitten im Wort
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Übungen und Durchführung |
+| Quelle  | Ist-Bilder für Briefing 2 (Prüfseite `plattform-uebungen.html`, 375 und 188 px) |
+| Status  | offen; wird mit Schritt 2 des Design-Reviews neu gefasst |
+| Berührt | `src/features/platform/Uebungen.tsx`, `Durchfuehrung.tsx` (Titel neben „Abbrechen“, Zeilen der Durchgänge) |
+
+**Beobachtung.** Bei 375 px bricht der Titel „Am Treppengeländer festhalten …“ neben „Abbrechen“ als „Treppengelände|r“. Bei 188 px (200 %) brechen „Totalendoprothe|se“, „Wiederholunge|n“ und „Durchgan|g“ in den Haken-Zeilen. Ursache ist `overflow-wrap: anywhere` in schmalen Spalten. **Erwartet.** Wie in PLATTFORM.md: nie mitten im Wort, lange Wörter ab zwölf Buchstaben mit Trennstrich (DR-114).
+
+### BEF-197 — Übungen: ein Serverfehler heißt „Ohne Verbindung“
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Übungen |
+| Quelle  | Ist-Bilder für Briefing 2 (lokaler Stack, `platform_exercise_plans` mit 500) |
+| Status  | offen; wird mit Schritt 2 des Design-Reviews neu gefasst |
+| Berührt | `OhneVerbindung` in `src/features/platform/Uebungen.tsx` |
+
+**Beobachtung.** Scheitert das Laden der Pläne bei bestehender Verbindung und liegt ein Plan auf dem Gerät, steht „Ohne Verbindung. Üben können Sie trotzdem …“ mit „Erneut laden“. Ohne Plan auf dem Gerät steht richtig „Ihre Übungen konnten nicht geladen werden.“ **Erwartet.** Der Satz unterscheidet „keine Verbindung“ von „die Praxis antwortet gerade nicht“; das Üben mit dem Plan vom letzten Laden bleibt in beiden Fällen.
+
+### BEF-198 — Eine gelöschte Grundlage samt Verordnungsscan fehlt im Löschjournal
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Akte, Behandlungsgrundlagen (`delete_treatment_basis`); Wiederherstellung |
+| Quelle  | Zweitreview BEF-170 (Subagent) |
+| Status  | offen (Vorschlag) |
+| Berührt | `public.delete_treatment_basis` (`20261121100000_bef_124_verordnung_mit_verlauf.sql`); ADR-008 Punkt 8 |
+
+**Beobachtung.** `delete_treatment_basis` löscht die Grundlage ohne Eintrag im Löschjournal; ihr Verordnungsscan fällt per `on delete cascade` mit, der Auslöser schreibt nur den Löschauftrag. Nach einer Wiederherstellung kämen Grundlage und Scan zurück. **Erwartet.** Journaleinträge für `treatment_bases` und die mitfallenden `patient_files`, Test mit Wiederherstellung (Pfad A). Dabei die übrigen Löschwege von Hand durchsehen, die ohne Journal löschen, etwa Leistungen, Vereinbarungen, Aufgaben und Tagebucheinträge.

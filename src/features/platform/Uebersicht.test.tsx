@@ -24,6 +24,7 @@ const ladeNachrichten = vi.fn();
 const ladePlaene = vi.fn();
 const ladeMeinePakete = vi.fn();
 const ladeErnaehrung = vi.fn();
+const ladeBenachrichtigungen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -39,9 +40,24 @@ vi.mock('./api', async (importOriginal) => ({
   ladePlaene: (...args: unknown[]) => ladePlaene(...args) as Promise<unknown>,
   ladeMeinePakete: (...args: unknown[]) => ladeMeinePakete(...args) as Promise<unknown>,
   ladeErnaehrung: (...args: unknown[]) => ladeErnaehrung(...args) as Promise<unknown>,
+  ladeBenachrichtigungen: (...args: unknown[]) =>
+    ladeBenachrichtigungen(...args) as Promise<unknown>,
 }));
 
 const { Uebersicht } = await import('./Uebersicht');
+const { NurLesenKontext } = await import('./einsicht');
+
+/** Die Wahl zu Mitteilungen: gewählt (Mail für Termine) oder noch nie (ANN-702). */
+const GEWAEHLT = {
+  email_kinds: ['appointment_reminder'],
+  push_kinds: [],
+  quiet_from: 20,
+  quiet_until: 8,
+  chosen_at: '2026-10-01T09:00:00Z',
+  disabled_kinds: [],
+  device_registered: false,
+};
+const NIE_GEWAEHLT = { ...GEWAEHLT, email_kinds: [], chosen_at: null };
 
 const ZUGANG: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000002',
@@ -153,6 +169,7 @@ beforeEach(() => {
   ladePlaene.mockResolvedValue({ today: '2026-10-12', plans: [] });
   ladeMeinePakete.mockResolvedValue(null);
   ladeErnaehrung.mockResolvedValue(null);
+  ladeBenachrichtigungen.mockResolvedValue(GEWAEHLT);
 });
 
 afterEach(() => {
@@ -385,6 +402,65 @@ describe('Heute und Neu für Sie', () => {
     expect(karte).toHaveAttribute('href', '/p/gewohnheiten?bereich=treatment');
     expect(within(karte).getByText('zwei Minuten Mobilität')).toBeInTheDocument();
     expect(screen.queryByText(/Treppe/)).not.toBeInTheDocument();
+  });
+
+  it('zeigt „Mitteilungen einschalten“ zuletzt, bis die Person gewählt hat (ANN-702)', async () => {
+    ladeBenachrichtigungen.mockResolvedValue(NIE_GEWAEHLT);
+    ladeGewohnheiten.mockResolvedValue({
+      today: '2026-10-12',
+      mark_days: 7,
+      can_mark: true,
+      consent_needed: false,
+      habits: [
+        {
+          id: 'g1',
+          action: 'zwei Minuten Mobilität',
+          cue: null,
+          place: null,
+          starts_on: '2026-10-01',
+          paused: false,
+          ended_at: null,
+          marks: [],
+        },
+      ],
+    });
+    zeige();
+    const karte = await screen.findByRole('link', { name: /^Mitteilungen einschalten/ });
+    expect(karte).toHaveAttribute('href', '/p/einstellungen?bereich=treatment#benachrichtigungen');
+    expect(ladeBenachrichtigungen).toHaveBeenCalledWith(ZUGANG.access_id, null);
+    const heute = screen.getByRole('heading', { level: 2, name: 'Heute' }).closest('section')!;
+    expect(
+      within(heute)
+        .getAllByRole('link')
+        .map((l) => l.textContent),
+    ).toEqual([
+      expect.stringMatching(/^Eine kleine Gewohnheit/),
+      expect.stringMatching(/^Mitteilungen einschalten/),
+    ]);
+  });
+
+  it('zeigt „Mitteilungen einschalten“ nicht nach einer Wahl, in der Lesefrist und in der Einsicht', async () => {
+    const { unmount } = zeige();
+    expect(await screen.findByText('Fragebogen vor Ihrem ersten Termin')).toBeInTheDocument();
+    expect(screen.queryByText('Mitteilungen einschalten')).not.toBeInTheDocument();
+    unmount();
+
+    ladeBenachrichtigungen.mockResolvedValue(NIE_GEWAEHLT);
+    const lesefrist = zeige({ ...ZUGANG, read_until: '2026-12-31T12:00:00+01:00' });
+    expect(await screen.findByRole('region', { name: 'Unterlagen sichern' })).toBeInTheDocument();
+    expect(screen.queryByText('Mitteilungen einschalten')).not.toBeInTheDocument();
+    lesefrist.unmount();
+
+    ladeBenachrichtigungen.mockClear();
+    renderWithProviders(
+      <NurLesenKontext.Provider value={true}>
+        <Uebersicht zugang={ZUGANG} />
+      </NurLesenKontext.Provider>,
+      '/p?bereich=treatment',
+    );
+    expect(await screen.findByText('Fragebogen vor Ihrem ersten Termin')).toBeInTheDocument();
+    expect(screen.queryByText('Mitteilungen einschalten')).not.toBeInTheDocument();
+    expect(ladeBenachrichtigungen).not.toHaveBeenCalled();
   });
 
   it('zeigt das Trainingsangebot der Praxis unter „Neu für Sie“ (KND-003)', async () => {

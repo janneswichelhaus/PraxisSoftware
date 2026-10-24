@@ -27,6 +27,10 @@ mit 1b.
 
 ## Schritt 1 – Handoff 1: Erster Eindruck und Plattform-Sprache
 
+**Erledigt und abgenommen** (Jannes, 24.10.2026): 1a #290, 1b #293, 1c #295, 1d #294, 1e #297 mit
+der Nacharbeit #298, dazu die Daten N1/N2 #292. Der Knopf der Hauptsache bleibt auch bei „Sehr
+groß“ wie im Handoff (Frage 1 aus #297). Offen aus Schritt 1 sind nur Vorschläge: BEF-194, BEF-195.
+
 Grundlage: der Handoff [handoff-2026-10-22-plattform-erster-eindruck.md](../handoff-2026-10-22-plattform-erster-eindruck.md)
 (Entwurf vom 22.10.2026 mit Jannes' Entscheidungen; freigegeben mit seinem Merge). Fünf Pull
 Requests, in dieser Reihenfolge:
@@ -48,7 +52,10 @@ Abhängigkeit: 1b bis 1e brauchen 1a. 1c und 1d können parallel laufen (verschi
 ## Schritte 2 bis 7 – Handoffs je Bereich
 
 Jeder Schritt braucht 1a (Sprache, Bausteine) und seinen freigegebenen Entwurf; untereinander sind
-sie unabhängig und können in zwei Strängen laufen. Reihenfolge nach Hebel:
+sie unabhängig und können in zwei Strängen laufen. Ablauf je Schritt: Briefing und Ist-Bilder an
+Claude Design, Entwürfe und Entscheidungen bei Jannes, Handoff ins Repository (sein Merge gibt ihn
+frei), dann je Teilschritt ein Pull Request. Für Schritt 2 sind die Unterlagen bereit (24.10.2026):
+Briefing 2 aufgefrischt nach Schritt 1, 22 Ist-Bilder vom selben Tag. Reihenfolge nach Hebel:
 
 | Schritt | Briefing                      | Befunde                   | Abhängig von          | Hinweis                                                                     |
 | ------- | ----------------------------- | ------------------------- | --------------------- | --------------------------------------------------------------------------- |

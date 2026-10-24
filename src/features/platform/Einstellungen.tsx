@@ -1,5 +1,6 @@
-import { useId } from 'react';
+import { useEffect, useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { Disclosure } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -9,13 +10,14 @@ import { PasskeyAbschnitt, PinAbschnitt } from '@/features/auth/einrichtung/Anme
 import { Benachrichtigungen } from './Benachrichtigungen';
 import { BEREICHSNAME, einstiegSchluessel, type Plattformzugang } from './api';
 import { usePlattformApi } from './einsicht';
-import { PLATTFORM_PFAD } from './pfade';
+import { BENACHRICHTIGUNGEN_ANKER, PLATTFORM_PFAD } from './pfade';
 import {
   SCHRIFTGROESSEN,
   SCHRIFTGROESSE_NAME,
   useSchriftgroesse,
   type Schriftgroesse,
 } from './schriftgroesse';
+import { useWahl } from './wahl';
 import { datum } from './zeit';
 
 /**
@@ -31,6 +33,14 @@ import { datum } from './zeit';
  */
 export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
   const [groesse, setzen] = useSchriftgroesse();
+  // „Mitteilungen einschalten“ auf der Übersicht führt zu den
+  // Benachrichtigungen (ANN-702). Der Router rollt nicht von selbst zum Anker.
+  const zuDenBenachrichtigungen = useLocation().hash === `#${BENACHRICHTIGUNGEN_ANKER}`;
+  const gewaehlt = useWahl(zugaenge.filter((z) => z.readable));
+  useEffect(() => {
+    if (!zuDenBenachrichtigungen) return;
+    document.getElementById(BENACHRICHTIGUNGEN_ANKER)?.scrollIntoView?.({ block: 'start' });
+  }, [zuDenBenachrichtigungen]);
   return (
     <>
       <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
@@ -39,7 +49,10 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
         <Schriftwahl groesse={groesse} onWahl={setzen} />
         <p className="text-ink-muted mt-2 max-w-prose text-sm">Gilt nur auf diesem Gerät.</p>
       </Section>
-      <Benachrichtigungen zugaenge={zugaenge} />
+      <Benachrichtigungen
+        zugaenge={zugaenge}
+        aufgeklappt={zuDenBenachrichtigungen ? gewaehlt?.access_id : undefined}
+      />
       <Section titel="Was die Praxis für Sie eingestellt hat" rahmen>
         <DetailList>
           <DetailRow label="Anrede">Die Praxis spricht Sie mit „Sie“ an.</DetailRow>

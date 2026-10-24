@@ -81,7 +81,8 @@ klarer Aussage („Ihre Absage geht rechtzeitig ein … es entsteht kein Ausfall
    Fehler, ohne Netz, Lesefrist (nur lesen).
 2. **Ein Termin:** kommend (Schritt „Was möchten Sie?“ mit „Termin ändern“ und „Termin absagen“),
    vergangen (Weg zu „Der Praxis schreiben“; Variante „Praxis anrufen“, wenn eine Rufnummer
-   vorliegt), abgesagt, angefragt.
+   vorliegt), abgesagt, angefragt. „Termin ansehen“ auf der Übersicht führt heute zur Liste; diese
+   Seite wird sein Ziel (Entscheidung Jannes, PR #297 Frage 4).
 3. **Terminwunsch** (geführt, 2 Schritte): Tage und Tageszeiten wählen (große Wahlflächen statt
    Kästchen), freie Zeile, Zusammenfassung, Bestätigung „Ihr Wunsch ist bei der Praxis angekommen“.
 4. **Absage** (geführt, 3 Schritte): Ausfallhonorar rechtzeitig und knapp (weniger als 24 Stunden,

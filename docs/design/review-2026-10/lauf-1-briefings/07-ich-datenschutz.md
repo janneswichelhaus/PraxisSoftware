@@ -86,7 +86,8 @@ Was trägt: Einwilligen und Widerrufen gleichwertig (kein Drängen), der klare B
    Lesefrist läuft, Zugang beendet.
 2. **Einstellungen:** Schriftgröße mit Vorschau („Aa“ und ein Beispielsatz), Benachrichtigungen je
    Art als Schalter mit Ruhezeit auf Abruf, Mitteilungen auf diesem Gerät (geht/geht nicht), Passkey
-   und PIN als Zeile mit Zustand (Geräteliste, PIN ändern), was die Praxis eingestellt hat.
+   und PIN als Zeile mit Zustand (Geräteliste, PIN ändern), was die Praxis eingestellt hat. Hierher
+   führt „Mitteilungen einschalten“ von der Übersicht (ANN-702), die Wahl des Bereichs offen.
 3. **Einwilligungen:** je Einwilligung Zweck in einem Satz, Details auf Abruf, Zustand (erteilt am …,
    nicht entschieden, widerrufen am …), Einwilligen und Widerrufen gleichwertig mit Rückfrage;
    Hinweis zur Freiwilligkeit.

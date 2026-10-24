@@ -7,6 +7,7 @@ import {
   freiwilligkeit,
   mitArten,
   mitteilungenAn,
+  mitteilungenOffen,
   mitteilungsarten,
   nochFragen,
   offeneEinwilligungen,
@@ -155,5 +156,31 @@ describe('Der eine Schalter für Mitteilungen (ANN-694)', () => {
     expect(mitArten(['nutrition_diary_reminder', ...arten], arten, false)).toEqual([
       'nutrition_diary_reminder',
     ]);
+  });
+});
+
+describe('„Mitteilungen einschalten“ unter „Heute“ (ANN-702)', () => {
+  const NIE: Parameters<typeof mitteilungenOffen>[0] = {
+    email_kinds: [],
+    push_kinds: [],
+    chosen_at: null,
+    disabled_kinds: [],
+  };
+
+  it('steht, solange die Person nichts gewählt hat', () => {
+    expect(mitteilungenOffen(NIE)).toBe(true);
+    // Die Erinnerung ans Tagebuch gehört nicht zum Schalter.
+    expect(mitteilungenOffen({ ...NIE, push_kinds: ['nutrition_diary_reminder'] })).toBe(true);
+  });
+
+  it('entfällt nach jeder Wahl, auch nach „Aus“, und wenn eine Art an ist', () => {
+    expect(mitteilungenOffen({ ...NIE, chosen_at: '2026-10-20T09:00:00Z' })).toBe(false);
+    expect(mitteilungenOffen({ ...NIE, email_kinds: ['appointment_reminder'] })).toBe(false);
+    expect(mitteilungenOffen({ ...NIE, push_kinds: ['message_answered'] })).toBe(false);
+  });
+
+  it('entfällt ohne Stand und wenn die Praxis alle Arten abgeschaltet hat', () => {
+    expect(mitteilungenOffen(null)).toBe(false);
+    expect(mitteilungenOffen({ ...NIE, disabled_kinds: [...MITTEILUNGSARTEN] })).toBe(false);
   });
 });
