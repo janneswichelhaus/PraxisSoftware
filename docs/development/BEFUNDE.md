@@ -498,20 +498,6 @@ Marke vorsieht.
 
 **Erwartet.** Derselbe Abgleich und dasselbe Kennzeichen wie bei den Dateien der Akte; die Fotoreihe sagt, dass das Foto fehlt. Pfad A (Dateien).
 
-### BEF-170 — Einzeln gelöschte Dateien der Akte fehlen im Löschjournal
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-16 |
-| Bereich | Akte, Dateien (`delete_patient_file`); Wiederherstellung |
-| Quelle  | Zweitreview FLT-EPIC-001 (Subagent), Vergleich mit den Fotos am Rad |
-| Status  | offen |
-| Berührt | `supabase/migrations/20261006110100_log_001b_schreibpfade.sql` (`delete_patient_file`), `reapply_deletion_journal`; ADR-008 Punkt 8, ADR-017 Punkt 26 |
-
-**Beobachtung.** Der Löschlauf schreibt fällige Dateien ins Löschjournal, `delete_patient_file` aber nicht. Nach einer Wiederherstellung käme eine einzeln gelöschte Datei zurück, etwa ein falsch zugeordnetes Foto. Die Anhänge an Rückfragen (`app.remove_message_attachments`) und seit FLT-EPIC-001 die Fotos am Rad journalisieren jede Löschung.
-
-**Erwartet.** Ein Journaleintrag `patient_files` in `delete_patient_file`, dazu ein Test mit Wiederherstellung wie in `fleet-photos.test.ts` („Löschjournal“). Pfad A (Löschpfad).
-
 ### BEF-171 — Uberspace bricht die SSH-Verbindung der Auslieferung vor dem Handshake ab
 
 |         |   |

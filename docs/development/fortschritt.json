@@ -1251,6 +1251,15 @@
           "vermerk": "ANN-594 geändert, ANN-675; ohne Auditeintrag und ohne Benachrichtigung"
         },
         {
+          "id": "bef-170",
+          "name": "BEF-170 Akte: einzeln gelöschte Dateien ins Löschjournal, damit eine Wiederherstellung sie nicht zurückbringt",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-24",
+          "nachweis": "Branch ccr-c5a4a21f-ys0el3, Migration 20261224100000_bef_170_dateien_ins_loeschjournal.sql, supabase/tests/patient-file-deletion.test.ts, supabase/tests/patient-file-verification.test.ts, supabase/tests/patient-photos.test.ts, Zweitreview",
+          "vermerk": "Pfad A (Löschpfad); auch das Verwerfen nach der Prüfung am Inhalt; ohne Auditeintrag"
+        },
+        {
           "id": "bef-191",
           "name": "BEF-191 Teamchat: neues Profilbild an Nachrichten, die schon dastehen",
           "gewicht": 1,
