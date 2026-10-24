@@ -7373,6 +7373,18 @@ Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 4) · er
 
 **Änderungspfad.** Regel dort streichen oder auf weitere Rollen ausdehnen · Aufwand `klein`.
 
+### ANN-708 — Übungstage: die Wochenleiste als Segment ohne Abstand
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Die sieben Übungstage stehen als ein Segment aneinander, je knapp 48 × 56 bei 375 px, ohne die 8 px zwischen Zielen (PLATTFORM.md); unter 23rem ein Raster mit drei Spalten, 48 × 48 und 8 Abstand.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0 (DR-128: eine Zeile); mit Abstand blieben je Ziel 41 px. Dieselbe Ausnahme wie beim `Segment`.
+
+**Anker.** `Wochenleiste` in `src/components/ui/Wochenleiste.tsx`.
+
+**Änderungspfad.** Abstand dort setzen und in zwei Reihen umbrechen · Aufwand `klein`.
+
 ### ANN-709 — Durchführung: die Pause als Ring statt als Uhr
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
