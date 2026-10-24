@@ -16,7 +16,6 @@ import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { angabeGueltig, groessenImTakt } from '@/lib/erfassungsgroessen';
 import {
   abgelegterPlan,
-  abweisungFuer,
   abweisungGelesen,
   aktuellerAblagestand,
   ereignisAblegen,
@@ -157,9 +156,11 @@ export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
   if (ohneAntwort ? abgelegt.isPending : plaene.isPending) {
     return <EinheitLaedt spaeter={{ pfad: zurueck }} />;
   }
+  // Der Seitentitel wie am Reiter: „Übungen“ bzw. „Training“.
+  const seitentitel = zugang.relationship_kind === 'training' ? 'Training' : 'Übungen';
   if (plaene.data === undefined) {
     return (
-      <Ausweg pfad={zurueck}>
+      <Ausweg titel={seitentitel} pfad={zurueck}>
         <ErrorState
           title="Ihre Übungen lassen sich gerade nicht laden."
           description="Prüfen Sie die Verbindung oder versuchen Sie es gleich noch einmal."
@@ -170,8 +171,8 @@ export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
   }
   if (!plan || !plan.can_exercise || plan.items.length === 0) {
     return (
-      <Ausweg pfad={zurueck}>
-        <EmptyState title="Mit diesem Plan können Sie hier gerade nicht üben." />
+      <Ausweg titel={seitentitel} pfad={zurueck}>
+        <EmptyState markenform title="Mit diesem Plan können Sie hier gerade nicht üben." />
       </Ausweg>
     );
   }
@@ -307,9 +308,12 @@ function Einheit({
     const kopf: Einheitskopf | null = id
       ? { id, begonnenAm: lokal?.begonnenAm ?? new Date().toISOString(), tag }
       : null;
-    return { kopf, haken };
+    return { kopf, haken, ereignisse: (lokal?.ereignisse ?? []).map((x) => x.id) };
   });
   const einheit = useRef<Einheitskopf | null>(start.kopf);
+  // Die Ereignisse dieser Einheit auf dem Gerät - weist der Server eines ab,
+  // ist sie nicht (ganz) bei der Praxis.
+  const eigene = useRef(new Set<string>(start.ereignisse));
 
   const [gewaehlt, setIndex] = useState(() => ersteOffeneUebung(plan.items, start.haken));
   // Kommt der Plan nach dem Wiederverbinden vom Server, kann er kürzer sein.
@@ -361,7 +365,13 @@ function Einheit({
     return einheit.current;
   }
 
-  const beenden = useEinheitBeenden({ zugangId, plan, einheitskopf, onBeendet });
+  const beenden = useEinheitBeenden({
+    zugangId,
+    plan,
+    einheitskopf,
+    onBeendet,
+    merken: (id) => eigene.current.add(id),
+  });
   // Während des Beendens nimmt die Einheit keinen Haken mehr an: Er käme
   // hinter ihr Ende (BEF-213).
   const beendetGerade = beenden.isPending || beenden.isSuccess;
@@ -374,20 +384,22 @@ function Einheit({
     setFehler(null);
     setHaken((alt) => umschalten(alt, schluessel(position.id, durchgang), erledigt));
     const kopf = einheitskopf();
+    const ereignis = {
+      id: crypto.randomUUID(),
+      kind: 'set' as const,
+      at: new Date().toISOString(),
+      item_id: position.id,
+      set_number: durchgang,
+      done: erledigt,
+    };
+    eigene.current.add(ereignis.id);
     setSchreibend((n) => n + 1);
     try {
       // Erst auf das Gerät (ADR-024 Punkt 5), dann zum Server.
-      const abgelegtIn = await ereignisAblegen(
+      const { einheitId: abgelegtIn } = await ereignisAblegen(
         besitzer,
         { ...kopf, zugangId, planId: plan.id },
-        {
-          id: crypto.randomUUID(),
-          kind: 'set',
-          at: new Date().toISOString(),
-          item_id: position.id,
-          set_number: durchgang,
-          done: erledigt,
-        },
+        ereignis,
       );
       // War die Einheit auf dem Gerät schon beendet, liegt der Haken in
       // einer neuen; die nächsten gehören dorthin (BEF-213).
@@ -416,12 +428,22 @@ function Einheit({
   const planWartet = warteschlange.einheiten.some(
     (e) => e.zugangId === zugangId && e.planId === plan.id && e.ereignisse.length > 0,
   );
+  // Hat der Server ein Ereignis dieser Einheit abgewiesen, ist sie verworfen:
+  // Danach sagt der Fuß nie mehr „übertragen“, auch nicht nach „Ausblenden“
+  // (ANN-716).
+  const [abgewiesenGesehen, setAbgewiesenGesehen] = useState(false);
+  if (
+    !abgewiesenGesehen &&
+    warteschlange.abgewiesen.some((a) => a.ereignisse.some((id) => eigene.current.has(id)))
+  ) {
+    setAbgewiesenGesehen(true);
+  }
   const stand: Uebertragungsstand =
     gelesen && !planWartet && haken.size === 0
       ? 'ohne'
       : !gelesen || planWartet
         ? 'geraet'
-        : verbunden && einheit.current
+        : anstossen && verbunden && einheit.current && !abgewiesenGesehen
           ? 'uebertragen'
           : 'ohne';
   // Eine Abweisung des Endes steht über dem Fuß, nicht noch einmal oben.
@@ -652,11 +674,14 @@ function useEinheitBeenden({
   plan,
   einheitskopf,
   onBeendet,
+  merken,
 }: {
   zugangId: string;
   plan: Ablageplan;
   einheitskopf: () => Einheitskopf;
   onBeendet: EinheitProps['onBeendet'];
+  /** Das Ende gehört zu den Ereignissen der Einheit (Abweisung im Fuß). */
+  merken: (ereignisId: string) => void;
 }) {
   const { besitzer, anstossen } = useDurchfuehrungstraeger();
   return useMutation({
@@ -677,9 +702,9 @@ function useEinheitBeenden({
         Object.entries(werte).filter((e): e is [string, number] => e[1] !== null),
       );
       // Auch das Ende liegt zuerst auf dem Gerät (ADR-024 Punkt 5).
-      let id: string;
+      let ende: string;
       try {
-        id = await ereignisAblegen(
+        ({ ereignisId: ende } = await ereignisAblegen(
           besitzer,
           { ...kopf, zugangId, planId: plan.id },
           {
@@ -689,20 +714,23 @@ function useEinheitBeenden({
             note: plan.note_allowed ? notiz : '',
             values: plan.note_allowed ? angaben : {},
           },
-        );
+        ));
       } catch {
         throw new Error('Nicht gespeichert. Bitte erneut versuchen.');
       }
+      merken(ende);
       if (!anstossen) return { ziel: 'gespeichert=geraet', tag: kopf.tag };
       const ergebnis = await anstossen().catch(() => null);
-      // Weist der Server die Einheit ab, ist sie verworfen: keine Endseite,
-      // die sie „auf diesem Gerät“ nennt, sondern der Grund (ADR-024 Punkt 8).
-      const abweisung = abweisungFuer(id);
-      if (abweisung) throw new EndeAbgewiesen(id, abweisung.satz);
-      return {
-        ziel: ergebnis?.angekommen.includes(id) ? 'gespeichert=1' : 'gespeichert=geraet',
-        tag: kopf.tag,
-      };
+      // Entschieden wird am Ende selbst, nicht an der Kennung der Einheit -
+      // die wechselt, wenn der Server sie anderswo beendet fand („closed“).
+      // In diesem Lauf abgewiesen: keine Endseite, die sie „auf diesem Gerät“
+      // nennt, sondern der Grund (ADR-024 Punkt 8).
+      const abweisung = ergebnis?.abgewiesen.find((a) => a.ereignisse.includes(ende));
+      if (abweisung) throw new EndeAbgewiesen(abweisung.einheitId, abweisung.satz);
+      const wartet = (await wartendeEinheiten(besitzer)).some((e) =>
+        e.ereignisse.some((x) => x.id === ende),
+      );
+      return { ziel: wartet ? 'gespeichert=geraet' : 'gespeichert=1', tag: kopf.tag };
     },
     onSuccess: ({ ziel, tag }) => onBeendet(ziel, tag),
   });
@@ -865,13 +893,17 @@ function Notkopf({
 }
 
 /**
- * Fehler und „kann hier nicht üben“: der Satz und als Hauptknopf im Fuß der
- * Weg zurück zu den Übungen - ohne Reiterleiste der einzige (ANN-714).
+ * Fehler und „kann hier nicht üben“: Seitentitel, der Satz und als
+ * Hauptknopf im Fuß der Weg zurück zu den Übungen - ohne Reiterleiste der
+ * einzige (ANN-714).
  */
-function Ausweg({ pfad, children }: { pfad: string; children: ReactNode }) {
+function Ausweg({ titel, pfad, children }: { titel: string; pfad: string; children: ReactNode }) {
   return (
     <Rahmen fuss={<Durchfuehrungsfuss aktion={{ text: 'Zu den Übungen', to: pfad }} />}>
-      {children}
+      <div>
+        <PageHeader title={titel} />
+        {children}
+      </div>
     </Rahmen>
   );
 }

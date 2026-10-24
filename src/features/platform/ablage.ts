@@ -164,6 +164,8 @@ export interface Abweisung {
   einheitId: string;
   planId: string;
   satz: string;
+  /** Die Kennungen der Ereignisse, die mit der Einheit verworfen sind. */
+  ereignisse: string[];
 }
 
 let abgewiesen: Abweisung[] = [];
@@ -183,11 +185,6 @@ function melden() {
 /** Der Stand der Ablage nach der letzten Änderung (`useWarteschlange`). */
 export function aktuellerAblagestand(): number {
   return ablagestand;
-}
-
-/** Hat der Server diese Einheit abgewiesen? Dann mit seinem Grund (Punkt 8). */
-export function abweisungFuer(einheitId: string): Abweisung | undefined {
-  return abgewiesen.find((a) => a.einheitId === einheitId);
 }
 
 /** Nur für Tests: alles Gemerkte vergessen. */
@@ -303,26 +300,33 @@ export async function wartendeEinheiten(besitzer: string): Promise<WartendeEinhe
 
 /**
  * Ein Ereignis in die Warteschlange - erst hier, dann zum Server. Die
- * Einheit entsteht mit ihrem ersten Ereignis. Gibt die Kennung der Einheit
- * zurück, in der das Ereignis liegt.
+ * Einheit entsteht mit ihrem ersten Ereignis. Gibt zurück, in welcher
+ * Einheit das Ereignis liegt und unter welcher Kennung - danach fragt die
+ * Ansicht, ob es noch wartet oder abgewiesen ist.
  *
  * **Das Ende bleibt das letzte Ereignis** (BEF-213): Der Server weist eine
  * Einheit ab, in der nach `finish` noch etwas kommt, und die Ablage verwürfe
  * sie dann ganz, samt Haken und Ende. Ist die Einheit auf dem Gerät schon
- * beendet - ein zweites Fenster, ein Tipp während des Beendens -, kommt das
- * Ereignis in die offene Einheit desselben Tages oder in eine neue, so wie
- * der Server nach einer anderswo beendeten Einheit („closed“) verfährt.
+ * beendet - ein zweites Fenster, ein Tipp während des Beendens -, kommt ein
+ * Haken in die offene Einheit desselben Tages oder in eine neue, so wie der
+ * Server nach einer anderswo beendeten Einheit („closed“) verfährt. Ein
+ * zweites Ende fällt weg; es gilt das erste.
  */
 export async function ereignisAblegen(
   besitzer: string,
   einheit: Omit<WartendeEinheit, 'ereignisse'>,
   ereignis: Einheitsereignis,
-): Promise<string> {
-  let ziel = einheit.id;
+): Promise<{ einheitId: string; ereignisId: string }> {
+  let ziel = { einheitId: einheit.id, ereignisId: ereignis.id };
   await fachAendern(besitzer, FACH, (alt) => {
     const f = fach(alt ?? LEER);
     const beendet = (e: WartendeEinheit) => e.ereignisse.some((x) => x.kind === 'finish');
     let da = f.einheiten.find((e) => e.id === einheit.id);
+    if (da && beendet(da) && ereignis.kind === 'finish') {
+      const erstes = da.ereignisse.find((x) => x.kind === 'finish')!;
+      ziel = { einheitId: da.id, ereignisId: erstes.id };
+      return f;
+    }
     if (da && beendet(da)) {
       da = f.einheiten.find(
         (e) =>
@@ -338,7 +342,7 @@ export async function ereignisAblegen(
     }
     if (da) da.ereignisse.push(ereignis);
     else f.einheiten.push({ ...einheit, ereignisse: [ereignis] });
-    ziel = da?.id ?? einheit.id;
+    ziel = { einheitId: da?.id ?? einheit.id, ereignisId: ereignis.id };
     return f;
   });
   melden();
@@ -351,8 +355,14 @@ export interface Uebertragungsergebnis {
   angekommen: string[];
   /** Einheiten mit „schwierig, weil …" oder Angaben, die beim Eingang fielen. */
   angabenVerworfen: string[];
+  /** Was der Server in diesem Lauf abgewiesen hat, mit den Ereignissen. */
+  abgewiesen: Abweisung[];
   /** Ein Funkloch: Was nicht ankam, liegt weiter auf dem Gerät. */
   ohneNetz: boolean;
+}
+
+function leeresErgebnis(): Uebertragungsergebnis {
+  return { angekommen: [], angabenVerworfen: [], abgewiesen: [], ohneNetz: false };
 }
 
 let laeuft: Promise<Uebertragungsergebnis> | null = null;
@@ -362,7 +372,7 @@ let nochmal = false;
 export type Sender = typeof einheitUebertragen;
 
 async function einmalUebertragen(besitzer: string, senden: Sender): Promise<Uebertragungsergebnis> {
-  const ergebnis: Uebertragungsergebnis = { angekommen: [], angabenVerworfen: [], ohneNetz: false };
+  const ergebnis = leeresErgebnis();
   for (const einheit of await wartendeEinheiten(besitzer)) {
     if (einheit.ereignisse.length === 0) continue;
     const gesendet = new Set(einheit.ereignisse.map((e) => e.id));
@@ -393,8 +403,16 @@ async function einmalUebertragen(besitzer: string, senden: Sender): Promise<Uebe
         ergebnis.ohneNetz = true;
         break;
       }
-      // ADR-024 Punkt 8: zeigen, warum, und danach verwerfen.
-      abgewiesen.push({ einheitId: einheit.id, planId: einheit.planId, satz: fehler.message });
+      // ADR-024 Punkt 8: zeigen, warum, und danach verwerfen. Verworfen wird
+      // alles der Einheit, auch was während der Übertragung dazukam.
+      const abweisung: Abweisung = {
+        einheitId: einheit.id,
+        planId: einheit.planId,
+        satz: fehler.message,
+        ereignisse: einheit.ereignisse.map((e) => e.id),
+      };
+      abgewiesen.push(abweisung);
+      ergebnis.abgewiesen.push(abweisung);
       fallen = true;
     }
     await fachAendern(besitzer, FACH, (alt) => {
@@ -429,12 +447,19 @@ export function uebertragen(
     return laeuft;
   }
   laeuft = (async () => {
+    // Über alle Runden gesammelt: Ein Ende, das in einer früheren Runde ankam
+    // oder abgewiesen wurde, fehlte sonst im Ergebnis.
+    const gesamt = leeresErgebnis();
     let ergebnis: Uebertragungsergebnis;
     do {
       nochmal = false;
       ergebnis = await einmalUebertragen(besitzer, senden);
+      gesamt.angekommen.push(...ergebnis.angekommen);
+      gesamt.angabenVerworfen.push(...ergebnis.angabenVerworfen);
+      gesamt.abgewiesen.push(...ergebnis.abgewiesen);
+      gesamt.ohneNetz = ergebnis.ohneNetz;
     } while (nochmal && !ergebnis.ohneNetz);
-    return ergebnis;
+    return gesamt;
   })().finally(() => {
     laeuft = null;
   });

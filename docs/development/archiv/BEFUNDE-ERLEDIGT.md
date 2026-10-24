@@ -1964,7 +1964,7 @@ eingeklappt.
 | Datum   | 2026-10-24 |
 | Bereich | Plattform, Durchführung und Warteschlange; ADR-001, ADR-024 Punkte 5 und 8 |
 | Quelle  | Zweitreview DRP-EPIC-008 (Subagent, Befund 1) |
-| Status  | erledigt 2026-10-24 (DRP-EPIC-008, Pfad A): `ereignisAblegen` hängt nie hinter ein Ende; eine auf dem Gerät beendete Einheit wird nicht wieder geöffnet; während des Beendens nimmt die Einheit keinen Haken an; Tests mit Gegenprobe |
+| Status  | erledigt 2026-10-24 (DRP-EPIC-008, Pfad A): `ereignisAblegen` hängt nie hinter ein Ende, ein zweites Ende fällt weg; eine auf dem Gerät beendete Einheit wird nicht wieder geöffnet; während des Beendens nimmt die Einheit keinen Haken an; das Ende wird an seinem Ereignis entschieden; Tests mit Gegenprobe |
 | Berührt | `ereignisAblegen` (`src/features/platform/ablage.ts`), `Einheit` in `Durchfuehrung.tsx`; auf `main` derselbe Weg, sobald der Server nicht antwortet |
 
 **Beobachtung.** Lag das Ende einer Einheit noch auf dem Gerät und wurde die Durchführung wieder geöffnet („Weiter üben“ mit dem alten `open_session`) oder während „Wird gespeichert …“ gehakt, hängte die Ablage den Haken hinter das Ende. Der Server weist eine solche Einheit ab („finish must be last“), und die Ablage verwarf sie dann ganz, samt Haken und Ende. **Erwartet.** Das Ende bleibt das letzte Ereignis; was danach kommt, geht in eine neue Einheit desselben Tages, wie nach „closed“.
@@ -1976,7 +1976,7 @@ eingeklappt.
 | Datum   | 2026-10-24 |
 | Bereich | Plattform, `Angabefeld` (Einheit beenden, Check-in) |
 | Quelle  | Design-Review DRP-EPIC-008 (Subagent, B2 und B3) |
-| Status  | erledigt 2026-10-24 (DRP-EPIC-008): auf der Plattform Stufen 48 hoch mit 8 Abstand in zwei Reihen, unter 23rem die Enden untereinander; Browsertest |
+| Status  | erledigt 2026-10-24 (DRP-EPIC-008): auf der Plattform Stufen 48 hoch mit 8 Abstand, zwei Reihen 0 bis 5 und 6 bis 10, bei großer Schrift mehr; die Enden brechen als Ganzes um; Browsertest |
 | Berührt | `src/components/ui/Angabefeld.tsx`, `.skala` in `src/index.css`; Handoff 2026-10-24, 5.4 und 6 |
 
 **Beobachtung.** Die Stufen der Skala waren 44 px hoch und standen 4 px (Telefon) bzw. 2 px (Rechner) auseinander; bei 188 px brach das Ende „0 = keine“ als „kein|e“ ohne Strich. **Erwartet.** Ziele 48 mit mindestens 8 Abstand (PLATTFORM.md), kein Wort ohne Strich gebrochen (BEF-196).

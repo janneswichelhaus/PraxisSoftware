@@ -115,7 +115,12 @@ describe('Warteschlange (ADR-024 Punkte 7 und 8)', () => {
     await ereignisAblegen(KONTO, kopf(), haken('h1'));
     await ereignisAblegen(KONTO, kopf(), haken('h2', 2));
     const ergebnis = await uebertragen(KONTO);
-    expect(ergebnis).toEqual({ angekommen: ['einheit-1'], angabenVerworfen: [], ohneNetz: false });
+    expect(ergebnis).toEqual({
+      angekommen: ['einheit-1'],
+      angabenVerworfen: [],
+      abgewiesen: [],
+      ohneNetz: false,
+    });
     expect(einheitUebertragen).toHaveBeenCalledWith(
       ZUGANG,
       expect.objectContaining({ id: 'einheit-1', ereignisse: [haken('h1'), haken('h2', 2)] }),
@@ -230,11 +235,15 @@ describe('Das Ende bleibt das letzte Ereignis (BEF-213, DRP-EPIC-008)', () => {
 
   it('hängt nie hinter ein Ende: der Haken kommt in eine neue Einheit desselben Tages', async () => {
     await ereignisAblegen(KONTO, kopf(), haken('h-1'));
-    expect(await ereignisAblegen(KONTO, kopf(), ENDE)).toBe('einheit-1');
-    const neu = await ereignisAblegen(KONTO, kopf(), haken('h-2', 2));
+    expect(await ereignisAblegen(KONTO, kopf(), ENDE)).toEqual({
+      einheitId: 'einheit-1',
+      ereignisId: 'ende-1',
+    });
+    const { einheitId: neu, ereignisId } = await ereignisAblegen(KONTO, kopf(), haken('h-2', 2));
     expect(neu).not.toBe('einheit-1');
+    expect(ereignisId).toBe('h-2');
     // Ein zweiter Haken findet dieselbe offene Einheit, statt noch eine anzulegen.
-    expect(await ereignisAblegen(KONTO, kopf(), haken('h-3', 3))).toBe(neu);
+    expect((await ereignisAblegen(KONTO, kopf(), haken('h-3', 3))).einheitId).toBe(neu);
     const [beendet, offen] = await wartendeEinheiten(KONTO);
     expect(beendet!.ereignisse.map((e) => e.id)).toEqual(['h-1', 'ende-1']);
     expect(offen).toMatchObject({ id: neu, zugangId: ZUGANG, planId: PLAN.id, tag: geraetetag() });
@@ -260,5 +269,42 @@ describe('Das Ende bleibt das letzte Ereignis (BEF-213, DRP-EPIC-008)', () => {
       (c[1] as { ereignisse: { id: string }[] }).ereignisse.map((e) => e.id),
     );
     expect(gesendet).toEqual([['h-1', 'ende-1'], ['h-2']]);
+  });
+
+  it('ein zweites Ende fällt weg: es gilt das erste, keine Einheit nur aus einem Ende', async () => {
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    await ereignisAblegen(KONTO, kopf(), ENDE);
+    expect(await ereignisAblegen(KONTO, kopf(), { ...ENDE, id: 'ende-2', note: 'anders' })).toEqual(
+      {
+        einheitId: 'einheit-1',
+        ereignisId: 'ende-1',
+      },
+    );
+    const einheiten = await wartendeEinheiten(KONTO);
+    expect(einheiten).toHaveLength(1);
+    expect(einheiten[0]!.ereignisse.map((e) => e.id)).toEqual(['h-1', 'ende-1']);
+  });
+
+  it('das Ergebnis nennt, was in diesem Lauf abgewiesen wurde - mit den Ereignissen, über alle Runden', async () => {
+    einheitUebertragen.mockImplementation((_z: string, e: { id: string }) =>
+      e.id === 'einheit-2'
+        ? Promise.reject(new UebertragungAbgewiesen('Der Plan gilt nicht mehr.'))
+        : Promise.resolve({ session_id: e.id, status: 'ok', note_dropped: false }),
+    );
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    await ereignisAblegen(KONTO, kopf('einheit-2'), haken('h-2', 2));
+    const ergebnis = await uebertragen(KONTO);
+    expect(ergebnis.angekommen).toEqual(['einheit-1']);
+    expect(ergebnis.abgewiesen).toEqual([
+      {
+        einheitId: 'einheit-2',
+        planId: PLAN.id,
+        satz: 'Der Plan gilt nicht mehr.',
+        ereignisse: ['h-2'],
+      },
+    ]);
+    // Ein späterer Lauf trägt die alte Abweisung nicht noch einmal.
+    await ereignisAblegen(KONTO, kopf('einheit-3'), haken('h-3', 3));
+    expect((await uebertragen(KONTO)).abgewiesen).toEqual([]);
   });
 });

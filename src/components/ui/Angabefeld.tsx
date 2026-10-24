@@ -109,13 +109,14 @@ export function Angabefeld({
       <div
         // `skala`: Haken für die Plattform, die bei sehr wenig Breite weniger
         // Stufen je Reihe setzt (POR-020). Eine Auswahl in Wörtern bricht
-        // einfach um. Auf der Plattform stehen die Stufen in jeder Breite in
-        // zwei Reihen, 48 hoch mit 8 Abstand (Handoff 2026-10-24, 5.4 und 6;
-        // PLATTFORM.md, Ziele).
+        // einfach um. Auf der Plattform Stufen 48 hoch mit 8 Abstand in einer
+        // Spalte für sechs - zwei Reihen 0 bis 5 und 6 bis 10; bei „Groß“ und
+        // „Sehr groß“ so viele je Reihe, wie hineinpassen (Handoff 2026-10-24,
+        // 5.4 und 6; PLATTFORM.md, Ziele).
         className={
           auswahl
             ? 'flex flex-wrap gap-2'
-            : 'skala grid max-w-md grid-cols-[repeat(var(--skala-spalten),minmax(2.75rem,1fr))] gap-1 sm:max-w-none sm:grid-flow-col sm:grid-cols-none sm:gap-0.5 [.plattform-schrift_&]:max-w-md [.plattform-schrift_&]:grid-flow-row [.plattform-schrift_&]:grid-cols-[repeat(var(--skala-spalten),minmax(3rem,1fr))] [.plattform-schrift_&]:gap-2'
+            : 'skala [.plattform-schrift_&]:max-w-skala grid max-w-md grid-cols-[repeat(var(--skala-spalten),minmax(2.75rem,1fr))] gap-1 sm:max-w-none sm:grid-flow-col sm:grid-cols-none sm:gap-0.5 [.plattform-schrift_&]:grid-flow-row [.plattform-schrift_&]:grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] [.plattform-schrift_&]:gap-2'
         }
         style={auswahl ? undefined : ({ '--skala-spalten': spaltenAmHandy } as CSSProperties)}
       >
@@ -138,8 +139,9 @@ export function Angabefeld({
         ))}
       </div>
       {groesse.enden ? (
-        // Unter 23rem untereinander: Nebeneinander bräche „keine“ als „kein|e“ (BEF-214).
-        <div className="text-ink-muted flex max-w-md justify-between text-xs max-[23rem]:flex-col sm:max-w-none [.plattform-schrift_&]:max-w-md">
+        // Passen beide Enden nicht nebeneinander, steht das zweite darunter -
+        // gequetscht bräche „keine“ als „kein|e“ (BEF-214).
+        <div className="text-ink-muted [.plattform-schrift_&]:max-w-skala flex max-w-md flex-wrap justify-between gap-x-4 text-xs sm:max-w-none">
           <span>
             {groesse.min} = {groesse.enden[0]}
           </span>

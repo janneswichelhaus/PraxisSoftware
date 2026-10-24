@@ -336,6 +336,7 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
     expect(
       await screen.findByText('Mit diesem Plan können Sie hier gerade nicht üben.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Übungen' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Durchgang/ })).not.toBeInTheDocument();
   });
 });
@@ -360,6 +361,8 @@ describe('Ohne Verbindung (TRK-008, ADR-024 Punkte 5 und 8)', () => {
     expect(
       await screen.findByText('Ihre Übungen lassen sich gerade nicht laden.'),
     ).toBeInTheDocument();
+    // Ein Seitentitel wie am Reiter, der Weg zurück als Hauptknopf.
+    expect(screen.getByRole('heading', { level: 1, name: 'Übungen' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Zu den Übungen' })).toBeInTheDocument();
   });
 
@@ -827,5 +830,69 @@ describe('Befunde aus den Reviews zu Schritt 2b', () => {
     expect(screen.getByText(/ist bei der Praxis\./).textContent).toBe(
       `Ihre Einheit vom ${tagFest(geraetetag())} ist bei der Praxis.`,
     );
+  });
+});
+
+describe('Befunde aus dem Zweitreview, zweite Runde', () => {
+  it('nach einer Abweisung sagt der Fuß nie „übertragen“, auch nach „Ausblenden“ (ADR-024 Punkt 8)', async () => {
+    einheitUebertragen.mockRejectedValue(new UebertragungAbgewiesen('Der Plan gilt nicht mehr.'));
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    expect(
+      await screen.findByText(/Nicht übertragen: Der Plan gilt nicht mehr\./),
+    ).toBeInTheDocument();
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(screen.queryByText('Übertragen an die Praxis')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ausblenden' }));
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(screen.queryByText('Übertragen an die Praxis')).not.toBeInTheDocument();
+  });
+
+  it('eine alte Abweisung derselben Einheit macht ein angenommenes Ende nicht zur Abweisung', async () => {
+    // Der erste Haken wird abgewiesen, danach nimmt der Server alles an.
+    einheitUebertragen.mockRejectedValueOnce(
+      new UebertragungAbgewiesen('Diese Übung gibt es nicht mehr.'),
+    );
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    expect(await screen.findByText(/Nicht übertragen: Diese Übung/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^2\. Durchgang/ }));
+    await waitFor(() => expect(einheitUebertragen).toHaveBeenCalledTimes(2));
+    await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
+    await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Gespeichert' }),
+    ).toBeInTheDocument();
+  });
+
+  it('nimmt der Server das Ende unter neuer Kennung an („closed“), ist es gespeichert', async () => {
+    const X = 'cccccccc-0000-4000-8000-000000000009';
+    ladePlaene.mockResolvedValue({
+      today: geraetetag(),
+      plans: [{ ...ZWEI, open_session: { id: X, sets: [] } }],
+    });
+    // Die Einheit X ist anderswo beendet: Alles geht unter neuer Kennung hinüber.
+    einheitUebertragen.mockImplementation((_z: string, e: Sendung) =>
+      Promise.resolve({
+        session_id: e.id,
+        status: e.id === X ? 'closed' : 'ok',
+        note_dropped: false,
+      }),
+    );
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    await waitFor(() => expect(einheitUebertragen).toHaveBeenCalledTimes(2));
+    await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
+    await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Gespeichert' }),
+    ).toBeInTheDocument();
+    expect(gesendet().filter((e) => e.kind === 'finish')).not.toHaveLength(0);
+    expect(await wartendeEinheiten(KONTO)).toEqual([]);
   });
 });

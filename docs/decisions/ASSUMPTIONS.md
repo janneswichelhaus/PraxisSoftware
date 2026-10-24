@@ -7423,13 +7423,13 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 ### ANN-712 — Durchführung: wer die Einheit und den Satz sieht
 
-Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+Datenschutz · offen · 2026-10-24 · — · Prüfpaket · Wiedervorlage: vor dem Scharfschalten
 
 **Annahme.** Endseite und Satz am freien Feld nennen die Fachperson des nächsten bestätigten Termins („Anna Beispiel sieht …“), ohne Termin „Ihre Therapeut:in“ bzw. „Ihre Trainingsbetreuung“. Auf der Endseite erscheint der Satz erst, wenn die Termine geantwortet haben, damit der Name nicht springt.
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 5.5 („{Name} sieht sie …“); der Plan trägt keinen Namen, die Übersicht nimmt ihn ebenso aus dem nächsten Termin.
 
-**Anker.** `EndeDerEinheit` in `src/features/platform/Durchfuehrung.tsx`.
+**Anker.** `wer` in `Durchfuehrung`, `src/features/platform/Durchfuehrung.tsx`.
 
 **Änderungspfad.** Immer das Wort des Bereichs · Aufwand `klein`; ein Name am Plan · Aufwand `mittel` (Pfad A).
 
@@ -7449,7 +7449,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
-**Annahme.** Auf `/p/uebungen/einheit/…` entfallen Kopf, Verbindungszeile und Reiterleiste der Plattform; Kopf und Fuß der Durchführung ersetzen sie. Das Band einer Vertretung und der Hinweis zum Profil bleiben darüber stehen. Beim Laden steht „Später weiter“ oben, bei Fehler und „kann hier nicht üben“ „Zu den Übungen“ als Hauptknopf im Fuß. Die lokale Ansicht behält ihren Kopf mit „Sperren“.
+**Annahme.** Auf `/p/uebungen/einheit/…` entfallen Kopf, Verbindungszeile und Reiterleiste der Plattform; Kopf und Fuß der Durchführung ersetzen sie. Das Band einer Vertretung und der Hinweis zum Profil bleiben darüber stehen. Beim Laden steht „Später weiter“ oben; Fehler und „kann hier nicht üben“ tragen den Titel des Reiters und „Zu den Übungen“ als Hauptknopf im Fuß. Die lokale Ansicht behält ihren Kopf mit „Sperren“.
 
 **Begründung.** Handoff 2026-10-24, Abschnitte 0, 4 und 5.3; PLATTFORM.md (Seitentyp Durchführung). Für wen geübt wird, muss sichtbar bleiben (ADR-023); ohne Reiterleiste braucht jede Lage einen Weg hinaus.
 
@@ -7468,3 +7468,15 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 **Anker.** `direkt` in `Einheit`, `src/features/platform/Durchfuehrung.tsx`.
 
 **Änderungspfad.** Die Seite immer zeigen · Aufwand `klein`.
+
+### ANN-716 — Durchführung: wann der Fuß „übertragen“ sagt
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** „Übertragen an die Praxis“ steht nur, wenn das Gerät Verbindung meldet, die Warteschlange nach dem letzten Haken gelesen ist und nichts dieses Plans mehr wartet. Ohne Netz und nach einer Abweisung eines Ereignisses der Einheit steht dort nichts, solange nichts wartet; wartet etwas, „Auf diesem Gerät, noch nicht übertragen“.
+
+**Begründung.** ADR-024 Punkt 8 und ADR-001; Handoff 2026-10-24, 3 und 5.6. Ohne Netz sagt die Zeile im Kopf, wo die Haken liegen; „übertragen“ daneben widerspräche ihr (Design-Review 2b, H2).
+
+**Anker.** `stand` in `Einheit`, `src/features/platform/Durchfuehrung.tsx`.
+
+**Änderungspfad.** Ohne Netz „übertragen“ für Haken vom Server zeigen · Aufwand `klein`.
