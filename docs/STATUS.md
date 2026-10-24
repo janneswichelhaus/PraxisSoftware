@@ -5,12 +5,12 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 1e Übersicht (24.10., Branch `ccr-c5a4a21f-ys0el3`, DRP-020 bis
--022): Gruß nach Tageszeit mit Namen, Initialen im Kopf, eine Hauptsache (ANN-698), „Heute“,
-nächster Besuch, „Neu für Sie“; Training, Begleitung, Lesefrist; ein Zustand für alle Abfragen
-(ANN-699); zweispaltig ab 900 px. Damit ist Schritt 1 des Handoffs gebaut.
+Design-Review Lauf 1, Schritt 2 Übungen (24.10., Branch `claude/new-session-27nejg`): Handoff aus
+Claude Design liegt vor (`design/handoff-2026-10-24-plattform-uebungen.md`, Leinwand „Plattform –
+Übungen“), vier Fragen an Jannes in Abschnitt 0. Mit dem Merge ist Schritt 2 freigegeben (2a bis 2d).
 
-Gemergt am 24.10.: Schritt 1d Einstieg (#294, DRP-015 bis -019), 1c Türen (#295), CI-Fix #296.
+Gemergt am 24.10.: Schritt 1e Übersicht (#297, DRP-020 bis -022; Schritt 1 damit gebaut), 1d
+Einstieg (#294, DRP-015 bis -019), 1c Türen (#295), CI-Fix #296.
 Gemergt am 22. und 23.10.: Schritt 0 (#288), Handoff und Bericht (#289), 1a (#290), 1b (#293),
 Daten N1/N2 (#292); BEF-179/-180 (#287). Auf `origin` liegt sonst nichts Ungemergtes.
 
@@ -22,6 +22,8 @@ BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederhers
 
 ## Bei Jannes
 
+- Handoff Übungen, Abschnitt 0: Dauer schätzen, „Später weiter“, Endseite, Trennung unter 23rem
+  (je mit Empfehlung; gebaut wird bis dahin die Fassung „bis dahin“).
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
@@ -45,4 +47,5 @@ BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederhers
 
 ## Letzte Session
 
-24.10.2026, Branch `ccr-c5a4a21f-ys0el3`: keine Migration, kein Seed. Lokal: `git pull`.
+24.10.2026, Branch `claude/new-session-27nejg`: nur Doku (Handoff Übungen), keine Migration, kein
+Seed. Lokal: `git pull`.
