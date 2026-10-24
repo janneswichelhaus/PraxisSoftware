@@ -282,8 +282,11 @@ export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
   },
   {
     // „Kein Kennwort“ und „Ein Kennwort brauchen Sie nicht“ sagen, dass es
-    // keins gibt - das darf stehen.
-    muster: /(?<![Kk]ein(en)? )\bKennw(o|ö)rt(e|er)?\b(?!-| brauchen Sie nicht)/,
+    // keins gibt - das darf stehen. Geprüft wird je Zeile und nur mit
+    // Lookahead: Ein Lookbehind ließe ältere Safari (vor iOS 16.4) dieses
+    // Modul nicht laden, und es geht mit der Anwendung aus.
+    muster:
+      /^(?!.*\b[Kk]ein(e|en)? Kennw)(?!.*Kennwort brauchen Sie nicht).*\bKennw(o|ö)rt(e|er)?\b(?!-)/,
     statt: 'Passkey bzw. PIN',
     quelle: 'Handoff 2026-10-22, Abschnitt 1',
     nurIn: [...PLATTFORM, ...TUEREN],

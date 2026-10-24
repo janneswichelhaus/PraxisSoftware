@@ -104,6 +104,14 @@ describe('Begriffe', () => {
     expect(proben.map((satz) => kennwort.muster.test(satz))).toEqual([false, false, true, true]);
   });
 
+  it('kommt ohne Lookbehind aus: ältere Safari laden das Modul sonst nicht', () => {
+    // `begriffe.ts` geht mit der Anwendung aus (BEREICHE, BEGRIFFE). Ein
+    // Lookbehind in einem der Muster ist dort ein Syntaxfehler vor iOS 16.4.
+    for (const regel of ABGELOESTE_BEGRIFFE) {
+      expect(regel.muster.source).not.toMatch(/\(\?<[=!]/);
+    }
+  });
+
   it('nennt für jedes abgelöste Wort, was stattdessen gilt, und woher', () => {
     for (const regel of ABGELOESTE_BEGRIFFE) {
       expect(regel.statt.length).toBeGreaterThan(0);

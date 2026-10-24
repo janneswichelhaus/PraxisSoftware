@@ -7061,11 +7061,11 @@ Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritt 1c (Türs
 
 Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritte 1c und 1d
 
-**Annahme.** Unter 23rem Fensterbreite (200 % Zoom am Telefon) hat die Plattform keine Reiterleiste; im Kopf steht der Zweitknopf „Menü“ und öffnet unter dem Kopf die vier Ziele und „Ich“ - Esc und ein Tipp daneben schließen, der Fokus geht zurück. Kopf und Inhalt haben 12 px Rand, der Kopf ist 60 statt 72 hoch (Zeichnung „Reiterleiste bei 200 %“). Die Grenze ist eine Media Query in rem: Sie greift beim Zoom, nicht bei „Sehr groß“. Fotos auf Türseiten und im Einstieg entfallen, der Fuß geführter Abläufe steht am Ende des Inhalts (1c, 1d).
+**Annahme.** Unter 23rem Fensterbreite (200 % Zoom am Telefon) hat die Plattform keine Reiterleiste; im Kopf steht der Zweitknopf „Menü“ und öffnet unter dem Kopf die vier Ziele und „Ich“ - Esc und ein Tipp daneben schließen, der Fokus geht zurück. Kopf und Inhalt haben 12 px Rand, der Kopf ist 60 statt 72 hoch (Zeichnung „Reiterleiste bei 200 %“). Die Grenze ist eine Media Query in rem: Sie greift beim Zoom, nicht bei „Sehr groß“. Fotos auf Türseiten und im Einstieg entfallen, der Fuß geführter Abläufe steht am Ende des Inhalts (1c, 1d). Die gezeichnete Abfrage der Einrichtung entfällt auch unter 48rem Höhe (Jannes 24.10.2026).
 
 **Begründung.** DR-112; Handoff 2026-10-22, Abschnitte 0, 3 und 4. Bei 188 px passen vier Ziele nicht nebeneinander, und zwei Reihen nähmen ein Drittel der Höhe.
 
-**Anker.** `Menue` in `src/features/platform/Navigation.tsx`; Rand in `geruestSpalte` (`geruestbreite.ts`).
+**Anker.** `Menue` in `src/features/platform/Navigation.tsx`; Rand in `geruestSpalte` (`geruestbreite.ts`); `gezeichnete-abfrage` in `AnmeldungEinrichten.tsx`.
 
 **Änderungspfad.** Andere Grenze an `max-[23rem]:`, ohne Menü die Leiste in zwei Reihen · Aufwand `klein`.
 
@@ -7107,7 +7107,7 @@ Praxisprozess · offen · 2026-10-22 · — · — · Wiedervorlage: —
 
 ### ANN-684 — Türseiten: oben und linksbündig, für Plattform und Praxis in derselben Hülle
 
-Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-24 · Jannes (PR #295, Frage 2) · — · Wiedervorlage: —
 
 **Annahme.** Jede Seite außerhalb des Rahmens (`Vollseite`: Anmeldung, Einladung, Einrichtung, Sperre, Fehler- und Ladezustände) steht oben statt senkrecht zentriert und linksbündig: Wortmarke 40 oben links, Titel in `text-plattform-titel` (Einladung `text-gruss`), bei einem Zustand ein Zeichen im Kreis 64, das Kleingedruckte am Ende. Das gilt auch dort, wo Beschäftigte die Seite sehen (gemeinsame Anmeldung, Sperre der Praxis); deren Wortlaute bleiben.
 
@@ -7155,15 +7155,15 @@ Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
 ### ANN-688 — „Praxis anrufen“ auf den Türen: gesperrter Zugang ja, Lesefrist vorbei und ungültige Einladung nein
 
-Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: Frage 1 in PR #292
+Praxisprozess · entschieden (Jannes) · 2026-10-24 · Jannes (PR #295, Fragen 3 und 5) · — · Wiedervorlage: —
 
-**Annahme.** Ohne lesbaren Zugang zeigt die Plattform den Kopf mit „Ich“ (auch unter 23rem, wo sonst „Menü“ steht), keine Reiterleiste, kein Menü und am Rechner keine Navigation; darunter die Markenfläche, Titel und Satz wie bisher und „Zu „Ich““. Ist der Zugang gesperrt und führt die Praxis eine Nummer, steht davor „Praxis anrufen“ als Hauptknopf; nach der Lesefrist nicht, dort ist „Ich“ der Weg. Eine ungültige, abgelaufene oder benutzte Einladung bekommt keinen Anruf, nur „Zur Anmeldung“.
+**Annahme.** Ohne lesbaren Zugang zeigt die Plattform nur „Ich“ im Kopf (keine Reiterleiste, kein Menü, keine Rechnernavigation), die Markenfläche, Titel, Satz und „Zu „Ich““. Ist der Zugang gesperrt und hat die Praxis eine Nummer, steht „Praxis anrufen“ als Hauptknopf davor; nach der Lesefrist und auf einer ungültigen Einladung nicht.
 
-**Begründung.** Handoff 2026-10-22, Abschnitt 5.2; ANN-691 („Gerade ein gesperrter Zugang braucht den Weg zur Praxis“). Vor der Anmeldung gibt es keinen Plattformkontext, aus dem die Nummer käme; sie am Code abzufragen, gäbe ungültigen Codes eine andere Auskunft als gültigen (ADR-023 Punkt 8).
+**Begründung.** Handoff 2026-10-22, Abschnitt 5.2; ANN-691. Vor der Anmeldung gibt es keinen Kontext mit Nummer, und eine Abfrage am Code gäbe ungültigen Codes eine andere Auskunft (ADR-023 Punkt 8).
 
-**Anker.** `OhneLesbarenZugang` in `src/features/platform/PlattformApp.tsx`; `ohneZiele` in `Kopf` (`Navigation.tsx`); Zustand `ungueltig` in `EinladungPage.tsx`.
+**Anker.** `OhneLesbarenZugang` in `PlattformApp.tsx`; `ohneZiele` in `Navigation.tsx`; Zustand `ungueltig` in `EinladungPage.tsx`.
 
-**Änderungspfad.** Den Anruf auch nach der Lesefrist: die Bedingung `gesperrt` streichen; für die Einladung eine öffentliche Nummer der Organisation ohne Code · Aufwand `klein` bzw. `mittel`.
+**Änderungspfad.** Anruf auch nach der Lesefrist: Bedingung `gesperrt` streichen; für die Einladung eine öffentliche Nummer ohne Code · Aufwand `klein` bzw. `mittel`.
 
 ### ANN-689 — PIN-Felder der Einrichtung ohne Passwortmanager (ADR-025 vor dem Handoff)
 

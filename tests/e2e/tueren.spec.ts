@@ -151,6 +151,34 @@ test('Zugang gesperrt: „Praxis anrufen“ bricht bei 200 % nie mitten im Wort 
   expect(await ueberlaeuft(page)).toBe(false);
 });
 
+test('Einrichtung: Passkey-Seite rollt nicht; die Abfrage entfällt unter 48rem Höhe (ANN-682)', async ({
+  page,
+}) => {
+  // Wie in Produktion, ohne „Später einrichten (nur Test-Umgebung)“.
+  const seite = '/tests/e2e/fixtures/anmeldung.html?seite=einrichten&ohne-spaeter';
+  const ueberstand = () =>
+    page.evaluate(() => {
+      const flaeche = [...document.querySelectorAll('[role="dialog"] [tabindex="0"]')].find(
+        (element) => element.scrollHeight > 0,
+      );
+      return flaeche ? flaeche.scrollHeight - flaeche.clientHeight : Number.NaN;
+    });
+  for (const hoehe of [812, 790, 768, 740, 667]) {
+    await page.setViewportSize({ width: 375, height: hoehe });
+    await page.goto(seite);
+    await expect(
+      page.getByRole('heading', { name: 'Mit Gesicht oder Finger anmelden' }),
+    ).toBeVisible();
+    const abfrage = page.getByTestId('gezeichnete-abfrage');
+    // `max-height: 48rem` schließt 768 px ein.
+    if (hoehe > 768) await expect(abfrage).toBeVisible();
+    else await expect(abfrage).toBeHidden();
+    // Keine Unterschrift unter der Zeichnung (Jannes 24.10.2026).
+    await expect(page.getByText(/So etwa sieht/)).toHaveCount(0);
+    expect(await ueberstand(), `${hoehe} px`).toBeLessThanOrEqual(0);
+  }
+});
+
 test.describe('Einladung bei offener Tastatur (ANN-681)', () => {
   test.use({ hasTouch: true, isMobile: true });
 

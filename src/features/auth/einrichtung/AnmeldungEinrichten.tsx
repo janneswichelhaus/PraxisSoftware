@@ -191,13 +191,16 @@ export function AnmeldungEinrichten({
         Ihr Telefon fragt gleich nach Gesicht, Finger oder Displaysperre. So melden Sie sich künftig
         an.
       </p>
-      {/* Die Abfrage des Telefons, nur gezeichnet; unter 23rem entfällt sie
-          wie ein Foto (ANN-682). */}
-      <figure className="max-[23rem]:hidden">
-        <div
-          aria-hidden="true"
-          className="bg-surface-sunken rounded-image flex justify-center px-4 py-4"
-        >
+      {/* Die Abfrage des Telefons, nur gezeichnet und ohne Unterschrift: Der
+          Satz darüber sagt dasselbe. Unter 23rem Breite und unter 48rem Höhe
+          entfällt sie wie ein Foto, damit die Seite nicht rollt (ANN-682,
+          Jannes 24.10.2026; gemessen rollte sie bis 47rem noch). */}
+      <div
+        data-testid="gezeichnete-abfrage"
+        aria-hidden="true"
+        className="max-[23rem]:hidden [@media(max-height:48rem)]:hidden"
+      >
+        <div className="bg-surface-sunken rounded-image flex justify-center px-4 py-4">
           <div className="bg-surface rounded-card flex w-60 max-w-full flex-col items-center gap-1.5 px-5 py-4 text-center">
             <svg
               viewBox="0 0 24 24"
@@ -219,10 +222,7 @@ export function AnmeldungEinrichten({
             </span>
           </div>
         </div>
-        <figcaption className="text-ink-muted mt-2 text-base">
-          So etwa sieht die Abfrage Ihres Telefons aus.
-        </figcaption>
-      </figure>
+      </div>
       <p className="text-ink flex items-start gap-3 text-base">
         <svg
           aria-hidden="true"
