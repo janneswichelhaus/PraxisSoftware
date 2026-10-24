@@ -8,7 +8,8 @@ import {
 } from 'react';
 import { bewegungErlaubt } from './bewegung';
 import { Button } from './Button';
-import { Dialogfenster, Fenstertitel, type Titelstufe } from './Dialogfenster';
+import { Dialogfenster, Fenstertitel } from './Dialogfenster';
+import type { Titelstufe } from './titelstufe';
 import { ProgressBar } from './ProgressBar';
 
 /**
