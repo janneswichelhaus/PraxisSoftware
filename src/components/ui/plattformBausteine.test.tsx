@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { Aufgabenkarte } from './Aufgabenkarte';
@@ -9,6 +9,7 @@ import { HeroKarte } from './HeroKarte';
 import { ListRow, ListRows } from './ListRow';
 import { Personenbild } from './Personenbild';
 import { Skelett, SkelettBereich } from './Skelett';
+import { Uebungsliste, Uebungszeile } from './Uebungszeile';
 import { buttonKlassen } from './buttonStile';
 
 /**
@@ -82,6 +83,129 @@ describe('HeroKarte', () => {
     );
     expect(container.querySelector('section.hero-erscheint')).not.toBeNull();
     expect(container.querySelector('[data-laufrad].laufrad-dreht')).not.toBeNull();
+  });
+
+  it('trägt als Vorschau der Einheit Angaben mit stummen Zeichen (Handoff 2026-10-24)', () => {
+    const { container } = zeige(
+      <HeroKarte
+        etikett="Heute ist Übungstag"
+        titel="Ihre Übungen für heute"
+        angaben={[
+          { schluessel: 'umfang', zeichen: ZEICHEN, text: '3 Übungen · etwa 10 Minuten' },
+          { schluessel: 'brauchen', zeichen: ZEICHEN, text: 'Sie brauchen: Theraband gelb' },
+        ]}
+        aktion={{ text: 'Übungen beginnen', to: '/p/uebungen/einheit/a1' }}
+        schmalOhneRad
+      />,
+    );
+    const karte = screen.getByRole('region', { name: 'Ihre Übungen für heute' });
+    const angaben = within(karte).getAllByRole('listitem');
+    expect(angaben.map((a) => a.textContent)).toEqual([
+      '3 Übungen · etwa 10 Minuten',
+      'Sie brauchen: Theraband gelb',
+    ]);
+    for (const angabe of angaben) {
+      expect(angabe.querySelector('.text-salbei')).toHaveAttribute('aria-hidden', 'true');
+    }
+    // Unter 23rem ohne Laufrad und innen 16 (Abschnitt 4).
+    expect(karte.className).toContain('max-[23rem]:p-4');
+    expect(container.querySelector('[data-laufrad]')!.getAttribute('class')).toContain(
+      'max-[23rem]:hidden',
+    );
+  });
+
+  it('bietet statt des Knopfs eine leise Aktion als Textlink an', () => {
+    zeige(
+      <HeroKarte
+        etikett="Heute geübt"
+        titel="Ihre Übungen für heute"
+        satz="Gespeichert. Anna Beispiel sieht Ihre Einheit beim nächsten Termin."
+        leiseAktion={{ text: 'Noch einmal üben', to: '/p/uebungen/einheit/a1' }}
+      />,
+    );
+    const link = screen.getByRole('link', { name: 'Noch einmal üben' });
+    expect(link).toHaveAttribute('href', '/p/uebungen/einheit/a1');
+    // Ein Textlink in Papier-Schrift mit Tippziel 44, kein Knopf.
+    expect(link.className).toContain('underline');
+    expect(link.className).toContain('min-h-11');
+    expect(link.className).not.toContain('bg-surface ');
+    // Ohne `schmalOhneRad` bleibt die Karte unter 23rem wie in Briefing 1.
+    expect(screen.getByRole('region').className).toContain('max-[23rem]:p-3');
+  });
+});
+
+describe('Uebungszeile', () => {
+  it('ist ganz ein Knopf mit Nummer, Name und Dosierung; Kreis und Pfeil stumm', async () => {
+    const tipp = vi.fn();
+    const { container } = zeige(
+      <Uebungsliste beschriftung="Die Übungen">
+        <Uebungszeile
+          nummer={1}
+          titel="Am Treppengeländer in die Hocke"
+          dosierung="3 Durchgänge · je 8 bis 12 Wiederholungen"
+          onClick={tipp}
+        />
+        <Uebungszeile
+          nummer={2}
+          titel="Becken anheben"
+          dosierung="2 Durchgänge"
+          erledigt
+          onClick={tipp}
+        />
+      </Uebungsliste>,
+    );
+    const erste = screen.getByRole('button', {
+      name: '1. Am Treppengeländer in die Hocke 3 Durchgänge · je 8 bis 12 Wiederholungen',
+    });
+    expect(erste.className).toContain('min-h-20');
+    // Der Name trennt nur unter 23rem an der Silbe (ANN-707).
+    expect(within(erste).getByText('Am Treppengeländer in die Hocke').className).toContain(
+      'trennen-schmal',
+    );
+    fireEvent.click(erste);
+    expect(tipp).toHaveBeenCalledTimes(1);
+    for (const stumm of container.querySelectorAll('button > [aria-hidden="true"], [data-pfeil]')) {
+      expect(stumm).toHaveAttribute('aria-hidden', 'true');
+    }
+    // Bei „Sehr groß“ und unter 23rem fällt der Pfeil weg.
+    expect(erste.querySelector('[data-pfeil]')!.getAttribute('class')).toContain(
+      '[[data-schrift=sehr-gross]_&]:hidden',
+    );
+  });
+
+  it('sagt heute Erledigtes mit Wort und Haken, nicht nur mit Farbe', () => {
+    zeige(
+      <Uebungsliste>
+        <Uebungszeile
+          nummer={2}
+          titel="Becken anheben"
+          dosierung="2 Durchgänge"
+          erledigt
+          onClick={() => undefined}
+        />
+      </Uebungsliste>,
+    );
+    const zeile = screen.getByRole('button', { name: /Becken anheben/ });
+    expect(zeile).toHaveTextContent('Heute erledigt');
+    const kreis = zeile.querySelector('span[aria-hidden="true"]')!;
+    expect(kreis.className).toContain('bg-accent');
+    expect(kreis.querySelector('svg')).not.toBeNull();
+  });
+
+  it('zeigt in der Lesefrist den Kreis vertieft', () => {
+    zeige(
+      <Uebungsliste>
+        <Uebungszeile
+          nummer={1}
+          titel="Becken anheben"
+          dosierung="2 Durchgänge"
+          beendet
+          onClick={() => undefined}
+        />
+      </Uebungsliste>,
+    );
+    const kreis = screen.getByRole('button').querySelector('span[aria-hidden="true"]')!;
+    expect(kreis.className).toContain('bg-surface-sunken');
   });
 });
 
@@ -249,6 +373,27 @@ describe('Barrierefreiheit der Plattform-Bausteine', () => {
           to="/p/gewohnheiten"
         />
         <EmptyState markenform title="Noch keine Termine" />
+        <HeroKarte
+          etikett="Heute geübt"
+          titel="Ihre Übungen"
+          angaben={[{ schluessel: 'umfang', zeichen: ZEICHEN, text: '3 Übungen' }]}
+          leiseAktion={{ text: 'Noch einmal üben', to: '/p/uebungen/einheit/a1' }}
+        />
+        <Uebungsliste beschriftung="Die Übungen">
+          <Uebungszeile
+            nummer={1}
+            titel="Becken anheben"
+            dosierung="2 Durchgänge"
+            onClick={() => undefined}
+          />
+          <Uebungszeile
+            nummer={2}
+            titel="Auf einem Bein stehen"
+            dosierung="2 Durchgänge"
+            erledigt
+            onClick={() => undefined}
+          />
+        </Uebungsliste>
         <SkelettBereich beschriftung="Übersicht wird geladen">
           <Skelett form="karte" />
         </SkelettBereich>
