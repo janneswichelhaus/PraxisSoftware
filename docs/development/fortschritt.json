@@ -1519,7 +1519,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-24",
           "nachweis": "DRP-020 bis DRP-022, Branch `ccr-c5a4a21f-ys0el3`, src/features/platform/Uebersicht.test.tsx, tests/e2e/plattform-barrierefreiheit.spec.ts",
-          "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 1e (Handoff 2026-10-22, Abschnitt 5.1); ANN-697 bis ANN-702, Fragen aus #297 wie empfohlen entschieden"
+          "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 1e (Handoff 2026-10-22, Abschnitt 5.1); ANN-697 bis ANN-702, Fragen aus #297 wie empfohlen entschieden; Schritt 1 abgenommen (Jannes, 24.10.2026)"
         }
       ]
     },
