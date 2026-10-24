@@ -20,6 +20,7 @@ import {
   uebungenHeute,
   type Aufgabenlage,
 } from './hauptsache';
+import { eigenerPlan } from './testdaten';
 
 /**
  * Die erste Aufgabe (ANN-692; Handoff 2026-10-22, Abschnitt 0): Reihenfolge
@@ -68,6 +69,9 @@ function checkins(
   };
 }
 
+/** 3 Durchgänge mit 10 bis 12 Wiederholungen, 30 s Pause: geschätzt 234 s (ANN-704). */
+const POSITION: PlanPosition = eigenerPlan().items[0]!;
+
 function plan(id: string, aenderungen: Partial<EigenerPlan> = {}): EigenerPlan {
   return {
     id,
@@ -85,7 +89,7 @@ function plan(id: string, aenderungen: Partial<EigenerPlan> = {}): EigenerPlan {
     can_choose_days: true,
     weekdays: [1, 3, 5],
     recent_sessions: [],
-    items: Array.from({ length: 4 }, () => ({}) as PlanPosition),
+    items: Array.from({ length: 4 }, (_, i) => ({ ...POSITION, position: i + 1 })),
     ...aenderungen,
   };
 }
@@ -125,9 +129,11 @@ describe('ersteAufgabe (ANN-692)', () => {
 
   it('nimmt die Übungen, wenn heute ein Übungstag ist und noch nicht geübt wurde', () => {
     const ohneVorher = { boegen: [bogen('abgeschlossen')], checkins: null };
+    // Vier Übungen zu 234 s sind 15,6 Minuten: „etwa 15 Minuten“.
     expect(ersteAufgabe(lage(ohneVorher))).toEqual({
       art: 'uebungen',
       uebungen: 4,
+      minuten: 15,
       planId: '00000000-0000-4000-8000-0000000000a1',
     });
     // Zwei Pläne heute: zu den Übungen, nicht in eine Einheit.
@@ -137,11 +143,11 @@ describe('ersteAufgabe (ANN-692)', () => {
           ...ohneVorher,
           plaene: plaene(
             plan('00000000-0000-4000-8000-0000000000a1'),
-            plan('00000000-0000-4000-8000-0000000000a2', { items: [{} as PlanPosition] }),
+            plan('00000000-0000-4000-8000-0000000000a2', { items: [POSITION] }),
           ),
         }),
       ),
-    ).toEqual({ art: 'uebungen', uebungen: 5, planId: null });
+    ).toEqual({ art: 'uebungen', uebungen: 5, minuten: 20, planId: null });
     // Kein Übungstag, heute schon geübt oder gesperrt: keine Aufgabe.
     for (const anders of [
       { weekdays: [1, 3] },
@@ -198,10 +204,12 @@ describe('handlung', () => {
       text: 'Check-in beantworten',
       pfad: '/p/checkin',
     });
-    expect(handlung({ art: 'uebungen', uebungen: 4, planId: 'a1' }).pfad).toBe(
+    expect(handlung({ art: 'uebungen', uebungen: 4, minuten: 15, planId: 'a1' }).pfad).toBe(
       '/p/uebungen/einheit/a1',
     );
-    expect(handlung({ art: 'uebungen', uebungen: 5, planId: null }).pfad).toBe('/p/uebungen');
+    expect(handlung({ art: 'uebungen', uebungen: 5, minuten: null, planId: null }).pfad).toBe(
+      '/p/uebungen',
+    );
   });
 });
 
@@ -300,6 +308,7 @@ describe('uebungenHeute', () => {
     expect(uebungenHeute(plaene(plan('a1')))).toEqual({
       art: 'uebungen',
       uebungen: 4,
+      minuten: 15,
       planId: 'a1',
     });
     expect(uebungenHeute(plaene(plan('a1', { weekdays: [1] })))).toBeNull();

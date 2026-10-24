@@ -7408,3 +7408,51 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 **Anker.** `useRuhigerStand` in `src/features/platform/Durchfuehrungsfuss.tsx`.
 
 **Änderungspfad.** Wartezeit dort ändern oder streichen · Aufwand `klein`.
+
+### ANN-720 — Übungen: „Weiter bei“ und „Heute erledigt“ aus `open_session.sets`
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Vorschau nennt die erste Übung mit offenem Durchgang („Weiter bei Übung 2: …“), und eine Übungszeile heißt „Heute erledigt“, wenn alle ihre Durchgänge in der offenen Einheit gehakt sind. Nach dem Beenden liefert der Server keine Haken mehr; dann sagt nur die Vorschau „Heute geübt“.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0 und 10 (Prüffrage); `recent_sessions` kennt nur Tag und Ende, keine Haken.
+
+**Anker.** `heuteErledigt` in `src/features/platform/vorschau.ts`.
+
+**Änderungspfad.** Haken der beendeten Einheit in die Projektion · Aufwand `mittel` (Pfad A).
+
+### ANN-722 — Übungen: Heute zuerst – die Vorschau der Einheit nach Lage
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Der Reiter beginnt mit der Vorschau als einzige Hero-Karte: Lage aus Plan und heutigem Tag, eine offene Einheit vor „Heute geübt“, bei mehreren Plänen der erste mit heutigem Übungstag; der Knopf heißt „Übungen beginnen“. Ein Plan, der erst beginnt, trägt „Ab 12. Oktober“ und keinen Knopf.
+
+**Begründung.** Handoff 2026-10-24, Abschnitte 0 und 3 (DR-127, DR-129); den künftigen Plan nennt der Handoff nicht.
+
+**Anker.** `lageDesPlans` in `src/features/platform/vorschau.ts`.
+
+**Änderungspfad.** Lagen dort ändern · Aufwand `klein`.
+
+### ANN-725 — Übungen: „Sie brauchen“ aus Hilfsmitteln und Lasten ohne Doppelte
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Vorschau nennt alle `equipment`-Einträge und Lasten (`load`) der Übungen in Planreihenfolge; was ohne Groß- und Kleinschreibung gleich lautet, steht einmal da („Theraband gelb“ als Hilfsmittel und als Last).
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0; dort steht nicht, was als doppelt gilt.
+
+**Anker.** `wasManBraucht` in `src/features/platform/vorschau.ts`.
+
+**Änderungspfad.** Vergleich dort ändern · Aufwand `klein`.
+
+### ANN-727 — Übersicht: Übungskarte mit Umfang und Dauer, ohne Netz dahinter
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Übungskarte der Übersicht sagt „3 Übungen · etwa 10 Minuten“ wie die Vorschau; ohne Netz folgt „Geht auch ohne Netz.“ dahinter, statt den Umfang zu ersetzen (Briefing 1).
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 9 Punkt 3; die Vorschau im Reiter nennt ohne Netz beides.
+
+**Anker.** `uebungenText` in `src/features/platform/Uebersicht.tsx`.
+
+**Änderungspfad.** Ohne Netz nur den Satz · Aufwand `klein`.

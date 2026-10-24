@@ -57,6 +57,7 @@ import { useMarkenmoment } from './markenmoment';
 import { THEMA_NAME } from './nachrichtentexte';
 import { paketStand } from './paketbedingungen';
 import { BENACHRICHTIGUNGEN_ANKER, PLATTFORM_PFAD, bereichParameter } from './pfade';
+import { umfangSatz, umfangText } from './vorschau';
 import { zahlungsstand } from './zahlungsstand';
 import {
   datum,
@@ -325,19 +326,18 @@ export function Uebersicht({
           schluessel: 'uebungen',
           zeichen: ZEICHEN.uebungen,
           titel: eigen ? 'Ihre Übungen für heute' : 'Übungen für heute',
-          satz: uebungenText(uebungen.uebungen, verbunden, !eigen),
+          satz: uebungenText(uebungen, verbunden),
           to: nurLesen ? p('/uebungen') : mit(handlung(uebungen).pfad),
         });
       }
     } else {
       const zuHause = (plaene.data?.plans ?? []).filter((plan) => plan.status === 'assigned');
       if (zuHause.length > 0) {
-        const anzahl = zuHause.reduce((summe, plan) => summe + plan.items.length, 0);
         heute.push({
           schluessel: 'plan',
           zeichen: ZEICHEN.uebungen,
           titel: eigen ? 'Ihr Plan für zu Hause' : 'Plan für zu Hause',
-          satz: anzahl === 1 ? 'Eine Übung' : `${anzahl} Übungen`,
+          satz: umfangText(zuHause.flatMap((plan) => plan.items)),
           to: p('/uebungen'),
         });
       }
@@ -729,7 +729,7 @@ function Hauptsachekarte({
       return (
         <HeroKarte
           titel={fuer ? `Übungen für ${fuer}` : 'Ihre Übungen für heute'}
-          satz={uebungenText(a.uebungen, verbunden, Boolean(fuer))}
+          satz={uebungenText(a, verbunden)}
           aktion={aktion}
           markenmoment={markenmoment}
         />
@@ -846,11 +846,18 @@ function fragenText(anzahl: number): string {
   return anzahl === 1 ? 'Eine kurze Frage' : `${anzahl} kurze Fragen`;
 }
 
-/** Die Pläne liegen auf dem Gerät (`PlattformAblage`): Ohne Netz geht es trotzdem. */
-function uebungenText(anzahl: number, verbunden: boolean, vertretung = false): string {
-  if (!verbunden) return 'Geht auch ohne Netz.';
-  const plan = vertretung ? 'dem Plan' : 'Ihrem Plan';
-  return anzahl === 1 ? `Eine Übung aus ${plan}` : `${anzahl} Übungen aus ${plan}`;
+/**
+ * „3 Übungen · etwa 10 Minuten“ wie die Vorschau im Reiter (Handoff
+ * 2026-10-24, Abschnitt 9 Punkt 3; ANN-704). Die Pläne liegen auf dem Gerät
+ * (`PlattformAblage`): Ohne Netz geht es trotzdem, und die Karte sagt es -
+ * ANN-727: hinter dem Umfang, nicht an seiner Stelle.
+ */
+function uebungenText(
+  aufgabe: { uebungen: number; minuten: number | null },
+  verbunden: boolean,
+): string {
+  const umfang = umfangSatz(aufgabe.uebungen, aufgabe.minuten);
+  return verbunden ? umfang : `${umfang}. Geht auch ohne Netz.`;
 }
 
 /**
