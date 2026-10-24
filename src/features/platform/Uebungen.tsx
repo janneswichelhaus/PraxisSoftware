@@ -1,63 +1,98 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { useIstVerbunden } from '@/app/verbindung';
+import { Buehne } from '@/components/ui/Buehne';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Chip } from '@/components/ui/Chip';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { HakenSymbol } from '@/components/ui/HakenSymbol';
+import { HeroKarte } from '@/components/ui/HeroKarte';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
-import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { Schrittliste } from '@/components/ui/Schrittliste';
 import { Section } from '@/components/ui/Section';
+import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Textlink } from '@/components/ui/Textlink';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
+import { Uebungsliste, Uebungszeile } from '@/components/ui/Uebungszeile';
+import { Wochenleiste } from '@/components/ui/Wochenleiste';
+import { useFenstertitelId } from '@/components/ui/fenstertitel';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { Planblatt } from '@/features/exercise-plans/Planblatt';
 import { haeufigkeit } from '@/features/exercise-plans/dosierung';
-import { formatDate } from '@/lib/datum';
-import { plaeneSchluessel, type EigenerPlan, type PlanPosition, type Plattformzugang } from './api';
+import { plaeneSchluessel, termineSchluessel, type EigenerPlan, type Plattformzugang } from './api';
 import { useNurLesen, usePlattformApi } from './einsicht';
 import {
   DurchfuehrungKontext,
   abgelegteZugaenge,
   abweisungGelesen,
   useWarteschlange,
+  type Ablageplan,
 } from './ablage';
 import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
+import { Dosierungsmarken } from './Dosierungsmarken';
+import { inLesefrist, naechsterTermin } from './hauptsache';
+import { hauptzahl } from './hauptzahl';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
-import { WOCHENTAGE, tageText } from './uebungstage';
-import { Uebungsinhalt, type DosisZumAblesen } from './Uebungsinhalt';
+import { WOCHENTAGE, isoWochentag, tageText, wochenleisteSatz } from './uebungstage';
+import {
+  ersteOffeneUebung,
+  heuteErledigt,
+  lageDesPlans,
+  naechsterUebungstag,
+  planDerVorschau,
+  umfangText,
+  wasManBraucht,
+} from './vorschau';
+import { datum, letzterTag, tagUndMonat } from './zeit';
+
+type Position = Ablageplan['items'][number];
 
 /**
- * Reiter „Übungen" bzw. „Training" (UEB-009, DSN-001 4.1 und 5): „Was mache
- * ich heute?"
+ * Reiter „Übungen" bzw. „Training" (UEB-009, DSN-001 4.1 und 5; Handoff
+ * 2026-10-24, Abschnitt 5.1): „Was mache ich heute?"
+ *
+ * Heute zuerst: Oben steht die Vorschau der Einheit als die eine Hero-Karte
+ * der Seite - Lage, Umfang mit geschätzter Dauer (ANN-704), was man braucht
+ * und der eine Knopf. Darunter je Plan Laufzeit, Übungstage, die Übungen als
+ * Zeilen und „Zum Plan“. Am Rechner stehen Plan links und Vorschau rechts;
+ * im Baum steht die Vorschau zuerst, damit sie am Telefon und für
+ * Vorlesesoftware oben ist (ANN-724).
  *
  * Der Heimübungsplan gehört zur Behandlung und kostet nichts extra (§4.6);
  * im Training gehört der Plan zum Paket (§4.10). Gezeigt wird, was der Server
  * über den Zugang liefert: die zugewiesenen Pläne, sonst der zuletzt beendete
- * nur zum Lesen und Mitnehmen (ANN-304). Je Übung Name und Dosierung,
- * auf Tipp Dosierung als Kacheln, Anleitung in Schritten und Hinweis (ANN-539) -
- * keine Punktzahl, keine Serie, kein Lob aus der
- * Software (DSN-001 4.1).
+ * nur zum Lesen und Mitnehmen (ANN-304). Keine Punktzahl, keine Serie, kein
+ * Lob aus der Software (DSN-001 4.1).
  */
 export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
   const api = usePlattformApi();
   const [suche] = useSearchParams();
   const gespeichert = useEinmaligeRueckmeldung('gespeichert');
+  const verbunden = useIstVerbunden();
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
     queryFn: () => api.ladePlaene(zugang.access_id),
   });
+  // ANN-726 (N1): Wer die Einheit sieht, ist die Person des nächsten Termins
+  // - ohne Termin oder ohne Antwort „Ihre Therapeut:in“. Dieselbe Abfrage wie
+  // auf der Übersicht; ihr Fehler hält die Seite nicht auf.
+  const termine = useQuery({
+    queryKey: termineSchluessel(zugang.access_id),
+    queryFn: () => api.ladeTermine(zugang.access_id),
+  });
   const training = zugang.relationship_kind === 'training';
   const bereich = bereichParameter(suche);
+  const name = naechsterTermin(termine.data ?? [])?.staff_name ?? null;
 
   return (
     <>
       <PageHeader title={training ? 'Training' : 'Übungen'} />
       {gespeichert === '1' ? (
-        // Eine Bestätigung, kein Lob (DSN-001 4.1).
+        // Eine Bestätigung, kein Lob (DSN-001 4.1). Mit der Endseite der
+        // Durchführung (Schritt 2b) kommt niemand mehr mit diesem Merker her.
         <Rueckmeldung className="mb-4">Ihre Einheit ist gespeichert.</Rueckmeldung>
       ) : gespeichert === 'geraet' ? (
         // TRK-008: ehrlich, wo sie liegt (ADR-024 Punkt 8).
@@ -67,34 +102,41 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
         </Statusmeldung>
       ) : null}
       <Wartehinweis zugangId={zugang.access_id} />
-      {plaene.isPending ? (
-        <LoadingState label="Ihre Übungen werden geladen …" inKarte />
-      ) : plaene.data === undefined ? (
-        <OhneVerbindung
-          zugangId={zugang.access_id}
-          bereich={bereich}
-          onErneut={() => void plaene.refetch()}
-        />
-      ) : plaene.data.plans.length === 0 ? (
-        <EmptyState
-          inKarte
-          title="Noch kein Plan"
-          description={
-            training
-              ? 'Ihre Trainingsbetreuung stellt Ihnen hier Ihren Plan zusammen.'
-              : 'Ihre Therapeut:in stellt Ihnen hier Übungen zusammen.'
-          }
-        />
-      ) : (
-        plaene.data.plans.map((plan) => (
-          <PlanAbschnitt
-            key={plan.id}
+      {plaene.data !== undefined ? (
+        plaene.data.plans.length === 0 ? (
+          <div className="[[data-rechner]_&]:max-w-spalte">
+            <EmptyState
+              inKarte
+              markenform
+              title="Noch kein Plan"
+              description={
+                training
+                  ? 'Ihre Trainingsbetreuung stellt Ihnen hier Ihren Plan zusammen.'
+                  : `${name ?? 'Ihre Therapeut:in'} stellt Ihnen hier Übungen zusammen.`
+              }
+            />
+          </div>
+        ) : (
+          <Reiter
             zugang={zugang}
-            plan={plan}
+            plaene={plaene.data.plans}
             heute={plaene.data.today}
             bereich={bereich}
+            name={name}
+            verbunden={verbunden}
           />
-        ))
+        )
+      ) : plaene.isError || plaene.fetchStatus === 'paused' ? (
+        // BEF-197: ohne Antwort der Plan vom Gerät - ohne Netz sagt es die
+        // Verbindungszeile, bei Verbindung eine eigene Meldung.
+        <PlanVomGeraet
+          zugang={zugang}
+          bereich={bereich}
+          verbunden={verbunden}
+          onErneut={() => plaene.refetch()}
+        />
+      ) : (
+        <Ladezustand />
       )}
     </>
   );
@@ -103,7 +145,7 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
 /**
  * TRK-008 (ADR-024 Punkt 8): Was noch auf dem Gerät wartet und was der Server
  * abgewiesen hat - bis nichts mehr wartet. Ohne Ablage (Tests des Gerüsts)
- * steht hier nichts.
+ * steht hier nichts. Über der Vorschau, wie der Handoff es will (5.1).
  */
 function Wartehinweis({ zugangId }: { zugangId: string }) {
   const traeger = useContext(DurchfuehrungKontext);
@@ -117,11 +159,11 @@ function Wartestand({ besitzer, zugangId }: { besitzer: string; zugangId: string
   return (
     <>
       {wartend > 0 ? (
-        <p className="text-ink-muted mb-4" data-testid="wartehinweis">
+        <Statusmeldung ton="neutral" className="mb-4">
           {wartend === 1
             ? 'Eine Einheit liegt noch auf diesem Gerät und ist noch nicht übertragen.'
             : `${wartend} Einheiten liegen noch auf diesem Gerät und sind noch nicht übertragen.`}
-        </p>
+        </Statusmeldung>
       ) : null}
       {stand.abgewiesen.map((a) => (
         <div key={a.einheitId} className="mb-4 flex flex-wrap items-center gap-x-3">
@@ -141,166 +183,431 @@ function Wartestand({ besitzer, zugangId }: { besitzer: string; zugangId: string
 }
 
 /**
- * TRK-008: Ohne Verbindung die Pläne vom letzten Laden zum Üben (ADR-024
- * Punkt 5) - nur die Durchführung, sonst nichts.
+ * Vorschau und Pläne nebeneinander (Handoff 2026-10-24, Abschnitt 4; ANN-724):
+ * am Rechner der Plan links, die Vorschau rechts, 340 bis 460 breit - so breit
+ * sie werden kann, ohne dass der Plan unter 1024 px zu schmal wird. Im Baum
+ * steht die Vorschau zuerst; das Raster stellt sie nach rechts. Am Telefon
+ * untereinander, die Vorschau oben; zwischen 640 und 1023 in `max-w-formular`.
  */
-function OhneVerbindung({
-  zugangId,
-  bereich,
-  onErneut,
-}: {
-  zugangId: string;
-  bereich: string;
-  onErneut: () => void;
-}) {
-  const traeger = useContext(DurchfuehrungKontext);
-  const abgelegt = useQuery({
-    queryKey: ['abgelegte-plaene', traeger?.besitzer, zugangId],
-    queryFn: async () =>
-      traeger
-        ? ((await abgelegteZugaenge(traeger.besitzer)).find((z) => z.zugangId === zugangId)
-            ?.plaene ?? [])
-        : [],
-    gcTime: 0,
-  });
-  const fehler = (
-    <ErrorState
-      title="Ihre Übungen konnten nicht geladen werden."
-      description={VERBINDUNG_PRUEFEN}
-      onErneut={onErneut}
-    />
+function Spalten({ vorschau, children }: { vorschau: ReactNode; children: ReactNode }) {
+  return (
+    <div className="max-w-formular flex flex-col gap-10 [[data-rechner]_&]:grid [[data-rechner]_&]:max-w-none [[data-rechner]_&]:grid-cols-[minmax(0,1fr)_minmax(21.25rem,28.75rem)] [[data-rechner]_&]:items-start [[data-rechner]_&]:gap-12">
+      <div className="min-w-0 [[data-rechner]_&]:col-start-2 [[data-rechner]_&]:row-start-1">
+        {vorschau}
+      </div>
+      <div className="min-w-0 [[data-rechner]_&]:col-start-1 [[data-rechner]_&]:row-start-1">
+        {children}
+      </div>
+    </div>
   );
-  if (!abgelegt.data || abgelegt.data.length === 0) return fehler;
+}
+
+/** Der Reiter mit Antwort des Servers: Vorschau, dann je Plan ein Abschnitt. */
+function Reiter({
+  zugang,
+  plaene,
+  heute,
+  bereich,
+  name,
+  verbunden,
+}: {
+  zugang: Plattformzugang;
+  plaene: EigenerPlan[];
+  heute: string;
+  bereich: string;
+  name: string | null;
+  verbunden: boolean;
+}) {
+  const erster = planDerVorschau(plaene, heute);
+  const reihe = [erster, ...plaene.filter((p) => p !== erster)];
+  const lesefrist = inLesefrist(zugang);
   return (
     <>
-      <Statusmeldung ton="neutral">
-        Ohne Verbindung. Üben können Sie trotzdem – mit Ihrem Plan vom letzten Laden. Die Haken
-        bleiben auf dem Gerät, bis Verbindung besteht.
-      </Statusmeldung>
-      {abgelegt.data.map((plan) => (
-        <Section key={plan.id} titel={plan.title}>
-          <ButtonLink
-            className="w-full"
-            to={`${PLATTFORM_PFAD}/uebungen/einheit/${plan.id}${bereich ? `?${bereich}` : ''}`}
-          >
-            Jetzt üben
-          </ButtonLink>
-        </Section>
-      ))}
-      <Button variant="secondary" className="mt-8 w-full" onClick={onErneut}>
-        Erneut laden
-      </Button>
+      {lesefrist && zugang.read_until ? (
+        // Wortlaut der Übersicht (Briefing 1); der Satz am Plan entfällt.
+        <Statusmeldung ton="warnung" className="mb-6">
+          {`Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(letzterTag(zugang.read_until))} lesen.`}
+        </Statusmeldung>
+      ) : null}
+      <Spalten
+        vorschau={
+          <Vorschau
+            zugang={zugang}
+            plan={erster}
+            heute={heute}
+            bereich={bereich}
+            name={name}
+            verbunden={verbunden}
+            mehrere={plaene.length > 1}
+          />
+        }
+      >
+        {reihe.map((plan, i) => (
+          <div key={plan.id} className={i === 0 ? undefined : 'border-line mt-10 border-t pt-10'}>
+            <PlanAbschnitt
+              zugang={zugang}
+              plan={plan}
+              heute={heute}
+              bereich={bereich}
+              verbunden={verbunden}
+              mitKnopf={i > 0}
+            />
+          </div>
+        ))}
+      </Spalten>
     </>
   );
 }
 
+function einheitPfad(planId: string, bereich: string): string {
+  return `${PLATTFORM_PFAD}/uebungen/einheit/${planId}${bereich ? `?${bereich}` : ''}`;
+}
+
+function blattPfad(planId: string, bereich: string): string {
+  return `${PLATTFORM_PFAD}/uebungen/blatt/${planId}${bereich ? `?${bereich}` : ''}`;
+}
+
+/** „Montag“ - der Tag einer nahen Woche, ohne Datum. */
+function wochentagName(tag: string): string {
+  return WOCHENTAGE.find((w) => w.nummer === isoWochentag(tag))?.lang ?? '';
+}
+
 /**
- * Ein Plan: Laufzeit, Übungstage, „Jetzt üben“ als der eine Hauptknopf, dann
- * die Übungen als Zeilen mit Name und Dosierung. Eine Zeile öffnet die Übung
- * mit Dosierung und Anleitung (ANN-539).
+ * Die Vorschau der Einheit (Handoff 2026-10-24, Abschnitt 3): Etikett und
+ * Titel nach der Lage des Plans (`lageDesPlans`), darunter die Angaben und
+ * der eine Knopf - „Übungen beginnen“, „Weiter üben“, nach dem Üben leise
+ * „Noch einmal üben“, in der Lesefrist „Plan als PDF sichern“.
+ */
+function Vorschau({
+  zugang,
+  plan,
+  heute,
+  bereich,
+  name,
+  verbunden,
+  mehrere,
+}: {
+  zugang: Plattformzugang;
+  plan: EigenerPlan;
+  heute: string;
+  bereich: string;
+  name: string | null;
+  verbunden: boolean;
+  mehrere: boolean;
+}) {
+  const nurLesen = useNurLesen();
+  const training = zugang.relationship_kind === 'training';
+  const lage = lageDesPlans(plan, heute);
+  const ueben = plan.can_exercise && !nurLesen && plan.items.length > 0;
+
+  if (lage === 'lesefrist') {
+    return (
+      <HeroKarte
+        schmalOhneRad
+        etikett="Plan beendet"
+        titel="Ihr Plan zum Mitnehmen"
+        satz={`${plan.title}${plan.ended_on ? `, beendet am ${tagUndMonat(plan.ended_on)}` : ''}. Als PDF bleibt er bei Ihnen.`}
+        aktion={{ text: 'Plan als PDF sichern', to: blattPfad(plan.id, bereich) }}
+      />
+    );
+  }
+
+  const naechster = naechsterUebungstag(plan, heute);
+  const fuerHeute = lage === 'heute' || lage === 'begonnen' || lage === 'geuebt';
+  const titel = training
+    ? 'Ihr Plan für zu Hause'
+    : fuerHeute
+      ? 'Ihre Übungen für heute'
+      : 'Ihre Übungen';
+  const etikett =
+    lage === 'heute' ? (
+      'Heute ist Übungstag'
+    ) : lage === 'begonnen' ? (
+      'Heute begonnen'
+    ) : lage === 'geuebt' ? (
+      <span className="inline-flex items-center gap-1.5">
+        <HakenSymbol className="size-5" />
+        Heute geübt
+      </span>
+    ) : lage === 'ab' && plan.runs_from ? (
+      `Ab ${tagUndMonat(plan.runs_from)}`
+    ) : lage === 'anderer-tag' && naechster ? (
+      `Nächster Übungstag: ${wochentagName(naechster)}`
+    ) : (
+      'Ihr Plan'
+    );
+
+  if (lage === 'geuebt') {
+    const wer = name ?? (training ? 'Ihre Trainingsbetreuung' : 'Ihre Therapeut:in');
+    return (
+      <HeroKarte
+        schmalOhneRad
+        etikett={etikett}
+        titel={titel}
+        satz={`Gespeichert. ${wer} sieht Ihre Einheit beim nächsten Termin.`}
+        angaben={
+          naechster
+            ? [
+                {
+                  schluessel: 'naechster',
+                  zeichen: ZEICHEN.kalender,
+                  text: `Nächster Übungstag: ${wochentagName(naechster)}`,
+                },
+              ]
+            : undefined
+        }
+        leiseAktion={
+          ueben ? { text: 'Noch einmal üben', to: einheitPfad(plan.id, bereich) } : undefined
+        }
+      />
+    );
+  }
+
+  const offen = lage === 'begonnen' ? ersteOffeneUebung(plan) : null;
+  return (
+    <HeroKarte
+      schmalOhneRad
+      etikett={etikett}
+      titel={titel}
+      angaben={angabenDerEinheit({
+        items: plan.items,
+        planname: mehrere ? plan.title : null,
+        offen,
+        ohneNetz: !verbunden && ueben,
+      })}
+      aktion={
+        ueben
+          ? {
+              text: lage === 'begonnen' ? 'Weiter üben' : 'Übungen beginnen',
+              to: einheitPfad(plan.id, bereich),
+            }
+          : undefined
+      }
+    />
+  );
+}
+
+/**
+ * Die Angaben einer Einheit: wo es weitergeht, Umfang mit Dauer, was man
+ * braucht, ohne Netz „Geht auch ohne Netz.“ (Briefing 1).
+ */
+function angabenDerEinheit({
+  items,
+  planname,
+  offen,
+  ohneNetz,
+}: {
+  items: readonly Position[];
+  planname: string | null;
+  offen: Position | null;
+  ohneNetz: boolean;
+}) {
+  const brauchen = wasManBraucht(items);
+  const umfang = umfangText(items);
+  return [
+    offen
+      ? {
+          schluessel: 'weiter',
+          zeichen: ZEICHEN.weiter,
+          text: `Weiter bei Übung ${offen.position}: ${offen.variant_lay_name}`,
+        }
+      : null,
+    {
+      schluessel: 'umfang',
+      zeichen: ZEICHEN.uhr,
+      text: planname ? `${planname} · ${umfang}` : umfang,
+    },
+    brauchen.length > 0
+      ? {
+          schluessel: 'brauchen',
+          zeichen: ZEICHEN.tasche,
+          text: `Sie brauchen: ${brauchen.join(', ')}`,
+        }
+      : null,
+    ohneNetz
+      ? { schluessel: 'netz', zeichen: ZEICHEN.telefon, text: 'Geht auch ohne Netz.' }
+      : null,
+  ].filter((a) => a !== null);
+}
+
+/**
+ * Ein Plan (Abschnitt 5.1): der Name als Abschnittstitel, Laufzeit und Stand
+ * in Worten, die Übungstage, die Übungen und „Zum Plan“. Ein weiterer Plan
+ * trägt seinen eigenen Knopf als Zweitknopf - der Hauptknopf steht in der
+ * Vorschau.
  */
 function PlanAbschnitt({
   zugang,
   plan,
   heute,
   bereich,
+  verbunden,
+  mitKnopf,
 }: {
   zugang: Plattformzugang;
   plan: EigenerPlan;
   heute: string;
   bereich: string;
+  verbunden: boolean;
+  mitKnopf: boolean;
 }) {
-  const [offen, setOffen] = useState<PlanPosition | null>(null);
   // E-001: In der Einsicht werden keine Tage gewählt, nicht geübt, nicht gefragt.
   const nurLesen = useNurLesen();
-  const zuletzt = plan.recent_sessions[0]?.performed_on;
+  const beendet = plan.status === 'ended';
+  const mitLeiste = !nurLesen && !beendet && plan.can_choose_days;
+  const zeile = [
+    laufzeitText(plan, heute),
+    // Befund B9: der Tag der Zuweisung - eine neue Fassung ist so als
+    // aktualisierter Plan zu erkennen.
+    !beendet && plan.assigned_on ? `Stand ${tagUndMonat(plan.assigned_on)}` : null,
+    // Die Häufigkeit steht sonst im Satz der Wochenleiste.
+    !mitLeiste && !beendet && plan.sessions_per_week ? haeufigkeit(plan.sessions_per_week) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
   return (
-    <Section titel={plan.title}>
-      <p className="text-ink-muted">
-        {[
-          // Befund B9: der Tag der Zuweisung - eine neue Fassung ist so als
-          // aktualisierter Plan zu erkennen.
-          plan.assigned_on ? `Stand ${formatDate(plan.assigned_on)}` : null,
-          laufzeitText(plan, heute),
-          plan.sessions_per_week ? haeufigkeit(plan.sessions_per_week) : null,
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-      </p>
-      {zuletzt ? (
-        <p className="text-ink-muted">
-          Zuletzt geübt: {zuletzt === heute ? 'heute' : formatDate(zuletzt)}
-        </p>
-      ) : null}
-      {/* ANN-307: Die Tage kommen in der Einsicht leer - sie sieht nur die
-          Person. Dort fehlen sie ohne Satz; die Leiste sagt „nur lesen“. */}
-      {nurLesen ? null : plan.can_choose_days ? (
-        <Uebungstage zugang={zugang} plan={plan} />
-      ) : plan.weekdays.length > 0 ? (
-        <p className="text-ink-muted">Meine Übungstage: {tageText(plan.weekdays)}</p>
-      ) : null}
-      {plan.can_exercise && !nurLesen && plan.items.length > 0 ? (
-        // UEB-010: die Durchführungsansicht (IDEA-ORG-003).
-        <div className="mt-4">
-          <ButtonLink
-            className="w-full"
-            to={`${PLATTFORM_PFAD}/uebungen/einheit/${plan.id}${bereich ? `?${bereich}` : ''}`}
-          >
-            {plan.open_session ? 'Weiter üben' : 'Jetzt üben'}
-          </ButtonLink>
-        </div>
-      ) : null}
-      {plan.status === 'ended' ? (
-        <Statusmeldung ton="neutral" className="mt-3">
-          Dieser Plan ist beendet. Sie können ihn hier noch lesen und als PDF mitnehmen.
-        </Statusmeldung>
-      ) : null}
-      <ListRows className="mt-4">
-        {plan.items.map((p) => (
-          <ListRow
-            key={p.id}
-            onClick={() => setOffen(p)}
-            titel={`${p.position}. ${p.variant_lay_name}`}
-            meta={dosierungKurz(p)}
-          />
-        ))}
-      </ListRows>
-      {offen ? <Uebungsfenster position={offen} onSchliessen={() => setOffen(null)} /> : null}
-      <div className="mt-4 flex flex-col items-start gap-2">
-        <ButtonLink
-          variant="secondary"
-          to={`${PLATTFORM_PFAD}/uebungen/blatt/${plan.id}${bereich ? `?${bereich}` : ''}`}
-        >
-          Plan als PDF
-        </ButtonLink>
-        {plan.status === 'assigned' && !nurLesen ? (
-          // KOM-001: eine Frage mit dem Plan als Bezug (IDEA-KOM-001).
-          <Textlink
-            alleinstehend
-            to={`${PLATTFORM_PFAD}/nachrichten/neu?${new URLSearchParams([
-              ...new URLSearchParams(bereich).entries(),
-              ['plan', plan.id],
-            ]).toString()}`}
-          >
-            Frage zu diesem Plan stellen →
-          </Textlink>
+    <Section titel={plan.title} trennen>
+      <div className="flex flex-col gap-6">
+        <p className="text-ink-muted">{zeile}</p>
+        {/* ANN-307: Die Tage kommen in der Einsicht leer - sie sieht nur die
+            Person. Dort fehlen sie ohne Satz; die Leiste sagt „nur lesen“. */}
+        {mitLeiste ? (
+          <Uebungstage zugang={zugang} plan={plan} verbunden={verbunden} />
+        ) : !nurLesen && !beendet && plan.weekdays.length > 0 ? (
+          <p className="text-ink-muted">Ihre Übungstage: {tageText(plan.weekdays)}</p>
         ) : null}
+        <UebungenDesPlans plan={plan} beendet={beendet} />
+        {mitKnopf && plan.can_exercise && !nurLesen && plan.items.length > 0 ? (
+          <ButtonLink variant="secondary" className="w-full" to={einheitPfad(plan.id, bereich)}>
+            {plan.open_session ? 'Weiter üben' : 'Übungen beginnen'}
+          </ButtonLink>
+        ) : null}
+        {beendet ? null : (
+          <ZumPlan
+            zeilen={[
+              {
+                text: 'Plan als PDF',
+                zeichen: ZEICHEN.dokument,
+                to: blattPfad(plan.id, bereich),
+              },
+              // KOM-001: eine Frage mit dem Plan als Bezug (IDEA-KOM-001).
+              plan.status === 'assigned' && !nurLesen
+                ? {
+                    text: 'Frage zu diesem Plan',
+                    zeichen: ZEICHEN.frage,
+                    to: `${PLATTFORM_PFAD}/nachrichten/neu?${new URLSearchParams([
+                      ...new URLSearchParams(bereich).entries(),
+                      ['plan', plan.id],
+                    ]).toString()}`,
+                  }
+                : null,
+            ]}
+          />
+        )}
       </div>
     </Section>
   );
 }
 
-function laufzeitText(plan: EigenerPlan, heute: string): string {
-  if (plan.status === 'ended') return `Beendet am ${formatDate(plan.ended_on)}`;
-  if (plan.runs_from && plan.runs_from > heute) return `Ab ${formatDate(plan.runs_from)}`;
-  return `Bis ${formatDate(plan.runs_until)}`;
+/**
+ * „Bis 29. Oktober“, „Ab 3. November“, „Beendet am 15. Oktober · zum
+ * Nachlesen“ - in Worten wie die Übersicht, das Jahr nur, wenn es nicht das
+ * laufende ist.
+ */
+function laufzeitText(plan: EigenerPlan, heute: string): string | null {
+  if (plan.status === 'ended') {
+    return plan.ended_on ? `Beendet am ${tagUndMonat(plan.ended_on)} · zum Nachlesen` : null;
+  }
+  if (plan.runs_from && plan.runs_from > heute) return `Ab ${tagUndMonat(plan.runs_from)}`;
+  return plan.runs_until ? `Bis ${tagUndMonat(plan.runs_until)}` : null;
+}
+
+/**
+ * „Die Übungen“ als Zeilen; eine Zeile öffnet die Übung zum Nachlesen. Heute
+ * Erledigtes nach `open_session.sets` (ANN-720). Für Pläne vom Server und
+ * vom Gerät gleich.
+ */
+function UebungenDesPlans({
+  plan,
+  beendet = false,
+}: {
+  plan: Pick<Ablageplan, 'items' | 'open_session'>;
+  beendet?: boolean;
+}) {
+  const [offen, setOffen] = useState<Position | null>(null);
+  const items = [...plan.items].sort((a, b) => a.position - b.position);
+  return (
+    <div>
+      <Zwischentitel ebene={3}>Die Übungen</Zwischentitel>
+      <Uebungsliste>
+        {items.map((p) => (
+          <Uebungszeile
+            key={p.id}
+            nummer={p.position}
+            titel={p.variant_lay_name}
+            dosierung={dosierungKurz(p)}
+            erledigt={heuteErledigt(p, plan.open_session)}
+            beendet={beendet}
+            onClick={() => setOffen(p)}
+          />
+        ))}
+      </Uebungsliste>
+      {offen ? (
+        <Uebungsfenster
+          position={offen}
+          nummer={items.indexOf(offen) + 1}
+          anzahl={items.length}
+          onSchliessen={() => setOffen(null)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * „Zum Plan“ (Abschnitt 5.1): Plan als PDF und die Frage zum Plan als Liste
+ * mit Rahmen, je 60 hoch mit Zeichen und Pfeil; am Rechner als Textlinks mit
+ * Zeichen in einer Reihe.
+ */
+function ZumPlan({
+  zeilen,
+}: {
+  zeilen: readonly ({ text: string; zeichen: ReactNode; to: string } | null)[];
+}) {
+  const sichtbar = zeilen.filter((z) => z !== null);
+  return (
+    <div>
+      <Zwischentitel ebene={3}>Zum Plan</Zwischentitel>
+      <ul className="rounded-card border-line bg-surface overflow-hidden border [[data-rechner]_&]:flex [[data-rechner]_&]:flex-wrap [[data-rechner]_&]:gap-x-8 [[data-rechner]_&]:border-0 [[data-rechner]_&]:bg-transparent">
+        {sichtbar.map((z) => (
+          <li key={z.text} className="border-line not-first:border-t [[data-rechner]_&]:border-0">
+            <Link
+              to={z.to}
+              className="text-ink hover:bg-surface-sunken active:bg-surface-sunken ease-druck [[data-rechner]_&]:text-accent flex min-h-15 items-center gap-3 px-4 py-2 font-semibold transition-colors duration-120 focus-visible:-outline-offset-2 max-[23rem]:gap-2 max-[23rem]:px-3 [[data-rechner]_&]:min-h-11 [[data-rechner]_&]:px-0 [[data-rechner]_&]:underline [[data-rechner]_&]:underline-offset-3 [[data-rechner]_&]:hover:bg-transparent"
+            >
+              <span aria-hidden="true" className="text-accent inline-flex shrink-0 [&_svg]:size-6">
+                {z.zeichen}
+              </span>
+              <span className="min-w-0 grow">{z.text}</span>
+              <span
+                aria-hidden="true"
+                className="text-ink-muted inline-flex shrink-0 max-[23rem]:hidden [&_svg]:size-6 [[data-rechner]_&]:hidden"
+              >
+                {ZEICHEN.pfeil}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 /**
  * „3 Durchgänge · je 10 bis 12 Wiederholungen" - die Zeile unter dem Namen;
- * mit „je Seite“, sobald die Fachperson es einträgt (UEB-012, `DosisZumAblesen`).
+ * mit „je Seite“, sobald die Fachperson es einträgt (UEB-012).
  */
-function dosierungKurz(p: PlanPosition & Pick<DosisZumAblesen, 'per_side'>): string {
+function dosierungKurz(p: Position): string {
   const durchgaenge = `${p.sets} ${p.sets === 1 ? 'Durchgang' : 'Durchgänge'}`;
   const seite = p.per_side ? ' · je Seite' : '';
   if (p.reps_min !== null && p.reps_max !== null) {
@@ -312,34 +619,369 @@ function dosierungKurz(p: PlanPosition & Pick<DosisZumAblesen, 'per_side'>): str
 }
 
 /**
- * Eine Übung zum Nachlesen (DESIGN.md Lücke 9.10): die Dosierung als
- * Kacheln, dann Anleitung, Hilfsmittel und Hinweis (ANN-539). Die Schrift der
- * Plattform gilt auch im Fenster, das außerhalb des Gerüsts gezeichnet wird.
+ * Eine Übung zum Nachlesen (Abschnitt 5.2): ein Fenster über die ganze Höhe
+ * mit eigenem Kopf („Übung 2 von 3“, „Schließen“), darin dieselbe Bühne wie
+ * die Durchführung - Name und Hauptzahl -, die Marken, Anleitung, was man
+ * braucht und der Hinweis, ohne Durchgänge. Das Fenster heißt nach dem Namen
+ * auf der Bühne. Die Schrift der Plattform gilt auch hier, obwohl das Fenster
+ * außerhalb des Gerüsts gezeichnet wird.
  */
 function Uebungsfenster({
   position,
+  nummer,
+  anzahl,
   onSchliessen,
 }: {
-  position: PlanPosition;
+  position: Position;
+  nummer: number;
+  anzahl: number;
   onSchliessen: () => void;
 }) {
   return (
-    <Dialogfenster titel={position.variant_lay_name} onSchliessen={onSchliessen}>
-      {/* Der Fokus steht am Anfang der Übung, nicht auf „Schließen“ am Ende:
-          Sonst öffnete das Fenster am Telefon unten, und Name und Dosierung lägen
-          außerhalb des Blicks. */}
-      <div className="plattform-schrift">
+    <Dialogfenster
+      titel={position.variant_lay_name}
+      onSchliessen={onSchliessen}
+      vollbild
+      titelImInhalt
+      ohneKopfzeile
+    >
+      <Fensterinhalt
+        position={position}
+        nummer={nummer}
+        anzahl={anzahl}
+        onSchliessen={onSchliessen}
+      />
+    </Dialogfenster>
+  );
+}
+
+function Fensterinhalt({
+  position,
+  nummer,
+  anzahl,
+  onSchliessen,
+}: {
+  position: Position;
+  nummer: number;
+  anzahl: number;
+  onSchliessen: () => void;
+}) {
+  const titelId = useFenstertitelId();
+  const { zahl, einheit } = hauptzahl(position);
+  return (
+    <div className="plattform-schrift flex min-h-0 flex-1 flex-col">
+      <div className="border-line flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-3 border-b py-2 pr-2 pl-5">
+        <p className="text-ink-muted">
+          Übung {nummer} von {anzahl}
+        </p>
+        <Button type="button" variant="quiet" onClick={onSchliessen}>
+          <span className="inline-flex items-center gap-2">
+            Schließen
+            <svg
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              aria-hidden="true"
+              focusable="false"
+              className="size-5"
+            >
+              <path d="M5 5l10 10M15 5L5 15" />
+            </svg>
+          </span>
+        </Button>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-5 pb-8">
+        {/* Der Fokus steht am Anfang der Übung, nicht auf „Schließen“: So
+            liegen Name und Zahl im Blick, und Vorlesesoftware beginnt dort. */}
         <span data-autofocus tabIndex={-1} className="block outline-none" />
-        <Uebungsinhalt position={position} />
-        <div className="mt-6">
+        <div className="flex flex-col gap-6">
+          <Buehne
+            name={position.variant_lay_name}
+            zahl={zahl}
+            einheit={einheit}
+            ebene={2}
+            titelId={titelId}
+          />
+          <Dosierungsmarken dosis={position} />
+          {position.instruction ? (
+            <div>
+              <Zwischentitel ebene={3}>So geht’s</Zwischentitel>
+              <Schrittliste text={position.instruction} />
+            </div>
+          ) : null}
+          {position.equipment.length > 0 || position.note ? (
+            <div className="flex flex-col gap-2">
+              {position.equipment.length > 0 ? (
+                <p className="text-ink">
+                  <span className="font-semibold">Sie brauchen: </span>
+                  {position.equipment.join(', ')}
+                </p>
+              ) : null}
+              {position.note ? (
+                <p className="text-ink">
+                  <span className="font-semibold">Hinweis: </span>
+                  {position.note}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <Button type="button" variant="secondary" className="w-full" onClick={onSchliessen}>
             Schließen
           </Button>
         </div>
       </div>
-    </Dialogfenster>
+    </div>
   );
 }
+
+/**
+ * „Ihre Übungstage" (UEB-011, ANN-307) als `Wochenleiste`: Die Person legt
+ * selbst fest, an welchen Tagen sie übt; die Tage erscheinen unter „Termine"
+ * neben den Terminen. Jeder Tipp wird sofort gespeichert und bei einem Fehler
+ * zurückgenommen (ANN-305). Die Praxis sieht die Tage nicht. ANN-723: Ohne
+ * Netz ist die Leiste gesperrt, statt einen Tipp zurückspringen zu lassen.
+ */
+function Uebungstage({
+  zugang,
+  plan,
+  verbunden,
+}: {
+  zugang: Plattformzugang;
+  plan: EigenerPlan;
+  verbunden: boolean;
+}) {
+  const api = usePlattformApi();
+  const queryClient = useQueryClient();
+  const [tage, setTage] = useState<number[]>(plan.weekdays);
+  const speichern = useMutation({
+    // Der Reihe nach, damit der letzte Tipp auch der letzte Stand am Server ist.
+    scope: { id: `tage-${plan.id}` },
+    mutationFn: (neu: number[]) => api.uebungstageSetzen(zugang.access_id, plan.id, neu),
+    onMutate: (neu) => {
+      const vorher = tage;
+      setTage(neu);
+      return { vorher };
+    },
+    onError: (_e, _neu, kontext) => {
+      if (kontext) setTage(kontext.vorher);
+    },
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: plaeneSchluessel(zugang.access_id) }),
+  });
+  return (
+    <div>
+      <Wochenleiste
+        titel="Ihre Übungstage"
+        wochentage={WOCHENTAGE}
+        tage={tage}
+        gesperrt={!verbunden}
+        satz={wochenleisteSatz(tage.length, plan.sessions_per_week, !verbunden)}
+        onUmschalten={(tag) =>
+          speichern.mutate(
+            tage.includes(tag)
+              ? tage.filter((t) => t !== tag)
+              : [...tage, tag].sort((a, b) => a - b),
+          )
+        }
+      />
+      {speichern.isError ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {speichern.error.message}
+        </Statusmeldung>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Ohne Antwort des Servers (Abschnitt 5.6, BEF-197): die Pläne vom letzten
+ * Laden zum Üben (ADR-024 Punkt 5). Die Ablage trägt nur die Felder der
+ * Durchführung - Vorschau und Übungen, keine Übungstage, keine Laufzeit, kein
+ * PDF. Ohne Netz spricht die Verbindungszeile; bei Verbindung sagt eine
+ * Meldung, dass die Praxis gerade nicht antwortet, mit dem Tag des Plans
+ * (ANN-721). Liegt nichts auf dem Gerät, der Fehler mit „Erneut versuchen“.
+ */
+function PlanVomGeraet({
+  zugang,
+  bereich,
+  verbunden,
+  onErneut,
+}: {
+  zugang: Plattformzugang;
+  bereich: string;
+  verbunden: boolean;
+  onErneut: () => unknown;
+}) {
+  const traeger = useContext(DurchfuehrungKontext);
+  const abgelegt = useQuery({
+    queryKey: ['abgelegte-plaene', traeger?.besitzer, zugang.access_id],
+    queryFn: async () =>
+      traeger
+        ? ((await abgelegteZugaenge(traeger.besitzer)).find(
+            (z) => z.zugangId === zugang.access_id,
+          ) ?? null)
+        : null,
+    gcTime: 0,
+    // Die Ablage liegt auf dem Gerät: Sie wird auch ohne Netz gelesen.
+    networkMode: 'always',
+  });
+  if (abgelegt.isPending) return <Ladezustand />;
+  const ablage = abgelegt.data;
+  if (!ablage || ablage.plaene.length === 0) {
+    return (
+      <div className="[[data-rechner]_&]:max-w-spalte">
+        <ErrorState
+          title="Ihre Übungen lassen sich gerade nicht laden."
+          description="Prüfen Sie die Verbindung oder versuchen Sie es gleich noch einmal."
+          onErneut={onErneut}
+        />
+      </div>
+    );
+  }
+  const training = zugang.relationship_kind === 'training';
+  const [erster, ...weitere] = ablage.plaene as [Ablageplan, ...Ablageplan[]];
+  return (
+    <>
+      {verbunden ? (
+        <div className="mb-6 flex flex-col items-start gap-1">
+          <Statusmeldung ton="warnung">
+            {`Die Praxis antwortet gerade nicht. Üben können Sie trotzdem – mit Ihrem Plan vom ${tagUndMonat(ablage.tag)}.`}
+          </Statusmeldung>
+          <Button type="button" variant="quiet" onClick={() => void onErneut()}>
+            Erneut versuchen
+          </Button>
+        </div>
+      ) : null}
+      <Spalten
+        vorschau={
+          <HeroKarte
+            schmalOhneRad
+            etikett="Ihr Plan auf diesem Gerät"
+            titel={training ? 'Ihr Plan für zu Hause' : 'Ihre Übungen'}
+            angaben={angabenDerEinheit({
+              items: erster.items,
+              planname: weitere.length > 0 ? erster.title : null,
+              offen: ersteOffeneUebung(erster),
+              ohneNetz: false,
+            })}
+            aktion={{
+              text: erster.open_session ? 'Weiter üben' : 'Übungen beginnen',
+              to: einheitPfad(erster.id, bereich),
+            }}
+          />
+        }
+      >
+        {ablage.plaene.map((plan, i) => (
+          <div key={plan.id} className={i === 0 ? undefined : 'border-line mt-10 border-t pt-10'}>
+            <Section titel={plan.title} trennen>
+              <div className="flex flex-col gap-6">
+                <p className="text-ink-muted">
+                  {verbunden
+                    ? 'Übungstage und Laufzeit sehen Sie wieder, sobald die Praxis antwortet.'
+                    : 'Übungstage und Laufzeit sehen Sie wieder mit Verbindung.'}
+                </p>
+                <UebungenDesPlans plan={plan} />
+                {i > 0 ? (
+                  <ButtonLink
+                    variant="secondary"
+                    className="w-full"
+                    to={einheitPfad(plan.id, bereich)}
+                  >
+                    {plan.open_session ? 'Weiter üben' : 'Übungen beginnen'}
+                  </ButtonLink>
+                ) : null}
+              </div>
+            </Section>
+          </div>
+        ))}
+      </Spalten>
+    </>
+  );
+}
+
+/**
+ * Das Skelett des Reiters (Abschnitt 5.6): Der Seitentitel steht schon; die
+ * Vorschau 300 hoch, der Plan mit zwei Zeilen, Leiste und Liste - am Rechner
+ * in zwei Spalten wie die Seite. Für Vorlesesoftware „Übungen werden
+ * geladen“.
+ */
+function Ladezustand() {
+  return (
+    <SkelettBereich beschriftung="Übungen werden geladen">
+      <Spalten vorschau={<Skelett form="vorschau" />}>
+        <span className="flex flex-col gap-4">
+          <Skelett form="titel" className="w-60 max-w-full" />
+          <Skelett form="zeile" className="w-50 max-w-full" />
+          <Skelett form="leiste" className="mt-2" />
+          <Skelett form="karte" className="mt-2 min-h-60" />
+        </span>
+      </Spalten>
+    </SkelettBereich>
+  );
+}
+
+const SVG = {
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  focusable: 'false',
+} as const;
+
+/** Zeichen der Angaben und Zeilen (Raster 24, Strich 2), für Vorlesesoftware ausgeblendet. */
+const ZEICHEN = {
+  uhr: (
+    <svg {...SVG}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  ),
+  tasche: (
+    <svg {...SVG}>
+      <path d="M9 7a3 3 0 0 1 6 0" />
+      <path d="M6.5 9h11l1.5 11h-14z" />
+    </svg>
+  ),
+  weiter: (
+    <svg {...SVG}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M10.5 8.5l4 3.5-4 3.5z" />
+    </svg>
+  ),
+  telefon: (
+    <svg {...SVG}>
+      <rect x="7" y="3" width="10" height="18" rx="2" />
+      <path d="M11 18h2" />
+    </svg>
+  ),
+  kalender: (
+    <svg {...SVG}>
+      <rect x="4" y="5" width="16" height="15" rx="2" />
+      <path d="M4 10h16M9 3v4M15 3v4" />
+    </svg>
+  ),
+  dokument: (
+    <svg {...SVG}>
+      <path d="M7 3h7l4 4v14H7z" />
+      <path d="M14 3v4h4M10 12h5M10 16h5" />
+    </svg>
+  ),
+  frage: (
+    <svg {...SVG}>
+      <path d="M5 5h14v10H10l-4 4v-4H5z" />
+      <path d="M10 9.5a2 2 0 1 1 2.5 1.9c-.3.1-.5.4-.5.7v.4M12 14h.01" />
+    </svg>
+  ),
+  pfeil: (
+    <svg {...SVG}>
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  ),
+};
 
 /**
  * Der Plan als Blatt auf der Plattform (UEB-009, ANN-303): derselbe Baustein
@@ -405,78 +1047,5 @@ export function PlanblattPlattform({
         </>
       )}
     </>
-  );
-}
-
-/**
- * „Meine Übungstage" (UEB-011, ANN-307): Die Person legt selbst fest, an
- * welchen Tagen sie übt; die Tage erscheinen unter „Termine" neben den
- * Terminen. Jeder Tipp wird sofort gespeichert und ohne Verbindung
- * zurückgenommen (ANN-305). Die Praxis sieht die Tage nicht.
- */
-function Uebungstage({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan }) {
-  const api = usePlattformApi();
-  const queryClient = useQueryClient();
-  const [tage, setTage] = useState<number[]>(plan.weekdays);
-  const speichern = useMutation({
-    // Der Reihe nach, damit der letzte Tipp auch der letzte Stand am Server ist.
-    scope: { id: `tage-${plan.id}` },
-    mutationFn: (neu: number[]) => api.uebungstageSetzen(zugang.access_id, plan.id, neu),
-    onMutate: (neu) => {
-      const vorher = tage;
-      setTage(neu);
-      return { vorher };
-    },
-    onError: (_e, _neu, kontext) => {
-      if (kontext) setTage(kontext.vorher);
-    },
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: plaeneSchluessel(zugang.access_id) }),
-  });
-  const gruppe = `tage-${plan.id}`;
-  return (
-    <div className="mt-4">
-      <p id={gruppe} className="font-medium">
-        Meine Übungstage
-        {plan.sessions_per_week ? (
-          <span className="text-ink-muted font-normal">
-            {' '}
-            – empfohlen: {plan.sessions_per_week === 1
-              ? 'einmal'
-              : `${plan.sessions_per_week}-mal`}{' '}
-            pro Woche
-          </span>
-        ) : null}
-      </p>
-      <div role="group" aria-labelledby={gruppe} className="mt-2 flex flex-wrap gap-2">
-        {WOCHENTAGE.map((w) => {
-          const an = tage.includes(w.nummer);
-          return (
-            // Ein Schalter je Tag (`Chip` mit `gewaehlt`, DESIGN.md „Umschalter“):
-            // gewählt mit Haken auf der Akzentfläche, der volle Name für
-            // Vorlesesoftware.
-            <Chip
-              key={w.nummer}
-              gewaehlt={an}
-              onClick={() =>
-                speichern.mutate(
-                  an
-                    ? tage.filter((t) => t !== w.nummer)
-                    : [...tage, w.nummer].sort((a, b) => a - b),
-                )
-              }
-            >
-              <span aria-hidden="true">{w.kurz}</span>
-              <span className="sr-only">{w.lang}</span>
-            </Chip>
-          );
-        })}
-      </div>
-      {speichern.isError ? (
-        <Statusmeldung ton="fehler" className="mt-2">
-          {speichern.error.message}
-        </Statusmeldung>
-      ) : null}
-    </div>
   );
 }

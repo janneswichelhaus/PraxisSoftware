@@ -45,8 +45,9 @@ unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
 Wahl, die sofort gilt; Zustand als Wort) · `Wahlreihe` mit `sofort` (Knöpfe statt Radios: Pfeiltasten
 wählen nichts, etwa eine Einwilligung) · `Zwischentitel` mit `stufe="abschnitt"` (Kartentitel 22) ·
 `Vertretungsband` („Sie handeln für …“ im Gerüst und im Einstieg). Übungen: `Buehne`,
-`Dosierungsmarken`, `Hakenzeile`, `Wochenleiste`, `Durchfuehrungskopf`/`-fuss`, `Abschlussseite`.
-Prüfseiten `tests/e2e/fixtures/plattform-bausteine.html` und `plattform-uebungsbausteine.html`.
+`Dosierungsmarken`, `Hakenzeile`, `Wochenleiste`, `Uebungszeile`, `Durchfuehrungskopf`/`-fuss`,
+`Abschlussseite`. Prüfseiten `tests/e2e/fixtures/plattform-bausteine.html` und
+`plattform-uebungsbausteine.html`.
 
 ## Seitentypen und Gerüst
 
@@ -60,15 +61,15 @@ unter 23rem 12 und alles in einer Rollfläche, die Frage ohne Rollen (ein Bild d
 4:3). Ein Titel mit einem Wort über elf Zeichen steht unter 23rem in 22 (ANN-696). Abschaltbar; so
 der Einstieg, DRP-EPIC-005.
 
-**Gerüst** (`src/features/platform/Navigation.tsx`): Kopf 72 mit Wortmarke 28 und „Ich“ mit
-Initialen (bis N1 das Zeichen der Person). Reiterleiste in drei Stufen (ANN-679): eine Reihe,
-solange die Wörter passen - gemessen, nicht aus der Einstellung gelesen -, sonst zwei; unter 23rem
-der `Menueknopf` im Kopf (ANN-682). Bei offener Tastatur tritt sie zurück (ANN-676, ANN-681). Ab
-1024 px Navigation im Kopf, Inhalt `max-w-inhalt`, jede Seite einspaltig in `max-w-spalte` außer
-der Übersicht (ab 900 px Inhaltsbreite zwei Spalten); die Einsicht der Praxis behält das Telefon
-(`data-rechner`, nicht `lg:`). Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12; Titel in rem
-(ANN-683). Kein Startbild auf Plattformwegen, stattdessen Markenmoment B beim ersten Erscheinen der
-Übersicht je Tab (ANN-680). Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit Daten.
+**Gerüst** (`src/features/platform/Navigation.tsx`): Kopf 72 mit Wortmarke 28 und „Ich“.
+Reiterleiste in drei Stufen (ANN-679): eine Reihe, solange die Wörter passen - gemessen, nicht aus
+der Einstellung gelesen -, sonst zwei; unter 23rem der `Menueknopf` im Kopf (ANN-682). Bei offener
+Tastatur tritt sie zurück (ANN-676, ANN-681). Ab 1024 px Navigation im Kopf, Inhalt `max-w-inhalt`,
+jede Seite einspaltig in `max-w-spalte` außer der Übersicht (ab 900 px Inhaltsbreite zwei Spalten)
+und den Übungen (ANN-724); die Einsicht der Praxis behält das Telefon (`data-rechner`, nicht `lg:`).
+Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12; Titel in rem (ANN-683). Kein
+Startbild auf Plattformwegen, stattdessen Markenmoment B beim ersten Erscheinen der Übersicht je Tab
+(ANN-680). Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit Daten.
 
 ## Begriffe
 

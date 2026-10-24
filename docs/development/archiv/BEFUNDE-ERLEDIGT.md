@@ -1908,3 +1908,15 @@ eingeklappt.
 **Beobachtung.** Der Löschlauf schreibt fällige Dateien ins Löschjournal, `delete_patient_file` aber nicht. Nach einer Wiederherstellung käme eine einzeln gelöschte Datei zurück, etwa ein falsch zugeordnetes Foto. Die Anhänge an Rückfragen (`app.remove_message_attachments`) und seit FLT-EPIC-001 die Fotos am Rad journalisieren jede Löschung.
 
 **Erwartet.** Ein Journaleintrag `patient_files` in `delete_patient_file`, dazu ein Test mit Wiederherstellung wie in `fleet-photos.test.ts` („Löschjournal“). Pfad A (Löschpfad).
+
+### BEF-197 — Übungen: ein Serverfehler heißt „Ohne Verbindung“
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Übungen |
+| Quelle  | Ist-Bilder für Briefing 2 (lokaler Stack, `platform_exercise_plans` mit 500) |
+| Status  | erledigt in DRP-EPIC-009 (Schritt 2c, DRP-042): bei Verbindung „Die Praxis antwortet gerade nicht …“ mit dem Plan vom Gerät, ohne Netz spricht die Verbindungszeile (ANN-721) |
+| Berührt | `OhneVerbindung` in `src/features/platform/Uebungen.tsx` |
+
+**Beobachtung.** Scheitert das Laden der Pläne bei bestehender Verbindung und liegt ein Plan auf dem Gerät, steht „Ohne Verbindung. Üben können Sie trotzdem …“ mit „Erneut laden“. Ohne Plan auf dem Gerät steht richtig „Ihre Übungen konnten nicht geladen werden.“ **Erwartet.** Der Satz unterscheidet „keine Verbindung“ von „die Praxis antwortet gerade nicht“; das Üben mit dem Plan vom letzten Laden bleibt in beiden Fällen.

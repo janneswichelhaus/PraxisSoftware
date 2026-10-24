@@ -7421,6 +7421,18 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Haken der beendeten Einheit in die Projektion · Aufwand `mittel` (Pfad A).
 
+### ANN-721 — Übungen: Praxis antwortet nicht – Plan vom Gerät mit dem Tag des Ladens
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Antwortet der Server bei Verbindung nicht, sagt eine Warnung „Die Praxis antwortet gerade nicht. Üben können Sie trotzdem – mit Ihrem Plan vom 24. Oktober.“; ohne Netz spricht nur die Verbindungszeile. Die Uhrzeit fehlt, weil die Ablage je Zugang nur den Tag trägt.
+
+**Begründung.** BEF-197, Handoff 2026-10-24, Abschnitt 5.6 („sonst ohne Zeit“); die Feldliste der Ablage bleibt unverändert (ADR-024 Punkt 5).
+
+**Anker.** `PlanVomGeraet` in `src/features/platform/Uebungen.tsx`.
+
+**Änderungspfad.** Zeitpunkt des Ladens in die Ablage · Aufwand `mittel` (Review ADR-024).
+
 ### ANN-722 — Übungen: Heute zuerst – die Vorschau der Einheit nach Lage
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
@@ -7433,6 +7445,30 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Lagen dort ändern · Aufwand `klein`.
 
+### ANN-723 — Übungstage: ohne Netz gesperrt statt zurückspringend
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Meldet das Gerät keine Verbindung, ist die Wochenleiste gesperrt (gestrichelt) und der Satz sagt „Ändern geht wieder mit Verbindung.“ Ein Tipp, der gespeichert werden soll und zurückspringt, entfällt.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0; Quelle ist `navigator.onLine` (ANN-015).
+
+**Anker.** `Uebungstage` in `src/features/platform/Uebungen.tsx`.
+
+**Änderungspfad.** `gesperrt` dort weglassen · Aufwand `klein`.
+
+### ANN-724 — Reiter „Übungen“ am Rechner zweispaltig
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Ab 1024 px steht der Plan links und die Vorschau rechts, 340 bis 460 px breit (ein Raster statt der Flex-Reihe des Handoffs, damit sie bei 1280 px die 460 erreicht und bei 1024 px zwei Spalten bleiben); im Baum steht die Vorschau zuerst. Abweichung von PLATTFORM.md („jede Seite einspaltig“).
+
+**Begründung.** Handoff 2026-10-24, Abschnitte 0 und 4 (im Briefing verlangt).
+
+**Anker.** `Spalten` in `src/features/platform/Uebungen.tsx` (dazu `breit` in `PlattformApp.tsx`).
+
+**Änderungspfad.** `Spalten` einspaltig, `breit` nur für die Übersicht · Aufwand `klein`.
+
 ### ANN-725 — Übungen: „Sie brauchen“ aus Hilfsmitteln und Lasten ohne Doppelte
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
@@ -7444,6 +7480,18 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 **Anker.** `wasManBraucht` in `src/features/platform/vorschau.ts`.
 
 **Änderungspfad.** Vergleich dort ändern · Aufwand `klein`.
+
+### ANN-726 — Übungen: wer den Plan macht und die Einheit sieht (N1)
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** „{Name} sieht Ihre Einheit beim nächsten Termin“ und „{Name} stellt Ihnen hier Übungen zusammen“ nennen die Person des nächsten bestätigten Termins; ohne Termin „Ihre Therapeut:in“, im Training „Ihre Trainingsbetreuung“.
+
+**Begründung.** Handoff 2026-10-24, Abschnitte 3 und 5.1 (N1); wie der Fragebogen der Übersicht (`naechster.staff_name`). Der Plan selbst trägt keinen Namen.
+
+**Anker.** `name` in `Uebungen` (`src/features/platform/Uebungen.tsx`).
+
+**Änderungspfad.** Name aus dem Plan in die Projektion · Aufwand `mittel` (Pfad A).
 
 ### ANN-727 — Übersicht: Übungskarte mit Umfang und Dauer, ohne Netz dahinter
 

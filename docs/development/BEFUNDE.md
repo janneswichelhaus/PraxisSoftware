@@ -567,22 +567,10 @@ Marke vorsieht.
 | Datum   | 2026-10-24 |
 | Bereich | Plattform, Übungen und Durchführung |
 | Quelle  | Ist-Bilder für Briefing 2 (Prüfseite `plattform-uebungen.html`, 375 und 188 px) |
-| Status  | offen; wird mit Schritt 2 des Design-Reviews neu gefasst |
+| Status  | Reiter erledigt in DRP-EPIC-009 (Schritt 2c: Plan- und Übungsnamen mit `trennen-schmal`, „Zum Plan“ ohne Pfeil unter 23rem); offen für die Durchführung, die Schritt 2b umstellt |
 | Berührt | `src/features/platform/Uebungen.tsx`, `Durchfuehrung.tsx` (Titel neben „Abbrechen“, Zeilen der Durchgänge) |
 
 **Beobachtung.** Bei 375 px bricht der Titel „Am Treppengeländer festhalten …“ neben „Abbrechen“ als „Treppengelände|r“. Bei 188 px (200 %) brechen „Totalendoprothe|se“, „Wiederholunge|n“ und „Durchgan|g“ in den Haken-Zeilen. Ursache ist `overflow-wrap: anywhere` in schmalen Spalten. **Erwartet.** Wie in PLATTFORM.md: nie mitten im Wort, lange Wörter ab zwölf Buchstaben mit Trennstrich (DR-114).
-
-### BEF-197 — Übungen: ein Serverfehler heißt „Ohne Verbindung“
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-24 |
-| Bereich | Plattform, Übungen |
-| Quelle  | Ist-Bilder für Briefing 2 (lokaler Stack, `platform_exercise_plans` mit 500) |
-| Status  | offen; wird mit Schritt 2 des Design-Reviews neu gefasst |
-| Berührt | `OhneVerbindung` in `src/features/platform/Uebungen.tsx` |
-
-**Beobachtung.** Scheitert das Laden der Pläne bei bestehender Verbindung und liegt ein Plan auf dem Gerät, steht „Ohne Verbindung. Üben können Sie trotzdem …“ mit „Erneut laden“. Ohne Plan auf dem Gerät steht richtig „Ihre Übungen konnten nicht geladen werden.“ **Erwartet.** Der Satz unterscheidet „keine Verbindung“ von „die Praxis antwortet gerade nicht“; das Üben mit dem Plan vom letzten Laden bleibt in beiden Fällen.
 
 ### BEF-198 — Eine gelöschte Grundlage samt Verordnungsscan fehlt im Löschjournal
 
@@ -607,3 +595,15 @@ Marke vorsieht.
 | Berührt | `grussNachTageszeit` (`src/features/platform/zeit.ts`) und die vier Tests |
 
 **Beobachtung.** „Einstieg: Willkommen (DRP-016) … gibt den Tab der Übersicht zurück“, „Einstieg: Alles bereit (DRP-019) … nur zur Übersicht“, „App: Plattformkonto … Gerüst“ und „Plattform: gescheitertes Nachladen des Zugangs“ suchen die Überschrift „Guten Tag“. Der Gruß folgt der Uhr des Geräts (11 bis 18 Uhr „Guten Tag“); vor 11 und ab 18 Uhr Ortszeit des Laufs (CI: UTC) sind die vier rot, mit `TZ=America/New_York` grün. **Erwartet.** Die Tests stellen die Uhr fest (`vi.setSystemTime`, etwa 12:00) oder lesen den Gruß aus `grussNachTageszeit()`; dann laufen sie zu jeder Stunde.
+
+### BEF-215 — Nach Schritt 2b: ein Inhalt für Fenster und Durchführung, alte Bausteine fort
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Übungen |
+| Quelle  | Bau von Schritt 2c (DRP-EPIC-009), parallel zu 2b |
+| Status  | offen (Vorschlag) |
+| Berührt | `Fensterinhalt` in `src/features/platform/Uebungen.tsx`, `Uebungsinhalt.tsx`, `Dosierungskacheln`, Rückmeldung `gespeichert=1` im Reiter |
+
+**Beobachtung.** Das Fenster „Übung zum Nachlesen“ setzt Bühne, Marken, „So geht’s“, „Sie brauchen“ und „Hinweis“ selbst zusammen, weil `Uebungsinhalt` (mit `Dosierungskacheln`) der Durchführung gehört, die 2b gleichzeitig umstellt. Die Rückmeldung „Ihre Einheit ist gespeichert.“ im Reiter bleibt, bis die Endseite aus 2b sie ablöst. **Erwartet.** Nach dem Merge beider Schritte ein gemeinsamer Inhalt ohne Durchgänge für Fenster und Durchführung; `Dosierungskacheln` und die Rückmeldung entfallen, wenn nichts sie mehr nutzt.
