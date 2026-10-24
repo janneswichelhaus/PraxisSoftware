@@ -454,7 +454,9 @@ async function einmalUebertragen(besitzer: string, senden: Sender): Promise<Uebe
       return oderNichts(f);
     });
     if (abweisung) {
-      abgewiesen.push(abweisung);
+      // Je Einheit eine Zeile: Ein zweiter Versuch ersetzt die erste.
+      const neu = abweisung;
+      abgewiesen = [...abgewiesen.filter((x) => x.einheitId !== neu.einheitId), neu];
       ergebnis.abgewiesen.push(abweisung);
     }
     if (angenommen) ergebnis.angekommen.push(einheit.id);

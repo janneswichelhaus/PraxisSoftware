@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, renderHook, screen, waitFor, within } from '@testing-library/react';
 import { onlineManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
@@ -38,6 +38,7 @@ const {
   geraetetag,
   plaeneAblegen,
   uebertragen,
+  useWarteschlange,
   wartendeEinheiten,
 } = await import('./ablage');
 
@@ -951,5 +952,41 @@ describe('Befunde aus dem Zweitreview, dritte Runde', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /gespeichert/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('Befunde aus dem Zweitreview, vierte Runde', () => {
+  it('eine wiederholte Abweisung derselben Einheit ersetzt die erste (eine Zeile am Reiter)', async () => {
+    einheitUebertragen.mockImplementation((_z: string, e: Sendung) =>
+      Promise.resolve({ session_id: e.id, status: 'empty', note_dropped: false }),
+    );
+    const einheit = {
+      id: 'dddddddd-0000-4000-8000-000000000001',
+      zugangId: ZUGANG.access_id,
+      planId: PLAN.id,
+      tag: geraetetag(),
+      begonnenAm: new Date().toISOString(),
+    };
+    const ende = (id: string) => ({
+      id,
+      kind: 'finish' as const,
+      at: new Date().toISOString(),
+      note: '',
+      values: {},
+    });
+    const { result } = renderHook(() => useWarteschlange(KONTO));
+    await ereignisAblegen(KONTO, einheit, ende('dddddddd-0000-4000-8000-000000000002'));
+    await act(async () => {
+      await uebertragen(KONTO);
+    });
+    await ereignisAblegen(KONTO, einheit, ende('dddddddd-0000-4000-8000-000000000003'));
+    await act(async () => {
+      await uebertragen(KONTO);
+    });
+    await waitFor(() =>
+      expect(result.current.abgewiesen.map((a) => a.ereignisse)).toEqual([
+        ['dddddddd-0000-4000-8000-000000000003'],
+      ]),
+    );
   });
 });
