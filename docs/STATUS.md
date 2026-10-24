@@ -20,16 +20,17 @@ BEF-179/-180 (#287). Auf `origin` liegt sonst nichts Ungemergtes.
 
 ## Danach
 
-Schritt 2 nach Abschnitt 9 des Handoffs: nach 2b und 2c das Planblatt 2d. Unabhängig davon Schritt 3
-vorbereiten: zuerst das Designsystem in Claude Design auf Code-Stand bringen (Stand 22.10., vor 1a;
-Generator `build-ds.mjs` im lokalen Worktree `PraxisSoftware-design-review-1`, Memory „Claude
-Design: System und Leinwand“), dann Briefing 3 auffrischen, Ist-Bilder. Danach Schritte 3 bis 7
-(Termine, Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff aus Claude
-Design; Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198 (Grundlage samt
+Schritt 2 nach Abschnitt 9 des Handoffs: nach 2b und 2c das Planblatt 2d. Schritt 3 Termine ist
+vorbereitet (Designsystem auf Code-Stand, Briefing 3, Leinwand, `design/handoff-2026-10-24-plattform-termine.md`,
+BEF-220 bis -222); gebaut wird nach Jannes' Merge in 3a bis 3d. Danach Schritte 4 bis 7
+(Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff aus Claude Design;
+Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198 (Grundlage samt
 Verordnungsscan ins Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A).
 
 ## Bei Jannes
 
+- Handoff Termine: fünf Fragen in Abschnitt 0, Leinwand
+  https://claude.ai/artifact/4jdCqRT4YWRiphJ2Sjhqf1; sein Merge gibt Schritt 3 frei.
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
@@ -53,5 +54,5 @@ Verordnungsscan ins Löschjournal, übrige Löschwege von Hand durchsehen; Pfad 
 
 ## Letzte Session
 
-24.10.2026, Branch `claude/new-session-27nejg`: 2a gemergt; 2b und 2c in eigenen Sitzungen
-gestartet; Befunde BEF-200 bis -202. Keine Migration, kein Seed. Lokal: `git pull`.
+24.10.2026, Branch `ccr-d51dd25d-ujz8lo`: Schritt 3 vorbereitet (Designsystem Version 7, Leinwand
+„Plattform – Termine“, Handoff). Keine Migration, kein Seed, kein Code. Lokal: `git pull`.

@@ -643,3 +643,15 @@ Marke vorsieht.
 | Berührt | `src/features/platform/Terminaenderung.tsx` (Satz „Bei Fragen rufen Sie bitte die Praxis an.“) |
 
 **Beobachtung.** Die Seite sagt „Dieser Termin lässt sich hier nicht mehr ändern. Bei Fragen rufen Sie bitte die Praxis an.“ – ohne Nummer und ohne Knopf. Seit N2 (#292, ANN-691) trägt der Plattformkontext die Rufnummer der Praxis (`practice_phone`), und die Türen zeigen „Praxis anrufen“ schon als Knopf (ANN-688). **Erwartet.** Mit Nummer „Praxis anrufen“ als Anruf-Link mit der Nummer im Wort, ohne Nummer ein Weg zu „Der Praxis schreiben“ – nie ein Satz, der zu einer Handlung auffordert, die die Seite nicht anbietet.
+
+### BEF-222 — Lesefrist: der Server nimmt Terminwünsche noch an
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Termine in der Lesefrist (`read_until` gesetzt, eigener Zugang) |
+| Quelle  | Handoff Termine (Briefing 3), Frage 5 |
+| Status  | offen; Frage an Jannes im Handoff |
+| Berührt | `app.platform_access_allows` (`request` für jeden lesbaren Zugang), `request_platform_appointment`, `request_platform_appointment_change` |
+
+**Beobachtung.** DSN-001 D2 sagt für das Ende einer Behandlung ohne Abo „30 Tage lesend“. `app.platform_access_allows` erlaubt `request` aber jedem lesbaren Zugang, also auch in der Lesefrist; heute zeigt der Reiter dort „Termin wünschen“ wie sonst. **Erwartet.** Nach Jannes' Antwort entweder Wünschen in der Lesefrist am Server ablehnen (Pfad A, `pnpm test:db`) und in der Ansicht weglassen, oder Wünschen bewusst erlauben und D2 entsprechend fassen. Das Weglassen in der Ansicht allein ist keine Zugriffskontrolle.
