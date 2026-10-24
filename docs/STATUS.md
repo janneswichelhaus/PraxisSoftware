@@ -6,8 +6,8 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 ## Jetzt
 
 Design-Review Lauf 1, Schritt 2b Durchführung (24.10., Branch `claude/drp-2b-durchfuehrung`,
-DRP-030 bis -035, Pfad A wegen BEF-211): Vollbild mit Kopf und Fuß, Pause als Ring, „Weiter üben“ an
-der offenen Übung, ein Hauptknopf, Endseite, ohne Netz (ANN-711 bis -715). 2c läuft parallel.
+DRP-030 bis -035, Pfad A wegen BEF-211 und BEF-213): Vollbild mit Kopf und Fuß, Pause als Ring,
+„Weiter üben“ an der offenen Übung, ein Hauptknopf, Endseite, ohne Netz (ANN-711 bis -715). 2c parallel.
 Gemergt am 24.10.: 2a Bausteine (#300).
 
 **Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24.10.: Handoff Übungen (#299), Nacharbeit

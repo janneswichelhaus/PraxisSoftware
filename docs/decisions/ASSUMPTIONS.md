@@ -7421,11 +7421,11 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Bei „alles gehakt“ direkt zum Abschluss oder zu Übung 1 · Aufwand `klein`.
 
-### ANN-712 — Endseite: wer die Einheit sieht
+### ANN-712 — Durchführung: wer die Einheit und den Satz sieht
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
-**Annahme.** Die Endseite nennt die Fachperson des nächsten bestätigten Termins („Anna Beispiel sieht sie beim nächsten Termin.“), ohne Termin „Ihre Therapeut:in“ bzw. „Ihre Trainingsbetreuung“. Der Satz erscheint erst, wenn die Termine geantwortet haben, damit der Name nicht springt.
+**Annahme.** Endseite und Satz am freien Feld nennen die Fachperson des nächsten bestätigten Termins („Anna Beispiel sieht …“), ohne Termin „Ihre Therapeut:in“ bzw. „Ihre Trainingsbetreuung“. Auf der Endseite erscheint der Satz erst, wenn die Termine geantwortet haben, damit der Name nicht springt.
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 5.5 („{Name} sieht sie …“); der Plan trägt keinen Namen, die Übersicht nimmt ihn ebenso aus dem nächsten Termin.
 
@@ -7449,7 +7449,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
-**Annahme.** Auf `/p/uebungen/einheit/…` entfallen Kopf, Verbindungszeile und Reiterleiste der Plattform; Kopf und Fuß der Durchführung ersetzen sie. Das Band einer Vertretung und der Hinweis zum Profil bleiben darüber stehen. Laden, Fehler und „kann hier nicht üben“ tragen je einen Ausweg oben.
+**Annahme.** Auf `/p/uebungen/einheit/…` entfallen Kopf, Verbindungszeile und Reiterleiste der Plattform; Kopf und Fuß der Durchführung ersetzen sie. Das Band einer Vertretung und der Hinweis zum Profil bleiben darüber stehen. Beim Laden steht „Später weiter“ oben, bei Fehler und „kann hier nicht üben“ „Zu den Übungen“ als Hauptknopf im Fuß. Die lokale Ansicht behält ihren Kopf mit „Sperren“.
 
 **Begründung.** Handoff 2026-10-24, Abschnitte 0, 4 und 5.3; PLATTFORM.md (Seitentyp Durchführung). Für wen geübt wird, muss sichtbar bleiben (ADR-023); ohne Reiterleiste braucht jede Lage einen Weg hinaus.
 

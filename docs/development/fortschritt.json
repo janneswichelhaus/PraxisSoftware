@@ -1547,7 +1547,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-24",
           "nachweis": "DRP-030 bis DRP-035, Branch `claude/drp-2b-durchfuehrung`, src/features/platform/Durchfuehrung.test.tsx, tests/e2e/plattform-uebungen.spec.ts, tests/e2e/ohne-netz.spec.ts",
-          "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2b (Handoff 2026-10-24, Abschnitt 9 Punkt 2), parallel zu 2c; ANN-711 bis ANN-715; BEF-210 und BEF-211 erledigt (Pfad A), BEF-212 offen"
+          "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2b (Handoff 2026-10-24, Abschnitt 9 Punkt 2), parallel zu 2c; ANN-711 bis ANN-715; BEF-210, BEF-211 und BEF-213 erledigt (Pfad A, Zweitreview), BEF-214 erledigt, BEF-212 offen"
         }
       ]
     },

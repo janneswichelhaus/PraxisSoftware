@@ -567,7 +567,7 @@ Marke vorsieht.
 | Datum   | 2026-10-24 |
 | Bereich | Plattform, Übungen und Durchführung |
 | Quelle  | Ist-Bilder für Briefing 2 (Prüfseite `plattform-uebungen.html`, 375 und 188 px) |
-| Status  | Durchführung erledigt in DRP-EPIC-008 (Schritt 2b: Titel in der Bühne ohne „Abbrechen“ daneben, `Hakenzeile`, ANN-707); Reiter offen für Schritt 2c |
+| Status  | Durchführung erledigt in DRP-EPIC-008 (Schritt 2b: Titel in der Bühne ohne „Abbrechen“ daneben, `Hakenzeile`, Enden der Skala untereinander, ANN-707, BEF-214); Reiter offen für Schritt 2c |
 | Berührt | `src/features/platform/Uebungen.tsx`, `Durchfuehrung.tsx` (Titel neben „Abbrechen“, Zeilen der Durchgänge) |
 
 **Beobachtung.** Bei 375 px bricht der Titel „Am Treppengeländer festhalten …“ neben „Abbrechen“ als „Treppengelände|r“. Bei 188 px (200 %) brechen „Totalendoprothe|se“, „Wiederholunge|n“ und „Durchgan|g“ in den Haken-Zeilen. Ursache ist `overflow-wrap: anywhere` in schmalen Spalten. **Erwartet.** Wie in PLATTFORM.md: nie mitten im Wort, lange Wörter ab zwölf Buchstaben mit Trennstrich (DR-114).
