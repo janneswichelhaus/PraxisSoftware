@@ -19,34 +19,33 @@ für Inhalt; Abweichungen stehen in Abschnitt 0.
 
 ## 0 · Entscheidungen
 
-### Offen für Jannes (je mit Empfehlung)
+### Entschieden: alle vier wie empfohlen (Jannes, 24.10.2026)
 
-Gebaut wird bis zur Antwort die Fassung, die hier unter „bis dahin“ steht. Keine der Fragen hält
-einen Schritt aus Abschnitt 9 auf.
+Jannes hat nach dem Merge alle vier Fragen wie empfohlen entschieden; gebaut wird die Empfehlung.
 
 1. **Dauer der Einheit.** Das Datenmodell kennt keine Dauer (`eigenerPlanSchema`). _Empfehlung:_ aus
    der Dosierung schätzen und als „etwa 10 Minuten“ zeigen – reine Anzeige, keine neue Spalte, kein
    Auslöser aus ADR-013 Punkt 9. Rechnung je Übung: Durchgänge × (Wiederholungen bis × 4 s oder
    Dauer, mal 2 bei „je Seite“) + (Durchgänge − 1) × Pause + 30 s Vorbereitung; Summe auf volle
    5 Minuten gerundet, mindestens 5. Fehlt einer Übung beides, entfällt die Angabe. _Alternative:_ ein
-   Feld der Fachperson am Plan (Migration, Pfad A). _Bis dahin:_ ohne Dauer („3 Übungen“); das Layout
-   trägt beides (Tweak „Dauer“ auf der Leinwand).
+   Feld der Fachperson am Plan (Migration, Pfad A). _Entschieden:_ geschätzt wie empfohlen; die
+   Leinwand zeigt beide Fassungen (Tweak „Dauer“).
 2. **„Später weiter“ statt „Abbrechen“** im Kopf der Durchführung und beim Beenden. _Empfehlung:_
    ja. Die Haken bleiben, die Einheit des Tages geht später weiter („Weiter üben“); „Abbrechen“ klingt
    nach Verwerfen. DSN-001 Abschnitt 7 Nr. 7 („Abbrechen ist immer sichtbar“) bleibt erfüllt: Der
-   Ausweg steht in jedem Schritt im Kopf. _Bis dahin:_ „Später weiter“.
+   Ausweg steht in jedem Schritt im Kopf. _Entschieden:_ „Später weiter“.
 3. **Eigene Endseite** „Gespeichert“ bzw. „Auf diesem Gerät gespeichert“ statt der Rückkehr zum
    Reiter mit Rückmeldung. _Empfehlung:_ ja – ein ruhiger Abschluss, der sagt, wo die Einheit liegt
-   und wer sie sieht, mit dem nächsten Übungstag, ohne Lob. _Bis dahin:_ Endseite.
+   und wer sie sieht, mit dem nächsten Übungstag, ohne Lob. _Entschieden:_ Endseite.
 4. **Silbentrennung in Titeln unter 23rem.** Bei 200 % passen „Treppengeländer“ oder
    „Totalendoprothese“ in keiner zulässigen Größe in die Zeile; heute bricht das Wort ohne Strich
    (BEF-196). _Empfehlung:_ nur unter 23rem `hyphens: auto` mit `hyphenate-limit-chars: 12 5 5` für
    Plan- und Übungsnamen, Etiketten der Skala, Hinweise und Fließtext (Trennung an der Silbe mit
    Strich) – eine Ausnahme zu DR-114 nur für diese Breite. Personennamen, Anschriften, Knöpfe und
-   Reiter bleiben ungetrennt. _Bis dahin:_ die Ausnahme.
+   Reiter bleiben ungetrennt. _Entschieden:_ die Ausnahme.
 
-**Freigabe:** Mit dem Merge dieses Handoffs gibt Jannes Schritt 2 der Umsetzung frei (Abschnitt 9);
-die Antworten auf die vier Fragen können danach kommen.
+**Freigabe:** Mit dem Merge dieses Handoffs (#299, 24.10.2026) hat Jannes Schritt 2 der Umsetzung
+freigegeben (Abschnitt 9).
 
 ### Festlegungen aus dem Entwurf (beim Bauen als Annahmen eintragen)
 
@@ -152,8 +151,8 @@ wie gehabt.
 | mehrere Pläne      | der erste Plan mit heutigem Übungstag | wie die Lage             | „{Plan} · 3 Übungen · …“                                                                  | wie die Lage                     |
 
 Ohne Namen (N1) heißt es „Ihre Therapeut:in sieht …“. Der nächste Übungstag kommt aus `weekdays`
-und dem heutigen Tag; „Heute geübt“ aus `recent_sessions` mit `finished` am heutigen Tag. Fehlt die
-Dauer (Frage 1), steht nur „3 Übungen“.
+und dem heutigen Tag; „Heute geübt“ aus `recent_sessions` mit `finished` am heutigen Tag. Lässt
+sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen“.
 
 ### Wochenleiste (_neu_, `src/features/platform/Wochenleiste.tsx`, ersetzt die Chips in `Uebungstage`)
 
@@ -467,27 +466,29 @@ Kein Markenmoment in der Durchführung und auf der Endseite; das Laufrad steht s
 ## 9 · Reihenfolge der Umsetzung
 
 Je Schritt ein Pull Request über den Feature-Loop. K1: Kein Schritt berührt einen Auslöser aus
-ADR-013 Punkt 9 – solange die Dauer nicht als Feld kommt (Frage 1) und Videos nicht gespeichert
-werden. Standardprüfungen und Bildstrecke genügen.
+ADR-013 Punkt 9 – die Dauer wird geschätzt, nicht gespeichert (Frage 1), und Videos kommen erst mit
+einem eigenen Auftrag. Standardprüfungen und Bildstrecke genügen.
 
 1. **2a Bausteine:** `--text-hauptzahl`, Knopf `gross`, Bühne, Dosierungsmarken, Hakenzeile mit
-   Pausenring, Kopf und Fuß der Durchführung, Wochenleiste, Endseite; Ratsche und Kontraste.
+   Pausenring, Kopf und Fuß der Durchführung, Wochenleiste, Endseite; Schätzung der Dauer als reine
+   Funktion mit Tests (Frage 1); Trennung unter 23rem (Frage 4); Ratsche und Kontraste.
 2. **2b Durchführung:** Vollbild ohne Reiterleiste, Kopf und Fuß, Übertragungsstand, Pause, Wechsel
    der Übung, „Weiter üben“ an der offenen Übung, Beenden mit einem Hauptknopf, Endseite, ohne Netz.
-3. **2c Reiter:** Vorschau in allen Lagen, Plan mit Wochenleiste, Übungszeilen, „Zum Plan“, mehrere
-   Pläne, Lesefrist, kein Plan, Training; Skelett, Fehler, Plan vom Gerät, „Praxis antwortet nicht“
+3. **2c Reiter:** Vorschau in allen Lagen mit Dauer („3 Übungen · etwa 10 Minuten“, ebenso die
+   Übungskarte der Übersicht), Plan mit Wochenleiste, Übungszeilen, „Zum Plan“, mehrere Pläne,
+   Lesefrist, kein Plan, Training; Skelett, Fehler, Plan vom Gerät, „Praxis antwortet nicht“
    (BEF-197); Fenster „Übung zum Nachlesen“; Rechner zweispaltig. 2b und 2c können nach 2a parallel
    laufen.
 4. **2d Planblatt:** Bildschirm am Telefon und Rechner, Druck A4; die Praxis bekommt den Druck mit.
-5. **Nach Antwort auf Frage 1:** Dauer in Vorschau und Übersicht („3 Übungen · etwa 10 Minuten“).
-6. **Später, mit Medien:** Video in Bühne und Fenster nach Abschnitt 3 – eigener Auftrag mit
+5. **Später, mit Medien:** Video in Bühne und Fenster nach Abschnitt 3 – eigener Auftrag mit
    Entscheidung zu Speicherort und Auslieferung (ADR-017).
 
 ## 10 · Beim Bauen nachzutragen
 
-- `docs/decisions/ASSUMPTIONS.md`: je eine Annahme für die Festlegungen aus Abschnitt 0, insbesondere
-  die Wochenleiste ohne Abstand, die Pause als Ring, „Später weiter“, die Endseite, die getrennten
-  Meldungen für Netz und Server, den Rechner zweispaltig und die Trennung unter 23rem.
+- `docs/decisions/ASSUMPTIONS.md`: je eine Annahme für die Festlegungen aus Abschnitt 0,
+  insbesondere die Wochenleiste ohne Abstand, die Pause als Ring, die getrennten Meldungen für Netz
+  und Server und den Rechner zweispaltig; die vier Fragen als „entschieden (Jannes)“ vom 24.10.2026:
+  geschätzte Dauer, „Später weiter“, Endseite, Trennung unter 23rem.
 - `docs/design/PLATTFORM.md`: Seitentyp Durchführung mit Kopf (Zurück, Später weiter, Balken) und
   Fuß (ein Hauptknopf 56, Stand); Rechner zweispaltig für den Reiter „Übungen“; Wochenleiste als
   Segment; Trennung unter 23rem (nach Frage 4); Bausteine Bühne, Wochenleiste, Hakenzeile.

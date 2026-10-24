@@ -54,8 +54,10 @@ Abhängigkeit: 1b bis 1e brauchen 1a. 1c und 1d können parallel laufen (verschi
 Jeder Schritt braucht 1a (Sprache, Bausteine) und seinen freigegebenen Entwurf; untereinander sind
 sie unabhängig und können in zwei Strängen laufen. Ablauf je Schritt: Briefing und Ist-Bilder an
 Claude Design, Entwürfe und Entscheidungen bei Jannes, Handoff ins Repository (sein Merge gibt ihn
-frei), dann je Teilschritt ein Pull Request. Für Schritt 2 sind die Unterlagen bereit (24.10.2026):
-Briefing 2 aufgefrischt nach Schritt 1, 22 Ist-Bilder vom selben Tag. Reihenfolge nach Hebel:
+frei), dann je Teilschritt ein Pull Request. Schritt 2: Handoff
+[handoff-2026-10-24-plattform-uebungen.md](../handoff-2026-10-24-plattform-uebungen.md), gemergt mit
+#299 und freigegeben; die vier Fragen darin hat Jannes am 24.10.2026 wie empfohlen entschieden.
+Umgesetzt wird in 2a bis 2d nach seinem Abschnitt 9. Reihenfolge nach Hebel:
 
 | Schritt | Briefing                      | Befunde                   | Abhängig von          | Hinweis                                                                     |
 | ------- | ----------------------------- | ------------------------- | --------------------- | --------------------------------------------------------------------------- |
