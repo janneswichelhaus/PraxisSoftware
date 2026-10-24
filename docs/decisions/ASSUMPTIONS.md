@@ -7325,6 +7325,18 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Datenschutzprüfu
 
 **Änderungspfad.** Spalte für den Anlass (Lauf oder von Hand) in Journal und `list_deletion_runs` · Aufwand `mittel`.
 
+### ANN-704 — Übungen: Dauer der Einheit aus der Dosierung geschätzt
+
+Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 1) · erledigt · Wiedervorlage: —
+
+**Annahme.** Die Plattform nennt die Dauer einer Einheit als Schätzung („etwa 10 Minuten“): je Übung Durchgänge × (Wiederholungen bis × 4 s oder Dauer, je Seite doppelt) + Pausen dazwischen + 30 s, auf volle 5 Minuten gerundet, mindestens 5. Fehlen einer Übung Wiederholungen und Dauer, steht keine Dauer da. Gespeichert wird nichts.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0, Frage 1: Das Datenmodell kennt keine Dauer; ein Feld der Fachperson wäre eine Migration (Pfad A).
+
+**Anker.** `dauerDerEinheit` in `src/features/platform/dauer.ts`.
+
+**Änderungspfad.** Werte dort ändern · Aufwand `klein`; ein Feld am Plan stattdessen · Aufwand `mittel`.
+
 ### ANN-707 — Plattform: Plan- und Übungsnamen trennen unter 23rem an der Silbe
 
 Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 4) · erledigt · Wiedervorlage: —
