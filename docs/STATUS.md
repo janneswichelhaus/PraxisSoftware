@@ -5,9 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Nacharbeit zu Schritt 1e (24.10., Branch `ccr-c5a4a21f-ys0el3`): Die fünf Fragen aus #297 sind wie
-empfohlen entschieden. „Mitteilungen einschalten“ steht unter „Heute“, bis die Person gewählt hat
-(ANN-702); Terminseite, Zeichen am Reiter „Nachrichten“ und „offen“ stehen in den Briefings 3, 5, 6.
+Design-Review Lauf 1: **Schritt 1 ist abgenommen** (Jannes, 24.10.). Nacharbeit dazu auf Branch
+`ccr-c5a4a21f-ys0el3` (#298): die fünf Fragen aus #297 wie empfohlen entschieden, „Mitteilungen
+einschalten“ unter „Heute“ (ANN-702). Für Schritt 2 (Übungen) liegen Briefing 2 aufgefrischt und 22
+Ist-Bilder bereit; neu dabei BEF-196 und BEF-197.
 
 Gemergt am 24.10.: Schritt 1e Übersicht (#297, DRP-020 bis -022) – damit ist Schritt 1 des Handoffs
 gebaut; 1d Einstieg (#294), 1c Türen (#295), CI-Fix #296. Gemergt am 22. und 23.10.: Schritt 0
@@ -22,8 +23,8 @@ BEF-170 (Akte: einzeln gelöschte Dateien ins Löschjournal, Test mit Wiederhers
 
 ## Bei Jannes
 
-- Übersicht am Telefon sichten: Knopf der Hauptsache bei „Sehr groß“ unter zwei Reiterreihen (#297,
-  Frage 1); sonst den Knopf vor den Satz ziehen.
+- Schritt 2: Briefing 2 und die Ist-Bilder in Claude Design geben, Entwürfe entscheiden, Handoff
+  zurück (`design/review-2026-10/lauf-1-umsetzung.md`, Ablauf je Schritt).
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis

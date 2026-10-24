@@ -573,3 +573,27 @@ Marke vorsieht.
 | Berührt | `Kopf` in `src/features/platform/Navigation.tsx` (Schalter unter `nav aria-label="Bereich"`) |
 
 **Beobachtung.** Bei 375 px und „Sehr groß“ bricht im Schalter „Für Maximilian Mustermann-Langenscheidt“ zwischen „Musterman“ und „n-“, also mitten im Wort, weil die Plattform `overflow-wrap: anywhere` setzt und das Ziel halb so breit ist. **Erwartet.** Wie im Gruß nur am Bindestrich brechen (DR-114) - etwa zwei Reihen statt zwei Spalten, sobald ein Wort nicht passt, oder der Name in einer eigenen Zeile.
+
+### BEF-196 — Übungen: Übungs- und Plannamen brechen mitten im Wort
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Übungen und Durchführung |
+| Quelle  | Ist-Bilder für Briefing 2 (Prüfseite `plattform-uebungen.html`, 375 und 188 px) |
+| Status  | offen; wird mit Schritt 2 des Design-Reviews neu gefasst |
+| Berührt | `src/features/platform/Uebungen.tsx`, `Durchfuehrung.tsx` (Titel neben „Abbrechen“, Zeilen der Durchgänge) |
+
+**Beobachtung.** Bei 375 px bricht der Titel „Am Treppengeländer festhalten …“ neben „Abbrechen“ als „Treppengelände|r“. Bei 188 px (200 %) brechen „Totalendoprothe|se“, „Wiederholunge|n“ und „Durchgan|g“ in den Haken-Zeilen. Ursache ist `overflow-wrap: anywhere` in schmalen Spalten. **Erwartet.** Wie in PLATTFORM.md: nie mitten im Wort, lange Wörter ab zwölf Buchstaben mit Trennstrich (DR-114).
+
+### BEF-197 — Übungen: ein Serverfehler heißt „Ohne Verbindung“
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Übungen |
+| Quelle  | Ist-Bilder für Briefing 2 (lokaler Stack, `platform_exercise_plans` mit 500) |
+| Status  | offen; wird mit Schritt 2 des Design-Reviews neu gefasst |
+| Berührt | `OhneVerbindung` in `src/features/platform/Uebungen.tsx` |
+
+**Beobachtung.** Scheitert das Laden der Pläne bei bestehender Verbindung und liegt ein Plan auf dem Gerät, steht „Ohne Verbindung. Üben können Sie trotzdem …“ mit „Erneut laden“. Ohne Plan auf dem Gerät steht richtig „Ihre Übungen konnten nicht geladen werden.“ **Erwartet.** Der Satz unterscheidet „keine Verbindung“ von „die Praxis antwortet gerade nicht“; das Üben mit dem Plan vom letzten Laden bleibt in beiden Fällen.
