@@ -61,15 +61,29 @@ const nutzer: CurrentUser = {
   revenueShare: false,
 };
 
-/** Ortszeit des heutigen Tages als Zeitpunkt; Sommer- und Winterzeit egal. */
-function um(uhrzeit: string): string {
+/** Ortszeit eines Tages (sonst heute) als Zeitpunkt; Sommer- und Winterzeit egal. */
+function um(uhrzeit: string, datum = heute): string {
   const [stunde, minute] = uhrzeit.split(':').map(Number) as [number, number];
-  const [jahr, monat, tag] = heute.split('-').map(Number) as [number, number, number];
+  const [jahr, monat, tag] = datum.split('-').map(Number) as [number, number, number];
   const utc = Date.UTC(jahr, monat - 1, tag, stunde, minute);
   const versatz =
     new Date(new Date(utc).toLocaleString('en-US', { timeZone: ZONE })).getTime() -
     new Date(new Date(utc).toLocaleString('en-US', { timeZone: 'UTC' })).getTime();
   return new Date(utc - versatz).toISOString();
+}
+
+/**
+ * Dieselbe Uhrzeit der Praxis `tage` Tage später. Nicht `+ 86_400_000`: Über
+ * die Zeitumstellung hinweg stünde 10:00 sonst als 09:00 da.
+ */
+function tageSpaeter(iso: string, tage: number): string {
+  const uhrzeit = new Intl.DateTimeFormat('en-GB', {
+    timeZone: ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(new Date(iso));
+  return um(uhrzeit, tagePlus(heute, tage));
 }
 
 function besuch(
@@ -334,7 +348,6 @@ client.setQueryData(
 // „Nachzuholen" (ANN-478): gestern eine Doku offen, die Tage davor leer.
 for (let abstand = 1; abstand <= 7; abstand++) {
   const t = tagePlus(heute, -abstand);
-  const versatz = abstand * 86_400_000;
   client.setQueryData(
     ['day-plan', t, STAFF],
     abstand === 1
@@ -344,8 +357,8 @@ for (let abstand = 1; abstand <= 7; abstand++) {
             id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000009',
             status: 'completed' as const,
             documentation_status: 'none' as const,
-            starts_at: new Date(Date.parse(tag[1]!.starts_at) - versatz).toISOString(),
-            ends_at: new Date(Date.parse(tag[1]!.ends_at) - versatz).toISOString(),
+            starts_at: tageSpaeter(tag[1]!.starts_at, -abstand),
+            ends_at: tageSpaeter(tag[1]!.ends_at, -abstand),
           },
         ]
       : [],
@@ -357,7 +370,7 @@ client.setQueryData(['appointments', heute, tagePlus(heute, 1), null, null, 'act
 
 // UBK-003: derselbe Tag, einen Tag später - für den Tageswechsel.
 const morgen = tagePlus(heute, 1);
-const einenTagSpaeter = (iso: string) => new Date(Date.parse(iso) + 86_400_000).toISOString();
+const einenTagSpaeter = (iso: string) => tageSpaeter(iso, 1);
 // Morgen ist noch nichts erledigt - auch in der Abendansicht.
 const tagMorgen = tag.map((termin) => ({
   ...termin,
@@ -385,13 +398,12 @@ for (const [abstand, anzahl] of [
   [6, 0],
 ] as const) {
   const t = tagePlus(heute, abstand);
-  const versatz = abstand * 86_400_000;
   client.setQueryData(
     ['day-plan', t, STAFF],
     tag.slice(0, anzahl).map((termin) => ({
       ...termin,
-      starts_at: new Date(Date.parse(termin.starts_at) + versatz).toISOString(),
-      ends_at: new Date(Date.parse(termin.ends_at) + versatz).toISOString(),
+      starts_at: tageSpaeter(termin.starts_at, abstand),
+      ends_at: tageSpaeter(termin.ends_at, abstand),
     })),
   );
 }
