@@ -1964,7 +1964,7 @@ eingeklappt.
 | Datum   | 2026-10-24 |
 | Bereich | Plattform, Durchführung und Warteschlange; ADR-001, ADR-024 Punkte 5 und 8 |
 | Quelle  | Zweitreview DRP-EPIC-008 (Subagent, Befund 1) |
-| Status  | erledigt 2026-10-24 (DRP-EPIC-008, Pfad A): `ereignisAblegen` hängt nie hinter ein Ende, ein zweites Ende fällt weg; eine auf dem Gerät beendete Einheit wird nicht wieder geöffnet; während des Beendens nimmt die Einheit keinen Haken an; das Ende wird an seinem Ereignis entschieden; Tests mit Gegenprobe |
+| Status  | erledigt 2026-10-24 (DRP-EPIC-008, Pfad A): `ereignisAblegen` hängt nie hinter ein Ende, ein zweites Ende fällt weg; eine auf dem Gerät beendete Einheit wird nicht wieder geöffnet; während des Beendens nimmt die Einheit keinen Haken an; das Ende wird an seinem Ereignis entschieden, eine Abweisung nennt alle verworfenen Ereignisse, ein Ende ohne angelegte Einheit (`empty`) gilt nicht als angekommen (ANN-717); Tests mit Gegenprobe |
 | Berührt | `ereignisAblegen` (`src/features/platform/ablage.ts`), `Einheit` in `Durchfuehrung.tsx`; auf `main` derselbe Weg, sobald der Server nicht antwortet |
 
 **Beobachtung.** Lag das Ende einer Einheit noch auf dem Gerät und wurde die Durchführung wieder geöffnet („Weiter üben“ mit dem alten `open_session`) oder während „Wird gespeichert …“ gehakt, hängte die Ablage den Haken hinter das Ende. Der Server weist eine solche Einheit ab („finish must be last“), und die Ablage verwarf sie dann ganz, samt Haken und Ende. **Erwartet.** Das Ende bleibt das letzte Ereignis; was danach kommt, geht in eine neue Einheit desselben Tages, wie nach „closed“.

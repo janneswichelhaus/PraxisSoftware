@@ -7480,3 +7480,16 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 **Anker.** `stand` in `Einheit`, `src/features/platform/Durchfuehrung.tsx`.
 
 **Änderungspfad.** Ohne Netz „übertragen“ für Haken vom Server zeigen · Aufwand `klein`.
+
+### ANN-717 — Durchführung: ein Ende, zu dem der Server nichts anlegt
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Antwortet der Server auf ein Ende mit `empty` (er legt nichts an), gilt es als nicht übertragen: Die Ansicht sagt „Nicht übertragen: Bei der Praxis ist zu dieser Einheit nichts mehr offen.“ statt „Gespeichert“, und die Ablage verwirft die Einheit wie bei einer Abweisung.
+
+**Begründung.** ADR-001, ADR-024 Punkt 8: „Gespeichert“ nur, was bei der Praxis liegt. `empty` heißt: kein Haken dieser Einheit kam an, oder sie war anderswo schon beendet (ANN-357, TRK-007); Satz und Angaben liegen dann nicht bei der Praxis.
+
+**Anker.** `NICHTS_OFFEN` in `src/features/platform/ablage.ts`.
+
+**Änderungspfad.** Im zweiten Fall „Gespeichert“ zeigen (der Server müsste das unterscheiden) · Aufwand `mittel`.
+

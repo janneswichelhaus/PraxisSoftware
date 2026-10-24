@@ -307,4 +307,61 @@ describe('Das Ende bleibt das letzte Ereignis (BEF-213, DRP-EPIC-008)', () => {
     await ereignisAblegen(KONTO, kopf('einheit-3'), haken('h-3', 3));
     expect((await uebertragen(KONTO)).abgewiesen).toEqual([]);
   });
+
+  it('eine Abweisung nennt auch, was während des Sendens dazukam - etwa das Ende (Runde 3)', async () => {
+    let abweisen: () => void = () => undefined;
+    einheitUebertragen.mockImplementationOnce(
+      () =>
+        new Promise((_r, reject) => {
+          abweisen = () => reject(new UebertragungAbgewiesen('Der Plan gilt nicht mehr.'));
+        }),
+    );
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    const lauf = uebertragen(KONTO);
+    await vi.waitFor(() => expect(einheitUebertragen).toHaveBeenCalled());
+    await ereignisAblegen(KONTO, kopf(), ENDE);
+    abweisen();
+    const ergebnis = await lauf;
+    expect(ergebnis.abgewiesen).toHaveLength(1);
+    expect(ergebnis.abgewiesen[0]!.ereignisse).toEqual(['h-1', 'ende-1']);
+    expect(await wartendeEinheiten(KONTO)).toEqual([]);
+  });
+
+  it('ein Ende, zu dem der Server nichts anlegt („empty“), ist nicht angekommen', async () => {
+    einheitUebertragen.mockImplementation((_z: string, e: { id: string }) =>
+      Promise.resolve({ session_id: e.id, status: 'empty', note_dropped: false }),
+    );
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    await ereignisAblegen(KONTO, kopf(), ENDE);
+    const ergebnis = await uebertragen(KONTO);
+    expect(ergebnis.angekommen).toEqual([]);
+    expect(ergebnis.abgewiesen).toEqual([
+      {
+        einheitId: 'einheit-1',
+        planId: PLAN.id,
+        satz: 'Bei der Praxis ist zu dieser Einheit nichts mehr offen.',
+        ereignisse: ['h-1', 'ende-1'],
+      },
+    ]);
+    expect(await wartendeEinheiten(KONTO)).toEqual([]);
+  });
+
+  it('sammelt über Runden: eine Abweisung der ersten Runde steht im Ergebnis der zweiten', async () => {
+    let erste = true;
+    einheitUebertragen.mockImplementation((_z: string, e: { id: string }) => {
+      if (!erste) return Promise.resolve({ session_id: e.id, status: 'ok', note_dropped: false });
+      erste = false;
+      // Während der ersten Runde kommt eine Einheit dazu, und jemand stößt an:
+      // Es folgt eine zweite Runde.
+      return ereignisAblegen(KONTO, kopf('einheit-2'), haken('h-2', 2)).then(() => {
+        void uebertragen(KONTO);
+        throw new UebertragungAbgewiesen('Der Plan gilt nicht mehr.');
+      });
+    });
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    const ergebnis = await uebertragen(KONTO);
+    expect(ergebnis.abgewiesen.map((a) => a.einheitId)).toEqual(['einheit-1']);
+    expect(ergebnis.angekommen).toEqual(['einheit-2']);
+    expect(einheitUebertragen).toHaveBeenCalledTimes(2);
+  });
 });

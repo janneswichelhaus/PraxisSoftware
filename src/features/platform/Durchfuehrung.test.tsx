@@ -896,3 +896,60 @@ describe('Befunde aus dem Zweitreview, zweite Runde', () => {
     expect(await wartendeEinheiten(KONTO)).toEqual([]);
   });
 });
+
+describe('Befunde aus dem Zweitreview, dritte Runde', () => {
+  it('kommt das Ende während einer abgewiesenen Übertragung dazu, zeigt die Ansicht den Grund, keine Endseite', async () => {
+    ladePlaene.mockResolvedValue({
+      today: geraetetag(),
+      plans: [{ ...ZWEI, service_area: 'training', note_allowed: false }],
+    });
+    let abweisen: () => void = () => undefined;
+    let erste = true;
+    einheitUebertragen.mockImplementation((_z: string, e: Sendung) => {
+      if (!erste) return Promise.resolve({ session_id: e.id, status: 'ok', note_dropped: false });
+      erste = false;
+      return new Promise((_r, reject) => {
+        abweisen = () => reject(new UebertragungAbgewiesen('Der Plan gilt nicht mehr.'));
+      });
+    });
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={{ ...ZUGANG, relationship_kind: 'training' }} />);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    await waitFor(() => expect(einheitUebertragen).toHaveBeenCalledTimes(1));
+    await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
+    // Ohne Einwilligung beendet die letzte Übung direkt (ANN-715).
+    await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
+    await act(async () => {
+      abweisen();
+      await Promise.resolve();
+    });
+    expect(
+      await screen.findByText('Nicht übertragen: Der Plan gilt nicht mehr.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /gespeichert/i })).not.toBeInTheDocument();
+    expect(await wartendeEinheiten(KONTO)).toEqual([]);
+  });
+
+  it('legt der Server zu einem Ende nichts an („empty“), sagt die Ansicht es statt „Gespeichert“', async () => {
+    einheitUebertragen.mockImplementation((_z: string, e: Sendung) =>
+      Promise.resolve({
+        session_id: e.id,
+        status: e.ereignisse.some((x) => x.kind === 'finish') ? 'empty' : 'ok',
+        note_dropped: false,
+      }),
+    );
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    await waitFor(() => expect(einheitUebertragen).toHaveBeenCalledTimes(1));
+    await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
+    await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
+    expect(
+      await screen.findByText(
+        'Nicht übertragen: Bei der Praxis ist zu dieser Einheit nichts mehr offen.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /gespeichert/i })).not.toBeInTheDocument();
+  });
+});

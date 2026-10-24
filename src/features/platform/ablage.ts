@@ -371,6 +371,13 @@ let nochmal = false;
 /** Der Weg zum Server; die Prüfseiten setzen einen eigenen ein. */
 export type Sender = typeof einheitUebertragen;
 
+/**
+ * Was die Ansicht sagt, wenn der Server zu einem Ende nichts anlegt
+ * (`empty`): Kein Haken der Einheit kam an, oder sie war anderswo schon
+ * beendet (ANN-357). Das Ende gilt dann als nicht übertragen (ANN-717).
+ */
+const NICHTS_OFFEN = 'Bei der Praxis ist zu dieser Einheit nichts mehr offen.';
+
 async function einmalUebertragen(besitzer: string, senden: Sender): Promise<Uebertragungsergebnis> {
   const ergebnis = leeresErgebnis();
   for (const einheit of await wartendeEinheiten(besitzer)) {
@@ -378,6 +385,9 @@ async function einmalUebertragen(besitzer: string, senden: Sender): Promise<Uebe
     const gesendet = new Set(einheit.ereignisse.map((e) => e.id));
     let fallen = false;
     let angenommen = false;
+    // Verwirft die Ablage die Einheit, nennt die Abweisung alle ihre
+    // Ereignisse - auch die, die während des Sendens dazukamen.
+    let abweisung: Abweisung | null = null;
     try {
       const antwort = await senden(einheit.zugangId, einheit);
       if (antwort.status === 'closed') {
@@ -395,37 +405,58 @@ async function einmalUebertragen(besitzer: string, senden: Sender): Promise<Uebe
         continue;
       }
       if (antwort.note_dropped) ergebnis.angabenVerworfen.push(einheit.id);
-      // Beendet - jetzt oder beim ersten Senden: An dieser Einheit ändert sich nichts mehr.
-      fallen = antwort.status === 'finished' || einheit.ereignisse.some((e) => e.kind === 'finish');
-      angenommen = true;
+      const mitEnde = einheit.ereignisse.some((e) => e.kind === 'finish');
+      if (antwort.status === 'empty' && mitEnde) {
+        // Der Server legte nichts an: Das Ende kam nicht an, auch wenn er
+        // nicht abwies. „Gespeichert“ hieße hier etwas, das nicht stimmt.
+        abweisung = {
+          einheitId: einheit.id,
+          planId: einheit.planId,
+          satz: NICHTS_OFFEN,
+          ereignisse: [...gesendet],
+        };
+        fallen = true;
+      } else {
+        // Beendet - jetzt oder beim ersten Senden: An dieser Einheit ändert sich nichts mehr.
+        fallen = antwort.status === 'finished' || mitEnde;
+        angenommen = true;
+      }
     } catch (fehler) {
       if (!(fehler instanceof UebertragungAbgewiesen)) {
         ergebnis.ohneNetz = true;
         break;
       }
-      // ADR-024 Punkt 8: zeigen, warum, und danach verwerfen. Verworfen wird
-      // alles der Einheit, auch was während der Übertragung dazukam.
-      const abweisung: Abweisung = {
+      // ADR-024 Punkt 8: zeigen, warum, und danach verwerfen.
+      abweisung = {
         einheitId: einheit.id,
         planId: einheit.planId,
         satz: fehler.message,
-        ereignisse: einheit.ereignisse.map((e) => e.id),
+        ereignisse: [...gesendet],
       };
-      abgewiesen.push(abweisung);
-      ergebnis.abgewiesen.push(abweisung);
       fallen = true;
     }
     await fachAendern(besitzer, FACH, (alt) => {
       const f = fach(alt ?? LEER);
       f.einheiten = f.einheiten.flatMap((e) => {
         if (e.id !== einheit.id) return [e];
-        if (fallen) return [];
+        if (fallen) {
+          // Verworfen wird alles der Einheit, auch was während der
+          // Übertragung dazukam - etwa ein Ende (Zweitreview 2b, Runde 3).
+          if (abweisung) {
+            abweisung.ereignisse = [...new Set([...gesendet, ...e.ereignisse.map((x) => x.id)])];
+          }
+          return [];
+        }
         // Was während der Übertragung dazukam, bleibt für die nächste.
         const rest = e.ereignisse.filter((x) => !gesendet.has(x.id));
         return rest.length > 0 ? [{ ...e, ereignisse: rest }] : [];
       });
       return oderNichts(f);
     });
+    if (abweisung) {
+      abgewiesen.push(abweisung);
+      ergebnis.abgewiesen.push(abweisung);
+    }
     if (angenommen) ergebnis.angekommen.push(einheit.id);
     melden();
   }

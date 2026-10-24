@@ -8,7 +8,7 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 Design-Review Lauf 1, Schritt 2 Übungen: 2a ist gemergt (#300, DRP-023 bis -029, mit BEF-199). 2b
 Durchführung (Branch `claude/drp-2b-durchfuehrung`, DRP-030 bis -035, Pfad A wegen BEF-211 und
 BEF-213): Vollbild mit Kopf und Fuß, Pause als Ring, „Weiter üben“ an der offenen Übung, ein
-Hauptknopf, Endseite, ohne Netz (ANN-711 bis -716). 2c Reiter läuft parallel (DRP-EPIC-009, DRP-040
+Hauptknopf, Endseite, ohne Netz (ANN-711 bis -717). 2c Reiter läuft parallel (DRP-EPIC-009, DRP-040
 bis -049, ANN-720 bis -729, BEF-215 bis -219). Befunde aus archivierten Sitzungen: BEF-200 (seit
 #297 erledigt), BEF-201, BEF-202.
 
