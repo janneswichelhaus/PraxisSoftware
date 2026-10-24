@@ -1909,6 +1909,30 @@ eingeklappt.
 
 **Erwartet.** Ein Journaleintrag `patient_files` in `delete_patient_file`, dazu ein Test mit Wiederherstellung wie in `fleet-photos.test.ts` („Löschjournal“). Pfad A (Löschpfad).
 
+### BEF-199 — Vier Tests der Plattform scheitern vor 11 und ab 18 Uhr: sie erwarten „Guten Tag“
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform: Gruß der Übersicht; `Einstieg.test.tsx`, `App.test.tsx`, `App.nachladen.test.tsx` |
+| Quelle  | Prüfsatz zu DRP-EPIC-007 um 18:51 UTC; auf `main` derselbe Befund |
+| Status  | erledigt in DRP-EPIC-007 (PR #300: die Tests lesen den Gruß aus `grussNachTageszeit()`) |
+| Berührt | `grussNachTageszeit` (`src/features/platform/zeit.ts`) und die vier Tests |
+
+**Beobachtung.** „Einstieg: Willkommen (DRP-016) … gibt den Tab der Übersicht zurück“, „Einstieg: Alles bereit (DRP-019) … nur zur Übersicht“, „App: Plattformkonto … Gerüst“ und „Plattform: gescheitertes Nachladen des Zugangs“ suchen die Überschrift „Guten Tag“. Der Gruß folgt der Uhr des Geräts (11 bis 18 Uhr „Guten Tag“); vor 11 und ab 18 Uhr Ortszeit des Laufs (CI: UTC) sind die vier rot, mit `TZ=America/New_York` grün. **Erwartet.** Die Tests stellen die Uhr fest (`vi.setSystemTime`, etwa 12:00) oder lesen den Gruß aus `grussNachTageszeit()`; dann laufen sie zu jeder Stunde.
+
+### BEF-200 — Zwei Barrierefreiheitstests zu „Einstellungen“ hängen unter Last
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Einstellungen (`/p/einstellungen`); `tests/e2e/plattform-barrierefreiheit.spec.ts` |
+| Quelle  | Sitzung „Konfliktlösung“ zu #294 (3 von 8 Läufen hingen); Gegenprobe 24.10. am Abend |
+| Status  | erledigt 2026-10-24 (DRP-EPIC-006, #297): `bewegungAbwarten` fragt den Stand der Bewegungen ab, statt auf `finished` zu warten |
+| Berührt | `bewegungAbwarten` in `tests/e2e/plattform-barrierefreiheit.spec.ts` |
+
+**Beobachtung.** Die Prüfung wartete auf das `finished` jeder Bewegung. Eine Einblendung wie `meldung-rein` in einem geschlossenen `<details>` („Nur ein Passkey“) löste es nicht auf; der Test lief in die Zeitüberschreitung. Die Korrektur der Sitzung (unsichtbare Bewegungen ausnehmen) kam nie auf `main`. **Erledigt durch #297.** Gegenprobe am 24.10.: mit der alten Fassung 9 von 24 Läufen in der Zeitüberschreitung, mit der heutigen 0 von 99 (bei 4 und 6 Workern).
+
 ### BEF-210 — Durchführung: „Wird gespeichert …“ bleibt ohne Netz stehen
 
 |         |   |
@@ -1956,4 +1980,3 @@ eingeklappt.
 | Berührt | `src/components/ui/Angabefeld.tsx`, `.skala` in `src/index.css`; Handoff 2026-10-24, 5.4 und 6 |
 
 **Beobachtung.** Die Stufen der Skala waren 44 px hoch und standen 4 px (Telefon) bzw. 2 px (Rechner) auseinander; bei 188 px brach das Ende „0 = keine“ als „kein|e“ ohne Strich. **Erwartet.** Ziele 48 mit mindestens 8 Abstand (PLATTFORM.md), kein Wort ohne Strich gebrochen (BEF-196).
-
