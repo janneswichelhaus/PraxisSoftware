@@ -151,6 +151,19 @@ describe('ersteAufgabe (ANN-692)', () => {
     ).toBeNull();
   });
 
+  it('hält das Ende einer Vertretung nicht für die Lesefrist', () => {
+    // Sorgerecht bis zur Volljährigkeit: `read_until` steht, die Behandlung läuft.
+    const vertretung: Aufgabenlage['zugang'] = {
+      ...ZUGANG,
+      access_kind: 'legal_representative',
+      read_until: '2031-04-30',
+    };
+    expect(ersteAufgabe(lage({ zugang: vertretung }))).toEqual({
+      art: 'fragebogen',
+      angefangen: false,
+    });
+  });
+
   it('lässt eine Begleitung den Fragebogen nicht ausfüllen (ANN-248)', () => {
     const begleitung: Plattformzugang['access_kind'] = 'companion';
     expect(ersteAufgabe(lage({ zugang: { ...ZUGANG, access_kind: begleitung } }))).toEqual({

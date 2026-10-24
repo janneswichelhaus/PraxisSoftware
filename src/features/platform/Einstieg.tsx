@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MARKE } from '@/app/tabtitel';
@@ -12,14 +12,9 @@ import { Schalter } from '@/components/ui/Schalter';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
-import {
-  ENDPUNKT_SCHLUESSEL,
-  eigenerEndpunkt,
-  pushAbmelden,
-  pushErlauben,
-  pushStand,
-} from '@/lib/push';
-import { VERTRETUNGSART } from '@/lib/vertretung';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
+import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { ENDPUNKT_SCHLUESSEL, eigenerEndpunkt, pushErlauben, pushStand } from '@/lib/push';
 import {
   befundbogenSchluessel,
   benachrichtigungSchluessel,
@@ -54,6 +49,7 @@ import { useRechner } from './geruestbreite';
 import { ersteAufgabe, handlung, type Aufgabe } from './hauptsache';
 import { fuerDiePlattform } from './instrumentwahl';
 import { bereichParameter } from './pfade';
+import { Vertretungsband } from './Vertretungsband';
 
 /**
  * Der Einstieg nach der ersten Anmeldung (POR-019, DSN-001 4.3,
@@ -88,7 +84,16 @@ const JA_NEIN = [
   { wert: 'nein', text: 'Nein' },
 ] as const;
 
-export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: string }) {
+export function Einstieg({
+  zugang,
+  praxis,
+  email,
+}: {
+  zugang: Plattformzugang;
+  praxis: string;
+  /** Die Adresse des Kontos, an die Mitteilungen per E-Mail gehen. */
+  email?: string | undefined;
+}) {
   const api = usePlattformApi();
   const begleitung = zugang.access_kind === 'companion';
   // Wie viele Fragen kommen, hängt an den offenen Einwilligungen (ANN-693):
@@ -104,6 +109,7 @@ export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: 
     <Ablauf
       zugang={zugang}
       praxis={praxis}
+      email={email}
       offen={begleitung ? [] : offeneEinwilligungen(einwilligungen.data ?? [])}
     />
   );
@@ -112,10 +118,12 @@ export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: 
 function Ablauf({
   zugang,
   praxis,
+  email,
   offen,
 }: {
   zugang: Plattformzugang;
   praxis: string;
+  email: string | undefined;
   offen: Zweck[];
 }) {
   const api = usePlattformApi();
@@ -171,30 +179,50 @@ function Ablauf({
     });
   };
 
-  const beenden = useMutation({ mutationFn: () => api.einstiegBeenden(zugang.access_id) });
-  // Beendet ist beendet: Der Stand gilt sofort, bevor der Server ihn noch
-  // einmal sagt - sonst stünde der Einstieg kurz wieder da.
-  const beendet = () => {
-    queryClient.setQueryData<Einstiegsstand | null>(einstiegSchluessel(zugang.access_id), (alt) =>
-      alt ? { ...alt, pending: false } : alt,
-    );
-    void queryClient.invalidateQueries({ queryKey: einstiegSchluessel(zugang.access_id) });
-  };
+  // Steht der Einstieg noch da? Nach einer Zurückgeste während des Beendens nicht.
+  const steht = useRef(true);
+  useEffect(() => {
+    steht.current = true;
+    return () => {
+      steht.current = false;
+    };
+  }, []);
+  const beenden = useMutation({
+    // `ziel`: die Handlung der künftigen Hauptsache, sonst die Übersicht.
+    mutationFn: (_ziel: string | null) => api.einstiegBeenden(zugang.access_id),
+    // Am Hook, nicht am Aufruf: Der Stand gilt auch, wenn die Person während
+    // der Anfrage schon woandershin gegangen ist.
+    onSuccess: (_daten, ziel) => {
+      // Erst dorthin, dann beendet - sonst stünde die Übersicht einen
+      // Augenblick da und nähme den Markenmoment mit.
+      if (ziel !== null && steht.current) void navigate(ziel, { flushSync: true });
+      // Beendet ist beendet: Der Stand gilt sofort, bevor der Server ihn noch
+      // einmal sagt - sonst stünde der Einstieg kurz wieder da.
+      queryClient.setQueryData<Einstiegsstand | null>(
+        einstiegSchluessel(zugang.access_id),
+        (alt) => (alt ? { ...alt, pending: false } : alt),
+      );
+      void queryClient.invalidateQueries({ queryKey: einstiegSchluessel(zugang.access_id) });
+    },
+  });
   const spaeter = () => {
-    if (!beenden.isPending) beenden.mutate(undefined, { onSuccess: beendet });
+    if (!beenden.isPending) beenden.mutate(null);
   };
-  // Die Handlung der künftigen Hauptsache: erst beenden, dann direkt dorthin -
-  // ohne Umweg über die Übersicht.
   const beginnen = (ziel: string) => {
     if (beenden.isPending) return;
     const bereich = bereichParameter(suche);
-    beenden.mutate(undefined, {
-      onSuccess: () => {
-        void navigate(`${ziel}${bereich ? `?${bereich}` : ''}`);
-        beendet();
-      },
-    });
+    beenden.mutate(`${ziel}${bereich ? `?${bereich}` : ''}`);
   };
+
+  // BEF-175: Die Zurückgeste des Telefons geht einen Schritt zurück wie
+  // „← Zurück“, statt den Einstieg zu verlassen. Ungespeichertes gibt es hier
+  // nicht - jede Wahl gilt sofort.
+  const { schutz } = useTextverlustschutz({
+    ungespeichert: false,
+    texte: EINGABETEXTE,
+    kompakt: true,
+    schrittZurueck: nummer > 0 ? () => setNummer(nummer - 1) : undefined,
+  });
 
   useEffect(() => {
     const vorher = document.title;
@@ -235,17 +263,26 @@ function Ablauf({
           : { text: `Schritt ${nummer + 1} von ${schritte}`, wert: nummer + 1, von: schritte }
       }
       onZurueck={nummer > 0 ? () => setNummer(nummer - 1) : undefined}
+      schutz={schutz}
+      // „Sie handeln für …“ wie im Gerüst, unter dem Fortschritt (5.3): eine
+      // Leiste über die ganze Breite, der Text an der Kante der Spalte.
+      band={
+        vertretung ? (
+          <Vertretungsband
+            zugang={zugang}
+            innen="max-w-formular mx-auto box-content px-5 max-[23rem]:px-3"
+          />
+        ) : undefined
+      }
       spaeter
       balkenJeSchritt
-      plattformSchmal
+      plattform
       titelStufe={seite === 'willkommen' || seite === 'bereit' ? 'gruss' : 'seite'}
       abschluss={seite === 'bereit'}
       vorDemTitel={
         <>
-          {/* „Sie handeln für …“ wie im Gerüst, unter dem Fortschritt (5.3). */}
-          {vertretung ? <Vertretungsband zugang={zugang} /> : null}
           {seite === 'willkommen' && eingerichtet && ersterBlick ? (
-            <Rueckmeldung>Anmeldung eingerichtet</Rueckmeldung>
+            <Rueckmeldung imFenster>Anmeldung eingerichtet</Rueckmeldung>
           ) : null}
           {seite === 'willkommen' ? <Willkommensbild /> : null}
           {seite === 'bereit' ? (
@@ -306,7 +343,12 @@ function Ablauf({
       ) : null}
       {seite === 'einwilligungen' ? (
         <>
-          <p className="text-ink max-w-prose">{freiwilligkeit(fragen.length, zugang)}</p>
+          <p className="text-ink max-w-prose">
+            <MitNamen
+              satz={freiwilligkeit(fragen.length, zugang)}
+              namen={[zugang.represented_name]}
+            />
+          </p>
           {fragen.map((zweck) => (
             <Einwilligungsfrage
               key={zweck}
@@ -319,9 +361,11 @@ function Ablauf({
           <Kleingedrucktes>{FREIWILLIG}</Kleingedrucktes>
         </>
       ) : null}
-      {seite === 'mitteilungen' ? <Mitteilungen zugang={zugang} /> : null}
+      {seite === 'mitteilungen' ? <Mitteilungen zugang={zugang} email={email} /> : null}
       {seite === 'bereit' ? (
-        <p className="text-ink max-w-prose">{bereitSatz(zugang, aufgabe)}</p>
+        <p className="text-ink max-w-prose">
+          <MitNamen satz={bereitSatz(zugang, aufgabe)} namen={[zugang.represented_name]} />
+        </p>
       ) : null}
     </GefuehrterAblauf>
   );
@@ -342,16 +386,70 @@ function Willkommen({
   praxis: string;
   fragen: number;
 }) {
+  const namen = [praxis, zugang.represented_name];
   return (
     <>
-      <p className="text-ink max-w-prose">{willkommenssatz(zugang, praxis)}</p>
+      <p className="text-ink max-w-prose">
+        <MitNamen satz={willkommenssatz(zugang, praxis)} namen={namen} />
+      </p>
       <p className="text-ink-muted max-w-prose">
-        {zugang.access_kind === 'companion'
-          ? `Einwilligungen gibt nur ${vertretenePerson(zugang)} selbst. ${nochFragen(fragen)}`
-          : nochFragen(fragen)}
+        <MitNamen
+          satz={
+            zugang.access_kind === 'companion'
+              ? `Einwilligungen gibt nur ${vertretenePerson(zugang)} selbst. ${nochFragen(fragen)}`
+              : nochFragen(fragen)
+          }
+          namen={namen}
+        />
       </p>
     </>
   );
+}
+
+/**
+ * Eine E-Mail-Adresse, die nach „@“ und vor einem Punkt umbricht, nicht
+ * mitten im Wort („@patie-nt“) und ohne Trennstrich. Nur ein Teil, der allein
+ * nicht in die Zeile passt, bricht, wo er muss.
+ */
+function Adresse({ adresse }: { adresse: string }) {
+  return (
+    <span className="wrap-break-word hyphens-manual">
+      {adresse.split(/(?<=@)|(?=\.)/).map((teil, index) => (
+        <Fragment key={index}>
+          {index > 0 ? <wbr /> : null}
+          {teil}
+        </Fragment>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * Ein Satz mit Namen: Namen trennt der Browser nie (DR-114) - im Fließtext
+ * sonst schon ab zwölf Buchstaben („Mustermann-Langen-scheidt“). Am Bindestrich
+ * darf der Name weiter umbrechen.
+ */
+function MitNamen({ satz, namen }: { satz: string; namen: readonly (string | null)[] }) {
+  const gesucht = namen.filter((name): name is string => Boolean(name));
+  const teile: ReactNode[] = [];
+  let rest = satz;
+  for (;;) {
+    // Der früheste Name zuerst; an derselben Stelle der längere.
+    const treffer = gesucht
+      .map((name) => ({ name, stelle: rest.indexOf(name) }))
+      .filter((t) => t.stelle >= 0)
+      .sort((a, b) => a.stelle - b.stelle || b.name.length - a.name.length)[0];
+    if (!treffer) break;
+    if (treffer.stelle > 0) teile.push(rest.slice(0, treffer.stelle));
+    teile.push(
+      <span key={teile.length} className="hyphens-manual">
+        {treffer.name}
+      </span>,
+    );
+    rest = rest.slice(treffer.stelle + treffer.name.length);
+  }
+  if (rest) teile.push(rest);
+  return teile;
 }
 
 /**
@@ -360,8 +458,14 @@ function Willkommen({
  * und nichts vorgewählt. Die Wahl gilt sofort, wie bisher der Knopf: Ein Ja
  * erteilt mit der Fassung des Texts, ein Nein danach widerruft es wieder. Ein
  * Nein zu einer offenen Einwilligung lässt sie offen - gespeichert wird es
- * nicht (ANN-693). Scheitert das Speichern, steht die Wahl wieder, wie sie war -
- * auch wenn die Person schon weitergetippt hat; deshalb am Hook, nicht am Aufruf.
+ * nicht (ANN-693). Gewählt wird nur mit Tippen, Enter oder Leertaste, nie mit
+ * den Pfeiltasten (`Wahlreihe sofort`).
+ *
+ * Die letzte Wahl gilt: Wer während des Speicherns umentscheidet, wird danach
+ * gespeichert, nicht verworfen. Je Zweck läuft eine Anfrage nach der anderen
+ * (`scope`) - auch, was ohne Netz wartet und danach weiterläuft, und auch über
+ * „Weiter“ und „← Zurück“ hinweg. Scheitert die letzte, zeigt die Karte den
+ * Stand des Servers, nicht die Wahl.
  */
 function Einwilligungsfrage({
   zugang,
@@ -377,47 +481,65 @@ function Einwilligungsfrage({
   const api = usePlattformApi();
   const queryClient = useQueryClient();
   const text = EINWILLIGUNGSTEXTE[zweck];
+  const liste = einwilligungenSchluessel(zugang.access_id);
+  const schluessel = ['einwilligung-schreiben', zugang.access_id, zweck];
   const schreiben = useMutation({
-    mutationFn: ({ erteilen }: { erteilen: boolean; vorher: JaNein | undefined }) =>
+    mutationKey: schluessel,
+    scope: { id: schluessel.join(':') },
+    mutationFn: (erteilen: boolean) =>
       api.einwilligungSchreiben({
         zugangId: zugang.access_id,
         zweck,
         erteilen,
         fassung: EINWILLIGUNGSFASSUNG,
       }),
-    onError: (_fehler, { vorher }) => onWahl(vorher),
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: einwilligungenSchluessel(zugang.access_id) }),
+    // Am Hook, nicht am Aufruf: Das läuft auch, wenn die Karte schon weg ist.
+    onSettled: async (_daten, fehler) => {
+      // Noch eine Wahl danach? Dann zählt deren Ausgang.
+      const letzte = queryClient.isMutating({ mutationKey: schluessel }) <= 1;
+      if (!fehler || !letzte) {
+        void queryClient.invalidateQueries({ queryKey: liste });
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: liste });
+      const stand = queryClient
+        .getQueryData<Einwilligung[]>(liste)
+        ?.find((e) => e.purpose === zweck)?.state;
+      onWahl(stand === 'granted' ? 'ja' : undefined);
+    },
   });
 
   const waehlen = (neu: JaNein) => {
-    if (schreiben.isPending || neu === wahl) return;
+    if (neu === wahl) return;
     onWahl(neu);
-    if (neu === 'ja' || wahl === 'ja') schreiben.mutate({ erteilen: neu === 'ja', vorher: wahl });
+    if (neu === 'ja' || wahl === 'ja') schreiben.mutate(neu === 'ja');
   };
 
   return (
     // Eine Karte mit Linie, ohne Schatten; die Wahl darin ist die benannte Gruppe.
-    <div className="border-line rounded-card flex flex-col gap-3 border p-5">
-      <h3 className="text-ink text-abschnitt">{text.titel}</h3>
+    <div className="border-line rounded-card flex flex-col border p-5">
+      <Zwischentitel stufe="abschnitt">{text.titel}</Zwischentitel>
       <p className="text-ink max-w-prose">{text.text}</p>
-      <Wahlreihe
-        legende={text.titel}
-        legendeSichtbar={false}
-        wahlen={JA_NEIN}
-        gewaehlt={wahl ?? null}
-        onWaehlen={waehlen}
-        gleichgewichtet
-        zusatz={
-          schreiben.isPending ? (
-            <Statusmeldung>Wird gespeichert …</Statusmeldung>
-          ) : schreiben.isError ? (
-            <Statusmeldung ton="fehler">{schreiben.error.message}</Statusmeldung>
-          ) : schreiben.isSuccess ? (
-            <Statusmeldung ton="erfolg">Gespeichert.</Statusmeldung>
-          ) : null
-        }
-      />
+      <div className="mt-3">
+        <Wahlreihe
+          legende={text.titel}
+          legendeSichtbar={false}
+          wahlen={JA_NEIN}
+          gewaehlt={wahl ?? null}
+          onWaehlen={waehlen}
+          gleichgewichtet
+          sofort
+          zusatz={
+            schreiben.isPending ? (
+              <Statusmeldung>Wird gespeichert …</Statusmeldung>
+            ) : schreiben.isError ? (
+              <Statusmeldung ton="fehler">{schreiben.error.message}</Statusmeldung>
+            ) : schreiben.isSuccess ? (
+              <Statusmeldung ton="erfolg">Gespeichert.</Statusmeldung>
+            ) : null
+          }
+        />
+      </div>
     </div>
   );
 }
@@ -426,12 +548,13 @@ function Einwilligungsfrage({
  * „Sollen wir Ihnen Bescheid geben?“ (5.3): ein Schalter statt der Liste je Art
  * mit Ruhezeit - die bleibt unter „Ich“ → „Einstellungen“ (DR-111). An schaltet
  * die Arten aus `MITTEILUNGSARTEN` ein (ANN-694): auf diesem Telefon per Push,
- * nach der einen Abfrage des Telefons; wo Push hier nicht geht, per E-Mail, dem
- * Regelweg (ADR-024 Punkt 11). Aus nimmt das Telefon wieder heraus bzw. die
- * Arten aus der Mail. Die Wahl gilt für den eigenen Zugang, auch einer
- * Begleitung (Punkt 15).
+ * nach der einen Abfrage des Telefons; wo Push hier nicht geht, per E-Mail an
+ * die Adresse des Kontos, dem Regelweg (ADR-024 Punkt 11). Aus nimmt dieselben
+ * Arten wieder heraus. Die Wahl gilt für den eigenen Zugang, auch einer
+ * Begleitung (Punkt 15) - das Telefon bleibt für andere Zugänge eingetragen;
+ * herausnehmen lässt es sich unter „Ich“.
  */
-function Mitteilungen({ zugang }: { zugang: Plattformzugang }) {
+function Mitteilungen({ zugang, email }: { zugang: Plattformzugang; email: string | undefined }) {
   const api = usePlattformApi();
   const queryClient = useQueryClient();
   const rechner = useRechner();
@@ -446,6 +569,9 @@ function Mitteilungen({ zugang }: { zugang: Plattformzugang }) {
     queryFn: () => api.ladeBenachrichtigungen(zugang.access_id, geraet),
     enabled: !endpunkt.isPending,
     retry: false,
+    // Wechselt das Gerät (das erste An), bleibt der Schalter stehen, bis der
+    // neue Stand da ist - sonst nähme das Skelett ihm den Fokus.
+    placeholderData: (vorher) => vorher,
   });
   const weg = pushStand().moeglich || geraet !== null ? 'push' : 'email';
   const daten = wahl.data ?? null;
@@ -478,10 +604,12 @@ function Mitteilungen({ zugang }: { zugang: Plattformzugang }) {
         return;
       }
       if (!einschalten) {
-        // Wie „Auf diesem Gerät ausschalten“ unter „Ich“: Das Telefon geht
-        // heraus; die Wahl je Art bleibt für andere Geräte des Zugangs.
-        if (geraet !== null) await api.entferneGeraet(geraet);
-        await pushAbmelden();
+        // Nur dieser Zugang: Die Arten gehen heraus, das Telefon bleibt für
+        // andere Zugänge eingetragen.
+        await api.speichereBenachrichtigungen(zugang.access_id, {
+          ...bisher,
+          push_kinds: mitArten(stand.push_kinds, arten, false),
+        });
         return;
       }
       if (geraet === null || !stand.device_registered) {
@@ -503,9 +631,14 @@ function Mitteilungen({ zugang }: { zugang: Plattformzugang }) {
   return (
     <>
       <p className="text-ink max-w-prose">
-        {vertretung
-          ? `Zum Beispiel am Vortag eines Termins von ${vertretenePerson(zugang)} oder wenn die Praxis antwortet.`
-          : 'Zum Beispiel am Vortag eines Termins oder wenn die Praxis antwortet.'}
+        <MitNamen
+          satz={
+            vertretung
+              ? `Zum Beispiel am Vortag eines Termins von ${vertretenePerson(zugang)} oder wenn die Praxis antwortet.`
+              : 'Zum Beispiel am Vortag eines Termins oder wenn die Praxis antwortet.'
+          }
+          namen={[zugang.represented_name]}
+        />
       </p>
       {endpunkt.isPending || wahl.isPending ? (
         <SkelettBereich beschriftung="Mitteilungen werden geladen">
@@ -529,9 +662,15 @@ function Mitteilungen({ zugang }: { zugang: Plattformzugang }) {
               )
             }
             hinweis={
-              weg === 'push'
-                ? `${rechner ? 'Ihr Browser' : 'Ihr Telefon'} fragt einmal um Erlaubnis.`
-                : 'An die Adresse, mit der Sie sich anmelden.'
+              weg === 'push' ? (
+                `${rechner ? 'Ihr Browser' : 'Ihr Telefon'} fragt einmal um Erlaubnis.`
+              ) : email ? (
+                <>
+                  An <Adresse adresse={email} />
+                </>
+              ) : (
+                'An die Adresse Ihres Kontos.'
+              )
             }
             an={an}
             laeuft={umschalten.isPending}
@@ -556,28 +695,23 @@ function Mitteilungen({ zugang }: { zugang: Plattformzugang }) {
 /**
  * Das Bild über „Willkommen“ (5.3): ein eigenes Foto der Praxis in 4:3 - bis
  * es da ist, die Markenfläche mit dem Laufrad. Schmuck ohne Information, für
- * Vorlesesoftware unsichtbar; unter 23rem (200 %) entfällt es (ANN-682). Am
- * Rechner höchstens 18rem hoch, damit der Text ohne Rollen darunter passt.
+ * Vorlesesoftware unsichtbar; unter 23rem (200 %) entfällt es (ANN-682).
+ *
+ * Die Seite rollt nicht (DESIGN.md, geführter Ablauf): Das Bild nimmt den
+ * Platz, der neben den Sätzen bleibt, höchstens die volle Breite und 18rem,
+ * immer in 4:3. Wird es dafür kleiner als 6rem, entfällt es - etwa mit Band
+ * und „Sehr groß“.
  */
 function Willkommensbild() {
   return (
     <div
       aria-hidden="true"
       data-willkommensbild=""
-      className="bg-surface-inverse rounded-image relative aspect-[4/3] max-h-72 w-full overflow-hidden max-[23rem]:hidden"
+      className="[container-type:size] aspect-[4/3] max-h-72 min-h-0 w-full shrink max-[23rem]:hidden"
     >
-      <Laufrad className="text-accent absolute -right-12 -bottom-16 size-72" />
+      <div className="bg-surface-inverse rounded-image relative aspect-[4/3] w-[min(100cqw,calc(100cqh*4/3))] overflow-hidden [@container_(max-height:6rem)]:hidden">
+        <Laufrad className="text-accent absolute -right-[14%] -bottom-[25%] aspect-square h-[115%]" />
+      </div>
     </div>
-  );
-}
-
-/** „Sie handeln für …“ - wie das Band im Gerüst (`HandelnFuer`, ADR-023 Punkt 14). */
-function Vertretungsband({ zugang }: { zugang: Plattformzugang }): ReactNode {
-  if (zugang.access_kind === 'self') return null;
-  return (
-    <p role="status" className="bg-accent text-surface rounded-card px-4 py-2">
-      Sie handeln für <strong>{zugang.represented_name ?? 'eine andere Person'}</strong>
-      <span className="opacity-90"> · {VERTRETUNGSART[zugang.access_kind]}</span>
-    </p>
   );
 }

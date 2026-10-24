@@ -78,7 +78,7 @@ describe('Wahlreihe', () => {
     expect(ja).not.toBeChecked();
     expect(nein).not.toBeChecked();
     for (const radio of [ja, nein]) {
-      expect(radio.closest('label')).toHaveClass('min-h-12', 'flex-1', 'basis-36');
+      expect(radio.closest('label')).toHaveClass('min-h-12', 'flex-1', 'basis-[7.5em]');
     }
     await nutzer.click(screen.getByText('Nein'));
     expect(nein).toBeChecked();
@@ -89,6 +89,59 @@ describe('Wahlreihe', () => {
     for (const radio of screen.getAllByRole('radio')) {
       expect(radio.closest('label')?.className).toContain('min-h-11');
     }
+  });
+
+  it('sofort: Knöpfe mit aria-pressed - die Pfeiltasten wählen nichts (DRP-017)', async () => {
+    const nutzer = userEvent.setup();
+    const gewaehlt: string[] = [];
+    function Einwilligung() {
+      const [wert, setWert] = useState<'ja' | 'nein' | null>(null);
+      return (
+        <Wahlreihe
+          legende="Bericht an Ihre Ärztin oder Ihren Arzt"
+          legendeSichtbar={false}
+          wahlen={[
+            { wert: 'ja', text: 'Ja, erlauben' },
+            { wert: 'nein', text: 'Nein' },
+          ]}
+          gewaehlt={wert}
+          onWaehlen={(neu) => {
+            gewaehlt.push(neu);
+            setWert(neu);
+          }}
+          gleichgewichtet
+          sofort
+        />
+      );
+    }
+    const { container } = renderWithProviders(<Einwilligung />);
+    const gruppe = screen.getByRole('group', { name: 'Bericht an Ihre Ärztin oder Ihren Arzt' });
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    const ja = screen.getByRole('button', { name: 'Ja, erlauben' });
+    const nein = screen.getByRole('button', { name: 'Nein' });
+    expect(gruppe).toContainElement(ja);
+    expect(ja).toHaveAttribute('aria-pressed', 'false');
+    expect(nein).toHaveAttribute('aria-pressed', 'false');
+    expect(ja).toHaveClass('min-h-12', 'flex-1', 'basis-[7.5em]');
+    await pruefeBarrierefreiheit(container);
+
+    // Tab und Pfeile hören sich die Wahlen an und wählen nichts.
+    await nutzer.tab();
+    expect(ja).toHaveFocus();
+    await nutzer.keyboard('{ArrowDown}{ArrowRight}{ArrowUp}');
+    await nutzer.tab();
+    expect(nein).toHaveFocus();
+    expect(gewaehlt).toEqual([]);
+
+    // Gewählt wird mit der Leertaste, Enter oder einem Tipp; die Wahl trägt ein Zeichen.
+    await nutzer.keyboard(' ');
+    expect(nein).toHaveAttribute('aria-pressed', 'true');
+    expect(nein.textContent).toBe('✓Nein');
+    await nutzer.click(ja);
+    await nutzer.click(ja);
+    expect(gewaehlt).toEqual(['nein', 'ja']);
+    expect(ja).toHaveAttribute('aria-pressed', 'true');
+    expect(nein).toHaveAttribute('aria-pressed', 'false');
   });
 });
 

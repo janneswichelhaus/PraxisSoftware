@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createMemoryRouter, useLocation } from 'react-router-dom';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { renderWithProviders } from '@/test-utils';
 import type * as Push from '@/lib/push';
@@ -134,6 +135,48 @@ function zeige(zugang: Plattformzugang, pfad = '/p') {
   );
 }
 
+/** Mit einem Eintrag davor im Verlauf - für die Zurückgeste. */
+function zeigeMitVerlauf(zugang: Plattformzugang) {
+  const router = createMemoryRouter(
+    [
+      {
+        path: '*',
+        element: (
+          <PlattformApp zugaenge={[zugang]} email="erika@patient.invalid" onAbmelden={vi.fn()} />
+        ),
+      },
+    ],
+    { initialEntries: ['/einrichten', '/p'], initialIndex: 1 },
+  );
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+  return router;
+}
+
+/**
+ * Ein Satz, auch wenn ein Name darin in eigenem Element steht - Namen trennt
+ * der Browser nie (DR-114).
+ */
+function satz(text: string) {
+  return (_inhalt: string, element: Element | null) =>
+    element?.tagName === 'P' && element.textContent === text;
+}
+
+/** Ein Versprechen, das der Test selbst erfüllt oder scheitern lässt. */
+function aufschub() {
+  let erfuellen: () => void = () => undefined;
+  let scheitern: (fehler: Error) => void = () => undefined;
+  const versprechen = new Promise<void>((ja, nein) => {
+    erfuellen = () => ja();
+    scheitern = nein;
+  });
+  return { versprechen, erfuellen, scheitern };
+}
+
 /** Nach jedem Seitenwechsel nimmt der Ablauf kurz keinen Tipp an (TIPPSPERRE_MS). */
 async function tippe(nutzer: ReturnType<typeof userEvent.setup>, name: string | RegExp) {
   const knopf = await screen.findByRole('button', { name });
@@ -175,7 +218,9 @@ describe('Einstieg: Willkommen (DRP-016)', () => {
     ).toHaveClass('text-gruss');
     expect(
       within(fenster).getByText(
-        'Schön, dass Sie da sind. Hier finden Sie alles zu Ihrer Behandlung bei Test Praxis Tuebingen.',
+        satz(
+          'Schön, dass Sie da sind. Hier finden Sie alles zu Ihrer Behandlung bei Test Praxis Tuebingen.',
+        ),
       ),
     ).toBeInTheDocument();
     expect(within(fenster).getByText('Noch zwei kurze Fragen, dann sind Sie fertig.')).toHaveClass(
@@ -200,7 +245,9 @@ describe('Einstieg: Willkommen (DRP-016)', () => {
     expect(await screen.findByRole('dialog', { name: 'Willkommen' })).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Schön, dass Sie da sind. Hier finden Sie alles zu Ihrem Training bei Test Praxis Tuebingen.',
+        satz(
+          'Schön, dass Sie da sind. Hier finden Sie alles zu Ihrem Training bei Test Praxis Tuebingen.',
+        ),
       ),
     ).toBeInTheDocument();
   });
@@ -210,6 +257,12 @@ describe('Einstieg: Willkommen (DRP-016)', () => {
     zeige(MIT_NAMEN, '/p?bereich=treatment&eingerichtet=1');
     const meldung = await screen.findByText('Anmeldung eingerichtet');
     expect(meldung.closest('[role="status"]')).not.toBeNull();
+    // Das Fenster gibt ihr den Fokus, nicht „Weiter“: Vorlesesoftware liest sie vor.
+    await waitFor(() =>
+      expect(meldung.closest('[data-autofocus]')).toContainElement(
+        document.activeElement as HTMLElement,
+      ),
+    );
     // Oben, über dem Bild und dem Gruß.
     const titel = screen.getByRole('heading', { name: /^Willkommen/ });
     expect(meldung.compareDocumentPosition(titel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -240,19 +293,32 @@ describe('Einstieg: Willkommen (DRP-016)', () => {
     const fenster = await screen.findByRole('dialog', { name: /^Willkommen,\s+Paula Mustermann$/ });
     expect(
       within(fenster).getByText(
-        'Hier sehen Sie, was Test Praxis Tuebingen für Max Mustermann bereithält.',
+        satz('Hier sehen Sie, was Test Praxis Tuebingen für Max Mustermann bereithält.'),
       ),
     ).toBeInTheDocument();
     expect(
       within(fenster).getByText(
-        'Einwilligungen gibt nur Max Mustermann selbst. Noch eine kurze Frage, dann sind Sie fertig.',
+        satz(
+          'Einwilligungen gibt nur Max Mustermann selbst. Noch eine kurze Frage, dann sind Sie fertig.',
+        ),
       ),
     ).toBeInTheDocument();
+    // Den Namen trennt der Browser nie, auch nicht ab zwölf Buchstaben (DR-114).
+    for (const name of within(fenster).getAllByText('Max Mustermann', { selector: 'span' })) {
+      expect(name).toHaveClass('hyphens-manual');
+    }
     expect(within(fenster).getByText('Schritt 1 von 2')).toBeInTheDocument();
-    // Das Begleitband unter dem Fortschritt.
-    expect(within(fenster).getByRole('status')).toHaveTextContent(
-      'Sie handeln für Max Mustermann · Begleitung',
-    );
+    // Das Begleitband unter dem Fortschritt - dieselbe Leiste wie im Gerüst,
+    // über die ganze Breite des Fensters und vor der Frage.
+    const band = within(fenster).getByRole('status');
+    expect(band).toHaveTextContent('Sie handeln für Max Mustermann · Begleitung');
+    expect(band).toHaveClass('bg-accent');
+    expect(band).not.toHaveClass('rounded-card');
+    expect(band.parentElement).toHaveClass('-mx-5', 'max-[23rem]:-mx-3');
+    const schritt = within(fenster).getByText('Schritt 1 von 2', { exact: true });
+    const titel = within(fenster).getByRole('heading', { level: 2 });
+    expect(schritt.compareDocumentPosition(band) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(band.compareDocumentPosition(titel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
@@ -278,9 +344,17 @@ describe('Einstieg: Einwilligungen (DRP-017)', () => {
         .map((titel) => titel.textContent),
     ).toEqual(['Nachrichten per E-Mail', 'Bericht an Ihre Ärztin oder Ihren Arzt']);
     for (const gruppe of within(fenster).getAllByRole('group')) {
-      expect(within(gruppe).getByRole('radio', { name: 'Ja, erlauben' })).not.toBeChecked();
-      expect(within(gruppe).getByRole('radio', { name: 'Nein' })).not.toBeChecked();
+      expect(within(gruppe).getByRole('button', { name: 'Ja, erlauben' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+      expect(within(gruppe).getByRole('button', { name: 'Nein' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
     }
+    // Keine Radios: In einer Radiogruppe wählten schon die Pfeiltasten.
+    expect(within(fenster).queryAllByRole('radio')).toHaveLength(0);
     // Keine eigenen Knöpfe je Einwilligung mehr, keine zweite Knopfebene.
     expect(within(fenster).queryByRole('button', { name: /Einwilligen|Widerrufen/ })).toBeNull();
     expect(within(fenster).getByText(FREIWILLIG)).toBeInTheDocument();
@@ -304,14 +378,20 @@ describe('Einstieg: Einwilligungen (DRP-017)', () => {
     });
     expect(await within(mail).findByText('Gespeichert.')).toBeInTheDocument();
     // Die Karte bleibt, auch wenn die Einwilligung jetzt erteilt ist.
-    expect(within(mail).getByRole('radio', { name: 'Ja, erlauben' })).toBeChecked();
+    expect(within(mail).getByRole('button', { name: 'Ja, erlauben' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await nutzer.click(within(mail).getByText('Nein'));
     await waitFor(() =>
       expect(einwilligungSchreiben).toHaveBeenLastCalledWith(
         expect.objectContaining({ zweck: 'email_contact', erteilen: false }),
       ),
     );
-    expect(within(mail).getByRole('radio', { name: 'Nein' })).toBeChecked();
+    expect(within(mail).getByRole('button', { name: 'Nein' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('speichert ein Nein zu einer offenen Einwilligung nicht und behält es über „Zurück“', async () => {
@@ -327,7 +407,43 @@ describe('Einstieg: Einwilligungen (DRP-017)', () => {
     const wieder = await screen.findByRole('group', {
       name: 'Bericht an Ihre Ärztin oder Ihren Arzt',
     });
-    expect(within(wieder).getByRole('radio', { name: 'Nein' })).toBeChecked();
+    expect(within(wieder).getByRole('button', { name: 'Nein' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('nimmt eine Wahl während des Speicherns an und speichert sie danach - die letzte gilt', async () => {
+    const nutzer = userEvent.setup();
+    const erteilen = aufschub();
+    einwilligungSchreiben.mockReturnValueOnce(erteilen.versprechen);
+    const fenster = await zuDenEinwilligungen(nutzer);
+    const bericht = within(fenster).getByRole('group', {
+      name: 'Bericht an Ihre Ärztin oder Ihren Arzt',
+    });
+    // Aus Versehen „Ja“, sofort „Nein“: Das Nein wartet, bis das Ja gespeichert ist.
+    await nutzer.click(within(bericht).getByText('Ja, erlauben'));
+    await nutzer.click(within(bericht).getByText('Nein'));
+    expect(within(bericht).getByRole('button', { name: 'Nein' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(within(bericht).getByText('Wird gespeichert …')).toBeInTheDocument();
+    expect(einwilligungSchreiben).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      erteilen.erfuellen();
+      await erteilen.versprechen;
+    });
+    await waitFor(() => expect(einwilligungSchreiben).toHaveBeenCalledTimes(2));
+    expect(einwilligungSchreiben.mock.calls.map((aufruf) => aufruf[0] as unknown)).toEqual([
+      expect.objectContaining({ zweck: 'prescriber_report', erteilen: true }),
+      expect.objectContaining({ zweck: 'prescriber_report', erteilen: false }),
+    ]);
+    expect(await within(bericht).findByText('Gespeichert.')).toBeInTheDocument();
+    expect(within(bericht).getByRole('button', { name: 'Nein' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('nimmt die Wahl zurück und sagt es, wenn das Speichern scheitert', async () => {
@@ -341,7 +457,11 @@ describe('Einstieg: Einwilligungen (DRP-017)', () => {
     expect(
       await within(mail).findByText('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.'),
     ).toBeInTheDocument();
-    expect(within(mail).getByRole('radio', { name: 'Ja, erlauben' })).not.toBeChecked();
+    // Die Karte zeigt den Stand des Servers: offen, nichts gewählt.
+    expect(within(mail).getByRole('button', { name: 'Ja, erlauben' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   it('nimmt die Wahl auch zurück, wenn das Speichern erst nach „Weiter“ scheitert', async () => {
@@ -361,7 +481,26 @@ describe('Einstieg: Einwilligungen (DRP-017)', () => {
     await waitFor(() => expect(ladeEinwilligungen).toHaveBeenCalledTimes(2));
     await tippe(nutzer, '← Zurück');
     const wieder = await screen.findByRole('group', { name: 'Nachrichten per E-Mail' });
-    expect(within(wieder).getByRole('radio', { name: 'Ja, erlauben' })).not.toBeChecked();
+    expect(within(wieder).getByRole('button', { name: 'Ja, erlauben' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('geht mit der Zurückgeste einen Schritt zurück, nicht aus dem Einstieg (BEF-175)', async () => {
+    const nutzer = userEvent.setup();
+    const router = zeigeMitVerlauf(MIT_NAMEN);
+    await screen.findByRole('dialog', { name: /^Willkommen/ });
+    await tippe(nutzer, 'Weiter');
+    await screen.findByRole('dialog', { name: 'Zwei Fragen zu Ihren Daten' });
+    await tippe(nutzer, 'Weiter');
+    await screen.findByRole('dialog', { name: 'Sollen wir Ihnen Bescheid geben?' });
+    // Von Schritt 3 einen zurück - nicht hinaus und nicht von vorn.
+    await act(() => router.navigate(-1));
+    expect(
+      await screen.findByRole('dialog', { name: 'Zwei Fragen zu Ihren Daten' }),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/p');
   });
 
   it('lässt die Seite weg, wenn nichts offen ist - dann noch eine Frage', async () => {
@@ -454,28 +593,63 @@ describe('Einstieg: Mitteilungen (DRP-018)', () => {
     expect(speichereBenachrichtigungen).not.toHaveBeenCalled();
   });
 
-  it('nimmt beim Ausschalten das Telefon heraus', async () => {
+  it('behält beim ersten Einschalten den Fokus am Schalter, auch wenn das Telefon neu ist', async () => {
     const nutzer = userEvent.setup();
     pushMoeglich.mockReturnValue(true);
+    const fenster = await zuDenMitteilungen(nutzer);
+    // Nach dem Eintragen hat das Telefon einen Endpunkt - ein neuer Stand wird geladen.
     eigenerEndpunkt.mockResolvedValue(GERAET.endpoint);
     ladeBenachrichtigungen.mockResolvedValue({
       ...WAHL,
       push_kinds: ARTEN,
       device_registered: true,
     });
+    const schalter = within(fenster).getByRole('switch');
+    await nutzer.click(schalter);
+    await waitFor(() => expect(schalter).toHaveAttribute('aria-checked', 'true'));
+    expect(schalter).toBeInTheDocument();
+    expect(schalter).toHaveFocus();
+  });
+
+  it('nimmt beim Ausschalten nur die Arten dieses Zugangs heraus - das Telefon bleibt', async () => {
+    const nutzer = userEvent.setup();
+    pushMoeglich.mockReturnValue(true);
+    eigenerEndpunkt.mockResolvedValue(GERAET.endpoint);
+    ladeBenachrichtigungen.mockResolvedValue({
+      ...WAHL,
+      push_kinds: [...ARTEN, 'nutrition_diary_reminder'],
+      device_registered: true,
+    });
     const fenster = await zuDenMitteilungen(nutzer);
     const schalter = within(fenster).getByRole('switch');
     expect(schalter).toHaveAttribute('aria-checked', 'true');
     await nutzer.click(schalter);
-    await waitFor(() => expect(entferneGeraet).toHaveBeenCalledWith(GERAET.endpoint));
-    expect(pushAbmelden).toHaveBeenCalled();
+    await waitFor(() =>
+      expect(speichereBenachrichtigungen).toHaveBeenCalledWith(MIT_NAMEN.access_id, {
+        email_kinds: ['nutrition_diary_reminder'],
+        push_kinds: ['nutrition_diary_reminder'],
+        quiet_from: 20,
+        quiet_until: 8,
+      }),
+    );
+    // Für andere Zugänge auf diesem Telefon ändert sich nichts.
+    expect(entferneGeraet).not.toHaveBeenCalled();
+    expect(pushAbmelden).not.toHaveBeenCalled();
   });
 
   it('schaltet per E-Mail, wo Push hier nicht geht - die übrigen Arten bleiben', async () => {
     const nutzer = userEvent.setup();
     const fenster = await zuDenMitteilungen(nutzer);
     const schalter = within(fenster).getByRole('switch', { name: 'Mitteilungen per E-Mail' });
-    expect(schalter).toHaveAccessibleDescription('An die Adresse, mit der Sie sich anmelden.');
+    // An die Adresse des Kontos - angemeldet wird mit Passkey, nicht mit ihr.
+    expect(schalter).toHaveAccessibleDescription('An erika@patient.invalid');
+    // Umbrechen darf sie nach „@“ und vor einem Punkt, nicht mitten im Wort.
+    const adresse = within(schalter).getByText(
+      (_inhalt, element) =>
+        element?.tagName === 'SPAN' && element.textContent === 'erika@patient.invalid',
+    );
+    expect(adresse).toHaveClass('wrap-break-word', 'hyphens-manual');
+    expect(adresse.querySelectorAll('wbr')).toHaveLength(2);
     expect(
       within(fenster).getByText('Welche Mitteilungen, stellen Sie später unter „Ich“ ein.'),
     ).toBeInTheDocument();
@@ -509,7 +683,9 @@ describe('Einstieg: Mitteilungen (DRP-018)', () => {
     expect(within(fenster).getByText('Schritt 2 von 2')).toBeInTheDocument();
     expect(
       within(fenster).getByText(
-        'Zum Beispiel am Vortag eines Termins von Max Mustermann oder wenn die Praxis antwortet.',
+        satz(
+          'Zum Beispiel am Vortag eines Termins von Max Mustermann oder wenn die Praxis antwortet.',
+        ),
       ),
     ).toBeInTheDocument();
     expect(
@@ -562,6 +738,10 @@ describe('Einstieg: Alles bereit (DRP-019)', () => {
       ),
     );
     expect(einstiegBeenden).toHaveBeenCalledWith(MIT_NAMEN.access_id);
+    // Direkt dorthin: Die Übersicht hat nichts geladen. (Dass sie auch keinen
+    // Augenblick dasteht, sichert `flushSync` - in jsdom nicht nachzustellen.)
+    expect(ladeTermine).not.toHaveBeenCalled();
+    expect(ladeWuensche).not.toHaveBeenCalled();
   });
 
   it('führt ohne Aufgabe nur zur Übersicht', async () => {
@@ -598,7 +778,7 @@ describe('Einstieg: Alles bereit (DRP-019)', () => {
     const nutzer = userEvent.setup();
     const fenster = await bisAllesBereit(nutzer, BEGLEITUNG);
     expect(
-      within(fenster).getByText('Die Übersicht zeigt, was für Max Mustermann ansteht.'),
+      within(fenster).getByText(satz('Die Übersicht zeigt, was für Max Mustermann ansteht.')),
     ).toBeInTheDocument();
     expect(within(fenster).getByRole('button', { name: 'Zur Übersicht' })).toBeInTheDocument();
     expect(within(fenster).queryByRole('button', { name: /beginnen/ })).toBeNull();

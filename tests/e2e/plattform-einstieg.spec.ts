@@ -155,6 +155,31 @@ async function kleineZiele(page: Page): Promise<string[]> {
   });
 }
 
+/** Steht ein Wort in einer Zeile - oder bricht es mitten darin um? */
+async function wortGanz(ort: Locator, wort: string): Promise<boolean> {
+  return ort.evaluate((element, gesucht) => {
+    const gehen = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    for (let knoten = gehen.nextNode(); knoten; knoten = gehen.nextNode()) {
+      const stelle = knoten.textContent?.indexOf(gesucht) ?? -1;
+      if (stelle < 0) continue;
+      const bereich = document.createRange();
+      bereich.setStart(knoten, stelle);
+      bereich.setEnd(knoten, stelle + gesucht.length);
+      const zeilen = new Set(Array.from(bereich.getClientRects(), (r) => Math.round(r.top)));
+      return zeilen.size === 1;
+    }
+    return false;
+  }, wort);
+}
+
+/** Muss die Fläche der Seite rollen? */
+async function rollt(seite: Locator): Promise<boolean> {
+  return seite.evaluate((fenster) => {
+    const flaeche = fenster.querySelector<HTMLElement>('[tabindex="0"]');
+    return flaeche !== null && flaeche.scrollHeight > flaeche.clientHeight + 1;
+  });
+}
+
 async function axeVerstoesse(page: Page): Promise<string[]> {
   await page.addScriptTag({ path: AXE });
   return page.evaluate(async () => {
@@ -197,6 +222,12 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
     const daten = fenster(page, 'Zwei Fragen zu Ihren Daten');
     await pruefeSeite(page, daten, 'Einwilligungen');
     const mail = daten.getByRole('group', { name: 'Nachrichten per E-Mail' });
+    // Gleich gewichtet nebeneinander, solange beide Wörter passen.
+    const [jaBox, neinBox] = await Promise.all(
+      ['Ja, erlauben', 'Nein'].map((name) => mail.getByRole('button', { name }).boundingBox()),
+    );
+    expect(Math.abs((jaBox?.y ?? 0) - (neinBox?.y ?? 1))).toBeLessThan(1);
+    expect(Math.abs((jaBox?.width ?? 0) - (neinBox?.width ?? 0))).toBeLessThan(1);
     await tippeGezaehlt(mail.getByText('Ja, erlauben'));
     await expect(mail.getByText('Gespeichert.')).toBeVisible();
     expect(server.aufrufe['record_platform_consent']).toEqual([
@@ -261,21 +292,39 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
       const box = await daten.getByRole('button', { name }).boundingBox();
       expect(box?.height ?? 0, name).toBeLessThan(60);
     }
-    // Der Fuß steht am Ende des Inhalts: Er liegt mit ihm in derselben Rollfläche.
-    const fussRollt = await daten.getByRole('button', { name: 'Weiter' }).evaluate((knopf) => {
-      const flaeche = knopf.closest('[class*="max-[23rem]:overflow-y-auto"]');
-      return flaeche !== null && getComputedStyle(flaeche).overflowY === 'auto';
-    });
-    expect(fussRollt).toBe(true);
+    // Kopf, Inhalt und Fuß liegen in einer Rollfläche: Nichts steht fest und
+    // nimmt ein Drittel der Höhe.
+    const flaeche = daten.locator('[class*="max-[23rem]:overflow-y-auto"]');
+    expect(await flaeche.evaluate((f) => getComputedStyle(f).overflowY)).toBe('auto');
+    for (const name of ['Später', 'Weiter']) {
+      await expect(flaeche.getByRole('button', { name })).toHaveCount(1);
+    }
+    // Die neue Seite beginnt oben, obwohl auf der vorigen unten getippt wurde.
+    expect(await flaeche.evaluate((f) => f.scrollTop)).toBe(0);
+    await expect(daten.getByRole('heading', { level: 2 })).toBeInViewport();
     expect(await ueberlaeuft(page)).toBe(false);
     expect(await axeVerstoesse(page), 'axe').toEqual([]);
 
     // Der Schalter: Zustand und Spur rücken unter die Beschriftung, statt sie
-    // Buchstabe für Buchstabe umzubrechen (vorher 1550 px hoch).
+    // Buchstabe für Buchstabe umzubrechen (ohne das 1550 px hoch).
     await tippe(daten.getByRole('button', { name: 'Weiter' }));
     const schalter = fenster(page, 'Sollen wir Ihnen Bescheid geben?').getByRole('switch');
     await schalter.scrollIntoViewIfNeeded();
     expect((await schalter.boundingBox())?.height ?? 0).toBeLessThan(320);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+
+  test('188 px (200 %): Ein langer Name bricht nur am Bindestrich (DR-114)', async ({ page }) => {
+    await oeffne(page, 'einstieg-begleitung', 188, 406);
+    const willkommen = fenster(page, /^Willkommen,\s+Paula Mustermann-Langenscheidt$/);
+    await expect(willkommen).toBeVisible();
+    const titel = willkommen.getByRole('heading', { level: 2 });
+    for (const wort of ['Willkommen,', 'Paula', 'Mustermann-', 'Langenscheidt']) {
+      expect(await wortGanz(titel, wort), wort).toBe(true);
+    }
+    // Im Satz darunter trennt der Browser den Namen auch nicht mit Trennstrich.
+    const satz = willkommen.getByText(/^Hier sehen Sie/);
+    expect(await wortGanz(satz, 'Langenscheidt'), 'im Satz').toBe(true);
     expect(await ueberlaeuft(page)).toBe(false);
   });
 
@@ -288,10 +337,26 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
     const daten = fenster(page, 'Zwei Fragen zu Ihren Daten');
     await pruefeSeite(page, daten, 'Einwilligungen, Sehr groß');
     const mail = daten.getByRole('group', { name: 'Nachrichten per E-Mail' });
-    const ja = await mail.locator('label', { hasText: 'Ja, erlauben' }).boundingBox();
-    const nein = await mail.locator('label', { hasText: 'Nein' }).boundingBox();
+    const ja = await mail.getByRole('button', { name: 'Ja, erlauben' }).boundingBox();
+    const nein = await mail.getByRole('button', { name: 'Nein' }).boundingBox();
     expect(ja?.height ?? 0).toBeGreaterThanOrEqual(47.5);
     expect(Math.abs((ja?.width ?? 0) - (nein?.width ?? 0))).toBeLessThan(1);
+    // Wird es eng, steht jede Wahl in einer Zeile - kein Wort bricht im Knopf.
+    expect(await wortGanz(mail.getByRole('button', { name: 'Ja, erlauben' }), 'Ja, erlauben')).toBe(
+      true,
+    );
+  });
+
+  test('„Sehr groß“: „Willkommen“ passt ohne Rollen, das Bild wird kleiner', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+    });
+    await oeffne(page, 'einstieg-eingerichtet');
+    const willkommen = fenster(page, /^Willkommen/);
+    await pruefeSeite(page, willkommen, 'Willkommen, Sehr groß');
+    expect(await rollt(willkommen)).toBe(false);
+    const bild = await willkommen.locator('[data-willkommensbild] > div').boundingBox();
+    expect((bild?.width ?? 0) / (bild?.height ?? 1)).toBeCloseTo(4 / 3, 1);
   });
 
   test('1280 px: Titel in der Stufe des Rechners, der Kopf an der Kante des Inhalts', async ({
@@ -302,12 +367,18 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
     await expect(willkommen).toBeVisible();
     const gruss = willkommen.getByRole('heading', { level: 2 });
     expect(await gruss.evaluate((el) => getComputedStyle(el).fontSize)).toBe('40px');
-    const bild = await page.locator('[data-willkommensbild]').boundingBox();
+    const spalte = await gruss.boundingBox();
     const spaeter = await willkommen.getByRole('button', { name: 'Später' }).boundingBox();
     // „Später“ steht an der rechten Kante der Spalte, nicht am Rand des Fensters.
     expect(
-      Math.abs((spaeter?.x ?? 0) + (spaeter?.width ?? 0) - ((bild?.x ?? 0) + (bild?.width ?? 0))),
+      Math.abs(
+        (spaeter?.x ?? 0) + (spaeter?.width ?? 0) - ((spalte?.x ?? 0) + (spalte?.width ?? 0)),
+      ),
     ).toBeLessThan(16);
+    // Das Bild bleibt 4:3 und passt mit dem Text ohne Rollen ins Fenster.
+    const bild = await willkommen.locator('[data-willkommensbild] > div').boundingBox();
+    expect((bild?.width ?? 0) / (bild?.height ?? 1)).toBeCloseTo(4 / 3, 1);
+    expect(await rollt(willkommen)).toBe(false);
     await tippe(willkommen.getByRole('button', { name: 'Weiter' }));
     const titel = fenster(page, 'Zwei Fragen zu Ihren Daten').getByRole('heading', { level: 2 });
     expect(await titel.evaluate((el) => getComputedStyle(el).fontSize)).toBe('32px');
@@ -323,6 +394,7 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
     await expect(willkommen.getByRole('status')).toContainText(
       'Sie handeln für Maximilian Mustermann-Langenscheidt',
     );
+    expect(await rollt(willkommen)).toBe(false);
     await tippe(willkommen.getByRole('button', { name: 'Weiter' }));
     const mitteilungen = fenster(page, 'Sollen wir Ihnen Bescheid geben?');
     await pruefeSeite(page, mitteilungen, 'Mitteilungen, Begleitung');
@@ -333,6 +405,42 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
       bereit.getByText('Die Übersicht zeigt, was für Maximilian Mustermann-Langenscheidt ansteht.'),
     ).toBeVisible();
     await expect(bereit.getByRole('button')).toHaveText(['← Zurück', 'Zur Übersicht']);
+  });
+
+  test('„Sehr groß“, Begleitung: Den Namen im Satz trennt der Browser nicht (DR-114)', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+    });
+    await oeffne(page, 'einstieg-begleitung');
+    await tippe(fenster(page, /^Willkommen/).getByRole('button', { name: 'Weiter' }));
+    const mitteilungen = fenster(page, 'Sollen wir Ihnen Bescheid geben?');
+    await tippe(mitteilungen.getByRole('button', { name: 'Weiter' }));
+    const satz = fenster(page, 'Alles bereit').getByText(/^Die Übersicht zeigt/);
+    await expect(satz).toBeVisible();
+    expect(await wortGanz(satz, 'Langenscheidt')).toBe(true);
+    // Wo der Name in die Zeile fällt, hängt an Breite und Schrift - deshalb der
+    // Stil selbst: Der Satz trennt lange Wörter, der Name darin nie.
+    const trennung = await satz.evaluate((p) => {
+      const name = Array.from(p.querySelectorAll('span')).find((s) =>
+        s.textContent?.includes('Langenscheidt'),
+      );
+      return [getComputedStyle(p).hyphens, name ? getComputedStyle(name).hyphens : 'fehlt'];
+    });
+    expect(trennung).toEqual(['auto', 'manual']);
+  });
+
+  test('1280 px, Begleitung: das Band reicht über die ganze Breite des Fensters', async ({
+    page,
+  }) => {
+    await oeffne(page, 'einstieg-begleitung', 1280, 800);
+    const willkommen = fenster(page, /^Willkommen/);
+    await pruefeSeite(page, willkommen, 'Willkommen, Begleitung, Rechner');
+    const band = await willkommen.getByRole('status').boundingBox();
+    const rahmen = await willkommen.boundingBox();
+    expect(Math.abs((band?.width ?? 0) - (rahmen?.width ?? 0))).toBeLessThan(6);
+    expect(await rollt(willkommen)).toBe(false);
   });
 
   test('nach der Einrichtung einmal „Anmeldung eingerichtet“, der Parameter geht', async ({

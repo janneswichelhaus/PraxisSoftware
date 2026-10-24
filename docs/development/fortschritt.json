@@ -1500,9 +1500,9 @@
           "name": "DRP-EPIC-005 Plattform: Einstieg aus dem Design-Review (Schritt 1d – geführter Ablauf mit „Später“, Einwilligungen als Wahl, ein Schalter für Mitteilungen, „Alles bereit“)",
           "gewicht": 1,
           "status": "fertig",
-          "fertig_am": "2026-10-23",
+          "fertig_am": "2026-10-24",
           "nachweis": "DRP-015 bis DRP-019, Branch `claude/lucid-keller-zholly`, src/features/platform/Einstieg.test.tsx, tests/e2e/plattform-einstieg.spec.ts",
-          "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1d (Handoff 2026-10-22, Abschnitt 5.3), parallel zu 1c; ANN-692 bis ANN-695"
+          "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1d (Handoff 2026-10-22, Abschnitt 5.3), parallel zu 1c; ANN-692 bis ANN-696"
         }
       ]
     },

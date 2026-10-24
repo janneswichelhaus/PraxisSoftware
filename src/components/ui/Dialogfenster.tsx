@@ -566,6 +566,10 @@ const TitelKontext = createContext<{ id: string; titel: string } | null>(null);
  * 40, unter 23rem 28. Den Rechner sagt `data-rechner` am Fensterziel der
  * Plattform (`PlattformApp`), nicht `lg:` - wie am Seitentitel (ANN-683).
  * Ein Zeilenumbruch im Titel bleibt einer („Willkommen,“ und der Name).
+ *
+ * Unter 23rem trägt eine Zeile in 28 elf Zeichen. Hat der Titel ein längeres
+ * Wort - meist ein Name wie „Langenscheidt“ -, steht er dort in 22 wie der
+ * Hero-Titel, damit der Name nicht mitten im Wort bricht (DR-114, ANN-696).
  */
 export type Titelstufe = 'seite' | 'gruss';
 
@@ -573,8 +577,26 @@ const TITELSTUFE: Record<Titelstufe, string> = {
   seite:
     'text-accent text-plattform-titel [.plattform-schrift[data-rechner]_&]:text-plattform-titel-rechner whitespace-pre-line',
   gruss:
-    'text-accent text-gruss max-[23rem]:text-plattform-titel [.plattform-schrift[data-rechner]_&]:text-gruss-rechner whitespace-pre-line',
+    'text-accent text-gruss [.plattform-schrift[data-rechner]_&]:text-gruss-rechner whitespace-pre-line',
 };
+
+/** So viele Zeichen trägt ein Wort in 28 unter 23rem (188 px, 12 px Rand). */
+const ZEICHEN_IN_28_SCHMAL = 11;
+
+/** Das längste Stück, das nur am Leerzeichen oder nach einem Bindestrich bricht. */
+function laengstesWort(titel: string): number {
+  return Math.max(0, ...titel.split(/\s+|(?<=-)/).map((wort) => wort.length));
+}
+
+function titelklassen(stufe: Titelstufe, titel: string): string {
+  const schmal =
+    laengstesWort(titel) > ZEICHEN_IN_28_SCHMAL
+      ? 'max-[23rem]:text-hero-schmal'
+      : stufe === 'gruss'
+        ? 'max-[23rem]:text-plattform-titel'
+        : '';
+  return `${TITELSTUFE[stufe]} ${schmal}`.trim();
+}
 
 /**
  * Die Überschrift eines Vollbild-Fensters an einer Stelle im Inhalt
@@ -586,7 +608,10 @@ export function Fenstertitel({ stufe }: { stufe?: Titelstufe | undefined } = {})
   const kontext = useContext(TitelKontext);
   if (!kontext) return null;
   return (
-    <h2 id={kontext.id} className={stufe ? TITELSTUFE[stufe] : 'text-ink text-h3 font-bold'}>
+    <h2
+      id={kontext.id}
+      className={stufe ? titelklassen(stufe, kontext.titel) : 'text-ink text-h3 font-bold'}
+    >
       {kontext.titel}
     </h2>
   );

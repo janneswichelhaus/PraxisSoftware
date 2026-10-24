@@ -33,7 +33,11 @@ export interface Aufgabenlage {
 
 export function ersteAufgabe(lage: Aufgabenlage): Aufgabe | null {
   const { zugang, bogenId, boegen, checkins, plaene } = lage;
-  if (zugang.read_until !== null || zugang.relationship_kind === 'training') return null;
+  // Die Lesefrist hat nur der eigene Zugang; an einer Vertretung ist
+  // `read_until` ihr Ende - etwa die Volljährigkeit -, auch mitten in der
+  // Behandlung (wie die Übersicht es liest).
+  const lesefrist = zugang.access_kind === 'self' && zugang.read_until !== null;
+  if (lesefrist || zugang.relationship_kind === 'training') return null;
 
   // Eine Begleitung füllt den Bogen nicht aus (ANN-248).
   if (zugang.access_kind !== 'companion' && bogenId !== undefined && boegen !== undefined) {

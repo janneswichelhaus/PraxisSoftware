@@ -42,7 +42,9 @@ unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
 (über jedem Eingabefeld für Nachrichten) · `Skelett` mit `SkelettBereich` statt „wird geladen …“ ·
 `EmptyState` mit `markenform` · `Button`/`ButtonLink` Variante `marke` (nur auf Tiefgrün) ·
 `Personenbild` Größe `karte` · `Laufrad` · `Verbindungszeile` · `Menueknopf` · `Schalter` (eine
-Wahl, die sofort gilt; Zustand als Wort). Zu sehen auf der
+Wahl, die sofort gilt; Zustand als Wort) · `Wahlreihe` mit `sofort` (Knöpfe statt Radios: Pfeiltasten
+wählen nichts, etwa eine Einwilligung) · `Zwischentitel` mit `stufe="abschnitt"` (Kartentitel 22) ·
+`Vertretungsband` („Sie handeln für …“ im Gerüst und im Einstieg). Zu sehen auf der
 Prüfseite `tests/e2e/fixtures/plattform-bausteine.html`.
 
 ## Seitentypen und Gerüst
@@ -51,8 +53,10 @@ Prüfseite `tests/e2e/fixtures/plattform-bausteine.html`.
 geführter Ablauf (Einladung, Einstieg, Wunsch, Absage, Check-in, Fragebogen) · Durchführung (Übung im
 Vollbild, Hauptknopf fest unten, ohne Reiterleiste) · Tür (Einladung, Anmeldung, Einrichten, Sperre,
 Zugang beendet) · Blatt (Planblatt, Rechnung). Der geführte Ablauf kann „Später“ statt ✕ tragen,
-einen Balken je Schritt und unter 23rem den Fuß am Inhaltsende (`GefuehrterAblauf`, abschaltbar;
-so der Einstieg, DRP-EPIC-005).
+einen Balken je Schritt und das Band einer Vertretung unter dem Fortschritt; mit `plattform` 20 Rand,
+unter 23rem 12 und alles in einer Rollfläche, die Frage ohne Rollen (ein Bild darüber schrumpft in
+4:3). Ein Titel mit einem Wort über elf Zeichen steht unter 23rem in 22 (ANN-696). Abschaltbar; so
+der Einstieg, DRP-EPIC-005.
 
 **Gerüst** (`src/features/platform/Navigation.tsx`): Kopf 72 mit Wortmarke 28 und „Ich“ mit
 Initialen (bis N1 das Zeichen der Person). Reiterleiste in drei Stufen (ANN-679): eine Reihe,

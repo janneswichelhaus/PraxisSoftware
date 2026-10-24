@@ -5,9 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 1d Einstieg (23.10., Branch `claude/lucid-keller-zholly`, DRP-015 bis
--019): geführter Ablauf mit „Später“, Einwilligungen als Wahl (ANN-693), ein Schalter für
-Mitteilungen (ANN-694), „Alles bereit“ mit der ersten Aufgabe aus `hauptsache.ts` (ANN-692, -695).
+Design-Review Lauf 1, Schritt 1d Einstieg (23./24.10., Branch `claude/lucid-keller-zholly`, DRP-015
+bis -019): geführter Ablauf mit „Später“, Einwilligungen als Wahl (ANN-693), ein Schalter für
+Mitteilungen (ANN-694), „Alles bereit“ mit der ersten Aufgabe aus `hauptsache.ts` (ANN-692, -695,
+-696).
 
 Gemergt am 22. und 23.10.: Design-Review Schritt 0 (#288), Handoff und Bericht (#289), Schritt 1a
 (#290, ANN-678), 1b Gerüst (#293, ANN-679 bis -683), Daten N1/N2 (#292, ANN-690, -691);
@@ -61,4 +62,4 @@ Pfad A).
 
 ## Letzte Session
 
-23.10.2026, Branch `claude/lucid-keller-zholly`: keine Migration, kein Seed. Lokal: `git pull`.
+24.10.2026, Branch `claude/lucid-keller-zholly`: keine Migration, kein Seed. Lokal: `git pull`.

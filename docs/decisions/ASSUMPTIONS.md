@@ -7121,9 +7121,9 @@ Technik · offen · 2026-10-23 · — · — · Wiedervorlage: Schritt 1e (Über
 
 Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)
 
-**Annahme.** Der Einstieg fragt nur offene Einwilligungen, die jetzt erteilt werden können; Entschiedenes ändert man unter „Ich“ mit Rückfrage. „Ja, erlauben“ und „Nein“ stehen gleich gewichtet, nichts vorgewählt. Ein Ja gilt beim Wählen, mit der Fassung des Texts; ein Nein danach widerruft es, ein Nein zu Offenem bleibt ungespeichert.
+**Annahme.** Der Einstieg fragt nur offene, jetzt erteilbare Einwilligungen. „Ja, erlauben“ und „Nein“ stehen gleich gewichtet als Knöpfe, nichts vorgewählt; Pfeiltasten wählen nichts. Ein Ja gilt beim Wählen mit der Fassung des Texts, ein Nein danach widerruft - je Zweck nacheinander, die letzte Wahl gilt. Ein Nein zu Offenem bleibt ungespeichert.
 
-**Begründung.** Handoff 2026-10-22, Abschnitt 5.3. Ausdrücklich ist die Wahl unter dem vollen Text (Art. 9 Abs. 2 lit. a DSGVO; EDSA-Leitlinien 05/2020). Eine Ablehnung kennt `record_platform_consent` nicht. Unsicher: ob die Prüfung eine zweite Bestätigung verlangt.
+**Begründung.** Handoff 2026-10-22, 5.3; Art. 9 Abs. 2 lit. a DSGVO, EDSA-Leitlinien 05/2020. `record_platform_consent` kennt keine Ablehnung. Unsicher: ob die Prüfung eine Bestätigung verlangt.
 
 **Anker.** `offeneEinwilligungen` in `src/features/platform/einstiegsablauf.ts`, `Einwilligungsfrage` in `Einstieg.tsx`.
 
@@ -7133,9 +7133,9 @@ Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datens
 
 Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, mit ADR-024 Punkt 18)
 
-**Annahme.** Der Schalter im Einstieg schaltet sechs Arten ein: Terminerinnerung, Termin verschoben oder abgesagt, Antwort auf eine Rückfrage, Terminwunsch beantwortet, neuer Plan - nicht die Erinnerung ans Tagebuch, nicht, was die Praxis abgeschaltet hat. Geht Push auf dem Gerät, gilt er für dieses Telefon; sonst für die E-Mail. Aus nimmt das Telefon heraus bzw. die sechs Arten aus der Mail.
+**Annahme.** Der Schalter schaltet für den eigenen Zugang sechs Arten ein: Terminerinnerung, verschoben, abgesagt, Antwort auf eine Rückfrage, Terminwunsch beantwortet, neuer Plan - ohne, was die Praxis abgeschaltet hat. Geht Push auf dem Gerät, per Push, sonst per E-Mail an die Adresse des Kontos. Aus nimmt die sechs Arten heraus; das Telefon bleibt für andere Zugänge eingetragen.
 
-**Begründung.** Handoff 2026-10-22, Abschnitte 5.3 und 10. ADR-024 Punkt 15 (eingeschaltet im Einstieg, je Art feiner unter „Ich“), Punkt 11 (Mail ist der Regelweg; ohne Push bliebe der Schritt leer). Unsicher: ob eine Wahl für sechs Arten der Wahl je Art genügt.
+**Begründung.** Handoff 2026-10-22, Abschnitte 5.3 und 10; ADR-024 Punkte 15 und 11 (Mail ist der Regelweg). Unsicher: ob eine Wahl für sechs Arten der Wahl je Art genügt.
 
 **Anker.** `MITTEILUNGSARTEN` in `src/features/platform/einstiegsablauf.ts`, `Mitteilungen` in `Einstieg.tsx`.
 
@@ -7152,3 +7152,15 @@ Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 **Anker.** `useEinmaligeRueckmeldung('eingerichtet')` in `src/features/platform/Einstieg.tsx`.
 
 **Änderungspfad.** Eigene Seite nach „PIN speichern“ (1c) oder die Rückmeldung auch auf der Übersicht · Aufwand `klein`.
+### ANN-696 — Plattform unter 23rem: ein Titel mit langem Wort in 22, damit kein Name bricht
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Schritt 1e (Gruß der Übersicht)
+
+**Annahme.** Unter 23rem steht die Überschrift eines Fensters der Plattform in 22 statt 28, sobald ein Wort darin länger als elf Zeichen ist - meist ein Name. Am Bindestrich darf er brechen, mitten im Wort nicht. Sonst bleibt es bei 28, auch für den Gruß.
+
+**Begründung.** Handoff 2026-10-22, Abschnitte 4 („Gruß in Größe des Seitentitels (28)“) und 6 („kein abgeschnittenes Wort“); DR-114. „Langenscheidt“ braucht in 28 173 px, bei 200 % sind 164 da; 22 ist die schmale Stufe des Hero-Titels.
+
+**Anker.** `titelklassen` in `src/components/ui/Dialogfenster.tsx`.
+
+**Änderungspfad.** Andere Grenze in `ZEICHEN_IN_28_SCHMAL` oder immer 28 mit Bruch im Wort · Aufwand `klein`.
+

@@ -16,22 +16,34 @@ import type { ReactNode } from 'react';
  * Element (h3 unter einem `Section` mit h2, h4 eine Stufe tiefer, h2 direkt
  * unter dem Seitentitel ohne `Section` dazwischen, DR-158), nie die Größe.
  * `aktion` steht rechts daneben, etwa ein Textlink „Bearbeiten“.
+ *
+ * `stufe="abschnitt"` setzt ihn in die Stufe des Abschnittstitels der
+ * Plattform (22/700, Handoff 2026-10-22, Abschnitt 2): der Titel einer Karte,
+ * die für sich steht - eine Einwilligung im Einstieg (5.3). Ohne die Angabe
+ * bleibt er überall, wie er ist.
  */
 export function Zwischentitel({
   children,
   ebene = 3,
   aktion,
   id,
+  stufe,
 }: {
   children: ReactNode;
   ebene?: 2 | 3 | 4;
   aktion?: ReactNode;
   /** Für `aria-labelledby` einer Gruppe darunter. */
   id?: string;
+  stufe?: 'abschnitt' | undefined;
 }) {
   const Element = ebene === 4 ? 'h4' : ebene === 2 ? 'h2' : 'h3';
   const titel = (
-    <Element id={id} className="text-ink text-base font-semibold">
+    <Element
+      id={id}
+      className={
+        stufe === 'abschnitt' ? 'text-ink text-abschnitt' : 'text-ink text-base font-semibold'
+      }
+    >
       {children}
     </Element>
   );

@@ -26,7 +26,7 @@ export function Schalter({
   /** Was er schaltet; ein Wort, das nicht brechen soll, in `whitespace-nowrap`. */
   beschriftung: ReactNode;
   /** Ein Satz unter der Beschriftung, als Beschreibung vorgelesen. */
-  hinweis?: string | undefined;
+  hinweis?: ReactNode;
   an: boolean;
   onUmschalten: (an: boolean) => void;
   laeuft?: boolean;
