@@ -5,28 +5,28 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1: **Schritt 1 ist abgenommen** (Jannes, 24.10.). Nacharbeit dazu auf Branch
-`ccr-c5a4a21f-ys0el3` (#298): die fünf Fragen aus #297 wie empfohlen entschieden, „Mitteilungen
-einschalten“ unter „Heute“ (ANN-702). Für Schritt 2 (Übungen) liegen Briefing 2 aufgefrischt und 22
-Ist-Bilder bereit; neu dabei BEF-196 und BEF-197. Im selben PR **BEF-170** (Pfad A): einzeln gelöschte
-Dateien der Akte stehen im Löschjournal (ANN-703), Zweitreview gelaufen; daraus BEF-198.
+Design-Review Lauf 1, Schritt 2 Übungen (24.10., Branch `claude/new-session-27nejg`): Handoff aus
+Claude Design liegt vor (`design/handoff-2026-10-24-plattform-uebungen.md`, Leinwand „Plattform –
+Übungen“), vier Fragen an Jannes in Abschnitt 0. Mit dem Merge ist Schritt 2 freigegeben (2a bis 2d).
 
-Gemergt am 24.10.: Schritt 1e Übersicht (#297, DRP-020 bis -022) – damit ist Schritt 1 des Handoffs
-gebaut; 1d Einstieg (#294), 1c Türen (#295), CI-Fix #296. Gemergt am 22. und 23.10.: Schritt 0
-(#288), Handoff und Bericht (#289), 1a (#290), 1b (#293), Daten N1/N2 (#292); BEF-179/-180 (#287).
-Auf `origin` liegt sonst nichts Ungemergtes.
+**Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24.10.: Nacharbeit #298 (Fragen aus #297
+wie empfohlen, „Mitteilungen einschalten“ unter „Heute“, ANN-702; Briefing 2 aufgefrischt, BEF-196
+und BEF-197; BEF-170 Pfad A, ANN-703, daraus BEF-198), 1e Übersicht (#297, DRP-020 bis -022), 1d
+Einstieg (#294), 1c Türen (#295), CI-Fix #296. Gemergt am 22. und 23.10.: Schritt 0 (#288), Handoff
+und Bericht (#289), 1a (#290), 1b (#293), Daten N1/N2 (#292); BEF-179/-180 (#287). Auf `origin`
+liegt sonst nichts Ungemergtes.
 
 ## Danach
 
-Design-Review Schritte 2 bis 7 (Übungen, Termine, Selbstauskunft, Nachrichten, Unterlagen, Ich),
-je mit freigegebenem Handoff aus Claude Design; Briefings in `design/review-2026-10/`. Ohne Handoff:
-BEF-198 (Grundlage samt Verordnungsscan ins Löschjournal, übrige Löschwege von Hand durchsehen;
-Pfad A).
+Schritt 2 nach Abschnitt 9 des Handoffs: 2a Bausteine, dann 2b Durchführung und 2c Reiter parallel,
+2d Planblatt. Danach Schritte 3 bis 7 (Termine, Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit
+freigegebenem Handoff aus Claude Design; Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198
+(Grundlage samt Verordnungsscan ins Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A).
 
 ## Bei Jannes
 
-- Schritt 2: Briefing 2 und die Ist-Bilder in Claude Design geben, Entwürfe entscheiden, Handoff
-  zurück (`design/review-2026-10/lauf-1-umsetzung.md`, Ablauf je Schritt).
+- Handoff Übungen, Abschnitt 0: Dauer schätzen, „Später weiter“, Endseite, Trennung unter 23rem
+  (je mit Empfehlung; gebaut wird bis dahin die Fassung „bis dahin“).
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
@@ -50,4 +50,5 @@ Pfad A).
 
 ## Letzte Session
 
-24.10.2026, Branch `ccr-c5a4a21f-ys0el3`: keine Migration, kein Seed. Lokal: `git pull`.
+24.10.2026, Branch `claude/new-session-27nejg`: nur Doku (Handoff Übungen), keine Migration, kein
+Seed. Lokal: `git pull`.
