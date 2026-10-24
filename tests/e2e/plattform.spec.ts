@@ -68,7 +68,8 @@ test.describe('Plattform', () => {
       // Besuch und die offene Rechnung (Schritt 1e).
       await page.goto(`${PRUEFSEITE}?seite=geruest`);
       await expect(
-        page.getByRole('region', { name: 'Fragebogen vor Ihrem ersten Termin' }),
+        // Die Prüfseite kennt einen vergangenen Termin: „nächsten“, nicht „ersten“.
+        page.getByRole('region', { name: 'Fragebogen vor Ihrem nächsten Termin' }),
       ).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Nächster Besuch' })).toBeVisible();
       await expect(page.getByRole('link', { name: /^Rechnung RG-2026-0007/ })).toBeVisible();

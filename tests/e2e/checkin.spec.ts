@@ -65,7 +65,10 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
       expect(await ueberlaeuft(page)).toBe(false);
 
       await page.goto(`${PRUEFSEITE}?seite=checkin-danke`);
-      await expect(page.getByText(/sieht Ihre Angaben beim nächsten Termin/)).toBeVisible();
+      // Die Rückmeldung, nicht der Satz der Hauptsache darunter (Schritt 1e).
+      await expect(
+        page.getByText(/Danke\. Ihre Therapeut:in sieht Ihre Angaben beim nächsten Termin/),
+      ).toBeVisible();
       await expect(page.getByRole('link', { name: /Check-in beantworten/ })).toHaveCount(0);
 
       await page.goto(`${PRUEFSEITE}?seite=angaben`);
