@@ -130,7 +130,8 @@ Aufgabe in dieser Reihenfolge:
 Steht keine an, ist der **nächste Termin** die Hauptsache — Datum, Uhrzeit,
 wer kommt; sonst steht er unter **„Nächster Besuch“** mit der Anschrift, an
 die jemand kommt. Weitere Aufgaben des Tages (Gewohnheit, Check-in) stehen
-unter **„Heute“**. **Antwort der Praxis** und **offene Rechnung** werden nie
+unter **„Heute“**, zuletzt „Mitteilungen einschalten“, bis die Person gewählt
+hat (ANN-702). **Antwort der Praxis** und **offene Rechnung** werden nie
 Hauptsache; sie stehen unter **„Neu für Sie“** (Rechnung mit Betrag,
 Fälligkeit und Zustand). In der Lesefrist ist die Hauptsache „Unterlagen
 sichern“. Der Notfallhinweis steht nicht auf der Übersicht, sondern über jedem

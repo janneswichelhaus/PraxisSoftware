@@ -1,8 +1,12 @@
 # Briefing 2 – Übungen
 
 Für Claude Design. Hebel 2 von 7. Quelle: Design-Review Lauf 1 vom 21.10.2026 (Befunde DR-127 bis
-DR-131, dazu DR-117 und DR-154). Baut auf der Plattform-Sprache aus Briefing 1 auf; liegt deren
-Ergebnis nicht vor, gelten die Leitplanken unten.
+DR-131, dazu DR-117 und DR-154). Aufgefrischt am 24.10.2026: Schritt 1 (Briefing 1) ist gebaut und
+abgenommen, die Bilder zeigen den Stand danach.
+
+**Mitgeben:** dieses Briefing, die 22 Bilder aus `fuer-claude-design/02-uebungen/`,
+`docs/design/PLATTFORM.md` und als Grundlage das „Own Motion Designsystem“ und die Leinwand
+„Plattform – Erster Eindruck“ (Briefing 1).
 
 ## Kontext
 
@@ -24,18 +28,57 @@ KI-Bilder sind ausgeschlossen. Der Entwurf muss deshalb **ohne Medien vollwertig
 bitte eine Variante „mit Video der Praxis“ zeigen (Platzhalter), damit das Layout später nicht neu
 gedacht werden muss – gebaut wird sie erst, wenn Medien vorliegen.
 
-## Ist-Zustand (Bilder zum Hochladen, Ordner `fuer-claude-design/02-uebungen/`)
+## Seit Schritt 1 gebaut – gilt, bitte nicht neu entwerfen
 
-| Datei                           | Was zu sehen ist                                                                                                                 |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `01-uebungen-plan-375.png`      | Reiter „Übungen“: Planname als Versal-Etikett, Stand und Laufzeit, Übungstage als 7 Pillen, „Jetzt üben“, Liste, „Plan als PDF“. |
-| `02-einheit-375.png`            | Durchführung: „ÜBUNG 1 VON 3“, vier Kacheln (Durchgänge, Wiederholungen, Pause, Mit), Schrittliste, Durchgänge zum Abhaken.      |
-| `03-planblatt-375.png`          | Plan als Blatt am Bildschirm (zum Drucken oder als PDF).                                                                         |
-| `04-training-375.png`           | Dieselbe Seite als „Training“ einer Trainingskundin.                                                                             |
-| `05-ohne-netz-375.png`          | Ohne Verbindung: „! Ohne Verbindung. Hier ist nur, was auf diesem Gerät liegt.“, Planname in Versalien, „Jetzt üben“.            |
-| `06-einheit-pruefseite-375.png` | Durchführung an einer Prüfseite, ganze Seite.                                                                                    |
-| `07-uebungen-1280.png`          | Reiter „Übungen“ am Rechner (576 px breite Spalte).                                                                              |
-| `08-laden-375.png`              | Laden: ein Satz in einer Karte.                                                                                                  |
+Die Plattform-Sprache aus Briefing 1 steht im Code und in `PLATTFORM.md`. Sie ist hier die Grundlage:
+
+- **Schrift und Raum:** Skala in rem – Seitentitel 28/800 (Rechner 32), Abschnitt 22/700, Zeile
+  18/600, Text 18/400, nichts unter 18; keine Versalien; 40 px zwischen Abschnitten (Rechner 48),
+  Seitenrand 20. Eine Schattenstufe nur für Hero-, Aufgaben- und Besuchskarte. Druck an Knopf, Zeile
+  und Karte: 98 % und vertiefte Fläche in 120 ms.
+- **Bausteine:** Hero-Karte (Tiefgrün, eine je Bildschirm), Aufgabenkarte, Besuchskarte, Skelett statt
+  „wird geladen …“, Leerzustand mit Markenform, Schalter, Wahlreihe, geführter Ablauf mit „Später“
+  und Balken je Schritt, Verbindungszeile ohne Netz.
+- **Gerüst:** Kopf 72 mit Initialen; Reiterleiste in drei Stufen (eine Reihe, zwei Reihen, unter
+  23rem ein Menü); ab 1024 px Navigation im Kopf und jede Seite in einer Spalte von 48rem.
+- **Seitentyp „Durchführung“** ist in `PLATTFORM.md` schon beschrieben – Übung im Vollbild, Hauptknopf
+  fest unten, ohne Reiterleiste –, aber noch nicht gebaut: Heute steht die Reiterleiste darunter.
+- **Einstieg aus der Übersicht:** „Ihre Übungen für heute“ ist dort die Hauptsache (Hero-Karte mit
+  „Übungen beginnen“, führt direkt in die Durchführung) oder eine Aufgabenkarte unter „Heute“; im
+  Training „Ihr Plan für zu Hause“ (Bild 22).
+
+Damit erledigt: DR-117 (Druckzustand), DR-154 (Skala, Versalien) und DR-131 (der Planname steht in
+Satzschreibung). Offen bleiben DR-127 bis DR-130, dazu zwei neue Befunde (unten).
+
+## Ist-Zustand (Bilder vom 24.10.2026, Ordner `fuer-claude-design/02-uebungen/`)
+
+Alles synthetisch. Bilder 01, 03, 04, 06, 12 bis 16 aus dem lokalen Stack (Erika, Behandlung;
+Tina, Training), die übrigen von der Prüfseite `plattform-uebungen.html` mit einem langen Plan.
+Ganzseitenaufnahmen: Die Reiterleiste steht am Telefon fest unten und liegt deshalb mitten im Bild.
+
+| Datei                                           | Was zu sehen ist                                                                                           |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `01-uebungen-plan-375.png`                      | Reiter „Übungen“: Planname, Stand und Laufzeit, Übungstage als sieben Pillen in zwei Reihen, „Jetzt üben“. |
+| `02-uebungen-langer-planname-375.png`           | Langer Planname, drei gewählte Übungstage mit Haken, „Zuletzt geübt: heute“, „Weiter üben“.                |
+| `03-uebungen-1280.png`                          | Derselbe Reiter am Rechner in der Spalte von 48rem.                                                        |
+| `04-training-375.png`                           | „Training“ einer Trainingskundin mit Plan.                                                                 |
+| `05-training-ohne-plan-375.png`                 | Leer: „Noch kein Plan“.                                                                                    |
+| `06-einheit-375.png`                            | Durchführung: „Übung 1 von 3“, vier Kacheln, „So geht’s“ in Schritten, Durchgänge, „Nächste Übung“.        |
+| `07-einheit-langer-name-375.png`                | Durchführung mit langem Übungsnamen neben „Abbrechen“ – das Wort bricht (BEF-196).                         |
+| `08-einheit-1280.png`                           | Durchführung am Rechner.                                                                                   |
+| `09-einheit-beenden-375.png`                    | Abschluss: drei Skalen 0–10, freies Feld, drei Knöpfe; die Reiterleiste liegt über dem Inhalt.             |
+| `10-ohne-netz-plan-375.png`                     | Reiter ohne Verbindung: Verbindungszeile oben, Plan bleibt.                                                |
+| `11-ohne-netz-einheit-375.png`                  | Durchführung ohne Verbindung.                                                                              |
+| `12-laden-375.png`                              | Laden: noch ein Satz in einer Karte, kein Skelett.                                                         |
+| `13-fehler-375.png`                             | Fehler ohne Plan auf dem Gerät.                                                                            |
+| `14-fehler-mit-plan-auf-dem-geraet-375.png`     | Serverfehler mit Plan auf dem Gerät – sagt „Ohne Verbindung“ (BEF-197).                                    |
+| `15-planblatt-375.png`, `16-planblatt-1280.png` | Plan als Blatt (Drucken oder als PDF sichern).                                                             |
+| `17-plan-sehr-gross-375.png`                    | Reiter bei „Sehr groß“.                                                                                    |
+| `18-einheit-sehr-gross-375.png`                 | Durchführung bei „Sehr groß“.                                                                              |
+| `19-plan-200-prozent-188.png`                   | Reiter bei 200 % (188 px): Planname und Übungen brechen mitten im Wort (BEF-196).                          |
+| `20-einheit-200-prozent-188.png`                | Durchführung bei 200 %: „Durchgang“ bricht vor dem „g“ in den Haken-Zeilen (BEF-196).                      |
+| `21-termine-mit-uebungstagen-375.png`           | Termine: „Diese Woche“ mit den Übungstagen – dort taucht der Plan ebenfalls auf.                           |
+| `22-uebersicht-uebungen-heute-375.png`          | Übersicht nach Schritt 1: „Ihre Übungen für heute“ als Aufgabenkarte unter „Heute“.                        |
 
 Was trägt: die großen Zeilen zum Abhaken je Durchgang, die Anleitung in nummerierten Schritten, die
 Dosierung in Worten, „Sie brauchen“ und „Hinweis“ der Fachperson, das Üben ohne Netz (jeder Haken
@@ -46,17 +89,18 @@ liegt zuerst auf dem Gerät).
 **S2:**
 
 - Plan und Einheit lesen sich wie ein Textdokument – kein Bild, keine Bühne, kein Moment (DR-127).
-- Übungstage als sieben umrahmte Pillen in zwei Reihen; ob und wie man wählt, ist nicht zu erkennen
-  (DR-128).
-- Kein Druckzustand an Knöpfen und Zeilen (DR-117); eine Schriftgröße für alles, Versal-Etiketten
-  (DR-154).
+- Übungstage als sieben Pillen in zwei Reihen; gewählte tragen jetzt Haken und Fläche, aber eine
+  Rückmeldung wie „Sie üben an 3 Tagen“ fehlt, und am Telefon brauchen sie zwei Reihen (DR-128).
+- Übungs- und Plannamen brechen mitten im Wort – bei 375 px neben „Abbrechen“, bei 200 % in Titel,
+  Dosierung und Haken-Zeilen (BEF-196).
 
 **S3:**
 
 - „Jetzt üben“ ohne Dauer und Hilfsmittel vorab (DR-129).
-- Der Hauptknopf „Nächste Übung“ liegt am Seitenende unter dem Text, darunter ein Erklärsatz;
-  „Abbrechen“ als kleiner Textknopf oben rechts (DR-130).
-- Langer Planname in Versalien mit Trennstrich („KNIE-TO-TALENDOPROTHESE“) (DR-131).
+- Durchführung nicht im Vollbild: Reiterleiste darunter, „Nächste Übung“ am Seitenende unter dem
+  Text, darunter ein Erklärsatz; „Abbrechen“ als kleiner Textknopf oben rechts (DR-130).
+- „Einheit beenden“: drei Knöpfe gleich laut, der Planname abgeschnitten mit „Mehr“.
+- Laden als Satz statt Skelett; ein Serverfehler heißt „Ohne Verbindung“ (BEF-197).
 
 ## Referenzmuster
 
@@ -90,7 +134,8 @@ liegt zuerst auf dem Gerät).
    den Übungen“, „Abbrechen“) – bitte auf einen Hauptknopf ordnen. Danach „Gespeichert“ bzw. „Liegt
    auf dem Gerät und wird übertragen“ – ohne Lob. Variante „mit Video der Praxis“ (Platzhalter).
 3. **Ohne Verbindung:** dieselbe Durchführung mit Zeile „Ohne Verbindung – Ihre Haken liegen auf
-   diesem Gerät“.
+   diesem Gerät“. Getrennt davon der Fehler bei bestehender Verbindung: Die Praxis antwortet gerade
+   nicht, geübt werden kann trotzdem mit dem Plan vom letzten Laden (BEF-197). Laden als Skelett.
 4. **Planblatt:** Bildschirm und Druck (A4, schwarzweiß tauglich, Marke im Kopf).
 5. **Rechner (1280 px):** Plan links, Vorschau der Einheit rechts; Durchführung mittig mit großem
    Hauptknopf.
@@ -107,14 +152,16 @@ Linie stark #767c84, Hauptfarbe #004429, Salbei hell #e1f0e4, Warnung #5a4300 au
 #7a2418 auf #f4e3e0. Schrift Hanken Grotesk. Radien: Knopf und Feld 10, Karte 14, Bild 16, Pille
 rund. Knopf 48 px, kompakt 44. Rhythmus 4/8/12/16/24/32 px.
 
-**Darf auf der Plattform abweichen:** Bilder (Platzhalter, keine KI-Bilder in der Umsetzung), mehr
-Weißraum (40/48 px), eine Schattenstufe, Markenfläche Tiefgrün, eigene Schriftskala ab 18 px, ruhige
-Bewegung. Nicht: neue Farbfamilie, Dunkelmodus, zweite Fassung der Marke.
+**Plattform:** Es gilt `PLATTFORM.md`, oben unter „Seit Schritt 1 gebaut“ zusammengefasst. Bilder
+bleiben Platzhalter, keine KI-Bilder in der Umsetzung. Nicht: neue Farbfamilie, Dunkelmodus, zweite Fassung
+der Marke.
 
 **Bausteine** (Werte dürfen sich ändern, nicht die Rolle): Seitenkopf, Abschnitt, Liste aus ganzen
 Zeilen, Kachel, Knopf (Haupt, Zweit, leise), Symbolknopf, Chip, Segment, Statuszeichen (Zeichen +
 Wort), Rückmeldung, Rückfrage, Fenster, geführter Ablauf, Formularfuß, Aktionsleiste (klebend über
-dem unteren Rand), Bild 4:3, Personenbild, Laden/Fehler/Leer, Kleingedrucktes, Aufklapper.
+dem unteren Rand), Bild 4:3, Personenbild, Laden/Fehler/Leer, Kleingedrucktes, Aufklapper; dazu die
+Plattform-Bausteine aus Schritt 1 (Hero-Karte, Aufgabenkarte, Besuchskarte, Skelett, Schalter,
+Wahlreihe, Verbindungszeile).
 
 **Nicht verhandelbar:**
 

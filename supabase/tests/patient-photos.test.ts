@@ -823,6 +823,13 @@ describe('Patientenfotos (DOK-006b)', () => {
           [BUCKET, datei.object_key],
         ),
       ).toBe(1);
+      // BEF-170: im Journal mit der Klasse der Arbeitshilfe, nicht der Akte.
+      expect(
+        await anzahl(
+          `select count(*) from public.deletion_journal where target_id = $1 and retention_class = 'patientenfoto'`,
+          [datei.file_id],
+        ),
+      ).toBe(1);
     });
 
     it('zeigt der Trainingsbetreuung keine Fotos - anderer Leistungsbereich (§4.8)', async () => {

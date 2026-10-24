@@ -76,6 +76,16 @@ async function zeile(fileId: string) {
   return rows[0];
 }
 
+/** Die Klassen der Einträge einer Datei im Löschjournal (BEF-170). */
+async function journal(fileId: string): Promise<string[]> {
+  const { rows } = await asPostgres<{ retention_class: string }>(
+    `select retention_class from public.deletion_journal
+      where target_table = 'patient_files' and target_id = $1`,
+    [fileId],
+  );
+  return rows.map((r) => r.retention_class);
+}
+
 async function schalter(an: boolean): Promise<void> {
   await asPostgres(
     `create or replace function app.patient_file_verification_required()
@@ -94,6 +104,7 @@ describe('Pruefung am Server (ABN-024)', () => {
     await asPostgres('delete from public.storage_deletion_orders');
     await asPostgres("delete from storage.objects where bucket_id = 'patientenakte'");
     await asPostgres("delete from public.audit_log where action like 'patient_file%'");
+    await asPostgres("delete from public.deletion_journal where target_table = 'patient_files'");
   });
 
   afterEach(async () => {
@@ -181,6 +192,9 @@ describe('Pruefung am Server (ABN-024)', () => {
       // Nie Name oder Objektschluessel im Protokoll (ADR-017 Punkt 20).
       expect(JSON.stringify(protokoll[0]!.context)).not.toContain(datei.object_key);
       expect(JSON.stringify(protokoll[0]!.context)).not.toContain('Befund vom');
+
+      // BEF-170: Das Verwerfen haelt auch ueber eine Wiederherstellung.
+      expect(await journal(datei.file_id)).toEqual(['patientenakte']);
     });
   }
 
@@ -306,6 +320,7 @@ describe('Pruefung am Server (ABN-024)', () => {
         [datei.file_id],
       );
       expect(rows).toEqual([{ held: true }]);
+      expect(await journal(datei.file_id)).toEqual([]);
       await asPostgres('delete from public.legal_holds');
     });
 

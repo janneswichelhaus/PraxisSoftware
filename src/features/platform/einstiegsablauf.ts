@@ -1,6 +1,6 @@
 import type { Benachrichtigungsart } from '@/lib/begriffe';
 import { einwilligungAngeboten } from '@/lib/einwilligung';
-import type { Einwilligung, Plattformzugang } from './api';
+import type { Benachrichtigungswahl, Einwilligung, Plattformzugang } from './api';
 import { OHNE_NACHTEIL } from './einwilligungstexte';
 import type { Aufgabe } from './hauptsache';
 
@@ -94,6 +94,23 @@ export function mitteilungenAn(
   arten: readonly Benachrichtigungsart[],
 ): boolean {
   return gewaehlt.some((art) => arten.includes(art));
+}
+
+/**
+ * Steht „Mitteilungen einschalten“ unter „Heute“ (ANN-702)? Solange die Person
+ * nichts gewählt hat - weder am Schalter des Einstiegs noch unter „Ich“ - und
+ * keine Art des Schalters an ist. Wer „Aus“ gewählt hat, hat gewählt:
+ * Abschalten kostet nichts, auch keine Erinnerung (ADR-024 Punkt 15).
+ */
+export function mitteilungenOffen(
+  wahl: Pick<
+    Benachrichtigungswahl,
+    'email_kinds' | 'push_kinds' | 'chosen_at' | 'disabled_kinds'
+  > | null,
+): boolean {
+  if (wahl === null || wahl.chosen_at !== null) return false;
+  const arten = mitteilungsarten(wahl.disabled_kinds);
+  return arten.length > 0 && !mitteilungenAn([...wahl.email_kinds, ...wahl.push_kinds], arten);
 }
 
 /** Die Wahl mit den Arten des Schalters an oder aus; die übrigen bleiben. */

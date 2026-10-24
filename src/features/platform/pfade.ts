@@ -11,6 +11,12 @@ export const PLATTFORM_PFAD = '/p';
  */
 export const NACH_DER_EINRICHTUNG = `${PLATTFORM_PFAD}?eingerichtet=1`;
 
+/**
+ * Der Abschnitt „Benachrichtigungen“ unter „Ich → Einstellungen“ als Sprungziel:
+ * Dorthin führt „Mitteilungen einschalten“ auf der Übersicht (ANN-702).
+ */
+export const BENACHRICHTIGUNGEN_ANKER = 'benachrichtigungen';
+
 /** Der gewählte Bereich als Suchparameter, damit Links ihn mitnehmen (D6). */
 export function bereichParameter(suche: URLSearchParams): string {
   return new URLSearchParams(

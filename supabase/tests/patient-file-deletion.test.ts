@@ -69,6 +69,22 @@ async function aufraeumen(): Promise<void> {
   await asPostgres(
     "delete from public.audit_log where action like 'patient_file.%' or action like 'storage_deletion.%'",
   );
+  await asPostgres("delete from public.deletion_journal where target_table = 'patient_files'");
+}
+
+/** Die Einträge einer Datei im Löschjournal (BEF-170). */
+async function journal(fileId: string) {
+  const { rows } = await asPostgres<{
+    retention_class: string;
+    due_at: Date;
+    deleted_at: Date;
+    reapplied_at: Date | null;
+  }>(
+    `select retention_class, due_at, deleted_at, reapplied_at from public.deletion_journal
+      where target_table = 'patient_files' and target_id = $1`,
+    [fileId],
+  );
+  return rows;
 }
 
 describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
@@ -154,6 +170,88 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
         ]),
       );
       expect(fehler?.message).toMatch(/file not accessible|not allowed/);
+    });
+  });
+
+  describe('Loeschjournal (BEF-170, ADR-008 Punkt 8, ADR-017 Punkt 26)', () => {
+    it('eine von Hand geloeschte Datei kommt mit einer Wiederherstellung nicht zurueck', async () => {
+      const datei = await abgelegteDatei(users.therapist);
+      const { rows: gesichert } = await asPostgres<{ datei: unknown }>(
+        'select to_jsonb(f) as datei from public.patient_files f where id = $1',
+        [datei.file_id],
+      );
+
+      // Etwa ein Rezept, das der falschen Person zugeordnet war.
+      await asUserCommitted(users.therapist, 'select public.delete_patient_file($1::uuid)', [
+        datei.file_id,
+      ]);
+      const eintraege = await journal(datei.file_id);
+      expect(eintraege).toHaveLength(1);
+      expect(eintraege[0]).toMatchObject({ retention_class: 'patientenakte', reapplied_at: null });
+      // Faellig mit der Loeschung - nicht frueher, nicht spaeter.
+      expect(eintraege[0]!.due_at).toEqual(eintraege[0]!.deleted_at);
+
+      // Die Sicherung ist aelter als die Loeschung: Zeile zurueck, Auftrag fort.
+      await asPostgres('delete from public.storage_deletion_orders');
+      await asPostgres(
+        `insert into public.patient_files
+         select * from jsonb_populate_record(null::public.patient_files, $1::jsonb)`,
+        [JSON.stringify(gesichert[0]!.datei)],
+      );
+
+      await asPostgres('select public.reapply_deletion_journal()');
+
+      const zeilen = await asPostgres('select id from public.patient_files where id = $1', [
+        datei.file_id,
+      ]);
+      expect(zeilen.rows).toEqual([]);
+      expect((await journal(datei.file_id))[0]!.reapplied_at).not.toBeNull();
+      // Auf beiden Seiten (Punkt 26): Das Objekt bekommt wieder einen Auftrag.
+      const { rows: auftraege } = await asPostgres<{ object_key: string }>(
+        'select object_key from public.storage_deletion_orders where receipted_at is null',
+      );
+      expect(auftraege).toEqual([{ object_key: datei.object_key }]);
+    });
+
+    it('laesst niemanden am Loeschweg vorbei ins Journal schreiben', async () => {
+      // Wer Eintraege anlegen koennte, liesse nach einer Wiederherstellung
+      // beliebige Dateien loeschen.
+      const { rows } = await asPostgres<{ authenticated: boolean; anon: boolean }>(
+        `select has_function_privilege('authenticated', 'app.journal_patient_file_deletion(uuid, uuid, text)', 'execute') as authenticated,
+                has_function_privilege('anon', 'app.journal_patient_file_deletion(uuid, uuid, text)', 'execute') as anon`,
+      );
+      expect(rows).toEqual([{ authenticated: false, anon: false }]);
+      const datei = await abgelegteDatei(users.therapist);
+      const { rows: org } = await asPostgres<{ organization_id: string }>(
+        'select organization_id from public.patient_files where id = $1',
+        [datei.file_id],
+      );
+      const fehler = await abgefangen(
+        asUserCommitted(
+          users.ownerTherapist,
+          "select app.journal_patient_file_deletion($1::uuid, $2::uuid, 'verordnungsscan')",
+          [org[0]!.organization_id, datei.file_id],
+        ),
+      );
+      expect(fehler?.message).toMatch(
+        /permission denied for function journal_patient_file_deletion/,
+      );
+      expect(await journal(datei.file_id)).toEqual([]);
+    });
+
+    it('schreibt nichts ins Journal, wenn das Loeschen abgewiesen wird', async () => {
+      const datei = await abgelegteDatei(users.therapist, {
+        verordnungId: null,
+        art: 'befund',
+        name: 'Befund.pdf',
+      });
+      const fehler = await abgefangen(
+        asUserCommitted(users.office, 'select public.delete_patient_file($1::uuid)', [
+          datei.file_id,
+        ]),
+      );
+      expect(fehler).not.toBeNull();
+      expect(await journal(datei.file_id)).toEqual([]);
     });
   });
 

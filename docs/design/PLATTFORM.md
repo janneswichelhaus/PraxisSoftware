@@ -50,7 +50,7 @@ Prüfseite `tests/e2e/fixtures/plattform-bausteine.html`.
 ## Seitentypen und Gerüst
 
 **Seitentypen:** Heute (Übersicht: Gruß, Hauptsache, Heute, Nächster Besuch, Neu für Sie; ANN-698
-bis ANN-701) · Liste · Objekt ·
+bis ANN-702) · Liste · Objekt ·
 geführter Ablauf (Einladung, Einstieg, Wunsch, Absage, Check-in, Fragebogen) · Durchführung (Übung im
 Vollbild, Hauptknopf fest unten, ohne Reiterleiste) · Tür (Einladung, Anmeldung, Einrichten, Sperre,
 Zugang beendet) · Blatt (Planblatt, Rechnung). Der geführte Ablauf kann „Später“ statt ✕ tragen,

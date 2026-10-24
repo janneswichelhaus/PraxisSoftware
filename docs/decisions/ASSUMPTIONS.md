@@ -7291,7 +7291,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 ### ANN-701 — „Neu für Sie“: die Rechnung mit dem Wort der Rechnungsliste
 
-Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Briefing 6 (Unterlagen)
+Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #297, Frage 3) · — · Wiedervorlage: Briefing 6 (Unterlagen)
 
 **Annahme.** Die offene Rechnung steht unter „Neu für Sie“ mit Nummer, „Fällig am …“, offenem Betrag und dem Wort aus `zahlungsstand` („offen“, „überfällig“) statt „Steht aus“ - vor der Fälligkeit ohne Warnzeichen, keine Dringlichkeit aus Geld.
 
@@ -7300,3 +7300,27 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Briefing 6 (Unter
 **Anker.** `zahlungsstand` in `src/features/platform/zahlungsstand.ts`; der Ton in `Uebersicht.tsx`.
 
 **Änderungspfad.** Das Wort dort ändern, gilt dann für Liste und Übersicht · Aufwand `klein`.
+
+### ANN-702 — Übersicht: „Mitteilungen einschalten“ unter „Heute“, bis die Person gewählt hat
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Briefing 7 (Ich)
+
+**Annahme.** Hat die Person für diesen Zugang nie gewählt (kein `chosen_at`) und ist keine Art des Schalters an, steht unter „Heute“ zuletzt „Mitteilungen einschalten“. Sie führt zu den Benachrichtigungen unter „Ich → Einstellungen“, die Wahl dieses Zugangs offen. Nach jeder Wahl, auch „Aus“, entfällt sie; ebenso in Lesefrist und Einsicht.
+
+**Begründung.** Jannes, PR #297 Frage 2 (aus #294 Frage 1): „Später“ bleibt endgültig, die Übersicht erinnert, solange nichts an ist. ADR-024 Punkt 15: eingeschaltet wird im Einstieg oder unter „Ich“; Abschalten kostet nichts, also keine Karte nach „Aus“.
+
+**Anker.** `mitteilungenOffen` in `src/features/platform/einstiegsablauf.ts`.
+
+**Änderungspfad.** Auch nach „Aus“ zeigen oder den Schalter selbst auf die Übersicht · Aufwand `klein`.
+
+### ANN-703 — Löschjournal: Eine Löschung von Hand ist mit sich selbst fällig
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Datenschutzprüfung (Löschkonzept)
+
+**Annahme.** Löscht eine Person eine Datei der Akte von Hand oder verwirft die Prüfung sie, trägt der Eintrag im Löschjournal als Fälligkeit den Zeitpunkt der Löschung und eine eigene `run_id`. Wer von Hand gelöscht hat, steht am Löschauftrag (`ordered_by`), ein Verwerfen im Protokoll (`access.denied`) - nicht im Journal.
+
+**Begründung.** ADR-008 Punkt 8: jede wirksame Löschung nach einer Wiederherstellung erneut anwenden; eine Frist hat eine Löschung von Hand nicht. So schon bei den Fotos am Rad (FLT-002). Unsicher: ob die Prüfung den Anlass im Journal verlangt.
+
+**Anker.** `app.journal_patient_file_deletion` in `supabase/migrations/20261224100000_bef_170_dateien_ins_loeschjournal.sql`.
+
+**Änderungspfad.** Spalte für den Anlass (Lauf oder von Hand) in Journal und `list_deletion_runs` · Aufwand `mittel`.
