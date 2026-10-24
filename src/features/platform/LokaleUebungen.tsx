@@ -44,41 +44,45 @@ export function LokaleUebungen({
   return (
     <DurchfuehrungKontext.Provider value={traeger}>
       <div className="plattform-schrift bg-canvas flex min-h-dvh flex-col">
-        <header className="border-line flex items-center justify-between gap-3 border-b px-5 py-3">
-          <Wortmarke hoehe={28} />
-          <Button variant="quiet" onClick={onSperren}>
-            Sperren
-          </Button>
-        </header>
-        <main className="max-w-formular mx-auto w-full flex-1 px-5 pt-5 pb-10">
-          <Statusmeldung ton="warnung">
-            Ohne Verbindung. Hier ist nur, was auf diesem Gerät liegt.
-          </Statusmeldung>
-          {gewaehlt ? (
-            <div className="mt-4">
-              <EinheitMitWarteschlange
-                zugangId={gewaehlt.zugangId}
-                plan={gewaehlt.plan}
-                onZurueck={() => setGewaehlt(null)}
-                onBeendet={() => {
-                  setGewaehlt(null);
-                  setBeendet(true);
-                }}
-              />
-            </div>
-          ) : (
-            <Auswahl
-              besitzer={besitzer}
-              zugaenge={zugaenge.data}
-              laedt={zugaenge.isPending}
-              beendet={beendet}
-              onWahl={(zugangId, plan) => {
-                setBeendet(false);
-                setGewaehlt({ zugangId, plan });
+        {gewaehlt ? (
+          // Die Durchführung im Vollbild wie in der Plattform: Ihr Kopf sagt
+          // ohne Netz, wo die Haken liegen, „Später weiter“ führt zur Auswahl.
+          <main className="flex flex-1 flex-col">
+            <EinheitMitWarteschlange
+              zugangId={gewaehlt.zugangId}
+              plan={gewaehlt.plan}
+              onZurueck={() => setGewaehlt(null)}
+              onBeendet={() => {
+                setGewaehlt(null);
+                setBeendet(true);
               }}
             />
-          )}
-        </main>
+          </main>
+        ) : (
+          <>
+            <header className="border-line flex items-center justify-between gap-3 border-b px-5 py-3">
+              <Wortmarke hoehe={28} />
+              <Button variant="quiet" onClick={onSperren}>
+                Sperren
+              </Button>
+            </header>
+            <main className="max-w-formular mx-auto w-full flex-1 px-5 pt-5 pb-10">
+              <Statusmeldung ton="warnung">
+                Ohne Verbindung. Hier ist nur, was auf diesem Gerät liegt.
+              </Statusmeldung>
+              <Auswahl
+                besitzer={besitzer}
+                zugaenge={zugaenge.data}
+                laedt={zugaenge.isPending}
+                beendet={beendet}
+                onWahl={(zugangId, plan) => {
+                  setBeendet(false);
+                  setGewaehlt({ zugangId, plan });
+                }}
+              />
+            </main>
+          </>
+        )}
       </div>
     </DurchfuehrungKontext.Provider>
   );

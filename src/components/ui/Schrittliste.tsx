@@ -9,7 +9,16 @@ import { zeilen } from './zeilen';
  * Seit 2026-10-15 trägt die Übung keine Zeichnung mehr (ANN-539); die Schritte
  * sind die Erklärung. Für Vorlesesoftware steht „Schritt n:“ vor dem Satz.
  */
-export function Schrittliste({ text, leer }: { text: string | null; leer?: string }) {
+export function Schrittliste({
+  text,
+  leer,
+  gross = false,
+}: {
+  text: string | null;
+  leer?: string;
+  /** Plattform (Handoff 2026-10-24, 5.3): Nummer im Kreis 32 in 18/700, Abstand 14. */
+  gross?: boolean;
+}) {
   const schritte = zeilen(text);
   if (schritte.length === 0) {
     return leer ? <p className="text-ink-muted">{leer}</p> : null;
@@ -18,12 +27,14 @@ export function Schrittliste({ text, leer }: { text: string | null; leer?: strin
     return <p className="text-ink max-w-prose">{schritte[0]}</p>;
   }
   return (
-    <ol className="flex max-w-prose flex-col gap-3">
+    <ol className={`flex max-w-prose flex-col ${gross ? 'gap-3.5' : 'gap-3'}`}>
       {schritte.map((schritt, index) => (
         <li key={index} className="text-ink flex gap-3">
           <span
             aria-hidden="true"
-            className="bg-accent-soft text-accent rounded-pill inline-flex size-7 shrink-0 items-center justify-center text-sm font-semibold"
+            className={`bg-accent-soft text-accent rounded-pill inline-flex shrink-0 items-center justify-center ${
+              gross ? 'size-8 font-bold' : 'size-7 text-sm font-semibold'
+            }`}
           >
             {index + 1}
           </span>

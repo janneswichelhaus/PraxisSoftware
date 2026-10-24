@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, matchPath, useLocation } from 'react-router-dom';
 import { Profilhinweis } from '@/app/Profilhinweis';
 import { MARKE, tabName, tabTitel } from '@/app/tabtitel';
 import { Anrufknoepfe } from '@/components/ui/Anrufknoepfe';
@@ -179,6 +179,11 @@ function Geruest({
   // lesbaren Zugang steht dort die Tür in der Spalte.
   const { pathname } = useLocation();
   const breit = pathname === PLATTFORM_PFAD && lesbar.length > 0;
+  // Die Durchführung steht im Vollbild (Handoff 2026-10-24, Abschnitt 4):
+  // ohne Kopf, Verbindungszeile und Reiterleiste des Gerüsts - ihr eigener
+  // Kopf mit „Später weiter“ ist der Weg hinaus, ihr Fuß trägt den Hauptknopf.
+  const vollbild =
+    !nurLesen && matchPath(`${PLATTFORM_PFAD}/uebungen/einheit/:planId`, pathname) !== null;
 
   // In der Einsicht füllt das Gerüst den Rahmen der Praxisseite, nicht das Fenster.
   return (
@@ -193,8 +198,8 @@ function Geruest({
       {nurLesen ? null : <SchriftgroesseDesGeraets />}
       {/* Den Tab und die Verbindung zeigt in der Einsicht die Praxis selbst. */}
       {nurLesen ? null : <TabtitelDerPlattform bereiche={lesbar} />}
-      <Kopf bereiche={lesbar} rechner={rechner} />
-      {nurLesen ? null : <Verbindungszeile rechner={rechner} />}
+      {vollbild ? null : <Kopf bereiche={lesbar} rechner={rechner} />}
+      {nurLesen || vollbild ? null : <Verbindungszeile rechner={rechner} />}
       {/* Gescheitertes Nachladen des Zugangs (BEF-046): Die Plattform bleibt
           stehen, die Zeile sagt es. */}
       <Profilhinweis />
@@ -208,11 +213,19 @@ function Geruest({
       <main
         id="inhalt"
         tabIndex={-1}
-        className={`${geruestSpalte(rechner)} w-full flex-1 focus:outline-none ${
-          rechner ? 'pt-12 pb-16' : 'pt-3 pb-10'
-        }`}
+        className={
+          vollbild
+            ? 'flex w-full flex-1 flex-col focus:outline-none'
+            : `${geruestSpalte(rechner)} w-full flex-1 focus:outline-none ${
+                rechner ? 'pt-12 pb-16' : 'pt-3 pb-10'
+              }`
+        }
       >
-        <div className={rechner && !breit ? 'max-w-spalte' : undefined}>
+        <div
+          className={
+            vollbild ? 'flex flex-1 flex-col' : rechner && !breit ? 'max-w-spalte' : undefined
+          }
+        >
           <Routes>
             <Route
               path={PLATTFORM_PFAD}
@@ -568,7 +581,7 @@ function Geruest({
         </div>
       </main>
       {/* Ohne lesbaren Zugang führt kein Reiter irgendwohin (Handoff 5.2). */}
-      {rechner || lesbar.length === 0 ? null : <Reiterleiste bereiche={lesbar} />}
+      {rechner || vollbild || lesbar.length === 0 ? null : <Reiterleiste bereiche={lesbar} />}
     </div>
   );
 }

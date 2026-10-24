@@ -649,6 +649,10 @@ html[data-schrift='sehr-gross'] {
   .haken-gesetzt {
     animation: haken-gesetzt 0.16s var(--ease-feder);
   }
+  /* Wechsel der Übung: 200 ms Überblendung (`Durchfuehrung.tsx`). */
+  .uebung-wechsel {
+    animation: uebung-wechsel 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .pausenring-fuellung {
@@ -663,6 +667,11 @@ html[data-schrift='sehr-gross'] {
   }
   to {
     stroke-dashoffset: 0;
+  }
+}
+@keyframes uebung-wechsel {
+  from {
+    opacity: 0;
   }
 }
 @keyframes haken-gesetzt {

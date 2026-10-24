@@ -3,7 +3,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import type * as PlattformApi from './api';
-import type { EigenePlaene, Einheitsereignis, Plattformzugang, Uebertragung } from './api';
+import type { EigenePlaene, Einheitsereignis, Plattformzugang, Termin, Uebertragung } from './api';
 import { renderWithProviders } from '@/test-utils';
 import { speicherImSpeicher, speicherSetzen } from '@/lib/geraeteablage';
 import { eigenerPlan } from './testdaten';
@@ -16,15 +16,19 @@ import { eigenerPlan } from './testdaten';
  */
 
 const ladePlaene = vi.fn();
+const ladeTermine = vi.fn();
 const einheitUebertragen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladePlaene: (...a: unknown[]) => ladePlaene(...a) as Promise<EigenePlaene>,
+  ladeTermine: (...a: unknown[]) => ladeTermine(...a) as Promise<Termin[]>,
   einheitUebertragen: (...a: unknown[]) => einheitUebertragen(...a) as Promise<Uebertragung>,
 }));
 
 const { Durchfuehrung } = await import('./Durchfuehrung');
+const { ersteOffeneUebung } = await import('./haken');
+const { kalendertag, tagFest } = await import('./zeit');
 const { UebertragungAbgewiesen } = await import('./api');
 const {
   DurchfuehrungKontext,
@@ -95,8 +99,9 @@ function zeige(ui: ReactNode, { mitNetz = true } = {}) {
 beforeEach(() => {
   speicherSetzen(speicherImSpeicher());
   ablageZuruecksetzen();
-  for (const f of [ladePlaene, einheitUebertragen]) f.mockReset();
+  for (const f of [ladePlaene, ladeTermine, einheitUebertragen]) f.mockReset();
   ladePlaene.mockResolvedValue({ today: geraetetag(), plans: [ZWEI] });
+  ladeTermine.mockResolvedValue([]);
   einheitUebertragen.mockImplementation((_z: string, e: Sendung) =>
     Promise.resolve({ session_id: e.id, status: 'ok', note_dropped: false }),
   );
@@ -136,13 +141,11 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
       expect.objectContaining({ planId: PLAN.id, tag: geraetetag() }),
     );
     expect(erster).toHaveAttribute('aria-pressed', 'true');
-    // Die Pause der Fachperson: 30 Sekunden.
-    expect(screen.getByRole('status')).toHaveTextContent('Pause: 30 Sekunden.');
-    await waitFor(() =>
-      expect(screen.getByTestId('uebertragungsstand')).toHaveTextContent('Alles übertragen.'),
-    );
+    // Die Pause der Fachperson: 30 Sekunden, einmal angesagt.
+    expect(screen.getByText('Pause: 30 Sekunden.')).toBeInTheDocument();
+    expect(await screen.findByText('Übertragen an die Praxis')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: '2. Durchgang' }));
+    await user.click(screen.getByRole('button', { name: /^2\. Durchgang/ }));
     await waitFor(() => expect(gesendet()).toHaveLength(2));
     // Dieselbe Einheit.
     expect(new Set(sendungen().map((s) => s.id)).size).toBe(1);
@@ -158,11 +161,10 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
     zeige(<Durchfuehrung zugang={ZUGANG} />);
     const erster = await screen.findByRole('button', { name: '1. Durchgang' });
     await user.click(erster);
-    await waitFor(() =>
-      expect(screen.getByTestId('uebertragungsstand')).toHaveTextContent(
-        'Auf dem Gerät gespeichert, noch nicht übertragen.',
-      ),
-    );
+    // Erst nach einer Sekunde Warten (ANN-710).
+    expect(
+      await screen.findByText('Auf diesem Gerät, noch nicht übertragen', {}, { timeout: 3000 }),
+    ).toBeInTheDocument();
     expect(erster).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByText(/Nicht gespeichert/)).not.toBeInTheDocument();
     const [wartend] = await wartendeEinheiten(KONTO);
@@ -173,9 +175,7 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
       Promise.resolve({ session_id: e.id, status: 'ok', note_dropped: false }),
     );
     await act(() => uebertragen(KONTO));
-    await waitFor(() =>
-      expect(screen.getByTestId('uebertragungsstand')).toHaveTextContent('Alles übertragen.'),
-    );
+    expect(await screen.findByText('Übertragen an die Praxis')).toBeInTheDocument();
     expect(await wartendeEinheiten(KONTO)).toEqual([]);
   });
 
@@ -194,7 +194,7 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
     });
     const user = userEvent.setup();
     zeige(<Durchfuehrung zugang={ZUGANG} />);
-    expect(await screen.findByRole('button', { name: '2. Durchgang' })).toHaveAttribute(
+    expect(await screen.findByRole('button', { name: '2. Durchgang erledigt' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
@@ -224,7 +224,7 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
     einheitUebertragen.mockRejectedValue(new Error('Nicht übertragen.'));
     const user = userEvent.setup();
     zeige(<Durchfuehrung zugang={ZUGANG} />);
-    expect(await screen.findByRole('button', { name: '3. Durchgang' })).toHaveAttribute(
+    expect(await screen.findByRole('button', { name: '3. Durchgang erledigt' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
@@ -241,7 +241,7 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
     zeige(<Durchfuehrung zugang={ZUGANG} />);
     await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
     await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
-    await user.click(screen.getByRole('button', { name: 'Fertig' }));
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
     await user.type(screen.getByLabelText('Das war schwierig, weil … (freiwillig)'), 'Knie zieht');
     await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
     await waitFor(() =>
@@ -259,7 +259,7 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
     zeige(<Durchfuehrung zugang={ZUGANG} />);
     await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
     await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
-    await user.click(screen.getByRole('button', { name: 'Fertig' }));
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
     const anstrengung = screen.getByRole('group', { name: 'Wie anstrengend war die Einheit?' });
     const schmerz = screen.getByRole('group', {
       name: 'Wie stark waren Schmerzen während der Einheit?',
@@ -285,7 +285,7 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
     expect(screen.queryByText(/hoch|zu viel|Warnung|reduzieren/i)).not.toBeInTheDocument();
   });
 
-  it('fragt im Training ohne Einwilligung nicht nach dem Befinden (ADR-021 Punkt 4)', async () => {
+  it('beendet im Training ohne Einwilligung direkt von der letzten Übung (ADR-021 Punkt 4)', async () => {
     ladePlaene.mockResolvedValue({
       today: geraetetag(),
       plans: [{ ...ZWEI, service_area: 'training', note_allowed: false }],
@@ -294,15 +294,36 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
     zeige(<Durchfuehrung zugang={{ ...ZUGANG, relationship_kind: 'training' }} />);
     await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
     await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
-    await user.click(screen.getByRole('button', { name: 'Fertig' }));
-    expect(screen.queryByLabelText(/schwierig/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('group', { name: /anstrengend/ })).not.toBeInTheDocument();
+    // Keine Seite „Einheit beenden“: Der eine Hauptknopf speichert.
+    expect(screen.queryByRole('button', { name: 'Zum Abschluss' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
     await waitFor(() =>
       expect(gesendet().at(-1)).toEqual(
         expect.objectContaining({ kind: 'finish', note: '', values: {} }),
       ),
     );
+    expect(screen.queryByLabelText(/schwierig/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /anstrengend/ })).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Gespeichert' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Ihre Trainingsbetreuung sieht sie beim nächsten Termin.'),
+    ).toBeInTheDocument();
+  });
+
+  it('ohne Einwilligung und ohne Haken führt die letzte Übung zum Abschluss, der nichts speichert', async () => {
+    ladePlaene.mockResolvedValue({
+      today: geraetetag(),
+      plans: [{ ...ZWEI, service_area: 'training', note_allowed: false }],
+    });
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={{ ...ZUGANG, relationship_kind: 'training' }} />);
+    await user.click(await screen.findByRole('button', { name: 'Nächste Übung' }));
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
+    expect(screen.getByText(/noch keinen Durchgang abgehakt/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Zurück zu den Übungen' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Einheit beenden' })).not.toBeInTheDocument();
   });
 
   it('lässt ohne Recht nicht üben', async () => {
@@ -325,7 +346,9 @@ describe('Ohne Verbindung (TRK-008, ADR-024 Punkte 5 und 8)', () => {
     einheitUebertragen.mockRejectedValue(new Error('Nicht übertragen.'));
     const user = userEvent.setup();
     zeige(<Durchfuehrung zugang={ZUGANG} />);
-    expect(await screen.findByText(/Ihr Plan vom letzten Laden/)).toBeInTheDocument();
+    // BEF-197: Das Gerät meldet Verbindung, der Server antwortet nicht.
+    expect(await screen.findByText(/Die Praxis antwortet gerade nicht/)).toBeInTheDocument();
+    expect(screen.queryByText(/Ohne Verbindung/)).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '1. Durchgang' }));
     await waitFor(async () => expect(await wartendeEinheiten(KONTO)).toHaveLength(1));
   });
@@ -334,19 +357,22 @@ describe('Ohne Verbindung (TRK-008, ADR-024 Punkte 5 und 8)', () => {
     ladePlaene.mockRejectedValue(new Error('Ihre Übungen konnten nicht geladen werden.'));
     zeige(<Durchfuehrung zugang={ZUGANG} />);
     expect(
-      await screen.findByText('Ihre Übungen konnten nicht geladen werden.'),
+      await screen.findByText('Ihre Übungen lassen sich gerade nicht laden.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zu den Übungen' })).toBeInTheDocument();
   });
 
   it('ohne Übertragung (lokale Ansicht): sagt, dass erst nach dem Entsperren übertragen wird', async () => {
     const user = userEvent.setup();
     zeige(<Durchfuehrung zugang={ZUGANG} />, { mitNetz: false });
     await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
-    await waitFor(() =>
-      expect(screen.getByTestId('uebertragungsstand')).toHaveTextContent(
-        'sobald Verbindung besteht und Sie die Anwendung entsperrt haben',
+    expect(
+      await screen.findByText(
+        /sobald Verbindung besteht und Sie die Anwendung entsperrt haben/,
+        {},
+        { timeout: 3000 },
       ),
-    );
+    ).toBeInTheDocument();
     expect(einheitUebertragen).not.toHaveBeenCalled();
   });
 
@@ -369,7 +395,7 @@ describe('Durchführung nach dem Zweitreview', () => {
     const user = userEvent.setup();
     zeige(<Durchfuehrung zugang={ZUGANG} />);
     await user.click(await screen.findByRole('button', { name: 'Nächste Übung' }));
-    await user.click(screen.getByRole('button', { name: 'Fertig' }));
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
     expect(screen.getByText(/noch keinen Durchgang abgehakt/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Einheit beenden' })).not.toBeInTheDocument();
   });
@@ -393,14 +419,170 @@ describe('Durchführung nach dem Zweitreview', () => {
     expect(await wartendeEinheiten(KONTO)).toEqual([]);
   });
 
-  it('startet die Pause beim nächsten Durchgang neu', async () => {
+  it('startet die Pause beim nächsten Durchgang neu; Tippen in der Pause hakt ab', async () => {
     const user = userEvent.setup();
     zeige(<Durchfuehrung zugang={ZUGANG} />);
     await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
-    await user.click(screen.getByRole('button', { name: 'Pause überspringen' }));
-    expect(screen.queryByRole('button', { name: 'Pause überspringen' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '2. Durchgang' }));
-    expect(screen.getByRole('button', { name: 'Pause überspringen' })).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Pause: 30 Sekunden.');
+    const zweiter = screen.getByRole('button', { name: /^2\. Durchgang/ });
+    expect(zweiter).toHaveTextContent('Pause · 30 Sekunden');
+    await user.click(zweiter);
+    expect(zweiter).toHaveAttribute('aria-pressed', 'true');
+    expect(zweiter).not.toHaveTextContent('Pause');
+    expect(screen.getByRole('button', { name: /^3\. Durchgang/ })).toHaveTextContent(
+      'Pause · 30 Sekunden',
+    );
+    expect(screen.getByText('Pause: 30 Sekunden.')).toBeInTheDocument();
+    // Nach dem letzten Durchgang keine Pause.
+    await user.click(screen.getByRole('button', { name: /^3\. Durchgang/ }));
+    expect(screen.queryByText(/Pause ·/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Pause: 30 Sekunden.')).not.toBeInTheDocument();
+  });
+});
+
+describe('Durchführung im Vollbild (DRP-EPIC-008, Handoff 2026-10-24)', () => {
+  it('„Weiter üben“ setzt bei der ersten Übung mit offenem Durchgang ein (ANN-711)', async () => {
+    ladePlaene.mockResolvedValue({
+      today: geraetetag(),
+      plans: [
+        {
+          ...ZWEI,
+          open_session: {
+            id: 'cccccccc-0000-4000-8000-000000000009',
+            sets: [1, 2, 3].map((n) => ({ item_id: PLAN.items[0]!.id, set_number: n })),
+          },
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Gelbes Band heranziehen' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Übung 2 von 2')).toBeInTheDocument();
+    // „Zurück“ im Kopf führt zur vorigen Übung, der Fokus geht auf ihren Namen.
+    await user.click(screen.getByRole('button', { name: 'Zurück' }));
+    const name = screen.getByRole('heading', { level: 1, name: 'Am Geländer in die Hocke' });
+    expect(name).toHaveFocus();
+    expect(screen.queryByRole('button', { name: 'Zurück' })).not.toBeInTheDocument();
+  });
+
+  it('ersteOffeneUebung: ohne Haken die erste, alles gehakt die letzte', () => {
+    const items = [
+      { id: 'a', sets: 2 },
+      { id: 'b', sets: 1 },
+    ];
+    expect(ersteOffeneUebung(items, new Set())).toBe(0);
+    expect(ersteOffeneUebung(items, new Set(['a:1']))).toBe(0);
+    expect(ersteOffeneUebung(items, new Set(['a:1', 'a:2']))).toBe(1);
+    expect(ersteOffeneUebung(items, new Set(['a:1', 'a:2', 'b:1']))).toBe(1);
+  });
+
+  it('zeigt Bühne, Marken und genau einen Hauptknopf; der Stand erst nach dem ersten Haken', async () => {
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    const buehne = await screen.findByRole('region', { name: 'Am Geländer in die Hocke' });
+    expect(within(buehne).getByText('10 bis 12')).toBeInTheDocument();
+    expect(within(buehne).getByText('Wiederholungen je Durchgang')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Dosierung' })).toHaveTextContent('3 Durchgänge');
+    expect(screen.getByRole('link', { name: 'Später weiter' })).toHaveAttribute(
+      'href',
+      '/p/uebungen',
+    );
+    expect(screen.getByRole('button', { name: 'Nächste Übung' })).toBeInTheDocument();
+    expect(screen.queryByText('Übertragen an die Praxis')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Abbrechen|Vorige Übung|Fertig/)).not.toBeInTheDocument();
+  });
+
+  it('ohne Netz spricht der Kopf, nicht die Meldung „Praxis antwortet nicht“ (BEF-197)', async () => {
+    const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      await plaeneAblegen(KONTO, ZUGANG.access_id, null, { today: geraetetag(), plans: [ZWEI] });
+      ladePlaene.mockRejectedValue(new Error('Ihre Übungen konnten nicht geladen werden.'));
+      zeige(<Durchfuehrung zugang={ZUGANG} />);
+      expect(
+        await screen.findByText('Ohne Verbindung – Ihre Haken liegen auf diesem Gerät.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Die Praxis antwortet gerade nicht/)).not.toBeInTheDocument();
+    } finally {
+      onLine.mockRestore();
+    }
+  });
+
+  it('endet auf der Seite „Gespeichert“ mit Namen und nächstem Übungstag (ANN-706, ANN-712)', async () => {
+    const morgen = new Date();
+    morgen.setDate(morgen.getDate() + 1);
+    ladePlaene.mockResolvedValue({
+      today: geraetetag(),
+      plans: [{ ...ZWEI, weekdays: [1, 2, 3, 4, 5, 6, 7], runs_until: '2099-12-31' }],
+    });
+    ladeTermine.mockResolvedValue([
+      {
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001',
+        starts_at: morgen.toISOString(),
+        ends_at: new Date(morgen.getTime() + 3600_000).toISOString(),
+        appointment_type: 'home_visit',
+        status: 'confirmed',
+        staff_name: 'Anna Beispiel',
+        location_name: null,
+        visit_street: null,
+        visit_house_number: null,
+        visit_postal_code: null,
+        visit_city: null,
+        late_notice: false,
+        open_request_kind: null,
+      },
+    ]);
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Einheit beenden' })).toHaveFocus();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Wie war es heute?' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Alle Angaben sind freiwillig.')).toBeInTheDocument();
+    // Tag und Monat hängen mit geschütztem Leerzeichen zusammen.
+    expect(screen.getByText(/Heimprogramm Knie/).closest('p')!.textContent).toBe(
+      `Heimprogramm Knie · ${tagFest(geraetetag())}`,
+    );
+    await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Gespeichert' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/ist bei der Praxis\./).textContent).toBe(
+      `Ihre Einheit vom ${tagFest(geraetetag())} ist bei der Praxis.`,
+    );
+    expect(
+      await screen.findByText('Anna Beispiel sieht sie beim nächsten Termin.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Nächster Übungstag:/).textContent).toBe(
+      `Nächster Übungstag: ${tagFest(kalendertag(morgen))}`,
+    );
+    expect(screen.getByRole('link', { name: 'Zur Übersicht' })).toHaveAttribute('href', '/p');
+    expect(screen.getByRole('link', { name: 'Zu den Übungen' })).toHaveAttribute(
+      'href',
+      '/p/uebungen',
+    );
+    // Die Einheit ist zu Ende; kein Hakenzeile mehr, kein Lob.
+    expect(screen.queryByRole('button', { name: /Durchgang/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Super|Toll|Prima|Serie/)).not.toBeInTheDocument();
+  });
+
+  it('endet auf „Auf diesem Gerät gespeichert“, wenn die Einheit nicht übertragen ist', async () => {
+    einheitUebertragen.mockRejectedValue(new Error('Nicht übertragen.'));
+    const user = userEvent.setup();
+    zeige(<Durchfuehrung zugang={ZUGANG} />);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
+    await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
+    await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Auf diesem Gerät gespeichert' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Bis dahin liegt sie nur auf diesem Telefon.')).toBeInTheDocument();
+    expect(screen.queryByText(/sieht sie beim nächsten Termin/)).not.toBeInTheDocument();
+    // Ohne gewählte Übungstage keine Zeile dazu.
+    expect(screen.queryByText(/Nächster Übungstag/)).not.toBeInTheDocument();
+    expect(await wartendeEinheiten(KONTO)).toHaveLength(1);
   });
 });
