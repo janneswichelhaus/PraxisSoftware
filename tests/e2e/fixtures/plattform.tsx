@@ -641,20 +641,24 @@ const abo: Nachsorgeabo = {
   cancelled_via: null,
   can_cancel: true,
 };
+// Schritt 1e: In der Lesefrist läuft kein Abo mehr - mit laufendem Abo ist
+// keine Lesefrist (ANN-274, `inLesefrist`).
 client.setQueryData(
   aboSchluessel(zugaenge[0]!.access_id),
-  seite === 'abo-gekuendigt'
-    ? {
-        ...abo,
-        state: 'ending',
-        ends_on: inTagen(27, 0).slice(0, 10),
-        next_month_start: null,
-        cancel_effective_on: null,
-        cancelled_at: inTagen(-1, 9),
-        cancelled_via: 'platform',
-        can_cancel: false,
-      }
-    : abo,
+  seite === 'uebersicht-lesefrist'
+    ? null
+    : seite === 'abo-gekuendigt'
+      ? {
+          ...abo,
+          state: 'ending',
+          ends_on: inTagen(27, 0).slice(0, 10),
+          next_month_start: null,
+          cancel_effective_on: null,
+          cancelled_at: inTagen(-1, 9),
+          cancelled_via: 'platform',
+          can_cancel: false,
+        }
+      : abo,
 );
 client.setQueryData(aboSchluessel(begleitung.access_id), null);
 // ANG-EPIC-002: das Trainingspaket und die Preise im Training.
