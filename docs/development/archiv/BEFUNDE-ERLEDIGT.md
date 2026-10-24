@@ -1908,3 +1908,28 @@ eingeklappt.
 **Beobachtung.** Der Löschlauf schreibt fällige Dateien ins Löschjournal, `delete_patient_file` aber nicht. Nach einer Wiederherstellung käme eine einzeln gelöschte Datei zurück, etwa ein falsch zugeordnetes Foto. Die Anhänge an Rückfragen (`app.remove_message_attachments`) und seit FLT-EPIC-001 die Fotos am Rad journalisieren jede Löschung.
 
 **Erwartet.** Ein Journaleintrag `patient_files` in `delete_patient_file`, dazu ein Test mit Wiederherstellung wie in `fleet-photos.test.ts` („Löschjournal“). Pfad A (Löschpfad).
+
+### BEF-210 — Durchführung: „Wird gespeichert …“ bleibt ohne Netz stehen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Durchführung (`Durchfuehrung.tsx`) |
+| Quelle  | Schritt 2b (DRP-EPIC-008), Bildstrecke im Flugmodus (`setOffline`) |
+| Status  | erledigt 2026-10-24 (DRP-EPIC-008): Neuladen der Pläne ohne Warten; Browsertest „Netz weg mitten in der Sitzung“ |
+| Berührt | `onBeendet` in `Durchfuehrung`; auf `main` dasselbe |
+
+**Beobachtung.** Nach „Einheit beenden“ wartete die Ansicht auf das Neuladen der Pläne. Ohne Netz hält die Abfragebibliothek das an, bis Verbindung besteht; so lange stand „Wird gespeichert …“. **Erwartet.** Weiter zur Endseite, das Neuladen läuft im Hintergrund.
+
+### BEF-211 — Durchführung: Ohne Netz lag das Ende nicht auf dem Gerät, die Ansicht lud nicht
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Durchführung; ADR-024 Punkt 5 |
+| Quelle  | Schritt 2b (DRP-EPIC-008), beim Nachstellen von BEF-210 |
+| Status  | erledigt 2026-10-24 (DRP-EPIC-008, Pfad A): `networkMode: 'always'` für das Beenden und die Gerätelesungen; Gegenprobe im Browsertest |
+| Berührt | `useEinheitBeenden`, `EinheitMitWarteschlange`, abgelegter Plan in `Durchfuehrung.tsx`; auf `main` dasselbe |
+
+**Beobachtung.** Meldete das Gerät während der Sitzung „offline“, hielt die Abfragebibliothek mit ihrem Standard `online` die Mutation „Einheit beenden“ an: Das Ende lag nicht auf dem Gerät, bis Verbindung bestand. Ebenso hielten die Lesungen der Warteschlange und des abgelegten Plans an - die Durchführung blieb beim Laden. **Erwartet.** Was nur das Gerät liest oder zuerst dorthin schreibt, läuft ohne Netz sofort; ob übertragen wird, entscheidet `anstossen`.
+

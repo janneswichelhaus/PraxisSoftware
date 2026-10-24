@@ -567,7 +567,7 @@ Marke vorsieht.
 | Datum   | 2026-10-24 |
 | Bereich | Plattform, Übungen und Durchführung |
 | Quelle  | Ist-Bilder für Briefing 2 (Prüfseite `plattform-uebungen.html`, 375 und 188 px) |
-| Status  | offen; wird mit Schritt 2 des Design-Reviews neu gefasst |
+| Status  | Durchführung erledigt in DRP-EPIC-008 (Schritt 2b: Titel in der Bühne ohne „Abbrechen“ daneben, `Hakenzeile`, ANN-707); Reiter offen für Schritt 2c |
 | Berührt | `src/features/platform/Uebungen.tsx`, `Durchfuehrung.tsx` (Titel neben „Abbrechen“, Zeilen der Durchgänge) |
 
 **Beobachtung.** Bei 375 px bricht der Titel „Am Treppengeländer festhalten …“ neben „Abbrechen“ als „Treppengelände|r“. Bei 188 px (200 %) brechen „Totalendoprothe|se“, „Wiederholunge|n“ und „Durchgan|g“ in den Haken-Zeilen. Ursache ist `overflow-wrap: anywhere` in schmalen Spalten. **Erwartet.** Wie in PLATTFORM.md: nie mitten im Wort, lange Wörter ab zwölf Buchstaben mit Trennstrich (DR-114).
@@ -579,7 +579,7 @@ Marke vorsieht.
 | Datum   | 2026-10-24 |
 | Bereich | Plattform, Übungen |
 | Quelle  | Ist-Bilder für Briefing 2 (lokaler Stack, `platform_exercise_plans` mit 500) |
-| Status  | offen; wird mit Schritt 2 des Design-Reviews neu gefasst |
+| Status  | Durchführung erledigt in DRP-EPIC-008 (Schritt 2b, ANN-713); Reiter (`OhneVerbindung`) offen für Schritt 2c |
 | Berührt | `OhneVerbindung` in `src/features/platform/Uebungen.tsx` |
 
 **Beobachtung.** Scheitert das Laden der Pläne bei bestehender Verbindung und liegt ein Plan auf dem Gerät, steht „Ohne Verbindung. Üben können Sie trotzdem …“ mit „Erneut laden“. Ohne Plan auf dem Gerät steht richtig „Ihre Übungen konnten nicht geladen werden.“ **Erwartet.** Der Satz unterscheidet „keine Verbindung“ von „die Praxis antwortet gerade nicht“; das Üben mit dem Plan vom letzten Laden bleibt in beiden Fällen.
@@ -607,3 +607,15 @@ Marke vorsieht.
 | Berührt | `grussNachTageszeit` (`src/features/platform/zeit.ts`) und die vier Tests |
 
 **Beobachtung.** „Einstieg: Willkommen (DRP-016) … gibt den Tab der Übersicht zurück“, „Einstieg: Alles bereit (DRP-019) … nur zur Übersicht“, „App: Plattformkonto … Gerüst“ und „Plattform: gescheitertes Nachladen des Zugangs“ suchen die Überschrift „Guten Tag“. Der Gruß folgt der Uhr des Geräts (11 bis 18 Uhr „Guten Tag“); vor 11 und ab 18 Uhr Ortszeit des Laufs (CI: UTC) sind die vier rot, mit `TZ=America/New_York` grün. **Erwartet.** Die Tests stellen die Uhr fest (`vi.setSystemTime`, etwa 12:00) oder lesen den Gruß aus `grussNachTageszeit()`; dann laufen sie zu jeder Stunde.
+
+### BEF-212 — Lokale Ansicht: Gerätelesungen halten an, wenn das Netz während der Ansicht wegfällt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, lokale Ansicht nach der Freigabe ohne Netz (`LokaleUebungen`) |
+| Quelle  | Schritt 2b (DRP-EPIC-008), beim Nachstellen von BEF-211 |
+| Status  | offen (Vorschlag) |
+| Berührt | `abgelegteZugaenge` und `wartendeEinheiten` in `src/features/platform/LokaleUebungen.tsx` |
+
+**Beobachtung.** Die Abfragen lesen nur das Gerät, laufen aber mit dem Standard `networkMode: 'online'` der Abfragebibliothek. Meldet das Gerät während der lokalen Ansicht „offline“ und wird eine Abfrage neu gestellt (etwa die Warteschlange nach einer Einheit), hält sie an, bis Verbindung besteht. Beim Kaltstart ohne Netz tritt es nicht auf. **Erwartet.** `networkMode: 'always'` wie in der Durchführung (BEF-211); Browsertest mit `setOffline` während der Ansicht.

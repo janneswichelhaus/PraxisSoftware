@@ -176,9 +176,10 @@ in der Liste, nie wie ein bestätigter Termin. Die Belegung anderer Personen
 ist nie sichtbar, auch nicht als „belegt".
 
 **Übungen** ist der Heimübungsplan: die Übungen des Tages in Reihenfolge, je
-Übung Name, Video oder Bild, Dosierung in Worten („3 × 10, langsam"), Hinweis
-der Therapeut:in. Ein Haken „gemacht" und ein freiwilliges Feld „Das war
-schwierig, weil …". Keine Punktzahl, keine Serie, kein Lob aus der Software.
+Übung Name, Bühne (Video der Praxis, wenn vorhanden), Dosierung in Worten
+(„3 × 10, langsam"), Hinweis der Therapeut:in. Ein Haken „gemacht" und ein
+freiwilliges Feld „Das war schwierig, weil …"; das Ende einer Einheit hat eine
+eigene Seite (ANN-706). Keine Punktzahl, keine Serie, kein Lob aus der Software.
 Liegt kein Plan vor: „Ihre Therapeut:in stellt Ihnen hier Übungen zusammen."
 Gebaut wird der Plan in UEB-EPIC-001 bis -003.
 

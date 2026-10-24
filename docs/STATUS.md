@@ -5,10 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 2a Bausteine der Übungen (24.10., Branch `claude/new-session-27nejg`,
-DRP-023 bis -029): Bühne, Marken, Hakenzeile mit Pausenring, Kopf, Fuß und Endseite, Wochenleiste,
-geschätzte Dauer, Trennung unter 23rem; die Seiten stellen 2b und 2c um. Mit den Antworten aus #299
-(alle vier wie empfohlen, ANN-704 bis -710). Dazu BEF-199: Die Gruß-Tests laufen zu jeder Uhrzeit.
+Design-Review Lauf 1, Schritt 2b Durchführung (24.10., Branch `claude/drp-2b-durchfuehrung`,
+DRP-030 bis -035, Pfad A wegen BEF-211): Vollbild mit Kopf und Fuß, Pause als Ring, „Weiter üben“ an
+der offenen Übung, ein Hauptknopf, Endseite, ohne Netz (ANN-711 bis -715). 2c läuft parallel.
+Gemergt am 24.10.: 2a Bausteine (#300).
 
 **Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24.10.: Handoff Übungen (#299), Nacharbeit
 #298 (Fragen aus #297 wie empfohlen, „Mitteilungen einschalten“ unter „Heute“, ANN-702; Briefing 2
@@ -51,5 +51,5 @@ A).
 
 ## Letzte Session
 
-24.10.2026, Branch `claude/new-session-27nejg`: Schritt 2a und die Antworten zum Handoff Übungen,
-keine Migration, kein Seed. Lokal: `git pull`.
+24.10.2026, Branch `claude/drp-2b-durchfuehrung`: Schritt 2b, keine Migration, kein Seed.
+Lokal: `git pull`.

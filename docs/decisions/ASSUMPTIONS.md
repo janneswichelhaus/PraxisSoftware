@@ -7408,3 +7408,63 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 **Anker.** `useRuhigerStand` in `src/features/platform/Durchfuehrungsfuss.tsx`.
 
 **Änderungspfad.** Wartezeit dort ändern oder streichen · Aufwand `klein`.
+
+### ANN-711 — Durchführung: „Weiter üben“ setzt bei der ersten offenen Übung ein
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Mit Haken von heute beginnt die Durchführung bei der ersten Übung, die noch einen offenen Durchgang hat; ohne Haken bei Übung 1. Ist alles gehakt, steht sie auf der letzten Übung, einen Tipp vor dem Abschluss.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0 („Weiter üben“ öffnet die erste Übung mit offenem Durchgang); Grundlage sind `open_session.sets` und die Haken auf dem Gerät. Für „alles gehakt“ schweigt der Handoff.
+
+**Anker.** `ersteOffeneUebung` in `src/features/platform/haken.ts`.
+
+**Änderungspfad.** Bei „alles gehakt“ direkt zum Abschluss oder zu Übung 1 · Aufwand `klein`.
+
+### ANN-712 — Endseite: wer die Einheit sieht
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Endseite nennt die Fachperson des nächsten bestätigten Termins („Anna Beispiel sieht sie beim nächsten Termin.“), ohne Termin „Ihre Therapeut:in“ bzw. „Ihre Trainingsbetreuung“. Der Satz erscheint erst, wenn die Termine geantwortet haben, damit der Name nicht springt.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 5.5 („{Name} sieht sie …“); der Plan trägt keinen Namen, die Übersicht nimmt ihn ebenso aus dem nächsten Termin.
+
+**Anker.** `EndeDerEinheit` in `src/features/platform/Durchfuehrung.tsx`.
+
+**Änderungspfad.** Immer das Wort des Bereichs · Aufwand `klein`; ein Name am Plan · Aufwand `mittel` (Pfad A).
+
+### ANN-713 — Durchführung: „Praxis antwortet nicht“ getrennt von „ohne Verbindung“
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Übt die Person am Plan vom Gerät, weil der Server nicht antwortet, das Gerät aber Verbindung meldet, sagt die Durchführung „Die Praxis antwortet gerade nicht. Üben können Sie trotzdem – mit Ihrem Plan von diesem Gerät.“ Meldet das Gerät keine Verbindung, spricht nur die Zeile im Kopf.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0 und 5.6 (BEF-197); der Wortlaut folgt dem des Reiters, ohne Uhrzeit, weil die Ablage keine trägt. Quelle der Verbindung bleibt `navigator.onLine` (ANN-015).
+
+**Anker.** `Einheit` in `src/features/platform/Durchfuehrung.tsx` (`ohneVerbindung && verbunden`).
+
+**Änderungspfad.** Wortlaut dort ändern · Aufwand `klein`.
+
+### ANN-714 — Durchführung im Vollbild: was vom Gerüst bleibt
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Auf `/p/uebungen/einheit/…` entfallen Kopf, Verbindungszeile und Reiterleiste der Plattform; Kopf und Fuß der Durchführung ersetzen sie. Das Band einer Vertretung und der Hinweis zum Profil bleiben darüber stehen. Laden, Fehler und „kann hier nicht üben“ tragen je einen Ausweg oben.
+
+**Begründung.** Handoff 2026-10-24, Abschnitte 0, 4 und 5.3; PLATTFORM.md (Seitentyp Durchführung). Für wen geübt wird, muss sichtbar bleiben (ADR-023); ohne Reiterleiste braucht jede Lage einen Weg hinaus.
+
+**Anker.** `vollbild` in `src/features/platform/PlattformApp.tsx`.
+
+**Änderungspfad.** Bedingung dort ändern · Aufwand `klein`.
+
+### ANN-715 — Durchführung: Ohne Einwilligung beendet die letzte Übung direkt
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Ohne Einwilligung im Training (`note_allowed` falsch) heißt der Knopf der letzten Übung „Einheit beenden“ und speichert sofort; die Seite „Einheit beenden“ entfällt. Ist noch nichts gehakt, führt „Zum Abschluss“ dorthin, wo steht, dass es nichts zu speichern gibt.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0; ADR-021 Punkt 4 (keine Fragen zum Befinden ohne Einwilligung). Für den Fall ohne Haken schweigt der Handoff; ein Ende ohne Haken speichert die Durchführung nie.
+
+**Anker.** `direkt` in `Einheit`, `src/features/platform/Durchfuehrung.tsx`.
+
+**Änderungspfad.** Die Seite immer zeigen · Aufwand `klein`.
