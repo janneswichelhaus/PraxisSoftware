@@ -6,6 +6,7 @@ import { Aufgabenkarte } from './Aufgabenkarte';
 import { ButtonLink } from './ButtonLink';
 import { EmptyState } from './Feedback';
 import { HeroKarte } from './HeroKarte';
+import { Linkliste } from './Linkliste';
 import { ListRow, ListRows } from './ListRow';
 import { Personenbild } from './Personenbild';
 import { Skelett, SkelettBereich } from './Skelett';
@@ -131,6 +132,34 @@ describe('HeroKarte', () => {
     expect(link.className).not.toContain('bg-surface ');
     // Ohne `schmalOhneRad` bleibt die Karte unter 23rem wie in Briefing 1.
     expect(screen.getByRole('region').className).toContain('max-[23rem]:p-3');
+  });
+});
+
+describe('Linkliste', () => {
+  it('ist eine Liste von Links, ganz das Ziel, Zeichen und Pfeil stumm, Druck mit 98 %', () => {
+    zeige(
+      <Linkliste
+        eintraege={[
+          { text: 'Plan als PDF', zeichen: ZEICHEN, to: '/p/uebungen/blatt/a1' },
+          { text: 'Frage zu diesem Plan', zeichen: ZEICHEN, to: '/p/nachrichten/neu?plan=a1' },
+        ]}
+      />,
+    );
+    const pdf = screen.getByRole('link', { name: 'Plan als PDF' });
+    expect(pdf).toHaveAttribute('href', '/p/uebungen/blatt/a1');
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    // 60 hoch am Telefon, 44 als Textlink am Rechner.
+    expect(pdf.className).toContain('min-h-15');
+    expect(pdf.className).toContain('[[data-rechner]_&]:min-h-11');
+    // Druck wie an jeder Zeile der Plattform (DR-117): 98 % nur ohne „Bewegung reduzieren“.
+    expect(pdf.className).toContain('motion-safe:active:scale-98');
+    for (const stumm of pdf.querySelectorAll('svg')) {
+      expect(stumm.closest('[aria-hidden="true"]')).not.toBeNull();
+    }
+    // Der Pfeil fällt unter 23rem und am Rechner weg.
+    const pfeil = pdf.querySelector('[data-pfeil]')!.getAttribute('class')!;
+    expect(pfeil).toContain('max-[23rem]:hidden');
+    expect(pfeil).toContain('[[data-rechner]_&]:hidden');
   });
 });
 
@@ -378,6 +407,9 @@ describe('Barrierefreiheit der Plattform-Bausteine', () => {
           titel="Ihre Übungen"
           angaben={[{ schluessel: 'umfang', zeichen: ZEICHEN, text: '3 Übungen' }]}
           leiseAktion={{ text: 'Noch einmal üben', to: '/p/uebungen/einheit/a1' }}
+        />
+        <Linkliste
+          eintraege={[{ text: 'Plan als PDF', zeichen: ZEICHEN, to: '/p/uebungen/blatt/a1' }]}
         />
         <Uebungsliste beschriftung="Die Übungen">
           <Uebungszeile

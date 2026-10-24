@@ -619,3 +619,16 @@ Marke vorsieht.
 | Berührt | `Fensterinhalt` in `src/features/platform/Uebungen.tsx`, `Uebungsinhalt.tsx`, `Dosierungskacheln`, Rückmeldung `gespeichert=1` im Reiter |
 
 **Beobachtung.** Das Fenster „Übung zum Nachlesen“ setzt Bühne, Marken, „So geht’s“, „Sie brauchen“ und „Hinweis“ selbst zusammen, weil `Uebungsinhalt` (mit `Dosierungskacheln`) der Durchführung gehört, die 2b gleichzeitig umstellt. Die Rückmeldung „Ihre Einheit ist gespeichert.“ im Reiter bleibt, bis die Endseite aus 2b sie ablöst. **Erwartet.** Nach dem Merge beider Schritte ein gemeinsamer Inhalt ohne Durchgänge für Fenster und Durchführung; `Dosierungskacheln` und die Rückmeldung entfallen, wenn nichts sie mehr nutzt.
+
+### BEF-216 — Plattform: „Erneut versuchen“ im Fehlerkasten ist 44 statt 48 hoch
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, alle Seiten mit Ladefehler (Übungen, Übersicht, Termine …) |
+| Quelle  | Design-Review zu DRP-EPIC-009 (Bild `reiter-fehler--375`: Knopf 273 bis 317 px) |
+| Status  | offen (Vorschlag) |
+| Berührt | `ErrorState` in `src/components/ui/Feedback.tsx` (`groesse="kompakt"`) |
+
+**Beobachtung.** Der Knopf „Erneut versuchen“ im `ErrorState` ist kompakt, also 44 hoch; auf der Plattform sind Knöpfe 48 (PLATTFORM.md, „Ziele ≥ 44 px“; Handoff 2026-10-24, Abschnitt 6). Das gilt für jede Seite mit Ladefehler, nicht nur für die Übungen. **Erwartet.** Unter `.plattform-schrift` die normale Größe (48), in der Praxis-App bleibt der kompakte Knopf; Prüfung in `plattform-barrierefreiheit.spec.ts`.
+

@@ -33,7 +33,8 @@ export function Uebungsliste({
  * der Kreis gefüllt mit Haken, darunter „Heute erledigt“ als Wort; Farbe
  * trägt nie allein. `beendet` (Lesefrist): der Kreis vertieft statt grün.
  *
- * Bei „Sehr groß“ fällt der Pfeil weg und der Kreis wächst auf 50; unter
+ * Bei „Sehr groß“ fällt der Pfeil weg, und der Kreis wächst mit der Schrift
+ * auf 50 (2.5rem bei 125 %); unter
  * 23rem (200 %) steht die Nummer über dem Text, innen 12, ohne Pfeil - wie
  * die `Aufgabenkarte`. Der Name trennt nur dort an der Silbe
  * (`trennen-schmal`, ANN-707).
@@ -68,7 +69,7 @@ export function Uebungszeile({
       >
         <span
           aria-hidden="true"
-          className={`rounded-pill flex size-10 shrink-0 items-center justify-center font-bold tabular-nums [[data-schrift=sehr-gross]_&]:size-12.5 ${kreis}`}
+          className={`rounded-pill flex size-10 shrink-0 items-center justify-center font-bold tabular-nums ${kreis}`}
         >
           {erledigt ? <HakenSymbol className="size-5" /> : nummer}
         </span>

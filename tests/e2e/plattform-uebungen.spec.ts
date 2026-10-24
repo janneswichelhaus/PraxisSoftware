@@ -217,6 +217,8 @@ const LAGEN: { lage: string; merkmal: RegExp; haupt: number }[] = [
   { lage: 'heute', merkmal: /Ihre Übungen für heute/, haupt: 1 },
   { lage: 'anderer-tag', merkmal: /Nächster Übungstag/, haupt: 1 },
   { lage: 'geuebt', merkmal: /Noch einmal üben/, haupt: 0 },
+  { lage: 'erledigt', merkmal: /Heute erledigt/, haupt: 1 },
+  { lage: 'ab', merkmal: /^Ab /, haupt: 0 },
   { lage: 'lesefrist', merkmal: /Ihr Plan zum Mitnehmen/, haupt: 1 },
   { lage: 'mehrere', merkmal: /Schulter mobil am Morgen/, haupt: 1 },
   { lage: 'ohne-plan', merkmal: /Noch kein Plan/, haupt: 0 },

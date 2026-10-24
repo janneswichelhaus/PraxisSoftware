@@ -431,6 +431,9 @@
   --container-wochenleiste: 35rem;
   --container-durchfuehrung: 60rem;
   --container-hauptknopf: 22.5rem;
+  /* Reiter „Übungen“ am Rechner: die Vorschau rechts, 340 bis 460 (ANN-724). */
+  --container-vorschau-min: 21.25rem;
+  --container-vorschau: 28.75rem;
 }
 
 /* Schrift der Plattform (POR-020, DSN-001 Abschnitt 7 Punkt 1,

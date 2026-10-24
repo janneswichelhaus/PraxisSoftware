@@ -7437,7 +7437,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
-**Annahme.** Der Reiter beginnt mit der Vorschau als einzige Hero-Karte: Lage aus Plan und heutigem Tag, eine offene Einheit vor „Heute geübt“, bei mehreren Plänen der erste mit heutigem Übungstag; der Knopf heißt „Übungen beginnen“. Ein Plan, der erst beginnt, trägt „Ab 12. Oktober“ und keinen Knopf.
+**Annahme.** Der Reiter beginnt mit der Vorschau als einzige Hero-Karte: Lage aus Plan und heutigem Tag, eine offene Einheit vor „Heute geübt“, bei mehreren Plänen der erste mit heutigem Übungstag; der Knopf heißt „Übungen beginnen“. Ein Plan, der erst beginnt, trägt „Ab 12. Oktober“ und keinen Knopf; liegt auf dem Gerät eine Einheit von heute offen, sagt auch der Plan vom Gerät „Weiter üben“.
 
 **Begründung.** Handoff 2026-10-24, Abschnitte 0 und 3 (DR-127, DR-129); den künftigen Plan nennt der Handoff nicht.
 

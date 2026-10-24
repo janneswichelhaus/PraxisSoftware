@@ -31,8 +31,8 @@ import '@/index.css';
  * gesprochen wird mit keinem Server. Alles ist synthetisch.
  *
  * Für den Reiter dazu `&lage=` (Handoff 2026-10-24, Abschnitte 3 und 5.6;
- * DRP-043): `heute`, `anderer-tag`, `geuebt`, `lesefrist`, `mehrere`,
- * `ohne-plan`, `geraet` (die Praxis antwortet nicht, der Plan liegt auf dem
+ * DRP-043): `heute`, `anderer-tag`, `geuebt`, `erledigt`, `ab`, `lesefrist`,
+ * `mehrere`, `ohne-plan`, `geraet` (die Praxis antwortet nicht, der Plan liegt auf dem
  * Gerät), `fehler` (ohne Plan auf dem Gerät) und `laden`. Ohne `lage` die
  * begonnene Einheit wie bisher. Mit `seite=training` gilt die Lage für den
  * Trainingsplan.
@@ -215,6 +215,29 @@ function plaeneDerLage(): EigenerPlan[] | null {
               hold_seconds: 5,
             }),
           ],
+        },
+      ];
+    case 'erledigt':
+      // Übungen 1 und 2 ganz gehakt: „Heute erledigt“, weiter bei Übung 3.
+      return [
+        {
+          ...plan,
+          open_session: {
+            id: 'cccccccc-0000-4000-8000-000000000001',
+            sets: plan.items
+              .slice(0, 2)
+              .flatMap((p) => [1, 2, 3].map((d) => ({ item_id: p.id, set_number: d }))),
+          },
+        },
+      ];
+    case 'ab':
+      // Beginnt in fünf Tagen: „Ab …“, noch kein Üben, die Tage schon wählbar.
+      return [
+        {
+          ...ohneEinheit,
+          runs_from: kalendertag(new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)),
+          can_exercise: false,
+          weekdays: [],
         },
       ];
     case 'ohne-plan':

@@ -1,6 +1,6 @@
 import { useContext, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
 import { Buehne } from '@/components/ui/Buehne';
 import { Button } from '@/components/ui/Button';
@@ -9,6 +9,7 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { HakenSymbol } from '@/components/ui/HakenSymbol';
 import { HeroKarte } from '@/components/ui/HeroKarte';
+import { Linkliste } from '@/components/ui/Linkliste';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
@@ -191,7 +192,7 @@ function Wartestand({ besitzer, zugangId }: { besitzer: string; zugangId: string
  */
 function Spalten({ vorschau, children }: { vorschau: ReactNode; children: ReactNode }) {
   return (
-    <div className="max-w-formular flex flex-col gap-10 [[data-rechner]_&]:grid [[data-rechner]_&]:max-w-none [[data-rechner]_&]:grid-cols-[minmax(0,1fr)_minmax(21.25rem,28.75rem)] [[data-rechner]_&]:items-start [[data-rechner]_&]:gap-12">
+    <div className="max-w-formular flex flex-col gap-10 [[data-rechner]_&]:grid [[data-rechner]_&]:max-w-none [[data-rechner]_&]:grid-cols-[minmax(0,1fr)_minmax(var(--container-vorschau-min),var(--container-vorschau))] [[data-rechner]_&]:items-start [[data-rechner]_&]:gap-12">
       <div className="min-w-0 [[data-rechner]_&]:col-start-2 [[data-rechner]_&]:row-start-1">
         {vorschau}
       </div>
@@ -267,6 +268,22 @@ function blattPfad(planId: string, bereich: string): string {
   return `${PLATTFORM_PFAD}/uebungen/blatt/${planId}${bereich ? `?${bereich}` : ''}`;
 }
 
+/** „1. Oktober“ - Tag und Monat brechen nicht auseinander. */
+function tagImSatz(tag: string): string {
+  return tagUndMonat(tag).replace(' ', '\u00a0');
+}
+
+/**
+ * Ein Name im Fließtext: Ein Plan- oder Übungsname trennt nur unter 23rem an
+ * der Silbe (ANN-707), ein Personenname nie (DR-114) - der Satz drumherum
+ * trennt als Fließtext wie überall.
+ */
+function Name({ children, person = false }: { children: string; person?: boolean }) {
+  return (
+    <span className={person ? 'hyphens-manual' : 'min-[23rem]:hyphens-manual'}>{children}</span>
+  );
+}
+
 /** „Montag“ - der Tag einer nahen Woche, ohne Datum. */
 function wochentagName(tag: string): string {
   return WOCHENTAGE.find((w) => w.nummer === isoWochentag(tag))?.lang ?? '';
@@ -306,7 +323,13 @@ function Vorschau({
         schmalOhneRad
         etikett="Plan beendet"
         titel="Ihr Plan zum Mitnehmen"
-        satz={`${plan.title}${plan.ended_on ? `, beendet am ${tagUndMonat(plan.ended_on)}` : ''}. Als PDF bleibt er bei Ihnen.`}
+        satz={
+          <>
+            <Name>{plan.title}</Name>
+            {plan.ended_on ? `, beendet am ${tagImSatz(plan.ended_on)}` : ''}. Als PDF bleibt er bei
+            Ihnen.
+          </>
+        }
         aktion={{ text: 'Plan als PDF sichern', to: blattPfad(plan.id, bereich) }}
       />
     );
@@ -330,7 +353,7 @@ function Vorschau({
         Heute geübt
       </span>
     ) : lage === 'ab' && plan.runs_from ? (
-      `Ab ${tagUndMonat(plan.runs_from)}`
+      `Ab ${tagImSatz(plan.runs_from)}`
     ) : lage === 'anderer-tag' && naechster ? (
       `Nächster Übungstag: ${wochentagName(naechster)}`
     ) : (
@@ -339,23 +362,28 @@ function Vorschau({
 
   if (lage === 'geuebt') {
     const wer = name ?? (training ? 'Ihre Trainingsbetreuung' : 'Ihre Therapeut:in');
+    // Ohne Netz geht auch „Noch einmal üben“ mit dem Plan vom Gerät.
+    const angaben = [
+      naechster
+        ? {
+            schluessel: 'naechster',
+            zeichen: ZEICHEN.kalender,
+            text: `Nächster Übungstag: ${wochentagName(naechster)}`,
+          }
+        : null,
+      !verbunden && ueben ? OHNE_NETZ : null,
+    ].filter((a) => a !== null);
     return (
       <HeroKarte
         schmalOhneRad
         etikett={etikett}
         titel={titel}
-        satz={`Gespeichert. ${wer} sieht Ihre Einheit beim nächsten Termin.`}
-        angaben={
-          naechster
-            ? [
-                {
-                  schluessel: 'naechster',
-                  zeichen: ZEICHEN.kalender,
-                  text: `Nächster Übungstag: ${wochentagName(naechster)}`,
-                },
-              ]
-            : undefined
+        satz={
+          <>
+            Gespeichert. <Name person>{wer}</Name> sieht Ihre Einheit beim nächsten Termin.
+          </>
         }
+        angaben={angaben}
         leiseAktion={
           ueben ? { text: 'Noch einmal üben', to: einheitPfad(plan.id, bereich) } : undefined
         }
@@ -409,13 +437,23 @@ function angabenDerEinheit({
       ? {
           schluessel: 'weiter',
           zeichen: ZEICHEN.weiter,
-          text: `Weiter bei Übung ${offen.position}: ${offen.variant_lay_name}`,
+          text: (
+            <>
+              Weiter bei Übung {offen.position}: <Name>{offen.variant_lay_name}</Name>
+            </>
+          ),
         }
       : null,
     {
       schluessel: 'umfang',
       zeichen: ZEICHEN.uhr,
-      text: planname ? `${planname} · ${umfang}` : umfang,
+      text: planname ? (
+        <>
+          <Name>{planname}</Name> · {umfang}
+        </>
+      ) : (
+        umfang
+      ),
     },
     brauchen.length > 0
       ? {
@@ -424,9 +462,7 @@ function angabenDerEinheit({
           text: `Sie brauchen: ${brauchen.join(', ')}`,
         }
       : null,
-    ohneNetz
-      ? { schluessel: 'netz', zeichen: ZEICHEN.telefon, text: 'Geht auch ohne Netz.' }
-      : null,
+    ohneNetz ? OHNE_NETZ : null,
   ].filter((a) => a !== null);
 }
 
@@ -459,7 +495,7 @@ function PlanAbschnitt({
     laufzeitText(plan, heute),
     // Befund B9: der Tag der Zuweisung - eine neue Fassung ist so als
     // aktualisierter Plan zu erkennen.
-    !beendet && plan.assigned_on ? `Stand ${tagUndMonat(plan.assigned_on)}` : null,
+    !beendet && plan.assigned_on ? `Stand ${tagImSatz(plan.assigned_on)}` : null,
     // Die Häufigkeit steht sonst im Satz der Wochenleiste.
     !mitLeiste && !beendet && plan.sessions_per_week ? haeufigkeit(plan.sessions_per_week) : null,
   ]
@@ -478,7 +514,11 @@ function PlanAbschnitt({
         ) : null}
         <UebungenDesPlans plan={plan} beendet={beendet} />
         {mitKnopf && plan.can_exercise && !nurLesen && plan.items.length > 0 ? (
-          <ButtonLink variant="secondary" className="w-full" to={einheitPfad(plan.id, bereich)}>
+          <ButtonLink
+            variant="secondary"
+            className="w-full [[data-rechner]_&]:w-auto [[data-rechner]_&]:self-start"
+            to={einheitPfad(plan.id, bereich)}
+          >
             {plan.open_session ? 'Weiter üben' : 'Übungen beginnen'}
           </ButtonLink>
         ) : null}
@@ -516,10 +556,10 @@ function PlanAbschnitt({
  */
 function laufzeitText(plan: EigenerPlan, heute: string): string | null {
   if (plan.status === 'ended') {
-    return plan.ended_on ? `Beendet am ${tagUndMonat(plan.ended_on)} · zum Nachlesen` : null;
+    return plan.ended_on ? `Beendet am ${tagImSatz(plan.ended_on)} · zum Nachlesen` : null;
   }
-  if (plan.runs_from && plan.runs_from > heute) return `Ab ${tagUndMonat(plan.runs_from)}`;
-  return plan.runs_until ? `Bis ${tagUndMonat(plan.runs_until)}` : null;
+  if (plan.runs_from && plan.runs_from > heute) return `Ab ${tagImSatz(plan.runs_from)}`;
+  return plan.runs_until ? `Bis ${tagImSatz(plan.runs_until)}` : null;
 }
 
 /**
@@ -565,40 +605,18 @@ function UebungenDesPlans({
 }
 
 /**
- * „Zum Plan“ (Abschnitt 5.1): Plan als PDF und die Frage zum Plan als Liste
- * mit Rahmen, je 60 hoch mit Zeichen und Pfeil; am Rechner als Textlinks mit
- * Zeichen in einer Reihe.
+ * „Zum Plan“ (Abschnitt 5.1): Plan als PDF und die Frage zum Plan als
+ * `Linkliste` - am Telefon Zeilen 60 hoch, am Rechner Textlinks in einer Reihe.
  */
 function ZumPlan({
   zeilen,
 }: {
   zeilen: readonly ({ text: string; zeichen: ReactNode; to: string } | null)[];
 }) {
-  const sichtbar = zeilen.filter((z) => z !== null);
   return (
     <div>
       <Zwischentitel ebene={3}>Zum Plan</Zwischentitel>
-      <ul className="rounded-card border-line bg-surface overflow-hidden border [[data-rechner]_&]:flex [[data-rechner]_&]:flex-wrap [[data-rechner]_&]:gap-x-8 [[data-rechner]_&]:border-0 [[data-rechner]_&]:bg-transparent">
-        {sichtbar.map((z) => (
-          <li key={z.text} className="border-line not-first:border-t [[data-rechner]_&]:border-0">
-            <Link
-              to={z.to}
-              className="text-ink hover:bg-surface-sunken active:bg-surface-sunken ease-druck [[data-rechner]_&]:text-accent flex min-h-15 items-center gap-3 px-4 py-2 font-semibold transition-colors duration-120 focus-visible:-outline-offset-2 max-[23rem]:gap-2 max-[23rem]:px-3 [[data-rechner]_&]:min-h-11 [[data-rechner]_&]:px-0 [[data-rechner]_&]:underline [[data-rechner]_&]:underline-offset-3 [[data-rechner]_&]:hover:bg-transparent"
-            >
-              <span aria-hidden="true" className="text-accent inline-flex shrink-0 [&_svg]:size-6">
-                {z.zeichen}
-              </span>
-              <span className="min-w-0 grow">{z.text}</span>
-              <span
-                aria-hidden="true"
-                className="text-ink-muted inline-flex shrink-0 max-[23rem]:hidden [&_svg]:size-6 [[data-rechner]_&]:hidden"
-              >
-                {ZEICHEN.pfeil}
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <Linkliste eintraege={zeilen.filter((z) => z !== null)} />
     </div>
   );
 }
@@ -670,8 +688,10 @@ function Fensterinhalt({
   const { zahl, einheit } = hauptzahl(position);
   return (
     <div className="plattform-schrift flex min-h-0 flex-1 flex-col">
-      <div className="border-line flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-3 border-b py-2 pr-2 pl-5 max-[23rem]:pl-3">
-        <p className="text-ink-muted">
+      {/* Eine Zeile wie im Handoff, auch bei „Sehr groß“; erst unter 23rem
+          bricht „Schließen“ unter die Zählung. */}
+      <div className="border-line flex min-h-16 shrink-0 items-center justify-between gap-x-3 border-b py-2 pr-2 pl-5 max-[23rem]:flex-wrap max-[23rem]:pl-3">
+        <p className="text-ink-muted min-w-0">
           Übung {nummer} von {anzahl}
         </p>
         <Button type="button" variant="quiet" onClick={onSchliessen}>
@@ -698,7 +718,8 @@ function Fensterinhalt({
         {/* Der Fokus steht am Anfang der Übung, nicht auf „Schließen“: So
             liegen Name und Zahl im Blick, und Vorlesesoftware beginnt dort. */}
         <span data-autofocus tabIndex={-1} className="block outline-none" />
-        <div className="flex flex-col gap-6">
+        {/* Am breiten Fenster in der Spalte wie die Durchführung, nicht gestreckt. */}
+        <div className="max-w-spalte mx-auto flex w-full flex-col gap-6">
           <Buehne
             name={position.variant_lay_name}
             zahl={zahl}
@@ -714,22 +735,45 @@ function Fensterinhalt({
             </div>
           ) : null}
           {position.equipment.length > 0 || position.note ? (
-            <div className="flex flex-col gap-2">
+            // „Sie brauchen:“ und „Hinweis:“ mit Zeichen 22 wie in der
+            // Durchführung (Handoff 5.3).
+            <div className="flex flex-col gap-3">
               {position.equipment.length > 0 ? (
-                <p className="text-ink">
-                  <span className="font-semibold">Sie brauchen: </span>
-                  {position.equipment.join(', ')}
+                <p className="text-ink flex items-start gap-2.5">
+                  <span
+                    aria-hidden="true"
+                    className="text-accent mt-px inline-flex shrink-0 [&_svg]:size-5.5"
+                  >
+                    {ZEICHEN.tasche}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="font-semibold">Sie brauchen: </span>
+                    {position.equipment.join(', ')}
+                  </span>
                 </p>
               ) : null}
               {position.note ? (
-                <p className="text-ink">
-                  <span className="font-semibold">Hinweis: </span>
-                  {position.note}
+                <p className="text-ink flex items-start gap-2.5">
+                  <span
+                    aria-hidden="true"
+                    className="text-accent mt-px inline-flex shrink-0 [&_svg]:size-5.5"
+                  >
+                    {ZEICHEN.hinweis}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="font-semibold">Hinweis: </span>
+                    {position.note}
+                  </span>
                 </p>
               ) : null}
             </div>
           ) : null}
-          <Button type="button" variant="secondary" className="w-full" onClick={onSchliessen}>
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full sm:w-auto sm:self-end sm:px-7"
+            onClick={onSchliessen}
+          >
             Schließen
           </Button>
         </div>
@@ -849,7 +893,7 @@ function PlanVomGeraet({
       {verbunden ? (
         <div className="mb-6 flex flex-col items-start gap-1">
           <Statusmeldung ton="warnung">
-            {`Die Praxis antwortet gerade nicht. Üben können Sie trotzdem – mit Ihrem Plan vom ${tagUndMonat(ablage.tag)}.`}
+            {`Die Praxis antwortet gerade nicht. Üben können Sie trotzdem – mit Ihrem Plan vom ${tagImSatz(ablage.tag)}.`}
           </Statusmeldung>
           <Button type="button" variant="quiet" onClick={() => void onErneut()}>
             Erneut versuchen
@@ -888,7 +932,7 @@ function PlanVomGeraet({
                 {i > 0 ? (
                   <ButtonLink
                     variant="secondary"
-                    className="w-full"
+                    className="w-full [[data-rechner]_&]:w-auto [[data-rechner]_&]:self-start"
                     to={einheitPfad(plan.id, bereich)}
                   >
                     {plan.open_session ? 'Weiter üben' : 'Übungen beginnen'}
@@ -978,9 +1022,10 @@ const ZEICHEN = {
       <path d="M10 9.5a2 2 0 1 1 2.5 1.9c-.3.1-.5.4-.5.7v.4M12 14h.01" />
     </svg>
   ),
-  pfeil: (
+  hinweis: (
     <svg {...SVG}>
-      <path d="M9 6l6 6-6 6" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 8h.01" />
     </svg>
   ),
 };
@@ -1051,3 +1096,6 @@ export function PlanblattPlattform({
     </>
   );
 }
+
+/** „Geht auch ohne Netz.“ (Briefing 1): Die Pläne liegen auf dem Gerät. */
+const OHNE_NETZ = { schluessel: 'netz', zeichen: ZEICHEN.telefon, text: 'Geht auch ohne Netz.' };

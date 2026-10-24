@@ -131,6 +131,13 @@ async function vorschau(name: string | RegExp = /Ihre Übungen|Ihr Plan/) {
   return screen.findByRole('region', { name });
 }
 
+/** Die Angaben der Vorschau als Text, Leerzeichen vereinheitlicht (Namen stehen in eigenen Spannen). */
+function angaben(karte: HTMLElement): string[] {
+  return within(karte)
+    .getAllByRole('listitem')
+    .map((a) => (a.textContent ?? '').replace(/\s+/g, ' ').trim());
+}
+
 describe('Reiter Übungen (UEB-009, Handoff 5.1)', () => {
   it('zeigt die Vorschau, den Plan in Worten, die Übungen als Zeilen und „Zum Plan“', async () => {
     zeige(<Uebungen zugang={ZUGANG} />);
@@ -138,11 +145,7 @@ describe('Reiter Übungen (UEB-009, Handoff 5.1)', () => {
     // Ohne gewählte Tage: „Ihr Plan“, Umfang mit Dauer und was man braucht.
     const karte = await vorschau('Ihre Übungen');
     expect(within(karte).getByText('Ihr Plan')).toBeInTheDocument();
-    expect(
-      within(karte)
-        .getAllByRole('listitem')
-        .map((a) => a.textContent),
-    ).toEqual(['Eine Übung · etwa 5 Minuten', 'Sie brauchen: Geländer']);
+    expect(angaben(karte)).toEqual(['Eine Übung · etwa 5 Minuten', 'Sie brauchen: Geländer']);
     expect(within(karte).getByRole('link', { name: 'Übungen beginnen' })).toHaveAttribute(
       'href',
       `/p/uebungen/einheit/${eigenerPlan().id}`,
@@ -270,9 +273,7 @@ describe('Vorschau der Einheit in ihren Lagen (Handoff, Abschnitt 3)', () => {
     zeige(<Uebungen zugang={ZUGANG} />);
     const karte = await vorschau('Ihre Übungen für heute');
     expect(within(karte).getByText('Heute begonnen')).toBeInTheDocument();
-    expect(
-      within(karte).getByText('Weiter bei Übung 2: Auf einem Bein stehen'),
-    ).toBeInTheDocument();
+    expect(angaben(karte)[0]).toBe('Weiter bei Übung 2: Auf einem Bein stehen');
     expect(within(karte).getByRole('link', { name: 'Weiter üben' })).toHaveAttribute(
       'href',
       `/p/uebungen/einheit/${eigenerPlan().id}`,
@@ -300,15 +301,30 @@ describe('Vorschau der Einheit in ihren Lagen (Handoff, Abschnitt 3)', () => {
     zeige(<Uebungen zugang={ZUGANG} />);
     const karte = await vorschau('Ihre Übungen für heute');
     expect(within(karte).getByText('Heute geübt')).toBeInTheDocument();
-    expect(
-      await within(karte).findByText(
+    await waitFor(() =>
+      expect(karte).toHaveTextContent(
         'Gespeichert. Anna Beispiel sieht Ihre Einheit beim nächsten Termin.',
       ),
-    ).toBeInTheDocument();
+    );
+    // Ein Personenname wird nie getrennt (DR-114).
+    expect(within(karte).getByText('Anna Beispiel').className).toBe('hyphens-manual');
     expect(within(karte).getByText('Nächster Übungstag: Montag')).toBeInTheDocument();
     const leise = within(karte).getByRole('link', { name: 'Noch einmal üben' });
     expect(leise.className).toContain('underline');
     expect(within(karte).queryByRole('link', { name: 'Übungen beginnen' })).not.toBeInTheDocument();
+  });
+
+  it('heute geübt ohne Netz: „Noch einmal üben“ geht auch dann', async () => {
+    ladePlaene.mockResolvedValue({
+      today: HEUTE,
+      plans: [eigenerPlan({ recent_sessions: [{ performed_on: HEUTE, finished: true }] })],
+    });
+    zeige(<Uebungen zugang={ZUGANG} />);
+    const karte = await vorschau('Ihre Übungen für heute');
+    expect(within(karte).queryByText('Geht auch ohne Netz.')).not.toBeInTheDocument();
+    setzeVerbindung(false);
+    expect(within(karte).getByText('Geht auch ohne Netz.')).toBeInTheDocument();
+    expect(within(karte).getByRole('link', { name: 'Noch einmal üben' })).toBeInTheDocument();
   });
 
   it('heute geübt ohne Termin: „Ihre Therapeut:in sieht …“', async () => {
@@ -318,11 +334,9 @@ describe('Vorschau der Einheit in ihren Lagen (Handoff, Abschnitt 3)', () => {
     });
     zeige(<Uebungen zugang={ZUGANG} />);
     const karte = await vorschau('Ihre Übungen für heute');
-    expect(
-      within(karte).getByText(
-        'Gespeichert. Ihre Therapeut:in sieht Ihre Einheit beim nächsten Termin.',
-      ),
-    ).toBeInTheDocument();
+    expect(karte).toHaveTextContent(
+      'Gespeichert. Ihre Therapeut:in sieht Ihre Einheit beim nächsten Termin.',
+    );
   });
 
   it('Lesefrist: Meldung oben, Plan zum Mitnehmen, nur die Übungen', async () => {
@@ -345,11 +359,13 @@ describe('Vorschau der Einheit in ihren Lagen (Handoff, Abschnitt 3)', () => {
     ).toBeInTheDocument();
     const karte = await vorschau('Ihr Plan zum Mitnehmen');
     expect(within(karte).getByText('Plan beendet')).toBeInTheDocument();
-    expect(
-      within(karte).getByText(
-        'Heimprogramm Knie, beendet am 1. Oktober. Als PDF bleibt er bei Ihnen.',
-      ),
-    ).toBeInTheDocument();
+    expect(karte).toHaveTextContent(
+      'Heimprogramm Knie, beendet am 1. Oktober. Als PDF bleibt er bei Ihnen.',
+    );
+    // Der Planname trennt nur unter 23rem an der Silbe (ANN-707).
+    expect(within(karte).getByText('Heimprogramm Knie').className).toBe(
+      'min-[23rem]:hyphens-manual',
+    );
     expect(within(karte).getByRole('link', { name: 'Plan als PDF sichern' })).toHaveAttribute(
       'href',
       `/p/uebungen/blatt/${eigenerPlan().id}`,
@@ -376,9 +392,7 @@ describe('Vorschau der Einheit in ihren Lagen (Handoff, Abschnitt 3)', () => {
     });
     zeige(<Uebungen zugang={ZUGANG} />);
     const karte = await vorschau('Ihre Übungen für heute');
-    expect(
-      within(karte).getByText('Schulter mobil · Eine Übung · etwa 5 Minuten'),
-    ).toBeInTheDocument();
+    expect(angaben(karte)[0]).toBe('Schulter mobil · Eine Übung · etwa 5 Minuten');
     expect(within(karte).getByRole('link', { name: 'Übungen beginnen' })).toHaveAttribute(
       'href',
       `/p/uebungen/einheit/${zweiter.id}`,

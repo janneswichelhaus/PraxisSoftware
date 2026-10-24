@@ -118,9 +118,9 @@ describe('umfangText', () => {
   it('nennt Übungen und die geschätzte Dauer (ANN-704)', () => {
     // 3 × 12 × 4 s + 2 × 30 s + 30 s = 234 s je Übung; drei Übungen 11,7 Minuten.
     expect(umfangText([position(1), position(2), position(3)])).toBe(
-      '3\u00a0Übungen · etwa 10 Minuten',
+      '3\u00a0Übungen · etwa 10\u00a0Minuten',
     );
-    expect(umfangText([position(1)])).toBe('Eine Übung · etwa 5 Minuten');
+    expect(umfangText([position(1)])).toBe('Eine Übung · etwa 5\u00a0Minuten');
   });
 
   it('nennt ohne Schätzung nur die Zahl der Übungen', () => {
@@ -128,7 +128,7 @@ describe('umfangText', () => {
       '2\u00a0Übungen',
     );
     expect(umfangSatz(4, null)).toBe('4\u00a0Übungen');
-    expect(umfangSatz(4, 15)).toBe('4\u00a0Übungen · etwa 15 Minuten');
+    expect(umfangSatz(4, 15)).toBe('4\u00a0Übungen · etwa 15\u00a0Minuten');
   });
 });
 

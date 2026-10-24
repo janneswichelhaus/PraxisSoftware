@@ -587,7 +587,7 @@ describe('Training, Begleitung, Lesefrist', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', {
-        name: 'Ihr Plan für zu Hause 3\u00a0Übungen · etwa 10 Minuten',
+        name: 'Ihr Plan für zu Hause 3\u00a0Übungen · etwa 10\u00a0Minuten',
       }),
     ).toHaveAttribute('href', '/p/uebungen?bereich=training');
     // Mit weicher Trennstelle, damit das Wort bei „Sehr groß“ nur dort bricht.
