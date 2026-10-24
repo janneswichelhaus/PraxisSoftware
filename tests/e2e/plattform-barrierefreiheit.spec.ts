@@ -405,6 +405,22 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
     expect(spalte?.width ?? 0).toBeLessThanOrEqual(768.5);
   });
 
+  test('188 px (200 %): jede Listenzeile in einer Spalte, auch mit Zeit, Titel und Zustand', async ({
+    page,
+  }) => {
+    // Die Telefonregel für dreiteilige Zeilen darf die Regel unter 23rem nicht
+    // überstimmen (`:where` in index.css); quer läuft dabei nichts über.
+    await page.setViewportSize({ width: 188, height: 900 });
+    await oeffne(page, 'rechnungen', 'Rechnungen');
+    const spalten = await page
+      .locator('.listenzeile')
+      .evaluateAll((zeilen) =>
+        zeilen.map((z) => getComputedStyle(z).gridTemplateColumns.split(' ').length),
+      );
+    expect(spalten.length).toBeGreaterThan(0);
+    expect(spalten.every((anzahl) => anzahl === 1)).toBe(true);
+  });
+
   test('375 px: die Übersicht einspaltig, Hauptsache vor „Heute“ vor Besuch vor „Neu für Sie“', async ({
     page,
   }) => {

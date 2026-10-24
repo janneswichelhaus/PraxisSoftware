@@ -60,6 +60,7 @@ import {
   datum,
   grussNachTageszeit,
   kuenftig,
+  letzterTag,
   tagOhneJahr,
   tagUndMonat,
   zeitraumLang,
@@ -182,24 +183,34 @@ export function Uebersicht({
     enabled: !nurLesen && !begleitung,
   });
 
-  const abfragen = [
-    termine,
-    wuensche,
-    rechnungen,
-    nachrichten,
-    bogen,
-    abo,
-    angebot,
-    checkin,
-    gewohnheiten,
-    plaene,
-    pakete,
-    ernaehrung,
-  ];
-  // Ein Zustand für alle (ANN-699): Eine ausgeschaltete Abfrage wartet nicht
-  // (`idle`); eine pausierte ohne Netz schon. Scheitert ein Nachladen, bleibt
-  // der Stand stehen.
-  const laedt = abfragen.some((a) => a.isPending && a.fetchStatus !== 'idle');
+  // Nur, was die Übersicht hier selbst abfragt: Eine ausgeschaltete Abfrage
+  // übernähme sonst den Fehler, den eine andere Seite unter demselben
+  // Schlüssel hinterließ (in der Einsicht etwa die Ernährung unter „Ich“).
+  const abfragen = (
+    [
+      [termine, true],
+      [wuensche, true],
+      [rechnungen, true],
+      [nachrichten, true],
+      [bogen, behandlung],
+      [abo, behandlung],
+      [angebot, behandlung && !begleitung],
+      [checkin, true],
+      [gewohnheiten, true],
+      [plaene, true],
+      [pakete, !behandlung],
+      [ernaehrung, !nurLesen && !begleitung],
+    ] as const
+  )
+    .filter(([, an]) => an)
+    .map(([abfrage]) => abfrage);
+  // Ein Zustand für alle (ANN-699): Das Skelett steht, solange eine Abfrage
+  // lädt. Ohne Netz wartet die Seite nur auf die Termine, wie vor Schritt 1e;
+  // was sonst ohne Stand pausiert, fehlt, bis das Netz wieder da ist - die
+  // Verbindungszeile sagt es.
+  const laedt =
+    abfragen.some((a) => a.isPending && a.fetchStatus === 'fetching') ||
+    (termine.isPending && termine.fetchStatus === 'paused');
   const gescheitert = abfragen.filter((a) => a.isError && a.data === undefined);
   // Scheitert ein Nachladen, bleibt der Stand, darüber der Hinweis „veraltet“.
   const veraltet = abfragen.filter((a) => a.isError && a.data !== undefined);
@@ -303,8 +314,8 @@ export function Uebersicht({
         heute.push({
           schluessel: 'uebungen',
           zeichen: ZEICHEN.uebungen,
-          titel: 'Ihre Übungen für heute',
-          satz: uebungenText(uebungen.uebungen, verbunden),
+          titel: eigen ? 'Ihre Übungen für heute' : 'Übungen für heute',
+          satz: uebungenText(uebungen.uebungen, verbunden, !eigen),
           to: nurLesen ? p('/uebungen') : mit(handlung(uebungen).pfad),
         });
       }
@@ -315,7 +326,7 @@ export function Uebersicht({
         heute.push({
           schluessel: 'plan',
           zeichen: ZEICHEN.uebungen,
-          titel: 'Ihr Plan für zu Hause',
+          titel: eigen ? 'Ihr Plan für zu Hause' : 'Plan für zu Hause',
           satz: anzahl === 1 ? 'Eine Übung' : `${anzahl} Übungen`,
           to: p('/uebungen'),
         });
@@ -585,8 +596,8 @@ function Kopfteil({
           {!eigen
             ? `Ihr Zugang für ${name} endet am ${datum(zugang.read_until)}.`
             : aboEndet?.ends_on
-              ? `Ihr Nachsorge-Abo ${aboEndet.state === 'ending' ? 'endet' : 'endete'} am ${datum(aboEndet.ends_on)}. Sie können hier noch bis ${datum(zugang.read_until)} lesen.`
-              : `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(zugang.read_until)} lesen.`}
+              ? `Ihr Nachsorge-Abo ${aboEndet.state === 'ending' ? 'endet' : 'endete'} am ${datum(aboEndet.ends_on)}. Sie können hier noch bis ${datum(letzterTag(zugang.read_until))} lesen.`
+              : `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(letzterTag(zugang.read_until))} lesen.`}
         </Statusmeldung>
       ) : null}
       <Gruss name={mitName ? zugang.own_name : null} jetzt={jetzt} mitDatum={mitDatum} />
@@ -642,7 +653,8 @@ function Hauptsachekarte({
       return (
         <HeroKarte
           titel="Unterlagen sichern"
-          satz={`Rechnungen und Dokumente können Sie bis ${tagUndMonat(haupt.bis, jetzt)} herunterladen.`}
+          // `read_until` ist die Mitternacht nach dem letzten Tag.
+          satz={`Rechnungen und Dokumente können Sie bis ${tagUndMonat(letzterTag(haupt.bis), jetzt)} herunterladen.`}
           aktion={{ text: 'Unterlagen ansehen', to: `${PLATTFORM_PFAD}/ich` }}
           markenmoment={markenmoment}
         />
@@ -669,11 +681,15 @@ function Hauptsachekarte({
       const a = haupt.aufgabe;
       const knopf = handlung(a);
       const aktion = nurLesen ? undefined : { text: knopf.text, to: mit(knopf.pfad) };
+      // Für eine Vertretung die Aufgabe der Person, nicht die eigene (5.1).
+      const fuer = vertretung ? zugang.represented_name : null;
+      const welcher = erster ? 'ersten' : 'nächsten';
       if (a.art === 'fragebogen') {
+        const wer = naechster?.staff_name ?? (fuer ? 'Die Therapeut:in' : 'Ihre Therapeut:in');
         return (
           <HeroKarte
-            titel={`Fragebogen vor Ihrem ${erster ? 'ersten' : 'nächsten'} Termin`}
-            satz={`Etwa 10 Minuten. ${naechster?.staff_name ?? 'Ihre Therapeut:in'} sieht Ihre Angaben beim ${erster ? 'ersten' : 'nächsten'} Termin.`}
+            titel={fuer ? `Fragebogen für ${fuer}` : `Fragebogen vor Ihrem ${welcher} Termin`}
+            satz={`Etwa 10 Minuten. ${wer} sieht ${fuer ? 'die' : 'Ihre'} Angaben beim ${welcher} Termin.`}
             aktion={aktion}
             markenmoment={markenmoment}
           />
@@ -682,7 +698,7 @@ function Hauptsachekarte({
       if (a.art === 'checkin') {
         return (
           <HeroKarte
-            titel="Ihr Check-in für heute"
+            titel={fuer ? `Check-in für ${fuer}` : 'Ihr Check-in für heute'}
             satz={`${fragenText(a.fragen)}, freiwillig, etwa 1 Minute.`}
             aktion={aktion}
             markenmoment={markenmoment}
@@ -691,21 +707,24 @@ function Hauptsachekarte({
       }
       return (
         <HeroKarte
-          titel="Ihre Übungen für heute"
-          satz={uebungenText(a.uebungen, verbunden)}
+          titel={fuer ? `Übungen für ${fuer}` : 'Ihre Übungen für heute'}
+          satz={uebungenText(a.uebungen, verbunden, Boolean(fuer))}
           aktion={aktion}
           markenmoment={markenmoment}
         />
       );
     }
     case 'nichts':
+      // Im Markenmoment läuft der Leerzustand ein wie sonst die Hero-Karte.
       return (
-        <EmptyState
-          markenform
-          inKarte
-          title="Gerade ist nichts zu tun."
-          description="Zurzeit ist kein Termin vereinbart."
-        />
+        <div className={markenmoment ? 'hero-erscheint' : undefined}>
+          <EmptyState
+            markenform
+            inKarte
+            title="Gerade ist nichts zu tun."
+            description="Zurzeit ist kein Termin vereinbart."
+          />
+        </div>
       );
   }
 }
@@ -760,30 +779,46 @@ function Heute({ titel, eintraege }: { titel: string; eintraege: Eintrag[] }) {
  * Auskunft im Rahmen des Abschnitts, keine Karte zum Antippen. Unter 23rem
  * das Bild über dem Text.
  */
-function Rueckblick({ person, von, bis }: { person: string | null; von: string; bis: string }) {
+function Rueckblick({
+  person,
+  von,
+  bis,
+}: {
+  person: string | null;
+  von: string | null;
+  bis: string;
+}) {
   return (
     <p className="flex items-center gap-4 hyphens-manual max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:gap-2">
       {person ? <Personenbild name={person} farbe={null} groesse="karte" /> : null}
       <span className="flex min-w-0 flex-col">
         {person ? <span className="font-semibold">Mit {person}</span> : null}{' '}
-        <span className="text-ink-muted">{zeitraumLang(von, bis)}</span>
+        <span className="text-ink-muted">
+          {von ? zeitraumLang(von, bis) : `bis ${zeitraumLang(bis, bis)}`}
+        </span>
       </span>
     </p>
   );
 }
 
-/** Erster und letzter Termin, der stattfand, und wer zuletzt kam. */
+/**
+ * Erster und letzter Termin, der stattfand, und wer zuletzt kam. Die
+ * Termine reichen zwölf Monate zurück (ANN-251): Liegt der erste nahe an
+ * diesem Rand, kann es frühere geben - dann nur „bis …“.
+ */
 function vergangen(
   termine: readonly Termin[],
   jetzt: Date,
-): { person: string | null; von: string; bis: string } | null {
+): { person: string | null; von: string | null; bis: string } | null {
   const liste = termine
     .filter((t) => t.status !== 'cancelled' && !kuenftig(t.starts_at, jetzt))
     .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
   const erster = liste[0];
   const letzter = liste.at(-1);
   if (!erster || !letzter) return null;
-  return { person: letzter.staff_name, von: erster.starts_at, bis: letzter.starts_at };
+  const rand = jetzt.getTime() - 330 * 24 * 60 * 60 * 1000;
+  const von = new Date(erster.starts_at).getTime() > rand ? erster.starts_at : null;
+  return { person: letzter.staff_name, von, bis: letzter.starts_at };
 }
 
 function fragenText(anzahl: number): string {
@@ -791,9 +826,10 @@ function fragenText(anzahl: number): string {
 }
 
 /** Die Pläne liegen auf dem Gerät (`PlattformAblage`): Ohne Netz geht es trotzdem. */
-function uebungenText(anzahl: number, verbunden: boolean): string {
+function uebungenText(anzahl: number, verbunden: boolean, vertretung = false): string {
   if (!verbunden) return 'Geht auch ohne Netz.';
-  return anzahl === 1 ? 'Eine Übung aus Ihrem Plan' : `${anzahl} Übungen aus Ihrem Plan`;
+  const plan = vertretung ? 'dem Plan' : 'Ihrem Plan';
+  return anzahl === 1 ? `Eine Übung aus ${plan}` : `${anzahl} Übungen aus ${plan}`;
 }
 
 /**

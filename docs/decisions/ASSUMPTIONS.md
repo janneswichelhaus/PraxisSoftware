@@ -7269,7 +7269,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
-**Annahme.** Die Übersicht wartet auf alle ihre Abfragen (Skelett) und zeigt den Fehler mit „Erneut versuchen“, sobald eine ohne Stand scheitert. Scheitert nur ein Nachladen, bleibt der Stand stehen; ohne Netz bleibt sie, wie sie war.
+**Annahme.** Die Übersicht wartet auf alle Abfragen, die sie selbst stellt (Skelett), und zeigt den Fehler mit „Erneut versuchen“, sobald eine ohne Stand scheitert. Scheitert ein Nachladen, bleibt der Stand mit dem Hinweis „veraltet“. Ohne Netz wartet sie nur auf die Termine; was sonst ohne Stand pausiert, fehlt bis zum Netz.
 
 **Begründung.** DR-126: Abschnitte sprangen nach, Fehler von fünf der neun Abfragen erschienen nicht. Eine Übersicht mit fehlender Rechnung oder Antwort sähe vollständig aus.
 

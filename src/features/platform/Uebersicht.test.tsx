@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen, waitFor, within } from '@testing-library/react';
-import { focusManager } from '@tanstack/react-query';
+import { focusManager, onlineManager, useQuery } from '@tanstack/react-query';
 import type * as PlattformApi from './api';
 import type { Plattformzugang } from './api';
 import { renderWithProviders } from '@/test-utils';
@@ -158,7 +158,20 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   focusManager.setFocused(undefined);
+  onlineManager.setOnline(true);
 });
+
+/** Lädt vorab unter einem Schlüssel - wie eine andere Seite derselben Sitzung. */
+function Vorher({
+  schluessel,
+  laden,
+}: {
+  schluessel: readonly unknown[];
+  laden: () => Promise<unknown>;
+}) {
+  const { status } = useQuery({ queryKey: schluessel, queryFn: laden, retry: false });
+  return <p data-testid="vorher">{status}</p>;
+}
 
 describe('Gruß der Übersicht (Handoff 5.1)', () => {
   it('grüßt nach der Tageszeit mit dem eigenen Namen und nennt das Datum', async () => {
@@ -512,6 +525,54 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(ladeErnaehrung).not.toHaveBeenCalled();
   });
 
+  it('übernimmt keinen Fehler einer Abfrage, die sie selbst nicht stellt (Einsicht, „Ich“)', async () => {
+    const schluessel = ['platform-nutrition', BEGLEITUNG.access_id] as const;
+    const { rerender } = renderWithProviders(
+      <Vorher schluessel={schluessel} laden={() => Promise.reject(new Error('gesperrt'))} />,
+      `/p?zugang=${BEGLEITUNG.access_id}`,
+    );
+    await waitFor(() => expect(screen.getByTestId('vorher')).toHaveTextContent('error'));
+    rerender(
+      <>
+        <Vorher schluessel={schluessel} laden={() => Promise.reject(new Error('gesperrt'))} />
+        <Uebersicht zugang={BEGLEITUNG} />
+      </>,
+    );
+    expect(await screen.findByText('Gerade ist nichts zu tun.')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Die Übersicht lässt sich gerade nicht laden.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('zeigt ohne Netz den Stand, sobald die Termine da sind (ANN-699)', async () => {
+    ladeTermine.mockResolvedValue([TERMIN]);
+    const { rerender } = renderWithProviders(
+      <Vorher
+        schluessel={['platform-appointments', ZUGANG.access_id]}
+        laden={() => ladeTermine() as Promise<unknown>}
+      />,
+      '/p?bereich=treatment',
+    );
+    await waitFor(() => expect(screen.getByTestId('vorher')).toHaveTextContent('success'));
+    onlineManager.setOnline(false);
+    rerender(<Uebersicht zugang={ZUGANG} />);
+    // Die übrigen Abfragen pausieren ohne Stand - die Seite steht trotzdem;
+    // was unbekannt ist (der Fragebogen), zählt nicht: Hauptsache ist der Termin.
+    expect(await screen.findByRole('region', { name: /^Besuch / })).toBeInTheDocument();
+    expect(screen.queryByText('Übersicht wird geladen')).not.toBeInTheDocument();
+  });
+
+  it('spricht bei einer rechtlichen Vertretung von der Aufgabe der Person', async () => {
+    ladeTermine.mockResolvedValue([TERMIN]);
+    zeige({ ...BEGLEITUNG, access_kind: 'legal_representative' });
+    const hero = await screen.findByRole('region', { name: 'Fragebogen für Max Mustermann' });
+    expect(
+      within(hero).getByText(
+        'Etwa 10 Minuten. Anna Beispiel sieht die Angaben beim ersten Termin.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('sagt einer rechtlichen Vertretung am Ende, was sie darf', async () => {
     zeige({ ...BEGLEITUNG, access_kind: 'legal_representative' });
     expect(
@@ -572,6 +633,35 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(await screen.findByRole('region', { name: /^Besuch / })).toBeInTheDocument();
     expect(screen.queryByText('Unterlagen sichern')).not.toBeInTheDocument();
     expect(screen.getByText(/Ihr Nachsorge-Abo endet am/)).toBeInTheDocument();
+  });
+
+  it('nennt als letzten Tag der Lesefrist den vor `read_until` (Mitternacht danach)', async () => {
+    // Mitternacht in der Zeitzone des Laufs, wie der Server sie in der der Praxis liefert.
+    zeige({ ...ZUGANG, read_until: new Date(2026, 10, 13).toISOString() });
+    const hero = await screen.findByRole('region', { name: 'Unterlagen sichern' });
+    expect(within(hero).getByText(/bis 12\. November( 2026)? herunterladen/)).toBeInTheDocument();
+    expect(screen.getByText(/Sie können hier noch bis 12\.11\.2026 lesen\./)).toBeInTheDocument();
+  });
+
+  it('nennt keinen Beginn, wenn der erste Termin am Rand der zwölf Monate liegt', async () => {
+    ladeTermine.mockResolvedValue([
+      {
+        ...TERMIN,
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-0000000000a1',
+        starts_at: inTagen(-360, 9),
+        ends_at: inTagen(-360, 10),
+        status: 'completed',
+      },
+      {
+        ...TERMIN,
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-0000000000a2',
+        starts_at: '2026-10-15T07:30:00Z',
+        ends_at: '2026-10-15T08:30:00Z',
+        status: 'completed',
+      },
+    ]);
+    zeige({ ...ZUGANG, read_until: '2026-12-31T12:00:00+01:00' });
+    expect(await screen.findByText('bis 15. Oktober 2026')).toBeInTheDocument();
   });
 
   it('nennt nach einem gekündigten Nachsorge-Abo dessen Ende und die Lesezeit (ANG-004)', async () => {

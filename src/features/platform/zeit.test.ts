@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { grussNachTageszeit, tageBis, tagUndMonat, zeitraumLang } from './zeit';
+import { grussNachTageszeit, letzterTag, tageBis, tagUndMonat, zeitraumLang } from './zeit';
 
 /** Zeiten der Übersicht (Handoff 2026-10-22, 5.1) auf der Uhr des Geräts (ANN-697). */
 describe('grussNachTageszeit', () => {
@@ -36,7 +36,13 @@ describe('tagUndMonat, zeitraumLang, tageBis', () => {
   it('zählt Kalendertage, nicht Stunden', () => {
     expect(tageBis(new Date(2026, 9, 22, 23, 30).toISOString(), jetzt)).toBe(0);
     expect(tageBis(new Date(2026, 9, 23, 0, 30).toISOString(), jetzt)).toBe(1);
-    // Über die Zeitumstellung am 25.10.2026 hinweg.
+    // Über das Wochenende der Zeitumstellung (25.10.2026) hinweg - prüft die
+    // Umstellung nur, wenn der Lauf in einer Zone mit Sommerzeit steht.
     expect(tageBis(new Date(2026, 9, 26, 9, 0).toISOString(), jetzt)).toBe(4);
+  });
+
+  it('nennt als letzten Tag den vor einem Ende um Mitternacht', () => {
+    const mitternacht = new Date(2026, 10, 13, 0, 0).toISOString();
+    expect(tagUndMonat(letzterTag(mitternacht), jetzt)).toBe('12. November');
   });
 });

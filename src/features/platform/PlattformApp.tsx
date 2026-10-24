@@ -905,10 +905,14 @@ function IchBereich({
  */
 function ErnaehrungZeile({ zugang }: { zugang: Plattformzugang }) {
   const api = usePlattformApi();
+  // Die Einsicht liest die Ernährung nicht (ADR-027 Punkt 4); ein Versuch
+  // hinterließe einen Fehler im Speicher, den die Übersicht übernähme.
+  const nurLesen = useNurLesen();
   const { data } = useQuery({
     queryKey: ernaehrungSchluessel(zugang.access_id),
     queryFn: () => api.ladeErnaehrung(zugang.access_id),
     retry: false,
+    enabled: !nurLesen,
   });
   if (!data) return null;
   const z = data.profile.targets;

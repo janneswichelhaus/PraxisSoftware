@@ -72,6 +72,15 @@ export function zeitraumLang(von: string, bis: string): string {
 }
 
 /**
+ * Der letzte Tag vor einem Ende, das der Server als Mitternacht danach
+ * liefert (`read_until`, `app.retention_due_at`): „bis 12. November“, nicht
+ * bis zum 13., an dem schon nichts mehr geht.
+ */
+export function letzterTag(endeExklusiv: string): string {
+  return new Date(new Date(endeExklusiv).getTime() - 1).toISOString();
+}
+
+/**
  * Wie viele Kalendertage bis zum Zeitpunkt? 0 heute, 1 morgen - gezählt auf
  * der Uhr des Geräts, nicht in Stunden.
  */

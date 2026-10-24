@@ -507,9 +507,11 @@ html:has(.reiterleiste[data-stufe='2']) {
    `listenzeile`): Am Telefon steht der Zustand unter dem Titel, bei sehr
    wenig Breite (200 %) steht alles untereinander. Nur Zeilen mit drei
    Teilen: Bei Titel und Betrag allein bekam sonst der Titel seine ganze
-   Breite und der Betrag ein Zeichen („Sehr groß“, Übersicht, Schritt 1e). */
+   Breite und der Betrag ein Zeichen („Sehr groß“, Übersicht, Schritt 1e).
+   `:where` hält die Spezifität bei der Regel darunter, sonst gewänne diese
+   auch unter 23rem. */
 @media (max-width: 40rem) {
-  .plattform-schrift .listenzeile:has(> :nth-child(3)) {
+  .plattform-schrift .listenzeile:where(:has(> :nth-child(3))) {
     grid-template-columns: auto minmax(0, 1fr);
   }
   .plattform-schrift .listenzeile > :nth-child(3) {
