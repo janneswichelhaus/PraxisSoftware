@@ -12,6 +12,10 @@ const FORM = {
   karte: 'min-h-20 rounded-card',
   besuch: 'min-h-30 rounded-card',
   hero: 'h-57.5 rounded-image',
+  /** Die Bühne der Durchführung (Handoff 2026-10-24, 5.6): 200 hoch. */
+  buehne: 'h-50 rounded-image',
+  /** Der Fuß der Durchführung: der Hauptknopf 56 als Fläche. */
+  knopf: 'h-14 rounded-button',
 } as const;
 
 /**

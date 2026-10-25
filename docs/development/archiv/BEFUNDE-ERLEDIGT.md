@@ -1932,3 +1932,51 @@ eingeklappt.
 | Berührt | `bewegungAbwarten` in `tests/e2e/plattform-barrierefreiheit.spec.ts` |
 
 **Beobachtung.** Die Prüfung wartete auf das `finished` jeder Bewegung. Eine Einblendung wie `meldung-rein` in einem geschlossenen `<details>` („Nur ein Passkey“) löste es nicht auf; der Test lief in die Zeitüberschreitung. Die Korrektur der Sitzung (unsichtbare Bewegungen ausnehmen) kam nie auf `main`. **Erledigt durch #297.** Gegenprobe am 24.10.: mit der alten Fassung 9 von 24 Läufen in der Zeitüberschreitung, mit der heutigen 0 von 99 (bei 4 und 6 Workern).
+
+### BEF-210 — Durchführung: „Wird gespeichert …“ bleibt ohne Netz stehen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Durchführung (`Durchfuehrung.tsx`) |
+| Quelle  | Schritt 2b (DRP-EPIC-008), Bildstrecke im Flugmodus (`setOffline`) |
+| Status  | erledigt 2026-10-24 (DRP-EPIC-008): Neuladen der Pläne ohne Warten; Browsertest „Netz weg mitten in der Sitzung“ |
+| Berührt | `onBeendet` in `Durchfuehrung`; auf `main` dasselbe |
+
+**Beobachtung.** Nach „Einheit beenden“ wartete die Ansicht auf das Neuladen der Pläne. Ohne Netz hält die Abfragebibliothek das an, bis Verbindung besteht; so lange stand „Wird gespeichert …“. **Erwartet.** Weiter zur Endseite, das Neuladen läuft im Hintergrund.
+
+### BEF-211 — Durchführung: Ohne Netz lag das Ende nicht auf dem Gerät, die Ansicht lud nicht
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Durchführung; ADR-024 Punkt 5 |
+| Quelle  | Schritt 2b (DRP-EPIC-008), beim Nachstellen von BEF-210 |
+| Status  | erledigt 2026-10-24 (DRP-EPIC-008, Pfad A): `networkMode: 'always'` für das Beenden und die Gerätelesungen; Gegenprobe im Browsertest |
+| Berührt | `useEinheitBeenden`, `EinheitMitWarteschlange`, abgelegter Plan in `Durchfuehrung.tsx`; auf `main` dasselbe |
+
+**Beobachtung.** Meldete das Gerät während der Sitzung „offline“, hielt die Abfragebibliothek mit ihrem Standard `online` die Mutation „Einheit beenden“ an: Das Ende lag nicht auf dem Gerät, bis Verbindung bestand. Ebenso hielten die Lesungen der Warteschlange und des abgelegten Plans an - die Durchführung blieb beim Laden. **Erwartet.** Was nur das Gerät liest oder zuerst dorthin schreibt, läuft ohne Netz sofort; ob übertragen wird, entscheidet `anstossen`.
+
+### BEF-213 — Durchführung: Ein Haken hinter dem Ende verwirft die ganze Einheit
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Durchführung und Warteschlange; ADR-001, ADR-024 Punkte 5 und 8 |
+| Quelle  | Zweitreview DRP-EPIC-008 (Subagent, Befund 1) |
+| Status  | erledigt 2026-10-24 (DRP-EPIC-008, Pfad A): `ereignisAblegen` hängt nie hinter ein Ende, ein zweites Ende fällt weg; eine auf dem Gerät beendete Einheit wird nicht wieder geöffnet; während des Beendens nimmt die Einheit keinen Haken an; das Ende wird an seinem Ereignis entschieden, eine Abweisung nennt alle verworfenen Ereignisse, ein Ende ohne angelegte Einheit (`empty`) gilt nicht als angekommen (ANN-717); Tests mit Gegenprobe |
+| Berührt | `ereignisAblegen` (`src/features/platform/ablage.ts`), `Einheit` in `Durchfuehrung.tsx`; auf `main` derselbe Weg, sobald der Server nicht antwortet |
+
+**Beobachtung.** Lag das Ende einer Einheit noch auf dem Gerät und wurde die Durchführung wieder geöffnet („Weiter üben“ mit dem alten `open_session`) oder während „Wird gespeichert …“ gehakt, hängte die Ablage den Haken hinter das Ende. Der Server weist eine solche Einheit ab („finish must be last“), und die Ablage verwarf sie dann ganz, samt Haken und Ende. **Erwartet.** Das Ende bleibt das letzte Ereignis; was danach kommt, geht in eine neue Einheit desselben Tages, wie nach „closed“.
+
+### BEF-214 — Plattform: Die Skala hat Stufen von 44 px mit 4 px Abstand, und „keine“ bricht bei 200 %
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, `Angabefeld` (Einheit beenden, Check-in) |
+| Quelle  | Design-Review DRP-EPIC-008 (Subagent, B2 und B3) |
+| Status  | erledigt 2026-10-24 (DRP-EPIC-008): auf der Plattform Stufen 48 hoch mit 8 Abstand, zwei Reihen 0 bis 5 und 6 bis 10, bei großer Schrift mehr; die Enden brechen als Ganzes um; Browsertest |
+| Berührt | `src/components/ui/Angabefeld.tsx`, `.skala` in `src/index.css`; Handoff 2026-10-24, 5.4 und 6 |
+
+**Beobachtung.** Die Stufen der Skala waren 44 px hoch und standen 4 px (Telefon) bzw. 2 px (Rechner) auseinander; bei 188 px brach das Ende „0 = keine“ als „kein|e“ ohne Strich. **Erwartet.** Ziele 48 mit mindestens 8 Abstand (PLATTFORM.md), kein Wort ohne Strich gebrochen (BEF-196).

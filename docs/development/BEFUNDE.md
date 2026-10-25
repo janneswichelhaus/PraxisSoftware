@@ -567,7 +567,7 @@ Marke vorsieht.
 | Datum   | 2026-10-24 |
 | Bereich | Plattform, Übungen und Durchführung |
 | Quelle  | Ist-Bilder für Briefing 2 (Prüfseite `plattform-uebungen.html`, 375 und 188 px) |
-| Status  | offen; wird mit Schritt 2 des Design-Reviews neu gefasst |
+| Status  | Durchführung erledigt in DRP-EPIC-008 (Schritt 2b: Titel in der Bühne ohne „Abbrechen“ daneben, `Hakenzeile`, Enden der Skala untereinander, ANN-707, BEF-214); Reiter offen für Schritt 2c |
 | Berührt | `src/features/platform/Uebungen.tsx`, `Durchfuehrung.tsx` (Titel neben „Abbrechen“, Zeilen der Durchgänge) |
 
 **Beobachtung.** Bei 375 px bricht der Titel „Am Treppengeländer festhalten …“ neben „Abbrechen“ als „Treppengelände|r“. Bei 188 px (200 %) brechen „Totalendoprothe|se“, „Wiederholunge|n“ und „Durchgan|g“ in den Haken-Zeilen. Ursache ist `overflow-wrap: anywhere` in schmalen Spalten. **Erwartet.** Wie in PLATTFORM.md: nie mitten im Wort, lange Wörter ab zwölf Buchstaben mit Trennstrich (DR-114).
@@ -579,7 +579,7 @@ Marke vorsieht.
 | Datum   | 2026-10-24 |
 | Bereich | Plattform, Übungen |
 | Quelle  | Ist-Bilder für Briefing 2 (lokaler Stack, `platform_exercise_plans` mit 500) |
-| Status  | offen; wird mit Schritt 2 des Design-Reviews neu gefasst |
+| Status  | Durchführung erledigt in DRP-EPIC-008 (Schritt 2b, ANN-713); Reiter (`OhneVerbindung`) offen für Schritt 2c |
 | Berührt | `OhneVerbindung` in `src/features/platform/Uebungen.tsx` |
 
 **Beobachtung.** Scheitert das Laden der Pläne bei bestehender Verbindung und liegt ein Plan auf dem Gerät, steht „Ohne Verbindung. Üben können Sie trotzdem …“ mit „Erneut laden“. Ohne Plan auf dem Gerät steht richtig „Ihre Übungen konnten nicht geladen werden.“ **Erwartet.** Der Satz unterscheidet „keine Verbindung“ von „die Praxis antwortet gerade nicht“; das Üben mit dem Plan vom letzten Laden bleibt in beiden Fällen.
@@ -619,3 +619,15 @@ Marke vorsieht.
 | Berührt | `tests/e2e/authenticated/helpers.ts` (`tagImFenster`), `playwright.config.ts` (`retries`), 24 Spezifikationen mit `const LAUF = Date.now()` |
 
 **Beobachtung.** Die CI wiederholt einmal. Eine wiederholte serielle Gruppe läuft in einem neuen Worker mit neuem `LAUF` und kann einen Tag treffen, den der erste Versuch in derselben Datenbank schon belegt hat; der Überschneidungsschutz weist den Termin dann zu Recht ab. #291 löst das nur für `treatment-note-finalisation.spec.ts` (Versatz je Versuch). **Erwartet.** Ein `LAUF` je Testlauf für alle Worker (etwa `E2E_LAUF`, einmal in `playwright.config.ts` gesetzt) und ein Tagesversatz je Wiederholung (`test.info().retry` × N); die Streuung für lokale Läufe und die Reserve je Fenster bleiben, kein Test wird abgeschwächt.
+
+### BEF-212 — Lokale Ansicht: Gerätelesungen halten an, wenn das Netz während der Ansicht wegfällt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, lokale Ansicht nach der Freigabe ohne Netz (`LokaleUebungen`) |
+| Quelle  | Schritt 2b (DRP-EPIC-008), beim Nachstellen von BEF-211 |
+| Status  | offen (Vorschlag) |
+| Berührt | `abgelegteZugaenge` und `wartendeEinheiten` in `src/features/platform/LokaleUebungen.tsx` |
+
+**Beobachtung.** Die Abfragen lesen nur das Gerät, laufen aber mit dem Standard `networkMode: 'online'` der Abfragebibliothek. Meldet das Gerät während der lokalen Ansicht „offline“ und wird eine Abfrage neu gestellt (etwa die Warteschlange nach einer Einheit), hält sie an, bis Verbindung besteht. Beim Kaltstart ohne Netz tritt es nicht auf. **Erwartet.** `networkMode: 'always'` wie in der Durchführung (BEF-211); Browsertest mit `setOffline` während der Ansicht.

@@ -6,10 +6,11 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 ## Jetzt
 
 Design-Review Lauf 1, Schritt 2 Übungen: 2a ist gemergt (#300, DRP-023 bis -029, mit BEF-199). 2b
-Durchführung und 2c Reiter laufen seit 24.10. abends parallel in zwei Sitzungen, mit getrennten
-Kennungen: 2b DRP-EPIC-008, DRP-030 bis -039, ANN-711 bis -719, BEF-210 bis -214; 2c DRP-EPIC-009,
-DRP-040 bis -049, ANN-720 bis -729, BEF-215 bis -219. Befunde aus archivierten Sitzungen: BEF-200
-(seit #297 erledigt), BEF-201, BEF-202.
+Durchführung (Branch `claude/drp-2b-durchfuehrung`, DRP-030 bis -035, Pfad A wegen BEF-211 und
+BEF-213): Vollbild mit Kopf und Fuß, Pause als Ring, „Weiter üben“ an der offenen Übung, ein
+Hauptknopf, Endseite, ohne Netz (ANN-711 bis -717). 2c Reiter läuft parallel (DRP-EPIC-009, DRP-040
+bis -049, ANN-720 bis -729, BEF-215 bis -219). Befunde aus archivierten Sitzungen: BEF-200 (seit
+#297 erledigt), BEF-201, BEF-202.
 
 **Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24.10.: 2a (#300), Handoff Übungen (#299),
 Nacharbeit #298 (Fragen aus #297 wie empfohlen, „Mitteilungen einschalten“ unter „Heute“, ANN-702;
@@ -53,5 +54,5 @@ Verordnungsscan ins Löschjournal, übrige Löschwege von Hand durchsehen; Pfad 
 
 ## Letzte Session
 
-24.10.2026, Branch `claude/new-session-27nejg`: 2a gemergt; 2b und 2c in eigenen Sitzungen
-gestartet; Befunde BEF-200 bis -202. Keine Migration, kein Seed. Lokal: `git pull`.
+24.10.2026, Branch `claude/drp-2b-durchfuehrung`: Schritt 2b; davor #301 (2a gemergt, Befunde
+BEF-200 bis -202). Keine Migration, kein Seed. Lokal: `git pull`.

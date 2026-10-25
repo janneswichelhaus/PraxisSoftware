@@ -56,6 +56,22 @@ describe('Endseite', () => {
     expect(screen.queryByText(/Nächster Übungstag/)).toBeNull();
   });
 
+  it('lässt den Satz weg, solange offen ist, wer die Einheit sieht (ANN-712)', () => {
+    render(
+      <MemoryRouter>
+        <Endseite
+          fassung="uebertragen"
+          tag="2026-10-24"
+          wer={null}
+          zurUebersicht="/p"
+          zuDenUebungen="/p/uebungen"
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Gespeichert' })).toBeInTheDocument();
+    expect(screen.queryByText(/sieht sie beim nächsten Termin/)).toBeNull();
+  });
+
   it('lobt nicht und zählt nichts (DSN-001 4.1)', () => {
     const { container } = zeige('uebertragen');
     expect(container.textContent).not.toMatch(

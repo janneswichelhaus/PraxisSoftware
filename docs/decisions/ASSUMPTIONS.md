@@ -7408,3 +7408,88 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 **Anker.** `useRuhigerStand` in `src/features/platform/Durchfuehrungsfuss.tsx`.
 
 **Änderungspfad.** Wartezeit dort ändern oder streichen · Aufwand `klein`.
+
+### ANN-711 — Durchführung: „Weiter üben“ setzt bei der ersten offenen Übung ein
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Mit Haken von heute beginnt die Durchführung bei der ersten Übung, die noch einen offenen Durchgang hat; ohne Haken bei Übung 1. Ist alles gehakt, steht sie auf der letzten Übung, einen Tipp vor dem Abschluss.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0 („Weiter üben“ öffnet die erste Übung mit offenem Durchgang); Grundlage sind `open_session.sets` und die Haken auf dem Gerät. Für „alles gehakt“ schweigt der Handoff.
+
+**Anker.** `ersteOffeneUebung` in `src/features/platform/haken.ts`.
+
+**Änderungspfad.** Bei „alles gehakt“ direkt zum Abschluss oder zu Übung 1 · Aufwand `klein`.
+
+### ANN-712 — Durchführung: wer die Einheit und den Satz sieht
+
+Datenschutz · offen · 2026-10-24 · — · Prüfpaket · Wiedervorlage: vor dem Scharfschalten
+
+**Annahme.** Endseite und Satz am freien Feld nennen die Fachperson des nächsten bestätigten Termins („Anna Beispiel sieht …“), ohne Termin „Ihre Therapeut:in“ bzw. „Ihre Trainingsbetreuung“. Auf der Endseite erscheint der Satz erst, wenn die Termine geantwortet haben, damit der Name nicht springt.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 5.5 („{Name} sieht sie …“); der Plan trägt keinen Namen, die Übersicht nimmt ihn ebenso aus dem nächsten Termin.
+
+**Anker.** `wer` in `Durchfuehrung`, `src/features/platform/Durchfuehrung.tsx`.
+
+**Änderungspfad.** Immer das Wort des Bereichs · Aufwand `klein`; ein Name am Plan · Aufwand `mittel` (Pfad A).
+
+### ANN-713 — Durchführung: „Praxis antwortet nicht“ getrennt von „ohne Verbindung“
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Übt die Person am Plan vom Gerät, weil der Server nicht antwortet, das Gerät aber Verbindung meldet, sagt die Durchführung „Die Praxis antwortet gerade nicht. Üben können Sie trotzdem – mit Ihrem Plan von diesem Gerät.“ Meldet das Gerät keine Verbindung, spricht nur die Zeile im Kopf.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0 und 5.6 (BEF-197); der Wortlaut folgt dem des Reiters, ohne Uhrzeit, weil die Ablage keine trägt. Quelle der Verbindung bleibt `navigator.onLine` (ANN-015).
+
+**Anker.** `Einheit` in `src/features/platform/Durchfuehrung.tsx` (`ohneVerbindung && verbunden`).
+
+**Änderungspfad.** Wortlaut dort ändern · Aufwand `klein`.
+
+### ANN-714 — Durchführung im Vollbild: was vom Gerüst bleibt
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Auf `/p/uebungen/einheit/…` entfallen Kopf, Verbindungszeile und Reiterleiste der Plattform; Kopf und Fuß der Durchführung ersetzen sie. Das Band einer Vertretung und der Hinweis zum Profil bleiben darüber stehen. Beim Laden steht „Später weiter“ oben; Fehler und „kann hier nicht üben“ tragen den Titel des Reiters und „Zu den Übungen“ als Hauptknopf im Fuß. Die lokale Ansicht behält ihren Kopf mit „Sperren“.
+
+**Begründung.** Handoff 2026-10-24, Abschnitte 0, 4 und 5.3; PLATTFORM.md (Seitentyp Durchführung). Für wen geübt wird, muss sichtbar bleiben (ADR-023); ohne Reiterleiste braucht jede Lage einen Weg hinaus.
+
+**Anker.** `vollbild` in `src/features/platform/PlattformApp.tsx`.
+
+**Änderungspfad.** Bedingung dort ändern · Aufwand `klein`.
+
+### ANN-715 — Durchführung: Ohne Einwilligung beendet die letzte Übung direkt
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Ohne Einwilligung im Training (`note_allowed` falsch) heißt der Knopf der letzten Übung „Einheit beenden“ und speichert sofort; die Seite „Einheit beenden“ entfällt. Ist noch nichts gehakt, führt „Zum Abschluss“ dorthin, wo steht, dass es nichts zu speichern gibt.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0; ADR-021 Punkt 4 (keine Fragen zum Befinden ohne Einwilligung). Für den Fall ohne Haken schweigt der Handoff; ein Ende ohne Haken speichert die Durchführung nie.
+
+**Anker.** `direkt` in `Einheit`, `src/features/platform/Durchfuehrung.tsx`.
+
+**Änderungspfad.** Die Seite immer zeigen · Aufwand `klein`.
+
+### ANN-716 — Durchführung: wann der Fuß „übertragen“ sagt
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** „Übertragen an die Praxis“ steht nur, wenn das Gerät Verbindung meldet, die Warteschlange nach dem letzten Haken gelesen ist und nichts dieses Plans mehr wartet. Ohne Netz und nach einer Abweisung eines Ereignisses der Einheit steht dort nichts, solange nichts wartet; wartet etwas, „Auf diesem Gerät, noch nicht übertragen“.
+
+**Begründung.** ADR-024 Punkt 8 und ADR-001; Handoff 2026-10-24, 3 und 5.6. Ohne Netz sagt die Zeile im Kopf, wo die Haken liegen; „übertragen“ daneben widerspräche ihr (Design-Review 2b, H2).
+
+**Anker.** `stand` in `Einheit`, `src/features/platform/Durchfuehrung.tsx`.
+
+**Änderungspfad.** Ohne Netz „übertragen“ für Haken vom Server zeigen · Aufwand `klein`.
+
+### ANN-717 — Durchführung: ein Ende, zu dem der Server nichts anlegt
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Antwortet der Server auf ein Ende mit `empty` (er legt nichts an), gilt es als nicht übertragen: Die Durchführung sagt „Nicht übertragen: Bei der Praxis ist zu dieser Einheit nichts mehr offen.“ statt „Gespeichert“, der Reiter führt es unter den Abweisungen, und die Ablage verwirft die Einheit wie bei einer Abweisung.
+
+**Begründung.** ADR-001, ADR-024 Punkt 8: „Gespeichert“ nur, was bei der Praxis liegt. `empty` heißt: Die Einheit hatte beim Server keinen Haken – alle waren schon anderswo da, zurückgenommen oder nie angekommen (ANN-357, TRK-007). Das Ende mit Satz und Angaben liegt dann nicht bei der Praxis.
+
+**Anker.** `NICHTS_OFFEN` in `src/features/platform/ablage.ts`.
+
+**Änderungspfad.** Im zweiten Fall „Gespeichert“ zeigen (der Server müsste das unterscheiden) · Aufwand `mittel`.
+
