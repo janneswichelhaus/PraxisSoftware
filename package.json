@@ -26,6 +26,7 @@
     "docs:check": "node scripts/docs-check.mjs",
     "migrationen:check": "node scripts/migrationen-check.mjs",
     "kommentare:check": "node scripts/kommentare-check.mjs",
+    "aufraeumen": "node scripts/aufraeumen.mjs",
     "audit:katalog": "node scripts/audit-aktionen-check.mjs",
     "scan:secrets": "./scripts/scan-secrets.sh",
     "screenshots": "node scripts/screenshots.mjs",

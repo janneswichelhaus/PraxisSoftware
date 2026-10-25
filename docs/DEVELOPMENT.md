@@ -429,6 +429,11 @@ Vorfahren mit `origin/main` (lokal vorher `git fetch origin main`), ohne Abhäng
 Zeile zählt und was die Prüfung sieht, steht in ANN-732. Die CI führt sie im Job „Format, Lint,
 Dokumentation, Typecheck“ hinter dem Lint aus.
 
+`/aufraeumen` (`.claude/skills/aufraeumen/SKILL.md`) misst mit `pnpm aufraeumen` Zeilen,
+Kommentaranteil, Modulgrenzen, große Dateien, Doppelungen und DB-Funktionen, vergleicht mit
+`development/AUFRAEUMEN.md` und schlägt drei Vereinfachungen vor, ohne Code zu ändern. Die Ablage
+ist Markdown, damit eine Aufräumrunde als reine Doku durch die CI geht.
+
 ## Befehle
 
 ```bash
@@ -443,6 +448,7 @@ pnpm test:e2e        # Playwright
 pnpm docs:check      # Obergrenzen, Register, Verweise, Querverweise, Nummern, Fortschrittstabelle
 pnpm migrationen:check  # Migrationen von main unverändert, neue hinten angehängt
 pnpm kommentare:check   # geänderte Kommentare: höchstens drei Zeilen, keine Tickets
+pnpm aufraeumen      # Kennzahlen für /aufraeumen; --schreiben legt sie ab
 pnpm fortschritt     # Stand bis zur Eröffnung; --schreiben erzeugt die Roadmap-Tabelle
 pnpm db:reset        # Test-Datenbank aus Migrationen neu aufsetzen
 pnpm scan:secrets    # Secret-Scan über versionierte Dateien
