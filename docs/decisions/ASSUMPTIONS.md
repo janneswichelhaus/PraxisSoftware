@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-24.
+Zuletzt aktualisiert: 2026-10-25.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -7618,3 +7618,15 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 **Anker.** `stand` in `src/features/exercise-plans/Planblatt.tsx`; die Vorschau in `PlanblattPlattform` (`src/features/platform/Uebungen.tsx`).
 
 **Änderungspfad.** Stand als Beginn der Fassung (`runs_from`) auf beiden Seiten oder ein sechster Radius im System · Aufwand `klein`.
+
+### ANN-748 — Modulgrenzen: Schnittstelle über index.ts, gemeinsamer Kern in src/lib
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Ein Modul unter `src/features` mit `index.ts` wird von außen nur darüber importiert; die Datei nennt jeden Export einzeln. Was mehrere Bereiche über den Termin wissen müssen, liegt als Kern in `src/lib`; einen fremden Abschnitt setzt die App über einen Erweiterungspunkt in Termine ein.
+
+**Begründung.** Aufräumen Schritt 3 (Jannes, 2026-10-25): schmale Schnittstellen ohne Barrel-Falle, ab Termine, gegenseitige Abhängigkeiten auflösen; ADR-015 will fachliche Module ohne Schichtenbau.
+
+**Anker.** Regel `nur-ueber-index` in `scripts/eslint-modulgrenzen.mjs`; `src/features/appointments/index.ts`; `src/features/appointments/erweiterungen.ts`.
+
+**Änderungspfad.** Regel aus `eslint.config.js` nehmen, Kern zurück nach Termine · Aufwand `mittel`.

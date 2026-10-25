@@ -19,8 +19,8 @@ oder auf Zuruf.
    Abhängigkeiten, längste Kommentare, meist neu gefasste DB-Funktionen, größte Doppelungen.
 3. **Lesen, nicht ändern.** Die Brennpunkte im Code ansehen und fragen: Mit welchem anderen Schnitt
    verschwindet eine ganze Klasse von Sonderfällen? Vorrang haben Doppelungen zusammenführen, tiefe
-   Importe und Kreise durch eine schmale Schnittstelle ersetzen, ein Register statt einer Liste von
-   Hand, zusammengehörige Module zusammenlegen. Eingefrorene Visualisierungen (3D-Rad, ROADMAP
+   Importe und Kreise durch eine schmale Schnittstelle ersetzen (Weg: `docs/DEVELOPMENT.md`,
+   „Modulgrenzen“), ein Register statt einer Liste von Hand, zusammengehörige Module zusammenlegen. Eingefrorene Visualisierungen (3D-Rad, ROADMAP
    7.16) sind Kandidaten für Einsparungen ohne Verlust im Kernbetrieb.
 4. **Genau drei Vorschläge**, geordnet nach Wirkung je Aufwand. Je Vorschlag: was, wo (Dateien),
    welche Kennzahl sich wie ändert (geschätzt in Zeilen, Importen oder Funktionen), Aufwand, Weg

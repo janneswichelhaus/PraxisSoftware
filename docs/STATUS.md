@@ -5,25 +5,27 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-**Aufräumen** (Auftrag Jannes 25.10., ROADMAP 7.16): Schritt 1 gemergt (#308). Schritt 2 liegt als
-PR vor: 341 Migrationen in einer Basis, Schema, Rechte und Daten per Abzug identisch, auch mit den
-Rechte-Vorgaben von Supabase; Funktionen ohne Aufrufer in BEF-229.
+**Aufräumen** (Auftrag Jannes 25.10., ROADMAP 7.16): Schritte 1 und 2 gemergt (#308, #309, Nachtrag
+#310; Test-Umgebung läuft auf der Basis). Schritt 3 liegt als PR vor: Termine hat eine Schnittstelle
+(`index.ts`, ESLint-Regel gegen tiefe Importe) und mit keinem Modul mehr eine gegenseitige
+Abhängigkeit (17 statt 32 Paare); der große Ring aus 35 Modulen bleibt für einen Schritt 3b.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Aufräumen Schritte 3 und 4 nach ROADMAP 7.16: Modulschnittstellen ab „Termine“ – vor Schritt 3 Termine des Design-Reviews (3a bis 3d) –, danach
-das Register für Auskunft, Aufbewahrung, Löschjournal und Zusammenführung (Pfad A). Dann Schritte 4
+Aufräumen Schritt 4 nach ROADMAP 7.16: das Register für Auskunft, Aufbewahrung, Löschjournal und
+Zusammenführung (Pfad A); ob vorher ein Schritt 3b kommt (Termine aus dem Ring, kleine Module
+zusammenlegen), entscheidet Jannes. Schritt 3 Termine des Design-Reviews (3a bis 3d), dann Schritte 4
 bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff; Briefings in
 `design/review-2026-10/`. Ohne Handoff: BEF-198 (Löschjournal; Pfad A), BEF-223 (Zeitumstellung;
 Pfad A).
 
 ## Bei Jannes
 
-- Nach dem Merge von Aufräumen Schritt 2: Workflow „Test-Umgebung“ einmal von Hand mit Haken bei
-  „basis_uebernehmen“ starten; bis dahin überspringt er die Migrationen mit einer Warnung.
+- BEF-230: Supabase-Vorgaben im Test-Stack nachbilden und `anon` die übrigen Rechte entziehen
+  (Empfehlung ja); gebaut wird erst nach Jannes' Ja.
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
@@ -47,7 +49,6 @@ Pfad A).
 
 ## Letzte Session
 
-25.10.2026, Branch `ccr-51128c80-r6lmjn`: Aufräumen Schritt 1 – `pnpm kommentare:check` in der CI,
-`/aufraeumen` mit `pnpm aufraeumen` und Ausgangswerten in `development/AUFRAEUMEN.md`, 14
-Kopfkommentare gekürzt (nur Kommentare, transpilierter Code gleich). Keine Migration, kein Seed.
-Lokal: `git pull`.
+25.10.2026, Branch `ccr-51128c80-r6lmjn`: Aufräumen Schritt 3 – Termin-Kern in `src/lib`,
+`index.ts` für Termine, Regel `modulgrenzen/nur-ueber-index`, Erweiterungspunkt für die
+Behandlungsdoku am Termin (ANN-748), BEF-024 erledigt. Keine Migration, kein Seed. Lokal: `git pull`.
