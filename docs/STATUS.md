@@ -5,36 +5,34 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 2 Übungen: 2a (#300) und 2b Durchführung (#304, DRP-030 bis -035,
-Pfad A wegen BEF-211 und BEF-213; Vollbild mit Kopf und Fuß, Pause als Ring, „Weiter üben“ an der
-offenen Übung, ein Hauptknopf, Endseite, ohne Netz; ANN-711 bis -717) sind gemergt. 2c Reiter
-(PR #302, Branch `claude/uebungen-reiter-2c`, DRP-040 bis -044): Vorschau der Einheit in allen
-Lagen mit Dauer, auch auf der Übersicht; Plan mit Wochenleiste, Übungszeilen und „Zum Plan“;
-Lesefrist, mehrere Pläne, Plan vom Gerät, „Praxis antwortet nicht“ (BEF-197); Fenster mit Bühne;
-Rechner zweispaltig (ANN-720 bis -727). Befunde aus archivierten Sitzungen: BEF-200 (seit #297
-erledigt), BEF-201, BEF-202.
+Design-Review Lauf 1, Schritt 2 Übungen: 2a (#300), 2b Durchführung (#304, DRP-030 bis -035, Pfad A
+wegen BEF-211 und BEF-213; ANN-711 bis -717) und 2c Reiter (#302, DRP-040 bis -044: Vorschau der
+Einheit in allen Lagen mit Dauer, Plan mit Wochenleiste und Übungszeilen, Plan vom Gerät, Fenster
+mit Bühne, Rechner zweispaltig; ANN-720 bis -727) sind gemergt. Schritt 3 Termine ist vorbereitet
+(#303): Designsystem auf Code-Stand (Version 7), Briefing 3, Leinwand,
+`design/handoff-2026-10-24-plattform-termine.md` mit fünf Fragen, BEF-220 bis -222. Befunde aus
+archivierten Sitzungen: BEF-200 (seit #297 erledigt), BEF-201, BEF-202.
 
-**Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24.10.: 2b (#304), 2a (#300), Handoff
-Übungen (#299), Nacharbeit #298 (Fragen aus #297 wie empfohlen, „Mitteilungen einschalten“ unter
-„Heute“, ANN-702; Briefing 2 aufgefrischt, BEF-196 und BEF-197; BEF-170 Pfad A, ANN-703, daraus
-BEF-198), 1e Übersicht (#297, DRP-020 bis -022), 1d Einstieg (#294), 1c Türen (#295), CI-Fix #296.
-Gemergt am 22. und 23.10.: Schritt 0 (#288), Handoff und Bericht (#289), 1a (#290), 1b (#293), Daten
-N1/N2 (#292); BEF-179/-180 (#287).
+**Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24. und 25.10.: 2c (#302), 2b (#304), 2a
+(#300), Handoff Übungen (#299), Nacharbeit #298 (Fragen aus #297 wie empfohlen, „Mitteilungen
+einschalten“ unter „Heute“, ANN-702; Briefing 2 aufgefrischt, BEF-196 und BEF-197; BEF-170 Pfad A,
+ANN-703, daraus BEF-198), 1e Übersicht (#297, DRP-020 bis -022), 1d Einstieg (#294), 1c Türen
+(#295), CI-Fix #296. Gemergt am 22. und 23.10.: Schritt 0 (#288), Handoff und Bericht (#289), 1a
+(#290), 1b (#293), Daten N1/N2 (#292); BEF-179/-180 (#287).
 
 ## Danach
 
-Schritt 2 nach Abschnitt 9 des Handoffs: nach 2c BEF-215 (ein Inhalt für Fenster und Durchführung,
-alte Bausteine fort), BEF-218 (Vorschau mit der Einheit auf dem Gerät) und das Planblatt 2d.
-Unabhängig davon Schritt 3 vorbereiten: zuerst das Designsystem in Claude Design auf Code-Stand
-bringen (Stand 22.10., vor 1a; Generator `build-ds.mjs` im lokalen Worktree
-`PraxisSoftware-design-review-1`, Memory „Claude Design: System und Leinwand“), dann Briefing 3
-auffrischen, Ist-Bilder. Danach Schritte 3 bis 7 (Termine, Selbstauskunft, Nachrichten, Unterlagen,
-Ich), je mit freigegebenem Handoff aus Claude Design; Briefings in `design/review-2026-10/`. Ohne
-Handoff: BEF-198 (Grundlage samt Verordnungsscan ins Löschjournal, übrige Löschwege von Hand
-durchsehen; Pfad A).
+Schritt 2 nach Abschnitt 9 des Handoffs: BEF-215 (ein Inhalt für Fenster und Durchführung, alte
+Bausteine fort), BEF-218 (Vorschau mit der Einheit auf dem Gerät), dann das Planblatt 2d. Schritt 3
+Termine wird nach Jannes' Merge von #303 in 3a bis 3d gebaut. Danach Schritte 4 bis 7
+(Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff aus Claude Design;
+Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198 (Grundlage samt Verordnungsscan ins
+Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A).
 
 ## Bei Jannes
 
+- Handoff Termine: fünf Fragen in Abschnitt 0, Leinwand
+  https://claude.ai/artifact/4jdCqRT4YWRiphJ2Sjhqf1; sein Merge gibt Schritt 3 frei.
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
@@ -58,6 +56,7 @@ durchsehen; Pfad A).
 
 ## Letzte Session
 
-25.10.2026, Branch `claude/uebungen-reiter-2c`: Schritt 2c, `main` mit 2b (#304) hereingeholt.
-Davor `claude/drp-2b-durchfuehrung`: Schritt 2b; #301 (2a gemergt, Befunde BEF-200 bis -202). Keine
-Migration, kein Seed. Lokal: `git pull`.
+25.10.2026, Branch `ccr-d51dd25d-ujz8lo`: #302 (2c, mit `main` und 2b) hereingeholt, weil #302 vor
+#303 gemergt wird. Davor derselbe Branch: Schritt 3 vorbereitet (Designsystem Version 7, Leinwand
+„Plattform – Termine“, Handoff); `claude/uebungen-reiter-2c`: Schritt 2c. Keine Migration, kein
+Seed. Lokal: `git pull`.

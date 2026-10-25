@@ -57,7 +57,9 @@ Claude Design, Entwürfe und Entscheidungen bei Jannes, Handoff ins Repository (
 frei), dann je Teilschritt ein Pull Request. Schritt 2: Handoff
 [handoff-2026-10-24-plattform-uebungen.md](../handoff-2026-10-24-plattform-uebungen.md), gemergt mit
 #299 und freigegeben; die vier Fragen darin hat Jannes am 24.10.2026 wie empfohlen entschieden.
-Umgesetzt wird in 2a bis 2d nach seinem Abschnitt 9. Reihenfolge nach Hebel:
+Umgesetzt wird in 2a bis 2d nach seinem Abschnitt 9. Schritt 3: Handoff
+[handoff-2026-10-24-plattform-termine.md](../handoff-2026-10-24-plattform-termine.md) mit fünf
+Fragen zur Freigabe; umgesetzt wird nach dem Merge in 3a bis 3d. Reihenfolge nach Hebel:
 
 | Schritt | Briefing                      | Befunde                   | Abhängig von          | Hinweis                                                                     |
 | ------- | ----------------------------- | ------------------------- | --------------------- | --------------------------------------------------------------------------- |

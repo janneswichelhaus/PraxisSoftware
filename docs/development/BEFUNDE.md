@@ -643,3 +643,39 @@ Marke vorsieht.
 | Berührt | `lageDesPlans`, `ersteOffeneUebung` in `src/features/platform/vorschau.ts`; Start der Einheit in `Durchfuehrung.tsx` mit `haken.ts`; ANN-720, ANN-722 |
 
 **Beobachtung.** Die Vorschau rechnet allein mit dem Plan vom Server (`open_session`, ANN-720), die Durchführung beginnt mit Server und Gerät (BEF-213). Seit 2b geht das Beenden ohne Netz; danach sagt der Reiter bis zur nächsten Verbindung „Heute begonnen“, „Weiter bei Übung n“ und „Weiter üben“, die Durchführung beginnt aber eine neue Einheit bei Übung 1. Haken, die nur auf dem Gerät liegen, kennt die Vorschau ebenso wenig („Übungen beginnen“). Darüber steht richtig „Eine Einheit liegt noch auf diesem Gerät …“. **Erwartet.** Lage und erste offene Übung aus Server und Warteschlange, mit einer Rechnung für Vorschau und Durchführung; Komponententest mit einer auf dem Gerät beendeten Einheit.
+
+### BEF-220 — Termine: Statuszeichen und Knopf brechen mitten im Wort
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Termine (`/p/termine`) |
+| Quelle  | Ist-Bilder für Briefing 3 (Prüfseite `plattform.html`, 375 px „Sehr groß“ und 188 px) |
+| Status  | offen; wird mit Schritt 3 des Design-Reviews neu gefasst |
+| Berührt | `src/features/platform/Termine.tsx` (`Terminzeile`, `Wunschzeile`), `src/index.css` (`.plattform-schrift`: `overflow-wrap: anywhere`) |
+
+**Beobachtung.** Bei „Sehr groß“ wird die Spalte des Zustands an der Terminzeile so schmal, dass „Änderung angefragt“ als „Änderun|g angefrag|t“ bricht. Bei 188 px (200 %) bricht der Knopf „Wunsch zurückziehen“ als „zurückzieh|en“ – ohne Strich. Ursache ist `overflow-wrap: anywhere` an der ganzen Plattform: Es gibt jedem Element eine Mindestbreite von einem Zeichen. **Erwartet.** Wie in PLATTFORM.md: Statuszeichen und Knöpfe brechen nie im Wort, nur zwischen Wörtern; ist kein Platz, rückt der Zustand unter den Titel.
+
+### BEF-221 — Termine: der vergangene Termin nennt keine Nummer, obwohl sie vorliegt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, ein Termin (`/p/termine/:id`, vergangen oder nicht mehr änderbar) |
+| Quelle  | Ist-Bilder für Briefing 3 (lokaler Stack, Erika, 375 und 1280 px) |
+| Status  | offen; wird mit Schritt 3 des Design-Reviews neu gefasst (DR-133) |
+| Berührt | `src/features/platform/Terminaenderung.tsx` (Satz „Bei Fragen rufen Sie bitte die Praxis an.“) |
+
+**Beobachtung.** Die Seite sagt „Dieser Termin lässt sich hier nicht mehr ändern. Bei Fragen rufen Sie bitte die Praxis an.“ – ohne Nummer und ohne Knopf. Seit N2 (#292, ANN-691) trägt der Plattformkontext die Rufnummer der Praxis (`practice_phone`), und die Türen zeigen „Praxis anrufen“ schon als Knopf (ANN-688). **Erwartet.** Mit Nummer „Praxis anrufen“ als Anruf-Link mit der Nummer im Wort, ohne Nummer ein Weg zu „Der Praxis schreiben“ – nie ein Satz, der zu einer Handlung auffordert, die die Seite nicht anbietet.
+
+### BEF-222 — Lesefrist: der Server nimmt Terminwünsche noch an
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Termine in der Lesefrist (`read_until` gesetzt, eigener Zugang) |
+| Quelle  | Handoff Termine (Briefing 3), Frage 5 |
+| Status  | offen; Frage an Jannes im Handoff |
+| Berührt | `app.platform_access_allows` (`request` für jeden lesbaren Zugang), `request_platform_appointment`, `request_platform_appointment_change` |
+
+**Beobachtung.** DSN-001 D2 sagt für das Ende einer Behandlung ohne Abo „30 Tage lesend“. `app.platform_access_allows` erlaubt `request` aber jedem lesbaren Zugang, also auch in der Lesefrist; heute zeigt der Reiter dort „Termin wünschen“ wie sonst. **Erwartet.** Nach Jannes' Antwort entweder Wünschen in der Lesefrist am Server ablehnen (Pfad A, `pnpm test:db`) und in der Ansicht weglassen, oder Wünschen bewusst erlauben und D2 entsprechend fassen. Das Weglassen in der Ansicht allein ist keine Zugriffskontrolle.
