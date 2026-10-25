@@ -1,5 +1,6 @@
 import { nurFragen } from '@/lib/erfassungsgroessen';
 import type { Bogenstand, EigeneCheckins, EigenePlaene, Plattformzugang, Termin } from './api';
+import { dauerDerEinheit } from './dauer';
 import { PLATTFORM_PFAD } from './pfade';
 import { uebungstageAm } from './uebungstage';
 import { kuenftig, tagOhneJahr, tagUndMonat, tageBis, uhrzeit } from './zeit';
@@ -21,7 +22,13 @@ import { kuenftig, tagOhneJahr, tagUndMonat, tageBis, uhrzeit } from './zeit';
 export type Aufgabe =
   | { art: 'fragebogen'; angefangen: boolean }
   | { art: 'checkin'; fragen: number }
-  | { art: 'uebungen'; uebungen: number; planId: string | null };
+  | {
+      art: 'uebungen';
+      uebungen: number;
+      /** Geschätzte Dauer aller Übungen für heute (ANN-704); `null`, wenn sie sich nicht schätzen lässt. */
+      minuten: number | null;
+      planId: string | null;
+    };
 
 export interface Aufgabenlage {
   zugang: Pick<Plattformzugang, 'relationship_kind' | 'access_kind' | 'read_until'>;
@@ -88,6 +95,7 @@ export function uebungenHeute(
   return {
     art: 'uebungen',
     uebungen: heute.reduce((summe, plan) => summe + plan.items.length, 0),
+    minuten: dauerDerEinheit(heute.flatMap((plan) => plan.items)),
     planId: heute.length === 1 ? heute[0]!.id : null,
   };
 }

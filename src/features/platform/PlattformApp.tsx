@@ -175,10 +175,12 @@ function Geruest({
   // DR-113: ab 1024 px die Rechneransicht. Die Einsicht zeigt die Plattform
   // in einem Telefon und behält dessen Ansicht (`geruestbreite.ts`).
   const rechner = useRechner() && !nurLesen;
-  // Die Übersicht nutzt am Rechner die ganze Breite (zwei Spalten); ohne
-  // lesbaren Zugang steht dort die Tür in der Spalte.
+  // Die Übersicht und der Reiter „Übungen“ (ANN-724) nutzen am Rechner die
+  // ganze Breite (zwei Spalten); ohne lesbaren Zugang steht dort die Tür in
+  // der Spalte.
   const { pathname } = useLocation();
-  const breit = pathname === PLATTFORM_PFAD && lesbar.length > 0;
+  const breit =
+    (pathname === PLATTFORM_PFAD || pathname === `${PLATTFORM_PFAD}/uebungen`) && lesbar.length > 0;
   // Die Durchführung steht im Vollbild (Handoff 2026-10-24, Abschnitt 4):
   // ohne Kopf, Verbindungszeile und Reiterleiste des Gerüsts - ihr eigener
   // Kopf mit „Später weiter“ ist der Weg hinaus, ihr Fuß trägt den Hauptknopf

@@ -69,7 +69,7 @@ describe('dauerDerEinheit', () => {
 
 describe('dauerText', () => {
   it('sagt „etwa“ und Minuten', () => {
-    expect(dauerText(10)).toBe('etwa 10 Minuten');
-    expect(dauerText(5)).toBe('etwa 5 Minuten');
+    expect(dauerText(10)).toBe('etwa 10\u00a0Minuten');
+    expect(dauerText(5)).toBe('etwa 5\u00a0Minuten');
   });
 });

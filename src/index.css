@@ -434,6 +434,9 @@
   /* Die Skala der Plattform: sechs Stufen 48 mit 8 Abstand, also zwei
      Reihen 0 bis 5 und 6 bis 10; bei großer Schrift bricht sie weiter um. */
   --container-skala: 20.5rem;
+  /* Reiter „Übungen“ am Rechner: die Vorschau rechts, 340 bis 460 (ANN-724). */
+  --container-vorschau-min: 21.25rem;
+  --container-vorschau: 28.75rem;
 }
 
 /* Schrift der Plattform (POR-020, DSN-001 Abschnitt 7 Punkt 1,

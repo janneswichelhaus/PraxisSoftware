@@ -26,6 +26,7 @@ export function Section({
   ebene = 2,
   aktion,
   rahmen = false,
+  trennen = false,
   id,
   children,
 }: {
@@ -37,6 +38,11 @@ export function Section({
   aktion?: ReactNode;
   /** Stellt den Inhalt in einen weißen Rahmen (UI-002c). */
   rahmen?: boolean;
+  /**
+   * Ein langer Name als Titel, etwa ein Plan auf der Plattform: unter 23rem
+   * an der Silbe getrennt (`trennen-schmal`, ANN-707), sonst ruhig umbrochen.
+   */
+  trennen?: boolean;
   /** Sprungziel (`#…`) für einen Link von einer anderen Seite. */
   id?: string;
   children: ReactNode;
@@ -57,7 +63,9 @@ export function Section({
         {/* Abschnittstitel als `--type-label`: 12 px in 600, Versalien mit
             0.14em Laufweite (DS-001). Auf der Plattform `text-abschnitt`
             22/700 in Tinte, ohne Versalien (PLATTFORM.md, ANN-683). */}
-        <Ueberschrift className="text-ink-muted tracking-label [.plattform-schrift_&]:text-abschnitt [.plattform-schrift_&]:text-ink text-xs font-semibold uppercase [.plattform-schrift_&]:font-bold [.plattform-schrift_&]:tracking-(--text-abschnitt--letter-spacing) [.plattform-schrift_&]:normal-case">
+        <Ueberschrift
+          className={`text-ink-muted tracking-label [.plattform-schrift_&]:text-abschnitt [.plattform-schrift_&]:text-ink text-xs font-semibold uppercase [.plattform-schrift_&]:font-bold [.plattform-schrift_&]:tracking-(--text-abschnitt--letter-spacing) [.plattform-schrift_&]:normal-case ${trennen ? 'trennen-schmal text-pretty' : ''}`.trim()}
+        >
           {titel}
         </Ueberschrift>
         {aktion}

@@ -4,6 +4,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { SessionContext } from '@/features/auth/sessionContext';
 import { planSchluessel, type Plan } from '@/features/exercise-plans/api';
 import { PlanblattSeite } from '@/features/exercise-plans/PlanblattSeite';
+import * as plattformApi from '@/features/platform/api';
 import {
   plaeneSchluessel,
   termineSchluessel,
@@ -13,7 +14,8 @@ import {
   type Termin,
 } from '@/features/platform/api';
 import { PlattformApp } from '@/features/platform/PlattformApp';
-import { DurchfuehrungKontext, uebertragen } from '@/features/platform/ablage';
+import { DurchfuehrungKontext, plaeneAblegen, uebertragen } from '@/features/platform/ablage';
+import { PlattformApiKontext, type PlattformApi } from '@/features/platform/einsicht';
 import { kalendertag } from '@/features/platform/zeit';
 import { isoWochentag } from '@/features/platform/uebungstage';
 import type { CurrentUser } from '@/features/session/types';
@@ -27,8 +29,17 @@ import '@/index.css';
  * (Plan als Blatt auf der Plattform), `woche` (Termine mit Übungstagen) und
  * `praxisblatt` (das Blatt aus der Akte). Die Daten liegen vorab im Cache;
  * gesprochen wird mit keinem Server. Alles ist synthetisch.
+ *
+ * Für den Reiter dazu `&lage=` (Handoff 2026-10-24, Abschnitte 3 und 5.6;
+ * DRP-043): `heute`, `anderer-tag`, `geuebt`, `erledigt`, `ab`, `lesefrist`,
+ * `mehrere`, `ohne-plan`, `geraet` (die Praxis antwortet nicht, der Plan liegt auf dem
+ * Gerät), `fehler` (ohne Plan auf dem Gerät) und `laden`. Ohne `lage` die
+ * begonnene Einheit wie bisher. Mit `seite=training` gilt die Lage für den
+ * Trainingsplan.
  */
-const seite = new URLSearchParams(window.location.search).get('seite') ?? 'uebungen';
+const parameter = new URLSearchParams(window.location.search);
+const seite = parameter.get('seite') ?? 'uebungen';
+const lage = parameter.get('lage');
 const heute = kalendertag(new Date());
 
 const zugaenge: Plattformzugang[] = [
@@ -152,11 +163,131 @@ const termine: Termin[] = [
   },
 ];
 
+/** Ein Wochentag, der nicht heute ist - für „Nächster Übungstag“. */
+const morgen = (isoWochentag(heute) % 7) + 1;
+
+/** Die Pläne des Reiters je Lage; `null`, wenn der Server nicht antworten soll. */
+function plaeneDerLage(): EigenerPlan[] | null {
+  const ohneEinheit = { ...plan, open_session: null, recent_sessions: [] };
+  switch (lage) {
+    case 'heute':
+      return [ohneEinheit];
+    case 'anderer-tag':
+      return [{ ...ohneEinheit, weekdays: [morgen] }];
+    case 'geuebt':
+      return [
+        {
+          ...ohneEinheit,
+          weekdays: [isoWochentag(heute), morgen],
+          recent_sessions: [{ performed_on: heute, finished: true }],
+        },
+      ];
+    case 'lesefrist':
+      return [
+        {
+          ...ohneEinheit,
+          status: 'ended',
+          ended_on: '2026-10-15',
+          runs_until: '2026-10-15',
+          can_exercise: false,
+          can_choose_days: false,
+          weekdays: [],
+        },
+      ];
+    case 'mehrere':
+      return [
+        { ...ohneEinheit, weekdays: [morgen] },
+        {
+          ...ohneEinheit,
+          id: 'aaaaaaaa-0000-4000-8000-000000000002',
+          title: 'Schulter mobil am Morgen',
+          sessions_per_week: 5,
+          weekdays: [isoWochentag(heute)],
+          items: [
+            position(1, 'Arme kreisen im Stand', {
+              id: 'bbbbbbbb-0000-4000-8000-000000000011',
+              reps_min: 10,
+              reps_max: 10,
+              sets: 2,
+            }),
+            position(2, 'Schulterblätter zusammenziehen', {
+              id: 'bbbbbbbb-0000-4000-8000-000000000012',
+              hold_seconds: 5,
+            }),
+          ],
+        },
+      ];
+    case 'erledigt':
+      // Übungen 1 und 2 ganz gehakt: „Heute erledigt“, weiter bei Übung 3.
+      return [
+        {
+          ...plan,
+          open_session: {
+            id: 'cccccccc-0000-4000-8000-000000000001',
+            sets: plan.items
+              .slice(0, 2)
+              .flatMap((p) => [1, 2, 3].map((d) => ({ item_id: p.id, set_number: d }))),
+          },
+        },
+      ];
+    case 'ab':
+      // Beginnt in fünf Tagen: „Ab …“, noch kein Üben, die Tage schon wählbar.
+      return [
+        {
+          ...ohneEinheit,
+          runs_from: kalendertag(new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)),
+          can_exercise: false,
+          weekdays: [],
+        },
+      ];
+    case 'ohne-plan':
+      return [];
+    case 'geraet':
+    case 'fehler':
+    case 'laden':
+      return null;
+    default:
+      return [plan];
+  }
+}
+
 const client = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
 });
-client.setQueryData(plaeneSchluessel(zugaenge[0]!.access_id), { today: heute, plans: [plan] });
-client.setQueryData(plaeneSchluessel(zugaenge[1]!.access_id), { today: heute, plans: [] });
+const lagePlaene = plaeneDerLage();
+const imTraining = seite === 'training' && lage !== null;
+const zuTraining = (p: EigenerPlan): EigenerPlan => ({ ...p, service_area: 'training' });
+if (lagePlaene !== null) {
+  client.setQueryData(plaeneSchluessel(zugaenge[0]!.access_id), {
+    today: heute,
+    plans: lagePlaene,
+  });
+}
+client.setQueryData(plaeneSchluessel(zugaenge[1]!.access_id), {
+  today: heute,
+  plans: imTraining && lagePlaene !== null ? lagePlaene.map(zuTraining) : [],
+});
+// Lesefrist: Der Zugang endet; die Meldung oben sagt, bis wann gelesen wird.
+if (lage === 'lesefrist')
+  zugaenge[0] = { ...zugaenge[0]!, read_until: '2099-11-14T00:00:00+01:00' };
+
+/**
+ * Ohne Antwort der Praxis: `ladePlaene` scheitert (`geraet`, `fehler`) oder
+ * kommt nie an (`laden`). Bei `geraet` liegt der Plan vom letzten Laden auf
+ * dem Gerät (ADR-024 Punkt 5).
+ */
+const prueferApi: PlattformApi = {
+  ...plattformApi,
+  ladePlaene: (zugangId: string) =>
+    lage === 'laden'
+      ? new Promise(() => undefined)
+      : lage === 'geraet' || lage === 'fehler'
+        ? Promise.reject(new Error('Ihre Übungen konnten nicht geladen werden.'))
+        : plattformApi.ladePlaene(zugangId),
+};
+if (lage === 'geraet') {
+  await plaeneAblegen(BESITZER, zugaenge[0]!.access_id, null, { today: heute, plans: [plan] });
+}
 for (const z of zugaenge) {
   client.setQueryData(termineSchluessel(z.access_id), z === zugaenge[0] ? termine : []);
   client.setQueryData(wuenscheSchluessel(z.access_id), []);
@@ -244,15 +375,17 @@ const element =
     // TRK-008: Die Durchführung legt jeden Haken zuerst auf dem Gerät ab und
     // überträgt ihn dann - die Prüfung fängt den Aufruf ab (oder nicht: dann
     // bleibt er „auf dem Gerät").
-    <DurchfuehrungKontext.Provider
-      value={{ besitzer: BESITZER, anstossen: () => uebertragen(BESITZER) }}
-    >
-      <PlattformApp
-        zugaenge={zugaenge}
-        email="erika.plattform@patient.invalid"
-        onAbmelden={() => undefined}
-      />
-    </DurchfuehrungKontext.Provider>
+    <PlattformApiKontext.Provider value={prueferApi}>
+      <DurchfuehrungKontext.Provider
+        value={{ besitzer: BESITZER, anstossen: () => uebertragen(BESITZER) }}
+      >
+        <PlattformApp
+          zugaenge={zugaenge}
+          email="erika.plattform@patient.invalid"
+          onAbmelden={() => undefined}
+        />
+      </DurchfuehrungKontext.Provider>
+    </PlattformApiKontext.Provider>
   );
 
 // Die Seite der Praxis liest die Kennung des Plans aus dem Pfad.

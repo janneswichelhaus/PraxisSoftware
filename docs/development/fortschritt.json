@@ -1548,6 +1548,15 @@
           "fertig_am": "2026-10-24",
           "nachweis": "DRP-030 bis DRP-035, Branch `claude/drp-2b-durchfuehrung`, src/features/platform/Durchfuehrung.test.tsx, tests/e2e/plattform-uebungen.spec.ts, tests/e2e/ohne-netz.spec.ts",
           "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2b (Handoff 2026-10-24, Abschnitt 9 Punkt 2), parallel zu 2c; ANN-711 bis ANN-717; BEF-210, BEF-211 und BEF-213 erledigt (Pfad A, Zweitreview), BEF-214 erledigt, BEF-212 offen"
+        },
+        {
+          "id": "drp-epic-009",
+          "name": "DRP-EPIC-009 Plattform: Reiter der Übungen aus dem Design-Review (Schritt 2c – Vorschau der Einheit in allen Lagen mit Dauer, Übungskarte der Übersicht, Plan mit Wochenleiste, Übungszeilen und „Zum Plan“, mehrere Pläne, Lesefrist, kein Plan, Training; Skelett, Fehler, Plan vom Gerät, „Praxis antwortet nicht“; Fenster „Übung zum Nachlesen“; Rechner zweispaltig)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-24",
+          "nachweis": "DRP-040 bis DRP-044, Branch `claude/uebungen-reiter-2c`, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts",
+          "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2c (Handoff 2026-10-24, Abschnitt 9 Punkt 3), parallel zu 2b; ANN-720 bis ANN-727; BEF-196 und BEF-197 mit 2b erledigt, BEF-216 durch 2b; BEF-215, BEF-217 und BEF-218 offen"
         }
       ]
     },

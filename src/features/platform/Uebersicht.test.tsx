@@ -4,6 +4,7 @@ import { focusManager, onlineManager, useQuery } from '@tanstack/react-query';
 import type * as PlattformApi from './api';
 import type { Plattformzugang } from './api';
 import { renderWithProviders } from '@/test-utils';
+import { eigenerPlan } from './testdaten';
 
 /**
  * Die Übersicht (POR-015, DSN-001 4.1) in der Fassung von Schritt 1e
@@ -154,6 +155,21 @@ function zeige(zugang = ZUGANG, pfad = '/p?bereich=treatment') {
   return renderWithProviders(<Uebersicht zugang={zugang} />, pfad);
 }
 
+/** Vier Übungen zu je 234 s: geschätzt „etwa 15 Minuten“ (ANN-704). */
+const VIER_UEBUNGEN = [1, 2, 3, 4].map((nummer) => ({
+  ...eigenerPlan().items[0]!,
+  id: `bbbbbbbb-0000-4000-8000-00000000000${nummer}`,
+  position: nummer,
+}));
+
+/** Was das Gerät über die Verbindung meldet (`navigator.onLine`, ANN-015). */
+function setzeVerbindung(verbunden: boolean) {
+  Object.defineProperty(navigator, 'onLine', { value: verbunden, configurable: true });
+  act(() => {
+    window.dispatchEvent(new Event(verbunden ? 'online' : 'offline'));
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   window.sessionStorage.clear();
@@ -175,6 +191,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   focusManager.setFocused(undefined);
+  Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
   onlineManager.setOnline(true);
 });
 
@@ -364,17 +381,24 @@ describe('Hauptsache (ANN-698)', () => {
           can_choose_days: true,
           weekdays: [1, 2, 3, 4, 5, 6, 7],
           recent_sessions: [],
-          items: [{}, {}, {}, {}],
+          items: VIER_UEBUNGEN,
         },
       ],
     });
     zeige();
     const hero = await screen.findByRole('region', { name: 'Ihre Übungen für heute' });
-    expect(within(hero).getByText('4 Übungen aus Ihrem Plan')).toBeInTheDocument();
+    // Umfang und geschätzte Dauer wie die Vorschau im Reiter (ANN-704).
+    expect(within(hero).getByText('4 Übungen · etwa 15 Minuten')).toBeInTheDocument();
     expect(within(hero).getByRole('link', { name: 'Übungen beginnen' })).toHaveAttribute(
       'href',
       '/p/uebungen/einheit/aeaeaeae-aeae-4eae-8eae-000000000001?bereich=treatment',
     );
+    // Ohne Netz geht es mit dem Plan vom Gerät trotzdem, und die Karte sagt es.
+    setzeVerbindung(false);
+    expect(
+      within(hero).getByText('4 Übungen · etwa 15 Minuten. Geht auch ohne Netz.'),
+    ).toBeInTheDocument();
+    setzeVerbindung(true);
   });
 });
 
@@ -536,7 +560,7 @@ describe('Training, Begleitung, Lesefrist', () => {
           can_choose_days: true,
           weekdays: [],
           recent_sessions: [],
-          items: [{}, {}, {}],
+          items: VIER_UEBUNGEN.slice(0, 3),
         },
       ],
     });
@@ -561,10 +585,11 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: 'Zwischen den Einheiten' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^Ihr Plan für zu Hause/ })).toHaveAttribute(
-      'href',
-      '/p/uebungen?bereich=training',
-    );
+    expect(
+      screen.getByRole('link', {
+        name: 'Ihr Plan für zu Hause 3\u00a0Übungen · etwa 10\u00a0Minuten',
+      }),
+    ).toHaveAttribute('href', '/p/uebungen?bereich=training');
     // Mit weicher Trennstelle, damit das Wort bei „Sehr groß“ nur dort bricht.
     expect(screen.getByRole('link', { name: /^Ernährungs\u00ADtagebuch/ })).toHaveAttribute(
       'href',

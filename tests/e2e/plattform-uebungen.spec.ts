@@ -20,6 +20,58 @@ async function ueberlaeuft(page: Page): Promise<boolean> {
   );
 }
 
+/** Sichtbarer Text unter 18 px - ohne Inhalte nur für Vorlesesoftware. */
+async function kleineSchrift(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const funde: string[] = [];
+    const gehen = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let knoten = gehen.nextNode(); knoten; knoten = gehen.nextNode()) {
+      const text = knoten.textContent?.trim();
+      const element = knoten.parentElement;
+      if (!text || !element || element.closest('svg, .sr-only, [aria-hidden="true"]')) continue;
+      const box = element.getBoundingClientRect();
+      if (box.width === 0 || box.height === 0) continue;
+      const groesse = parseFloat(getComputedStyle(element).fontSize);
+      if (groesse < 17.9) funde.push(`${groesse}px: ${text.slice(0, 40)}`);
+    }
+    return funde;
+  });
+}
+
+/** Bedienelemente unter 44 px Höhe im Inhalt und in einem Fenster. */
+async function kleineZiele(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const funde: string[] = [];
+    for (const ziel of document.querySelectorAll<HTMLElement>(
+      'main a, main button, [role="dialog"] a, [role="dialog"] button',
+    )) {
+      const box = ziel.getBoundingClientRect();
+      if (box.width === 0 || box.height === 0) continue;
+      if (box.height < 43.5) {
+        funde.push(`${Math.round(box.height)}px: ${(ziel.textContent ?? '').trim().slice(0, 40)}`);
+      }
+    }
+    return funde;
+  });
+}
+
+/**
+ * Die Hauptknöpfe im Inhalt des Reiters: Knöpfe des Systems (`h-12`) mit der
+ * Fläche der Hauptfarbe oder als Knopf `marke` auf Tiefgrün (die Vorschau) -
+ * nicht die gewählten Tage der Wochenleiste, die auch in der Hauptfarbe stehen.
+ */
+async function hauptknoepfeImReiter(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('main a[class~="h-12"], main button[class~="h-12"]')]
+      .filter(
+        (k) =>
+          k.classList.contains('bg-accent') ||
+          (k.classList.contains('bg-surface') && k.classList.contains('text-surface-inverse')),
+      )
+      .map((k) => (k.textContent ?? '').trim()),
+  );
+}
+
 /**
  * Die Hauptknöpfe einer Ansicht: sichtbare Knöpfe und Links auf der
  * Hauptfarbe (Handoff 2026-10-24, Abschnitt 8: genau einer je Ansicht).
@@ -226,6 +278,60 @@ test.describe('Übungen auf der Plattform', () => {
     ).toBeVisible();
   });
 
+  test('Rechner: Plan links, Vorschau rechts; am Telefon die Vorschau oben', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${PRUEFSEITE}?seite=uebungen&lage=heute`);
+    const vorschau = page.getByRole('region', { name: 'Ihre Übungen für heute' });
+    const plan = page.getByRole('heading', { level: 2, name: /^Heimprogramm/ });
+    await expect(vorschau).toBeVisible();
+    const rechts = (await vorschau.boundingBox())!;
+    const links = (await plan.boundingBox())!;
+    expect(rechts.x).toBeGreaterThan(links.x + links.width - 1);
+    expect(rechts.width).toBeLessThanOrEqual(461);
+    // Der Knopf so breit wie sein Text, nicht über die ganze Karte.
+    const knopf = (await vorschau.getByRole('link', { name: 'Übungen beginnen' }).boundingBox())!;
+    expect(knopf.width).toBeLessThan(rechts.width - 64);
+
+    await page.setViewportSize({ width: 375, height: 900 });
+    const oben = (await vorschau.boundingBox())!;
+    const darunter = (await plan.boundingBox())!;
+    expect(oben.y + oben.height).toBeLessThan(darunter.y);
+  });
+
+  test('Übung zum Nachlesen: Fenster über die ganze Höhe, Fokus am Anfang, große Ziele', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${PRUEFSEITE}?seite=uebungen&lage=heute`);
+    await page.getByRole('button', { name: /^2\. Gelbes Band/ }).click();
+    const fenster = page.getByRole('dialog', { name: 'Gelbes Band zum Körper heranziehen' });
+    await expect(fenster).toBeVisible();
+    await expect(fenster.getByText('Übung 2 von 3')).toBeVisible();
+    expect((await fenster.boundingBox())!.height).toBeGreaterThanOrEqual(800);
+    // Der Fokus steht vor der Bühne, nicht auf „Schließen“ unten.
+    expect(
+      await page.evaluate(() => document.activeElement?.hasAttribute('data-autofocus') ?? false),
+    ).toBe(true);
+    expect(await kleineZiele(page)).toEqual([]);
+    expect(await kleineSchrift(page)).toEqual([]);
+    expect(await ueberlaeuft(page)).toBe(false);
+    expect(await axeVerstoesse(page)).toEqual([]);
+    await fenster.getByRole('button', { name: 'Schließen' }).first().click();
+    await expect(fenster).toBeHidden();
+  });
+
+  test('ohne Netz: „Geht auch ohne Netz.“, die Übungstage gesperrt', async ({ page, context }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.goto(`${PRUEFSEITE}?seite=uebungen&lage=heute`);
+    await expect(page.getByRole('region', { name: 'Ihre Übungen für heute' })).toBeVisible();
+    await context.setOffline(true);
+    await expect(page.getByText('Geht auch ohne Netz.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Montag' })).toBeDisabled();
+    await expect(page.getByText(/Ändern geht wieder mit Verbindung\./)).toBeVisible();
+    expect(await axeVerstoesse(page)).toEqual([]);
+    await context.setOffline(false);
+  });
+
   test('das Blatt druckt ohne Bedienelemente und ohne Reiterleiste', async ({ page }) => {
     await page.goto(`${PRUEFSEITE}?seite=blatt`);
     await expect(page.getByRole('article', { name: 'Planblatt' })).toBeVisible();
@@ -233,5 +339,71 @@ test.describe('Übungen auf der Plattform', () => {
     await expect(page.getByRole('button', { name: 'Drucken oder als PDF sichern' })).toBeHidden();
     await expect(page.getByRole('navigation', { name: 'Plattform' })).toBeHidden();
     await expect(page.getByRole('article', { name: 'Planblatt' })).toBeVisible();
+  });
+});
+
+/**
+ * Der Reiter in allen Lagen (Schritt 2c, Handoff 2026-10-24, Abschnitte 5.1,
+ * 5.6 und 8): Schrift, Ziele, axe und genau ein Hauptknopf bei 375 und 1280
+ * px; kein waagerechtes Rollen bei 188 px (200 %) und bei „Sehr groß“. Ob ein
+ * Wort ohne Strich bricht (BEF-196), zeigt die Sichtung der Bildstrecke.
+ */
+const LAGEN: { lage: string; merkmal: RegExp; haupt: number }[] = [
+  { lage: 'heute', merkmal: /Ihre Übungen für heute/, haupt: 1 },
+  { lage: 'anderer-tag', merkmal: /Nächster Übungstag/, haupt: 1 },
+  { lage: 'geuebt', merkmal: /Noch einmal üben/, haupt: 0 },
+  { lage: 'erledigt', merkmal: /Heute erledigt/, haupt: 1 },
+  { lage: 'ab', merkmal: /^Ab /, haupt: 0 },
+  { lage: 'lesefrist', merkmal: /Ihr Plan zum Mitnehmen/, haupt: 1 },
+  { lage: 'mehrere', merkmal: /Schulter mobil am Morgen/, haupt: 1 },
+  { lage: 'ohne-plan', merkmal: /Noch kein Plan/, haupt: 0 },
+  { lage: 'geraet', merkmal: /Die Praxis antwortet gerade nicht/, haupt: 1 },
+  { lage: 'fehler', merkmal: /Ihre Übungen lassen sich gerade nicht laden/, haupt: 0 },
+  { lage: 'laden', merkmal: /Übungen werden geladen/, haupt: 0 },
+];
+
+test.describe('Reiter Übungen in allen Lagen (Schritt 2c)', () => {
+  for (const { lage, merkmal, haupt } of LAGEN) {
+    for (const breite of [375, 1280]) {
+      test(`${lage} bei ${breite} px: Schrift, Ziele, axe, ein Hauptknopf`, async ({ page }) => {
+        await page.setViewportSize({ width: breite, height: 900 });
+        await page.goto(`${PRUEFSEITE}?seite=uebungen&lage=${lage}`);
+        await expect(page.getByText(merkmal).first()).toBeAttached();
+        await expect(page.getByRole('heading', { level: 1, name: 'Übungen' })).toBeVisible();
+        expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
+        expect(await kleineZiele(page), 'Ziele unter 44 px').toEqual([]);
+        expect(await hauptknoepfeImReiter(page)).toHaveLength(haupt);
+        expect(await ueberlaeuft(page)).toBe(false);
+        expect(await axeVerstoesse(page), 'axe').toEqual([]);
+      });
+    }
+
+    test(`${lage} bei 188 px (200 %) und bei „Sehr groß“ ohne waagerechtes Rollen`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 188, height: 900 });
+      await page.goto(`${PRUEFSEITE}?seite=uebungen&lage=${lage}`);
+      await expect(page.getByText(merkmal).first()).toBeAttached();
+      expect(await ueberlaeuft(page)).toBe(false);
+
+      await page.addInitScript(() =>
+        window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross'),
+      );
+      await page.setViewportSize({ width: 375, height: 900 });
+      await page.goto(`${PRUEFSEITE}?seite=uebungen&lage=${lage}`);
+      await expect(page.getByText(merkmal).first()).toBeAttached();
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.dataset.schrift))
+        .toBe('sehr-gross');
+      expect(await ueberlaeuft(page)).toBe(false);
+    });
+  }
+
+  test('Training: Titel „Training“, die Vorschau „Ihr Plan für zu Hause“', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.goto(`${PRUEFSEITE}?seite=training&lage=heute`);
+    await expect(page.getByRole('heading', { level: 1, name: 'Training' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Ihr Plan für zu Hause' })).toBeVisible();
+    expect(await axeVerstoesse(page)).toEqual([]);
   });
 });

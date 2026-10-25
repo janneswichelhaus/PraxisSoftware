@@ -1,5 +1,4 @@
 import {
-  createContext,
   useContext,
   useEffect,
   useId,
@@ -11,6 +10,7 @@ import {
 import { createPortal } from 'react-dom';
 import { bewegungErlaubt } from './bewegung';
 import { Button } from './Button';
+import { TitelKontext } from './fenstertitel';
 import { FENSTERZIEL, usePortalZiel } from './portalZiel';
 import { Symbolknopf } from './Symbolknopf';
 import { titelklassen, type Titelstufe } from './titelstufe';
@@ -557,8 +557,6 @@ export function Hinweisfenster({
     </Dialogfenster>
   );
 }
-
-const TitelKontext = createContext<{ id: string; titel: string } | null>(null);
 
 /**
  * Die Überschrift eines Vollbild-Fensters an einer Stelle im Inhalt
