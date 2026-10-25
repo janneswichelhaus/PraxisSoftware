@@ -585,9 +585,12 @@ describe('Einheit auf dem Gerät (BEF-218, ANN-730)', () => {
     zeige(<Uebungen zugang={ZUGANG} />);
     const karte = await vorschau('Ihre Übungen für heute');
     await waitFor(() => expect(within(karte).getByText('Heute geübt')).toBeInTheDocument());
-    expect(karte).toHaveTextContent(
-      'Auf diesem Gerät gespeichert. Sie wird übertragen, sobald Verbindung besteht.',
-    );
+    // Wo die Einheit liegt, sagt einmal der Hinweis über der Karte; die Karte
+    // sagt nicht „Gespeichert“ (Design-Review B1, ADR-024 Punkt 8).
+    expect(
+      screen.getByText('Eine Einheit liegt noch auf diesem Gerät und ist noch nicht übertragen.'),
+    ).toBeInTheDocument();
+    expect(karte).not.toHaveTextContent('Gespeichert');
     expect(karte).not.toHaveTextContent('sieht Ihre Einheit');
     expect(within(karte).getByRole('link', { name: 'Noch einmal üben' })).toBeInTheDocument();
     expect(within(karte).queryByRole('link', { name: 'Weiter üben' })).not.toBeInTheDocument();
@@ -608,6 +611,37 @@ describe('Einheit auf dem Gerät (BEF-218, ANN-730)', () => {
     expect(screen.getByRole('button', { name: /^1\. Am Geländer/ })).toHaveTextContent(
       'Heute erledigt',
     );
+  });
+
+  it('sagt vor der ersten Lesung des Geräts nie „Gespeichert“ (Zweitreview B1)', async () => {
+    // Heute schon eine Einheit bei der Praxis; eine zweite liegt beendet nur auf dem Gerät.
+    ladePlaene.mockResolvedValue({
+      today: HEUTE,
+      plans: [
+        zweiUebungen({ weekdays: [4], recent_sessions: [{ performed_on: HEUTE, finished: true }] }),
+      ],
+    });
+    const speicher = speicherImSpeicher();
+    speicherSetzen(speicher);
+    await aufDemGeraet('dddddddd-0000-4000-8000-000000000000', [1], true);
+    // Die Ablage antwortet erst, wenn der Test sie freigibt.
+    let freigeben = () => {};
+    const tor = new Promise<void>((weiter) => {
+      freigeben = weiter;
+    });
+    speicherSetzen({ ...speicher, holen: () => tor.then(() => speicher.holen()) });
+    zeige(<Uebungen zugang={ZUGANG} />);
+    await waitFor(() => expect(ladePlaene).toHaveBeenCalled());
+    await act(async () => {});
+    expect(screen.getByText('Übungen werden geladen')).toBeInTheDocument();
+    expect(screen.queryByText(/sieht Ihre Einheit/)).not.toBeInTheDocument();
+    await act(async () => {
+      freigeben();
+      await tor;
+    });
+    const karte = await vorschau('Ihre Übungen für heute');
+    await waitFor(() => expect(within(karte).getByText('Heute geübt')).toBeInTheDocument());
+    expect(karte).not.toHaveTextContent('sieht Ihre Einheit');
   });
 
   it('Plan vom Gerät: eine heute dort begonnene Einheit heißt „Weiter üben“', async () => {

@@ -88,6 +88,18 @@ describe('heutigeEinheit', () => {
     expect(e.beendetAufGeraet).toBe(true);
   });
 
+  it('erkennt das Ende der Server-Einheit wie die Durchführung in der ganzen Ablage (BEF-213)', () => {
+    const e = heutigeEinheit(
+      { id: PLAN, open_session: offen },
+      ZUGANG,
+      [einheit(SERVER, [satz('a', 2), ENDE], { zugangId: 'anderer-zugang' })],
+      HEUTE,
+    );
+    expect(e.id).toBeNull();
+    // Angezeigt wird nur, was zu diesem Zugang gehört.
+    expect(e.beendetAufGeraet).toBe(false);
+  });
+
   it('übergeht Einheiten anderer Tage, Pläne und Zugänge', () => {
     const e = heutigeEinheit(
       { id: PLAN, open_session: null },

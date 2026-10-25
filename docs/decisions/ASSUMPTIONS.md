@@ -7597,9 +7597,9 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
 **Ablösung.** ersetzt ANN-720
 
-**Annahme.** Vorschau, Übungszeilen und Plan vom Gerät nehmen die heutige Einheit aus Server und Warteschlange wie der Start der Durchführung: die Haken des Servers, darüber die des Geräts; „Weiter bei Übung n“ ist die Übung, bei der die Durchführung beginnt. Ist die Einheit heute nur auf dem Gerät beendet, sagt die Vorschau „Heute geübt“ mit „Auf diesem Gerät gespeichert. Sie wird übertragen, sobald Verbindung besteht.“
+**Annahme.** Vorschau, Übungszeilen und Plan vom Gerät nehmen die heutige Einheit aus Server und Warteschlange wie der Start der Durchführung: die Haken des Servers, darüber die des Geräts; „Weiter bei Übung n“ ist die Übung, bei der die Durchführung beginnt. Ist die Einheit heute nur auf dem Gerät beendet, sagt die Vorschau „Heute geübt“ ohne „Gespeichert …“; wo sie liegt, sagt der Hinweis darüber.
 
-**Begründung.** BEF-218; ADR-024 Punkt 8 (ehrlich, wo die Einheit liegt); Wortlaut der Endseite (ANN-706).
+**Begründung.** BEF-218; ADR-024 Punkt 8 (ehrlich, wo die Einheit liegt); ein Satz Orientierung nur einmal (PLATTFORM.md).
 
 **Anker.** `heutigeEinheit` in `src/features/platform/haken.ts`.
 

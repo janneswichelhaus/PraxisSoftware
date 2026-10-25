@@ -106,7 +106,7 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
             />
           </div>
         ) : (
-          <AmGeraet zugangId={zugang.access_id}>
+          <AmGeraet>
             {(wartend) => (
               <Reiter
                 zugang={zugang}
@@ -123,7 +123,7 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
       ) : plaene.isError || plaene.fetchStatus === 'paused' ? (
         // BEF-197: ohne Antwort der Plan vom Gerät - ohne Netz sagt es die
         // Verbindungszeile, bei Verbindung eine eigene Meldung.
-        <AmGeraet zugangId={zugang.access_id}>
+        <AmGeraet>
           {(wartend) => (
             <PlanVomGeraet
               zugang={zugang}
@@ -182,37 +182,29 @@ function Wartestand({ besitzer, zugangId }: { besitzer: string; zugangId: string
 }
 
 /**
- * Die Einheiten dieses Zugangs, die noch auf dem Gerät warten (BEF-218):
- * Vorschau, Übungszeilen und Plan vom Gerät rechnen mit ihnen wie der Start
- * der Durchführung (`heutigeEinheit`). Ohne Ablage (Tests des Gerüsts) keine.
+ * Die Einheiten, die noch auf dem Gerät warten (BEF-218): Vorschau,
+ * Übungszeilen und Plan vom Gerät rechnen mit ihnen wie der Start der
+ * Durchführung - `heutigeEinheit` wählt selbst nach Zugang, Plan und Tag.
+ * Bis die Ablage gelesen ist, steht das Skelett: Sonst sagte die Vorschau
+ * einen Augenblick „Gespeichert“ für eine Einheit, die nur auf dem Gerät
+ * liegt. Ohne Ablage (Tests des Gerüsts) keine.
  */
-function AmGeraet({
-  zugangId,
-  children,
-}: {
-  zugangId: string;
-  children: (wartend: readonly WartendeEinheit[]) => ReactNode;
-}) {
+function AmGeraet({ children }: { children: (wartend: readonly WartendeEinheit[]) => ReactNode }) {
   const traeger = useContext(DurchfuehrungKontext);
   if (!traeger) return children([]);
-  return (
-    <AmGeraetGelesen besitzer={traeger.besitzer} zugangId={zugangId}>
-      {children}
-    </AmGeraetGelesen>
-  );
+  return <AmGeraetGelesen besitzer={traeger.besitzer}>{children}</AmGeraetGelesen>;
 }
 
 function AmGeraetGelesen({
   besitzer,
-  zugangId,
   children,
 }: {
   besitzer: string;
-  zugangId: string;
   children: (wartend: readonly WartendeEinheit[]) => ReactNode;
 }) {
   const stand = useWarteschlange(besitzer);
-  return children(stand.einheiten.filter((e) => e.zugangId === zugangId));
+  if (stand.gelesenBis < 0) return <Ladezustand />;
+  return children(stand.einheiten);
 }
 
 /**
@@ -418,11 +410,10 @@ function Vorschau({
         etikett={etikett}
         titel={titel}
         satz={
-          einheit.beendetAufGeraet ? (
-            // Auf dem Gerät gespeichert ist nicht bei der Praxis (ADR-024
-            // Punkt 8): Wortlaut der Endseite (ANN-730).
-            'Auf diesem Gerät gespeichert. Sie wird übertragen, sobald Verbindung besteht.'
-          ) : (
+          // Liegt die Einheit nur auf dem Gerät, ist sie nicht bei der Praxis
+          // (ADR-024 Punkt 8); das sagt der Hinweis darüber, die Karte
+          // wiederholt es nicht (ANN-730).
+          einheit.beendetAufGeraet ? undefined : (
             <>
               Gespeichert. <Name person>{wer}</Name> sieht Ihre Einheit beim nächsten Termin.
             </>
