@@ -62,11 +62,11 @@ unter 23rem 12 und alles in einer Rollfläche, die Frage ohne Rollen (ein Bild d
 4:3). Ein Titel mit einem Wort über elf Zeichen steht unter 23rem in 22 (ANN-696). Abschaltbar (der Einstieg, DRP-EPIC-005).
 
 **Gerüst** (`Navigation.tsx`): Kopf 72 mit Wortmarke 28 und „Ich“ mit
-Initialen. Reiterleiste in drei Stufen (ANN-679): eine Reihe, solange die Wörter passen (gemessen),
+Initialen. Reiterleiste in drei Stufen (ANN-679): eine Reihe, solange die Wörter passen,
 sonst zwei; unter 23rem der `Menueknopf` im Kopf (ANN-682). Bei
 offener Tastatur tritt sie zurück (ANN-676, ANN-681). Ab 1024 px Navigation im Kopf, Inhalt
 `max-w-inhalt`, jede Seite einspaltig in `max-w-spalte` außer der Übersicht (ab 900 px
-Inhaltsbreite zwei Spalten) und den Übungen (ANN-724); die Einsicht der Praxis behält das Telefon
+Inhaltsbreite zwei Spalten), Übungen und Termine (ANN-724, ANN-743); die Einsicht behält das Telefon
 (`data-rechner`, nicht `lg:`). Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12;
 Titel in rem (ANN-683). Statt Startbild Markenmoment B beim ersten Erscheinen der Übersicht je Tab
 (ANN-680). Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit Daten.

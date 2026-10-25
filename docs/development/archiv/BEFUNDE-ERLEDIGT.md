@@ -2052,3 +2052,15 @@ eingeklappt.
 | Berührt | `RequestWorkingTimePage.tsx` (Abschluss, `appointmentDaysText`), `arbeitszeit.spec.ts` |
 
 **Beobachtung.** Bei 375 × 667 blieben ohne Termine außerhalb der neuen Zeiten 38 px Luft. Die Terminzeile nannte drei Tage, die übrigen als Zahl und „plant die Praxisleitung nach dem Genehmigen um“. Mit den Terminen, die andere Testdateien vorher für Anna anlegen (dauerhaft prüft der Server ein Jahr lang jeden Tag), wurden daraus drei Zeilen, und die Seite rollte. Ob der Test grün wurde, hing von der Reihenfolge der Dateien ab; im ungünstigsten Fall fehlten 6 px. **Erledigt.** Beim Antrag nennt die Zeile nur die Tage, jeder Eintrag mit festen Leerzeichen, und „Entscheidet“ sagt „Praxisinhaber, plant nach dem Genehmigen um“; beim eigenen Eintragen bleibt „nach dem Eintragen umplanen“ an der Terminzeile. Gemessen am Cloud-Stack: dauerhaft ohne Termine 54 px Luft, mit 1116 Terminen an 123 Tagen 30 px (Antrag und Eintragen), einmalig 74 px, bei 1280 px 159 px. Der Test legt vier Termine Annas an Samstagen um 06:00 selbst an (Petra, ohne Plattformzugang) und nimmt sie danach mit `undo_appointment_creation` zurück.
+
+### BEF-220 — Termine: Statuszeichen und Knopf brechen mitten im Wort
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Termine (`/p/termine`) |
+| Quelle  | Ist-Bilder für Briefing 3 (Prüfseite `plattform.html`, 375 px „Sehr groß“ und 188 px) |
+| Status  | erledigt 2026-10-25 (Schritte 3a und 3b): Statuszeichen, Knöpfe und Textlinks brechen nur zwischen Wörtern (ANN-733), die `Terminzeile` stellt Kreis und Zeichen bei „Sehr groß“ und unter 23rem über bzw. unter den Text, und die Liste trägt sie; Browsertest auf gebrochene Wörter in Zeichen, Knöpfen und Zeilen bei 188 px und „Sehr groß“ |
+| Berührt | `src/features/platform/Termine.tsx` (`Terminzeile`, `Wunschzeile`), `src/index.css` (`.plattform-schrift`: `overflow-wrap: anywhere`) |
+
+**Beobachtung.** Bei „Sehr groß“ wird die Spalte des Zustands an der Terminzeile so schmal, dass „Änderung angefragt“ als „Änderun|g angefrag|t“ bricht. Bei 188 px (200 %) bricht der Knopf „Wunsch zurückziehen“ als „zurückzieh|en“ – ohne Strich. Ursache ist `overflow-wrap: anywhere` an der ganzen Plattform: Es gibt jedem Element eine Mindestbreite von einem Zeichen. **Erwartet.** Wie in PLATTFORM.md: Statuszeichen und Knöpfe brechen nie im Wort, nur zwischen Wörtern; ist kein Platz, rückt der Zustand unter den Titel.

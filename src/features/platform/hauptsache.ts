@@ -3,7 +3,7 @@ import type { Bogenstand, EigeneCheckins, EigenePlaene, Plattformzugang, Termin 
 import { dauerDerEinheit } from './dauer';
 import { PLATTFORM_PFAD } from './pfade';
 import { uebungstageAm } from './uebungstage';
-import { kuenftig, tagOhneJahr, tagUndMonat, tageBis, uhrzeit } from './zeit';
+import { datum, kuenftig, letzterTag, tagOhneJahr, tagUndMonat, tageBis, uhrzeit } from './zeit';
 
 /**
  * Die erste Aufgabe - was als Hauptsache oben auf der Übersicht steht
@@ -55,6 +55,25 @@ export function inLesefrist(
   aboLaeuft = false,
 ): boolean {
   return zugang.access_kind === 'self' && zugang.read_until !== null && !aboLaeuft;
+}
+
+/**
+ * Der Satz über dem Titel, wenn der eigene Zugang endet (Handoff 2026-10-22,
+ * 5.1; seit Schritt 3b auch über den Terminen): nach einem Nachsorge-Abo
+ * dessen Ende, sonst das Ende der Behandlung bzw. Trainingszeit - und bis
+ * wann noch gelesen werden kann. `read_until` ist die Mitternacht nach dem
+ * letzten Tag.
+ */
+export function lesefristSatz(
+  zugang: Pick<Plattformzugang, 'relationship_kind' | 'read_until'>,
+  abo: { state: string; ends_on: string | null } | null,
+): string | null {
+  if (!zugang.read_until) return null;
+  const bis = datum(letzterTag(zugang.read_until));
+  if (abo && abo.state !== 'running' && abo.ends_on) {
+    return `Ihr Nachsorge-Abo ${abo.state === 'ending' ? 'endet' : 'endete'} am ${datum(abo.ends_on)}. Sie können hier noch bis ${bis} lesen.`;
+  }
+  return `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${bis} lesen.`;
 }
 
 export function ersteAufgabe(lage: Aufgabenlage): Aufgabe | null {

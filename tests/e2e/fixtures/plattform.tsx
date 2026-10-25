@@ -95,7 +95,12 @@ import '@/index.css';
  * „PIN speichern“) und `einstieg-begleitung` (für Maximilian). Seit Schritt
  * 1e die Übersicht: `geruest` mit dem Fragebogen als Hauptsache,
  * `uebersicht-training`, `uebersicht-lesefrist`, `uebersicht-laden` (eine
- * Abfrage endet nie) und `uebersicht-fehler` (eine scheitert). Die Daten
+ * Abfrage endet nie) und `uebersicht-fehler` (eine scheitert). Seit Schritt
+ * 3b die Liste der Termine in ihren Lagen: `termine-heute` (Besuch heute),
+ * `termine-absage-angefragt` (Absage zum nächsten Termin angefragt),
+ * `termine-gesendet` (mit der Rückmeldung nach dem Senden), `termine-leer`, `termine-nur-wunsch`, `termine-lesefrist`,
+ * `termine-laden`, `termine-fehler`, `termine-training` und
+ * `termine-begleitung` (für Maximilian). Die Daten
  * liegen vorab im Cache; gesprochen wird mit keinem Server - was eine Seite
  * sendet, beantwortet der Test über abgefangene Anfragen. Alles ist
  * synthetisch.
@@ -531,13 +536,94 @@ const vergangeneTermine: Termin[] = [
     late_notice: null,
   },
 ];
+// Schritt 3b: die Termine der Behandlung je Lage der Liste.
+function termineDerBehandlung(): Termin[] {
+  switch (seite) {
+    case 'uebersicht-lesefrist':
+    case 'termine-lesefrist':
+    case 'termine-leer':
+      return vergangeneTermine;
+    case 'termine-nur-wunsch':
+      return [];
+    case 'termine-heute':
+      return termine.map((t) =>
+        t.id === TERMIN_HAUSBESUCH ? { ...t, starts_at: inStunden(2), ends_at: inStunden(3) } : t,
+      );
+    case 'termine-absage-angefragt':
+      return termine.map((t) =>
+        t.id === TERMIN_HAUSBESUCH ? { ...t, open_request_kind: 'cancel' as const } : t,
+      );
+    default:
+      return termine;
+  }
+}
+function wuenscheDerBehandlung(): Terminwunsch[] {
+  if (seite === 'termine-leer' || seite === 'termine-lesefrist') return [];
+  if (seite === 'termine-absage-angefragt') {
+    return [
+      {
+        ...wuensche[0]!,
+        id: 'dddddddd-dddd-4ddd-8ddd-0000000000f4',
+        kind: 'cancel',
+        appointment_id: TERMIN_HAUSBESUCH,
+        preferred_days: [],
+        preferred_times: [],
+        note: null,
+        created_at: inTagen(0, 7),
+      },
+      ...wuensche,
+    ];
+  }
+  if (seite === 'termine-nur-wunsch') {
+    return [
+      {
+        ...wuensche[1]!,
+        id: 'dddddddd-dddd-4ddd-8ddd-0000000000f3',
+        preferred_days: [inTagen(4, 12).slice(0, 10), inTagen(6, 12).slice(0, 10)],
+        preferred_times: ['morning'],
+        status: 'open',
+        created_at: inTagen(0, 7),
+        resolved_at: null,
+        answer: null,
+      },
+    ];
+  }
+  return wuensche;
+}
+// Im Training zwei Termine in der Praxis und einer per Video: Unter dem
+// Hero stehen Zeilen mit dem Zeichen „Training“ und „Video“.
+const trainingstermine: Termin[] = [
+  termine[1]!,
+  {
+    ...termine[1]!,
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-0000000000f5',
+    starts_at: inTagen(12, 17),
+    ends_at: inTagen(12, 18),
+    appointment_type: 'video',
+    staff_name: 'Tom Training',
+    location_name: null,
+    open_request_kind: null,
+  },
+  {
+    ...termine[1]!,
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-0000000000f6',
+    starts_at: inTagen(17, 17),
+    ends_at: inTagen(17, 18),
+    staff_name: 'Tom Training',
+    open_request_kind: null,
+  },
+];
 for (const z of zugaenge) {
   const behandlung = z.relationship_kind === 'treatment';
   client.setQueryData(
     termineSchluessel(z.access_id),
-    behandlung ? (seite === 'uebersicht-lesefrist' ? vergangeneTermine : termine) : [termine[1]!],
+    behandlung
+      ? termineDerBehandlung()
+      : seite === 'termine-training'
+        ? trainingstermine
+        : [termine[1]!],
   );
-  client.setQueryData(wuenscheSchluessel(z.access_id), behandlung ? wuensche : []);
+  client.setQueryData(wuenscheSchluessel(z.access_id), behandlung ? wuenscheDerBehandlung() : []);
   client.setQueryData(rechnungenSchluessel(z.access_id), behandlung ? rechnungen : []);
   client.setQueryData(dokumenteSchluessel(z.access_id), behandlung ? dokumente : []);
   client.setQueryData(befundbogenSchluessel(z.access_id), []);
@@ -645,7 +731,7 @@ const abo: Nachsorgeabo = {
 // keine Lesefrist (ANN-274, `inLesefrist`).
 client.setQueryData(
   aboSchluessel(zugaenge[0]!.access_id),
-  seite === 'uebersicht-lesefrist'
+  seite === 'uebersicht-lesefrist' || seite === 'termine-lesefrist'
     ? null
     : seite === 'abo-gekuendigt'
       ? {
@@ -767,7 +853,16 @@ client.setQueryData(
   vertragSchluessel(zugaenge[1]!.access_id),
   seite === 'vertrag' ? trainingsvertrag : null,
 );
-client.setQueryData(termineSchluessel(begleitung.access_id), [termine[0]!]);
+// Der Besuch bei Maximilian - an seiner Anschrift, nicht an Erikas.
+client.setQueryData(termineSchluessel(begleitung.access_id), [
+  {
+    ...termine[0]!,
+    visit_street: 'Lindenweg',
+    visit_house_number: '3',
+    visit_postal_code: '72070',
+    visit_city: 'Tübingen',
+  },
+]);
 client.setQueryData(wuenscheSchluessel(begleitung.access_id), []);
 client.setQueryData(rechnungenSchluessel(begleitung.access_id), []);
 client.setQueryData(befundbogenSchluessel(begleitung.access_id), []);
@@ -879,6 +974,23 @@ client.setQueryData(plaeneSchluessel(begleitung.access_id), {
 });
 client.setQueryData(checkinsSchluessel(begleitung.access_id), null);
 client.setQueryData(gewohnheitenSchluessel(begleitung.access_id), null);
+// Schritt 3b: `termine-laden` - die Termine laden ohne Ende; `termine-fehler`
+// - sie scheitern, auch beim Erscheinen nicht noch einmal versucht.
+if (seite === 'termine-laden') {
+  client.removeQueries({ queryKey: termineSchluessel(zugaenge[0]!.access_id) });
+  void client.prefetchQuery({
+    queryKey: termineSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => new Promise<Termin[]>(() => undefined),
+  });
+}
+if (seite === 'termine-fehler') {
+  client.removeQueries({ queryKey: termineSchluessel(zugaenge[0]!.access_id) });
+  client.setQueryDefaults(termineSchluessel(zugaenge[0]!.access_id), { retryOnMount: false });
+  void client.prefetchQuery({
+    queryKey: termineSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => Promise.reject(new Error('Ihre Termine konnten nicht geladen werden.')),
+  });
+}
 // `uebersicht-laden`: Die Nachrichten laden ohne Ende; `uebersicht-fehler`:
 // Sie scheitern, auch beim Erscheinen nicht noch einmal versucht.
 if (seite === 'uebersicht-laden') {
@@ -1392,8 +1504,12 @@ function inhalt(): { pfad: string; element: ReactNode } {
       };
     case 'handeln-fuer':
     case 'einstieg-begleitung':
+    case 'termine-begleitung':
       return {
-        pfad: `/p?zugang=${begleitung.access_id}`,
+        pfad:
+          seite === 'termine-begleitung'
+            ? `/p/termine?zugang=${begleitung.access_id}`
+            : `/p?zugang=${begleitung.access_id}`,
         element: (
           <PlattformApp
             zugaenge={[zugaenge[0]!, begleitung]}
@@ -1408,6 +1524,14 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'einstieg':
     case 'einstieg-eingerichtet':
     case 'termine':
+    case 'termine-heute':
+    case 'termine-absage-angefragt':
+    case 'termine-gesendet':
+    case 'termine-leer':
+    case 'termine-nur-wunsch':
+    case 'termine-laden':
+    case 'termine-fehler':
+    case 'termine-training':
     case 'wunsch':
     case 'termin':
     case 'termin-absagen':
@@ -1444,6 +1568,14 @@ function inhalt(): { pfad: string; element: ReactNode } {
         paket: '/p/paket?bereich=training',
         preise: '/p/paket?bereich=training',
         termine: '/p/termine?bereich=treatment',
+        'termine-heute': '/p/termine?bereich=treatment',
+        'termine-absage-angefragt': '/p/termine?bereich=treatment',
+        'termine-gesendet': '/p/termine?bereich=treatment&gesendet=1',
+        'termine-leer': '/p/termine?bereich=treatment',
+        'termine-nur-wunsch': '/p/termine?bereich=treatment',
+        'termine-laden': '/p/termine?bereich=treatment',
+        'termine-fehler': '/p/termine?bereich=treatment',
+        'termine-training': '/p/termine?bereich=training',
         wunsch: '/p/termine/wunsch?bereich=treatment',
         termin: `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment`,
         'termin-absagen': `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment&art=cancel`,
@@ -1518,8 +1650,9 @@ function inhalt(): { pfad: string; element: ReactNode } {
         ),
       };
     case 'uebersicht-lesefrist':
+    case 'termine-lesefrist':
       return {
-        pfad: '/p',
+        pfad: seite === 'termine-lesefrist' ? '/p/termine?bereich=treatment' : '/p',
         element: (
           <PlattformApp
             zugaenge={[{ ...zugaenge[0]!, read_until: inTagen(20, 0) }]}

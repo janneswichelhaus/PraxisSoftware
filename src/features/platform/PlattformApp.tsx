@@ -175,12 +175,14 @@ function Geruest({
   // DR-113: ab 1024 px die Rechneransicht. Die Einsicht zeigt die Plattform
   // in einem Telefon und behält dessen Ansicht (`geruestbreite.ts`).
   const rechner = useRechner() && !nurLesen;
-  // Die Übersicht und der Reiter „Übungen“ (ANN-724) nutzen am Rechner die
-  // ganze Breite (zwei Spalten); ohne lesbaren Zugang steht dort die Tür in
-  // der Spalte.
+  // Die Übersicht und die Reiter „Übungen“ (ANN-724) und „Termine“ (ANN-743)
+  // nutzen am Rechner die ganze Breite (zwei Spalten); ohne lesbaren Zugang
+  // steht dort die Tür in der Spalte.
   const { pathname } = useLocation();
   const breit =
-    (pathname === PLATTFORM_PFAD || pathname === `${PLATTFORM_PFAD}/uebungen`) && lesbar.length > 0;
+    [PLATTFORM_PFAD, `${PLATTFORM_PFAD}/uebungen`, `${PLATTFORM_PFAD}/termine`].includes(
+      pathname,
+    ) && lesbar.length > 0;
   // Die Durchführung steht im Vollbild (Handoff 2026-10-24, Abschnitt 4):
   // ohne Kopf, Verbindungszeile und Reiterleiste des Gerüsts - ihr eigener
   // Kopf mit „Später weiter“ ist der Weg hinaus, ihr Fuß trägt den Hauptknopf
@@ -211,7 +213,7 @@ function Geruest({
           unter 23rem 12 px; am Rechner `max-w-inhalt` mit 40 px. Darin steht
           jede Seite einspaltig in `max-w-spalte`, an der Kante der Marke -
           außer der Übersicht, die ab 900 px Inhaltsbreite zwei Spalten hat
-          (`Uebersicht.tsx`). Unten bleibt Luft statt Platz für eine feste
+          (`Uebersicht.tsx`), und den Reitern „Übungen“ und „Termine“. Unten bleibt Luft statt Platz für eine feste
           Leiste: Die Reiterleiste steht am Ende der Seite (`Navigation.tsx`). */}
       <main
         id="inhalt"

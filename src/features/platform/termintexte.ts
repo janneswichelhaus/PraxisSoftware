@@ -75,6 +75,11 @@ export function tagInWorten(zeitpunkt: string, jetzt: Date = new Date()): string
   return `${wort}, ${fest(tagUndMonat(zeitpunkt, jetzt))}`;
 }
 
+/** „Mo., 26.“ - ein Tag in „Diese Woche“ (Kalendertag `YYYY-MM-DD`). */
+export function tagDerWoche(kalendertag: string): string {
+  return `${wochentag(kalendertag, true)}, ${new Date(`${kalendertag}T12:00:00`).getDate()}.`;
+}
+
 /** „Mi., 4. November“ - der Tag eines Termins im Titel eines Wunschs. */
 export function tagKurzInWorten(zeitpunkt: string, jetzt: Date = new Date()): string {
   return `${wochentag(zeitpunkt, true)}, ${fest(tagUndMonat(zeitpunkt, jetzt))}`;

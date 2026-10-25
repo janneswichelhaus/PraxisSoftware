@@ -76,6 +76,21 @@ describe('Terminzeile', () => {
     expect(screen.getByText('Samstag, 17. Oktober')).toHaveClass('text-ink-muted');
     expect(screen.getByText('durchgeführt')).toBeInTheDocument();
   });
+
+  it('ohne Ziel ist sie kein Link und trägt keinen Pfeil (Einsicht, Schritt 3b)', () => {
+    const { container } = renderWithProviders(
+      <Terminliste name="Weitere Termine">
+        <Terminzeile termin={termin('2026-11-04')} bereich="treatment" jetzt={JETZT} />
+      </Terminliste>,
+    );
+    const zeile = within(screen.getByRole('list', { name: 'Weitere Termine' })).getByRole(
+      'listitem',
+    );
+    expect(within(zeile).queryByRole('link')).not.toBeInTheDocument();
+    expect(zeile).toHaveTextContent('Hausbesuch · Anna Beispiel');
+    // Nur der Kreis der Art, kein Pfeil.
+    expect(container.querySelectorAll('svg')).toHaveLength(1);
+  });
 });
 
 describe('Wunschzeile', () => {

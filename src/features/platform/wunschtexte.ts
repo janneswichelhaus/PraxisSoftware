@@ -18,3 +18,10 @@ export const WUNSCHSCHUTZ: Verlustschutztexte = {
     bleiben: 'Weiter ausfüllen',
   },
 };
+
+/**
+ * Ohne Netz sind Wünschen, Ändern und Absagen gesperrt (Handoff 2026-10-24
+ * „Termine“, Frage 4; ANN-741): der Satz unter dem gesperrten Knopf - auf
+ * der Liste und auf der Seite des Termins.
+ */
+export const WUENSCHE_OHNE_NETZ = 'Wünschen, Ändern und Absagen gehen wieder mit Verbindung.';

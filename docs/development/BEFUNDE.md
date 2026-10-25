@@ -620,18 +620,6 @@ Marke vorsieht.
 
 **Beobachtung.** Einzeln (188 px oder „Sehr groß“) bricht kein Wort ohne Strich. Beides zugleich lässt für den Namen in der Bühne etwa 118 px: „heranziehen“ (elf Buchstaben, unter der Trenngrenze von ANN-707) bricht als „heranzie|hen“, die Marke „3 Durchgänge“ als „Durchgän|ge“. **Erwartet.** Entscheiden, ob die Kombination zu den Prüfpunkten gehört; wenn ja, dort die Trenngrenze senken oder Titel und Marken kleiner setzen.
 
-### BEF-220 — Termine: Statuszeichen und Knopf brechen mitten im Wort
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-24 |
-| Bereich | Plattform, Termine (`/p/termine`) |
-| Quelle  | Ist-Bilder für Briefing 3 (Prüfseite `plattform.html`, 375 px „Sehr groß“ und 188 px) |
-| Status  | teilweise erledigt 2026-10-25 (Schritt 3a): Statuszeichen, Knöpfe und Textlinks brechen nur zwischen Wörtern (ANN-733), die neue `Terminzeile` stellt das Zeichen unter den Text; die Liste trägt sie ab 3b, dann erledigt |
-| Berührt | `src/features/platform/Termine.tsx` (`Terminzeile`, `Wunschzeile`), `src/index.css` (`.plattform-schrift`: `overflow-wrap: anywhere`) |
-
-**Beobachtung.** Bei „Sehr groß“ wird die Spalte des Zustands an der Terminzeile so schmal, dass „Änderung angefragt“ als „Änderun|g angefrag|t“ bricht. Bei 188 px (200 %) bricht der Knopf „Wunsch zurückziehen“ als „zurückzieh|en“ – ohne Strich. Ursache ist `overflow-wrap: anywhere` an der ganzen Plattform: Es gibt jedem Element eine Mindestbreite von einem Zeichen. **Erwartet.** Wie in PLATTFORM.md: Statuszeichen und Knöpfe brechen nie im Wort, nur zwischen Wörtern; ist kein Platz, rückt der Zustand unter den Titel.
-
 ### BEF-221 — Termine: der vergangene Termin nennt keine Nummer, obwohl sie vorliegt
 
 |         |   |
@@ -651,7 +639,7 @@ Marke vorsieht.
 | Datum   | 2026-10-24 |
 | Bereich | Plattform, Termine in der Lesefrist (`read_until` gesetzt, eigener Zugang) |
 | Quelle  | Handoff Termine (Briefing 3), Frage 5 |
-| Status  | offen; Frage an Jannes im Handoff |
+| Status  | offen: Die Ansicht lässt „Termin wünschen“ in der Lesefrist weg (Schritt 3b, ANN-742); die Regel am Server bleibt ein eigener Auftrag nach Pfad A |
 | Berührt | `app.platform_access_allows` (`request` für jeden lesbaren Zugang), `request_platform_appointment`, `request_platform_appointment_change` |
 
 **Beobachtung.** DSN-001 D2 sagt für das Ende einer Behandlung ohne Abo „30 Tage lesend“. `app.platform_access_allows` erlaubt `request` aber jedem lesbaren Zugang, also auch in der Lesefrist; heute zeigt der Reiter dort „Termin wünschen“ wie sonst. **Erwartet.** Nach Jannes' Antwort entweder Wünschen in der Lesefrist am Server ablehnen (Pfad A, `pnpm test:db`) und in der Ansicht weglassen, oder Wünschen bewusst erlauben und D2 entsprechend fassen. Das Weglassen in der Ansicht allein ist keine Zugriffskontrolle.
@@ -703,3 +691,27 @@ Marke vorsieht.
 | Berührt | die beiden Tests, kein Code der Anwendung |
 
 **Beobachtung.** Unter „Dokumente“ war „Herunterladen“ nach 5 s noch nicht da, obwohl der Name der Datei stand. Die Durchführung lief bei 188 px und „Sehr groß“ einmal waagerecht über: Gemessen wird, sobald der Titel sichtbar ist - womöglich bevor die Schriftgröße des Geräts gilt. **Erwartet.** Auf das gemessene Element warten (der Knopf mit eigenem Zeitlimit, die Schrift über `data-schrift` am Wurzelelement) und erst dann messen; die Grenzen bleiben.
+
+### BEF-227 — Praxis: Der Rückweg in „Tag umplanen“ wird gelesen, bevor die Adresse nachzieht
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-25 |
+| Bereich | Kalender, `src/features/appointments/TagUmplanenPage.test.tsx` („führt danach je Person durch die Anrufe …“) |
+| Quelle  | `pnpm test` zu Schritt 3b unter Last (`pnpm test:db` daneben); allein dreimal grün, auf dem Stand vor 3a ebenso |
+| Status  | offen (Vorschlag) |
+| Berührt | der Test, womöglich `TagUmplanenPage.tsx` |
+
+**Beobachtung.** Der Link „Akte“ im ersten Anruf trug unter Last noch `/kalender/tag-umplanen?person=…&datum=…` ohne `abgesagt=…`: Das Fenster steht, bevor die Adresse mit den abgesagten Terminen nachgezogen ist. Im selben Lauf liefen vier weitere Tests der Praxisseite in ihre Zeitgrenze (Erhebung, Radflotte, Akte, Behandlungsgrundlage); allein grün. **Erwartet.** Der Test wartet auf den Rückweg (`waitFor`) oder die Seite baut ihn aus dem Zustand statt aus der Adresse; die Grenzen bleiben.
+
+### BEF-228 — Plattform: Am Rechner mit „Sehr groß“ bleiben den Übungen links knapp 290 px
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-25 |
+| Bereich | Plattform, Reiter „Übungen“ am Rechner (`src/features/platform/Uebungen.tsx`, ANN-724) |
+| Quelle  | Design-Review zu Schritt 3b (H2): dasselbe Raster wie dort |
+| Status  | offen (Vorschlag) |
+| Berührt | `Uebungen.tsx` |
+
+**Beobachtung.** Das Raster gibt der Vorschau rechts Vorrang (bis 28.75rem); bei 1024 px mit „Sehr groß“ bleiben links rund 290 px. **Erwartet.** Wie die Termine seit 3b (`ZWEI_SPALTEN`, ANN-743): links mindestens 32.5rem, gemessen am Inhalt in rem, sonst eine Spalte.

@@ -41,6 +41,9 @@ type Bereich = Plattformzugang['relationship_kind'];
  * Termins, mindestens 80 hoch. Vergangenes und Abgesagtes steht gedämpft.
  * Bei „Sehr groß“ und unter 23rem steht der Kreis über dem Text, der Pfeil
  * entfällt - so bleibt „Änderung angefragt“ in einer Zeile.
+ *
+ * Ohne `to` ist die Zeile kein Link und trägt keinen Pfeil: in der Einsicht
+ * der Praxis, die noch keine Seite des Termins hat (Schritt 3b).
  */
 export function Terminzeile({
   termin,
@@ -51,44 +54,55 @@ export function Terminzeile({
   termin: Termin;
   bereich: Bereich;
   /** Die Seite des Termins, mit dem Bereich in der Adresse (D6). */
-  to: string;
+  to?: string | undefined;
   jetzt?: Date;
 }) {
   const gedaempft = istGedaempft(termin, jetzt);
   const zustand = terminZustand(termin);
-  return (
-    <li>
-      <Link
-        to={to}
-        aria-label={terminzeileName(termin, bereich, jetzt)}
-        className="text-ink hover:bg-surface-sunken active:bg-surface-sunken ease-druck focus-visible:outline-ink flex min-h-20 items-center gap-3 px-3 py-3.5 transition-[background-color,scale] duration-120 focus-visible:outline-3 focus-visible:-outline-offset-3 motion-safe:active:scale-98 max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:p-3 [[data-schrift=sehr-gross]_&]:flex-col [[data-schrift=sehr-gross]_&]:items-start [[data-schrift=sehr-gross]_&]:p-3"
-      >
-        <span className="self-start">
-          <Terminkreis
-            zeichen={artzeichen(termin.appointment_type, bereich)}
-            gedaempft={gedaempft}
-          />
+  const inhalt = (
+    <>
+      <span className="self-start">
+        <Terminkreis zeichen={artzeichen(termin.appointment_type, bereich)} gedaempft={gedaempft} />
+      </span>
+      <span className="flex min-w-0 grow flex-col hyphens-manual">
+        <span className={`leading-snug font-semibold ${gedaempft ? 'text-ink-muted' : ''}`}>
+          {tagInWorten(termin.starts_at, jetzt)}
         </span>
-        <span className="flex min-w-0 grow flex-col hyphens-manual">
-          <span className={`leading-snug font-semibold ${gedaempft ? 'text-ink-muted' : ''}`}>
-            {tagInWorten(termin.starts_at, jetzt)}
+        <span>{vonBis(termin)}</span>
+        <span className="text-ink-muted">{artUndPerson(termin, bereich)}</span>
+        {zustand ? (
+          <span className="mt-1.5">
+            <Statuszeichen {...zustand} />
           </span>
-          <span>{vonBis(termin)}</span>
-          <span className="text-ink-muted">{artUndPerson(termin, bereich)}</span>
-          {zustand ? (
-            <span className="mt-1.5">
-              <Statuszeichen {...zustand} />
-            </span>
-          ) : null}
-        </span>
+        ) : null}
+      </span>
+      {to ? (
         <Terminsymbol
           zeichen="pfeil"
           className="text-ink-muted size-5 max-[23rem]:hidden [[data-schrift=sehr-gross]_&]:hidden"
         />
-      </Link>
+      ) : null}
+    </>
+  );
+  return (
+    <li>
+      {to ? (
+        <Link
+          to={to}
+          aria-label={terminzeileName(termin, bereich, jetzt)}
+          className={`${TERMINZEILE} hover:bg-surface-sunken active:bg-surface-sunken ease-druck focus-visible:outline-ink transition-[background-color,scale] duration-120 focus-visible:outline-3 focus-visible:-outline-offset-3 motion-safe:active:scale-98`}
+        >
+          {inhalt}
+        </Link>
+      ) : (
+        <div className={TERMINZEILE}>{inhalt}</div>
+      )}
     </li>
   );
 }
+
+const TERMINZEILE =
+  'text-ink flex min-h-20 items-center gap-3 px-3 py-3.5 max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:p-3 [[data-schrift=sehr-gross]_&]:flex-col [[data-schrift=sehr-gross]_&]:items-start [[data-schrift=sehr-gross]_&]:p-3';
 
 /** Zeichen und Wort; ein offener Wunsch wartet auf die Praxis („…“). */
 function Statuszeichen({ wort, ton }: { wort: string; ton: Ton }) {

@@ -75,8 +75,10 @@ test.describe('Plattform', () => {
       await expect(page.getByRole('link', { name: /^Rechnung RG-2026-0007/ })).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
 
+      // Schritt 3b: der nächste Termin als Karte, die übrigen als „Weitere Termine“.
       await page.goto(`${PRUEFSEITE}?seite=termine`);
-      await expect(page.getByRole('heading', { name: 'Kommende Termine' })).toBeVisible();
+      await expect(page.getByRole('region', { name: /^Besuch / })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Weitere Termine' })).toBeVisible();
       await expect(page.getByText('Änderung angefragt')).toBeVisible();
       const wunschKnopf = await page.getByRole('link', { name: 'Termin wünschen' }).boundingBox();
       expect(wunschKnopf!.height).toBeGreaterThanOrEqual(44);

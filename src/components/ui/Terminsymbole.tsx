@@ -6,14 +6,14 @@ import type { ReactNode } from 'react';
  * Wort daneben trägt die Bedeutung, deshalb `aria-hidden`.
  *
  * Die Art eines Termins: Haus, Praxis, Video und im Training die Hantel
- * (Festlegung „Zeichen der Art“). Dazu Kalender (ein Wunsch), Ort, Telefon,
- * Nachricht, der Pfeil am Ende einer Zeile und der Pfeil hinter „Termin
- * ansehen“.
+ * (Festlegung „Zeichen der Art“). Dazu Kalender (ein Wunsch), Uhr (der
+ * Wunsch wartet, Schritt 3b), Ort, Telefon, Nachricht, der Pfeil am Ende
+ * einer Zeile und der Pfeil hinter „Termin ansehen“.
  */
 export type Artzeichen = 'haus' | 'praxis' | 'video' | 'training';
 
 export type Terminzeichen =
-  Artzeichen | 'kalender' | 'ort' | 'telefon' | 'nachricht' | 'pfeil' | 'vor';
+  Artzeichen | 'kalender' | 'uhr' | 'ort' | 'telefon' | 'nachricht' | 'pfeil' | 'vor';
 
 const PFADE: Record<Terminzeichen, ReactNode> = {
   haus: (
@@ -40,6 +40,12 @@ const PFADE: Record<Terminzeichen, ReactNode> = {
     <>
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M3 10h18M8 3v4M16 3v4" />
+    </>
+  ),
+  uhr: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
     </>
   ),
   ort: (

@@ -23,7 +23,7 @@ ANN-703, daraus BEF-198), 1e Übersicht (#297, DRP-020 bis -022), 1d Einstieg (#
 ## Danach
 
 Schritt 2 ist mit dem Planblatt 2d gebaut. Schritt 3 Termine (mit #303 freigegeben, Fragen wie
-empfohlen): 3a Bausteine gebaut; 3b Liste, 3c Seite des Termins und 3d Abläufe folgen. Danach Schritte 4 bis 7
+empfohlen): 3a Bausteine und 3b Liste gebaut; 3c Seite des Termins und 3d Abläufe folgen. Danach Schritte 4 bis 7
 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff aus Claude Design;
 Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198 (Grundlage samt Verordnungsscan ins
 Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A), BEF-223 (Zeitumstellung; Pfad A).
@@ -57,4 +57,4 @@ Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A), BEF-223 (Zeitums
 Termine selbst an; danach BEF-215 und BEF-218 – das Fenster „Übung zum Nachlesen“ nutzt die
 Anleitung der Durchführung, die Vorschau rechnet mit der Einheit auf dem Gerät (ANN-730); dann 2d
 Planblatt – „Plan als PDF“, Vorschau als Blatt, Druck A4 (ANN-731); dann 3a – die Bausteine der
-Termine (ANN-732 bis -739, BEF-220 teilweise). Keine Migration, kein Seed. Lokal: `git pull`.
+Termine (ANN-732 bis -739); dann 3b – die Liste (ANN-740 bis -745, BEF-220 erledigt). Keine Migration, kein Seed. Lokal: `git pull`.

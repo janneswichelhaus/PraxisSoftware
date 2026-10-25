@@ -7712,3 +7712,75 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 **Anker.** `Personenbild` in `src/components/ui/HeroKarte.tsx`.
 
 **Änderungspfad.** Eine Fassung „auf Papier“ am `Personenbild` und an beiden Hero-Karten · Aufwand `klein`.
+
+### ANN-740 — Termine: der nächste Termin als Hero-Karte (Frage 1)
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Der nächste bestätigte Termin steht als Hero-Karte über der Liste (Variante A); die ganze Karte führt zur Seite des Termins, „Termin ansehen“ steht nur sichtbar darunter. Die übrigen kommenden stehen als „Weitere Termine“; gibt es keine, entfällt der Abschnitt, gibt es keinen nächsten, heißen sie „Abgesagte Termine“. Ein offener Wunsch zum Termin steht unter „Ihre Wünsche“, nicht an der Karte - bis dahin gilt der Termin.
+
+**Begründung.** Handoff 2026-10-24 „Termine“, Frage 1 und Festlegung „Der nächste Termin zuerst“; Jannes hat sie nicht anders entschieden.
+
+**Anker.** `hauptsache` in `src/features/platform/Termine.tsx`.
+
+**Änderungspfad.** Variante B: die Besuchskarte der Übersicht unter „Ihr nächster Besuch“ · Aufwand `klein`.
+
+### ANN-741 — Termine: ohne Netz sind Wünschen, Ändern, Absagen und Zurückziehen gesperrt (Frage 4)
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Ohne Netz bleibt die Liste lesbar; „Termin wünschen“ ist gesperrt (gestrichelt, `disabled` wie die Übungstage), der Satz „Wünschen, Ändern und Absagen gehen wieder mit Verbindung.“ steht einmal darunter und ist über `aria-describedby` verbunden. Ebenso „Wunsch zurückziehen“, das sonst erst nach der Rückfrage warten würde; fehlt der Knopf, steht der Satz unter den Wünschen. Reißt die Verbindung erst im Ablauf ab, bleibt der heutige Weg.
+
+**Begründung.** Handoff „Termine“, Frage 4 („wie die Übungstage“) und 5.6; der Handoff nennt `aria-disabled`, die App sperrt Knöpfe mit Satz durchweg mit `disabled`.
+
+**Anker.** `Wunschknopf` und `Zurueckziehen` in `src/features/platform/Termine.tsx`; `WUENSCHE_OHNE_NETZ` in `src/features/platform/wunschtexte.ts`.
+
+**Änderungspfad.** `aria-disabled` an einem fokussierbaren Knopf · Aufwand `klein`.
+
+### ANN-742 — Termine: in der Lesefrist kein „Termin wünschen“ (Frage 5)
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** In der Lesefrist fehlen „Termin wünschen“ und die Woche; unter dem Titel steht „Neue Termine vereinbaren Sie bei Bedarf direkt mit der Praxis.“, darüber der Satz zum Ende wie auf der Übersicht, das Vergangene steht offen. Der Server nimmt Wünsche dort weiter an (BEF-222): Weglassen ist keine Zugriffskontrolle; die Regel am Server wäre ein eigener Auftrag nach Pfad A.
+
+**Begründung.** Handoff „Termine“, Frage 5; DSN-001 D2 („30 Tage lesend“). Wie auf der Übersicht erst nach einem Nachsorge-Abo (ANN-274).
+
+**Anker.** `lesefrist` in `src/features/platform/Termine.tsx`.
+
+**Änderungspfad.** Den Knopf in der Lesefrist zeigen wie sonst · Aufwand `klein`.
+
+### ANN-743 — Termine: am Rechner zwei Spalten
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Ab 1024 px stehen Hero und „Termin wünschen“ rechts (21.25 bis 28.75rem wie bei den Übungen, ANN-724), die Listen links; im Baum zuerst Hero und Knopf. Die Liste geht vor: links mindestens 32.5rem, gemessen an der Breite des Inhalts in rem; reicht sie nicht (1024 px mit „Sehr groß“), eine Spalte. Ohne nächsten Termin, ohne etwas für links, in der Lesefrist und beim Fehler eine Spalte in `max-w-spalte`. Am Telefon steht der Knopf unter „Weitere Termine“. Abweichung von PLATTFORM.md („jede Seite einspaltig“).
+
+**Begründung.** Handoff „Termine“, Festlegungen in Abschnitt 0, Abschnitte 4 und 5.1 (Reihenfolge am Telefon).
+
+**Anker.** `ZWEI_SPALTEN` und `aufteilen` in `src/features/platform/Termine.tsx`; `breit` in `src/features/platform/PlattformApp.tsx`.
+
+**Änderungspfad.** Eine Spalte wie die übrigen Seiten · Aufwand `klein`.
+
+### ANN-744 — Termine: die Seite des Termins als Ziel jeder Zeile
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Jede Terminzeile führt zur Seite ihres Termins, auch eine vergangene oder abgesagte; vorher führten nur bestätigte künftige weiter. In der Einsicht der Praxis bleiben die Zeilen ohne Ziel, bis sie dort eine Seite des Termins hat (Schritt 3c).
+
+**Begründung.** Handoff „Termine“, Festlegung „Die Seite des Termins ist das Ziel jeder Zeile“.
+
+**Anker.** `zielVon` in `src/features/platform/Termine.tsx`.
+
+**Änderungspfad.** `to` nur an bestätigten künftigen Terminen · Aufwand `klein`.
+
+### ANN-745 — „Diese Woche“: bei „Sehr groß“ der Tag über dem Inhalt
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Wie unter 23rem steht der Tag auch bei „Sehr groß“ über seinen Einträgen statt in einer Spalte von 8rem daneben.
+
+**Begründung.** Neben 8rem blieben bei 375 px rund 90 px, „Übungstag“ und „Heimübungen“ brachen im Wort (Browsertest Schritt 3b; DR-114).
+
+**Anker.** `WOCHENZEILE` in `src/features/platform/Termine.tsx`.
+
+**Änderungspfad.** Spalte 8rem wie im Handoff, wenn die Einträge kürzer werden · Aufwand `klein`.
