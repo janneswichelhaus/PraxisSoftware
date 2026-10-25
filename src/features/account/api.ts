@@ -3,45 +3,12 @@ import { protokolliereFehler } from '@/lib/protokoll';
 import { meldeSelbstAb } from '@/features/auth/eigeneAbmeldung';
 
 /**
- * Das eigene Konto (STAFF-004).
- *
- * Sitzungen und zweiter Faktor liegen vollständig beim Anmeldedienst des
- * Providers (§3.4: nichts davon wird selbst gebaut); Passkeys stehen in
- * `features/auth/passkey.ts`, die App-PIN in `features/auth/appPin.ts`. Diese Datei ruft
- * dessen Funktionen auf und meldet anschließend ins Auditlog, **dass** der
- * Vorgang stattgefunden hat — nie mit PIN, Token oder Geheimnis.
- *
- * Die Reihenfolge ist **fast** überall dieselbe: erst der Vorgang beim
- * Provider, dann die Meldung. Scheitert der Vorgang, wird nichts gemeldet;
- * scheitert die Meldung, ist der Vorgang trotzdem passiert — deshalb bricht
- * sie den Ablauf nicht ab, sondern bleibt still. Eine Fehlermeldung, die einen
- * erfolgreichen Vorgang als Misserfolg darstellt, wäre die schlechtere
- * Auskunft (Oberflächen-Checkliste Punkt 6).
- *
- * **Die eine Ausnahme ist `sessions_ended`** (ANN-044). Dieser Vorgang nimmt
- * dem Konto die eigene Sitzung — danach gibt es kein `auth.uid()` mehr, und
- * `log_account_security_event` weist den Aufruf ab. Nachher melden heißt
- * deshalb: gar nicht melden. Der Vermerk steht dort vor dem Vorgang und hält
- * den **Versuch** fest. Seit Fassung 2 (Jannes, 2026-10-02) ist er keine
- * Vorbedingung mehr: Wer ein Telefon verloren hat, darf nicht daran scheitern,
- * dass das Protokoll gerade nicht schreibt. Scheitert der Vermerk, steht das
- * im Betriebslog, und die Sitzungen werden trotzdem beendet.
- *
- * **Das geht in die andere Richtung als ANN-041 Fassung 2**, und der
- * Unterschied ist nicht Bequemlichkeit. Dort vermerkt die Anwendung erst, wenn
- * ein Mensch den Versand bestätigt hat, weil sie den Ausgang eines `mailto:`
- * grundsätzlich nicht sehen kann. Hier sieht sie ihn (`signOut` liefert einen
- * Fehler oder nicht), kann ihn aber nicht mehr aufschreiben. Was der Eintrag
- * deshalb festhält, ist die **Auslösung** durch diese Person, nicht die
- * Wirkung auf allen Geräten — die Oberfläche sagt genau das.
- *
- * Der Restfall bleibt und ist in ANN-044 benannt: Scheitert `signOut` nach
- * einem geschriebenen Vermerk, steht ein Eintrag zu einem Vorgang, der nicht
- * durchlief. Ihn aufzulösen braucht einen serverseitigen Vermerk und damit
- * eine Migration; der Änderungspfad steht im Register.
+ * Das eigene Konto: erst der Vorgang beim Anmeldedienst (§3.4), dann der Vermerk, dass er
+ * stattfand, nie mit PIN, Token oder Geheimnis. Ein gescheiterter Vermerk hält nichts auf;
+ * `sessions_ended` vermerkt vorher den Versuch, danach schreibt keine Sitzung mehr (ANN-044).
  */
-// `password_changed` gibt es seit SEC-EPIC-002 nicht mehr: Kein Konto hat ein
-// Kennwort, das sich ändern ließe (ADR-025 Punkt 9).
+
+// Kein `password_changed`: Kein Konto hat ein Kennwort (ADR-025 Punkt 9).
 type Sicherheitsereignis = 'sessions_ended' | 'mfa_enrolled' | 'mfa_removed';
 
 /**

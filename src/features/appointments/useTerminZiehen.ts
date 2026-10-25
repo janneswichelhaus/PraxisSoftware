@@ -2,44 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { aufRaster, pixelZuMinute } from './calendar';
 
 /**
- * Termine im Kalender mit dem Zeigegerät verschieben (CAL-006).
- *
- * Umgesetzt mit Pointer Events, ohne zusätzliche Abhängigkeit. Die Abwägung:
- * HTML5-Drag-and-drop ist eingebaut, funktioniert auf Touch-Geräten aber gar
- * nicht - und der Kalender soll ausdrücklich auch mobil bedienbar sein. Eine
- * Bibliothek hätte für genau eine Geste eine dauerhafte Abhängigkeit bedeutet;
- * Pointer Events decken Maus, Stift und Finger mit einem Modell ab
- * (PROJECT_PRINCIPLES.md: keine Abhängigkeit ohne fachliche Notwendigkeit).
- *
- * Bewusst NICHT enthalten: Größe ändern, Kopieren, Wechsel des Patienten,
- * Ziehen abgesagter oder abgeschlossener Termine (Auftrag Abschnitt 4).
- *
- * Das Ziehen erzeugt ausschließlich eine Vorschau. Geschrieben wird erst beim
- * Loslassen, und die Kachel bleibt bis zur Bestätigung des Servers an ihrer
- * alten Stelle - eine optimistisch verschobene Kachel würde eine Zusage
- * darstellen, die der Server noch gar nicht gegeben hat.
- *
- * **Finger und Maus sind verschieden (UX-010).** Am Zeigegerät ist eine
- * begonnene Bewegung eindeutig; am Finger ist sie es nicht - dieselbe Geste
- * heißt auf dem Telefon zuerst einmal „scrollen". Bisher fing eine Kachel die
- * Geste sofort ab (`touch-action: none`), und weil eine Kachel auf dem Telefon
- * fast die ganze Spalte einnimmt, ließ sich der Kalender über einem Termin gar
- * nicht mehr scrollen; wer es versuchte, verschob ihn.
- *
- * Deshalb: Mit dem Finger beginnt ein Verschieben erst nach einem **langen
- * Druck** (`LANGER_DRUCK_MS`), und nur, wenn der Finger dabei ruhig bleibt.
- * Wer scrollt, bewegt sich vorher - der lange Druck wird abgebrochen, und der
- * Browser scrollt ganz normal weiter. Am Zeigegerät bleibt alles wie bisher:
- * dort gibt es keinen Grund zu warten.
- *
- * **Über den Ausschnitt hinaus (FIX-018, BEF-014).** Ein Termin wandert um
- * Tage und Wochen, nicht nur innerhalb des sichtbaren Gitters. Deshalb bricht
- * ein Bildlauf ein **aktives** Ziehen nicht mehr ab (vorher ja - das galt dem
- * Finger, der scrollen wollte; der ist vor dem langen Druck weiterhin frei):
- * am oberen und unteren Rand des Fensters scrollt die Seite von selbst, ein
- * Mausrad wirkt ebenso, und die Vorschau rechnet den Bildlauf mit. Wer den
- * Zeiger über den seitlichen Rand des Gitters hält, blättert nach
- * `BLAETTER_MS` in den nächsten Ausschnitt - und behält die Geste.
+ * Termine im Kalender ziehen, mit Pointer Events: HTML5-Drag-and-drop fehlt auf Touch, und eine
+ * Bibliothek lohnt für eine Geste nicht. Ziehen zeigt nur eine Vorschau; die Kachel wandert erst,
+ * wenn der Server bestätigt. Am Finger beginnt es nach langem Druck, damit Scrollen frei bleibt.
  */
 
 /** Bewegung in Pixeln, ab der aus einem Tippen ein Ziehen wird. */

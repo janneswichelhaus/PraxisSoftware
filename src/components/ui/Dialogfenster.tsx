@@ -16,51 +16,9 @@ import { Symbolknopf } from './Symbolknopf';
 import { titelklassen, type Titelstufe } from './titelstufe';
 
 /**
- * Fenster über dem aktuellen Inhalt (FIX-016, ANN-058).
- *
- * Bis dahin standen Rückfragen als Kasten **im Fluss der Seite** — bewusst
- * kein modaler Dialog (UI-000). Der Befund BEF-016 hat gezeigt, wo das
- * scheitert: Wer am Ende eines langen Formulars auf „Termin anlegen" drückt,
- * sieht eine Rückfrage am Seitenanfang nicht und hält den Klick für wirkungslos.
- * Festlegung von Jannes (2026-09-18): Solche Rückfragen erscheinen **immer**
- * als Fenster über dem Inhalt.
- *
- * Was das Fenster leistet, damit es niemandem etwas wegnimmt:
- *
- *   * `role="dialog"` mit `aria-modal`, benannt über die Überschrift;
- *   * der Fokus wandert beim Öffnen hinein (auf `data-autofocus`, sonst auf
- *     das erste bedienbare Element) und bleibt drin (Tab läuft im Kreis);
- *   * Escape und ein Klick neben das Fenster schließen es — das ist immer
- *     das Abbrechen, nie das Bestätigen;
- *   * beim Schließen kehrt der Fokus dorthin zurück, wo er vorher war.
- *
- * **Der Fokus bleibt auch, wenn sich der Inhalt ändert (UIK-09, DAT-11).**
- * Im Kameradialog verschwindet „Auslösen" mit dem Tipp darauf; der Browser
- * setzt den Fokus dann ohne jedes Ereignis auf den `body`, und Escape, Tab
- * und der Fokuskreis liefen bis UXR-001 ins Leere. Verschwindet das
- * fokussierte Element oder verlässt der Fokus das Fenster, holt es ihn
- * deshalb zurück - auf `data-autofocus`, sonst auf das erste bedienbare
- * Element. Das Verschwinden meldet ein `MutationObserver`, das Verlassen
- * `focusin` außerhalb und `focusout` ins Nichts.
- *
- * **Der Fokus rollt nichts weg (BEF-175).** Er geht mit `preventScroll`
- * hinein: Ein hohes Fokusziel - eine Liste, eine Zusammenfassung - schöbe die
- * Frage darüber sonst aus dem Bild.
- *
- * **Der Rest der Seite ist gesperrt**, solange das Fenster offen ist: Was
- * schon da ist - die Anwendung selbst, ein schon offenes Fenster - trägt
- * `inert`, auch wenn das Fenster nicht am `body` zeichnet, sondern im Ziel der
- * Sitzungssperre oder der Plattform (`sperreDarunter`). Tab, ein Tipp und die
- * Vorlesesoftware erreichen darunter nichts mehr; `aria-modal` allein sagt das
- * nur an.
- *
- * **Es kommt von unten und geht nach unten** (ANN-663): eine Ebene über der
- * Seite, kein Wechsel der Seite. Wie es kommt, steht in `index.css`
- * („Ein Fenster kommt von unten“); wie es geht, in `useAbgang`.
- *
- * Gezeichnet wird über ein Portal am `body`, damit das Fenster über der
- * Kopfleiste und der Navigation liegt. Kein Paket: `<dialog>` hätte in
- * jsdom keinen `showModal`, und ein eigener Fokuskreis ist zwanzig Zeilen.
+ * Fenster über dem Inhalt für Rückfragen (ANN-058), eine Ebene über der Seite (ANN-663). Eigener
+ * Fokuskreis statt `<dialog>`, weil jsdom `showModal` nicht kennt; der Rest der Seite wird `inert`,
+ * weil `aria-modal` nur ansagt. Escape und ein Klick daneben brechen ab, nie bestätigen sie.
  */
 export function Dialogfenster({
   titel,
@@ -143,6 +101,7 @@ export function Dialogfenster({
       if (!fenster.isConnected || istVerborgen(fenster)) return;
       const aktiv = document.activeElement;
       if (aktiv && aktiv !== document.body && aktiv.closest('[aria-modal="true"]')) return;
+      // Ohne Rollen: Ein hohes Fokusziel schöbe die Frage darüber aus dem Bild.
       startpunkt().focus({ preventScroll: true });
     }
 
@@ -192,6 +151,7 @@ export function Dialogfenster({
       // gerade entfernt wird. Erst nach dem Wechsel steht fest, wo er landet.
       if (event.relatedTarget === null) window.setTimeout(zurueckholen, 0);
     }
+    // Verschwindet das fokussierte Element, setzt der Browser den Fokus ohne Ereignis auf `body`.
     const beobachter = new MutationObserver(zurueckholen);
 
     document.addEventListener('focusin', fokusDraussen);

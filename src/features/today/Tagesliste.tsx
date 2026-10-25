@@ -47,35 +47,9 @@ const namenslink =
   'underline decoration-2 underline-offset-4 transition-colors';
 
 /**
- * Der eine ausgeklappte Termin im Zeitstrahl, so wie man ihn an der
- * Wohnungstür braucht (UX-001, Design-Handoff 2026-10-01).
- *
- * Bewusst eine Karte statt einer Zeile: Anschrift, Zugang und Rufnummer
- * müssen bei 375 px ohne einen Seitenwechsel erreichbar sein.
- *
- * **Der Termin ist ein kleiner Link „Termin →“ in der Kopfzeile** (Praxis-
- * Review R2, P1). Von UBK-004 bis dahin spannte ein Link seine Fläche über
- * die ganze Karte (`after:inset-0`): Ein Fehltipp neben Doku, Hörer oder
- * Haken landete im Kalender - unterwegs, mit einer Hand. Jetzt ist nur, was
- * wie ein Ziel aussieht, auch eines; die Knöpfe stehen 12 px auseinander.
- *
- * Die Uhrzeit des Beginns steht am Zeitstrahl daneben; die Karte nennt die
- * ganze Spanne in der Nebenzeile, weil das Ende am Strahl nicht steht.
- *
- * **Pillen statt Textblock:** Liege und offene Erstaufnahme stehen als Pillen
- * unter den Knöpfen (seit Auftrag C1; bis dahin unter der Anschrift, wo sie
- * den Hauptknopf am Telefon unter die Tableiste schoben). Etage,
- * Zugangshinweis, Besonderheit und Rufnummern liegen hinter dem Info-Knopf
- * „i“ - seit UBK-004 in der Namenszeile, bis
- * dahin am Ende der Adresszeile (Jannes 2026-10-03, AKTE-008; 2026-10-05):
- * Sie sind wichtig, wenn man vor der Tür steht, und sonst Text,
- * den Umstehende mitlesen. Ohne eine dieser Angaben gibt es keinen Knopf.
- * Die Etage kommt vorerst vom Anfang des Zugangshinweises (ANN-197,
- * `stockwerk.ts`) - ein eigenes Feld `home_visit_floor` gibt es noch nicht.
- *
- * Freitexte - Name, Anschrift, Zugangshinweis, Besonderheit - brechen auch
- * mitten im Wort um (UEB-16, wie BEF-005): Ein Hinweis ohne Trennstelle
- * sprengte sonst bei 390 px die Karte und die Seite liefe waagerecht.
+ * Der ausgeklappte Termin im Zeitstrahl, wie man ihn an der Tür braucht: Anschrift, Zugang und
+ * Rufnummer bei 375 px ohne Seitenwechsel. Nur der kleine Link „Termin →“ führt weg, damit ein
+ * Fehltipp nicht im Kalender landet; Türangaben liegen hinter „i“, die Etage aus ANN-197.
  */
 export function Tageskarte({
   termin,

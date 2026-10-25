@@ -7,36 +7,9 @@ import { istVersprechen } from './versprechen';
 const STANDARDFEHLER = 'Das hat nicht geklappt. Bitte die Verbindung prüfen und erneut versuchen.';
 
 /**
- * Rückfrage vor einem Vorgang, der nicht versehentlich passieren soll (UI-000).
- *
- * Die auslösende Schaltfläche wird durch einen Kasten mit der Frage ersetzt.
- * Das war bisher in acht Dateien einzeln gebaut, und die Fokusführung — ohne
- * die eine Tastaturbedienung nach dem Klick am Seitenanfang landet — nur an
- * einer davon (`AppointmentDetailPage`, CAL-004). Dieser Baustein hebt genau
- * dieses Verhalten für alle:
- *
- *   * beim Öffnen wandert der Fokus auf die bestätigende Schaltfläche,
- *   * beim Abbrechen kehrt er auf die auslösende zurück.
- *
- * Die Rückkehr braucht einen eigenen Durchlauf: während der Rückfrage ist die
- * auslösende Schaltfläche nicht im Dokument, ihre Referenz zeigt also auf ein
- * bereits entferntes Element.
- *
- * Der Kasten ist kein modaler Dialog: Er erscheint **an der Stelle des
- * Klicks** und ist damit immer im Blick. Rückfragen, die woanders als am
- * Klick entstehen — die Arbeitszeit-Rückfrage nach dem Absenden eines langen
- * Formulars etwa —, sind seit FIX-016 ein Fenster über dem Inhalt
- * (`Dialogfenster`, ANN-058). Die Grenze ist der Ort: Was neben dem Auslöser
- * stehen kann, steht dort; was sonst aus dem Sichtfeld fiele, kommt darüber.
- *
- * **Der Kasten wartet auf das Ergebnis (ABR-03, ZST-06).** Liefert
- * `onBestaetigen` ein Versprechen - `() => x.mutateAsync()` -, bleibt der
- * Kasten offen, zeigt bis zu dessen Ende „läuft" und nimmt keinen zweiten
- * Tipp an; erst ein erfülltes Versprechen schließt ihn. Wird es verworfen,
- * bleibt er offen und zeigt den Fehler: den `fehler` der Seite oder, fehlt
- * der, einen Satz ohne technische Einzelheiten (§13). Ein synchroner Aufruf
- * (`() => x.mutate()`) schließt wie bisher sofort - dann kann der Kasten
- * aber auch keinen Fehler mehr zeigen, weil es ihn nicht mehr gibt.
+ * Rückfrage an der Stelle des Klicks; was dort aus dem Blick fiele, kommt als `Dialogfenster`
+ * (ANN-058). Der Fokus geht aufs Bestätigen und beim Abbrechen zurück. Liefert `onBestaetigen` ein
+ * Versprechen, bleibt der Kasten bis zum Ergebnis offen und zeigt einen Fehler (§13).
  */
 export function Rueckfrage({
   ausloeser,
