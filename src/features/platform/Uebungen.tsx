@@ -12,8 +12,6 @@ import { HeroKarte } from '@/components/ui/HeroKarte';
 import { Linkliste } from '@/components/ui/Linkliste';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
-import { Schrittliste } from '@/components/ui/Schrittliste';
 import { Section } from '@/components/ui/Section';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -30,11 +28,14 @@ import {
   DurchfuehrungKontext,
   abgelegteZugaenge,
   abweisungGelesen,
+  geraetetag,
   useWarteschlange,
   type Ablageplan,
+  type WartendeEinheit,
 } from './ablage';
-import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
+import { Anleitung } from './Anleitung';
 import { Dosierungsmarken } from './Dosierungsmarken';
+import { heutigeEinheit, uebungErledigt } from './haken';
 import { inLesefrist, naechsterTermin } from './hauptsache';
 import { hauptzahl } from './hauptzahl';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
@@ -45,14 +46,7 @@ import {
   tageText,
   wochenleisteSatz,
 } from './uebungstage';
-import {
-  ersteOffeneUebung,
-  heuteErledigt,
-  lageDesPlans,
-  planDerVorschau,
-  umfangText,
-  wasManBraucht,
-} from './vorschau';
+import { lageDesPlans, planDerVorschau, umfangText, wasManBraucht, weiterBei } from './vorschau';
 import { datum, letzterTag, tagUndMonat } from './zeit';
 
 type Position = Ablageplan['items'][number];
@@ -77,7 +71,6 @@ type Position = Ablageplan['items'][number];
 export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
   const api = usePlattformApi();
   const [suche] = useSearchParams();
-  const gespeichert = useEinmaligeRueckmeldung('gespeichert');
   const verbunden = useIstVerbunden();
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
@@ -97,17 +90,6 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
   return (
     <>
       <PageHeader title={training ? 'Training' : 'Übungen'} />
-      {gespeichert === '1' ? (
-        // Eine Bestätigung, kein Lob (DSN-001 4.1). Mit der Endseite der
-        // Durchführung (Schritt 2b) kommt niemand mehr mit diesem Merker her.
-        <Rueckmeldung className="mb-4">Ihre Einheit ist gespeichert.</Rueckmeldung>
-      ) : gespeichert === 'geraet' ? (
-        // TRK-008: ehrlich, wo sie liegt (ADR-024 Punkt 8).
-        <Statusmeldung ton="warnung" className="mb-4">
-          Ihre Einheit liegt auf diesem Gerät und ist noch nicht bei der Praxis. Sie wird
-          übertragen, sobald Verbindung besteht.
-        </Statusmeldung>
-      ) : null}
       <Wartehinweis zugangId={zugang.access_id} />
       {plaene.data !== undefined ? (
         plaene.data.plans.length === 0 ? (
@@ -124,24 +106,34 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
             />
           </div>
         ) : (
-          <Reiter
-            zugang={zugang}
-            plaene={plaene.data.plans}
-            heute={plaene.data.today}
-            bereich={bereich}
-            name={name}
-            verbunden={verbunden}
-          />
+          <AmGeraet>
+            {(wartend) => (
+              <Reiter
+                zugang={zugang}
+                plaene={plaene.data.plans}
+                heute={plaene.data.today}
+                bereich={bereich}
+                name={name}
+                verbunden={verbunden}
+                wartend={wartend}
+              />
+            )}
+          </AmGeraet>
         )
       ) : plaene.isError || plaene.fetchStatus === 'paused' ? (
         // BEF-197: ohne Antwort der Plan vom Gerät - ohne Netz sagt es die
         // Verbindungszeile, bei Verbindung eine eigene Meldung.
-        <PlanVomGeraet
-          zugang={zugang}
-          bereich={bereich}
-          verbunden={verbunden}
-          onErneut={() => plaene.refetch()}
-        />
+        <AmGeraet>
+          {(wartend) => (
+            <PlanVomGeraet
+              zugang={zugang}
+              bereich={bereich}
+              verbunden={verbunden}
+              wartend={wartend}
+              onErneut={() => plaene.refetch()}
+            />
+          )}
+        </AmGeraet>
       ) : (
         <Ladezustand />
       )}
@@ -190,6 +182,32 @@ function Wartestand({ besitzer, zugangId }: { besitzer: string; zugangId: string
 }
 
 /**
+ * Die Einheiten, die noch auf dem Gerät warten (BEF-218): Vorschau,
+ * Übungszeilen und Plan vom Gerät rechnen mit ihnen wie der Start der
+ * Durchführung - `heutigeEinheit` wählt selbst nach Zugang, Plan und Tag.
+ * Bis die Ablage gelesen ist, steht das Skelett: Sonst sagte die Vorschau
+ * einen Augenblick „Gespeichert“ für eine Einheit, die nur auf dem Gerät
+ * liegt. Ohne Ablage (Tests des Gerüsts) keine.
+ */
+function AmGeraet({ children }: { children: (wartend: readonly WartendeEinheit[]) => ReactNode }) {
+  const traeger = useContext(DurchfuehrungKontext);
+  if (!traeger) return children([]);
+  return <AmGeraetGelesen besitzer={traeger.besitzer}>{children}</AmGeraetGelesen>;
+}
+
+function AmGeraetGelesen({
+  besitzer,
+  children,
+}: {
+  besitzer: string;
+  children: (wartend: readonly WartendeEinheit[]) => ReactNode;
+}) {
+  const stand = useWarteschlange(besitzer);
+  if (stand.gelesenBis < 0) return <Ladezustand />;
+  return children(stand.einheiten);
+}
+
+/**
  * Vorschau und Pläne nebeneinander (Handoff 2026-10-24, Abschnitt 4; ANN-724):
  * am Rechner der Plan links, die Vorschau rechts, 340 bis 460 breit - so breit
  * sie werden kann, ohne dass der Plan unter 1024 px zu schmal wird. Im Baum
@@ -217,6 +235,7 @@ function Reiter({
   bereich,
   name,
   verbunden,
+  wartend,
 }: {
   zugang: Plattformzugang;
   plaene: EigenerPlan[];
@@ -224,6 +243,7 @@ function Reiter({
   bereich: string;
   name: string | null;
   verbunden: boolean;
+  wartend: readonly WartendeEinheit[];
 }) {
   const erster = planDerVorschau(plaene, heute);
   const reihe = [erster, ...plaene.filter((p) => p !== erster)];
@@ -246,6 +266,7 @@ function Reiter({
             name={name}
             verbunden={verbunden}
             mehrere={plaene.length > 1}
+            wartend={wartend}
           />
         }
       >
@@ -258,6 +279,7 @@ function Reiter({
               bereich={bereich}
               verbunden={verbunden}
               mitKnopf={i > 0}
+              wartend={wartend}
             />
           </div>
         ))}
@@ -309,6 +331,7 @@ function Vorschau({
   name,
   verbunden,
   mehrere,
+  wartend,
 }: {
   zugang: Plattformzugang;
   plan: EigenerPlan;
@@ -317,10 +340,12 @@ function Vorschau({
   name: string | null;
   verbunden: boolean;
   mehrere: boolean;
+  wartend: readonly WartendeEinheit[];
 }) {
   const nurLesen = useNurLesen();
   const training = zugang.relationship_kind === 'training';
-  const lage = lageDesPlans(plan, heute);
+  const einheit = heutigeEinheit(plan, zugang.access_id, wartend, geraetetag());
+  const lage = lageDesPlans(plan, heute, einheit);
   const ueben = plan.can_exercise && !nurLesen && plan.items.length > 0;
 
   if (lage === 'lesefrist') {
@@ -385,9 +410,14 @@ function Vorschau({
         etikett={etikett}
         titel={titel}
         satz={
-          <>
-            Gespeichert. <Name person>{wer}</Name> sieht Ihre Einheit beim nächsten Termin.
-          </>
+          // Liegt die Einheit nur auf dem Gerät, ist sie nicht bei der Praxis
+          // (ADR-024 Punkt 8); das sagt der Hinweis darüber, die Karte
+          // wiederholt es nicht (ANN-730).
+          einheit.beendetAufGeraet ? undefined : (
+            <>
+              Gespeichert. <Name person>{wer}</Name> sieht Ihre Einheit beim nächsten Termin.
+            </>
+          )
         }
         angaben={angaben}
         leiseAktion={
@@ -397,7 +427,7 @@ function Vorschau({
     );
   }
 
-  const offen = lage === 'begonnen' ? ersteOffeneUebung(plan) : null;
+  const offen = lage === 'begonnen' ? weiterBei(plan.items, einheit) : null;
   return (
     <HeroKarte
       schmalOhneRad
@@ -485,6 +515,7 @@ function PlanAbschnitt({
   bereich,
   verbunden,
   mitKnopf,
+  wartend,
 }: {
   zugang: Plattformzugang;
   plan: EigenerPlan;
@@ -492,9 +523,11 @@ function PlanAbschnitt({
   bereich: string;
   verbunden: boolean;
   mitKnopf: boolean;
+  wartend: readonly WartendeEinheit[];
 }) {
   // E-001: In der Einsicht werden keine Tage gewählt, nicht geübt, nicht gefragt.
   const nurLesen = useNurLesen();
+  const einheit = heutigeEinheit(plan, zugang.access_id, wartend, geraetetag());
   const beendet = plan.status === 'ended';
   const mitLeiste = !nurLesen && !beendet && plan.can_choose_days;
   const zeile = [
@@ -518,14 +551,14 @@ function PlanAbschnitt({
         ) : !nurLesen && !beendet && plan.weekdays.length > 0 ? (
           <p className="text-ink-muted">Ihre Übungstage: {tageText(plan.weekdays)}</p>
         ) : null}
-        <UebungenDesPlans plan={plan} beendet={beendet} />
+        <UebungenDesPlans items={plan.items} haken={einheit.haken} beendet={beendet} />
         {mitKnopf && plan.can_exercise && !nurLesen && plan.items.length > 0 ? (
           <ButtonLink
             variant="secondary"
             className="w-full [[data-rechner]_&]:w-auto [[data-rechner]_&]:self-start"
             to={einheitPfad(plan.id, bereich)}
           >
-            {plan.open_session ? 'Weiter üben' : 'Übungen beginnen'}
+            {einheit.id ? 'Weiter üben' : 'Übungen beginnen'}
           </ButtonLink>
         ) : null}
         {beendet ? null : (
@@ -570,18 +603,20 @@ function laufzeitText(plan: EigenerPlan, heute: string): string | null {
 
 /**
  * „Die Übungen“ als Zeilen; eine Zeile öffnet die Übung zum Nachlesen. Heute
- * Erledigtes nach `open_session.sets` (ANN-720). Für Pläne vom Server und
- * vom Gerät gleich.
+ * Erledigtes nach den Haken der heutigen Einheit aus Server und Gerät
+ * (ANN-730). Für Pläne vom Server und vom Gerät gleich.
  */
 function UebungenDesPlans({
-  plan,
+  items: positionen,
+  haken,
   beendet = false,
 }: {
-  plan: Pick<Ablageplan, 'items' | 'open_session'>;
+  items: readonly Position[];
+  haken: ReadonlySet<string>;
   beendet?: boolean;
 }) {
   const [offen, setOffen] = useState<Position | null>(null);
-  const items = [...plan.items].sort((a, b) => a.position - b.position);
+  const items = [...positionen].sort((a, b) => a.position - b.position);
   return (
     <div>
       <Zwischentitel ebene={3}>Die Übungen</Zwischentitel>
@@ -592,7 +627,7 @@ function UebungenDesPlans({
             nummer={p.position}
             titel={p.variant_lay_name}
             dosierung={dosierungKurz(p)}
-            erledigt={heuteErledigt(p, plan.open_session)}
+            erledigt={uebungErledigt(p, haken)}
             beendet={beendet}
             onClick={() => setOffen(p)}
           />
@@ -739,46 +774,8 @@ function Fensterinhalt({
             titelId={titelId}
           />
           <Dosierungsmarken dosis={position} />
-          {position.instruction ? (
-            <div>
-              <Zwischentitel ebene={3}>So geht’s</Zwischentitel>
-              <Schrittliste text={position.instruction} />
-            </div>
-          ) : null}
-          {position.equipment.length > 0 || position.note ? (
-            // „Sie brauchen:“ und „Hinweis:“ mit Zeichen 22 wie in der
-            // Durchführung (Handoff 5.3).
-            <div className="flex flex-col gap-3">
-              {position.equipment.length > 0 ? (
-                <p className="text-ink flex items-start gap-2.5">
-                  <span
-                    aria-hidden="true"
-                    className="text-accent mt-px inline-flex shrink-0 [&_svg]:size-5.5"
-                  >
-                    {ZEICHEN.tasche}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="font-semibold">Sie brauchen: </span>
-                    {position.equipment.join(', ')}
-                  </span>
-                </p>
-              ) : null}
-              {position.note ? (
-                <p className="text-ink flex items-start gap-2.5">
-                  <span
-                    aria-hidden="true"
-                    className="text-accent mt-px inline-flex shrink-0 [&_svg]:size-5.5"
-                  >
-                    {ZEICHEN.hinweis}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="font-semibold">Hinweis: </span>
-                    {position.note}
-                  </span>
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+          {/* Derselbe Inhalt wie in der Durchführung, eine Ebene unter der Bühne. */}
+          <Anleitung position={position} ebene={3} />
           <Button
             type="button"
             variant="secondary"
@@ -864,11 +861,13 @@ function PlanVomGeraet({
   zugang,
   bereich,
   verbunden,
+  wartend,
   onErneut,
 }: {
   zugang: Plattformzugang;
   bereich: string;
   verbunden: boolean;
+  wartend: readonly WartendeEinheit[];
   onErneut: () => unknown;
 }) {
   const traeger = useContext(DurchfuehrungKontext);
@@ -899,6 +898,9 @@ function PlanVomGeraet({
   }
   const training = zugang.relationship_kind === 'training';
   const [erster, ...weitere] = ablage.plaene as [Ablageplan, ...Ablageplan[]];
+  // Die heutige Einheit je Plan wie in der Durchführung (ANN-722, ANN-730).
+  const heute = geraetetag();
+  const einheit = (plan: Ablageplan) => heutigeEinheit(plan, zugang.access_id, wartend, heute);
   return (
     <>
       {verbunden ? (
@@ -920,11 +922,11 @@ function PlanVomGeraet({
             angaben={angabenDerEinheit({
               items: erster.items,
               planname: weitere.length > 0 ? erster.title : null,
-              offen: ersteOffeneUebung(erster),
+              offen: weiterBei(erster.items, einheit(erster)),
               ohneNetz: false,
             })}
             aktion={{
-              text: erster.open_session ? 'Weiter üben' : 'Übungen beginnen',
+              text: einheit(erster).id ? 'Weiter üben' : 'Übungen beginnen',
               to: einheitPfad(erster.id, bereich),
             }}
           />
@@ -939,14 +941,14 @@ function PlanVomGeraet({
                     ? 'Übungstage und Laufzeit sehen Sie wieder, sobald die Praxis antwortet.'
                     : 'Übungstage und Laufzeit sehen Sie wieder mit Verbindung.'}
                 </p>
-                <UebungenDesPlans plan={plan} />
+                <UebungenDesPlans items={plan.items} haken={einheit(plan).haken} />
                 {i > 0 ? (
                   <ButtonLink
                     variant="secondary"
                     className="w-full [[data-rechner]_&]:w-auto [[data-rechner]_&]:self-start"
                     to={einheitPfad(plan.id, bereich)}
                   >
-                    {plan.open_session ? 'Weiter üben' : 'Übungen beginnen'}
+                    {einheit(plan).id ? 'Weiter üben' : 'Übungen beginnen'}
                   </ButtonLink>
                 ) : null}
               </div>
@@ -1026,12 +1028,6 @@ const ZEICHEN = {
     <svg {...SVG}>
       <path d="M5 5h14v10H10l-4 4v-4H5z" />
       <path d="M10 9.5a2 2 0 1 1 2.5 1.9c-.3.1-.5.4-.5.7v.4M12 14h.01" />
-    </svg>
-  ),
-  hinweis: (
-    <svg {...SVG}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 11v5M12 8h.01" />
     </svg>
   ),
 };

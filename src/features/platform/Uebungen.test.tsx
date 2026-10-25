@@ -32,7 +32,8 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Uebungen, PlanblattPlattform } = await import('./Uebungen');
-const { DurchfuehrungKontext, ablageZuruecksetzen, plaeneAblegen } = await import('./ablage');
+const { DurchfuehrungKontext, ablageZuruecksetzen, ereignisAblegen, plaeneAblegen } =
+  await import('./ablage');
 
 const HEUTE = '2026-10-08';
 const KONTO = 'eeeeeeee-0000-4000-8000-000000000001';
@@ -537,6 +538,128 @@ describe('Plan vom Gerät (BEF-197, ADR-024 Punkt 5)', () => {
   });
 });
 
+describe('Einheit auf dem Gerät (BEF-218, ANN-730)', () => {
+  /** Die Einheit von heute auf dem Gerät - mit Haken und auf Wunsch mit Ende. */
+  async function aufDemGeraet(id: string, durchgaenge: number[], beendet = false) {
+    const einheit = {
+      id,
+      zugangId: ZUGANG.access_id,
+      planId: eigenerPlan().id,
+      tag: HEUTE,
+      begonnenAm: `${HEUTE}T08:00:00.000Z`,
+    };
+    for (const n of durchgaenge) {
+      await ereignisAblegen(KONTO, einheit, {
+        id: `${id.slice(0, -1)}${n}`,
+        kind: 'set',
+        at: `${HEUTE}T08:0${n}:00.000Z`,
+        item_id: ERSTE,
+        set_number: n,
+        done: true,
+      });
+    }
+    if (beendet) {
+      await ereignisAblegen(KONTO, einheit, {
+        id: 'ffffffff-0000-4000-8000-000000000009',
+        kind: 'finish',
+        at: `${HEUTE}T08:30:00.000Z`,
+        note: '',
+        values: {},
+      });
+    }
+  }
+
+  it('ohne Netz beendet: „Heute geübt“ und ehrlich, wo die Einheit liegt', async () => {
+    // Der Server kennt die Einheit noch offen, das Gerät hat ihr Ende.
+    ladePlaene.mockResolvedValue({
+      today: HEUTE,
+      plans: [
+        zweiUebungen({
+          weekdays: [4],
+          open_session: { ...OFFEN, sets: [{ item_id: ERSTE, set_number: 1 }] },
+          recent_sessions: [{ performed_on: HEUTE, finished: false }],
+        }),
+      ],
+    });
+    await aufDemGeraet(OFFEN.id, [2, 3], true);
+    zeige(<Uebungen zugang={ZUGANG} />);
+    const karte = await vorschau('Ihre Übungen für heute');
+    await waitFor(() => expect(within(karte).getByText('Heute geübt')).toBeInTheDocument());
+    // Wo die Einheit liegt, sagt einmal der Hinweis über der Karte; die Karte
+    // sagt nicht „Gespeichert“ (Design-Review B1, ADR-024 Punkt 8).
+    expect(
+      screen.getByText('Eine Einheit liegt noch auf diesem Gerät und ist noch nicht übertragen.'),
+    ).toBeInTheDocument();
+    expect(karte).not.toHaveTextContent('Gespeichert');
+    expect(karte).not.toHaveTextContent('sieht Ihre Einheit');
+    expect(within(karte).getByRole('link', { name: 'Noch einmal üben' })).toBeInTheDocument();
+    expect(within(karte).queryByRole('link', { name: 'Weiter üben' })).not.toBeInTheDocument();
+    // Eine beendete Einheit ist nicht mehr offen: kein „Heute erledigt“ wie beim Server.
+    expect(screen.getByRole('button', { name: /^1\. Am Geländer/ })).not.toHaveTextContent(
+      'Heute erledigt',
+    );
+  });
+
+  it('Haken nur auf dem Gerät: „Heute begonnen“ und „Weiter bei“ wie die Durchführung', async () => {
+    ladePlaene.mockResolvedValue({ today: HEUTE, plans: [zweiUebungen({ weekdays: [4] })] });
+    await aufDemGeraet('dddddddd-0000-4000-8000-000000000000', [1, 2, 3]);
+    zeige(<Uebungen zugang={ZUGANG} />);
+    const karte = await vorschau('Ihre Übungen für heute');
+    await waitFor(() => expect(within(karte).getByText('Heute begonnen')).toBeInTheDocument());
+    expect(angaben(karte)[0]).toBe('Weiter bei Übung 2: Auf einem Bein stehen');
+    expect(within(karte).getByRole('link', { name: 'Weiter üben' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^1\. Am Geländer/ })).toHaveTextContent(
+      'Heute erledigt',
+    );
+  });
+
+  it('sagt vor der ersten Lesung des Geräts nie „Gespeichert“ (Zweitreview B1)', async () => {
+    // Heute schon eine Einheit bei der Praxis; eine zweite liegt beendet nur auf dem Gerät.
+    ladePlaene.mockResolvedValue({
+      today: HEUTE,
+      plans: [
+        zweiUebungen({ weekdays: [4], recent_sessions: [{ performed_on: HEUTE, finished: true }] }),
+      ],
+    });
+    const speicher = speicherImSpeicher();
+    speicherSetzen(speicher);
+    await aufDemGeraet('dddddddd-0000-4000-8000-000000000000', [1], true);
+    // Die Ablage antwortet erst, wenn der Test sie freigibt.
+    let freigeben = () => {};
+    const tor = new Promise<void>((weiter) => {
+      freigeben = weiter;
+    });
+    speicherSetzen({ ...speicher, holen: () => tor.then(() => speicher.holen()) });
+    zeige(<Uebungen zugang={ZUGANG} />);
+    await waitFor(() => expect(ladePlaene).toHaveBeenCalled());
+    await act(async () => {});
+    expect(screen.getByText('Übungen werden geladen')).toBeInTheDocument();
+    expect(screen.queryByText(/sieht Ihre Einheit/)).not.toBeInTheDocument();
+    await act(async () => {
+      freigeben();
+      await tor;
+    });
+    const karte = await vorschau('Ihre Übungen für heute');
+    await waitFor(() => expect(within(karte).getByText('Heute geübt')).toBeInTheDocument());
+    expect(karte).not.toHaveTextContent('sieht Ihre Einheit');
+  });
+
+  it('Plan vom Gerät: eine heute dort begonnene Einheit heißt „Weiter üben“', async () => {
+    await plaeneAblegen(KONTO, ZUGANG.access_id, null, {
+      today: HEUTE,
+      plans: [zweiUebungen({ weekdays: [4] })],
+    });
+    await aufDemGeraet('dddddddd-0000-4000-8000-000000000000', [1]);
+    ladePlaene.mockRejectedValue(new Error('Ihre Übungen konnten nicht geladen werden.'));
+    zeige(<Uebungen zugang={ZUGANG} />);
+    const karte = await vorschau('Ihre Übungen');
+    await waitFor(() =>
+      expect(within(karte).getByRole('link', { name: 'Weiter üben' })).toBeInTheDocument(),
+    );
+    expect(angaben(karte)[0]).toBe('Weiter bei Übung 1: Am Geländer in die Hocke');
+  });
+});
+
 describe('Ihre Übungstage (UEB-011, Wochenleiste)', () => {
   it('wählt Tage und speichert sofort; der Satz zählt mit', async () => {
     ladePlaene.mockResolvedValue({ today: HEUTE, plans: [eigenerPlan({ weekdays: [1] })] });
@@ -593,13 +716,6 @@ describe('Ihre Übungstage (UEB-011, Wochenleiste)', () => {
       screen.getByText('Bis 18. November · Stand 7. Oktober · 3-mal pro Woche'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('group', { name: 'Ihre Übungstage' })).not.toBeInTheDocument();
-  });
-});
-
-describe('Rückmeldung nach dem Speichern', () => {
-  it('bestätigt eine gespeicherte Einheit ohne Lob', async () => {
-    zeige(<Uebungen zugang={ZUGANG} />, '/p/uebungen?gespeichert=1');
-    expect(await screen.findByText('Ihre Einheit ist gespeichert.')).toBeInTheDocument();
   });
 });
 

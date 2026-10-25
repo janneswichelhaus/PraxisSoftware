@@ -1,6 +1,17 @@
 import type { ReactNode } from 'react';
 import { TascheSymbol } from '@/components/ui/TascheSymbol';
-import type { DosisZumAblesen } from './Uebungsinhalt';
+import type { Dosis } from '@/features/exercise-plans/dosierung';
+
+/**
+ * Halten, je Seite und wie oft am Tag (UEB-012, ANN-384): optionale Felder
+ * von `Dosis` aus der Übungsbibliothek. Fehlen sie, wird nichts gezeigt; keine
+ * Angabe der Fachperson geht beim Ablesen verloren.
+ */
+export type DosisZumAblesen = Dosis & {
+  hold_seconds?: number | null;
+  per_side?: boolean;
+  times_per_day?: number | null;
+};
 
 /**
  * Die übrige Dosierung einer Übung unter der Bühne (Handoff 2026-10-24,
@@ -8,7 +19,7 @@ import type { DosisZumAblesen } from './Uebungsinhalt';
  * Knöpfe, deshalb eine vertiefte Fläche ohne Rand. Die Hauptzahl steht in der
  * `Buehne`, nicht hier. Darunter als Zeilen, was sich nicht als Marke lesen
  * lässt: Halten, wie oft am Tag, Tempo und die Regel der Fachperson zur
- * Steigerung, im Wortlaut der `Dosierungskacheln`, die sie ablösen.
+ * Steigerung, im Wortlaut der Kacheln, die sie ablösen (ANN-466, BEF-215).
  *
  * Reine Darstellung dessen, was die Fachperson eingetragen hat: Nichts hier
  * rechnet eine Steigerung aus oder schlägt eine vor (ADR-006 Punkt 10).

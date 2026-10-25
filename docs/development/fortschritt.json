@@ -1566,6 +1566,15 @@
           "fertig_am": "2026-10-24",
           "nachweis": "DRP-040 bis DRP-044, Branch `claude/uebungen-reiter-2c`, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts",
           "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2c (Handoff 2026-10-24, Abschnitt 9 Punkt 3), parallel zu 2b; ANN-720 bis ANN-727; BEF-196 und BEF-197 mit 2b erledigt, BEF-216 durch 2b; BEF-215, BEF-217 und BEF-218 offen"
+        },
+        {
+          "id": "bef-215-218",
+          "name": "BEF-215 und BEF-218 Übungen: ein Inhalt für Fenster und Durchführung, die Vorschau kennt die Einheit auf dem Gerät",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-25",
+          "nachweis": "Branch ccr-544f8ce7-u1sqpf, src/features/platform/haken.test.ts, vorschau.test.ts, Uebungen.test.tsx, PlattformAblage.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Lagen geraet-geuebt und geraet-begonnen, Fenster bei 188 px und „Sehr groß“), Zweitreview, Design-Review",
+          "vermerk": "Folge von DRP-EPIC-009 vor dem Planblatt 2d; ANN-730 ersetzt ANN-720, ANN-466 verworfen; nur Oberfläche, ohne Migration, ohne Auditeintrag"
         }
       ]
     },

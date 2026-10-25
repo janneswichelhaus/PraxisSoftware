@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { hauptzahl } from './hauptzahl';
-import type { DosisZumAblesen } from './Uebungsinhalt';
+import type { DosisZumAblesen } from './Dosierungsmarken';
 
 const DOSIS: DosisZumAblesen = {
   sets: 3,

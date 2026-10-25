@@ -5,18 +5,26 @@ import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import type { Ablageplan } from './ablage';
 
 /**
- * Wie eine Übung geht, unter Bühne und Marken der Durchführung (Handoff
- * 2026-10-24, Abschnitt 5.3): „So geht’s“ mit den Schritten der Fachperson
- * (Nummer im Kreis 32, ein einziger Schritt als Absatz), dann „Sie
- * brauchen:“ und „Hinweis:“ mit Zeichen. Wortlaute wie in `Uebungsinhalt`.
+ * Wie eine Übung geht, unter Bühne und Marken (Handoff 2026-10-24, Abschnitte
+ * 5.2 und 5.3): „So geht’s“ mit den Schritten der Fachperson (Nummer im Kreis
+ * 32, ein einziger Schritt als Absatz), dann „Sie brauchen:“ und „Hinweis:“
+ * mit Zeichen. Derselbe Inhalt in der Durchführung und im Fenster „Übung zum
+ * Nachlesen“ (BEF-215); `ebene` folgt dem Namen in der Bühne darüber - in der
+ * Durchführung der Seitentitel, im Fenster eine Ebene tiefer.
  */
-export function Anleitung({ position }: { position: Ablageplan['items'][number] }) {
+export function Anleitung({
+  position,
+  ebene = 2,
+}: {
+  position: Ablageplan['items'][number];
+  ebene?: 2 | 3;
+}) {
   if (!position.instruction && position.equipment.length === 0 && !position.note) return null;
   return (
     <div className="flex flex-col gap-4">
       {position.instruction ? (
         <div>
-          <Zwischentitel ebene={2} stufe="abschnitt">
+          <Zwischentitel ebene={ebene} stufe="abschnitt">
             So geht’s
           </Zwischentitel>
           <Schrittliste text={position.instruction} gross />

@@ -14,7 +14,13 @@ import {
   type Termin,
 } from '@/features/platform/api';
 import { PlattformApp } from '@/features/platform/PlattformApp';
-import { DurchfuehrungKontext, plaeneAblegen, uebertragen } from '@/features/platform/ablage';
+import {
+  DurchfuehrungKontext,
+  ereignisAblegen,
+  plaeneAblegen,
+  uebertragen,
+  wartendeEinheiten,
+} from '@/features/platform/ablage';
 import { PlattformApiKontext, type PlattformApi } from '@/features/platform/einsicht';
 import { kalendertag } from '@/features/platform/zeit';
 import { isoWochentag } from '@/features/platform/uebungstage';
@@ -33,7 +39,9 @@ import '@/index.css';
  * Für den Reiter dazu `&lage=` (Handoff 2026-10-24, Abschnitte 3 und 5.6;
  * DRP-043): `heute`, `anderer-tag`, `geuebt`, `erledigt`, `ab`, `lesefrist`,
  * `mehrere`, `ohne-plan`, `geraet` (die Praxis antwortet nicht, der Plan liegt auf dem
- * Gerät), `fehler` (ohne Plan auf dem Gerät) und `laden`. Ohne `lage` die
+ * Gerät), `fehler` (ohne Plan auf dem Gerät) und `laden`; dazu `geraet-geuebt`
+ * (ohne Netz beendet, der Server kennt die Einheit noch offen) und
+ * `geraet-begonnen` (Übungen 1 und 2 nur auf dem Gerät gehakt, BEF-218). Ohne `lage` die
  * begonnene Einheit wie bisher. Mit `seite=training` gilt die Lage für den
  * Trainingsplan.
  */
@@ -71,6 +79,8 @@ const zugaenge: Plattformzugang[] = [
 
 const PLAN_ID = 'aaaaaaaa-0000-4000-8000-000000000001';
 const BESITZER = 'eeeeeeee-0000-4000-8000-000000000001';
+/** Die Einheit, die in `geraet-geuebt` ohne Netz beendet wurde (BEF-218). */
+const EINHEIT_AM_GERAET = 'cccccccc-0000-4000-8000-000000000009';
 
 function position(
   nummer: number,
@@ -240,6 +250,19 @@ function plaeneDerLage(): EigenerPlan[] | null {
           weekdays: [],
         },
       ];
+    case 'geraet-geuebt':
+      // BEF-218: Der erste Durchgang ist beim Server, der Rest und das Ende auf dem Gerät.
+      return [
+        {
+          ...plan,
+          open_session: {
+            id: EINHEIT_AM_GERAET,
+            sets: [{ item_id: plan.items[0]!.id, set_number: 1 }],
+          },
+        },
+      ];
+    case 'geraet-begonnen':
+      return [ohneEinheit];
     case 'ohne-plan':
       return [];
     case 'geraet':
@@ -287,6 +310,45 @@ const prueferApi: PlattformApi = {
 };
 if (lage === 'geraet') {
   await plaeneAblegen(BESITZER, zugaenge[0]!.access_id, null, { today: heute, plans: [plan] });
+}
+// BEF-218: die Einheit von heute in der Warteschlange - nur einmal je Browser,
+// denn die Ablage bleibt über ein erneutes Laden der Seite stehen.
+if (
+  (lage === 'geraet-geuebt' || lage === 'geraet-begonnen') &&
+  (await wartendeEinheiten(BESITZER)).length === 0
+) {
+  const beendet = lage === 'geraet-geuebt';
+  const einheit = {
+    id: beendet ? EINHEIT_AM_GERAET : 'dddddddd-0000-4000-8000-000000000001',
+    zugangId: zugaenge[0]!.access_id,
+    planId: plan.id,
+    tag: heute,
+    begonnenAm: new Date().toISOString(),
+  };
+  let nummer = 0;
+  for (const p of plan.items.slice(0, beendet ? 1 : 2)) {
+    for (const durchgang of [1, 2, 3]) {
+      if (beendet && durchgang === 1) continue;
+      nummer += 1;
+      await ereignisAblegen(BESITZER, einheit, {
+        id: `eeeeeeee-0000-4000-8000-0000000000${String(nummer).padStart(2, '0')}`,
+        kind: 'set',
+        at: new Date().toISOString(),
+        item_id: p.id,
+        set_number: durchgang,
+        done: true,
+      });
+    }
+  }
+  if (beendet) {
+    await ereignisAblegen(BESITZER, einheit, {
+      id: 'eeeeeeee-0000-4000-8000-000000000099',
+      kind: 'finish',
+      at: new Date().toISOString(),
+      note: '',
+      values: {},
+    });
+  }
 }
 for (const z of zugaenge) {
   client.setQueryData(termineSchluessel(z.access_id), z === zugaenge[0] ? termine : []);

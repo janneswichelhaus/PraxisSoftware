@@ -1,13 +1,15 @@
 import type { EigenerPlan } from './api';
 import type { Ablageplan } from './ablage';
 import { dauerDerEinheit, dauerText } from './dauer';
+import { uebungErledigt, type HeutigeEinheit } from './haken';
 import { uebungstageAm } from './uebungstage';
 
 /**
  * Die Vorschau der Einheit im Reiter „Übungen“ (Handoff 2026-10-24,
  * Abschnitt 3, „Vorschau der Einheit“) als reine Rechnung ohne Datenzugriff:
  * in welcher Lage der Plan heute ist, was man braucht und wo es weitergeht.
- * Alles aus dem, was der Server ohnehin liefert (`platform_exercise_plans`) -
+ * Alles aus dem, was der Server ohnehin liefert (`platform_exercise_plans`),
+ * und der heutigen Einheit aus Server und Gerät (`heutigeEinheit`, BEF-218) -
  * nichts Neues gespeichert. Den nächsten Übungstag rechnet `uebungstage.ts`,
  * für die Vorschau wie für die Endseite der Durchführung.
  */
@@ -18,13 +20,26 @@ export type Lage =
 
 type Position = Ablageplan['items'][number];
 
-/** ANN-722: die Lage der Vorschau - offene Einheit vor „geübt“, ein künftiger Plan „Ab …“. */
-export function lageDesPlans(plan: EigenerPlan, heute: string): Lage {
+/**
+ * ANN-722: die Lage der Vorschau - offene Einheit vor „geübt“, ein künftiger
+ * Plan „Ab …“. Offen oder beendet ist die heutige Einheit beim Server oder auf
+ * dem Gerät (ANN-730).
+ */
+export function lageDesPlans(
+  plan: EigenerPlan,
+  heute: string,
+  einheit: Pick<HeutigeEinheit, 'id' | 'beendetAufGeraet'>,
+): Lage {
   if (plan.status === 'ended') return 'lesefrist';
   // Eine offene Einheit gilt vor „geübt“: Wer heute ein zweites Mal beginnt,
   // macht dort weiter.
-  if (plan.open_session) return 'begonnen';
-  if (plan.recent_sessions.some((e) => e.performed_on === heute && e.finished)) return 'geuebt';
+  if (einheit.id) return 'begonnen';
+  if (
+    einheit.beendetAufGeraet ||
+    plan.recent_sessions.some((e) => e.performed_on === heute && e.finished)
+  ) {
+    return 'geuebt';
+  }
   if (plan.runs_from && plan.runs_from > heute) return 'ab';
   if (uebungstageAm([plan], heute).length > 0) return 'heute';
   return plan.weekdays.length > 0 ? 'anderer-tag' : 'ohne-tage';
@@ -71,38 +86,20 @@ export function umfangText(items: readonly Position[]): string {
   return umfangSatz(items.length, dauerDerEinheit(items));
 }
 
-/** Wie oft die Übung in der offenen Einheit schon gehakt ist. */
-function gehakt(
-  item: Pick<Position, 'id'>,
-  offen: Pick<Ablageplan, 'open_session'>['open_session'],
-): number {
-  return offen ? offen.sets.filter((s) => s.item_id === item.id).length : 0;
-}
-
-/**
- * Alle Durchgänge der Übung in der heutigen, offenen Einheit gehakt. ANN-720:
- * Grundlage ist allein `open_session.sets`; nach dem Beenden kennt der Reiter
- * die Haken nicht mehr und sagt „Heute geübt“ in der Vorschau.
- */
-export function heuteErledigt(
-  item: Pick<Position, 'id' | 'sets'>,
-  offen: Pick<Ablageplan, 'open_session'>['open_session'],
-): boolean {
-  return offen !== null && gehakt(item, offen) >= item.sets;
-}
-
 /**
  * Wo „Weiter üben“ weitermacht (Abschnitt 0): die erste Übung mit offenem
- * Durchgang, nach `open_session.sets`. Ohne offene Einheit oder mit allen
- * Haken keine.
+ * Durchgang nach den Haken von Server und Gerät - dieselbe, bei der die
+ * Durchführung beginnt (ANN-730). Ohne offene Einheit oder mit allen Haken
+ * keine.
  */
-export function ersteOffeneUebung(
-  plan: Pick<Ablageplan, 'items' | 'open_session'>,
+export function weiterBei(
+  items: readonly Position[],
+  einheit: Pick<HeutigeEinheit, 'id' | 'haken'>,
 ): Position | null {
-  if (!plan.open_session) return null;
+  if (!einheit.id) return null;
   return (
-    [...plan.items]
+    [...items]
       .sort((a, b) => a.position - b.position)
-      .find((p) => !heuteErledigt(p, plan.open_session)) ?? null
+      .find((p) => !uebungErledigt(p, einheit.haken)) ?? null
   );
 }

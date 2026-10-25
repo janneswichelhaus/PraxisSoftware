@@ -320,6 +320,33 @@ test.describe('Übungen auf der Plattform', () => {
     await expect(fenster).toBeHidden();
   });
 
+  test('Übung zum Nachlesen bei 188 px (200 %) und bei „Sehr groß“: kein waagerechtes Rollen (BEF-215)', async ({
+    page,
+  }) => {
+    // Das Fenster trägt seit BEF-215 die Anleitung der Durchführung: „So
+    // geht’s“ als Abschnittstitel, große Schritte.
+    const fensterOeffnen = async () => {
+      await page.goto(`${PRUEFSEITE}?seite=uebungen&lage=heute`);
+      await page.getByRole('button', { name: /^2\. Gelbes Band/ }).click();
+      const fenster = page.getByRole('dialog', { name: 'Gelbes Band zum Körper heranziehen' });
+      await expect(fenster.getByRole('heading', { level: 3, name: 'So geht’s' })).toBeVisible();
+    };
+    await page.setViewportSize({ width: 188, height: 900 });
+    await fensterOeffnen();
+    expect(await ueberlaeuft(page)).toBe(false);
+
+    await page.addInitScript(() =>
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross'),
+    );
+    await page.setViewportSize({ width: 375, height: 900 });
+    await fensterOeffnen();
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.dataset.schrift))
+      .toBe('sehr-gross');
+    expect(await ueberlaeuft(page)).toBe(false);
+    expect(await kleineZiele(page)).toEqual([]);
+  });
+
   test('ohne Netz: „Geht auch ohne Netz.“, die Übungstage gesperrt', async ({ page, context }) => {
     await page.setViewportSize({ width: 375, height: 900 });
     await page.goto(`${PRUEFSEITE}?seite=uebungen&lage=heute`);
@@ -360,6 +387,9 @@ const LAGEN: { lage: string; merkmal: RegExp; haupt: number }[] = [
   { lage: 'geraet', merkmal: /Die Praxis antwortet gerade nicht/, haupt: 1 },
   { lage: 'fehler', merkmal: /Ihre Übungen lassen sich gerade nicht laden/, haupt: 0 },
   { lage: 'laden', merkmal: /Übungen werden geladen/, haupt: 0 },
+  // BEF-218: die Einheit auf dem Gerät - beendet und nur dort gehakt.
+  { lage: 'geraet-geuebt', merkmal: /Heute geübt/, haupt: 0 },
+  { lage: 'geraet-begonnen', merkmal: /Weiter bei Übung 3/, haupt: 1 },
 ];
 
 test.describe('Reiter Übungen in allen Lagen (Schritt 2c)', () => {
