@@ -608,18 +608,6 @@ Marke vorsieht.
 
 **Beobachtung.** Die Abfragen lesen nur das Gerät, laufen aber mit dem Standard `networkMode: 'online'` der Abfragebibliothek. Meldet das Gerät während der lokalen Ansicht „offline“ und wird eine Abfrage neu gestellt (etwa die Warteschlange nach einer Einheit), hält sie an, bis Verbindung besteht. Beim Kaltstart ohne Netz tritt es nicht auf. **Erwartet.** `networkMode: 'always'` wie in der Durchführung (BEF-211); Browsertest mit `setOffline` während der Ansicht.
 
-### BEF-215 — Nach Schritt 2b: ein Inhalt für Fenster und Durchführung, alte Bausteine fort
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-24 |
-| Bereich | Plattform, Übungen |
-| Quelle  | Bau von Schritt 2c (DRP-EPIC-009), parallel zu 2b; Merge mit 2b (#304) |
-| Status  | offen (Vorschlag) |
-| Berührt | `Fensterinhalt` in `src/features/platform/Uebungen.tsx`, `Anleitung.tsx`, `Uebungsinhalt.tsx` mit `Dosierungskacheln`, Rückmeldung `gespeichert` im Reiter |
-
-**Beobachtung.** Das Fenster „Übung zum Nachlesen“ setzt „So geht’s“, „Sie brauchen“ und „Hinweis“ selbst zusammen; die Durchführung aus 2b hat dafür `Anleitung` (Schritte groß, Überschrift Ebene 2). Seit dem Merge beider Schritte nutzt `Uebungsinhalt` samt `Dosierungskacheln` nur noch der eigene Test, und die Rückmeldung „Ihre Einheit ist gespeichert.“ im Reiter erreicht kein Weg mehr: Die Endseite steht auf der Route der Durchführung. **Erwartet.** Das Fenster nutzt `Anleitung` mit wählbarer Ebene (dort 3, unter der Bühne als Titel); `Uebungsinhalt`, `Dosierungskacheln` mit Test und die Rückmeldung fallen weg, `DosisZumAblesen` zieht um.
-
 ### BEF-217 — Übungen: Bühne und Marken brechen bei 188 px und „Sehr groß“ zugleich mitten im Wort
 
 |         |   |
@@ -631,18 +619,6 @@ Marke vorsieht.
 | Berührt | `Buehne` (`src/components/ui/Buehne.tsx`), `Dosierungsmarken` (`src/features/platform/Dosierungsmarken.tsx`) |
 
 **Beobachtung.** Einzeln (188 px oder „Sehr groß“) bricht kein Wort ohne Strich. Beides zugleich lässt für den Namen in der Bühne etwa 118 px: „heranziehen“ (elf Buchstaben, unter der Trenngrenze von ANN-707) bricht als „heranzie|hen“, die Marke „3 Durchgänge“ als „Durchgän|ge“. **Erwartet.** Entscheiden, ob die Kombination zu den Prüfpunkten gehört; wenn ja, dort die Trenngrenze senken oder Titel und Marken kleiner setzen.
-
-### BEF-218 — Übungen: Die Vorschau kennt die Einheit auf dem Gerät nicht
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-25 |
-| Bereich | Plattform, Übungen (Vorschau im Reiter, ohne Netz) |
-| Quelle  | Merge von 2b (#304) in 2c (DRP-EPIC-009), Abgleich von `vorschau.ts` mit dem Start der Durchführung |
-| Status  | offen (Vorschlag) |
-| Berührt | `lageDesPlans`, `ersteOffeneUebung` in `src/features/platform/vorschau.ts`; Start der Einheit in `Durchfuehrung.tsx` mit `haken.ts`; ANN-720, ANN-722 |
-
-**Beobachtung.** Die Vorschau rechnet allein mit dem Plan vom Server (`open_session`, ANN-720), die Durchführung beginnt mit Server und Gerät (BEF-213). Seit 2b geht das Beenden ohne Netz; danach sagt der Reiter bis zur nächsten Verbindung „Heute begonnen“, „Weiter bei Übung n“ und „Weiter üben“, die Durchführung beginnt aber eine neue Einheit bei Übung 1. Haken, die nur auf dem Gerät liegen, kennt die Vorschau ebenso wenig („Übungen beginnen“). Darüber steht richtig „Eine Einheit liegt noch auf diesem Gerät …“. **Erwartet.** Lage und erste offene Übung aus Server und Warteschlange, mit einer Rechnung für Vorschau und Durchführung; Komponententest mit einer auf dem Gerät beendeten Einheit.
 
 ### BEF-220 — Termine: Statuszeichen und Knopf brechen mitten im Wort
 
@@ -703,3 +679,15 @@ Marke vorsieht.
 | Berührt | `RequestWorkingTimePage.tsx` (Abfragezustand der Vorschau), `LoadingState` und `ErrorState` in `src/components/ui/Feedback.tsx` |
 
 **Beobachtung.** Solange die Vorschau der neuen Zeiten lädt, steht „Termine werden geprüft …“ in 100 px Höhe unter der Liste, die Seite rollt um 21 px. Scheitert sie, rollt sie mit `ErrorState` und „Erneut versuchen“ um 68 px; „Grund angeben“ liegt dann unter dem Fuß. Vor und nach BEF-219 gleich. **Erwartet.** Laden in der Größe der Terminzeile (etwa ein kompakter `LoadingState` über `Abfragezustand`) und ein Fehler, der mit „Erneut versuchen“ ohne Rollen Platz findet; Bilder beider Zustände bei 375 px im Browsertest.
+
+### BEF-225 — Übungspläne: Ein Ablauftest misst die Höhe eines Links, während die Rückmeldung neu gezeichnet wird
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-25 |
+| Bereich | Übungspläne (Praxis), `tests/e2e/plaene.spec.ts` („Ablauf Heimprogramm … mit 5 Übungen individuell“) |
+| Quelle  | Browsertests zu BEF-215 und BEF-218 unter Last (paralleler Prüfsatz); allein grün |
+| Status  | offen (Vorschlag) |
+| Berührt | `hoehe()` in `tests/e2e/plaene.spec.ts` |
+
+**Beobachtung.** Nach „Zuweisen“ erwartete der Test für „Als PDF oder drucken“ in der Rückmeldung mindestens 44 px und bekam 0. `hoehe()` wartet auf Sichtbarkeit und liest danach `boundingBox()`; wird die Rückmeldung dazwischen neu gezeichnet, liefert das `null`, und `?? 0` macht daraus 0 px. **Erwartet.** Die Höhe mit `expect.poll(() => hoehe(…))` abfragen statt einmal zu messen; die Grenze 44 px bleibt.

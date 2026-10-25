@@ -2017,6 +2017,30 @@ eingeklappt.
 
 **Beobachtung.** Der Knopf „Erneut versuchen“ im `ErrorState` ist kompakt, also 44 hoch; auf der Plattform sind Knöpfe 48 (PLATTFORM.md, „Ziele ≥ 44 px“; Handoff 2026-10-24, Abschnitt 6). Das gilt für jede Seite mit Ladefehler, nicht nur für die Übungen. **Erwartet.** Unter `.plattform-schrift` die normale Größe (48), in der Praxis-App bleibt der kompakte Knopf; Prüfung in `plattform-barrierefreiheit.spec.ts`.
 
+### BEF-215 — Nach Schritt 2b: ein Inhalt für Fenster und Durchführung, alte Bausteine fort
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Übungen |
+| Quelle  | Bau von Schritt 2c (DRP-EPIC-009), parallel zu 2b; Merge mit 2b (#304) |
+| Status  | erledigt 2026-10-25 (Branch `ccr-544f8ce7-u1sqpf`): Das Fenster nutzt `Anleitung` mit Ebene 3 (Schritte groß, „Sie brauchen:“, „Hinweis:“ wie in der Durchführung); `Uebungsinhalt` mit `Dosierungskacheln` und Test sowie die Rückmeldung `gespeichert` fallen weg, `DosisZumAblesen` steht in `Dosierungsmarken.tsx` (ANN-466 verworfen); Browsertest bei 375 und 188 px und mit „Sehr groß“ |
+| Berührt | `Fensterinhalt` in `src/features/platform/Uebungen.tsx`, `Anleitung.tsx`, `Uebungsinhalt.tsx` mit `Dosierungskacheln`, Rückmeldung `gespeichert` im Reiter |
+
+**Beobachtung.** Das Fenster „Übung zum Nachlesen“ setzt „So geht’s“, „Sie brauchen“ und „Hinweis“ selbst zusammen; die Durchführung aus 2b hat dafür `Anleitung` (Schritte groß, Überschrift Ebene 2). Seit dem Merge beider Schritte nutzt `Uebungsinhalt` samt `Dosierungskacheln` nur noch der eigene Test, und die Rückmeldung „Ihre Einheit ist gespeichert.“ im Reiter erreicht kein Weg mehr: Die Endseite steht auf der Route der Durchführung. **Erwartet.** Das Fenster nutzt `Anleitung` mit wählbarer Ebene (dort 3, unter der Bühne als Titel); `Uebungsinhalt`, `Dosierungskacheln` mit Test und die Rückmeldung fallen weg, `DosisZumAblesen` zieht um.
+
+### BEF-218 — Übungen: Die Vorschau kennt die Einheit auf dem Gerät nicht
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-25 |
+| Bereich | Plattform, Übungen (Vorschau im Reiter, ohne Netz) |
+| Quelle  | Merge von 2b (#304) in 2c (DRP-EPIC-009), Abgleich von `vorschau.ts` mit dem Start der Durchführung |
+| Status  | erledigt 2026-10-25 (Branch `ccr-544f8ce7-u1sqpf`): `heutigeEinheit` in `haken.ts` rechnet die heutige Einheit aus Server und Warteschlange für den Start der Durchführung, die Vorschau, die Übungszeilen und den Plan vom Gerät (ANN-730 statt ANN-720); auf dem Gerät beendet heißt „Heute geübt“ ohne „Gespeichert …“, bis die Ablage gelesen ist, steht das Skelett, nach einer Übertragung lädt die Ablage die Pläne neu; Komponenten- und Browsertests, Zweitreview |
+| Berührt | `lageDesPlans`, `ersteOffeneUebung` in `src/features/platform/vorschau.ts`; Start der Einheit in `Durchfuehrung.tsx` mit `haken.ts`; ANN-720, ANN-722 |
+
+**Beobachtung.** Die Vorschau rechnet allein mit dem Plan vom Server (`open_session`, ANN-720), die Durchführung beginnt mit Server und Gerät (BEF-213). Seit 2b geht das Beenden ohne Netz; danach sagt der Reiter bis zur nächsten Verbindung „Heute begonnen“, „Weiter bei Übung n“ und „Weiter üben“, die Durchführung beginnt aber eine neue Einheit bei Übung 1. Haken, die nur auf dem Gerät liegen, kennt die Vorschau ebenso wenig („Übungen beginnen“). Darüber steht richtig „Eine Einheit liegt noch auf diesem Gerät …“. **Erwartet.** Lage und erste offene Übung aus Server und Warteschlange, mit einer Rechnung für Vorschau und Durchführung; Komponententest mit einer auf dem Gerät beendeten Einheit.
+
 ### BEF-219 — Arbeitszeit: Die Zusammenfassung „Änderung beantragen?“ rollt, wenn Anna viele Termine hat
 
 |         |   |
