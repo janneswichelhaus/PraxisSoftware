@@ -364,7 +364,7 @@ test('G8 dauerhaft: Anna verschiebt dienstags die Pause in sieben Tipps (AZ-001)
     // jeder Eintrag mit festen Leerzeichen. Wer umplant, sagt die Zeile
     // darunter (BEF-219).
     await expect(abschluss.getByText(/\d+\s(weiterer\sTag|weitere\sTage)$/)).toBeVisible();
-    await expect(abschluss.getByText('Praxisinhaber, plant die Termine danach um')).toBeVisible();
+    await expect(abschluss.getByText('Praxisinhaber, plant nach dem Genehmigen um')).toBeVisible();
     await rolltNichtMitReserve(page, abschluss);
     const absenden = abschluss.getByRole('button', { name: 'Änderung beantragen' });
     await expect(absenden).toBeEnabled();

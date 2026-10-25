@@ -272,7 +272,7 @@ describe('RequestWorkingTimePage', () => {
       '1.\u00a0Dez.:\u00a02 · 8.\u00a0Dez.:\u00a01 · 15.\u00a0Dez.:\u00a01 · 2\u00a0weitere\u00a0Tage',
     );
     expect(
-      within(abschluss).getByText('Praxisinhaber, plant die Termine danach um'),
+      within(abschluss).getByText('Praxisinhaber, plant nach dem Genehmigen um'),
     ).toBeInTheDocument();
     await user.click(within(abschluss).getByRole('button', { name: 'Änderung beantragen' }));
     tipps += 1;

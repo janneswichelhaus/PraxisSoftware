@@ -683,14 +683,14 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
               self
                 ? `Sie gilt ${kind === 'once' ? 'für den Tag' : 'ab dem Datum'} sofort.`
                 : outside > 0
-                  ? `${roleLabels.owner}, plant die Termine danach um`
+                  ? `${roleLabels.owner}, plant nach dem Genehmigen um`
                   : roleLabels.owner
             }
           />
         </ListRows>
         {/* Nur Laden und Fehler der Vorschau brauchen hier Abstand; sonst folgt
             „Grund angeben“ der Liste wie eine weitere Zeile (BEF-219). */}
-        <div className="mt-4 empty:hidden">
+        <div className="my-4 empty:hidden">
           {complete ? (
             <Abfragezustand
               abfrage={preview}
