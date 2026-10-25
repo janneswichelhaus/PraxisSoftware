@@ -448,7 +448,7 @@ describe('Dosierung in Worten (ANN-299)', () => {
 
   it('setzt die Dosierung für das Planblatt in eine Zeile (Handoff 2026-10-24, 5.7)', () => {
     expect(dosierungZeile(position({ load: 'Rucksack 3 kg' }))).toBe(
-      '3 Durchgänge mit je 8 bis 12 Wiederholungen · 60 Sekunden Pause · mit Rucksack 3 kg',
+      '3 Durchgänge mit je 8 bis 12 Wiederholungen\u00a0· 60 Sekunden Pause\u00a0· mit Rucksack 3 kg',
     );
     expect(
       dosierungZeile(
@@ -461,7 +461,7 @@ describe('Dosierung in Worten (ANN-299)', () => {
           rest_seconds: 45,
         }),
       ),
-    ).toBe('2 Durchgänge von je 30 Sekunden · 45 Sekunden Pause');
+    ).toBe('2 Durchgänge von je 30 Sekunden\u00a0· 45 Sekunden Pause');
     expect(
       dosierungZeile(
         position({
@@ -476,11 +476,11 @@ describe('Dosierung in Worten (ANN-299)', () => {
         }),
       ),
     ).toBe(
-      '3 Durchgänge mit je 10 Wiederholungen, jede 5 Sekunden halten, je Seite · 2-mal am Tag · Tempo 3-0-1',
+      '3 Durchgänge mit je 10 Wiederholungen, jede 5 Sekunden halten, je Seite\u00a0· 2-mal am Tag\u00a0· Tempo 3-0-1',
     );
     expect(
       dosierungZeile(position({ sets: 1, times_per_day: 1, load: null, rest_seconds: null })),
-    ).toBe('1 Durchgang mit je 8 bis 12 Wiederholungen · einmal am Tag');
+    ).toBe('1 Durchgang mit je 8 bis 12 Wiederholungen\u00a0· einmal am Tag');
   });
 
   it('nennt die Regel zur Steigerung nur mit Wiederholungen und doppelter Progression', () => {
@@ -1695,6 +1695,8 @@ describe('Plan als Blatt (UEB-008, ANN-303)', () => {
   const zugewiesen = () =>
     plan({
       status: 'assigned',
+      // Zugewiesen kurz nach Mitternacht in Berlin: in UTC noch der Vortag.
+      assigned_at: '2026-10-06T22:30:00Z',
       runs_from: '2026-10-07',
       runs_until: '2026-11-18',
       items: [

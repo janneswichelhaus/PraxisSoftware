@@ -19,6 +19,7 @@ import { Uebungsliste, Uebungszeile } from '@/components/ui/Uebungszeile';
 import { Wochenleiste } from '@/components/ui/Wochenleiste';
 import { useFenstertitelId } from '@/components/ui/fenstertitel';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
+import { ZurueckSymbol } from '@/components/ui/ZurueckSymbol';
 import { Planblatt } from '@/features/exercise-plans/Planblatt';
 import { haeufigkeit } from '@/features/exercise-plans/dosierung';
 import { plaeneSchluessel, termineSchluessel, type EigenerPlan, type Plattformzugang } from './api';
@@ -35,7 +36,6 @@ import {
 } from './ablage';
 import { Anleitung } from './Anleitung';
 import { Dosierungsmarken } from './Dosierungsmarken';
-import { ZurueckSymbol } from './Durchfuehrungskopf';
 import { heutigeEinheit, uebungErledigt } from './haken';
 import { inLesefrist, naechsterTermin } from './hauptsache';
 import { hauptzahl } from './hauptzahl';

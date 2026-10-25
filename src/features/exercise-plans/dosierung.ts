@@ -139,7 +139,8 @@ export function dosierungZeile(d: Dosis): string {
   }
   if (d.load) teile.push(`mit ${d.load}`);
   if (d.tempo) teile.push(`Tempo ${d.tempo}`);
-  return teile.join(' · ');
+  // Mit geschütztem Leerzeichen vor dem Punkt: Er beginnt nie eine Zeile.
+  return teile.join('\u00a0· ');
 }
 
 /**

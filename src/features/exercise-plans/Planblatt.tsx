@@ -49,6 +49,9 @@ function schritte(text: string | null): string[] {
     .filter(Boolean);
 }
 
+/** „ · “ mit geschütztem Leerzeichen davor: Der Punkt beginnt nie eine Zeile. */
+const TRENNER = '\u00a0· ';
+
 const WOCHENTAGE = [
   'Montag',
   'Dienstag',
@@ -72,8 +75,8 @@ export function Planblatt({
   /** Der Name der Person - auf dem Blatt der Praxis, nicht auf der Plattform. */
   fuer?: string;
   /**
-   * Der Stand als Kalendertag, wie ihn die Seite sonst nennt: die Plattform
-   * den Tag der Zuweisung, die Praxis den Beginn der Fassung (ANN-731).
+   * Der Stand: der Tag der Zuweisung in der Zeitzone der Praxis - auf beiden
+   * Ausdrucken derselben Fassung derselbe (ANN-731).
    */
   stand?: string | null;
   /** Nur auf der Plattform: die Übungstage der Person; die Praxis kennt sie nicht (ANN-307). */
@@ -87,7 +90,7 @@ export function Planblatt({
     plan.sessions_per_week ? haeufigkeit(plan.sessions_per_week) : null,
   ]
     .filter(Boolean)
-    .join(' · ');
+    .join(TRENNER);
   const fett = gross ? 'font-bold' : 'font-semibold print:font-bold';
 
   return (
@@ -197,7 +200,7 @@ export function Planblatt({
 
 /**
  * „17. September“ oder „17. September 2026“ - ein Kalendertag ohne
- * Zeitzonenrechnung; Tag und Monat brechen nicht auseinander.
+ * Zeitzonenrechnung; das Datum bricht nicht in sich.
  */
 function tagLang(tag: string, mitJahr: boolean): string {
   return new Intl.DateTimeFormat('de-DE', {
@@ -206,7 +209,7 @@ function tagLang(tag: string, mitJahr: boolean): string {
     ...(mitJahr ? { year: 'numeric' } : {}),
   })
     .format(new Date(`${tag}T12:00:00`))
-    .replace(' ', ' ');
+    .replaceAll(' ', '\u00a0');
 }
 
 /** „Gültig vom 17. September bis 29. Oktober 2026“ - das Jahr am Ende, bei zweien beide. */

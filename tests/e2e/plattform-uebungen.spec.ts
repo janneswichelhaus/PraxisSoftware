@@ -417,6 +417,9 @@ test.describe('Übungen auf der Plattform', () => {
     await expect(blatt.locator('xpath=../..')).toHaveCSS('padding-left', '0px');
     // Eine Übung bricht nicht über zwei Seiten.
     await expect(blatt.locator('> ol > li').first()).toHaveCSS('break-inside', 'avoid');
+    // Die Spalte des Gerüsts begrenzt das Papier nicht - am Telefon wie am
+    // Rechner gleich breit (Design-Review 2d, H2).
+    await expect(page.locator('main')).toHaveCSS('max-width', 'none');
   });
 
   test('Plan als PDF bei 188 px (200 %) und bei „Sehr groß“: kein waagerechtes Rollen (Schritt 2d)', async ({

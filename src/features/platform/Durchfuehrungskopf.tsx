@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { OhneNetzSymbol } from '@/components/ui/OhneNetzSymbol';
+import { ZurueckSymbol } from '@/components/ui/ZurueckSymbol';
 
 /**
  * Der Kopf der Durchführung (Handoff 2026-10-24, Abschnitt 3; Muster wie der
@@ -107,24 +108,5 @@ export function Durchfuehrungskopf({
         ) : null}
       </div>
     </div>
-  );
-}
-
-/** Der Winkel nach links, 24 px im Raster 24 - auch am Planblatt. */
-export function ZurueckSymbol() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-      className="size-6 shrink-0"
-    >
-      <path d="M15 6l-6 6 6 6" />
-    </svg>
   );
 }
