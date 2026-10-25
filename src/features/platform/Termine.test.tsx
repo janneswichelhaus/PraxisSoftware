@@ -449,7 +449,7 @@ describe('Lesefrist (Frage 5)', () => {
 });
 
 describe('Einsicht der Praxis (E-001)', () => {
-  it('ohne Knopf, ohne Zurückziehen und ohne Ziele - die Seite des Termins fehlt dort noch', async () => {
+  it('ohne Knopf und ohne Zurückziehen; die Ziele führen zur Seite des Termins, nur lesend', async () => {
     ladeTermine.mockResolvedValue([PRAXIS, HAUSBESUCH, PRAXIS_VERGANGEN]);
     ladeWuensche.mockResolvedValue([WUNSCH]);
     ladePlaene.mockResolvedValue({
@@ -463,8 +463,11 @@ describe('Einsicht der Praxis (E-001)', () => {
       '/p/termine',
     );
     const karte = await screen.findByRole('region', { name: /^Besuch / });
-    expect(within(karte).queryByRole('link')).not.toBeInTheDocument();
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(within(karte).getByRole('link')).toHaveAttribute('href', `/p/termine/${HAUSBESUCH.id}`);
+    expect(
+      within(screen.getByRole('list', { name: 'Weitere Termine' })).getByRole('link'),
+    ).toHaveAttribute('href', `/p/termine/${PRAXIS.id}`);
+    expect(screen.queryByRole('link', { name: /Termin wünschen/ })).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: /Termin wünschen|zurückziehen/ }),
     ).not.toBeInTheDocument();

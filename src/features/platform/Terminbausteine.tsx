@@ -1,13 +1,23 @@
 import type { ReactNode } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Anrufknoepfe } from '@/components/ui/Anrufknoepfe';
 import { Badge, STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Personenbild } from '@/components/ui/Personenbild';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Terminliste } from '@/components/ui/Terminliste';
 import { Terminkreis, Terminsymbol } from '@/components/ui/Terminsymbole';
 import { telHref } from '@/lib/telefon';
-import type { Plattformzugang, Termin, Terminwunsch } from './api';
+import {
+  termineSchluessel,
+  wuenscheSchluessel,
+  type Plattformzugang,
+  type Termin,
+  type Terminwunsch,
+} from './api';
+import { usePlattformApi } from './einsicht';
 import {
   artUndPerson,
   artzeichen,
@@ -105,7 +115,7 @@ const TERMINZEILE =
   'text-ink flex min-h-20 items-center gap-3 px-3 py-3.5 max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:p-3 [[data-schrift=sehr-gross]_&]:flex-col [[data-schrift=sehr-gross]_&]:items-start [[data-schrift=sehr-gross]_&]:p-3';
 
 /** Zeichen und Wort; ein offener Wunsch wartet auf die Praxis („…“). */
-function Statuszeichen({ wort, ton }: { wort: string; ton: Ton }) {
+export function Statuszeichen({ wort, ton }: { wort: string; ton: Ton }) {
   return ton === 'akzent' ? (
     <Badge ton={ton} eigenesZeichen={STATUSZEICHEN.wartet}>
       {wort}
@@ -312,5 +322,54 @@ function Fragezeile({
         </Link>
       )}
     </li>
+  );
+}
+
+/**
+ * „Wunsch zurückziehen“ mit der Rückfrage an Ort und Stelle - in der Liste
+ * und auf der Seite des Termins. Danach laden Wünsche und Termine neu: Ein
+ * zurückgezogener Änderungs- oder Absagewunsch nimmt auch das Statuszeichen
+ * am Termin mit. Ohne Netz gesperrt wie „Termin wünschen“; `ohneNetzId`
+ * zeigt auf den Satz, der sagt, warum (Frage 4, ANN-741).
+ */
+export function Zurueckziehen({
+  zugang,
+  wunschId,
+  verbunden,
+  ohneNetzId,
+}: {
+  zugang: Plattformzugang;
+  wunschId: string;
+  verbunden: boolean;
+  ohneNetzId: string;
+}) {
+  const api = usePlattformApi();
+  const queryClient = useQueryClient();
+  const zurueckziehen = useMutation({
+    mutationFn: () => api.wunschZurueckziehen(zugang.access_id, wunschId),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: wuenscheSchluessel(zugang.access_id) }),
+        queryClient.invalidateQueries({ queryKey: termineSchluessel(zugang.access_id) }),
+      ]),
+  });
+  if (!verbunden) {
+    return (
+      <Button type="button" variant="quiet" disabled aria-describedby={ohneNetzId}>
+        Wunsch zurückziehen
+      </Button>
+    );
+  }
+  return (
+    <Rueckfrage
+      ausloeser="Wunsch zurückziehen"
+      ausloeserVariante="quiet"
+      bestaetigen="Ja, zurückziehen"
+      bestaetigenLaeuft="Wird zurückgezogen …"
+      fehler={zurueckziehen.error?.message}
+      onBestaetigen={() => zurueckziehen.mutateAsync()}
+    >
+      <p>Die Praxis bearbeitet diesen Wunsch dann nicht weiter.</p>
+    </Rueckfrage>
   );
 }

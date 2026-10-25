@@ -40,20 +40,20 @@ unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
 
 `HeroKarte` (eine Markenfläche je Bildschirm) · `Aufgabenkarte` · `Besuchskarte` · `Notfallkarte`
 (über jedem Nachrichtenfeld) · `Skelett` mit `SkelettBereich` statt „wird geladen …“ ·
-`EmptyState` mit `markenform` · `Button`/`ButtonLink` Variante `marke` (nur auf Tiefgrün) ·
-`Personenbild` Größe `karte` · `Laufrad` · `Verbindungszeile` · `Menueknopf` · `Schalter` (eine
+`EmptyState` mit `markenform` · `Button`/`ButtonLink` `marke` (nur auf Tiefgrün) ·
+`Personenbild` `karte` · `Laufrad` · `Verbindungszeile` · `Menueknopf` · `Schalter` (eine
 Wahl, die sofort gilt; Zustand als Wort) · `Wahlreihe` mit `sofort` (Knöpfe statt Radios, etwa
 eine Einwilligung) · `Zwischentitel` mit `stufe="abschnitt"` (Kartentitel 22) ·
 `Vertretungsband` („Sie handeln für …“ im Gerüst und im Einstieg). Übungen: `Buehne`,
 `Dosierungsmarken`, `Hakenzeile`, `Wochenleiste`, `Uebungszeile`, `Durchfuehrungskopf`/`-fuss`,
-`Abschlussseite`. Termine: `Terminzeile`, `Wunschzeile`, `WerUndWo`, `FragenZumTermin`,
+`Abschlussseite`. Termine: `Terminkopf`, `Terminzeile`, `Wunschzeile`, `WerUndWo`, `FragenZumTermin`,
 `Wahlflaechen`, `HeroKarte` mit `ziel`; Zeichen und Knöpfe brechen nur zwischen Wörtern
 (ANN-733). Prüfseiten `tests/e2e/fixtures/plattform-*bausteine.html`.
 
 ## Seitentypen und Gerüst
 
 **Seitentypen:** Heute (Übersicht: Gruß, Hauptsache, Heute, Nächster Besuch, Neu für Sie; ANN-698
-bis ANN-702) · Liste · Objekt ·
+bis ANN-702) · Liste · Objekt (Termin) ·
 geführter Ablauf (Einladung, Einstieg, Wunsch, Absage, Check-in, Fragebogen) · Durchführung (Vollbild
 ohne Gerüst; Kopf mit „Später weiter“ und Balken, Fuß mit Stand und Hauptknopf 56; ANN-714) · Tür
 (Einladung, Anmeldung, Einrichten, Sperre, Zugang beendet) · Blatt (Planblatt, Rechnung). Der geführte Ablauf kann „Später“ statt ✕ tragen,

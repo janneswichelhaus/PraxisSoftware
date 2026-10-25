@@ -23,7 +23,7 @@ ANN-703, daraus BEF-198), 1e Übersicht (#297, DRP-020 bis -022), 1d Einstieg (#
 ## Danach
 
 Schritt 2 ist mit dem Planblatt 2d gebaut. Schritt 3 Termine (mit #303 freigegeben, Fragen wie
-empfohlen): 3a Bausteine und 3b Liste gebaut; 3c Seite des Termins und 3d Abläufe folgen. Danach Schritte 4 bis 7
+empfohlen): 3a Bausteine, 3b Liste und 3c Seite des Termins gebaut; 3d Abläufe folgt. Danach Schritte 4 bis 7
 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff aus Claude Design;
 Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198 (Grundlage samt Verordnungsscan ins
 Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A), BEF-223 (Zeitumstellung; Pfad A).

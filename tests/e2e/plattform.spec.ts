@@ -92,8 +92,9 @@ test.describe('Plattform', () => {
       expect((await zeile.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       expect(await ueberlaeuft(page)).toBe(false);
 
+      // Seit Schritt 3c beginnt das Absagen auf der Seite des Termins.
       await page.goto(`${PRUEFSEITE}?seite=termin`);
-      await page.getByRole('button', { name: 'Termin absagen' }).click();
+      await page.getByRole('link', { name: 'Termin absagen' }).click();
       await expect(
         page.getByRole('dialog', { name: 'Ausfallhonorar' }).getByRole('status'),
       ).toContainText('kein Ausfallhonorar');

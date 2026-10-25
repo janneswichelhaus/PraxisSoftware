@@ -165,7 +165,9 @@ Zwei Handlungen, beide als Wunsch (§8, D4):
 - **Termin wünschen**: Welche Tage und Tageszeiten passen (Vormittag,
   Mittag, Nachmittag), dazu eine freie Zeile. Zeigt die Anwendung später
   freie Zeitfenster zur Auswahl an, ist auch die Auswahl ein Wunsch.
-- **Termin ändern oder absagen**: am einzelnen Termin. Vor dem Absenden steht
+- **Termin ändern oder absagen**: am einzelnen Termin - beides beginnt auf
+  der Seite des Termins, zu der jede Zeile führt (Handoff 2026-10-24
+  „Termine“, Frage 2; ANN-744, ANN-746). Vor dem Absenden steht
   der **Hinweis zum Ausfallhonorar** in festem Wortlaut aus den
   Praxisstammdaten, bei weniger als 24 Stunden deutlich über dem Knopf
   (ADR-018 Punkt 8; derselbe Mangel wie BEF-079 in der Praxisoberfläche darf

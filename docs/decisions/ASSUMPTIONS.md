@@ -7765,11 +7765,11 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
-**Annahme.** Jede Terminzeile führt zur Seite ihres Termins, auch eine vergangene oder abgesagte; vorher führten nur bestätigte künftige weiter. In der Einsicht der Praxis bleiben die Zeilen ohne Ziel, bis sie dort eine Seite des Termins hat (Schritt 3c).
+**Annahme.** Jede Terminzeile führt zur Seite ihres Termins, auch eine vergangene oder abgesagte; vorher führten nur bestätigte künftige weiter. Seit Schritt 3c auch in der Einsicht der Praxis: Dort zeigt die Seite Kopf, „Wer und wo“ und einen offenen Wunsch, ohne Ändern, Absagen, Zurückziehen und Fragen; `?art=` öffnet dort keinen Ablauf.
 
 **Begründung.** Handoff „Termine“, Festlegung „Die Seite des Termins ist das Ziel jeder Zeile“.
 
-**Anker.** `zielVon` in `src/features/platform/Termine.tsx`.
+**Anker.** `zielVon` in `src/features/platform/Termine.tsx`; `TerminOderAblauf` in `src/features/platform/PlattformApp.tsx`.
 
 **Änderungspfad.** `to` nur an bestätigten künftigen Terminen · Aufwand `klein`.
 
@@ -7784,3 +7784,27 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 **Anker.** `WOCHENZEILE` in `src/features/platform/Termine.tsx`.
 
 **Änderungspfad.** Spalte 8rem wie im Handoff, wenn die Einträge kürzer werden · Aufwand `klein`.
+
+### ANN-746 — Termine: Ändern und Absagen beginnen auf der Seite des Termins (Frage 2)
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** `/p/termine/{id}` ohne `?art=` zeigt die Seite des Termins; „Termin ändern“ und „Termin absagen“ stehen dort gleich gewichtet und öffnen den Ablauf mit `?art=`. Bis Schritt 3d bleibt der Ablauf, wie er ist: Er beginnt mit der passenden Seite, zählt „von 3“, und „Ändern“ in der Zusammenfassung führt zu „Was möchten Sie?“. Die Tipps bis zum Senden bleiben gleich (Absage 4, Änderung 6).
+
+**Begründung.** Handoff 2026-10-24 „Termine“, Frage 2; Jannes hat sie nicht anders entschieden.
+
+**Anker.** `TerminOderAblauf` in `src/features/platform/PlattformApp.tsx`; `AendernOderAbsagen` in `src/features/platform/Terminseite.tsx`.
+
+**Änderungspfad.** „Was möchten Sie?“ wieder als Schritt 1, die Seite zeigt nur · Aufwand `klein`.
+
+### ANN-747 — Seite des Termins: von der Übersicht heißt der Rückweg „Übersicht“
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Hero und Besuchskarte der Übersicht führen zur Seite des Termins mit `?von=uebersicht`; dann heißt der Rückweg „Übersicht“ und führt dorthin, sonst „Termine“. Ein anderes Ziel nimmt der Rückweg nicht an.
+
+**Begründung.** Handoff „Termine“, Abschnitt 3 („Kopf der Seite des Termins“). Eine feste Angabe statt des Verlaufs: Auch nach einem Neuladen oder aus einem Link stimmt der Weg, und keine Adresse lenkt ihn woandershin.
+
+**Anker.** `Rueckweg` in `src/features/platform/Terminseite.tsx`; `zumTermin` in `src/features/platform/Uebersicht.tsx`.
+
+**Änderungspfad.** Rückweg aus dem Verlauf des Browsers · Aufwand `klein`.

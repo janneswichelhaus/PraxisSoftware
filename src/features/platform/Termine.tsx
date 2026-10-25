@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
 import { Button } from '@/components/ui/Button';
@@ -8,7 +8,6 @@ import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { HeroKarte } from '@/components/ui/HeroKarte';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 import { HeroSkelett, Skelett, SkelettBereich } from '@/components/ui/Skelett';
@@ -38,7 +37,7 @@ import {
   terminZeit,
 } from './hauptsache';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
-import { Terminzeile, Wunschzeile } from './Terminbausteine';
+import { Terminzeile, Wunschzeile, Zurueckziehen } from './Terminbausteine';
 import { artUndPerson, artzeichen, heroEtikett, leereTage, tagDerWoche } from './termintexte';
 import { terminBeschreibung } from './terminbeschreibung';
 import { tageAb, uebungstageAm } from './uebungstage';
@@ -280,8 +279,8 @@ function Liste({
   // Ohne Netz sagt ein Satz, warum Wünschen und Zurückziehen gesperrt sind -
   // einmal, unter dem Knopf oder, fehlt er, unter den Wünschen (Frage 4).
   const ohneNetzId = useId();
-  // Die Einsicht hat noch keine Seite des Termins (ANN-744).
-  const zielVon = (t: Termin) => (nurLesen ? undefined : mit(`${PLATTFORM_PFAD}/termine/${t.id}`));
+  // Jede Zeile führt zur Seite ihres Termins, seit 3c auch in der Einsicht (ANN-744).
+  const zielVon = (t: Termin) => mit(`${PLATTFORM_PFAD}/termine/${t.id}`);
 
   const hauptsache = naechster ? (
     <HeroKarte
@@ -294,11 +293,7 @@ function Liste({
       titel={terminTitel(naechster, bereich, vertretung ? zugang.represented_name : null, jetzt)}
       satz={terminZeit(naechster, vertretung, jetzt)}
       person={personDesTermins(naechster, vertretung)}
-      ziel={
-        nurLesen
-          ? undefined
-          : { text: 'Termin ansehen', to: mit(`${PLATTFORM_PFAD}/termine/${naechster.id}`) }
-      }
+      ziel={{ text: 'Termin ansehen', to: zielVon(naechster) }}
     />
   ) : nurWunsch ? (
     // Der Wunsch ist gesendet: die Uhr auf der Vertiefung statt des Laufrads (5.1).
@@ -520,54 +515,6 @@ function Wunschknopf({
         {WUENSCHE_OHNE_NETZ}
       </p>
     </div>
-  );
-}
-
-/**
- * „Wunsch zurückziehen“ mit der Rückfrage an Ort und Stelle. Danach lädt
- * die Liste Wünsche und Termine neu: Ein zurückgezogener Änderungs- oder
- * Absagewunsch nimmt auch das Statuszeichen am Termin mit. Ohne Netz
- * gesperrt wie „Termin wünschen“, mit demselben Satz (Frage 4, ANN-741).
- */
-function Zurueckziehen({
-  zugang,
-  wunschId,
-  verbunden,
-  ohneNetzId,
-}: {
-  zugang: Plattformzugang;
-  wunschId: string;
-  verbunden: boolean;
-  ohneNetzId: string;
-}) {
-  const api = usePlattformApi();
-  const queryClient = useQueryClient();
-  const zurueckziehen = useMutation({
-    mutationFn: () => api.wunschZurueckziehen(zugang.access_id, wunschId),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: wuenscheSchluessel(zugang.access_id) }),
-        queryClient.invalidateQueries({ queryKey: termineSchluessel(zugang.access_id) }),
-      ]),
-  });
-  if (!verbunden) {
-    return (
-      <Button type="button" variant="quiet" disabled aria-describedby={ohneNetzId}>
-        Wunsch zurückziehen
-      </Button>
-    );
-  }
-  return (
-    <Rueckfrage
-      ausloeser="Wunsch zurückziehen"
-      ausloeserVariante="quiet"
-      bestaetigen="Ja, zurückziehen"
-      bestaetigenLaeuft="Wird zurückgezogen …"
-      fehler={zurueckziehen.error?.message}
-      onBestaetigen={() => zurueckziehen.mutateAsync()}
-    >
-      <p>Die Praxis bearbeitet diesen Wunsch dann nicht weiter.</p>
-    </Rueckfrage>
   );
 }
 

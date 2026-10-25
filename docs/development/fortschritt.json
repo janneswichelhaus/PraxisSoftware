@@ -1602,6 +1602,15 @@
           "fertig_am": "2026-10-25",
           "nachweis": "DRP-051, Branch ccr-544f8ce7-u1sqpf, src/features/platform/Termine.test.tsx, tests/e2e/plattform-terminliste.spec.ts (acht Lagen der Prüfseite plattform.html), tests/e2e/plattform-termine.spec.ts (Abläufe ab der Liste, Tipps gleich), Design-Review",
           "vermerk": "Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 3b (Handoff 2026-10-24 „Termine“, Abschnitt 9 Punkt 2), Fragen 1, 4 und 5 wie empfohlen; ANN-740 bis ANN-745; BEF-220 erledigt, BEF-222 offen (Server); nur Oberfläche, ohne Migration, ohne Auditeintrag"
+        },
+        {
+          "id": "drp-epic-013",
+          "name": "DRP-EPIC-013 Plattform: Seite des Termins aus dem Design-Review (Schritt 3c – Kopf mit Tag, „Wer und wo“, je Lage ein Abschnitt: kommend mit Ändern und Absagen, unter 24 Stunden mit der Warnung, offener Wunsch mit Zurückziehen, vergangen mit „Praxis anrufen“, abgesagt mit „Neuen Termin wünschen“; Einsicht nur lesend; Laden, Fehler, ohne Netz; Rechner)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-25",
+          "nachweis": "DRP-052, Branch ccr-544f8ce7-u1sqpf, src/features/platform/Terminseite.test.tsx, tests/e2e/plattform-terminliste.spec.ts (Seite des Termins in sechs Lagen der Prüfseite plattform.html), tests/e2e/plattform-termine.spec.ts (Abläufe über die Seite, Tipps gleich), Design-Review",
+          "vermerk": "Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 3c (Handoff 2026-10-24 „Termine“, Abschnitt 9 Punkt 3), Frage 2 wie empfohlen; ANN-746, ANN-747; BEF-221 erledigt; nur Oberfläche, ohne Migration, ohne Auditeintrag"
         }
       ]
     },

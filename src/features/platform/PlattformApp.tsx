@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Navigate, Route, Routes, matchPath, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, matchPath, useLocation, useSearchParams } from 'react-router-dom';
 import { Profilhinweis } from '@/app/Profilhinweis';
 import { MARKE, tabName, tabTitel } from '@/app/tabtitel';
 import { Anrufknoepfe } from '@/components/ui/Anrufknoepfe';
@@ -69,6 +69,7 @@ import { PlanblattPlattform, Uebungen } from './Uebungen';
 import { Durchfuehrung } from './Durchfuehrung';
 import { datum, kalendertag } from './zeit';
 import { Terminaenderung } from './Terminaenderung';
+import { Terminseite } from './Terminseite';
 import { Terminwunsch } from './Terminwunsch';
 import { useWahl, wahlAdresse, wahlName } from './wahl';
 
@@ -258,30 +259,34 @@ function Geruest({
                 />
               }
             />
-            {nurLesen ? null : (
-              <Route
-                path={`${PLATTFORM_PFAD}/termine/wunsch`}
-                element={
+            {/* E-001: In der Einsicht führt „wunsch“ zurück zur Übersicht - ohne
+              diese Route nähme die Seite des Termins darunter es als Kennung. */}
+            <Route
+              path={`${PLATTFORM_PFAD}/termine/wunsch`}
+              element={
+                nurLesen ? (
+                  <Navigate to={PLATTFORM_PFAD} replace />
+                ) : (
                   <MitZugang
                     bereiche={lesbar}
                     zugaenge={zugaenge}
                     seite={(z) => <Terminwunsch zugang={z} />}
                   />
-                }
-              />
-            )}
-            {nurLesen ? null : (
-              <Route
-                path={`${PLATTFORM_PFAD}/termine/:terminId`}
-                element={
-                  <MitZugang
-                    bereiche={lesbar}
-                    zugaenge={zugaenge}
-                    seite={(z) => <Terminaenderung zugang={z} />}
-                  />
-                }
-              />
-            )}
+                )
+              }
+            />
+            {/* Die Seite des Termins (Schritt 3c), auch in der Einsicht - dort
+                nur lesend; mit `?art=` der Ablauf zum Ändern oder Absagen. */}
+            <Route
+              path={`${PLATTFORM_PFAD}/termine/:terminId`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <TerminOderAblauf zugang={z} />}
+                />
+              }
+            />
             {/* KOM-001: Reiter „Nachrichten" - Fragen an die Praxis. */}
             <Route
               path={`${PLATTFORM_PFAD}/nachrichten`}
@@ -1111,5 +1116,20 @@ function VertretungZeile({
         <p className="text-ink-muted mt-1 text-sm">Beenden kann diese Vertretung nur die Praxis.</p>
       )}
     </li>
+  );
+}
+
+/**
+ * `/p/termine/<id>`: ohne `?art=` die Seite des Termins (Handoff „Termine“,
+ * 5.2), mit `?art=change` oder `?art=cancel` gleich der Ablauf. Die Einsicht
+ * der Praxis sieht immer die Seite - sie schreibt nicht (E-001).
+ */
+function TerminOderAblauf({ zugang }: { zugang: Plattformzugang }) {
+  const nurLesen = useNurLesen();
+  const [suche] = useSearchParams();
+  return suche.has('art') && !nurLesen ? (
+    <Terminaenderung zugang={zugang} />
+  ) : (
+    <Terminseite zugang={zugang} />
   );
 }

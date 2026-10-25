@@ -207,7 +207,6 @@ describe('Plattform in der Einsicht (E-001)', () => {
 
   it.each([
     '/p/termine/wunsch',
-    `/p/termine/${TERMIN.id}`,
     '/p/nachrichten/neu',
     '/p/checkin',
     '/p/befundbogen',
@@ -225,10 +224,33 @@ describe('Plattform in der Einsicht (E-001)', () => {
     zeige('/p/termine');
     expect(await screen.findByText(/Anna Beispiel/)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Termin wünschen' })).not.toBeInTheDocument();
+    // Die Hero-Karte führt zur Seite des Termins - auch sie nur lesend.
     expect(
-      screen.queryByRole('link', { name: /Musterweg|Hausbesuch|Anna Beispiel/ }),
-    ).not.toBeInTheDocument();
+      within(screen.getByRole('region', { name: /^Besuch / })).getByRole('link'),
+    ).toHaveAttribute('href', `/p/termine/${TERMIN.id}`);
   });
+
+  it.each(['', '?art=cancel', '?art=change'])(
+    'Seite des Termins%s: lesen ja, ändern, absagen und fragen nein (Schritt 3c)',
+    async (suche) => {
+      zeige(`/p/termine/${TERMIN.id}${suche}`);
+      expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument();
+      expect(screen.getByTestId('ort')).toHaveTextContent(`/p/termine/${TERMIN.id}`);
+      expect(screen.getByRole('region', { name: 'Wer und wo' })).toHaveTextContent('Musterweg');
+      expect(
+        screen.queryByRole('link', { name: /Termin (ändern|absagen)/ }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('heading', { name: 'Fragen zu diesem Termin?' }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(screen.getByRole('main')).getByRole('link', { name: 'Termine' }),
+      ).toHaveAttribute('href', '/p/termine');
+      for (const [funktion] of quelle.mock.calls) expect(EINSICHT_LESEN).toContain(funktion);
+      expect(netz.aufgerufen).toBe(0);
+    },
+  );
 
   it('Nachrichten: lesen ja, schreiben, öffnen und erledigen nein', async () => {
     const liste = zeige('/p/nachrichten');

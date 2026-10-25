@@ -22,6 +22,8 @@ const terminAendernWuenschen = vi.fn();
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladeTermine: (...args: unknown[]) => ladeTermine(...args) as Promise<Termin[]>,
+  // Die Seite des Termins fragt die Wünsche nach dem offenen (Schritt 3c).
+  ladeWuensche: () => Promise.resolve([]),
   terminAendernWuenschen: (...args: unknown[]) =>
     terminAendernWuenschen(...args) as Promise<string>,
 }));
@@ -420,23 +422,30 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     expect(await screen.findByTestId('ort')).toHaveTextContent(/^\/p\/termine\?bereich=treatment$/);
   });
 
-  it('zeigt bei offenem Wunsch keinen Ablauf', async () => {
-    zeige({ ...TERMIN, open_request_kind: 'cancel' });
-    expect(await screen.findByText(/Ihr Absagewunsch ist bei der Praxis/)).toBeInTheDocument();
+  // Schritt 3c: Was sich nicht ändern lässt, zeigt die Seite des Termins.
+  it('zeigt bei offenem Wunsch keinen Ablauf, sondern die Seite mit dem Wunsch', async () => {
+    zeige({ ...TERMIN, open_request_kind: 'cancel' }, `/p/termine/${TERMIN.id}?art=cancel`);
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Ihr Absagewunsch' }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Termin absagen' })).not.toBeInTheDocument();
   });
 
-  it('laesst einen vergangenen oder abgesagten Termin nicht aendern', async () => {
-    zeige({ ...TERMIN, status: 'cancelled', late_notice: null });
-    expect(await screen.findByText(/lässt sich hier nicht mehr ändern/)).toBeInTheDocument();
+  it('laesst einen abgesagten Termin nicht aendern: die Seite bietet einen neuen Wunsch an', async () => {
+    zeige(
+      { ...TERMIN, status: 'cancelled', late_notice: null },
+      `/p/termine/${TERMIN.id}?art=change`,
+    );
+    expect(await screen.findByRole('link', { name: 'Neuen Termin wünschen' })).toBeInTheDocument();
+    expect(screen.queryByText(/lässt sich hier nicht mehr ändern/)).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('sagt, wenn der Termin nicht gefunden wurde', async () => {
     zeige(TERMIN, '/p/termine/aaaaaaaa-aaaa-4aaa-8aaa-0000000000ff?bereich=treatment');
     expect(await screen.findByText('Dieser Termin wurde nicht gefunden.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '← Zu den Terminen' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Termine' })).toHaveAttribute(
       'href',
       '/p/termine?bereich=treatment',
     );

@@ -11,6 +11,9 @@ import { naechsteWerktage } from '../../src/features/platform/zeit';
  *   * **Ändern** ≤ 6 Tipps + Text (vorher 5 + Text, ebenso rollend);
  *   * **Wünschen** 5 Tipps (vorher 4, rollend) - ohne eigenes Budget.
  *
+ * Seit Schritt 3c führt die Zeile zur Seite des Termins; dort beginnen Ändern
+ * und Absagen (Frage 2, ANN-746) - die Tipps bleiben gleich.
+ *
  * Die Nachricht aufklappen und schreiben zählt als „Text“ - vorher kostete das
  * Antippen des Felds denselben Tipp. Je Seite: kein Rollen (der Abschluss rollt
  * höchstens seinen Inhalt, Fuß und Hauptknopf stehen fest im Bild), Ziele ≥ 44
@@ -25,6 +28,8 @@ const BILDER = '.tmp/screenshots';
 /** Der Hausbesuch der Prüfseite (`fixtures/plattform.tsx`). */
 const TERMIN = 'aaaaaaaa-aaaa-4aaa-8aaa-0000000000f1';
 const ZUGANG = 'cafecafe-cafe-4afe-8afe-000000000002';
+/** Der Titel der Seite eines Termins: der Tag in Worten (Schritt 3c). */
+const TAG = /^(Heute|Morgen|Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), /;
 /** Wie viele Werktage „Wann passt es Ihnen?“ anbietet (`WUNSCHTAGE`). */
 const WUNSCHTAGE = 14;
 
@@ -295,11 +300,10 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     const z = zaehler();
 
     await z.tippe(terminzeile(page));
-    const art = fenster(page, 'Was möchten Sie?');
-    await expect(art.getByText('Schritt 1 von 3', { exact: true })).toBeVisible();
-    await pruefeSeite(page, art, 'b6-absagen-01-was-moechten-sie', true);
+    await expect(page.getByRole('heading', { level: 1, name: TAG })).toBeVisible();
+    await bild(page, 'b6-absagen-01-seite-des-termins', true);
 
-    await z.tippe(art.getByRole('button', { name: 'Termin absagen' }));
+    await z.tippe(page.getByRole('link', { name: 'Termin absagen' }));
     const hinweis = fenster(page, 'Ausfallhonorar');
     await expect(hinweis.getByRole('status')).toContainText('kein Ausfallhonorar');
     await pruefeSeite(page, hinweis, 'b6-absagen-02-ausfallhonorar');
@@ -344,9 +348,8 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     const z = zaehler();
 
     await z.tippe(terminzeile(page));
-    const art = fenster(page, 'Was möchten Sie?');
-    await pruefeSeite(page, art, 'b6-aendern-01-was-moechten-sie', true);
-    await z.tippe(art.getByRole('button', { name: 'Termin ändern' }));
+    await expect(page.getByRole('heading', { level: 1, name: TAG })).toBeVisible();
+    await z.tippe(page.getByRole('link', { name: 'Termin ändern' }));
     const wann = fenster(page, 'Wann passt es Ihnen?');
     await expect(wann.getByText('Schritt 2 von 3', { exact: true })).toBeVisible();
     // Wochentage, Tageszeiten und „Egal“ zusammen auf einer Seite ohne Rollen.
