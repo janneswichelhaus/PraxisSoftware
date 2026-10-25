@@ -3,15 +3,15 @@
 Erzeugt von `pnpm aufraeumen --schreiben`, nicht von Hand ändern. Der nächste Lauf von
 [`/aufraeumen`](../../.claude/skills/aufraeumen/SKILL.md) vergleicht mit diesem Stand.
 
-Stand: 2026-10-25 · Commit `e6008fb`
+Stand: 2026-10-25 · Commit `a608506`
 
 | Kennzahl | Wert | Schlüssel |
 | --- | ---: | --- |
-| Zeilen gesamt | 756982 | `zeilen_gesamt` |
+| Zeilen gesamt | 756988 | `zeilen_gesamt` |
 | Zeilen Programm (src, Edge Functions) | 204959 | `zeilen_programm` |
 | Zeilen Tests | 268750 | `zeilen_tests` |
 | Zeilen Migrationen | 205024 | `zeilen_migrationen` |
-| Zeilen Doku (Markdown) | 48667 | `zeilen_doku` |
+| Zeilen Doku (Markdown) | 48673 | `zeilen_doku` |
 | Zeilen Rest (Skripte, Konfiguration, Seed) | 29582 | `zeilen_rest` |
 | Kommentaranteil Programm (%) | 19.5 | `kommentaranteil_programm` |
 | Kommentaranteil Migrationen (%) | 17.1 | `kommentaranteil_migrationen` |
