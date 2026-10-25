@@ -137,20 +137,26 @@ function draftBlocks(form: DayForm | null, fallback: readonly Block[]): Block[] 
 /** Wie viele Tage mit Terminen außerhalb der Abschluss einzeln nennt. */
 const NAMED_DAYS = 3;
 
+/** Ein Eintrag der Terminzeile bricht nicht in sich, nur zwischen den Einträgen. */
+function unbroken(text: string): string {
+  return text.replaceAll(' ', '\u00a0');
+}
+
 /**
  * „1. Dez.: 2 · 8. Dez.: 1 · 2 weitere Tage“ - je Tag die Zahl, ab dem vierten
  * Tag nur noch, wie viele es sind: Die Zeile bleibt kurz, der Abschluss rollt
- * bei 375 × 667 nicht (DESIGN.md, geführter Ablauf).
+ * bei 375 × 667 nicht (DESIGN.md, geführter Ablauf). Auch mit zweistelligen
+ * Zahlen sind es höchstens zwei Zeilen (BEF-219).
  */
 function appointmentDaysText(days: readonly { on_date: string; appointments: number }[]): string {
   const withAppointments = days.filter((d) => d.appointments > 0);
   const named = withAppointments
     .slice(0, NAMED_DAYS)
-    .map((d) => `${tagKurz(d.on_date)}: ${d.appointments}`);
+    .map((d) => unbroken(`${tagKurz(d.on_date)}: ${d.appointments}`));
   const rest = withAppointments.length - named.length;
   return [
     ...named,
-    ...(rest > 0 ? [`${rest} ${rest === 1 ? 'weiterer Tag' : 'weitere Tage'}`] : []),
+    ...(rest > 0 ? [unbroken(`${rest} ${rest === 1 ? 'weiterer Tag' : 'weitere Tage'}`)] : []),
   ].join(' · ');
 }
 
@@ -550,28 +556,27 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
   /**
    * Die Termine außerhalb der neuen Zeiten - erst mit der Vorschau des Servers.
    * Je Tag die Zahl; umplanen wird, wer genehmigt (Praxis-Review Überholung 8).
+   * Beim Antrag sagt das die Zeile „Entscheidet“, damit beide Zeilen auch im
+   * ungünstigsten Fall kurz bleiben (BEF-219).
    */
-  const appointmentsRow = (days: readonly { on_date: string; appointments: number }[]) => {
-    const appointments = days.reduce((sum, d) => sum + d.appointments, 0);
-    return (
-      <ListRow
-        titel={
-          appointments === 0
-            ? 'Keine Termine außerhalb der neuen Zeiten'
-            : `${appointments} ${appointments === 1 ? 'Termin' : 'Termine'} außerhalb der neuen Zeiten`
-        }
-        meta={
-          appointments === 0
-            ? undefined
-            : `${appointmentDaysText(days)} · ${
-                self
-                  ? 'nach dem Eintragen umplanen'
-                  : 'plant die Praxisleitung nach dem Genehmigen um'
-              }`
-        }
-      />
-    );
-  };
+  const outsideDays = complete && preview.data ? preview.data.appointment_days : null;
+  const outside = outsideDays?.reduce((sum, d) => sum + d.appointments, 0) ?? 0;
+  const appointmentsRow = (days: readonly { on_date: string; appointments: number }[]) => (
+    <ListRow
+      titel={
+        outside === 0
+          ? 'Keine Termine außerhalb der neuen Zeiten'
+          : `${outside} ${outside === 1 ? 'Termin' : 'Termine'} außerhalb der neuen Zeiten`
+      }
+      meta={
+        outside === 0
+          ? undefined
+          : self
+            ? `${appointmentDaysText(days)} · nach dem Eintragen umplanen`
+            : appointmentDaysText(days)
+      }
+    />
+  );
 
   return (
     <GefuehrterAblauf
@@ -607,7 +612,7 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
           der Vorschau in dieselbe Liste. Laden, Funkloch und Abweisung der
           Vorschau zeigt der Baustein darunter (Regel 8, Design-Review
           Überholung 8) - ein Fehler ist nie „keine Termine außerhalb“. */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col">
         <ListRows rahmen={false} beschriftung="Änderung">
           {/* Die Stunden stehen an der Zeile des Datums - eine Zeile weniger, damit
               der Abschluss auch mit Terminen außerhalb nicht rollt. */}
@@ -671,29 +676,35 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
               }
             />
           ))}
-          {complete && preview.data ? appointmentsRow(preview.data.appointment_days) : null}
+          {outsideDays ? appointmentsRow(outsideDays) : null}
           <ListRow
             titel={self ? 'Sie tragen die Änderung selbst ein' : 'Entscheidet'}
             meta={
               self
                 ? `Sie gilt ${kind === 'once' ? 'für den Tag' : 'ab dem Datum'} sofort.`
-                : roleLabels.owner
+                : outside > 0
+                  ? `${roleLabels.owner}, plant nach dem Genehmigen um`
+                  : roleLabels.owner
             }
           />
         </ListRows>
-        {complete ? (
-          <Abfragezustand
-            abfrage={preview}
-            laden="Termine werden geprüft …"
-            fehler={PREVIEW_ERROR}
-            endgueltig={{
-              wenn: (error) => error instanceof Error && error.message !== PREVIEW_ERROR,
-              titel: preview.error instanceof Error ? preview.error.message : PREVIEW_ERROR,
-            }}
-          >
-            {() => null}
-          </Abfragezustand>
-        ) : null}
+        {/* Nur Laden und Fehler der Vorschau brauchen hier Abstand; sonst folgt
+            „Grund angeben“ der Liste wie eine weitere Zeile (BEF-219). */}
+        <div className="my-4 empty:hidden">
+          {complete ? (
+            <Abfragezustand
+              abfrage={preview}
+              laden="Termine werden geprüft …"
+              fehler={PREVIEW_ERROR}
+              endgueltig={{
+                wenn: (error) => error instanceof Error && error.message !== PREVIEW_ERROR,
+                titel: preview.error instanceof Error ? preview.error.message : PREVIEW_ERROR,
+              }}
+            >
+              {() => null}
+            </Abfragezustand>
+          ) : null}
+        </div>
         <Disclosure summary="Grund angeben" offen={message !== ''}>
           <TextArea
             label="Grund – für die Praxisleitung, freiwillig"

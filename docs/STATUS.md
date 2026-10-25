@@ -24,15 +24,13 @@ ANN-703, daraus BEF-198), 1e Übersicht (#297, DRP-020 bis -022), 1d Einstieg (#
 
 Schritt 2 nach Abschnitt 9 des Handoffs: BEF-215 (ein Inhalt für Fenster und Durchführung, alte
 Bausteine fort), BEF-218 (Vorschau mit der Einheit auf dem Gerät), dann das Planblatt 2d. Schritt 3
-Termine wird nach Jannes' Merge von #303 in 3a bis 3d gebaut. Danach Schritte 4 bis 7
+Termine ist mit #303 freigegeben und wird in 3a bis 3d gebaut. Danach Schritte 4 bis 7
 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff aus Claude Design;
 Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198 (Grundlage samt Verordnungsscan ins
-Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A).
+Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A), BEF-223 (Zeitumstellung; Pfad A).
 
 ## Bei Jannes
 
-- Handoff Termine: fünf Fragen in Abschnitt 0, Leinwand
-  https://claude.ai/artifact/4jdCqRT4YWRiphJ2Sjhqf1; sein Merge gibt Schritt 3 frei.
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
@@ -56,7 +54,6 @@ Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A).
 
 ## Letzte Session
 
-25.10.2026, Branch `ccr-d51dd25d-ujz8lo`: #302 (2c, mit `main` und 2b) hereingeholt, weil #302 vor
-#303 gemergt wird. Davor derselbe Branch: Schritt 3 vorbereitet (Designsystem Version 7, Leinwand
-„Plattform – Termine“, Handoff); `claude/uebungen-reiter-2c`: Schritt 2c. Keine Migration, kein
-Seed. Lokal: `git pull`.
+25.10.2026, Branch `ccr-544f8ce7-u1sqpf`: BEF-219 – der Arbeitszeit-Test legt seine Termine
+selbst an, die Zusammenfassung behält eine Zeile Reserve; BEF-223 (Zeitumstellung) eingetragen.
+Keine Migration, kein Seed. Lokal: `git pull`.
