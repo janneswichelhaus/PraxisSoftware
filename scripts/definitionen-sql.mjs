@@ -143,8 +143,8 @@ export function fehlendeMigration(fassungen, koerperbereiche, stand) {
   const kopf = [
     '-- =============================================================================',
     '-- Erzeugt von scripts/definitionen-sql.mjs - nicht von Hand aendern.',
-    '-- Fassungen der Fragebogen-Definitionen fuer die Serverpruefung (ABN-014,',
-    '-- BEF-101, ANN-219). Quelle: src/features/assessments/definitionen/scores/.',
+    '-- Fassungen der Fragebogen-Definitionen fuer die Serverpruefung (ANN-219).',
+    '-- Quelle: src/features/assessments/definitionen/scores/.',
     '-- =============================================================================',
     '',
   ];

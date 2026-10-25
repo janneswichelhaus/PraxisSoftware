@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-24.
+Zuletzt aktualisiert: 2026-10-25.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -7616,3 +7616,15 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 **Anker.** `stand` in `src/features/exercise-plans/Planblatt.tsx`; die Vorschau in `PlanblattPlattform` (`src/features/platform/Uebungen.tsx`).
 
 **Änderungspfad.** Stand als Beginn der Fassung (`runs_from`) auf beiden Seiten oder ein sechster Radius im System · Aufwand `klein`.
+
+### ANN-732 — Kommentarregel: gezählt wird je Block, geprüft wird nur, was der Diff berührt
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** „Höchstens drei Zeilen“ zählt die Textzeilen eines Blocks zusammenhängender Kommentarzeilen; Trennlinien, leere Kommentarzeilen und Anweisungen an Werkzeuge zählen nicht. Ein Ticket ist ein Kürzel mit Bindestrich und drei Ziffern; erlaubt bleiben `ANN-`, `ADR-` und Normen wie SHA-256. Geprüft werden nur Blöcke, die der Diff gegen `main` berührt, Kennungen nur in neuen Zeilen.
+
+**Begründung.** Auftrag Jannes 2026-10-25, Bestand beim Anfassen kürzen. Den ganzen Bestand zu prüfen, wäre mit über 3.300 langen Blöcken sofort rot; je Zeile zu zählen, sähe Wände aus kurzen Kommentaren nicht.
+
+**Anker.** Schritt „Kommentarregel“ in `.github/workflows/ci.yml`, Regeln in `scripts/kommentare-check.mjs`.
+
+**Änderungspfad.** Grenze oder Muster in `scripts/kommentare-check.mjs` ändern, Test nachziehen · Aufwand `klein`.

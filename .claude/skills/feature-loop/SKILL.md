@@ -46,9 +46,9 @@ vermutete Stelle öffnen, dann gezielt suchen; Subagenten für breite Suche erla
 - **Je Story** nur das eng Betroffene: einzelne Testdatei, `pnpm typecheck`, bei Migrationen
   `pnpm test:db supabase/tests/<datei>` (Cloud: `pnpm db:start`, `TEST_DATABASE_URL` und Test in
   einem Aufruf). Welche Dateien eine Funktion prüfen: `grep -l <name> supabase/tests`.
-- **Am Ende** einmal: der Prüfsatz aus `CLAUDE.md` („Befehle“) und `pnpm build`; alle
-  Testdateien, die eine geänderte Funktion, Policy oder Tabelle prüfen, dazu die Gegenprobe ohne
-  Migration. Die volle `test:db`-Suite läuft in der CI.
+- **Am Ende** einmal: der Prüfsatz aus `CLAUDE.md` („Befehle“), `pnpm kommentare:check` und
+  `pnpm build`; alle Testdateien, die eine geänderte Funktion, Policy oder Tabelle prüfen, dazu die
+  Gegenprobe ohne Migration. Die volle `test:db`-Suite läuft in der CI.
 - **Oberfläche:** Cloud-Stack und `pnpm bildstrecke` vorher/nachher bei 375 und 1280 px, Bilder
   selbst ansehen; betroffene `pnpm test:e2e`.
 - Keine identischen teuren Läufe ohne Änderung dazwischen. Was aus Umgebungsgründen nicht lief,

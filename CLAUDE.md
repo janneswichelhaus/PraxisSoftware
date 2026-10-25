@@ -45,8 +45,8 @@ Push, Mail · 025 Sitzungssperre, Passkey · 026 Virenprüfung (abgelehnt) · 02
 
 Modularer Monolith (ADR-015): `src/features/<domäne>/`, keine Microservices, keine
 Clean-Architecture-Schichten. `marke/` ist die einzige Quelle für Wortmarke und App-Symbole,
-byte-gleich in `public/marke/` (`src/marke.test.ts`); keine zweite Fassung, kein Umfärben. pnpm,
-nicht npm/yarn; neuer Code englisch (`docs/DEVELOPMENT.md`).
+byte-gleich in `public/marke/` (`src/marke.test.ts`); keine zweite Fassung, kein Umfärben. pnpm
+statt npm/yarn; neuer Code englisch, Kommentare ≤ 3 Zeilen, nur Warum (`docs/DEVELOPMENT.md`).
 
 ```bash
 pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check

@@ -412,6 +412,23 @@ Moduls geht Einheitlichkeit vor der Regel.
   Dokumente), Kommentare, Commit-Nachrichten und `docs/`.
 - Keine Umlaute oder `ß` in Bezeichnern und Dateinamen.
 
+## Kommentare
+
+Gilt für jeden Kommentar, den eine Änderung schreibt oder anfasst (Jannes, 2026-10-25):
+
+- **Höchstens drei Zeilen, nur das Warum.** Was der Code tut, sagt der Code. Braucht eine
+  Begründung mehr Platz, gehört sie ins ADR oder als Annahme ins Register; im Code steht der Verweis.
+- **Keine Entstehungsgeschichte** („seit …“, „bisher …“) und **keine Kennungen von Tickets oder
+  Epics** — die stehen in Commit und PR. Erlaubt sind `ANN-NNN`, `ADR-NNN` und Paragrafen der
+  Prinzipien.
+- **Der Bestand wird beim Anfassen gekürzt**, nicht in einem Zug: Wer einen langen Kommentar
+  ändert, kürzt ihn.
+
+`pnpm kommentare:check` prüft das für TypeScript, JavaScript, CSS und SQL gegen den gemeinsamen
+Vorfahren mit `origin/main` (lokal vorher `git fetch origin main`), ohne Abhängigkeiten. Was als
+Zeile zählt und was die Prüfung sieht, steht in ANN-732. Die CI führt sie im Job „Format, Lint,
+Dokumentation, Typecheck“ hinter dem Lint aus.
+
 ## Befehle
 
 ```bash
@@ -425,6 +442,7 @@ pnpm test:db         # Migrationen + RLS gegen echtes PostgreSQL
 pnpm test:e2e        # Playwright
 pnpm docs:check      # Obergrenzen, Register, Verweise, Querverweise, Nummern, Fortschrittstabelle
 pnpm migrationen:check  # Migrationen von main unverändert, neue hinten angehängt
+pnpm kommentare:check   # geänderte Kommentare: höchstens drei Zeilen, keine Tickets
 pnpm fortschritt     # Stand bis zur Eröffnung; --schreiben erzeugt die Roadmap-Tabelle
 pnpm db:reset        # Test-Datenbank aus Migrationen neu aufsetzen
 pnpm scan:secrets    # Secret-Scan über versionierte Dateien

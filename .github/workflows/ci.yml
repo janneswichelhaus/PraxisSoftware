@@ -75,6 +75,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Die Kommentarregel vergleicht mit dem Zielbranch.
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -91,6 +94,12 @@ jobs:
 
       - name: Lint (inkl. statischer Sicherheitsanalyse)
         run: pnpm lint
+
+      # Nur Kommentare, die der Pull Request oder Push schreibt oder aendert (ANN-732).
+      - name: Kommentarregel (hoechstens drei Zeilen, keine Tickets)
+        env:
+          BASIS: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: node scripts/kommentare-check.mjs "$BASIS"
 
       - name: Dokumentation (Obergrenzen, Register-Anker, Links)
         run: pnpm docs:check
