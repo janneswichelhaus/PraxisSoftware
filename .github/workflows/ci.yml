@@ -379,7 +379,11 @@ jobs:
           version: 2.116.0
 
       - name: Supabase starten
-        run: supabase start
+        # Die Ports des Stacks liegen im Bereich der Absenderports von Linux. Belegt eine andere
+        # Verbindung gerade einen davon, scheitert der Start (Port 54324, 2026-10-25); reserviert nie.
+        run: |
+          sudo sysctl -w net.ipv4.ip_local_reserved_ports=54320-54329
+          supabase start
 
       - name: Migrationen und synthetischen Seed anwenden
         # Ausdruecklich statt implizit: der Stand ist damit nachweislich aus
