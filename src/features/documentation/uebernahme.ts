@@ -2,7 +2,7 @@ import type { RefObject } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { mitRueckweg } from '@/lib/rueckweg';
-import type { Textverlustschutz } from './Textverlustschutz';
+import type { Textverlustschutz } from '@/app/Textverlustschutz';
 import {
   createTreatmentNoteAddendum,
   finalizeTreatmentNote,

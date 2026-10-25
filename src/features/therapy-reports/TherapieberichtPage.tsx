@@ -15,10 +15,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { bereicheText } from '@/features/assessments/koerperschema';
-import {
-  useTextverlustschutz,
-  type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+import { useTextverlustschutz, type Verlustschutztexte } from '@/app/Textverlustschutz';
 import type { CurrentUser } from '@/features/session/types';
 import { formatDate } from '@/lib/datum';
 import {

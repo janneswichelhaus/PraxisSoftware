@@ -7,7 +7,7 @@ import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { aendern, kannZurueck, zurueck, type Abfolge } from '@/components/ui/abfolge';
-import { useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import { wuenscheSchluessel, type Plattformzugang } from './api';
 import { usePlattformApi } from './einsicht';
 import { PLATTFORM_PFAD } from './pfade';

@@ -5,13 +5,13 @@ import {
   MITTERNACHT_MELDUNG,
   leseAngelegtenTermin,
   leseDauer,
-  leseMeldung,
   mitAngelegtemTermin,
   nachDemAnlegen,
   speicherfehlerText,
   terminFehlerliste,
   terminFeldfehler,
 } from './terminformular';
+import { leseMeldung } from '@/lib/meldung';
 
 const NEU = '77777777-7777-4777-8777-000000000002';
 

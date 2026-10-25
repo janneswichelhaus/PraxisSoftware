@@ -20,7 +20,7 @@ import {
   type Abfolge,
 } from '@/components/ui/abfolge';
 import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import type { CurrentUser } from '@/features/session/types';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {

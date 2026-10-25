@@ -18,7 +18,7 @@ import {
   EINGABETEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+} from '@/app/Textverlustschutz';
 import { PrescriberFormFields } from './PrescriberFormFields';
 import { VERORDNER_BESCHRIFTUNG, VERORDNER_REIHENFOLGE, verordnerFeldId } from './verordnerfelder';
 import {

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as StaffApi from './api';
-import type * as AppointmentsApi from '@/features/appointments/api';
 import { renderWithProviders, testStaffMember, testUser } from '@/test-utils';
 
 const anna = testStaffMember({
@@ -39,18 +38,10 @@ vi.mock('./api', async (importOriginal) => {
   return {
     ...actual,
     fetchStaffMembers: () => fetchStaffMembers() as Promise<StaffApi.StaffMember[]>,
-  };
-});
-
-vi.mock('@/features/appointments/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof AppointmentsApi>();
-  return {
-    ...actual,
     fetchAssignableTherapists: () =>
-      fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
+      fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
   };
 });
-
 const { StaffListPage } = await import('./StaffListPage');
 
 describe('StaffListPage', () => {

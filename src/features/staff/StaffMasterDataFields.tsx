@@ -1,10 +1,10 @@
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
-import type { Location } from '@/features/appointments/api';
 import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import type { StaffFeld } from './api';
 import { staffFeldId } from './mitarbeiterfelder';
 import { Feldgruppe, Section } from '@/components/ui/Section';
+import type { Location } from './api';
 
 /** Stand der Standortliste für die Auswahl des Hauptstandorts (ORG-14). */
 export type StandorteStand = 'laedt' | 'fehler' | 'bereit';

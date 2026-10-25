@@ -17,10 +17,7 @@ import {
   completeAppointment,
   reopenAppointment,
 } from '@/features/appointments/api';
-import {
-  useTextverlustschutz,
-  type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+import { useTextverlustschutz, type Verlustschutztexte } from '@/app/Textverlustschutz';
 import {
   finalizeTrainingProtocol,
   addTrainingProtocolAddendum,

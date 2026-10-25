@@ -1,4 +1,4 @@
-import { EINGABETEXTE, type Verlustschutztexte } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, type Verlustschutztexte } from '@/app/Textverlustschutz';
 
 /**
  * Die Rückfrage vor dem Weggehen aus einem Terminwunsch (Überholung 6): Sie

@@ -6,6 +6,7 @@ import type * as AppointmentsApi from './api';
 import type * as TodayApi from '@/features/today/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import type * as StaffApi from '@/features/staff/api';
 
 /**
  * Tag umplanen mit Anrufliste (CAL-009), geführt seit Überholung 6 (G2,
@@ -66,8 +67,6 @@ vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
   return {
     ...actual,
-    fetchAssignableTherapists: () =>
-      fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
     cancelStaffDay: (
       person: string,
       datum: string,
@@ -76,6 +75,12 @@ vi.mock('./api', async (importOriginal) => {
     ) => cancelStaffDay(person, datum, grund, auswahl) as Promise<number>,
   };
 });
+
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: () =>
+    fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
+}));
 
 const { TagUmplanenPage } = await import('./TagUmplanenPage');
 

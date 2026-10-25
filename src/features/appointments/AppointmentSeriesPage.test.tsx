@@ -5,6 +5,7 @@ import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
+import type * as StaffApi from '@/features/staff/api';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 const VERORDNUNG = '88888888-8888-4888-8888-000000000002';
@@ -41,15 +42,19 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchTreatmentBasisSlots: (id: string) =>
       fetchTreatmentBasisSlots(id) as Promise<AppointmentsApi.TreatmentBasisSlots>,
-    fetchAssignableTherapists: () =>
-      fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
-    fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
     checkAppointmentSlots: (staff: string, slots: unknown) =>
       checkAppointmentSlots(staff, slots) as Promise<(AppointmentsApi.SlotConflict | null)[]>,
     createAppointmentSeries: (...args: unknown[]) =>
       createAppointmentSeries(...args) as Promise<number>,
   };
 });
+
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: () =>
+    fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
+  fetchLocations: () => fetchLocations() as Promise<StaffApi.Location[]>,
+}));
 
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),

@@ -10,7 +10,7 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import { canReadTreatmentBases, type CurrentUser } from '@/features/session/types';
 import { fetchPatientTreatmentBases, grundlageBezeichnung } from '@/features/treatment-bases/api';
@@ -28,8 +28,6 @@ import {
   appointmentFormSchema,
   createAppointment,
   fensterEnde,
-  fetchAssignableTherapists,
-  fetchLocations,
   istAusserhalbArbeitszeit,
   kalenderZumTermin,
   istVergangenheit,
@@ -55,6 +53,7 @@ import {
   terminFehlerliste,
   terminFeldfehler,
 } from './terminformular';
+import { fetchAssignableTherapists, fetchLocations } from '@/features/staff/api';
 
 /**
  * Anlage eines Termins für einen bereits gewählten Patienten.

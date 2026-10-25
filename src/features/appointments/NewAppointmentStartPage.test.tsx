@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as UebersichtApi from '@/features/patients/uebersicht';
-import type * as AppointmentsApi from './api';
 import type * as RouterModul from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
+import type * as StaffApi from '@/features/staff/api';
 
 /** Jede Adresse, die die Seite durchläuft - auch eine, die gleich wieder ersetzt wird. */
 const adressen: string[] = [];
@@ -20,11 +20,10 @@ function Adressprobe() {
 const navigate = vi.fn();
 const fetchPatientOverview = vi.fn();
 const fetchAssignableTherapists = vi.fn();
-
-vi.mock('./api', async (importOriginal) => ({
-  ...(await importOriginal<typeof AppointmentsApi>()),
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
   fetchAssignableTherapists: () =>
-    fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
+    fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
 }));
 
 vi.mock('@/features/patients/uebersicht', async (importOriginal) => ({

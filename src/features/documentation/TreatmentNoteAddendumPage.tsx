@@ -16,7 +16,7 @@ import {
   ZustandMitRueckweg,
 } from './Schreibflaeche';
 import { kopfzeileFuer } from './format';
-import { useTextverlustschutz } from './Textverlustschutz';
+import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import { NochEinEntwurf } from './Zustaende';
 import { Einfuegemeldung } from './Einfuegemeldung';
 import { useEinfuegen } from './einfuegen';

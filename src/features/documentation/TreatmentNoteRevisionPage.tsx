@@ -14,7 +14,7 @@ import {
   DOKUMENTATIONSTEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from './Textverlustschutz';
+} from '@/app/Textverlustschutz';
 import { Schreibfeld, Schreibflaeche, ZustandMitRueckweg } from './Schreibflaeche';
 import { kopfzeileFuer } from './format';
 import { NochEinEntwurf } from './Zustaende';

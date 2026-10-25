@@ -22,7 +22,7 @@ import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { leseRueckweg, mitRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import {
   canManageInvoicing,
   canWriteTrainingClients,

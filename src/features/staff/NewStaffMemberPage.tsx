@@ -15,7 +15,7 @@ import {
   type Abfolge,
 } from '@/components/ui/abfolge';
 import { RUECKWEG_PARAM, leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { FLOTTE_SCHLUESSEL, fetchFleet, flotteSchluessel, takeKey } from '@/features/fleet/api';
 import { montagDerWoche } from '@/features/fleet/format';
 import { saveWorkingHours } from '@/features/scheduling/api';

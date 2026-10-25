@@ -3,7 +3,7 @@ import {
   EINGABETEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+} from '@/app/Textverlustschutz';
 
 const TEXTE: Verlustschutztexte = {
   ...EINGABETEXTE,

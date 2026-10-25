@@ -1,7 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { leseMeldung } from '@/features/appointments/terminformular';
 import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
@@ -20,7 +19,7 @@ import {
   Ursprungseintrag,
   ZustandMitRueckweg,
 } from './Schreibflaeche';
-import { useTextverlustschutz } from './Textverlustschutz';
+import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
 import { BereitsFinalisiert, TextUebernehmen } from './Zustaende';
@@ -35,6 +34,7 @@ import {
   type TreatmentNote,
 } from './api';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { leseMeldung } from '@/lib/meldung';
 
 /**
  * Entwurf der Behandlungsdokumentation schreiben (DOK-001).

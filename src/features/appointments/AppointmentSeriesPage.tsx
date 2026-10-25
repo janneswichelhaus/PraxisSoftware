@@ -17,7 +17,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
 import { alsFormularfehler, type Formularfehler } from '@/lib/formularfehler';
@@ -31,8 +31,6 @@ import {
   checkAppointmentSlots,
   createAppointmentSeries,
   fensterEnde,
-  fetchAssignableTherapists,
-  fetchLocations,
   fetchTreatmentBasisSlots,
   istAusserhalbArbeitszeit,
   leseTerminVorbelegung,
@@ -54,6 +52,7 @@ import {
 } from './serie';
 import { speicherfehlerText } from './terminformular';
 import { formatDate, todayInTimeZone, istIsoDatum } from '@/lib/datum';
+import { fetchAssignableTherapists, fetchLocations } from '@/features/staff/api';
 
 /**
  * „1 Termin" gegen „3 Termine" — an einer Stelle statt in jeder Meldung.

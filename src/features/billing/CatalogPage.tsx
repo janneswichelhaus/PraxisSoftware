@@ -21,7 +21,7 @@ import { centZuEingabe, formatEuro, parseEuroZuCent } from '@/lib/geld';
 import type { Formularfehler } from '@/lib/formularfehler';
 import { HEILMITTEL } from '@/features/treatment-bases/heilmittel';
 import { canManageServiceCatalog, type CurrentUser } from '@/features/session/types';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import {
   artLabels,
   bereichLabels,

@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as WaitlistApi from './api';
-import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as PatientsApi from '@/features/patients/api';
 import type * as BasesApi from '@/features/treatment-bases/api';
 import { renderWithProviders, testPatient } from '@/test-utils';
+import type * as StaffApi from '@/features/staff/api';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
@@ -28,10 +28,10 @@ vi.mock('@/features/treatment-bases/api', async (importOriginal) => ({
   fetchPatientTreatmentBases: (id: string) =>
     fetchPatientTreatmentBases(id) as Promise<BasesApi.TreatmentBasis[]>,
 }));
-vi.mock('@/features/appointments/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof AppointmentsApi>()),
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
   fetchAssignableTherapists: () =>
-    fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
+    fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
 }));
 
 const { NewWaitlistEntryPage } = await import('./WaitlistFormPage');

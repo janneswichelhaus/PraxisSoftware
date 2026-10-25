@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { REIMBURSEMENTS_KEY, savePayoutAccount } from './api';
 import { REIMBURSEMENTS_HOME } from './paths';

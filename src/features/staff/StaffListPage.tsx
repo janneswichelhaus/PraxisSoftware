@@ -12,7 +12,6 @@ import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { EmptyState } from '@/components/ui/Feedback';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { fetchAssignableTherapists } from '@/features/appointments/api';
 import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import { fullName } from '@/features/patients/api';
 import {
@@ -21,7 +20,7 @@ import {
   canManageStaffMasterData,
   type CurrentUser,
 } from '@/features/session/types';
-import { fetchStaffMembers, type StaffMember } from './api';
+import { fetchStaffMembers, type StaffMember, fetchAssignableTherapists } from './api';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 

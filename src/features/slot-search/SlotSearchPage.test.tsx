@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import type * as SlotApi from './api';
-import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as PatientsApi from '@/features/patients/api';
 import type * as WaitlistApi from '@/features/waitlist/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
+import type * as StaffApi from '@/features/staff/api';
 
 const PATIENT = '66666666-6666-4666-8666-000000000001';
 const ENTRY = '99999999-9999-4999-8999-000000000001';
@@ -28,8 +28,8 @@ vi.mock('@/features/waitlist/api', async (importOriginal) => ({
   fetchWaitlist: (f: string, p: string) =>
     fetchWaitlist(f, p) as Promise<WaitlistApi.WaitlistEntry[]>,
 }));
-vi.mock('@/features/appointments/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof AppointmentsApi>()),
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
   fetchAssignableTherapists: () =>
     Promise.resolve([{ staff_member_id: 's1', display_name: 'Anna Beispiel' }]),
 }));

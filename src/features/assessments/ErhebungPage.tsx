@@ -17,10 +17,7 @@ import { TextArea } from '@/components/ui/TextArea';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import type { Formularfehler } from '@/lib/formularfehler';
 import { fetchPatient, fullName, type Patient } from '@/features/patients/api';
-import {
-  useTextverlustschutz,
-  type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+import { useTextverlustschutz, type Verlustschutztexte } from '@/app/Textverlustschutz';
 import { canWriteQuestionnaire, type CurrentUser } from '@/features/session/types';
 import { abschnitte } from './abschnitte';
 import { antwortFehler, type Antwort, type Antworten } from './antworten';

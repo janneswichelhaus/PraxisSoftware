@@ -34,9 +34,6 @@ import {
   fetchAppointment,
   fetchAppointments,
   fetchBelegteZeiten,
-  fetchAssignableTherapists,
-  fetchAssignableTrainers,
-  fetchLocations,
   terminBezeichnung,
   istAusserhalbArbeitszeit,
   istVergangenheit,
@@ -61,7 +58,6 @@ import { TerminPanel } from './TerminPanel';
 import { TerminAktionenDialog } from './TerminAktionen';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Segment } from '@/components/ui/Segment';
-import { leseMeldung } from './terminformular';
 import { letzterKalenderstand, merkeKalenderstand } from './kalenderstand';
 import { SpannenBild } from './Laengenzeichen';
 import { naechsteAuswahl, type Spanne } from './useSpanneAufziehen';
@@ -96,6 +92,12 @@ import {
   kalenderwoche,
   tagePlus,
 } from '@/lib/datum';
+import {
+  fetchAssignableTherapists,
+  fetchAssignableTrainers,
+  fetchLocations,
+} from '@/features/staff/api';
+import { leseMeldung } from '@/lib/meldung';
 
 /** Bevorzugt das Terminfenster, sonst die kürzere Dauer (ANN-317, BEF-136). */
 const LUECKEN_DAUERN = [TERMINFENSTER_MINUTEN, KURZE_TERMINDAUER_MINUTEN] as const;

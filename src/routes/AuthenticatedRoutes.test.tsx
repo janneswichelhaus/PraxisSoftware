@@ -10,6 +10,7 @@ import type * as EinsichtModule from '@/features/platform-access/einsicht';
 import type * as FleetApiModule from '@/features/fleet/api';
 import { AuthenticatedRoutes } from './AuthenticatedRoutes';
 import { renderWithProviders, testUser } from '@/test-utils';
+import type * as StaffApi from '@/features/staff/api';
 
 // Der Entwurfsspeicher des Verordnungsformulars bindet an die Benutzer-ID
 // aus der Sitzung (VER-003, ANN-019); ohne diesen Mock würde useSession()
@@ -57,10 +58,14 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
     ...actual,
     fetchAppointment: () => Promise.resolve(null),
     fetchAppointments: () => Promise.resolve([]),
-    fetchAssignableTherapists: () => Promise.resolve([]),
-    fetchLocations: () => Promise.resolve([]),
   };
 });
+
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: () => Promise.resolve([]),
+  fetchLocations: () => Promise.resolve([]),
+}));
 vi.mock('@/features/documentation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof DokumentationApiModule>()),
   fetchTreatmentDocumentation: () => Promise.resolve({ primary: null, addenda: [] }),

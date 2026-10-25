@@ -23,7 +23,7 @@ import { DocumentationShell } from './DocumentationShell';
 import { Einfuegemeldung } from './Einfuegemeldung';
 import { useEinfuegen } from './einfuegen';
 import { statuswechselText, type Statuswechsel } from './format';
-import { useTextverlustschutz } from './Textverlustschutz';
+import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
 import { BereitsFinalisiert, TextUebernehmen } from './Zustaende';

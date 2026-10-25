@@ -10,8 +10,7 @@ import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { leseRueckweg } from '@/lib/rueckweg';
-import { fetchLocations } from '@/features/appointments/api';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { fullName } from '@/features/patients/api';
 import { canManageStaffPrivateDetails, type CurrentUser } from '@/features/session/types';
 import {
@@ -22,6 +21,7 @@ import {
   type StaffFeld,
   type StaffMasterDataValues,
   type StaffMember,
+  fetchLocations,
 } from './api';
 import { StaffMasterDataFields } from './StaffMasterDataFields';
 import {

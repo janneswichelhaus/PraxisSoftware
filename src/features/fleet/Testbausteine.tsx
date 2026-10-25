@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router-dom';
-import { leseMeldung } from '@/features/appointments/terminformular';
 import type { BikeFocus } from './bike3d/BikeModel3D';
 import type { BikeMarker, BikePick, ModelPoint } from './bike3d/zones';
+import { leseMeldung } from '@/lib/meldung';
 
 /** Das Ziel eines Vorgangs im Test: Pfad, Suchteil und mitgegebene Meldung. */
 export function Zielanzeige() {

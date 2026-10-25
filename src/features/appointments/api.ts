@@ -346,55 +346,6 @@ export async function fetchAppointment(appointmentId: string): Promise<Appointme
   return antwort(appointmentSchema, data, 'Der Termin konnte nicht geladen werden.');
 }
 
-const therapistSchema = z.object({
-  staff_member_id: z.string(),
-  display_name: z.string(),
-});
-export type AssignableTherapist = z.infer<typeof therapistSchema>;
-
-/**
- * Zuordenbare behandelnde Personen.
- *
- * Bewusst über eine Serverfunktion: die RLS auf `user_roles` zeigt einem
- * Nicht-owner die Rollen anderer Accounts nicht, ein Join im Client bliebe
- * deshalb leer. Geliefert wird nur ID und Anzeigename (ADR-004).
- */
-export async function fetchAssignableTherapists(): Promise<AssignableTherapist[]> {
-  const { data, error } = (await getSupabase().rpc('list_assignable_therapists')) as {
-    data: unknown;
-    error: unknown;
-  };
-  if (error) throw new Error('Die behandelnden Personen konnten nicht geladen werden.');
-  return z.array(therapistSchema).parse(data ?? []);
-}
-
-/**
- * Wer einen Trainingstermin betreuen kann (TRN-004, ANN-176): die Personen mit
- * der Rolle Trainingsbetreuung. Für owner, Büro und Trainingsbetreuung; den
- * Behandlungsrollen liefert der Server nichts.
- */
-export async function fetchAssignableTrainers(): Promise<AssignableTherapist[]> {
-  const { data, error } = (await getSupabase().rpc('list_assignable_trainers')) as {
-    data: unknown;
-    error: unknown;
-  };
-  if (error) throw new Error('Die Trainingsbetreuung konnte nicht geladen werden.');
-  return z.array(therapistSchema).parse(data ?? []);
-}
-
-const locationSchema = z.object({ id: z.string(), name: z.string() });
-export type Location = z.infer<typeof locationSchema>;
-
-export async function fetchLocations(): Promise<Location[]> {
-  const { data, error } = await getSupabase()
-    .from('locations')
-    .select('id, name')
-    .order('name', { ascending: true });
-
-  if (error) throw new Error('Die Standorte konnten nicht geladen werden.');
-  return z.array(locationSchema).parse(data ?? []);
-}
-
 /** Ortsangabe eines Termins in einer Zeile - passend zur Terminart. */
 export function locationSummary(appointment: Appointment): string {
   if (appointment.appointment_type === 'practice') return appointment.location_name ?? '—';

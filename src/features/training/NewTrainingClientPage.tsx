@@ -13,7 +13,7 @@ import { Section } from '@/components/ui/Section';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import { alsFormularfehler } from '@/lib/formularfehler';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import {
   TRAINING_BESCHRIFTUNG,
   TRAINING_FELDER,

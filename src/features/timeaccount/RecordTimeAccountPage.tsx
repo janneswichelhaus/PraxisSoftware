@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/abfolge';
 import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
 import { tagUmplanenAdresse } from '@/features/appointments/tagumplanen';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { canManageAppointments, isOwner, type CurrentUser } from '@/features/session/types';
 import { blocksText } from '@/features/working-time/rules';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';

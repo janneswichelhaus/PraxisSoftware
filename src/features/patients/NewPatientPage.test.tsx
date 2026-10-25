@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
-import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as RouterModul from 'react-router-dom';
 import { morgenOrtszeit, renderWithProviders } from '@/test-utils';
+import type * as StaffApi from '@/features/staff/api';
 
 const createPatient = vi.fn();
 // PRX-015: ohne Angabe keine Dublette.
@@ -13,15 +13,11 @@ const findPossibleDuplicates = vi.fn(
 );
 const navigate = vi.fn();
 const fetchAssignableTherapists = vi.fn();
-
-vi.mock('@/features/appointments/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof AppointmentsApi>();
-  return {
-    ...actual,
-    fetchAssignableTherapists: () =>
-      fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
-  };
-});
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: () =>
+    fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
+}));
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();

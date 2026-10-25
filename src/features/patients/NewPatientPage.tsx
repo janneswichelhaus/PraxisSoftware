@@ -13,8 +13,7 @@ import { weiterMitEnter } from '@/lib/weiterMitEnter';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
-import { fetchAssignableTherapists } from '@/features/appointments/api';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
@@ -31,6 +30,7 @@ import {
   STAMMDATEN_REIHENFOLGE,
   stammdatenFeldId,
 } from './stammdatenfelder';
+import { fetchAssignableTherapists } from '@/features/staff/api';
 
 /** Der Vorgang heißt hier wie in der Liste und in der Kopfsuche (PAT-21). */
 const ANLEGEN = `${BEGRIFFE.patientIn} anlegen`;

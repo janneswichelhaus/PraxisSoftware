@@ -60,6 +60,9 @@ vi.mock('@/features/patients/api', async (importOriginal) => ({
 vi.mock('@/features/staff/api', async (importOriginal) => ({
   ...(await importOriginal<typeof StaffApi>()),
   fetchStaffMembers: () => fetchStaffMembers() as Promise<StaffApi.StaffMember[]>,
+  fetchAssignableTherapists: () =>
+    fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
+  fetchLocations: () => fetchLocations() as Promise<StaffApi.Location[]>,
 }));
 
 vi.mock('./api', async (importOriginal) => {
@@ -68,9 +71,6 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchAppointment: (id: string) =>
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
-    fetchAssignableTherapists: () =>
-      fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
-    fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
     updateAppointment: (
       id: string,
       stand: string,

@@ -4,10 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { renderWithProviders, testUser } from '@/test-utils';
 import type * as WorkingTimeApi from './api';
-import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as SchedulingApi from '@/features/scheduling/api';
 import { testOpenRequest, testOwnRequest, testWeek, testWorkingTime } from './testdata';
 import type * as Datum from '@/lib/datum';
+import type * as StaffApi from '@/features/staff/api';
 
 /**
  * Die Seite Arbeitszeit (AZ-001): der eigene Plan heute und - genehmigt - ab
@@ -26,23 +26,17 @@ vi.mock('./api', async (importOriginal) => {
     withdrawRequest: (...a: unknown[]) => withdrawRequest(...a) as unknown,
   };
 });
-
-// ORG-003: Die Seite trägt seit der Zusammenlegung auch die Planung je
-// Person; deren Abfragen stehen hier still.
-vi.mock('@/features/appointments/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof AppointmentsApi>();
-  return {
-    ...actual,
-    fetchAssignableTherapists: () =>
-      Promise.resolve([
-        { staff_member_id: '55555555-5555-4555-8555-000000000002', display_name: 'Anna Beispiel' },
-        {
-          staff_member_id: '55555555-5555-4555-8555-000000000004',
-          display_name: 'Tim Teamleitung',
-        },
-      ]),
-  };
-});
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: () =>
+    Promise.resolve([
+      { staff_member_id: '55555555-5555-4555-8555-000000000002', display_name: 'Anna Beispiel' },
+      {
+        staff_member_id: '55555555-5555-4555-8555-000000000004',
+        display_name: 'Tim Teamleitung',
+      },
+    ]),
+}));
 
 // Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
 vi.mock('@/lib/datum', async (importOriginal) => ({

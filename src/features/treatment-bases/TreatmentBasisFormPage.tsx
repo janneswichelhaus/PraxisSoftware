@@ -21,7 +21,7 @@ import {
   EINGABETEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+} from '@/app/Textverlustschutz';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import { ordneScanZu } from '@/features/files/api';
 import { GrundlagenVerlauf } from './GrundlagenVerlauf';

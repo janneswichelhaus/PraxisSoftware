@@ -3,10 +3,10 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, useLocation } from 'react-router-dom';
 import type * as SchedulingApi from './api';
-import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as DokumentationApi from '@/features/documentation/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 import type * as Datum from '@/lib/datum';
+import type * as StaffApi from '@/features/staff/api';
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
 const TIM = '55555555-5555-4555-8555-000000000004';
@@ -34,15 +34,11 @@ vi.mock('./api', async (importOriginal) => {
     saveAppointmentGrid: (minuten: number) => saveAppointmentGrid(minuten) as Promise<void>,
   };
 });
-
-vi.mock('@/features/appointments/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof AppointmentsApi>();
-  return {
-    ...actual,
-    fetchAssignableTherapists: () =>
-      fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
-  };
-});
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: () =>
+    fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
+}));
 
 // Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
 vi.mock('@/lib/datum', async (importOriginal) => ({

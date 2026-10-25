@@ -15,9 +15,14 @@ import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Textlink } from '@/components/ui/Textlink';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { fetchPatient } from '@/features/patients/api';
-import { fetchStaffMembers } from '@/features/staff/api';
+import {
+  fetchStaffMembers,
+  fetchAssignableTherapists,
+  fetchLocations,
+  type AssignableTherapist,
+} from '@/features/staff/api';
 import type { CurrentUser } from '@/features/session/types';
 import {
   AppointmentFormFields,
@@ -31,8 +36,6 @@ import {
   appointmentToFormValues,
   fensterEnde,
   fetchAppointment,
-  fetchAssignableTherapists,
-  fetchLocations,
   istAusserhalbArbeitszeit,
   istVergangenheit,
   liegtInVergangenheit,
@@ -45,7 +48,6 @@ import {
   type AppointmentFormField,
   type AppointmentFormValues,
   type AppointmentType,
-  type AssignableTherapist,
   kalenderZumTermin,
   zurueckZumTermin,
 } from './api';

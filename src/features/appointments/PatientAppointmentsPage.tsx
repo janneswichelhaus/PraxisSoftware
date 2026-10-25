@@ -48,7 +48,8 @@ import {
 } from './api';
 import { schreibeParameter, ZOOM_STANDARD } from './calendar';
 import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
-import { leseAngelegtenTermin, leseMeldung } from './terminformular';
+import { leseAngelegtenTermin } from './terminformular';
+import { leseMeldung } from '@/lib/meldung';
 
 /**
  * Der Terminbereich der Akte (AKTE-003, gruppiert seit AKTE-006).

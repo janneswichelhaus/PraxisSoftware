@@ -15,7 +15,7 @@ import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import type { CurrentUser } from '@/features/session/types';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import {

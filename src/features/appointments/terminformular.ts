@@ -196,17 +196,3 @@ export function leseDauer(suche: URLSearchParams): number | null {
   const minuten = Number(wert);
   return minuten > 0 && minuten < 24 * 60 ? minuten : null;
 }
-
-/**
- * Eine Bestätigung, die ein anderer Vorgang beim Seitenwechsel mitgibt
- * (DOK-15, ZST-17, TER-04).
- *
- * Die Absprache ist `navigate(ziel, { state: { meldung } })`: ein kurzer Satz
- * ohne Namen, etwa „Entwurf gespeichert." oder „3 Termine angelegt.". Er
- * steht im Verlauf des Browsers, nicht in der Adresse - und nirgends sonst.
- */
-export function leseMeldung(zustand: unknown): string | null {
-  if (typeof zustand !== 'object' || zustand === null || !('meldung' in zustand)) return null;
-  const { meldung } = zustand;
-  return typeof meldung === 'string' && meldung.trim() !== '' ? meldung : null;
-}

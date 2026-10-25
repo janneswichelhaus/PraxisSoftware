@@ -17,14 +17,13 @@ import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
-import { fetchAssignableTherapists } from '@/features/appointments/api';
 import { dateLong } from '@/features/working-time/format';
 import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import {
   EINGABETEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+} from '@/app/Textverlustschutz';
 import { canManageWorkingHours, type CurrentUser } from '@/features/session/types';
 import {
   WOCHENTAGE,
@@ -48,6 +47,7 @@ import {
   type Blockfehler,
 } from './zeitbloecke';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { fetchAssignableTherapists } from '@/features/staff/api';
 
 /**
  * Arbeitszeiten und Planungseinstellungen der Praxis (CAL-005).

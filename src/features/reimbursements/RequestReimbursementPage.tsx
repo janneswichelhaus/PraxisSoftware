@@ -21,7 +21,7 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { DATEI_ACCEPT } from '@/features/files/dokumentarten';
 import { Kameradialog } from '@/features/files/Kameradialog';
 import { useKamera } from '@/features/files/kamera';

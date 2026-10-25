@@ -12,7 +12,7 @@ import {
   EINGABETEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+} from '@/app/Textverlustschutz';
 import { formatDate } from '@/lib/datum';
 import { wertText } from '@/lib/erfassungsgroessen';
 import {

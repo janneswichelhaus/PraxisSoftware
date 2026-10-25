@@ -12,7 +12,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { beginne, kannZurueck, weiter, zurueck, type Abfolge } from '@/components/ui/abfolge';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { fetchDayPlan, rufnummern } from '@/features/today/api';
 import { fetchAppointment, recordNoShow, type Appointment } from './api';
 import {

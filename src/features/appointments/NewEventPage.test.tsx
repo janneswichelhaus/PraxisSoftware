@@ -89,6 +89,7 @@ vi.mock('@/features/staff/api', async (importOriginal) => {
   return {
     ...actual,
     fetchStaffMembers: () => fetchStaffMembers() as Promise<StaffApi.StaffMember[]>,
+    fetchLocations: () => fetchLocations() as Promise<StaffApi.Location[]>,
   };
 });
 
@@ -96,7 +97,6 @@ vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
   return {
     ...actual,
-    fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
     createAppointmentEvent: (werte: AppointmentsApi.EreignisFormValues, bestaetigt: boolean) =>
       createAppointmentEvent(werte, bestaetigt) as Promise<number>,
   };

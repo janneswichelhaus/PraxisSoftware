@@ -17,7 +17,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
   appointmentTypeLabels,
   appointmentTypeSchema,
-  fetchAssignableTherapists,
   schreibeTerminVorbelegung,
   type AppointmentType,
 } from '@/features/appointments/api';
@@ -40,6 +39,7 @@ import {
   type Slot,
   type TravelRating,
 } from './api';
+import { fetchAssignableTherapists } from '@/features/staff/api';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

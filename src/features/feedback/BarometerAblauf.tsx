@@ -16,7 +16,7 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { FEEDBACK_KEY, submitBarometer, type BarometerAnswers } from './api';
 import {
   SKALEN,

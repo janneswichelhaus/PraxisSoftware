@@ -13,8 +13,7 @@ import { alsFormularfehler } from '@/lib/formularfehler';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
-import { fetchAssignableTherapists } from '@/features/appointments/api';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import {
   fetchPatient,
   fullName,
@@ -31,6 +30,7 @@ import {
   STAMMDATEN_REIHENFOLGE,
   stammdatenFeldId,
 } from './stammdatenfelder';
+import { fetchAssignableTherapists } from '@/features/staff/api';
 
 const TITEL = 'Stammdaten bearbeiten';
 

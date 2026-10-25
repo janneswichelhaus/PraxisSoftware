@@ -20,7 +20,7 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import { leseRueckweg } from '@/lib/rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import {

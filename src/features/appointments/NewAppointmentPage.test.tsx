@@ -7,6 +7,7 @@ import type * as PatientsApi from '@/features/patients/api';
 import type * as GrundlagenApi from '@/features/treatment-bases/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
+import type * as StaffApi from '@/features/staff/api';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
@@ -54,9 +55,6 @@ vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
   return {
     ...actual,
-    fetchAssignableTherapists: () =>
-      fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
-    fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
     createAppointment: (
       patientId: string,
       values: unknown,
@@ -73,6 +71,13 @@ vi.mock('./api', async (importOriginal) => {
       ) as Promise<string>,
   };
 });
+
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: () =>
+    fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
+  fetchLocations: () => fetchLocations() as Promise<StaffApi.Location[]>,
+}));
 
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),

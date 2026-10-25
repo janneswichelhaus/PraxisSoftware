@@ -14,7 +14,7 @@ import {
   EINGABETEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+} from '@/app/Textverlustschutz';
 import type { Erhebung } from './api';
 import { Ereignisliste, Messreihenbild } from './Messreihenbild';
 import type { ScoreDefinition } from './schema';

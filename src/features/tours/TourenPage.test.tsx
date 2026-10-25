@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as TodayApi from '@/features/today/api';
 import type * as Tagesroute from './tagesroute';
 import type * as Startort from './startort';
 import { renderWithProviders, testUser } from '@/test-utils';
+import type * as StaffApi from '@/features/staff/api';
 
 /**
  * Tourenseite (MAP-006b): lädt Tagesliste und Tagesroute der gewählten
@@ -17,14 +17,10 @@ const fetchDayRoute = vi.fn();
 const fetchAssignableTherapists = vi.fn();
 const fetchStandorte = vi.fn();
 const karte = vi.fn();
-
-vi.mock('@/features/appointments/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof AppointmentsApi>();
-  return {
-    ...actual,
-    fetchAssignableTherapists: () => fetchAssignableTherapists() as unknown,
-  };
-});
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: () => fetchAssignableTherapists() as unknown,
+}));
 
 vi.mock('@/features/today/api', async (importOriginal) => {
   const actual = await importOriginal<typeof TodayApi>();

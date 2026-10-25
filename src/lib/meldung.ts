@@ -69,3 +69,13 @@ export function useMeldungAusVerlauf(): {
         : null;
   return { meldung, verwerfen };
 }
+
+/**
+ * Eine Bestätigung, die ein anderer Vorgang beim Seitenwechsel mitgibt: `navigate(ziel, { state:
+ * { meldung } })`, ein kurzer Satz ohne Namen. Er steht im Verlauf des Browsers, nie in der Adresse.
+ */
+export function leseMeldung(zustand: unknown): string | null {
+  if (typeof zustand !== 'object' || zustand === null || !('meldung' in zustand)) return null;
+  const { meldung } = zustand;
+  return typeof meldung === 'string' && meldung.trim() !== '' ? meldung : null;
+}
