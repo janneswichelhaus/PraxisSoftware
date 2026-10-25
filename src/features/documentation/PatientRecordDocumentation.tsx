@@ -16,6 +16,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { fetchAppointment } from '@/features/appointments/api';
+import { VERLAUF_ANKER } from '@/features/patients/akte';
 import type { Patient } from '@/features/patients/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
@@ -28,7 +29,7 @@ import {
   type RecordAppointment,
   type TreatmentNote,
 } from './api';
-import { FREITEXT, fristDatum } from './format';
+import { fristDatum } from './format';
 import { formatLocalTime, formatLocalTimeRange } from '@/lib/datum';
 import {
   appointmentStatusLabels,
@@ -36,9 +37,7 @@ import {
   appointmentTypeHint,
   staffName,
 } from '@/lib/termin';
-
-/** Anker des Behandlungsverlaufs in der Akte - Ziel von „Bisherige Doku →“ (BEF-058). */
-export const VERLAUF_ANKER = 'behandlungsverlauf';
+import { FREITEXT } from '@/components/ui/textStile';
 
 /** „28.09.2026" in der Zeit der Praxis. */
 function kurzesDatum(iso: string, zone: string): string {

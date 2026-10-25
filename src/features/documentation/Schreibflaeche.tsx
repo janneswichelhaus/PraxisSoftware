@@ -5,8 +5,8 @@ import { Disclosure } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { rueckwegBeschriftung } from '@/lib/rueckweg';
-import { FREITEXT } from './format';
 import { kalenderZumTermin } from '@/lib/termin';
+import { FREITEXT } from '@/components/ui/textStile';
 
 /**
  * Die Hülle der Schreibseite für die übrigen Wege eines Eintrags: Nachtrag,

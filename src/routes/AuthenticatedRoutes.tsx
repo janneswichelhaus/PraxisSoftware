@@ -44,7 +44,7 @@ import {
   EditTreatmentBasisPage,
   NewTreatmentBasisPage,
 } from '@/features/treatment-bases/TreatmentBasisFormPage';
-import { TermineUebertragenPage } from '@/features/treatment-bases/TermineUebertragenPage';
+import { TermineUebertragenPage } from '@/features/appointments/TermineUebertragenPage';
 import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { TagUmplanenPage } from '@/features/appointments/TagUmplanenPage';
 import { NewAppointmentPage } from '@/features/appointments/NewAppointmentPage';

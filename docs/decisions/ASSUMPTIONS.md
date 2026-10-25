@@ -274,7 +274,7 @@ Technik · entschieden (Jannes) · 2026-09-08 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Anlass ist der Hausbesuch: reißt die Verbindung ab, merkt man es sonst erst beim fehlgeschlagenen Speichern. Ein regelmäßiger Ping wäre genauer, aber eine wiederkehrende Verbindung ohne fachlichen Grund (§18) und ein Signal, wann ein Gerät benutzt wird (§20). Der Preis ist bekannt und benannt: ein Gerät hinter einem Anmeldeportal gilt als verbunden, deshalb behauptet der Text nicht, der Server sei erreichbar. Die Anzeige ist keine Offline-Fähigkeit (ADR-015 Punkt 16, ADR-001). Unsicher: ob der Hinweis früh genug kommt, um Textverlust zu verhindern.
 
-**Anker.** `src/app/verbindung.ts` (`useIstVerbunden`); `src/app/Verbindungsanzeige.tsx` in `src/app/AppShell.tsx`; seit UX-009 zusätzlich `src/features/documentation/Textverlustschutz.tsx`.
+**Anker.** `src/app/verbindung.ts` (`useIstVerbunden`); `src/app/Verbindungsanzeige.tsx` in `src/app/AppShell.tsx`; seit UX-009 zusätzlich `src/app/Textverlustschutz.tsx`.
 
 **Änderungspfad.** Zusätzliche Prüfung gegen den Server: eine Abfrage in `useIstVerbunden` · Aufwand `klein`, aber datenschutzrelevant und deshalb nicht ohne Entscheidung. Anderer Wortlaut oder dauerhafte Anzeige: eine Stelle · Aufwand `klein`. Echte Offline-Fähigkeit: eigenes Epic nach ADR-001 · Aufwand `groß`.
 
@@ -588,7 +588,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Die Wahl des Kanals bleibt Sache der Praxis; die Anwendung hält fest, was geschehen ist, und schafft keinen Empfänger, der vorher keiner war — deshalb kein neuer Verarbeitungsweg nach §3.5. Ein Vermerk, der eine verschobene Zeit überlebt, wäre schlimmer als keiner; der Vergleich gegen `updated_at` löst das ohne Frist und ohne Aufräumlauf, um den Preis, dass „nie mitgeteilt" und „seit der Mitteilung geändert" gleich aussehen — beabsichtigt, der Handlungsbedarf ist derselbe. Unsicher und deshalb im Prüfpaket: ob die Datenschutzprüfung den Weg `email` in der Auswahl sehen will.
 
-**Anker.** Tabelle `public.appointment_notifications`, `app.appointment_notification_channels()`, `public.set_appointment_notification()` und `public.add_appointment_notification()` in `supabase/migrations/20260912180000_appointment_notification.sql`; `notificationChannelSchema` in `src/features/appointments/api.ts`.
+**Anker.** Tabelle `public.appointment_notifications`, `app.appointment_notification_channels()`, `public.set_appointment_notification()` und `public.add_appointment_notification()` in `supabase/migrations/20260912180000_appointment_notification.sql`; `notificationChannelSchema` in `src/lib/termin.ts`.
 
 **Änderungspfad.** Weg streichen oder ergänzen: ein Wert in Constraint, Zod-Schema und Beschriftungstabelle · Aufwand `klein`; gesetzte Vermerke eines gestrichenen Weges wären einmalig zu entfernen. Verfallsregel lockern: Vergleich gegen einen eigenen Zeitstempel, den nur `update_appointment` bei Zeitänderungen bumpt · Aufwand `mittel`. Echter Versand nach B15: eigenes Epic · Aufwand `groß`. **Fassung 2 (ABN-003, 2026-10-02, Abnahme Jannes, BEF-093):** Der Vermerk verfällt nur noch bei Änderungen, die die Patient:in betreffen (Beginn, Ende, Terminart, Ort, Adresse, Person, Absage); Anker ist die Spalte `appointments.patient_relevant_changed_at` mit dem Trigger `appointments_patient_relevant_change` in `supabase/migrations/20261002122000_abn_003_patient_relevant_change.sql`. Weitere Spalten als relevant erklären: die Liste im Trigger ergänzen · Aufwand `klein`.
 
@@ -674,7 +674,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Ein eigener Wachposten käme an das Zurück des Browsers nur über einen Eingriff in die Verlaufsliste heran — selbst gebaute Infrastruktur, wo die eingesetzte Bibliothek eine geprüfte anbietet (ADR-015, §3.4 sinngemäß); der gewählte Weg ändert die Routentabelle nicht und ist mit zwei Dateien zurückzunehmen. §19 und ADR-016 machen die Finalisierung zum ausdrücklichen Schritt mit Folgen — sie darf nicht Nebenwirkung eines Tastendrucks sein, der Entwurf ist die leichter umkehrbare Seite (§16). Ein Seitenwechsel nach fehlgeschlagenem Speichern wäre der stille Verlust, den §13 ausschließt.
 
-**Anker.** `src/features/documentation/Textverlustschutz.tsx` (`useTextverlustschutz`); Router in `src/app/App.tsx`, Abmeldeschutz in `src/app/abmeldeschutz.ts` und `AbmeldeschutzProvider.tsx`; Tests in `Textverlustschutz.test.tsx` (29 Fälle) und `tests/e2e/authenticated/treatment-note-workflows.spec.ts`.
+**Anker.** `src/app/Textverlustschutz.tsx` (`useTextverlustschutz`); Router in `src/app/App.tsx`, Abmeldeschutz in `src/app/abmeldeschutz.ts` und `AbmeldeschutzProvider.tsx`; Tests in `Textverlustschutz.test.tsx` (29 Fälle) und `tests/e2e/authenticated/treatment-note-workflows.spec.ts`.
 
 **Änderungspfad.** Zurück auf `<BrowserRouter>`: zwei Dateien, dann entfällt der Schutz für interne Navigation ersatzlos · Aufwand `klein`. Speichern auch für die Korrektur anbieten: ein Parameter mehr, aber eine fachliche Entscheidung gegen ADR-016 · Aufwand `klein`, Folge `groß`. Schutz auf weitere Formulare ausdehnen: je Formular ein Aufruf des Hooks · Aufwand `klein` je Stelle. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -804,7 +804,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-17, bestätigt 2026-09-18 · Ja
 
 **Begründung.** `PROJECT_PRINCIPLES.md` 0.11 §8.1 nennt als Schranke „mindestens einen Rasterschritt" und hält zugleich fest, dass das Raster serverseitig durchgesetzt bleibt. „Vielfaches des Rasters" ist die Lesart, bei der mit dem Beginn auch das Ende auf einem Rasterpunkt liegt — dieselbe Regel, die für Ereignisse schon gilt (CAL-015b), und die Voraussetzung dafür, dass CAL-019 eine aufgezogene Spanne ohne Sonderfall übernimmt. 45 und 60 Minuten passen in jedes zulässige Raster (5, 10, 15). Der Bestandsschutz stammt unverändert aus ANN-037 und §8.1 („DARF NICHT an der Länge scheitern"). Das Kennzeichen wird gerechnet statt gespeichert, weil es vollständig aus zwei vorhandenen Werten folgt und so nie von ihnen abweichen kann (ADR-014). **Bestätigt am 2026-09-18:** Jannes hat festgelegt, dass die Praxis ausschließlich in 5-Minuten-Schritten terminiert; eine Zeit, die nicht auf einem Rasterpunkt beginnt, gibt es nicht.
 
-**Anker.** `app.is_valid_treatment_length` und die beiden Längenprüfungen in `supabase/migrations/20260917110000_free_appointment_length.sql`; `abweichendeLaengeMinuten` in `src/features/appointments/api.ts`, `Laengenzeichen.tsx`; Tests in `supabase/tests/appointment-window.test.ts` und `src/features/appointments/Laengenzeichen.test.tsx`.
+**Anker.** `app.is_valid_treatment_length` und die beiden Längenprüfungen in `supabase/migrations/20260917110000_free_appointment_length.sql`; `abweichendeLaengeMinuten` in `src/lib/termin.ts`, `src/components/ui/Laengenzeichen.tsx`; Tests in `supabase/tests/appointment-window.test.ts` und `src/components/ui/Laengenzeichen.test.tsx`.
 
 **Änderungspfad.** Länge ganz vom Raster lösen: `app.is_valid_treatment_length` auf „größer null" reduzieren und die Schrittweite des Minutenfelds entfernen · Aufwand `klein`, ohne Datenumzug. Kennzeichen an anderen Regellängen ausrichten: `app.appointment_window_options()` und `TERMINFENSTER_OPTIONEN` gemeinsam ändern (ein Datenbanktest hält sie gegeneinander) · Aufwand `klein`.
 
@@ -954,7 +954,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Die Vorgabe nennt eine einzige Grenze ausdrücklich: „nie mit abgerechneter Leistung". Leistungen gibt es noch nicht (ABR-EPIC-001), und der einzige objektive Marker dafür ist heute der Terminzustand `invoiced` — er ist deshalb die Grenze, die die Datenbank zieht. Ein abgesagter Termin kommt dazu, weil er nichts mehr plant: Ihn umzuhängen änderte rückwirkend die Zahlen zweier Grundlagen, ohne dass ihm etwas folgt. Ein durchgeführter Termin bleibt dagegen übertragbar — genau dann fällt im Alltag auf, dass die Behandlung schon zur Folgeverordnung gehörte. Das Kontingent des Ziels zu prüfen wäre widersprüchlich: Denselben Termin dort neu anzulegen ist erlaubt (CAL-022), ihn dorthin zu übertragen also zu verbieten, wäre eine Regel, die nur den bequemeren Weg trifft. Dass `updated_at` stehen bleibt, folgt aus CAL-012: Mitgeteilt wurde ein Zeitpunkt, und der ändert sich nicht. Unsicher: ob die Praxis einen bereits durchgeführten Termin überhaupt übertragen will — dann kommt `completed`/`documented` zur Ausschlussliste.
 
-**Anker.** Die Bedingung `status not in ('cancelled', 'invoiced')` in `public.transfer_appointments_to_treatment_basis`, `supabase/migrations/20260918140000_appointment_coverage.sql`; das Angebot der Oberfläche in `angebot` in `src/features/treatment-bases/TermineUebertragenPage.tsx`.
+**Anker.** Die Bedingung `status not in ('cancelled', 'invoiced')` in `public.transfer_appointments_to_treatment_basis`, `supabase/migrations/20260918140000_appointment_coverage.sql`; das Angebot der Oberfläche in `angebot` in `src/features/appointments/TermineUebertragenPage.tsx`.
 
 **Änderungspfad.** Weitere Zustände ausschließen: die Liste in der Funktion ergänzen und den Testfall spiegeln · Aufwand `klein`. Kontingent des Ziels doch prüfen: eine Abfrage vor dem Schreiben, Fehlermeldung mit Zahl · Aufwand `klein`, widerspricht aber CAL-022. Die Leistungsprüfung steht seit R3-001 neben der Zustandsprüfung; sie zurückzunehmen hieße, abgerechnete Termine wieder übertragbar zu machen. **Abnahme (Jannes, 2026-10-02):** Übertragung samt Überplanung und durchgeführter Termine als nachvollziehbare Zuordnungskorrektur bestätigt; abgerechnete Leistungen bleiben ausgeschlossen. Erfasste, nicht abgerechnete Leistungen müssen mitziehen, damit Termin, Leistung und Verbrauch zusammenpassen — BEF-097. **Fassung 2 (ABN-002, 2026-10-02, Abnahme Jannes):** Erfasste, nicht abgerechnete Leistungen ziehen in derselben Transaktion auf die Position des Ziels mit demselben Heilmittel mit, die genutzte Menge wandert; ohne passende Position oder bei erschöpftem Kontingent wird der ganze Vorgang abgewiesen (`supabase/migrations/20261002121000_abn_002_transfer_services.sql`). Durchgeführte Termine bietet die Oberfläche zugeklappt an (ANN-211).
 
@@ -2312,7 +2312,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Jannes (2026-09-30): „Hausbesuch ist Standard, nur ein Praxistermin muss auffallen.“ Ein Wort, das an jeder Stelle steht, sagt nichts mehr und frisst am Telefon eine Zeile je Karte (§5, ADR-015 Punkt zur Bedienbarkeit). Die Terminart bleibt im Datenmodell und in allen Formularen wählbar; nur die Anzeige des Regelfalls entfällt. Eine Praxis mit anderem Regelfall ändert eine Konstante.
 
-**Anker.** `REGEL_TERMINART` und `appointmentTypeHint` in `src/features/appointments/api.ts`; alle Kacheln und Zeilen lesen die Terminart darüber.
+**Anker.** `REGEL_TERMINART` und `appointmentTypeHint` in `src/lib/termin.ts`; alle Kacheln und Zeilen lesen die Terminart darüber.
 
 **Änderungspfad.** Anderer Regelfall (etwa eine Praxis, die überwiegend im Haus behandelt): `REGEL_TERMINART` auf `practice` setzen · Aufwand `klein`. Terminart immer zeigen: `appointmentTypeHint` gibt stets das Etikett zurück · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -2556,7 +2556,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** Die Abnahme (BEF-097) verlangt, dass auch durchgeführte Termine als Zuordnungskorrektur übertragen werden können; der Server erlaubt es seit CAL-022 (ANN-068). Ohne einen Weg in der Oberfläche bliebe die Korrektur unerreichbar. Zugeklappt und ohne Vorauswahl, weil der Regelfall die ungedeckten künftigen Termine sind und eine Korrektur der Vergangenheit eine bewusste Handlung bleiben soll (§13: nichts wandert unbemerkt). Unsicher: ob die Praxis die Korrektur häufiger braucht und der Abschnitt offen stehen sollte.
 
-**Anker.** `vergangenesAngebot` und der Aufklapper „Vergangene Termine“ in `src/features/treatment-bases/TermineUebertragenPage.tsx`; Test in `TermineUebertragenPage.test.tsx`.
+**Anker.** `vergangenesAngebot` und der Aufklapper „Vergangene Termine“ in `src/features/appointments/TermineUebertragenPage.tsx`; Test in `TermineUebertragenPage.test.tsx`.
 
 **Änderungspfad.** Abschnitt offen zeigen oder vorwählen: `Disclosure offen` beziehungsweise Startwert der Auswahl ändern · Aufwand `klein`. Vergangene gar nicht anbieten: den Abschnitt entfernen, der Server bleibt unverändert · Aufwand `klein`.
 
@@ -2902,7 +2902,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** Zuschnitt Jannes (UBK-EPIC-002, Teil 2 von CAL-015c, `IDEA-PRX-042`): passt / knapp / nicht, kein Name in der URL, bei Fehler „nicht geprüft“; die Woche ausdrücklich nicht. Die Stufen sind die des Wegbalkens (ANN-195) und von „Passt es?“ (ANN-238). 60 Minuten sind die Vorbelegung des Formulars (§8.1); der Lückenfinder kennt die Verordnung nicht. Ohne BEF-053 Punkt 1 färbte er Zeiten, die nur ausgeblendet, aber belegt sind; gezeigt wird nichts Neues, der Ausschnitt ist ohnehin geladen (AKTE-003). Die Matrix ist gegen den echten Dienst nie geprüft (PTV aus der Cloud gesperrt) — deshalb der eigene Sichtungsschritt. Unsicher: ob eine Fehlzeit als Grenze zu streng ist und ob 60 Minuten für Erstbefunde zu kurz sind.
 
-**Anker.** `freieLuecken`, `umfeldDer`, `useLueckenfinder`, `MIN_LUECKE_MINUTEN` in `src/features/appointments/lueckenfinder.ts`; `usePlanungsmatrizen` in `src/features/tours/fahrzeitfaktor.ts`; `lueckenDarstellung` und `zurueckgenommen` in `CalendarGrid.tsx`; `lueckenSpalten`, `lueckenHinweis` in `CalendarPage.tsx`; Tests `lueckenfinder.test.tsx`, `CalendarPage.test.tsx` („UBK-014“, „AKTE-003“).
+**Anker.** `freieLuecken` in `src/lib/zeitband.ts`; `umfeldDer`, `useLueckenfinder`, `MIN_LUECKE_MINUTEN` in `src/features/appointments/lueckenfinder.ts`; `usePlanungsmatrizen` in `src/features/tours/fahrzeitfaktor.ts`; `lueckenDarstellung` und `zurueckgenommen` in `CalendarGrid.tsx`; `lueckenSpalten`, `lueckenHinweis` in `CalendarPage.tsx`; Tests `zeitband.test.ts`, `lueckenfinder.test.tsx`, `CalendarPage.test.tsx` („UBK-014“, „AKTE-003“).
 
 **Änderungspfad.** Andere Dauer, etwa aus der Verordnung: `dauer` in `useLueckenfinder` aus dem Kalenderstand · Aufwand `klein`. Ein Band je Tag statt je Lücke: Darstellung in `CalendarGrid.tsx` · Aufwand `klein`. Auch in der Woche: `lueckenSpalten` für Tage statt Personen · Aufwand `klein`, kostet zwei Matrizen je Tag. Andere Termine wieder ausblenden: `zurueckgenommen` in `CalendarPage.tsx` · Aufwand `klein`.
 
@@ -3884,7 +3884,7 @@ Technik · offen · 2026-10-10 · — · — · Wiedervorlage: Jannes nach dem e
 
 **Begründung.** BEF-056, Entscheidung Jannes 2026-10-09 (Option 2): Am iPhone fragt beim Wegwischen der App niemand nach; der Schutz soll dort greifen, wo unterwegs am meisten passiert (§13). Drei Sekunden sind eine Pause im Satz, nicht zwischen zwei Buchstaben. Das Aussetzen nach einem Fehlschlag verhindert, dass die Sicherung im Konfliktfall still den Entwurf einer Kollegin überschreibt (ADR-016 Punkt 3 kennt beim Entwurf keine Versionen). Am Vermerk entstünde ein Entwurf ohne `visit_without_treatment`, den die Frist als gewöhnliche Behandlung festschriebe (ADR-016 Punkt 7, ANN-055) – dort bleibt es beim ausdrücklichen „Entwurf“ und „Mit Vermerk festschreiben“. Ein offener Bausteinvorschlag geht nie in den Text (ANN-120); die Befundangaben werden wie bisher daneben gesichert. Folge laut Befund: Entwürfe entstehen früher und laufen früher in die Frist.
 
-**Anker.** `SELBST_SICHERN_PAUSE_MS` und `selbst` in `useTextverlustschutz` (`src/features/documentation/Textverlustschutz.tsx`); die Bedingungen je Seite in `TreatmentNotePage.tsx`, `CompleteTreatmentPage.tsx` (`selbst: ohneBehandlung ? undefined : …`), `TreatmentNoteAddendumPage.tsx`, `TherapieberichtPage.tsx`, `ErhebungPage.tsx`. Geprüft in `Textverlustschutz.test.tsx` („Sicherung von selbst“, sechs Fälle) und den Seitentests.
+**Anker.** `SELBST_SICHERN_PAUSE_MS` und `selbst` in `useTextverlustschutz` (`src/app/Textverlustschutz.tsx`); die Bedingungen je Seite in `TreatmentNotePage.tsx`, `CompleteTreatmentPage.tsx` (`selbst: ohneBehandlung ? undefined : …`), `TreatmentNoteAddendumPage.tsx`, `TherapieberichtPage.tsx`, `ErhebungPage.tsx`. Geprüft in `Textverlustschutz.test.tsx` („Sicherung von selbst“, sechs Fälle) und den Seitentests.
 
 **Änderungspfad.** Andere Pause: die Konstante · Aufwand `klein`. Abschalten an einer Seite: `selbst` weglassen · Aufwand `klein`. Auch am Vermerk sichern: erst der Entwurfsweg muss den Vermerk tragen (Migration an `create_treatment_note`/`update_treatment_note`) · Aufwand `mittel`.
 
@@ -5855,7 +5855,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervo
 
 **Begründung.** Auftrag Jannes (16.10.): sofort offensichtlich, Hintergrund deaktiviert. Folgt FIX-016 (Rückfragen als Fenster). Ein versehentliches Enter darf nichts verwerfen (§13).
 
-**Anker.** `useTextverlustschutz` in `src/features/documentation/Textverlustschutz.tsx`; `Wechselrueckfrage` in `scheduling/SchedulingPage.tsx` und `billing/CatalogPage.tsx`.
+**Anker.** `useTextverlustschutz` in `src/app/Textverlustschutz.tsx`; `Wechselrueckfrage` in `scheduling/SchedulingPage.tsx` und `billing/CatalogPage.tsx`.
 
 **Änderungspfad.** Zurück zur Zeile: der Block `offen` in `useTextverlustschutz` · Aufwand `klein`.
 

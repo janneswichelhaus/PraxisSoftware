@@ -14,7 +14,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { usePatientRecord } from '@/features/patients/akte';
 import { WaitlistNotice } from '@/features/waitlist/WaitlistNotice';
-import { HausbesucheMitAlterAdresse } from './HausbesucheMitAlterAdresse';
 import {
   formatDate as formatIsoDate,
   dayKey,
@@ -34,7 +33,6 @@ import {
 } from '@/features/treatment-bases/api';
 import { deckungstext } from '@/features/treatment-bases/grundlagen';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
-import { Deckungszeichen } from './Deckungszeichen';
 import {
   fetchPatientAppointments,
   naechsteTerminSeite,
@@ -52,6 +50,8 @@ import {
   leseAngelegtenTermin,
 } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
+import { Deckungszeichen } from '@/features/treatment-bases/Deckungszeichen';
+import { HausbesucheMitAlterAdresse } from '@/features/patients/HausbesucheMitAlterAdresse';
 
 /**
  * Der Terminbereich der Akte (AKTE-003, gruppiert seit AKTE-006).

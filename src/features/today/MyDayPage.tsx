@@ -35,7 +35,7 @@ import {
 } from '@/features/session/types';
 import { NavigationZumTermin } from '@/features/appointments/NavigationStarten';
 import { fetchAbrechnungslage, positionText } from '@/features/appointments/abrechnungslage-api';
-import { fetchDayPlan, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS, type DayPlanEntry } from './api';
+import { nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { Tageskarte } from './Tagesliste';
 import { AnrufKnopf, AusfallKnopf, HakenRueckgaengig, SpaeterDa } from './Besuchsknoepfe';
 import { ausfallMoeglich, dokuZiel } from './besuchswege';
@@ -87,6 +87,7 @@ import {
   terminPfad,
 } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
+import { fetchDayPlan, type DayPlanEntry } from '@/lib/tagesplan';
 
 /**
  * Übersicht - der persönliche Einstieg.

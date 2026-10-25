@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
+import { appointmentKindSchema, appointmentTypeSchema } from '@/lib/termin';
 
 /**
  * Datenzugriff auf die Mitarbeiterverwaltung (STAFF-001).
@@ -221,14 +222,14 @@ const futureAppointmentSchema = z.object({
   id: z.string(),
   starts_at: z.string(),
   ends_at: z.string(),
-  appointment_type: z.enum(['home_visit', 'practice', 'video']),
+  appointment_type: appointmentTypeSchema,
   // Seit CAL-015b stehen hier auch Ereignisse des Praxisbetriebs: Sie hängen
   // an dieser Person genauso wie eine Behandlung, und wer sie deaktivieren
   // will, muss sie sehen. Seit CAL-024 gilt dasselbe für den Trainingstermin —
   // ausgeblendet bliebe er beim Deaktivieren unbemerkt stehen. Er zeigt dabei
   // nur die Belegung: Personenfelder und Titel sind an ihm leer (ADR-022
   // Punkt 11).
-  kind: z.enum(['therapy', 'internal', 'training']),
+  kind: appointmentKindSchema,
   title: z.string().nullable(),
   patient_id: z.string().nullable(),
   patient_given_name: z.string().nullable(),

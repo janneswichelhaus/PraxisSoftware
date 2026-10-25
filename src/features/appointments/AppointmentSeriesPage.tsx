@@ -24,7 +24,6 @@ import { alsFormularfehler, type Formularfehler } from '@/lib/formularfehler';
 import { istInternerPfad, leseRueckweg, mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { ArbeitszeitRueckfrage, UebernommeneAdresse } from './AppointmentFormFields';
 import { TerritoryHint } from '@/features/territories/TerritoryHint';
-import { Deckungszeichen } from './Deckungszeichen';
 import { Listenfehler, NachladeHinweis } from '@/components/ui/Rueckmeldung';
 import {
   checkAppointmentSlots,
@@ -55,6 +54,7 @@ import {
   type AppointmentType,
   type TerminVorbelegung,
 } from '@/lib/termin';
+import { Deckungszeichen } from '@/features/treatment-bases/Deckungszeichen';
 
 /**
  * „1 Termin" gegen „3 Termine" — an einer Stelle statt in jeder Meldung.

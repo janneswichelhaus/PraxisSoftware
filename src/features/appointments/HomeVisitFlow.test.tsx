@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { useLocation } from 'react-router-dom';
 import type * as AppointmentsApi from './api';
-import type * as TodayApi from '@/features/today/api';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { renderWithProviders, testAppointment } from '@/test-utils';
 import { TIPPSPERRE_MS } from '@/components/ui/GefuehrterAblauf';
 import { HomeVisitFlow } from './HomeVisitFlow';
+import type * as Tagesplan from '@/lib/tagesplan';
 
 const recordNoShow = vi.fn();
 const fetchAppointment = vi.fn();
@@ -17,9 +17,10 @@ vi.mock('./api', async (importOriginal) => ({
   fetchAppointment: (id: string) =>
     fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
 }));
-vi.mock('@/features/today/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof TodayApi>()),
-  fetchDayPlan: (...args: unknown[]) => fetchDayPlan(...args) as Promise<TodayApi.DayPlanEntry[]>,
+
+vi.mock('@/lib/tagesplan', async (importOriginal) => ({
+  ...(await importOriginal<typeof Tagesplan>()),
+  fetchDayPlan: (...args: unknown[]) => fetchDayPlan(...args) as Promise<Tagesplan.DayPlanEntry[]>,
 }));
 
 const termin = testAppointment({ appointment_type: 'home_visit' });

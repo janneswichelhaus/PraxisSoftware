@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Coordinate } from '@/lib/location/contract';
 import type { Stopp } from '@/features/tours/tagesroute';
-import type { DayPlanEntry } from './api';
 import { FAHRZEITEN_BEIM_OEFFNEN, anfahrtenAusRoute } from './fahrzeiten';
+import type { DayPlanEntry } from '@/lib/tagesplan';
 
 /**
  * Die Fahrzeiten der Übersicht (ANN-194): Aus der einen Route des Tages wird

@@ -13,16 +13,19 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { fetchPatientAppointments, type PatientAppointment } from '@/features/appointments/api';
+import { fetchPatientAppointments, type PatientAppointment } from './api';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import { formatDate, formatLocalDate, formatLocalTimeRange } from '@/lib/datum';
 import type { CurrentUser } from '@/features/session/types';
-import { grundlageBezeichnung, transferAppointmentsToTreatmentBasis } from './api';
+import {
+  grundlageBezeichnung,
+  transferAppointmentsToTreatmentBasis,
+} from '@/features/treatment-bases/api';
 import {
   useVerordnungenDerAkte,
   type Uebertragungsergebnis,
   type VerordnungMitZahlen,
-} from './grundlagen';
+} from '@/features/treatment-bases/grundlagen';
 import { staffName, appointmentTypeHint } from '@/lib/termin';
 
 /**

@@ -2052,3 +2052,29 @@ eingeklappt.
 | Berührt | `RequestWorkingTimePage.tsx` (Abschluss, `appointmentDaysText`), `arbeitszeit.spec.ts` |
 
 **Beobachtung.** Bei 375 × 667 blieben ohne Termine außerhalb der neuen Zeiten 38 px Luft. Die Terminzeile nannte drei Tage, die übrigen als Zahl und „plant die Praxisleitung nach dem Genehmigen um“. Mit den Terminen, die andere Testdateien vorher für Anna anlegen (dauerhaft prüft der Server ein Jahr lang jeden Tag), wurden daraus drei Zeilen, und die Seite rollte. Ob der Test grün wurde, hing von der Reihenfolge der Dateien ab; im ungünstigsten Fall fehlten 6 px. **Erledigt.** Beim Antrag nennt die Zeile nur die Tage, jeder Eintrag mit festen Leerzeichen, und „Entscheidet“ sagt „Praxisinhaber, plant nach dem Genehmigen um“; beim eigenen Eintragen bleibt „nach dem Eintragen umplanen“ an der Terminzeile. Gemessen am Cloud-Stack: dauerhaft ohne Termine 54 px Luft, mit 1116 Terminen an 123 Tagen 30 px (Antrag und Eintragen), einmalig 74 px, bei 1280 px 159 px. Der Test legt vier Termine Annas an Samstagen um 06:00 selbst an (Petra, ohne Plattformzugang) und nimmt sie danach mit `undo_appointment_creation` zurück.
+
+### BEF-024 — Der Terminkontext steht in zwei Schemata
+
+|         |                                                                                  |
+| ------- | -------------------------------------------------------------------------------- |
+| Datum   | 2026-09-21                                                                       |
+| Bereich | Oberfläche: `src/features/appointments/api.ts`, `src/features/staff/api.ts`      |
+| Quelle  | Loop CAL-027, beim Umbenennen der Bestandswerte                                  |
+| Status  | erledigt 2026-10-25 (Aufräumen Schritt 3): beide Enums aus `src/lib/termin.ts`   |
+| Berührt | `futureAppointmentSchema`; nichts an der Datenbank                               |
+
+**Beobachtung.** `appointmentKindSchema` ist als eine Quelle angelegt und wird
+von den Terminschemata benutzt. `futureAppointmentSchema` in `features/staff`
+zählt dieselben drei Werte stattdessen ein zweites Mal auf, statt sie zu
+importieren.
+
+**Warum das zählt.** CAL-027 hat beide Stellen anfassen müssen, und die zweite
+fiel nur auf, weil ein `grep` sie fand — kein Gate hätte sie gemeldet. Ein
+vierter Kontext (oder eine weitere Umbenennung) trifft dieselbe Lücke, und
+dann steht in der Verwaltung der Zugänge ein Schema, das den neuen Wert
+verwirft, während der Kalender ihn kennt: eine Zod-Ausnahme in einer Liste,
+die mit dem Kontext gar nichts vorhat.
+
+**Richtung.** `appointmentKindSchema` importieren statt aufzählen — eine
+Zeile, gehört in den nächsten Loop, der `features/staff` ohnehin anfasst. Als
+eigener Auftrag lohnt sie nicht.

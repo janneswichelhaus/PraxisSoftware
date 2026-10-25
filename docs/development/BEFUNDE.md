@@ -79,32 +79,6 @@ Schema genau einer Funktion gehört und die zweite Sicht ihr eigenes bekommt.
 Entschieden ist das nicht; es gehört in den Loop, der das nächste Feld an ein
 geteiltes Schema hängt.
 
-### BEF-024 — Der Terminkontext steht in zwei Schemata
-
-|         |                                                                                  |
-| ------- | -------------------------------------------------------------------------------- |
-| Datum   | 2026-09-21                                                                       |
-| Bereich | Oberfläche: `src/features/appointments/api.ts`, `src/features/staff/api.ts`      |
-| Quelle  | Loop CAL-027, beim Umbenennen der Bestandswerte                                  |
-| Status  | offen                                                                            |
-| Berührt | `futureAppointmentSchema`; nichts an der Datenbank                               |
-
-**Beobachtung.** `appointmentKindSchema` ist als eine Quelle angelegt und wird
-von den Terminschemata benutzt. `futureAppointmentSchema` in `features/staff`
-zählt dieselben drei Werte stattdessen ein zweites Mal auf, statt sie zu
-importieren.
-
-**Warum das zählt.** CAL-027 hat beide Stellen anfassen müssen, und die zweite
-fiel nur auf, weil ein `grep` sie fand — kein Gate hätte sie gemeldet. Ein
-vierter Kontext (oder eine weitere Umbenennung) trifft dieselbe Lücke, und
-dann steht in der Verwaltung der Zugänge ein Schema, das den neuen Wert
-verwirft, während der Kalender ihn kennt: eine Zod-Ausnahme in einer Liste,
-die mit dem Kontext gar nichts vorhat.
-
-**Richtung.** `appointmentKindSchema` importieren statt aufzählen — eine
-Zeile, gehört in den nächsten Loop, der `features/staff` ohnehin anfasst. Als
-eigener Auftrag lohnt sie nicht.
-
 ### BEF-026 — B13 ist mit dem eingebauten Mailversand nicht einlösbar
 
 |         |                                                                                       |

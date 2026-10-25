@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ablageLeeren, fachLesen, speicherImSpeicher, speicherSetzen } from '@/lib/geraeteablage';
-import type { DayPlanEntry } from '@/features/today/api';
 import { ausschalten, einrichten, einrichtungLesen } from './servicePhone';
 import {
   alsTagesplanTermin,
@@ -10,6 +9,7 @@ import {
   tagesplanVerwerfen,
 } from './tagesplan';
 import { entwuerfeLesen, entwurfSchreiben } from './entwuerfe';
+import type { DayPlanEntry } from '@/lib/tagesplan';
 
 /** OFF-001: Einrichtung des Diensttelefons und die Feldliste des Tagesplans (ADR-024 Punkt 6). */
 

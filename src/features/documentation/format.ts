@@ -3,17 +3,6 @@ import type { TreatmentNote } from './api';
 import { formatLocalDate, formatLocalTime, formatLocalTimeRange, tagePlus } from '@/lib/datum';
 
 /**
- * Klassen für klinischen Freitext, wo er gelesen wird (DOK-23).
- *
- * `whitespace-pre-wrap` hält die Absätze, wie sie getippt wurden. Es bricht
- * aber nur an Leerraum um: Ein kopierter Link, eine Messreihe wie
- * „Flex/Ext/Abd:120/0/10°“ oder ein langes Kompositum schöbe die Karte bei
- * 390 px waagerecht auf. `wrap-anywhere` bricht solche Ketten notfalls mitten
- * im Wort - wie `DetailRow` und das Bausteinfeld es schon tun.
- */
-export const FREITEXT = 'whitespace-pre-wrap wrap-anywhere';
-
-/**
  * Der Zusatz am Etikett eines Entwurfs (DOK-02).
  *
  * Ein Entwurf bleibt nicht ewig einer: Mit Ablauf der Dokumentationsfrist der

@@ -4,7 +4,7 @@ import type { Coordinate } from '@/lib/location/contract';
 import { usePlanungsmatrizen } from '@/features/tours/fahrzeitfaktor';
 import { fetchStandorte, tagesorte } from '@/features/tours/startort';
 import { fetchDayRoute, type Tagesstopp } from '@/features/tours/tagesroute';
-import type { Zeitband } from './calendar';
+import { freieLuecken, type Zeitband } from '@/lib/zeitband';
 import { luftStufe, type Luftstufe } from './wegpruefung';
 import { checkTravelFit, fetchVisitPosition, type Passfrage } from './wegpruefung-api';
 import { minutesOfDay, zeitpunktIn } from '@/lib/datum';
@@ -71,30 +71,6 @@ export type Lueckenfinder =
       /** Mindestens eine Lücke blieb ungeprüft - die Seite sagt es dazu. */
       readonly ungeprueft: boolean;
     };
-
-/**
- * Die freien Lücken innerhalb der Arbeitszeit: Bänder minus Belegtes, ab
- * `minLaenge` Minuten. Überschneidungen im Belegten werden zusammengelegt.
- */
-export function freieLuecken(
-  baender: readonly Zeitband[],
-  belegt: readonly Zeitband[],
-  minLaenge: number = MIN_LUECKE_MINUTEN,
-): Zeitband[] {
-  const besetzt = [...belegt].sort((a, b) => a.vonMinute - b.vonMinute);
-  const luecken: Zeitband[] = [];
-  for (const band of [...baender].sort((a, b) => a.vonMinute - b.vonMinute)) {
-    let stand = band.vonMinute;
-    for (const b of besetzt) {
-      if (b.bisMinute <= stand || b.vonMinute >= band.bisMinute) continue;
-      if (b.vonMinute > stand) luecken.push({ vonMinute: stand, bisMinute: b.vonMinute });
-      stand = Math.max(stand, b.bisMinute);
-      if (stand >= band.bisMinute) break;
-    }
-    if (stand < band.bisMinute) luecken.push({ vonMinute: stand, bisMinute: band.bisMinute });
-  }
-  return luecken.filter((l) => l.bisMinute - l.vonMinute >= minLaenge);
-}
 
 function schluessel(position: Coordinate): string {
   return `${position.lat},${position.lon}`;
@@ -206,7 +182,7 @@ export function useLueckenfinder({
       const ab = s.baender
         .map((b) => ({ vonMinute: Math.max(b.vonMinute, abMinute), bisMinute: b.bisMinute }))
         .filter((b) => b.bisMinute > b.vonMinute);
-      const luecken = freieLuecken(ab, s.belegt);
+      const luecken = freieLuecken(ab, s.belegt, MIN_LUECKE_MINUTEN);
       const umfeld = luecken.map((l) => umfeldDer(l, stopps, orte, zeitzone));
       const orteDerSpalte = [
         ...new Map(

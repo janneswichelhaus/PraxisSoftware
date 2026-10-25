@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DayPlanEntry } from '@/features/today/api';
 import type * as Tagesroute from './tagesroute';
 import type * as Startort from './startort';
 import { renderWithProviders } from '@/test-utils';
+import type { DayPlanEntry } from '@/lib/tagesplan';
 
 /**
  * Die Tagesroute in der Übersicht (MAP-006b): zugeklappt, erst beim

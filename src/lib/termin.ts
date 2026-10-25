@@ -179,6 +179,24 @@ export function kalenderZumTermin(id: string): string {
 }
 
 /**
+ * Der Kalender am Tag `datum` mit Patient:in und Verordnung als Kontext: Eine freie Stelle führt
+ * ins Terminformular dieser Person. Ein Test hält die Parameter gleich mit `schreibeParameter`.
+ */
+export function kalenderZurVerordnung(
+  datum: string,
+  patientId: string,
+  verordnungId: string,
+): string {
+  const suche = new URLSearchParams({
+    ansicht: 'tag',
+    datum,
+    patient: patientId,
+    verordnung: verordnungId,
+  });
+  return `/kalender?${suche.toString()}`;
+}
+
+/**
  * Zurück zu einem Termin nach einem Formular: in den Kalender, aus dem man kam, mit dem Termin
  * gewählt - sonst dorthin, wo man herkam, und ohne Rückweg in den Kalender am Tag des Termins.
  */

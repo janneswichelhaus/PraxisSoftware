@@ -15,6 +15,7 @@
 import { BEGRIFFE } from '@/lib/begriffe';
 import { istIsoDatum, monatPlus, tagePlus, wochenBeginn } from '@/lib/datum';
 import type { EreignisFormValues } from './api';
+import type { Zeitband } from '@/lib/zeitband';
 
 const KALENDER_ANSICHTEN = ['tag', 'woche'] as const;
 export type KalenderAnsicht = (typeof KALENDER_ANSICHTEN)[number];
@@ -602,11 +603,6 @@ export interface Arbeitsausnahme {
   kind: 'unavailable' | 'block';
   starts_at: string | null;
   ends_at: string | null;
-}
-
-export interface Zeitband {
-  vonMinute: number;
-  bisMinute: number;
 }
 
 /**

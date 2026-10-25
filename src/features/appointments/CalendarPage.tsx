@@ -75,7 +75,6 @@ import {
   type KalenderAnsicht,
   type KalenderParameter,
   type StatusFilter,
-  type Zeitband,
 } from './calendar';
 import {
   dayKey,
@@ -100,6 +99,7 @@ import {
   TERMIN_PARAM,
 } from '@/lib/termin';
 import { SpannenBild } from '@/components/ui/Laengenzeichen';
+import type { Zeitband } from '@/lib/zeitband';
 
 /** Bevorzugt das Terminfenster, sonst die kürzere Dauer (ANN-317, BEF-136). */
 const LUECKEN_DAUERN = [TERMINFENSTER_MINUTEN, KURZE_TERMINDAUER_MINUTEN] as const;

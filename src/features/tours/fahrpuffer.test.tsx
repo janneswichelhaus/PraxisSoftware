@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import type { DayPlanEntry } from '@/features/today/api';
 import type { Stopp } from './tagesroute';
+import type { DayPlanEntry } from '@/lib/tagesplan';
 
 /**
  * MAP-006c: Die Fahrzeiten kommen aus **einer** Route; geprüft wird jedes

@@ -8,7 +8,6 @@ import { fetchAppointment, reopenAppointment } from '@/features/appointments/api
 import { hakenZuruecknehmbar } from '@/features/appointments/haken';
 import { HomeVisitFlow } from '@/features/appointments/HomeVisitFlow';
 import { NichtAngetroffenAktion } from '@/features/appointments/NichtAngetroffen';
-import type { DayPlanEntry } from './api';
 import {
   VERSPAETUNG_MINUTEN,
   anrufNummer,
@@ -19,6 +18,7 @@ import {
 import { terminName } from './tagesstart';
 import { formatLocalTime } from '@/lib/datum';
 import { kalenderZumTermin } from '@/lib/termin';
+import type { DayPlanEntry } from '@/lib/tagesplan';
 
 /** Hörer im 20er-Raster, Strich 1,75, runde Enden (DESIGN.md 9.15). */
 function TelefonSymbol() {

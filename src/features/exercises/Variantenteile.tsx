@@ -4,9 +4,9 @@ import { Section } from '@/components/ui/Section';
 import { Tile, TileGrid } from '@/components/ui/Tile';
 import { zeilen } from '@/components/ui/zeilen';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { FREITEXT } from '@/features/documentation/format';
 import { BEGRIFFE } from '@/lib/begriffe';
 import type { Standarddosierung, Variante } from './api';
+import { FREITEXT } from '@/components/ui/textStile';
 
 /**
  * Die Teile einer Variante, wie Übungsseite und Durchsicht sie zeigen

@@ -3,7 +3,6 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as Geocode from '@/lib/location/geocode';
-import type * as AppointmentsApi from '@/features/appointments/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 /**
@@ -25,16 +24,6 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     setPatientAddressCoordinate: (...args: unknown[]) =>
       setPatientAddressCoordinate(...args) as Promise<void>,
-  };
-});
-
-// UBK-006: künftige Hausbesuche mit alter Anschrift und ihr Umstellen.
-const fetchVeralteteHausbesuche = vi.fn();
-const aktualisiereHausbesuchAdressen = vi.fn();
-vi.mock('@/features/appointments/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof AppointmentsApi>();
-  return {
-    ...actual,
     fetchVeralteteHausbesuche: (...args: unknown[]) =>
       fetchVeralteteHausbesuche(...args) as unknown,
     aktualisiereHausbesuchAdressen: (...args: unknown[]) =>
@@ -42,6 +31,9 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
   };
 });
 
+// Künftige Hausbesuche mit alter Anschrift und ihr Umstellen.
+const fetchVeralteteHausbesuche = vi.fn();
+const aktualisiereHausbesuchAdressen = vi.fn();
 const { AdresseVerorten } = await import('./AdresseVerorten');
 
 const OHNE = testPatient({

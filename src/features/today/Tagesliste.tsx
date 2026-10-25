@@ -8,20 +8,14 @@ import { TravelBar } from '@/components/ui/TravelBar';
 import { LetzterEintragVorDerTuer } from '@/features/appointments/Kurzblick';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { openItemsText, type IntakeItem } from '@/features/open-points/intake-api';
-import {
-  adressZeilen,
-  dayPlanStatusLabels,
-  dayPlanStatusTon,
-  offenGrund,
-  rufnummern,
-  type DayPlanEntry,
-} from './api';
+import { adressZeilen, dayPlanStatusLabels, dayPlanStatusTon, offenGrund } from './api';
 import { zugangMitStockwerk } from './stockwerk';
 import { einordnung, terminName, type Wegstrecke } from './tagesstart';
 import { erstaufnahmePfad } from '@/features/intake/stand';
 import { formatLocalTimeRange } from '@/lib/datum';
 import { kalenderZumTermin } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
+import { rufnummern, type DayPlanEntry } from '@/lib/tagesplan';
 
 /** Eine Pille der Karte: 36 px hoch, 14 px in 600 (Design-Handoff 2026-10-01). */
 const pille =

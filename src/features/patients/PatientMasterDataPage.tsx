@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
-import { HausbesucheMitAlterAdresse } from '@/features/appointments/HausbesucheMitAlterAdresse';
 import { useLocation } from 'react-router-dom';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
@@ -46,6 +45,7 @@ import { AdresseVerorten } from './AdresseVerorten';
 import { Behandlungsliege } from './Behandlungsliege';
 import { Mitnehmen } from './Mitnehmen';
 import { concludePatientCare, jahrPlus, reopenPatientCare, type Patient } from './api';
+import { HausbesucheMitAlterAdresse } from './HausbesucheMitAlterAdresse';
 
 /**
  * Stammdaten und Verwaltung (AKTE-005).

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { telHref } from '@/lib/telefon';
-import { adressZeilen, istOffen, offenGrund, rufnummern, type DayPlanEntry } from './api';
+import { adressZeilen, istOffen, offenGrund } from './api';
+import { rufnummern, type DayPlanEntry } from '@/lib/tagesplan';
 
 /**
  * Reine Ableitungen der Tagesliste (UX-001).

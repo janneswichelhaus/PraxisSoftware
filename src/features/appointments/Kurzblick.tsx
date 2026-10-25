@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/Badge';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { formatDate, formatLocalDate } from '@/lib/datum';
-import { FREITEXT } from '@/features/documentation/format';
 import { grundlageBezeichnung } from '@/features/treatment-bases/api';
 import { fetchKurzblick, type Kurzblick as KurzblickDaten } from './kurzblick-api';
+import { FREITEXT } from '@/components/ui/textStile';
 
 /**
  * Der Inhalt - erst gezeichnet und gelesen, wenn der Blick offen ist.

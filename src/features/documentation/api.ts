@@ -494,9 +494,6 @@ const recordAppointmentSchema = z.object({
 /** Ein Termin der Akte - der organisatorische Rahmen seiner Eintraege. */
 export type RecordAppointment = z.infer<typeof recordAppointmentSchema>;
 
-/** Dokumentationsstand eines Termins ohne Inhalt, wie ihn der Tagesplan liefert. */
-export const documentationStatusSchema = z.enum(['none', 'draft', 'final']);
-
 function seitenArgumente(cursor: AkteCursor | null) {
   return {
     p_limit: AKTE_SEITENGROESSE,

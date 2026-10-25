@@ -23,7 +23,8 @@ import {
   finalizeTreatmentNote,
   type TreatmentNote,
 } from './api';
-import { FREITEXT, fristDatum, herkunft, zeitpunkt } from './format';
+import { fristDatum, herkunft, zeitpunkt } from './format';
+import { FREITEXT } from '@/components/ui/textStile';
 
 /** Das Abzeichen eines Eintrags: festgeschrieben mit Version, sonst Entwurf mit Frist. */
 function zustandsAbzeichen(note: TreatmentNote, frist: string | null) {

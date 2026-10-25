@@ -4,9 +4,9 @@ import { Karte } from '@/features/tours/karte/Karte';
 import { Fahrtabschnitt, Routenzusammenfassung } from '@/features/tours/Fahrten';
 import { Tourenliste } from '@/features/tours/Tourenliste';
 import { kartenmarker, type Stopp } from '@/features/tours/tagesroute';
-import type { DayPlanEntry } from '@/features/today/api';
 import type { Coordinate, MapDisplayConfig } from '@/lib/location/contract';
 import '@/index.css';
+import type { DayPlanEntry } from '@/lib/tagesplan';
 
 /**
  * Einstieg der Prüfseite aus `karte.html`.

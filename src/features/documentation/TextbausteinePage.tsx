@@ -20,7 +20,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { canWriteTreatmentNote, isOwner, type CurrentUser } from '@/features/session/types';
 import { leseRueckweg } from '@/lib/rueckweg';
-import { FREITEXT } from './format';
 import {
   EINGABETEXTE,
   useTextverlustschutz,
@@ -36,6 +35,7 @@ import {
   updateTextSnippet,
   type TextSnippet,
 } from './textbausteine';
+import { FREITEXT } from '@/components/ui/textStile';
 
 /**
  * Textbausteine pflegen (UX-008).

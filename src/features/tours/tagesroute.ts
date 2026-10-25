@@ -7,7 +7,7 @@ import type {
   TravelProfile,
 } from '@/lib/location/contract';
 import { navigationsZiel } from '@/lib/location/navigation';
-import type { DayPlanEntry } from '@/features/today/api';
+import type { DayPlanEntry } from '@/lib/tagesplan';
 
 /**
  * Die Stopps der Tagesroute (MAP-006b, ADR-019).

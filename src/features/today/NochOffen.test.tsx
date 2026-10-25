@@ -1,21 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
-import type * as TodayApiModule from './api';
 import { renderMitVorschau } from '@/test-utils';
 import { Nachzuholen, NochOffen } from './NochOffen';
 import { tagePlus } from '@/lib/datum';
+import type * as Tagesplan from '@/lib/tagesplan';
 
 const fetchDayPlan = vi.fn();
-vi.mock('./api', async (importOriginal) => ({
-  ...(await importOriginal<typeof TodayApiModule>()),
+vi.mock('@/lib/tagesplan', async (importOriginal) => ({
+  ...(await importOriginal<typeof Tagesplan>()),
   fetchDayPlan: (tag: string, person: string) =>
-    fetchDayPlan(tag, person) as Promise<TodayApiModule.DayPlanEntry[]>,
+    fetchDayPlan(tag, person) as Promise<Tagesplan.DayPlanEntry[]>,
 }));
 
 const HEUTE = '2026-10-13';
 const ZONE = 'Europe/Berlin';
 
-function eintrag(teil: Partial<TodayApiModule.DayPlanEntry>): TodayApiModule.DayPlanEntry {
+function eintrag(teil: Partial<Tagesplan.DayPlanEntry>): Tagesplan.DayPlanEntry {
   return {
     id: 't1',
     patient_id: 'p1',
@@ -238,7 +238,7 @@ describe('NochOffen (Auftrag C1, B4, B7)', () => {
   // B12: „Ausfall“ an jeder Zeile - unter ihr, weil das Feld dahinter die
   // volle Breite braucht. Wann er passt, sagt die Übersicht (`ausfall`).
   it('setzt „Ausfall“ unter die Zeile, wo die Übersicht ihn anbietet (B12)', async () => {
-    const ausfall = vi.fn((termin: TodayApiModule.DayPlanEntry) =>
+    const ausfall = vi.fn((termin: Tagesplan.DayPlanEntry) =>
       termin.id === 'nicht-abgeschlossen' ? (
         <button type="button">Ausfall für {termin.patient_family_name}</button>
       ) : null,

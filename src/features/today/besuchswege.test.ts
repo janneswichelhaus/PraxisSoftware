@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { DayPlanEntry } from './api';
 import {
   anrufNummer,
   ausfallMoeglich,
@@ -9,6 +8,7 @@ import {
   verspaetungsText,
   VERSPAETUNG_MINUTEN,
 } from './besuchswege';
+import type { DayPlanEntry } from '@/lib/tagesplan';
 
 const BEGINN = Date.parse('2026-10-13T08:00:00.000Z');
 

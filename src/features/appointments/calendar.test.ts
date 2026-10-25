@@ -43,6 +43,7 @@ import {
   tagePlus,
   wochenBeginn,
 } from '@/lib/datum';
+import { kalenderZurVerordnung } from '@/lib/termin';
 
 describe('Ungespeicherte Fehlzeit (KAL-20)', () => {
   const anfang = {
@@ -351,6 +352,24 @@ describe('Query-Parameter', () => {
       zoom: 144 as const,
     };
     expect(leseParameter(schreibeParameter(original), HEUTE)).toEqual(original);
+  });
+
+  it('versteht den Weg von der Verordnung in den Kalender wie die eigenen Parameter', () => {
+    const patient = '66666666-6666-4666-8666-000000000001';
+    const verordnung = '99999999-9999-4999-8999-000000000001';
+    const kontext = {
+      ansicht: 'tag' as const,
+      datum: '2027-06-01',
+      person: null,
+      standort: null,
+      status: 'active' as const,
+      patient,
+      verordnung,
+      zoom: ZOOM_STANDARD,
+    };
+    const weg = kalenderZurVerordnung('2027-06-01', patient, verordnung);
+    expect(weg).toBe(`/kalender?${schreibeParameter(kontext).toString()}`);
+    expect(leseParameter(new URLSearchParams(weg.split('?')[1]), HEUTE)).toEqual(kontext);
   });
 });
 

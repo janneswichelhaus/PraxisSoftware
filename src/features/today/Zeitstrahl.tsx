@@ -8,7 +8,7 @@ import { TravelBar } from '@/components/ui/TravelBar';
 import { zeitstrahlRaster, zeitstrahlSchiene } from '@/components/ui/timelineStile';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { hakenFehlt } from '@/features/appointments/haken';
-import { dayPlanStatusLabels, dayPlanStatusTon, offenGrund, type DayPlanEntry } from './api';
+import { dayPlanStatusLabels, dayPlanStatusTon, offenGrund } from './api';
 import {
   VERALTET_TEXT,
   einordnung,
@@ -20,6 +20,7 @@ import {
 import { formatLocalTime } from '@/lib/datum';
 import { kalenderZumTermin } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
+import type { DayPlanEntry } from '@/lib/tagesplan';
 
 /**
  * Wie ein Termin im Strahl steht: vor sich, hinter sich, ausgefallen - oder

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { DayPlanEntry } from './api';
 import {
   besuchsphase,
   besucheDesTages,
@@ -19,6 +18,7 @@ import {
   wegZumBesuch,
   type Anfahrt,
 } from './tagesstart';
+import type { DayPlanEntry } from '@/lib/tagesplan';
 
 const HEUTE = '2026-09-26';
 

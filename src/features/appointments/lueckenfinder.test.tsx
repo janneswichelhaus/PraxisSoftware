@@ -27,25 +27,29 @@ vi.mock('@/features/tours/tagesroute', async (importOriginal) => ({
   fetchDayRoute: (datum: string, person: string) =>
     fetchDayRoute(datum, person) as Promise<TagesrouteModul.Tagesstopp[]>,
 }));
+
 vi.mock('@/features/tours/startort', async (importOriginal) => ({
   ...(await importOriginal<typeof StartortModul>()),
   fetchStandorte: () => fetchStandorte() as Promise<StartortModul.Standort[]>,
 }));
+
 vi.mock('@/lib/location/funktion', async (importOriginal) => ({
   ...(await importOriginal<typeof FunktionModul>()),
   rufeFunktionAuf: (aufgabe: string, koerper: unknown) =>
     rufeFunktionAuf(aufgabe, koerper) as Promise<unknown>,
 }));
+
 vi.mock('@/features/tours/fahrzeitfaktor-api', () => ({
   fetchFahrzeitfaktor: () => Promise.resolve(1),
   saveFahrzeitfaktor: () => Promise.resolve(),
 }));
+
 vi.mock('./wegpruefung-api', () => ({
   checkTravelFit: (fragen: unknown) => checkTravelFit(fragen) as Promise<unknown>,
   fetchVisitPosition: (id: string) => fetchVisitPosition(id) as Promise<unknown>,
 }));
 
-const { freieLuecken, umfeldDer, useLueckenfinder } = await import('./lueckenfinder');
+const { umfeldDer, useLueckenfinder } = await import('./lueckenfinder');
 
 const ZONE = 'Europe/Berlin';
 const TAG = '2027-05-12';
@@ -101,22 +105,6 @@ beforeEach(() => {
     },
   ]);
   fetchVisitPosition.mockResolvedValue(PATIENTIN);
-});
-
-describe('freieLuecken', () => {
-  it('nimmt die Arbeitszeit und zieht Belegtes ab, auch ueberlappendes', () => {
-    expect(
-      freieLuecken(
-        [band('08:00', '12:00'), band('13:00', '17:00')],
-        [band('09:00', '10:00'), band('09:30', '10:30'), band('11:50', '13:30')],
-      ),
-    ).toEqual([band('08:00', '09:00'), band('10:30', '11:50'), band('13:30', '17:00')]);
-  });
-
-  it('laesst Streifen unter 15 Minuten weg und kennt ohne Arbeitszeit keine Luecke', () => {
-    expect(freieLuecken([band('08:00', '10:00')], [band('08:10', '10:00')])).toEqual([]);
-    expect(freieLuecken([], [])).toEqual([]);
-  });
 });
 
 describe('umfeldDer', () => {

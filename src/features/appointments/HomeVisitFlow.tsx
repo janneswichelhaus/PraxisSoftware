@@ -13,7 +13,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { beginne, kannZurueck, weiter, zurueck, type Abfolge } from '@/components/ui/abfolge';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import { fetchDayPlan, rufnummern } from '@/features/today/api';
 import { fetchAppointment, recordNoShow, type Appointment } from './api';
 import {
   AUSFALL_PARAMETER,
@@ -31,6 +30,7 @@ import {
   type NiemandSeite,
 } from './niemandOeffnet';
 import { dayKey, formatLocalTime } from '@/lib/datum';
+import { fetchDayPlan, rufnummern } from '@/lib/tagesplan';
 
 /**
  * Was der Ablauf vom Termin braucht. Die Übersicht kennt den Bearbeitungsstand

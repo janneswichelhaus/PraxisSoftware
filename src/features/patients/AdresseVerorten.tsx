@@ -10,12 +10,13 @@ import {
   trefferanzahlText,
 } from '@/lib/location/geocode';
 import type { Quelle } from '@/lib/location/funktion';
+import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import {
+  setPatientAddressCoordinate,
+  type Patient,
   aktualisiereHausbesuchAdressen,
   fetchVeralteteHausbesuche,
-} from '@/features/appointments/api';
-import { canManageAppointments, type CurrentUser } from '@/features/session/types';
-import { setPatientAddressCoordinate, type Patient } from './api';
+} from './api';
 
 /**
  * Die Adresse auf der Karte verorten (MAP-006a, ANN-016).

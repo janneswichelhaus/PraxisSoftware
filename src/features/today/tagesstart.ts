@@ -1,8 +1,9 @@
 import type { ProgressDot } from '@/components/ui/ProgressDots';
 import { hakenFehlt } from '@/features/appointments/haken';
-import { istOffen, nachUhrzeit, type DayPlanEntry } from './api';
+import { istOffen, nachUhrzeit } from './api';
 import { formatLocalTime } from '@/lib/datum';
 import { appointmentTypeHint } from '@/lib/termin';
+import type { DayPlanEntry } from '@/lib/tagesplan';
 
 // -----------------------------------------------------------------------------
 // Tagesstart (UX-EPIC-003) und Zeitstrahl (Design-Handoff 2026-10-01)

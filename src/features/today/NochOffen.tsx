@@ -8,16 +8,11 @@ import { hakenFehlt } from '@/features/appointments/haken';
 import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
 import type { RejectedTimeOff } from '@/features/timeaccount/api';
 import { TIME_ACCOUNT_HOME } from '@/features/timeaccount/paths';
-import {
-  fetchDayPlan,
-  nachUhrzeit,
-  offenGrund,
-  TAGESPLAN_VORHALTEDAUER_MS,
-  type DayPlanEntry,
-} from './api';
+import { nachUhrzeit, offenGrund, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { schreibseite } from './besuchswege';
 import { nichtAbgeschlossen, terminName } from './tagesstart';
 import { formatLocalTime, tagePlus } from '@/lib/datum';
+import { fetchDayPlan, type DayPlanEntry } from '@/lib/tagesplan';
 
 /**
  * Was an einem Besuch noch fehlt, als Wort - oder `null`, wenn nichts fehlt.

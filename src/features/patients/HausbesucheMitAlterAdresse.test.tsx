@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as AppointmentsApi from './api';
+import type * as PatientsApi from './api';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 /**
@@ -19,11 +19,11 @@ const fetchVeralteteHausbesuche = vi.fn();
 const aktualisiereHausbesuchAdressen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
-  const actual = await importOriginal<typeof AppointmentsApi>();
+  const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,
     fetchVeralteteHausbesuche: (id: string) =>
-      fetchVeralteteHausbesuche(id) as Promise<AppointmentsApi.VeralteterHausbesuch[]>,
+      fetchVeralteteHausbesuche(id) as Promise<PatientsApi.VeralteterHausbesuch[]>,
     aktualisiereHausbesuchAdressen: (ids: readonly string[]) =>
       aktualisiereHausbesuchAdressen(ids) as Promise<number>,
   };
@@ -31,7 +31,7 @@ vi.mock('./api', async (importOriginal) => {
 
 const { HausbesucheMitAlterAdresse } = await import('./HausbesucheMitAlterAdresse');
 
-function besuch(rest: Partial<AppointmentsApi.VeralteterHausbesuch> = {}) {
+function besuch(rest: Partial<PatientsApi.VeralteterHausbesuch> = {}) {
   return {
     id: 'b1',
     starts_at: '2027-05-19T07:00:00.000Z',

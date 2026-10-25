@@ -6,9 +6,9 @@ import { offlineschluesselAus } from '@/features/auth/freigabeOhneNetz';
 import { entwurfSchreiben } from '@/features/offline-documentation/entwuerfe';
 import { einrichten } from '@/features/offline-documentation/servicePhone';
 import { tagesplanAblegen } from '@/features/offline-documentation/tagesplan';
-import type { DayPlanEntry } from '@/features/today/api';
 import { Pruefseite } from './ohne-empfang-seite';
 import '@/index.css';
+import type { DayPlanEntry } from '@/lib/tagesplan';
 
 /**
  * Einstieg der Prüfseite aus `ohne-empfang.html` (OFF-EPIC-001).

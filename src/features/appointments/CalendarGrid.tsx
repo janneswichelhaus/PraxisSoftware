@@ -22,7 +22,6 @@ import {
   rueckfrageOben,
   spalten,
   trifftPunktauswahl,
-  type Zeitband,
 } from './calendar';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { dokuOffen, type CalendarEntry } from './api';
@@ -47,6 +46,7 @@ import {
   terminPfad,
 } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
+import type { Zeitband } from '@/lib/zeitband';
 
 /**
  * Eine abgelegte, noch nicht bestätigte Verschiebung, wie das Gitter sie

@@ -10,7 +10,6 @@ import { NavigationZumTermin } from './NavigationStarten';
 import { positionText } from './abrechnungslage-api';
 import { useAbrechnungslage } from './useAbrechnungslage';
 import { Badge } from '@/components/ui/Badge';
-import { Deckungszeichen } from './Deckungszeichen';
 import { locationSummary, type Appointment } from './api';
 import {
   appointmentStatusLabels,
@@ -19,6 +18,7 @@ import {
   staffName,
 } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
+import { Deckungszeichen } from '@/features/treatment-bases/Deckungszeichen';
 
 /** „Do 01.10.2026" in der Zeit der Praxis. */
 function tagMitWochentag(iso: string, zone: string): string {
