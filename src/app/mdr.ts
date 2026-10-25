@@ -1,50 +1,7 @@
 /**
- * `MDR_REVIEW_REQUIRED` — wo die Klassifikation geführt wird und wie sie wirkt.
- *
- * ADR-006 Punkt 6 verlangt, Features an der MDR-Grenze zu klassifizieren. Die
- * „Konsequenzen" desselben ADR verlangen mehr: geführt, **sichtbar** und
- * **technisch wirksam** — ein so markiertes Feature darf produktiv nicht
- * erreichbar sein, solange die regulatorische Prüfung nicht dokumentiert
- * vorliegt. Punkt 13 schließt die Hintertür: „Ein Feature-Flag ersetzt die
- * Prüfung nicht." Seit `PROJECT_PRINCIPLES.md` 0.13 §17 steht dieselbe Pflicht
- * an Rang 1. Bis hierher stand `MDR_REVIEW_REQUIRED` an keiner Codestelle,
- * sondern nur in der Dokumentation (ADR-006, „Offene Folgefragen"). Diese Datei
- * ist sie — und die einzige.
- *
- * **Zwei Hälften, und sie sind nicht dasselbe.**
- *
- *   * Einträge **ohne Pfad** sind Ausgabeverbote. ADR-006 nimmt ihre
- *     technische Durchsetzung ausdrücklich aus („Bewusst nicht Bestandteil":
- *     kein Schema, keine Migration, kein Code, kein Test) — ein Verbot, etwas
- *     **nicht** zu bauen, lässt sich nicht erzwingen. Sie stehen hier, damit
- *     der Zuschnitt eines Loops sie benennen kann und der Zweitreview eine
- *     Liste hat. Wer an ihnen einen Riegel sucht, sucht am falschen Ort.
- *   * Einträge **mit Pfad** sind Funktionen, die es einmal geben könnte und
- *     die dann eine Adresse hätten. Die Adresse ist reserviert und gesperrt:
- *     `mdrSperre` fängt sie in `src/routes/AuthenticatedRoutes.tsx` ab, bevor
- *     die Routentabelle überhaupt gefragt wird. Eine später eingetragene Route
- *     gewinnt dagegen nicht — das ist der Unterschied zu einem Eintrag, der
- *     nur in einer Prüfliste steht.
- *
- * **Eine reservierte Adresse ist keine Planung.** Sie sagt nicht, dass die
- * Funktion kommt oder wo sie hinkäme; sie sagt, dass dort nichts erreichbar
- * wird. Bekommt die Funktion später eine andere Adresse, wandert sie im
- * Eintrag mit — der Eintrag selbst bleibt, weil `mdr.test.ts` die Vollzähligkeit
- * gegen die Dokumente hält.
- *
- * **Es gibt keinen Schalter.** Kein Feld, keine Umgebungsvariable, kein Flag:
- * Ein Eintrag ist gesperrt, solange er keinen **Freigabevermerk** trägt. Seit
- * ABN-019 (BEF-110, Abnahme Jannes 2026-10-02) genügt das Entfernen des
- * Eintrags nicht mehr — `mdr.test.ts` hält die Vollzähligkeit —, sondern eine
- * Funktion öffnet erst mit einer dokumentierten MDR-Prüfung am Eintrag: wer,
- * wann, mit welchem Ergebnis, und der Verweis auf das Prüfdokument im
- * Repository. Ein Vermerk ist kein Schalter: Er ist ein Nachweis, der im Diff
- * steht, und `mdr.test.ts` prüft jedes Feld und dass das Dokument existiert.
- * Auf dem Server antwortet `app.mdr_released(id)`; jede künftige
- * Serverfunktion eines klassifizierten Bereichs fragt sie (heute für jede
- * Kennung `false`).
- *
- * Diese Verortung ist **ANN-089**.
+ * Einzige Stelle der MDR-Klassifikation (ADR-006 Punkt 6, §17, ANN-089): Einträge ohne Pfad sind
+ * Ausgabeverbote, Einträge mit Pfad gesperrte Adressen (`mdrSperre`). Es gibt keinen Schalter: Ein
+ * Eintrag öffnet nur mit Freigabevermerk samt Prüfdokument, auf dem Server `app.mdr_released`.
  */
 
 /** Ein Merkmal, das nach ADR-006 Punkt 6 klassifiziert ist. */

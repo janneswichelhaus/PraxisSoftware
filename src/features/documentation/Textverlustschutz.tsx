@@ -9,80 +9,9 @@ import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung
 import { useIstVerbunden } from '@/app/verbindung';
 
 /**
- * Schutz vor Textverlust in der Behandlungsdokumentation (UX-009, FIX-011,
- * FIX-014).
- *
- * `PROJECT_PRINCIPLES.md` §13: Dokumentation darf niemals unbemerkt verloren
- * gehen. Das Feld hält den Text nur im Arbeitsspeicher der Seite - ein
- * versehentliches Neuladen, ein Tap ins Hauptmenü, ein Patientenwechsel, das
- * Zurück des Browsers oder ein Tap auf „Abmelden" nimmt ihn mit, und im
- * Hausbesuch merkt man es erst danach.
- *
- * Fünf Dinge, und ausdrücklich nur diese fünf:
- *
- *   1. **Rückfrage vor jeder Navigation innerhalb der Anwendung.** Solange
- *      ungespeicherter Text im Feld steht, wird der Seitenwechsel angehalten
- *      und die Person entscheidet: speichern und weitergehen, verwerfen und
- *      weitergehen, oder hier bleiben. Das braucht den Data Router (FIX-010).
- *   2. **Dieselbe Rückfrage vor dem freiwilligen Abmelden.** Das Abmelden ist
- *      keine Navigation; `useBlocker` sieht davon nichts. Die Kopfzeile fragt
- *      deshalb über den `Abmeldeschutz`, und die Sitzung endet erst, wenn das
- *      Speichern **abgeschlossen** ist (FIX-014). Die **erzwungene**
- *      Beendigung - Ablauf, „Alle Sitzungen beenden", Entzug der Berechtigung -
- *      kommt hier nie vorbei und greift unverändert sofort.
- *   3. **Warnung vor dem Verlassen des Fensters.** Neuladen und Schließen
- *      kann die Anwendung nicht anhalten; dort greift die native Warnung des
- *      Browsers. Den Wortlaut bestimmt der Browser; er lässt sich seit Jahren
- *      nicht mehr setzen.
- *   4. **Ein Weg für alle Schreibvorgänge der Seite.** Speichern, Abschließen
- *      und das Speichern aus der Rückfrage laufen durch `schreiben`. Damit
- *      kann kein zweiter Vorgang starten, während einer läuft - zwei
- *      gleichzeitige Schreibzugriffe auf denselben Eintrag hätten sich
- *      gegenseitig überholt -, und **kein erfolgreicher Vorgang geht weiter,
- *      wenn währenddessen weitergeschrieben wurde** (FIX-014).
- *   5. **Ein Hinweis, wenn das Gerät getrennt ist.** Die Verbindungsanzeige
- *      über der Kopfleiste sagt es allgemein; hier steht es dort, wo die
- *      Person gerade tippt und gleich auf „Speichern" tippen will (ANN-015).
- *
- * Die Festlegungen dahinter - Data Router, drei Wege, „Speichern" heißt
- * Entwurf, ein Fehlschlag navigiert nicht, das Abmelden fragt ebenso - stehen
- * als **ANN-046** im Annahmenregister.
- *
- * **Seit UX-EPIC-007 ein sechstes (BEF-056, ANN-319):** Wo die Seite es
- * verlangt (`selbst`), sichert der Schutz den Entwurf nach einer Pause im
- * Tippen von selbst - auf demselben Weg wie „Speichern", mit sichtbarem
- * Stand. Am iPhone fragt beim Wegwischen der App niemand nach; was bis zur
- * letzten Pause getippt war, liegt dann schon auf dem Server.
- *
- * **Auch für andere Formulare (UXR-001).** Mit eigenen Sätzen - meist
- * `EINGABETEXTE` - schützt derselbe Hook Formulare ohne Dokumentationsbezug.
- * Ohne `speichern` bietet die Rückfrage dort nur „Verwerfen und weitergehen"
- * und „Hier bleiben", wie ANN-046 es für die Korrektur festlegt. Sätze und
- * Verhalten der Dokumentation bleiben, wie sie sind.
- *
- * **Seit KI-EPIC-001 ein siebtes (`nichtSicherbar`):** Was außer dem Text
- * offen ist und sich nicht speichern lässt - eine laufende Aufnahme, ein
- * Vorschlag aus ihr -, hält Seitenwechsel, Abmelden und das Verlassen des
- * Fensters an wie ungespeicherter Text. Gesichert wird es nie, weder von
- * selbst noch vor der Sitzungssperre: Ein Vorschlag ist kein Entwurf (ADR-016
- * Punkt 10). Vor der Sperre bleibt die Seite deshalb verborgen stehen
- * (ANN-257), und die Rückfrage nennt, was beim Weitergehen verloren geht.
- *
- * **Seit FLT-005 ein achtes, für Abläufe mit Schritten:** Hängt die Seite
- * an einem Suchparameter (`auchSuchparameter`, der Check-Up an `?rad=`),
- * gilt auch dessen Wegfall als Weggehen. Und das Zurück des Browsers - am
- * Telefon die Zurückgeste - geht dort einen Schritt zurück (`schrittZurueck`),
- * statt die Seite samt allen Angaben zu verlassen; erst auf dem ersten
- * Schritt fragt der Schutz wie sonst.
- *
- * **Kein lokaler Zwischenspeicher.** Ein Entwurf, der nur im Browser läge,
- * wäre nicht gespeichert, würde aber so aussehen - genau die Situation, die
- * ADR-001 und ADR-015 Punkt 16 ausschließen. „Speichern" schreibt deshalb auf
- * den Server, und zwar den **Entwurf**: Eine Finalisierung ist ein eigener,
- * ausdrücklicher Schritt und entsteht niemals nebenbei aus einer Navigation
- * oder einer Abmeldung (ADR-016). Schlägt das Speichern fehl, bleiben Text,
- * Seite **und** Sitzung stehen - ein Weitergehen nach einem Fehlschlag wäre
- * genau der stille Verlust, den dieser Schutz verhindern soll.
+ * Schutz vor Textverlust (§13): Ungespeichertes hält Seitenwechsel, Abmelden und Schließen an.
+ * Gesichert wird nur als Entwurf auf dem Server, nie lokal und nie als Finalisierung (ADR-001,
+ * ADR-016); ein Fehlschlag lässt Text, Seite und Sitzung stehen (ANN-046).
  */
 
 /**

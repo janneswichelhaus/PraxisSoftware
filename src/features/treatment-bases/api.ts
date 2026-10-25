@@ -728,42 +728,7 @@ export function bestandstexte(grundlage: TreatmentBasisDetail): { feld: string; 
   ].filter((eintrag) => eintrag.text.length > 0);
 }
 
-/**
- * Entwurf einer Verordnung, der einen Abstecher zum Anlegen einer fehlenden
- * Verordner:in überlebt (VER-003).
- *
- * Eigener In-Memory-Speicher, bewusst **nicht** im TanStack-Query-Cache: ein
- * dort über `setQueryData` abgelegter Wert hat ohne beobachtenden `useQuery`
- * keinen aktiven Beobachter und gilt deshalb sofort als inaktiv - die normale
- * Garbage Collection (`gcTime`, Standard fünf Minuten) kann ihn verwerfen,
- * während die Verordner-Anlage in der Praxis auch mal länger dauert (ANN-019).
- * Eine einzelne Abfrage global länger vorzuhalten hätte das für jede andere
- * Abfrage mitgeändert; ein eigener, schlanker Speicher lässt alle anderen
- * Caches unberührt.
- *
- * Ein Neuladen der Seite oder ein Schließen des Tabs verwirft ihn wie jeden
- * anderen In-Memory-Zustand. Es gibt bewusst keinen Weg über die URL
- * (verordnerAnlegenZiel trägt nur den Rücksprungpfad) und keinen über
- * `localStorage`/`sessionStorage`: die Verordnung kann klinische Freitexte
- * enthalten (Diagnose, Therapieziel), die nirgendwo länger liegen bleiben
- * sollen als für diesen einen Abstecher (§18, ADR-011).
- *
- * Gebunden an Vorgang **und** Benutzer (ANN-019): der Schlüssel verbindet eine
- * **Vorgangskennung** mit der Benutzer-ID, damit ein Kontowechsel im selben
- * Tab nie den Entwurf einer anderen Person übernimmt.
- *
- * **Seit UX-009 ist die Vorgangskennung eine Zufallskennung je Abstecher, nicht
- * mehr der Rücksprungpfad.** Das behebt den in ANN-019 dokumentierten
- * Restpunkt: Wer die Verordner-Anlage über die Hauptnavigation verließ statt
- * über „Abbrechen", ließ einen Entwurf liegen, der bei einem **unabhängigen
- * neuen** Versuch auf demselben Pfad wieder auftauchte - der Pfad war für
- * beide Versuche derselbe Schlüssel. Die Kennung entsteht je Besuch des
- * Formulars neu und reist im Rücksprungpfad mit; ein neuer Besuch bringt eine
- * neue Kennung mit und findet deshalb nichts vor. `ENTWURF_MAX_ALTER_MS`
- * bleibt als zweite Grenze bestehen - jetzt aber, damit ein aufgegebener
- * Entwurf nicht unbegrenzt im Arbeitsspeicher liegt, und nicht mehr als
- * einziger Schutz gegen ein Wiederauftauchen.
- */
+/** Verordnungsentwurf, der den Abstecher zur Verordner-Anlage übersteht (`@/lib/abstecher`). */
 export interface TreatmentBasisDraft {
   werte: Record<TreatmentBasisFeld, string>;
   positionen: Heilmittelposition[];
@@ -771,14 +736,7 @@ export interface TreatmentBasisDraft {
   neuerVerordnerId?: string;
 }
 
-/**
- * Die Mechanik steht seit UX-012 in `@/lib/abstecher`: Dieselben Regeln
- * brauchen auch die Terminanlage (Patient:in fehlt) und der Terminzettel
- * (Adresse fehlt). Hier bleiben die getypten Zugänge - der Entwurf einer
- * Verordnung hat eine feste Form, und die soll an der Aufrufstelle sichtbar
- * sein. `neueVorgangskennung` und `vorgangAusPfad` holen die Aufrufer direkt
- * aus `@/lib/abstecher`.
- */
+// Getypte Zugänge zu `@/lib/abstecher`: Der Entwurf einer Verordnung hat eine feste Form.
 /** Legt den Formularzustand vor dem Abstecher zur Verordner-Anlage ab (VER-003). */
 export function entwurfAblegen(
   vorgang: string,

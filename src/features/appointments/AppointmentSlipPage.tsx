@@ -17,35 +17,9 @@ import { absenderKontakt } from '@/features/datenschutz/absender';
 import type { CurrentUser } from '@/features/session/types';
 
 /**
- * Die Termine der Patient:in mitteilen (CAL-011, CAL-013, `IDEA-PRX-006`).
- *
- * Ein Blatt, das die Patient:in mitnimmt: Datum, Uhrzeit, wo und wer. Kein
- * Status, keine Verordnung, kein Behandlungsinhalt — was nicht darauf gehört,
- * liefert der Server gar nicht erst.
- *
- * **Zwei Wege, eine Liste.** Gedruckt und in die Hand gegeben, oder als
- * E-Mail an die Patient:in. Die E-Mail entsteht seit CAL-013 als Entwurf im
- * Mailprogramm der Praxis; die Anwendung verschickt weiterhin nichts selbst
- * und beteiligt keinen neuen Dienstleister (ANN-041, `TermineMailen.tsx`).
- * SMS und Messenger gibt es nicht — Messenger ist nach B15 ausgeschlossen.
- *
- * **Vorbereiten und Mitteilen sind zwei Schritte** (seit UX-012). Drucken
- * öffnet den Druckdialog, die E-Mail öffnet das Mailprogramm — beides
- * vermerkt nichts. Erst die Bestätigung danach hält fest, dass der Zettel
- * ausgehändigt beziehungsweise die Nachricht gesendet wurde (CAL-012, ANN-039
- * und ANN-041 je Fassung 2). Vorher vermerkte schon die Vorbereitung, und ein
- * abgebrochener Druckdialog hinterließ eine Aushändigung, die nie stattfand.
- *
- * **Keine Wortmarke.** `marke/README.md` sieht sie auf Papier nur für
- * Rechnung und Fax vor. **Ein Absender** steht seit UX-009a darauf (BEF-052,
- * ANN-323): Name, Anschrift, Telefon und E-Mail der Praxis aus den
- * Stammdaten, damit die Bitte um rechtzeitige Absage sagt, wo - eine zu späte
- * Absage kann ein Ausfallhonorar auslösen. Beim Praxistermin steht die
- * Anschrift des Standorts am Termin.
- *
- * Die Druck-Basis aus UI-000 (`@media print` in `src/index.css`) blendet
- * `nav` und jeden `button` von selbst aus; `.nicht-drucken` nimmt die Kopfzeile
- * der Anwendung und zusätzlich aus, was ein Link ist.
+ * Termine der Patient:in mitteilen, als Zettel oder Entwurf im Mailprogramm: nur Datum, Zeit, Ort
+ * und Person, mehr liefert der Server nicht (ANN-041). Erst die Bestätigung danach vermerkt
+ * Aushändigung oder Versand (ANN-039); der Absender sagt, wo rechtzeitig abzusagen ist (ANN-323).
  */
 export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
   const { patientId } = useParams<{ patientId: string }>();

@@ -77,9 +77,9 @@ betroffene Tests; höchstens drei Reparaturversuche je Ursache, sonst als offen 
 ## 6. Integration (ein Agent)
 
 Zusammenführen, Konflikte lösen, **Duplikate entfernen** (zwei Bausteine für dasselbe → einer).
-Danach der volle Prüfsatz aus `CLAUDE.md` („Befehle“), `pnpm build` und die betroffenen
-`pnpm test:e2e` — ohne und hinter der Anmeldung gegen den Cloud-Stack, vorher `reset` ohne
-`--reich`.
+Danach der volle Prüfsatz aus `CLAUDE.md` („Befehle“), `pnpm kommentare:check`, `pnpm build` und
+die betroffenen `pnpm test:e2e` — ohne und hinter der Anmeldung gegen den Cloud-Stack, vorher
+`reset` ohne `--reich`.
 
 ## 7. Prüfschleife (höchstens drei Runden)
 

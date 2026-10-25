@@ -412,6 +412,31 @@ Moduls geht Einheitlichkeit vor der Regel.
   Dokumente), Kommentare, Commit-Nachrichten und `docs/`.
 - Keine Umlaute oder `ß` in Bezeichnern und Dateinamen.
 
+## Kommentare
+
+Gilt für jeden Kommentar, den eine Änderung schreibt oder anfasst (Jannes, 2026-10-25):
+
+- **Höchstens drei Zeilen, nur das Warum.** Was der Code tut, sagt der Code. Braucht eine
+  Begründung mehr Platz, gehört eine fachliche oder architektonische Entscheidung ins ADR oder als
+  Annahme ins Register, ein Werkzeugdetail hierher; im Code steht der Verweis.
+- **Keine Entstehungsgeschichte** („seit …“, „bisher …“) und **keine Kennungen von Tickets oder
+  Epics** — die stehen in Commit und PR. Erlaubt sind `ANN-NNN`, `ADR-NNN` und Paragrafen der
+  Prinzipien.
+- **Der Bestand wird beim Anfassen gekürzt**, nicht in einem Zug: Wer einen langen Kommentar
+  ändert, kürzt ihn.
+
+`pnpm kommentare:check` prüft das für TypeScript, JavaScript, CSS und SQL gegen den gemeinsamen
+Vorfahren mit `origin/main` (lokal vorher `git fetch origin main`), ohne Abhängigkeiten. Gezählt
+werden die Textzeilen eines Blocks zusammenhängender Kommentarzeilen; Trennlinien, leere Zeilen und
+Anweisungen an Werkzeuge (`eslint-disable…`, `@ts-expect-error`) zählen nicht. Geprüft werden nur
+Blöcke, die der Diff berührt; als Ticket gilt ein Kürzel mit Bindestrich und drei Ziffern. Die CI
+führt die Prüfung im Job „Format, Lint, Dokumentation, Typecheck“ hinter dem Lint aus.
+
+`/aufraeumen` (`.claude/skills/aufraeumen/SKILL.md`) misst mit `pnpm aufraeumen` Zeilen,
+Kommentaranteil, Modulgrenzen, große Dateien, Doppelungen und DB-Funktionen, vergleicht mit
+`development/AUFRAEUMEN.md` und schlägt drei Vereinfachungen vor, ohne Code zu ändern. Die Ablage
+ist Markdown, damit eine Aufräumrunde als reine Doku durch die CI geht.
+
 ## Befehle
 
 ```bash
@@ -425,6 +450,8 @@ pnpm test:db         # Migrationen + RLS gegen echtes PostgreSQL
 pnpm test:e2e        # Playwright
 pnpm docs:check      # Obergrenzen, Register, Verweise, Querverweise, Nummern, Fortschrittstabelle
 pnpm migrationen:check  # Migrationen von main unverändert, neue hinten angehängt
+pnpm kommentare:check   # geänderte Kommentare: höchstens drei Zeilen, keine Tickets
+pnpm aufraeumen      # Kennzahlen für /aufraeumen; --schreiben legt sie ab
 pnpm fortschritt     # Stand bis zur Eröffnung; --schreiben erzeugt die Roadmap-Tabelle
 pnpm db:reset        # Test-Datenbank aus Migrationen neu aufsetzen
 pnpm scan:secrets    # Secret-Scan über versionierte Dateien

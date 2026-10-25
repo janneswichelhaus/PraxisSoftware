@@ -4,50 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { erzeugeVorschauzustand } from './vorschauZustand';
 
 /**
- * Die Vorschaubereiche müssen technisch von echten Vorgängen getrennt bleiben.
- *
- * Das ist die tragende Zusicherung dieses Umbaus: Aus einer Vorschauaktion darf
- * keine echte Speicherung, Genehmigung, Nachricht oder Zahlung entstehen. Die
- * Prüfung läuft über den Quelltext, weil eine Verhaltensprüfung nur die Wege
- * abdeckt, die ein Test zufällig durchläuft - ein neuer Serveraufruf in einer
- * ungetesteten Ecke bliebe unbemerkt.
- *
- * `src/features/today` ist bewusst nicht dabei: die Übersicht mischt echte Termine
- * mit einem sichtbar abgesetzten Vorschaublock und muss deshalb mit dem Server
- * sprechen.
- *
- * `src/features/staff` stand hier, solange dieser Umbau eigene Vorschauseiten
- * für Personal mitbrachte. Beide sind beim Zusammenführen mit `main` entfallen:
- * die Mitarbeiterverwaltung ist mit STAFF-001 echt angebunden und MUSS mit dem
- * Server sprechen. Das Verzeichnis hier zu lassen, hieße die eigene Zusicherung
- * zu verwässern — geprüft wird, dass **Vorschaubereiche** keinen Server
- * berühren, nicht dass irgendein Verzeichnis es nicht tut.
- *
- * `src/features/billing` ist aus demselben Grund mit **ABR-EPIC-003**
- * entfallen. Es stand hier ab ABR-EPIC-001 nur noch als gemischtes
- * Verzeichnis mit einer namentlichen Ausnahme je echter Datei; die letzte
- * Vorschau war die Zahlungsseite. Seit sie echt gebucht wird, gibt es im
- * Bereich keine Vorschau mehr, die zu schützen wäre — und ein Verzeichnis, in
- * dem jede Datei eine Ausnahme ist, prüft nichts.
- *
- * `src/features/tours` ist mit **MAP-006** entfallen: Die Touren lesen die
- * Termine des Tages und rufen Route und Geocoding über die eigene Function ab
- * — sie MÜSSEN mit dem Server sprechen. Mit dem Verzeichnis ist auch die
- * Ausnahme für den Kartenprototyp gefallen: MapLibre, Routen-, Matrix- und
- * Handoff-Aufrufe sind seitdem in **jedem** Vorschaubereich ein Fund.
- *
- * `src/features/vacation` ist mit **URL-001** entfallen: Urlaub wird über
- * seine Serverfunktionen beantragt, entschieden und gezählt und MUSS mit dem
- * Server sprechen.
- *
- * `src/features/fleet` ist mit **FLT-EPIC-001** entfallen: Die Radflotte
- * liest und schreibt über ihre Serverfunktionen (Räder, Schlüssel, Check-Up,
- * Panne, Stellen am Rad) und MUSS mit dem Server sprechen. Ihre Prüfungen zur
- * Standortvorlage stehen seitdem unverändert in
- * `src/features/fleet/standortvorlage.test.ts`.
+ * Vorschaubereiche bleiben technisch von echten Vorgängen getrennt: keine Speicherung, Genehmigung,
+ * Nachricht oder Zahlung. Geprüft wird der Quelltext, weil ein Verhaltenstest nur durchlaufene Wege
+ * sieht. Echt angebundene Bereiche gehören nicht in die Liste; `today` mischt beides bewusst.
  */
-
-// Der Teamchat ist seit TEAM-001 echt angebunden und kein Vorschaubereich mehr.
 const VORSCHAUBEREICHE = ['src/features/preview'];
 
 /**

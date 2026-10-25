@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 7.15 · Stand 2026-10-18 · **in Kraft**
+Version 7.16 · Stand 2026-10-25 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Fassung 7.0 arbeitet das Produktgespräch vom 2026-09-23 ein
@@ -9,6 +9,23 @@ Plattform für Patient:innen hat zwei Stufen, die externen Anfragen gehen ab
 Anfang 2027 parallel zum Bauen hinaus. Fassung 7.13 stellt die Arbeitsweise auf
 Bereichsüberholungen um (Block unten). Ältere Fassungen und ausführliche
 Fortschrittsvermerke: [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
+
+## Aufräumen (Auftrag Jannes 2026-10-25)
+
+Kein Neustart: Größe, Kopplung und Kommentarlast werden in vier Schritten abgebaut, je eine PR, in
+dieser Reihenfolge. Schritt 3 kommt vor Schritt 3 „Termine“ des Design-Reviews, Schritt 4 direkt
+danach. Wie es steht, misst `/aufraeumen` (`AUFRAEUMEN.md`).
+
+| Schritt | Inhalt | Weg | Stand |
+| --- | --- | --- | --- |
+| 1 | Kommentarregel mit Prüfung (`pnpm kommentare:check`), die 14 extremsten Kopfkommentare gekürzt, `/aufraeumen` rein diagnostisch, `CLAUDE.md` auf unter 7 KB verdichtet | Standard | gebaut (Branch `ccr-51128c80-r6lmjn`) |
+| 2 | Migrationen vor dem Start zu einer Basis zusammenfassen: vorher Schemaabzug (Tabellen, Constraints, Indizes, Policies, Trigger, Funktionen), danach automatischer Diff ohne Unterschied und alle Tests grün; einmalige Ausnahme vom Migrationen-Gate (freigegeben); dazu eine Übersicht der DB-Funktionen nach Art und der verwaisten | Pfad A | offen |
+| 3 | Modulschnittstellen: je Modul eine schmale `index.ts` ohne pauschale Re-Exporte, ESLint-Regel gegen tiefe Importe (zuerst Warnung); beginnend mit „Termine“, dort die gegenseitigen Abhängigkeiten auflösen; zusammengehörige kleine Module prüfen | Standard | offen |
+| 4 | Register für Datenauskunft, Aufbewahrung, Löschjournal und Zusammenführung; ein Test wird rot, wenn eine Tabelle mit Patientenbezug darin nicht klassifiziert ist | Pfad A | offen |
+
+**Radflotte:** Das Modul bleibt fachlich. Der Ausbau nicht kritischer Visualisierungen, etwa des
+3D-Modells des Rads, ist seit 2026-10-25 eingefroren; Einsparungen ohne Verlust im Kernbetrieb darf
+`/aufraeumen` vorschlagen.
 
 ## Bereichsüberholungen (Auftrag Jannes 2026-10-12)
 
@@ -943,6 +960,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | DRP-EPIC-009 Plattform: Reiter der Übungen aus dem Design-Review (Schritt 2c – Vorschau der Einheit in allen Lagen mit Dauer, Übungskarte der Übersicht, Plan mit Wochenleiste, Übungszeilen und „Zum Plan“, mehrere Pläne, Lesefrist, kein Plan, Training; Skelett, Fehler, Plan vom Gerät, „Praxis antwortet nicht“; Fenster „Übung zum Nachlesen“; Rechner zweispaltig) | fertig | 2026-10-24 | DRP-040 bis DRP-044, Branch `claude/uebungen-reiter-2c`, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts | — | Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2c (Handoff 2026-10-24, Abschnitt 9 Punkt 3), parallel zu 2b; ANN-720 bis ANN-727; BEF-196 und BEF-197 mit 2b erledigt, BEF-216 durch 2b; BEF-215, BEF-217 und BEF-218 offen |
 | B | BEF-215 und BEF-218 Übungen: ein Inhalt für Fenster und Durchführung, die Vorschau kennt die Einheit auf dem Gerät | fertig | 2026-10-25 | Branch ccr-544f8ce7-u1sqpf, src/features/platform/haken.test.ts, vorschau.test.ts, Uebungen.test.tsx, PlattformAblage.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Lagen geraet-geuebt und geraet-begonnen, Fenster bei 188 px und „Sehr groß“), Zweitreview, Design-Review | — | Folge von DRP-EPIC-009 vor dem Planblatt 2d; ANN-730 ersetzt ANN-720, ANN-466 verworfen; nur Oberfläche, ohne Migration, ohne Auditeintrag |
 | B | DRP-EPIC-010 Plattform: Planblatt aus dem Design-Review (Schritt 2d – „Plan als PDF“ mit Satz und Hauptknopf, Vorschau als Blatt, Druck A4 mit Wortmarke, Stand, Übungstage und Dosierung in einer Zeile; die Praxis bekommt den Druck mit) | fertig | 2026-10-25 | DRP-045, Branch ccr-544f8ce7-u1sqpf, src/features/exercise-plans/Plaene.test.tsx, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Titel, ein Hauptknopf, Druck mit Marke 40 und Text 16, 188 px und „Sehr groß“), Design-Review | — | Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 2d (Handoff 2026-10-24, Abschnitt 9 Punkt 4); ANN-731; nur Oberfläche, ohne Migration, ohne Auditeintrag; Safari am iPhone nicht geprüft |
+| B | Aufräumen Schritt 1: Kommentarregel mit Prüfung, die extremsten Kopfkommentare gekürzt, /aufraeumen, CLAUDE.md verdichtet | fertig | 2026-10-25 | Branch ccr-51128c80-r6lmjn, scripts/kommentare-check.test.mjs, scripts/aufraeumen.test.mjs, Kommentarregel in der CI, transpilierter Code der 14 gekürzten Dateien unverändert | — | Auftrag Jannes (25.10.2026), ROADMAP 7.16; CLAUDE.md auf unter 7 KB verdichtet; ohne Migration, ohne Oberfläche |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |
@@ -982,6 +1000,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
 | Version | Datum | Änderung |
 | --- | --- | --- |
+| 7.16 | 2026-10-25 | **Aufräumen** (Auftrag Jannes): neuer Block oben mit vier Schritten (Kommentarregel und `/aufraeumen`, Migrationen zusammenfassen, Modulschnittstellen ab „Termine“, Register für Auskunft, Aufbewahrung, Löschjournal und Zusammenführung); Schritt 3 vor Schritt 3 „Termine“ des Design-Reviews. Ausbau nicht kritischer Visualisierungen der Radflotte eingefroren. Kette der Blöcke sonst unverändert. |
 | 7.15 | 2026-10-18 | **Ernährungsberatung** (Jannes, ADR-027): ALT-EPIC-002 ersetzt durch ERN-EPIC-001 bis -006 mit Budgets und einer Politurrunde nach ERN-EPIC-003; Zusatz zu Behandlung und Training, Eigenbau statt Anbieter. Prinzipien 0.28, ADR-006 Fassung 4, ADR-008 Fassung 6, ADR-021 Fassung 4. |
 | 7.13 | 2026-10-12 | **Bereichsüberholungen** (Auftrag Jannes: Design der ganzen App, Übungsbibliothek, größere Schritte, weniger Doku): neuer Block oben mit Reihenfolge als Vorschlag; „Credit-Budget" wird „Arbeitsweise und Budget" (Auftrag vollständig abarbeiten, Subagenten und Worktrees erlaubt, Fundament seriell); Sichtung über Bildstrecke (Regel 1, Definition of Done, Fortschritt); Sandbox-Pfad und Ablaufrunden entfallen, Kernabläufe mit Tipp-Budgets in [`../product/kernablaeufe.md`](../product/kernablaeufe.md). Kette der Blöcke unverändert. |
 | 7.12 | 2026-10-10 | **G22 SEC-EPIC-002 Anmeldung ohne Kennwort** eingeschoben (Jannes: „jetzt bauen und scharf schalten“, im Alltag Passkey, Rückweg eigene App-PIN, kein Kennwort): ADR-025 Fassung 2, ADR-023 Fassung 4, Prinzipien 0.25 (§3.4, Ausnahme für die App-PIN). Nächster Bau-Loop vor KOM-EPIC-002; Reihenfolge der Blöcke sonst unverändert. |

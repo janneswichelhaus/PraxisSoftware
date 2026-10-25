@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-22",
+  "stand": "2026-10-25",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -1584,6 +1584,33 @@
           "fertig_am": "2026-10-25",
           "nachweis": "DRP-045, Branch ccr-544f8ce7-u1sqpf, src/features/exercise-plans/Plaene.test.tsx, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Titel, ein Hauptknopf, Druck mit Marke 40 und Text 16, 188 px und „Sehr groß“), Design-Review",
           "vermerk": "Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 2d (Handoff 2026-10-24, Abschnitt 9 Punkt 4); ANN-731; nur Oberfläche, ohne Migration, ohne Auditeintrag; Safari am iPhone nicht geprüft"
+        },
+        {
+          "id": "aufraeumen-1",
+          "name": "Aufräumen Schritt 1: Kommentarregel mit Prüfung, die extremsten Kopfkommentare gekürzt, /aufraeumen, CLAUDE.md verdichtet",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-25",
+          "nachweis": "Branch ccr-51128c80-r6lmjn, scripts/kommentare-check.test.mjs, scripts/aufraeumen.test.mjs, Kommentarregel in der CI, transpilierter Code der 14 gekürzten Dateien unverändert",
+          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; CLAUDE.md auf unter 7 KB verdichtet; ohne Migration, ohne Oberfläche"
+        },
+        {
+          "id": "aufraeumen-2",
+          "name": "Aufräumen Schritt 2: Migrationen zu einer Basis zusammenfassen, Schema per Diff identisch, Übersicht der DB-Funktionen",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "aufraeumen-3",
+          "name": "Aufräumen Schritt 3: Modulschnittstellen mit schmaler index.ts, ESLint gegen tiefe Importe, zuerst Termine",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "aufraeumen-4",
+          "name": "Aufräumen Schritt 4: Register für Auskunft, Aufbewahrung, Löschjournal und Zusammenführung mit Vollständigkeitstest",
+          "gewicht": 2,
+          "status": "offen"
         }
       ]
     },

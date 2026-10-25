@@ -61,44 +61,9 @@ import { PlattformApp } from '@/features/platform/PlattformApp';
 import '@/index.css';
 
 /**
- * Einstieg der Prüfseite aus `plattform.html` (POR-EPIC-001).
- *
- * `?seite=abschnitt` (Standard, ohne Zugang), `abschnitt-aktiv`, `qr`,
- * `einladung` (mit `#code=…`), `geruest` (zwei Bereiche), `ich`,
- * `gesperrt`; seit POR-EPIC-001b `handeln-fuer` (eigener Bereich und eine
- * Begleitung). `abschnitt-aktiv` und `ich` zeigen Vertretungen. Seit
- * POR-EPIC-002: `termine`, `wunsch`, `termin`, `rechnungen`, `rechnung`,
- * `dokumente`, `befundbogen`; die Übersicht (`geruest`) trägt Befundbogen,
- * nächsten Termin und offene Rechnung. Seit POR-EPIC-003 `einwilligungen`,
- * `daten`, `einstellungen`, `einstieg` (Einstieg steht aus) und
- * `ende` (Lesefrist vorbei, „Ich"). Seit ANG-EPIC-001 `abo` (laufendes
- * Nachsorge-Abo mit Kündigungsknopf) und `abo-gekuendigt` (Übersicht nach
- * der Kündigung). Seit ANG-EPIC-002 `paket` (laufendes Trainingspaket mit
- * Preisen) und `preise` (Preise ohne Paket). Seit KND-EPIC-001 `angebot`
- * (Angebot der Praxis zum Buchen), `angebot-frueh` (Beginn in der
- * Widerrufsfrist), `angebot-wartet` (Behandlung läuft noch),
- * `angebot-uebersicht` (Kachel auf der Übersicht) und `vertrag` (eigener
- * Vertrag mit Widerrufsknopf). Seit KOM-EPIC-003 tragen `einstellungen`
- * und `einstieg` die Benachrichtigungen. Seit TRK-EPIC-001 `checkin` (die
- * Fragen), `checkin-uebersicht` (Kachel), `checkin-danke` (Satz nach dem
- * Absenden), `angaben` („Meine Angaben") und `zwischen` (Abschnitt der
- * Praxis). Seit OUT-EPIC-001 trägt `zwischen` das Verlaufsbild mit
- * Ereignissen und `angaben` die Punktbilder; `assessments` zeigt die
- * Assessments der Trainingsseite. Seit ALT-EPIC-001 `checkin-alltag`
- * (Schlafdauer, Schmerzmittel bei Bedarf, Belastung außerhalb der Übungen),
- * `gewohnheiten` (die Seite der Person) und in `zwischen` die Gewohnheiten
- * der Praxisseite. Seit Überholung 6 (G6) `termin-absagen` und
- * `termin-aendern` (der geführte Ablauf mit `?art=`), und `&kurzfristig`
- * legt den Hausbesuch in weniger als 24 Stunden (`late_notice`). Seit
- * DRP-EPIC-005 der Einstieg als geführter Ablauf: `einstieg` (zwei offene
- * Einwilligungen, der Fragebogen steht aus), `einstieg-eingerichtet` (nach
- * „PIN speichern“) und `einstieg-begleitung` (für Maximilian). Seit Schritt
- * 1e die Übersicht: `geruest` mit dem Fragebogen als Hauptsache,
- * `uebersicht-training`, `uebersicht-lesefrist`, `uebersicht-laden` (eine
- * Abfrage endet nie) und `uebersicht-fehler` (eine scheitert). Die Daten
- * liegen vorab im Cache; gesprochen wird mit keinem Server - was eine Seite
- * sendet, beantwortet der Test über abgefangene Anfragen. Alles ist
- * synthetisch.
+ * Prüfseite aus `plattform.html`: `?seite=` wählt die Ansicht (die Fälle von `seite` unten),
+ * `&kurzfristig` legt den Hausbesuch in die nächsten 24 Stunden. Die Daten liegen vorab im Cache;
+ * was eine Seite sendet, beantwortet der Test über abgefangene Anfragen. Alles ist synthetisch.
  */
 const parameter = new URLSearchParams(window.location.search);
 const seite = parameter.get('seite') ?? 'abschnitt';

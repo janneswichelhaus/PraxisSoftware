@@ -10,17 +10,9 @@ const SEED_FILE = path.join(SUPABASE_DIR, 'seed.sql');
 const SHIM_FILE = path.join(HERE, 'supabase-shim.sql');
 
 /**
- * Das Schema entsteht einmal je Lauf, nicht einmal je Test (R3-019).
- *
- * Der Aufbau aus Shim, achtzig Migrationen und Seed dauert rund anderthalb
- * Sekunden; 27 Dateien setzen die Datenbank vor **jedem** Test zurück, das
- * sind rund 540 Aufbauten je Lauf. PostgreSQL kann eine Datenbank aber aus
- * einer Vorlage klonen — dasselbe Ergebnis in einem Bruchteil der Zeit.
- *
- * `praxis_vorlage` trägt den fertigen Stand, `praxis_test` ist die Datenbank,
- * in der die Tests arbeiten; sie wird je Reset verworfen und neu geklont.
- * Fehlt das Recht, Datenbanken anzulegen, fällt der Helfer auf den bisherigen
- * Weg zurück — dann läuft alles wie vorher, nur langsamer.
+ * Das Schema entsteht einmal je Lauf und wird je Reset aus `praxis_vorlage` geklont: Shim, alle
+ * Migrationen und Seed neu aufzubauen dauert Sekunden und liefe vor jedem Test. Ohne das Recht,
+ * Datenbanken anzulegen, arbeitet der Helfer langsamer direkt in der konfigurierten Datenbank.
  */
 const VORLAGE = 'praxis_vorlage';
 const ARBEIT = 'praxis_test';

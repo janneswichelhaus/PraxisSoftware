@@ -5,37 +5,9 @@ import type { Bike, BikeDetail, Fleet, Spot } from '../../src/features/fleet/api
 import { testDetail, testFlotte, testRad } from '../../src/features/fleet/testdaten';
 
 /**
- * Die Radflotte (FLT-EPIC-001) im echten Browser bei 375 px, mit gezählten
- * Tipps je Ablauf der Spec:
- *
- *   * **R1** Schlüssel des eigenen Rads nehmen: 1 Tipp ab der Radflotte
- *     (vorher 2 Tipps und ein Seitenwechsel);
- *   * **R2** Schlüssel zurücklegen: 1 Tipp (vorher 1);
- *   * **R3** Check-Up ohne Befund: ≤ 25 Tipps ab der Radflotte - geführt,
- *     jeder der zwölf Prüfpunkte wird bestätigt (FLT-005; vorher 4 mit
- *     vorbelegtem „In Ordnung“), dazu seit FLT-007 (ANN-568) „Abgewischt“
- *     für die Werbeflächen und je Seite „Auslösen“ und „Foto verwenden“
- *     (vorher 16 ohne Werbeflächen und Fotos);
- *   * **R4** Check-Up mit einer Stelle am 3D-Rad: ≤ 26 Tipps + Text (vorher
- *     17 ohne Werbeflächen und Fotos);
- *   * **R5** Panne, Rad weiter fahrbar, mit einer Stelle: ≤ 7 Tipps + Text,
- *     seit Überholung 6 im Fenster des geführten Ablaufs (G3, vorher 7);
- *   * **R6** Freigabe durch die Teamleitung: ≤ 3 Tipps;
- *   * **R7** Unterlage für die Werkstatt ab dem Rad: 2 Tipps bis zum
- *     Druckdialog;
- *   * **G3** Panne bis zur Abschlussart „Rad zurückgelassen“: 11 Tipps +
- *     Text wie vorher, jede Seite bei 375 × 667 ohne Scrollen;
- *   * **G4** Schlüssel von Hand zu Hand: ≤ 3 Tipps nach dem Einstieg (vorher
- *     4 über den Tresor: zurücklegen, Rad, Person, eintragen), mit `?rad=`
- *     ≤ 2.
- *
- * Je Seite der geführten Abläufe ein Bildschirmfoto nach `.tmp/screenshots/`
- * (`b6-panne-…`, `b6-schluessel-…`; die erste und die letzte Seite auch bei
- * 1280 px) - für die Selbstsichtung, nicht verglichen.
- *
- * Der Server ist eine kleine Nachbildung über abgefangene Anfragen; Rechte,
- * Nummern und Fristen prüft `pnpm test:db`. WebGL kommt aus SwiftShader, wie
- * auf einem Rechner ohne Grafikkarte. Alles ist synthetisch.
+ * Radflotte im Browser bei 375 px mit gezählten Tipps je Ablauf; das Budget steht im Namen jedes
+ * Tests. Der Server ist eine Nachbildung über abgefangene Anfragen, Rechte und Fristen prüft
+ * `pnpm test:db`. WebGL kommt aus SwiftShader; Bildschirmfotos dienen der Selbstsichtung.
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/radflotte.html';
 
