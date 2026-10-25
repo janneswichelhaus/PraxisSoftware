@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { dayKey } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchPlan, planPfad, planSchluessel } from './api';
 import { Planblatt } from './Planblatt';
@@ -59,6 +60,11 @@ export function PlanblattSeite({ user }: { user: CurrentUser }) {
                 plan={plan}
                 praxis={user.organizationName}
                 fuer={`${plan.given_name} ${plan.family_name}`}
+                stand={
+                  plan.assigned_at
+                    ? dayKey(plan.assigned_at, user.organizationTimeZone ?? 'Europe/Berlin')
+                    : null
+                }
               />
               <div className="nicht-drucken mt-8">
                 <Kleingedrucktes>

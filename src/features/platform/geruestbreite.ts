@@ -41,7 +41,12 @@ export function useRechner(): boolean {
  * Bänder und Seitentitel an derselben Kante.
  */
 export function geruestSpalte(rechner: boolean): string {
-  return rechner ? 'max-w-inhalt mx-auto px-10' : 'max-w-formular mx-auto px-5 max-[23rem]:px-3';
+  // Im Druck füllt der Inhalt das Papier, gleich auf welchem Gerät gedruckt
+  // wird: Am Telefon hätte die Spalte das Planblatt auf 36rem begrenzt
+  // (Design-Review 2d, H2).
+  return rechner
+    ? 'max-w-inhalt mx-auto px-10 print:max-w-none'
+    : 'max-w-formular mx-auto px-5 max-[23rem]:px-3 print:max-w-none';
 }
 
 /**

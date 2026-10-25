@@ -10,7 +10,6 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { HakenSymbol } from '@/components/ui/HakenSymbol';
 import { HeroKarte } from '@/components/ui/HeroKarte';
 import { Linkliste } from '@/components/ui/Linkliste';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Section } from '@/components/ui/Section';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
@@ -20,10 +19,12 @@ import { Uebungsliste, Uebungszeile } from '@/components/ui/Uebungszeile';
 import { Wochenleiste } from '@/components/ui/Wochenleiste';
 import { useFenstertitelId } from '@/components/ui/fenstertitel';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
+import { ZurueckSymbol } from '@/components/ui/ZurueckSymbol';
 import { Planblatt } from '@/features/exercise-plans/Planblatt';
 import { haeufigkeit } from '@/features/exercise-plans/dosierung';
 import { plaeneSchluessel, termineSchluessel, type EigenerPlan, type Plattformzugang } from './api';
 import { useNurLesen, usePlattformApi } from './einsicht';
+import { useRechner } from './geruestbreite';
 import {
   DurchfuehrungKontext,
   abgelegteZugaenge,
@@ -1036,6 +1037,11 @@ const ZEICHEN = {
  * Der Plan als Blatt auf der Plattform (UEB-009, ANN-303): derselbe Baustein
  * wie in der Praxis, ohne Namen - die Person weiß, wer sie ist. Auch in der
  * Lesefrist (DSN-001 D2): „Plan als PDF" ist das, was nach dem Ende bleibt.
+ *
+ * Handoff 2026-10-24, Abschnitt 5.7: Titel „Plan als PDF“ mit einem Satz und
+ * dem Hauptknopf, darunter die Vorschau als Blatt - am Rechner der Knopf
+ * rechts neben Titel und Satz. Gedruckt wird nur das Blatt. Unter 23rem steht
+ * es ohne Rahmen, sonst bliebe bei 200 % kaum Breite für den Text (ANN-731).
  */
 export function PlanblattPlattform({
   zugang,
@@ -1045,6 +1051,10 @@ export function PlanblattPlattform({
   praxis: string;
 }) {
   const api = usePlattformApi();
+  // Wie das Gerüst: Die Einsicht zeigt immer das Telefon (`geruestbreite.ts`).
+  const breit = useRechner();
+  const nurLesen = useNurLesen();
+  const rechner = breit && !nurLesen;
   // Die Kennung aus dem Pfad `/p/uebungen/blatt/<id>` wie bei den Terminen.
   const { pathname } = useLocation();
   const planId = pathname.slice(pathname.lastIndexOf('/') + 1);
@@ -1058,22 +1068,40 @@ export function PlanblattPlattform({
   const plan = plaene.data?.plans.find((p) => p.id === planId);
 
   return (
-    <>
-      <div className="nicht-drucken mb-4 flex flex-wrap items-center justify-between gap-3">
-        <ButtonLink variant="quiet" to={zurueck}>
+    <div className="flex flex-col gap-6">
+      <div className="nicht-drucken flex flex-col gap-6">
+        <ButtonLink variant="quiet" to={zurueck} className="-ml-2 gap-1 self-start pl-2">
+          <ZurueckSymbol />
           Zurück
         </ButtonLink>
-        {plan ? (
-          <Button type="button" onClick={() => window.print()}>
-            Drucken oder als PDF sichern
-          </Button>
-        ) : null}
-      </div>
-      {/* Das Blatt selbst beginnt mit `h2`, weil es in der Praxis unter einem
-          Seitentitel steht; hier fehlte die `h1` (DR-158). Sichtbar trägt das
-          Blatt seinen Titel selbst, der Seitentitel ist nur für Vorlesesoftware. */}
-      <div className="sr-only">
-        <PageHeader title="Ihr Plan" />
+        <div
+          className={
+            rechner
+              ? 'flex flex-wrap items-end justify-between gap-x-8 gap-y-4'
+              : 'flex flex-col gap-6'
+          }
+        >
+          <div
+            className={`flex max-w-prose flex-col gap-2 ${rechner ? 'min-w-0 flex-1 basis-72' : ''}`}
+          >
+            <PageHeader title="Plan als PDF" stufe="seite" />
+            {plan ? (
+              <p className="text-ink">
+                Drucken Sie den Plan aus oder sichern Sie ihn als PDF. Die Datei bleibt auf Ihrem
+                Gerät.
+              </p>
+            ) : null}
+          </div>
+          {plan ? (
+            <Button
+              type="button"
+              onClick={() => window.print()}
+              className={rechner ? 'shrink-0' : 'w-full'}
+            >
+              Drucken oder als PDF sichern
+            </Button>
+          ) : null}
+        </div>
       </div>
       {plaene.isPending ? (
         <LoadingState label="Ihr Plan wird geladen …" />
@@ -1086,16 +1114,24 @@ export function PlanblattPlattform({
       ) : !plan ? (
         <EmptyState title="Diesen Plan gibt es hier nicht." />
       ) : (
-        <>
-          <Planblatt plan={plan} praxis={praxis} />
-          <div className="nicht-drucken mt-8">
-            <Kleingedrucktes>
-              Im Druckfenster können Sie „Als PDF sichern“ wählen. Die Datei bleibt auf Ihrem Gerät.
-            </Kleingedrucktes>
+        <div
+          className={`bg-surface-sunken rounded-card max-[23rem]:bg-transparent max-[23rem]:p-0 print:p-0 ${rechner ? 'p-6' : 'p-3'}`}
+        >
+          {/* Eckig wie Papier: Das System kennt keinen Radius 4 (ANN-731). */}
+          <div
+            className={`bg-surface border-line border max-[23rem]:border-0 max-[23rem]:p-0 print:border-0 print:p-0 ${rechner ? 'p-12' : 'px-4 py-5'}`}
+          >
+            <Planblatt
+              plan={plan}
+              praxis={praxis}
+              stand={plan.assigned_on}
+              uebungstage={plan.weekdays}
+              gross={rechner}
+            />
           </div>
-        </>
+        </div>
       )}
-    </>
+    </div>
   );
 }
 

@@ -10,7 +10,14 @@ import type { Katalogeintrag, Katalogvorlage } from '@/features/exercises/katalo
 import type * as KatalogLaden from '@/features/exercises/katalogLaden';
 import type * as ZugangApi from '@/features/platform-access/api';
 import { renderWithProviders, testUser } from '@/test-utils';
-import { dosierungAlltag, dosierungFachlich, dosierungKurz, unterschiede } from './dosierung';
+import {
+  dosierungAlltag,
+  dosierungFachlich,
+  dosierungKurz,
+  dosierungZeile,
+  steigerungsregel,
+  unterschiede,
+} from './dosierung';
 import { OHNE_KATALOG } from '@/features/exercises/testdaten';
 import { OHNE_ZUSATZ } from './testdaten';
 import { VorlagenKontext } from './vorlagen';
@@ -437,6 +444,53 @@ describe('Dosierung in Worten (ANN-299)', () => {
     expect(dosierungAlltag(position())).toContain(
       'Beginnen Sie mit 8 und steigern Sie bis 12 Wiederholungen.',
     );
+  });
+
+  it('setzt die Dosierung für das Planblatt in eine Zeile (Handoff 2026-10-24, 5.7)', () => {
+    expect(dosierungZeile(position({ load: 'Rucksack 3 kg' }))).toBe(
+      '3 Durchgänge mit je 8 bis 12 Wiederholungen\u00a0· 60 Sekunden Pause\u00a0· mit Rucksack 3 kg',
+    );
+    expect(
+      dosierungZeile(
+        position({
+          sets: 2,
+          reps_min: null,
+          reps_max: null,
+          duration_seconds: 30,
+          load: null,
+          rest_seconds: 45,
+        }),
+      ),
+    ).toBe('2 Durchgänge von je 30 Sekunden\u00a0· 45 Sekunden Pause');
+    expect(
+      dosierungZeile(
+        position({
+          reps_min: 10,
+          reps_max: 10,
+          hold_seconds: 5,
+          per_side: true,
+          times_per_day: 2,
+          load: null,
+          tempo: '3-0-1',
+          rest_seconds: 0,
+        }),
+      ),
+    ).toBe(
+      '3 Durchgänge mit je 10 Wiederholungen, jede 5 Sekunden halten, je Seite\u00a0· 2-mal am Tag\u00a0· Tempo 3-0-1',
+    );
+    expect(
+      dosierungZeile(position({ sets: 1, times_per_day: 1, load: null, rest_seconds: null })),
+    ).toBe('1 Durchgang mit je 8 bis 12 Wiederholungen\u00a0· einmal am Tag');
+  });
+
+  it('nennt die Regel zur Steigerung nur mit Wiederholungen und doppelter Progression', () => {
+    expect(steigerungsregel(position())).toBe(
+      'Beginnen Sie mit 8 und steigern Sie bis 12 Wiederholungen. Schaffen Sie in allen Durchgängen 12, sagen Sie es uns – dann passen wir das Gewicht an.',
+    );
+    expect(steigerungsregel(position({ double_progression: false }))).toBeNull();
+    expect(
+      steigerungsregel(position({ reps_min: null, reps_max: null, duration_seconds: 30 })),
+    ).toBeNull();
   });
 
   it('nennt die Unterschiede zur vorigen Fassung', () => {
@@ -1641,6 +1695,8 @@ describe('Plan als Blatt (UEB-008, ANN-303)', () => {
   const zugewiesen = () =>
     plan({
       status: 'assigned',
+      // Zugewiesen kurz nach Mitternacht in Berlin: in UTC noch der Vortag.
+      assigned_at: '2026-10-06T22:30:00Z',
       runs_from: '2026-10-07',
       runs_until: '2026-11-18',
       items: [
@@ -1665,13 +1721,29 @@ describe('Plan als Blatt (UEB-008, ANN-303)', () => {
     const blatt = await screen.findByRole('article', { name: 'Planblatt' });
     expect(blatt).toHaveTextContent('Ihr Übungsplan für Erika Beispiel');
     expect(blatt).toHaveTextContent('1. Am Geländer in die Hocke');
-    expect(blatt).toHaveTextContent('3 Durchgänge mit je 8 bis 12 Wiederholungen.');
+    // Schritt 2d (Handoff 5.7): die Dosierung in einer Zeile, die Regel zur
+    // Steigerung als eigener Satz; Stand wie im Plankopf, ohne Übungstage.
+    expect(blatt).toHaveTextContent(
+      '3 Durchgänge mit je 8 bis 12 Wiederholungen · 60 Sekunden Pause · mit 5 kg',
+    );
+    expect(blatt).toHaveTextContent('Beginnen Sie mit 8 und steigern Sie bis 12 Wiederholungen.');
     expect(blatt).toHaveTextContent('Sie brauchen: Geländer');
     expect(blatt).toHaveTextContent('Hinweis: Langsam ablassen.');
-    expect(blatt).toHaveTextContent('3-mal pro Woche');
+    expect(blatt).toHaveTextContent(
+      'Gültig vom 7. Oktober bis 18. November 2026 · 3-mal pro Woche',
+    );
+    expect(blatt).toHaveTextContent('Stand 7. Oktober 2026');
+    expect(blatt).not.toHaveTextContent('Ihre Übungstage');
     expect(blatt).not.toHaveTextContent('Kniebeuge am Geländer');
-    // Die Anleitung in Schritten, ohne Zeichnung (ANN-539).
-    expect(within(blatt).queryByRole('img')).not.toBeInTheDocument();
+    // Die Anleitung in Schritten, ohne Zeichnung (ANN-539); ein Bild ist nur
+    // die Wortmarke im Kopf (für Bildschirm und Druck je eine Größe).
+    expect(
+      new Set(
+        within(blatt)
+          .getAllByRole('img')
+          .map((bild) => bild.getAttribute('alt')),
+      ),
+    ).toEqual(new Set(['Own Motion']));
     expect(within(blatt).getByText('Knie strecken.').tagName).toBe('LI');
     await user.click(screen.getByRole('button', { name: 'Drucken oder als PDF sichern' }));
     expect(print).toHaveBeenCalled();

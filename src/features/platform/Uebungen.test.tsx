@@ -721,6 +721,7 @@ describe('Ihre Übungstage (UEB-011, Wochenleiste)', () => {
 
 describe('Plan als Blatt auf der Plattform (ANN-303)', () => {
   it('druckt den eigenen Plan ohne Namen', async () => {
+    ladePlaene.mockResolvedValue({ today: HEUTE, plans: [eigenerPlan({ weekdays: [3, 1] })] });
     const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
     const user = userEvent.setup();
     renderWithProviders(
@@ -732,8 +733,23 @@ describe('Plan als Blatt auf der Plattform (ANN-303)', () => {
     expect(blatt).toHaveTextContent('Ihr Übungsplan');
     expect(blatt).not.toHaveTextContent(' für ');
     expect(blatt).toHaveTextContent('Hinweis: Langsam ablassen.');
-    // Das Blatt beginnt mit h2; die Seite trägt die h1 (DR-158).
-    expect(screen.getByRole('heading', { level: 1, name: 'Ihr Plan' })).toBeInTheDocument();
+    // Schritt 2d (Handoff 5.7): Stand als Tag der Zuweisung wie im Reiter,
+    // die Übungstage nur hier, die Dosierung in einer Zeile.
+    expect(blatt).toHaveTextContent('Stand 7. Oktober 2026');
+    expect(blatt).toHaveTextContent(
+      'Gültig vom 7. Oktober bis 18. November 2026 · 3-mal pro Woche',
+    );
+    expect(blatt).toHaveTextContent('Ihre Übungstage: Montag, Mittwoch');
+    expect(blatt).toHaveTextContent(
+      '3 Durchgänge mit je 10 bis 12 Wiederholungen · 30 Sekunden Pause',
+    );
+    // Der Titel der Seite ist sichtbar, das Blatt beginnt mit h2 (DR-158).
+    expect(screen.getByRole('heading', { level: 1, name: 'Plan als PDF' })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Drucken Sie den Plan aus oder sichern Sie ihn als PDF. Die Datei bleibt auf Ihrem Gerät.',
+      ),
+    ).toBeInTheDocument();
     expect(within(blatt).getByRole('heading', { level: 2 })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Drucken oder als PDF sichern' }));
     expect(print).toHaveBeenCalled();

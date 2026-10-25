@@ -691,3 +691,15 @@ Marke vorsieht.
 | Berührt | `hoehe()` in `tests/e2e/plaene.spec.ts` |
 
 **Beobachtung.** Nach „Zuweisen“ erwartete der Test für „Als PDF oder drucken“ in der Rückmeldung mindestens 44 px und bekam 0. `hoehe()` wartet auf Sichtbarkeit und liest danach `boundingBox()`; wird die Rückmeldung dazwischen neu gezeichnet, liefert das `null`, und `?? 0` macht daraus 0 px. **Erwartet.** Die Höhe mit `expect.poll(() => hoehe(…))` abfragen statt einmal zu messen; die Grenze 44 px bleibt.
+
+### BEF-226 — Plattform: Zwei Browsertests messen zu früh, unter Last kippen sie
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-25 |
+| Bereich | Plattform, `tests/e2e/plattform.spec.ts` („… laufen bei 375/1280 px nicht über“) und `tests/e2e/plattform-uebungen.spec.ts` („Durchführung bei 188 px …, Schrift „sehr-gross““) |
+| Quelle  | Browsertests zu Schritt 2d mit `pnpm test:db` und einem zweiten Prüfsatz daneben; allein 8 von 8 grün |
+| Status  | offen (Vorschlag) |
+| Berührt | die beiden Tests, kein Code der Anwendung |
+
+**Beobachtung.** Unter „Dokumente“ war „Herunterladen“ nach 5 s noch nicht da, obwohl der Name der Datei stand. Die Durchführung lief bei 188 px und „Sehr groß“ einmal waagerecht über: Gemessen wird, sobald der Titel sichtbar ist - womöglich bevor die Schriftgröße des Geräts gilt. **Erwartet.** Auf das gemessene Element warten (der Knopf mit eigenem Zeitlimit, die Schrift über `data-schrift` am Wurzelelement) und erst dann messen; die Grenzen bleiben.
