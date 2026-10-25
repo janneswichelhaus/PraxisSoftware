@@ -1584,6 +1584,15 @@
           "fertig_am": "2026-10-25",
           "nachweis": "DRP-045, Branch ccr-544f8ce7-u1sqpf, src/features/exercise-plans/Plaene.test.tsx, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Titel, ein Hauptknopf, Druck mit Marke 40 und Text 16, 188 px und „Sehr groß“), Design-Review",
           "vermerk": "Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 2d (Handoff 2026-10-24, Abschnitt 9 Punkt 4); ANN-731; nur Oberfläche, ohne Migration, ohne Auditeintrag; Safari am iPhone nicht geprüft"
+        },
+        {
+          "id": "drp-epic-011",
+          "name": "DRP-EPIC-011 Plattform: Bausteine der Termine aus dem Design-Review (Schritt 3a – Statuszeichen und Knöpfe ohne Bruch im Wort, Zeichen der Art, Terminzeile, Wunschzeile, „Wer und wo“, „Fragen zu diesem Termin?“, Wahlflächen, Wochenleiste mit Spalten und Ebene, Hero mit Ort und Ziel, die Wörter als reine Funktionen)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-25",
+          "nachweis": "DRP-050, Branch ccr-544f8ce7-u1sqpf, src/features/platform/termintexte.test.ts, src/features/platform/Terminbausteine.test.tsx, tests/e2e/plattform-terminbausteine.spec.ts (Prüfseite plattform-terminbausteine.html), src/lib/kontrast.test.ts, Design-Review",
+          "vermerk": "Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 3a (Handoff 2026-10-24 „Termine“, Abschnitt 9 Punkt 1), Fragen wie empfohlen; ANN-732 bis ANN-736; BEF-220 teilweise erledigt (Liste mit 3b); nur Oberfläche, ohne Migration, ohne Auditeintrag"
         }
       ]
     },

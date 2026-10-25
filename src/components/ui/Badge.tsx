@@ -62,6 +62,11 @@ export const STATUSZEICHEN = {
  * 28 px hoch, 14 px in 600 (Design-Handoff 2026-10-01; bis dahin 12 px in
  * 500). Kein Bedienziel: Das Abzeichen wird gelesen, nicht getippt.
  *
+ * Es bricht nur zwischen Wörtern (BEF-220): `.plattform-schrift` lässt
+ * Fließtext überall brechen, und so stand „Änderung angefragt“ als
+ * „Änderun|g angefrag|t“ in einer schmalen Spalte. Höchstens so breit wie
+ * die Zeile; ein Wort, das allein breiter ist, bricht noch (ANN-733).
+ *
  * `eigenesZeichen` ersetzt das Zeichen des Tons. Das braucht, wer eine Sache
  * unterscheidet, die kein Status ist — die Mitteilungswege am Termin etwa
  * (CAL-012): vier Abzeichen im selben Ton, die sich am Bild auseinanderhalten
@@ -81,7 +86,7 @@ export function Badge({
 
   return (
     <span
-      className={`rounded-pill inline-flex min-h-7 shrink-0 items-center gap-1 px-3 text-sm font-semibold ${toene[ton]}`}
+      className={`rounded-pill inline-flex min-h-7 max-w-full shrink-0 items-center gap-1 px-3 py-0.5 text-sm font-semibold wrap-break-word hyphens-manual ${toene[ton]}`}
     >
       {/* Das Zeichen ist für Vorlesesoftware ausgeblendet: der Zustand steht
           daneben als Wort, und „Häkchen Abgeschlossen" wäre nur Rauschen. */}

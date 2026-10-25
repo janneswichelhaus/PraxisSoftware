@@ -7616,3 +7616,63 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 **Anker.** `stand` in `src/features/exercise-plans/Planblatt.tsx`; die Vorschau in `PlanblattPlattform` (`src/features/platform/Uebungen.tsx`).
 
 **Änderungspfad.** Stand als Beginn der Fassung (`runs_from`) auf beiden Seiten oder ein sechster Radius im System · Aufwand `klein`.
+
+### ANN-732 — Termine: „Heute“ und „Morgen“ nach dem Tag des Geräts
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Terminzeile und Kopf der Seite des Termins sagen „Heute, 24. Oktober“ und „Morgen, 25. Oktober“ nach dem Kalendertag des Geräts, wie `terminTitel` im Hero, nicht nach dem Tag der Praxis (`today` der Pläne). Ein anderes Jahr steht beim Datum.
+
+**Begründung.** Handoff 2026-10-24 „Termine“, Abschnitt 10 („Rechnen Heute und Morgen …?“): Zeile und Hero derselben Seite sollen denselben Tag meinen; die Plattform rechnet jede Zeit auf der Uhr des Geräts (`zeit.ts`).
+
+**Anker.** `tagInWorten` in `src/features/platform/termintexte.ts`.
+
+**Änderungspfad.** `heute` der Praxis hereinreichen und dort vergleichen · Aufwand `klein`.
+
+### ANN-733 — Plattform: Statuszeichen und Knöpfe brechen nur zwischen Wörtern
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Statuszeichen, Knöpfe und Textlinks tragen auf der Plattform `overflow-wrap: break-word` und `hyphens: manual` statt `anywhere`: Sie schrumpfen nie unter ihr längstes Wort und brechen zwischen Wörtern. Nur ein Wort, das allein breiter ist als die Zeile, bricht noch. Der Handoff nennt `normal`; das ließe es hinausragen und die Seite rollen.
+
+**Begründung.** BEF-220; Handoff 2026-10-24 „Termine“, Abschnitt 3 (Statuszeichen) und 6 (Trennung).
+
+**Anker.** `WORTWEISE` in `src/components/ui/buttonStile.ts`.
+
+**Änderungspfad.** `wrap-normal` statt `wrap-break-word` dort und in `Badge` · Aufwand `klein`.
+
+### ANN-734 — Termine: die Rolle ohne Geschlecht
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** „Wer und wo“ nennt den Namen und die Rolle als Satzrest: „kommt zu Ihnen“, „erwartet Sie in der Praxis“, „per Video“, nach dem Termin beim Hausbesuch „war bei Ihnen“, sonst nur den Namen. „Ihr Therapeut“ oder „Ihre Therapeutin“ steht nirgends; die Daten kennen nur `staff_name`.
+
+**Begründung.** Handoff 2026-10-24 „Termine“, Festlegungen in Abschnitt 0 und die Tabelle in Abschnitt 3.
+
+**Anker.** `rolle` in `src/features/platform/termintexte.ts`.
+
+**Änderungspfad.** Ein Feld für die Anrede der Person in der Projektion · Aufwand `mittel` (Pfad A).
+
+### ANN-735 — Termine: Wünsche nach Wochentag mit „oder“
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Ein Wunsch nennt seine Tage nach Wochentag zusammengefasst mit „oder“ („Dienstag oder Donnerstag, vormittags“), alle fünf als „Montag bis Freitag“, ohne Tageszeit „zu jeder Tageszeit“ - statt jedes Datum aufzuzählen. Jeder einzelne Tag passt; an den Server gehen weiter die Kalendertage.
+
+**Begründung.** Handoff 2026-10-24 „Termine“, Festlegungen in Abschnitt 0; DR-159.
+
+**Anker.** `wunschInWorten` in `src/features/platform/termintexte.ts`.
+
+**Änderungspfad.** Die Daten aufzählen wie bisher `wunschText` · Aufwand `klein`.
+
+### ANN-736 — Termine: „Praxis anrufen“ als Hauptknopf am vergangenen Termin
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Am vergangenen Termin ist „Praxis anrufen“ mit der Nummer aus N2 der Hauptknopf über „Fragen zu diesem Termin?“, 60 hoch, die Nummer in einer zweiten Zeile; sonst eine Zeile der Liste. Ohne Nummer bleibt nur „Der Praxis schreiben“ - kein Satz, der zu einem Anruf auffordert.
+
+**Begründung.** DR-133, BEF-221; Handoff 2026-10-24 „Termine“, Abschnitt 3; ANN-688, ANN-691.
+
+**Anker.** `FragenZumTermin` in `src/features/platform/Terminbausteine.tsx`.
+
+**Änderungspfad.** `anrufenAlsHauptknopf` nicht setzen · Aufwand `klein`.

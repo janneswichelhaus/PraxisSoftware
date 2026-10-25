@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type CSSProperties } from 'react';
 import { HakenSymbol } from './HakenSymbol';
 import { Zwischentitel } from './Zwischentitel';
 
@@ -36,8 +36,9 @@ export function Wochenleiste({
   onUmschalten,
   satz,
   gesperrt = false,
+  ebene = 3,
 }: {
-  /** Die Überschrift der Gruppe, etwa „Ihre Übungstage“ (`h3`). */
+  /** Die Überschrift der Gruppe, etwa „Ihre Übungstage“ (`h3`) oder „An welchen Tagen?“ (`h2`). */
   titel: string;
   /** Die Tage der Woche in ihrer Reihenfolge. */
   wochentage: readonly Wochentag[];
@@ -47,18 +48,23 @@ export function Wochenleiste({
   /** Der Satz darunter, etwa wie oft und was empfohlen ist. */
   satz: string;
   gesperrt?: boolean;
+  /** Die Ebene der Überschrift: im Reiter 3, als Frage eines Ablaufs 2. */
+  ebene?: 2 | 3;
 }) {
   const titelId = useId();
   const linie = gesperrt ? 'border-dashed' : 'border-solid';
   return (
     <div>
-      <Zwischentitel ebene={3} id={titelId}>
+      <Zwischentitel ebene={ebene} id={titelId}>
         {titel}
       </Zwischentitel>
       <div
         role="group"
         aria-labelledby={titelId}
-        className={`border-line-strong rounded-button max-w-wochenleiste grid grid-cols-7 overflow-hidden border max-[23rem]:grid-cols-3 max-[23rem]:gap-2 max-[23rem]:overflow-visible max-[23rem]:border-0 ${linie}`}
+        // So viele Spalten wie Tage: sieben im Reiter, Montag bis Freitag im
+        // Wunsch (Handoff „Termine“, Abschnitt 3).
+        style={{ '--spalten': wochentage.length } as CSSProperties}
+        className={`border-line-strong rounded-button max-w-wochenleiste grid grid-cols-[repeat(var(--spalten),minmax(0,1fr))] overflow-hidden border max-[23rem]:grid-cols-3 max-[23rem]:gap-2 max-[23rem]:overflow-visible max-[23rem]:border-0 ${linie}`}
       >
         {wochentage.map((w) => {
           const an = tage.includes(w.nummer);

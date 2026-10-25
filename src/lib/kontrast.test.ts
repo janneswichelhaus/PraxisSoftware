@@ -292,6 +292,12 @@ describe('Farbtokens erfuellen WCAG AA', () => {
     // Die Übungen (Handoff 2026-10-24, Abschnitt 6): „1. Durchgang“ auf der
     // erledigten Zeile in Salbei hell.
     ['ink', 'accent-soft', 4.5],
+    // Die Termine (Handoff 2026-10-24 „Termine“, Abschnitt 6): gedämpfte
+    // Kreise und der Kalender eines Wunschs, die Initialen in „Wer und wo“,
+    // das Statuszeichen „abgesagt“ und die Absage im Ablauf.
+    ['ink-muted', 'surface-sunken', 4.5],
+    ['surface', 'person-schiefer', 4.5],
+    ['danger', 'danger-soft', 4.5],
   ] as const)('hält auf der Plattform %s auf %s über %s:1', (vorne, hinten, mindestens) => {
     expect(kontrastverhaeltnis(tokens[vorne]!, tokens[hinten]!)).toBeGreaterThanOrEqual(mindestens);
   });

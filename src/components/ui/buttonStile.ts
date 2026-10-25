@@ -23,6 +23,17 @@ const druck =
   'motion-safe:[.plattform-schrift_&]:not-disabled:active:scale-98 ' +
   '[.plattform-schrift_&]:transition-[color,background-color,border-color,scale] [.plattform-schrift_&]:duration-120 [.plattform-schrift_&]:ease-druck';
 
+/**
+ * Ein Knopf bricht auf der Plattform nur zwischen Wörtern (BEF-220, Handoff
+ * 2026-10-24 „Termine“, Abschnitt 3): `.plattform-schrift` lässt Fließtext
+ * überall brechen (`overflow-wrap: anywhere`), und damit schrumpfte ein Knopf
+ * neben anderem Inhalt bis auf ein Zeichen („zurückzieh|en“). `break-word`
+ * statt `normal`: Ein Wort, das allein breiter ist als die Zeile, bricht
+ * noch, statt die Seite waagerecht rollen zu lassen (ANN-733).
+ */
+export const WORTWEISE =
+  '[.plattform-schrift_&]:wrap-break-word [.plattform-schrift_&]:hyphens-manual';
+
 // `nicht-drucken`: eine Schaltflaeche ist auf Papier nutzlos und kostet Platz.
 // Hier statt in der Druckregel, weil ButtonLink ein <a> erzeugt - die Regel
 // `button { display: none }` wuerde ihn nicht erfassen (UI-000).
@@ -44,7 +55,7 @@ const druck =
 // deshalb an der Variante, nicht an der Basis (ANN-252).
 const basis =
   'nicht-drucken inline-flex h-12 items-center justify-center gap-2 rounded-button px-5 ' +
-  `text-base font-bold transition-colors disabled:cursor-not-allowed ${druck}`;
+  `text-base font-bold transition-colors disabled:cursor-not-allowed ${druck} ${WORTWEISE}`;
 
 const varianten: Record<Variant, string> = {
   // Der helle Text auf der Hauptfarbe ist Papier, nicht Weiss
@@ -96,7 +107,7 @@ export function buttonKlassen(variant: Variant = 'primary', zusatz = ''): string
  */
 const kompakt =
   'nicht-drucken inline-flex min-h-11 items-center justify-center gap-2 rounded-button px-4 ' +
-  `text-sm font-bold transition-colors disabled:cursor-not-allowed ${druck}`;
+  `text-sm font-bold transition-colors disabled:cursor-not-allowed ${druck} ${WORTWEISE}`;
 
 export function kartenAktionKlassen(variant: Variant = 'secondary', zusatz = ''): string {
   return `${kompakt} ${varianten[variant]} ${zusatz}`.trim();
@@ -110,7 +121,7 @@ export function kartenAktionKlassen(variant: Variant = 'secondary', zusatz = '')
  */
 const gross =
   'nicht-drucken inline-flex min-h-14 items-center justify-center gap-2 rounded-button px-6 max-[23rem]:px-3 ' +
-  `text-base font-bold transition-colors disabled:cursor-not-allowed ${druck}`;
+  `text-base font-bold transition-colors disabled:cursor-not-allowed ${druck} ${WORTWEISE}`;
 
 /**
  * Größe einer Schaltfläche: `normal` 48 px, `kompakt` 44 px mit 14 px Schrift
@@ -174,8 +185,7 @@ export function symbolknopfKlassen(
  *
  * Die Schriftgröße erbt der Link; die Seite setzt sie bei Bedarf dazu.
  */
-const textlink =
-  'text-accent underline underline-offset-3 transition-colors hover:text-accent-hover';
+const textlink = `text-accent underline underline-offset-3 transition-colors hover:text-accent-hover ${WORTWEISE}`;
 
 export function textlinkKlassen(alleinstehend = false, zusatz = ''): string {
   return [textlink, alleinstehend ? 'inline-flex min-h-11 items-center' : '', zusatz]

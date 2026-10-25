@@ -627,7 +627,7 @@ Marke vorsieht.
 | Datum   | 2026-10-24 |
 | Bereich | Plattform, Termine (`/p/termine`) |
 | Quelle  | Ist-Bilder für Briefing 3 (Prüfseite `plattform.html`, 375 px „Sehr groß“ und 188 px) |
-| Status  | offen; wird mit Schritt 3 des Design-Reviews neu gefasst |
+| Status  | teilweise erledigt 2026-10-25 (Schritt 3a): Statuszeichen, Knöpfe und Textlinks brechen nur zwischen Wörtern (ANN-733), die neue `Terminzeile` stellt das Zeichen unter den Text; die Liste trägt sie ab 3b, dann erledigt |
 | Berührt | `src/features/platform/Termine.tsx` (`Terminzeile`, `Wunschzeile`), `src/index.css` (`.plattform-schrift`: `overflow-wrap: anywhere`) |
 
 **Beobachtung.** Bei „Sehr groß“ wird die Spalte des Zustands an der Terminzeile so schmal, dass „Änderung angefragt“ als „Änderun|g angefrag|t“ bricht. Bei 188 px (200 %) bricht der Knopf „Wunsch zurückziehen“ als „zurückzieh|en“ – ohne Strich. Ursache ist `overflow-wrap: anywhere` an der ganzen Plattform: Es gibt jedem Element eine Mindestbreite von einem Zeichen. **Erwartet.** Wie in PLATTFORM.md: Statuszeichen und Knöpfe brechen nie im Wort, nur zwischen Wörtern; ist kein Platz, rückt der Zustand unter den Titel.

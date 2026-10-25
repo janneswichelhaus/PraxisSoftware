@@ -4,7 +4,7 @@ Gleiche Marke, gleiche Farben, gleiche Bausteine, eigene Sprache. Für Patient:i
 bis 78, am eigenen Telefon, zuhause. Gilt für `/p`, `/einladung` und die Türseiten (`Vollseite`); es
 gilt [DESIGN.md](DESIGN.md), soweit hier nichts anderes steht. Werte und Bildschirme:
 [Handoff 2026-10-22](handoff-2026-10-22-plattform-erster-eindruck.md); Befunde:
-[Design-Review Lauf 1](review-2026-10/lauf-1-bericht.md); Inhalt und Reihenfolge der Ansichten:
+[Design-Review Lauf 1](review-2026-10/lauf-1-bericht.md); Inhalt der Ansichten:
 DSN-001 (`docs/development/PLATTFORM-ANSICHTEN.md`).
 
 ## Grundsätze
@@ -39,15 +39,16 @@ unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
 ## Bausteine der Plattform
 
 `HeroKarte` (eine Markenfläche je Bildschirm) · `Aufgabenkarte` · `Besuchskarte` · `Notfallkarte`
-(über jedem Eingabefeld für Nachrichten) · `Skelett` mit `SkelettBereich` statt „wird geladen …“ ·
+(über jedem Nachrichtenfeld) · `Skelett` mit `SkelettBereich` statt „wird geladen …“ ·
 `EmptyState` mit `markenform` · `Button`/`ButtonLink` Variante `marke` (nur auf Tiefgrün) ·
 `Personenbild` Größe `karte` · `Laufrad` · `Verbindungszeile` · `Menueknopf` · `Schalter` (eine
-Wahl, die sofort gilt; Zustand als Wort) · `Wahlreihe` mit `sofort` (Knöpfe statt Radios: Pfeiltasten
-wählen nichts, etwa eine Einwilligung) · `Zwischentitel` mit `stufe="abschnitt"` (Kartentitel 22) ·
+Wahl, die sofort gilt; Zustand als Wort) · `Wahlreihe` mit `sofort` (Knöpfe statt Radios, etwa
+eine Einwilligung) · `Zwischentitel` mit `stufe="abschnitt"` (Kartentitel 22) ·
 `Vertretungsband` („Sie handeln für …“ im Gerüst und im Einstieg). Übungen: `Buehne`,
 `Dosierungsmarken`, `Hakenzeile`, `Wochenleiste`, `Uebungszeile`, `Durchfuehrungskopf`/`-fuss`,
-`Abschlussseite`. Prüfseiten `tests/e2e/fixtures/plattform-bausteine.html` und
-`plattform-uebungsbausteine.html`.
+`Abschlussseite`. Termine: `Terminzeile`, `Wunschzeile`, `WerUndWo`, `FragenZumTermin`,
+`Wahlflaechen`, `HeroKarte` mit `ziel`; Zeichen und Knöpfe brechen nur zwischen Wörtern
+(ANN-733). Prüfseiten `tests/e2e/fixtures/plattform-*bausteine.html`.
 
 ## Seitentypen und Gerüst
 
@@ -57,13 +58,12 @@ geführter Ablauf (Einladung, Einstieg, Wunsch, Absage, Check-in, Fragebogen) ·
 ohne Gerüst; Kopf mit „Später weiter“ und Balken, Fuß mit Stand und Hauptknopf 56; ANN-714) · Tür
 (Einladung, Anmeldung, Einrichten, Sperre, Zugang beendet) · Blatt (Planblatt, Rechnung). Der geführte Ablauf kann „Später“ statt ✕ tragen,
 einen Balken je Schritt und das Band einer Vertretung unter dem Fortschritt; mit `plattform` 20 Rand,
-unter 23rem 12 und alles in einer Rollfläche, die Frage ohne Rollen (ein Bild darüber schrumpft in
-4:3). Ein Titel mit einem Wort über elf Zeichen steht unter 23rem in 22 (ANN-696). Abschaltbar; so
-der Einstieg, DRP-EPIC-005.
+unter 23rem 12 und alles in einer Rollfläche, die Frage ohne Rollen (ein Bild darüber schrumpft,
+4:3). Ein Titel mit einem Wort über elf Zeichen steht unter 23rem in 22 (ANN-696). Abschaltbar (der Einstieg, DRP-EPIC-005).
 
-**Gerüst** (`src/features/platform/Navigation.tsx`): Kopf 72 mit Wortmarke 28 und „Ich“ mit
-Initialen. Reiterleiste in drei Stufen (ANN-679): eine Reihe, solange die Wörter passen - gemessen,
-nicht aus der Einstellung gelesen -, sonst zwei; unter 23rem der `Menueknopf` im Kopf (ANN-682). Bei
+**Gerüst** (`Navigation.tsx`): Kopf 72 mit Wortmarke 28 und „Ich“ mit
+Initialen. Reiterleiste in drei Stufen (ANN-679): eine Reihe, solange die Wörter passen (gemessen),
+sonst zwei; unter 23rem der `Menueknopf` im Kopf (ANN-682). Bei
 offener Tastatur tritt sie zurück (ANN-676, ANN-681). Ab 1024 px Navigation im Kopf, Inhalt
 `max-w-inhalt`, jede Seite einspaltig in `max-w-spalte` außer der Übersicht (ab 900 px
 Inhaltsbreite zwei Spalten) und den Übungen (ANN-724); die Einsicht der Praxis behält das Telefon
