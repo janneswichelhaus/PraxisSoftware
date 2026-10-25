@@ -1,24 +1,6 @@
--- =============================================================================
--- Minimaler Supabase-Nachbau fuer Tests gegen eine gewoehnliche PostgreSQL-
--- Instanz.
---
--- Zweck: Migrationen und RLS-Policies gegen eine ECHTE Datenbank pruefen, ohne
--- den vollstaendigen Supabase-Stack (Docker) zu benoetigen. Damit laufen die
--- Berechtigungstests aus ADR-013 auch in CI zuverlaessig.
---
--- Nachgebildet wird ausschliesslich das, worauf die Migrationen sich stuetzen:
---   * die Datenbankrollen anon / authenticated / service_role
---   * das Schema auth mit auth.users
---   * auth.uid() / auth.role() / auth.jwt() mit derselben Semantik wie bei
---     Supabase (Auswertung von request.jwt.claims)
---   * das Schema extensions
---   * das Schema storage mit storage.buckets und storage.objects (ADR-017):
---     ohne diese Nachbildung bliebe ausgerechnet der Dateizugriff im
---     wichtigsten Gate der Cloudumgebung ungeprueft
---
--- Diese Datei ist AUSSCHLIESSLICH Testinfrastruktur und wird niemals gegen
--- eine Supabase-Instanz eingespielt.
--- =============================================================================
+-- Nachbau des Teils von Supabase, auf den sich die Migrationen stuetzen (Rollen, auth, storage,
+-- Rechte-Vorgaben in public), damit RLS und Rechte ohne Docker gegen PostgreSQL pruefbar sind.
+-- Nur Testinfrastruktur, nie gegen eine Supabase-Instanz eingespielt.
 
 create schema if not exists extensions;
 create extension if not exists pgcrypto with schema extensions;
@@ -117,6 +99,11 @@ $$;
 
 grant usage on schema auth, extensions, public to anon, authenticated, service_role;
 grant execute on function auth.uid(), auth.jwt(), auth.role() to anon, authenticated, service_role;
+
+-- Wie scripts/cloud-stack/bootstrap.sql und Supabase selbst, fuer die Rolle, die migriert.
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
 
 -- =============================================================================
 -- Schema storage (ADR-017)
