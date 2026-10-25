@@ -31,7 +31,18 @@ describe('Rechte der API-Rollen', () => {
     expect(schema.rows[0]!.darf).toBe(false);
   });
 
-  it('eine neue Funktion führt ohne ausdrückliches Recht nur service_role aus', async () => {
+  it('authenticated: kein TRUNCATE, REFERENCES, TRIGGER, keine Sequenz - das ginge an RLS vorbei', async () => {
+    const { rows } = await asPostgres<{ objekt: string }>(`
+      select distinct format('%s.%s', n.nspname, c.relname) as objekt
+        from pg_class c join pg_namespace n on n.oid = c.relnamespace, aclexplode(c.relacl) a
+       where n.nspname in ('public', 'app') and a.grantee = 'authenticated'::regrole
+         and (c.relkind = 'S' or a.privilege_type in ('TRUNCATE', 'REFERENCES', 'TRIGGER'))
+       order by 1
+    `);
+    expect(rows).toEqual([]);
+  });
+
+  it('eine neue Funktion führt ohne ausdrückliches Recht keine API-Rolle aus', async () => {
     const client = new Client({ connectionString: testDatabaseUrl() });
     await client.connect();
     try {
@@ -49,7 +60,7 @@ describe('Rechte der API-Rollen', () => {
          where r.rolname in ('anon', 'authenticated', 'service_role')
            and has_function_privilege(r.oid, f, 'execute')
       `);
-      expect(rows).toEqual([{ funktion: 'rechte_probe()', rolle: 'service_role' }]);
+      expect(rows).toEqual([]);
     } finally {
       await client.query('rollback').catch(() => undefined);
       await client.end();

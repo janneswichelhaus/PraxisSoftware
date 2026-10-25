@@ -47,7 +47,7 @@ Supabase-Stack prüfbar — dieselbe Datei wird niemals gegen eine echte
 Supabase-Instanz eingespielt. Was Supabase in `public` von selbst an `anon`,
 `authenticated` und `service_role` vergibt, vergibt der Shim ebenso; ein
 vergessener Entzug fällt so in `pnpm test:db` auf (`rechte-api-rollen.test.ts`).
-Eine neue Funktion führt ohne ausdrückliches `grant` nur `service_role` aus
+Eine neue Funktion führt ohne ausdrückliches `grant` keine dieser Rollen aus
 (`20261225010000_rechte_api_rollen.sql`).
 
 Der Stand ist jederzeit aus **Migrationen + Seed** reproduzierbar. Es gibt

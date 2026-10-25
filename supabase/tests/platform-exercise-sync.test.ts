@@ -410,7 +410,7 @@ describe('Einheit ohne Netz übertragen (TRK-007)', () => {
     ).toBe('P0002');
   });
 
-  it('Begleitung, Praxiskonto, andere Organisation, ohne Anmeldung: abgewiesen', async () => {
+  it('Begleitung, Praxiskonto, fremde Person, andere Organisation, ohne Anmeldung: abgewiesen', async () => {
     const plan = await zugewiesenerPlan('therapy', patients.max, 'Max');
     const [position] = await positionen(plan);
     const args = (zugang: string) => [
@@ -425,6 +425,7 @@ describe('Einheit ohne Netz übertragen (TRK-007)', () => {
       await fehler(asUser(users.plattformPaula, SYNC, args(platformAccesses.paulaBegleitungMax))),
     ).toBe('42501');
     expect(await fehler(asUser(users.therapist, SYNC, args(erika.zugang)))).toBe('42501');
+    expect(await fehler(asUser(users.plattformTina, SYNC, args(erika.zugang)))).toBe('42501');
     const fremd = await fremdeOrganisation();
     expect(await fehler(asUser(fremd.owner, SYNC, args(erika.zugang)))).toBe('42501');
     // Ohne Anmeldung: wie eine gesperrte Sitzung - das Gerät behält die Daten.
