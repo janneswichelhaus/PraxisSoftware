@@ -11,7 +11,7 @@ import {
   streckeZwischen,
   type Tagesstopp,
 } from '@/features/tours/tagesroute';
-import { minutesOfDay } from './api';
+import { minutesOfDay } from '@/lib/datum';
 
 // -----------------------------------------------------------------------------
 // Fahrwege als Blöcke im Kalender (UBK-005, ANN-235, ADR-019 Punkt 3)

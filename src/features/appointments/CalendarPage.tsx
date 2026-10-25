@@ -31,23 +31,19 @@ import {
   fetchPlatformRequests,
 } from '@/features/open-points/platform-requests-api';
 import {
-  dayKey,
   fetchAppointment,
   fetchAppointments,
   fetchBelegteZeiten,
   fetchAssignableTherapists,
   fetchAssignableTrainers,
   fetchLocations,
-  formatLocalTime,
   terminBezeichnung,
   istAusserhalbArbeitszeit,
   istVergangenheit,
   liegtInVergangenheit,
-  minutesOfDay,
   NEUER_TERMIN_PARAM,
   schreibeTerminVorbelegung,
   TERMINFENSTER_MINUTEN,
-  todayInTimeZone,
   updateAppointment,
   type TerminVorbelegung,
   TERMIN_PARAM,
@@ -79,12 +75,10 @@ import {
   FEHLZEIT_BEISPIELE,
   fensterMitArbeitszeit,
   gitterlinien,
-  kalenderwoche,
   leseEingetrageneFehlzeit,
   leseParameter,
   minuteZuZeit,
   schreibeParameter,
-  tagePlus,
   tageImBereich,
   tagesFenster,
   ZOOMSTUFEN,
@@ -94,6 +88,14 @@ import {
   type StatusFilter,
   type Zeitband,
 } from './calendar';
+import {
+  dayKey,
+  formatLocalTime,
+  minutesOfDay,
+  todayInTimeZone,
+  kalenderwoche,
+  tagePlus,
+} from '@/lib/datum';
 
 /** Bevorzugt das Terminfenster, sonst die kürzere Dauer (ANN-317, BEF-136). */
 const LUECKEN_DAUERN = [TERMINFENSTER_MINUTEN, KURZE_TERMINDAUER_MINUTEN] as const;

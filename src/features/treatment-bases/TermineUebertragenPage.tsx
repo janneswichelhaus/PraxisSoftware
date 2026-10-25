@@ -15,14 +15,12 @@ import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
   fetchPatientAppointments,
-  formatLocalDate,
-  formatLocalTimeRange,
   staffName,
   appointmentTypeHint,
   type PatientAppointment,
 } from '@/features/appointments/api';
 import { fetchPatient, fullName } from '@/features/patients/api';
-import { formatDate } from '@/lib/datum';
+import { formatDate, formatLocalDate, formatLocalTimeRange } from '@/lib/datum';
 import type { CurrentUser } from '@/features/session/types';
 import { grundlageBezeichnung, transferAppointmentsToTreatmentBasis } from './api';
 import {

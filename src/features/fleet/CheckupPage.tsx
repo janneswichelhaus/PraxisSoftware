@@ -7,7 +7,6 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { leseRueckweg } from '@/lib/rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchBike, fetchFleet, flotteSchluessel, radSchluessel, type Fleet } from './api';
@@ -16,6 +15,7 @@ import { CheckupFenster } from './CheckupFenster';
 import { montagDerWoche } from './format';
 import { istMeinRad } from './rad';
 import { Radwahl } from './Radwahl';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Fahrrad-Check-Up (FLT-EPIC-001; geführt seit FLT-005, ANN-563).

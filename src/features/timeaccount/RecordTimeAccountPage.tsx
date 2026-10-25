@@ -21,8 +21,6 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { monatsBeginn, tagePlus } from '@/features/appointments/calendar';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
 import { tagUmplanenAdresse } from '@/features/appointments/tagumplanen';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
@@ -56,6 +54,7 @@ import {
   type EntryKind,
 } from './rules';
 import { PERSON_PARAM, entryDate, personPath } from './paths';
+import { todayInTimeZone, monatsBeginn, tagePlus } from '@/lib/datum';
 
 /**
  * Ins Zeitkonto eintragen, geführt (G9, ZK-001, Budget ≤ 6 Tipps):

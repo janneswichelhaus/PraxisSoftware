@@ -19,10 +19,9 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Textlink } from '@/components/ui/Textlink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { leseRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
-import { todayInTimeZone } from '@/features/appointments/api';
 import {
   canManageBillingProfile,
   canManageInvoicing,

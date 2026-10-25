@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import type * as TagesrouteModul from '@/features/tours/tagesroute';
 import type * as StartortModul from '@/features/tours/startort';
 import type * as FunktionModul from '@/lib/location/funktion';
-import { zeitpunktIn } from './api';
+import { zeitpunktIn } from '@/lib/datum';
 
 /**
  * UBK-014: Lückenfinder (ANN-239) - freie Lücken in der Arbeitszeit, Fahrweg

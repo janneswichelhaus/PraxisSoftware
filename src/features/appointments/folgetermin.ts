@@ -1,6 +1,6 @@
-import { formatLocalTime } from './api';
 import type { Zeitband } from './calendar';
 import type { Seite, Wegpruefung } from './wegpruefung';
+import { formatLocalTime } from '@/lib/datum';
 
 // -----------------------------------------------------------------------------
 // Folgetermin nach der Doku (Befund B8)

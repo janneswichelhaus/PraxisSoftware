@@ -10,9 +10,9 @@ import {
   routenplan,
   type Tagesstopp,
 } from '@/features/tours/tagesroute';
-import { dayKey, minutesOfDay, zeitpunktIn } from './api';
 import { arbeitszeitBaender, type Zeitband } from './calendar';
 import { checkTravelFit, fetchVisitPosition, type Passfrage } from './wegpruefung-api';
+import { dayKey, minutesOfDay, zeitpunktIn } from '@/lib/datum';
 
 // -----------------------------------------------------------------------------
 // „Passt es?“ - An- und Weiterfahrt eines geplanten Termins (UBK-012, ANN-238)

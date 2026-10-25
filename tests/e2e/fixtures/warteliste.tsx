@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import { todayInTimeZone } from '@/features/appointments/api';
 import type { Patient } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
 import { travelItems, type Slot, type TravelRating } from '@/features/slot-search/api';
@@ -15,6 +14,7 @@ import { NewWaitlistEntryPage } from '@/features/waitlist/WaitlistFormPage';
 import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
 import { WaitlistPage } from '@/features/waitlist/WaitlistPage';
 import '@/index.css';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Einstieg der Prüfseite aus `warteliste.html` (PRX-EPIC-001).

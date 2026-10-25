@@ -13,6 +13,7 @@ import type * as StartortModul from '@/features/tours/startort';
 import type * as FunktionModul from '@/lib/location/funktion';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { ZOOM_STANDARD } from './calendar';
+import type * as Datum from '@/lib/datum';
 
 /**
  * Eine Stunde nach unten, in Pixeln der voreingestellten Zoomstufe (CAL-011).
@@ -95,10 +96,14 @@ vi.mock('./api', async (importOriginal) => {
       bestaetigt?: boolean,
       vergangenheit?: boolean,
     ) => updateAppointment(id, stand, werte, bestaetigt, vergangenheit) as Promise<void>,
-    // Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
-    todayInTimeZone: () => HEUTE,
   };
 });
+
+// Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
+vi.mock('@/lib/datum', async (importOriginal) => ({
+  ...(await importOriginal<typeof Datum>()),
+  todayInTimeZone: () => HEUTE,
+}));
 
 // POR-011: Terminwünsche von der Plattform - ohne Wünsche im Regelfall.
 const fetchPlatformRequests = vi.fn();

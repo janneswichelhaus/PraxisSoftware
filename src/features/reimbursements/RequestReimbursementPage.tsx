@@ -21,7 +21,6 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import { DATEI_ACCEPT } from '@/features/files/dokumentarten';
 import { Kameradialog } from '@/features/files/Kameradialog';
@@ -57,6 +56,7 @@ import {
   normalizeIban,
   selectableMonths,
 } from './rules';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Erstattung beantragen, geführt (G10, ERS-001, Budget ≤ 7 Tipps + Betrag):

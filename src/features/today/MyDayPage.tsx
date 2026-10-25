@@ -27,11 +27,8 @@ import {
   appointmentStatusTon,
   appointmentTypeHint,
   fetchAppointments,
-  formatLocalDate,
-  formatLocalTime,
   terminBezeichnung,
   staffName,
-  todayInTimeZone,
   type CalendarEntry,
   terminPfad,
 } from '@/features/appointments/api';
@@ -47,7 +44,6 @@ import {
 } from '@/features/session/types';
 import { NavigationZumTermin } from '@/features/appointments/NavigationStarten';
 import { fetchAbrechnungslage, positionText } from '@/features/appointments/abrechnungslage-api';
-import { tagePlus } from '@/features/appointments/calendar';
 import { fetchDayPlan, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS, type DayPlanEntry } from './api';
 import { Tageskarte } from './Tagesliste';
 import { AnrufKnopf, AusfallKnopf, HakenRueckgaengig, SpaeterDa } from './Besuchsknoepfe';
@@ -91,6 +87,7 @@ import { OPEN_INTAKES_KEY, fetchOpenIntakes } from '@/features/open-points/intak
 import { useBarometerHinweise } from '@/features/feedback/barometerHinweis';
 import { REJECTED_TIME_OFF_KEY, fetchRejectedTimeOff } from '@/features/timeaccount/api';
 import { HinweisZwischendurch } from './HinweisZwischendurch';
+import { formatLocalDate, formatLocalTime, todayInTimeZone, tagePlus } from '@/lib/datum';
 
 /**
  * Übersicht - der persönliche Einstieg.

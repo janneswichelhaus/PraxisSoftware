@@ -13,7 +13,6 @@ import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import {
   FLOTTE_SCHLUESSEL,
@@ -25,6 +24,7 @@ import {
   type Fleet,
 } from './api';
 import { montagDerWoche } from './format';
+import { todayInTimeZone } from '@/lib/datum';
 
 const ZUR_FLOTTE = '/betrieb/flotte';
 

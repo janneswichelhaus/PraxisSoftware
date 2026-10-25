@@ -4,10 +4,10 @@ import type { Coordinate } from '@/lib/location/contract';
 import { usePlanungsmatrizen } from '@/features/tours/fahrzeitfaktor';
 import { fetchStandorte, tagesorte } from '@/features/tours/startort';
 import { fetchDayRoute, type Tagesstopp } from '@/features/tours/tagesroute';
-import { minutesOfDay, zeitpunktIn } from './api';
 import type { Zeitband } from './calendar';
 import { luftStufe, type Luftstufe } from './wegpruefung';
 import { checkTravelFit, fetchVisitPosition, type Passfrage } from './wegpruefung-api';
+import { minutesOfDay, zeitpunktIn } from '@/lib/datum';
 
 // -----------------------------------------------------------------------------
 // Lückenfinder (UBK-014, ANN-239; Teil 2 von CAL-015c, IDEA-PRX-029)

@@ -8,7 +8,6 @@ import { Section } from '@/components/ui/Section';
 import { TextArea } from '@/components/ui/TextArea';
 import { Textlink } from '@/components/ui/Textlink';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-import { formatLocalDate, formatLocalTimeRange } from '@/features/appointments/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Arbeitszeile } from './Arbeitszeile';
 import { abfragen } from './eingang';
@@ -21,6 +20,7 @@ import {
   type PlatformRequest,
 } from './platform-requests-api';
 import { formatDay } from './format';
+import { formatLocalDate, formatLocalTimeRange } from '@/lib/datum';
 
 const ANTWORT_MAX = 300;
 

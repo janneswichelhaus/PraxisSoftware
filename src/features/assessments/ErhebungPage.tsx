@@ -14,9 +14,8 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { TextArea } from '@/components/ui/TextArea';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import type { Formularfehler } from '@/lib/formularfehler';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { fetchPatient, fullName, type Patient } from '@/features/patients/api';
 import {
   useTextverlustschutz,

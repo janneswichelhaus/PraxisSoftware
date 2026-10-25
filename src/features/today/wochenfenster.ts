@@ -1,4 +1,4 @@
-import { tagePlus } from '@/features/appointments/calendar';
+import { tagePlus } from '@/lib/datum';
 
 // Die Rechnung hinter der Wochenleiste (`Wochenleiste.tsx`), als reine
 // Funktionen in eigener Datei - wie `travelPlan.ts` (react-refresh).

@@ -13,7 +13,6 @@ import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Tile, TileGrid } from '@/components/ui/Tile';
-import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -27,6 +26,7 @@ import {
 } from './api';
 import { PERSON_PARAM, TIME_ACCOUNT_HOME, entryDate, personPath } from './paths';
 import { KIND_TITLE, signedHours } from './rules';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Zeitkonto (ZK-001, Überholung 9).

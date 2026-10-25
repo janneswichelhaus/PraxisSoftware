@@ -19,10 +19,9 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zweispalter } from '@/components/ui/Zweispalter';
 import { BEGRIFFE } from '@/lib/begriffe';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { leseRueckweg, mitRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import {
   canManageInvoicing,

@@ -8,7 +8,7 @@ import { TravelBar } from '@/components/ui/TravelBar';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { LetzterEintragVorDerTuer } from '@/features/appointments/Kurzblick';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { formatLocalTimeRange, kalenderZumTermin } from '@/features/appointments/api';
+import { kalenderZumTermin } from '@/features/appointments/api';
 import { openItemsText, type IntakeItem } from '@/features/open-points/intake-api';
 import {
   adressZeilen,
@@ -21,6 +21,7 @@ import {
 import { zugangMitStockwerk } from './stockwerk';
 import { einordnung, terminName, type Wegstrecke } from './tagesstart';
 import { erstaufnahmePfad } from '@/features/intake/stand';
+import { formatLocalTimeRange } from '@/lib/datum';
 
 /** Eine Pille der Karte: 36 px hoch, 14 px in 600 (Design-Handoff 2026-10-01). */
 const pille =

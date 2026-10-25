@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from 'react';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Field } from '@/components/ui/Field';
@@ -7,6 +6,7 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { freieZeit, type Zeitvorschlag } from './zeit';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Einen Zeitpunkt wählen - für „Später senden“ (ANN-643) und „Erinnern“

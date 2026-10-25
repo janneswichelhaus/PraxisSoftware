@@ -16,7 +16,6 @@ import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { formatEuro } from '@/lib/geld';
 import { sichereAlsDatei } from '@/features/datenschutz/datei';
 import { isOwner, type CurrentUser } from '@/features/session/types';
-import { todayInTimeZone } from '@/features/appointments/api';
 import {
   JE_PERSON_KEY,
   KENNZAHLEN_KEY,
@@ -49,6 +48,7 @@ import {
   type Kennzahlen,
   type Ziele,
 } from './kennzahlen';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Statistiken (STA-EPIC-001): fünf Zahlen, nach denen die Praxis gesteuert

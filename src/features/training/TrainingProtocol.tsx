@@ -15,7 +15,6 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import {
   appointmentTypeHint,
   completeAppointment,
-  formatLocalTimeRange,
   reopenAppointment,
 } from '@/features/appointments/api';
 import {
@@ -32,6 +31,7 @@ import {
   type TrainingClient,
   type TrainingProtocol,
 } from './api';
+import { formatLocalTimeRange } from '@/lib/datum';
 
 /**
  * Das Trainingsprotokoll (TRN-009, TRN-010).

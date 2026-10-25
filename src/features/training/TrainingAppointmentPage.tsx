@@ -13,7 +13,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Textlink } from '@/components/ui/Textlink';
-import { formatDate } from '@/lib/datum';
+import { formatDate, formatLocalDate, formatLocalTimeRange } from '@/lib/datum';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   canWriteTrainingClients,
@@ -27,8 +27,6 @@ import {
   cancelAppointment,
   cancellationReasonSchema,
   waehlbareAbsagegruende,
-  formatLocalDate,
-  formatLocalTimeRange,
   type CancellationReason,
 } from '@/features/appointments/api';
 import { leseAngelegtenTermin } from '@/features/appointments/terminformular';

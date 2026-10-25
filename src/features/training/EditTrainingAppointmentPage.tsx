@@ -6,14 +6,11 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { canWriteTrainingClients, type CurrentUser } from '@/features/session/types';
-import {
-  appointmentToFormValues,
-  todayInTimeZone,
-  updateAppointment,
-} from '@/features/appointments/api';
+import { appointmentToFormValues, updateAppointment } from '@/features/appointments/api';
 import { getTrainingAppointment } from './api';
 import { TrainingTerminFormular } from './TrainingTerminFormular';
 import { tageslageNeuLaden } from '@/features/appointments/tageslage';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Einen Trainingstermin verschieben (TRN-004).

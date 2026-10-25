@@ -19,8 +19,6 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { istIsoDatum, monatPlus, monatsBeginn, tagePlus } from '@/features/appointments/calendar';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import type { CurrentUser } from '@/features/session/types';
@@ -48,6 +46,7 @@ import {
   zeitraumText,
   type Zeitraumwahl,
 } from './zeitraum';
+import { todayInTimeZone, istIsoDatum, monatPlus, monatsBeginn, tagePlus } from '@/lib/datum';
 
 /**
  * Urlaub beantragen, geführt (G7, URL-001, Budget ≤ 6 Tipps, Ziel 5):

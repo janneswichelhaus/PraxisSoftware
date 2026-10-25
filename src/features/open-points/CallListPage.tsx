@@ -12,13 +12,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
-import {
-  appointmentTypeHint,
-  formatLocalTime,
-  notificationChannelLabels,
-  todayInTimeZone,
-} from '@/features/appointments/api';
-import { tagePlus } from '@/features/appointments/calendar';
+import { appointmentTypeHint, notificationChannelLabels } from '@/features/appointments/api';
 import { formatDatum } from '@/features/preview/format';
 import type { CurrentUser } from '@/features/session/types';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -33,6 +27,7 @@ import {
   type CallOutcome,
 } from './call-list-api';
 import { Anrufknopf } from './Symbole';
+import { formatLocalTime, todayInTimeZone, tagePlus } from '@/lib/datum';
 
 const TAG = /^\d{4}-\d{2}-\d{2}$/;
 

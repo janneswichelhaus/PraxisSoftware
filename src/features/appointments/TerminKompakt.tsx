@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Textlink } from '@/components/ui/Textlink';
-import { formatDate } from '@/lib/datum';
+import { formatDate, formatLocalDate, formatLocalTime, formatLocalTimeRange } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import { grundlageBezeichnung } from '@/features/treatment-bases/api';
@@ -16,9 +16,6 @@ import {
   appointmentStatusLabels,
   appointmentStatusTon,
   appointmentTypeHint,
-  formatLocalDate,
-  formatLocalTime,
-  formatLocalTimeRange,
   locationSummary,
   staffName,
   type Appointment,

@@ -39,7 +39,6 @@ import {
   istHinderlich,
   schreibeTerminVorbelegung,
   slotConflictLabels,
-  todayInTimeZone,
   type AppointmentFormValues,
   type AppointmentType,
   type SlotConflict,
@@ -54,8 +53,7 @@ import {
   type Serientermin,
 } from './serie';
 import { speicherfehlerText } from './terminformular';
-import { istIsoDatum } from './calendar';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone, istIsoDatum } from '@/lib/datum';
 
 /**
  * „1 Termin" gegen „3 Termine" — an einer Stelle statt in jeder Meldung.

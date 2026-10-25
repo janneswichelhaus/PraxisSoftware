@@ -15,7 +15,13 @@ import { Textlink } from '@/components/ui/Textlink';
 import { usePatientRecord } from '@/features/patients/akte';
 import { WaitlistNotice } from '@/features/waitlist/WaitlistNotice';
 import { HausbesucheMitAlterAdresse } from './HausbesucheMitAlterAdresse';
-import { formatDate as formatIsoDate } from '@/lib/datum';
+import {
+  formatDate as formatIsoDate,
+  dayKey,
+  formatLocalDate,
+  formatLocalTimeRange,
+  todayInTimeZone,
+} from '@/lib/datum';
 import type { Patient } from '@/features/patients/api';
 import { canReadTreatmentBases, type CurrentUser } from '@/features/session/types';
 import {
@@ -34,13 +40,9 @@ import {
   appointmentStatusLabels,
   appointmentStatusTon,
   appointmentTypeHint,
-  dayKey,
   fetchPatientAppointments,
-  formatLocalDate,
-  formatLocalTimeRange,
   naechsteTerminSeite,
   staffName,
-  todayInTimeZone,
   type PatientAppointment,
   type TerminCursor,
 } from './api';

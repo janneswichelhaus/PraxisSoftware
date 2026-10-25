@@ -8,8 +8,8 @@ import { Field } from '@/components/ui/Field';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { fetchPatientAppointments, todayInTimeZone } from '@/features/appointments/api';
-import { formatDate } from '@/lib/datum';
+import { fetchPatientAppointments } from '@/features/appointments/api';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import {
   EINGABETEXTE,
   useTextverlustschutz,

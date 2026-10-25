@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
-import { tagePlus } from '@/features/appointments/calendar';
 import { tagesPfad } from './tageswahl';
 import { KURZ, alsDatum, fensterTage, tagesName } from './wochenfenster';
+import { tagePlus } from '@/lib/datum';
 
 // -----------------------------------------------------------------------------
 // Wochenleiste der Übersicht (Jannes, 2026-10-11)

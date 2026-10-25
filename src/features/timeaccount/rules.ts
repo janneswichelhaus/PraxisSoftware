@@ -1,5 +1,5 @@
-import { tagePlus } from '@/features/appointments/calendar';
 import { toMinutes, toTime, type Block } from '@/features/working-time/rules';
+import { tagePlus } from '@/lib/datum';
 
 /**
  * Regeln des Zeitkontos am Gerät (ZK-001): dieselben Fristen wie am Server

@@ -19,9 +19,7 @@ import {
   appointmentStatusLabels,
   appointmentStatusTon,
   appointmentTypeHint,
-  formatLocalTime,
   fetchAppointment,
-  formatLocalTimeRange,
   staffName,
 } from '@/features/appointments/api';
 import type { Patient } from '@/features/patients/api';
@@ -37,6 +35,7 @@ import {
   type TreatmentNote,
 } from './api';
 import { FREITEXT, fristDatum } from './format';
+import { formatLocalTime, formatLocalTimeRange } from '@/lib/datum';
 
 /** Anker des Behandlungsverlaufs in der Akte - Ziel von „Bisherige Doku →“ (BEF-058). */
 export const VERLAUF_ANKER = 'behandlungsverlauf';

@@ -12,16 +12,18 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Tile, TileGrid } from '@/components/ui/Tile';
-import { formatDate } from '@/lib/datum';
+import {
+  formatDate,
+  dayKey,
+  formatLocalDate,
+  formatLocalTimeRange,
+  todayInTimeZone,
+} from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
   appointmentTypeHint,
-  dayKey,
-  formatLocalDate,
-  formatLocalTimeRange,
-  todayInTimeZone,
 } from '@/features/appointments/api';
 import {
   createTrainingBasis,

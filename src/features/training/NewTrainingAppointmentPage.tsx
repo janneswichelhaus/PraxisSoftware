@@ -8,7 +8,7 @@ import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { BEGRIFFE } from '@/lib/begriffe';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { canWriteTrainingClients, type CurrentUser } from '@/features/session/types';
 import {
@@ -16,7 +16,6 @@ import {
   leererTermin,
   leseTerminVorbelegung,
   TERMINFENSTER_MINUTEN,
-  todayInTimeZone,
 } from '@/features/appointments/api';
 import { mitAngelegtemTermin } from '@/features/appointments/terminformular';
 import {

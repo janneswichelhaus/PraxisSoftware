@@ -7,7 +7,7 @@ import { NowMarker } from '@/components/ui/NowMarker';
 import { TravelBar } from '@/components/ui/TravelBar';
 import { zeitstrahlRaster, zeitstrahlSchiene } from '@/components/ui/timelineStile';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { formatLocalTime, kalenderZumTermin } from '@/features/appointments/api';
+import { kalenderZumTermin } from '@/features/appointments/api';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { hakenFehlt } from '@/features/appointments/haken';
 import { dayPlanStatusLabels, dayPlanStatusTon, offenGrund, type DayPlanEntry } from './api';
@@ -19,6 +19,7 @@ import {
   wegZumBesuch,
   type Anfahrt,
 } from './tagesstart';
+import { formatLocalTime } from '@/lib/datum';
 
 /**
  * Wie ein Termin im Strahl steht: vor sich, hinter sich, ausgefallen - oder

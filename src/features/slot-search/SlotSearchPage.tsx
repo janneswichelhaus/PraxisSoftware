@@ -19,14 +19,13 @@ import {
   appointmentTypeSchema,
   fetchAssignableTherapists,
   schreibeTerminVorbelegung,
-  todayInTimeZone,
   type AppointmentType,
 } from '@/features/appointments/api';
 import { DAUER_PARAM } from '@/features/appointments/terminformular';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchWaitlist, windowsText, type TimeWindow } from '@/features/waitlist/api';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { usePlanungsmatrix } from '@/features/tours/fahrzeitfaktor';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {

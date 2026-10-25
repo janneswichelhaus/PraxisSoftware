@@ -25,12 +25,12 @@ import {
   appointmentStatusTon,
   dokuOffen,
   fetchAppointment,
-  formatLocalTimeRange,
   istBeratung,
   terminBezeichnung,
   terminPfad,
   type CalendarEntry,
 } from './api';
+import { formatLocalTimeRange } from '@/lib/datum';
 
 /** „Do 01.10.2026" in der Zeit der Praxis. */
 function tagKurz(iso: string, zone: string): string {

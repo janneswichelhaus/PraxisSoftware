@@ -14,9 +14,8 @@ import type * as LeistungenModule from '@/features/appointments/leistungenAmTerm
 import type * as NochOffenModule from './NochOffen';
 import type * as TimeAccountApiModule from '@/features/timeaccount/api';
 import { renderMitVorschau, testUser } from '@/test-utils';
-import { todayInTimeZone } from '@/features/appointments/api';
-import { tagePlus } from '@/features/appointments/calendar';
 import { MyDayPage } from './MyDayPage';
+import { todayInTimeZone, tagePlus } from '@/lib/datum';
 
 /**
  * Die Übersicht mischt bewusst zwei Dinge: echte Termine aus dem Kalender und

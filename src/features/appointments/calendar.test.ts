@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  kalenderwoche,
-  monatPlus,
-  monatsBeginn,
   monatsRaster,
   ZOOMSTUFEN,
   ZOOM_STANDARD,
@@ -17,7 +14,6 @@ import {
   isoWochentag,
   kachelBreite,
   blaettern,
-  istIsoDatum,
   leseEingetrageneFehlzeit,
   leseParameter,
   linienAchse,
@@ -30,16 +26,23 @@ import {
   schreibeParameter,
   spalten,
   tageImBereich,
-  tagePlus,
   tagesFenster,
   trifftPunktauswahl,
-  wochenBeginn,
   zeitZuMinute,
   zoomSchritt,
   type Arbeitsausnahme,
   type Arbeitsblock,
 } from './calendar';
-import { dayKey, minutesOfDay } from './api';
+import {
+  dayKey,
+  minutesOfDay,
+  kalenderwoche,
+  monatPlus,
+  monatsBeginn,
+  istIsoDatum,
+  tagePlus,
+  wochenBeginn,
+} from '@/lib/datum';
 
 describe('Ungespeicherte Fehlzeit (KAL-20)', () => {
   const anfang = {

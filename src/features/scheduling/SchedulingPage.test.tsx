@@ -6,6 +6,7 @@ import type * as SchedulingApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as DokumentationApi from '@/features/documentation/api';
 import { renderWithProviders, testUser } from '@/test-utils';
+import type * as Datum from '@/lib/datum';
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
 const TIM = '55555555-5555-4555-8555-000000000004';
@@ -40,10 +41,14 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
     ...actual,
     fetchAssignableTherapists: () =>
       fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
-    // Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
-    todayInTimeZone: () => '2027-05-12',
   };
 });
+
+// Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
+vi.mock('@/lib/datum', async (importOriginal) => ({
+  ...(await importOriginal<typeof Datum>()),
+  todayInTimeZone: () => '2027-05-12',
+}));
 
 vi.mock('@/features/documentation/api', async (importOriginal) => {
   const actual = await importOriginal<typeof DokumentationApi>();

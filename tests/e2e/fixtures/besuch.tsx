@@ -8,8 +8,6 @@ import { MyDayPage } from '@/features/today/MyDayPage';
 import { CompleteTreatmentPage } from '@/features/documentation/CompleteTreatmentPage';
 import type { DayPlanEntry } from '@/features/today/api';
 import type { Appointment } from '@/features/appointments/api';
-import { todayInTimeZone } from '@/features/appointments/api';
-import { tagePlus } from '@/features/appointments/calendar';
 import type { TextSnippet } from '@/features/documentation/textbausteine';
 import type { Routenergebnis } from '@/lib/location/route';
 import { startpunkt, type Standort } from '@/features/tours/startort';
@@ -21,6 +19,7 @@ import {
 } from '@/features/tours/tagesroute';
 import type { CurrentUser } from '@/features/session/types';
 import '@/index.css';
+import { todayInTimeZone, tagePlus } from '@/lib/datum';
 
 /**
  * Einstieg der Prüfseite aus `besuch.html` (Auftrag C1 „Besuch in einem

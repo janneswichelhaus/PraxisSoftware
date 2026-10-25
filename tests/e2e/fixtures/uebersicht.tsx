@@ -17,10 +17,10 @@ import {
 } from '@/features/tours/tagesroute';
 import { Stammdaten } from '@/features/patients/PatientMasterDataPage';
 import type { Patient } from '@/features/patients/api';
-import { tagePlus } from '@/features/appointments/calendar';
-import { todayInTimeZone, type CalendarEntry } from '@/features/appointments/api';
+import { type CalendarEntry } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import '@/index.css';
+import { todayInTimeZone, tagePlus } from '@/lib/datum';
 
 /**
  * Einstieg der Prüfseite aus `uebersicht.html` (UX-EPIC-003).

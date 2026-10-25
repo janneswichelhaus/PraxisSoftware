@@ -3,7 +3,7 @@ import { antwort } from '@/lib/antwort';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { getSupabase } from '@/lib/supabase';
 import { minuteZuZeit, type StatusFilter } from './calendar';
-import { formatDate } from '@/lib/datum';
+import { dayKey, formatDate } from '@/lib/datum';
 import { istInternerPfad } from '@/lib/rueckweg';
 import { SERIE_HOECHSTZAHL, type Serientermin } from './serie';
 
@@ -393,47 +393,6 @@ export async function fetchLocations(): Promise<Location[]> {
 
   if (error) throw new Error('Die Standorte konnten nicht geladen werden.');
   return z.array(locationSchema).parse(data ?? []);
-}
-
-// -----------------------------------------------------------------------------
-// Darstellung in der Praxiszeitzone
-//
-// Ausschließlich über Intl.DateTimeFormat mit ausdrücklicher `timeZone`. Keine
-// eigene Zeitzonenarithmetik: Sommer-/Winterzeit und Umstellungstage sind dort
-// bereits korrekt abgebildet.
-// -----------------------------------------------------------------------------
-
-export function formatLocalDate(isoTimestamp: string, timeZone: string): string {
-  return new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeZone }).format(
-    new Date(isoTimestamp),
-  );
-}
-
-export function formatLocalTime(isoTimestamp: string, timeZone: string): string {
-  return new Intl.DateTimeFormat('de-DE', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone,
-  }).format(new Date(isoTimestamp));
-}
-
-export function formatLocalTimeRange(startIso: string, endIso: string, timeZone: string): string {
-  return `${formatLocalTime(startIso, timeZone)}–${formatLocalTime(endIso, timeZone)} Uhr`;
-}
-
-/**
- * Heutiger Kalendertag in einer Zeitzone als `YYYY-MM-DD`.
- *
- * `en-CA` liefert genau dieses Format. Damit lässt sich im Formular gegen den
- * laufenden Praxistag prüfen, ohne die Browserzeitzone heranzuziehen.
- */
-export function todayInTimeZone(timeZone: string, now = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    timeZone,
-  }).format(now);
 }
 
 /** Ortsangabe eines Termins in einer Zeile - passend zur Terminart. */
@@ -1507,69 +1466,6 @@ export async function fetchBelegteZeiten(query: {
   })) as { data: unknown; error: unknown };
   if (error) throw new Error('Die belegten Zeiten konnten nicht geladen werden.');
   return z.array(belegtSchema).parse(data ?? []);
-}
-
-/**
- * Kalendertag eines Zeitpunkts in einer Zeitzone als `YYYY-MM-DD`.
- *
- * Damit landet ein Termin in genau der Tagesspalte, in der er für die Praxis
- * stattfindet - unabhängig davon, in welcher Zeitzone der Browser läuft.
- */
-export function dayKey(isoTimestamp: string, timeZone: string): string {
-  return todayInTimeZone(timeZone, new Date(isoTimestamp));
-}
-
-/**
- * Der Zeitpunkt zu einer Ortszeit der Praxis (UBK-012): Kalendertag und
- * Minuten seit Mitternacht in `timeZone`, als ISO-Zeitstempel in UTC.
- *
- * Das Gegenstück zu `dayKey` und `minutesOfDay`. Der Versatz der Zone wird am
- * Zielzeitpunkt bestimmt und einmal nachgeprüft - so trägt die Rechnung auch
- * über eine Zeitumstellung.
- */
-export function zeitpunktIn(datum: string, minute: number, timeZone: string): string {
-  const [jahr, monat, tag] = datum.split('-').map(Number) as [number, number, number];
-  const alsUtc = Date.UTC(jahr, monat - 1, tag, Math.floor(minute / 60), minute % 60);
-  let ziel = alsUtc - zonenversatz(alsUtc, timeZone);
-  ziel = alsUtc - zonenversatz(ziel, timeZone);
-  return new Date(ziel).toISOString();
-}
-
-/** Ortszeit minus UTC in Millisekunden zum Zeitpunkt `ms`. */
-function zonenversatz(ms: number, timeZone: string): number {
-  const teile = new Intl.DateTimeFormat('en-GB', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23',
-    timeZone,
-  }).formatToParts(new Date(ms));
-  const zahl = (typ: string) => Number(teile.find((t) => t.type === typ)?.value ?? '0');
-  const ortszeit = Date.UTC(
-    zahl('year'),
-    zahl('month') - 1,
-    zahl('day'),
-    zahl('hour'),
-    zahl('minute'),
-    zahl('second'),
-  );
-  return ortszeit - Math.floor(ms / 1000) * 1000;
-}
-
-/** Minuten seit Mitternacht in einer Zeitzone - Grundlage der Anordnung. */
-export function minutesOfDay(isoTimestamp: string, timeZone: string): number {
-  const teile = new Intl.DateTimeFormat('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-    timeZone,
-  }).formatToParts(new Date(isoTimestamp));
-
-  const zahl = (typ: string) => Number(teile.find((t) => t.type === typ)?.value ?? '0');
-  return zahl('hour') * 60 + zahl('minute');
 }
 
 // -----------------------------------------------------------------------------

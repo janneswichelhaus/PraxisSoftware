@@ -4,8 +4,6 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
-import { tagePlus } from '@/features/appointments/calendar';
-import { formatLocalTime } from '@/features/appointments/api';
 import { hakenFehlt } from '@/features/appointments/haken';
 import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
 import type { RejectedTimeOff } from '@/features/timeaccount/api';
@@ -19,6 +17,7 @@ import {
 } from './api';
 import { schreibseite } from './besuchswege';
 import { nichtAbgeschlossen, terminName } from './tagesstart';
+import { formatLocalTime, tagePlus } from '@/lib/datum';
 
 /**
  * Was an einem Besuch noch fehlt, als Wort - oder `null`, wenn nichts fehlt.

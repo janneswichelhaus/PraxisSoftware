@@ -1,7 +1,6 @@
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { CheckupErinnerung } from '@/features/fleet/CheckupHinweise';
 import { Arbeitszeitantraege } from '@/features/open-points/Arbeitszeitantraege';
 import { Erstattungen } from '@/features/open-points/Erstattungen';
@@ -14,6 +13,7 @@ import { isTherapyStaff, type CurrentUser } from '@/features/session/types';
 import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { MeineAntraege } from './MeineAntraege';
 import { EINGANG, NEUER_ANTRAG } from './pfade';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Eingang von Organisation (ORG-004, ANN-604): was im Team, an den Rädern und

@@ -9,13 +9,13 @@ import {
   kalenderZumTermin,
   leererTermin,
   TERMINFENSTER_MINUTEN,
-  todayInTimeZone,
 } from '@/features/appointments/api';
 import { tageslageNeuLaden } from '@/features/appointments/tageslage';
 import type { CurrentUser } from '@/features/session/types';
 import { TrainingTerminFormular } from '@/features/training/TrainingTerminFormular';
 import { beratungsterminAnlegen, ernaehrungSchluessel, fetchErnaehrung } from './api';
 import { ernaehrungsReiter, type Verhaeltnisart } from './eingabe';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * `…/ernaehrung/termin` - einen Beratungstermin anlegen (ERN-012, ANN-622).

@@ -14,7 +14,7 @@ import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Tex
 import { fetchPatient, fullName } from '@/features/patients/api';
 import { canReadTreatmentBases, type CurrentUser } from '@/features/session/types';
 import { fetchPatientTreatmentBases, grundlageBezeichnung } from '@/features/treatment-bases/api';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import type { Formularfehler } from '@/lib/formularfehler';
 import { istInternerPfad, leseRueckweg, mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import {
@@ -38,7 +38,6 @@ import {
   leseTerminVorbelegung,
   schreibeTerminVorbelegung,
   TERMINFENSTER_MINUTEN,
-  todayInTimeZone,
   type AppointmentFormField,
   type AppointmentFormValues,
   type AppointmentType,

@@ -17,7 +17,6 @@ import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { leseMeldung } from '@/features/appointments/terminformular';
 import type { CurrentUser } from '@/features/session/types';
 import {
@@ -50,6 +49,7 @@ import {
   type Radzustand,
 } from './rad';
 import { aktiveStandortvorlage } from './standortvorlage';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Radflotte (FLT-EPIC-001): die Räder der Praxis nach Standort, mit Suche,

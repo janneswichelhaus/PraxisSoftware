@@ -10,7 +10,6 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { formatLocalDate } from '@/features/appointments/api';
 import {
   EINWILLIGUNG_BEGLEITUNG_FASSUNG,
   NACHWEISDOKUMENT,
@@ -34,6 +33,7 @@ import {
   type Vertretung,
 } from './api';
 import { ZUSTAND } from './zustand';
+import { formatLocalDate } from '@/lib/datum';
 
 /**
  * Vertretungen im Abschnitt „Plattform" (POR-005, ADR-023 Punkte 13 bis 15).

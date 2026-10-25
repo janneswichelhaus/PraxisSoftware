@@ -1,10 +1,5 @@
-import {
-  formatLocalDate,
-  formatLocalTimeRange,
-  slipOrt,
-  staffName,
-  type AppointmentSlipEntry,
-} from './api';
+import { slipOrt, staffName, type AppointmentSlipEntry } from './api';
+import { formatLocalDate, formatLocalTimeRange } from '@/lib/datum';
 
 /**
  * Die Termine einer Patient:in als vorbereitete E-Mail (CAL-013, ANN-041).

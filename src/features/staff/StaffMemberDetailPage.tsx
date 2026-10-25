@@ -17,15 +17,9 @@ import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { leseMeldung } from '@/features/appointments/terminformular';
-import {
-  appointmentTypeHint,
-  fetchAssignableTherapists,
-  formatLocalDate,
-  formatLocalTimeRange,
-  todayInTimeZone,
-} from '@/features/appointments/api';
+import { appointmentTypeHint, fetchAssignableTherapists } from '@/features/appointments/api';
 import { BEGRIFFE } from '@/lib/begriffe';
-import { formatDate } from '@/lib/datum';
+import { formatDate, formatLocalDate, formatLocalTimeRange, todayInTimeZone } from '@/lib/datum';
 import { leseRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
 import { fullName } from '@/features/patients/api';

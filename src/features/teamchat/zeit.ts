@@ -1,4 +1,4 @@
-import { todayInTimeZone, zeitpunktIn } from '@/features/appointments/api';
+import { todayInTimeZone, zeitpunktIn } from '@/lib/datum';
 
 /**
  * Wann eine Nachricht kam, so kurz wie möglich: heute nur die Uhrzeit,

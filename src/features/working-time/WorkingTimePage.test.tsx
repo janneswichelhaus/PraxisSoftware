@@ -7,6 +7,7 @@ import type * as WorkingTimeApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as SchedulingApi from '@/features/scheduling/api';
 import { testOpenRequest, testOwnRequest, testWeek, testWorkingTime } from './testdata';
+import type * as Datum from '@/lib/datum';
 
 /**
  * Die Seite Arbeitszeit (AZ-001): der eigene Plan heute und - genehmigt - ab
@@ -40,9 +41,14 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
           display_name: 'Tim Teamleitung',
         },
       ]),
-    todayInTimeZone: () => '2026-11-12',
   };
 });
+
+// Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
+vi.mock('@/lib/datum', async (importOriginal) => ({
+  ...(await importOriginal<typeof Datum>()),
+  todayInTimeZone: () => '2026-11-12',
+}));
 vi.mock('@/features/scheduling/api', async (importOriginal) => {
   const actual = await importOriginal<typeof SchedulingApi>();
   return {

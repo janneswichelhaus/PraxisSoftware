@@ -14,7 +14,6 @@ import { useOffenerReiter, type Suchreiter } from '@/components/ui/offenerReiter
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { leseMeldung } from '@/features/appointments/terminformular';
 import { leseRueckweg, mitRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
 import type { CurrentUser } from '@/features/session/types';
@@ -36,6 +35,7 @@ import { ausserhalbDesStammdepots, depotName, radzustandLabels, standort } from 
 import { RadAngaben } from './RadAngaben';
 import { RadStellen } from './RadStellen';
 import { RadVerlauf } from './RadVerlauf';
+import { todayInTimeZone } from '@/lib/datum';
 
 const ZUR_FLOTTE = '/betrieb/flotte';
 

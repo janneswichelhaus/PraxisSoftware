@@ -6,7 +6,6 @@ import { symbolknopfKlassen, type SymbolGroesse } from '@/components/ui/buttonSt
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
   fetchAppointment,
-  formatLocalTime,
   kalenderZumTermin,
   reopenAppointment,
 } from '@/features/appointments/api';
@@ -22,6 +21,7 @@ import {
   verspaetungsText,
 } from './besuchswege';
 import { terminName } from './tagesstart';
+import { formatLocalTime } from '@/lib/datum';
 
 /** Hörer im 20er-Raster, Strich 1,75, runde Enden (DESIGN.md 9.15). */
 function TelefonSymbol() {

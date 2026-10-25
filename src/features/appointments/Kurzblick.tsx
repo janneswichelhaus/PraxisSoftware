@@ -6,10 +6,9 @@ import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Badge } from '@/components/ui/Badge';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { formatDate } from '@/lib/datum';
+import { formatDate, formatLocalDate } from '@/lib/datum';
 import { FREITEXT } from '@/features/documentation/format';
 import { grundlageBezeichnung } from '@/features/treatment-bases/api';
-import { formatLocalDate } from './api';
 import { fetchKurzblick, type Kurzblick as KurzblickDaten } from './kurzblick-api';
 
 /**

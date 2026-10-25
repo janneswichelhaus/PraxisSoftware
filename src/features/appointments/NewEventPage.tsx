@@ -36,9 +36,9 @@ import {
   fetchLocations,
   istAusserhalbArbeitszeit,
   leseTerminVorbelegung,
-  todayInTimeZone,
   type EreignisFormValues,
 } from './api';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Eine Fehlzeit des Praxisbetriebs eintragen (CAL-015b, CAL-015c).

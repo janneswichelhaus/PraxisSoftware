@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import type * as TodayApiModule from './api';
-import { tagePlus } from '@/features/appointments/calendar';
 import { renderMitVorschau } from '@/test-utils';
 import { Nachzuholen, NochOffen } from './NochOffen';
+import { tagePlus } from '@/lib/datum';
 
 const fetchDayPlan = vi.fn();
 vi.mock('./api', async (importOriginal) => ({

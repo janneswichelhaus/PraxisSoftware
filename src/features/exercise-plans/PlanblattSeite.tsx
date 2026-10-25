@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { dayKey } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchPlan, planPfad, planSchluessel } from './api';
 import { Planblatt } from './Planblatt';
+import { dayKey } from '@/lib/datum';
 
 /**
  * Der Plan als Blatt aus der Praxis (UEB-008, ANN-303) - unter

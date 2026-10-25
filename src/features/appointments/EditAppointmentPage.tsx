@@ -33,8 +33,6 @@ import {
   fetchAppointment,
   fetchAssignableTherapists,
   fetchLocations,
-  formatLocalDate,
-  formatLocalTimeRange,
   istAusserhalbArbeitszeit,
   istVergangenheit,
   liegtInVergangenheit,
@@ -43,7 +41,6 @@ import {
   patientName,
   TERMINFENSTER_MINUTEN,
   terminLaengeMinuten,
-  todayInTimeZone,
   updateAppointment,
   type AppointmentFormField,
   type AppointmentFormValues,
@@ -56,6 +53,7 @@ import { tageslageNeuLaden } from './tageslage';
 import { Wegauskunft } from './Wegauskunft';
 import { frageAusFormular, useWegpruefung } from './wegpruefung';
 import { speicherfehlerText, terminFehlerliste, terminFeldfehler } from './terminformular';
+import { formatLocalDate, formatLocalTimeRange, todayInTimeZone } from '@/lib/datum';
 
 /** Die Felder, an denen sich eine Eingabe vom gespeicherten Termin unterscheiden kann. */
 const FELDER: readonly AppointmentFormField[] = [

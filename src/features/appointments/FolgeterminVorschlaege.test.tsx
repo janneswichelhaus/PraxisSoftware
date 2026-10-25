@@ -8,10 +8,9 @@ import type * as SlotApi from '@/features/slot-search/api';
 import type * as WegModul from './wegpruefung';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-import { tagePlus } from './calendar';
-import { zeitpunktIn } from './api';
 import { luftStufe, type Seite, type Wegpruefung } from './wegpruefung';
 import { FolgeterminVorschlaege } from './FolgeterminVorschlaege';
+import { zeitpunktIn, tagePlus } from '@/lib/datum';
 
 const fetchUpcomingAppointments = vi.fn();
 const createAppointment = vi.fn();

@@ -16,7 +16,7 @@ import { BausteinFeld } from '@/features/assessments/BausteinFeld';
 import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
 import { VORSCHLAG_OFFEN } from '@/features/assessments/dokumentationstext';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
-import { formatLocalTimeRange, patientName, type Appointment } from '@/features/appointments/api';
+import { patientName, type Appointment } from '@/features/appointments/api';
 import { BisherigeEintraege } from './BisherigeEintraege';
 import { AufGeraetSichern } from '@/features/offline-documentation/AufGeraetSichern';
 import { DocumentationShell } from './DocumentationShell';
@@ -44,6 +44,7 @@ import {
   updateTreatmentNote,
   type TreatmentNote,
 } from './api';
+import { formatLocalTimeRange } from '@/lib/datum';
 
 /**
  * Behandlung abschließen in einem Schritt (UX-007).

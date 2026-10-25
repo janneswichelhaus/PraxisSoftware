@@ -3,13 +3,8 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { AbsenderBlock } from '@/features/datenschutz/AbsenderBlock';
 import type { PraxisAbsender } from '@/features/datenschutz/absender';
-import {
-  formatLocalDate,
-  formatLocalTimeRange,
-  slipOrt,
-  staffName,
-  type AppointmentSlipEntry,
-} from './api';
+import { slipOrt, staffName, type AppointmentSlipEntry } from './api';
+import { formatLocalDate, formatLocalTimeRange } from '@/lib/datum';
 
 /**
  * Das Blatt des Terminzettels, wie es auf Papier geht (Profil „Druckblatt“,

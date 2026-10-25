@@ -13,7 +13,6 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Segment } from '@/components/ui/Segment';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import {
@@ -25,6 +24,7 @@ import {
   type Urlaubskonto,
 } from './api';
 import { urlaubsfenster } from './fenster';
+import { todayInTimeZone } from '@/lib/datum';
 
 type Feld = 'tage' | 'uebertrag';
 const FELDER: readonly Feld[] = ['tage', 'uebertrag'];

@@ -1,6 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { formatLocalTime } from './api';
 import { minuteZuZeit } from './calendar';
 import {
   useWegpruefung,
@@ -10,6 +9,7 @@ import {
   type Wegfrage,
   type Wegpruefung,
 } from './wegpruefung';
+import { formatLocalTime } from '@/lib/datum';
 
 /**
  * „Passt es?“ - An- und Weiterfahrt eines geplanten Termins (UBK-012,

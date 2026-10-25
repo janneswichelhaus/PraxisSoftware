@@ -13,6 +13,7 @@
 
 // Nur der Typ: `api.ts` liest diese Datei zur Laufzeit, nicht umgekehrt.
 import { BEGRIFFE } from '@/lib/begriffe';
+import { istIsoDatum, monatPlus, tagePlus, wochenBeginn } from '@/lib/datum';
 import type { EreignisFormValues } from './api';
 
 const KALENDER_ANSICHTEN = ['tag', 'woche'] as const;
@@ -32,40 +33,6 @@ export type KalenderAnsicht = (typeof KALENDER_ANSICHTEN)[number];
  */
 const STATUS_FILTER = ['active', 'confirmed', 'done', 'no_show', 'cancelled', 'all'] as const;
 export type StatusFilter = (typeof STATUS_FILTER)[number];
-
-const ISO_DATUM = /^\d{4}-\d{2}-\d{2}$/;
-
-/** Prüft ein `YYYY-MM-DD` samt tatsächlicher Existenz des Tages. */
-export function istIsoDatum(wert: string | null | undefined): wert is string {
-  if (!wert || !ISO_DATUM.test(wert)) return false;
-  const d = new Date(`${wert}T00:00:00Z`);
-  if (Number.isNaN(d.getTime())) return false;
-  // Fängt den 31. Februar ab: Date normalisiert still auf den 3. März.
-  return d.toISOString().slice(0, 10) === wert;
-}
-
-function alsDate(iso: string): Date {
-  return new Date(`${iso}T00:00:00Z`);
-}
-
-function alsIso(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-/** Verschiebt einen Kalendertag um ganze Tage. */
-export function tagePlus(iso: string, tage: number): string {
-  const d = alsDate(iso);
-  d.setUTCDate(d.getUTCDate() + tage);
-  return alsIso(d);
-}
-
-/** Montag der Woche, in der dieser Tag liegt. */
-export function wochenBeginn(iso: string): string {
-  const d = alsDate(iso);
-  // getUTCDay: 0 = Sonntag. Die Woche beginnt am Montag.
-  const versatz = (d.getUTCDay() + 6) % 7;
-  return tagePlus(iso, -versatz);
-}
 
 export interface Zeitbereich {
   /** Erster Kalendertag, einschließlich. */
@@ -90,29 +57,6 @@ export function tageImBereich({ von, bis }: Zeitbereich): string[] {
 /** Einen Bereich um eine ganze Ansichtslänge vor oder zurück schieben. */
 export function blaettern(ansicht: KalenderAnsicht, datum: string, richtung: 1 | -1): string {
   return tagePlus(datum, richtung * (ansicht === 'tag' ? 1 : 7));
-}
-
-/**
- * Kalenderwoche nach ISO 8601 (DIN 1355): Die Woche beginnt am Montag, und
- * Woche 1 ist die mit dem ersten Donnerstag des Jahres (BEF-039).
- */
-export function kalenderwoche(iso: string): number {
-  // Der Donnerstag derselben Woche entscheidet über das Jahr der Woche.
-  const donnerstag = alsDate(tagePlus(wochenBeginn(iso), 3));
-  const jahresBeginn = Date.UTC(donnerstag.getUTCFullYear(), 0, 1);
-  return Math.floor((donnerstag.getTime() - jahresBeginn) / 86_400_000 / 7) + 1;
-}
-
-/** Erster Tag des Monats, in dem dieser Tag liegt. */
-export function monatsBeginn(iso: string): string {
-  return `${iso.slice(0, 7)}-01`;
-}
-
-/** Derselbe Monatserste, um ganze Monate verschoben. */
-export function monatPlus(monatsErster: string, monate: number): string {
-  const d = alsDate(monatsErster);
-  d.setUTCMonth(d.getUTCMonth() + monate, 1);
-  return alsIso(d);
 }
 
 /**

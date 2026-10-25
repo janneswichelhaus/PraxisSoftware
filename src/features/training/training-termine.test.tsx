@@ -5,6 +5,7 @@ import type * as TrainingApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
+import type * as Datum from '@/lib/datum';
 
 /**
  * Trainingstermine (TRN-004 bis TRN-006). Die Grenze sitzt im Server
@@ -48,9 +49,14 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
     cancelAppointment: (...args: unknown[]) => cancelAppointment(...args) as Promise<void>,
     fetchAssignableTrainers: () => fetchAssignableTrainers() as Promise<unknown>,
     fetchLocations: () => fetchLocations() as Promise<unknown>,
-    todayInTimeZone: () => '2027-05-12',
   };
 });
+
+// Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
+vi.mock('@/lib/datum', async (importOriginal) => ({
+  ...(await importOriginal<typeof Datum>()),
+  todayInTimeZone: () => '2027-05-12',
+}));
 
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),

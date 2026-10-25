@@ -10,10 +10,9 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Zusammenfuehrungsvermerke } from './Zusammenfuehrungsvermerke';
 import { Textlink } from '@/components/ui/Textlink';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
-import { todayInTimeZone } from '@/features/appointments/api';
 import {
   PlattformAbschnitt,
   PlattformzugangBeenden,

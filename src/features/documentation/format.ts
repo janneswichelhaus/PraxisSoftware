@@ -1,11 +1,6 @@
-import {
-  formatLocalDate,
-  formatLocalTime,
-  formatLocalTimeRange,
-  type Appointment,
-} from '@/features/appointments/api';
+import { type Appointment } from '@/features/appointments/api';
 import type { TreatmentNote } from './api';
-import { tagePlus } from '@/features/appointments/calendar';
+import { formatLocalDate, formatLocalTime, formatLocalTimeRange, tagePlus } from '@/lib/datum';
 
 /**
  * Klassen für klinischen Freitext, wo er gelesen wird (DOK-23).

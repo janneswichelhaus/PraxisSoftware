@@ -13,9 +13,9 @@ import {
   stoppsDesTages,
   type Tagesstopp,
 } from '@/features/tours/tagesroute';
-import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import '@/index.css';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Einstieg der Prüfseite aus `tour.html` (UBK-009).

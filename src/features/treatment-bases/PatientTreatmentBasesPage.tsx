@@ -21,11 +21,10 @@ import {
 } from '@/features/session/types';
 import { GrundlagenKacheln } from './GrundlagenKacheln';
 import { KlinischerHinweis } from './KlinischerHinweis';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { Dateiliste } from '@/features/files/Dateiliste';
 import { OffeneVerordnungsfotos } from '@/features/files/Aktendateien';
 import { usePatientRecord } from '@/features/patients/akte';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { Deckungszeichen } from '@/features/appointments/Deckungszeichen';
 import { ZOOM_STANDARD, schreibeParameter } from '@/features/appointments/calendar';
 import type { Patient } from '@/features/patients/api';

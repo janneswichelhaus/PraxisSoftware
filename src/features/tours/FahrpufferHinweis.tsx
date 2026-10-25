@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { formatLocalTime } from '@/features/appointments/api';
 import { useFahrten, useTagesstopps } from './fahrpuffer';
+import { formatLocalTime } from '@/lib/datum';
 
 /**
  * Fahrpuffer im Kalender (MAP-006c, §8.1, ANN-097).

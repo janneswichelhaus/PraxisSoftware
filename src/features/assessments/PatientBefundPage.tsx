@@ -7,8 +7,7 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { usePatientRecord } from '@/features/patients/akte';
-import { formatDate } from '@/lib/datum';
-import { todayInTimeZone } from '@/features/appointments/api';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import type { Patient } from '@/features/patients/api';
 import { Behandlungsliege } from '@/features/patients/Behandlungsliege';
 import {

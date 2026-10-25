@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Section } from '@/components/ui/Section';
-import { todayInTimeZone } from '@/features/appointments/api';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { fetchZusammenfuehrungen, wandertMit } from './zusammenfuehren';
 
 /**

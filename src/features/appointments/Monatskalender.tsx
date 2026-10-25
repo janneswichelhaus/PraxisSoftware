@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
-import { monatPlus, monatsBeginn, monatsRaster } from './calendar';
+import { monatsRaster } from './calendar';
+import { monatPlus, monatsBeginn } from '@/lib/datum';
 
 /**
  * Der Monatskalender zum Aufklappen über dem Raster (BEF-039, **ANN-109**).

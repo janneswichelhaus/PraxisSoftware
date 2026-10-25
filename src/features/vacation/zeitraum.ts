@@ -1,6 +1,6 @@
 import { STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
-import { tagePlus } from '@/features/appointments/calendar';
 import type { Antragsstatus } from './api';
+import { tagePlus } from '@/lib/datum';
 
 /**
  * Rechnen und Schreiben rund um einen Urlaubszeitraum (URL-001), ohne
