@@ -15,6 +15,10 @@ const FORM = {
   hero: 'h-57.5 rounded-image',
   vorschau: 'h-75 rounded-image',
   leiste: 'h-14 rounded-button',
+  /** Die Bühne der Durchführung (Handoff 2026-10-24, 5.6): 200 hoch. */
+  buehne: 'h-50 rounded-image',
+  /** Der Fuß der Durchführung: der Hauptknopf 56 als Fläche. */
+  knopf: 'h-14 rounded-button',
 } as const;
 
 /**

@@ -88,12 +88,15 @@ test.describe('Freigabe ohne Netz per Passkey (TRK-009)', () => {
 
       // Üben ohne Netz: der Haken von vorhin steht, ein neuer kommt dazu.
       await page.getByRole('button', { name: 'Jetzt üben' }).click();
-      const erster = page.getByRole('button', { name: '1. Durchgang' });
+      // „Sperren“ bleibt auch beim Üben im Kopf der lokalen Ansicht (ADR-025 Punkt 16).
+      await expect(page.getByRole('button', { name: 'Sperren' })).toBeVisible();
+      const erster = page.getByRole('button', { name: /^1\. Durchgang/ });
       await expect(erster).toHaveAttribute('aria-pressed', 'true');
-      await page.getByRole('button', { name: '2. Durchgang' }).click();
-      await expect(page.getByTestId('uebertragungsstand')).toContainText(
-        'sobald Verbindung besteht und Sie die Anwendung entsperrt haben',
-      );
+      await page.getByRole('button', { name: /^2\. Durchgang/ }).click();
+      // Der Fuß der Durchführung (ANN-710), mit dem Zusatz der gesperrten Anwendung.
+      await expect(
+        page.getByText(/sobald Verbindung besteht und Sie die Anwendung entsperrt haben/),
+      ).toBeVisible();
       expect((await erster.boundingBox())!.height).toBeGreaterThanOrEqual(56);
       expect(await ueberlaeuft(page)).toBe(false);
 
@@ -101,10 +104,14 @@ test.describe('Freigabe ohne Netz per Passkey (TRK-009)', () => {
       await page.reload();
       await expect(page.getByText('Ohne Verbindung. Hier ist nur')).toBeVisible();
       await page.getByRole('button', { name: 'Jetzt üben' }).click();
-      await expect(page.getByRole('button', { name: '2. Durchgang' })).toHaveAttribute(
+      await expect(page.getByRole('button', { name: /^2\. Durchgang/ })).toHaveAttribute(
         'aria-pressed',
         'true',
       );
+
+      // „Später weiter“ führt zur Auswahl zurück, die Einheit bleibt offen.
+      await page.getByRole('button', { name: 'Später weiter' }).click();
+      await expect(page.getByRole('button', { name: 'Jetzt üben' })).toBeVisible();
 
       // Sperren schließt die Ansicht. Das Passkey-Fenster öffnet sich wieder
       // von selbst; diesmal scheitert die Prüfung der Person.
@@ -149,7 +156,7 @@ test.describe('Freigabe ohne Netz per Passkey (TRK-009)', () => {
 });
 
 test.describe('Durchführung über die Warteschlange (TRK-008)', () => {
-  test('überträgt jeden Haken und sagt „Alles übertragen"', async ({ page }) => {
+  test('überträgt jeden Haken und sagt „Übertragen an die Praxis"', async ({ page }) => {
     const gesendet: unknown[] = [];
     await page.route('**/rest/v1/rpc/sync_platform_exercise_session', async (route) => {
       const daten = route.request().postDataJSON() as { p_session_id: string };
@@ -161,11 +168,9 @@ test.describe('Durchführung über die Warteschlange (TRK-008)', () => {
       });
     });
     await page.goto(`${UEBUNGEN}?seite=einheit`);
-    await page.getByRole('button', { name: '2. Durchgang' }).click();
+    await page.getByRole('button', { name: /^2\. Durchgang/ }).click();
     await expect.poll(() => gesendet.length).toBe(1);
-    await expect(page.getByTestId('uebertragungsstand')).toHaveText(
-      'Alles übertragen. Sie können jederzeit abbrechen.',
-    );
+    await expect(page.getByText('Übertragen an die Praxis')).toBeVisible();
     expect(gesendet[0]).toMatchObject({
       p_session_id: 'cccccccc-0000-4000-8000-000000000001',
       p_events: [{ kind: 'set', set_number: 2, done: true }],
@@ -177,12 +182,10 @@ test.describe('Durchführung über die Warteschlange (TRK-008)', () => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.route('**/rest/v1/rpc/sync_platform_exercise_session', (route) => route.abort());
       await page.goto(`${UEBUNGEN}?seite=einheit`);
-      const zweiter = page.getByRole('button', { name: '2. Durchgang' });
+      const zweiter = page.getByRole('button', { name: /^2\. Durchgang/ });
       await zweiter.click();
       await expect(zweiter).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.getByTestId('uebertragungsstand')).toHaveText(
-        'Auf dem Gerät gespeichert, noch nicht übertragen. Übertragen wird, sobald Verbindung besteht.',
-      );
+      await expect(page.getByText('Auf diesem Gerät, noch nicht übertragen')).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
     });
   }

@@ -1,7 +1,7 @@
 import { Abschlussseite } from '@/components/ui/Abschlussseite';
 import { HakenSymbol } from '@/components/ui/HakenSymbol';
 import { Durchfuehrungsfuss, TelefonSymbol } from './Durchfuehrungsfuss';
-import { tagOhneJahr } from './zeit';
+import { tagFest } from './zeit';
 
 /**
  * Die Seite nach „Einheit beenden“ (Handoff 2026-10-24, Abschnitte 3 und
@@ -25,8 +25,8 @@ export function Endseite({
   fassung: 'uebertragen' | 'geraet';
   /** Der Tag der Einheit, `YYYY-MM-DD`. */
   tag: string;
-  /** Wer die Einheit sieht: „Anna Beispiel“, ohne Namen „Ihre Therapeut:in“. */
-  wer: string;
+  /** Wer die Einheit sieht: „Anna Beispiel“, ohne Namen „Ihre Therapeut:in“; `null`, solange offen. */
+  wer: string | null;
   /** Der nächste Übungstag, `YYYY-MM-DD`; ohne Angabe keine Zeile. */
   naechsterTag?: string | null | undefined;
   zurUebersicht: string;
@@ -58,7 +58,7 @@ export function Endseite({
       {uebertragen ? (
         <>
           <p>Ihre Einheit vom {tagFest(tag)} ist bei der Praxis.</p>
-          <p className="text-ink-muted">{wer} sieht sie beim nächsten Termin.</p>
+          {wer ? <p className="text-ink-muted">{wer} sieht sie beim nächsten Termin.</p> : null}
         </>
       ) : (
         <>
@@ -71,15 +71,6 @@ export function Endseite({
       )}
     </Abschlussseite>
   );
-}
-
-/**
- * „Samstag, 24. Oktober“ für einen Kalendertag `YYYY-MM-DD` - Tag und Monat
- * mit geschütztem Leerzeichen, damit „24.“ und „Oktober“ nicht auf zwei
- * Zeilen stehen.
- */
-function tagFest(kalendertag: string): string {
-  return tagOhneJahr(`${kalendertag}T12:00:00`).replace(/(\d+\.) /, '$1\u00a0');
 }
 
 /** Der Kalender, 22 px in der Hauptfarbe - für Vorlesesoftware ausgeblendet. */

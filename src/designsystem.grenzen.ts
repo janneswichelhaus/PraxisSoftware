@@ -74,8 +74,6 @@ export const GRENZEN: Record<
 
     'features/files': 1,
 
-    'features/platform': 1,
-
     'features/today': 1,
 
     'features/tours': 2,

@@ -431,6 +431,9 @@
   --container-wochenleiste: 35rem;
   --container-durchfuehrung: 60rem;
   --container-hauptknopf: 22.5rem;
+  /* Die Skala der Plattform: sechs Stufen 48 mit 8 Abstand, also zwei
+     Reihen 0 bis 5 und 6 bis 10; bei großer Schrift bricht sie weiter um. */
+  --container-skala: 20.5rem;
   /* Reiter „Übungen“ am Rechner: die Vorschau rechts, 340 bis 460 (ANN-724). */
   --container-vorschau-min: 21.25rem;
   --container-vorschau: 28.75rem;
@@ -551,10 +554,10 @@ html:has(.reiterleiste[data-stufe='2']) {
   .plattform-schrift .listenzeile > :nth-child(3) {
     grid-column: 1;
   }
-  /* Eine Skala (0–10) mit so vielen Stufen je Reihe, wie 44 px breit
+  /* Eine Skala (0–10) mit so vielen Stufen je Reihe, wie 48 px breit
      hineinpassen - Reihenfolge und Anker bleiben (ANN-258). */
   .plattform-schrift .skala {
-    grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
   }
   /* ANN-707 (Jannes, 24.10.2026): Bei 200 % passen „Treppengeländer“ oder
      „Totalendoprothese“ in keiner zulässigen Größe in die Zeile, und ohne
@@ -652,6 +655,10 @@ html[data-schrift='sehr-gross'] {
   .haken-gesetzt {
     animation: haken-gesetzt 0.16s var(--ease-feder);
   }
+  /* Wechsel der Übung: 200 ms Überblendung (`Durchfuehrung.tsx`). */
+  .uebung-wechsel {
+    animation: uebung-wechsel 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .pausenring-fuellung {
@@ -666,6 +673,11 @@ html[data-schrift='sehr-gross'] {
   }
   to {
     stroke-dashoffset: 0;
+  }
+}
+@keyframes uebung-wechsel {
+  from {
+    opacity: 0;
   }
 }
 @keyframes haken-gesetzt {
