@@ -5,28 +5,25 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 2 Übungen: 2a (#300), 2b Durchführung (#304, DRP-030 bis -035, Pfad A
-wegen BEF-211 und BEF-213; ANN-711 bis -717) und 2c Reiter (#302, DRP-040 bis -044: Vorschau der
-Einheit in allen Lagen mit Dauer, Plan mit Wochenleiste und Übungszeilen, Plan vom Gerät, Fenster
-mit Bühne, Rechner zweispaltig; ANN-720 bis -727) sind gemergt. Schritt 3 Termine ist vorbereitet
-(#303): Designsystem auf Code-Stand (Version 7), Briefing 3, Leinwand,
-`design/handoff-2026-10-24-plattform-termine.md` mit fünf Fragen, BEF-220 bis -222. Befunde aus
-archivierten Sitzungen: BEF-200 (seit #297 erledigt), BEF-201, BEF-202.
-
-**Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24. und 25.10.: 2c (#302), 2b (#304), 2a
-(#300), Handoff Übungen (#299), Nacharbeit #298 (Fragen aus #297 wie empfohlen, „Mitteilungen
-einschalten“ unter „Heute“, ANN-702; Briefing 2 aufgefrischt, BEF-196 und BEF-197; BEF-170 Pfad A,
-ANN-703, daraus BEF-198), 1e Übersicht (#297, DRP-020 bis -022), 1d Einstieg (#294), 1c Türen
-(#295), CI-Fix #296. Gemergt am 22. und 23.10.: Schritt 0 (#288), Handoff und Bericht (#289), 1a
-(#290), 1b (#293), Daten N1/N2 (#292); BEF-179/-180 (#287).
+Design-Review Lauf 1, **Schritt 3 Termine** (Handoff #303, Fragen wie empfohlen), am 25.10.
+mitten im Schritt pausiert. Auf `ccr-544f8ce7-u1sqpf` liegt der Stapel auf `main` (2d #307 ist
+gemergt), noch ohne PR: 3a Bausteine (`761d6fe`, `f0150fb`), 3b Liste (`bf34c04`), 3c Seite des
+Termins (`1acd34a`), darüber diese Übergabe. Design-Review 3a und 3b abgearbeitet (3b: `Section`
+statt Nachbau, `EmptyState` mit `zeichen`, H1 bis H10; BEF-227, BEF-228), für 3c steht es aus.
+Geprüft: Komponententests Plattform und UI, Browsertests `plattform*` und `einsicht` (3c: 183
+grün), `docs:check`; die volle Prüfung (Lint, alle Tests, Build, Secrets) steht für jeden Schritt
+noch aus. Schritt 1 ist abgenommen (24.10.), Schritt 2 mit 2d abgeschlossen.
 
 ## Danach
 
-Schritt 2 ist mit dem Planblatt 2d gebaut. Schritt 3 Termine (mit #303 freigegeben, Fragen wie
-empfohlen): 3a Bausteine, 3b Liste und 3c Seite des Termins gebaut; 3d Abläufe folgt. Danach Schritte 4 bis 7
-(Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff aus Claude Design;
-Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198 (Grundlage samt Verordnungsscan ins
-Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A), BEF-223 (Zeitumstellung; Pfad A).
+**Schritt 3 Termine fortsetzen**, je eine PR, nur der eine Branch: (1) volle Prüfung auf 3a, die
+Commits von 3b und 3c lokal sichern, Branch auf `f0150fb` stellen, PR 3a; (2) nach dem Merge PR 3b;
+(3) Design-Review 3c, dann PR; (4) 3d Abläufe nach Handoff 5.3/5.4 und 5.5: je zwei Schritte
+(`terminablauf.ts` ohne „Was möchten Sie?“), Tage als `Wochenleiste` Mo–Fr, Tageszeiten als
+`Wahlflaechen` (Vorlage: Prüfseite der Bausteine), Zusammenfassungen als Karte, ✕ zur Seite des
+Termins, Senden ohne Netz gesperrt, am Rechner Fenster 36rem; Frage 3 als Annahme. Danach
+Schritte 4 bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff;
+ohne Handoff BEF-198 und BEF-223 (beide Pfad A).
 
 ## Bei Jannes
 
@@ -57,4 +54,5 @@ Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A), BEF-223 (Zeitums
 Termine selbst an; danach BEF-215 und BEF-218 – das Fenster „Übung zum Nachlesen“ nutzt die
 Anleitung der Durchführung, die Vorschau rechnet mit der Einheit auf dem Gerät (ANN-730); dann 2d
 Planblatt – „Plan als PDF“, Vorschau als Blatt, Druck A4 (ANN-731); dann 3a – die Bausteine der
-Termine (ANN-732 bis -739); dann 3b – die Liste (ANN-740 bis -745, BEF-220 erledigt). Keine Migration, kein Seed. Lokal: `git pull`.
+Termine (ANN-732 bis -739); dann 3b – die Liste (ANN-740 bis -745, BEF-220 erledigt); dann 3c –
+die Seite des Termins (ANN-746, -747, BEF-221 erledigt). Keine Migration, kein Seed.
