@@ -1,4 +1,4 @@
-import type { DosisZumAblesen } from './Uebungsinhalt';
+import type { DosisZumAblesen } from './Dosierungsmarken';
 
 /**
  * Die Hauptzahl einer Dosierung für die `Buehne` (Handoff 2026-10-24,

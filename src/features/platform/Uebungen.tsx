@@ -12,8 +12,6 @@ import { HeroKarte } from '@/components/ui/HeroKarte';
 import { Linkliste } from '@/components/ui/Linkliste';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
-import { Schrittliste } from '@/components/ui/Schrittliste';
 import { Section } from '@/components/ui/Section';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -33,7 +31,7 @@ import {
   useWarteschlange,
   type Ablageplan,
 } from './ablage';
-import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
+import { Anleitung } from './Anleitung';
 import { Dosierungsmarken } from './Dosierungsmarken';
 import { inLesefrist, naechsterTermin } from './hauptsache';
 import { hauptzahl } from './hauptzahl';
@@ -77,7 +75,6 @@ type Position = Ablageplan['items'][number];
 export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
   const api = usePlattformApi();
   const [suche] = useSearchParams();
-  const gespeichert = useEinmaligeRueckmeldung('gespeichert');
   const verbunden = useIstVerbunden();
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
@@ -97,17 +94,6 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
   return (
     <>
       <PageHeader title={training ? 'Training' : 'Übungen'} />
-      {gespeichert === '1' ? (
-        // Eine Bestätigung, kein Lob (DSN-001 4.1). Mit der Endseite der
-        // Durchführung (Schritt 2b) kommt niemand mehr mit diesem Merker her.
-        <Rueckmeldung className="mb-4">Ihre Einheit ist gespeichert.</Rueckmeldung>
-      ) : gespeichert === 'geraet' ? (
-        // TRK-008: ehrlich, wo sie liegt (ADR-024 Punkt 8).
-        <Statusmeldung ton="warnung" className="mb-4">
-          Ihre Einheit liegt auf diesem Gerät und ist noch nicht bei der Praxis. Sie wird
-          übertragen, sobald Verbindung besteht.
-        </Statusmeldung>
-      ) : null}
       <Wartehinweis zugangId={zugang.access_id} />
       {plaene.data !== undefined ? (
         plaene.data.plans.length === 0 ? (
@@ -739,46 +725,8 @@ function Fensterinhalt({
             titelId={titelId}
           />
           <Dosierungsmarken dosis={position} />
-          {position.instruction ? (
-            <div>
-              <Zwischentitel ebene={3}>So geht’s</Zwischentitel>
-              <Schrittliste text={position.instruction} />
-            </div>
-          ) : null}
-          {position.equipment.length > 0 || position.note ? (
-            // „Sie brauchen:“ und „Hinweis:“ mit Zeichen 22 wie in der
-            // Durchführung (Handoff 5.3).
-            <div className="flex flex-col gap-3">
-              {position.equipment.length > 0 ? (
-                <p className="text-ink flex items-start gap-2.5">
-                  <span
-                    aria-hidden="true"
-                    className="text-accent mt-px inline-flex shrink-0 [&_svg]:size-5.5"
-                  >
-                    {ZEICHEN.tasche}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="font-semibold">Sie brauchen: </span>
-                    {position.equipment.join(', ')}
-                  </span>
-                </p>
-              ) : null}
-              {position.note ? (
-                <p className="text-ink flex items-start gap-2.5">
-                  <span
-                    aria-hidden="true"
-                    className="text-accent mt-px inline-flex shrink-0 [&_svg]:size-5.5"
-                  >
-                    {ZEICHEN.hinweis}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="font-semibold">Hinweis: </span>
-                    {position.note}
-                  </span>
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+          {/* Derselbe Inhalt wie in der Durchführung, eine Ebene unter der Bühne. */}
+          <Anleitung position={position} ebene={3} />
           <Button
             type="button"
             variant="secondary"
@@ -1026,12 +974,6 @@ const ZEICHEN = {
     <svg {...SVG}>
       <path d="M5 5h14v10H10l-4 4v-4H5z" />
       <path d="M10 9.5a2 2 0 1 1 2.5 1.9c-.3.1-.5.4-.5.7v.4M12 14h.01" />
-    </svg>
-  ),
-  hinweis: (
-    <svg {...SVG}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 11v5M12 8h.01" />
     </svg>
   ),
 };

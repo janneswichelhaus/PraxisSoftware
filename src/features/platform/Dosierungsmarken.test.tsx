@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { Dosierungsmarken } from './Dosierungsmarken';
-import type { DosisZumAblesen } from './Uebungsinhalt';
+import type { DosisZumAblesen } from './Dosierungsmarken';
 
 const DOSIS: DosisZumAblesen = {
   sets: 3,

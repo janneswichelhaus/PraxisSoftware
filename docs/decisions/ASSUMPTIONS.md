@@ -4876,15 +4876,15 @@ Oberfläche · verworfen · 2026-10-24 · ANN-698 · erledigt · Wiedervorlage: 
 
 ### ANN-466 — Übung auf der Plattform: fester Bildplatz, Dosierung als Kacheln
 
-Oberfläche · geändert · 2026-10-15 · Jannes · — · Wiedervorlage: —
+Oberfläche · verworfen · 2026-10-25 · Handoff 2026-10-24 · erledigt · Wiedervorlage: keine
 
-**Geändert (Jannes, 2026-10-15):** Der feste Bildplatz entfällt mit den Zeichnungen (ANN-539); die Kacheln der Dosierung stehen oben, darunter die Anleitung in Schritten.
+**Ablösung.** abgelöst durch den Handoff 2026-10-24 (Dosierungsmarken unter der Bühne, Schritte 2a bis 2c); die Kacheln fallen mit BEF-215 weg. Zuvor geändert (Jannes, 2026-10-15): Der feste Bildplatz entfällt mit den Zeichnungen (ANN-539); die Kacheln der Dosierung stehen oben, darunter die Anleitung in Schritten.
 
 **Annahme.** Jede Übung hat einen festen Bildplatz: in der Liste `Medienbild vorschau` (56 px), in Übung und Durchführung `Medienbild` 4:3, solange ohne Bild mit Platzhalter. Die Dosierung steht als höchstens vier Kacheln (Durchgänge, Wiederholungen oder Dauer, Pause, womit), Tempo und Steigerungsregel als Zeilen. Die Liste öffnet die Übung im Fenster.
 
 **Begründung.** DESIGN.md Lücke 9.10; die Figuren der Übungsbibliothek kommen ohne Umbau in das `Medienbild`.
 
-**Anker.** `Uebungsinhalt` und `Dosierungskacheln` in `src/features/platform/Uebungsinhalt.tsx`.
+**Anker.** `Dosierungsmarken` in `src/features/platform/Dosierungsmarken.tsx`, die die Kacheln ablösen.
 
 **Änderungspfad.** Dosierung wieder als Satz (`dosierungAlltag`) · Aufwand `klein`.
 

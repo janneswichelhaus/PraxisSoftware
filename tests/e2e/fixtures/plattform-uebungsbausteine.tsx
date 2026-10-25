@@ -17,7 +17,7 @@ import { Endseite } from '@/features/platform/Endseite';
 import { useRechner } from '@/features/platform/geruestbreite';
 import { hauptzahl } from '@/features/platform/hauptzahl';
 import { WOCHENTAGE, wochenleisteSatz } from '@/features/platform/uebungstage';
-import type { DosisZumAblesen } from '@/features/platform/Uebungsinhalt';
+import type { DosisZumAblesen } from '@/features/platform/Dosierungsmarken';
 import '@/index.css';
 
 /**

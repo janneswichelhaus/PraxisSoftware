@@ -596,13 +596,6 @@ describe('Ihre Übungstage (UEB-011, Wochenleiste)', () => {
   });
 });
 
-describe('Rückmeldung nach dem Speichern', () => {
-  it('bestätigt eine gespeicherte Einheit ohne Lob', async () => {
-    zeige(<Uebungen zugang={ZUGANG} />, '/p/uebungen?gespeichert=1');
-    expect(await screen.findByText('Ihre Einheit ist gespeichert.')).toBeInTheDocument();
-  });
-});
-
 describe('Plan als Blatt auf der Plattform (ANN-303)', () => {
   it('druckt den eigenen Plan ohne Namen', async () => {
     const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
