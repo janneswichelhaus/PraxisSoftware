@@ -360,6 +360,9 @@ const LAGEN: { lage: string; merkmal: RegExp; haupt: number }[] = [
   { lage: 'geraet', merkmal: /Die Praxis antwortet gerade nicht/, haupt: 1 },
   { lage: 'fehler', merkmal: /Ihre Übungen lassen sich gerade nicht laden/, haupt: 0 },
   { lage: 'laden', merkmal: /Übungen werden geladen/, haupt: 0 },
+  // BEF-218: die Einheit auf dem Gerät - beendet und nur dort gehakt.
+  { lage: 'geraet-geuebt', merkmal: /Auf diesem Gerät gespeichert/, haupt: 0 },
+  { lage: 'geraet-begonnen', merkmal: /Weiter bei Übung 3/, haupt: 1 },
 ];
 
 test.describe('Reiter Übungen in allen Lagen (Schritt 2c)', () => {

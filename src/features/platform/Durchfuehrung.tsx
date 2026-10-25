@@ -35,7 +35,7 @@ import {
   type Plattformzugang,
 } from './api';
 import { Dosierungsmarken } from './Dosierungsmarken';
-import { ersteOffeneUebung, hakenSchluessel as schluessel } from './haken';
+import { ersteOffeneUebung, hakenSchluessel as schluessel, heutigeEinheit } from './haken';
 import {
   Durchfuehrungsfuss,
   type Hauptaktion,
@@ -254,11 +254,6 @@ interface Einheitskopf {
   tag: string;
 }
 
-/** Hat die Einheit auf dem Gerät schon ihr Ende? */
-function istBeendet(einheit: WartendeEinheit): boolean {
-  return einheit.ereignisse.some((x) => x.kind === 'finish');
-}
-
 /** Der Server hat das Ende abgewiesen; die Einheit ist verworfen (ADR-024 Punkt 8). */
 class EndeAbgewiesen extends Error {
   readonly einheitId: string;
@@ -284,31 +279,19 @@ function Einheit({
   const formId = useId();
 
   // Weiter mit der heute auf dem Gerät begonnenen Einheit, sonst mit der heute
-  // beim Server offenen; eine neue entsteht mit dem ersten Haken.
+  // beim Server offenen; eine neue entsteht mit dem ersten Haken. Dieselbe
+  // Rechnung wie die Vorschau im Reiter (BEF-218).
   const [start] = useState(() => {
     const tag = geraetetag();
-    const lokal = wartend.find(
-      (e) => e.zugangId === zugangId && e.planId === plan.id && e.tag === tag && !istBeendet(e),
-    );
-    // BEF-213: Ist die beim Server offene Einheit auf diesem Gerät schon
-    // beendet und nur noch nicht übertragen, gehören ihre Haken zu ihr - es
-    // beginnt eine neue, statt hinter ihr Ende zu schreiben.
-    const offen =
-      plan.open_session && !wartend.some((e) => e.id === plan.open_session?.id && istBeendet(e))
-        ? plan.open_session
-        : null;
-    const haken = new Set((offen?.sets ?? []).map((x) => schluessel(x.item_id, x.set_number)));
-    for (const x of lokal?.ereignisse ?? []) {
-      if (x.kind === 'set') {
-        if (x.done) haken.add(schluessel(x.item_id, x.set_number));
-        else haken.delete(schluessel(x.item_id, x.set_number));
-      }
-    }
-    const id = lokal?.id ?? offen?.id ?? null;
-    const kopf: Einheitskopf | null = id
-      ? { id, begonnenAm: lokal?.begonnenAm ?? new Date().toISOString(), tag }
+    const heutige = heutigeEinheit(plan, zugangId, wartend, tag);
+    const kopf: Einheitskopf | null = heutige.id
+      ? { id: heutige.id, begonnenAm: heutige.lokal?.begonnenAm ?? new Date().toISOString(), tag }
       : null;
-    return { kopf, haken, ereignisse: (lokal?.ereignisse ?? []).map((x) => x.id) };
+    return {
+      kopf,
+      haken: heutige.haken,
+      ereignisse: (heutige.lokal?.ereignisse ?? []).map((x) => x.id),
+    };
   });
   const einheit = useRef<Einheitskopf | null>(start.kopf);
   // Die Ereignisse dieser Einheit auf dem Gerät - weist der Server eines ab,

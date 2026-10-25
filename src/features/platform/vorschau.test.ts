@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import type { WartendeEinheit } from './ablage';
 import type { EigenerPlan } from './api';
+import { heutigeEinheit, uebungErledigt } from './haken';
 import { eigenerPlan } from './testdaten';
 import {
-  ersteOffeneUebung,
-  heuteErledigt,
   lageDesPlans,
   planDerVorschau,
   umfangSatz,
   umfangText,
   wasManBraucht,
+  weiterBei,
 } from './vorschau';
 
 /**
@@ -18,7 +19,51 @@ import {
  */
 const HEUTE = '2026-10-08';
 
+const ZUGANG = 'cafecafe-cafe-4afe-8afe-000000000002';
+
 type Position = EigenerPlan['items'][number];
+
+/** Die Lage wie im Reiter: mit der heutigen Einheit aus Server und Gerät (ANN-730). */
+function lage(plan: EigenerPlan, wartend: WartendeEinheit[] = []) {
+  return lageDesPlans(plan, HEUTE, heutigeEinheit(plan, ZUGANG, wartend, HEUTE));
+}
+
+/** Eine Einheit auf dem Gerät mit Haken und auf Wunsch mit Ende. */
+function aufDemGeraet(
+  plan: EigenerPlan,
+  id: string,
+  haken: [string, number][],
+  beendet = false,
+): WartendeEinheit {
+  return {
+    id,
+    zugangId: ZUGANG,
+    planId: plan.id,
+    tag: HEUTE,
+    begonnenAm: `${HEUTE}T08:00:00.000Z`,
+    ereignisse: [
+      ...haken.map(([item_id, set_number], i) => ({
+        id: `${id}-satz-${i}`,
+        kind: 'set' as const,
+        at: `${HEUTE}T08:0${i}:00.000Z`,
+        item_id,
+        set_number,
+        done: true,
+      })),
+      ...(beendet
+        ? [
+            {
+              id: `${id}-ende`,
+              kind: 'finish' as const,
+              at: `${HEUTE}T08:30:00.000Z`,
+              note: '',
+              values: {},
+            },
+          ]
+        : []),
+    ],
+  };
+}
 
 function position(nummer: number, teil: Partial<Position> = {}): Position {
   return {
@@ -32,21 +77,19 @@ function position(nummer: number, teil: Partial<Position> = {}): Position {
 
 describe('lageDesPlans', () => {
   it('kennt heute Übungstag, anderer Tag und keine Tage', () => {
-    expect(lageDesPlans(eigenerPlan({ weekdays: [4] }), HEUTE)).toBe('heute');
-    expect(lageDesPlans(eigenerPlan({ weekdays: [1, 3] }), HEUTE)).toBe('anderer-tag');
-    expect(lageDesPlans(eigenerPlan({ weekdays: [] }), HEUTE)).toBe('ohne-tage');
+    expect(lage(eigenerPlan({ weekdays: [4] }))).toBe('heute');
+    expect(lage(eigenerPlan({ weekdays: [1, 3] }))).toBe('anderer-tag');
+    expect(lage(eigenerPlan({ weekdays: [] }))).toBe('ohne-tage');
   });
 
   it('nimmt eine offene Einheit vor „heute geübt“', () => {
     const offen = { id: 'cccccccc-0000-4000-8000-000000000001', sets: [] };
     const geuebt = [{ performed_on: HEUTE, finished: true }];
-    expect(lageDesPlans(eigenerPlan({ recent_sessions: geuebt }), HEUTE)).toBe('geuebt');
-    expect(lageDesPlans(eigenerPlan({ recent_sessions: geuebt, open_session: offen }), HEUTE)).toBe(
-      'begonnen',
-    );
+    expect(lage(eigenerPlan({ recent_sessions: geuebt }))).toBe('geuebt');
+    expect(lage(eigenerPlan({ recent_sessions: geuebt, open_session: offen }))).toBe('begonnen');
     // Eine Einheit von gestern zählt nicht als heute geübt, eine nicht beendete auch nicht.
     expect(
-      lageDesPlans(
+      lage(
         eigenerPlan({
           weekdays: [4],
           recent_sessions: [
@@ -54,16 +97,45 @@ describe('lageDesPlans', () => {
             { performed_on: HEUTE, finished: false },
           ],
         }),
-        HEUTE,
       ),
     ).toBe('heute');
   });
 
+  it('kennt die Einheit auf dem Gerät wie die Durchführung (BEF-218)', () => {
+    const offen = { id: 'cccccccc-0000-4000-8000-000000000001', sets: [] };
+    const plan = eigenerPlan({ weekdays: [4], open_session: offen });
+    const erste = plan.items[0]!.id;
+    // Ohne Netz beendet: Der Server kennt die Einheit noch offen, das Gerät
+    // hat ihr Ende - „Heute geübt“, nicht „Heute begonnen“.
+    expect(lage(plan, [aufDemGeraet(plan, offen.id, [[erste, 1]], true)])).toBe('geuebt');
+    // Haken nur auf dem Gerät: „Heute begonnen“, nicht „Übungen beginnen“.
+    const ohneServer = eigenerPlan({ weekdays: [4] });
+    expect(
+      lage(ohneServer, [
+        aufDemGeraet(ohneServer, 'dddddddd-0000-4000-8000-000000000001', [[erste, 1]]),
+      ]),
+    ).toBe('begonnen');
+    // Nach einer beendeten Einheit eine zweite begonnen: Die offene geht vor.
+    expect(
+      lage(ohneServer, [
+        aufDemGeraet(ohneServer, 'dddddddd-0000-4000-8000-000000000001', [[erste, 1]], true),
+        aufDemGeraet(ohneServer, 'dddddddd-0000-4000-8000-000000000002', [[erste, 1]]),
+      ]),
+    ).toBe('begonnen');
+    // Eine Einheit von gestern auf dem Gerät zählt heute nicht.
+    expect(
+      lage(ohneServer, [
+        {
+          ...aufDemGeraet(ohneServer, 'dddddddd-0000-4000-8000-000000000003', [[erste, 1]], true),
+          tag: '2026-10-07',
+        },
+      ]),
+    ).toBe('heute');
+  });
+
   it('kennt einen Plan, der erst beginnt, und die Lesefrist', () => {
-    expect(lageDesPlans(eigenerPlan({ runs_from: '2026-10-12', weekdays: [4] }), HEUTE)).toBe('ab');
-    expect(lageDesPlans(eigenerPlan({ status: 'ended', ended_on: '2026-10-01' }), HEUTE)).toBe(
-      'lesefrist',
-    );
+    expect(lage(eigenerPlan({ runs_from: '2026-10-12', weekdays: [4] }))).toBe('ab');
+    expect(lage(eigenerPlan({ status: 'ended', ended_on: '2026-10-01' }))).toBe('lesefrist');
   });
 });
 
@@ -108,9 +180,10 @@ describe('umfangText', () => {
   });
 });
 
-describe('ersteOffeneUebung und heuteErledigt', () => {
-  const plan = {
-    items: [position(2, { sets: 2 }), position(1, { sets: 2 }), position(3, { sets: 1 })],
+describe('weiterBei und uebungErledigt (Server und Gerät, ANN-730)', () => {
+  const items = [position(2, { sets: 2 }), position(1, { sets: 2 }), position(3, { sets: 1 })];
+  const plan = eigenerPlan({
+    items,
     open_session: {
       id: 'cccccccc-0000-4000-8000-000000000001',
       sets: [
@@ -119,27 +192,39 @@ describe('ersteOffeneUebung und heuteErledigt', () => {
         { item_id: 'bbbbbbbb-0000-4000-8000-000000000002', set_number: 1 },
       ],
     },
-  };
+  });
+  const einheit = (wartend: WartendeEinheit[] = []) => heutigeEinheit(plan, ZUGANG, wartend, HEUTE);
 
   it('setzt „Weiter üben“ auf die erste Übung mit offenem Durchgang', () => {
-    expect(ersteOffeneUebung(plan)?.position).toBe(2);
-    expect(ersteOffeneUebung({ ...plan, open_session: null })).toBeNull();
+    expect(weiterBei(items, einheit())?.position).toBe(2);
+    expect(
+      weiterBei(items, heutigeEinheit({ ...plan, open_session: null }, ZUGANG, [], HEUTE)),
+    ).toBeNull();
   });
 
   it('nennt eine Übung erledigt, wenn alle ihre Durchgänge gehakt sind', () => {
-    expect(heuteErledigt(plan.items[1]!, plan.open_session)).toBe(true);
-    expect(heuteErledigt(plan.items[0]!, plan.open_session)).toBe(false);
-    expect(heuteErledigt(plan.items[1]!, null)).toBe(false);
+    expect(uebungErledigt(items[1]!, einheit().haken)).toBe(true);
+    expect(uebungErledigt(items[0]!, einheit().haken)).toBe(false);
+    expect(uebungErledigt(items[1]!, new Set())).toBe(false);
+  });
+
+  it('nimmt die Haken des Geräts dazu (BEF-218)', () => {
+    // Der zweite Durchgang von Übung 2 liegt nur auf dem Gerät.
+    const geraet = aufDemGeraet(plan, 'cccccccc-0000-4000-8000-000000000001', [
+      ['bbbbbbbb-0000-4000-8000-000000000002', 2],
+    ]);
+    expect(uebungErledigt(items[0]!, einheit([geraet]).haken)).toBe(true);
+    expect(weiterBei(items, einheit([geraet]))?.position).toBe(3);
   });
 
   it('kennt keine offene Übung, wenn alles gehakt ist', () => {
-    const fertig = {
+    const fertig = eigenerPlan({
       items: [position(1, { sets: 1 })],
       open_session: {
         id: 'cccccccc-0000-4000-8000-000000000001',
         sets: [{ item_id: 'bbbbbbbb-0000-4000-8000-000000000001', set_number: 1 }],
       },
-    };
-    expect(ersteOffeneUebung(fertig)).toBeNull();
+    });
+    expect(weiterBei(fertig.items, heutigeEinheit(fertig, ZUGANG, [], HEUTE))).toBeNull();
   });
 });

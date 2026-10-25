@@ -7495,13 +7495,15 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 ### ANN-720 — Übungen: „Weiter bei“ und „Heute erledigt“ aus `open_session.sets`
 
-Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+Technik · verworfen · 2026-10-25 · ANN-730 · erledigt · Wiedervorlage: keine
+
+**Ablösung.** abgelöst durch ANN-730 (BEF-218: Haken von Server und Gerät, wie die Durchführung)
 
 **Annahme.** Die Vorschau nennt die erste Übung mit offenem Durchgang („Weiter bei Übung 2: …“), und eine Übungszeile heißt „Heute erledigt“, wenn alle ihre Durchgänge in der offenen Einheit gehakt sind. Nach dem Beenden liefert der Server keine Haken mehr; dann sagt nur die Vorschau „Heute geübt“.
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 0 und 10 (Prüffrage); `recent_sessions` kennt nur Tag und Ende, keine Haken.
 
-**Anker.** `heuteErledigt` in `src/features/platform/vorschau.ts`.
+**Anker.** `heutigeEinheit` in `src/features/platform/haken.ts` (bis BEF-218 `heuteErledigt` in `vorschau.ts`).
 
 **Änderungspfad.** Haken der beendeten Einheit in die Projektion · Aufwand `mittel` (Pfad A).
 
@@ -7588,3 +7590,17 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 **Anker.** `uebungenText` in `src/features/platform/Uebersicht.tsx`.
 
 **Änderungspfad.** Ohne Netz nur den Satz · Aufwand `klein`.
+
+### ANN-730 — Übungen: Die Vorschau rechnet mit der Einheit auf dem Gerät
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Ablösung.** ersetzt ANN-720
+
+**Annahme.** Vorschau, Übungszeilen und Plan vom Gerät nehmen die heutige Einheit aus Server und Warteschlange wie der Start der Durchführung: die Haken des Servers, darüber die des Geräts; „Weiter bei Übung n“ ist die Übung, bei der die Durchführung beginnt. Ist die Einheit heute nur auf dem Gerät beendet, sagt die Vorschau „Heute geübt“ mit „Auf diesem Gerät gespeichert. Sie wird übertragen, sobald Verbindung besteht.“
+
+**Begründung.** BEF-218; ADR-024 Punkt 8 (ehrlich, wo die Einheit liegt); Wortlaut der Endseite (ANN-706).
+
+**Anker.** `heutigeEinheit` in `src/features/platform/haken.ts`.
+
+**Änderungspfad.** Wieder allein `open_session.sets` lesen · Aufwand `klein`.
