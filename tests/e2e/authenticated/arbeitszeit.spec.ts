@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   KONTEN,
   MITARBEITENDE,
+  PATIENTEN,
   anmelden,
   rpcAufrufen,
   supabaseKonfiguration,
@@ -17,9 +18,10 @@ import {
  * 18:00 (Budget ≤ 8 Tipps und die Zeiten, Ziel 5); Jannes genehmigt aus
  * „Offene Punkte“ (2 Tipps). Danach am Server: der Tag steht als Abweichung in
  * den Arbeitszeiten. Dauerhaft: Anna verschiebt dienstags die Pause (Ziel 7)
- * und zieht den Antrag danach zurück. Am Ende wird die Abweichung entfernt -
- * so bleibt der Kalender späterer Läufe unberührt. Ausschließlich
- * synthetische Seed-Konten.
+ * und zieht den Antrag danach zurück; die Termine außerhalb der neuen Zeiten
+ * legt der Test vorher selbst an und nimmt sie danach zurück (BEF-219). Am
+ * Ende wird die Abweichung entfernt - so bleibt der Kalender späterer Läufe
+ * unberührt. Ausschließlich synthetische Seed-Konten.
  */
 test.describe.configure({ mode: 'serial' });
 
@@ -42,6 +44,83 @@ function dienstag(): string {
 }
 
 const DIENSTAG = dienstag();
+
+/**
+ * Vier Samstage ab der sechsten Woche: nach jedem Monatsersten der
+ * Schnellwahl „Ab wann?“ und im Jahr danach, das der Server prüft.
+ */
+function samstage(): string[] {
+  const heute = new Date();
+  const erster = new Date(
+    Date.UTC(heute.getUTCFullYear(), heute.getUTCMonth(), heute.getUTCDate()),
+  );
+  erster.setUTCDate(erster.getUTCDate() + ((13 - erster.getUTCDay()) % 7 || 7) + 7 * 5);
+  return [0, 1, 2, 3].map((woche) => {
+    const tag = new Date(erster);
+    tag.setUTCDate(erster.getUTCDate() + 7 * woche);
+    return iso(tag);
+  });
+}
+
+/** Ein eben angelegter Termin mit seinem Stand - so nimmt der Server ihn zurück. */
+interface AngelegterTermin {
+  id: string;
+  stand: string;
+}
+
+/**
+ * Die Termine außerhalb der neuen Zeiten, selbst angelegt statt von den
+ * Terminen anderer Dateien abhängig (BEF-219): an vier Samstagen je ein Termin
+ * Annas vor sieben - außerhalb jedes Wochenplans, auch des neuen. Die
+ * Zusammenfassung nennt dann drei Tage und die übrigen als Zahl, die längste
+ * Form der Zeile. Je Versuch eine andere Uhrzeit: Eine Wiederholung trifft
+ * nicht auf Termine, die der erste Versuch nicht mehr zurücknehmen konnte.
+ */
+async function termineAusserhalb(
+  page: Page,
+  token: string,
+  termine: AngelegterTermin[],
+): Promise<void> {
+  const [von, bis] = test.info().retry === 0 ? ['06:00', '06:30'] : ['06:30', '07:00'];
+  const { url, anonKey } = supabaseKonfiguration();
+  for (const tag of samstage()) {
+    const angelegt = await rpcAufrufen(page.request, token, 'create_appointment', {
+      p_patient_id: PATIENTEN.petra,
+      p_staff_member_id: MITARBEITENDE.anna,
+      p_appointment_type: 'video',
+      p_date: tag,
+      p_start_time: von,
+      p_end_time: bis,
+      p_location_id: null,
+      p_allow_outside_working_hours: true,
+    });
+    expect(angelegt.status(), `Vorbereitung: Termin am ${tag}`).toBe(200);
+    const id = (await angelegt.json()) as string;
+    const gelesen = await page.request.get(
+      `${url}/rest/v1/appointment_directory?select=updated_at&id=eq.${id}`,
+      { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } },
+    );
+    expect(gelesen.status()).toBe(200);
+    const [zeile] = (await gelesen.json()) as { updated_at: string }[];
+    expect(zeile, `Vorbereitung: Stand des Termins am ${tag}`).toBeDefined();
+    termine.push({ id, stand: zeile?.updated_at ?? '' });
+  }
+}
+
+/** Nimmt die Termine zurück; scheitert das, bleibt der Fehler des Tests sichtbar. */
+async function termineZuruecknehmen(
+  page: Page,
+  token: string,
+  termine: readonly AngelegterTermin[],
+): Promise<void> {
+  for (const termin of termine) {
+    const antwort = await rpcAufrufen(page.request, token, 'undo_appointment_creation', {
+      p_appointment_id: termin.id,
+      p_expected_updated_at: termin.stand,
+    });
+    expect.soft(antwort.status(), `Aufräumen: Termin ${termin.id}`).toBe(204);
+  }
+}
 
 function zaehler() {
   let tipps = 0;
@@ -90,6 +169,21 @@ async function rolltNicht(dialog: Locator): Promise<void> {
         .filter((el) => el.scrollHeight > el.clientHeight + 1).length,
   );
   expect(rollend).toBe(0);
+}
+
+/** Eine Zeile Kleingedrucktes - so viel Reserve braucht der Abschluss mindestens. */
+const ZEILE = 20;
+
+/**
+ * Der Abschluss rollt auch eine Zeile niedriger nicht (BEF-219): Mehr Termine
+ * außerhalb, zweistellige Zahlen oder ein längerer Monatsname brauchen höchstens
+ * eine Zeile mehr, als dieser Lauf zeigt.
+ */
+async function rolltNichtMitReserve(page: Page, dialog: Locator): Promise<void> {
+  await rolltNicht(dialog);
+  await page.setViewportSize({ width: TELEFON.width, height: TELEFON.height - ZEILE });
+  await rolltNicht(dialog);
+  await page.setViewportSize(TELEFON);
 }
 
 /** Bildschirmfoto im ruhenden Stand: nach der Tippsperre und dem Aufgehen des Fensters. */
@@ -172,7 +266,7 @@ test('G8 einmalig: Anna ändert einen Tag in fünf Tipps, Jannes genehmigt in zw
   await expect(absenden).toBeEnabled();
   await stehtImBild(page, abschluss, absenden);
   // Auch der Abschluss rollt nicht: Angaben, Termine und „Grund angeben“.
-  await rolltNicht(abschluss);
+  await rolltNichtMitReserve(page, abschluss);
   await bild(page, 'b8-g8-04-zusammenfassung-375');
   await t.tippe(absenden);
   await expect(page.getByRole('status').filter({ hasText: 'Änderung beantragt:' })).toBeVisible();
@@ -228,51 +322,64 @@ test('G8 dauerhaft: Anna verschiebt dienstags die Pause in sieben Tipps (AZ-001)
   // Zwei Personen nacheinander - länger als ein Ablauf (wie Urlaub und Zeitkonto).
   test.setTimeout(120_000);
   await page.setViewportSize(TELEFON);
-  await anmelden(page, KONTEN.therapist);
-  await page.goto('/betrieb/arbeitszeit');
+  const token = await zugriffstoken(page.request, KONTEN.owner);
+  const termine: AngelegterTermin[] = [];
+  try {
+    await termineAusserhalb(page, token, termine);
+    await anmelden(page, KONTEN.therapist);
+    await page.goto('/betrieb/arbeitszeit');
 
-  const t = zaehler();
-  await t.tippe(page.getByRole('link', { name: 'Änderung beantragen' }));
-  await t.tippe(
-    page
-      .getByRole('dialog', { name: 'Was möchten Sie ändern?' })
-      .getByRole('button', { name: 'Den Wochenplan ab einem Datum' }),
-  );
-  // Ein Wochenplan beginnt am Monatsersten: Schnellwahl statt Blättern.
-  const abWann = page.getByRole('dialog', { name: 'Ab wann?' });
-  await rolltNicht(abWann);
-  await bild(page, 'b8-g8-05a-ab-wann-375');
-  await t.tippe(abWann.getByRole('button', { name: /^Ab \S+, 1\. / }).first());
+    const t = zaehler();
+    await t.tippe(page.getByRole('link', { name: 'Änderung beantragen' }));
+    await t.tippe(
+      page
+        .getByRole('dialog', { name: 'Was möchten Sie ändern?' })
+        .getByRole('button', { name: 'Den Wochenplan ab einem Datum' }),
+    );
+    // Ein Wochenplan beginnt am Monatsersten: Schnellwahl statt Blättern.
+    const abWann = page.getByRole('dialog', { name: 'Ab wann?' });
+    await rolltNicht(abWann);
+    await bild(page, 'b8-g8-05a-ab-wann-375');
+    await t.tippe(abWann.getByRole('button', { name: /^Ab \S+, 1\. / }).first());
 
-  const woche = page.getByRole('dialog', { name: /^Wochenplan ab / });
-  await expect(woche.getByRole('button', { name: /^Dienstag / })).toBeVisible();
-  // Sieben Tage und der Fuß ohne Rollen (Design-Review Überholung 8).
-  await rolltNicht(woche);
-  await bild(page, 'b8-g8-05-woche-375');
-  await t.tippe(woche.getByRole('button', { name: /^Dienstag / }));
-  const dienstagSeite = page.getByRole('dialog', { name: /^Dienstags ab / });
-  await dienstagSeite.getByLabel('Pause ab').fill('12:30');
-  const uebernehmen = dienstagSeite.getByRole('button', { name: 'Übernehmen' });
-  await stehtImBild(page, dienstagSeite, uebernehmen);
-  await rolltNicht(dienstagSeite);
-  await bild(page, 'b8-g8-06-dienstag-375');
-  await t.tippe(uebernehmen);
-  await t.tippe(woche.getByRole('button', { name: 'Weiter' }));
+    const woche = page.getByRole('dialog', { name: /^Wochenplan ab / });
+    await expect(woche.getByRole('button', { name: /^Dienstag / })).toBeVisible();
+    // Sieben Tage und der Fuß ohne Rollen (Design-Review Überholung 8).
+    await rolltNicht(woche);
+    await bild(page, 'b8-g8-05-woche-375');
+    await t.tippe(woche.getByRole('button', { name: /^Dienstag / }));
+    const dienstagSeite = page.getByRole('dialog', { name: /^Dienstags ab / });
+    await dienstagSeite.getByLabel('Pause ab').fill('12:30');
+    const uebernehmen = dienstagSeite.getByRole('button', { name: 'Übernehmen' });
+    await stehtImBild(page, dienstagSeite, uebernehmen);
+    await rolltNicht(dienstagSeite);
+    await bild(page, 'b8-g8-06-dienstag-375');
+    await t.tippe(uebernehmen);
+    await t.tippe(woche.getByRole('button', { name: 'Weiter' }));
 
-  const abschluss = page.getByRole('dialog', { name: 'Änderung beantragen?' });
-  await expect(abschluss.getByText(/^Dienstag 08:00–12:30, 13:30–18:00/)).toBeVisible();
-  await expect(abschluss.getByText(/außerhalb der neuen Zeiten/)).toBeVisible();
-  await rolltNicht(abschluss);
-  const absenden = abschluss.getByRole('button', { name: 'Änderung beantragen' });
-  await expect(absenden).toBeEnabled();
-  await bild(page, 'b8-g8-07-zusammenfassung-woche-375');
-  await t.tippe(absenden);
-  await expect(page.getByRole('status').filter({ hasText: 'Änderung beantragt:' })).toBeVisible();
-  test.info().annotations.push({ type: 'G8 dauerhaft', description: `${t.tipps} Tipps` });
-  expect(t.tipps).toBeLessThanOrEqual(8);
+    const abschluss = page.getByRole('dialog', { name: 'Änderung beantragen?' });
+    await expect(abschluss.getByText(/^Dienstag 08:00–12:30, 13:30–18:00/)).toBeVisible();
+    await expect(abschluss.getByText(/^\d+ Termine außerhalb der neuen Zeiten$/)).toBeVisible();
+    // Die längste Form der Terminzeile: drei Tage und die übrigen als Zahl,
+    // jeder Eintrag mit festen Leerzeichen. Wer umplant, sagt die Zeile
+    // darunter (BEF-219).
+    await expect(abschluss.getByText(/\d+\s(weiterer\sTag|weitere\sTage)$/)).toBeVisible();
+    await expect(abschluss.getByText('Praxisinhaber, plant die Termine danach um')).toBeVisible();
+    await rolltNichtMitReserve(page, abschluss);
+    const absenden = abschluss.getByRole('button', { name: 'Änderung beantragen' });
+    await expect(absenden).toBeEnabled();
+    await bild(page, 'b8-g8-07-zusammenfassung-woche-375');
+    await t.tippe(absenden);
+    await expect(page.getByRole('status').filter({ hasText: 'Änderung beantragt:' })).toBeVisible();
+    test.info().annotations.push({ type: 'G8 dauerhaft', description: `${t.tipps} Tipps` });
+    expect(t.tipps).toBeLessThanOrEqual(8);
 
-  // Aufräumen: Anna zieht den Antrag zurück - der Plan bleibt, wie er ist.
-  await page.getByRole('button', { name: 'Zurückziehen' }).first().click();
-  await page.getByRole('button', { name: 'Ja, zurückziehen' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: 'Beantragt' })).toHaveCount(0);
+    // Aufräumen: Anna zieht den Antrag zurück - der Plan bleibt, wie er ist.
+    await page.getByRole('button', { name: 'Zurückziehen' }).first().click();
+    await page.getByRole('button', { name: 'Ja, zurückziehen' }).click();
+    await expect(page.getByRole('listitem').filter({ hasText: 'Beantragt' })).toHaveCount(0);
+  } finally {
+    // Die Termine des Tests fallen wieder weg, auch wenn er scheitert.
+    await termineZuruecknehmen(page, token, termine);
+  }
 });

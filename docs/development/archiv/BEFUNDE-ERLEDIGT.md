@@ -2016,3 +2016,15 @@ eingeklappt.
 | Berührt | `ErrorState` in `src/components/ui/Feedback.tsx` (`groesse="kompakt"`) |
 
 **Beobachtung.** Der Knopf „Erneut versuchen“ im `ErrorState` ist kompakt, also 44 hoch; auf der Plattform sind Knöpfe 48 (PLATTFORM.md, „Ziele ≥ 44 px“; Handoff 2026-10-24, Abschnitt 6). Das gilt für jede Seite mit Ladefehler, nicht nur für die Übungen. **Erwartet.** Unter `.plattform-schrift` die normale Größe (48), in der Praxis-App bleibt der kompakte Knopf; Prüfung in `plattform-barrierefreiheit.spec.ts`.
+
+### BEF-219 — Arbeitszeit: Die Zusammenfassung „Änderung beantragen?“ rollt, wenn Anna viele Termine hat
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-25 |
+| Bereich | Betrieb, Arbeitszeit ändern (`/betrieb/arbeitszeit/beantragen`, Abschluss); `tests/e2e/authenticated/arbeitszeit.spec.ts` |
+| Quelle  | CI zu #302 am 25.10. (Teil 1/3, „G8 dauerhaft“ samt Wiederholung rot, nach dem Neustart grün); Bericht der Sitzung zu Schritt 2c |
+| Status  | erledigt 2026-10-25 (Branch `ccr-544f8ce7-u1sqpf`): Die Terminzeile hat höchstens zwei Zeilen, „Grund angeben“ folgt der Liste ohne zweiten Abstand; der Test legt die Termine selbst an und prüft eine Reserve von einer Zeile; Gegenprobe mit dem alten Abschluss rot |
+| Berührt | `RequestWorkingTimePage.tsx` (Abschluss, `appointmentDaysText`), `arbeitszeit.spec.ts` |
+
+**Beobachtung.** Bei 375 × 667 blieben ohne Termine außerhalb der neuen Zeiten 38 px Luft. Die Terminzeile nannte drei Tage, die übrigen als Zahl und „plant die Praxisleitung nach dem Genehmigen um“. Mit den Terminen, die andere Testdateien vorher für Anna anlegen (dauerhaft prüft der Server ein Jahr lang jeden Tag), wurden daraus drei Zeilen, und die Seite rollte. Ob der Test grün wurde, hing von der Reihenfolge der Dateien ab; im ungünstigsten Fall fehlten 6 px. **Erledigt.** Beim Antrag nennt die Zeile nur die Tage, jeder Eintrag mit festen Leerzeichen, und „Entscheidet“ sagt „Praxisinhaber, plant die Termine danach um“; beim eigenen Eintragen bleibt „nach dem Eintragen umplanen“ an der Terminzeile. Gemessen am Cloud-Stack: dauerhaft ohne Termine 54 px Luft, mit 1116 Terminen an 123 Tagen 30 px (Antrag und Eintragen), einmalig 74 px, bei 1280 px 159 px. Der Test legt vier Termine Annas an Samstagen um 06:00 selbst an (Petra, ohne Plattformzugang) und nimmt sie danach mit `undo_appointment_creation` zurück.

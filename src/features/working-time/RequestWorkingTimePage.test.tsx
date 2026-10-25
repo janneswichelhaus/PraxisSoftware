@@ -263,11 +263,16 @@ describe('RequestWorkingTimePage', () => {
       await within(abschluss).findByText('6 Termine außerhalb der neuen Zeiten'),
     ).toBeInTheDocument();
     // Je Tag die Zahl, ab dem vierten Tag nur noch die Zahl der Tage - die Zeile
-    // bleibt kurz, der Abschluss rollt nicht; umplanen wird die Praxisleitung.
+    // bleibt kurz, der Abschluss rollt nicht; umplanen wird, wer entscheidet
+    // (BEF-219). Ein Eintrag bricht nicht in sich.
+    const tage = within(abschluss).getByText(
+      '1. Dez.: 2 · 8. Dez.: 1 · 15. Dez.: 1 · 2 weitere Tage',
+    );
+    expect(tage.textContent).toBe(
+      '1.\u00a0Dez.:\u00a02 · 8.\u00a0Dez.:\u00a01 · 15.\u00a0Dez.:\u00a01 · 2\u00a0weitere\u00a0Tage',
+    );
     expect(
-      within(abschluss).getByText(
-        '1. Dez.: 2 · 8. Dez.: 1 · 15. Dez.: 1 · 2 weitere Tage · plant die Praxisleitung nach dem Genehmigen um',
-      ),
+      within(abschluss).getByText('Praxisinhaber, plant die Termine danach um'),
     ).toBeInTheDocument();
     await user.click(within(abschluss).getByRole('button', { name: 'Änderung beantragen' }));
     tipps += 1;
@@ -507,6 +512,16 @@ describe('RequestWorkingTimePage', () => {
   it('owner trägt die eigene Änderung ein', async () => {
     const user = userEvent.setup();
     fetchWorkingTime.mockResolvedValue(testWorkingTime({ self_entered: true, can_decide: true }));
+    previewChange.mockResolvedValue({
+      previous: ANNAS_TAG,
+      previous_minutes: 540,
+      new_minutes: 540,
+      unchanged: false,
+      reduced: false,
+      problems: [],
+      appointment_days: [{ on_date: '2026-10-20', appointments: 1 }],
+      self_entered: true,
+    });
     rendern(['owner']);
     await user.click(
       within(await screen.findByRole('dialog', { name: 'Was möchten Sie ändern?' })).getByRole(
@@ -531,6 +546,11 @@ describe('RequestWorkingTimePage', () => {
     expect(
       await within(abschluss).findByText('Sie tragen die Änderung selbst ein'),
     ).toBeInTheDocument();
+    // Wer selbst einträgt, plant selbst um - das sagt die Terminzeile (BEF-219).
+    expect(
+      await within(abschluss).findByText('20. Okt.: 1 · nach dem Eintragen umplanen'),
+    ).toBeInTheDocument();
+    expect(within(abschluss).getByText('Sie gilt für den Tag sofort.')).toBeInTheDocument();
     await user.click(await within(abschluss).findByRole('button', { name: 'Änderung eintragen' }));
     expect(
       await screen.findByText(

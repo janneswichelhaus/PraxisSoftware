@@ -178,6 +178,11 @@ export const PATIENTEN = {
   max: '66666666-6666-4666-8666-000000000001',
   /** Erika Beispiel, im Seed aktiv, Ort "Tuebingen". */
   erika: '66666666-6666-4666-8666-000000000002',
+  /**
+   * Petra Platzhalter, im Seed aktiv, ohne Plattformzugang - ein eben
+   * angelegter Termin lässt sich zurücknehmen (`undo_appointment_creation`).
+   */
+  petra: '66666666-6666-4666-8666-000000000003',
 } as const;
 
 interface SupabaseKonfiguration {

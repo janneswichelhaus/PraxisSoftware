@@ -1260,6 +1260,15 @@
           "vermerk": "Pfad A (Löschpfad); auch das Verwerfen nach der Prüfung am Inhalt; ohne Auditeintrag"
         },
         {
+          "id": "bef-219",
+          "name": "BEF-219 Arbeitszeit: Die Zusammenfassung „Änderung beantragen?“ rollt auch mit vielen Terminen außerhalb nicht; der Test legt sie selbst an",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-25",
+          "nachweis": "Branch ccr-544f8ce7-u1sqpf, src/features/working-time/RequestWorkingTimePage.test.tsx, tests/e2e/authenticated/arbeitszeit.spec.ts (Reserve einer Zeile, Gegenprobe mit dem alten Abschluss rot), Messung am Cloud-Stack bei 375 × 667 und 1280 px",
+          "vermerk": "nur Oberfläche und Test; ohne Migration, ohne Auditeintrag"
+        },
+        {
           "id": "bef-191",
           "name": "BEF-191 Teamchat: neues Profilbild an Nachrichten, die schon dastehen",
           "gewicht": 1,

@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-10-24
+Stand: 2026-10-25
 
 ## Zweck
 
@@ -679,3 +679,15 @@ Marke vorsieht.
 | Berührt | `app.platform_access_allows` (`request` für jeden lesbaren Zugang), `request_platform_appointment`, `request_platform_appointment_change` |
 
 **Beobachtung.** DSN-001 D2 sagt für das Ende einer Behandlung ohne Abo „30 Tage lesend“. `app.platform_access_allows` erlaubt `request` aber jedem lesbaren Zugang, also auch in der Lesefrist; heute zeigt der Reiter dort „Termin wünschen“ wie sonst. **Erwartet.** Nach Jannes' Antwort entweder Wünschen in der Lesefrist am Server ablehnen (Pfad A, `pnpm test:db`) und in der Ansicht weglassen, oder Wünschen bewusst erlauben und D2 entsprechend fassen. Das Weglassen in der Ansicht allein ist keine Zugriffskontrolle.
+
+### BEF-223 — Zeitumstellung: In der doppelten Stunde liegt „jetzt“ eine Stunde in der Zukunft
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-25 |
+| Bereich | Termine (Absage), Plattform (Absage aus einem Wunsch), Ernährung (Erinnerungen ans Tagebuch) |
+| Quelle  | CI zu #304 am 25.10. zwischen 00:00 und 01:00 UTC (7 Datenbanktests rot, auf `main` nachgestellt); Kommentar in #304 |
+| Status  | offen (Vorschlag, Pfad A) |
+| Berührt | `cancel_appointment`, `cancel_appointment_from_request`, `enqueue_nutrition_diary_reminders`; `nutrition-appointments.test.ts`, `platform-requests-practice.test.ts`, `nutrition-diary-reminders.test.ts` |
+
+**Beobachtung.** Wenn die Uhr in Berlin 02:00 bis 03:00 zweimal zeigt, liest PostgreSQL eine Ortszeit aus dieser Stunde als die spätere (MEZ). Eine Absage, die mit „jetzt“ als Datum und Uhrzeit eingeht, scheitert dann mit `cancellation cannot be received in the future`, und eine Erinnerung wird erst eine Stunde später fällig. Betroffen sind die echte Nutzung und jeder Testlauf in dieser Stunde, einmal im Jahr (nächstes Mal am 31.10.2027). **Erwartet.** „Nicht in der Zukunft“ in Ortszeit vergleichen und eine doppelte Ortszeit als den früheren Zeitpunkt lesen, ebenso in den Erinnerungen; je ein Test mit einer fest übergebenen Uhrzeit aus der doppelten Stunde, unabhängig von der Uhr des Laufs.
