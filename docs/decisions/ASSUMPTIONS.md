@@ -436,9 +436,9 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-010 Punkt 10 verlangt MFA für privilegierten Produktionszugriff, nicht für die Alltagsrolle `owner` (Punkt 11 hält beide Domänen getrennt). Ein Zwang wäre eine Verschärfung über den ADR hinaus mit gefährlicher Nebenwirkung: Es gibt genau einen `owner`-Zugang (Bus-Faktor 1, ADR-012) ohne zweiten Faktor — er wäre im selben Moment ausgesperrt, und der Weg zurück wäre ein privilegierter Produktionszugriff, den ADR-010 Punkt 9 ausschließt. Erst einrichten, dann erzwingen. Unsicher: ob die Datenschutzprüfung MFA für Vollzugriff auf Gesundheitsdaten als TOM verlangt — das wäre kein Widerspruch, sondern der geplante zweite Schritt.
 
-**Anker.** `app.has_strong_authentication()` in `supabase/migrations/20260911140000_account_security.sql` — der eine Ausdruck, an dem eine Durchsetzung hinge; der Test „setzt heute nichts durch" in `supabase/tests/staff-accounts.test.ts` hält fest, dass nichts daran hängt; Hinweis in `src/features/account/MeinKontoPage.tsx`.
+**Anker.** Der Test „setzt heute nichts durch" in `supabase/tests/staff-accounts.test.ts` hält fest, dass keine Funktion und keine Policy den Claim `aal` liest (die ungenutzte `app.has_strong_authentication()` ist seit 2026-10-25 entfernt); Hinweis in `src/features/account/MeinKontoPage.tsx`.
 
-**Änderungspfad.** Durchsetzung einschalten, sobald mindestens zwei `owner`-Zugänge einen bestätigten Faktor haben: `app.has_strong_authentication()` in die Policies der Zugangsverwaltung aufnehmen und den genannten Test umdrehen · Aufwand `klein`. Vorher nicht — die Rücknahme wäre ein privilegierter Produktionszugriff und damit `groß`.
+**Änderungspfad.** Durchsetzung einschalten, sobald mindestens zwei `owner`-Zugänge einen bestätigten Faktor haben: eine Prüfung auf `aal2` in die Policies der Zugangsverwaltung aufnehmen und den genannten Test umdrehen · Aufwand `klein`. Vorher nicht — die Rücknahme wäre ein privilegierter Produktionszugriff und damit `groß`.
 
 **Bestätigt (Jannes, 2026-10-06):** „Behalten, aber erstmal nicht einrichten. Wichtiger ist, dass Nutzer nach 30/60 min automatisch ausgeloggt werden.“ Der zweite Faktor bleibt einrichtbar und wird nicht erzwungen; Jannes richtet ihn vorerst nicht ein. Vorrang hat die Sitzungssperre nach ADR-025 (SEC-EPIC-001). Das Geheimnis „Zum Abtippen“ steht seit SKN-008 in 14 px Festbreite. *Vermerk 2026-10-10 (ADR-025 Fassung 2, ADR-023 Fassung 4):* Ein Passkey verbindet Besitz und Prüfung am Gerät. Der Warnhinweis in „Mein Konto“ entfällt für Konten mit Passkey; das zieht SEC-EPIC-002 nach.
 
@@ -2642,7 +2642,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** Der Anmeldedienst verschickt den Wiederherstellungslink an jede bekannte Adresse; sein öffentlicher Endpunkt umgeht jede Oberfläche, und er kennt keine Regel je Konto. Die einzige unterstützte Stelle, an der sich das Verschicken prüfen lässt, ist der Mail-Hook. Er übernimmt dann alle Mails des Anmeldedienstes, auch die der Mitarbeitenden (Kennwort zurücksetzen, Zugangslink), und braucht deshalb einen Versanddienst — der fehlt bis B13. Unsicher: ob der Hook-Weg mit dem in B13 gewählten Anbieter so trägt; der Zugangsdienst spricht ihn ohnehin über den Adapter an.
 
-**Anker.** `public.auth_email_allowed`, `app.platform_mailbox_confirmed` und `platform_mailbox_confirmations` in `supabase/migrations/20261002136000_abn_012_platform_mailbox_confirmation.sql`; `supabase/functions/platform-access/authmail.ts`; der abgeschaltete Eintrag in `supabase/config.toml`; Tests in `supabase/tests/platform-mailbox.test.ts` und `supabase/functions/platform-access/authmail.test.ts`.
+**Anker.** `public.auth_email_allowed` und `platform_mailbox_confirmations` in `supabase/migrations/20261002136000_abn_012_platform_mailbox_confirmation.sql`; `supabase/functions/platform-access/authmail.ts`; der abgeschaltete Eintrag in `supabase/config.toml`; Tests in `supabase/tests/platform-mailbox.test.ts` und `supabase/functions/platform-access/authmail.test.ts`.
 
 **Änderungspfad.** Hook einschalten: Eintrag in `supabase/config.toml` bzw. im Cloudprojekt, Secret `SEND_EMAIL_HOOK_SECRET`, Versandweg aus B13 · Aufwand `klein`, sobald B13 steht. Bestätigungsweg: eine Mail mit Link an die Adresse und eine Funktion, die das Merkmal setzt · Aufwand `mittel`.
 
@@ -3708,7 +3708,7 @@ Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · 
 
 **Begründung.** IDEA-ORG-003 verlangt „Abbrechen ohne Datenverlust“ und nennt „keine Verbindung“ als Lage. ADR-015 Punkt 16 schließt einen Service Worker aus, ADR-024 steht aus; Gesundheitsdaten im Browser abzulegen wäre eine Offline-Erfassung, die ADR-001 erst mit Geräteregeln zulässt. ADR-001 verlangt, dass niemand glaubt, gespeichert zu haben, was nur lokal liegt. Ist-Werte gehören zu Verlauf und Tracking (Block 7, §17 Verbot 2).
 
-**Anker.** `public.start_platform_exercise_session`, `app.platform_access_writable` und der Index `exercise_plan_sessions_one_open` in `supabase/migrations/20261019110000_ueb_010_exercise_sessions.sql`; Ansicht `src/features/platform/Durchfuehrung.tsx`. Geprüft in `supabase/tests/platform-exercise-sessions.test.ts` und `src/features/platform/Durchfuehrung.test.tsx`.
+**Anker.** `public.sync_platform_exercise_session`, `app.platform_access_writable` und der Index `exercise_plan_sessions_one_open` in `supabase/migrations/20261019110000_ueb_010_exercise_sessions.sql`; Ansicht `src/features/platform/Durchfuehrung.tsx`. Geprüft in `supabase/tests/platform-exercise-sessions.test.ts` und `src/features/platform/Durchfuehrung.test.tsx`.
 
 **Änderungspfad.** Offline-Erfassung mit späterem Abgleich: nach ADR-024, Warteschlange im Gerät und additive Übertragung · Aufwand `groß`. Erfassen auch in der Lesefrist: `app.platform_access_writable` aus der Prüfung nehmen · Aufwand `klein`. Ist-Werte je Durchgang: Spalten an `exercise_plan_session_sets` und Felder in der Ansicht · Aufwand `mittel`.
 
@@ -4540,7 +4540,7 @@ Technik · verworfen · 2026-10-15 · Jannes · — · Wiedervorlage: —
 
 **Begründung.** Einheitlich, offline im Build (ADR-024 Punkt 1), testbar, ohne Anbieter; eingefroren wie Name und Anleitung (ANN-300).
 
-**Anker.** `app.exercise_illustration_valid` (Grundstellungen: `app.exercise_illustration_bases`) in der Migration UEB-012; `src/features/exercises/bild/schema.ts`.
+**Anker.** `app.exercise_illustration_valid` in der Migration UEB-012; `src/features/exercises/bild/schema.ts`.
 
 **Änderungspfad.** Neue Fassung: `v: 2` neben `v: 1` · Aufwand `mittel`. Fotos/Videos: neue Fassung von ADR-017 · Aufwand `groß`.
 

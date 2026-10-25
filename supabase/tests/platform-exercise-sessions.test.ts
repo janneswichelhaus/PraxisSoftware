@@ -8,27 +8,21 @@ import {
   planeEntfernen,
   resetDatabase,
 } from './helpers/db';
-import { RUDERN_GELB, KNIEBEUGE_GELAENDER, positionen, zugewiesenerPlan } from './helpers/plaene';
+import {
+  RUDERN_GELB,
+  KNIEBEUGE_GELAENDER,
+  einheitErfassen,
+  positionen,
+  zugewiesenerPlan,
+} from './helpers/plaene';
 
 /**
- * Die Durchführungsansicht (UEB-010, IDEA-ORG-003, DSN-001 4.1).
- *
- *   * Jeder Haken wird sofort gespeichert; eine heute begonnene Einheit geht
- *     weiter (ANN-305).
- *   * Erfassen darf die Person selbst und ihre rechtliche Vertretung, nicht
- *     die Begleitung (ANN-306); nicht in der Lesefrist (ANN-305).
- *   * Nur am laufenden Plan des eigenen Verhältnisses (ADR-023 Punkt 19, 4.8).
- *   * Im Training „schwierig, weil …" nur mit Einwilligung (ADR-021 Punkt 4).
- *   * Die Praxis liest die Einheiten mit dem Plan - dieselben Rollen (ANN-298).
+ * Was Plattform und Praxis von den Einheiten sehen; erfasst wird wie auf dem Gerät über die
+ * Übertragung, deren Prüfungen in `platform-exercise-sync.test.ts` stehen.
  */
 
 const { users, platformAccesses, patients, trainingRelationships, organizationId } = SEED;
 
-const BEGINNEN = 'select public.start_platform_exercise_session($1::uuid, $2::uuid) as id';
-const HAKEN = 'select public.mark_platform_exercise_set($1::uuid, $2::uuid, $3::uuid, $4, $5)';
-const BEENDEN = 'select public.finish_platform_exercise_session($1::uuid, $2::uuid, $3)';
-const BEENDEN_MIT =
-  'select public.finish_platform_exercise_session($1::uuid, $2::uuid, $3, $4::jsonb)';
 const PLAENE = 'select public.platform_exercise_plans($1::uuid) as daten';
 const PLAN = 'select public.get_exercise_plan($1::uuid) as plan';
 
@@ -38,11 +32,6 @@ interface PortalPlan {
   note_allowed: boolean;
   open_session: { id: string; sets: { item_id: string; set_number: number }[] } | null;
   recent_sessions: { performed_on: string; finished: boolean }[];
-}
-
-async function beginnen(konto: string, zugang: string, plan: string): Promise<string> {
-  const { rows } = await asUserCommitted<{ id: string }>(konto, BEGINNEN, [zugang, plan]);
-  return rows[0]!.id;
 }
 
 async function portal(konto: string, zugang: string): Promise<PortalPlan[]> {
@@ -61,6 +50,16 @@ async function fehler(versuch: Promise<unknown>): Promise<string> {
 
 const erika = { konto: users.plattformErika, zugang: platformAccesses.erikaBehandlung };
 
+/** Eine beendete Einheit mit einem Satz an Erikas Plan. */
+async function beendet(plan: string, note = '', values: object = {}): Promise<string> {
+  const [position] = await positionen(plan);
+  const { session_id } = await einheitErfassen(erika.konto, erika.zugang, plan, {
+    saetze: [[position!, 1]],
+    ende: { note, values },
+  });
+  return session_id;
+}
+
 describe('Einheiten am Plan (UEB-010)', () => {
   beforeAll(async () => {
     await resetDatabase();
@@ -72,22 +71,18 @@ describe('Einheiten am Plan (UEB-010)', () => {
     await asPostgres('delete from public.audit_log');
   });
 
-  it('beginnt, hakt ab und setzt eine heute begonnene Einheit fort (ANN-305)', async () => {
+  it('zeigt der Plattform die offene Einheit und danach die beendete (ANN-305)', async () => {
     const plan = await zugewiesenerPlan('therapy', patients.erika, 'Knie', [
       KNIEBEUGE_GELAENDER,
       RUDERN_GELB,
     ]);
-    const [erste, zweite] = await positionen(plan);
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
-    await asUserCommitted(erika.konto, HAKEN, [erika.zugang, einheit, erste, 1, true]);
-    await asUserCommitted(erika.konto, HAKEN, [erika.zugang, einheit, erste, 2, true]);
-    await asUserCommitted(erika.konto, HAKEN, [erika.zugang, einheit, zweite, 1, true]);
-    // Doppelt abhaken schadet nicht, zurücknehmen geht.
-    await asUserCommitted(erika.konto, HAKEN, [erika.zugang, einheit, erste, 2, true]);
-    await asUserCommitted(erika.konto, HAKEN, [erika.zugang, einheit, zweite, 1, false]);
-
-    // Abbrechen und wieder anfangen: dieselbe Einheit, nichts verloren.
-    expect(await beginnen(erika.konto, erika.zugang, plan)).toBe(einheit);
+    const [erste] = await positionen(plan);
+    const { session_id: einheit } = await einheitErfassen(erika.konto, erika.zugang, plan, {
+      saetze: [
+        [erste!, 1],
+        [erste!, 2],
+      ],
+    });
     const [p] = await portal(erika.konto, erika.zugang);
     expect(p!.can_exercise).toBe(true);
     expect(p!.open_session).toEqual({
@@ -98,114 +93,48 @@ describe('Einheiten am Plan (UEB-010)', () => {
       ],
     });
 
-    await asUserCommitted(erika.konto, BEENDEN, [erika.zugang, einheit, '  Knie zieht etwas  ']);
+    await einheitErfassen(erika.konto, erika.zugang, plan, { einheit, ende: { note: 'Knie' } });
     const [danach] = await portal(erika.konto, erika.zugang);
     expect(danach!.open_session).toBeNull();
     expect(danach!.recent_sessions).toEqual([
       { performed_on: expect.any(String) as unknown, finished: true },
     ]);
-    // Nach dem Beenden ändert sich nichts mehr; Beginnen eröffnet eine neue.
-    expect(
-      await fehler(asUserCommitted(erika.konto, HAKEN, [erika.zugang, einheit, erste, 3, true])),
-    ).toBe('P0002');
-    expect(await beginnen(erika.konto, erika.zugang, plan)).not.toBe(einheit);
-
-    const { rows } = await asPostgres<{
-      difficulty_note: string;
-      platform_access_kind: string;
-      recorded_by: string;
-    }>('select * from public.exercise_plan_sessions where id = $1', [einheit]);
-    expect(rows[0]).toMatchObject({
-      difficulty_note: 'Knie zieht etwas',
-      platform_access_kind: 'self',
-      recorded_by: users.plattformErika,
-    });
-  });
-
-  it('prüft Satz und Übung gegen den Plan', async () => {
-    const plan = await zugewiesenerPlan();
-    const fremd = await zugewiesenerPlan('therapy', patients.max, 'Max');
-    const [position] = await positionen(plan);
-    const [fremdePosition] = await positionen(fremd);
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
-    expect(
-      await fehler(asUser(erika.konto, HAKEN, [erika.zugang, einheit, position, 4, true])),
-    ).toBe('22023');
-    expect(
-      await fehler(asUser(erika.konto, HAKEN, [erika.zugang, einheit, position, 0, true])),
-    ).toBe('22023');
-    expect(
-      await fehler(asUser(erika.konto, HAKEN, [erika.zugang, einheit, fremdePosition, 1, true])),
-    ).toBe('P0002');
-    expect(
-      await fehler(asUser(erika.konto, BEENDEN, [erika.zugang, einheit, 'x'.repeat(501)])),
-    ).toBe('22023');
   });
 
   it('nur am laufenden Plan des eigenen Verhältnisses (Punkt 19, 4.8)', async () => {
     const maxPlan = await zugewiesenerPlan('therapy', patients.max, 'Max');
-    const training = await zugewiesenerPlan('training', trainingRelationships.erika, 'Training');
-    expect(await fehler(asUser(erika.konto, BEGINNEN, [erika.zugang, maxPlan]))).toBe('P0002');
+    const [maxPosition] = await positionen(maxPlan);
+    const satz = { saetze: [[maxPosition!, 1]] as [string, number][] };
+    expect(await fehler(einheitErfassen(erika.konto, erika.zugang, maxPlan, satz))).toBe('P0002');
     // Der Trainingsplan derselben Person nicht über den Behandlungszugang.
-    expect(await fehler(asUser(erika.konto, BEGINNEN, [erika.zugang, training]))).toBe('P0002');
-    // Ein beendeter Plan nicht.
-    const plan = await zugewiesenerPlan();
-    await asUserCommitted(users.therapist, 'select public.end_exercise_plan($1::uuid)', [plan]);
-    expect(await fehler(asUser(erika.konto, BEGINNEN, [erika.zugang, plan]))).toBe('P0002');
-    const [p] = await portal(erika.konto, erika.zugang);
-    expect(p!.can_exercise).toBe(false);
-    // Fremde Einheit: Tina kommt mit ihrem Zugang nicht an Erikas Einheit.
-    const eigener = await zugewiesenerPlan('training', trainingRelationships.tina, 'Tina');
-    const tinaEinheit = await beginnen(users.plattformTina, platformAccesses.tinaTraining, eigener);
-    const [tinaPosition] = await positionen(eigener);
+    const training = await zugewiesenerPlan('training', trainingRelationships.erika, 'Training');
+    const [trainingPosition] = await positionen(training);
     expect(
       await fehler(
-        asUser(erika.konto, HAKEN, [
-          platformAccesses.erikaTraining,
-          tinaEinheit,
-          tinaPosition,
-          1,
-          true,
-        ]),
+        einheitErfassen(erika.konto, erika.zugang, training, { saetze: [[trainingPosition!, 1]] }),
       ),
     ).toBe('P0002');
+    // Ein beendeter Plan: auf der Plattform ohne Erfassen.
+    const plan = await zugewiesenerPlan();
+    await asUserCommitted(users.therapist, 'select public.end_exercise_plan($1::uuid)', [plan]);
+    const beendeterPlan = (await portal(erika.konto, erika.zugang)).find((p) => p.id === plan);
+    expect(beendeterPlan!.can_exercise).toBe(false);
   });
 
   it('Begleitung liest, erfasst aber nicht (ANN-306)', async () => {
-    const plan = await zugewiesenerPlan('therapy', patients.max, 'Max');
-    expect(
-      await fehler(
-        asUser(users.plattformPaula, BEGINNEN, [platformAccesses.paulaBegleitungMax, plan]),
-      ),
-    ).toBe('42501');
+    await zugewiesenerPlan('therapy', patients.max, 'Max');
     const [p] = await portal(users.plattformPaula, platformAccesses.paulaBegleitungMax);
     expect(p!.can_exercise).toBe(false);
   });
 
-  it('Praxiskonto, fremde Person, andere Organisation, ohne Anmeldung: abgewiesen', async () => {
-    const plan = await zugewiesenerPlan();
-    expect(await fehler(asUser(users.therapist, BEGINNEN, [erika.zugang, plan]))).toBe('42501');
-    expect(await fehler(asUser(users.plattformTina, BEGINNEN, [erika.zugang, plan]))).toBe('42501');
-    const fremd = await fremdeOrganisation();
-    expect(await fehler(asUser(fremd.owner, BEGINNEN, [erika.zugang, plan]))).toBe('42501');
-    expect(await fehler(asUser(null, BEGINNEN, [erika.zugang, plan]))).toBe('42501');
-  });
-
   it('im Training „schwierig, weil …" nur mit Einwilligung (ADR-021 Punkt 4)', async () => {
-    const plan = await zugewiesenerPlan('training', trainingRelationships.tina, 'Tina');
+    await zugewiesenerPlan('training', trainingRelationships.tina, 'Tina');
     const tina = { konto: users.plattformTina, zugang: platformAccesses.tinaTraining };
     await asPostgres(
       'delete from public.training_consent_records where training_relationship_id = $1',
       [trainingRelationships.tina],
     );
-    const einheit = await beginnen(tina.konto, tina.zugang, plan);
     expect((await portal(tina.konto, tina.zugang))[0]!.note_allowed).toBe(false);
-    expect(await fehler(asUser(tina.konto, BEENDEN, [tina.zugang, einheit, 'Rücken']))).toBe(
-      '42501',
-    );
-    // Ohne Text geht das Beenden.
-    await asUserCommitted(tina.konto, BEENDEN, [tina.zugang, einheit, '']);
-
     await asPostgres(
       `insert into public.training_consent_records
          (organization_id, training_relationship_id, record_kind, purpose, occurred_on, recorded_by)
@@ -213,8 +142,6 @@ describe('Einheiten am Plan (UEB-010)', () => {
       [organizationId, trainingRelationships.tina, users.trainer],
     );
     expect((await portal(tina.konto, tina.zugang))[0]!.note_allowed).toBe(true);
-    const zweite = await beginnen(tina.konto, tina.zugang, plan);
-    await asUserCommitted(tina.konto, BEENDEN, [tina.zugang, zweite, 'Rücken']);
   });
 
   it('nennt der Praxis die abgehakten Sätze je Übung; eine ausgelassene fehlt (OUT-003)', async () => {
@@ -223,11 +150,14 @@ describe('Einheiten am Plan (UEB-010)', () => {
       RUDERN_GELB,
     ]);
     const [erste, zweite] = await positionen(plan);
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
-    for (const satz of [1, 2, 3]) {
-      await asUserCommitted(erika.konto, HAKEN, [erika.zugang, einheit, erste, satz, true]);
-    }
-    await asUserCommitted(erika.konto, BEENDEN, [erika.zugang, einheit, null]);
+    await einheitErfassen(erika.konto, erika.zugang, plan, {
+      saetze: [
+        [erste!, 1],
+        [erste!, 2],
+        [erste!, 3],
+      ],
+      ende: {},
+    });
     const { rows } = await asUser<{
       plan: { sessions: { sets_done: number; sets_by_item: Record<string, number> }[] };
     }>(users.therapist, PLAN, [plan]);
@@ -240,10 +170,7 @@ describe('Einheiten am Plan (UEB-010)', () => {
 
   it('die Praxis liest die Einheiten mit dem Plan, dieselben Rollen (ANN-298)', async () => {
     const plan = await zugewiesenerPlan();
-    const [position] = await positionen(plan);
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
-    await asUserCommitted(erika.konto, HAKEN, [erika.zugang, einheit, position, 1, true]);
-    await asUserCommitted(erika.konto, BEENDEN, [erika.zugang, einheit, 'Knie']);
+    await beendet(plan, 'Knie');
 
     for (const konto of [users.therapist, users.office, users.ownerTherapist, users.teamLead]) {
       const { rows } = await asUser<{ plan: { sessions: Record<string, unknown>[] } }>(
@@ -271,8 +198,7 @@ describe('Einheiten am Plan (UEB-010)', () => {
 
   it('steht in der Auskunft am Plan (Art. 15)', async () => {
     const plan = await zugewiesenerPlan();
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
-    await asUserCommitted(erika.konto, BEENDEN, [erika.zugang, einheit, 'Knie']);
+    await beendet(plan, 'Knie');
     const { rows } = await asUser<{
       daten: { tabellen: { exercise_plans: { sessions: Record<string, unknown>[] }[] } };
     }>(users.ownerTherapist, 'select public.export_patient_record($1::uuid) as daten', [
@@ -285,14 +211,17 @@ describe('Einheiten am Plan (UEB-010)', () => {
 
   it('hält fest, wer beendet hat (ADR-010 Fassung 3, Zweitreview)', async () => {
     const plan = await zugewiesenerPlan();
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
+    const [position] = await positionen(plan);
+    const { session_id: einheit } = await einheitErfassen(erika.konto, erika.zugang, plan, {
+      saetze: [[position!, 1]],
+    });
     // Als hätte die rechtliche Vertretung begonnen: Die Person selbst beendet.
     await asPostgres(
       `update public.exercise_plan_sessions set platform_access_kind = 'legal_representative'
         where id = $1`,
       [einheit],
     );
-    await asUserCommitted(erika.konto, BEENDEN, [erika.zugang, einheit, 'Knie']);
+    await einheitErfassen(erika.konto, erika.zugang, plan, { einheit, ende: { note: 'Knie' } });
     const { rows } = await asUser<{ plan: { sessions: Record<string, unknown>[] } }>(
       users.therapist,
       PLAN,
@@ -312,42 +241,21 @@ describe('Einheiten am Plan (UEB-010)', () => {
     });
   });
 
-  it('eine liegengebliebene Einheit eines früheren Tages bleibt stehen (ANN-305)', async () => {
+  it('entzogen: nichts kommt an (Punkt 18)', async () => {
     const plan = await zugewiesenerPlan();
     const [position] = await positionen(plan);
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
-    await asPostgres(
-      'update public.exercise_plan_sessions set performed_on = performed_on - 1 where id = $1',
-      [einheit],
-    );
-    expect(
-      await fehler(asUser(erika.konto, HAKEN, [erika.zugang, einheit, position, 1, true])),
-    ).toBe('P0002');
-    expect(await fehler(asUser(erika.konto, BEENDEN, [erika.zugang, einheit, '']))).toBe('P0002');
-    // Heute beginnt eine neue.
-    expect(await beginnen(erika.konto, erika.zugang, plan)).not.toBe(einheit);
-  });
-
-  it('gesperrt oder entzogen: kein Haken, kein Beenden (Punkt 18)', async () => {
-    const plan = await zugewiesenerPlan();
-    const [position] = await positionen(plan);
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
     try {
       await asPostgres(
-        `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
-        [erika.zugang],
-      );
-      expect(
-        await fehler(asUser(erika.konto, HAKEN, [erika.zugang, einheit, position, 1, true])),
-      ).toBe('42501');
-      expect(await fehler(asUser(erika.konto, BEENDEN, [erika.zugang, einheit, '']))).toBe('42501');
-      await asPostgres(
         `update public.platform_accesses
-            set status = 'revoked', locked_at = null, revoked_at = now(), revoked_reason = 'practice'
+            set status = 'revoked', revoked_at = now(), revoked_reason = 'practice'
           where id = $1`,
         [erika.zugang],
       );
-      expect(await fehler(asUser(erika.konto, BEGINNEN, [erika.zugang, plan]))).toBe('42501');
+      expect(
+        await fehler(
+          einheitErfassen(erika.konto, erika.zugang, plan, { saetze: [[position!, 1]] }),
+        ),
+      ).toBe('42501');
     } finally {
       await resetDatabase();
       await fremdeOrganisation();
@@ -356,8 +264,7 @@ describe('Einheiten am Plan (UEB-010)', () => {
 
   it('steht im Export der Plattform, wie die Plattform ihn zeigt (POR-018)', async () => {
     const plan = await zugewiesenerPlan();
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
-    await asUserCommitted(erika.konto, BEENDEN, [erika.zugang, einheit, 'Rücken zwickt']);
+    await beendet(plan, 'Rücken zwickt');
     const { rows } = await asUser<{
       daten: { exercise_plans: { id: string; recent_sessions: unknown[] }[] };
     }>(erika.konto, 'select public.platform_export($1::uuid) as daten', [erika.zugang]);
@@ -369,9 +276,8 @@ describe('Einheiten am Plan (UEB-010)', () => {
 
   it('fällt mit dem Plan und der Akte (ADR-008)', async () => {
     const plan = await zugewiesenerPlan();
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
     const [position] = await positionen(plan);
-    await asUserCommitted(erika.konto, HAKEN, [erika.zugang, einheit, position, 1, true]);
+    await einheitErfassen(erika.konto, erika.zugang, plan, { saetze: [[position!, 1]] });
     try {
       // Der echte Löschlauf der Akte, nicht das Entfernen im Test.
       await asPostgres(
@@ -391,13 +297,7 @@ describe('Einheiten am Plan (UEB-010)', () => {
 
   it('nimmt Angaben zur Einheit an und zeigt sie der Praxis unverändert (TRK-001)', async () => {
     const plan = await zugewiesenerPlan();
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
-    await asUserCommitted(erika.konto, BEENDEN_MIT, [
-      erika.zugang,
-      einheit,
-      '',
-      JSON.stringify({ session_exertion: 7, session_pain: 0 }),
-    ]);
+    await beendet(plan, '', { session_exertion: 7, session_pain: 0 });
     const { rows } = await asUser<{ plan: { sessions: { values: Record<string, number> }[] } }>(
       users.office,
       PLAN,
@@ -419,13 +319,7 @@ describe('Einheiten am Plan (UEB-010)', () => {
 
   it('nimmt die Bewegungssicherheit nach der Einheit an (TRK-004, IDEA-TRK-003)', async () => {
     const plan = await zugewiesenerPlan();
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
-    await asUserCommitted(erika.konto, BEENDEN_MIT, [
-      erika.zugang,
-      einheit,
-      '',
-      JSON.stringify({ session_pain: 2, session_confidence: 4 }),
-    ]);
+    await beendet(plan, '', { session_pain: 2, session_confidence: 4 });
     const { rows } = await asUser<{ plan: { sessions: { values: Record<string, number> }[] } }>(
       users.office,
       PLAN,
@@ -436,13 +330,7 @@ describe('Einheiten am Plan (UEB-010)', () => {
 
   it('ohne Angabe bleibt sie leer; null heißt nicht beantwortet (IDEA-TRK-002)', async () => {
     const plan = await zugewiesenerPlan();
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
-    await asUserCommitted(erika.konto, BEENDEN_MIT, [
-      erika.zugang,
-      einheit,
-      '',
-      JSON.stringify({ session_exertion: null, session_pain: 4 }),
-    ]);
+    const einheit = await beendet(plan, '', { session_exertion: null, session_pain: 4 });
     const { rows } = await asPostgres<{ parameter_key: string; value: number }>(
       'select parameter_key, value from public.exercise_plan_session_values where session_id = $1',
       [einheit],
@@ -450,9 +338,8 @@ describe('Einheiten am Plan (UEB-010)', () => {
     expect(rows).toEqual([{ parameter_key: 'session_pain', value: 4 }]);
   });
 
-  it('ein falscher Wert beendet nichts (22023)', async () => {
+  it('ein falscher Wert legt nichts an (22023)', async () => {
     const plan = await zugewiesenerPlan();
-    const einheit = await beginnen(erika.konto, erika.zugang, plan);
     for (const werte of [
       { session_pain: 11 },
       { session_pain: -1 },
@@ -462,44 +349,13 @@ describe('Einheiten am Plan (UEB-010)', () => {
       { unbekannt: 1 },
       [3],
     ]) {
-      expect(
-        await fehler(
-          asUser(erika.konto, BEENDEN_MIT, [erika.zugang, einheit, '', JSON.stringify(werte)]),
-        ),
-      ).toBe('22023');
+      expect(await fehler(beendet(plan, '', werte))).toBe('22023');
     }
-    const { rows } = await asPostgres<{ offen: boolean }>(
-      'select finished_at is null as offen from public.exercise_plan_sessions where id = $1',
-      [einheit],
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.exercise_plan_sessions where plan_id = $1',
+      [plan],
     );
-    expect(rows[0]!.offen).toBe(true);
-  });
-
-  it('im Training Angaben zur Einheit nur mit Einwilligung (ADR-021 Punkt 4)', async () => {
-    const plan = await zugewiesenerPlan('training', trainingRelationships.tina, 'Tina');
-    const tina = { konto: users.plattformTina, zugang: platformAccesses.tinaTraining };
-    await asPostgres(
-      'delete from public.training_consent_records where training_relationship_id = $1',
-      [trainingRelationships.tina],
-    );
-    try {
-      const einheit = await beginnen(tina.konto, tina.zugang, plan);
-      expect(
-        await fehler(
-          asUser(tina.konto, BEENDEN_MIT, [
-            tina.zugang,
-            einheit,
-            '',
-            JSON.stringify({ session_exertion: 5 }),
-          ]),
-        ),
-      ).toBe('42501');
-      // Ohne Angaben geht das Beenden.
-      await asUserCommitted(tina.konto, BEENDEN_MIT, [tina.zugang, einheit, '', '{}']);
-    } finally {
-      await resetDatabase();
-      await fremdeOrganisation();
-    }
+    expect(rows[0]!.n).toBe(0);
   });
 
   it('kein Tabellenrecht auf die Angaben (ADR-004)', async () => {
@@ -521,7 +377,6 @@ describe('Einheiten am Plan (UEB-010)', () => {
       const [p] = await portal(erika.konto, erika.zugang);
       expect(p!.id).toBe(plan);
       expect(p!.can_exercise).toBe(false);
-      expect(await fehler(asUser(erika.konto, BEGINNEN, [erika.zugang, plan]))).toBe('42501');
     } finally {
       await resetDatabase();
       await fremdeOrganisation();

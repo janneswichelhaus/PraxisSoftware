@@ -385,21 +385,6 @@ const SCHREIBWEGE: Record<string, Schreibweg> = {
     gelingtDerPerson: false,
     zugang: platformAccesses.erikaTraining,
   },
-  start_platform_exercise_session: {
-    sql: 'select public.start_platform_exercise_session($1::uuid, $2::uuid)',
-    params: () => [E, PLAN_ERIKA],
-    gelingtDerPerson: true,
-  },
-  mark_platform_exercise_set: {
-    sql: 'select public.mark_platform_exercise_set($1::uuid, $2::uuid, $2::uuid, 1, true)',
-    params: () => [E, UNBEKANNT],
-    gelingtDerPerson: false,
-  },
-  finish_platform_exercise_session: {
-    sql: "select public.finish_platform_exercise_session($1::uuid, $2::uuid, null, '{}'::jsonb)",
-    params: () => [E, UNBEKANNT],
-    gelingtDerPerson: false,
-  },
   sync_platform_exercise_session: {
     sql: `select public.sync_platform_exercise_session($1::uuid, $2::uuid, $3::uuid,
             app_heute.tag, now(), '[]'::jsonb)

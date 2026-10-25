@@ -8,7 +8,7 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
-import { zugewiesenerPlan } from './helpers/plaene';
+import { einheitErfassen, positionen, zugewiesenerPlan } from './helpers/plaene';
 
 /**
  * Check-in mit einstellbarem Takt, Praxisseite (TRK-002, IDEA-TRK-004,
@@ -685,20 +685,10 @@ describe('Check-in auf der Plattform (TRK-003)', () => {
 
   it('zeigt der Praxis daneben die Angaben nach den Einheiten, mit Zeitzone (TRK-006)', async () => {
     const plan = await zugewiesenerPlan('therapy', patients.erika, 'Heimprogramm Knie');
-    const beginnen = async (konto: string, zugang: string, p: string) => {
-      const { rows } = await asUserCommitted<{ id: string }>(
-        konto,
-        'select public.start_platform_exercise_session($1::uuid, $2::uuid) as id',
-        [zugang, p],
-      );
-      return rows[0]!.id;
+    const beenden = async (konto: string, zugang: string, p: string, values: object) => {
+      const [position] = await positionen(p);
+      await einheitErfassen(konto, zugang, p, { saetze: [[position!, 1]], ende: { values } });
     };
-    const beenden = async (konto: string, zugang: string, p: string, werte: object) =>
-      asUserCommitted(
-        konto,
-        'select public.finish_platform_exercise_session($1::uuid, $2::uuid, $3, $4::jsonb)',
-        [zugang, await beginnen(konto, zugang, p), '', JSON.stringify(werte)],
-      );
     // Eine Einheit ohne Angaben steht nicht in der Zeitreihe.
     await beenden(erika.konto, erika.zugang, plan, {});
     await beenden(erika.konto, erika.zugang, plan, { session_pain: 3, session_confidence: 6 });

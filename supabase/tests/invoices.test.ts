@@ -321,8 +321,8 @@ describe('Rechnung', () => {
       await asUserCommitted(users.office, ENTWURF, [patients.petra, await monat()]);
 
       await expect(
-        asUser(users.office, 'select public.delete_invoice_recipient($1::uuid)', [BETREUUNG]),
-      ).rejects.toThrow();
+        asPostgres('delete from public.invoice_recipients where id = $1', [BETREUUNG]),
+      ).rejects.toThrow(/foreign key/);
     });
 
     it('wirkt mit einer Korrektur am Empfaenger auf Entwuerfe, nie auf Ausgestelltes (UX-008c)', async () => {

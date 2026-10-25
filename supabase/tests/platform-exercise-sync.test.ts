@@ -29,8 +29,6 @@ const { users, platformAccesses, patients, trainingRelationships, organizationId
 
 const SYNC =
   'select public.sync_platform_exercise_session($1::uuid, $2::uuid, $3::uuid, $4::date, $5::timestamptz, $6::jsonb) as ergebnis';
-const BEGINNEN = 'select public.start_platform_exercise_session($1::uuid, $2::uuid) as id';
-const HAKEN = 'select public.mark_platform_exercise_set($1::uuid, $2::uuid, $3::uuid, $4, $5)';
 
 const erika = { konto: users.plattformErika, zugang: platformAccesses.erikaBehandlung };
 
@@ -224,31 +222,11 @@ describe('Einheit ohne Netz übertragen (TRK-007)', () => {
     expect((await saetze(einheit)).map((s) => s.set_number)).toEqual([1, 2, 3]);
   });
 
-  it('online begonnene Einheit: die Kennung des Servers wird fortgesetzt', async () => {
-    const plan = await zugewiesenerPlan();
-    const [position] = await positionen(plan);
-    const { rows } = await asUserCommitted<{ id: string }>(erika.konto, BEGINNEN, [
-      erika.zugang,
-      plan,
-    ]);
-    const einheit = rows[0]!.id;
-    await asUserCommitted(erika.konto, HAKEN, [erika.zugang, einheit, position, 1, true]);
-    await senden(erika.konto, erika.zugang, plan, einheit, await heute(), [
-      haken(position!, 2),
-      ende(),
-    ]);
-    expect((await saetze(einheit)).map((s) => s.set_number)).toEqual([1, 2]);
-  });
-
   it('ist am selben Tag schon eine offen (zweites Gerät), kommen die Haken dazu', async () => {
     const plan = await zugewiesenerPlan();
     const [position] = await positionen(plan);
-    const { rows } = await asUserCommitted<{ id: string }>(erika.konto, BEGINNEN, [
-      erika.zugang,
-      plan,
-    ]);
-    const offen = rows[0]!.id;
-    await asUserCommitted(erika.konto, HAKEN, [erika.zugang, offen, position, 1, true]);
+    const offen = randomUUID();
+    await senden(erika.konto, erika.zugang, plan, offen, await heute(), [haken(position!, 1)]);
     const ergebnis = await senden(erika.konto, erika.zugang, plan, randomUUID(), await heute(), [
       haken(position!, 2),
     ]);
@@ -551,12 +529,8 @@ describe('Einheit ohne Netz übertragen (TRK-007)', () => {
   it('eine offene Einheit eines anderen Tages nimmt nichts an (ANN-305, Zweitreview S1)', async () => {
     const plan = await zugewiesenerPlan();
     const [position] = await positionen(plan);
-    const { rows } = await asUserCommitted<{ id: string }>(erika.konto, BEGINNEN, [
-      erika.zugang,
-      plan,
-    ]);
-    const gestern = rows[0]!.id;
-    await asUserCommitted(erika.konto, HAKEN, [erika.zugang, gestern, position, 1, true]);
+    const gestern = randomUUID();
+    await senden(erika.konto, erika.zugang, plan, gestern, await heute(), [haken(position!, 1)]);
     await asPostgres(
       'update public.exercise_plan_sessions set performed_on = performed_on - 1 where id = $1',
       [gestern],
