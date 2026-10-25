@@ -29,7 +29,6 @@ import {
   ereignisGeaendert,
 } from './calendar';
 import {
-  appointmentStatusLabels,
   appointmentToFormValues,
   ereignisFormSchema,
   fetchAppointment,
@@ -39,12 +38,11 @@ import {
   updateAppointmentEvent,
   updateEventSeries,
   type EreignisFormValues,
-  kalenderZumTermin,
-  zurueckZumTermin,
 } from './api';
 import { formatDate } from '@/lib/datum';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { fetchLocations } from '@/features/staff/api';
+import { appointmentStatusLabels, kalenderZumTermin, zurueckZumTermin } from '@/lib/termin';
 
 /**
  * Die ganze Fehlzeit bearbeiten (CAL-017).

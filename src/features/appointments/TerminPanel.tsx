@@ -16,21 +16,19 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { ErstaufnahmeEinstieg } from '@/features/intake/ErstaufnahmeEinstieg';
-import { Laengenzeichen } from './Laengenzeichen';
 import { TerminAbschliessenKnopf } from './TerminAbschliessen';
 import { AbsageAktion } from './TerminAktionen';
 import { VERLAUF_ANKER } from '@/features/documentation/PatientRecordDocumentation';
+import { dokuOffen, fetchAppointment, type CalendarEntry } from './api';
+import { formatLocalTimeRange } from '@/lib/datum';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
-  dokuOffen,
-  fetchAppointment,
   istBeratung,
   terminBezeichnung,
   terminPfad,
-  type CalendarEntry,
-} from './api';
-import { formatLocalTimeRange } from '@/lib/datum';
+} from '@/lib/termin';
+import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
 
 /** „Do 01.10.2026" in der Zeit der Praxis. */
 function tagKurz(iso: string, zone: string): string {

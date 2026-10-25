@@ -1,4 +1,4 @@
-import type { AppointmentStatus } from './api';
+import type { AppointmentStatus } from '@/lib/termin';
 
 /**
  * Der Haken am Termin (B4, BEF-154, ADR-018 Fassung 5).

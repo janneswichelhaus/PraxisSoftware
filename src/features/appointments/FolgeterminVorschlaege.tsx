@@ -18,7 +18,6 @@ import {
   fetchAppointment,
   fetchAppointments,
   fetchUpcomingAppointments,
-  kalenderZumTermin,
   type Appointment,
 } from './api';
 import { arbeitszeitBaender } from './calendar';
@@ -37,6 +36,7 @@ import {
 } from './folgetermin';
 import { frageAusFormular, useWegpruefung } from './wegpruefung';
 import { dayKey, formatLocalTime, todayInTimeZone, zeitpunktIn, tagePlus } from '@/lib/datum';
+import { kalenderZumTermin } from '@/lib/termin';
 
 /** Höchstens so viele Vorschläge stehen da. */
 const VORSCHLAEGE = 3;

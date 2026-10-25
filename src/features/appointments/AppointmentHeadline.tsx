@@ -1,9 +1,10 @@
 import { Badge } from '@/components/ui/Badge';
 import type { CurrentUser } from '@/features/session/types';
-import { Laengenzeichen } from './Laengenzeichen';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
-import { appointmentStatusLabels, appointmentStatusTon, staffName, type Appointment } from './api';
+import { type Appointment } from './api';
 import { formatLocalDate, formatLocalTime, formatLocalTimeRange } from '@/lib/datum';
+import { appointmentStatusLabels, appointmentStatusTon, staffName } from '@/lib/termin';
+import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
 
 /**
  * Die Zeile unter dem Titel eines Termins (UX-005a).

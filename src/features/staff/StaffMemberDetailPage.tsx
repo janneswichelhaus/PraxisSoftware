@@ -15,8 +15,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
-import { appointmentTypeHint } from '@/features/appointments/api';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate, formatLocalDate, formatLocalTimeRange, todayInTimeZone } from '@/lib/datum';
 import { leseRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
@@ -43,6 +41,8 @@ import {
   fetchAssignableTherapists,
 } from './api';
 import { leseMeldung } from '@/lib/meldung';
+import { appointmentTypeHint } from '@/lib/termin';
+import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
 
 /**
  * Eine Kontaktangabe als Weg, nicht als Text (UX-012).

@@ -7,17 +7,17 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BEGRIFFE, BEREICHE } from '@/lib/begriffe';
-import {
-  TERMINFENSTER_OPTIONEN,
-  appointmentTypeLabels,
-  istRegellaenge,
-  type AppointmentFormField,
-  type AppointmentType,
-} from './api';
+import { type AppointmentFormField } from './api';
 import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import { DAUER_AUSWAHL_ID, TERMINFELD_IDS } from './terminformular';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import type { AssignableTherapist, Location } from '@/features/staff/api';
+import {
+  TERMINFENSTER_OPTIONEN,
+  appointmentTypeLabels,
+  istRegellaenge,
+  type AppointmentType,
+} from '@/lib/termin';
 
 /**
  * Zustand einer Auswahlliste, die das Formular nachlädt (ZST-07).

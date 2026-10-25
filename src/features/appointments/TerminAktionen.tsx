@@ -36,7 +36,6 @@ import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import {
-  appointmentStatusLabels,
   appointmentToFormValues,
   cancelAppointment,
   cancelAppointmentEvent,
@@ -49,13 +48,9 @@ import {
   fetchAppointment,
   folgeterminVorbelegung,
   feeBasisLabels,
-  istBeratung,
   locationSummary,
-  patientName,
   reopenAppointment,
   waiveAppointmentFee,
-  schreibeTerminVorbelegung,
-  staffName,
   fetchEventParticipants,
   type Appointment,
   type EventParticipant,
@@ -63,6 +58,13 @@ import {
 import { TAGESLAGE } from './tageslage';
 import { NichtAngetroffenAktion } from './NichtAngetroffen';
 import { formatLocalDate, formatLocalTime, todayInTimeZone } from '@/lib/datum';
+import {
+  appointmentStatusLabels,
+  istBeratung,
+  patientName,
+  schreibeTerminVorbelegung,
+  staffName,
+} from '@/lib/termin';
 
 /**
  * Meldet der Seite einen bestätigten Vorgang (ZST-16, TER-17).

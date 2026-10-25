@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
-import { appointmentStatusSchema, appointmentTypeSchema } from '@/features/appointments/api';
 import type { BausteinStand } from '@/features/assessments/bausteinauswahl';
+import { appointmentStatusSchema, appointmentTypeSchema } from '@/lib/termin';
 
 /**
  * Datenzugriff auf die Behandlungsdokumentation (DOK-001, DOK-002).

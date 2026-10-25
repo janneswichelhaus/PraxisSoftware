@@ -12,9 +12,9 @@ import {
   stoppsJeAbschnitt,
 } from '@/lib/location/navigation';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { terminBezeichnung, terminPfad } from '@/features/appointments/api';
 import { zielDesStopps, type Stopp } from './tagesroute';
 import { formatLocalTimeRange } from '@/lib/datum';
+import { terminBezeichnung, terminPfad } from '@/lib/termin';
 
 /**
  * Die Tourenliste mit Navigations-Handoff (MAP-006b und MAP-006d).

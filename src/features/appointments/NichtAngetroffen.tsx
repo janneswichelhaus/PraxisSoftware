@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { fetchAppointment, patientName, recordNoShow, type Appointment } from './api';
+import { fetchAppointment, recordNoShow, type Appointment } from './api';
 import type { NiemandOeffnetTermin } from './HomeVisitFlow';
 import { formatLocalDate, formatLocalTime } from '@/lib/datum';
+import { patientName } from '@/lib/termin';
 
 /**
  * „Nicht angetroffen" am Praxis- und am Videotermin — ein Schritt ohne

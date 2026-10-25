@@ -22,14 +22,11 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import {
-  appointmentStatusLabels,
-  appointmentStatusTon,
   cancelAppointment,
   cancellationReasonSchema,
   waehlbareAbsagegruende,
   type CancellationReason,
 } from '@/features/appointments/api';
-import { leseAngelegtenTermin } from '@/features/appointments/terminformular';
 import {
   getTrainingAppointment,
   getTrainingProtocol,
@@ -41,6 +38,7 @@ import {
 } from './api';
 import { TerminAbschluss, TrainingProtokoll } from './TrainingProtocol';
 import { tageslageNeuLaden } from '@/features/appointments/tageslage';
+import { appointmentStatusLabels, appointmentStatusTon, leseAngelegtenTermin } from '@/lib/termin';
 
 /**
  * Ein Trainingstermin (TRN-004, TRN-006).

@@ -14,13 +14,6 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import {
-  appointmentTypeLabels,
-  appointmentTypeSchema,
-  schreibeTerminVorbelegung,
-  type AppointmentType,
-} from '@/features/appointments/api';
-import { DAUER_PARAM } from '@/features/appointments/terminformular';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchWaitlist, windowsText, type TimeWindow } from '@/features/waitlist/api';
@@ -40,6 +33,13 @@ import {
   type TravelRating,
 } from './api';
 import { fetchAssignableTherapists } from '@/features/staff/api';
+import {
+  appointmentTypeLabels,
+  appointmentTypeSchema,
+  schreibeTerminVorbelegung,
+  type AppointmentType,
+  DAUER_PARAM,
+} from '@/lib/termin';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

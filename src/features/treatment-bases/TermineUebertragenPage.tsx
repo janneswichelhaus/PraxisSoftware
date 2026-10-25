@@ -13,12 +13,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import {
-  fetchPatientAppointments,
-  staffName,
-  appointmentTypeHint,
-  type PatientAppointment,
-} from '@/features/appointments/api';
+import { fetchPatientAppointments, type PatientAppointment } from '@/features/appointments/api';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import { formatDate, formatLocalDate, formatLocalTimeRange } from '@/lib/datum';
 import type { CurrentUser } from '@/features/session/types';
@@ -28,6 +23,7 @@ import {
   type Uebertragungsergebnis,
   type VerordnungMitZahlen,
 } from './grundlagen';
+import { staffName, appointmentTypeHint } from '@/lib/termin';
 
 /**
  * Termine auf eine andere Behandlungsgrundlage übertragen (CAL-022).

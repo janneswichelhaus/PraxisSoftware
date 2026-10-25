@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import { telHref } from '@/lib/telefon';
+import { documentationStatusSchema } from '@/features/documentation/api';
+import { hakenFehlt } from '@/features/appointments/haken';
 import {
   appointmentKindSchema,
   appointmentStatusLabels,
@@ -8,9 +10,7 @@ import {
   appointmentTypeSchema,
   terminAnlassSchema,
   type AppointmentStatus,
-} from '@/features/appointments/api';
-import { documentationStatusSchema } from '@/features/documentation/api';
-import { hakenFehlt } from '@/features/appointments/haken';
+} from '@/lib/termin';
 
 // -----------------------------------------------------------------------------
 // Tagesliste des Hausbesuchstags (UX-001)

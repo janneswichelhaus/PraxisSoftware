@@ -14,7 +14,6 @@ import { TextArea } from '@/components/ui/TextArea';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { telHref } from '@/lib/telefon';
-import { appointmentTypeLabels } from '@/features/appointments/api';
 import { MAX_ZEICHEN } from '@/features/documentation/api';
 import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
 import {
@@ -31,6 +30,7 @@ import {
   type Entwurfskopf,
 } from './entwuerfe';
 import { tagesplanLesen, type TagesplanTermin } from './tagesplan';
+import { appointmentTypeLabels } from '@/lib/termin';
 
 /**
  * Was auf dem Diensttelefon liegt (OFF-002, OFF-003, ADR-024 Punkte 6 bis 8).

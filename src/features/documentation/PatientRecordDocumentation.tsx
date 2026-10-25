@@ -15,13 +15,7 @@ import {
   canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
-import {
-  appointmentStatusLabels,
-  appointmentStatusTon,
-  appointmentTypeHint,
-  fetchAppointment,
-  staffName,
-} from '@/features/appointments/api';
+import { fetchAppointment } from '@/features/appointments/api';
 import type { Patient } from '@/features/patients/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
@@ -36,6 +30,12 @@ import {
 } from './api';
 import { FREITEXT, fristDatum } from './format';
 import { formatLocalTime, formatLocalTimeRange } from '@/lib/datum';
+import {
+  appointmentStatusLabels,
+  appointmentStatusTon,
+  appointmentTypeHint,
+  staffName,
+} from '@/lib/termin';
 
 /** Anker des Behandlungsverlaufs in der Akte - Ziel von „Bisherige Doku →“ (BEF-058). */
 export const VERLAUF_ANKER = 'behandlungsverlauf';

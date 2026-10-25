@@ -22,16 +22,7 @@ import {
 } from '@/features/appointments/haken';
 import { FreigabeNachHaken } from '@/features/appointments/FreigabeNachHaken';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
-import {
-  appointmentStatusLabels,
-  appointmentStatusTon,
-  appointmentTypeHint,
-  fetchAppointments,
-  terminBezeichnung,
-  staffName,
-  type CalendarEntry,
-  terminPfad,
-} from '@/features/appointments/api';
+import { fetchAppointments, type CalendarEntry } from '@/features/appointments/api';
 import {
   canManageAppointments,
   canReadPatientDirectory,
@@ -80,7 +71,6 @@ import {
   type Fokus,
   type NaechsterWeg,
 } from './tagesstart';
-import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
 import { OpenPointsSummary } from '@/features/open-points/OpenPointsSummary';
 import { OPEN_INTAKES_KEY, fetchOpenIntakes } from '@/features/open-points/intake-api';
@@ -88,6 +78,15 @@ import { useBarometerHinweise } from '@/features/feedback/barometerHinweis';
 import { REJECTED_TIME_OFF_KEY, fetchRejectedTimeOff } from '@/features/timeaccount/api';
 import { HinweisZwischendurch } from './HinweisZwischendurch';
 import { formatLocalDate, formatLocalTime, todayInTimeZone, tagePlus } from '@/lib/datum';
+import {
+  appointmentStatusLabels,
+  appointmentStatusTon,
+  appointmentTypeHint,
+  terminBezeichnung,
+  staffName,
+  terminPfad,
+} from '@/lib/termin';
+import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
 
 /**
  * Übersicht - der persönliche Einstieg.

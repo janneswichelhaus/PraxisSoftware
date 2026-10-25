@@ -1,4 +1,3 @@
-import type { AppointmentType } from '@/features/appointments/api';
 import {
   DURATION_MAX,
   DURATION_MIN,
@@ -9,6 +8,7 @@ import {
   type TimeWindow,
   type WaitlistEntry,
 } from './api';
+import type { AppointmentType } from '@/lib/termin';
 
 /** Die Formularwerte als Zeichenketten, wie die Felder sie halten. */
 export interface FormState {

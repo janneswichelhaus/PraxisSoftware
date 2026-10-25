@@ -1,6 +1,6 @@
 import { alsFormularfehler, type Formularfehler } from '@/lib/formularfehler';
 import { leseRueckweg } from '@/lib/rueckweg';
-import { mitNeuemTermin, NEUER_TERMIN_PARAM, type AppointmentFormField } from './api';
+import type { AppointmentFormField } from './api';
 
 /**
  * Was die Terminformulare gemeinsam brauchen, ohne React (UXR-005).
@@ -132,25 +132,6 @@ export function speicherfehlerText(meldung: string, titel: string): string {
     : meldung;
 }
 
-/**
- * Der Rückweg nach dem Anlegen, mit Hinweis auf den neuen Termin (TER-04).
- *
- * Der Kalender hebt ihn hervor (`mitNeuemTermin`, FIX-016). Die
- * Termin-Detailseite und die Terminliste der Akte lesen denselben Parameter
- * und bestätigen dort das Anlegen - vorher kam man nach „Folgetermin anlegen"
- * auf den Ausgangstermin zurück, ohne jeden Hinweis, dass etwas entstanden war.
- *
- * Nur die Kennung reist mit, kein Name (ADR-011).
- */
-export function mitAngelegtemTermin(rueckweg: string, appointmentId: string): string {
-  if (rueckweg.startsWith('/kalender')) return mitNeuemTermin(rueckweg, appointmentId);
-  const trenner = rueckweg.indexOf('?');
-  const pfad = trenner === -1 ? rueckweg : rueckweg.slice(0, trenner);
-  const suche = new URLSearchParams(trenner === -1 ? '' : rueckweg.slice(trenner + 1));
-  suche.set(NEUER_TERMIN_PARAM, appointmentId);
-  return `${pfad}?${suche.toString()}`;
-}
-
 const TERMINSUCHE = /^\/patienten\/([^/?]+)\/plaetze$/;
 
 /**
@@ -169,30 +150,4 @@ export function nachDemAnlegen(rueckweg: string, ausWarteliste: boolean): string
   if (!treffer) return rueckweg;
   const suche = new URLSearchParams(trenner === -1 ? '' : rueckweg.slice(trenner + 1));
   return leseRueckweg(suche, `/patienten/${treffer[1]}/termine`);
-}
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Die Kennung eines gerade angelegten Termins aus der Adresszeile, sonst `null`. */
-export function leseAngelegtenTermin(suche: URLSearchParams): string | null {
-  const wert = suche.get(NEUER_TERMIN_PARAM);
-  return wert && UUID.test(wert) ? wert : null;
-}
-
-/**
- * Die gewählte Dauer auf dem Abstecher in die Stammdaten (TER-05).
- *
- * Nur das Terminformular selbst schreibt diesen Parameter, wenn es für eine
- * fehlende Hausbesuchsadresse in die Stammdaten verzweigt, und liest ihn beim
- * Zurückkommen. Der Kalender gibt ihn nicht mit: Dort bleibt es beim
- * Terminfenster (CAL-010a).
- */
-export const DAUER_PARAM = 'dauer';
-
-/** Eine ganze Zahl von Minuten, die am selben Tag endet - sonst `null`. */
-export function leseDauer(suche: URLSearchParams): number | null {
-  const wert = suche.get(DAUER_PARAM);
-  if (!wert || !/^\d{1,4}$/.test(wert)) return null;
-  const minuten = Number(wert);
-  return minuten > 0 && minuten < 24 * 60 ? minuten : null;
 }

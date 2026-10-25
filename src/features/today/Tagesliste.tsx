@@ -5,10 +5,8 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Textlink } from '@/components/ui/Textlink';
 import { TravelBar } from '@/components/ui/TravelBar';
-import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { LetzterEintragVorDerTuer } from '@/features/appointments/Kurzblick';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { kalenderZumTermin } from '@/features/appointments/api';
 import { openItemsText, type IntakeItem } from '@/features/open-points/intake-api';
 import {
   adressZeilen,
@@ -22,6 +20,8 @@ import { zugangMitStockwerk } from './stockwerk';
 import { einordnung, terminName, type Wegstrecke } from './tagesstart';
 import { erstaufnahmePfad } from '@/features/intake/stand';
 import { formatLocalTimeRange } from '@/lib/datum';
+import { kalenderZumTermin } from '@/lib/termin';
+import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
 
 /** Eine Pille der Karte: 36 px hoch, 14 px in 600 (Design-Handoff 2026-10-01). */
 const pille =

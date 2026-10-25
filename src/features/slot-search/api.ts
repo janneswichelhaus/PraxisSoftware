@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import type { Coordinate } from '@/lib/location/contract';
-import type { AppointmentType } from '@/features/appointments/api';
 import type { TimeWindow } from '@/features/waitlist/api';
+import type { AppointmentType } from '@/lib/termin';
 
 /**
  * Terminsuche als Vorschlagsliste (PRX-003).

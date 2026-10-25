@@ -3,6 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import { renderWithProviders } from '@/test-utils';
+import type { NotificationChannel } from '@/lib/termin';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 
@@ -13,13 +14,13 @@ vi.mock('./api', async (importOriginal) => {
   return {
     ...actual,
     setAppointmentNotification: (id: string, kanaele: unknown) =>
-      setAppointmentNotification(id, kanaele) as Promise<AppointmentsApi.NotificationChannel[]>,
+      setAppointmentNotification(id, kanaele) as Promise<NotificationChannel[]>,
   };
 });
 
 const { MitteilungVermerken } = await import('./MitteilungVermerken');
 
-function termin(kanaele: AppointmentsApi.NotificationChannel[] = []): AppointmentsApi.Appointment {
+function termin(kanaele: NotificationChannel[] = []): AppointmentsApi.Appointment {
   return {
     id: TERMIN_ID,
     patient_id: '66666666-6666-4666-8666-000000000001',

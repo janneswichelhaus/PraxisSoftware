@@ -23,7 +23,7 @@ import {
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
-import { leseTerminVorbelegung, schreibeTerminVorbelegung } from './api';
+import { leseTerminVorbelegung, schreibeTerminVorbelegung } from '@/lib/termin';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

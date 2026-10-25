@@ -27,9 +27,7 @@ import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { fetchDayPlan, rufnummern, type DayPlanEntry } from '@/features/today/api';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
-import { Laengenzeichen } from './Laengenzeichen';
 import {
-  appointmentTypeHint,
   cancellationReasonLabels,
   waehlbareAbsagegruende,
   cancelStaffDay,
@@ -55,6 +53,8 @@ import {
 } from './tagumplanen';
 import { formatLocalDate, formatLocalTime, formatLocalTimeRange, istIsoDatum } from '@/lib/datum';
 import { fetchAssignableTherapists } from '@/features/staff/api';
+import { appointmentTypeHint } from '@/lib/termin';
+import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
 
 /**
  * Tag umplanen mit Anrufliste (CAL-009, IDEA-PRX-004), geführt seit

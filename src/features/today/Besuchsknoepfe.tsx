@@ -4,11 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { symbolknopfKlassen, type SymbolGroesse } from '@/components/ui/buttonStile';
 import { mitRueckweg } from '@/lib/rueckweg';
-import {
-  fetchAppointment,
-  kalenderZumTermin,
-  reopenAppointment,
-} from '@/features/appointments/api';
+import { fetchAppointment, reopenAppointment } from '@/features/appointments/api';
 import { hakenZuruecknehmbar } from '@/features/appointments/haken';
 import { HomeVisitFlow } from '@/features/appointments/HomeVisitFlow';
 import { NichtAngetroffenAktion } from '@/features/appointments/NichtAngetroffen';
@@ -22,6 +18,7 @@ import {
 } from './besuchswege';
 import { terminName } from './tagesstart';
 import { formatLocalTime } from '@/lib/datum';
+import { kalenderZumTermin } from '@/lib/termin';
 
 /** Hörer im 20er-Raster, Strich 1,75, runde Enden (DESIGN.md 9.15). */
 function TelefonSymbol() {

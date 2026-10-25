@@ -15,7 +15,6 @@ import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { TextArea } from '@/components/ui/TextArea';
-import { appointmentTypeLabels, appointmentTypeSchema } from '@/features/appointments/api';
 import {
   EINGABETEXTE,
   useTextverlustschutz,
@@ -44,6 +43,7 @@ import {
   type WaitlistEntry,
 } from './api';
 import { fetchAssignableTherapists } from '@/features/staff/api';
+import { appointmentTypeLabels, appointmentTypeSchema } from '@/lib/termin';
 
 const LIST = '/warteliste';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -34,16 +34,10 @@ import {
   fetchAppointment,
   fetchAppointments,
   fetchBelegteZeiten,
-  terminBezeichnung,
   istAusserhalbArbeitszeit,
   istVergangenheit,
   liegtInVergangenheit,
-  NEUER_TERMIN_PARAM,
-  schreibeTerminVorbelegung,
-  TERMINFENSTER_MINUTEN,
   updateAppointment,
-  type TerminVorbelegung,
-  TERMIN_PARAM,
   appointmentToFormValues,
 } from './api';
 import {
@@ -59,7 +53,6 @@ import { TerminAktionenDialog } from './TerminAktionen';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Segment } from '@/components/ui/Segment';
 import { letzterKalenderstand, merkeKalenderstand } from './kalenderstand';
-import { SpannenBild } from './Laengenzeichen';
 import { naechsteAuswahl, type Spanne } from './useSpanneAufziehen';
 import { Monatskalender } from './Monatskalender';
 import type { VerschiebenFrage } from './VerschiebenRueckfrage';
@@ -98,6 +91,15 @@ import {
   fetchLocations,
 } from '@/features/staff/api';
 import { leseMeldung } from '@/lib/meldung';
+import {
+  terminBezeichnung,
+  NEUER_TERMIN_PARAM,
+  schreibeTerminVorbelegung,
+  TERMINFENSTER_MINUTEN,
+  type TerminVorbelegung,
+  TERMIN_PARAM,
+} from '@/lib/termin';
+import { SpannenBild } from '@/components/ui/Laengenzeichen';
 
 /** Bevorzugt das Terminfenster, sonst die kürzere Dauer (ANN-317, BEF-136). */
 const LUECKEN_DAUERN = [TERMINFENSTER_MINUTEN, KURZE_TERMINDAUER_MINUTEN] as const;

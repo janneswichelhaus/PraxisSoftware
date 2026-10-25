@@ -35,21 +35,23 @@ import {
 import { deckungstext } from '@/features/treatment-bases/grundlagen';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
 import { Deckungszeichen } from './Deckungszeichen';
-import { Laengenzeichen } from './Laengenzeichen';
 import {
-  appointmentStatusLabels,
-  appointmentStatusTon,
-  appointmentTypeHint,
   fetchPatientAppointments,
   naechsteTerminSeite,
-  staffName,
   type PatientAppointment,
   type TerminCursor,
 } from './api';
 import { schreibeParameter, ZOOM_STANDARD } from './calendar';
 import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
-import { leseAngelegtenTermin } from './terminformular';
 import { leseMeldung } from '@/lib/meldung';
+import {
+  appointmentStatusLabels,
+  appointmentStatusTon,
+  appointmentTypeHint,
+  staffName,
+  leseAngelegtenTermin,
+} from '@/lib/termin';
+import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
 
 /**
  * Der Terminbereich der Akte (AKTE-003, gruppiert seit AKTE-006).

@@ -27,20 +27,15 @@ import { TerritoryHint } from '@/features/territories/TerritoryHint';
 import { Deckungszeichen } from './Deckungszeichen';
 import { Listenfehler, NachladeHinweis } from '@/components/ui/Rueckmeldung';
 import {
-  appointmentTypeLabels,
   checkAppointmentSlots,
   createAppointmentSeries,
   fensterEnde,
   fetchTreatmentBasisSlots,
   istAusserhalbArbeitszeit,
-  leseTerminVorbelegung,
   istHinderlich,
-  schreibeTerminVorbelegung,
   slotConflictLabels,
   type AppointmentFormValues,
-  type AppointmentType,
   type SlotConflict,
-  type TerminVorbelegung,
 } from './api';
 import { tageslageNeuLaden } from './tageslage';
 import {
@@ -53,6 +48,13 @@ import {
 import { speicherfehlerText } from './terminformular';
 import { formatDate, todayInTimeZone, istIsoDatum } from '@/lib/datum';
 import { fetchAssignableTherapists, fetchLocations } from '@/features/staff/api';
+import {
+  appointmentTypeLabels,
+  leseTerminVorbelegung,
+  schreibeTerminVorbelegung,
+  type AppointmentType,
+  type TerminVorbelegung,
+} from '@/lib/termin';
 
 /**
  * „1 Termin" gegen „3 Termine" — an einer Stelle statt in jeder Meldung.

@@ -11,13 +11,7 @@ import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { canWriteTrainingClients, type CurrentUser } from '@/features/session/types';
-import {
-  fensterEnde,
-  leererTermin,
-  leseTerminVorbelegung,
-  TERMINFENSTER_MINUTEN,
-} from '@/features/appointments/api';
-import { mitAngelegtemTermin } from '@/features/appointments/terminformular';
+import { fensterEnde, leererTermin } from '@/features/appointments/api';
 import {
   createTrainingAppointment,
   listTrainingBases,
@@ -26,6 +20,7 @@ import {
 } from './api';
 import { TrainingTerminFormular } from './TrainingTerminFormular';
 import { tageslageNeuLaden } from '@/features/appointments/tageslage';
+import { leseTerminVorbelegung, TERMINFENSTER_MINUTEN, mitAngelegtemTermin } from '@/lib/termin';
 
 const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

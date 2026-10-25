@@ -12,11 +12,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { mitRueckweg } from '@/lib/rueckweg';
-import {
-  appointmentTypeHint,
-  completeAppointment,
-  reopenAppointment,
-} from '@/features/appointments/api';
+import { completeAppointment, reopenAppointment } from '@/features/appointments/api';
 import { useTextverlustschutz, type Verlustschutztexte } from '@/app/Textverlustschutz';
 import {
   finalizeTrainingProtocol,
@@ -29,6 +25,7 @@ import {
   type TrainingProtocol,
 } from './api';
 import { formatLocalTimeRange } from '@/lib/datum';
+import { appointmentTypeHint } from '@/lib/termin';
 
 /**
  * Das Trainingsprotokoll (TRN-009, TRN-010).

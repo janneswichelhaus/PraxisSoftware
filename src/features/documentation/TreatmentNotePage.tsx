@@ -8,7 +8,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BausteinFeld } from '@/features/assessments/BausteinFeld';
 import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
-import { patientName, type Appointment } from '@/features/appointments/api';
+import { type Appointment } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
 import { Einfuegemeldung } from './Einfuegemeldung';
 import { useEinfuegen } from './einfuegen';
@@ -35,6 +35,7 @@ import {
 } from './api';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { leseMeldung } from '@/lib/meldung';
+import { patientName } from '@/lib/termin';
 
 /**
  * Entwurf der Behandlungsdokumentation schreiben (DOK-001).

@@ -21,11 +21,6 @@ import {
 } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
-  appointmentStatusLabels,
-  appointmentStatusTon,
-  appointmentTypeHint,
-} from '@/features/appointments/api';
-import {
   createTrainingBasis,
   listTrainingBases,
   listTrainingClientAppointments,
@@ -35,6 +30,7 @@ import {
   type TrainingClient,
   type TrainingClientAppointment,
 } from './api';
+import { appointmentStatusLabels, appointmentStatusTon, appointmentTypeHint } from '@/lib/termin';
 
 /** „10:00–11:00 Uhr · Video · Tom" - eine abweichende Art steht dabei (ANN-192). */
 function terminMeta(termin: TrainingClientAppointment, zone: string): string {

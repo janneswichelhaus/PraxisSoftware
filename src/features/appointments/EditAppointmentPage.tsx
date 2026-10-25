@@ -41,21 +41,23 @@ import {
   liegtInVergangenheit,
   leererTermin,
   locationSummary,
-  patientName,
-  TERMINFENSTER_MINUTEN,
   terminLaengeMinuten,
   updateAppointment,
   type AppointmentFormField,
   type AppointmentFormValues,
-  type AppointmentType,
-  kalenderZumTermin,
-  zurueckZumTermin,
 } from './api';
 import { tageslageNeuLaden } from './tageslage';
 import { Wegauskunft } from './Wegauskunft';
 import { frageAusFormular, useWegpruefung } from './wegpruefung';
 import { speicherfehlerText, terminFehlerliste, terminFeldfehler } from './terminformular';
 import { formatLocalDate, formatLocalTimeRange, todayInTimeZone } from '@/lib/datum';
+import {
+  patientName,
+  TERMINFENSTER_MINUTEN,
+  type AppointmentType,
+  kalenderZumTermin,
+  zurueckZumTermin,
+} from '@/lib/termin';
 
 /** Die Felder, an denen sich eine Eingabe vom gespeicherten Termin unterscheiden kann. */
 const FELDER: readonly AppointmentFormField[] = [

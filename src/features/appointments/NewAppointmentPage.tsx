@@ -29,31 +29,33 @@ import {
   createAppointment,
   fensterEnde,
   istAusserhalbArbeitszeit,
-  kalenderZumTermin,
   istVergangenheit,
   liegtInVergangenheit,
   leererTermin,
-  leseTerminVorbelegung,
-  schreibeTerminVorbelegung,
-  TERMINFENSTER_MINUTEN,
   type AppointmentFormField,
   type AppointmentFormValues,
-  type AppointmentType,
-  type TerminVorbelegung,
 } from './api';
 import { tageslageNeuLaden } from './tageslage';
 import { Wegauskunft } from './Wegauskunft';
 import { frageAusFormular, useWegpruefung } from './wegpruefung';
 import {
-  DAUER_PARAM,
-  leseDauer,
-  mitAngelegtemTermin,
   nachDemAnlegen,
   speicherfehlerText,
   terminFehlerliste,
   terminFeldfehler,
 } from './terminformular';
 import { fetchAssignableTherapists, fetchLocations } from '@/features/staff/api';
+import {
+  kalenderZumTermin,
+  leseTerminVorbelegung,
+  schreibeTerminVorbelegung,
+  TERMINFENSTER_MINUTEN,
+  type AppointmentType,
+  type TerminVorbelegung,
+  DAUER_PARAM,
+  leseDauer,
+  mitAngelegtemTermin,
+} from '@/lib/termin';
 
 /**
  * Anlage eines Termins für einen bereits gewählten Patienten.

@@ -34,10 +34,10 @@ import {
   createAppointmentEvent,
   ereignisFormSchema,
   istAusserhalbArbeitszeit,
-  leseTerminVorbelegung,
   type EreignisFormValues,
 } from './api';
 import { todayInTimeZone } from '@/lib/datum';
+import { leseTerminVorbelegung } from '@/lib/termin';
 
 /**
  * Eine Fehlzeit des Praxisbetriebs eintragen (CAL-015b, CAL-015c).

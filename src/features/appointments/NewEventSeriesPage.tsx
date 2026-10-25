@@ -39,10 +39,10 @@ import {
   createEventSeries,
   ereignisFormSchema,
   istAusserhalbArbeitszeit,
-  leseTerminVorbelegung,
   type EreignisFormValues,
 } from './api';
 import { SERIE_HOECHSTZAHL, rhythmen, serienTermine, type Rhythmus } from './serie';
+import { leseTerminVorbelegung } from '@/lib/termin';
 
 /**
  * Dauerfehlzeit eintragen (CAL-021).

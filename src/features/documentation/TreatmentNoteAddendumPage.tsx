@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
-import { patientName, type Appointment } from '@/features/appointments/api';
+import { type Appointment } from '@/features/appointments/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { DocumentationShell } from './DocumentationShell';
 import {
@@ -33,6 +33,7 @@ import {
   type TreatmentNote,
 } from './api';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { patientName } from '@/lib/termin';
 
 /**
  * Nachtrag zu einem finalisierten Eintrag (DOK-002, ADR-016 Punkt 6).

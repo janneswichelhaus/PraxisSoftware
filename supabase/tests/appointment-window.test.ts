@@ -1,6 +1,5 @@
 import { Client } from 'pg';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { TERMINFENSTER_MINUTEN, TERMINFENSTER_OPTIONEN } from '@/features/appointments/api';
 import {
   SEED,
   asPostgres,
@@ -10,6 +9,7 @@ import {
   tagInTagen,
   testDatabaseUrl,
 } from './helpers/db';
+import { TERMINFENSTER_MINUTEN, TERMINFENSTER_OPTIONEN } from '@/lib/termin';
 
 /**
  * Terminfenster von 60 Minuten (CAL-010a, PROJECT_PRINCIPLES.md 8.1).

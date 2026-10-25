@@ -54,7 +54,6 @@ import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentS
 import { DauerterminStartPage } from '@/features/appointments/DauerterminStartPage';
 import { AppointmentSeriesPage } from '@/features/appointments/AppointmentSeriesPage';
 import { AppointmentSlipPage } from '@/features/appointments/AppointmentSlipPage';
-import { kalenderZumTermin } from '@/features/appointments/api';
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { EditEventPage } from '@/features/appointments/EditEventPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
@@ -176,6 +175,7 @@ import {
   isTherapyStaff,
   type CurrentUser,
 } from '@/features/session/types';
+import { kalenderZumTermin } from '@/lib/termin';
 
 /**
  * Routen des angemeldeten Bereichs.
