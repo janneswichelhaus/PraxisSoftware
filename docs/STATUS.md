@@ -5,9 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-**Aufräumen** (Auftrag Jannes 25.10., ROADMAP 7.16): Schritt 1 gemergt (#308). Schritt 2 liegt als
-PR vor: 341 Migrationen in einer Basis, Schema, Rechte und Daten per Abzug identisch, auch mit den
-Rechte-Vorgaben von Supabase; Funktionen ohne Aufrufer in BEF-229.
+**Aufräumen** (Auftrag Jannes 25.10., ROADMAP 7.16): Schritt 1 gemergt (#308), Schritt 2
+gemergt (#309, #310), Test-Umgebung umgestellt; Nachzug-PR: neun Funktionen ohne Aufrufer entfernt,
+`anon` ohne Rechte, neue Funktionen ohne `grant` gesperrt. Neu: keine BEF-Nummern mehr, Schritt 5 Doku.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
@@ -22,8 +22,6 @@ Pfad A).
 
 ## Bei Jannes
 
-- Nach dem Merge von Aufräumen Schritt 2: Workflow „Test-Umgebung“ einmal von Hand mit Haken bei
-  „basis_uebernehmen“ starten; bis dahin überspringt er die Migrationen mit einer Warnung.
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis

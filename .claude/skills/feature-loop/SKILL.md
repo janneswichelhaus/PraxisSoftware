@@ -74,6 +74,6 @@ Konkrete Fehler selbst beheben und gezielt erneut prüfen. Gates werden **nie** 
 Push, PR gegen `main`, kein Merge. Die PR-Beschreibung trägt Spec, Bilder, Prüfungen mit Ergebnis,
 Checkliste und Zweitreview, Annahmen je ein Satz und höchstens fünf Fragen mit Empfehlung. Dazu
 `fortschritt.json` (`status`, `fertig_am`, `nachweis`) mit `pnpm fortschritt --schreiben`, STATUS in
-drei Zeilen, erledigte Befunde nach `docs/development/archiv/BEFUNDE-ERLEDIGT.md`;
+drei Zeilen, behobene Befunde aus `docs/development/BEFUNDE.md` löschen;
 `pnpm docs:check` grün. Der Bericht im Chat ist der PR-Link plus Fragen und der Vorschlag für den
 nächsten Auftrag; lokale Schritte als Fußnote.

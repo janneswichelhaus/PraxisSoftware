@@ -26,9 +26,9 @@ oder auf Zuruf.
    welche Kennzahl sich wie ändert (geschätzt in Zeilen, Importen oder Funktionen), Aufwand, Weg
    (Standard oder Pfad A nach ADR-013 Punkt 9), Risiko. Sicherheits-, RLS- und Datenschutztests
    sind nie Einsparpotenzial.
-5. **Ablegen.** Je Vorschlag ein `BEF-NNN` in `docs/development/BEFUNDE.md` (Bereich
-   „Aufräumen“, Quelle „/aufraeumen <Datum>“, Status „offen (Vorschlag)“; nächste freie Nummer
-   auch gegen `archiv/BEFUNDE-ERLEDIGT.md`), dann `pnpm aufraeumen --schreiben`.
+5. **Ablegen.** Je Vorschlag ein Eintrag ohne Nummer in `docs/development/BEFUNDE.md` (Bereich
+   „Aufräumen“, Quelle „/aufraeumen <Datum>“, Status „offen (Vorschlag)“), dann
+   `pnpm aufraeumen --schreiben`.
    `pnpm format:check && pnpm docs:check`, Commit „Aufräumrunde <Datum>: Kennzahlen und drei
    Vorschläge“, Push, PR. Die PR ändert nur Markdown, die CI läuft kurz.
 6. **Bericht** an Jannes: Tabelle vorher und jetzt mit den drei größten Veränderungen, die drei
