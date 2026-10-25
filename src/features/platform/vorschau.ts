@@ -1,14 +1,15 @@
 import type { EigenerPlan } from './api';
 import type { Ablageplan } from './ablage';
 import { dauerDerEinheit, dauerText } from './dauer';
-import { isoWochentag, tageAb, uebungstageAm } from './uebungstage';
+import { uebungstageAm } from './uebungstage';
 
 /**
  * Die Vorschau der Einheit im Reiter „Übungen“ (Handoff 2026-10-24,
  * Abschnitt 3, „Vorschau der Einheit“) als reine Rechnung ohne Datenzugriff:
- * in welcher Lage der Plan heute ist, wann der nächste Übungstag ist, was man
- * braucht und wo es weitergeht. Alles aus dem, was der Server ohnehin liefert
- * (`platform_exercise_plans`) - nichts Neues gespeichert.
+ * in welcher Lage der Plan heute ist, was man braucht und wo es weitergeht.
+ * Alles aus dem, was der Server ohnehin liefert (`platform_exercise_plans`) -
+ * nichts Neues gespeichert. Den nächsten Übungstag rechnet `uebungstage.ts`,
+ * für die Vorschau wie für die Endseite der Durchführung.
  */
 
 /** Die Lagen der Tabelle in Abschnitt 3; „Plan vom Gerät“ kennt nur die Ablage. */
@@ -36,21 +37,6 @@ export function lageDesPlans(plan: EigenerPlan, heute: string): Lage {
 export function planDerVorschau<P extends EigenerPlan>(plaene: readonly P[], heute: string): P {
   const heutig = uebungstageAm([...plaene], heute)[0];
   return (plaene.find((p) => p.id === heutig?.id) ?? plaene[0])!;
-}
-
-/**
- * Der nächste Übungstag nach heute innerhalb der Laufzeit, als `YYYY-MM-DD`;
- * ohne gewählte Tage oder nach dem Ende keiner.
- */
-export function naechsterUebungstag(plan: EigenerPlan, heute: string): string | null {
-  if (plan.weekdays.length === 0 || plan.status !== 'assigned') return null;
-  const ab = plan.runs_from && plan.runs_from > heute ? plan.runs_from : heute;
-  for (const tag of tageAb(ab, 8)) {
-    if (tag <= heute) continue;
-    if (plan.runs_until && tag > plan.runs_until) return null;
-    if (plan.weekdays.includes(isoWochentag(tag))) return tag;
-  }
-  return null;
 }
 
 /**

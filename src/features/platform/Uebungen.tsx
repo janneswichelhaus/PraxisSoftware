@@ -17,6 +17,7 @@ import { Schrittliste } from '@/components/ui/Schrittliste';
 import { Section } from '@/components/ui/Section';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { TascheSymbol } from '@/components/ui/TascheSymbol';
 import { Uebungsliste, Uebungszeile } from '@/components/ui/Uebungszeile';
 import { Wochenleiste } from '@/components/ui/Wochenleiste';
 import { useFenstertitelId } from '@/components/ui/fenstertitel';
@@ -37,12 +38,17 @@ import { Dosierungsmarken } from './Dosierungsmarken';
 import { inLesefrist, naechsterTermin } from './hauptsache';
 import { hauptzahl } from './hauptzahl';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
-import { WOCHENTAGE, isoWochentag, tageText, wochenleisteSatz } from './uebungstage';
+import {
+  WOCHENTAGE,
+  isoWochentag,
+  naechsterUebungstag,
+  tageText,
+  wochenleisteSatz,
+} from './uebungstage';
 import {
   ersteOffeneUebung,
   heuteErledigt,
   lageDesPlans,
-  naechsterUebungstag,
   planDerVorschau,
   umfangText,
   wasManBraucht,
@@ -991,12 +997,7 @@ const ZEICHEN = {
       <path d="M12 7v5l3 2" />
     </svg>
   ),
-  tasche: (
-    <svg {...SVG}>
-      <path d="M9 7a3 3 0 0 1 6 0" />
-      <path d="M6.5 9h11l1.5 11h-14z" />
-    </svg>
-  ),
+  tasche: <TascheSymbol />,
   weiter: (
     <svg {...SVG}>
       <circle cx="12" cy="12" r="9" />

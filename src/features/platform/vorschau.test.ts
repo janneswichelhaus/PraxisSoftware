@@ -5,7 +5,6 @@ import {
   ersteOffeneUebung,
   heuteErledigt,
   lageDesPlans,
-  naechsterUebungstag,
   planDerVorschau,
   umfangSatz,
   umfangText,
@@ -14,7 +13,7 @@ import {
 
 /**
  * Die Vorschau der Einheit im Reiter „Übungen“ (Handoff 2026-10-24,
- * Abschnitt 3): Lage, nächster Übungstag, was man braucht, wo es weitergeht.
+ * Abschnitt 3): Lage, was man braucht, wo es weitergeht.
  * Donnerstag, 8. Oktober 2026, ist „heute“ (ISO-Wochentag 4).
  */
 const HEUTE = '2026-10-08';
@@ -75,29 +74,6 @@ describe('planDerVorschau', () => {
     const c = eigenerPlan({ id: 'aaaaaaaa-0000-4000-8000-00000000000c', weekdays: [4] });
     expect(planDerVorschau([a, b, c], HEUTE)).toBe(b);
     expect(planDerVorschau([a], HEUTE)).toBe(a);
-  });
-});
-
-describe('naechsterUebungstag', () => {
-  it('sucht den nächsten gewählten Tag nach heute, auch in der nächsten Woche', () => {
-    // Donnerstag: Montag der nächsten Woche, nicht heute.
-    expect(naechsterUebungstag(eigenerPlan({ weekdays: [1, 4] }), HEUTE)).toBe('2026-10-12');
-    expect(naechsterUebungstag(eigenerPlan({ weekdays: [6] }), HEUTE)).toBe('2026-10-10');
-    expect(naechsterUebungstag(eigenerPlan({ weekdays: [4] }), HEUTE)).toBe('2026-10-15');
-  });
-
-  it('nennt keinen Tag ohne Wahl, nach dem Ende oder in der Lesefrist', () => {
-    expect(naechsterUebungstag(eigenerPlan({ weekdays: [] }), HEUTE)).toBeNull();
-    expect(
-      naechsterUebungstag(eigenerPlan({ weekdays: [1], runs_until: '2026-10-10' }), HEUTE),
-    ).toBeNull();
-    expect(naechsterUebungstag(eigenerPlan({ weekdays: [1], status: 'ended' }), HEUTE)).toBeNull();
-  });
-
-  it('beginnt bei einem künftigen Plan mit dessen erstem Tag', () => {
-    expect(
-      naechsterUebungstag(eigenerPlan({ weekdays: [3], runs_from: '2026-10-20' }), HEUTE),
-    ).toBe('2026-10-21');
   });
 });
 
