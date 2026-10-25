@@ -44,10 +44,22 @@ pnpm db:stop
 Migrationen von Supabase erwarten: die Rollen `anon`/`authenticated`, das Schema
 `auth` und `auth.uid()`. Damit sind die Policies ohne den vollständigen
 Supabase-Stack prüfbar — dieselbe Datei wird niemals gegen eine echte
-Supabase-Instanz eingespielt.
+Supabase-Instanz eingespielt. Was Supabase in `public` von selbst an `anon`,
+`authenticated` und `service_role` vergibt, kennt der Shim nicht; ein Entzug
+dieser Rechte wirkt deshalb nur in Supabase.
 
 Der Stand ist jederzeit aus **Migrationen + Seed** reproduzierbar. Es gibt
 keinen manuell gepflegten Zwischenzustand.
+
+**Basis.** `supabase/migrations/` beginnt mit `20261225000000_basis.sql`, dem
+Abzug der 341 Migrationen davor (ROADMAP 7.16), erzeugt von
+`node scripts/basis-migration.mjs schreiben` und nie von Hand geändert; neue
+Migrationen kommen dahinter. `node scripts/basis-migration.mjs pruefen <ref>`
+baut den Stand `<ref>` und den Arbeitsbaum auf, je ohne und mit den Vorgaben von
+Supabase, und vergleicht Schema, Rechte und Daten. Die alten Dateien, auf die
+Kommentare und Doku noch verweisen, zeigt `git show aabe5d0:<pfad>`. Eine
+lokale Datenbank von vorher braucht einmal `pnpm db:reset`, `supabase db reset`
+oder `./scripts/cloud-stack.sh reset`.
 
 In der CI läuft `pnpm test:db` in vier Teilen nebeneinander
 (`pnpm test:db --shard=<n>/4`, Jobs „Migrationen und RLS-Tests (Teil n/4)“),
@@ -306,7 +318,14 @@ der sieben Pflicht-Secrets, wird übersprungen, nicht rot.
 **Neu aufsetzen** (Seed und Praxiswoche, verwirft alles dort): GitHub →
 Actions → „Test-Umgebung" → „Run workflow" auf `main`, Haken bei „neu
 aufsetzen". Beim allerersten Lauf gegen ein leeres Projekt geschieht das von
-selbst. Die Praxiswoche sind die Werktage von vorgestern bis in vier Tagen;
+selbst.
+
+**Basis übernehmen** (einmalig, Haken bei „basis_uebernehmen"): Die
+Test-Umgebung kennt noch die 341 Versionen vor der Basis. Bis zu diesem
+Handstart überspringt der Workflow die Migrationen mit einer Warnung, denn die
+Basis bringt kein neues Schema; wartet schon eine neue Migration, bricht er ab. Der
+Handstart stellt nur die Historie um, in einer Transaktion und nur, wenn sie
+genau diese Versionen enthält (`supabase/testumgebung/basis-uebernehmen.sql`). Die Praxiswoche sind die Werktage von vorgestern bis in vier Tagen;
 nach einer Woche einfach wieder neu aufsetzen (ANN-100). Zum Seed kommen dort
 zwölf weitere Testpatient:innen (`supabase/testumgebung/testpatienten.sql`,
 AKTE-009) – lange Namen, minderjährig, Einrichtung, ohne Telefon, mit und ohne
@@ -481,7 +500,9 @@ Test-Umgebung eingespielt; `supabase db push` führt sie dort nie wieder aus.
 Das Gate weist deshalb jede Änderung, Umbenennung oder Löschung einer solchen
 Datei ab, ebenso eine neue Migration, deren Version nicht hinter der jüngsten
 auf `main` liegt. Eine Korrektur ist eine neue Migration. Migrationen, die nur
-auf dem Branch liegen, dürfen bis zum Merge geändert werden. Lokal vergleicht
+auf dem Branch liegen, dürfen bis zum Merge geändert werden. Einmalig ersetzt
+die Basis alle älteren Migrationen (Jannes, 2026-10-25): Mit ihr müssen alle
+gehen, geändert wird keine. Lokal vergleicht
 das Gate mit `origin/main` (vorher `git fetch origin main`), im Pull Request
 mit dem Merge auf den aktuellen `main`.
 

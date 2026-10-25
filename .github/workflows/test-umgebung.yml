@@ -40,6 +40,10 @@ on:
         description: 'Seed und Praxiswoche neu einspielen - verwirft alles in der Test-Umgebung'
         type: boolean
         default: false
+      basis_uebernehmen:
+        description: 'Einmalig nach dem Zusammenfassen: Migrationshistorie auf die Basis umstellen, Schema und Daten bleiben'
+        type: boolean
+        default: false
 
 # Nie zwei Auslieferungen zugleich, und keine bricht die andere ab: Eine
 # halb eingespielte Migration waere schlimmer als eine Minute Warten.
@@ -198,10 +202,32 @@ jobs:
           version: 2.116.0
 
       - name: Migrationen einspielen
+        # Die Basis ersetzt die Migrationen davor (ROADMAP 7.16) und bringt kein neues Schema. Kennt die
+        # Test-Umgebung sie noch, stellt ein Handstart mit "basis_uebernehmen" die Historie einmal um.
         if: steps.bereit.outputs.bereit == 'true'
         env:
           TESTENV_DATABASE_URL: ${{ secrets.TESTENV_DATABASE_URL }}
-        run: supabase db push --db-url "$TESTENV_DATABASE_URL" --yes
+          BASIS_UEBERNEHMEN: ${{ inputs.basis_uebernehmen }}
+        run: |
+          vorher=0
+          historie=$(psql "$TESTENV_DATABASE_URL" -tAX -v ON_ERROR_STOP=1 -c \
+            "select count(*) from pg_tables where schemaname = 'supabase_migrations' and tablename = 'schema_migrations'")
+          if [ "$historie" = "1" ]; then
+            vorher=$(psql "$TESTENV_DATABASE_URL" -tAX -v ON_ERROR_STOP=1 -c \
+              "select count(*) from supabase_migrations.schema_migrations where version < '20261225000000'")
+          fi
+          if [ "$vorher" != "0" ] && [ "$BASIS_UEBERNEHMEN" = "true" ]; then
+            psql "$TESTENV_DATABASE_URL" --single-transaction -v ON_ERROR_STOP=1 \
+              -f supabase/testumgebung/basis-uebernehmen.sql
+          elif [ "$vorher" != "0" ]; then
+            if ls supabase/migrations | awk '$0 > "20261225000000_basis.sql"' | grep -q .; then
+              echo "::error::Neue Migrationen warten, die Test-Umgebung kennt aber noch die Versionen vor der Basis. Einmal von Hand starten mit 'basis_uebernehmen'."
+              exit 1
+            fi
+            echo "::warning::Migrationen uebersprungen: Die Test-Umgebung kennt noch die Versionen vor der Basis, die Basis bringt kein neues Schema. Einmal von Hand starten mit 'basis_uebernehmen'."
+            exit 0
+          fi
+          supabase db push --db-url "$TESTENV_DATABASE_URL" --yes
 
       - name: Kartendienst ausliefern
         # Nur der Code der einen Function, gebuendelt beim Anbieter (ohne

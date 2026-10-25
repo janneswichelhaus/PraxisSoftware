@@ -32,6 +32,14 @@ import { pathToFileURL } from 'node:url';
 
 export const MIGRATIONEN = 'supabase/migrations';
 
+// Einmalig (Jannes, 25.10.): Die Basis ersetzt genau die Migrationen bis LETZTE_ERSETZTE; die
+// Test-Umgebung stellt ihre Historie per Handstart um (test-umgebung.yml). Greift nur mit neuer Basis.
+export const ZUSAMMENFASSUNG = `${MIGRATIONEN}/20261225000000_basis.sql`;
+export const LETZTE_ERSETZTE = '20261224100000';
+
+const mitBasis = (aenderungen) =>
+  aenderungen.some((a) => a.status.startsWith('A') && a.pfad === ZUSAMMENFASSUNG);
+
 /** Die Versionsnummer vorn im Dateinamen: `20261004110000_…sql` → `20261004110000`. */
 export function version(datei) {
   const name = datei.split('/').pop() ?? '';
@@ -55,8 +63,27 @@ export function pruefeMigrationen(aenderungen, basis) {
     .sort()
     .at(-1);
 
+  const ersetzt = durchBasisErsetzt(aenderungen, basis);
+  const geloescht = new Set(aenderungen.filter((a) => a.status.startsWith('D')).map((a) => a.pfad));
+  for (const pfad of ersetzt) {
+    if (!geloescht.has(pfad)) {
+      verstoesse.push(
+        `${pfad}: bleibt neben der Basis stehen - die Basis ersetzt alle Migrationen davor.`,
+      );
+    }
+  }
+  const vorBasis = (v) =>
+    mitBasis(aenderungen) && v > LETZTE_ERSETZTE && v < version(ZUSAMMENFASSUNG);
+  for (const pfad of basis.filter((p) => p.endsWith('.sql') && vorBasis(version(p)))) {
+    verstoesse.push(
+      `${pfad}: kam nach der letzten ersetzten Migration auf main und fehlt in der Basis - ` +
+        'die Basis neu erzeugen (scripts/basis-migration.mjs).',
+    );
+  }
+
   for (const { status, pfad } of aenderungen) {
     if (!pfad.endsWith('.sql')) continue;
+    if (ersetzt.has(pfad) && status.startsWith('D')) continue;
     if (vorhanden.has(pfad)) {
       const was = status.startsWith('D') ? 'gelöscht' : 'geändert';
       verstoesse.push(
@@ -74,9 +101,19 @@ export function pruefeMigrationen(aenderungen, basis) {
         `${pfad}: Version ${neu} liegt nicht hinter der jüngsten Migration auf main (${juengste}). ` +
           'Neue Migrationen werden hinten angehängt.',
       );
+    } else if (vorBasis(neu)) {
+      verstoesse.push(
+        `${pfad}: Version ${neu} liefe vor der Basis - neue Migrationen kommen dahinter.`,
+      );
     }
   }
   return verstoesse;
+}
+
+/** Die Migrationen der Basis, die die einmalige Zusammenfassung ersetzt, wenn die Änderung sie hinzufügt. */
+export function durchBasisErsetzt(aenderungen, basis) {
+  if (!mitBasis(aenderungen)) return new Set();
+  return new Set(basis.filter((pfad) => pfad.endsWith('.sql') && version(pfad) <= LETZTE_ERSETZTE));
 }
 
 function git(...argumente) {
@@ -108,13 +145,15 @@ function main() {
     });
 
   const verstoesse = pruefeMigrationen(aenderungen, dateien);
+  const ersetzt = durchBasisErsetzt(aenderungen, dateien).size;
   if (verstoesse.length > 0) {
     console.error(`Migrationen-Gate rot (Basis ${basis.slice(0, 7)}):`);
     for (const verstoss of verstoesse) console.error(`  - ${verstoss}`);
     process.exit(1);
   }
   console.log(
-    `Migrationen-Gate gruen: ${dateien.length} ausgelieferte Migrationen unveraendert, ` +
+    `Migrationen-Gate gruen: ${dateien.length - ersetzt} ausgelieferte Migrationen unveraendert, ` +
+      (ersetzt ? `${ersetzt} durch die Basis ersetzt, ` : '') +
       `${aenderungen.length} Aenderung(en) gegen ${basis.slice(0, 7)} geprueft.`,
   );
 }

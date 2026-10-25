@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Erhebung } from './api';
 import { instrumentFuer } from './instrumente';
 import { EREIGNISARTEN, messreihen, nichtVergleichbar, tagZahl, zeitraum } from './verlauf';
-import { readFileSync } from 'node:fs';
+import { erlaubteWerte } from '../../../supabase/tests/helpers/migrationen';
 
 const anamnese = instrumentFuer('anamnese_v8')!;
 
@@ -109,11 +109,6 @@ describe('Messreihen (FRB-002e)', () => {
   });
 
   it('kennt dieselben Ereignisarten wie die Datenbank', () => {
-    const migration = readFileSync(
-      'supabase/migrations/20260926110000_frb_002e_course_events.sql',
-      'utf8',
-    );
-    const zeile = /kind in \(([^)]*)\)/.exec(migration)![1]!;
-    expect([...zeile.matchAll(/'([a-z]+)'/g)].map((m) => m[1])).toEqual([...EREIGNISARTEN]);
+    expect(erlaubteWerte('patient_course_events_kind_check')).toEqual([...EREIGNISARTEN]);
   });
 });

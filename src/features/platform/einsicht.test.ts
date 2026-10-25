@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { letzteFassung } from '../../../supabase/tests/helpers/migrationen';
 import { createElement, type ReactNode } from 'react';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -137,16 +138,10 @@ function quelleMit(daten: unknown) {
   return vi.fn<Einsichtsquelle>(() => Promise.resolve({ data: daten, error: null }));
 }
 
-/** Die feste Liste des Servers aus der jüngsten Migration, die sie setzt. */
+/** Die feste Liste des Servers aus der jüngsten Fassung der Funktion. */
 function listeDesServers(): string[] {
-  const inhalt = readdirSync('supabase/migrations')
-    .filter((datei) => datei.endsWith('.sql'))
-    .sort()
-    .map((datei) => readFileSync(`supabase/migrations/${datei}`, 'utf8'))
-    .filter((text) => text.includes('function app.platform_preview_functions()'))
-    .at(-1)!;
-  const rumpf = inhalt.slice(inhalt.indexOf('function app.platform_preview_functions()'));
-  const liste = /array\[([^\]]*)\]/.exec(rumpf)![1]!;
+  const rumpf = letzteFassung('app.platform_preview_functions');
+  const liste = /array\[([^\]]*)\]/i.exec(rumpf)![1]!;
   return [...liste.matchAll(/'([a-z_]+)'/g)].map((t) => t[1]!);
 }
 

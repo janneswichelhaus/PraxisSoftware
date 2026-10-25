@@ -703,3 +703,27 @@ Marke vorsieht.
 | Berührt | die beiden Tests, kein Code der Anwendung |
 
 **Beobachtung.** Unter „Dokumente“ war „Herunterladen“ nach 5 s noch nicht da, obwohl der Name der Datei stand. Die Durchführung lief bei 188 px und „Sehr groß“ einmal waagerecht über: Gemessen wird, sobald der Titel sichtbar ist - womöglich bevor die Schriftgröße des Geräts gilt. **Erwartet.** Auf das gemessene Element warten (der Knopf mit eigenem Zeitlimit, die Schrift über `data-schrift` am Wurzelelement) und erst dann messen; die Grenzen bleiben.
+
+### BEF-229 — Datenbank: Neun Funktionen haben außerhalb der Tests keinen Aufrufer
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-25 |
+| Bereich | Datenbank, `supabase/migrations/20261225000000_basis.sql` |
+| Quelle  | Aufschlüsselung der 1.211 Funktionen beim Zusammenfassen der Migrationen (Aufräumen Schritt 2) |
+| Status  | offen (Vorschlag) |
+| Berührt | die neun Funktionen; Entfernen je in einer Migration mit Pfad A |
+
+**Beobachtung.** Gesucht in Oberfläche, Edge Functions, Skripten, Seed, Policies, Triggern, Constraints, Zeitplänen und den Rümpfen anderer Funktionen. Ohne jeden Aufrufer: `app.exercise_illustration_bases()`, `app.platform_mailbox_confirmed(uuid)`, `app.team_message_text(text)`. Nur aus Tests gerufen: `app.has_strong_authentication()`, `public.delete_invoice_recipient(uuid)`, `public.start_platform_exercise_session`, `public.mark_platform_exercise_set`, `public.finish_platform_exercise_session` und `public.update_service_catalog_version`. Ebenfalls nur aus Tests, aber laut Betriebsdoku gewollt: `place_legal_hold`, `place_staff_legal_hold`, `release_legal_hold`, `reapply_deletion_journal`. **Erwartet.** Je Funktion klären, ob die Oberfläche fehlt (dann Befund an den Bereich) oder die Funktion überholt ist (dann entfernen, samt Test); die vier Betriebswege bleiben.
+
+### BEF-230 — Testdatenbank: Ein fehlender Entzug an anon fällt nur in Supabase auf
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-25 |
+| Bereich | `supabase/tests/helpers/supabase-shim.sql`, `pnpm test:db` |
+| Quelle  | Nachweis zum Zusammenfassen der Migrationen mit den Rechte-Vorgaben von Supabase (Aufräumen Schritt 2) |
+| Status  | offen (Vorschlag) |
+| Berührt | der Shim; findet der Test danach etwas, je eine Migration mit Pfad A |
+
+**Beobachtung.** Supabase gibt `anon`, `authenticated` und `service_role` an allem, was eine Migration in `public` anlegt, von selbst alle Rechte; der Shim nicht. Entzieht eine Migration einer Funktion nur `from public`, ist sie in `pnpm test:db` für `anon` gesperrt, in Supabase aber ausführbar; eine Sicht ohne Entzug liest `anon` dort an RLS vorbei. Die Basis trägt deshalb 1.219 ausdrückliche Entzüge. Schon heute, aus den alten Migrationen übernommen, darf `anon` in Supabase vier `SECURITY DEFINER`-Funktionen ausführen (`check_travel_buffers`, `list_day_route`, `set_location_tour_start`, `set_patient_address_coordinate`; alle weisen ohne Anmeldung ab) und hat Rechte an `patient_file_document_types`, `retention_assignments`, `retention_classes` und `fleet_spots_seq_seq`. **Erwartet.** Der Shim legt dieselben Vorgaben an (`alter default privileges … in schema public`), damit `pnpm test:db` sieht, was Supabase tut; eine Migration hinter der Basis entzieht `anon` die genannten Rechte. Vor dem ersten neuen Supabase-Projekt die Basis dort einspielen und den Abzug von `public` und `app` samt Rechten mit der Test-Umgebung vergleichen.

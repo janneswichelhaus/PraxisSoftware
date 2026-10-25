@@ -13,6 +13,8 @@ bis §3.3 und ADR-013 regeln. Was das bräuchte, ist keine Annahme, sondern eine
 Änderungsanfrage an Jannes. Überbrückt eine Annahme einen Punkt aus
 `OPEN_DECISIONS.md`, bleibt der Punkt dort offen und verweist auf die Kennung.
 
+Pfade `supabase/migrations/…` vor der Basis von 2026-10-25 zeigt `git show aabe5d0:<pfad>`.
+
 ## Lebenszyklus
 
 | Status | Bedeutung |

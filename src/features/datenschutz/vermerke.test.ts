@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { erlaubteWerte } from '../../../supabase/tests/helpers/migrationen';
 import {
   ausfallhonorarRegel,
   datenschutzinformation,
@@ -11,20 +11,6 @@ import {
   herkunftText,
   type Datenschutzvermerk,
 } from './vermerke';
-
-/**
- * Die jüngste Migration, die den Constraint der Zwecke setzt - seit DOK-006b
- * nicht mehr die, die die Tabelle angelegt hat.
- */
-const MIGRATION = readdirSync('supabase/migrations')
-  .filter((datei) => datei.endsWith('.sql'))
-  .sort()
-  .map((datei) => readFileSync(`supabase/migrations/${datei}`, 'utf8'))
-  // Nur die Migrationen der Vermerke: Seit POR-002 trägt auch die Einladung
-  // zur Plattform eine Spalte `purpose` mit eigener Prüfung.
-  .filter((inhalt) => inhalt.includes('patient_privacy_records'))
-  .filter((inhalt) => /check \(\s*purpose in \(/.test(inhalt))
-  .at(-1)!;
 
 function vermerk(
   rest: Partial<Datenschutzvermerk> & Pick<Datenschutzvermerk, 'record_kind'>,
@@ -138,8 +124,7 @@ describe('datenschutzstand', () => {
 
 describe('ANN-093: Zwecke und Datenbank', () => {
   it('fuehrt dieselben Zwecke wie der Constraint', () => {
-    const treffer = /check \(\s*purpose in \(([^)]*)\)\s*\)/.exec(MIGRATION);
-    const inDatenbank = [...(treffer?.[1] ?? '').matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+    const inDatenbank = erlaubteWerte('patient_privacy_records_purpose_check');
     expect(inDatenbank.sort()).toEqual([...EINWILLIGUNGSZWECKE].sort());
   });
 

@@ -1,9 +1,22 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, unlinkSync, renameSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+  unlinkSync,
+  renameSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { pruefeMigrationen, version } from './migrationen-check.mjs';
+import {
+  LETZTE_ERSETZTE,
+  ZUSAMMENFASSUNG,
+  pruefeMigrationen,
+  version,
+} from './migrationen-check.mjs';
 
 /**
  * Ausgelieferte Migrationen bleiben, wie sie sind (BEF-123).
@@ -49,6 +62,71 @@ describe('pruefeMigrationen', () => {
     expect(pruefeMigrationen([{ status: 'A', pfad: `${M}/neu.sql` }], BASIS)[0]).toMatch(
       /keine Versionsnummer/,
     );
+  });
+
+  it('laesst die Basis einmalig alle aelteren Migrationen ersetzen', () => {
+    const geloescht = BASIS.map((pfad) => ({ status: 'D', pfad }));
+    expect(
+      pruefeMigrationen([...geloescht, { status: 'A', pfad: ZUSAMMENFASSUNG }], BASIS),
+    ).toEqual([]);
+  });
+
+  it('verlangt, dass die Basis alle aelteren ersetzt und keine aendert', () => {
+    const verstoesse = pruefeMigrationen(
+      [
+        { status: 'M', pfad: BASIS[0] },
+        { status: 'D', pfad: BASIS[1] },
+        { status: 'A', pfad: ZUSAMMENFASSUNG },
+      ],
+      BASIS,
+    );
+    expect(verstoesse).toHaveLength(2);
+    expect(verstoesse[0]).toMatch(/dok_006b_patient_photos\.sql: bleibt neben der Basis stehen/);
+    expect(verstoesse[1]).toMatch(/dok_006b_patient_photos\.sql: geändert/);
+  });
+
+  it('verlangt eine neue Basis, wenn auf main eine Migration nach der letzten ersetzten dazukam', () => {
+    const spaeter = `${M}/20261224150000_parallel.sql`;
+    const geloescht = BASIS.map((pfad) => ({ status: 'D', pfad }));
+    const verstoesse = pruefeMigrationen(
+      [...geloescht, { status: 'D', pfad: spaeter }, { status: 'A', pfad: ZUSAMMENFASSUNG }],
+      [...BASIS, spaeter],
+    );
+    expect(verstoesse).toHaveLength(2);
+    expect(verstoesse[0]).toMatch(/parallel\.sql: kam nach der letzten ersetzten Migration/);
+    expect(verstoesse[1]).toMatch(/parallel\.sql: gelöscht/);
+  });
+
+  it('kennt dieselbe letzte ersetzte Migration wie die Basis selbst', () => {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- fester Pfad der Basis.
+    expect(readFileSync(ZUSAMMENFASSUNG, 'utf8').split('\n')[0]).toContain(
+      `bis ${LETZTE_ERSETZTE} `,
+    );
+  });
+
+  it('laesst neben der Basis nur Migrationen hinter ihr zu', () => {
+    const geloescht = BASIS.map((pfad) => ({ status: 'D', pfad }));
+    const mit = (pfad) =>
+      pruefeMigrationen(
+        [...geloescht, { status: 'A', pfad: ZUSAMMENFASSUNG }, { status: 'A', pfad }],
+        BASIS,
+      );
+    expect(mit(`${M}/20261224200000_davor.sql`)[0]).toMatch(/liefe vor der Basis/);
+    expect(mit(`${M}/20261226000000_dahinter.sql`)).toEqual([]);
+  });
+
+  it('erlaubt Loeschen nur mit genau dieser Basis', () => {
+    const verstoesse = pruefeMigrationen(
+      [
+        { status: 'D', pfad: BASIS[0] },
+        { status: 'A', pfad: `${M}/20261226000000_basis.sql` },
+      ],
+      BASIS,
+    );
+    expect(verstoesse[0]).toMatch(/gelöscht/);
+    expect(
+      pruefeMigrationen([{ status: 'D', pfad: ZUSAMMENFASSUNG }], [...BASIS, ZUSAMMENFASSUNG])[0],
+    ).toMatch(/20261225000000_basis\.sql: gelöscht/);
   });
 
   it('kuemmert sich nicht um Dateien, die keine Migrationen sind', () => {

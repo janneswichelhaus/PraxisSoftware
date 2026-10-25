@@ -5,18 +5,16 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-**Aufräumen** (Auftrag Jannes 25.10., ROADMAP 7.16): Schritt 1 liegt als PR #308 vor –
-Kommentarregel mit Prüfung, die 14 extremsten Kopfkommentare gekürzt, `/aufraeumen` rein
-diagnostisch, `CLAUDE.md` auf unter 7 KB verdichtet; ANN und ADR nur noch für fachliche und
-architektonische Grundsatzentscheidungen.
+**Aufräumen** (Auftrag Jannes 25.10., ROADMAP 7.16): Schritt 1 gemergt (#308). Schritt 2 liegt als
+PR vor: 341 Migrationen in einer Basis, Schema, Rechte und Daten per Abzug identisch, auch mit den
+Rechte-Vorgaben von Supabase; Funktionen ohne Aufrufer in BEF-229.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Aufräumen Schritte 2 bis 4 nach ROADMAP 7.16: Migrationen zusammenfassen (Pfad A), dann
-Modulschnittstellen ab „Termine“ – vor Schritt 3 Termine des Design-Reviews (3a bis 3d) –, danach
+Aufräumen Schritte 3 und 4 nach ROADMAP 7.16: Modulschnittstellen ab „Termine“ – vor Schritt 3 Termine des Design-Reviews (3a bis 3d) –, danach
 das Register für Auskunft, Aufbewahrung, Löschjournal und Zusammenführung (Pfad A). Dann Schritte 4
 bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff; Briefings in
 `design/review-2026-10/`. Ohne Handoff: BEF-198 (Löschjournal; Pfad A), BEF-223 (Zeitumstellung;
@@ -24,6 +22,8 @@ Pfad A).
 
 ## Bei Jannes
 
+- Nach dem Merge von Aufräumen Schritt 2: Workflow „Test-Umgebung“ einmal von Hand mit Haken bei
+  „basis_uebernehmen“ starten; bis dahin überspringt er die Migrationen mit einer Warnung.
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
