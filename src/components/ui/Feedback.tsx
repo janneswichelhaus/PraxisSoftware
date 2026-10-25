@@ -177,7 +177,8 @@ export function ErrorState({
           type="button"
           variant="secondary"
           groesse="kompakt"
-          className="mt-3"
+          // Auf der Plattform sind Knöpfe 48 hoch (PLATTFORM.md, Ziele).
+          className="mt-3 [.plattform-schrift_&]:min-h-12"
           disabled={laeuft}
           onClick={() => {
             void erneut();

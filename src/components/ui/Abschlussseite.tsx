@@ -36,20 +36,24 @@ export function Abschlussseite({
 }) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <div className="max-w-formular mx-auto flex w-full flex-1 flex-col justify-center gap-6 px-6 py-12 max-[23rem]:px-3 max-[23rem]:py-8">
-        <span
-          aria-hidden="true"
-          className={`rounded-pill inline-flex size-24 shrink-0 items-center justify-center ${
-            ton === 'marke' ? 'bg-surface-inverse text-surface' : 'bg-surface-sunken text-ink'
-          }`}
-        >
-          {zeichen}
-        </span>
-        <div className="flex flex-col gap-3">
-          <h1 className={titelklassen('gruss', titel)}>{titel}</h1>
-          {children}
+      {/* Der Rand außen, die Spalte innen - wie im Fuß der Durchführung, damit
+          Text und Hauptknopf am Rechner an denselben Kanten stehen. */}
+      <div className="flex flex-1 flex-col justify-center px-6 py-12 max-[23rem]:px-3 max-[23rem]:py-8">
+        <div className="max-w-spalte mx-auto flex w-full flex-col gap-6">
+          <span
+            aria-hidden="true"
+            className={`rounded-pill inline-flex size-24 shrink-0 items-center justify-center ${
+              ton === 'marke' ? 'bg-surface-inverse text-surface' : 'bg-surface-sunken text-ink'
+            }`}
+          >
+            {zeichen}
+          </span>
+          <div className="flex flex-col gap-3">
+            <h1 className={titelklassen('gruss', titel)}>{titel}</h1>
+            {children}
+          </div>
+          {zeile ? <div className="border-line border-t pt-4">{zeile}</div> : null}
         </div>
-        {zeile ? <div className="border-line border-t pt-4">{zeile}</div> : null}
       </div>
       {fuss}
     </div>

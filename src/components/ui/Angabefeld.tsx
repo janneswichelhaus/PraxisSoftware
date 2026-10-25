@@ -109,18 +109,21 @@ export function Angabefeld({
       <div
         // `skala`: Haken für die Plattform, die bei sehr wenig Breite weniger
         // Stufen je Reihe setzt (POR-020). Eine Auswahl in Wörtern bricht
-        // einfach um.
+        // einfach um. Auf der Plattform Stufen 48 hoch mit 8 Abstand in einer
+        // Spalte für sechs - zwei Reihen 0 bis 5 und 6 bis 10; bei „Groß“ und
+        // „Sehr groß“ so viele je Reihe, wie hineinpassen (Handoff 2026-10-24,
+        // 5.4 und 6; PLATTFORM.md, Ziele).
         className={
           auswahl
             ? 'flex flex-wrap gap-2'
-            : 'skala grid max-w-md grid-cols-[repeat(var(--skala-spalten),minmax(2.75rem,1fr))] gap-1 sm:max-w-none sm:grid-flow-col sm:grid-cols-none sm:gap-0.5'
+            : 'skala [.plattform-schrift_&]:max-w-skala grid max-w-md grid-cols-[repeat(var(--skala-spalten),minmax(2.75rem,1fr))] gap-1 sm:max-w-none sm:grid-flow-col sm:grid-cols-none sm:gap-0.5 [.plattform-schrift_&]:grid-flow-row [.plattform-schrift_&]:grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] [.plattform-schrift_&]:gap-2'
         }
         style={auswahl ? undefined : ({ '--skala-spalten': spaltenAmHandy } as CSSProperties)}
       >
         {stufen.map((stufe) => (
           <label
             key={stufe}
-            className={`has-[:checked]:bg-accent has-[:checked]:border-accent has-[:checked]:text-surface border-line-strong text-ink rounded-field has-[:focus-visible]:outline-accent flex min-h-11 cursor-pointer items-center justify-center border text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
+            className={`has-[:checked]:bg-accent has-[:checked]:border-accent has-[:checked]:text-surface border-line-strong text-ink rounded-field has-[:focus-visible]:outline-accent flex min-h-11 cursor-pointer items-center justify-center border text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 [.plattform-schrift_&]:min-h-12 ${
               auswahl ? 'px-4' : 'tabular-nums sm:min-w-11'
             }`}
           >
@@ -136,7 +139,9 @@ export function Angabefeld({
         ))}
       </div>
       {groesse.enden ? (
-        <div className="text-ink-muted flex max-w-md justify-between text-xs sm:max-w-none">
+        // Passen beide Enden nicht nebeneinander, steht das zweite darunter -
+        // gequetscht bräche „keine“ als „kein|e“ (BEF-214).
+        <div className="text-ink-muted [.plattform-schrift_&]:max-w-skala flex max-w-md flex-wrap justify-between gap-x-4 text-xs sm:max-w-none">
           <span>
             {groesse.min} = {groesse.enden[0]}
           </span>

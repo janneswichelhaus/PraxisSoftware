@@ -164,13 +164,27 @@ export interface Abweisung {
   einheitId: string;
   planId: string;
   satz: string;
+  /** Die Kennungen der Ereignisse, die mit der Einheit verworfen sind. */
+  ereignisse: string[];
 }
 
 let abgewiesen: Abweisung[] = [];
 const hoerer = new Set<() => void>();
+/**
+ * Zählt jede Änderung an Warteschlange und Abweisungen. Eine Lesung, die bei
+ * Stand n beginnt, kennt alle Änderungen bis n - so weiß eine Ansicht, ob
+ * ihr letzter Haken schon in dem steckt, was `useWarteschlange` sagt.
+ */
+let ablagestand = 0;
 
 function melden() {
+  ablagestand += 1;
   for (const h of hoerer) h();
+}
+
+/** Der Stand der Ablage nach der letzten Änderung (`useWarteschlange`). */
+export function aktuellerAblagestand(): number {
+  return ablagestand;
 }
 
 /** Nur für Tests: alles Gemerkte vergessen. */
@@ -286,21 +300,53 @@ export async function wartendeEinheiten(besitzer: string): Promise<WartendeEinhe
 
 /**
  * Ein Ereignis in die Warteschlange - erst hier, dann zum Server. Die
- * Einheit entsteht mit ihrem ersten Ereignis.
+ * Einheit entsteht mit ihrem ersten Ereignis. Gibt zurück, in welcher
+ * Einheit das Ereignis liegt und unter welcher Kennung - danach fragt die
+ * Ansicht, ob es noch wartet oder abgewiesen ist.
+ *
+ * **Das Ende bleibt das letzte Ereignis** (BEF-213): Der Server weist eine
+ * Einheit ab, in der nach `finish` noch etwas kommt, und die Ablage verwürfe
+ * sie dann ganz, samt Haken und Ende. Ist die Einheit auf dem Gerät schon
+ * beendet - ein zweites Fenster, ein Tipp während des Beendens -, kommt ein
+ * Haken in die offene Einheit desselben Tages oder in eine neue, so wie der
+ * Server nach einer anderswo beendeten Einheit („closed“) verfährt. Ein
+ * zweites Ende fällt weg; es gilt das erste.
  */
 export async function ereignisAblegen(
   besitzer: string,
   einheit: Omit<WartendeEinheit, 'ereignisse'>,
   ereignis: Einheitsereignis,
-): Promise<void> {
+): Promise<{ einheitId: string; ereignisId: string }> {
+  let ziel = { einheitId: einheit.id, ereignisId: ereignis.id };
   await fachAendern(besitzer, FACH, (alt) => {
     const f = fach(alt ?? LEER);
-    const da = f.einheiten.find((e) => e.id === einheit.id);
+    const beendet = (e: WartendeEinheit) => e.ereignisse.some((x) => x.kind === 'finish');
+    let da = f.einheiten.find((e) => e.id === einheit.id);
+    if (da && beendet(da) && ereignis.kind === 'finish') {
+      const erstes = da.ereignisse.find((x) => x.kind === 'finish')!;
+      ziel = { einheitId: da.id, ereignisId: erstes.id };
+      return f;
+    }
+    if (da && beendet(da)) {
+      da = f.einheiten.find(
+        (e) =>
+          e.zugangId === einheit.zugangId &&
+          e.planId === einheit.planId &&
+          e.tag === einheit.tag &&
+          !beendet(e),
+      );
+      if (!da) {
+        da = { ...einheit, id: crypto.randomUUID(), ereignisse: [] };
+        f.einheiten.push(da);
+      }
+    }
     if (da) da.ereignisse.push(ereignis);
     else f.einheiten.push({ ...einheit, ereignisse: [ereignis] });
+    ziel = { einheitId: da?.id ?? einheit.id, ereignisId: ereignis.id };
     return f;
   });
   melden();
+  return ziel;
 }
 
 /** Ergebnis einer Übertragung für die Ansicht, die sie angestoßen hat. */
@@ -309,8 +355,14 @@ export interface Uebertragungsergebnis {
   angekommen: string[];
   /** Einheiten mit „schwierig, weil …" oder Angaben, die beim Eingang fielen. */
   angabenVerworfen: string[];
+  /** Was der Server in diesem Lauf abgewiesen hat, mit den Ereignissen. */
+  abgewiesen: Abweisung[];
   /** Ein Funkloch: Was nicht ankam, liegt weiter auf dem Gerät. */
   ohneNetz: boolean;
+}
+
+function leeresErgebnis(): Uebertragungsergebnis {
+  return { angekommen: [], angabenVerworfen: [], abgewiesen: [], ohneNetz: false };
 }
 
 let laeuft: Promise<Uebertragungsergebnis> | null = null;
@@ -319,13 +371,23 @@ let nochmal = false;
 /** Der Weg zum Server; die Prüfseiten setzen einen eigenen ein. */
 export type Sender = typeof einheitUebertragen;
 
+/**
+ * Was die Ansicht sagt, wenn der Server zu einem Ende nichts anlegt
+ * (`empty`): Kein Haken der Einheit kam an, oder sie war anderswo schon
+ * beendet (ANN-357). Das Ende gilt dann als nicht übertragen (ANN-717).
+ */
+const NICHTS_OFFEN = 'Bei der Praxis ist zu dieser Einheit nichts mehr offen.';
+
 async function einmalUebertragen(besitzer: string, senden: Sender): Promise<Uebertragungsergebnis> {
-  const ergebnis: Uebertragungsergebnis = { angekommen: [], angabenVerworfen: [], ohneNetz: false };
+  const ergebnis = leeresErgebnis();
   for (const einheit of await wartendeEinheiten(besitzer)) {
     if (einheit.ereignisse.length === 0) continue;
     const gesendet = new Set(einheit.ereignisse.map((e) => e.id));
     let fallen = false;
     let angenommen = false;
+    // Verwirft die Ablage die Einheit, nennt die Abweisung alle ihre
+    // Ereignisse - auch die, die während des Sendens dazukamen.
+    let abweisung: Abweisung | null = null;
     try {
       const antwort = await senden(einheit.zugangId, einheit);
       if (antwort.status === 'closed') {
@@ -343,29 +405,60 @@ async function einmalUebertragen(besitzer: string, senden: Sender): Promise<Uebe
         continue;
       }
       if (antwort.note_dropped) ergebnis.angabenVerworfen.push(einheit.id);
-      // Beendet - jetzt oder beim ersten Senden: An dieser Einheit ändert sich nichts mehr.
-      fallen = antwort.status === 'finished' || einheit.ereignisse.some((e) => e.kind === 'finish');
-      angenommen = true;
+      const mitEnde = einheit.ereignisse.some((e) => e.kind === 'finish');
+      if (antwort.status === 'empty' && mitEnde) {
+        // Der Server legte nichts an: Das Ende kam nicht an, auch wenn er
+        // nicht abwies. „Gespeichert“ hieße hier etwas, das nicht stimmt.
+        abweisung = {
+          einheitId: einheit.id,
+          planId: einheit.planId,
+          satz: NICHTS_OFFEN,
+          ereignisse: [...gesendet],
+        };
+        fallen = true;
+      } else {
+        // Beendet - jetzt oder beim ersten Senden: An dieser Einheit ändert sich nichts mehr.
+        fallen = antwort.status === 'finished' || mitEnde;
+        angenommen = true;
+      }
     } catch (fehler) {
       if (!(fehler instanceof UebertragungAbgewiesen)) {
         ergebnis.ohneNetz = true;
         break;
       }
       // ADR-024 Punkt 8: zeigen, warum, und danach verwerfen.
-      abgewiesen.push({ einheitId: einheit.id, planId: einheit.planId, satz: fehler.message });
+      abweisung = {
+        einheitId: einheit.id,
+        planId: einheit.planId,
+        satz: fehler.message,
+        ereignisse: [...gesendet],
+      };
       fallen = true;
     }
     await fachAendern(besitzer, FACH, (alt) => {
       const f = fach(alt ?? LEER);
       f.einheiten = f.einheiten.flatMap((e) => {
         if (e.id !== einheit.id) return [e];
-        if (fallen) return [];
+        if (fallen) {
+          // Verworfen wird alles der Einheit, auch was während der
+          // Übertragung dazukam - etwa ein Ende (Zweitreview 2b, Runde 3).
+          if (abweisung) {
+            abweisung.ereignisse = [...new Set([...gesendet, ...e.ereignisse.map((x) => x.id)])];
+          }
+          return [];
+        }
         // Was während der Übertragung dazukam, bleibt für die nächste.
         const rest = e.ereignisse.filter((x) => !gesendet.has(x.id));
         return rest.length > 0 ? [{ ...e, ereignisse: rest }] : [];
       });
       return oderNichts(f);
     });
+    if (abweisung) {
+      // Je Einheit eine Zeile: Ein zweiter Versuch ersetzt die erste.
+      const neu = abweisung;
+      abgewiesen = [...abgewiesen.filter((x) => x.einheitId !== neu.einheitId), neu];
+      ergebnis.abgewiesen.push(abweisung);
+    }
     if (angenommen) ergebnis.angekommen.push(einheit.id);
     melden();
   }
@@ -387,12 +480,19 @@ export function uebertragen(
     return laeuft;
   }
   laeuft = (async () => {
+    // Über alle Runden gesammelt: Ein Ende, das in einer früheren Runde ankam
+    // oder abgewiesen wurde, fehlte sonst im Ergebnis.
+    const gesamt = leeresErgebnis();
     let ergebnis: Uebertragungsergebnis;
     do {
       nochmal = false;
       ergebnis = await einmalUebertragen(besitzer, senden);
+      gesamt.angekommen.push(...ergebnis.angekommen);
+      gesamt.angabenVerworfen.push(...ergebnis.angabenVerworfen);
+      gesamt.abgewiesen.push(...ergebnis.abgewiesen);
+      gesamt.ohneNetz = ergebnis.ohneNetz;
     } while (nochmal && !ergebnis.ohneNetz);
-    return ergebnis;
+    return gesamt;
   })().finally(() => {
     laeuft = null;
   });
@@ -425,16 +525,33 @@ export interface Wartestand {
   /** Einheiten mit noch nicht übertragenen Ereignissen. */
   einheiten: WartendeEinheit[];
   abgewiesen: Abweisung[];
+  /**
+   * Bis zu welchem Stand der Ablage (`aktuellerAblagestand`) das gelesen ist;
+   * -1, solange noch nichts gelesen ist.
+   */
+  gelesenBis: number;
 }
 
 /** Was noch auf dem Gerät wartet und was der Server abgewiesen hat - live. */
 export function useWarteschlange(besitzer: string): Wartestand {
-  const [stand, setStand] = useState<Wartestand>({ einheiten: [], abgewiesen });
+  const [stand, setStand] = useState<Wartestand>({
+    einheiten: [],
+    abgewiesen,
+    gelesenBis: -1,
+  });
   useEffect(() => {
     let aktiv = true;
     function neu() {
+      const bis = ablagestand;
       void wartendeEinheiten(besitzer).then((einheiten) => {
-        if (aktiv) setStand({ einheiten, abgewiesen: [...abgewiesen] });
+        // Lesungen können sich überholen: Eine ältere überschreibt keine neuere.
+        if (aktiv) {
+          setStand((alt) =>
+            alt.gelesenBis > bis
+              ? alt
+              : { einheiten, abgewiesen: [...abgewiesen], gelesenBis: bis },
+          );
+        }
       });
     }
     neu();

@@ -73,3 +73,13 @@ export function tageText(wochentage: number[]): string {
     .map((w) => w.kurz)
     .join(', ');
 }
+
+/**
+ * Der nächste Übungstag nach `heute` (Endseite, Handoff 2026-10-24, 5.5):
+ * der erste gewählte Wochentag in den sieben Tagen danach, solange der Plan
+ * dann noch läuft. Ohne gewählte Tage oder nach dem Ende `null`.
+ */
+export function naechsterUebungstag(plan: EigenerPlan, heute: string): string | null {
+  const [, ...folgende] = tageAb(heute, 8);
+  return folgende.find((tag) => uebungstageAm([plan], tag).length > 0) ?? null;
+}

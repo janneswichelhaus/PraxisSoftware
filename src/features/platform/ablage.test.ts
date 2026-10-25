@@ -115,7 +115,12 @@ describe('Warteschlange (ADR-024 Punkte 7 und 8)', () => {
     await ereignisAblegen(KONTO, kopf(), haken('h1'));
     await ereignisAblegen(KONTO, kopf(), haken('h2', 2));
     const ergebnis = await uebertragen(KONTO);
-    expect(ergebnis).toEqual({ angekommen: ['einheit-1'], angabenVerworfen: [], ohneNetz: false });
+    expect(ergebnis).toEqual({
+      angekommen: ['einheit-1'],
+      angabenVerworfen: [],
+      abgewiesen: [],
+      ohneNetz: false,
+    });
     expect(einheitUebertragen).toHaveBeenCalledWith(
       ZUGANG,
       expect.objectContaining({ id: 'einheit-1', ereignisse: [haken('h1'), haken('h2', 2)] }),
@@ -216,5 +221,147 @@ describe('Befunde aus dem Zweitreview', () => {
     });
     const [z] = await abgelegteZugaenge(KONTO);
     expect(z!.plaene[0]!.open_session).toBeNull();
+  });
+});
+
+describe('Das Ende bleibt das letzte Ereignis (BEF-213, DRP-EPIC-008)', () => {
+  const ENDE = {
+    id: 'ende-1',
+    kind: 'finish' as const,
+    at: '2026-10-12T06:10:00.000Z',
+    note: '',
+    values: {},
+  };
+
+  it('hängt nie hinter ein Ende: der Haken kommt in eine neue Einheit desselben Tages', async () => {
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    expect(await ereignisAblegen(KONTO, kopf(), ENDE)).toEqual({
+      einheitId: 'einheit-1',
+      ereignisId: 'ende-1',
+    });
+    const { einheitId: neu, ereignisId } = await ereignisAblegen(KONTO, kopf(), haken('h-2', 2));
+    expect(neu).not.toBe('einheit-1');
+    expect(ereignisId).toBe('h-2');
+    // Ein zweiter Haken findet dieselbe offene Einheit, statt noch eine anzulegen.
+    expect((await ereignisAblegen(KONTO, kopf(), haken('h-3', 3))).einheitId).toBe(neu);
+    const [beendet, offen] = await wartendeEinheiten(KONTO);
+    expect(beendet!.ereignisse.map((e) => e.id)).toEqual(['h-1', 'ende-1']);
+    expect(offen).toMatchObject({ id: neu, zugangId: ZUGANG, planId: PLAN.id, tag: geraetetag() });
+    expect(offen!.ereignisse.map((e) => e.id)).toEqual(['h-2', 'h-3']);
+  });
+
+  it('so weist der Server nichts ab, und nichts geht verloren', async () => {
+    // Wie der Server (Migration TRK-007): Nach dem Ende kommt nichts mehr.
+    einheitUebertragen.mockImplementation(
+      (_z: string, e: { id: string; ereignisse: { kind: string }[] }) =>
+        e.ereignisse.findIndex((x) => x.kind === 'finish') === e.ereignisse.length - 1 ||
+        !e.ereignisse.some((x) => x.kind === 'finish')
+          ? Promise.resolve({ session_id: e.id, status: 'ok', note_dropped: false })
+          : Promise.reject(new UebertragungAbgewiesen('finish must be last')),
+    );
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    await ereignisAblegen(KONTO, kopf(), ENDE);
+    await ereignisAblegen(KONTO, kopf(), haken('h-2', 2));
+    const ergebnis = await uebertragen(KONTO);
+    expect(ergebnis.angekommen).toHaveLength(2);
+    expect(await wartendeEinheiten(KONTO)).toEqual([]);
+    const gesendet = einheitUebertragen.mock.calls.map((c) =>
+      (c[1] as { ereignisse: { id: string }[] }).ereignisse.map((e) => e.id),
+    );
+    expect(gesendet).toEqual([['h-1', 'ende-1'], ['h-2']]);
+  });
+
+  it('ein zweites Ende fällt weg: es gilt das erste, keine Einheit nur aus einem Ende', async () => {
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    await ereignisAblegen(KONTO, kopf(), ENDE);
+    expect(await ereignisAblegen(KONTO, kopf(), { ...ENDE, id: 'ende-2', note: 'anders' })).toEqual(
+      {
+        einheitId: 'einheit-1',
+        ereignisId: 'ende-1',
+      },
+    );
+    const einheiten = await wartendeEinheiten(KONTO);
+    expect(einheiten).toHaveLength(1);
+    expect(einheiten[0]!.ereignisse.map((e) => e.id)).toEqual(['h-1', 'ende-1']);
+  });
+
+  it('das Ergebnis nennt, was in diesem Lauf abgewiesen wurde - mit den Ereignissen, über alle Runden', async () => {
+    einheitUebertragen.mockImplementation((_z: string, e: { id: string }) =>
+      e.id === 'einheit-2'
+        ? Promise.reject(new UebertragungAbgewiesen('Der Plan gilt nicht mehr.'))
+        : Promise.resolve({ session_id: e.id, status: 'ok', note_dropped: false }),
+    );
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    await ereignisAblegen(KONTO, kopf('einheit-2'), haken('h-2', 2));
+    const ergebnis = await uebertragen(KONTO);
+    expect(ergebnis.angekommen).toEqual(['einheit-1']);
+    expect(ergebnis.abgewiesen).toEqual([
+      {
+        einheitId: 'einheit-2',
+        planId: PLAN.id,
+        satz: 'Der Plan gilt nicht mehr.',
+        ereignisse: ['h-2'],
+      },
+    ]);
+    // Ein späterer Lauf trägt die alte Abweisung nicht noch einmal.
+    await ereignisAblegen(KONTO, kopf('einheit-3'), haken('h-3', 3));
+    expect((await uebertragen(KONTO)).abgewiesen).toEqual([]);
+  });
+
+  it('eine Abweisung nennt auch, was während des Sendens dazukam - etwa das Ende (Runde 3)', async () => {
+    let abweisen: () => void = () => undefined;
+    einheitUebertragen.mockImplementationOnce(
+      () =>
+        new Promise((_r, reject) => {
+          abweisen = () => reject(new UebertragungAbgewiesen('Der Plan gilt nicht mehr.'));
+        }),
+    );
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    const lauf = uebertragen(KONTO);
+    await vi.waitFor(() => expect(einheitUebertragen).toHaveBeenCalled());
+    await ereignisAblegen(KONTO, kopf(), ENDE);
+    abweisen();
+    const ergebnis = await lauf;
+    expect(ergebnis.abgewiesen).toHaveLength(1);
+    expect(ergebnis.abgewiesen[0]!.ereignisse).toEqual(['h-1', 'ende-1']);
+    expect(await wartendeEinheiten(KONTO)).toEqual([]);
+  });
+
+  it('ein Ende, zu dem der Server nichts anlegt („empty“), ist nicht angekommen', async () => {
+    einheitUebertragen.mockImplementation((_z: string, e: { id: string }) =>
+      Promise.resolve({ session_id: e.id, status: 'empty', note_dropped: false }),
+    );
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    await ereignisAblegen(KONTO, kopf(), ENDE);
+    const ergebnis = await uebertragen(KONTO);
+    expect(ergebnis.angekommen).toEqual([]);
+    expect(ergebnis.abgewiesen).toEqual([
+      {
+        einheitId: 'einheit-1',
+        planId: PLAN.id,
+        satz: 'Bei der Praxis ist zu dieser Einheit nichts mehr offen.',
+        ereignisse: ['h-1', 'ende-1'],
+      },
+    ]);
+    expect(await wartendeEinheiten(KONTO)).toEqual([]);
+  });
+
+  it('sammelt über Runden: eine Abweisung der ersten Runde steht im Ergebnis der zweiten', async () => {
+    let erste = true;
+    einheitUebertragen.mockImplementation((_z: string, e: { id: string }) => {
+      if (!erste) return Promise.resolve({ session_id: e.id, status: 'ok', note_dropped: false });
+      erste = false;
+      // Während der ersten Runde kommt eine Einheit dazu, und jemand stößt an:
+      // Es folgt eine zweite Runde.
+      return ereignisAblegen(KONTO, kopf('einheit-2'), haken('h-2', 2)).then(() => {
+        void uebertragen(KONTO);
+        throw new UebertragungAbgewiesen('Der Plan gilt nicht mehr.');
+      });
+    });
+    await ereignisAblegen(KONTO, kopf(), haken('h-1'));
+    const ergebnis = await uebertragen(KONTO);
+    expect(ergebnis.abgewiesen.map((a) => a.einheitId)).toEqual(['einheit-1']);
+    expect(ergebnis.angekommen).toEqual(['einheit-2']);
+    expect(einheitUebertragen).toHaveBeenCalledTimes(2);
   });
 });

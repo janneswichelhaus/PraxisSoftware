@@ -34,9 +34,12 @@ export function dauerDerEinheit(
   return Math.max(RASTER_MINUTEN, Math.round(sekunden / 60 / RASTER_MINUTEN) * RASTER_MINUTEN);
 }
 
-/** „etwa 10 Minuten“ - nie genauer, als die Schätzung ist. */
+/**
+ * „etwa 10 Minuten“ - nie genauer, als die Schätzung ist. Zahl und Einheit
+ * bleiben in einer Zeile.
+ */
 export function dauerText(minuten: number): string {
-  return `etwa ${minuten} Minuten`;
+  return `etwa ${minuten}\u00a0Minuten`;
 }
 
 const SEKUNDEN_JE_WIEDERHOLUNG = 4;

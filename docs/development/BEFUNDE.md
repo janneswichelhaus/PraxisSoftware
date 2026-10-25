@@ -560,30 +560,6 @@ Marke vorsieht.
 
 **Beobachtung.** Bei 375 px und „Sehr groß“ bricht im Schalter „Für Maximilian Mustermann-Langenscheidt“ zwischen „Musterman“ und „n-“, also mitten im Wort, weil die Plattform `overflow-wrap: anywhere` setzt und das Ziel halb so breit ist. **Erwartet.** Wie im Gruß nur am Bindestrich brechen (DR-114) - etwa zwei Reihen statt zwei Spalten, sobald ein Wort nicht passt, oder der Name in einer eigenen Zeile.
 
-### BEF-196 — Übungen: Übungs- und Plannamen brechen mitten im Wort
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-24 |
-| Bereich | Plattform, Übungen und Durchführung |
-| Quelle  | Ist-Bilder für Briefing 2 (Prüfseite `plattform-uebungen.html`, 375 und 188 px) |
-| Status  | offen; wird mit Schritt 2 des Design-Reviews neu gefasst |
-| Berührt | `src/features/platform/Uebungen.tsx`, `Durchfuehrung.tsx` (Titel neben „Abbrechen“, Zeilen der Durchgänge) |
-
-**Beobachtung.** Bei 375 px bricht der Titel „Am Treppengeländer festhalten …“ neben „Abbrechen“ als „Treppengelände|r“. Bei 188 px (200 %) brechen „Totalendoprothe|se“, „Wiederholunge|n“ und „Durchgan|g“ in den Haken-Zeilen. Ursache ist `overflow-wrap: anywhere` in schmalen Spalten. **Erwartet.** Wie in PLATTFORM.md: nie mitten im Wort, lange Wörter ab zwölf Buchstaben mit Trennstrich (DR-114).
-
-### BEF-197 — Übungen: ein Serverfehler heißt „Ohne Verbindung“
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-24 |
-| Bereich | Plattform, Übungen |
-| Quelle  | Ist-Bilder für Briefing 2 (lokaler Stack, `platform_exercise_plans` mit 500) |
-| Status  | offen; wird mit Schritt 2 des Design-Reviews neu gefasst |
-| Berührt | `OhneVerbindung` in `src/features/platform/Uebungen.tsx` |
-
-**Beobachtung.** Scheitert das Laden der Pläne bei bestehender Verbindung und liegt ein Plan auf dem Gerät, steht „Ohne Verbindung. Üben können Sie trotzdem …“ mit „Erneut laden“. Ohne Plan auf dem Gerät steht richtig „Ihre Übungen konnten nicht geladen werden.“ **Erwartet.** Der Satz unterscheidet „keine Verbindung“ von „die Praxis antwortet gerade nicht“; das Üben mit dem Plan vom letzten Laden bleibt in beiden Fällen.
-
 ### BEF-198 — Eine gelöschte Grundlage samt Verordnungsscan fehlt im Löschjournal
 
 |         |   |
@@ -619,6 +595,54 @@ Marke vorsieht.
 | Berührt | `tests/e2e/authenticated/helpers.ts` (`tagImFenster`), `playwright.config.ts` (`retries`), 24 Spezifikationen mit `const LAUF = Date.now()` |
 
 **Beobachtung.** Die CI wiederholt einmal. Eine wiederholte serielle Gruppe läuft in einem neuen Worker mit neuem `LAUF` und kann einen Tag treffen, den der erste Versuch in derselben Datenbank schon belegt hat; der Überschneidungsschutz weist den Termin dann zu Recht ab. #291 löst das nur für `treatment-note-finalisation.spec.ts` (Versatz je Versuch). **Erwartet.** Ein `LAUF` je Testlauf für alle Worker (etwa `E2E_LAUF`, einmal in `playwright.config.ts` gesetzt) und ein Tagesversatz je Wiederholung (`test.info().retry` × N); die Streuung für lokale Läufe und die Reserve je Fenster bleiben, kein Test wird abgeschwächt.
+
+### BEF-212 — Lokale Ansicht: Gerätelesungen halten an, wenn das Netz während der Ansicht wegfällt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, lokale Ansicht nach der Freigabe ohne Netz (`LokaleUebungen`) |
+| Quelle  | Schritt 2b (DRP-EPIC-008), beim Nachstellen von BEF-211 |
+| Status  | offen (Vorschlag) |
+| Berührt | `abgelegteZugaenge` und `wartendeEinheiten` in `src/features/platform/LokaleUebungen.tsx` |
+
+**Beobachtung.** Die Abfragen lesen nur das Gerät, laufen aber mit dem Standard `networkMode: 'online'` der Abfragebibliothek. Meldet das Gerät während der lokalen Ansicht „offline“ und wird eine Abfrage neu gestellt (etwa die Warteschlange nach einer Einheit), hält sie an, bis Verbindung besteht. Beim Kaltstart ohne Netz tritt es nicht auf. **Erwartet.** `networkMode: 'always'` wie in der Durchführung (BEF-211); Browsertest mit `setOffline` während der Ansicht.
+
+### BEF-215 — Nach Schritt 2b: ein Inhalt für Fenster und Durchführung, alte Bausteine fort
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Übungen |
+| Quelle  | Bau von Schritt 2c (DRP-EPIC-009), parallel zu 2b; Merge mit 2b (#304) |
+| Status  | offen (Vorschlag) |
+| Berührt | `Fensterinhalt` in `src/features/platform/Uebungen.tsx`, `Anleitung.tsx`, `Uebungsinhalt.tsx` mit `Dosierungskacheln`, Rückmeldung `gespeichert` im Reiter |
+
+**Beobachtung.** Das Fenster „Übung zum Nachlesen“ setzt „So geht’s“, „Sie brauchen“ und „Hinweis“ selbst zusammen; die Durchführung aus 2b hat dafür `Anleitung` (Schritte groß, Überschrift Ebene 2). Seit dem Merge beider Schritte nutzt `Uebungsinhalt` samt `Dosierungskacheln` nur noch der eigene Test, und die Rückmeldung „Ihre Einheit ist gespeichert.“ im Reiter erreicht kein Weg mehr: Die Endseite steht auf der Route der Durchführung. **Erwartet.** Das Fenster nutzt `Anleitung` mit wählbarer Ebene (dort 3, unter der Bühne als Titel); `Uebungsinhalt`, `Dosierungskacheln` mit Test und die Rückmeldung fallen weg, `DosisZumAblesen` zieht um.
+
+### BEF-217 — Übungen: Bühne und Marken brechen bei 188 px und „Sehr groß“ zugleich mitten im Wort
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-24 |
+| Bereich | Plattform, Übungen (Fenster „Übung zum Nachlesen“, Durchführung) |
+| Quelle  | Selbstsichtung DRP-EPIC-009, Prüfseite `plattform-uebungen.html` bei 188 px mit „Sehr groß“ |
+| Status  | offen (Vorschlag) |
+| Berührt | `Buehne` (`src/components/ui/Buehne.tsx`), `Dosierungsmarken` (`src/features/platform/Dosierungsmarken.tsx`) |
+
+**Beobachtung.** Einzeln (188 px oder „Sehr groß“) bricht kein Wort ohne Strich. Beides zugleich lässt für den Namen in der Bühne etwa 118 px: „heranziehen“ (elf Buchstaben, unter der Trenngrenze von ANN-707) bricht als „heranzie|hen“, die Marke „3 Durchgänge“ als „Durchgän|ge“. **Erwartet.** Entscheiden, ob die Kombination zu den Prüfpunkten gehört; wenn ja, dort die Trenngrenze senken oder Titel und Marken kleiner setzen.
+
+### BEF-218 — Übungen: Die Vorschau kennt die Einheit auf dem Gerät nicht
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-25 |
+| Bereich | Plattform, Übungen (Vorschau im Reiter, ohne Netz) |
+| Quelle  | Merge von 2b (#304) in 2c (DRP-EPIC-009), Abgleich von `vorschau.ts` mit dem Start der Durchführung |
+| Status  | offen (Vorschlag) |
+| Berührt | `lageDesPlans`, `ersteOffeneUebung` in `src/features/platform/vorschau.ts`; Start der Einheit in `Durchfuehrung.tsx` mit `haken.ts`; ANN-720, ANN-722 |
+
+**Beobachtung.** Die Vorschau rechnet allein mit dem Plan vom Server (`open_session`, ANN-720), die Durchführung beginnt mit Server und Gerät (BEF-213). Seit 2b geht das Beenden ohne Netz; danach sagt der Reiter bis zur nächsten Verbindung „Heute begonnen“, „Weiter bei Übung n“ und „Weiter üben“, die Durchführung beginnt aber eine neue Einheit bei Übung 1. Haken, die nur auf dem Gerät liegen, kennt die Vorschau ebenso wenig („Übungen beginnen“). Darüber steht richtig „Eine Einheit liegt noch auf diesem Gerät …“. **Erwartet.** Lage und erste offene Übung aus Server und Warteschlange, mit einer Rechnung für Vorschau und Durchführung; Komponententest mit einer auf dem Gerät beendeten Einheit.
 
 ### BEF-220 — Termine: Statuszeichen und Knopf brechen mitten im Wort
 

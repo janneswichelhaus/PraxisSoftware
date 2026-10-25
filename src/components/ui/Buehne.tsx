@@ -25,6 +25,7 @@ export function Buehne({
   einheit,
   ebene = 1,
   titelRef,
+  titelId: vorgegebeneId,
 }: {
   /** Der Name der Übung, wie die Person ihn liest. */
   name: string;
@@ -36,8 +37,11 @@ export function Buehne({
   ebene?: 1 | 2;
   /** Beim Wechsel der Übung geht der Fokus auf den Namen (Abschnitt 5.3). */
   titelRef?: Ref<HTMLHeadingElement>;
+  /** Im Fenster „Übung zum Nachlesen“ die Kennung, nach der das Fenster heißt. */
+  titelId?: string | undefined;
 }) {
-  const titelId = useId();
+  const eigeneId = useId();
+  const titelId = vorgegebeneId ?? eigeneId;
   const Titel = ebene === 1 ? 'h1' : 'h2';
   return (
     <section

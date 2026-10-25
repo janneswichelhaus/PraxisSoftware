@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { wochenleisteSatz } from './uebungstage';
+import { eigenerPlan } from './testdaten';
+import { naechsterUebungstag, wochenleisteSatz } from './uebungstage';
 
 /** Der Satz unter der Wochenleiste (Handoff 2026-10-24, Abschnitt 3). */
 describe('wochenleisteSatz', () => {
@@ -23,5 +24,26 @@ describe('wochenleisteSatz', () => {
     expect(wochenleisteSatz(0, 3, true)).toBe(
       'Noch keine Tage gewählt. Wählen geht wieder mit Verbindung.',
     );
+  });
+});
+
+describe('naechsterUebungstag (Endseite, Handoff 5.5)', () => {
+  // 2026-10-24 ist ein Samstag.
+  it('nennt den nächsten gewählten Tag nach heute, nicht heute selbst', () => {
+    const plan = eigenerPlan({ weekdays: [1, 6], runs_until: '2026-12-31' });
+    expect(naechsterUebungstag(plan, '2026-10-24')).toBe('2026-10-26');
+    expect(
+      naechsterUebungstag(eigenerPlan({ weekdays: [6], runs_until: null }), '2026-10-24'),
+    ).toBe('2026-10-31');
+  });
+
+  it('ohne gewählte Tage, nach dem Ende oder bei beendetem Plan keinen', () => {
+    expect(naechsterUebungstag(eigenerPlan({ weekdays: [] }), '2026-10-24')).toBeNull();
+    expect(
+      naechsterUebungstag(eigenerPlan({ weekdays: [1], runs_until: '2026-10-25' }), '2026-10-24'),
+    ).toBeNull();
+    expect(
+      naechsterUebungstag(eigenerPlan({ weekdays: [1], status: 'ended' }), '2026-10-24'),
+    ).toBeNull();
   });
 });

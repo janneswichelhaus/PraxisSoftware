@@ -1,31 +1,33 @@
-# Status · Stand 2026-10-24
+# Status · Stand 2026-10-25
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
 
-Design-Review Lauf 1, Schritt 2 Übungen: 2a ist gemergt (#300, DRP-023 bis -029, mit BEF-199). 2b
-Durchführung und 2c Reiter laufen seit 24.10. abends parallel in zwei Sitzungen, mit getrennten
-Kennungen: 2b DRP-EPIC-008, DRP-030 bis -039, ANN-711 bis -719, BEF-210 bis -214; 2c DRP-EPIC-009,
-DRP-040 bis -049, ANN-720 bis -729, BEF-215 bis -219. Befunde aus archivierten Sitzungen: BEF-200
-(seit #297 erledigt), BEF-201, BEF-202.
+Design-Review Lauf 1, Schritt 2 Übungen: 2a (#300), 2b Durchführung (#304, DRP-030 bis -035, Pfad A
+wegen BEF-211 und BEF-213; ANN-711 bis -717) und 2c Reiter (#302, DRP-040 bis -044: Vorschau der
+Einheit in allen Lagen mit Dauer, Plan mit Wochenleiste und Übungszeilen, Plan vom Gerät, Fenster
+mit Bühne, Rechner zweispaltig; ANN-720 bis -727) sind gemergt. Schritt 3 Termine ist vorbereitet
+(#303): Designsystem auf Code-Stand (Version 7), Briefing 3, Leinwand,
+`design/handoff-2026-10-24-plattform-termine.md` mit fünf Fragen, BEF-220 bis -222. Befunde aus
+archivierten Sitzungen: BEF-200 (seit #297 erledigt), BEF-201, BEF-202.
 
-**Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24.10.: 2a (#300), Handoff Übungen (#299),
-Nacharbeit #298 (Fragen aus #297 wie empfohlen, „Mitteilungen einschalten“ unter „Heute“, ANN-702;
-Briefing 2 aufgefrischt, BEF-196 und BEF-197; BEF-170 Pfad A, ANN-703, daraus BEF-198), 1e Übersicht
-(#297, DRP-020 bis -022), 1d Einstieg (#294), 1c Türen (#295), CI-Fix #296. Gemergt am 22. und
-23.10.: Schritt 0 (#288), Handoff und Bericht (#289), 1a (#290), 1b (#293), Daten N1/N2 (#292);
-BEF-179/-180 (#287). Auf `origin` liegt sonst nichts Ungemergtes.
+**Schritt 1 ist abgenommen** (Jannes, 24.10.). Gemergt am 24. und 25.10.: 2c (#302), 2b (#304), 2a
+(#300), Handoff Übungen (#299), Nacharbeit #298 (Fragen aus #297 wie empfohlen, „Mitteilungen
+einschalten“ unter „Heute“, ANN-702; Briefing 2 aufgefrischt, BEF-196 und BEF-197; BEF-170 Pfad A,
+ANN-703, daraus BEF-198), 1e Übersicht (#297, DRP-020 bis -022), 1d Einstieg (#294), 1c Türen
+(#295), CI-Fix #296. Gemergt am 22. und 23.10.: Schritt 0 (#288), Handoff und Bericht (#289), 1a
+(#290), 1b (#293), Daten N1/N2 (#292); BEF-179/-180 (#287).
 
 ## Danach
 
-Schritt 2 nach Abschnitt 9 des Handoffs: nach 2b und 2c das Planblatt 2d. Schritt 3 Termine ist
-vorbereitet (Designsystem auf Code-Stand, Briefing 3, Leinwand, `design/handoff-2026-10-24-plattform-termine.md`,
-BEF-220 bis -222); gebaut wird nach Jannes' Merge in 3a bis 3d. Danach Schritte 4 bis 7
+Schritt 2 nach Abschnitt 9 des Handoffs: BEF-215 (ein Inhalt für Fenster und Durchführung, alte
+Bausteine fort), BEF-218 (Vorschau mit der Einheit auf dem Gerät), dann das Planblatt 2d. Schritt 3
+Termine wird nach Jannes' Merge von #303 in 3a bis 3d gebaut. Danach Schritte 4 bis 7
 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff aus Claude Design;
-Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198 (Grundlage samt
-Verordnungsscan ins Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A).
+Briefings in `design/review-2026-10/`. Ohne Handoff: BEF-198 (Grundlage samt Verordnungsscan ins
+Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A).
 
 ## Bei Jannes
 
@@ -54,5 +56,7 @@ Verordnungsscan ins Löschjournal, übrige Löschwege von Hand durchsehen; Pfad 
 
 ## Letzte Session
 
-24.10.2026, Branch `ccr-d51dd25d-ujz8lo`: Schritt 3 vorbereitet (Designsystem Version 7, Leinwand
-„Plattform – Termine“, Handoff). Keine Migration, kein Seed, kein Code. Lokal: `git pull`.
+25.10.2026, Branch `ccr-d51dd25d-ujz8lo`: #302 (2c, mit `main` und 2b) hereingeholt, weil #302 vor
+#303 gemergt wird. Davor derselbe Branch: Schritt 3 vorbereitet (Designsystem Version 7, Leinwand
+„Plattform – Termine“, Handoff); `claude/uebungen-reiter-2c`: Schritt 2c. Keine Migration, kein
+Seed. Lokal: `git pull`.

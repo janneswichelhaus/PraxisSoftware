@@ -7408,3 +7408,183 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 **Anker.** `useRuhigerStand` in `src/features/platform/Durchfuehrungsfuss.tsx`.
 
 **Änderungspfad.** Wartezeit dort ändern oder streichen · Aufwand `klein`.
+
+### ANN-711 — Durchführung: „Weiter üben“ setzt bei der ersten offenen Übung ein
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Mit Haken von heute beginnt die Durchführung bei der ersten Übung, die noch einen offenen Durchgang hat; ohne Haken bei Übung 1. Ist alles gehakt, steht sie auf der letzten Übung, einen Tipp vor dem Abschluss.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0 („Weiter üben“ öffnet die erste Übung mit offenem Durchgang); Grundlage sind `open_session.sets` und die Haken auf dem Gerät. Für „alles gehakt“ schweigt der Handoff.
+
+**Anker.** `ersteOffeneUebung` in `src/features/platform/haken.ts`.
+
+**Änderungspfad.** Bei „alles gehakt“ direkt zum Abschluss oder zu Übung 1 · Aufwand `klein`.
+
+### ANN-712 — Durchführung: wer die Einheit und den Satz sieht
+
+Datenschutz · offen · 2026-10-24 · — · Prüfpaket · Wiedervorlage: vor dem Scharfschalten
+
+**Annahme.** Endseite und Satz am freien Feld nennen die Fachperson des nächsten bestätigten Termins („Anna Beispiel sieht …“), ohne Termin „Ihre Therapeut:in“ bzw. „Ihre Trainingsbetreuung“. Auf der Endseite erscheint der Satz erst, wenn die Termine geantwortet haben, damit der Name nicht springt.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 5.5 („{Name} sieht sie …“); der Plan trägt keinen Namen, die Übersicht nimmt ihn ebenso aus dem nächsten Termin.
+
+**Anker.** `wer` in `Durchfuehrung`, `src/features/platform/Durchfuehrung.tsx`.
+
+**Änderungspfad.** Immer das Wort des Bereichs · Aufwand `klein`; ein Name am Plan · Aufwand `mittel` (Pfad A).
+
+### ANN-713 — Durchführung: „Praxis antwortet nicht“ getrennt von „ohne Verbindung“
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Übt die Person am Plan vom Gerät, weil der Server nicht antwortet, das Gerät aber Verbindung meldet, sagt die Durchführung „Die Praxis antwortet gerade nicht. Üben können Sie trotzdem – mit Ihrem Plan von diesem Gerät.“ Meldet das Gerät keine Verbindung, spricht nur die Zeile im Kopf.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0 und 5.6 (BEF-197); der Wortlaut folgt dem des Reiters, ohne Uhrzeit, weil die Ablage keine trägt. Quelle der Verbindung bleibt `navigator.onLine` (ANN-015).
+
+**Anker.** `Einheit` in `src/features/platform/Durchfuehrung.tsx` (`ohneVerbindung && verbunden`).
+
+**Änderungspfad.** Wortlaut dort ändern · Aufwand `klein`.
+
+### ANN-714 — Durchführung im Vollbild: was vom Gerüst bleibt
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Auf `/p/uebungen/einheit/…` entfallen Kopf, Verbindungszeile und Reiterleiste der Plattform; Kopf und Fuß der Durchführung ersetzen sie. Das Band einer Vertretung und der Hinweis zum Profil bleiben darüber stehen. Beim Laden steht „Später weiter“ oben; Fehler und „kann hier nicht üben“ tragen den Titel des Reiters und „Zu den Übungen“ als Hauptknopf im Fuß. Die lokale Ansicht behält ihren Kopf mit „Sperren“.
+
+**Begründung.** Handoff 2026-10-24, Abschnitte 0, 4 und 5.3; PLATTFORM.md (Seitentyp Durchführung). Für wen geübt wird, muss sichtbar bleiben (ADR-023); ohne Reiterleiste braucht jede Lage einen Weg hinaus.
+
+**Anker.** `vollbild` in `src/features/platform/PlattformApp.tsx`.
+
+**Änderungspfad.** Bedingung dort ändern · Aufwand `klein`.
+
+### ANN-715 — Durchführung: Ohne Einwilligung beendet die letzte Übung direkt
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Ohne Einwilligung im Training (`note_allowed` falsch) heißt der Knopf der letzten Übung „Einheit beenden“ und speichert sofort; die Seite „Einheit beenden“ entfällt. Ist noch nichts gehakt, führt „Zum Abschluss“ dorthin, wo steht, dass es nichts zu speichern gibt.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0; ADR-021 Punkt 4 (keine Fragen zum Befinden ohne Einwilligung). Für den Fall ohne Haken schweigt der Handoff; ein Ende ohne Haken speichert die Durchführung nie.
+
+**Anker.** `direkt` in `Einheit`, `src/features/platform/Durchfuehrung.tsx`.
+
+**Änderungspfad.** Die Seite immer zeigen · Aufwand `klein`.
+
+### ANN-716 — Durchführung: wann der Fuß „übertragen“ sagt
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** „Übertragen an die Praxis“ steht nur, wenn das Gerät Verbindung meldet, die Warteschlange nach dem letzten Haken gelesen ist und nichts dieses Plans mehr wartet. Ohne Netz und nach einer Abweisung eines Ereignisses der Einheit steht dort nichts, solange nichts wartet; wartet etwas, „Auf diesem Gerät, noch nicht übertragen“.
+
+**Begründung.** ADR-024 Punkt 8 und ADR-001; Handoff 2026-10-24, 3 und 5.6. Ohne Netz sagt die Zeile im Kopf, wo die Haken liegen; „übertragen“ daneben widerspräche ihr (Design-Review 2b, H2).
+
+**Anker.** `stand` in `Einheit`, `src/features/platform/Durchfuehrung.tsx`.
+
+**Änderungspfad.** Ohne Netz „übertragen“ für Haken vom Server zeigen · Aufwand `klein`.
+
+### ANN-717 — Durchführung: ein Ende, zu dem der Server nichts anlegt
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Antwortet der Server auf ein Ende mit `empty` (er legt nichts an), gilt es als nicht übertragen: Die Durchführung sagt „Nicht übertragen: Bei der Praxis ist zu dieser Einheit nichts mehr offen.“ statt „Gespeichert“, der Reiter führt es unter den Abweisungen, und die Ablage verwirft die Einheit wie bei einer Abweisung.
+
+**Begründung.** ADR-001, ADR-024 Punkt 8: „Gespeichert“ nur, was bei der Praxis liegt. `empty` heißt: Die Einheit hatte beim Server keinen Haken – alle waren schon anderswo da, zurückgenommen oder nie angekommen (ANN-357, TRK-007). Das Ende mit Satz und Angaben liegt dann nicht bei der Praxis.
+
+**Anker.** `NICHTS_OFFEN` in `src/features/platform/ablage.ts`.
+
+**Änderungspfad.** Im zweiten Fall „Gespeichert“ zeigen (der Server müsste das unterscheiden) · Aufwand `mittel`.
+
+### ANN-720 — Übungen: „Weiter bei“ und „Heute erledigt“ aus `open_session.sets`
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Vorschau nennt die erste Übung mit offenem Durchgang („Weiter bei Übung 2: …“), und eine Übungszeile heißt „Heute erledigt“, wenn alle ihre Durchgänge in der offenen Einheit gehakt sind. Nach dem Beenden liefert der Server keine Haken mehr; dann sagt nur die Vorschau „Heute geübt“.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0 und 10 (Prüffrage); `recent_sessions` kennt nur Tag und Ende, keine Haken.
+
+**Anker.** `heuteErledigt` in `src/features/platform/vorschau.ts`.
+
+**Änderungspfad.** Haken der beendeten Einheit in die Projektion · Aufwand `mittel` (Pfad A).
+
+### ANN-721 — Übungen: Praxis antwortet nicht – Plan vom Gerät mit dem Tag des Ladens
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Antwortet der Server bei Verbindung nicht, sagt eine Warnung „Die Praxis antwortet gerade nicht. Üben können Sie trotzdem – mit Ihrem Plan vom 24. Oktober.“; ohne Netz spricht nur die Verbindungszeile. Die Uhrzeit fehlt, weil die Ablage je Zugang nur den Tag trägt.
+
+**Begründung.** BEF-197, Handoff 2026-10-24, Abschnitt 5.6 („sonst ohne Zeit“); die Feldliste der Ablage bleibt unverändert (ADR-024 Punkt 5).
+
+**Anker.** `PlanVomGeraet` in `src/features/platform/Uebungen.tsx`.
+
+**Änderungspfad.** Zeitpunkt des Ladens in die Ablage · Aufwand `mittel` (Review ADR-024).
+
+### ANN-722 — Übungen: Heute zuerst – die Vorschau der Einheit nach Lage
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Der Reiter beginnt mit der Vorschau als einzige Hero-Karte: Lage aus Plan und heutigem Tag, eine offene Einheit vor „Heute geübt“, bei mehreren Plänen der erste mit heutigem Übungstag; der Knopf heißt „Übungen beginnen“. Ein Plan, der erst beginnt, trägt „Ab 12. Oktober“ und keinen Knopf; liegt auf dem Gerät eine Einheit von heute offen, sagt auch der Plan vom Gerät „Weiter üben“.
+
+**Begründung.** Handoff 2026-10-24, Abschnitte 0 und 3 (DR-127, DR-129); den künftigen Plan nennt der Handoff nicht.
+
+**Anker.** `lageDesPlans` in `src/features/platform/vorschau.ts`.
+
+**Änderungspfad.** Lagen dort ändern · Aufwand `klein`.
+
+### ANN-723 — Übungstage: ohne Netz gesperrt statt zurückspringend
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Meldet das Gerät keine Verbindung, ist die Wochenleiste gesperrt (gestrichelt) und der Satz sagt „Ändern geht wieder mit Verbindung.“ Ein Tipp, der gespeichert werden soll und zurückspringt, entfällt.
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0; Quelle ist `navigator.onLine` (ANN-015).
+
+**Anker.** `Uebungstage` in `src/features/platform/Uebungen.tsx`.
+
+**Änderungspfad.** `gesperrt` dort weglassen · Aufwand `klein`.
+
+### ANN-724 — Reiter „Übungen“ am Rechner zweispaltig
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Ab 1024 px steht der Plan links und die Vorschau rechts, 340 bis 460 px breit (ein Raster statt der Flex-Reihe des Handoffs, damit sie bei 1280 px die 460 erreicht und bei 1024 px zwei Spalten bleiben); im Baum steht die Vorschau zuerst. Abweichung von PLATTFORM.md („jede Seite einspaltig“).
+
+**Begründung.** Handoff 2026-10-24, Abschnitte 0 und 4 (im Briefing verlangt).
+
+**Anker.** `Spalten` in `src/features/platform/Uebungen.tsx` (dazu `breit` in `PlattformApp.tsx`).
+
+**Änderungspfad.** `Spalten` einspaltig, `breit` nur für die Übersicht · Aufwand `klein`.
+
+### ANN-725 — Übungen: „Sie brauchen“ aus Hilfsmitteln und Lasten ohne Doppelte
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Vorschau nennt alle `equipment`-Einträge und Lasten (`load`) der Übungen in Planreihenfolge; was ohne Groß- und Kleinschreibung gleich lautet, steht einmal da („Theraband gelb“ als Hilfsmittel und als Last).
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 0; dort steht nicht, was als doppelt gilt.
+
+**Anker.** `wasManBraucht` in `src/features/platform/vorschau.ts`.
+
+**Änderungspfad.** Vergleich dort ändern · Aufwand `klein`.
+
+### ANN-726 — Übungen: wer den Plan macht und die Einheit sieht (N1)
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** „{Name} sieht Ihre Einheit beim nächsten Termin“ und „{Name} stellt Ihnen hier Übungen zusammen“ nennen die Person des nächsten bestätigten Termins; ohne Termin „Ihre Therapeut:in“, im Training „Ihre Trainingsbetreuung“.
+
+**Begründung.** Handoff 2026-10-24, Abschnitte 3 und 5.1 (N1); wie der Fragebogen der Übersicht (`naechster.staff_name`). Der Plan selbst trägt keinen Namen.
+
+**Anker.** `name` in `Uebungen` (`src/features/platform/Uebungen.tsx`).
+
+**Änderungspfad.** Name aus dem Plan in die Projektion · Aufwand `mittel` (Pfad A).
+
+### ANN-727 — Übersicht: Übungskarte mit Umfang und Dauer, ohne Netz dahinter
+
+Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Übungskarte der Übersicht sagt „3 Übungen · etwa 10 Minuten“ wie die Vorschau; ohne Netz folgt „Geht auch ohne Netz.“ dahinter, statt den Umfang zu ersetzen (Briefing 1).
+
+**Begründung.** Handoff 2026-10-24, Abschnitt 9 Punkt 3; die Vorschau im Reiter nennt ohne Netz beides.
+
+**Anker.** `uebungenText` in `src/features/platform/Uebersicht.tsx`.
+
+**Änderungspfad.** Ohne Netz nur den Satz · Aufwand `klein`.
