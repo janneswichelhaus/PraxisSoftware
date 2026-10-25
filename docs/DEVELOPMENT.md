@@ -325,7 +325,8 @@ Test-Umgebung kennt noch die 341 Versionen vor der Basis. Bis zu diesem
 Handstart überspringt der Workflow die Migrationen mit einer Warnung, denn die
 Basis bringt kein neues Schema; wartet schon eine neue Migration, bricht er ab. Der
 Handstart stellt nur die Historie um, in einer Transaktion und nur, wenn sie
-genau diese Versionen enthält (`supabase/testumgebung/basis-uebernehmen.sql`). Die Praxiswoche sind die Werktage von vorgestern bis in vier Tagen;
+genau diese Versionen enthält (`supabase/testumgebung/basis-uebernehmen.sql`).
+Wie jede Auslieferung geht er erst, wenn die CI für den Stand von `main` grün ist. Die Praxiswoche sind die Werktage von vorgestern bis in vier Tagen;
 nach einer Woche einfach wieder neu aufsetzen (ANN-100). Zum Seed kommen dort
 zwölf weitere Testpatient:innen (`supabase/testumgebung/testpatienten.sql`,
 AKTE-009) – lange Namen, minderjährig, Einrichtung, ohne Telefon, mit und ohne

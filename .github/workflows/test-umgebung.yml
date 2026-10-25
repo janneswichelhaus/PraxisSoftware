@@ -148,7 +148,13 @@ jobs:
           gruen=$(gh run list -R "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$COMMIT" \
             --event push --status success --json databaseId --jq length)
           if [ "$gruen" = "0" ]; then
-            echo "::error::Fuer $COMMIT gibt es keinen gruenen CI-Lauf auf main - keine Auslieferung."
+            laeuft=$(gh run list -R "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$COMMIT" \
+              --event push --json status --jq '[.[] | select(.status != "completed")] | length')
+            if [ "$laeuft" != "0" ]; then
+              echo "::error::Die CI fuer $COMMIT laeuft noch - nach ihrem gruenen Ende erneut starten."
+            else
+              echo "::error::Fuer $COMMIT gibt es keinen gruenen CI-Lauf auf main - keine Auslieferung."
+            fi
             exit 1
           fi
           echo "bereit=true" >> "$GITHUB_OUTPUT"
