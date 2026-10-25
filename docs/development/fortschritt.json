@@ -1575,6 +1575,15 @@
           "fertig_am": "2026-10-25",
           "nachweis": "Branch ccr-544f8ce7-u1sqpf, src/features/platform/haken.test.ts, vorschau.test.ts, Uebungen.test.tsx, PlattformAblage.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Lagen geraet-geuebt und geraet-begonnen, Fenster bei 188 px und „Sehr groß“), Zweitreview, Design-Review",
           "vermerk": "Folge von DRP-EPIC-009 vor dem Planblatt 2d; ANN-730 ersetzt ANN-720, ANN-466 verworfen; nur Oberfläche, ohne Migration, ohne Auditeintrag"
+        },
+        {
+          "id": "drp-epic-010",
+          "name": "DRP-EPIC-010 Plattform: Planblatt aus dem Design-Review (Schritt 2d – „Plan als PDF“ mit Satz und Hauptknopf, Vorschau als Blatt, Druck A4 mit Wortmarke, Stand, Übungstage und Dosierung in einer Zeile; die Praxis bekommt den Druck mit)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-25",
+          "nachweis": "DRP-045, Branch ccr-544f8ce7-u1sqpf, src/features/exercise-plans/Plaene.test.tsx, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Titel, ein Hauptknopf, Druck mit Marke 40 und Text 16, 188 px und „Sehr groß“), Design-Review",
+          "vermerk": "Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 2d (Handoff 2026-10-24, Abschnitt 9 Punkt 4); ANN-731; nur Oberfläche, ohne Migration, ohne Auditeintrag; Safari am iPhone nicht geprüft"
         }
       ]
     },
