@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -171,6 +171,17 @@ describe('kommentare-check.mjs im Repository', () => {
     aufbauen();
     datei('neu.sql', zeilen('-- Seit FLT-005 so', 'select 1;', ''));
     expect(pruefen().ausgabe).toMatch(/neu\.sql:1: FLT-005 im Kommentar/);
+  });
+
+  it('laesst nur die erzeugte Basis der Migrationen aus', () => {
+    aufbauen();
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Wegwerfordner aus mkdtempSync.
+    mkdirSync(join(ordner, 'supabase/migrations'), { recursive: true });
+    const rumpf = zeilen('-- Seit FLT-005', '-- zwei', '-- drei', '-- vier', 'select 1;', '');
+    datei('supabase/migrations/20261225000000_basis.sql', rumpf);
+    expect(pruefen().rot).toBe(false);
+    datei('supabase/migrations/20261226000000_neu.sql', rumpf);
+    expect(pruefen().ausgabe).toMatch(/20261226000000_neu\.sql:1: Kommentar mit 4 Zeilen/);
   });
 
   it('ist gruen fuer eine umbenannte Datei mit altem Kommentar', () => {

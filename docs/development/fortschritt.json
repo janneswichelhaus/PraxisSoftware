@@ -1598,7 +1598,10 @@
           "id": "aufraeumen-2",
           "name": "Aufräumen Schritt 2: Migrationen zu einer Basis zusammenfassen, Schema per Diff identisch, Übersicht der DB-Funktionen",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-25",
+          "nachweis": "Branch ccr-51128c80-r6lmjn, node scripts/basis-migration.mjs pruefen (Schema, Rechte mit Supabase-Vorgaben und Daten identisch), scripts/basis-migration.test.mjs, supabase/tests/basis-uebernehmen.test.ts, pnpm test:db",
+          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; 341 Migrationen zu einer Basis; Test-Umgebung einmal per Handstart basis_uebernehmen; BEF-229"
         },
         {
           "id": "aufraeumen-3",

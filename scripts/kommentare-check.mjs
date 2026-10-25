@@ -8,6 +8,8 @@ import { pathToFileURL } from 'node:url';
 
 export const HOECHSTENS = 3;
 const ENDUNGEN = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|css|sql)$/;
+// Abzug aus pg_dump (scripts/basis-migration.mjs): Kommentare in Funktionsruempfen gehoeren zum Schema.
+const ERZEUGT = new Set(['supabase/migrations/20261225000000_basis.sql']);
 // Kennungen von Tickets und Epics: Kürzel, Bindestrich, drei Ziffern. ANN und ADR nennen das Warum,
 // SHA, AES und ISO sind Normen.
 const TICKET = /\b(?!(?:ANN|ADR|SHA|AES|ISO)-)[A-Z][A-Z0-9]{1,6}(?:-EPIC)?-\d{3}[a-z]?\b/g;
@@ -133,7 +135,7 @@ function main() {
   const verstoesse = [];
   let dateien = 0;
   for (const [pfad, zeilen] of neu) {
-    if (!ENDUNGEN.test(pfad)) continue;
+    if (!ENDUNGEN.test(pfad) || ERZEUGT.has(pfad)) continue;
     let text;
     try {
       // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfad aus git diff im Repository.
