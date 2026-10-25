@@ -110,8 +110,8 @@ export function Durchfuehrungskopf({
   );
 }
 
-/** Der Winkel nach links, 24 px im Raster 24. */
-function ZurueckSymbol() {
+/** Der Winkel nach links, 24 px im Raster 24 - auch am Planblatt. */
+export function ZurueckSymbol() {
   return (
     <svg
       viewBox="0 0 24 24"

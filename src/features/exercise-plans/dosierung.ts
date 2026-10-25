@@ -100,14 +100,46 @@ export function dosierungAlltag(d: Dosis): string {
   if (d.rest_seconds !== null && d.rest_seconds > 0) {
     saetze.push(`Pause dazwischen: ${mal(d.rest_seconds, 'Sekunde', 'Sekunden')}.`);
   }
-  if (d.double_progression && d.reps_min !== null && d.reps_max !== null) {
-    // Die Regel stammt von der Fachperson; die Steigerung der Last
-    // entscheidet sie selbst (IDEA-TRN-007, ADR-006 Punkt 4).
-    saetze.push(
-      `Beginnen Sie mit ${d.reps_min} und steigern Sie bis ${d.reps_max} Wiederholungen. Schaffen Sie in allen Durchgängen ${d.reps_max}, sagen Sie es uns – dann passen wir das Gewicht an.`,
-    );
-  }
+  const regel = steigerungsregel(d);
+  if (regel) saetze.push(regel);
   return saetze.join(' ');
+}
+
+/**
+ * Die Regel der Fachperson zur Steigerung (doppelte Progression) in Worten -
+ * ohne Wiederholungen keine. Sie stammt von der Fachperson; die Steigerung
+ * der Last entscheidet sie selbst (IDEA-TRN-007, ADR-006 Punkt 4).
+ */
+export function steigerungsregel(d: Dosis): string | null {
+  if (!d.double_progression || d.reps_min === null || d.reps_max === null) return null;
+  return `Beginnen Sie mit ${d.reps_min} und steigern Sie bis ${d.reps_max} Wiederholungen. Schaffen Sie in allen Durchgängen ${d.reps_max}, sagen Sie es uns – dann passen wir das Gewicht an.`;
+}
+
+/**
+ * Die Dosierung in einer Zeile für das Planblatt (Handoff 2026-10-24,
+ * Abschnitt 5.7): „3 Durchgänge mit je 8 bis 12 Wiederholungen · 60 Sekunden
+ * Pause · mit Rucksack 3 kg“. Jede Angabe der Fachperson steht darin, die
+ * Regel zur Steigerung als eigener Satz darunter (`steigerungsregel`).
+ */
+export function dosierungZeile(d: Dosis): string {
+  const wdh = wiederholungen(d, ' bis ');
+  const halten =
+    wdh && d.hold_seconds ? `, jede ${mal(d.hold_seconds, 'Sekunde', 'Sekunden')} halten` : '';
+  const seite = d.per_side ? ', je Seite' : '';
+  const teile = [
+    wdh
+      ? `${mal(d.sets, 'Durchgang', 'Durchgänge')} mit je ${wdh} Wiederholungen${halten}${seite}`
+      : `${mal(d.sets, 'Durchgang', 'Durchgänge')} von je ${dauerAlltag(d.duration_seconds ?? 0)}${seite}`,
+  ];
+  if (d.times_per_day) {
+    teile.push(d.times_per_day === 1 ? 'einmal am Tag' : `${d.times_per_day}-mal am Tag`);
+  }
+  if (d.rest_seconds !== null && d.rest_seconds > 0) {
+    teile.push(`${mal(d.rest_seconds, 'Sekunde', 'Sekunden')} Pause`);
+  }
+  if (d.load) teile.push(`mit ${d.load}`);
+  if (d.tempo) teile.push(`Tempo ${d.tempo}`);
+  return teile.join(' · ');
 }
 
 /**

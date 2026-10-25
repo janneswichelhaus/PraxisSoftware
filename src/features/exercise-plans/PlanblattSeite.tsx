@@ -59,6 +59,7 @@ export function PlanblattSeite({ user }: { user: CurrentUser }) {
                 plan={plan}
                 praxis={user.organizationName}
                 fuer={`${plan.given_name} ${plan.family_name}`}
+                stand={plan.runs_from}
               />
               <div className="nicht-drucken mt-8">
                 <Kleingedrucktes>

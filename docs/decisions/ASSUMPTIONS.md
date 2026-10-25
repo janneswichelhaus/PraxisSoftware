@@ -7604,3 +7604,15 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 **Anker.** `heutigeEinheit` in `src/features/platform/haken.ts`.
 
 **Änderungspfad.** Wieder allein `open_session.sets` lesen · Aufwand `klein`.
+
+### ANN-731 — Planblatt: Stand je Seite, die Vorschau eckig und unter 23rem ohne Rahmen
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Das Planblatt nennt als Stand den Tag, den die Seite sonst so nennt: die Plattform den Tag der Zuweisung wie der Reiter, die Praxis den Beginn der Fassung wie der Plankopf. Die Vorschau auf der Plattform hat eckige Ecken statt Radius 4 und steht unter 23rem ohne Fläche und Rahmen. Die Maße des Rechners gelten nach `data-rechner`, in der Einsicht also nie.
+
+**Begründung.** Handoff 2026-10-24, 5.7; das System kennt fünf Radien, 4 gehört nicht dazu (DS-001); bei 200 % blieben mit Rahmen rund 110 px für den Text.
+
+**Anker.** `stand` in `src/features/exercise-plans/Planblatt.tsx`; die Vorschau in `PlanblattPlattform` (`src/features/platform/Uebungen.tsx`).
+
+**Änderungspfad.** Stand aus einer Quelle (etwa `assigned_at` in der Zeitzone der Praxis) oder ein sechster Radius im System · Aufwand `klein`.

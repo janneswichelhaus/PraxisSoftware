@@ -205,6 +205,35 @@ test.describe('Übungen auf der Plattform', () => {
         expect(await axeVerstoesse(page)).toEqual([]);
       }
     });
+
+    test(`Plan als PDF bei ${breite} px (Schritt 2d): Titel, Satz, ein Hauptknopf, Schrift, Ziele`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto(`${PRUEFSEITE}?seite=blatt`);
+      const titel = page.getByRole('heading', { level: 1, name: 'Plan als PDF' });
+      await expect(titel).toBeVisible();
+      await expect(
+        page.getByText(
+          'Drucken Sie den Plan aus oder sichern Sie ihn als PDF. Die Datei bleibt auf Ihrem Gerät.',
+        ),
+      ).toBeVisible();
+      const blatt = page.getByRole('article', { name: 'Planblatt' });
+      await expect(blatt.getByText(/^Stand \d/)).toBeVisible();
+      await expect(blatt.getByText(/^Ihre Übungstage: /)).toBeVisible();
+      expect(await hauptknoepfe(page)).toEqual(['Drucken oder als PDF sichern']);
+      expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
+      expect(await kleineZiele(page), 'Ziele unter 44 px').toEqual([]);
+      // Am Rechner steht der Knopf rechts neben Titel und Satz, am Telefon
+      // darunter über die ganze Breite (Handoff 5.7).
+      const knopf = await page
+        .getByRole('button', { name: 'Drucken oder als PDF sichern' })
+        .boundingBox();
+      const kopf = await titel.boundingBox();
+      if (!knopf || !kopf) throw new Error('Titel oder Knopf ohne Maße');
+      if (breite >= 1024) expect(knopf.x).toBeGreaterThan(kopf.x + kopf.width);
+      else expect(knopf.y).toBeGreaterThan(kopf.y + kopf.height);
+    });
   }
 
   for (const schrift of ['normal', 'sehr-gross'] as const) {
@@ -366,6 +395,48 @@ test.describe('Übungen auf der Plattform', () => {
     await expect(page.getByRole('button', { name: 'Drucken oder als PDF sichern' })).toBeHidden();
     await expect(page.getByRole('navigation', { name: 'Plattform' })).toBeHidden();
     await expect(page.getByRole('article', { name: 'Planblatt' })).toBeVisible();
+  });
+
+  test('der Druck (Schritt 2d): nur das Blatt, Marke 40, Text 16, ohne Rahmen der Vorschau', async ({
+    page,
+  }) => {
+    await page.goto(`${PRUEFSEITE}?seite=blatt`);
+    const blatt = page.getByRole('article', { name: 'Planblatt' });
+    await expect(blatt).toBeVisible();
+    await page.emulateMedia({ media: 'print' });
+    await expect(page.getByRole('heading', { level: 1, name: 'Plan als PDF' })).toBeHidden();
+    const marke = blatt.getByRole('img', { name: 'Own Motion' });
+    await expect(marke).toHaveCount(1);
+    expect((await marke.boundingBox())?.height).toBe(40);
+    await expect(blatt.getByText(/^Ihre Übungstage: /)).toHaveCSS('font-size', '16px');
+    await expect(blatt.getByRole('heading', { level: 2 })).toHaveCSS('font-size', '28px');
+    await expect(blatt.getByRole('heading', { level: 3 }).first()).toHaveCSS('font-size', '20px');
+    // Der Rahmen der Vorschau fällt weg: Das Blatt steht an der Kante des Papiers.
+    await expect(blatt.locator('xpath=..')).toHaveCSS('border-top-width', '0px');
+    await expect(blatt.locator('xpath=..')).toHaveCSS('padding-left', '0px');
+    await expect(blatt.locator('xpath=../..')).toHaveCSS('padding-left', '0px');
+    // Eine Übung bricht nicht über zwei Seiten.
+    await expect(blatt.locator('> ol > li').first()).toHaveCSS('break-inside', 'avoid');
+  });
+
+  test('Plan als PDF bei 188 px (200 %) und bei „Sehr groß“: kein waagerechtes Rollen (Schritt 2d)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 188, height: 900 });
+    await page.goto(`${PRUEFSEITE}?seite=blatt`);
+    await expect(page.getByRole('article', { name: 'Planblatt' })).toBeVisible();
+    expect(await ueberlaeuft(page)).toBe(false);
+
+    await page.addInitScript(() =>
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross'),
+    );
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.goto(`${PRUEFSEITE}?seite=blatt`);
+    await expect(page.getByRole('article', { name: 'Planblatt' })).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.dataset.schrift))
+      .toBe('sehr-gross');
+    expect(await ueberlaeuft(page)).toBe(false);
   });
 });
 
