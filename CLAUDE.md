@@ -101,8 +101,8 @@ ohne `--reich` (`docs/DEVELOPMENT.md`). **`pnpm test:db` nie überspringen:** `p
   Worktrees; Migration und RLS seriell.
 - **Doku je PR, nur vier Dinge:** PR-Beschreibung (Spec, Prüfungen, Checkliste, Bilder, Fragen),
   kurze Annahmen mit Anker, `fortschritt.json` (`pnpm fortschritt --schreiben`), STATUS in drei
-  Zeilen. Befunde ohne Nummer nach `docs/development/BEFUNDE.md`, behobene löschen; Ideen außerhalb des Auftrags nach
-  `docs/product/` (`/idee`), nicht in den Code.
+  Zeilen. Befunde ohne Nummer nach `docs/development/BEFUNDE.md`, behobene löschen; Ideen
+  außerhalb des Auftrags nach `docs/product/` (`/idee`), nicht in den Code.
 - **Gemessen** werden die Software auf synthetischen Daten und Jannes' Zeit, nie Mitarbeitende,
   nie per Telemetrie (§20). Merge bleibt bei Jannes.
 - **Bericht:** PR-Link, neue Annahmen je ein Satz, Fragen, Vorschlag für den nächsten Auftrag;
