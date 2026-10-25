@@ -6,10 +6,13 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { canWriteTrainingClients, type CurrentUser } from '@/features/session/types';
-import { appointmentToFormValues, updateAppointment } from '@/features/appointments/api';
+import {
+  appointmentToFormValues,
+  tageslageNeuLaden,
+  updateAppointment,
+} from '@/features/appointments';
 import { getTrainingAppointment } from './api';
 import { TrainingTerminFormular } from './TrainingTerminFormular';
-import { tageslageNeuLaden } from '@/features/appointments/tageslage';
 import { todayInTimeZone } from '@/lib/datum';
 
 /**

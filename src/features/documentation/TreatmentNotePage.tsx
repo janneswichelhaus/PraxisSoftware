@@ -8,7 +8,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BausteinFeld } from '@/features/assessments/BausteinFeld';
 import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
-import { type Appointment } from '@/features/appointments/api';
+import type { Appointment } from '@/features/appointments';
 import { DocumentationShell } from './DocumentationShell';
 import { Einfuegemeldung } from './Einfuegemeldung';
 import { useEinfuegen } from './einfuegen';

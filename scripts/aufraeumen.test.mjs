@@ -8,6 +8,7 @@ import {
   importziel,
   kategorie,
   messen,
+  groessterRing,
   modulgrenzen,
 } from './aufraeumen.mjs';
 
@@ -54,6 +55,18 @@ describe('modulgrenzen', () => {
     ]);
     expect([querimporte, tief, gegenseitig]).toEqual([2, 2, ['a <-> b']]);
     expect([...ziele.get('a').von]).toEqual(['src/app']);
+  });
+
+  it('misst den groessten Ring auch ueber Ketten, ohne die Module, die nur hineinzeigen', () => {
+    expect(groessterRing(['a>b', 'b>c', 'c>a', 'd>a', 'c>e'])).toBe(3);
+    expect(groessterRing(['a>b', 'b>a', 'c>d', 'd>e', 'e>c', 'e>f'])).toBe(3);
+    expect(groessterRing(['a>b', 'b>c'])).toBe(0);
+    const { ringgruppe } = modulgrenzen([
+      { pfad: 'src/features/a/A.tsx', text: "import { x } from '@/features/b';" },
+      { pfad: 'src/features/b/B.tsx', text: "import { y } from '@/features/c/intern';" },
+      { pfad: 'src/features/c/C.tsx', text: "import { z } from '../a/A';" },
+    ]);
+    expect(ringgruppe).toBe(3);
   });
 });
 

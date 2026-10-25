@@ -1,4 +1,4 @@
-import { hakenFehlt } from '@/features/appointments/haken';
+import { hakenFehlt } from '@/features/appointments';
 import type { DayPlanEntry } from '@/lib/tagesplan';
 import { appointmentStatusLabels, type AppointmentStatus } from '@/lib/termin';
 

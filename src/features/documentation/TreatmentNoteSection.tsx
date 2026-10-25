@@ -14,8 +14,7 @@ import {
   canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
-import type { Appointment } from '@/features/appointments/api';
-import { useAbrechnungslage } from '@/features/appointments/useAbrechnungslage';
+import { type Appointment, useAbrechnungslage } from '@/features/appointments';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   fetchDocumentationDeadline,

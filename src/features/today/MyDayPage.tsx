@@ -14,15 +14,19 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Zweispalter } from '@/components/ui/Zweispalter';
-import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
 import {
+  type CalendarEntry,
   dokumentiertOhneHaken,
+  fetchAbrechnungslage,
+  fetchAppointments,
+  FreigabeNachHaken,
   hakenFehlt,
   hakenZuruecknehmbar,
-} from '@/features/appointments/haken';
-import { FreigabeNachHaken } from '@/features/appointments/FreigabeNachHaken';
+  NavigationZumTermin,
+  positionText,
+  TerminAbschliessenKnopf,
+} from '@/features/appointments';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { fetchAppointments, type CalendarEntry } from '@/features/appointments/api';
 import {
   canManageAppointments,
   canReadPatientDirectory,
@@ -33,8 +37,6 @@ import {
   isStaff,
   type CurrentUser,
 } from '@/features/session/types';
-import { NavigationZumTermin } from '@/features/appointments/NavigationStarten';
-import { fetchAbrechnungslage, positionText } from '@/features/appointments/abrechnungslage-api';
 import { nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { Tageskarte } from './Tagesliste';
 import { AnrufKnopf, AusfallKnopf, HakenRueckgaengig, SpaeterDa } from './Besuchsknoepfe';

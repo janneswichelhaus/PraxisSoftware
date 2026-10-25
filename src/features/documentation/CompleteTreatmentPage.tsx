@@ -7,16 +7,16 @@ import { symbolknopfKlassen } from '@/components/ui/buttonStile';
 import { EmptyState } from '@/components/ui/Feedback';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
+  type Abrechnungslage,
+  type Appointment,
   fetchAbrechnungslage,
   positionText,
-  type Abrechnungslage,
-} from '@/features/appointments/abrechnungslage-api';
+} from '@/features/appointments';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BausteinFeld } from '@/features/assessments/BausteinFeld';
 import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
 import { VORSCHLAG_OFFEN } from '@/features/assessments/dokumentationstext';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
-import { type Appointment } from '@/features/appointments/api';
 import { BisherigeEintraege } from './BisherigeEintraege';
 import { AufGeraetSichern } from '@/features/offline-documentation/AufGeraetSichern';
 import { DocumentationShell } from './DocumentationShell';

@@ -23,10 +23,11 @@ import {
 } from '@/features/session/types';
 import {
   cancelAppointment,
-  cancellationReasonSchema,
-  waehlbareAbsagegruende,
   type CancellationReason,
-} from '@/features/appointments/api';
+  cancellationReasonSchema,
+  tageslageNeuLaden,
+  waehlbareAbsagegruende,
+} from '@/features/appointments';
 import {
   getTrainingAppointment,
   getTrainingProtocol,
@@ -37,7 +38,6 @@ import {
   type TrainingAppointment,
 } from './api';
 import { TerminAbschluss, TrainingProtokoll } from './TrainingProtocol';
-import { tageslageNeuLaden } from '@/features/appointments/tageslage';
 import { appointmentStatusLabels, appointmentStatusTon, leseAngelegtenTermin } from '@/lib/termin';
 
 /**

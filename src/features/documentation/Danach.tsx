@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { FolgeterminVorschlaege } from '@/features/appointments/FolgeterminVorschlaege';
-import { LeistungAmTermin } from '@/features/appointments/LeistungAmTermin';
-import { type Appointment } from '@/features/appointments/api';
+import {
+  type Appointment,
+  FolgeterminVorschlaege,
+  LeistungAmTermin,
+} from '@/features/appointments';
 import {
   canReadExercisePlans,
   canRecordAtAppointment,

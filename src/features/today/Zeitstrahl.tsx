@@ -7,7 +7,7 @@ import { NowMarker } from '@/components/ui/NowMarker';
 import { TravelBar } from '@/components/ui/TravelBar';
 import { zeitstrahlRaster, zeitstrahlSchiene } from '@/components/ui/timelineStile';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { hakenFehlt } from '@/features/appointments/haken';
+import { hakenFehlt } from '@/features/appointments';
 import { dayPlanStatusLabels, dayPlanStatusTon, offenGrund } from './api';
 import {
   VERALTET_TEXT,

@@ -4,10 +4,13 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { symbolknopfKlassen, type SymbolGroesse } from '@/components/ui/buttonStile';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { fetchAppointment, reopenAppointment } from '@/features/appointments/api';
-import { hakenZuruecknehmbar } from '@/features/appointments/haken';
-import { HomeVisitFlow } from '@/features/appointments/HomeVisitFlow';
-import { NichtAngetroffenAktion } from '@/features/appointments/NichtAngetroffen';
+import {
+  fetchAppointment,
+  hakenZuruecknehmbar,
+  HomeVisitFlow,
+  NichtAngetroffenAktion,
+  reopenAppointment,
+} from '@/features/appointments';
 import {
   VERSPAETUNG_MINUTEN,
   anrufNummer,

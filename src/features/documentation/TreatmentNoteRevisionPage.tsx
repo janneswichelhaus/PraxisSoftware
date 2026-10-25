@@ -7,7 +7,7 @@ import { TextArea } from '@/components/ui/TextArea';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Textlink } from '@/components/ui/Textlink';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
-import { type Appointment } from '@/features/appointments/api';
+import type { Appointment } from '@/features/appointments';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { DocumentationShell } from './DocumentationShell';
 import {

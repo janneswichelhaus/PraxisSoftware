@@ -4,7 +4,7 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { ErrorState } from '@/components/ui/Feedback';
 import { canReadTreatmentNote, type CurrentUser } from '@/features/session/types';
-import { type Appointment } from '@/features/appointments/api';
+import type { Appointment } from '@/features/appointments';
 import { DocumentationShell } from './DocumentationShell';
 import { Schreibflaeche, ZustandMitRueckweg } from './Schreibflaeche';
 import { kopfzeileFuer } from './format';

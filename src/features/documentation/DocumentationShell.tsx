@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { fetchAppointment, type Appointment } from '@/features/appointments/api';
+import { type Appointment, fetchAppointment } from '@/features/appointments';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { fetchTreatmentDocumentation, type TreatmentDocumentation } from './api';
 import { kalenderZumTermin, zurueckZumTermin } from '@/lib/termin';

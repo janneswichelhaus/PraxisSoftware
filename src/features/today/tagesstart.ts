@@ -1,5 +1,5 @@
 import type { ProgressDot } from '@/components/ui/ProgressDots';
-import { hakenFehlt } from '@/features/appointments/haken';
+import { hakenFehlt } from '@/features/appointments';
 import { istOffen, nachUhrzeit } from './api';
 import { formatLocalTime } from '@/lib/datum';
 import { appointmentTypeHint } from '@/lib/termin';

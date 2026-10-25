@@ -23,7 +23,7 @@ import { PLATTFORM_PFAD } from '@/features/platform/pfade';
 import { PlattformAblage } from '@/features/platform/PlattformAblage';
 import { ohneNetzFuer } from './ohneNetz';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
-import { TerminErweiterungenKontext } from '@/features/appointments/erweiterungen';
+import { TerminErweiterungenKontext } from '@/features/appointments';
 import { TERMIN_ERWEITERUNGEN } from './terminErweiterungen';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';

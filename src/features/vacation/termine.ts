@@ -1,4 +1,4 @@
-import { fetchAppointments } from '@/features/appointments/api';
+import { fetchAppointments } from '@/features/appointments';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { dayKey, tagePlus } from '@/lib/datum';
 

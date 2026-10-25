@@ -30,6 +30,8 @@ export const KENNZAHLEN = [
   ['querimporte', 'Importe zwischen Modulen'],
   ['tiefe_importe', 'Tiefe Importe in Module (an index.ts vorbei)'],
   ['gegenseitige_abhaengigkeiten', 'Gegenseitige Abhängigkeiten (Modulpaare)'],
+  ['ringgruppe', 'Module im größten Abhängigkeitsring'],
+  ['module_mit_schnittstelle', 'Module mit Schnittstelle (index.ts)'],
   ['grosse_programmdateien', `Programmdateien über ${GROSS} Zeilen`],
   ['grosse_testdateien', `Testdateien über ${GROSS} Zeilen`],
   ['db_funktionen', 'DB-Funktionen (nach Name)'],
@@ -93,7 +95,43 @@ export function modulgrenzen(dateien) {
     .map((k) => k.split('>'))
     .filter(([a, b]) => a < b && kanten.has(`${b}>${a}`))
     .map(([a, b]) => `${a} <-> ${b}`);
-  return { querimporte, tief, gegenseitig, ziele };
+  return { querimporte, tief, gegenseitig, ziele, ringgruppe: groessterRing(kanten.keys()) };
+}
+
+/** Wie viele Module höchstens über Importketten wechselseitig voneinander abhängen (Tarjan). */
+export function groessterRing(kanten) {
+  const nach = new Map();
+  for (const kante of kanten) {
+    const [von, zu] = kante.split('>');
+    for (const m of [von, zu]) if (!nach.has(m)) nach.set(m, []);
+    nach.get(von).push(zu);
+  }
+  const nummer = new Map();
+  const niedrig = new Map();
+  const stapel = [];
+  const aufStapel = new Set();
+  let groesste = 0;
+  const besuche = (v) => {
+    nummer.set(v, nummer.size);
+    niedrig.set(v, nummer.get(v));
+    stapel.push(v);
+    aufStapel.add(v);
+    for (const w of nach.get(v)) {
+      if (!nummer.has(w)) besuche(w);
+      if (aufStapel.has(w)) niedrig.set(v, Math.min(niedrig.get(v), niedrig.get(w)));
+    }
+    if (niedrig.get(v) !== nummer.get(v)) return;
+    let groesse = 0;
+    let w;
+    do {
+      w = stapel.pop();
+      aufStapel.delete(w);
+      groesse++;
+    } while (w !== v);
+    if (groesse > 1) groesste = Math.max(groesste, groesse);
+  };
+  for (const v of nach.keys()) if (!nummer.has(v)) besuche(v);
+  return groesste;
 }
 
 /** Funktionen nach Name über alle Migrationen, mit `drop function` in Reihenfolge. */
@@ -237,6 +275,11 @@ export function messen(dateien) {
   k.set('querimporte', grenzen.querimporte);
   k.set('tiefe_importe', grenzen.tief);
   k.set('gegenseitige_abhaengigkeiten', grenzen.gegenseitig.length);
+  k.set('ringgruppe', grenzen.ringgruppe);
+  k.set(
+    'module_mit_schnittstelle',
+    dateien.filter(({ pfad }) => /^src\/features\/[^/]+\/index\.ts$/.test(pfad)).length,
+  );
 
   const db = dbFunktionen(
     dateien

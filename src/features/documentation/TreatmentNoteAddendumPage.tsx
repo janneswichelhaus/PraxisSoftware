@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
-import { type Appointment } from '@/features/appointments/api';
+import type { Appointment } from '@/features/appointments';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { DocumentationShell } from './DocumentationShell';
 import {

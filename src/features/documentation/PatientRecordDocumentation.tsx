@@ -15,7 +15,7 @@ import {
   canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
-import { fetchAppointment } from '@/features/appointments/api';
+import { fetchAppointment } from '@/features/appointments';
 import { VERLAUF_ANKER } from '@/features/patients/akte';
 import type { Patient } from '@/features/patients/api';
 import { mitRueckweg } from '@/lib/rueckweg';

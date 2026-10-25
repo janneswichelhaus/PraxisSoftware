@@ -12,7 +12,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { completeAppointment, reopenAppointment } from '@/features/appointments/api';
+import { completeAppointment, reopenAppointment } from '@/features/appointments';
 import { useTextverlustschutz, type Verlustschutztexte } from '@/app/Textverlustschutz';
 import {
   finalizeTrainingProtocol,

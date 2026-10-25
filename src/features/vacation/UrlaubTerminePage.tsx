@@ -5,7 +5,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
+import { DaysToReschedule } from '@/features/appointments';
 import type { CurrentUser } from '@/features/session/types';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { URLAUB_SCHLUESSEL } from './api';

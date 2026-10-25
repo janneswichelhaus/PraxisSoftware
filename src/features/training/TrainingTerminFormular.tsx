@@ -8,23 +8,19 @@ import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import type { Formularfehler } from '@/lib/formularfehler';
 import {
+  type AppointmentFormField,
   AppointmentFormFields,
-  ArbeitszeitRueckfrage,
-} from '@/features/appointments/AppointmentFormFields';
-import {
   appointmentFormSchema,
+  type AppointmentFormValues,
+  ArbeitszeitRueckfrage,
   fensterEnde,
   istAusserhalbArbeitszeit,
   istVergangenheit,
   liegtInVergangenheit,
-  type AppointmentFormField,
-  type AppointmentFormValues,
-} from '@/features/appointments/api';
-import {
   speicherfehlerText,
   terminFehlerliste,
   terminFeldfehler,
-} from '@/features/appointments/terminformular';
+} from '@/features/appointments';
 import {
   fetchAssignableTherapists,
   fetchAssignableTrainers,
