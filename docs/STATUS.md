@@ -5,8 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-**Aufräumen** (Auftrag Jannes 25.10., ROADMAP 7.16): Schritt 1 liegt als PR vor – Kommentarregel
-mit Prüfung (ANN-732), die 14 extremsten Kopfkommentare gekürzt, `/aufraeumen` rein diagnostisch.
+**Aufräumen** (Auftrag Jannes 25.10., ROADMAP 7.16): Schritt 1 liegt als PR #308 vor –
+Kommentarregel mit Prüfung, die 14 extremsten Kopfkommentare gekürzt, `/aufraeumen` rein
+diagnostisch, `CLAUDE.md` auf unter 7 KB verdichtet; ANN und ADR nur noch für fachliche und
+architektonische Grundsatzentscheidungen.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.

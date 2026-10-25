@@ -417,7 +417,8 @@ Moduls geht Einheitlichkeit vor der Regel.
 Gilt für jeden Kommentar, den eine Änderung schreibt oder anfasst (Jannes, 2026-10-25):
 
 - **Höchstens drei Zeilen, nur das Warum.** Was der Code tut, sagt der Code. Braucht eine
-  Begründung mehr Platz, gehört sie ins ADR oder als Annahme ins Register; im Code steht der Verweis.
+  Begründung mehr Platz, gehört eine fachliche oder architektonische Entscheidung ins ADR oder als
+  Annahme ins Register, ein Werkzeugdetail hierher; im Code steht der Verweis.
 - **Keine Entstehungsgeschichte** („seit …“, „bisher …“) und **keine Kennungen von Tickets oder
   Epics** — die stehen in Commit und PR. Erlaubt sind `ANN-NNN`, `ADR-NNN` und Paragrafen der
   Prinzipien.
@@ -425,9 +426,11 @@ Gilt für jeden Kommentar, den eine Änderung schreibt oder anfasst (Jannes, 202
   ändert, kürzt ihn.
 
 `pnpm kommentare:check` prüft das für TypeScript, JavaScript, CSS und SQL gegen den gemeinsamen
-Vorfahren mit `origin/main` (lokal vorher `git fetch origin main`), ohne Abhängigkeiten. Was als
-Zeile zählt und was die Prüfung sieht, steht in ANN-732. Die CI führt sie im Job „Format, Lint,
-Dokumentation, Typecheck“ hinter dem Lint aus.
+Vorfahren mit `origin/main` (lokal vorher `git fetch origin main`), ohne Abhängigkeiten. Gezählt
+werden die Textzeilen eines Blocks zusammenhängender Kommentarzeilen; Trennlinien, leere Zeilen und
+Anweisungen an Werkzeuge (`eslint-disable…`, `@ts-expect-error`) zählen nicht. Geprüft werden nur
+Blöcke, die der Diff berührt; als Ticket gilt ein Kürzel mit Bindestrich und drei Ziffern. Die CI
+führt die Prüfung im Job „Format, Lint, Dokumentation, Typecheck“ hinter dem Lint aus.
 
 `/aufraeumen` (`.claude/skills/aufraeumen/SKILL.md`) misst mit `pnpm aufraeumen` Zeilen,
 Kommentaranteil, Modulgrenzen, große Dateien, Doppelungen und DB-Funktionen, vergleicht mit

@@ -95,7 +95,7 @@ jobs:
       - name: Lint (inkl. statischer Sicherheitsanalyse)
         run: pnpm lint
 
-      # Nur Kommentare, die der Pull Request oder Push schreibt oder aendert (ANN-732).
+      # Nur Kommentare, die der Pull Request oder Push schreibt oder aendert (docs/DEVELOPMENT.md).
       - name: Kommentarregel (hoechstens drei Zeilen, keine Tickets)
         env:
           BASIS: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}

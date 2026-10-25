@@ -1587,12 +1587,12 @@
         },
         {
           "id": "aufraeumen-1",
-          "name": "Aufräumen Schritt 1: Kommentarregel mit Prüfung, die extremsten Kopfkommentare gekürzt, /aufraeumen",
+          "name": "Aufräumen Schritt 1: Kommentarregel mit Prüfung, die extremsten Kopfkommentare gekürzt, /aufraeumen, CLAUDE.md verdichtet",
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-25",
           "nachweis": "Branch ccr-51128c80-r6lmjn, scripts/kommentare-check.test.mjs, scripts/aufraeumen.test.mjs, Kommentarregel in der CI, transpilierter Code der 14 gekürzten Dateien unverändert",
-          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; ANN-732; ohne Migration, ohne Oberfläche"
+          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; CLAUDE.md auf unter 7 KB verdichtet; ohne Migration, ohne Oberfläche"
         },
         {
           "id": "aufraeumen-2",
