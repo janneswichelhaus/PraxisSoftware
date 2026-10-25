@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { HakenSymbol } from './HakenSymbol';
 import { Zwischentitel } from './Zwischentitel';
 
@@ -21,6 +21,8 @@ export interface Wahl {
  * Fläche Salbei hell, das Wort fett, im Kreis ein Haken - Farbe trägt nie
  * allein. Bei „Sehr groß“ und unter 23rem eine Spalte, „Sehr groß“ 72 hoch.
  * Der Fokus ist ein Ring von 3 px Tinte außen. Ein Wort bricht nie in sich.
+ * Der Haken federt nur nach einem Tipp, nicht beim ersten Zeichnen
+ * (Handoff, Abschnitt 7; wie `Hakenzeile`).
  */
 export function Wahlflaechen({
   titel,
@@ -38,6 +40,7 @@ export function Wahlflaechen({
   onUmschalten: (schluessel: string) => void;
 }) {
   const titelId = useId();
+  const [getippt, setGetippt] = useState<string | null>(null);
   return (
     <div>
       <Zwischentitel ebene={ebene} id={titelId}>
@@ -55,12 +58,15 @@ export function Wahlflaechen({
               key={w.schluessel}
               type="button"
               aria-pressed={an}
-              onClick={() => onUmschalten(w.schluessel)}
+              onClick={() => {
+                setGetippt(w.schluessel);
+                onUmschalten(w.schluessel);
+              }}
               className={`rounded-button ease-druck focus-visible:outline-ink flex min-h-16 min-w-0 items-center justify-between gap-3 text-left wrap-break-word hyphens-manual transition-colors duration-120 focus-visible:outline-3 focus-visible:outline-offset-2 [[data-schrift=sehr-gross]_&]:min-h-18 ${
                 // Die Linie 2 der Wahl nimmt sich ihren Pixel aus dem Innenabstand:
                 // Das Wort springt beim Wählen nicht.
                 an
-                  ? 'border-accent bg-accent-soft text-accent border-2 px-[calc(1rem-1px)] py-[calc(0.5rem-1px)] font-bold'
+                  ? 'border-accent bg-accent-soft text-accent active:bg-surface-sunken border-2 px-[calc(1rem-1px)] py-[calc(0.5rem-1px)] font-bold'
                   : 'border-line-strong bg-surface text-ink active:bg-surface-sunken border px-4 py-2 font-semibold'
               }`}
             >
@@ -68,7 +74,9 @@ export function Wahlflaechen({
               {an ? (
                 <span
                   aria-hidden="true"
-                  className="bg-accent text-surface rounded-pill haken-gesetzt inline-flex size-6 shrink-0 items-center justify-center"
+                  className={`bg-accent text-surface rounded-pill inline-flex size-6 shrink-0 items-center justify-center ${
+                    getippt === w.schluessel ? 'haken-gesetzt' : ''
+                  }`}
                 >
                   <HakenSymbol className="size-4" />
                 </span>

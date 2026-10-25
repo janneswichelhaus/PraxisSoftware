@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { knopfKlassen } from './buttonStile';
+import { Terminsymbol } from './Terminsymbole';
 
 /** Eine Rufnummer zum Wählen: Art, Schreibweise und Wählziel (`telHref`). */
 export interface Anrufnummer {
@@ -16,11 +17,18 @@ export interface Anrufnummer {
  *
  * Mit `hauptknopf` ist die erste Nummer der Hauptknopf einer Seite, deren
  * Haupthandlung der Anruf ist, die übrigen bleiben sekundär (BEF-192).
+ *
+ * Mit `zweizeilig` stehen Zeichen und „{Art} anrufen“ in der ersten Zeile,
+ * die Nummer darunter - mindestens 60 hoch, wie am vergangenen Termin der
+ * Plattform (Handoff 2026-10-24 „Termine“, Abschnitt 3; ANN-736). Die Maße
+ * kommen aus der großen Stufe ohne `h-12`, das im Plattformgerüst Höhe und
+ * Innenabstand selbst setzt.
  */
 export function Anrufknoepfe({
   nummern,
   fokusbeginn = false,
   hauptknopf = false,
+  zweizeilig = false,
   ohneNummer,
 }: {
   nummern: readonly Anrufnummer[];
@@ -28,6 +36,8 @@ export function Anrufknoepfe({
   fokusbeginn?: boolean;
   /** Die erste Nummer als Hauptknopf (`primary`). */
   hauptknopf?: boolean;
+  /** Zeichen und Wort in der ersten Zeile, die Nummer in der zweiten. */
+  zweizeilig?: boolean;
   ohneNummer?: ReactNode;
 }) {
   if (nummern.length === 0) {
@@ -40,24 +50,45 @@ export function Anrufknoepfe({
   }
   return (
     <div className="flex flex-col gap-2">
-      {nummern.map((nummer, index) => (
-        <a
-          key={nummer.href}
-          href={nummer.href}
-          // Bei 200 % bricht der Knopf zwischen Wort und Nummer und zwischen den
-          // Ziffergruppen um, nie mitten darin (Handoff 2026-10-22, Abschnitt 6):
-          // Die Plattform erlaubt sonst Umbrüche überall (`overflow-wrap`).
-          className={knopfKlassen(
-            hauptknopf && index === 0 ? 'primary' : 'secondary',
-            'normal',
-            'w-full flex-wrap gap-x-2 gap-y-0 text-center wrap-normal',
-          )}
-          {...(fokusbeginn && index === 0 ? { 'data-autofocus': true } : {})}
-        >
-          {nummer.label} anrufen
-          <span className="tabular-nums">{nummer.anzeige}</span>
-        </a>
-      ))}
+      {nummern.map((nummer, index) =>
+        zweizeilig ? (
+          <a
+            key={nummer.href}
+            href={nummer.href}
+            className={knopfKlassen(
+              hauptknopf && index === 0 ? 'primary' : 'secondary',
+              'gross',
+              'w-full text-center',
+            )}
+            {...(fokusbeginn && index === 0 ? { 'data-autofocus': true } : {})}
+          >
+            <span className="flex flex-col items-center py-1">
+              <span className="inline-flex items-center gap-2">
+                <Terminsymbol zeichen="telefon" className="size-5 shrink-0" />
+                {nummer.label} anrufen
+              </span>{' '}
+              <span className="font-normal tabular-nums">{nummer.anzeige}</span>
+            </span>
+          </a>
+        ) : (
+          <a
+            key={nummer.href}
+            href={nummer.href}
+            // Bei 200 % bricht der Knopf zwischen Wort und Nummer und zwischen den
+            // Ziffergruppen um, nie mitten darin (Handoff 2026-10-22, Abschnitt 6):
+            // Die Plattform erlaubt sonst Umbrüche überall (`overflow-wrap`).
+            className={knopfKlassen(
+              hauptknopf && index === 0 ? 'primary' : 'secondary',
+              'normal',
+              'w-full flex-wrap gap-x-2 gap-y-0 text-center wrap-normal',
+            )}
+            {...(fokusbeginn && index === 0 ? { 'data-autofocus': true } : {})}
+          >
+            {nummer.label} anrufen
+            <span className="tabular-nums">{nummer.anzeige}</span>
+          </a>
+        ),
+      )}
     </div>
   );
 }

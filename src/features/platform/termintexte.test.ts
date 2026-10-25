@@ -152,6 +152,10 @@ describe('rolle („Wer und wo“)', () => {
 
   it('durchgeführt beim Hausbesuch „war bei Ihnen“, sonst nur der Name', () => {
     expect(rolle(termin('2026-10-20', { status: 'completed' }), null, JETZT)).toBe('war bei Ihnen');
+    // Für eine Vertretung war der Besuch bei der Person, nicht bei ihr.
+    expect(rolle(termin('2026-10-20', { status: 'completed' }), 'Maximilian', JETZT)).toBe(
+      'war da',
+    );
     expect(rolle(termin('2026-10-20', { ...praxis, status: 'completed' }), null, JETZT)).toBeNull();
     expect(rolle(termin('2026-10-20', { status: 'cancelled' }), null, JETZT)).toBeNull();
     expect(rolle(termin('2026-10-20', { status: 'no_show' }), null, JETZT)).toBeNull();
@@ -196,6 +200,15 @@ describe('Wunsch in Worten', () => {
     expect(wunschInWorten(wunsch({ preferred_days: ['2026-10-26'] }))).toBe(
       'Montag, zu jeder Tageszeit',
     );
+    // Ab drei steht „oder“ nur vor dem letzten.
+    expect(
+      wunschInWorten(
+        wunsch({
+          preferred_days: ['2026-10-26', '2026-10-27', '2026-10-28'],
+          preferred_times: ['morning', 'midday', 'afternoon'],
+        }),
+      ),
+    ).toBe('Montag, Dienstag oder Mittwoch, vormittags, mittags oder nachmittags');
     expect(wunschInWorten(wunsch({ kind: 'cancel' }))).toBeNull();
   });
 

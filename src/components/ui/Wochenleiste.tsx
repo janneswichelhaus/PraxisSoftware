@@ -1,4 +1,4 @@
-import { useId, type CSSProperties } from 'react';
+import { useId, useState, type CSSProperties } from 'react';
 import { HakenSymbol } from './HakenSymbol';
 import { Zwischentitel } from './Zwischentitel';
 
@@ -52,6 +52,8 @@ export function Wochenleiste({
   ebene?: 2 | 3;
 }) {
   const titelId = useId();
+  // Der Haken federt nur nach einem Tipp, nicht beim ersten Zeichnen.
+  const [getippt, setGetippt] = useState<number | null>(null);
   const linie = gesperrt ? 'border-dashed' : 'border-solid';
   return (
     <div>
@@ -74,10 +76,15 @@ export function Wochenleiste({
               type="button"
               aria-pressed={an}
               disabled={gesperrt}
-              onClick={() => onUmschalten(w.nummer)}
+              onClick={() => {
+                setGetippt(w.nummer);
+                onUmschalten(w.nummer);
+              }}
               className={`border-line-strong ease-druck focus-visible:outline-ink aria-pressed:focus-visible:outline-surface max-[23rem]:rounded-button flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-1 transition-colors duration-120 not-first:border-l focus-visible:outline-3 focus-visible:-outline-offset-3 disabled:cursor-not-allowed max-[23rem]:min-h-12 max-[23rem]:border ${linie} ${zelle(an, gesperrt)}`}
             >
-              {an ? <HakenSymbol className="size-4" /> : null}
+              {an ? (
+                <HakenSymbol className={`size-4 ${getippt === w.nummer ? 'haken-gesetzt' : ''}`} />
+              ) : null}
               <span aria-hidden="true">{w.kurz}</span>
               <span className="sr-only">{w.lang}</span>
             </button>

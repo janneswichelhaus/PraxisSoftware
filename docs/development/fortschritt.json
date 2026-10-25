@@ -1592,7 +1592,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-25",
           "nachweis": "DRP-050, Branch ccr-544f8ce7-u1sqpf, src/features/platform/termintexte.test.ts, src/features/platform/Terminbausteine.test.tsx, tests/e2e/plattform-terminbausteine.spec.ts (Prüfseite plattform-terminbausteine.html), src/lib/kontrast.test.ts, Design-Review",
-          "vermerk": "Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 3a (Handoff 2026-10-24 „Termine“, Abschnitt 9 Punkt 1), Fragen wie empfohlen; ANN-732 bis ANN-736; BEF-220 teilweise erledigt (Liste mit 3b); nur Oberfläche, ohne Migration, ohne Auditeintrag"
+          "vermerk": "Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 3a (Handoff 2026-10-24 „Termine“, Abschnitt 9 Punkt 1), Fragen wie empfohlen; ANN-732 bis ANN-739; BEF-220 teilweise erledigt (Liste mit 3b); nur Oberfläche, ohne Migration, ohne Auditeintrag"
         }
       ]
     },

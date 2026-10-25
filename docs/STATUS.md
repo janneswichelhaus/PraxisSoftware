@@ -57,4 +57,4 @@ Löschjournal, übrige Löschwege von Hand durchsehen; Pfad A), BEF-223 (Zeitums
 Termine selbst an; danach BEF-215 und BEF-218 – das Fenster „Übung zum Nachlesen“ nutzt die
 Anleitung der Durchführung, die Vorschau rechnet mit der Einheit auf dem Gerät (ANN-730); dann 2d
 Planblatt – „Plan als PDF“, Vorschau als Blatt, Druck A4 (ANN-731); dann 3a – die Bausteine der
-Termine (ANN-732 bis -736, BEF-220 teilweise). Keine Migration, kein Seed. Lokal: `git pull`.
+Termine (ANN-732 bis -739, BEF-220 teilweise). Keine Migration, kein Seed. Lokal: `git pull`.

@@ -45,10 +45,14 @@ import type { Personenfarbe } from './personenfarben';
  * üben“). Mit `schmalOhneRad` fällt dort unter 23rem das Laufrad weg, innen
  * 16 (Abschnitt 4): Die Angaben brauchen die ganze Breite.
  */
-/** Die ganze Karte als Ziel: Ring außen beim Fokus des Titels, Druck 98 %. */
+/**
+ * Die ganze Karte als Ziel: Ring außen beim Fokus des Titels; beim Drücken
+ * 98 % und die Fläche in der helleren Hauptfarbe - bei „Bewegung reduzieren“
+ * nur die Fläche (Handoff „Termine“, Abschnitt 7).
+ */
 const ZIEL =
   'has-[.hero-ziel:focus-visible]:outline-3 has-[.hero-ziel:focus-visible]:outline-offset-3 has-[.hero-ziel:focus-visible]:outline-ink ' +
-  'motion-safe:active:scale-98 transition-[scale] duration-120 ease-druck';
+  'active:bg-accent motion-safe:active:scale-98 transition-[scale,background-color] duration-120 ease-druck';
 
 export function HeroKarte({
   etikett = 'Als Nächstes',
@@ -129,7 +133,8 @@ export function HeroKarte({
       ) : null}
       {person ? (
         // Unter 23rem das Bild über der Zeile (wie Aufgaben- und Besuchskarte);
-        // ein Name wird nie getrennt (DR-114).
+        // ein Name wird nie getrennt (DR-114). Das Bild auf der Farbe der
+        // Person, nicht auf Papier - wie auf der Übersicht (ANN-739).
         <p className="relative mt-2 flex items-center gap-4 font-semibold hyphens-manual max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:gap-2">
           <Personenbild name={person.name} farbe={person.farbe} groesse="karte" />
           <span className="flex min-w-0 flex-col">

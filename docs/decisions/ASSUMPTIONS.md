@@ -7645,7 +7645,7 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
-**Annahme.** „Wer und wo“ nennt den Namen und die Rolle als Satzrest: „kommt zu Ihnen“, „erwartet Sie in der Praxis“, „per Video“, nach dem Termin beim Hausbesuch „war bei Ihnen“, sonst nur den Namen. „Ihr Therapeut“ oder „Ihre Therapeutin“ steht nirgends; die Daten kennen nur `staff_name`.
+**Annahme.** „Wer und wo“ nennt den Namen und die Rolle als Satzrest: „kommt zu Ihnen“, „erwartet Sie in der Praxis“, „per Video“, nach dem Termin beim Hausbesuch „war bei Ihnen“ (für eine Vertretung „kommt“ und „war da“), sonst nur den Namen. „Ihr Therapeut“ oder „Ihre Therapeutin“ steht nirgends; die Daten kennen nur `staff_name`.
 
 **Begründung.** Handoff 2026-10-24 „Termine“, Festlegungen in Abschnitt 0 und die Tabelle in Abschnitt 3.
 
@@ -7657,7 +7657,7 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
-**Annahme.** Ein Wunsch nennt seine Tage nach Wochentag zusammengefasst mit „oder“ („Dienstag oder Donnerstag, vormittags“), alle fünf als „Montag bis Freitag“, ohne Tageszeit „zu jeder Tageszeit“ - statt jedes Datum aufzuzählen. Jeder einzelne Tag passt; an den Server gehen weiter die Kalendertage.
+**Annahme.** Ein Wunsch nennt seine Tage nach Wochentag zusammengefasst mit „oder“ („Dienstag oder Donnerstag, vormittags“; ab drei „Montag, Dienstag oder Mittwoch“), alle fünf als „Montag bis Freitag“, ohne Tageszeit „zu jeder Tageszeit“ - statt jedes Datum aufzuzählen. Jeder einzelne Tag passt; an den Server gehen weiter die Kalendertage.
 
 **Begründung.** Handoff 2026-10-24 „Termine“, Festlegungen in Abschnitt 0; DR-159.
 
@@ -7669,10 +7669,46 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
-**Annahme.** Am vergangenen Termin ist „Praxis anrufen“ mit der Nummer aus N2 der Hauptknopf über „Fragen zu diesem Termin?“, 60 hoch, die Nummer in einer zweiten Zeile; sonst eine Zeile der Liste. Ohne Nummer bleibt nur „Der Praxis schreiben“ - kein Satz, der zu einem Anruf auffordert.
+**Annahme.** Am vergangenen Termin ist „Praxis anrufen“ mit der Nummer aus N2 der Hauptknopf über „Fragen zu diesem Termin?“ (`Anrufknoepfe` zweizeilig), mindestens 60 hoch, die Nummer in einer zweiten Zeile; sonst eine Zeile der Liste. Ohne Nummer bleibt nur „Der Praxis schreiben“ - kein Satz, der zu einem Anruf auffordert.
 
 **Begründung.** DR-133, BEF-221; Handoff 2026-10-24 „Termine“, Abschnitt 3; ANN-688, ANN-691.
 
 **Anker.** `FragenZumTermin` in `src/features/platform/Terminbausteine.tsx`.
 
 **Änderungspfad.** `anrufenAlsHauptknopf` nicht setzen · Aufwand `klein`.
+
+### ANN-737 — Termine: die Rufnummer bricht bei 200 % zwischen ihren Gruppen
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Nummer der Praxis unter „Praxis anrufen“ darf zwischen ihren Gruppen umbrechen („+49 7071“ / „0000000“), nie in einer Gruppe; Handoff 6 verlangt `white-space: nowrap`. Unter 23rem steht die Zeile innen 12.
+
+**Begründung.** Bei 188 px ist die Nummer rund 148 px breit, die Zeile hat 130 px; mit `nowrap` lief sie über den Rahmen und wurde angeschnitten (Design-Review 3a, B1; PLATTFORM.md Grundsatz 3). `Anrufknoepfe` bricht seit Handoff 1 ebenso.
+
+**Anker.** `Fragezeile` in `src/features/platform/Terminbausteine.tsx`.
+
+**Änderungspfad.** Wieder `whitespace-nowrap`, wenn die Zeile bei 200 % breiter wird · Aufwand `klein`.
+
+### ANN-738 — „Wer und wo“: unter 23rem das Zeichen über der Anschrift
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** Unter 23rem steht das Zeichen „Ort“ über der Anschrift statt in einer Spalte von 26 daneben; Name, Rolle und Anschrift werden nie getrennt.
+
+**Begründung.** Neben der Spalte blieben bei 200 % rund 100 px, „Hauptstandort“ und „Neckarhalde“ brachen im Wort (Design-Review 3a, B2; PLATTFORM.md „nie in Namen, Anschriften“, DR-114).
+
+**Anker.** `WerUndWo` in `src/features/platform/Terminbausteine.tsx`.
+
+**Änderungspfad.** Spalte 26 wie im Handoff, wenn die Anschrift zweizeilig gesetzt wird · Aufwand `klein`.
+
+### ANN-739 — Hero-Karte: das Personenbild auf seiner Farbe, nicht auf Papier
+
+Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
+
+**Annahme.** In der Hero-Karte steht das Personenbild wie auf der Übersicht auf der Farbe der Person (ohne Farbe Schiefer) mit weißen Initialen, nicht als Papier mit Initialen in Tiefgrün.
+
+**Begründung.** Handoff „Termine“ (Abschnitt 2) nennt Papier; Handoff 1 (Abschnitt 3) und DESIGN.md 9.10 nennen die Personenfarbe (ANN-666). Dieselbe Karte sähe auf Übersicht und Terminen sonst verschieden aus (Design-Review 3a, H4).
+
+**Anker.** `Personenbild` in `src/components/ui/HeroKarte.tsx`.
+
+**Änderungspfad.** Eine Fassung „auf Papier“ am `Personenbild` und an beiden Hero-Karten · Aufwand `klein`.

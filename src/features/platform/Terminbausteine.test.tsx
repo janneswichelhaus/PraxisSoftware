@@ -1,18 +1,14 @@
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HeroKarte } from '@/components/ui/HeroKarte';
+import { Terminliste } from '@/components/ui/Terminliste';
 import { Wahlflaechen } from '@/components/ui/Wahlflaechen';
 import { Wochenleiste } from '@/components/ui/Wochenleiste';
 import { renderWithProviders } from '@/test-utils';
 import type { Termin, Terminwunsch } from './api';
-import {
-  FragenZumTermin,
-  Terminliste,
-  Terminzeile,
-  WerUndWo,
-  Wunschzeile,
-} from './Terminbausteine';
+import { FragenZumTermin, Terminzeile, WerUndWo, Wunschzeile } from './Terminbausteine';
 
 /**
  * Die Bausteine der Termine (Schritt 3a, Handoff 2026-10-24 „Termine“,
@@ -197,9 +193,10 @@ describe('FragenZumTermin', () => {
       />,
     );
     expect(within(screen.getByRole('list')).getAllByRole('link')).toHaveLength(1);
-    expect(screen.getByRole('link', { name: /Praxis anrufen/ })).toHaveTextContent(
-      '+49 7071 0000000',
-    );
+    const knopf = screen.getByRole('link', { name: /Praxis anrufen/ });
+    expect(knopf).toHaveTextContent('+49 7071 0000000');
+    // Ohne `h-12`: Im Gerüst setzte es Höhe und Innenabstand selbst (Design-Review 3a, B4).
+    expect(knopf).not.toHaveClass('h-12');
     unmount();
 
     renderWithProviders(
@@ -260,6 +257,30 @@ describe('Wahlflaechen und Wochenleiste', () => {
     );
     await user.click(within(gruppe).getByRole('button', { name: 'Vormittag' }));
     expect(umschalten).toHaveBeenCalledWith('morning');
+  });
+
+  it('der Haken federt nur nach einem Tipp, nicht beim ersten Zeichnen', async () => {
+    const user = userEvent.setup();
+    function Probe() {
+      const [gewaehlt, setGewaehlt] = useState(['egal']);
+      return (
+        <Wahlflaechen
+          titel="Zu welcher Tageszeit?"
+          wahlen={[
+            { schluessel: 'morning', text: 'Vormittag' },
+            { schluessel: 'egal', text: 'Egal' },
+          ]}
+          gewaehlt={gewaehlt}
+          onUmschalten={(s) => setGewaehlt([s])}
+        />
+      );
+    }
+    const { container } = renderWithProviders(<Probe />);
+    expect(container.querySelector('.haken-gesetzt')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Vormittag' }));
+    expect(
+      screen.getByRole('button', { name: 'Vormittag' }).querySelector('.haken-gesetzt'),
+    ).not.toBeNull();
   });
 
   it('Wochenleiste: Überschrift auf Wunsch als h2, so viele Spalten wie Tage', () => {

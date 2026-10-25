@@ -142,8 +142,8 @@ export function terminzeileName(
  * Die Rolle unter dem Namen in „Wer und wo“ (Handoff, Abschnitt 3): kommend
  * „kommt zu Ihnen“, „erwartet Sie in der Praxis“, „per Video“; durchgeführt
  * beim Hausbesuch „war bei Ihnen“; sonst nur der Name (`null`). Für eine
- * Vertretung „kommt“ bzw. „erwartet {Name} in der Praxis“. Die Daten kennen
- * nur den Namen - ein Geschlecht steht nirgends (ANN-734).
+ * Vertretung „kommt“, „war da“ bzw. „erwartet {Name} in der Praxis“. Die
+ * Daten kennen nur den Namen - ein Geschlecht steht nirgends (ANN-734).
  */
 export function rolle(
   termin: Termin,
@@ -151,7 +151,10 @@ export function rolle(
   jetzt: Date = new Date(),
 ): string | null {
   const art = termin.appointment_type;
-  if (termin.status === 'completed') return art === 'home_visit' ? 'war bei Ihnen' : null;
+  if (termin.status === 'completed') {
+    if (art !== 'home_visit') return null;
+    return vertretung ? 'war da' : 'war bei Ihnen';
+  }
   if (termin.status !== 'confirmed' || !kuenftig(termin.ends_at, jetzt)) return null;
   if (art === 'home_visit') return vertretung ? 'kommt' : 'kommt zu Ihnen';
   if (art === 'video') return 'per Video';
@@ -183,11 +186,17 @@ const TAGESZEIT_ADVERB: Record<Terminwunsch['preferred_times'][number], string> 
   afternoon: 'nachmittags',
 };
 
+/** „Dienstag oder Donnerstag“, „Montag, Dienstag oder Mittwoch“ - das letzte mit „oder“. */
+function mitOder(woerter: readonly string[]): string {
+  if (woerter.length <= 2) return woerter.join(' oder ');
+  return `${woerter.slice(0, -1).join(', ')} oder ${woerter[woerter.length - 1]}`;
+}
+
 /** „Dienstag oder Donnerstag“, alle fünf „Montag bis Freitag“. */
 function tageMitOder(tage: readonly Wochentag[]): string {
   const gewaehlt = WOCHENTAGE.filter((t) => tage.includes(t));
   if (gewaehlt.length === WOCHENTAGE.length) return 'Montag bis Freitag';
-  return gewaehlt.map((t) => WOCHENTAG_NAME[t]).join(' oder ');
+  return mitOder(gewaehlt.map((t) => WOCHENTAG_NAME[t]));
 }
 
 /**
@@ -206,7 +215,7 @@ export function wunschInWorten(
   ];
   if (tage.length === 0) return null;
   const zeiten = wunsch.preferred_times.map((z) => TAGESZEIT_ADVERB[z]);
-  return `${tageMitOder(tage)}, ${zeiten.length > 0 ? zeiten.join(' oder ') : 'zu jeder Tageszeit'}`;
+  return `${tageMitOder(tage)}, ${zeiten.length > 0 ? mitOder(zeiten) : 'zu jeder Tageszeit'}`;
 }
 
 /**

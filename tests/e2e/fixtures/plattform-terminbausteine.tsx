@@ -5,6 +5,7 @@ import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { HeroKarte } from '@/components/ui/HeroKarte';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
+import { Terminliste } from '@/components/ui/Terminliste';
 import { Terminkreis } from '@/components/ui/Terminsymbole';
 import { Wahlflaechen } from '@/components/ui/Wahlflaechen';
 import { Wochenleiste } from '@/components/ui/Wochenleiste';
@@ -14,7 +15,6 @@ import { useRechner } from '@/features/platform/geruestbreite';
 import { terminPerson, terminTitel, terminZeit } from '@/features/platform/hauptsache';
 import {
   FragenZumTermin,
-  Terminliste,
   Terminzeile,
   WerUndWo,
   Wunschzeile,
@@ -205,9 +205,12 @@ export function Seite() {
             <Badge ton="warnung">nicht angetroffen</Badge>
           </p>
           {/* BEF-220: neben einem langen Titel rückt das Zeichen in die nächste
-              Zeile, statt im Wort zu brechen. */}
-          <p data-testid="enge-zeile" className="flex items-start gap-2">
-            <span className="min-w-0 font-semibold">Hausbesuch bei Maximilian</span>
+              Zeile, statt im Wort zu brechen - wie in der Wunschzeile. */}
+          <p
+            data-testid="enge-zeile"
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 hyphens-manual"
+          >
+            <span className="font-semibold">Hausbesuch bei Maximilian</span>
             <Badge ton="akzent" eigenesZeichen={STATUSZEICHEN.wartet}>
               Änderung angefragt
             </Badge>

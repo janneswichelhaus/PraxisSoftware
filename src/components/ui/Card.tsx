@@ -185,7 +185,8 @@ export function Disclosure({
             eine Überschrift sein, und die gehört nicht in ein `span`. Das
             Leerzeichen davor steht für Vorlesesoftware da; sichtbar trägt den
             Abstand der Kopf selbst. */}
-        {anzahl === undefined ? null : <span className="-ml-1"> ({anzahl})</span>}
+        {/* Die Zahl in Klammern bricht nie in sich, auch bei 200 % (BEF-220). */}
+        {anzahl === undefined ? null : <span className="-ml-1 whitespace-nowrap"> ({anzahl})</span>}
       </summary>
       <div className={inKarte ? 'border-line mt-1 border-t pt-3 pb-2.5' : 'mt-2'}>{children}</div>
     </details>

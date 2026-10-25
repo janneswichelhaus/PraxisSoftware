@@ -67,14 +67,17 @@ async function kleineZiele(page: Page): Promise<string[]> {
 }
 
 /**
- * Wörter, die über zwei Zeilen brechen - in Statuszeichen und Knöpfen
- * (BEF-220). Ein Wort, das ganz bleibt, steht auf einer Zeile; ein
- * zusammengesetzter Name bricht höchstens nach seinem Bindestrich.
+ * Wörter, die über zwei Zeilen brechen - in Statuszeichen, Knöpfen und den
+ * Zeilen der Listen mit Tag, Namen und Anschrift (BEF-220, DR-114). Ein
+ * Wort, das ganz bleibt, steht auf einer Zeile; ein zusammengesetzter Name
+ * bricht höchstens nach seinem Bindestrich.
  */
 async function gebrocheneWoerter(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const funde: string[] = [];
-    const ziele = document.querySelectorAll<HTMLElement>('main .rounded-pill, main button, main a');
+    const ziele = document.querySelectorAll<HTMLElement>(
+      'main .rounded-pill, main button, main a, main li, main section[aria-label], [data-testid="enge-zeile"]',
+    );
     for (const ziel of ziele) {
       const gehen = document.createTreeWalker(ziel, NodeFilter.SHOW_TEXT);
       for (let knoten = gehen.nextNode(); knoten; knoten = gehen.nextNode()) {
@@ -86,6 +89,40 @@ async function gebrocheneWoerter(page: Page): Promise<string[]> {
           bereich.setEnd(knoten, fund.index + fund[0].length);
           const zeilen = new Set([...bereich.getClientRects()].map((r) => Math.round(r.top)));
           if (zeilen.size > 1) funde.push(fund[0]);
+        }
+      }
+    }
+    return funde;
+  });
+}
+
+/**
+ * Angeschnittener Text: Text, der über den Rand eines Elements hinausragt,
+ * das nicht sichtbar überlaufen darf (`overflow` nicht `visible`) - etwa
+ * eine Rufnummer in der Liste mit Rahmen bei 200 % (Design-Review 3a, B1).
+ * Zeichen wie das Laufrad der Hero-Karte dürfen angeschnitten sein; sie
+ * sind für Vorlesesoftware ausgeblendet und tragen keinen Text.
+ */
+async function angeschnitten(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const funde: string[] = [];
+    const gehen = document.createTreeWalker(document.querySelector('main')!, NodeFilter.SHOW_TEXT);
+    for (let knoten = gehen.nextNode(); knoten; knoten = gehen.nextNode()) {
+      const text = knoten.textContent?.trim();
+      const element = knoten.parentElement;
+      if (!text || !element || element.closest('.sr-only, [aria-hidden="true"]')) continue;
+      let rahmen = element.parentElement;
+      while (rahmen && getComputedStyle(rahmen).overflowX === 'visible') {
+        rahmen = rahmen.parentElement;
+      }
+      if (!rahmen || rahmen === document.body) continue;
+      const grenze = rahmen.getBoundingClientRect();
+      const bereich = document.createRange();
+      bereich.selectNodeContents(knoten);
+      for (const r of bereich.getClientRects()) {
+        if (r.width > 0 && (r.right > grenze.right + 1 || r.left < grenze.left - 1)) {
+          funde.push(`${text.slice(0, 40)} (${Math.round(r.right)} > ${Math.round(grenze.right)})`);
+          break;
         }
       }
     }
@@ -127,6 +164,7 @@ test.describe('Bausteine der Termine (Schritt 3a)', () => {
       await oeffne(page, breite, schrift);
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await gebrocheneWoerter(page)).toEqual([]);
+      expect(await angeschnitten(page), 'angeschnitten').toEqual([]);
     });
   }
 

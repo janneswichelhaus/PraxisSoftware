@@ -1,10 +1,11 @@
-import { useId, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { Anrufknoepfe } from '@/components/ui/Anrufknoepfe';
 import { Badge, STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
-import { knopfKlassen } from '@/components/ui/buttonStile';
 import { Personenbild } from '@/components/ui/Personenbild';
+import { Section } from '@/components/ui/Section';
+import { Terminliste } from '@/components/ui/Terminliste';
 import { Terminkreis, Terminsymbol } from '@/components/ui/Terminsymbole';
-import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { telHref } from '@/lib/telefon';
 import type { Plattformzugang, Termin, Terminwunsch } from './api';
 import {
@@ -24,26 +25,14 @@ import { terminBeschreibung } from './terminbeschreibung';
 
 /**
  * Die Bausteine der Termine (Handoff 2026-10-24 „Termine“, Abschnitt 3;
- * Schritt 3a): Liste und Zeile eines Termins, Zeile eines Wunschs, „Wer und
- * wo“ und „Fragen zu diesem Termin?“. Reine Darstellung - was die Seite
- * lädt, wann sie etwas zeigt und was ein Tipp auslöst, entscheiden die
- * Seiten (3b Liste, 3c Seite des Termins). Die Wörter kommen aus
- * `termintexte.ts`; ein Wort bricht nie in sich (BEF-220).
+ * Schritt 3a): Zeile eines Termins, Zeile eines Wunschs, „Wer und wo“ und
+ * „Fragen zu diesem Termin?“; die Liste darum ist `Terminliste`. Reine
+ * Darstellung - was die Seite lädt, wann sie etwas zeigt und was ein Tipp
+ * auslöst, entscheiden die Seiten (3b Liste, 3c Seite des Termins). Die
+ * Wörter kommen aus `termintexte.ts`; ein Wort bricht nie in sich (BEF-220).
  */
 
 type Bereich = Plattformzugang['relationship_kind'];
-
-/** Eine Liste mit Rahmen; Trenner ab der zweiten Zeile (`Terminzeile`, `Wunschzeile`). */
-export function Terminliste({ children, name }: { children: ReactNode; name?: string }) {
-  return (
-    <ul
-      aria-label={name}
-      className="border-line bg-surface rounded-card [&>li+li]:border-line overflow-hidden border [&>li+li]:border-t"
-    >
-      {children}
-    </ul>
-  );
-}
 
 /**
  * Ein Termin als Zeile (Handoff, Abschnitt 3): vorn der Kreis der Art, dann
@@ -72,7 +61,7 @@ export function Terminzeile({
       <Link
         to={to}
         aria-label={terminzeileName(termin, bereich, jetzt)}
-        className="text-ink hover:bg-surface-sunken active:bg-surface-sunken ease-druck focus-visible:outline-ink flex min-h-20 items-center gap-3 px-3 py-3.5 transition-colors duration-120 focus-visible:outline-3 focus-visible:-outline-offset-3 max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:p-3 [[data-schrift=sehr-gross]_&]:flex-col [[data-schrift=sehr-gross]_&]:items-start [[data-schrift=sehr-gross]_&]:p-3"
+        className="text-ink hover:bg-surface-sunken active:bg-surface-sunken ease-druck focus-visible:outline-ink flex min-h-20 items-center gap-3 px-3 py-3.5 transition-[background-color,scale] duration-120 focus-visible:outline-3 focus-visible:-outline-offset-3 motion-safe:active:scale-98 max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:p-3 [[data-schrift=sehr-gross]_&]:flex-col [[data-schrift=sehr-gross]_&]:items-start [[data-schrift=sehr-gross]_&]:p-3"
       >
         <span className="self-start">
           <Terminkreis
@@ -142,23 +131,23 @@ export function Wunschzeile({
   const zustand = WUNSCHZUSTAND[wunsch.status];
   const wann = wunschInWorten(wunsch);
   return (
-    <li className="flex gap-3 px-4 py-3.5 hyphens-manual">
+    <li className="flex gap-3 px-4 py-3.5">
       <span className="max-[23rem]:hidden">
         <Terminkreis zeichen="kalender" />
       </span>
       <div className="flex min-w-0 grow flex-col">
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 hyphens-manual">
           <span className="font-semibold">{wunschTitel(wunsch, termine, jetzt)}</span>
           <Statuszeichen {...zustand} />
         </p>
-        {wann ? <p>{wann}</p> : null}
+        {wann ? <p className="hyphens-manual">{wann}</p> : null}
         {wunsch.note ? <p className="text-ink-muted">„{wunsch.note}“</p> : null}
         {wunsch.answer ? (
           <p>
             <span className="font-semibold">Antwort der Praxis:</span> {wunsch.answer}
           </p>
         ) : null}
-        <p className="text-ink-muted">{gesendetAm(wunsch, jetzt)}</p>
+        <p className="text-ink-muted hyphens-manual">{gesendetAm(wunsch, jetzt)}</p>
         {zurueckziehen ? <div className="mt-1">{zurueckziehen}</div> : null}
       </div>
     </li>
@@ -169,7 +158,9 @@ export function Wunschzeile({
  * Wer und wo (Handoff, Abschnitt 3): eine Karte mit Rahmen - vorn die
  * Person mit Initialen, daneben Name und Rolle; nach einer Linie das Zeichen
  * „Ort“ und die Anschrift bzw. der Standort. Beim Video entfällt der Ort.
- * Unter 23rem gestapelt.
+ * Unter 23rem gestapelt, auch das Zeichen über der Anschrift: Neben der
+ * Spalte blieben bei 200 % rund 100 px, und „Hauptstandort“ bräche im Wort
+ * (ANN-738). Name, Rolle und Anschrift werden nie getrennt (DR-114).
  */
 export function WerUndWo({
   termin,
@@ -189,12 +180,12 @@ export function WerUndWo({
   return (
     <section
       aria-label="Wer und wo"
-      className="border-line bg-surface rounded-card flex flex-col border hyphens-manual"
+      className="border-line bg-surface rounded-card flex flex-col border"
     >
       {wer ? (
         <div className="flex items-center gap-4 px-4 py-3.5 max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:gap-2 max-[23rem]:p-3">
           <Personenbild name={wer} farbe={null} groesse="karte" />
-          <p className="flex min-w-0 flex-col">
+          <p className="flex min-w-0 flex-col hyphens-manual">
             <span className="font-semibold">{wer}</span>
             {wieDieRolle ? <span className="text-ink-muted">{wieDieRolle}</span> : null}
           </p>
@@ -202,14 +193,14 @@ export function WerUndWo({
       ) : null}
       {mitOrt ? (
         <div
-          className={`flex items-center gap-4 px-4 py-3.5 max-[23rem]:gap-3 max-[23rem]:p-3 ${
+          className={`flex items-center gap-4 px-4 py-3.5 max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:gap-2 max-[23rem]:p-3 ${
             wer ? 'border-line border-t' : ''
           }`}
         >
-          <span className="text-ink-muted inline-flex w-14 shrink-0 justify-center max-[23rem]:w-6.5">
+          <span className="text-ink-muted inline-flex w-14 shrink-0 justify-center max-[23rem]:w-auto">
             <Terminsymbol zeichen="ort" className="size-6.5" />
           </span>
-          <p className="min-w-0">{ort}</p>
+          <p className="min-w-0 hyphens-manual">{ort}</p>
         </div>
       ) : null}
     </section>
@@ -220,9 +211,11 @@ export function WerUndWo({
  * Fragen zu diesem Termin? (Handoff, Abschnitt 3): eine Liste mit „Praxis
  * anrufen“ (mit der Nummer, nur wenn die Praxis eine hat) und „Der Praxis
  * schreiben“. Am vergangenen Termin ist „Praxis anrufen“ der Hauptknopf
- * über der Liste, 60 hoch, die Nummer in einer zweiten Zeile (DR-133,
- * BEF-221; Muster `Anrufknoepfe` mit `hauptknopf`, ANN-688, ANN-736). Die Nummer
- * steht, wie sie gespeichert ist, und bricht nie.
+ * über der Liste, die Nummer in einer zweiten Zeile (DR-133, BEF-221;
+ * `Anrufknoepfe` zweizeilig, ANN-736). Die Nummer steht, wie sie gespeichert
+ * ist, und bricht bei 200 % nur zwischen ihren Gruppen (ANN-737). Der
+ * Abschnitt ist ein `Section`; in einem Stapel mit `gap` steht er allein in
+ * seinem Block, sonst zählte sein Abstand zum Vorgänger doppelt.
  */
 export function FragenZumTermin({
   rufnummer,
@@ -236,44 +229,37 @@ export function FragenZumTermin({
   anrufenAlsHauptknopf?: boolean;
 }) {
   const hauptknopf = anrufenAlsHauptknopf && rufnummer;
-  const titelId = useId();
   return (
-    <section aria-labelledby={titelId} className="flex flex-col gap-4">
-      <Zwischentitel ebene={2} stufe="abschnitt" id={titelId}>
-        Fragen zu diesem Termin?
-      </Zwischentitel>
-      {hauptknopf ? (
-        <a
-          href={telHref(rufnummer)}
-          className={knopfKlassen(
-            'primary',
-            'normal',
-            'min-h-15 w-full flex-col gap-0 py-1.5 text-center',
-          )}
-        >
-          <span className="inline-flex items-center gap-2">
-            <Terminsymbol zeichen="telefon" className="size-5" />
-            Praxis anrufen
-          </span>
-          <span className="font-normal whitespace-nowrap tabular-nums">{rufnummer}</span>
-        </a>
-      ) : null}
-      <Terminliste>
-        {rufnummer && !hauptknopf ? (
-          <Fragezeile
-            zeichen="telefon"
-            wort="Praxis anrufen"
-            zusatz={rufnummer}
-            ziel={{ href: telHref(rufnummer) }}
+    <Section titel="Fragen zu diesem Termin?">
+      <div className="flex flex-col gap-4">
+        {hauptknopf ? (
+          <Anrufknoepfe
+            nummern={[{ label: 'Praxis', anzeige: rufnummer, href: telHref(rufnummer) }]}
+            hauptknopf
+            zweizeilig
           />
         ) : null}
-        <Fragezeile zeichen="nachricht" wort="Der Praxis schreiben" ziel={{ to: schreiben }} />
-      </Terminliste>
-    </section>
+        <Terminliste>
+          {rufnummer && !hauptknopf ? (
+            <Fragezeile
+              zeichen="telefon"
+              wort="Praxis anrufen"
+              zusatz={rufnummer}
+              ziel={{ href: telHref(rufnummer) }}
+            />
+          ) : null}
+          <Fragezeile zeichen="nachricht" wort="Der Praxis schreiben" ziel={{ to: schreiben }} />
+        </Terminliste>
+      </div>
+    </Section>
   );
 }
 
-/** Eine Zeile der Fragen: 64 hoch, Zeichen in der Hauptfarbe, Pfeil in Leise. */
+/**
+ * Eine Zeile der Fragen: 64 hoch, Zeichen in der Hauptfarbe, Pfeil in Leise;
+ * beim Drücken Fläche und 98 % wie jede Zeile. Unter 23rem steht das Zeichen
+ * über dem Text, innen 12, ohne Pfeil.
+ */
 function Fragezeile({
   zeichen,
   wort,
@@ -286,14 +272,15 @@ function Fragezeile({
   ziel: { href: string } | { to: string };
 }) {
   const klassen =
-    'text-ink hover:bg-surface-sunken active:bg-surface-sunken ease-druck focus-visible:outline-ink flex min-h-16 items-center gap-4 px-4 py-2.5 transition-colors duration-120 focus-visible:outline-3 focus-visible:-outline-offset-3 max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:gap-2';
+    'text-ink hover:bg-surface-sunken active:bg-surface-sunken ease-druck focus-visible:outline-ink flex min-h-16 items-center gap-4 px-4 py-2.5 transition-[background-color,scale] duration-120 focus-visible:outline-3 focus-visible:-outline-offset-3 motion-safe:active:scale-98 max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:gap-2 max-[23rem]:px-3';
   const inhalt = (
     <>
       <Terminsymbol zeichen={zeichen} className="text-accent size-6" />
       <span className="flex min-w-0 grow flex-col hyphens-manual">
         <span className="font-semibold">{wort}</span>
+        {/* Bricht nur an den Leerzeichen zwischen den Gruppen (ANN-737). */}
         {zusatz ? (
-          <span className="text-ink-muted whitespace-nowrap tabular-nums">{zusatz}</span>
+          <span className="text-ink-muted wrap-break-word tabular-nums">{zusatz}</span>
         ) : null}
       </span>
       <Terminsymbol zeichen="pfeil" className="text-ink-muted size-6 max-[23rem]:hidden" />
