@@ -701,3 +701,15 @@ Marke vorsieht.
 | Berührt | der Shim; findet der Test danach etwas, je eine Migration mit Pfad A |
 
 **Beobachtung.** Supabase gibt `anon`, `authenticated` und `service_role` an allem, was eine Migration in `public` anlegt, von selbst alle Rechte; der Shim nicht. Entzieht eine Migration einer Funktion nur `from public`, ist sie in `pnpm test:db` für `anon` gesperrt, in Supabase aber ausführbar; eine Sicht ohne Entzug liest `anon` dort an RLS vorbei. Die Basis trägt deshalb 1.219 ausdrückliche Entzüge. Schon heute, aus den alten Migrationen übernommen, darf `anon` in Supabase vier `SECURITY DEFINER`-Funktionen ausführen (`check_travel_buffers`, `list_day_route`, `set_location_tour_start`, `set_patient_address_coordinate`; alle weisen ohne Anmeldung ab) und hat Rechte an `patient_file_document_types`, `retention_assignments`, `retention_classes` und `fleet_spots_seq_seq`. **Erwartet.** Der Shim legt dieselben Vorgaben an (`alter default privileges … in schema public`), damit `pnpm test:db` sieht, was Supabase tut; eine Migration hinter der Basis entzieht `anon` die genannten Rechte. Vor dem ersten neuen Supabase-Projekt die Basis dort einspielen und den Abzug von `public` und `app` samt Rechten mit der Test-Umgebung vergleichen.
+
+### BEF-231 — Trennung: Die Prüfungen erlauben `@/lib/` pauschal, auch einen Datenzugriff dort
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-25 |
+| Bereich | `src/features/platform/trennung.test.ts`, `src/features/preview/trennung.test.ts`, `src/lib/` |
+| Quelle  | Zweitreview zu Aufräumen Schritt 3 |
+| Status  | offen (Vorschlag) |
+| Berührt | beide Trennungsprüfungen; `src/lib/ki/gateway.ts`, `src/lib/location/funktion.ts` |
+
+**Beobachtung.** Beide Prüfungen lassen jeden Import aus `@/lib/` durch, weil dort anbieterfreie Hilfen liegen. Zwei Module dort sprechen aber den Server an (`functions.invoke` im KI-Gateway und in der Ortsfunktion); die Vorschau sperrt nur die Ortsmodule einzeln. Läge eine Praxisabfrage unter `src/lib`, sähe keine der beiden Prüfungen einen Import aus Plattform oder Vorschau. Schritt 3 hat die Tagesliste deshalb als Modul `day-plan` angelegt statt in `src/lib` (DEVELOPMENT.md „Modulgrenzen“). **Erwartet.** Ein Test hält fest, welche Dateien unter `src/lib` `getSupabase()` benutzen dürfen, oder die Trennungsprüfungen sperren genau diese; dazu je eine Gegenprobe.
