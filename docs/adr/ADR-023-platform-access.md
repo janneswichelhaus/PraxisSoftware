@@ -37,6 +37,11 @@ und Zustellungen ihres Zugangs. Das ist ihr eigenes Datum, nicht das der Person;
 ihr verschlossen. Geändert ist nur **Punkt 13** (Tabelle, mit Vermerk); protokolliert wird nach
 Punkt 24 wie jeder Export, ohne neue Aktion (ADR-010 Punkt 16). Die übrigen Punkte bleiben.
 
+**Fassung 7 (2026-10-26, Aufräumen M7)**: Jannes hat die **Einsicht** der Praxis in die Plattform
+einer Person zurückgenommen. **Punkt 19** kennt wieder nur den Weg über den eigenen aktiven Zugang,
+**Punkt 25** hat keine Vorschau mehr; beide mit Vermerk. Damit fällt ein Lesepfad der Praxis auf
+Plattformdaten weg. Die übrigen Punkte bleiben.
+
 **Ergänzt durch [ADR-025](ADR-025-session-lock.md)** (2026-10-02): Die Punkte 17 und 18 bekommen eine Sitzungssperre.
 
 *Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.* *Den Zweifel an der Einwilligungsfähigkeit (Punkt 13) vermerkt die Praxis am Zugang der rechtlichen Vertretung (`companion_declined_*`), nicht im Auditlog (ANN-207 Fassung 2).*
@@ -305,11 +310,12 @@ Funktionen, die den Zugriff aus `auth.uid()` über einen **aktiven Zugang** zum 
 ableiten. Eine Kennung, die der Browser mitschickt, wählt höchstens unter den eigenen Zugängen
 aus und gewährt nie etwas. Für Plattformkonten gibt es keine Tabellen-Policy auf Praxistabellen
 und kein direktes `SELECT`. Das ist ADR-004 Punkt 5, angewandt auf die neue Seite: Die
-Projektion entscheidet, RLS bleibt die zweite Linie. *(Fassung 5)* Der Wächter der Projektionen
+Projektion entscheidet, RLS bleibt die zweite Linie. ~~*(Fassung 5)* Der Wächter der Projektionen
 kennt seitdem einen zweiten, nur lesenden Weg: die Einsicht der Praxisinhaber:in (Punkt 25). Er
 gilt nur innerhalb des Verteilers `platform_preview`, der Rolle, Sitzung und Zugang selbst prüft,
 und schaltet die Transaktion auf „nur lesen" (ANN-529). Eine Kennung aus dem Browser gewährt
-weiterhin nichts.
+weiterhin nichts.~~ *(Fassung 7)* Die Einsicht ist entfallen; der Wächter kennt wieder nur den
+eigenen aktiven Zugang der Person oder ihrer Vertretung.
 
 **20. Der Selbstzugriff über `person_id` entfällt.** Die Klauseln
 `person_id = app.current_person_id()` bzw. `id = app.current_person_id()` in
@@ -365,8 +371,8 @@ protokolliert.
 Anwendung (ADR-015 Punkt 1). Das Gate unterscheidet nach der Art des Kontos: Ein Praxiskonto
 bekommt die Praxisoberfläche, ein Plattformkonto das Gerüst aus DSN-001 unter eigenem Pfadpräfix
 (der SPEC wählt es). Ein Plattformkonto sieht nie Seitenleiste, Funktionssuche oder Praxisbegriffe.
-Ein Praxiskonto sieht das Plattformgerüst nur als Vorschau (D7, später). Die Weiche im Router
-dient der Bedienung. **Der Schutz liegt in den Punkten 19 bis 21.** *(Fassung 5)* Die Vorschau
+~~Ein Praxiskonto sieht das Plattformgerüst nur als Vorschau (D7, später).~~ Die Weiche im Router
+dient der Bedienung. **Der Schutz liegt in den Punkten 19 bis 21.** ~~*(Fassung 5)* Die Vorschau
 heißt **Einsicht**: Nur die Praxisinhaber:in öffnet sie, am aktiven eigenen Zugang einer Person
 (ANN-525, ANN-526). Gelesen wird über `platform_preview` mit fester Liste lesender Projektionen;
 der Server schaltet die Transaktion dabei auf „nur lesen" (ANN-529) und schreibt den Lesezugriff
@@ -374,7 +380,9 @@ wie beim Öffnen der Akte (Punkt 24, keine neue Aktion). Die Oberfläche zeigt k
 Seiten, die nur schreiben, sind nicht erreichbar, Dokumente und Anhänge werden nicht geöffnet
 (ANN-527); die Sicht einer Vertretung zeigt die Einsicht nicht (ANN-528). Was die Praxis nach
 einer Entscheidung nicht sieht, sieht sie auch hier nicht: Die Übungstage kommen leer, die Seiten
-sagen, dass nur die Person sie sieht (ANN-307).
+sagen, dass nur die Person sie sieht (ANN-307).~~ *(Fassung 7)* Ein Praxiskonto sieht das
+Plattformgerüst nicht, auch nicht als Vorschau (Jannes, 2026-10-26). Was die Person auf der
+Plattform hat, steht für die Praxis im Abschnitt „Plattform“ der Akte.
 
 **26. Der Plattformcode ist ein eigenes Feature** unter `src/features/` (ADR-015 Punkt 23). Er
 spricht nur Plattformprojektionen an. Ein Test oder eine Lint-Regel prüft, dass er keine
@@ -509,3 +517,4 @@ muss sie stehen, denn ab dort gibt es etwas zu sehen. Rücknahme `klein`: Reihen
 | 4 | 2026-10-10 | Anmeldung ohne Kennwort nach ADR-025 Fassung 2 (Jannes): Passkey als Anmeldung, App-PIN als Rückweg der Freigabe, kein Kennwort. Geändert sind die Punkte 1, 7, 8, 10, 13, 17 und 18 und die Liste „Nicht entschieden“, jeweils mit Vermerk. *Zeile nachgetragen 2026-10-14 aus der Statuszeile.* |
 | 5 | 2026-10-14 | E-001 (Befund B11): **Punkt 25** mit Vermerk — die Vorschau (DSN-001 D7) ist als Einsicht gebaut: owner, eigener aktiver Zugang, Verteiler `platform_preview` mit fester Liste, nur lesende Transaktion, Protokoll nach Punkt 24 mit den vorhandenen Aktionen (ANN-525 bis ANN-529), ohne die Übungstage (ANN-307). **Punkt 19** mit Vermerk: der zweite, nur lesende Weg des Wächters. Übrige Punkte unverändert. |
 | 6 | 2026-10-20 | BEF-189, Entscheidung von Jannes (wie empfohlen): **Punkt 13** — eine Begleitung exportiert ihre eigene Wahl zu Benachrichtigungen (`platform_export_notifications`), nichts von der Person; protokolliert nach Punkt 24 ohne neue Aktion. Übrige Punkte unverändert. |
+| 7 | 2026-10-26 | Aufräumen M7, Entscheidung von Jannes: Die Einsicht der Praxis in die Plattform entfällt. **Punkt 19** und **Punkt 25** mit Vermerk; Verteiler `platform_preview` und die Freigabe im Wächter sind entfernt (Migration `20261225070000_einsicht_entfernt.sql`). Übrige Punkte unverändert. |

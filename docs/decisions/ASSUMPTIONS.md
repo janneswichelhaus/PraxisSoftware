@@ -5400,61 +5400,71 @@ Technik · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, 
 
 ### ANN-525 — Die Einsicht in die Plattform einer Person hat nur owner
 
-Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+Praxisprozess · verworfen · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M7):** Die Einsicht entfällt (ADR-023 Fassung 7).
 
 **Annahme.** „So sieht … die Plattform“ (DSN-001 D7) darf nur `owner`; therapist, team_lead, office und trainer weist `platform_preview` mit `access.denied` ab.
 
 **Begründung.** Befund B11: „über meinen Zugang“. Später zu öffnen ist billig, eine weitere Rolle wäre neue Sichtbarkeit zwischen Rollen (ADR-013 Punkt 9). Gelesen wird wie in der Akte (ADR-023 Punkt 24).
 
-**Anker.** Rollenprüfung in `public.platform_preview` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225070000_einsicht_entfernt.sql`.
 
 **Änderungspfad.** Weitere Rolle im Verteiler und in `app.platform_preview_grant`, Knopf in `PlattformAbschnitt` · Aufwand `klein`.
 
 ### ANN-526 — Eingesehen wird nur der eigene, aktive Zugang der Person
 
-Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+Praxisprozess · verworfen · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M7):** Die Einsicht entfällt (ADR-023 Fassung 7).
 
 **Annahme.** Die Einsicht gibt es nur für den eigenen Zugang der Person im Zustand `active`; eingeladen, gesperrt, entzogen und fremde Organisation weist der Server gleich ab.
 
 **Begründung.** Nur ein aktiver Zugang zeigt der Person etwas (ADR-023 Punkt 18); gleiche Antworten verraten nicht, welcher Zustand vorliegt (§13).
 
-**Anker.** Zugangsprüfung in `public.platform_preview` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225070000_einsicht_entfernt.sql`.
 
 **Änderungspfad.** Zustand `locked` zulassen und die Leiste „gesperrt“ zeigen lassen · Aufwand `klein`.
 
 ### ANN-527 — Die Einsicht listet Dokumente und Anhänge, öffnet sie aber nicht
 
-Datenschutz · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · Prüfpaket · Wiedervorlage: Datenschutzprüfung
+Datenschutz · verworfen · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · Prüfpaket · Wiedervorlage: Datenschutzprüfung
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M7):** Die Einsicht entfällt (ADR-023 Fassung 7).
 
 **Annahme.** Freigegebene Dokumente und Fotos oder Videos an Rückfragen stehen in der Einsicht in der Liste; Ansehen und Herunterladen gibt es dort nicht, ein Link führt an den Ort in der Praxis (Reiter der Akte, Rückfrage).
 
 **Begründung.** Öffnen hieße ein neuer Leseweg in den Speicher über den Zugang der Person, mit eigener Regel und eigenem Nachweis. In Akte und Rückfragen öffnet die Praxis dieselbe Datei mit ihrem Nachweis (ADR-010).
 
-**Anker.** `einsichtsApi` in `src/features/platform/einsicht.ts`: `ladeDokumentZumAnzeigen`, `ladeDokumentHerunter` und `ladeAnhang` werfen.
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225070000_einsicht_entfernt.sql`.
 
 **Änderungspfad.** Eine lesende Signatur über `platform_preview`, mit ADR-Änderung · Aufwand `mittel`.
 
 ### ANN-528 — Die Einsicht zeigt die Sicht der Person, nicht die einer Vertretung
 
-Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+Praxisprozess · verworfen · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M7):** Die Einsicht entfällt (ADR-023 Fassung 7).
 
 **Annahme.** „So sieht … die Plattform“ steht nur am eigenen Zugang der Person; was eine Begleitung oder rechtliche Vertretung sieht, zeigt die Einsicht nicht.
 
 **Begründung.** Befund B11 fragt nach der Sicht der Person. Die Sicht einer Vertretung hängt an ihren Rechten (ADR-023 Punkte 13 bis 15) und wäre eine zweite Einsicht mit eigener Prüfung.
 
-**Anker.** Knopf in `PlattformAbschnitt` (`src/features/platform-access/PlattformAbschnitt.tsx`).
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225070000_einsicht_entfernt.sql`.
 
 **Änderungspfad.** Knopf je Vertretung in `Vertretungen`, Verteiler für Vertretungen öffnen · Aufwand `mittel`.
 
 ### ANN-529 — Die Einsicht sperrt Schreibwege über eine nur lesende Transaktion
 
-Technik · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+Technik · verworfen · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M7):** Die Einsicht entfällt (ADR-023 Fassung 7).
 
 **Annahme.** Gibt der Wächter einen Zugang für die Einsicht frei, schaltet er die Transaktion auf `read only`; die Fähigkeiten (`can_write`, `can_answer` …) bleiben, wie die Person sie hat.
 
 **Begründung.** Ein Riegel für jeden Schreibweg, auch die nur mit Recht `read` und künftige (25006 im Test); `writable = false` änderte, was die Einsicht anzeigt.
 
-**Anker.** `app.platform_preview_grant` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225070000_einsicht_entfernt.sql`.
 
 **Änderungspfad.** Zusätzlich `app.platform_access_writable` und Schreibrechte in der Einsicht auf `false`, die Projektionen fragen dann einen eigenen Helfer · Aufwand `mittel`.
 
@@ -6067,7 +6077,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 Technik · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
-**Annahme.** Fenster der Plattform zeichnen in ein Portalziel mit `.plattform-schrift` direkt nach dem Gerüst und innerhalb des Bereichs, den die Sitzungssperre verbirgt; die Einsicht der Praxis behält ihr Ziel.
+**Annahme.** Fenster der Plattform zeichnen in ein Portalziel mit `.plattform-schrift` direkt nach dem Gerüst und innerhalb des Bereichs, den die Sitzungssperre verbirgt.
 
 **Begründung.** Am body erbten die Fenster die 18 px nicht (gemessen 14–16 px); DESIGN.md verlangt auf der Plattform alles ≥ 18 px.
 
@@ -6527,7 +6537,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.202
 
 Praxisprozess · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · erledigt · Wiedervorlage: —
 
-**Annahme.** Die Person trägt ihr Gewicht für heute ein; je Tag gilt ein Gewicht, der jüngste Eintrag ersetzt den des Tages, auch einen der Beratung, und nennt, wer eingetragen hat. Die Plattform zeigt nur die laufende Beratung; nach ihrem Ende verschwindet sie dort, bleibt im Export. Die Einsicht der Praxis zeigt die Ernährung nicht.
+**Annahme.** Die Person trägt ihr Gewicht für heute ein; je Tag gilt ein Gewicht, der jüngste Eintrag ersetzt den des Tages, auch einen der Beratung, und nennt, wer eingetragen hat. Die Plattform zeigt nur die laufende Beratung; nach ihrem Ende verschwindet sie dort, bleibt im Export.
 
 **Begründung.** ADR-027 Punkt 5 (Verlauf), Punkt 2 (Ende durch die Beratung); klassische Tracker führen ein Gewicht je Tag.
 
@@ -7029,7 +7039,7 @@ Technik · entschieden (Jannes) · 2026-10-22 · Jannes · erledigt · Wiedervor
 
 Technik · entschieden (Jannes) · 2026-10-22 · Jannes · erledigt · Wiedervorlage: —
 
-**Annahme.** Die Reiterleiste steht in einer Reihe, solange die vier Wörter in 700 mit je 4 px Luft nebeneinander passen; sonst in zwei Reihen, das Zeichen neben dem Wort. Gemessen wird mit `ResizeObserver` an der Leiste und an einer unsichtbaren Messreihe, nicht an der Schrift-Einstellung. In zwei Reihen und im Menü wachsen nur die Wörter, Zeichen und Abstände bleiben in px; `scroll-padding` hebt, was den Fokus bekommt, über die Leiste. Unter 23rem steht statt der Leiste „Menü“ im Kopf (ANN-682), ab 64rem die Navigation im Kopf; die Einsicht der Praxis behält das Telefon.
+**Annahme.** Die Reiterleiste steht in einer Reihe, solange die vier Wörter in 700 mit je 4 px Luft nebeneinander passen; sonst in zwei Reihen, das Zeichen neben dem Wort. Gemessen wird mit `ResizeObserver` an der Leiste und an einer unsichtbaren Messreihe, nicht an der Schrift-Einstellung. In zwei Reihen und im Menü wachsen nur die Wörter, Zeichen und Abstände bleiben in px; `scroll-padding` hebt, was den Fokus bekommt, über die Leiste. Unter 23rem steht statt der Leiste „Menü“ im Kopf (ANN-682), ab 64rem die Navigation im Kopf.
 
 **Begründung.** DR-112: Bei 200 % waren „Übungen“ und „Nachrichten“ abgeschnitten, bei „Sehr groß“ gekappt, bei „Groß“ stießen die Wörter aneinander. Handoff 2026-10-22, Abschnitt 3; Jannes am 22.10.2026, Entscheidung 2 („nur Zeichen“ verworfen). Gemessen, damit auch Systemschrift und Übersetzung greifen; bei 375 px ist „Normal“ eine Reihe, „Groß“ zwei. Mit mitwachsenden Abständen passte „Nachrichten“ bei „Sehr groß“ ab 360 px nicht in seine Hälfte (Zweitreview).
 
@@ -7149,7 +7159,7 @@ Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
-**Annahme.** Die Sitzungssperre zeigt die Sperrseite der Plattform („Zum Schutz gesperrt“) jedem Konto, das die Marke `platform_account` des Zugangsdienstes trägt (`app_metadata` der Sitzung, ANN-189), sonst die der Praxis - auch einem Praxiskonto in der Einsicht unter `/p`. Die Seiten-Adresse zählt nicht: Die Anwendung startet auf `/` und sperrt, bevor die Plattform nach `/p` leitet. Die Plattform-Fassung zeigt keine Angaben zur Person, auch nicht den eigenen Namen; die PIN hat eine eigene Seite mit „Zurück“. Die Plattformkonten im Seed tragen die Marke wie echte.
+**Annahme.** Die Sitzungssperre zeigt die Sperrseite der Plattform („Zum Schutz gesperrt“) jedem Konto, das die Marke `platform_account` des Zugangsdienstes trägt (`app_metadata` der Sitzung, ANN-189), sonst die der Praxis. Die Seiten-Adresse zählt nicht: Die Anwendung startet auf `/` und sperrt, bevor die Plattform nach `/p` leitet. Die Plattform-Fassung zeigt keine Angaben zur Person, auch nicht den eigenen Namen; die PIN hat eine eigene Seite mit „Zurück“. Die Plattformkonten im Seed tragen die Marke wie echte.
 
 **Begründung.** Handoff 2026-10-22, Abschnitt 5.2 („Plattform-Fassung für Plattformkonten“). Gesperrt ist der Abfragespeicher geräumt (ADR-025 Punkt 3); die Marke steht in der Sitzung, die die Sperre ohnehin hält, und setzt allein der Dienst. Ein Merker auf dem Gerät entfällt. Zweitreview 1c: die erste Fassung nach der Adresse traf Kaltstart und Einsicht falsch.
 
@@ -7257,7 +7267,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
-**Annahme.** Oben steht eine Hero-Karte: in der Lesefrist (nach einem Abo erst nach dessen Ende) „Unterlagen sichern“, sonst die erste Aufgabe (ANN-692), sonst der nächste Termin - „Besuch morgen/am Samstag“, über sechs Tage mit Datum, für eine Vertretung „Besuch bei {Name}“. Sonst der Leerzustand. Antwort und Rechnung nie; in der Einsicht ohne Knopf.
+**Annahme.** Oben steht eine Hero-Karte: in der Lesefrist (nach einem Abo erst nach dessen Ende) „Unterlagen sichern“, sonst die erste Aufgabe (ANN-692), sonst der nächste Termin - „Besuch morgen/am Samstag“, über sechs Tage mit Datum, für eine Vertretung „Besuch bei {Name}“. Sonst der Leerzustand. Antwort und Rechnung nie.
 
 **Begründung.** Handoff 2026-10-22, Abschnitt 0 und 5.1; Abweichung von DSN-001 4.1: der Termin ist ein eigener Abschnitt „Nächster Besuch“. „heute“ und „morgen“ statt eines Wochentags, der in sechs Tagen wiederkäme.
 
@@ -7307,7 +7317,7 @@ Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #297, Frage 3) · �
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Briefing 7 (Ich)
 
-**Annahme.** Hat die Person für diesen Zugang nie gewählt (kein `chosen_at`) und ist keine Art des Schalters an, steht unter „Heute“ zuletzt „Mitteilungen einschalten“. Sie führt zu den Benachrichtigungen unter „Ich → Einstellungen“, die Wahl dieses Zugangs offen. Nach jeder Wahl, auch „Aus“, entfällt sie; ebenso in Lesefrist und Einsicht.
+**Annahme.** Hat die Person für diesen Zugang nie gewählt (kein `chosen_at`) und ist keine Art des Schalters an, steht unter „Heute“ zuletzt „Mitteilungen einschalten“. Sie führt zu den Benachrichtigungen unter „Ich → Einstellungen“, die Wahl dieses Zugangs offen. Nach jeder Wahl, auch „Aus“, entfällt sie; ebenso in der Lesefrist.
 
 **Begründung.** Jannes, PR #297 Frage 2 (aus #294 Frage 1): „Später“ bleibt endgültig, die Übersicht erinnert, solange nichts an ist. ADR-024 Punkt 15: eingeschaltet wird im Einstieg oder unter „Ich“; Abschalten kostet nichts, also keine Karte nach „Aus“.
 
@@ -7611,7 +7621,7 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
-**Annahme.** Das Planblatt nennt als Stand den Tag der Zuweisung in der Zeitzone der Praxis: auf der Plattform `assigned_on` vom Server wie im Reiter, in der Praxis aus `assigned_at` mit `dayKey`. So tragen beide Ausdrucke derselben Fassung denselben Stand. Die Vorschau auf der Plattform hat eckige Ecken statt Radius 4 und steht unter 23rem ohne Fläche und Rahmen. Die Maße des Rechners gelten nach `data-rechner`, in der Einsicht also nie.
+**Annahme.** Das Planblatt nennt als Stand den Tag der Zuweisung in der Zeitzone der Praxis: auf der Plattform `assigned_on` vom Server wie im Reiter, in der Praxis aus `assigned_at` mit `dayKey`. So tragen beide Ausdrucke derselben Fassung denselben Stand. Die Vorschau auf der Plattform hat eckige Ecken statt Radius 4 und steht unter 23rem ohne Fläche und Rahmen. Die Maße des Rechners gelten nach `data-rechner`.
 
 **Begründung.** Handoff 2026-10-24, 5.7 („Stand {Datum}“); Person und Praxis gleichen die Fassung auf Papier über den Stand ab (Design-Review 2d, H3). Das System kennt fünf Radien, 4 gehört nicht dazu (DS-001); bei 200 % blieben mit Rahmen rund 110 px für den Text.
 

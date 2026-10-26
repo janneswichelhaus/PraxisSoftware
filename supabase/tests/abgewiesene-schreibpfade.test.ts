@@ -238,14 +238,6 @@ const FAELLE: Fall[] = [
     [IRGENDEINE],
     'storage_deletion.receipted',
   ],
-  // E-001: die Einsicht in die Plattform einer Person - nur owner, die
-  // Abweisung überlebt wie bei den Schreibwegen (keine neue Aktion).
-  [
-    'platform_preview',
-    "select public.platform_preview($1::uuid, 'platform_messages', '{}'::jsonb) as daten",
-    [IRGENDEINE],
-    'platform_preview.read',
-  ],
 ];
 
 describe('Abgewiesene Schreibpfade (G6c)', () => {
@@ -254,15 +246,9 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
   }, 120_000);
 
   it('kennt genau die Pfade, die eine Abweisung beim Schreiben ueberleben lassen', async () => {
-    // Die Liste ist Jannes' Wahl vom 2026-09-26: Rollen und Konten, Legal Hold
-    // und Loeschauftraege; seit PRX-017 dazu das Zusammenfuehren von Akten,
-    // seit TRN-001 die Schreibwege des Trainingsverhaeltnisses, seit TRN-004
-    // und TRN-005 Trainingstermin und Vereinbarung, seit TRN-009 das
-    // Trainingsprotokoll (seit ABN-022 mit Nachtrag), seit POR-002 der Plattformzugang, seit POR-005 die
-    // Vertretung, seit AKTE-009 der Kalender ohne Zugang, seit E-001 die
-    // Einsicht in die Plattform einer Person.
-    // Ein neuer Pfad ist Absicht, ein fehlender ein
-    // Rueckschritt - beides soll ein Review sehen.
+    // Jannes' Wahl vom 2026-09-26 mit ihren Erweiterungen: Rollen und Konten, Legal Hold, Löschaufträge,
+    // Zusammenführen, Training, Plattformzugang, Vertretung und Kalender ohne Zugang. Ein neuer Pfad ist
+    // Absicht, ein fehlender ein Rückschritt - beides soll ein Review sehen.
     const { rows } = await asPostgres<{ proname: string }>(`
       select p.proname
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
