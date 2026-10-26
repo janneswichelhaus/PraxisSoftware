@@ -60,12 +60,9 @@ export function darfVermerken(um: boolean, schonVorher: boolean): boolean {
 }
 
 /**
- * Der Stand in der Adresse (Praxis-Review Überholung 6, wie G2 und ANN-574):
- * `ausfall=<Termin>.<Uhrstart>[.<Seite>]` - nur Kennung, Zeit und Seite,
- * keine Namen (ADR-011). So übersteht die Uhr ein Neuladen nach dem Wechsel
- * in die Telefon-App; gespeichert wird nichts. Die Seite steht nur, solange
- * das Fenster offen ist: Wer abbricht, beginnt beim nächsten Mal wieder mit
- * dem Klingeln, die Uhr läuft weiter (ANN-479).
+ * Der Stand in der Adresse, `ausfall=<Termin>.<Uhrstart>[.<Seite>]`: fester Länge, ohne Namen (ADR-011),
+ * damit die Uhr ein Neuladen nach dem Wechsel in die Telefon-App übersteht. Wer abbricht, beginnt
+ * wieder mit dem Klingeln, die Uhr läuft weiter (ANN-479).
  */
 export const AUSFALL_PARAMETER = 'ausfall';
 

@@ -109,6 +109,14 @@ async function abgelegteDatei(
   return datei;
 }
 
+/** Tauscht eine Rolle des Kontos, etwa um ein Recht mitten im Upload zu entziehen. */
+async function rolleTauschen(userId: string, von: string, nach: string): Promise<void> {
+  await asPostgres(
+    'update public.user_roles set role_key = $3 where user_id = $1 and role_key = $2',
+    [userId, von, nach],
+  );
+}
+
 async function aufraeumen(): Promise<void> {
   await asPostgres('delete from public.patient_files');
   await asPostgres('delete from public.storage_deletion_orders');
@@ -475,6 +483,52 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(format?.message).toMatch(/media type does not match/);
     });
 
+    it('bestaetigt nur fuer die vorbereitende Person - keine Kollegin mit demselben Recht', async () => {
+      const datei = await vorbereiten(users.therapist);
+      await objektAblegen(datei.object_key);
+      for (const konto of [users.teamLead, users.ownerTherapist]) {
+        const fehler = await abgefangen(
+          asUserCommitted(konto, 'select public.confirm_patient_file_upload($1::uuid)', [
+            datei.file_id,
+          ]),
+        );
+        expect(fehler, konto).toMatchObject({ code: '42501', message: 'file not accessible' });
+      }
+      const { rows } = await asPostgres<{ status: string }>(
+        'select status from public.patient_files where id = $1',
+        [datei.file_id],
+      );
+      expect(rows).toEqual([{ status: 'pending' }]);
+      await asUserCommitted(
+        users.therapist,
+        'select public.confirm_patient_file_upload($1::uuid)',
+        [datei.file_id],
+      );
+    });
+
+    it('bestaetigt nicht, wenn die vorbereitende Person das Recht inzwischen verloren hat', async () => {
+      const datei = await vorbereiten(users.therapist, { verordnungId: null, art: 'befund' });
+      await objektAblegen(datei.object_key);
+      await rolleTauschen(users.therapist, 'therapist', 'trainer');
+      try {
+        for (const [sql, meldung] of [
+          [
+            'select public.confirm_patient_file_upload($1::uuid)',
+            'not allowed to confirm this file',
+          ],
+          [
+            'select public.discard_patient_file_upload($1::uuid)',
+            'not allowed to discard this upload',
+          ],
+        ] as const) {
+          const fehler = await abgefangen(asUserCommitted(users.therapist, sql, [datei.file_id]));
+          expect(fehler, sql).toMatchObject({ code: '42501', message: meldung });
+        }
+      } finally {
+        await rolleTauschen(users.therapist, 'trainer', 'therapist');
+      }
+    });
+
     it('bestaetigt keine Datei zweimal', async () => {
       const datei = await abgelegteDatei(users.therapist);
       const fehler = await abgefangen(
@@ -834,6 +888,30 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       );
       expect(rows).toEqual([{ status: 'ready' }]);
       expect((await asPostgres('select id from public.storage_deletion_orders')).rows).toEqual([]);
+    });
+
+    it('verwirft nur fuer die vorbereitende Person - keine Kollegin mit demselben Recht', async () => {
+      const datei = await vorbereiten(users.therapist);
+      await objektAblegen(datei.object_key);
+      for (const konto of [users.teamLead, users.ownerTherapist]) {
+        const fehler = await abgefangen(
+          asUserCommitted(konto, 'select public.discard_patient_file_upload($1::uuid)', [
+            datei.file_id,
+          ]),
+        );
+        expect(fehler, konto).toMatchObject({
+          code: '42501',
+          message: 'pending upload not accessible',
+        });
+      }
+      expect((await asPostgres('select id from public.patient_files')).rows).toHaveLength(1);
+      expect((await asPostgres('select id from public.storage_deletion_orders')).rows).toEqual([]);
+      await asUserCommitted(
+        users.therapist,
+        'select public.discard_patient_file_upload($1::uuid)',
+        [datei.file_id],
+      );
+      expect((await asPostgres('select id from public.patient_files')).rows).toEqual([]);
     });
 
     it('verwirft keine bestaetigte Datei ueber diesen Weg', async () => {

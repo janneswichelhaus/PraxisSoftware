@@ -29,6 +29,7 @@ vi.mock('@/lib/abstecher', async (original) => ({
 
 const { SessionProvider } = await import('./SessionProvider');
 const { gemerkterSuchbegriff, suchbegriffMerken } = await import('@/lib/suchbegriff');
+const { tabstandLegen, tabstandLesen } = await import('@/lib/tabstand');
 const { useSession } = await import('./sessionContext');
 const { useSitzungEndeteVonAussen } = await import('./sitzungsende');
 
@@ -167,6 +168,33 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     act(() => melde?.('TOKEN_REFRESHED', sitzung('anna')));
 
     expect(gemerkterSuchbegriff('radflotte')).toBe('Nina');
+  });
+
+  it('leert die Anrufliste im Tab beim Abmelden und beim Kontowechsel, nicht beim Verlängern', async () => {
+    await anbieterZeigen();
+    tabstandLegen('anna', 'v1', { abgesagt: ['t1'] });
+    sessionStorage.setItem('anderes', 'bleibt');
+
+    act(() => melde?.('TOKEN_REFRESHED', sitzung('anna')));
+    expect(tabstandLesen('anna', 'v1')).toEqual({ abgesagt: ['t1'] });
+
+    act(() => melde?.('SIGNED_IN', sitzung('bert')));
+    expect(tabstandLesen('anna', 'v1')).toBeUndefined();
+    expect(sessionStorage.getItem('anderes')).toBe('bleibt');
+
+    tabstandLegen('bert', 'v2', { abgesagt: ['t2'] });
+    act(() => melde?.('SIGNED_OUT', null));
+    expect(tabstandLesen('bert', 'v2')).toBeUndefined();
+  });
+
+  it('leert beim ersten Blick den Stand eines anderen Kontos, etwa nach einem Wechsel im zweiten Tab', async () => {
+    tabstandLegen('bert', 'v1', { abgesagt: ['t1'] });
+    tabstandLegen('anna', 'v2', { abgesagt: ['t2'] });
+
+    await anbieterZeigen();
+
+    expect(tabstandLesen('bert', 'v1')).toBeUndefined();
+    expect(tabstandLesen('anna', 'v2')).toEqual({ abgesagt: ['t2'] });
   });
 
   /**

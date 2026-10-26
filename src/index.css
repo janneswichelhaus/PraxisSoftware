@@ -364,11 +364,6 @@
      376 px, im Teamchat wie in der Radflotte dieselbe Spalte. */
   --spacing-gespraechsspalte: 18rem;
   --spacing-threadspalte: 21rem;
-  /* Der geführte Ablauf mit Bühne (BEF-175): ab 1024 px steht die Frage in
-     einer Spalte von 384 px neben der Bühne; am Telefon nimmt eine lange
-     Frage höchstens 60 % der Höhe, die Bühne behält den Rest. */
-  --spacing-ablaufspalte: 24rem;
-  --spacing-ablauf-knapp: 60%;
 
   /* Innenabstand einer Kachel: 12 oben und unten, 14 an den Seiten
      (Design-Handoff 2026-10-01, Abschnitt 2, dort als ein Wert „12px 14px"

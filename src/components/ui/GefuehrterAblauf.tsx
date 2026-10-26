@@ -22,40 +22,9 @@ import { ProgressBar } from './ProgressBar';
 export const TIPPSPERRE_MS = 700;
 
 /**
- * Der geführte Ablauf (DESIGN.md „Geführter Ablauf“, Überholung 6, ANN-572):
- * ein Fenster, eine Frage je Seite, die Antwort führt weiter. Entstanden aus
- * dem Check-Up am Rad (FLT-005); der Check-Up ist der erste, der ihn trägt.
- *
- * Was jeder Ablauf gleich bekommt:
- *
- *   * **Kopf** im `Dialogfenster vollbild`: worum es geht (`objekt`, etwa das
- *     Rad oder der Termin) und ✕ mit eigenem Namen („Check-Up abbrechen“). Am
- *     Telefon randlos, am Rechner groß in der Mitte.
- *   * **„← Zurück“ und der Schritt** darunter; der Balken nur mit fester
- *     Schrittzahl - ein verzweigter Weg (die Panne) hat keine.
- *   * **Die Frage als Überschrift** (`Fenstertitel`), nach ihr heißt das
- *     Fenster. Ohne Bühne steht sie oben, die Antworten im festen **Fuß**
- *     darunter, im Daumenbereich und ohne Rollen. Mit Bühne (das 3D-Rad)
- *     steht sie unter der Bühne, direkt über den Antworten (Jannes 2026-10-16).
- *   * **Der Abschluss** (`abschluss`): Die Zusammenfassung rollt, der Fuß mit
- *     dem einen Hauptknopf steht fest darunter, mit einer Linie.
- *   * **Die Seiten wechseln waagerecht** (ANN-663): Die nächste rückt von
- *     rechts nach, „← Zurück“ und die Zurückgeste holen die vorige von links.
- *     Das Fenster selbst kam von unten - es ist die Ebene, die Seiten darin
- *     sind gleichrangig.
- *   * **Tippsperre** nach jedem Wechsel der `seite` und eine **Ansage** für
- *     Vorlesesoftware; der Fokus folgt der neuen Seite (`data-autofocus`).
- *   * Die **Rückfrage vor dem Verlust** (`schutz` aus `useTextverlustschutz`)
- *     gleich unter dem Kopf - dort, wo ✕ liegt.
- *
- * Welche Seite auf welche folgt, steht nicht hier, sondern im Ablauf selbst
- * (`abfolge.ts` für den gemeinsamen Teil). Nicht für Tägliches: Dort kostet
- * ein Schritt je Frage nur Tipps (DESIGN.md).
- *
- * **Zusätzlich und abschaltbar** (Handoff 2026-10-22, Abschnitt 5.3; der
- * Einstieg der Plattform): `spaeter` statt der Zeile mit ✕, `balkenJeSchritt`,
- * `titelStufe`, `vorDemTitel`, `band` und `plattform`. Ohne sie bleibt jeder
- * Ablauf, wie er ist.
+ * Der geführte Ablauf (DESIGN.md „Geführter Ablauf“, ANN-572): ein Fenster, eine Frage je Seite, die
+ * Antwort führt weiter; Kopf, Schritt, Tippsperre, Ansage und Rückfrage bekommt jeder Ablauf gleich.
+ * Welche Seite folgt, steht im Ablauf selbst (`abfolge.ts`).
  */
 export function GefuehrterAblauf({
   titel,
@@ -67,9 +36,6 @@ export function GefuehrterAblauf({
   onZurueck,
   ansage,
   schutz,
-  buehne,
-  buehneAmTelefon = true,
-  flaecheKnapp = false,
   abschluss = false,
   fuss,
   tippsperre = true,
@@ -89,10 +55,7 @@ export function GefuehrterAblauf({
   /** Name des ✕, etwa „Check-Up abbrechen“. */
   schliessen: string;
   onSchliessen: () => void;
-  /**
-   * Kennung der Seite. Ändert sie sich, greift die Tippsperre, und ohne Bühne
-   * beginnt die Seite neu - samt Fokus auf ihrem `data-autofocus`.
-   */
+  /** Kennung der Seite: Ändert sie sich, greift die Tippsperre, und die Seite beginnt neu. */
   seite: string;
   /** „Schritt 2 von 4“; mit `von` dazu der Balken. */
   stand?: { text: string; wert?: number; von?: number } | undefined;
@@ -102,12 +65,6 @@ export function GefuehrterAblauf({
   ansage?: string | undefined;
   /** Hinweise und Rückfrage des Textverlustschutzes. */
   schutz?: ReactNode;
-  /** Oben, über der Frage: etwa das 3D-Rad. */
-  buehne?: ReactNode;
-  /** Am Telefon die Bühne zeigen; im Abschluss des Check-Ups nicht. */
-  buehneAmTelefon?: boolean;
-  /** Mit Bühne: die Fläche der Frage höchstens 60 % hoch (lange Stelle). */
-  flaecheKnapp?: boolean;
   /** Der Abschluss: Inhalt rollt, der Fuß steht fest mit Linie darüber. */
   abschluss?: boolean;
   /** Die Antworten oder der Hauptknopf, fest unten. */
@@ -125,7 +82,7 @@ export function GefuehrterAblauf({
   balkenJeSchritt?: boolean;
   /** Die Frage in einer Stufe der Plattform statt in der des Fensters. */
   titelStufe?: Titelstufe | undefined;
-  /** Über der Frage, im Inhalt: etwa ein Bild und eine Bestätigung. Nicht mit Bühne. */
+  /** Über der Frage, im Inhalt: etwa ein Bild und eine Bestätigung. */
   vorDemTitel?: ReactNode;
   /** Am Telefon steht der Inhalt unten über dem Fuß, im Daumenbereich (Antworten im Inhalt). */
   inhaltUnten?: boolean;
@@ -135,10 +92,8 @@ export function GefuehrterAblauf({
    */
   band?: ReactNode;
   /**
-   * Im Rhythmus der Plattform (Handoff 2026-10-22, Abschnitt 4): 20 px Rand
-   * statt 16. Unter 23rem (200 % Zoom am Telefon) wie die übrige Plattform
-   * (ANN-682): 12 px Rand, und die ganze Seite rollt samt Kopf und Fuß, statt
-   * oben und unten je ein Drittel der Höhe festzuhalten. Nicht mit Bühne.
+   * Im Rhythmus der Plattform: 20 px Rand statt 16; unter 23rem (200 % Zoom) 12 px, und die ganze
+   * Seite rollt samt Kopf und Fuß, statt oben und unten je ein Drittel festzuhalten (ANN-682).
    */
   plattform?: boolean;
   children?: ReactNode;
@@ -238,69 +193,6 @@ export function GefuehrterAblauf({
       {fuss}
     </div>
   ) : null;
-
-  if (buehne) {
-    // Bühne und Fragefläche teilen sich die Höhe; ab 1024 px nebeneinander.
-    // Im Abschluss rollt die Zusammenfassung, der Fuß steht fest darunter.
-    const flaeche = abschluss
-      ? 'flex min-h-0 flex-1 flex-col lg:flex-none'
-      : `overflow-y-auto px-4 pt-2 pb-4 lg:pt-4 ${
-          flaecheKnapp ? 'max-h-ablauf-knapp shrink-0 lg:max-h-none' : 'shrink-0'
-        }`;
-    return (
-      <Dialogfenster
-        vollbild
-        titel={titel}
-        beschreibung={objekt}
-        onSchliessen={onSchliessen}
-        schliessenBeschriftung={schliessen}
-        titelImInhalt
-        ohneKopfzeile={spaeter}
-      >
-        {kopf}
-        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <div
-            className={`flex-col px-4 pt-3 pb-2 lg:p-4 ${
-              buehneAmTelefon
-                ? 'flex min-h-36 flex-1 lg:min-h-0'
-                : 'hidden lg:flex lg:min-h-0 lg:flex-1'
-            }`}
-          >
-            {buehne}
-          </div>
-          <div
-            ref={schritt}
-            className={`lg:border-line lg:w-ablaufspalte lg:shrink-0 lg:border-l ${flaeche} ${sperre}`.trim()}
-          >
-            {abschluss ? (
-              <>
-                <div className="shrink-0 px-4 pt-3 lg:pt-4">
-                  <Fenstertitel stufe={titelStufe} />
-                </div>
-                <div
-                  className={`min-h-0 flex-1 overflow-y-auto px-4 pt-2 pb-4 lg:pt-4 ${ROLLFLAECHE}`}
-                  {...rollflaeche}
-                >
-                  {children}
-                </div>
-                {fussLeiste}
-              </>
-            ) : (
-              <>
-                {/* Die Überschrift unter der Bühne, direkt über den Antworten -
-                    wo der Daumen ist und der Blick als Nächstes hinwill. */}
-                <div className="mb-3">
-                  <Fenstertitel stufe={titelStufe} />
-                </div>
-                {children}
-                {fuss}
-              </>
-            )}
-          </div>
-        </div>
-      </Dialogfenster>
-    );
-  }
 
   // Unter 23rem rollt alles zusammen - Kopf, Inhalt und Fuß -, nicht nur der
   // Inhalt zwischen festem Kopf und Fuß.

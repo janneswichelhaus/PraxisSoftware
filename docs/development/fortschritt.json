@@ -1634,7 +1634,19 @@
           "id": "aufraeumen-4a",
           "name": "Aufräumen Schritt 4a: Teillöschung unter Belegfrist löscht die 17 Trainingstabellen nach drei Jahren",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-26",
+          "nachweis": "#316 (Branch claude/pr-313-decisions-2mdcwc, dritte PR), Migration 20261225050000_teilloeschung_training_vollstaendig.sql, supabase/tests/training-invoices.test.ts (Entscheidung je Tabelle, Restore)",
+          "vermerk": "Entscheidung Jannes 26.10.2026, ROADMAP 7.20; Pfad A; ADR-021 Punkt 4, ANN-183"
+        },
+        {
+          "id": "aufraeumen-nachzug-316",
+          "name": "Aufräumen, Nachzug aus #316: Rückweg der Anrufliste kurz, Zustand im Tab; 3D-Rad-Rest im geführten Ablauf entfernt; Upload der Akte nur durch die vorbereitende Person bestätigen und verwerfen",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-26",
+          "nachweis": "Branch claude/step-4-central-register-ur5k1y, src/lib/tabstand.test.ts, tagumplanen.test.ts, TagUmplanenPage.test.tsx (15 Termine mit echten Kennungen, gegen main rot), SessionProvider.test.tsx, Migration 20261225120000_upload_akte_vorbereitende_person.sql, supabase/tests/patient-files.test.ts (ohne Migration rot), E2E appointment-states, Zweitreview",
+          "vermerk": "Entscheidungen Jannes 26.10.2026, ROADMAP 7.21; ANN-574 Fassung 2; Pfad A mit Zweitreview (SECURITY DEFINER); drei Befunde aus BEFUNDE.md erledigt"
         },
         {
           "id": "aufraeumen-4",
