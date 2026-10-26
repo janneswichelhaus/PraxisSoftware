@@ -81,6 +81,10 @@ function zeitraumZeile(von: string, bis: string): string {
   if (von.slice(0, 7) === bis.slice(0, 7)) {
     return `${Number(von.slice(8, 10))}.–${tagMonat(bis)}${jahr(bis)}`;
   }
+  // Über den Jahreswechsel nennt die Zeile beide Jahre, auch das laufende.
+  if (von.slice(0, 4) !== bis.slice(0, 4)) {
+    return `${tagMonat(von)} ${von.slice(0, 4)} – ${tagMonat(bis)} ${bis.slice(0, 4)}`;
+  }
   return `${tagMonat(von)} – ${tagMonat(bis)}${jahr(bis)}`;
 }
 
