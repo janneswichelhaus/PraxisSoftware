@@ -18,7 +18,7 @@ import {
   wegZumBesuch,
   type Anfahrt,
 } from './tagesstart';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 const HEUTE = '2026-09-26';
 

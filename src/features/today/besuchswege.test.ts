@@ -8,7 +8,7 @@ import {
   verspaetungsText,
   VERSPAETUNG_MINUTEN,
 } from './besuchswege';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 const BEGINN = Date.parse('2026-10-13T08:00:00.000Z');
 

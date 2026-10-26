@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as Navigation from '@/lib/location/navigation';
 import { renderWithProviders } from '@/test-utils';
 import type { Stopp } from './tagesroute';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Tourenliste (MAP-006b/d): Namen stehen in der Liste, die Navigation bekommt

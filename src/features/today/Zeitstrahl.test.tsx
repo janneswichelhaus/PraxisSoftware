@@ -4,7 +4,7 @@ import { renderWithProviders } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { Zeitstrahl } from './Zeitstrahl';
 import type { Anfahrt } from './tagesstart';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Der Zeitstrahl der Übersicht (Design-Handoff 2026-10-01, Abschnitte 5 und

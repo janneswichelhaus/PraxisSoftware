@@ -6,7 +6,7 @@ import { Tourenliste } from '@/features/tours/Tourenliste';
 import { kartenmarker, type Stopp } from '@/features/tours/tagesroute';
 import type { Coordinate, MapDisplayConfig } from '@/lib/location/contract';
 import '@/index.css';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Einstieg der Prüfseite aus `karte.html`.

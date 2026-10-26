@@ -12,7 +12,7 @@ import {
   type Stopp,
 } from '@/features/tours/tagesroute';
 import { stehtAus, type Anfahrt } from './tagesstart';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 // -----------------------------------------------------------------------------
 // Fahrzeiten des eigenen Tages für die Übersicht (Design-Handoff 2026-10-01)

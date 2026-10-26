@@ -3,10 +3,10 @@ import { screen, within } from '@testing-library/react';
 import { renderMitVorschau } from '@/test-utils';
 import { Nachzuholen, NochOffen } from './NochOffen';
 import { tagePlus } from '@/lib/datum';
-import type * as Tagesplan from '@/lib/tagesplan';
+import type * as Tagesplan from '@/features/day-plan/api';
 
 const fetchDayPlan = vi.fn();
-vi.mock('@/lib/tagesplan', async (importOriginal) => ({
+vi.mock('@/features/day-plan/api', async (importOriginal) => ({
   ...(await importOriginal<typeof Tagesplan>()),
   fetchDayPlan: (tag: string, person: string) =>
     fetchDayPlan(tag, person) as Promise<Tagesplan.DayPlanEntry[]>,

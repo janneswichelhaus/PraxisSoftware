@@ -5,7 +5,7 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Textlink } from '@/components/ui/Textlink';
 import { fetchStandorte, startpunkt } from './startort';
 import { fetchDayRoute, stoppsDesTages } from './tagesroute';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
 

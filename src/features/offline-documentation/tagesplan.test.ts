@@ -9,7 +9,7 @@ import {
   tagesplanVerwerfen,
 } from './tagesplan';
 import { entwuerfeLesen, entwurfSchreiben } from './entwuerfe';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /** OFF-001: Einrichtung des Diensttelefons und die Feldliste des Tagesplans (ADR-024 Punkt 6). */
 

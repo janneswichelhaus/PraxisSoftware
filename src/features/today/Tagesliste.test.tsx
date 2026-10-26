@@ -5,7 +5,7 @@ import { renderWithProviders } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import type * as KurzblickApi from '@/features/appointments/kurzblick-api';
 import { Tageskarte } from './Tagesliste';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 const fetchKurzblick = vi.fn();
 vi.mock('@/features/appointments/kurzblick-api', async (importOriginal) => ({

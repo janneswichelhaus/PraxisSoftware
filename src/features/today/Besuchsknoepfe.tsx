@@ -21,7 +21,7 @@ import {
 import { terminName } from './tagesstart';
 import { formatLocalTime } from '@/lib/datum';
 import { kalenderZumTermin } from '@/lib/termin';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /** Hörer im 20er-Raster, Strich 1,75, runde Enden (DESIGN.md 9.15). */
 function TelefonSymbol() {

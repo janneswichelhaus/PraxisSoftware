@@ -3,7 +3,7 @@ import { hakenFehlt } from '@/features/appointments';
 import { istOffen, nachUhrzeit } from './api';
 import { formatLocalTime } from '@/lib/datum';
 import { appointmentTypeHint } from '@/lib/termin';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 // -----------------------------------------------------------------------------
 // Tagesstart (UX-EPIC-003) und Zeitstrahl (Design-Handoff 2026-10-01)

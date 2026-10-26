@@ -15,7 +15,7 @@ import { erstaufnahmePfad } from '@/features/intake/stand';
 import { formatLocalTimeRange } from '@/lib/datum';
 import { kalenderZumTermin } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
-import { rufnummern, type DayPlanEntry } from '@/lib/tagesplan';
+import { rufnummern, type DayPlanEntry } from '@/features/day-plan/api';
 
 /** Eine Pille der Karte: 36 px hoch, 14 px in 600 (Design-Handoff 2026-10-01). */
 const pille =

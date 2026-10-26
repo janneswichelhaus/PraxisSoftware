@@ -15,7 +15,7 @@ import type * as TimeAccountApiModule from '@/features/timeaccount/api';
 import { renderMitVorschau, testUser } from '@/test-utils';
 import { MyDayPage } from './MyDayPage';
 import { todayInTimeZone, tagePlus } from '@/lib/datum';
-import type * as Tagesplan from '@/lib/tagesplan';
+import type * as Tagesplan from '@/features/day-plan/api';
 
 /**
  * Die Übersicht mischt bewusst zwei Dinge: echte Termine aus dem Kalender und
@@ -190,7 +190,7 @@ vi.mock('./NochOffen', async (importOriginal) => ({
   },
 }));
 
-vi.mock('@/lib/tagesplan', async (importOriginal) => ({
+vi.mock('@/features/day-plan/api', async (importOriginal) => ({
   ...(await importOriginal<typeof Tagesplan>()),
   fetchDayPlan: (tag: string, person: string) =>
     fetchDayPlan(tag, person) as Promise<Tagesplan.DayPlanEntry[]>,

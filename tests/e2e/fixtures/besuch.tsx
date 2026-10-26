@@ -19,7 +19,7 @@ import {
 import type { CurrentUser } from '@/features/session/types';
 import '@/index.css';
 import { todayInTimeZone, tagePlus } from '@/lib/datum';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Einstieg der Prüfseite aus `besuch.html` (Auftrag C1 „Besuch in einem

@@ -8,7 +8,7 @@ import { einrichten } from '@/features/offline-documentation/servicePhone';
 import { tagesplanAblegen } from '@/features/offline-documentation/tagesplan';
 import { Pruefseite } from './ohne-empfang-seite';
 import '@/index.css';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Einstieg der Prüfseite aus `ohne-empfang.html` (OFF-EPIC-001).

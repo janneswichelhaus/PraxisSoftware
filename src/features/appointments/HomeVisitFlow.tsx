@@ -30,7 +30,7 @@ import {
   type NiemandSeite,
 } from './niemandOeffnet';
 import { dayKey, formatLocalTime } from '@/lib/datum';
-import { fetchDayPlan, rufnummern } from '@/lib/tagesplan';
+import { fetchDayPlan, rufnummern } from '@/features/day-plan/api';
 
 /**
  * Was der Ablauf vom Termin braucht. Die Übersicht kennt den Bearbeitungsstand

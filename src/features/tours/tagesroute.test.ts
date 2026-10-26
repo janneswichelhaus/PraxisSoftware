@@ -7,7 +7,7 @@ import {
   stoppsDesTages,
   type Tagesstopp,
 } from './tagesroute';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /** MAP-006b: Zusammenführen von Tagesliste und Tagesroute, reine Rechnung. */
 

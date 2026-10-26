@@ -49,6 +49,7 @@ Pfad A).
 
 ## Letzte Session
 
-25.10.2026, Branch `ccr-51128c80-r6lmjn`: Aufräumen Schritt 3 – Termin-Kern in `src/lib`,
-`index.ts` für Termine, Regel `modulgrenzen/nur-ueber-index`, Erweiterungspunkt für die
-Behandlungsdoku am Termin (ANN-748), BEF-024 erledigt. Keine Migration, kein Seed. Lokal: `git pull`.
+25.10.2026, Branch `ccr-51128c80-r6lmjn`: Aufräumen Schritt 3 – Termin-Kern in `src/lib`, die
+Tagesliste als Modul `day-plan`, `index.ts` für Termine, Regel `modulgrenzen/nur-ueber-index`,
+Erweiterungspunkt für die Behandlungsdoku am Termin (ANN-748), BEF-024 erledigt. Keine Migration,
+kein Seed. Lokal: `git pull`.

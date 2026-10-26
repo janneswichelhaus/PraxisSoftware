@@ -6,7 +6,7 @@ import type * as AppointmentsApi from './api';
 import type * as DokumentationApi from '@/features/documentation/api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
-import type * as Tagesplan from '@/lib/tagesplan';
+import type * as Tagesplan from '@/features/day-plan/api';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -83,7 +83,7 @@ vi.mock('@/features/documentation/api', async (importOriginal) => {
 // Die Rufnummer im Ablauf „Niemand öffnet?" kommt aus der Tagesliste
 // (UX-005b); ihr Lesepfad wird hier gestubbt.
 const fetchDayPlan = vi.fn();
-vi.mock('@/lib/tagesplan', async (importOriginal) => ({
+vi.mock('@/features/day-plan/api', async (importOriginal) => ({
   ...(await importOriginal<typeof Tagesplan>()),
   fetchDayPlan: (datum: string, staff: string) =>
     fetchDayPlan(datum, staff) as Promise<Tagesplan.DayPlanEntry[]>,

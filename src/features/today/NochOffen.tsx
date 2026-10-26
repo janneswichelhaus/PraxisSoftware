@@ -11,7 +11,7 @@ import { nachUhrzeit, offenGrund, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { schreibseite } from './besuchswege';
 import { nichtAbgeschlossen, terminName } from './tagesstart';
 import { formatLocalTime, tagePlus } from '@/lib/datum';
-import { fetchDayPlan, type DayPlanEntry } from '@/lib/tagesplan';
+import { fetchDayPlan, type DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Was an einem Besuch noch fehlt, als Wort - oder `null`, wenn nichts fehlt.

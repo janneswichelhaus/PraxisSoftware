@@ -89,7 +89,7 @@ import {
   terminPfad,
 } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
-import { fetchDayPlan, type DayPlanEntry } from '@/lib/tagesplan';
+import { fetchDayPlan, type DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Übersicht - der persönliche Einstieg.

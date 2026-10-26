@@ -6,7 +6,7 @@ import type * as AppointmentsApi from './api';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import type * as StaffApi from '@/features/staff/api';
-import type * as Tagesplan from '@/lib/tagesplan';
+import type * as Tagesplan from '@/features/day-plan/api';
 
 /**
  * Tag umplanen mit Anrufliste (CAL-009), geführt seit Überholung 6 (G2,
@@ -53,7 +53,7 @@ function eintrag(teil: Partial<Tagesplan.DayPlanEntry>): Tagesplan.DayPlanEntry 
 const fetchDayPlan = vi.fn();
 const cancelStaffDay = vi.fn();
 const fetchAssignableTherapists = vi.fn();
-vi.mock('@/lib/tagesplan', async (importOriginal) => ({
+vi.mock('@/features/day-plan/api', async (importOriginal) => ({
   ...(await importOriginal<typeof Tagesplan>()),
   fetchDayPlan: (datum: string, person: string) =>
     fetchDayPlan(datum, person) as Promise<Tagesplan.DayPlanEntry[]>,

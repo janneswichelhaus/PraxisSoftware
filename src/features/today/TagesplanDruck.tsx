@@ -2,7 +2,7 @@ import { adressZeilen, dayPlanStatusLabels } from './api';
 import { zugangMitStockwerk } from './stockwerk';
 import { einordnung, terminName } from './tagesstart';
 import { formatLocalTime, formatLocalTimeRange } from '@/lib/datum';
-import { rufnummern, type DayPlanEntry } from '@/lib/tagesplan';
+import { rufnummern, type DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Der eigene Tag auf Papier - der Papierweg für den Ausfall (BEF-052,

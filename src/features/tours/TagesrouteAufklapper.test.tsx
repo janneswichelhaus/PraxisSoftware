@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as Tagesroute from './tagesroute';
 import type * as Startort from './startort';
 import { renderWithProviders } from '@/test-utils';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Die Tagesroute in der Übersicht (MAP-006b): zugeklappt, erst beim

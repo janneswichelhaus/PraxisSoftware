@@ -11,7 +11,7 @@ import { kopfDatum } from './wochenfenster';
 import { hausbesucheDesTages, liegeHeute } from './tagesstart';
 import { Zeitstrahl } from './Zeitstrahl';
 import { formatLocalTime } from '@/lib/datum';
-import { fetchDayPlan } from '@/lib/tagesplan';
+import { fetchDayPlan } from '@/features/day-plan/api';
 
 /** Ohne Bezug auf eine Uhr: Morgen liegt ganz vor einem (`bezugszeitpunkt`). */
 const VOR_ALLEM = 0;

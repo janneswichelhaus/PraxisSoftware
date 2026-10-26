@@ -1,6 +1,6 @@
 import { hakenFehlt } from '@/features/appointments';
-import type { DayPlanEntry } from '@/lib/tagesplan';
 import { appointmentStatusLabels, type AppointmentStatus } from '@/lib/termin';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Wie lange die zuletzt geladene Tagesliste im Arbeitsspeicher der Seite

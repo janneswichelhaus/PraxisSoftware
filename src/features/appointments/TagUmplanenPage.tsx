@@ -54,7 +54,7 @@ import { formatLocalDate, formatLocalTime, formatLocalTimeRange, istIsoDatum } f
 import { fetchAssignableTherapists } from '@/features/staff/api';
 import { appointmentTypeHint } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
-import { fetchDayPlan, rufnummern, type DayPlanEntry } from '@/lib/tagesplan';
+import { fetchDayPlan, rufnummern, type DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Tag umplanen mit Anrufliste (CAL-009, IDEA-PRX-004), geführt seit

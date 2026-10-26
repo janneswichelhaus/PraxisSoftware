@@ -12,7 +12,7 @@ import {
   stoppsDesTages,
   type Stopp,
 } from './tagesroute';
-import { fetchDayPlan } from '@/lib/tagesplan';
+import { fetchDayPlan } from '@/features/day-plan/api';
 
 /**
  * Fahrzeiten und Fahrpuffer der Tagesroute (MAP-006c, §8.1, ANN-097).

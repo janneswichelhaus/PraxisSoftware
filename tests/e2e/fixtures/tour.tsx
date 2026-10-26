@@ -15,7 +15,7 @@ import {
 import type { CurrentUser } from '@/features/session/types';
 import '@/index.css';
 import { todayInTimeZone } from '@/lib/datum';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Einstieg der Prüfseite aus `tour.html` (UBK-009).

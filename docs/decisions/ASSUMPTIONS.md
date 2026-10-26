@@ -7623,7 +7623,7 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
-**Annahme.** Ein Modul unter `src/features` mit `index.ts` wird von außen nur darüber importiert; die Datei nennt jeden Export einzeln. Was mehrere Bereiche über den Termin wissen müssen, liegt als Kern in `src/lib`; einen fremden Abschnitt setzt die App über einen Erweiterungspunkt in Termine ein.
+**Annahme.** Ein Modul unter `src/features` mit `index.ts` wird von außen nur darüber importiert; die Datei nennt jeden Export einzeln. Was mehrere Bereiche über den Termin wissen müssen, liegt als Kern in `src/lib`, Abfragen aber nie (die Tagesliste hat das Modul `day-plan`); einen fremden Abschnitt setzt die App über einen Erweiterungspunkt in Termine ein.
 
 **Begründung.** Aufräumen Schritt 3 (Jannes, 2026-10-25): schmale Schnittstellen ohne Barrel-Falle, ab Termine, gegenseitige Abhängigkeiten auflösen; ADR-015 will fachliche Module ohne Schichtenbau.
 

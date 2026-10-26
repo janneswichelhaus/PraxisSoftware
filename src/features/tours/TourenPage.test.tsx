@@ -5,7 +5,7 @@ import type * as Tagesroute from './tagesroute';
 import type * as Startort from './startort';
 import { renderWithProviders, testUser } from '@/test-utils';
 import type * as StaffApi from '@/features/staff/api';
-import type * as Tagesplan from '@/lib/tagesplan';
+import type * as Tagesplan from '@/features/day-plan/api';
 
 /**
  * Tourenseite (MAP-006b): lädt Tagesliste und Tagesroute der gewählten
@@ -22,7 +22,7 @@ vi.mock('@/features/staff/api', async (importOriginal) => ({
   fetchAssignableTherapists: () => fetchAssignableTherapists() as unknown,
 }));
 
-vi.mock('@/lib/tagesplan', async (importOriginal) => ({
+vi.mock('@/features/day-plan/api', async (importOriginal) => ({
   ...(await importOriginal<typeof Tagesplan>()),
   fetchDayPlan: (...a: unknown[]) => fetchDayPlan(...a) as unknown,
 }));

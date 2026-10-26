@@ -468,10 +468,11 @@ Gilt seit Aufräumen Schritt 3 (ANN-748), zuerst für „Termine“ (`src/featur
 - **Ein Modul umstellen:** `index.ts` mit genau den Namen anlegen, die andere Bereiche nutzen,
   `pnpm lint` zeigt jeden tiefen Import, danach auf `@/features/<modul>` umschreiben.
 - **Kein Ring:** Was mehrere Bereiche über den Termin wissen müssen, liegt in `src/lib`
-  (`termin.ts` Art, Zustand, Länge und Wege; `tagesplan.ts` die Tagesliste; `zeitband.ts`);
-  `src/lib` importiert kein Modul. Braucht Termine einen Abschnitt eines anderen Bereichs, setzt
-  die App ihn über `TerminErweiterungen` ein (`src/app/terminErweiterungen.ts`), statt dass Termine
-  ihn importiert.
+  (`termin.ts` Art, Zustand, Länge und Wege; `zeitband.ts`); `src/lib` importiert kein Modul.
+  **Abfragen der Praxis gehören nie nach `src/lib`:** Die Trennungsprüfungen von Plattform und
+  Vorschau erlauben `@/lib/` pauschal und sähen sie nicht. Die Tagesliste hat dafür das Modul
+  `day-plan`. Braucht Termine einen Abschnitt eines anderen Bereichs, setzt die App ihn über
+  `TerminErweiterungen` ein (`src/app/terminErweiterungen.ts`), statt dass Termine ihn importiert.
 - `pnpm aufraeumen` zählt gegenseitige Abhängigkeiten, die Module im größten Abhängigkeitsring und
   die Module mit Schnittstelle.
 

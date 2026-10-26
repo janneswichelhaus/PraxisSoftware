@@ -20,7 +20,7 @@ import {
 import { formatLocalTime } from '@/lib/datum';
 import { kalenderZumTermin } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
-import type { DayPlanEntry } from '@/lib/tagesplan';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Wie ein Termin im Strahl steht: vor sich, hinter sich, ausgefallen - oder
