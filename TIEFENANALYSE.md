@@ -68,8 +68,14 @@ Doku-Datei wurde geändert; diese Datei ist die einzige neue. Sie hat keinen Ran
    - Funktionsregister.
 
    Diese Bausteine decken **≥ 95 % der Fälle**, sparen aber nur ≈ 12.150 Zeilen (17 %) der großen
-   Dateien. Den Rest löst eine Zerlegungsregel für Seiten, kein weiterer Baustein. Die zehn
-   gegengeprüften semantischen Duplikate stehen in 2b.
+   Dateien. Den Rest löst eine Zerlegungsregel für Seiten, kein weiterer Baustein.
+
+   Die zehn gegengeprüften semantischen Duplikate (2b) sparen konservativ ≈ 3.650 Zeilen. Ihr
+   eigentlicher Wert sind die belegten Fehler, die aus abweichenden Kopien entstanden sind. Die
+   Top 3:
+   - die Client-RPC-Schicht mit 12 Wrappern und 45 Fehler-Mappern,
+   - die Terminformulare, die einen vorhandenen Kern nachbauen,
+   - die Antragsmechanik, dreimal in SQL und viermal in der Oberfläche.
 
 3. **Datenbank.** Die 1.206 Funktionsnamen teilen sich so auf:
 
@@ -116,17 +122,20 @@ Doku-Datei wurde geändert; diese Datei ist die einzige neue. Sie hat keinen Ran
 Die Analyse hat nebenbei Fehler im Gebauten gefunden. Sie sind nur gemeldet, nicht behoben
 (read-only):
 
-| #   | Befund                                                                                                                                                                                                                                                                                                                                                                             | Schwere                                  | Fundort         |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | --------------- |
-| 1   | **Die Teillöschung unter Belegfrist lässt Art.-9-Daten des Trainings stehen.** `app.reduce_training_relationship` löscht 6 Tabellen. 17 Kind-Tabellen bleiben, darunter Screening, Assessments, Check-ins, Gewohnheiten und Übungspläne, bis die Belegfrist endet: 8 Jahre statt 3 ab Vertragsende, also bis zu etwa 5 Jahre zu lang. Das widerspricht ADR-021 Punkt 4 und ANN-183 | hoch, Pfad A                             | 3b.6 L-L1       |
-| 2   | **Manuelle Löschwege schreiben kein Löschjournal.** 12 RPCs löschen in 16 Tabellen ohne Journaleintrag. Nach einem Restore kämen diese Zeilen zurück (ADR-008 Punkt 8). Das ist breiter als BEF-198                                                                                                                                                                                | mittel, Pfad A                           | 3b.6 L-J1       |
-| 3   | **Für das Zusammenführen gibt es weder Vollständigkeitstest noch Ersatznachweis.** 26 FK-Spalten zeigen auf `patients`. Eine neue cascade-Tabelle fiele beim Merge still mit der Dublette. Nach LOG-EPIC-001 gibt es keine Aktion `patient.merged` mehr. Ein Restore von vor dem Merge brächte die Dublette ohne Nachweis zurück                                                   | mittel                                   | 3b.6 L-M1, L-J3 |
-| 4   | **Zeitumstellung:** In der doppelten Stunde liegt „jetzt“ eine Stunde in der Zukunft. Per SELECT reproduziert. Dazu: 57 SQL-Funktionen rechnen das Praxis-„Heute“ inline, obwohl es `app.training_today` gibt                                                                                                                                                                      | mittel, Pfad A                           | BEF-223; 2b     |
-| 5   | **Annahmen setzen geltende ADRs außer Kraft (Rang 4 gegen Rang 2).** ANN-662 hebt die Benachrichtigungsgrenze aus ADR-024 Punkt 15 auf. ANN-541 widerspricht ADR-009 Punkt 15 (Steuerkennzeichen). ANN-291 weicht von ADR-023 Punkt 7 und 11 ab                                                                                                                                    | mittel (Rangfolge)                       | 5b              |
-| 6   | **Prüfpaket unvollständig.** 17 Einträge der Kategorie Datenschutz oder Recht tragen den Zusatz „Prüfpaket“ nicht, 11 Technik- oder Praxis-Einträge tragen ihn zu Unrecht. Der `grep` aus dem Kopf des Registers liefert der Datenschutzprüfung damit eine falsche Liste                                                                                                           | mittel (Go-live)                         | 5c              |
-| 7   | **Kommentare und Annahmen versprechen Protokolle, die nicht entstehen.** `COMMENT ON` an `set_appointment_grid`, `list_revenue_by_staff`, `set_practice_target` und `waive_appointment_fee` nennt ein Audit, das die Funktion nicht schreibt. 25 und mehr ANN nennen Aktionen außerhalb der 27 aus `supabase/audit-aktionen.txt`                                                   | gering (Doku-Drift, aber Prüfgegenstand) | 5b              |
-| 8   | **Neun public-RPCs ohne Produktionsaufrufer sind für `authenticated` ausführbar.** Sie sind über PostgREST ohne Oberfläche erreichbar und prüfen ihre Rechte selbst. Dazu kommt `void_offset_payments`                                                                                                                                                                             | gering (Angriffsfläche)                  | 3a e)           |
-| 9   | **BEF-229 ist unvollständig.** Es nennt 9 Funktionen, ohne Produktionsaufrufer sind es 11: zusätzlich `list_patient_treatment_evidence` und `app.mdr_released`. BEF-082 betrifft noch 15 statt 16 Funktionen                                                                                                                                                                       | gering                                   | 5a              |
+| #   | Befund                                                                                                                                                                                                                                                                                                                                                                             | Schwere                                          | Fundort                 |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ----------------------- |
+| 1   | **Die Teillöschung unter Belegfrist lässt Art.-9-Daten des Trainings stehen.** `app.reduce_training_relationship` löscht 6 Tabellen. 17 Kind-Tabellen bleiben, darunter Screening, Assessments, Check-ins, Gewohnheiten und Übungspläne, bis die Belegfrist endet: 8 Jahre statt 3 ab Vertragsende, also bis zu etwa 5 Jahre zu lang. Das widerspricht ADR-021 Punkt 4 und ANN-183 | hoch, Pfad A                                     | 3b.6 L-L1               |
+| 2   | **Manuelle Löschwege schreiben kein Löschjournal.** 12 RPCs löschen in 16 Tabellen ohne Journaleintrag. Nach einem Restore kämen diese Zeilen zurück (ADR-008 Punkt 8). Das ist breiter als BEF-198                                                                                                                                                                                | mittel, Pfad A                                   | 3b.6 L-J1               |
+| 3   | **Für das Zusammenführen gibt es weder Vollständigkeitstest noch Ersatznachweis.** 26 FK-Spalten zeigen auf `patients`. Eine neue cascade-Tabelle fiele beim Merge still mit der Dublette. Nach LOG-EPIC-001 gibt es keine Aktion `patient.merged` mehr. Ein Restore von vor dem Merge brächte die Dublette ohne Nachweis zurück                                                   | mittel                                           | 3b.6 L-M1, L-J3         |
+| 4   | **Ein Trainings-Nachtrag gilt bei 403 als gespeichert.** `addTrainingProtocolAddendum` (`training/api.ts` 585–601) prüft nur `error`. Der Server antwortet bei fehlender Rolle mit 403 und `null`, die Oberfläche meldet also Erfolg. Die 11 anderen Schreibwege derselben Datei prüfen das                                                                                        | mittel (Datenverlust ohne Hinweis)               | 2b Fund 1               |
+| 5   | **Upload-Recht der Akte schwächer als die vier anderen Dateiarten.** `may_upload_patient_file_object` prüft weder `uploaded_by = auth.uid()` noch das 24-h-Fenster. Dazu sperren `confirm_fleet_photo_upload` und `confirm_message_attachment_upload`, ohne den Zustand unter der Sperre nachzuprüfen                                                                              | mittel, Prüffall fürs Sicherheitsreview (Pfad A) | 2b Fund 5               |
+| 6   | **Namen in der Adresse.** `staff/StaffListPage.tsx` 99–111 und 193 schreiben den Suchbegriff (meist einen Namen) in URL und Rückweg. Das widerspricht `src/lib/rueckweg.ts` 22–25 („Keine Namen im Rückweg“, ADR-011)                                                                                                                                                              | gering–mittel (Datenschutz)                      | 2b, nicht in den Top 10 |
+| 7   | **Zeitumstellung:** In der doppelten Stunde liegt „jetzt“ eine Stunde in der Zukunft (BEF-223), per SELECT reproduziert. Dazu kommen 55 SQL-Funktionen, die das Praxis-„Heute“ inline rechnen, obwohl es `app.training_today` gibt, und „gestern“ als jetzt − 24 h im Teamchat                                                                                                     | mittel, Pfad A                                   | BEF-223; 2b Fund 7      |
+| 8   | **Annahmen setzen geltende ADRs außer Kraft (Rang 4 gegen Rang 2).** ANN-662 hebt die Benachrichtigungsgrenze aus ADR-024 Punkt 15 auf. ANN-541 widerspricht ADR-009 Punkt 15 (Steuerkennzeichen). ANN-291 weicht von ADR-023 Punkt 7 und 11 ab                                                                                                                                    | mittel (Rangfolge)                               | 5b                      |
+| 9   | **Prüfpaket unvollständig.** 17 Einträge der Kategorie Datenschutz oder Recht tragen den Zusatz „Prüfpaket“ nicht, 11 Technik- oder Praxis-Einträge tragen ihn zu Unrecht. Der `grep` aus dem Kopf des Registers liefert der Datenschutzprüfung damit eine falsche Liste                                                                                                           | mittel (Go-live)                                 | 5c                      |
+| 10  | **Kommentare und Annahmen versprechen Protokolle, die nicht entstehen.** `COMMENT ON` an `set_appointment_grid`, `list_revenue_by_staff`, `set_practice_target` und `waive_appointment_fee` nennt ein Audit, das die Funktion nicht schreibt. 25 und mehr ANN nennen Aktionen außerhalb der 27 aus `supabase/audit-aktionen.txt`                                                   | gering (Doku-Drift, aber Prüfgegenstand)         | 5b                      |
+| 11  | **Neun public-RPCs ohne Produktionsaufrufer sind für `authenticated` ausführbar.** Sie sind über PostgREST ohne Oberfläche erreichbar und prüfen ihre Rechte selbst. Dazu kommt `void_offset_payments`                                                                                                                                                                             | gering (Angriffsfläche)                          | 3a e)                   |
+| 12  | **BEF-229 ist unvollständig.** Es nennt 9 Funktionen, ohne Produktionsaufrufer sind es 11: zusätzlich `list_patient_treatment_evidence` und `app.mdr_released`. BEF-082 betrifft noch 15 statt 16 Funktionen                                                                                                                                                                       | gering                                           | 5a                      |
 
 ## 1. Röntgenbild der 44 Module und Schnittplan
 
@@ -1110,9 +1119,577 @@ B1, B2, B3 und B6 sind je Datei aus Messwerten gerechnet (`ersparnis.mjs`: 4.635
 - **Präzisiert:** ts/tsx ohne Tests umfassen per `git ls-files` 953 Dateien mit 203.263 Zeilen; mit index.css sind es 204.699. FAKTEN nennt 204.959; der Rest von 260 Zeilen sind andere Dateitypen, nicht geprüft.
 - **Präzisiert:** Die Git-Historie ist flach (317 Commits ab 2026-10-16). Aussagen zum Wachstum gelten nur für 9 Tage.
 
-### 2b Semantische Duplikate
+### 2b · Top 10 der semantischen Duplikate nach der Gegenprüfung
 
-(Gegenprüfung ausstehend)
+Ich habe die 23 Kandidaten der vier Sucher an den genannten Stellen nachgelesen, am Code (Commit 3c5e72b) und an der Analyse-DB. Überschneidende Kandidaten habe ich zusammengeführt:
+
+- 7, 8, 11 und der TS-Teil von 2 werden zu Fund 1,
+- 3, 4 und 14 zu Fund 3,
+- 5, 10, 19 und 20 zu Fund 5,
+- 18, 21 und 22 zu Fund 7.
+
+**Rangwert** = konservative Einsparung × Fehlerrisiko, mit hoch = 3, mittel = 2, niedrig = 1. Das Fehlerrisiko richtet sich nach den belegten Abweichungen mit Folgen.
+
+**Vorbehalt für alle SQL-Einsparungen.** Die Basis-Migration wird „nie von Hand geändert; neue Migrationen kommen dahinter“ (`docs/DEVELOPMENT.md` 53-61). Eine Vereinheitlichung bringt deshalb zunächst eine Folgemigration mit allen Neudefinitionen, die Zeilenzahl steigt also erst. Weniger Zeilen gibt es erst beim nächsten Abzug mit `scripts/basis-migration.mjs`. Jeder Umbau an RPC-Gates, Upload-Rechten oder Policies ist Pfad A (ADR-013 Punkt 9) und braucht ein Zweitreview.
+
+| Rang | Thema                                                                 | Varianten                                                                                                        | betroffene Zeilen                     | Einsparung (konservativ)                       | Risiko  | Abstraktion                                                                            |
+| ---- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------- | ------- | -------------------------------------------------------------------------------------- |
+| 1    | Client-RPC-Schicht: Aufruf, 403-Abweisung, Fehlersatz, Antwortprüfung | 12 Wrapper, 45 Mapper, 5 Schreibweisen der Abweisung, 2 Prüfwege                                                 | ≈ 2.700 (Schätzung)                   | ≈ 600                                          | hoch    | `src/lib/rpc.ts` (`rufeRpc`, `leseRpc`) + `src/lib/serverfehler.ts` (`satzFuer`)       |
+| 2    | Terminformulare Behandlung und Fehlzeit                               | 6 Formulare neben einem vorhandenen Kern, 5 Kopien des Einzelstandort-Effekts                                    | 2.862                                 | ≈ 500                                          | hoch    | `appointments/Terminformular.tsx` mit Slots, `Fehlzeitformular`, `useEinzigerStandort` |
+| 3    | Antragsmechanik: SQL-Zyklus und Entscheidungsseiten                   | 4 Antragsarten (3 volle Zyklen, Zeitkonto als Variante)                                                          | 2.399                                 | ≈ 500                                          | hoch    | SQL-Helfer `app.staff_request_*` + `features/antraege/Entscheidungsablauf.tsx`         |
+| 4    | RPC-Eingangsprüfung in SQL                                            | 140 Audit-Vorspänne (27 bis 66 Formen), ≥ 145 rohe Gates, 2 byte-identische Helfer                               | 1.650–2.300 (hängt an der Abgrenzung) | ≈ 550, erst nach dem Basis-Abzug               | mittel  | `app.enter(p_allowed, p_operation, p_message, p_on_denied)`                            |
+| 5    | Dateiarten nach ADR-017 fünffach: SQL-Lebenszyklus und Client-Weg     | 5 Arten: 66 SQL-Funktionen, 5 Upload-Abläufe, 12 Lader                                                           | 3.138                                 | ≈ 350, davon SQL 150 erst nach dem Basis-Abzug | hoch    | SQL-Helfer `app.assert_uploaded_object` u. a. + `files/ablage.ts`                      |
+| 6    | Rollenspiegel SQL ↔ TS                                                | 4 Mechanismen plus Server-Flags, 10 Rollenmengen in 12 Schreibweisen                                             | 1.182                                 | ≈ 200                                          | hoch    | `session/rechte.ts` + Drift-Test, später `get_my_capabilities()`                       |
+| 7    | Zeit und Datum: Praxistag, Kalendertag, Formate                       | SQL: 1 Helfer und 55 Eigenrechnungen; TS: 29 Kalendertag-Eigenbauten, 49 Formatoptionssätze, 16 Wochentagslisten | 822                                   | ≈ 300                                          | mittel  | `app.org_today` + `src/lib/{praxiszeit,kalendertag,datumsformat}.ts`                   |
+| 8    | Formulargerüst der Stammdaten- und Einzelformulare                    | 10 Formulare, 4 Strategien für die Fehlerzusammenfassung                                                         | 1.985                                 | ≈ 170                                          | hoch    | `useFormular` in `src/lib/formular.ts`                                                 |
+| 9    | React-Query-Abfragen                                                  | 42 Paare aus Schlüssel und Ladefunktion an 154 Stellen, 347× `retry: false`                                      | 1.069                                 | ≈ 330                                          | niedrig | `abfragen.ts` je Besitzermodul (`queryOptions`)                                        |
+| 10   | Weiche für Laden, Fehler und Leer                                     | 65 Weichen in 53 Dateien                                                                                         | 626                                   | ≈ 150                                          | mittel  | vorhandenes `Abfragezustand` + `kombiniereAbfragen`                                    |
+
+Rangwerte: 1.800 · 1.500 · 1.500 · 1.100 · 1.050 · 600 · 600 · 510 · 330 · 300.
+
+- Gleichstand 2 und 3: Die Terminformulare stehen vorn, weil ihr Kopierfehler schon einmal eingetreten ist (FIX-013).
+- Gleichstand 6 und 7: Die Rollen stehen vorn, weil sie Autorisierung betreffen.
+
+#### 1 · Client-RPC-Schicht: Aufruf, Abweisung, Fehlersatz, Antwortprüfung
+
+**Stellen.** Zwölf Modul-Wrapper:
+
+| Datei                                       | Zeilen                               |
+| ------------------------------------------- | ------------------------------------ |
+| `src/features/timeaccount/api.ts`           | 106-158                              |
+| `src/features/working-time/api.ts`          | 115-187                              |
+| `src/features/feedback/api.ts`              | 92-114                               |
+| `src/features/reimbursements/api.ts`        | 150-196                              |
+| `src/features/exercise-plans/api.ts`        | 205-274 und 526-556 (`rufeVorlagen`) |
+| `src/features/teamchat/api.ts`              | 246-345                              |
+| `src/features/vacation/api.ts`              | 135-171                              |
+| `src/features/fleet/api.ts`                 | 259-315                              |
+| `src/features/nutrition/api.ts`             | 92-122                               |
+| `src/features/nutrition/lebensmittelApi.ts` | 22-44                                |
+| `src/features/platform/api.ts`              | 66-76 (`Verbindung`)                 |
+
+Zwei Paare sind byte-gleich, per diff nachgeprüft: `feedback/api.ts` 101-114 mit `reimbursements/api.ts` 183-196 und `vacation/api.ts` 158-171 mit `fleet/api.ts` 302-315.
+
+Nachgezählt:
+
+- 409 `.rpc(` in 74 Dateien, davon 374 `getSupabase().rpc('…')`.
+- 121 einzeilige Casts `as { data: unknown; error: unknown }`; die Sucher zählen 152 mit den mehrzeiligen.
+- Antwortprüfung: `src/lib/antwort.ts` 16-20 wird 222× genutzt, daneben 80× `.parse(data…)` (Sucher: 81).
+
+Laut Sucher (AST) gibt es 45 eigene Mapper in drei Formen, z. B. `appointments/api.ts` 1626-1725 und 8 Mapper in `platform/api.ts`. `schreibfehler` steht in 7 Dateien mit zwei unverträglichen Signaturen.
+
+**Muster.** Jede Stelle läuft so ab: Aufruf, Cast, `if (error)`, ein englischer Teilstring der Servermeldung wird zum deutschen Satz, dann `antwort` oder `.parse`, und an den Schreibwegen mit record_denied_write zusätzlich eine Hand-Prüfung mit `abgewiesen()`.
+
+**Belegte Fehler aus den Abweichungen:**
+
+1. `training/api.ts` 585-601 `addTrainingProtocolAddendum` prüft nur `error`. `add_training_protocol_addendum` (Migration 16885-16933) antwortet bei fehlender Rolle über `app.record_denied_write` mit 403 und `return null`. Damit gilt der Nachtrag als gespeichert, obwohl der Dateikopf (12-19) die Prüfung zusagt. Die 11 übrigen Aufrufer mit record_denied_write in derselben Datei prüfen sie, nachgezählt.
+2. `platform/api.ts` 1508-1520 `anhangfehler` hat keinen Zweig für „platform access not allowed“ und „topic needs consent“; beide wirft `prepare_message_attachment_upload` mit 42501. Die Person liest dann „Bitte versuchen Sie es erneut.“
+3. `lebensmittelApi.ts` 22-44 mit `lebensmittel.ts` 299-310: Auch die Lesewege `search_foods`, `list_food_sources` und `list_practice_foods` melden „Nicht gespeichert …“.
+4. `appointments/api.ts` 2130-2142 endet mit `.parse`. In `MitteilungVermerken.tsx` 123-124 steht damit ZodError-JSON in der Oberfläche, also genau das Muster, das R3-023/BEF-070 behoben hat.
+
+Dazu kommt eine Reihenfolgeabhängigkeit: „not allowed“ muss in 4 Tabellen hinter „not allowed to …“ stehen.
+
+**Server.** 2.377 `raise exception`. „not allowed…“ kommt 412× mit 42501 und 2× mit 22023, „changed meanwhile“ 33× mit 40001, beides nachgezählt. Der SQLSTATE wäre also ein verlässlicher Standardschlüssel; der Client liest ihn rund 14×.
+
+**Fachlich nötig** sind nur:
+
+- die Regelpräfixe von Arbeitszeit und Zeitkonto,
+- die Netzklassifikation im Teamchat (ANN-641),
+- die Verbindungs-Naht der Einsicht (`platform/api.ts` 66-76, `einsicht.ts` 71),
+- rollenspezifische Sätze und Fehlerklassen, an denen Folgelogik hängt.
+
+**Abstraktion:**
+
+```ts
+// src/lib/serverfehler.ts
+export type Fehlersaetze = readonly (readonly [muster: string, satz: string])[];
+export class Serverfehler extends Error {
+  readonly code: string | null;
+  readonly netz: boolean;
+  readonly bekannt: boolean;
+}
+export function satzFuer(
+  error: { message?: string; code?: string } | null,
+  saetze: Fehlersaetze,
+  rest: string,
+  standard?: Partial<Record<'42501' | '40001' | '23505' | 'P0002', string>>,
+): Serverfehler; // längstes Muster gewinnt
+// src/lib/rpc.ts – wendet abgewiesen() immer an, leseRpc immer antwort()
+export async function rufeRpc(
+  fn: string,
+  args: Record<string, unknown> | undefined,
+  satz: string,
+  opt?: { saetze?: Fehlersaetze; regel?: (m: string) => string | null; verbindung?: Verbindung },
+): Promise<unknown>;
+export async function leseRpc<T>(
+  fn: string,
+  args: Record<string, unknown> | undefined,
+  schema: ZodType<T>,
+  satz: string,
+  opt?: Parameters<typeof rufeRpc>[3],
+): Promise<T>;
+```
+
+Die Modul-Wrapper werden zu Einzeilern.
+
+**Einsparung.** Schätzung, zusammen ≈ 640, gerundet 600:
+
+- Inline-Gerüst −450: Die Sucher messen an 259 gleichförmigen Stellen 1.524 → 936 Zeilen, also −588; ich setze rund ¾ davon an.
+- Wrapper 113 → ~50: −60.
+- Mapper als Tabellen −200: statt −380 laut Sucher.
+- 14 safeParse-Dreizeiler: −28.
+- Zwei neue Dateien: +100.
+
+**Betroffen** sind ≈ 2.700 Zeilen. Schätzung: 1.648 + 1.441 + 134 = 3.223 laut Sucher, abzüglich ~450 Zeilen Inline-Fehlerprüfungen, die in beiden Messungen stecken.
+
+#### 2 · Terminformulare: Behandlungstermin baut den vorhandenen Kern nach, Fehlzeit steht dreimal von Hand da
+
+**Stellen:**
+
+| Datei                                              | Zeilen                            | Rolle                                                                                                                                                              |
+| -------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/features/training/TrainingTerminFormular.tsx` | 122-335                           | vorhandener Kern; genutzt von `NewTrainingAppointmentPage.tsx` (180 Z.), `EditTrainingAppointmentPage.tsx` (108 Z.), `nutrition/BeratungsterminSeite.tsx` (107 Z.) |
+| `appointments/NewAppointmentPage.tsx`              | 147-372, 462-606 (612 Z.)         | Nachbau                                                                                                                                                            |
+| `appointments/EditAppointmentPage.tsx`             | 96-114, 180-345, 471-621 (625 Z.) | Nachbau                                                                                                                                                            |
+| `appointments/NewEventPage.tsx`                    | 98-332 (332 Z.)                   | Fehlzeit                                                                                                                                                           |
+| `appointments/NewEventSeriesPage.tsx`              | 146-468 (468 Z.)                  | Fehlzeit                                                                                                                                                           |
+| `appointments/EditEventPage.tsx`                   | 81-480 (480 Z.)                   | Fehlzeit                                                                                                                                                           |
+| `appointments/AppointmentSeriesPage.tsx`           | 242-249                           | Kopie                                                                                                                                                              |
+
+**Eigene Nachmessung.** Gezählt sind Zeilen, die nach trim gleich sind, ohne Leer-, Kommentar-, Import- und reine Klammerzeilen. Das ist eine Obergrenze, weil generische JSX-Zeilen mitzählen.
+
+- Kern und die zwei Behandlungsformulare teilen 580 von 1.009 Zeilen (57,5 %).
+- Die drei Fehlzeitformulare teilen 512 von 837 (61,2 %). NewEventPage steckt zu 92 % in den beiden anderen.
+
+Der FAKTEN-Scanner mit 2,7 % sieht das nicht, weil eingestreute Abweichungen die Kopien zerschneiden.
+
+**Muster:**
+
+- `werte` und Vergleichsstand als useState, `setzen` mit Ableitung `start_time`→`end_time`.
+- Rückfragekette Vorfrage → Arbeitszeit → Vergangenheit → Hinweisfenster: NewAppointmentPage 469-503 ≙ TrainingTerminFormular 253-287 ≙ EditAppointmentPage 477-511.
+- Der Einzelstandort-Effekt steht 5× wortgleich: NewAppointmentPage 216-227, TrainingTerminFormular 140-151, NewEventPage 140-153, NewEventSeriesPage 197-205, AppointmentSeriesPage 242-249. NewEventPage 140-144 dokumentiert, dass genau das Fehlen dieser Kopie schon ein Fehler war (FIX-013).
+
+**Zufällige Abweichungen:**
+
+- (a) Personenvorbelegung: „ich“ in NewAppointmentPage 237-252, „genau eine“ in TrainingTerminFormular 154-169.
+- (b) Fehlerzusammenfassung: Die Termine nutzen eine Momentaufnahme mit Nummer, begründet in NewAppointmentPage 157-166. Die Fehlzeiten zeigen sie live (NewEventPage 225, NewEventSeriesPage 295, EditEventPage 323); daraus folgt der Fokussprung aus Fund 8.
+- (c) ZST-07: Die Termine melden am Feld, die Fehlzeiten sperren still den Knopf (NewEventPage 211-213, 320).
+- (d) Speicherfehler: Hinweisfenster gegen Statusmeldung (NewEventPage 310).
+- (e) „trotzdem“-Beschriftungen in mehreren Formen: „Termin trotzdem anlegen“ (NewAppointmentPage 480), „Änderung trotzdem speichern“ (EditAppointmentPage 488), `${absendeText} – trotzdem` (TrainingTerminFormular 264).
+
+**Fachlich trägt die gemeinsame Abstraktion.** ADR-021 (Z. 188) sieht „ein Kalender, ein Kontext je Termin“ vor, und der Kern importiert ohnehin `AppointmentFormFields` und `appointmentFormSchema` aus appointments. Nötig bleiben als Slots: Wegauskunft und TerritoryHint nur am Behandlungstermin, die nicht gezeigte Trainingsadresse (ANN-177), der Ereigniszweig, die Wiederholung und der Ändern-Umfang.
+
+**Abstraktion:**
+
+- `Terminformular({ startwerte, startMinuten, vergleich?, personen: { abfrage, beschriftung, vorbelegung: 'ich' | 'einzige' | 'keine' }, vorFeldern?, nachFeldern?: (werte, setzen) => ReactNode, texte: { absenden, laeuft, trotzdem, fehlerTitel, verlust }, abbrechenZiel, onSpeichern(werte, bestaetigung): Promise<string>, onGespeichert })` in `src/features/appointments/Terminformular.tsx`. Damit entfällt auch die Kante nutrition>training.
+- `useEinzigerStandort(standorte: Location[] | undefined, setze: (f: (w) => w) => void)` in `appointments/terminformular.ts`.
+- `Fehlzeitformular({ start, zusatz?: ReactNode, zusatzPruefen?: () => Partial<Record<string, string>>, absendeText, onSpeichern })`.
+
+**Einsparung ≈ 500.** Schätzung: Die Sucher kommen über einen Rohzeilenfaktor auf 750; ich ziehe ein Drittel für Slots, Hüllen und Konfiguration ab. Das Vorbild zeigt den Effekt: EditTrainingAppointmentPage hat 108 Zeilen, EditAppointmentPage 625.
+
+#### 3 · Antragsmechanik: dreimal neu in SQL, viermal kopierte Entscheidungsseite
+
+**SQL-Stellen** (Migration, Zeilen nachgeprüft):
+
+| Schritt      | Funktionen                                                                                                                                                                                                             |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entscheiden  | `decide_leave_request` 23030-23108, `decide_working_time_request` 23157-23226, `decide_reimbursement` 23112-23153, `reject_time_account_entry` 42749-42783, `mark_reimbursement_paid` 36790-36817                      |
+| Zurückziehen | `withdraw_leave_request` 52233-52253 ≡ `withdraw_working_time_request` 52528-52548 (bis auf Tabelle und Text), `withdraw_reimbursement` 52355-52381, `withdraw_time_account_entry` 52385-52420                         |
+| Stellen      | `request_leave` 43518, `request_leave_cancellation` 43586, `request_working_time_change` 43870, `submit_electricity_reimbursement` 48862, `submit_purchase_reimbursement` 48995, `app.reimbursement_start` 12872-12893 |
+
+**Abweichungen ohne fachlichen Grund** (Rümpfe und pg_constraint gelesen):
+
+1. Eigen-Prüfung: Der Urlaub prüft `staff_member_id = own OR requested_by = auth.uid()`, die Erstattung nur `staff_member_id is not distinct from own` (23128), obwohl die Tabelle `requested_by` hat.
+2. Nicht offener Antrag: Urlaub antwortet mit P0002 „leave request not found“, Erstattung mit 55000 „reimbursement is not open“.
+3. Prüfreihenfolge und Texte: „decision is required“ / „note is too long“ gegen „decision missing“ / „reason is too long“.
+4. Notiz bei Genehmigung: Urlaub und Arbeitszeit speichern sie, die Erstattung verwirft sie. Grund: `staff_reimbursements_reject_reason` verlangt die Äquivalenz `(status='rejected') = (decision_note IS NOT NULL)`, die beiden anderen nur die Implikation.
+5. Selbsteintrag in drei Quellen:
+   - 9× `app.has_any_role('owner')` in 7 Funktionen (request_leave, request_leave_cancellation, request_working_time_change, list_leave 2×, list_working_time, preview_leave, preview_working_time_change 2×);
+   - 1× `app.can_decide_staff_requests()` in reimbursement_start;
+   - 1× im Client: `selfEntered = state.can_decide` (`reimbursements/RequestReimbursementPage.tsx` 142).
+
+   Deckungsgleich ist das nur, solange `can_decide_staff_requests` = owner bleibt (2278-2285).
+
+6. `*_self_entered` als CHECK gibt es nur an `staff_reimbursements`.
+7. Die `*_decided`-CHECKs listen die Endzustände je Tabelle von Hand.
+
+Das Zeitkonto hat eigene Spalten (`rejected_by`, `rejected_at`, `rejection_note`). Es bekommt deshalb nur Helfer, keine Einheitstabelle.
+
+**UI-Stellen:**
+
+- Die vier Entscheidungsseiten mit 1.281 Zeilen: `vacation/UrlaubEntscheidenPage.tsx` (414), `working-time/DecideWorkingTimePage.tsx` (333), `reimbursements/DecideReimbursementPage.tsx` (267), `timeaccount/RejectTimeAccountEntryPage.tsx` (267).
+- Eigene Nachmessung: 502 von 918 nichttrivialen Zeilen (54,7 %) stehen wörtlich auch in einer der anderen Seiten. Der Ablehnschritt in DecideReimbursementPage 184-218 und RejectTimeAccountEntryPage 204-238 unterscheidet sich per diff nur in Namen, Fehlerzeile und Knopfwort.
+- Statusanzeige 3×: `vacation/zeitraum.ts` 135-158, `working-time/format.ts` 67-79, `reimbursements/rules.ts` 164-187. Für requested, approved, rejected und withdrawn sind Wort, Ton und Zeichen jeweils gleich.
+- Unterzeile 4×: `VacationPage.tsx` 170-173, `WorkingTimePage.tsx` 296-298, `reimbursements/BelowRow.tsx` 1-9, `TimeAccountPage.tsx` 267-269.
+- Eingangsgruppen: `open-points/Urlaubsantraege.tsx`, `Arbeitszeitantraege.tsx`, `Erstattungen.tsx`, zusammen 166 Zeilen.
+
+**UI-Abweichungen mit Folge:**
+
+- `DecideReimbursementPage.tsx` 39 setzt `REJECT_TEXTS` ohne `zeile`, nutzt aber `kompakt: true` (122-125). Deshalb erscheinen die Vorgaben der Schreibseite aus `Textverlustschutz.tsx` 572-575 und 663: „Text noch nicht gespeichert.“ und „Weiterschreiben“. DecideWorkingTimePage 50-58 zeigt dagegen „Der Antrag ist noch nicht abgelehnt.“
+- Die Erstattung zeigt `decide.error.message` roh, die anderen Seiten einen Ersatzsatz.
+
+**Abstraktion SQL** (neben `app.staff_request_org`):
+
+- `app.staff_request_decision_note(p_approve boolean, p_note text) returns text`
+- `app.assert_not_own_staff_request(p_org uuid, p_staff_member_id uuid, p_requested_by uuid) returns void`
+- `app.staff_request_self_enters() returns boolean` (= `can_decide_staff_requests()`, auch als Flag `self_entered` für den Client)
+- `app.withdraw_staff_request(p_table regclass, p_id uuid, p_not_found text) returns void`, `regclass` gegen eine feste Liste geprüft
+- einheitliche `*_decided`-, `*_reject_reason`- und `*_self_entered`-CHECKs; ob eine Notiz bei Genehmigung erlaubt ist, entscheidet Jannes fachlich.
+
+**Abstraktion TS** in `src/features/antraege/`:
+
+- `Entscheidungsablauf<A, E>({ titel, abfrage, finde: (stand) => A | undefined, objekt: (a) => string, details: (a) => ReactNode, entscheiden: (a, genehmigen: boolean, grund: string | null) => Promise<E>, fertig: (a, e) => ReactNode, ablehnWort?: 'Ablehnen' | 'Zurückweisen', nurAblehnen?: boolean, invalidieren: QueryKey[] })`
+- `ANTRAGSSTATUS_ANZEIGE: Record<'requested' | 'approved' | 'rejected' | 'withdrawn' | 'cancelled' | 'paid', { text: string; ton: Ton; zeichen?: string }>`
+- `Antragsgruppe`
+
+Voraussetzung: Textverlustschutz kommt aus `features/documentation` heraus. 18 Module importieren documentation nur dafür (`s2bC/doku_imports.txt`).
+
+**Einsparung ≈ 500.** Schätzung, zusammen ≈ 555, abgerundet:
+
+- Seiten 1.281 → ~880: −400.
+- Statusanzeige: −40.
+- Unterzeile: −14.
+- Eingangsgruppen: −50.
+- SQL-Helfer: −50, erst nach dem Basis-Abzug.
+
+Der Hauptnutzen sind die sieben SQL- und zwei UI-Abweichungen.
+
+#### 4 · RPC-Eingangsprüfung in SQL von Hand
+
+**Stellen** (nachgezählt):
+
+- 140 public-RPCs schreiben einen Abweisungseintrag über `app.record_denied_read`, `_write` oder `_owner_read`, z. B. `add_training_protocol_addendum` 16885-16933. Die Aufrufer-Zahlen: record_denied_read 106, record_denied_write 34, record_denied_owner_read 2.
+- 145 RPCs haben ein rohes Gate in strenger Form `if not app.can_…()/has_any_role(…) then raise exception` ohne Eintrag; die Sucher zählen 162 mit weiteren Formen.
+- `app.staff_request_org` 13752-13771 und `app.fleet_org` 6466-6485 sind byte-identisch (prosrc-Vergleich = true) und haben 37 bzw. 22 Aufrufer. staff_request_org hat 8 fremde Aufrufer: teamchat_member, staff_feedback_giver, get_my_staff_feedback_status, get_staff_feedback_summary, list_staff_feedback_named, electricity_suggestions, electricity_tour_points und preview_electricity_reimbursement.
+
+Länge des Vorspanns: Die Sucher messen 1.076 Zeilen (Ø 7,7) bis zum Abweisungszweig. Meine Nachmessung bis zum Ende des Organisationsblocks ergibt 1.737 Zeilen (Ø 12,4). Formen: 27 laut Sucher (normalisiert), 66 bei mir mit Variablennamen.
+
+**Abweichungen:**
+
+- Der COMMENT zu record_denied_write (12652) nennt „die zehn Schreibpfade“; tatsächlich sind es 34 Aufrufer.
+- 15 STABLE-RPCs schreiben über record_denied_read, nämlich find_free_slots, find_possible_duplicates, get_intake_checklist, get_practice_statistics, get_practice_targets, list_call_list, list_ending_prescriptions, list_open_intakes, list_open_prescription_scans, list_practice_revenue_months, list_tasks, list_top_services, list_waitlist_entries, list_waitlist_matches und rate_slot_travel. Das ist BEF-082 (offen); der Befund nannte 16, list_care_without_conclusion ist inzwischen nicht mehr darunter.
+- `return;` gegen `return null;`, wechselnde Reihenfolge von uid, Recht und Organisation.
+
+**Fachlich nötig** ist nur die Abweisungsart je Bereich (ADR-010 Punkt 16, ANN-115, ANN-172). Sie bleibt ein expliziter Parameter, und die Menge der protokollierten Pfade darf sich nicht ändern. Mehr Protokollierung braucht eine ADR-Änderung und das Label `freigabe-audit`, weniger wäre ein abgeschwächtes Gate. `supabase/tests/abgewiesene-schreibpfade.test.ts` und `abgewiesene-lesepfade.test.ts` bleiben die Prüfung.
+
+**Abstraktion.** `app.enter(p_allowed boolean, p_operation text, p_message text, p_on_denied text default 'raise') returns uuid`, VOLATILE, neben `app.record_denied_read`. Sie gibt die Organisation zurück oder null nach einem protokollierten Abweisen. Aufruf: `v_org := app.enter(app.can_x(), 'x.read', 'not allowed …', 'audit_read'); if v_org is null then return; end if;`. staff_request_org und fleet_org werden erst Aliase, dann ersetzt. Ein Katalogtest in `audit.test.ts` verlangt: Wer `app.enter` mit `'audit_*'` ruft, ist nicht STABLE. Den Fehler aus BEF-082 behebt erst dieser Test, nicht der Helfer.
+
+**Einsparung ≈ 550**, erst nach dem Basis-Abzug. Schätzung:
+
+- 140 Vorspänne × ~4 Zeilen (7,7 → ~3, die `v_actor`-Zeile bleibt, wo sie gebraucht wird) = −560.
+- Die rohen Gates sind nicht eingerechnet.
+- Die Helferkopie entfällt: −17.
+- `app.enter` kostet +30.
+
+#### 5 · Dateiarten nach ADR-017 fünffach: SQL-Lebenszyklus und Client-Weg
+
+**SQL** (Migration, Zeilen nachgeprüft):
+
+| Rolle                     | Zeilen      |
+| ------------------------- | ----------- |
+| `prepare_*`               | 39717-40107 |
+| `confirm_*`               | 19876-20220 |
+| `record_*_verification`   | 41348-42353 |
+| `discard_stale_*`         | 24376-24472 |
+| Cron                      | 63390-63485 |
+| `may_upload_*`            | 8452-8542   |
+| `may_read_*`              | 8127-8401   |
+| `own_pending_*`           | 10245-10409 |
+| `order_*_object_deletion` | 10125-10225 |
+| `issue_*_link`            | 30448-30825 |
+
+Dazu die Edge Function: `supabase/functions/patient-file-verify/handler.ts` 70-110 (Id-Feld fünffach) und `instanz.ts` 106-131 und 156-196 (zwei fünffach verschachtelte Ternäre). Laut Sucher sind es 66 artspezifische Funktionen mit 2.212 Zeilen.
+
+**SQL-Abweichungen mit Folgen** (nachgeprüft):
+
+1. `confirm_fleet_photo_upload` (19876-19910) und `confirm_message_attachment_upload` (19915-19984; Sperre in 19943) sperren mit `perform 1 … for update`, ohne den Zustand nachzuprüfen. Beleg (20126-20170) und Teamchat (20174-20220) prüfen unter der Sperre nach („Zweitreview Runde 2“). Ein Wettlauf ist plausibel, aber nicht durch einen Test belegt.
+2. `may_upload_patient_file_object` (8505-8525) prüft weder `uploaded_by = auth.uid()` noch `confirmation_requested_at is null` noch das 24-h-Fenster; die vier anderen prüfen alle drei. Das ist ein Prüffall für das Sicherheitsreview (Pfad A). Ausnutzbar ist es wohl kaum, weil der Objektschlüssel zufällig ist und `upsert: false` gilt; geprüft habe ich das nicht.
+3. `interval '24 hours'` steht 21× als Literal in 21 Funktionen. `own_pending_fleet_photo`, `own_pending_reimbursement_receipt` und `own_pending_attachment` haben das Fenster nicht, nur `own_pending_team_attachment`.
+4. Abgelaufene Lesefreigaben räumen nur discard_stale für Radflotte, Beleg und Teamchat nächtlich ab (Begründung PROJECT_PRINCIPLES §20). Akte und Rückfrage räumen erst beim nächsten Ausstellen, Herausgeben oder Löschauftrag in derselben Organisation ab (issue_patient_file_link, hand_out_patient_photo, claim_storage_deletion_order bzw. grant_message_attachment, hand_out_message_attachment). Korrektur zum Kandidaten: Es ist nicht nur das Ausstellen.
+5. Das Löschjournal wird beim Verwerfen auf vier Arten geschrieben.
+
+**TS-Upload:**
+
+| Datei                   | Zeilen                             | Länge |
+| ----------------------- | ---------------------------------- | ----- |
+| `files/api.ts`          | 122-128, 139-218, 235-246, 256-262 | 106   |
+| `fleet/api.ts`          | 584-590, 611-669, 672-683          | 78    |
+| `reimbursements/api.ts` | 422-428, 449-496, 499-510          | 67    |
+| `teamchat/api.ts`       | 698-704, 791-893, 896-907          | 122   |
+| `platform/api.ts`       | 1526-1532, 1545-1626               | 89    |
+
+Die SHA-256-Prüfsumme steht 5× gleich, nachgezählt.
+
+**TS-Lader:** `files/api.ts` 276-359, `files/patientenfotos.ts` 111-150 und 192-218, `fleet/api.ts` 686-710, `messages/api.ts` 198-217 und 382-403, `platform/api.ts` 593-651 und 1633-1653, `reimbursements/api.ts` 522-549, `teamchat/api.ts` 919-955. Die Gültigkeit von 60 s steht 6× als eigene Konstante und 2× als Literal (`messages/api.ts` 212, 396).
+
+**TS-Abweichungen:**
+
+- `patientenfotos.ts` 149 und 217 geben `abruf.blob()` zurück, also den Typ aus dem Antwortkopf. `files/api.ts` 329-343 schließt das ausdrücklich aus, im selben Modul, und `patientenfotos.ts` 111-114 hat dazu ein eigenes verweisSchema ohne mime_type. Praktisch gedeckt ist das, weil `confirm_*` den mimetype gegen storage.objects abgleicht.
+- Die Größe nach der Umkodierung prüft nur `files/api.ts` 158-160.
+- `platform/api.ts` 1624 erkennt den eigenen Wurf am Meldungstext.
+
+Korrektur zum Kandidaten: Dass fleet und reimbursements das Ergebnis von `discard_*` verschlucken, ist gewollt („der tägliche Lauf räumt auf“, `fleet/api.ts` 655-660). Das ist kein Befund.
+
+**Fachlich nötig:**
+
+- Bucket, Tabelle, Rechtsprüfung, Zuordnung, Aufbewahrungsklasse;
+- Legal Hold und Audit bei der Akte, Tonspur- und Virenprüfung bei Rückfragen, Videodauer;
+- der Downloadname nur bei Akte und Plattformdokument (ADR-017 Punkt 55), die Netzklasse im Teamchat.
+
+Die 5 Grant-Tabellen sind wegen der Fremdschlüssel vertretbar.
+
+**Abstraktion SQL** (neben `app.patient_file_verification_required`):
+
+- `app.assert_uploaded_object(p_bucket text, p_object_key text, p_byte_size bigint, p_mime_type text) returns void`
+- `app.lock_pending_upload(p_table regclass, p_id uuid) returns void` mit Nachprüfung unter der Sperre
+- `app.finish_upload_confirmation(p_table regclass, p_id uuid) returns void`
+- `app.verification_gate(p_status text, p_verified_at timestamptz, p_confirmation_requested_at timestamptz) returns text`
+- `app.upload_window() returns interval`
+- ein generischer Trigger `app.order_storage_object_deletion()` mit `TG_ARGV[0]` = Bucket
+- `public.discard_stale_uploads() returns jsonb`, ein Cron-Job für alle Upload- und Grant-Tabellen
+- in der Edge Function `const ARTEN: Record<Art, { idFeld: string; ankuendigung: string; eintrag: string }>`
+
+**Abstraktion TS:** `src/features/files/ablage.ts` mit
+
+- `VERWEIS_GUELTIGKEIT_SEKUNDEN = 60`
+- `pruefsumme(datei: Blob): Promise<string>`
+- `pruefeAmServer(ziel: Partial<Record<'file_id' | 'photo_id' | 'receipt_id' | 'attachment_id' | 'team_attachment_id', string>>): Promise<string | null>`
+- `ladeAngekuendigtHoch<V extends { bucket_id: string; object_key: string }>(o: { datei: Blob; vorbereiten(): Promise<V>; bestaetigen(v: V): Promise<void>; verwerfen(v: V): Promise<void>; uebertragungsfehler(u: unknown): Error; signal?: AbortSignal }): Promise<V>`
+- `ladeFreigegeben(o: { freigabe(): Promise<{ bucket_id: string; object_key: string; mime_type: string }>; texte: { fehlt: string; laden: string }; downloadName?: string }): Promise<Blob>`, immer mit `new Blob(…, { type: mime_type })`.
+
+Eine Einheitstabelle `upload_objects` wäre ein großer Umbau; ich nenne sie nur als Vorschlag.
+
+**Einsparung ≈ 350.** Schätzung:
+
+- SQL ~150, erst nach dem Basis-Abzug: Trigger −46, discard_stale und Cron −80, Storage-Abgleich −40, Zustandsprüfung −18.
+- TS ~200: Prüfsummen −28, Serverprüfung −32, upload/confirm/discard −55, Lader −90 statt −127 laut Sucher.
+
+**Betroffen:** SQL 2.212 + Cron 75 + Edge 108 = 2.395; TS 743.
+
+#### 6 · Rollenspiegel SQL ↔ TS ohne Drift-Prüfung
+
+**Stellen** (nachgezählt):
+
+1. **SQL can\_\*:** 70 `app.can_*` mit reinem Rumpf `select app.has_any_role(…)`. 68 ohne und 2 mit Kommentarzeilen im Rumpf (can_release_treatment_basis, can_manage_tasks). Sie decken 10 Rollenmengen in 12 Schreibweisen ab:
+   - 22× owner/therapist/team_lead/office
+   - 18× owner
+   - 10× owner/office
+   - 6× alle fünf Praxisrollen, in 3 Reihenfolgen
+   - 5× owner/therapist/team_lead
+   - je 3× owner/team_lead und owner/trainer/office
+   - je 1× owner/trainer, owner/team_lead/office und therapist/team_lead
+
+   Dazu kommen `app.is_staff` (4er-Tupel) und `app.is_practice_account` (5er-Tupel), Migration 7595-7625.
+
+2. **Inline in RPCs:** 25 public-RPCs mit 27 direkten `has_any_role`-Aufrufen.
+3. **TS-Prädikate:** `src/features/session/types.ts` 63-513, 451 Zeilen, davon 249 Kommentarzeilen. 39 exportierte Prädikate und 9 Tupel-Konstanten. Gleich sind `directoryRoles` 65, `appointmentRoles` 78 und `therapyStaffRoles` 402; ebenso `trainingRoles` 415 und `trainingContentReaders` 444. Die Prädikate werden 255× in 87 Dateien aufgerufen (grep).
+4. **Inline-Spiegel:** `src/app/navigation.tsx` 405-408 (canSeeBilling), `teamchat/NeuPage.tsx` 45, `account/MeinKontoPage.tsx` 304-306, `files/dateien.ts` 140 und 198.
+5. **Server-Flags** `can_decide`: `VacationPage.tsx` 91, `WorkingTimePage.tsx` 171, `ReimbursementsPage.tsx` 114 und 128.
+
+**Abweichungen:**
+
+- Namensfalle: TS `isStaff` (types.ts 389-391: alles außer patient) entspricht SQL `is_practice_account`, TS `isTherapyStaff` entspricht SQL `is_staff`.
+- `preview/identitaet.ts` 51-54 `darfEntscheiden` = owner‖team_lead widerspricht `can_decide_staff_requests` (2278-2285: „owner, nie den eigenen (BEF-066 Option 2)“). Die Funktion hat 0 Aufrufer, ist also toter Code.
+- „Anträge entscheiden“ hat zwei Quellen: das TS-Tupel in `open-points/eingang.ts` 210-212 und `OpenPointsSummary.tsx` 86/91, das Server-Flag auf den Antragsseiten.
+- Kein Test in `supabase/tests` vergleicht TS-Tupel mit pg_proc (grep ohne Treffer).
+
+**Fachlich nötig** ist nur der Bereichsparameter therapy/training, z. B. in `can_read_exercise_plans`. Die UI ist ohnehin nur Darstellung (ADR-004).
+
+**Abstraktion.**
+
+- Stufe 1: `src/features/session/rechte.ts` mit `export const RECHTE = { … } as const satisfies Record<Recht, readonly RoleKey[]>` (die 10 Mengen als benannte Konstanten) und `darf(roles: readonly RoleKey[], recht: Recht): boolean`. Dazu ein Drift-Test `supabase/tests/rechte-spiegel.test.ts` gegen die Rümpfe in pg_proc. `isStaff` wird in `isPracticeAccount` umbenannt, `darfEntscheiden` gelöscht.
+- Stufe 2: `public.get_my_capabilities() returns text[]`. Das ist eine neue RPC, also Pfad A.
+- Stufe 3: Tabelle `app.capability_roles`. Das ist ein großer Umbau und nur nach Rückfrage bei Jannes; er ist nicht eingerechnet.
+
+**Einsparung ≈ 200.** Schätzung: types.ts 451 → ~200, mit einem Satz je Recht, weil die Begründung im SQL-COMMENT bleibt: −250. Der Drift-Test kostet +40, die Inline-Spiegel bringen −5.
+
+#### 7 · Zeit und Datum: Praxistag, Kalendertag, Formate
+
+**Praxistag.**
+
+- `app.training_today` (15174-15181) läuft in 65 Funktionen mit 67 Aufrufen.
+- `app.practice_today` (12247-12254) hat 0 Aufrufe in Funktionsrümpfen; einzige Nutzung ist die Policy `staff_working_hours_select_staff_only`.
+- 55 weitere Funktionen rechnen `now() at time zone …` selbst, nachgezählt. Der Kandidat nennt 57, weil er die zwei Helfer mitzählt. Die Zonenvariable trägt 8 verschiedene Namen.
+- `coalesce(v_zone, 'Europe/Berlin')` steht 4× (z. B. 41757-41883), obwohl `organizations.time_zone` NOT NULL ist.
+- `app.staff_feedback_month` (13607-13614) steht neben 5 Inline-Monatsanfängen.
+
+TS: Die Basis liegt in `appointments/api.ts` 430-437 und 1518-1574 (todayInTimeZone, dayKey, zeitpunktIn). Kopien stehen in `preview/format.ts` 43-86, `fleet/format.ts` 11 und 36-44 sowie `teamchat/zeit.ts` 45-47. Für eine noch nicht geladene Zone gibt es zwei Politiken: 45× `?? 'Europe/Berlin'` (exakte Schreibweise; die Sucher zählen mit Varianten 51) gegen 22× `zone ? … : ''`.
+
+**Kalendertag.** Die Basis ist `appointments/calendar.ts` 39-68. Daneben stehen 29 Eigenbauten laut Sucher, z. B.:
+
+- in appointments selbst: `serie.ts` 52-56, `api.ts` 911-915;
+- in anderen Modulen: `exercise-plans/laufzeit.ts` 33-37, `vacation/feiertage.ts` 40-44, `fleet/format.ts` 63-83, `preview/demodaten.ts` 32-47, `slot-search/SlotSearchPage.tsx` 47-51, `teamchat/zeit.ts` 56-64;
+- in src/lib und den Bausteinen: `src/lib/gewohnheiten.ts` 25-29, `src/lib/zeitachse.ts` 7-14, `components/ui/Monatsblatt.tsx` 28-52.
+
+**Formate.**
+
+- 98 `new Intl.DateTimeFormat` in 56 Dateien, nachgezählt.
+- „TT.MM.JJJJ in der Praxiszone“ steht 9× mit gleichem Rumpf, z. B. `messages/api.ts` 338-345 = `open-points/format.ts` 2-9.
+- „Wochentag + Datum“ gibt es in 13 Funktionen mit 7 Schreibweisen.
+- 16 Wochentagslisten mit drei Indexsystemen, z. B. `scheduling/api.ts` 28-36, `waitlist/api.ts` 31-39, `working-time/format.ts` 6-14.
+
+**Belegte Fehler** (nachgerechnet):
+
+- `teamchat/zeit.ts` 12 und 32 bilden „gestern“ als jetzt − 86.400.000 ms. Am 2026-03-30 um 00:30 MESZ ergibt das den 2026-03-28; das betrifft eine Stunde im Jahr.
+- `platform/zeit.ts` 30-33: Die Doku verspricht „Di 14.10.“, die Funktion liefert „Mi., 14.10“.
+- `datenschutz/datei.ts` 10-16 nimmt für den Dateinamen den UTC-Tag.
+- `audit/api.ts` 52-65 bildet die Tagesgrenzen in Gerätezeit.
+- `patients/api.ts` 238-245 prüft per Date-Parse und lässt „2026-02-31“ durch (V8 macht daraus den 03.03.). Die Wirkung ist gering, weil `type="date"` und der Server-Cast solche Werte abweisen.
+
+**Fachlich nötig:** Die Plattform rechnet bewusst in Gerätezeit (ADR-023 Punkt 26); das wird ein Parameter, keine eigene Funktion. Die Feiertage sind bewusst doppelt und getestet (`vacation/feiertage.ts` gegen `app.is_public_holiday`).
+
+**Abstraktion:**
+
+- SQL: `app.org_today(p_org uuid default app.current_organization_id()) returns date`, STABLE; training_today bleibt als Alias. Dazu `app.org_month_start(p_org uuid default …) returns date`.
+- `src/lib/praxiszeit.ts`: `heuteIn(zone: string): Kalendertag`, `kalendertagIn(iso: string, zone: string): Kalendertag`, `zeitpunktIn(tag: Kalendertag, minute: number, zone: string): string`, `ERSATZZONE`.
+- `src/lib/kalendertag.ts`: `istKalendertag(w): w is Kalendertag`, `plusTage(t, n)`, `tageZwischen(von, bis)`, `isoWochentag(t): 1|2|3|4|5|6|7`, `montagDerWoche(t)`, `monatPlus(m, n)`, `tageImMonat(m)`.
+- `src/lib/datumsformat.ts`: `WOCHENTAGE: readonly { nr: 1|…|7; kurz: string; lang: string; adverb: string }[]`, `datumIn(iso, zone)`, `wochentagUndDatum(wert, o?: { zone?: string; mitJahr?: boolean })`, `monatJahr(tag)`.
+- `usePraxiszeit(user): { zone: string; heute: Kalendertag }` als einzige Fallback-Politik. `appointments/api.ts` und `calendar.ts` re-exportieren.
+
+Nebeneffekt: Laut Sucher holen 16 Importe aus 9 Modulen aus appointments nur Zeithelfer. Und staff importiert fleet nur für `montagDerWoche` (`staff/NewStaffMemberPage.tsx` 21).
+
+**Einsparung ≈ 300.** Schätzung: Praxiszeit −80 (SQL-Anteil ~50 erst nach dem Basis-Abzug), Kalendertag −100, Formate −150 statt −280 laut Sucher, weil Ableitungszeilen und Formatter-Cache geschätzt sind.
+
+#### 8 · Formulargerüst je Seite von Hand, mit Fokussprung beim Korrigieren
+
+**Stellen:**
+
+- `patients/EditPatientPage.tsx` 48-188 (setzen 98-102, Zod-Schleife 111-116, Zusammenfassung 131-138)
+- `patients/NewPatientPage.tsx` 52-290
+- `staff/EditStaffMemberPage.tsx` 62-197
+- `training/NewTrainingClientPage.tsx` 55-249
+- `training/TrainingClientPage.tsx` 449-552
+- `treatment-bases/PrescriberFormPage.tsx` 114-257
+- `treatment-bases/TreatmentBasisFormPage.tsx` 100-518
+- `fleet/BikeForm.tsx` 74-274 (Zusammenfassung 156)
+- `vacation/AnspruchPage.tsx` 110-236
+- `waitlist/WaitlistFormPage.tsx` 87-365
+
+**Vorhandene Basis:** `src/lib/formularfehler.ts` und `src/components/ui/Fehlerzusammenfassung.tsx` (104 Zeilen, 25 Aufrufe, nachgezählt). Es fehlt der Zustandsteil.
+
+**Muster** laut Sucher:
+
+- 13× dieselbe Schleife über die Zod-issues;
+- 14× Feldfehler wortgleich beim Tippen gelöscht;
+- 3 Formen des Dirty-Checks;
+- der Satz „Die Eingaben stehen noch im Formular …“ 13× in 11 Dateien;
+- `weiterMitEnter` nur in 2 von ~25 Formularen.
+
+**Fehler**, aus dem Code abgeleitet, nicht im Browser geprüft: `Fehlerzusammenfassung.tsx` 63-65 fokussiert den Kasten bei jeder Änderung von `anzahl`. In 12 Live-Formularen, die Feldfehler beim Tippen löschen, springt der Fokus deshalb bei ≥ 2 Fehlern nach dem ersten Tastendruck aus dem Feld in den Kasten. Betroffen sind EditPatient, NewPatient, EditStaff, NewTrainingClient, TrainingClient, Prescriber, TreatmentBasis, Bike, Anspruch, NewEvent, NewEventSeries und EditEvent. Genau diesen Effekt nennt NewAppointmentPage 157-166 als Grund für die Momentaufnahme.
+
+**Abstraktion:**
+
+- `useFormular<F extends string, D>({ start: Record<F, string>, felder: readonly F[], beschriftungen: Record<F, string>, feldId: (f: F) => string, pruefen: ZodType<D> | ((w) => { daten: D } | { fehler: Partial<Record<F, string>> }), zusatz? })` liefert `{ werte, setzen, fehler, ungespeichert, absenden(): D | null, zusammenfassung: { key: number; fehler: Formularfehler[] }, formProps }`. Die Momentaufnahme mit key ist dann die einzige Strategie.
+- `feldfehlerAus(issues)` in `formularfehler.ts`.
+- `Speicherfehlerfenster({ titel, onSchliessen, zurueckAuf })` in `Dialogfenster.tsx`.
+- Sofort und unabhängig davon möglich: `Fehlerzusammenfassung` bekommt einen Prop `pruefung: number` als Auslöser für den Fokus.
+
+**Einsparung ≈ 170.** Schätzung: rund 20 Zeilen je Formular bei 10 Formularen, dazu Fokus-Rückgabe und Fenster, abzüglich ~100 Zeilen Hook und Fenster.
+
+#### 9 · React-Query-Abfragen wiederholen Standardwerte und Paare aus Schlüssel und Ladefunktion
+
+**Stellen:**
+
+- `src/app/App.tsx` 34-42 setzt als Standard `retry: false`, `staleTime 30_000` und `refetchOnWindowFocus false`.
+- Trotzdem stehen 372 Zeilen `retry: false` in Nicht-Test-Code (grep); laut Sucher (AST) 347 davon an Abfragen, bei 487 `useQuery`.
+- Paare, nachgezählt: `['patient', id]` + `fetchPatient` 17×, `fetchAssignableTherapists` 15×, `['locations']` 9×. Laut Sucher sind es 42 Gruppen an 154 Stellen mit 858 Zeilen.
+- Die einzige Basis ist `open-points/eingang.ts` 69-191.
+- Dieselben 5 Invalidierungen stehen 3× von Hand: `billing/InvoiceDetailPage.tsx` 824, `Zahlungsformular.tsx` 117, `Zahlungsstorno.tsx` 41. Vorbild für einen Helfer ist `appointments/tageslage.ts` 22.
+
+**Risiko niedrig:** Die Sucher fanden keine tote Invalidierung und keine Schlüsselkollision.
+
+**Voraussetzung:** 19 Tests bauen `new QueryClient()` ohne Standardwerte (nachgezählt). Sie brauchen `testQueryClient()` in `src/test-utils.tsx`, sonst wiederholen ihre Fehlerfälle dreimal mit Backoff.
+
+**Abstraktion:** je Besitzermodul eine `abfragen.ts`, z. B. `export const patientAbfrage = (id: string) => queryOptions({ queryKey: ['patient', id] as const, queryFn: () => fetchPatient(id) })`. Aufruf: `useQuery({ ...patientAbfrage(id), enabled: Boolean(id) })`.
+
+**Einsparung ≈ 330.** Angesetzt sind nur die `retry: false`-Zeilen an Abfragen, 347 abzüglich ~15 Sonderfälle. Den Nettogewinn der Fabriken (Sucher +172) habe ich nicht eingerechnet.
+
+#### 10 · Weiche für Laden, Fehler und Leer 65-mal neben dem vorhandenen Abfragezustand
+
+**Basis:** `src/components/ui/Abfragezustand.tsx` 1-133 (153 Aufrufe, nachgezählt) und `abfrageTexte.ts` 4-13. Laut Sucher-Liste (`s2bC/weichen.txt`) gibt es 65 Weichen in 53 Dateien mit 626 Zeilen; `<LoadingState` steht in features 89× (nachgezählt).
+
+**Beispiele:**
+
+- Plattform: `platform/Abo.tsx` 44-55 (nachgeprüft: ErrorState und alter Stand erscheinen gleichzeitig), `Vertrag.tsx` 47-62, `Angebot.tsx` 66-80, `Paket.tsx` 44-56, `Checkin.tsx` 46-53 und 213-220.
+- `staff/EditStaffMemberPage.tsx` 214-226.
+- Mehrfach in einer Datei: `billing/InvoiceDetailPage.tsx` 159-173, 651-657, 947-955, 1244-1255; `scheduling/SchedulingPage.tsx` 428-437, 752-759, 1135-1141.
+- Eigene Fehlersatz-Konstanten: `retention/AufbewahrungPage.tsx` 77 (ERNEUT_LADEN) mit Weichen in 412-421 und 533-542, `today/MyDayPage.tsx` 120 (NACH_LADEFEHLER) mit Weiche in 249-256.
+
+**Abweichungen:**
+
+- Nur 10 der 65 Weichen prüfen `!x.data`. Die 7 Plattform-Weichen zeigen bei gescheitertem Nachladen ErrorState über dem alten Stand, in Angebot 78-80 sogar über einem Formular. Das widerspricht ZST-03.
+- Den Fehlersatz gibt es in 4 Formen.
+- Die Ratsche in `src/designsystem.grenzen.ts` kennt 6 Muster (breiten, details, divideY, knoepfe, tabellen, ueberschriften), die Weiche nicht.
+
+**Abstraktion:** das vorhandene `Abfragezustand` nutzen, ergänzt um `kombiniereAbfragen<A, B>(a: Abfrage<A>, b: Abfrage<B>): Abfrage<[A, B]>`. Dazu als Werkzeugregel ein siebtes Ratschenmuster `weichen`.
+
+**Einsparung ≈ 150.** Schätzung: 65 × ~2,3 Zeilen; die Sucher setzen ~3,1 an.
+
+#### Korrekturen an FAKTEN.md und an den Kandidaten
+
+**FAKTEN.md:**
+
+- „~67 reine Rollentupel mit 7 Tupeln“: Es sind 70 can_*-Funktionen mit 10 Rollenmengen in 12 Schreibweisen. Das 4er-Tupel steht 22× (nicht 20×), alle fünf Praxisrollen stehen 6× (nicht 4×). Dazu kommen is_staff und is_practice_account, zusammen 72.
+- „25 public-RPCs rufen has_any_role direkt“: bestätigt, mit 27 Aufrufen.
+- „record_denied_read 106“: bestätigt; 140 public-RPCs schreiben überhaupt einen Abweisungseintrag.
+- „app.training_today 65“: Das sind 65 Funktionen mit 67 Aufrufen.
+- „ca. 394 Literal-Aufrufe in 74 Dateien“: 409 `.rpc(` in 74 Dateien, davon 374 `getSupabase().rpc('…')`, dazu laut Sucher 20 `verbindung.rpc('…')`.
+- „36 Spiegel in types.ts“: Es sind 39 exportierte Prädikate.
+- Der Copy-Paste-Scanner mit 2,7 % unterschätzt die semantischen Duplikate. Wörtliche Zeilenüberdeckung nach eigener Messung: Terminformulare 57–61 %, Entscheidungsseiten 55 %, Kamera- und Videodialog 64 %.
+
+**Kandidaten:**
+
+- „57 SQL-Funktionen rechnen inline“: 55 ohne die Helfer.
+- „BEF-082 16 Funktionen“: heute 15.
+- „8× owner als Selbsteintrag“: 9 Vorkommen in 7 Funktionen.
+- „257 Aufrufstellen“: 255 per grep.
+
+#### Summe
+
+Die konservative Einsparung der Top 10 liegt bei **≈ 3.650 Zeilen**, eine Schätzung.
+
+- Davon wirken ≈ 800 erst nach dem nächsten Basis-Abzug: Fund 4 550, Fund 5 150, Fund 3 50, Fund 7 ~50.
+- ≈ 2.850 sind TS-Zeilen.
+
+Belegte Fehler, die aus Abweichungen der Kopien folgen:
+
+- Fund 1: 4 Fehler, darunter der 403-Nachtrag im Training;
+- Fund 3: 7 SQL- und 2 UI-Abweichungen;
+- Fund 5: 2 Sperren ohne Nachprüfung und das schwächere Upload-Recht der Akte;
+- Fund 6: eine Namensvertauschung und toter widersprüchlicher Code;
+- Fund 7: 5 Fehler;
+- Fund 8: der Fokussprung in 12 Formularen;
+- Fund 10: 7 Abweichungen von ZST-03.
+
+#### Verworfen, zusammengeführt, nicht ausgewählt
+
+**Zusammengeführt:**
+
+- Kandidat 3 (Antragsmechanik SQL), 4 (Antrags-Oberfläche, 930) und 14 (Genehmigen/Ablehnen, 400) sind Fund 3. 4 und 14 beschreiben dieselben vier Seiten; die 930 aus Kandidat 4 sind überzeichnet, weil generische JSX-Zeilen die wörtliche Überdeckung aufblähen.
+- Kandidat 5 (Upload-Prüfzustand), 10 (Dateitransfer), 19 (SQL-Lebenszyklus) und 20 (Upload- und Ladeweg TS) sind Fund 5. Sie zeigen dieselben Funktionen; einzeln gezählt wäre die Einsparung doppelt.
+- Kandidat 7 (RPC-Aufrufgerüst), 8 (Fehlerabbildung), 11 (antwort gegen .parse) und der TS-Teil von 2 (abgewiesen je Aufrufstelle) sind Fund 1. Wrapper und Mapper sind dieselben Funktionen, die Abstraktion ist eine einzige Schicht.
+- Kandidat 18 (Praxiszeit), 21 (Kalendertag) und 22 (Datumsformate) sind Fund 7. Dieselben Dateien (teamchat/zeit.ts, fleet/format.ts, preview) und dieselbe Ursache: Die Basis liegt in appointments, nicht in src/lib.
+
+**Nicht in den Top 10, aber bestätigt:**
+
+| Kandidat                          | Befund                                                                                                                                                                                                                                                                                                                                | Einsparung | Rangwert | Empfehlung                                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------------------- |
+| 23 Kamera-/Videodialog            | `files/Kameradialog.tsx` und `platform/Videodialog.tsx` teilen 251 von 391 Codezeilen; dem Videodialog fehlen der NotReadableError-Zweig (Kameradialog 60-66) und ein Test                                                                                                                                                            | ≈ 120      | 240      | Platz 11                                                                                          |
+| 16 Rückmeldung nach Seitenwechsel | `leseMeldung` (`appointments/terminformular.ts` 208-212) nimmt die Meldung nicht aus dem Verlauf, und die 6 Produktivnutzer setzen nirgends `state: null` (nachgeprüft). Nach Neuladen erscheint sie wieder; bei CalendarPage nur ohne gemerkten Kalenderstand. Genau diesen Fehler beschreibt `src/lib/meldung.ts` 22-28 als behoben | ≈ 60       | 180      | Einzelfix weitergeben                                                                             |
+| 17 Listensuche                    | Wenig Zeilen. Aber `staff/StaffListPage.tsx` 99-111 und 193 schreiben den Suchbegriff, meist einen Namen, in Adresse und Rückweg, gegen `src/lib/rueckweg.ts` 22-25 („Keine Namen im Rückweg“, ADR-011)                                                                                                                               | ≈ 30       | 90       | als Datenschutzbefund weitergeben                                                                 |
+| 6 Statuswerte                     | `training/api.ts` 413 schreibt den Terminstatus neu, statt `appointmentStatusSchema` aus `appointments/api.ts` 32-39 zu nehmen; dazu 3× `['draft','issued']` in billing und 6× `['draft','final']`                                                                                                                                    | ≈ 25       | 50       | Der Nutzen liegt im Drift-Test gegen pg_constraint; der kann mit dem Drift-Test aus Fund 6 laufen |
+
+**Verworfene Teilbehauptungen:** Vollständig verworfen ist kein Kandidat. Diese Teilbehauptungen halten nicht:
+
+- fleet und reimbursements verschlucken den Fehler von `discard_*`: gewollt und kommentiert, kein Befund.
+- „Für patient_file_access_grants ist issue_patient_file_link der einzige Abbau“: falsch, auch hand_out_patient_photo und claim_storage_deletion_order räumen ab.
+- „31. Februar geht durch“ als Fehler mit Wirkung: Native Datumsfelder und der Server-Cast fangen ihn ab, das bleibt nur ein Schönheitsfehler.
+- Blob-Typ bei den Patientenfotos als Risiko: praktisch gedeckt durch den mimetype-Abgleich in confirm_*, es bleibt eine Regelabweichung.
+
+**Nicht eingerechnete Einsparungen:**
+
+- Stufe 3 von Kandidat 1 (−543 SQL-Zeilen): großer Umbau mit teurer Rücknahme, nur nach Rückfrage bei Jannes.
+- Die Einheitstabelle `upload_objects`: aus demselben Grund.
 
 ## 3. Datenbank: Inventur der 1.206 Funktionen und 151 Tabellen
 
@@ -2982,18 +3559,18 @@ Risiko einer Gesamtgrenze: Die Register-Gesamtgrenze „musste elfmal angehoben 
 Die Einsparungen überlappen sich. Der RPC-Vertrag B1 aus 2a enthält zum Beispiel einen Teil der
 Duplikate aus 2b. Die Spalte darf deshalb nicht einfach summiert werden.
 
-| Hebel                                         | Abschnitt | Wirkung                                                                                        |                                                               Zeilen | gemessen / geschätzt                                  | braucht                               |
-| --------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------: | ----------------------------------------------------- | ------------------------------------- |
-| Geteilte Hilfen aus den Fachmodulen lösen (K) | 1a.3      | 171 Querimporte, Paare 32 → 26                                                                 |                                                            0 (Umzug) | gemessen                                              | – (mechanisch)                        |
-| Seiten als Kompositionsschicht (S)            | 1a.3      | 382 Querimporte entfallen als Kante; mit K bleiben 290 Querimporte, 14 Paare                   |                                                                    0 | gemessen                                              | Regel und Gate                        |
-| 17 Restimporte umdrehen                       | 1a.5      | Domänengraph azyklisch                                                                         |                                                                  ≈ 0 | gemessen                                              | K + S vorher                          |
-| `appointments/index.ts` mit 15 Exporten       | 1b        | tiefe Importe 185 → 0, Zyklenpartner 13 → 0                                                    |                                                                  ≈ 0 | modelliert                                            | S1–S11                                |
-| Grunddesign B1–B7                             | 2a.4      | ≥ 95 % der Fälle ohne Sonderbau                                                                |                                          ≈ 12.150 TS (10.000–14.500) | B1/B2/B3/B6 aus Messwerten, B4/B5/B7 Prozentschätzung | Architekturentscheidung (ANN Technik) |
-| Top 10 semantische Duplikate                  | 2b        | gemeinsame Basis statt Handkopien, beseitigt gefundene Drift                                   |                                                             siehe 2b | gegengeprüft, konservativ                             | überwiegend in B1–B6 enthalten        |
-| DB-Familien generisch                         | 3a e)     | 172 Funktionen weniger (1.206 → ≈ 1.034)                                                       |                                                    ≈ 2.400 Migration | Schätzung je Familie                                  | Pfad A (Rechte, Storage, Löschen)     |
-| Zentrale Registry                             | 3b.8      | Eintragsstellen je neuer Tabelle 6–23 → 1 Zeile + Sonderregel; schließt L-L1, L-J1, L-J2, L-M1 | Schätzung: etwa die Hälfte der 2.602 Rumpfzeilen der acht Funktionen | Schätzung                                             | Pfad A, ADR-008                       |
-| Feature-Vereinfachung M1–M9                   | 4.6       | 15 Tabellen weniger, `three` entfällt                                                          |                               ≈ 28.500 (+ 989 Skripte, + 3.672 Doku) | 15.185 gemessen, 13.271 geschätzt                     | Entscheidung Jannes je Punkt          |
-| Doku-Zielstruktur                             | 5c        | 48.722 → 9.692                                                                                 |                                                         −39.030 Doku | gemessen (Ist), geplant (Ziel)                        | Jannes (PP, ADR, Gate)                |
+| Hebel                                         | Abschnitt | Wirkung                                                                                                                                                              |                                                               Zeilen | gemessen / geschätzt                                  | braucht                               |
+| --------------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------: | ----------------------------------------------------- | ------------------------------------- |
+| Geteilte Hilfen aus den Fachmodulen lösen (K) | 1a.3      | 171 Querimporte, Paare 32 → 26                                                                                                                                       |                                                            0 (Umzug) | gemessen                                              | – (mechanisch)                        |
+| Seiten als Kompositionsschicht (S)            | 1a.3      | 382 Querimporte entfallen als Kante; mit K bleiben 290 Querimporte, 14 Paare                                                                                         |                                                                    0 | gemessen                                              | Regel und Gate                        |
+| 17 Restimporte umdrehen                       | 1a.5      | Domänengraph azyklisch                                                                                                                                               |                                                                  ≈ 0 | gemessen                                              | K + S vorher                          |
+| `appointments/index.ts` mit 15 Exporten       | 1b        | tiefe Importe 185 → 0, Zyklenpartner 13 → 0                                                                                                                          |                                                                  ≈ 0 | modelliert                                            | S1–S11                                |
+| Grunddesign B1–B7                             | 2a.4      | ≥ 95 % der Fälle ohne Sonderbau                                                                                                                                      |                                          ≈ 12.150 TS (10.000–14.500) | B1/B2/B3/B6 aus Messwerten, B4/B5/B7 Prozentschätzung | Architekturentscheidung (ANN Technik) |
+| Top 10 semantische Duplikate                  | 2b        | gemeinsame Basis statt Handkopien; beseitigt belegte Fehler aus Drift (403-Nachtrag, Upload-Recht, Fokussprung in 12 Formularen, 7 Abweichungen der Antragsmechanik) |               ≈ 3.650 (≈ 800 SQL erst nach dem nächsten Basis-Abzug) | gegengeprüft, konservativ                             | überwiegend in B1–B6 enthalten        |
+| DB-Familien generisch                         | 3a e)     | 172 Funktionen weniger (1.206 → ≈ 1.034)                                                                                                                             |                                                    ≈ 2.400 Migration | Schätzung je Familie                                  | Pfad A (Rechte, Storage, Löschen)     |
+| Zentrale Registry                             | 3b.8      | Eintragsstellen je neuer Tabelle 6–23 → 1 Zeile + Sonderregel; schließt L-L1, L-J1, L-J2, L-M1                                                                       | Schätzung: etwa die Hälfte der 2.602 Rumpfzeilen der acht Funktionen | Schätzung                                             | Pfad A, ADR-008                       |
+| Feature-Vereinfachung M1–M9                   | 4.6       | 15 Tabellen weniger, `three` entfällt                                                                                                                                |                               ≈ 28.500 (+ 989 Skripte, + 3.672 Doku) | 15.185 gemessen, 13.271 geschätzt                     | Entscheidung Jannes je Punkt          |
+| Doku-Zielstruktur                             | 5c        | 48.722 → 9.692                                                                                                                                                       |                                                         −39.030 Doku | gemessen (Ist), geplant (Ziel)                        | Jannes (PP, ADR, Gate)                |
 
 **Was das für das Ziel „95 % im Grunddesign“ heißt:**
 
@@ -3021,6 +3598,7 @@ Registry.
 
 | #   | Auftrag                                                                                                                                                                                                                                                                         | Pfad           | Größe              | Abhängig von         |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ------------------ | -------------------- |
+| 0   | **Einzelfixes ohne Umbau:** 403-Prüfung in `addTrainingProtocolAddendum`, Suchbegriff aus der Adresse der Mitarbeiterliste, Fokusauslöser der `Fehlerzusammenfassung`, `leseMeldung` aus dem Verlauf nehmen (2b)                                                                | –              | klein              | –                    |
 | 1   | **L-L1 beheben.** Die Teillöschung unter Belegfrist um die 17 Tabellen ergänzen, mit Test (3b.6). Die Lücke betrifft Art.-9-Daten und widerspricht einem geltenden ADR                                                                                                          | A              | klein–mittel       | Entscheidung 1 unten |
 | 2   | Aufräumen Schritt 3, Teil 1: `src/lib/praxiszeit.ts`, `kalendertag.ts`, `zeitbaender.ts`, `termin.ts`, `wege.ts` (appointments S1–S3). Damit fallen die Paare appointments~billing und ~datenschutz, und die Nutzer sinken von 28 auf 16                                        | –              | mittel, mechanisch | –                    |
 | 3   | Aufräumen Schritt 3, Teil 2: Blattmodule `praxisverzeichnis` und `tagesplan`, UI-Bausteine nach `components/ui`, Terminformular und Terminknopf, `index.ts` (S4–S11). Dazu ein Gate „kein tiefer Import nach `features/appointments`“ in `scripts/aufraeumen.mjs` oder als Test | –              | groß, in 8 PRs     | 2                    |
@@ -3028,7 +3606,7 @@ Registry.
 | 5   | Kompositionsregel S für alle Domänen, dann die 17 Rückkanten, dann das Zusammenlegen der Ordner                                                                                                                                                                                 | –              | groß               | 2, 3                 |
 | 6   | Grunddesign B1 und B2 (Endpunkt-Vertrag, Haken) zuerst an `platform/api.ts` und `billing/api.ts` (≈ 1.800 Zeilen weniger), dann B6 und B4                                                                                                                                       | –              | groß               | ANN Technik          |
 | 7   | Doku-Schritte 1 und 2 (Archiv, Befunde, Register-Index)                                                                                                                                                                                                                         | –              | mittel             | Entscheidung 3       |
-| 8   | DB-Familien (1) und (3)/(4) (Fähigkeitsmatrix, Storage-Register)                                                                                                                                                                                                                | A              | mittel             | 4                    |
+| 8   | DB-Familien (1) und (3)/(4) (Fähigkeitsmatrix, Storage-Register); dabei das Upload-Recht der Akte und die Sperren ohne Nachprüfung angleichen (2b Fund 5)                                                                                                                       | A              | mittel             | 4                    |
 | 9   | Feature-Vereinfachungen nach Entscheidung je Punkt                                                                                                                                                                                                                              | – / A je Punkt | je klein–mittel    | Entscheidung 2       |
 
 ### 6.3 Fragen an Jannes (höchstens fünf, je mit Empfehlung)
