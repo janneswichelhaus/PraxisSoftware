@@ -22,7 +22,7 @@ abgeschlossen ist. Wie es steht, misst `/aufraeumen` (`AUFRAEUMEN.md`).
 | 1 | Kommentarregel mit Prüfung (`pnpm kommentare:check`), die 14 extremsten Kopfkommentare gekürzt, `/aufraeumen` rein diagnostisch, `CLAUDE.md` auf unter 7 KB verdichtet | Standard | gemergt (#308) |
 | 2 | Migrationen vor dem Start zu einer Basis zusammenfassen: vorher Schemaabzug (Tabellen, Constraints, Indizes, Policies, Trigger, Funktionen), danach automatischer Diff ohne Unterschied und alle Tests grün; einmalige Ausnahme vom Migrationen-Gate (freigegeben); dazu eine Übersicht der DB-Funktionen nach Art und der verwaisten | Pfad A | gemergt (#309, #310); Funktionen ohne Aufrufer entfernt, Rechte der API-Rollen nachgezogen |
 | 3 | Modulschnittstellen: je Modul eine schmale `index.ts` ohne pauschale Re-Exporte, ESLint-Regel gegen tiefe Importe (zuerst Warnung); beginnend mit „Termine“, dort die gegenseitigen Abhängigkeiten auflösen; zusammengehörige kleine Module prüfen. Teil 1, Rest: die Zeit- und Kalenderhilfen aller Module in `src/lib/datum.ts` | Pfad A | gemergt (#312); Rest gebaut (Branch `ccr-30ca4f76-x8pvfg`) |
-| 4a | Teillöschung unter Belegfrist: Screening, Assessments, Check-ins, Gewohnheiten und Übungspläne eines beendeten Trainingsverhältnisses (17 Tabellen) fallen nach drei Jahren, auch wenn die Belege acht Jahre bleiben (ADR-021 Punkt 4, ANN-183; Jannes 2026-10-26) | Pfad A | offen, erste Pfad-A-Story |
+| 4a | Teillöschung unter Belegfrist: Screening, Assessments, Check-ins, Gewohnheiten und Übungspläne eines beendeten Trainingsverhältnisses (17 Tabellen) fallen nach drei Jahren, auch wenn die Belege acht Jahre bleiben (ADR-021 Punkt 4, ANN-183; Jannes 2026-10-26) | Pfad A | gebaut (Branch `claude/pr-313-decisions-2mdcwc`, dritte PR), mit Restore und Entscheidung je Tabelle im Test |
 | 4 | Register für Datenauskunft, Aufbewahrung, Löschjournal und Zusammenführung; ein Test wird rot, wenn eine Tabelle mit Patientenbezug darin nicht klassifiziert ist | Pfad A | offen |
 | 3b | Domänenschnitt „Ziel“ der Tiefenanalyse (14 Domänen, Abschnitt 1a.5; Jannes 2026-10-26): geteilte Hilfen nach `src/lib`, eine Regel, nach der nur Seiten fremde Domänen importieren, die 17 Rückkanten umdrehen, danach die Ordner zusammenlegen | Standard | offen |
 | 5 | Doku-Konsolidierung (54.000 Zeilen -> <10.000 Zeilen, Bereinigung von 732 ANN und 230 BEF). Git ist das Archiv: Archiv, Chroniken und erledigte Handoffs gehen ersatzlos. Das Prüfpaket umfasst 208 Einträge mit einem Gate für den Zusatz; dabei werden 17 fehlende und 11 falsche Zusätze korrigiert und ANN-662 gegen ADR-024 sowie ANN-541 gegen ADR-009 aufgelöst (Jannes 2026-10-26) | Standard | offen |
@@ -32,7 +32,7 @@ abgeschlossen ist. Wie es steht, misst `/aufraeumen` (`AUFRAEUMEN.md`).
 
 | Nr. | Fehler | Weg | Wohin |
 | --- | --- | --- | --- |
-| 1 | Die Teillöschung unter Belegfrist lässt 17 Tabellen mit Art.-9-Daten des Trainings bis zu fünf Jahre zu lang stehen | Pfad A | Schritt 4a |
+| 1 | Die Teillöschung unter Belegfrist lässt 17 Tabellen mit Art.-9-Daten des Trainings bis zu fünf Jahre zu lang stehen | Pfad A | behoben mit Schritt 4a (dritte PR) |
 | 2 | 12 Lösch-RPCs schreiben kein Löschjournal; nach einem Restore kämen Zeilen aus 16 Tabellen zurück (umfasst BEF-198) | Pfad A | Schritt 4 |
 | 3 | Das Zusammenführen hat weder einen Vollständigkeitstest noch einen Nachweis für einen Restore | Pfad A | Schritt 4 |
 | 4 | Ein Trainings-Nachtrag gilt bei 403 als gespeichert (`addTrainingProtocolAddendum`) | Pfad A | behoben (Branch `claude/pr-313-decisions-2mdcwc`) |

@@ -8,6 +8,7 @@ import {
   fremdeOrganisation,
   resetDatabaseOhneTermine,
 } from './helpers/db';
+import { einheitErfassen, positionen, zugewiesenerPlan } from './helpers/plaene';
 
 /**
  * TRN-008: Die Rechnung haengt am Trainingsverhaeltnis (TRN-EPIC-003).
@@ -821,6 +822,252 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
         [trainingRelationships.tina],
       );
       expect(kontakt[0]?.n).toBe(0);
+    });
+
+    const PLAENE = 'select id from public.exercise_plans where training_relationship_id = $1';
+    const EINHEITEN = `select id from public.exercise_plan_sessions where plan_id in (${PLAENE})`;
+    /** Was nur das Verhaeltnis traegt, keine Belege: fallen nach drei Jahren (ADR-021 Punkt 4). */
+    const OHNE_BELEG: Record<string, string> = {
+      training_profiles: 'training_relationship_id = $1',
+      training_takeovers: 'training_relationship_id = $1',
+      training_consent_records: 'training_relationship_id = $1',
+      training_assessments: 'training_relationship_id = $1',
+      training_assessment_results: `assessment_id in (select id from public.training_assessments
+                                     where training_relationship_id = $1)`,
+      training_course_events: 'training_relationship_id = $1',
+      checkin_schedules: 'training_relationship_id = $1',
+      checkins: 'training_relationship_id = $1',
+      checkin_values: `checkin_id in (select id from public.checkins
+                        where training_relationship_id = $1)`,
+      habits: 'training_relationship_id = $1',
+      habit_marks: 'habit_id in (select id from public.habits where training_relationship_id = $1)',
+      exercise_plans: 'training_relationship_id = $1',
+      exercise_plan_items: `plan_id in (${PLAENE})`,
+      exercise_plan_days: `plan_id in (${PLAENE})`,
+      exercise_plan_sessions: `plan_id in (${PLAENE})`,
+      exercise_plan_session_sets: `session_id in (${EINHEITEN})`,
+      exercise_plan_session_values: `session_id in (${EINHEITEN})`,
+    };
+    const SCHLUESSEL = (tabelle: string) =>
+      tabelle === 'training_profiles' ? 'training_relationship_id' : 'id';
+
+    /** Je mindestens eine Zeile in jeder Tabelle aus OHNE_BELEG, solange Tina noch trainiert. */
+    async function trainingsdaten(): Promise<void> {
+      const tina = trainingRelationships.tina;
+      const zugang = SEED.platformAccesses.tinaTraining;
+      await asPostgres(
+        `insert into public.training_consent_records
+           (organization_id, training_relationship_id, record_kind, purpose, occurred_on, recorded_by)
+         values ($1, $2, 'consent_granted', 'training_health_data', current_date, $3)`,
+        [organizationId, tina, users.trainer],
+      );
+      await asPostgres(
+        `insert into public.training_profiles (training_relationship_id, organization_id, goals)
+         values ($1, $2, 'Wieder joggen')`,
+        [tina, organizationId],
+      );
+      await asPostgres(
+        `insert into public.training_takeovers
+           (organization_id, training_relationship_id, position, title, body, offered_on,
+            released_platform_access_id)
+         values ($1, $2, 1, 'Belastungsgrenzen', 'Keine Sprünge', current_date, $3)`,
+        [organizationId, tina, zugang],
+      );
+      const { rows: assessment } = await asPostgres<{ id: string }>(
+        `insert into public.training_assessments
+           (organization_id, training_relationship_id, title, performed_on, created_by)
+         values ($1, $2, 'Sprungtest', current_date, $3) returning id`,
+        [organizationId, tina, users.trainer],
+      );
+      await asPostgres(
+        `insert into public.training_assessment_results
+           (organization_id, assessment_id, position, label, unit, value)
+         values ($1, $2, 1, 'Kniebeugen in 30 s', null, 18)`,
+        [organizationId, assessment[0]!.id],
+      );
+      await asPostgres(
+        `insert into public.training_course_events
+           (organization_id, training_relationship_id, occurred_on, kind, created_by)
+         values ($1, $2, current_date, 'urlaub', $3)`,
+        [organizationId, tina, users.trainer],
+      );
+      await asPostgres(
+        `insert into public.checkin_schedules
+           (organization_id, relationship_kind, relationship_id, training_relationship_id,
+            interval_days, parameter_keys, starts_on, created_by, updated_by)
+         values ($1, 'training', $2, $2, 7, array['pain_load'], current_date, $3, $3)`,
+        [organizationId, tina, users.trainer],
+      );
+      const { rows: checkin } = await asPostgres<{ id: string }>(
+        `insert into public.checkins
+           (organization_id, relationship_kind, relationship_id, training_relationship_id,
+            answered_on, platform_access_id, platform_access_kind, recorded_by)
+         values ($1, 'training', $2, $2, current_date, $3, 'self', $4) returning id`,
+        [organizationId, tina, zugang, users.plattformTina],
+      );
+      await asPostgres(
+        `insert into public.checkin_values (organization_id, checkin_id, parameter_key, value)
+         values ($1, $2, 'pain_load', 3)`,
+        [organizationId, checkin[0]!.id],
+      );
+      const { rows: gewohnheit } = await asPostgres<{ id: string }>(
+        `insert into public.habits
+           (organization_id, relationship_kind, relationship_id, training_relationship_id, action,
+            cue, starts_on, created_by)
+         values ($1, 'training', $2, $2, 'Zwei Minuten Mobilität', 'Nach dem Zähneputzen',
+                 current_date - 3, $3) returning id`,
+        [organizationId, tina, users.trainer],
+      );
+      await asPostgres(
+        `insert into public.habit_marks
+           (organization_id, habit_id, done_on, platform_access_id, platform_access_kind, recorded_by)
+         values ($1, $2, current_date - 1, $3, 'self', $4)`,
+        [organizationId, gewohnheit[0]!.id, zugang, users.plattformTina],
+      );
+      // Ein zugewiesener Plan: Ihn darf sonst nur das Verhaeltnis mitnehmen (Schutzregel).
+      const plan = await zugewiesenerPlan('training');
+      await asUserCommitted(
+        users.plattformTina,
+        'select public.set_platform_exercise_days($1::uuid, $2::uuid, $3::int[])',
+        [zugang, plan, [1, 4]],
+      );
+      const [position] = await positionen(plan);
+      await einheitErfassen(users.plattformTina, zugang, plan, {
+        saetze: [[position!, 1]],
+        ende: { values: { session_pain: 2 } },
+      });
+    }
+
+    /** Die Zeilen aus OHNE_BELEG je Tabelle, wie eine Sicherung sie haette. */
+    async function sicherung(): Promise<Record<string, unknown[]>> {
+      const zeilen: Record<string, unknown[]> = {};
+      for (const [tabelle, bedingung] of Object.entries(OHNE_BELEG)) {
+        const { rows } = await asPostgres<{ zeilen: unknown[] }>(
+          `select coalesce(json_agg(x), '[]'::json) as zeilen from public.${tabelle} x
+            where ${bedingung}`,
+          [trainingRelationships.tina],
+        );
+        zeilen[tabelle] = rows[0]!.zeilen;
+      }
+      return zeilen;
+    }
+
+    /** Wie viele Zeilen der Sicherung je Tabelle noch stehen. */
+    async function nochDa(gesichert: Record<string, unknown[]>): Promise<Record<string, number>> {
+      const anzahl: Record<string, number> = {};
+      for (const [tabelle, zeilen] of Object.entries(gesichert)) {
+        const { rows } = await asPostgres<{ n: number }>(
+          `select count(*)::int as n from public.${tabelle} x
+             join json_populate_recordset(null::public.${tabelle}, $1::json) s
+             using (${SCHLUESSEL(tabelle)})`,
+          [JSON.stringify(zeilen)],
+        );
+        anzahl[tabelle] = rows[0]!.n;
+      }
+      return anzahl;
+    }
+
+    const KEINE = Object.fromEntries(Object.keys(OHNE_BELEG).map((t) => [t, 0]));
+
+    it('nimmt alles, was kein Beleg ist - auch Assessments, Check-ins und zugewiesene Plaene', async () => {
+      await trainingsdaten();
+      const gesichert = await sicherung();
+      for (const [tabelle, zeilen] of Object.entries(gesichert)) {
+        expect(zeilen.length, tabelle).toBeGreaterThan(0);
+      }
+      const id = await ausgestelltVor(4);
+
+      await asPostgres(LAUF);
+
+      expect(await nochDa(gesichert)).toEqual(KEINE);
+      const { rows } = await asPostgres<{ verhaeltnis: number; rechnung: number }>(
+        `select (select count(*)::int from public.training_relationships where id = $1) as verhaeltnis,
+                (select count(*)::int from public.invoices where id = $2) as rechnung`,
+        [trainingRelationships.tina, id],
+      );
+      expect(rows[0]).toEqual({ verhaeltnis: 1, rechnung: 1 });
+
+      // Jede Zeile mit eigenem Eintrag; Kinder fallen mit ihrer Zeile und ziehen mit ihr nach.
+      const { rows: journal } = await asPostgres<{ target_table: string; n: number }>(
+        `select target_table, count(*)::int as n from public.deletion_journal
+          where retention_class = 'trainingsverhaeltnis' group by target_table`,
+      );
+      const eintraege = Object.fromEntries(journal.map((j) => [j.target_table, j.n]));
+      for (const tabelle of [
+        'training_profiles',
+        'training_takeovers',
+        'training_consent_records',
+        'training_assessments',
+        'training_course_events',
+        'checkin_schedules',
+        'checkins',
+        'habits',
+        'exercise_plans',
+      ]) {
+        expect(eintraege[tabelle], tabelle).toBe(gesichert[tabelle]!.length);
+      }
+    });
+
+    it('loescht nach einem Restore auch die Trainingsdaten erneut, zugewiesene Plaene eingeschlossen', async () => {
+      await trainingsdaten();
+      const gesichert = await sicherung();
+      await ausgestelltVor(4);
+      await asPostgres(LAUF);
+
+      // Restore wie aus einer Sicherung: an Triggern und Fremdschluesseln vorbei.
+      await asPostgres(
+        [
+          'set session_replication_role = replica;',
+          ...Object.entries(gesichert).map(
+            ([tabelle, zeilen]) =>
+              `insert into public.${tabelle} select * from json_populate_recordset(` +
+              `null::public.${tabelle}, $json$${JSON.stringify(zeilen)}$json$::json);`,
+          ),
+          'set session_replication_role = origin;',
+        ].join('\n'),
+      );
+      expect(Object.values(await nochDa(gesichert)).every((n) => n > 0)).toBe(true);
+
+      await asPostgres('select public.reapply_deletion_journal()');
+
+      expect(await nochDa(gesichert)).toEqual(KEINE);
+    });
+
+    it('hat fuer jede Tabelle am Verhaeltnis eine Entscheidung zur Teilloeschung', async () => {
+      // Faellt (ganz oder ohne Beleg): Protokolle, Rueckfragen, Kontakt, Termine ohne Leistung,
+      // Vereinbarungen ohne Termin, Ernaehrung und alles aus OHNE_BELEG.
+      const faellt = [
+        'appointments',
+        'checkin_schedules',
+        'checkins',
+        'exercise_plans',
+        'habits',
+        'nutrition_profiles',
+        'platform_messages',
+        'training_assessments',
+        'training_bases',
+        'training_consent_records',
+        'training_contact_details',
+        'training_course_events',
+        'training_profiles',
+        'training_protocols',
+        'training_takeovers',
+      ];
+      // Bleibt: Belege und was sie tragen (ANN-183); Terminwuensche und Zugang nach eigener Regel.
+      const bleibt = [
+        'billable_services',
+        'invoices',
+        'platform_accesses',
+        'platform_appointment_requests',
+        'training_contracts',
+        'training_packages',
+      ];
+      const { rows } = await asPostgres<{ tabelle: string }>(
+        `select distinct c.conrelid::regclass::text as tabelle from pg_constraint c
+          where c.contype = 'f' and c.confrelid = 'public.training_relationships'::regclass
+          order by 1`,
+      );
+      expect(rows.map((r) => r.tabelle)).toEqual([...faellt, ...bleibt].sort());
     });
 
     it('loescht Belege und Verhaeltnis gemeinsam nach Ablauf der Belegfrist', async () => {
