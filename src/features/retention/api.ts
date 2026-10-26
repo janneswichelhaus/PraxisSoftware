@@ -53,11 +53,14 @@ export async function fetchRetentionSchedule(): Promise<Datenklasse[]> {
       .select(
         'key, basis, legal_reference, anchor, retention_interval, upper_bound_anchor, upper_bound_interval, assumption_key, note, sort_order',
       )
-      .order('sort_order'),
+      // Gleiche Stufen ordnet sonst die Lage der Zeilen; ein Update am Plan verschöbe sie.
+      .order('sort_order')
+      .order('key'),
     supabase
       .from('retention_assignments')
       .select('table_name, class_key, deletion_mode, sort_order')
-      .order('sort_order'),
+      .order('sort_order')
+      .order('table_name'),
   ]);
 
   if (klassen.error || zuordnungen.error) {
