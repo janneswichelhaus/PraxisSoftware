@@ -52,17 +52,17 @@ Wiedervorlage betrachtet vier Wege getrennt:
    beim Aufklappen. Abschaltbar an einer Stelle (`FAHRZEITEN_BEIM_OEFFNEN`).
 4. **Handoff vom Gerät.** Seit MAP-006d die Koordinate statt der Anschrift (ANN-018); B2 bleibt
    offen (ADR-019 Punkt 23).
-5. **Kilometer für den Ladestrom (BEF-181, ADR-019 Fassung 6).** Beim Beantragen eines
+5. ~~**Kilometer für den Ladestrom (BEF-181, ADR-019 Fassung 6).** Beim Beantragen eines
    abgeschlossenen Monats rechnet die Edge Function `electricity-distance` die geplanten Touren der
    antragstellenden Person neu: je Tag eine Route über dieselben Koordinaten wie Weg 3, in der
    Zusammenfassung einmal zur Anzeige und beim Absenden einmal zum Eintragen. Gespeichert wird nur
    die Monatssumme in ganzen Kilometern am Antrag (`staff_reimbursements.tour_km`); sie sehen die
    Person und owner, das Büro nicht (ANN-616). Neu ist die **Menge** je Aufruf (bis zu einem
-   Monat), nicht die Art der Daten.
+   Monat), nicht die Art der Daten.~~ *Entfallen 2026-10-26 (ADR-019 Fassung 7): Ladestrom wird wie
+   ein Einkauf mit Beleg beantragt; ältere Anträge behalten ihre Monatssumme.*
 
 Beschäftigtendatenschutz (§20): Es entsteht keine Fahrtenhistorie, keine gespeicherte Fahrzeit,
-keine Auswertung je Person; die Monatssumme am eigenen Antrag auf Ladestrom dient allein der
-Abrechnung (ADR-019 Fassung 6). Der Startort ist die Praxis oder der erste Besuch; ein persönlicher
+keine Auswertung je Person. Der Startort ist die Praxis oder der erste Besuch; ein persönlicher
 Startort ist bewusst nicht gebaut (ANN-096).
 
 ## Aufbewahrung (ADR-008)

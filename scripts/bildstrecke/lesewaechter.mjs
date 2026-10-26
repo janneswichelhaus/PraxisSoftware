@@ -28,8 +28,6 @@ const LESENDE_RPC_EINZELN = new Set([
   'log_patient_record_view',
   // Auszahlen zeigt owner die volle IBAN (ANN-601) - `stable`, nur lesend.
   'reimbursement_payout_details',
-  // ORG-008: die Vorschläge für den Ladestrom im Eingang - `stable`, nur lesend.
-  'electricity_suggestions',
   // TEAM-001: Das Öffnen eines Gesprächs zieht nur den eigenen Lesestand vor
   // (ANN-609) - wie das Öffnen einer Akte ein Lesen, kein Schreiben.
   'mark_team_channel_read',
@@ -41,8 +39,6 @@ const SCHREIBEND_TROTZ_NAME = /^platform_(accesses_take_back_deletion|invitation
 const ANMELDUNG = new Set(['/auth/v1/token', '/auth/v1/passkeys/authentication/options']);
 const DATEIEN_LESEN = /^\/storage\/v1\/object\/(sign|list)\//;
 const KARTENDIENST = /^\/functions\/v1\/location-provider(\/|$)/;
-// BEF-181: Die Vorschau rechnet nur; `record` traegt ein und bleibt angehalten.
-const LADESTROM_VORSCHAU = /^\/functions\/v1\/electricity-distance\/preview\/?$/;
 
 /**
  * `null`, wenn die Anfrage lesend ist; sonst eine kurze Beschreibung der
@@ -61,7 +57,6 @@ export function schreibanfrage(methode, adresse) {
   }
   if (DATEIEN_LESEN.test(pfad)) return null;
   if (KARTENDIENST.test(pfad)) return null;
-  if (LADESTROM_VORSCHAU.test(pfad)) return null;
   return `${methode} ${pfad}`;
 }
 

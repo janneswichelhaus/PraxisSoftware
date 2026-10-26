@@ -6341,15 +6341,15 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 ### ANN-605 — Ladestrom: geplante Stunden, Werte der Praxis
 
-Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
+Praxisprozess · verworfen · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
-**Ablösung.** ersetzt ANN-599
+**Ablösung.** ersetzt ANN-599. **Verworfen (Jannes, 2026-10-26, Aufräumen M5):** Ladestrom wird wie ein Einkauf mit Beleg beantragt (ANN-749); Rechnung, Werte der Praxis und Vorschläge entfallen.
 
 **Annahme.** Ladestrom = geplante Arbeitsstunden des Monats (Wochenplan in Fassungen mit Abweichungen, ohne Feiertage und ganztägige Abwesenheit; nicht änderbar) × km je Arbeitsstunde × Wh/km bei höchster Stufe × ct/kWh, kaufmännisch auf Cent. Die drei Werte pflegt nur owner (Vorbelegung 6 km, 18 Wh/km, 37 ct); der Antrag hält alle fest. Der Eingang schlägt jeden offenen Monat vor; „zu Hause geladen“ bleibt ein Haken.
 
 **Begründung.** Auftrag Jannes 2026-10-17; Kilometer aus Touren erlaubt erst ADR-019 Fassung 6, umgesetzt in BEF-181 – bis dahin der Pauschalwert.
 
-**Anker.** `app.electricity_amount_cents`.
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql`.
 
 **Änderungspfad.** Stunden von der Person korrigierbar: Parameter und Feld im Ablauf · Aufwand `mittel`.
 
@@ -6457,13 +6457,15 @@ Praxisprozess · offen · 2026-10-17 · Claude nach Vorgabe Jannes · — · Wie
 
 ### ANN-615 — Ladestrom aus Touren: rechnen und eintragen in einer eigenen Function
 
-Technik · offen · 2026-10-17 · — · — · Wiedervorlage: —
+Technik · verworfen · 2026-10-17 · — · — · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M5):** Die Rechnung aus Touren entfällt mit der Edge Function `electricity-distance` (ADR-019 Fassung 7, ANN-749).
 
 **Annahme.** Die Kilometer rechnet die Edge Function `electricity-distance`: Wegpunkte holt sie mit dem Token der Person, die Summe trägt sie mit eigenem Dienstschlüssel ein (`record_electricity_tour_distance`, nur `service_role`) – nur am Antrag desselben Monats, einmal, binnen zehn Minuten, vor fremder Entscheidung. Ohne Ergebnis bleibt der Wert je Stunde. Den Aufruf löst der Browser aus; wer ihn auslässt, behält den Stundenwert – owner sieht die Grundlage.
 
 **Begründung.** ADR-019 Fassung 6: Der Server rechnet; die Datenbank erreicht den Kartendienst nicht, `location-provider` schreibt nichts (Punkt 16).
 
-**Anker.** `public.record_electricity_tour_distance`.
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql`.
 
 **Änderungspfad.** Der Server löst selbst aus (`pg_net` beim Absenden oder Zeitplan), Stundenwert nur noch ohne Kartendienst: Function und Funktion ersetzen · Aufwand `mittel`.
 
@@ -6471,7 +6473,7 @@ Technik · offen · 2026-10-17 · — · — · Wiedervorlage: —
 
 Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung
 
-**Annahme.** Die Monatssumme sehen nur die Person und owner. Das Büro sieht einen Antrag aus Touren mit Monat und Zustand, aber ohne Kilometer, Betrag, Verbrauch und Satz, weil der Betrag mit den Werten der Praxis die Kilometer verriete. Anträge nach Stunden bleiben wie bisher.
+**Annahme.** Gilt seit 2026-10-26 nur noch für ältere Anträge aus Touren (ANN-749). Die Monatssumme sehen nur die Person und owner. Das Büro sieht einen Antrag aus Touren mit Monat und Zustand, aber ohne Kilometer, Betrag, Verbrauch und Satz, weil der Betrag mit den Werten der Praxis die Kilometer verriete. Anträge nach Stunden bleiben wie bisher.
 
 **Begründung.** ADR-019 Fassung 6 (Rang 2) geht ANN-598 (Büro sieht alle Erstattungen, Rang 4) vor; Art. 5 Abs. 1 lit. c DSGVO, §26 BDSG.
 
@@ -6481,13 +6483,15 @@ Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-617 — Was als gefahrene Tour zählt
 
-Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —
+Praxisprozess · verworfen · 2026-10-17 · — · — · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M5):** Ohne Rechnung aus Touren gibt es nichts mehr zu zählen (ANN-749).
 
 **Annahme.** Gezählt wird je Tag die Tour der Tagesroute: Garage oder Startort des ersten Standorts, alle nicht abgesagten Behandlungs- und Trainingstermine mit Ort (auch „nicht angetroffen“), zurück. Ein Termin ohne Koordinate fehlt; die Summe wird auf ganze km gerundet; scheitert eine Route, gibt es keine Summe. Der Eingang zeigt weiter die Schätzung nach Stunden.
 
 **Begründung.** Dieselbe Regel wie Karte und Fahrzeiten (ANN-240); zwölf Monate im Eingang wären hunderte Routen je Öffnen.
 
-**Anker.** `app.electricity_tour_days`.
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql`.
 
 **Änderungspfad.** Andere Tour (etwa ohne Rückweg): nur diese Funktion · Aufwand `klein`.
 
@@ -7640,3 +7644,15 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 **Anker.** Regel `nur-ueber-index` in `scripts/eslint-modulgrenzen.mjs`; `src/features/appointments/index.ts`; `src/features/appointments/erweiterungen.ts`.
 
 **Änderungspfad.** Regel aus `eslint.config.js` nehmen, Kern zurück nach Termine · Aufwand `mittel`.
+
+### ANN-749 — Ladestrom wird wie ein Einkauf mit Beleg beantragt; ältere Anträge behalten ihren Rechenweg
+
+Praxisprozess · offen · 2026-10-26 · — · — · Wiedervorlage: —
+
+**Annahme.** Seit Jannes' Entscheidung (2026-10-26, M5) beantragt eine Person Ladestrom über den Weg des Einkaufs: Beleg, Betrag, Zweck „Ladestrom“ mit Monat. Neue Anträge tragen die Art `purchase`. Anträge der Art `electricity` mit Rechenweg (Tage, Minuten, Kilometer, Satz) bleiben unverändert lesbar, entscheidbar und auszahlbar; ausgezahlte sind Belege (ANN-602).
+
+**Begründung.** „Betrag mit Beleg bleibt“ (ROADMAP 7.18). Ein eigener Weg mit eigener Art brächte die gestrichene Logik zurück; den Rechenweg alter Anträge zu löschen hieße, Belege zu ändern.
+
+**Anker.** `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql`; Test „Ältere Ladestrom-Anträge mit Rechenweg“ in `supabase/tests/reimbursements.test.ts`.
+
+**Änderungspfad.** Eigene Art „Strom“ mit Beleg: `submit_purchase_reimbursement` um die Art erweitern, Bedingung `staff_reimbursements_kind_fields` ergänzen · Aufwand `mittel`.

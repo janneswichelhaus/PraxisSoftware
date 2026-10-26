@@ -2,11 +2,16 @@
 
 ## Status
 
-**Angenommen, Fassung 6** — Fassung 4 von Jannes am 2026-09-22 bestätigt,
+**Angenommen, Fassung 7** — Fassung 4 von Jannes am 2026-09-22 bestätigt,
 Fassung 5 am 2026-10-02, F5-1 bis F5-4 wie empfohlen, Fassung 6 am
-2026-10-17 (Jannes, Variante A).
+2026-10-17 (Jannes, Variante A), Fassung 7 am 2026-10-26.
 
-**Fassung 6 (2026-10-17).** Eine eng begrenzte Ausnahme von Punkt 16 und 17
+**Fassung 7 (2026-10-26, Aufräumen M5).** Jannes hat die Rechnung des Ladestroms zurückgenommen:
+Ladestrom wird wie ein Einkauf mit Beleg beantragt. Die Ausnahme der Fassung 6 entfällt damit,
+der Kartendienst rechnet keine Tourstrecken mehr; die Vermerke an Punkt 16 und 17 sind
+durchgestrichen. Ältere Anträge behalten ihre Monatssumme als Beleg. Alle übrigen Punkte bleiben.
+
+~~**Fassung 6 (2026-10-17).** Eine eng begrenzte Ausnahme von Punkt 16 und 17
 für die Erstattung des Ladestroms: Beim Beantragen eines abgeschlossenen
 Monats dürfen die geplanten Tourstrecken der antragstellenden Person neu
 berechnet werden; gespeichert wird nur die **Monatssumme in Kilometern am
@@ -18,7 +23,7 @@ den Kartendienst weiter erst nach dem Gate aus Punkt 9. Alle übrigen Punkte
 bleiben Wort für Wort stehen; Punkt 16 und 17 tragen einen Vermerk.
 Die Annahme gilt der Zielarchitektur, dem Kandidaten und dem Gate; **produktiv
 freigeschaltet ist damit nichts** — die Freigabe echter Adressen an einen
-Anbieter bleibt am Gate aus Punkt 9 (Vertrag, §203, DSFA).
+Anbieter bleibt am Gate aus Punkt 9 (Vertrag, §203, DSFA).~~
 
 **Fassung 5 (2026-10-02, am selben Tag angenommen).** Anlass ist die Abnahme der Annahmen vom 2026-10-02
 (Block 7, BEF-109; ANN-094, ANN-095, ANN-097). Fassung 5 ändert **nichts an
@@ -227,15 +232,16 @@ zurückzubauen ist.
     *Vermerk 2026-10-02 (Fassung 5): Eine Ersatzschätzung des
     Anbieters ist keine Fahrzeit und wird nicht als solche angezeigt
     (Punkt 38).*
-    *Vermerk 2026-10-17 (Fassung 6): Ausgenommen ist die Monatssumme der
-    geplanten Tourstrecke am Antrag auf Ladestrom (siehe Status).*
+    ~~*Vermerk 2026-10-17 (Fassung 6): Ausgenommen ist die Monatssumme der
+    geplanten Tourstrecke am Antrag auf Ladestrom (siehe Status).*~~ *(Fassung 7)
+    Die Ausnahme ist entfallen.*
 17. **Kein Live-Tracking, keine Bewegungsverläufe, keine Auswertung je
     Person** (§20, B6). Ohne gespeicherte Fahrzeit gibt es nichts, woraus sich
     ein Leistungsprofil bilden ließe.
-    *Vermerk 2026-10-17 (Fassung 6): Die Kilometersumme eines Monats am
+    ~~*Vermerk 2026-10-17 (Fassung 6): Die Kilometersumme eines Monats am
     eigenen Antrag auf Ladestrom ist keine Auswertung in diesem Sinn; sie
     dient allein der Abrechnung und wird nicht über Personen oder Monate
-    zusammengeführt (siehe Status).*
+    zusammengeführt (siehe Status).*~~ *(Fassung 7) Die Ausnahme ist entfallen.*
 18. **Logs enthalten keine Adressen und keine Koordinaten** (ADR-011). Der
     Adapter loggt Fehlerklasse, Dauer und Anbieterkennung, nie die Anfrage
     oder Teile der Antwort. `LocationError.message` ist dafür gebaut.
@@ -659,4 +665,5 @@ Dokumentenrecherche; sie geht mit B2 an die Datenschutzberatung.
 | 3 | 2026-09-22 | Abschnitt F (Führung auf dem Gerät), löst Kontext-Punkt 6 ab; am selben Tag angenommen |
 | 4 | 2026-09-22 | Gate vom Baubeginn auf das Scharfschalten (§15.2), Umfang unverändert; am selben Tag angenommen |
 | 6 | 2026-10-17 | **angenommen am selben Tag (Jannes, Variante A):** Ausnahme von Punkt 16 und 17 für die Monatssumme der geplanten Tourstrecke am eigenen Antrag auf Ladestrom; keine Tageswerte, keine Auswertung über Personen; Gate aus Punkt 9 unverändert. Umsetzung als eigene Story nach ORG-008 |
+| 7 | 2026-10-26 | Aufräumen M5, Entscheidung von Jannes: Die Rechnung des Ladestroms entfällt, damit die Ausnahme der Fassung 6; Vermerke an Punkt 16 und 17 durchgestrichen, Edge Function `electricity-distance` entfernt (Migration `20261225090000_ladestrom_wie_einkauf.sql`). Übrige Punkte unverändert |
 | 5 | 2026-10-02 | **angenommen am selben Tag, F5-1 bis F5-4 wie empfohlen:** Abschnitt G (Punkte 34 bis 38) — Kacheln im Gate mit zwei neuen Punkten der Gate-Liste, ein Schalter für Kacheln und Server-Aufrufe, `synthetic` und `mock` in der Produktion technisch ausgeschlossen (fehlende Umgebung gilt als Produktion), nur eindeutige Treffer zur vollständigen Adresse ohne Rückfrage, Ersatzschätzungen als „Fahrzeit nicht verfügbar" (BEF-109). Punkte 1 bis 33 bleiben stehen; Vermerke an 9, 14 und 16 |

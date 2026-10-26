@@ -176,7 +176,6 @@ describe('Lesewächter', () => {
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/log_patient_record_view`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/notification_kind_switches`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/reimbursement_payout_details`)).toBeNull();
-    expect(schreibanfrage('POST', `${api}/rest/v1/rpc/electricity_suggestions`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/mark_team_channel_read`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/post_team_message`)).toBe(
       'rpc post_team_message',
@@ -184,16 +183,12 @@ describe('Lesewächter', () => {
     expect(schreibanfrage('POST', `${api}/auth/v1/token?grant_type=password`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/storage/v1/object/sign/patient-files/a.png`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/functions/v1/location-provider`)).toBeNull();
-    expect(schreibanfrage('POST', `${api}/functions/v1/electricity-distance/preview`)).toBeNull();
     // Der Entwicklungsserver der Anwendung ist nicht gemeint.
     expect(schreibanfrage('POST', 'http://127.0.0.1:5190/@vite/client')).toBeNull();
   });
 
   it('hält Schreiben an', () => {
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/create_task`)).toBe('rpc create_task');
-    expect(schreibanfrage('POST', `${api}/functions/v1/electricity-distance/record`)).toBe(
-      'POST /functions/v1/electricity-distance/record',
-    );
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/save_treatment_note`)).toBe(
       'rpc save_treatment_note',
     );
