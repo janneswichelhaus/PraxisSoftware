@@ -33,7 +33,6 @@ import {
   type Fleet,
   type FleetStaff,
 } from './api';
-import { montagDerWoche } from './format';
 import {
   SCHRITTE,
   beginn,
@@ -48,7 +47,7 @@ import {
   vorgang,
   type Seite,
 } from './schluesselablauf';
-import { todayInTimeZone } from '@/lib/datum';
+import { todayInTimeZone, wochenBeginn } from '@/lib/datum';
 
 const ZUR_FLOTTE = '/betrieb/flotte';
 
@@ -67,7 +66,7 @@ const ZUR_FLOTTE = '/betrieb/flotte';
  * ob er gilt, entscheidet der Server.
  */
 export function KeyPage({ user }: { user: CurrentUser }) {
-  const montag = montagDerWoche(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
+  const montag = wochenBeginn(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
   const abfrage = useQuery({
     queryKey: flotteSchluessel(montag),
     queryFn: () => fetchFleet(montag),

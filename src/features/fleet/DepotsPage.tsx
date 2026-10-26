@@ -23,8 +23,7 @@ import {
   type Depot,
   type Fleet,
 } from './api';
-import { montagDerWoche } from './format';
-import { todayInTimeZone } from '@/lib/datum';
+import { todayInTimeZone, wochenBeginn } from '@/lib/datum';
 
 const ZUR_FLOTTE = '/betrieb/flotte';
 
@@ -35,7 +34,7 @@ const ZUR_FLOTTE = '/betrieb/flotte';
  * Kein Zugangscode (ANN-554).
  */
 export function DepotsPage({ user }: { user: CurrentUser }) {
-  const montag = montagDerWoche(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
+  const montag = wochenBeginn(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
   const abfrage = useQuery({
     queryKey: flotteSchluessel(montag),
     queryFn: () => fetchFleet(montag),

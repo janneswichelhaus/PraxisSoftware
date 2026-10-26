@@ -33,7 +33,6 @@ import {
   WOCHENTAGE,
   formatZeitpunkt,
   istWochentag,
-  montagDerWoche,
   tageDerWoche,
   wochentageKurz,
   type Wochentag,
@@ -48,7 +47,7 @@ import {
   type Radzustand,
 } from './rad';
 import { aktiveStandortvorlage } from './standortvorlage';
-import { todayInTimeZone } from '@/lib/datum';
+import { todayInTimeZone, wochenBeginn } from '@/lib/datum';
 import { leseMeldung } from '@/lib/meldung';
 
 /**
@@ -97,7 +96,7 @@ function passtZurSuche(rad: Bike, suche: string): boolean {
 
 export function FleetPage({ user }: { user: CurrentUser }) {
   const zone = user.organizationTimeZone;
-  const montag = montagDerWoche(todayInTimeZone(zone ?? 'Europe/Berlin'));
+  const montag = wochenBeginn(todayInTimeZone(zone ?? 'Europe/Berlin'));
   const abfrage = useQuery({
     queryKey: flotteSchluessel(montag),
     queryFn: () => fetchFleet(montag),

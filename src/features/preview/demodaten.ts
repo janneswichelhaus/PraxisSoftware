@@ -12,6 +12,7 @@
  * Vorschau nicht mit der Zeit veraltet.
  */
 
+import { tagePlus } from '@/lib/datum';
 import { ortszeitAlsZeitpunkt } from './format';
 import type {
   Depot,
@@ -31,19 +32,6 @@ import type {
 
 export function tagesschluessel(datum: Date): string {
   return datum.toISOString().slice(0, 10);
-}
-
-export function plusTage(tag: string, tage: number): string {
-  const datum = new Date(`${tag}T00:00:00Z`);
-  datum.setUTCDate(datum.getUTCDate() + tage);
-  return tagesschluessel(datum);
-}
-
-/** Montag der Woche, in der `tag` liegt. */
-export function montagDerWoche(tag: string): string {
-  const datum = new Date(`${tag}T00:00:00Z`);
-  const wochentag = (datum.getUTCDay() + 6) % 7;
-  return plusTage(tag, -wochentag);
 }
 
 /**
@@ -236,15 +224,15 @@ export function demoRaeder(heute: string): Rad[] {
         {
           id: 'sv1',
           inhaber: 'Lena Hartmann',
-          entnommen: zeitpunkt(plusTage(heute, -3), '07:35'),
-          zurueckgelegt: zeitpunkt(plusTage(heute, -3), '17:10'),
+          entnommen: zeitpunkt(tagePlus(heute, -3), '07:35'),
+          zurueckgelegt: zeitpunkt(tagePlus(heute, -3), '17:10'),
         },
       ],
       pannenverlauf: [],
       checkups: [
         {
           id: 'cu1',
-          zeitpunkt: zeitpunkt(plusTage(heute, -7), '17:20'),
+          zeitpunkt: zeitpunkt(tagePlus(heute, -7), '17:20'),
           geprueftVon: 'Lena Hartmann',
           befunde: demoCheckupfragen.map((frage) => ({
             frage,
@@ -317,7 +305,7 @@ export function demoRaeder(heute: string): Rad[] {
       pannenverlauf: [
         {
           id: 'pv1',
-          zeitpunkt: zeitpunkt(plusTage(heute, -1), '14:05'),
+          zeitpunkt: zeitpunkt(tagePlus(heute, -1), '14:05'),
           text: 'Kettenriss unterwegs. Rad bei der Werkstatt abgegeben, Ersatzrad übernommen.',
           gesperrt: true,
         },
@@ -412,12 +400,12 @@ export function demoUrlaub(heute: string): Urlaubsantrag[] {
     {
       id: 'u1',
       mitarbeiterId: 'm5',
-      von: plusTage(heute, 2),
-      bis: plusTage(heute, 6),
+      von: tagePlus(heute, 2),
+      bis: tagePlus(heute, 6),
       tage: 5,
       grund: 'Familienurlaub',
       status: 'beantragt',
-      eingereichtAm: plusTage(heute, -4),
+      eingereichtAm: tagePlus(heute, -4),
       entschiedenVon: '',
       entschiedenAm: '',
       ablehnungsgrund: '',
@@ -426,14 +414,14 @@ export function demoUrlaub(heute: string): Urlaubsantrag[] {
     {
       id: 'u2',
       mitarbeiterId: 'm3',
-      von: plusTage(heute, 21),
-      bis: plusTage(heute, 32),
+      von: tagePlus(heute, 21),
+      bis: tagePlus(heute, 32),
       tage: 10,
       grund: '',
       status: 'genehmigt',
-      eingereichtAm: plusTage(heute, -30),
+      eingereichtAm: tagePlus(heute, -30),
       entschiedenVon: 'Nadja Wolf',
-      entschiedenAm: plusTage(heute, -28),
+      entschiedenAm: tagePlus(heute, -28),
       ablehnungsgrund: '',
       unterschrift: true,
     },
@@ -442,26 +430,26 @@ export function demoUrlaub(heute: string): Urlaubsantrag[] {
       // sehen, dass dann zwei behandelnde Personen gleichzeitig fehlen.
       id: 'u6',
       mitarbeiterId: 'm4',
-      von: plusTage(heute, 2),
-      bis: plusTage(heute, 6),
+      von: tagePlus(heute, 2),
+      bis: tagePlus(heute, 6),
       tage: 3,
       grund: '',
       status: 'genehmigt',
-      eingereichtAm: plusTage(heute, -14),
+      eingereichtAm: tagePlus(heute, -14),
       entschiedenVon: 'Nadja Wolf',
-      entschiedenAm: plusTage(heute, -13),
+      entschiedenAm: tagePlus(heute, -13),
       ablehnungsgrund: '',
       unterschrift: true,
     },
     {
       id: 'u3',
       mitarbeiterId: 'm6',
-      von: plusTage(heute, 9),
-      bis: plusTage(heute, 10),
+      von: tagePlus(heute, 9),
+      bis: tagePlus(heute, 10),
       tage: 2,
       grund: 'Umzug',
       status: 'beantragt',
-      eingereichtAm: plusTage(heute, -1),
+      eingereichtAm: tagePlus(heute, -1),
       entschiedenVon: '',
       entschiedenAm: '',
       ablehnungsgrund: '',
@@ -470,28 +458,28 @@ export function demoUrlaub(heute: string): Urlaubsantrag[] {
     {
       id: 'u4',
       mitarbeiterId: 'm4',
-      von: plusTage(heute, -20),
-      bis: plusTage(heute, -16),
+      von: tagePlus(heute, -20),
+      bis: tagePlus(heute, -16),
       tage: 5,
       grund: '',
       status: 'abgelehnt',
-      eingereichtAm: plusTage(heute, -40),
+      eingereichtAm: tagePlus(heute, -40),
       entschiedenVon: 'Nadja Wolf',
-      entschiedenAm: plusTage(heute, -38),
+      entschiedenAm: tagePlus(heute, -38),
       ablehnungsgrund: 'Zeitraum bereits durch zwei Abwesenheiten belegt.',
       unterschrift: false,
     },
     {
       id: 'u5',
       mitarbeiterId: 'm7',
-      von: plusTage(heute, 45),
-      bis: plusTage(heute, 52),
+      von: tagePlus(heute, 45),
+      bis: tagePlus(heute, 52),
       tage: 6,
       grund: '',
       status: 'genehmigt',
-      eingereichtAm: plusTage(heute, -10),
+      eingereichtAm: tagePlus(heute, -10),
       entschiedenVon: 'Miriam Falk',
-      entschiedenAm: plusTage(heute, -9),
+      entschiedenAm: tagePlus(heute, -9),
       ablehnungsgrund: '',
       unterschrift: true,
     },
@@ -541,7 +529,7 @@ export function demoLeistungen(heute: string): ErbrachteLeistung[] {
   return [
     {
       id: 'el1',
-      datum: plusTage(heute, -7),
+      datum: tagePlus(heute, -7),
       patient: 'A. Musterfrau',
       leistungId: 'l1',
       mitarbeiterId: 'm3',
@@ -550,7 +538,7 @@ export function demoLeistungen(heute: string): ErbrachteLeistung[] {
     },
     {
       id: 'el2',
-      datum: plusTage(heute, -7),
+      datum: tagePlus(heute, -7),
       patient: 'A. Musterfrau',
       leistungId: 'l3',
       mitarbeiterId: 'm3',
@@ -559,7 +547,7 @@ export function demoLeistungen(heute: string): ErbrachteLeistung[] {
     },
     {
       id: 'el3',
-      datum: plusTage(heute, -3),
+      datum: tagePlus(heute, -3),
       patient: 'B. Beispiel',
       leistungId: 'l2',
       mitarbeiterId: 'm4',
@@ -568,7 +556,7 @@ export function demoLeistungen(heute: string): ErbrachteLeistung[] {
     },
     {
       id: 'el4',
-      datum: plusTage(heute, -3),
+      datum: tagePlus(heute, -3),
       patient: 'B. Beispiel',
       leistungId: 'l3',
       mitarbeiterId: 'm4',
@@ -577,7 +565,7 @@ export function demoLeistungen(heute: string): ErbrachteLeistung[] {
     },
     {
       id: 'el5',
-      datum: plusTage(heute, -1),
+      datum: tagePlus(heute, -1),
       patient: 'C. Probst',
       leistungId: 'l4',
       mitarbeiterId: 'm5',
@@ -603,7 +591,7 @@ export function demoRechnungen(heute: string): Rechnung[] {
       nummer: '2026-0148',
       empfaenger: 'A. Musterfrau',
       patient: 'A. Musterfrau',
-      datum: plusTage(heute, -5),
+      datum: tagePlus(heute, -5),
       betragCent: 9700,
       offenCent: 0,
       stand: 'bezahlt',
@@ -614,7 +602,7 @@ export function demoRechnungen(heute: string): Rechnung[] {
       nummer: '2026-0149',
       empfaenger: 'Krankenkasse Beihilfe (Beispiel)',
       patient: 'E. Kunert',
-      datum: plusTage(heute, -4),
+      datum: tagePlus(heute, -4),
       betragCent: 21400,
       offenCent: 10700,
       stand: 'ausgestellt',
@@ -639,14 +627,14 @@ export function demoZahlungen(heute: string): Zahlung[] {
     {
       id: 'za1',
       rechnungId: 'rg1',
-      datum: plusTage(heute, -2),
+      datum: tagePlus(heute, -2),
       betragCent: 9700,
       art: 'Überweisung',
     },
     {
       id: 'za2',
       rechnungId: 'rg2',
-      datum: plusTage(heute, -1),
+      datum: tagePlus(heute, -1),
       betragCent: 10700,
       art: 'Überweisung',
     },

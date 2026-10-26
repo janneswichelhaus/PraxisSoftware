@@ -25,8 +25,8 @@ import {
 } from './api';
 import { urlaubsfenster } from './fenster';
 import { terminePfad } from './termine';
-import { tagKurz, tage, urlaubstage, zeitraumText } from './zeitraum';
-import { formatLocalDate, todayInTimeZone } from '@/lib/datum';
+import { tage, urlaubstage } from './zeitraum';
+import { formatLocalDate, tagKurz, todayInTimeZone, zeitraumText } from '@/lib/datum';
 
 /**
  * Über einen Urlaubsantrag entscheiden (G7b, URL-001): je Antrag eine Seite

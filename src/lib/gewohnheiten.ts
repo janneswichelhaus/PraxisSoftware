@@ -10,6 +10,8 @@
  * Vermerk (IDEA-ALT-002 „Vorsicht“, ADR-006 Punkt 11).
  */
 
+import { tagePlus } from './datum';
+
 /** Was, Auslöser, Wo: höchstens so viele Zeichen (ANN-370). */
 export const GEWOHNHEIT_TEXT_MAX = 120;
 
@@ -19,13 +21,6 @@ export interface Gewohnheitstag {
   vermerkt: boolean;
   /** Vor dem Eintragen: weder vermerkt noch offen. */
   vorBeginn: boolean;
-}
-
-/** „2026-10-12“ minus n Tage, ohne Zeitzone (reine Kalendertage). */
-export function tagDavor(iso: string, tage: number): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - tage);
-  return d.toISOString().slice(0, 10);
 }
 
 /**
@@ -40,7 +35,7 @@ export function tagesreihe(
 ): Gewohnheitstag[] {
   const menge = new Set(vermerkte);
   return Array.from({ length: anzahl }, (_, i) => {
-    const datum = tagDavor(heute, anzahl - 1 - i);
+    const datum = tagePlus(heute, i + 1 - anzahl);
     return { datum, vermerkt: menge.has(datum), vorBeginn: datum < beginn };
   });
 }

@@ -1,3 +1,4 @@
+import { isoWochentag, monatLang, monatPlus } from '@/lib/datum';
 import { Symbolknopf } from './Symbolknopf';
 import { Zwischentitel } from './Zwischentitel';
 
@@ -18,20 +19,10 @@ import { Zwischentitel } from './Zwischentitel';
 
 const WOCHENTAGE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as const;
 
-const MONATSNAME = new Intl.DateTimeFormat('de-DE', {
-  month: 'long',
-  year: 'numeric',
-  timeZone: 'UTC',
-});
 const TAGESNAME = new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeZone: 'UTC' });
 
 function datum(tag: string): Date {
   return new Date(`${tag}T00:00:00Z`);
-}
-
-function monatPlus(monat: string, n: number): string {
-  const d = datum(monat);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1)).toISOString().slice(0, 10);
 }
 
 /**
@@ -40,7 +31,7 @@ function monatPlus(monat: string, n: number): string {
  */
 function monatsfelder(monat: string): (string | null)[] {
   const erster = datum(monat);
-  const vorne = (erster.getUTCDay() + 6) % 7;
+  const vorne = isoWochentag(monat) - 1;
   const tage = new Date(
     Date.UTC(erster.getUTCFullYear(), erster.getUTCMonth() + 1, 0),
   ).getUTCDate();
@@ -86,7 +77,7 @@ export function Monatsblatt({
   /** Blättern: ‹ › im Kopf, nur innerhalb von `ab` bis `bis`. */
   onMonat?: ((monat: string) => void) | undefined;
 }) {
-  const name = MONATSNAME.format(datum(monat));
+  const name = monatLang(monat);
   const vorher = monatPlus(monat, -1);
   const nachher = monatPlus(monat, 1);
   return (

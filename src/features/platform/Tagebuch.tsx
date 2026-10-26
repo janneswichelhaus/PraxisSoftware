@@ -40,7 +40,8 @@ import { tagebuchSchluessel, type EigenesTagebuch, type Plattformzugang } from '
 import { useNurLesen, usePlattformApi } from './einsicht';
 import { PLATTFORM_PFAD } from './pfade';
 import { TagebuchErinnerungen } from './TagebuchErinnerungen';
-import { eintragenAdresse, tagebuchAdresse, tagName, tagPlus } from './tagebuchAdresse';
+import { eintragenAdresse, tagebuchAdresse, tagName } from './tagebuchAdresse';
+import { tagePlus } from '@/lib/datum';
 
 /**
  * Das Ernährungstagebuch auf der Plattform (ERN-007, ADR-027 Punkte 10 und
@@ -177,7 +178,7 @@ function Tagesleiste({ tag, heute, anfang }: { tag: string; heute: string; anfan
       <Symbolknopf
         beschriftung="Vortag"
         disabled={tag <= anfang}
-        onClick={() => void navigate(tagebuchAdresse(tagPlus(tag, -1), search, heute))}
+        onClick={() => void navigate(tagebuchAdresse(tagePlus(tag, -1), search, heute))}
       >
         <span aria-hidden="true" className="text-2xl">
           ‹
@@ -189,7 +190,7 @@ function Tagesleiste({ tag, heute, anfang }: { tag: string; heute: string; anfan
       <Symbolknopf
         beschriftung="Folgetag"
         disabled={tag >= heute}
-        onClick={() => void navigate(tagebuchAdresse(tagPlus(tag, 1), search, heute))}
+        onClick={() => void navigate(tagebuchAdresse(tagePlus(tag, 1), search, heute))}
       >
         <span aria-hidden="true" className="text-2xl">
           ›
@@ -421,7 +422,7 @@ function Kopieren({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTa
   const api = usePlattformApi();
   const neuLaden = useNeuLaden(zugang);
   const tag = daten.day.day;
-  const [von, setVon] = useState(tag > daten.started_on ? tagPlus(tag, -1) : tag);
+  const [von, setVon] = useState(tag > daten.started_on ? tagePlus(tag, -1) : tag);
   const [teil, setTeil] = useState<Mahlzeit | 'tag'>('tag');
   const [kopiert, setKopiert] = useState<number | null>(null);
   const kopieren = useMutation({

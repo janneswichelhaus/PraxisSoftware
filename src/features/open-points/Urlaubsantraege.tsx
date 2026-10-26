@@ -5,7 +5,8 @@ import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { urlaubstage, zeitraumText } from '@/features/vacation/zeitraum';
+import { zeitraumText } from '@/lib/datum';
+import { urlaubstage } from '@/features/vacation/zeitraum';
 import { abfragen } from './eingang';
 
 /**

@@ -1,11 +1,9 @@
 /**
- * Zeitpunkte und Wochentage der Radflotte.
- *
- * Zeitpunkte (Schlüssel seit, Check-Up am, gesperrt seit) stehen in der
- * Zeitzone der Praxis, über `Intl` mit ausdrücklicher Zone - wie die Termine
- * (`@/features/appointments/api`). Wochentage zählen nach ISO: 1 ist Montag,
- * 7 Sonntag, wie `fleet_bikes.planned_weekdays` in der Datenbank.
+ * Zeitpunkte der Radflotte in der Zone der Praxis wie in `@/lib/datum`; Wochentage nach ISO
+ * (1 Montag … 7 Sonntag) wie `fleet_bikes.planned_weekdays` in der Datenbank.
  */
+
+import { dayKey, isoWochentag, tagePlus } from '@/lib/datum';
 
 /** Ohne bekannte Zone: die der Praxis in Tübingen (CAL-001). */
 const ERSATZZONE = 'Europe/Berlin';
@@ -35,12 +33,7 @@ export function formatTag(iso: string, zone: string | null): string {
 
 /** Der Kalendertag eines Zeitpunkts in der Zone der Praxis, als `YYYY-MM-DD`. */
 export function kalendertag(iso: string, zone: string | null): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    timeZone: zone ?? ERSATZZONE,
-  }).format(new Date(iso));
+  return dayKey(iso, zone ?? ERSATZZONE);
 }
 
 export const WOCHENTAGE = [
@@ -59,33 +52,15 @@ export function istWochentag(wert: number): wert is Wochentag {
   return Number.isInteger(wert) && wert >= 1 && wert <= 7;
 }
 
-/** Ein Kalendertag `YYYY-MM-DD` als Mittag in UTC - fern von jeder Umstellung. */
-function mittag(tag: string): Date {
-  return new Date(`${tag}T12:00:00Z`);
-}
-
 /** Der ISO-Wochentag eines Kalendertags (1 Montag … 7 Sonntag). */
 export function wochentagVon(tag: string): Wochentag {
-  const tagImSystem = mittag(tag).getUTCDay();
-  return (tagImSystem === 0 ? 7 : tagImSystem) as Wochentag;
-}
-
-/** Ein Kalendertag plus `tage` Tage, als `YYYY-MM-DD`. */
-export function plusTage(tag: string, tage: number): string {
-  const datum = mittag(tag);
-  datum.setUTCDate(datum.getUTCDate() + tage);
-  return datum.toISOString().slice(0, 10);
-}
-
-/** Der Montag der Woche eines Kalendertags. */
-export function montagDerWoche(tag: string): string {
-  return plusTage(tag, 1 - wochentagVon(tag));
+  return isoWochentag(tag) as Wochentag;
 }
 
 /** Die Kalendertage der Woche ab ihrem Montag, nach Wochentag. */
 export function tageDerWoche(montag: string): Record<Wochentag, string> {
   return Object.fromEntries(
-    WOCHENTAGE.map((tag) => [tag.nr, plusTage(montag, tag.nr - 1)]),
+    WOCHENTAGE.map((tag) => [tag.nr, tagePlus(montag, tag.nr - 1)]),
   ) as Record<Wochentag, string>;
 }
 

@@ -4,27 +4,26 @@ import {
   formatTag,
   formatZeitpunkt,
   kalendertag,
-  montagDerWoche,
-  plusTage,
   tageDerWoche,
   wochentagVon,
   wochentageKurz,
 } from './format';
+import { tagePlus, wochenBeginn } from '@/lib/datum';
 
 describe('Wochentage nach ISO (1 Montag … 7 Sonntag)', () => {
   it('rechnet Wochentag und Montag der Woche ohne Zeitzone', () => {
     expect(wochentagVon('2026-10-12')).toBe(1);
     expect(wochentagVon('2026-10-18')).toBe(7);
-    expect(montagDerWoche('2026-10-15')).toBe('2026-10-12');
-    expect(montagDerWoche('2026-10-18')).toBe('2026-10-12');
-    expect(montagDerWoche('2026-10-12')).toBe('2026-10-12');
+    expect(wochenBeginn('2026-10-15')).toBe('2026-10-12');
+    expect(wochenBeginn('2026-10-18')).toBe('2026-10-12');
+    expect(wochenBeginn('2026-10-12')).toBe('2026-10-12');
   });
 
   it('bleibt über die Zeitumstellung und den Jahreswechsel beim richtigen Tag', () => {
     // Sommerzeit endet am 25.10.2026, ein Sonntag.
-    expect(plusTage('2026-10-24', 1)).toBe('2026-10-25');
-    expect(plusTage('2026-10-25', 1)).toBe('2026-10-26');
-    expect(montagDerWoche('2027-01-01')).toBe('2026-12-28');
+    expect(tagePlus('2026-10-24', 1)).toBe('2026-10-25');
+    expect(tagePlus('2026-10-25', 1)).toBe('2026-10-26');
+    expect(wochenBeginn('2027-01-01')).toBe('2026-12-28');
     expect(tageDerWoche('2026-12-28')[5]).toBe('2027-01-01');
   });
 

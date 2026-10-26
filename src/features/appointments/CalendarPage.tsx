@@ -80,6 +80,7 @@ import {
   dayKey,
   formatLocalTime,
   minutesOfDay,
+  monatLang,
   todayInTimeZone,
   kalenderwoche,
   tagePlus,
@@ -150,14 +151,6 @@ function monatKurz(tag: string, heute: string): string {
   return new Intl.DateTimeFormat('de-DE', {
     month: 'short',
     ...(laufendesJahr ? {} : { year: 'numeric' as const }),
-    timeZone: 'UTC',
-  }).format(new Date(`${tag}T00:00:00Z`));
-}
-
-function monatLang(tag: string): string {
-  return new Intl.DateTimeFormat('de-DE', {
-    month: 'long',
-    year: 'numeric',
     timeZone: 'UTC',
   }).format(new Date(`${tag}T00:00:00Z`));
 }

@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { gewohnheitSatz, tagDavor, tagesreihe } from './gewohnheiten';
+import { gewohnheitSatz, tagesreihe } from './gewohnheiten';
 
 describe('Gewohnheiten (ALT-003, ANN-370)', () => {
-  it('rechnet Kalendertage, auch über den Monatswechsel und die Zeitumstellung', () => {
-    expect(tagDavor('2026-11-01', 1)).toBe('2026-10-31');
-    expect(tagDavor('2026-10-26', 2)).toBe('2026-10-24');
-  });
-
   it('legt die Tage ältester zuerst an, mit Vermerk und Beginn – ohne Zählwerk', () => {
     const reihe = tagesreihe(
       '2026-10-12',

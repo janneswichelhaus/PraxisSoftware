@@ -1,4 +1,5 @@
 import { STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
+import { dateLong, isoWochentag } from '@/lib/datum';
 import type { ChangeKind, RequestStatus } from './api';
 import { WEEKDAYS, blocksText, hoursText, workMinutes, type Block, type Week } from './rules';
 
@@ -13,33 +14,9 @@ export const WEEKDAY_NAME: Record<(typeof WEEKDAYS)[number], string> = {
   '7': 'Sonntag',
 };
 
-const LONG = new Intl.DateTimeFormat('de-DE', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  timeZone: 'UTC',
-});
-
-/** „Dienstag, 3. November“ für einen Kalendertag `YYYY-MM-DD`. */
-export function dateLong(day: string): string {
-  return LONG.format(new Date(`${day}T00:00:00Z`));
-}
-
-const DAY_MONTH = new Intl.DateTimeFormat('de-DE', {
-  day: 'numeric',
-  month: 'long',
-  timeZone: 'UTC',
-});
-
-/** „1. Dezember“ für einen Kalendertag `YYYY-MM-DD`. */
-export function dateDayMonth(day: string): string {
-  return DAY_MONTH.format(new Date(`${day}T00:00:00Z`));
-}
-
-/** Der ISO-Wochentag eines Kalendertags: `'1'` Montag bis `'7'` Sonntag. */
+/** Der ISO-Wochentag eines Kalendertags als Schlüssel: `'1'` Montag bis `'7'` Sonntag. */
 export function isoWeekday(day: string): (typeof WEEKDAYS)[number] {
-  const d = new Date(`${day}T00:00:00Z`).getUTCDay();
-  return WEEKDAYS[(d + 6) % 7]!;
+  return WEEKDAYS[isoWochentag(day) - 1]!;
 }
 
 /** Was ein Antrag ändert, als Titel: „Einmalig: Dienstag, 3. November“ oder „Ab Dienstag, 1. Dezember“. */

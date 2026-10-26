@@ -7,12 +7,12 @@ import { REIMBURSEMENTS_HOME } from '@/features/reimbursements/paths';
 import { reimbursementTitle } from '@/features/reimbursements/rules';
 import { fetchUrlaub, urlaubSchluessel } from '@/features/vacation/api';
 import { urlaubsfenster } from '@/features/vacation/fenster';
-import { urlaubstage, zeitraumText } from '@/features/vacation/zeitraum';
+import { urlaubstage } from '@/features/vacation/zeitraum';
 import { WORKING_TIME_KEY, fetchWorkingTime } from '@/features/working-time/api';
 import { changeTitle } from '@/features/working-time/format';
 import { fetchTimeAccount, timeAccountKey } from '@/features/timeaccount/api';
 import { TIME_ACCOUNT_HOME } from '@/features/timeaccount/paths';
-import { dateLong } from '@/features/working-time/format';
+import { dateLong, zeitraumText } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 
 const TON = { Beantragt: 'neutral', Genehmigt: 'positiv', Zurückgewiesen: 'warnung' } as const;

@@ -29,12 +29,12 @@ import {
   type Fleet,
 } from './api';
 import { bikeTypeLabels } from './bike3d/zones';
-import { formatZeitpunkt, montagDerWoche } from './format';
+import { formatZeitpunkt } from './format';
 import { ausserhalbDesStammdepots, depotName, radzustandLabels, standort } from './rad';
 import { RadAngaben } from './RadAngaben';
 import { RadStellen } from './RadStellen';
 import { RadVerlauf } from './RadVerlauf';
-import { todayInTimeZone } from '@/lib/datum';
+import { todayInTimeZone, wochenBeginn } from '@/lib/datum';
 import { leseMeldung } from '@/lib/meldung';
 
 const ZUR_FLOTTE = '/betrieb/flotte';
@@ -61,7 +61,7 @@ const BEREICHE: Suchreiter<Bereich>[] = [
 export function BikePage({ user }: { user: CurrentUser }) {
   const { radId = '' } = useParams<{ radId: string }>();
   const zone = user.organizationTimeZone;
-  const montag = montagDerWoche(todayInTimeZone(zone ?? 'Europe/Berlin'));
+  const montag = wochenBeginn(todayInTimeZone(zone ?? 'Europe/Berlin'));
   const detail = useQuery({
     queryKey: radSchluessel(radId),
     queryFn: () => fetchBike(radId),

@@ -13,7 +13,7 @@ import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BIBLIOTHEK_SCHLUESSEL, fetchBibliothek, type Bibliothek } from '@/features/exercises/api';
 import { KATALOG_SCHLUESSEL, ladeKatalog } from '@/features/exercises/katalogLaden';
-import { formatDate } from '@/lib/datum';
+import { formatDate, tagePlus } from '@/lib/datum';
 import {
   PLAENE_SCHLUESSEL,
   PRAXISVORLAGEN_SCHLUESSEL,
@@ -43,7 +43,7 @@ import {
   type NichtHinzugefuegt,
   type Wunsch,
 } from './hinzufuegen';
-import { LAUFZEIT_HOECHSTENS_TAGE, LAUFZEIT_VORSCHLAG_TAGE, tagPlus } from './laufzeit';
+import { LAUFZEIT_HOECHSTENS_TAGE, LAUFZEIT_VORSCHLAG_TAGE } from './laufzeit';
 import { Plankopf } from './Plankopf';
 import { PositionFormular } from './PositionFormular';
 import { Positionszeile } from './Positionszeile';
@@ -645,9 +645,9 @@ function Zuweisen({
   onZugewiesen?: (bis: string) => void;
 }) {
   const queryClient = useQueryClient();
-  const [bis, setBis] = useState(() => tagPlus(plan.today, LAUFZEIT_VORSCHLAG_TAGE));
+  const [bis, setBis] = useState(() => tagePlus(plan.today, LAUFZEIT_VORSCHLAG_TAGE));
   const [fehler, setFehler] = useState<string | undefined>();
-  const spaetestens = tagPlus(plan.today, LAUFZEIT_HOECHSTENS_TAGE);
+  const spaetestens = tagePlus(plan.today, LAUFZEIT_HOECHSTENS_TAGE);
   const zuweisen = useMutation({
     // Wartet, bis der letzte Tipp auf die Häufigkeit gespeichert ist: Der Plan
     // geht mit dem zur Person, was die Zeile zeigt (kopfdaten.ts).

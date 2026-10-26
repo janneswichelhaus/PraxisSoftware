@@ -13,7 +13,7 @@
 
 // Nur der Typ: `api.ts` liest diese Datei zur Laufzeit, nicht umgekehrt.
 import { BEGRIFFE } from '@/lib/begriffe';
-import { istIsoDatum, monatPlus, tagePlus, wochenBeginn } from '@/lib/datum';
+import { istIsoDatum, isoWochentag, monatPlus, tagePlus, wochenBeginn } from '@/lib/datum';
 import type { EreignisFormValues } from './api';
 import type { Zeitband } from '@/lib/zeitband';
 
@@ -579,12 +579,6 @@ export function minuteZuZeit(minute: number): string {
   const h = String(Math.floor(begrenzt / 60)).padStart(2, '0');
   const m = String(begrenzt % 60).padStart(2, '0');
   return `${h}:${m}`;
-}
-
-/** ISO-8601-Wochentag eines Kalendertags: 1 = Montag … 7 = Sonntag. */
-export function isoWochentag(tag: string): number {
-  const d = new Date(`${tag}T00:00:00Z`);
-  return ((d.getUTCDay() + 6) % 7) + 1;
 }
 
 export interface Arbeitsblock {

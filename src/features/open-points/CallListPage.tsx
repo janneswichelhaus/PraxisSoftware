@@ -12,7 +12,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
-import { formatDatum } from '@/features/preview/format';
 import type { CurrentUser } from '@/features/session/types';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
@@ -26,7 +25,7 @@ import {
   type CallOutcome,
 } from './call-list-api';
 import { Anrufknopf } from './Symbole';
-import { formatLocalTime, todayInTimeZone, tagePlus } from '@/lib/datum';
+import { formatDate, formatLocalTime, todayInTimeZone, tagePlus } from '@/lib/datum';
 import { appointmentTypeHint, notificationChannelLabels } from '@/lib/termin';
 
 const TAG = /^\d{4}-\d{2}-\d{2}$/;
@@ -259,7 +258,7 @@ export function CallListPage({ user }: { user: CurrentUser }) {
       <Rueckweg standard="/offen" beschriftung="Zurück zu den offenen Punkten" />
       <PageHeader
         title="Anrufliste"
-        description={`${datum === tagePlus(heute, 1) ? 'Morgen, ' : ''}${formatDatum(datum)}`}
+        description={`${datum === tagePlus(heute, 1) ? 'Morgen, ' : ''}${formatDate(datum)}`}
         actions={
           // Mit Wort statt nackter Pfeile (R2-O5): „‹“ allein war ein Zeichen
           // von 8 px in einem 44-px-Kasten.

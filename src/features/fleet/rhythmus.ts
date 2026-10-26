@@ -1,6 +1,7 @@
 import { mitRueckweg } from '@/lib/rueckweg';
 import type { Bike } from './api';
-import { formatTag, kalendertag, plusTage, wochentagVon } from './format';
+import { tagePlus } from '@/lib/datum';
+import { formatTag, kalendertag, wochentagVon } from './format';
 import { freieLuecken, type Zeitband } from '@/lib/zeitband';
 
 /**
@@ -47,7 +48,7 @@ export function faelligkeit(
 ): Faelligkeit | null {
   if (rhythmus === null || rad.block) return null;
   if (!rad.last_checkup_at) return { ab: null };
-  return { ab: plusTage(kalendertag(rad.last_checkup_at, zone), rhythmus) };
+  return { ab: tagePlus(kalendertag(rad.last_checkup_at, zone), rhythmus) };
 }
 
 /** Ob ein Rad an einem Tag fällig ist (noch nie geprüft: immer). */

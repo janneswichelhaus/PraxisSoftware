@@ -12,10 +12,9 @@ import type { CurrentUser } from '@/features/session/types';
 import { fetchBike, fetchFleet, flotteSchluessel, radSchluessel, type Fleet } from './api';
 import { bikeTypeLabels } from './bike3d/zones';
 import { CheckupFenster } from './CheckupFenster';
-import { montagDerWoche } from './format';
 import { istMeinRad } from './rad';
 import { Radwahl } from './Radwahl';
-import { todayInTimeZone } from '@/lib/datum';
+import { todayInTimeZone, wochenBeginn } from '@/lib/datum';
 
 /**
  * Fahrrad-Check-Up (FLT-EPIC-001; geführt seit FLT-005, ANN-563).
@@ -32,7 +31,7 @@ import { todayInTimeZone } from '@/lib/datum';
 export function CheckupPage({ user }: { user: CurrentUser }) {
   const [parameter, setParameter] = useSearchParams();
   const radId = parameter.get('rad');
-  const montag = montagDerWoche(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
+  const montag = wochenBeginn(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
   const flotte = useQuery({
     queryKey: flotteSchluessel(montag),
     queryFn: () => fetchFleet(montag),

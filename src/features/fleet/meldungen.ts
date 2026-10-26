@@ -1,7 +1,7 @@
 import type { FleetReport } from './api';
 import { checkItemLabels, type CheckItemKey } from './bike3d/zones';
 import { SEITEN, type SeitenKey } from './checkupablauf';
-import { plusTage } from './format';
+import { tagePlus } from '@/lib/datum';
 
 /**
  * Die Meldungen der Flotte für den Arbeitgeber (FLT-008, ANN-569) ohne
@@ -29,7 +29,7 @@ export function istZeitraum(wert: string | null): wert is Zeitraum {
 /** Der erste Tag eines Zeitraums, von heute (in der Zeit der Praxis) aus. */
 export function abTag(heute: string, zeitraum: Zeitraum): string {
   const tage = ZEITRAEUME.find((eintrag) => eintrag.wert === zeitraum)!.tage;
-  return plusTage(heute, -tage);
+  return tagePlus(heute, -tage);
 }
 
 export const ARTEN = [

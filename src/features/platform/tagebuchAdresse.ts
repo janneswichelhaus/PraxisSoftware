@@ -1,3 +1,4 @@
+import { tagePlus } from '@/lib/datum';
 import { PLATTFORM_PFAD } from './pfade';
 
 /** Wege und Tage des Ernährungstagebuchs (ERN-007) - der Tag steht in der Adresse, nie ein Lebensmittel. */
@@ -30,13 +31,6 @@ export function eintragenAdresse(tag: string, mahlzeit: string, suche: string): 
   return mitSuche(`${TAGEBUCH_PFAD}/eintragen`, suche, { tag, mahlzeit });
 }
 
-/** Ein Kalendertag `YYYY-MM-DD` plus `n` Tage. */
-export function tagPlus(tag: string, n: number): string {
-  const d = new Date(`${tag}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
-
 const TAG_LANG = new Intl.DateTimeFormat('de-DE', {
   weekday: 'long',
   day: 'numeric',
@@ -46,6 +40,6 @@ const TAG_LANG = new Intl.DateTimeFormat('de-DE', {
 /** „Heute“, „Gestern“, sonst „Freitag, 17. Oktober“. */
 export function tagName(tag: string, heute: string): string {
   if (tag === heute) return 'Heute';
-  if (tag === tagPlus(heute, -1)) return 'Gestern';
+  if (tag === tagePlus(heute, -1)) return 'Gestern';
   return TAG_LANG.format(new Date(`${tag}T12:00:00`));
 }
