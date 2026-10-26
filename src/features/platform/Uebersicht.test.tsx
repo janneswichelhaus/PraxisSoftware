@@ -46,7 +46,6 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Uebersicht } = await import('./Uebersicht');
-const { NurLesenKontext } = await import('./einsicht');
 
 /** Die Wahl zu Mitteilungen: gewählt (Mail für Termine) oder noch nie (ANN-702). */
 const GEWAEHLT = {
@@ -463,7 +462,7 @@ describe('Heute und Neu für Sie', () => {
     ]);
   });
 
-  it('zeigt „Mitteilungen einschalten“ nicht nach einer Wahl, in der Lesefrist und in der Einsicht', async () => {
+  it('zeigt „Mitteilungen einschalten“ nicht nach einer Wahl und in der Lesefrist', async () => {
     const { unmount } = zeige();
     expect(await screen.findByText('Fragebogen vor Ihrem ersten Termin')).toBeInTheDocument();
     expect(screen.queryByText('Mitteilungen einschalten')).not.toBeInTheDocument();
@@ -474,17 +473,6 @@ describe('Heute und Neu für Sie', () => {
     expect(await screen.findByRole('region', { name: 'Unterlagen sichern' })).toBeInTheDocument();
     expect(screen.queryByText('Mitteilungen einschalten')).not.toBeInTheDocument();
     lesefrist.unmount();
-
-    ladeBenachrichtigungen.mockClear();
-    renderWithProviders(
-      <NurLesenKontext.Provider value={true}>
-        <Uebersicht zugang={ZUGANG} />
-      </NurLesenKontext.Provider>,
-      '/p?bereich=treatment',
-    );
-    expect(await screen.findByText('Fragebogen vor Ihrem ersten Termin')).toBeInTheDocument();
-    expect(screen.queryByText('Mitteilungen einschalten')).not.toBeInTheDocument();
-    expect(ladeBenachrichtigungen).not.toHaveBeenCalled();
   });
 
   it('zeigt das Trainingsangebot der Praxis unter „Neu für Sie“ (KND-003)', async () => {
@@ -626,7 +614,7 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(ladeErnaehrung).not.toHaveBeenCalled();
   });
 
-  it('übernimmt keinen Fehler einer Abfrage, die sie selbst nicht stellt (Einsicht, „Ich“)', async () => {
+  it('übernimmt keinen Fehler einer Abfrage, die sie selbst nicht stellt (Begleitung, „Ich“)', async () => {
     const schluessel = ['platform-nutrition', BEGLEITUNG.access_id] as const;
     const { rerender } = renderWithProviders(
       <Vorher schluessel={schluessel} laden={() => Promise.reject(new Error('gesperrt'))} />,

@@ -101,11 +101,9 @@ function mitFrist(sicherung: Sicherung, ms: number): Promise<boolean> {
 }
 
 /**
- * Ein Konto, das der Zugangsdienst für die Plattform angelegt hat: Es trägt
- * die Marke `platform_account` beim Anmeldedienst (ANN-189). Sie steht in der
- * Sitzung und ist deshalb auch gesperrt zu lesen, ohne Abfrage und ohne
- * Merker auf dem Gerät (ANN-687). Praxiskonten tragen sie nie - auch nicht in
- * der Einsicht unter `/p`.
+ * Ein Konto des Zugangsdiensts für die Plattform trägt beim Anmeldedienst die Marke
+ * `platform_account` (ANN-189); sie steht in der Sitzung und ist deshalb auch gesperrt zu lesen,
+ * ohne Abfrage und ohne Merker auf dem Gerät (ANN-687). Praxiskonten tragen sie nie.
  */
 function istPlattformkonto(session: Session | null): boolean {
   // Optional: Eine Sitzung aus einem Test oder einem alten Speicher kann ohne

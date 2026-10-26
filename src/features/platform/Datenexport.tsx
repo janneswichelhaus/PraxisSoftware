@@ -11,11 +11,12 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BENACHRICHTIGUNGEN, istBenachrichtigungsart } from '@/lib/begriffe';
 import { formatEuro } from '@/lib/geld';
 import {
+  ladeBenachrichtigungsexport,
+  ladeDatenexport,
   type Benachrichtigungsexport,
   type Datenexport as Daten,
   type Plattformzugang,
 } from './api';
-import { usePlattformApi } from './einsicht';
 import { EINWILLIGUNGSTEXTE } from './einwilligungstexte';
 import { THEMA_NAME } from './nachrichtentexte';
 import { PLATTFORM_PFAD } from './pfade';
@@ -43,10 +44,9 @@ export function Datenexport({ zugang }: { zugang: Plattformzugang }) {
 }
 
 function GanzerExport({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const [ergebnis, setErgebnis] = useState<{ daten: Daten; roh: unknown } | null>(null);
   const abrufen = useMutation({
-    mutationFn: () => api.ladeDatenexport(zugang.access_id),
+    mutationFn: () => ladeDatenexport(zugang.access_id),
     onSuccess: setErgebnis,
   });
   const fuer = zugang.access_kind === 'legal_representative' ? zugang.represented_name : null;
@@ -267,13 +267,12 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
  * Person gibt es hier nicht.
  */
 function EigeneBenachrichtigungen({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const [ergebnis, setErgebnis] = useState<{
     daten: Benachrichtigungsexport;
     roh: unknown;
   } | null>(null);
   const abrufen = useMutation({
-    mutationFn: () => api.ladeBenachrichtigungsexport(zugang.access_id),
+    mutationFn: () => ladeBenachrichtigungsexport(zugang.access_id),
     onSuccess: setErgebnis,
   });
   const wahl = ergebnis?.daten.notifications.settings ?? null;

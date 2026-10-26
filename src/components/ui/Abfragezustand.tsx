@@ -15,31 +15,9 @@ export interface Abfrage<T> {
 }
 
 /**
- * Laden, Fehler, Leer, Veraltet und Inhalt einer Abfrage an einer Stelle
- * (Design-Fundament, DESIGN.md „Zustände“, ANN-406).
- *
- * Bis dahin schrieb jede Seite die Weiche selbst (`isPending ? … : isError ?
- * …`, rund 200-mal) und den Satz zum Fehler dazu. Jetzt:
- *
- *   * **Laden** in Zielgröße: `LoadingState` mit `laden` als Satz, mit
- *     `inKarte` in einer Karte, mit `kacheln` leeren Kachelflächen darüber.
- *   * **Fehler ohne Stand:** `ErrorState` mit `fehler` als Titel, dem einen
- *     Satz `VERBINDUNG_PRUEFEN` und „Erneut versuchen“.
- *   * **Fehler mit Stand** (das Nachladen scheiterte): der Inhalt bleibt, darüber
- *     „Der angezeigte Stand konnte nicht aktualisiert werden …“ mit „Erneut
- *     versuchen“ (`NachladeHinweis`) - nie ein Formular, das mitten in der
- *     Eingabe verschwindet.
- *   * **Endgültiger Fehler** (`endgueltig`, etwa eine Abweisung des Servers):
- *     ein eigener Titel, ohne Satz zur Verbindung und ohne „Erneut versuchen“ -
- *     ein neuer Versuch behebt ihn nicht. Er ersetzt auch einen alten Stand:
- *     Was der Server abweist, bleibt nicht stehen.
- *   * **Leer:** trifft `leer.wenn` zu, ein `EmptyState` (in einer Karte, wenn
- *     `inKarte`) mit dem nächsten Schritt.
- *   * Sonst `children(daten)`.
- *
- * Für eine Seite ohne Rahmen der Anwendung, deren Inhalt seine Hülle selbst
- * mitbringt (die Einsicht der Praxis, E-001): `rahmen` hüllt Laden und Fehler
- * ein, `ausweg` steht unter jeder Fehlermeldung.
+ * Laden, Fehler, Leer, Veraltet und Inhalt einer Abfrage an einer Stelle (DESIGN.md „Zustände“,
+ * ANN-406): Scheitert nur das Nachladen, bleibt der Inhalt - nie verschwindet ein Formular
+ * mitten in der Eingabe; was der Server endgültig abweist, ersetzt auch einen alten Stand.
  */
 export function Abfragezustand<T>({
   abfrage,

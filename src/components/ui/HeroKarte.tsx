@@ -6,33 +6,9 @@ import { Personenbild } from './Personenbild';
 import type { Personenfarbe } from './personenfarben';
 
 /**
- * Die eine Hauptsache eines Bildschirms der Plattform (Handoff 2026-10-22,
- * Abschnitt 3): Etikett, Titel, ein Satz, auf Wunsch die Person, ein Knopf.
- * Tiefgrün mit Papier-Schrift - die Markenfläche des Bildschirms, höchstens
- * einmal je Seite (`docs/design/PLATTFORM.md`). Das Laufrad rechts oben ist
- * Markenform, keine Information.
- *
- * Eine `section` mit dem Titel als `h2`; das `h1` der Seite (Gruß oder
- * Seitentitel) steht darüber. `markenmoment` lässt die Karte beim ersten
- * Erscheinen der Übersicht einlaufen und das Rad eine Achtel drehen
- * (Abschnitt 7); bei „Bewegung reduzieren“ steht beides sofort.
- *
- * Unter 23rem (200 %) innen 12 wie die Seite (Handoff, Abschnitt 4): Bei 24
- * brach der Knopf „Fragebogen beginnen“ mitten im Wort.
- *
- * Die Rechnermaße (innen 32, Titel 32, Rad 300) gelten unter `data-rechner`
- * wie Seitentitel und Abschnitte (ANN-683), nicht ab 1024 px Fenster: Die
- * Einsicht der Praxis zeigt die Plattform in einem Telefon.
- *
- * Ohne `aktion` kein Knopf: in der Einsicht der Praxis, wo die Seite dahinter
- * nur schreibt (E-001).
- *
- * Für die Vorschau einer Übungseinheit (Handoff 2026-10-24, Abschnitt 3)
- * trägt die Karte `angaben` - Zeilen mit Zeichen in Salbei, etwa „3 Übungen
- * · etwa 10 Minuten“ und „Sie brauchen: …“ - und statt des Knopfs auf Wunsch
- * eine `leiseAktion` als Textlink, wenn nichts mehr zu tun ist („Noch einmal
- * üben“). Mit `schmalOhneRad` fällt dort unter 23rem das Laufrad weg, innen
- * 16 (Abschnitt 4): Die Angaben brauchen die ganze Breite.
+ * Die eine Hauptsache eines Bildschirms der Plattform, höchstens einmal je Seite (PLATTFORM.md);
+ * das Laufrad ist Markenform, keine Information. Rechnermaße unter `data-rechner` (ANN-683); unter
+ * 23rem innen 12, weil bei 24 der Knopf „Fragebogen beginnen“ mitten im Wort brach.
  */
 export function HeroKarte({
   etikett = 'Als Nächstes',

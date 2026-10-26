@@ -9,11 +9,12 @@ import { formatEuro } from '@/lib/geld';
 import {
   angeboteSchluessel,
   paketeSchluessel,
+  ladeAngebote,
+  ladeMeinePakete,
   type MeinPaket,
   type Paketangebote,
   type Plattformzugang,
 } from './api';
-import { usePlattformApi } from './einsicht';
 import { PAKETBEDINGUNGEN, paketStand, steuerHinweis } from './paketbedingungen';
 import { PLATTFORM_PFAD } from './pfade';
 
@@ -27,14 +28,13 @@ import { PLATTFORM_PFAD } from './pfade';
  * (nur Training), sagt der Server.
  */
 export function Paket({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const pakete = useQuery({
     queryKey: paketeSchluessel(zugang.access_id),
-    queryFn: () => api.ladeMeinePakete(zugang.access_id),
+    queryFn: () => ladeMeinePakete(zugang.access_id),
   });
   const angebote = useQuery({
     queryKey: angeboteSchluessel(zugang.access_id),
-    queryFn: () => api.ladeAngebote(zugang.access_id),
+    queryFn: () => ladeAngebote(zugang.access_id),
   });
 
   return (

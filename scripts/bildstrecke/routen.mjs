@@ -96,13 +96,9 @@ const { max, erika, ohne } = IDS;
 const akte = (id) => `/patienten/${id}`;
 
 /**
- * Eine Route der Bildstrecke.
- * - `konten`: Schlüssel aus scripts/testkonten.mjs (KONTEN); `ohne` = nicht angemeldet.
- * - `ziel`: erwarteter Pfad nach einer Weiterleitung der Anwendung (ohne Suchteil).
- * - `ohneDaten`: Der Seed hat keine Zeile dazu; ein Fehlerzustand ist erwartet.
- * - `einsicht`: die Einsicht der Praxis in die Plattform einer Person (E-001,
- *   DSN-001 D7) - ein Plattformmuster, aufgenommen mit dem Praxiskonto der
- *   Inhaber:in statt mit einem Plattformkonto.
+ * Felder einer Route: `konten` sind Schlüssel aus scripts/testkonten.mjs (KONTEN), `ohne` = nicht
+ * angemeldet; `ziel` ist der erwartete Pfad nach einer Weiterleitung (ohne Suchteil); `ohneDaten`
+ * heißt, der Seed hat keine Zeile dazu und ein Fehlerzustand ist erwartet.
  */
 export const ROUTEN = Object.freeze([
   // --- Übersicht und Rahmen ------------------------------------------------
@@ -1435,16 +1431,6 @@ export const ROUTEN = Object.freeze([
     bereich: 'Plattform',
     etikett: 'Plattform – Ich',
     konten: ['plattform', 'begleitung'],
-  },
-  // E-001: Erikas eigener Zugang zur Behandlung (supabase/seed.sql), gesehen
-  // von der Praxisinhaber:in - nur lesend.
-  {
-    muster: '/p',
-    pfad: '/p?zugang=cafecafe-cafe-4afe-8afe-000000000002',
-    bereich: 'Plattform',
-    etikett: 'Einsicht der Praxis – So sieht Erika die Plattform',
-    konten: ['owner'],
-    einsicht: true,
   },
 
   // --- Ohne Anmeldung (src/app/App.tsx, OeffentlicheRouten) --------------

@@ -17,8 +17,14 @@ import {
   AUSFALLHONORAR_REGEL,
   AUSFALLHONORAR_SPAET,
 } from '@/lib/ausfallhonorar';
-import { termineSchluessel, wuenscheSchluessel, type Plattformzugang, type Termin } from './api';
-import { usePlattformApi } from './einsicht';
+import {
+  termineSchluessel,
+  wuenscheSchluessel,
+  ladeTermine,
+  terminAendernWuenschen,
+  type Plattformzugang,
+  type Termin,
+} from './api';
 import { PLATTFORM_PFAD } from './pfade';
 import {
   NICHTS_GEWAEHLT,
@@ -60,7 +66,6 @@ import { naechsteWerktage, tagKurz, tagLang, zeitraum } from './zeit';
  * die Seite das wie bisher.
  */
 export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   // Die Kennung aus dem Pfad `/p/termine/<id>` - nicht aus `useParams`, damit
   // die Seite auch in einer Platzhalterroute funktioniert.
   const { pathname } = useLocation();
@@ -73,7 +78,7 @@ export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
 
   const termine = useQuery({
     queryKey: termineSchluessel(zugang.access_id),
-    queryFn: () => api.ladeTermine(zugang.access_id),
+    queryFn: () => ladeTermine(zugang.access_id),
   });
   const termin = termine.data?.find((t) => t.id === terminId);
 
@@ -147,7 +152,6 @@ function Aenderungsablauf({
   startArt: Art | null;
   terminliste: string;
 }) {
-  const api = usePlattformApi();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [abfolge, setAbfolge] = useState(() => beginneAenderung(startArt));
@@ -175,7 +179,7 @@ function Aenderungsablauf({
 
   const senden = useMutation({
     mutationFn: (gewaehlt: Art) =>
-      api.terminAendernWuenschen({
+      terminAendernWuenschen({
         zugangId: zugang.access_id,
         terminId: termin.id,
         art: gewaehlt,

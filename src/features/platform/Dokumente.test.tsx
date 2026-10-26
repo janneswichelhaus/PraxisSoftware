@@ -23,7 +23,6 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Dokumente } = await import('./Dokumente');
-const { PraxiswegeKontext } = await import('./einsicht');
 
 const ZUGANG: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000002',
@@ -68,20 +67,6 @@ beforeEach(() => {
 });
 
 describe('Dokumente (POR-014)', () => {
-  it('zeigt der Person ihre Knöpfe, nie den Weg der Einsicht in die Akte (E-001)', async () => {
-    ladeDokumente.mockResolvedValue([BRIEF]);
-    renderWithProviders(
-      <PraxiswegeKontext.Provider value={{ datei: () => '/akte', rueckfrage: () => '/rueckfrage' }}>
-        <Dokumente zugang={ZUGANG} />
-      </PraxiswegeKontext.Provider>,
-      '/p/dokumente',
-    );
-    expect(
-      await screen.findByRole('button', { name: 'Herunterladen: Arztbrief Orthopaedie.pdf' }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /In der Akte/ })).not.toBeInTheDocument();
-  });
-
   it('listet freigegebene Dokumente und holt ein PDF auf das Geraet', async () => {
     const nutzer = userEvent.setup();
     ladeDokumente.mockResolvedValue([BRIEF, BILD]);

@@ -180,8 +180,8 @@ export const auditOperationLabels: Record<string, string> = {
   'platform_access.invited': 'Zur Plattform eingeladen',
   'platform_access.revoked': 'Plattformzugang entzogen',
   'platform_accesses.read': 'Plattformzugang angesehen',
-  // E-001: die Einsicht in die Plattform einer Person (nur owner; keine neue Aktion).
-  'platform_preview.read': 'Plattform einer Person eingesehen',
+  // Abweisungen der früheren Einsicht bleiben bis zu zwölf Monate im Protokoll (ADR-010 Punkt 18).
+  'platform_preview.read': 'Plattform einer Person eingesehen (früher: Einsicht der Praxis)',
   'questionnaire_response.viewed': 'Fragebogen gelesen',
   'staff_account.invitation_revoked': 'Einladung zurückgenommen',
   'staff_account.invited': 'Zugang eingeladen',

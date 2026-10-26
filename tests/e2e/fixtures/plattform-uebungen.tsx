@@ -4,11 +4,11 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { SessionContext } from '@/features/auth/sessionContext';
 import { planSchluessel, type Plan } from '@/features/exercise-plans/api';
 import { PlanblattSeite } from '@/features/exercise-plans/PlanblattSeite';
-import * as plattformApi from '@/features/platform/api';
 import {
   plaeneSchluessel,
   termineSchluessel,
   wuenscheSchluessel,
+  type EigenePlaene,
   type EigenerPlan,
   type Plattformzugang,
   type Termin,
@@ -21,7 +21,6 @@ import {
   uebertragen,
   wartendeEinheiten,
 } from '@/features/platform/ablage';
-import { PlattformApiKontext, type PlattformApi } from '@/features/platform/einsicht';
 import { kalendertag } from '@/features/platform/zeit';
 import { isoWochentag } from '@/features/platform/uebungstage';
 import type { CurrentUser } from '@/features/session/types';
@@ -295,19 +294,23 @@ if (lage === 'lesefrist')
   zugaenge[0] = { ...zugaenge[0]!, read_until: '2099-11-14T00:00:00+01:00' };
 
 /**
- * Ohne Antwort der Praxis: `ladePlaene` scheitert (`geraet`, `fehler`) oder
- * kommt nie an (`laden`). Bei `geraet` liegt der Plan vom letzten Laden auf
- * dem Gerät (ADR-024 Punkt 5).
+ * Ohne Antwort der Praxis: Die Pläne kommen nie an (`laden`) oder scheitern, auch beim Erscheinen
+ * nicht noch einmal versucht (`geraet`, `fehler`). Bei `geraet` liegt der Plan vom letzten Laden
+ * auf dem Gerät (ADR-024 Punkt 5).
  */
-const prueferApi: PlattformApi = {
-  ...plattformApi,
-  ladePlaene: (zugangId: string) =>
-    lage === 'laden'
-      ? new Promise(() => undefined)
-      : lage === 'geraet' || lage === 'fehler'
-        ? Promise.reject(new Error('Ihre Übungen konnten nicht geladen werden.'))
-        : plattformApi.ladePlaene(zugangId),
-};
+if (lage === 'laden') {
+  void client.prefetchQuery({
+    queryKey: plaeneSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => new Promise<EigenePlaene>(() => undefined),
+  });
+}
+if (lage === 'geraet' || lage === 'fehler') {
+  client.setQueryDefaults(plaeneSchluessel(zugaenge[0]!.access_id), { retryOnMount: false });
+  void client.prefetchQuery({
+    queryKey: plaeneSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => Promise.reject(new Error('Ihre Übungen konnten nicht geladen werden.')),
+  });
+}
 if (lage === 'geraet') {
   await plaeneAblegen(BESITZER, zugaenge[0]!.access_id, null, { today: heute, plans: [plan] });
 }
@@ -437,17 +440,15 @@ const element =
     // TRK-008: Die Durchführung legt jeden Haken zuerst auf dem Gerät ab und
     // überträgt ihn dann - die Prüfung fängt den Aufruf ab (oder nicht: dann
     // bleibt er „auf dem Gerät").
-    <PlattformApiKontext.Provider value={prueferApi}>
-      <DurchfuehrungKontext.Provider
-        value={{ besitzer: BESITZER, anstossen: () => uebertragen(BESITZER) }}
-      >
-        <PlattformApp
-          zugaenge={zugaenge}
-          email="erika.plattform@patient.invalid"
-          onAbmelden={() => undefined}
-        />
-      </DurchfuehrungKontext.Provider>
-    </PlattformApiKontext.Provider>
+    <DurchfuehrungKontext.Provider
+      value={{ besitzer: BESITZER, anstossen: () => uebertragen(BESITZER) }}
+    >
+      <PlattformApp
+        zugaenge={zugaenge}
+        email="erika.plattform@patient.invalid"
+        onAbmelden={() => undefined}
+      />
+    </DurchfuehrungKontext.Provider>
   );
 
 // Die Seite der Praxis liest die Kennung des Plans aus dem Pfad.

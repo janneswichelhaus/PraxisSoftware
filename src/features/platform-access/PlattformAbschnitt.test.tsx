@@ -260,62 +260,6 @@ describe('Abschnitt Plattform', () => {
     expect(screen.queryByRole('button', { name: 'Einstieg überspringen' })).toBeNull();
   });
 
-  // E-001 (DSN-001 D7, ANN-525, ANN-526): die Einsicht nur für die
-  // Inhaber:in und nur in einen aktiven eigenen Zugang. Verbindlich prüft der
-  // Server (`supabase/tests/platform-preview.test.ts`).
-  describe('Einsicht in die Plattform (E-001)', () => {
-    function zeigeFuer(einsichtFuer: string | null) {
-      return renderWithProviders(
-        <PlattformAbschnitt
-          art="treatment"
-          verhaeltnisId={MAX}
-          darfVerwalten
-          zeitzone="Europe/Berlin"
-          praxis="Test Praxis Tuebingen"
-          einsichtFuer={einsichtFuer}
-        />,
-      );
-    }
-
-    it('führt die Inhaber:in in die Einsicht des aktiven Zugangs', async () => {
-      getPlatformAccess.mockResolvedValue(AKTIV);
-      zeigeFuer('Max');
-      expect(
-        await screen.findByRole('link', { name: 'So sieht Max die Plattform' }),
-      ).toHaveAttribute('href', `/p?zugang=${ZUGANG}`);
-    });
-
-    it.each([
-      ['ohne Vorname, also nicht die Inhaber:in', null, AKTIV, 'Aktiv'],
-      [
-        'gesperrt',
-        'Max',
-        { ...AKTIV, status: 'locked', locked_at: '2026-10-03T08:00:00+00:00' },
-        'Gesperrt',
-      ],
-      [
-        'eingeladen',
-        'Max',
-        {
-          ...LEER,
-          id: ZUGANG,
-          status: 'invited',
-          invitation_id: EINLADUNG.invitation_id,
-          invitation_purpose: 'activate',
-          invitation_channel: 'on_site',
-          invitation_expires_at: EINLADUNG.expires_at,
-        },
-        'Eingeladen',
-      ],
-      ['ohne Zugang', 'Max', LEER, 'Kein Zugang'],
-    ] as const)('bietet keine Einsicht an: %s', async (_fall, vorname, zugang, zustand) => {
-      getPlatformAccess.mockResolvedValue(zugang);
-      zeigeFuer(vorname);
-      expect(await screen.findByText(zustand)).toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: /die Plattform/ })).not.toBeInTheDocument();
-    });
-  });
-
   // Sichtung 13.10.2026, A5: An der Akte stehen Sperren und Entziehen leise am
   // Ende des Reiters; Entsperren nimmt etwas zurück und bleibt im Abschnitt.
   describe('Beenden am Ende der Seite', () => {

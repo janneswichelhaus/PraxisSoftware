@@ -22,8 +22,15 @@ import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { ZurueckSymbol } from '@/components/ui/ZurueckSymbol';
 import { Planblatt } from '@/features/exercise-plans/Planblatt';
 import { haeufigkeit } from '@/features/exercise-plans/dosierung';
-import { plaeneSchluessel, termineSchluessel, type EigenerPlan, type Plattformzugang } from './api';
-import { useNurLesen, usePlattformApi } from './einsicht';
+import {
+  plaeneSchluessel,
+  termineSchluessel,
+  ladePlaene,
+  ladeTermine,
+  uebungstageSetzen,
+  type EigenerPlan,
+  type Plattformzugang,
+} from './api';
 import { useRechner } from './geruestbreite';
 import {
   DurchfuehrungKontext,
@@ -70,19 +77,18 @@ type Position = Ablageplan['items'][number];
  * Lob aus der Software (DSN-001 4.1).
  */
 export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const [suche] = useSearchParams();
   const verbunden = useIstVerbunden();
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
-    queryFn: () => api.ladePlaene(zugang.access_id),
+    queryFn: () => ladePlaene(zugang.access_id),
   });
   // ANN-726 (N1): Wer die Einheit sieht, ist die Person des nächsten Termins
   // - ohne Termin oder ohne Antwort „Ihre Therapeut:in“. Dieselbe Abfrage wie
   // auf der Übersicht; ihr Fehler hält die Seite nicht auf.
   const termine = useQuery({
     queryKey: termineSchluessel(zugang.access_id),
-    queryFn: () => api.ladeTermine(zugang.access_id),
+    queryFn: () => ladeTermine(zugang.access_id),
   });
   const training = zugang.relationship_kind === 'training';
   const bereich = bereichParameter(suche);
@@ -343,11 +349,10 @@ function Vorschau({
   mehrere: boolean;
   wartend: readonly WartendeEinheit[];
 }) {
-  const nurLesen = useNurLesen();
   const training = zugang.relationship_kind === 'training';
   const einheit = heutigeEinheit(plan, zugang.access_id, wartend, geraetetag());
   const lage = lageDesPlans(plan, heute, einheit);
-  const ueben = plan.can_exercise && !nurLesen && plan.items.length > 0;
+  const ueben = plan.can_exercise && plan.items.length > 0;
 
   if (lage === 'lesefrist') {
     return (
@@ -526,11 +531,9 @@ function PlanAbschnitt({
   mitKnopf: boolean;
   wartend: readonly WartendeEinheit[];
 }) {
-  // E-001: In der Einsicht werden keine Tage gewählt, nicht geübt, nicht gefragt.
-  const nurLesen = useNurLesen();
   const einheit = heutigeEinheit(plan, zugang.access_id, wartend, geraetetag());
   const beendet = plan.status === 'ended';
-  const mitLeiste = !nurLesen && !beendet && plan.can_choose_days;
+  const mitLeiste = !beendet && plan.can_choose_days;
   const zeile = [
     laufzeitText(plan, heute),
     // Befund B9: der Tag der Zuweisung - eine neue Fassung ist so als
@@ -545,15 +548,13 @@ function PlanAbschnitt({
     <Section titel={plan.title} trennen>
       <div className="flex flex-col gap-6">
         <p className="text-ink-muted">{zeile}</p>
-        {/* ANN-307: Die Tage kommen in der Einsicht leer - sie sieht nur die
-            Person. Dort fehlen sie ohne Satz; die Leiste sagt „nur lesen“. */}
         {mitLeiste ? (
           <Uebungstage zugang={zugang} plan={plan} verbunden={verbunden} />
-        ) : !nurLesen && !beendet && plan.weekdays.length > 0 ? (
+        ) : !beendet && plan.weekdays.length > 0 ? (
           <p className="text-ink-muted">Ihre Übungstage: {tageText(plan.weekdays)}</p>
         ) : null}
         <UebungenDesPlans items={plan.items} haken={einheit.haken} beendet={beendet} />
-        {mitKnopf && plan.can_exercise && !nurLesen && plan.items.length > 0 ? (
+        {mitKnopf && plan.can_exercise && plan.items.length > 0 ? (
           <ButtonLink
             variant="secondary"
             className="w-full [[data-rechner]_&]:w-auto [[data-rechner]_&]:self-start"
@@ -571,7 +572,7 @@ function PlanAbschnitt({
                 to: blattPfad(plan.id, bereich),
               },
               // KOM-001: eine Frage mit dem Plan als Bezug (IDEA-KOM-001).
-              plan.status === 'assigned' && !nurLesen
+              plan.status === 'assigned'
                 ? {
                     text: 'Frage zu diesem Plan',
                     zeichen: ZEICHEN.frage,
@@ -807,13 +808,12 @@ function Uebungstage({
   plan: EigenerPlan;
   verbunden: boolean;
 }) {
-  const api = usePlattformApi();
   const queryClient = useQueryClient();
   const [tage, setTage] = useState<number[]>(plan.weekdays);
   const speichern = useMutation({
     // Der Reihe nach, damit der letzte Tipp auch der letzte Stand am Server ist.
     scope: { id: `tage-${plan.id}` },
-    mutationFn: (neu: number[]) => api.uebungstageSetzen(zugang.access_id, plan.id, neu),
+    mutationFn: (neu: number[]) => uebungstageSetzen(zugang.access_id, plan.id, neu),
     onMutate: (neu) => {
       const vorher = tage;
       setTage(neu);
@@ -1050,11 +1050,7 @@ export function PlanblattPlattform({
   zugang: Plattformzugang;
   praxis: string;
 }) {
-  const api = usePlattformApi();
-  // Wie das Gerüst: Die Einsicht zeigt immer das Telefon (`geruestbreite.ts`).
-  const breit = useRechner();
-  const nurLesen = useNurLesen();
-  const rechner = breit && !nurLesen;
+  const rechner = useRechner();
   // Die Kennung aus dem Pfad `/p/uebungen/blatt/<id>` wie bei den Terminen.
   const { pathname } = useLocation();
   const planId = pathname.slice(pathname.lastIndexOf('/') + 1);
@@ -1063,7 +1059,7 @@ export function PlanblattPlattform({
   const zurueck = `${PLATTFORM_PFAD}/uebungen${bereich ? `?${bereich}` : ''}`;
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
-    queryFn: () => api.ladePlaene(zugang.access_id),
+    queryFn: () => ladePlaene(zugang.access_id),
   });
   const plan = plaene.data?.plans.find((p) => p.id === planId);
 

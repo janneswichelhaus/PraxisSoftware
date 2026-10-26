@@ -18,8 +18,16 @@ import {
   type Lebensmittel as Eintrag,
   type LebensmittelAngaben,
 } from '@/features/nutrition/lebensmittel';
-import { ernaehrungSchluessel, type EigeneErnaehrung, type Plattformzugang } from './api';
-import { useNurLesen, usePlattformApi } from './einsicht';
+import {
+  ernaehrungSchluessel,
+  eigenesLebensmittelLoeschen,
+  eigenesLebensmittelSpeichern,
+  ladeErnaehrung,
+  lebensmittelQuellen,
+  lebensmittelSuchen,
+  type EigeneErnaehrung,
+  type Plattformzugang,
+} from './api';
 import { PLATTFORM_PFAD } from './pfade';
 
 /**
@@ -32,19 +40,16 @@ import { PLATTFORM_PFAD } from './pfade';
 const PFAD = `${PLATTFORM_PFAD}/ernaehrung/lebensmittel`;
 
 function useErnaehrung(zugang: Plattformzugang) {
-  const api = usePlattformApi();
   return useQuery({
     queryKey: ernaehrungSchluessel(zugang.access_id),
-    queryFn: () => api.ladeErnaehrung(zugang.access_id),
+    queryFn: () => ladeErnaehrung(zugang.access_id),
   });
 }
 
 export function Lebensmittel({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const { search } = useLocation();
   const abfrage = useErnaehrung(zugang);
-  const nurLesen = useNurLesen();
-  const darfAnlegen = Boolean(abfrage.data?.can_write) && !nurLesen;
+  const darfAnlegen = Boolean(abfrage.data?.can_write);
   return (
     <>
       <Rueckweg standard={`${PLATTFORM_PFAD}/ernaehrung${search}`} beschriftung="Zur Ernährung" />
@@ -58,12 +63,12 @@ export function Lebensmittel({ zugang }: { zugang: Plattformzugang }) {
       >
         {(daten) => (
           <LebensmittelSuche
-            suchen={(begriff) => api.lebensmittelSuchen(zugang.access_id, begriff)}
+            suchen={(begriff) => lebensmittelSuchen(zugang.access_id, begriff)}
             schluessel={['platform-foods', zugang.access_id]}
             eigene={daten!.profile.own_foods}
             ohneBegriff={<EigeneListe daten={daten!} search={search} />}
             detailAktion={(f) =>
-              f.kind === 'person' && !nurLesen ? (
+              f.kind === 'person' ? (
                 <ButtonLink to={`${PFAD}/${f.id}${search}`} variant="secondary">
                   Bearbeiten
                 </ButtonLink>
@@ -81,13 +86,12 @@ export function Lebensmittel({ zugang }: { zugang: Plattformzugang }) {
           </ButtonLink>
         </div>
       ) : null}
-      <Quellenangabe laden={api.lebensmittelQuellen} />
+      <Quellenangabe laden={lebensmittelQuellen} />
     </>
   );
 }
 
 function EigeneListe({ daten, search }: { daten: EigeneErnaehrung; search: string }) {
-  const nurLesen = useNurLesen();
   return (
     <Listenabschnitt
       titel="Eigene Lebensmittel"
@@ -95,20 +99,19 @@ function EigeneListe({ daten, search }: { daten: EigeneErnaehrung; search: strin
       leer={{ titel: 'Noch keine eigenen Lebensmittel.' }}
     >
       {daten.profile.own_foods.map((f) => (
-        <Trefferzeile key={f.id} f={f} {...(nurLesen ? {} : { to: `${PFAD}/${f.id}${search}` })} />
+        <Trefferzeile key={f.id} f={f} to={`${PFAD}/${f.id}${search}`} />
       ))}
     </Listenabschnitt>
   );
 }
 
 function useSpeichern(zugang: Plattformzugang, id: string | null) {
-  const api = usePlattformApi();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { search } = useLocation();
   return useMutation({
     mutationFn: ({ angaben }: { angaben: LebensmittelAngaben; freigeben: () => void }) =>
-      api.eigenesLebensmittelSpeichern(zugang.access_id, id, angaben),
+      eigenesLebensmittelSpeichern(zugang.access_id, id, angaben),
     onSuccess: async (_leer, { freigeben }) => {
       freigeben();
       await queryClient.invalidateQueries({ queryKey: ernaehrungSchluessel(zugang.access_id) });
@@ -179,13 +182,12 @@ function Aendern({
   daten: EigeneErnaehrung;
   f: Eintrag;
 }) {
-  const api = usePlattformApi();
   const navigate = useNavigate();
   const { search } = useLocation();
   const queryClient = useQueryClient();
   const speichern = useSpeichern(zugang, f.id);
   const loeschen = useMutation({
-    mutationFn: () => api.eigenesLebensmittelLoeschen(zugang.access_id, f.id),
+    mutationFn: () => eigenesLebensmittelLoeschen(zugang.access_id, f.id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ernaehrungSchluessel(zugang.access_id) });
       void navigate(`${PFAD}${search}`, { replace: true });

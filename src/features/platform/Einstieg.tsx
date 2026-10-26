@@ -22,12 +22,20 @@ import {
   einstiegSchluessel,
   einwilligungenSchluessel,
   plaeneSchluessel,
+  einstiegBeenden,
+  einwilligungSchreiben,
+  ladeBefundbogen,
+  ladeBenachrichtigungen,
+  ladeCheckins,
+  ladeEinwilligungen,
+  ladePlaene,
+  registriereGeraet,
+  speichereBenachrichtigungen,
   type Benachrichtigungswahl,
   type Einstiegsstand,
   type Einwilligung,
   type Plattformzugang,
 } from './api';
-import { usePlattformApi } from './einsicht';
 import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import {
   bereitSatz,
@@ -94,14 +102,13 @@ export function Einstieg({
   /** Die Adresse des Kontos, an die Mitteilungen per E-Mail gehen. */
   email?: string | undefined;
 }) {
-  const api = usePlattformApi();
   const begleitung = zugang.access_kind === 'companion';
   // Wie viele Fragen kommen, hängt an den offenen Einwilligungen (ANN-693):
   // erst laden, dann zählen. Lädt es nicht, entfällt die Seite - einwilligen
   // geht auch unter „Ich“, und der Einstieg versperrt nichts.
   const einwilligungen = useQuery({
     queryKey: einwilligungenSchluessel(zugang.access_id),
-    queryFn: () => api.ladeEinwilligungen(zugang.access_id),
+    queryFn: () => ladeEinwilligungen(zugang.access_id),
     enabled: !begleitung,
   });
   if (!begleitung && einwilligungen.isPending) return null;
@@ -126,7 +133,6 @@ function Ablauf({
   email: string | undefined;
   offen: Zweck[];
 }) {
-  const api = usePlattformApi();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [suche] = useSearchParams();
@@ -152,17 +158,17 @@ function Ablauf({
   const selbst = zugang.access_kind === 'self';
   const boegen = useQuery({
     queryKey: befundbogenSchluessel(zugang.access_id),
-    queryFn: () => api.ladeBefundbogen(zugang.access_id),
+    queryFn: () => ladeBefundbogen(zugang.access_id),
     enabled: selbst && zugang.relationship_kind === 'treatment',
   });
   const checkins = useQuery({
     queryKey: checkinsSchluessel(zugang.access_id),
-    queryFn: () => api.ladeCheckins(zugang.access_id),
+    queryFn: () => ladeCheckins(zugang.access_id),
     enabled: selbst,
   });
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
-    queryFn: () => api.ladePlaene(zugang.access_id),
+    queryFn: () => ladePlaene(zugang.access_id),
     enabled: selbst,
   });
   const [aufgabe, setAufgabe] = useState<Aufgabe | null>(null);
@@ -189,7 +195,7 @@ function Ablauf({
   }, []);
   const beenden = useMutation({
     // `ziel`: die Handlung der künftigen Hauptsache, sonst die Übersicht.
-    mutationFn: (_ziel: string | null) => api.einstiegBeenden(zugang.access_id),
+    mutationFn: (_ziel: string | null) => einstiegBeenden(zugang.access_id),
     // Am Hook, nicht am Aufruf: Der Stand gilt auch, wenn die Person während
     // der Anfrage schon woandershin gegangen ist.
     onSuccess: (_daten, ziel) => {
@@ -493,7 +499,6 @@ function Einwilligungsfrage({
   wahl: JaNein | undefined;
   onWahl: (wahl: JaNein | undefined) => void;
 }) {
-  const api = usePlattformApi();
   const queryClient = useQueryClient();
   const text = EINWILLIGUNGSTEXTE[zweck];
   const liste = einwilligungenSchluessel(zugang.access_id);
@@ -502,7 +507,7 @@ function Einwilligungsfrage({
     mutationKey: schluessel,
     scope: { id: schluessel.join(':') },
     mutationFn: (erteilen: boolean) =>
-      api.einwilligungSchreiben({
+      einwilligungSchreiben({
         zugangId: zugang.access_id,
         zweck,
         erteilen,
@@ -570,7 +575,6 @@ function Einwilligungsfrage({
  * herausnehmen lässt es sich unter „Ich“.
  */
 function Mitteilungen({ zugang, email }: { zugang: Plattformzugang; email: string | undefined }) {
-  const api = usePlattformApi();
   const queryClient = useQueryClient();
   const rechner = useRechner();
   const endpunkt = useQuery({
@@ -581,7 +585,7 @@ function Mitteilungen({ zugang, email }: { zugang: Plattformzugang; email: strin
   const geraet = endpunkt.data ?? null;
   const wahl = useQuery({
     queryKey: benachrichtigungSchluessel(zugang.access_id, geraet),
-    queryFn: () => api.ladeBenachrichtigungen(zugang.access_id, geraet),
+    queryFn: () => ladeBenachrichtigungen(zugang.access_id, geraet),
     enabled: !endpunkt.isPending,
     retry: false,
     // Wechselt das Gerät (das erste An), bleibt der Schalter stehen, bis der
@@ -612,7 +616,7 @@ function Mitteilungen({ zugang, email }: { zugang: Plattformzugang; email: strin
         quiet_until: stand.quiet_until,
       };
       if (weg === 'email') {
-        await api.speichereBenachrichtigungen(zugang.access_id, {
+        await speichereBenachrichtigungen(zugang.access_id, {
           ...bisher,
           email_kinds: mitArten(stand.email_kinds, arten, einschalten),
         });
@@ -621,16 +625,16 @@ function Mitteilungen({ zugang, email }: { zugang: Plattformzugang; email: strin
       if (!einschalten) {
         // Nur dieser Zugang: Die Arten gehen heraus, das Telefon bleibt für
         // andere Zugänge eingetragen.
-        await api.speichereBenachrichtigungen(zugang.access_id, {
+        await speichereBenachrichtigungen(zugang.access_id, {
           ...bisher,
           push_kinds: mitArten(stand.push_kinds, arten, false),
         });
         return;
       }
       if (geraet === null || !stand.device_registered) {
-        await api.registriereGeraet([zugang.access_id], await pushErlauben());
+        await registriereGeraet([zugang.access_id], await pushErlauben());
       }
-      await api.speichereBenachrichtigungen(zugang.access_id, {
+      await speichereBenachrichtigungen(zugang.access_id, {
         ...bisher,
         push_kinds: mitArten(stand.push_kinds, arten, true),
       });

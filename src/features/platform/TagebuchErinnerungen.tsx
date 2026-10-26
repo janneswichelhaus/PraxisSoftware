@@ -11,8 +11,13 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { MAHLZEIT_NAMEN, MAHLZEITEN, type Mahlzeit } from '@/features/nutrition/tagebuch';
-import { erinnerungenSchluessel, type Plattformzugang, type Tagebucherinnerungen } from './api';
-import { usePlattformApi } from './einsicht';
+import {
+  erinnerungenSchluessel,
+  erinnerungenSpeichern,
+  ladeErinnerungen,
+  type Plattformzugang,
+  type Tagebucherinnerungen,
+} from './api';
 import { PLATTFORM_PFAD } from './pfade';
 
 /**
@@ -36,11 +41,10 @@ const UHRZEITEN = Array.from({ length: 76 }, (_, i) => {
 });
 
 export function TagebuchErinnerungen({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const [offen, setOffen] = useState(false);
   const abfrage = useQuery({
     queryKey: erinnerungenSchluessel(zugang.access_id),
-    queryFn: () => api.ladeErinnerungen(zugang.access_id),
+    queryFn: () => ladeErinnerungen(zugang.access_id),
     enabled: offen,
   });
   const an = abfrage.data ? abfrage.data.reminders.length > 0 : null;
@@ -64,7 +68,6 @@ export function TagebuchErinnerungen({ zugang }: { zugang: Plattformzugang }) {
 }
 
 function Wahl({ zugang, daten }: { zugang: Plattformzugang; daten: Tagebucherinnerungen }) {
-  const api = usePlattformApi();
   const queryClient = useQueryClient();
   const [zeiten, setZeiten] = useState<Partial<Record<Mahlzeit, string>>>(() =>
     Object.fromEntries(daten.reminders.map((r) => [r.meal, r.time])),
@@ -77,7 +80,7 @@ function Wahl({ zugang, daten }: { zugang: Plattformzugang; daten: Tagebucherinn
     mutationFn: () => {
       const liste = MAHLZEITEN.flatMap((m) => (zeiten[m] ? [{ meal: m, time: zeiten[m] }] : []));
       // Ohne Uhrzeit ist alles aus - auch die Wege dieser Art.
-      return api.erinnerungenSpeichern(
+      return erinnerungenSpeichern(
         zugang.access_id,
         liste,
         liste.length === 0 ? { email: false, push: false } : { email: mail, push },

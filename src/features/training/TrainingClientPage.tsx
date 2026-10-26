@@ -320,7 +320,6 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
                       zeitzone={zone}
                       praxis={user.organizationName ?? 'der Praxis'}
                       beendenAmEnde
-                      einsichtFuer={isOwner(user.roles) ? kundin.given_name : null}
                     />
                   ) : null}
                   {/* KOM-003: Rückfragen dieses Trainingsverhältnisses; das Büro
