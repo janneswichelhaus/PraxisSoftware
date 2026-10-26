@@ -11,8 +11,8 @@ import { SearchField } from '@/components/ui/SearchField';
 import { Segment } from '@/components/ui/Segment';
 import { StatusMark } from '@/components/ui/StatusMark';
 import { formatEuro } from '@/lib/geld';
+import { gemerkterSuchbegriff, suchbegriffMerken } from '@/lib/suchbegriff';
 import { ageInYears } from './api';
-import { gemerkterSuchbegriff, suchbegriffMerken } from './suchbegriff';
 import {
   PATIENT_OVERVIEW_KEY,
   SORTIERUNGEN,
@@ -91,7 +91,9 @@ export function Patientenauswahl({
 }) {
   const [parameter, setParameter] = useSearchParams();
   const navigate = useNavigate();
-  const [begriff, setBegriff] = useState(() => (begriffMerken ? gemerkterSuchbegriff() : ''));
+  const [begriff, setBegriff] = useState(() =>
+    begriffMerken ? gemerkterSuchbegriff('patienten') : '',
+  );
   const sortierung = leseSortierung(parameter.get('sort'));
   const zeigen = leseZeigen(parameter.get('zeigen'));
   // Eine Auswahl aus der Adresse, die hier nicht angeboten wird, filtert nicht.
@@ -112,7 +114,7 @@ export function Patientenauswahl({
 
   function suchen(wert: string) {
     setBegriff(wert);
-    if (begriffMerken) suchbegriffMerken(wert);
+    if (begriffMerken) suchbegriffMerken('patienten', wert);
   }
 
   const abfrage = useQuery({

@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { Session } from '@supabase/supabase-js';
 import { protokolliereFehler } from '@/lib/protokoll';
 import { startbildZuruecksetzen } from '@/lib/startbildMerker';
+import { suchbegriffeLeeren } from '@/lib/suchbegriff';
 import { getSupabase } from '@/lib/supabase';
 import { istEigeneAbmeldung, meldeSelbstAb } from './eigeneAbmeldung';
 import { geraetBeimAbmeldenLoesen } from '@/lib/push';
@@ -88,6 +89,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // Suche des Teamchats - bis dahin stand ein Entwurf nach einem
     // Kontowechsel im selben Kanal der nächsten Person.
     teamchatLeeren();
+    // Gemerkte Suchbegriffe der Listen, meist Namen, findet das nächste Konto nicht vor.
+    suchbegriffeLeeren();
     // Abstecher-Entwürfe bleiben (ABN-019, BEF-110, ANN-019 Fassung 2): Sie
     // sind an das Konto gebunden, das sie begonnen hat, und kein anderes
     // findet sie. Eine automatische Abmeldung verwirft sie nicht still; beim

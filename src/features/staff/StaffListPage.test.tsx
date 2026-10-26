@@ -1,8 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useSearchParams } from 'react-router-dom';
 import type * as StaffApi from './api';
 import { renderWithProviders, testStaffMember, testUser } from '@/test-utils';
+import { suchbegriffeLeeren } from '@/lib/suchbegriff';
+
+/** Jede Adresse, die die Liste durchläuft - auch eine, die gleich wieder ersetzt wird. */
+const adressen: string[] = [];
+
+function AdressProbe() {
+  const [params] = useSearchParams();
+  adressen.push(params.toString());
+  return null;
+}
 
 const anna = testStaffMember({
   work_phone: '+49 7071 0000102',
@@ -46,6 +57,8 @@ const { StaffListPage } = await import('./StaffListPage');
 
 describe('StaffListPage', () => {
   beforeEach(() => {
+    suchbegriffeLeeren();
+    adressen.length = 0;
     fetchStaffMembers.mockReset();
     fetchAssignableTherapists.mockReset();
     fetchStaffMembers.mockResolvedValue([anna, nina, tim]);
@@ -100,7 +113,7 @@ describe('StaffListPage', () => {
     expect(screen.queryByText('Nicht für Termine zuordenbar')).toBeNull();
   });
 
-  it('gibt Suche und Filter als Rueckweg in den Datensatz mit (ORG-24)', async () => {
+  it('gibt den Filter als Rückweg in den Datensatz mit (ORG-24)', async () => {
     renderWithProviders(
       <StaffListPage user={testUser(['office'])} />,
       '/praxis/team?status=active',
@@ -111,6 +124,42 @@ describe('StaffListPage', () => {
       'href',
       `/praxis/team/${anna.id}?zurueck=${encodeURIComponent('/praxis/team?status=active')}`,
     );
+  });
+
+  // Der Suchbegriff ist meist ein Name: weder in der Adresse noch im Rückweg (ADR-011).
+  it('schreibt den Suchbegriff weder in die Adresse noch in den Rückweg', async () => {
+    const nutzer = userEvent.setup();
+    renderWithProviders(
+      <>
+        <StaffListPage user={testUser(['office'])} />
+        <AdressProbe />
+      </>,
+      '/praxis/team?status=active',
+    );
+
+    await nutzer.type(await screen.findByRole('searchbox'), 'Anna');
+
+    const link = await screen.findByRole('link', { name: /Anna Beispiel/ });
+    expect(screen.queryByRole('link', { name: /Nina Neu/ })).toBeNull();
+    const ziel = new URL(link.getAttribute('href') ?? '', 'http://liste.test');
+    expect(ziel.pathname).toBe(`/praxis/team/${anna.id}`);
+    expect(ziel.searchParams.get('zurueck')).toBe('/praxis/team?status=active');
+    expect(link.getAttribute('href')).not.toMatch(/anna/i);
+    await nutzer.selectOptions(screen.getByLabelText('Beschäftigung'), 'all');
+    expect(adressen.length).toBeGreaterThan(1);
+    for (const adresse of adressen) expect(adresse).not.toMatch(/q=|anna/i);
+  });
+
+  it('hat den Suchbegriff nach dem Weg in den Datensatz und zurück noch', async () => {
+    const nutzer = userEvent.setup();
+    const { unmount } = renderWithProviders(<StaffListPage user={testUser(['office'])} />);
+    await nutzer.type(await screen.findByRole('searchbox'), 'Nina');
+    unmount();
+
+    renderWithProviders(<StaffListPage user={testUser(['office'])} />);
+    expect(await screen.findByRole('searchbox')).toHaveValue('Nina');
+    expect(await screen.findByRole('link', { name: /Nina Neu/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Anna Beispiel/ })).toBeNull();
   });
 
   it('nutzt fuer den Filter den Baustein mit 48 px (ORG-16, TOK-13)', async () => {

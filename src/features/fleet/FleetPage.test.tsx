@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useSearchParams } from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
+import { suchbegriffeLeeren } from '@/lib/suchbegriff';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import * as api from './api';
 import { FleetPage } from './FleetPage';
@@ -21,11 +23,28 @@ const takeKey = vi.mocked(api.takeKey);
 const returnKey = vi.mocked(api.returnKey);
 const setCheckupInterval = vi.mocked(api.setCheckupInterval);
 
+/** Jede Adresse, die die Seite durchläuft - auch eine, die gleich wieder ersetzt wird. */
+const adressen: string[] = [];
+
+function AdressProbe() {
+  const [params] = useSearchParams();
+  adressen.push(params.toString());
+  return null;
+}
+
 function oeffne(pfad = '/betrieb/flotte') {
-  return renderWithProviders(<FleetPage user={testUser(['therapist'])} />, pfad);
+  return renderWithProviders(
+    <>
+      <FleetPage user={testUser(['therapist'])} />
+      <AdressProbe />
+    </>,
+    pfad,
+  );
 }
 
 beforeEach(() => {
+  suchbegriffeLeeren();
+  adressen.length = 0;
   vi.clearAllMocks();
   fetchFleet.mockResolvedValue(testFlotte());
   takeKey.mockResolvedValue();
@@ -156,6 +175,22 @@ describe('Radflotte', () => {
     const liste = screen.getByRole('heading', { name: 'Raddepot Nord (1)' }).closest('section');
     expect(liste).not.toBeNull();
     expect(within(liste!).getByText('Lastenrad 4')).toBeInTheDocument();
+    expect(screen.queryByText('Lastenrad 1')).toBeNull();
+    // Die Suche findet Personen: ihr Begriff steht in keiner Adresse (ADR-011).
+    await nutzer.selectOptions(screen.getByLabelText('Zustand'), 'verfuegbar');
+    expect(adressen.at(-1)).toBe('zustand=verfuegbar');
+    for (const adresse of adressen) expect(adresse).not.toMatch(/q=|nina/i);
+  });
+
+  it('hat den Suchbegriff nach dem Weg zu einem Rad und zurück noch', async () => {
+    const nutzer = userEvent.setup();
+    const { unmount } = oeffne();
+    await nutzer.type(await screen.findByRole('searchbox'), 'Nina');
+    unmount();
+
+    oeffne();
+    expect(await screen.findByRole('searchbox')).toHaveValue('Nina');
+    expect(await screen.findByText('Lastenrad 4')).toBeInTheDocument();
     expect(screen.queryByText('Lastenrad 1')).toBeNull();
   });
 
