@@ -85,6 +85,35 @@ describe('Register der Querschnittsfunktionen (ADR-008 Punkt 13)', () => {
       ).toEqual([]);
     });
 
+    it('führt, was nur über den Zugang an einer Person hängt, in beiden Kopien oder auf der Plattform', async () => {
+      // Ein Zugang gehört zur Akte oder zum Verhältnis; einseitig fehlte er in der anderen Kopie.
+      expect(
+        await liste(`
+          select r.table_name || ' als ' || r.subject_kind as t from public.data_registry r
+           where exists (select 1 from information_schema.columns c
+                          where c.table_schema = 'public' and c.table_name = r.table_name
+                            and c.column_name in ('access_id', 'platform_access_id'))
+             and not exists (select 1 from information_schema.columns c
+                              where c.table_schema = 'public' and c.table_name = r.table_name
+                                and c.column_name in ('patient_id', 'training_relationship_id',
+                                                      'relationship_kind'))
+             and r.subject_kind not in ('patient_training', 'platform_account')
+           order by 1`),
+      ).toEqual([]);
+    });
+
+    it('zeigt Daten des Plattformkontos auf der Plattform oder unter einem Zugang beider Kopien', async () => {
+      expect(
+        await liste(`
+          select r.table_name || ' als ' || r.export_mode as t from public.data_registry r
+            left join public.data_registry e on e.table_name = r.export_parent
+           where r.subject_kind = 'platform_account'
+             and not (r.export_mode in ('platform_only', 'excluded')
+                      or (r.export_mode = 'nested' and e.subject_kind = 'patient_training'))
+           order by 1`),
+      ).toEqual([]);
+    });
+
     it('ordnet jede Datenklasse der Akte oder des Trainings derselben Seite zu', async () => {
       expect(
         await liste(`

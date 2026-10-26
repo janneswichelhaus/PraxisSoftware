@@ -579,7 +579,10 @@ die Reihenfolge [`development/ROADMAP.md`](development/ROADMAP.md)
      Datenbank und wird von einem Restore mit zurückgesetzt. OPS-003 muss es
      vor der Rückspielung exportieren, danach einspielen und erst dann
      `reapply_deletion_journal()` aufrufen (ADR-008 Punkt 8, ADR-012, ANN-031).
-     Keine Funktion kann das lösen.
+     Keine Funktion kann das lösen. Danach prüft es, ob ein Zusammenführen
+     offen blieb (Warnung „left open“, ANN-150): Einträge mit `merged_into`,
+     ohne `reapplied_at` und mit noch stehender Dublette; den Sperrgrund
+     beheben und erneut nachziehen.
 
 **Außerhalb des Codes** blockieren den Produktivstart die Providerprüfungen
 (Supabase nach [ADR-002](adr/ADR-002-hosting-data-residency.md), Kartendienst

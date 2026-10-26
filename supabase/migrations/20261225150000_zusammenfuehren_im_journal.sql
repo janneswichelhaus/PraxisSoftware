@@ -526,12 +526,16 @@ begin
     end;
   end loop;
 
-  -- Personen, die eine zurückgekehrte Dublette noch hielt, fallen jetzt.
+  -- Personen, die eine zurückgekehrte Dublette noch hielt, fallen jetzt; was sonst an ihnen hängt,
+  -- hält sie wie im Zusammenführen selbst.
   with g as (
     delete from public.persons pe
      using public.deletion_journal j
      where j.target_table = 'persons' and j.target_id = pe.id
        and not exists (select 1 from public.patients p where p.person_id = pe.id)
+       and not exists (select 1 from public.staff_members s where s.person_id = pe.id)
+       and not exists (select 1 from public.user_profiles u where u.person_id = pe.id)
+       and not exists (select 1 from public.training_relationships t where t.person_id = pe.id)
     returning pe.id
   )
   update public.deletion_journal j

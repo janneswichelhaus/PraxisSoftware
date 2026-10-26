@@ -675,3 +675,15 @@ Marke vorsieht.
 | Berührt | beide Trennungsprüfungen; `src/lib/ki/gateway.ts`, `src/lib/location/funktion.ts` |
 
 **Beobachtung.** Beide Prüfungen lassen jeden Import aus `@/lib/` durch, weil dort anbieterfreie Hilfen liegen. Zwei Module dort sprechen aber den Server an (`functions.invoke` im KI-Gateway und in der Ortsfunktion); die Vorschau sperrt nur die Ortsmodule einzeln. Läge eine Praxisabfrage unter `src/lib`, sähe keine der beiden Prüfungen einen Import aus Plattform oder Vorschau. Schritt 3 hat die Tagesliste deshalb als Modul `day-plan` angelegt statt in `src/lib` (DEVELOPMENT.md „Modulgrenzen“). **Erwartet.** Ein Test hält fest, welche Dateien unter `src/lib` `getSupabase()` benutzen dürfen, oder die Trennungsprüfungen sperren genau diese; dazu je eine Gegenprobe.
+
+### Löschjournal — Löschungen von Hand mit eigenem Eintrag stehen sekundengenau in der Übersicht der Praxisleitung
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-26 |
+| Bereich | Löschjournal, `list_deletion_runs` (owner) |
+| Quelle  | Zweitreview zu Aufräumen Schritt 4 (#318), Hinweis außerhalb des Auftrags |
+| Status  | offen (Vorschlag) |
+| Berührt | `undo_appointment_creation`, `delete_fleet_photo`, `record_fleet_photo_verification`, `discard_reimbursement_receipt`, `record_reimbursement_receipt_verification` (`20261225000000_basis.sql`) |
+
+**Beobachtung.** Seit #318 bündelt der Auslöser Löschungen von Hand ohne eigenen Lauf je Praxis und Tag, ohne Uhrzeit (§20, ANN-752). Die genannten Funktionen schreiben ihren Eintrag weiter selbst, mit `now()` und eigener Laufkennung; `list_deletion_runs` zeigt der Praxisleitung damit je Vorgang die Uhrzeit, in einer kleinen Praxis meist einer Person zuzuordnen. **Erwartet.** Diese Einträge wie im Auslöser je Praxis und Tag bündeln (Laufkennung und Zeit auf den Tag) oder `list_deletion_runs` zeigt für Läufe von Hand nur das Datum; je Funktion ein Test.
