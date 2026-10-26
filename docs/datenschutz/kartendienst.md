@@ -58,8 +58,8 @@ Wiedervorlage betrachtet vier Wege getrennt:
    Zusammenfassung einmal zur Anzeige und beim Absenden einmal zum Eintragen. Gespeichert wird nur
    die Monatssumme in ganzen Kilometern am Antrag (`staff_reimbursements.tour_km`); sie sehen die
    Person und owner, das Büro nicht (ANN-616). Neu ist die **Menge** je Aufruf (bis zu einem
-   Monat), nicht die Art der Daten.~~ *Entfallen 2026-10-26 (ADR-019 Fassung 7): Ladestrom wird wie
-   ein Einkauf mit Beleg beantragt; ältere Anträge behalten ihre Monatssumme.*
+   Monat), nicht die Art der Daten.~~ _Entfallen 2026-10-26 (ADR-019 Fassung 7): Ladestrom wird wie
+   ein Einkauf mit Beleg beantragt; ältere Anträge behalten ihre Monatssumme._
 
 Beschäftigtendatenschutz (§20): Es entsteht keine Fahrtenhistorie, keine gespeicherte Fahrzeit,
 keine Auswertung je Person. Der Startort ist die Praxis oder der erste Besuch; ein persönlicher

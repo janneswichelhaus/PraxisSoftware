@@ -357,8 +357,6 @@ const ANKER = {
   'ANN-347': 'CREATE FUNCTION app.push_endpoint_allowed(',
   'ANN-480': 'CREATE TABLE public.exercise_plan_items (',
   'ANN-483': 'CREATE TABLE public.appointments (',
-  'ANN-615': 'CREATE FUNCTION public.record_electricity_tour_distance(',
-  'ANN-617': 'CREATE FUNCTION app.electricity_tour_days(',
   'ANN-703': 'CREATE FUNCTION app.journal_patient_file_deletion(',
 };
 
