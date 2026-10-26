@@ -118,6 +118,7 @@ describe('rueckwegBeschriftung', () => {
   it.each([
     ['/', 'Zurück zur Übersicht'],
     ['/kalender?ansicht=tag&datum=2027-05-12', 'Zurück zum Kalender'],
+    ['/kalender/tag-umplanen?person=s1&datum=2027-05-12&anrufliste=v1', 'Zurück zur Anrufliste'],
     ['/patienten', 'Zurück zu den Patient:innen'],
     ['/patienten?suche=mus&status=alle', 'Zurück zu den Patient:innen'],
     ['/patienten/abc', 'Zurück zur Akte'],

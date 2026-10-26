@@ -1,12 +1,13 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { tabstandLegen } from '@/lib/tabstand';
 import {
   ersteAnrufseite,
-  leseAbgesagt,
-  leseAnrufstand,
+  leseAnrufliste,
   leseZeiten,
   liegtInZeiten,
-  mitAnrufliste,
-  mitAnrufstand,
+  merkeAnrufliste,
+  mitAnruflistenKennung,
   naechsterAnruf,
   seitenKennung,
   terminDativ,
@@ -16,10 +17,41 @@ import {
 } from './tagumplanen';
 
 describe('Tag umplanen - die Folge (G2, ANN-574)', () => {
-  it('liest die abgesagten Kennungen nur in ihrer Form, ohne Namen', () => {
-    expect(leseAbgesagt(new URLSearchParams(''))).toBeNull();
-    expect(leseAbgesagt(new URLSearchParams('abgesagt='))).toEqual([]);
-    expect(leseAbgesagt(new URLSearchParams('abgesagt=a,b,<x>,c'))).toEqual(['a', 'b', 'c']);
+  const ANNA = '55555555-5555-4555-8555-000000000002';
+  const TAG = '2027-05-12';
+
+  it('liest die Anrufliste aus dem Tab, nur in ihrer Form und nur für ihr Konto', () => {
+    merkeAnrufliste('konto-a', 'v1', ANNA, TAG, { abgesagt: ['a', 'b'], stand: { a: 'nicht' } });
+    const suche = new URLSearchParams(`person=${ANNA}&datum=${TAG}&anrufliste=v1`);
+    expect(leseAnrufliste(suche, 'konto-a', ANNA, TAG)).toEqual({
+      kennung: 'v1',
+      liste: { abgesagt: ['a', 'b'], stand: { a: 'nicht' } },
+    });
+    expect(leseAnrufliste(suche, 'konto-b', ANNA, TAG)).toBeNull();
+    expect(leseAnrufliste(new URLSearchParams(''), 'konto-a', ANNA, TAG)).toBeNull();
+    expect(leseAnrufliste(new URLSearchParams('anrufliste=<x>'), 'konto-a', ANNA, TAG)).toBeNull();
+  });
+
+  it('nimmt eine Liste nur für die Person und den Tag, für die sie angelegt wurde', () => {
+    merkeAnrufliste('konto-a', 'v1', ANNA, TAG, { abgesagt: ['a'], stand: {} });
+    const suche = new URLSearchParams('anrufliste=v1');
+    expect(leseAnrufliste(suche, 'konto-a', ANNA, '2027-05-13')).toBeNull();
+    expect(leseAnrufliste(suche, 'konto-a', 'andere-person', TAG)).toBeNull();
+  });
+
+  it('lässt fremde Kennungen und Antworten aus einer verstellten Ablage weg', () => {
+    tabstandLegen('konto-a', 'v1', {
+      person: ANNA,
+      datum: TAG,
+      abgesagt: ['a', '<x>', 7, 'b'],
+      stand: { a: 'erreicht', b: 'vielleicht', fremd: 'nicht' },
+    });
+    expect(leseAnrufliste(new URLSearchParams('anrufliste=v1'), 'konto-a', ANNA, TAG)).toEqual({
+      kennung: 'v1',
+      liste: { abgesagt: ['a', 'b'], stand: { a: 'erreicht' } },
+    });
+    tabstandLegen('konto-a', 'v2', 'kein Objekt');
+    expect(leseAnrufliste(new URLSearchParams('anrufliste=v2'), 'konto-a', ANNA, TAG)).toBeNull();
   });
 
   it('liest die Arbeitszeit nach einer Teiländerung nur in ihrer Form (Praxis-Review Überholung 9)', () => {
@@ -48,25 +80,12 @@ describe('Tag umplanen - die Folge (G2, ANN-574)', () => {
     expect(liegtInZeiten('09:00', '10:00', [])).toBe(false);
   });
 
-  it('hält den Anrufstand in der Adresse und lässt den Rest stehen', () => {
-    const suche = new URLSearchParams('person=p&datum=2027-05-12&abgesagt=a,b,c');
-    const neu = mitAnrufstand(suche, { a: 'erreicht', b: 'nicht' });
-    expect(neu.get('person')).toBe('p');
-    expect(neu.get('abgesagt')).toBe('a,b,c');
-    expect(neu.get('erreicht')).toBe('a');
-    expect(neu.get('nicht')).toBe('b');
-    expect(leseAnrufstand(neu)).toEqual({ a: 'erreicht', b: 'nicht' });
-    // Ohne Ergebnis fallen die Parameter weg.
-    expect(mitAnrufstand(neu, {}).has('erreicht')).toBe(false);
-  });
-
-  it('schreibt die ganze Anrufliste, auch wenn die Adresse davor noch ohne sie war', () => {
-    const davor = new URLSearchParams('person=p&datum=2027-05-12');
-    const neu = mitAnrufliste(davor, ['a', 'b'], { a: 'nicht' });
-    expect(neu.get('person')).toBe('p');
-    expect(leseAbgesagt(neu)).toEqual(['a', 'b']);
-    expect(leseAnrufstand(neu)).toEqual({ a: 'nicht' });
-    expect(davor.has('abgesagt')).toBe(false);
+  it('schreibt nur die Kennung in die Adresse, gleich lang für jede Liste', () => {
+    const davor = new URLSearchParams(`person=${ANNA}&datum=${TAG}`);
+    const neu = mitAnruflistenKennung(davor, 'v1');
+    expect(neu.get('person')).toBe(ANNA);
+    expect(neu.get('anrufliste')).toBe('v1');
+    expect(davor.has('anrufliste')).toBe(false);
   });
 
   it('führt der Reihe nach zur nächsten Person ohne Ergebnis, am Ende zum Abschluss', () => {

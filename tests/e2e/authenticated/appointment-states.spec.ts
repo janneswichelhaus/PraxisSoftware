@@ -276,9 +276,17 @@ test.describe('CAL-009: Tag umplanen', () => {
     await page.goBack();
     const nochmal = page.getByRole('dialog', { name: 'Max Mustermann erreicht?' });
     await expect(nochmal).toBeVisible();
-    await nochmal.getByRole('button', { name: 'Nicht erreicht' }).click();
+    // Der Abstecher in die Akte und zurück: Die Adresse trägt nur die Kennung der Anrufliste.
+    await nochmal.getByRole('link', { name: 'Akte' }).click();
+    await page.getByRole('link', { name: 'Zurück zur Anrufliste' }).click();
+    await expect(page).toHaveURL(/anrufliste=[\w-]+/);
+    expect(page.url()).not.toMatch(/abgesagt=|erreicht=/);
+    await page
+      .getByRole('dialog', { name: 'Max Mustermann erreicht?' })
+      .getByRole('button', { name: 'Nicht erreicht' })
+      .click();
     await expect(page.getByRole('dialog', { name: '1 noch nicht erreicht' })).toBeVisible();
-    // Der Anrufstand steht in der Adresse - ein Neuladen nimmt ihn mit (ANN-574).
+    // Der Anrufstand bleibt im Tab - ein Neuladen nimmt ihn mit (ANN-574).
     await page.reload();
     await expect(page.getByRole('dialog', { name: '1 noch nicht erreicht' })).toBeVisible();
 

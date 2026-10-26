@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import { protokolliereFehler } from '@/lib/protokoll';
 import { startbildZuruecksetzen } from '@/lib/startbildMerker';
 import { suchbegriffeLeeren } from '@/lib/suchbegriff';
+import { tabstaendeLeeren } from '@/lib/tabstand';
 import { getSupabase } from '@/lib/supabase';
 import { istEigeneAbmeldung, meldeSelbstAb } from './eigeneAbmeldung';
 import { geraetBeimAbmeldenLoesen } from '@/lib/push';
@@ -91,6 +92,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     teamchatLeeren();
     // Gemerkte Suchbegriffe der Listen, meist Namen, findet das nächste Konto nicht vor.
     suchbegriffeLeeren();
+    // Der Stand laufender Vorgänge im Tab, etwa die Anrufliste, ebenso wenig (ANN-574).
+    tabstaendeLeeren();
     // Abstecher-Entwürfe bleiben (ABN-019, BEF-110, ANN-019 Fassung 2): Sie
     // sind an das Konto gebunden, das sie begonnen hat, und kein anderes
     // findet sie. Eine automatische Abmeldung verwirft sie nicht still; beim

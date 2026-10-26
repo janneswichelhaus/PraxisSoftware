@@ -1,18 +1,8 @@
-/**
- * „Tag umplanen“ geführt (Überholung 6, G2, ANN-574) - die Folge ohne
- * Oberfläche.
- *
- * Zwei Teile: Erst wird abgesagt - Grund, Auswahl der Termine (alle
- * vorgewählt, nach einer Teiländerung nur die außerhalb der Arbeitszeit;
- * abwählbar), Rückfrage -, dann wird angerufen, eine Person je
- * Seite mit „Erreicht“ oder „Nicht erreicht“, am Ende steht, wer noch fehlt.
- *
- * Der Anrufstand liegt nur in der Adresse, als Kennungen ohne Namen
- * (ADR-011): `?abgesagt=` nennt die eben abgesagten Termine (KAL-06),
- * `erreicht=` und `nicht=` die Antworten. So übersteht die Liste den Wechsel
- * in die Telefon-App, das Zurück und ein Neuladen, ohne dass am Server ein
- * Anrufprotokoll entsteht.
- */
+import { tabstandLegen, tabstandLesen } from '@/lib/tabstand';
+
+// „Tag umplanen“ ohne Oberfläche: erst absagen (Grund, Auswahl, Rückfrage), dann je Person anrufen.
+// Die Anrufliste liegt im Tab, die Adresse trägt nur ihre Kennung (ANN-574): So bleibt der Rückweg aus
+// der Akte kurz, wie viele Termine der Tag auch hat, und am Server entsteht kein Anrufprotokoll.
 
 export type UmplanSeite =
   | { art: 'grund' }
@@ -24,20 +14,25 @@ export type UmplanSeite =
 export type Anrufergebnis = 'erreicht' | 'nicht';
 export type Anrufstand = Readonly<Record<string, Anrufergebnis>>;
 
-/** Parameter der Anrufliste: die Kennungen der eben abgesagten Termine. */
-export const ABGESAGT_PARAM = 'abgesagt';
-const ERREICHT_PARAM = 'erreicht';
-const NICHT_PARAM = 'nicht';
+/** Parameter der Anrufliste: nur die Kennung des Vorgangs. */
+export const ANRUFLISTE_PARAM = 'anrufliste';
+
+const KENNUNG = /^[\w-]{1,64}$/;
 
 /** Höchstens so viele Kennungen je Liste - mehr Termine hat kein Tag. */
 const HOECHSTENS = 100;
 
-function kennungen(wert: string | null): string[] {
-  if (wert === null || wert === '') return [];
+function kennungen(wert: unknown): string[] {
+  if (!Array.isArray(wert)) return [];
   return wert
-    .split(',')
-    .filter((kennung) => /^[\w-]{1,64}$/.test(kennung))
+    .filter((kennung): kennung is string => typeof kennung === 'string' && KENNUNG.test(kennung))
     .slice(0, HOECHSTENS);
+}
+
+/** Die eben abgesagten Termine in ihrer Reihenfolge und wer schon angerufen wurde. */
+export interface Anrufliste {
+  abgesagt: string[];
+  stand: Anrufstand;
 }
 
 /** Eine Spanne der Arbeitszeit in Ortszeit, „08:00“ bis „12:00“. */
@@ -100,44 +95,48 @@ export function liegtInZeiten(
 }
 
 /**
- * Die abgesagten Kennungen aus der Adresse - oder `null` vor der Absage.
- *
- * Die Kennungen filtern nur den geladenen Tagesplan und gehen nie an den
- * Server; geprüft wird deshalb nur ihre Form, und die Liste ist begrenzt.
+ * Die Anrufliste dieses Vorgangs - oder `null` vor der Absage, in einem anderen Tab oder Konto.
+ * Die Kennungen filtern nur den geladenen Tagesplan und gehen nie an den Server.
  */
-export function leseAbgesagt(suche: URLSearchParams): string[] | null {
-  const wert = suche.get(ABGESAGT_PARAM);
-  return wert === null ? null : kennungen(wert);
-}
-
-/** Wer schon angerufen wurde und mit welchem Ergebnis. */
-export function leseAnrufstand(suche: URLSearchParams): Anrufstand {
-  const stand: Record<string, Anrufergebnis> = {};
-  for (const id of kennungen(suche.get(ERREICHT_PARAM))) stand[id] = 'erreicht';
-  for (const id of kennungen(suche.get(NICHT_PARAM))) stand[id] = 'nicht';
-  return stand;
-}
-
-/** Die Adresse mit einem neuen Anrufstand; alles andere bleibt. */
-export function mitAnrufstand(suche: URLSearchParams, stand: Anrufstand): URLSearchParams {
-  const naechste = new URLSearchParams(suche);
-  const erreicht = Object.keys(stand).filter((id) => stand[id] === 'erreicht');
-  const nicht = Object.keys(stand).filter((id) => stand[id] === 'nicht');
-  if (erreicht.length > 0) naechste.set(ERREICHT_PARAM, erreicht.join(','));
-  else naechste.delete(ERREICHT_PARAM);
-  if (nicht.length > 0) naechste.set(NICHT_PARAM, nicht.join(','));
-  else naechste.delete(NICHT_PARAM);
-  return naechste;
-}
-
-/** Die Adresse mit der ganzen Anrufliste, eben abgesagt und angerufen; alles andere bleibt. */
-export function mitAnrufliste(
+export function leseAnrufliste(
   suche: URLSearchParams,
-  abgesagt: readonly string[],
-  stand: Anrufstand,
-): URLSearchParams {
-  const naechste = mitAnrufstand(suche, stand);
-  naechste.set(ABGESAGT_PARAM, abgesagt.join(','));
+  konto: string,
+  person: string,
+  datum: string,
+): { kennung: string; liste: Anrufliste } | null {
+  const kennung = suche.get(ANRUFLISTE_PARAM);
+  if (kennung === null || !KENNUNG.test(kennung)) return null;
+  const gelegt = tabstandLesen(konto, kennung);
+  if (typeof gelegt !== 'object' || gelegt === null) return null;
+  const roh = gelegt as Record<string, unknown>;
+  // Eine Liste gilt nur für die Person und den Tag, für die sie angelegt wurde.
+  if (roh.person !== person || roh.datum !== datum) return null;
+  const abgesagt = kennungen(roh.abgesagt);
+  const stand: Record<string, Anrufergebnis> = {};
+  if (typeof roh.stand === 'object' && roh.stand !== null) {
+    for (const [id, ergebnis] of Object.entries(roh.stand as Record<string, unknown>)) {
+      if (abgesagt.includes(id) && (ergebnis === 'erreicht' || ergebnis === 'nicht')) {
+        stand[id] = ergebnis;
+      }
+    }
+  }
+  return { kennung, liste: { abgesagt, stand } };
+}
+
+export function merkeAnrufliste(
+  konto: string,
+  kennung: string,
+  person: string,
+  datum: string,
+  liste: Anrufliste,
+): void {
+  tabstandLegen(konto, kennung, { person, datum, abgesagt: liste.abgesagt, stand: liste.stand });
+}
+
+/** Die Adresse mit der Kennung der Anrufliste; alles andere bleibt. */
+export function mitAnruflistenKennung(suche: URLSearchParams, kennung: string): URLSearchParams {
+  const naechste = new URLSearchParams(suche);
+  naechste.set(ANRUFLISTE_PARAM, kennung);
   return naechste;
 }
 

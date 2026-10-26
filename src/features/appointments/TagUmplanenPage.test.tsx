@@ -5,20 +5,14 @@ import { STAND_VERALTET } from '@/components/ui/abfrageTexte';
 import type * as AppointmentsApi from './api';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import { leseRueckweg } from '@/lib/rueckweg';
 import type * as StaffApi from '@/features/staff/api';
 import type * as Tagesplan from '@/features/day-plan/api';
 import type * as RouterModul from 'react-router-dom';
 
-/**
- * Tag umplanen mit Anrufliste (CAL-009), geführt seit Überholung 6 (G2,
- * ANN-574).
- *
- * Geprüft wird, was der Ablauf verspricht und was er bewusst nicht tut: nur
- * bestätigte Termine gehen in die Absage, alle vorgewählt und abwählbar, der
- * Grund ist Pflicht und nicht vorgewählt, abgesagt wird genau die Auswahl,
- * und danach führt er je Person durch die Anrufe. Der Schreibpfad selbst hat
- * seine Prüfungen in `supabase/tests/appointment-states.test.ts`.
- */
+// Tag umplanen (ANN-574): nur bestätigte Termine, alle vorgewählt und abwählbar, Grund Pflicht, genau
+// die Auswahl abgesagt, danach je Person ein Anruf; die Anrufliste liegt im Tab. Den Schreibpfad prüft
+// `supabase/tests/appointment-states.test.ts`.
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
 const DATUM = '2027-05-12';
@@ -96,6 +90,13 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 const { TagUmplanenPage } = await import('./TagUmplanenPage');
+const { merkeAnrufliste } = await import('./tagumplanen');
+
+/** Eine Anrufliste, wie sie ein früherer Besuch dieses Tabs hinterlassen hat. */
+function anruflisteImTab(liste: Parameters<typeof merkeAnrufliste>[4], kennung = 'v1') {
+  merkeAnrufliste(testUser(['office']).profile.id, kennung, ANNA, DATUM, liste);
+  return `/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&anrufliste=${kennung}`;
+}
 
 function rendern(
   pfad = `/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}`,
@@ -129,6 +130,12 @@ describe('TagUmplanenPage', () => {
   /** Das Fenster des Ablaufs; sein Name ist die Frage der Seite. */
   function fenster(name: string | RegExp) {
     return screen.findByRole('dialog', { name });
+  }
+
+  /** Der Rückweg des Links „Akte“ in einem Fenster, so wie die Akte ihn liest. */
+  function rueckwegDerAkte(element: HTMLElement): string {
+    const akte = within(element).getByRole('link', { name: 'Akte' });
+    return leseRueckweg(new URL(akte.getAttribute('href')!, 'http://test').searchParams, '');
   }
 
   /** Grund wählen und zur Auswahl der Termine. */
@@ -314,12 +321,10 @@ describe('TagUmplanenPage', () => {
     expect(waehlen).toHaveAttribute('href', 'tel:01701234567');
     expect(waehlen).toHaveClass('bg-accent');
     expect(within(erste).getByRole('button', { name: 'Erreicht' })).not.toHaveClass('bg-accent');
-    // Der Weg in die Akte nimmt die Anrufliste als Rückweg mit - nur Kennungen,
-    // keine Namen (KAL-06, ADR-011).
-    const akte = within(erste).getByRole('link', { name: 'Akte' });
-    const zurueck = new URL(akte.getAttribute('href')!, 'http://test').searchParams.get('zurueck');
-    expect(zurueck).toContain('abgesagt=termin-1%2Ctermin-2');
-    expect(zurueck).not.toMatch(/Erika|Beispiel/);
+    // Der Weg in die Akte nimmt als Rückweg nur die Kennung der Anrufliste mit (ADR-011).
+    const zurueck = rueckwegDerAkte(erste);
+    expect(zurueck).toMatch(/anrufliste=[\w-]+/);
+    expect(zurueck).not.toMatch(/termin-1|termin-2|Erika|Beispiel/);
     await user.click(within(erste).getByRole('button', { name: 'Nicht erreicht' }));
 
     const zweite = await fenster('Max Beispiel erreicht?');
@@ -328,7 +333,7 @@ describe('TagUmplanenPage', () => {
     const ende = await fenster('1 noch nicht erreicht');
     expect(within(ende).getByText('Erika Beispiel')).toBeInTheDocument();
     expect(within(ende).getByText('1 Person erreicht von 2.')).toBeInTheDocument();
-    expect(within(ende).getByText(/nicht gespeichert/)).toBeInTheDocument();
+    expect(within(ende).getByText(/nur in diesem Tab/)).toBeInTheDocument();
     // Nach dem letzten Anruf der Weg zum Kalender (KAL-19).
     expect(within(ende).getByRole('link', { name: 'Zum Kalender' })).toHaveAttribute(
       'href',
@@ -346,12 +351,6 @@ describe('TagUmplanenPage', () => {
     );
     expect(await fenster('Alle angerufen')).toBeInTheDocument();
   });
-
-  /** Der Rückweg des Links „Akte“ in einem Fenster. */
-  function rueckwegDerAkte(element: HTMLElement): string {
-    const akte = within(element).getByRole('link', { name: 'Akte' });
-    return new URL(akte.getAttribute('href')!, 'http://test').searchParams.get('zurueck') ?? '';
-  }
 
   // Unter Last folgt die Adresse spät; hier folgt sie gar nicht. Rückweg und Anrufstand kommen
   // trotzdem vollständig aus dem Zustand.
@@ -374,12 +373,12 @@ describe('TagUmplanenPage', () => {
     );
 
     const erste = await fenster('Erika Beispiel erreicht?');
-    expect(rueckwegDerAkte(erste)).toContain('abgesagt=termin-1%2Ctermin-2');
+    const rueckweg = rueckwegDerAkte(erste);
+    expect(rueckweg).toMatch(/anrufliste=[\w-]+/);
     await user.click(within(erste).getByRole('button', { name: 'Nicht erreicht' }));
 
     const zweite = await fenster('Max Beispiel erreicht?');
-    expect(rueckwegDerAkte(zweite)).toContain('abgesagt=termin-1%2Ctermin-2');
-    expect(rueckwegDerAkte(zweite)).toContain('nicht=termin-1');
+    expect(rueckwegDerAkte(zweite)).toBe(rueckweg);
     await user.click(within(zweite).getByRole('button', { name: 'Erreicht' }));
 
     // Die erste Antwort geht nicht verloren, obwohl die Adresse sie nie trug.
@@ -433,7 +432,7 @@ describe('TagUmplanenPage', () => {
     await pruefeBarrierefreiheit(document.body);
   });
 
-  it('führt die Anrufliste nur aus den eben abgesagten Kennungen der Adresse (KAL-06)', async () => {
+  it('führt die Anrufliste nur aus den eben abgesagten Kennungen des Tabs', async () => {
     // termin-1 hatte die Patient:in schon vorher abgesagt - er gehört nicht auf
     // die Liste. termin-2 ist in diesem Vorgang abgesagt worden.
     fetchDayPlan.mockResolvedValue([
@@ -444,7 +443,7 @@ describe('TagUmplanenPage', () => {
       }),
       eintrag({ id: 'termin-2', status: 'cancelled' }),
     ]);
-    rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&abgesagt=termin-2`);
+    rendern(anruflisteImTab({ abgesagt: ['termin-2'], stand: {} }));
 
     const anruf = await fenster('Erika Beispiel erreicht?');
     expect(within(anruf).getByText('Anruf 1 von 1')).toBeInTheDocument();
@@ -459,9 +458,69 @@ describe('TagUmplanenPage', () => {
       eintrag({ id: 'termin-2', status: 'cancelled', patient_given_name: 'Max' }),
     ]);
     rendern(
-      `/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&abgesagt=termin-1,termin-2&nicht=termin-1`,
+      anruflisteImTab({ abgesagt: ['termin-1', 'termin-2'], stand: { 'termin-1': 'nicht' } }),
     );
     expect(await fenster('Max Beispiel erreicht?')).toBeInTheDocument();
+  });
+
+  it('nimmt keine Anrufliste eines anderen Tages und beginnt dann mit der Absage', async () => {
+    merkeAnrufliste(testUser(['office']).profile.id, 'v1', ANNA, '2027-05-13', {
+      abgesagt: ['termin-1'],
+      stand: {},
+    });
+    rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&anrufliste=v1`);
+    expect(await fenster('Warum fällt der Tag aus?')).toBeInTheDocument();
+  });
+
+  it('hält den Rückweg aus der Akte kurz, auch bei 15 Terminen mit echten Kennungen', async () => {
+    const user = userEvent.setup();
+    const kennungen = Array.from(
+      { length: 15 },
+      (_, i) => `77777777-7777-4777-8777-${String(i + 1).padStart(12, '0')}`,
+    );
+    const tag = (status: 'confirmed' | 'cancelled') =>
+      kennungen.map((id, i) =>
+        eintrag({
+          id,
+          status,
+          patient_id: `66666666-6666-4666-8666-${String(i + 1).padStart(12, '0')}`,
+          patient_given_name: `Person${i + 1}`,
+          starts_at: `${DATUM}T${String(6 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}:00.000Z`,
+          ends_at: `${DATUM}T${String(6 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '55' : '25'}:00.000Z`,
+        }),
+      );
+    fetchDayPlan.mockResolvedValueOnce(tag('confirmed')).mockResolvedValue(tag('cancelled'));
+    cancelStaffDay.mockResolvedValue(15);
+    const kalender = `/kalender?ansicht=tag&datum=${DATUM}&person=${ANNA}&status=all`;
+    const { unmount } = rendern(
+      `/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&zurueck=${encodeURIComponent(kalender)}`,
+    );
+    const auswahl = await bisZurAuswahl(user);
+    await user.click(within(auswahl).getByRole('button', { name: 'Weiter mit 15 Terminen' }));
+    await user.click(
+      within(await fenster('15 Termine absagen?')).getByRole('button', {
+        name: 'Ja, 15 Termine absagen',
+      }),
+    );
+
+    let rueckweg = '';
+    for (let i = 1; i <= 15; i += 1) {
+      const seite = await fenster(`Person${i} Beispiel erreicht?`);
+      const jetzt = rueckwegDerAkte(seite);
+      // Die Akte nimmt ihn an, und er wächst nicht mit den Antworten.
+      expect(jetzt).toMatch(/^\/kalender\/tag-umplanen\?/);
+      if (rueckweg) expect(jetzt).toBe(rueckweg);
+      rueckweg = jetzt;
+      await user.click(within(seite).getByRole('button', { name: 'Nicht erreicht' }));
+    }
+    expect(await fenster('15 noch nicht erreicht')).toBeInTheDocument();
+    expect(rueckweg.length).toBeLessThan(300);
+    expect(new URLSearchParams(rueckweg.split('?')[1]).get('zurueck')).toBe(kalender);
+
+    // Zurück aus der Akte: Die Liste steht wieder, mit allen Antworten.
+    unmount();
+    rendern(rueckweg);
+    expect(await fenster('15 noch nicht erreicht')).toBeInTheDocument();
   });
 
   it('nennt den Tag in der Zeitzone der Praxis, auch ohne Termine (KAL-10)', async () => {
@@ -497,7 +556,7 @@ describe('TagUmplanenPage', () => {
 
   it('laesst die Anrufliste stehen, wenn nur das Nachladen scheitert (ZST-03)', async () => {
     fetchDayPlan.mockResolvedValue([eintrag({ status: 'cancelled' })]);
-    rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&abgesagt=termin-1`);
+    rendern(anruflisteImTab({ abgesagt: ['termin-1'], stand: {} }));
     expect(await fenster('Erika Beispiel erreicht?')).toBeInTheDocument();
 
     // Das Gerät kommt zurück, das Nachladen scheitert - der Stand bleibt.

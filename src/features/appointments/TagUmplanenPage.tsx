@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/abfolge';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
+import { neueVorgangskennung } from '@/lib/abstecher';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   cancellationReasonLabels,
@@ -35,11 +36,11 @@ import {
 import { tageslageNeuLaden } from './tageslage';
 import {
   ersteAnrufseite,
-  leseAbgesagt,
-  leseAnrufstand,
+  leseAnrufliste,
   leseZeiten,
   liegtInZeiten,
-  mitAnrufliste,
+  merkeAnrufliste,
+  mitAnruflistenKennung,
   naechsterAnruf,
   seitenKennung,
   terminDativ,
@@ -56,33 +57,8 @@ import { appointmentTypeHint } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
 import { fetchDayPlan, rufnummern, type DayPlanEntry } from '@/features/day-plan/api';
 
-/**
- * Tag umplanen mit Anrufliste (CAL-009, IDEA-PRX-004), geführt seit
- * Überholung 6 (G2, ANN-574).
- *
- * Der Anlass ist ein Ausfall am Morgen — ein Platten, ein krankes Kind. Sechs
- * Haushalte ohne Wartezimmer müssen abgesagt und angerufen werden. Ein
- * Fenster führt durch beides, eine Frage je Seite: Warum? → Welche Termine?
- * (alle bestätigten vorgewählt, einzelne abwählbar, etwa wenn eine Kollegin
- * übernimmt) → Rückfrage → je Person eine Seite mit Anrufen, „Erreicht“ oder
- * „Nicht erreicht“ → am Ende, wer noch fehlt.
- *
- * Zwei Dinge sind bewusst so und nicht anders:
- *
- *   * Die Absage ist **ein** Vorgang und läuft serverseitig alles-oder-nichts
- *     (`cancel_staff_day` mit der Auswahl). Ein halb umgeplanter Tag wäre
- *     schlimmer als ein gescheiterter Versuch. Die Seite schickt die Auswahl
- *     immer mit - auch wenn alle gewählt sind -, damit kein Termin abgesagt
- *     wird, den niemand gesehen hat (Zweitreview Überholung 6).
- *   * Die Anrufliste liest den **bestehenden** Tagesplan-Lesepfad
- *     (`list_day_plan`, UX-001). Kein zweiter Weg zu denselben Rufnummern.
- *
- * **Der Anrufstand steht in der Adresse (KAL-06, ANN-574):** die Kennungen
- * der eben abgesagten Termine und die Antworten - nur Kennungen, keine Namen
- * (ADR-011). So übersteht die Liste den Abstecher in die Akte, das Zurück und
- * ein Neuladen nach dem Wechsel in die Telefon-App; gespeichert wird sie
- * nicht.
- */
+// Tag umplanen mit Anrufliste (ANN-574): Die Absage ist ein Vorgang, alles oder nichts, mit der
+// Auswahl, die jemand gesehen hat; die Anrufliste liest die Rufnummern über den Tagesplan.
 
 const UUID_MUSTER = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -134,8 +110,7 @@ function Anrufseite({
         <p className="text-ink-muted text-sm">
           Abgesagt: {formatLocalTime(termin.starts_at, termin.organization_time_zone)} Uhr
         </p>
-        {/* Ein Weg in die Akte, mit Rückweg hierher samt Anrufliste (RSP-06,
-            KAL-06) - für sich mit 44 px Tippziel (DESIGN.md Grundsatz 3). */}
+        {/* Der Rückweg trägt nur die Kennung der Anrufliste; 44 px Tippziel (DESIGN.md Grundsatz 3). */}
         <Textlink alleinstehend to={mitRueckweg(`/patienten/${termin.patient_id}`, rueckweg)}>
           Akte
         </Textlink>
@@ -171,22 +146,27 @@ function Umplanung({
   const navigate = useNavigate();
   const [suche, setSuche] = useSearchParams();
   const ort = useLocation();
-  // Die Anrufliste gilt aus dem Zustand: Der Router setzt die Adresse erst als Übergang, später.
-  // Sie trägt die Liste nur durch Zurück, Neuladen und den Weg aus der Akte (ANN-574).
-  const [abgesagt, setAbgesagt] = useState(() => leseAbgesagt(suche));
-  const [anrufstand, setAnrufstand] = useState(() => leseAnrufstand(suche));
+  const konto = user.profile.id;
+  // Die Anrufliste gilt aus dem Zustand: Der Router setzt die Kennung in der Adresse erst später.
+  const [gemerkt] = useState(() => leseAnrufliste(suche, konto, staffMemberId, datum));
+  const [kennung, setKennung] = useState(gemerkt?.kennung ?? null);
+  const [abgesagt, setAbgesagt] = useState(gemerkt?.liste.abgesagt ?? null);
+  const [anrufstand, setAnrufstand] = useState<Anrufstand>(gemerkt?.liste.stand ?? {});
   const [eben, setEben] = useState<number | null>(null);
   const zeiten = leseZeiten(suche);
   const zumKalender = leseRueckweg(suche, '/kalender');
   const darfUmplanen = canManageAppointments(user.roles);
-  const hierher = abgesagt ? mitAnrufliste(suche, abgesagt, anrufstand) : suche;
+  const hierher = kennung ? mitAnruflistenKennung(suche, kennung) : suche;
 
   function anruflisteMerken(liste: string[], stand: Anrufstand) {
+    const vorgang = kennung ?? neueVorgangskennung();
+    merkeAnrufliste(konto, vorgang, staffMemberId, datum, { abgesagt: liste, stand });
     setAbgesagt(liste);
     setAnrufstand(stand);
-    // Ganz aus dem Zustand geschrieben, nie aus der Adresse davor; `replace`: Zurück führt nicht
-    // wieder zur Absage.
-    setSuche((bisher) => mitAnrufliste(bisher, liste, stand), { replace: true });
+    if (vorgang === kennung) return;
+    setKennung(vorgang);
+    // `replace`: Zurück führt nicht wieder zur Absage.
+    setSuche((bisher) => mitAnruflistenKennung(bisher, vorgang), { replace: true });
   }
 
   const tag = useQuery({
@@ -309,7 +289,7 @@ function Ablauf({
   abgesagt: readonly string[] | null;
   anrufstand: Readonly<Record<string, Anrufergebnis>>;
   objekt: string;
-  /** Diese Seite samt Anrufliste - der Weg aus der Akte zurück (KAL-06). */
+  /** Diese Seite samt Kennung der Anrufliste - der Weg aus der Akte zurück. */
   rueckweg: string;
   zumKalender: string;
   /** Wie viele eben in dieser Sitzung abgesagt wurden - für die Bestätigung. */
@@ -353,8 +333,7 @@ function Ablauf({
   }
 
   const { schutz } = useTextverlustschutz({
-    // Vor der Absage geht die Wahl beim Weggehen verloren; danach steht alles
-    // in der Adresse.
+    // Vor der Absage geht die Wahl beim Weggehen verloren; danach bleibt die Anrufliste im Tab.
     ungespeichert: imAbsagen && grund !== null,
     kompakt: true,
     texte: UMPLANTEXTE,
@@ -365,10 +344,8 @@ function Ablauf({
     mutationFn: ({ gewaehlt, ids }: { gewaehlt: CancellationReason; ids: string[] }) =>
       onAbsagen(gewaehlt, ids),
     onSuccess: async (_leer, { ids }) => {
-      // Kein `freigeben()`: Danach wechselt nur die Adresse (die Anrufliste),
-      // das hält der Schutz ohnehin nicht an. Eine übrige Freigabe ließe
-      // sonst die nächste Zurückgeste aus dem Ablauf, statt zur vorigen
-      // Person zu gehen (Praxis-Review der Politurrunde, BEF-175).
+      // Kein `freigeben()`: Danach wechselt nur die Adresse, das hält der Schutz nicht an. Eine übrige
+      // Freigabe ließe die nächste Zurückgeste aus dem Ablauf, statt zur vorigen Person zu gehen.
       await onAbgesagt(ids);
       // Die Anrufe beginnen von vorn, ohne Weg zurück in die Absage.
       setAbfolge(beginne<UmplanSeite>(ids[0] ? { art: 'anruf', id: ids[0] } : { art: 'fertig' }));
@@ -631,7 +608,7 @@ function Ablauf({
             {anzurufen.length > 0 ? ` von ${anzurufen.length}.` : '.'}
           </p>
           <Kleingedrucktes>
-            Der Anrufstand steht nur in dieser Adresse und wird nicht gespeichert.
+            Der Anrufstand bleibt nur in diesem Tab und wird sonst nirgends gespeichert.
           </Kleingedrucktes>
         </div>
       ) : null}

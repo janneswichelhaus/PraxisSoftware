@@ -5945,17 +5945,17 @@ Technik · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervor
 
 **Änderungspfad.** Lage der Antworten oder Dauer der Sperre: eine Stelle im Baustein · Aufwand `klein`.
 
-### ANN-574 — Tag umplanen: Auswahl abwählbar, Anrufstand nur in der Adresse
+### ANN-574 — Tag umplanen: Auswahl abwählbar, Anrufliste im Tab
 
-Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-17, Fassung 2 2026-10-26 · Jannes · erledigt · Wiedervorlage: —
 
-**Annahme.** „Tag umplanen“ wählt alle bestätigten Behandlungstermine des Tages vor; einzelne lassen sich abwählen (Kollegin übernimmt). `cancel_staff_day` sagt genau die Auswahl in einem Vorgang ab und schreibt nichts, wenn sie nicht mehr zum Tag passt. Danach je Person eine Seite mit „Erreicht“ oder „Nicht erreicht“; der Stand steht nur als Kennungen in der Adresse, nicht am Server.
+**Annahme.** „Tag umplanen“ wählt alle bestätigten Behandlungstermine des Tages vor; einzelne lassen sich abwählen. `cancel_staff_day` sagt genau die Auswahl in einem Vorgang ab. Danach je Person „Erreicht“ oder „Nicht erreicht“. Die Anrufliste (Kennungen der abgesagten Termine und die Antworten, keine Namen) liegt im `sessionStorage` des Tabs, je Konto und Vorgang; Adresse und Rückweg aus der Akte tragen nur die Kennung des Vorgangs. Sie fällt mit dem Tab, beim Abmelden und beim Kontowechsel.
 
-**Begründung.** Spec Überholung 6 (G2); ein halb umgeplanter Tag wäre schlimmer als ein gescheiterter Versuch (CAL-009). Ein Anrufprotokoll am Server wäre eine neue Datenklasse ohne Auftrag; die Adresse übersteht den Wechsel in die Telefon-App (KAL-06), nur Kennungen (ADR-011).
+**Begründung.** In der Adresse (Fassung 1) wuchs der Rückweg je Termin um 37 Zeichen und fiel ab etwa acht Terminen still weg; Jannes 2026-10-26: Rückweg kurz, Zustand im Tab. Ein Anrufprotokoll am Server wäre eine neue Datenklasse ohne Auftrag.
 
-**Anker.** `cancel_staff_day(…, p_appointment_ids)`; `cancelStaffDay` in `appointments/api.ts`; `TagUmplanenPage.tsx`.
+**Anker.** `src/lib/tabstand.ts`; `leseAnrufliste` in `src/features/appointments/tagumplanen.ts`.
 
-**Änderungspfad.** Anrufstand speichern: eigene Tabelle mit Frist, Pfad A · Aufwand `mittel`.
+**Änderungspfad.** Anrufstand am Server: eigene Tabelle mit Frist, Pfad A · Aufwand `mittel`.
 
 ### ANN-575 — Schlüssel von Hand zu Hand in einem Vorgang
 

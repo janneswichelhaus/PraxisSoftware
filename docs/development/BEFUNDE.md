@@ -688,18 +688,6 @@ Marke vorsieht.
 
 **Beobachtung.** Beide Prüfungen lassen jeden Import aus `@/lib/` durch, weil dort anbieterfreie Hilfen liegen. Zwei Module dort sprechen aber den Server an (`functions.invoke` im KI-Gateway und in der Ortsfunktion); die Vorschau sperrt nur die Ortsmodule einzeln. Läge eine Praxisabfrage unter `src/lib`, sähe keine der beiden Prüfungen einen Import aus Plattform oder Vorschau. Schritt 3 hat die Tagesliste deshalb als Modul `day-plan` angelegt statt in `src/lib` (DEVELOPMENT.md „Modulgrenzen“). **Erwartet.** Ein Test hält fest, welche Dateien unter `src/lib` `getSupabase()` benutzen dürfen, oder die Trennungsprüfungen sperren genau diese; dazu je eine Gegenprobe.
 
-### Termine — Der Rückweg der Anrufliste fällt mit echten Kennungen über 512 Zeichen still weg
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-26 |
-| Bereich | Kalender, Tag umplanen (`/kalender/tag-umplanen`), Link „Akte“ |
-| Quelle  | Zweitreview zu Fehler 4 und 6 (Branch `claude/pr-313-decisions-2mdcwc`), mit echten Kennungen nachgerechnet; schon auf `main` |
-| Status  | offen (Vorschlag), Frage an Jannes in der PR |
-| Berührt | `src/lib/rueckweg.ts` (`HOECHSTLAENGE`), `TagUmplanenPage.tsx` (Rückweg `hierher`) |
-
-**Beobachtung.** Der Rückweg in die Akte trägt Person, Tag, den verschachtelten Kalenderstand (rund 105 Zeichen) und die Anrufliste mit Kennungen zu je 36 Zeichen. Sechs abgesagte Termine ergeben 429 Zeichen, nach der zweiten Antwort 518; bei acht Terminen ist die Grenze schon nach der ersten Antwort überschritten. Über 512 Zeichen lässt `mitRueckweg` den Rückweg still weg: Wer dann auf „Akte“ tippt, kommt ohne die Anrufliste zurück. Die Unit-Tests nutzen Kennungen wie `termin-1` und erreichen die Grenze nie. **Erwartet.** Ein Tag mit realistisch vielen Terminen (bis etwa 15, alle beantwortet) behält seinen Rückweg, belegt mit einem Test aus echten Kennungen. Wege: die Obergrenze auf 2048 anheben, die Prüfung auf anwendungsinterne Pfade bleibt; oder die Anrufliste kürzer schreiben (Antwort als ein Zeichen je abgesagtem Termin, Rückweg ohne verschachtelten Kalenderstand), das reicht bis etwa zehn Termine.
-
 ### Akte — Bestätigen und Verwerfen eines offenen Uploads prüfen nicht, wer ihn vorbereitet hat
 
 |         |   |
