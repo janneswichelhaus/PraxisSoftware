@@ -1,3 +1,4 @@
+import { Client } from 'pg';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   FREMDE_ORGANISATION,
@@ -7,6 +8,7 @@ import {
   asUserCommitted,
   fremdeOrganisation,
   resetDatabaseOhneTermine,
+  testDatabaseUrl,
 } from './helpers/db';
 import { einheitErfassen, positionen, zugewiesenerPlan } from './helpers/plaene';
 
@@ -805,11 +807,11 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
     it('loescht die Kontaktdaten nach einem Restore erneut', async () => {
       await ausgestelltVor(4);
       await asPostgres(LAUF);
-      // Restore: der Kontakt ist wieder da.
+      // Restore: der Kontakt ist wieder da, mit seinem Zeitpunkt aus der Sicherung.
       await asPostgres(
         `insert into public.training_contact_details
-           (training_relationship_id, organization_id, email)
-         values ($1, $2, 'tina@beispiel.invalid')`,
+           (training_relationship_id, organization_id, email, created_at)
+         values ($1, $2, 'tina@beispiel.invalid', now() - interval '5 years')`,
         [trainingRelationships.tina, organizationId],
       );
 
@@ -1031,6 +1033,63 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
       await asPostgres('select public.reapply_deletion_journal()');
 
       expect(await nochDa(gesichert)).toEqual(KEINE);
+    });
+
+    it('laesst beim Nachziehen ein nach der Loeschung neu angelegtes Profil stehen', async () => {
+      await trainingsdaten();
+      await ausgestelltVor(4);
+      await asPostgres(LAUF);
+      // Der Vertrag wird wieder geoeffnet, das Profil neu angelegt - mit demselben Schluessel.
+      await asPostgres(
+        `insert into public.training_profiles (training_relationship_id, organization_id, goals)
+         values ($1, $2, 'Wieder einsteigen')`,
+        [trainingRelationships.tina, organizationId],
+      );
+      await asPostgres('select public.reapply_deletion_journal()');
+      const { rows } = await asPostgres<{ goals: string }>(
+        'select goals from public.training_profiles where training_relationship_id = $1',
+        [trainingRelationships.tina],
+      );
+      expect(rows).toEqual([{ goals: 'Wieder einsteigen' }]);
+    });
+
+    it('setzt die Freigabe nach Lauf und Nachziehen zurueck und gibt sie nur fuer Trainingsplaene', async () => {
+      const andererPlan = await zugewiesenerPlan('training', trainingRelationships.erika);
+      const therapieplan = 'aeaeaeae-aeae-4eae-8eae-000000000001';
+      await trainingsdaten();
+      await ausgestelltVor(4);
+      const LOESCHEN = 'delete from public.exercise_plans where id = $1';
+      const client = new Client({ connectionString: testDatabaseUrl() });
+      await client.connect();
+      /** Fuehrt `schritt` aus und versucht danach in derselben Transaktion, `plan` zu loeschen. */
+      const danach = async (schritt: string, plan: string) => {
+        await client.query('begin');
+        try {
+          await client.query(schritt);
+          return await client.query(LOESCHEN, [plan]);
+        } finally {
+          await client.query('rollback');
+        }
+      };
+      try {
+        await expect(danach(LAUF, andererPlan)).rejects.toThrow(/only a draft/);
+        // Mit Eintraegen im Journal setzt auch das Nachziehen die Freigabe - und nimmt sie zurueck.
+        await asPostgres(LAUF);
+        await expect(
+          danach('select public.reapply_deletion_journal()', andererPlan),
+        ).rejects.toThrow(/only a draft/);
+        // Selbst mit gesetzter Freigabe faellt kein Therapieplan.
+        await expect(
+          danach("select set_config('app.retention_deletion', 'on', true)", therapieplan),
+        ).rejects.toThrow(/only a draft/);
+      } finally {
+        await client.end();
+      }
+      const { rows } = await asPostgres<{ dienst: boolean }>(
+        `select has_function_privilege('service_role', 'public.reapply_deletion_journal()',
+                                       'execute') as dienst`,
+      );
+      expect(rows).toEqual([{ dienst: false }]);
     });
 
     it('hat fuer jede Tabelle am Verhaeltnis eine Entscheidung zur Teilloeschung', async () => {

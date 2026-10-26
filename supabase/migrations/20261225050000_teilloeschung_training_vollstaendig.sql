@@ -1,4 +1,4 @@
--- Die Teillöschung unter Belegfrist nimmt jetzt alles, was das Trainingsverhältnis ohne Beleg trägt:
+-- Die Teillöschung unter Belegfrist nimmt alles, was das Trainingsverhältnis ohne Beleg trägt:
 -- Profil, Übernahmen, Einwilligungen, Assessments, Verlauf, Check-ins, Gewohnheiten und Übungspläne
 -- (ADR-021 Punkt 4, ANN-183). Jede Zeile steht im Löschjournal und fällt nach einem Restore erneut.
 
@@ -10,7 +10,7 @@ as $$
   select coalesce(current_setting('app.retention_deletion', true), '') = 'on';
 $$;
 
-comment on function app.retention_deletion_active() is 'Laeuft gerade die Teilloeschung unter Belegfrist oder das Nachziehen des Loeschjournals? Nur dort gesetzt, transaktionslokal (ANN-183). Erlaubt das Loeschen zugewiesener und beendeter Uebungsplaene, deren Verhaeltnis stehen bleibt.';
+comment on function app.retention_deletion_active() is 'Laeuft gerade die Teilloeschung unter Belegfrist oder das Nachziehen der Uebungsplaene aus dem Loeschjournal? Nur dort gesetzt, transaktionslokal (ANN-183). Erlaubt das Loeschen zugewiesener und beendeter Trainingsplaene, deren Verhaeltnis stehen bleibt.';
 
 create or replace function app.deletion_key_column(p_table text)
 returns text
@@ -61,8 +61,8 @@ begin
       return old;
     end if;
     -- Die Teilloeschung unter Belegfrist und ihr Nachziehen nach einem Restore nehmen auch
-    -- zugewiesene Plaene, waehrend das Verhaeltnis als Beleg stehen bleibt (ANN-183).
-    if app.retention_deletion_active() then
+    -- zugewiesene Trainingsplaene, waehrend das Verhaeltnis als Beleg stehen bleibt (ANN-183).
+    if old.service_area = 'training' and app.retention_deletion_active() then
       return old;
     end if;
     raise exception 'only a draft exercise plan can be discarded' using errcode = '22023';
@@ -376,8 +376,6 @@ begin
       using errcode = '22023';
   end if;
 
-  -- Zugewiesene Uebungsplaene aus der Teilloeschung fallen auch, wenn das Verhaeltnis steht.
-  perform pg_catalog.set_config('app.retention_deletion', 'on', true);
   foreach v_tabelle in array v_reihenfolge
   loop
     select array_agg(j.target_id)
@@ -421,9 +419,25 @@ begin
         returning id
       )
       select array_agg(id) into v_geloescht from g;
+    elsif app.deletion_key_column(v_tabelle) <> 'id' then
+    -- Der Schluessel ist das Verhaeltnis: Was nach der Loeschung neu angelegt wurde, etwa nach
+    -- einem wieder geoeffneten Vertrag, traegt denselben Schluessel und bleibt.
+    execute format(
+      'with g as (delete from public.%1$I t using public.deletion_journal j
+                   where j.target_table = %2$L and t.%3$I = j.target_id
+                     and t.created_at <= j.deleted_at
+                  returning t.%3$I as id)
+       select array_agg(distinct id) from g',
+      v_tabelle, v_tabelle, app.deletion_key_column(v_tabelle)
+    )
+    into v_geloescht;
     else
-    -- Tabellenname aus der festen Liste oben, nie aus Benutzereingabe;
-    -- die Kennungen gehen als Parameter, nicht als Text.
+    -- Tabellenname aus der festen Liste oben, nie aus Benutzereingabe; die Kennungen gehen als
+    -- Parameter. Zugewiesene Trainingsplaene aus der Teilloeschung fallen auch, wenn ihr
+    -- Verhaeltnis steht (ANN-183).
+    if v_tabelle = 'exercise_plans' then
+      perform pg_catalog.set_config('app.retention_deletion', 'on', true);
+    end if;
     execute format(
       'with g as (delete from public.%I where %I = any($1) returning %I as id) select array_agg(id) from g',
       v_tabelle,
@@ -432,6 +446,7 @@ begin
     )
     into v_geloescht
     using v_ids;
+    perform pg_catalog.set_config('app.retention_deletion', 'off', true);
     end if;
 
     if v_geloescht is not null then
@@ -443,7 +458,6 @@ begin
       v_gesamt := v_gesamt + array_length(v_geloescht, 1);
     end if;
   end loop;
-  perform pg_catalog.set_config('app.retention_deletion', 'off', true);
 
   -- Anonyme Rückmeldungen schreibt der Lauf mit neuer Kennung neu; ein älteres Backup trägt
   -- andere Kennungen als das Journal. Was nach dem Restore über der Frist liegt, fällt hier
@@ -474,11 +488,15 @@ begin
 end;
 $_$;
 
-comment on function public.exercise_plans_guard() is 'UEB-004: Bereich, Verhaeltnis und Herkunft eines Plans stehen fest; ein zugewiesener Plan aendert nur Laufzeit und Ende (ANN-300, ANN-302), ein beendeter nichts; beim Zusammenfuehren nur patient_id (PRX-017). Geloescht wird nur ein Entwurf - ausser mit dem Verhaeltnis und in der Teilloeschung unter Belegfrist samt ihrem Nachziehen nach einem Restore (ANN-183).';
+comment on function public.exercise_plans_guard() is 'Bereich, Verhaeltnis und Herkunft eines Plans stehen fest; ein zugewiesener Plan aendert nur Laufzeit und Ende (ANN-300, ANN-302), ein beendeter nichts; beim Zusammenfuehren nur patient_id. Geloescht wird nur ein Entwurf - ausser mit dem Verhaeltnis und, fuer Trainingsplaene, in der Teilloeschung unter Belegfrist samt ihrem Nachziehen nach einem Restore (ANN-183).';
 
 comment on function app.reduce_training_relationship(p_relationship_id uuid, p_run_id uuid, p_due_at timestamp with time zone) is 'Teilloeschung eines Trainingsverhaeltnisses nach drei Jahren, solange seine Belege noch in der steuerlichen Frist liegen (ANN-183, ADR-021 Punkt 4, ADR-008 Punkt 2): Protokolle, Rueckfragen, Kontakt, Termine ohne Leistung, unbenutzte Vereinbarungen, Ernaehrungsberatung, Profil, Uebernahmen, Einwilligungen, Assessments, Verlauf, Check-ins, Gewohnheiten und Uebungsplaene fallen, jeder Datensatz im Journal. Es bleiben die Belege und was sie tragen; der Rest faellt mit app.delete_training_relationship.';
 
-comment on function public.reapply_deletion_journal() is 'Zieht nach einer Wiederherstellung die Loeschungen des Journals erneut nach (ADR-008 Punkt 8). Seit ABR-003d einschliesslich Zahlungserinnerungen, Stornodokumenten, Zahlungen, Rechnungen, ihrer Zeilen und der Empfaenger, seit LEI-002 einschliesslich der Trainingsverhaeltnisse, seit der vollstaendigen Teilloeschung (ANN-183) auch Profil, Uebernahmen, Einwilligungen, Assessments, Verlauf, Check-ins, Gewohnheiten und Uebungsplaene des Trainings.';
+comment on function public.reapply_deletion_journal() is 'Zieht nach einer Wiederherstellung die Loeschungen des Journals erneut nach (ADR-008 Punkt 8), in fester Reihenfolge ueber alle Tabellen, die das Journal fuehrt - Belege und Trainingsverhaeltnisse eingeschlossen, ebenso die Teilloeschung unter Belegfrist (ANN-183). Zeilen mit dem Verhaeltnis als Schluessel fallen nur, wenn sie vor der Loeschung entstanden sind. Nur fuer den Betrieb nach einem Restore, fuer keine API-Rolle.';
+
+-- Das Nachziehen gehoert dem Betrieb nach einem Restore (ADR-012), nicht dem Dienstschluessel:
+-- Er darf ins Journal schreiben und braeuchte sonst nur einen Eintrag fuer eine Loeschung.
+revoke all on function public.reapply_deletion_journal() from service_role;
 
 update public.retention_assignments
    set scope_note = scope_note || ' Auch in der Teilloeschung unter Belegfrist nach drei Jahren (ANN-183).'
