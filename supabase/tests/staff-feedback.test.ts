@@ -8,6 +8,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { gleichzeitig } from './helpers/gleichzeitig';
 
 /**
  * Rückmeldungen von Beschäftigten (§20.2): das Barometer immer mit Namen (ANN-607), die Rückmeldung
@@ -265,6 +266,20 @@ describe('Rückmeldungen: wer abgibt', () => {
     expect(await anzahl('select count(*) as n from public.staff_feedback')).toBe(4);
   });
 
+  it('lässt von zwei gleichzeitigen Abgaben derselben Person nur eine zu', async () => {
+    const erste = { konto: users.therapist, sql: BAROMETER, params: [5, null, null, null, null] };
+    const zweite = { ...erste, params: [6, null, null, null, null] };
+    // Die zweite wartet auf den eindeutigen Index der ersten und schreibt dann nichts.
+    expect(await gleichzeitig(erste, zweite)).toMatchObject({
+      code: '23505',
+      message: 'barometer already submitted',
+    });
+    const { rows } = await asPostgres<{ mood: number }>(
+      `select mood from public.staff_feedback where kind = 'barometer'`,
+    );
+    expect(rows).toEqual([{ mood: 5 }]);
+  });
+
   it('weist leere, unzulässige und zu lange Abgaben ab, ohne den Text zu nennen', async () => {
     expect((await fehler(users.therapist, BAROMETER, [null, null, null, ' ', null]))?.message).toBe(
       'feedback is empty',
@@ -384,6 +399,7 @@ describe('Rückmeldungen: wer liest', () => {
   });
 
   it('zeigt der fremden Praxis nichts von dieser', async () => {
+    await abgeben(users.therapist, [5, null, null, 'Nur hier', null]);
     await asUserCommitted(users.office, NACHRICHT, [true, 'Hier']);
     await anonymeNachrichten(await monatVor(1), ['a', 'b', 'c', 'd', 'e']);
     const fremd = await fremdeOrganisation();

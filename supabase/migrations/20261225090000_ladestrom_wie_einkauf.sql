@@ -19,4 +19,6 @@ alter table public.organizations
   drop column electricity_wh_per_km,
   drop column electricity_km_per_hour;
 
-comment on table public.staff_reimbursements is 'ERS-001 (ANN-598, ANN-599): Erstattungsanträge - Einkauf mit Belegen; Ladestrom seit 2026-10-26 ebenso als Einkauf mit Beleg, ältere Ladestrom-Anträge je Monat mit ihrem Rechenweg (kind electricity). Beantragt von/am, entschieden von/am mit Grund, ausgezahlt von/am sind der Nachweis (ADR-010 Punkt 15). Datenklassen erstattung (ausgezahlt: acht Jahre ab Ende des Jahres der Auszahlung, Par. 147 AO) und erstattung_kurz (abgelehnt, zurückgezogen: ein Jahr), ANN-602; beantragte und genehmigte bleiben. Kein Tabellenrecht.';
+comment on table public.staff_reimbursements is 'Erstattungsanträge (ANN-598, ANN-599) - Einkauf mit Belegen; Ladestrom seit 2026-10-26 ebenso als Einkauf mit Beleg, ältere Ladestrom-Anträge je Monat mit ihrem Rechenweg (kind electricity). Beantragt von/am, entschieden von/am mit Grund, ausgezahlt von/am sind der Nachweis (ADR-010 Punkt 15). Datenklassen erstattung (ausgezahlt: acht Jahre ab Ende des Jahres der Auszahlung, Par. 147 AO) und erstattung_kurz (abgelehnt, zurückgezogen: ein Jahr), ANN-602; beantragte und genehmigte bleiben. Kein Tabellenrecht.';
+
+comment on function app.reimbursement_view(p_reimbursement public.staff_reimbursements, p_full boolean) is 'Ansicht eines Antrags; ohne p_full fehlen bei einem älteren Antrag aus Touren tour_km, amount_cents, wh_per_km und rate_cents_per_kwh (ANN-616). Voll nur für die Person selbst und owner.';

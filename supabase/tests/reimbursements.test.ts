@@ -73,6 +73,7 @@ interface Antrag {
   working_minutes: number | null;
   km_per_hour: number | null;
   wh_per_km: number | null;
+  tour_km: number | null;
   rate_cents_per_kwh: number | null;
   amount_cents: number;
   status: string;
@@ -418,16 +419,58 @@ describe('Erstattungen (ERS-001)', () => {
       expect(await antrag(alt)).toMatchObject({ status: 'paid', amount_cents: 333 });
     });
 
+    it('zeigt Kilometer und Betrag eines Antrags aus Touren nur der Person und owner (ANN-616)', async () => {
+      // Nach der alten Regel: 412 km × 18 Wh/km × 37 ct/kWh = 274 ct; daneben einer nach km je Stunde.
+      const { rows } = await asPostgres<{ id: string; art: string }>(
+        `insert into public.staff_reimbursements
+           (organization_id, staff_member_id, kind, period_month, working_minutes, km_per_hour,
+            wh_per_km, tour_km, rate_cents_per_kwh, declared_at, amount_cents, status, requested_by)
+         values ($1, $2, 'electricity', $3, 9600, null, 18, 412, 37, now(), 274, 'requested', $5),
+                ($1, $2, 'electricity', $4, 9600, 6, 18, null, 37, now(), 639, 'requested', $5)
+         returning id, case when tour_km is null then 'stunde' else 'tour' end as art`,
+        [organizationId, STAFF.anna, await monat(1), await monat(2), users.therapist],
+      );
+      const tour = rows.find((r) => r.art === 'tour')!.id;
+      const stunde = rows.find((r) => r.art === 'stunde')!.id;
+      const voll = {
+        id: tour,
+        tour_km: 412,
+        amount_cents: 274,
+        wh_per_km: 18,
+        rate_cents_per_kwh: 37,
+      };
+      const finde = (antraege: Antrag[] | undefined, id: string) =>
+        (antraege ?? []).find((r) => r.id === id);
+
+      expect(finde((await liste(users.therapist)).person?.reimbursements, tour)).toMatchObject(
+        voll,
+      );
+      const owner = await liste(users.ownerTherapist, STAFF.anna);
+      expect(finde(owner.person?.reimbursements, tour)).toMatchObject(voll);
+      expect(finde(owner.to_decide, tour)).toMatchObject(voll);
+
+      const buero = (await liste(users.office, STAFF.anna)).person?.reimbursements;
+      expect(finde(buero, tour)).toMatchObject({
+        id: tour,
+        tour_km: null,
+        amount_cents: null,
+        wh_per_km: null,
+        rate_cents_per_kwh: null,
+      });
+      // Ohne Touren gibt es nichts zu verbergen: Das Büro sieht den Betrag.
+      expect(finde(buero, stunde)).toMatchObject({ id: stunde, tour_km: null, amount_cents: 639 });
+    });
+
     it('hält die Rechnung auch am Tisch fest - für jeden Weg', async () => {
       const letzter = await monat(1);
-      const einfuegen = (spalten: string, werte: string) =>
+      const einfuegen = (spalten: string, werte: string, fuer = letzter) =>
         code(
           asPostgres(
             `insert into public.staff_reimbursements
                (organization_id, staff_member_id, kind, period_month, declared_at, status,
                 requested_by, ${spalten})
              values ($1, $2, 'electricity', $3, now(), 'requested', $4, ${werte})`,
-            [organizationId, STAFF.anna, letzter, users.therapist],
+            [organizationId, STAFF.anna, fuer, users.therapist],
           ),
         );
       // Falscher Betrag.
@@ -457,6 +500,15 @@ describe('Erstattungen (ERS-001)', () => {
           '9600, 6, 18, 37, 639',
         ),
       ).toBe('kein Fehler');
+      // Aus Touren, in einem anderen Monat (einer je Monat): falscher Betrag, zugleich km je
+      // Stunde, Strecke außerhalb der Grenzen.
+      const tour =
+        'working_minutes, km_per_hour, wh_per_km, tour_km, rate_cents_per_kwh, amount_cents';
+      const vorletzter = await monat(2);
+      expect(await einfuegen(tour, '9600, null, 18, 412, 37, 275', vorletzter)).toBe('23514');
+      expect(await einfuegen(tour, '9600, 6, 18, 412, 37, 274', vorletzter)).toBe('23514');
+      expect(await einfuegen(tour, '9600, null, 18, 10001, 37, 6661', vorletzter)).toBe('23514');
+      expect(await einfuegen(tour, '9600, null, 18, 412, 37, 274', vorletzter)).toBe('kein Fehler');
     });
   });
 

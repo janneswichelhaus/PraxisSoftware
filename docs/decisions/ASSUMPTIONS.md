@@ -6357,7 +6357,7 @@ Praxisprozess · verworfen · 2026-10-17 · Jannes · erledigt · Wiedervorlage:
 
 Datenschutz · entschieden (Jannes) · 2026-10-26 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Monatlich drei Skalen 1–9 (Stimmung, Touren und Fahrzeiten, Miteinander) und zwei Freitexte, alle freiwillig, Anrede „du“; nie owner. Seit 2026-10-26 immer mit Namen und Zeitpunkt, einmal je Person und Monat, ab der ersten beschäftigten Person (§20.2 Nr. 1 und 4, Version 0.29): owner liest jede Antwort einzeln, ohne Summe, Kurve oder Zählung je Person. Ohne Namen geht nur die Rückmeldung an die Praxisleitung (ANN-608); anonyme Barometer, ihre Blöcke und die Teilnahmemarke sind gelöscht.
+**Annahme.** Monatlich drei Skalen 1–9 (Stimmung, Touren und Fahrzeiten, Miteinander) und zwei Freitexte, alle freiwillig, Anrede „du“; nie owner. Seit 2026-10-26 immer mit Namen und Zeitpunkt, einmal je Person und Monat, ab der ersten beschäftigten Person (§20.2 Nr. 1 und 4, Version 0.29): owner liest jede Antwort einzeln, ohne Summe, Kurve oder Zählung je Person. Ohne Namen geht nur die Rückmeldung an die Praxisleitung (ANN-608); anonyme Barometer, ihre Blöcke und die Teilnahmemarke sind gelöscht. Für die Datenschutzprüfung: Wer nicht antwortet, lässt sich aus den namentlichen Antworten ablesen; keine Funktion listet es (§20.2 Nr. 2), die Freiwilligkeit nach § 26 Abs. 2 BDSG bleibt zu prüfen.
 
 **Begründung.** §20.2; Art. 88 DSGVO, § 26 BDSG; Entscheidung Jannes (ROADMAP 7.18, Option A): Unter drei Beschäftigten zeigte ein anonymes Barometer nie etwas.
 
@@ -6475,11 +6475,11 @@ Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Annahme.** Gilt seit 2026-10-26 nur noch für ältere Anträge aus Touren (ANN-749). Die Monatssumme sehen nur die Person und owner. Das Büro sieht einen Antrag aus Touren mit Monat und Zustand, aber ohne Kilometer, Betrag, Verbrauch und Satz, weil der Betrag mit den Werten der Praxis die Kilometer verriete. Anträge nach Stunden bleiben wie bisher.
 
-**Begründung.** ADR-019 Fassung 6 (Rang 2) geht ANN-598 (Büro sieht alle Erstattungen, Rang 4) vor; Art. 5 Abs. 1 lit. c DSGVO, §26 BDSG.
+**Begründung.** Art. 5 Abs. 1 lit. c DSGVO, §26 BDSG: Die Kilometer der Touren sind Standortdaten (§20). Bis Fassung 6 schrieb ADR-019 das vor; Fassung 7 streicht die Rechnung, die Regel bleibt für die älteren Anträge und geht ANN-598 (Büro sieht alle Erstattungen) vor.
 
-**Anker.** `app.reimbursement_view(public.staff_reimbursements, boolean)`.
+**Anker.** `app.reimbursement_view(public.staff_reimbursements, boolean)`; Test „…aus Touren nur der Person und owner (ANN-616)“ in `supabase/tests/reimbursements.test.ts`.
 
-**Änderungspfad.** Büro sieht den Betrag: Tiefe in `list_reimbursements` auf `v_alle` stellen, dazu eine neue Fassung von ADR-019 · Aufwand `klein`.
+**Änderungspfad.** Büro sieht den Betrag: Tiefe in `list_reimbursements` auf `v_alle` stellen · Aufwand `klein`.
 
 ### ANN-617 — Was als gefahrene Tour zählt
 
