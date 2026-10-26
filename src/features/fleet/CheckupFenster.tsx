@@ -410,6 +410,7 @@ export function CheckupFenster({
       ansage={ansage}
       schutz={schutz}
       abschluss={abschlussZeigen}
+      inhaltUnten={!abschlussZeigen}
       fuss={
         abschlussZeigen ? (
           <AbschlussFuss

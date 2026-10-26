@@ -362,6 +362,12 @@ test('R3: geführter Check-Up ohne Befund in höchstens 25 Tipps, jede Seite ohn
   await expect(erste.getByText('Prüfpunkt 1 von 12', { exact: true })).toBeVisible();
   // Unter dem Titel das Rad mit Bauart (Regel 6).
   await expect(erste.getByText('Lastenrad 1 · Load 60 · Riemenantrieb')).toBeVisible();
+  // Die Antworten stehen unten, im Daumenbereich am Lenker (DESIGN.md, Grundsatz 1) - gemessen,
+  // wenn das Fenster steht (`trial` wartet, bis der Knopf ruht).
+  const unten = erste.getByRole('button', { name: 'Problem' });
+  await unten.click({ trial: true });
+  const antwort = (await unten.boundingBox())!;
+  expect(667 - (antwort.y + antwort.height)).toBeLessThanOrEqual(48);
   expect(await axeVerstoesse(page)).toEqual([]);
   for (const [index, label] of [
     'Reifen und Luftdruck',
