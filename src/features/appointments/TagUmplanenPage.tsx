@@ -34,19 +34,19 @@ import {
 } from './api';
 import { tageslageNeuLaden } from './tageslage';
 import {
-  ABGESAGT_PARAM,
   ersteAnrufseite,
   leseAbgesagt,
   leseAnrufstand,
   leseZeiten,
   liegtInZeiten,
-  mitAnrufstand,
+  mitAnrufliste,
   naechsterAnruf,
   seitenKennung,
   terminDativ,
   terminWort,
   umplanStand,
   type Anrufergebnis,
+  type Anrufstand,
   type UmplanSeite,
   type Zeitspanne,
 } from './tagumplanen';
@@ -171,15 +171,23 @@ function Umplanung({
   const navigate = useNavigate();
   const [suche, setSuche] = useSearchParams();
   const ort = useLocation();
-  // Die eben abgesagten Kennungen, sofort - die Adresse folgt einen Augenblick
-  // später, und der neu geladene Tag ohne bestätigte Termine stünde sonst kurz
-  // als „nichts umzuplanen“ da.
-  const [eben, setEben] = useState<string[] | null>(null);
-  const abgesagt = leseAbgesagt(suche) ?? eben;
+  // Die Anrufliste gilt aus dem Zustand: Der Router setzt die Adresse erst als Übergang, später.
+  // Sie trägt die Liste nur durch Zurück, Neuladen und den Weg aus der Akte (ANN-574).
+  const [abgesagt, setAbgesagt] = useState(() => leseAbgesagt(suche));
+  const [anrufstand, setAnrufstand] = useState(() => leseAnrufstand(suche));
+  const [eben, setEben] = useState<number | null>(null);
   const zeiten = leseZeiten(suche);
-  const anrufstand = leseAnrufstand(suche);
   const zumKalender = leseRueckweg(suche, '/kalender');
   const darfUmplanen = canManageAppointments(user.roles);
+  const hierher = abgesagt ? mitAnrufliste(suche, abgesagt, anrufstand) : suche;
+
+  function anruflisteMerken(liste: string[], stand: Anrufstand) {
+    setAbgesagt(liste);
+    setAnrufstand(stand);
+    // Ganz aus dem Zustand geschrieben, nie aus der Adresse davor; `replace`: Zurück führt nicht
+    // wieder zur Absage.
+    setSuche((bisher) => mitAnrufliste(bisher, liste, stand), { replace: true });
+  }
 
   const tag = useQuery({
     queryKey: ['day-plan', datum, staffMemberId],
@@ -254,32 +262,22 @@ function Umplanung({
                 abgesagt={abgesagt}
                 anrufstand={anrufstand}
                 objekt={fensterObjekt}
-                rueckweg={`${ort.pathname}${ort.search}`}
+                rueckweg={`${ort.pathname}?${hierher.toString()}`}
                 onSchliessen={() => void navigate(zumKalender)}
                 zumKalender={zumKalender}
                 onAbsagen={async (grund, auswahl) => {
                   await cancelStaffDay(staffMemberId, datum, grund, auswahl);
                 }}
-                frischAbgesagt={eben?.length ?? null}
+                frischAbgesagt={eben}
                 onAbgesagt={async (auswahl) => {
-                  setEben(auswahl);
-                  // Die Anrufliste in die Adresse (KAL-06): Sie übersteht
-                  // Zurück und Neuladen. `replace`: Zurück soll nicht wieder
-                  // zur Absage führen.
-                  setSuche(
-                    (bisher) => {
-                      const naechste = new URLSearchParams(bisher);
-                      naechste.set(ABGESAGT_PARAM, auswahl.join(','));
-                      return naechste;
-                    },
-                    { replace: true },
-                  );
+                  setEben(auswahl.length);
+                  anruflisteMerken(auswahl, {});
                   // UBK-011: Tagesliste, Kalender, Tour und Fahrpuffer.
                   await tageslageNeuLaden(queryClient);
                 }}
-                onAnrufstand={(stand) =>
-                  setSuche((bisher) => mitAnrufstand(bisher, stand), { replace: true })
-                }
+                onAnrufstand={(stand) => {
+                  if (abgesagt) anruflisteMerken(abgesagt, stand);
+                }}
               />
             );
           }}

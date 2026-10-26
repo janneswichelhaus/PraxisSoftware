@@ -31,7 +31,7 @@ vi.mock('./uebersicht', async (importOriginal) => {
 });
 
 const { PatientsListPage } = await import('./PatientsListPage');
-const { suchbegriffMerken } = await import('./suchbegriff');
+const { suchbegriffeLeeren } = await import('@/lib/suchbegriff');
 
 function eintrag(
   id: string,
@@ -74,7 +74,7 @@ function reihenfolge(): string[] {
 
 describe('PatientsListPage (B1, B10)', () => {
   beforeEach(() => {
-    suchbegriffMerken('');
+    suchbegriffeLeeren();
     adressen.length = 0;
   });
 

@@ -5,17 +5,17 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-**Aufräumen** (Auftrag Jannes 25.10., Entscheidungen 26.10., ROADMAP 7.17): Schritte 1 bis 3 gemergt
-(#308 bis #312). Schritt 3, Teil 1, Rest liegt als PR vor: Zeit- und Kalenderhilfen aller Module in
-`src/lib/datum.ts`, 16 statt 17 Paare. Bauplan ist `development/TIEFENANALYSE.md`.
+**Aufräumen** (Auftrag Jannes 25.10., Entscheidungen 26.10., ROADMAP 7.18): Schritte 1 bis 3 gemergt
+(#308 bis #313). Fehler 4 und 6 der Tiefenanalyse und der wackelnde Test zu „Tag umplanen“ liegen als
+PR vor. Bauplan ist `development/TIEFENANALYSE.md`.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Aufräumen nach ROADMAP 7.17: Schritt 4a (Teillöschung im Training, erste Pfad-A-Story), 4 (Register),
-3b (Domänenschnitt), 5 (Doku); dazwischen kleine PRs für die Fehler 4 bis 7 der Liste dort.
+Aufräumen nach ROADMAP 7.18: PR mit Fehler 5 und 7 (Zweitreview), dann Schritt 4a, M9, M1, M5, M7 und
+das Barometer nach Option A; danach 4 (Register), 3b (Domänenschnitt), 5 (Doku).
 Schritt 3 Termine des Design-Reviews (3a bis 3d), dann Schritte 4
 bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff; Briefings in
 `design/review-2026-10/`. Ohne Handoff: BEF-198 (Löschjournal; Pfad A), BEF-223 (Zeitumstellung;
@@ -28,8 +28,8 @@ Pfad A).
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
   ANN-479 ansehen (Besuch).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
-- Vereinfachungen M1 bis M9 und das Barometer einzeln freigeben oder ablehnen (Aufstellung im Bericht
-  zur PR von Aufräumen Schritt 3, Teil 1).
+- Tag umplanen: Obergrenze des Rückwegs von 512 auf 2048 Zeichen anheben? (Frage 1 der PR zu Fehler 4
+  und 6, Befund in `development/BEFUNDE.md`)
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
 - Sichtung neu: ~170 offene Schritte werden per Bildstrecke triagiert (`sichtung/README.md`); am
   Gerät bleibt nur, was eine Hand braucht (Kamera, Passkey, Flugmodus, Sonne).
@@ -48,6 +48,6 @@ Pfad A).
 
 ## Letzte Session
 
-26.10.2026, Branch `ccr-30ca4f76-x8pvfg`: Aufräumen Schritt 3, Teil 1, Rest – Kopien von `tagePlus`
-und ISO-Wochentag ersetzt, Datumsformate aus Arbeitszeit und Urlaub in `src/lib/datum.ts`;
-Tiefenanalyse abgelegt, Entscheidungen in ROADMAP 7.17. Keine Migration, kein Seed. Lokal: `git pull`.
+26.10.2026, Branch `claude/pr-313-decisions-2mdcwc`: Fehler 4 (Nachtrag bei 403) und 6 (Suchbegriff
+nie in der Adresse, auch Radflotte), Tag umplanen ohne Wettlauf mit der Adresse; Entscheidungen zu M1
+bis M9 in ROADMAP 7.18. Keine Migration, kein Seed. Lokal: `git pull`.

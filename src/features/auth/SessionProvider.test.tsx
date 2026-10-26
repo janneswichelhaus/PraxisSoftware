@@ -28,6 +28,7 @@ vi.mock('@/lib/abstecher', async (original) => ({
 }));
 
 const { SessionProvider } = await import('./SessionProvider');
+const { gemerkterSuchbegriff, suchbegriffMerken } = await import('@/lib/suchbegriff');
 const { useSession } = await import('./sessionContext');
 const { useSitzungEndeteVonAussen } = await import('./sitzungsende');
 
@@ -136,6 +137,36 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
 
     expect(patientenImSpeicher()).toBeUndefined();
     expect(await screen.findByText('bert')).toBeInTheDocument();
+  });
+
+  it('leert die gemerkten Suchbegriffe der Listen, meist Namen', async () => {
+    await anbieterZeigen();
+    suchbegriffMerken('patienten', 'Mustermann');
+    suchbegriffMerken('mitarbeitende', 'Anna');
+
+    act(() => melde?.('SIGNED_OUT', null));
+
+    expect(gemerkterSuchbegriff('patienten')).toBe('');
+    expect(gemerkterSuchbegriff('mitarbeitende')).toBe('');
+  });
+
+  it('leert die Suchbegriffe auch beim Wechsel auf ein anderes Konto ohne Abmeldung', async () => {
+    await anbieterZeigen();
+    suchbegriffMerken('radflotte', 'Nina');
+
+    act(() => melde?.('SIGNED_IN', sitzung('bert')));
+
+    expect(gemerkterSuchbegriff('radflotte')).toBe('');
+    expect(await screen.findByText('bert')).toBeInTheDocument();
+  });
+
+  it('behält die Suchbegriffe beim turnusmäßigen Verlängern', async () => {
+    await anbieterZeigen();
+    suchbegriffMerken('radflotte', 'Nina');
+
+    act(() => melde?.('TOKEN_REFRESHED', sitzung('anna')));
+
+    expect(gemerkterSuchbegriff('radflotte')).toBe('Nina');
   });
 
   /**

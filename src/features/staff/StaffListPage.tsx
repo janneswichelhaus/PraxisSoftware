@@ -12,6 +12,7 @@ import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { EmptyState } from '@/components/ui/Feedback';
 import { mitRueckweg } from '@/lib/rueckweg';
+import { useSuchbegriff } from '@/lib/suchbegriff';
 import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import { fullName } from '@/features/patients/api';
 import {
@@ -28,9 +29,8 @@ function parseStatusFilter(value: string | null): StatusFilter {
   return value === 'active' || value === 'inactive' ? value : 'all';
 }
 
-function toSearchParams(query: string, status: StatusFilter): URLSearchParams {
+function toSearchParams(status: StatusFilter): URLSearchParams {
   const next = new URLSearchParams();
-  if (query.trim()) next.set('q', query);
   if (status !== 'all') next.set('status', status);
   return next;
 }
@@ -59,7 +59,7 @@ function matches(staff: StaffMember, query: string): boolean {
  */
 export function StaffListPage({ user }: { user: CurrentUser }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [query, setQuery] = useState(() => searchParams.get('q') ?? '');
+  const [query, updateQuery] = useSuchbegriff('mitarbeitende');
   const [status, setStatus] = useState<StatusFilter>(() =>
     parseStatusFilter(searchParams.get('status')),
   );
@@ -94,19 +94,14 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
     [liste.data, query, status],
   );
 
-  // Der gefilterte Stand reist als Rückweg mit (ORG-24): „← Zurück zu den
-  // Mitarbeitenden" führt dann in genau diese Liste, nicht in die ungefilterte.
-  const filter = toSearchParams(query, status).toString();
+  // Der Filter reist als Rückweg mit, der Suchbegriff (meist ein Name) bleibt im Arbeitsspeicher
+  // (ADR-011): „Zurück zu den Mitarbeitenden“ führt so in genau diese Liste.
+  const filter = toSearchParams(status).toString();
   const rueckweg = filter ? `/praxis/team?${filter}` : null;
-
-  function updateQuery(value: string) {
-    setQuery(value);
-    setSearchParams(toSearchParams(value, status), { replace: true });
-  }
 
   function updateStatus(value: StatusFilter) {
     setStatus(value);
-    setSearchParams(toSearchParams(query, value), { replace: true });
+    setSearchParams(toSearchParams(value), { replace: true });
   }
 
   return (

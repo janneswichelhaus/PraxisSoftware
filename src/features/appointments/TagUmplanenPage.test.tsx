@@ -7,6 +7,7 @@ import { renderWithProviders, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import type * as StaffApi from '@/features/staff/api';
 import type * as Tagesplan from '@/features/day-plan/api';
+import type * as RouterModul from 'react-router-dom';
 
 /**
  * Tag umplanen mit Anrufliste (CAL-009), geführt seit Überholung 6 (G2,
@@ -78,6 +79,22 @@ vi.mock('@/features/staff/api', async (importOriginal) => ({
     fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
 }));
 
+/** Hält das Schreiben der Adresse zurück wie ein Übergang des Routers, der noch aussteht. */
+const adresse = { zurueckhalten: false };
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof RouterModul>();
+  return {
+    ...actual,
+    useSearchParams: (...args: Parameters<typeof actual.useSearchParams>) => {
+      const [suche, setSuche] = actual.useSearchParams(...args);
+      const halten: typeof setSuche = (...neu) => {
+        if (!adresse.zurueckhalten) setSuche(...neu);
+      };
+      return [suche, halten];
+    },
+  };
+});
+
 const { TagUmplanenPage } = await import('./TagUmplanenPage');
 
 function rendern(
@@ -89,6 +106,7 @@ function rendern(
 
 describe('TagUmplanenPage', () => {
   beforeEach(() => {
+    adresse.zurueckhalten = false;
     fetchDayPlan.mockReset();
     cancelStaffDay.mockReset();
     fetchAssignableTherapists.mockReset();
@@ -327,6 +345,46 @@ describe('TagUmplanenPage', () => {
       within(await fenster('Erika Beispiel erreicht?')).getByRole('button', { name: 'Erreicht' }),
     );
     expect(await fenster('Alle angerufen')).toBeInTheDocument();
+  });
+
+  /** Der Rückweg des Links „Akte“ in einem Fenster. */
+  function rueckwegDerAkte(element: HTMLElement): string {
+    const akte = within(element).getByRole('link', { name: 'Akte' });
+    return new URL(akte.getAttribute('href')!, 'http://test').searchParams.get('zurueck') ?? '';
+  }
+
+  // Unter Last folgt die Adresse spät; hier folgt sie gar nicht. Rückweg und Anrufstand kommen
+  // trotzdem vollständig aus dem Zustand.
+  it('baut Rückweg und Anrufstand aus dem Zustand, auch bevor die Adresse folgt', async () => {
+    const user = userEvent.setup();
+    fetchDayPlan
+      .mockResolvedValueOnce([eintrag({}), eintrag({ id: 'termin-2', patient_given_name: 'Max' })])
+      .mockResolvedValue([
+        eintrag({ status: 'cancelled' }),
+        eintrag({ id: 'termin-2', status: 'cancelled', patient_given_name: 'Max' }),
+      ]);
+    rendern();
+    const auswahl = await bisZurAuswahl(user);
+    await user.click(within(auswahl).getByRole('button', { name: 'Weiter mit 2 Terminen' }));
+    adresse.zurueckhalten = true;
+    await user.click(
+      within(await fenster('2 Termine absagen?')).getByRole('button', {
+        name: 'Ja, 2 Termine absagen',
+      }),
+    );
+
+    const erste = await fenster('Erika Beispiel erreicht?');
+    expect(rueckwegDerAkte(erste)).toContain('abgesagt=termin-1%2Ctermin-2');
+    await user.click(within(erste).getByRole('button', { name: 'Nicht erreicht' }));
+
+    const zweite = await fenster('Max Beispiel erreicht?');
+    expect(rueckwegDerAkte(zweite)).toContain('abgesagt=termin-1%2Ctermin-2');
+    expect(rueckwegDerAkte(zweite)).toContain('nicht=termin-1');
+    await user.click(within(zweite).getByRole('button', { name: 'Erreicht' }));
+
+    // Die erste Antwort geht nicht verloren, obwohl die Adresse sie nie trug.
+    const ende = await fenster('1 noch nicht erreicht');
+    expect(within(ende).getByText('1 Person erreicht von 2.')).toBeInTheDocument();
   });
 
   it('bietet einem Zugang ohne Terminrecht keine Absage an', async () => {

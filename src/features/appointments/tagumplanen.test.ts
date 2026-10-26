@@ -5,6 +5,7 @@ import {
   leseAnrufstand,
   leseZeiten,
   liegtInZeiten,
+  mitAnrufliste,
   mitAnrufstand,
   naechsterAnruf,
   seitenKennung,
@@ -57,6 +58,15 @@ describe('Tag umplanen - die Folge (G2, ANN-574)', () => {
     expect(leseAnrufstand(neu)).toEqual({ a: 'erreicht', b: 'nicht' });
     // Ohne Ergebnis fallen die Parameter weg.
     expect(mitAnrufstand(neu, {}).has('erreicht')).toBe(false);
+  });
+
+  it('schreibt die ganze Anrufliste, auch wenn die Adresse davor noch ohne sie war', () => {
+    const davor = new URLSearchParams('person=p&datum=2027-05-12');
+    const neu = mitAnrufliste(davor, ['a', 'b'], { a: 'nicht' });
+    expect(neu.get('person')).toBe('p');
+    expect(leseAbgesagt(neu)).toEqual(['a', 'b']);
+    expect(leseAnrufstand(neu)).toEqual({ a: 'nicht' });
+    expect(davor.has('abgesagt')).toBe(false);
   });
 
   it('führt der Reihe nach zur nächsten Person ohne Ergebnis, am Ende zum Abschluss', () => {

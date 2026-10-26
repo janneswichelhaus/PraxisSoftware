@@ -49,6 +49,7 @@ import {
 import { aktiveStandortvorlage } from './standortvorlage';
 import { todayInTimeZone, wochenBeginn } from '@/lib/datum';
 import { leseMeldung } from '@/lib/meldung';
+import { useSuchbegriff } from '@/lib/suchbegriff';
 
 /**
  * Radflotte (FLT-EPIC-001): die Räder der Praxis nach Standort, mit Suche,
@@ -113,19 +114,18 @@ export function FleetPage({ user }: { user: CurrentUser }) {
   });
 
   const [parameter, setParameter] = useSearchParams();
-  const suche = parameter.get('q') ?? '';
+  // Die Suche findet auch Personen; der Begriff steht deshalb nie in der Adresse (ADR-011).
+  const [suche, suchen] = useSuchbegriff('radflotte');
   const zustandRoh = parameter.get('zustand');
   const zustand: Zustandsfilter = istZustandsfilter(zustandRoh) ? zustandRoh : 'alle';
   const freiRoh = Number(parameter.get('frei'));
   const frei: Wochentag | null = istWochentag(freiRoh) ? freiRoh : null;
 
-  function setze(naechste: { q?: string; zustand?: Zustandsfilter; frei?: Wochentag | null }) {
+  function setze(naechste: { zustand?: Zustandsfilter; frei?: Wochentag | null }) {
     const neu = new URLSearchParams(parameter);
-    const q = naechste.q ?? suche;
+    neu.delete('q');
     const z = naechste.zustand ?? zustand;
     const f = naechste.frei === undefined ? frei : naechste.frei;
-    if (q.trim()) neu.set('q', q);
-    else neu.delete('q');
     if (z !== 'alle') neu.set('zustand', z);
     else neu.delete('zustand');
     if (f) neu.set('frei', String(f));
@@ -188,6 +188,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
             suche={suche}
             zustand={zustand}
             frei={frei}
+            onSuche={suchen}
             onFilter={setze}
             onMeldung={(text) => setMeldung((vorher) => ({ text, nr: (vorher?.nr ?? 0) + 1 }))}
           />
@@ -205,6 +206,7 @@ function Flotte({
   suche,
   zustand,
   frei,
+  onSuche,
   onFilter,
   onMeldung,
 }: {
@@ -215,7 +217,8 @@ function Flotte({
   suche: string;
   zustand: Zustandsfilter;
   frei: Wochentag | null;
-  onFilter: (naechste: { q?: string; zustand?: Zustandsfilter; frei?: Wochentag | null }) => void;
+  onSuche: (wert: string) => void;
+  onFilter: (naechste: { zustand?: Zustandsfilter; frei?: Wochentag | null }) => void;
   onMeldung: (text: string) => void;
 }) {
   const queryClient = useQueryClient();
@@ -288,13 +291,7 @@ function Flotte({
       {/* Suche offen, Zustand und „Frei am“ am Telefon hinter „Filter“
           (Filterleiste, ANN-405); darunter der Bestand als Ergebniszeile. */}
       <Filterleiste
-        suche={
-          <SearchField
-            placeholder="Rad, Person, Notiz"
-            value={suche}
-            onChange={(wert) => onFilter({ q: wert })}
-          />
-        }
+        suche={<SearchField placeholder="Rad, Person, Notiz" value={suche} onChange={onSuche} />}
         gesetzt={(zustand === 'alle' ? 0 : 1) + (frei ? 1 : 0)}
         onZuruecksetzen={() => onFilter({ zustand: 'alle', frei: null })}
         beschriftung="Radflotte filtern"
