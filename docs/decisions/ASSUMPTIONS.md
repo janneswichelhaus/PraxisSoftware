@@ -7660,3 +7660,27 @@ Praxisprozess · offen · 2026-10-26 · — · — · Wiedervorlage: —
 **Anker.** `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql`; Test „Ältere Ladestrom-Anträge mit Rechenweg“ in `reimbursements.test.ts`.
 
 **Änderungspfad.** Eigene Art „Strom“: `submit_purchase_reimbursement` und `staff_reimbursements_kind_fields` erweitern · Aufwand `mittel`.
+
+### ANN-750 — Auskunft für Beschäftigte und Verordner:innen von Hand
+
+Datenschutz · offen · 2026-10-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung
+
+**Annahme.** Für Beschäftigtendaten (Personal, Zeit, Urlaub, Erstattung, Radflotte, Teamchat, Praxiskonten) und für Verordner:innen gibt es keine Auskunftsfunktion; eine Auskunft nach Art. 15 DSGVO stellt die Inhaberin aus den Daten der Person zusammen. Das Register führt diese Tabellen als `manual`, mit Begründung.
+
+**Begründung.** Die Kopien der Anwendung gelten Akte und Trainingsverhältnis; eine dritte wäre ein eigener Auftrag. Unsicher: ob die Prüfung für Beschäftigte eine Funktion verlangt.
+
+**Anker.** Die Zeilen `manual` in `supabase/migrations/20261225130000_datenregister.sql`.
+
+**Änderungspfad.** Kopie für Beschäftigte wie `export_patient_record`, Register auf `section` · Aufwand `mittel`.
+
+### ANN-751 — Ein Register je Tabelle über dem Aufbewahrungsplan
+
+Technik · offen · 2026-10-26 · — · — · Wiedervorlage: —
+
+**Annahme.** `public.data_registry` führt je Tabelle in `public` eine Zeile: Personenbezug, Auskunft (Abschnitt, verschachtelt, nur Plattform, ausgenommen, von Hand), Löschjournal (je Zeile, über den Elter, nach Regel, keins) samt Reihenfolge des Nachziehens und Zusammenführen. `retention_assignments` zeigt per Fremdschlüssel darauf; Ausnahmen tragen eine Begründung.
+
+**Begründung.** Schritt 4 der Tiefenanalyse (Abschnitt 3b.8, Jannes 2026-10-26): Die Entscheidungen standen verteilt in Funktionen und Testlisten, Lücken fielen nicht auf.
+
+**Anker.** `supabase/migrations/20261225130000_datenregister.sql`; geprüft in `supabase/tests/data-registry.test.ts`.
+
+**Änderungspfad.** Generische Auskunft, Löschung oder Zusammenführung aus dem Register: je Funktion eine Migration · Aufwand `mittel`.
