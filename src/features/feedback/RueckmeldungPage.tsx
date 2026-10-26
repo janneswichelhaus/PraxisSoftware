@@ -3,10 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/Feedback';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { KeinZugang } from '@/app/KeinZugang';
@@ -14,15 +18,22 @@ import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { EINGANG } from '@/features/organisation/pfade';
 import type { CurrentUser } from '@/features/session/types';
 import { leseRueckweg } from '@/lib/rueckweg';
-import { FEEDBACK_KEY, FEEDBACK_STATUS_KEY, fetchFeedbackStatus, submitMessage } from './api';
-import { TEXT_MAX, WER_SIEHT_WAS } from './fragen';
+import {
+  FEEDBACK_KEY,
+  FEEDBACK_STATUS_KEY,
+  FEEDBACK_SUMMARY_KEY,
+  fetchFeedbackStatus,
+  fetchFeedbackSummary,
+  submitMessage,
+  type FeedbackSummary,
+} from './api';
+import { TEXT_MAX, WER_SIEHT_WAS, zeitraum } from './fragen';
 import { NamentlicheRueckmeldungen } from './NamentlicheRueckmeldungen';
 
 /**
- * „Rückmeldung an die Praxisleitung“ (ORG-006, ANN-608): jederzeit ein
- * Freitext, mit oder ohne Namen - dieselbe Wahl wie im Barometer, zwei
- * gleichwertige Knöpfe. owner nimmt nicht teil; für owner steht hier die
- * Liste der namentlichen Rückmeldungen.
+ * „Rückmeldung an die Praxisleitung“ (ANN-608): jederzeit ein Freitext, mit oder ohne Namen, zwei
+ * gleichwertige Knöpfe. owner nimmt nicht teil und liest hier die namentlichen einzeln und die
+ * ohne Namen als Summe.
  */
 export function RueckmeldungPage({ user }: { user: CurrentUser }) {
   const status = useQuery({
@@ -46,8 +57,11 @@ export function RueckmeldungPage({ user }: { user: CurrentUser }) {
         stand.can_read ? (
           <>
             <Rueckweg standard={EINGANG} />
-            <PageHeader title="Rückmeldungen" description="Mit Namen, die neueste zuerst" />
-            <NamentlicheRueckmeldungen />
+            <PageHeader title="Rückmeldungen" description="An die Praxisleitung" />
+            <div className="flex flex-col gap-8 [&>*]:mt-0">
+              <NamentlicheRueckmeldungen art="message" titel="Mit Namen" />
+              <OhneNamen />
+            </div>
           </>
         ) : stand.can_take_part ? (
           <Schreiben />
@@ -170,5 +184,54 @@ function Schreiben() {
         onChange={(e) => setText(e.target.value)}
       />
     </GefuehrterAblauf>
+  );
+}
+
+/**
+ * Die Praxissumme der Rückmeldungen ohne Namen (§20.2 Nr. 4): die Texte gemischt - oder „noch zu
+ * wenige“. Die Schwelle prüft der Server; hier steht nur, was er liefert.
+ */
+function OhneNamen() {
+  const summe = useQuery({
+    queryKey: FEEDBACK_SUMMARY_KEY,
+    queryFn: fetchFeedbackSummary,
+    retry: false,
+  });
+  return (
+    <Abfragezustand
+      abfrage={summe}
+      laden="Rückmeldungen ohne Namen werden geladen …"
+      fehler="Die Rückmeldungen ohne Namen konnten nicht geladen werden."
+    >
+      {(daten) => <Summe daten={daten} />}
+    </Abfragezustand>
+  );
+}
+
+function Summe({ daten: { messages } }: { daten: FeedbackSummary }) {
+  return (
+    <div className="flex flex-col gap-3 [&>*]:mt-0">
+      {messages.status === 'ready' ? (
+        <Listenabschnitt
+          titel={`Ohne Namen · ${zeitraum(messages.from_month, messages.to_month)}`}
+          anzahl={messages.texts.length}
+        >
+          {messages.texts.map((text, index) => (
+            <ListRow
+              key={`nachricht-${index}`}
+              titel={<span className="break-words whitespace-pre-line">{text}</span>}
+            />
+          ))}
+        </Listenabschnitt>
+      ) : (
+        <Section titel="Ohne Namen">
+          <EmptyState inKarte title="Noch zu wenige Rückmeldungen für eine Auswertung" />
+        </Section>
+      )}
+      <Kleingedrucktes>
+        Ohne Namen gesendete Rückmeldungen erscheinen erst ab fünf und drei möglichen Teilnehmenden,
+        gemischt und ohne Monat; der laufende Monat zählt nach seinem Ende.
+      </Kleingedrucktes>
+    </div>
   );
 }

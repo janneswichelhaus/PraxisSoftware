@@ -32,10 +32,6 @@ test.describe('Plattform', () => {
       await page.goto(`${PRUEFSEITE}?seite=abschnitt-aktiv`);
       await expect(page.getByText('Eingerichtet')).toBeVisible();
       await expect(page.getByRole('button', { name: 'Sperren' }).first()).toBeVisible();
-      // E-001: der Weg in die Einsicht der Plattform, für die Inhaber:in.
-      const einsicht = page.getByRole('link', { name: 'So sieht Maximilian die Plattform' });
-      await expect(einsicht).toBeVisible();
-      expect((await einsicht.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       expect(await ueberlaeuft(page)).toBe(false);
 
       // POR-005: Vertretungen und das Formular mit dem Wortlaut der Einwilligung.

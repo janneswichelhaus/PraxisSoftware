@@ -13,7 +13,6 @@ import { Personenbild } from '@/components/ui/Personenbild';
 import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
-import { StatusMark } from '@/components/ui/StatusMark';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
@@ -32,11 +31,23 @@ import {
   trainingsangebotSchluessel,
   termineSchluessel,
   wuenscheSchluessel,
+  ladeAbo,
+  ladeBefundbogen,
+  ladeBenachrichtigungen,
+  ladeCheckins,
+  ladeErnaehrung,
+  ladeGewohnheiten,
+  ladeMeinePakete,
+  ladeNachrichten,
+  ladePlaene,
+  ladeRechnungen,
+  ladeTermine,
+  ladeTrainingsangebot,
+  ladeWuensche,
   type Plattformzugang,
   type Termin,
 } from './api';
 import { Besuchskarte } from './Besuchskarte';
-import { useNurLesen, usePlattformApi } from './einsicht';
 import { nachDemCheckin } from './checkintexte';
 import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import { mitteilungenOffen } from './einstiegsablauf';
@@ -97,17 +108,7 @@ import {
  * sehen darf, liefert der Server nicht (eine Begleitung ohne Einwilligung
  * sieht keine Rechnung).
  */
-export function Uebersicht({
-  zugang,
-  einstiegSteht = false,
-}: {
-  zugang: Plattformzugang;
-  /** E-001: nur in der Einsicht - die Person sähe zuerst den Einstieg. */
-  einstiegSteht?: boolean;
-}) {
-  const api = usePlattformApi();
-  // E-001: In der Einsicht führt kein Ziel auf eine Seite, die nur schreibt.
-  const nurLesen = useNurLesen();
+export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
   const verbunden = useIstVerbunden();
   const [suche] = useSearchParams();
   const nachCheckin = useEinmaligeRueckmeldung('checkin');
@@ -123,79 +124,76 @@ export function Uebersicht({
 
   const termine = useQuery({
     queryKey: termineSchluessel(id),
-    queryFn: () => api.ladeTermine(id),
+    queryFn: () => ladeTermine(id),
   });
   const wuensche = useQuery({
     queryKey: wuenscheSchluessel(id),
-    queryFn: () => api.ladeWuensche(id),
+    queryFn: () => ladeWuensche(id),
   });
   const rechnungen = useQuery({
     queryKey: rechnungenSchluessel(id),
-    queryFn: () => api.ladeRechnungen(id),
+    queryFn: () => ladeRechnungen(id),
   });
   // KOM-001: eine Antwort der Praxis auf eine Nachricht (DSN-001 4.1 Punkt 5).
   const nachrichten = useQuery({
     queryKey: nachrichtenSchluessel(id),
-    queryFn: () => api.ladeNachrichten(id),
+    queryFn: () => ladeNachrichten(id),
   });
   const bogen = useQuery({
     queryKey: befundbogenSchluessel(id),
-    queryFn: () => api.ladeBefundbogen(id),
+    queryFn: () => ladeBefundbogen(id),
     enabled: behandlung,
   });
   // ANG-004 (ANN-274): Nach einem Nachsorge-Abo zählt die Lesezeit vom Ende des Abos.
   const abo = useQuery({
     queryKey: aboSchluessel(id),
-    queryFn: () => api.ladeAbo(id),
+    queryFn: () => ladeAbo(id),
     enabled: behandlung,
   });
   // KND-003: das Angebot aus dem Abschlussgespräch. Eine Begleitung sieht es
   // nicht - der Server liefert ihr nichts (Recht contract).
   const angebot = useQuery({
     queryKey: trainingsangebotSchluessel(id),
-    queryFn: () => api.ladeTrainingsangebot(id),
+    queryFn: () => ladeTrainingsangebot(id),
     enabled: behandlung && !begleitung,
   });
   // TRK-003: der Check-in, wenn er fällig ist. Ohne Mahnung: Verpasstes
   // zählt nicht (IDEA-TRK-004).
   const checkin = useQuery({
     queryKey: checkinsSchluessel(id),
-    queryFn: () => api.ladeCheckins(id),
+    queryFn: () => ladeCheckins(id),
   });
   // ALT-003: laufende Gewohnheiten - ohne Zählwerk, ohne Mahnung.
   const gewohnheiten = useQuery({
     queryKey: gewohnheitenSchluessel(id),
-    queryFn: () => api.ladeGewohnheiten(id),
+    queryFn: () => ladeGewohnheiten(id),
   });
   // UEB-009: die Übungen für heute, im Training der Plan für zu Hause.
   const plaene = useQuery({
     queryKey: plaeneSchluessel(id),
-    queryFn: () => api.ladePlaene(id),
+    queryFn: () => ladePlaene(id),
   });
   // ANG-008: das eigene Paket; `null` ohne Recht billing.
   const pakete = useQuery({
     queryKey: paketeSchluessel(id),
-    queryFn: () => api.ladeMeinePakete(id),
+    queryFn: () => ladeMeinePakete(id),
     enabled: !behandlung,
   });
-  // ERN-002: das Tagebuch einer gebuchten Beratung. Die Einsicht liest die
-  // Ernährung nicht (ADR-027 Punkt 4), eine Begleitung bekommt nichts.
+  // Das Tagebuch einer gebuchten Beratung; eine Begleitung bekommt nichts.
   const ernaehrung = useQuery({
     queryKey: ernaehrungSchluessel(id),
-    queryFn: () => api.ladeErnaehrung(id),
-    enabled: !nurLesen && !begleitung,
+    queryFn: () => ladeErnaehrung(id),
+    enabled: !begleitung,
   });
-  // ANN-702: ob die Person schon über Mitteilungen entschieden hat. Die
-  // Einsicht fragt das nicht - die Wahl ist Sache der Person (ADR-024 Punkt 15).
+  // ANN-702: ob die Person schon über Mitteilungen entschieden hat.
   const mitteilungen = useQuery({
     queryKey: benachrichtigungSchluessel(id, null),
-    queryFn: () => api.ladeBenachrichtigungen(id, null),
-    enabled: !nurLesen,
+    queryFn: () => ladeBenachrichtigungen(id, null),
   });
 
   // Nur, was die Übersicht hier selbst abfragt: Eine ausgeschaltete Abfrage
   // übernähme sonst den Fehler, den eine andere Seite unter demselben
-  // Schlüssel hinterließ (in der Einsicht etwa die Ernährung unter „Ich“).
+  // Schlüssel hinterließ.
   const abfragen = (
     [
       [termine, true],
@@ -209,8 +207,8 @@ export function Uebersicht({
       [gewohnheiten, true],
       [plaene, true],
       [pakete, !behandlung],
-      [ernaehrung, !nurLesen && !begleitung],
-      [mitteilungen, !nurLesen],
+      [ernaehrung, !begleitung],
+      [mitteilungen, true],
     ] as const
   )
     .filter(([, an]) => an)
@@ -265,12 +263,6 @@ export function Uebersicht({
           nächsten Termin.
         </Rueckmeldung>
       ) : null}
-      {/* E-001: Status als Zeichen und Wort (DESIGN.md Regel 5), kein Erklärsatz. */}
-      {einstiegSteht ? (
-        <p>
-          <StatusMark ton="warnung">Einstieg steht aus</StatusMark>
-        </p>
-      ) : null}
     </Kopfteil>
   );
 
@@ -301,7 +293,7 @@ export function Uebersicht({
         zeichen: ZEICHEN.checkin,
         titel: 'Check-in beantworten',
         satz: `${fragenText(fragen.length)}, freiwillig, etwa 1 Minute`,
-        to: nurLesen ? null : p('/checkin'),
+        to: p('/checkin'),
       });
     } else if (
       !begleitung &&
@@ -327,7 +319,7 @@ export function Uebersicht({
           zeichen: ZEICHEN.uebungen,
           titel: eigen ? 'Ihre Übungen für heute' : 'Übungen für heute',
           satz: uebungenText(uebungen, verbunden),
-          to: nurLesen ? p('/uebungen') : mit(handlung(uebungen).pfad),
+          to: mit(handlung(uebungen).pfad),
         });
       }
     } else {
@@ -484,7 +476,6 @@ export function Uebersicht({
       erster={erster}
       jetzt={jetzt}
       verbunden={verbunden}
-      nurLesen={nurLesen}
       mit={mit}
       markenmoment={markenmoment}
     />,
@@ -654,7 +645,6 @@ function Hauptsachekarte({
   erster,
   jetzt,
   verbunden,
-  nurLesen,
   mit,
   markenmoment,
 }: {
@@ -664,7 +654,6 @@ function Hauptsachekarte({
   erster: boolean;
   jetzt: Date;
   verbunden: boolean;
-  nurLesen: boolean;
   mit: (pfad: string) => string;
   markenmoment: boolean;
 }) {
@@ -701,7 +690,7 @@ function Hauptsachekarte({
     case 'aufgabe': {
       const a = haupt.aufgabe;
       const knopf = handlung(a);
-      const aktion = nurLesen ? undefined : { text: knopf.text, to: mit(knopf.pfad) };
+      const aktion = { text: knopf.text, to: mit(knopf.pfad) };
       // Für eine Vertretung die Aufgabe der Person, nicht die eigene (5.1).
       const fuer = vertretung ? zugang.represented_name : null;
       const welcher = erster ? 'ersten' : 'nächsten';
@@ -755,8 +744,7 @@ interface Eintrag {
   zeichen: ReactNode;
   titel: string;
   satz: string;
-  /** Ohne Ziel (Einsicht) als Zeile ohne Link. */
-  to: string | null;
+  to: string;
 }
 
 /**
@@ -764,7 +752,7 @@ interface Eintrag {
  * Weitere als Zeile (PLATTFORM.md).
  */
 function Heute({ titel, eintraege }: { titel: string; eintraege: Eintrag[] }) {
-  const karten = eintraege.filter((e) => e.to !== null).slice(0, 3);
+  const karten = eintraege.slice(0, 3);
   const zeilen = eintraege.filter((e) => !karten.includes(e));
   return (
     <Section titel={titel}>
@@ -775,18 +763,13 @@ function Heute({ titel, eintraege }: { titel: string; eintraege: Eintrag[] }) {
             zeichen={e.zeichen}
             titel={e.titel}
             satz={e.satz}
-            to={e.to!}
+            to={e.to}
           />
         ))}
         {zeilen.length > 0 ? (
           <ListRows rahmen>
             {zeilen.map((e) => (
-              <ListRow
-                key={e.schluessel}
-                titel={e.titel}
-                meta={e.satz}
-                {...(e.to ? { to: e.to } : {})}
-              />
+              <ListRow key={e.schluessel} titel={e.titel} meta={e.satz} to={e.to} />
             ))}
           </ListRows>
         ) : null}

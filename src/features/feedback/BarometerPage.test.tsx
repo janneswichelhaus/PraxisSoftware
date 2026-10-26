@@ -6,16 +6,15 @@ import { RouterProvider, createMemoryRouter, useLocation } from 'react-router-do
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { testUser } from '@/test-utils';
 import type * as FeedbackApi from './api';
-import type { FeedbackStatus, FeedbackSummary } from './api';
+import type { FeedbackStatus, NamedFeedback } from './api';
 
 /**
- * Das Barometer (ORG-006, ANN-607): eine Frage je Seite, jede überspringbar,
- * nichts vorbelegt; am Ende zwei gleichwertige Knöpfe. owner sieht die
- * Praxissumme oder „noch zu wenige“ - die Schwelle steht am Server.
+ * Das Barometer (ANN-607): eine Frage je Seite, jede überspringbar, nichts vorbelegt; am Ende
+ * „Mit Namen senden“. owner liest die Antworten einzeln mit Namen, eine Summe gibt es nicht.
  */
 
 const fetchFeedbackStatus = vi.fn();
-const fetchFeedbackSummary = vi.fn();
+const fetchNamedFeedback = vi.fn();
 const submitBarometer = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
@@ -23,7 +22,7 @@ vi.mock('./api', async (importOriginal) => {
   return {
     ...actual,
     fetchFeedbackStatus: () => fetchFeedbackStatus() as unknown,
-    fetchFeedbackSummary: () => fetchFeedbackSummary() as unknown,
+    fetchNamedFeedback: () => fetchNamedFeedback() as unknown,
     submitBarometer: (...a: unknown[]) => submitBarometer(...a) as unknown,
   };
 });
@@ -63,12 +62,12 @@ function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
 
 beforeEach(() => {
   fetchFeedbackStatus.mockReset().mockResolvedValue(stand());
-  fetchFeedbackSummary.mockReset();
-  submitBarometer.mockReset().mockResolvedValue({ month: '2026-10-01', named: false });
+  fetchNamedFeedback.mockReset();
+  submitBarometer.mockReset().mockResolvedValue({ month: '2026-10-01' });
 });
 
 describe('Barometer abgeben', () => {
-  it('führt Frage für Frage zum Senden ohne Namen - sechs Tipps ab der ersten Frage', async () => {
+  it('führt Frage für Frage zum Senden mit Namen - sechs Tipps ab der ersten Frage', async () => {
     const nutzer = userEvent.setup();
     rendern();
     let tipps = 0;
@@ -113,20 +112,23 @@ describe('Barometer abgeben', () => {
     expect(within(abschluss).getByText('7 von 9')).toBeInTheDocument();
     expect(within(abschluss).getByText('9 von 9')).toBeInTheDocument();
     expect(within(abschluss).getAllByText('übersprungen')).toHaveLength(3);
-    expect(within(abschluss).getByText(/Nur die Praxisleitung sieht/)).toBeInTheDocument();
-    // Zwei gleichwertige Knöpfe: gleiche Art, keiner vorgewählt.
-    const mit = within(abschluss).getByRole('button', { name: 'Mit Namen senden' });
-    const ohne = within(abschluss).getByRole('button', { name: 'Ohne Namen senden' });
-    expect(mit.className).toBe(ohne.className);
+    // Vor dem Senden steht da, dass es mit Namen geht - eine Wahl gibt es nicht.
+    expect(
+      within(abschluss).getByText(/Nur die Praxisleitung sieht deine Antworten, mit deinem Namen/),
+    ).toBeInTheDocument();
+    expect(within(abschluss).queryByRole('button', { name: 'Ohne Namen senden' })).toBeNull();
     await pruefeBarrierefreiheit(document.body);
-    await tippe(ohne);
+    await tippe(within(abschluss).getByRole('button', { name: 'Mit Namen senden' }));
 
     expect(submitBarometer).toHaveBeenCalledWith({
-      named: false,
-      answers: { mood: 7, tours: null, team: 9, easier: '', more: '' },
+      mood: 7,
+      tours: null,
+      team: 9,
+      easier: '',
+      more: '',
     });
     expect(await screen.findByRole('dialog', { name: 'Danke!' })).toBeInTheDocument();
-    expect(screen.getByText(/Ohne Namen gesendet/)).toBeInTheDocument();
+    expect(screen.getByText('Mit deinem Namen an die Praxisleitung gesendet.')).toBeInTheDocument();
     // Mit „Jetzt“ im Fenster der Übersicht sind es sieben.
     expect(tipps).toBe(6);
     await nutzer.click(screen.getByRole('button', { name: 'Fertig' }));
@@ -135,7 +137,6 @@ describe('Barometer abgeben', () => {
 
   it('ändert aus dem Abschluss und kehrt dorthin zurück; ohne Antwort kein Senden', async () => {
     const nutzer = userEvent.setup();
-    submitBarometer.mockResolvedValue({ month: '2026-10-01', named: true });
     rendern();
     for (let i = 0; i < 5; i += 1) {
       const fenster = await screen.findByRole('dialog');
@@ -144,7 +145,6 @@ describe('Barometer abgeben', () => {
     let abschluss = screen.getByRole('dialog', { name: 'Senden?' });
     expect(within(abschluss).getByText('Noch nichts beantwortet.')).toBeInTheDocument();
     expect(within(abschluss).getByRole('button', { name: 'Mit Namen senden' })).toBeDisabled();
-    expect(within(abschluss).getByRole('button', { name: 'Ohne Namen senden' })).toBeDisabled();
 
     await nutzer.click(
       within(abschluss).getByRole('button', {
@@ -159,8 +159,11 @@ describe('Barometer abgeben', () => {
     expect(within(abschluss).getByText('Mehr Pausen')).toBeInTheDocument();
     await nutzer.click(within(abschluss).getByRole('button', { name: 'Mit Namen senden' }));
     expect(submitBarometer).toHaveBeenCalledWith({
-      named: true,
-      answers: { mood: null, tours: null, team: null, easier: 'Mehr Pausen', more: '' },
+      mood: null,
+      tours: null,
+      team: null,
+      easier: 'Mehr Pausen',
+      more: '',
     });
     expect(await screen.findByText(/Mit deinem Namen/)).toBeInTheDocument();
   });
@@ -180,45 +183,54 @@ describe('Barometer abgeben', () => {
 });
 
 describe('Barometer für owner', () => {
+  const ANTWORTEN: NamedFeedback[] = [
+    {
+      id: 'b1',
+      kind: 'barometer',
+      month: '2026-09-01',
+      name: 'Tim Teamleitung',
+      mood: 8,
+      tours: null,
+      team: 6,
+      easier_text: 'Mehr Pausen',
+      more_text: null,
+      message_text: null,
+    },
+    {
+      id: 'r1',
+      kind: 'message',
+      month: '2026-10-01',
+      name: 'Olivia Office',
+      mood: null,
+      tours: null,
+      team: null,
+      easier_text: null,
+      more_text: null,
+      message_text: 'Der Drucker klemmt',
+    },
+  ];
+
   beforeEach(() => {
     fetchFeedbackStatus.mockResolvedValue(stand({ can_take_part: false, can_read: true }));
   });
 
-  it('sagt nur „noch zu wenige“, wenn der Server keine Summe liefert', async () => {
-    const zuWenige: FeedbackSummary = {
-      barometer: { status: 'too_few' },
-      messages: { status: 'too_few' },
-    };
-    fetchFeedbackSummary.mockResolvedValue(zuWenige);
+  it('zeigt jede Antwort einzeln mit Namen, ohne Summe', async () => {
+    fetchNamedFeedback.mockResolvedValue(ANTWORTEN);
     rendern(['owner', 'therapist']);
-    expect(await screen.findAllByText('Noch zu wenige Antworten für eine Auswertung')).toHaveLength(
-      2,
-    );
+    expect(await screen.findByText('Tim Teamleitung · Barometer')).toBeInTheDocument();
+    expect(
+      screen.getByText('Insgesamt 8 · Touren und Fahrzeiten – · Miteinander im Team 6'),
+    ).toBeInTheDocument();
+    // Rückmeldungen stehen unter „Rückmeldungen“, nicht hier.
+    expect(screen.queryByText('Der Drucker klemmt')).toBeNull();
+    expect(screen.queryByText(/Median/)).toBeNull();
     expect(screen.queryByRole('dialog')).toBeNull();
+    await pruefeBarrierefreiheit(document.body);
   });
 
-  it('zeigt die Praxissumme: Median, Verteilung, Texte', async () => {
-    fetchFeedbackSummary.mockResolvedValue({
-      barometer: {
-        status: 'ready',
-        from_month: '2026-08-01',
-        to_month: '2026-09-01',
-        answers: 6,
-        mood: { enough: true, answered: 6, median: 6.5, distribution: [0, 0, 1, 0, 1, 1, 2, 1, 0] },
-        tours: { enough: false },
-        team: { enough: true, answered: 5, median: 7, distribution: [0, 0, 0, 0, 0, 1, 3, 1, 0] },
-        easier_texts: ['Mehr Pausen'],
-        more_texts: [],
-      },
-      messages: { status: 'too_few' },
-    } satisfies FeedbackSummary);
+  it('sagt, wenn es noch keine Antworten gibt', async () => {
+    fetchNamedFeedback.mockResolvedValue([ANTWORTEN[1]]);
     rendern(['owner', 'therapist']);
-    expect(await screen.findByText('August bis September 2026 · 6 Antworten')).toBeInTheDocument();
-    expect(
-      screen.getByText('Median 6,5 von 9 · niedrig 1 · mittel 2 · hoch 3'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Zu wenige Antworten auf diese Frage')).toBeInTheDocument();
-    expect(screen.getByText('Mehr Pausen')).toBeInTheDocument();
-    await pruefeBarrierefreiheit(document.body);
+    expect(await screen.findByText('Noch keine Antworten')).toBeInTheDocument();
   });
 });

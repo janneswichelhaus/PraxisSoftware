@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 7.19 · Stand 2026-10-26 · **in Kraft**
+Version 7.20 · Stand 2026-10-26 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Fassung 7.0 arbeitet das Produktgespräch vom 2026-09-23 ein
@@ -22,7 +22,7 @@ abgeschlossen ist. Wie es steht, misst `/aufraeumen` (`AUFRAEUMEN.md`).
 | 1 | Kommentarregel mit Prüfung (`pnpm kommentare:check`), die 14 extremsten Kopfkommentare gekürzt, `/aufraeumen` rein diagnostisch, `CLAUDE.md` auf unter 7 KB verdichtet | Standard | gemergt (#308) |
 | 2 | Migrationen vor dem Start zu einer Basis zusammenfassen: vorher Schemaabzug (Tabellen, Constraints, Indizes, Policies, Trigger, Funktionen), danach automatischer Diff ohne Unterschied und alle Tests grün; einmalige Ausnahme vom Migrationen-Gate (freigegeben); dazu eine Übersicht der DB-Funktionen nach Art und der verwaisten | Pfad A | gemergt (#309, #310); Funktionen ohne Aufrufer entfernt, Rechte der API-Rollen nachgezogen |
 | 3 | Modulschnittstellen: je Modul eine schmale `index.ts` ohne pauschale Re-Exporte, ESLint-Regel gegen tiefe Importe (zuerst Warnung); beginnend mit „Termine“, dort die gegenseitigen Abhängigkeiten auflösen; zusammengehörige kleine Module prüfen. Teil 1, Rest: die Zeit- und Kalenderhilfen aller Module in `src/lib/datum.ts` | Pfad A | gemergt (#312); Rest gebaut (Branch `ccr-30ca4f76-x8pvfg`) |
-| 4a | Teillöschung unter Belegfrist: Screening, Assessments, Check-ins, Gewohnheiten und Übungspläne eines beendeten Trainingsverhältnisses (17 Tabellen) fallen nach drei Jahren, auch wenn die Belege acht Jahre bleiben (ADR-021 Punkt 4, ANN-183; Jannes 2026-10-26) | Pfad A | offen, erste Pfad-A-Story |
+| 4a | Teillöschung unter Belegfrist: Screening, Assessments, Check-ins, Gewohnheiten und Übungspläne eines beendeten Trainingsverhältnisses (17 Tabellen) fallen nach drei Jahren, auch wenn die Belege acht Jahre bleiben (ADR-021 Punkt 4, ANN-183; Jannes 2026-10-26) | Pfad A | gebaut (dritte PR, Branch `claude/pr-313-decisions-2mdcwc`), mit Restore und Entscheidung je Tabelle im Test; den Löschlauf startet nur noch pg_cron |
 | 4 | Register für Datenauskunft, Aufbewahrung, Löschjournal und Zusammenführung; ein Test wird rot, wenn eine Tabelle mit Patientenbezug darin nicht klassifiziert ist | Pfad A | offen |
 | 3b | Domänenschnitt „Ziel“ der Tiefenanalyse (14 Domänen, Abschnitt 1a.5; Jannes 2026-10-26): geteilte Hilfen nach `src/lib`, eine Regel, nach der nur Seiten fremde Domänen importieren, die 17 Rückkanten umdrehen, danach die Ordner zusammenlegen | Standard | offen |
 | 5 | Doku-Konsolidierung (54.000 Zeilen -> <10.000 Zeilen, Bereinigung von 732 ANN und 230 BEF). Git ist das Archiv: Archiv, Chroniken und erledigte Handoffs gehen ersatzlos. Das Prüfpaket umfasst 208 Einträge mit einem Gate für den Zusatz; dabei werden 17 fehlende und 11 falsche Zusätze korrigiert und ANN-662 gegen ADR-024 sowie ANN-541 gegen ADR-009 aufgelöst (Jannes 2026-10-26) | Standard | offen |
@@ -32,13 +32,13 @@ abgeschlossen ist. Wie es steht, misst `/aufraeumen` (`AUFRAEUMEN.md`).
 
 | Nr. | Fehler | Weg | Wohin |
 | --- | --- | --- | --- |
-| 1 | Die Teillöschung unter Belegfrist lässt 17 Tabellen mit Art.-9-Daten des Trainings bis zu fünf Jahre zu lang stehen | Pfad A | Schritt 4a |
+| 1 | Die Teillöschung unter Belegfrist lässt 17 Tabellen mit Art.-9-Daten des Trainings bis zu fünf Jahre zu lang stehen | Pfad A | behoben mit Schritt 4a (dritte PR) |
 | 2 | 12 Lösch-RPCs schreiben kein Löschjournal; nach einem Restore kämen Zeilen aus 16 Tabellen zurück (umfasst BEF-198) | Pfad A | Schritt 4 |
 | 3 | Das Zusammenführen hat weder einen Vollständigkeitstest noch einen Nachweis für einen Restore | Pfad A | Schritt 4 |
-| 4 | Ein Trainings-Nachtrag gilt bei 403 als gespeichert (`addTrainingProtocolAddendum`) | Pfad A | behoben (Branch `claude/pr-313-decisions-2mdcwc`) |
-| 5 | Das Upload-Recht der Akte prüft weder die hochladende Person noch das 24-Stunden-Fenster; zwei Bestätigungen sperren, ohne unter der Sperre nachzuprüfen | Pfad A, Zweitreview | behoben (Branch `claude/pr-313-decisions-2mdcwc`, zweite PR) |
-| 6 | Die Mitarbeiterliste schreibt den Suchbegriff, meist einen Namen, in Adresse und Rückweg | Pfad A | behoben, samt Radflotte (Branch `claude/pr-313-decisions-2mdcwc`) |
-| 7 | DB-Funktionen ohne Produktionsaufrufer: #311 hat neun der 19 entfernt. `app.mdr_released` ist entfernt. `list_patient_treatment_evidence` bleibt, bis Jannes entscheidet: Sie ist der Behandlungsnachweis, den `PROJECT_PRINCIPLES.md` §4.4 als MUSS verlangt (ADR-004 Punkt 4). Es bleiben die drei Funktionen zum Legal Hold (ADR-008), `reapply_deletion_journal`, `bootstrap_practice`, die beiden Importfunktionen des Lebensmittelkatalogs und `app.appointment_window_options` (Jannes 2026-10-26) | Pfad A | zur Hälfte (zweite PR), Rückfrage zu §4.4 |
+| 4 | Ein Trainings-Nachtrag gilt bei 403 als gespeichert (`addTrainingProtocolAddendum`) | Pfad A | gemergt (#314) |
+| 5 | Das Upload-Recht der Akte prüft weder die hochladende Person noch das 24-Stunden-Fenster; zwei Bestätigungen sperren, ohne unter der Sperre nachzuprüfen | Pfad A, Zweitreview | gemergt (#315) |
+| 6 | Die Mitarbeiterliste schreibt den Suchbegriff, meist einen Namen, in Adresse und Rückweg | Pfad A | gemergt, samt Radflotte (#314) |
+| 7 | DB-Funktionen ohne Produktionsaufrufer: #311 hat neun der 19 entfernt. `app.mdr_released` ist entfernt. `list_patient_treatment_evidence` bleibt, bis Jannes entscheidet: Sie ist der Behandlungsnachweis, den `PROJECT_PRINCIPLES.md` §4.4 als MUSS verlangt (ADR-004 Punkt 4). Es bleiben die drei Funktionen zum Legal Hold (ADR-008), `reapply_deletion_journal`, `bootstrap_practice`, die beiden Importfunktionen des Lebensmittelkatalogs und `app.appointment_window_options` (Jannes 2026-10-26) | Pfad A | zur Hälfte (#315), Rückfrage zu §4.4 |
 
 **Teamchat, Radflotte, Personal, Barometer:** Teamchat, Radflotte und Barometer bleiben fester Teil
 des Systems; sie werden nicht als Module gelöscht (Jannes 2026-10-26). Teamchat, Radflotte und
@@ -54,6 +54,9 @@ Es bleiben **M2** Check-Up, **M3** Teamchat samt Sprachnachricht (ohne Ausbau), 
 ersten beschäftigten Person, ohne die Wahl „ohne Namen“ und ohne die Schwellen 3 und 5; die freie
 Rückmeldung behält Wahl und Schwellen. Das ändert `PROJECT_PRINCIPLES.md` §20.2 Nr. 1 und 4
 (freigegeben) und ANN-607, mit Migration über Pfad A.
+**Stand:** M9, M1, M5, M7 und das Barometer nach Option A sind gebaut (dritte PR). Im Check-Up
+zeigt „Wo genau?“ die Bauteile des Prüfpunkts als Knöpfe, die Panne die Liste der 27; Ladestrom
+läuft als Einkauf mit Beleg (ANN-749); `PROJECT_PRINCIPLES.md` steht auf 0.29.
 
 **Reihenfolge der nächsten PRs** (Jannes 2026-10-26): erstens Fehler 4 und 6 und der wackelnde Test
 zu „Tag umplanen“ an der Ursache; zweitens Fehler 5 und 7 mit Zweitreview; drittens Schritt 4a,
@@ -1036,6 +1039,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
 | Version | Datum | Änderung |
 | --- | --- | --- |
+| 7.20 | 2026-10-26 | **Aufräumen**, Schritt 4a, M9, M1, M5, M7 und das Barometer nach Option A gebaut (dritte PR); Fehler 4 bis 6 gemergt. Kette der Blöcke sonst unverändert. |
 | 7.19 | 2026-10-26 | **Aufräumen**, Fehler 5 behoben; von Fehler 7 `app.mdr_released` entfernt, `list_patient_treatment_evidence` bleibt bis zur Entscheidung, weil §4.4 der Prinzipien den Behandlungsnachweis verlangt. Kette der Blöcke sonst unverändert. |
 | 7.18 | 2026-10-26 | **Aufräumen**, Entscheidungen zu M1 bis M9 (Jannes): M1, M5, M7 und M9 werden zurückgebaut, M2, M3, M4, M6 und M8 bleiben; Barometer nach Option A, nur namentlich; Fehler 7 mit festem Umfang; Reihenfolge der nächsten drei PRs; Fehler 4 und 6 behoben. Kette der Blöcke sonst unverändert. |
 | 7.17 | 2026-10-26 | **Aufräumen**, Entscheidungen zur Tiefenanalyse (Jannes): Schritte 4a (Teillöschung im Training) und 3b (Domänenschnitt), Reihenfolge 3, 4a, 4, 3b, 5; zu Schritt 5 Git als Archiv und das Prüfpaket mit Gate; sieben Fehler verbindlich aufgenommen; Teamchat, Radflotte und Barometer bleiben, Teamchat, Radflotte und Personal ohne Ausbau bis Schritt 3 und 4 stehen; M1 bis M9 einzeln. Kette der Blöcke sonst unverändert. |

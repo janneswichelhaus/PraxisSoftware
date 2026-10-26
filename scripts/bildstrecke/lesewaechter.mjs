@@ -1,16 +1,7 @@
 // -----------------------------------------------------------------------------
-// Der Lesewaechter der Bildstrecke: Sie oeffnet Seiten nur und laeuft oft
-// gegen einen gemeinsam genutzten Stack. Eine Seite, die schon beim Oeffnen
-// schreibt, soll dort nichts veraendern - der Waechter laesst lesende Anfragen
-// durch, haelt schreibende an und meldet sie. Eine angehaltene Anfrage ist
-// selbst ein Befund: Die Seite schreibt, ohne dass jemand etwas getan hat.
-//
-// Lesend heisst hier: GET/HEAD/OPTIONS, die Anmeldung selbst, RPCs mit
-// lesendem Namen (sie protokollieren hoechstens den Zugriff, ADR-010) und das
-// Signieren oder Auflisten von Dateien. Alles andere - jede andere RPC, jedes
-// Schreiben in eine Tabelle, ein Upload, eine Edge Function ausser dem
-// Kartendienst und der Vorschau des Ladestroms aus Touren - gilt als
-// Schreiben.
+// Die Bildstrecke laeuft oft gegen einen geteilten Stack: Lesendes geht durch (GET/HEAD/OPTIONS,
+// Anmeldung, RPCs mit lesendem Namen, Dateien signieren oder auflisten, der Kartendienst), alles
+// andere haelt der Waechter an und meldet es - eine Seite, die von selbst schreibt, ist ein Befund.
 // -----------------------------------------------------------------------------
 
 /** Die Pfade des Supabase-Gateways, die der Waechter ueberhaupt ansieht. */
@@ -28,8 +19,6 @@ const LESENDE_RPC_EINZELN = new Set([
   'log_patient_record_view',
   // Auszahlen zeigt owner die volle IBAN (ANN-601) - `stable`, nur lesend.
   'reimbursement_payout_details',
-  // ORG-008: die Vorschläge für den Ladestrom im Eingang - `stable`, nur lesend.
-  'electricity_suggestions',
   // TEAM-001: Das Öffnen eines Gesprächs zieht nur den eigenen Lesestand vor
   // (ANN-609) - wie das Öffnen einer Akte ein Lesen, kein Schreiben.
   'mark_team_channel_read',
@@ -41,8 +30,6 @@ const SCHREIBEND_TROTZ_NAME = /^platform_(accesses_take_back_deletion|invitation
 const ANMELDUNG = new Set(['/auth/v1/token', '/auth/v1/passkeys/authentication/options']);
 const DATEIEN_LESEN = /^\/storage\/v1\/object\/(sign|list)\//;
 const KARTENDIENST = /^\/functions\/v1\/location-provider(\/|$)/;
-// BEF-181: Die Vorschau rechnet nur; `record` traegt ein und bleibt angehalten.
-const LADESTROM_VORSCHAU = /^\/functions\/v1\/electricity-distance\/preview\/?$/;
 
 /**
  * `null`, wenn die Anfrage lesend ist; sonst eine kurze Beschreibung der
@@ -61,7 +48,6 @@ export function schreibanfrage(methode, adresse) {
   }
   if (DATEIEN_LESEN.test(pfad)) return null;
   if (KARTENDIENST.test(pfad)) return null;
-  if (LADESTROM_VORSCHAU.test(pfad)) return null;
   return `${methode} ${pfad}`;
 }
 

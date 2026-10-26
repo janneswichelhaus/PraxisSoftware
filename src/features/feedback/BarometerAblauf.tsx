@@ -19,10 +19,10 @@ import {
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { FEEDBACK_KEY, submitBarometer, type BarometerAnswers } from './api';
 import {
+  BAROMETER_MIT_NAMEN,
   SKALEN,
   TEXTE,
   TEXT_MAX,
-  WER_SIEHT_WAS,
   monatsname,
   type SkalenFrage,
   type TextFrage,
@@ -30,15 +30,9 @@ import {
 import { etwasBeantwortet, skalenText } from './inhalt';
 
 /**
- * Das Barometer als geführter Ablauf (ORG-006, ANN-607): eine Frage je Seite,
- * jede überspringbar, nichts vorbelegt. Die Skala ist die Antwort - ein Tipp
- * führt weiter. Am Ende die Zusammenfassung mit „Ändern“ je Frage und zwei
- * gleichwertigen Knöpfen: mit oder ohne Namen (§20.2 Nr. 1). Kein Tipp, welche
- * Wahl die bessere wäre.
- *
- * Vom Hinweis in der Übersicht bis abgeschickt sind es sieben Tipps, wenn die
- * Freitexte leer bleiben: „Jetzt“, drei Skalen, zweimal „Überspringen“,
- * „Senden“.
+ * Eine Frage je Seite, jede überspringbar, nichts vorbelegt; die Skala ist die Antwort. Am Ende
+ * „Ändern“ je Frage und „Mit Namen senden“ (§20.2 Nr. 1, ANN-607). Vom Hinweis bis abgeschickt
+ * sieben Tipps, wenn die Freitexte leer bleiben.
  */
 
 type Seite = SkalenFrage | TextFrage | 'abschluss';
@@ -68,7 +62,7 @@ export function BarometerAblauf({
   /** Der laufende Monat der Praxis, `YYYY-MM-01`. */
   monat: string;
   rueckweg: string;
-  onGesendet: (mitNamen: boolean) => void;
+  onGesendet: () => void;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -93,11 +87,11 @@ export function BarometerAblauf({
   });
 
   const senden = useMutation({
-    mutationFn: (mitNamen: boolean) => submitBarometer({ named: mitNamen, answers: antworten }),
-    onSuccess: async (antwort) => {
+    mutationFn: () => submitBarometer(antworten),
+    onSuccess: async () => {
       freigeben();
       await queryClient.invalidateQueries({ queryKey: FEEDBACK_KEY });
-      onGesendet(antwort.named);
+      onGesendet();
     },
   });
 
@@ -177,7 +171,7 @@ export function BarometerAblauf({
   }
 
   // ---------------------------------------------------------------------------
-  // Abschluss: was gesendet würde, und die Wahl mit oder ohne Namen.
+  // Abschluss: was gesendet würde, und mit wessen Namen.
   const beantwortet = etwasBeantwortet(antworten);
   return (
     <GefuehrterAblauf
@@ -194,27 +188,14 @@ export function BarometerAblauf({
             </Statusmeldung>
           ) : null}
           {beantwortet ? null : <p className="text-ink-muted text-sm">Noch nichts beantwortet.</p>}
-          <Kleingedrucktes>{WER_SIEHT_WAS}</Kleingedrucktes>
-          {/* Zwei gleichwertige Knöpfe, gleiche Größe und Art (§20.2 Nr. 1):
-              nichts ist vorgewählt, keiner ist der „richtige“. */}
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant="secondary"
-              className="w-full px-2"
-              disabled={!beantwortet || senden.isPending}
-              onClick={() => senden.mutate(true)}
-            >
-              Mit Namen senden
-            </Button>
-            <Button
-              variant="secondary"
-              className="w-full px-2"
-              disabled={!beantwortet || senden.isPending}
-              onClick={() => senden.mutate(false)}
-            >
-              Ohne Namen senden
-            </Button>
-          </div>
+          <Kleingedrucktes>{BAROMETER_MIT_NAMEN}</Kleingedrucktes>
+          <Button
+            className="w-full"
+            disabled={!beantwortet || senden.isPending}
+            onClick={() => senden.mutate()}
+          >
+            Mit Namen senden
+          </Button>
         </div>
       }
     >

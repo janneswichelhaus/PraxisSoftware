@@ -894,7 +894,7 @@ insert into public.exercise_plan_items
 update public.exercise_plan_items i
    set exercise_name = e.name, exercise_lay_name = e.lay_name, variant_name = v.name,
        variant_lay_name = v.lay_name, body_region = e.body_region, instruction = v.instruction,
-       equipment = v.equipment, illustration = v.illustration
+       equipment = v.equipment
   from public.exercise_variants v
   join public.exercises e on e.id = v.exercise_id
  where v.id = i.variant_id
@@ -1189,20 +1189,20 @@ insert into public.fleet_blocks (id, organization_id, bike_id, breakdown_id, rea
    now() - interval '3 days', '11111111-1111-4111-8111-000000000001');
 
 insert into public.fleet_spots
-  (id, organization_id, bike_id, checkup_id, breakdown_id, bike_type, model_version, zone,
-   point_x, point_y, point_z, severity, note, created_at, created_by) values
+  (id, organization_id, bike_id, checkup_id, breakdown_id, bike_type, zone, severity, note,
+   created_at, created_by) values
   ('b2b2b2b2-b2b2-4b2b-8b2b-000000000051', '22222222-2222-4222-8222-000000000001',
    'b2b2b2b2-b2b2-4b2b-8b2b-000000000013', 'b2b2b2b2-b2b2-4b2b-8b2b-000000000021', null,
-   'load60_riemen', 1, 'bremse-vorne', 1.050, 0.310, -0.060, 'problem',
+   'load60_riemen', 'bremse-vorne', 'problem',
    'Scheibe schleift beim Drehen', now() - interval '2 days', '11111111-1111-4111-8111-000000000004'),
   ('b2b2b2b2-b2b2-4b2b-8b2b-000000000052', '22222222-2222-4222-8222-000000000001',
    'b2b2b2b2-b2b2-4b2b-8b2b-000000000013', 'b2b2b2b2-b2b2-4b2b-8b2b-000000000021', null,
-   'load60_riemen', 1, 'reifen-hinten', -1.151, 0.119, 0.027, 'beobachten',
+   'load60_riemen', 'reifen-hinten', 'beobachten',
    'Profil hinten fast abgefahren', now() - interval '2 days' + interval '1 minute',
    '11111111-1111-4111-8111-000000000004'),
   ('b2b2b2b2-b2b2-4b2b-8b2b-000000000053', '22222222-2222-4222-8222-000000000001',
    'b2b2b2b2-b2b2-4b2b-8b2b-000000000013', null, 'b2b2b2b2-b2b2-4b2b-8b2b-000000000031',
-   'load60_riemen', 1, 'riemen', -0.550, 0.397, 0.090, 'problem',
+   'load60_riemen', 'riemen', 'problem',
    'Riemen springt über, Spannung zu gering', now() - interval '1 day',
    '11111111-1111-4111-8111-000000000004');
 

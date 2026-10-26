@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { BIKE_ZONES, CHECK_ITEMS, ZONE_KEYS } from '@/features/fleet/bike3d/zones';
+import { BIKE_ZONES, CHECK_ITEMS, ZONE_KEYS } from '@/features/fleet/zones';
 import { ABSCHLUSSARTEN } from '@/features/fleet/pannenablauf';
 import {
   SEED,
@@ -11,15 +11,9 @@ import {
 } from './helpers/db';
 
 /**
- * Radflotte (FLT-EPIC-001, FLT-001): Depots, Räder, Schlüssel, Check-Up,
- * Panne, Sperre und Stellen am 3D-Rad.
- *
- * Geprüft werden die Rollen aus BEF-066 und ANN-550 samt Negativfällen
- * (ADR-013 Punkt 9 Nr. 1: andere Organisation, Rolle ohne Recht,
- * Patientenkonto, Plattformkonto), die geschlossenen Tabellen, die
- * Eingabeprüfung, die Regel „eine Stelle hebt ihren Prüfpunkt an, nie ab“
- * (ANN-555), Sperre und Freigabe, die Unterlage für die Werkstatt ohne Namen
- * und Ort und der Löschlauf mit Journal (ANN-551, ADR-013 Nr. 4).
+ * Radflotte: Rollen samt Negativfällen (ANN-550, ADR-013 Punkt 9 Nr. 1), geschlossene Tabellen,
+ * Eingabeprüfung, „eine Stelle hebt ihren Prüfpunkt an, nie ab“ (ANN-555), Sperre und Freigabe,
+ * die Unterlage für die Werkstatt ohne Namen und Ort und der Löschlauf mit Journal (ANN-551).
  */
 
 const { users, organizationId } = SEED;
@@ -112,7 +106,6 @@ interface Stelle {
   id: string;
   number: number | null;
   zone: string;
-  point: number[] | null;
   severity: string;
   resolved_at: string | null;
 }
@@ -177,7 +170,6 @@ describe('Radflotte (FLT-001)', () => {
         [2, 'reifen-hinten', 'beobachten'],
         [3, 'riemen', 'problem'],
       ]);
-      expect(rad.spots[0]!.point).toEqual([1.05, 0.31, -0.06]);
     });
   });
 
@@ -643,7 +635,7 @@ describe('Radflotte (FLT-001)', () => {
               point: [1.05, 0.31, -0.06],
               note: 'schleift',
             },
-            { zone: 'rahmen', severity: 'beobachten', point: null, note: null },
+            { zone: 'rahmen', severity: 'beobachten', note: null },
           ]),
           true,
         ],
@@ -651,10 +643,21 @@ describe('Radflotte (FLT-001)', () => {
       expect(ergebnis.spot_ids).toHaveLength(2);
       const rad = await daten<{ spots: Stelle[]; bike: Rad }>(users.office, RAD, [FLOTTE.rad2]);
       expect(rad.bike.block).toBeNull();
-      expect(rad.spots.map((s) => [s.number, s.zone, s.point])).toEqual([
-        [1, 'bremse-vorne', [1.05, 0.31, -0.06]],
-        [2, 'rahmen', null],
+      expect(rad.spots.map((s) => [s.number, s.zone])).toEqual([
+        [1, 'bremse-vorne'],
+        [2, 'rahmen'],
       ]);
+      // Den Punkt im Modell sendet nur noch eine ältere Fassung der App: Er bleibt ohne Wirkung.
+      expect(rad.spots.some((s) => 'point' in s || 'model_version' in s)).toBe(false);
+      expect(
+        (
+          await asPostgres(
+            `select column_name from information_schema.columns
+             where table_schema = 'public' and table_name = 'fleet_spots'
+               and column_name in ('point_x', 'point_y', 'point_z', 'model_version')`,
+          )
+        ).rows,
+      ).toEqual([]);
       const { rows } = await asPostgres<{ checked_by: string; bike_type: string }>(
         `select checked_by, bike_type from public.fleet_checkups where id = $1`,
         [ergebnis.checkup_id],
@@ -671,9 +674,7 @@ describe('Radflotte (FLT-001)', () => {
         FLOTTE.rad2,
         punkte({ staender: 'beobachten', akku: 'beobachten', klingel: 'beobachten' }),
         null,
-        JSON.stringify(
-          zonen.map((zone) => ({ zone, severity: 'beobachten', point: null, note: null })),
-        ),
+        JSON.stringify(zonen.map((zone) => ({ zone, severity: 'beobachten', note: null }))),
         true,
       ]);
       const erwartet = zonen.map((zone, index) => [index + 1, zone]);
@@ -689,7 +690,7 @@ describe('Radflotte (FLT-001)', () => {
 
     it('hebt die Bewertung über die Stelle an, nie ab (ANN-555)', async () => {
       const stelle = (severity: string) =>
-        JSON.stringify([{ zone: 'bremse-hinten', severity, point: null, note: null }]);
+        JSON.stringify([{ zone: 'bremse-hinten', severity, note: null }]);
       // Problem an der Bremse, „Bremsen“ aber nur beobachten: abgewiesen.
       expect(
         (
@@ -730,7 +731,7 @@ describe('Radflotte (FLT-001)', () => {
           FLOTTE.rad2,
           punkte(),
           null,
-          JSON.stringify([{ zone: 'lenker', severity: 'problem', point: null, note: null }]),
+          JSON.stringify([{ zone: 'lenker', severity: 'problem', note: null }]),
           true,
         ]),
       ).toBeNull();
@@ -747,12 +748,6 @@ describe('Radflotte (FLT-001)', () => {
         [punkte(), '[]', false],
         [punkte(), JSON.stringify([{ zone: 'propeller', severity: 'problem' }]), true],
         [punkte(), JSON.stringify([{ zone: 'rahmen', severity: 'kaputt' }]), true],
-        [
-          punkte(),
-          JSON.stringify([{ zone: 'rahmen', severity: 'problem', point: [9, 0, 0] }]),
-          true,
-        ],
-        [punkte(), JSON.stringify([{ zone: 'rahmen', severity: 'problem', point: [1, 2] }]), true],
       ] as const) {
         expect(
           (await fehler(users.therapist, CHECKUP, [FLOTTE.rad2, items, null, spots, bestaetigt]))
@@ -772,7 +767,7 @@ describe('Radflotte (FLT-001)', () => {
         'Klingel klemmt',
         null,
         null,
-        JSON.stringify([{ zone: 'klingel', severity: 'beobachten', point: null, note: 'klemmt' }]),
+        JSON.stringify([{ zone: 'klingel', severity: 'beobachten', note: 'klemmt' }]),
       ]);
       expect(ohne.blocked).toBe(false);
       let rad = await daten<{ bike: Rad; spots: Stelle[] }>(users.office, RAD, [FLOTTE.rad2]);
@@ -967,7 +962,7 @@ describe('Radflotte (FLT-001)', () => {
         null,
         'vor Hausnummer 7',
         'carsharing',
-        JSON.stringify([{ zone: 'reifen-vorne', point: null, note: 'Platten' }]),
+        JSON.stringify([{ zone: 'reifen-vorne', note: 'Platten' }]),
       ]);
       const blatt = await daten<Record<string, unknown>>(users.office, WERKSTATT, [FLOTTE.rad3]);
       expect(Object.keys(blatt).sort()).toEqual(['bike_type', 'blocked_since', 'name', 'spots']);
@@ -980,10 +975,8 @@ describe('Radflotte (FLT-001)', () => {
       ]);
       expect(Object.keys(spots[0]!).sort()).toEqual([
         'id',
-        'model_version',
         'note',
         'number',
-        'point',
         'severity',
         'source',
         'source_at',

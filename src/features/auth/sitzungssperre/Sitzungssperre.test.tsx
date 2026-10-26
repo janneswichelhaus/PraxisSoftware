@@ -741,7 +741,7 @@ describe('Sperrseite der Plattform (Handoff 2026-10-22, Abschnitt 5.2; ANN-687)'
     expect(signOut).toHaveBeenCalledTimes(1);
   });
 
-  it('zeigt einem Praxiskonto die Sperrseite der Praxis, auch in der Einsicht unter /p', async () => {
+  it('zeigt einem Praxiskonto die Sperrseite der Praxis, auch unter /p', async () => {
     metadaten = { provider: 'email' };
     window.history.replaceState(null, '', '/p?zugang=cafecafe-cafe-4afe-8afe-000000000002');
     await gesperrt();

@@ -5,15 +5,21 @@ import { ListRow } from '@/components/ui/ListRow';
 import { Textlink } from '@/components/ui/Textlink';
 import { FEEDBACK_NAMED_KEY, fetchNamedFeedback, type NamedFeedback } from './api';
 import { monatUndJahr } from './fragen';
-import { BAROMETER_PFAD, skalenZeile, textZeilen } from './inhalt';
+import { RUECKMELDUNG_PFAD, skalenZeile, textZeilen } from './inhalt';
 
 /**
- * Die namentlichen Rückmeldungen für owner (§20.2 Nr. 3): jede als einzelne
- * Nachricht - Name, Monat, Inhalt, die neueste zuerst. Kein Filter nach
- * Person, keine Kurve, keine Zählung je Person; Antworten ohne Namen stehen
- * nur in der Summe unter „Barometer“.
+ * Namentliche Rückmeldungen für owner (§20.2 Nr. 3): jede als einzelne Nachricht - Name, Monat,
+ * Inhalt, die neueste zuerst. Kein Filter nach Person, keine Kurve, keine Zählung je Person; ohne
+ * Namen gibt es nur die Summe unter „Rückmeldungen“.
  */
-export function NamentlicheRueckmeldungen({ titel = 'Rückmeldungen' }: { titel?: string }) {
+export function NamentlicheRueckmeldungen({
+  titel = 'Rückmeldungen',
+  art,
+}: {
+  titel?: string;
+  /** Nur Barometer oder nur Rückmeldungen; ohne Angabe beide und der Weg zur Summe. */
+  art?: NamedFeedback['kind'];
+}) {
   const liste = useQuery({
     queryKey: FEEDBACK_NAMED_KEY,
     queryFn: fetchNamedFeedback,
@@ -25,28 +31,35 @@ export function NamentlicheRueckmeldungen({ titel = 'Rückmeldungen' }: { titel?
       laden="Rückmeldungen werden geladen …"
       fehler="Die Rückmeldungen konnten nicht geladen werden."
     >
-      {(eintraege) => (
-        <Listenabschnitt
-          titel={titel}
-          anzahl={eintraege.length}
-          aktion={
-            <Textlink to={BAROMETER_PFAD} className="text-sm font-semibold">
-              Barometer ohne Namen
-            </Textlink>
-          }
-          leer={{ titel: 'Keine Rückmeldungen mit Namen' }}
-        >
-          {eintraege.map((eintrag) => (
-            <ListRow
-              key={eintrag.id}
-              titel={`${eintrag.name ?? 'Unbekannt'} · ${
-                eintrag.kind === 'barometer' ? 'Barometer' : 'Rückmeldung'
-              }`}
-              meta={<Inhalt eintrag={eintrag} />}
-            />
-          ))}
-        </Listenabschnitt>
-      )}
+      {(alle) => {
+        const eintraege = art ? alle.filter((eintrag) => eintrag.kind === art) : alle;
+        return (
+          <Listenabschnitt
+            titel={titel}
+            anzahl={eintraege.length}
+            aktion={
+              art ? undefined : (
+                <Textlink to={RUECKMELDUNG_PFAD} className="text-sm font-semibold">
+                  Ohne Namen
+                </Textlink>
+              )
+            }
+            leer={{
+              titel: art === 'barometer' ? 'Noch keine Antworten' : 'Keine Rückmeldungen mit Namen',
+            }}
+          >
+            {eintraege.map((eintrag) => (
+              <ListRow
+                key={eintrag.id}
+                titel={`${eintrag.name ?? 'Unbekannt'} · ${
+                  eintrag.kind === 'barometer' ? 'Barometer' : 'Rückmeldung'
+                }`}
+                meta={<Inhalt eintrag={eintrag} />}
+              />
+            ))}
+          </Listenabschnitt>
+        );
+      }}
     </Abfragezustand>
   );
 }

@@ -1,5 +1,5 @@
 import type { FleetReport } from './api';
-import { checkItemLabels, type CheckItemKey } from './bike3d/zones';
+import { checkItemLabels, type CheckItemKey } from './zones';
 import { SEITEN, type SeitenKey } from './checkupablauf';
 import { tagePlus } from '@/lib/datum';
 

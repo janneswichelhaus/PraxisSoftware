@@ -8,8 +8,7 @@ import { ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { aendern, kannZurueck, zurueck, type Abfolge } from '@/components/ui/abfolge';
 import { useTextverlustschutz } from '@/app/Textverlustschutz';
-import { wuenscheSchluessel, type Plattformzugang } from './api';
-import { usePlattformApi } from './einsicht';
+import { wuenscheSchluessel, terminWuenschen, type Plattformzugang } from './api';
 import { PLATTFORM_PFAD } from './pfade';
 import {
   NICHTS_GEWAEHLT,
@@ -41,7 +40,6 @@ import { naechsteWerktage } from './zeit';
  * ist, steht direkt über dem Knopf.
  */
 export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const navigate = useNavigate();
   const [suche] = useSearchParams();
   const queryClient = useQueryClient();
@@ -65,7 +63,7 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
 
   const senden = useMutation({
     mutationFn: () =>
-      api.terminWuenschen({
+      terminWuenschen({
         zugangId: zugang.access_id,
         tage: wunschtage(wann.tage, werktage),
         zeiten: wunschzeiten(wann.zeiten),

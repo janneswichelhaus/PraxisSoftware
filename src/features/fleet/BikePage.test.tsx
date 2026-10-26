@@ -8,10 +8,6 @@ import { BikePage } from './BikePage';
 import { testDetail, testFlotte } from './testdaten';
 import { rendereSeite } from './testseite';
 
-vi.mock('./bike3d/BikeModel3D', async () => ({
-  BikeModel3D: (await import('./Testbausteine')).RadStellvertreter,
-}));
-
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof api>()),
   fetchFleet: vi.fn(),
@@ -45,10 +41,8 @@ beforeEach(() => {
 });
 
 /**
- * Ein Rad (FLT-EPIC-001, DESIGN.md „Objekt“): Objektkopf mit Zustand,
- * „Stellen am Rad“ mit derselben Nummer an Nadel und Liste (AC 5),
- * Freigabe mit Rückfrage nur für owner und team_lead (ANN-550), Verlauf und
- * Angaben.
+ * Ein Rad (DESIGN.md „Objekt“): Objektkopf mit Zustand, „Stellen am Rad“ mit den Nummern der
+ * Unterlage für die Werkstatt, Freigabe mit Rückfrage nur für owner und team_lead (ANN-550).
  */
 describe('Rad', () => {
   it('zeigt Zustand, Grund und die Wege des gesperrten Rads', async () => {
@@ -82,19 +76,20 @@ describe('Rad', () => {
     );
   });
 
-  it('nummeriert Nadeln und Liste gleich und ordnet die Stellen ihrem Ereignis zu (AC 5)', async () => {
+  it('listet die Stellen mit Nummer und Bauteil je Ereignis, ohne Modell', async () => {
     oeffne();
-    expect(await screen.findByTestId('nadeln')).toHaveTextContent(
-      '1:bremse-vorne:problem 2:reifen-hinten:beobachten 3:riemen:problem',
+    const checkup = (await screen.findByRole('heading', { name: /Check-Up · / })).closest(
+      'section',
     );
-    const checkup = screen.getByRole('heading', { name: /Check-Up · / }).closest('section');
     const panne = screen.getByRole('heading', { name: /Panne · / }).closest('section');
-    expect(within(checkup!).getByText('Bremse vorne')).toBeInTheDocument();
-    expect(within(checkup!).getByText('Reifen hinten')).toBeInTheDocument();
-    expect(within(panne!).getByText('Riemen und Riemenscheiben')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Stelle 3 am Rad zeigen: Riemen und Riemenscheiben' }),
-    ).toBeInTheDocument();
+    const zeilen = within(checkup!).getAllByRole('listitem');
+    expect(zeilen).toHaveLength(2);
+    expect(zeilen[0]).toHaveTextContent(/^Stelle 1\s*Bremse vorne× Problem · Prüfpunkt Bremsen/);
+    expect(zeilen[1]).toHaveTextContent(/^Stelle 2\s*Reifen hinten! Beobachten/);
+    expect(within(panne!).getByRole('listitem')).toHaveTextContent(
+      /^Stelle 3\s*Riemen und Riemenscheiben/,
+    );
+    expect(screen.queryByRole('img', { name: /3D/ })).toBeNull();
   });
 
   it('gibt nach Rückfrage frei und sagt, was mit den Stellen geschieht (ANN-555)', async () => {

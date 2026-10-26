@@ -31,7 +31,7 @@ export function RueckmeldungenImEingang() {
       {stand.barometer_submitted ? null : (
         <ListRow
           titel={`Barometer ${monat}`}
-          meta="Fünf kurze Fragen, mit oder ohne Namen"
+          meta="Fünf kurze Fragen, mit deinem Namen"
           aktion={
             <ButtonLink
               to={mitRueckweg(BAROMETER_PFAD, EINGANG)}

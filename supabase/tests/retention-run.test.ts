@@ -842,7 +842,6 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       // ORG-006: Regel in app.delete_due_staff_feedback, Tests in
       // staff-feedback.test.ts.
       'rueckmeldung',
-      'rueckmeldung_teilnahme',
       // FLT-001: Regel in app.delete_due_fleet_records, Tests in fleet.test.ts.
       'schluesselverlauf',
       // SEC-001: Regel in public.session_status (Vermerke älter als ein Tag),

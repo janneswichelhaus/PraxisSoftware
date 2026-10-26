@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.28** |
-| **Änderungsdatum** | **2026-10-18** |
-| Vorversion | 0.27 (2026-10-17); 0.26 (2026-10-11); 0.25 (2026-10-10); 0.24 (2026-10-10); 0.23 (2026-10-09); 0.22 (2026-10-09); 0.21 (2026-10-03); 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| **Dokumentversion** | **0.29** |
+| **Änderungsdatum** | **2026-10-26** |
+| Vorversion | 0.28 (2026-10-18); 0.27 (2026-10-17); 0.26 (2026-10-11); 0.25 (2026-10-10); 0.24 (2026-10-10); 0.23 (2026-10-09); 0.22 (2026-10-09); 0.21 (2026-10-03); 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-023, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -1643,13 +1643,16 @@ Punkt geführt.
 
 ### 20.2 Rückmeldungen von Beschäftigten
 
-Beschäftigte DÜRFEN der Praxisleitung Rückmeldungen geben, auch mit Namen — im
-monatlichen Barometer und jederzeit über „Rückmeldung an die Praxisleitung“.
-Zweck ist offene Kommunikation und eine niedrige Hürde für Beschwerden, nicht
-die Leistungs- oder Verhaltenskontrolle; der Satz oben gilt unverändert.
+Beschäftigte DÜRFEN der Praxisleitung Rückmeldungen geben — im monatlichen
+Barometer mit Namen und jederzeit über „Rückmeldung an die Praxisleitung“, dort
+mit oder ohne Namen. Zweck ist offene Kommunikation und eine niedrige Hürde für
+Beschwerden, nicht die Leistungs- oder Verhaltenskontrolle; der Satz oben gilt
+unverändert.
 
-1. Die Person entscheidet **bei jeder Abgabe**, ob sie mit oder ohne Namen
-   sendet. Beides ist gleich leicht; nichts ist vorbelegt.
+1. Das Barometer ist namentlich (Version 0.29); das steht vor dem Senden da.
+   Bei der Rückmeldung an die Praxisleitung entscheidet die Person **bei jeder
+   Abgabe**, ob sie mit oder ohne Namen sendet. Beides ist gleich leicht;
+   nichts ist vorbelegt.
 2. Die Teilnahme ist freiwillig. Wer nicht antwortet, wird NICHT gelistet und
    NICHT erinnert; daraus folgt nichts. Der Hinweis in der Anwendung, der allen
    gleich und an höchstens drei Tagen im Monat erscheint (ANN-603), ist kein
@@ -1658,8 +1661,10 @@ die Leistungs- oder Verhaltenskontrolle; der Satz oben gilt unverändert.
    Bewertung, keine Rangfolge und keine Personalentscheidung ein. Einen
    Verlauf von Werten je Person als Kurve oder Kennzahl gibt es NICHT; eine
    namentliche Antwort wird als einzelne Nachricht gelesen.
-4. Anonyme Antworten erscheinen nur als Praxissumme und erst, wenn mindestens
-   drei Beschäftigte teilnehmen können und fünf Antworten vorliegen.
+4. Anonyme Rückmeldungen erscheinen nur als Praxissumme und erst, wenn
+   mindestens drei Beschäftigte teilnehmen können und fünf Rückmeldungen
+   vorliegen. Für das Barometer gilt keine Schwelle: Es ist ab der ersten
+   beschäftigten Person nutzbar, jede Antwort wird nach Nr. 3 einzeln gelesen.
 5. Für die Antworten gilt eine eigene Datenklasse mit Frist
    ([ADR-008](docs/adr/ADR-008-data-retention-and-deletion.md)).
 

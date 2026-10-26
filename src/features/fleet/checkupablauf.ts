@@ -7,7 +7,7 @@ import {
   type CheckRating,
   type Severity,
   type ZoneKey,
-} from './bike3d/zones';
+} from './zones';
 
 /**
  * Der geführte Check-Up (FLT-005, ANN-563) ohne Oberfläche: welche Seite nach
@@ -26,7 +26,7 @@ export type Teil = 'bewerten' | 'wo' | 'was';
 
 export type Seite =
   | { art: 'punkt'; index: number; teil: 'bewerten' | 'wo' }
-  /** `vonWo`: über „Wo genau?“ gekommen, sonst über die Frage oder das Rad. */
+  /** `vonWo`: über „Wo genau?“ gekommen, sonst gleich von der Frage. */
   | { art: 'punkt'; index: number; teil: 'was'; vonWo: boolean }
   /** Jede Werbefläche mit einem Desinfektions- oder Reinigungstuch abwischen. */
   | { art: 'werbung' }
@@ -46,16 +46,14 @@ export type Antworten = Partial<Record<CheckItemKey, Antwort>>;
 export const PRUEFPUNKTE = CHECK_ITEMS.length;
 
 /**
- * Die vier Seiten für die Fotos, in der Reihenfolge eines Gangs ums Rad
- * (ANN-568). Die Schlüssel stehen so in der Datenbank
- * (`app.fleet_photo_sides`, `supabase/tests/fleet-pflege.test.ts`); `blick`
- * ist der Blickwinkel des 3D-Rads (θ, φ in Grad, eingepasst).
+ * Die vier Seiten für die Fotos, in der Reihenfolge eines Gangs ums Rad (ANN-568). Die Schlüssel
+ * stehen so in der Datenbank (`app.fleet_photo_sides`, `supabase/tests/fleet-pflege.test.ts`).
  */
 export const SEITEN = [
-  { key: 'left', label: 'Linke Seite', titel: 'Foto von links', blick: [180, 82, null] },
-  { key: 'front', label: 'Vorne', titel: 'Foto von vorne', blick: [90, 80, null] },
-  { key: 'right', label: 'Rechte Seite', titel: 'Foto von rechts', blick: [0, 82, null] },
-  { key: 'back', label: 'Hinten', titel: 'Foto von hinten', blick: [-90, 80, null] },
+  { key: 'left', label: 'Linke Seite', titel: 'Foto von links' },
+  { key: 'front', label: 'Vorne', titel: 'Foto von vorne' },
+  { key: 'right', label: 'Rechte Seite', titel: 'Foto von rechts' },
+  { key: 'back', label: 'Hinten', titel: 'Foto von hinten' },
 ] as const;
 
 export type SeitenKey = (typeof SEITEN)[number]['key'];
@@ -132,9 +130,9 @@ export function nachDemFoto(index: number, zurUebersicht: boolean): Seite {
 }
 
 /**
- * „← Zurück“ - auch die Zurückgeste des Telefons -, dorthin, woher man kam:
- * Nach einem Tipp aufs Rad führt es zur Frage, nicht auf ein „Wo genau?“,
- * das nie zu sehen war (Praxis-Review FLT-005). `null` auf der ersten Seite.
+ * „← Zurück“ - auch die Zurückgeste des Telefons -, dorthin, woher man kam: ohne „Wo genau?“
+ * (ein Bauteil, schon markiert) zur Frage, nicht auf eine Seite, die nie zu sehen war. `null`
+ * auf der ersten Seite.
  */
 export function vorigeSeite(seite: Seite, zurUebersicht: boolean): Seite | null {
   if (seite.art === 'weitere') return ABSCHLUSS;

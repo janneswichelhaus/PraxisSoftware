@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate, Route, Routes, matchPath, useLocation } from 'react-router-dom';
 import { Profilhinweis } from '@/app/Profilhinweis';
@@ -25,19 +25,17 @@ import {
   paketeSchluessel,
   vertragSchluessel,
   vertretungenSchluessel,
+  begleitungBeenden,
+  ladeAbo,
+  ladeEinstieg,
+  ladeErnaehrung,
+  ladeMeinePakete,
+  ladeMeineVertretungen,
+  ladeVertrag,
+  ueberallAbmelden,
   type MeineVertretung,
   type Plattformzugang,
 } from './api';
-import {
-  NurLesenKontext,
-  PlattformApiKontext,
-  PraxiswegeKontext,
-  einsichtsApi,
-  useNurLesen,
-  usePlattformApi,
-  type Einsichtsquelle,
-  type Praxiswege,
-} from './einsicht';
 import { Abo } from './Abo';
 import { Angebot } from './Angebot';
 import { Vertrag } from './Vertrag';
@@ -99,47 +97,19 @@ import { useWahl, wahlAdresse, wahlName } from './wahl';
  */
 export { PLATTFORM_PFAD };
 
-/**
- * E-001: Die Einsicht der Praxis (DSN-001 D7) zeigt dasselbe Gerüst, nur
- * lesend. Die Praxisseite gibt den einen Zugang und ihre Quelle mit, dazu die
- * Wege in die Praxis; die Seiten bekommen daraus `einsichtsApi`,
- * `useNurLesen()` und `usePraxiswege()` über den Kontext. Ohne `einsicht` ist
- * es die Plattform der Person, wie bisher.
- */
-export interface Einsicht {
-  zugangId: string;
-  quelle: Einsichtsquelle;
-  /** Wo die Praxis öffnet, was die Einsicht nicht öffnet. */
-  wege?: Praxiswege;
-}
-
 export function PlattformApp({
   zugaenge,
   email,
   onAbmelden,
-  einsicht,
 }: {
   zugaenge: Plattformzugang[];
   email: string | undefined;
   onAbmelden: () => void;
-  einsicht?: Einsicht;
 }) {
-  const zugangId = einsicht?.zugangId;
-  const quelle = einsicht?.quelle;
-  const api = useMemo(
-    () => (zugangId && quelle ? einsichtsApi(zugangId, quelle) : null),
-    [zugangId, quelle],
-  );
-  const geruest = <Geruest zugaenge={zugaenge} email={email} onAbmelden={onAbmelden} />;
-  if (!api) return <MitFensterZiel>{geruest}</MitFensterZiel>;
   return (
-    <PlattformApiKontext.Provider value={api}>
-      <NurLesenKontext.Provider value>
-        <PraxiswegeKontext.Provider value={einsicht?.wege ?? null}>
-          {geruest}
-        </PraxiswegeKontext.Provider>
-      </NurLesenKontext.Provider>
-    </PlattformApiKontext.Provider>
+    <MitFensterZiel>
+      <Geruest zugaenge={zugaenge} email={email} onAbmelden={onAbmelden} />
+    </MitFensterZiel>
   );
 }
 
@@ -152,8 +122,6 @@ function Geruest({
   email: string | undefined;
   onAbmelden: () => void;
 }) {
-  // E-001: Seiten, die nur schreiben, gibt es in der Einsicht nicht.
-  const nurLesen = useNurLesen();
   const lesbar = zugaenge.filter((z) => z.readable);
   // POR-016 (D2, ANN-261): Einwilligungen entscheidet die Person selbst oder
   // ihre rechtliche Vertretung - die Person auch nach der Lesefrist, solange
@@ -172,9 +140,7 @@ function Geruest({
     ...lesbar.filter((z) => z.access_kind === 'companion'),
   ];
   const praxis = zugaenge[0]?.organization_name ?? '';
-  // DR-113: ab 1024 px die Rechneransicht. Die Einsicht zeigt die Plattform
-  // in einem Telefon und behält dessen Ansicht (`geruestbreite.ts`).
-  const rechner = useRechner() && !nurLesen;
+  const rechner = useRechner();
   // Die Übersicht und der Reiter „Übungen“ (ANN-724) nutzen am Rechner die
   // ganze Breite (zwei Spalten); ohne lesbaren Zugang steht dort die Tür in
   // der Spalte.
@@ -185,24 +151,19 @@ function Geruest({
   // ohne Kopf, Verbindungszeile und Reiterleiste des Gerüsts - ihr eigener
   // Kopf mit „Später weiter“ ist der Weg hinaus, ihr Fuß trägt den Hauptknopf
   // (ANN-714).
-  const vollbild =
-    !nurLesen && matchPath(`${PLATTFORM_PFAD}/uebungen/einheit/:planId`, pathname) !== null;
+  const vollbild = matchPath(`${PLATTFORM_PFAD}/uebungen/einheit/:planId`, pathname) !== null;
 
-  // In der Einsicht füllt das Gerüst den Rahmen der Praxisseite, nicht das Fenster.
   return (
     <div
-      className={`plattform-schrift bg-canvas flex flex-col ${nurLesen ? 'min-h-full' : 'min-h-dvh'}`}
+      className="plattform-schrift bg-canvas flex min-h-dvh flex-col"
       // Am Rechner wachsen die Seitentitel auf 32 (`PageHeader`, ANN-683).
       data-rechner={rechner ? '' : undefined}
     >
-      {/* POR-020 (ANN-267): Schriftgröße des Geräts; mindestens 18 px am
-          Gerüst. In der Einsicht gilt die Wahl der Person, nicht die dieses
-          Geräts - sie bleibt dort bei 18 px. */}
-      {nurLesen ? null : <SchriftgroesseDesGeraets />}
-      {/* Den Tab und die Verbindung zeigt in der Einsicht die Praxis selbst. */}
-      {nurLesen ? null : <TabtitelDerPlattform bereiche={lesbar} />}
+      {/* Schriftgröße des Geräts; mindestens 18 px am Gerüst (ANN-267). */}
+      <SchriftgroesseDesGeraets />
+      <TabtitelDerPlattform bereiche={lesbar} />
       {vollbild ? null : <Kopf bereiche={lesbar} rechner={rechner} />}
-      {nurLesen || vollbild ? null : <Verbindungszeile rechner={rechner} />}
+      {vollbild ? null : <Verbindungszeile rechner={rechner} />}
       {/* Gescheitertes Nachladen des Zugangs (BEF-046): Die Plattform bleibt
           stehen, die Zeile sagt es. */}
       <Profilhinweis />
@@ -256,30 +217,26 @@ function Geruest({
                 />
               }
             />
-            {nurLesen ? null : (
-              <Route
-                path={`${PLATTFORM_PFAD}/termine/wunsch`}
-                element={
-                  <MitZugang
-                    bereiche={lesbar}
-                    zugaenge={zugaenge}
-                    seite={(z) => <Terminwunsch zugang={z} />}
-                  />
-                }
-              />
-            )}
-            {nurLesen ? null : (
-              <Route
-                path={`${PLATTFORM_PFAD}/termine/:terminId`}
-                element={
-                  <MitZugang
-                    bereiche={lesbar}
-                    zugaenge={zugaenge}
-                    seite={(z) => <Terminaenderung zugang={z} />}
-                  />
-                }
-              />
-            )}
+            <Route
+              path={`${PLATTFORM_PFAD}/termine/wunsch`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Terminwunsch zugang={z} />}
+                />
+              }
+            />
+            <Route
+              path={`${PLATTFORM_PFAD}/termine/:terminId`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Terminaenderung zugang={z} />}
+                />
+              }
+            />
             {/* KOM-001: Reiter „Nachrichten" - Fragen an die Praxis. */}
             <Route
               path={`${PLATTFORM_PFAD}/nachrichten`}
@@ -291,20 +248,14 @@ function Geruest({
                 />
               }
             />
-            {/* E-001: In der Einsicht führt „neu“ zurück zur Übersicht - ohne
-              diese Route nähme die Nachricht darunter es als Kennung. */}
             <Route
               path={`${PLATTFORM_PFAD}/nachrichten/neu`}
               element={
-                nurLesen ? (
-                  <Navigate to={PLATTFORM_PFAD} replace />
-                ) : (
-                  <MitZugang
-                    bereiche={lesbar}
-                    zugaenge={zugaenge}
-                    seite={(z) => <NeueNachricht zugang={z} />}
-                  />
-                )
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <NeueNachricht zugang={z} />}
+                />
               }
             />
             <Route
@@ -328,18 +279,16 @@ function Geruest({
                 />
               }
             />
-            {nurLesen ? null : (
-              <Route
-                path={`${PLATTFORM_PFAD}/uebungen/einheit/:planId`}
-                element={
-                  <MitZugang
-                    bereiche={lesbar}
-                    zugaenge={zugaenge}
-                    seite={(z) => <Durchfuehrung zugang={z} />}
-                  />
-                }
-              />
-            )}
+            <Route
+              path={`${PLATTFORM_PFAD}/uebungen/einheit/:planId`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Durchfuehrung zugang={z} />}
+                />
+              }
+            />
             <Route
               path={`${PLATTFORM_PFAD}/uebungen/blatt/:planId`}
               element={
@@ -351,18 +300,16 @@ function Geruest({
               }
             />
             {/* TRK-003: Check-in und „Meine Angaben" (DSN-001 4.1). */}
-            {nurLesen ? null : (
-              <Route
-                path={`${PLATTFORM_PFAD}/checkin`}
-                element={
-                  <MitZugang
-                    bereiche={lesbar}
-                    zugaenge={zugaenge}
-                    seite={(z) => <Checkin zugang={z} />}
-                  />
-                }
-              />
-            )}
+            <Route
+              path={`${PLATTFORM_PFAD}/checkin`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Checkin zugang={z} />}
+                />
+              }
+            />
             {/* ALT-003: Gewohnheiten mit den letzten sieben Tagen (ANN-370). */}
             <Route
               path={`${PLATTFORM_PFAD}/gewohnheiten`}
@@ -397,18 +344,16 @@ function Geruest({
                 />
               }
             />
-            {nurLesen ? null : (
-              <Route
-                path={`${PLATTFORM_PFAD}/ernaehrung/tagebuch/eintragen`}
-                element={
-                  <MitZugang
-                    bereiche={lesbar}
-                    zugaenge={zugaenge}
-                    seite={(z) => <TagebuchEintragen zugang={z} />}
-                  />
-                }
-              />
-            )}
+            <Route
+              path={`${PLATTFORM_PFAD}/ernaehrung/tagebuch/eintragen`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <TagebuchEintragen zugang={z} />}
+                />
+              }
+            />
             {/* ERN-EPIC-002: Lebensmittel nachschlagen und eigene anlegen. */}
             <Route
               path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel`}
@@ -420,30 +365,26 @@ function Geruest({
                 />
               }
             />
-            {nurLesen ? null : (
-              <>
-                <Route
-                  path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel/neu`}
-                  element={
-                    <MitZugang
-                      bereiche={lesbar}
-                      zugaenge={zugaenge}
-                      seite={(z) => <EigenesLebensmittelNeu zugang={z} />}
-                    />
-                  }
+            <Route
+              path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel/neu`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <EigenesLebensmittelNeu zugang={z} />}
                 />
-                <Route
-                  path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel/:foodId`}
-                  element={
-                    <MitZugang
-                      bereiche={lesbar}
-                      zugaenge={zugaenge}
-                      seite={(z) => <EigenesLebensmittelAendern zugang={z} />}
-                    />
-                  }
+              }
+            />
+            <Route
+              path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel/:foodId`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <EigenesLebensmittelAendern zugang={z} />}
                 />
-              </>
-            )}
+              }
+            />
             <Route
               path={`${PLATTFORM_PFAD}/angaben`}
               element={
@@ -454,18 +395,16 @@ function Geruest({
                 />
               }
             />
-            {nurLesen ? null : (
-              <Route
-                path={`${PLATTFORM_PFAD}/befundbogen`}
-                element={
-                  <MitZugang
-                    bereiche={lesbar}
-                    zugaenge={zugaenge}
-                    seite={(z) => <Befundbogen zugang={z} />}
-                  />
-                }
-              />
-            )}
+            <Route
+              path={`${PLATTFORM_PFAD}/befundbogen`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Befundbogen zugang={z} />}
+                />
+              }
+            />
             <Route
               path={`${PLATTFORM_PFAD}/rechnungen`}
               element={
@@ -506,18 +445,16 @@ function Geruest({
                 />
               }
             />
-            {nurLesen ? null : (
-              <Route
-                path={`${PLATTFORM_PFAD}/daten`}
-                element={
-                  <MitZugang
-                    bereiche={exportierbar}
-                    zugaenge={zugaenge}
-                    seite={(z) => <Datenexport zugang={z} />}
-                  />
-                }
-              />
-            )}
+            <Route
+              path={`${PLATTFORM_PFAD}/daten`}
+              element={
+                <MitZugang
+                  bereiche={exportierbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Datenexport zugang={z} />}
+                />
+              }
+            />
             <Route
               path={`${PLATTFORM_PFAD}/abo`}
               element={
@@ -561,12 +498,10 @@ function Geruest({
                 />
               }
             />
-            {nurLesen ? null : (
-              <Route
-                path={`${PLATTFORM_PFAD}/einstellungen`}
-                element={<Einstellungen zugaenge={lesbar} />}
-              />
-            )}
+            <Route
+              path={`${PLATTFORM_PFAD}/einstellungen`}
+              element={<Einstellungen zugaenge={lesbar} />}
+            />
             <Route
               path={`${PLATTFORM_PFAD}/ich`}
               element={
@@ -590,18 +525,9 @@ function Geruest({
 }
 
 /**
- * Wohin die Fenster der Plattform zeichnen (Überholung 6, ANN-584): ein
- * Ziel mit der Schrift der Plattform (`.plattform-schrift`, 18 px) direkt nach
- * dem Gerüst. Am `body` - dem Ziel ohne Angabe - erbten `Dialogfenster` und
- * der geführte Ablauf die 18 px nicht, weil ihr Portal außerhalb des Gerüsts
- * liegt. Das Ziel bleibt innerhalb dessen, was die Sitzungssperre verbirgt.
- * Die Seiten zeichnen erst, wenn es steht: Ein Fenster, das beim ersten
- * Zeichnen schon offen ist, zöge sonst um. Die Einsicht der Praxis behält
- * ihr Ziel - ihre Fenster liegen über der Praxisseite.
- *
- * Am Rechner trägt das Ziel `data-rechner` wie das Gerüst: Die Titel eines
- * Fensters in der Stufe der Plattform wachsen dann mit (`Fenstertitel`,
- * Einstieg, DRP-016) - nicht nach `lg:`, das in der Einsicht gälte.
+ * Das Ziel der Fenster in der Schrift der Plattform (ANN-584), innerhalb dessen, was die
+ * Sitzungssperre verbirgt: Am `body` erbten Dialoge die 18 px nicht. Die Seiten zeichnen erst, wenn
+ * es steht, sonst zöge ein offenes Fenster um; `data-rechner` lässt ihre Titel mitwachsen.
  */
 function MitFensterZiel({ children }: { children: ReactNode }) {
   const [ziel, setZiel] = useState<HTMLDivElement | null>(null);
@@ -659,19 +585,15 @@ function UebersichtOderEinstieg({
   email: string | undefined;
   zugang: Plattformzugang;
 }) {
-  const api = usePlattformApi();
-  const nurLesen = useNurLesen();
   const einstieg = useQuery({
     queryKey: einstiegSchluessel(zugang.access_id),
-    queryFn: () => api.ladeEinstieg(zugang.access_id),
+    queryFn: () => ladeEinstieg(zugang.access_id),
     retry: false,
   });
   if (einstieg.isPending) return null;
   const steht = Boolean(einstieg.data?.pending);
-  // E-001: Den Einstieg bedient nur die Person - die Einsicht zeigt die
-  // Übersicht und sagt, dass er noch aussteht.
-  if (steht && !nurLesen) return <Einstieg zugang={zugang} praxis={praxis} email={email} />;
-  return <Uebersicht zugang={zugang} einstiegSteht={steht && nurLesen} />;
+  if (steht) return <Einstieg zugang={zugang} praxis={praxis} email={email} />;
+  return <Uebersicht zugang={zugang} />;
 }
 
 /**
@@ -770,8 +692,6 @@ function Ich({
   entscheidend: Plattformzugang[];
   onAbmelden: () => void;
 }) {
-  const api = usePlattformApi();
-  const nurLesen = useNurLesen();
   // Die Person selbst und eine rechtliche Vertretung sehen, wer Zugang hat;
   // eine Begleitung nicht. Verbindlich ist der Server (manage_companions).
   const mitVertretungen = zugaenge.filter((z) => z.access_kind !== 'companion');
@@ -806,40 +726,36 @@ function Ich({
             meta={<span className="wrap-anywhere">{email ?? 'Ihr Konto'}</span>}
           />
           <ListRow
-            // E-001: Geräteeinstellungen und Abmelden der Person gibt es in
-            // der Einsicht nicht - die Zeile steht, wie die Person sie sieht.
-            {...(nurLesen ? {} : { to: `${PLATTFORM_PFAD}/einstellungen` })}
+            to={`${PLATTFORM_PFAD}/einstellungen`}
             titel="Einstellungen"
             meta="Schrift, Benachrichtigungen, Passkey und PIN"
           />
         </ListRows>
-        {nurLesen ? null : (
-          // DR-150: Abmelden ist nicht die Hauptsache dieser Seite - eine
-          // leise Zeile am Ende, „Überall abmelden“ mit Rückfrage darunter.
-          <div className="mt-6 flex flex-col items-start gap-3">
-            <Button variant="quiet" onClick={onAbmelden}>
-              Abmelden
-            </Button>
-            <Rueckfrage
-              ausloeser="Überall abmelden"
-              ausloeserVariante="quiet"
-              bestaetigen="Überall abmelden"
-              bestaetigenLaeuft="Wird abgemeldet …"
-              fehler={fehler}
-              onBestaetigen={() =>
-                api.ueberallAbmelden().catch((grund: Error) => {
-                  setFehler(grund.message);
-                  throw grund;
-                })
-              }
-            >
-              <p>
-                Sie werden auf allen Geräten abgemeldet, auch auf diesem. Das ist richtig, wenn Sie
-                ein Telefon verloren haben.
-              </p>
-            </Rueckfrage>
-          </div>
-        )}
+        {/* Abmelden ist nicht die Hauptsache dieser Seite - eine leise Zeile am
+            Ende, „Überall abmelden“ mit Rückfrage darunter. */}
+        <div className="mt-6 flex flex-col items-start gap-3">
+          <Button variant="quiet" onClick={onAbmelden}>
+            Abmelden
+          </Button>
+          <Rueckfrage
+            ausloeser="Überall abmelden"
+            ausloeserVariante="quiet"
+            bestaetigen="Überall abmelden"
+            bestaetigenLaeuft="Wird abgemeldet …"
+            fehler={fehler}
+            onBestaetigen={() =>
+              ueberallAbmelden().catch((grund: Error) => {
+                setFehler(grund.message);
+                throw grund;
+              })
+            }
+          >
+            <p>
+              Sie werden auf allen Geräten abgemeldet, auch auf diesem. Das ist richtig, wenn Sie
+              ein Telefon verloren haben.
+            </p>
+          </Rueckfrage>
+        </div>
       </Section>
       <Kleingedrucktes className="mt-8">
         {/* DR-104: Ein Kennwort gibt es nicht; was sich weitergeben ließe, ist
@@ -872,7 +788,6 @@ function IchBereich({
   lesbar: boolean;
   entscheidet: boolean;
 }) {
-  const nurLesen = useNurLesen();
   const ziel = (pfad: string) => `${PLATTFORM_PFAD}/${pfad}?${wahlSuche(z)}`;
   return (
     <Listenabschnitt titel={wahlName(z)}>
@@ -898,18 +813,14 @@ function IchBereich({
       {entscheidet ? <ListRow to={ziel('einwilligungen')} titel="Einwilligungen" /> : null}
       {/* POR-018 (ANN-261): der Export nur in der Lesezeit. */}
       {entscheidet && z.readable ? (
-        // E-001: Der Export steht im Protokoll und gehört der Person.
-        <ListRow {...(nurLesen ? {} : { to: ziel('daten') })} titel="Meine Daten herunterladen" />
+        <ListRow to={ziel('daten')} titel="Meine Daten herunterladen" />
       ) : null}
       {entscheidet && !z.readable ? (
         <ListRow titel="Meine Daten" meta="Ihre Daten bekommen Sie jetzt bei der Praxis." />
       ) : null}
       {/* BEF-189: die Begleitung lädt ihre eigene Wahl herunter, in der Lesezeit. */}
       {lesbar && z.access_kind === 'companion' ? (
-        <ListRow
-          {...(nurLesen ? {} : { to: ziel('daten') })}
-          titel="Meine Benachrichtigungen herunterladen"
-        />
+        <ListRow to={ziel('daten')} titel="Meine Benachrichtigungen herunterladen" />
       ) : null}
     </Listenabschnitt>
   );
@@ -920,15 +831,10 @@ function IchBereich({
  * Zugang sie sehen darf; sonst keine Zeile.
  */
 function ErnaehrungZeile({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
-  // Die Einsicht liest die Ernährung nicht (ADR-027 Punkt 4); ein Versuch
-  // hinterließe einen Fehler im Speicher, den die Übersicht übernähme.
-  const nurLesen = useNurLesen();
   const { data } = useQuery({
     queryKey: ernaehrungSchluessel(zugang.access_id),
-    queryFn: () => api.ladeErnaehrung(zugang.access_id),
+    queryFn: () => ladeErnaehrung(zugang.access_id),
     retry: false,
-    enabled: !nurLesen,
   });
   if (!data) return null;
   const z = data.profile.targets;
@@ -947,10 +853,9 @@ function ErnaehrungZeile({ zugang }: { zugang: Plattformzugang }) {
  * Zeile.
  */
 function AboZeile({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const { data } = useQuery({
     queryKey: aboSchluessel(zugang.access_id),
-    queryFn: () => api.ladeAbo(zugang.access_id),
+    queryFn: () => ladeAbo(zugang.access_id),
   });
   if (!data) return null;
   return (
@@ -981,10 +886,9 @@ function AboZeile({ zugang }: { zugang: Plattformzugang }) {
  * sieht nur, wer Rechnungen sieht; das sagt der Server.
  */
 function PaketZeile({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const { data } = useQuery({
     queryKey: paketeSchluessel(zugang.access_id),
-    queryFn: () => api.ladeMeinePakete(zugang.access_id),
+    queryFn: () => ladeMeinePakete(zugang.access_id),
   });
   const aktuell = data?.find((k) => k.state !== 'ended');
   return (
@@ -1009,10 +913,9 @@ function PaketZeile({ zugang }: { zugang: Plattformzugang }) {
  * Vertrag im Konto keine Zeile.
  */
 function VertragZeile({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const { data } = useQuery({
     queryKey: vertragSchluessel(zugang.access_id),
-    queryFn: () => api.ladeVertrag(zugang.access_id),
+    queryFn: () => ladeVertrag(zugang.access_id),
   });
   if (!data) return null;
   return (
@@ -1037,10 +940,9 @@ function VertragZeile({ zugang }: { zugang: Plattformzugang }) {
  * Vertretung beendet nur die Praxis.
  */
 function WerZugangHat({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolean }) {
-  const api = usePlattformApi();
   const { data } = useQuery({
     queryKey: vertretungenSchluessel(zugang.access_id),
-    queryFn: () => api.ladeMeineVertretungen(zugang.access_id),
+    queryFn: () => ladeMeineVertretungen(zugang.access_id),
   });
   if (!data || data.length === 0) return null;
   const titel =
@@ -1065,11 +967,9 @@ function VertretungZeile({
   zugangId: string;
   vertretung: MeineVertretung;
 }) {
-  const api = usePlattformApi();
-  const nurLesen = useNurLesen();
   const queryClient = useQueryClient();
   const beenden = useMutation({
-    mutationFn: () => api.begleitungBeenden(zugangId, v.access_id),
+    mutationFn: () => begleitungBeenden(zugangId, v.access_id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: vertretungenSchluessel(zugangId) }),
   });
   const art =
@@ -1087,24 +987,21 @@ function VertretungZeile({
         {v.status === 'invited' ? ' · eingeladen' : v.status === 'locked' ? ' · gesperrt' : ''}
       </p>
       {v.can_end ? (
-        // E-001: Beenden kann nur die Person selbst - in der Einsicht fehlt der Knopf.
-        nurLesen ? null : (
-          <div className="mt-2">
-            <Rueckfrage
-              ausloeser="Begleitung beenden"
-              ausloeserVariante="quiet"
-              bestaetigen="Begleitung beenden"
-              bestaetigenLaeuft="Wird beendet …"
-              fehler={beenden.error?.message}
-              onBestaetigen={() => beenden.mutateAsync()}
-            >
-              <p>
-                {v.representative_name} sieht ab sofort nichts mehr. Damit widerrufen Sie Ihre
-                Einwilligung. Eine neue Begleitung richtet die Praxis ein.
-              </p>
-            </Rueckfrage>
-          </div>
-        )
+        <div className="mt-2">
+          <Rueckfrage
+            ausloeser="Begleitung beenden"
+            ausloeserVariante="quiet"
+            bestaetigen="Begleitung beenden"
+            bestaetigenLaeuft="Wird beendet …"
+            fehler={beenden.error?.message}
+            onBestaetigen={() => beenden.mutateAsync()}
+          >
+            <p>
+              {v.representative_name} sieht ab sofort nichts mehr. Damit widerrufen Sie Ihre
+              Einwilligung. Eine neue Begleitung richtet die Praxis ein.
+            </p>
+          </Rueckfrage>
+        </div>
       ) : (
         <p className="text-ink-muted mt-1 text-sm">Beenden kann diese Vertretung nur die Praxis.</p>
       )}

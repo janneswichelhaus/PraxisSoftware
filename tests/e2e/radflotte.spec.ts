@@ -7,35 +7,26 @@ import { testDetail, testFlotte, testRad } from '../../src/features/fleet/testda
 /**
  * Radflotte im Browser bei 375 px mit gezählten Tipps je Ablauf; das Budget steht im Namen jedes
  * Tests. Der Server ist eine Nachbildung über abgefangene Anfragen, Rechte und Fristen prüft
- * `pnpm test:db`. WebGL kommt aus SwiftShader; Bildschirmfotos dienen der Selbstsichtung.
+ * `pnpm test:db`. Bildschirmfotos dienen der Selbstsichtung.
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/radflotte.html';
 
-/**
- * Nach dem Speichern zeigt die Seite das Rad mit seinem 3D-Modell. Auf einem
- * Rechner ohne Grafikkarte (SwiftShader, auch in der CI) baut WebGL dafür die
- * Shader neu - das dauert dort länger als die üblichen 5 s. Gezählt werden
- * Tipps, nicht Sekunden.
- */
+/** Nach dem Speichern laufen Fotos und das Neuladen des Rads; gezählt werden Tipps, nicht Sekunden. */
 const NACH_DEM_SPEICHERN = 20_000;
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 test.use({
-  // Ein Bildpunkt je CSS-Pixel: SwiftShader zeichnet in Software, und bei der
-  // Dichte des Pixel 7 dauert ein Bild in der CI Sekunden. Tipps, Layout und
-  // axe hängen an CSS-Pixeln, nicht an der Dichte.
+  // Ein Bildpunkt je CSS-Pixel: Die Prüfungen ohne Scrollen und die Bildschirmfotos bleiben so
+  // mit den früheren Läufen vergleichbar.
   deviceScaleFactor: 1,
   launchOptions: {
     ...(executablePath ? { executablePath } : {}),
     args: [
       '--no-sandbox',
       '--disable-dev-shm-usage',
-      '--enable-unsafe-swiftshader',
-      '--use-angle=swiftshader',
-      '--ignore-gpu-blocklist',
-      // Künstliche Kamera mit Testbild für die Seitenfotos (FLT-007), Freigabe
-      // ohne Rückfrage - wie in fotos.spec.ts.
+      // Künstliche Kamera mit Testbild für die Seitenfotos, Freigabe ohne Rückfrage - wie in
+      // fotos.spec.ts.
       '--use-fake-device-for-media-stream',
       '--use-fake-ui-for-media-stream',
     ],
@@ -90,7 +81,6 @@ function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie', weitere: Bi
     const liste = JSON.parse(JSON.stringify(p.p_spots ?? [])) as {
       zone: string;
       severity?: 'problem' | 'beobachten';
-      point: [number, number, number] | null;
       note: string | null;
     }[];
     return liste.map((eingabe) => {
@@ -101,8 +91,6 @@ function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie', weitere: Bi
         id,
         number: null,
         zone: eingabe.zone,
-        point: eingabe.point,
-        model_version: 1,
         severity: quelle === 'breakdown' ? 'problem' : (eingabe.severity ?? 'problem'),
         note: eingabe.note,
         source: quelle,
@@ -197,8 +185,6 @@ function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie', weitere: Bi
           id: stelle.id,
           number: stelle.number,
           zone: stelle.zone,
-          point: stelle.point,
-          model_version: stelle.model_version,
           severity: stelle.severity,
           note: stelle.note,
           source: stelle.source,
@@ -230,17 +216,10 @@ function zaehler() {
       tipps += 1;
       await ziel.click();
     },
-    /** Ein Antippen am 3D-Rad: in der Mitte der Transportbox. */
-    async tippeAmRad(page: Page) {
+    /** Eine Auswahl in einer Liste zählt als ein Tipp (`kernablaeufe.md`, Zählweise). */
+    async waehle(feld: Locator, wert: string) {
       tipps += 1;
-      const rad = page.locator('canvas[role="img"]').first();
-      await expect(page.getByText('Ziehen dreht · Antippen markiert')).toBeVisible();
-      const box = (await rad.boundingBox())!;
-      await page.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.45);
-    },
-    /** Ein Tipp, den der Test selbst ausführt (etwa ans Rad im Fenster). */
-    mitzaehlen() {
-      tipps += 1;
+      await feld.selectOption(wert);
     },
     get tipps() {
       return tipps;
@@ -383,6 +362,12 @@ test('R3: geführter Check-Up ohne Befund in höchstens 25 Tipps, jede Seite ohn
   await expect(erste.getByText('Prüfpunkt 1 von 12', { exact: true })).toBeVisible();
   // Unter dem Titel das Rad mit Bauart (Regel 6).
   await expect(erste.getByText('Lastenrad 1 · Load 60 · Riemenantrieb')).toBeVisible();
+  // Die Antworten stehen unten, im Daumenbereich am Lenker (DESIGN.md, Grundsatz 1) - gemessen,
+  // wenn das Fenster steht (`trial` wartet, bis der Knopf ruht).
+  const unten = erste.getByRole('button', { name: 'Problem' });
+  await unten.click({ trial: true });
+  const antwort = (await unten.boundingBox())!;
+  expect(667 - (antwort.y + antwort.height)).toBeLessThanOrEqual(48);
   expect(await axeVerstoesse(page)).toEqual([]);
   for (const [index, label] of [
     'Reifen und Luftdruck',
@@ -441,9 +426,7 @@ test('R3: geführter Check-Up ohne Befund in höchstens 25 Tipps, jede Seite ohn
   expect(z.tipps).toBeLessThanOrEqual(25);
 });
 
-test('R4: geführter Check-Up mit einer Stelle am 3D-Rad in höchstens 26 Tipps und Text', async ({
-  page,
-}) => {
+test('R4: geführter Check-Up mit einer Stelle in höchstens 26 Tipps und Text', async ({ page }) => {
   test.setTimeout(120_000);
   const server = nachbildung();
   await oeffne(page, server);
@@ -467,15 +450,9 @@ test('R4: geführter Check-Up mit einer Stelle am 3D-Rad in höchstens 26 Tipps 
     await z.tippe(checkupFenster(page, label).getByRole('button', { name: 'In Ordnung' }));
   }
 
-  // Transportbox: Das Rad hat sich zur Box gedreht; ein Tipp darauf ist
-  // „Problem an dieser Stelle“.
+  // Transportbox: nur ein Bauteil - „Problem“ führt gleich zum Befund an der Box.
   const box = checkupFenster(page, 'Transportbox');
-  await expect(box.getByText('Problem? Stelle antippen')).toBeVisible();
-  // Der Flug der Kamera dauert 0,7 s.
-  await page.waitForTimeout(1_000);
-  z.mitzaehlen();
-  const rad = (await box.locator('canvas[role="img"]').boundingBox())!;
-  await page.mouse.click(rad.x + rad.width * 0.5, rad.y + rad.height * 0.5);
+  await z.tippe(box.getByRole('button', { name: 'Problem' }));
   await expect(box.getByLabel('Was ist aufgefallen?')).toBeVisible();
   await expect(box.getByRole('radio', { name: 'Problem' })).toBeChecked();
   expect(await scrolltNicht(page)).toBe(true);
@@ -496,12 +473,13 @@ test('R4: geführter Check-Up mit einer Stelle am 3D-Rad in höchstens 26 Tipps 
     timeout: NACH_DEM_SPEICHERN,
   });
   const eingabe = server.aufrufe.record_fleet_checkup![0]!;
+  // Bauteil, Einstufung und Notiz - kein Punkt am Modell.
   expect(eingabe.p_spots).toEqual([
-    expect.objectContaining({ zone: 'transportbox', severity: 'problem', note: 'Deckel klemmt' }),
+    { zone: 'transportbox', severity: 'problem', note: 'Deckel klemmt' },
   ]);
-  await expect(
-    page.getByRole('button', { name: 'Stelle 1 am Rad zeigen: Transportbox' }),
-  ).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Transportbox' })).toContainText(
+    'Deckel klemmt',
+  );
   test.info().annotations.push({
     type: 'R4',
     description: `${z.tipps} Tipps + Text (vorher 17 ohne Werbeflächen und Fotos)`,
@@ -537,9 +515,11 @@ test('Check-Up mit zwei Befunden bei 375 × 667: Zurückgeste, Bauteil ohne Frag
   await expect(speichen.getByRole('status')).toHaveText('Reifen und Luftdruck: ✓ In Ordnung');
   await speichen.getByRole('button', { name: 'In Ordnung' }).click();
 
-  // Bremsen: drei Bauteile, also „Wo genau?“.
+  // Bremsen: drei Bauteile, also „Wo genau?“ - ein Knopf je Bauteil.
   const bremsen = checkupFenster(page, 'Bremsen');
   await bremsen.getByRole('button', { name: 'Problem' }).click();
+  expect(await scrolltNicht(page), 'Wo genau? ohne Scrollen').toBe(true);
+  await mindestens44(bremsen.getByRole('button', { name: 'Bremse vorne' }));
   await bremsen.getByRole('button', { name: 'Bremse vorne' }).click();
   await bremsen.getByLabel('Was ist aufgefallen?').fill('Belag schleift');
   await bremsen.getByRole('button', { name: 'Weiter' }).click();
@@ -588,12 +568,8 @@ test('Check-Up mit zwei Befunden bei 375 × 667: Zurückgeste, Bauteil ohne Frag
   });
   const eingabe = server.aufrufe.record_fleet_checkup![0]!;
   expect(eingabe.p_spots).toEqual([
-    expect.objectContaining({ zone: 'bremse-vorne', severity: 'problem', note: 'Belag schleift' }),
-    expect.objectContaining({
-      zone: 'transportbox',
-      severity: 'beobachten',
-      note: 'Deckel klemmt',
-    }),
+    { zone: 'bremse-vorne', severity: 'problem', note: 'Belag schleift' },
+    { zone: 'transportbox', severity: 'beobachten', note: 'Deckel klemmt' },
   ]);
 });
 
@@ -607,10 +583,12 @@ function fenster(page: Page, name: string) {
  * danach wieder am Telefon (Überholung 6, Selbstsichtung).
  */
 async function bild(page: Page, name: string, breit = false) {
-  await page.screenshot({ path: `.tmp/screenshots/b6-${name}-375.png` });
+  // Ein Seitenwechsel gleitet kurz; das Foto zeigt die Seite dort, wo sie stehen bleibt.
+  const animations = 'disabled';
+  await page.screenshot({ path: `.tmp/screenshots/b6-${name}-375.png`, animations });
   if (!breit) return;
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.screenshot({ path: `.tmp/screenshots/b6-${name}-1280.png` });
+  await page.screenshot({ path: `.tmp/screenshots/b6-${name}-1280.png`, animations });
   await page.setViewportSize({ width: 375, height: 667 });
 }
 
@@ -649,7 +627,7 @@ test('R5: Panne, Rad weiter fahrbar, mit einer Stelle in höchstens sieben Tipps
   await bild(page, 'panne-01-rad', true);
   await z.tippe(page.getByRole('button', { name: 'Weiter' }));
 
-  // „Wo ist der Schaden?“ im Fenster, das 3D-Rad als Bühne.
+  // „Wo ist der Schaden?“ im Fenster: das Bauteil aus der Liste.
   const schaden = fenster(page, 'Wo ist der Schaden?');
   await expect(schaden.getByText('Panne melden · Lastenrad 1')).toBeVisible();
   await expect(schaden.getByText('Schritt 1', { exact: true })).toBeVisible();
@@ -657,9 +635,10 @@ test('R5: Panne, Rad weiter fahrbar, mit einer Stelle in höchstens sieben Tipps
   expect(await scrolltNicht(page), 'Wo ist der Schaden? ohne Scrollen').toBe(true);
   expect(await axeVerstoesse(page)).toEqual([]);
   await mindestens44(schaden.getByRole('button', { name: 'Weiter' }));
+  await mindestens44(schaden.getByLabel('Bauteil', { exact: true }));
   await bild(page, 'panne-02-schaden');
 
-  await z.tippeAmRad(page);
+  await z.waehle(schaden.getByLabel('Bauteil', { exact: true }), 'transportbox');
   await schaden.getByLabel('Was ist passiert?').fill('Deckel klemmt');
   // Die offene Stelle mit „Stelle setzen“ im Bild, ohne Rollen.
   expect(await scrolltNicht(page), 'offene Stelle ohne Scrollen').toBe(true);
@@ -670,9 +649,6 @@ test('R5: Panne, Rad weiter fahrbar, mit einer Stelle in höchstens sieben Tipps
     'Deckel klemmt',
   );
   expect(await scrolltNicht(page), 'Schaden gesetzt ohne Scrollen').toBe(true);
-  // Das Rad wird nach dem Größenwechsel der Bühne neu gezeichnet; SwiftShader
-  // braucht dafür einen Moment - erst dann das Bild.
-  await page.waitForTimeout(1_000);
   await bild(page, 'panne-04-schaden-gesetzt');
   await z.tippe(schaden.getByRole('button', { name: 'Weiter' }));
 
@@ -697,6 +673,10 @@ test('R5: Panne, Rad weiter fahrbar, mit einer Stelle in höchstens sieben Tipps
   expect(server.aufrufe.record_fleet_breakdown![0]).toEqual(
     expect.objectContaining({ p_outcome: 'meldungOhneSperre', p_location_note: '' }),
   );
+  // Die Stelle geht als Bauteil und Notiz, ohne Punkt am Modell.
+  expect(server.aufrufe.record_fleet_breakdown![0]!.p_spots).toEqual([
+    { zone: 'transportbox', note: 'Deckel klemmt' },
+  ]);
   test.info().annotations.push({ type: 'R5', description: `${z.tipps} Tipps + Text (vorher 7)` });
   expect(z.tipps).toBeLessThanOrEqual(7);
 });
@@ -1025,10 +1005,12 @@ test('R7: Unterlage für die Werkstatt in zwei Tipps bis zum Druckdialog, zwei A
   const z = zaehler();
   await z.tippe(page.getByRole('link', { name: 'Unterlage für die Werkstatt' }));
   const drucken = page.getByRole('button', { name: 'Drucken oder als PDF sichern' });
-  await expect(drucken).toBeEnabled({ timeout: 20_000 });
+  await expect(drucken).toBeEnabled();
   expect(await ueberlaeuft(page)).toBe(false);
-  await expect(page.getByText('Rechte Seite mit Antrieb: Stellen 2 und 3')).toBeVisible();
-  await expect(page.getByText('Linke Seite: Stelle 1')).toBeVisible();
+  // Bauteilnamen statt gerenderter Ansichten des Rads.
+  const tabelle = page.getByRole('region', { name: 'Seite 1 von 2' }).getByRole('table');
+  await expect(tabelle).toContainText('Bremse vorne');
+  await expect(tabelle).toContainText('Riemen und Riemenscheiben');
   await z.tippe(drucken);
   expect(await page.evaluate(() => (window as unknown as { __gedruckt: number }).__gedruckt)).toBe(
     1,

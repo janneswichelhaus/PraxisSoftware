@@ -205,9 +205,8 @@ describe('Schema-Invarianten', () => {
       'staff_reimbursement_receipts',
       'staff_reimbursement_receipt_access_grants',
       'staff_payout_accounts',
-      // ORG-006: Rückmeldungen von Beschäftigten und die Teilnahme am Barometer.
+      // Rückmeldungen von Beschäftigten und die Blöcke ihrer Praxissumme.
       'staff_feedback',
-      'staff_feedback_participations',
       'staff_feedback_blocks',
       // TEAM-002: der eigene Stand an einem Thread, Reaktionen, Angeheftetes,
       // „Für später“ und Einstellungen je Gespräch.

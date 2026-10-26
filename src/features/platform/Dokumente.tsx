@@ -8,10 +8,15 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Textlink } from '@/components/ui/Textlink';
 import { Dateiansicht } from '@/features/files/Dateiansicht';
-import { dokumenteSchluessel, type Dokument, type Plattformzugang } from './api';
-import { useNurLesen, usePlattformApi, usePraxiswege } from './einsicht';
+import {
+  dokumenteSchluessel,
+  ladeDokumentHerunter,
+  ladeDokumentZumAnzeigen,
+  ladeDokumente,
+  type Dokument,
+  type Plattformzugang,
+} from './api';
 import { PLATTFORM_PFAD } from './pfade';
 import { datum } from './zeit';
 
@@ -39,10 +44,9 @@ function groesse(bytes: number): string {
  * ADR-010 Punkt 22); nachgewiesen ist die Freigabe.
  */
 export function Dokumente({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const dokumente = useQuery({
     queryKey: dokumenteSchluessel(zugang.access_id),
-    queryFn: () => api.ladeDokumente(zugang.access_id),
+    queryFn: () => ladeDokumente(zugang.access_id),
     enabled: zugang.relationship_kind === 'treatment',
   });
   return (
@@ -79,9 +83,6 @@ export function Dokumente({ zugang }: { zugang: Plattformzugang }) {
 }
 
 function Dokumentzeile({ zugang, dokument: d }: { zugang: Plattformzugang; dokument: Dokument }) {
-  const api = usePlattformApi();
-  const nurLesen = useNurLesen();
-  const wege = usePraxiswege();
   const [laeuft, setLaeuft] = useState<'oeffnen' | 'herunterladen' | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [ansicht, setAnsicht] = useState<Blob | null>(null);
@@ -99,9 +100,9 @@ function Dokumentzeile({ zugang, dokument: d }: { zugang: Plattformzugang; dokum
     setLaeuft(aktion);
     try {
       if (aktion === 'oeffnen') {
-        setAnsicht((await api.ladeDokumentZumAnzeigen(zugang.access_id, d.id)).bild);
+        setAnsicht((await ladeDokumentZumAnzeigen(zugang.access_id, d.id)).bild);
       } else {
-        await api.ladeDokumentHerunter(zugang.access_id, d.id);
+        await ladeDokumentHerunter(zugang.access_id, d.id);
       }
     } catch (ursache) {
       setFehler((ursache as Error).message);
@@ -120,38 +121,28 @@ function Dokumentzeile({ zugang, dokument: d }: { zugang: Plattformzugang; dokum
             {datum(d.released_at)}
           </p>
         </div>
-        {/* E-001 (ANN-527): In der Einsicht wird kein Dokument geöffnet - der
-            Weg führt in den Reiter der Akte, in dem es steht. */}
-        {nurLesen ? (
-          wege?.datei ? (
-            <Textlink alleinstehend to={wege.datei(d.document_type)}>
-              In der Akte öffnen<span className="sr-only">: {d.display_name}</span>
-            </Textlink>
-          ) : null
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {bild ? (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => void ausfuehren('oeffnen')}
-                disabled={laeuft !== null}
-              >
-                {laeuft === 'oeffnen' ? 'Wird geöffnet …' : 'Ansehen'}
-                <span className="sr-only">: {d.display_name}</span>
-              </Button>
-            ) : null}
+        <div className="flex flex-wrap gap-2">
+          {bild ? (
             <Button
               type="button"
-              variant={bild ? 'quiet' : 'secondary'}
-              onClick={() => void ausfuehren('herunterladen')}
+              variant="secondary"
+              onClick={() => void ausfuehren('oeffnen')}
               disabled={laeuft !== null}
             >
-              {laeuft === 'herunterladen' ? 'Wird heruntergeladen …' : 'Herunterladen'}
+              {laeuft === 'oeffnen' ? 'Wird geöffnet …' : 'Ansehen'}
               <span className="sr-only">: {d.display_name}</span>
             </Button>
-          </div>
-        )}
+          ) : null}
+          <Button
+            type="button"
+            variant={bild ? 'quiet' : 'secondary'}
+            onClick={() => void ausfuehren('herunterladen')}
+            disabled={laeuft !== null}
+          >
+            {laeuft === 'herunterladen' ? 'Wird heruntergeladen …' : 'Herunterladen'}
+            <span className="sr-only">: {d.display_name}</span>
+          </Button>
+        </div>
       </div>
       {fehler ? (
         <Statusmeldung ton="fehler" className="mt-2">

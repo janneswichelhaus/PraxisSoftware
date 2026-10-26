@@ -1,17 +1,9 @@
 import { useSyncExternalStore } from 'react';
 
 /**
- * Ab dieser Fensterbreite hat die Plattform ihre Rechneransicht (Handoff
- * 2026-10-22, Abschnitt 4; DR-113): Navigation im Kopf, keine Reiterleiste,
- * der Inhalt bis `max-w-inhalt`. Tailwinds `lg`, 64rem - bei der
- * Standardschrift 1024 px; wer im Browser eine größere Schrift eingestellt
- * hat, behält länger die Ansicht des Telefons, wie unter 23rem.
- *
- * Gefragt wird im Code, nicht mit `lg:` an den Klassen: Die Einsicht der
- * Praxis (E-001) zeigt dasselbe Gerüst am breiten Bildschirm in einem
- * Telefon von 390 px - dort gälte `lg:` nach der Breite des Fensters, und im
- * Telefon stünde die Navigation des Rechners. Die Einsicht bekommt deshalb
- * immer die Ansicht des Telefons (`PlattformApp`).
+ * Ab dieser Fensterbreite hat die Plattform ihre Rechneransicht: Navigation im Kopf, keine
+ * Reiterleiste, der Inhalt bis `max-w-inhalt`. Tailwinds `lg`, 64rem - wer im Browser eine größere
+ * Schrift eingestellt hat, behält länger die Ansicht des Telefons, wie unter 23rem.
  */
 export const RECHNER_ABFRAGE = '(min-width: 64rem)';
 

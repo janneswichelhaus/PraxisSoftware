@@ -130,15 +130,13 @@ describe('Übungsbibliothek: Übung und Variante (UEB-001)', () => {
               common_faults: 'Knie fallen nach innen.',
               practice_notes: 'Nicht unter Schmerz über 5.',
               archived: false,
-              // UEB-012: Eine eigene Variante hat keine Herkunft aus dem
-              // Katalog, kein Bild und keinen Prüfvermerk.
+              // Eine eigene Variante hat keine Herkunft aus dem Katalog und keinen Prüfvermerk.
               catalog_key: null,
               catalog_version: null,
               goal: null,
               starting_position: null,
               level: null,
               default_dosage: null,
-              illustration: null,
               reviewed_at: null,
               reviewed_by_name: null,
             },

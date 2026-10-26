@@ -218,16 +218,6 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
     ]);
   });
 
-  // E-001 (DSN-001 D7): Die Einsicht der Praxis liest über `platform_preview`.
-  // Den Verteiler ruft nur die Praxisseite (`features/platform-access`); die
-  // Plattform bekommt die Quelle eingespeist und kennt ihn nicht.
-  it('spricht den Verteiler der Einsicht nie selbst an (E-001)', () => {
-    const verteiler = /\.rpc\(\s*'platform_preview'/;
-    expect(dateien.filter((pfad) => verteiler.test(readFileSync(pfad, 'utf8')))).toEqual([]);
-    const praxisseite = join(VERZEICHNIS, '..', 'platform-access', 'einsicht.ts');
-    expect(readFileSync(praxisseite, 'utf8')).toMatch(verteiler);
-  });
-
   it('wuerde einen Import aus einem Praxisfeature tatsaechlich finden', () => {
     expect(ERLAUBT.some((muster) => muster.test('@/features/patients/api'))).toBe(false);
     expect(ERLAUBT.some((muster) => muster.test('@/features/session/useCurrentUser'))).toBe(false);

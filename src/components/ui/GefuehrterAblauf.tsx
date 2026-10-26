@@ -77,6 +77,7 @@ export function GefuehrterAblauf({
   balkenJeSchritt = false,
   titelStufe,
   vorDemTitel,
+  inhaltUnten = false,
   band,
   plattform = false,
   children,
@@ -126,6 +127,8 @@ export function GefuehrterAblauf({
   titelStufe?: Titelstufe | undefined;
   /** Über der Frage, im Inhalt: etwa ein Bild und eine Bestätigung. Nicht mit Bühne. */
   vorDemTitel?: ReactNode;
+  /** Am Telefon steht der Inhalt unten über dem Fuß, im Daumenbereich (Antworten im Inhalt). */
+  inhaltUnten?: boolean;
   /**
    * Unter dem Fortschritt über die ganze Breite des Fensters: das Band „Sie
    * handeln für …“ einer Vertretung (5.3), dieselbe Leiste wie im Gerüst.
@@ -307,6 +310,7 @@ export function GefuehrterAblauf({
         inhalt: 'max-[23rem]:flex-none max-[23rem]:overflow-visible',
       }
     : { seite: '', inhalt: '' };
+  const hoch = plattform || inhaltUnten ? 'h-full' : '';
   const seiteMitFuss = (
     <div
       key={seite}
@@ -319,12 +323,14 @@ export function GefuehrterAblauf({
       >
         {/* Im Rhythmus der Plattform so hoch wie die Fläche: Was schrumpfen darf
             (ein Bild über der Frage), gibt Platz her, bevor die Seite rollt. */}
-        <div
-          className={`max-w-formular mx-auto flex w-full flex-col gap-4 ${plattform ? 'h-full' : ''}`.trim()}
-        >
+        <div className={`max-w-formular mx-auto flex w-full flex-col gap-4 ${hoch}`.trim()}>
           {vorDemTitel}
           <Fenstertitel stufe={titelStufe} />
-          {children}
+          {inhaltUnten ? (
+            <div className="mt-auto flex flex-col gap-4 lg:mt-0">{children}</div>
+          ) : (
+            children
+          )}
         </div>
       </div>
       {fussLeiste ? (

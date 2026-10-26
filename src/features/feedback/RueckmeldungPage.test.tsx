@@ -6,7 +6,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { testUser } from '@/test-utils';
 import type * as FeedbackApi from './api';
-import type { FeedbackStatus, NamedFeedback } from './api';
+import type { FeedbackStatus, FeedbackSummary, NamedFeedback } from './api';
 
 /**
  * Rückmeldung an die Praxisleitung (ORG-006, ANN-608) und der Eingang:
@@ -15,6 +15,7 @@ import type { FeedbackStatus, NamedFeedback } from './api';
 
 const fetchFeedbackStatus = vi.fn();
 const fetchNamedFeedback = vi.fn();
+const fetchFeedbackSummary = vi.fn();
 const submitMessage = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
@@ -23,6 +24,7 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchFeedbackStatus: () => fetchFeedbackStatus() as unknown,
     fetchNamedFeedback: () => fetchNamedFeedback() as unknown,
+    fetchFeedbackSummary: () => fetchFeedbackSummary() as unknown,
     submitMessage: (...a: unknown[]) => submitMessage(...a) as unknown,
   };
 });
@@ -86,6 +88,9 @@ function rendern(element: React.ReactNode, pfad = '/betrieb/rueckmeldung') {
 beforeEach(() => {
   fetchFeedbackStatus.mockReset().mockResolvedValue(stand());
   fetchNamedFeedback.mockReset().mockResolvedValue(NAMENTLICH);
+  fetchFeedbackSummary.mockReset().mockResolvedValue({
+    messages: { status: 'too_few' },
+  } satisfies FeedbackSummary);
   submitMessage.mockReset().mockResolvedValue({ month: '2026-10-01', named: true });
 });
 
@@ -113,15 +118,32 @@ describe('Rückmeldung an die Praxisleitung', () => {
     rendern(<RueckmeldungPage user={testUser(['owner'])} />);
     expect(await screen.findByText('Olivia Office · Rückmeldung')).toBeInTheDocument();
     expect(screen.getByText('Der Drucker klemmt')).toBeInTheDocument();
-    expect(screen.getByText('Tim Teamleitung · Barometer')).toBeInTheDocument();
+    // Das Barometer hat seine eigene Seite.
+    expect(screen.queryByText('Tim Teamleitung · Barometer')).toBeNull();
     expect(
-      screen.getByText('Insgesamt 8 · Touren und Fahrzeiten – · Miteinander im Team 6'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('Was die Arbeit leichter machen würde: Mehr Pausen'),
+      await screen.findByText('Noch zu wenige Rückmeldungen für eine Auswertung'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(submitMessage).not.toHaveBeenCalled();
+    await pruefeBarrierefreiheit(document.body);
+  });
+
+  it('zeigt owner die Rückmeldungen ohne Namen gemischt, sobald der Server sie liefert', async () => {
+    fetchFeedbackStatus.mockResolvedValue(stand({ can_take_part: false, can_read: true }));
+    fetchFeedbackSummary.mockResolvedValue({
+      messages: {
+        status: 'ready',
+        from_month: '2026-08-01',
+        to_month: '2026-09-01',
+        answers: 5,
+        texts: ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo'],
+      },
+    } satisfies FeedbackSummary);
+    rendern(<RueckmeldungPage user={testUser(['owner'])} />);
+    expect(
+      await screen.findByText('Ohne Namen · August bis September 2026 (5)'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Charlie')).toBeInTheDocument();
     await pruefeBarrierefreiheit(document.body);
   });
 });
@@ -130,6 +152,7 @@ describe('Rückmeldungen im Eingang', () => {
   it('zeigt Beschäftigten das Barometer des Monats, solange es offen ist', async () => {
     rendern(<RueckmeldungenImEingang />, '/betrieb');
     expect(await screen.findByText('Barometer Oktober')).toBeInTheDocument();
+    expect(screen.getByText('Fünf kurze Fragen, mit deinem Namen')).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: 'Barometer Oktober ausfüllen' }).getAttribute('href'),
     ).toBe('/betrieb/barometer?zurueck=%2Fbetrieb');
@@ -147,9 +170,10 @@ describe('Rückmeldungen im Eingang', () => {
     fetchFeedbackStatus.mockResolvedValue(stand({ can_take_part: false, can_read: true }));
     rendern(<RueckmeldungenImEingang />, '/betrieb');
     expect(await screen.findByText('Olivia Office · Rückmeldung')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Barometer ohne Namen' })).toHaveAttribute(
+    expect(screen.getByText('Tim Teamleitung · Barometer')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ohne Namen' })).toHaveAttribute(
       'href',
-      '/betrieb/barometer',
+      '/betrieb/rueckmeldung',
     );
     expect(screen.queryByText('Barometer Oktober')).toBeNull();
   });

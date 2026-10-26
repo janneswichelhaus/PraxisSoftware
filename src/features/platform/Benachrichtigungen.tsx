@@ -25,10 +25,13 @@ import {
 import {
   BEREICHSNAME,
   benachrichtigungSchluessel,
+  entferneGeraet,
+  ladeBenachrichtigungen,
+  registriereGeraet,
+  speichereBenachrichtigungen,
   type Benachrichtigungswahl,
   type Plattformzugang,
 } from './api';
-import { usePlattformApi } from './einsicht';
 import { BENACHRICHTIGUNGEN_ANKER } from './pfade';
 import { datum } from './zeit';
 
@@ -110,7 +113,6 @@ function GeraetAbschnitt({
   endpunkt: string | null;
   zugaenge: Plattformzugang[];
 }) {
-  const api = usePlattformApi();
   const queryClient = useQueryClient();
   const neuLaden = async () => {
     await queryClient.invalidateQueries({ queryKey: ENDPUNKT_SCHLUESSEL });
@@ -119,7 +121,7 @@ function GeraetAbschnitt({
   const erlauben = useMutation({
     mutationFn: async () => {
       const geraet = await pushErlauben();
-      await api.registriereGeraet(
+      await registriereGeraet(
         zugaenge.map((z) => z.access_id),
         geraet,
       );
@@ -128,7 +130,7 @@ function GeraetAbschnitt({
   });
   const ausschalten = useMutation({
     mutationFn: async () => {
-      if (endpunkt !== null) await api.entferneGeraet(endpunkt);
+      if (endpunkt !== null) await entferneGeraet(endpunkt);
       await pushAbmelden();
     },
     onSettled: neuLaden,
@@ -194,11 +196,10 @@ function WahlFuerZugang({
   zugang: Plattformzugang;
   endpunkt: string | null;
 }) {
-  const api = usePlattformApi();
   const schluessel = benachrichtigungSchluessel(zugang.access_id, endpunkt);
   const { data, isPending, isError } = useQuery({
     queryKey: schluessel,
-    queryFn: () => api.ladeBenachrichtigungen(zugang.access_id, endpunkt),
+    queryFn: () => ladeBenachrichtigungen(zugang.access_id, endpunkt),
     retry: false,
   });
   if (isPending) return <LoadingState label="Benachrichtigungen werden geladen …" />;
@@ -219,7 +220,6 @@ function Wahlformular({
   zugang: Plattformzugang;
   gespeichert: Benachrichtigungswahl;
 }) {
-  const api = usePlattformApi();
   const queryClient = useQueryClient();
   const [mail, setMail] = useState(gespeichert.email_kinds);
   const [push, setPush] = useState(gespeichert.push_kinds);
@@ -227,7 +227,7 @@ function Wahlformular({
   const [bis, setBis] = useState(gespeichert.quiet_until);
   const speichern = useMutation({
     mutationFn: () =>
-      api.speichereBenachrichtigungen(zugang.access_id, {
+      speichereBenachrichtigungen(zugang.access_id, {
         email_kinds: mail,
         push_kinds: push,
         quiet_from: von,

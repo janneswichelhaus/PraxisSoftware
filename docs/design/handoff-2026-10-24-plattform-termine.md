@@ -1,5 +1,8 @@
 # Handoff: Plattform · Termine (Briefing 3)
 
+_Nachtrag 2026-10-26 (Aufräumen M7):_ Die Einsicht der Praxis (`useNurLesen`) ist entfernt; alle
+Vorgaben zu ihr entfallen (ADR-023 Fassung 7).
+
 > **Entwurfsreferenz, kein Produktionscode.** Die Entwürfe liegen auf der Design-Leinwand „Plattform –
 > Termine“ (<https://claude.ai/artifact/4jdCqRT4YWRiphJ2Sjhqf1>, privat bei Jannes), gebaut mit dem
 > „Own Motion Designsystem“ (<https://claude.ai/artifact/HmuUQAQau7HT48PkmvSFQK>, Stand

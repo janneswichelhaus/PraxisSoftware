@@ -25,9 +25,9 @@ export function Fotovormerkung({
 }: {
   fotos: readonly Blob[];
   onFotos: (fotos: Blob[]) => void;
-  /** Titel des Kameradialogs, etwa „Foto zu Stelle 2“. */
+  /** Titel des Kameradialogs, etwa „Foto zu Bremse vorne“. */
   titel: string;
-  /** Wofür die Fotos sind, für Vorlesesoftware: „zu Stelle 2“, „vom ganzen Rad“. */
+  /** Wofür die Fotos sind, für Vorlesesoftware: „zu Bremse vorne“, „vom ganzen Rad“. */
   bezug: string;
 }) {
   const [kamera, setKamera] = useState(false);

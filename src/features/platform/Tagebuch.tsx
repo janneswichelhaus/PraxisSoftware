@@ -36,8 +36,17 @@ import {
   type Mahlzeit,
 } from '@/features/nutrition/tagebuch';
 import { liter, zahl } from '@/features/nutrition/texte';
-import { tagebuchSchluessel, type EigenesTagebuch, type Plattformzugang } from './api';
-import { useNurLesen, usePlattformApi } from './einsicht';
+import {
+  tagebuchSchluessel,
+  ladeTagebuch,
+  tagebuchAendern,
+  tagebuchKopieren,
+  tagebuchLoeschen,
+  wasserZaehlen,
+  zahlenAusblenden,
+  type EigenesTagebuch,
+  type Plattformzugang,
+} from './api';
 import { PLATTFORM_PFAD } from './pfade';
 import { TagebuchErinnerungen } from './TagebuchErinnerungen';
 import { eintragenAdresse, tagebuchAdresse, tagName } from './tagebuchAdresse';
@@ -63,12 +72,11 @@ function zurueck(suche: URLSearchParams): string {
 }
 
 export function Tagebuch({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const [suche] = useSearchParams();
   const tag = /^\d{4}-\d{2}-\d{2}$/.test(suche.get('tag') ?? '') ? suche.get('tag') : null;
   const abfrage = useQuery({
     queryKey: tagebuchSchluessel(zugang.access_id, tag ?? 'heute'),
-    queryFn: () => api.ladeTagebuch(zugang.access_id, tag),
+    queryFn: () => ladeTagebuch(zugang.access_id, tag),
   });
 
   return (
@@ -92,14 +100,13 @@ export function Tagebuch({ zugang }: { zugang: Plattformzugang }) {
 }
 
 function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTagebuch }) {
-  const nurLesen = useNurLesen();
   const { state, search } = useLocation() as {
     state: { eingetragen?: string } | null;
     search: string;
   };
   const [offen, setOffen] = useState<Eintrag | null>(null);
   const tag = daten.day.day;
-  const schreibbar = daten.can_write && !nurLesen;
+  const schreibbar = daten.can_write;
 
   return (
     <div className="flex flex-col gap-8 [&>*]:mt-0">
@@ -145,19 +152,17 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTage
                 titel={e.name}
                 meta={mengeText(e)}
                 {...(daten.hide_numbers ? {} : { betrag: kcal(e.energy_kcal) })}
-                {...(daten.can_delete && !nurLesen ? { onClick: () => setOffen(e) } : {})}
+                {...(daten.can_delete ? { onClick: () => setOffen(e) } : {})}
               />
             ))}
           </Listenabschnitt>
         );
       })}
-      {!nurLesen ? (
-        <div className="flex flex-col gap-2">
-          {daten.can_write ? <Kopieren zugang={zugang} daten={daten} /> : null}
-          {daten.can_delete ? <Einstellungen zugang={zugang} daten={daten} /> : null}
-          {daten.enabled ? <TagebuchErinnerungen zugang={zugang} /> : null}
-        </div>
-      ) : null}
+      <div className="flex flex-col gap-2">
+        {daten.can_write ? <Kopieren zugang={zugang} daten={daten} /> : null}
+        {daten.can_delete ? <Einstellungen zugang={zugang} daten={daten} /> : null}
+        {daten.enabled ? <TagebuchErinnerungen zugang={zugang} /> : null}
+      </div>
       {offen ? (
         <EintragFenster
           zugang={zugang}
@@ -262,11 +267,10 @@ function Wasser({
   daten: EigenesTagebuch;
   schreibbar: boolean;
 }) {
-  const api = usePlattformApi();
   const neuLaden = useNeuLaden(zugang);
   const glas = daten.glass_ml;
   const zaehlen = useMutation({
-    mutationFn: (ml: number) => api.wasserZaehlen(zugang.access_id, daten.day.day, ml),
+    mutationFn: (ml: number) => wasserZaehlen(zugang.access_id, daten.day.day, ml),
     onSuccess: () => neuLaden(),
   });
   const ziel = daten.targets?.water_ml;
@@ -327,7 +331,6 @@ function EintragFenster({
   eintrag: Eintrag;
   onSchliessen: () => void;
 }) {
-  const api = usePlattformApi();
   const neuLaden = useNeuLaden(zugang);
   const portion = eintrag.portion_label !== null;
   const [mahlzeit, setMahlzeit] = useState<Mahlzeit>(eintrag.meal);
@@ -335,14 +338,14 @@ function EintragFenster({
   const [fehler, setFehler] = useState<string | undefined>();
   const aendern = useMutation({
     mutationFn: (angabe: { menge: number | null; anzahl: number | null }) =>
-      api.tagebuchAendern(zugang.access_id, eintrag.id, mahlzeit, angabe),
+      tagebuchAendern(zugang.access_id, eintrag.id, mahlzeit, angabe),
     onSuccess: async () => {
       await neuLaden();
       onSchliessen();
     },
   });
   const loeschen = useMutation({
-    mutationFn: () => api.tagebuchLoeschen(zugang.access_id, eintrag.id),
+    mutationFn: () => tagebuchLoeschen(zugang.access_id, eintrag.id),
     onSuccess: async () => {
       await neuLaden();
       onSchliessen();
@@ -419,15 +422,13 @@ function EintragFenster({
 
 /** Eine Mahlzeit oder den ganzen Tag von einem anderen Tag hierher kopieren (ERN-008). */
 function Kopieren({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTagebuch }) {
-  const api = usePlattformApi();
   const neuLaden = useNeuLaden(zugang);
   const tag = daten.day.day;
   const [von, setVon] = useState(tag > daten.started_on ? tagePlus(tag, -1) : tag);
   const [teil, setTeil] = useState<Mahlzeit | 'tag'>('tag');
   const [kopiert, setKopiert] = useState<number | null>(null);
   const kopieren = useMutation({
-    mutationFn: () =>
-      api.tagebuchKopieren(zugang.access_id, von, teil === 'tag' ? null : teil, tag),
+    mutationFn: () => tagebuchKopieren(zugang.access_id, von, teil === 'tag' ? null : teil, tag),
     onSuccess: async (anzahl) => {
       setKopiert(anzahl);
       await neuLaden();
@@ -485,11 +486,10 @@ function Kopieren({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTa
 
 /** „Zahlen ausblenden“ (ADR-027 Punkt 11) - die Einstellung der Person. */
 function Einstellungen({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTagebuch }) {
-  const api = usePlattformApi();
   const neuLaden = useNeuLaden(zugang);
   const [aus, setAus] = useState(daten.hide_numbers);
   const schalten = useMutation({
-    mutationFn: (neu: boolean) => api.zahlenAusblenden(zugang.access_id, neu),
+    mutationFn: (neu: boolean) => zahlenAusblenden(zugang.access_id, neu),
     // Der Haken folgt dem Tipp sofort; geht es schief, springt er zurück.
     onMutate: (neu) => setAus(neu),
     onError: (_fehler, neu) => setAus(!neu),

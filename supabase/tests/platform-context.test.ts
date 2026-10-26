@@ -47,12 +47,15 @@ async function kontext(konto: string) {
  * Anwendungsrolle ausführbar; hier läuft sie als Eigentümer mit den Claims
  * des Kontos, so wie eine Projektion sie aufruft.
  */
-async function lesbar(konto: string, zugang: string): Promise<boolean> {
+async function lesbar(konto: string, zugang: string, alteEinsicht = false): Promise<boolean> {
   const client = new Client({ connectionString: testDatabaseUrl() });
   await client.connect();
   try {
     await client.query('begin');
     await client.query("select set_config('request.jwt.claims', $1, true)", [jwtClaims(konto)]);
+    if (alteEinsicht) {
+      await client.query("select set_config('app.platform_preview_access', $1, true)", [zugang]);
+    }
     const { rows } = await client.query<{ n: number }>(LESBAR, [zugang]);
     await client.query('rollback');
     return Number(rows[0]?.n) > 0;
@@ -168,6 +171,17 @@ describe('platform_context', () => {
     for (const konto of [users.ownerTherapist, users.office, users.trainer, users.patientMax]) {
       expect(await kontext(konto)).toEqual([]);
     }
+  });
+
+  it('owner liest keinen Zugang einer Person, auch nicht mit der Einstellung der frueheren Einsicht', async () => {
+    for (const zugang of [platformAccesses.erikaBehandlung, platformAccesses.tinaTraining]) {
+      expect(await lesbar(users.ownerTherapist, zugang)).toBe(false);
+      expect(await lesbar(users.ownerTherapist, zugang, true)).toBe(false);
+    }
+    const { rows } = await asPostgres<{ n: number }>(
+      "select count(*)::int as n from pg_proc where proname like 'platform_preview%'",
+    );
+    expect(rows[0]!.n).toBe(0);
   });
 
   it('andere Organisation: ihr Konto sieht nichts von hier', async () => {

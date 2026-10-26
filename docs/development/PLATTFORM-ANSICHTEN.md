@@ -394,6 +394,8 @@ die Plattform“ im Abschnitt Plattform, nur für die Praxisinhaber:in und nur a
 aktiven eigenen Zugang; dasselbe Gerüst, nur lesend, mit der Leiste „Einsicht ·
 nur lesen“, protokolliert wie das Öffnen der Akte ([ADR-023](../adr/ADR-023-platform-access.md)
 Fassung 5, Punkt 25; ANN-525 bis ANN-529). Die Übungstage sieht dort nur die Person (ANN-307).
+*Zurückgenommen 2026-10-26 (Jannes, Aufräumen M7):* Die Einsicht ist entfernt, die Praxis sieht die
+Plattform einer Person nicht mehr (ADR-023 Fassung 7).
 
 ## 9. Was daraus in welchem Loop entsteht
 

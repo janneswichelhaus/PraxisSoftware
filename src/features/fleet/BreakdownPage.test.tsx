@@ -11,10 +11,6 @@ import { Zielanzeige } from './Testbausteine';
 import { testDetail, testFlotte, testRad } from './testdaten';
 import { rendereSeite } from './testseite';
 
-vi.mock('./bike3d/BikeModel3D', async () => ({
-  BikeModel3D: (await import('./Testbausteine')).RadStellvertreter,
-}));
-
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof api>()),
   fetchFleet: vi.fn(),
@@ -78,6 +74,12 @@ function fenster(name: string | RegExp) {
   return screen.findByRole('dialog', { name });
 }
 
+/** „Wo ist der Schaden?“: das Bauteil aus der Liste wählen. */
+async function waehleBauteil(nutzer: ReturnType<typeof userEvent.setup>, zone: string) {
+  const schaden = within(await fenster('Wo ist der Schaden?'));
+  await nutzer.selectOptions(schaden.getByRole('combobox', { name: 'Bauteil' }), zone);
+}
+
 /** Antwortet in der Reihenfolge, Seite für Seite. */
 async function antworte(nutzer: ReturnType<typeof userEvent.setup>, ...antworten: string[]) {
   for (const antwort of antworten) {
@@ -110,13 +112,11 @@ beforeEach(() => {
 });
 
 /**
- * Panne melden (FLT-EPIC-001, Handoff Abschnitt 4 und AC 4; im Fenster seit
- * Überholung 6, G3): zuerst „Wo ist der Schaden?“ am 3D-Rad, „Weiter“ auch
- * ohne Stelle, danach je Frage der Vorlage eine Seite (`pannenablauf.ts` und
- * `pannenseiten.ts`, eigene Tests); die Stellen stehen in der Meldung.
+ * Panne melden: zuerst „Wo ist der Schaden?“ mit der Liste der Bauteile, „Weiter“ auch ohne
+ * Stelle, danach je Frage der Vorlage eine Seite; die Stellen stehen in der Meldung.
  */
 describe('Panne melden', () => {
-  it('öffnet „Wo ist der Schaden?“ im Fenster am Rad und geht auch ohne Stelle weiter', async () => {
+  it('öffnet „Wo ist der Schaden?“ mit der Liste der Bauteile und geht auch ohne Stelle weiter', async () => {
     const nutzer = userEvent.setup();
     oeffne();
     const schaden = await fenster('Wo ist der Schaden?');
@@ -126,7 +126,10 @@ describe('Panne melden', () => {
     expect(document.querySelector('[data-fortschritt]')).toBeNull();
     // Die erste Seite des Fensters hat kein Zurück.
     expect(within(schaden).queryByRole('button', { name: '← Zurück' })).toBeNull();
-    await screen.findByTestId('rad3d');
+    // Alle Bauteile, nach Prüfpunkt gruppiert; der Fokus beginnt an der Liste.
+    const bauteil = within(schaden).getByRole('combobox', { name: 'Bauteil' });
+    expect(bauteil).toHaveFocus();
+    expect(within(bauteil).getAllByRole('option')).toHaveLength(28);
     await pruefeBarrierefreiheit(document.body);
 
     await nutzer.click(within(schaden).getByRole('button', { name: 'Weiter' }));
@@ -144,23 +147,27 @@ describe('Panne melden', () => {
   it('bietet „Weiter“ erst, wenn keine Stelle mehr offen ist; jede Stelle ist ein Schaden', async () => {
     const nutzer = userEvent.setup();
     oeffne();
-    await nutzer.click(await screen.findByRole('button', { name: 'Bremse vorne antippen' }));
+    await waehleBauteil(nutzer, 'bremse-vorne');
     const stelle = within(await fenster('Wo ist der Schaden?'));
     // Mit offener Stelle ist „Stelle setzen“ der Hauptknopf, nicht „Weiter“.
     expect(stelle.queryByRole('button', { name: 'Weiter' })).toBeNull();
+    expect(stelle.getByRole('combobox', { name: 'Bauteil' })).toHaveValue('bremse-vorne');
     // Keine Einstufung in der Pannenmeldung (Handoff, Vorschlag 4).
     expect(stelle.queryByRole('group', { name: 'Bewertung der Stelle' })).toBeNull();
     await nutzer.type(stelle.getByLabelText('Was ist passiert?'), 'schleift');
     await nutzer.click(stelle.getByRole('button', { name: 'Stelle setzen' }));
-    expect(screen.getByTestId('nadeln')).toHaveTextContent('1:bremse-vorne:problem');
-    expect(stelle.getByRole('list', { name: 'Schäden am Rad' })).toHaveTextContent('schleift');
+    expect(stelle.getByRole('list', { name: 'Schäden am Rad' })).toHaveTextContent(
+      'Bremse vorneschleift',
+    );
     expect(stelle.getByRole('button', { name: 'Weiter' })).toBeEnabled();
+    // Ein weiterer Schaden geht über dieselbe Liste.
+    expect(stelle.getByRole('combobox', { name: 'Weiteres Bauteil' })).toHaveValue('');
   });
 
   it('füllt „Was ist auffällig?“ aus den Stellen vor und meldet ohne Sperre', async () => {
     const nutzer = userEvent.setup();
     oeffne();
-    await nutzer.click(await screen.findByRole('button', { name: 'Bremse vorne antippen' }));
+    await waehleBauteil(nutzer, 'bremse-vorne');
     await nutzer.type(screen.getByLabelText('Was ist passiert?'), 'schleift');
     await nutzer.click(screen.getByRole('button', { name: 'Stelle setzen' }));
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
@@ -191,9 +198,7 @@ describe('Panne melden', () => {
       remark: '',
       locationNote: '',
       transport: null,
-      spots: [
-        { zone: 'bremse-vorne', severity: 'problem', point: [1.05, 0.31, -0.06], note: 'schleift' },
-      ],
+      spots: [{ zone: 'bremse-vorne', severity: 'problem', note: 'schleift' }],
     });
     expect(await screen.findByTestId('ziel')).toHaveTextContent(
       `/betrieb/flotte/rad/${RAD.id}?bereich=stellen`,
@@ -364,13 +369,14 @@ describe('Panne melden', () => {
     const nutzer = userEvent.setup();
     uploadFleetPhoto.mockRejectedValueOnce(new Error('Keine Verbindung.'));
     oeffne();
-    await nutzer.click(await screen.findByRole('button', { name: 'Bremse vorne antippen' }));
+    await waehleBauteil(nutzer, 'bremse-vorne');
     await nutzer.type(screen.getByLabelText('Was ist passiert?'), 'schleift');
     await nutzer.click(screen.getByRole('button', { name: /Foto hinzufügen/ }));
     await nutzer.click(
-      within(screen.getByRole('group', { name: 'Kamera: Foto zu Stelle 1' })).getByRole('button', {
-        name: 'Auslösen',
-      }),
+      within(screen.getByRole('group', { name: 'Kamera: Foto zu Bremse vorne' })).getByRole(
+        'button',
+        { name: 'Auslösen' },
+      ),
     );
     await nutzer.click(screen.getByRole('button', { name: 'Stelle setzen' }));
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
@@ -413,7 +419,7 @@ describe('Panne melden', () => {
     expect(router.state.location.search).toBe(`?rad=${RAD.id}`);
 
     // Auf der ersten Seite mit einer Stelle: die Rückfrage, in den Worten der Panne.
-    await nutzer.click(screen.getByRole('button', { name: 'Bremse vorne antippen' }));
+    await waehleBauteil(nutzer, 'bremse-vorne');
     await act(() => router.navigate(-1));
     const frage = await screen.findByRole('group', { name: 'Ungemeldete Panne' });
     expect(screen.getByRole('dialog', { name: 'Panne noch nicht gemeldet' })).toBeInTheDocument();

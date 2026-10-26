@@ -37,11 +37,16 @@ import { zahl } from '@/features/nutrition/texte';
 import {
   ernaehrungSchluessel,
   tagebuchSchluessel,
+  favoritSetzen,
+  ladeErnaehrung,
+  ladeTagebuch,
+  lebensmittelQuellen,
+  lebensmittelSuchen,
+  tagebuchEintragen,
   type EigeneErnaehrung,
   type EigenesTagebuch,
   type Plattformzugang,
 } from './api';
-import { useNurLesen, usePlattformApi } from './einsicht';
 import { tagebuchAdresse, tagName } from './tagebuchAdresse';
 
 /**
@@ -53,7 +58,6 @@ import { tagebuchAdresse, tagName } from './tagebuchAdresse';
  * Punkt 8). Nach dem Eintragen geht es zurück zum Tag.
  */
 export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const [suche] = useSearchParams();
   const { search } = useLocation();
   const tagAusAdresse = /^\d{4}-\d{2}-\d{2}$/.test(suche.get('tag') ?? '')
@@ -63,12 +67,12 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
   const mahlzeit: Mahlzeit = istMahlzeit(roh) ? roh : 'snack';
   const ernaehrung = useQuery({
     queryKey: ernaehrungSchluessel(zugang.access_id),
-    queryFn: () => api.ladeErnaehrung(zugang.access_id),
+    queryFn: () => ladeErnaehrung(zugang.access_id),
   });
   // Zuletzt, Favoriten und „Zahlen ausblenden“ kommen mit dem Tag (ERN-008).
   const tagebuch = useQuery({
     queryKey: tagebuchSchluessel(zugang.access_id, tagAusAdresse ?? 'heute'),
-    queryFn: () => api.ladeTagebuch(zugang.access_id, tagAusAdresse),
+    queryFn: () => ladeTagebuch(zugang.access_id, tagAusAdresse),
   });
   // Ohne Tag in der Adresse: heute.
   const tag = tagAusAdresse ?? tagebuch.data?.today ?? null;
@@ -100,7 +104,7 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
           />
         )}
       </Abfragezustand>
-      <Quellenangabe laden={api.lebensmittelQuellen} />
+      <Quellenangabe laden={lebensmittelQuellen} />
     </>
   );
 }
@@ -123,13 +127,12 @@ function Suche({
   tag: string;
   mahlzeit: Mahlzeit;
 }) {
-  const api = usePlattformApi();
   const ohneZahlen = tagebuch.hide_numbers;
   const letzte = (f: Lebensmittel) =>
     [...tagebuch.recent, ...tagebuch.favorites].find((s) => gleich(s.food, f));
   return (
     <LebensmittelSuche
-      suchen={(begriff) => api.lebensmittelSuchen(zugang.access_id, begriff)}
+      suchen={(begriff) => lebensmittelSuchen(zugang.access_id, begriff)}
       schluessel={['platform-foods', zugang.access_id]}
       eigene={ernaehrung.profile.own_foods}
       ohneZahlen={ohneZahlen}
@@ -265,13 +268,12 @@ function Schnellzeile({
 
 /** Eintragen und zurück zum Tag - aus dem Fenster wie aus einer Zeile. */
 function useEintragen(zugang: Plattformzugang, f: Lebensmittel, tag: string, mahlzeit: Mahlzeit) {
-  const api = usePlattformApi();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { search } = useLocation();
   return useMutation({
     mutationFn: (angabe: Mengenangabe) =>
-      api.tagebuchEintragen(zugang.access_id, tag, mahlzeit, f, angabe),
+      tagebuchEintragen(zugang.access_id, tag, mahlzeit, f, angabe),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: tagebuchSchluessel(zugang.access_id) });
       void navigate(tagebuchAdresse(tag, search), {
@@ -284,11 +286,10 @@ function useEintragen(zugang: Plattformzugang, f: Lebensmittel, tag: string, mah
 
 /** Favorit an oder ab - sofort gespeichert. */
 function Favorit({ zugang, f, an }: { zugang: Plattformzugang; f: Lebensmittel; an: boolean }) {
-  const api = usePlattformApi();
   const queryClient = useQueryClient();
   const [wert, setWert] = useState(an);
   const setzen = useMutation({
-    mutationFn: (neu: boolean) => api.favoritSetzen(zugang.access_id, f, neu),
+    mutationFn: (neu: boolean) => favoritSetzen(zugang.access_id, f, neu),
     // Der Haken folgt dem Tipp sofort; geht es schief, springt er zurück.
     onMutate: (neu) => setWert(neu),
     onError: (_fehler, neu) => setWert(!neu),
@@ -331,7 +332,6 @@ export function MengeWaehlen({
   /** Unter dem Knopf, etwa „Favorit“ (ERN-008). */
   unten?: ReactNode;
 }) {
-  const nurLesen = useNurLesen();
   const start = anfang ?? vorbelegung(f);
   const [einheit, setEinheit] = useState(start.einheit);
   const [wert, setWert] = useState(start.wert);
@@ -342,7 +342,6 @@ export function MengeWaehlen({
     ...f.portions.map((p) => ({ wert: p.label, text: p.label })),
     { wert: FREIE_MENGE, text: f.base_unit === 'ml' ? 'Milliliter' : 'Gramm' },
   ];
-  if (nurLesen) return null;
   return (
     <form
       aria-label="Menge wählen"

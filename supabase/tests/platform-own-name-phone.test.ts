@@ -25,7 +25,6 @@ import {
 
 const { users, platformAccesses, patients, trainingRelationships } = SEED;
 const KONTEXT = 'select * from public.platform_context()';
-const EINSICHT = `select public.platform_preview($1::uuid, 'platform_context', '{}'::jsonb) as daten`;
 /** Synthetisch, aus `supabase/seed.sql` (Absender der Rechnungen). */
 const RUFNUMMER = '+49 7071 0000000';
 
@@ -268,7 +267,7 @@ describe('platform_context: eigener Name (DRP-N1, ANN-690)', () => {
     for (const konto of [users.ownerTherapist, users.office, users.trainer, users.patientMax]) {
       expect(await kontext(konto)).toEqual([]);
     }
-    // Die Einsicht der owner:in gilt nur innerhalb von platform_preview (E-001).
+    // Auch owner bekommt den Namen einer Person nicht.
     expect(await eigenerName(users.ownerTherapist, platformAccesses.erikaBehandlung)).toBeNull();
     expect(await eigenerName(users.therapist, platformAccesses.tinaTraining)).toBeNull();
   });
@@ -347,46 +346,6 @@ describe('platform_context: Rufnummer der Praxis (DRP-N2, ANN-691)', () => {
     for (const konto of [users.ownerTherapist, users.office, null]) {
       expect(await kontext(konto)).toEqual([]);
     }
-  });
-});
-
-describe('Einsicht der Praxis (E-001): Name und Nummer wie für die Person', () => {
-  beforeEach(async () => {
-    await resetDatabase();
-  }, 120_000);
-
-  async function einsicht(zugang: string): Promise<Record<string, unknown>> {
-    const { rows } = await asUser<{ daten: Record<string, unknown>[] }>(
-      users.ownerTherapist,
-      EINSICHT,
-      [zugang],
-    );
-    return rows[0]!.daten[0]!;
-  }
-
-  it('zeigt owner den Namen und die Nummer, die Erika sieht', async () => {
-    const person = (await kontext(users.plattformErika)).find(
-      (z) => z.access_id === platformAccesses.erikaBehandlung,
-    );
-    expect(await einsicht(platformAccesses.erikaBehandlung)).toEqual(
-      expect.objectContaining({
-        own_name: 'Erika Beispiel',
-        practice_phone: RUFNUMMER,
-      }),
-    );
-    expect(person).toEqual(
-      expect.objectContaining({ own_name: 'Erika Beispiel', practice_phone: RUFNUMMER }),
-    );
-  });
-
-  it('nach der Lesefrist ohne Namen, wie bei der Person (D2)', async () => {
-    await asPostgres(
-      'update public.training_relationships set contract_ended_on = current_date - 40 where id = $1',
-      [trainingRelationships.erika],
-    );
-    expect(await einsicht(platformAccesses.erikaTraining)).toEqual(
-      expect.objectContaining({ readable: false, own_name: null, practice_phone: RUFNUMMER }),
-    );
   });
 });
 

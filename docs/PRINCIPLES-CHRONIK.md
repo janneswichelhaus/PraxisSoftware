@@ -6,6 +6,18 @@ werden nicht nachträglich geändert; wer den damaligen Wortlaut braucht, findet
 
 ## Änderungsvermerke
 
+### Änderungsvermerk 0.29
+
+Entscheidung des Projektinhabers vom **2026-10-26** (Option A zur Vereinfachung M4): Das Barometer
+ist namentlich und ab der ersten beschäftigten Person nutzbar. **§20.2** — Einleitung, **Nr. 1**
+(die Wahl mit oder ohne Namen gilt nur noch für die Rückmeldung an die Praxisleitung) und **Nr. 4**
+(Praxissumme ab drei Beschäftigten und fünf Antworten nur für anonyme Rückmeldungen). Unverändert
+bleiben Nr. 2, 3 und 5 und der Satz gegen Leistungs- und Verhaltenskontrolle: keine Liste der
+Fehlenden, nur `owner` liest, jede namentliche Antwort einzeln, kein Verlauf je Person. Rang 4
+dazu: ANN-607, ANN-608. Die Wahl beim Barometer brauchte in einer kleinen Praxis die Schwelle und
+mit ihr Teilnahmemarke, Blöcke und Neuschreiben; ein anonymes Barometer zeigte unter drei
+Beschäftigten nie etwas.
+
 ### Änderungsvermerk 0.28
 
 Entscheidung des Projektinhabers vom **2026-10-18**: Ernährungsberatung als Zusatzleistung zu

@@ -43,6 +43,7 @@ const reimbursementSchema = z.object({
   staff_member_id: z.string(),
   name: z.string().nullable(),
   kind: z.enum(['electricity', 'purchase']),
+  // Monat und Rechenweg älterer Ladestrom-Anträge; neue sind Einkäufe mit Beleg (ANN-749).
   period_month: z.string().nullable(),
   working_days: z.number().int().nullable(),
   energy_wh_per_day: z.number().int().nullable(),
@@ -99,37 +100,6 @@ const overviewSchema = z.object({
 });
 export type Overview = z.infer<typeof overviewSchema>;
 
-const electricityPreviewSchema = z.object({
-  month: z.string(),
-  working_minutes: z.number().int(),
-  km_per_hour: z.number().int(),
-  wh_per_km: z.number().int(),
-  cents_per_kwh: z.number().int(),
-  amount_cents: z.number().int(),
-  already_requested: z.boolean(),
-});
-export type ElectricityPreview = z.infer<typeof electricityPreviewSchema>;
-
-const electricitySuggestionSchema = z.object({
-  month: z.string(),
-  working_minutes: z.number().int(),
-  amount_cents: z.number().int(),
-});
-export type ElectricitySuggestion = z.infer<typeof electricitySuggestionSchema>;
-
-const electricitySettingsSchema = z.object({
-  electricity_cents_per_kwh: z.number().int(),
-  electricity_wh_per_km: z.number().int(),
-  electricity_km_per_hour: z.number().int(),
-});
-
-/** Die Werte der Praxis für den Ladestrom (ORG-008). */
-export interface ElectricitySettings {
-  centsPerKwh: number;
-  whPerKm: number;
-  kmPerHour: number;
-}
-
 const submittedSchema = z.object({
   id: z.string(),
   status: z.enum(['requested', 'approved']),
@@ -152,14 +122,6 @@ type ServerError = { message?: string; code?: string } | null;
 const SENTENCES: readonly (readonly [string, string])[] = [
   ['invalid iban', 'Die IBAN stimmt nicht – bitte die Ziffern prüfen.'],
   ['payout account missing', 'Bitte zuerst die IBAN für die Auszahlung angeben.'],
-  ['month already requested', 'Für diesen Monat ist Ladestrom schon beantragt.'],
-  ['month not allowed', 'Ladestrom geht für einen der letzten zwölf abgeschlossenen Monate.'],
-  [
-    'no planned working hours',
-    'In diesem Monat sind keine Arbeitsstunden geplant – es gibt nichts zu erstatten.',
-  ],
-  ['declaration missing', 'Ladestrom gibt es nur, wenn zu Hause geladen wurde.'],
-  ['electricity settings out of range', 'Bitte die Werte in den angegebenen Grenzen eintragen.'],
   [
     'too many receipts',
     'Schon zehn Belege ohne Antrag – nicht abgesendete fallen nach einem Tag weg.',
@@ -214,116 +176,6 @@ export async function fetchReimbursements(staffMemberId: string | null): Promise
   return antwort(overviewSchema, data, LOAD_ERROR);
 }
 
-/** Der Satz, wenn der Vorschlag ohne Antwort des Servers nicht kommt (Funkloch). */
-export const PREVIEW_ERROR = 'Die Arbeitsstunden konnten nicht gezählt werden.';
-
-/**
- * Ladestrom eines Monats (ORG-008): geplante Arbeitsminuten, die Werte der
- * Praxis und der Betrag - gerechnet am Server.
- */
-export async function previewElectricity(month: string): Promise<ElectricityPreview> {
-  const data = await call('preview_electricity_reimbursement', { p_month: month }, PREVIEW_ERROR);
-  return antwort(electricityPreviewSchema, data, PREVIEW_ERROR);
-}
-
-export const SUGGESTIONS_KEY = [...REIMBURSEMENTS_KEY, 'suggestions'] as const;
-
-/** Die abgeschlossenen Monate ohne Ladestrom-Antrag, mit Betrag - für den Eingang. */
-export async function fetchElectricitySuggestions(): Promise<ElectricitySuggestion[]> {
-  const fallback = 'Der Ladestrom konnte nicht berechnet werden.';
-  const data = await call('electricity_suggestions', {}, fallback);
-  return antwort(z.array(electricitySuggestionSchema), data ?? [], fallback);
-}
-
-/** Die Edge Function für den Ladestrom aus Touren (BEF-181). */
-const DISTANCE_FUNCTION = 'electricity-distance';
-
-const distanceReplySchema = z.object({
-  ok: z.literal(true),
-  value: z.object({ km: z.number().int().nullable(), amountCents: z.number().int().optional() }),
-  quelle: z.enum(['anbieter', 'nachbildung']),
-});
-
-/** Kilometer der geplanten Touren - und ob ein Anbieter sie gerechnet hat. */
-export interface TourDistance {
-  km: number;
-  source: 'anbieter' | 'nachbildung';
-}
-
-async function invokeDistance(
-  path: 'preview' | 'record',
-  body: Record<string, string>,
-): Promise<z.infer<typeof distanceReplySchema> | null> {
-  try {
-    const { data, error } = (await getSupabase().functions.invoke<unknown>(
-      `${DISTANCE_FUNCTION}/${path}`,
-      { body },
-    )) as { data: unknown; error: unknown };
-    if (error !== null) return null;
-    const parsed = distanceReplySchema.safeParse(data);
-    return parsed.success ? parsed.data : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Die Kilometer der eigenen geplanten Touren eines Monats (BEF-181): Der
- * Server rechnet sie aus den Routen je Tag, zur Anzeige - gespeichert wird
- * nichts. `null` ohne Ergebnis (kein Kartendienst, keine Tour, Funkloch);
- * dann gilt der Wert je Stunde.
- */
-export async function previewTourDistance(month: string): Promise<TourDistance | null> {
-  const reply = await invokeDistance('preview', { month });
-  if (!reply || reply.value.km === null) return null;
-  return { km: reply.value.km, source: reply.quelle };
-}
-
-/**
- * Nach dem Beantragen: Der Server rechnet die Touren neu und trägt die
- * Monatssumme am Antrag ein. `null`, wenn nichts eingetragen wurde - der
- * Antrag behält dann den Wert je Stunde.
- */
-export async function recordTourDistance(
-  month: string,
-  reimbursementId: string,
-): Promise<{ km: number; amountCents: number } | null> {
-  const reply = await invokeDistance('record', { month, reimbursementId });
-  if (!reply || reply.value.km === null || reply.value.amountCents === undefined) return null;
-  return { km: reply.value.km, amountCents: reply.value.amountCents };
-}
-
-export const ELECTRICITY_SETTINGS_KEY = ['electricity-settings'] as const;
-
-/** Die Werte der eigenen Praxis - RLS liefert Praxiskonten genau die eigene Organisation. */
-export async function fetchElectricitySettings(): Promise<ElectricitySettings> {
-  const fallback = 'Die Werte für den Ladestrom konnten nicht geladen werden.';
-  const { data, error } = await getSupabase()
-    .from('organizations')
-    .select('electricity_cents_per_kwh, electricity_wh_per_km, electricity_km_per_hour')
-    .maybeSingle();
-  if (error || !data) throw new Error(fallback);
-  const row = antwort(electricitySettingsSchema, data, fallback);
-  return {
-    centsPerKwh: row.electricity_cents_per_kwh,
-    whPerKm: row.electricity_wh_per_km,
-    kmPerHour: row.electricity_km_per_hour,
-  };
-}
-
-/** Verbindlich prüft `set_electricity_settings`: nur owner, Werte in ihren Grenzen. */
-export async function saveElectricitySettings(settings: ElectricitySettings): Promise<void> {
-  await call(
-    'set_electricity_settings',
-    {
-      p_cents_per_kwh: settings.centsPerKwh,
-      p_wh_per_km: settings.whPerKm,
-      p_km_per_hour: settings.kmPerHour,
-    },
-    'Die Werte für den Ladestrom konnten nicht gespeichert werden.',
-  );
-}
-
 export const PAYOUT_ERROR = 'Die Angaben zur Auszahlung konnten nicht geladen werden.';
 
 /** Für owner: die volle IBAN zu einem genehmigten Antrag (ANN-601). */
@@ -346,30 +198,11 @@ export async function savePayoutAccount(iban: string): Promise<PayoutAccount> {
   return antwort(accountSchema, data, fallback);
 }
 
-export async function submitElectricity(input: {
-  month: string;
-  /** Der Haken „zu Hause geladen“ - der Server prüft ihn selbst. */
-  declared: boolean;
-  iban: string | null;
-}): Promise<Submitted> {
-  const fallback = 'Der Ladestrom konnte nicht beantragt werden.';
-  const data = await call(
-    'submit_electricity_reimbursement',
-    {
-      p_month: input.month,
-      p_declared: input.declared,
-      p_iban: input.iban,
-    },
-    fallback,
-  );
-  return antwort(submittedSchema, data, fallback);
-}
-
 export async function submitPurchase(input: {
   items: readonly { receiptId: string; amountCents: number; purpose: string }[];
   iban: string | null;
 }): Promise<Submitted> {
-  const fallback = 'Der Einkauf konnte nicht beantragt werden.';
+  const fallback = 'Die Erstattung konnte nicht beantragt werden.';
   const data = await call(
     'submit_purchase_reimbursement',
     {

@@ -5,18 +5,6 @@ import * as api from './api';
 import { WerkstattblattPage } from './WerkstattblattPage';
 import { rendereSeite } from './testseite';
 
-vi.mock('./bike3d/werkstattbilder', () => ({
-  zeichneWerkstattbilder: () =>
-    Promise.resolve({
-      rechts: { url: 'data:image/png;base64,', punkte: [{ id: 's2', x: 20, y: 70 }] },
-      links: { url: 'data:image/png;base64,', punkte: [{ id: 's1', x: 15, y: 60 }] },
-      ausschnitte: {
-        s1: { url: 'data:image/png;base64,', punkte: [{ id: 's1', x: 50, y: 40 }] },
-        s2: { url: 'data:image/png;base64,', punkte: [{ id: 's2', x: 50, y: 40 }] },
-      },
-    }),
-}));
-
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof api>()),
   fetchWorkshopSheet: vi.fn(),
@@ -26,6 +14,7 @@ vi.mock('./api', async (importOriginal) => ({
 
 const fetchWorkshopSheet = vi.mocked(api.fetchWorkshopSheet);
 const fetchFleetPhotos = vi.mocked(api.fetchFleetPhotos);
+const loadFleetPhoto = vi.mocked(api.loadFleetPhoto);
 
 function oeffne() {
   return rendereSeite(
@@ -46,8 +35,6 @@ beforeEach(() => {
         id: 's1',
         number: 1,
         zone: 'bremse-vorne',
-        point: [1.05, 0.31, -0.06],
-        model_version: 1,
         severity: 'problem',
         note: 'Scheibe schleift beim Drehen',
         source: 'checkup',
@@ -57,8 +44,6 @@ beforeEach(() => {
         id: 's2',
         number: 2,
         zone: 'reifen-hinten',
-        point: null,
-        model_version: 1,
         severity: 'beobachten',
         note: null,
         source: 'breakdown',
@@ -70,12 +55,11 @@ beforeEach(() => {
 });
 
 /**
- * Die Unterlage für die Werkstatt (Handoff Lastenrad 3D, Vorschläge 5 bis 7,
- * AC 6): Übersicht und Stellen im Detail, dieselben Nummern, keine Namen
- * aus dem Team, der Dateiname aus Rad, Zweck und Tag.
+ * Die Unterlage für die Werkstatt: Übersicht und Stellen im Detail mit Bauteil und Fotos,
+ * dieselben Nummern, keine Namen aus dem Team, der Dateiname aus Rad, Zweck und Tag.
  */
 describe('Unterlage für die Werkstatt', () => {
-  it('zeigt Seite 1 mit Zustand, Ansichten und der Tabelle zum Abhaken', async () => {
+  it('zeigt Seite 1 mit Zustand, Nummer und Bauteil in der Tabelle zum Abhaken', async () => {
     oeffne();
     expect(
       await screen.findByRole('heading', { name: 'Lastenrad 3', level: 1 }),
@@ -83,26 +67,76 @@ describe('Unterlage für die Werkstatt', () => {
     const seite1 = screen.getByRole('region', { name: 'Seite 1 von 2' });
     expect(within(seite1).getByText(/Gesperrt seit/)).toBeInTheDocument();
     expect(within(seite1).getByText('2 markiert, davon 1 Problem')).toBeInTheDocument();
-    expect(within(seite1).getByText('Rechte Seite mit Antrieb: Stelle 2')).toBeInTheDocument();
-    expect(within(seite1).getByText('Linke Seite: Stelle 1')).toBeInTheDocument();
     const zeilen = within(within(seite1).getByRole('table')).getAllByRole('row');
     expect(zeilen).toHaveLength(3);
-    expect(zeilen[1]).toHaveTextContent('Bremse vorne');
+    expect(zeilen[1]).toHaveTextContent(/^1\s*Bremse vorne/);
     expect(zeilen[1]).toHaveTextContent('Check-Up am 13.10.2026');
+    expect(zeilen[2]).toHaveTextContent(/^2\s*Reifen hinten/);
     expect(zeilen[2]).toHaveTextContent('Panne am 14.10.2026');
     expect(within(seite1).getAllByRole('img', { name: 'Erledigt, zum Abhaken' })).toHaveLength(2);
+    // Keine gerenderten Ansichten des Rads mehr.
+    expect(screen.queryByText(/am Modell|Wo am Rad/)).toBeNull();
   });
 
-  it('zeigt je Stelle den Ausschnitt mit derselben Nummer', async () => {
+  it('zeigt je Stelle Bauteil und Notiz mit derselben Nummer', async () => {
     oeffne();
     const seite2 = await screen.findByRole('region', { name: 'Seite 2 von 2' });
-    expect(within(seite2).getByRole('article', { name: 'Stelle 1' })).toHaveTextContent(
-      'Scheibe schleift beim Drehen',
-    );
+    const erste = within(seite2).getByRole('article', { name: 'Stelle 1' });
+    expect(within(erste).getByRole('heading', { name: '1 · Bremse vorne' })).toBeInTheDocument();
+    expect(erste).toHaveTextContent('Scheibe schleift beim Drehen');
     expect(within(seite2).getByRole('article', { name: 'Stelle 2' })).toHaveTextContent(
       'Ohne Notiz.',
     );
     expect(within(seite2).getAllByText('Zu dieser Stelle gibt es kein Foto.')).toHaveLength(2);
+  });
+
+  it('zeigt die vorhandenen Fotos an ihrer Stelle', async () => {
+    fetchFleetPhotos.mockResolvedValue([
+      {
+        id: 'f1',
+        spot_id: 's1',
+        checkup_id: null,
+        side: null,
+        created_at: '2026-10-13T05:51:00+00:00',
+        verified: true,
+        may_delete: false,
+      },
+    ]);
+    loadFleetPhoto.mockResolvedValue(new Blob(['foto'], { type: 'image/jpeg' }));
+    vi.stubGlobal(
+      'URL',
+      Object.assign(URL, {
+        createObjectURL: () => 'blob:test/1',
+        revokeObjectURL: () => undefined,
+      }),
+    );
+    oeffne();
+    const erste = await screen.findByRole('article', { name: 'Stelle 1' });
+    expect(await within(erste).findByRole('img', { name: 'Foto 1 zu Stelle 1' })).toHaveAttribute(
+      'src',
+      'blob:test/1',
+    );
+    expect(
+      within(screen.getByRole('article', { name: 'Stelle 2' })).getByText(
+        'Zu dieser Stelle gibt es kein Foto.',
+      ),
+    ).toBeInTheDocument();
+    expect(loadFleetPhoto).toHaveBeenCalledWith('f1');
+  });
+
+  it('lässt erst drucken, wenn die Liste der Fotos geladen ist', async () => {
+    let geladen: (fotos: api.FleetPhoto[]) => void = () => undefined;
+    fetchFleetPhotos.mockReturnValue(
+      new Promise((resolve) => {
+        geladen = resolve;
+      }),
+    );
+    oeffne();
+    expect(await screen.findByRole('button', { name: 'Wird vorbereitet …' })).toBeDisabled();
+    geladen([]);
+    expect(
+      await screen.findByRole('button', { name: 'Drucken oder als PDF sichern' }),
+    ).toBeEnabled();
   });
 
   it('nennt keine Namen aus dem Team, keine Termine, keinen Pannenort (Vorschlag 5)', async () => {

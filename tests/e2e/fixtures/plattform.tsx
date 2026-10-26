@@ -1311,8 +1311,6 @@ function inhalt(): { pfad: string; element: ReactNode } {
             darfVerwalten
             zeitzone="Europe/Berlin"
             praxis="Test Praxis Tuebingen"
-            // E-001: die Inhaber:in sieht den Weg in die Einsicht.
-            einsichtFuer="Maximilian"
           />,
         ),
       };

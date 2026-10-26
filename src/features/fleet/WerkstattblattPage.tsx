@@ -19,36 +19,15 @@ import {
   type FleetPhoto,
   type WorkshopSheet,
 } from './api';
-import type { Werkstattbild, Werkstattbilder } from './bike3d/werkstattbilder';
-import {
-  bikeTypeLabels,
-  checkItemLabels,
-  zoneCheckItem,
-  zoneLabel,
-  type Severity,
-} from './bike3d/zones';
+import { bikeTypeLabels, checkItemLabels, zoneCheckItem, zoneLabel, type Severity } from './zones';
 import { dateinameWerkstatt, formatTag, formatZeitpunkt } from './format';
-import { punktAmModell } from './stellen';
 import { aktiveStandortvorlage } from './standortvorlage';
 import { todayInTimeZone } from '@/lib/datum';
 
 /**
- * Die Unterlage für die Werkstatt (Handoff Lastenrad 3D, Abschnitt 4,
- * Vorschläge 5 bis 7; AC 6) - Seitentyp „Druckblatt“: Bedienung darüber
- * `nicht-drucken`, das Blatt selbst über den Druckdialog des Browsers als
- * Papier oder PDF, wie das Rechnungsblatt (B14, Weg 1).
- *
- * Seite 1: Wortmarke, Rad und Bauart, An und Rückfragen, Zustand, die rechte
- * und die linke Seite mit den Nadeln und die Tabelle der Stellen mit einem
- * leeren Kästchen „Erledigt“. Ab Seite 2 je Stelle ein Ausschnitt am Modell
- * und ihre Fotos, drei Stellen je Seite. Dieselbe Nummer wie am Rad und in
- * der Liste.
- *
- * **Nur Angaben zum Rad** (Vorschlag 5): keine Namen aus dem Team, keine
- * Termine, kein Pannenort - die Serverfunktion liefert sie gar nicht
- * (`get_fleet_workshop_sheet`). Notizen und Fotos gehen unverändert mit; die
- * Seite bittet, sie vor dem Weitergeben zu prüfen. **Versendet wird nichts**
- * (Vorschlag 6, ADR-017 Punkt 42).
+ * Die Unterlage für die Werkstatt als Druckblatt: Seite 1 die Stellen mit Nummer und Bauteil zum
+ * Abhaken, danach je Stelle ihre Fotos. Nur Angaben zum Rad - keine Namen, kein Pannenort -, und
+ * versendet wird nichts (ADR-017 Punkt 42).
  */
 export function WerkstattblattPage({ user }: { user: CurrentUser }) {
   const { radId = '' } = useParams();
@@ -108,26 +87,6 @@ function Unterlage({
   const name = dateinameWerkstatt(blatt.name, heute);
   const stand = `${formatZeitpunkt(new Date().toISOString(), zone)} Uhr`;
 
-  const bilder = useQuery({
-    queryKey: [
-      ...werkstattSchluessel(radId),
-      'bilder',
-      blatt.spots.map((spot) => spot.id).join(','),
-    ],
-    queryFn: async (): Promise<Werkstattbilder> => {
-      const { zeichneWerkstattbilder } = await import('./bike3d/werkstattbilder');
-      return zeichneWerkstattbilder(
-        blatt.spots.map((spot) => ({
-          id: spot.id,
-          zone: spot.zone,
-          point: punktAmModell(spot, blatt.bike_type),
-        })),
-      );
-    },
-    staleTime: Infinity,
-    gcTime: 0,
-    retry: false,
-  });
   const fotos = useQuery({
     queryKey: fotosSchluessel(radId),
     queryFn: () => fetchFleetPhotos(radId),
@@ -161,7 +120,8 @@ function Unterlage({
     seiten.push(blatt.spots.slice(start, start + JE_SEITE));
   }
   const seitenzahl = 1 + seiten.length;
-  const bereit = !bilder.isPending && (fotos.isError || fotoadressen.fertig);
+  // Erst drucken, wenn die Liste der Fotos da ist - sonst fehlten sie still auf dem Blatt.
+  const bereit = fotos.isError || (fotos.isSuccess && fotoadressen.fertig);
 
   return (
     <>
@@ -184,12 +144,6 @@ function Unterlage({
           Werkstatt. Notizen und Fotos gehen unverändert mit – bitte vor dem Weitergeben auf Angaben
           zu Patient:innen prüfen.
         </Kleingedrucktes>
-        {bilder.isError ? (
-          <Statusmeldung ton="warnung">
-            Die Ansichten des Rads lassen sich in diesem Browser nicht zeichnen. Die Unterlage
-            enthält die Tabelle und die Fotos, aber keine Bilder vom Modell.
-          </Statusmeldung>
-        ) : null}
         {fotos.isError || fotoadressen.fehler ? (
           <Statusmeldung ton="warnung">
             Nicht alle Fotos ließen sich laden. Die Unterlage zeigt nur die geladenen.
@@ -228,13 +182,6 @@ function Unterlage({
             </dd>
           </dl>
 
-          <h2 className="mt-6 text-lg font-bold">Wo am Rad</h2>
-          {/* Nebeneinander wie im Entwurf: So passt Seite 1 auf ein A4-Blatt. */}
-          <div className="mt-3 grid grid-cols-2 gap-4">
-            <Seitenbild titel="Rechte Seite mit Antrieb" bild={bilder.data?.rechts} blatt={blatt} />
-            <Seitenbild titel="Linke Seite" bild={bilder.data?.links} blatt={blatt} />
-          </div>
-
           <h2 className="mt-6 text-lg font-bold">Markierte Stellen</h2>
           {/* Feste Spalten mit Silbentrennung. Am Telefon steht die Einstufung
               unter dem Bauteil, und das Kästchen zum Abhaken fehlt - es gehört
@@ -270,9 +217,7 @@ function Unterlage({
             <tbody>
               {blatt.spots.map((spot) => (
                 <tr key={spot.id} className="border-line border-b align-top">
-                  <td className="py-2 pr-2 sm:pr-3">
-                    <DruckNadel nummer={spot.number} einstufung={spot.severity} />
-                  </td>
+                  <td className="py-2 pr-2 font-semibold tabular-nums sm:pr-3">{spot.number}</td>
                   <td className="py-2 pr-2 sm:pr-3">
                     <span className="block font-semibold">{zoneLabel(spot.zone)}</span>
                     <span className="block sm:hidden">{einstufungText(spot.severity)}</span>
@@ -294,8 +239,7 @@ function Unterlage({
             </tbody>
           </table>
           <p className="text-ink-muted mt-4 text-sm">
-            Ausschnitt am Modell und Fotos zu jeder Stelle: Seite 2
-            {seitenzahl > 2 ? ` bis ${seitenzahl}` : ''}.
+            Fotos zu jeder Stelle: Seite 2{seitenzahl > 2 ? ` bis ${seitenzahl}` : ''}.
           </p>
         </Blattseite>
 
@@ -313,9 +257,7 @@ function Unterlage({
               <p className="text-ink-muted text-sm">Stand {stand}</p>
             </div>
             <h2 className="text-accent mt-6 text-2xl font-extrabold">Stellen im Detail</h2>
-            <p className="text-ink-muted mt-1 text-base">
-              Je Stelle ein Ausschnitt am Modell und die Fotos aus der Meldung.
-            </p>
+            <p className="text-ink-muted mt-1 text-base">Je Stelle die Fotos aus der Meldung.</p>
             <div className="mt-6 flex flex-col gap-4">
               {gruppe.map((spot) => {
                 const pruefpunkt = zoneCheckItem(spot.zone);
@@ -323,13 +265,12 @@ function Unterlage({
                   <article
                     key={spot.id}
                     aria-label={`Stelle ${spot.number}`}
-                    className="border-line rounded-card grid gap-4 border p-4 sm:grid-cols-[200px_minmax(0,1fr)_minmax(0,1fr)]"
+                    className="border-line rounded-card grid gap-4 border p-4 sm:grid-cols-[200px_minmax(0,1fr)]"
                   >
                     <div className="flex min-w-0 flex-col gap-2">
-                      <div className="flex items-start gap-2">
-                        <DruckNadel nummer={spot.number} einstufung={spot.severity} />
-                        <h3 className="text-base font-semibold">{zoneLabel(spot.zone)}</h3>
-                      </div>
+                      <h3 className="text-base font-semibold">
+                        <span className="tabular-nums">{spot.number}</span> · {zoneLabel(spot.zone)}
+                      </h3>
                       <p className="text-sm font-semibold">{einstufungText(spot.severity)}</p>
                       <p className="text-base">{spot.note ?? 'Ohne Notiz.'}</p>
                       <p className="text-ink-muted text-sm">
@@ -337,12 +278,6 @@ function Unterlage({
                         {pruefpunkt ? ` · Prüfpunkt ${checkItemLabels[pruefpunkt]}` : ''}
                       </p>
                     </div>
-                    <figure className="min-w-0">
-                      <Ausschnitt bild={bilder.data?.ausschnitte[spot.id]} spot={spot} />
-                      <figcaption className="text-ink-muted mt-2 text-sm">
-                        Ausschnitt am Modell
-                      </figcaption>
-                    </figure>
                     <figure className="min-w-0">
                       <Fotos
                         adressen={fotoadressen.adressen.filter(
@@ -414,159 +349,6 @@ function Blattseite({
   );
 }
 
-/**
- * Die Nadel im Druck: als SVG, damit Farbe, Form und Nummer auf Papier und in
- * der PDF bleiben (das Druckprofil nimmt Hintergründe weg, `src/index.css`)
- * und scharf drucken. Dieselben Farben wie am Modell (`--color-nadel-*`).
- */
-function DruckNadel({ nummer, einstufung }: { nummer: number; einstufung: Severity }) {
-  const problem = einstufung === 'problem';
-  return (
-    <svg
-      viewBox="0 0 32 32"
-      width="32"
-      height="32"
-      role="img"
-      aria-label={`Stelle ${nummer}, ${problem ? 'Problem' : 'Beobachten'}`}
-      className="shrink-0"
-    >
-      {problem ? (
-        <circle cx="16" cy="16" r="15" className="fill-nadel-problem" />
-      ) : (
-        <rect
-          x="2"
-          y="2"
-          width="28"
-          height="28"
-          rx="7"
-          className="fill-nadel-beobachten stroke-nadel-beobachten-ink"
-          strokeWidth="2.5"
-        />
-      )}
-      <text
-        x="16"
-        y="21.5"
-        textAnchor="middle"
-        fontSize="15"
-        fontWeight="800"
-        className={problem ? 'fill-surface' : 'fill-nadel-beobachten-ink'}
-      >
-        {nummer}
-      </text>
-    </svg>
-  );
-}
-
-/** Eine Nadel mit Spitze über einem Bild, an der Lage des Punkts. */
-function NadelImBild({
-  x,
-  y,
-  nummer,
-  einstufung,
-}: {
-  x: number;
-  y: number;
-  nummer: number;
-  einstufung: Severity;
-}) {
-  return (
-    <span
-      className="absolute -translate-x-1/2 -translate-y-full"
-      style={{ left: `${x}%`, top: `${y}%` }}
-    >
-      <span className="flex flex-col items-center">
-        <DruckNadel nummer={nummer} einstufung={einstufung} />
-        <svg viewBox="0 0 12 8" width="12" height="8" aria-hidden="true" className="-mt-px">
-          <path
-            d="M0 0h12L6 8z"
-            className={
-              einstufung === 'problem' ? 'fill-nadel-problem' : 'fill-nadel-beobachten-ink'
-            }
-          />
-        </svg>
-      </span>
-    </span>
-  );
-}
-
-function Seitenbild({
-  titel,
-  bild,
-  blatt,
-}: {
-  titel: string;
-  bild: Werkstattbild | undefined;
-  blatt: WorkshopSheet;
-}) {
-  const nummern = (bild?.punkte ?? [])
-    .map((punkt) => blatt.spots.find((spot) => spot.id === punkt.id)?.number)
-    .filter((nummer): nummer is number => nummer !== undefined)
-    .sort((a, b) => a - b);
-  const unterschrift =
-    nummern.length === 0
-      ? `${titel}: keine Stelle`
-      : `${titel}: ${nummern.length === 1 ? 'Stelle' : 'Stellen'} ${nummern.join(', ').replace(/, (\d+)$/, ' und $1')}`;
-  return (
-    <figure className="min-w-0 break-inside-avoid">
-      <div className="border-line bg-surface-sunken rounded-card relative aspect-[341/200] overflow-hidden border">
-        {bild ? (
-          <>
-            <img
-              src={bild.url}
-              alt={`${blatt.name}, ${unterschrift}`}
-              className="block size-full"
-            />
-            {bild.punkte.map((punkt) => {
-              const spot = blatt.spots.find((eintrag) => eintrag.id === punkt.id);
-              return spot ? (
-                <NadelImBild
-                  key={punkt.id}
-                  x={punkt.x}
-                  y={punkt.y}
-                  nummer={spot.number}
-                  einstufung={spot.severity}
-                />
-              ) : null;
-            })}
-          </>
-        ) : null}
-      </div>
-      <figcaption className="text-ink-muted mt-2 text-sm">{unterschrift}</figcaption>
-    </figure>
-  );
-}
-
-function Ausschnitt({
-  bild,
-  spot,
-}: {
-  bild: Werkstattbild | undefined;
-  spot: WorkshopSheet['spots'][number];
-}) {
-  return (
-    <div className="border-line bg-surface-sunken rounded-card relative aspect-[3/2] overflow-hidden border">
-      {bild ? (
-        <>
-          <img
-            src={bild.url}
-            alt={`Ausschnitt am Modell: ${zoneLabel(spot.zone)}`}
-            className="block size-full"
-          />
-          {bild.punkte.map((punkt) => (
-            <NadelImBild
-              key={punkt.id}
-              x={punkt.x}
-              y={punkt.y}
-              nummer={spot.number}
-              einstufung={spot.severity}
-            />
-          ))}
-        </>
-      ) : null}
-    </div>
-  );
-}
-
 function Fotos({
   adressen,
   nummer,
@@ -576,13 +358,15 @@ function Fotos({
 }) {
   if (adressen.length === 0) {
     return (
-      <div className="bg-surface-sunken border-line text-ink-muted rounded-card flex aspect-[3/2] items-center justify-center border border-dashed p-4 text-center text-sm">
+      <div className="bg-surface-sunken border-line text-ink-muted rounded-card border border-dashed p-4 text-center text-sm">
         Zu dieser Stelle gibt es kein Foto.
       </div>
     );
   }
+  // Ohne die Ansichten des Modells hat die Zeile die ganze Breite: Ab drei Fotos stehen sie in
+  // einer Reihe, damit drei Stellen weiter auf ein A4-Blatt passen.
   return (
-    <div className={adressen.length === 1 ? 'grid' : 'grid grid-cols-2 gap-2'}>
+    <div className={`grid grid-cols-2 gap-2 ${adressen.length > 2 ? 'sm:grid-cols-4' : ''}`.trim()}>
       {adressen.map((eintrag, index) => (
         <img
           key={eintrag.id}

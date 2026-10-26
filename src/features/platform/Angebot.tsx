@@ -15,11 +15,12 @@ import { formatEuro } from '@/lib/geld';
 import {
   KONTEXT_SCHLUESSEL,
   trainingsangebotSchluessel,
+  angebotAnnehmen,
+  ladeTrainingsangebot,
   type Buchungsbestaetigung,
   type Plattformzugang,
   type Trainingsangebot,
 } from './api';
-import { useNurLesen, usePlattformApi } from './einsicht';
 import { EINWILLIGUNGSTEXTE, FREIWILLIG, OHNE_NACHTEIL } from './einwilligungstexte';
 import { PAKETINHALT, steuerHinweis } from './paketbedingungen';
 import { PLATTFORM_PFAD } from './pfade';
@@ -48,10 +49,9 @@ import { datum, uhrzeit } from './zeit';
  * der Server (`can_accept`, `blocker`).
  */
 export function Angebot({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const angebot = useQuery({
     queryKey: trainingsangebotSchluessel(zugang.access_id),
-    queryFn: () => api.ladeTrainingsangebot(zugang.access_id),
+    queryFn: () => ladeTrainingsangebot(zugang.access_id),
   });
   const [bestaetigung, setBestaetigung] = useState<Buchungsbestaetigung | null>(null);
 
@@ -94,8 +94,6 @@ function Formular({
   angebot: Trainingsangebot;
   onGebucht: (bestaetigung: Buchungsbestaetigung) => void;
 }) {
-  const api = usePlattformApi();
-  const nurLesen = useNurLesen();
   const queryClient = useQueryClient();
   const [freigaben, setFreigaben] = useState<number[]>([]);
   const [kontakt, setKontakt] = useState(false);
@@ -104,7 +102,7 @@ function Formular({
   const [geprueft, setGeprueft] = useState(false);
   const buchen = useMutation({
     mutationFn: () =>
-      api.angebotAnnehmen(zugang.access_id, {
+      angebotAnnehmen(zugang.access_id, {
         angebotId: angebot.id,
         freigaben,
         kontakt,
@@ -123,8 +121,7 @@ function Formular({
     },
   });
 
-  // E-001: In der Einsicht wird nichts angekreuzt und nichts gebucht.
-  const annehmbar = angebot.can_accept && !nurLesen;
+  const annehmbar = angebot.can_accept;
   const einwilligungFehlt = geprueft && freigaben.length > 0 && !einwilligung;
   const fruehFehlt = geprueft && angebot.early_start && !frueh;
   const text = EINWILLIGUNGSTEXTE.training_health_data;

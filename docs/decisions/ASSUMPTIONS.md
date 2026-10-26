@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-25.
+Zuletzt aktualisiert: 2026-10-26.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -2194,13 +2194,13 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-008 Punkt 2, ADR-021 Punkt 4)
 
-**Annahme.** Drei Jahre nach Vertragsende löscht der Löschlauf das Trainingsverhältnis. Liegt einer seiner Belege (Rechnung, Storno, Erinnerung, Zahlung) noch in der Frist von acht Jahren ab Ende des Kalenderjahres, fällt nur ein Teil: Kontakt mit Anschrift und Geburtsdatum, Termine ohne Leistung und Vereinbarungen ohne verbliebenen Termin. Stehen bleiben die Belege, die abgerechneten Termine mit ihren Leistungen, die Verhältniszeile und der Name der Person. Im Bericht des Laufs erscheint das Verhältnis als `steuerfrist_gehalten`. Nach Ablauf der Belegfrist fällt der Rest. Jeder gelöschte Datensatz steht im Löschjournal und wird nach einem Restore erneut gelöscht.
+**Annahme.** Drei Jahre nach Vertragsende löscht der Löschlauf das Trainingsverhältnis. Liegt einer seiner Belege (Rechnung, Storno, Erinnerung, Zahlung) noch in der Frist von acht Jahren ab Ende des Kalenderjahres, fällt alles, was kein Beleg ist: Kontakt mit Anschrift und Geburtsdatum, Profil, Übernahmen, Einwilligungen, Assessments, Verlauf, Check-ins, Gewohnheiten, Übungspläne, Termine ohne Leistung und Vereinbarungen ohne verbliebenen Termin. Stehen bleiben die Belege, die abgerechneten Termine mit ihren Leistungen, Vertrag und Pakete, die Verhältniszeile und der Name der Person; Terminwünsche und Zugang folgen ihren eigenen Regeln. Im Bericht des Laufs erscheint das Verhältnis als `steuerfrist_gehalten`. Nach Ablauf der Belegfrist fällt der Rest. Jeder gelöschte Datensatz steht im Löschjournal und wird nach einem Restore erneut gelöscht.
 
 **Begründung.** ADR-021 Punkt 4 legt drei Jahre fest. ADR-008 Punkt 2 und § 147 Abs. 3 AO rechtfertigen die längere Aufbewahrung nur für die Belege, und die Rechnung trägt Name und Anschrift in ihrem Snapshot. Leistung und Rechnung zeigen mit RESTRICT auf Termin und Verhältnis; diese Zeilen bleiben deshalb, ohne Kontakt. Unsicher: ob der abgerechnete Termin (Zeit, betreuende Person) als Teil des Belegs gilt oder früher fallen muss.
 
-**Seit TRN-EPIC-004** fällt in der Teillöschung auch das Trainingsprotokoll, am abgerechneten Termin ebenso: Es ist kein Beleg. Der Termin bleibt `documented` stehen, ohne Protokoll – die einzige Stelle, an der die Invariante aus ADR-018 Punkt 3 nicht mehr greift, und zwar durch die Frist, nicht durch einen Schreibweg.
+**Seit TRN-EPIC-004** fällt in der Teillöschung auch das Trainingsprotokoll, am abgerechneten Termin ebenso: Es ist kein Beleg. Der Termin bleibt `documented` stehen, ohne Protokoll – die einzige Stelle, an der die Invariante aus ADR-018 Punkt 3 nicht mehr greift, und zwar durch die Frist, nicht durch einen Schreibweg. **Seit Schritt 4a** (Jannes, 2026-10-26) fallen auch Screening, Assessments, Check-ins, Gewohnheiten und Übungspläne; einen zugewiesenen Plan lässt die Schutzregel dafür fallen, obwohl das Verhältnis steht.
 
-**Anker.** `app.reduce_training_relationship` und die Sperre in der Trainingsschleife von `public.apply_retention` in `supabase/migrations/20260930122000_trn_epic_003_zweitreview.sql` (mit den Protokollen neu gefasst in `supabase/migrations/20260930130000_trn_009_training_protocols.sql`); Frist in `app.training_billing_retention_due_at`, `supabase/migrations/20260930121000_trn_008_training_invoices.sql`; Tests in `supabase/tests/training-invoices.test.ts`, für das Protokoll in `supabase/tests/training-protocols.test.ts`.
+**Anker.** `app.reduce_training_relationship` und `public.reapply_deletion_journal` in `supabase/migrations/20261225050000_teilloeschung_training_vollstaendig.sql`; die Sperre in der Trainingsschleife von `public.apply_retention` und die Frist in `app.training_billing_retention_due_at` in der Basis; Tests in `supabase/tests/training-invoices.test.ts`, für das Protokoll in `supabase/tests/training-protocols.test.ts`.
 
 **Änderungspfad.** Abgerechnete Termine auch früher löschen: die Leistung vom Termin lösen (`appointment_id` nullbar, `on delete set null`) und in `app.reduce_training_relationship` mitlöschen · Aufwand `mittel`.
 
@@ -4534,13 +4534,13 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
 
 Technik · verworfen · 2026-10-15 · Jannes · — · Wiedervorlage: —
 
-**Verworfen (Jannes, 2026-10-15):** keine KI-Bilder. Es gilt ANN-539; Zeichner und Posenformat sind entfernt, die Datenbank nimmt nur noch `null` an.
+**Verworfen (Jannes, 2026-10-15):** keine KI-Bilder. Es gilt ANN-539; Zeichner und Posenformat sind entfernt, seit M9 (2026-10-26) auch Spalten und Prüfung in der Datenbank.
 
 **Annahme.** Keine Datei und keine Ablage (ADR-017 Punkt 4): Grundstellung plus Winkel; der Zeichner rechnet Bodenkontakt, Griffe und Ausschnitt. Maße und Grundstellungen gehören zur Fassung und ändern sich nur mit `v: 2`. Ungültig wird zu „kein Bild".
 
 **Begründung.** Einheitlich, offline im Build (ADR-024 Punkt 1), testbar, ohne Anbieter; eingefroren wie Name und Anleitung (ANN-300).
 
-**Anker.** `app.exercise_illustration_valid` in der Migration UEB-012; `src/features/exercises/bild/schema.ts`.
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225060000_uebungsbild_entfernt.sql`.
 
 **Änderungspfad.** Neue Fassung: `v: 2` neben `v: 1` · Aufwand `mittel`. Fotos/Videos: neue Fassung von ADR-017 · Aufwand `groß`.
 
@@ -5400,61 +5400,71 @@ Technik · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, 
 
 ### ANN-525 — Die Einsicht in die Plattform einer Person hat nur owner
 
-Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+Praxisprozess · verworfen · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M7):** Die Einsicht entfällt (ADR-023 Fassung 7).
 
 **Annahme.** „So sieht … die Plattform“ (DSN-001 D7) darf nur `owner`; therapist, team_lead, office und trainer weist `platform_preview` mit `access.denied` ab.
 
 **Begründung.** Befund B11: „über meinen Zugang“. Später zu öffnen ist billig, eine weitere Rolle wäre neue Sichtbarkeit zwischen Rollen (ADR-013 Punkt 9). Gelesen wird wie in der Akte (ADR-023 Punkt 24).
 
-**Anker.** Rollenprüfung in `public.platform_preview` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225070000_einsicht_entfernt.sql`.
 
 **Änderungspfad.** Weitere Rolle im Verteiler und in `app.platform_preview_grant`, Knopf in `PlattformAbschnitt` · Aufwand `klein`.
 
 ### ANN-526 — Eingesehen wird nur der eigene, aktive Zugang der Person
 
-Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+Praxisprozess · verworfen · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M7):** Die Einsicht entfällt (ADR-023 Fassung 7).
 
 **Annahme.** Die Einsicht gibt es nur für den eigenen Zugang der Person im Zustand `active`; eingeladen, gesperrt, entzogen und fremde Organisation weist der Server gleich ab.
 
 **Begründung.** Nur ein aktiver Zugang zeigt der Person etwas (ADR-023 Punkt 18); gleiche Antworten verraten nicht, welcher Zustand vorliegt (§13).
 
-**Anker.** Zugangsprüfung in `public.platform_preview` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225070000_einsicht_entfernt.sql`.
 
 **Änderungspfad.** Zustand `locked` zulassen und die Leiste „gesperrt“ zeigen lassen · Aufwand `klein`.
 
 ### ANN-527 — Die Einsicht listet Dokumente und Anhänge, öffnet sie aber nicht
 
-Datenschutz · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · Prüfpaket · Wiedervorlage: Datenschutzprüfung
+Datenschutz · verworfen · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · Prüfpaket · Wiedervorlage: Datenschutzprüfung
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M7):** Die Einsicht entfällt (ADR-023 Fassung 7).
 
 **Annahme.** Freigegebene Dokumente und Fotos oder Videos an Rückfragen stehen in der Einsicht in der Liste; Ansehen und Herunterladen gibt es dort nicht, ein Link führt an den Ort in der Praxis (Reiter der Akte, Rückfrage).
 
 **Begründung.** Öffnen hieße ein neuer Leseweg in den Speicher über den Zugang der Person, mit eigener Regel und eigenem Nachweis. In Akte und Rückfragen öffnet die Praxis dieselbe Datei mit ihrem Nachweis (ADR-010).
 
-**Anker.** `einsichtsApi` in `src/features/platform/einsicht.ts`: `ladeDokumentZumAnzeigen`, `ladeDokumentHerunter` und `ladeAnhang` werfen.
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225070000_einsicht_entfernt.sql`.
 
 **Änderungspfad.** Eine lesende Signatur über `platform_preview`, mit ADR-Änderung · Aufwand `mittel`.
 
 ### ANN-528 — Die Einsicht zeigt die Sicht der Person, nicht die einer Vertretung
 
-Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+Praxisprozess · verworfen · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M7):** Die Einsicht entfällt (ADR-023 Fassung 7).
 
 **Annahme.** „So sieht … die Plattform“ steht nur am eigenen Zugang der Person; was eine Begleitung oder rechtliche Vertretung sieht, zeigt die Einsicht nicht.
 
 **Begründung.** Befund B11 fragt nach der Sicht der Person. Die Sicht einer Vertretung hängt an ihren Rechten (ADR-023 Punkte 13 bis 15) und wäre eine zweite Einsicht mit eigener Prüfung.
 
-**Anker.** Knopf in `PlattformAbschnitt` (`src/features/platform-access/PlattformAbschnitt.tsx`).
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225070000_einsicht_entfernt.sql`.
 
 **Änderungspfad.** Knopf je Vertretung in `Vertretungen`, Verteiler für Vertretungen öffnen · Aufwand `mittel`.
 
 ### ANN-529 — Die Einsicht sperrt Schreibwege über eine nur lesende Transaktion
 
-Technik · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+Technik · verworfen · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M7):** Die Einsicht entfällt (ADR-023 Fassung 7).
 
 **Annahme.** Gibt der Wächter einen Zugang für die Einsicht frei, schaltet er die Transaktion auf `read only`; die Fähigkeiten (`can_write`, `can_answer` …) bleiben, wie die Person sie hat.
 
 **Begründung.** Ein Riegel für jeden Schreibweg, auch die nur mit Recht `read` und künftige (25006 im Test); `writable = false` änderte, was die Einsicht anzeigt.
 
-**Anker.** `app.platform_preview_grant` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225070000_einsicht_entfernt.sql`.
 
 **Änderungspfad.** Zusätzlich `app.platform_access_writable` und Schreibrechte in der Einsicht auf `false`, die Projektionen fragen dann einen eigenen Helfer · Aufwand `mittel`.
 
@@ -5574,13 +5584,13 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-
 
 Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes · — · Wiedervorlage: wenn die ersten eigenen Bilder oder Videos vorliegen
 
-**Annahme.** Weder Katalog noch Bibliothek noch Plan tragen ein Bild. Die Übungsseite der Praxis, das Auswahlblatt, die Planzeilen, die Übung auf der Plattform und das Planblatt zeigen Dosierung, Anleitung als nummerierte Schritte (je Zeile ein Schritt, `Schrittliste`), Hilfsmittel und Hinweis. Die Spalten `illustration` bleiben leer stehen.
+**Annahme.** Weder Katalog noch Bibliothek noch Plan tragen ein Bild. Die Übungsseite der Praxis, das Auswahlblatt, die Planzeilen, die Übung auf der Plattform und das Planblatt zeigen Dosierung, Anleitung als nummerierte Schritte (je Zeile ein Schritt, `Schrittliste`), Hilfsmittel und Hinweis. Seit M9 (Jannes, 2026-10-26) gibt es die Spalten `illustration`, ihre Prüfung und das Feld `bild` im Katalog nicht mehr.
 
 **Begründung.** Jannes: „Ich möchte keine KI-Bilder“; er dreht Bilder und Videos selbst. Ein Platzhalter „Noch kein Bild“ an 196 Übungen wäre Lärm. Eigene Medien wären Dateien (ADR-017), kein Posenformat.
 
-**Anker.** `app.exercise_illustration_valid` (nur `null`) in `supabase/migrations/20261117110000_ueb_013_uebungen_ohne_zeichnung.sql`; `src/components/ui/Schrittliste.tsx`.
+**Anker.** `supabase/migrations/20261225060000_uebungsbild_entfernt.sql` (Katalog ohne `bild`, Bibliothek und Plan ohne `illustration`); `src/components/ui/Schrittliste.tsx`.
 
-**Änderungspfad.** Eigene Fotos/Videos je Übung: Dateiart nach ADR-017 mit eigener Fassung, Anzeige über `Medienbild`, Spalten `illustration` entfernen · Aufwand `groß`.
+**Änderungspfad.** Eigene Fotos/Videos je Übung: Dateiart nach ADR-017 mit eigener Fassung, Anzeige über `Medienbild` · Aufwand `groß`.
 
 ### ANN-541 — Umsatzsteuer: Heilbehandlung frei nur mit Nachweis, Training und Abo 19 %, Hinweis nach § 34a UStDV
 
@@ -5715,29 +5725,33 @@ Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Eigene Vorlage pflegen: Tabelle und Formular · Aufwand `mittel`.
 
-### ANN-555 — Stellen am Rad: Punkt im Modell, Nummer je Rad, Freigabe erledigt sie
+### ANN-555 — Stellen am Rad: Bauteil statt Punkt im Modell, Nummer je Rad, Freigabe erledigt sie
 
 Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
-**Annahme.** Eine Stelle trägt Bauteil, Einstufung, Notiz und den Punkt in Modellkoordinaten mit der Fassung des Modells; bei anderer Fassung zeigt die Nadel die Bauteilmitte. Die offenen Stellen eines Rads sind über alle Meldungen in der Reihenfolge des Setzens nummeriert, erledigte ohne Nummer. Eine Stelle hebt ihren Prüfpunkt an, nie ab. Die Freigabe erledigt alle offenen Stellen; ein neuer Check-Up übernimmt keine, er zeigt sie unter „Schon offen am Rad“.
+**Geändert (Jannes, 2026-10-26):** M1 nimmt den Punkt im Modell zurück (Auftrag vom 08.10.): ohne 3D-Rad weder Punkt noch Fassung des Modells, ein mitgesendeter Punkt bleibt ohne Wirkung; die übrigen Sätze gelten weiter.
+
+**Annahme.** Eine Stelle trägt Bauteil, Einstufung, Notiz und Fotos; das Bauteil kommt aus der Liste der 27. Die offenen Stellen eines Rads sind über alle Meldungen in der Reihenfolge des Setzens nummeriert, erledigte ohne Nummer. Eine Stelle hebt ihren Prüfpunkt an, nie ab. Die Freigabe erledigt alle offenen Stellen; ein neuer Check-Up übernimmt keine, er zeigt sie unter „Schon offen am Rad“.
 
 **Begründung.** Handoff Lastenrad 3D, AC 2 und 3, Abschnitt 7 (offene Stellen beim nächsten Check-Up).
 
-**Anker.** `MODEL_VERSION` in `src/features/fleet/bike3d/zones.ts`.
+**Anker.** `app.fleet_insert_spots` (`supabase/migrations/20261225110000_stellen_ohne_punkt.sql`); `SpotInput` in `src/features/fleet/api.ts`.
 
 **Änderungspfad.** Stellen übernehmen statt erledigen: Freigabe und Check-Up am Server · Aufwand `mittel`.
 
 ### ANN-556 — three.js nur auf Abruf, nie im Einstiegsbundle
 
-Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
+Technik · verworfen · 2026-10-26 · Jannes · erledigt · Wiedervorlage: keine
+
+**Verworfen (Jannes, 2026-10-26):** M1 – das 3D-Rad entfällt und mit ihm `three`; „Wo genau?“ zeigt die Bauteile des Prüfpunkts als Knöpfe, die Panne die Liste der 27, die Unterlage für die Werkstatt Bauteilnamen und Fotos.
 
 **Annahme.** Betrachter und Bilder der Werkstattunterlage laden three.js über einen dynamischen Import; ohne WebGL oder ohne Netz und Zwischenspeicher trägt die Bauteil-Liste.
 
 **Begründung.** Das Diensttelefon lädt die Übersicht unterwegs; das 3D-Paket gehört nur auf die Seiten mit Rad (ADR-015, ADR-024).
 
-**Anker.** `import('./viewer')` in `src/features/fleet/bike3d/BikeModel3D.tsx`.
+**Anker.** `Bauteilwahl` in `src/features/fleet/Bauteilwahl.tsx`, die das 3D-Rad ersetzt; bis `51875fe` `import('./viewer')` in `bike3d/BikeModel3D.tsx`.
 
-**Änderungspfad.** Vorab laden: Eintrag im Service Worker · Aufwand `klein`.
+**Änderungspfad.** 3D-Rad zurück: Betrachter, Modell und Werkstattbilder aus der Git-Historie bis `51875fe`, `three` neu gegen ADR-015 prüfen · Aufwand `groß`.
 
 ### ANN-557 — Zustand eines Rads abgeleitet; mit Verlauf ausmustern statt löschen
 
@@ -5875,7 +5889,7 @@ Technik · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage:
 
 Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage: —
 
-**Annahme.** Nach den zwölf Prüfpunkten wischt die prüfende Person jede Werbefläche mit Desinfektions- oder Reinigungstuch ab („Abgewischt“) oder nennt den Grund („Nicht möglich“), dann je ein Foto links, vorne, rechts, hinten; die Kamera öffnet sich selbst. Ohne beides kein Speichern; der Server verlangt die Werbeflächen, die Fotos folgen wie alle Fotos nach dem Speichern (24 h, je Seite eines). Die Überschrift steht unter dem Rad über den Antworten.
+**Annahme.** Nach den zwölf Prüfpunkten wischt die prüfende Person jede Werbefläche mit Desinfektions- oder Reinigungstuch ab („Abgewischt“) oder nennt den Grund („Nicht möglich“), dann je ein Foto links, vorne, rechts, hinten; die Kamera öffnet sich selbst. Ohne beides kein Speichern; der Server verlangt die Werbeflächen, die Fotos folgen wie alle Fotos nach dem Speichern (24 h, je Seite eines). Die Überschrift steht über den Antworten.
 
 **Begründung.** Auftrag Jannes (16.10.). „Nicht möglich“ mit Grund, damit ein fehlendes Tuch die Sicherheitsprüfung nicht blockiert; der Arbeitgeber sieht ihn in den Meldungen. +9 Tipps (R3 ≤ 25).
 
@@ -6067,7 +6081,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 Technik · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
-**Annahme.** Fenster der Plattform zeichnen in ein Portalziel mit `.plattform-schrift` direkt nach dem Gerüst und innerhalb des Bereichs, den die Sitzungssperre verbirgt; die Einsicht der Praxis behält ihr Ziel.
+**Annahme.** Fenster der Plattform zeichnen in ein Portalziel mit `.plattform-schrift` direkt nach dem Gerüst und innerhalb des Bereichs, den die Sitzungssperre verbirgt.
 
 **Begründung.** Am body erbten die Fenster die 18 px nicht (gemessen 14–16 px); DESIGN.md verlangt auf der Plattform alles ≥ 18 px.
 
@@ -6331,41 +6345,41 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 ### ANN-605 — Ladestrom: geplante Stunden, Werte der Praxis
 
-Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
+Praxisprozess · verworfen · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
-**Ablösung.** ersetzt ANN-599
+**Ablösung.** ersetzt ANN-599. **Verworfen (Jannes, 2026-10-26, Aufräumen M5):** Ladestrom wird wie ein Einkauf mit Beleg beantragt (ANN-749); Rechnung, Werte der Praxis und Vorschläge entfallen.
 
 **Annahme.** Ladestrom = geplante Arbeitsstunden des Monats (Wochenplan in Fassungen mit Abweichungen, ohne Feiertage und ganztägige Abwesenheit; nicht änderbar) × km je Arbeitsstunde × Wh/km bei höchster Stufe × ct/kWh, kaufmännisch auf Cent. Die drei Werte pflegt nur owner (Vorbelegung 6 km, 18 Wh/km, 37 ct); der Antrag hält alle fest. Der Eingang schlägt jeden offenen Monat vor; „zu Hause geladen“ bleibt ein Haken.
 
 **Begründung.** Auftrag Jannes 2026-10-17; Kilometer aus Touren erlaubt erst ADR-019 Fassung 6, umgesetzt in BEF-181 – bis dahin der Pauschalwert.
 
-**Anker.** `app.electricity_amount_cents`.
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql`.
 
 **Änderungspfad.** Stunden von der Person korrigierbar: Parameter und Feld im Ablauf · Aufwand `mittel`.
 
-### ANN-607 — Barometer: Fragen, Schwelle, Frist
+### ANN-607 — Barometer: Fragen, namentlich, Frist
 
-Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-26 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Monatlich drei Skalen 1–9 (Stimmung, Touren und Fahrzeiten, Miteinander) und zwei Freitexte, alle freiwillig, Anrede „du“; nie owner. Ohne Namen nur Monat, keine Person, keine Uhrzeit; Teilnahme als eigene Marke. owner sieht ohne Namen nur die Summe ab drei möglichen Teilnehmenden und fünf Antworten, in festen, nie überlappenden Blöcken abgeschlossener Monate (höchstens zwölf), je Frage ab fünf. Jede anonyme Abgabe und der Löschlauf schreiben die Antworten neu; bis VACUUM und in Backups (30 Tage) bleiben alte Zeilen an den Rechten vorbei lesbar (DSFA). Gezählt werden Antworten, nicht Personen.
+**Annahme.** Monatlich drei Skalen 1–9 (Stimmung, Touren und Fahrzeiten, Miteinander) und zwei Freitexte, alle freiwillig, Anrede „du“; nie owner. Seit 2026-10-26 immer mit Namen und Zeitpunkt, einmal je Person und Monat, ab der ersten beschäftigten Person (§20.2 Nr. 1 und 4, Version 0.29): owner liest jede Antwort einzeln, ohne Summe, Kurve oder Zählung je Person. Ohne Namen geht nur die Rückmeldung an die Praxisleitung (ANN-608); anonyme Barometer, ihre Blöcke und die Teilnahmemarke sind gelöscht. Für die Datenschutzprüfung: Wer nicht antwortet, lässt sich aus den namentlichen Antworten ablesen; keine Funktion listet es (§20.2 Nr. 2), die Freiwilligkeit nach § 26 Abs. 2 BDSG bleibt zu prüfen.
 
-**Begründung.** §20.2; Art. 88 DSGVO, § 26 BDSG; Zweitreview ORG-006 (Differenzen, Transaktionsspur).
+**Begründung.** §20.2; Art. 88 DSGVO, § 26 BDSG; Entscheidung Jannes (ROADMAP 7.18, Option A): Unter drei Beschäftigten zeigte ein anonymes Barometer nie etwas.
 
-**Anker.** `app.staff_feedback_threshold`.
+**Anker.** `public.submit_staff_barometer` (`supabase/migrations/20261225100000_barometer_namentlich.sql`).
 
-**Änderungspfad.** Schwelle dort, Fragen `fragen.ts` · Aufwand `klein`.
+**Änderungspfad.** Fragen `fragen.ts` · Aufwand `klein`. Wieder ohne Namen: Wahl, Teilnahmemarke, Summe und Neuschreiben aus der Basis zurückholen · Aufwand `mittel`.
 
 ### ANN-608 — Rückmeldung an die Praxisleitung
 
-Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-26 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Jederzeit ein Freitext (bis 2000 Zeichen) an owner, je Abgabe mit oder ohne Namen, zwei gleichwertige Knöpfe; Einstieg im Eingang und unter „Neuer Antrag“, nicht für owner. Mit Namen einzeln mit Monat; ohne Namen nur gemischt ab fünf (ANN-607). Kein Auditeintrag, der Text nie in Fehlern.
+**Annahme.** Jederzeit ein Freitext (bis 2000 Zeichen) an owner, je Abgabe mit oder ohne Namen, zwei gleichwertige Knöpfe; Einstieg im Eingang und unter „Neuer Antrag“, nicht für owner. Mit Namen einzeln mit Monat. Ohne Namen nur Monat, keine Person, keine Uhrzeit; owner sieht sie nur gemischt ab drei möglichen Teilnehmenden und fünf Rückmeldungen, in festen, nie überlappenden Blöcken abgeschlossener Monate (höchstens zwölf). Der Löschlauf schreibt sie nach dem Monat neu; bis VACUUM und in Backups (30 Tage) bleiben alte Zeilen an den Rechten vorbei lesbar (DSFA). Kein Auditeintrag, der Text nie in Fehlern.
 
-**Begründung.** §20.2: niedrige Hürde für Beschwerden; ADR-010 Punkt 17, ADR-011.
+**Begründung.** §20.2 Nr. 1 und 4: niedrige Hürde für Beschwerden; Art. 88 DSGVO, § 26 BDSG; ADR-010 Punkt 17, ADR-011; Zweitreview der Rückmeldungen (Differenzen, Transaktionsspur).
 
 **Anker.** `public.submit_staff_feedback_message`.
 
-**Änderungspfad.** Länge oder Empfänger: dort · Aufwand `klein`.
+**Änderungspfad.** Länge oder Empfänger: dort; Schwelle in `app.staff_feedback_threshold` · Aufwand `klein`.
 
 ### ANN-609 — Teamchat: kein Lesen über andere, nur der eigene Stand
 
@@ -6447,13 +6461,15 @@ Praxisprozess · offen · 2026-10-17 · Claude nach Vorgabe Jannes · — · Wie
 
 ### ANN-615 — Ladestrom aus Touren: rechnen und eintragen in einer eigenen Function
 
-Technik · offen · 2026-10-17 · — · — · Wiedervorlage: —
+Technik · verworfen · 2026-10-17 · — · — · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M5):** Die Rechnung aus Touren entfällt mit der Edge Function `electricity-distance` (ADR-019 Fassung 7, ANN-749).
 
 **Annahme.** Die Kilometer rechnet die Edge Function `electricity-distance`: Wegpunkte holt sie mit dem Token der Person, die Summe trägt sie mit eigenem Dienstschlüssel ein (`record_electricity_tour_distance`, nur `service_role`) – nur am Antrag desselben Monats, einmal, binnen zehn Minuten, vor fremder Entscheidung. Ohne Ergebnis bleibt der Wert je Stunde. Den Aufruf löst der Browser aus; wer ihn auslässt, behält den Stundenwert – owner sieht die Grundlage.
 
 **Begründung.** ADR-019 Fassung 6: Der Server rechnet; die Datenbank erreicht den Kartendienst nicht, `location-provider` schreibt nichts (Punkt 16).
 
-**Anker.** `public.record_electricity_tour_distance`.
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql`.
 
 **Änderungspfad.** Der Server löst selbst aus (`pg_net` beim Absenden oder Zeitplan), Stundenwert nur noch ohne Kartendienst: Function und Funktion ersetzen · Aufwand `mittel`.
 
@@ -6461,23 +6477,25 @@ Technik · offen · 2026-10-17 · — · — · Wiedervorlage: —
 
 Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung
 
-**Annahme.** Die Monatssumme sehen nur die Person und owner. Das Büro sieht einen Antrag aus Touren mit Monat und Zustand, aber ohne Kilometer, Betrag, Verbrauch und Satz, weil der Betrag mit den Werten der Praxis die Kilometer verriete. Anträge nach Stunden bleiben wie bisher.
+**Annahme.** Gilt seit 2026-10-26 nur noch für ältere Anträge aus Touren (ANN-749). Die Monatssumme sehen nur die Person und owner. Das Büro sieht einen Antrag aus Touren mit Monat und Zustand, aber ohne Kilometer, Betrag, Verbrauch und Satz, weil der Betrag mit den Werten der Praxis die Kilometer verriete. Anträge nach Stunden bleiben wie bisher.
 
-**Begründung.** ADR-019 Fassung 6 (Rang 2) geht ANN-598 (Büro sieht alle Erstattungen, Rang 4) vor; Art. 5 Abs. 1 lit. c DSGVO, §26 BDSG.
+**Begründung.** Art. 5 Abs. 1 lit. c DSGVO, §26 BDSG: Die Kilometer der Touren sind Standortdaten (§20). Bis Fassung 6 schrieb ADR-019 das vor; Fassung 7 streicht die Rechnung, die Regel bleibt für die älteren Anträge und geht ANN-598 (Büro sieht alle Erstattungen) vor.
 
-**Anker.** `app.reimbursement_view(public.staff_reimbursements, boolean)`.
+**Anker.** `app.reimbursement_view(public.staff_reimbursements, boolean)`; Test „…aus Touren nur der Person und owner (ANN-616)“ in `supabase/tests/reimbursements.test.ts`.
 
-**Änderungspfad.** Büro sieht den Betrag: Tiefe in `list_reimbursements` auf `v_alle` stellen, dazu eine neue Fassung von ADR-019 · Aufwand `klein`.
+**Änderungspfad.** Büro sieht den Betrag: Tiefe in `list_reimbursements` auf `v_alle` stellen · Aufwand `klein`.
 
 ### ANN-617 — Was als gefahrene Tour zählt
 
-Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —
+Praxisprozess · verworfen · 2026-10-17 · — · — · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-26, Aufräumen M5):** Ohne Rechnung aus Touren gibt es nichts mehr zu zählen (ANN-749).
 
 **Annahme.** Gezählt wird je Tag die Tour der Tagesroute: Garage oder Startort des ersten Standorts, alle nicht abgesagten Behandlungs- und Trainingstermine mit Ort (auch „nicht angetroffen“), zurück. Ein Termin ohne Koordinate fehlt; die Summe wird auf ganze km gerundet; scheitert eine Route, gibt es keine Summe. Der Eingang zeigt weiter die Schätzung nach Stunden.
 
 **Begründung.** Dieselbe Regel wie Karte und Fahrzeiten (ANN-240); zwölf Monate im Eingang wären hunderte Routen je Öffnen.
 
-**Anker.** `app.electricity_tour_days`.
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql`.
 
 **Änderungspfad.** Andere Tour (etwa ohne Rückweg): nur diese Funktion · Aufwand `klein`.
 
@@ -6527,7 +6545,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.202
 
 Praxisprozess · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · erledigt · Wiedervorlage: —
 
-**Annahme.** Die Person trägt ihr Gewicht für heute ein; je Tag gilt ein Gewicht, der jüngste Eintrag ersetzt den des Tages, auch einen der Beratung, und nennt, wer eingetragen hat. Die Plattform zeigt nur die laufende Beratung; nach ihrem Ende verschwindet sie dort, bleibt im Export. Die Einsicht der Praxis zeigt die Ernährung nicht.
+**Annahme.** Die Person trägt ihr Gewicht für heute ein; je Tag gilt ein Gewicht, der jüngste Eintrag ersetzt den des Tages, auch einen der Beratung, und nennt, wer eingetragen hat. Die Plattform zeigt nur die laufende Beratung; nach ihrem Ende verschwindet sie dort, bleibt im Export.
 
 **Begründung.** ADR-027 Punkt 5 (Verlauf), Punkt 2 (Ende durch die Beratung); klassische Tracker führen ein Gewicht je Tag.
 
@@ -7029,7 +7047,7 @@ Technik · entschieden (Jannes) · 2026-10-22 · Jannes · erledigt · Wiedervor
 
 Technik · entschieden (Jannes) · 2026-10-22 · Jannes · erledigt · Wiedervorlage: —
 
-**Annahme.** Die Reiterleiste steht in einer Reihe, solange die vier Wörter in 700 mit je 4 px Luft nebeneinander passen; sonst in zwei Reihen, das Zeichen neben dem Wort. Gemessen wird mit `ResizeObserver` an der Leiste und an einer unsichtbaren Messreihe, nicht an der Schrift-Einstellung. In zwei Reihen und im Menü wachsen nur die Wörter, Zeichen und Abstände bleiben in px; `scroll-padding` hebt, was den Fokus bekommt, über die Leiste. Unter 23rem steht statt der Leiste „Menü“ im Kopf (ANN-682), ab 64rem die Navigation im Kopf; die Einsicht der Praxis behält das Telefon.
+**Annahme.** Die Reiterleiste steht in einer Reihe, solange die vier Wörter in 700 mit je 4 px Luft nebeneinander passen; sonst in zwei Reihen, das Zeichen neben dem Wort. Gemessen wird mit `ResizeObserver` an der Leiste und an einer unsichtbaren Messreihe, nicht an der Schrift-Einstellung. In zwei Reihen und im Menü wachsen nur die Wörter, Zeichen und Abstände bleiben in px; `scroll-padding` hebt, was den Fokus bekommt, über die Leiste. Unter 23rem steht statt der Leiste „Menü“ im Kopf (ANN-682), ab 64rem die Navigation im Kopf.
 
 **Begründung.** DR-112: Bei 200 % waren „Übungen“ und „Nachrichten“ abgeschnitten, bei „Sehr groß“ gekappt, bei „Groß“ stießen die Wörter aneinander. Handoff 2026-10-22, Abschnitt 3; Jannes am 22.10.2026, Entscheidung 2 („nur Zeichen“ verworfen). Gemessen, damit auch Systemschrift und Übersetzung greifen; bei 375 px ist „Normal“ eine Reihe, „Groß“ zwei. Mit mitwachsenden Abständen passte „Nachrichten“ bei „Sehr groß“ ab 360 px nicht in seine Hälfte (Zweitreview).
 
@@ -7149,7 +7167,7 @@ Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
-**Annahme.** Die Sitzungssperre zeigt die Sperrseite der Plattform („Zum Schutz gesperrt“) jedem Konto, das die Marke `platform_account` des Zugangsdienstes trägt (`app_metadata` der Sitzung, ANN-189), sonst die der Praxis - auch einem Praxiskonto in der Einsicht unter `/p`. Die Seiten-Adresse zählt nicht: Die Anwendung startet auf `/` und sperrt, bevor die Plattform nach `/p` leitet. Die Plattform-Fassung zeigt keine Angaben zur Person, auch nicht den eigenen Namen; die PIN hat eine eigene Seite mit „Zurück“. Die Plattformkonten im Seed tragen die Marke wie echte.
+**Annahme.** Die Sitzungssperre zeigt die Sperrseite der Plattform („Zum Schutz gesperrt“) jedem Konto, das die Marke `platform_account` des Zugangsdienstes trägt (`app_metadata` der Sitzung, ANN-189), sonst die der Praxis. Die Seiten-Adresse zählt nicht: Die Anwendung startet auf `/` und sperrt, bevor die Plattform nach `/p` leitet. Die Plattform-Fassung zeigt keine Angaben zur Person, auch nicht den eigenen Namen; die PIN hat eine eigene Seite mit „Zurück“. Die Plattformkonten im Seed tragen die Marke wie echte.
 
 **Begründung.** Handoff 2026-10-22, Abschnitt 5.2 („Plattform-Fassung für Plattformkonten“). Gesperrt ist der Abfragespeicher geräumt (ADR-025 Punkt 3); die Marke steht in der Sitzung, die die Sperre ohnehin hält, und setzt allein der Dienst. Ein Merker auf dem Gerät entfällt. Zweitreview 1c: die erste Fassung nach der Adresse traf Kaltstart und Einsicht falsch.
 
@@ -7257,7 +7275,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
-**Annahme.** Oben steht eine Hero-Karte: in der Lesefrist (nach einem Abo erst nach dessen Ende) „Unterlagen sichern“, sonst die erste Aufgabe (ANN-692), sonst der nächste Termin - „Besuch morgen/am Samstag“, über sechs Tage mit Datum, für eine Vertretung „Besuch bei {Name}“. Sonst der Leerzustand. Antwort und Rechnung nie; in der Einsicht ohne Knopf.
+**Annahme.** Oben steht eine Hero-Karte: in der Lesefrist (nach einem Abo erst nach dessen Ende) „Unterlagen sichern“, sonst die erste Aufgabe (ANN-692), sonst der nächste Termin - „Besuch morgen/am Samstag“, über sechs Tage mit Datum, für eine Vertretung „Besuch bei {Name}“. Sonst der Leerzustand. Antwort und Rechnung nie.
 
 **Begründung.** Handoff 2026-10-22, Abschnitt 0 und 5.1; Abweichung von DSN-001 4.1: der Termin ist ein eigener Abschnitt „Nächster Besuch“. „heute“ und „morgen“ statt eines Wochentags, der in sechs Tagen wiederkäme.
 
@@ -7307,7 +7325,7 @@ Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #297, Frage 3) · �
 
 Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Briefing 7 (Ich)
 
-**Annahme.** Hat die Person für diesen Zugang nie gewählt (kein `chosen_at`) und ist keine Art des Schalters an, steht unter „Heute“ zuletzt „Mitteilungen einschalten“. Sie führt zu den Benachrichtigungen unter „Ich → Einstellungen“, die Wahl dieses Zugangs offen. Nach jeder Wahl, auch „Aus“, entfällt sie; ebenso in Lesefrist und Einsicht.
+**Annahme.** Hat die Person für diesen Zugang nie gewählt (kein `chosen_at`) und ist keine Art des Schalters an, steht unter „Heute“ zuletzt „Mitteilungen einschalten“. Sie führt zu den Benachrichtigungen unter „Ich → Einstellungen“, die Wahl dieses Zugangs offen. Nach jeder Wahl, auch „Aus“, entfällt sie; ebenso in der Lesefrist.
 
 **Begründung.** Jannes, PR #297 Frage 2 (aus #294 Frage 1): „Später“ bleibt endgültig, die Übersicht erinnert, solange nichts an ist. ADR-024 Punkt 15: eingeschaltet wird im Einstieg oder unter „Ich“; Abschalten kostet nichts, also keine Karte nach „Aus“.
 
@@ -7611,7 +7629,7 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
-**Annahme.** Das Planblatt nennt als Stand den Tag der Zuweisung in der Zeitzone der Praxis: auf der Plattform `assigned_on` vom Server wie im Reiter, in der Praxis aus `assigned_at` mit `dayKey`. So tragen beide Ausdrucke derselben Fassung denselben Stand. Die Vorschau auf der Plattform hat eckige Ecken statt Radius 4 und steht unter 23rem ohne Fläche und Rahmen. Die Maße des Rechners gelten nach `data-rechner`, in der Einsicht also nie.
+**Annahme.** Das Planblatt nennt als Stand den Tag der Zuweisung in der Zeitzone der Praxis: auf der Plattform `assigned_on` vom Server wie im Reiter, in der Praxis aus `assigned_at` mit `dayKey`. So tragen beide Ausdrucke derselben Fassung denselben Stand. Die Vorschau auf der Plattform hat eckige Ecken statt Radius 4 und steht unter 23rem ohne Fläche und Rahmen. Die Maße des Rechners gelten nach `data-rechner`.
 
 **Begründung.** Handoff 2026-10-24, 5.7 („Stand {Datum}“); Person und Praxis gleichen die Fassung auf Papier über den Stand ab (Design-Review 2d, H3). Das System kennt fünf Radien, 4 gehört nicht dazu (DS-001); bei 200 % blieben mit Rahmen rund 110 px für den Text.
 
@@ -7630,3 +7648,15 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 **Anker.** Regel `nur-ueber-index` in `scripts/eslint-modulgrenzen.mjs`; `src/features/appointments/index.ts`; `src/features/appointments/erweiterungen.ts`.
 
 **Änderungspfad.** Regel aus `eslint.config.js` nehmen, Kern zurück nach Termine · Aufwand `mittel`.
+
+### ANN-749 — Ladestrom wie ein Einkauf mit Beleg; ältere Anträge behalten ihren Rechenweg
+
+Praxisprozess · offen · 2026-10-26 · — · — · Wiedervorlage: —
+
+**Annahme.** Ladestrom läuft seit 2026-10-26 (M5) über den Einkauf: Beleg, Betrag, Zweck „Ladestrom“ mit dem jüngsten abgeschlossenen Monat (änderbar), Art `purchase`. Ältere Anträge der Art `electricity` bleiben mit Rechenweg lesbar, entscheidbar und auszahlbar (ANN-602).
+
+**Begründung.** „Betrag mit Beleg bleibt“ (ROADMAP 7.18); den Rechenweg alter Anträge zu löschen hieße, Belege zu ändern.
+
+**Anker.** `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql`; Test „Ältere Ladestrom-Anträge mit Rechenweg“ in `reimbursements.test.ts`.
+
+**Änderungspfad.** Eigene Art „Strom“: `submit_purchase_reimbursement` und `staff_reimbursements_kind_fields` erweitern · Aufwand `mittel`.

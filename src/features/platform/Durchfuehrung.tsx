@@ -30,6 +30,8 @@ import { Anleitung } from './Anleitung';
 import {
   plaeneSchluessel,
   termineSchluessel,
+  ladePlaene,
+  ladeTermine,
   type EigenerPlan,
   type PlanPosition,
   type Plattformzugang,
@@ -42,7 +44,6 @@ import {
   type Uebertragungsstand,
 } from './Durchfuehrungsfuss';
 import { Durchfuehrungskopf } from './Durchfuehrungskopf';
-import { usePlattformApi } from './einsicht';
 import { useRechner } from './geruestbreite';
 import { Endseite } from './Endseite';
 import { naechsterTermin } from './hauptsache';
@@ -77,7 +78,6 @@ import { tagFest } from './zeit';
  * halten, soweit der Browser das kann - auf der Endseite nicht mehr.
  */
 export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const { pathname } = useLocation();
   const [suche] = useSearchParams();
   const navigate = useNavigate();
@@ -88,7 +88,7 @@ export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
   const zurueck = `${PLATTFORM_PFAD}/uebungen${bereich ? `?${bereich}` : ''}`;
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
-    queryFn: () => api.ladePlaene(zugang.access_id),
+    queryFn: () => ladePlaene(zugang.access_id),
     // Die Haken stehen in der Ansicht; ein Neuladen im Hintergrund würde sie
     // mit dem Stand vom Öffnen überschreiben.
     refetchOnWindowFocus: false,
@@ -109,7 +109,7 @@ export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
   // sonst das Wort des Bereichs - am freien Feld und auf der Endseite.
   const termine = useQuery({
     queryKey: termineSchluessel(zugang.access_id),
-    queryFn: () => api.ladeTermine(zugang.access_id),
+    queryFn: () => ladeTermine(zugang.access_id),
   });
   const name = termine.data ? naechsterTermin(termine.data)?.staff_name : null;
   const wer =

@@ -10,11 +10,12 @@ import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
   vertragSchluessel,
+  ladeVertrag,
+  vertragWiderrufen,
   type Plattformzugang,
   type Trainingsvertrag,
   type Widerrufseingang,
 } from './api';
-import { useNurLesen, usePlattformApi } from './einsicht';
 import { steuerHinweis } from './paketbedingungen';
 import { PLATTFORM_PFAD } from './pfade';
 import { WIDERRUF_BESTAETIGEN, WIDERRUFEN } from './vertragstexte';
@@ -34,10 +35,9 @@ import { datum, uhrzeit } from './zeit';
  * Paket –, wickelt die Praxis ab (ANN-290).
  */
 export function Vertrag({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const vertrag = useQuery({
     queryKey: vertragSchluessel(zugang.access_id),
-    queryFn: () => api.ladeVertrag(zugang.access_id),
+    queryFn: () => ladeVertrag(zugang.access_id),
   });
 
   return (
@@ -107,13 +107,11 @@ function Inhalt({ vertrag: v }: { vertrag: Trainingsvertrag }) {
 }
 
 function Widerruf({ zugang, vertrag: v }: { zugang: Plattformzugang; vertrag: Trainingsvertrag }) {
-  const api = usePlattformApi();
-  const nurLesen = useNurLesen();
   const queryClient = useQueryClient();
   const [schritt, setSchritt] = useState<'stand' | 'bestaetigen'>('stand');
   const [eingang, setEingang] = useState<Widerrufseingang | null>(null);
   const widerrufen = useMutation({
-    mutationFn: () => api.vertragWiderrufen(zugang.access_id, v.id),
+    mutationFn: () => vertragWiderrufen(zugang.access_id, v.id),
     onSuccess: async (bestaetigung) => {
       setEingang(bestaetigung);
       await queryClient.invalidateQueries({ queryKey: vertragSchluessel(zugang.access_id) });
@@ -197,14 +195,11 @@ function Widerruf({ zugang, vertrag: v }: { zugang: Plattformzugang; vertrag: Tr
         Sie können diesen Vertrag bis zum <strong>{datum(v.withdrawal_ends_on)}</strong> ohne Angabe
         von Gründen widerrufen.
       </p>
-      {/* E-001: In der Einsicht wird nicht widerrufen. */}
-      {nurLesen ? null : (
-        <div className="mt-4">
-          <Button variant="secondary" onClick={() => setSchritt('bestaetigen')}>
-            {WIDERRUFEN}
-          </Button>
-        </div>
-      )}
+      <div className="mt-4">
+        <Button variant="secondary" onClick={() => setSchritt('bestaetigen')}>
+          {WIDERRUFEN}
+        </Button>
+      </div>
     </Section>
   );
 }

@@ -19,14 +19,8 @@ import { aktiveStandortvorlage } from './standortvorlage';
 import { todayInTimeZone, wochenBeginn } from '@/lib/datum';
 
 /**
- * Panne melden (FLT-EPIC-001, Handoff Lastenrad 3D Abschnitt 4; geführt seit
- * Überholung 6, G3).
- *
- * Wie beim Check-Up: Erst das Rad - das eigene vorbelegt, nie übersprungen
- * (VOR-18) - auf einer gewöhnlichen Seite, dann die Panne im Fenster des
- * geführten Ablaufs an `?rad=` (`Pannenfenster`): „Wo ist der Schaden?“ am
- * 3D-Rad, danach je Frage der Vorlage eine Seite bis zur Abschlussart. Ein
- * anderes Rad baut das Fenster neu auf.
+ * Panne melden: erst das Rad auf einer gewöhnlichen Seite - das eigene vorbelegt, nie übersprungen,
+ * sonst meldete man stillschweigend ein beliebiges -, dann das Fenster an `?rad=` (`Pannenfenster`).
  */
 export function BreakdownPage({ user }: { user: CurrentUser }) {
   const [parameter, setParameter] = useSearchParams();

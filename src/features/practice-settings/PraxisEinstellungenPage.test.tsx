@@ -46,7 +46,7 @@ describe('PraxisEinstellungenPage (ORG-002)', () => {
     saveAppointmentGrid.mockResolvedValue(undefined);
   });
 
-  it('heißt wie ihre Ansicht und gliedert die Einstellungen in vier eingeklappte Gruppen', async () => {
+  it('heißt wie ihre Ansicht und gliedert die Einstellungen in drei eingeklappte Gruppen', async () => {
     rendern();
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Einstellungen' }),
@@ -55,7 +55,6 @@ describe('PraxisEinstellungenPage (ORG-002)', () => {
     expect(gruppen.map((gruppe) => gruppe.querySelector('summary')?.textContent)).toEqual([
       'Termine und Dokumentation',
       'Touren',
-      'Ladestrom',
       'Benachrichtigungen an Patient:innen',
     ]);
     expect(gruppen.every((gruppe) => !gruppe.open)).toBe(true);

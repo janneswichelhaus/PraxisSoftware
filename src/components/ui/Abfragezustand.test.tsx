@@ -83,16 +83,16 @@ describe('Abfragezustand (Design-Fundament, ANN-406)', () => {
 /** Eine Abweisung des Servers - kein Netzfehler. */
 class Abgewiesen extends Error {}
 
-/** Eine Seite ohne Rahmen der Anwendung, etwa die Einsicht der Praxis (E-001). */
+/** Eine Seite mit eigener Hülle um Laden und Fehler, etwa „Auszahlen“. */
 function Vollbild({ zustand }: { zustand: Abfrage<string> }) {
   return (
     <Abfragezustand
       abfrage={zustand}
-      laden="Die Einsicht wird geladen …"
-      fehler="Die Einsicht konnte nicht geladen werden."
+      laden="Die Auszahlung wird geladen …"
+      fehler="Die Auszahlung konnte nicht geladen werden."
       endgueltig={{
         wenn: (fehler) => fehler instanceof Abgewiesen,
-        titel: 'Diese Einsicht ist nicht möglich.',
+        titel: 'Diese Auszahlung ist nicht möglich.',
       }}
       ausweg={<a href="/">Zur Übersicht</a>}
       rahmen={(inhalt) => <main data-testid="rahmen">{inhalt}</main>}
@@ -102,7 +102,7 @@ function Vollbild({ zustand }: { zustand: Abfrage<string> }) {
   );
 }
 
-describe('Abfragezustand ohne Rahmen der Anwendung (E-001)', () => {
+describe('Abfragezustand mit eigener Hülle', () => {
   it('hüllt das Laden ein, ohne Ausweg', () => {
     renderWithProviders(<Vollbild zustand={abfrage({ isPending: true })} />);
     expect(screen.getByTestId('rahmen')).toContainElement(screen.getByRole('status'));
@@ -116,7 +116,7 @@ describe('Abfragezustand ohne Rahmen der Anwendung (E-001)', () => {
     const rahmen = screen.getByTestId('rahmen');
     const meldung = screen.getByRole('alert');
     expect(rahmen).toContainElement(meldung);
-    expect(meldung).toHaveTextContent('Diese Einsicht ist nicht möglich.');
+    expect(meldung).toHaveTextContent('Diese Auszahlung ist nicht möglich.');
     expect(meldung).not.toHaveTextContent(VERBINDUNG_PRUEFEN);
     expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).toBeNull();
     expect(rahmen).toContainElement(screen.getByRole('link', { name: 'Zur Übersicht' }));
@@ -128,7 +128,7 @@ describe('Abfragezustand ohne Rahmen der Anwendung (E-001)', () => {
         zustand={abfrage({ data: 'Erika Beispiel', isError: true, error: new Abgewiesen() })}
       />,
     );
-    expect(screen.getByRole('alert')).toHaveTextContent('Diese Einsicht ist nicht möglich.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Diese Auszahlung ist nicht möglich.');
     expect(screen.queryByRole('region', { name: 'Inhalt' })).toBeNull();
     expect(screen.queryByText(STAND_VERALTET)).toBeNull();
   });

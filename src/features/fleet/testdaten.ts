@@ -1,5 +1,5 @@
 import type { Bike, BikeDetail, Fleet, FleetReport, Spot } from './api';
-import { CHECK_ITEMS } from './bike3d/zones';
+import { CHECK_ITEMS } from './zones';
 
 /**
  * Synthetische Radflotte für die Komponententests (FLT-EPIC-001) - dieselben
@@ -88,8 +88,6 @@ export function testStelle(overrides: Partial<Spot> = {}): Spot {
     id: 'stelle-1',
     number: 1,
     zone: 'bremse-vorne',
-    point: [1.05, 0.31, -0.06],
-    model_version: 1,
     severity: 'problem',
     note: 'Scheibe schleift beim Drehen',
     source: 'checkup',
@@ -110,7 +108,6 @@ export function testDetail(overrides: Partial<BikeDetail> = {}): BikeDetail {
         id: 'stelle-2',
         number: 2,
         zone: 'reifen-hinten',
-        point: [-1.151, 0.119, 0.027],
         severity: 'beobachten',
         note: 'Profil hinten fast abgefahren',
       }),
@@ -118,7 +115,6 @@ export function testDetail(overrides: Partial<BikeDetail> = {}): BikeDetail {
         id: 'stelle-3',
         number: 3,
         zone: 'riemen',
-        point: [-0.55, 0.397, 0.09],
         note: 'Riemen springt über',
         source: 'breakdown',
         source_id: 'panne-3',

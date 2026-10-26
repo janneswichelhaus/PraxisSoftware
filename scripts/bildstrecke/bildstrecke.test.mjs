@@ -23,10 +23,6 @@ const PLATTFORM = routenmusterAusQuelle(
   { konstanten: new Map([['PLATTFORM_PFAD', PLATTFORM_PFAD]]) },
 );
 const ERFASST = new Set(ROUTEN.map((route) => route.muster));
-/** Eine Route je Muster - die Einsicht der Praxis (E-001) zählt für sich. */
-const EINDEUTIG = new Set(
-  ROUTEN.map((route) => (route.einsicht ? `${route.muster} (Einsicht)` : route.muster)),
-);
 const AUSNAHMEN = new Set(AUSGENOMMEN.map((eintrag) => eintrag.muster));
 
 describe('Routenliste der Bildstrecke', () => {
@@ -67,7 +63,7 @@ describe('Routenliste der Bildstrecke', () => {
   });
 
   it('Bereiche, Etiketten und Konten sind gültig, Muster eindeutig', () => {
-    expect(EINDEUTIG.size).toBe(ROUTEN.length);
+    expect(ERFASST.size).toBe(ROUTEN.length);
     for (const route of ROUTEN) {
       expect(BEREICHE, route.muster).toContain(route.bereich);
       expect(route.etikett.trim().length, route.muster).toBeGreaterThan(2);
@@ -77,14 +73,6 @@ describe('Routenliste der Bildstrecke', () => {
       }
       // Plattformseiten nur mit Plattformkonten, Praxisseiten nie mit ihnen.
       const plattform = route.muster === PLATTFORM_PFAD || route.muster.startsWith('/p/');
-      if (route.einsicht) {
-        // E-001: Die Einsicht zeigt eine Plattformseite, und nur der
-        // Praxisinhaber:in - nie einem Plattformkonto, nie einer anderen Rolle.
-        expect(plattform, route.muster).toBe(true);
-        expect(route.oeffentlich, route.muster).toBeUndefined();
-        expect(route.konten, route.muster).toEqual(['owner']);
-        continue;
-      }
       for (const konto of route.konten) {
         if (route.oeffentlich) expect(konto, route.muster).toBe('ohne');
         else expect(PLATTFORMKONTEN.has(konto), `${route.muster}: ${konto}`).toBe(plattform);
@@ -176,7 +164,6 @@ describe('Lesewächter', () => {
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/log_patient_record_view`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/notification_kind_switches`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/reimbursement_payout_details`)).toBeNull();
-    expect(schreibanfrage('POST', `${api}/rest/v1/rpc/electricity_suggestions`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/mark_team_channel_read`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/post_team_message`)).toBe(
       'rpc post_team_message',
@@ -184,16 +171,12 @@ describe('Lesewächter', () => {
     expect(schreibanfrage('POST', `${api}/auth/v1/token?grant_type=password`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/storage/v1/object/sign/patient-files/a.png`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/functions/v1/location-provider`)).toBeNull();
-    expect(schreibanfrage('POST', `${api}/functions/v1/electricity-distance/preview`)).toBeNull();
     // Der Entwicklungsserver der Anwendung ist nicht gemeint.
     expect(schreibanfrage('POST', 'http://127.0.0.1:5190/@vite/client')).toBeNull();
   });
 
   it('hält Schreiben an', () => {
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/create_task`)).toBe('rpc create_task');
-    expect(schreibanfrage('POST', `${api}/functions/v1/electricity-distance/record`)).toBe(
-      'POST /functions/v1/electricity-distance/record',
-    );
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/save_treatment_note`)).toBe(
       'rpc save_treatment_note',
     );

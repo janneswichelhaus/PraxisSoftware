@@ -14,7 +14,7 @@ import { Select } from '@/components/ui/Select';
 import { Textlink } from '@/components/ui/Textlink';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchFleetReports, meldungenSchluessel, type FleetReport } from './api';
-import { checkItemLabels, checkRatingLabels, zoneLabel, type CheckItemKey } from './bike3d/zones';
+import { checkItemLabels, checkRatingLabels, zoneLabel, type CheckItemKey } from './zones';
 import { formatTag, formatZeitpunkt } from './format';
 import { Fotoreihe } from './Fotoreihe';
 import {
@@ -34,7 +34,7 @@ import {
   type Artfilter,
   type Zeitraum,
 } from './meldungen';
-import { Einstufung } from './Nadel';
+import { Einstufung } from './Einstufung';
 import { todayInTimeZone } from '@/lib/datum';
 
 const ZUR_FLOTTE = '/betrieb/flotte';

@@ -18,8 +18,16 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { leseZahl } from '@/features/nutrition/eingabe';
 import { Zielwertliste } from '@/features/nutrition/Rechenweg';
 import { ERNAEHRUNG_EINWILLIGUNG, kg, zahl } from '@/features/nutrition/texte';
-import { ernaehrungSchluessel, type EigeneErnaehrung, type Plattformzugang } from './api';
-import { useNurLesen, usePlattformApi } from './einsicht';
+import {
+  ernaehrungSchluessel,
+  ernaehrungEinwilligen,
+  ernaehrungGewichtEintragen,
+  ernaehrungTagebuchSchalten,
+  ernaehrungZielgewichtSetzen,
+  ladeErnaehrung,
+  type EigeneErnaehrung,
+  type Plattformzugang,
+} from './api';
 import { PLATTFORM_PFAD } from './pfade';
 import { datum } from './zeit';
 
@@ -34,10 +42,9 @@ import { datum } from './zeit';
  * (ADR-006 Punkt 14).
  */
 export function Ernaehrung({ zugang }: { zugang: Plattformzugang }) {
-  const api = usePlattformApi();
   const abfrage = useQuery({
     queryKey: ernaehrungSchluessel(zugang.access_id),
-    queryFn: () => api.ladeErnaehrung(zugang.access_id),
+    queryFn: () => ladeErnaehrung(zugang.access_id),
   });
 
   return (
@@ -115,22 +122,19 @@ function useNeuLaden(zugang: Plattformzugang) {
 }
 
 function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
-  const api = usePlattformApi();
-  const nurLesen = useNurLesen();
   const neuLaden = useNeuLaden(zugang);
   const [wert, setWert] = useState('');
   const [fehler, setFehler] = useState<string | undefined>();
   const [eingetragen, setEingetragen] = useState(0);
   const eintragen = useMutation({
-    mutationFn: (kilo: number) =>
-      api.ernaehrungGewichtEintragen(zugang.access_id, daten.today, kilo),
+    mutationFn: (kilo: number) => ernaehrungGewichtEintragen(zugang.access_id, daten.today, kilo),
     onSuccess: async () => {
       setWert('');
       setEingetragen((n) => n + 1);
       await neuLaden();
     },
   });
-  const schreibbar = daten.can_write && !nurLesen;
+  const schreibbar = daten.can_write;
   // Je Tag gilt ein Gewicht (ANN-621); steht heute schon eines, steht es da.
   const heute = daten.profile.weights.find((eintrag) => eintrag.measured_on === daten.today);
   return (
@@ -194,15 +198,13 @@ function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErna
 }
 
 function Zielgewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
-  const api = usePlattformApi();
-  const nurLesen = useNurLesen();
   const neuLaden = useNeuLaden(zugang);
   const p = daten.profile;
   const [wert, setWert] = useState(p.target_weight_kg === null ? '' : zahl(p.target_weight_kg, 1));
   const [fehler, setFehler] = useState<string | undefined>();
   const [gespeichert, setGespeichert] = useState(0);
   const setzen = useMutation({
-    mutationFn: (kilo: number | null) => api.ernaehrungZielgewichtSetzen(zugang.access_id, kilo),
+    mutationFn: (kilo: number | null) => ernaehrungZielgewichtSetzen(zugang.access_id, kilo),
     onSuccess: async () => {
       setGespeichert((n) => n + 1);
       await neuLaden();
@@ -210,7 +212,7 @@ function Zielgewicht({ zugang, daten }: { zugang: Plattformzugang; daten: Eigene
   });
   const unten = daten.target_weight_floor_kg;
   const titel = `Zielgewicht · ${p.target_weight_kg === null ? 'keines' : kg(p.target_weight_kg)}`;
-  if (!daten.can_write || nurLesen) {
+  if (!daten.can_write) {
     return (
       <Disclosure summary={titel}>
         <p className="text-ink text-base">
@@ -260,16 +262,14 @@ function Zielgewicht({ zugang, daten }: { zugang: Plattformzugang; daten: Eigene
 }
 
 function Tagebuch({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
-  const api = usePlattformApi();
-  const nurLesen = useNurLesen();
   const neuLaden = useNeuLaden(zugang);
   const schalten = useMutation({
-    mutationFn: (an: boolean) => api.ernaehrungTagebuchSchalten(zugang.access_id, an),
+    mutationFn: (an: boolean) => ernaehrungTagebuchSchalten(zugang.access_id, an),
     onSuccess: () => neuLaden(),
   });
   const an = daten.profile.diary_enabled;
   // Einschalten braucht die Einwilligung; ausschalten geht immer.
-  const bedienbar = !nurLesen && (an || daten.can_write);
+  const bedienbar = an || daten.can_write;
   const angehalten = an && daten.profile.consent?.state === 'withdrawn';
   return (
     <Disclosure summary={`Ernährungstagebuch · ${angehalten ? 'angehalten' : an ? 'an' : 'aus'}`}>
@@ -290,14 +290,12 @@ function Tagebuch({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErn
 }
 
 function Einwilligung({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
-  const api = usePlattformApi();
-  const nurLesen = useNurLesen();
   const neuLaden = useNeuLaden(zugang);
   const stand = daten.profile.consent;
   const erteilt = stand?.state === 'granted';
   const schreiben = useMutation({
     mutationFn: (erteilen: boolean) =>
-      api.ernaehrungEinwilligen(zugang.access_id, erteilen, daten.wording_version),
+      ernaehrungEinwilligen(zugang.access_id, erteilen, daten.wording_version),
     onSuccess: () => neuLaden(),
   });
   const zustand = erteilt
@@ -311,7 +309,7 @@ function Einwilligung({ zugang, daten }: { zugang: Plattformzugang; daten: Eigen
         <p className="text-ink mb-2 text-base">In der Praxis auf Papier erteilt.</p>
       ) : null}
       <p className="text-ink max-w-prose text-base leading-relaxed">{ERNAEHRUNG_EINWILLIGUNG}</p>
-      {nurLesen ? null : erteilt ? (
+      {erteilt ? (
         <div className="mt-4">
           <Rueckfrage
             ausloeser="Einwilligung widerrufen"

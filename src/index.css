@@ -202,21 +202,6 @@
   /* Terrakotta: das Übungsband. */
   --color-figur-band: oklch(57% 0.13 30);
 
-  /* --- Nadeln am 3D-Rad (FLT-EPIC-001) ---------------------------------------
-     Handoff Lastenrad 3D, Abschnitt 3: Form, Farbe und Nummer tragen die
-     Einstufung gemeinsam. „Problem“ ist ein Kreis #b3261e mit weißer Nummer
-     (6,5:1), „Beobachten“ ein abgerundetes Quadrat #f0b43c mit Nummer #2a1e00
-     (8,8:1). Das Gelb allein hat auf der Fläche hinter dem Rad nur 1,7:1;
-     die Kontur in `nadel-beobachten-ink` hebt die Nadel auf 15:1 (WCAG
-     1.4.11, AC 9). Die neue, noch nicht gesetzte Stelle trägt die
-     Hauptfarbe. Nur an der Nadel, nie als Textfarbe im Fluss
-     (`src/designsystem.test.ts`); das 3D-Modell liest dieselben Werte aus
-     `PIN_COLORS` (`src/features/fleet/bike3d/zones.ts`, geprüft in
-     `src/lib/kontrast.test.ts`). */
-  --color-nadel-problem: oklch(50.1% 0.1783 28.7);
-  --color-nadel-beobachten: oklch(80.6% 0.1469 80.6);
-  --color-nadel-beobachten-ink: oklch(24.3% 0.0497 87.2);
-
   /* --- Schrift und Maße ----------------------------------------------------- */
 
   --font-sans:
@@ -418,10 +403,6 @@
      Fließtext `max-w-prose`. */
   --container-formular: 36rem;
   --container-spalte: 48rem;
-  /* Die Einsicht der Praxis in die Plattform (E-001, DSN-001 D7): am breiten
-     Bildschirm ein Telefon von 390 px, so breit, wie die Person die
-     Plattform meist sieht. */
-  --container-telefon: 24.375rem;
   /* Titel der Hero-Karte höchstens 11 Zeichenbreiten (Handoff 2026-10-22,
      Abschnitt 3): in em, damit die Grenze mit der Schrift wächst. */
   --container-hero-titel: 11em;

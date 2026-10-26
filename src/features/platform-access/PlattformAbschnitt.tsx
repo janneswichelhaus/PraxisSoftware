@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -25,36 +24,15 @@ import {
   type Plattformzugang,
   type Verhaeltnisart,
 } from './api';
-import { einsichtsadresse } from './einsicht';
 import { QrCode } from './QrCode';
 import { Vertretungen } from './Vertretungen';
 import { ZUSTAND, anzeigezustand, usePlattformzugang, zugangBeendbar } from './zustand';
 import { formatLocalDate } from '@/lib/datum';
 
 /**
- * Der Abschnitt „Plattform" an Akte und Trainingsverhältnis (POR-002,
- * DSN-001 Abschnitt 6, ADR-023 Punkte 6 bis 11).
- *
- * Zwei Abschnitte, nicht einer: Hat eine Person beide Verhältnisse, lädt die
- * Praxis je Verhältnis ein, sperrt je Verhältnis und entzieht je Verhältnis
- * (§4.8, Punkt 4). Der Abschnitt zeigt den Zustand und **nur den passenden
- * Knopf**. Wer das Verhältnis nur liest, sieht den Zustand ohne Knöpfe; die
- * Rolle prüft der Server (ADR-004).
- *
- * Der Code einer Einladung lebt nur in diesem Abschnitt, solange er offen
- * ist. Er steht nirgends sonst: nicht in der Adresse, nicht im
- * Abfragespeicher, nicht in der Datenbank (dort nur sein Hash).
- *
- * Darunter stehen die Vertretungen (POR-005): eigene Konten, die für die
- * Person handeln, mit eigenem Zugang zu diesem Verhältnis.
- *
- * Mit `beendenAmEnde` fehlen „Sperren“ und „Entziehen“ hier; die Seite setzt
- * sie mit `PlattformzugangBeenden` leise ans Ende des Reiters (Objekt-Rezeptur,
- * DESIGN.md 9.16; Sichtung 13.10.2026, A5). „Entsperren“ bleibt im Abschnitt:
- * Es nimmt etwas zurück, statt etwas zu beenden.
- *
- * Seit E-001 (DSN-001 D7) führt „So sieht … die Plattform“ in die Einsicht:
- * nur lesend, nur in den aktiven eigenen Zugang der Person.
+ * Der Abschnitt „Plattform“ je Verhältnis (ADR-023 Punkte 4, 6 bis 11): Zustand und nur der
+ * passende Knopf, die Rolle prüft der Server (ADR-004). Der Code einer Einladung lebt nur hier,
+ * gespeichert nur sein Hash. „Entsperren“ bleibt auch mit `beendenAmEnde` hier: Es beendet nichts.
  */
 export function PlattformAbschnitt({
   art,
@@ -63,7 +41,6 @@ export function PlattformAbschnitt({
   zeitzone,
   praxis,
   beendenAmEnde = false,
-  einsichtFuer = null,
 }: {
   art: Verhaeltnisart;
   verhaeltnisId: string;
@@ -73,11 +50,6 @@ export function PlattformAbschnitt({
   praxis: string;
   /** Sperren und Entziehen stehen am Ende der Seite (`PlattformzugangBeenden`). */
   beendenAmEnde?: boolean;
-  /**
-   * Der Vorname für die Einsicht in die Plattform (E-001) - nur für die
-   * Praxisinhaber:in gesetzt, sonst kein Knopf. Verbindlich prüft der Server.
-   */
-  einsichtFuer?: string | null;
 }) {
   const schluessel = zugangsschluessel(art, verhaeltnisId);
   const { data, isPending, isError, refetch } = useQuery({
@@ -113,7 +85,6 @@ export function PlattformAbschnitt({
             darfVerwalten={darfVerwalten}
             zeitzone={zeitzone}
             beendenAmEnde={beendenAmEnde}
-            einsichtFuer={einsichtFuer}
             onEinladungVorOrt={(e) => setEinladung({ einladung: e })}
           />
           <Vertretungen
@@ -137,7 +108,6 @@ function Zustand({
   darfVerwalten,
   zeitzone,
   beendenAmEnde,
-  einsichtFuer,
   onEinladungVorOrt,
 }: {
   art: Verhaeltnisart;
@@ -146,7 +116,6 @@ function Zustand({
   darfVerwalten: boolean;
   zeitzone: string;
   beendenAmEnde: boolean;
-  einsichtFuer: string | null;
   onEinladungVorOrt: (einladung: Einladung) => void;
 }) {
   const queryClient = useQueryClient();
@@ -230,16 +199,6 @@ function Zustand({
         <Statusmeldung className="mt-3" ton={versenden.isError ? 'warnung' : 'erfolg'}>
           {meldung}
         </Statusmeldung>
-      ) : null}
-
-      {/* E-001 (ANN-528): die Einsicht nur in den aktiven eigenen Zugang;
-          die Ansicht einer Vertretung zeigt sie nicht. */}
-      {einsichtFuer && aktiv && zugang?.id ? (
-        <div className="mt-4">
-          <ButtonLink variant="secondary" to={einsichtsadresse(zugang.id)}>
-            So sieht {einsichtFuer} die Plattform
-          </ButtonLink>
-        </div>
       ) : null}
 
       {darfVerwalten ? (

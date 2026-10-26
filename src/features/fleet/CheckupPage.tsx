@@ -10,23 +10,16 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchBike, fetchFleet, flotteSchluessel, radSchluessel, type Fleet } from './api';
-import { bikeTypeLabels } from './bike3d/zones';
+import { bikeTypeLabels } from './zones';
 import { CheckupFenster } from './CheckupFenster';
 import { istMeinRad } from './rad';
 import { Radwahl } from './Radwahl';
 import { todayInTimeZone, wochenBeginn } from '@/lib/datum';
 
 /**
- * Fahrrad-Check-Up (FLT-EPIC-001; geführt seit FLT-005, ANN-563).
- *
- * Erst das Rad - das eigene vorbelegt, nie übersprungen (VOR-18) -, dann der
- * geführte Check-Up im Fenster (`CheckupFenster`): eine Seite je Prüfpunkt
- * am 3D-Rad, „In Ordnung“ führt weiter, am Ende Zusammenfassung, Haken und
- * Speichern (ANN-553). Jeder Check-Up beginnt leer (VOR-03); ein anderes Rad
- * baut das Fenster neu auf.
- *
- * Der Check-Up sperrt das Rad nicht - auch nicht mit „Problem“. Dafür ist die
- * Pannenmeldung da, und die Teamleitung kann es von Hand sperren.
+ * Fahrrad-Check-Up: erst das Rad, dann der geführte Check-Up im Fenster (`CheckupFenster`,
+ * ANN-563). Er sperrt das Rad nicht, auch nicht mit „Problem“ - dafür ist die Pannenmeldung da,
+ * und die Teamleitung kann es von Hand sperren.
  */
 export function CheckupPage({ user }: { user: CurrentUser }) {
   const [parameter, setParameter] = useSearchParams();
