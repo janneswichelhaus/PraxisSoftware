@@ -1652,7 +1652,10 @@
           "id": "aufraeumen-4",
           "name": "Aufräumen Schritt 4: Register für Auskunft, Aufbewahrung, Löschjournal und Zusammenführung mit Vollständigkeitstest",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-26",
+          "nachweis": "#318 (Branch claude/step-4-central-register-ur5k1y), Migrationen 20261225130000_datenregister.sql, 20261225140000_loeschjournal_je_zeile.sql und 20261225150000_zusammenfuehren_im_journal.sql, supabase/tests/data-registry.test.ts (Katalog), ein Restore-Test je Lösch-RPC (ohne Migrationen rot), patient-merge.test.ts (Zeilenzählung, Restore von vor dem Zusammenführen), voller pnpm test:db in en_US wie die CI, Zweitreview mit Nachprüfung",
+          "vermerk": "Auftrag Jannes 26.10.2026, ROADMAP 7.21; Fehler 2 und 3 der Tiefenanalyse; Pfad A; ANN-751, ANN-752, ANN-150 Fassung 3, ANN-652 Fassung 2; BEF-198 erledigt"
         },
         {
           "id": "aufraeumen-3b",
