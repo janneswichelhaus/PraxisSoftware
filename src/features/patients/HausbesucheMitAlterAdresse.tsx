@@ -6,10 +6,9 @@ import { canManageAppointments, type CurrentUser } from '@/features/session/type
 import {
   aktualisiereHausbesuchAdressen,
   fetchVeralteteHausbesuche,
-  formatLocalDate,
-  formatLocalTimeRange,
   type VeralteterHausbesuch,
 } from './api';
+import { formatLocalDate, formatLocalTimeRange } from '@/lib/datum';
 
 /**
  * Hinweis auf künftige Hausbesuche, die noch die alte Anschrift tragen

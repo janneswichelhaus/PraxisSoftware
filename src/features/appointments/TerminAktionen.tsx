@@ -31,12 +31,11 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { PrescriptionPhoto } from '@/features/files/PrescriptionPhoto';
-import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
+import { useTerminErweiterungen } from './erweiterungen';
 import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import {
-  appointmentStatusLabels,
   appointmentToFormValues,
   cancelAppointment,
   cancelAppointmentEvent,
@@ -48,23 +47,24 @@ import {
   type CancellationReason,
   fetchAppointment,
   folgeterminVorbelegung,
-  formatLocalDate,
-  formatLocalTime,
   feeBasisLabels,
-  istBeratung,
   locationSummary,
-  patientName,
   reopenAppointment,
   waiveAppointmentFee,
-  schreibeTerminVorbelegung,
-  staffName,
-  todayInTimeZone,
   fetchEventParticipants,
   type Appointment,
   type EventParticipant,
 } from './api';
 import { TAGESLAGE } from './tageslage';
 import { NichtAngetroffenAktion } from './NichtAngetroffen';
+import { formatLocalDate, formatLocalTime, todayInTimeZone } from '@/lib/datum';
+import {
+  appointmentStatusLabels,
+  istBeratung,
+  patientName,
+  schreibeTerminVorbelegung,
+  staffName,
+} from '@/lib/termin';
 
 /**
  * Meldet der Seite einen bestätigten Vorgang (ZST-16, TER-17).
@@ -890,6 +890,7 @@ function TerminAktionen({
   /** Der Kalenderstand mit diesem Termin - Rückweg für andere Gegenstände. */
   zumTermin: string;
 }) {
+  const { Behandlungsnotiz } = useTerminErweiterungen();
   const darfVerwalten = canManageAppointments(user.roles);
   // Geaendert wird ausschliesslich aus „bestätigt". Abgesagte, dokumentierte
   // und abgerechnete Termine sind terminal; abgeschlossene und nicht
@@ -1068,8 +1069,8 @@ function TerminAktionen({
           lesen, finalisieren, Nachtrag und Korrektur (DOK-001, ADR-016).
           Klinische Inhalte kommen über einen eigenen, protokollierten
           Lesepfad; an einer Fehlzeit gibt es sie nicht. */}
-      {istEreignis ? null : (
-        <TreatmentNoteSection appointment={appointment} user={user} eingehend={eingehend} />
+      {istEreignis || !Behandlungsnotiz ? null : (
+        <Behandlungsnotiz appointment={appointment} user={user} eingehend={eingehend} />
       )}
 
       {istEreignis ? null : (

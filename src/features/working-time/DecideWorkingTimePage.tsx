@@ -11,9 +11,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { beginne, kannZurueck, weiter, zurueck, type Abfolge } from '@/components/ui/abfolge';
-import { formatLocalDate } from '@/features/appointments/api';
-import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { DaysToReschedule } from '@/features/appointments';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import type { CurrentUser } from '@/features/session/types';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {
@@ -31,6 +30,7 @@ import {
   isoWeekday,
   minutesChange,
 } from './format';
+import { formatLocalDate } from '@/lib/datum';
 
 /**
  * Über eine Arbeitszeitänderung entscheiden (G8b, AZ-001): je Antrag eine

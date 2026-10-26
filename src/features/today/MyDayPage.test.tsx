@@ -6,7 +6,6 @@ import userEvent from '@testing-library/user-event';
 import { VorschauProvider } from '@/features/preview/VorschauProvider';
 import type * as AppointmentsApiModule from '@/features/appointments/api';
 import type * as AbrechnungslageModule from '@/features/appointments/abrechnungslage-api';
-import type * as TodayApiModule from '@/features/today/api';
 import type * as TagesrouteModule from '@/features/tours/tagesroute';
 import type * as StartortModule from '@/features/tours/startort';
 import type * as FunktionModule from '@/lib/location/funktion';
@@ -14,9 +13,9 @@ import type * as LeistungenModule from '@/features/appointments/leistungenAmTerm
 import type * as NochOffenModule from './NochOffen';
 import type * as TimeAccountApiModule from '@/features/timeaccount/api';
 import { renderMitVorschau, testUser } from '@/test-utils';
-import { todayInTimeZone } from '@/features/appointments/api';
-import { tagePlus } from '@/features/appointments/calendar';
 import { MyDayPage } from './MyDayPage';
+import { todayInTimeZone, tagePlus } from '@/lib/datum';
+import type * as Tagesplan from '@/features/day-plan/api';
 
 /**
  * Die Übersicht mischt bewusst zwei Dinge: echte Termine aus dem Kalender und
@@ -94,7 +93,7 @@ const termine = [
 ];
 
 /** Ein Besuch, der in einer Stunde beginnt - er „wartet". */
-function tagesEintrag(teil: Partial<TodayApiModule.DayPlanEntry>): TodayApiModule.DayPlanEntry {
+function tagesEintrag(teil: Partial<Tagesplan.DayPlanEntry>): Tagesplan.DayPlanEntry {
   return {
     id: 't1',
     patient_id: 'p1',
@@ -123,9 +122,7 @@ function tagesEintrag(teil: Partial<TodayApiModule.DayPlanEntry>): TodayApiModul
 }
 
 /** Der zweite Besuch des Tages, zwei Stunden nach dem ersten. */
-function zweiterBesuch(
-  teil: Partial<TodayApiModule.DayPlanEntry> = {},
-): TodayApiModule.DayPlanEntry {
+function zweiterBesuch(teil: Partial<Tagesplan.DayPlanEntry> = {}): Tagesplan.DayPlanEntry {
   return tagesEintrag({
     id: 't2',
     patient_id: 'p2',
@@ -142,7 +139,7 @@ function zweiterBesuch(
 }
 
 /** Ein offener Besuch in einer Stunde, davor ein erledigter mit festgeschriebener Doku. */
-function tagesplan(): TodayApiModule.DayPlanEntry[] {
+function tagesplan(): Tagesplan.DayPlanEntry[] {
   return [
     tagesEintrag({ id: 't1' }),
     tagesEintrag({
@@ -193,14 +190,11 @@ vi.mock('./NochOffen', async (importOriginal) => ({
   },
 }));
 
-vi.mock('@/features/today/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof TodayApiModule>();
-  return {
-    ...actual,
-    fetchDayPlan: (tag: string, person: string) =>
-      fetchDayPlan(tag, person) as Promise<TodayApiModule.DayPlanEntry[]>,
-  };
-});
+vi.mock('@/features/day-plan/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof Tagesplan>()),
+  fetchDayPlan: (tag: string, person: string) =>
+    fetchDayPlan(tag, person) as Promise<Tagesplan.DayPlanEntry[]>,
+}));
 
 /**
  * Haelt den abgefragten Zeitbereich fest.
@@ -289,7 +283,7 @@ vi.mock('@/features/tours/fahrzeitfaktor-api', () => ({
 
 /** Ein Punkt der Tagesroute zu einem Eintrag der Tagesliste. */
 function routenpunkt(
-  eintrag: TodayApiModule.DayPlanEntry,
+  eintrag: Tagesplan.DayPlanEntry,
   lat: number,
   lon: number,
 ): TagesrouteModule.Tagesstopp {
@@ -790,9 +784,9 @@ describe('Übersicht', () => {
     });
 
     it('haelt beim Laden den Platz von Liege-Zeile und Wegbalken frei', async () => {
-      let liefern: (wert: TodayApiModule.DayPlanEntry[]) => void = () => undefined;
+      let liefern: (wert: Tagesplan.DayPlanEntry[]) => void = () => undefined;
       fetchDayPlan.mockReturnValue(
-        new Promise<TodayApiModule.DayPlanEntry[]>((resolve) => {
+        new Promise<Tagesplan.DayPlanEntry[]>((resolve) => {
           liefern = resolve;
         }),
       );
@@ -1152,7 +1146,7 @@ describe('Übersicht', () => {
         ends_at: inMinuten(-75),
         documentation_status: 'final',
       });
-      let stand: TodayApiModule.DayPlanEntry[] = [
+      let stand: Tagesplan.DayPlanEntry[] = [
         vorher,
         zweiterBesuch({
           starts_at: inMinuten(-60),
@@ -1436,12 +1430,7 @@ describe('Übersicht', () => {
   });
 
   describe('UXR-003: Befunde aus dem UX-Review', () => {
-    function fehlzeit(
-      id: string,
-      titel: string,
-      von: number,
-      bis: number,
-    ): TodayApiModule.DayPlanEntry {
+    function fehlzeit(id: string, titel: string, von: number, bis: number): Tagesplan.DayPlanEntry {
       return tagesEintrag({
         id,
         kind: 'internal',
@@ -2174,7 +2163,7 @@ describe('Übersicht', () => {
 
   describe('B12: „Ausfall" an jeder Zeile (ANN-533)', () => {
     /** Ein Besuch, der vorbei ist - weder abgehakt noch dokumentiert. */
-    function vorbei(teil: Partial<TodayApiModule.DayPlanEntry>): TodayApiModule.DayPlanEntry {
+    function vorbei(teil: Partial<Tagesplan.DayPlanEntry>): Tagesplan.DayPlanEntry {
       return tagesEintrag({ starts_at: inMinuten(-180), ends_at: inMinuten(-135), ...teil });
     }
 
@@ -2214,7 +2203,7 @@ describe('Übersicht', () => {
     });
 
     /** Begonnen ohne Doku (Anna, Bernd), mit Entwurf, abgehakt und noch nicht begonnen. */
-    function tagMitAllenFaellen(): TodayApiModule.DayPlanEntry[] {
+    function tagMitAllenFaellen(): Tagesplan.DayPlanEntry[] {
       return [
         anna,
         bernd,

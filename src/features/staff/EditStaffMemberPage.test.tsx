@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as StaffApi from './api';
-import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testStaffMember, testUser } from '@/test-utils';
 
@@ -36,17 +35,9 @@ vi.mock('./api', async (importOriginal) => {
     fetchStaffMember: (id: string) => fetchStaffMember(id) as Promise<StaffApi.StaffMember | null>,
     updateStaffMember: (id: string, values: StaffApi.StaffMasterDataValues, privat?: boolean) =>
       updateStaffMember(id, values, privat) as Promise<void>,
+    fetchLocations: () => fetchLocations() as Promise<StaffApi.Location[]>,
   };
 });
-
-vi.mock('@/features/appointments/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof AppointmentsApi>();
-  return {
-    ...actual,
-    fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
-  };
-});
-
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),
   useNavigate: () => navigate,

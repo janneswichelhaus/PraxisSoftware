@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import type { Coordinate } from '@/lib/location/contract';
-import { fetchDayPlan } from '@/features/today/api';
 import { usePlanungsroute } from './fahrzeitfaktor';
 import {
   fahrzeitZwischen,
@@ -13,6 +12,7 @@ import {
   stoppsDesTages,
   type Stopp,
 } from './tagesroute';
+import { fetchDayPlan } from '@/features/day-plan/api';
 
 /**
  * Fahrzeiten und Fahrpuffer der Tagesroute (MAP-006c, §8.1, ANN-097).

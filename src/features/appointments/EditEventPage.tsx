@@ -17,7 +17,7 @@ import {
   EINGABETEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+} from '@/app/Textverlustschutz';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
@@ -29,22 +29,20 @@ import {
   ereignisGeaendert,
 } from './calendar';
 import {
-  appointmentStatusLabels,
   appointmentToFormValues,
   ereignisFormSchema,
   fetchAppointment,
   fetchEventParticipants,
   fetchEventSeries,
-  fetchLocations,
   istAusserhalbArbeitszeit,
   updateAppointmentEvent,
   updateEventSeries,
   type EreignisFormValues,
-  kalenderZumTermin,
-  zurueckZumTermin,
 } from './api';
 import { formatDate } from '@/lib/datum';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { fetchLocations } from '@/features/staff/api';
+import { appointmentStatusLabels, kalenderZumTermin, zurueckZumTermin } from '@/lib/termin';
 
 /**
  * Die ganze Fehlzeit bearbeiten (CAL-017).

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { DayPlanEntry } from '@/features/today/api';
 import {
   fahrzeitZwischen,
   streckeZwischen,
@@ -8,6 +7,7 @@ import {
   stoppsDesTages,
   type Tagesstopp,
 } from './tagesroute';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /** MAP-006b: Zusammenführen von Tagesliste und Tagesroute, reine Rechnung. */
 

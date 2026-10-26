@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import { todayInTimeZone } from '@/features/appointments/api';
 import type { OffenerScan } from '@/features/files/api';
 import type { CallEntry } from '@/features/open-points/call-list-api';
 import { CALL_LIST_KEY } from '@/features/open-points/call-list-api';
@@ -40,6 +39,7 @@ import {
 } from '@/features/reimbursements/api';
 import type { WaitlistEntry } from '@/features/waitlist/api';
 import '@/index.css';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Einstieg der Prüfseite aus `offen.html` (PRX-EPIC-003).

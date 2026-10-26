@@ -9,12 +9,12 @@ import { Patientenauswahl } from '@/features/patients/Patientenauswahl';
 import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
 import { formatDate } from '@/lib/datum';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
+import { fetchAssignableTherapists } from '@/features/staff/api';
 import {
   appointmentTypeHint,
-  fetchAssignableTherapists,
   leseTerminVorbelegung,
   schreibeTerminVorbelegung,
-} from './api';
+} from '@/lib/termin';
 
 /** Beim Termin anlegen zählt von den Karteileichen nur diese (B1, B10). */
 const NUR_TERMINE_FEHLEN = ['termine_fehlen'] as const;

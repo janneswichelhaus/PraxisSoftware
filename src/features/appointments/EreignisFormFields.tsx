@@ -5,7 +5,9 @@ import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { EREIGNIS_FELD_IDS } from './calendar';
-import { todayInTimeZone, type EreignisFormValues, type Location } from './api';
+import { type EreignisFormValues } from './api';
+import { todayInTimeZone } from '@/lib/datum';
+import type { Location } from '@/features/staff/api';
 
 /**
  * Eingabefelder eines Ereignisses (CAL-015c, CAL-017).

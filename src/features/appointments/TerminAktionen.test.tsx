@@ -4,9 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient } from '@tanstack/react-query';
 import type * as AppointmentsApi from './api';
 import type * as DokumentationApi from '@/features/documentation/api';
-import type * as TagesApi from '@/features/today/api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import type * as Tagesplan from '@/features/day-plan/api';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -83,17 +83,15 @@ vi.mock('@/features/documentation/api', async (importOriginal) => {
 // Die Rufnummer im Ablauf „Niemand öffnet?" kommt aus der Tagesliste
 // (UX-005b); ihr Lesepfad wird hier gestubbt.
 const fetchDayPlan = vi.fn();
-
-vi.mock('@/features/today/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof TagesApi>();
-  return {
-    ...actual,
-    fetchDayPlan: (datum: string, staff: string) =>
-      fetchDayPlan(datum, staff) as Promise<TagesApi.DayPlanEntry[]>,
-  };
-});
+vi.mock('@/features/day-plan/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof Tagesplan>()),
+  fetchDayPlan: (datum: string, staff: string) =>
+    fetchDayPlan(datum, staff) as Promise<Tagesplan.DayPlanEntry[]>,
+}));
 
 const { TerminAktionenDialog } = await import('./TerminAktionen');
+const { TERMIN_ERWEITERUNGEN } = await import('@/app/terminErweiterungen');
+const { TerminErweiterungenKontext } = await import('./erweiterungen');
 
 /** Der Kalenderstand, aus dem das Fenster geöffnet wird. */
 const KALENDER = '/kalender?ansicht=tag&datum=2027-05-12';
@@ -113,14 +111,17 @@ const NAMEN: Record<string, string> = {
 };
 
 function rendern(rollen: Parameters<typeof testUser>[0] = ['office']) {
+  // Wie in der App: Die Dokumentation setzt ihren Abschnitt in die Aktionen ein.
   return renderWithProviders(
-    <TerminAktionenDialog
-      appointmentId={TERMIN_ID}
-      user={testUser(rollen, NAMEN[rollen[0] ?? 'office'])}
-      eingehend={KALENDER}
-      zumTermin={`${KALENDER}&termin=${TERMIN_ID}`}
-      onSchliessen={vi.fn()}
-    />,
+    <TerminErweiterungenKontext.Provider value={TERMIN_ERWEITERUNGEN}>
+      <TerminAktionenDialog
+        appointmentId={TERMIN_ID}
+        user={testUser(rollen, NAMEN[rollen[0] ?? 'office'])}
+        eingehend={KALENDER}
+        zumTermin={`${KALENDER}&termin=${TERMIN_ID}`}
+        onSchliessen={vi.fn()}
+      />
+    </TerminErweiterungenKontext.Provider>,
     KALENDER,
   );
 }
@@ -599,7 +600,7 @@ describe('TerminAktionenDialog', () => {
     });
 
     /** Der Termin, wie ihn die Tagesliste liefert - mit Rufnummer. */
-    function tagesEintrag(teil: Partial<TagesApi.DayPlanEntry> = {}): TagesApi.DayPlanEntry {
+    function tagesEintrag(teil: Partial<Tagesplan.DayPlanEntry> = {}): Tagesplan.DayPlanEntry {
       return {
         id: TERMIN_ID,
         patient_id: PATIENT_ID,

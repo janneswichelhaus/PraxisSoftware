@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as RouterModul from 'react-router-dom';
-import type * as AppointmentsApi from '@/features/appointments/api';
+import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
-import type * as TreatmentBasesApi from './api';
+import type * as TreatmentBasesApi from '@/features/treatment-bases/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 /**
@@ -26,7 +26,7 @@ const transferAppointmentsToTreatmentBasis = vi.fn();
 const fetchPatientAppointments = vi.fn();
 const navigate = vi.fn();
 
-vi.mock('./api', async (importOriginal) => {
+vi.mock('@/features/treatment-bases/api', async (importOriginal) => {
   const actual = await importOriginal<typeof TreatmentBasesApi>();
   return {
     ...actual,
@@ -40,7 +40,7 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/appointments/api', async (importOriginal) => {
+vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
   return {
     ...actual,

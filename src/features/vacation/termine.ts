@@ -1,6 +1,6 @@
-import { dayKey, fetchAppointments } from '@/features/appointments/api';
-import { tagePlus } from '@/features/appointments/calendar';
+import { fetchAppointments } from '@/features/appointments';
 import { mitRueckweg } from '@/lib/rueckweg';
+import { dayKey, tagePlus } from '@/lib/datum';
 
 /**
  * Termine in einem Urlaub, der schon gilt (URL-001, Praxis-Review Überholung

@@ -14,8 +14,13 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { usePatientRecord } from '@/features/patients/akte';
 import { WaitlistNotice } from '@/features/waitlist/WaitlistNotice';
-import { HausbesucheMitAlterAdresse } from './HausbesucheMitAlterAdresse';
-import { formatDate as formatIsoDate } from '@/lib/datum';
+import {
+  formatDate as formatIsoDate,
+  dayKey,
+  formatLocalDate,
+  formatLocalTimeRange,
+  todayInTimeZone,
+} from '@/lib/datum';
 import type { Patient } from '@/features/patients/api';
 import { canReadTreatmentBases, type CurrentUser } from '@/features/session/types';
 import {
@@ -28,25 +33,25 @@ import {
 } from '@/features/treatment-bases/api';
 import { deckungstext } from '@/features/treatment-bases/grundlagen';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
-import { Deckungszeichen } from './Deckungszeichen';
-import { Laengenzeichen } from './Laengenzeichen';
 import {
-  appointmentStatusLabels,
-  appointmentStatusTon,
-  appointmentTypeHint,
-  dayKey,
   fetchPatientAppointments,
-  formatLocalDate,
-  formatLocalTimeRange,
   naechsteTerminSeite,
-  staffName,
-  todayInTimeZone,
   type PatientAppointment,
   type TerminCursor,
 } from './api';
 import { schreibeParameter, ZOOM_STANDARD } from './calendar';
 import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
-import { leseAngelegtenTermin, leseMeldung } from './terminformular';
+import { leseMeldung } from '@/lib/meldung';
+import {
+  appointmentStatusLabels,
+  appointmentStatusTon,
+  appointmentTypeHint,
+  staffName,
+  leseAngelegtenTermin,
+} from '@/lib/termin';
+import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
+import { Deckungszeichen } from '@/features/treatment-bases/Deckungszeichen';
+import { HausbesucheMitAlterAdresse } from '@/features/patients/HausbesucheMitAlterAdresse';
 
 /**
  * Der Terminbereich der Akte (AKTE-003, gruppiert seit AKTE-006).

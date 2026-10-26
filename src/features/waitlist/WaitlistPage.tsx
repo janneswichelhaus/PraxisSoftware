@@ -11,10 +11,8 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Segment, type Segmentwahl } from '@/components/ui/Segment';
 import { Textlink } from '@/components/ui/Textlink';
-import { kalenderZumTermin, todayInTimeZone } from '@/features/appointments/api';
-import { leseAngelegtenTermin } from '@/features/appointments/terminformular';
 import type { CurrentUser } from '@/features/session/types';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
 import { Arbeitszeile } from './Arbeitszeile';
@@ -27,6 +25,7 @@ import {
   type ListFilter,
   type WaitlistEntry,
 } from './api';
+import { kalenderZumTermin, leseAngelegtenTermin } from '@/lib/termin';
 
 const FILTER_WAHLEN: readonly Segmentwahl<ListFilter>[] = [
   { wert: 'open', text: 'Offen' },

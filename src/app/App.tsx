@@ -23,6 +23,8 @@ import { PLATTFORM_PFAD } from '@/features/platform/pfade';
 import { PlattformAblage } from '@/features/platform/PlattformAblage';
 import { ohneNetzFuer } from './ohneNetz';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
+import { TerminErweiterungenKontext } from '@/features/appointments';
+import { TERMIN_ERWEITERUNGEN } from './terminErweiterungen';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Absturzseite, Startfehlergrenze } from './Absturz';
@@ -154,7 +156,9 @@ function AngemeldeterInhalt() {
     <NachladefehlerContext.Provider
       value={isError ? { satz: PROFIL_NICHT_AKTUALISIERT, erneut: refetch } : null}
     >
-      <AuthenticatedRoutes user={user} onSignOut={() => void abmelden()} />
+      <TerminErweiterungenKontext.Provider value={TERMIN_ERWEITERUNGEN}>
+        <AuthenticatedRoutes user={user} onSignOut={() => void abmelden()} />
+      </TerminErweiterungenKontext.Provider>
     </NachladefehlerContext.Provider>
   );
 }

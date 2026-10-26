@@ -3,9 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Disclosure } from '@/components/ui/Card';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Textlink } from '@/components/ui/Textlink';
-import type { DayPlanEntry } from '@/features/today/api';
 import { fetchStandorte, startpunkt } from './startort';
 import { fetchDayRoute, stoppsDesTages } from './tagesroute';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
 

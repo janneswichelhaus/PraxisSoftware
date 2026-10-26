@@ -474,3 +474,49 @@ export async function reopenPatientCare(patientId: string): Promise<void> {
 
   if (error) throw new Error('Der Abschluss der Versorgung konnte nicht zurückgenommen werden.');
 }
+
+// Hausbesuche mit alter Adresse: künftige Hausbesuche, deren kopierte Anschrift von den Stammdaten
+// abweicht (ANN-003). Geändert wird nur auf ausdrücklichen Auftrag; die Prüfungen stehen im Server.
+
+export const veralteterHausbesuchSchema = z.object({
+  id: z.string(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  staff_given_name: z.string(),
+  staff_family_name: z.string(),
+  visit_street: z.string().nullable(),
+  visit_house_number: z.string().nullable(),
+  visit_postal_code: z.string().nullable(),
+  visit_city: z.string().nullable(),
+  organization_time_zone: z.string(),
+});
+
+export type VeralteterHausbesuch = z.infer<typeof veralteterHausbesuchSchema>;
+
+/** Künftige bestätigte Hausbesuche mit abweichender Anschrift; die Liste ändert nichts. */
+export async function fetchVeralteteHausbesuche(
+  patientId: string,
+): Promise<VeralteterHausbesuch[]> {
+  const { data, error } = (await getSupabase().rpc('list_home_visits_with_outdated_address', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Hausbesuche konnten nicht geprüft werden.');
+  return antwort(
+    z.array(veralteterHausbesuchSchema),
+    data ?? [],
+    'Die Hausbesuche konnten nicht geprüft werden.',
+  );
+}
+
+/** Setzt die genannten Hausbesuche auf die aktuelle Stammdatenadresse, alles oder nichts. */
+export async function aktualisiereHausbesuchAdressen(
+  terminIds: readonly string[],
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('update_home_visit_addresses', {
+    p_appointment_ids: [...terminIds],
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Adresse konnte nicht übernommen werden.');
+  return antwort(z.number(), data, 'Die Adresse konnte nicht übernommen werden.');
+}

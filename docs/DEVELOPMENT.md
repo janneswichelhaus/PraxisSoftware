@@ -459,6 +459,25 @@ Kommentaranteil, Modulgrenzen, große Dateien, Doppelungen und DB-Funktionen, ve
 `development/AUFRAEUMEN.md` und schlägt drei Vereinfachungen vor, ohne Code zu ändern. Die Ablage
 ist Markdown, damit eine Aufräumrunde als reine Doku durch die CI geht.
 
+## Modulgrenzen
+
+Gilt seit Aufräumen Schritt 3 (ANN-748), zuerst für „Termine“ (`src/features/appointments`):
+
+- **Ein Modul mit `index.ts` wird von außen nur darüber importiert.** Die Datei nennt jeden Export
+  einzeln, kein `export *`; Seiten verdrahtet `src/routes` weiter direkt, Tests mocken weiter tiefe
+  Pfade. Die ESLint-Regel `modulgrenzen/nur-ueber-index` (`scripts/eslint-modulgrenzen.mjs`) steht
+  auf Warnung, `pnpm lint` lässt mit `--max-warnings 0` aber keine stehen.
+- **Ein Modul umstellen:** `index.ts` mit genau den Namen anlegen, die andere Bereiche nutzen,
+  `pnpm lint` zeigt jeden tiefen Import, danach auf `@/features/<modul>` umschreiben.
+- **Kein Ring:** Was mehrere Bereiche über den Termin wissen müssen, liegt in `src/lib`
+  (`termin.ts` Art, Zustand, Länge und Wege; `zeitband.ts`); `src/lib` importiert kein Modul.
+  **Abfragen der Praxis gehören nie nach `src/lib`:** Die Trennungsprüfungen von Plattform und
+  Vorschau erlauben `@/lib/` pauschal und sähen sie nicht. Die Tagesliste hat dafür das Modul
+  `day-plan`. Braucht Termine einen Abschnitt eines anderen Bereichs, setzt die App ihn über
+  `TerminErweiterungen` ein (`src/app/terminErweiterungen.ts`), statt dass Termine ihn importiert.
+- `pnpm aufraeumen` zählt gegenseitige Abhängigkeiten, die Module im größten Abhängigkeitsring und
+  die Module mit Schnittstelle.
+
 ## Befehle
 
 ```bash

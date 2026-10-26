@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as Navigation from '@/lib/location/navigation';
-import type { DayPlanEntry } from '@/features/today/api';
 import { renderWithProviders } from '@/test-utils';
 import type { Stopp } from './tagesroute';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Tourenliste (MAP-006b/d): Namen stehen in der Liste, die Navigation bekommt

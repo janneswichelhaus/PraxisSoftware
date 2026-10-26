@@ -4,21 +4,14 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
-import { tagePlus } from '@/features/appointments/calendar';
-import { formatLocalTime } from '@/features/appointments/api';
-import { hakenFehlt } from '@/features/appointments/haken';
-import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
+import { hakenFehlt, TerminAbschliessenKnopf } from '@/features/appointments';
 import type { RejectedTimeOff } from '@/features/timeaccount/api';
 import { TIME_ACCOUNT_HOME } from '@/features/timeaccount/paths';
-import {
-  fetchDayPlan,
-  nachUhrzeit,
-  offenGrund,
-  TAGESPLAN_VORHALTEDAUER_MS,
-  type DayPlanEntry,
-} from './api';
+import { nachUhrzeit, offenGrund, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { schreibseite } from './besuchswege';
 import { nichtAbgeschlossen, terminName } from './tagesstart';
+import { formatLocalTime, tagePlus } from '@/lib/datum';
+import { fetchDayPlan, type DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Was an einem Besuch noch fehlt, als Wort - oder `null`, wenn nichts fehlt.

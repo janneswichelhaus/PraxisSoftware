@@ -1,10 +1,10 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { appointmentStatusLabels } from '@/features/appointments/api';
 import { FEHLZEIT_BEISPIELE } from '@/features/appointments/calendar';
 import { dayPlanStatusLabels } from '@/features/today/api';
 import { ABGELOESTE_BEGRIFFE, BEGRIFFE, BEREICHE, type AbgeloesterBegriff } from './begriffe';
+import { appointmentStatusLabels } from './termin';
 
 /**
  * Das Gate der Begriffe (UX-EPIC-002, ANN-111).

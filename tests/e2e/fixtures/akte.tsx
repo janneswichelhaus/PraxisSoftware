@@ -17,10 +17,9 @@ import type {
 } from '@/features/treatment-bases/api';
 import { PatientTreatmentBasesPage } from '@/features/treatment-bases/PatientTreatmentBasesPage';
 import type { PatientFile } from '@/features/files/api';
-import { tagePlus } from '@/features/appointments/calendar';
-import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser, RoleKey } from '@/features/session/types';
 import '@/index.css';
+import { todayInTimeZone, tagePlus } from '@/lib/datum';
 
 /**
  * Einstieg der Prüfseite aus `akte.html` (UI-Redesign Schritt 5).

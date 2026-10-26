@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { FolgeterminVorschlaege } from '@/features/appointments/FolgeterminVorschlaege';
-import { LeistungAmTermin } from '@/features/appointments/LeistungAmTermin';
-import { patientName, type Appointment } from '@/features/appointments/api';
+import {
+  type Appointment,
+  FolgeterminVorschlaege,
+  LeistungAmTermin,
+} from '@/features/appointments';
 import {
   canReadExercisePlans,
   canRecordAtAppointment,
@@ -16,6 +18,7 @@ import {
 import { mitRueckweg } from '@/lib/rueckweg';
 import { PLAENE_ANKER } from './sprungmarke';
 import { Schreibflaeche } from './Schreibflaeche';
+import { patientName } from '@/lib/termin';
 
 /** Ein Teil des Blocks „Danach“: über eine Linie vom vorigen getrennt (kein Kasten im Kasten). */
 const TEIL = 'border-line border-t pt-4 first:border-t-0 first:pt-0';

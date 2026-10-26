@@ -21,13 +21,11 @@ import {
 } from '@/features/session/types';
 import { GrundlagenKacheln } from './GrundlagenKacheln';
 import { KlinischerHinweis } from './KlinischerHinweis';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { Dateiliste } from '@/features/files/Dateiliste';
 import { OffeneVerordnungsfotos } from '@/features/files/Aktendateien';
 import { usePatientRecord } from '@/features/patients/akte';
-import { todayInTimeZone } from '@/features/appointments/api';
-import { Deckungszeichen } from '@/features/appointments/Deckungszeichen';
-import { ZOOM_STANDARD, schreibeParameter } from '@/features/appointments/calendar';
+import { kalenderZurVerordnung } from '@/lib/termin';
 import type { Patient } from '@/features/patients/api';
 import {
   BerichteDerVerordnung,
@@ -54,6 +52,7 @@ import {
   type Verordnung,
   type VerordnungMitZahlen,
 } from './grundlagen';
+import { Deckungszeichen } from './Deckungszeichen';
 
 /**
  * Behandlungsgrundlagen in der Akte (VER-002, überarbeitet mit AKTE-002,
@@ -380,16 +379,11 @@ function Verordnungsaktionen({
    * Terminformular dieser Person, und der Termin kennt seine Verordnung -
    * ohne dass jemand beides noch einmal sucht.
    */
-  const kalenderZiel = `/kalender?${schreibeParameter({
-    ansicht: 'tag',
-    datum: user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : '',
-    person: null,
-    standort: null,
-    status: 'active',
-    patient: patient.id,
-    verordnung: verordnung.id,
-    zoom: ZOOM_STANDARD,
-  })}`;
+  const kalenderZiel = kalenderZurVerordnung(
+    user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : '',
+    patient.id,
+    verordnung.id,
+  );
 
   if (!darfPlanen && !darfSchreiben) return null;
 

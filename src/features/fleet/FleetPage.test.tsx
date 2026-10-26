@@ -3,11 +3,11 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
-import { todayInTimeZone } from '@/features/appointments/api';
 import * as api from './api';
 import { montagDerWoche, plusTage } from './format';
 import { FleetPage } from './FleetPage';
 import { ANNA, TIM, testFlotte, testRad } from './testdaten';
+import { todayInTimeZone } from '@/lib/datum';
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof api>()),

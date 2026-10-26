@@ -11,7 +11,6 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 import { Tile, TileGrid } from '@/components/ui/Tile';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { isOwner, type CurrentUser } from '@/features/session/types';
 import {
   URLAUB_SCHLUESSEL,
@@ -26,6 +25,7 @@ import {
 import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { urlaubsfenster } from './fenster';
 import { statusAnzeige, tage, urlaubstage, zeitraumText } from './zeitraum';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Urlaub (URL-001, Überholung 7) - ersetzt die Vorschau.

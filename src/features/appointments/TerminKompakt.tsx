@@ -1,28 +1,24 @@
 import type { ReactNode } from 'react';
 import { Textlink } from '@/components/ui/Textlink';
-import { formatDate } from '@/lib/datum';
+import { formatDate, formatLocalDate, formatLocalTime, formatLocalTimeRange } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import { grundlageBezeichnung } from '@/features/treatment-bases/api';
 import { Kurzblick } from './Kurzblick';
-import { Laengenzeichen } from './Laengenzeichen';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
 import { NavigationZumTermin } from './NavigationStarten';
 import { positionText } from './abrechnungslage-api';
 import { useAbrechnungslage } from './useAbrechnungslage';
 import { Badge } from '@/components/ui/Badge';
-import { Deckungszeichen } from './Deckungszeichen';
+import { locationSummary, type Appointment } from './api';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
   appointmentTypeHint,
-  formatLocalDate,
-  formatLocalTime,
-  formatLocalTimeRange,
-  locationSummary,
   staffName,
-  type Appointment,
-} from './api';
+} from '@/lib/termin';
+import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
+import { Deckungszeichen } from '@/features/treatment-bases/Deckungszeichen';
 
 /** „Do 01.10.2026" in der Zeit der Praxis. */
 function tagMitWochentag(iso: string, zone: string): string {

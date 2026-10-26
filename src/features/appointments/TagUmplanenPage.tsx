@@ -23,21 +23,13 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
-import { fetchDayPlan, rufnummern, type DayPlanEntry } from '@/features/today/api';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
-import { Laengenzeichen } from './Laengenzeichen';
-import { istIsoDatum } from './calendar';
 import {
-  appointmentTypeHint,
   cancellationReasonLabels,
   waehlbareAbsagegruende,
   cancelStaffDay,
-  fetchAssignableTherapists,
-  formatLocalDate,
-  formatLocalTime,
-  formatLocalTimeRange,
   type CancellationReason,
 } from './api';
 import { tageslageNeuLaden } from './tageslage';
@@ -58,6 +50,11 @@ import {
   type UmplanSeite,
   type Zeitspanne,
 } from './tagumplanen';
+import { formatLocalDate, formatLocalTime, formatLocalTimeRange, istIsoDatum } from '@/lib/datum';
+import { fetchAssignableTherapists } from '@/features/staff/api';
+import { appointmentTypeHint } from '@/lib/termin';
+import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
+import { fetchDayPlan, rufnummern, type DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Tag umplanen mit Anrufliste (CAL-009, IDEA-PRX-004), geführt seit

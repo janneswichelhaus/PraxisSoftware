@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { abgewiesen } from '@/lib/abgewiesen';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
-import { schreibfehler, type AppointmentFormValues } from '@/features/appointments/api';
+import { type AppointmentFormValues, schreibfehler } from '@/features/appointments';
 import {
   einwilligungSchema,
   FORMELN,

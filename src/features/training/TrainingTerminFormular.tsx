@@ -5,29 +5,27 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Hinweisfenster } from '@/components/ui/Dialogfenster';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import type { Formularfehler } from '@/lib/formularfehler';
 import {
+  type AppointmentFormField,
   AppointmentFormFields,
-  ArbeitszeitRueckfrage,
-} from '@/features/appointments/AppointmentFormFields';
-import {
   appointmentFormSchema,
+  type AppointmentFormValues,
+  ArbeitszeitRueckfrage,
   fensterEnde,
-  fetchAssignableTherapists,
-  fetchAssignableTrainers,
-  fetchLocations,
   istAusserhalbArbeitszeit,
   istVergangenheit,
   liegtInVergangenheit,
-  type AppointmentFormField,
-  type AppointmentFormValues,
-} from '@/features/appointments/api';
-import {
   speicherfehlerText,
   terminFehlerliste,
   terminFeldfehler,
-} from '@/features/appointments/terminformular';
+} from '@/features/appointments';
+import {
+  fetchAssignableTherapists,
+  fetchAssignableTrainers,
+  fetchLocations,
+} from '@/features/staff/api';
 
 /** Die Felder, an denen sich eine Eingabe von der Vorbelegung unterscheiden kann. */
 const FELDER: readonly AppointmentFormField[] = [

@@ -4,7 +4,6 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import type * as StaffApi from './api';
-import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testStaffMember, testUser } from '@/test-utils';
 
@@ -26,18 +25,6 @@ const fetchStaffFutureAppointments = vi.fn();
 const fetchAssignableTherapists = vi.fn();
 const fetchVerguetungsmodell = vi.fn();
 const setzeVerguetungsmodell = vi.fn();
-
-// Kalender und Arbeitszeiten kennen nur zuordenbare Personen (UX-012); die
-// Seite fragt deshalb, ob diese Person ueberhaupt behandelt.
-vi.mock('@/features/appointments/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof AppointmentsApi>();
-  return {
-    ...actual,
-    fetchAssignableTherapists: () =>
-      fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
-  };
-});
-
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof StaffApi>();
   return {
@@ -51,6 +38,8 @@ vi.mock('./api', async (importOriginal) => {
       fetchVerguetungsmodell(id) as Promise<StaffApi.Verguetungsmodell | null>,
     setzeVerguetungsmodell: (id: string, modell: string | null) =>
       setzeVerguetungsmodell(id, modell) as Promise<void>,
+    fetchAssignableTherapists: () =>
+      fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
   };
 });
 

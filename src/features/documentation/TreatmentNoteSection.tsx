@@ -14,8 +14,7 @@ import {
   canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
-import type { Appointment } from '@/features/appointments/api';
-import { useAbrechnungslage } from '@/features/appointments/useAbrechnungslage';
+import { type Appointment, useAbrechnungslage } from '@/features/appointments';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   fetchDocumentationDeadline,
@@ -23,7 +22,8 @@ import {
   finalizeTreatmentNote,
   type TreatmentNote,
 } from './api';
-import { FREITEXT, fristDatum, herkunft, zeitpunkt } from './format';
+import { fristDatum, herkunft, zeitpunkt } from './format';
+import { FREITEXT } from '@/components/ui/textStile';
 
 /** Das Abzeichen eines Eintrags: festgeschrieben mit Version, sonst Entwurf mit Frist. */
 function zustandsAbzeichen(note: TreatmentNote, frist: string | null) {

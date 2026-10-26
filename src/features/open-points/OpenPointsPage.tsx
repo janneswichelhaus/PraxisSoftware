@@ -5,7 +5,6 @@ import { EmptyState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import { AftercareCancellations } from './AftercareCancellations';
 import { TrainingWithdrawals } from './TrainingWithdrawals';
@@ -24,6 +23,7 @@ import { WaitlistReview } from './WaitlistReview';
 import { useEingang } from './eingang';
 import { PlanWiedervorlage } from '@/features/exercise-plans/Wiedervorlage';
 import { OffeneRueckfragen } from '@/features/messages/RueckfragenAbschnitt';
+import { todayInTimeZone } from '@/lib/datum';
 
 /** Eine Kennung aus der Adresszeile, wie die Datenbank sie vergibt. */
 const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

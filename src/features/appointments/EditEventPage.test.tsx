@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
+import type * as StaffApi from '@/features/staff/api';
 
 /**
  * Die ganze Fehlzeit bearbeiten (CAL-017).
@@ -97,7 +98,6 @@ vi.mock('./api', async (importOriginal) => {
       fetchEventParticipants(gruppe) as Promise<AppointmentsApi.EventParticipant[]>,
     fetchEventSeries: (serie: string) =>
       fetchEventSeries(serie) as Promise<AppointmentsApi.EventSeriesOccurrence[]>,
-    fetchLocations: () => Promise.resolve([{ id: ORT, name: 'Hauptstandort Tuebingen' }]),
     updateAppointmentEvent: (
       gruppe: string,
       erwartet: string,
@@ -112,6 +112,11 @@ vi.mock('./api', async (importOriginal) => {
     ) => updateEventSeries(serie, erwartet, werte, bestaetigt) as Promise<number>,
   };
 });
+
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchLocations: () => Promise.resolve([{ id: ORT, name: 'Hauptstandort Tuebingen' }]),
+}));
 
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),

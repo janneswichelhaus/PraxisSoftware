@@ -5,14 +5,14 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
-import { istIsoDatum } from '@/features/appointments/calendar';
-import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
+import { DaysToReschedule } from '@/features/appointments';
 import type { CurrentUser } from '@/features/session/types';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { URLAUB_SCHLUESSEL } from './api';
 import { fetchTermineImUrlaub } from './termine';
 import { zeitraumText } from './zeitraum';
+import { todayInTimeZone, istIsoDatum } from '@/lib/datum';
+import { fetchAssignableTherapists } from '@/features/staff/api';
 
 /**
  * Termine im Urlaub (URL-001, Praxis-Review Überholung 7): die Tage eines

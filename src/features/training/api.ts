@@ -3,11 +3,11 @@ import { antwort } from '@/lib/antwort';
 import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
 import {
-  schreibfehler,
-  terminAnlassSchema,
   type AppointmentFormValues,
   type CancellationReason,
-} from '@/features/appointments/api';
+  schreibfehler,
+} from '@/features/appointments';
+import { terminAnlassSchema } from '@/lib/termin';
 
 /**
  * Trainingskund:innen (TRN-EPIC-001).

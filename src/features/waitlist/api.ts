@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
-import { appointmentTypeSchema } from '@/features/appointments/api';
+import { appointmentTypeSchema } from '@/lib/termin';
 
 /**
  * Warteliste mit Zeitfenstern (PRX-001).

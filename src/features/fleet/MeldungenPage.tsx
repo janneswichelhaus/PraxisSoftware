@@ -12,7 +12,6 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Textlink } from '@/components/ui/Textlink';
-import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchFleetReports, meldungenSchluessel, type FleetReport } from './api';
 import { checkItemLabels, checkRatingLabels, zoneLabel, type CheckItemKey } from './bike3d/zones';
@@ -36,6 +35,7 @@ import {
   type Zeitraum,
 } from './meldungen';
 import { Einstufung } from './Nadel';
+import { todayInTimeZone } from '@/lib/datum';
 
 const ZUR_FLOTTE = '/betrieb/flotte';
 const ZU_DEN_MELDUNGEN = '/betrieb/flotte/meldungen';

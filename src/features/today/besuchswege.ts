@@ -1,7 +1,7 @@
 import { mitRueckweg } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
-import { rufnummern, type DayPlanEntry, type Rufnummer } from './api';
 import { besuchsphase } from './tagesstart';
+import { rufnummern, type DayPlanEntry, type Rufnummer } from '@/features/day-plan/api';
 
 // -----------------------------------------------------------------------------
 // Wege eines Besuchs aus der Übersicht (Auftrag C1 „Besuch in einem Zug“)

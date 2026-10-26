@@ -8,7 +8,6 @@ import { ErrorState } from '@/components/ui/Feedback';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { leseRueckweg } from '@/lib/rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchBike, fetchFleet, flotteSchluessel, radSchluessel, type Fleet } from './api';
@@ -18,6 +17,7 @@ import { Pannenfenster } from './Pannenfenster';
 import { istMeinRad } from './rad';
 import { Radwahl } from './Radwahl';
 import { aktiveStandortvorlage } from './standortvorlage';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Panne melden (FLT-EPIC-001, Handoff Lastenrad 3D Abschnitt 4; geführt seit

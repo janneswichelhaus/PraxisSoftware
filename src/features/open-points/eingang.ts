@@ -1,5 +1,4 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { tagePlus } from '@/features/appointments/calendar';
 import { FAELLIG_SCHLUESSEL, fetchFaellige, type Bereich } from '@/features/exercise-plans/api';
 import { fetchOffeneScans } from '@/features/files/api';
 import { fetchRueckfragen, rueckfragenKey, type Verhaeltnisart } from '@/features/messages/api';
@@ -41,6 +40,7 @@ import {
 import { PATIENT_OVERVIEW_KEY, fetchPatientOverview } from '@/features/patients/uebersicht';
 import { TASKS_KEY, fetchTasks } from './tasks-api';
 import { TRAININGSWIDERRUFE_KEY, fetchTrainingswiderrufe } from './training-withdrawals-api';
+import { tagePlus } from '@/lib/datum';
 
 /**
  * Der Eingang „Offene Punkte" als ein Ganzes (Design-Rollout B5, ANN-450).

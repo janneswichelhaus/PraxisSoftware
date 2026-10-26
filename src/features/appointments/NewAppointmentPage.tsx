@@ -10,11 +10,11 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import { canReadTreatmentBases, type CurrentUser } from '@/features/session/types';
 import { fetchPatientTreatmentBases, grundlageBezeichnung } from '@/features/treatment-bases/api';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import type { Formularfehler } from '@/lib/formularfehler';
 import { istInternerPfad, leseRueckweg, mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import {
@@ -28,34 +28,34 @@ import {
   appointmentFormSchema,
   createAppointment,
   fensterEnde,
-  fetchAssignableTherapists,
-  fetchLocations,
   istAusserhalbArbeitszeit,
-  kalenderZumTermin,
   istVergangenheit,
   liegtInVergangenheit,
   leererTermin,
-  leseTerminVorbelegung,
-  schreibeTerminVorbelegung,
-  TERMINFENSTER_MINUTEN,
-  todayInTimeZone,
   type AppointmentFormField,
   type AppointmentFormValues,
-  type AppointmentType,
-  type TerminVorbelegung,
 } from './api';
 import { tageslageNeuLaden } from './tageslage';
 import { Wegauskunft } from './Wegauskunft';
 import { frageAusFormular, useWegpruefung } from './wegpruefung';
 import {
-  DAUER_PARAM,
-  leseDauer,
-  mitAngelegtemTermin,
   nachDemAnlegen,
   speicherfehlerText,
   terminFehlerliste,
   terminFeldfehler,
 } from './terminformular';
+import { fetchAssignableTherapists, fetchLocations } from '@/features/staff/api';
+import {
+  kalenderZumTermin,
+  leseTerminVorbelegung,
+  schreibeTerminVorbelegung,
+  TERMINFENSTER_MINUTEN,
+  type AppointmentType,
+  type TerminVorbelegung,
+  DAUER_PARAM,
+  leseDauer,
+  mitAngelegtemTermin,
+} from '@/lib/termin';
 
 /**
  * Anlage eines Termins für einen bereits gewählten Patienten.

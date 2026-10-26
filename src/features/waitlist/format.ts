@@ -1,7 +1,7 @@
-import { appointmentTypeHint } from '@/features/appointments/api';
 import { grundlageBezeichnung } from '@/features/treatment-bases/api';
 import { formatDate } from '@/lib/datum';
 import { windowsText, type WaitlistEntry } from './api';
+import { appointmentTypeHint } from '@/lib/termin';
 
 /** „Folgeverordnung vom 18. Juni 2026" oder „ohne Grundlage". */
 export function basisText(entry: WaitlistEntry): string {

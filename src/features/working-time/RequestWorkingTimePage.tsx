@@ -20,9 +20,7 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { monatPlus, monatsBeginn, tagePlus } from '@/features/appointments/calendar';
-import { todayInTimeZone } from '@/features/appointments/api';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import type { CurrentUser } from '@/features/session/types';
 import { tagKurz } from '@/features/vacation/zeitraum';
 import { leseRueckweg } from '@/lib/rueckweg';
@@ -64,6 +62,7 @@ import {
   type Block,
   type Week,
 } from './rules';
+import { todayInTimeZone, monatPlus, monatsBeginn, tagePlus } from '@/lib/datum';
 
 /**
  * Arbeitszeitänderung beantragen, geführt (G8, AZ-001, Budget ≤ 8 Tipps und

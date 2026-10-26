@@ -60,7 +60,7 @@ const ERLAUBT: readonly RegExp[] = [
   // Überholung 6: der Schutz ungesendeter Angaben im geführten Ablauf
   // (Rückfrage vor dem Weggehen, Zurückgeste einen Schritt zurück) - ein
   // Baustein ohne Datenzugriff, wie im Check-Up am Rad.
-  /^@\/features\/documentation\/Textverlustschutz$/,
+  /^@\/app\/Textverlustschutz$/,
   // ERN-002: Form, Wörter und Anzeige der Zielwerte - ohne Datenzugriff; die
   // Zahlen kommen über die Plattformprojektion (`platform_nutrition`).
   /^@\/features\/nutrition\/(Rechenweg|texte|zielwerte|eingabe)$/,

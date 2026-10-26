@@ -4,9 +4,9 @@ import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-import { tagePlus } from '@/features/appointments/calendar';
 import { stillToCall } from './call-list-api';
 import { abfragen } from './eingang';
+import { tagePlus } from '@/lib/datum';
 
 /**
  * „Anrufe für morgen" unter „Offene Punkte" (PRX-014): wie viele Termine noch

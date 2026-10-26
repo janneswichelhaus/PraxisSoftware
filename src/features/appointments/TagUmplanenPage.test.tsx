@@ -3,9 +3,10 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { STAND_VERALTET } from '@/components/ui/abfrageTexte';
 import type * as AppointmentsApi from './api';
-import type * as TodayApi from '@/features/today/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import type * as StaffApi from '@/features/staff/api';
+import type * as Tagesplan from '@/features/day-plan/api';
 
 /**
  * Tag umplanen mit Anrufliste (CAL-009), geführt seit Überholung 6 (G2,
@@ -21,7 +22,7 @@ import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 const ANNA = '55555555-5555-4555-8555-000000000002';
 const DATUM = '2027-05-12';
 
-function eintrag(teil: Partial<TodayApi.DayPlanEntry>): TodayApi.DayPlanEntry {
+function eintrag(teil: Partial<Tagesplan.DayPlanEntry>): Tagesplan.DayPlanEntry {
   return {
     id: 'termin-1',
     patient_id: 'p1',
@@ -52,22 +53,16 @@ function eintrag(teil: Partial<TodayApi.DayPlanEntry>): TodayApi.DayPlanEntry {
 const fetchDayPlan = vi.fn();
 const cancelStaffDay = vi.fn();
 const fetchAssignableTherapists = vi.fn();
-
-vi.mock('@/features/today/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof TodayApi>();
-  return {
-    ...actual,
-    fetchDayPlan: (datum: string, person: string) =>
-      fetchDayPlan(datum, person) as Promise<TodayApi.DayPlanEntry[]>,
-  };
-});
+vi.mock('@/features/day-plan/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof Tagesplan>()),
+  fetchDayPlan: (datum: string, person: string) =>
+    fetchDayPlan(datum, person) as Promise<Tagesplan.DayPlanEntry[]>,
+}));
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
   return {
     ...actual,
-    fetchAssignableTherapists: () =>
-      fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
     cancelStaffDay: (
       person: string,
       datum: string,
@@ -76,6 +71,12 @@ vi.mock('./api', async (importOriginal) => {
     ) => cancelStaffDay(person, datum, grund, auswahl) as Promise<number>,
   };
 });
+
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: () =>
+    fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
+}));
 
 const { TagUmplanenPage } = await import('./TagUmplanenPage');
 

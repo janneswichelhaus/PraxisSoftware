@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { zeitpunktIn } from './api';
 import {
   dauerangabe,
   freieMinuten,
@@ -15,6 +14,7 @@ import {
   type Zeitraum,
 } from './folgetermin';
 import { luftStufe, type Seite, type Wegpruefung } from './wegpruefung';
+import { zeitpunktIn } from '@/lib/datum';
 
 /** Befund B8: die Regeln hinter den Folgeterminvorschlägen (ANN-535). */
 

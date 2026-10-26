@@ -9,7 +9,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Wortmarke } from '@/components/ui/Wortmarke';
-import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import {
   fetchFleetPhotos,
@@ -31,6 +30,7 @@ import {
 import { dateinameWerkstatt, formatTag, formatZeitpunkt } from './format';
 import { punktAmModell } from './stellen';
 import { aktiveStandortvorlage } from './standortvorlage';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Die Unterlage für die Werkstatt (Handoff Lastenrad 3D, Abschnitt 4,

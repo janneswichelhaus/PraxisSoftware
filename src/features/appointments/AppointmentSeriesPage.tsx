@@ -17,33 +17,24 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
 import { alsFormularfehler, type Formularfehler } from '@/lib/formularfehler';
 import { istInternerPfad, leseRueckweg, mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { ArbeitszeitRueckfrage, UebernommeneAdresse } from './AppointmentFormFields';
 import { TerritoryHint } from '@/features/territories/TerritoryHint';
-import { Deckungszeichen } from './Deckungszeichen';
 import { Listenfehler, NachladeHinweis } from '@/components/ui/Rueckmeldung';
 import {
-  appointmentTypeLabels,
   checkAppointmentSlots,
   createAppointmentSeries,
   fensterEnde,
-  fetchAssignableTherapists,
-  fetchLocations,
   fetchTreatmentBasisSlots,
   istAusserhalbArbeitszeit,
-  leseTerminVorbelegung,
   istHinderlich,
-  schreibeTerminVorbelegung,
   slotConflictLabels,
-  todayInTimeZone,
   type AppointmentFormValues,
-  type AppointmentType,
   type SlotConflict,
-  type TerminVorbelegung,
 } from './api';
 import { tageslageNeuLaden } from './tageslage';
 import {
@@ -54,8 +45,16 @@ import {
   type Serientermin,
 } from './serie';
 import { speicherfehlerText } from './terminformular';
-import { istIsoDatum } from './calendar';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone, istIsoDatum } from '@/lib/datum';
+import { fetchAssignableTherapists, fetchLocations } from '@/features/staff/api';
+import {
+  appointmentTypeLabels,
+  leseTerminVorbelegung,
+  schreibeTerminVorbelegung,
+  type AppointmentType,
+  type TerminVorbelegung,
+} from '@/lib/termin';
+import { Deckungszeichen } from '@/features/treatment-bases/Deckungszeichen';
 
 /**
  * „1 Termin" gegen „3 Termine" — an einer Stelle statt in jeder Meldung.

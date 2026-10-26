@@ -1,11 +1,19 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
-import { BEGRIFFE } from '@/lib/begriffe';
 import { getSupabase } from '@/lib/supabase';
 import { minuteZuZeit, type StatusFilter } from './calendar';
-import { formatDate } from '@/lib/datum';
-import { istInternerPfad } from '@/lib/rueckweg';
+import { dayKey, formatDate } from '@/lib/datum';
 import { SERIE_HOECHSTZAHL, type Serientermin } from './serie';
+import {
+  appointmentKindSchema,
+  appointmentStatusSchema,
+  appointmentTypeSchema,
+  notificationChannelSchema,
+  terminAnlassSchema,
+  TERMINFENSTER_MINUTEN,
+  type NotificationChannel,
+  type TerminVorbelegung,
+} from '@/lib/termin';
 
 /**
  * Datenzugriff auf die Terminverwaltung.
@@ -17,79 +25,6 @@ import { SERIE_HOECHSTZAHL, type Serientermin } from './serie';
  * Termine sind organisatorische Daten. Klinische Inhalte gehören ausdrücklich
  * nicht dazu (PROJECT_PRINCIPLES.md 4.6, 5).
  */
-
-export const appointmentTypeSchema = z.enum(['home_visit', 'practice', 'video']);
-export type AppointmentType = z.infer<typeof appointmentTypeSchema>;
-
-/**
- * Zustände des Termins nach ADR-018.
- *
- * Sechs Werte, genau die der Datenbank-Constraint. „Angefragt" und
- * „vorgemerkt" sind im ADR beschrieben, aber nicht gebaut: ohne Portal gibt es
- * niemanden, der einen Termin anfragt (ADR-014). `invoiced` steht im
- * Wertebereich und bekommt seinen Schreibpfad mit ABR-003.
- */
-export const appointmentStatusSchema = z.enum([
-  'confirmed',
-  'cancelled',
-  'no_show',
-  'completed',
-  'documented',
-  'invoiced',
-]);
-export type AppointmentStatus = z.infer<typeof appointmentStatusSchema>;
-
-export const appointmentTypeLabels: Record<AppointmentType, string> = {
-  home_visit: 'Hausbesuch',
-  practice: 'Praxis',
-  video: 'Video',
-};
-
-/**
- * Der Regelfall der Terminart (UX-005a, ANN-192).
- *
- * Die Praxis macht Hausbesuche. „Hausbesuch" an jedem Termin, jeder Kachel
- * und jeder Zeile sagte deshalb nichts - es stand nur im Weg. Ein Praxis-
- * oder Videotermin ist die Ausnahme und trägt sein Wort als Kennzeichen.
- * Genau eine Stelle: Wer den Regelfall ändert, ändert ihn hier.
- */
-export const REGEL_TERMINART: AppointmentType = 'home_visit';
-
-/** Die Terminart als Kennzeichen - nur, wenn sie vom Regelfall abweicht (ANN-192). */
-export function appointmentTypeHint(type: AppointmentType): string | null {
-  return type === REGEL_TERMINART ? null : appointmentTypeLabels[type];
-}
-
-/**
- * Das Wort für den Zustand eines Termins. Ein bestätigter, noch offener
- * Termin „steht aus" - in Tageskarte, Terminseite und Akte dasselbe Wort
- * (UX-009c, BEF-067; bis dahin hieß er auf der Terminseite „Bestätigt").
- */
-export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
-  confirmed: BEGRIFFE.stehtAus,
-  cancelled: 'Abgesagt',
-  no_show: 'Nicht angetroffen',
-  completed: 'Abgeschlossen',
-  documented: 'Dokumentiert',
-  invoiced: 'Abgerechnet',
-};
-
-/**
- * Ton des Statusabzeichens.
- *
- * An genau einer Stelle, weil ihn Kalender und Akte brauchen und ein Zustand
- * überall gleich aussehen muss; die Tagesliste hat mit `dayPlanStatusTon` einen
- * eigenen Schnitt. Der Ton ergänzt nur: der Zustand steht immer als Wort
- * daneben (`Badge`, WCAG 1.4.1).
- */
-export const appointmentStatusTon: Record<AppointmentStatus, 'positiv' | 'warnung' | 'kritisch'> = {
-  confirmed: 'positiv',
-  cancelled: 'kritisch',
-  no_show: 'warnung',
-  completed: 'positiv',
-  documented: 'positiv',
-  invoiced: 'positiv',
-};
 
 /**
  * Absagegründe (CAL-008b, ANN-034).
@@ -168,69 +103,6 @@ export const feeBasisLabels: Record<FeeBasis, string> = {
   late_cancellation: 'Absage weniger als 24 Stunden vorher',
   no_show: 'Nicht angetroffen',
 };
-
-/**
- * Mitteilungswege eines Termins (CAL-012, ANN-040).
- *
- * **Die Anwendung versendet nichts.** B15 ist vorläufig entschieden: in
- * Stufe 1 und 2 gibt es keine automatische Terminerinnerung. Auch `email`
- * heißt deshalb „die Praxis hat die Nachricht selbst geschrieben" — der
- * Vermerk beschreibt einen Vorgang außerhalb der Anwendung.
- *
- * `sms` und `messenger` fehlen bewusst: Messenger ist nach B15 ausgeschlossen,
- * SMS gibt es nicht. Ein Wert, den niemand setzen kann, wäre Vorbau (ADR-014).
- */
-const notificationChannelSchema = z.enum(['slip', 'phone', 'in_person', 'email']);
-export type NotificationChannel = z.infer<typeof notificationChannelSchema>;
-
-/**
- * Zwei Beschriftungen je Weg: `kurz` steht als Abzeichen in der Terminliste,
- * `lang` an der Auswahl auf der Terminseite. Die Reihenfolge ist die der
- * Häufigkeit im Praxisalltag.
- */
-export const notificationChannelLabels: Record<
-  NotificationChannel,
-  { kurz: string; lang: string }
-> = {
-  in_person: { kurz: 'Persönlich', lang: 'Persönlich gesagt' },
-  phone: { kurz: 'Telefon', lang: 'Telefonisch mitgeteilt' },
-  slip: { kurz: 'Zettel', lang: 'Terminzettel ausgehändigt' },
-  email: { kurz: 'E-Mail', lang: 'Per E-Mail mitgeteilt' },
-};
-
-/** Auswahlreihenfolge - `Object.keys` wäre eine Zusage, die das Objekt nicht gibt. */
-export const notificationChannelOrder: readonly NotificationChannel[] = [
-  'in_person',
-  'phone',
-  'slip',
-  'email',
-] as const;
-
-/**
- * Kontext des Termins (CAL-015b, CAL-024; ADR-022 Punkt 2).
- *
- * `therapy` ist der Behandlungstermin mit Patient:in; `internal` ein Ereignis
- * des Praxisbetriebs — Besprechung, Teamtermin — ohne Patient:in, ohne
- * Verordnung und ohne Längenregel. Ein Ereignis erzeugt ausdrücklich **keine**
- * abrechenbare Leistung (§19). Beide hießen bis CAL-027 `treatment` und
- * `event`; sie heißen jetzt wie die Bereiche (ADR-021 Punkt 9).
- *
- * `training` ist der Trainingstermin am Trainingsverhältnis (ADR-021). Wer ihn
- * sieht, entscheidet der Kontext (ADR-022 Punkt 11): owner, Büro und
- * Trainingsbetreuung im Kalender, die Behandlungsrollen nie (TRN-006). Seine
- * Detailseite liegt im Trainingsbereich (`/training/termine/:id`, TRN-004).
- */
-export const appointmentKindSchema = z.enum(['therapy', 'internal', 'training']);
-export type AppointmentKind = z.infer<typeof appointmentKindSchema>;
-
-/** ERN-011: der Anlass eines Termins neben dem Kontext (ADR-022 Punkt 2). */
-export const terminAnlassSchema = z.enum(['regular', 'nutrition_counselling']);
-export type TerminAnlass = z.infer<typeof terminAnlassSchema>;
-
-/** Ist der Termin eine Ernährungsberatung? Ohne Angabe nicht. */
-export function istBeratung(termin: { occasion?: TerminAnlass | null | undefined }): boolean {
-  return termin.occasion === 'nutrition_counselling';
-}
 
 export const appointmentSchema = z.object({
   id: z.string(),
@@ -346,96 +218,6 @@ export async function fetchAppointment(appointmentId: string): Promise<Appointme
   return antwort(appointmentSchema, data, 'Der Termin konnte nicht geladen werden.');
 }
 
-const therapistSchema = z.object({
-  staff_member_id: z.string(),
-  display_name: z.string(),
-});
-export type AssignableTherapist = z.infer<typeof therapistSchema>;
-
-/**
- * Zuordenbare behandelnde Personen.
- *
- * Bewusst über eine Serverfunktion: die RLS auf `user_roles` zeigt einem
- * Nicht-owner die Rollen anderer Accounts nicht, ein Join im Client bliebe
- * deshalb leer. Geliefert wird nur ID und Anzeigename (ADR-004).
- */
-export async function fetchAssignableTherapists(): Promise<AssignableTherapist[]> {
-  const { data, error } = (await getSupabase().rpc('list_assignable_therapists')) as {
-    data: unknown;
-    error: unknown;
-  };
-  if (error) throw new Error('Die behandelnden Personen konnten nicht geladen werden.');
-  return z.array(therapistSchema).parse(data ?? []);
-}
-
-/**
- * Wer einen Trainingstermin betreuen kann (TRN-004, ANN-176): die Personen mit
- * der Rolle Trainingsbetreuung. Für owner, Büro und Trainingsbetreuung; den
- * Behandlungsrollen liefert der Server nichts.
- */
-export async function fetchAssignableTrainers(): Promise<AssignableTherapist[]> {
-  const { data, error } = (await getSupabase().rpc('list_assignable_trainers')) as {
-    data: unknown;
-    error: unknown;
-  };
-  if (error) throw new Error('Die Trainingsbetreuung konnte nicht geladen werden.');
-  return z.array(therapistSchema).parse(data ?? []);
-}
-
-const locationSchema = z.object({ id: z.string(), name: z.string() });
-export type Location = z.infer<typeof locationSchema>;
-
-export async function fetchLocations(): Promise<Location[]> {
-  const { data, error } = await getSupabase()
-    .from('locations')
-    .select('id, name')
-    .order('name', { ascending: true });
-
-  if (error) throw new Error('Die Standorte konnten nicht geladen werden.');
-  return z.array(locationSchema).parse(data ?? []);
-}
-
-// -----------------------------------------------------------------------------
-// Darstellung in der Praxiszeitzone
-//
-// Ausschließlich über Intl.DateTimeFormat mit ausdrücklicher `timeZone`. Keine
-// eigene Zeitzonenarithmetik: Sommer-/Winterzeit und Umstellungstage sind dort
-// bereits korrekt abgebildet.
-// -----------------------------------------------------------------------------
-
-export function formatLocalDate(isoTimestamp: string, timeZone: string): string {
-  return new Intl.DateTimeFormat('de-DE', { dateStyle: 'full', timeZone }).format(
-    new Date(isoTimestamp),
-  );
-}
-
-export function formatLocalTime(isoTimestamp: string, timeZone: string): string {
-  return new Intl.DateTimeFormat('de-DE', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone,
-  }).format(new Date(isoTimestamp));
-}
-
-export function formatLocalTimeRange(startIso: string, endIso: string, timeZone: string): string {
-  return `${formatLocalTime(startIso, timeZone)}–${formatLocalTime(endIso, timeZone)} Uhr`;
-}
-
-/**
- * Heutiger Kalendertag in einer Zeitzone als `YYYY-MM-DD`.
- *
- * `en-CA` liefert genau dieses Format. Damit lässt sich im Formular gegen den
- * laufenden Praxistag prüfen, ohne die Browserzeitzone heranzuziehen.
- */
-export function todayInTimeZone(timeZone: string, now = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    timeZone,
-  }).format(now);
-}
-
 /** Ortsangabe eines Termins in einer Zeile - passend zur Terminart. */
 export function locationSummary(appointment: Appointment): string {
   if (appointment.appointment_type === 'practice') return appointment.location_name ?? '—';
@@ -446,87 +228,6 @@ export function locationSummary(appointment: Appointment): string {
     .join(' ');
   const city = [appointment.visit_postal_code, appointment.visit_city].filter(Boolean).join(' ');
   return [street, city].filter(Boolean).join(', ') || '—';
-}
-
-export function staffName(
-  appointment: Pick<Appointment, 'staff_given_name' | 'staff_family_name'>,
-): string {
-  return `${appointment.staff_given_name} ${appointment.staff_family_name}`;
-}
-
-export function patientName(
-  appointment: Pick<Appointment, 'patient_given_name' | 'patient_family_name'>,
-): string {
-  return `${appointment.patient_given_name ?? ''} ${appointment.patient_family_name ?? ''}`.trim();
-}
-
-/**
- * Was am Termin steht: der Name der Patient:in oder der Titel des Ereignisses.
- *
- * Eine Stelle für beide Fälle, weil sie in Kalender, Tagesplan und
- * Detailansicht dieselbe Antwort brauchen. Fehlt beides — ein Ereignis ohne
- * Titel kann es nicht geben, eine Behandlung ohne Namen nur, wenn die RLS den
- * Namen zurückhält —, steht ein Gedankenstrich da und keine leere Zeile
- * (PROJECT_PRINCIPLES.md §13).
- */
-/** Der Suchparameter, mit dem der Kalender einen Termin öffnet (Akte entschlacken, 2026-10-03). */
-export const TERMIN_PARAM = 'termin';
-
-/**
- * Der Weg zu einem Termin, seit er keine eigene Seite mehr hat: der Kalender
- * am Tag des Termins, der Termin im Panel gewählt (`?termin=`). Der Kalender
- * liest den Tag selbst aus dem Termin - wer verlinkt, braucht nur die Kennung.
- */
-export function kalenderZumTermin(id: string): string {
-  return `/kalender?${TERMIN_PARAM}=${encodeURIComponent(id)}`;
-}
-
-/**
- * Zurück zu einem Termin nach einem Formular: in den Kalender, aus dem man
- * kam, mit dem Termin gewählt - sonst dorthin, wo man herkam, und ohne
- * Rückweg in den Kalender am Tag des Termins.
- */
-export function zurueckZumTermin(rueckweg: string | null | undefined, id: string): string {
-  if (!istInternerPfad(rueckweg)) return kalenderZumTermin(id);
-  if (!rueckweg.startsWith('/kalender')) return rueckweg;
-  const [pfad, suche = ''] = rueckweg.split('?');
-  const parameter = new URLSearchParams(suche);
-  parameter.set(TERMIN_PARAM, id);
-  return `${pfad}?${parameter.toString()}`;
-}
-
-/**
- * Wo ein Termin geöffnet wird (TRN-004): Der Trainingstermin hat seine Seite
- * im Trainingsbereich, jeder andere steht im Kalender (`kalenderZumTermin`).
- * Eine Stelle für Tagesplan, Tour und Warteliste, damit kein Trainingstermin
- * im Kalender der Behandlung gesucht wird.
- */
-export function terminPfad(termin: Pick<Appointment, 'id' | 'kind'>): string {
-  return termin.kind === 'training'
-    ? `/training/termine/${termin.id}`
-    : kalenderZumTermin(termin.id);
-}
-
-export function terminBezeichnung(
-  appointment: Pick<
-    Appointment,
-    'kind' | 'title' | 'patient_given_name' | 'patient_family_name'
-  > & {
-    training_given_name?: string | null | undefined;
-    training_family_name?: string | null | undefined;
-  },
-): string {
-  if (appointment.kind === 'internal') return appointment.title ?? 'Fehlzeit';
-  // Ein Trainingstermin traegt den Namen aus dem Training (TRN-006), wo der
-  // Lesepfad ihn liefert - Kalender und Tagesliste. Wo nicht - in der
-  // Terminliste vor dem Deaktivieren eines Zugangs -, ist er die Belegung und
-  // nicht der Termin: Zeit und Mitarbeitende, sonst nichts.
-  if (appointment.kind === 'training') {
-    const name =
-      `${appointment.training_given_name ?? ''} ${appointment.training_family_name ?? ''}`.trim();
-    return name || '—';
-  }
-  return patientName(appointment) || '—';
 }
 
 // -----------------------------------------------------------------------------
@@ -574,34 +275,6 @@ export const leererTermin: Record<AppointmentFormField, string> = {
   location_id: '',
 };
 
-/**
- * Vorbelegte Länge eines angebotenen Terminfensters in Minuten (CAL-010a).
- *
- * `PROJECT_PRINCIPLES.md` 0.11 §8.1: Die Länge eines Behandlungstermins ist
- * frei wählbar, die Dokumentation eingeschlossen. 60 bleibt die Vorbelegung.
- *
- * Diese Konstante steuert die Oberfläche. Verbindlich ist sie **nicht**:
- * `app.appointment_window_minutes()` führt dieselbe Vorbelegung serverseitig
- * (§8.1: „eine Vorbelegung im Formular allein erfüllt sie nicht"). Ein
- * Datenbanktest hält beide gegeneinander.
- */
-export const TERMINFENSTER_MINUTEN = 60;
-
-/**
- * Die Regellängen, in der Reihenfolge der Auswahl (CAL-015b, CAL-020).
- *
- * Spiegel von `app.appointment_window_options()`; ein Datenbanktest hält beide
- * gegeneinander. Seit `PROJECT_PRINCIPLES.md` 0.11 §8.1 ist die Liste **keine
- * Schranke** mehr: Der Server nimmt jede Länge im Praxisraster an, und wer
- * von ihr abweicht, wird gekennzeichnet (`abweichendeLaengeMinuten`).
- */
-export const TERMINFENSTER_OPTIONEN = [60, 45] as const;
-
-/** Ist das eine der Regellängen aus §8.1? */
-export function istRegellaenge(minuten: number): boolean {
-  return (TERMINFENSTER_OPTIONEN as readonly number[]).includes(minuten);
-}
-
 const UHRZEIT_ZERLEGT = /^([01]\d|2[0-3]):([0-5]\d)/;
 
 /** Minuten seit Mitternacht aus `HH:MM`; `null`, wenn die Eingabe keine Uhrzeit ist. */
@@ -646,38 +319,6 @@ export function terminLaengeMinuten(appointment: Appointment): number {
   const ende = minutenAusZeit(werte.end_time);
   if (beginn === null || ende === null) return TERMINFENSTER_MINUTEN;
   return ende - beginn;
-}
-
-/**
- * Länge in Minuten, wenn sie gekennzeichnet werden muss — sonst `null`.
- *
- * `PROJECT_PRINCIPLES.md` 0.11 §8.1: Ein **Behandlungstermin**, dessen Länge
- * weder 45 noch 60 Minuten beträgt, MUSS in Kalender und Terminlisten als
- * abweichend gekennzeichnet werden. Das Kennzeichen meldet, es verbietet
- * nicht; Termine ohne Patient:in tragen es nie (CAL-020).
- *
- * Gerechnet wird auf den gespeicherten Zeitpunkten, nicht auf Ortszeiten: Die
- * Funktion braucht so keine Zeitzone und gilt für jede Liste gleich. Wer
- * `kind` nicht mitliefert, liefert nur Behandlungen (die Terminlisten der
- * Akte).
- */
-export function abweichendeLaengeMinuten(termin: {
-  kind?: AppointmentKind | undefined;
-  starts_at: string;
-  ends_at: string;
-}): number | null {
-  // Die Längenregel gilt dem Behandlungstermin: Ereignis und Trainingstermin
-  // haben keine Patient:in und damit auch keine Regellänge (CAL-020).
-  if (termin.kind !== undefined && termin.kind !== 'therapy') return null;
-  const dauerMs = Date.parse(termin.ends_at) - Date.parse(termin.starts_at);
-  if (!Number.isFinite(dauerMs)) return null;
-  const minuten = Math.round(dauerMs / 60_000);
-  return istRegellaenge(minuten) ? null : minuten;
-}
-
-/** Textfassung des Kennzeichens, auch für Vorlesewerkzeuge (§8.1). */
-export function abweichendeLaengeText(minuten: number): string {
-  return `Dauer weicht ab: ${minuten} Minuten`;
 }
 
 // -----------------------------------------------------------------------------
@@ -809,67 +450,6 @@ export function naechsteTerminSeite(
 // Verbindlich prüft `create_appointment` ohnehin alles erneut: Raster,
 // Arbeitszeit, Überschneidung, Zuordenbarkeit (ADR-004).
 // -----------------------------------------------------------------------------
-
-export interface TerminVorbelegung {
-  datum?: string;
-  beginn?: string;
-  ende?: string;
-  art?: AppointmentType;
-  person?: string;
-}
-
-const UHRZEIT = /^([01]\d|2[0-3]):[0-5]\d$/;
-const UUID_MUSTER = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ISO_TAG = /^\d{4}-\d{2}-\d{2}$/;
-
-/**
- * Parameter, mit dem der Kalender einen gerade angelegten Termin hervorhebt.
- *
- * Nur eine Kennung, kein Name (ADR-011). Der Kalender liest ihn einmal und
- * schreibt ihn beim nächsten Blättern nicht zurück - die Hervorhebung gilt
- * dem Moment der Rückkehr, nicht dem Stand.
- */
-export const NEUER_TERMIN_PARAM = 'neu';
-
-/**
- * Hängt die Kennung eines neuen Termins an einen Rückweg in den Kalender
- * (FIX-016). Andere Rückwege bleiben, wie sie sind.
- */
-export function mitNeuemTermin(rueckweg: string, appointmentId: string): string {
-  if (!rueckweg.startsWith('/kalender')) return rueckweg;
-  const trenner = rueckweg.includes('?') ? '&' : '?';
-  return `${rueckweg}${trenner}${NEUER_TERMIN_PARAM}=${encodeURIComponent(appointmentId)}`;
-}
-
-export function leseTerminVorbelegung(suche: URLSearchParams): TerminVorbelegung {
-  const datum = suche.get('datum');
-  const beginn = suche.get('beginn');
-  const ende = suche.get('ende');
-  const art = suche.get('art');
-  const person = suche.get('person');
-
-  const vorbelegung: TerminVorbelegung = {};
-  if (datum && ISO_TAG.test(datum)) vorbelegung.datum = datum;
-  if (beginn && UHRZEIT.test(beginn)) vorbelegung.beginn = beginn;
-  if (ende && UHRZEIT.test(ende)) vorbelegung.ende = ende;
-  if (art && appointmentTypeSchema.safeParse(art).success) {
-    vorbelegung.art = art as AppointmentType;
-  }
-  if (person && UUID_MUSTER.test(person)) vorbelegung.person = person;
-  return vorbelegung;
-}
-
-/** Die Vorbelegung als Suchteil einer Adresse - leere Felder bleiben weg. */
-export function schreibeTerminVorbelegung(vorbelegung: TerminVorbelegung): string {
-  const suche = new URLSearchParams();
-  if (vorbelegung.datum) suche.set('datum', vorbelegung.datum);
-  if (vorbelegung.beginn) suche.set('beginn', vorbelegung.beginn);
-  if (vorbelegung.ende) suche.set('ende', vorbelegung.ende);
-  if (vorbelegung.art) suche.set('art', vorbelegung.art);
-  if (vorbelegung.person) suche.set('person', vorbelegung.person);
-  const text = suche.toString();
-  return text ? `?${text}` : '';
-}
 
 /**
  * Der Folgetermin zu einem Termin: dieselbe Person, dieselbe Art, dieselbe
@@ -1509,69 +1089,6 @@ export async function fetchBelegteZeiten(query: {
   return z.array(belegtSchema).parse(data ?? []);
 }
 
-/**
- * Kalendertag eines Zeitpunkts in einer Zeitzone als `YYYY-MM-DD`.
- *
- * Damit landet ein Termin in genau der Tagesspalte, in der er für die Praxis
- * stattfindet - unabhängig davon, in welcher Zeitzone der Browser läuft.
- */
-export function dayKey(isoTimestamp: string, timeZone: string): string {
-  return todayInTimeZone(timeZone, new Date(isoTimestamp));
-}
-
-/**
- * Der Zeitpunkt zu einer Ortszeit der Praxis (UBK-012): Kalendertag und
- * Minuten seit Mitternacht in `timeZone`, als ISO-Zeitstempel in UTC.
- *
- * Das Gegenstück zu `dayKey` und `minutesOfDay`. Der Versatz der Zone wird am
- * Zielzeitpunkt bestimmt und einmal nachgeprüft - so trägt die Rechnung auch
- * über eine Zeitumstellung.
- */
-export function zeitpunktIn(datum: string, minute: number, timeZone: string): string {
-  const [jahr, monat, tag] = datum.split('-').map(Number) as [number, number, number];
-  const alsUtc = Date.UTC(jahr, monat - 1, tag, Math.floor(minute / 60), minute % 60);
-  let ziel = alsUtc - zonenversatz(alsUtc, timeZone);
-  ziel = alsUtc - zonenversatz(ziel, timeZone);
-  return new Date(ziel).toISOString();
-}
-
-/** Ortszeit minus UTC in Millisekunden zum Zeitpunkt `ms`. */
-function zonenversatz(ms: number, timeZone: string): number {
-  const teile = new Intl.DateTimeFormat('en-GB', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23',
-    timeZone,
-  }).formatToParts(new Date(ms));
-  const zahl = (typ: string) => Number(teile.find((t) => t.type === typ)?.value ?? '0');
-  const ortszeit = Date.UTC(
-    zahl('year'),
-    zahl('month') - 1,
-    zahl('day'),
-    zahl('hour'),
-    zahl('minute'),
-    zahl('second'),
-  );
-  return ortszeit - Math.floor(ms / 1000) * 1000;
-}
-
-/** Minuten seit Mitternacht in einer Zeitzone - Grundlage der Anordnung. */
-export function minutesOfDay(isoTimestamp: string, timeZone: string): number {
-  const teile = new Intl.DateTimeFormat('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-    timeZone,
-  }).formatToParts(new Date(isoTimestamp));
-
-  const zahl = (typ: string) => Number(teile.find((t) => t.type === typ)?.value ?? '0');
-  return zahl('hour') * 60 + zahl('minute');
-}
-
 // -----------------------------------------------------------------------------
 // Bearbeiten und Absagen (CAL-003)
 // -----------------------------------------------------------------------------
@@ -2155,59 +1672,4 @@ export async function addAppointmentNotification(
 
   if (error) throw schreibfehler(error, 'Der Vermerk konnte nicht gespeichert werden.');
   return antwort(z.number(), data, 'Der Vermerk konnte nicht gespeichert werden.');
-}
-
-// -----------------------------------------------------------------------------
-// Hausbesuche mit alter Adresse (ABN-004, BEF-092)
-// -----------------------------------------------------------------------------
-
-export const veralteterHausbesuchSchema = z.object({
-  id: z.string(),
-  starts_at: z.string(),
-  ends_at: z.string(),
-  staff_given_name: z.string(),
-  staff_family_name: z.string(),
-  visit_street: z.string().nullable(),
-  visit_house_number: z.string().nullable(),
-  visit_postal_code: z.string().nullable(),
-  visit_city: z.string().nullable(),
-  organization_time_zone: z.string(),
-});
-
-export type VeralteterHausbesuch = z.infer<typeof veralteterHausbesuchSchema>;
-
-/**
- * Künftige bestätigte Hausbesuche, deren kopierte Anschrift von den Stammdaten
- * abweicht (ANN-003). Die Liste sagt nur, was abweicht - geändert wird nichts,
- * bis jemand es ausdrücklich beauftragt.
- */
-export async function fetchVeralteteHausbesuche(
-  patientId: string,
-): Promise<VeralteterHausbesuch[]> {
-  const { data, error } = (await getSupabase().rpc('list_home_visits_with_outdated_address', {
-    p_patient_id: patientId,
-  })) as { data: unknown; error: unknown };
-
-  if (error) throw new Error('Die Hausbesuche konnten nicht geprüft werden.');
-  return antwort(
-    z.array(veralteterHausbesuchSchema),
-    data ?? [],
-    'Die Hausbesuche konnten nicht geprüft werden.',
-  );
-}
-
-/**
- * Setzt die genannten Hausbesuche auf die aktuelle Stammdatenadresse. Alles
- * oder nichts, protokolliert je Termin (ABN-004); die Prüfungen stehen
- * serverseitig.
- */
-export async function aktualisiereHausbesuchAdressen(
-  terminIds: readonly string[],
-): Promise<number> {
-  const { data, error } = (await getSupabase().rpc('update_home_visit_addresses', {
-    p_appointment_ids: [...terminIds],
-  })) as { data: unknown; error: unknown };
-
-  if (error) throw new Error('Die Adresse konnte nicht übernommen werden.');
-  return antwort(z.number(), data, 'Die Adresse konnte nicht übernommen werden.');
 }

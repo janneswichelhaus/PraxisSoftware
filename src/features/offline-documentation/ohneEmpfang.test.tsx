@@ -19,7 +19,7 @@ import { entwuerfeLesen, entwuerfeZuruecksetzen, entwurfSchreiben } from './entw
 import { praxisOhneNetz } from './ohneNetz';
 import { einrichten } from './servicePhone';
 import { tagesplanAblegen, tagesplanLesen } from './tagesplan';
-import type { DayPlanEntry } from '@/features/today/api';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * OFF-003: Abmelden mit Entwürfen, „Noch nicht übertragen", die Freigabe ohne

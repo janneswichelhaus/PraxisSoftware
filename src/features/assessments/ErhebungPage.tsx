@@ -14,14 +14,10 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { TextArea } from '@/components/ui/TextArea';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import type { Formularfehler } from '@/lib/formularfehler';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { fetchPatient, fullName, type Patient } from '@/features/patients/api';
-import {
-  useTextverlustschutz,
-  type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+import { useTextverlustschutz, type Verlustschutztexte } from '@/app/Textverlustschutz';
 import { canWriteQuestionnaire, type CurrentUser } from '@/features/session/types';
 import { abschnitte } from './abschnitte';
 import { antwortFehler, type Antwort, type Antworten } from './antworten';

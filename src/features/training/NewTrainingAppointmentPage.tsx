@@ -8,17 +8,10 @@ import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { BEGRIFFE } from '@/lib/begriffe';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { canWriteTrainingClients, type CurrentUser } from '@/features/session/types';
-import {
-  fensterEnde,
-  leererTermin,
-  leseTerminVorbelegung,
-  TERMINFENSTER_MINUTEN,
-  todayInTimeZone,
-} from '@/features/appointments/api';
-import { mitAngelegtemTermin } from '@/features/appointments/terminformular';
+import { fensterEnde, leererTermin, tageslageNeuLaden } from '@/features/appointments';
 import {
   createTrainingAppointment,
   listTrainingBases,
@@ -26,7 +19,7 @@ import {
   vereinbarungText,
 } from './api';
 import { TrainingTerminFormular } from './TrainingTerminFormular';
-import { tageslageNeuLaden } from '@/features/appointments/tageslage';
+import { leseTerminVorbelegung, TERMINFENSTER_MINUTEN, mitAngelegtemTermin } from '@/lib/termin';
 
 const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

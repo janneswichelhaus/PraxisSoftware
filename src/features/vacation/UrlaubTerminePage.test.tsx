@@ -7,6 +7,7 @@ import { testUser } from '@/test-utils';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import { STAFF } from './testdaten';
 import { terminePfad } from './termine';
+import type * as StaffApi from '@/features/staff/api';
 
 /**
  * Termine im Urlaub (URL-001, Praxis-Review Überholung 7): Der Rückweg jedes
@@ -22,9 +23,13 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
   return {
     ...actual,
     fetchAppointments: (...a: unknown[]) => fetchAppointments(...a) as unknown,
-    fetchAssignableTherapists: (...a: unknown[]) => fetchAssignableTherapists(...a) as unknown,
   };
 });
+
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: (...a: unknown[]) => fetchAssignableTherapists(...a) as unknown,
+}));
 
 const { UrlaubTerminePage } = await import('./UrlaubTerminePage');
 

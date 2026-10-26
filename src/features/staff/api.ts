@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
+import { appointmentKindSchema, appointmentTypeSchema } from '@/lib/termin';
 
 /**
  * Datenzugriff auf die Mitarbeiterverwaltung (STAFF-001).
@@ -221,14 +222,14 @@ const futureAppointmentSchema = z.object({
   id: z.string(),
   starts_at: z.string(),
   ends_at: z.string(),
-  appointment_type: z.enum(['home_visit', 'practice', 'video']),
+  appointment_type: appointmentTypeSchema,
   // Seit CAL-015b stehen hier auch Ereignisse des Praxisbetriebs: Sie hängen
   // an dieser Person genauso wie eine Behandlung, und wer sie deaktivieren
   // will, muss sie sehen. Seit CAL-024 gilt dasselbe für den Trainingstermin —
   // ausgeblendet bliebe er beim Deaktivieren unbemerkt stehen. Er zeigt dabei
   // nur die Belegung: Personenfelder und Titel sind an ihm leer (ADR-022
   // Punkt 11).
-  kind: z.enum(['therapy', 'internal', 'training']),
+  kind: appointmentKindSchema,
   title: z.string().nullable(),
   patient_id: z.string().nullable(),
   patient_given_name: z.string().nullable(),
@@ -352,4 +353,51 @@ export async function setzeKalender(
   if (abgewiesen(antwort)) {
     throw new Error('Die Angabe zum Kalender konnte nicht gespeichert werden.');
   }
+}
+
+// Wen und wo die Planung vergeben kann: zuordenbare Personen und Standorte der Praxis.
+
+const therapistSchema = z.object({
+  staff_member_id: z.string(),
+  display_name: z.string(),
+});
+export type AssignableTherapist = z.infer<typeof therapistSchema>;
+
+/**
+ * Zuordenbare behandelnde Personen, über eine Serverfunktion: Die RLS auf `user_roles` zeigt
+ * einem Nicht-owner fremde Rollen nicht. Geliefert werden nur ID und Anzeigename (ADR-004).
+ */
+export async function fetchAssignableTherapists(): Promise<AssignableTherapist[]> {
+  const { data, error } = (await getSupabase().rpc('list_assignable_therapists')) as {
+    data: unknown;
+    error: unknown;
+  };
+  if (error) throw new Error('Die behandelnden Personen konnten nicht geladen werden.');
+  return z.array(therapistSchema).parse(data ?? []);
+}
+
+/**
+ * Wer einen Trainingstermin betreuen kann (ANN-176): die Personen mit der Rolle
+ * Trainingsbetreuung. Den Behandlungsrollen liefert der Server nichts.
+ */
+export async function fetchAssignableTrainers(): Promise<AssignableTherapist[]> {
+  const { data, error } = (await getSupabase().rpc('list_assignable_trainers')) as {
+    data: unknown;
+    error: unknown;
+  };
+  if (error) throw new Error('Die Trainingsbetreuung konnte nicht geladen werden.');
+  return z.array(therapistSchema).parse(data ?? []);
+}
+
+const locationSchema = z.object({ id: z.string(), name: z.string() });
+export type Location = z.infer<typeof locationSchema>;
+
+export async function fetchLocations(): Promise<Location[]> {
+  const { data, error } = await getSupabase()
+    .from('locations')
+    .select('id, name')
+    .order('name', { ascending: true });
+
+  if (error) throw new Error('Die Standorte konnten nicht geladen werden.');
+  return z.array(locationSchema).parse(data ?? []);
 }

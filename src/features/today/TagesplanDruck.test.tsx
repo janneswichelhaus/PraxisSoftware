@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import type { DayPlanEntry } from './api';
 import { TagesplanDruck } from './TagesplanDruck';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Das Druckblatt der Übersicht (BEF-052, ANN-021 Fassung 3): jeder Termin des

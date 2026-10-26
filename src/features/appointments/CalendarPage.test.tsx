@@ -13,6 +13,8 @@ import type * as StartortModul from '@/features/tours/startort';
 import type * as FunktionModul from '@/lib/location/funktion';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { ZOOM_STANDARD } from './calendar';
+import type * as Datum from '@/lib/datum';
+import type * as StaffApi from '@/features/staff/api';
 
 /**
  * Eine Stunde nach unten, in Pixeln der voreingestellten Zoomstufe (CAL-011).
@@ -80,11 +82,6 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchAppointments: (query: unknown) =>
       fetchAppointments(query) as Promise<AppointmentsApi.CalendarEntry[]>,
-    fetchAssignableTherapists: () =>
-      fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
-    fetchAssignableTrainers: () =>
-      fetchAssignableTrainers() as Promise<AppointmentsApi.AssignableTherapist[]>,
-    fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
     fetchAppointment: (id: string) =>
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
     cancelAppointment: (...args: unknown[]) => cancelAppointment(...args) as Promise<void>,
@@ -95,10 +92,23 @@ vi.mock('./api', async (importOriginal) => {
       bestaetigt?: boolean,
       vergangenheit?: boolean,
     ) => updateAppointment(id, stand, werte, bestaetigt, vergangenheit) as Promise<void>,
-    // Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
-    todayInTimeZone: () => HEUTE,
   };
 });
+
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: () =>
+    fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
+  fetchAssignableTrainers: () =>
+    fetchAssignableTrainers() as Promise<StaffApi.AssignableTherapist[]>,
+  fetchLocations: () => fetchLocations() as Promise<StaffApi.Location[]>,
+}));
+
+// Der heutige Tag wird festgehalten, damit die Tests nicht mit der Uhr laufen.
+vi.mock('@/lib/datum', async (importOriginal) => ({
+  ...(await importOriginal<typeof Datum>()),
+  todayInTimeZone: () => HEUTE,
+}));
 
 // POR-011: Terminwünsche von der Plattform - ohne Wünsche im Regelfall.
 const fetchPlatformRequests = vi.fn();

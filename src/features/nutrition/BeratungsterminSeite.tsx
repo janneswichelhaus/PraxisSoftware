@@ -5,17 +5,13 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import {
-  kalenderZumTermin,
-  leererTermin,
-  TERMINFENSTER_MINUTEN,
-  todayInTimeZone,
-} from '@/features/appointments/api';
-import { tageslageNeuLaden } from '@/features/appointments/tageslage';
+import { leererTermin, tageslageNeuLaden } from '@/features/appointments';
 import type { CurrentUser } from '@/features/session/types';
 import { TrainingTerminFormular } from '@/features/training/TrainingTerminFormular';
 import { beratungsterminAnlegen, ernaehrungSchluessel, fetchErnaehrung } from './api';
 import { ernaehrungsReiter, type Verhaeltnisart } from './eingabe';
+import { todayInTimeZone } from '@/lib/datum';
+import { kalenderZumTermin, TERMINFENSTER_MINUTEN } from '@/lib/termin';
 
 /**
  * `…/ernaehrung/termin` - einen Beratungstermin anlegen (ERN-012, ANN-622).

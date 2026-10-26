@@ -13,7 +13,6 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { ArbeitszeitJePerson } from '@/features/scheduling/SchedulingPage';
 import { EmptyState, LoadingState } from '@/components/ui/Feedback';
 import { Section } from '@/components/ui/Section';
-import { fetchAssignableTherapists } from '@/features/appointments/api';
 import {
   canManageWorkingHours,
   isOwner,
@@ -31,6 +30,7 @@ import {
 import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { WeekRows } from './WeekRows';
 import { changeTitle, dateLong, minutesChange, statusDisplay } from './format';
+import { fetchAssignableTherapists } from '@/features/staff/api';
 
 /**
  * Arbeitszeit (AZ-001, Überholung 8; seit ORG-003 die eine Seite dafür).

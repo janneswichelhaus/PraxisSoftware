@@ -6,13 +6,12 @@ import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { setAppointmentNotification, type Appointment } from './api';
 import {
   notificationChannelLabels,
   notificationChannelOrder,
-  setAppointmentNotification,
-  type Appointment,
   type NotificationChannel,
-} from './api';
+} from '@/lib/termin';
 
 /**
  * Vermerken, dass ein Termin der Patient:in mitgeteilt wurde (CAL-012).

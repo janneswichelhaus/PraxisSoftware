@@ -3,15 +3,13 @@ import { leererTermin } from './api';
 import {
   DAUER_UNGUELTIG,
   MITTERNACHT_MELDUNG,
-  leseAngelegtenTermin,
-  leseDauer,
-  leseMeldung,
-  mitAngelegtemTermin,
   nachDemAnlegen,
   speicherfehlerText,
   terminFehlerliste,
   terminFeldfehler,
 } from './terminformular';
+import { leseMeldung } from '@/lib/meldung';
+import { leseAngelegtenTermin, leseDauer, mitAngelegtemTermin } from '@/lib/termin';
 
 const NEU = '77777777-7777-4777-8777-000000000002';
 

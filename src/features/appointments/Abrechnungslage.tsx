@@ -6,10 +6,10 @@ import { formatEuro } from '@/lib/geld';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { empfaengerartLabels } from '@/features/billing/api';
 import { grundlageBezeichnung } from '@/features/treatment-bases/api';
-import { Deckungszeichen } from './Deckungszeichen';
 import { positionText, type Abrechnungslage } from './abrechnungslage-api';
 import { useAbrechnungslage } from './useAbrechnungslage';
 import type { Appointment } from './api';
+import { Deckungszeichen } from '@/features/treatment-bases/Deckungszeichen';
 
 function OffeneRechnungen({ lage }: { lage: Abrechnungslage }) {
   const anzahl = lage.open_invoice_count ?? 0;

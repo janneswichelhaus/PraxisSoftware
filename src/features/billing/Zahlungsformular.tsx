@@ -5,8 +5,8 @@ import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { centZuEingabe, formatEuro, parseEuroZuCent } from '@/lib/geld';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { RueckzahlungZuHoch, bucheZahlung, zahlungswegLabels } from './api';
+import { todayInTimeZone } from '@/lib/datum';
 
 export type Zahlungsrichtung = 'incoming' | 'refund';
 

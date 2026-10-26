@@ -42,6 +42,9 @@ export const ANMELDEBOGEN_ANKER = 'anmeldebogen';
 /** Die Einwilligungen in den Stammdaten - Ziel von „Zu den Einwilligungen" (Foto aufnehmen). */
 export const EINWILLIGUNGEN_ANKER = 'einwilligungen';
 
+/** Der Behandlungsverlauf im Bereich Doku - Ziel von „Bisherige Doku →“ am Termin. */
+export const VERLAUF_ANKER = 'behandlungsverlauf';
+
 /**
  * Die Bereiche der Akte in der Reihenfolge des Arbeitstags - genau vier
  * (AKTE-007, Jannes 2026-10-03); mit der Fähigkeit „Ernährungsberatung“

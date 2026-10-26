@@ -16,13 +16,12 @@ import { Chip } from '@/components/ui/Chip';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { formatDate } from '@/lib/datum';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { centZuEingabe, formatEuro, parseEuroZuCent } from '@/lib/geld';
 import type { Formularfehler } from '@/lib/formularfehler';
 import { HEILMITTEL } from '@/features/treatment-bases/heilmittel';
 import { canManageServiceCatalog, type CurrentUser } from '@/features/session/types';
-import { todayInTimeZone } from '@/features/appointments/api';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import {
   artLabels,
   bereichLabels,

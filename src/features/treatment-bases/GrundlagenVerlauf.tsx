@@ -2,11 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Disclosure } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { formatLocalDate, formatLocalTime } from '@/features/appointments/api';
 import { useSession } from '@/features/auth/sessionContext';
 import { useCurrentUser } from '@/features/session/useCurrentUser';
 import { fetchTreatmentBasisVersions, type TreatmentBasisDetail } from './api';
 import { aktuellerInhalt, verlauf } from './verlauf';
+import { formatLocalDate, formatLocalTime } from '@/lib/datum';
 
 /**
  * Der Verlauf einer Grundlage auf ihrer Bearbeiten-Seite (BEF-124, ANN-562).

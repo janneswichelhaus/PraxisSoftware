@@ -31,26 +31,13 @@ import {
   fetchPlatformRequests,
 } from '@/features/open-points/platform-requests-api';
 import {
-  dayKey,
   fetchAppointment,
   fetchAppointments,
   fetchBelegteZeiten,
-  fetchAssignableTherapists,
-  fetchAssignableTrainers,
-  fetchLocations,
-  formatLocalTime,
-  terminBezeichnung,
   istAusserhalbArbeitszeit,
   istVergangenheit,
   liegtInVergangenheit,
-  minutesOfDay,
-  NEUER_TERMIN_PARAM,
-  schreibeTerminVorbelegung,
-  TERMINFENSTER_MINUTEN,
-  todayInTimeZone,
   updateAppointment,
-  type TerminVorbelegung,
-  TERMIN_PARAM,
   appointmentToFormValues,
 } from './api';
 import {
@@ -65,9 +52,7 @@ import { TerminPanel } from './TerminPanel';
 import { TerminAktionenDialog } from './TerminAktionen';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Segment } from '@/components/ui/Segment';
-import { leseMeldung } from './terminformular';
 import { letzterKalenderstand, merkeKalenderstand } from './kalenderstand';
-import { SpannenBild } from './Laengenzeichen';
 import { naechsteAuswahl, type Spanne } from './useSpanneAufziehen';
 import { Monatskalender } from './Monatskalender';
 import type { VerschiebenFrage } from './VerschiebenRueckfrage';
@@ -79,12 +64,10 @@ import {
   FEHLZEIT_BEISPIELE,
   fensterMitArbeitszeit,
   gitterlinien,
-  kalenderwoche,
   leseEingetrageneFehlzeit,
   leseParameter,
   minuteZuZeit,
   schreibeParameter,
-  tagePlus,
   tageImBereich,
   tagesFenster,
   ZOOMSTUFEN,
@@ -92,8 +75,31 @@ import {
   type KalenderAnsicht,
   type KalenderParameter,
   type StatusFilter,
-  type Zeitband,
 } from './calendar';
+import {
+  dayKey,
+  formatLocalTime,
+  minutesOfDay,
+  todayInTimeZone,
+  kalenderwoche,
+  tagePlus,
+} from '@/lib/datum';
+import {
+  fetchAssignableTherapists,
+  fetchAssignableTrainers,
+  fetchLocations,
+} from '@/features/staff/api';
+import { leseMeldung } from '@/lib/meldung';
+import {
+  terminBezeichnung,
+  NEUER_TERMIN_PARAM,
+  schreibeTerminVorbelegung,
+  TERMINFENSTER_MINUTEN,
+  type TerminVorbelegung,
+  TERMIN_PARAM,
+} from '@/lib/termin';
+import { SpannenBild } from '@/components/ui/Laengenzeichen';
+import type { Zeitband } from '@/lib/zeitband';
 
 /** Bevorzugt das Terminfenster, sonst die kürzere Dauer (ANN-317, BEF-136). */
 const LUECKEN_DAUERN = [TERMINFENSTER_MINUTEN, KURZE_TERMINDAUER_MINUTEN] as const;

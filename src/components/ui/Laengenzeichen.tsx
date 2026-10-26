@@ -1,5 +1,9 @@
 import { Badge } from '@/components/ui/Badge';
-import { abweichendeLaengeMinuten, abweichendeLaengeText, type AppointmentKind } from './api';
+import {
+  abweichendeLaengeMinuten,
+  abweichendeLaengeText,
+  type AppointmentKind,
+} from '@/lib/termin';
 
 /**
  * Das Zeichen für eine abweichende Terminlänge (CAL-020).

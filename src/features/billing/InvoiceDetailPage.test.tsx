@@ -3,9 +3,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as BillingApi from './api';
 import { renderWithProviders, testUser } from '@/test-utils';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { rechnungsansicht } from './testdaten';
 import { zeigeMitRouten } from './testumgebung';
+import { todayInTimeZone } from '@/lib/datum';
 
 const fetchRechnung = vi.fn();
 const fetchEmpfaenger = vi.fn();

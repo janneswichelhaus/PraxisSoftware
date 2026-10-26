@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Chip } from '@/components/ui/Chip';
-import { fetchKurzblick } from '@/features/appointments/kurzblick-api';
+import { fetchKurzblick } from '@/features/appointments';
 
 /**
  * „Wie zuletzt“ (K6, ANN-502): den letzten Eintrag als Ausgangspunkt

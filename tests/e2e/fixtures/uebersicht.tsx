@@ -5,7 +5,6 @@ import { AppShell } from '@/app/AppShell';
 import { NachladefehlerContext } from '@/app/nachladefehler';
 import { VorschauProvider } from '@/features/preview/VorschauProvider';
 import { MyDayPage } from '@/features/today/MyDayPage';
-import type { DayPlanEntry } from '@/features/today/api';
 import type { Abrechnungslage } from '@/features/appointments/abrechnungslage-api';
 import type { Routenergebnis } from '@/lib/location/route';
 import { startpunkt, type Standort } from '@/features/tours/startort';
@@ -17,10 +16,11 @@ import {
 } from '@/features/tours/tagesroute';
 import { Stammdaten } from '@/features/patients/PatientMasterDataPage';
 import type { Patient } from '@/features/patients/api';
-import { tagePlus } from '@/features/appointments/calendar';
-import { todayInTimeZone, type CalendarEntry } from '@/features/appointments/api';
+import { type CalendarEntry } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import '@/index.css';
+import { todayInTimeZone, tagePlus } from '@/lib/datum';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Einstieg der Prüfseite aus `uebersicht.html` (UX-EPIC-003).

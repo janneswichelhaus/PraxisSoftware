@@ -5,8 +5,7 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
-import { formatDate } from '@/lib/datum';
-import { todayInTimeZone } from '@/features/appointments/api';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import {
   listTrainingConsents,
   recordTrainingConsent,

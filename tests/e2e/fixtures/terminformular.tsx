@@ -8,12 +8,11 @@ import { VorschauProvider } from '@/features/preview/VorschauProvider';
 import type { Patient } from '@/features/patients/api';
 import type { WorkingHour } from '@/features/scheduling/api';
 import type { CurrentUser } from '@/features/session/types';
-import { tagePlus } from '@/features/appointments/calendar';
-import { todayInTimeZone } from '@/features/appointments/api';
 import type { Standort } from '@/features/tours/startort';
 import { PRAXISPROFIL, type Tagesstopp } from '@/features/tours/tagesroute';
 import type { Routenergebnis } from '@/lib/location/route';
 import '@/index.css';
+import { todayInTimeZone, tagePlus } from '@/lib/datum';
 
 /**
  * Einstieg der Prüfseite aus `terminformular.html` (B2, ANN-530): „Termin

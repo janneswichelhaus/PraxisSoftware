@@ -7,23 +7,23 @@ import { symbolknopfKlassen } from '@/components/ui/buttonStile';
 import { EmptyState } from '@/components/ui/Feedback';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
+  type Abrechnungslage,
+  type Appointment,
   fetchAbrechnungslage,
   positionText,
-  type Abrechnungslage,
-} from '@/features/appointments/abrechnungslage-api';
+} from '@/features/appointments';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BausteinFeld } from '@/features/assessments/BausteinFeld';
 import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
 import { VORSCHLAG_OFFEN } from '@/features/assessments/dokumentationstext';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
-import { formatLocalTimeRange, patientName, type Appointment } from '@/features/appointments/api';
 import { BisherigeEintraege } from './BisherigeEintraege';
 import { AufGeraetSichern } from '@/features/offline-documentation/AufGeraetSichern';
 import { DocumentationShell } from './DocumentationShell';
 import { Einfuegemeldung } from './Einfuegemeldung';
 import { useEinfuegen } from './einfuegen';
 import { statuswechselText, type Statuswechsel } from './format';
-import { useTextverlustschutz } from './Textverlustschutz';
+import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
 import { BereitsFinalisiert, TextUebernehmen } from './Zustaende';
@@ -44,6 +44,8 @@ import {
   updateTreatmentNote,
   type TreatmentNote,
 } from './api';
+import { formatLocalTimeRange } from '@/lib/datum';
+import { patientName } from '@/lib/termin';
 
 /**
  * Behandlung abschließen in einem Schritt (UX-007).

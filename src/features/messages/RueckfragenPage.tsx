@@ -14,8 +14,7 @@ import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { Verlauf, Verlaufseintrag } from '@/components/ui/Verlauf';
-import { formatDate } from '@/lib/datum';
-import { formatLocalTime } from '@/features/appointments/api';
+import { formatDate, formatLocalTime } from '@/lib/datum';
 import { isOwner, type CurrentUser } from '@/features/session/types';
 import {
   ANTWORTFRIST_KEY,

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/Badge';
-import { notificationChannelLabels, type NotificationChannel } from './api';
+import { notificationChannelLabels, type NotificationChannel } from '@/lib/termin';
 
 /**
  * Die Mitteilungswege eines Termins als Zeichenreihe (CAL-012).

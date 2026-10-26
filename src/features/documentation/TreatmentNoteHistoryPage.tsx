@@ -4,17 +4,15 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { ErrorState } from '@/components/ui/Feedback';
 import { canReadTreatmentNote, type CurrentUser } from '@/features/session/types';
-import {
-  formatLocalDate,
-  formatLocalTime,
-  patientName,
-  type Appointment,
-} from '@/features/appointments/api';
+import type { Appointment } from '@/features/appointments';
 import { DocumentationShell } from './DocumentationShell';
 import { Schreibflaeche, ZustandMitRueckweg } from './Schreibflaeche';
-import { FREITEXT, kopfzeileFuer } from './format';
+import { kopfzeileFuer } from './format';
 import { fetchTreatmentNoteVersions, findeEintrag, type TreatmentNote } from './api';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { formatLocalDate, formatLocalTime } from '@/lib/datum';
+import { patientName } from '@/lib/termin';
+import { FREITEXT } from '@/components/ui/textStile';
 
 /**
  * Änderungsverlauf einer Behandlungsdokumentation (DOK-002, ADR-016 Punkt 5).

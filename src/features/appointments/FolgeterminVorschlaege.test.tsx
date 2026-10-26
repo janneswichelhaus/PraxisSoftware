@@ -8,10 +8,10 @@ import type * as SlotApi from '@/features/slot-search/api';
 import type * as WegModul from './wegpruefung';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-import { tagePlus } from './calendar';
-import { zeitpunktIn } from './api';
 import { luftStufe, type Seite, type Wegpruefung } from './wegpruefung';
 import { FolgeterminVorschlaege } from './FolgeterminVorschlaege';
+import { zeitpunktIn, tagePlus } from '@/lib/datum';
+import type { AppointmentType } from '@/lib/termin';
 
 const fetchUpcomingAppointments = vi.fn();
 const createAppointment = vi.fn();
@@ -158,7 +158,7 @@ function eintrag(
   datum: string,
   von: string,
   bis: string,
-  art: AppointmentsApi.AppointmentType = 'home_visit',
+  art: AppointmentType = 'home_visit',
 ): AppointmentsApi.CalendarEntry {
   return {
     id: `${datum}-${von}`,

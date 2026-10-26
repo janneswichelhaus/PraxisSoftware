@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
-import { appointmentStatusSchema, appointmentTypeSchema } from '@/features/appointments/api';
 import type { BausteinStand } from '@/features/assessments/bausteinauswahl';
+import { appointmentStatusSchema, appointmentTypeSchema } from '@/lib/termin';
 
 /**
  * Datenzugriff auf die Behandlungsdokumentation (DOK-001, DOK-002).
@@ -493,9 +493,6 @@ const recordAppointmentSchema = z.object({
 
 /** Ein Termin der Akte - der organisatorische Rahmen seiner Eintraege. */
 export type RecordAppointment = z.infer<typeof recordAppointmentSchema>;
-
-/** Dokumentationsstand eines Termins ohne Inhalt, wie ihn der Tagesplan liefert. */
-export const documentationStatusSchema = z.enum(['none', 'draft', 'final']);
 
 function seitenArgumente(cursor: AkteCursor | null) {
   return {

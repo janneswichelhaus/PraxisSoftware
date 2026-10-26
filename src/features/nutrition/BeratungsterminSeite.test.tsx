@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type * as ErnaehrungApi from './api';
-import type * as AppointmentsApi from '@/features/appointments/api';
 import { testUser } from '@/test-utils';
 import { BeratungsterminSeite } from './BeratungsterminSeite';
+import type * as StaffApi from '@/features/staff/api';
 
 const fetchErnaehrung = vi.fn();
 const beratungsterminAnlegen = vi.fn();
@@ -18,8 +18,8 @@ vi.mock('./api', async (importOriginal) => ({
 
 const fetchAssignableTherapists = vi.fn();
 const fetchAssignableTrainers = vi.fn();
-vi.mock('@/features/appointments/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof AppointmentsApi>()),
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
   fetchAssignableTherapists: () => fetchAssignableTherapists() as unknown,
   fetchAssignableTrainers: () => fetchAssignableTrainers() as unknown,
   fetchLocations: () => Promise.resolve([{ id: 'ort-1', name: 'Hauptstandort Tuebingen' }]),

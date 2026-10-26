@@ -9,7 +9,6 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { formatLocalDate } from '@/features/appointments/api';
 import { fetchPatientFiles } from '@/features/files/api';
 import {
   einloeseadresse,
@@ -30,6 +29,7 @@ import { einsichtsadresse } from './einsicht';
 import { QrCode } from './QrCode';
 import { Vertretungen } from './Vertretungen';
 import { ZUSTAND, anzeigezustand, usePlattformzugang, zugangBeendbar } from './zustand';
+import { formatLocalDate } from '@/lib/datum';
 
 /**
  * Der Abschnitt „Plattform" an Akte und Trainingsverhältnis (POR-002,

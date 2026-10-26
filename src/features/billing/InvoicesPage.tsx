@@ -10,7 +10,6 @@ import { Textlink } from '@/components/ui/Textlink';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { formatEuro } from '@/lib/geld';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { canManageInvoicing, type CurrentUser } from '@/features/session/types';
 import {
   bereichLabels,
@@ -25,6 +24,7 @@ import { Abrechnungslauf } from './Abrechnungslauf';
 import { laufstand, laufstandTexte } from './lauf';
 import { OffenePosten } from './OffenePosten';
 import { Rechnungsliste } from './Rechnungsliste';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Rechnungen (ABR-003) - die Einstiegsseite der Abrechnung.

@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { kannZurueck, aendern, zurueck, type Abfolge } from '@/components/ui/abfolge';
-import { useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import {
   AUSFALLHONORAR_RECHTZEITIG,
   AUSFALLHONORAR_REGEL,

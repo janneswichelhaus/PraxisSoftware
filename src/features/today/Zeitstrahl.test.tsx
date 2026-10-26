@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import { renderWithProviders } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
-import type { DayPlanEntry } from './api';
 import { Zeitstrahl } from './Zeitstrahl';
 import type { Anfahrt } from './tagesstart';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Der Zeitstrahl der Übersicht (Design-Handoff 2026-10-01, Abschnitte 5 und

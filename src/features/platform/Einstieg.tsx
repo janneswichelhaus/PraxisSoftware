@@ -13,7 +13,7 @@ import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { ENDPUNKT_SCHLUESSEL, eigenerEndpunkt, pushErlauben, pushStand } from '@/lib/push';
 import {
   befundbogenSchluessel,

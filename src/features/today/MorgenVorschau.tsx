@@ -3,14 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { EmptyState } from '@/components/ui/Feedback';
 import { Textlink } from '@/components/ui/Textlink';
 import { travelPlan } from '@/components/ui/travelPlan';
-import { formatLocalTime } from '@/features/appointments/api';
-import { fetchDayPlan, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from './api';
+import { nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { useTagesfahrzeiten } from './fahrzeiten';
 import { Tageskacheln, type Abfahrt } from './Tageskacheln';
 import { tagesPfad } from './tageswahl';
 import { kopfDatum } from './wochenfenster';
 import { hausbesucheDesTages, liegeHeute } from './tagesstart';
 import { Zeitstrahl } from './Zeitstrahl';
+import { formatLocalTime } from '@/lib/datum';
+import { fetchDayPlan } from '@/features/day-plan/api';
 
 /** Ohne Bezug auf eine Uhr: Morgen liegt ganz vor einem (`bezugszeitpunkt`). */
 const VOR_ALLEM = 0;

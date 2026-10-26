@@ -8,7 +8,6 @@ import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { todayInTimeZone } from '@/features/appointments/api';
 import { ordneScanZu } from '@/features/files/api';
 import type { CurrentUser } from '@/features/session/types';
 import {
@@ -27,6 +26,7 @@ import {
 import { HAUSBESUCH, HEILMITTEL } from './heilmittel';
 import { usePosNummern } from './posNummern';
 import { ScanBesideForm } from './ScanBesideForm';
+import { todayInTimeZone } from '@/lib/datum';
 
 /** Eine Zeile unter „Positionen für die Rechnung". */
 interface Zeile {

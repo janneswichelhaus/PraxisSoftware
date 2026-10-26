@@ -22,22 +22,9 @@ import {
   rueckfrageOben,
   spalten,
   trifftPunktauswahl,
-  type Zeitband,
 } from './calendar';
 import { mitRueckweg } from '@/lib/rueckweg';
-import {
-  abweichendeLaengeMinuten,
-  abweichendeLaengeText,
-  appointmentStatusLabels,
-  appointmentStatusTon,
-  appointmentTypeHint,
-  dokuOffen,
-  istBeratung,
-  terminBezeichnung,
-  type CalendarEntry,
-  terminPfad,
-} from './api';
-import { Laengenzeichen } from './Laengenzeichen';
+import { dokuOffen, type CalendarEntry } from './api';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
 import { WegauskunftFuer } from './Wegauskunft';
 import type { Wegfrage } from './wegpruefung';
@@ -48,6 +35,18 @@ import { AnlegenMenue, type AnlegenEintrag } from './AnlegenMenue';
 import { auswahlBildlauf } from './auswahlBildlauf';
 import { VerschiebenRueckfrage, type VerschiebenFrage } from './VerschiebenRueckfrage';
 import { useZweiFingerZoom } from './useZweiFingerZoom';
+import {
+  abweichendeLaengeMinuten,
+  abweichendeLaengeText,
+  appointmentStatusLabels,
+  appointmentStatusTon,
+  appointmentTypeHint,
+  istBeratung,
+  terminBezeichnung,
+  terminPfad,
+} from '@/lib/termin';
+import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
+import type { Zeitband } from '@/lib/zeitband';
 
 /**
  * Eine abgelegte, noch nicht bestätigte Verschiebung, wie das Gitter sie

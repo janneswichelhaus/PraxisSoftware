@@ -5,8 +5,6 @@ import { ListRows } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { appointmentTypeHint, schreibeTerminVorbelegung } from '@/features/appointments/api';
-import { DAUER_PARAM } from '@/features/appointments/terminformular';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
@@ -19,6 +17,7 @@ import {
   type WaitlistMatch,
 } from './api';
 import { Arbeitszeile } from './Arbeitszeile';
+import { appointmentTypeHint, schreibeTerminVorbelegung, DAUER_PARAM } from '@/lib/termin';
 
 function takeOverLink(match: WaitlistMatch, slot: FreeSlot, back: string): string {
   const params = new URLSearchParams(

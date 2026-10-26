@@ -19,12 +19,12 @@ import {
   EINGABETEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
-import { formatDate } from '@/lib/datum';
+} from '@/app/Textverlustschutz';
+import { formatDate, todayInTimeZone, istIsoDatum } from '@/lib/datum';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { EreignisArbeitszeitRueckfrage, EreignisFormFields } from './EreignisFormFields';
-import { fetchStaffMembers } from '@/features/staff/api';
+import { fetchStaffMembers, fetchLocations } from '@/features/staff/api';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {
   EREIGNIS_BESCHRIFTUNGEN,
@@ -32,20 +32,17 @@ import {
   EREIGNIS_FELD_IDS,
   FEHLZEIT_BEISPIELE,
   ereignisGeaendert,
-  istIsoDatum,
   mitEingetragenerFehlzeit,
   type EreignisFehlerfeld,
 } from './calendar';
 import {
   createEventSeries,
   ereignisFormSchema,
-  fetchLocations,
   istAusserhalbArbeitszeit,
-  leseTerminVorbelegung,
-  todayInTimeZone,
   type EreignisFormValues,
 } from './api';
 import { SERIE_HOECHSTZAHL, rhythmen, serienTermine, type Rhythmus } from './serie';
+import { leseTerminVorbelegung } from '@/lib/termin';
 
 /**
  * Dauerfehlzeit eintragen (CAL-021).

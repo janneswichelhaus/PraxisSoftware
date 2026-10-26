@@ -15,8 +15,7 @@ import {
   type Abfolge,
 } from '@/components/ui/abfolge';
 import { RUECKWEG_PARAM, leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
-import { todayInTimeZone } from '@/features/appointments/api';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { FLOTTE_SCHLUESSEL, fetchFleet, flotteSchluessel, takeKey } from '@/features/fleet/api';
 import { montagDerWoche } from '@/features/fleet/format';
 import { saveWorkingHours } from '@/features/scheduling/api';
@@ -60,6 +59,7 @@ import {
 import { EinladungsError, ladeZugangEin } from './konto-api';
 import { staffFeldId } from './mitarbeiterfelder';
 import { problemTexte } from './zugangstexte';
+import { todayInTimeZone } from '@/lib/datum';
 
 const LEER: Personangaben = { given_name: '', family_name: '', work_email: '', work_phone: '' };
 

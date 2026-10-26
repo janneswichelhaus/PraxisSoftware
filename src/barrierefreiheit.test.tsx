@@ -12,6 +12,7 @@ import { Route, Routes } from 'react-router-dom';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import type * as AbsenderModul from '@/features/datenschutz/absender';
 import { pruefeBarrierefreiheit } from './barrierefreiheit';
+import type * as StaffApi from '@/features/staff/api';
 
 /**
  * Automatische Barrierefreiheitsprüfung auf den Kernseiten (UI-000).
@@ -83,9 +84,6 @@ vi.mock('@/features/datenschutz/absender', async (importOriginal) => ({
 
 vi.mock('@/features/appointments/api', async (importOriginal) => ({
   ...(await importOriginal<typeof AppointmentsApi>()),
-  fetchAssignableTherapists: () =>
-    Promise.resolve([{ staff_member_id: 'st-1', display_name: 'Anna Beispiel' }]),
-  fetchLocations: () => Promise.resolve([{ id: 'ort-1', name: 'Hauptstandort' }]),
   fetchTreatmentBasisSlots: () =>
     Promise.resolve({
       patient_id: 'pat-1',
@@ -110,6 +108,13 @@ vi.mock('@/features/appointments/api', async (importOriginal) => ({
         organization_time_zone: 'Europe/Berlin',
       },
     ]),
+}));
+
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: () =>
+    Promise.resolve([{ staff_member_id: 'st-1', display_name: 'Anna Beispiel' }]),
+  fetchLocations: () => Promise.resolve([{ id: 'ort-1', name: 'Hauptstandort' }]),
 }));
 
 vi.mock('@/features/documentation/textbausteine', async (importOriginal) => ({

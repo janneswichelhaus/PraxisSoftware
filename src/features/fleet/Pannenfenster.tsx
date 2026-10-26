@@ -16,7 +16,7 @@ import {
   EINGABETEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+} from '@/app/Textverlustschutz';
 import { FLOTTE_SCHLUESSEL, recordBreakdown, type BikeDetail, type Fleet } from './api';
 import { antriebsriss, zoneLabel } from './bike3d/zones';
 import { fotoText, fotosVerlorenText, uebertrageFotos, type Fotoauftrag } from './fotoauftraege';

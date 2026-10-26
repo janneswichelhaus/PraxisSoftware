@@ -15,17 +15,12 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import {
   cancelAppointment,
   createAppointment,
-  dayKey,
   fetchAppointment,
   fetchAppointments,
   fetchUpcomingAppointments,
-  formatLocalTime,
-  kalenderZumTermin,
-  todayInTimeZone,
-  zeitpunktIn,
   type Appointment,
 } from './api';
-import { arbeitszeitBaender, tagePlus } from './calendar';
+import { arbeitszeitBaender } from './calendar';
 import { AufDerPlattformSichtbar, undoAppointmentCreation } from './folgetermin-api';
 import {
   dauerangabe,
@@ -40,6 +35,8 @@ import {
   type Urteil,
 } from './folgetermin';
 import { frageAusFormular, useWegpruefung } from './wegpruefung';
+import { dayKey, formatLocalTime, todayInTimeZone, zeitpunktIn, tagePlus } from '@/lib/datum';
+import { kalenderZumTermin } from '@/lib/termin';
 
 /** Höchstens so viele Vorschläge stehen da. */
 const VORSCHLAEGE = 3;

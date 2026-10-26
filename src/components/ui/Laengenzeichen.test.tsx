@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Laengenzeichen, SpannenBild } from './Laengenzeichen';
-import { abweichendeLaengeMinuten, abweichendeLaengeText, istRegellaenge } from './api';
+import { abweichendeLaengeMinuten, abweichendeLaengeText, istRegellaenge } from '@/lib/termin';
 
 /**
  * PROJECT_PRINCIPLES.md 0.11 §8.1: Ein Behandlungstermin, dessen Länge weder

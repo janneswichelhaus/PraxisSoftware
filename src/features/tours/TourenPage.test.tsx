@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as AppointmentsApi from '@/features/appointments/api';
-import type * as TodayApi from '@/features/today/api';
 import type * as Tagesroute from './tagesroute';
 import type * as Startort from './startort';
 import { renderWithProviders, testUser } from '@/test-utils';
+import type * as StaffApi from '@/features/staff/api';
+import type * as Tagesplan from '@/features/day-plan/api';
 
 /**
  * Tourenseite (MAP-006b): lädt Tagesliste und Tagesroute der gewählten
@@ -17,19 +17,15 @@ const fetchDayRoute = vi.fn();
 const fetchAssignableTherapists = vi.fn();
 const fetchStandorte = vi.fn();
 const karte = vi.fn();
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchAssignableTherapists: () => fetchAssignableTherapists() as unknown,
+}));
 
-vi.mock('@/features/appointments/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof AppointmentsApi>();
-  return {
-    ...actual,
-    fetchAssignableTherapists: () => fetchAssignableTherapists() as unknown,
-  };
-});
-
-vi.mock('@/features/today/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof TodayApi>();
-  return { ...actual, fetchDayPlan: (...a: unknown[]) => fetchDayPlan(...a) as unknown };
-});
+vi.mock('@/features/day-plan/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof Tagesplan>()),
+  fetchDayPlan: (...a: unknown[]) => fetchDayPlan(...a) as unknown,
+}));
 
 vi.mock('./tagesroute', async (importOriginal) => {
   const actual = await importOriginal<typeof Tagesroute>();
@@ -43,10 +39,12 @@ vi.mock('./startort', async (importOriginal) => {
 
 // UBK-015: Route über die eigene Function; ohne Angabe bleibt sie offen.
 const rufeFunktionAuf = vi.fn((): Promise<unknown> => new Promise(() => {}));
+
 vi.mock('@/lib/location/funktion', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   rufeFunktionAuf: () => rufeFunktionAuf(),
 }));
+
 vi.mock('./fahrzeitfaktor-api', () => ({
   fetchFahrzeitfaktor: () => Promise.resolve(1),
   saveFahrzeitfaktor: () => Promise.resolve(),

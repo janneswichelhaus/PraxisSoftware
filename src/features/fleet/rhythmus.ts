@@ -1,8 +1,7 @@
-import type { Zeitband } from '@/features/appointments/calendar';
-import { freieLuecken } from '@/features/appointments/lueckenfinder';
 import { mitRueckweg } from '@/lib/rueckweg';
 import type { Bike } from './api';
 import { formatTag, kalendertag, plusTage, wochentagVon } from './format';
+import { freieLuecken, type Zeitband } from '@/lib/zeitband';
 
 /**
  * Der Check-Up-Rhythmus (FLT-009, ANN-570) ohne Oberfläche: wann ein Rad

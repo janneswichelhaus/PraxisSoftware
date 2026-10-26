@@ -3,11 +3,11 @@ import { Field } from '@/components/ui/Field';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
-import type { AssignableTherapist } from '@/features/appointments/api';
 import type { StammdatenFeld } from './api';
 import { stammdatenFeldId } from './stammdatenfelder';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Disclosure } from '@/components/ui/Card';
+import type { AssignableTherapist } from '@/features/staff/api';
 
 /** Was die Anlage hinter „Weitere Angaben“ stellt (K11). */
 const WEITERE: readonly StammdatenFeld[] = [

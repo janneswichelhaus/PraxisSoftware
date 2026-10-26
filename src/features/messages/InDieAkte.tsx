@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Rueckfrage as Nachfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { formatLocalTime } from '@/features/appointments/api';
 import {
   RUECKFRAGEN_KEY,
   THEMA_LABEL,
@@ -14,6 +13,7 @@ import {
   verfasser,
   type Rueckfrage,
 } from './api';
+import { formatLocalTime } from '@/lib/datum';
 
 /**
  * „In die Akte übernehmen" an der Rückfrage (KOM-004, §10, IDEA-KOM-007).

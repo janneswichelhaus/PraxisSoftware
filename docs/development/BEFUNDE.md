@@ -77,32 +77,6 @@ Schema genau einer Funktion gehört und die zweite Sicht ihr eigenes bekommt.
 Entschieden ist das nicht; es gehört in den Loop, der das nächste Feld an ein
 geteiltes Schema hängt.
 
-### BEF-024 — Der Terminkontext steht in zwei Schemata
-
-|         |                                                                                  |
-| ------- | -------------------------------------------------------------------------------- |
-| Datum   | 2026-09-21                                                                       |
-| Bereich | Oberfläche: `src/features/appointments/api.ts`, `src/features/staff/api.ts`      |
-| Quelle  | Loop CAL-027, beim Umbenennen der Bestandswerte                                  |
-| Status  | offen                                                                            |
-| Berührt | `futureAppointmentSchema`; nichts an der Datenbank                               |
-
-**Beobachtung.** `appointmentKindSchema` ist als eine Quelle angelegt und wird
-von den Terminschemata benutzt. `futureAppointmentSchema` in `features/staff`
-zählt dieselben drei Werte stattdessen ein zweites Mal auf, statt sie zu
-importieren.
-
-**Warum das zählt.** CAL-027 hat beide Stellen anfassen müssen, und die zweite
-fiel nur auf, weil ein `grep` sie fand — kein Gate hätte sie gemeldet. Ein
-vierter Kontext (oder eine weitere Umbenennung) trifft dieselbe Lücke, und
-dann steht in der Verwaltung der Zugänge ein Schema, das den neuen Wert
-verwirft, während der Kalender ihn kennt: eine Zod-Ausnahme in einer Liste,
-die mit dem Kontext gar nichts vorhat.
-
-**Richtung.** `appointmentKindSchema` importieren statt aufzählen — eine
-Zeile, gehört in den nächsten Loop, der `features/staff` ohnehin anfasst. Als
-eigener Auftrag lohnt sie nicht.
-
 ### BEF-026 — B13 ist mit dem eingebauten Mailversand nicht einlösbar
 
 |         |                                                                                       |
@@ -701,3 +675,15 @@ Marke vorsieht.
 | Berührt | die beiden Tests, kein Code der Anwendung |
 
 **Beobachtung.** Unter „Dokumente“ war „Herunterladen“ nach 5 s noch nicht da, obwohl der Name der Datei stand. Die Durchführung lief bei 188 px und „Sehr groß“ einmal waagerecht über: Gemessen wird, sobald der Titel sichtbar ist - womöglich bevor die Schriftgröße des Geräts gilt. **Erwartet.** Auf das gemessene Element warten (der Knopf mit eigenem Zeitlimit, die Schrift über `data-schrift` am Wurzelelement) und erst dann messen; die Grenzen bleiben.
+
+### Trennung — Die Prüfungen erlauben `@/lib/` pauschal, auch einen Datenzugriff dort
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-25 |
+| Bereich | `src/features/platform/trennung.test.ts`, `src/features/preview/trennung.test.ts`, `src/lib/` |
+| Quelle  | Zweitreview zu Aufräumen Schritt 3 |
+| Status  | offen (Vorschlag) |
+| Berührt | beide Trennungsprüfungen; `src/lib/ki/gateway.ts`, `src/lib/location/funktion.ts` |
+
+**Beobachtung.** Beide Prüfungen lassen jeden Import aus `@/lib/` durch, weil dort anbieterfreie Hilfen liegen. Zwei Module dort sprechen aber den Server an (`functions.invoke` im KI-Gateway und in der Ortsfunktion); die Vorschau sperrt nur die Ortsmodule einzeln. Läge eine Praxisabfrage unter `src/lib`, sähe keine der beiden Prüfungen einen Import aus Plattform oder Vorschau. Schritt 3 hat die Tagesliste deshalb als Modul `day-plan` angelegt statt in `src/lib` (DEVELOPMENT.md „Modulgrenzen“). **Erwartet.** Ein Test hält fest, welche Dateien unter `src/lib` `getSupabase()` benutzen dürfen, oder die Trennungsprüfungen sperren genau diese; dazu je eine Gegenprobe.

@@ -5,11 +5,11 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchFleet, flotteSchluessel } from './api';
 import { BikeForm } from './BikeForm';
 import { montagDerWoche } from './format';
+import { todayInTimeZone } from '@/lib/datum';
 
 const ZUR_FLOTTE = '/betrieb/flotte';
 

@@ -7,14 +7,14 @@ import { TextArea } from '@/components/ui/TextArea';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Textlink } from '@/components/ui/Textlink';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
-import { patientName, type Appointment } from '@/features/appointments/api';
+import type { Appointment } from '@/features/appointments';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { DocumentationShell } from './DocumentationShell';
 import {
   DOKUMENTATIONSTEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from './Textverlustschutz';
+} from '@/app/Textverlustschutz';
 import { Schreibfeld, Schreibflaeche, ZustandMitRueckweg } from './Schreibflaeche';
 import { kopfzeileFuer } from './format';
 import { NochEinEntwurf } from './Zustaende';
@@ -29,6 +29,7 @@ import {
 } from './api';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { patientName } from '@/lib/termin';
 
 /**
  * Die Sätze des Schutzes für die Korrektur (DOK-05).

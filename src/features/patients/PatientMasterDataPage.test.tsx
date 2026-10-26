@@ -7,7 +7,6 @@ import type * as VermerkeApi from '@/features/datenschutz/vermerke';
 import type * as FilesApi from '@/features/files/api';
 import type * as IntakeApi from '@/features/open-points/intake-api';
 import type * as BillingApi from '@/features/billing/api';
-import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as Geocode from '@/lib/location/geocode';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
@@ -48,6 +47,9 @@ vi.mock('./api', async (importOriginal) => {
       setTreatmentTableRequired(id, wert) as Promise<void>,
     setPatientAddressCoordinate: (...args: unknown[]) =>
       setPatientAddressCoordinate(...args) as Promise<void>,
+    fetchVeralteteHausbesuche: () => fetchVeralteteHausbesuche() as unknown,
+    aktualisiereHausbesuchAdressen: (ids: string[]) =>
+      aktualisiereHausbesuchAdressen(ids) as unknown,
   };
 });
 
@@ -59,12 +61,6 @@ vi.mock('@/lib/location/geocode', async (importOriginal) => ({
 }));
 const fetchVeralteteHausbesuche = vi.fn(() => Promise.resolve([] as unknown[]));
 const aktualisiereHausbesuchAdressen = vi.fn();
-vi.mock('@/features/appointments/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof AppointmentsApi>()),
-  fetchVeralteteHausbesuche: () => fetchVeralteteHausbesuche() as unknown,
-  aktualisiereHausbesuchAdressen: (ids: string[]) => aktualisiereHausbesuchAdressen(ids) as unknown,
-}));
-
 // Der Abschnitt „Plattform" hat eigene Tests (POR-002, POR-005); hier nur
 // ohne Zugang und ohne Vertretung.
 vi.mock('@/features/platform-access/api', async (importOriginal) => ({

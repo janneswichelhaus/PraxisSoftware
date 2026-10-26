@@ -4,16 +4,17 @@ import {
   appointmentSchema,
   TERMIN_SPALTEN,
   folgeterminVorbelegung,
-  formatLocalDate,
-  formatLocalTime,
-  formatLocalTimeRange,
-  leseTerminVorbelegung,
   locationSummary,
-  schreibeTerminVorbelegung,
-  todayInTimeZone,
   type Appointment,
 } from './api';
 import { testAppointment } from '@/test-utils';
+import {
+  formatLocalDate,
+  formatLocalTime,
+  formatLocalTimeRange,
+  todayInTimeZone,
+} from '@/lib/datum';
+import { leseTerminVorbelegung, schreibeTerminVorbelegung } from '@/lib/termin';
 
 const basis = testAppointment({
   location_id: null,

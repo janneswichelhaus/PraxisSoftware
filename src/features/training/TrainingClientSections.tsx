@@ -12,17 +12,14 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Tile, TileGrid } from '@/components/ui/Tile';
-import { formatDate } from '@/lib/datum';
-import { mitRueckweg } from '@/lib/rueckweg';
 import {
-  appointmentStatusLabels,
-  appointmentStatusTon,
-  appointmentTypeHint,
+  formatDate,
   dayKey,
   formatLocalDate,
   formatLocalTimeRange,
   todayInTimeZone,
-} from '@/features/appointments/api';
+} from '@/lib/datum';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   createTrainingBasis,
   listTrainingBases,
@@ -33,6 +30,7 @@ import {
   type TrainingClient,
   type TrainingClientAppointment,
 } from './api';
+import { appointmentStatusLabels, appointmentStatusTon, appointmentTypeHint } from '@/lib/termin';
 
 /** „10:00–11:00 Uhr · Video · Tom" - eine abweichende Art steht dabei (ANN-192). */
 function terminMeta(termin: TrainingClientAppointment, zone: string): string {

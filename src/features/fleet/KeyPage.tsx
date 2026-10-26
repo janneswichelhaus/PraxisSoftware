@@ -20,8 +20,7 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { todayInTimeZone } from '@/features/appointments/api';
-import { useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import { leseRueckweg } from '@/lib/rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import {
@@ -49,6 +48,7 @@ import {
   vorgang,
   type Seite,
 } from './schluesselablauf';
+import { todayInTimeZone } from '@/lib/datum';
 
 const ZUR_FLOTTE = '/betrieb/flotte';
 

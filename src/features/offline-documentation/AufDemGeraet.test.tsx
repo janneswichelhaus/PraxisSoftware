@@ -18,7 +18,7 @@ import {
 } from './entwuerfe';
 import { einrichten } from './servicePhone';
 import { tagesplanAblegen } from './tagesplan';
-import type { DayPlanEntry } from '@/features/today/api';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 /** OFF-002: Schreiben auf dem Gerät, Zustände und Wege im Konflikt (ADR-024 Punkte 6 bis 8). */
 

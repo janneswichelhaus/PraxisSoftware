@@ -11,8 +11,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Select } from '@/components/ui/Select';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-import { formatDate } from '@/lib/datum';
-import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
+import { formatDate, todayInTimeZone } from '@/lib/datum';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchStandorte, garagenpunkt, startpunkt } from './startort';
 import { Fahrtabschnitt, Routenzusammenfassung } from './Fahrten';
@@ -20,6 +19,7 @@ import { useFahrten, useTagesstopps } from './fahrpuffer';
 import { Tourenliste } from './Tourenliste';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ortsZeile, tagKurz, type Ortswahl } from './tourKopf';
+import { fetchAssignableTherapists } from '@/features/staff/api';
 
 const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
 

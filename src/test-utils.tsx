@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { render, type RenderResult } from '@testing-library/react';
 import { VorschauProvider } from '@/features/preview/VorschauProvider';
-import type { Appointment } from '@/features/appointments/api';
+import type { Appointment } from '@/features/appointments';
 import type { Patient } from '@/features/patients/api';
 import type { StaffMember } from '@/features/staff/api';
 import type { CurrentUser, RoleKey } from '@/features/session/types';

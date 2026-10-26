@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type { Appointment } from '@/features/appointments/api';
 import { TerminAktionenDialog } from '@/features/appointments/TerminAktionen';
+import { TerminErweiterungenKontext } from '@/features/appointments/erweiterungen';
+import { TERMIN_ERWEITERUNGEN } from '@/app/terminErweiterungen';
 import type { Abrechnungslage } from '@/features/appointments/abrechnungslage-api';
 import type { Kurzblick } from '@/features/appointments/kurzblick-api';
 import type { LeistungenAmTermin } from '@/features/appointments/leistungenAmTermin';
@@ -274,13 +276,15 @@ const router = createMemoryRouter(
     {
       path: '/kalender',
       element: rahmen(
-        <TerminAktionenDialog
-          appointmentId={TERMIN}
-          user={benutzer}
-          eingehend="/kalender"
-          zumTermin={`/kalender?termin=${TERMIN}`}
-          onSchliessen={() => undefined}
-        />,
+        <TerminErweiterungenKontext.Provider value={TERMIN_ERWEITERUNGEN}>
+          <TerminAktionenDialog
+            appointmentId={TERMIN}
+            user={benutzer}
+            eingehend="/kalender"
+            zumTermin={`/kalender?termin=${TERMIN}`}
+            onSchliessen={() => undefined}
+          />
+        </TerminErweiterungenKontext.Provider>,
       ),
     },
     { path: '*', element: rahmen(<p>Ende der Prüfseite.</p>) },

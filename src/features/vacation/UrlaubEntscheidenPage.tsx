@@ -11,9 +11,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { beginne, kannZurueck, weiter, zurueck, type Abfolge } from '@/components/ui/abfolge';
-import { formatLocalDate, todayInTimeZone } from '@/features/appointments/api';
-import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { DaysToReschedule } from '@/features/appointments';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import type { CurrentUser } from '@/features/session/types';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
@@ -27,6 +26,7 @@ import {
 import { urlaubsfenster } from './fenster';
 import { terminePfad } from './termine';
 import { tagKurz, tage, urlaubstage, zeitraumText } from './zeitraum';
+import { formatLocalDate, todayInTimeZone } from '@/lib/datum';
 
 /**
  * Über einen Urlaubsantrag entscheiden (G7b, URL-001): je Antrag eine Seite

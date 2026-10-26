@@ -18,7 +18,7 @@ import {
   EINGABETEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+} from '@/app/Textverlustschutz';
 import { Kameradialog } from '@/features/files/Kameradialog';
 import type { CurrentUser } from '@/features/session/types';
 import { FLOTTE_SCHLUESSEL, recordCheckup, type BikeDetail } from './api';

@@ -11,8 +11,8 @@ import {
   stoppsDesTages,
   type Stopp,
 } from '@/features/tours/tagesroute';
-import type { DayPlanEntry } from './api';
 import { stehtAus, type Anfahrt } from './tagesstart';
+import type { DayPlanEntry } from '@/features/day-plan/api';
 
 // -----------------------------------------------------------------------------
 // Fahrzeiten des eigenen Tages für die Übersicht (Design-Handoff 2026-10-01)

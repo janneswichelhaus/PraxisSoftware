@@ -8,12 +8,12 @@ import { leseRueckweg } from '@/lib/rueckweg';
 import { canWriteTrainingClients, type CurrentUser } from '@/features/session/types';
 import {
   appointmentToFormValues,
-  todayInTimeZone,
+  tageslageNeuLaden,
   updateAppointment,
-} from '@/features/appointments/api';
+} from '@/features/appointments';
 import { getTrainingAppointment } from './api';
 import { TrainingTerminFormular } from './TrainingTerminFormular';
-import { tageslageNeuLaden } from '@/features/appointments/tageslage';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Einen Trainingstermin verschieben (TRN-004).

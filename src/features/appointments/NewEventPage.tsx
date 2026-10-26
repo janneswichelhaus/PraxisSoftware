@@ -16,10 +16,10 @@ import {
   EINGABETEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+} from '@/app/Textverlustschutz';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { EreignisArbeitszeitRueckfrage, EreignisFormFields } from './EreignisFormFields';
-import { fetchStaffMembers } from '@/features/staff/api';
+import { fetchStaffMembers, fetchLocations } from '@/features/staff/api';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {
@@ -33,12 +33,11 @@ import {
 import {
   createAppointmentEvent,
   ereignisFormSchema,
-  fetchLocations,
   istAusserhalbArbeitszeit,
-  leseTerminVorbelegung,
-  todayInTimeZone,
   type EreignisFormValues,
 } from './api';
+import { todayInTimeZone } from '@/lib/datum';
+import { leseTerminVorbelegung } from '@/lib/termin';
 
 /**
  * Eine Fehlzeit des Praxisbetriebs eintragen (CAL-015b, CAL-015c).

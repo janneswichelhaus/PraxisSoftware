@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
 import { CalendarPage } from '@/features/appointments/CalendarPage';
 import { bereichFuer } from '@/features/appointments/calendar';
-import { todayInTimeZone, type CalendarEntry } from '@/features/appointments/api';
+import { type CalendarEntry } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import type { WorkingHour } from '@/features/scheduling/api';
 import { wegpunkte } from '@/features/appointments/fahrwege';
@@ -12,6 +12,7 @@ import { PRAXISPROFIL, type Tagesstopp } from '@/features/tours/tagesroute';
 import { startpunkt, type Standort } from '@/features/tours/startort';
 import type { Routenergebnis } from '@/lib/location/route';
 import '@/index.css';
+import { todayInTimeZone } from '@/lib/datum';
 
 /**
  * Einstieg der Prüfseite aus `kalender.html` (UX-EPIC-002, BEF-035 bis BEF-039).

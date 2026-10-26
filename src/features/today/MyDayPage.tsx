@@ -14,27 +14,19 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Zweispalter } from '@/components/ui/Zweispalter';
-import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
 import {
+  type CalendarEntry,
   dokumentiertOhneHaken,
+  fetchAbrechnungslage,
+  fetchAppointments,
+  FreigabeNachHaken,
   hakenFehlt,
   hakenZuruecknehmbar,
-} from '@/features/appointments/haken';
-import { FreigabeNachHaken } from '@/features/appointments/FreigabeNachHaken';
+  NavigationZumTermin,
+  positionText,
+  TerminAbschliessenKnopf,
+} from '@/features/appointments';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
-import {
-  appointmentStatusLabels,
-  appointmentStatusTon,
-  appointmentTypeHint,
-  fetchAppointments,
-  formatLocalDate,
-  formatLocalTime,
-  terminBezeichnung,
-  staffName,
-  todayInTimeZone,
-  type CalendarEntry,
-  terminPfad,
-} from '@/features/appointments/api';
 import {
   canManageAppointments,
   canReadPatientDirectory,
@@ -45,10 +37,7 @@ import {
   isStaff,
   type CurrentUser,
 } from '@/features/session/types';
-import { NavigationZumTermin } from '@/features/appointments/NavigationStarten';
-import { fetchAbrechnungslage, positionText } from '@/features/appointments/abrechnungslage-api';
-import { tagePlus } from '@/features/appointments/calendar';
-import { fetchDayPlan, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS, type DayPlanEntry } from './api';
+import { nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { Tageskarte } from './Tagesliste';
 import { AnrufKnopf, AusfallKnopf, HakenRueckgaengig, SpaeterDa } from './Besuchsknoepfe';
 import { ausfallMoeglich, dokuZiel } from './besuchswege';
@@ -84,13 +73,23 @@ import {
   type Fokus,
   type NaechsterWeg,
 } from './tagesstart';
-import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
 import { OpenPointsSummary } from '@/features/open-points/OpenPointsSummary';
 import { OPEN_INTAKES_KEY, fetchOpenIntakes } from '@/features/open-points/intake-api';
 import { useBarometerHinweise } from '@/features/feedback/barometerHinweis';
 import { REJECTED_TIME_OFF_KEY, fetchRejectedTimeOff } from '@/features/timeaccount/api';
 import { HinweisZwischendurch } from './HinweisZwischendurch';
+import { formatLocalDate, formatLocalTime, todayInTimeZone, tagePlus } from '@/lib/datum';
+import {
+  appointmentStatusLabels,
+  appointmentStatusTon,
+  appointmentTypeHint,
+  terminBezeichnung,
+  staffName,
+  terminPfad,
+} from '@/lib/termin';
+import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
+import { fetchDayPlan, type DayPlanEntry } from '@/features/day-plan/api';
 
 /**
  * Übersicht - der persönliche Einstieg.

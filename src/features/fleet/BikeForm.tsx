@@ -11,7 +11,7 @@ import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { Mehrfachwahl } from '@/components/ui/Wahlreihe';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { FLOTTE_SCHLUESSEL, saveBike, type Bike, type Fleet } from './api';
 import { WOCHENTAGE } from './format';

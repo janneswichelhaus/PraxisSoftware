@@ -3,9 +3,9 @@ import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { Routenergebnis } from '@/lib/location/route';
 import { formatiereFahrzeit, formatiereStrecke } from '@/lib/location/strecke';
-import { formatLocalTime } from '@/features/appointments/api';
 import type { Pufferpruefung } from './fahrpuffer';
 import { FEHLERTEXTE } from './karte/fehlertexte';
+import { formatLocalTime } from '@/lib/datum';
 
 /**
  * Anzeige von Route, Fahrzeit und Fahrpuffer (MAP-006c).

@@ -7,7 +7,7 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Segment } from '@/components/ui/Segment';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import {
   bezug,

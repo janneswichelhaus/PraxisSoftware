@@ -1607,7 +1607,10 @@
           "id": "aufraeumen-3",
           "name": "Aufräumen Schritt 3: Modulschnittstellen mit schmaler index.ts, ESLint gegen tiefe Importe, zuerst Termine",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-25",
+          "nachweis": "Branch ccr-51128c80-r6lmjn, scripts/eslint-modulgrenzen.test.mjs, scripts/aufraeumen.test.mjs, pnpm lint ohne Warnung, verschobene Deklarationen gegen main verglichen, pnpm test und pnpm test:db",
+          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; ANN-748; Termine ohne gegenseitige Abhängigkeit, 17 statt 32 Paare; BEF-024 erledigt"
         },
         {
           "id": "aufraeumen-4",
