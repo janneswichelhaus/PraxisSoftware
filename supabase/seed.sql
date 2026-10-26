@@ -894,7 +894,7 @@ insert into public.exercise_plan_items
 update public.exercise_plan_items i
    set exercise_name = e.name, exercise_lay_name = e.lay_name, variant_name = v.name,
        variant_lay_name = v.lay_name, body_region = e.body_region, instruction = v.instruction,
-       equipment = v.equipment, illustration = v.illustration
+       equipment = v.equipment
   from public.exercise_variants v
   join public.exercises e on e.id = v.exercise_id
  where v.id = i.variant_id

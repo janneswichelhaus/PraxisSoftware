@@ -4534,13 +4534,13 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
 
 Technik · verworfen · 2026-10-15 · Jannes · — · Wiedervorlage: —
 
-**Verworfen (Jannes, 2026-10-15):** keine KI-Bilder. Es gilt ANN-539; Zeichner und Posenformat sind entfernt, die Datenbank nimmt nur noch `null` an.
+**Verworfen (Jannes, 2026-10-15):** keine KI-Bilder. Es gilt ANN-539; Zeichner und Posenformat sind entfernt, seit M9 (2026-10-26) auch Spalten und Prüfung in der Datenbank.
 
 **Annahme.** Keine Datei und keine Ablage (ADR-017 Punkt 4): Grundstellung plus Winkel; der Zeichner rechnet Bodenkontakt, Griffe und Ausschnitt. Maße und Grundstellungen gehören zur Fassung und ändern sich nur mit `v: 2`. Ungültig wird zu „kein Bild".
 
 **Begründung.** Einheitlich, offline im Build (ADR-024 Punkt 1), testbar, ohne Anbieter; eingefroren wie Name und Anleitung (ANN-300).
 
-**Anker.** `app.exercise_illustration_valid` in der Migration UEB-012; `src/features/exercises/bild/schema.ts`.
+**Anker.** entfallen; zuletzt `supabase/migrations/20261225060000_uebungsbild_entfernt.sql`.
 
 **Änderungspfad.** Neue Fassung: `v: 2` neben `v: 1` · Aufwand `mittel`. Fotos/Videos: neue Fassung von ADR-017 · Aufwand `groß`.
 
@@ -5574,13 +5574,13 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-
 
 Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes · — · Wiedervorlage: wenn die ersten eigenen Bilder oder Videos vorliegen
 
-**Annahme.** Weder Katalog noch Bibliothek noch Plan tragen ein Bild. Die Übungsseite der Praxis, das Auswahlblatt, die Planzeilen, die Übung auf der Plattform und das Planblatt zeigen Dosierung, Anleitung als nummerierte Schritte (je Zeile ein Schritt, `Schrittliste`), Hilfsmittel und Hinweis. Die Spalten `illustration` bleiben leer stehen.
+**Annahme.** Weder Katalog noch Bibliothek noch Plan tragen ein Bild. Die Übungsseite der Praxis, das Auswahlblatt, die Planzeilen, die Übung auf der Plattform und das Planblatt zeigen Dosierung, Anleitung als nummerierte Schritte (je Zeile ein Schritt, `Schrittliste`), Hilfsmittel und Hinweis. Seit M9 (Jannes, 2026-10-26) gibt es die Spalten `illustration`, ihre Prüfung und das Feld `bild` im Katalog nicht mehr.
 
 **Begründung.** Jannes: „Ich möchte keine KI-Bilder“; er dreht Bilder und Videos selbst. Ein Platzhalter „Noch kein Bild“ an 196 Übungen wäre Lärm. Eigene Medien wären Dateien (ADR-017), kein Posenformat.
 
-**Anker.** `app.exercise_illustration_valid` (nur `null`) in `supabase/migrations/20261117110000_ueb_013_uebungen_ohne_zeichnung.sql`; `src/components/ui/Schrittliste.tsx`.
+**Anker.** `supabase/migrations/20261225060000_uebungsbild_entfernt.sql` (Katalog ohne `bild`, Bibliothek und Plan ohne `illustration`); `src/components/ui/Schrittliste.tsx`.
 
-**Änderungspfad.** Eigene Fotos/Videos je Übung: Dateiart nach ADR-017 mit eigener Fassung, Anzeige über `Medienbild`, Spalten `illustration` entfernen · Aufwand `groß`.
+**Änderungspfad.** Eigene Fotos/Videos je Übung: Dateiart nach ADR-017 mit eigener Fassung, Anzeige über `Medienbild` · Aufwand `groß`.
 
 ### ANN-541 — Umsatzsteuer: Heilbehandlung frei nur mit Nachweis, Training und Abo 19 %, Hinweis nach § 34a UStDV
 

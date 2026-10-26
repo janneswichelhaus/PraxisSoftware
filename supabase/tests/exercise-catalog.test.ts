@@ -61,7 +61,6 @@ interface Variante {
   starting_position: string | null;
   level: number | null;
   default_dosage: Record<string, unknown> | null;
-  illustration: unknown;
   reviewed_at: string | null;
   reviewed_by_name: string | null;
 }
@@ -153,13 +152,15 @@ describe('Übungskatalog im Seed (UEB-012)', () => {
     expect(rows[0]!.hilfsmittel).toEqual(HILFSMITTEL_LABEL);
   });
 
-  it('trägt keine Zeichnung - weder Bibliothek noch Pläne (UEB-013, ANN-539)', async () => {
-    const { rows } = await asPostgres<{ anzahl: number }>(
-      `select (select count(*) from public.exercise_variants where illustration is not null)
-            + (select count(*) from public.exercise_plan_items where illustration is not null)
-              as anzahl`,
+  it('führt keine Zeichnung mehr - weder Spalte noch Prüfung (ANN-539)', async () => {
+    const { rows } = await asPostgres<{ spalten: number; pruefung: number }>(
+      `select (select count(*)::int from information_schema.columns
+                where table_schema = 'public' and column_name = 'illustration'
+                  and table_name in ('exercise_variants', 'exercise_plan_items')) as spalten,
+              (select count(*)::int from pg_proc where proname = 'exercise_illustration_valid')
+                as pruefung`,
     );
-    expect(Number(rows[0]!.anzahl)).toBe(0);
+    expect(rows[0]).toEqual({ spalten: 0, pruefung: 0 });
   });
 });
 
@@ -206,11 +207,9 @@ describe('Katalog übernehmen (UEB-012, ANN-385)', () => {
         per_side: true,
         times_per_day: 1,
       },
-      // Keine Zeichnung mehr (ANN-539).
-      illustration: null,
       reviewed_at: null,
     });
-    expect((await katalogvarianten()).every((v) => v.illustration === null)).toBe(true);
+    expect((await katalogvarianten()).every((v) => !('illustration' in v))).toBe(true);
     // Wer übernommen hat, steht an der Zeile (ADR-010 Fassung 3).
     const { rows } = await asPostgres<{ created_by: string }>(
       `select distinct created_by from public.exercise_variants where catalog_key is not null`,
@@ -315,7 +314,7 @@ describe('Katalog übernehmen (UEB-012, ANN-385)', () => {
 
   describe('prüft am Server und übernimmt bei einem Fehler nichts (22023)', () => {
     it.each([
-      // Seit UEB-013 gibt es kein Bild mehr, auch kein gültiges (ANN-539).
+      // Ein Bild gibt es nicht mehr, auch kein gültiges (ANN-539): Das Feld ist unbekannt.
       ['ein Bild', [mit(KN01, { bild: ALTES_BILD })]],
       ['ein Bild als Zeichenkette', [mit(KN01, { bild: '<svg onload="x()"/>' })]],
       ['ein Bild ohne Start', [mit(KN01, { bild: { v: 1, basis: 'stand', ende: {} } })]],
@@ -352,11 +351,6 @@ describe('Katalog übernehmen (UEB-012, ANN-385)', () => {
     it('hält die Grenzen auch an der Tabelle fest', async () => {
       await importiere(users.ownerTherapist, [KN01]);
       for (const [spalte, wert] of [
-        ['illustration', JSON.stringify(ALTES_BILD)],
-        ['illustration', '"bild"'],
-        // Fehlt ein Teil, ist die Prüfung nicht "unbekannt", sondern falsch.
-        ['illustration', '{"v": 1, "basis": "stand", "ende": {}}'],
-        ['illustration', '{"v": 1, "basis": "kopfstand", "start": {}, "ende": {}}'],
         ['default_dosage', '{"reps_min": 10, "reps_max": 10}'],
         ['default_dosage', '{"sets": 3, "reps_min": 10, "reps_max": 10, "duration_seconds": 30}'],
         ['default_dosage', '{"sets": 3, "duration_seconds": 30, "hold_seconds": 5}'],
@@ -534,8 +528,6 @@ describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {
       hold_seconds: 3,
       per_side: true,
       times_per_day: 2,
-      // Kein Bild, auch im Entwurf nicht (ANN-539).
-      illustration: null,
     });
     for (const [halten, mal] of [
       [0, null],
@@ -591,17 +583,12 @@ describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {
     const nachher = (await plan(p)).items[0]!;
     expect(nachher).toMatchObject({
       variant_name: KN01.name,
-      illustration: null,
       sets: 3,
       hold_seconds: 3,
       per_side: true,
       times_per_day: 2,
     });
-    const { rows } = await asPostgres<{ illustration: unknown }>(
-      'select illustration from public.exercise_plan_items where plan_id = $1',
-      [p],
-    );
-    expect(rows[0]!.illustration).toBeNull();
+    expect(Object.keys(nachher)).not.toContain('illustration');
 
     // Die Plattform zeigt die eingefrorene Dosierung - ohne Kennung der Bibliothek.
     const { rows: portal } = await asUser<{
@@ -611,7 +598,6 @@ describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {
     ]);
     const position = portal[0]!.daten.plans[0]!.items[0]!;
     expect(position).toMatchObject({
-      illustration: null,
       hold_seconds: 3,
       per_side: true,
       times_per_day: 2,
@@ -634,12 +620,10 @@ describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {
       [p],
     );
     const { rows: positionen } = await asPostgres<Record<string, unknown>>(
-      'select hold_seconds, per_side, times_per_day, illustration from public.exercise_plan_items where plan_id = $1',
+      'select hold_seconds, per_side, times_per_day from public.exercise_plan_items where plan_id = $1',
       [rows[0]!.id],
     );
-    expect(positionen).toEqual([
-      { hold_seconds: 3, per_side: true, times_per_day: 2, illustration: null },
-    ]);
+    expect(positionen).toEqual([{ hold_seconds: 3, per_side: true, times_per_day: 2 }]);
   });
 
   it('zählt längeres Halten in einer neuen Fassung als Schritt auf der Achse Wiederholungen (ANN-301)', async () => {
