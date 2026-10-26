@@ -11,6 +11,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { gleichzeitig } from './helpers/gleichzeitig';
 
 /**
  * Fotos am Rad (FLT-002, ANN-552): ADR-017 sinngemäß wie die Anhänge an
@@ -615,6 +616,29 @@ describe('Fotos am Rad (FLT-002)', () => {
       // Kein zweites Mal, und verwerfen geht nur vor der Bestätigung.
       expect(await code(asUserCommitted(users.teamLead, BESTAETIGEN, [v.photo_id]))).toBe('P0002');
       expect(await code(asUserCommitted(users.teamLead, VERWERFEN, [v.photo_id]))).toBe('P0002');
+    });
+
+    it('bestätigt kein Foto, das gleichzeitig verworfen oder schon bestätigt wird', async () => {
+      const { stelle } = await checkUp(users.teamLead);
+      const verworfen = await vorbereiten(users.teamLead, { spot: stelle });
+      await hochladen(users.teamLead, verworfen);
+      expect(
+        await gleichzeitig(
+          { konto: users.teamLead, sql: VERWERFEN, params: [verworfen.photo_id] },
+          { konto: users.teamLead, sql: BESTAETIGEN, params: [verworfen.photo_id] },
+        ),
+      ).toMatchObject({ code: 'P0002', message: 'photo not found' });
+      expect(await zeile(verworfen.photo_id)).toBeUndefined();
+
+      const doppelt = await vorbereiten(users.teamLead, { spot: stelle });
+      await hochladen(users.teamLead, doppelt);
+      expect(
+        await gleichzeitig(
+          { konto: users.teamLead, sql: BESTAETIGEN, params: [doppelt.photo_id] },
+          { konto: users.teamLead, sql: BESTAETIGEN, params: [doppelt.photo_id] },
+        ),
+      ).toMatchObject({ code: 'P0002', message: 'photo not found' });
+      expect((await zeile(doppelt.photo_id))?.status).toBe('ready');
     });
 
     it('verwirft die eigene vorbereitete Zeile; liegt schon ein Objekt, folgt ein Löschauftrag', async () => {

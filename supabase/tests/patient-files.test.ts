@@ -605,6 +605,32 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(fehler?.message).toMatch(/row-level security/i);
     });
 
+    it('laesst nur die vorbereitende Person hochladen, keine Kollegin mit demselben Recht', async () => {
+      const datei = await vorbereiten(users.therapist);
+      for (const konto of [users.teamLead, users.ownerTherapist, users.office]) {
+        const fehler = await abgefangen(asUser(konto, HOCHLADEN, [datei.object_key]));
+        expect(fehler?.message, konto).toMatch(/row-level security/i);
+      }
+      expect(await abgefangen(asUser(users.therapist, HOCHLADEN, [datei.object_key]))).toBeNull();
+    });
+
+    it('laesst nach der Bitte um Bestaetigung und nach 24 Stunden nicht mehr hochladen (ADR-017 Punkt 7)', async () => {
+      const angefragt = await vorbereiten(users.therapist);
+      await asPostgres(
+        'update public.patient_files set confirmation_requested_at = now() where id = $1',
+        [angefragt.file_id],
+      );
+      const alt = await vorbereiten(users.therapist);
+      await asPostgres(
+        "update public.patient_files set created_at = now() - interval '25 hours' where id = $1",
+        [alt.file_id],
+      );
+      for (const datei of [angefragt, alt]) {
+        const fehler = await abgefangen(asUser(users.therapist, HOCHLADEN, [datei.object_key]));
+        expect(fehler?.message, datei.file_id).toMatch(/row-level security/i);
+      }
+    });
+
     it('laesst nach der Bestaetigung nicht mehr hochladen (kein Ueberschreiben)', async () => {
       const datei = await abgelegteDatei(users.therapist);
       await asPostgres("delete from storage.objects where bucket_id = 'patientenakte'");
