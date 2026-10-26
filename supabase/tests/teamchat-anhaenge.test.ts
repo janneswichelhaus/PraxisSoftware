@@ -792,7 +792,7 @@ describe('Teamchat: Löschpfad der Anhänge (ADR-017 Punkte 25 und 75)', () => {
     expect(await auftraege()).toEqual([foto.object_key, offen.object_key].sort());
   });
 
-  it('verwirft ungesendete sofort mit Journal oder nach 24 Stunden ohne - jeweils mit Löschauftrag (ANN-652)', async () => {
+  it('verwirft ungesendete sofort oder nach 24 Stunden - jeweils mit Journal und Löschauftrag (ANN-652)', async () => {
     const allgemein = await kanal(users.therapist, 'Allgemein');
     const verworfen = await anhang(users.therapist, allgemein);
     await asUserCommitted(users.therapist, VERWERFEN, [verworfen.attachment_id]);
@@ -823,9 +823,8 @@ describe('Teamchat: Löschpfad der Anhänge (ADR-017 Punkte 25 und 75)', () => {
     ).toBe(1);
     expect(await auftraege()).toEqual([verworfen.object_key, liegen.object_key].sort());
     expect(await anzahl('select count(*) n from public.team_attachment_access_grants')).toBe(0);
-    // Von Hand verworfen: im Journal, damit es eine Wiederherstellung nicht
-    // zurückbringt (ADR-008 Punkt 8). Im Lauf gefallen: ohne, denn was älter
-    // als 24 Stunden ist, ist weder bindbar noch lesbar.
+    // Auf beiden Wegen im Journal, damit eine Wiederherstellung nichts
+    // zurückbringt (ADR-008 Punkt 8, ANN-752).
     const { rows: journal } = await asPostgres<{
       target_id: string;
       target_table: string;
@@ -835,19 +834,20 @@ describe('Teamchat: Löschpfad der Anhänge (ADR-017 Punkte 25 und 75)', () => {
       `select target_id, target_table, retention_class,
               deleted_at = date_trunc('day', deleted_at) and due_at = deleted_at as mitternacht
          from public.deletion_journal
-        where target_id = any($1::uuid[])`,
+        where target_id = any($1::uuid[])
+        order by target_id`,
       [[verworfen.attachment_id, liegen.attachment_id]],
     );
     // Tageweise, ohne Uhrzeit, in einem Lauf je Praxis und Tag (Zweitreview
     // TEAM-001 N4, TEAM-003 Runde 2).
-    expect(journal).toEqual([
-      {
-        target_id: verworfen.attachment_id,
+    expect(journal).toEqual(
+      [verworfen.attachment_id, liegen.attachment_id].sort().map((target_id) => ({
+        target_id,
         target_table: 'team_message_attachments',
         retention_class: 'teamchat',
         mitternacht: true,
-      },
-    ]);
+      })),
+    );
   });
 
   it('lässt verworfene und abgewiesene ungesendete Anhänge nach einem Restore erneut fallen (Zweitreview TEAM-003)', async () => {

@@ -8,6 +8,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 
 /**
  * Eigene Lebensmittel der Praxis und der Person (ERN-005, ADR-027 Punkte 6
@@ -324,15 +325,34 @@ describe('Eigene Lebensmittel der Person (ERN-005)', () => {
       `select id from public.custom_foods where profile_id = $1`,
       [PROFIL],
     );
+    const id = rows[0]!.id;
+    await asPostgres(
+      `insert into public.nutrition_diary_favorites (organization_id, profile_id, food_kind,
+         custom_food_id, platform_access_id, platform_access_kind, created_by)
+       values ($1, $2, 'person', $3, $4, 'self', $5)`,
+      [SEED.organizationId, PROFIL, id, platformAccesses.erikaBehandlung, users.plattformErika],
+    );
+    const lebensmittel = await sichern('custom_foods', 'id = $1', [id]);
+    const favoriten = await sichern('nutrition_diary_favorites', 'custom_food_id = $1', [id]);
     await asUserCommitted(users.plattformErika, PLATTFORM_LOESCHEN, [
       platformAccesses.erikaBehandlung,
-      rows[0]!.id,
+      id,
     ]);
     const { rows: rest } = await asPostgres<{ n: number }>(
       `select count(*)::int as n from public.custom_foods where profile_id = $1`,
       [PROFIL],
     );
     expect(rest[0]!.n).toBe(0);
+
+    // Im Journal; der Favorit fällt beim Nachziehen mit (ANN-752).
+    expect(await journal('custom_foods', [id])).toEqual([
+      { target_id: id, retention_class: 'ernaehrungsberatung', reapplied_at: null },
+    ]);
+    await zurueckspielen('custom_foods', lebensmittel);
+    await zurueckspielen('nutrition_diary_favorites', favoriten);
+    await asPostgres(NACHZIEHEN);
+    expect(await stehen('custom_foods', lebensmittel)).toBe(0);
+    expect(await stehen('nutrition_diary_favorites', favoriten)).toBe(0);
   });
 
   it('fällt mit dem Profil (Datenklasse Ernährungsberatung)', async () => {

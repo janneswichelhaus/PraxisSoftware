@@ -12,6 +12,7 @@ import {
   resetDatabaseOhneTermine,
   testDatabaseUrl,
 } from './helpers/db';
+import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 
 /**
  * B4 und B7 (BEF-154, BEF-157; ADR-009 Fassung 6, ADR-016 Fassung 4, ADR-018
@@ -205,6 +206,11 @@ describe('Leistung mit dem Haken (B7, ANN-513)', () => {
     await festschreiben(id);
     await abhaken(id);
 
+    const gesichert = {
+      leistungen: await sichern('billable_services', 'appointment_id = $1', [id]),
+      honorare: await sichern('appointment_session_fees', 'appointment_id = $1', [id]),
+    };
+
     await asUserCommitted(users.therapist, ZURUECKNEHMEN, [id, await stand(id)]);
 
     expect(await leistungen(id)).toEqual([]);
@@ -215,6 +221,26 @@ describe('Leistung mit dem Haken (B7, ANN-513)', () => {
       [id],
     );
     expect(rows[0]).toEqual({ status: 'documented', completed_at: null });
+
+    // Beides steht im Journal (ANN-752): Eine Sicherung von davor bringt Leistung,
+    // Honorar und die gezählte Menge zurück, das Nachziehen nimmt alle drei wieder.
+    for (const [tabelle, zeilen] of [
+      ['billable_services', gesichert.leistungen],
+      ['appointment_session_fees', gesichert.honorare],
+    ] as const) {
+      expect(zeilen).toHaveLength(1);
+      expect(await journal(tabelle, [zeilen[0]!['id']])).toEqual([
+        { target_id: zeilen[0]!['id'], retention_class: 'abrechnungsdaten', reapplied_at: null },
+      ]);
+      await zurueckspielen(tabelle, zeilen);
+    }
+    await asPostgres('update public.treatment_base_items set used_quantity = 1 where id = $1', [
+      POSITION,
+    ]);
+    await asPostgres(NACHZIEHEN);
+    expect(await stehen('billable_services', gesichert.leistungen)).toBe(0);
+    expect(await stehen('appointment_session_fees', gesichert.honorare)).toBe(0);
+    expect(await genutzt()).toBe(0);
   });
 
   it('haelt den Haken, solange die Leistung in einer Rechnung steht', async () => {

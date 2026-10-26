@@ -532,18 +532,6 @@ Marke vorsieht.
 
 **Beobachtung.** Bei 375 px und „Sehr groß“ bricht im Schalter „Für Maximilian Mustermann-Langenscheidt“ zwischen „Musterman“ und „n-“, also mitten im Wort, weil die Plattform `overflow-wrap: anywhere` setzt und das Ziel halb so breit ist. **Erwartet.** Wie im Gruß nur am Bindestrich brechen (DR-114) - etwa zwei Reihen statt zwei Spalten, sobald ein Wort nicht passt, oder der Name in einer eigenen Zeile.
 
-### BEF-198 — Eine gelöschte Grundlage samt Verordnungsscan fehlt im Löschjournal
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-24 |
-| Bereich | Akte, Behandlungsgrundlagen (`delete_treatment_basis`); Wiederherstellung |
-| Quelle  | Zweitreview BEF-170 (Subagent) |
-| Status  | offen (Vorschlag) |
-| Berührt | `public.delete_treatment_basis` (`20261121100000_bef_124_verordnung_mit_verlauf.sql`); ADR-008 Punkt 8 |
-
-**Beobachtung.** `delete_treatment_basis` löscht die Grundlage ohne Eintrag im Löschjournal; ihr Verordnungsscan fällt per `on delete cascade` mit, der Auslöser schreibt nur den Löschauftrag. Nach einer Wiederherstellung kämen Grundlage und Scan zurück. **Erwartet.** Journaleinträge für `treatment_bases` und die mitfallenden `patient_files`, Test mit Wiederherstellung (Pfad A). Dabei die übrigen Löschwege von Hand durchsehen, die ohne Journal löschen, etwa Leistungen, Vereinbarungen, Aufgaben und Tagebucheinträge.
-
 ### BEF-201 — Plattform: „Löschen“ an einem Anhang löscht ohne Rückfrage
 
 |         |   |

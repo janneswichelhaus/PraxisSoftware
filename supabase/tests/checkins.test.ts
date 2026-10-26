@@ -9,6 +9,7 @@ import {
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 import { einheitErfassen, positionen, zugewiesenerPlan } from './helpers/plaene';
+import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 
 /**
  * Check-in mit einstellbarem Takt, Praxisseite (TRK-002, IDEA-TRK-004,
@@ -189,6 +190,21 @@ describe('Check-in, Takt und Lesen in der Praxis (TRK-002)', () => {
     expect(danach!.checkins).toEqual([
       expect.objectContaining({ recorded_by_kind: 'self', values: { pain_rest: 2 } }),
     ]);
+  });
+
+  it('journalisiert einen beendeten Takt; ein Restore bringt ihn nicht zurück (ANN-752)', async () => {
+    await asUserCommitted(users.therapist, SETZEN, ['treatment', patients.erika, 7, ['pain_rest']]);
+    const gesichert = await sichern('checkin_schedules', 'relationship_id = $1', [patients.erika]);
+    expect(gesichert).toHaveLength(1);
+    const id = gesichert[0]!['id'];
+    await asUserCommitted(users.therapist, BEENDEN, ['treatment', patients.erika]);
+    expect(await journal('checkin_schedules', [id])).toEqual([
+      { target_id: id, retention_class: 'patientenakte', reapplied_at: null },
+    ]);
+
+    await zurueckspielen('checkin_schedules', gesichert);
+    await asPostgres(NACHZIEHEN);
+    expect(await stehen('checkin_schedules', gesichert)).toBe(0);
   });
 
   it('zeigt die Angaben unverändert, jüngste zuerst, ohne Bewertung (ADR-006 Punkt 11)', async () => {

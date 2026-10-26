@@ -33,7 +33,7 @@ abgeschlossen ist. Wie es steht, misst `/aufraeumen` (`AUFRAEUMEN.md`).
 | Nr. | Fehler | Weg | Wohin |
 | --- | --- | --- | --- |
 | 1 | Die Teillöschung unter Belegfrist lässt 17 Tabellen mit Art.-9-Daten des Trainings bis zu fünf Jahre zu lang stehen | Pfad A | behoben mit Schritt 4a (dritte PR) |
-| 2 | 12 Lösch-RPCs schreiben kein Löschjournal; nach einem Restore kämen Zeilen aus 16 Tabellen zurück (umfasst BEF-198) | Pfad A | Schritt 4 |
+| 2 | 12 Lösch-RPCs schreiben kein Löschjournal; nach einem Restore kämen Zeilen aus 16 Tabellen zurück (umfasst BEF-198) | Pfad A | behoben mit Schritt 4: ein Auslöser je Tabelle mit eigenem Journal (ANN-752) |
 | 3 | Das Zusammenführen hat weder einen Vollständigkeitstest noch einen Nachweis für einen Restore | Pfad A | Schritt 4 |
 | 4 | Ein Trainings-Nachtrag gilt bei 403 als gespeichert (`addTrainingProtocolAddendum`) | Pfad A | gemergt (#314) |
 | 5 | Das Upload-Recht der Akte prüft weder die hochladende Person noch das 24-Stunden-Fenster; zwei Bestätigungen sperren, ohne unter der Sperre nachzuprüfen | Pfad A, Zweitreview | gemergt (#315) |

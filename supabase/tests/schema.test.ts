@@ -43,6 +43,7 @@ describe('Schema-Invarianten', () => {
       'retention_classes',
       'retention_assignments',
       'patient_file_document_types',
+      'data_registry',
     ];
     const abweichend = rows.filter(
       (r) => r.data_type !== 'uuid' && !katalogeMitTextschluessel.includes(r.table_name),

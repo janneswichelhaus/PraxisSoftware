@@ -8,6 +8,7 @@ import {
   resetDatabaseOhneTermine,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 
 /**
  * Das Nachsorge-Abo an der Akte (ANG-001, ADR-009 Punkt 21,
@@ -169,9 +170,18 @@ describe('Nachsorge-Abo anlegen (ANG-001)', () => {
     const fremd = await fremdeOrganisation();
     await expect(asUser(fremd.owner, ENTFERNEN, [id])).rejects.toThrow(/not found/);
     await expect(asUser(users.therapist, ENTFERNEN, [id])).rejects.toThrow(/not allowed/);
+    const gesichert = await sichern('aftercare_subscriptions', 'id = $1', [id]);
     await asUserCommitted(users.office, ENTFERNEN, [id]);
     const { rows } = await asPostgres('select 1 from public.aftercare_subscriptions');
     expect(rows).toHaveLength(0);
+
+    // Im Journal: Ein Restore bringt die Fehlanlage nicht zurück (ANN-752).
+    expect(await journal('aftercare_subscriptions', [id])).toEqual([
+      { target_id: id, retention_class: 'abrechnungsdaten', reapplied_at: null },
+    ]);
+    await zurueckspielen('aftercare_subscriptions', gesichert);
+    await asPostgres(NACHZIEHEN);
+    expect(await stehen('aftercare_subscriptions', gesichert)).toBe(0);
   });
 
   it('entfernt ein gekündigtes Abo nicht – die Kündigung ist ein Nachweis (ANN-272)', async () => {

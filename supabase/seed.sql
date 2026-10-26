@@ -16,6 +16,10 @@
 -- =============================================================================
 
 -- Idempotenz: Seed kann wiederholt eingespielt werden.
+-- Ein neuer Seed ist keine Löschung im Sinne des Journals (ANN-752): Der Auslöser schweigt, bis
+-- die Datei durch ist; die Organisation fiele sonst nicht, solange Einträge auf sie zeigen.
+select pg_catalog.set_config('app.journal_paused', 'on', false);
+delete from public.deletion_journal;
 delete from public.audit_log;
 -- FLT-001: Die Radflotte zeigt auf Mitarbeitende (Schluessel, restrict) und
 -- Organisation; Stellen fallen mit Check-Up und Panne, alles mit dem Rad.
@@ -1504,3 +1508,5 @@ insert into public.nutrition_water_days
   ('22222222-2222-4222-8222-000000000001', 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001',
    app.training_today('22222222-2222-4222-8222-000000000001'), 500,
    'cafecafe-cafe-4afe-8afe-000000000002', 'self', '11111111-1111-4111-8111-000000000009');
+
+select pg_catalog.set_config('app.journal_paused', '', false);

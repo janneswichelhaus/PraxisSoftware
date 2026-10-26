@@ -6719,17 +6719,17 @@ Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026)
 
 **Abnahme (Jannes, 2026-10-18).** Bestätigt wie gebaut (PR #272, Frage 5); ob „Von“ bleibt, entscheidet die Datenschutzprüfung. Bleibt im Prüfpaket.
 
-### ANN-652 — Teamchat: ungesendete Anhänge fallen beim Verwerfen mit Journal, nach 24 Stunden ohne
+### ANN-652 — Teamchat: ungesendete Anhänge fallen beim Verwerfen oder nach 24 Stunden, mit Journal
 
-Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007); Fassung 2 vom 2026-10-26
 
-**Annahme.** Ein Anhang, der an keiner Nachricht hängt, fällt beim Entfernen oder nach einem Befund der Prüfung sofort - mit Löschauftrag und Eintrag im Löschjournal, tageweise gebündelt wie jedes Löschen im Teamchat (ohne Uhrzeit) -, sonst im täglichen Lauf nach 24 Stunden ohne Journal. Gebunden wird nur, was jünger als 24 Stunden ist; ungesendet sieht ihn niemand; je Person liegen höchstens 20.
+**Annahme.** Ein Anhang, der an keiner Nachricht hängt, fällt beim Entfernen oder nach einem Befund der Prüfung sofort, sonst im täglichen Lauf nach 24 Stunden - mit Löschauftrag und Eintrag im Löschjournal, tageweise gebündelt wie jedes Löschen im Teamchat (ohne Uhrzeit). Gebunden wird nur, was jünger als 24 Stunden ist; ungesendet sieht ihn niemand; je Person liegen höchstens 20. **Fassung 2 (2026-10-26):** Auch der Lauf schreibt das Journal, über den Auslöser der Tabelle (ANN-752).
 
-**Begründung.** ADR-017 Punkte 7, 52 und 73; ADR-008 Punkt 8: Ohne Journal käme ein verworfener, jüngerer Anhang mit einem Restore bindbar zurück (Zweitreview TEAM-003, wie ERS-001). Was der Lauf verwirft, ist nach einem Restore älter als 24 Stunden, weder bindbar noch lesbar und fällt im nächsten Lauf. Gesendete fallen über das Journal ihrer Nachricht.
+**Begründung.** ADR-017 Punkte 7, 52 und 73; ADR-008 Punkt 8: Ohne Journal käme ein verworfener, jüngerer Anhang mit einem Restore bindbar zurück (Zweitreview TEAM-003, wie ERS-001). Der Lauf bräuchte keins, sein Fall ist nach einem Restore weder bindbar noch lesbar; eine Ausnahme vom Auslöser wäre aber eine Lücke mehr. Gesendete fallen mit ihrer Nachricht.
 
 **Anker.** `public.discard_team_attachment`, `public.discard_stale_team_attachments`.
 
-**Änderungspfad.** Auch der Lauf schreibt das Journal (eine Einfügung wie in ERS-001) · Aufwand `klein`.
+**Änderungspfad.** Der Lauf wieder ohne Journal: Pause wie beim Nachziehen (`app.journal_paused`) · Aufwand `klein`.
 
 ### ANN-653 — Teamchat: Nachricht nur mit Anhängen
 
@@ -7684,3 +7684,15 @@ Technik · offen · 2026-10-26 · — · — · Wiedervorlage: —
 **Anker.** `supabase/migrations/20261225130000_datenregister.sql`; geprüft in `supabase/tests/data-registry.test.ts`.
 
 **Änderungspfad.** Generische Auskunft, Löschung oder Zusammenführung aus dem Register: je Funktion eine Migration · Aufwand `mittel`.
+
+### ANN-752 — Löschjournal: ein Auslöser je Tabelle, Läufe ergänzen ihn
+
+Datenschutz · offen · 2026-10-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Jede Tabelle mit eigenem Journal im Register trägt den Auslöser `journal_deletion`: Jede gelöschte Zeile steht im Löschjournal, ob ein Lauf, eine Funktion von Hand oder eine Kaskade sie nahm. Ein Lauf ergänzt den Eintrag um Kennung, Klasse und Fälligkeit; je Zeile und Transaktion bleibt einer. Nachziehen, Zusammenführen und Seed schalten ihn ab. Das Nachziehen nimmt mit einer Leistung ihre Menge an der Grundlage zurück.
+
+**Begründung.** ADR-008 Punkt 8: Nach einem Restore kehrt nichts Gelöschtes zurück. Die Tiefenanalyse fand elf Löschwege ohne Eintrag (Fehler 2, BEF-198); ein Auslöser schließt auch künftige.
+
+**Anker.** `app.journal_deletion`, `app.deletion_journal_once`; geprüft in `supabase/tests/data-registry.test.ts`.
+
+**Änderungspfad.** Einträge wieder je Löschweg: Auslöser entfernen · Aufwand `mittel`.

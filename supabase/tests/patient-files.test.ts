@@ -11,6 +11,7 @@ import {
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 import { gleichzeitig } from './helpers/gleichzeitig';
+import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 import {
   DOKUMENTARTEN,
   KLINISCHE_DOKUMENTARTEN,
@@ -795,6 +796,11 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       await asPostgres('update public.treatment_bases set had_appointments = false where id = $1', [
         VERORDNUNG_MAX,
       ]);
+      const grundlage = await sichern('treatment_bases', 'id = $1', [VERORDNUNG_MAX]);
+      const positionen = await sichern('treatment_base_items', 'treatment_basis_id = $1', [
+        VERORDNUNG_MAX,
+      ]);
+      const scan = await sichern('patient_files', 'id = $1', [datei.file_id]);
       await asUserCommitted(users.therapist, 'select public.delete_treatment_basis($1::uuid)', [
         VERORDNUNG_MAX,
       ]);
@@ -806,6 +812,23 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
         'select object_key from public.storage_deletion_orders',
       );
       expect(auftraege.rows.map((r) => r.object_key)).toEqual([datei.object_key]);
+
+      // Grundlage und mitgefallener Scan stehen im Journal; ein Restore bringt
+      // keins von beiden zurück, die Positionen fallen mit (ANN-752).
+      expect(await journal('treatment_bases', [VERORDNUNG_MAX])).toEqual([
+        { target_id: VERORDNUNG_MAX, retention_class: 'patientenakte', reapplied_at: null },
+      ]);
+      expect(await journal('patient_files', [datei.file_id])).toEqual([
+        { target_id: datei.file_id, retention_class: 'patientenakte', reapplied_at: null },
+      ]);
+      expect(positionen).toHaveLength(2);
+      await zurueckspielen('treatment_bases', grundlage);
+      await zurueckspielen('treatment_base_items', positionen);
+      await zurueckspielen('patient_files', scan);
+      await asPostgres(NACHZIEHEN);
+      expect(await stehen('treatment_bases', grundlage)).toBe(0);
+      expect(await stehen('treatment_base_items', positionen)).toBe(0);
+      expect(await stehen('patient_files', scan)).toBe(0);
 
       // Der Vorgang ist bestaetigt und nicht zurueckgerollt: die Verordnung des
       // Seeds ist danach weg. Der Neuaufbau haelt die folgenden Tests sauber.

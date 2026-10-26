@@ -18,8 +18,7 @@ Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
 Aufräumen nach ROADMAP 7.21: 4 (Register), 3b (Domänenschnitt), 5 (Doku).
 Schritt 3 Termine des Design-Reviews (3a bis 3d), dann Schritte 4
 bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff; Briefings in
-`design/review-2026-10/`. Ohne Handoff: BEF-198 (Löschjournal; Pfad A), BEF-223 (Zeitumstellung;
-Pfad A).
+`design/review-2026-10/`. Ohne Handoff: BEF-223 (Zeitumstellung; Pfad A).
 
 ## Bei Jannes
 

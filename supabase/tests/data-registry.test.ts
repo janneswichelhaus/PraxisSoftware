@@ -161,6 +161,51 @@ describe('Register der Querschnittsfunktionen (ADR-008 Punkt 13)', () => {
       ).toEqual([]);
     });
 
+    it('hängt den Auslöser genau an die Tabellen mit eigenem Journal (ANN-752)', async () => {
+      // Nach jeder gelöschten Zeile (tgtype 9: row, delete, after) und eingeschaltet.
+      expect(
+        await liste(`
+          with ausloeser as (
+            select c.relname::text collate "C" as tabelle
+              from pg_catalog.pg_trigger t
+              join pg_catalog.pg_class c on c.oid = t.tgrelid
+             where c.relnamespace = 'public'::regnamespace and t.tgtype = 9
+               and t.tgenabled = 'O' and t.tgfoid = 'app.journal_deletion()'::regprocedure)
+          select r.table_name || ' ohne Auslöser' as t from public.data_registry r
+           where r.journal_mode = 'row'
+             and not exists (select 1 from ausloeser a where a.tabelle = r.table_name)
+          union all
+          select a.tabelle || ' mit Auslöser ohne eigenes Journal' from ausloeser a
+           where not exists (select 1 from public.data_registry r
+                              where r.table_name = a.tabelle and r.journal_mode = 'row')
+          order by 1`),
+      ).toEqual([]);
+    });
+
+    it('gibt den Auslösern keiner Anwendungsrolle zum Aufruf', async () => {
+      expect(
+        await liste(`
+          select r.rolle || ' ' || f.fn as t
+            from unnest(array['app.journal_deletion()', 'app.deletion_journal_once()']) f(fn),
+                 unnest(array['anon', 'authenticated']) r(rolle)
+           where has_function_privilege(r.rolle, f.fn, 'execute')
+           order by 1`),
+      ).toEqual([]);
+    });
+
+    it('schaltet den Auslöser nur an begründeten Stellen ab (ANN-752)', async () => {
+      // Nachziehen (steht schon im Journal) und Neuschreiben anonymer Rückmeldungen (ANN-608).
+      expect(
+        await liste(`
+          select n.nspname || '.' || p.proname as t
+            from pg_catalog.pg_proc p
+            join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+           where n.nspname in ('public', 'app') and p.prosrc like '%app.journal_paused%'
+             and p.oid <> 'app.journal_deletion()'::regprocedure
+           order by 1`),
+      ).toEqual(['app.delete_due_staff_feedback', 'public.reapply_deletion_journal']);
+    });
+
     it('zieht Kinder vor ihren Eltern nach, auch über Tabellen ohne eigenes Journal', async () => {
       expect(
         await liste(`

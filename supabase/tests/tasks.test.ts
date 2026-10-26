@@ -10,6 +10,7 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 
 /**
  * Aufgaben und Wiedervorlagen (PRX-012, ANN-142).
@@ -311,6 +312,19 @@ describe('Aufgaben im Loeschlauf (ANN-142)', () => {
     );
     await asPostgres('select public.apply_retention()');
     expect(await vorhanden(alt)).toBe(true);
+  });
+
+  it('journalisiert eine von Hand gelöschte Aufgabe; ein Restore bringt sie nicht zurück (ANN-752)', async () => {
+    const id = await anlegen();
+    const gesichert = await sichern('tasks', 'id = $1', [id]);
+    await asUserCommitted(users.office, LOESCHEN, [id]);
+    expect(await journal('tasks', [id])).toEqual([
+      { target_id: id, retention_class: 'aufgabe', reapplied_at: null },
+    ]);
+
+    await zurueckspielen('tasks', gesichert);
+    await asPostgres(NACHZIEHEN);
+    expect(await stehen('tasks', gesichert)).toBe(0);
   });
 
   it('loescht nach einer Wiederherstellung erneut', async () => {

@@ -329,10 +329,14 @@ describe('Kalender ohne Durchgriff', () => {
           where retention_class = 'trainingsverhaeltnis' order by target_table`,
       );
       // Je Tabelle einmal genannt: Der Seed traegt seit TRN-EPIC-002 weitere
-      // Termine und eine Vereinbarung an Tina.
+      // Termine und eine Vereinbarung an Tina. Was mit dem Verhältnis fällt und
+      // ein eigenes Journal führt, steht seit dem Auslöser mit darin (ANN-752).
       expect([...new Set(journal.map((r) => r.target_table))]).toEqual([
         'appointments',
+        'exercise_plans',
+        'platform_messages',
         'training_bases',
+        'training_contact_details',
         'training_relationships',
       ]);
       expect(klammer[0]?.id).toBeTruthy();

@@ -233,6 +233,7 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
         delete from public.prescribers   where organization_id = '${fremdeOrg}';
         delete from public.patients      where organization_id = '${fremdeOrg}';
         delete from public.persons       where organization_id = '${fremdeOrg}';
+        delete from public.deletion_journal where organization_id = '${fremdeOrg}';
         delete from public.organizations where id = '${fremdeOrg}';
       `);
     });

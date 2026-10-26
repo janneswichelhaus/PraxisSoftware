@@ -1131,6 +1131,7 @@ describe('Loeschjournal', () => {
       'run_id',
       'target_id',
       'target_table',
+      'transaction_id',
     ]);
   });
 

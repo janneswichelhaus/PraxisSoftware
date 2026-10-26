@@ -7,6 +7,7 @@ import {
   fremdeOrganisation,
   resetDatabaseOhneTermine,
 } from './helpers/db';
+import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
@@ -447,6 +448,37 @@ describe('Leistungserfassung', () => {
 
       const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, ENTFERNEN, [id]);
       expect(Number(rows[0]!.anzahl)).toBe(1);
+      expect(await genutzt()).toBe(0);
+    });
+
+    it('bleibt nach einem Restore entfernt, samt der Menge (ADR-008 Punkt 8, ANN-752)', async () => {
+      const id = await termin({ vorStunden: 57 });
+      await asUserCommitted(users.office, ERFASSEN, [
+        id,
+        JSON.stringify([
+          { catalog_item_id: KATALOG.kg, quantity: 1 },
+          { catalog_item_id: KATALOG.hausbesuch, quantity: 1 },
+        ]),
+      ]);
+      const gesichert = await sichern('billable_services', 'appointment_id = $1', [id]);
+      const ids = gesichert.map((z) => z['id'] as string).sort();
+      expect(ids).toHaveLength(2);
+      await asUserCommitted(users.office, ENTFERNEN, [id]);
+      expect(await journal('billable_services', ids)).toEqual(
+        ids.map((target_id) => ({
+          target_id,
+          retention_class: 'abrechnungsdaten',
+          reapplied_at: null,
+        })),
+      );
+
+      // Eine Sicherung von davor trägt die Leistungen und die Menge, die sie zählten.
+      await zurueckspielen('billable_services', gesichert);
+      await asPostgres('update public.treatment_base_items set used_quantity = 1 where id = $1', [
+        POSITION_FRISCH,
+      ]);
+      await asPostgres(NACHZIEHEN);
+      expect(await stehen('billable_services', gesichert)).toBe(0);
       expect(await genutzt()).toBe(0);
     });
 
