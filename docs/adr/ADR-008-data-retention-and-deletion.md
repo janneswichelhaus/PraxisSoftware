@@ -91,6 +91,8 @@ gehört zu den Vorbedingungen des Produktivstarts.
     (Umsetzung ANN-751). Eine Tabelle mit eigenem Journal schreibt es bei
     jeder gelöschten Zeile selbst, gleich auf welchem Weg sie fällt; so trägt
     Punkt 8 auch Löschwege, die erst später entstehen (Umsetzung ANN-752).
+    Eine zusammengeführte Akte steht dort als Zusammenführung; nach einer
+    Wiederherstellung wird sie erneut zusammengeführt (ANN-150 Fassung 3).
 
 ### Initialer Retention Schedule
 
@@ -209,4 +211,4 @@ Verankerung im Code und Änderungspfad.
 | 4 | 2026-10-17 | Datenklasse „Rückmeldungen von Beschäftigten“ (ORG-006, §20.2, ANN-607): 12 Monate ab Ende des Monats der Abgabe. Übrige Punkte unverändert. |
 | 5 | 2026-10-17 | Punkt 12 neu (TEAM-001, ANN-610): rollierende Löschung des Teamchats je Nachricht; Anker ohne Inhalt im Thread; beantwortet die Folgefrage dazu. Übrige Punkte unverändert. |
 | 6 | 2026-10-18 | Datenklasse „Ernährungsberatung“ (ADR-027): 3 Jahre nach dem Ende des Profils, Anker am Profil, unabhängig von der Frist des Verhältnisses. Übrige Punkte unverändert. |
-| 7 | 2026-10-26 | Punkt 13 neu (Aufräumen Schritt 4, Jannes 2026-10-26): Register der Querschnittsfunktionen mit Vollständigkeitstest; Löschjournal je gelöschter Zeile über einen Auslöser (Fehler 2 der Tiefenanalyse). Übrige Punkte unverändert. |
+| 7 | 2026-10-26 | Punkt 13 neu (Aufräumen Schritt 4, Jannes 2026-10-26): Register der Querschnittsfunktionen mit Vollständigkeitstest; Löschjournal je gelöschter Zeile über einen Auslöser, Zusammenführen im Journal (Fehler 2 und 3 der Tiefenanalyse). Übrige Punkte unverändert. |

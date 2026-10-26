@@ -12,6 +12,7 @@ import {
   erwarteAbgewiesenenLeseversuch,
   erwarteAbgewiesenenSchreibversuch,
 } from './helpers/abgewiesen';
+import { NACHZIEHEN, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 
 /**
  * Zwei Akten derselben Person werden eine (PRX-017, PRX-EPIC-003b).
@@ -286,6 +287,18 @@ async function patientVon(tabelle: string, id: string): Promise<string> {
   return rows[0]!.patient_id;
 }
 
+/** Zeilen je Tabelle des Registers. */
+async function zaehlen(): Promise<Record<string, number>> {
+  const { rows } = await asPostgres<{ t: string; n: number }>(
+    `select r.table_name as t,
+            (xpath('/row/n/text()', query_to_xml(
+               format('select count(*) as n from public.%I', r.table_name), false, true, '')
+            ))[1]::text::int as n
+       from public.data_registry r`,
+  );
+  return Object.fromEntries(rows.map((r) => [r.t, r.n]));
+}
+
 async function zusammenfuehren(quelle: string, ziel: string) {
   const { rows } = await asUserCommitted<{ ergebnis: Record<string, unknown> }>(
     users.ownerTherapist,
@@ -427,6 +440,7 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
     let quelle: { patient: string; person: string };
     let b: Bestand;
     let vorher: Record<string, Record<string, unknown>>;
+    let zeilenVorher: Record<string, number>;
     let ergebnis: Record<string, unknown>;
 
     const TABELLEN: [string, keyof Bestand][] = [
@@ -490,6 +504,7 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
         )
       ).rows[0]!.z;
 
+      zeilenVorher = await zaehlen();
       ergebnis = await zusammenfuehren(quelle.patient, ziel.patient);
     }, 60_000);
 
@@ -544,6 +559,36 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
         [quelle.patient],
       );
       expect(reste.rows).toEqual([]);
+    });
+
+    it('nimmt keiner Tabelle eine Zeile außer dem, was das Register zusammenlegt (ADR-008 Punkt 13)', async () => {
+      // Fiele eine Tabelle, die das Zusammenführen nicht kennt, per Kaskade mit der Dublette,
+      // stünde sie hier.
+      const nachher = await zaehlen();
+      const { rows } = await asPostgres<{ t: string }>(
+        `select table_name as t from public.data_registry where merge_mode = 'combine'`,
+      );
+      const zusammengelegt = new Set(rows.map((r) => r.t));
+      expect(
+        Object.keys(zeilenVorher)
+          .filter((t) => nachher[t]! < zeilenVorher[t]! && !zusammengelegt.has(t))
+          .sort(),
+      ).toEqual([]);
+    });
+
+    it('steht im Löschjournal als Zusammenführung, nicht als Löschung (ANN-150)', async () => {
+      const { rows } = await asPostgres<{
+        target_table: string;
+        target_id: string;
+        merged_into: string | null;
+      }>(
+        `select target_table, target_id, merged_into from public.deletion_journal
+          where target_id = any($1::uuid[])`,
+        [[quelle.patient, quelle.person]],
+      );
+      expect(rows).toEqual([
+        { target_table: 'patients', target_id: quelle.patient, merged_into: ziel.patient },
+      ]);
     });
 
     it('füllt nur Leeres und hängt Freitexte an (ANN-147)', async () => {
@@ -1315,5 +1360,154 @@ describe('Gewohnheiten beim Zusammenführen (ALT-003)', () => {
     expect(danach.rows).toEqual([
       { patient_id: ziel.patient, relationship_id: ziel.patient, tage: 1 },
     ]);
+  });
+});
+
+describe('Restore von vor dem Zusammenführen (ANN-150, ADR-008 Punkt 8)', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  interface Gesichert {
+    tabelle: string;
+    schluessel: string;
+    zeilen: Record<string, unknown>[];
+  }
+
+  /** Was eine Sicherung von zwei Akten hätte: Akte, Person und jede Zeile an einer der beiden. */
+  async function sicherungVon(akten: { patient: string; person: string }[]): Promise<Gesichert[]> {
+    const ids = akten.map((a) => a.patient);
+    const { rows } = await asPostgres<{ t: string }>(
+      `select r.table_name as t from public.data_registry r
+        where r.merge_mode in ('repoint', 'combine')
+          and exists (select 1 from information_schema.columns c
+                       where c.table_schema = 'public' and c.table_name = r.table_name
+                         and c.column_name = 'patient_id')
+        order by 1`,
+    );
+    const teile: [string, string, string, unknown[]][] = [
+      ...rows.map(({ t }): [string, string, string, unknown[]] => [
+        t,
+        t === 'patient_contact_details' || t === 'patient_care_details' ? 'patient_id' : 'id',
+        'patient_id = any($1::uuid[])',
+        [ids],
+      ]),
+      ['patients', 'id', 'id = any($1::uuid[])', [ids]],
+      ['persons', 'id', 'id = any($1::uuid[])', [akten.map((a) => a.person)]],
+      ['legal_holds', 'id', "subject_type = 'patient' and subject_id = any($1::uuid[])", [ids]],
+    ];
+    const sicherung: Gesichert[] = [];
+    for (const [tabelle, schluessel, bedingung, params] of teile) {
+      sicherung.push({ tabelle, schluessel, zeilen: await sichern(tabelle, bedingung, params) });
+    }
+    return sicherung;
+  }
+
+  /** Spielt die Sicherung zurück; den Vermerk des Zusammenführens kannte sie noch nicht. */
+  async function einspielen(sicherung: Gesichert[], ziel: string) {
+    await asPostgres(
+      `set session_replication_role = replica;
+       delete from public.patient_merge_records where target_patient_id = '${ziel}';
+       set session_replication_role = origin;`,
+    );
+    for (const { tabelle, schluessel, zeilen } of sicherung) {
+      await zurueckspielen(tabelle, zeilen, schluessel);
+    }
+  }
+
+  it('führt die zurückgekehrte Dublette erneut zusammen, mit Vermerk zur alten Zeit', async () => {
+    const ziel = await legeAkteAn({ vorname: 'Rita', nachname: 'Restore', telefon: '0221 1' });
+    const quelle = await legeAkteAn({
+      vorname: 'Rita',
+      nachname: 'Restore',
+      email: 'rita@example.invalid',
+      besonderheit: 'Hund im Flur',
+    });
+    const b = await fuelle(quelle.patient);
+    const sicherung = await sicherungVon([ziel, quelle]);
+
+    await zusammenfuehren(quelle.patient, ziel.patient);
+    const { rows: damals } = await asPostgres<{ merged_at: string }>(
+      `select merged_at::text as merged_at from public.patient_merge_records
+        where source_patient_id = $1`,
+      [quelle.patient],
+    );
+
+    await einspielen(sicherung, ziel.patient);
+    expect(await patientVon('tasks', b.aufgabe)).toBe(quelle.patient);
+    await asPostgres(NACHZIEHEN);
+
+    expect(await stehen('patients', [{ id: quelle.patient }])).toBe(0);
+    expect(await stehen('persons', [{ id: quelle.person }])).toBe(0);
+    expect(
+      await stehen('patient_contact_details', [{ patient_id: quelle.patient }], 'patient_id'),
+    ).toBe(0);
+    for (const { tabelle, zeilen } of sicherung) {
+      for (const z of zeilen.filter((z) => z['patient_id'] === quelle.patient)) {
+        if (tabelle === 'patient_contact_details' || tabelle === 'patient_care_details') continue;
+        expect(await patientVon(tabelle, z['id'] as string), tabelle).toBe(ziel.patient);
+      }
+    }
+    const { rows: sperre } = await asPostgres<{ subject_id: string }>(
+      'select subject_id from public.legal_holds where id = $1',
+      [b.sperre],
+    );
+    expect(sperre[0]!.subject_id).toBe(ziel.patient);
+    const { rows: kontakt } = await asPostgres<{ email: string | null }>(
+      'select email from public.patient_contact_details where patient_id = $1',
+      [ziel.patient],
+    );
+    expect(kontakt[0]!.email).toBe('rita@example.invalid');
+
+    // Wer zusammengeführt hat, steht nach einem Restore nicht mehr fest; wann, schon.
+    const { rows: vermerk } = await asPostgres<{ merged_at: string; merged_by: string | null }>(
+      `select merged_at::text as merged_at, merged_by from public.patient_merge_records
+        where source_patient_id = $1`,
+      [quelle.patient],
+    );
+    expect(vermerk).toEqual([{ merged_at: damals[0]!.merged_at, merged_by: null }]);
+    const { rows: eintrag } = await asPostgres<{ nachgezogen: boolean }>(
+      `select reapplied_at is not null as nachgezogen from public.deletion_journal
+        where target_id = $1 and merged_into = $2`,
+      [quelle.patient, ziel.patient],
+    );
+    expect(eintrag).toEqual([{ nachgezogen: true }]);
+
+    // Ein zweites Nachziehen ändert nichts mehr.
+    const zeilen = await zaehlen();
+    await asPostgres(NACHZIEHEN);
+    expect(await zaehlen()).toEqual(zeilen);
+  });
+
+  it('lässt die Dublette fallen, wenn die bleibende Akte inzwischen gelöscht ist', async () => {
+    const ziel = await legeAkteAn({ vorname: 'Lotte', nachname: 'Restore' });
+    const quelle = await legeAkteAn({ vorname: 'Lotte', nachname: 'Restore' });
+    const { rows } = await asPostgres<{ aufgabe: string; vermerk: string }>(
+      `with aufgabe as (
+         insert into public.tasks (organization_id, patient_id, title)
+         values ($1, $2, 'Rückruf') returning id
+       ), vermerk as (
+         insert into public.patient_privacy_records
+           (organization_id, patient_id, record_kind, purpose, occurred_on)
+         values ($1, $2, 'consent_granted', 'email_contact', current_date - 20) returning id
+       )
+       select (select id from aufgabe) as aufgabe, (select id from vermerk) as vermerk`,
+      [ORG, quelle.patient],
+    );
+    const sicherung = await sicherungVon([ziel, quelle]);
+
+    await zusammenfuehren(quelle.patient, ziel.patient);
+    await asPostgres(
+      'select app.delete_patient_record($1::uuid, extensions.gen_random_uuid(), now())',
+      [ziel.patient],
+    );
+
+    await einspielen(sicherung, ziel.patient);
+    await asPostgres(NACHZIEHEN);
+
+    expect(await stehen('patients', [{ id: ziel.patient }, { id: quelle.patient }])).toBe(0);
+    expect(await stehen('persons', [{ id: ziel.person }, { id: quelle.person }])).toBe(0);
+    expect(await stehen('tasks', [{ id: rows[0]!.aufgabe }])).toBe(0);
+    expect(await stehen('patient_privacy_records', [{ id: rows[0]!.vermerk }])).toBe(0);
   });
 });

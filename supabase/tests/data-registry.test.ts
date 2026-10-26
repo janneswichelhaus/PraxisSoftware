@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { AUSKUNFT_KATEGORIEN, TRAINING_KATEGORIEN } from '@/features/datenschutz/kategorien';
-import { SEED, asPostgres, asUser, resetDatabase } from './helpers/db';
+import { SEED, asAnon, asPostgres, asUser, resetDatabase } from './helpers/db';
 
 // Das Register der Querschnittsfunktionen (ADR-008 Punkt 13, ANN-751): Jede Tabelle in public trägt
 // Personenbezug und die Entscheidungen zu Auskunft, Aufbewahrung, Löschjournal und Zusammenführen.
@@ -182,11 +182,13 @@ describe('Register der Querschnittsfunktionen (ADR-008 Punkt 13)', () => {
       ).toEqual([]);
     });
 
-    it('gibt den Auslösern keiner Anwendungsrolle zum Aufruf', async () => {
+    it('gibt Auslöser und Kern des Zusammenführens keiner Anwendungsrolle zum Aufruf', async () => {
       expect(
         await liste(`
           select r.rolle || ' ' || f.fn as t
-            from unnest(array['app.journal_deletion()', 'app.deletion_journal_once()']) f(fn),
+            from unnest(array['app.journal_deletion()', 'app.deletion_journal_once()',
+                              'app.merge_patients_core(uuid, uuid, uuid, uuid, timestamptz, boolean)'
+                             ]) f(fn),
                  unnest(array['anon', 'authenticated']) r(rolle)
            where has_function_privilege(r.rolle, f.fn, 'execute')
            order by 1`),
@@ -194,7 +196,8 @@ describe('Register der Querschnittsfunktionen (ADR-008 Punkt 13)', () => {
     });
 
     it('schaltet den Auslöser nur an begründeten Stellen ab (ANN-752)', async () => {
-      // Nachziehen (steht schon im Journal) und Neuschreiben anonymer Rückmeldungen (ANN-608).
+      // Nachziehen und Zusammenführen tragen selbst ein; anonyme Rückmeldungen neu zu schreiben ist
+      // keine Löschung (ANN-608).
       expect(
         await liste(`
           select n.nspname || '.' || p.proname as t
@@ -203,7 +206,11 @@ describe('Register der Querschnittsfunktionen (ADR-008 Punkt 13)', () => {
            where n.nspname in ('public', 'app') and p.prosrc like '%app.journal_paused%'
              and p.oid <> 'app.journal_deletion()'::regprocedure
            order by 1`),
-      ).toEqual(['app.delete_due_staff_feedback', 'public.reapply_deletion_journal']);
+      ).toEqual([
+        'app.delete_due_staff_feedback',
+        'app.merge_patients_core',
+        'public.reapply_deletion_journal',
+      ]);
     });
 
     it('zieht Kinder vor ihren Eltern nach, auch über Tabellen ohne eigenes Journal', async () => {
@@ -254,6 +261,54 @@ describe('Register der Querschnittsfunktionen (ADR-008 Punkt 13)', () => {
   });
 
   describe('Zusammenführen', () => {
+    const KERN = `'app.merge_patients_core(uuid, uuid, uuid, uuid, timestamptz, boolean)'::regprocedure`;
+
+    it('zieht genau die Tabellen um, die das Register umziehen oder zusammenlegen lässt', async () => {
+      expect(
+        await liste(`
+          with geaendert as (
+            select distinct m[1] collate "C" as tabelle
+              from pg_catalog.pg_proc p,
+                   regexp_matches(p.prosrc, '(?:update|delete\\s+from)\\s+public\\.([a-z_]+)', 'gi') m
+             where p.oid = ${KERN})
+          select r.table_name || ' fehlt' as t from public.data_registry r
+           where r.merge_mode in ('repoint', 'combine')
+             and not exists (select 1 from geaendert g where g.tabelle = r.table_name)
+          union all
+          select g.tabelle || ' ohne Entscheidung' from geaendert g
+           where not exists (select 1 from public.data_registry r
+                              where r.table_name = g.tabelle
+                                and r.merge_mode in ('repoint', 'combine'))
+          order by 1`),
+      ).toEqual([]);
+    });
+
+    it('führt an polymorphen Tabellen das Verhältnis mit', async () => {
+      expect(
+        await liste(`
+          select r.table_name as t from public.data_registry r
+           where r.merge_mode = 'repoint'
+             and exists (select 1 from information_schema.columns c
+                          where c.table_schema = 'public' and c.table_name = r.table_name
+                            and c.column_name = 'relationship_id')
+             and (select p.prosrc from pg_catalog.pg_proc p where p.oid = ${KERN})
+                 !~* ('update\\s+public\\.' || r.table_name || '\\s+set[^;]*relationship_id')
+           order by 1`),
+      ).toEqual([]);
+    });
+
+    it('prüft jede sperrende Tabelle im Plan', async () => {
+      expect(
+        await liste(`
+          select r.table_name as t from public.data_registry r
+           where r.merge_mode = 'blocks'
+             and (select p.prosrc from pg_catalog.pg_proc p
+                   where p.oid = 'app.patient_merge_plan(uuid, uuid, uuid)'::regprocedure)
+                 !~ ('public\\.' || r.table_name || '\\M')
+           order by 1`),
+      ).toEqual([]);
+    });
+
     it('entscheidet jede Spalte, die auf eine Akte zeigt', async () => {
       expect(
         await liste(`
@@ -279,5 +334,34 @@ describe('Register der Querschnittsfunktionen (ADR-008 Punkt 13)', () => {
            order by 1`),
       ).toEqual([]);
     });
+  });
+});
+
+describe('Register: Zugriff und Löschlauf (ADR-004, ADR-008)', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('ist für keine Anwendungsrolle les- oder schreibbar', async () => {
+    const { users } = SEED;
+    for (const konto of [users.ownerTherapist, users.office, users.patientMax]) {
+      await expect(asUser(konto, 'select table_name from public.data_registry')).rejects.toThrow(
+        /permission denied/,
+      );
+      await expect(
+        asUser(konto, "update public.data_registry set decision_note = 'x'"),
+      ).rejects.toThrow(/permission denied/);
+    }
+    await expect(asAnon('select table_name from public.data_registry')).rejects.toThrow(
+      /permission denied/,
+    );
+  });
+
+  it('bleibt im Löschlauf unberührt (Klasse konfiguration, keine Löschung)', async () => {
+    const vorher = await liste('select table_name as t from public.data_registry order by 1');
+    await asPostgres('select public.apply_retention()');
+    expect(await liste('select table_name as t from public.data_registry order by 1')).toEqual(
+      vorher,
+    );
   });
 });

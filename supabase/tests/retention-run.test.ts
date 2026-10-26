@@ -1125,6 +1125,7 @@ describe('Loeschjournal', () => {
       'deleted_at',
       'due_at',
       'id',
+      'merged_into',
       'organization_id',
       'reapplied_at',
       'retention_class',
