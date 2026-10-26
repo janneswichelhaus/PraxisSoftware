@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useSearchParams } from 'react-router-dom';
 import type * as StaffApi from './api';
@@ -148,6 +148,20 @@ describe('StaffListPage', () => {
     await nutzer.selectOptions(screen.getByLabelText('Beschäftigung'), 'all');
     expect(adressen.length).toBeGreaterThan(1);
     for (const adresse of adressen) expect(adresse).not.toMatch(/q=|anna/i);
+  });
+
+  it('entfernt einen alten Suchbegriff aus der Adresse, ohne ihn zu übernehmen', async () => {
+    renderWithProviders(
+      <>
+        <StaffListPage user={testUser(['office'])} />
+        <AdressProbe />
+      </>,
+      '/praxis/team?q=Nina&status=active',
+    );
+
+    expect(await screen.findByRole('link', { name: /Anna Beispiel/ })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox')).toHaveValue('');
+    await waitFor(() => expect(adressen.at(-1)).toBe('status=active'));
   });
 
   it('hat den Suchbegriff nach dem Weg in den Datensatz und zurück noch', async () => {

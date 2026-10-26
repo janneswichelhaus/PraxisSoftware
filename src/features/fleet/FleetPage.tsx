@@ -49,7 +49,7 @@ import {
 import { aktiveStandortvorlage } from './standortvorlage';
 import { todayInTimeZone, wochenBeginn } from '@/lib/datum';
 import { leseMeldung } from '@/lib/meldung';
-import { gemerkterSuchbegriff, suchbegriffMerken } from '@/lib/suchbegriff';
+import { useSuchbegriff } from '@/lib/suchbegriff';
 
 /**
  * Radflotte (FLT-EPIC-001): die Räder der Praxis nach Standort, mit Suche,
@@ -115,19 +115,15 @@ export function FleetPage({ user }: { user: CurrentUser }) {
 
   const [parameter, setParameter] = useSearchParams();
   // Die Suche findet auch Personen; der Begriff steht deshalb nie in der Adresse (ADR-011).
-  const [suche, setSuche] = useState(() => gemerkterSuchbegriff('radflotte'));
+  const [suche, suchen] = useSuchbegriff('radflotte');
   const zustandRoh = parameter.get('zustand');
   const zustand: Zustandsfilter = istZustandsfilter(zustandRoh) ? zustandRoh : 'alle';
   const freiRoh = Number(parameter.get('frei'));
   const frei: Wochentag | null = istWochentag(freiRoh) ? freiRoh : null;
 
-  function suchen(wert: string) {
-    setSuche(wert);
-    suchbegriffMerken('radflotte', wert);
-  }
-
   function setze(naechste: { zustand?: Zustandsfilter; frei?: Wochentag | null }) {
     const neu = new URLSearchParams(parameter);
+    neu.delete('q');
     const z = naechste.zustand ?? zustand;
     const f = naechste.frei === undefined ? frei : naechste.frei;
     if (z !== 'alle') neu.set('zustand', z);

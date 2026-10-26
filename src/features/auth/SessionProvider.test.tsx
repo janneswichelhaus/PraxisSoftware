@@ -150,6 +150,16 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     expect(gemerkterSuchbegriff('mitarbeitende')).toBe('');
   });
 
+  it('leert die Suchbegriffe auch beim Wechsel auf ein anderes Konto ohne Abmeldung', async () => {
+    await anbieterZeigen();
+    suchbegriffMerken('radflotte', 'Nina');
+
+    act(() => melde?.('SIGNED_IN', sitzung('bert')));
+
+    expect(gemerkterSuchbegriff('radflotte')).toBe('');
+    expect(await screen.findByText('bert')).toBeInTheDocument();
+  });
+
   it('behält die Suchbegriffe beim turnusmäßigen Verlängern', async () => {
     await anbieterZeigen();
     suchbegriffMerken('radflotte', 'Nina');

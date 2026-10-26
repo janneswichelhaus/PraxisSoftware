@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, type FormEvent, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
@@ -11,7 +11,7 @@ import { SearchField } from '@/components/ui/SearchField';
 import { Segment } from '@/components/ui/Segment';
 import { StatusMark } from '@/components/ui/StatusMark';
 import { formatEuro } from '@/lib/geld';
-import { gemerkterSuchbegriff, suchbegriffMerken } from '@/lib/suchbegriff';
+import { useSuchbegriff } from '@/lib/suchbegriff';
 import { ageInYears } from './api';
 import {
   PATIENT_OVERVIEW_KEY,
@@ -91,31 +91,11 @@ export function Patientenauswahl({
 }) {
   const [parameter, setParameter] = useSearchParams();
   const navigate = useNavigate();
-  const [begriff, setBegriff] = useState(() =>
-    begriffMerken ? gemerkterSuchbegriff('patienten') : '',
-  );
+  const [begriff, suchen] = useSuchbegriff('patienten', begriffMerken);
   const sortierung = leseSortierung(parameter.get('sort'));
   const zeigen = leseZeigen(parameter.get('zeigen'));
   // Eine Auswahl aus der Adresse, die hier nicht angeboten wird, filtert nicht.
   const angeboten = zeigen && (!wahlenNur || wahlenNur.includes(zeigen)) ? zeigen : null;
-  const alterBegriff = parameter.has('q');
-
-  useEffect(() => {
-    if (!alterBegriff) return;
-    setParameter(
-      (bisher) => {
-        const neu = new URLSearchParams(bisher);
-        neu.delete('q');
-        return neu;
-      },
-      { replace: true },
-    );
-  }, [alterBegriff, setParameter]);
-
-  function suchen(wert: string) {
-    setBegriff(wert);
-    if (begriffMerken) suchbegriffMerken('patienten', wert);
-  }
 
   const abfrage = useQuery({
     queryKey: PATIENT_OVERVIEW_KEY,

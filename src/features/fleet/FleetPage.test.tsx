@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useSearchParams } from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
@@ -180,6 +180,17 @@ describe('Radflotte', () => {
     await nutzer.selectOptions(screen.getByLabelText('Zustand'), 'verfuegbar');
     expect(adressen.at(-1)).toBe('zustand=verfuegbar');
     for (const adresse of adressen) expect(adresse).not.toMatch(/q=|nina/i);
+  });
+
+  it('entfernt einen alten Suchbegriff aus der Adresse, ohne ihn zu übernehmen', async () => {
+    const nutzer = userEvent.setup();
+    oeffne('/betrieb/flotte?q=Nina&zustand=reparatur');
+    expect(await screen.findByText('Lastenrad 3')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox')).toHaveValue('');
+    await waitFor(() => expect(adressen.at(-1)).toBe('zustand=reparatur'));
+
+    await nutzer.selectOptions(screen.getByLabelText('Zustand'), 'alle');
+    for (const adresse of adressen.slice(-2)) expect(adresse).not.toMatch(/q=|nina/i);
   });
 
   it('hat den Suchbegriff nach dem Weg zu einem Rad und zurück noch', async () => {

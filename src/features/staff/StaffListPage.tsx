@@ -12,7 +12,7 @@ import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { EmptyState } from '@/components/ui/Feedback';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { gemerkterSuchbegriff, suchbegriffMerken } from '@/lib/suchbegriff';
+import { useSuchbegriff } from '@/lib/suchbegriff';
 import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import { fullName } from '@/features/patients/api';
 import {
@@ -59,7 +59,7 @@ function matches(staff: StaffMember, query: string): boolean {
  */
 export function StaffListPage({ user }: { user: CurrentUser }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [query, setQuery] = useState(() => gemerkterSuchbegriff('mitarbeitende'));
+  const [query, updateQuery] = useSuchbegriff('mitarbeitende');
   const [status, setStatus] = useState<StatusFilter>(() =>
     parseStatusFilter(searchParams.get('status')),
   );
@@ -98,11 +98,6 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
   // (ADR-011): „Zurück zu den Mitarbeitenden“ führt so in genau diese Liste.
   const filter = toSearchParams(status).toString();
   const rueckweg = filter ? `/praxis/team?${filter}` : null;
-
-  function updateQuery(value: string) {
-    setQuery(value);
-    suchbegriffMerken('mitarbeitende', value);
-  }
 
   function updateStatus(value: StatusFilter) {
     setStatus(value);
