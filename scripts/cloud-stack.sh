@@ -381,11 +381,7 @@ start_functions() {
     # synthetische Daten (ADR-019 Punkte 15 und 36), und das AI Gateway mit
     # seiner Nachbildung (KI-EPIC-001, ADR-005 Punkt 5). Zugangsdienst, Pruefung
     # und Benachrichtigungen bleiben ohne ihre Schluessel "nicht eingerichtet".
-    # Der Ladestrom aus Touren (BEF-181) rechnet mit derselben Nachbildung und
-    # traegt mit dem Dienstschluessel dieses lokalen Stacks ein - nur
-    # synthetische Daten, nie ein Schluessel einer anderen Umgebung.
-    extra_env=(LOCATION_PROVIDER=mock LOCATION_DATA_GATE=synthetic AI_PROVIDER=mock APP_ENVIRONMENT=development
-      "ELECTRICITY_DISTANCE_SERVICE_KEY=$STACK_SERVICE_ROLE_KEY")
+    extra_env=(LOCATION_PROVIDER=mock LOCATION_DATA_GATE=synthetic AI_PROVIDER=mock APP_ENVIRONMENT=development)
   fi
   if pid_of functions >/dev/null; then
     info "Edge Functions laufen bereits"

@@ -1,4 +1,4 @@
-import type { ElectricityPreview, Overview, PayoutDetails, Reimbursement } from './api';
+import type { Overview, PayoutDetails, Reimbursement } from './api';
 
 /**
  * Synthetische Erstattungen für die Tests (ERS-001, ORG-008): Anna mit
@@ -78,19 +78,6 @@ export function testOverview(change: Partial<Overview> = {}): Overview {
     to_decide: [],
     to_pay: [],
     people: [],
-    ...change,
-  };
-}
-
-export function testPreview(change: Partial<ElectricityPreview> = {}): ElectricityPreview {
-  return {
-    month: '2026-09-01',
-    working_minutes: 9_600,
-    km_per_hour: 6,
-    wh_per_km: 18,
-    cents_per_kwh: 37,
-    amount_cents: 639,
-    already_requested: false,
     ...change,
   };
 }
