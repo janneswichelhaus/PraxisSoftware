@@ -1,6 +1,6 @@
 -- Das Upload-Recht der Akte prüft wie die vier anderen Dateiarten die vorbereitende Person, den
--- Zustand vor der Bestätigung und das 24-Stunden-Fenster (ADR-017 Punkte 7 und 11). Radflotte und
--- Rückfrage prüfen den Zustand unter der Sperre nach, wie Beleg und Teamchat.
+-- Zustand vor der Bestätigung und das 24-Stunden-Fenster (ADR-017 Punkte 7 und 11). Bestätigen und
+-- Verwerfen prüfen den Zustand unter der Sperre nach, wie bei Beleg und Teamchat.
 
 create or replace function app.may_upload_patient_file_object(p_bucket text, p_object_key text)
 returns boolean
@@ -147,5 +147,92 @@ begin
   perform app.log_platform_representation(
     p_access_id, 'platform_representation.read', jsonb_build_object('view', 'message')
   );
+end;
+$$;
+
+create or replace function public.discard_fleet_photo_upload(p_photo_id uuid)
+returns void
+language plpgsql security definer
+set search_path to ''
+as $$
+declare
+  v_foto public.fleet_photos%rowtype;
+  v_id   uuid;
+begin
+  perform app.fleet_org(app.can_read_fleet(), 'not allowed to use the fleet');
+  v_foto := app.own_pending_fleet_photo(p_photo_id);
+  -- Der Trigger schreibt den Loeschauftrag, falls doch schon ein Objekt liegt. Der Zustand steht
+  -- im Loeschen selbst: Ein gleichzeitig bestaetigtes Foto bleibt.
+  delete from public.fleet_photos f
+   where f.id = v_foto.id and f.status = 'pending' and f.confirmation_requested_at is null
+  returning f.id into v_id;
+  if v_id is null then
+    raise exception 'photo not found' using errcode = 'P0002';
+  end if;
+end;
+$$;
+
+create or replace function public.discard_message_attachment_upload(p_access_id uuid, p_attachment_id uuid)
+returns void
+language plpgsql security definer
+set search_path to ''
+as $$
+declare
+  v_anhang public.platform_message_attachments%rowtype;
+  v_id     uuid;
+begin
+  if not app.platform_access_allows(p_access_id, 'attach') then
+    raise exception 'platform access not allowed' using errcode = '42501';
+  end if;
+  v_anhang := app.own_pending_attachment(p_access_id, p_attachment_id);
+  -- Der Trigger schreibt den Loeschauftrag, falls doch schon ein Objekt liegt. Der Zustand steht
+  -- im Loeschen selbst: Ein gleichzeitig bestaetigter Anhang bleibt.
+  delete from public.platform_message_attachments x
+   where x.id = v_anhang.id and x.status = 'pending' and x.confirmation_requested_at is null
+  returning x.id into v_id;
+  if v_id is null then
+    raise exception 'attachment not found' using errcode = 'P0002';
+  end if;
+end;
+$$;
+
+create or replace function public.discard_patient_file_upload(p_file_id uuid)
+returns void
+language plpgsql security definer
+set search_path to ''
+as $$
+declare
+  v_datei record;
+  v_id    uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+
+  select f.* into v_datei
+  from public.patient_files f
+  where f.id = p_file_id
+    and f.organization_id = app.current_organization_id()
+    and f.status = 'pending'
+    -- Eine bestaetigte Datei, die auf die Pruefung wartet, ist kein abgebrochener Upload;
+    -- verwerfen darf sie nur das Ergebnis der Pruefung oder der Lauf nach 24 Stunden.
+    and f.confirmation_requested_at is null;
+
+  if not found then
+    raise exception 'pending upload not accessible' using errcode = '42501';
+  end if;
+
+  if not app.can_write_patient_file(v_datei.document_type, v_datei.treatment_basis_id) then
+    raise exception 'not allowed to discard this upload' using errcode = '42501';
+  end if;
+
+  -- Der Trigger schreibt den Loeschauftrag, falls doch schon ein Objekt liegt. Der Zustand steht
+  -- im Loeschen selbst: Eine gleichzeitig bestaetigte Datei bleibt.
+  delete from public.patient_files f
+   where f.id = p_file_id and f.status = 'pending' and f.confirmation_requested_at is null
+  returning f.id into v_id;
+  if v_id is null then
+    raise exception 'pending upload not accessible' using errcode = '42501';
+  end if;
 end;
 $$;

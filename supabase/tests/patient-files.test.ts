@@ -10,6 +10,7 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { gleichzeitig } from './helpers/gleichzeitig';
 import {
   DOKUMENTARTEN,
   KLINISCHE_DOKUMENTARTEN,
@@ -625,6 +626,23 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(await abgefangen(asUser(users.therapist, HOCHLADEN, [datei.object_key]))).toBeNull();
     });
 
+    it('laesst nicht hochladen, wer das Schreibrecht nach der Vorbereitung verliert', async () => {
+      const datei = await vorbereiten(users.therapist, { verordnungId: null, art: 'befund' });
+      await asPostgres(
+        `update public.user_roles set role_key = 'trainer' where user_id = $1 and role_key = 'therapist'`,
+        [users.therapist],
+      );
+      try {
+        const fehler = await abgefangen(asUser(users.therapist, HOCHLADEN, [datei.object_key]));
+        expect(fehler?.message).toMatch(/row-level security/i);
+      } finally {
+        await asPostgres(
+          `update public.user_roles set role_key = 'therapist' where user_id = $1 and role_key = 'trainer'`,
+          [users.therapist],
+        );
+      }
+    });
+
     it('laesst nach der Bitte um Bestaetigung und nach 24 Stunden nicht mehr hochladen (ADR-017 Punkt 7)', async () => {
       const angefragt = await vorbereiten(users.therapist);
       await asPostgres(
@@ -792,6 +810,30 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(zeilen.rows).toEqual([]);
       const auftraege = await asPostgres('select id from public.storage_deletion_orders');
       expect(auftraege.rows).toHaveLength(1);
+    });
+
+    it('verwirft keine Datei, die gleichzeitig bestaetigt wird', async () => {
+      const datei = await vorbereiten(users.therapist);
+      await objektAblegen(datei.object_key);
+      const fehler = await gleichzeitig(
+        {
+          konto: users.therapist,
+          sql: 'select public.confirm_patient_file_upload($1::uuid)',
+          params: [datei.file_id],
+        },
+        {
+          konto: users.therapist,
+          sql: 'select public.discard_patient_file_upload($1::uuid)',
+          params: [datei.file_id],
+        },
+      );
+      expect(fehler).toMatchObject({ code: '42501', message: 'pending upload not accessible' });
+      const { rows } = await asPostgres<{ status: string }>(
+        'select status from public.patient_files where id = $1',
+        [datei.file_id],
+      );
+      expect(rows).toEqual([{ status: 'ready' }]);
+      expect((await asPostgres('select id from public.storage_deletion_orders')).rows).toEqual([]);
     });
 
     it('verwirft keine bestaetigte Datei ueber diesen Weg', async () => {
