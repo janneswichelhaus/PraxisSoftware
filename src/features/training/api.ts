@@ -587,17 +587,16 @@ export async function addTrainingProtocolAddendum(
   inhalt: string,
   grund: string,
 ): Promise<void> {
-  const { error } = (await getSupabase().rpc('add_training_protocol_addendum', {
+  const satz = 'Der Nachtrag konnte nicht gespeichert werden.';
+  const ergebnis = (await getSupabase().rpc('add_training_protocol_addendum', {
     p_appointment_id: appointmentId,
     p_content: inhalt.trim(),
     p_reason: grund.trim(),
-  })) as { error: { message?: string } | null };
-  if (error) {
-    if (error.message?.includes('needs a reason')) {
-      throw new Error('Ein Nachtrag braucht einen Grund (3 bis 500 Zeichen).');
-    }
-    throw new Error('Der Nachtrag konnte nicht gespeichert werden.');
+  })) as { data: unknown; error: { message?: string } | null; status?: number };
+  if (ergebnis.error?.message?.includes('needs a reason')) {
+    throw new Error('Ein Nachtrag braucht einen Grund (3 bis 500 Zeichen).');
   }
+  if (abgewiesen(ergebnis) || ergebnis.data === null) throw new Error(satz);
 }
 
 /** Die protokollierten Einheiten einer Trainingskund:in, neueste zuerst. */
