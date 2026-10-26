@@ -5,17 +5,17 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-**Aufräumen** (Auftrag Jannes 25.10., Entscheidungen 26.10., ROADMAP 7.19): Schritte 1 bis 3 und
-Fehler 4 und 6 gemergt (#308 bis #314). Fehler 5 und von 7 `app.mdr_released` liegen als PR vor.
-Bauplan ist `development/TIEFENANALYSE.md`.
+**Aufräumen** (Auftrag Jannes 25.10., Entscheidungen 26.10., ROADMAP 7.20): Schritte 1 bis 3,
+Fehler 4 bis 6 und von 7 `app.mdr_released` gemergt (#308 bis #315). Schritt 4a, M9, M1, M5, M7
+und das Barometer nach Option A (Prinzipien 0.29) liegen als dritte PR vor. Bauplan ist
+`development/TIEFENANALYSE.md`.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Aufräumen nach ROADMAP 7.19: Schritt 4a, M9, M1, M5, M7 und das Barometer nach Option A; danach 4
-(Register), 3b (Domänenschnitt), 5 (Doku).
+Aufräumen nach ROADMAP 7.20: 4 (Register), 3b (Domänenschnitt), 5 (Doku).
 Schritt 3 Termine des Design-Reviews (3a bis 3d), dann Schritte 4
 bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff; Briefings in
 `design/review-2026-10/`. Ohne Handoff: BEF-198 (Löschjournal; Pfad A), BEF-223 (Zeitumstellung;
