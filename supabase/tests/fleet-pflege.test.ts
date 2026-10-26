@@ -218,7 +218,7 @@ describe('Check-Up-Pflege und Meldungen (FLT-007 bis FLT-009)', () => {
           FLOTTE.rad2,
           punkte(),
           null,
-          JSON.stringify([{ zone: 'lenker', severity: 'problem', point: null, note: null }]),
+          JSON.stringify([{ zone: 'lenker', severity: 'problem', note: null }]),
           'wiped',
           null,
         ],

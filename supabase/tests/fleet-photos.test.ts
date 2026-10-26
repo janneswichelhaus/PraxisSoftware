@@ -116,7 +116,7 @@ async function checkUp(konto: string): Promise<{ checkup: string; stelle: string
     FLOTTE.rad2,
     JSON.stringify(punkte),
     null,
-    JSON.stringify([{ zone: 'lenker', severity: 'problem', point: null, note: null }]),
+    JSON.stringify([{ zone: 'lenker', severity: 'problem', note: null }]),
     true,
   ]);
   return { checkup: rows[0]!.daten.checkup_id, stelle: rows[0]!.daten.spot_ids[0]! };
@@ -133,7 +133,7 @@ async function panne(konto: string): Promise<{ panne: string; stelle: string }> 
     'Klingel klemmt',
     null,
     null,
-    JSON.stringify([{ zone: 'klingel', point: null, note: null }]),
+    JSON.stringify([{ zone: 'klingel', note: null }]),
   ]);
   return { panne: rows[0]!.daten.breakdown_id, stelle: rows[0]!.daten.spot_ids[0]! };
 }
