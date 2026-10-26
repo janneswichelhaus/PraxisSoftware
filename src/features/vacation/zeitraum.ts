@@ -61,68 +61,6 @@ export function ueberschneidet(
   return a.starts_on <= bis && von <= a.ends_on;
 }
 
-/**
- * Monatsnamen in der Kurzform des Duden - fest, weil `Intl` sie je nach
- * ICU-Stand mit oder ohne Punkt liefert.
- */
-const MONAT_KURZ = [
-  'Jan.',
-  'Feb.',
-  'März',
-  'Apr.',
-  'Mai',
-  'Juni',
-  'Juli',
-  'Aug.',
-  'Sept.',
-  'Okt.',
-  'Nov.',
-  'Dez.',
-] as const;
-
-function teile(tag: string) {
-  const d = new Date(`${tag}T00:00:00Z`);
-  return { tag: d.getUTCDate(), monat: MONAT_KURZ[d.getUTCMonth()]!, jahr: d.getUTCFullYear() };
-}
-
-/** „Okt.“ - ein Monat als Kachel beim Wählen (das Jahr steht darüber). */
-export function monatKurz(monat: string): string {
-  return teile(monat).monat;
-}
-
-const MONATSNAME = new Intl.DateTimeFormat('de-DE', {
-  month: 'long',
-  year: 'numeric',
-  timeZone: 'UTC',
-});
-
-/** „Oktober 2026“ - der Name einer Monatskachel für Vorlesesoftware. */
-export function monatLang(monat: string): string {
-  return MONATSNAME.format(new Date(`${monat}T00:00:00Z`));
-}
-
-/** „3. Okt.“ - ein Tag im laufenden Monat, etwa ein Feiertag. */
-export function tagKurz(tag: string): string {
-  const t = teile(tag);
-  return `${t.tag}. ${t.monat}`;
-}
-
-/**
- * „4.–15. Aug. 2027“, „28. Dez. 2027 – 8. Jan. 2028“, ein Tag: „4. Aug. 2027“.
- * Ohne Jahr, wenn es das laufende ist (`ohneJahr`).
- */
-export function zeitraumText(von: string, bis: string, ohneJahr: number | null = null): string {
-  const a = teile(von);
-  const b = teile(bis);
-  const jahr = (j: number) => (j === ohneJahr ? '' : ` ${j}`);
-  if (von === bis) return `${a.tag}. ${a.monat}${jahr(a.jahr)}`;
-  if (a.jahr === b.jahr && a.monat === b.monat) {
-    return `${a.tag}.–${b.tag}. ${b.monat}${jahr(b.jahr)}`;
-  }
-  if (a.jahr === b.jahr) return `${a.tag}. ${a.monat} – ${b.tag}. ${b.monat}${jahr(b.jahr)}`;
-  return `${a.tag}. ${a.monat} ${a.jahr} – ${b.tag}. ${b.monat} ${b.jahr}`;
-}
-
 /** „1 Urlaubstag“, „9 Urlaubstage“ - ohne Umbruch zwischen Zahl und Wort. */
 export function urlaubstage(anzahl: number): string {
   return `${anzahl}\u00a0${anzahl === 1 ? 'Urlaubstag' : 'Urlaubstage'}`;

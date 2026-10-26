@@ -17,7 +17,6 @@ import {
 import { RUECKWEG_PARAM, leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { FLOTTE_SCHLUESSEL, fetchFleet, flotteSchluessel, takeKey } from '@/features/fleet/api';
-import { montagDerWoche } from '@/features/fleet/format';
 import { saveWorkingHours } from '@/features/scheduling/api';
 import {
   canManageStaffPrivateDetails,
@@ -59,7 +58,7 @@ import {
 import { EinladungsError, ladeZugangEin } from './konto-api';
 import { staffFeldId } from './mitarbeiterfelder';
 import { problemTexte } from './zugangstexte';
-import { todayInTimeZone } from '@/lib/datum';
+import { todayInTimeZone, wochenBeginn } from '@/lib/datum';
 
 const LEER: Personangaben = { given_name: '', family_name: '', work_email: '', work_phone: '' };
 
@@ -122,7 +121,7 @@ export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
   const [fokusAufEinrichten, setFokusAufEinrichten] = useState(false);
 
   // Gleich zu Beginn geladen: Auf der Seite zum Rad steht die Liste dann schon.
-  const montag = montagDerWoche(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
+  const montag = wochenBeginn(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
   const flotte = useQuery({
     queryKey: flotteSchluessel(montag),
     queryFn: () => fetchFleet(montag),

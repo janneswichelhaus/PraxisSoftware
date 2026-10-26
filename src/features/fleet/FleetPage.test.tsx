@@ -4,10 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import * as api from './api';
-import { montagDerWoche, plusTage } from './format';
 import { FleetPage } from './FleetPage';
 import { ANNA, TIM, testFlotte, testRad } from './testdaten';
-import { todayInTimeZone } from '@/lib/datum';
+import { tagePlus, todayInTimeZone, wochenBeginn } from '@/lib/datum';
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof api>()),
@@ -131,7 +130,7 @@ describe('Radflotte', () => {
   });
 
   it('findet das Rad, das am Donnerstag frei ist - auch weil die Stammnutzer:in abwesend ist', async () => {
-    const donnerstag = plusTage(montagDerWoche(todayInTimeZone('Europe/Berlin')), 3);
+    const donnerstag = tagePlus(wochenBeginn(todayInTimeZone('Europe/Berlin')), 3);
     fetchFleet.mockResolvedValue(
       testFlotte({ unavailable: [{ staff_member_id: ANNA.id, on_date: donnerstag }] }),
     );
@@ -165,12 +164,12 @@ describe('Radflotte', () => {
     fetchFleet.mockResolvedValue(
       testFlotte({
         bikes: [
-          testRad({ last_checkup_at: `${plusTage(heute, -20)}T08:00:00+00:00` }),
+          testRad({ last_checkup_at: `${tagePlus(heute, -20)}T08:00:00+00:00` }),
           testRad({
             id: 'rad-4',
             name: 'Lastenrad 4',
             regular_rider: TIM,
-            last_checkup_at: `${plusTage(heute, -2)}T08:00:00+00:00`,
+            last_checkup_at: `${tagePlus(heute, -2)}T08:00:00+00:00`,
           }),
         ],
       }),

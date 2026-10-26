@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
-import { formatDate } from '@/lib/datum';
+import { formatDate, tagePlus } from '@/lib/datum';
 import { fetchTagebuch, tagebuchSchluessel, type TagebuchDerBeratung as Daten } from './api';
 import {
   grammVon,
@@ -45,7 +45,7 @@ export function TagebuchDerBeratung({ profilId }: { profilId: string }) {
         <>
           <Woche
             daten={daten!}
-            onFrueher={() => setBis(vortag(daten!.from))}
+            onFrueher={() => setBis(tagePlus(daten!.from, -1))}
             onOeffnen={setOffen}
           />
           {offen ? (
@@ -55,12 +55,6 @@ export function TagebuchDerBeratung({ profilId }: { profilId: string }) {
       )}
     </Abfragezustand>
   );
-}
-
-function vortag(tag: string): string {
-  const d = new Date(`${tag}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().slice(0, 10);
 }
 
 function Woche({

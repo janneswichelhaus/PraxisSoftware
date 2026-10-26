@@ -1,6 +1,7 @@
 import { Monatsblatt, type Tagesangabe } from '@/components/ui/Monatsblatt';
 import { feiertageZwischen, type Bundesland } from './feiertage';
-import { gewaehlteTage, tagKurz, type Zeitraumwahl } from './zeitraum';
+import { gewaehlteTage, type Zeitraumwahl } from './zeitraum';
+import { tagKurz } from '@/lib/datum';
 
 /**
  * Der Kalender zum Wählen eines Urlaubs (G7, URL-001): ein Monat je Seite,

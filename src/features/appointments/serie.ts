@@ -14,6 +14,8 @@
  * anders legen will, verschiebt ihn in der Liste.
  */
 
+import { tagePlus } from '@/lib/datum';
+
 export interface Serientermin {
   datum: string;
   beginn: string;
@@ -42,18 +44,6 @@ export const rhythmen: Record<Rhythmus, { label: string; abstaende: number[] }> 
  * Behandlungen je Woche (ANN-038).
  */
 export const SERIE_HOECHSTZAHL = 30;
-
-/**
- * Verschiebt einen Kalendertag um ganze Tage.
- *
- * UTC-verankert, damit daraus nie eine Ortszeit abgeleitet wird - dieselbe
- * Regel wie in `calendar.ts` und in `folgeterminVorbelegung`.
- */
-function tagePlus(iso: string, tage: number): string {
-  const tag = new Date(`${iso}T00:00:00Z`);
-  tag.setUTCDate(tag.getUTCDate() + tage);
-  return tag.toISOString().slice(0, 10);
-}
 
 const ISO_TAG = /^\d{4}-\d{2}-\d{2}$/;
 

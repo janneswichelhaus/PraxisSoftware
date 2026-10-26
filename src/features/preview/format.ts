@@ -1,11 +1,7 @@
-/**
- * Anzeigeformate des Vorschaugeruests.
- *
- * Bewusst ueber `Intl` mit fester Sprache. Kalendertage formatiert die
- * Anwendung an einer Stelle - die Vorschau nennt dieselbe Funktion nur in
- * ihrem eigenen Vokabular.
- */
-export { formatDate as formatDatum } from '@/lib/datum';
+/** Anzeigeformate des Vorschaugeruests, bewusst ueber `Intl` mit fester Sprache. */
+
+import { zeitpunktIn } from '@/lib/datum';
+
 // parseEuroZuCent kam mit R3-018 dazu: Der Vorschaubereich hatte einen
 // eigenen Geldparser mit abweichender Semantik ('1e3' als tausend Euro,
 // '1,005' auf 1,00 abgerundet). Gerechnet wird ueberall dieselbe Funktion.
@@ -53,34 +49,6 @@ export function ortszeitAlsZeitpunkt(
   uhrzeit: string,
   zeitzone: string = VORSCHAU_ZEITZONE,
 ): string {
-  const [jahr = 1970, monat = 1, tagImMonat = 1] = tag.split('-').map(Number);
   const [stunde = 0, minute = 0] = uhrzeit.split(':').map(Number);
-  const wanduhr = Date.UTC(jahr, monat - 1, tagImMonat, stunde, minute);
-  const erster = wanduhr - versatzMs(wanduhr, zeitzone);
-  return new Date(wanduhr - versatzMs(erster, zeitzone)).toISOString();
-}
-
-/** Abstand der Zone zu UTC in Millisekunden, zum Augenblick `ms`. */
-function versatzMs(ms: number, zeitzone: string): number {
-  const teile = new Intl.DateTimeFormat('en-US', {
-    timeZone: zeitzone,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
-  }).formatToParts(new Date(ms));
-  const zahl = (typ: Intl.DateTimeFormatPartTypes) =>
-    Number(teile.find((teil) => teil.type === typ)?.value ?? '0');
-  const alsUtc = Date.UTC(
-    zahl('year'),
-    zahl('month') - 1,
-    zahl('day'),
-    zahl('hour'),
-    zahl('minute'),
-    zahl('second'),
-  );
-  return alsUtc - Math.floor(ms / 1000) * 1000;
+  return zeitpunktIn(tag, stunde * 60 + minute, zeitzone);
 }

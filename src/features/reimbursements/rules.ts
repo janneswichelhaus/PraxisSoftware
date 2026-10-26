@@ -1,5 +1,5 @@
 import { STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
-import { monatKurz } from '@/features/vacation/zeitraum';
+import { monatKurz } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import type { Reimbursement, ReimbursementStatus } from './api';
 

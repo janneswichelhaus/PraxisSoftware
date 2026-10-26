@@ -17,7 +17,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchWaitlist, windowsText, type TimeWindow } from '@/features/waitlist/api';
-import { formatDate, todayInTimeZone } from '@/lib/datum';
+import { formatDate, tagePlus, todayInTimeZone } from '@/lib/datum';
 import { usePlanungsmatrix } from '@/features/tours/fahrzeitfaktor';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
@@ -42,12 +42,6 @@ import {
 } from '@/lib/termin';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function plusDays(iso: string, days: number): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
 
 const WEEKDAY = new Intl.DateTimeFormat('de-DE', { weekday: 'short', timeZone: 'UTC' });
 
@@ -249,7 +243,7 @@ function SearchForm({
   const [duration, setDuration] = useState(String(initial.duration));
   const [staff, setStaff] = useState(initial.staffMemberId ?? '');
   const [from, setFrom] = useState(initial.from);
-  const [to, setTo] = useState(plusDays(initial.from, 13));
+  const [to, setTo] = useState(tagePlus(initial.from, 13));
   const [useWindows, setUseWindows] = useState(initial.windows.length > 0);
   const [error, setError] = useState<string | null>(null);
 
@@ -280,7 +274,7 @@ function SearchForm({
       setError('Die Dauer liegt zwischen 5 und 240 Minuten.');
       return;
     }
-    if (!from || !to || to < from || to > plusDays(from, MAX_DAYS - 1) || to < today) {
+    if (!from || !to || to < from || to > tagePlus(from, MAX_DAYS - 1) || to < today) {
       setError(`Der Zeitraum muss in der Zukunft liegen und höchstens ${MAX_DAYS} Tage umfassen.`);
       return;
     }

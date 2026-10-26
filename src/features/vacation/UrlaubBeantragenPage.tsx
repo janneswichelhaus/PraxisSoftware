@@ -37,16 +37,17 @@ import { MONATE_VORAUS, Zeitraumkalender, type EigenerZeitraum } from './Zeitrau
 import { feiertageZwischen, type Bundesland } from './feiertage';
 import { urlaubsfenster } from './fenster';
 import { terminePfad } from './termine';
+import { KEINE_WAHL, urlaubstage, vollstaendig, type Zeitraumwahl } from './zeitraum';
 import {
-  KEINE_WAHL,
+  todayInTimeZone,
+  istIsoDatum,
   monatKurz,
+  monatPlus,
+  monatsBeginn,
   tagKurz,
-  urlaubstage,
-  vollstaendig,
+  tagePlus,
   zeitraumText,
-  type Zeitraumwahl,
-} from './zeitraum';
-import { todayInTimeZone, istIsoDatum, monatPlus, monatsBeginn, tagePlus } from '@/lib/datum';
+} from '@/lib/datum';
 
 /**
  * Urlaub beantragen, geführt (G7, URL-001, Budget ≤ 6 Tipps, Ziel 5):

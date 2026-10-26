@@ -11,6 +11,8 @@
  * Innenministerium Baden-Württemberg.
  */
 
+import { tagePlus } from '@/lib/datum';
+
 export type Bundesland = 'BW' | 'NW';
 
 export const BUNDESLAND_NAME: Record<Bundesland, string> = {
@@ -37,12 +39,6 @@ export function ostersonntag(jahr: number): string {
   return `${jahr}-${String(monat).padStart(2, '0')}-${String(tag).padStart(2, '0')}`;
 }
 
-function plusTage(tag: string, tage: number): string {
-  const d = new Date(`${tag}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
-}
-
 /** Die gesetzlichen Feiertage eines Jahres mit Namen, nach Datum. */
 export function feiertage(jahr: number, land: Bundesland): { tag: string; name: string }[] {
   const ostern = ostersonntag(jahr);
@@ -50,12 +46,12 @@ export function feiertage(jahr: number, land: Bundesland): { tag: string; name: 
   const liste: { tag: string; name: string }[] = [
     { tag: `${j}-01-01`, name: 'Neujahr' },
     ...(land === 'BW' ? [{ tag: `${j}-01-06`, name: 'Heilige Drei Könige' }] : []),
-    { tag: plusTage(ostern, -2), name: 'Karfreitag' },
-    { tag: plusTage(ostern, 1), name: 'Ostermontag' },
+    { tag: tagePlus(ostern, -2), name: 'Karfreitag' },
+    { tag: tagePlus(ostern, 1), name: 'Ostermontag' },
     { tag: `${j}-05-01`, name: 'Tag der Arbeit' },
-    { tag: plusTage(ostern, 39), name: 'Christi Himmelfahrt' },
-    { tag: plusTage(ostern, 50), name: 'Pfingstmontag' },
-    { tag: plusTage(ostern, 60), name: 'Fronleichnam' },
+    { tag: tagePlus(ostern, 39), name: 'Christi Himmelfahrt' },
+    { tag: tagePlus(ostern, 50), name: 'Pfingstmontag' },
+    { tag: tagePlus(ostern, 60), name: 'Fronleichnam' },
     { tag: `${j}-10-03`, name: 'Tag der Deutschen Einheit' },
     { tag: `${j}-11-01`, name: 'Allerheiligen' },
     { tag: `${j}-12-25`, name: '1. Weihnachtstag' },

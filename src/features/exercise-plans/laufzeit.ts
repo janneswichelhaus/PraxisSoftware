@@ -28,10 +28,3 @@ export const LAUFZEIT_VORSCHLAG_TAGE = 42;
  * Formular.
  */
 export const LAUFZEIT_HOECHSTENS_TAGE = 182;
-
-/** Kalendertag plus `tage`, als `YYYY-MM-DD` - ohne Zeitzonenrechnung. */
-export function tagPlus(tag: string, tage: number): string {
-  const d = new Date(`${tag}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + tage);
-  return d.toISOString().slice(0, 10);
-}

@@ -10,8 +10,7 @@ import type { CurrentUser } from '@/features/session/types';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { URLAUB_SCHLUESSEL } from './api';
 import { fetchTermineImUrlaub } from './termine';
-import { zeitraumText } from './zeitraum';
-import { todayInTimeZone, istIsoDatum } from '@/lib/datum';
+import { todayInTimeZone, istIsoDatum, zeitraumText } from '@/lib/datum';
 import { fetchAssignableTherapists } from '@/features/staff/api';
 
 /**

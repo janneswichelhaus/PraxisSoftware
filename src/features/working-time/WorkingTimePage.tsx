@@ -29,7 +29,8 @@ import {
 } from './api';
 import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { WeekRows } from './WeekRows';
-import { changeTitle, dateLong, minutesChange, statusDisplay } from './format';
+import { changeTitle, minutesChange, statusDisplay } from './format';
+import { dateLong } from '@/lib/datum';
 import { fetchAssignableTherapists } from '@/features/staff/api';
 
 /**

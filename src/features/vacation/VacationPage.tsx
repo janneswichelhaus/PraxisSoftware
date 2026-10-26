@@ -24,8 +24,8 @@ import {
 } from './api';
 import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { urlaubsfenster } from './fenster';
-import { statusAnzeige, tage, urlaubstage, zeitraumText } from './zeitraum';
-import { todayInTimeZone } from '@/lib/datum';
+import { statusAnzeige, tage, urlaubstage } from './zeitraum';
+import { todayInTimeZone, zeitraumText } from '@/lib/datum';
 
 /**
  * Urlaub (URL-001, Überholung 7) - ersetzt die Vorschau.

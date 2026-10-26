@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 7.16 · Stand 2026-10-25 · **in Kraft**
+Version 7.17 · Stand 2026-10-26 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Fassung 7.0 arbeitet das Produktgespräch vom 2026-09-23 ein
@@ -10,23 +10,44 @@ Anfang 2027 parallel zum Bauen hinaus. Fassung 7.13 stellt die Arbeitsweise auf
 Bereichsüberholungen um (Block unten). Ältere Fassungen und ausführliche
 Fortschrittsvermerke: [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
-## Aufräumen (Auftrag Jannes 2026-10-25)
+## Aufräumen (Auftrag Jannes 2026-10-25, Entscheidungen 2026-10-26)
 
-Kein Neustart: Größe, Kopplung und Kommentarlast werden in fünf Schritten abgebaut, je eine PR, in
-dieser Reihenfolge. Schritt 3 kommt vor Schritt 3 „Termine“ des Design-Reviews, Schritt 4 direkt
-danach. Wie es steht, misst `/aufraeumen` (`AUFRAEUMEN.md`).
+Kein Neustart: Größe, Kopplung und Kommentarlast werden schrittweise abgebaut, je eine PR, in der
+Reihenfolge 3, 4a, 4, 3b, 5. Schritt 3 kommt vor Schritt 3 „Termine“ des Design-Reviews, Schritt 4
+direkt danach. Bauplan ist [`TIEFENANALYSE.md`](TIEFENANALYSE.md); sie wird gelöscht, wenn der Block
+abgeschlossen ist. Wie es steht, misst `/aufraeumen` (`AUFRAEUMEN.md`).
 
 | Schritt | Inhalt | Weg | Stand |
 | --- | --- | --- | --- |
 | 1 | Kommentarregel mit Prüfung (`pnpm kommentare:check`), die 14 extremsten Kopfkommentare gekürzt, `/aufraeumen` rein diagnostisch, `CLAUDE.md` auf unter 7 KB verdichtet | Standard | gemergt (#308) |
 | 2 | Migrationen vor dem Start zu einer Basis zusammenfassen: vorher Schemaabzug (Tabellen, Constraints, Indizes, Policies, Trigger, Funktionen), danach automatischer Diff ohne Unterschied und alle Tests grün; einmalige Ausnahme vom Migrationen-Gate (freigegeben); dazu eine Übersicht der DB-Funktionen nach Art und der verwaisten | Pfad A | gemergt (#309, #310); Funktionen ohne Aufrufer entfernt, Rechte der API-Rollen nachgezogen |
-| 3 | Modulschnittstellen: je Modul eine schmale `index.ts` ohne pauschale Re-Exporte, ESLint-Regel gegen tiefe Importe (zuerst Warnung); beginnend mit „Termine“, dort die gegenseitigen Abhängigkeiten auflösen; zusammengehörige kleine Module prüfen | Pfad A | gebaut (Branch `ccr-51128c80-r6lmjn`) |
+| 3 | Modulschnittstellen: je Modul eine schmale `index.ts` ohne pauschale Re-Exporte, ESLint-Regel gegen tiefe Importe (zuerst Warnung); beginnend mit „Termine“, dort die gegenseitigen Abhängigkeiten auflösen; zusammengehörige kleine Module prüfen. Teil 1, Rest: die Zeit- und Kalenderhilfen aller Module in `src/lib/datum.ts` | Pfad A | gemergt (#312); Rest gebaut (Branch `ccr-30ca4f76-x8pvfg`) |
+| 4a | Teillöschung unter Belegfrist: Screening, Assessments, Check-ins, Gewohnheiten und Übungspläne eines beendeten Trainingsverhältnisses (17 Tabellen) fallen nach drei Jahren, auch wenn die Belege acht Jahre bleiben (ADR-021 Punkt 4, ANN-183; Jannes 2026-10-26) | Pfad A | offen, erste Pfad-A-Story |
 | 4 | Register für Datenauskunft, Aufbewahrung, Löschjournal und Zusammenführung; ein Test wird rot, wenn eine Tabelle mit Patientenbezug darin nicht klassifiziert ist | Pfad A | offen |
-| 5 | Doku-Konsolidierung (54.000 Zeilen -> <10.000 Zeilen, Bereinigung von 732 ANN und 230 BEF) | Standard | offen |
+| 3b | Domänenschnitt „Ziel“ der Tiefenanalyse (14 Domänen, Abschnitt 1a.5; Jannes 2026-10-26): geteilte Hilfen nach `src/lib`, eine Regel, nach der nur Seiten fremde Domänen importieren, die 17 Rückkanten umdrehen, danach die Ordner zusammenlegen | Standard | offen |
+| 5 | Doku-Konsolidierung (54.000 Zeilen -> <10.000 Zeilen, Bereinigung von 732 ANN und 230 BEF). Git ist das Archiv: Archiv, Chroniken und erledigte Handoffs gehen ersatzlos. Das Prüfpaket umfasst 208 Einträge mit einem Gate für den Zusatz; dabei werden 17 fehlende und 11 falsche Zusätze korrigiert und ANN-662 gegen ADR-024 sowie ANN-541 gegen ADR-009 aufgelöst (Jannes 2026-10-26) | Standard | offen |
 
-**Radflotte:** Das Modul bleibt fachlich. Der Ausbau nicht kritischer Visualisierungen, etwa des
-3D-Modells des Rads, ist seit 2026-10-25 eingefroren; Einsparungen ohne Verlust im Kernbetrieb darf
-`/aufraeumen` vorschlagen.
+**Fehler aus der Tiefenanalyse**, verbindlich aufgenommen (Jannes 2026-10-26; Belege in
+`TIEFENANALYSE.md` 0.3 und 3b.6). 4 bis 7 kommen bald als kleine eigene PRs:
+
+| Nr. | Fehler | Weg | Wohin |
+| --- | --- | --- | --- |
+| 1 | Die Teillöschung unter Belegfrist lässt 17 Tabellen mit Art.-9-Daten des Trainings bis zu fünf Jahre zu lang stehen | Pfad A | Schritt 4a |
+| 2 | 12 Lösch-RPCs schreiben kein Löschjournal; nach einem Restore kämen Zeilen aus 16 Tabellen zurück (umfasst BEF-198) | Pfad A | Schritt 4 |
+| 3 | Das Zusammenführen hat weder einen Vollständigkeitstest noch einen Nachweis für einen Restore | Pfad A | Schritt 4 |
+| 4 | Ein Trainings-Nachtrag gilt bei 403 als gespeichert (`addTrainingProtocolAddendum`) | Pfad A | kleine PR |
+| 5 | Das Upload-Recht der Akte prüft weder die hochladende Person noch das 24-Stunden-Fenster; zwei Bestätigungen sperren, ohne unter der Sperre nachzuprüfen | Pfad A, Zweitreview | kleine PR |
+| 6 | Die Mitarbeiterliste schreibt den Suchbegriff, meist einen Namen, in Adresse und Rückweg | Pfad A | kleine PR |
+| 7 | DB-Funktionen ohne Produktionsaufrufer: #311 hat neun der 19 entfernt. Offen sind `list_patient_treatment_evidence` und `app.mdr_released`; Legal Hold setzen und aufheben braucht einen Betriebsweg statt einer Löschung (ADR-008). Gewollt bleiben `reapply_deletion_journal`, `bootstrap_practice`, die beiden Importfunktionen des Lebensmittelkatalogs und `app.appointment_window_options` | Pfad A | kleine PR |
+
+**Teamchat, Radflotte, Personal, Barometer:** Teamchat, Radflotte und Barometer bleiben fester Teil
+des Systems; sie werden nicht als Module gelöscht (Jannes 2026-10-26). Teamchat, Radflotte und
+Personal bekommen keine neuen Funktionen, bis Schritt 3 und 4 stehen; der Ausbau nicht kritischer
+Visualisierungen der Radflotte, etwa des 3D-Modells, ist schon seit 2026-10-25 eingefroren. Über
+die Vereinfachungen M1 bis M9 der Tiefenanalyse (Abschnitt 4.6) entscheidet Jannes einzeln. Jannes
+will das Barometer nicht anonym, offen ab der ersten beschäftigten Person; das ändert
+`PROJECT_PRINCIPLES.md` §20.2 Nr. 1 und 4 und ANN-607 und wird zusammen mit M4 entschieden.
+Einsparungen ohne Verlust im Kernbetrieb darf `/aufraeumen` vorschlagen.
 
 ## Bereichsüberholungen (Auftrag Jannes 2026-10-12)
 
@@ -963,7 +984,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | DRP-EPIC-010 Plattform: Planblatt aus dem Design-Review (Schritt 2d – „Plan als PDF“ mit Satz und Hauptknopf, Vorschau als Blatt, Druck A4 mit Wortmarke, Stand, Übungstage und Dosierung in einer Zeile; die Praxis bekommt den Druck mit) | fertig | 2026-10-25 | DRP-045, Branch ccr-544f8ce7-u1sqpf, src/features/exercise-plans/Plaene.test.tsx, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Titel, ein Hauptknopf, Druck mit Marke 40 und Text 16, 188 px und „Sehr groß“), Design-Review | — | Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 2d (Handoff 2026-10-24, Abschnitt 9 Punkt 4); ANN-731; nur Oberfläche, ohne Migration, ohne Auditeintrag; Safari am iPhone nicht geprüft |
 | B | Aufräumen Schritt 1: Kommentarregel mit Prüfung, die extremsten Kopfkommentare gekürzt, /aufraeumen, CLAUDE.md verdichtet | fertig | 2026-10-25 | Branch ccr-51128c80-r6lmjn, scripts/kommentare-check.test.mjs, scripts/aufraeumen.test.mjs, Kommentarregel in der CI, transpilierter Code der 14 gekürzten Dateien unverändert | — | Auftrag Jannes (25.10.2026), ROADMAP 7.16; CLAUDE.md auf unter 7 KB verdichtet; ohne Migration, ohne Oberfläche |
 | B | Aufräumen Schritt 2: Migrationen zu einer Basis zusammenfassen, Schema per Diff identisch, Übersicht der DB-Funktionen | fertig | 2026-10-25 | Branch ccr-51128c80-r6lmjn, node scripts/basis-migration.mjs pruefen (Schema, Rechte mit Supabase-Vorgaben und Daten identisch), scripts/basis-migration.test.mjs, supabase/tests/basis-uebernehmen.test.ts, pnpm test:db | — | Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; 341 Migrationen zu einer Basis; Test-Umgebung per Handstart basis_uebernehmen umgestellt (#209); Nachzug: neun Funktionen ohne Aufrufer entfernt, Rechte der API-Rollen und Vorgaben im Shim (Migrationen 20261225010000, 20261225020000, supabase/tests/rechte-api-rollen.test.ts) |
-| B | Aufräumen Schritt 3: Modulschnittstellen mit schmaler index.ts, ESLint gegen tiefe Importe, zuerst Termine | fertig | 2026-10-25 | Branch ccr-51128c80-r6lmjn, scripts/eslint-modulgrenzen.test.mjs, scripts/aufraeumen.test.mjs, pnpm lint ohne Warnung, verschobene Deklarationen gegen main verglichen, pnpm test und pnpm test:db | — | Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; ANN-748; Termine ohne gegenseitige Abhängigkeit, 17 statt 32 Paare; BEF-024 erledigt |
+| B | Aufräumen Schritt 3: Modulschnittstellen mit schmaler index.ts, ESLint gegen tiefe Importe, zuerst Termine | fertig | 2026-10-26 | #312 (Branch ccr-51128c80-r6lmjn), scripts/eslint-modulgrenzen.test.mjs, scripts/aufraeumen.test.mjs, pnpm lint ohne Warnung, verschobene Deklarationen gegen main verglichen, pnpm test und pnpm test:db; Teil 1, Rest: Branch ccr-30ca4f76-x8pvfg, pnpm test, pnpm test:db, E2E der berührten Bereiche, Bildstrecke main gegen Branch ohne sichtbare Änderung | — | Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; ANN-748; Termine ohne gegenseitige Abhängigkeit, 17 statt 32 Paare; BEF-024 erledigt; Teil 1, Rest (Jannes 26.10.2026): Zeit- und Kalenderhilfen aller Module in src/lib/datum.ts, 16 statt 17 Paare |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |
@@ -1003,6 +1024,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
 | Version | Datum | Änderung |
 | --- | --- | --- |
+| 7.17 | 2026-10-26 | **Aufräumen**, Entscheidungen zur Tiefenanalyse (Jannes): Schritte 4a (Teillöschung im Training) und 3b (Domänenschnitt), Reihenfolge 3, 4a, 4, 3b, 5; zu Schritt 5 Git als Archiv und das Prüfpaket mit Gate; sieben Fehler verbindlich aufgenommen; Teamchat, Radflotte und Barometer bleiben, Teamchat, Radflotte und Personal ohne Ausbau bis Schritt 3 und 4 stehen; M1 bis M9 einzeln. Kette der Blöcke sonst unverändert. |
 | 7.16 | 2026-10-25 | **Aufräumen** (Auftrag Jannes): neuer Block oben mit vier Schritten (Kommentarregel und `/aufraeumen`, Migrationen zusammenfassen, Modulschnittstellen ab „Termine“, Register für Auskunft, Aufbewahrung, Löschjournal und Zusammenführung); Schritt 3 vor Schritt 3 „Termine“ des Design-Reviews; als Schritt 5 die Doku-Konsolidierung (Jannes, 25.10.). Ausbau nicht kritischer Visualisierungen der Radflotte eingefroren. Kette der Blöcke sonst unverändert. |
 | 7.15 | 2026-10-18 | **Ernährungsberatung** (Jannes, ADR-027): ALT-EPIC-002 ersetzt durch ERN-EPIC-001 bis -006 mit Budgets und einer Politurrunde nach ERN-EPIC-003; Zusatz zu Behandlung und Training, Eigenbau statt Anbieter. Prinzipien 0.28, ADR-006 Fassung 4, ADR-008 Fassung 6, ADR-021 Fassung 4. |
 | 7.13 | 2026-10-12 | **Bereichsüberholungen** (Auftrag Jannes: Design der ganzen App, Übungsbibliothek, größere Schritte, weniger Doku): neuer Block oben mit Reihenfolge als Vorschlag; „Credit-Budget" wird „Arbeitsweise und Budget" (Auftrag vollständig abarbeiten, Subagenten und Worktrees erlaubt, Fundament seriell); Sichtung über Bildstrecke (Regel 1, Definition of Done, Fortschritt); Sandbox-Pfad und Ablaufrunden entfallen, Kernabläufe mit Tipp-Budgets in [`../product/kernablaeufe.md`](../product/kernablaeufe.md). Kette der Blöcke unverändert. |

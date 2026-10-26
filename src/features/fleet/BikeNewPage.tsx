@@ -8,8 +8,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchFleet, flotteSchluessel } from './api';
 import { BikeForm } from './BikeForm';
-import { montagDerWoche } from './format';
-import { todayInTimeZone } from '@/lib/datum';
+import { todayInTimeZone, wochenBeginn } from '@/lib/datum';
 
 const ZUR_FLOTTE = '/betrieb/flotte';
 
@@ -20,7 +19,7 @@ const ZUR_FLOTTE = '/betrieb/flotte';
  */
 export function BikeNewPage({ user }: { user: CurrentUser }) {
   const navigate = useNavigate();
-  const montag = montagDerWoche(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
+  const montag = wochenBeginn(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
   const abfrage = useQuery({
     queryKey: flotteSchluessel(montag),
     queryFn: () => fetchFleet(montag),

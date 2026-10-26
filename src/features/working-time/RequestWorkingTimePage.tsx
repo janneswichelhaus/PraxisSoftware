@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/abfolge';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import type { CurrentUser } from '@/features/session/types';
-import { tagKurz } from '@/features/vacation/zeitraum';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { DayEditor } from './DayEditor';
 import {
@@ -39,15 +38,7 @@ import {
   type WorkingTime,
 } from './api';
 import { blocksFromForm, formFromBlocks, type DayForm } from './dayForm';
-import {
-  WEEKDAY_NAME,
-  changeTitle,
-  changedWeekdays,
-  dateDayMonth,
-  dateLong,
-  dayText,
-  minutesChange,
-} from './format';
+import { WEEKDAY_NAME, changeTitle, changedWeekdays, dayText, minutesChange } from './format';
 import {
   PROBLEM_SHORT,
   PROBLEM_TEXT,
@@ -62,7 +53,15 @@ import {
   type Block,
   type Week,
 } from './rules';
-import { todayInTimeZone, monatPlus, monatsBeginn, tagePlus } from '@/lib/datum';
+import {
+  dateDayMonth,
+  dateLong,
+  todayInTimeZone,
+  monatPlus,
+  monatsBeginn,
+  tagKurz,
+  tagePlus,
+} from '@/lib/datum';
 
 /**
  * Arbeitszeitänderung beantragen, geführt (G8, AZ-001, Budget ≤ 8 Tipps und

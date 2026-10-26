@@ -122,12 +122,15 @@ export function tagePlus(iso: string, tage: number): string {
   return alsIso(d);
 }
 
+/** ISO-8601-Wochentag eines Kalendertags: 1 = Montag … 7 = Sonntag. */
+export function isoWochentag(iso: string): number {
+  // getUTCDay: 0 = Sonntag. Die Woche beginnt am Montag.
+  return ((alsDate(iso).getUTCDay() + 6) % 7) + 1;
+}
+
 /** Montag der Woche, in der dieser Tag liegt. */
 export function wochenBeginn(iso: string): string {
-  const d = alsDate(iso);
-  // getUTCDay: 0 = Sonntag. Die Woche beginnt am Montag.
-  const versatz = (d.getUTCDay() + 6) % 7;
-  return tagePlus(iso, -versatz);
+  return tagePlus(iso, 1 - isoWochentag(iso));
 }
 
 /** Kalenderwoche nach ISO 8601: Woche 1 ist die mit dem ersten Donnerstag des Jahres. */
@@ -148,4 +151,91 @@ export function monatPlus(monatsErster: string, monate: number): string {
   const d = alsDate(monatsErster);
   d.setUTCMonth(d.getUTCMonth() + monate, 1);
   return alsIso(d);
+}
+
+// Kalendertage als Text, ebenfalls über UTC: Der Tag bleibt derselbe, wo auch immer das Gerät steht.
+
+const LONG = new Intl.DateTimeFormat('de-DE', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'UTC',
+});
+
+/** „Dienstag, 3. November“ für einen Kalendertag `YYYY-MM-DD`. */
+export function dateLong(day: string): string {
+  return LONG.format(alsDate(day));
+}
+
+const DAY_MONTH = new Intl.DateTimeFormat('de-DE', {
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'UTC',
+});
+
+/** „1. Dezember“ für einen Kalendertag `YYYY-MM-DD`. */
+export function dateDayMonth(day: string): string {
+  return DAY_MONTH.format(alsDate(day));
+}
+
+/**
+ * Monatsnamen in der Kurzform des Duden - fest, weil `Intl` sie je nach
+ * ICU-Stand mit oder ohne Punkt liefert.
+ */
+const MONAT_KURZ = [
+  'Jan.',
+  'Feb.',
+  'März',
+  'Apr.',
+  'Mai',
+  'Juni',
+  'Juli',
+  'Aug.',
+  'Sept.',
+  'Okt.',
+  'Nov.',
+  'Dez.',
+] as const;
+
+function teile(tag: string) {
+  const d = alsDate(tag);
+  return { tag: d.getUTCDate(), monat: MONAT_KURZ[d.getUTCMonth()]!, jahr: d.getUTCFullYear() };
+}
+
+/** „Okt.“ - ein Monat als Kachel beim Wählen (das Jahr steht darüber). */
+export function monatKurz(monat: string): string {
+  return teile(monat).monat;
+}
+
+const MONATSNAME = new Intl.DateTimeFormat('de-DE', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** „Oktober 2026“ - der Name eines Monats, etwa für Vorlesesoftware. */
+export function monatLang(monat: string): string {
+  return MONATSNAME.format(alsDate(monat));
+}
+
+/** „3. Okt.“ - ein Tag im laufenden Monat, etwa ein Feiertag. */
+export function tagKurz(tag: string): string {
+  const t = teile(tag);
+  return `${t.tag}. ${t.monat}`;
+}
+
+/**
+ * „4.–15. Aug. 2027“, „28. Dez. 2027 – 8. Jan. 2028“, ein Tag: „4. Aug. 2027“.
+ * Ohne Jahr, wenn es das laufende ist (`ohneJahr`).
+ */
+export function zeitraumText(von: string, bis: string, ohneJahr: number | null = null): string {
+  const a = teile(von);
+  const b = teile(bis);
+  const jahr = (j: number) => (j === ohneJahr ? '' : ` ${j}`);
+  if (von === bis) return `${a.tag}. ${a.monat}${jahr(a.jahr)}`;
+  if (a.jahr === b.jahr && a.monat === b.monat) {
+    return `${a.tag}.–${b.tag}. ${b.monat}${jahr(b.jahr)}`;
+  }
+  if (a.jahr === b.jahr) return `${a.tag}. ${a.monat} – ${b.tag}. ${b.monat}${jahr(b.jahr)}`;
+  return `${a.tag}. ${a.monat} ${a.jahr} – ${b.tag}. ${b.monat} ${b.jahr}`;
 }

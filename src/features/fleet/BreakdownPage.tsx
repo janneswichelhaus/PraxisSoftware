@@ -11,13 +11,12 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchBike, fetchFleet, flotteSchluessel, radSchluessel, type Fleet } from './api';
-import { montagDerWoche } from './format';
 import { frage } from './pannenablauf';
 import { Pannenfenster } from './Pannenfenster';
 import { istMeinRad } from './rad';
 import { Radwahl } from './Radwahl';
 import { aktiveStandortvorlage } from './standortvorlage';
-import { todayInTimeZone } from '@/lib/datum';
+import { todayInTimeZone, wochenBeginn } from '@/lib/datum';
 
 /**
  * Panne melden (FLT-EPIC-001, Handoff Lastenrad 3D Abschnitt 4; geführt seit
@@ -33,7 +32,7 @@ export function BreakdownPage({ user }: { user: CurrentUser }) {
   const [parameter, setParameter] = useSearchParams();
   const radId = parameter.get('rad');
   const zeitzone = user.organizationTimeZone ?? 'Europe/Berlin';
-  const montag = montagDerWoche(todayInTimeZone(zeitzone));
+  const montag = wochenBeginn(todayInTimeZone(zeitzone));
   const flotte = useQuery({
     queryKey: flotteSchluessel(montag),
     queryFn: () => fetchFleet(montag),

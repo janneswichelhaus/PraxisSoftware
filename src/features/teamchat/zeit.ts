@@ -1,4 +1,4 @@
-import { todayInTimeZone, zeitpunktIn } from '@/lib/datum';
+import { isoWochentag, tagePlus, todayInTimeZone, zeitpunktIn } from '@/lib/datum';
 
 /**
  * Wann eine Nachricht kam, so kurz wie möglich: heute nur die Uhrzeit,
@@ -53,21 +53,10 @@ export interface Zeitvorschlag {
   um: string;
 }
 
-function tagPlus(tag: string, tage: number): string {
-  const [jahr, monat, tagImMonat] = tag.split('-').map(Number) as [number, number, number];
-  return new Date(Date.UTC(jahr, monat - 1, tagImMonat + tage)).toISOString().slice(0, 10);
-}
-
-/** Wochentag eines Tages `YYYY-MM-DD`: 0 Sonntag bis 6 Samstag. */
-function wochentag(tag: string): number {
-  return new Date(`${tag}T12:00:00Z`).getUTCDay();
-}
-
 /** Der nächste Werktag nach `tag` (Montag bis Freitag). */
 function naechsterWerktag(tag: string): string {
-  let naechster = tagPlus(tag, 1);
-  while (wochentag(naechster) === 0 || wochentag(naechster) === 6)
-    naechster = tagPlus(naechster, 1);
+  let naechster = tagePlus(tag, 1);
+  while (isoWochentag(naechster) > 5) naechster = tagePlus(naechster, 1);
   return naechster;
 }
 
@@ -78,7 +67,7 @@ function naechsterWerktag(tag: string): string {
  */
 export function planvorschlaege(zeitzone: string, jetzt = new Date()): Zeitvorschlag[] {
   const heute = todayInTimeZone(zeitzone, jetzt);
-  const morgen = tagPlus(heute, 1);
+  const morgen = tagePlus(heute, 1);
   const werktag = naechsterWerktag(heute);
   const vorschlaege: Zeitvorschlag[] = [];
   if (werktag === morgen) {
@@ -104,9 +93,9 @@ export function erinnerungsvorschlaege(zeitzone: string, jetzt = new Date()): Ze
   if (Date.parse(nachmittag) - jetzt.getTime() > 30 * 60_000) {
     vorschlaege.push({ text: 'Heute, 17:00', um: nachmittag });
   }
-  vorschlaege.push({ text: 'Morgen, 8:00', um: zeitpunktIn(tagPlus(heute, 1), 8 * 60, zeitzone) });
-  let montag = tagPlus(heute, 1);
-  while (wochentag(montag) !== 1) montag = tagPlus(montag, 1);
+  vorschlaege.push({ text: 'Morgen, 8:00', um: zeitpunktIn(tagePlus(heute, 1), 8 * 60, zeitzone) });
+  let montag = tagePlus(heute, 1);
+  while (isoWochentag(montag) !== 1) montag = tagePlus(montag, 1);
   vorschlaege.push({
     text: 'Nächste Woche, Montag 8:00',
     um: zeitpunktIn(montag, 8 * 60, zeitzone),
@@ -131,7 +120,7 @@ export function geplantFuer(iso: string, zeitzone: string, jetzt = new Date()): 
     timeZone: zeitzone,
   }).format(new Date(iso));
   if (tag === heute) return `heute, ${uhr}`;
-  if (tag === tagPlus(heute, 1)) return `morgen, ${uhr}`;
+  if (tag === tagePlus(heute, 1)) return `morgen, ${uhr}`;
   const datum = new Intl.DateTimeFormat('de-DE', {
     weekday: 'short',
     day: 'numeric',

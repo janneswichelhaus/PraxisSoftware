@@ -11,7 +11,6 @@ import {
   ereignisGeaendert,
   fensterMitArbeitszeit,
   gitterlinien,
-  isoWochentag,
   kachelBreite,
   blaettern,
   leseEingetrageneFehlzeit,
@@ -636,17 +635,6 @@ describe('Zeitformate', () => {
   it('begrenzt auf einen Kalendertag', () => {
     expect(minuteZuZeit(-30)).toBe('00:00');
     expect(minuteZuZeit(2000)).toBe('24:00');
-  });
-});
-
-describe('isoWochentag', () => {
-  it.each([
-    ['2027-05-10', 1],
-    ['2027-05-12', 3],
-    ['2027-05-15', 6],
-    ['2027-05-16', 7],
-  ])('bestimmt fuer %s den Wochentag %s', (tag, erwartet) => {
-    expect(isoWochentag(tag)).toBe(erwartet);
   });
 });
 

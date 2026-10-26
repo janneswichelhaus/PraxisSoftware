@@ -24,7 +24,7 @@ import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import type { Plattformzugang } from '@/features/platform-access/api';
 import { anzeigezustand, usePlattformzugang } from '@/features/platform-access/zustand';
 import { angabenZeile } from '@/lib/erfassungsgroessen';
-import { formatDate } from '@/lib/datum';
+import { formatDate, tagePlus } from '@/lib/datum';
 import {
   PLAENE_SCHLUESSEL,
   createVersion,
@@ -38,7 +38,7 @@ import {
 } from './api';
 import { AlsVorlageSpeichern } from './AlsVorlageSpeichern';
 import { schrittZeilen, vorigePosition } from './fassung';
-import { LAUFZEIT_HOECHSTENS_TAGE, LAUFZEIT_VORSCHLAG_TAGE, tagPlus } from './laufzeit';
+import { LAUFZEIT_HOECHSTENS_TAGE, LAUFZEIT_VORSCHLAG_TAGE } from './laufzeit';
 import { Fassungen } from './Fassungen';
 import { Plankopf } from './Plankopf';
 import { Planeditor } from './Planeditor';
@@ -298,9 +298,9 @@ function Laufzeit({ plan, abgelaufen }: { plan: Plan; abgelaufen: boolean }) {
 /** Verlängern (UEB-007, ANN-302) - ändern geht über „Neue Fassung“. */
 function Verlaengern({ plan }: { plan: Plan }) {
   const queryClient = useQueryClient();
-  const spaetestens = tagPlus(plan.today, LAUFZEIT_HOECHSTENS_TAGE);
+  const spaetestens = tagePlus(plan.today, LAUFZEIT_HOECHSTENS_TAGE);
   const ab = plan.runs_until && plan.runs_until > plan.today ? plan.runs_until : plan.today;
-  const vorschlag = tagPlus(ab, LAUFZEIT_VORSCHLAG_TAGE);
+  const vorschlag = tagePlus(ab, LAUFZEIT_VORSCHLAG_TAGE);
   const [bis, setBis] = useState(vorschlag > spaetestens ? spaetestens : vorschlag);
   const [fehler, setFehler] = useState<string | undefined>();
   const verlaengern = useMutation({

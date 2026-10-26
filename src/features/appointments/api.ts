@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import { minuteZuZeit, type StatusFilter } from './calendar';
-import { dayKey, formatDate } from '@/lib/datum';
+import { dayKey, formatDate, tagePlus } from '@/lib/datum';
 import { SERIE_HOECHSTZAHL, type Serientermin } from './serie';
 import {
   appointmentKindSchema,
@@ -473,25 +473,12 @@ export function folgeterminVorbelegung(
 ): TerminVorbelegung {
   const werte = appointmentToFormValues(appointment);
   return {
-    datum: naechsterTag(werte.date, tageSpaeter),
+    datum: tagePlus(werte.date, tageSpaeter),
     beginn: werte.start_time,
     ende: fensterEnde(werte.start_time),
     art: appointment.appointment_type,
     person: appointment.staff_member_id,
   };
-}
-
-/**
- * Verschiebt einen Kalendertag um ganze Tage.
- *
- * Reine Kalenderarithmetik auf `YYYY-MM-DD` über ein UTC-verankertes `Date`;
- * daraus wird nie eine Ortszeit abgeleitet (dieselbe Regel wie in
- * `calendar.ts`, wo `tagePlus` für die Kalenderansichten dasselbe tut).
- */
-function naechsterTag(iso: string, tage: number): string {
-  const tag = new Date(`${iso}T00:00:00Z`);
-  tag.setUTCDate(tag.getUTCDate() + tage);
-  return tag.toISOString().slice(0, 10);
 }
 
 /**

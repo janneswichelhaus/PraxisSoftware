@@ -8,7 +8,6 @@ import {
   urlaubstage,
   vollstaendig,
   waehleTag,
-  zeitraumText,
 } from './zeitraum';
 
 describe('Zeitraum wählen', () => {
@@ -58,18 +57,6 @@ describe('Zeitraum wählen', () => {
 });
 
 describe('Zeitraum schreiben', () => {
-  it('kürzt im selben Monat und Jahr', () => {
-    expect(zeitraumText('2027-08-04', '2027-08-15')).toBe('4.–15. Aug. 2027');
-    expect(zeitraumText('2027-07-28', '2027-08-06')).toBe('28. Juli – 6. Aug. 2027');
-    expect(zeitraumText('2027-12-28', '2028-01-08')).toBe('28. Dez. 2027 – 8. Jan. 2028');
-    expect(zeitraumText('2027-08-04', '2027-08-04')).toBe('4. Aug. 2027');
-  });
-
-  it('lässt das laufende Jahr weg', () => {
-    expect(zeitraumText('2027-08-04', '2027-08-15', 2027)).toBe('4.–15. Aug.');
-    expect(zeitraumText('2027-12-28', '2028-01-08', 2027)).toBe('28. Dez. 2027 – 8. Jan. 2028');
-  });
-
   it('schreibt Urlaubstage in Einzahl und Mehrzahl ohne Umbruch', () => {
     expect(urlaubstage(1)).toBe('1\u00a0Urlaubstag');
     expect(urlaubstage(9)).toBe('9\u00a0Urlaubstage');
