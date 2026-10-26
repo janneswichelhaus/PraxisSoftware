@@ -44,10 +44,7 @@ export const IDS = Object.freeze({
   trainingTina: 'eeeeeeee-eeee-4eee-8eee-000000000001',
   planErika: 'aeaeaeae-aeae-4eae-8eae-000000000001',
   planTraining: 'aeaeaeae-aeae-4eae-8eae-000000000002',
-  /**
-   * Mini-Kniebeuge mit Halt (KN-07) aus dem mitgelieferten Katalog - mit Bild.
-   * Feste Kennung des Seeds: md5('<Praxis>:uebung:KN-07') (ANN-380).
-   */
+  /** Mini-Kniebeuge mit Halt (KN-07) aus dem Katalog; md5('<Praxis>:uebung:KN-07'), ANN-380. */
   uebung: '5a72622b-f921-f78e-d1a1-ce4f3d0f9269',
   /** Rückfrage aus der Behandlung (Erika) und aus dem Training (Tina). */
   rueckfrage: 'd1d1d1d1-d1d1-4d1d-8d1d-000000000001',
@@ -1042,8 +1039,8 @@ export const ROUTEN = Object.freeze([
     etikett: 'Neuer Antrag',
     konten: ['owner', 'trainer'],
   },
-  // ORG-006: Barometer (Beschäftigte: der Ablauf, owner: die Praxissumme) und
-  // Rückmeldung an die Praxisleitung (Beschäftigte: schreiben, owner: Liste).
+  // Barometer (Beschäftigte: der Ablauf, owner: die Antworten mit Namen) und Rückmeldung an die
+  // Praxisleitung (Beschäftigte: schreiben, owner: mit Namen und die Summe ohne Namen).
   {
     muster: '/betrieb/barometer',
     pfad: '/betrieb/barometer',

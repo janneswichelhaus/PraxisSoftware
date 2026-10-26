@@ -3,16 +3,9 @@ import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 
 /**
- * Rückmeldungen von Beschäftigten (ORG-006, PROJECT_PRINCIPLES.md §20.2):
- * Barometer und Rückmeldung an die Praxisleitung über die Serverfunktionen aus
- * `supabase/migrations/20261203100000_org_006_rueckmeldungen.sql`.
- *
- * Wer abgibt und wer liest, entscheidet der Server; die Schwelle 3/5 steht
- * nur dort (ANN-607). Die Seiten fragen `can_take_part` und `can_read` nur
- * ab, um nicht anzubieten, was abgewiesen würde (ADR-004).
- *
- * **Freitext geht nie in eine Meldung, ein Log oder einen Schlüssel** (ADR-011):
- * Fehler werden hier in feste Sätze übersetzt, der Text bleibt im Feld.
+ * Wer abgibt, wer liest und die Schwelle 3/5 (ANN-608) entscheidet der Server; die Seiten fragen nur
+ * ab, um nichts Abgewiesenes anzubieten (ADR-004). Freitext geht nie in eine Meldung, ein Log oder
+ * einen Schlüssel (ADR-011): Fehler werden hier feste Sätze, der Text bleibt im Feld.
  */
 
 // -----------------------------------------------------------------------------
@@ -42,34 +35,9 @@ const namedSchema = z.object({
 });
 export type NamedFeedback = z.infer<typeof namedSchema>;
 
-const scaleSchema = z.union([
-  z.object({ enough: z.literal(false) }),
-  z.object({
-    enough: z.literal(true),
-    answered: z.number().int(),
-    median: z.number(),
-    distribution: z.array(z.number().int()).length(9),
-  }),
-]);
-export type ScaleSummary = z.infer<typeof scaleSchema>;
-
 const tooFew = z.object({ status: z.literal('too_few') });
 
 const summarySchema = z.object({
-  barometer: z.union([
-    tooFew,
-    z.object({
-      status: z.literal('ready'),
-      from_month: z.string(),
-      to_month: z.string(),
-      answers: z.number().int(),
-      mood: scaleSchema,
-      tours: scaleSchema,
-      team: scaleSchema,
-      easier_texts: z.array(z.string()),
-      more_texts: z.array(z.string()),
-    }),
-  ]),
   messages: z.union([
     tooFew,
     z.object({
@@ -84,6 +52,7 @@ const summarySchema = z.object({
 export type FeedbackSummary = z.infer<typeof summarySchema>;
 
 const submittedSchema = z.object({ month: z.string(), named: z.boolean() });
+const barometerSubmittedSchema = z.object({ month: z.string() });
 
 // -----------------------------------------------------------------------------
 // Fehler in festen Sätzen - nie mit dem Text der Person
@@ -140,7 +109,7 @@ export async function fetchNamedFeedback(): Promise<NamedFeedback[]> {
 
 const LOAD_SUMMARY = 'Die Auswertung konnte nicht geladen werden.';
 
-/** owner: die Praxissumme der anonymen Rückmeldungen - oder „zu wenige“. */
+/** owner: die Praxissumme der Rückmeldungen ohne Namen - oder „zu wenige“. */
 export async function fetchFeedbackSummary(): Promise<FeedbackSummary> {
   const data = await call('get_staff_feedback_summary', {}, LOAD_SUMMARY);
   return antwort(summarySchema, data, LOAD_SUMMARY);
@@ -163,24 +132,21 @@ function textOrNull(text: string): string | null {
   return trimmed === '' ? null : trimmed;
 }
 
-export async function submitBarometer(input: {
-  named: boolean;
-  answers: BarometerAnswers;
-}): Promise<{ month: string; named: boolean }> {
+/** Das Barometer geht immer mit Namen (§20.2 Nr. 1, ANN-607). */
+export async function submitBarometer(answers: BarometerAnswers): Promise<{ month: string }> {
   const fallback = 'Das Barometer konnte nicht gesendet werden.';
   const data = await call(
     'submit_staff_barometer',
     {
-      p_named: input.named,
-      p_mood: input.answers.mood,
-      p_tours: input.answers.tours,
-      p_team: input.answers.team,
-      p_easier: textOrNull(input.answers.easier),
-      p_more: textOrNull(input.answers.more),
+      p_mood: answers.mood,
+      p_tours: answers.tours,
+      p_team: answers.team,
+      p_easier: textOrNull(answers.easier),
+      p_more: textOrNull(answers.more),
     },
     fallback,
   );
-  return antwort(submittedSchema, data, fallback);
+  return antwort(barometerSubmittedSchema, data, fallback);
 }
 
 export async function submitMessage(input: {

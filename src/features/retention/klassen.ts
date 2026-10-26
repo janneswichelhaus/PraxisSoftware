@@ -177,12 +177,7 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
   rueckmeldung: {
     label: 'Rückmeldungen von Beschäftigten',
     beschreibung:
-      'Barometer und Rückmeldungen an die Praxisleitung, mit und ohne Namen. Zwölf Monate ab Ende des Monats der Abgabe, dann endgültig gelöscht.',
-  },
-  rueckmeldung_teilnahme: {
-    label: 'Teilnahme am Barometer',
-    beschreibung:
-      'Nur, dass eine Person das Barometer eines Monats abgegeben hat - damit der Hinweis verschwindet. Fällt nach dem Monat.',
+      'Barometer mit Namen und Rückmeldungen an die Praxisleitung, mit oder ohne Namen. Zwölf Monate ab Ende des Monats der Abgabe, dann endgültig gelöscht.',
   },
   teamchat: {
     label: 'Teamchat',

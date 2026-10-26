@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-25.
+Zuletzt aktualisiert: 2026-10-26.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -6353,29 +6353,29 @@ Praxisprozess · verworfen · 2026-10-17 · Jannes · erledigt · Wiedervorlage:
 
 **Änderungspfad.** Stunden von der Person korrigierbar: Parameter und Feld im Ablauf · Aufwand `mittel`.
 
-### ANN-607 — Barometer: Fragen, Schwelle, Frist
+### ANN-607 — Barometer: Fragen, namentlich, Frist
 
-Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-26 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Monatlich drei Skalen 1–9 (Stimmung, Touren und Fahrzeiten, Miteinander) und zwei Freitexte, alle freiwillig, Anrede „du“; nie owner. Ohne Namen nur Monat, keine Person, keine Uhrzeit; Teilnahme als eigene Marke. owner sieht ohne Namen nur die Summe ab drei möglichen Teilnehmenden und fünf Antworten, in festen, nie überlappenden Blöcken abgeschlossener Monate (höchstens zwölf), je Frage ab fünf. Jede anonyme Abgabe und der Löschlauf schreiben die Antworten neu; bis VACUUM und in Backups (30 Tage) bleiben alte Zeilen an den Rechten vorbei lesbar (DSFA). Gezählt werden Antworten, nicht Personen.
+**Annahme.** Monatlich drei Skalen 1–9 (Stimmung, Touren und Fahrzeiten, Miteinander) und zwei Freitexte, alle freiwillig, Anrede „du“; nie owner. Seit 2026-10-26 immer mit Namen und Zeitpunkt, einmal je Person und Monat, ab der ersten beschäftigten Person (§20.2 Nr. 1 und 4, Version 0.29): owner liest jede Antwort einzeln, ohne Summe, Kurve oder Zählung je Person. Ohne Namen geht nur die Rückmeldung an die Praxisleitung (ANN-608); anonyme Barometer, ihre Blöcke und die Teilnahmemarke sind gelöscht.
 
-**Begründung.** §20.2; Art. 88 DSGVO, § 26 BDSG; Zweitreview ORG-006 (Differenzen, Transaktionsspur).
+**Begründung.** §20.2; Art. 88 DSGVO, § 26 BDSG; Entscheidung Jannes (ROADMAP 7.18, Option A): Unter drei Beschäftigten zeigte ein anonymes Barometer nie etwas.
 
-**Anker.** `app.staff_feedback_threshold`.
+**Anker.** `public.submit_staff_barometer` (`supabase/migrations/20261225100000_barometer_namentlich.sql`).
 
-**Änderungspfad.** Schwelle dort, Fragen `fragen.ts` · Aufwand `klein`.
+**Änderungspfad.** Fragen `fragen.ts` · Aufwand `klein`. Wieder ohne Namen: Wahl, Teilnahmemarke, Summe und Neuschreiben aus der Basis zurückholen · Aufwand `mittel`.
 
 ### ANN-608 — Rückmeldung an die Praxisleitung
 
-Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-26 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Jederzeit ein Freitext (bis 2000 Zeichen) an owner, je Abgabe mit oder ohne Namen, zwei gleichwertige Knöpfe; Einstieg im Eingang und unter „Neuer Antrag“, nicht für owner. Mit Namen einzeln mit Monat; ohne Namen nur gemischt ab fünf (ANN-607). Kein Auditeintrag, der Text nie in Fehlern.
+**Annahme.** Jederzeit ein Freitext (bis 2000 Zeichen) an owner, je Abgabe mit oder ohne Namen, zwei gleichwertige Knöpfe; Einstieg im Eingang und unter „Neuer Antrag“, nicht für owner. Mit Namen einzeln mit Monat. Ohne Namen nur Monat, keine Person, keine Uhrzeit; owner sieht sie nur gemischt ab drei möglichen Teilnehmenden und fünf Rückmeldungen, in festen, nie überlappenden Blöcken abgeschlossener Monate (höchstens zwölf). Der Löschlauf schreibt sie nach dem Monat neu; bis VACUUM und in Backups (30 Tage) bleiben alte Zeilen an den Rechten vorbei lesbar (DSFA). Kein Auditeintrag, der Text nie in Fehlern.
 
-**Begründung.** §20.2: niedrige Hürde für Beschwerden; ADR-010 Punkt 17, ADR-011.
+**Begründung.** §20.2 Nr. 1 und 4: niedrige Hürde für Beschwerden; Art. 88 DSGVO, § 26 BDSG; ADR-010 Punkt 17, ADR-011; Zweitreview der Rückmeldungen (Differenzen, Transaktionsspur).
 
 **Anker.** `public.submit_staff_feedback_message`.
 
-**Änderungspfad.** Länge oder Empfänger: dort · Aufwand `klein`.
+**Änderungspfad.** Länge oder Empfänger: dort; Schwelle in `app.staff_feedback_threshold` · Aufwand `klein`.
 
 ### ANN-609 — Teamchat: kein Lesen über andere, nur der eigene Stand
 

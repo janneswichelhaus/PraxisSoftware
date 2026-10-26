@@ -11,7 +11,7 @@ import type { EigenerTermin, Hinweis } from './zwischendurch';
 const BAROMETER: Hinweis = {
   schluessel: 'barometer-2026-10',
   titel: 'Barometer Oktober',
-  text: 'Fünf kurze Fragen, wie es dir gerade geht – mit oder ohne Namen.',
+  text: 'Fünf kurze Fragen, wie es dir gerade geht – mit deinem Namen.',
   ziel: '/betrieb/barometer?zurueck=%2F',
 };
 

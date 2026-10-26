@@ -1,18 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { barometerHinweise } from './barometerHinweis';
 import { zeitraum } from './fragen';
-import { etwasBeantwortet, medianText, skalenSumme, verteilungText } from './inhalt';
+import { etwasBeantwortet } from './inhalt';
 
 /** ORG-006: Texte der Rückmeldungen und der Barometer-Hinweis (ANN-603, ANN-607). */
 
-describe('Auswertung in Worten', () => {
-  it('fasst die Verteilung in drei Gruppen und den Median mit Komma', () => {
-    expect(verteilungText([1, 0, 1, 0, 2, 0, 1, 1, 1])).toBe('niedrig 2 · mittel 2 · hoch 3');
-    expect(medianText(6)).toBe('6');
-    expect(medianText(6.5)).toBe('6,5');
-    expect(skalenSumme({ enough: false })).toBe('Zu wenige Antworten auf diese Frage');
-  });
-
+describe('Texte in Worten', () => {
   it('nennt den Zeitraum über Monate und Jahre', () => {
     expect(zeitraum('2026-09-01', '2026-09-01')).toBe('September 2026');
     expect(zeitraum('2026-07-01', '2026-09-01')).toBe('Juli bis September 2026');
@@ -39,7 +32,7 @@ describe('barometerHinweise', () => {
       {
         schluessel: 'barometer-2026-10',
         titel: 'Barometer Oktober',
-        text: 'Fünf kurze Fragen, wie es dir gerade geht – mit oder ohne Namen.',
+        text: 'Fünf kurze Fragen, wie es dir gerade geht – mit deinem Namen.',
         ziel: '/betrieb/barometer?zurueck=%2F',
       },
     ]);

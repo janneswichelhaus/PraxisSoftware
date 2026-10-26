@@ -59,6 +59,10 @@ export const TEXT_MAX = 2000;
 export const WER_SIEHT_WAS =
   'Nur die Praxisleitung sieht deine Antworten. Ohne Namen erscheinen sie nur in einer Summe, sobald genug Antworten da sind.';
 
+/** Wer das Barometer sieht - vor dem Senden, denn es geht immer mit Namen (§20.2 Nr. 1). */
+export const BAROMETER_MIT_NAMEN =
+  'Nur die Praxisleitung sieht deine Antworten, mit deinem Namen. Ohne Namen geht eine Rückmeldung an die Praxisleitung.';
+
 const MONAT = new Intl.DateTimeFormat('de-DE', { month: 'long', timeZone: 'UTC' });
 const MONAT_JAHR = new Intl.DateTimeFormat('de-DE', {
   month: 'long',

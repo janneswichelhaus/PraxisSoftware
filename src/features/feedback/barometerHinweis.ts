@@ -18,7 +18,7 @@ export function barometerHinweise(stand: FeedbackStatus): Hinweis[] {
     {
       schluessel: `barometer-${stand.month.slice(0, 7)}`,
       titel: `Barometer ${monat}`,
-      text: 'Fünf kurze Fragen, wie es dir gerade geht – mit oder ohne Namen.',
+      text: 'Fünf kurze Fragen, wie es dir gerade geht – mit deinem Namen.',
       ziel: mitRueckweg(BAROMETER_PFAD, '/'),
     },
   ];
