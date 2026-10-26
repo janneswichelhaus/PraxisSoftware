@@ -1123,8 +1123,11 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
         'training_contracts',
         'training_packages',
       ];
+      // Byteweise sortiert wie `.sort()`: Unter en_US.UTF-8 (CI) zählen die Unterstriche nicht,
+      // und `checkins` stünde vor `checkin_schedules`.
       const { rows } = await asPostgres<{ tabelle: string }>(
-        `select distinct c.conrelid::regclass::text as tabelle from pg_constraint c
+        `select distinct c.conrelid::regclass::text collate "C" as tabelle
+           from pg_constraint c
           where c.contype = 'f' and c.confrelid = 'public.training_relationships'::regclass
           order by 1`,
       );
