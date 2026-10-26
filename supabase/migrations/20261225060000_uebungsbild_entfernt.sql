@@ -477,3 +477,9 @@ alter table public.exercise_variants drop constraint exercise_variants_illustrat
 alter table public.exercise_variants drop column illustration;
 
 drop function app.exercise_illustration_valid(jsonb);
+
+comment on function public.assign_exercise_plan(p_plan_id uuid, p_runs_until date) is 'Weist einen Entwurf mit mindestens einer Uebung zu - friert Bezeichnungen, Anleitung, Ausruestung und Dosierung ein (ANN-300), setzt die Laufzeit von heute bis p_runs_until (hoechstens 26 Wochen, ANN-302) und loest eine laufende vorige Fassung ab (ANN-301). Nur nach app.can_write_exercise_plans(Bereich).';
+
+comment on function public.list_exercise_library() is 'Die Uebungsbibliothek der Praxis mit Varianten (nach Bezeichnung sortiert, nach nichts sonst) samt Herkunft, Ordnungen, Standarddosierung und Pruefvermerk, dazu die Verbindungen und ob die anfragende Person pflegen darf. Lesen nach app.can_read_exercise_library() (ANN-293).';
+
+comment on column public.exercise_variants.reviewed_at is 'Pruefvermerk (ANN-386) - die Praxis hat Text und Dosierung fachlich durchgesehen. Ohne Vermerk gilt eine uebernommene Variante als ungeprueft; das blockiert nur das Scharfschalten (PROJECT_PRINCIPLES.md 15.2). Faellt, sobald sich der Inhalt aendert (save_exercise_variant).';
