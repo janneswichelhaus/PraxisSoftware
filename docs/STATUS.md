@@ -51,5 +51,5 @@ Pfad A).
 ## Letzte Session
 
 26.10.2026, Branch `claude/pr-313-decisions-2mdcwc` (zweite PR): Fehler 5 (Upload-Recht der Akte,
-Bestätigungen mit Nachprüfung) und von 7 `app.mdr_released` entfernt. Zwei Migrationen, kein Seed.
-Lokal: `git pull`, danach `./scripts/cloud-stack.sh reset` oder `supabase db reset`.
+Bestätigen und Verwerfen ohne Wettlauf) und von 7 `app.mdr_released` entfernt. Zwei Migrationen,
+kein Seed. Lokal: `git pull`, danach `./scripts/cloud-stack.sh reset` oder `supabase db reset`.

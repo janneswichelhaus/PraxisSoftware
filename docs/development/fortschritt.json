@@ -1623,7 +1623,7 @@
         },
         {
           "id": "aufraeumen-fehler-5-7",
-          "name": "Aufräumen, Fehler 5 und 7 der Tiefenanalyse: Upload-Recht der Akte wie die übrigen Dateiarten, Bestätigungen von Radflotte und Rückfrage mit Nachprüfung unter der Sperre, app.mdr_released entfernt",
+          "name": "Aufräumen, Fehler 5 und 7 der Tiefenanalyse: Upload-Recht der Akte wie die übrigen Dateiarten, Bestätigen und Verwerfen von Radflotte, Rückfrage und Akte ohne Wettlauf, app.mdr_released entfernt",
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-26",
