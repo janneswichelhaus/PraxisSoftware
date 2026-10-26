@@ -1,24 +1,22 @@
-# Status · Stand 2026-10-25
+# Status · Stand 2026-10-26
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
 
-**Aufräumen** (Auftrag Jannes 25.10., ROADMAP 7.16): Schritte 1 und 2 gemergt (#308, #309, #310),
-Nachzug #311: neun Funktionen ohne Aufrufer entfernt, `anon` ohne Rechte, keine BEF-Nummern mehr,
-Schritt 5 Doku. Schritt 3 liegt als PR vor: Termine hat eine Schnittstelle (`index.ts`, ESLint-Regel
-gegen tiefe Importe) und keine gegenseitige Abhängigkeit mehr (17 statt 32 Paare); der Ring aus 35
-Modulen bleibt für einen Schritt 3b.
+**Aufräumen** (Auftrag Jannes 25.10., Entscheidungen 26.10., ROADMAP 7.17): Schritte 1 bis 3 gemergt
+(#308 bis #312). Schritt 3, Teil 1, Rest liegt als PR vor: Zeit- und Kalenderhilfen aller Module in
+`src/lib/datum.ts`, 16 statt 17 Paare. Bauplan ist `development/TIEFENANALYSE.md`.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Aufräumen Schritt 4 nach ROADMAP 7.16: das Register für Auskunft, Aufbewahrung, Löschjournal und
-Zusammenführung (Pfad A); ob vorher ein Schritt 3b kommt (Termine aus dem Ring, kleine Module
-zusammenlegen), entscheidet Jannes. Schritt 3 Termine des Design-Reviews (3a bis 3d), dann Schritte 4
+Aufräumen nach ROADMAP 7.17: Schritt 4a (Teillöschung im Training, erste Pfad-A-Story), 4 (Register),
+3b (Domänenschnitt), 5 (Doku); dazwischen kleine PRs für die Fehler 4 bis 7 der Liste dort.
+Schritt 3 Termine des Design-Reviews (3a bis 3d), dann Schritte 4
 bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff; Briefings in
 `design/review-2026-10/`. Ohne Handoff: BEF-198 (Löschjournal; Pfad A), BEF-223 (Zeitumstellung;
 Pfad A).
@@ -30,6 +28,8 @@ Pfad A).
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
   ANN-479 ansehen (Besuch).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
+- Vereinfachungen M1 bis M9 und das Barometer einzeln freigeben oder ablehnen (Aufstellung im Bericht
+  zur PR von Aufräumen Schritt 3, Teil 1).
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
 - Sichtung neu: ~170 offene Schritte werden per Bildstrecke triagiert (`sichtung/README.md`); am
   Gerät bleibt nur, was eine Hand braucht (Kamera, Passkey, Flugmodus, Sonne).
@@ -48,7 +48,6 @@ Pfad A).
 
 ## Letzte Session
 
-25.10.2026, Branch `ccr-51128c80-r6lmjn`: Aufräumen Schritt 3 – Termin-Kern in `src/lib`, die
-Tagesliste als Modul `day-plan`, `index.ts` für Termine, Regel `modulgrenzen/nur-ueber-index`,
-Erweiterungspunkt für die Behandlungsdoku am Termin (ANN-748), BEF-024 erledigt. Keine Migration,
-kein Seed. Lokal: `git pull`.
+26.10.2026, Branch `ccr-30ca4f76-x8pvfg`: Aufräumen Schritt 3, Teil 1, Rest – Kopien von `tagePlus`
+und ISO-Wochentag ersetzt, Datumsformate aus Arbeitszeit und Urlaub in `src/lib/datum.ts`;
+Tiefenanalyse abgelegt, Entscheidungen in ROADMAP 7.17. Keine Migration, kein Seed. Lokal: `git pull`.

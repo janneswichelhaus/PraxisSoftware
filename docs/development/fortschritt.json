@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-25",
+  "stand": "2026-10-26",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -1608,14 +1608,26 @@
           "name": "Aufräumen Schritt 3: Modulschnittstellen mit schmaler index.ts, ESLint gegen tiefe Importe, zuerst Termine",
           "gewicht": 1,
           "status": "fertig",
-          "fertig_am": "2026-10-25",
-          "nachweis": "Branch ccr-51128c80-r6lmjn, scripts/eslint-modulgrenzen.test.mjs, scripts/aufraeumen.test.mjs, pnpm lint ohne Warnung, verschobene Deklarationen gegen main verglichen, pnpm test und pnpm test:db",
-          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; ANN-748; Termine ohne gegenseitige Abhängigkeit, 17 statt 32 Paare; BEF-024 erledigt"
+          "fertig_am": "2026-10-26",
+          "nachweis": "#312 (Branch ccr-51128c80-r6lmjn), scripts/eslint-modulgrenzen.test.mjs, scripts/aufraeumen.test.mjs, pnpm lint ohne Warnung, verschobene Deklarationen gegen main verglichen, pnpm test und pnpm test:db; Teil 1, Rest: Branch ccr-30ca4f76-x8pvfg, pnpm test, Bildstrecke main gegen Branch",
+          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; ANN-748; Termine ohne gegenseitige Abhängigkeit, 17 statt 32 Paare; BEF-024 erledigt; Teil 1, Rest (Jannes 26.10.2026): Zeit- und Kalenderhilfen aller Module in src/lib/datum.ts, 16 statt 17 Paare"
+        },
+        {
+          "id": "aufraeumen-4a",
+          "name": "Aufräumen Schritt 4a: Teillöschung unter Belegfrist löscht die 17 Trainingstabellen nach drei Jahren",
+          "gewicht": 1,
+          "status": "offen"
         },
         {
           "id": "aufraeumen-4",
           "name": "Aufräumen Schritt 4: Register für Auskunft, Aufbewahrung, Löschjournal und Zusammenführung mit Vollständigkeitstest",
           "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "aufraeumen-3b",
+          "name": "Aufräumen Schritt 3b: Domänenschnitt mit 14 Domänen, nur Seiten importieren fremde Domänen",
+          "gewicht": 1,
           "status": "offen"
         }
       ]
