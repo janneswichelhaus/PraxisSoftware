@@ -107,6 +107,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     function uebernehmen(naechste: Session | null) {
       const kennung = naechste?.user.id ?? null;
       const wechsel = letzteKennung.current !== undefined && letzteKennung.current !== kennung;
+      // Den Wechsel in einem anderen Tab erlebt dieser nach einem Neuladen nicht mit; sein Stand im
+      // Tab gehört dann womöglich dem vorigen Konto.
+      if (letzteKennung.current === undefined) {
+        tabstaendeLeeren(kennung === null ? undefined : { konto: kennung });
+      }
       letzteKennung.current = kennung;
 
       if (wechsel) raeumen();

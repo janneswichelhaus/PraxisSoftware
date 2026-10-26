@@ -1,4 +1,4 @@
-import { tabstandLegen, tabstandLesen } from '@/lib/tabstand';
+import { tabstaendeLeeren, tabstandLegen, tabstandLesen } from '@/lib/tabstand';
 
 // „Tag umplanen“ ohne Oberfläche: erst absagen (Grund, Auswahl, Rückfrage), dann je Person anrufen.
 // Die Anrufliste liegt im Tab, die Adresse trägt nur ihre Kennung (ANN-574): So bleibt der Rückweg aus
@@ -123,6 +123,7 @@ export function leseAnrufliste(
   return { kennung, liste: { abgesagt, stand } };
 }
 
+/** Legt die Liste ab; eine frühere Liste dieses Tabs fällt dabei, es bleibt nur die jüngste. */
 export function merkeAnrufliste(
   konto: string,
   kennung: string,
@@ -130,6 +131,7 @@ export function merkeAnrufliste(
   datum: string,
   liste: Anrufliste,
 ): void {
+  tabstaendeLeeren({ konto, vorgang: kennung });
   tabstandLegen(konto, kennung, { person, datum, abgesagt: liste.abgesagt, stand: liste.stand });
 }
 

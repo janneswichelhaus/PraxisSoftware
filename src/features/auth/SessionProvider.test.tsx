@@ -187,6 +187,16 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     expect(tabstandLesen('bert', 'v2')).toBeUndefined();
   });
 
+  it('leert beim ersten Blick den Stand eines anderen Kontos, etwa nach einem Wechsel im zweiten Tab', async () => {
+    tabstandLegen('bert', 'v1', { abgesagt: ['t1'] });
+    tabstandLegen('anna', 'v2', { abgesagt: ['t2'] });
+
+    await anbieterZeigen();
+
+    expect(tabstandLesen('bert', 'v1')).toBeUndefined();
+    expect(tabstandLesen('anna', 'v2')).toEqual({ abgesagt: ['t2'] });
+  });
+
   /**
    * Was dieser Test belegt und was nicht: Er hält fest, dass eine Antwort,
    * die **nach** dem Wechsel eintrifft, nicht im Speicher landet. Das ist die

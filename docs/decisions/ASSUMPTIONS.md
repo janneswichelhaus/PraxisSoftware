@@ -5937,7 +5937,7 @@ Technik · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage:
 
 Technik · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
-**Annahme.** Seltene, verzweigte oder einhändige Abläufe laufen im Baustein `GefuehrterAblauf`: Kopf mit Objekt und ✕, „← Zurück“, Schritt (Balken nur bei fester Zahl), je Seite eine Frage; ohne Bühne steht die Frage oben und die Antworten im festen Fuß, mit Bühne (3D-Rad) wie beim Check-Up unter ihr. Nach jedem Seitenwechsel 0,7 s keine Tipps; aus dem Abschluss geändert geht es zurück dorthin (`abfolge.ts`).
+**Annahme.** Seltene, verzweigte oder einhändige Abläufe laufen im Baustein `GefuehrterAblauf`: Kopf mit Objekt und ✕, „← Zurück“, Schritt (Balken nur bei fester Zahl), je Seite eine Frage; die Frage steht oben und die Antworten im festen Fuß. Nach jedem Seitenwechsel 0,7 s keine Tipps; aus dem Abschluss geändert geht es zurück dorthin (`abfolge.ts`).
 
 **Begründung.** Auftrag Jannes (16.10.): einfach, geführt, ohne Scrollen nach dem Vorbild des Check-Ups (ANN-563). Der feste Fuß hält die Antwort am Telefon im Daumenbereich (DESIGN.md Grundsatz 1).
 
@@ -5949,9 +5949,9 @@ Technik · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervor
 
 Praxisprozess · entschieden (Jannes) · 2026-10-17, Fassung 2 2026-10-26 · Jannes · erledigt · Wiedervorlage: —
 
-**Annahme.** „Tag umplanen“ wählt alle bestätigten Behandlungstermine des Tages vor; einzelne lassen sich abwählen. `cancel_staff_day` sagt genau die Auswahl in einem Vorgang ab. Danach je Person „Erreicht“ oder „Nicht erreicht“. Die Anrufliste (Kennungen der abgesagten Termine und die Antworten, keine Namen) liegt im `sessionStorage` des Tabs, je Konto und Vorgang; Adresse und Rückweg aus der Akte tragen nur die Kennung des Vorgangs. Sie fällt mit dem Tab, beim Abmelden und beim Kontowechsel.
+**Annahme.** „Tag umplanen“ wählt alle bestätigten Behandlungstermine des Tages vor; einzelne lassen sich abwählen. `cancel_staff_day` sagt genau die Auswahl in einem Vorgang ab. Danach je Person „Erreicht“ oder „Nicht erreicht“. Die Anrufliste (Kennungen der abgesagten Termine und die Antworten, keine Namen) liegt im `sessionStorage` des Tabs, je Konto und Vorgang; Adresse und Rückweg aus der Akte tragen nur die Kennung des Vorgangs. Es bleibt nur die jüngste Liste; sie fällt mit dem Tab, beim Abmelden und beim Kontowechsel.
 
-**Begründung.** In der Adresse (Fassung 1) wuchs der Rückweg je Termin um 37 Zeichen und fiel ab etwa acht Terminen still weg; Jannes 2026-10-26: Rückweg kurz, Zustand im Tab. Ein Anrufprotokoll am Server wäre eine neue Datenklasse ohne Auftrag.
+**Begründung.** In der Adresse (Fassung 1) wuchs der Rückweg je Termin um 37 Zeichen und fiel ab etwa acht Terminen still weg; Jannes 2026-10-26: Rückweg kurz, Zustand im Tab. Keine Ablage für das Arbeiten ohne Netz (ADR-024 Abschnitt B): weder Namen noch Rufnummern, und ohne Netz lädt die Seite den Tag nicht. Ein Anrufprotokoll am Server wäre eine neue Datenklasse ohne Auftrag.
 
 **Anker.** `src/lib/tabstand.ts`; `leseAnrufliste` in `src/features/appointments/tagumplanen.ts`.
 

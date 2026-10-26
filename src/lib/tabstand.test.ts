@@ -15,6 +15,17 @@ describe('Stand eines Vorgangs im Tab (ANN-574)', () => {
     expect(tabstandLesen('anna', 'v1')).toBeUndefined();
   });
 
+  it('behält auf Wunsch die Stände eines Kontos oder nur einen seiner Vorgänge', () => {
+    tabstandLegen('anna', 'v1', 1);
+    tabstandLegen('anna', 'v2', 2);
+    tabstandLegen('bert', 'v3', 3);
+    tabstaendeLeeren({ konto: 'anna' });
+    expect([tabstandLesen('anna', 'v1'), tabstandLesen('anna', 'v2')]).toEqual([1, 2]);
+    expect(tabstandLesen('bert', 'v3')).toBeUndefined();
+    tabstaendeLeeren({ konto: 'anna', vorgang: 'v2' });
+    expect([tabstandLesen('anna', 'v1'), tabstandLesen('anna', 'v2')]).toEqual([undefined, 2]);
+  });
+
   it('leert nur die eigenen Einträge', () => {
     tabstandLegen('anna', 'v1', 1);
     tabstandLegen('bert', 'v2', 2);

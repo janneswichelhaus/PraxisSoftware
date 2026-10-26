@@ -32,6 +32,15 @@ describe('Tag umplanen - die Folge (G2, ANN-574)', () => {
     expect(leseAnrufliste(new URLSearchParams('anrufliste=<x>'), 'konto-a', ANNA, TAG)).toBeNull();
   });
 
+  it('behält je Tab nur die jüngste Liste', () => {
+    merkeAnrufliste('konto-a', 'v1', ANNA, TAG, { abgesagt: ['a'], stand: {} });
+    merkeAnrufliste('konto-a', 'v2', ANNA, TAG, { abgesagt: ['b'], stand: {} });
+    const lies = (kennung: string) =>
+      leseAnrufliste(new URLSearchParams(`anrufliste=${kennung}`), 'konto-a', ANNA, TAG);
+    expect(lies('v1')).toBeNull();
+    expect(lies('v2')?.liste.abgesagt).toEqual(['b']);
+  });
+
   it('nimmt eine Liste nur für die Person und den Tag, für die sie angelegt wurde', () => {
     merkeAnrufliste('konto-a', 'v1', ANNA, TAG, { abgesagt: ['a'], stand: {} });
     const suche = new URLSearchParams('anrufliste=v1');
