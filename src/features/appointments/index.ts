@@ -24,7 +24,6 @@ export {
   type AppointmentFormValues,
   type CalendarEntry,
   type CancellationReason,
-  type PatientAppointment,
 } from './api';
 export { fetchAbrechnungslage, positionText, type Abrechnungslage } from './abrechnungslage-api';
 export { useAbrechnungslage } from './useAbrechnungslage';
