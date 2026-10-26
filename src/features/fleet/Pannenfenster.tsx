@@ -40,7 +40,7 @@ import {
   type Fussknopf,
 } from './pannenseiten';
 import { ersatzradName } from './rad';
-import { Stellenbuehne, Stellenflaeche } from './Stellenerfassung';
+import { Stellenflaeche } from './Stellenerfassung';
 import { useStellenerfassung, type Stelle } from './stellen';
 import {
   aktiveStandortvorlage,
@@ -50,25 +50,9 @@ import {
 } from './standortvorlage';
 
 /**
- * Die Panne im Fenster des geführten Ablaufs (Überholung 6, G3; vorher eine
- * gewöhnliche Seite je Schritt, FLT-EPIC-001).
- *
- * **Zuerst „Wo ist der Schaden?“** am 3D-Rad als Bühne: Jede getippte Stelle
- * ist ein Schaden (rot, ohne Einstufung); „Weiter“ geht auch ohne Stelle,
- * nur nicht, solange eine offen ist. **Dann je Frage der Vorlage eine Seite**
- * (`pannenablauf.ts`, unverändert verzweigt): die Frage oben, Hinweise und
- * Texte des Schritts darunter, die Antworten - oder der eine Knopf, der
- * meldet - im festen Fuß (`pannenseiten.ts`). Kein Balken, der Weg verzweigt.
- * Im Zweig „weiter fahrbar“ steht der Text aus den markierten Stellen schon
- * da.
- *
- * „← Zurück“ und die Zurückgeste gehen einen Schritt zurück; ✕ fragt, sobald
- * etwas eingegeben ist (Textverlustschutz). Gespeichert wird mit dem
- * Abschluss wie bisher: Meldung, Stellen, Fotos; ein sperrender Abschluss
- * sperrt das Rad („In Reparatur“). Der Ort eines zurückgelassenen Rads steht
- * für das Team daneben, nie im Abschlusstext und nie in der Unterlage für die
- * Werkstatt, und geht mit der Freigabe (ANN-558). **Versendet wird nichts:**
- * keine E-Mail, keine Push-Nachricht, keine Meldung an eine Werkstatt.
+ * Die Panne im geführten Fenster: zuerst „Wo ist der Schaden?“ über die Bauteilliste (jede Stelle
+ * ein Schaden), dann je Frage der Vorlage eine Seite. Der Ort eines zurückgelassenen Rads bleibt
+ * beim Team (ANN-558); versendet wird nichts.
  */
 export function Pannenfenster({
   flotte,
@@ -126,7 +110,6 @@ export function Pannenfenster({
         spots: stellen.map((stelle) => ({
           zone: stelle.zone,
           severity: 'problem',
-          point: stelle.point,
           note: stelle.note,
         })),
       });
@@ -286,20 +269,16 @@ export function Pannenfenster({
         // „Stelle setzen“ trifft nicht gleich „Weiter“.
         seite={entwurf ? 'schaden-stelle' : 'schaden'}
         stand={{ text: schrittText(1) }}
-        buehne={<Stellenbuehne zustand={erfassung} bestehend={offen} bauart={bike.bike_type} />}
-        // Höchstens 60 % hoch: Eine offene Stelle oder viele Schäden rollen
-        // unter dem Rad, statt „Weiter“ aus dem Fenster zu schieben.
-        flaecheKnapp
-      >
-        <div className="flex flex-col gap-3">
-          <Stellenflaeche zustand={erfassung} bestehend={offen} bauart={bike.bike_type} />
-          {/* Weiter geht es auch ohne Stelle - nur nicht mit einer offenen. */}
-          {entwurf ? null : (
+        fuss={
+          // Weiter geht es auch ohne Stelle - nur nicht mit einer offenen.
+          entwurf ? undefined : (
             <Button className="w-full" onClick={() => setAmRad(false)} data-autofocus>
               Weiter
             </Button>
-          )}
-        </div>
+          )
+        }
+      >
+        <Stellenflaeche zustand={erfassung} bestehend={offen} />
       </GefuehrterAblauf>
     );
   }

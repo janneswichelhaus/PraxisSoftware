@@ -10,19 +10,9 @@ import {
 } from './pannenablauf';
 
 /**
- * Die Panne im Fenster des geführten Ablaufs (Überholung 6, G3) ohne
- * Oberfläche: welche Knöpfe im Fuß einer Seite stehen, was sie bewirken,
- * welcher Schritt gerade gilt und wohin „← Zurück“ führt.
- *
- * Die Verzweigungen selbst bleiben in `pannenablauf.ts`, wie sie sind. Hier
- * stehen nur die Antworten, die bisher in der Seite verdrahtet waren - die
- * zweite Antwort von „Reparatur direkt vor Ort möglich?“, die meldet, die
- * Antworten zu Führerschein und Carsharing, die den Transport festhalten, und
- * je Schritt der eine Hauptknopf. So steht jede Abschlussart an genau einer
- * Stelle, und ein Test sieht, dass keine verloren geht.
- *
- * Vor den Fragen der Vorlage liegt „Wo ist der Schaden?“ am 3D-Rad: Schritt 1
- * ohne Zurück. Eine Gesamtzahl gibt es nicht - der Weg verzweigt.
+ * Die Seiten der Panne ohne Oberfläche: Knöpfe im Fuß, ihre Wirkung, Schritt und „← Zurück“. So
+ * steht jede Abschlussart an genau einer Stelle, und ein Test sieht, dass keine verloren geht.
+ * „Wo ist der Schaden?“ ist Schritt 1 ohne Zurück; eine Gesamtzahl gibt es nicht.
  */
 
 /** Was ein Knopf im Fuß bewirkt: zum nächsten Schritt oder die Meldung. */

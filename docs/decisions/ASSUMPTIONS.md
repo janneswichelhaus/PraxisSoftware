@@ -5725,29 +5725,33 @@ Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Eigene Vorlage pflegen: Tabelle und Formular · Aufwand `mittel`.
 
-### ANN-555 — Stellen am Rad: Punkt im Modell, Nummer je Rad, Freigabe erledigt sie
+### ANN-555 — Stellen am Rad: Bauteil statt Punkt im Modell, Nummer je Rad, Freigabe erledigt sie
 
 Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
-**Annahme.** Eine Stelle trägt Bauteil, Einstufung, Notiz und den Punkt in Modellkoordinaten mit der Fassung des Modells; bei anderer Fassung zeigt die Nadel die Bauteilmitte. Die offenen Stellen eines Rads sind über alle Meldungen in der Reihenfolge des Setzens nummeriert, erledigte ohne Nummer. Eine Stelle hebt ihren Prüfpunkt an, nie ab. Die Freigabe erledigt alle offenen Stellen; ein neuer Check-Up übernimmt keine, er zeigt sie unter „Schon offen am Rad“.
+**Geändert (Jannes, 2026-10-26):** M1 nimmt den Punkt im Modell zurück (Auftrag vom 08.10.): ohne 3D-Rad weder Punkt noch Fassung des Modells; die übrigen Sätze gelten weiter.
+
+**Annahme.** Eine Stelle trägt Bauteil, Einstufung, Notiz und Fotos; das Bauteil kommt aus der Liste der 27. Die offenen Stellen eines Rads sind über alle Meldungen in der Reihenfolge des Setzens nummeriert, erledigte ohne Nummer. Eine Stelle hebt ihren Prüfpunkt an, nie ab. Die Freigabe erledigt alle offenen Stellen; ein neuer Check-Up übernimmt keine, er zeigt sie unter „Schon offen am Rad“.
 
 **Begründung.** Handoff Lastenrad 3D, AC 2 und 3, Abschnitt 7 (offene Stellen beim nächsten Check-Up).
 
-**Anker.** `MODEL_VERSION` in `src/features/fleet/bike3d/zones.ts`.
+**Anker.** `SpotInput` in `src/features/fleet/api.ts`; Nummer und Freigabe in `release_fleet_bike` (Basis-Migration).
 
 **Änderungspfad.** Stellen übernehmen statt erledigen: Freigabe und Check-Up am Server · Aufwand `mittel`.
 
 ### ANN-556 — three.js nur auf Abruf, nie im Einstiegsbundle
 
-Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
+Technik · verworfen · 2026-10-26 · Jannes · erledigt · Wiedervorlage: keine
+
+**Verworfen (Jannes, 2026-10-26):** M1 – das 3D-Rad entfällt und mit ihm `three`; „Wo genau?“ ist die Bauteilliste, die Unterlage für die Werkstatt zeigt Bauteilnamen und Fotos.
 
 **Annahme.** Betrachter und Bilder der Werkstattunterlage laden three.js über einen dynamischen Import; ohne WebGL oder ohne Netz und Zwischenspeicher trägt die Bauteil-Liste.
 
 **Begründung.** Das Diensttelefon lädt die Übersicht unterwegs; das 3D-Paket gehört nur auf die Seiten mit Rad (ADR-015, ADR-024).
 
-**Anker.** `import('./viewer')` in `src/features/fleet/bike3d/BikeModel3D.tsx`.
+**Anker.** `Bauteilwahl` in `src/features/fleet/Bauteilwahl.tsx`, die das 3D-Rad ersetzt; bis `51875fe` `import('./viewer')` in `bike3d/BikeModel3D.tsx`.
 
-**Änderungspfad.** Vorab laden: Eintrag im Service Worker · Aufwand `klein`.
+**Änderungspfad.** 3D-Rad zurück: Betrachter, Modell und Werkstattbilder aus der Git-Historie bis `51875fe`, `three` neu gegen ADR-015 prüfen · Aufwand `groß`.
 
 ### ANN-557 — Zustand eines Rads abgeleitet; mit Verlauf ausmustern statt löschen
 

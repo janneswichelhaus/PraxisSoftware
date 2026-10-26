@@ -50,7 +50,7 @@ den Tipps: kein Scrollen bei 375 px** auf keiner Seite des Ablaufs. „Heute“ 
 | --- | --- | --- | --- | --- |
 | G1 | Niemand öffnet → Ausfallhonorar vermerkt (= K8) | Therapie, wöchentlich | ≤ 5 Tipps | 4, geführt: geklingelt → angerufen → gewartet (Uhr) |
 | G2 | Tag umplanen: Grund → Termine absagen → alle angerufen | Büro, selten | ≤ 4 + 2 je Person | ab Kalender 5 bis abgesagt (mit „Ansicht und Filter“, +1 je Abwahl), 1 je Person, geführt |
-| G3 | Panne am Rad → Abschlussart | Therapie, selten | Schrittzahl wie heute | wie vorher (7 + Text, 11 + Text), im Fenster mit 3D-Rad |
+| G3 | Panne am Rad → Abschlussart | Therapie, selten | Schrittzahl wie heute | wie vorher (7 + Text, 11 + Text), im Fenster; der Schaden als Auswahl aus der Bauteilliste statt Tipp aufs 3D-Rad (M1, Jannes 2026-10-26) |
 | G4 | Schlüssel übergeben | Therapie, Büro, wöchentlich | ≤ 3 Tipps | 3, auch von Hand zu Hand in einem Vorgang (mit Rad 2) |
 | G5 | Neue:n Mitarbeiter:in einrichten bis Einladung | Büro, selten | ≤ 8 Tipps + Felder, ein Ablauf | owner 8 + 3 Felder, office 4, ein Ablauf |
 | G6 | Plattform: Termin ändern oder absagen | Patient:in, selten | ≤ 6 Tipps + Text | Absagen 4, Ändern 6 + Text, im Fenster in 18 px |

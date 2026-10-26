@@ -22,18 +22,15 @@ import {
 import { Kameradialog } from '@/features/files/Kameradialog';
 import type { CurrentUser } from '@/features/session/types';
 import { FLOTTE_SCHLUESSEL, recordCheckup, type BikeDetail } from './api';
-import { BikeModel3D, type BikeFocus } from './bike3d/BikeModel3D';
+import { Bauteilwahl } from './Bauteilwahl';
 import {
   CHECK_ITEMS,
-  CHECK_ITEM_VIEWS,
-  ZONE_KEYS,
   bikeTypeLabels,
   checkRatingLabels,
   isZoneKey,
   zoneCheckItem,
   zoneLabel,
   zonesOfCheckItem,
-  type BikePick,
   type CheckItemKey,
   type CheckRating,
   type Severity,
@@ -66,39 +63,17 @@ import {
   type Teil,
   type Werbeflaechen,
 } from './checkupablauf';
+import { Einstufung } from './Einstufung';
 import { fotoText, fotosVerlorenText, uebertrageFotos, type Fotoauftrag } from './fotoauftraege';
 import { Fotovormerkung } from './Fotovormerkung';
 import { useObjektadressen } from './objektadressen';
-import { Einstufung, Nadel, Nadelform } from './Nadel';
 import { Entwurfsfeld, SchonOffen } from './Stellenerfassung';
-import { nummerDerStelle, radBild, useStellenerfassung, type Stelle } from './stellen';
+import { useStellenerfassung, type Stelle } from './stellen';
 
 /**
- * Der geführte Check-Up am 3D-Rad (FLT-005, ANN-563): ein Fenster, eine Seite
- * je Prüfpunkt, kein Scrollen.
- *
- * Oben das Rad - es fliegt zu den Bauteilen des Punkts und hebt sie hervor -,
- * darunter die Frage. „In Ordnung“ führt gleich zum nächsten Punkt;
- * „Beobachten“ und „Problem“ fragen „Wo genau?“ (am Rad antippen oder ein
- * Bauteil wählen; bei einem Punkt mit nur einem Bauteil entfällt die Frage)
- * und „Was ist aufgefallen?“, dann „Weiter“. Ein Tipp aufs Rad gleich auf der
- * Frage ist die Abkürzung für „Problem an dieser Stelle“.
- *
- * Nach dem Praxis-Review: Eine Antwort gilt erst mit „Weiter“; „← Zurück“ und
- * die Zurückgeste des Telefons führen dorthin, woher man kam. Nach jedem
- * Seitenwechsel nimmt die Fragefläche kurz keinen Tipp an, und die nächste
- * Seite sagt, was gerade notiert wurde. „In Ordnung“ über einer Stelle mit
- * Notiz oder Foto fragt, bevor es sie verwirft.
- *
- * Gespeichert wird wie im früheren Formular (ANN-553, ANN-555): zwölf
- * Bewertungen, Notizen, Stellen und Fotos, erst mit dem Haken. Neu ist nur,
- * dass kein Punkt mehr auf „In Ordnung“ vorbelegt ist - jeder wird bestätigt.
- * Wer einen Punkt neu bewertet, ersetzt dessen neue Stelle.
- *
- * Nach den zwölf Punkten (FLT-007, ANN-568): jede Werbefläche abwischen -
- * oder sagen, warum es nicht ging - und je ein Foto von links, vorne, rechts
- * und hinten. Die Überschrift steht unter dem Rad, direkt über den Antworten
- * (Jannes 2026-10-16); oben bleiben Rad und „Check-Up abbrechen“.
+ * Der geführte Check-Up (ANN-563, ANN-568): eine Seite je Prüfpunkt, keiner vorbelegt, damit am
+ * Rad nichts übersprungen wird. „Wo genau?“ wählt das Bauteil aus einer Liste; gespeichert wird
+ * erst mit dem Haken (ANN-553, ANN-555).
  */
 export function CheckupFenster({
   detail,
@@ -122,9 +97,6 @@ export function CheckupFenster({
   // laufen. Sie gilt erst mit „Weiter“; wer zurückgeht, nimmt sie nicht mit.
   const [vorlaeufig, setVorlaeufig] = useState<{ rating: Severity; note: string } | null>(null);
   const [zurUebersicht, setZurUebersicht] = useState(false);
-  const [fokus, setFokus] = useState<BikeFocus>(() => fokusFuer(START, 1));
-  // Ein Tipp auf ein Bauteil, das zu einem anderen Punkt gehört.
-  const [fremd, setFremd] = useState<string | null>(null);
   // Was zuletzt beantwortet wurde - sichtbar auf der Seite danach.
   const [quittung, setQuittung] = useState<{ fuer: string; inhalt: ReactNode } | null>(null);
   const [notiz, setNotiz] = useState('');
@@ -186,7 +158,6 @@ export function CheckupFenster({
         spots: stellen.map((stelle) => ({
           zone: stelle.zone,
           severity: stelle.severity,
-          point: stelle.point,
           note: stelle.note,
         })),
         werbeflaechen: werbeflaechen ?? { wert: 'wiped' },
@@ -236,15 +207,7 @@ export function CheckupFenster({
   // ---------------------------------------------------------------------------
 
   function gehe(neu: Seite) {
-    setFremd(null);
-    const andererOrt =
-      neu.art !== seite.art ||
-      (neu.art === 'punkt' && seite.art === 'punkt' && neu.index !== seite.index) ||
-      (neu.art === 'foto' && seite.art === 'foto' && neu.index !== seite.index);
-    if (andererOrt) setFokus((vorher) => fokusFuer(neu, vorher.token + 1));
     if (neu.art === 'abschluss') setZurUebersicht(false);
-    // Die Tippsperre für die Dauer des Kameraflugs setzt der Baustein, sobald
-    // sich die Seite ändert (`seitenKennung`).
     setSeite(neu);
   }
 
@@ -264,13 +227,6 @@ export function CheckupFenster({
 
   function eigeneStellen(key: CheckItemKey) {
     return stellen.filter((stelle) => zoneCheckItem(stelle.zone) === key);
-  }
-
-  function nummerVon(key: string) {
-    return nummerDerStelle(
-      stellen.findIndex((stelle) => stelle.key === key),
-      offeneAnzahl,
-    );
   }
 
   function setzeAntwort(key: CheckItemKey, antwort: Antwort) {
@@ -340,77 +296,22 @@ export function CheckupFenster({
     const bauteil = einzigesBauteil(item.key);
     if (bauteil) {
       // Nur ein Bauteil: kein „Wo genau?“, die Stelle sitzt gleich daran.
-      erfassung.tippen({ zone: bauteil, point: null });
+      erfassung.waehle(bauteil);
       erfassung.aendere({ severity: rating });
-      zumBauteil(bauteil);
       gehe(wasSeite(index, false));
       return;
     }
     gehe(punktSeite(index, 'wo'));
   }
 
-  function amRad(treffer: BikePick | null) {
-    if (
-      !treffer ||
-      !isZoneKey(treffer.zone) ||
-      seite.art === 'abschluss' ||
-      seite.art === 'werbung' ||
-      seite.art === 'foto'
-    ) {
-      return;
-    }
-    if (seite.art === 'weitere') {
-      erfassung.tippen(treffer);
-      return;
-    }
-    const item = CHECK_ITEMS[seite.index]!;
-    if (zoneCheckItem(treffer.zone) !== item.key) {
-      setFremd(treffer.zone);
-      return;
-    }
-    setFremd(null);
-    // Eine Nadel aus einer früheren Meldung bleibt, wie sie ist.
-    if (treffer.markerId && !stellen.some((stelle) => stelle.key === treffer.markerId)) return;
-    if (seite.teil === 'bewerten') {
-      // Die Abkürzung: Antippen heißt „Problem an dieser Stelle“.
-      const vorher = antworten[item.key];
-      const rating: Severity = vorher && vorher.rating !== 'ok' ? vorher.rating : 'problem';
-      setVorlaeufig({ rating, note: vorher && vorher.rating !== 'ok' ? vorher.note : '' });
-      const erste = eigeneStellen(item.key)[0];
-      if (!erste) erfassung.verwerfen();
-      else if (!treffer.markerId) erfassung.bearbeite(erste.key);
-      erfassung.tippen(treffer);
-      erfassung.aendere({ severity: rating });
-      zumBauteil(treffer.zone);
-      gehe(wasSeite(seite.index, false));
-      return;
-    }
-    // „Wo genau?“ und „Was ist aufgefallen?“: setzt oder versetzt die Stelle;
-    // eine Notiz ohne Stelle wandert mit an sie.
-    erfassung.tippen(treffer);
-    erfassung.aendere({
-      severity: vorlaeufig?.rating ?? 'problem',
-      ...(entwurf ? {} : { note: vorlaeufig?.note ?? '' }),
-    });
-    if (seite.teil === 'wo') {
-      zumBauteil(treffer.zone);
-      gehe(wasSeite(seite.index, true));
-    }
-  }
-
+  /** „Wo genau?“: setzt oder versetzt die Stelle; eine Notiz ohne Stelle wandert mit an sie. */
   function waehleBauteil(index: number, zone: ZoneKey) {
-    erfassung.tippen({ zone, point: null });
+    erfassung.waehle(zone);
     erfassung.aendere({
       severity: vorlaeufig?.rating ?? 'problem',
       ...(entwurf ? {} : { note: vorlaeufig?.note ?? '' }),
     });
-    zumBauteil(zone);
     gehe(wasSeite(index, true));
-  }
-
-  /** Die Kamera an die gewählte Stelle - „Was ist aufgefallen?“ zeigt das Bild kleiner. */
-  function zumBauteil(zone: string) {
-    setFokus((vorher) => ({ zones: [zone], token: vorher.token + 1 }));
   }
 
   function ohneStelle(index: number) {
@@ -440,19 +341,17 @@ export function CheckupFenster({
     erfassung.verwerfen();
     setVorlaeufig(null);
     setQuittung(null);
-    setFremd(null);
-    setFokus((vorher) => fokusFuer(ziel, vorher.token + 1));
     setSeite(ziel);
   }
 
   /**
    * Was „In Ordnung“ verwürfe, als Frage für die Rückfrage - oder `null`, wenn
-   * nichts verloren geht als eine Nadel (Praxis-Review FLT-005).
+   * nur eine Stelle ohne Notiz und Foto wegfiele.
    */
   function verlust(key: CheckItemKey): string | null {
     const teile = eigeneStellen(key)
       .filter((stelle) => stelle.note.trim() !== '' || stelle.fotos.length > 0)
-      .map((stelle) => `Stelle ${nummerVon(stelle.key)}${beschreibe(stelle)}`);
+      .map((stelle) => `${zoneLabel(stelle.zone)}${beschreibe(stelle)}`);
     if (
       entwurf &&
       !entwurf.key &&
@@ -474,36 +373,6 @@ export function CheckupFenster({
   // ---------------------------------------------------------------------------
 
   const punkt = seite.art === 'punkt' ? CHECK_ITEMS[seite.index]! : null;
-  const { markers, draft, aktivNummer, offene } = radBild(erfassung, offen, bike.bike_type);
-  const offeneAnzahl = offene.length;
-  const zonenDesPunkts = punkt ? zonesOfCheckItem(punkt.key) : [];
-  const highlight =
-    seite.art === 'punkt'
-      ? seite.teil === 'was' && entwurf?.zone
-        ? [entwurf.zone]
-        : zonenDesPunkts
-      : seite.art === 'werbung'
-        ? ['transportbox']
-        : entwurf?.zone
-          ? [entwurf.zone]
-          : [];
-  const hinweis = fremd
-    ? `${zoneLabel(fremd)}: anderer Prüfpunkt`
-    : seite.art === 'punkt'
-      ? seite.teil === 'bewerten'
-        ? 'Problem? Stelle antippen'
-        : seite.teil === 'wo'
-          ? 'Betroffene Stelle antippen'
-          : entwurf
-            ? 'Andere Stelle? Antippen'
-            : 'Doch eine Stelle? Antippen'
-      : seite.art === 'weitere'
-        ? entwurf
-          ? 'Andere Stelle? Antippen'
-          : 'Bauteil am Rad antippen'
-        : seite.art === 'foto'
-          ? `So ungefähr: ${SEITEN[seite.index]!.label}`
-          : 'Ziehen dreht das Rad';
   const titel = ausstehend
     ? 'Check-Up gespeichert'
     : seite.art === 'punkt'
@@ -527,11 +396,7 @@ export function CheckupFenster({
   const quittungHier =
     quittung && quittung.fuer === seitenSchluessel(seite) ? quittung.inhalt : null;
 
-  // Bühne und Fragefläche teilen sich die Höhe des Fensters (Baustein
-  // `GefuehrterAblauf`). Auf den Fragen bekommt das Rad den Rest; im
-  // Abschluss rollt die Zusammenfassung, Haken und Speichern stehen fest
-  // darunter, und am Telefon entfällt das Rad (Praxis- und Design-Review
-  // FLT-005). Eine lange Stelle bekommt einen Rollbereich.
+  // Im Abschluss rollt die Zusammenfassung; Haken und Speichern stehen fest darunter.
   const abschlussZeigen = seite.art === 'abschluss' && !ausstehend;
 
   return (
@@ -545,22 +410,6 @@ export function CheckupFenster({
       onZurueck={zurueckZiel ? zurueckGehen : undefined}
       ansage={ansage}
       schutz={schutz}
-      buehne={
-        <BikeModel3D
-          hoehe="100%"
-          ansichten={seite.art === 'abschluss' || seite.art === 'weitere'}
-          ersatz="Alle Schritte gehen auch über die Knöpfe."
-          markers={markers}
-          draft={draft}
-          activeMarkerId={entwurf?.key ?? null}
-          highlight={highlight}
-          focus={fokus}
-          hinweis={hinweis}
-          onPick={amRad}
-        />
-      }
-      buehneAmTelefon={!abschlussZeigen}
-      flaecheKnapp={seite.art === 'weitere' && entwurf !== null}
       abschluss={abschlussZeigen}
       fuss={
         abschlussZeigen ? (
@@ -603,15 +452,11 @@ export function CheckupFenster({
           notizOhneStelle={
             eigeneStellen(punkt!.key).length === 0 ? (antworten[punkt!.key]?.note ?? '') : ''
           }
-          neueStellen={eigeneStellen(punkt!.key).map((stelle) => ({
-            stelle,
-            nummer: nummerVon(stelle.key),
-          }))}
+          neueStellen={eigeneStellen(punkt!.key)}
           quittung={quittungHier}
           verlust={verlust(punkt!.key)}
           erfassung={erfassung}
-          aktivNummer={aktivNummer}
-          offen={offene.filter((spot) => zoneCheckItem(spot.zone) === punkt!.key)}
+          offen={offen.filter((spot) => zoneCheckItem(spot.zone) === punkt!.key)}
           vorlaeufig={vorlaeufig}
           onInOrdnung={() => inOrdnung(seite.index)}
           onAbweichung={(rating) => abweichung(seite.index, rating)}
@@ -657,35 +502,14 @@ export function CheckupFenster({
               },
             }}
             entwurf={entwurf}
-            nummer={aktivNummer}
-            rahmen={false}
-            hauptknopf
           />
-        ) : (
-          <div className="flex flex-col gap-3">
-            {/* Die Nadeln am Rad: Form und Farbe mit Wort (Regel 5). */}
-            <p className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              <span className="inline-flex items-center gap-2">
-                <Nadelform einstufung="problem" />
-                <span className="text-ink">Problem</span>
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <Nadelform einstufung="beobachten" />
-                <span className="text-ink">Beobachten</span>
-              </span>
-            </p>
-            <Button className="w-full" onClick={erfassung.ohneModell} data-autofocus>
-              Bauteil aus Liste wählen
-            </Button>
-          </div>
-        )
+        ) : null
       ) : (
         <Abschluss
           bewertet={bewertet}
           antworten={antworten}
           stellen={stellen}
-          offene={offene}
-          nummerVon={nummerVon}
+          offene={offen}
           notiz={notiz}
           onNotiz={setNotiz}
           weitereFotos={weitereFotos}
@@ -697,7 +521,10 @@ export function CheckupFenster({
             erfassung.bearbeite(key);
             gehe({ art: 'weitere' });
           }}
-          onWeitereStelle={() => gehe({ art: 'weitere' })}
+          onWeitereStelle={() => {
+            erfassung.neu();
+            gehe({ art: 'weitere' });
+          }}
         />
       )}
     </GefuehrterAblauf>
@@ -714,19 +541,6 @@ const CHECKUPTEXTE: Verlustschutztexte = {
     bleiben: 'Weiter prüfen',
   },
 };
-
-/** Wohin die Kamera auf einer Seite schaut: zum Punkt oder schräg aufs ganze Rad. */
-function fokusFuer(seite: Seite, token: number): BikeFocus {
-  if (seite.art === 'punkt') {
-    const item = CHECK_ITEMS[seite.index]!;
-    const ansicht = CHECK_ITEM_VIEWS[item.key];
-    return { zones: zonesOfCheckItem(item.key), ...(ansicht ? { view: ansicht } : {}), token };
-  }
-  if (seite.art === 'werbung') return { zones: ['transportbox'], token };
-  // Das ganze Rad von der Seite, die fotografiert wird.
-  if (seite.art === 'foto') return { zones: ZONE_KEYS, view: SEITEN[seite.index]!.blick, token };
-  return { zones: [], preset: 'schraeg', token };
-}
 
 /**
  * Kennung jeder einzelnen Seite für den Baustein: Wechselt sie, nimmt die
@@ -832,7 +646,6 @@ function Punktseite({
   quittung,
   verlust,
   erfassung,
-  aktivNummer,
   offen,
   vorlaeufig,
   onInOrdnung,
@@ -847,11 +660,10 @@ function Punktseite({
   /** Die Bewertung des Punkts mit seinen Stellen; ohne Antwort `undefined`. */
   bewertung: CheckRating | undefined;
   notizOhneStelle: string;
-  neueStellen: readonly { stelle: Stelle; nummer: number }[];
+  neueStellen: readonly Stelle[];
   quittung: ReactNode;
   verlust: string | null;
   erfassung: ReturnType<typeof useStellenerfassung>;
-  aktivNummer: number;
   offen: BikeDetail['spots'];
   vorlaeufig: { rating: Severity; note: string } | null;
   onInOrdnung: () => void;
@@ -888,24 +700,18 @@ function Punktseite({
         <p className="text-ink-muted text-sm">{zonen.map((zone) => zoneLabel(zone)).join(' · ')}</p>
         {/* Schon offen aus früheren Meldungen - sie bleiben offen, bis die
             Teamleitung freigibt (ANN-555) - und was dieser Check-Up am Punkt
-            schon notiert hat: je eine Zeile mit Nadel und Wort (Regel 5). */}
+            schon notiert hat: je eine Zeile mit Zeichen und Wort (Regel 5). */}
         {offen.map((spot) => (
-          <p key={spot.id} className="flex items-center gap-2 text-sm">
-            <Nadel nummer={spot.number ?? 0} einstufung={spot.severity} />
-            <span className="text-ink-muted min-w-0">
-              <Einstufung einstufung={spot.severity} /> · Schon offen:{' '}
-              {spot.note || zoneLabel(spot.zone)}
-            </span>
+          <p key={spot.id} className="text-ink-muted text-sm">
+            <Einstufung einstufung={spot.severity} /> · Schon offen:{' '}
+            {spot.note || zoneLabel(spot.zone)}
           </p>
         ))}
-        {neueStellen.map(({ stelle, nummer }) => (
-          <p key={stelle.key} className="flex items-center gap-2 text-sm">
-            <Nadel nummer={nummer} einstufung={stelle.severity} />
-            <span className="text-ink-muted min-w-0">
-              <Einstufung einstufung={stelle.severity} /> · Neu:{' '}
-              {stelle.note.trim() || zoneLabel(stelle.zone)}
-              {stelle.fotos.length > 0 ? ` · ${fotoZahl(stelle.fotos.length)}` : ''}
-            </span>
+        {neueStellen.map((stelle) => (
+          <p key={stelle.key} className="text-ink-muted text-sm">
+            <Einstufung einstufung={stelle.severity} /> · Neu:{' '}
+            {stelle.note.trim() || zoneLabel(stelle.zone)}
+            {stelle.fotos.length > 0 ? ` · ${fotoZahl(stelle.fotos.length)}` : ''}
           </p>
         ))}
         {notizOhneStelle.trim() ? (
@@ -928,35 +734,14 @@ function Punktseite({
 
   if (teil === 'wo') {
     return (
-      <fieldset className="flex min-w-0 flex-col gap-3">
-        <legend className="text-ink text-liste mb-1 font-semibold">Wo genau?</legend>
-        <div className="flex flex-wrap gap-2">
-          {zonen.map((zone, nummer) => (
-            <Button
-              key={zone}
-              variant="secondary"
-              groesse="kompakt"
-              onClick={() => onBauteil(zone)}
-              {...(nummer === 0 ? { 'data-autofocus': true } : {})}
-            >
-              {zoneLabel(zone)}
-            </Button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="quiet" groesse="kompakt" onClick={onOhneStelle}>
-            Ohne genaue Stelle
-          </Button>
-          {/* Der Weg zurück nach einem Fehltipp auf „Problem“, im Daumenbereich. */}
-          <InOrdnungKnopf
-            beschriftung="Doch in Ordnung"
-            haupt={false}
-            gewaehlt={false}
-            verlust={verlust}
-            onInOrdnung={onInOrdnung}
-          />
-        </div>
-      </fieldset>
+      <WoGenau
+        zonen={zonen}
+        vorher={entwurf && isZoneKey(entwurf.zone) ? entwurf.zone : ''}
+        verlust={verlust}
+        onBauteil={onBauteil}
+        onOhneStelle={onOhneStelle}
+        onInOrdnung={onInOrdnung}
+      />
     );
   }
 
@@ -965,10 +750,7 @@ function Punktseite({
   return (
     <div className="flex flex-col gap-4">
       {entwurf && isZoneKey(entwurf.zone) ? (
-        <div className="flex items-center gap-3">
-          <Nadel nummer={aktivNummer} einstufung={entwurf.severity} neu={!entwurf.key} />
-          <p className="text-ink text-liste font-semibold">{zoneLabel(entwurf.zone)}</p>
-        </div>
+        <p className="text-ink text-liste font-semibold">{zoneLabel(entwurf.zone)}</p>
       ) : (
         <p className="text-ink-muted text-sm">Ohne genaue Stelle am Rad</p>
       )}
@@ -999,13 +781,63 @@ function Punktseite({
         <Fotovormerkung
           fotos={entwurf.fotos}
           onFotos={(fotos) => erfassung.aendere({ fotos })}
-          titel={`Foto zu Stelle ${aktivNummer}`}
-          bezug={`zu Stelle ${aktivNummer}`}
+          titel={`Foto zu ${zoneLabel(entwurf.zone)}`}
+          bezug={`zu ${zoneLabel(entwurf.zone)}`}
         />
       ) : null}
       <Button className="w-full" onClick={onWeiter}>
         Weiter
       </Button>
+    </div>
+  );
+}
+
+/**
+ * „Wo genau?“ wie die Radwahl: Erst „Weiter“ setzt die Stelle, ein Fehlgriff in der Liste
+ * noch nicht.
+ */
+function WoGenau({
+  zonen,
+  vorher,
+  verlust,
+  onBauteil,
+  onOhneStelle,
+  onInOrdnung,
+}: {
+  zonen: readonly ZoneKey[];
+  /** Das Bauteil, mit dem man aus „Was ist aufgefallen?“ zurückkam. */
+  vorher: string;
+  verlust: string | null;
+  onBauteil: (zone: ZoneKey) => void;
+  onOhneStelle: () => void;
+  onInOrdnung: () => void;
+}) {
+  const [wahl, setWahl] = useState(vorher);
+  return (
+    <div className="flex flex-col gap-3">
+      <Bauteilwahl label="Wo genau?" zonen={zonen} wert={wahl} onWahl={setWahl} autofokus />
+      <Button
+        className="w-full"
+        disabled={!isZoneKey(wahl)}
+        onClick={() => {
+          if (isZoneKey(wahl)) onBauteil(wahl);
+        }}
+      >
+        Weiter
+      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="quiet" groesse="kompakt" onClick={onOhneStelle}>
+          Ohne genaue Stelle
+        </Button>
+        {/* Der Weg zurück nach einem Fehltipp auf „Problem“, im Daumenbereich. */}
+        <InOrdnungKnopf
+          beschriftung="Doch in Ordnung"
+          haupt={false}
+          gewaehlt={false}
+          verlust={verlust}
+          onInOrdnung={onInOrdnung}
+        />
+      </div>
     </div>
   );
 }
@@ -1155,7 +987,6 @@ function Abschluss({
   antworten,
   stellen,
   offene,
-  nummerVon,
   notiz,
   onNotiz,
   weitereFotos,
@@ -1170,7 +1001,6 @@ function Abschluss({
   antworten: Antworten;
   stellen: readonly Stelle[];
   offene: BikeDetail['spots'];
-  nummerVon: (key: string) => number;
   notiz: string;
   onNotiz: (text: string) => void;
   weitereFotos: Blob[];
@@ -1213,16 +1043,12 @@ function Abschluss({
             return (
               <ListRow
                 key={item.key}
-                zeit={
-                  stelle ? (
-                    <Nadel nummer={nummerVon(stelle.key)} einstufung={stelle.severity} />
-                  ) : undefined
-                }
                 titel={item.label}
                 meta={
                   <>
                     <span className="block">
                       <Einstufung einstufung={rating} />
+                      {stelle ? ` · ${zoneLabel(stelle.zone)}` : ''}
                       {stelle && stelle.fotos.length > 0
                         ? ` · ${fotoZahl(stelle.fotos.length)}`
                         : ''}
@@ -1250,7 +1076,6 @@ function Abschluss({
             return (
               <ListRow
                 key={stelle.key}
-                zeit={<Nadel nummer={nummerVon(stelle.key)} einstufung={stelle.severity} />}
                 titel={zoneLabel(stelle.zone)}
                 meta={
                   <>
@@ -1268,7 +1093,7 @@ function Abschluss({
                   <Button
                     variant="secondary"
                     groesse="kompakt"
-                    aria-label={`Stelle ${nummerVon(stelle.key)} ändern: ${zoneLabel(stelle.zone)}`}
+                    aria-label={`${zoneLabel(stelle.zone)} ändern`}
                     onClick={() => onStelleAendern(stelle.key)}
                   >
                     Ändern
@@ -1329,7 +1154,6 @@ function Abschluss({
         ))}
       </ListRows>
 
-      {/* Ohne 3D-Rad die einzige Stelle, an der sie stehen. */}
       <SchonOffen offene={offene} />
 
       {/* Selten gebraucht, deshalb zusammen eingeklappt (DESIGN.md

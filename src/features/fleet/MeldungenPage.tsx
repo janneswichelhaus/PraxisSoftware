@@ -34,7 +34,7 @@ import {
   type Artfilter,
   type Zeitraum,
 } from './meldungen';
-import { Einstufung } from './Nadel';
+import { Einstufung } from './Einstufung';
 import { todayInTimeZone } from '@/lib/datum';
 
 const ZUR_FLOTTE = '/betrieb/flotte';

@@ -9,7 +9,6 @@ import {
   tokensAusCss,
 } from './kontrast';
 import { PERSONENFARBEN, type Personenfarbe } from '@/components/ui/personenfarben';
-import { PIN_COLORS } from '@/features/fleet/bike3d/zones';
 
 // Unter jsdom traegt import.meta.url kein file:-Schema; der Pfad kommt
 // deshalb aus dem Projektstamm.
@@ -294,51 +293,6 @@ describe('Farbtokens erfuellen WCAG AA', () => {
     ['ink', 'accent-soft', 4.5],
   ] as const)('hält auf der Plattform %s auf %s über %s:1', (vorne, hinten, mindestens) => {
     expect(kontrastverhaeltnis(tokens[vorne]!, tokens[hinten]!)).toBeGreaterThanOrEqual(mindestens);
-  });
-});
-
-describe('Nadeln am 3D-Rad (FLT-EPIC-001, Handoff Lastenrad 3D Abschnitt 3)', () => {
-  const weiss = { L: 1, C: 0, H: 0 };
-  const farbe = (name: string) => {
-    const wert = tokens[name];
-    if (!wert) throw new Error(`Token --color-${name} fehlt in src/index.css.`);
-    return wert;
-  };
-
-  it('setzt die Nummer an beiden Nadeln mit mindestens 4,5:1 ab', () => {
-    expect(kontrastverhaeltnis(farbe('nadel-problem'), weiss)).toBeGreaterThanOrEqual(4.5);
-    expect(
-      kontrastverhaeltnis(farbe('nadel-beobachten-ink'), farbe('nadel-beobachten')),
-    ).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it('hebt beide Nadeln mit 3:1 von der Fläche hinter dem Rad ab – die gelbe über ihre Kontur (AC 9)', () => {
-    expect(schlechtesterKontrast('nadel-problem')).toBeGreaterThanOrEqual(3);
-    // Das Gelb allein läge darunter (1,7:1); getragen wird es von der Kontur.
-    expect(schlechtesterKontrast('nadel-beobachten')).toBeLessThan(3);
-    expect(schlechtesterKontrast('nadel-beobachten-ink')).toBeGreaterThanOrEqual(3);
-  });
-
-  it('unterscheidet die beiden Nadeln auch in Graustufen', () => {
-    const problem = relativeHelligkeit(oklchNachLinearSrgb(farbe('nadel-problem')));
-    const beobachten = relativeHelligkeit(oklchNachLinearSrgb(farbe('nadel-beobachten')));
-    expect(beobachten - problem).toBeGreaterThan(0.3);
-  });
-
-  it('zeichnet das 3D-Modell mit denselben Farben wie die Tokens', () => {
-    const alsHex = (name: string) =>
-      `#${oklchNachLinearSrgb(farbe(name))
-        .map((kanal) => {
-          const s = kanal <= 0.0031308 ? 12.92 * kanal : 1.055 * kanal ** (1 / 2.4) - 0.055;
-          return Math.round(Math.min(1, Math.max(0, s)) * 255)
-            .toString(16)
-            .padStart(2, '0');
-        })
-        .join('')}`;
-    expect(alsHex('nadel-problem')).toBe(PIN_COLORS.problem.fill);
-    expect(alsHex('nadel-beobachten')).toBe(PIN_COLORS.beobachten.fill);
-    expect(alsHex('nadel-beobachten-ink')).toBe(PIN_COLORS.beobachten.ink);
-    expect(PIN_COLORS.beobachten.kontur).toBe(PIN_COLORS.beobachten.ink);
   });
 });
 

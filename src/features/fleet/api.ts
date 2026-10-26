@@ -5,7 +5,7 @@ import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from '@/features/fil
 import { nachSrgb } from '@/features/files/farbe';
 import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
 import { ABSCHLUSSARTEN, type Abschlussart } from './pannenablauf';
-import { BIKE_TYPES, type CheckRating, type ModelPoint, type Severity } from './bike3d/zones';
+import { BIKE_TYPES, type CheckRating, type Severity } from './bike3d/zones';
 import { SEITEN, type SeitenKey, type Werbeflaechen } from './checkupablauf';
 
 /**
@@ -21,10 +21,6 @@ import { SEITEN, type SeitenKey, type Werbeflaechen } from './checkupablauf';
 // -----------------------------------------------------------------------------
 // Schemas
 // -----------------------------------------------------------------------------
-
-const pointSchema = z
-  .tuple([z.coerce.number(), z.coerce.number(), z.coerce.number()])
-  .transform((p): ModelPoint => [p[0], p[1], p[2]]);
 
 const depotSchema = z.object({
   id: z.string(),
@@ -89,8 +85,6 @@ const spotSchema = z.object({
   id: z.string(),
   number: z.number().int().nullable(),
   zone: z.string(),
-  point: pointSchema.nullable(),
-  model_version: z.number().int(),
   severity: z.enum(['problem', 'beobachten']),
   note: z.string().nullable(),
   source: z.enum(['checkup', 'breakdown']),
@@ -165,8 +159,6 @@ const workshopSheetSchema = z.object({
       id: z.string(),
       number: z.number().int(),
       zone: z.string(),
-      point: pointSchema.nullable(),
-      model_version: z.number().int(),
       severity: z.enum(['problem', 'beobachten']),
       note: z.string().nullable(),
       source: z.enum(['checkup', 'breakdown']),
@@ -478,7 +470,6 @@ export async function returnKey(bikeId: string): Promise<void> {
 export interface SpotInput {
   zone: string;
   severity: Severity;
-  point: ModelPoint | null;
   note: string;
 }
 
@@ -537,7 +528,6 @@ export async function recordBreakdown(eingabe: {
       p_transport: eingabe.transport,
       p_spots: eingabe.spots.map((spot) => ({
         zone: spot.zone,
-        point: spot.point,
         note: spot.note.trim() || null,
       })),
     },
