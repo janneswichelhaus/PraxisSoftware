@@ -276,18 +276,22 @@ test.describe('CAL-009: Tag umplanen', () => {
     await page.goBack();
     const nochmal = page.getByRole('dialog', { name: 'Max Mustermann erreicht?' });
     await expect(nochmal).toBeVisible();
-    // Der Abstecher in die Akte und zurück: Die Adresse trägt nur die Kennung der Anrufliste.
-    await nochmal.getByRole('link', { name: 'Akte' }).click();
-    await page.getByRole('link', { name: 'Zurück zur Anrufliste' }).click();
-    await expect(page).toHaveURL(/anrufliste=[\w-]+/);
-    expect(page.url()).not.toMatch(/abgesagt=|erreicht=/);
-    await page
-      .getByRole('dialog', { name: 'Max Mustermann erreicht?' })
-      .getByRole('button', { name: 'Nicht erreicht' })
-      .click();
+    await nochmal.getByRole('button', { name: 'Nicht erreicht' }).click();
     await expect(page.getByRole('dialog', { name: '1 noch nicht erreicht' })).toBeVisible();
     // Der Anrufstand bleibt im Tab - ein Neuladen nimmt ihn mit (ANN-574).
     await page.reload();
+    const nachLaden = page.getByRole('dialog', { name: '1 noch nicht erreicht' });
+    await expect(nachLaden).toBeVisible();
+    // Der Abstecher in die Akte und zurück: Die Adresse trägt nur die Kennung der Anrufliste, und
+    // die Liste steht mit der Antwort wieder da.
+    await nachLaden.getByText('Max Mustermann').click();
+    await page
+      .getByRole('dialog', { name: 'Max Mustermann erreicht?' })
+      .getByRole('link', { name: 'Akte' })
+      .click();
+    await page.getByRole('link', { name: 'Zurück zur Anrufliste' }).click();
+    await expect(page).toHaveURL(/anrufliste=[\w-]+/);
+    expect(page.url()).not.toMatch(/abgesagt=|erreicht=/);
     await expect(page.getByRole('dialog', { name: '1 noch nicht erreicht' })).toBeVisible();
 
     test.info().annotations.push({
