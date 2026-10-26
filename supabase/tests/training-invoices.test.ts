@@ -1085,11 +1085,13 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
       } finally {
         await client.end();
       }
-      const { rows } = await asPostgres<{ dienst: boolean }>(
+      const { rows } = await asPostgres<{ nachziehen: boolean; lauf: boolean }>(
         `select has_function_privilege('service_role', 'public.reapply_deletion_journal()',
-                                       'execute') as dienst`,
+                                       'execute') as nachziehen,
+                has_function_privilege('service_role', 'public.apply_retention()',
+                                       'execute') as lauf`,
       );
-      expect(rows).toEqual([{ dienst: false }]);
+      expect(rows).toEqual([{ nachziehen: false, lauf: false }]);
     });
 
     it('hat fuer jede Tabelle am Verhaeltnis eine Entscheidung zur Teilloeschung', async () => {

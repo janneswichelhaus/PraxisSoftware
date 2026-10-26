@@ -494,9 +494,10 @@ comment on function app.reduce_training_relationship(p_relationship_id uuid, p_r
 
 comment on function public.reapply_deletion_journal() is 'Zieht nach einer Wiederherstellung die Loeschungen des Journals erneut nach (ADR-008 Punkt 8), in fester Reihenfolge ueber alle Tabellen, die das Journal fuehrt - Belege und Trainingsverhaeltnisse eingeschlossen, ebenso die Teilloeschung unter Belegfrist (ANN-183). Zeilen mit dem Verhaeltnis als Schluessel fallen nur, wenn sie vor der Loeschung entstanden sind. Nur fuer den Betrieb nach einem Restore, fuer keine API-Rolle.';
 
--- Das Nachziehen gehoert dem Betrieb nach einem Restore (ADR-012), nicht dem Dienstschluessel:
--- Er darf ins Journal schreiben und braeuchte sonst nur einen Eintrag fuer eine Loeschung.
+-- Nachziehen und Lauf gehoeren dem Betrieb (Restore nach ADR-012, pg_cron), nicht dem Dienst:
+-- Er darf ins Journal schreiben und Verhaeltnisse aendern, braeuchte also nur Eintrag oder Datum.
 revoke all on function public.reapply_deletion_journal() from service_role;
+revoke all on function public.apply_retention() from service_role;
 
 update public.retention_assignments
    set scope_note = scope_note || ' Auch in der Teilloeschung unter Belegfrist nach drei Jahren (ANN-183).'
