@@ -1622,6 +1622,15 @@
           "vermerk": "Entscheidungen Jannes 26.10.2026 zu #313, ROADMAP 7.18; Pfad A ohne Auslöser aus Nr. 8; ohne Migration; Fehler 6 auch in der Radflotte; gemerkte Suchbegriffe fallen mit dem Kontowechsel; neuer Befund: Rückweg der Anrufliste über 512 Zeichen"
         },
         {
+          "id": "aufraeumen-fehler-5-7",
+          "name": "Aufräumen, Fehler 5 und 7 der Tiefenanalyse: Upload-Recht der Akte wie die übrigen Dateiarten, Bestätigen und Verwerfen von Radflotte, Rückfrage und Akte ohne Wettlauf, app.mdr_released entfernt",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-26",
+          "nachweis": "Branch claude/pr-313-decisions-2mdcwc (zweite PR), Migrationen 20261225030000_upload_recht_akte_und_sperren.sql und 20261225040000_mdr_released_entfernt.sql, supabase/tests/patient-files.test.ts, fleet-photos.test.ts und message-attachments.test.ts (Wettlauf über helpers/gleichzeitig), Gegenprobe ohne Migration rot, E2E patient-file-access und kernablaeufe, Zweitreview",
+          "vermerk": "Entscheidungen Jannes 26.10.2026, ROADMAP 7.19; Pfad A mit Zweitreview (SECURITY DEFINER, Funktion hinter der Storage-Policy); list_patient_treatment_evidence bleibt wegen PROJECT_PRINCIPLES.md §4.4 (MUSS), Rückfrage"
+        },
+        {
           "id": "aufraeumen-4a",
           "name": "Aufräumen Schritt 4a: Teillöschung unter Belegfrist löscht die 17 Trainingstabellen nach drei Jahren",
           "gewicht": 1,

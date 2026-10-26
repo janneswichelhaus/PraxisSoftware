@@ -1,7 +1,7 @@
 /**
  * Einzige Stelle der MDR-Klassifikation (ADR-006 Punkt 6, §17, ANN-089): Einträge ohne Pfad sind
  * Ausgabeverbote, Einträge mit Pfad gesperrte Adressen (`mdrSperre`). Es gibt keinen Schalter: Ein
- * Eintrag öffnet nur mit Freigabevermerk samt Prüfdokument, auf dem Server `app.mdr_released`.
+ * Eintrag öffnet nur mit Freigabevermerk samt Prüfdokument.
  */
 
 /** Ein Merkmal, das nach ADR-006 Punkt 6 klassifiziert ist. */

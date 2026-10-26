@@ -699,3 +699,15 @@ Marke vorsieht.
 | Berührt | `src/lib/rueckweg.ts` (`HOECHSTLAENGE`), `TagUmplanenPage.tsx` (Rückweg `hierher`) |
 
 **Beobachtung.** Der Rückweg in die Akte trägt Person, Tag, den verschachtelten Kalenderstand (rund 105 Zeichen) und die Anrufliste mit Kennungen zu je 36 Zeichen. Sechs abgesagte Termine ergeben 429 Zeichen, nach der zweiten Antwort 518; bei acht Terminen ist die Grenze schon nach der ersten Antwort überschritten. Über 512 Zeichen lässt `mitRueckweg` den Rückweg still weg: Wer dann auf „Akte“ tippt, kommt ohne die Anrufliste zurück. Die Unit-Tests nutzen Kennungen wie `termin-1` und erreichen die Grenze nie. **Erwartet.** Ein Tag mit realistisch vielen Terminen (bis etwa 15, alle beantwortet) behält seinen Rückweg, belegt mit einem Test aus echten Kennungen. Wege: die Obergrenze auf 2048 anheben, die Prüfung auf anwendungsinterne Pfade bleibt; oder die Anrufliste kürzer schreiben (Antwort als ein Zeichen je abgesagtem Termin, Rückweg ohne verschachtelten Kalenderstand), das reicht bis etwa zehn Termine.
+
+### Akte — Bestätigen und Verwerfen eines offenen Uploads prüfen nicht, wer ihn vorbereitet hat
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-26 |
+| Bereich | Patientenakte, Dateiablage (Upload in zwei Phasen, ADR-017 Punkt 7) |
+| Quelle  | Nachprüfung des Zweitreviews zu Fehler 5 (Branch `claude/pr-313-decisions-2mdcwc`, zweite PR) |
+| Status  | offen (Vorschlag, Pfad A) |
+| Berührt | `confirm_patient_file_upload`, `discard_patient_file_upload` |
+
+**Beobachtung.** Seit Fehler 5 darf nur die vorbereitende Person Bytes in den Bucket der Akte legen. Bestätigen und Verwerfen prüfen dagegen nur Organisation und Schreibrecht. Bei Radflotte und Rückfrage prüft `own_pending_*` auch die Person. Erreichbar ist das kaum: Die Listen der Akte zeigen nur `ready`, die Kennung eines offenen Uploads sieht also keine Kollegin. **Erwartet.** Gleichstand mit den anderen Dateiarten: `uploaded_by = auth.uid()` in beiden Funktionen, mit Negativtest für eine Kollegin mit demselben Recht.

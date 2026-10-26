@@ -273,6 +273,65 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     expect(rows).toEqual([{ vorgang: 'closed', anhang: 'pending' }]);
   });
 
+  it('öffnet den Vorgang nicht wieder, wenn der Anhang gleichzeitig verworfen wird', async () => {
+    const vorgang = await fragen(tina);
+    await einwilligen(tina);
+    await asUserCommitted(users.trainer, ANTWORTEN, [vorgang, 'Bitte filmen.', null, null]);
+    const v = await vorbereiten(tina, vorgang);
+    await hochladen(tina.konto, v);
+    const STAND =
+      'select status, due_on::text, last_entry_at::text from public.platform_messages where id = $1';
+    const vorher = (await asPostgres(STAND, [vorgang])).rows;
+
+    const fehler = await gleichzeitig(
+      {
+        konto: tina.konto,
+        sql: 'select public.discard_message_attachment_upload($1::uuid, $2::uuid)',
+        params: [tina.zugang, v.attachment_id],
+      },
+      { konto: tina.konto, sql: BESTAETIGEN, params: [tina.zugang, v.attachment_id] },
+    );
+    expect(fehler).toMatchObject({ code: 'P0002', message: 'attachment not found' });
+    expect((await asPostgres(STAND, [vorgang])).rows).toEqual(vorher);
+    expect(
+      (
+        await asPostgres('select 1 from public.platform_message_attachments where id = $1', [
+          v.attachment_id,
+        ])
+      ).rows,
+    ).toEqual([]);
+  });
+
+  it('verwirft keinen Anhang, der gleichzeitig bestätigt wird, und bestätigt keinen zweimal', async () => {
+    const vorgang = await fragen(tina);
+    await einwilligen(tina);
+    await asUserCommitted(users.trainer, ANTWORTEN, [vorgang, 'Bitte filmen.', null, null]);
+    const VERWERFEN = 'select public.discard_message_attachment_upload($1::uuid, $2::uuid)';
+    const STATUS = 'select status from public.platform_message_attachments where id = $1';
+
+    const bestaetigt = await vorbereiten(tina, vorgang);
+    await hochladen(tina.konto, bestaetigt);
+    expect(
+      await gleichzeitig(
+        { konto: tina.konto, sql: BESTAETIGEN, params: [tina.zugang, bestaetigt.attachment_id] },
+        { konto: tina.konto, sql: VERWERFEN, params: [tina.zugang, bestaetigt.attachment_id] },
+      ),
+    ).toMatchObject({ code: 'P0002', message: 'attachment not found' });
+    expect((await asPostgres(STATUS, [bestaetigt.attachment_id])).rows).toEqual([
+      { status: 'ready' },
+    ]);
+
+    const doppelt = await vorbereiten(tina, vorgang);
+    await hochladen(tina.konto, doppelt);
+    expect(
+      await gleichzeitig(
+        { konto: tina.konto, sql: BESTAETIGEN, params: [tina.zugang, doppelt.attachment_id] },
+        { konto: tina.konto, sql: BESTAETIGEN, params: [tina.zugang, doppelt.attachment_id] },
+      ),
+    ).toMatchObject({ code: 'P0002', message: 'attachment not found' });
+    expect((await asPostgres(STATUS, [doppelt.attachment_id])).rows).toEqual([{ status: 'ready' }]);
+  });
+
   it('Behandlung: nur mit laufendem Nachsorge-Abo, nicht während der Behandlung (Punkt 59)', async () => {
     const vorgang = await fragen(erika);
     await einwilligen(erika);
