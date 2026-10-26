@@ -687,15 +687,3 @@ Marke vorsieht.
 | Berührt | beide Trennungsprüfungen; `src/lib/ki/gateway.ts`, `src/lib/location/funktion.ts` |
 
 **Beobachtung.** Beide Prüfungen lassen jeden Import aus `@/lib/` durch, weil dort anbieterfreie Hilfen liegen. Zwei Module dort sprechen aber den Server an (`functions.invoke` im KI-Gateway und in der Ortsfunktion); die Vorschau sperrt nur die Ortsmodule einzeln. Läge eine Praxisabfrage unter `src/lib`, sähe keine der beiden Prüfungen einen Import aus Plattform oder Vorschau. Schritt 3 hat die Tagesliste deshalb als Modul `day-plan` angelegt statt in `src/lib` (DEVELOPMENT.md „Modulgrenzen“). **Erwartet.** Ein Test hält fest, welche Dateien unter `src/lib` `getSupabase()` benutzen dürfen, oder die Trennungsprüfungen sperren genau diese; dazu je eine Gegenprobe.
-
-### Termine — Der Rückweg der Anrufliste fehlt einen Augenblick lang nach dem Absagen
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-26 |
-| Bereich | Kalender, Tag umplanen (`/kalender/tag-umplanen`) |
-| Quelle  | Volle Unit-Suite unter Last (Bildstrecke daneben) zu Aufräumen Schritt 3, Teil 1; allein 6 von 6 grün |
-| Status  | offen (Vorschlag) |
-| Berührt | `src/features/appointments/TagUmplanenPage.tsx` (Z. 174–178), `TagUmplanenPage.test.tsx` (Z. 300–303) |
-
-**Beobachtung.** „führt danach je Person durch die Anrufe …“ war einmal rot: Der Link „Akte“ trug im Rückweg noch kein `abgesagt=…`. Die Seite hält die eben abgesagten Kennungen sofort im Zustand, die Adresse folgt einen Augenblick später (Z. 174), und der Rückweg entsteht aus der Adresse. Wer in diesem Augenblick auf „Akte“ tippt, kommt ohne die Anrufliste zurück. **Erwartet.** Den Rückweg aus den abgesagten Kennungen des Zustands bauen statt aus der Adresse; die Prüfung im Test bleibt.

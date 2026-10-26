@@ -130,6 +130,17 @@ export function mitAnrufstand(suche: URLSearchParams, stand: Anrufstand): URLSea
   return naechste;
 }
 
+/** Die Adresse mit der ganzen Anrufliste, eben abgesagt und angerufen; alles andere bleibt. */
+export function mitAnrufliste(
+  suche: URLSearchParams,
+  abgesagt: readonly string[],
+  stand: Anrufstand,
+): URLSearchParams {
+  const naechste = mitAnrufstand(suche, stand);
+  naechste.set(ABGESAGT_PARAM, abgesagt.join(','));
+  return naechste;
+}
+
 /** Wer als Nächstes dran ist: die erste Person ohne Ergebnis, sonst niemand. */
 export function naechsterAnruf(
   reihenfolge: readonly string[],
