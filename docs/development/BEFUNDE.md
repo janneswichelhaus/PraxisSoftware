@@ -687,15 +687,3 @@ Marke vorsieht.
 | Berührt | beide Trennungsprüfungen; `src/lib/ki/gateway.ts`, `src/lib/location/funktion.ts` |
 
 **Beobachtung.** Beide Prüfungen lassen jeden Import aus `@/lib/` durch, weil dort anbieterfreie Hilfen liegen. Zwei Module dort sprechen aber den Server an (`functions.invoke` im KI-Gateway und in der Ortsfunktion); die Vorschau sperrt nur die Ortsmodule einzeln. Läge eine Praxisabfrage unter `src/lib`, sähe keine der beiden Prüfungen einen Import aus Plattform oder Vorschau. Schritt 3 hat die Tagesliste deshalb als Modul `day-plan` angelegt statt in `src/lib` (DEVELOPMENT.md „Modulgrenzen“). **Erwartet.** Ein Test hält fest, welche Dateien unter `src/lib` `getSupabase()` benutzen dürfen, oder die Trennungsprüfungen sperren genau diese; dazu je eine Gegenprobe.
-
-### Akte — Bestätigen und Verwerfen eines offenen Uploads prüfen nicht, wer ihn vorbereitet hat
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-26 |
-| Bereich | Patientenakte, Dateiablage (Upload in zwei Phasen, ADR-017 Punkt 7) |
-| Quelle  | Nachprüfung des Zweitreviews zu Fehler 5 (Branch `claude/pr-313-decisions-2mdcwc`, zweite PR) |
-| Status  | offen (Vorschlag, Pfad A) |
-| Berührt | `confirm_patient_file_upload`, `discard_patient_file_upload` |
-
-**Beobachtung.** Seit Fehler 5 darf nur die vorbereitende Person Bytes in den Bucket der Akte legen. Bestätigen und Verwerfen prüfen dagegen nur Organisation und Schreibrecht. Bei Radflotte und Rückfrage prüft `own_pending_*` auch die Person. Erreichbar ist das kaum: Die Listen der Akte zeigen nur `ready`, die Kennung eines offenen Uploads sieht also keine Kollegin. **Erwartet.** Gleichstand mit den anderen Dateiarten: `uploaded_by = auth.uid()` in beiden Funktionen, mit Negativtest für eine Kollegin mit demselben Recht.
