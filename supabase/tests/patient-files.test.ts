@@ -6,6 +6,7 @@ import {
   asPostgres,
   asUser,
   asUserCommitted,
+  fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
@@ -605,9 +606,19 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(fehler?.message).toMatch(/row-level security/i);
     });
 
-    it('laesst nur die vorbereitende Person hochladen, keine Kollegin mit demselben Recht', async () => {
+    it('laesst nur die vorbereitende Person hochladen - keine Kollegin, kein anderes Konto', async () => {
+      const fremd = await fremdeOrganisation();
       const datei = await vorbereiten(users.therapist);
-      for (const konto of [users.teamLead, users.ownerTherapist, users.office]) {
+      // Dasselbe Recht, anderer Leistungsbereich, Patientenkonto, fremde Person, andere Praxis.
+      for (const konto of [
+        users.teamLead,
+        users.ownerTherapist,
+        users.office,
+        users.trainer,
+        users.patientMax,
+        users.plattformTina,
+        fremd.owner,
+      ]) {
         const fehler = await abgefangen(asUser(konto, HOCHLADEN, [datei.object_key]));
         expect(fehler?.message, konto).toMatch(/row-level security/i);
       }
