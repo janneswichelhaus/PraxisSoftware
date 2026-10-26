@@ -118,9 +118,10 @@ describe('Register der Querschnittsfunktionen (ADR-008 Punkt 13)', () => {
       ],
     ] as const) {
       it(`die Kopie zum ${wurzel} hat genau die Abschnitte des Registers, jeden beschriftet`, async () => {
-        const soll = await liste(
-          `select distinct s as t from public.data_registry r, unnest(r.${spalte}) s order by 1`,
-        );
+        // In JavaScript sortiert: Die Sortierung der Datenbank hängt an ihrer Locale (en_US in der CI).
+        const soll = (
+          await liste(`select distinct s as t from public.data_registry r, unnest(r.${spalte}) s`)
+        ).sort();
         const { rows } = await asUser<{ daten: { tabellen: Record<string, unknown> } }>(
           SEED.users.ownerTherapist,
           `select public.${funktion}($1::uuid) as daten`,
