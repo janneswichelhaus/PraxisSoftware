@@ -19,13 +19,7 @@ import {
   type FleetPhoto,
   type WorkshopSheet,
 } from './api';
-import {
-  bikeTypeLabels,
-  checkItemLabels,
-  zoneCheckItem,
-  zoneLabel,
-  type Severity,
-} from './bike3d/zones';
+import { bikeTypeLabels, checkItemLabels, zoneCheckItem, zoneLabel, type Severity } from './zones';
 import { dateinameWerkstatt, formatTag, formatZeitpunkt } from './format';
 import { aktiveStandortvorlage } from './standortvorlage';
 import { todayInTimeZone } from '@/lib/datum';

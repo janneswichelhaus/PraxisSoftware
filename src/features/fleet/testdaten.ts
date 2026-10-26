@@ -1,5 +1,5 @@
 import type { Bike, BikeDetail, Fleet, FleetReport, Spot } from './api';
-import { CHECK_ITEMS } from './bike3d/zones';
+import { CHECK_ITEMS } from './zones';
 
 /**
  * Synthetische Radflotte für die Komponententests (FLT-EPIC-001) - dieselben

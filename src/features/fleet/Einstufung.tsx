@@ -1,4 +1,4 @@
-import type { Severity } from './bike3d/zones';
+import type { Severity } from './zones';
 
 /** Die Einstufung einer Stelle als Zeichen und Wort (DESIGN.md Regel 5). */
 export function Einstufung({ einstufung }: { einstufung: Severity }) {

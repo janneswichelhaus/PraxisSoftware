@@ -28,7 +28,7 @@ import {
   type BikeDetail,
   type Fleet,
 } from './api';
-import { bikeTypeLabels } from './bike3d/zones';
+import { bikeTypeLabels } from './zones';
 import { formatZeitpunkt } from './format';
 import { ausserhalbDesStammdepots, depotName, radzustandLabels, standort } from './rad';
 import { RadAngaben } from './RadAngaben';

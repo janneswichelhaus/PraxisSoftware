@@ -7,7 +7,7 @@ import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { FLOTTE_SCHLUESSEL, releaseBike, type BikeDetail, type FleetPhoto, type Spot } from './api';
-import { checkItemLabels, zoneCheckItem, zoneLabel } from './bike3d/zones';
+import { checkItemLabels, zoneCheckItem, zoneLabel } from './zones';
 import { Einstufung } from './Einstufung';
 import { formatZeitpunkt } from './format';
 import { Fotoreihe } from './Fotoreihe';

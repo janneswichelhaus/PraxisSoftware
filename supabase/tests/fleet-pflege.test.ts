@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { CHECK_ITEMS } from '@/features/fleet/bike3d/zones';
+import { CHECK_ITEMS } from '@/features/fleet/zones';
 import { SEITEN } from '@/features/fleet/checkupablauf';
 import {
   SEED,

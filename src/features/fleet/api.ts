@@ -5,7 +5,7 @@ import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from '@/features/fil
 import { nachSrgb } from '@/features/files/farbe';
 import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
 import { ABSCHLUSSARTEN, type Abschlussart } from './pannenablauf';
-import { BIKE_TYPES, type CheckRating, type Severity } from './bike3d/zones';
+import { BIKE_TYPES, type CheckRating, type Severity } from './zones';
 import { SEITEN, type SeitenKey, type Werbeflaechen } from './checkupablauf';
 
 /**

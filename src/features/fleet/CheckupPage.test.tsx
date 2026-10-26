@@ -6,7 +6,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import * as api from './api';
-import { CHECK_ITEMS } from './bike3d/zones';
+import { CHECK_ITEMS, zoneLabel, type ZoneKey } from './zones';
 import { CheckupPage } from './CheckupPage';
 import { Zielanzeige } from './Testbausteine';
 import { testDetail, testFlotte, testRad, testStelle } from './testdaten';
@@ -91,12 +91,11 @@ async function reinigenUndFotografieren(nutzer: ReturnType<typeof userEvent.setu
   }
 }
 
-/** „Problem“ am Punkt, dann „Wo genau?“ mit dem Bauteil und „Weiter“. */
-async function problemAn(nutzer: ReturnType<typeof userEvent.setup>, punkt: string, zone: string) {
+/** „Problem“ am Punkt, dann unter „Wo genau?“ der Knopf des Bauteils. */
+async function problemAn(nutzer: ReturnType<typeof userEvent.setup>, punkt: string, zone: ZoneKey) {
   await nutzer.click(within(await fenster(punkt)).getByRole('button', { name: 'Problem' }));
   const wo = within(await fenster(punkt));
-  await nutzer.selectOptions(wo.getByRole('combobox', { name: 'Wo genau?' }), zone);
-  await nutzer.click(wo.getByRole('button', { name: 'Weiter' }));
+  await nutzer.click(wo.getByRole('button', { name: zoneLabel(zone) }));
 }
 
 /** Beantwortet die Punkte von `von` bis vor `bis` mit „In Ordnung“. */
@@ -159,18 +158,21 @@ describe('Geführter Check-Up', () => {
     const bremsen = await fenster('Bremsen');
     await nutzer.click(within(bremsen).getByRole('button', { name: 'Problem' }));
 
-    // „Wo genau?“: die Bauteile des Punkts als Auswahl, wie die Radwahl.
+    // „Wo genau?“: die Bauteile des Punkts als Knöpfe - ein Tipp setzt die Stelle.
     const wo = within(await fenster('Bremsen'));
-    const liste = wo.getByRole('combobox', { name: 'Wo genau?' });
-    expect(
-      within(liste)
-        .getAllByRole('option')
-        .map((option) => option.textContent),
-    ).toEqual(['Bitte wählen …', 'Bremse vorne', 'Bremse hinten', 'Bremsgriffe']);
-    expect(liste).toHaveFocus();
-    expect(wo.getByRole('button', { name: 'Weiter' })).toBeDisabled();
-    await nutzer.selectOptions(liste, 'bremse-hinten');
-    await nutzer.click(wo.getByRole('button', { name: 'Weiter' }));
+    const knoepfe = within(wo.getByRole('group', { name: 'Wo genau?' }))
+      .getAllByRole('button')
+      .map((knopf) => knopf.textContent);
+    expect(knoepfe).toEqual([
+      'Bremse vorne',
+      'Bremse hinten',
+      'Bremsgriffe',
+      'Ohne genaue Stelle',
+      'Doch in Ordnung',
+    ]);
+    expect(wo.getByRole('button', { name: 'Bremse vorne' })).toHaveAttribute('data-autofocus');
+    expect(wo.queryByRole('button', { name: 'Weiter' })).not.toBeInTheDocument();
+    await nutzer.click(wo.getByRole('button', { name: 'Bremse hinten' }));
 
     const was = within(await fenster('Bremsen'));
     expect(was.getByText('Bremse hinten')).toBeInTheDocument();
@@ -183,7 +185,7 @@ describe('Geführter Check-Up', () => {
     await pruefeBarrierefreiheit(document.body);
   });
 
-  it('setzt die Stelle erst mit „Weiter“ und nimmt die Notiz zu einem anderen Bauteil mit', async () => {
+  it('zeigt beim Zurückgehen das gewählte Bauteil und nimmt die Notiz zu einem anderen mit', async () => {
     const nutzer = userEvent.setup();
     oeffne();
     await inOrdnungBis(nutzer, 2);
@@ -191,18 +193,22 @@ describe('Geführter Check-Up', () => {
       within(await fenster('Bremsen')).getByRole('button', { name: 'Beobachten' }),
     );
     const wo = within(await fenster('Bremsen'));
-    await nutzer.selectOptions(wo.getByRole('combobox', { name: 'Wo genau?' }), 'bremse-vorne');
-    await nutzer.click(wo.getByRole('button', { name: 'Weiter' }));
+    await nutzer.click(wo.getByRole('button', { name: 'Bremse vorne' }));
     const was = within(await fenster('Bremsen'));
     await nutzer.type(was.getByLabelText('Was ist aufgefallen?'), 'quietscht');
 
-    // Zurück zu „Wo genau?“: Das Bauteil steht noch da; ein anderes nimmt die Notiz mit.
+    // Zurück zu „Wo genau?“: Das Bauteil ist gedrückt; ein anderes nimmt die Notiz mit.
     await nutzer.click(was.getByRole('button', { name: '← Zurück' }));
     const wieder = within(await fenster('Bremsen'));
-    const liste = wieder.getByRole('combobox', { name: 'Wo genau?' });
-    expect(liste).toHaveValue('bremse-vorne');
-    await nutzer.selectOptions(liste, 'bremsgriffe');
-    await nutzer.click(wieder.getByRole('button', { name: 'Weiter' }));
+    expect(wieder.getByRole('button', { name: 'Bremse vorne' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(wieder.getByRole('button', { name: 'Bremsgriffe' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    await nutzer.click(wieder.getByRole('button', { name: 'Bremsgriffe' }));
     const danach = within(await fenster('Bremsen'));
     expect(danach.getByText('Bremsgriffe')).toBeInTheDocument();
     expect(danach.getByLabelText('Was ist aufgefallen?')).toHaveValue('quietscht');
@@ -260,7 +266,7 @@ describe('Geführter Check-Up', () => {
     expect(was.getByText('Ohne genaue Stelle am Rad')).toBeInTheDocument();
     await nutzer.click(was.getByRole('button', { name: '← Zurück' }));
     expect(
-      within(await fenster('Speichen')).getByRole('combobox', { name: 'Wo genau?' }),
+      within(await fenster('Speichen')).getByRole('group', { name: 'Wo genau?' }),
     ).toBeInTheDocument();
     await nutzer.click(screen.getByRole('button', { name: '← Zurück' }));
     // Ohne „Weiter“ gilt „Beobachten“ nicht.
@@ -283,7 +289,7 @@ describe('Geführter Check-Up', () => {
       within(await fenster('Licht vorne')).getByRole('button', { name: 'Problem' }),
     );
     const was = within(await fenster('Licht vorne'));
-    expect(was.queryByRole('combobox', { name: 'Wo genau?' })).not.toBeInTheDocument();
+    expect(was.queryByRole('group', { name: 'Wo genau?' })).not.toBeInTheDocument();
     // Die Stelle sitzt gleich am einzigen Bauteil.
     expect(was.getByText('Licht vorne', { selector: 'p' })).toBeInTheDocument();
     // Das Beispiel passt zum Punkt.

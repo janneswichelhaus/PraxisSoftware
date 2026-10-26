@@ -22,7 +22,7 @@ import {
   werbeflaechenText,
   zusammenfassung,
 } from './checkupablauf';
-import { CHECK_ITEMS } from './bike3d/zones';
+import { CHECK_ITEMS } from './zones';
 
 /** Der geführte Check-Up ohne Oberfläche (FLT-005, ANN-563). */
 describe('Ablauf des geführten Check-Ups', () => {

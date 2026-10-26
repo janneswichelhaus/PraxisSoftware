@@ -22,7 +22,6 @@ import {
 import { Kameradialog } from '@/features/files/Kameradialog';
 import type { CurrentUser } from '@/features/session/types';
 import { FLOTTE_SCHLUESSEL, recordCheckup, type BikeDetail } from './api';
-import { Bauteilwahl } from './Bauteilwahl';
 import {
   CHECK_ITEMS,
   bikeTypeLabels,
@@ -35,7 +34,7 @@ import {
   type CheckRating,
   type Severity,
   type ZoneKey,
-} from './bike3d/zones';
+} from './zones';
 import {
   ABSCHLUSS,
   BEISPIEL,
@@ -793,8 +792,8 @@ function Punktseite({
 }
 
 /**
- * „Wo genau?“ wie die Radwahl: Erst „Weiter“ setzt die Stelle, ein Fehlgriff in der Liste
- * noch nicht.
+ * „Wo genau?“: je Bauteil des Punkts ein Knopf - ein Tipp setzt die Stelle und führt weiter. Das
+ * Bauteil, mit dem man aus „Was ist aufgefallen?“ zurückkam, ist gedrückt.
  */
 function WoGenau({
   zonen,
@@ -812,19 +811,23 @@ function WoGenau({
   onOhneStelle: () => void;
   onInOrdnung: () => void;
 }) {
-  const [wahl, setWahl] = useState(vorher);
   return (
-    <div className="flex flex-col gap-3">
-      <Bauteilwahl label="Wo genau?" zonen={zonen} wert={wahl} onWahl={setWahl} autofokus />
-      <Button
-        className="w-full"
-        disabled={!isZoneKey(wahl)}
-        onClick={() => {
-          if (isZoneKey(wahl)) onBauteil(wahl);
-        }}
-      >
-        Weiter
-      </Button>
+    <fieldset className="flex min-w-0 flex-col gap-3">
+      <legend className="text-ink text-liste mb-1 font-semibold">Wo genau?</legend>
+      <div className="flex flex-wrap gap-2">
+        {zonen.map((zone, nummer) => (
+          <Button
+            key={zone}
+            variant="secondary"
+            groesse="kompakt"
+            aria-pressed={zone === vorher}
+            onClick={() => onBauteil(zone)}
+            {...(nummer === 0 ? { 'data-autofocus': true } : {})}
+          >
+            {zoneLabel(zone)}
+          </Button>
+        ))}
+      </div>
       <div className="flex flex-wrap gap-2">
         <Button variant="quiet" groesse="kompakt" onClick={onOhneStelle}>
           Ohne genaue Stelle
@@ -838,7 +841,7 @@ function WoGenau({
           onInOrdnung={onInOrdnung}
         />
       </div>
-    </div>
+    </fieldset>
   );
 }
 

@@ -5729,13 +5729,13 @@ Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
-**Geändert (Jannes, 2026-10-26):** M1 nimmt den Punkt im Modell zurück (Auftrag vom 08.10.): ohne 3D-Rad weder Punkt noch Fassung des Modells; die übrigen Sätze gelten weiter.
+**Geändert (Jannes, 2026-10-26):** M1 nimmt den Punkt im Modell zurück (Auftrag vom 08.10.): ohne 3D-Rad weder Punkt noch Fassung des Modells, ein mitgesendeter Punkt bleibt ohne Wirkung; die übrigen Sätze gelten weiter.
 
 **Annahme.** Eine Stelle trägt Bauteil, Einstufung, Notiz und Fotos; das Bauteil kommt aus der Liste der 27. Die offenen Stellen eines Rads sind über alle Meldungen in der Reihenfolge des Setzens nummeriert, erledigte ohne Nummer. Eine Stelle hebt ihren Prüfpunkt an, nie ab. Die Freigabe erledigt alle offenen Stellen; ein neuer Check-Up übernimmt keine, er zeigt sie unter „Schon offen am Rad“.
 
 **Begründung.** Handoff Lastenrad 3D, AC 2 und 3, Abschnitt 7 (offene Stellen beim nächsten Check-Up).
 
-**Anker.** `SpotInput` in `src/features/fleet/api.ts`; Nummer und Freigabe in `release_fleet_bike` (Basis-Migration).
+**Anker.** `app.fleet_insert_spots` (`supabase/migrations/20261225110000_stellen_ohne_punkt.sql`); `SpotInput` in `src/features/fleet/api.ts`.
 
 **Änderungspfad.** Stellen übernehmen statt erledigen: Freigabe und Check-Up am Server · Aufwand `mittel`.
 
@@ -5743,7 +5743,7 @@ Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
 Technik · verworfen · 2026-10-26 · Jannes · erledigt · Wiedervorlage: keine
 
-**Verworfen (Jannes, 2026-10-26):** M1 – das 3D-Rad entfällt und mit ihm `three`; „Wo genau?“ ist die Bauteilliste, die Unterlage für die Werkstatt zeigt Bauteilnamen und Fotos.
+**Verworfen (Jannes, 2026-10-26):** M1 – das 3D-Rad entfällt und mit ihm `three`; „Wo genau?“ zeigt die Bauteile des Prüfpunkts als Knöpfe, die Panne die Liste der 27, die Unterlage für die Werkstatt Bauteilnamen und Fotos.
 
 **Annahme.** Betrachter und Bilder der Werkstattunterlage laden three.js über einen dynamischen Import; ohne WebGL oder ohne Netz und Zwischenspeicher trägt die Bauteil-Liste.
 
@@ -5889,7 +5889,7 @@ Technik · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage:
 
 Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage: —
 
-**Annahme.** Nach den zwölf Prüfpunkten wischt die prüfende Person jede Werbefläche mit Desinfektions- oder Reinigungstuch ab („Abgewischt“) oder nennt den Grund („Nicht möglich“), dann je ein Foto links, vorne, rechts, hinten; die Kamera öffnet sich selbst. Ohne beides kein Speichern; der Server verlangt die Werbeflächen, die Fotos folgen wie alle Fotos nach dem Speichern (24 h, je Seite eines). Die Überschrift steht unter dem Rad über den Antworten.
+**Annahme.** Nach den zwölf Prüfpunkten wischt die prüfende Person jede Werbefläche mit Desinfektions- oder Reinigungstuch ab („Abgewischt“) oder nennt den Grund („Nicht möglich“), dann je ein Foto links, vorne, rechts, hinten; die Kamera öffnet sich selbst. Ohne beides kein Speichern; der Server verlangt die Werbeflächen, die Fotos folgen wie alle Fotos nach dem Speichern (24 h, je Seite eines). Die Überschrift steht über den Antworten.
 
 **Begründung.** Auftrag Jannes (16.10.). „Nicht möglich“ mit Grund, damit ein fehlendes Tuch die Sicherheitsprüfung nicht blockiert; der Arbeitgeber sieht ihn in den Meldungen. +9 Tipps (R3 ≤ 25).
 
@@ -7649,14 +7649,14 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Regel aus `eslint.config.js` nehmen, Kern zurück nach Termine · Aufwand `mittel`.
 
-### ANN-749 — Ladestrom wird wie ein Einkauf mit Beleg beantragt; ältere Anträge behalten ihren Rechenweg
+### ANN-749 — Ladestrom wie ein Einkauf mit Beleg; ältere Anträge behalten ihren Rechenweg
 
 Praxisprozess · offen · 2026-10-26 · — · — · Wiedervorlage: —
 
-**Annahme.** Seit Jannes' Entscheidung (2026-10-26, M5) beantragt eine Person Ladestrom über den Weg des Einkaufs: Beleg, Betrag, Zweck „Ladestrom“ mit Monat. Neue Anträge tragen die Art `purchase`. Anträge der Art `electricity` mit Rechenweg (Tage, Minuten, Kilometer, Satz) bleiben unverändert lesbar, entscheidbar und auszahlbar; ausgezahlte sind Belege (ANN-602).
+**Annahme.** Ladestrom läuft seit 2026-10-26 (M5) über den Einkauf: Beleg, Betrag, Zweck „Ladestrom“ mit dem jüngsten abgeschlossenen Monat (änderbar), Art `purchase`. Ältere Anträge der Art `electricity` bleiben mit Rechenweg lesbar, entscheidbar und auszahlbar (ANN-602).
 
-**Begründung.** „Betrag mit Beleg bleibt“ (ROADMAP 7.18). Ein eigener Weg mit eigener Art brächte die gestrichene Logik zurück; den Rechenweg alter Anträge zu löschen hieße, Belege zu ändern.
+**Begründung.** „Betrag mit Beleg bleibt“ (ROADMAP 7.18); den Rechenweg alter Anträge zu löschen hieße, Belege zu ändern.
 
-**Anker.** `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql`; Test „Ältere Ladestrom-Anträge mit Rechenweg“ in `supabase/tests/reimbursements.test.ts`.
+**Anker.** `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql`; Test „Ältere Ladestrom-Anträge mit Rechenweg“ in `reimbursements.test.ts`.
 
-**Änderungspfad.** Eigene Art „Strom“ mit Beleg: `submit_purchase_reimbursement` um die Art erweitern, Bedingung `staff_reimbursements_kind_fields` ergänzen · Aufwand `mittel`.
+**Änderungspfad.** Eigene Art „Strom“: `submit_purchase_reimbursement` und `staff_reimbursements_kind_fields` erweitern · Aufwand `mittel`.

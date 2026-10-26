@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { isZoneKey, type Severity } from './bike3d/zones';
+import { isZoneKey, type Severity } from './zones';
 
 /**
  * Die Stellen einer Meldung ohne Oberfläche: Check-Up und Panne führen denselben Zustand,

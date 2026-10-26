@@ -10,7 +10,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchBike, fetchFleet, flotteSchluessel, radSchluessel, type Fleet } from './api';
-import { bikeTypeLabels } from './bike3d/zones';
+import { bikeTypeLabels } from './zones';
 import { CheckupFenster } from './CheckupFenster';
 import { istMeinRad } from './rad';
 import { Radwahl } from './Radwahl';

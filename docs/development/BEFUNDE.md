@@ -711,3 +711,15 @@ Marke vorsieht.
 | Berührt | `confirm_patient_file_upload`, `discard_patient_file_upload` |
 
 **Beobachtung.** Seit Fehler 5 darf nur die vorbereitende Person Bytes in den Bucket der Akte legen. Bestätigen und Verwerfen prüfen dagegen nur Organisation und Schreibrecht. Bei Radflotte und Rückfrage prüft `own_pending_*` auch die Person. Erreichbar ist das kaum: Die Listen der Akte zeigen nur `ready`, die Kennung eines offenen Uploads sieht also keine Kollegin. **Erwartet.** Gleichstand mit den anderen Dateiarten: `uploaded_by = auth.uid()` in beiden Funktionen, mit Negativtest für eine Kollegin mit demselben Recht.
+
+### Rahmen — Der geführte Ablauf trägt noch die Bühne des 3D-Rads
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-26 |
+| Bereich | Bausteine (`GefuehrterAblauf`, `Segment`) |
+| Quelle  | Rückbau M1 (Branch `claude/pr-313-decisions-2mdcwc`, dritte PR) |
+| Status  | offen (Vorschlag) |
+| Berührt | `src/components/ui/GefuehrterAblauf.tsx`, `src/components/ui/Segment.tsx`, `--spacing-ablauf-knapp` |
+
+**Beobachtung.** Seit das 3D-Rad entfallen ist, übergibt kein Ablauf mehr `buehne`, `buehneAmTelefon` oder `flaecheKnapp`; der Zweig dafür (gut 60 Zeilen) und das Maß `--spacing-ablauf-knapp` sind tot, die Kommentare dort und in `Segment` nennen noch das 3D-Rad. **Erwartet.** Zweig, Props und Maß entfernen und den Kopfkommentar dabei nach der Kommentarregel kürzen; ohne sichtbare Änderung.

@@ -130,4 +130,4 @@ drop function app.fleet_model_version(text);
 
 comment on table public.fleet_spots is 'Stelle am Rad aus einem Check-Up oder einer Panne - Bauteil aus der Liste der 27, Einstufung, Notiz (ANN-555). Mit "Freigeben" erledigt, bleibt im Verlauf. Datenklasse radflotte_ereignis, faellt mit Check-Up oder Panne (cascade). Kein Tabellenrecht.';
 
-comment on function app.fleet_zones(p_bike_type text) is 'Die 27 Bauteile des Lastenrads, aus denen eine Stelle waehlt (ANN-555). Gegenstueck BIKE_ZONES in src/features/fleet/bike3d/zones.ts.';
+comment on function app.fleet_zones(p_bike_type text) is 'Die 27 Bauteile des Lastenrads, aus denen eine Stelle waehlt (ANN-555). Gegenstueck BIKE_ZONES in src/features/fleet/zones.ts.';

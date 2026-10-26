@@ -6,7 +6,7 @@ import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { FLOTTE_SCHLUESSEL, blockBike, removeBike, type Bike, type Fleet } from './api';
-import { bikeTypeLabels } from './bike3d/zones';
+import { bikeTypeLabels } from './zones';
 import { BikeForm } from './BikeForm';
 import { wochentageKurz } from './format';
 import { depotName, standort } from './rad';

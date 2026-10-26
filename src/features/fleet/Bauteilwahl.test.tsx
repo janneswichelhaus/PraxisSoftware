@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Bauteilwahl } from './Bauteilwahl';
-import { BIKE_ZONES, ZONE_KEYS, zonesOfCheckItem } from './bike3d/zones';
+import { ZONE_KEYS } from './zones';
 
-/** „Wo genau?“ als Auswahlliste der 27 Bauteile (statt des 3D-Rads). */
+/** Das Bauteil als Auswahlliste der 27 (statt des 3D-Rads). */
 describe('Bauteilwahl', () => {
   it('bietet alle Bauteile genau einmal, nach Prüfpunkt gruppiert', () => {
     const { container } = render(<Bauteilwahl label="Bauteil" wert="" onWahl={() => undefined} />);
@@ -30,31 +30,11 @@ describe('Bauteilwahl', () => {
     expect(screen.getByRole('combobox', { name: 'Bauteil' })).toHaveValue('');
   });
 
-  it('zeigt mit `zonen` nur die Bauteile eines Prüfpunkts und meldet die Wahl', async () => {
+  it('meldet die Wahl und trägt den Fokus der Seite', async () => {
     const nutzer = userEvent.setup();
     const onWahl = vi.fn();
-    const { container } = render(
-      <Bauteilwahl
-        label="Wo genau?"
-        zonen={zonesOfCheckItem('antrieb')}
-        wert=""
-        onWahl={onWahl}
-        autofokus
-      />,
-    );
-    const liste = screen.getByRole('combobox', { name: 'Wo genau?' });
-    expect(container.querySelector('optgroup')).toBeNull();
-    expect(
-      within(liste)
-        .getAllByRole('option')
-        .map((option) => option.textContent),
-    ).toEqual([
-      'Bitte wählen …',
-      BIKE_ZONES.riemen.label,
-      BIKE_ZONES.nabenschaltung.label,
-      BIKE_ZONES.kurbeln.label,
-      BIKE_ZONES.motor.label,
-    ]);
+    render(<Bauteilwahl label="Bauteil" wert="" onWahl={onWahl} autofokus />);
+    const liste = screen.getByRole('combobox', { name: 'Bauteil' });
     expect(liste).toHaveAttribute('data-autofocus');
     await nutzer.selectOptions(liste, 'motor');
     expect(onWahl).toHaveBeenCalledWith('motor');

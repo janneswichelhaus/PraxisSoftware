@@ -509,13 +509,12 @@ test('Check-Up mit zwei Befunden bei 375 × 667: Zurückgeste, Bauteil ohne Frag
   await expect(speichen.getByRole('status')).toHaveText('Reifen und Luftdruck: ✓ In Ordnung');
   await speichen.getByRole('button', { name: 'In Ordnung' }).click();
 
-  // Bremsen: drei Bauteile, also „Wo genau?“ als Auswahl, dann „Weiter“.
+  // Bremsen: drei Bauteile, also „Wo genau?“ - ein Knopf je Bauteil.
   const bremsen = checkupFenster(page, 'Bremsen');
   await bremsen.getByRole('button', { name: 'Problem' }).click();
-  await bremsen.getByLabel('Wo genau?').selectOption('bremse-vorne');
   expect(await scrolltNicht(page), 'Wo genau? ohne Scrollen').toBe(true);
-  await mindestens44(bremsen.getByLabel('Wo genau?'));
-  await bremsen.getByRole('button', { name: 'Weiter' }).click();
+  await mindestens44(bremsen.getByRole('button', { name: 'Bremse vorne' }));
+  await bremsen.getByRole('button', { name: 'Bremse vorne' }).click();
   await bremsen.getByLabel('Was ist aufgefallen?').fill('Belag schleift');
   await bremsen.getByRole('button', { name: 'Weiter' }).click();
   for (const label of [

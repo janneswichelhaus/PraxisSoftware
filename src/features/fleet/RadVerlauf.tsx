@@ -2,7 +2,7 @@ import { Disclosure } from '@/components/ui/Card';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import type { BikeDetail, FleetPhoto } from './api';
-import { checkItemLabels, type CheckItemKey } from './bike3d/zones';
+import { checkItemLabels, type CheckItemKey } from './zones';
 import { formatTag, formatZeitpunkt } from './format';
 import { Fotoreihe } from './Fotoreihe';
 

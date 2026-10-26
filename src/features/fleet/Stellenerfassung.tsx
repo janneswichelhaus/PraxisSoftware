@@ -3,7 +3,7 @@ import { Disclosure } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
-import { BIKE_ZONES, checkItemLabels, isZoneKey, zoneCheckItem, zoneLabel } from './bike3d/zones';
+import { BIKE_ZONES, checkItemLabels, isZoneKey, zoneCheckItem, zoneLabel } from './zones';
 import type { Spot } from './api';
 import { Bauteilwahl } from './Bauteilwahl';
 import { Einstufung } from './Einstufung';

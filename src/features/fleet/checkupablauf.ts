@@ -7,7 +7,7 @@ import {
   type CheckRating,
   type Severity,
   type ZoneKey,
-} from './bike3d/zones';
+} from './zones';
 
 /**
  * Der geführte Check-Up (FLT-005, ANN-563) ohne Oberfläche: welche Seite nach
