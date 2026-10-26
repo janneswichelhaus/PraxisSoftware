@@ -24,6 +24,11 @@ create table public.data_registry (
                            or length(btrim(decision_note)) between 1 and 500),
   constraint data_registry_section check (
     (export_mode = 'section') = (cardinality(export_patient) + cardinality(export_training) > 0)),
+  -- Ein Abschnitt steht in jeder Kopie, zu der die Tabelle gehört, und in keiner anderen.
+  constraint data_registry_section_sides check (
+    export_mode <> 'section'
+    or ((subject_kind in ('patient', 'patient_training')) = (cardinality(export_patient) > 0)
+        and (subject_kind in ('training', 'patient_training')) = (cardinality(export_training) > 0))),
   constraint data_registry_nested check ((export_mode = 'nested') = (export_parent is not null)),
   constraint data_registry_not_personal check ((subject_kind = 'none') = (export_mode = 'not_personal')),
   constraint data_registry_manual check (

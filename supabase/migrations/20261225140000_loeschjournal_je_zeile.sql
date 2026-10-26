@@ -24,6 +24,7 @@ declare
   v_org     uuid := (to_jsonb(old) ->> 'organization_id')::uuid;
   v_id      uuid;
   v_lauf    uuid;
+  v_zeit    timestamptz;
 begin
   -- Abgeschaltet nur, wo die Löschung schon eingetragen ist oder keine ist (data-registry.test.ts).
   if coalesce(current_setting('app.journal_paused', true), '') = 'on' then
@@ -57,21 +58,24 @@ begin
             tg_table_name, v_id, v_eintrag.journal_class,
             date_trunc('day', now()), date_trunc('day', now()));
   else
-    -- Ein Lauf je Transaktion; bringt ein Lauf seine Kennung mit, übernimmt er diese Einträge.
     v_lauf := nullif(current_setting('app.deletion_run', true), '')::uuid;
+    v_zeit := now();
     if v_lauf is null then
-      v_lauf := extensions.gen_random_uuid();
-      perform pg_catalog.set_config('app.deletion_run', v_lauf::text, true);
+      -- Von Hand ohne eigenen Lauf: je Praxis und Tag gebündelt, ohne Uhrzeit (§20, ADR-010 Punkt
+      -- 20). Bringt ein Lauf derselben Transaktion seine Kennung mit, übernimmt er die Einträge.
       perform pg_catalog.set_config('app.deletion_run_generated', 'on', true);
+      v_lauf := md5('tageweise:' || v_org::text || ':' || current_date::text)::uuid;
+      v_zeit := date_trunc('day', now());
     end if;
+    -- Ein Verhältnis als Schlüssel braucht die genaue Zeit: Was danach neu entstand, bleibt.
     insert into public.deletion_journal
-      (organization_id, run_id, target_table, target_id, retention_class, due_at)
+      (organization_id, run_id, target_table, target_id, retention_class, due_at, deleted_at)
     values (v_org, v_lauf, tg_table_name, v_id,
             case when v_eintrag.journal_class_training is not null
                       and v_zeile ->> 'training_relationship_id' is not null
                  then v_eintrag.journal_class_training
                  else v_eintrag.journal_class end,
-            now());
+            v_zeit, case when v_eintrag.journal_key = 'id' then v_zeit else now() end);
   end if;
   perform pg_catalog.set_config('app.journal_by_trigger', '', true);
   return old;
@@ -100,12 +104,14 @@ begin
                       where r.table_name = new.target_table and r.journal_daily) then
     if v_lauf is null then
       perform pg_catalog.set_config('app.deletion_run', new.run_id::text, true);
-    elsif coalesce(current_setting('app.deletion_run_generated', true), '') = 'on' then
-      update public.deletion_journal j
-         set run_id = new.run_id
-       where j.run_id = v_lauf::uuid and j.transaction_id = new.transaction_id;
-      perform pg_catalog.set_config('app.deletion_run', new.run_id::text, true);
-      perform pg_catalog.set_config('app.deletion_run_generated', '', true);
+      if coalesce(current_setting('app.deletion_run_generated', true), '') = 'on' then
+        update public.deletion_journal j
+           set run_id = new.run_id
+         where j.run_id in (select md5('tageweise:' || o.id::text || ':' || current_date::text)::uuid
+                              from public.organizations o)
+           and j.transaction_id = new.transaction_id;
+        perform pg_catalog.set_config('app.deletion_run_generated', '', true);
+      end if;
     end if;
   end if;
 

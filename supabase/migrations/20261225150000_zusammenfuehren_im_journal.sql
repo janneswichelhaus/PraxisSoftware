@@ -338,6 +338,8 @@ declare
   v_gesamt     integer := 0;
   v_merge      public.deletion_journal%rowtype;
   v_person     uuid;
+  v_ziel       uuid;
+  v_weiter     uuid;
 begin
   -- Was hier fällt, steht schon im Journal; der Auslöser schreibt nichts dazu.
   perform pg_catalog.set_config('app.journal_paused', 'on', true);
@@ -378,6 +380,17 @@ begin
     where j.target_table = v_tabelle and j.merged_into is null;
 
     continue when v_ids is null;
+
+    -- Die Person einer zurückgekehrten Dublette fällt erst nach dem Zusammenführen (unten).
+    if v_tabelle = 'persons' then
+      select array_agg(i) into v_ids
+        from unnest(v_ids) i
+       where not exists (select 1 from public.patients p
+                           join public.deletion_journal m
+                             on m.target_id = p.id and m.merged_into is not null
+                          where p.person_id = i);
+      continue when v_ids is null;
+    end if;
 
     -- Das Konto liegt beim Anmeldedienst (ADR-023 Punkt 5): Was der Restore zurückbringt, verliert
     -- sofort jeden Zugang und bekommt einen Löschauftrag; erneut angewandt gilt der Eintrag erst
@@ -461,35 +474,70 @@ begin
   end loop;
 
   -- Eine Sicherung von vor dem Zusammenführen bringt die Dublette zurück: Sie geht erneut in der
-  -- bleibenden Akte auf, nach den Löschungen, die einen Sperrgrund genommen haben können. Fiel die
-  -- bleibende Akte inzwischen, fällt die Dublette mit ihr (ANN-150).
+  -- bleibenden Akte auf, nach den Löschungen, die einen Sperrgrund genommen haben können (ANN-150).
   for v_merge in
     select j.* from public.deletion_journal j
      where j.merged_into is not null
        and exists (select 1 from public.patients p where p.id = j.target_id)
      order by j.deleted_at, j.id
   loop
-    if exists (select 1 from public.patients p where p.id = v_merge.merged_into) then
-      begin
-        perform app.merge_patients_core(v_merge.organization_id, v_merge.target_id,
-                                        v_merge.merged_into, null, v_merge.deleted_at, true);
-      exception when sqlstate '22023' then
-        raise exception 'deletion journal entry %: %', v_merge.id, sqlerrm using errcode = '22023';
-      end;
-    else
-      select p.person_id into v_person from public.patients p where p.id = v_merge.target_id;
-      delete from public.patients where id = v_merge.target_id;
-      if not exists (select 1 from public.patients p where p.person_id = v_person)
-         and not exists (select 1 from public.staff_members s where s.person_id = v_person)
-         and not exists (select 1 from public.user_profiles u where u.person_id = v_person)
-         and not exists (select 1 from public.training_relationships t where t.person_id = v_person)
-      then
-        delete from public.persons where id = v_person;
+    -- Ging die bleibende Akte später selbst in einer anderen auf, folgt das Ziel dieser Kette.
+    v_ziel := v_merge.merged_into;
+    for v_schritt in 1 .. 50 loop
+      exit when exists (select 1 from public.patients p where p.id = v_ziel);
+      v_weiter := null;
+      select j.merged_into into v_weiter from public.deletion_journal j
+       where j.target_table = 'patients' and j.target_id = v_ziel and j.merged_into is not null
+       order by j.deleted_at desc, j.id desc
+       limit 1;
+      exit when v_weiter is null;
+      v_ziel := v_weiter;
+    end loop;
+
+    begin
+      if exists (select 1 from public.patients p where p.id = v_ziel) then
+        perform app.merge_patients_core(v_merge.organization_id, v_merge.target_id, v_ziel,
+                                        null, v_merge.deleted_at, true);
+      elsif exists (select 1 from public.deletion_journal j
+                     where j.target_table = 'patients' and j.target_id = v_ziel
+                       and j.merged_into is null) then
+        -- Die bleibende Akte wurde gelöscht; mit ihr fällt, was in ihr aufgegangen war.
+        select p.person_id into v_person from public.patients p where p.id = v_merge.target_id;
+        delete from public.patients where id = v_merge.target_id;
+        if not exists (select 1 from public.patients p where p.person_id = v_person)
+           and not exists (select 1 from public.staff_members s where s.person_id = v_person)
+           and not exists (select 1 from public.user_profiles u where u.person_id = v_person)
+           and not exists (select 1 from public.training_relationships t
+                            where t.person_id = v_person)
+        then
+          delete from public.persons where id = v_person;
+        end if;
+      else
+        -- Die Sicherung kennt die bleibende Akte nicht, gelöscht wurde sie nicht: Die Dublette ist
+        -- dann die einzige Fassung der Akte und bleibt, der Eintrag offen.
+        raise warning 'deletion journal entry % left open: merge target missing', v_merge.id;
+        continue;
       end if;
-    end if;
-    update public.deletion_journal set reapplied_at = now() where id = v_merge.id;
-    v_gesamt := v_gesamt + 1;
+      update public.deletion_journal set reapplied_at = now() where id = v_merge.id;
+      v_gesamt := v_gesamt + 1;
+    exception when sqlstate '22023' or sqlstate '23503' then
+      -- Eine Sperre oder ein Bezug lässt nur diesen Eintrag offen, nicht das ganze Nachziehen.
+      raise warning 'deletion journal entry % left open: %', v_merge.id, sqlerrm;
+    end;
   end loop;
+
+  -- Personen, die eine zurückgekehrte Dublette noch hielt, fallen jetzt.
+  with g as (
+    delete from public.persons pe
+     using public.deletion_journal j
+     where j.target_table = 'persons' and j.target_id = pe.id
+       and not exists (select 1 from public.patients p where p.person_id = pe.id)
+    returning pe.id
+  )
+  update public.deletion_journal j
+     set reapplied_at = now()
+    from g
+   where j.target_table = 'persons' and j.target_id = g.id;
 
   -- Anonyme Rückmeldungen schreibt der Lauf mit neuer Kennung neu; ein älteres Backup trägt
   -- andere Kennungen als das Journal. Was nach dem Restore über der Frist liegt, fällt hier.

@@ -327,6 +327,22 @@ describe('Aufgaben im Loeschlauf (ANN-142)', () => {
     expect(await stehen('tasks', gesichert)).toBe(0);
   });
 
+  it('bündelt Löschungen von Hand je Praxis und Tag, ohne Uhrzeit (ANN-752)', async () => {
+    const erste = await anlegen();
+    const zweite = await anlegen();
+    await asUserCommitted(users.office, LOESCHEN, [erste]);
+    await asUserCommitted(users.therapist, LOESCHEN, [zweite]);
+    // Kein sekundengenauer Nachweis über Beschäftigte in der Übersicht der Praxisleitung.
+    const { rows } = await asPostgres<{ laeufe: number; mitternacht: boolean }>(
+      `select count(distinct run_id)::int as laeufe,
+              bool_and(deleted_at = date_trunc('day', deleted_at) and due_at = deleted_at)
+                as mitternacht
+         from public.deletion_journal where target_id = any($1::uuid[])`,
+      [[erste, zweite]],
+    );
+    expect(rows[0]).toEqual({ laeufe: 1, mitternacht: true });
+  });
+
   it('loescht nach einer Wiederherstellung erneut', async () => {
     const alt = await erledigtVor(13);
     await asPostgres('select public.apply_retention()');

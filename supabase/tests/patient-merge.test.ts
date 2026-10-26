@@ -1479,6 +1479,116 @@ describe('Restore von vor dem Zusammenführen (ANN-150, ADR-008 Punkt 8)', () =>
     expect(await zaehlen()).toEqual(zeilen);
   });
 
+  async function aufgabeAn(patient: string): Promise<string> {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.tasks (organization_id, patient_id, title)
+       values ($1, $2, 'Rückruf') returning id`,
+      [ORG, patient],
+    );
+    return rows[0]!.id;
+  }
+
+  /** Ob der Eintrag des Zusammenführens noch auf das Nachziehen wartet. */
+  async function offen(quelle: string): Promise<boolean> {
+    const { rows } = await asPostgres<{ offen: boolean }>(
+      `select reapplied_at is null as offen from public.deletion_journal
+        where target_id = $1 and merged_into is not null`,
+      [quelle],
+    );
+    return rows[0]!.offen;
+  }
+
+  it('lässt die Dublette stehen, wenn die Sicherung die bleibende Akte nicht kennt', async () => {
+    const quelle = await legeAkteAn({ vorname: 'Nora', nachname: 'Neu' });
+    const aufgabe = await aufgabeAn(quelle.patient);
+    const sicherung = await sicherungVon([quelle]);
+    // Erst nach der Sicherung angelegt: Ein Restore kennt sie nicht.
+    const ziel = await legeAkteAn({ vorname: 'Nora', nachname: 'Neu' });
+    await zusammenfuehren(quelle.patient, ziel.patient);
+
+    await einspielen(sicherung, ziel.patient);
+    await asPostgres(
+      `set session_replication_role = replica;
+       delete from public.patient_contact_details where patient_id = '${ziel.patient}';
+       delete from public.patient_care_details where patient_id = '${ziel.patient}';
+       delete from public.patients where id = '${ziel.patient}';
+       delete from public.persons where id = '${ziel.person}';
+       set session_replication_role = origin;`,
+    );
+    await asPostgres(NACHZIEHEN);
+
+    expect(await stehen('patients', [{ id: quelle.patient }])).toBe(1);
+    expect(await patientVon('tasks', aufgabe)).toBe(quelle.patient);
+    expect(await offen(quelle.patient)).toBe(true);
+  });
+
+  it('folgt der Kette, wenn die bleibende Akte später selbst zusammengeführt wurde', async () => {
+    const quelle = await legeAkteAn({ vorname: 'Kai', nachname: 'Kette' });
+    const ende = await legeAkteAn({ vorname: 'Kai', nachname: 'Kette' });
+    const aufgabe = await aufgabeAn(quelle.patient);
+    const sicherung = await sicherungVon([quelle, ende]);
+    const mitte = await legeAkteAn({ vorname: 'Kai', nachname: 'Kette' });
+    await zusammenfuehren(quelle.patient, mitte.patient);
+    await zusammenfuehren(mitte.patient, ende.patient);
+
+    await einspielen(sicherung, ende.patient);
+    await asPostgres(NACHZIEHEN);
+
+    expect(await stehen('patients', [{ id: quelle.patient }, { id: mitte.patient }])).toBe(0);
+    expect(await patientVon('tasks', aufgabe)).toBe(ende.patient);
+    expect(await offen(quelle.patient)).toBe(false);
+  });
+
+  it('lässt einen gesperrten Eintrag offen und zieht alles andere nach', async () => {
+    const ziel = await legeAkteAn({
+      vorname: 'Lisa',
+      nachname: 'Lang',
+      besonderheit: 'a'.repeat(600),
+    });
+    const quelle = await legeAkteAn({
+      vorname: 'Lisa',
+      nachname: 'Lang',
+      besonderheit: 'b'.repeat(600),
+    });
+    const aufgabe = await aufgabeAn(ziel.patient);
+    const sicherung = await sicherungVon([ziel, quelle]);
+    // Erst gekürzt, dann zusammengeführt: Die Sicherung bringt die Sperre zurück.
+    await asPostgres(
+      `update public.patient_care_details set special_note = 'kurz' where patient_id = $1`,
+      [quelle.patient],
+    );
+    await zusammenfuehren(quelle.patient, ziel.patient);
+    await asUserCommitted(users.office, 'select public.delete_task($1::uuid)', [aufgabe]);
+
+    await einspielen(sicherung, ziel.patient);
+    await asPostgres(NACHZIEHEN);
+
+    expect(await stehen('tasks', [{ id: aufgabe }])).toBe(0);
+    expect(await stehen('patients', [{ id: quelle.patient }])).toBe(1);
+    expect(await offen(quelle.patient)).toBe(true);
+  });
+
+  it('hält die Person einer zurückgekehrten Dublette, bis sie zusammengeführt ist', async () => {
+    const ziel = await legeAkteAn({ vorname: 'Pia', nachname: 'Person' });
+    const quelle = await legeAkteAn({ vorname: 'Pia', nachname: 'Person' });
+    const sicherung = await sicherungVon([ziel, quelle]);
+    await zusammenfuehren(quelle.patient, ziel.patient);
+    // Wie eine spätere Löschung der Person, etwa mit ihrem Trainingsverhältnis: Sie steht im Journal.
+    await asPostgres(
+      `insert into public.deletion_journal
+         (organization_id, run_id, target_table, target_id, retention_class, due_at)
+       values ($1, extensions.gen_random_uuid(), 'persons', $2, 'personenstammdaten', now())`,
+      [ORG, quelle.person],
+    );
+
+    await einspielen(sicherung, ziel.patient);
+    await asPostgres(NACHZIEHEN);
+
+    expect(await stehen('patients', [{ id: quelle.patient }])).toBe(0);
+    expect(await stehen('persons', [{ id: quelle.person }])).toBe(0);
+    expect(await offen(quelle.patient)).toBe(false);
+  });
+
   it('lässt die Dublette fallen, wenn die bleibende Akte inzwischen gelöscht ist', async () => {
     const ziel = await legeAkteAn({ vorname: 'Lotte', nachname: 'Restore' });
     const quelle = await legeAkteAn({ vorname: 'Lotte', nachname: 'Restore' });

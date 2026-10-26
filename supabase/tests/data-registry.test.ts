@@ -66,16 +66,35 @@ describe('Register der Querschnittsfunktionen (ADR-008 Punkt 13)', () => {
   });
 
   describe('Gegenstand der Kopien', () => {
-    it('führt jede Tabelle mit Spalte zu Akte, Verhältnis oder Zugang als deren Daten', async () => {
+    // Die Seite entscheidet, in welcher Kopie eine Tabelle steht (Constraint data_registry_section_sides).
+    it('ordnet jede Spalte zu Akte, Verhältnis oder Zugang der Seite ihrer Kopie zu', async () => {
       expect(
         await liste(`
-          select distinct c.table_name as t from information_schema.columns c
+          select c.table_name || '.' || c.column_name || ' als ' || r.subject_kind as t
+            from information_schema.columns c
             join public.data_registry r on r.table_name = c.table_name
            where c.table_schema = 'public'
-             and c.column_name in ('patient_id', 'training_relationship_id', 'access_id',
-                                   'platform_access_id')
-             and r.subject_kind not in ('patient', 'training', 'patient_training',
-                                        'platform_account')
+             and ((c.column_name = 'patient_id'
+                   and r.subject_kind not in ('patient', 'patient_training'))
+               or (c.column_name in ('training_relationship_id', 'relationship_kind')
+                   and r.subject_kind not in ('training', 'patient_training'))
+               or (c.column_name in ('access_id', 'platform_access_id')
+                   and r.subject_kind not in ('patient', 'training', 'patient_training',
+                                              'platform_account')))
+           order by 1`),
+      ).toEqual([]);
+    });
+
+    it('ordnet jede Datenklasse der Akte oder des Trainings derselben Seite zu', async () => {
+      expect(
+        await liste(`
+          select a.table_name || ':' || a.class_key || ' als ' || r.subject_kind as t
+            from public.retention_assignments a
+            join public.data_registry r on r.table_name = a.table_name
+           where (a.class_key in ('patientenakte', 'personenstammdaten')
+                  and r.subject_kind not in ('patient', 'patient_training'))
+              or (a.class_key = 'trainingsverhaeltnis'
+                  and r.subject_kind not in ('training', 'patient_training'))
            order by 1`),
       ).toEqual([]);
     });
@@ -145,6 +164,20 @@ describe('Register der Querschnittsfunktionen (ADR-008 Punkt 13)', () => {
            order by 1`),
       ).toEqual([]);
     });
+
+    it('hängt Daten der Akte oder des Trainings nur an einen Elter derselben Seite', async () => {
+      expect(
+        await liste(`
+          select r.table_name || ' unter ' || e.table_name as t from public.data_registry r
+            join public.data_registry e on e.table_name = r.export_parent
+           where r.export_mode = 'nested'
+             and ((r.subject_kind in ('patient', 'patient_training')
+                   and e.subject_kind not in ('patient', 'patient_training'))
+               or (r.subject_kind in ('training', 'patient_training')
+                   and e.subject_kind not in ('training', 'patient_training')))
+           order by 1`),
+      ).toEqual([]);
+    });
   });
 
   describe('Löschjournal', () => {
@@ -204,7 +237,9 @@ describe('Register der Querschnittsfunktionen (ADR-008 Punkt 13)', () => {
           select n.nspname || '.' || p.proname as t
             from pg_catalog.pg_proc p
             join pg_catalog.pg_namespace n on n.oid = p.pronamespace
-           where n.nspname in ('public', 'app') and p.prosrc like '%app.journal_paused%'
+           where n.nspname in ('public', 'app')
+             and (p.prosrc like '%app.journal_paused%'
+                  or exists (select 1 from unnest(p.proconfig) c where c like 'app.journal_paused=%'))
              and p.oid <> 'app.journal_deletion()'::regprocedure
            order by 1`),
       ).toEqual([
