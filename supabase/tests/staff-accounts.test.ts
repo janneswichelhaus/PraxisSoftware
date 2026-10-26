@@ -6,7 +6,6 @@ import {
   asUser,
   asUserCommitted,
   resetDatabaseOhneTermine,
-  jwtClaims,
 } from './helpers/db';
 import { erwarteAbgewiesenenSchreibversuch } from './helpers/abgewiesen';
 
@@ -891,41 +890,25 @@ describe('log_account_security_event', () => {
 });
 
 // -----------------------------------------------------------------------------
-// Zweiter Faktor: die lesbare Seite (STAFF-004b)
+// Zweiter Faktor
 // -----------------------------------------------------------------------------
-describe('app.has_strong_authentication', () => {
+describe('zweiter Faktor', () => {
   beforeEach(async () => {
     await resetDatabaseOhneTermine();
   }, 120_000);
 
-  it('liest den aal-Claim des Anmeldedienstes', async () => {
-    const { rows } = await asPostgres<{ stark: boolean }>(
-      `select set_config('request.jwt.claims', $1, false) is not null
-              and app.has_strong_authentication() as stark`,
-      [jwtClaims(users.ownerTherapist, { aal: 'aal2' })],
-    );
-    expect(rows[0]?.stark).toBe(true);
-  });
-
-  it('wertet ein Token ohne aal als einfache Anmeldung', async () => {
-    const { rows } = await asUser<{ stark: boolean }>(
-      users.ownerTherapist,
-      'select app.has_strong_authentication() as stark',
-    );
-    expect(rows[0]?.stark).toBe(false);
-  });
-
-  it('setzt heute nichts durch - keine Policy und keine RPC verlangt aal2', async () => {
+  it('setzt heute nichts durch - keine Policy und keine Funktion liest aal', async () => {
     // Das ist Absicht (ANN-028): Ein Zwang vor der ersten Einrichtung wuerde
     // die einzige Praxisinhaberin aussperren. Der Test haelt den Stand fest,
     // damit eine spaetere Durchsetzung eine bewusste Aenderung ist.
     const { rows } = await asPostgres<{ anzahl: string }>(
-      `select count(*) as anzahl from pg_proc p
-         join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname in ('app', 'public')
-          and p.prokind = 'f'
-          and p.proname <> 'has_strong_authentication'
-          and pg_get_functiondef(p.oid) like '%has_strong_authentication%'`,
+      `select (select count(*) from pg_proc p
+                 join pg_namespace n on n.oid = p.pronamespace
+                where n.nspname in ('app', 'public')
+                  and p.prokind = 'f'
+                  and p.prosrc like '%''aal''%')
+            + (select count(*) from pg_policies
+                where coalesce(qual, '') || coalesce(with_check, '') like '%''aal''%') as anzahl`,
     );
     expect(rows[0]?.anzahl).toBe('0');
   });

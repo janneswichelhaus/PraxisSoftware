@@ -1601,7 +1601,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-25",
           "nachweis": "Branch ccr-51128c80-r6lmjn, node scripts/basis-migration.mjs pruefen (Schema, Rechte mit Supabase-Vorgaben und Daten identisch), scripts/basis-migration.test.mjs, supabase/tests/basis-uebernehmen.test.ts, pnpm test:db",
-          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; 341 Migrationen zu einer Basis; Test-Umgebung einmal per Handstart basis_uebernehmen; BEF-229"
+          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; 341 Migrationen zu einer Basis; Test-Umgebung per Handstart basis_uebernehmen umgestellt (#209); Nachzug: neun Funktionen ohne Aufrufer entfernt, Rechte der API-Rollen und Vorgaben im Shim (Migrationen 20261225010000, 20261225020000, supabase/tests/rechte-api-rollen.test.ts)"
         },
         {
           "id": "aufraeumen-3",

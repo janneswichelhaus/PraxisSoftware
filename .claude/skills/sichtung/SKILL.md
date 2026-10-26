@@ -20,8 +20,8 @@ Handy. Regeln: `docs/sichtung/README.md`. **Nichts bauen.**
    Schritt abfragen — Jannes antwortet gesammelt: „ok“ oder „Befund: <Bild>, <was>“.
 3. **Am Gerät** nur, was ein Bild nicht zeigt: Kamera, Passkey, Flugmodus, Sonne, Halterung am Rad —
    höchstens fünf Punkte je PR, auf der Test-Umgebung.
-4. **Befunde** als `BEF-NNN` nach `docs/development/BEFUNDE.md` (nächste freie Nummer, auch gegen
-   `archiv/BEFUNDE-ERLEDIGT.md`; Bereich, Rolle, Bild, erwartet, gesehen) — **keine echten Daten,
+4. **Befunde** ohne Nummer nach `docs/development/BEFUNDE.md` (Bereich, Rolle, Bild, erwartet,
+   gesehen) — **keine echten Daten,
    keine Namen außer Seed**. Sie werden die erste Story der nächsten Überholung des Bereichs.
 5. **Abschluss.** In `docs/development/fortschritt.json` die gesichteten Posten auf `gesichtet` mit
    `gesichtet_am`, dann `pnpm fortschritt --schreiben`; STATUS in drei Zeilen;

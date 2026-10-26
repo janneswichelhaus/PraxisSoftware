@@ -45,8 +45,10 @@ Migrationen von Supabase erwarten: die Rollen `anon`/`authenticated`, das Schema
 `auth` und `auth.uid()`. Damit sind die Policies ohne den vollständigen
 Supabase-Stack prüfbar — dieselbe Datei wird niemals gegen eine echte
 Supabase-Instanz eingespielt. Was Supabase in `public` von selbst an `anon`,
-`authenticated` und `service_role` vergibt, kennt der Shim nicht; ein Entzug
-dieser Rechte wirkt deshalb nur in Supabase.
+`authenticated` und `service_role` vergibt, vergibt der Shim ebenso; ein
+vergessener Entzug fällt so in `pnpm test:db` auf (`rechte-api-rollen.test.ts`).
+Eine neue Funktion führt ohne ausdrückliches `grant` keine dieser Rollen aus
+(`20261225010000_rechte_api_rollen.sql`).
 
 Der Stand ist jederzeit aus **Migrationen + Seed** reproduzierbar. Es gibt
 keinen manuell gepflegten Zwischenzustand.
@@ -54,7 +56,7 @@ keinen manuell gepflegten Zwischenzustand.
 **Basis.** `supabase/migrations/` beginnt mit `20261225000000_basis.sql`, dem
 Abzug der 341 Migrationen davor (ROADMAP 7.16), erzeugt von
 `node scripts/basis-migration.mjs schreiben` und nie von Hand geändert; neue
-Migrationen kommen dahinter. `node scripts/basis-migration.mjs pruefen <ref>`
+Migrationen kommen dahinter. `pnpm db:vergleich <ref>`
 baut den Stand `<ref>` und den Arbeitsbaum auf, je ohne und mit den Vorgaben von
 Supabase, und vergleicht Schema, Rechte und Daten. Die alten Dateien, auf die
 Kommentare und Doku noch verweisen, zeigt `git show aabe5d0:<pfad>`. Eine

@@ -31,10 +31,6 @@ const SPEICHERN = `select public.save_invoice_recipient(
   $1::uuid, $2::uuid, $3::text, $4::text, $5::text, $6::text, $7::text, $8::text,
   $9::text, $10::boolean
 ) as id`;
-const ENTFERNEN = 'select public.delete_invoice_recipient($1::uuid)';
-
-/** Rechnungsempfaenger aus supabase/seed.sql: Betreuung von Petra. */
-const BETREUUNG = 'dddddddd-dddd-4ddd-8ddd-000000000001';
 
 function empfaenger(aenderungen: Record<string, unknown> = {}): unknown[] {
   const felder: Record<string, unknown> = {
@@ -193,32 +189,16 @@ describe('Rechnungsempfaenger', () => {
     });
   });
 
-  describe('Entfernen', () => {
-    it('entfernt eine Empfaengerin ohne Rechnung', async () => {
-      await asUserCommitted(users.office, ENTFERNEN, [BETREUUNG]);
-
-      const { rows } = await asUser(users.office, LISTE, [patients.petra]);
-      expect(rows).toHaveLength(0);
-    });
-
-    it('weist die Teamleitung ab', async () => {
-      await expect(asUser(users.teamLead, ENTFERNEN, [BETREUUNG])).rejects.toThrow(
-        /not allowed to manage invoice recipients/,
-      );
-    });
-  });
-
   // ---------------------------------------------------------------------------
   // Mandantengrenze (ADR-003, R3-025)
   // ---------------------------------------------------------------------------
   describe('Fremde Organisation', () => {
-    it('sieht keine Empfaengerin der Testpraxis und entfernt keine', async () => {
+    it('sieht keine Empfaengerin der Testpraxis', async () => {
       const fremd = await fremdeOrganisation();
 
       // Die Liste antwortet leer statt zu werfen - eine Fehlermeldung waere
       // selbst eine Auskunft darueber, dass es die Patientin gibt.
       expect((await asUser(fremd.owner, LISTE, [patients.petra])).rows).toEqual([]);
-      await expect(asUser(fremd.owner, ENTFERNEN, [BETREUUNG])).rejects.toThrow();
 
       // Die Tabelle traegt ueberhaupt kein Leserecht - auch nicht fuer die
       // eigene Praxis; gelesen wird nur ueber die Funktion (ADR-004).
