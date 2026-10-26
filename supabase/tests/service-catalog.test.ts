@@ -237,14 +237,6 @@ describe('Leistungskatalog', () => {
       await expect(
         asUser(users.ownerTherapist, VERWERFEN, [KATALOG.veroeffentlicht]),
       ).rejects.toThrow(/immutable/);
-
-      await expect(
-        asUser(users.ownerTherapist, 'select public.update_service_catalog_version($1, $2, $3)', [
-          KATALOG.veroeffentlicht,
-          'Neuer Name',
-          '2026-01-01',
-        ]),
-      ).rejects.toThrow(/immutable/);
     });
 
     it('weist auch den direkten Zugriff ab - die Sperre sitzt am Trigger', async () => {

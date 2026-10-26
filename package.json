@@ -23,6 +23,7 @@
     "db:start": "./scripts/test-db.sh start",
     "db:stop": "./scripts/test-db.sh stop",
     "db:reset": "./scripts/test-db.sh reset",
+    "db:vergleich": "node scripts/basis-migration.mjs pruefen",
     "docs:check": "node scripts/docs-check.mjs",
     "migrationen:check": "node scripts/migrationen-check.mjs",
     "kommentare:check": "node scripts/kommentare-check.mjs",

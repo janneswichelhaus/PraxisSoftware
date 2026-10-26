@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { SEED, asPostgres, asUserCommitted } from './db';
 
 /**
@@ -60,4 +61,43 @@ export async function positionen(plan: string): Promise<string[]> {
     [plan],
   );
   return rows.map((r) => r.id);
+}
+
+export interface Einheit {
+  session_id: string;
+  status: 'ok' | 'finished' | 'empty' | 'closed';
+  note_dropped: boolean;
+}
+
+/** Abgehakte Sätze `[Position, Satz]`; `ende` beendet mit Text und Angaben. */
+export interface Erfassung {
+  saetze?: [string, number][];
+  ende?: { note?: string; values?: object };
+  einheit?: string;
+}
+
+/** Erfasst eine Einheit heute wie die Plattform, über die Übertragung; ohne Satz entsteht keine. */
+export async function einheitErfassen(
+  konto: string,
+  zugang: string,
+  plan: string,
+  { saetze = [], ende, einheit = randomUUID() }: Erfassung,
+): Promise<Einheit> {
+  const ereignisse: object[] = saetze.map(([item, satz]) => ({
+    id: randomUUID(),
+    kind: 'set',
+    at: new Date().toISOString(),
+    item_id: item,
+    set_number: satz,
+    done: true,
+  }));
+  if (ende)
+    ereignisse.push({ id: randomUUID(), kind: 'finish', at: new Date().toISOString(), ...ende });
+  const { rows } = await asUserCommitted<{ ergebnis: Einheit }>(
+    konto,
+    `select public.sync_platform_exercise_session($1::uuid, $2::uuid, $3::uuid, $4::date, now(),
+       $5::jsonb) as ergebnis`,
+    [zugang, plan, einheit, await praxistag(0), JSON.stringify(ereignisse)],
+  );
+  return rows[0]!.ergebnis;
 }

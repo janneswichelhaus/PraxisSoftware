@@ -104,8 +104,8 @@ Gegen `main`, kein Merge. Oben, in dieser Reihenfolge:
 
 Darunter eingeklappt (`<details>`): Spec, Prüfungen mit Ergebnis (nur, was lief), ADR-013-
 Checkliste und Zweitreview, Annahmen je ein Satz. Dazu die übrigen Doku-Pflichten:
-`fortschritt.json` + `pnpm fortschritt --schreiben`, STATUS in drei Zeilen, erledigte Befunde
-nach `docs/development/archiv/BEFUNDE-ERLEDIGT.md`.
+`fortschritt.json` + `pnpm fortschritt --schreiben`, STATUS in drei Zeilen, behobene Befunde
+aus `docs/development/BEFUNDE.md` löschen.
 
 ## 9. Sichtung durch Jannes (~10 Minuten)
 

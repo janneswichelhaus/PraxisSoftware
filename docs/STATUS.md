@@ -5,10 +5,11 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-**Aufräumen** (Auftrag Jannes 25.10., ROADMAP 7.16): Schritte 1 und 2 gemergt (#308, #309, Nachtrag
-#310; Test-Umgebung läuft auf der Basis). Schritt 3 liegt als PR vor: Termine hat eine Schnittstelle
-(`index.ts`, ESLint-Regel gegen tiefe Importe) und mit keinem Modul mehr eine gegenseitige
-Abhängigkeit (17 statt 32 Paare); der große Ring aus 35 Modulen bleibt für einen Schritt 3b.
+**Aufräumen** (Auftrag Jannes 25.10., ROADMAP 7.16): Schritte 1 und 2 gemergt (#308, #309, #310),
+Nachzug #311: neun Funktionen ohne Aufrufer entfernt, `anon` ohne Rechte, keine BEF-Nummern mehr,
+Schritt 5 Doku. Schritt 3 liegt als PR vor: Termine hat eine Schnittstelle (`index.ts`, ESLint-Regel
+gegen tiefe Importe) und keine gegenseitige Abhängigkeit mehr (17 statt 32 Paare); der Ring aus 35
+Modulen bleibt für einen Schritt 3b.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
@@ -24,8 +25,6 @@ Pfad A).
 
 ## Bei Jannes
 
-- BEF-230: Supabase-Vorgaben im Test-Stack nachbilden und `anon` die übrigen Rechte entziehen
-  (Empfehlung ja); gebaut wird erst nach Jannes' Ja.
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis

@@ -83,7 +83,10 @@ async function schemaSignatur(dateien: string[]): Promise<string> {
  * hinter `client`.
  */
 async function baueSchema(client: Client, dateien: string[], mitSeed = true): Promise<void> {
+  // Die globale Vorgabe der Migrationen hängt an der Datenbank, nicht am Schema: Ohne Klon
+  // entstünden Shim und Basis sonst ohne EXECUTE für PUBLIC.
   await client.query(`
+    alter default privileges grant execute on functions to public;
     drop schema if exists public cascade;
     drop schema if exists app cascade;
     drop schema if exists auth cascade;
