@@ -1,27 +1,7 @@
 /**
- * Die Prüfung am Inhalt (ABN-025, ADR-017 Fassung 3, Punkt 49).
- *
- * Drei Fragen an die abgelegten Bytes, ohne Laufzeit und ohne Netz — deshalb
- * vollständig in Vitest prüfbar:
- *
- *   1. **Typ an der Signatur.** Passen die ersten Bytes zum angekündigten
- *      Format, und ist das Format in der Allowlist (Punkt 18)? Der MIME-Typ
- *      aus Browser und Speicher ist keine zweite Quelle (ANN-053).
- *   2. **SHA-256** über genau die abgelegten Bytes, gegen die angekündigte
- *      Prüfsumme. Erst damit ist sie ein Nachweis des Servers (Punkt 9).
- *   3. **Metadatenfreiheit** bei JPEG und PNG nach **derselben
- *      Erlaubnisliste**, nach der das Gerät bereinigt
- *      (`src/features/files/metadaten.ts`, ANN-125): Bilddaten, die
- *      Dekodierangaben (Adobe-Segment, Farbchunks) und höchstens die
- *      Ausrichtung in genau der Form, die das Gerät schreibt. Alles andere —
- *      EXIF mit mehr als der Ausrichtung, XMP, ICC, Kommentare, Textchunks,
- *      Bytes hinter dem Bildende — ist ein Befund. Bei PDF entfällt die
- *      Frage (`null`).
- *
- * Die Prüfung **schreibt keine Bytes um** (Punkt 52): Sie urteilt, sie
- * repariert nicht. Ein `vitest`-Test hält sie mit der Bereinigung des Geräts
- * deckungsgleich: Was das Gerät bereinigt hat, besteht; was es durchließe,
- * fiele hier auf.
+ * Die Prüfung am Inhalt (ADR-017 Punkte 9, 18, 49 und 52; ANN-053, ANN-125): Signatur, SHA-256
+ * und Metadaten nach derselben Erlaubnisliste wie `src/lib/dateien/metadaten.ts` auf dem Gerät.
+ * Sie urteilt und schreibt keine Bytes um; ein Test hält beide deckungsgleich.
  */
 
 import type { Ankuendigung, Pruefergebnis } from './typen.ts';

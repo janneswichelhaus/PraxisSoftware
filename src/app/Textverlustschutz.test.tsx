@@ -6,10 +6,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
 import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
 import { useAbmeldeanfrage } from '@/app/abmeldeschutz';
-import {
-  SperrsicherungKontext,
-  type Sicherung,
-} from '@/features/auth/sitzungssperre/sperrsicherung';
+import { SperrsicherungKontext, type Sicherung } from '@/lib/sperrsicherung';
 import {
   DOKUMENTATIONSTEXTE,
   EINGABETEXTE,

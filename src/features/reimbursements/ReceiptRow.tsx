@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Dateiansicht } from '@/features/files/Dateiansicht';
+import { Dateiansicht } from '@/components/ui/Dateiansicht';
 import { formatEuro } from '@/lib/geld';
 import { loadReceipt, type Receipt } from './api';
 

@@ -3,7 +3,7 @@ import { useBlocker } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { useAbmeldewache } from '@/app/abmeldeschutz';
-import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
+import { useSperrsicherung } from '@/lib/sperrsicherung';
 
 /**
  * Ein aufgenommenes Foto geht nicht unbemerkt verloren (DOK-006, ADR-017

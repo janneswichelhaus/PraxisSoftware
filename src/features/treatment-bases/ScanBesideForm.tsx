@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { ladeDateiHerunter, ladeDateiZumAnzeigen } from '@/features/files/api';
-import { istAnzeigbar, istPdf } from '@/features/files/dokumentarten';
-import { PdfRahmen } from '@/features/files/Dateiansicht';
+import { istAnzeigbar, istPdf } from '@/lib/dateien/pruefung';
+import { PdfRahmen } from '@/components/ui/Dateiansicht';
 
 /**
  * Das Foto der Verordnung neben dem Formular (PRX-011): Das Büro tippt ab,

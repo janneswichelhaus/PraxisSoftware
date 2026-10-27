@@ -19,7 +19,7 @@ const STAMM = process.cwd();
 
 const DATEIEN = [
   'src/features/documentation/diktat.ts',
-  'src/features/documentation/aufnahme.ts',
+  'src/lib/aufnahme.ts',
   'src/features/documentation/Spracheingabe.tsx',
   ...readdirSync(join(STAMM, 'src/lib/ki'))
     .filter((name) => /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name))
@@ -57,8 +57,8 @@ const ERLAUBT = new Set([
   // Nur für `functions.invoke` an den Gateway (`gateway.ts`).
   '@/lib/supabase',
   '@/lib/ki/gateway',
-  '@/features/auth/sitzungssperre/sperrsicherung',
-  './aufnahme',
+  '@/lib/sperrsicherung',
+  '@/lib/aufnahme',
   './diktat',
 ]);
 
@@ -97,7 +97,7 @@ describe('ANN-520: Diktat und Aufnahme legen nichts ab', () => {
   it('importiert nur aus der festen Liste', () => {
     // Die Prüfung sieht die Importe wirklich.
     expect(importe(lies('src/features/documentation/diktat.ts'))).toEqual(
-      expect.arrayContaining(['react', '@/lib/ki/gateway', './aufnahme']),
+      expect.arrayContaining(['react', '@/lib/ki/gateway', '@/lib/aufnahme']),
     );
     const fremd = DATEIEN.flatMap((pfad) =>
       importe(lies(pfad))

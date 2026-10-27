@@ -4,7 +4,7 @@ import { istBenachrichtigungsart, type Benachrichtigungsart } from '@/lib/begrif
 import type { PushRegistrierung } from '@/lib/push';
 import { getSupabase } from '@/lib/supabase';
 import { meldeSelbstAb } from '@/features/auth/eigeneAbmeldung';
-import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
+import { alleBytes, bereinigeBild } from '@/lib/dateien/metadaten';
 import {
   lebensmittelfehler,
   lebensmittelSchema,

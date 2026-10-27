@@ -2,9 +2,9 @@ import { z } from 'zod';
 import { abgewiesen } from '@/lib/abgewiesen';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
-import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from './dokumentarten';
-import { nachSrgb } from './farbe';
-import { alleBytes, bereinigeBild } from './metadaten';
+import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from '@/lib/dateien/pruefung';
+import { nachSrgb } from '@/lib/dateien/farbe';
+import { alleBytes, bereinigeBild } from '@/lib/dateien/metadaten';
 
 /**
  * Datenzugriff auf die Dateiablage der Patientenakte (DAT-001, ADR-017).

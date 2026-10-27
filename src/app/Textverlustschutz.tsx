@@ -5,7 +5,7 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { useAbmeldewache } from '@/app/abmeldeschutz';
-import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
+import { useSperrsicherung } from '@/lib/sperrsicherung';
 import { useIstVerbunden } from '@/app/verbindung';
 
 /**

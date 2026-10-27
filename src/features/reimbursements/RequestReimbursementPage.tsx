@@ -20,9 +20,9 @@ import {
   type Abfolge,
 } from '@/components/ui/abfolge';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import { DATEI_ACCEPT } from '@/features/files/dokumentarten';
-import { Kameradialog } from '@/features/files/Kameradialog';
-import { useKamera } from '@/features/files/kamera';
+import { DATEI_ACCEPT } from '@/lib/dateien/pruefung';
+import { Kameradialog } from '@/components/ui/Kameradialog';
+import { useKamera } from '@/lib/dateien/kamera';
 import type { CurrentUser } from '@/features/session/types';
 import { formatEuro, parseEuroZuCent } from '@/lib/geld';
 import { leseRueckweg } from '@/lib/rueckweg';

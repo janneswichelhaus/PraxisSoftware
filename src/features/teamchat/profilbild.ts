@@ -1,4 +1,4 @@
-import { alleBytes, entferneMetadaten } from '@/features/files/metadaten';
+import { alleBytes, entferneMetadaten } from '@/lib/dateien/metadaten';
 
 /**
  * Ein Profilbild entsteht auf dem Gerät (TEAM-007, ADR-017 Abschnitt O): aus

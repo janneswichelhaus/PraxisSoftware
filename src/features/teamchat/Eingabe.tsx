@@ -20,11 +20,11 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { TextArea } from '@/components/ui/TextArea';
 import { Textlink } from '@/components/ui/Textlink';
-import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
-import { aufnahmedauer, useAufnahme } from '@/features/documentation/aufnahme';
-import { Kameradialog } from '@/features/files/Kameradialog';
-import { DATEI_ACCEPT } from '@/features/files/dokumentarten';
-import { useKamera } from '@/features/files/kamera';
+import { useSperrsicherung } from '@/lib/sperrsicherung';
+import { aufnahmedauer, useAufnahme } from '@/lib/aufnahme';
+import { Kameradialog } from '@/components/ui/Kameradialog';
+import { DATEI_ACCEPT } from '@/lib/dateien/pruefung';
+import { useKamera } from '@/lib/dateien/kamera';
 import { EntwurfsAnhaenge } from './Anhaenge';
 import { anhaengeBinden, anhaengen, aufnahmeName, useEntwurfsanhaenge } from './entwurfsanhaenge';
 import {

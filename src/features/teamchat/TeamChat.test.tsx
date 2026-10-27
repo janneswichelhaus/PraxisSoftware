@@ -7,11 +7,8 @@ import { Outlet, RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { testUser } from '@/test-utils';
 import { abmeldenAufraeumen } from '@/lib/abmelden';
-import {
-  SperrsicherungKontext,
-  type Sicherung,
-} from '@/features/auth/sitzungssperre/sperrsicherung';
-import { Testrecorder, installiereAufnahme } from '@/features/documentation/testaufnahme';
+import { SperrsicherungKontext, type Sicherung } from '@/lib/sperrsicherung';
+import { Testrecorder, installiereAufnahme } from '@/lib/testaufnahme';
 import type { CurrentUser, RoleKey } from '@/features/session/types';
 import type * as TeamchatApi from './api';
 import type { Kanal, Nachricht, Zaehler } from './api';

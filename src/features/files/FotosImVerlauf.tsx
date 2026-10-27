@@ -17,10 +17,10 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { loescheDatei } from './api';
-import { NICHT_SERVERSEITIG_GEPRUEFT } from './dokumentarten';
+import { NICHT_SERVERSEITIG_GEPRUEFT } from '@/lib/dateien/pruefung';
 import { Fotoverlustschutz } from './Fotoverlustschutz';
-import { Kameradialog } from './Kameradialog';
-import { fotoVomHeutigenTag, useKamera } from './kamera';
+import { Kameradialog } from '@/components/ui/Kameradialog';
+import { fotoVomHeutigenTag, useKamera } from '@/lib/dateien/kamera';
 import {
   fetchPatientenfotos,
   fotoartLabels,

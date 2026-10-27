@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Dateiansicht } from '@/features/files/Dateiansicht';
+import { Dateiansicht } from '@/components/ui/Dateiansicht';
 import { FLOTTE_SCHLUESSEL, deleteFleetPhoto, loadFleetPhoto } from './api';
 import { SEITEN, type SeitenKey } from './checkupablauf';
 

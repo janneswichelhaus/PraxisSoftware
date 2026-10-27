@@ -15,7 +15,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { telHref } from '@/lib/telefon';
 import { MAX_ZEICHEN } from '@/features/documentation/api';
-import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
+import { useSperrsicherung } from '@/lib/sperrsicherung';
 import {
   bearbeitungBeginnen,
   entwurfAmTermin,

@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/Button';
 import { textlinkKlassen } from '@/components/ui/buttonStile';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Fotoverlustschutz } from './Fotoverlustschutz';
-import { Kameradialog } from './Kameradialog';
+import { Kameradialog } from '@/components/ui/Kameradialog';
 import { useDateiUpload } from './dateien';
-import { DATEI_ACCEPT, dateiAblehnungsgrund, type Dokumentart } from './dokumentarten';
-import { fotoVomHeutigenTag, useKamera } from './kamera';
+import type { Dokumentart } from './dokumentarten';
+import { DATEI_ACCEPT, dateiAblehnungsgrund } from '@/lib/dateien/pruefung';
+import { fotoVomHeutigenTag, useKamera } from '@/lib/dateien/kamera';
 
 /**
  * Ein Papierblatt als Foto in die Akte (PRX-011, Akte entschlacken 2026-10-03).

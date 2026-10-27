@@ -27,7 +27,7 @@ Stand 2026-09-26 · neue Datei mit dem ersten Oberflächen-Loop der Etappe.
 ## Nicht in dieser Sichtung
 
 - **Rechenkern:** jede Formelart und jeder Referenzfall ist in `rechnen.test.ts` und `referenzfaelle.test.ts` nachgerechnet; auf dem Bildschirm entsteht noch kein Wert.
-- **Einwilligung, Fristen und Legal Hold der Fotos** (Widerruf nach der Aufnahme, zwölf Monate, drei Monate nach dem festgehaltenen Abschluss, Sperre unter Hold, Löschung bei dessen Ende) und das **Entfernen der Metadaten** (Ort, Gerät, Vorschaubild): `supabase/tests/patient-photos.test.ts`, `src/features/files/metadaten.test.ts` und `tests/e2e/fotos.spec.ts` mit der künstlichen Kamera von Chromium.
+- **Einwilligung, Fristen und Legal Hold der Fotos** (Widerruf nach der Aufnahme, zwölf Monate, drei Monate nach dem festgehaltenen Abschluss, Sperre unter Hold, Löschung bei dessen Ende) und das **Entfernen der Metadaten** (Ort, Gerät, Vorschaubild): `supabase/tests/patient-photos.test.ts`, `src/lib/dateien/metadaten.test.ts` und `tests/e2e/fotos.spec.ts` mit der künstlichen Kamera von Chromium.
 - **Rollen, Mandantengrenze, Unveränderlichkeit und Audit** der Bögen, Ereignisse und Therapieberichte: `supabase/tests/questionnaire-responses.test.ts`, `course-events.test.ts` und `therapy-reports.test.ts`; der eingefrorene Snapshot nach einer späteren Änderung der Akte ebenda.
 
 ## Ergebnis

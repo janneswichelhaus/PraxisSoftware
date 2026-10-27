@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { Testrecorder, installiereAufnahme } from '@/features/documentation/testaufnahme';
+import { Testrecorder, installiereAufnahme } from '@/lib/testaufnahme';
 import {
   SPRACHNACHRICHT_HOECHSTDAUER_S,
   dauerSekunden,

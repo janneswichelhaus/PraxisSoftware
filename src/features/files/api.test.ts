@@ -28,8 +28,8 @@ const {
   ladeDateiZumAnzeigen,
   merkeVerwaisteZurLoeschungVor,
 } = await import('./api');
-const { enthaelt, jpegVomHandy } = await import('./testbilder');
-const { alleBytes } = await import('./metadaten');
+const { enthaelt, jpegVomHandy } = await import('@/lib/dateien/testbilder');
+const { alleBytes } = await import('@/lib/dateien/metadaten');
 
 const PATIENT = '66666666-6666-4666-8666-000000000002';
 

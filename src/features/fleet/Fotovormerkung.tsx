@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Medienbild } from '@/components/ui/Medienbild';
-import { Kameradialog } from '@/features/files/Kameradialog';
+import { Kameradialog } from '@/components/ui/Kameradialog';
 import { useObjektadressen } from './objektadressen';
 
 /** Höchstens vier Fotos je Stelle und je Check-Up (`app.fleet_photo_limit()`). */

@@ -16,12 +16,9 @@ import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import type * as KurzblickApi from '@/features/appointments/kurzblick-api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { KI_FEHLERTEXTE } from '@/lib/ki/gateway';
-import {
-  SperrsicherungKontext,
-  type Sicherung,
-} from '@/features/auth/sitzungssperre/sperrsicherung';
+import { SperrsicherungKontext, type Sicherung } from '@/lib/sperrsicherung';
 import { AUFNAHMEFEHLER, BEI_SPERRE_ANGEHALTEN, DIKTAT_OFFEN } from './diktat';
-import { installiereAufnahme } from './testaufnahme';
+import { installiereAufnahme } from '@/lib/testaufnahme';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const NOTE_ID = '88888888-8888-4888-8888-000000000001';

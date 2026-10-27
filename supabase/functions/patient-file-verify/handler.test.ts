@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { entferneMetadaten } from '../../../src/features/files/metadaten';
-import { CHROMIUM_PNG, basis, jpegVomHandy } from '../../../src/features/files/testbilder';
+import { entferneMetadaten } from '../../../src/lib/dateien/metadaten';
+import { CHROMIUM_PNG, basis, jpegVomHandy } from '../../../src/lib/dateien/testbilder';
 import { erstelleHandler } from './handler';
 import type { Instanz } from './instanz';
 import { sha256 } from './pruefung';
 import { bereinigeTon, bereinigeVideo } from '../../../src/features/platform/videometadaten';
-import { alleBytes } from '../../../src/features/files/metadaten';
+import { alleBytes } from '../../../src/lib/dateien/metadaten';
 import { webmAusChromium } from '../../../src/features/platform/testvideos';
 import type { Ankuendigung, Protokolleintrag } from './typen';
 

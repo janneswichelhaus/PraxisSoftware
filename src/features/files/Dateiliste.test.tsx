@@ -296,11 +296,9 @@ describe('Dateiliste', () => {
     );
 
     await screen.findByText('Nichts da.');
-    // Erste von drei Durchsetzungen (ADR-017 Punkt 18). Sie ist die
-    // bequemste und die schwächste: `accept` filtert den Auswahldialog,
-    // nicht das Ablegen per Drag-and-drop. Die zweite steht in
-    // `dateiAblehnungsgrund` (siehe dokumentarten.test.ts), die dritte am
-    // Server.
+    // Erste von drei Durchsetzungen (ADR-017 Punkt 18): `accept` filtert nur den Auswahldialog,
+    // nicht das Ablegen per Drag-and-drop. Die zweite prüft `dateiAblehnungsgrund`
+    // (`lib/dateien/pruefung.test.ts`), die dritte der Server.
     expect(screen.getByLabelText('Datei')).toHaveAttribute(
       'accept',
       '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png',

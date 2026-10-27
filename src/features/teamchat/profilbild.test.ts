@@ -12,10 +12,8 @@ import {
 } from './profilbild';
 
 /**
- * Das Profilbild auf dem Gerät (TEAM-007, ADR-017 Abschnitt O): Zuschnitt,
- * Größe und die Form, in der es zum Server geht. Dass das Bild keine
- * Metadaten trägt, prüft `entferneMetadaten` (`files/metadaten.test.ts`) und
- * am Inhalt der Server (`supabase/tests/teamchat-profil.test.ts`).
+ * Das Profilbild auf dem Gerät (ADR-017 Abschnitt O): Zuschnitt, Größe und Form zum Server. Dass
+ * es keine Metadaten trägt, prüfen `lib/dateien/metadaten.test.ts` und am Inhalt der Server.
  */
 
 describe('zuschnitt', () => {

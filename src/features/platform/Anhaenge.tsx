@@ -5,7 +5,7 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { Kameradialog } from '@/features/files/Kameradialog';
+import { Kameradialog } from '@/components/ui/Kameradialog';
 import {
   nachrichtenSchluessel,
   anhangLoeschen,

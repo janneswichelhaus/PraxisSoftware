@@ -17,7 +17,7 @@ import {
   type Sperrgrund,
   type Sperrstand,
 } from './sperrstand';
-import { SperrsicherungKontext, type Sicherung, type Sperrsicherung } from './sperrsicherung';
+import { SperrsicherungKontext, type Sicherung, type Sperrsicherung } from '@/lib/sperrsicherung';
 import { PlattformSperrseite } from './PlattformSperrseite';
 import { Sperrseite } from './Sperrseite';
 import { SperreOhneNetz } from './SperreOhneNetz';
