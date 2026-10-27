@@ -158,7 +158,7 @@ nennt Zeit und Mitarbeitende, nie den fremden Termin. Die Belegungsmeldung der S
   entweder Behandlung oder Ereignis — einen dritten Fall konnte es nie geben, `patient_id` war bis
   CAL-015b `not null`. Es gibt nichts zu raten und nichts nachzutragen (§13).
 - **Die Filterregel aus Punkt 11 ist vorhanden, aber unbesetzt.** Es gibt heute keine
-  Trainingsrolle (`roleKeySchema` in `src/features/session/types.ts` führt ausschließlich
+  Trainingsrolle (`roleKeySchema` in `src/features/core/session/types.ts` führt ausschließlich
   Behandlungsrollen); sie kommt mit dem Nachzug an §4 (E18 Schritt 5). Bis dahin ist die Grenze in
   den Policies gezogen, aber niemand steht auf der anderen Seite — dieselbe Lage wie bei ADR-021
   Punkt 6.

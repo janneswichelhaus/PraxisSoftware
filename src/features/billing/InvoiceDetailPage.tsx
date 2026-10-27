@@ -26,7 +26,7 @@ import {
   canManageBillingProfile,
   canManageInvoicing,
   type CurrentUser,
-} from '@/features/session/types';
+} from '@/features/core/session/types';
 import {
   KeineStammdaten,
   bereichLabels,

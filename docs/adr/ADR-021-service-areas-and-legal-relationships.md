@@ -162,7 +162,7 @@ Verhältnissen, auch nicht über das Profil.
   Verhältnis sie hängt. Das ist der Preis der Trennung und derselbe Mehraufwand
   je Feature, den ADR-004 bereits hingenommen hat (§16).
 - **Die Rollen tragen die zweite Regel heute noch nicht.** `roleKeySchema`
-  (`src/features/session/types.ts`) führt `owner`, `therapist`, `team_lead`,
+  (`src/features/core/session/types.ts`) führt `owner`, `therapist`, `team_lead`,
   `office`, `patient` — ausschließlich Behandlungsrollen. Ohne eine
   Trainingsrolle läuft „kein Durchgriff" ins Leere, weil es nichts gibt, das
   nur das Training sieht. Diese Rolle kommt mit dem Nachzug an §4 (E18

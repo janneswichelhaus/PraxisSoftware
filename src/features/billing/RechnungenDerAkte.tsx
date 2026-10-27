@@ -6,7 +6,7 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { canManageInvoicing, type CurrentUser } from '@/features/session/types';
+import { canManageInvoicing, type CurrentUser } from '@/features/core/session/types';
 import { fetchRechnungenDerAkte, zahlungsstandLabels, type RechnungDerAkte } from './api';
 
 /** Zeichen und Wort je Rechnung: storniert, zu mahnen, überfällig, Zahlungsstand. */

@@ -1,0 +1,729 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { QueryClient } from '@tanstack/react-query';
+import type * as AppointmentsApi from './api';
+import type * as PatientsApi from '@/features/patients/api';
+import type * as StaffApi from '@/features/workforce/staff/api';
+import type * as RouterModul from 'react-router-dom';
+import {
+  renderWithProviders,
+  testAppointment,
+  testPatient,
+  testStaffMember,
+  testUser,
+} from '@/test-utils';
+
+const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
+const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
+const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
+const STAFF_TIM = '55555555-5555-4555-8555-000000000004';
+const ORT = '33333333-3333-4333-8333-000000000001';
+const STAND = '2027-05-01T10:00:00.000000+00';
+
+/** Praxistermin am 12.05.2027, 09:00-10:00 Ortszeit Europe/Berlin. */
+const termin = testAppointment({
+  id: TERMIN_ID,
+  patient_id: PATIENT_ID,
+  staff_member_id: STAFF_ANNA,
+  location_id: ORT,
+  updated_at: STAND,
+});
+
+const patient: PatientsApi.Patient = testPatient({
+  id: PATIENT_ID,
+  care_started_on: '2026-01-05',
+  given_name: 'Berta',
+  family_name: 'Bestand',
+  date_of_birth: '1970-05-06',
+  email: null,
+  phone: null,
+  street: 'Altstrasse',
+  house_number: '1',
+  postal_code: '72070',
+  city: 'Tuebingen',
+});
+
+const fetchAppointment = vi.fn();
+const fetchAssignableTherapists = vi.fn();
+const fetchLocations = vi.fn();
+const updateAppointment = vi.fn();
+const fetchPatient = vi.fn();
+const fetchStaffMembers = vi.fn();
+const navigate = vi.fn();
+
+vi.mock('@/features/patients/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof PatientsApi>()),
+  fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
+}));
+
+vi.mock('@/features/workforce/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchStaffMembers: () => fetchStaffMembers() as Promise<StaffApi.StaffMember[]>,
+  fetchAssignableTherapists: () =>
+    fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
+  fetchLocations: () => fetchLocations() as Promise<StaffApi.Location[]>,
+}));
+
+vi.mock('./api', async (importOriginal) => {
+  const actual = await importOriginal<typeof AppointmentsApi>();
+  return {
+    ...actual,
+    fetchAppointment: (id: string) =>
+      fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
+    updateAppointment: (
+      id: string,
+      stand: string,
+      werte: unknown,
+      bestaetigt?: boolean,
+      vergangenheit?: boolean,
+    ) => updateAppointment(id, stand, werte, bestaetigt, vergangenheit) as Promise<void>,
+  };
+});
+
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useNavigate: () => navigate,
+  useParams: () => ({ appointmentId: TERMIN_ID }),
+}));
+
+// UBK-012: hier zählt, welche Frage die Seite stellt - und was sie mit einer
+// Antwort anfängt, die der Test vorgibt (B2).
+const wegfragen = vi.hoisted((): { letzte: unknown; antwort: unknown } => ({
+  letzte: null,
+  antwort: { stand: 'aus' },
+}));
+vi.mock('./wegpruefung', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  useWegpruefung: (frage: unknown) => {
+    wegfragen.letzte = frage;
+    return frage === null ? { stand: 'aus' } : wegfragen.antwort;
+  },
+}));
+
+const { EditAppointmentPage } = await import('./EditAppointmentPage');
+
+function rendern() {
+  return renderWithProviders(
+    <EditAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+    `/termine/${TERMIN_ID}/bearbeiten`,
+  );
+}
+
+function formularAbwarten() {
+  return screen.findByRole('button', { name: 'Änderungen speichern' });
+}
+
+describe('EditAppointmentPage', () => {
+  beforeEach(() => {
+    fetchAppointment.mockReset();
+    fetchAssignableTherapists.mockReset();
+    fetchLocations.mockReset();
+    updateAppointment.mockReset();
+    fetchPatient.mockReset();
+    fetchStaffMembers.mockReset();
+    navigate.mockReset();
+
+    fetchAppointment.mockResolvedValue(termin);
+    fetchAssignableTherapists.mockResolvedValue([
+      { staff_member_id: STAFF_ANNA, display_name: 'Anna Beispiel' },
+      { staff_member_id: STAFF_TIM, display_name: 'Tim Teamleitung' },
+    ]);
+    fetchLocations.mockResolvedValue([{ id: ORT, name: 'Hauptstandort Tuebingen' }]);
+    updateAppointment.mockResolvedValue(undefined);
+    fetchPatient.mockResolvedValue(patient);
+    wegfragen.antwort = { stand: 'aus' };
+  });
+
+  it('befuellt das Formular aus dem bestehenden Termin', async () => {
+    rendern();
+    await formularAbwarten();
+
+    expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(STAFF_ANNA);
+    expect(screen.getByLabelText('Terminart *')).toHaveValue('practice');
+    // 07:00 UTC ist 09:00 Ortszeit - vorbefuellt wird die Praxiszeit.
+    expect(screen.getByLabelText('Datum *')).toHaveValue('2027-05-12');
+    expect(screen.getByLabelText('Beginn *')).toHaveValue('09:00');
+    // Das Ende ist seit CAL-010a eine Ableitung, kein Feld; gewaehlt wird
+    // seit CAL-015b die Dauer.
+    expect(screen.getByText('Ende: 10:00 Uhr')).toBeInTheDocument();
+    expect(screen.getByLabelText('Standort *')).toHaveValue(ORT);
+  });
+
+  it('zeigt den Patienten als Kontext und bietet keinen Wechsel an', async () => {
+    rendern();
+    await formularAbwarten();
+
+    // Der Name steht in der Seitenbeschreibung; einen eigenen Kasten mit dem
+    // Satz, dass der Termin nicht übertragbar sei, gibt es seit UX-005g nicht.
+    // Eine Angabe, kein Satz: ohne Schlusspunkt (Design-Review T8).
+    expect(screen.getByText('Für Berta Bestand')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Ein Termin kann nicht auf eine andere Person übertragen werden.'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Patient.*\*/)).not.toBeInTheDocument();
+  });
+
+  it('speichert gegen den gelesenen Stand', async () => {
+    const user = userEvent.setup();
+    const neuLaden = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
+    rendern();
+    await formularAbwarten();
+
+    await user.clear(screen.getByLabelText('Beginn *'));
+    await user.type(screen.getByLabelText('Beginn *'), '11:00');
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+    await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+    expect(updateAppointment).toHaveBeenCalledWith(
+      TERMIN_ID,
+      STAND,
+      {
+        staff_member_id: STAFF_ANNA,
+        appointment_type: 'practice',
+        date: '2027-05-12',
+        start_time: '11:00',
+        end_time: '12:00',
+        location_id: ORT,
+      },
+      false,
+      false,
+    );
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, { replace: true }),
+    );
+    // UBK-011: auch Tagesroute und Fahrpuffer.
+    expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['day-route'] });
+    expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['travel-buffers'] });
+    neuLaden.mockRestore();
+  });
+
+  it('wechselt die behandelnde Person', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_TIM);
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+    await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+    expect(updateAppointment.mock.calls[0]?.[2]).toMatchObject({ staff_member_id: STAFF_TIM });
+  });
+
+  it('zeigt beim Wechsel zu Hausbesuch die zu uebernehmende Adresse', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Terminart *'), 'home_visit');
+
+    expect(await screen.findByText('Adresse des Hausbesuchs')).toBeInTheDocument();
+    expect(screen.getByText('Altstrasse 1, 72070 Tuebingen')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Standort *')).not.toBeInTheDocument();
+  });
+
+  it('zeigt bei einem bleibenden Hausbesuch die festgehaltene Anschrift', async () => {
+    fetchAppointment.mockResolvedValue({
+      ...termin,
+      appointment_type: 'home_visit',
+      location_id: null,
+      location_name: null,
+      visit_street: 'Sicherungsweg',
+      visit_house_number: '5',
+      visit_postal_code: '12345',
+      visit_city: 'Alteswohnort',
+    });
+    rendern();
+    await formularAbwarten();
+
+    // Der Snapshot bleibt - er haelt fest, wohin an diesem Tag gefahren wird.
+    expect(await screen.findByText('Festgehaltene Anschrift')).toBeInTheDocument();
+    expect(screen.getByText('Sicherungsweg 5, 12345 Alteswohnort')).toBeInTheDocument();
+    expect(screen.queryByText('Altstrasse 1, 72070 Tuebingen')).not.toBeInTheDocument();
+    // UBK-012: „Passt es?“ rechnet mit der Position dieses Termins, nicht mit
+    // der Akte - und der Termin ist nicht sein eigener Nachbar.
+    await waitFor(() =>
+      expect(wegfragen.letzte).toMatchObject({
+        ort: { art: 'bestehend', terminId: TERMIN_ID, person: STAFF_ANNA },
+        ohneTermin: TERMIN_ID,
+      }),
+    );
+  });
+
+  it('blendet beim Wechsel zu Video Standort und Adresse aus', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Terminart *'), 'video');
+
+    expect(await screen.findByText(/noch kein Videolink erzeugt/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Standort *')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Adresse des Hausbesuchs/)).not.toBeInTheDocument();
+  });
+
+  it('zieht das Ende beim Verschieben mit und laesst die Laenge unangetastet', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.clear(screen.getByLabelText('Beginn *'));
+    await user.type(screen.getByLabelText('Beginn *'), '14:30');
+
+    expect(screen.getByText('Ende: 15:30 Uhr')).toBeInTheDocument();
+  });
+
+  describe('CAL-010a, CAL-020: Termin mit abweichender Laenge', () => {
+    /**
+     * Derselbe Termin, aber 09:00-09:30.
+     *
+     * Seit CAL-020 ist das keine Altlast mehr, sondern eine zulaessige Laenge
+     * (8.1 in der Fassung 0.11). Geblieben ist die Zusage, dass das Formular
+     * sie nicht von sich aus aendert (ANN-056).
+     */
+    const kurz: AppointmentsApi.Appointment = {
+      ...termin,
+      ends_at: '2027-05-12T07:30:00.000Z',
+    };
+
+    it('behaelt seine Laenge beim Oeffnen und beim Verschieben', async () => {
+      // 8.1: "Die Anwendung DARF ihn NICHT selbsttaetig verlaengern, verkuerzen
+      // oder verschieben."
+      fetchAppointment.mockResolvedValue(kurz);
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      expect(screen.getByLabelText('Dauer')).toHaveValue('frei');
+      expect(screen.getByLabelText('Dauer in Minuten')).toHaveValue(30);
+      expect(screen.getByText('Ende: 09:30 Uhr')).toBeInTheDocument();
+      // Die Abweichung wird angekuendigt, nicht verhindert (8.1).
+      expect(screen.getByText(/Weicht von 45 und 60 Minuten ab/)).toBeInTheDocument();
+
+      await user.clear(screen.getByLabelText('Beginn *'));
+      await user.type(screen.getByLabelText('Beginn *'), '14:00');
+      expect(screen.getByText('Ende: 14:30 Uhr')).toBeInTheDocument();
+    });
+
+    it('zieht auf Wunsch vor, wenn die Weiterfahrt zu knapp ist - mit seiner Länge (B2)', async () => {
+      fetchAppointment.mockResolvedValue(kurz);
+      // Weiterfahrt 7 Minuten zu knapp, davor 30 Minuten Luft.
+      wegfragen.antwort = {
+        stand: 'bereit',
+        an: {
+          stand: 'geprueft',
+          luft: 30,
+          stufe: 'passt',
+          fruehester: '2027-05-12T06:30:00Z',
+          fahrtMinuten: 12,
+          nachbar: 'termin',
+          nachbarZeit: '2027-05-12T06:15:00Z',
+        },
+        weiter: {
+          stand: 'geprueft',
+          luft: -7,
+          stufe: 'nicht',
+          fruehester: '2027-05-12T07:50:00Z',
+          fahrtMinuten: 17,
+          nachbar: 'termin',
+          nachbarZeit: '2027-05-12T07:43:00Z',
+        },
+      };
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.click(await screen.findByRole('button', { name: 'Auf 08:50 vorziehen' }));
+
+      // Nur verschoben, nicht verkürzt oder verlängert (8.1, ANN-056).
+      expect(screen.getByLabelText('Beginn *')).toHaveValue('08:50');
+      expect(screen.getByText('Ende: 09:20 Uhr')).toBeInTheDocument();
+      expect(wegfragen.letzte).toMatchObject({
+        beginnMinute: 8 * 60 + 50,
+        endeMinute: 9 * 60 + 20,
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+      expect(updateAppointment.mock.calls[0]?.[2]).toMatchObject({
+        date: '2027-05-12',
+        start_time: '08:50',
+        end_time: '09:20',
+      });
+    });
+
+    it('fragt beim Zuruecklegen in die Vergangenheit nach und schickt das Kennzeichen (FIX-019)', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.clear(screen.getByLabelText('Datum *'));
+      await user.type(screen.getByLabelText('Datum *'), '2020-01-06');
+      await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+      const fenster = await screen.findByRole('dialog', { name: 'Termin in der Vergangenheit' });
+      expect(updateAppointment).not.toHaveBeenCalled();
+      await user.click(
+        within(fenster).getByRole('button', { name: 'Änderung trotzdem speichern' }),
+      );
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+      expect(updateAppointment).toHaveBeenCalledWith(
+        TERMIN_ID,
+        STAND,
+        expect.objectContaining({ date: '2020-01-06' }),
+        false,
+        true,
+      );
+    });
+
+    it('bekommt eine Regellaenge erst auf ausdrueckliche Anweisung', async () => {
+      fetchAppointment.mockResolvedValue(kurz);
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.selectOptions(screen.getByLabelText('Dauer'), '60');
+
+      expect(screen.getByText('Ende: 10:00 Uhr')).toBeInTheDocument();
+      // Der Hinweis ist danach gegenstandslos, das Minutenfeld auch.
+      expect(screen.queryByText(/Weicht von 45 und 60 Minuten ab/)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Dauer in Minuten')).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+      expect(updateAppointment).toHaveBeenCalledWith(
+        TERMIN_ID,
+        STAND,
+        expect.objectContaining({ start_time: '09:00', end_time: '10:00' }),
+        false,
+        false,
+      );
+    });
+
+    it('zeigt den Hinweis bei einem Termin mit Regellaenge nicht', async () => {
+      rendern();
+      await formularAbwarten();
+      expect(screen.queryByText(/Weicht von 45 und 60 Minuten ab/)).not.toBeInTheDocument();
+    });
+
+    it('speichert eine frei eingegebene Laenge (CAL-020)', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.selectOptions(screen.getByLabelText('Dauer'), 'frei');
+      await user.clear(screen.getByLabelText('Dauer in Minuten'));
+      await user.type(screen.getByLabelText('Dauer in Minuten'), '90');
+      expect(screen.getByText('Ende: 10:30 Uhr')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+      expect(updateAppointment).toHaveBeenCalledWith(
+        TERMIN_ID,
+        STAND,
+        expect.objectContaining({ start_time: '09:00', end_time: '10:30' }),
+        false,
+        false,
+      );
+    });
+  });
+
+  it('loest bei doppeltem Klick nur einen Schreibvorgang aus', async () => {
+    let aufloesen: (() => void) | undefined;
+    updateAppointment.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          aufloesen = resolve;
+        }),
+    );
+
+    const user = userEvent.setup();
+    rendern();
+    const knopf = await formularAbwarten();
+
+    await user.click(knopf);
+    await user.click(knopf);
+
+    expect(updateAppointment).toHaveBeenCalledTimes(1);
+    aufloesen?.();
+  });
+
+  it('zeigt einen Bearbeitungskonflikt verstaendlich an', async () => {
+    updateAppointment.mockRejectedValue(
+      new Error(
+        'Der Termin wurde zwischenzeitlich von einer anderen Person geändert. Bitte die Ansicht neu laden und die Änderung erneut vornehmen.',
+      ),
+    );
+    const user = userEvent.setup();
+    rendern();
+    await user.click(await formularAbwarten());
+
+    expect(
+      await screen.findByText(/zwischenzeitlich von einer anderen Person/),
+    ).toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('zeigt eine Ueberschneidung verstaendlich an', async () => {
+    updateAppointment.mockRejectedValue(
+      new Error(
+        'In diesem Zeitraum hat die behandelnde Person bereits einen Termin. Bitte eine andere Zeit wählen.',
+      ),
+    );
+    const user = userEvent.setup();
+    rendern();
+    await user.click(await formularAbwarten());
+
+    expect(
+      await screen.findByText(/hat die behandelnde Person bereits einen Termin/),
+    ).toBeInTheDocument();
+  });
+
+  it('bricht ohne Schreibvorgang zum Termin zurueck ab - ueber einen Link (UIK-13)', async () => {
+    rendern();
+    await formularAbwarten();
+
+    // Ohne mitgereisten Weg in den Kalender, der Termin gewählt - eine
+    // Terminseite gibt es nicht mehr (Akte entschlacken, 2026-10-03).
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
+      'href',
+      `/kalender?termin=${TERMIN_ID}`,
+    );
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
+      'href',
+      `/kalender?termin=${TERMIN_ID}`,
+    );
+    expect(updateAppointment).not.toHaveBeenCalled();
+  });
+
+  it('reicht den Rückweg des Termins an Abbrechen weiter', async () => {
+    const kalender = '/kalender?ansicht=tag';
+    renderWithProviders(
+      <EditAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+      `/termine/${TERMIN_ID}/bearbeiten?zurueck=${encodeURIComponent(kalender)}`,
+    );
+    await formularAbwarten();
+
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
+      'href',
+      `/kalender?ansicht=tag&termin=${TERMIN_ID}`,
+    );
+    // Der Rückweg oben folgt dem mitgereisten Weg (Rueckweg-Baustein, TER-03).
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
+      'href',
+      kalender,
+    );
+  });
+
+  it('bietet fuer einen abgesagten Termin kein Formular an', async () => {
+    fetchAppointment.mockResolvedValue({ ...termin, status: 'cancelled' });
+    rendern();
+
+    expect(
+      await screen.findByText('Abgesagte Termine werden nicht bearbeitet'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Änderungen speichern' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toBeInTheDocument();
+  });
+
+  it('meldet einen nicht freigegebenen Termin ohne Details', async () => {
+    fetchAppointment.mockResolvedValue(null);
+    rendern();
+
+    expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Änderungen speichern' })).not.toBeInTheDocument();
+    // Der Rückweg bleibt auch im Fehlerfall (ZST-08).
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toBeInTheDocument();
+  });
+
+  it('meldet einen Ladefehler als Ladefehler und bietet einen neuen Versuch an (TER-11)', async () => {
+    fetchAppointment.mockRejectedValueOnce(new Error('Netz weg'));
+    fetchAppointment.mockResolvedValue(termin);
+    const user = userEvent.setup();
+    rendern();
+
+    expect(await screen.findByText('Der Termin konnte nicht geladen werden.')).toBeInTheDocument();
+    expect(screen.queryByText('Nicht gefunden')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await formularAbwarten()).toBeInTheDocument();
+  });
+
+  it('meldet fehlende Angaben in einer Zusammenfassung mit Fokus (UIK-02, TER-06)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.clear(screen.getByLabelText('Beginn *'));
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+    const kasten = (await screen.findByText('Bitte prüfen Sie diese Angabe')).closest(
+      '[role="alert"]',
+    ) as HTMLElement;
+    expect(kasten).toHaveFocus();
+    expect(
+      within(kasten).getByRole('link', { name: 'Beginn ist erforderlich.' }),
+    ).toBeInTheDocument();
+    // Das Ende ist eine Ableitung und meldet sich nicht zusaetzlich.
+    expect(screen.queryByText('Ende ist erforderlich.')).not.toBeInTheDocument();
+    expect(updateAppointment).not.toHaveBeenCalled();
+  });
+
+  it('wiederholt im Fehlerfenster nicht den Titel (ZST-12)', async () => {
+    updateAppointment.mockRejectedValue(new Error('Der Termin konnte nicht geändert werden.'));
+    const user = userEvent.setup();
+    rendern();
+    await user.click(await formularAbwarten());
+
+    const fenster = await screen.findByRole('dialog', {
+      name: 'Der Termin konnte nicht geändert werden.',
+    });
+    expect(fenster).toHaveTextContent('Die Eingaben stehen noch im Formular.');
+  });
+
+  it('haelt nach einer Aenderung vor dem Weggehen an (TER-05)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_TIM);
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+
+    const rueckfrage = await screen.findByRole('group', { name: 'Ungespeicherter Termin' });
+    expect(
+      within(rueckfrage).getByRole('button', { name: 'Verwerfen und weitergehen' }),
+    ).toBeInTheDocument();
+    expect(
+      within(rueckfrage).queryByRole('button', { name: 'Speichern und weitergehen' }),
+    ).not.toBeInTheDocument();
+
+    await user.click(within(rueckfrage).getByRole('button', { name: 'Hier bleiben' }));
+    expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(STAFF_TIM);
+  });
+
+  it('meldet ein unveraendertes Formular nicht als ungespeichert', async () => {
+    rendern();
+    await formularAbwarten();
+
+    const ereignis = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(ereignis);
+    expect(ereignis.defaultPrevented).toBe(false);
+  });
+
+  it('sagt am Feld, wenn die Personen nicht laden, und speichert dann nicht (ZST-07)', async () => {
+    fetchAssignableTherapists.mockRejectedValue(new Error('Netz weg'));
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    expect(
+      await screen.findByText('Die Personen konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+    expect(
+      await screen.findAllByText('Bitte zuerst die Liste der Personen erneut laden.'),
+    ).not.toHaveLength(0);
+    expect(updateAppointment).not.toHaveBeenCalled();
+  });
+
+  it('fuehrt beim Wechsel zum Hausbesuch in die Stammdaten und zurueck hierher (TER-15)', async () => {
+    fetchPatient.mockResolvedValue({ ...patient, house_number: null });
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Terminart *'), 'home_visit');
+
+    const abstecher = await screen.findByRole('link', { name: 'Jetzt in den Stammdaten ergänzen' });
+    expect(abstecher).toHaveAttribute(
+      'href',
+      `/patienten/${PATIENT_ID}/bearbeiten?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}/bearbeiten`)}`,
+    );
+  });
+
+  describe('TER-01: Teilnahme an einer Fehlzeit', () => {
+    const fehlzeit: AppointmentsApi.Appointment = {
+      ...termin,
+      kind: 'internal',
+      title: 'Teambesprechung',
+      patient_id: null,
+      patient_given_name: null,
+      patient_family_name: null,
+      event_group_id: '99999999-9999-4999-8999-000000000001',
+    };
+
+    beforeEach(() => {
+      fetchAppointment.mockResolvedValue(fehlzeit);
+      fetchStaffMembers.mockResolvedValue([
+        testStaffMember({ id: STAFF_ANNA, given_name: 'Anna', family_name: 'Beispiel' }),
+        testStaffMember({ id: STAFF_TIM, given_name: 'Tim', family_name: 'Teamleitung' }),
+      ]);
+    });
+
+    it('heisst „Teilnahme ändern" und bietet nur die beteiligte Person an', async () => {
+      rendern();
+      await formularAbwarten();
+
+      expect(screen.getByRole('heading', { level: 1, name: 'Teilnahme ändern' })).toBeVisible();
+      expect(screen.getByText('Hier wird nur die beteiligte Person getauscht.')).toBeVisible();
+      expect(screen.getByLabelText('Beteiligte Person *')).toHaveValue(STAFF_ANNA);
+      // Zeit, Art und Ort gelten fuer alle - sie stehen als Auskunft da.
+      for (const feld of ['Terminart *', 'Datum *', 'Beginn *', 'Standort *']) {
+        expect(screen.queryByLabelText(feld)).not.toBeInTheDocument();
+      }
+      expect(screen.getByText('Teambesprechung')).toBeVisible();
+      expect(screen.getByText('09:00–10:00 Uhr')).toBeVisible();
+    });
+
+    it('fuehrt fuer Zeit und Ort zu „Fehlzeit bearbeiten", mit Rückweg', async () => {
+      const kalender = '/kalender?ansicht=woche';
+      renderWithProviders(
+        <EditAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+        `/termine/${TERMIN_ID}/bearbeiten?zurueck=${encodeURIComponent(kalender)}`,
+      );
+      await formularAbwarten();
+
+      expect(screen.getByRole('link', { name: 'Zeit oder Ort für alle ändern' })).toHaveAttribute(
+        'href',
+        `/termine/${TERMIN_ID}/ereignis-bearbeiten?zurueck=${encodeURIComponent(kalender)}`,
+      );
+    });
+
+    it('tauscht die Person und laesst Zeit und Ort, wie sie sind', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.selectOptions(screen.getByLabelText('Beteiligte Person *'), STAFF_TIM);
+      await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+      expect(updateAppointment).toHaveBeenCalledWith(
+        TERMIN_ID,
+        STAND,
+        {
+          staff_member_id: STAFF_TIM,
+          appointment_type: 'practice',
+          date: '2027-05-12',
+          start_time: '09:00',
+          end_time: '10:00',
+          location_id: ORT,
+        },
+        false,
+        false,
+      );
+    });
+
+    it('nennt im Fehlerfenster die Teilnahme, nicht den Termin (TER-22)', async () => {
+      updateAppointment.mockRejectedValue(new Error('Der Termin konnte nicht geändert werden.'));
+      const user = userEvent.setup();
+      rendern();
+      await user.click(await formularAbwarten());
+
+      expect(
+        await screen.findByRole('dialog', { name: 'Die Teilnahme konnte nicht geändert werden.' }),
+      ).toHaveTextContent('Die Eingaben stehen noch im Formular.');
+    });
+  });
+});

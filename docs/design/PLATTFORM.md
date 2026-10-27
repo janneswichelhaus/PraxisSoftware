@@ -61,7 +61,7 @@ unter 23rem 12 und alles in einer Rollfläche, die Frage ohne Rollen (ein Bild d
 4:3). Ein Titel mit einem Wort über elf Zeichen steht unter 23rem in 22 (ANN-696). Abschaltbar; so
 der Einstieg, DRP-EPIC-005.
 
-**Gerüst** (`src/features/platform/Navigation.tsx`): Kopf 72 mit Wortmarke 28 und „Ich“ mit
+**Gerüst** (`src/features/portal/platform/Navigation.tsx`): Kopf 72 mit Wortmarke 28 und „Ich“ mit
 Initialen. Reiterleiste in drei Stufen (ANN-679): eine Reihe, solange die Wörter passen - gemessen,
 nicht aus der Einstellung gelesen -, sonst zwei; unter 23rem der `Menueknopf` im Kopf (ANN-682). Bei
 offener Tastatur tritt sie zurück (ANN-676, ANN-681). Ab 1024 px Navigation im Kopf, Inhalt

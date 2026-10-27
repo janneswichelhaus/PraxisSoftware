@@ -1,23 +1,23 @@
 import type { ReactNode } from 'react';
-import { OHNE_KATALOG } from '@/features/exercises/testdaten';
-import { OHNE_ZUSATZ } from '@/features/exercise-plans/testdaten';
+import { OHNE_KATALOG } from '@/features/exercise/exercises/testdaten';
+import { OHNE_ZUSATZ } from '@/features/exercise/exercise-plans/testdaten';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import { BIBLIOTHEK_SCHLUESSEL, type Bibliothek } from '@/features/exercises/api';
+import { BIBLIOTHEK_SCHLUESSEL, type Bibliothek } from '@/features/exercise/exercises/api';
 import {
   FAELLIG_SCHLUESSEL,
   planSchluessel,
   planlisteSchluessel,
   type Plan,
   type Position,
-} from '@/features/exercise-plans/api';
-import { PlanAbschnitt } from '@/features/exercise-plans/PlanAbschnitt';
-import { PlanPage } from '@/features/exercise-plans/PlanPage';
-import { PlanWiedervorlage } from '@/features/exercise-plans/Wiedervorlage';
-import { VorlagenKontext } from '@/features/exercise-plans/vorlagen';
-import { katalogeintrag } from '@/features/exercises/katalog';
-import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
+} from '@/features/exercise/exercise-plans/api';
+import { PlanAbschnitt } from '@/features/exercise/exercise-plans/PlanAbschnitt';
+import { PlanPage } from '@/features/exercise/exercise-plans/PlanPage';
+import { PlanWiedervorlage } from '@/features/exercise/exercise-plans/Wiedervorlage';
+import { VorlagenKontext } from '@/features/exercise/exercise-plans/vorlagen';
+import { katalogeintrag } from '@/features/exercise/exercises/katalog';
+import type { Katalogvorlage } from '@/features/exercise/exercises/katalog/typen';
 import '@/index.css';
 
 /**

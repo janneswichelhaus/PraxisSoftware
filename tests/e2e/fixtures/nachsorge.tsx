@@ -14,10 +14,10 @@ import {
 } from '@/features/billing/nachsorge-api';
 import { ServicesPage } from '@/features/billing/ServicesPage';
 import { rechnungsansicht } from '@/features/billing/testdaten';
-import { AftercareCancellations } from '@/features/open-points/AftercareCancellations';
-import { ABO_KUENDIGUNGEN_KEY } from '@/features/open-points/aftercare-cancellations-api';
-import { TrainingWithdrawals } from '@/features/open-points/TrainingWithdrawals';
-import { TRAININGSWIDERRUFE_KEY } from '@/features/open-points/training-withdrawals-api';
+import { AftercareCancellations } from '@/features/workplace/open-points/AftercareCancellations';
+import { ABO_KUENDIGUNGEN_KEY } from '@/features/workplace/open-points/aftercare-cancellations-api';
+import { TrainingWithdrawals } from '@/features/workplace/open-points/TrainingWithdrawals';
+import { TRAININGSWIDERRUFE_KEY } from '@/features/workplace/open-points/training-withdrawals-api';
 import '@/index.css';
 
 /**

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { feiertage, ostersonntag } from '@/features/vacation/feiertage';
+import { feiertage, ostersonntag } from '@/features/workforce/vacation/feiertage';
 import {
   SEED,
   asPostgres,

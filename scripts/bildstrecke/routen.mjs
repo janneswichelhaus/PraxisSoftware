@@ -1211,7 +1211,7 @@ export const ROUTEN = Object.freeze([
     konten: ['owner'],
   },
 
-  // --- Patientenplattform (src/features/platform/PlattformApp.tsx) --------
+  // --- Patientenplattform (src/features/portal/platform/PlattformApp.tsx) --------
   {
     muster: '/p',
     pfad: '/p?bereich=treatment',

@@ -2,13 +2,13 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
-import { AppointmentSlipPage } from '@/features/appointments/AppointmentSlipPage';
-import type { AppointmentSlipEntry } from '@/features/appointments/api';
-import { AufnahmeblaetterPage } from '@/features/datenschutz/AufnahmeblaetterPage';
-import { PRAXIS_ABSENDER_KEY, type PraxisAbsender } from '@/features/datenschutz/absender';
+import { AppointmentSlipPage } from '@/features/calendar/appointments/AppointmentSlipPage';
+import type { AppointmentSlipEntry } from '@/features/calendar/appointments/api';
+import { AufnahmeblaetterPage } from '@/features/privacy/datenschutz/AufnahmeblaetterPage';
+import { PRAXIS_ABSENDER_KEY, type PraxisAbsender } from '@/features/privacy/datenschutz/absender';
 import type { Patient } from '@/features/patients/api';
-import { VorschauProvider } from '@/features/preview/VorschauProvider';
-import type { CurrentUser } from '@/features/session/types';
+import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

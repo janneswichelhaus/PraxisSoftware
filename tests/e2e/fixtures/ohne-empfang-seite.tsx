@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { SperreOhneNetz } from '@/features/auth/sitzungssperre/SperreOhneNetz';
-import { AufDemGeraet } from '@/features/offline-documentation/AufDemGeraet';
-import { DiensttelefonAbschnitt } from '@/features/offline-documentation/DiensttelefonAbschnitt';
-import { Geraetehinweis } from '@/features/offline-documentation/Geraetehinweis';
-import { PraxisAblage } from '@/features/offline-documentation/PraxisAblage';
-import { praxisOhneNetz } from '@/features/offline-documentation/ohneNetz';
+import { SperreOhneNetz } from '@/features/core/auth/sitzungssperre/SperreOhneNetz';
+import { AufDemGeraet } from '@/features/clinical/offline-documentation/AufDemGeraet';
+import { DiensttelefonAbschnitt } from '@/features/clinical/offline-documentation/DiensttelefonAbschnitt';
+import { Geraetehinweis } from '@/features/clinical/offline-documentation/Geraetehinweis';
+import { PraxisAblage } from '@/features/clinical/offline-documentation/PraxisAblage';
+import { praxisOhneNetz } from '@/features/clinical/offline-documentation/ohneNetz';
 
 /** Die Prüfseite aus `ohne-empfang.tsx` (OFF-EPIC-001): Sperre, Gerät oder Einrichtung. */
 export function Pruefseite({

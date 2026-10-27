@@ -86,7 +86,7 @@ const PLATTFORM_SCHATTEN = /(?<=[\s"'`:])shadow-plattform(?![\w-])/g;
 const MIT_PLATTFORM_SCHATTEN: ReadonlySet<string> = new Set([
   'src/components/ui/Aufgabenkarte.tsx',
   'src/components/ui/HeroKarte.tsx',
-  'src/features/platform/Besuchskarte.tsx',
+  'src/features/portal/platform/Besuchskarte.tsx',
 ]);
 
 function schattenFundeIn(zeile: string, datei: string): string[] {
@@ -219,9 +219,11 @@ describe('Keine Schatten', () => {
   it('lässt `shadow-plattform` nur in den drei Karten der Plattform zu (ANN-678, Gegenprobe)', () => {
     const zeile = 'className="rounded-card border shadow-plattform"';
     expect(schattenFundeIn(zeile, 'src/components/ui/HeroKarte.tsx')).toEqual([]);
-    expect(schattenFundeIn(zeile, 'src/features/platform/Besuchskarte.tsx')).toEqual([]);
+    expect(schattenFundeIn(zeile, 'src/features/portal/platform/Besuchskarte.tsx')).toEqual([]);
     expect(schattenFundeIn(zeile, 'src/components/ui/Card.tsx')).toEqual(['shadow']);
-    expect(schattenFundeIn(zeile, 'src/features/platform/Uebersicht.tsx')).toEqual(['shadow']);
+    expect(schattenFundeIn(zeile, 'src/features/portal/platform/Uebersicht.tsx')).toEqual([
+      'shadow',
+    ]);
     expect(schattenFundeIn('className="shadow-md"', 'src/components/ui/HeroKarte.tsx')).toEqual([
       'shadow',
     ]);
@@ -595,7 +597,9 @@ describe('Sprache der Plattform (Handoff 2026-10-22, PLATTFORM.md)', () => {
   it('setzt in Plattformcode keine Versalien', () => {
     expect(
       funde((zeile, datei) =>
-        datei.startsWith('src/features/platform/') && VERSALIEN.test(zeile) ? ['uppercase'] : [],
+        datei.startsWith('src/features/portal/platform/') && VERSALIEN.test(zeile)
+          ? ['uppercase']
+          : [],
       ),
     ).toEqual([]);
   });
@@ -608,10 +612,10 @@ describe('Sprache der Plattform (Handoff 2026-10-22, PLATTFORM.md)', () => {
    */
   function vonDerPlattformEingebunden(): string[] {
     const eingebunden = new Set<string>();
-    for (const datei of quelldateien(join(stamm, 'src/features/platform'))) {
+    for (const datei of quelldateien(join(stamm, 'src/features/portal/platform'))) {
       const text = readFileSync(datei, 'utf8');
       for (const [, ziel] of text.matchAll(/from\s+'@\/((?:app|components|features)\/[^']+)'/g)) {
-        if (!ziel || /^(features\/platform|components\/ui)\//.test(ziel)) continue;
+        if (!ziel || /^(features\/portal\/platform|components\/ui)\//.test(ziel)) continue;
         const pfad = ['.tsx', '.ts']
           .map((endung) => `src/${ziel}${endung}`)
           .find((kandidat) => existsSync(join(stamm, kandidat)));
@@ -623,8 +627,8 @@ describe('Sprache der Plattform (Handoff 2026-10-22, PLATTFORM.md)', () => {
 
   it('hebt Versalien auch in dem auf, was die Plattform aus anderen Bereichen zeigt', () => {
     const eingebunden = vonDerPlattformEingebunden();
-    expect(eingebunden).toContain('src/features/assessments/FragebogenFelder.tsx');
-    expect(eingebunden).toContain('src/features/exercise-plans/Planblatt.tsx');
+    expect(eingebunden).toContain('src/features/clinical/assessments/FragebogenFelder.tsx');
+    expect(eingebunden).toContain('src/features/exercise/exercise-plans/Planblatt.tsx');
     expect(
       funde((zeile, datei) =>
         eingebunden.includes(datei) &&
@@ -682,7 +686,9 @@ describe('Sprache der Plattform (Handoff 2026-10-22, PLATTFORM.md)', () => {
 
   it('setzt in Plattformcode keine Schrift unter 18 px', () => {
     expect(
-      funde((zeile, datei) => (datei.startsWith('src/features/platform/') ? unter18(zeile) : [])),
+      funde((zeile, datei) =>
+        datei.startsWith('src/features/portal/platform/') ? unter18(zeile) : [],
+      ),
     ).toEqual([]);
   });
 
@@ -835,7 +841,9 @@ const DRUCKBLATT = /Druck|Print|blatt|Briefkopf/;
 /** `features/patients`, `app`, `lib` … - das Verzeichnis, nach dem gezählt wird. */
 function verzeichnisVon(pfad: string): string {
   const teile = relative(join(stamm, 'src'), pfad).split('/');
-  return teile[0] === 'features' ? `features/${teile[1]}` : (teile[0] ?? '');
+  if (teile[0] !== 'features') return teile[0] ?? '';
+  // Ein Modul liegt an der Wurzel seiner Domäne oder in einem Ordner darunter (ANN-754).
+  return teile.length > 3 ? `features/${teile[1]}/${teile[2]}` : `features/${teile[1]}`;
 }
 
 /** Der Ist-Stand: je Muster und Verzeichnis die Zahl der Vorkommen. */

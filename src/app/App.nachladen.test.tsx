@@ -3,10 +3,10 @@ import type { ReactNode } from 'react';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { onlineManager } from '@tanstack/react-query';
-import type * as CurrentUserModul from '@/features/session/useCurrentUser';
-import type * as PlattformApi from '@/features/platform/api';
-import { grussNachTageszeit } from '@/features/platform/zeit';
-import type { CurrentUser } from '@/features/session/types';
+import type * as CurrentUserModul from '@/features/core/session/useCurrentUser';
+import type * as PlattformApi from '@/features/portal/platform/api';
+import { grussNachTageszeit } from '@/features/portal/platform/zeit';
+import type { CurrentUser } from '@/features/core/session/types';
 
 /**
  * Ein gescheitertes Nachladen ersetzt die laufende Anwendung nicht mehr
@@ -19,15 +19,15 @@ import type { CurrentUser } from '@/features/session/types';
  * gesperrt" weiter sofort ersetzen.
  */
 
-vi.mock('@/features/auth/SessionProvider', () => ({
+vi.mock('@/features/core/auth/SessionProvider', () => ({
   SessionProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
-vi.mock('@/features/auth/sitzungssperre/Sitzungssperre', () => ({
+vi.mock('@/features/core/auth/sitzungssperre/Sitzungssperre', () => ({
   Sitzungssperre: ({ children }: { children: ReactNode }) => children,
 }));
 
-vi.mock('@/features/auth/sessionContext', () => ({
+vi.mock('@/features/core/auth/sessionContext', () => ({
   useSession: () => ({
     session: { user: { id: '00000000-0000-0000-0000-000000000001' } },
     initialising: false,
@@ -53,7 +53,7 @@ vi.mock('@/routes/AuthenticatedRoutes', async () => {
 });
 
 const { KeinProfilError, ZugangGesperrtError } = await vi.importActual<typeof CurrentUserModul>(
-  '@/features/session/useCurrentUser',
+  '@/features/core/session/useCurrentUser',
 );
 
 const PROFIL = { profile: { id: 'p1' }, roles: ['therapist'] } as unknown as CurrentUser;
@@ -72,7 +72,7 @@ function setzeZustand(naechster: typeof zustand) {
   zuhoerer.forEach((melden) => melden());
 }
 
-vi.mock('@/features/session/useCurrentUser', async (importOriginal) => {
+vi.mock('@/features/core/session/useCurrentUser', async (importOriginal) => {
   const { useSyncExternalStore } = await import('react');
   return {
     ...(await importOriginal<typeof CurrentUserModul>()),
@@ -90,7 +90,7 @@ vi.mock('@/features/session/useCurrentUser', async (importOriginal) => {
 });
 
 const ladePlattformkontext = vi.fn<() => Promise<PlattformApi.Plattformzugang[]>>();
-vi.mock('@/features/platform/api', async (importOriginal) => ({
+vi.mock('@/features/portal/platform/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladePlattformkontext: () => ladePlattformkontext(),
 }));

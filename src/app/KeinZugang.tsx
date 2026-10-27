@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { isStaff, type CurrentUser } from '@/features/session/types';
+import { isStaff, type CurrentUser } from '@/features/core/session/types';
 
 /**
  * Bereiche der Praxis, deren Seiten nicht jede Rolle öffnen darf. Ein Pfad

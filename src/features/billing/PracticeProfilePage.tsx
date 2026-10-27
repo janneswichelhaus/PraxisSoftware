@@ -12,7 +12,7 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { alsFormularfehler, type Formularfehler } from '@/lib/formularfehler';
-import { canManageBillingProfile, type CurrentUser } from '@/features/session/types';
+import { canManageBillingProfile, type CurrentUser } from '@/features/core/session/types';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { fetchPraxisStammdaten, savePraxisStammdaten, type PraxisStammdaten } from './api';
 import { ibanInGruppen } from './anzeige';

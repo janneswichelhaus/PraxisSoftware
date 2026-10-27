@@ -3,23 +3,23 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
-import { VorschauProvider } from '@/features/preview/VorschauProvider';
-import { MyDayPage } from '@/features/today/MyDayPage';
-import { CompleteTreatmentPage } from '@/features/documentation/CompleteTreatmentPage';
-import type { Appointment } from '@/features/appointments/api';
-import type { TextSnippet } from '@/features/documentation/textbausteine';
+import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
+import { MyDayPage } from '@/features/calendar/today/MyDayPage';
+import { CompleteTreatmentPage } from '@/features/clinical/documentation/CompleteTreatmentPage';
+import type { Appointment } from '@/features/calendar/appointments/api';
+import type { TextSnippet } from '@/features/clinical/documentation/textbausteine';
 import type { Routenergebnis } from '@/lib/location/route';
-import { startpunkt, type Standort } from '@/features/tours/startort';
+import { startpunkt, type Standort } from '@/features/calendar/tours/startort';
 import {
   PRAXISPROFIL,
   routenplan,
   stoppsDesTages,
   type Tagesstopp,
-} from '@/features/tours/tagesroute';
-import type { CurrentUser } from '@/features/session/types';
+} from '@/features/calendar/tours/tagesroute';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 import { todayInTimeZone, tagePlus } from '@/lib/datum';
-import type { DayPlanEntry } from '@/features/day-plan/api';
+import type { DayPlanEntry } from '@/features/calendar/day-plan/api';
 
 /**
  * Einstieg der Prüfseite aus `besuch.html` (Auftrag C1 „Besuch in einem

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { asPostgres, asUser, resetDatabase, SEED } from './helpers/db';
-import { KOERPERBEREICHE } from '../../src/features/assessments/koerperschema';
+import { KOERPERBEREICHE } from '../../src/features/clinical/assessments/koerperschema';
 
 /**
  * Die Fassungen der Fragebögen auf dem Server (ABN-014, BEF-101, ANN-219).
@@ -16,7 +16,7 @@ import { KOERPERBEREICHE } from '../../src/features/assessments/koerperschema';
 
 const SCORES = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  '../../src/features/assessments/definitionen/scores',
+  '../../src/features/clinical/assessments/definitionen/scores',
 );
 
 async function dateien(): Promise<{ id: string; version: string; inhalt: unknown }[]> {

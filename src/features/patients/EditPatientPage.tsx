@@ -30,7 +30,7 @@ import {
   STAMMDATEN_REIHENFOLGE,
   stammdatenFeldId,
 } from './stammdatenfelder';
-import { fetchAssignableTherapists } from '@/features/staff/api';
+import { fetchAssignableTherapists } from '@/features/workforce/staff/api';
 
 const TITEL = 'Stammdaten bearbeiten';
 

@@ -1,0 +1,2240 @@
+import { z } from 'zod';
+import { antwort } from '@/lib/antwort';
+import { istBenachrichtigungsart, type Benachrichtigungsart } from '@/lib/begriffe';
+import type { PushRegistrierung } from '@/lib/push';
+import { getSupabase } from '@/lib/supabase';
+import { meldeSelbstAb } from '@/features/core/auth/eigeneAbmeldung';
+import { alleBytes, bereinigeBild } from '@/lib/dateien/metadaten';
+import {
+  lebensmittelfehler,
+  lebensmittelSchema,
+  quelleSchema,
+  type Lebensmittel,
+  type LebensmittelAngaben,
+  type Quelle,
+} from '@/features/nutrition/lebensmittel';
+import {
+  MAHLZEITEN,
+  schnellwahlSchema,
+  tagSchema,
+  zieleSchema,
+  type Mahlzeit,
+  type Mengenangabe,
+} from '@/features/nutrition/tagebuch';
+import { GESCHLECHTER, ZIELE, zielwerteSchema } from '@/features/nutrition/zielwerte';
+import { bereinigeVideo } from './videometadaten';
+
+/**
+ * Die Plattform spricht nur Plattformprojektionen an (ADR-023 Punkte 19, 26).
+ *
+ * Diese Datei ist der einzige Datenzugang des Features. `trennung.test.ts`
+ * hält fest, dass hier nichts aus den Praxisfeatures hereinkommt. Welche
+ * Zeilen die Person sieht, entscheidet der Server; die Oberfläche zeigt nur.
+ */
+
+const kontextSchema = z.object({
+  access_id: z.string().uuid(),
+  organization_name: z.string(),
+  relationship_kind: z.enum(['treatment', 'training']),
+  status: z.enum(['active', 'locked']),
+  readable: z.boolean(),
+  read_until: z.string().nullable(),
+  /** POR-006: eigener Zugang oder Vertretung (ADR-023 Punkt 13). */
+  access_kind: z.enum(['self', 'legal_representative', 'companion']),
+  /** Nur an einer lesbaren Vertretung: für wen sie handelt (Punkt 14). */
+  represented_name: z.string().nullable(),
+  /**
+   * DRP-N1: der eigene Name für Gruß und Initialen (`initialen` aus
+   * `@/components/ui/personenfarben`), nur an einem lesbaren Zugang. Eine
+   * Vertretung bekommt ihren eigenen, nie den der vertretenen Person.
+   */
+  own_name: z.string().nullable(),
+  /** DRP-N2: die Rufnummer der Praxis für „Praxis anrufen“, wo sie eine führt. */
+  practice_phone: z.string().nullable(),
+});
+export type Plattformzugang = z.infer<typeof kontextSchema>;
+export type Bereich = Plattformzugang['relationship_kind'];
+
+export const KONTEXT_SCHLUESSEL = ['platform-context'] as const;
+
+/**
+ * Die eigenen Zugänge mit Praxis und Zustand. Leer heißt: Dieses Konto hat
+ * keinen Zugang zur Plattform - dann ist es womöglich ein Konto mit offener
+ * Praxiseinladung (`ZugangEinrichtenPage`).
+ */
+export async function ladePlattformkontext(): Promise<Plattformzugang[]> {
+  const satz = 'Ihr Zugang konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_context')) as {
+    data: unknown;
+    error: unknown;
+  };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(kontextSchema), ergebnis.data ?? [], satz);
+}
+
+/** Die Bezeichnung eines Bereichs in der Sprache der Person (DSN-001 D6). */
+export const BEREICHSNAME: Record<Bereich, string> = {
+  treatment: 'Behandlung',
+  training: 'Training',
+};
+
+/**
+ * „Überall abmelden" (ADR-023 Punkt 18): beendet alle Sitzungen des Kontos
+ * beim Anmeldedienst. Anders als in der Praxis ohne Auditeintrag - das
+ * Protokoll kennt für die Plattform nur, was Punkt 24 nennt.
+ */
+export async function ueberallAbmelden(): Promise<void> {
+  // Selbst ausgelöst (BEF-047): kein „Ihre Sitzung wurde beendet" auf diesem Gerät.
+  const { error } = await meldeSelbstAb(() => getSupabase().auth.signOut({ scope: 'global' }));
+  if (error) throw new Error('Die Abmeldung auf allen Geräten ist nicht gelungen.');
+}
+
+// -----------------------------------------------------------------------------
+// Unter „Ich": wer für mich Zugang hat (POR-007, ADR-023 Punkt 14)
+// -----------------------------------------------------------------------------
+
+const vertretungSchema = z.object({
+  access_id: z.string().uuid(),
+  access_kind: z.enum(['legal_representative', 'companion']),
+  legal_basis: z.enum(['custody', 'guardianship', 'power_of_attorney']).nullable(),
+  representative_name: z.string(),
+  status: z.enum(['invited', 'active', 'locked']),
+  since: z.string(),
+  can_end: z.boolean(),
+});
+export type MeineVertretung = z.infer<typeof vertretungSchema>;
+
+export function vertretungenSchluessel(zugangId: string) {
+  return ['platform-representatives', zugangId] as const;
+}
+
+/**
+ * Wer für die Person Zugang hat. Der Server antwortet nur über den eigenen
+ * Zugang oder eine rechtliche Vertretung; einer Begleitung leer.
+ */
+export async function ladeMeineVertretungen(zugangId: string): Promise<MeineVertretung[]> {
+  const satz = 'Die Liste konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_representatives', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(vertretungSchema), ergebnis.data ?? [], satz);
+}
+
+/** Eine Begleitung beenden — der Widerruf der Einwilligung (Punkt 13). */
+export async function begleitungBeenden(zugangId: string, begleitungId: string): Promise<void> {
+  const satz = 'Die Begleitung konnte nicht beendet werden. Bitte wenden Sie sich an die Praxis.';
+  const ergebnis = (await getSupabase().rpc('end_platform_companion', {
+    p_access_id: zugangId,
+    p_companion_access_id: begleitungId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error || ergebnis.data !== true) throw new Error(satz);
+}
+
+// -----------------------------------------------------------------------------
+// Reiter „Termine": die eigenen Termine (POR-008, DSN-001 4.1)
+// -----------------------------------------------------------------------------
+
+const terminSchema = z.object({
+  id: z.string().uuid(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  appointment_type: z.enum(['home_visit', 'practice', 'video']),
+  /** Für die Person: dokumentiert und abgerechnet sind „durchgeführt". */
+  status: z.enum(['confirmed', 'cancelled', 'no_show', 'completed']),
+  staff_name: z.string().nullable(),
+  location_name: z.string().nullable(),
+  visit_street: z.string().nullable(),
+  visit_house_number: z.string().nullable(),
+  visit_postal_code: z.string().nullable(),
+  visit_city: z.string().nullable(),
+  /**
+   * POR-010: Ein Absagewunsch jetzt läge unter 24 Stunden - gerechnet vom
+   * Server (ADR-018 Punkt 8), nur am bestätigten künftigen Termin.
+   */
+  late_notice: z.boolean().nullable(),
+  /** POR-010: der offene Wunsch an diesem Termin. */
+  open_request_kind: z.enum(['change', 'cancel']).nullable(),
+});
+export type Termin = z.infer<typeof terminSchema>;
+
+export function termineSchluessel(zugangId: string) {
+  return ['platform-appointments', zugangId] as const;
+}
+
+/**
+ * Die eigenen Termine des gewählten Bereichs: künftige und die der letzten
+ * zwölf Monate (ANN-251). Welche Zeilen, entscheidet der Server über den
+ * Zugang; die Kennung wählt nur unter den eigenen aus (ADR-023 Punkt 19).
+ */
+export async function ladeTermine(zugangId: string): Promise<Termin[]> {
+  const satz = 'Ihre Termine konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_appointments', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(terminSchema), ergebnis.data ?? [], satz);
+}
+
+// -----------------------------------------------------------------------------
+// Terminwünsche (POR-009, PROJECT_PRINCIPLES.md 8, DSN-001 4.1, ANN-246)
+// -----------------------------------------------------------------------------
+
+export const TAGESZEITEN = ['morning', 'midday', 'afternoon'] as const;
+export type Tageszeit = (typeof TAGESZEITEN)[number];
+export const TAGESZEIT_NAME: Record<Tageszeit, string> = {
+  morning: 'Vormittag',
+  midday: 'Mittag',
+  afternoon: 'Nachmittag',
+};
+
+const wunschSchema = z.object({
+  id: z.string().uuid(),
+  kind: z.enum(['new', 'change', 'cancel']),
+  appointment_id: z.string().uuid().nullable(),
+  /** Kalendertage `YYYY-MM-DD`. */
+  preferred_days: z.array(z.string()),
+  preferred_times: z.array(z.enum(TAGESZEITEN)),
+  note: z.string().nullable(),
+  status: z.enum(['open', 'done', 'declined', 'withdrawn']),
+  created_at: z.string(),
+  resolved_at: z.string().nullable(),
+  answer: z.string().nullable(),
+});
+export type Terminwunsch = z.infer<typeof wunschSchema>;
+
+export function wuenscheSchluessel(zugangId: string) {
+  return ['platform-appointment-requests', zugangId] as const;
+}
+
+/** Die eigenen Wünsche des Bereichs, offene zuerst. */
+export async function ladeWuensche(zugangId: string): Promise<Terminwunsch[]> {
+  const satz = 'Ihre Terminwünsche konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_appointment_requests', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(wunschSchema), ergebnis.data ?? [], satz);
+}
+
+/**
+ * Einen Termin wünschen: Tage, Tageszeiten, eine freie Zeile. Ein Wunsch, kein
+ * Termin - einen Termin macht daraus die Praxis (§8). Die Grenzen prüft der
+ * Server; die Meldungen hier sagen, was zu tun ist (§13).
+ */
+export async function terminWuenschen(eingabe: {
+  zugangId: string;
+  tage: string[];
+  zeiten: Tageszeit[];
+  notiz: string;
+}): Promise<string> {
+  const ergebnis = (await getSupabase().rpc('request_platform_appointment', {
+    p_access_id: eingabe.zugangId,
+    p_days: eingabe.tage,
+    p_times: eingabe.zeiten,
+    p_note: eingabe.notiz.trim() === '' ? null : eingabe.notiz.trim(),
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) throw new Error(wunschfehler(ergebnis.error.message));
+  return antwort(z.string().uuid(), ergebnis.data, 'Ihr Wunsch konnte nicht gesendet werden.');
+}
+
+/** Verständliche Sätze für die Abweisungen des Servers, ohne interne Details. */
+export function wunschfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('at least one day')) return 'Bitte wählen Sie mindestens einen Tag.';
+  if (m.includes('too many days')) return 'Bitte wählen Sie höchstens 14 Tage.';
+  if (m.includes('day out of range'))
+    return 'Bitte wählen Sie Tage ab heute, höchstens ein Jahr voraus.';
+  if (m.includes('note too long')) return 'Ihre Nachricht darf höchstens 500 Zeichen lang sein.';
+  if (m.includes('not allowed'))
+    return 'Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.';
+  return 'Ihr Wunsch konnte nicht gesendet werden. Bitte versuchen Sie es erneut.';
+}
+
+/** Einen offenen Wunsch zurückziehen. */
+export async function wunschZurueckziehen(zugangId: string, wunschId: string): Promise<void> {
+  const satz = 'Der Wunsch konnte nicht zurückgezogen werden.';
+  const ergebnis = (await getSupabase().rpc('withdraw_platform_appointment_request', {
+    p_access_id: zugangId,
+    p_request_id: wunschId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error || ergebnis.data !== true) throw new Error(satz);
+}
+
+/**
+ * Termin ändern oder absagen - als Wunsch (POR-010, D4). Die Absage trägt
+ * das Büro ein; als Eingang gilt der Zeitpunkt dieses Wunsches (ANN-247).
+ */
+export async function terminAendernWuenschen(eingabe: {
+  zugangId: string;
+  terminId: string;
+  art: 'change' | 'cancel';
+  tage: string[];
+  zeiten: Tageszeit[];
+  notiz: string;
+}): Promise<string> {
+  const ergebnis = (await getSupabase().rpc('request_platform_appointment_change', {
+    p_access_id: eingabe.zugangId,
+    p_appointment_id: eingabe.terminId,
+    p_kind: eingabe.art,
+    p_days: eingabe.tage,
+    p_times: eingabe.zeiten,
+    p_note: eingabe.notiz.trim() === '' ? null : eingabe.notiz.trim(),
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) {
+    const m = ergebnis.error.message ?? '';
+    if (m.includes('request already open'))
+      throw new Error('Zu diesem Termin liegt schon ein Wunsch vor. Die Praxis meldet sich.');
+    if (m.includes('not confirmed') || m.includes('has started') || m.includes('not found'))
+      throw new Error('Dieser Termin lässt sich nicht mehr ändern. Bitte rufen Sie die Praxis an.');
+    throw new Error(wunschfehler(m));
+  }
+  return antwort(z.string().uuid(), ergebnis.data, 'Ihr Wunsch konnte nicht gesendet werden.');
+}
+
+// -----------------------------------------------------------------------------
+// Befundbogen vorab (POR-012, §7, DSN-001 4.1, ANN-248)
+// -----------------------------------------------------------------------------
+
+const bogenSchema = z.object({
+  id: z.string().uuid(),
+  instrument_id: z.string(),
+  definition_version: z.string(),
+  status: z.enum(['entwurf', 'abgeschlossen']),
+  recorded_on: z.string(),
+  source: z.enum(['practice', 'platform']),
+  /** Nur aus Erhebungen über die Plattform; eine in der Praxis erhobene bleibt Befund. */
+  answers: z.record(z.string(), z.unknown()).nullable(),
+  updated_at: z.string(),
+  completed_at: z.string().nullable(),
+});
+export type Bogenstand = z.infer<typeof bogenSchema>;
+
+export function befundbogenSchluessel(zugangId: string) {
+  return ['platform-questionnaire', zugangId] as const;
+}
+
+/** Der Stand der Bögen, die die Person ausfüllt - nur im Behandlungszugang. */
+export async function ladeBefundbogen(zugangId: string): Promise<Bogenstand[]> {
+  const satz = 'Ihr Fragebogen konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_questionnaire', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(bogenSchema), ergebnis.data ?? [], satz);
+}
+
+function bogenfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('already completed'))
+    return 'Ihr Fragebogen liegt der Praxis schon vor. Änderungen besprechen Sie beim Termin.';
+  if (m.includes('not available'))
+    return 'Dieser Bogen lässt sich zurzeit nicht ausfüllen. Bitte wenden Sie sich an die Praxis.';
+  if (m.includes('not allowed'))
+    return 'Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.';
+  if (m.includes('is completed')) return 'Dieser Bogen ist schon abgeschickt.';
+  return 'Ihre Angaben konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.';
+}
+
+/** Entwurf anlegen oder überschreiben; der Server prüft jede Antwort gegen die Definition. */
+export async function befundbogenSpeichern(eingabe: {
+  zugangId: string;
+  entwurfId: string | null;
+  instrumentId: string;
+  version: string;
+  antworten: Record<string, unknown>;
+}): Promise<string> {
+  const ergebnis = (await getSupabase().rpc('save_platform_questionnaire_response', {
+    p_access_id: eingabe.zugangId,
+    p_response_id: eingabe.entwurfId,
+    p_instrument_id: eingabe.instrumentId,
+    p_definition_version: eingabe.version,
+    p_answers: eingabe.antworten,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) throw new Error(bogenfehler(ergebnis.error.message));
+  return antwort(z.string().uuid(), ergebnis.data, bogenfehler(undefined));
+}
+
+/** Absenden: der Bogen ist abgeschlossen und liegt der Praxis vor. */
+export async function befundbogenAbsenden(zugangId: string, entwurfId: string): Promise<void> {
+  const ergebnis = (await getSupabase().rpc('complete_platform_questionnaire_response', {
+    p_access_id: zugangId,
+    p_response_id: entwurfId,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error || ergebnis.data !== true) {
+    throw new Error(bogenfehler(ergebnis.error?.message ?? 'not found'));
+  }
+}
+
+/** Den eigenen Entwurf verwerfen. */
+export async function befundbogenVerwerfen(zugangId: string, entwurfId: string): Promise<void> {
+  const ergebnis = (await getSupabase().rpc('discard_platform_questionnaire_response', {
+    p_access_id: zugangId,
+    p_response_id: entwurfId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error || ergebnis.data !== true) {
+    throw new Error('Der Entwurf konnte nicht verworfen werden.');
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Eigene Rechnungen (POR-013, DSN-001 D3, ADR-023 Punkt 16, ANN-250)
+// -----------------------------------------------------------------------------
+
+const rechnungZeileSchema = z.object({
+  id: z.string().uuid(),
+  invoice_number: z.string(),
+  issued_on: z.string(),
+  due_on: z.string(),
+  total_cents: z.number(),
+  currency: z.string(),
+  paid_cents: z.number(),
+  outstanding_cents: z.number(),
+  payment_state: z.enum(['unpaid', 'partially_paid', 'paid', 'overpaid']),
+  overdue: z.boolean(),
+  cancelled: z.boolean(),
+  cancelled_on: z.string().nullable(),
+  recipient_kind: z.string().nullable(),
+  recipient_name: z.string().nullable(),
+  service_from: z.string().nullable(),
+  service_to: z.string().nullable(),
+});
+export type Rechnungszeile = z.infer<typeof rechnungZeileSchema>;
+
+export function rechnungenSchluessel(zugangId: string) {
+  return ['platform-invoices', zugangId] as const;
+}
+
+/** Die ausgestellten Rechnungen des Bereichs - mit Recht `billing`, sonst leer. */
+export async function ladeRechnungen(zugangId: string): Promise<Rechnungszeile[]> {
+  const satz = 'Ihre Rechnungen konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_invoices', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(rechnungZeileSchema), ergebnis.data ?? [], satz);
+}
+
+const positionSchema = z.object({
+  performed_on: z.string(),
+  code: z.string(),
+  label: z.string(),
+  item_kind: z.string(),
+  quantity: z.number(),
+  unit_price_cents: z.number(),
+  line_total_cents: z.number(),
+  currency: z.string(),
+  tax_treatment: z.string(),
+  tax_rate_permille: z.number(),
+  /** ANG-002: letzter Tag eines Abo-Monats; ältere Snapshots tragen ihn nicht. */
+  period_until: z.string().nullable().optional(),
+});
+export type Rechnungsposition = z.infer<typeof positionSchema>;
+
+/** Das Blatt: der Snapshot der Praxis (ADR-009 Punkt 10), nur was das Blatt zeigt. */
+const rechnungSchema = z.object({
+  id: z.string().uuid(),
+  invoice_number: z.string(),
+  issued_on: z.string(),
+  due_on: z.string(),
+  paid_cents: z.number(),
+  outstanding_cents: z.number(),
+  payment_state: z.enum(['unpaid', 'partially_paid', 'paid', 'overpaid']),
+  cancellation: z.object({ cancellation_number: z.string(), cancelled_on: z.string() }).nullable(),
+  replaces_invoice_number: z.string().nullable(),
+  correction_invoice_number: z.string().nullable(),
+  document: z.object({
+    schema_version: z.number(),
+    currency: z.string(),
+    service_period: z.object({ from: z.string(), to: z.string() }).nullable().optional(),
+    period_month: z.string(),
+    issuer: z.object({
+      legal_name: z.string(),
+      street: z.string().optional(),
+      house_number: z.string().nullable().optional(),
+      postal_code: z.string().optional(),
+      city: z.string().optional(),
+      phone: z.string().nullable().optional(),
+      email: z.string().nullable().optional(),
+      tax_number: z.string().nullable().optional(),
+      vat_id: z.string().nullable().optional(),
+      bank_name: z.string().nullable().optional(),
+      account_holder: z.string().nullable().optional(),
+      iban: z.string().optional(),
+      bic: z.string().nullable().optional(),
+      payment_term_days: z.number().optional(),
+    }),
+    recipient: z.object({
+      kind: z.string(),
+      name: z.string(),
+      street: z.string().nullable().optional(),
+      house_number: z.string().nullable().optional(),
+      postal_code: z.string().nullable().optional(),
+      city: z.string().nullable().optional(),
+    }),
+    // Geburtsdatum und Behandlungsgrundlage stehen auf dem Blatt der Praxis
+    // (Beihilfe braucht beides) - die Person bekommt dasselbe Blatt (ANN-250).
+    patient: z.object({ name: z.string(), date_of_birth: z.string().nullable().optional() }),
+    treatment_bases: z
+      .array(
+        z.object({
+          kind: z.string(),
+          issued_on: z.string(),
+          prescriber: z.string().nullable().optional(),
+          diagnosis_icd10: z.string().nullable().optional(),
+          diagnosis: z.string().nullable().optional(),
+        }),
+      )
+      .optional(),
+    items: z.array(positionSchema),
+    tax_groups: z
+      .array(
+        z.object({
+          tax_treatment: z.string(),
+          tax_rate_permille: z.number(),
+          exemption_reason: z.string().nullable().optional(),
+          gross_cents: z.number(),
+          tax_cents: z.number(),
+          net_cents: z.number(),
+        }),
+      )
+      .optional(),
+    totals: z.object({ total_cents: z.number(), tax_total_cents: z.number() }),
+  }),
+});
+export type Rechnungsblatt = z.infer<typeof rechnungSchema>;
+
+export function rechnungSchluessel(zugangId: string, rechnungId: string) {
+  return ['platform-invoice', zugangId, rechnungId] as const;
+}
+
+/** Eine eigene Rechnung als Blatt; `null`, wenn es sie für diesen Zugang nicht gibt. */
+export async function ladeRechnung(
+  zugangId: string,
+  rechnungId: string,
+): Promise<Rechnungsblatt | null> {
+  const satz = 'Die Rechnung konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_invoice', {
+    p_access_id: zugangId,
+    p_invoice_id: rechnungId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  if (ergebnis.data === null || ergebnis.data === undefined) return null;
+  return antwort(rechnungSchema, ergebnis.data, satz);
+}
+
+// -----------------------------------------------------------------------------
+// Freigegebene Dokumente (POR-014, DSN-001 D3, ADR-017 Punkte 15, 54, 55, ANN-249)
+// -----------------------------------------------------------------------------
+
+const dokumentSchema = z.object({
+  id: z.string().uuid(),
+  document_type: z.string(),
+  display_name: z.string(),
+  mime_type: z.string(),
+  byte_size: z.coerce.number(),
+  released_at: z.string(),
+});
+export type Dokument = z.infer<typeof dokumentSchema>;
+
+export function dokumenteSchluessel(zugangId: string) {
+  return ['platform-files', zugangId] as const;
+}
+
+/** Die einzeln freigegebenen Dokumente der Akte - nur im Behandlungszugang. */
+export async function ladeDokumente(zugangId: string): Promise<Dokument[]> {
+  const satz = 'Ihre Dokumente konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_files', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(dokumentSchema), ergebnis.data ?? [], satz);
+}
+
+const verweisSchema = z.object({
+  bucket_id: z.string(),
+  object_key: z.string(),
+  display_name: z.string(),
+  mime_type: z.string(),
+});
+
+/** Gültigkeit eines signierten Verweises in Sekunden (ADR-017 Punkt 15). */
+const VERWEIS_GUELTIGKEIT_SEKUNDEN = 60;
+
+/**
+ * Der Verweis auf genau ein freigegebenes Dokument: erst die einmalige
+ * Freigabe des Servers (ohne Protokoll, ADR-010 Punkt 22), dann die
+ * Unterschrift der Ablage, die sie verbraucht (ADR-017 Punkte 15, 20, 21).
+ * Der Verweis verlässt dieses Modul nicht.
+ */
+async function dokumentVerweis(
+  zugangId: string,
+  dokumentId: string,
+  herunterladen: boolean,
+): Promise<{ url: string; mimeType: string; name: string }> {
+  const satz = 'Das Dokument konnte nicht geöffnet werden.';
+  const ergebnis = (await getSupabase().rpc('issue_platform_file_link', {
+    p_access_id: zugangId,
+    p_file_id: dokumentId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  const freigabe = antwort(z.array(verweisSchema), ergebnis.data ?? [], satz)[0];
+  if (!freigabe) throw new Error(satz);
+  const ablage = getSupabase().storage.from(freigabe.bucket_id);
+  const { data: signiert, error } = herunterladen
+    ? await ablage.createSignedUrl(freigabe.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN, {
+        download: freigabe.display_name,
+      })
+    : await ablage.createSignedUrl(freigabe.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN);
+  if (error || !signiert?.signedUrl) throw new Error(satz);
+  return { url: signiert.signedUrl, mimeType: freigabe.mime_type, name: freigabe.display_name };
+}
+
+/** Ein Bild zum Ansehen in der Anwendung (ADR-017 Punkt 54). */
+export async function ladeDokumentZumAnzeigen(
+  zugangId: string,
+  dokumentId: string,
+): Promise<{ bild: Blob; name: string }> {
+  const { url, mimeType, name } = await dokumentVerweis(zugangId, dokumentId, false);
+  const antwortDerAblage = await fetch(url, { cache: 'no-store' });
+  if (!antwortDerAblage.ok) throw new Error('Das Dokument konnte nicht geladen werden.');
+  return { bild: new Blob([await antwortDerAblage.arrayBuffer()], { type: mimeType }), name };
+}
+
+/** Ein Dokument auf das Gerät holen (ADR-017 Punkt 55), etwa ein PDF. */
+export async function ladeDokumentHerunter(zugangId: string, dokumentId: string): Promise<void> {
+  const { url } = await dokumentVerweis(zugangId, dokumentId, true);
+  const link = document.createElement('a');
+  link.href = url;
+  link.rel = 'noopener noreferrer';
+  link.download = '';
+  link.click();
+}
+
+// -----------------------------------------------------------------------------
+// Einwilligungen (POR-016, POR-017; ADR-023 Punkt 13; ANN-261, ANN-262)
+// -----------------------------------------------------------------------------
+
+const einwilligungSchema = z.object({
+  purpose: z.enum([
+    'email_contact',
+    'prescriber_report',
+    'patient_photos',
+    'training_health_data',
+    'message_attachments',
+  ]),
+  /** open: noch nie etwas; refused: in der Praxis abgelehnt (ADR-017 Punkt 35). */
+  state: z.enum(['open', 'granted', 'withdrawn', 'refused']),
+  occurred_on: z.string().nullable(),
+  /** Wer den Stand gesetzt hat: die Plattform oder ein Papier in der Praxis. */
+  source: z.enum(['practice', 'platform']).nullable(),
+  /** Nach der Lesefrist nur noch widerrufen (D2, ANN-261). */
+  can_grant: z.boolean(),
+});
+export type Einwilligung = z.infer<typeof einwilligungSchema>;
+
+export function einwilligungenSchluessel(zugangId: string) {
+  return ['platform-consents', zugangId] as const;
+}
+
+/**
+ * Der Stand je Zweck. Leer für eine Begleitung: Sie erteilt nichts, und der
+ * Stand geht sie nichts an (Punkt 13).
+ */
+export async function ladeEinwilligungen(zugangId: string): Promise<Einwilligung[]> {
+  const satz = 'Ihre Einwilligungen konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_consents', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(einwilligungSchema), ergebnis.data ?? [], satz);
+}
+
+/** Erteilen oder widerrufen, mit der Fassung des Texts, den die Person sah. */
+export async function einwilligungSchreiben(eingabe: {
+  zugangId: string;
+  zweck: Einwilligung['purpose'];
+  erteilen: boolean;
+  fassung: string;
+}): Promise<void> {
+  const ergebnis = (await getSupabase().rpc('record_platform_consent', {
+    p_access_id: eingabe.zugangId,
+    p_purpose: eingabe.zweck,
+    p_grant: eingabe.erteilen,
+    p_wording_version: eingabe.fassung,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) throw new Error(einwilligungsfehler(ergebnis.error.message));
+}
+
+/** Verständliche Sätze für die Abweisungen des Servers (§13). */
+export function einwilligungsfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('already granted')) return 'Diese Einwilligung ist schon erteilt.';
+  if (m.includes('no consent to withdraw'))
+    return 'Diese Einwilligung ist nicht erteilt. Es gibt nichts zu widerrufen.';
+  if (m.includes('wording outdated'))
+    return 'Der Text hat sich geändert. Bitte laden Sie die Seite neu und lesen Sie ihn noch einmal.';
+  if (m.includes('not allowed'))
+    return 'Das ist mit diesem Zugang nicht möglich. Bitte wenden Sie sich an die Praxis.';
+  return 'Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.';
+}
+
+// -----------------------------------------------------------------------------
+// Datenexport (POR-018, IDEA-QSN-003, ANN-265)
+// -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// Trainingspaket und Preise (ANG-008, IDEA-ANG-004, PROJECT_PRINCIPLES.md 4.10)
+// -----------------------------------------------------------------------------
+
+const meinPaketSchema = z.object({
+  label: z.string(),
+  package_months: z.number(),
+  price_cents: z.number(),
+  currency: z.string(),
+  starts_on: z.string(),
+  ends_on: z.string(),
+  /** Aus dem Tag: beginnt bald, läuft, vorbei. Kein Pausieren (ANN-277). */
+  state: z.enum(['planned', 'running', 'ended']),
+});
+export type MeinPaket = z.infer<typeof meinPaketSchema>;
+
+export function paketeSchluessel(zugangId: string) {
+  return ['platform-training-packages', zugangId] as const;
+}
+
+/** Die eigenen Pakete; `null` heißt: für diesen Zugang nicht sichtbar (Recht billing). */
+export async function ladeMeinePakete(zugangId: string): Promise<MeinPaket[] | null> {
+  const satz = 'Ihr Paket konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_training_packages', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(meinPaketSchema).nullable(), ergebnis.data ?? null, satz);
+}
+
+const angeboteSchema = z.object({
+  /** Enthält der Preis Umsatzsteuer? Unter § 19 UStG nicht. */
+  vat_included: z.boolean(),
+  offers: z.array(
+    z.object({
+      code: z.string(),
+      label: z.string(),
+      package_months: z.number(),
+      price_cents: z.number(),
+      currency: z.string(),
+      tax_rate_permille: z.number(),
+    }),
+  ),
+});
+export type Paketangebote = z.infer<typeof angeboteSchema>;
+
+export function angeboteSchluessel(zugangId: string) {
+  return ['platform-training-offers', zugangId] as const;
+}
+
+/** Die Pakete der geltenden Preisliste; `null`: für diesen Zugang keine (nur Training). */
+export async function ladeAngebote(zugangId: string): Promise<Paketangebote | null> {
+  const satz = 'Die Preise konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_training_offers', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(angeboteSchema.nullable(), ergebnis.data ?? null, satz);
+}
+
+const exportSchema = z.object({
+  format: z.literal('plattform-export'),
+  format_version: z.number(),
+  exported_at: z.string(),
+  organization: z.string(),
+  relationship: z.enum(['treatment', 'training']),
+  exported_by: z.enum(['self', 'legal_representative']),
+  person: z.record(z.string(), z.unknown()),
+  appointments: z.array(terminSchema),
+  appointment_requests: z.array(wunschSchema),
+  questionnaires: z.array(bogenSchema),
+  invoices: z.array(rechnungZeileSchema),
+  documents: z.array(dokumentSchema),
+  consents: z.array(einwilligungSchema.omit({ can_grant: true })),
+  /** ANG-008: die eigenen Trainingspakete; ältere Exporte tragen sie nicht. */
+  training_packages: z.array(meinPaketSchema).default([]),
+  /** KND-003: der im Konto geschlossene Trainingsvertrag; sonst null. */
+  training_contract: z
+    .lazy(() => vertragSchema)
+    .nullable()
+    .default(null),
+  /** KOM-004: die eigenen Nachrichten; ältere Exporte tragen sie nicht. */
+  messages: z.lazy(() => z.array(nachrichtSchema)).default([]),
+});
+export type Datenexport = z.infer<typeof exportSchema>;
+
+/**
+ * Die eigenen Daten der Plattform, wie der Server sie zusammensetzt. Jeder
+ * Aufruf steht im Protokoll der Praxis (ADR-023 Punkt 24) - die Seite ruft
+ * deshalb nur auf Knopfdruck auf und nie von selbst.
+ */
+export async function ladeDatenexport(
+  zugangId: string,
+): Promise<{ daten: Datenexport; roh: unknown }> {
+  const satz =
+    'Ihre Daten konnten nicht zusammengestellt werden. Bitte versuchen Sie es noch einmal.';
+  const ergebnis = (await getSupabase().rpc('platform_export', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return { daten: antwort(exportSchema, ergebnis.data, satz), roh: ergebnis.data };
+}
+
+/**
+ * BEF-189 (ADR-023 Punkt 13, Fassung 6): der Export einer Begleitung - nur
+ * ihre eigene Wahl zu Benachrichtigungen, nichts von der Person. Die Liste
+ * ist dieselbe wie im ganzen Export (`notifications`).
+ */
+const benachrichtigungsexportSchema = z.object({
+  format: z.literal('plattform-export'),
+  format_version: z.number(),
+  exported_at: z.string(),
+  organization: z.string(),
+  relationship: z.enum(['treatment', 'training']),
+  exported_by: z.literal('companion'),
+  notifications: z.object({
+    settings: z
+      .object({
+        email_kinds: z.array(z.string()),
+        push_kinds: z.array(z.string()),
+        quiet_from: z.number().nullable(),
+        quiet_until: z.number().nullable(),
+        chosen_at: z.string(),
+      })
+      .nullable(),
+    devices: z.array(z.object({ registered_at: z.string() })),
+    deliveries: z.array(z.object({ kind: z.string(), state: z.string() })),
+  }),
+});
+export type Benachrichtigungsexport = z.infer<typeof benachrichtigungsexportSchema>;
+
+/** Wie `ladeDatenexport`: nur auf Knopfdruck, jeder Aufruf steht im Protokoll. */
+export async function ladeBenachrichtigungsexport(
+  zugangId: string,
+): Promise<{ daten: Benachrichtigungsexport; roh: unknown }> {
+  const satz =
+    'Ihre Daten konnten nicht zusammengestellt werden. Bitte versuchen Sie es noch einmal.';
+  const ergebnis = (await getSupabase().rpc('platform_export_notifications', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return {
+    daten: antwort(benachrichtigungsexportSchema, ergebnis.data, satz),
+    roh: ergebnis.data,
+  };
+}
+
+// -----------------------------------------------------------------------------
+// Einstieg (POR-019, IDEA-LZK-005, ANN-266)
+// -----------------------------------------------------------------------------
+
+const einstiegSchema = z.object({
+  pending: z.boolean(),
+  finished_at: z.string().nullable(),
+  /** Von der Praxis übersprungen - ohne Namen (ADR-023 Punkt 22). */
+  skipped_at: z.string().nullable(),
+});
+export type Einstiegsstand = z.infer<typeof einstiegSchema>;
+
+export function einstiegSchluessel(zugangId: string) {
+  return ['platform-onboarding', zugangId] as const;
+}
+
+export async function ladeEinstieg(zugangId: string): Promise<Einstiegsstand | null> {
+  const satz = 'Der Einstieg konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_onboarding', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(einstiegSchema), ergebnis.data ?? [], satz)[0] ?? null;
+}
+
+/** Den Einstieg beenden - auch mit „Später"; danach kommt er nicht wieder. */
+export async function einstiegBeenden(zugangId: string): Promise<void> {
+  const ergebnis = (await getSupabase().rpc('finish_platform_onboarding', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error)
+    throw new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.');
+}
+
+// -----------------------------------------------------------------------------
+// Nachsorge-Abo (ANG-003, ANG-004; PROJECT_PRINCIPLES.md 4.6, ADR-009 Punkt 21)
+// -----------------------------------------------------------------------------
+
+const aboSchema = z.object({
+  id: z.string().uuid(),
+  starts_on: z.string(),
+  ends_on: z.string().nullable(),
+  /** Läuft, ist gekündigt und läuft noch, oder ist beendet. */
+  state: z.enum(['running', 'ending', 'ended']),
+  next_month_start: z.string().nullable(),
+  next_month_price_cents: z.number().nullable(),
+  /** Laufend: das Ende, auf das eine Kündigung heute fiele (ANN-270). */
+  cancel_effective_on: z.string().nullable(),
+  cancelled_at: z.string().nullable(),
+  cancelled_via: z.enum(['practice', 'platform']).nullable(),
+  /** Den Knopf haben die Person selbst und ihre rechtliche Vertretung (ANN-273). */
+  can_cancel: z.boolean(),
+});
+export type Nachsorgeabo = z.infer<typeof aboSchema>;
+
+export function aboSchluessel(zugangId: string) {
+  return ['platform-aftercare', zugangId] as const;
+}
+
+/** Das eigene Abo; `null` heißt: keins, oder für diesen Zugang nicht sichtbar. */
+export async function ladeAbo(zugangId: string): Promise<Nachsorgeabo | null> {
+  const satz = 'Ihr Abo konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_aftercare', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(aboSchema.nullable(), ergebnis.data ?? null, satz);
+}
+
+const kuendigungSchema = z.object({
+  ends_on: z.string(),
+  cancelled_at: z.string(),
+  cancelled_on: z.string(),
+});
+export type Kuendigungsbestaetigung = z.infer<typeof kuendigungSchema>;
+
+/** Der Kündigungsknopf (ANN-272): liefert die Bestätigung mit Zeitpunkt. */
+export async function aboKuendigen(
+  zugangId: string,
+  aboId: string,
+): Promise<Kuendigungsbestaetigung> {
+  const satz = 'Die Kündigung ist nicht angekommen. Bitte versuchen Sie es noch einmal.';
+  const ergebnis = (await getSupabase().rpc('cancel_platform_aftercare', {
+    p_access_id: zugangId,
+    p_subscription_id: aboId,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error?.message?.includes('already cancelled'))
+    throw new Error('Ihr Abo ist schon gekündigt.');
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(kuendigungSchema, ergebnis.data, satz);
+}
+
+// -----------------------------------------------------------------------------
+// Trainingsvertrag im eigenen Konto (KND-003, KND-004; PROJECT_PRINCIPLES.md
+// 4.10, ANN-288, ANN-289)
+// -----------------------------------------------------------------------------
+
+const praxisSchema = z.object({
+  name: z.string(),
+  street: z.string().nullable(),
+  house_number: z.string().nullable(),
+  postal_code: z.string().nullable(),
+  city: z.string().nullable(),
+  phone: z.string().nullable(),
+  email: z.string().nullable(),
+});
+
+const trainingsangebotSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string(),
+  package_months: z.number(),
+  price_cents: z.number(),
+  currency: z.string(),
+  tax_rate_permille: z.number(),
+  /** Enthält der Preis Umsatzsteuer? Unter § 19 UStG nicht. */
+  vat_included: z.boolean(),
+  starts_on: z.string(),
+  ends_on: z.string(),
+  valid_until: z.string(),
+  offered_on: z.string(),
+  handover_items: z.array(z.object({ title: z.string(), body: z.string() })),
+  /** Die Kontaktdaten der Akte, wenn die Praxis sie zur Übernahme anbietet. */
+  contact: z
+    .object({
+      date_of_birth: z.string().nullable(),
+      street: z.string().nullable(),
+      house_number: z.string().nullable(),
+      postal_code: z.string().nullable(),
+      city: z.string().nullable(),
+      phone: z.string().nullable(),
+      email: z.string().nullable(),
+    })
+    .nullable(),
+  /** Beginnt das Training innerhalb der Widerrufsfrist? */
+  early_start: z.boolean(),
+  withdrawal_days: z.number(),
+  wording_version: z.string(),
+  /** Warum (noch) nicht angenommen werden kann; null: es geht. */
+  blocker: z.string().nullable(),
+  /** Nur der eigene Zugang nimmt an (ANN-289). */
+  can_accept: z.boolean(),
+  practice: praxisSchema,
+});
+export type Trainingsangebot = z.infer<typeof trainingsangebotSchema>;
+
+export function trainingsangebotSchluessel(zugangId: string) {
+  return ['platform-training-offer', zugangId] as const;
+}
+
+/** Das offene Angebot der Praxis; `null`: keins, oder für diesen Zugang nicht sichtbar. */
+export async function ladeTrainingsangebot(zugangId: string): Promise<Trainingsangebot | null> {
+  const satz = 'Das Angebot konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_training_offer', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(trainingsangebotSchema.nullable(), ergebnis.data ?? null, satz);
+}
+
+const buchungSchema = z.object({
+  contract_id: z.string().uuid(),
+  training_access_id: z.string().uuid(),
+  concluded_at: z.string(),
+  label: z.string(),
+  package_months: z.number(),
+  price_cents: z.number(),
+  currency: z.string(),
+  starts_on: z.string(),
+  ends_on: z.string(),
+  withdrawal_ends_on: z.string(),
+  early_start_requested: z.boolean(),
+  contact_released: z.boolean(),
+  health_consent_granted: z.boolean(),
+  released_titles: z.array(z.string()),
+});
+export type Buchungsbestaetigung = z.infer<typeof buchungSchema>;
+
+export interface Buchung {
+  angebotId: string;
+  freigaben: number[];
+  kontakt: boolean;
+  einwilligung: boolean;
+  fruehBeginnen: boolean;
+  fassung: string;
+}
+
+/** „Zahlungspflichtig buchen": liefert die Bestätigung (ANN-288). */
+export async function angebotAnnehmen(
+  zugangId: string,
+  buchung: Buchung,
+): Promise<Buchungsbestaetigung> {
+  const satz = 'Die Buchung ist nicht angekommen. Bitte versuchen Sie es noch einmal.';
+  const ergebnis = (await getSupabase().rpc('accept_platform_training_offer', {
+    p_access_id: zugangId,
+    p_offer_id: buchung.angebotId,
+    p_release_items: buchung.freigaben,
+    p_release_contact: buchung.kontakt,
+    p_health_consent: buchung.einwilligung,
+    p_early_start: buchung.fruehBeginnen,
+    p_wording_version: buchung.fassung,
+  })) as { data: unknown; error: { message?: string } | null };
+  const meldung = ergebnis.error?.message ?? '';
+  if (meldung.includes('not open'))
+    throw new Error('Das Angebot gilt nicht mehr. Bitte sprechen Sie die Praxis an.');
+  if (meldung.includes('wording outdated'))
+    throw new Error('Die Bedingungen haben sich geändert. Bitte laden Sie die Seite neu.');
+  if (meldung.includes('health consent required'))
+    throw new Error(
+      'Angaben aus der Behandlung gehen nur mit Ihrer Einwilligung zu Gesundheitsangaben ins Training.',
+    );
+  if (meldung.includes('early start must be requested'))
+    throw new Error(
+      'Bitte bestätigen Sie, dass das Training vor dem Ende der Frist beginnen soll.',
+    );
+  if (meldung.includes('cannot be accepted'))
+    throw new Error(
+      'Das Angebot kann gerade nicht angenommen werden. Bitte laden Sie die Seite neu.',
+    );
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(buchungSchema, ergebnis.data, satz);
+}
+
+const vertragSchema = z.object({
+  id: z.string().uuid(),
+  concluded_at: z.string(),
+  label: z.string(),
+  package_months: z.number(),
+  price_cents: z.number(),
+  currency: z.string(),
+  tax_rate_permille: z.number(),
+  vat_included: z.boolean(),
+  starts_on: z.string(),
+  ends_on: z.string(),
+  offered_on: z.string(),
+  wording_version: z.string(),
+  early_start_requested: z.boolean(),
+  contact_released: z.boolean(),
+  health_consent_granted: z.boolean(),
+  withdrawal_ends_on: z.string(),
+  released_titles: z.array(z.string()),
+  /** KND-004: Eingang des Widerrufs; null: nicht widerrufen. */
+  withdrawn_at: z.string().nullable().default(null),
+  /** KND-004: Knopf da? In der Frist, nicht widerrufen, Recht contract. */
+  can_withdraw: z.boolean().default(false),
+});
+export type Trainingsvertrag = z.infer<typeof vertragSchema>;
+
+export function vertragSchluessel(zugangId: string) {
+  return ['platform-training-contract', zugangId] as const;
+}
+
+/** Der eigene Trainingsvertrag; `null`: keiner, oder für diesen Zugang nicht sichtbar. */
+export async function ladeVertrag(zugangId: string): Promise<Trainingsvertrag | null> {
+  const satz = 'Ihr Vertrag konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_training_contract', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(vertragSchema.nullable(), ergebnis.data ?? null, satz);
+}
+
+const widerrufSchema = z.object({
+  withdrawn_at: z.string(),
+  withdrawn_on: z.string(),
+  label: z.string(),
+  concluded_at: z.string(),
+});
+export type Widerrufseingang = z.infer<typeof widerrufSchema>;
+
+/** Die Widerrufsfunktion (§ 356a BGB, KND-004): liefert den Eingang mit Zeitpunkt. */
+export async function vertragWiderrufen(
+  zugangId: string,
+  vertragId: string,
+): Promise<Widerrufseingang> {
+  const satz = 'Der Widerruf ist nicht angekommen. Bitte versuchen Sie es noch einmal.';
+  const ergebnis = (await getSupabase().rpc('withdraw_platform_training_contract', {
+    p_access_id: zugangId,
+    p_contract_id: vertragId,
+  })) as { data: unknown; error: { message?: string } | null };
+  const meldung = ergebnis.error?.message ?? '';
+  if (meldung.includes('already withdrawn')) throw new Error('Sie haben schon widerrufen.');
+  if (meldung.includes('period has ended'))
+    throw new Error('Die Widerrufsfrist ist abgelaufen. Bitte wenden Sie sich an die Praxis.');
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(widerrufSchema, ergebnis.data, satz);
+}
+
+// -----------------------------------------------------------------------------
+// Übungen und Training (UEB-009, DSN-001 4.1 und 5)
+// -----------------------------------------------------------------------------
+
+const planPositionSchema = z.object({
+  id: z.string().uuid(),
+  position: z.number(),
+  variant_lay_name: z.string(),
+  instruction: z.string().nullable(),
+  equipment: z.array(z.string()),
+  sets: z.number(),
+  reps_min: z.number().nullable(),
+  reps_max: z.number().nullable(),
+  duration_seconds: z.number().nullable(),
+  /** UEB-012 (ANN-384): Halten je Wiederholung, je Seite, Häufigkeit am Tag. */
+  hold_seconds: z.number().nullable().default(null),
+  per_side: z.boolean().default(false),
+  times_per_day: z.number().nullable().default(null),
+  load: z.string().nullable(),
+  tempo: z.string().nullable(),
+  rest_seconds: z.number().nullable(),
+  double_progression: z.boolean(),
+  note: z.string().nullable(),
+});
+export type PlanPosition = z.infer<typeof planPositionSchema>;
+
+const eigenerPlanSchema = z.object({
+  id: z.string().uuid(),
+  service_area: z.enum(['therapy', 'training']),
+  title: z.string(),
+  status: z.enum(['assigned', 'ended']),
+  sessions_per_week: z.number().nullable(),
+  assigned_on: z.string().nullable(),
+  runs_from: z.string().nullable(),
+  runs_until: z.string().nullable(),
+  ended_on: z.string().nullable(),
+  /** UEB-010: Darf dieser Zugang heute an diesem Plan üben? Der Server rechnet. */
+  can_exercise: z.boolean(),
+  /** Im Training nur mit Einwilligung zu Gesundheitsangaben (ANN-306). */
+  note_allowed: z.boolean(),
+  /** Die heute begonnene, nicht beendete Einheit mit ihren Haken (ANN-305). */
+  open_session: z
+    .object({
+      id: z.string().uuid(),
+      sets: z.array(z.object({ item_id: z.string().uuid(), set_number: z.number() })),
+    })
+    .nullable(),
+  /** UEB-011: Darf dieser Zugang Übungstage wählen - auch vor dem Beginn? */
+  can_choose_days: z.boolean(),
+  /** UEB-011: die gewählten Übungstage, ISO 1 Montag bis 7 Sonntag (ANN-307). */
+  weekdays: z.array(z.number().int().min(1).max(7)),
+  /** Die Tage der letzten vier Wochen, an denen geübt wurde. */
+  recent_sessions: z.array(z.object({ performed_on: z.string(), finished: z.boolean() })),
+  items: z.array(planPositionSchema),
+});
+export type EigenerPlan = z.infer<typeof eigenerPlanSchema>;
+
+const eigenePlaeneSchema = z.object({
+  /** Der Tag in der Zeitzone der Praxis. */
+  today: z.string(),
+  plans: z.array(eigenerPlanSchema),
+});
+export type EigenePlaene = z.infer<typeof eigenePlaeneSchema>;
+
+export function plaeneSchluessel(zugangId: string) {
+  return ['platform-exercise-plans', zugangId] as const;
+}
+
+/**
+ * Die zugewiesenen Pläne des gewählten Bereichs, sonst der zuletzt beendete
+ * (ANN-304) - als Schnappschuss in Alltagssprache. Welche, entscheidet der
+ * Server über den Zugang (ADR-023 Punkt 22).
+ */
+export async function ladePlaene(zugangId: string): Promise<EigenePlaene> {
+  const satz = 'Ihre Übungen konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_exercise_plans', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(eigenePlaeneSchema, ergebnis.data ?? { today: '', plans: [] }, satz);
+}
+
+/** TRK-007: ein Ereignis einer Einheit, wie das Gerät es erfasst hat (ADR-024 Punkt 7). */
+export type Einheitsereignis =
+  | {
+      id: string;
+      kind: 'set';
+      /** Uhr des Geräts - eine Angabe der Person (Punkt 8). */
+      at: string;
+      item_id: string;
+      set_number: number;
+      done: boolean;
+    }
+  | { id: string; kind: 'finish'; at: string; note: string; values: Record<string, number> };
+
+const uebertragungSchema = z.object({
+  session_id: z.string().uuid(),
+  status: z.enum(['ok', 'finished', 'closed', 'empty']),
+  note_dropped: z.boolean(),
+});
+export type Uebertragung = z.infer<typeof uebertragungSchema>;
+
+/**
+ * Der Server hat die Einheit beim Eingang abgewiesen (ADR-024 Punkt 8). Die
+ * Ansicht sagt den Grund und verwirft sie danach; ein Funkloch ist das nicht.
+ */
+export class UebertragungAbgewiesen extends Error {
+  constructor(satz: string) {
+    super(satz);
+    this.name = 'UebertragungAbgewiesen';
+  }
+}
+
+export const ABWEISUNGSSAETZE = {
+  zugang: 'Sie können mit diesem Zugang gerade nicht mehr üben.',
+  plan: 'Der Plan gilt nicht mehr.',
+  form: 'Die Einheit ließ sich nicht übertragen.',
+} as const;
+
+/**
+ * TRK-007: eine Einheit übertragen - zweimal gesendet ist einmal gespeichert
+ * (ANN-357). Wirft `UebertragungAbgewiesen` mit dem Grund, sonst bei
+ * Funkloch einen gewöhnlichen Fehler.
+ */
+export async function einheitUebertragen(
+  zugangId: string,
+  einheit: {
+    id: string;
+    planId: string;
+    tag: string;
+    begonnenAm: string;
+    ereignisse: Einheitsereignis[];
+  },
+): Promise<Uebertragung> {
+  const satz = 'Nicht übertragen. Bitte die Verbindung prüfen.';
+  const { data, error } = (await getSupabase().rpc('sync_platform_exercise_session', {
+    p_access_id: zugangId,
+    p_plan_id: einheit.planId,
+    p_session_id: einheit.id,
+    p_performed_on: einheit.tag,
+    p_started_at: einheit.begonnenAm,
+    p_events: einheit.ereignisse,
+  })) as { data: unknown; error: { code?: string } | null };
+  const code = error?.code;
+  // 28000: Die Sitzung ist gesperrt - kein Urteil über die Daten. Sie bleiben
+  // auf dem Gerät bis nach dem Entsperren (Zweitreview B1).
+  if (code === '42501') throw new UebertragungAbgewiesen(ABWEISUNGSSAETZE.zugang);
+  if (code === 'P0002') throw new UebertragungAbgewiesen(ABWEISUNGSSAETZE.plan);
+  if (code === '22023' || code === '22P02') throw new UebertragungAbgewiesen(ABWEISUNGSSAETZE.form);
+  if (error) throw new Error(satz);
+  return antwort(uebertragungSchema, data, satz);
+}
+
+/** UEB-011: die eigenen Übungstage eines Plans wählen (ANN-307). */
+export async function uebungstageSetzen(
+  zugangId: string,
+  planId: string,
+  wochentage: number[],
+): Promise<void> {
+  const { error } = await getSupabase().rpc('set_platform_exercise_days', {
+    p_access_id: zugangId,
+    p_plan_id: planId,
+    p_weekdays: wochentage,
+  });
+  if (error) throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
+}
+
+// -----------------------------------------------------------------------------
+// Nachrichten (KOM-001, IDEA-KOM-001, DSN-001 4.1)
+// -----------------------------------------------------------------------------
+
+const nachrichtEintragSchema = z.object({
+  id: z.string().uuid(),
+  side: z.enum(['person', 'practice']),
+  body: z.string(),
+  created_at: z.string(),
+  /** Wer geschrieben hat: dieser Zugang, die Person selbst, eine Vertretung, die Praxis. */
+  author: z.enum(['you', 'person', 'representative', 'practice']),
+  /** Nur bei einer Vertretung: ihr Name (ADR-023 Punkt 14). */
+  author_label: z.string().nullable(),
+  /** KOM-005 (ANN-338): Antwort der Praxis mit Zeitmarke in einem Video. */
+  attachment_id: z.string().uuid().nullable().optional(),
+  attachment_mark_seconds: z.number().int().nullable().optional(),
+});
+export type NachrichtEintrag = z.infer<typeof nachrichtEintragSchema>;
+
+const nachrichtSchema = z.object({
+  id: z.string().uuid(),
+  topic: z.enum(['exercise', 'complaint', 'organisational', 'other']),
+  /** Plan oder Übung, auf die sich die Frage bezieht - als Schnappschuss. */
+  reference_label: z.string().nullable(),
+  status: z.enum(['open', 'answered', 'closed']),
+  /** Antwort fällig bis (ANN-309); nur solange die Praxis am Zug ist. */
+  due_on: z.string().nullable(),
+  created_at: z.string(),
+  last_entry_at: z.string(),
+  closed_at: z.string().nullable(),
+  closed_by_side: z.enum(['person', 'practice']).nullable(),
+  entries: z.array(nachrichtEintragSchema),
+  /** KOM-005: wie viele Anhänge der Vorgang hat (Grenze drei); null für die Begleitung. */
+  attachment_count: z.number().int().nullable().optional(),
+  /** KOM-005: die sichtbaren Fotos und Videos, ohne Objektschlüssel. */
+  attachments: z.lazy(() => z.array(anhangSchema)).optional(),
+});
+export type Nachricht = z.infer<typeof nachrichtSchema>;
+
+const anhangSchema = z.object({
+  id: z.string().uuid(),
+  media_kind: z.enum(['photo', 'video']),
+  mime_type: z.string(),
+  duration_seconds: z.number().int().nullable(),
+  created_at: z.string(),
+  /** Der Tag, an dem der Anhang spätestens gelöscht wird (ADR-017 Punkt 65). */
+  delete_on: z.string(),
+  author: z.enum(['you', 'person', 'representative']),
+  author_label: z.string().nullable(),
+  /** Am Server geprüft (Punkt 49); sonst „nicht serverseitig geprüft". */
+  server_verified: z.boolean(),
+  /** Auf Schadsoftware geprüft (Punkt 69); seit ADR-017 Fassung 6 nie. */
+  malware_scanned: z.boolean(),
+});
+export type Anhang = z.infer<typeof anhangSchema>;
+
+const nachrichtenSchema = z.object({
+  /** Antwortfrist der Praxis in Werktagen (ANN-309). */
+  response_workdays: z.number().int(),
+  /** Darf dieser Zugang schreiben? Nicht in der Lesefrist (ANN-313). */
+  can_write: z.boolean(),
+  /** Im Training Übung und Beschwerden nur mit Einwilligung (ANN-311). */
+  health_topics: z.boolean(),
+  /** KOM-005 (ADR-017 Punkt 59, ANN-332): Foto und Video anhängen. */
+  can_attach: z.boolean().optional(),
+  /** Stand der Einwilligung zu Anhängen; null für die Begleitung (Punkt 67). */
+  attachment_consent: z.enum(['open', 'granted', 'withdrawn', 'refused']).nullable().optional(),
+  attachment_limit: z.number().int().optional(),
+  attachment_max_seconds: z.number().int().optional(),
+  messages: z.array(nachrichtSchema),
+});
+export type Nachrichten = z.infer<typeof nachrichtenSchema>;
+
+export function nachrichtenSchluessel(zugangId: string) {
+  return ['platform-messages', zugangId] as const;
+}
+
+/** Die Vorgänge des gewählten Bereichs mit ihren Einträgen, offene zuerst. */
+export async function ladeNachrichten(zugangId: string): Promise<Nachrichten> {
+  const satz = 'Ihre Nachrichten konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_messages', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error || ergebnis.data === null) throw new Error(satz);
+  return antwort(nachrichtenSchema, ergebnis.data, satz);
+}
+
+/** Verständliche Sätze für die Abweisungen des Servers, ohne interne Details. */
+export function nachrichtenfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('text is required')) return 'Bitte schreiben Sie Ihre Frage.';
+  if (m.includes('text too long')) return 'Ihre Nachricht darf höchstens 2000 Zeichen lang sein.';
+  if (m.includes('needs consent'))
+    return 'Fragen zu Übungen und Beschwerden brauchen Ihre Einwilligung. Bitte wählen Sie ein anderes Thema oder willigen Sie unter „Ich“ ein.';
+  if (m.includes('is closed'))
+    return 'Diese Nachricht ist erledigt. Bitte schreiben Sie eine neue.';
+  if (m.includes('not found'))
+    return 'Diese Übung ist nicht mehr in Ihrem Plan. Bitte wählen Sie neu.';
+  if (m.includes('not allowed'))
+    return 'Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.';
+  return 'Ihre Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.';
+}
+
+/** Eine Frage stellen. Liefert die Kennung des Vorgangs. */
+export async function nachrichtStellen(eingabe: {
+  zugangId: string;
+  thema: Nachricht['topic'];
+  text: string;
+  planId: string | null;
+  positionId: string | null;
+}): Promise<string> {
+  const ergebnis = (await getSupabase().rpc('start_platform_message', {
+    p_access_id: eingabe.zugangId,
+    p_topic: eingabe.thema,
+    p_body: eingabe.text,
+    p_plan_id: eingabe.planId,
+    p_item_id: eingabe.positionId,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) throw new Error(nachrichtenfehler(ergebnis.error.message));
+  return antwort(z.string().uuid(), ergebnis.data, 'Ihre Nachricht konnte nicht gesendet werden.');
+}
+
+/** Zu einer offenen oder beantworteten Nachricht nachtragen. */
+export async function nachrichtNachtragen(
+  zugangId: string,
+  nachrichtId: string,
+  text: string,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('add_platform_message_entry', {
+    p_access_id: zugangId,
+    p_message_id: nachrichtId,
+    p_body: text,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error(nachrichtenfehler(error.message));
+}
+
+/** Eine Nachricht als erledigt markieren. */
+export async function nachrichtErledigen(zugangId: string, nachrichtId: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('close_platform_message', {
+    p_access_id: zugangId,
+    p_message_id: nachrichtId,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
+}
+
+// -----------------------------------------------------------------------------
+// Foto und Video an der Rückfrage (KOM-007, ADR-017 Abschnitt L)
+//
+// Derselbe Weg wie jede Datei (Punkt 60): erst bereinigen, dann Phase (a)
+// beim Server, (b) Upload unter genau dem Schlüssel mit `cacheControl: '0'`,
+// (c) Bestätigung; danach die Prüfung am Server, wo es sie gibt. Der
+// Objektschlüssel verlässt diese Datei nicht.
+// -----------------------------------------------------------------------------
+
+/** Was die Person liest, wenn ein Anhang nicht angenommen wird (§13). */
+export function anhangfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('no consent'))
+    return 'Dafür fehlt Ihre Einwilligung. Bitte willigen Sie zuerst ein.';
+  if (m.includes('not offered'))
+    return 'Fotos und Videos gibt es im Nachsorge-Abo und im Training.';
+  if (m.includes('too many')) return 'An eine Frage passen höchstens drei Fotos oder Videos.';
+  if (m.includes('too long')) return 'Ein Video darf höchstens 30 Sekunden lang sein.';
+  if (m.includes('too large')) return 'Die Aufnahme ist zu groß. Bitte kürzer aufnehmen.';
+  if (m.includes('is closed'))
+    return 'Diese Nachricht ist erledigt. Bitte schreiben Sie eine neue.';
+  return 'Die Aufnahme konnte nicht gesendet werden. Bitte versuchen Sie es erneut.';
+}
+
+/** Was die Person liest, wenn der Server einen Anhang verwirft (Punkt 52). */
+export const ANHANG_VERWORFEN =
+  'Die Aufnahme wurde bei der Prüfung verworfen. Bitte nehmen Sie sie noch einmal auf.';
+
+async function pruefsummeVon(daten: Blob): Promise<string> {
+  const bytes = await alleBytes(daten);
+  const hash = await crypto.subtle.digest('SHA-256', bytes as BufferSource);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+const vorbereitetSchema = z.object({
+  attachment_id: z.string().uuid(),
+  bucket_id: z.string(),
+  object_key: z.string(),
+});
+
+/**
+ * Eine Aufnahme an eine Nachricht hängen. Ein Foto kommt aus dem
+ * Kameradialog, ein Video aus dem Videodialog - beide nur im Speicher der
+ * Seite (Punkte 33, 62).
+ */
+export async function anhangSenden(eingabe: {
+  zugangId: string;
+  nachrichtId: string;
+  aufnahme: Blob;
+  art: 'photo' | 'video';
+  /** Sekunden, nur beim Video. */
+  dauer: number | null;
+}): Promise<void> {
+  // Punkte 34 und 64: Angaben verlassen das Gerät nicht.
+  let daten: Blob;
+  if (eingabe.art === 'photo') {
+    daten = await bereinigeBild(eingabe.aufnahme);
+    if (daten.type !== 'image/jpeg') throw new Error(anhangfehler(undefined));
+  } else {
+    const video = await bereinigeVideo(eingabe.aufnahme);
+    if (!video.ok) {
+      throw new Error(
+        video.grund === 'ton'
+          ? 'Die Aufnahme enthält Ton. Videos werden nur ohne Ton angenommen.'
+          : 'Dieses Videoformat wird nicht angenommen.',
+      );
+    }
+    daten = video.video;
+  }
+  const summe = await pruefsummeVon(daten);
+
+  const vorbereitung = (await getSupabase().rpc('prepare_message_attachment_upload', {
+    p_access_id: eingabe.zugangId,
+    p_message_id: eingabe.nachrichtId,
+    p_mime_type: daten.type,
+    p_byte_size: daten.size,
+    p_checksum_sha256: summe,
+    p_duration_seconds: eingabe.art === 'video' ? eingabe.dauer : null,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (vorbereitung.error) throw new Error(anhangfehler(vorbereitung.error.message));
+  const vorbereitet = antwort(
+    z.array(vorbereitetSchema),
+    vorbereitung.data ?? [],
+    anhangfehler(undefined),
+  )[0];
+  if (!vorbereitet) throw new Error(anhangfehler(undefined));
+
+  try {
+    const { error: uploadFehler } = await getSupabase()
+      .storage.from(vorbereitet.bucket_id)
+      .upload(vorbereitet.object_key, daten, {
+        contentType: daten.type,
+        cacheControl: '0',
+        upsert: false,
+      });
+    if (uploadFehler) throw new Error(anhangfehler(undefined));
+    const { error } = (await getSupabase().rpc('confirm_message_attachment_upload', {
+      p_access_id: eingabe.zugangId,
+      p_attachment_id: vorbereitet.attachment_id,
+    })) as { error: { message?: string } | null };
+    if (error) throw new Error(anhangfehler(error.message));
+  } catch (fehler) {
+    try {
+      await getSupabase().rpc('discard_message_attachment_upload', {
+        p_access_id: eingabe.zugangId,
+        p_attachment_id: vorbereitet.attachment_id,
+      });
+    } catch {
+      // Der ursprüngliche Grund ist die Meldung; der Lauf räumt nach 24 Stunden auf.
+    }
+    throw fehler;
+  }
+
+  // Die Prüfung am Server (Punkte 49 bis 52), wo die Function läuft. Fehlt
+  // sie, bleibt der Anhang „nicht serverseitig geprüft" (Punkt 51).
+  try {
+    const { data } = (await getSupabase().functions.invoke<unknown>('patient-file-verify', {
+      body: { attachment_id: vorbereitet.attachment_id },
+    })) as { data: unknown };
+    const pruefung = z.object({ ergebnis: z.string() }).safeParse(data);
+    if (pruefung.success && pruefung.data.ergebnis === 'rejected') {
+      throw new Error(ANHANG_VERWORFEN);
+    }
+  } catch (fehler) {
+    if (fehler instanceof Error && fehler.message === ANHANG_VERWORFEN) throw fehler;
+  }
+}
+
+/**
+ * Lädt einen Anhang zum Ansehen in den Speicher der Seite (Punkt 54): erst
+ * die einmalige Freigabe, dann die Unterschrift, dann `fetch` ohne Cache.
+ * Kein Downloadname, nie ein Fenster auf den Verweis.
+ */
+export async function ladeAnhang(zugangId: string, anhangId: string): Promise<Blob> {
+  const satz = 'Die Aufnahme konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('issue_platform_message_attachment_link', {
+    p_access_id: zugangId,
+    p_attachment_id: anhangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  const freigabe = antwort(
+    z.array(z.object({ bucket_id: z.string(), object_key: z.string(), mime_type: z.string() })),
+    ergebnis.data ?? [],
+    satz,
+  )[0];
+  if (!freigabe) throw new Error(satz);
+  const { data: signiert, error } = await getSupabase()
+    .storage.from(freigabe.bucket_id)
+    .createSignedUrl(freigabe.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN);
+  if (error || !signiert?.signedUrl) throw new Error(satz);
+  const antwortDerAblage = await fetch(signiert.signedUrl, { cache: 'no-store' });
+  if (!antwortDerAblage.ok) throw new Error(satz);
+  return new Blob([await antwortDerAblage.arrayBuffer()], { type: freigabe.mime_type });
+}
+
+/** Einen eigenen Anhang löschen - jederzeit (Punkt 67). */
+export async function anhangLoeschen(zugangId: string, anhangId: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('delete_platform_message_attachment', {
+    p_access_id: zugangId,
+    p_attachment_id: anhangId,
+  })) as { error: unknown };
+  if (error) throw new Error('Die Aufnahme konnte nicht gelöscht werden. Bitte erneut versuchen.');
+}
+
+// -----------------------------------------------------------------------------
+// Benachrichtigungen (KOM-011, ADR-024 Punkt 15)
+// -----------------------------------------------------------------------------
+
+const artSchema = z.string().refine(istBenachrichtigungsart);
+
+const benachrichtigungSchema = z.object({
+  email_kinds: z.array(artSchema),
+  push_kinds: z.array(artSchema),
+  quiet_from: z.number().int().min(0).max(23),
+  quiet_until: z.number().int().min(0).max(23),
+  chosen_at: z.string().nullable(),
+  disabled_kinds: z.array(z.string()),
+  device_registered: z.boolean(),
+});
+export type Benachrichtigungswahl = Omit<
+  z.infer<typeof benachrichtigungSchema>,
+  'email_kinds' | 'push_kinds'
+> & { email_kinds: Benachrichtigungsart[]; push_kinds: Benachrichtigungsart[] };
+
+export function benachrichtigungSchluessel(zugangId: string, endpunkt: string | null) {
+  return ['platform-notifications', zugangId, endpunkt] as const;
+}
+
+export async function ladeBenachrichtigungen(
+  zugangId: string,
+  endpunkt: string | null,
+): Promise<Benachrichtigungswahl | null> {
+  const satz = 'Ihre Benachrichtigungen konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_notification_settings', {
+    p_access_id: zugangId,
+    p_endpoint: endpunkt,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  const zeile = antwort(z.array(benachrichtigungSchema), ergebnis.data ?? [], satz)[0];
+  return (zeile as Benachrichtigungswahl | undefined) ?? null;
+}
+
+export async function speichereBenachrichtigungen(
+  zugangId: string,
+  wahl: Pick<Benachrichtigungswahl, 'email_kinds' | 'push_kinds' | 'quiet_from' | 'quiet_until'>,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('set_platform_notification_settings', {
+    p_access_id: zugangId,
+    p_email_kinds: wahl.email_kinds,
+    p_push_kinds: wahl.push_kinds,
+    p_quiet_from: wahl.quiet_from,
+    p_quiet_until: wahl.quiet_until,
+  })) as { error: unknown };
+  if (error) throw new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.');
+}
+
+/** Dieses Gerät für Push an den eigenen Zugängen registrieren. */
+export async function registriereGeraet(
+  zugangIds: readonly string[],
+  geraet: PushRegistrierung,
+): Promise<void> {
+  for (const zugangId of zugangIds) {
+    const { error } = (await getSupabase().rpc('register_platform_push_subscription', {
+      p_access_id: zugangId,
+      p_endpoint: geraet.endpoint,
+      p_p256dh: geraet.p256dh,
+      p_auth: geraet.auth,
+    })) as { error: unknown };
+    if (error) throw new Error('Dieses Gerät konnte nicht eingetragen werden.');
+  }
+}
+
+/** Push auf diesem Gerät ausschalten - an allen eigenen Zugängen. */
+export async function entferneGeraet(endpunkt: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('remove_platform_push_subscription', {
+    p_endpoint: endpunkt,
+  })) as { error: unknown };
+  if (error) throw new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.');
+}
+
+// -----------------------------------------------------------------------------
+// TRK-003: Check-in (DSN-001 4.1 und 5)
+// -----------------------------------------------------------------------------
+
+const checkinVerlaufSchema = z.object({
+  answered_on: z.string(),
+  recorded_by_kind: z.enum(['self', 'legal_representative']),
+  values: z.record(z.string(), z.number()),
+});
+
+const eigeneCheckinsSchema = z.object({
+  today: z.string(),
+  schedule: z.object({ interval_days: z.number(), parameter_keys: z.array(z.string()) }).nullable(),
+  due_on: z.string().nullable(),
+  due: z.boolean(),
+  /** Darf dieser Zugang jetzt antworten? Recht, Lesefrist, Einwilligung. */
+  can_answer: z.boolean(),
+  /** Im Training fehlt die Einwilligung zu Gesundheitsangaben. */
+  consent_needed: z.boolean(),
+  /** Die letzte Angabe je Frage - nur als Hinweis (ANN-349). */
+  last_values: z.record(z.string(), z.number()),
+  history: z.array(checkinVerlaufSchema),
+  /** OUT-004: die eigenen Angaben nach den Einheiten, jüngste zuerst (ANN-367). */
+  session_history: z
+    .array(
+      z.object({
+        performed_on: z.string(),
+        plan_title: z.string(),
+        recorded_by_kind: z.enum(['self', 'legal_representative']),
+        values: z.record(z.string(), z.number()),
+      }),
+    )
+    .default([]),
+});
+
+export type EigeneCheckins = z.infer<typeof eigeneCheckinsSchema>;
+
+export function checkinsSchluessel(zugangId: string) {
+  return ['platform-checkins', zugangId] as const;
+}
+
+/** Ob ein Check-in fällig ist, die Fragen und „Meine Angaben" (TRK-003). */
+export async function ladeCheckins(zugangId: string): Promise<EigeneCheckins | null> {
+  const satz = 'Ihr Check-in konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_checkins', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  if (ergebnis.data === null) return null;
+  return antwort(eigeneCheckinsSchema, ergebnis.data, satz);
+}
+
+/** Einen fälligen Check-in beantworten; nur die beantworteten Fragen. */
+export async function checkinAbsenden(
+  zugangId: string,
+  werte: Record<string, number>,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('submit_platform_checkin', {
+    p_access_id: zugangId,
+    p_values: werte,
+  })) as { error: { message?: string } | null };
+  if (!error) return;
+  const m = error.message ?? '';
+  if (m.includes('not due')) throw new Error('Diesen Check-in haben Sie schon beantwortet. Danke.');
+  if (m.includes('no answer')) throw new Error('Bitte beantworten Sie mindestens eine Frage.');
+  if (m.includes('no checkin schedule'))
+    throw new Error('Ihre Praxis hat den Check-in gerade beendet.');
+  if (m.includes('consent') || m.includes('not allowed'))
+    throw new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');
+  throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+}
+
+// -----------------------------------------------------------------------------
+// ALT-003: Gewohnheiten (IDEA-ALT-002, ANN-370)
+// -----------------------------------------------------------------------------
+
+const eigeneGewohnheitenSchema = z.object({
+  today: z.string(),
+  /** So viele Tage zurück vermerkt die Person, heute eingeschlossen. */
+  mark_days: z.number(),
+  /** Darf dieser Zugang vermerken? Recht, Lesefrist, Einwilligung. */
+  can_mark: z.boolean(),
+  consent_needed: z.boolean(),
+  habits: z.array(
+    z.object({
+      id: z.string(),
+      action: z.string(),
+      cue: z.string(),
+      place: z.string().nullable(),
+      starts_on: z.string(),
+      paused: z.boolean(),
+      ended_at: z.string().nullable(),
+      marks: z.array(z.string()),
+    }),
+  ),
+});
+
+export type EigeneGewohnheiten = z.infer<typeof eigeneGewohnheitenSchema>;
+export type EigeneGewohnheit = EigeneGewohnheiten['habits'][number];
+
+export function gewohnheitenSchluessel(zugangId: string) {
+  return ['platform-habits', zugangId] as const;
+}
+
+export async function ladeGewohnheiten(zugangId: string): Promise<EigeneGewohnheiten | null> {
+  const satz = 'Ihre Gewohnheiten konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_habits', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  if (ergebnis.data === null) return null;
+  return antwort(eigeneGewohnheitenSchema, ergebnis.data, satz);
+}
+
+function gewohnheitsfehler(meldung: string | undefined): Error {
+  const m = meldung ?? '';
+  if (m.includes('paused'))
+    return new Error('Die Gewohnheit ist pausiert. Setzen Sie sie fort, um Tage zu vermerken.');
+  if (m.includes('day not open'))
+    return new Error('Diesen Tag können Sie nicht mehr vermerken – nur die angezeigten Tage.');
+  if (m.includes('not found')) return new Error('Ihre Praxis hat die Gewohnheit beendet.');
+  if (m.includes('consent') || m.includes('not allowed'))
+    return new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');
+  return new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+}
+
+/** Einen Tag vermerken oder den Vermerk zurücknehmen (ANN-370). */
+export async function gewohnheitVermerken(
+  zugangId: string,
+  gewohnheitId: string,
+  tag: string,
+  gemacht: boolean,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('mark_platform_habit', {
+    p_access_id: zugangId,
+    p_habit_id: gewohnheitId,
+    p_done_on: tag,
+    p_done: gemacht,
+  })) as { error: { message?: string } | null };
+  if (error) throw gewohnheitsfehler(error.message);
+}
+
+/** Pausieren, etwa bei Krankheit, und fortsetzen – nichts bricht ab. */
+export async function gewohnheitPausieren(
+  zugangId: string,
+  gewohnheitId: string,
+  pausiert: boolean,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('pause_platform_habit', {
+    p_access_id: zugangId,
+    p_habit_id: gewohnheitId,
+    p_paused: pausiert,
+  })) as { error: { message?: string } | null };
+  if (error) throw gewohnheitsfehler(error.message);
+}
+
+// -----------------------------------------------------------------------------
+// ERN-002: Ernährung (ADR-027) - die eigene laufende Beratung, Gewicht,
+// Zielgewicht, Tagebuch und Einwilligung. Die Begleitung bekommt nichts
+// (Recht nutrition); gerechnet hat der Server (`app.nutrition_calculation`).
+// -----------------------------------------------------------------------------
+
+const eigeneErnaehrungSchema = z.object({
+  today: z.string(),
+  can_write: z.boolean(),
+  can_grant: z.boolean(),
+  wording_version: z.string(),
+  target_weight_floor_kg: z.number(),
+  profile: z.object({
+    started_on: z.string(),
+    ended_on: z.string().nullable(),
+    height_cm: z.number(),
+    formula_sex: z.enum(GESCHLECHTER),
+    body_fat_percent: z.number().nullable(),
+    activity_pal: z.number(),
+    goal: z.enum(ZIELE),
+    target_weight_kg: z.number().nullable(),
+    target_weight_source: z.enum(['counsellor', 'person']).nullable(),
+    diary_enabled: z.boolean(),
+    diary_changed_at: z.string().nullable(),
+    consent: z
+      .object({
+        state: z.enum(['granted', 'withdrawn']),
+        occurred_on: z.string(),
+        source: z.enum(['practice', 'platform']),
+      })
+      .nullable(),
+    weights: z.array(
+      z.object({
+        measured_on: z.string(),
+        weight_kg: z.number(),
+        source: z.enum(['practice', 'platform']),
+      }),
+    ),
+    targets: zielwerteSchema,
+    // ERN-005: die eigenen Lebensmittel der Person.
+    own_foods: z.array(lebensmittelSchema),
+  }),
+});
+
+export type EigeneErnaehrung = z.infer<typeof eigeneErnaehrungSchema>;
+
+export function ernaehrungSchluessel(zugangId: string) {
+  return ['platform-nutrition', zugangId] as const;
+}
+
+/** Die eigene laufende Beratung; `null` heißt: keine oder ohne Recht. */
+export async function ladeErnaehrung(zugangId: string): Promise<EigeneErnaehrung | null> {
+  const satz = 'Ihre Ernährung konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_nutrition', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  const daten = ergebnis.data as { profile?: unknown } | null;
+  if (daten === null || daten.profile === null || daten.profile === undefined) return null;
+  return antwort(eigeneErnaehrungSchema, daten, satz);
+}
+
+function ernaehrungsfehler(meldung: string | undefined): Error {
+  const m = meldung ?? '';
+  if (m.includes('below floor'))
+    return new Error('Dieses Zielgewicht liegt unter der Grenze. Bitte ein höheres wählen.');
+  if (m.includes('future')) return new Error('Das Datum liegt in der Zukunft.');
+  if (m.includes('before')) return new Error('Das Datum liegt vor dem Beginn der Beratung.');
+  if (m.includes('check constraint') || m.includes('violates'))
+    return new Error('Bitte das Gewicht in kg angeben, zwischen 20 und 350.');
+  if (m.includes('not found')) return new Error('Ihre Praxis hat die Beratung beendet.');
+  if (m.includes('wording outdated'))
+    return new Error('Der Text der Einwilligung hat sich geändert. Bitte die Seite neu laden.');
+  if (m.includes('consent') || m.includes('not allowed'))
+    return new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');
+  return new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+}
+
+/** Ein Fehler des Servers als Satz für die Person. */
+function ernaehrungsergebnis(antwort: { error: { message?: string } | null }): void {
+  if (antwort.error) throw ernaehrungsfehler(antwort.error.message);
+}
+
+/** Das eigene Gewicht eintragen, eines je Tag (ADR-027 Punkt 5). */
+export async function ernaehrungGewichtEintragen(
+  zugangId: string,
+  tag: string,
+  gewicht: number,
+): Promise<void> {
+  ernaehrungsergebnis(
+    (await getSupabase().rpc('record_platform_nutrition_weight', {
+      p_access_id: zugangId,
+      p_measured_on: tag,
+      p_weight_kg: gewicht,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+/** Das Zielgewicht wählen; `null` nimmt es zurück (ADR-027 Punkt 21). */
+export async function ernaehrungZielgewichtSetzen(
+  zugangId: string,
+  zielgewicht: number | null,
+): Promise<void> {
+  ernaehrungsergebnis(
+    (await getSupabase().rpc('set_platform_nutrition_target_weight', {
+      p_access_id: zugangId,
+      p_target_weight_kg: zielgewicht,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+/** Das Tagebuch ein- oder ausschalten (ADR-027 Punkt 2). */
+export async function ernaehrungTagebuchSchalten(zugangId: string, an: boolean): Promise<void> {
+  ernaehrungsergebnis(
+    (await getSupabase().rpc('set_platform_nutrition_diary', {
+      p_access_id: zugangId,
+      p_enabled: an,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+/** Die Einwilligung „Ernährungsberatung“ erteilen oder widerrufen (ADR-027 Punkt 3). */
+export async function ernaehrungEinwilligen(
+  zugangId: string,
+  erteilen: boolean,
+  fassung: string,
+): Promise<void> {
+  ernaehrungsergebnis(
+    (await getSupabase().rpc('record_platform_nutrition_consent', {
+      p_access_id: zugangId,
+      p_grant: erteilen,
+      p_wording_version: fassung,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+// -----------------------------------------------------------------------------
+// ERN-EPIC-002: Lebensmittel nachschlagen und eigene anlegen (ADR-027 Punkte
+// 8 und 9). Gesucht wird im eigenen Katalog am Server, nie bei einem fremden
+// Dienst; eigene Lebensmittel nur mit Einwilligung, nie die Begleitung.
+// -----------------------------------------------------------------------------
+
+/** Die Suche der Person (`search_platform_foods`). */
+export async function lebensmittelSuchen(
+  zugangId: string,
+  begriff: string,
+): Promise<Lebensmittel[]> {
+  const satz = 'Die Suche hat nicht geklappt.';
+  const { data, error } = (await getSupabase().rpc('search_platform_foods', {
+    p_access_id: zugangId,
+    p_query: begriff,
+    p_limit: 20,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(z.array(lebensmittelSchema), data, satz);
+}
+
+/** Die Quellenangabe der Lebensmitteldaten. */
+export async function lebensmittelQuellen(): Promise<Quelle[]> {
+  const satz = 'Die Quellen konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_food_sources')) as {
+    data: unknown;
+    error: unknown;
+  };
+  if (error) throw new Error(satz);
+  return antwort(z.array(quelleSchema), data, satz);
+}
+
+/** Ein eigenes Lebensmittel anlegen (`id` null) oder ändern. */
+export async function eigenesLebensmittelSpeichern(
+  zugangId: string,
+  id: string | null,
+  angaben: LebensmittelAngaben,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('save_platform_food', {
+    p_access_id: zugangId,
+    p_id: id,
+    p_food: angaben,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error(lebensmittelfehler(error.message));
+}
+
+/** Ein eigenes Lebensmittel löschen. */
+export async function eigenesLebensmittelLoeschen(zugangId: string, id: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('delete_platform_food', {
+    p_access_id: zugangId,
+    p_id: id,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error(lebensmittelfehler(error.message));
+}
+
+// -----------------------------------------------------------------------------
+// ERN-EPIC-003: das Ernährungstagebuch (ADR-027 Punkte 10 und 11). Eintragen
+// nur mit Einwilligung und eingeschaltetem Tagebuch, nie die Begleitung;
+// gerechnet hat der Server aus Lebensmittel und Menge.
+// -----------------------------------------------------------------------------
+
+const tagebuchSchema = z.object({
+  today: z.string(),
+  started_on: z.string(),
+  enabled: z.boolean(),
+  can_write: z.boolean(),
+  can_delete: z.boolean(),
+  glass_ml: z.number(),
+  // ERN-008: die Einstellung der Person, zuletzt und Favoriten.
+  hide_numbers: z.boolean(),
+  recent: z.array(schnellwahlSchema),
+  favorites: z.array(schnellwahlSchema),
+  targets: zieleSchema,
+  day: tagSchema,
+});
+
+export type EigenesTagebuch = z.infer<typeof tagebuchSchema>;
+
+export function tagebuchSchluessel(zugangId: string, tag?: string) {
+  return tag === undefined
+    ? (['platform-nutrition-diary', zugangId] as const)
+    : (['platform-nutrition-diary', zugangId, tag] as const);
+}
+
+/** Ein Tag des eigenen Tagebuchs; `null` heißt: keine Beratung oder ohne Recht. */
+export async function ladeTagebuch(
+  zugangId: string,
+  tag: string | null,
+): Promise<EigenesTagebuch | null> {
+  const satz = 'Ihr Tagebuch konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_nutrition_diary', {
+    p_access_id: zugangId,
+    p_day: tag,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  const daten = ergebnis.data as { diary?: unknown } | null;
+  if (daten === null || (daten && 'diary' in daten && daten.diary === null)) return null;
+  return antwort(tagebuchSchema, daten, satz);
+}
+
+/** Ein Satz statt der Meldung des Servers (§13). */
+export function tagebuchfehler(meldung: string | undefined): Error {
+  const m = meldung ?? '';
+  if (m.includes('future') || m.includes('before') || m.includes('outside'))
+    return new Error('An diesem Tag lässt sich nichts eintragen.');
+  if (m.includes('too many')) return new Error('An diesem Tag stehen schon 80 Einträge.');
+  if (m.includes('food not found'))
+    return new Error('Dieses Lebensmittel gibt es nicht mehr. Bitte neu suchen.');
+  if (m.includes('entry not found')) return new Error('Dieser Eintrag ist schon gelöscht.');
+  if (m.includes('portion or amount') || m.includes('unknown portion'))
+    return new Error('Bitte die Menge prüfen.');
+  if (m.includes('diary is off')) return new Error('Ihr Tagebuch ist ausgeschaltet.');
+  if (m.includes('profile not found')) return new Error('Ihre Praxis hat die Beratung beendet.');
+  if (m.includes('consent') || m.includes('not allowed'))
+    return new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');
+  return new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+}
+
+function tagebuchergebnis(antwort: { error: { message?: string } | null }): void {
+  if (antwort.error) throw tagebuchfehler(antwort.error.message);
+}
+
+/** Ein Lebensmittel ins Tagebuch - mit Portion und Anzahl oder in g bzw. ml. */
+export async function tagebuchEintragen(
+  zugangId: string,
+  tag: string,
+  mahlzeit: Mahlzeit,
+  lebensmittel: { kind: 'catalog' | 'practice' | 'person'; id: string },
+  angabe: Mengenangabe,
+): Promise<void> {
+  tagebuchergebnis(
+    (await getSupabase().rpc('add_platform_diary_entry', {
+      p_access_id: zugangId,
+      p_eaten_on: tag,
+      p_meal: mahlzeit,
+      p_food_kind: lebensmittel.kind,
+      p_food_id: lebensmittel.id,
+      p_amount: angabe.art === 'menge' ? angabe.menge : null,
+      p_portion_label: angabe.art === 'portion' ? angabe.label : null,
+      p_portion_count: angabe.art === 'portion' ? angabe.anzahl : null,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+/** Mahlzeit und Menge eines Eintrags ändern; die Portion bleibt dieselbe. */
+export async function tagebuchAendern(
+  zugangId: string,
+  id: string,
+  mahlzeit: Mahlzeit,
+  angabe: { menge: number | null; anzahl: number | null },
+): Promise<void> {
+  tagebuchergebnis(
+    (await getSupabase().rpc('update_platform_diary_entry', {
+      p_access_id: zugangId,
+      p_id: id,
+      p_meal: mahlzeit,
+      p_amount: angabe.menge,
+      p_portion_count: angabe.anzahl,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+/** Einen Eintrag löschen - auch nach einem Widerruf. */
+export async function tagebuchLoeschen(zugangId: string, id: string): Promise<void> {
+  tagebuchergebnis(
+    (await getSupabase().rpc('delete_platform_diary_entry', {
+      p_access_id: zugangId,
+      p_id: id,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+/** Wasser zählen: ein Glas dazu oder wieder weg; liefert die Menge des Tages. */
+export async function wasserZaehlen(zugangId: string, tag: string, ml: number): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('add_platform_water', {
+    p_access_id: zugangId,
+    p_drunk_on: tag,
+    p_delta_ml: ml,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (error) throw tagebuchfehler(error.message);
+  return antwort(z.number(), data, 'Nicht gespeichert.');
+}
+
+/** Ein Lebensmittel als Favorit markieren oder abnehmen (ERN-008). */
+export async function favoritSetzen(
+  zugangId: string,
+  lebensmittel: { kind: 'catalog' | 'practice' | 'person'; id: string },
+  favorit: boolean,
+): Promise<void> {
+  tagebuchergebnis(
+    (await getSupabase().rpc('set_platform_diary_favorite', {
+      p_access_id: zugangId,
+      p_food_kind: lebensmittel.kind,
+      p_food_id: lebensmittel.id,
+      p_favorite: favorit,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+/** Eine Mahlzeit (oder ohne Mahlzeit den Tag) an einen anderen Tag kopieren. */
+export async function tagebuchKopieren(
+  zugangId: string,
+  vonTag: string,
+  mahlzeit: Mahlzeit | null,
+  nachTag: string,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('copy_platform_diary', {
+    p_access_id: zugangId,
+    p_from_day: vonTag,
+    p_from_meal: mahlzeit,
+    p_to_day: nachTag,
+    p_to_meal: null,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (error) {
+    if ((error.message ?? '').includes('onto itself'))
+      throw new Error('Bitte einen anderen Tag wählen.');
+    throw tagebuchfehler(error.message);
+  }
+  return antwort(z.number(), data, 'Nicht kopiert.');
+}
+
+/** „Zahlen ausblenden“ ein- und ausschalten (ADR-027 Punkt 11). */
+export async function zahlenAusblenden(zugangId: string, ausblenden: boolean): Promise<void> {
+  tagebuchergebnis(
+    (await getSupabase().rpc('set_platform_diary_hide_numbers', {
+      p_access_id: zugangId,
+      p_hide: ausblenden,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+// ERN-009: Erinnerungen an das Tagebuch (ADR-027 Punkt 12) - je Zugang und
+// Mahlzeit eine Uhrzeit, dazu die Wege dieser Art; von Anfang an aus.
+
+const erinnerungenSchema = z.object({
+  reminders: z.array(z.object({ meal: z.enum(MAHLZEITEN), time: z.string() })),
+  email: z.boolean(),
+  push: z.boolean(),
+  switched_off: z.boolean(),
+  quiet_from: z.number(),
+  quiet_until: z.number(),
+});
+
+export type Tagebucherinnerungen = z.infer<typeof erinnerungenSchema>;
+
+export function erinnerungenSchluessel(zugangId: string) {
+  return ['platform-diary-reminders', zugangId] as const;
+}
+
+/** Die eigenen Erinnerungen; `null` heißt: keine Beratung oder ohne Recht. */
+export async function ladeErinnerungen(zugangId: string): Promise<Tagebucherinnerungen | null> {
+  const satz = 'Ihre Erinnerungen konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('platform_diary_reminders', {
+    p_access_id: zugangId,
+  })) as { data: { reminders?: unknown } | null; error: unknown };
+  if (error) throw new Error(satz);
+  if (data === null || data.reminders === null) return null;
+  return antwort(erinnerungenSchema, data, satz);
+}
+
+/** Die Wahl ersetzen: Uhrzeiten je Mahlzeit, per Mail, per Push. */
+export async function erinnerungenSpeichern(
+  zugangId: string,
+  erinnerungen: { meal: Mahlzeit; time: string }[],
+  wege: { email: boolean; push: boolean },
+): Promise<void> {
+  tagebuchergebnis(
+    (await getSupabase().rpc('set_platform_diary_reminders', {
+      p_access_id: zugangId,
+      p_reminders: erinnerungen,
+      p_email: wege.email,
+      p_push: wege.push,
+    })) as { error: { message?: string } | null },
+  );
+}

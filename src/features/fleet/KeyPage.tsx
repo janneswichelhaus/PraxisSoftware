@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/abfolge';
 import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import { leseRueckweg } from '@/lib/rueckweg';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import {
   FLOTTE_SCHLUESSEL,
   fetchFleet,

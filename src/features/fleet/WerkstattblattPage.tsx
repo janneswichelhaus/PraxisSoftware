@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Wortmarke } from '@/components/ui/Wortmarke';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import {
   fetchFleetPhotos,
   fetchWorkshopSheet,

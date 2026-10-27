@@ -8,7 +8,7 @@ import { Datenliste, type Datenspalte } from '@/components/ui/Datenliste';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { canManageInvoicing, type CurrentUser } from '@/features/session/types';
+import { canManageInvoicing, type CurrentUser } from '@/features/core/session/types';
 import { fetchZahlungen, richtungLabels, zahlungswegAnzeige, type ZahlungMitRechnung } from './api';
 import { Zahlungsstorno } from './Zahlungsstorno';
 

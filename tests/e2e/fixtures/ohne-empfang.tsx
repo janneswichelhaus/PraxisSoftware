@@ -2,13 +2,13 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { fachAendern } from '@/lib/geraeteablage';
-import { offlineschluesselAus } from '@/features/auth/freigabeOhneNetz';
-import { entwurfSchreiben } from '@/features/offline-documentation/entwuerfe';
-import { einrichten } from '@/features/offline-documentation/servicePhone';
-import { tagesplanAblegen } from '@/features/offline-documentation/tagesplan';
+import { offlineschluesselAus } from '@/features/core/auth/freigabeOhneNetz';
+import { entwurfSchreiben } from '@/features/clinical/offline-documentation/entwuerfe';
+import { einrichten } from '@/features/clinical/offline-documentation/servicePhone';
+import { tagesplanAblegen } from '@/features/clinical/offline-documentation/tagesplan';
 import { Pruefseite } from './ohne-empfang-seite';
 import '@/index.css';
-import type { DayPlanEntry } from '@/features/day-plan/api';
+import type { DayPlanEntry } from '@/features/calendar/day-plan/api';
 
 /**
  * Einstieg der Prüfseite aus `ohne-empfang.html` (OFF-EPIC-001).

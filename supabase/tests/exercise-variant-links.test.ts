@@ -9,8 +9,8 @@ import {
   planeEntfernen,
   resetDatabase,
 } from './helpers/db';
-import { KATALOG } from '@/features/exercises/katalog';
-import { ACHSEN } from '@/features/exercises/types';
+import { KATALOG } from '@/features/exercise/exercises/katalog';
+import { ACHSEN } from '@/features/exercise/exercises/types';
 
 /**
  * Achsen und Nachbarschaften (UEB-002, IDEA-TRN-004, IDEA-TRN-005).

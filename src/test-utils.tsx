@@ -2,11 +2,11 @@ import { createContext, useState, type ReactElement, type ReactNode } from 'reac
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { render, type RenderResult } from '@testing-library/react';
-import { VorschauProvider } from '@/features/preview/VorschauProvider';
-import type { Appointment } from '@/features/appointments';
+import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
+import type { Appointment } from '@/features/calendar/appointments';
 import type { Patient } from '@/features/patients/api';
-import type { StaffMember } from '@/features/staff/api';
-import type { CurrentUser, RoleKey } from '@/features/session/types';
+import type { StaffMember } from '@/features/workforce/staff/api';
+import type { CurrentUser, RoleKey } from '@/features/core/session/types';
 
 /**
  * Der zu prüfende Inhalt auf dem Weg in die Route.

@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as TrainingApi from './api';
-import type * as AppointmentsApi from '@/features/appointments/api';
+import type * as AppointmentsApi from '@/features/calendar/appointments/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 import type * as Datum from '@/lib/datum';
-import type * as StaffApi from '@/features/staff/api';
+import type * as StaffApi from '@/features/workforce/staff/api';
 
 /**
  * Trainingstermine (TRN-004 bis TRN-006). Die Grenze sitzt im Server
@@ -43,7 +43,7 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/appointments/api', async (importOriginal) => {
+vi.mock('@/features/calendar/appointments/api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
   return {
     ...actual,
@@ -51,7 +51,7 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/staff/api', async (importOriginal) => ({
+vi.mock('@/features/workforce/staff/api', async (importOriginal) => ({
   ...(await importOriginal<typeof StaffApi>()),
   fetchAssignableTrainers: () => fetchAssignableTrainers() as Promise<unknown>,
   fetchLocations: () => fetchLocations() as Promise<unknown>,

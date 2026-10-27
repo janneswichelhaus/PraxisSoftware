@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
-import { VorschauProvider } from '@/features/preview/VorschauProvider';
-import { NewStaffMemberPage } from '@/features/staff/NewStaffMemberPage';
-import type { CurrentUser, RoleKey } from '@/features/session/types';
+import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
+import { NewStaffMemberPage } from '@/features/workforce/staff/NewStaffMemberPage';
+import type { CurrentUser, RoleKey } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

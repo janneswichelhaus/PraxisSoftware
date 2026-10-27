@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { canManageAppointments, type CurrentUser } from '@/features/session/types';
+import { canManageAppointments, type CurrentUser } from '@/features/core/session/types';
 import {
   aktualisiereHausbesuchAdressen,
   fetchVeralteteHausbesuche,

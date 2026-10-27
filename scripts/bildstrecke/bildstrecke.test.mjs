@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ALTE_AKTENBEREICHE } from '@/features/patients/akte';
-import { PLATTFORM_PFAD } from '@/features/platform/pfade';
+import { PLATTFORM_PFAD } from '@/features/portal/platform/pfade';
 import { KONTEN, PLATTFORMKONTEN } from '../testkonten.mjs';
 import { AUSGENOMMEN, BEREICHE, ROUTEN } from './routen.mjs';
 import { musterAlsAusdruck, routenmusterAusQuelle } from './routenquelle.mjs';
@@ -19,7 +19,7 @@ const PRAXIS = routenmusterAusQuelle(readFileSync('src/routes/AuthenticatedRoute
   variablen: new Map([['alt', Object.keys(ALTE_AKTENBEREICHE)]]),
 });
 const PLATTFORM = routenmusterAusQuelle(
-  readFileSync('src/features/platform/PlattformApp.tsx', 'utf8'),
+  readFileSync('src/features/portal/platform/PlattformApp.tsx', 'utf8'),
   { konstanten: new Map([['PLATTFORM_PFAD', PLATTFORM_PFAD]]) },
 );
 const ERFASST = new Set(ROUTEN.map((route) => route.muster));

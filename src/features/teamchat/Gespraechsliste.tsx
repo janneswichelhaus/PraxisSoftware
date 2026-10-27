@@ -12,7 +12,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Gruppenbild } from '@/components/ui/Personenbild';
 import { SearchField } from '@/components/ui/SearchField';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import {
   GESPRAECHE_HALTEN_MS,
   KANAELE_KEY,

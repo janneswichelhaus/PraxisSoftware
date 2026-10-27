@@ -12,7 +12,7 @@ import {
   type Paketposition,
   type Paketsicht,
 } from '@/features/billing/trainingspaket-api';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

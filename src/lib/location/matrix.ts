@@ -92,7 +92,7 @@ export function useMatrix(
 /**
  * Die Abfrage einer Matrix, wie alle Verbraucher sie stellen. Der Fachcode
  * stellt sie seit UBK-010 über `usePlanungsmatrix`
- * (`src/features/tours/fahrzeitfaktor.ts`), das den Fahrzeitfaktor anwendet.
+ * (`src/features/calendar/tours/fahrzeitfaktor.ts`), das den Fahrzeitfaktor anwendet.
  */
 export function matrixAbfrage(
   origins: readonly Coordinate[],

@@ -99,7 +99,7 @@ wenn ein Schlüssel vorliegt. Für die Produktion gilt:
 
 ## Datenschutzinformation (PAT-006)
 
-Der Abschnitt „Hausbesuche und Kartendienst" in `src/features/datenschutz/patienteninformation.ts`
+Der Abschnitt „Hausbesuche und Kartendienst" in `src/features/privacy/datenschutz/patienteninformation.ts`
 nennt Adresse beziehungsweise Kartenposition, schließt Name, Termine, Uhrzeiten und
 Gesundheitsangaben aus und sagt, dass Fahrzeiten nicht gespeichert werden. Seit MAP-006 ergänzt
 er, dass die Kartenposition mit der Adresse gespeichert und mit ihr gelöscht wird. Der Wortlaut

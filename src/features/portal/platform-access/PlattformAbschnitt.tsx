@@ -1,0 +1,530 @@
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Section } from '@/components/ui/Section';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { fetchPatientFiles } from '@/features/patients/files/api';
+import {
+  einloeseadresse,
+  einstiegsschluessel,
+  getPlatformAccess,
+  getPlatformOnboarding,
+  invitePlatformAccess,
+  revokePlatformAccess,
+  sendPlatformInvitation,
+  setPlatformAccessLocked,
+  skipPlatformOnboarding,
+  zugangsschluessel,
+  type Einladung,
+  type Plattformzugang,
+  type Verhaeltnisart,
+} from './api';
+import { QrCode } from './QrCode';
+import { Vertretungen } from './Vertretungen';
+import { ZUSTAND, anzeigezustand, usePlattformzugang, zugangBeendbar } from './zustand';
+import { formatLocalDate } from '@/lib/datum';
+
+/**
+ * Der Abschnitt „Plattform“ je Verhältnis (ADR-023 Punkte 4, 6 bis 11): Zustand und nur der
+ * passende Knopf, die Rolle prüft der Server (ADR-004). Der Code einer Einladung lebt nur hier,
+ * gespeichert nur sein Hash. „Entsperren“ bleibt auch mit `beendenAmEnde` hier: Es beendet nichts.
+ */
+export function PlattformAbschnitt({
+  art,
+  verhaeltnisId,
+  darfVerwalten,
+  zeitzone,
+  praxis,
+  beendenAmEnde = false,
+}: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+  darfVerwalten: boolean;
+  zeitzone: string;
+  /** Name der Praxis für den Wortlaut der Einwilligung zur Begleitung. */
+  praxis: string;
+  /** Sperren und Entziehen stehen am Ende der Seite (`PlattformzugangBeenden`). */
+  beendenAmEnde?: boolean;
+}) {
+  const schluessel = zugangsschluessel(art, verhaeltnisId);
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: schluessel,
+    queryFn: () => getPlatformAccess(art, verhaeltnisId),
+  });
+  const [einladung, setEinladung] = useState<{ einladung: Einladung; fuer?: string } | null>(null);
+
+  return (
+    // Ohne Erklärsatz: Zustand und Knöpfe sagen, worum es geht (Leitfaden
+    // L1 und L2, Löschkandidat 3, ANN-260).
+    <Section titel="Plattform" rahmen>
+      {isPending ? (
+        <LoadingState label="Zugang wird geladen …" />
+      ) : isError ? (
+        <ErrorState
+          title="Der Zugang konnte nicht geladen werden."
+          description="Bitte später erneut versuchen."
+          onErneut={refetch}
+        />
+      ) : einladung ? (
+        <EinladungVorOrt
+          einladung={einladung.einladung}
+          fuer={einladung.fuer}
+          onFertig={() => setEinladung(null)}
+        />
+      ) : (
+        <>
+          <Zustand
+            art={art}
+            verhaeltnisId={verhaeltnisId}
+            zugang={data ?? null}
+            darfVerwalten={darfVerwalten}
+            zeitzone={zeitzone}
+            beendenAmEnde={beendenAmEnde}
+            onEinladungVorOrt={(e) => setEinladung({ einladung: e })}
+          />
+          <Vertretungen
+            art={art}
+            verhaeltnisId={verhaeltnisId}
+            darfVerwalten={darfVerwalten}
+            zeitzone={zeitzone}
+            praxis={praxis}
+            onEinladungVorOrt={(e, fuer) => setEinladung({ einladung: e, fuer })}
+          />
+        </>
+      )}
+    </Section>
+  );
+}
+
+function Zustand({
+  art,
+  verhaeltnisId,
+  zugang,
+  darfVerwalten,
+  zeitzone,
+  beendenAmEnde,
+  onEinladungVorOrt,
+}: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+  zugang: Plattformzugang | null;
+  darfVerwalten: boolean;
+  zeitzone: string;
+  beendenAmEnde: boolean;
+  onEinladungVorOrt: (einladung: Einladung) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [meldung, setMeldung] = useState<string | null>(null);
+  const zustand = anzeigezustand(zugang);
+  const datum = (wert: string | null) => (wert ? formatLocalDate(wert, zeitzone) : '—');
+  const neuLaden = () =>
+    queryClient.invalidateQueries({ queryKey: zugangsschluessel(art, verhaeltnisId) });
+
+  const einladen = useMutation({
+    mutationFn: ({ weg, bestaetigt }: { weg: 'on_site' | 'email'; bestaetigt: boolean }) =>
+      invitePlatformAccess(art, verhaeltnisId, weg, bestaetigt),
+  });
+  const versenden = useMutation({
+    mutationFn: (e: Einladung) => sendPlatformInvitation(e.invitation_id, e.code),
+  });
+
+  async function vorOrt() {
+    setMeldung(null);
+    const e = await einladen.mutateAsync({ weg: 'on_site', bestaetigt: false });
+    await neuLaden();
+    onEinladungVorOrt(e);
+  }
+
+  async function perMail(bestaetigt: boolean) {
+    setMeldung(null);
+    const e = await einladen.mutateAsync({ weg: 'email', bestaetigt });
+    await neuLaden();
+    // Der Versand ist ein zweiter Schritt. Scheitert er, steht die
+    // Einladung trotzdem - sie lässt sich vor Ort übergeben.
+    try {
+      await versenden.mutateAsync(e);
+      setMeldung(`Die Einladung ist an ${zugang?.relationship_email ?? 'die Adresse'} unterwegs.`);
+    } catch (fehler) {
+      setMeldung((fehler as Error).message);
+    }
+    await neuLaden();
+  }
+
+  const kannEinladen = zustand === 'none' || zustand === 'revoked' || zustand === 'expired';
+  const aktiv = zustand === 'active';
+  const gesperrt = zustand === 'locked';
+  const eingeladen = zustand === 'invited';
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge ton={ZUSTAND[zustand]!.ton}>{ZUSTAND[zustand]!.text}</Badge>
+      </div>
+      <DetailList>
+        {aktiv || gesperrt ? (
+          <DetailRow label="Eingerichtet">{datum(zugang?.activated_at ?? null)}</DetailRow>
+        ) : null}
+        {gesperrt ? (
+          <DetailRow label="Gesperrt seit">{datum(zugang?.locked_at ?? null)}</DetailRow>
+        ) : null}
+        {zustand === 'revoked' ? (
+          <DetailRow label="Entzogen am">{datum(zugang?.revoked_at ?? null)}</DetailRow>
+        ) : null}
+        {/* POR-019 (DSN-001 Abschnitt 6): der Einstieg - Coach-Kontrolle. */}
+        {zugang?.id && (aktiv || gesperrt || eingeladen) ? (
+          <EinstiegZeile zugangId={zugang.id} zeitzone={zeitzone} />
+        ) : null}
+        {/* POR-014 (DSN-001 Abschnitt 6): was die Person unter „Dokumente" sieht. */}
+        {art === 'treatment' && (aktiv || gesperrt) ? (
+          <FreigegebeneDokumente patientId={verhaeltnisId} />
+        ) : null}
+        {zugang?.invitation_id ? (
+          <DetailRow label={zugang.invitation_purpose === 'reset' ? 'Neues Kennwort' : 'Einladung'}>
+            {zugang.invitation_channel === 'email'
+              ? zugang.invitation_sent_at
+                ? 'per Mail versandt'
+                : 'per Mail, noch nicht versandt'
+              : 'vor Ort'}
+            , gültig bis {datum(zugang.invitation_expires_at)}
+          </DetailRow>
+        ) : null}
+      </DetailList>
+
+      {meldung ? (
+        <Statusmeldung className="mt-3" ton={versenden.isError ? 'warnung' : 'erfolg'}>
+          {meldung}
+        </Statusmeldung>
+      ) : null}
+
+      {darfVerwalten ? (
+        <div className="mt-4 flex flex-wrap items-start gap-3">
+          {kannEinladen || eingeladen ? (
+            <Rueckfrage
+              ausloeser={eingeladen ? 'Neu einladen (vor Ort)' : 'Vor Ort einladen'}
+              ausloeserVariante="primary"
+              bestaetigen="Code anzeigen"
+              bestaetigenLaeuft="Wird ausgestellt …"
+              fehler={einladen.error?.message}
+              onBestaetigen={vorOrt}
+            >
+              <p>
+                Ein Code erscheint auf diesem Gerät. Die Person scannt ihn mit dem eigenen Telefon
+                und richtet dort ihren Zugang mit Gesicht oder Finger ein. Die Übergabe ist die
+                Prüfung, dass sie es selbst ist – bitte nur an die Person selbst zeigen.
+              </p>
+            </Rueckfrage>
+          ) : null}
+          {(kannEinladen || eingeladen) && zugang?.relationship_email ? (
+            <MailEinladung
+              adresse={zugang.relationship_email}
+              fehler={einladen.error?.message}
+              onEinladen={perMail}
+            />
+          ) : null}
+          {aktiv ? (
+            <Rueckfrage
+              ausloeser="Neues Kennwort (vor Ort)"
+              bestaetigen="Code anzeigen"
+              bestaetigenLaeuft="Wird ausgestellt …"
+              fehler={einladen.error?.message}
+              onBestaetigen={vorOrt}
+            >
+              <p>
+                Die Person hat ihr Kennwort vergessen? Mit diesem Code setzt sie auf dem eigenen
+                Telefon ein neues. Ihr Zugang bleibt derselbe.
+              </p>
+            </Rueckfrage>
+          ) : null}
+          {zugang?.id && (aktiv || eingeladen) ? (
+            <EinstiegUeberspringen zugangId={zugang.id} />
+          ) : null}
+          {(aktiv && !beendenAmEnde) || gesperrt ? (
+            <SperrenFrage
+              art={art}
+              verhaeltnisId={verhaeltnisId}
+              zugangId={zugang?.id ?? ''}
+              sperre={aktiv}
+              ausloeser={aktiv ? 'Sperren' : 'Entsperren'}
+            />
+          ) : null}
+          {(aktiv || gesperrt || eingeladen) && !beendenAmEnde ? (
+            <EntziehenFrage
+              art={art}
+              verhaeltnisId={verhaeltnisId}
+              zugangId={zugang?.id ?? ''}
+              ausloeser="Entziehen"
+            />
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Sperren oder Entsperren eines Zugangs, erst nach der Rückfrage. */
+function SperrenFrage({
+  art,
+  verhaeltnisId,
+  zugangId,
+  sperre,
+  ausloeser,
+  variante = 'secondary',
+}: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+  zugangId: string;
+  /** `true` sperrt, `false` entsperrt. */
+  sperre: boolean;
+  ausloeser: string;
+  variante?: 'secondary' | 'quiet';
+}) {
+  const queryClient = useQueryClient();
+  const sperren = useMutation({
+    mutationFn: () => setPlatformAccessLocked(zugangId, sperre),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: zugangsschluessel(art, verhaeltnisId) }),
+  });
+  return (
+    <Rueckfrage
+      ausloeser={ausloeser}
+      ausloeserVariante={variante}
+      bestaetigen={sperre ? 'Sperren' : 'Entsperren'}
+      bestaetigenLaeuft={sperre ? 'Wird gesperrt …' : 'Wird entsperrt …'}
+      fehler={sperren.error?.message}
+      onBestaetigen={() => sperren.mutateAsync()}
+    >
+      <p>
+        {sperre
+          ? 'Die Person sieht ab sofort nichts mehr auf der Plattform. Das lässt sich zurücknehmen.'
+          : 'Die Person kann die Plattform wieder nutzen.'}
+      </p>
+    </Rueckfrage>
+  );
+}
+
+/** Einen Zugang endgültig entziehen, erst nach der Rückfrage. */
+function EntziehenFrage({
+  art,
+  verhaeltnisId,
+  zugangId,
+  ausloeser,
+}: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+  zugangId: string;
+  ausloeser: string;
+}) {
+  const queryClient = useQueryClient();
+  const entziehen = useMutation({
+    mutationFn: () => revokePlatformAccess(zugangId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: zugangsschluessel(art, verhaeltnisId) }),
+  });
+  return (
+    <Rueckfrage
+      ausloeser={ausloeser}
+      ausloeserVariante="quiet"
+      bestaetigen="Zugang entziehen"
+      bestaetigenLaeuft="Wird entzogen …"
+      fehler={entziehen.error?.message}
+      onBestaetigen={() => entziehen.mutateAsync()}
+    >
+      <p>
+        Der Zugang endet endgültig. Ein neuer braucht eine neue Einladung. An der Akte und am
+        Verhältnis ändert sich nichts.
+      </p>
+    </Rueckfrage>
+  );
+}
+
+/**
+ * Sperren und Entziehen des Zugangs als leise Auslöser am Ende einer Seite
+ * (Sichtung 13.10.2026, A5) - gegenüber `PlattformAbschnitt` mit
+ * `beendenAmEnde`. Liest denselben Zugang (derselbe Abfrageschlüssel, eine
+ * Anfrage). Ohne Zugang, der sich beenden ließe, steht nichts. Wer verwalten
+ * darf, entscheidet die Seite; verbindlich prüft der Server (ADR-004).
+ */
+export function PlattformzugangBeenden({
+  art,
+  verhaeltnisId,
+}: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+}) {
+  const zugang = usePlattformzugang(art, verhaeltnisId);
+  if (!zugang?.id || !zugangBeendbar(zugang)) return null;
+  const aktiv = anzeigezustand(zugang) === 'active';
+  return (
+    <>
+      {aktiv ? (
+        <SperrenFrage
+          art={art}
+          verhaeltnisId={verhaeltnisId}
+          zugangId={zugang.id}
+          sperre
+          ausloeser="Plattformzugang sperren"
+          variante="quiet"
+        />
+      ) : null}
+      <EntziehenFrage
+        art={art}
+        verhaeltnisId={verhaeltnisId}
+        zugangId={zugang.id}
+        ausloeser="Plattformzugang entziehen"
+      />
+    </>
+  );
+}
+
+/**
+ * Einladung per Mail — nur an die Adresse im Verhältnis und nur, wenn die
+ * Person sie selbst bestätigt hat (ADR-023 Punkt 11, Fassung 2, ANN-188).
+ * Eine Adresse aus einer Überweisung oder von Angehörigen genügt nicht.
+ */
+function MailEinladung({
+  adresse,
+  fehler,
+  onEinladen,
+}: {
+  adresse: string;
+  fehler: string | undefined;
+  onEinladen: (bestaetigt: boolean) => Promise<void>;
+}) {
+  const [bestaetigt, setBestaetigt] = useState(false);
+  return (
+    <Rueckfrage
+      ausloeser="Per Mail einladen"
+      bestaetigen="Einladung senden"
+      bestaetigenLaeuft="Wird gesendet …"
+      fehler={fehler}
+      onBestaetigen={() => onEinladen(bestaetigt)}
+      onAbbrechen={() => setBestaetigt(false)}
+    >
+      <p>
+        Die Einladung geht an <strong>{adresse}</strong>.
+      </p>
+      <div className="mt-2">
+        <Checkbox
+          label="Die Person hat mir diese Adresse selbst bestätigt."
+          hint="Nicht genug: eine Adresse aus einer Überweisung, einem Formular oder von Angehörigen."
+          checked={bestaetigt}
+          onChange={(event) => setBestaetigt(event.target.checked)}
+        />
+      </div>
+    </Rueckfrage>
+  );
+}
+
+/**
+ * Der Code zum Scannen (ADR-023 Punkt 8). Bleibt nur so lange sichtbar, bis
+ * die Praxis „Fertig" tippt; danach ist er aus dem Speicher der Seite.
+ */
+export function EinladungVorOrt({
+  einladung,
+  fuer,
+  onFertig,
+}: {
+  einladung: Einladung;
+  /** Bei einer Vertretung: wer scannt (POR-005). Ohne Angabe die Person selbst. */
+  fuer?: string | undefined;
+  onFertig: () => void;
+}) {
+  const adresse = einloeseadresse(window.location.origin, einladung.code);
+  const wer = fuer ? fuer : 'die Person';
+  return (
+    <div className="flex flex-col items-start gap-4">
+      <p className="text-ink max-w-prose text-sm">
+        {einladung.purpose === 'reset'
+          ? `Bitte ${wer} diesen Code mit dem eigenen Telefon scannen lassen. Dort entsteht ein neues Kennwort.`
+          : // DR-104: Ein Kennwort gibt es nicht (ADR-025); die Einladung sagt dasselbe.
+            `Bitte ${wer} diesen Code mit dem eigenen Telefon scannen lassen. Dort entsteht der Zugang – mit Gesicht oder Finger, ohne Kennwort.`}
+        {fuer ? ' Es ist ein eigenes Konto, nie das der Person.' : ''}
+      </p>
+      <QrCode inhalt={adresse} bezeichnung="Code zum Einlösen der Einladung" />
+      <p className="text-ink-muted text-sm">
+        Gilt 14 Tage und nur einmal. Nach „Fertig" ist er hier nicht mehr zu sehen.
+      </p>
+      <Button onClick={onFertig}>Fertig</Button>
+    </div>
+  );
+}
+
+/**
+ * „Freigegeben: n Dokumente" (POR-014): dieselbe Liste wie in der Akte,
+ * gezählt nach der Freigabe. Ohne Leserecht auf Dateien keine Zeile.
+ */
+function FreigegebeneDokumente({ patientId }: { patientId: string }) {
+  const { data } = useQuery({
+    queryKey: ['patient-files', patientId, 'plattform'],
+    queryFn: () => fetchPatientFiles(patientId, null),
+    retry: false,
+  });
+  if (!data) return null;
+  const anzahl = data.filter((d) => d.released_at).length;
+  return (
+    <DetailRow label="Freigegeben">
+      {anzahl === 0 ? 'kein Dokument' : anzahl === 1 ? '1 Dokument' : `${anzahl} Dokumente`}
+    </DetailRow>
+  );
+}
+
+/**
+ * „Einstieg: übersprungen (Name)" (POR-019, DSN-001 Abschnitt 6): ob die
+ * Person den Einstieg hinter sich hat oder die Praxis ihn übersprungen hat.
+ */
+function EinstiegZeile({ zugangId, zeitzone }: { zugangId: string; zeitzone: string }) {
+  const { data } = useQuery({
+    queryKey: einstiegsschluessel(zugangId),
+    queryFn: () => getPlatformOnboarding(zugangId),
+    retry: false,
+  });
+  if (!data) return null;
+  return (
+    <DetailRow label="Einstieg">
+      {data.skipped_at
+        ? `übersprungen am ${formatLocalDate(data.skipped_at, zeitzone)}${
+            data.skipped_by_name ? ` (${data.skipped_by_name})` : ''
+          }`
+        : data.finished_at
+          ? `beendet am ${formatLocalDate(data.finished_at, zeitzone)}`
+          : 'steht noch aus'}
+    </DetailRow>
+  );
+}
+
+/**
+ * Den Einstieg für die Person überspringen (IDEA-LZK-005) - nur, solange er
+ * aussteht. Einwilligungen bleiben offen; das sagt die Rückfrage.
+ */
+function EinstiegUeberspringen({ zugangId }: { zugangId: string }) {
+  const queryClient = useQueryClient();
+  const { data } = useQuery({
+    queryKey: einstiegsschluessel(zugangId),
+    queryFn: () => getPlatformOnboarding(zugangId),
+    retry: false,
+  });
+  const ueberspringen = useMutation({
+    mutationFn: () => skipPlatformOnboarding(zugangId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: einstiegsschluessel(zugangId) }),
+  });
+  if (!data || data.finished_at || data.skipped_at) return null;
+  return (
+    <Rueckfrage
+      ausloeser="Einstieg überspringen"
+      bestaetigen="Einstieg überspringen"
+      bestaetigenLaeuft="Wird übersprungen …"
+      fehler={ueberspringen.error?.message}
+      onBestaetigen={() => ueberspringen.mutateAsync()}
+    >
+      <p>
+        Die Person sieht beim Anmelden gleich ihre Übersicht. Einwilligungen bleiben offen: Über sie
+        entscheidet sie selbst, unter „Ich“.
+      </p>
+    </Rueckfrage>
+  );
+}

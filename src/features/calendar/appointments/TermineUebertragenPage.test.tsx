@@ -1,0 +1,456 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type * as RouterModul from 'react-router-dom';
+import type * as AppointmentsApi from './api';
+import type * as PatientsApi from '@/features/patients/api';
+import type * as TreatmentBasesApi from '@/features/patients/treatment-bases/api';
+import { renderWithProviders, testPatient, testUser } from '@/test-utils';
+
+/**
+ * Termine übertragen (CAL-022).
+ *
+ * Geprüft wird, was diese Seite selbst verantwortet: **welche** Termine sie
+ * anbietet, dass sich jeder einzeln abwählen lässt und dass sie den Vorgang in
+ * **einem** Aufruf abschickt. Ob die Übertragung zulässig ist, entscheidet der
+ * Server — dafür stehen die Fälle in `supabase/tests/appointment-coverage.test.ts`.
+ */
+
+const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
+const ALT = '88888888-8888-4888-8888-000000000003';
+const NEU = '88888888-8888-4888-8888-000000000004';
+
+const fetchPatientTreatmentBasesClinical = vi.fn();
+const fetchPatientTreatmentBasisSlots = vi.fn();
+const transferAppointmentsToTreatmentBasis = vi.fn();
+const fetchPatientAppointments = vi.fn();
+const navigate = vi.fn();
+
+vi.mock('@/features/patients/treatment-bases/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof TreatmentBasesApi>();
+  return {
+    ...actual,
+    fetchPatientTreatmentBases: () => Promise.resolve([]),
+    fetchPatientTreatmentBasesClinical: (id: string) =>
+      fetchPatientTreatmentBasesClinical(id) as Promise<TreatmentBasesApi.ClinicalTreatmentBasis[]>,
+    fetchPatientTreatmentBasisSlots: (id: string) =>
+      fetchPatientTreatmentBasisSlots(id) as Promise<TreatmentBasesApi.TreatmentBasisKontingent[]>,
+    transferAppointmentsToTreatmentBasis: (ziel: string, ids: readonly string[]) =>
+      transferAppointmentsToTreatmentBasis(ziel, ids) as Promise<number>,
+  };
+});
+
+vi.mock('./api', async (importOriginal) => {
+  const actual = await importOriginal<typeof AppointmentsApi>();
+  return {
+    ...actual,
+    fetchPatientAppointments: (id: string, abfrage: unknown) =>
+      fetchPatientAppointments(id, abfrage) as Promise<AppointmentsApi.PatientAppointment[]>,
+  };
+});
+
+vi.mock('@/features/patients/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof PatientsApi>();
+  return { ...actual, fetchPatient: () => Promise.resolve(testPatient({ id: PATIENT_ID })) };
+});
+
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useNavigate: () => navigate,
+  useParams: () => ({ patientId: PATIENT_ID }),
+}));
+
+const { TermineUebertragenPage } = await import('./TermineUebertragenPage');
+
+function grundlage(
+  rest: Partial<TreatmentBasesApi.ClinicalTreatmentBasis> = {},
+): TreatmentBasesApi.ClinicalTreatmentBasis {
+  return {
+    id: ALT,
+    prescriber_id: 'p1',
+    prescriber_name: 'Dr. Test',
+    prescriber_practice_name: null,
+    treatment_basis_kind: 'first',
+    issued_on: '2025-11-12',
+    frequency_note: null,
+    note: null,
+    items: [],
+    updated_at: '2026-01-01T10:00:00.000Z',
+    diagnosis: null,
+    therapy_goal: null,
+    prescriber_note: null,
+    follow_up_recommendation: null,
+    ...rest,
+  };
+}
+
+function kontingent(
+  rest: Partial<TreatmentBasesApi.TreatmentBasisKontingent> = {},
+): TreatmentBasesApi.TreatmentBasisKontingent {
+  return {
+    treatment_basis_id: ALT,
+    prescribed: 6,
+    used: 2,
+    planned: 8,
+    upcoming: 8,
+    remaining: 0,
+    covered: 6,
+    uncovered: 2,
+    ...rest,
+  };
+}
+
+function termin(
+  rest: Partial<AppointmentsApi.PatientAppointment> = {},
+): AppointmentsApi.PatientAppointment {
+  return {
+    id: 't1',
+    starts_at: '2027-05-19T07:00:00.000Z',
+    ends_at: '2027-05-19T08:00:00.000Z',
+    appointment_type: 'practice',
+    status: 'confirmed',
+    staff_given_name: 'Anna',
+    staff_family_name: 'Beispiel',
+    notification_channels: [],
+    treatment_basis_id: ALT,
+    treatment_basis_kind: 'first',
+    treatment_basis_issued_on: '2025-11-12',
+    treatment_basis_covered: false,
+    organization_time_zone: 'Europe/Berlin',
+    ...rest,
+  };
+}
+
+function rendern(adresse = `/patienten/${PATIENT_ID}/termine-uebertragen?ziel=${NEU}`) {
+  return renderWithProviders(
+    <TermineUebertragenPage user={testUser(['office'], 'Olivia Office')} />,
+    adresse,
+  );
+}
+
+describe('Termine übertragen', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([
+      grundlage(),
+      grundlage({ id: NEU, treatment_basis_kind: 'follow_up', issued_on: '2026-09-08' }),
+    ]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([
+      kontingent(),
+      kontingent({
+        treatment_basis_id: NEU,
+        prescribed: 10,
+        used: 0,
+        planned: 0,
+        upcoming: 0,
+        remaining: 10,
+        covered: 0,
+        uncovered: 0,
+      }),
+    ]);
+    fetchPatientAppointments.mockResolvedValue([
+      termin({ id: 'ungedeckt-1' }),
+      termin({ id: 'ungedeckt-2', starts_at: '2027-05-26T07:00:00.000Z' }),
+      termin({ id: 'gedeckt', treatment_basis_covered: true }),
+    ]);
+    transferAppointmentsToTreatmentBasis.mockResolvedValue(2);
+  });
+
+  it('bietet nur die ungedeckten künftigen Termine an', async () => {
+    rendern();
+
+    expect(await screen.findByText('Mittwoch, 19. Mai 2027')).toBeInTheDocument();
+    expect(screen.getByText('Mittwoch, 26. Mai 2027')).toBeInTheDocument();
+    // Der gedeckte Termin steht nicht zur Wahl - er hat seine Grundlage.
+    expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+    // Gefragt wird ausdrücklich nach den kommenden Terminen.
+    expect(fetchPatientAppointments).toHaveBeenCalledWith(
+      PATIENT_ID,
+      expect.objectContaining({ kuenftig: true }),
+    );
+  });
+
+  it('nimmt das Ziel aus der Adresse und überträgt alles in einem Vorgang', async () => {
+    const user = userEvent.setup();
+    rendern();
+
+    await screen.findByText('Mittwoch, 19. Mai 2027');
+    expect(screen.getByLabelText('Auf welche Behandlungsgrundlage? *')).toHaveValue(NEU);
+
+    await user.click(screen.getByRole('button', { name: '2 Termine übertragen' }));
+
+    expect(transferAppointmentsToTreatmentBasis).toHaveBeenCalledTimes(1);
+    expect(transferAppointmentsToTreatmentBasis).toHaveBeenCalledWith(NEU, [
+      'ungedeckt-1',
+      'ungedeckt-2',
+    ]);
+    // Die Akte bestätigt danach, wie viele gewandert sind - laut Server
+    // (VER-13).
+    await vi.waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}/verordnungen`, {
+        state: { termineUebertragen: 2 },
+      }),
+    );
+  });
+
+  it('lässt jeden Termin einzeln abwählen', async () => {
+    const user = userEvent.setup();
+    rendern();
+
+    await screen.findByText('Mittwoch, 19. Mai 2027');
+    await user.click(screen.getAllByRole('checkbox')[0]!);
+
+    await user.click(screen.getByRole('button', { name: '1 Termin übertragen' }));
+    expect(transferAppointmentsToTreatmentBasis).toHaveBeenCalledWith(NEU, ['ungedeckt-2']);
+  });
+
+  it('fragt ohne Ziel in der Adresse danach und schickt vorher nichts ab', async () => {
+    const user = userEvent.setup();
+    rendern(`/patienten/${PATIENT_ID}/termine-uebertragen`);
+
+    await screen.findByText('Mittwoch, 19. Mai 2027');
+    expect(screen.getByLabelText('Auf welche Behandlungsgrundlage? *')).toHaveValue('');
+    const knopf = screen.getByRole('button', { name: '2 Termine übertragen' });
+    expect(knopf).toBeDisabled();
+    // Der gesperrte Knopf sagt, warum (VER-13).
+    expect(knopf).toHaveAccessibleDescription('Zuerst die Grundlage wählen.');
+
+    await user.selectOptions(screen.getByLabelText('Auf welche Behandlungsgrundlage? *'), NEU);
+    expect(screen.queryByText('Zuerst die Grundlage wählen.')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '2 Termine übertragen' }));
+    expect(transferAppointmentsToTreatmentBasis).toHaveBeenCalledWith(NEU, [
+      'ungedeckt-1',
+      'ungedeckt-2',
+    ]);
+  });
+
+  it('nennt die Termine des Ziels nicht als Angebot', async () => {
+    rendern(`/patienten/${PATIENT_ID}/termine-uebertragen?ziel=${ALT}`);
+
+    // Alle ungedeckten Termine hängen an ALT - auf sich selbst wandert nichts.
+    expect(await screen.findByText('Kein ungedeckter Termin')).toBeInTheDocument();
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    // Ohne Angebot kein Knopf über null Termine (VER-13) - der Rückweg steht oben.
+    expect(screen.queryByRole('button', { name: /übertragen/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Abbrechen' })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }),
+    ).toBeInTheDocument();
+  });
+
+  // VER-13: Wer von der überplanten Grundlage kommt, sieht, welche noch Platz
+  // hat. Die abgebende steht da, ist aber nicht wählbar.
+  it('nennt je Ziel, was es noch traegt, und sperrt die abgebende Grundlage', async () => {
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([
+      grundlage(),
+      grundlage({ id: NEU, treatment_basis_kind: 'follow_up', issued_on: '2026-09-08' }),
+      grundlage({ id: 'erschoepft', issued_on: '2025-01-10' }),
+      grundlage({ id: 'verplant', treatment_basis_kind: 'self_pay', issued_on: '2026-03-01' }),
+    ]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([
+      kontingent(),
+      kontingent({
+        treatment_basis_id: NEU,
+        prescribed: 10,
+        used: 0,
+        planned: 4,
+        upcoming: 4,
+        remaining: 6,
+        covered: 4,
+        uncovered: 0,
+      }),
+      kontingent({
+        treatment_basis_id: 'erschoepft',
+        prescribed: 6,
+        used: 6,
+        planned: 6,
+        upcoming: 0,
+        remaining: 0,
+        covered: 6,
+        uncovered: 0,
+      }),
+      kontingent({
+        treatment_basis_id: 'verplant',
+        prescribed: 4,
+        used: 1,
+        planned: 4,
+        upcoming: 3,
+        remaining: 0,
+        covered: 4,
+        uncovered: 0,
+      }),
+    ]);
+    rendern(`/patienten/${PATIENT_ID}/termine-uebertragen`);
+
+    expect(
+      await screen.findByRole('option', {
+        name: 'Folgeverordnung vom 08.09.2026 – noch 6 planbar',
+      }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole('option', { name: 'Erstverordnung vom 12.11.2025 – 2 ohne Deckung' }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('option', { name: 'Erstverordnung vom 10.01.2025 – ausgeschöpft' }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole('option', { name: 'Selbstzahler seit 01.03.2026 – vollständig verplant' }),
+    ).toBeEnabled();
+  });
+
+  it('sagt beim gesperrten Knopf auch, wenn kein Termin mehr gewaehlt ist', async () => {
+    const user = userEvent.setup();
+    rendern();
+
+    await screen.findByText('Mittwoch, 19. Mai 2027');
+    for (const kaestchen of screen.getAllByRole('checkbox')) await user.click(kaestchen);
+
+    const knopf = screen.getByRole('button', { name: '0 Termine übertragen' });
+    expect(knopf).toBeDisabled();
+    expect(knopf).toHaveAccessibleDescription('Mindestens einen Termin wählen.');
+  });
+
+  it('fuehrt mit Namen und Link zurueck zu den Behandlungsgrundlagen', async () => {
+    rendern();
+    await screen.findByText('Mittwoch, 19. Mai 2027');
+
+    // Derselbe Name wie der Reiter der Akte (VER-17), und „Abbrechen" ist ein
+    // Seitenwechsel, also ein Link (UIK-13).
+    expect(
+      screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }),
+    ).toHaveAttribute('href', `/patienten/${PATIENT_ID}/verordnungen`);
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
+      'href',
+      `/patienten/${PATIENT_ID}/verordnungen`,
+    );
+    // Abschnitte direkt unter der Seitenüberschrift (VER-16), ohne Technikwort
+    // im Hinweis (VER-17, WRT-03).
+    expect(screen.getByRole('heading', { level: 2, name: 'Ziel' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Diese Termine' })).toBeInTheDocument();
+    expect(screen.getByText('Nur Grundlagen dieser Patient:in.')).toBeInTheDocument();
+    expect(screen.queryByText(/Server/)).not.toBeInTheDocument();
+  });
+
+  it('bietet nach einem Ladefehler einen neuen Versuch an (WRT-01)', async () => {
+    fetchPatientAppointments.mockRejectedValueOnce(new Error('interne Ursache'));
+    const user = userEvent.setup();
+    rendern();
+
+    const kasten = await screen.findByRole('alert');
+    expect(kasten).toHaveTextContent('Termine oder Grundlagen konnten nicht geladen werden.');
+    expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(kasten).not.toHaveTextContent(/interne Ursache|angemeldet|Akte/);
+
+    await user.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await screen.findByText('Mittwoch, 19. Mai 2027')).toBeInTheDocument();
+  });
+
+  it('sagt es, wenn der Server ablehnt, und behält die Auswahl', async () => {
+    const user = userEvent.setup();
+    transferAppointmentsToTreatmentBasis.mockRejectedValue(
+      new Error('Die Termine konnten nicht übertragen werden.'),
+    );
+    rendern();
+
+    await screen.findByText('Mittwoch, 19. Mai 2027');
+    await user.click(screen.getByRole('button', { name: '2 Termine übertragen' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Die Termine konnten nicht übertragen werden/,
+    );
+    expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe('Vergangene Termine zur Zuordnungskorrektur (ABN-002, ANN-211)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([
+      grundlage(),
+      grundlage({ id: NEU, treatment_basis_kind: 'follow_up', issued_on: '2026-09-08' }),
+    ]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([
+      kontingent(),
+      kontingent({
+        treatment_basis_id: NEU,
+        prescribed: 10,
+        used: 0,
+        planned: 0,
+        upcoming: 0,
+        remaining: 10,
+        covered: 0,
+        uncovered: 0,
+      }),
+    ]);
+    fetchPatientAppointments.mockImplementation((_id: string, abfrage: unknown) =>
+      Promise.resolve(
+        (abfrage as { kuenftig: boolean }).kuenftig
+          ? [termin({ id: 'ungedeckt-1' })]
+          : [
+              termin({
+                id: 'durchgefuehrt',
+                status: 'completed',
+                starts_at: '2026-09-01T07:00:00.000Z',
+                ends_at: '2026-09-01T08:00:00.000Z',
+                treatment_basis_covered: true,
+              }),
+              termin({
+                id: 'dokumentiert',
+                status: 'documented',
+                starts_at: '2026-09-03T07:00:00.000Z',
+                ends_at: '2026-09-03T08:00:00.000Z',
+                treatment_basis_covered: true,
+              }),
+              termin({
+                id: 'abgesagt',
+                status: 'cancelled',
+                starts_at: '2026-09-05T07:00:00.000Z',
+                ends_at: '2026-09-05T08:00:00.000Z',
+                treatment_basis_covered: null,
+              }),
+              termin({
+                id: 'am-ziel',
+                status: 'completed',
+                treatment_basis_id: NEU,
+                starts_at: '2026-09-07T07:00:00.000Z',
+                ends_at: '2026-09-07T08:00:00.000Z',
+                treatment_basis_covered: true,
+              }),
+            ],
+      ),
+    );
+    transferAppointmentsToTreatmentBasis.mockResolvedValue(2);
+  });
+
+  it('bietet durchgeführte Termine zugeklappt und ohne Vorauswahl an', async () => {
+    const user = userEvent.setup();
+    rendern();
+
+    await screen.findByText('Mittwoch, 19. Mai 2027');
+    // Zugeklappt (jsdom zeichnet den Inhalt trotzdem, offen ist das Element nicht).
+    const aufklapper = screen.getByText('Vergangene Termine').closest('details')!;
+    expect(aufklapper).not.toHaveAttribute('open');
+    expect(screen.getByRole('button', { name: '1 Termin übertragen' })).toBeInTheDocument();
+
+    await user.click(screen.getByText('Vergangene Termine'));
+    expect(aufklapper).toHaveAttribute('open');
+    // Zwei durchgeführte stehen zur Wahl, nicht der abgesagte und nicht der am Ziel.
+    expect(screen.getAllByRole('checkbox')).toHaveLength(3);
+    expect(screen.getByText('Dienstag, 1. September 2026')).toBeInTheDocument();
+    expect(screen.queryByText('Samstag, 5. September 2026')).not.toBeInTheDocument();
+    expect(screen.queryByText('Montag, 7. September 2026')).not.toBeInTheDocument();
+    // Ohne Vorauswahl.
+    expect(screen.getByLabelText(/1\. September 2026/)).not.toBeChecked();
+    expect(screen.getByText(/Leistungen ziehen mit/)).toBeInTheDocument();
+
+    // Nicht vorgewählt: der Knopf zählt weiter einen Termin.
+    expect(screen.getByRole('button', { name: '1 Termin übertragen' })).toBeInTheDocument();
+    await user.click(screen.getByLabelText(/1\. September 2026/));
+    await user.click(screen.getByRole('button', { name: '2 Termine übertragen' }));
+    expect(transferAppointmentsToTreatmentBasis).toHaveBeenCalledWith(NEU, [
+      'ungedeckt-1',
+      'durchgefuehrt',
+    ]);
+  });
+});

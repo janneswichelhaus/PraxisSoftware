@@ -1,10 +1,10 @@
 import { createRequire } from 'node:module';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import type AxeCore from 'axe-core';
-import { KATALOG } from '../../src/features/exercises/katalog';
-import { alsDosis } from '../../src/features/exercises/katalog/dosierung';
-import { ausruestungVon } from '../../src/features/exercises/katalog/schema';
-import type { Katalogeintrag } from '../../src/features/exercises/katalog/typen';
+import { KATALOG } from '../../src/features/exercise/exercises/katalog';
+import { alsDosis } from '../../src/features/exercise/exercises/katalog/dosierung';
+import { ausruestungVon } from '../../src/features/exercise/exercises/katalog/schema';
+import type { Katalogeintrag } from '../../src/features/exercise/exercises/katalog/typen';
 
 /**
  * Übungspläne im echten Browser (UEB-EPIC-002, Welle B).

@@ -1,12 +1,12 @@
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
-import { Karte } from '@/features/tours/karte/Karte';
-import { Fahrtabschnitt, Routenzusammenfassung } from '@/features/tours/Fahrten';
-import { Tourenliste } from '@/features/tours/Tourenliste';
-import { kartenmarker, type Stopp } from '@/features/tours/tagesroute';
+import { Karte } from '@/features/calendar/tours/karte/Karte';
+import { Fahrtabschnitt, Routenzusammenfassung } from '@/features/calendar/tours/Fahrten';
+import { Tourenliste } from '@/features/calendar/tours/Tourenliste';
+import { kartenmarker, type Stopp } from '@/features/calendar/tours/tagesroute';
 import type { Coordinate, MapDisplayConfig } from '@/lib/location/contract';
 import '@/index.css';
-import type { DayPlanEntry } from '@/features/day-plan/api';
+import type { DayPlanEntry } from '@/features/calendar/day-plan/api';
 
 /**
  * Einstieg der Prüfseite aus `karte.html`.

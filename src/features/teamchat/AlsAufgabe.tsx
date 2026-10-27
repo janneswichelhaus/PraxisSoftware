@@ -8,7 +8,7 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { Textlink } from '@/components/ui/Textlink';
-import { TASKS_KEY, createTask } from '@/features/open-points/tasks-api';
+import { TASKS_KEY, createTask } from '@/features/workplace/open-points/tasks-api';
 import { NOTIZ_MAX, TITEL_MAX, aufgabeAus } from './aufgabe';
 
 /**

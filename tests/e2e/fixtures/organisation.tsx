@@ -2,11 +2,11 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
-import { BenachrichtigungsSchalter } from '@/features/platform-access/BenachrichtigungsSchalter';
-import { SCHALTER_SCHLUESSEL } from '@/features/platform-access/benachrichtigungen-api';
-import { StaffListPage } from '@/features/staff/StaffListPage';
-import type { StaffMember } from '@/features/staff/api';
-import type { CurrentUser, RoleKey } from '@/features/session/types';
+import { BenachrichtigungsSchalter } from '@/features/portal/platform-access/BenachrichtigungsSchalter';
+import { SCHALTER_SCHLUESSEL } from '@/features/portal/platform-access/benachrichtigungen-api';
+import { StaffListPage } from '@/features/workforce/staff/StaffListPage';
+import type { StaffMember } from '@/features/workforce/staff/api';
+import type { CurrentUser, RoleKey } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

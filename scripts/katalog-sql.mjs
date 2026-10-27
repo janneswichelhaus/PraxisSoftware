@@ -21,14 +21,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const wurzel = join(dirname(fileURLToPath(import.meta.url)), '..');
-const EINTRAEGE = join(wurzel, 'src/features/exercises/katalog/eintraege');
+const EINTRAEGE = join(wurzel, 'src/features/exercise/exercises/katalog/eintraege');
 const SEED = join(wurzel, 'supabase/seed.sql');
 
 /** Organisation und owner der Seed-Praxis (Jannes Test). */
 export const SEED_ORGANISATION = '22222222-2222-4222-8222-000000000001';
 export const SEED_OWNER = '11111111-1111-4111-8111-000000000001';
 
-/** Die Reihenfolge der Gruppen wie in src/features/exercises/katalog/typen.ts. */
+/** Die Reihenfolge der Gruppen wie in src/features/exercise/exercises/katalog/typen.ts. */
 export const GRUPPEN = [
   'bt',
   'hw',

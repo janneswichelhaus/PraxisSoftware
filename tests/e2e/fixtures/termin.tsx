@@ -2,16 +2,16 @@ import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import type { Appointment } from '@/features/appointments/api';
-import { TerminAktionenDialog } from '@/features/appointments/TerminAktionen';
-import { TerminErweiterungenKontext } from '@/features/appointments/erweiterungen';
+import type { Appointment } from '@/features/calendar/appointments/api';
+import { TerminAktionenDialog } from '@/features/calendar/appointments/TerminAktionen';
+import { TerminErweiterungenKontext } from '@/features/calendar/appointments/erweiterungen';
 import { TERMIN_ERWEITERUNGEN } from '@/app/terminErweiterungen';
-import type { Abrechnungslage } from '@/features/appointments/abrechnungslage-api';
-import type { Kurzblick } from '@/features/appointments/kurzblick-api';
-import type { LeistungenAmTermin } from '@/features/appointments/leistungenAmTermin';
+import type { Abrechnungslage } from '@/features/calendar/appointments/abrechnungslage-api';
+import type { Kurzblick } from '@/features/calendar/appointments/kurzblick-api';
+import type { LeistungenAmTermin } from '@/features/calendar/appointments/leistungenAmTermin';
 import type { Vorschlag } from '@/features/billing/api';
-import type { TreatmentNote } from '@/features/documentation/api';
-import type { CurrentUser, RoleKey } from '@/features/session/types';
+import type { TreatmentNote } from '@/features/clinical/documentation/api';
+import type { CurrentUser, RoleKey } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

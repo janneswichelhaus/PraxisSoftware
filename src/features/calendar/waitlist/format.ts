@@ -1,0 +1,29 @@
+import { grundlageBezeichnung } from '@/features/patients/treatment-bases/api';
+import { formatDate } from '@/lib/datum';
+import { windowsText, type WaitlistEntry } from './api';
+import { appointmentTypeHint } from '@/lib/termin';
+
+/** „Folgeverordnung vom 18. Juni 2026" oder „ohne Grundlage". */
+export function basisText(entry: WaitlistEntry): string {
+  if (!entry.treatment_basis_kind || !entry.treatment_basis_issued_on) return 'ohne Grundlage';
+  const { bauart, praeposition } = grundlageBezeichnung({
+    treatment_basis_kind: entry.treatment_basis_kind,
+  });
+  return `${bauart} ${praeposition} ${formatDate(entry.treatment_basis_issued_on)}`;
+}
+
+/**
+ * Eine Zeile mit Dauer, Wunschzeiten und Therapeut:in - die Terminart nur,
+ * wenn sie vom Hausbesuch abweicht (ANN-192), und keine Therapeut:in nur,
+ * wenn eine gewünscht ist (UX-005h).
+ */
+export function wishText(entry: WaitlistEntry): string {
+  return [
+    appointmentTypeHint(entry.appointment_type),
+    `${entry.duration_minutes} Min.`,
+    windowsText(entry.time_windows),
+    entry.preferred_staff_name ? `bei ${entry.preferred_staff_name}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}

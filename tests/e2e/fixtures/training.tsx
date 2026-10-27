@@ -16,7 +16,7 @@ import { TrainingAppointmentPage } from '@/features/training/TrainingAppointment
 import { NewTrainingClientPage } from '@/features/training/NewTrainingClientPage';
 import { TrainingClientPage } from '@/features/training/TrainingClientPage';
 import { TrainingClientsPage } from '@/features/training/TrainingClientsPage';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

@@ -1,20 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import type * as PatientsApiModule from '@/features/patients/api';
-import type * as AppointmentsApiModule from '@/features/appointments/api';
-import type * as DokumentationApiModule from '@/features/documentation/api';
-import type * as TreatmentBasesApiModule from '@/features/treatment-bases/api';
-import type * as RetentionApiModule from '@/features/retention/api';
-import type * as SessionContextModule from '@/features/auth/sessionContext';
+import type * as AppointmentsApiModule from '@/features/calendar/appointments/api';
+import type * as DokumentationApiModule from '@/features/clinical/documentation/api';
+import type * as TreatmentBasesApiModule from '@/features/patients/treatment-bases/api';
+import type * as RetentionApiModule from '@/features/privacy/retention/api';
+import type * as SessionContextModule from '@/features/core/auth/sessionContext';
 import type * as FleetApiModule from '@/features/fleet/api';
 import { AuthenticatedRoutes } from './AuthenticatedRoutes';
 import { renderWithProviders, testUser } from '@/test-utils';
-import type * as StaffApi from '@/features/staff/api';
+import type * as StaffApi from '@/features/workforce/staff/api';
 
 // Der Entwurfsspeicher des Verordnungsformulars bindet an die Benutzer-ID
 // aus der Sitzung (VER-003, ANN-019); ohne diesen Mock würde useSession()
 // außerhalb eines SessionProvider werfen.
-vi.mock('@/features/auth/sessionContext', async (importOriginal) => ({
+vi.mock('@/features/core/auth/sessionContext', async (importOriginal) => ({
   ...(await importOriginal<typeof SessionContextModule>()),
   useSession: () => ({
     session: { user: { id: '11111111-1111-4111-8111-000000000002' } },
@@ -39,19 +39,19 @@ vi.mock('@/features/fleet/api', async (importOriginal) => ({
     }),
 }));
 
-vi.mock('@/features/retention/api', async (importOriginal) => ({
+vi.mock('@/features/privacy/retention/api', async (importOriginal) => ({
   ...(await importOriginal<typeof RetentionApiModule>()),
   fetchRetentionSchedule: () => Promise.resolve([]),
   fetchLegalHolds: () => Promise.resolve([]),
   fetchDeletionRuns: () => Promise.resolve([]),
 }));
-vi.mock('@/features/audit/api', () => ({
+vi.mock('@/features/privacy/audit/api', () => ({
   fetchAuditEvents: () => Promise.resolve({ events: [], totalCount: 0 }),
   fetchOrganizationMembers: () => Promise.resolve([]),
   formatTimestamp: () => '—',
   shortReference: () => '—',
 }));
-vi.mock('@/features/appointments/api', async (importOriginal) => {
+vi.mock('@/features/calendar/appointments/api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApiModule>();
   return {
     ...actual,
@@ -60,17 +60,17 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/staff/api', async (importOriginal) => ({
+vi.mock('@/features/workforce/staff/api', async (importOriginal) => ({
   ...(await importOriginal<typeof StaffApi>()),
   fetchAssignableTherapists: () => Promise.resolve([]),
   fetchLocations: () => Promise.resolve([]),
 }));
-vi.mock('@/features/documentation/api', async (importOriginal) => ({
+vi.mock('@/features/clinical/documentation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof DokumentationApiModule>()),
   fetchTreatmentDocumentation: () => Promise.resolve({ primary: null, addenda: [] }),
   fetchTreatmentNoteVersions: () => Promise.resolve([]),
 }));
-vi.mock('@/features/treatment-bases/api', async (importOriginal) => ({
+vi.mock('@/features/patients/treatment-bases/api', async (importOriginal) => ({
   ...(await importOriginal<typeof TreatmentBasesApiModule>()),
   fetchPrescribers: () => Promise.resolve([]),
   fetchPrescriber: () => Promise.resolve(null),

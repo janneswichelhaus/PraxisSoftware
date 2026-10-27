@@ -65,7 +65,7 @@ Annahme (`ANN-NNN`, §15.1) oder verwirft sie:
 Panne und Check-Up an der Radkarte in `/betrieb/flotte`.
 
 **Unverändert bleiben:** die Schrittstruktur des Pannenassistenten (`src/features/fleet/pannenablauf.ts`;
-der neue Schritt kommt davor), die Standortinhalte aus `src/features/preview/standortvorlage.ts`,
+der neue Schritt kommt davor), die Standortinhalte aus `src/features/core/preview/standortvorlage.ts`,
 Tokens und Bausteine aus `src/index.css` und `src/components/ui`, die Marke nach `marke/README.md`.
 
 **Kein Scope:** Rad im Kalender (eigener Loop nach Roadmap), weitere Bauarten über das Load 60 mit

@@ -39,63 +39,63 @@ export const GRENZEN: Record<
   breiten: {
     'features/billing': 1,
 
-    'features/tours': 3,
+    'features/calendar/tours': 3,
   },
   details: {
-    'features/appointments': 3,
+    'features/calendar/appointments': 3,
 
-    'features/assessments': 2,
+    'features/calendar/tours': 1,
 
-    'features/datenschutz': 1,
+    'features/clinical/assessments': 2,
 
-    'features/files': 1,
+    'features/patients/files': 1,
 
-    'features/tours': 1,
+    'features/patients/treatment-bases': 1,
 
-    'features/treatment-bases': 1,
+    'features/privacy/datenschutz': 1,
   },
   divideY: {
     app: 1,
 
-    'features/appointments': 1,
+    'features/calendar/appointments': 1,
 
-    'features/datenschutz': 1,
+    'features/privacy/datenschutz': 1,
   },
   knoepfe: {
     app: 2,
 
-    'features/appointments': 9,
-
     'features/billing': 1,
 
-    'features/datenschutz': 1,
+    'features/calendar/appointments': 9,
 
-    'features/documentation': 1,
+    'features/calendar/today': 1,
 
-    'features/files': 1,
+    'features/calendar/tours': 2,
 
-    'features/today': 1,
+    'features/clinical/documentation': 1,
 
-    'features/tours': 2,
+    'features/patients/files': 1,
 
-    'features/treatment-bases': 4,
+    'features/patients/treatment-bases': 4,
+
+    'features/privacy/datenschutz': 1,
   },
   tabellen: {
-    'features/statistics': 1,
+    'features/billing/statistics': 1,
 
     'features/training': 1,
   },
   ueberschriften: {
     app: 1,
 
-    'features/appointments': 4,
+    'features/calendar/appointments': 4,
 
-    'features/documentation': 4,
+    'features/calendar/today': 3,
+
+    'features/clinical/documentation': 4,
 
     'features/patients': 1,
 
-    'features/today': 3,
-
-    'features/treatment-bases': 1,
+    'features/patients/treatment-bases': 1,
   },
 };

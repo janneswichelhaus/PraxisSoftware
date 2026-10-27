@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, normalize } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { ortIn } from './domaenen.mjs';
 import { kommentarbloecke, sprache, textzeilen } from './kommentare-check.mjs';
 
 const ABLAGE = 'docs/development/AUFRAEUMEN.md';
@@ -51,18 +52,18 @@ export function kategorie(pfad) {
 
 const zeilenzahl = (text) => text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
 
-/** Das Modul unter src/features, auf das ein Import zeigt, samt Pfad darin. */
+/** Domäne und Modul unter src/features, auf die ein Import zeigt, samt Pfad darin. */
 export function importziel(datei, spezifizierer) {
   let pfad;
   if (spezifizierer.startsWith('@/')) pfad = `src/${spezifizierer.slice(2)}`;
   else if (spezifizierer.startsWith('.')) pfad = normalize(join(dirname(datei), spezifizierer));
   else return null;
-  const treffer = /^src\/features\/([^/]+)\/?(.*)$/.exec(pfad.replaceAll('\\', '/'));
-  if (!treffer) return null;
-  return { modul: treffer[1], rest: treffer[2].replace(/\.(tsx?|js)$/, '') };
+  const ort = ortIn(pfad.replaceAll('\\', '/').replace(/\/$/, ''));
+  if (!ort) return null;
+  return { ...ort, rest: ort.rest.replace(/\.(tsx?|js)$/, '') };
 }
 
-const modulVon = (pfad) => /^src\/features\/([^/]+)\//.exec(pfad)?.[1] ?? null;
+const modulVon = (pfad) => (/^src\/features\/[^/]+\//.test(pfad) ? ortIn(pfad).modul : null);
 
 /** Querimporte, tiefe Importe und gegenseitige Abhängigkeiten der Module. */
 export function modulgrenzen(dateien) {
@@ -278,7 +279,8 @@ export function messen(dateien) {
   k.set('ringgruppe', grenzen.ringgruppe);
   k.set(
     'module_mit_schnittstelle',
-    dateien.filter(({ pfad }) => /^src\/features\/[^/]+\/index\.ts$/.test(pfad)).length,
+    dateien.filter(({ pfad }) => pfad.endsWith('/index.ts') && ortIn(pfad)?.rest === 'index.ts')
+      .length,
   );
 
   const db = dbFunktionen(

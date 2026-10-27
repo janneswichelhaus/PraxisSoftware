@@ -54,7 +54,7 @@ Mitarbeitenden (§20).
 | Bereich | Behandlungsdokumentation: Termin (`/termine/:id`) und Akte (`…/verlauf`)                       |
 | Quelle  | Jannes, angemeldeter E2E-Lauf zu CAL-018; behoben in CAL-018d                                  |
 | Status  | erledigt für den Einzelfall (CAL-018d), offen als Muster                                       |
-| Berührt | `src/features/documentation/api.ts` (`treatmentNoteSchema`), `get_treatment_note`, `list_patient_treatment_notes` |
+| Berührt | `src/features/clinical/documentation/api.ts` (`treatmentNoteSchema`), `get_treatment_note`, `list_patient_treatment_notes` |
 
 **Beobachtung.** CAL-018 machte `visit_without_treatment` zum Pflichtfeld des
 Eintragsschemas. Dieses Schema liegt unter **zwei** Serverfunktionen;
@@ -193,7 +193,7 @@ fängt das Gate deshalb nicht; sie gehören in die Durchsicht vor B2.
 | Bereich | Organisatorisches → Team (`/praxis/team`, `/praxis/team/:id`)                       |
 | Quelle  | Aufgefallen bei der Bestandsaufnahme für G6b Teil 1                                 |
 | Status  | erledigt in UX-EPIC-002 (UX-002h, 2026-09-26); Ausgang des Lesepfads in G6b bleibt offen |
-| Berührt | `src/features/staff/StaffListPage.tsx`, `src/features/staff/StaffMemberDetailPage.tsx` |
+| Berührt | `src/features/workforce/staff/StaffListPage.tsx`, `src/features/workforce/staff/StaffMemberDetailPage.tsx` |
 
 **Beobachtung.** Beide Seiten laden `list_assignable_therapists` ohne
 Rollenbedingung. Für ein trainer-Konto weist die Datenbank den Aufruf ab; die
@@ -331,7 +331,7 @@ Marke vorsieht.
 | Bereich | Tests, Übersicht |
 | Quelle  | Loop ABN-EPIC-001b, voller Lauf von `pnpm test` am Abend |
 | Status  | erledigt in ABN-EPIC-001b (PR #169: Uhr im Test festgesetzt) |
-| Berührt | `src/features/today/MyDayPage.test.tsx` („fragt beim Oeffnen die Route des Tages ab …“, ANN-194) |
+| Berührt | `src/features/calendar/today/MyDayPage.test.tsx` („fragt beim Oeffnen die Route des Tages ab …“, ANN-194) |
 
 **Beobachtet:** Der Test legt die Termine relativ zur echten Uhr (in 60 Minuten, danach 75 Minuten Abstand). Um 21:18 Uhr Berliner Zeit fällt der zweite Termin über Mitternacht, und „≈ 9 min Rad · 66 min Puffer“ erscheint nicht; auf `main` ebenso rot, also unabhängig von ABN-EPIC-001b. **Erwartet:** Der Test setzt die Uhr fest (`vi.setSystemTime` auf einen Vormittag) und ist zu jeder Tageszeit grün. Behoben im selben PR, weil die CI sonst am Abend rot wird.
 
@@ -406,7 +406,7 @@ Marke vorsieht.
 | Bereich | Übersicht, Stammdaten, Tour |
 | Quelle  | Jannes, Entscheidung zu den Löschkandidaten in `docs/design/leitfaden-schlank.md` (2026-10-10) |
 | Status  | teilweise erledigt (1 und 2 am 2026-10-11), offen: 3 |
-| Berührt | Übersicht (`src/features/today/MyDayPage.tsx`), Formular der Person (`phone_work`), `src/features/tours/Tourenliste.tsx` |
+| Berührt | Übersicht (`src/features/calendar/today/MyDayPage.tsx`), Formular der Person (`phone_work`), `src/features/calendar/tours/Tourenliste.tsx` |
 
 **Entscheidung (Jannes, 2026-10-10).** (1) Der Aufklapper „Organisatorisches und Kommunikation“ am Ende der Übersicht fällt weg; „Panne melden“ bleibt im Fuhrpark erreichbar. (2) „Telefon (geschäftlich)“ verschwindet aus dem Formular; die Spalte `phone_work` bleibt, damit Auskunft, Zusammenführen und Bestand unberührt sind. (3) „Andere Ziel-App prüfen (für die Gerätebewertung)“ unter der Tourliste fällt weg, sobald die Sichtung Kartendienst die Gerätebewertung abgeschlossen hat.
 
@@ -419,7 +419,7 @@ Marke vorsieht.
 |         |   |
 | ------- | - |
 | Datum   | 2026-10-10 |
-| Bereich | Plattform: Einwilligungen (`src/features/platform/einwilligungstexte.ts`) |
+| Bereich | Plattform: Einwilligungen (`src/features/portal/platform/einwilligungstexte.ts`) |
 | Quelle  | UX-008a, beim Prüfen des Foto-Widerrufs |
 | Status  | offen |
 | Berührt | `einwilligungstexte.ts` (Zweck `patient_photos`, Satz zum Widerruf); ADR-017 Punkt 46 |
@@ -492,7 +492,7 @@ Marke vorsieht.
 | Bereich | Arbeitszeit, Planung (`staff_working_hours`) |
 | Quelle  | Zweitreview der Überholung 8 (AZ-001) |
 | Status  | offen (Vorschlag) |
-| Berührt | `supabase/migrations/20260830120100_working_hours.sql` (Tabellenrecht), `src/features/scheduling/api.ts` |
+| Berührt | `supabase/migrations/20260830120100_working_hours.sql` (Tabellenrecht), `src/features/calendar/scheduling/api.ts` |
 
 **Beobachtung.** Der Wochenplan ist mit Tabellenrecht lesbar (seit CAL-005), also auch `created_by` und `created_at`. Seit den Fassungen (ANN-589) zeigt das, wer eine genehmigte dauerhafte Änderung eingetragen hat und wann – jeder Praxisrolle, solange die Fassung gilt. Die Abweichungen haben dafür seit URL-001 ein Spaltenrecht (ANN-580). **Erwartet.** Wie bei den Abweichungen nur die Spalten, die Kalender und Planung brauchen (`id`, `organization_id`, `staff_member_id`, `weekday`, `starts_at`, `ends_at`, `valid_from`, `valid_until`); Pfad A, eine Migration mit Negativtest.
 
@@ -516,7 +516,7 @@ Marke vorsieht.
 | Bereich | Plattform, Fragebogen; Praxis, Erhebungen |
 | Quelle  | Design-Review 1c (PR #295), beim Beheben desselben Fehlers in `begriffe.ts` |
 | Status  | offen (Vorschlag) |
-| Berührt | `src/features/assessments/darstellung.ts` (Zeile 27, `split(/\s+\|(?<=-)(?=\p{L})/u)`) |
+| Berührt | `src/features/clinical/assessments/darstellung.ts` (Zeile 27, `split(/\s+\|(?<=-)(?=\p{L})/u)`) |
 
 **Beobachtung.** Ein regulärer Ausdruck mit Lookbehind ist in Safari vor iOS 16.4 ein Syntaxfehler; das ganze Modul lädt dann nicht. `darstellung.ts` steht im Fragebogen der Plattform (`trennung.test.ts` lässt es zu) und in der Praxis. Schritt 1d hat dasselbe in `Dialogfenster.tsx` und `Einstieg.tsx` behoben, 1c in `begriffe.ts`. **Erwartet.** Trennen ohne Lookbehind (etwa erst an Leerraum, dann je Teil nach `-` mit angehängtem Bindestrich) und ein Test, der Lookbehinds in ausgeliefertem Code unter `src/` findet.
 
@@ -528,7 +528,7 @@ Marke vorsieht.
 | Bereich | Plattform, Gerüst (Kopf) |
 | Quelle  | Design-Review 1e, Bildstrecke „Sehr groß“ der Begleitung (`handeln-fuer`) |
 | Status  | offen (Vorschlag) |
-| Berührt | `Kopf` in `src/features/platform/Navigation.tsx` (Schalter unter `nav aria-label="Bereich"`) |
+| Berührt | `Kopf` in `src/features/portal/platform/Navigation.tsx` (Schalter unter `nav aria-label="Bereich"`) |
 
 **Beobachtung.** Bei 375 px und „Sehr groß“ bricht im Schalter „Für Maximilian Mustermann-Langenscheidt“ zwischen „Musterman“ und „n-“, also mitten im Wort, weil die Plattform `overflow-wrap: anywhere` setzt und das Ziel halb so breit ist. **Erwartet.** Wie im Gruß nur am Bindestrich brechen (DR-114) - etwa zwei Reihen statt zwei Spalten, sobald ein Wort nicht passt, oder der Name in einer eigenen Zeile.
 
@@ -540,7 +540,7 @@ Marke vorsieht.
 | Bereich | Plattform, Rückfragen der Praxis mit Anhängen (`/p/nachrichten/:id`) |
 | Quelle  | Design-Review von Schritt 1a (#290); bestand schon vorher; aus der Sitzung „Design-Review Anwendung Lauf 1“ (archiviert 24.10.) übernommen |
 | Status  | offen (Vorschlag) |
-| Berührt | `src/features/platform/Anhaenge.tsx` (Knopf „Löschen“); Vorbild `src/features/messages/RueckfrageAnhaenge.tsx` |
+| Berührt | `src/features/portal/platform/Anhaenge.tsx` (Knopf „Löschen“); Vorbild `src/features/portal/messages/RueckfrageAnhaenge.tsx` |
 
 **Beobachtung.** „Löschen“ steht als Zweitknopf gleichrangig neben „Ansehen“ und löscht den Anhang sofort (`onClick={() => loeschen.mutate(a.id)}`). DESIGN.md verlangt für Zerstörendes: leise am Ende, mit `Rueckfrage`; die Praxis macht es so. **Erwartet.** „Löschen“ leise ans Ende, erst nach `Rueckfrage` löschen, Wortlaut nach PLATTFORM.md („Begriffe“); am Löschpfad (RPC, Policy) nichts ändern. Komponententest für Abbrechen und Bestätigen, `nachrichten.spec.ts` grün.
 
@@ -564,7 +564,7 @@ Marke vorsieht.
 | Bereich | Plattform, lokale Ansicht nach der Freigabe ohne Netz (`LokaleUebungen`) |
 | Quelle  | Schritt 2b (DRP-EPIC-008), beim Nachstellen von BEF-211 |
 | Status  | offen (Vorschlag) |
-| Berührt | `abgelegteZugaenge` und `wartendeEinheiten` in `src/features/platform/LokaleUebungen.tsx` |
+| Berührt | `abgelegteZugaenge` und `wartendeEinheiten` in `src/features/portal/platform/LokaleUebungen.tsx` |
 
 **Beobachtung.** Die Abfragen lesen nur das Gerät, laufen aber mit dem Standard `networkMode: 'online'` der Abfragebibliothek. Meldet das Gerät während der lokalen Ansicht „offline“ und wird eine Abfrage neu gestellt (etwa die Warteschlange nach einer Einheit), hält sie an, bis Verbindung besteht. Beim Kaltstart ohne Netz tritt es nicht auf. **Erwartet.** `networkMode: 'always'` wie in der Durchführung (BEF-211); Browsertest mit `setOffline` während der Ansicht.
 
@@ -576,7 +576,7 @@ Marke vorsieht.
 | Bereich | Plattform, Übungen (Fenster „Übung zum Nachlesen“, Durchführung) |
 | Quelle  | Selbstsichtung DRP-EPIC-009, Prüfseite `plattform-uebungen.html` bei 188 px mit „Sehr groß“ |
 | Status  | offen (Vorschlag) |
-| Berührt | `Buehne` (`src/components/ui/Buehne.tsx`), `Dosierungsmarken` (`src/features/platform/Dosierungsmarken.tsx`) |
+| Berührt | `Buehne` (`src/components/ui/Buehne.tsx`), `Dosierungsmarken` (`src/features/portal/platform/Dosierungsmarken.tsx`) |
 
 **Beobachtung.** Einzeln (188 px oder „Sehr groß“) bricht kein Wort ohne Strich. Beides zugleich lässt für den Namen in der Bühne etwa 118 px: „heranziehen“ (elf Buchstaben, unter der Trenngrenze von ANN-707) bricht als „heranzie|hen“, die Marke „3 Durchgänge“ als „Durchgän|ge“. **Erwartet.** Entscheiden, ob die Kombination zu den Prüfpunkten gehört; wenn ja, dort die Trenngrenze senken oder Titel und Marken kleiner setzen.
 
@@ -588,7 +588,7 @@ Marke vorsieht.
 | Bereich | Plattform, Termine (`/p/termine`) |
 | Quelle  | Ist-Bilder für Briefing 3 (Prüfseite `plattform.html`, 375 px „Sehr groß“ und 188 px) |
 | Status  | offen; wird mit Schritt 3 des Design-Reviews neu gefasst |
-| Berührt | `src/features/platform/Termine.tsx` (`Terminzeile`, `Wunschzeile`), `src/index.css` (`.plattform-schrift`: `overflow-wrap: anywhere`) |
+| Berührt | `src/features/portal/platform/Termine.tsx` (`Terminzeile`, `Wunschzeile`), `src/index.css` (`.plattform-schrift`: `overflow-wrap: anywhere`) |
 
 **Beobachtung.** Bei „Sehr groß“ wird die Spalte des Zustands an der Terminzeile so schmal, dass „Änderung angefragt“ als „Änderun|g angefrag|t“ bricht. Bei 188 px (200 %) bricht der Knopf „Wunsch zurückziehen“ als „zurückzieh|en“ – ohne Strich. Ursache ist `overflow-wrap: anywhere` an der ganzen Plattform: Es gibt jedem Element eine Mindestbreite von einem Zeichen. **Erwartet.** Wie in PLATTFORM.md: Statuszeichen und Knöpfe brechen nie im Wort, nur zwischen Wörtern; ist kein Platz, rückt der Zustand unter den Titel.
 
@@ -600,7 +600,7 @@ Marke vorsieht.
 | Bereich | Plattform, ein Termin (`/p/termine/:id`, vergangen oder nicht mehr änderbar) |
 | Quelle  | Ist-Bilder für Briefing 3 (lokaler Stack, Erika, 375 und 1280 px) |
 | Status  | offen; wird mit Schritt 3 des Design-Reviews neu gefasst (DR-133) |
-| Berührt | `src/features/platform/Terminaenderung.tsx` (Satz „Bei Fragen rufen Sie bitte die Praxis an.“) |
+| Berührt | `src/features/portal/platform/Terminaenderung.tsx` (Satz „Bei Fragen rufen Sie bitte die Praxis an.“) |
 
 **Beobachtung.** Die Seite sagt „Dieser Termin lässt sich hier nicht mehr ändern. Bei Fragen rufen Sie bitte die Praxis an.“ – ohne Nummer und ohne Knopf. Seit N2 (#292, ANN-691) trägt der Plattformkontext die Rufnummer der Praxis (`practice_phone`), und die Türen zeigen „Praxis anrufen“ schon als Knopf (ANN-688). **Erwartet.** Mit Nummer „Praxis anrufen“ als Anruf-Link mit der Nummer im Wort, ohne Nummer ein Weg zu „Der Praxis schreiben“ – nie ein Satz, der zu einer Handlung auffordert, die die Seite nicht anbietet.
 
@@ -669,9 +669,21 @@ Marke vorsieht.
 |         |   |
 | ------- | - |
 | Datum   | 2026-10-25 |
-| Bereich | `src/features/platform/trennung.test.ts`, `src/features/preview/trennung.test.ts`, `src/lib/` |
+| Bereich | `src/features/portal/platform/trennung.test.ts`, `src/features/core/preview/trennung.test.ts`, `src/lib/` |
 | Quelle  | Zweitreview zu Aufräumen Schritt 3 |
 | Status  | offen (Vorschlag) |
 | Berührt | beide Trennungsprüfungen; `src/lib/ki/gateway.ts`, `src/lib/location/funktion.ts` |
 
 **Beobachtung.** Beide Prüfungen lassen jeden Import aus `@/lib/` durch, weil dort anbieterfreie Hilfen liegen. Zwei Module dort sprechen aber den Server an (`functions.invoke` im KI-Gateway und in der Ortsfunktion); die Vorschau sperrt nur die Ortsmodule einzeln. Läge eine Praxisabfrage unter `src/lib`, sähe keine der beiden Prüfungen einen Import aus Plattform oder Vorschau. Schritt 3 hat die Tagesliste deshalb als Modul `day-plan` angelegt statt in `src/lib` (DEVELOPMENT.md „Modulgrenzen“). **Erwartet.** Ein Test hält fest, welche Dateien unter `src/lib` `getSupabase()` benutzen dürfen, oder die Trennungsprüfungen sperren genau diese; dazu je eine Gegenprobe.
+
+### Kommentare — 30 lange Kommentarblöcke nennen noch die Pfade vor dem Domänenschnitt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-27 |
+| Bereich | Kommentare im Code |
+| Quelle  | Aufräumen Schritt 3b, Teil 2a |
+| Status  | offen |
+| Berührt | `scripts/bildstrecke/routen.mjs`, `routenquelle.mjs`, `scripts/definitionen-sql.mjs`, `katalog-sql.mjs`; `src/components/ui/Buehne.tsx`, `Reiterleiste.tsx`, `Rueckmeldung.tsx`; `src/dateinamen.test.ts`, `src/protokollierung.test.ts`; `src/features/calendar/tours/TagesrouteAufklapper.tsx`, `core/preview/trennung.test.ts`, `fleet/api.ts`, `fleet/standortvorlage.test.ts`, `nutrition/lebensmittel.ts`, `patients/akte.ts`, `portal/platform/trennung.test.ts`, `portal/platform/zeit.ts`, `privacy/datenschutz/kategorien.ts`, `training/api.ts`, `workforce/staff/rollenhinweise.ts`; `src/lib/ki/gateway.ts`, `src/lib/location/matrix.ts`, `route.ts` (zwei Blöcke), `src/lib/vertretung.ts`; `supabase/functions/location-provider/abschottung.test.ts`, `mock.ts`, `supabase/functions/patient-file-verify/video.ts`; `supabase/tests/patient-files.test.ts`, `staff-leave.test.ts` |
+
+**Beobachtung.** Beim Umzug der Module in die 14 Domänenordner zogen Pfade in Importen, Tests, Skripten und Doku mit. In diesen Kommentarblöcken mit mehr als drei Zeilen steht noch die alte Form `src/features/<modul>/…`: Die Kommentarregel verlangt, einen angefassten Block auf drei Zeilen zu kürzen, und der Umzug sollte mechanisch bleiben. **Erwartet.** Beim nächsten Anfassen der Datei den Block kürzen und den Pfad nachziehen (`<domäne>/<modul>` nach `scripts/domaenen.mjs`).

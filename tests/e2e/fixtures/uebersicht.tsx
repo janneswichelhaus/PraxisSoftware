@@ -3,24 +3,24 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
 import { NachladefehlerContext } from '@/app/nachladefehler';
-import { VorschauProvider } from '@/features/preview/VorschauProvider';
-import { MyDayPage } from '@/features/today/MyDayPage';
-import type { Abrechnungslage } from '@/features/appointments/abrechnungslage-api';
+import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
+import { MyDayPage } from '@/features/calendar/today/MyDayPage';
+import type { Abrechnungslage } from '@/features/calendar/appointments/abrechnungslage-api';
 import type { Routenergebnis } from '@/lib/location/route';
-import { startpunkt, type Standort } from '@/features/tours/startort';
+import { startpunkt, type Standort } from '@/features/calendar/tours/startort';
 import {
   PRAXISPROFIL,
   routenplan,
   stoppsDesTages,
   type Tagesstopp,
-} from '@/features/tours/tagesroute';
+} from '@/features/calendar/tours/tagesroute';
 import { Stammdaten } from '@/features/patients/PatientMasterDataPage';
 import type { Patient } from '@/features/patients/api';
-import { type CalendarEntry } from '@/features/appointments/api';
-import type { CurrentUser } from '@/features/session/types';
+import { type CalendarEntry } from '@/features/calendar/appointments/api';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 import { todayInTimeZone, tagePlus } from '@/lib/datum';
-import type { DayPlanEntry } from '@/features/day-plan/api';
+import type { DayPlanEntry } from '@/features/calendar/day-plan/api';
 
 /**
  * Einstieg der Prüfseite aus `uebersicht.html` (UX-EPIC-003).

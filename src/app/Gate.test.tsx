@@ -24,11 +24,11 @@ import { render, screen } from '@testing-library/react';
 let sitzung: { user: { id: string; email?: string } } | null = null;
 let pruefend = false;
 
-vi.mock('@/features/auth/SessionProvider', () => ({
+vi.mock('@/features/core/auth/SessionProvider', () => ({
   SessionProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
-vi.mock('@/features/auth/sessionContext', () => ({
+vi.mock('@/features/core/auth/sessionContext', () => ({
   useSession: () => ({ session: sitzung, initialising: pruefend, signOut: vi.fn() }),
 }));
 

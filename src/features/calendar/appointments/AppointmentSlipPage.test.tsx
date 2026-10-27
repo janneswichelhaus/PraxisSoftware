@@ -1,0 +1,311 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type * as AppointmentsApi from './api';
+import type * as PatientsApi from '@/features/patients/api';
+import type * as RouterModul from 'react-router-dom';
+import type * as AbsenderApi from '@/features/privacy/datenschutz/absender';
+import { renderWithProviders, testPatient, testUser } from '@/test-utils';
+
+const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
+
+const patient: PatientsApi.Patient = testPatient({
+  id: PATIENT_ID,
+  given_name: 'Max',
+  family_name: 'Mustermann',
+  email: 'max@example.invalid',
+});
+
+const eintraege: AppointmentsApi.AppointmentSlipEntry[] = [
+  {
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001',
+    starts_at: '2027-05-12T07:00:00.000Z',
+    ends_at: '2027-05-12T08:00:00.000Z',
+    appointment_type: 'home_visit',
+    location_name: null,
+    staff_given_name: 'Anna',
+    staff_family_name: 'Beispiel',
+    organization_time_zone: 'Europe/Berlin',
+  },
+  {
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000002',
+    starts_at: '2027-05-19T12:00:00.000Z',
+    ends_at: '2027-05-19T13:00:00.000Z',
+    appointment_type: 'practice',
+    location_name: 'Hauptstandort Tuebingen',
+    location_street: 'Praxisplatz',
+    location_house_number: '1',
+    location_postal_code: '72072',
+    location_city: 'Tuebingen',
+    staff_given_name: 'Anna',
+    staff_family_name: 'Beispiel',
+    organization_time_zone: 'Europe/Berlin',
+  },
+];
+
+const absender = {
+  name: 'Test Praxis Tuebingen',
+  street: 'Musterallee',
+  house_number: '1',
+  postal_code: '72070',
+  city: 'Tuebingen',
+  phone: '+49 7071 0000000',
+  email: 'praxis@example.invalid',
+};
+const fetchPraxisAbsender = vi.fn();
+vi.mock('@/features/privacy/datenschutz/absender', async (importOriginal) => ({
+  ...(await importOriginal<typeof AbsenderApi>()),
+  fetchPraxisAbsender: () => fetchPraxisAbsender() as Promise<AbsenderApi.PraxisAbsender | null>,
+}));
+
+const fetchPatient = vi.fn();
+const fetchAppointmentSlip = vi.fn();
+const addAppointmentNotification = vi.fn();
+
+vi.mock('@/features/patients/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof PatientsApi>()),
+  fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
+}));
+
+vi.mock('./api', async (importOriginal) => {
+  const actual = await importOriginal<typeof AppointmentsApi>();
+  return {
+    ...actual,
+    fetchAppointmentSlip: (id: string) =>
+      fetchAppointmentSlip(id) as Promise<AppointmentsApi.AppointmentSlipEntry[]>,
+    addAppointmentNotification: (ids: readonly string[], kanal: string) =>
+      addAppointmentNotification(ids, kanal) as Promise<number>,
+  };
+});
+
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModul>()),
+  useParams: () => ({ patientId: PATIENT_ID }),
+}));
+
+/** `window.print` gibt es in jsdom nicht - ohne Attrappe wirft der Klick. */
+const drucken = vi.fn();
+vi.stubGlobal('print', drucken);
+
+const { AppointmentSlipPage } = await import('./AppointmentSlipPage');
+
+function rendern() {
+  return renderWithProviders(
+    <AppointmentSlipPage user={testUser(['therapist'])} />,
+    `/patienten/${PATIENT_ID}/terminzettel`,
+  );
+}
+
+describe('AppointmentSlipPage', () => {
+  beforeEach(() => {
+    fetchPatient.mockReset();
+    fetchAppointmentSlip.mockReset();
+    addAppointmentNotification.mockReset();
+    fetchPatient.mockResolvedValue(patient);
+    fetchAppointmentSlip.mockResolvedValue(eintraege);
+    addAppointmentNotification.mockResolvedValue(2);
+    fetchPraxisAbsender.mockReset();
+    fetchPraxisAbsender.mockResolvedValue(absender);
+    drucken.mockClear();
+  });
+
+  it('richtet sich an die Patient:in und listet Datum, Zeit, Ort und Person', async () => {
+    rendern();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Ihre nächsten Termine' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Max Mustermann')).toBeInTheDocument();
+    expect(screen.getByText('Mittwoch, 12. Mai 2027')).toBeInTheDocument();
+    expect(screen.getByText(/09:00–10:00 Uhr · bei Ihnen zu Hause/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/14:00–15:00 Uhr · Hauptstandort Tuebingen, Praxisplatz 1, 72072 Tuebingen/),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText('Anna Beispiel')).toHaveLength(2);
+  });
+
+  // UX-009a (BEF-052): Der Zettel nennt die Praxis und sagt, wo man absagt.
+  it('trägt den Absender der Praxis und nennt bei der Bitte um Absage den Weg', async () => {
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    expect(await screen.findByText('Test Praxis Tuebingen')).toBeInTheDocument();
+    expect(screen.getByText('Musterallee 1, 72070 Tuebingen')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /rechtzeitig ab, wenn Sie ihn nicht wahrnehmen können – Telefon \+49 7071 0000000, E-Mail praxis@example\.invalid\./,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/fehlen Anschrift oder Telefon/)).not.toBeInTheDocument();
+  });
+
+  it('sagt am Bildschirm, wenn die Stammdaten fehlen', async () => {
+    fetchPraxisAbsender.mockResolvedValue({ name: 'Test Praxis Tuebingen' });
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    expect(await screen.findByText(/fehlen Anschrift oder Telefon/)).toHaveClass('nicht-drucken');
+    expect(screen.getByText(/nicht wahrnehmen können\.$/)).toBeInTheDocument();
+  });
+
+  it('zeigt weder Status noch Verordnung noch Behandlungsinhalte', async () => {
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    // Feste Muster statt eines aus einer Schleife gebauten RegExp - ein
+    // nicht-literales Muster ist ein zu Recht gemeldeter Injektionspunkt.
+    for (const verboten of [/bestätigt/i, /verordnung/i, /diagnose/i, /dokumentation/i]) {
+      expect(screen.queryByText(verboten)).not.toBeInTheDocument();
+    }
+  });
+
+  it('bietet beide Wege an - Druck und E-Mail (CAL-013)', async () => {
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    expect(screen.getByRole('button', { name: 'Terminzettel drucken' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Termine per E-Mail senden' })).toBeInTheDocument();
+    // Die Fußnote zu organisatorischen Angaben ist seit UX-005g fort; was der
+    // Zettel enthält, prüft der Test oben an der Liste selbst.
+    expect(screen.queryByText(/organisatorische Angaben/)).not.toBeInTheDocument();
+    // Weiter kein SMS- oder Messenger-Weg: Messenger ist nach B15
+    // ausgeschlossen, SMS gibt es nicht.
+    expect(
+      screen.queryByRole('button', { name: /sms|messenger|whatsapp/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('bietet die E-Mail nur an, wenn eine Adresse hinterlegt ist', async () => {
+    fetchPatient.mockResolvedValue({ ...patient, email: null });
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    expect(
+      screen.queryByRole('button', { name: 'Termine per E-Mail senden' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/fehlt die Adresse/)).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // UX-012 (ANN-039 Fassung 2): Drucken bereitet vor, die Bestaetigung teilt mit.
+  //
+  // Vorher vermerkte der Klick auf "Drucken" vor dem Druckdialog. Der wird
+  // laufend abgebrochen - falscher Drucker, kein Papier, nur mal nachsehen -,
+  // und in der Akte stand danach eine Aushaendigung, die nie stattfand.
+  // ---------------------------------------------------------------------------
+  it('druckt sofort und vermerkt dabei noch nichts', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    await user.click(screen.getByRole('button', { name: 'Terminzettel drucken' }));
+
+    await waitFor(() => expect(drucken).toHaveBeenCalledTimes(1));
+    expect(addAppointmentNotification).not.toHaveBeenCalled();
+    expect(screen.getByText(/Wurde der Zettel ausgehändigt\?/)).toBeInTheDocument();
+  });
+
+  it('vermerkt erst auf die Bestaetigung hin (CAL-012)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    await user.click(screen.getByRole('button', { name: 'Terminzettel drucken' }));
+    await user.click(await screen.findByRole('button', { name: 'Ja, als mitgeteilt vermerken' }));
+
+    await waitFor(() =>
+      expect(addAppointmentNotification).toHaveBeenCalledWith(
+        eintraege.map((eintrag) => eintrag.id),
+        'slip',
+      ),
+    );
+    // Im Erfolgston und mit dem Fokus: Der Knopf, der ihn hatte, ist mit der
+    // Frage verschwunden (UIK-21, ZST-16).
+    const bestaetigung = await screen.findByText(/sind als „Terminzettel ausgehändigt“ vermerkt/);
+    // Seit dem Design-Handoff vom 2026-10-01 auf der Akzentfläche (Rueckmeldung).
+    expect(bestaetigung).toHaveClass('bg-accent-soft', 'text-accent');
+    expect(bestaetigung).toHaveAttribute('role', 'status');
+    expect(bestaetigung.closest('[tabindex="-1"]')).toHaveFocus();
+  });
+
+  it('vermerkt nichts, wenn der Zettel doch nicht ausgehaendigt wurde', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    await user.click(screen.getByRole('button', { name: 'Terminzettel drucken' }));
+    await user.click(await screen.findByRole('button', { name: 'Nein, nichts vermerken' }));
+
+    expect(addAppointmentNotification).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.queryByText(/Wurde der Zettel ausgehändigt\?/)).not.toBeInTheDocument(),
+    );
+  });
+
+  it('meldet einen gescheiterten Vermerk, ohne ihn zu behaupten', async () => {
+    addAppointmentNotification.mockRejectedValue(
+      new Error('Der Vermerk konnte nicht gespeichert werden.'),
+    );
+    const user = userEvent.setup();
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    await user.click(screen.getByRole('button', { name: 'Terminzettel drucken' }));
+    await user.click(await screen.findByRole('button', { name: 'Ja, als mitgeteilt vermerken' }));
+
+    expect(await screen.findByText(/Es wurde nichts vermerkt/)).toBeInTheDocument();
+  });
+
+  it('bietet ohne Termine nichts zum Drucken an', async () => {
+    fetchAppointmentSlip.mockResolvedValue([]);
+    rendern();
+
+    expect(await screen.findByText('Keine bevorstehenden Termine')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Terminzettel drucken' })).not.toBeInTheDocument();
+  });
+
+  it('meldet nicht ladbare Termine als Ladefehler, mit neuem Versuch und Rückweg (TER-11)', async () => {
+    fetchAppointmentSlip.mockRejectedValueOnce(new Error('nope'));
+    const user = userEvent.setup();
+    rendern();
+
+    expect(
+      await screen.findByText('Die Termine konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    // Kein „Nicht gefunden" - im Funkloch wirkte die Akte sonst gelöscht.
+    expect(screen.queryByText('Nicht gefunden')).not.toBeInTheDocument();
+    expect(screen.queryByText('Max Mustermann')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Zurück zur Akte' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Ihre nächsten Termine' }),
+    ).toBeInTheDocument();
+  });
+
+  it('meldet eine nicht freigegebene Akte mit ihrem Gegenstand, nicht als „Datensatz"', async () => {
+    fetchPatient.mockResolvedValue(null);
+    rendern();
+
+    expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+    expect(
+      screen.getByText('Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Datensatz/)).not.toBeInTheDocument();
+  });
+
+  it('nimmt den Rückweg vom Druck aus', async () => {
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    const zurueck = screen.getByRole('link', { name: '← Zurück zur Akte' });
+    expect(zurueck.closest('.nicht-drucken')).not.toBeNull();
+  });
+
+  it('setzt die Überschrift des Blatts in einer Größe des Systems (TER-16)', async () => {
+    rendern();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Ihre nächsten Termine' }),
+    ).toHaveClass('text-h4', 'font-bold');
+  });
+});

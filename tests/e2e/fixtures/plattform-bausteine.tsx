@@ -9,9 +9,9 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Menueknopf } from '@/components/ui/Menueknopf';
 import { Section } from '@/components/ui/Section';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
-import type { Termin } from '@/features/platform/api';
-import { Besuchskarte } from '@/features/platform/Besuchskarte';
-import { Notfallkarte } from '@/features/platform/Notfallkarte';
+import type { Termin } from '@/features/portal/platform/api';
+import { Besuchskarte } from '@/features/portal/platform/Besuchskarte';
+import { Notfallkarte } from '@/features/portal/platform/Notfallkarte';
 import '@/index.css';
 
 /**

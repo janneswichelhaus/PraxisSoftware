@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Hervorhebung } from '@/components/ui/Hervorhebung';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { canReadPatientDirectory, type CurrentUser } from '@/features/session/types';
+import { canReadPatientDirectory, type CurrentUser } from '@/features/core/session/types';
 import {
   SUCHE_MINDESTLAENGE,
   searchPatients,

@@ -1,0 +1,222 @@
+import type { ReactNode } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Field } from '@/components/ui/Field';
+import { Feldgruppe, Section } from '@/components/ui/Section';
+import { Select } from '@/components/ui/Select';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { EREIGNIS_FELD_IDS } from './calendar';
+import { type EreignisFormValues } from './api';
+import { todayInTimeZone } from '@/lib/datum';
+import type { Location } from '@/features/workforce/staff/api';
+
+/**
+ * Eingabefelder eines Ereignisses (CAL-015c, CAL-017).
+ *
+ * Vom Eintragen und vom Bearbeiten gemeinsam genutzt: beide erfassen
+ * Bezeichnung, Ort, Tag und die beiden freien Enden, und beide meinen damit
+ * dasselbe. Was sich unterscheidet, ist die Frage nach den Beteiligten - beim
+ * Eintragen eine Auswahl, beim Bearbeiten eine Liste - und die reicht die
+ * jeweilige Seite als `beteiligte` herein.
+ *
+ * Jedes Feld trägt eine feste Kennung (`EREIGNIS_FELD_IDS`): Die
+ * Fehlerzusammenfassung über dem Formular springt darauf (KAL-17). Der
+ * Abstand der Felder ist der der `Feldgruppe` (TOK-15).
+ *
+ * Die Prüfung hier ist Bedienkomfort. Verbindlich prüfen `create_appointment_event`
+ * und `update_appointment_event` (ADR-004).
+ */
+type EreignisFeld = keyof EreignisFormValues;
+
+export function EreignisFormFields({
+  werte,
+  fehler,
+  onChange,
+  standorte,
+  zeitzone,
+  rasterMinuten,
+  beteiligte,
+  datumBeschriftung = 'Datum *',
+  datumHinweis,
+  datumFest,
+  standorteFehler,
+}: {
+  werte: EreignisFormValues;
+  fehler: Partial<Record<EreignisFeld, string>>;
+  onChange: <F extends EreignisFeld>(feld: F, wert: EreignisFormValues[F]) => void;
+  standorte: Location[];
+  zeitzone?: string | null | undefined;
+  /** Praxisraster in Minuten. Steuert die Schrittweite beider Enden (CAL-005). */
+  rasterMinuten?: number | null | undefined;
+  /** Die Frage nach den Beteiligten - je nach Vorgang verschieden. */
+  beteiligte: ReactNode;
+  /**
+   * Beschriftung des Tages. Bei einer Serie ist es der **erste** Tag, und das
+   * muss dranstehen - sonst behauptet das Formular einen einzelnen Termin
+   * (CAL-021).
+   */
+  datumBeschriftung?: string;
+  /** Ein Satz am Tag, etwa sein Wochentag (KAL-B03). */
+  datumHinweis?: string | undefined;
+  /**
+   * Der Tag steht fest und ist keine Eingabe (TER-14): Wer die ganze Serie
+   * ändert, ändert ihre Tage nicht - dann steht hier, was gilt, statt eines
+   * Feldes, dessen Wert der Server verwirft.
+   */
+  datumFest?: ReactNode;
+  /**
+   * Die Standorte konnten nicht geladen werden (ZST-07): Statt einer Auswahl
+   * nur mit „Bitte wählen …" steht dann dieser Hinweis - mit einem Weg heraus.
+   */
+  standorteFehler?: ReactNode;
+}) {
+  return (
+    // Zwei Gruppen statt sieben Felder untereinander (Design-Rollout B2,
+    // DESIGN.md „Formular“): was und wer, dann wo und wann. Die Reihenfolge
+    // bleibt die der Fehlerzusammenfassung (KAL-17).
+    <>
+      <Section titel="Fehlzeit">
+        <Feldgruppe>
+          <Field
+            label="Bezeichnung *"
+            feldId={EREIGNIS_FELD_IDS.title}
+            value={werte.title}
+            error={fehler.title}
+            maxLength={120}
+            // ANN-060: Die Bezeichnung ist organisatorisch - sie steht als Aufschrift
+            // im Kalender und ist damit für alle sichtbar, die den Kalender sehen.
+            // Klinisches gehört in die Dokumentation der Akte, nicht hierher.
+            hint="Steht als Aufschrift im Kalender. Organisatorisch benennen – kein Patientenname, keine Diagnose, kein klinischer Inhalt."
+            onChange={(e) => onChange('title', e.target.value)}
+          />
+
+          {beteiligte}
+        </Feldgruppe>
+      </Section>
+
+      <Section titel="Ort und Zeit">
+        <Feldgruppe>
+          {/* Ort und Standort gehören zusammen und stehen ab 640 px
+            nebeneinander (DESIGN.md „Formular“). */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
+            <Select
+              label="Ort *"
+              value={werte.appointment_type}
+              onChange={(e) =>
+                onChange('appointment_type', e.target.value === 'video' ? 'video' : 'practice')
+              }
+            >
+              <option value="practice">In der Praxis</option>
+              <option value="video">Video</option>
+            </Select>
+
+            {werte.appointment_type === 'practice' ? (
+              standorteFehler ? (
+                // Die Fehlermeldung braucht die ganze Breite.
+                <div className="sm:col-span-2">{standorteFehler}</div>
+              ) : (
+                <Select
+                  label="Standort *"
+                  feldId={EREIGNIS_FELD_IDS.location_id}
+                  value={werte.location_id}
+                  error={fehler.location_id}
+                  onChange={(e) => onChange('location_id', e.target.value)}
+                >
+                  <option value="">Bitte wählen …</option>
+                  {standorte.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </Select>
+              )
+            ) : null}
+          </div>
+
+          {datumFest ? (
+            <div>
+              <p className="text-ink text-sm font-medium">
+                {datumBeschriftung.replace(/\s*\*$/, '')}
+              </p>
+              <p className="text-ink-muted mt-1 text-sm">{datumFest}</p>
+            </div>
+          ) : (
+            <Field
+              label={datumBeschriftung}
+              type="date"
+              feldId={EREIGNIS_FELD_IDS.date}
+              value={werte.date}
+              error={fehler.date}
+              hint={datumHinweis}
+              min={zeitzone ? todayInTimeZone(zeitzone) : undefined}
+              onChange={(e) => onChange('date', e.target.value)}
+            />
+          )}
+
+          {/* Beide Enden im Raster: Anders als beim Behandlungstermin ist die
+              Länge hier frei (§8.1) - gebunden bleibt sie ans Praxisraster,
+              und das prüft der Server an beiden Enden. Die stehenden Hinweise zum
+              Raster sind fort - sie erklärten das System, nicht die Eingabe; die
+              Fehlermeldung des Servers bleibt (UX-005g). */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field
+              label="Beginn *"
+              type="time"
+              feldId={EREIGNIS_FELD_IDS.start_time}
+              value={werte.start_time}
+              error={fehler.start_time}
+              step={rasterMinuten ? rasterMinuten * 60 : undefined}
+              onChange={(e) => onChange('start_time', e.target.value)}
+            />
+            <Field
+              label="Ende *"
+              type="time"
+              feldId={EREIGNIS_FELD_IDS.end_time}
+              value={werte.end_time}
+              error={fehler.end_time}
+              step={rasterMinuten ? rasterMinuten * 60 : undefined}
+              onChange={(e) => onChange('end_time', e.target.value)}
+            />
+          </div>
+        </Feldgruppe>
+      </Section>
+    </>
+  );
+}
+
+/**
+ * Die Rückfrage „außerhalb der Arbeitszeit" für Ereignisse (CAL-005).
+ *
+ * Wie beim Termin eine Warnung, keine Grenze - der Text ist ein anderer, weil
+ * es hier mehrere Beteiligte gibt und weil der Server den **ganzen** Vorgang
+ * abgewiesen hat, nicht die Hälfte.
+ */
+export function EreignisArbeitszeitRueckfrage({
+  beschriftung,
+  laeuft,
+  onBestaetigen,
+  onAbbrechen,
+}: {
+  beschriftung: string;
+  laeuft: boolean;
+  onBestaetigen: () => void;
+  onAbbrechen: () => void;
+}) {
+  // Seit FIX-016 ein Fenster ueber dem Formular (BEF-016), wie beim
+  // Behandlungstermin.
+  return (
+    <Dialogfenster titel="Außerhalb der Arbeitszeit" onSchliessen={onAbbrechen}>
+      <p className="text-ink text-sm">
+        Mindestens eine beteiligte Person hat zu dieser Zeit keine hinterlegte Arbeitszeit. Es wurde
+        noch nichts eingetragen.
+      </p>
+      <div className="mt-4 flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">
+        <Button type="button" disabled={laeuft} data-autofocus onClick={onBestaetigen}>
+          {beschriftung}
+        </Button>
+        <Button type="button" variant="quiet" disabled={laeuft} onClick={onAbbrechen}>
+          Zurück zum Formular
+        </Button>
+      </div>
+    </Dialogfenster>
+  );
+}

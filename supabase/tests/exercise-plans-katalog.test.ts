@@ -11,8 +11,8 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { praxistag } from './helpers/plaene';
-import { KATALOG, katalogeintrag } from '@/features/exercises/katalog';
-import type { Katalogeintrag } from '@/features/exercises/katalog/typen';
+import { KATALOG, katalogeintrag } from '@/features/exercise/exercises/katalog';
+import type { Katalogeintrag } from '@/features/exercise/exercises/katalog/typen';
 
 /**
  * Übungsplan: Katalogübungen beim Hinzufügen übernehmen, Stand und Fassung

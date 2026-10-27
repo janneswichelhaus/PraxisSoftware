@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SEED, asPostgres, asUserCommitted, resetDatabase } from './helpers/db';
-import { auditOperationLabels } from '@/features/audit/actions';
+import { auditOperationLabels } from '@/features/privacy/audit/actions';
 
 /**
  * LOG-EPIC-001, PR (a): Lesen je Akte und Tag, Abweisungen mit Zähler

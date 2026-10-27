@@ -33,7 +33,7 @@ import {
   canCounselNutrition,
   isOwner,
   type CurrentUser,
-} from '@/features/session/types';
+} from '@/features/core/session/types';
 import { Trainingspaket } from '@/features/billing/Trainingspaket';
 import { Suchreiterleiste } from '@/components/ui/Reiterleiste';
 import { useOffenerReiter, type Suchreiter } from '@/components/ui/offenerReiter';
@@ -58,14 +58,14 @@ import { TrainingEinheiten } from './TrainingProtocol';
 import {
   PlattformAbschnitt,
   PlattformzugangBeenden,
-} from '@/features/platform-access/PlattformAbschnitt';
-import { usePlattformzugang, zugangBeendbar } from '@/features/platform-access/zustand';
-import { RueckfragenAbschnitt } from '@/features/messages/RueckfragenAbschnitt';
+} from '@/features/portal/platform-access/PlattformAbschnitt';
+import { usePlattformzugang, zugangBeendbar } from '@/features/portal/platform-access/zustand';
+import { RueckfragenAbschnitt } from '@/features/portal/messages/RueckfragenAbschnitt';
 import { TrainingEinwilligung } from './TrainingEinwilligung';
 import { TrainingProfil } from './TrainingProfil';
 import { TrainingVertraege } from './TrainingVertraege';
-import { PlanAbschnitt } from '@/features/exercise-plans/PlanAbschnitt';
-import { ZwischenDenTerminen } from '@/features/checkins/ZwischenDenTerminen';
+import { PlanAbschnitt } from '@/features/exercise/exercise-plans/PlanAbschnitt';
+import { ZwischenDenTerminen } from '@/features/exercise/checkins/ZwischenDenTerminen';
 import { TrainingAssessments } from './TrainingAssessments';
 import { ErnaehrungReiter } from '@/features/nutrition/ErnaehrungReiter';
 

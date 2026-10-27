@@ -6,18 +6,18 @@ import { Button } from '@/components/ui/Button';
 import { Hakenzeile } from '@/components/ui/Hakenzeile';
 import { Section } from '@/components/ui/Section';
 import { Wochenleiste } from '@/components/ui/Wochenleiste';
-import { dauerDerEinheit, dauerText } from '@/features/platform/dauer';
-import { Dosierungsmarken } from '@/features/platform/Dosierungsmarken';
+import { dauerDerEinheit, dauerText } from '@/features/portal/platform/dauer';
+import { Dosierungsmarken } from '@/features/portal/platform/Dosierungsmarken';
 import {
   Durchfuehrungsfuss,
   type Uebertragungsstand,
-} from '@/features/platform/Durchfuehrungsfuss';
-import { Durchfuehrungskopf } from '@/features/platform/Durchfuehrungskopf';
-import { Endseite } from '@/features/platform/Endseite';
-import { useRechner } from '@/features/platform/geruestbreite';
-import { hauptzahl } from '@/features/platform/hauptzahl';
-import { WOCHENTAGE, wochenleisteSatz } from '@/features/platform/uebungstage';
-import type { DosisZumAblesen } from '@/features/platform/Dosierungsmarken';
+} from '@/features/portal/platform/Durchfuehrungsfuss';
+import { Durchfuehrungskopf } from '@/features/portal/platform/Durchfuehrungskopf';
+import { Endseite } from '@/features/portal/platform/Endseite';
+import { useRechner } from '@/features/portal/platform/geruestbreite';
+import { hauptzahl } from '@/features/portal/platform/hauptzahl';
+import { WOCHENTAGE, wochenleisteSatz } from '@/features/portal/platform/uebungstage';
+import type { DosisZumAblesen } from '@/features/portal/platform/Dosierungsmarken';
 import '@/index.css';
 
 /**

@@ -5,94 +5,28 @@
 import { existsSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { importziel } from './aufraeumen.mjs';
+import { DOMAENEN, EBENEN, ortIn } from './domaenen.mjs';
 
 const WURZEL = join(import.meta.dirname, '..');
 const mitIndex = new Map();
 
-function hatIndex(modul) {
-  if (!mitIndex.has(modul)) {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Modulname aus einem Importpfad unter src/features.
-    mitIndex.set(modul, existsSync(join(WURZEL, 'src', 'features', modul, 'index.ts')));
+function hatIndex({ domaene, modul }) {
+  const ordner = modul === domaene ? [domaene] : [domaene, modul];
+  const schluessel = ordner.join('/');
+  if (!mitIndex.has(schluessel)) {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Ordner aus einem Importpfad unter src/features.
+    mitIndex.set(schluessel, existsSync(join(WURZEL, 'src', 'features', ...ordner, 'index.ts')));
   }
-  return mitIndex.get(modul);
+  return mitIndex.get(schluessel);
 }
 
 /** Das Modul, in das `spezifizierer` an seiner index.ts vorbei greift, sonst `null`. */
 export function tieferImport(datei, spezifizierer, mitSchnittstelle = hatIndex) {
   const ziel = importziel(datei, spezifizierer);
-  const eigenes = /^src\/features\/([^/]+)\//.exec(datei)?.[1] ?? null;
+  const eigenes = /^src\/features\/[^/]+\//.test(datei) ? ortIn(datei).modul : null;
   if (!ziel || ziel.modul === eigenes || ziel.rest === '' || ziel.rest === 'index') return null;
-  return mitSchnittstelle(ziel.modul) ? ziel.modul : null;
+  return mitSchnittstelle(ziel) ? ziel.modul : null;
 }
-
-/** Die 14 Domänen der Module unter src/features (Tiefenanalyse 1a.5). */
-export const DOMAENEN = {
-  session: 'core',
-  auth: 'core',
-  preview: 'core',
-  patients: 'patients',
-  'treatment-bases': 'patients',
-  files: 'patients',
-  intake: 'patients',
-  'training-offers': 'patients',
-  datenschutz: 'privacy',
-  retention: 'privacy',
-  audit: 'privacy',
-  fleet: 'fleet',
-  billing: 'billing',
-  statistics: 'billing',
-  staff: 'workforce',
-  vacation: 'workforce',
-  'working-time': 'workforce',
-  timeaccount: 'workforce',
-  reimbursements: 'workforce',
-  appointments: 'calendar',
-  scheduling: 'calendar',
-  'slot-search': 'calendar',
-  waitlist: 'calendar',
-  territories: 'calendar',
-  tours: 'calendar',
-  today: 'calendar',
-  'day-plan': 'calendar',
-  documentation: 'clinical',
-  'offline-documentation': 'clinical',
-  assessments: 'clinical',
-  'therapy-reports': 'clinical',
-  nutrition: 'nutrition',
-  exercises: 'exercise',
-  'exercise-plans': 'exercise',
-  checkins: 'exercise',
-  platform: 'portal',
-  'platform-access': 'portal',
-  messages: 'portal',
-  training: 'training',
-  'open-points': 'workplace',
-  organisation: 'workplace',
-  feedback: 'workplace',
-  'practice-settings': 'workplace',
-  account: 'workplace',
-  teamchat: 'teamchat',
-};
-
-/** Die Folge von unten nach oben, mit den wenigsten Importen gegen sie (ANN-754). */
-export const EBENEN = [
-  'core',
-  'patients',
-  'privacy',
-  'fleet',
-  'billing',
-  'workforce',
-  'calendar',
-  'clinical',
-  'nutrition',
-  'exercise',
-  'portal',
-  'training',
-  'workplace',
-  'teamchat',
-];
-
-const DOMAENE_VON = new Map(Object.entries(DOMAENEN));
 
 /** Seiten setzen zusammen und dürfen jede Domäne importieren. */
 export const istSeite = (datei) => /(Page|Seite|Layout)\.tsx$/.test(datei);
@@ -102,15 +36,13 @@ export const istSeite = (datei) => /(Page|Seite|Layout)\.tsx$/.test(datei);
  * `{ ohneDomaene }` bei einem Modul ohne Domäne, sonst `null`.
  */
 export function gegenDieFolge(datei, spezifizierer) {
-  const eigenes = /^src\/features\/([^/]+)\//.exec(datei)?.[1] ?? null;
+  const von = /^src\/features\/[^/]+\//.test(datei) ? ortIn(datei).domaene : null;
   const ziel = importziel(datei, spezifizierer);
-  if (!eigenes || !ziel || ziel.modul === eigenes || istSeite(datei)) return null;
-  for (const modul of [eigenes, ziel.modul]) {
-    if (!DOMAENE_VON.has(modul)) return { ohneDomaene: modul };
+  if (!von || !ziel || ziel.domaene === von || istSeite(datei)) return null;
+  for (const domaene of [von, ziel.domaene]) {
+    if (!Object.hasOwn(DOMAENEN, domaene)) return { ohneDomaene: domaene };
   }
-  const von = DOMAENE_VON.get(eigenes);
-  const nach = DOMAENE_VON.get(ziel.modul);
-  return EBENEN.indexOf(nach) > EBENEN.indexOf(von) ? { hoeher: nach, von } : null;
+  return EBENEN.indexOf(ziel.domaene) > EBENEN.indexOf(von) ? { hoeher: ziel.domaene, von } : null;
 }
 
 const nachUnten = {
@@ -122,7 +54,7 @@ const nachUnten = {
       hoeher:
         '{{von}} liegt unter {{hoeher}}: nur Seiten setzen höhere Domänen zusammen (ANN-754). Den Teil über die Seite einsetzen oder das Geteilte nach unten legen.',
       ohneDomaene:
-        'Das Modul {{modul}} hat keine Domäne: in DOMAENEN in scripts/eslint-modulgrenzen.mjs eintragen.',
+        '{{modul}} ist keine der 14 Domänen: Ordner unter einer Domäne anlegen oder in scripts/domaenen.mjs eintragen.',
     },
   },
   create(context) {

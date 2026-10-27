@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
 import { Startbild } from '@/app/Startbild';
 import { PageHeader } from '@/components/ui/PageHeader';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

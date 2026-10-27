@@ -9,7 +9,7 @@ import {
   planeEntfernen,
   resetDatabase,
 } from './helpers/db';
-import { KOERPERREGIONEN } from '@/features/exercises/types';
+import { KOERPERREGIONEN } from '@/features/exercise/exercises/types';
 
 /**
  * Übung und Variante (UEB-001, IDEA-TRN-005, IDEA-QSN-002).

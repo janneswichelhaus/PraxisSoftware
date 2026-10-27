@@ -7,7 +7,7 @@ Vorgaben zu ihr entfallen (ADR-023 Fassung 7).
 > Termine“ (<https://claude.ai/artifact/4jdCqRT4YWRiphJ2Sjhqf1>, privat bei Jannes), gebaut mit dem
 > „Own Motion Designsystem“ (<https://claude.ai/artifact/HmuUQAQau7HT48PkmvSFQK>, Stand
 > `main@616a5545`) auf der Plattform-Sprache aus Briefing 1. Umgesetzt wird in den bestehenden
-> Seiten und Bausteinen (`src/features/platform/Termine.tsx`, `Terminaenderung.tsx`,
+> Seiten und Bausteinen (`src/features/portal/platform/Termine.tsx`, `Terminaenderung.tsx`,
 > `Terminwunsch.tsx`, `Wunschfelder.tsx`, `src/components/ui/HeroKarte.tsx`, `Badge.tsx`,
 > `Wochenleiste.tsx`) mit deren Namen, Props und Verhalten. Neu sind **Anordnung, Werte und
 > Wortlaute**, die **Seite des einen Termins** und vier Bausteine. Rechte, Projektionen und

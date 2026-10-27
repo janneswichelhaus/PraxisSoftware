@@ -17,7 +17,7 @@ import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import {
   FLOTTE_SCHLUESSEL,
   fetchFleet,

@@ -1,5 +1,5 @@
 import { useOutletContext } from 'react-router-dom';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import type { Spalten } from './flaeche';
 
 /** Was der Rahmen des Teamchats seinen Seiten mitgibt (`TeamchatRahmen`). */

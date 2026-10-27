@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as TrainingApi from './api';
-import type * as ZugangApi from '@/features/platform-access/api';
+import type * as ZugangApi from '@/features/portal/platform-access/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -55,7 +55,7 @@ vi.mock('./api', async (importOriginal) => {
 
 // Der Abschnitt „Plattform" hat eigene Tests (POR-002); hier nur, wo Sperren
 // und Entziehen stehen.
-vi.mock('@/features/platform-access/api', async (importOriginal) => ({
+vi.mock('@/features/portal/platform-access/api', async (importOriginal) => ({
   ...(await importOriginal<typeof ZugangApi>()),
   getPlatformAccess: (...args: unknown[]) => getPlatformAccess(...args) as Promise<unknown>,
   listPlatformRepresentations: () => Promise.resolve([]),

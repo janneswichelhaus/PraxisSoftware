@@ -20,14 +20,14 @@ import {
   canReadTrainingProtocols,
   canWriteTrainingProtocols,
   type CurrentUser,
-} from '@/features/session/types';
+} from '@/features/core/session/types';
 import {
   cancelAppointment,
   type CancellationReason,
   cancellationReasonSchema,
   tageslageNeuLaden,
   waehlbareAbsagegruende,
-} from '@/features/appointments';
+} from '@/features/calendar/appointments';
 import {
   getTrainingAppointment,
   getTrainingProtocol,

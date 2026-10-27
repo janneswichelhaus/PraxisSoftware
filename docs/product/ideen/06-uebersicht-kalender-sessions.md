@@ -50,7 +50,7 @@ Der Zähler „43 Sessions" aus der Referenzsoftware mischt genau das.
 **Warum.** Die Trennung entscheidet über Abrechnung, Dokumentationspflicht,
 Aufbewahrungsfrist und Sichtbarkeit. Sie nachträglich einzuziehen bedeutet,
 jede Auswertung anzufassen. Umgekehrt: heute existieren Termine bereits
-(`src/features/appointments`), Trainingseinheiten nicht — die Trennung kostet
+(`src/features/calendar/appointments`), Trainingseinheiten nicht — die Trennung kostet
 also gerade nichts, solange man sie nicht verletzt.
 
 **Konsequenz für Loops.** Trainingseinheiten **nicht** in die bestehende

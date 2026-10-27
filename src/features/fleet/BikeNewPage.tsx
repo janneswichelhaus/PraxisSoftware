@@ -5,7 +5,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import { fetchFleet, flotteSchluessel } from './api';
 import { BikeForm } from './BikeForm';
 import { todayInTimeZone, wochenBeginn } from '@/lib/datum';

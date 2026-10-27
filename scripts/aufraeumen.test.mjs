@@ -33,15 +33,45 @@ describe('kategorie', () => {
 describe('importziel', () => {
   it('findet das Modul unter src/features und den Pfad darin', () => {
     expect(importziel('src/features/a/A.tsx', '@/features/b/api')).toEqual({
+      domaene: 'b',
       modul: 'b',
       rest: 'api',
     });
     expect(importziel('src/features/a/A.tsx', '../b/teil/Seite.tsx')).toEqual({
+      domaene: 'b',
       modul: 'b',
       rest: 'teil/Seite',
     });
-    expect(importziel('src/app/App.tsx', '@/features/b')).toEqual({ modul: 'b', rest: '' });
+    expect(importziel('src/app/App.tsx', '@/features/b')).toEqual({
+      domaene: 'b',
+      modul: 'b',
+      rest: '',
+    });
     expect(importziel('src/features/a/A.tsx', 'react')).toBeNull();
+  });
+
+  it('kennt die Module einer Domäne, auch an deren Wurzel', () => {
+    const heute = 'src/features/calendar/today/MyDayPage.tsx';
+    expect(importziel(heute, '@/features/calendar/appointments/api')).toEqual({
+      domaene: 'calendar',
+      modul: 'appointments',
+      rest: 'api',
+    });
+    expect(importziel(heute, '../appointments')).toEqual({
+      domaene: 'calendar',
+      modul: 'appointments',
+      rest: '',
+    });
+    expect(importziel(heute, '@/features/patients/intake/api')).toEqual({
+      domaene: 'patients',
+      modul: 'intake',
+      rest: 'api',
+    });
+    expect(importziel(heute, '@/features/patients/api')).toEqual({
+      domaene: 'patients',
+      modul: 'patients',
+      rest: 'api',
+    });
     expect(importziel('src/features/a/A.tsx', '@/lib/zeit')).toBeNull();
   });
 });

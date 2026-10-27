@@ -1078,7 +1078,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-18",
-          "nachweis": "PR #273, Migration 20261213100000_team_004_sprachnachrichten.sql, supabase/tests/teamchat-anhaenge.test.ts, supabase/functions/patient-file-verify/video.test.ts, src/features/platform/videometadaten.test.ts, src/features/teamchat/sprachnachricht.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (künstliches Mikrofon), Zweitreview in drei Runden, Design- und Praxis-Review (Aufnahmeanzeige und Mikrofon als Bausteine, Abspielen mit eigenem Knopf, Fenster über Abfragezustand)",
+          "nachweis": "PR #273, Migration 20261213100000_team_004_sprachnachrichten.sql, supabase/tests/teamchat-anhaenge.test.ts, supabase/functions/patient-file-verify/video.test.ts, src/features/portal/platform/videometadaten.test.ts, src/features/teamchat/sprachnachricht.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (künstliches Mikrofon), Zweitreview in drei Runden, Design- und Praxis-Review (Aufnahmeanzeige und Mikrofon als Bausteine, Abspielen mit eigenem Knopf, Fenster über Abfragezustand)",
           "vermerk": "Antwort auf Frage 4 der PR #273 (Jannes 18.10.2026: Sprachnachrichten ermöglichen); ADR-017 Fassung 9 Abschnitt N vorgeschlagen (Bestätigungsfragen 33, 34), Mikrofon der eigenen Herkunft freigegeben; ANN-655; keine Transkription, kein Video; scharf erst nach OPS-001 und OPS-003 (Punkt 87)"
         },
         {
@@ -1096,7 +1096,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-19",
-          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223100000_team_006_farbe_je_person.sql, supabase/tests/teamchat-profil.test.ts, src/lib/kontrast.test.ts und designsystem.test.ts (Farben nur als Fläche und Umriss), src/features/teamchat/TeamChat.test.tsx, src/features/account/MeinKontoPage.test.tsx, tests/e2e/authenticated/profilbild.spec.ts, Zweitreview",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223100000_team_006_farbe_je_person.sql, supabase/tests/teamchat-profil.test.ts, src/lib/kontrast.test.ts und designsystem.test.ts (Farben nur als Fläche und Umriss), src/features/teamchat/TeamChat.test.tsx, src/features/workplace/account/MeinKontoPage.test.tsx, tests/e2e/authenticated/profilbild.spec.ts, Zweitreview",
           "vermerk": "Auftrag Jannes 19.10.2026 (Chat noch nicht zufrieden: Farbe je Mitarbeiter:in); ANN-666; Baustein Personenbild; keine Farbe im Rot, Orange oder Gelb der Statusfarben"
         },
         {
@@ -1141,7 +1141,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-19",
-          "nachweis": "Branch ccr-37917f35-emdjjp, src/features/offline-documentation/entwuerfe.test.ts, AufDemGeraet.test.tsx, ohneEmpfang.test.tsx, tagesplan.test.ts",
+          "nachweis": "Branch ccr-37917f35-emdjjp, src/features/clinical/offline-documentation/entwuerfe.test.ts, AufDemGeraet.test.tsx, ohneEmpfang.test.tsx, tagesplan.test.ts",
           "vermerk": "/weiter aus STATUS „Danach“; Entwürfe fallen nie still (§13)"
         },
         {
@@ -1177,7 +1177,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-20",
-          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223170000_bef_182_auskunft_trainingsverhaeltnis.sql, supabase/tests/auskunft-training.test.ts, src/features/datenschutz/TrainingAuskunftPage.test.tsx, Zweitreview",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223170000_bef_182_auskunft_trainingsverhaeltnis.sql, supabase/tests/auskunft-training.test.ts, src/features/privacy/datenschutz/TrainingAuskunftPage.test.tsx, Zweitreview",
           "vermerk": "Nur owner; dieselbe Auditaktion wie an der Akte, Gegenstand das Verhältnis"
         },
         {
@@ -1195,7 +1195,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-20",
-          "nachweis": "Branch claude/cool-allen-m2aaci, Migration 20261223190000_bef_188_herausgabe_rueckfrageanhaenge.sql, supabase/tests/message-attachments.test.ts, src/features/messages/AnhangHerausgabe.test.tsx",
+          "nachweis": "Branch claude/cool-allen-m2aaci, Migration 20261223190000_bef_188_herausgabe_rueckfrageanhaenge.sql, supabase/tests/message-attachments.test.ts, src/features/portal/messages/AnhangHerausgabe.test.tsx",
           "vermerk": "ADR-017 Fassung 12, ADR-010 Fassung 5, ANN-672; Merge erst mit Label freigabe-audit"
         },
         {
@@ -1213,7 +1213,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-20",
-          "nachweis": "Branch ccr-9f54aa20-cgnb8q, src/features/appointments/TagUmplanenPage.test.tsx, src/components/ui/Anrufknoepfe.test.tsx, Bildstrecke vorher/nachher"
+          "nachweis": "Branch ccr-9f54aa20-cgnb8q, src/features/calendar/appointments/TagUmplanenPage.test.tsx, src/components/ui/Anrufknoepfe.test.tsx, Bildstrecke vorher/nachher"
         },
         {
           "id": "bef-193",
@@ -1221,7 +1221,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-20",
-          "nachweis": "Branch ccr-9f54aa20-cgnb8q, src/features/platform/PlattformApp.test.tsx, Bildstrecke vorher/nachher"
+          "nachweis": "Branch ccr-9f54aa20-cgnb8q, src/features/portal/platform/PlattformApp.test.tsx, Bildstrecke vorher/nachher"
         },
         {
           "id": "bef-176",
@@ -1229,7 +1229,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-21",
-          "nachweis": "Branch ccr-4626bc96-m83ovf, src/features/fleet/BreakdownPage.test.tsx, src/features/fleet/pannenablauf.test.ts, src/features/fleet/standortvorlage.test.ts, src/features/appointments/HomeVisitFlow.test.tsx, tests/e2e/radflotte.spec.ts, Bildstrecke vorher/nachher",
+          "nachweis": "Branch ccr-4626bc96-m83ovf, src/features/fleet/BreakdownPage.test.tsx, src/features/fleet/pannenablauf.test.ts, src/features/fleet/standortvorlage.test.ts, src/features/calendar/appointments/HomeVisitFlow.test.tsx, tests/e2e/radflotte.spec.ts, Bildstrecke vorher/nachher",
           "vermerk": "ANN-673"
         },
         {
@@ -1238,7 +1238,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-21",
-          "nachweis": "Branch ccr-24200d06-dhr3ze, Migration 20261223200000_bef_178_loeschsperre_beschaeftigte.sql, supabase/tests/legal-hold-staff.test.ts, supabase/tests/abgewiesene-schreibpfade.test.ts, src/features/retention/AufbewahrungPage.test.tsx, Bildstrecke vorher/nachher, Zweitreview",
+          "nachweis": "Branch ccr-24200d06-dhr3ze, Migration 20261223200000_bef_178_loeschsperre_beschaeftigte.sql, supabase/tests/legal-hold-staff.test.ts, supabase/tests/abgewiesene-schreibpfade.test.ts, src/features/privacy/retention/AufbewahrungPage.test.tsx, Bildstrecke vorher/nachher, Zweitreview",
           "vermerk": "ANN-674; ohne Auditeintrag, Katalog unverändert"
         },
         {
@@ -1247,7 +1247,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-21",
-          "nachweis": "Branch ccr-fc77ad4b-t5zz1m, Migrationen 20261223210000_bef_180_zuruecknehmen_am_tag.sql und 20261223220000_bef_179_zurueckweisung_in_der_uebersicht.sql, supabase/tests/time-account.test.ts, src/features/today/NochOffen.test.tsx, src/features/today/MyDayPage.test.tsx, src/features/timeaccount/api.test.ts, tests/e2e/authenticated/zeitkonto.spec.ts, Bildstrecke vorher/nachher, Zweitreview",
+          "nachweis": "Branch ccr-fc77ad4b-t5zz1m, Migrationen 20261223210000_bef_180_zuruecknehmen_am_tag.sql und 20261223220000_bef_179_zurueckweisung_in_der_uebersicht.sql, supabase/tests/time-account.test.ts, src/features/calendar/today/NochOffen.test.tsx, src/features/calendar/today/MyDayPage.test.tsx, src/features/workforce/timeaccount/api.test.ts, tests/e2e/authenticated/zeitkonto.spec.ts, Bildstrecke vorher/nachher, Zweitreview",
           "vermerk": "ANN-594 geändert, ANN-675; ohne Auditeintrag und ohne Benachrichtigung"
         },
         {
@@ -1265,7 +1265,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-25",
-          "nachweis": "Branch ccr-544f8ce7-u1sqpf, src/features/working-time/RequestWorkingTimePage.test.tsx, tests/e2e/authenticated/arbeitszeit.spec.ts (Reserve einer Zeile, Gegenprobe mit dem alten Abschluss rot), Messung am Cloud-Stack bei 375 × 667 und 1280 px",
+          "nachweis": "Branch ccr-544f8ce7-u1sqpf, src/features/workforce/working-time/RequestWorkingTimePage.test.tsx, tests/e2e/authenticated/arbeitszeit.spec.ts (Reserve einer Zeile, Gegenprobe mit dem alten Abschluss rot), Messung am Cloud-Stack bei 375 × 667 und 1280 px",
           "vermerk": "nur Oberfläche und Test; ohne Migration, ohne Auditeintrag"
         },
         {
@@ -1282,7 +1282,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-20",
-          "nachweis": "Branch ccr-c66528c5-m3o7aq, src/components/ui/Dialogfenster.test.tsx, src/components/ui/GefuehrterAblauf.test.tsx, src/features/documentation/Textverlustschutz.test.tsx, tests/e2e/radflotte.spec.ts",
+          "nachweis": "Branch ccr-c66528c5-m3o7aq, src/components/ui/Dialogfenster.test.tsx, src/components/ui/GefuehrterAblauf.test.tsx, src/features/clinical/documentation/Textverlustschutz.test.tsx, tests/e2e/radflotte.spec.ts",
           "vermerk": "Politurrunde, ANN-671"
         },
         {
@@ -1308,7 +1308,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-17",
-          "nachweis": "Branch ccr-350340fc-pnh5ti-arbeitszeit, Migration 20261125100000_az_001_arbeitszeit_antraege.sql, supabase/tests/working-time-requests.test.ts, src/features/working-time/*.test.ts(x), tests/e2e/authenticated/arbeitszeit.spec.ts, Zweitreview",
+          "nachweis": "Branch ccr-350340fc-pnh5ti-arbeitszeit, Migration 20261125100000_az_001_arbeitszeit_antraege.sql, supabase/tests/working-time-requests.test.ts, src/features/workforce/working-time/*.test.ts(x), tests/e2e/authenticated/arbeitszeit.spec.ts, Zweitreview",
           "vermerk": "Bereichsüberholung 8 der Roadmap (Auftrag Jannes 16.10.2026); ANN-588 bis ANN-592; bewegliche Mittagspause als eigener Loop danach; Sichtung per Bildstrecke im PR"
         },
         {
@@ -1317,7 +1317,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-17",
-          "nachweis": "Branch ccr-350340fc-pnh5ti-zeitkonto, Migration 20261126100000_zk_001_zeitkonto.sql, supabase/tests/time-account.test.ts, src/features/timeaccount/*.test.ts(x), tests/e2e/authenticated/zeitkonto.spec.ts, Zweitreview in zwei Runden",
+          "nachweis": "Branch ccr-350340fc-pnh5ti-zeitkonto, Migration 20261126100000_zk_001_zeitkonto.sql, supabase/tests/time-account.test.ts, src/features/workforce/timeaccount/*.test.ts(x), tests/e2e/authenticated/zeitkonto.spec.ts, Zweitreview in zwei Runden",
           "vermerk": "Bereichsüberholung 9 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-593 bis ANN-597; Fristen mit Übertrag; Löschsperre für Beschäftigtendaten seit BEF-178 (ANN-674); Sichtung per Bildstrecke im PR"
         },
         {
@@ -1326,7 +1326,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-17",
-          "nachweis": "Branch ccr-350340fc-pnh5ti-erstattungen, Migration 20261127100000_ers_001_erstattungen.sql, supabase/tests/reimbursements.test.ts, src/features/reimbursements/*.test.ts(x), tests/e2e/authenticated/erstattungen.spec.ts, Zweitreview",
+          "nachweis": "Branch ccr-350340fc-pnh5ti-erstattungen, Migration 20261127100000_ers_001_erstattungen.sql, supabase/tests/reimbursements.test.ts, src/features/workforce/reimbursements/*.test.ts(x), tests/e2e/authenticated/erstattungen.spec.ts, Zweitreview",
           "vermerk": "Bereichsüberholung 10 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-598 bis ANN-602; Belege im Bucket erstattungsbelege mit nachgelagerter Prüfung; Löschsperre für Beschäftigtendaten seit BEF-178 (ANN-674); Sichtung per Bildstrecke im PR"
         },
         {
@@ -1335,7 +1335,7 @@
           "gewicht": 2,
           "status": "fertig",
           "fertig_am": "2026-10-17",
-          "nachweis": "Branch claude/modest-turing-i5qgn9, Migrationen 20261201100000_org_007_minusstunden.sql und 20261203100000_org_006_rueckmeldungen.sql, supabase/tests/staff-feedback.test.ts, time-account.test.ts, src/app/navigation.test.tsx, src/features/organisation/*.test.tsx, src/features/feedback/*.test.ts(x), Zweitreview in drei Runden, Bildstrecke vorher/nachher",
+          "nachweis": "Branch claude/modest-turing-i5qgn9, Migrationen 20261201100000_org_007_minusstunden.sql und 20261203100000_org_006_rueckmeldungen.sql, supabase/tests/staff-feedback.test.ts, time-account.test.ts, src/app/navigation.test.tsx, src/features/workplace/organisation/*.test.tsx, src/features/workplace/feedback/*.test.ts(x), Zweitreview in drei Runden, Bildstrecke vorher/nachher",
           "vermerk": "Auftrag Jannes 17.10.2026; Prinzipien 0.27 §20.2, ADR-024 Fassung 2, ADR-008 Fassung 4, ADR-019 Fassung 6; ANN-603, ANN-604, ANN-606 bis ANN-608"
         },
         {
@@ -1344,7 +1344,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-17",
-          "nachweis": "Branch claude/modest-turing-i5qgn9, Migration 20261202100000_org_008_ladestrom.sql, supabase/tests/reimbursements.test.ts, src/features/reimbursements/*.test.ts(x), tests/e2e/authenticated/erstattungen.spec.ts, Zweitreview",
+          "nachweis": "Branch claude/modest-turing-i5qgn9, Migration 20261202100000_org_008_ladestrom.sql, supabase/tests/reimbursements.test.ts, src/features/workforce/reimbursements/*.test.ts(x), tests/e2e/authenticated/erstattungen.spec.ts, Zweitreview",
           "vermerk": "Auftrag Jannes 17.10.2026; ANN-605 löst ANN-599 ab, gestellte Anträge behalten ihre Werte; Kilometer aus Touren nach ADR-019 Fassung 6 als BEF-181"
         },
         {
@@ -1362,7 +1362,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-17",
-          "nachweis": "Branch ccr-0d8db4ad-3ufjj1, Migration 20261205110000_wochenplan_in_einem_zug.sql, supabase/tests/working-week.test.ts, src/features/scheduling/SchedulingPage.test.tsx, tests/e2e/authenticated/scheduling-workflows.spec.ts",
+          "nachweis": "Branch ccr-0d8db4ad-3ufjj1, Migration 20261205110000_wochenplan_in_einem_zug.sql, supabase/tests/working-week.test.ts, src/features/calendar/scheduling/SchedulingPage.test.tsx, tests/e2e/authenticated/scheduling-workflows.spec.ts",
           "vermerk": "Praxis-Review der Überholung Organisation (PR #267, Frage 2)"
         },
         {
@@ -1528,7 +1528,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-24",
-          "nachweis": "DRP-015 bis DRP-019, Branch `claude/lucid-keller-zholly`, src/features/platform/Einstieg.test.tsx, tests/e2e/plattform-einstieg.spec.ts",
+          "nachweis": "DRP-015 bis DRP-019, Branch `claude/lucid-keller-zholly`, src/features/portal/platform/Einstieg.test.tsx, tests/e2e/plattform-einstieg.spec.ts",
           "vermerk": "Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1d (Handoff 2026-10-22, Abschnitt 5.3), parallel zu 1c; ANN-692 bis ANN-696"
         },
         {
@@ -1537,7 +1537,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-24",
-          "nachweis": "DRP-020 bis DRP-022, Branch `ccr-c5a4a21f-ys0el3`, src/features/platform/Uebersicht.test.tsx, tests/e2e/plattform-barrierefreiheit.spec.ts",
+          "nachweis": "DRP-020 bis DRP-022, Branch `ccr-c5a4a21f-ys0el3`, src/features/portal/platform/Uebersicht.test.tsx, tests/e2e/plattform-barrierefreiheit.spec.ts",
           "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 1e (Handoff 2026-10-22, Abschnitt 5.1); ANN-697 bis ANN-702, Fragen aus #297 wie empfohlen entschieden; Schritt 1 abgenommen (Jannes, 24.10.2026)"
         },
         {
@@ -1555,7 +1555,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-24",
-          "nachweis": "DRP-030 bis DRP-035, Branch `claude/drp-2b-durchfuehrung`, src/features/platform/Durchfuehrung.test.tsx, tests/e2e/plattform-uebungen.spec.ts, tests/e2e/ohne-netz.spec.ts",
+          "nachweis": "DRP-030 bis DRP-035, Branch `claude/drp-2b-durchfuehrung`, src/features/portal/platform/Durchfuehrung.test.tsx, tests/e2e/plattform-uebungen.spec.ts, tests/e2e/ohne-netz.spec.ts",
           "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2b (Handoff 2026-10-24, Abschnitt 9 Punkt 2), parallel zu 2c; ANN-711 bis ANN-717; BEF-210, BEF-211 und BEF-213 erledigt (Pfad A, Zweitreview), BEF-214 erledigt, BEF-212 offen"
         },
         {
@@ -1564,7 +1564,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-24",
-          "nachweis": "DRP-040 bis DRP-044, Branch `claude/uebungen-reiter-2c`, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts",
+          "nachweis": "DRP-040 bis DRP-044, Branch `claude/uebungen-reiter-2c`, src/features/portal/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts",
           "vermerk": "Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2c (Handoff 2026-10-24, Abschnitt 9 Punkt 3), parallel zu 2b; ANN-720 bis ANN-727; BEF-196 und BEF-197 mit 2b erledigt, BEF-216 durch 2b; BEF-215, BEF-217 und BEF-218 offen"
         },
         {
@@ -1573,7 +1573,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-25",
-          "nachweis": "Branch ccr-544f8ce7-u1sqpf, src/features/platform/haken.test.ts, vorschau.test.ts, Uebungen.test.tsx, PlattformAblage.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Lagen geraet-geuebt und geraet-begonnen, Fenster bei 188 px und „Sehr groß“), Zweitreview, Design-Review",
+          "nachweis": "Branch ccr-544f8ce7-u1sqpf, src/features/portal/platform/haken.test.ts, vorschau.test.ts, Uebungen.test.tsx, PlattformAblage.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Lagen geraet-geuebt und geraet-begonnen, Fenster bei 188 px und „Sehr groß“), Zweitreview, Design-Review",
           "vermerk": "Folge von DRP-EPIC-009 vor dem Planblatt 2d; ANN-730 ersetzt ANN-720, ANN-466 verworfen; nur Oberfläche, ohne Migration, ohne Auditeintrag"
         },
         {
@@ -1582,7 +1582,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-25",
-          "nachweis": "DRP-045, Branch ccr-544f8ce7-u1sqpf, src/features/exercise-plans/Plaene.test.tsx, src/features/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Titel, ein Hauptknopf, Druck mit Marke 40 und Text 16, 188 px und „Sehr groß“), Design-Review",
+          "nachweis": "DRP-045, Branch ccr-544f8ce7-u1sqpf, src/features/exercise/exercise-plans/Plaene.test.tsx, src/features/portal/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Titel, ein Hauptknopf, Druck mit Marke 40 und Text 16, 188 px und „Sehr groß“), Design-Review",
           "vermerk": "Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 2d (Handoff 2026-10-24, Abschnitt 9 Punkt 4); ANN-731; nur Oberfläche, ohne Migration, ohne Auditeintrag; Safari am iPhone nicht geprüft"
         },
         {
@@ -1838,7 +1838,7 @@
           "gewicht": 2,
           "status": "fertig",
           "fertig_am": "2026-10-06",
-          "nachweis": "SEC-001 bis SEC-003, Migration 20261012100000_sec_001_sitzungssperre.sql, supabase/tests/sitzungssperre.test.ts, src/features/auth/sitzungssperre/, Prüfseite tests/e2e/fixtures/sperre.html",
+          "nachweis": "SEC-001 bis SEC-003, Migration 20261012100000_sec_001_sitzungssperre.sql, supabase/tests/sitzungssperre.test.ts, src/features/core/auth/sitzungssperre/, Prüfseite tests/e2e/fixtures/sperre.html",
           "vermerk": "Auftrag Jannes (06.10.2026: nach 30/60 min automatisch sperren); W1 (a), W2 (a); W3 entschieden mit ADR-025 Fassung 2 (2026-10-10), Passkey und App-PIN in G22; Sichtung: Betriebsreife Schritt 15"
         },
         {
@@ -1847,7 +1847,7 @@
           "gewicht": 2,
           "status": "fertig",
           "fertig_am": "2026-10-10",
-          "nachweis": "SEC-004 bis SEC-009, Migrationen 20261025100000_sec_004_app_pin.sql und 20261025120000_sec_009_passkey_freigabe.sql, supabase/tests/app-pin.test.ts, src/features/auth/passkey.ts, src/features/auth/einrichtung/, Zweitreview",
+          "nachweis": "SEC-004 bis SEC-009, Migrationen 20261025100000_sec_004_app_pin.sql und 20261025120000_sec_009_passkey_freigabe.sql, supabase/tests/app-pin.test.ts, src/features/core/auth/passkey.ts, src/features/core/auth/einrichtung/, Zweitreview",
           "vermerk": "Passkey und App-PIN, kein Kennwort (ADR-025 Fassung 2); scharf auf der Test-Umgebung, sobald Jannes Passkeys im Dashboard von praxis-test einschaltet; Sichtung: Betriebsreife Schritte 12, 15; Plattform Schritt 1"
         }
       ]

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AUSKUNFT_KATEGORIEN } from '@/features/datenschutz/kategorien';
+import { AUSKUNFT_KATEGORIEN } from '@/features/privacy/datenschutz/kategorien';
 import {
   FREMDE_ORGANISATION,
   SEED,

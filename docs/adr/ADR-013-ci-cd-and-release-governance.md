@@ -4,6 +4,12 @@
 
 **Angenommen** (2026-08-28).
 
+**Fassung 6 (2026-10-27)** — Punkt 9 nennt den RPC-Auslöser mit dem Muster
+`src/features/**/api.ts`. Seit Aufräumen Schritt 3b liegen die Module in
+Domänenordnern (`src/features/<domäne>/<modul>/`); das alte Muster
+`src/features/*/api.ts` träfe nur noch die Module an der Wurzel einer Domäne.
+Redaktionell, die Bedeutung bleibt; alle übrigen Punkte gelten unverändert.
+
 **Fassung 5 (2026-10-16)** — Punkt 2 nennt eine Ausnahme für Pull Requests,
 die nur Dokumentation ändern: Sie bestehen die Prüfungen, die Text lesen;
 Tests, Build und Datenbankprüfungen laufen nach dem Merge auf `main`.
@@ -27,7 +33,7 @@ die Review-Checkliste fest, die Punkt 8 seit Fassung 1 verlangt.
 ## Datum
 
 2026-08-28 · Fassung 2: 2026-09-13 · Fassung 3: 2026-09-15 · Fassung 4: 2026-09-23 ·
-Fassung 5: 2026-10-16
+Fassung 5: 2026-10-16 · Fassung 6: 2026-10-27
 
 ## Kontext
 
@@ -101,7 +107,7 @@ Dieser ADR schließt den offenen Punkt E7.
    mindestens einen dieser technischen Auslöser:
    - eine Migration in `supabase/migrations/`, auch eine reine Datenmigration
    - eine RLS-Policy oder eine `SECURITY DEFINER`-Funktion
-   - einen neuen oder geänderten RPC-Aufruf in `src/features/*/api.ts`
+   - einen neuen oder geänderten RPC-Aufruf in `src/features/**/api.ts`
    - Authentifizierung, Sitzungen, Rollen oder Sichtbarkeit zwischen Rollen
    - den Auditkatalog oder einen Audit-Lesepfad (ADR-010)
    - den Retention Schedule, eine Datenklasse oder einen Löschpfad (ADR-008)
@@ -245,3 +251,4 @@ Dieser ADR schließt den offenen Punkt E7.
 | 3 | 2026-09-15 | Punkt 2: Dokumentationsprüfung als zehnte Pflichtprüfung; Punkt 9 Nr. 8: Merge durch den Projektinhaber statt Auto-Merge. |
 | 4 | 2026-09-23 | Punkt 9 Nr. 1: Negativfälle „fremde Person" und „anderer Leistungsbereich". Übrige Punkte unverändert. |
 | 5 | 2026-10-16 | Punkt 2: Pull Requests nur mit Dokumentation ohne Tests, Build und Datenbankprüfungen; auf `main` läuft nach dem Merge alles. Entschieden von Jannes. |
+| 6 | 2026-10-27 | Punkt 9: RPC-Auslöser `src/features/**/api.ts` statt `src/features/*/api.ts`, weil die Module seit Aufräumen 3b in Domänenordnern liegen; redaktionell, Bedeutung unverändert. |

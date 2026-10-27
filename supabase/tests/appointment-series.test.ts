@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SERIE_HOECHSTZAHL } from '@/features/appointments/serie';
+import { SERIE_HOECHSTZAHL } from '@/features/calendar/appointments/serie';
 import {
   SEED,
   asAnon,

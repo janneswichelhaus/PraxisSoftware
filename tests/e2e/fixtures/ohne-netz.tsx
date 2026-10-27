@@ -1,10 +1,10 @@
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fachAendern } from '@/lib/geraeteablage';
-import { offlineschluesselAus } from '@/features/auth/freigabeOhneNetz';
-import { plaeneAblegen, ereignisAblegen, geraetetag } from '@/features/platform/ablage';
+import { offlineschluesselAus } from '@/features/core/auth/freigabeOhneNetz';
+import { plaeneAblegen, ereignisAblegen, geraetetag } from '@/features/portal/platform/ablage';
 import { Pruefseite } from './ohne-netz-seite';
-import type { EigenerPlan } from '@/features/platform/api';
+import type { EigenerPlan } from '@/features/portal/platform/api';
 import '@/index.css';
 
 /**

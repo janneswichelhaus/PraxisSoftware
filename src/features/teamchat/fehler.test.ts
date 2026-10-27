@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type * as Pruefung from '@/lib/dateien/pruefung';
 import type * as Metadaten from '@/lib/dateien/metadaten';
-import { enthaelt, webmAusChromium } from '@/features/platform/testvideos';
+import { enthaelt, webmAusChromium } from '@/features/portal/platform/testvideos';
 
 /**
  * Fehler des Teamchats ohne Netz (TEAM-002, Praxis-Sichtung): Nur Nachrichten

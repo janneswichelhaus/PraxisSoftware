@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Spaltenkopf } from '@/components/ui/Spaltenkopf';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import { RUECKWEG_PARAM, istInternerPfad, rueckwegBeschriftung } from '@/lib/rueckweg';
 import { gesperrtSatz, kanalTitel, type Kanal } from './api';
 import { Details } from './Details';

@@ -160,7 +160,7 @@ export interface AbgeloesterBegriff {
 }
 
 /** Die Seiten der Patient:innen unter `/p` (DSN-001). */
-const PLATTFORM = ['src/features/platform/'] as const;
+const PLATTFORM = ['src/features/portal/platform/'] as const;
 
 /**
  * Die Türen der Plattform: Einladung, Einrichtung nach der Einladung und die
@@ -169,9 +169,9 @@ const PLATTFORM = ['src/features/platform/'] as const;
  * Patient:innen; sie stehen nicht in dieser Liste.
  */
 const TUEREN = [
-  'src/features/platform/EinladungPage.tsx',
-  'src/features/auth/einrichtung/AnmeldungEinrichten.tsx',
-  'src/features/auth/sitzungssperre/PlattformSperrseite.tsx',
+  'src/features/portal/platform/EinladungPage.tsx',
+  'src/features/core/auth/einrichtung/AnmeldungEinrichten.tsx',
+  'src/features/core/auth/sitzungssperre/PlattformSperrseite.tsx',
 ] as const;
 
 /**
@@ -180,10 +180,10 @@ const TUEREN = [
  * weder „Konto“ noch „Sitzung“ (Design-Review 1c).
  */
 const GETEILTE_TUERSAETZE = [
-  'src/features/auth/passkey.ts',
-  'src/features/auth/appPin.ts',
-  'src/features/auth/einrichtung/PinFestlegen.tsx',
-  'src/features/auth/einrichtung/Einrichtungspflicht.tsx',
+  'src/features/core/auth/passkey.ts',
+  'src/features/core/auth/appPin.ts',
+  'src/features/core/auth/einrichtung/PinFestlegen.tsx',
+  'src/features/core/auth/einrichtung/Einrichtungspflicht.tsx',
 ] as const;
 
 export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
@@ -220,11 +220,11 @@ export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
     statt: BEGRIFFE.fehlzeit,
     quelle: 'Anlegen-Leiste nach Jannes (BEF-035); ANN-111',
     nurIn: [
-      'src/features/appointments/',
-      'src/features/today/',
-      'src/features/tours/',
+      'src/features/calendar/appointments/',
+      'src/features/calendar/today/',
+      'src/features/calendar/tours/',
       // Die Terminliste an der Person (UX-012) zeigt dieselben Einträge.
-      'src/features/staff/',
+      'src/features/workforce/staff/',
     ],
   },
   {
@@ -245,7 +245,11 @@ export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
     statt: BEGRIFFE.dauer,
     quelle: 'BEF-067, Jannes 2026-10-09; ANN-111',
     // „Länge" meint anderswo anderes (Textbausteine, Wegstrecken).
-    nurIn: ['src/features/appointments/', 'src/features/training/', 'src/features/today/'],
+    nurIn: [
+      'src/features/calendar/appointments/',
+      'src/features/training/',
+      'src/features/calendar/today/',
+    ],
   },
   {
     // Titel der Anlegeseiten sind Verben wie überall; die Anlegen-Leiste

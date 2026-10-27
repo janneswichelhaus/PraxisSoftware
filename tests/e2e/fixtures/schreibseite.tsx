@@ -2,20 +2,20 @@ import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import type { Appointment } from '@/features/appointments/api';
-import type { Abrechnungslage } from '@/features/appointments/abrechnungslage-api';
-import { CompleteTreatmentPage } from '@/features/documentation/CompleteTreatmentPage';
-import { TreatmentNoteAddendumPage } from '@/features/documentation/TreatmentNoteAddendumPage';
-import { TreatmentNoteHistoryPage } from '@/features/documentation/TreatmentNoteHistoryPage';
-import { TreatmentNotePage } from '@/features/documentation/TreatmentNotePage';
-import { TreatmentNoteRevisionPage } from '@/features/documentation/TreatmentNoteRevisionPage';
+import type { Appointment } from '@/features/calendar/appointments/api';
+import type { Abrechnungslage } from '@/features/calendar/appointments/abrechnungslage-api';
+import { CompleteTreatmentPage } from '@/features/clinical/documentation/CompleteTreatmentPage';
+import { TreatmentNoteAddendumPage } from '@/features/clinical/documentation/TreatmentNoteAddendumPage';
+import { TreatmentNoteHistoryPage } from '@/features/clinical/documentation/TreatmentNoteHistoryPage';
+import { TreatmentNotePage } from '@/features/clinical/documentation/TreatmentNotePage';
+import { TreatmentNoteRevisionPage } from '@/features/clinical/documentation/TreatmentNoteRevisionPage';
 import type {
   PatientTreatmentNotesEntry,
   TreatmentNote,
   TreatmentNoteVersion,
-} from '@/features/documentation/api';
-import type { TextSnippet } from '@/features/documentation/textbausteine';
-import type { CurrentUser } from '@/features/session/types';
+} from '@/features/clinical/documentation/api';
+import type { TextSnippet } from '@/features/clinical/documentation/textbausteine';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

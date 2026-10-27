@@ -14,7 +14,7 @@ import {
   isTherapyStaff,
   type CurrentUser,
   type RoleKey,
-} from '@/features/session/types';
+} from '@/features/core/session/types';
 
 /**
  * Die Arbeitsbereiche der Plattform.
