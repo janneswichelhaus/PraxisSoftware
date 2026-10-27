@@ -94,12 +94,9 @@ function Eintrag({
 
   const basis = `/termine/${appointment.id}/dokumentation`;
   const mit = (ziel: string) => mitRueckweg(ziel, eingehend);
-  // Am offenen Hausbesuch kein „Finalisieren“ am Haupteintrag (BEF-055,
-  // Entscheidung Jannes 2026-10-09): Es setzte den Termin still auf
-  // „dokumentiert“, und „Niemand öffnet?“ und „Ohne Behandlung“ (ADR-018
-  // Punkt 9) wären danach nicht mehr wählbar. Festgeschrieben wird dort über
-  // „Doku“, die Wege daneben stehen oben im Abschluss. Die automatische
-  // Finalisierung zum Fristende bleibt (ADR-016 Punkt 7).
+  // Am offenen Hausbesuch kein „Finalisieren“: Es setzte den Termin still auf „dokumentiert“, und
+  // „Niemand öffnet?“ und „Ohne Behandlung“ (ADR-018 Punkt 9) wären umgangen. Die automatische
+  // Finalisierung zum Fristende bleibt (ANN-757).
   const ueberAbschluss =
     !istNachtrag &&
     appointment.status === 'confirmed' &&

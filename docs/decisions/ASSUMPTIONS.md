@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-26.
+Zuletzt aktualisiert: 2026-10-27.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -7732,3 +7732,99 @@ Technik · entschieden (Jannes) · Fassung 2 2026-10-27 · Jannes: Seiten ebenfa
 **Anker.** Regel `nur-ueber-schnittstelle` in `scripts/eslint-modulgrenzen.mjs`; die `index.ts` je Domäne.
 
 **Änderungspfad.** Auch der Rahmen über die Schnittstellen: was Fachmodule aus `src/app` nutzen, nach `src/components` · Aufwand `mittel`.
+
+### ANN-756 — Anmeldung: Die Maske nennt die Ursache, nie ein Konto
+
+Technik · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Anmelde- und Sperrseite haben eigene Sätze für keine Verbindung, Störung des Dienstes und zu viele Versuche, nach einem Ende von außen „Sie wurden abgemeldet“. Falsches Kennwort, unbekanntes und unbestätigtes Konto bleiben ein Satz. Eine Höchstdauer der Sitzung gibt es nicht.
+
+**Begründung.** Entscheidung Jannes 2026-10-09 (BEF-047, Option 2): Im Funkloch stand „Kennwort prüfen“, und die Maske darf kein Verzeichnis der Konten sein. Die vergessene Sitzung am Praxisrechner begrenzt die Sitzungssperre (ADR-025).
+
+**Anker.** `ANMELDESAETZE` und `anmeldesatz()` in `src/features/core/auth/anmeldefehler.ts`.
+
+**Änderungspfad.** Höchstdauer über den Anmeldedienst (`timebox` in `[auth.sessions]`) · Aufwand `klein`.
+
+### ANN-757 — Hausbesuch: Abschluss über „Was ist passiert?“, nicht über „Finalisieren“
+
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Am offenen Hausbesuch bietet die Dokumentation kein „Finalisieren“; abgeschlossen wird über „Was ist passiert?“. Je Ansicht gibt es einen Hauptknopf, „Nur Termin abschließen“ steht eingeklappt.
+
+**Begründung.** Entscheidung Jannes 2026-10-09 (BEF-055, Option 3). Die Finalisierung setzt den Termin auf „dokumentiert“; „Tür geöffnet, nicht behandelt“ und „nicht angetroffen“ (ADR-018 Punkt 9) wären danach nicht mehr wählbar. Die automatische Finalisierung zum Fristende bleibt (ADR-016 Punkt 7).
+
+**Anker.** `ueberAbschluss` in `src/features/clinical/documentation/TreatmentNoteSection.tsx`.
+
+**Änderungspfad.** „Finalisieren“ wieder anbieten, die Folge in der Rückfrage nennen · Aufwand `klein`.
+
+### ANN-758 — Fotos im Verlauf: eine Zeile, zum Aufklappen
+
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Ohne Fotos steht im Behandlungsverlauf eine Zeile, mit Fotos „Fotos (n)“ zum Aufklappen, nach einer Aufnahme offen. „Bisherige Doku“ springt zum ersten Eintrag.
+
+**Begründung.** Entscheidung Jannes 2026-10-09 (BEF-058): Der Fotobereich stand vor dem Verlauf, auch ohne Fotos.
+
+**Anker.** `fotosOffen` in `src/features/patients/files/FotosImVerlauf.tsx`.
+
+**Änderungspfad.** Fotobereich wieder offen vor dem Verlauf · Aufwand `klein`.
+
+### ANN-759 — Behandlungsgrundlage: eine Hauptaktion je Zustand, Kontaktwege als Links
+
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Die Karte einer Behandlungsgrundlage hat je Zustand eine Hauptaktion; Bearbeiten, Bericht und Scan stehen ruhig. Telefon und E-Mail der Verordner:in sind Links in der Liste und an der Karte, das Fax ist Text.
+
+**Begründung.** Entscheidung Jannes 2026-10-09 (BEF-060, 2b und 3a): Wer eine Folgeverordnung anforderte, schrieb die Nummer aus einem offenen Formular ab. Es sind Angaben zur Praxis der Verordner:in; sie werden nicht weitergegeben.
+
+**Anker.** `Kontaktwege` in `src/features/patients/treatment-bases/Kontaktwege.tsx`.
+
+**Änderungspfad.** Kontaktdaten nur im Formular · Aufwand `klein`.
+
+### ANN-760 — Rückfrage mit Kontrollwerten vor Ausstellen, Löschen und Entziehen
+
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** „Rechnung ausstellen“ fragt nach und nennt Empfänger, Betrag und Nummernkreis. Ebenso fragen das unwiderrufliche Löschen von Fotos und das Entziehen einer Rolle nach, mit ihren Folgen.
+
+**Begründung.** Entscheidung Jannes 2026-10-09 (BEF-063, BEF-064, Option 2): Ausstellen ging mit einem Tipp, während folgenlose Schritte nachfragten. Die Werte stammen aus dem Stand, den der Server festschreibt (ADR-009 Punkt 10).
+
+**Anker.** `Kontrollwerte` in `src/features/billing/InvoiceDetailPage.tsx`.
+
+**Änderungspfad.** Rückfrage ohne Kontrollwerte · Aufwand `klein`.
+
+### ANN-761 — Nachweisseiten: für die Praxisleitung, der Nachweis als Zusatz
+
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Protokoll, Aufbewahrung und MDR-Sperre sind für die Praxisleitung im Alltag geschrieben: oben, was zu tun ist oder gilt, in Praxissprache; Kennungen, Fundstellen und Grundlagen als Zusatz darunter oder zugeklappt.
+
+**Begründung.** Entscheidung Jannes 2026-10-09 (BEF-065, Option 2), mit Freigabe des geänderten Satzes im E2E-Test der MDR-Sperre; die Kennung `MDR_REVIEW_REQUIRED` bleibt gleich streng geprüft.
+
+**Anker.** `Annahme` in `src/features/privacy/retention/AufbewahrungPage.tsx`.
+
+**Änderungspfad.** Nachweis wieder vor die Arbeit · Aufwand `mittel` (drei Seiten).
+
+### ANN-762 — Übersicht: keine Liste „Check-in ausgeblieben“
+
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Die Übersicht der Praxis führt keine Liste ausgebliebener Check-ins. Die Fälligkeit steht an der Akte und am Trainingsverhältnis.
+
+**Begründung.** Entscheidung Jannes 2026-10-15: „Nein“ (BEF-149 verworfen).
+
+**Anker.** Gruppen der Übersicht in `src/features/workplace/open-points/OpenPointsPage.tsx`; Fälligkeit `app.checkin_due_on`.
+
+**Änderungspfad.** Eigene Gruppe aus `app.checkin_due_on` · Aufwand `mittel`.
+
+### ANN-763 — Auskunft nach Art. 15 auch je Trainingsverhältnis
+
+Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung
+
+**Annahme.** Die Praxis erteilt die Auskunft auch je Trainingsverhältnis: nur `owner`, auf Knopfdruck, als eigene Kopie ohne interne Kennungen. Geprüft und protokolliert wird sie wie die zur Akte, ein Eintrag `patient_record.exported` je Kopie.
+
+**Begründung.** Art. 15 DSGVO; das Training ist ein eigenes Rechtsverhältnis mit eigener Kopie (ADR-021). Entscheidung Jannes 2026-10-18 (BEF-182).
+
+**Anker.** `fetchTrainingAuskunft` in `src/features/privacy/datenschutz/api.ts`; `public.export_training_record`.
+
+**Änderungspfad.** Auskunft zum Training mit der zur Akte zusammenlegen · Aufwand `mittel`.

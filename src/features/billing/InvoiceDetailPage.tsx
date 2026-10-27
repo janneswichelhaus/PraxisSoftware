@@ -1534,9 +1534,8 @@ function Empfaengerformular({
 }
 
 /**
- * Die Kontrollwerte der Rückfrage vor dem Ausstellen (BEF-063): an wen, wie
- * viel, aus welchem Nummernkreis. Alles aus dem Dokument des Entwurfs - dem
- * Stand, den der Server beim Ausstellen festschreibt (ADR-009 Punkt 10).
+ * Die Kontrollwerte der Rückfrage vor dem Ausstellen (ANN-760): an wen, wie viel, aus welchem
+ * Nummernkreis, alles aus dem Stand, den der Server dabei festschreibt (ADR-009 Punkt 10).
  */
 function Kontrollwerte({ ansicht }: { ansicht: Rechnungsansicht }) {
   const dokument = ansicht.document;

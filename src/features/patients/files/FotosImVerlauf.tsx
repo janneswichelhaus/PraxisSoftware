@@ -507,9 +507,8 @@ export function Patientenfotos({
     ansichtRef.current?.focus();
   }, [ansicht]);
 
-  // Die Fotos klein (BEF-058, Entscheidung Jannes 2026-10-09): ohne Fotos
-  // eine Zeile, mit Fotos „Fotos (n)“ zum Aufklappen - nach einer Aufnahme
-  // offen, damit das neue Foto zu sehen ist.
+  // Ohne Fotos eine Zeile, mit Fotos „Fotos (n)“ zum Aufklappen; nach einer Aufnahme offen, damit
+  // das neue Foto zu sehen ist (ANN-758).
   const anzahl = fotos.data?.length;
   const [fotosOffen, setFotosOffen] = useState(false);
   const bisherigeAnzahl = useRef<number | undefined>(undefined);

@@ -1,4 +1,4 @@
-/** Die Sätze der Anmeldemaske und der Sperrseite (BEF-047). */
+/** Die Sätze der Anmeldemaske und der Sperrseite: die Ursache, nie ein Konto (ANN-756). */
 export const ANMELDESAETZE = {
   pruefen: 'Anmeldung nicht möglich. Bitte E-Mail-Adresse und Kennwort prüfen.',
   leer: 'Bitte E-Mail-Adresse und Kennwort eingeben.',

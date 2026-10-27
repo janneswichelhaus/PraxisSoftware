@@ -42,9 +42,8 @@ export async function fetchAuskunft(patientId: string): Promise<Auskunft> {
 }
 
 /**
- * Die Auskunft zu einem Trainingsverhältnis (BEF-182): eigenes
- * Rechtsverhältnis, eigene Kopie (ADR-021) - geprüft und protokolliert wie die
- * zur Akte.
+ * Die Auskunft zu einem Trainingsverhältnis: eigenes Rechtsverhältnis, eigene Kopie (ADR-021),
+ * geprüft und protokolliert wie die zur Akte (ANN-763).
  */
 export async function fetchTrainingAuskunft(relationshipId: string): Promise<Auskunft> {
   const { data, error } = (await getSupabase().rpc('export_training_record', {
