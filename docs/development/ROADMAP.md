@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 7.21 · Stand 2026-10-26 · **in Kraft**
+Version 7.22 · Stand 2026-10-27 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Fassung 7.0 arbeitet das Produktgespräch vom 2026-09-23 ein
@@ -10,7 +10,7 @@ Anfang 2027 parallel zum Bauen hinaus. Fassung 7.13 stellt die Arbeitsweise auf
 Bereichsüberholungen um (Block unten). Ältere Fassungen und ausführliche
 Fortschrittsvermerke: [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
-## Aufräumen (Auftrag Jannes 2026-10-25, Entscheidungen 2026-10-26)
+## Aufräumen (Auftrag Jannes 2026-10-25, Entscheidungen 2026-10-26 und 2026-10-27)
 
 Kein Neustart: Größe, Kopplung und Kommentarlast werden schrittweise abgebaut, je eine PR, in der
 Reihenfolge 3, 4a, 4, 3b, 5. Schritt 3 kommt vor Schritt 3 „Termine“ des Design-Reviews, Schritt 4
@@ -23,8 +23,9 @@ abgeschlossen ist. Wie es steht, misst `/aufraeumen` (`AUFRAEUMEN.md`).
 | 2 | Migrationen vor dem Start zu einer Basis zusammenfassen: vorher Schemaabzug (Tabellen, Constraints, Indizes, Policies, Trigger, Funktionen), danach automatischer Diff ohne Unterschied und alle Tests grün; einmalige Ausnahme vom Migrationen-Gate (freigegeben); dazu eine Übersicht der DB-Funktionen nach Art und der verwaisten | Pfad A | gemergt (#309, #310); Funktionen ohne Aufrufer entfernt, Rechte der API-Rollen nachgezogen |
 | 3 | Modulschnittstellen: je Modul eine schmale `index.ts` ohne pauschale Re-Exporte, ESLint-Regel gegen tiefe Importe (zuerst Warnung); beginnend mit „Termine“, dort die gegenseitigen Abhängigkeiten auflösen; zusammengehörige kleine Module prüfen. Teil 1, Rest: die Zeit- und Kalenderhilfen aller Module in `src/lib/datum.ts` | Pfad A | gemergt (#312); Rest gebaut (Branch `ccr-30ca4f76-x8pvfg`) |
 | 4a | Teillöschung unter Belegfrist: Screening, Assessments, Check-ins, Gewohnheiten und Übungspläne eines beendeten Trainingsverhältnisses (17 Tabellen) fallen nach drei Jahren, auch wenn die Belege acht Jahre bleiben (ADR-021 Punkt 4, ANN-183; Jannes 2026-10-26) | Pfad A | gemergt (#316), mit Restore und Entscheidung je Tabelle im Test; den Löschlauf startet nur noch pg_cron |
-| 4 | Register für Datenauskunft, Aufbewahrung, Löschjournal und Zusammenführung; ein Test wird rot, wenn eine Tabelle mit Patientenbezug darin nicht klassifiziert ist. Vorweg der Nachzug aus #316: Rückweg der Anrufliste kurz, Zustand im Tab (ANN-574 Fassung 2); 3D-Rad-Rest im geführten Ablauf entfernt; Bestätigen und Verwerfen eines Uploads der Akte nur durch die vorbereitende Person (Jannes 2026-10-26) | Pfad A | Nachzug gemergt (#317); Register, Löschjournal je Zeile und Zusammenführen im Journal als #318 (ANN-751, ANN-752, ANN-150 Fassung 3) |
-| 3b | Domänenschnitt „Ziel“ der Tiefenanalyse (14 Domänen, Abschnitt 1a.5; Jannes 2026-10-26): geteilte Hilfen nach `src/lib`, eine Regel, nach der nur Seiten fremde Domänen importieren, die 17 Rückkanten umdrehen, danach die Ordner zusammenlegen | Standard | offen |
+| 4 | Register für Datenauskunft, Aufbewahrung, Löschjournal und Zusammenführung; ein Test wird rot, wenn eine Tabelle mit Patientenbezug darin nicht klassifiziert ist. Vorweg der Nachzug aus #316: Rückweg der Anrufliste kurz, Zustand im Tab (ANN-574 Fassung 2); 3D-Rad-Rest im geführten Ablauf entfernt; Bestätigen und Verwerfen eines Uploads der Akte nur durch die vorbereitende Person (Jannes 2026-10-26) | Pfad A | gemergt (#317, #318); Register, Löschjournal je Zeile und Zusammenführen im Journal (ANN-751, ANN-752, ANN-150 Fassung 3) |
+| 4b | Nachzug aus #318 vor 3b: beendete Plattformzugänge der Dublette ziehen beim Zusammenführen mit (L-A4, ANN-753); Löschungen von Hand stehen je Praxis und Tag ohne Uhrzeit im Journal, auch die elf weiteren Wege mit demselben Muster (ANN-752 Fassung 2) (Jannes 2026-10-27) | Pfad A | als #319 |
+| 3b | Domänenschnitt „Ziel“ der Tiefenanalyse (14 Domänen, Abschnitt 1a.5; Jannes 2026-10-26): geteilte Hilfen nach `src/lib`, eine Regel, nach der nur Seiten fremde Domänen importieren, die 17 Rückkanten umdrehen, danach die Ordner zusammenlegen. In zwei Teilen (Jannes 2026-10-27): Teil 1 Entflechtung (geteilte Hilfen, Rückkanten), Teil 2 Domänen mit schmaler `index.ts` und scharfer Regel (keine tiefen Importe, Seiten führen zusammen, keine Zyklen) | Standard | offen |
 | 5 | Doku-Konsolidierung (54.000 Zeilen -> <10.000 Zeilen, Bereinigung von 732 ANN und 230 BEF). Git ist das Archiv: Archiv, Chroniken und erledigte Handoffs gehen ersatzlos. Das Prüfpaket umfasst 208 Einträge mit einem Gate für den Zusatz; dabei werden 17 fehlende und 11 falsche Zusätze korrigiert und ANN-662 gegen ADR-024 sowie ANN-541 gegen ADR-009 aufgelöst (Jannes 2026-10-26) | Standard | offen |
 
 **Fehler aus der Tiefenanalyse**, verbindlich aufgenommen (Jannes 2026-10-26; Belege in
@@ -1003,6 +1004,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | Aufräumen Schritt 4a: Teillöschung unter Belegfrist löscht die 17 Trainingstabellen nach drei Jahren | fertig | 2026-10-26 | #316 (Branch claude/pr-313-decisions-2mdcwc, dritte PR), Migration 20261225050000_teilloeschung_training_vollstaendig.sql, supabase/tests/training-invoices.test.ts (Entscheidung je Tabelle, Restore) | — | Entscheidung Jannes 26.10.2026, ROADMAP 7.20; Pfad A; ADR-021 Punkt 4, ANN-183 |
 | B | Aufräumen, Nachzug aus #316: Rückweg der Anrufliste kurz, Zustand im Tab; 3D-Rad-Rest im geführten Ablauf entfernt; Upload der Akte nur durch die vorbereitende Person bestätigen und verwerfen | fertig | 2026-10-26 | Branch claude/step-4-central-register-ur5k1y, src/lib/tabstand.test.ts, tagumplanen.test.ts, TagUmplanenPage.test.tsx (15 Termine mit echten Kennungen, gegen main rot), SessionProvider.test.tsx, Migration 20261225120000_upload_akte_vorbereitende_person.sql, supabase/tests/patient-files.test.ts (ohne Migration rot), E2E appointment-states, Zweitreview | — | Entscheidungen Jannes 26.10.2026, ROADMAP 7.21; ANN-574 Fassung 2; Pfad A mit Zweitreview (SECURITY DEFINER); drei Befunde aus BEFUNDE.md erledigt |
 | B | Aufräumen Schritt 4: Register für Auskunft, Aufbewahrung, Löschjournal und Zusammenführung mit Vollständigkeitstest | fertig | 2026-10-26 | #318 (Branch claude/step-4-central-register-ur5k1y), Migrationen 20261225130000_datenregister.sql, 20261225140000_loeschjournal_je_zeile.sql und 20261225150000_zusammenfuehren_im_journal.sql, supabase/tests/data-registry.test.ts (Katalog), ein Restore-Test je Lösch-RPC (ohne Migrationen rot), patient-merge.test.ts (Zeilenzählung, Restore von vor dem Zusammenführen), voller pnpm test:db in en_US wie die CI, Zweitreview mit Nachprüfung | — | Auftrag Jannes 26.10.2026, ROADMAP 7.21; Fehler 2 und 3 der Tiefenanalyse; Pfad A; ANN-751, ANN-752, ANN-150 Fassung 3, ANN-652 Fassung 2; BEF-198 erledigt |
+| B | Aufräumen, Nachzug aus #318: Zugänge beim Zusammenführen, Löschungen von Hand tageweise | fertig | 2026-10-27 | #319 (Branch claude/step-4-central-register-ur5k1y), Migrationen 20261225160000_zugaenge_beim_zusammenfuehren.sql und 20261225170000_loeschungen_von_hand_tageweise.sql, supabase/tests/patient-merge.test.ts (Zugang zieht um, Auskunft, Wächter), data-registry.test.ts (Katalog „keine eigene Laufkennung“, Regel), je Löschweg eine Prüfung „tageweise“ (ohne Migrationen rot), voller pnpm test:db, Zweitreview | — | Entscheidungen Jannes 27.10.2026, ROADMAP 7.22; Pfad A; ANN-753, ANN-752 Fassung 2; Befund „sekundengenau“ aus BEFUNDE.md erledigt |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |
@@ -1042,6 +1044,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
 | Version | Datum | Änderung |
 | --- | --- | --- |
+| 7.22 | 2026-10-27 | **Aufräumen**, Entscheidungen zu #318 (Jannes): beendete Zugänge ziehen beim Zusammenführen mit, ein gesperrtes erneutes Zusammenführen bleibt offen und gemeldet, Löschungen von Hand stehen tageweise im Journal (Vorab-PR #319); 3b in zwei Teilen. Kette der Blöcke sonst unverändert. |
 | 7.21 | 2026-10-26 | **Aufräumen**, Entscheidungen zu #314 bis #316 (Jannes): `list_patient_treatment_evidence` bleibt, Fehler 7 erledigt; Rückweg der Anrufliste kurz statt längerer Grenze; Nachzug aus #316 vor Schritt 4, danach Schritt 4 mit Fehler 2 und 3. Kette der Blöcke sonst unverändert. |
 | 7.20 | 2026-10-26 | **Aufräumen**, Schritt 4a, M9, M1, M5, M7 und das Barometer nach Option A gebaut (dritte PR); Fehler 4 bis 6 gemergt. Kette der Blöcke sonst unverändert. |
 | 7.19 | 2026-10-26 | **Aufräumen**, Fehler 5 behoben; von Fehler 7 `app.mdr_released` entfernt, `list_patient_treatment_evidence` bleibt bis zur Entscheidung, weil §4.4 der Prinzipien den Behandlungsnachweis verlangt. Kette der Blöcke sonst unverändert. |
