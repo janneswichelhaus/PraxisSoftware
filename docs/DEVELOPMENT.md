@@ -48,7 +48,7 @@ mit dem Arbeitsbaum, je ohne und mit den Vorgaben von Supabase. Alte Migrationen
 `git show aabe5d0:<pfad>`; eine lokale Datenbank von vorher braucht einmal einen Reset.
 
 **CI:** `pnpm test:db` läuft in vier Teilen (`--shard=<n>/4`), die E2E-Tests hinter der Anmeldung
-in drei (ANN-571); die Pflichtchecks sind nur grün, wenn alle Teile es sind
+auch (ANN-571); die Pflichtchecks sind nur grün, wenn alle Teile es sind
 (`src/werkzeugkette.test.ts`). **Nur Doku:** Ändert ein Pull Request nur Markdown unter `docs/` oder
 im Wurzelverzeichnis, entfallen Tests, Build, Datenbank- und E2E-Prüfungen (ADR-013 Punkt 2,
 `scripts/nur-doku.mjs` in der Fassung des Zielbranchs); Markdown aus `VON_TESTS_GELESEN` und jede

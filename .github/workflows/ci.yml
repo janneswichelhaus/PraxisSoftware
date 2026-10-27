@@ -315,8 +315,11 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Ohne `--with-deps`: Die Bibliotheken für Chromium hat der Runner. Nachgeladen wurden nur
+      # Schriften für Chinesisch, Japanisch, Thai und Kyrillisch, bis zu 4 min lang; die App bringt
+      # ihre Schrift selbst mit.
       - name: Browser installieren
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install chromium
 
       - name: End-to-End-Tests
         run: pnpm test:e2e
@@ -328,27 +331,18 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-  # Prueft den echten Integrationspfad: Browser -> GoTrue -> PostgREST ->
-  # SECURITY-DEFINER-RPC -> PostgreSQL. Jeder Teil startet dafuer denselben
-  # lokalen Supabase-Stack, den auch die Entwicklung benutzt. Es entsteht
-  # keine Cloudressource und es wird kein Projekt kontaktiert (ADR-015).
-  #
-  # Die Tests aendern Daten und laufen deshalb mit einem Worker. In einem
-  # Stueck brauchten sie zuletzt 16 Minuten und bestimmten die Dauer jedes
-  # Laufs (2026-10-16). Jetzt laufen drei Teile nebeneinander, jeder mit
-  # eigenem Stack aus Migrationen und Seed (ANN-571). Playwright teilt das
-  # Projekt `authenticated` dateiweise auf, weil es nicht `fullyParallel`
-  # ist; die seriellen Bloecke einer Datei bleiben zusammen. Pflichtcheck
-  # bleibt `e2e-supabase` weiter unten unter seinem alten Namen.
+  # Der echte Integrationspfad (Browser, GoTrue, PostgREST, RPC, PostgreSQL) im lokalen Stack, ohne
+  # Cloudressource (ADR-015). Die Tests ändern Daten und laufen mit einem Worker, deshalb in Teilen
+  # mit je eigenem Stack, dateiweise geteilt (ANN-571); Pflichtcheck bleibt `e2e-supabase` unten.
   e2e-supabase-teil:
-    name: End-to-End hinter der Anmeldung (Teil ${{ matrix.teil }}/3)
+    name: End-to-End hinter der Anmeldung (Teil ${{ matrix.teil }}/4)
     runs-on: ubuntu-latest
     needs: aenderungen
     if: ${{ !cancelled() && needs.aenderungen.outputs.nur_doku != 'true' }}
     strategy:
       fail-fast: false
       matrix:
-        teil: [1, 2, 3]
+        teil: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v5
 
@@ -362,8 +356,11 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Ohne `--with-deps`: Die Bibliotheken für Chromium hat der Runner. Nachgeladen wurden nur
+      # Schriften für Chinesisch, Japanisch, Thai und Kyrillisch, bis zu 4 min lang; die App bringt
+      # ihre Schrift selbst mit.
       - name: Browser installieren
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install chromium
 
       # Feste Version statt `latest`. `latest` laesst die Action bei jedem Lauf
       # die GitHub-API nach dem neuesten Release fragen - ein Aufruf ohne Token,
@@ -379,16 +376,12 @@ jobs:
           version: 2.116.0
 
       - name: Supabase starten
-        # Die Ports des Stacks liegen im Bereich der Absenderports von Linux. Belegt eine andere
-        # Verbindung gerade einen davon, scheitert der Start (Port 54324, 2026-10-25); reserviert nie.
+        # Belegt eine Verbindung einen Port des Stacks als Absender, scheitert der Start (54324,
+        # 2026-10-25); reservierte vergibt Linux nie. Auf dem frischen Runner spielt der Start
+        # Migrationen und Seed ein. Studio, pg-meta und Realtime braucht kein Test.
         run: |
           sudo sysctl -w net.ipv4.ip_local_reserved_ports=54320-54329
-          supabase start
-
-      - name: Migrationen und synthetischen Seed anwenden
-        # Ausdruecklich statt implizit: der Stand ist damit nachweislich aus
-        # Migrationen + Seed reproduziert und nicht aus einem Zwischenzustand.
-        run: supabase db reset
+          supabase start -x studio,postgres-meta,realtime
 
       - name: Verbindungswerte der Wegwerf-Instanz uebernehmen
         # Die Werte gelten nur fuer diesen Lauf. Der anon key ist ein
@@ -406,7 +399,7 @@ jobs:
         # Nur das Projekt hinter der Anmeldung: den nicht angemeldeten Zustand
         # deckt der Job "End-to-End" ab, der ohne Docker auskommt. So laeuft
         # jeder Test einmal statt zweimal.
-        run: pnpm test:e2e --project authenticated --shard=${{ matrix.teil }}/3
+        run: pnpm test:e2e --project authenticated --shard=${{ matrix.teil }}/4
 
       - uses: actions/upload-artifact@v4
         if: failure()
