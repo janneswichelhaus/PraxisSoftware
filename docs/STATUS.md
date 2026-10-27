@@ -6,9 +6,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 ## Jetzt
 
 **Aufräumen** (Auftrag Jannes 25.10., Entscheidungen 26. und 27.10., ROADMAP 7.22): Schritte 1 bis 4,
-alle sieben Fehler, M1, M5, M7, M9, das Barometer, die Vorab-PR und 3b Teil 1 gemergt (#308 bis
-#320). 3b Teil 2 (14 Domänenordner, je Domäne eine `index.ts`, Regel gegen tiefe Importe) liegt als
-#321 vor. Bauplan ist `development/TIEFENANALYSE.md`.
+alle sieben Fehler, M1, M5, M7, M9, das Barometer, die Vorab-PR und 3b gemergt (#308 bis #321).
+Der Nachzug zu #321 (Startbild nach der Anmeldung, `pnpm lint` mit 6 GB, Seiten über die
+Schnittstelle) liegt als #322 vor. Bauplan ist `development/TIEFENANALYSE.md`.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
@@ -45,5 +45,5 @@ bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Hando
 
 ## Letzte Session
 
-27.10.2026, Branch `claude/step-4-central-register-ur5k1y`: 3b Teil 1 gemergt (#320), Teil 2 als
-#321. Keine Migration. Lokal: `git pull`; die Module liegen danach unter `src/features/<domäne>/`.
+27.10.2026, Branch `claude/step-4-central-register-ur5k1y`: 3b gemergt (#320, #321), Nachzug als
+#322. Keine Migration. Lokal: `git pull`.
