@@ -42,6 +42,12 @@ einer Person zurückgenommen. **Punkt 19** kennt wieder nur den Weg über den ei
 **Punkt 25** hat keine Vorschau mehr; beide mit Vermerk. Damit fällt ein Lesepfad der Praxis auf
 Plattformdaten weg. Die übrigen Punkte bleiben.
 
+**Fassung 8 (2026-10-27)**: **Punkte 7 und 11** nennen die Ausnahme aus §4.10 der Prinzipien:
+Schließt eine Person mit eigenem Zugang den Trainingsvertrag über ihr Konto, entsteht der Zugang zum
+neuen Trainingsverhältnis ohne eigene Einladung; die Identität prüfte die Einladung zur Behandlung.
+So hat Jannes es am 2026-10-09 entschieden (bis dahin überbrückt als ANN-291). Die übrigen Punkte
+bleiben.
+
 **Ergänzt durch [ADR-025](ADR-025-session-lock.md)** (2026-10-02): Die Punkte 17 und 18 bekommen eine Sitzungssperre.
 
 *Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.* *Den Zweifel an der Einwilligungsfähigkeit (Punkt 13) vermerkt die Praxis am Zugang der rechtlichen Vertretung (`companion_declined_*`), nicht im Auditlog (ANN-207 Fassung 2).*
@@ -173,7 +179,9 @@ nur dessen Hash, nie der Code selbst, und er steht in keinem Log (ADR-011). Ange
 **Passkey**; die E-Mail-Adresse bleibt die Kennung des Kontos (*Fassung 4*, ADR-025 Punkte 9 bis 11;
 *bis Fassung 3: „E-Mail-Adresse und Kennwort“*). Wer keine E-Mail-Adresse oder kein Gerät mit Passkey
 hat, bekommt in V1 kein eigenes Konto. Er kann über eine Vertretung (Punkt 13) oder mit Plänen als
-PDF versorgt werden.
+PDF versorgt werden. *(Fassung 8)* Ausnahme nach §4.10: Bucht eine Person mit eigenem Zugang den
+Trainingsvertrag über ihr Konto, bekommt dasselbe Konto im selben Aufruf einen aktiven Zugang zum
+neuen Trainingsverhältnis, ohne Einladung (ANN-291).
 
 **8. Zwei Übergabewege, eine Einladung** (**W2**):
 
@@ -219,7 +227,8 @@ hält fest, wer sie auf welchem Weg übergeben hat und wer die Adresse wann best
 sich die Adresse, braucht es eine neue Einladung. Es gibt **keinen
 Ausweisscan, kein Video-Ident, keinen externen Identitätsdienst**: Die Praxis kennt die Person,
 und ein neuer Anbieter wäre ein neues Risiko ohne neue Sicherheit. Das Verfahren gilt vorläufig
-bis zur Antwort auf B5 und ist an einer Stelle austauschbar, der Einladungsfunktion.
+bis zur Antwort auf B5 und ist an einer Stelle austauschbar, der Einladungsfunktion. *(Fassung 8)*
+Für den Zugang aus dem Trainingsvertrag (Punkt 7) gilt die Prüfung der Einladung zur Behandlung.
 
 **12. Die Plattform ist keine Akteneinsicht** (B5 Rahmensatz 2, DSN-001 Abschnitt 2 Satz 3). Sie
 zeigt nur, was für sie bestimmt ist (Punkt 22). Die Einsicht nach § 630g BGB bleibt ein eigener
