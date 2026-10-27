@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { fetchPlan, planPfad, planSchluessel } from './api';
 import { Planblatt } from './Planblatt';
 import { dayKey } from '@/lib/datum';

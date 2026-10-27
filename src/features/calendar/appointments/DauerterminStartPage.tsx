@@ -10,16 +10,17 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
-import { fetchPatient, fullName } from '@/features/patients/api';
-import { Patientenauswahl } from '@/features/patients/Patientenauswahl';
-import { canWriteTreatmentBases, type CurrentUser } from '@/features/core/session/types';
-import { grundlageBezeichnung } from '@/features/patients/treatment-bases/api';
 import {
+  fetchPatient,
+  fullName,
+  Patientenauswahl,
+  grundlageBezeichnung,
   eindeutigeGrundlage,
   useVerordnungenDerAkte,
   zustandLabels,
   type VerordnungMitZahlen,
-} from '@/features/patients/treatment-bases/grundlagen';
+} from '@/features/patients';
+import { canWriteTreatmentBases, type CurrentUser } from '@/features/core';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';

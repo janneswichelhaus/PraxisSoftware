@@ -4,12 +4,11 @@ import { Tile } from '@/components/ui/Tile';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { empfaengerartLabels } from '@/features/billing/api';
-import { grundlageBezeichnung } from '@/features/patients/treatment-bases/api';
+import { empfaengerartLabels } from '@/features/billing';
+import { grundlageBezeichnung, Deckungszeichen } from '@/features/patients';
 import { positionText, type Abrechnungslage } from './abrechnungslage-api';
 import { useAbrechnungslage } from './useAbrechnungslage';
 import type { Appointment } from './api';
-import { Deckungszeichen } from '@/features/patients/treatment-bases/Deckungszeichen';
 
 function OffeneRechnungen({ lage }: { lage: Abrechnungslage }) {
   const anzahl = lage.open_invoice_count ?? 0;

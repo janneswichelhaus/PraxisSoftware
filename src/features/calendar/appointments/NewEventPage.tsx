@@ -17,9 +17,9 @@ import {
   useTextverlustschutz,
   type Verlustschutztexte,
 } from '@/app/Textverlustschutz';
-import { canManageAppointments, type CurrentUser } from '@/features/core/session/types';
+import { canManageAppointments, type CurrentUser } from '@/features/core';
 import { EreignisArbeitszeitRueckfrage, EreignisFormFields } from './EreignisFormFields';
-import { fetchStaffMembers, fetchLocations } from '@/features/workforce/staff/api';
+import { fetchStaffMembers, fetchLocations } from '@/features/workforce';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {

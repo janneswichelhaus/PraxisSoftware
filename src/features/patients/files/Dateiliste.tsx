@@ -35,7 +35,7 @@ import {
   canWriteClinicalPatientFiles,
   canWriteTreatmentBases,
   type CurrentUser,
-} from '@/features/core/session/types';
+} from '@/features/core';
 
 /**
  * Dateien einer Akte: anzeigen, hinzufügen, öffnen (DAT-001, ADR-017).

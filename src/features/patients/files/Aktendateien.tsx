@@ -4,7 +4,7 @@ import {
   canWriteClinicalPatientFiles,
   canWriteTreatmentBases,
   type CurrentUser,
-} from '@/features/core/session/types';
+} from '@/features/core';
 import type { PatientFile } from './api';
 import { Dateiliste } from './Dateiliste';
 import { useDateien } from './dateien';

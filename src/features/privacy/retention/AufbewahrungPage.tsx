@@ -36,9 +36,9 @@ import {
   useLoeschauftraege,
   useLoeschauftraegeAusfuehren,
   useVerwaisteVormerken,
-} from '@/features/patients/files/dateien';
-import { aktenortDerDatei } from '@/features/patients/files/dokumentarten';
-import type { CurrentUser } from '@/features/core/session/types';
+  aktenortDerDatei,
+} from '@/features/patients';
+import type { CurrentUser } from '@/features/core';
 
 /**
  * Aufbewahrung und Löschung (LOE-002b).

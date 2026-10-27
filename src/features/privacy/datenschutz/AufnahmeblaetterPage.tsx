@@ -1,9 +1,9 @@
-import { ANMELDEBOGEN_ANKER } from '@/features/patients/akte';
+import { ANMELDEBOGEN_ANKER } from '@/features/patients';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Textlink } from '@/components/ui/Textlink';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { Aufnahmeblatt } from './Aufnahmeblatt';
 import { useAbsender } from './useAbsender';
 

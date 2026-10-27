@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/Badge';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
 import { type Appointment } from './api';
 import { formatLocalDate, formatLocalTime, formatLocalTimeRange } from '@/lib/datum';

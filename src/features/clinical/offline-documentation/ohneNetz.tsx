@@ -1,4 +1,4 @@
-import type { OhneNetz } from '@/features/core/auth/sitzungssperre/Sitzungssperre';
+import type { OhneNetz } from '@/features/core';
 import { LokaleDokumentation } from './LokaleDokumentation';
 import { entwuerfeLesen } from './entwuerfe';
 import { einrichtungLesen } from './servicePhone';

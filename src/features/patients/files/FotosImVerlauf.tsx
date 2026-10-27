@@ -15,7 +15,7 @@ import {
   canReadClinicalPatientFiles,
   canWriteClinicalPatientFiles,
   type CurrentUser,
-} from '@/features/core/session/types';
+} from '@/features/core';
 import { loescheDatei } from './api';
 import { NICHT_SERVERSEITIG_GEPRUEFT } from '@/lib/dateien/pruefung';
 import { Fotoverlustschutz } from './Fotoverlustschutz';

@@ -21,8 +21,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Tile, TileGrid } from '@/components/ui/Tile';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import type { Plattformzugang } from '@/features/portal/platform-access/api';
-import { anzeigezustand, usePlattformzugang } from '@/features/portal/platform-access/zustand';
+import { type Plattformzugang, anzeigezustand, usePlattformzugang } from '@/features/portal';
 import { angabenZeile } from '@/lib/erfassungsgroessen';
 import { formatDate, tagePlus } from '@/lib/datum';
 import {

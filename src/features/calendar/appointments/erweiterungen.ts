@@ -1,5 +1,5 @@
 import { createContext, useContext, type ComponentType } from 'react';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import type { Appointment } from './api';
 
 /**

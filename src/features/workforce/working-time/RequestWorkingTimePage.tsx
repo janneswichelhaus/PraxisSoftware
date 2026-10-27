@@ -21,7 +21,7 @@ import {
   type Abfolge,
 } from '@/components/ui/abfolge';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { DayEditor } from './DayEditor';
 import {

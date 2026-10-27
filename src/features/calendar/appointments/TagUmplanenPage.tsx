@@ -24,7 +24,7 @@ import {
   type Abfolge,
 } from '@/components/ui/abfolge';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import { canManageAppointments, type CurrentUser } from '@/features/core/session/types';
+import { canManageAppointments, type CurrentUser } from '@/features/core';
 import { neueVorgangskennung } from '@/lib/abstecher';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
@@ -52,7 +52,7 @@ import {
   type Zeitspanne,
 } from './tagumplanen';
 import { formatLocalDate, formatLocalTime, formatLocalTimeRange, istIsoDatum } from '@/lib/datum';
-import { fetchAssignableTherapists } from '@/features/workforce/staff/api';
+import { fetchAssignableTherapists } from '@/features/workforce';
 import { appointmentTypeHint } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
 import { fetchDayPlan, rufnummern, type DayPlanEntry } from '@/features/calendar/day-plan/api';

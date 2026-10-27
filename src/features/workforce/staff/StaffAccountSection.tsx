@@ -15,7 +15,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { roleLabel } from '@/components/ui/roleLabels';
 import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
-import type { RoleKey } from '@/features/core/session/types';
+import type { RoleKey } from '@/features/core';
 import {
   EinladungsError,
   ZugangsError,
@@ -34,7 +34,7 @@ import {
   type Zustellung,
 } from './konto-api';
 import type { StaffMember } from './api';
-import { fullName } from '@/features/patients/api';
+import { fullName } from '@/features/patients';
 import { ROLLENHINWEISE, WAEHLBARE_ROLLEN } from './rollenhinweise';
 import { problemTexte } from './zugangstexte';
 

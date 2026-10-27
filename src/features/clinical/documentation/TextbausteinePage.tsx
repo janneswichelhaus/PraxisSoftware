@@ -18,7 +18,7 @@ import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { canWriteTreatmentNote, isOwner, type CurrentUser } from '@/features/core/session/types';
+import { canWriteTreatmentNote, isOwner, type CurrentUser } from '@/features/core';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {
   EINGABETEXTE,

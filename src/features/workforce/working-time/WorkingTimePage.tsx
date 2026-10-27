@@ -13,12 +13,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { ArbeitszeitJePerson } from '@/features/calendar/scheduling/SchedulingPage';
 import { EmptyState, LoadingState } from '@/components/ui/Feedback';
 import { Section } from '@/components/ui/Section';
-import {
-  canManageWorkingHours,
-  isOwner,
-  isTherapyStaff,
-  type CurrentUser,
-} from '@/features/core/session/types';
+import { canManageWorkingHours, isOwner, isTherapyStaff, type CurrentUser } from '@/features/core';
 import { RUECKWEG_PARAM } from '@/lib/rueckweg';
 import {
   WORKING_TIME_KEY,

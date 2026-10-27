@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { canReadPatientDirectory, type CurrentUser } from '@/features/core/session/types';
+import { canReadPatientDirectory, type CurrentUser } from '@/features/core';
 import { fetchIntakeChecklist, type IntakeItem } from './api';
 
 /**

@@ -11,7 +11,7 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Segment, type Segmentwahl } from '@/components/ui/Segment';
 import { Textlink } from '@/components/ui/Textlink';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';

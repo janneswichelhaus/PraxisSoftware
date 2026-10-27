@@ -8,8 +8,8 @@ import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { ibanInGruppen } from '@/features/billing/anzeige';
-import type { CurrentUser } from '@/features/core/session/types';
+import { ibanInGruppen } from '@/features/billing';
+import type { CurrentUser } from '@/features/core';
 import { formatEuro } from '@/lib/geld';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {

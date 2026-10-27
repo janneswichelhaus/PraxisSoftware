@@ -13,7 +13,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { vorgangAusPfad } from '@/lib/abstecher';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { leseRueckweg } from '@/lib/rueckweg';
-import { useSession } from '@/features/core/auth/sessionContext';
+import { useSession } from '@/features/core';
 import {
   EINGABETEXTE,
   useTextverlustschutz,

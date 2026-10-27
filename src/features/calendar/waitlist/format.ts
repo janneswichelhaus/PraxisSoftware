@@ -1,4 +1,4 @@
-import { grundlageBezeichnung } from '@/features/patients/treatment-bases/api';
+import { grundlageBezeichnung } from '@/features/patients';
 import { formatDate } from '@/lib/datum';
 import { windowsText, type WaitlistEntry } from './api';
 import { appointmentTypeHint } from '@/lib/termin';

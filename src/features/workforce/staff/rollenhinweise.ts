@@ -1,4 +1,4 @@
-import type { RoleKey } from '@/features/core/session/types';
+import type { RoleKey } from '@/features/core';
 
 /**
  * Was eine Rolle in dieser Praxis darf - ein Satz, dort, wo sie vergeben wird

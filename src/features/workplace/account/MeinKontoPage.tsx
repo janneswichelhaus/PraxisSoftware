@@ -8,9 +8,14 @@ import { RoleBadge } from '@/components/ui/RoleBadge';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { canWriteTreatmentNote, isOwner, type CurrentUser } from '@/features/core/session/types';
-import { DiensttelefonAbschnitt } from '@/features/clinical/offline-documentation/DiensttelefonAbschnitt';
-import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/clinical/offline-documentation/servicePhone';
+import {
+  canWriteTreatmentNote,
+  isOwner,
+  type CurrentUser,
+  PasskeyAbschnitt,
+  PinAbschnitt,
+} from '@/features/core';
+import { DiensttelefonAbschnitt, ABLAGE_FUER_PRAXISKONTEN } from '@/features/clinical';
 import {
   beendeAlleSitzungen,
   bestaetigeZweitenFaktor,
@@ -20,11 +25,7 @@ import {
   starteMfaEinrichtung,
   type MfaEinrichtung,
 } from './api';
-import {
-  PasskeyAbschnitt,
-  PinAbschnitt,
-} from '@/features/core/auth/einrichtung/AnmeldungVerwalten';
-import { ProfilAbschnitt } from '@/features/teamchat/ProfilAbschnitt';
+import { ProfilAbschnitt } from '@/features/teamchat';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 

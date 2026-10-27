@@ -20,12 +20,12 @@ import {
   speicherfehlerText,
   terminFehlerliste,
   terminFeldfehler,
-} from '@/features/calendar/appointments';
+} from '@/features/calendar';
 import {
   fetchAssignableTherapists,
   fetchAssignableTrainers,
   fetchLocations,
-} from '@/features/workforce/staff/api';
+} from '@/features/workforce';
 
 /** Die Felder, an denen sich eine Eingabe von der Vorbelegung unterscheiden kann. */
 const FELDER: readonly AppointmentFormField[] = [

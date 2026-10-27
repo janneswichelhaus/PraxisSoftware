@@ -10,8 +10,8 @@ import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { leseRueckweg } from '@/lib/rueckweg';
-import { canWriteTrainingClients, type CurrentUser } from '@/features/core/session/types';
-import { fensterEnde, leererTermin, tageslageNeuLaden } from '@/features/calendar/appointments';
+import { canWriteTrainingClients, type CurrentUser } from '@/features/core';
+import { fensterEnde, leererTermin, tageslageNeuLaden } from '@/features/calendar';
 import {
   createTrainingAppointment,
   listTrainingBases,

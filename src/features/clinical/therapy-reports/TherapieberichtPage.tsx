@@ -16,7 +16,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { bereicheText } from '@/features/clinical/assessments/koerperschema';
 import { useTextverlustschutz, type Verlustschutztexte } from '@/app/Textverlustschutz';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { formatDate } from '@/lib/datum';
 import {
   EINTRAEGE_MAX,

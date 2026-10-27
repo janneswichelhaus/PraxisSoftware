@@ -8,11 +8,23 @@ import { Section } from '@/components/ui/Section';
 import { Disclosure } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Tile, TileGrid } from '@/components/ui/Tile';
-import { useAktuelleGrundlage } from '@/features/patients/treatment-bases/useAktuelleGrundlage';
+import {
+  useAktuelleGrundlage,
+  usePatientRecord,
+  type Patient,
+  bauartLabels,
+  fetchPatientTreatmentBasisSlots,
+  grundlageBezeichnung,
+  kontingentJeGrundlage,
+  type Bauart,
+  type TreatmentBasisKontingent,
+  deckungstext,
+  Deckungszeichen,
+  HausbesucheMitAlterAdresse,
+} from '@/features/patients';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { usePatientRecord } from '@/features/patients/akte';
 import { WaitlistNotice } from '@/features/calendar/waitlist/WaitlistNotice';
 import {
   formatDate as formatIsoDate,
@@ -21,17 +33,7 @@ import {
   formatLocalTimeRange,
   todayInTimeZone,
 } from '@/lib/datum';
-import type { Patient } from '@/features/patients/api';
-import { canReadTreatmentBases, type CurrentUser } from '@/features/core/session/types';
-import {
-  bauartLabels,
-  fetchPatientTreatmentBasisSlots,
-  grundlageBezeichnung,
-  kontingentJeGrundlage,
-  type Bauart,
-  type TreatmentBasisKontingent,
-} from '@/features/patients/treatment-bases/api';
-import { deckungstext } from '@/features/patients/treatment-bases/grundlagen';
+import { canReadTreatmentBases, type CurrentUser } from '@/features/core';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
 import {
   fetchPatientAppointments,
@@ -50,8 +52,6 @@ import {
   leseAngelegtenTermin,
 } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
-import { Deckungszeichen } from '@/features/patients/treatment-bases/Deckungszeichen';
-import { HausbesucheMitAlterAdresse } from '@/features/patients/HausbesucheMitAlterAdresse';
 
 /**
  * Der Terminbereich der Akte (AKTE-003, gruppiert seit AKTE-006).

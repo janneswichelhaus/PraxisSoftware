@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { formatDate } from '@/lib/datum';
-import type { Patient } from '@/features/patients/api';
+import type { Patient } from '@/features/patients';
 import { erhebungenQueryKey, fetchErhebungen } from './api';
 import { hervorhebungen } from './hervorhebung';
 import { fassungFuer } from './instrumente';

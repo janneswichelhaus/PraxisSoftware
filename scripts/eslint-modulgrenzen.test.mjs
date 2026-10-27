@@ -3,7 +3,11 @@ import { join } from 'node:path';
 import { RuleTester } from 'eslint';
 import { describe, expect, it } from 'vitest';
 import { DOMAENEN, EBENEN } from './domaenen.mjs';
-import modulgrenzen, { gegenDieFolge, tieferImport } from './eslint-modulgrenzen.mjs';
+import modulgrenzen, {
+  anDerSchnittstelleVorbei,
+  gegenDieFolge,
+  tieferImport,
+} from './eslint-modulgrenzen.mjs';
 
 const nurTermine = ({ modul }) => modul === 'appointments';
 const HEUTE = 'src/features/calendar/today/MyDayPage.tsx';
@@ -171,6 +175,108 @@ describe('Regel nach-unten am Baum', () => {
         code: "import { x } from '@/features/patients/api';",
         filename: in_('src/features/neu/x.ts'),
         errors: [{ messageId: 'ohneDomaene' }],
+      },
+    ],
+  });
+});
+
+describe('anDerSchnittstelleVorbei (ANN-755)', () => {
+  const personal = 'src/features/workforce/staff/x.ts';
+
+  it('meldet den Griff in eine fremde Domäne an ihrer index.ts vorbei', () => {
+    expect(anDerSchnittstelleVorbei(personal, '@/features/calendar/appointments/api')).toEqual({
+      domaene: 'calendar',
+    });
+    expect(anDerSchnittstelleVorbei(personal, '@/features/calendar/appointments')).toEqual({
+      domaene: 'calendar',
+    });
+    expect(anDerSchnittstelleVorbei(personal, '../../patients/api')).toEqual({
+      domaene: 'patients',
+    });
+    expect(
+      anDerSchnittstelleVorbei('src/components/ui/x.ts', '@/features/core/session/types'),
+    ).toEqual({
+      domaene: 'core',
+    });
+  });
+
+  it('meldet die eigene index.ts, die im Kreis zurückführte', () => {
+    expect(
+      anDerSchnittstelleVorbei('src/features/calendar/today/x.ts', '@/features/calendar'),
+    ).toEqual({
+      eigene: 'calendar',
+    });
+    expect(anDerSchnittstelleVorbei('src/features/patients/intake/x.ts', '../index')).toEqual({
+      eigene: 'patients',
+    });
+  });
+
+  it('lässt die Schnittstelle, Seiten, die eigene Domäne und src/lib durch', () => {
+    expect(anDerSchnittstelleVorbei(personal, '@/features/calendar')).toBeNull();
+    expect(anDerSchnittstelleVorbei(personal, '@/features/calendar/index')).toBeNull();
+    expect(anDerSchnittstelleVorbei(personal, '@/features/patients')).toBeNull();
+    expect(
+      anDerSchnittstelleVorbei(personal, '@/features/calendar/scheduling/SchedulingPage'),
+    ).toBeNull();
+    expect(
+      anDerSchnittstelleVorbei('src/features/calendar/today/x.ts', '../appointments/api'),
+    ).toBeNull();
+    expect(
+      anDerSchnittstelleVorbei('src/features/patients/intake/x.ts', '@/features/patients/api'),
+    ).toBeNull();
+    expect(anDerSchnittstelleVorbei(personal, '@/lib/datum')).toBeNull();
+    expect(anDerSchnittstelleVorbei(personal, 'react')).toBeNull();
+  });
+
+  it('überlässt die Wurzel einer Domäne der Schnittstelle, nicht der Regel für Module', () => {
+    expect(tieferImport('src/features/patients/intake/x.ts', '@/features/patients/api')).toBeNull();
+  });
+});
+
+describe('Regel nur-ueber-schnittstelle am Baum', () => {
+  RuleTester.describe = describe;
+  RuleTester.it = it;
+  RuleTester.itOnly = it.only;
+  const pruefer = new RuleTester({
+    languageOptions: { ecmaVersion: 'latest', sourceType: 'module' },
+  });
+  const in_ = (pfad) => join(import.meta.dirname, '..', pfad);
+
+  pruefer.run('nur-ueber-schnittstelle', modulgrenzen.rules['nur-ueber-schnittstelle'], {
+    valid: [
+      {
+        code: "import { fetchTerminTage } from '@/features/calendar';",
+        filename: in_('src/features/workforce/vacation/UrlaubTerminePage.tsx'),
+      },
+      {
+        code: "import { SchedulingPage } from '@/features/calendar/scheduling/SchedulingPage';",
+        filename: in_('src/features/workforce/working-time/WorkingTimePage.tsx'),
+      },
+      {
+        code: "import { hakenFehlt } from '../appointments';",
+        filename: in_('src/features/calendar/today/x.ts'),
+      },
+    ],
+    invalid: [
+      {
+        code: "import { fetchTerminTage } from '@/features/calendar/appointments';",
+        filename: in_('src/features/workforce/vacation/UrlaubTerminePage.tsx'),
+        errors: [{ messageId: 'vorbei' }],
+      },
+      {
+        code: "export { fullName } from '@/features/patients/api';",
+        filename: in_('src/features/billing/x.ts'),
+        errors: [{ messageId: 'vorbei' }],
+      },
+      {
+        code: "const termine = import('@/features/calendar/appointments/api');",
+        filename: in_('src/features/workforce/staff/x.ts'),
+        errors: [{ messageId: 'vorbei' }],
+      },
+      {
+        code: "import { hakenFehlt } from '@/features/calendar';",
+        filename: in_('src/features/calendar/today/x.ts'),
+        errors: [{ messageId: 'eigene' }],
       },
     ],
   });

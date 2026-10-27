@@ -6,7 +6,7 @@ import {
   type AppointmentFormValues,
   type CancellationReason,
   schreibfehler,
-} from '@/features/calendar/appointments';
+} from '@/features/calendar';
 import { terminAnlassSchema } from '@/lib/termin';
 
 /**

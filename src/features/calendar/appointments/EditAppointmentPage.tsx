@@ -16,14 +16,14 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Textlink } from '@/components/ui/Textlink';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import { fetchPatient } from '@/features/patients/api';
+import { fetchPatient } from '@/features/patients';
 import {
   fetchStaffMembers,
   fetchAssignableTherapists,
   fetchLocations,
   type AssignableTherapist,
-} from '@/features/workforce/staff/api';
-import type { CurrentUser } from '@/features/core/session/types';
+} from '@/features/workforce';
+import type { CurrentUser } from '@/features/core';
 import {
   AppointmentFormFields,
   ArbeitszeitRueckfrage,

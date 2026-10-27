@@ -11,12 +11,13 @@ import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import { fetchPatient, fullName } from '@/features/patients/api';
-import { canReadTreatmentBases, type CurrentUser } from '@/features/core/session/types';
 import {
+  fetchPatient,
+  fullName,
   fetchPatientTreatmentBases,
   grundlageBezeichnung,
-} from '@/features/patients/treatment-bases/api';
+} from '@/features/patients';
+import { canReadTreatmentBases, type CurrentUser } from '@/features/core';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import type { Formularfehler } from '@/lib/formularfehler';
 import { istInternerPfad, leseRueckweg, mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
@@ -47,7 +48,7 @@ import {
   terminFehlerliste,
   terminFeldfehler,
 } from './terminformular';
-import { fetchAssignableTherapists, fetchLocations } from '@/features/workforce/staff/api';
+import { fetchAssignableTherapists, fetchLocations } from '@/features/workforce';
 import {
   kalenderZumTermin,
   leseTerminVorbelegung,

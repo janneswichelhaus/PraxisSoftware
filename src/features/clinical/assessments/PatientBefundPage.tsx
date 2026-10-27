@@ -6,15 +6,9 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
-import { usePatientRecord } from '@/features/patients/akte';
+import { usePatientRecord, type Patient, Behandlungsliege } from '@/features/patients';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
-import type { Patient } from '@/features/patients/api';
-import { Behandlungsliege } from '@/features/patients/Behandlungsliege';
-import {
-  canReadPatientDirectory,
-  canWriteQuestionnaire,
-  type CurrentUser,
-} from '@/features/core/session/types';
+import { canReadPatientDirectory, canWriteQuestionnaire, type CurrentUser } from '@/features/core';
 import { erhebungenQueryKey, erhebungVerwerfen, fetchErhebungen, type Erhebung } from './api';
 import { erhebenPfad } from './darstellung';
 import { ErhebungAnsicht } from './ErhebungAnsicht';

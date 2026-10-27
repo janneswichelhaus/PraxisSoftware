@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { canReadTreatmentNote, type CurrentUser } from '@/features/core/session/types';
+import { canReadTreatmentNote, type CurrentUser } from '@/features/core';
 import { berichteQueryKey, fetchBerichteDerAkte } from './api';
 
 /**

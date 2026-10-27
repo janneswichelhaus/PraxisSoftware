@@ -6,7 +6,7 @@ import { useRandVerlauf } from '@/components/ui/waagerechtRollen';
 import type { PatientFile } from '@/features/patients/files/api';
 import { useDateien } from '@/features/patients/files/dateien';
 import { dateibereich } from '@/features/patients/files/dokumentarten';
-import { canWriteTreatmentBases, type CurrentUser } from '@/features/core/session/types';
+import { canWriteTreatmentBases, type CurrentUser } from '@/features/core';
 import { formatDate } from '@/lib/datum';
 import { istVerordnung } from './api';
 import {

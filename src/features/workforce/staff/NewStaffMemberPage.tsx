@@ -16,13 +16,9 @@ import {
 } from '@/components/ui/abfolge';
 import { RUECKWEG_PARAM, leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import { FLOTTE_SCHLUESSEL, fetchFleet, flotteSchluessel, takeKey } from '@/features/fleet/api';
-import { saveWorkingHours } from '@/features/calendar/scheduling/api';
-import {
-  canManageStaffPrivateDetails,
-  type CurrentUser,
-  type RoleKey,
-} from '@/features/core/session/types';
+import { FLOTTE_SCHLUESSEL, fetchFleet, flotteSchluessel, takeKey } from '@/features/fleet';
+import { saveWorkingHours } from '@/features/calendar';
+import { canManageStaffPrivateDetails, type CurrentUser, type RoleKey } from '@/features/core';
 import { createStaffMember, leereStammdaten, setzeKalender, staffMasterDataSchema } from './api';
 import { vorlageZu, wochenplanDer, type VorlageKey } from './arbeitszeitvorlagen';
 import {

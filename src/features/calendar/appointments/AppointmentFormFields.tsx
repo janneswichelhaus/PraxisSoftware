@@ -11,7 +11,7 @@ import { type AppointmentFormField } from './api';
 import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import { DAUER_AUSWAHL_ID, TERMINFELD_IDS } from './terminformular';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
-import type { AssignableTherapist, Location } from '@/features/workforce/staff/api';
+import type { AssignableTherapist, Location } from '@/features/workforce';
 import {
   TERMINFENSTER_OPTIONEN,
   appointmentTypeLabels,

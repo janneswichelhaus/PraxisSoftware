@@ -1,4 +1,4 @@
-import { FreigabeVorschlag } from '@/features/patients/treatment-bases/Freigabe';
+import { FreigabeVorschlag } from '@/features/patients';
 import { useAbrechnungslage } from './useAbrechnungslage';
 
 /**

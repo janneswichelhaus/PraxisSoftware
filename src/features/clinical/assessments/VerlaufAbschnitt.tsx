@@ -8,7 +8,7 @@ import { Field } from '@/components/ui/Field';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { fetchPatientAppointments } from '@/features/calendar/appointments';
+import { fetchPatientAppointments } from '@/features/calendar';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import {
   EINGABETEXTE,

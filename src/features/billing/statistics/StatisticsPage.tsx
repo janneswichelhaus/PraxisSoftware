@@ -14,8 +14,8 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Section } from '@/components/ui/Section';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { formatEuro } from '@/lib/geld';
-import { sichereAlsDatei } from '@/features/privacy/datenschutz/datei';
-import { isOwner, type CurrentUser } from '@/features/core/session/types';
+import { sichereAlsDatei } from '@/features/privacy';
+import { isOwner, type CurrentUser } from '@/features/core';
 import {
   JE_PERSON_KEY,
   KENNZAHLEN_KEY,

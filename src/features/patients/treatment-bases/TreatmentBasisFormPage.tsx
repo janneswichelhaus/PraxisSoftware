@@ -16,7 +16,7 @@ import { alsFormularfehler } from '@/lib/formularfehler';
 import { istInternerPfad, leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { useSession } from '@/features/core/auth/sessionContext';
+import { useSession } from '@/features/core';
 import {
   EINGABETEXTE,
   useTextverlustschutz,

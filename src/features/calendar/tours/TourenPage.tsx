@@ -12,14 +12,14 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Select } from '@/components/ui/Select';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { fetchStandorte, garagenpunkt, startpunkt } from './startort';
 import { Fahrtabschnitt, Routenzusammenfassung } from './Fahrten';
 import { useFahrten, useTagesstopps } from './fahrpuffer';
 import { Tourenliste } from './Tourenliste';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ortsZeile, tagKurz, type Ortswahl } from './tourKopf';
-import { fetchAssignableTherapists } from '@/features/workforce/staff/api';
+import { fetchAssignableTherapists } from '@/features/workforce';
 
 const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
 

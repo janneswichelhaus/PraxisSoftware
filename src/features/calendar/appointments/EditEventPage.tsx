@@ -20,7 +20,7 @@ import {
 } from '@/app/Textverlustschutz';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { RUECKWEG_PARAM } from '@/lib/rueckweg';
-import { canManageAppointments, type CurrentUser } from '@/features/core/session/types';
+import { canManageAppointments, type CurrentUser } from '@/features/core';
 import { EreignisArbeitszeitRueckfrage, EreignisFormFields } from './EreignisFormFields';
 import {
   EREIGNIS_BESCHRIFTUNGEN,
@@ -41,7 +41,7 @@ import {
 } from './api';
 import { formatDate } from '@/lib/datum';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
-import { fetchLocations } from '@/features/workforce/staff/api';
+import { fetchLocations } from '@/features/workforce';
 import { appointmentStatusLabels, kalenderZumTermin, zurueckZumTermin } from '@/lib/termin';
 
 /**

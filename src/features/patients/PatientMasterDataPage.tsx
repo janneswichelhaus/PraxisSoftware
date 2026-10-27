@@ -15,9 +15,10 @@ import { telHref } from '@/lib/telefon';
 import {
   PlattformAbschnitt,
   PlattformzugangBeenden,
-} from '@/features/portal/platform-access/PlattformAbschnitt';
-import { usePlattformzugang, zugangBeendbar } from '@/features/portal/platform-access/zustand';
-import { RueckfragenAbschnitt } from '@/features/portal/messages/RueckfragenAbschnitt';
+  usePlattformzugang,
+  zugangBeendbar,
+  RueckfragenAbschnitt,
+} from '@/features/portal';
 import {
   canConcludePatientCare,
   canManageInvoicing,
@@ -25,16 +26,19 @@ import {
   canReadPatientDirectory,
   isOwner,
   type CurrentUser,
-} from '@/features/core/session/types';
+} from '@/features/core';
 import { ANMELDEBOGEN_ANKER, EINWILLIGUNGEN_ANKER, usePatientRecord } from './akte';
-import { AnmeldebogenFoto, Datenschutz } from '@/features/privacy/datenschutz/Anmeldebogen';
-import { empfaengerartLabels, fetchEmpfaenger } from '@/features/billing/api';
-import { Honorarvereinbarung } from '@/features/billing/Honorarvereinbarung';
-import { Nachsorgeabo } from '@/features/billing/Nachsorgeabo';
+import { AnmeldebogenFoto, Datenschutz } from '@/features/privacy';
+import {
+  empfaengerartLabels,
+  fetchEmpfaenger,
+  Honorarvereinbarung,
+  Nachsorgeabo,
+  nachsorgeSchluessel,
+} from '@/features/billing';
 import { Trainingsangebot } from '@/features/patients/training-offers/Trainingsangebot';
-import { nachsorgeSchluessel } from '@/features/billing/nachsorge-api';
 import { fetchIntakeChecklist } from '@/features/patients/intake/api';
-import { zugangMitStockwerk } from '@/features/calendar/today/stockwerk';
+import { zugangMitStockwerk } from '@/features/calendar';
 import {
   useAktuelleGrundlage,
   versicherungsart,

@@ -15,7 +15,7 @@ import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { leseRueckweg, mitRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import {
   FLOTTE_SCHLUESSEL,
   fetchBike,

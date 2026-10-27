@@ -19,7 +19,7 @@ import {
   fetchBibliothek,
   type Bibliothek,
 } from '@/features/exercise/exercises/api';
-import { canReadExerciseLibrary, type CurrentUser } from '@/features/core/session/types';
+import { canReadExerciseLibrary, type CurrentUser } from '@/features/core';
 import { formatDate } from '@/lib/datum';
 import {
   PRAXISVORLAGEN_SCHLUESSEL,

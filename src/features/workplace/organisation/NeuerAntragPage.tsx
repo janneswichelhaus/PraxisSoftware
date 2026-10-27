@@ -1,9 +1,9 @@
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { isOwner, isTherapyStaff, type CurrentUser } from '@/features/core/session/types';
+import { isOwner, isTherapyStaff, type CurrentUser } from '@/features/core';
 import { RUECKMELDUNG_PFAD } from '@/features/workplace/feedback/inhalt';
-import { REQUEST_PATH } from '@/features/workforce/reimbursements/paths';
+import { REQUEST_PATH } from '@/features/workforce';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { EINGANG, NEUER_ANTRAG } from './pfade';
 

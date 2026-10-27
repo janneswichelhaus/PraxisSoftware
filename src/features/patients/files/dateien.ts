@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { canReadPatientFiles, type CurrentUser } from '@/features/core/session/types';
+import { canReadPatientFiles, type CurrentUser } from '@/features/core';
 import {
   fetchFehlendeDateien,
   fetchLoeschauftraege,

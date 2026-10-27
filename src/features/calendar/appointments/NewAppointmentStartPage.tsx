@@ -5,11 +5,11 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
-import { Patientenauswahl } from '@/features/patients/Patientenauswahl';
+import { Patientenauswahl } from '@/features/patients';
 import { WaitlistMatches } from '@/features/calendar/waitlist/WaitlistMatches';
 import { formatDate } from '@/lib/datum';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
-import { fetchAssignableTherapists } from '@/features/workforce/staff/api';
+import { fetchAssignableTherapists } from '@/features/workforce';
 import {
   appointmentTypeHint,
   leseTerminVorbelegung,

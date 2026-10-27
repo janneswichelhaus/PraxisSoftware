@@ -8,7 +8,7 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { fetchPatientFiles } from '@/features/patients/files/api';
+import { fetchPatientFiles } from '@/features/patients';
 import {
   einloeseadresse,
   einstiegsschluessel,

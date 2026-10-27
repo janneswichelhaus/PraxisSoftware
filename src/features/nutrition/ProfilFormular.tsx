@@ -16,7 +16,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import {
   ernaehrungSchluessel,

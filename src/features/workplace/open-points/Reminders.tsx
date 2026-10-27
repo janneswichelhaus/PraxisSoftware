@@ -7,7 +7,7 @@ import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { StatusMark } from '@/components/ui/StatusMark';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-import { bauartLabels } from '@/features/patients/treatment-bases/api';
+import { bauartLabels } from '@/features/patients';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { abfragen } from './eingang';

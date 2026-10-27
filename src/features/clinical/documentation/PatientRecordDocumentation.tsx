@@ -10,14 +10,9 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import {
-  canReadTreatmentNote,
-  canWriteTreatmentNote,
-  type CurrentUser,
-} from '@/features/core/session/types';
-import { fetchAppointment } from '@/features/calendar/appointments';
-import { VERLAUF_ANKER } from '@/features/patients/akte';
-import type { Patient } from '@/features/patients/api';
+import { canReadTreatmentNote, canWriteTreatmentNote, type CurrentUser } from '@/features/core';
+import { fetchAppointment } from '@/features/calendar';
+import { VERLAUF_ANKER, type Patient } from '@/features/patients';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
   fetchDocumentationDeadline,

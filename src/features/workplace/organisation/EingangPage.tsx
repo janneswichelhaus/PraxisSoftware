@@ -1,14 +1,14 @@
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
-import { CheckupErinnerung } from '@/features/fleet/CheckupHinweise';
+import { CheckupErinnerung } from '@/features/fleet';
 import { Arbeitszeitantraege } from '@/features/workplace/open-points/Arbeitszeitantraege';
 import { Erstattungen } from '@/features/workplace/open-points/Erstattungen';
 import { RaederMitProblem } from '@/features/workplace/open-points/RaederMitProblem';
 import { Urlaubsantraege } from '@/features/workplace/open-points/Urlaubsantraege';
 import { eingangsrechte } from '@/features/workplace/open-points/eingang';
 import { RueckmeldungenImEingang } from '@/features/workplace/feedback/RueckmeldungenImEingang';
-import { isTherapyStaff, type CurrentUser } from '@/features/core/session/types';
+import { isTherapyStaff, type CurrentUser } from '@/features/core';
 import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { MeineAntraege } from './MeineAntraege';
 import { EINGANG, NEUER_ANTRAG } from './pfade';

@@ -17,11 +17,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Zweispalter } from '@/components/ui/Zweispalter';
-import {
-  canReadExerciseLibrary,
-  canWriteExercisePlans,
-  type CurrentUser,
-} from '@/features/core/session/types';
+import { canReadExerciseLibrary, canWriteExercisePlans, type CurrentUser } from '@/features/core';
 import { ZuEinemPlan } from '@/features/exercise/exercise-plans/ZuEinemPlan';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';

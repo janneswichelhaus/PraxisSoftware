@@ -8,7 +8,7 @@ import {
   fetchTreatmentDocumentation,
 } from '@/features/clinical/documentation/api';
 import { textUebergeben } from '@/features/clinical/documentation/uebernahme';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { AufDemGeraet, type Serverwege } from './AufDemGeraet';
 
 /**

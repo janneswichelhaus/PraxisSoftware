@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
-import { zweckTexte } from '@/features/privacy/datenschutz/vermerke';
+import { zweckTexte } from '@/features/privacy';
 
 /**
  * Widerrufe über die Plattform (POR-016, DSN-001 Abschnitt 6, ANN-263).

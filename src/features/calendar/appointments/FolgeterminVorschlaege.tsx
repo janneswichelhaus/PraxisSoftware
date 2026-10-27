@@ -9,7 +9,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { fetchWorkingHourExceptions, fetchWorkingHours } from '@/features/calendar/scheduling/api';
-import { canManageAppointments, type CurrentUser } from '@/features/core/session/types';
+import { canManageAppointments, type CurrentUser } from '@/features/core';
 import { findFreeSlots, type SearchParams, type Slot } from '@/features/calendar/slot-search/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {

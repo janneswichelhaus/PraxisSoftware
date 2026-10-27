@@ -15,7 +15,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { Verlauf, Verlaufseintrag } from '@/components/ui/Verlauf';
 import { formatDate, formatLocalTime } from '@/lib/datum';
-import { isOwner, type CurrentUser } from '@/features/core/session/types';
+import { isOwner, type CurrentUser } from '@/features/core';
 import {
   ANTWORTFRIST_KEY,
   RUECKFRAGEN_KEY,

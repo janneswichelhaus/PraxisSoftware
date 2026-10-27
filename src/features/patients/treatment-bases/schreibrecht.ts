@@ -1,6 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useSession } from '@/features/core/auth/sessionContext';
-import { canWriteTreatmentBases, type CurrentUser } from '@/features/core/session/types';
+import { useSession, canWriteTreatmentBases, type CurrentUser } from '@/features/core';
 
 /**
  * Darf die angemeldete Person Behandlungsgrundlagen schreiben? (VER-04)

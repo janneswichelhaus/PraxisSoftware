@@ -8,7 +8,7 @@ import { ErrorState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { canWriteTreatmentNote, type CurrentUser } from '@/features/core/session/types';
+import { canWriteTreatmentNote, type CurrentUser } from '@/features/core';
 import { berichtQueryKey, druckVermerken, fetchBericht } from './api';
 import { Berichtsblatt } from './Berichtsblatt';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';

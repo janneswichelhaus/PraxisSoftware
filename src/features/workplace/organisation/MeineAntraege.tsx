@@ -2,16 +2,22 @@ import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
-import { fetchReimbursements, reimbursementsKey } from '@/features/workforce/reimbursements/api';
-import { REIMBURSEMENTS_HOME } from '@/features/workforce/reimbursements/paths';
-import { reimbursementTitle } from '@/features/workforce/reimbursements/rules';
-import { fetchUrlaub, urlaubSchluessel } from '@/features/workforce/vacation/api';
-import { urlaubsfenster } from '@/features/workforce/vacation/fenster';
-import { urlaubstage } from '@/features/workforce/vacation/zeitraum';
-import { WORKING_TIME_KEY, fetchWorkingTime } from '@/features/workforce/working-time/api';
-import { changeTitle } from '@/features/workforce/working-time/format';
-import { fetchTimeAccount, timeAccountKey } from '@/features/workforce/timeaccount/api';
-import { TIME_ACCOUNT_HOME } from '@/features/workforce/timeaccount/paths';
+import {
+  fetchReimbursements,
+  reimbursementsKey,
+  REIMBURSEMENTS_HOME,
+  reimbursementTitle,
+  fetchUrlaub,
+  urlaubSchluessel,
+  urlaubsfenster,
+  urlaubstage,
+  WORKING_TIME_KEY,
+  fetchWorkingTime,
+  changeTitle,
+  fetchTimeAccount,
+  timeAccountKey,
+  TIME_ACCOUNT_HOME,
+} from '@/features/workforce';
 import { dateLong, zeitraumText } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 

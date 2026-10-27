@@ -6,7 +6,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
 import { Objektkopf, Warnzeile } from '@/components/ui/Objektkopf';
 import { Reiterleiste } from '@/components/ui/Reiterleiste';
-import { AnmeldebogenFoto } from '@/features/privacy/datenschutz/Anmeldebogen';
+import { AnmeldebogenFoto } from '@/features/privacy';
 import { useOffeneErstaufnahme } from '@/features/patients/intake/useOffeneErstaufnahme';
 import {
   useAktuelleGrundlage,
@@ -15,11 +15,7 @@ import {
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import {
-  canManageAppointments,
-  canWriteTreatmentBases,
-  type CurrentUser,
-} from '@/features/core/session/types';
+import { canManageAppointments, canWriteTreatmentBases, type CurrentUser } from '@/features/core';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import {

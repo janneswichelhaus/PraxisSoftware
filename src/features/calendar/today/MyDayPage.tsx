@@ -36,14 +36,14 @@ import {
   canWriteTreatmentNote,
   isStaff,
   type CurrentUser,
-} from '@/features/core/session/types';
+} from '@/features/core';
 import { nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { Tageskarte } from './Tagesliste';
 import { AnrufKnopf, AusfallKnopf, HakenRueckgaengig, SpaeterDa } from './Besuchsknoepfe';
 import { ausfallMoeglich, dokuZiel } from './besuchswege';
 import { Nachzuholen, NochOffen } from './NochOffen';
 import { TagesplanDruck } from './TagesplanDruck';
-import { CheckupErinnerung } from '@/features/fleet/CheckupHinweise';
+import { CheckupErinnerung } from '@/features/fleet';
 import { Zeitstrahl } from './Zeitstrahl';
 import { Wochenleiste } from './Wochenleiste';
 import { fensterTage, kopfDatum, terminAnzahl } from './wochenfenster';
@@ -74,10 +74,9 @@ import {
   type NaechsterWeg,
 } from './tagesstart';
 import { TagesrouteAufklapper } from '@/features/calendar/tours/TagesrouteAufklapper';
-import { OpenPointsSummary } from '@/features/workplace/open-points/OpenPointsSummary';
-import { OPEN_INTAKES_KEY, fetchOpenIntakes } from '@/features/patients/intake/api';
-import { useBarometerHinweise } from '@/features/workplace/feedback/barometerHinweis';
-import { REJECTED_TIME_OFF_KEY, fetchRejectedTimeOff } from '@/features/workforce/timeaccount/api';
+import { OpenPointsSummary, useBarometerHinweise } from '@/features/workplace';
+import { OPEN_INTAKES_KEY, fetchOpenIntakes } from '@/features/patients';
+import { REJECTED_TIME_OFF_KEY, fetchRejectedTimeOff } from '@/features/workforce';
 import { HinweisZwischendurch } from './HinweisZwischendurch';
 import { formatLocalDate, formatLocalTime, todayInTimeZone, tagePlus } from '@/lib/datum';
 import {

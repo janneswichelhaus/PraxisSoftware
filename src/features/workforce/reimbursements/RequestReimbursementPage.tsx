@@ -23,7 +23,7 @@ import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { DATEI_ACCEPT } from '@/lib/dateien/pruefung';
 import { Kameradialog } from '@/components/ui/Kameradialog';
 import { useKamera } from '@/lib/dateien/kamera';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { formatEuro, parseEuroZuCent } from '@/lib/geld';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {

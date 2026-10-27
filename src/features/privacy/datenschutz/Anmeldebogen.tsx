@@ -12,11 +12,9 @@ import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
-import { DokumentFoto } from '@/features/patients/files/DokumentFoto';
+import { DokumentFoto, type Patient, fetchPatientenfotos } from '@/features/patients';
 import { BEGRIFFE } from '@/lib/begriffe';
-import type { Patient } from '@/features/patients/api';
-import { canReadClinicalPatientFiles, type CurrentUser } from '@/features/core/session/types';
-import { fetchPatientenfotos } from '@/features/patients/files/patientenfotos';
+import { canReadClinicalPatientFiles, type CurrentUser } from '@/features/core';
 import {
   datenschutzstand,
   fetchDatenschutzvermerke,

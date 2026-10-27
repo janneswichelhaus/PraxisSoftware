@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { TextArea } from '@/components/ui/TextArea';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Textlink } from '@/components/ui/Textlink';
-import { canWriteTreatmentNote, type CurrentUser } from '@/features/core/session/types';
-import type { Appointment } from '@/features/calendar/appointments';
+import { canWriteTreatmentNote, type CurrentUser } from '@/features/core';
+import type { Appointment } from '@/features/calendar';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { DocumentationShell } from './DocumentationShell';
 import {

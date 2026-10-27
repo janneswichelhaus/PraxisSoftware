@@ -12,7 +12,7 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
-import { canManageWorkingHours, type CurrentUser } from '@/features/core/session/types';
+import { canManageWorkingHours, type CurrentUser } from '@/features/core';
 import {
   dayPartsText,
   fetchTerritories,

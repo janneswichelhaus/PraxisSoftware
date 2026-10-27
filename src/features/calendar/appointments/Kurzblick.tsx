@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { formatDate, formatLocalDate } from '@/lib/datum';
-import { grundlageBezeichnung } from '@/features/patients/treatment-bases/api';
+import { grundlageBezeichnung } from '@/features/patients';
 import { fetchKurzblick, type Kurzblick as KurzblickDaten } from './kurzblick-api';
 import { FREITEXT } from '@/components/ui/textStile';
 

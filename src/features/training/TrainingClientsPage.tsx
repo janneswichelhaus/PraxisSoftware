@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { TrainingRueckfragen } from '@/features/portal/messages/RueckfragenAbschnitt';
-import { PlanWiedervorlage } from '@/features/exercise/exercise-plans/Wiedervorlage';
+import { TrainingRueckfragen } from '@/features/portal';
+import { PlanWiedervorlage } from '@/features/exercise';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
@@ -12,11 +12,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { SearchField } from '@/components/ui/SearchField';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
-import {
-  canWriteExercisePlans,
-  canWriteTrainingClients,
-  type CurrentUser,
-} from '@/features/core/session/types';
+import { canWriteExercisePlans, canWriteTrainingClients, type CurrentUser } from '@/features/core';
 import { listTrainingClients, type TrainingClientListItem } from './api';
 
 export const TRAINING_ANLEGEN = `${BEGRIFFE.trainingskundIn} anlegen`;

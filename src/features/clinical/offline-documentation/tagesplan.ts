@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { fachAendern, fachLesen } from '@/lib/geraeteablage';
 import { einrichtungLesen } from './servicePhone';
 import { todayInTimeZone } from '@/lib/datum';
-import type { DayPlanEntry } from '@/features/calendar/day-plan/api';
+import type { DayPlanEntry } from '@/features/calendar';
 
 /**
  * Der eigene Tagesplan von heute auf dem Diensttelefon (OFF-001, ADR-024

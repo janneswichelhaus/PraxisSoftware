@@ -1,14 +1,11 @@
 import { BefundKarte } from '@/features/clinical/assessments/BefundKarte';
-import { DokuDateien } from '@/features/patients/files/Aktendateien';
-import { Patientenfotos } from '@/features/patients/files/FotosImVerlauf';
-import { usePatientRecord } from '@/features/patients/akte';
+import { DokuDateien, Patientenfotos, usePatientRecord } from '@/features/patients';
 import { useRef } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { PlanAbschnitt } from '@/features/exercise/exercise-plans/PlanAbschnitt';
-import { ZwischenDenTerminen } from '@/features/exercise/checkins/ZwischenDenTerminen';
-import { canReadExercisePlans } from '@/features/core/session/types';
+import { PlanAbschnitt, ZwischenDenTerminen } from '@/features/exercise';
+import { canReadExercisePlans } from '@/features/core';
 import { DieserTermin, PatientRecordDocumentation } from './PatientRecordDocumentation';
-import { NachrichtenInDerAkte } from '@/features/portal/messages/InDieAkte';
+import { NachrichtenInDerAkte } from '@/features/portal';
 import { PLAENE_ANKER, useSprungmarke } from './sprungmarke';
 
 /**

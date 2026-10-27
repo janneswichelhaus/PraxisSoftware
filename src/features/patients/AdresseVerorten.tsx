@@ -10,7 +10,7 @@ import {
   trefferanzahlText,
 } from '@/lib/location/geocode';
 import type { Quelle } from '@/lib/location/funktion';
-import { canManageAppointments, type CurrentUser } from '@/features/core/session/types';
+import { canManageAppointments, type CurrentUser } from '@/features/core';
 import {
   setPatientAddressCoordinate,
   type Patient,

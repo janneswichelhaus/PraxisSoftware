@@ -13,7 +13,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { canReadExerciseLibrary, type CurrentUser } from '@/features/core/session/types';
+import { canReadExerciseLibrary, type CurrentUser } from '@/features/core';
 import { BIBLIOTHEK_SCHLUESSEL, fetchBibliothek, setzePruefvermerk, type Bibliothek } from './api';
 import { naechster, offeneDurchsicht, type Durchsichtsposten } from './durchsicht';
 import { ordnungen } from './suche';

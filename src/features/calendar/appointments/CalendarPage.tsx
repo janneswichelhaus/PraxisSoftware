@@ -3,8 +3,7 @@ import { useFahrwege, type Fahrweg, type FahrwegSpalte } from './fahrwege';
 import { tageslageNeuLaden } from './tageslage';
 import type { Terminort, Wegfrage } from './wegpruefung';
 import { KURZE_TERMINDAUER_MINUTEN, useLueckenfinder, type LueckenSpalte } from './lueckenfinder';
-import { CheckupKalenderhinweis } from '@/features/fleet/CheckupHinweise';
-import type { Tagesspalte } from '@/features/fleet/rhythmus';
+import { CheckupKalenderhinweis, type Tagesspalte } from '@/features/fleet';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -22,14 +21,11 @@ import {
   canWriteTrainingClients,
   isTherapyStaff,
   type CurrentUser,
-} from '@/features/core/session/types';
+} from '@/features/core';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchWorkingHourExceptions, fetchWorkingHours } from '@/features/calendar/scheduling/api';
-import {
-  PLATFORM_REQUESTS_KEY,
-  fetchPlatformRequests,
-} from '@/features/workplace/open-points/platform-requests-api';
+import { PLATFORM_REQUESTS_KEY, fetchPlatformRequests } from '@/features/workplace';
 import {
   fetchAppointment,
   fetchAppointments,
@@ -89,7 +85,7 @@ import {
   fetchAssignableTherapists,
   fetchAssignableTrainers,
   fetchLocations,
-} from '@/features/workforce/staff/api';
+} from '@/features/workforce';
 import { leseMeldung } from '@/lib/meldung';
 import {
   terminBezeichnung,

@@ -5,7 +5,7 @@ import { EmptyState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { AftercareCancellations } from './AftercareCancellations';
 import { TrainingWithdrawals } from './TrainingWithdrawals';
 import { CallsSummary } from './CallsSummary';
@@ -21,8 +21,8 @@ import { RaederMitProblem } from './RaederMitProblem';
 import { Urlaubsantraege } from './Urlaubsantraege';
 import { WaitlistReview } from './WaitlistReview';
 import { useEingang } from './eingang';
-import { PlanWiedervorlage } from '@/features/exercise/exercise-plans/Wiedervorlage';
-import { OffeneRueckfragen } from '@/features/portal/messages/RueckfragenAbschnitt';
+import { PlanWiedervorlage } from '@/features/exercise';
+import { OffeneRueckfragen } from '@/features/portal';
 import { todayInTimeZone } from '@/lib/datum';
 
 /** Eine Kennung aus der Adresszeile, wie die Datenbank sie vergibt. */

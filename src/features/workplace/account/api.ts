@@ -1,6 +1,6 @@
 import { getSupabase } from '@/lib/supabase';
 import { protokolliereFehler } from '@/lib/protokoll';
-import { meldeSelbstAb } from '@/features/core/auth/eigeneAbmeldung';
+import { meldeSelbstAb } from '@/features/core';
 
 /**
  * Das eigene Konto: erst der Vorgang beim Anmeldedienst (§3.4), dann der Vermerk, dass er

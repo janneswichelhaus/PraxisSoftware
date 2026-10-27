@@ -2,7 +2,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { canManageAppointments, type CurrentUser } from '@/features/core/session/types';
+import { canManageAppointments, type CurrentUser } from '@/features/core';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { tagUmplanenAdresse, type Zeitspanne } from './tagumplanen';
 

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { Hinweis } from '@/features/calendar/today/zwischendurch';
+import type { Hinweis } from '@/features/calendar';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { FEEDBACK_STATUS_KEY, fetchFeedbackStatus, type FeedbackStatus } from './api';
 import { monatsname } from './fragen';

@@ -16,7 +16,7 @@ import { TextArea } from '@/components/ui/TextArea';
 import { KeinZugang } from '@/app/KeinZugang';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { EINGANG } from '@/features/workplace/organisation/pfade';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {
   FEEDBACK_KEY,

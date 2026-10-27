@@ -100,6 +100,20 @@ export default tseslint.config(
     rules: { 'modulgrenzen/nur-ueber-index': 'warn', 'modulgrenzen/nach-unten': 'warn' },
   },
   {
+    /* Eine fremde Domäne nur über ihre index.ts (ANN-755). Der Rahmen in src/app verdrahtet direkt,
+       die Plattform-App holt nur ihre freigegebenen Bausteine (ADR-023 Punkt 26, trennung.test.ts). */
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: [
+      'src/**/*.test.{ts,tsx}',
+      'src/test-*',
+      'src/routes/**',
+      'src/app/**',
+      'src/features/portal/platform/**',
+    ],
+    plugins: { modulgrenzen },
+    rules: { 'modulgrenzen/nur-ueber-schnittstelle': 'warn' },
+  },
+  {
     /* Die erklaerten Ausgaenge fuer Betriebslogs (ADR-011 Punkt 6, OPS-004).
        Zwei, weil es zwei Laufzeiten gibt: Die Edge Function laeuft in Deno und
        kann `src/lib/protokoll.ts` nicht importieren; sie hat ihr eigenes

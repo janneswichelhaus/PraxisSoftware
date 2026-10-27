@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
-import { BAUARTEN } from '@/features/patients/treatment-bases/api';
+import { BAUARTEN } from '@/features/patients';
 
 // -----------------------------------------------------------------------------
 // Vertretungs-Kurzblick am Termin (PRX-006, ANN-137)

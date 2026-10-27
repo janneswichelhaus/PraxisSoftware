@@ -14,8 +14,8 @@ import {
   canReadTreatmentNote,
   canWriteTreatmentNote,
   type CurrentUser,
-} from '@/features/core/session/types';
-import { ErstaufnahmeEinstieg } from '@/features/patients/intake/ErstaufnahmeEinstieg';
+} from '@/features/core';
+import { ErstaufnahmeEinstieg, VERLAUF_ANKER } from '@/features/patients';
 import { TerminAbschliessenKnopf } from './TerminAbschliessen';
 import { AbsageAktion } from './TerminAktionen';
 import { dokuOffen, fetchAppointment, type CalendarEntry } from './api';
@@ -28,7 +28,6 @@ import {
   terminPfad,
 } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
-import { VERLAUF_ANKER } from '@/features/patients/akte';
 
 /** „Do 01.10.2026" in der Zeit der Praxis. */
 function tagKurz(iso: string, zone: string): string {

@@ -1,10 +1,6 @@
 import type { Ton } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/datum';
-import {
-  BAUARTEN,
-  grundlageBezeichnung,
-  type Bauart,
-} from '@/features/patients/treatment-bases/api';
+import { BAUARTEN, grundlageBezeichnung, type Bauart } from '@/features/patients';
 import { empfaengerartLabels, type Leistungsbereich, type Zahlungsstand } from './api';
 
 /**

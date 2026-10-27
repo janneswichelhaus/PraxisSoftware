@@ -14,13 +14,13 @@ import { EmptyState } from '@/components/ui/Feedback';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { useSuchbegriff } from '@/lib/suchbegriff';
 import { Listenfehler } from '@/components/ui/Rueckmeldung';
-import { fullName } from '@/features/patients/api';
+import { fullName } from '@/features/patients';
 import {
   canManageAppointments,
   canManageStaffAccounts,
   canManageStaffMasterData,
   type CurrentUser,
-} from '@/features/core/session/types';
+} from '@/features/core';
 import { fetchStaffMembers, type StaffMember, fetchAssignableTherapists } from './api';
 
 type StatusFilter = 'all' | 'active' | 'inactive';

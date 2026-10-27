@@ -13,7 +13,7 @@ import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Tile, TileGrid } from '@/components/ui/Tile';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {

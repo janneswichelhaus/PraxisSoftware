@@ -14,18 +14,17 @@ import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { fetchPatientAppointments, type PatientAppointment } from './api';
-import { fetchPatient, fullName } from '@/features/patients/api';
-import { formatDate, formatLocalDate, formatLocalTimeRange } from '@/lib/datum';
-import type { CurrentUser } from '@/features/core/session/types';
 import {
+  fetchPatient,
+  fullName,
   grundlageBezeichnung,
   transferAppointmentsToTreatmentBasis,
-} from '@/features/patients/treatment-bases/api';
-import {
   useVerordnungenDerAkte,
   type Uebertragungsergebnis,
   type VerordnungMitZahlen,
-} from '@/features/patients/treatment-bases/grundlagen';
+} from '@/features/patients';
+import { formatDate, formatLocalDate, formatLocalTimeRange } from '@/lib/datum';
+import type { CurrentUser } from '@/features/core';
 import { staffName, appointmentTypeHint } from '@/lib/termin';
 
 /**

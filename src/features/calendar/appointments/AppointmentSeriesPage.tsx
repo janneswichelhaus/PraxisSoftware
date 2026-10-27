@@ -18,8 +18,8 @@ import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import { fetchPatient, fullName } from '@/features/patients/api';
-import type { CurrentUser } from '@/features/core/session/types';
+import { fetchPatient, fullName, Deckungszeichen } from '@/features/patients';
+import type { CurrentUser } from '@/features/core';
 import { alsFormularfehler, type Formularfehler } from '@/lib/formularfehler';
 import { istInternerPfad, leseRueckweg, mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { ArbeitszeitRueckfrage, UebernommeneAdresse } from './AppointmentFormFields';
@@ -46,7 +46,7 @@ import {
 } from './serie';
 import { speicherfehlerText } from './terminformular';
 import { formatDate, todayInTimeZone, istIsoDatum } from '@/lib/datum';
-import { fetchAssignableTherapists, fetchLocations } from '@/features/workforce/staff/api';
+import { fetchAssignableTherapists, fetchLocations } from '@/features/workforce';
 import {
   appointmentTypeLabels,
   leseTerminVorbelegung,
@@ -54,7 +54,6 @@ import {
   type AppointmentType,
   type TerminVorbelegung,
 } from '@/lib/termin';
-import { Deckungszeichen } from '@/features/patients/treatment-bases/Deckungszeichen';
 
 /**
  * „1 Termin" gegen „3 Termine" — an einer Stelle statt in jeder Meldung.

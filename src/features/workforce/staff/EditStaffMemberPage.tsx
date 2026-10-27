@@ -11,8 +11,8 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import { fullName } from '@/features/patients/api';
-import { canManageStaffPrivateDetails, type CurrentUser } from '@/features/core/session/types';
+import { fullName } from '@/features/patients';
+import { canManageStaffPrivateDetails, type CurrentUser } from '@/features/core';
 import {
   fetchStaffMember,
   staffMasterDataSchema,

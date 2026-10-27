@@ -22,9 +22,9 @@ import {
 } from '@/app/Textverlustschutz';
 import { formatDate, todayInTimeZone, istIsoDatum } from '@/lib/datum';
 import { alsFormularfehler } from '@/lib/formularfehler';
-import { canManageAppointments, type CurrentUser } from '@/features/core/session/types';
+import { canManageAppointments, type CurrentUser } from '@/features/core';
 import { EreignisArbeitszeitRueckfrage, EreignisFormFields } from './EreignisFormFields';
-import { fetchStaffMembers, fetchLocations } from '@/features/workforce/staff/api';
+import { fetchStaffMembers, fetchLocations } from '@/features/workforce';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {
   EREIGNIS_BESCHRIFTUNGEN,

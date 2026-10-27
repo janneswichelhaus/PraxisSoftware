@@ -6,7 +6,7 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { fullName, type Patient } from '@/features/patients/api';
+import { fullName, type Patient } from '@/features/patients';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { addAppointmentNotification, type AppointmentSlipEntry } from './api';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';

@@ -1,4 +1,4 @@
-import type { RoleKey } from '@/features/core/session/types';
+import type { RoleKey } from '@/features/core';
 
 /** Anzeigenamen der Rollen aus PROJECT_PRINCIPLES.md 4. */
 export const roleLabels: Record<RoleKey, string> = {

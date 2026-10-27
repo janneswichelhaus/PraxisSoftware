@@ -21,9 +21,9 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { DaysToReschedule, tagUmplanenAdresse } from '@/features/calendar/appointments';
+import { DaysToReschedule, tagUmplanenAdresse } from '@/features/calendar';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import { canManageAppointments, isOwner, type CurrentUser } from '@/features/core/session/types';
+import { canManageAppointments, isOwner, type CurrentUser } from '@/features/core';
 import { blocksText } from '@/features/workforce/working-time/rules';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {

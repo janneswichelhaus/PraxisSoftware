@@ -11,9 +11,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { beginne, kannZurueck, weiter, zurueck, type Abfolge } from '@/components/ui/abfolge';
-import { DaysToReschedule } from '@/features/calendar/appointments';
+import { DaysToReschedule } from '@/features/calendar';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   URLAUB_SCHLUESSEL,

@@ -11,7 +11,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { KeinZugang } from '@/app/KeinZugang';
 import { EINGANG } from '@/features/workplace/organisation/pfade';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { FEEDBACK_STATUS_KEY, fetchFeedbackStatus, type FeedbackStatus } from './api';
 import { BarometerAblauf } from './BarometerAblauf';

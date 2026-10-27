@@ -7,7 +7,7 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { EREIGNIS_FELD_IDS } from './calendar';
 import { type EreignisFormValues } from './api';
 import { todayInTimeZone } from '@/lib/datum';
-import type { Location } from '@/features/workforce/staff/api';
+import type { Location } from '@/features/workforce';
 
 /**
  * Eingabefelder eines Ereignisses (CAL-015c, CAL-017).

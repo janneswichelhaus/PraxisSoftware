@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -62,7 +62,6 @@ const ERLAUBT: readonly RegExp[] = [
   /^@\/features\/nutrition\/(LebensmittelSuche|LebensmittelFormular|lebensmittel)$/,
   // ERN-EPIC-003: Form und Texte des Tagebuchs - ohne Datenzugriff.
   /^@\/features\/nutrition\/tagebuch$/,
-  /^\.\//,
 ];
 
 function quelldateien(): string[] {
@@ -71,9 +70,19 @@ function quelldateien(): string[] {
     .map((name) => join(VERZEICHNIS, name));
 }
 
-function importe(pfad: string): string[] {
-  const quelltext = readFileSync(pfad, 'utf8');
-  return [...quelltext.matchAll(/from\s+'([^']+)'/g)].map((treffer) => treffer[1]!);
+/** Jedes Modul, das eine Datei lädt: `… from '…'`, `import('…')` und ein bloßes `import '…'`. */
+function importe(quelltext: string): string[] {
+  const muster = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)'([^']+)'/g;
+  return [...quelltext.matchAll(muster)].map((treffer) => treffer[1]!);
+}
+
+/** Was nicht erlaubt ist; ein relativer Pfad muss im Verzeichnis der Plattform bleiben. */
+function fremdeImporte(pfad: string, quelltext: string): string[] {
+  return importe(quelltext).filter((ziel) =>
+    ziel.startsWith('.')
+      ? !join(dirname(pfad), ziel).startsWith(VERZEICHNIS + sep)
+      : !ERLAUBT.some((muster) => muster.test(ziel)),
+  );
 }
 
 describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
@@ -85,9 +94,9 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
 
   it('importiert nichts aus den Praxisfeatures', () => {
     const fremd = dateien.flatMap((pfad) =>
-      importe(pfad)
-        .filter((ziel) => !ERLAUBT.some((muster) => muster.test(ziel)))
-        .map((ziel) => `${pfad.slice(VERZEICHNIS.length + 1)}: ${ziel}`),
+      fremdeImporte(pfad, readFileSync(pfad, 'utf8')).map(
+        (ziel) => `${pfad.slice(VERZEICHNIS.length + 1)}: ${ziel}`,
+      ),
     );
     expect(fremd).toEqual([]);
   });
@@ -208,6 +217,25 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // KND-004: den Trainingsvertrag widerrufen (§ 356a BGB).
       'rpc:withdraw_platform_training_contract',
     ]);
+  });
+
+  it('wuerde jede Importform und einen Weg aus dem Verzeichnis tatsaechlich finden', () => {
+    const beispiel = join(VERZEICHNIS, 'Beispiel.tsx');
+    const fremd = (quelltext: string) => fremdeImporte(beispiel, quelltext);
+    expect(fremd("import { fullName } from './../../patients/api';")).toEqual([
+      './../../patients/api',
+    ]);
+    expect(fremd("import { fullName } from '../messages/api';")).toEqual(['../messages/api']);
+    expect(fremd("const m = await import('@/features/patients/api');")).toEqual([
+      '@/features/patients/api',
+    ]);
+    expect(fremd("import '@/features/patients/api';")).toEqual(['@/features/patients/api']);
+    expect(fremd("export { fullName } from '@/features/patients/api';")).toEqual([
+      '@/features/patients/api',
+    ]);
+    // Die Gegenprobe zur Gegenprobe: Eigenes und Freigegebenes bleibt erlaubt.
+    expect(fremd("import { ladePlattformkontext } from './api';")).toEqual([]);
+    expect(fremd("import { Button } from '@/components/ui/Button';")).toEqual([]);
   });
 
   it('wuerde einen Import aus einem Praxisfeature tatsaechlich finden', () => {

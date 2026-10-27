@@ -12,7 +12,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Textlink } from '@/components/ui/Textlink';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { fetchFleetReports, meldungenSchluessel, type FleetReport } from './api';
 import { checkItemLabels, checkRatingLabels, zoneLabel, type CheckItemKey } from './zones';
 import { formatTag, formatZeitpunkt } from './format';

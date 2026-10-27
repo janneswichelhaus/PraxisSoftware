@@ -18,7 +18,7 @@ import {
   canReleaseTreatmentBasis,
   canWriteTreatmentBases,
   type CurrentUser,
-} from '@/features/core/session/types';
+} from '@/features/core';
 import { GrundlagenKacheln } from './GrundlagenKacheln';
 import { KlinischerHinweis } from './KlinischerHinweis';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
@@ -30,15 +30,12 @@ import type { Patient } from '@/features/patients/api';
 import {
   BerichteDerVerordnung,
   EmpfehlungAusBericht,
-} from '@/features/clinical/therapy-reports/BerichteDerVerordnung';
-import { useBerichteDerAkte } from '@/features/clinical/therapy-reports/useBerichteDerAkte';
-import {
+  useBerichteDerAkte,
   empfehlungDerVerordnung,
   type Berichtszeile,
-} from '@/features/clinical/therapy-reports/api';
+} from '@/features/clinical';
 import { AbrechnungDerGrundlage } from './Freigabe';
-import { ladePosNummern } from '@/features/billing/posNummern';
-import { RechnungenDerAkte } from '@/features/billing/RechnungenDerAkte';
+import { ladePosNummern, RechnungenDerAkte } from '@/features/billing';
 import {
   fetchPrescribers,
   grundlagenZustandLabels,

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { canReadTreatmentBases, type CurrentUser } from '@/features/core/session/types';
+import { canReadTreatmentBases, type CurrentUser } from '@/features/core';
 import {
   fetchPatientTreatmentBases,
   fetchPatientTreatmentBasisSlots,

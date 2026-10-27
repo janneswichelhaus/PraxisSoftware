@@ -7720,3 +7720,15 @@ Technik · offen · 2026-10-27 · — · — · Wiedervorlage: —
 **Anker.** Regel `nach-unten` in `scripts/eslint-modulgrenzen.mjs`; `PosNummernLaden` in `src/features/patients/treatment-bases/DatenUebertragenFenster.tsx`.
 
 **Änderungspfad.** Wörtliche Lesart: Regel auf jeden Import einer fremden Domäne ausweiten, Bausteine über Seiten einsetzen · Aufwand `groß`.
+
+### ANN-755 — Schnittstelle je Domäne: was direkt bleibt
+
+Technik · offen · 2026-10-27 · — · — · Wiedervorlage: —
+
+**Annahme.** Jede der 14 Domänen hat eine `index.ts`, die jeden Export einzeln nennt; eine fremde Domäne wird nur darüber importiert, die eigene nie. Direkt bleiben Seiten, die in keiner Schnittstelle stehen, der Rahmen in `src/routes` und `src/app`, Tests und die Plattform-App mit ihren freigegebenen Bausteinen (ADR-023 Punkt 26).
+
+**Begründung.** Aufräumen 3b (Jannes, 2026-10-27): keine tiefen Importe in fremde Domänen. Über die Schnittstellen liefe der Rahmen im Kreis (`src/app/Vollseite`, Plattform, Akte, Kern), und die Trennungsprüfung der Plattform müsste ganze Domänen erlauben.
+
+**Anker.** Regel `nur-ueber-schnittstelle` in `scripts/eslint-modulgrenzen.mjs`; die `index.ts` je Domäne.
+
+**Änderungspfad.** Auch der Rahmen über die Schnittstellen: was Fachmodule aus `src/app` nutzen, nach `src/components` · Aufwand `mittel`.

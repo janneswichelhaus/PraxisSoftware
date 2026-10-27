@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { schluesselAblegen } from '@/features/core/auth/freigabeOhneNetz';
+import { schluesselAblegen } from '@/features/core';
 import { useEinrichtung } from './servicePhone';
 import { useTagesplanAblegen } from './tagesplan';
 import { entwuerfeUebertragen, uebertragungAnmelden, type Kontofrage } from './entwuerfe';

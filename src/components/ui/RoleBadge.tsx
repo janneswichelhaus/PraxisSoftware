@@ -1,4 +1,4 @@
-import type { RoleKey } from '@/features/core/session/types';
+import type { RoleKey } from '@/features/core';
 import { Badge } from './Badge';
 import { roleLabel } from './roleLabels';
 

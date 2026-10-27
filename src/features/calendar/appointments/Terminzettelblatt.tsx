@@ -1,8 +1,7 @@
 import { EmptyState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
-import { AbsenderBlock } from '@/features/privacy/datenschutz/AbsenderBlock';
-import type { PraxisAbsender } from '@/features/privacy/datenschutz/absender';
+import { AbsenderBlock, type PraxisAbsender } from '@/features/privacy';
 import { slipOrt, type AppointmentSlipEntry } from './api';
 import { formatLocalDate, formatLocalTimeRange } from '@/lib/datum';
 import { staffName } from '@/lib/termin';

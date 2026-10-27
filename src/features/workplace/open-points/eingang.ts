@@ -1,15 +1,13 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
+import { FAELLIG_SCHLUESSEL, fetchFaellige, type Bereich } from '@/features/exercise';
 import {
-  FAELLIG_SCHLUESSEL,
-  fetchFaellige,
-  type Bereich,
-} from '@/features/exercise/exercise-plans/api';
-import { fetchOffeneScans } from '@/features/patients/files/api';
-import {
-  fetchRueckfragen,
-  rueckfragenKey,
-  type Verhaeltnisart,
-} from '@/features/portal/messages/api';
+  fetchOffeneScans,
+  OPEN_INTAKES_KEY,
+  fetchOpenIntakes,
+  PATIENT_OVERVIEW_KEY,
+  fetchPatientOverview,
+} from '@/features/patients';
+import { fetchRueckfragen, rueckfragenKey, type Verhaeltnisart } from '@/features/portal';
 import {
   canConcludePatientCare,
   canDecideStaffRequests,
@@ -23,29 +21,24 @@ import {
   canWriteTreatmentBases,
   isTherapyStaff,
   type CurrentUser,
-} from '@/features/core/session/types';
-import { fetchWaitlist } from '@/features/calendar/waitlist/api';
-import { fetchFleet, flotteSchluessel, type Fleet } from '@/features/fleet/api';
+} from '@/features/core';
+import { fetchWaitlist } from '@/features/calendar';
+import { fetchFleet, flotteSchluessel, type Fleet } from '@/features/fleet';
 import {
   fetchUrlaub,
   urlaubSchluessel,
   type Urlaubsstand,
-} from '@/features/workforce/vacation/api';
-import { urlaubsfenster } from '@/features/workforce/vacation/fenster';
-import {
+  urlaubsfenster,
   WORKING_TIME_KEY,
   fetchWorkingTime,
   type WorkingTime,
-} from '@/features/workforce/working-time/api';
-import {
   fetchReimbursements,
   reimbursementsKey,
   type Overview,
-} from '@/features/workforce/reimbursements/api';
+} from '@/features/workforce';
 import { ABO_KUENDIGUNGEN_KEY, fetchAboKuendigungen } from './aftercare-cancellations-api';
 import { CALL_LIST_KEY, fetchCallList, stillToCall } from './call-list-api';
 import { CONSENT_WITHDRAWALS_KEY, fetchConsentWithdrawals } from './consent-withdrawals-api';
-import { OPEN_INTAKES_KEY, fetchOpenIntakes } from '@/features/patients/intake/api';
 import { PLATFORM_REQUESTS_KEY, fetchPlatformRequests } from './platform-requests-api';
 import {
   ENDING_KEY,
@@ -53,7 +46,6 @@ import {
   fetchCareWithoutConclusion,
   fetchEndingPrescriptions,
 } from './reminders-api';
-import { PATIENT_OVERVIEW_KEY, fetchPatientOverview } from '@/features/patients/uebersicht';
 import { TASKS_KEY, fetchTasks } from './tasks-api';
 import { TRAININGSWIDERRUFE_KEY, fetchTrainingswiderrufe } from './training-withdrawals-api';
 import { tagePlus } from '@/lib/datum';

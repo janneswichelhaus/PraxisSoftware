@@ -485,6 +485,13 @@ Gilt seit Aufräumen Schritt 3 (ANN-748), zuerst für „Termine“ (`src/featur
   Seite es herein (Ladefunktion, Abschnitt), oder das Geteilte zieht nach `src/lib`. Die Regel
   `modulgrenzen/nach-unten` meldet jeden Import nach oben und jeden Ordner, der keine Domäne ist;
   ein neues Modul bekommt seinen Ordner unter seiner Domäne und seinen Namen in `DOMAENEN`.
+- **Schnittstelle je Domäne (ANN-755):** Jede Domäne hat eine `index.ts`, die jeden Export einzeln
+  nennt. Eine fremde Domäne wird nur über `@/features/<domäne>` importiert, die eigene nie: Die
+  `index.ts` führte im Kreis zurück. Direkt bleiben Seiten, die in keiner Schnittstelle stehen,
+  `src/routes` und `src/app`, Tests und die Plattform-App mit ihren freigegebenen Bausteinen
+  (ADR-023 Punkt 26). Braucht eine Domäne einen weiteren Namen von einer anderen, kommt er in deren
+  `index.ts`; die Regel `modulgrenzen/nur-ueber-schnittstelle` zeigt jeden tiefen Import. Innerhalb
+  einer Domäne gilt die `index.ts` eines Moduls weiter (Termine, ANN-748).
 - `pnpm aufraeumen` zählt gegenseitige Abhängigkeiten, die Module im größten Abhängigkeitsring und
   die Module mit Schnittstelle.
 

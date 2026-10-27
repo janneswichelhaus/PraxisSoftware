@@ -1,11 +1,11 @@
 import { zurueck, type Abfolge } from '@/components/ui/abfolge';
-import type { Fleet } from '@/features/fleet/api';
+import type { Fleet } from '@/features/fleet';
 import {
   canManageStaffAccounts,
   canManageWorkingHours,
   isTherapyStaff,
   type RoleKey,
-} from '@/features/core/session/types';
+} from '@/features/core';
 import type { VorlageKey } from './arbeitszeitvorlagen';
 import type { Zustellung } from './konto-api';
 

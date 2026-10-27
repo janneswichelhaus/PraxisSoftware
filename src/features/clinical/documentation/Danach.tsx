@@ -5,16 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import {
-  type Appointment,
-  FolgeterminVorschlaege,
-  LeistungAmTermin,
-} from '@/features/calendar/appointments';
-import {
-  canReadExercisePlans,
-  canRecordAtAppointment,
-  type CurrentUser,
-} from '@/features/core/session/types';
+import { type Appointment, FolgeterminVorschlaege, LeistungAmTermin } from '@/features/calendar';
+import { canReadExercisePlans, canRecordAtAppointment, type CurrentUser } from '@/features/core';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { PLAENE_ANKER } from './sprungmarke';
 import { Schreibflaeche } from './Schreibflaeche';

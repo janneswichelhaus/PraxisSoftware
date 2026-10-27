@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
-import { roleKeySchema, type RoleKey } from '@/features/core/session/types';
-import { ZUGANG_PFAD } from '@/features/core/auth/linkEinloesen';
+import { roleKeySchema, type RoleKey, ZUGANG_PFAD } from '@/features/core';
 
 /**
  * Zugänge zur Anwendung (STAFF-002b).

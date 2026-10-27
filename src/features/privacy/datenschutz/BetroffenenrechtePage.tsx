@@ -15,9 +15,8 @@ import { roleLabel } from '@/components/ui/roleLabels';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
-import { fetchPatient, fullName, type Patient } from '@/features/patients/api';
-import { FotoHerausgabe } from '@/features/patients/files/FotoHerausgabe';
-import { AnhangHerausgabe } from '@/features/portal/messages/AnhangHerausgabe';
+import { fetchPatient, fullName, type Patient, FotoHerausgabe } from '@/features/patients';
+import { AnhangHerausgabe } from '@/features/portal';
 import { DATENKLASSEN } from '@/features/privacy/retention/klassen';
 import {
   auskunftKennung,

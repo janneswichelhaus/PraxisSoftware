@@ -15,20 +15,18 @@ import {
   fetchDocumentationDeadline,
   fristLabel,
   saveDocumentationDeadline,
-} from '@/features/clinical/documentation/api';
-import { BenachrichtigungsSchalter } from '@/features/portal/platform-access/BenachrichtigungsSchalter';
+} from '@/features/clinical';
+import { BenachrichtigungsSchalter } from '@/features/portal';
 import {
   RASTER_WERTE,
   istRasterWert,
   saveAppointmentGrid,
   type RasterWert,
-} from '@/features/calendar/scheduling/api';
-import type { CurrentUser } from '@/features/core/session/types';
-import { FahrzeitfaktorEinstellung } from '@/features/calendar/tours/FahrzeitfaktorEinstellung';
-import {
+  FahrzeitfaktorEinstellung,
   GarageEinstellung,
   StartortEinstellung,
-} from '@/features/calendar/tours/StartortEinstellung';
+} from '@/features/calendar';
+import type { CurrentUser } from '@/features/core';
 
 /**
  * Die Einstellungen der Praxis, nur für owner (ANN-604): die erste Ansicht unter Praxis statt

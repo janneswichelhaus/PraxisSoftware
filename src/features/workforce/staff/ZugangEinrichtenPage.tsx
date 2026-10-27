@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Vollseite } from '@/app/Vollseite';
-import { useFokusNachWechsel } from '@/features/core/auth/fokus';
+import { useFokusNachWechsel } from '@/features/core';
 import { KeineEinladungError, nimmZugangAn } from './konto-api';
 
 /**

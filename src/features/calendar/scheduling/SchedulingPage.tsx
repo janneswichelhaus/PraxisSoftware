@@ -30,7 +30,7 @@ import {
   useTextverlustschutz,
   type Verlustschutztexte,
 } from '@/app/Textverlustschutz';
-import { canManageWorkingHours, type CurrentUser } from '@/features/core/session/types';
+import { canManageWorkingHours, type CurrentUser } from '@/features/core';
 import {
   bloeckeText,
   fetchWorkingHourExceptions,
@@ -50,7 +50,7 @@ import {
   type Blockfehler,
 } from './zeitbloecke';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
-import { fetchAssignableTherapists } from '@/features/workforce/staff/api';
+import { fetchAssignableTherapists } from '@/features/workforce';
 
 /**
  * Arbeitszeiten und Planungseinstellungen der Praxis (CAL-005).

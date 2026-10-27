@@ -3,7 +3,7 @@ import {
   canReadTreatmentBasisClinical,
   canReadTreatmentBases,
   type CurrentUser,
-} from '@/features/core/session/types';
+} from '@/features/core';
 import {
   fetchPatientTreatmentBases,
   fetchPatientTreatmentBasesClinical,

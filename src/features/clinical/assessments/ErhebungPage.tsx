@@ -16,9 +16,9 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { TextArea } from '@/components/ui/TextArea';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import type { Formularfehler } from '@/lib/formularfehler';
-import { fetchPatient, fullName, type Patient } from '@/features/patients/api';
+import { fetchPatient, fullName, type Patient } from '@/features/patients';
 import { useTextverlustschutz, type Verlustschutztexte } from '@/app/Textverlustschutz';
-import { canWriteQuestionnaire, type CurrentUser } from '@/features/core/session/types';
+import { canWriteQuestionnaire, type CurrentUser } from '@/features/core';
 import { abschnitte } from './abschnitte';
 import { antwortFehler, type Antwort, type Antworten } from './antworten';
 import {

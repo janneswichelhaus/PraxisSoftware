@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import type { CurrentUser } from '@/features/core/session/types';
+import type { CurrentUser } from '@/features/core';
 import { useChatflaeche, useSpalten } from './flaeche';
 import { Gespraechsliste } from './Gespraechsliste';
 import { TEAMCHAT } from './pfade';

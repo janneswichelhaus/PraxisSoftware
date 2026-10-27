@@ -29,8 +29,8 @@ import {
   canWriteTreatmentBases,
   canWriteTreatmentNote,
   type CurrentUser,
-} from '@/features/core/session/types';
-import { PrescriptionPhoto } from '@/features/patients/files/PrescriptionPhoto';
+} from '@/features/core';
+import { PrescriptionPhoto } from '@/features/patients';
 import { useTerminErweiterungen } from './erweiterungen';
 import { WaitlistMatches } from '@/features/calendar/waitlist/WaitlistMatches';
 import { mitRueckweg } from '@/lib/rueckweg';

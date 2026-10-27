@@ -10,7 +10,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { formatEuro } from '@/lib/geld';
-import { canManageInvoicing, type CurrentUser } from '@/features/core/session/types';
+import { canManageInvoicing, type CurrentUser } from '@/features/core';
 import {
   bereichLabels,
   WegHinweis,

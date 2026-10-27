@@ -10,10 +10,13 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
-import { erhebungenQueryKey, fetchErhebungen } from '@/features/clinical/assessments/api';
-import { erhebenPfad } from '@/features/clinical/assessments/darstellung';
-import { erhebbareInstrumente } from '@/features/clinical/assessments/instrumente';
-import { AnmeldebogenFoto, Datenschutz } from '@/features/privacy/datenschutz/Anmeldebogen';
+import {
+  erhebungenQueryKey,
+  fetchErhebungen,
+  erhebenPfad,
+  erhebbareInstrumente,
+} from '@/features/clinical';
+import { AnmeldebogenFoto, Datenschutz } from '@/features/privacy';
 import { PrescriptionPhoto } from '@/features/patients/files/PrescriptionPhoto';
 import { fetchIntakeChecklist } from '@/features/patients/intake/api';
 import { fetchPatient, type Patient } from '@/features/patients/api';
@@ -24,7 +27,7 @@ import {
   canWriteTreatmentBases,
   canWriteTreatmentNote,
   type CurrentUser,
-} from '@/features/core/session/types';
+} from '@/features/core';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import { erstaufnahmePfad, erstaufnahmestand, istAnamnese, type Schrittstand } from './stand';

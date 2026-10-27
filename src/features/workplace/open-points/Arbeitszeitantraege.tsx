@@ -4,7 +4,7 @@ import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-import { changeTitle, minutesChange } from '@/features/workforce/working-time/format';
+import { changeTitle, minutesChange } from '@/features/workforce';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { abfragen } from './eingang';
 

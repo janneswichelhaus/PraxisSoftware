@@ -11,12 +11,12 @@ import {
   type Appointment,
   fetchAbrechnungslage,
   positionText,
-} from '@/features/calendar/appointments';
+} from '@/features/calendar';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BausteinFeld } from '@/features/clinical/assessments/BausteinFeld';
 import { useBausteinAuswahl } from '@/features/clinical/assessments/bausteinauswahl';
 import { VORSCHLAG_OFFEN } from '@/features/clinical/assessments/dokumentationstext';
-import { canWriteTreatmentNote, type CurrentUser } from '@/features/core/session/types';
+import { canWriteTreatmentNote, type CurrentUser } from '@/features/core';
 import { BisherigeEintraege } from './BisherigeEintraege';
 import { AufGeraetSichern } from '@/features/clinical/offline-documentation/AufGeraetSichern';
 import { DocumentationShell } from './DocumentationShell';

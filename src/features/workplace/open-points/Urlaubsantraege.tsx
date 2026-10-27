@@ -6,7 +6,7 @@ import { Section } from '@/components/ui/Section';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { zeitraumText } from '@/lib/datum';
-import { urlaubstage } from '@/features/workforce/vacation/zeitraum';
+import { urlaubstage } from '@/features/workforce';
 import { abfragen } from './eingang';
 
 /**

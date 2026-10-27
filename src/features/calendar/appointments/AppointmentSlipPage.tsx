@@ -7,14 +7,13 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { fetchPatient, fullName } from '@/features/patients/api';
+import { fetchPatient, fullName } from '@/features/patients';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { TermineMailen } from './TermineMailen';
 import { Terminzettelblatt } from './Terminzettelblatt';
 import { addAppointmentNotification, fetchAppointmentSlip } from './api';
-import { useAbsender } from '@/features/privacy/datenschutz/useAbsender';
-import { absenderKontakt } from '@/features/privacy/datenschutz/absender';
-import type { CurrentUser } from '@/features/core/session/types';
+import { useAbsender, absenderKontakt } from '@/features/privacy';
+import type { CurrentUser } from '@/features/core';
 
 /**
  * Termine der Patient:in mitteilen, als Zettel oder Entwurf im Mailprogramm: nur Datum, Zeit, Ort

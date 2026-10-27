@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import { Textlink } from '@/components/ui/Textlink';
 import { formatDate, formatLocalDate, formatLocalTime, formatLocalTimeRange } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
-import type { CurrentUser } from '@/features/core/session/types';
-import { grundlageBezeichnung } from '@/features/patients/treatment-bases/api';
+import type { CurrentUser } from '@/features/core';
+import { grundlageBezeichnung, Deckungszeichen } from '@/features/patients';
 import { Kurzblick } from './Kurzblick';
 import { Mitteilungszeichen } from './Mitteilungszeichen';
 import { NavigationZumTermin } from './NavigationStarten';
@@ -18,7 +18,6 @@ import {
   staffName,
 } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
-import { Deckungszeichen } from '@/features/patients/treatment-bases/Deckungszeichen';
 
 /** „Do 01.10.2026" in der Zeit der Praxis. */
 function tagMitWochentag(iso: string, zone: string): string {

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { fetchOffeneScans } from '@/features/patients/files/api';
+import { fetchOffeneScans } from '@/features/patients';
 import {
   canDecideStaffRequests,
   canManageAppointments,
@@ -10,11 +10,11 @@ import {
   canWriteTreatmentBases,
   isTherapyStaff,
   type CurrentUser,
-} from '@/features/core/session/types';
+} from '@/features/core';
 import { OPEN_SCANS_KEY, abfragen } from './eingang';
 import { PLATFORM_REQUESTS_KEY, fetchPlatformRequests } from './platform-requests-api';
 import { TASKS_KEY, fetchTasks, isOverdue } from './tasks-api';
-import { fetchRueckfragen, rueckfragenKey } from '@/features/portal/messages/api';
+import { fetchRueckfragen, rueckfragenKey } from '@/features/portal';
 
 /** „1 Aufgabe", „2 Aufgaben" - Zahl und Wort gehören zusammen. */
 function anzahl(n: number, eins: string, mehr: string): string {

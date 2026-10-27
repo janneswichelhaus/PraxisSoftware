@@ -14,8 +14,8 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { fetchPatient, fullName } from '@/features/patients/api';
-import type { CurrentUser } from '@/features/core/session/types';
+import { fetchPatient, fullName } from '@/features/patients';
+import type { CurrentUser } from '@/features/core';
 import { fetchWaitlist, windowsText, type TimeWindow } from '@/features/calendar/waitlist/api';
 import { formatDate, tagePlus, todayInTimeZone } from '@/lib/datum';
 import { usePlanungsmatrix } from '@/features/calendar/tours/fahrzeitfaktor';
@@ -32,7 +32,7 @@ import {
   type Slot,
   type TravelRating,
 } from './api';
-import { fetchAssignableTherapists } from '@/features/workforce/staff/api';
+import { fetchAssignableTherapists } from '@/features/workforce';
 import {
   appointmentTypeLabels,
   appointmentTypeSchema,

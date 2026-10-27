@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
-import { BAUARTEN, grundlagenZustandSchema } from '@/features/patients/treatment-bases/api';
+import { BAUARTEN, grundlagenZustandSchema } from '@/features/patients';
 
 // -----------------------------------------------------------------------------
 // Verordnungszähler und Abrechnungslage am Termin (PRX-008, ANN-139)

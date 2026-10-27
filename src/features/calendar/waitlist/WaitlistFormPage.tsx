@@ -20,12 +20,13 @@ import {
   useTextverlustschutz,
   type Verlustschutztexte,
 } from '@/app/Textverlustschutz';
-import { Patientensuche } from '@/features/patients/Patientensuche';
-import { fetchPatient, fullName } from '@/features/patients/api';
 import {
+  Patientensuche,
+  fetchPatient,
+  fullName,
   fetchPatientTreatmentBases,
   grundlageBezeichnung,
-} from '@/features/patients/treatment-bases/api';
+} from '@/features/patients';
 import { formatDate } from '@/lib/datum';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { leseRueckweg } from '@/lib/rueckweg';
@@ -45,7 +46,7 @@ import {
   type TimeWindow,
   type WaitlistEntry,
 } from './api';
-import { fetchAssignableTherapists } from '@/features/workforce/staff/api';
+import { fetchAssignableTherapists } from '@/features/workforce';
 import { appointmentTypeLabels, appointmentTypeSchema } from '@/lib/termin';
 
 const LIST = '/warteliste';

@@ -1,4 +1,4 @@
-import type { Appointment } from '@/features/calendar/appointments';
+import type { Appointment } from '@/features/calendar';
 import type { TreatmentNote } from './api';
 import { formatLocalDate, formatLocalTime, formatLocalTimeRange, tagePlus } from '@/lib/datum';
 

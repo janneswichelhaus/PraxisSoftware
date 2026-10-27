@@ -17,7 +17,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { usePatientRecord } from '@/features/patients/akte';
+import { usePatientRecord } from '@/features/patients';
 import { formatDate } from '@/lib/datum';
 import {
   beratungBeenden,

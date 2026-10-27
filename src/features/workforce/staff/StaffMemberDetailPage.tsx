@@ -19,7 +19,7 @@ import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate, formatLocalDate, formatLocalTimeRange, todayInTimeZone } from '@/lib/datum';
 import { leseRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
-import { fullName } from '@/features/patients/api';
+import { fullName } from '@/features/patients';
 import {
   canManageAppointments,
   canManageStaffAccounts,
@@ -27,7 +27,7 @@ import {
   canManageStaffMasterData,
   isOwner,
   type CurrentUser,
-} from '@/features/core/session/types';
+} from '@/features/core';
 import { StaffAccountSection } from './StaffAccountSection';
 import { StaffEinsatz } from './StaffEinsatz';
 import { Suchreiterleiste } from '@/components/ui/Reiterleiste';

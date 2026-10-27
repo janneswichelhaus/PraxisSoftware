@@ -13,8 +13,8 @@ import {
   canReadTreatmentNote,
   canWriteTreatmentNote,
   type CurrentUser,
-} from '@/features/core/session/types';
-import { type Appointment, useAbrechnungslage } from '@/features/calendar/appointments';
+} from '@/features/core';
+import { type Appointment, useAbrechnungslage } from '@/features/calendar';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   fetchDocumentationDeadline,

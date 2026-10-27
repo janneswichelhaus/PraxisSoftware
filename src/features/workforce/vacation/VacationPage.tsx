@@ -11,7 +11,7 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 import { Tile, TileGrid } from '@/components/ui/Tile';
-import { isOwner, type CurrentUser } from '@/features/core/session/types';
+import { isOwner, type CurrentUser } from '@/features/core';
 import {
   URLAUB_SCHLUESSEL,
   fetchUrlaub,

@@ -5,8 +5,8 @@ import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
-import { canWriteTreatmentNote, type CurrentUser } from '@/features/core/session/types';
-import type { Appointment } from '@/features/calendar/appointments';
+import { canWriteTreatmentNote, type CurrentUser } from '@/features/core';
+import type { Appointment } from '@/features/calendar';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { DocumentationShell } from './DocumentationShell';
 import {

@@ -12,7 +12,7 @@ import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { canReadExerciseLibrary, type CurrentUser } from '@/features/core/session/types';
+import { canReadExerciseLibrary, type CurrentUser } from '@/features/core';
 import { BEGRIFFE } from '@/lib/begriffe';
 import {
   BIBLIOTHEK_SCHLUESSEL,
