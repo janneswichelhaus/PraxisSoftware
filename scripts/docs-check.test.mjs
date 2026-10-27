@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DATEIGRENZEN,
+  GESAMTGRENZE,
   OBERGRENZEN,
   OFFENE_BEFUNDE,
   REGISTER_GRENZEN,
   SKILL_GRENZE_BYTES,
+  STANDARDGRENZE,
   aktuelleFassungen,
+  dateigrenzen,
   prinzipienAbschnitte,
   prinzipienVersionen,
   pruefeBefundkennungen,
   pruefeEindeutigkeit,
+  pruefeGesamtgrenze,
   pruefeObergrenzen,
   pruefeRegister,
   pruefeVerweise,
@@ -217,6 +222,21 @@ describe('eindeutige Nummern im Register (Regel D mit Tabellenzeilen)', () => {
       ),
     ).toEqual([`ANN-001 ist mehrfach vergeben: ${register}:1, ${register}:3.`]);
   });
+
+  it('findet im Ideenspeicher eine doppelte Zeile', () => {
+    const ideen = 'docs/product/IDEENSPEICHER.md';
+    expect(
+      pruefeEindeutigkeit(
+        [
+          {
+            pfad: ideen,
+            text: '| IDEA-PRX-004 | Anrufliste | notiert |\n| IDEA-PRX-004 | x | y |',
+          },
+        ],
+        new Set([ideen]),
+      ),
+    ).toEqual([`IDEA-PRX-004 ist mehrfach vergeben: ${ideen}:1, ${ideen}:2.`]);
+  });
 });
 
 describe('Befundkennungen nach dem Archiv (Regel D)', () => {
@@ -417,9 +437,41 @@ describe('Obergrenzen in Bytes (Regel E, 2026-10-12)', () => {
       { pfad: 'docs/development/ARBEITSBEREICHE.md', bytes: 8192 },
       { pfad: 'docs/design/DESIGN.md', bytes: 12800, optional: true },
       { pfad: 'docs/design/PLATTFORM.md', bytes: 8192 },
-      { pfad: 'docs/decisions/OPEN_DECISIONS.md', zeilen: 400 },
+      { pfad: 'docs/decisions/OPEN_DECISIONS.md', zeilen: 150 },
     ]);
     expect(SKILL_GRENZE_BYTES).toBe(8192);
+    expect(STANDARDGRENZE).toEqual({ zeilen: 300, bytes: 16384 });
+    expect([...DATEIGRENZEN]).toEqual([
+      ['PROJECT_PRINCIPLES.md', { zeilen: 760, bytes: 55296 }],
+      ['docs/DEVELOPMENT.md', { zeilen: 400, bytes: 28672 }],
+      ['docs/adr/ADR-017-file-storage.md', { zeilen: 450, bytes: 40960 }],
+      ['docs/adr/ADR-023-platform-access.md', { zeilen: 250, bytes: 18432 }],
+      ['docs/decisions/ASSUMPTIONS.md', { zeilen: 1650, bytes: 286720 }],
+      ['docs/development/BEFUNDE.md', { zeilen: 300, bytes: 25600 }],
+      ['docs/development/ROADMAP.md', { zeilen: 480, bytes: 81920 }],
+      ['marke/README.md', { zeilen: 260, bytes: 24576 }],
+      ['quellen/bausteine/mt-untersuchung-quelldaten.md', { zeilen: 430, bytes: 13312 }],
+    ]);
+    expect(GESAMTGRENZE).toEqual({ zeilen: 10000, bytes: 921600 });
+  });
+
+  it('gibt jeder Markdown-Datei eine Grenze, groesseren ihre eigene', () => {
+    expect(dateigrenzen(['README.md', 'src/a.ts', 'docs/adr/ADR-017-file-storage.md'])).toEqual([
+      { pfad: 'README.md', zeilen: 300, bytes: 16384 },
+      { pfad: 'docs/adr/ADR-017-file-storage.md', zeilen: 450, bytes: 40960 },
+    ]);
+  });
+
+  it('zaehlt Zeilen und Bytes aller Markdown-Dateien zusammen', () => {
+    const dateien = [
+      { pfad: 'a.md', text: 'eins\nzwei\n' },
+      { pfad: 'b.md', text: 'drei\n' },
+    ];
+    expect(pruefeGesamtgrenze(dateien, { zeilen: 3, bytes: 15 })).toEqual([]);
+    expect(pruefeGesamtgrenze(dateien, { zeilen: 2, bytes: 14 })).toEqual([
+      'Markdown gesamt: 3 Zeilen, erlaubt sind 2.',
+      'Markdown gesamt: 15 Bytes, erlaubt sind 14.',
+    ]);
   });
 });
 
