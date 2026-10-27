@@ -1,34 +1,6 @@
 /**
- * Querverweise zwischen Dokumenten (G19, BEF-028).
- *
- * Reine Funktionen ohne Dateizugriff, damit `scripts/docs-check.test.mjs` sie
- * mit kleinen Texten pruefen kann; gelesen wird in `docs-check.mjs`.
- *
- * Geprueft wird nur, was sich **maschinell** entscheiden laesst. Ob eine
- * Aussage inhaltlich noch stimmt, entscheidet die Durchsicht vor dem B2-Paket,
- * nicht dieses Gate. Fuenf Regeln:
- *
- *   A. **Es gibt, was genannt wird.** `ADR-NNN Fassung N` nennt einen ADR aus
- *      dem Index und hoechstens dessen aktuelle Fassung; eine Version von
- *      `PROJECT_PRINCIPLES.md` ist eine, die es gab; `§NN` ist ein Abschnitt
- *      dort. Das gilt ueberall, auch in der Chronik - eine Version, die es nie
- *      gab, ist auch als Geschichte falsch.
- *   B. **Wer eine Grundlage nennt, nennt die geltende.** Steht vor dem Verweis
- *      im selben Satz das Wort „Grundlage", behauptet er den heutigen Stand -
- *      und eine aeltere Fassung ist dann veraltet. Genau diese Form hatten die
- *      Belege aus BEF-028 („Grundlage sind ADR-019 Fassung 3" bei Fassung 4).
- *      Ohne das Wort bleibt eine aeltere Fassung erlaubt: „ADR-013 Fassung 2,
- *      Punkt 9" sagt, woher ein Punkt stammt, und der Punkt gilt weiter.
- *   C. **Aenderungsvermerke duerfen die Vergangenheit nennen.** Regel B und die
- *      Abschnittspruefung aus A gelten nicht unter einer Ueberschrift
- *      „Aenderungsvermerk", „Aenderungshistorie" oder „Chronik" - dort ist die
- *      damalige Fassung die richtige Angabe.
- *   D. **Eine Nummer wird einmal vergeben.** Jede `ANN-`, `BEF-` und
- *      `IDEA-`-Kennung steht hoechstens einmal als Ueberschrift.
- *   E. **Pflichtlektuere bleibt klein** (Prozess verschlanken, 2026-10-12).
- *      Was jede Session ganz liest, hat eine Obergrenze in **Bytes**. Eine
- *      Zeilengrenze liess sich mit einer einzigen Zeile von 26.879 Zeichen
- *      umgehen (STATUS, Stand 2026-10-12: 47 KB in 60 Zeilen).
+ * Die Regeln des Doku-Gates als reine Funktionen, damit `docs-check.test.mjs` sie mit kleinen
+ * Texten prueft. Was jede Regel (A bis F) prueft und warum: `docs/DEVELOPMENT.md`, docs:check.
  */
 
 // Leerraum schliesst den Zeilenumbruch ein: Markdown bricht Absaetze um.
@@ -188,12 +160,17 @@ export function pruefeVerweise(pfad, text, kontext) {
   return verstoesse;
 }
 
-/** Regel D ueber alle Dateien: `[{ pfad, text }]`. */
-export function pruefeEindeutigkeit(dateien) {
+const KOPF_KENNUNG = /^#{1,6} ((?:ANN|BEF)-\d{3}|IDEA-[A-Z]+-\d{3})\b/;
+const ZEILE_KENNUNG = /^\| ((?:ANN|BEF)-\d{3}|IDEA-[A-Z]+-\d{3}) \|/;
+
+/** Regel D ueber alle Dateien `[{ pfad, text }]`; in den Registern `register` zaehlt auch die Tabellenzeile. */
+export function pruefeEindeutigkeit(dateien, register = new Set()) {
   const fundorte = new Map();
   for (const { pfad, text } of dateien) {
     text.split('\n').forEach((zeile, i) => {
-      const kennung = zeile.match(/^#{1,6} ((?:ANN|BEF)-\d{3}|IDEA-[A-Z]+-\d{3})\b/)?.[1];
+      const kennung =
+        zeile.match(KOPF_KENNUNG)?.[1] ??
+        (register.has(pfad) ? zeile.match(ZEILE_KENNUNG)?.[1] : undefined);
       if (!kennung) return;
       const liste = fundorte.get(kennung) ?? [];
       liste.push(`${pfad}:${i + 1}`);
@@ -305,4 +282,127 @@ export function pruefeObergrenzen(grenzen, inhaltVon) {
     }
   }
   return verstoesse;
+}
+
+// Regel F: das verdichtete Annahmenregister. Kurze Eintraege im Pruefpaket und bei den Fachregeln,
+// sonst eine Tabellenzeile; der Zusatz „Prüfpaket“ folgt aus Kategorie und Status.
+export const REGISTER_GRENZEN = {
+  vorspann: 40,
+  zeilenJeEintrag: 5,
+  bytes: { Prüfpaket: 800, Fachregeln: 600, 'Übrige Einträge': 240 },
+};
+const KATEGORIEN = new Set(['Datenschutz', 'Recht', 'Praxisprozess', 'Technik']);
+const STATUS = [
+  'offen',
+  'entschieden (Jannes)',
+  'bestätigt (Prüfung)',
+  'geändert',
+  'verworfen',
+  'in ADR überführt',
+];
+
+const imPruefpaket = (kategorie, status) =>
+  (kategorie === 'Datenschutz' || kategorie === 'Recht') && status !== 'verworfen';
+
+/** Regel F fuer den Text des Registers; liefert die Verstoesse und alle Kennungen fuer die Anker. */
+export function pruefeRegister(pfad, text) {
+  const zeilen = text.split('\n');
+  if (zeilen.at(-1) === '') zeilen.pop();
+  const verstoesse = [];
+  const kennungen = [];
+  const melde = (i, satz) => verstoesse.push(`${pfad}:${i + 1}: ${satz}`);
+  let abschnitt = null;
+  let erster = null;
+
+  const eintrag = (i, kennung) => {
+    let ende = i + 1;
+    // eslint-disable-next-line security/detect-object-injection -- Zahlindex in ein eigenes Array.
+    while (ende < zeilen.length && !zeilen[ende].startsWith('#')) ende += 1;
+    const block = zeilen.slice(i, ende);
+    if (block.length > REGISTER_GRENZEN.zeilenJeEintrag) {
+      melde(
+        i,
+        `${kennung} hat ${block.length} Zeilen, erlaubt sind ${REGISTER_GRENZEN.zeilenJeEintrag}.`,
+      );
+    }
+    if (abschnitt !== 'Prüfpaket' && abschnitt !== 'Fachregeln') {
+      melde(i, `${kennung} steht als Eintrag außerhalb von „Prüfpaket“ und „Fachregeln“.`);
+      return;
+    }
+    // eslint-disable-next-line security/detect-object-injection -- nur die zwei Abschnitte oben.
+    const grenze = REGISTER_GRENZEN.bytes[abschnitt];
+    const bytes = bytesVon(block.join('\n').trimEnd());
+    if (bytes > grenze) melde(i, `${kennung} hat ${bytes} Bytes, erlaubt sind ${grenze}.`);
+    // Prettier setzt nach der Ueberschrift eine Leerzeile; die Statuszeile ist die naechste danach,
+    // mit hartem Umbruch (`\\`) vor dem Absatz.
+    const s =
+      i +
+      Math.max(
+        1,
+        block.findIndex((zeile, n) => n > 0 && zeile.trim() !== ''),
+      );
+    // eslint-disable-next-line security/detect-object-injection -- Zahlindex in ein eigenes Array.
+    const felder = (zeilen[s] ?? '').replace(/\\$/, '').split(' · ');
+    if (felder.length !== 6 || !felder[5].startsWith('Wiedervorlage:')) {
+      melde(s, `${kennung}: Die Statuszeile braucht sechs Felder bis „Wiedervorlage: …“.`);
+      return;
+    }
+    const [kategorie, status, , , zusatz] = felder;
+    if (!KATEGORIEN.has(kategorie)) melde(s, `${kennung}: Kategorie „${kategorie}“ gibt es nicht.`);
+    if (!STATUS.includes(status)) melde(s, `${kennung}: Status „${status}“ gibt es nicht.`);
+    const pruef = imPruefpaket(kategorie, status);
+    const erwartet = pruef ? 'Prüfpaket' : status === 'offen' ? '—' : 'erledigt';
+    if (zusatz !== erwartet) {
+      melde(s, `${kennung}: Zusatz „${zusatz}“, erwartet „${erwartet}“.`);
+    }
+    if (pruef !== (abschnitt === 'Prüfpaket')) {
+      melde(i, `${kennung} gehört ${pruef ? 'ins' : 'nicht ins'} Prüfpaket.`);
+    }
+  };
+
+  const reihe = (i, kennung) => {
+    if (abschnitt !== 'Übrige Einträge') {
+      melde(i, `${kennung} steht als Tabellenzeile außerhalb von „Übrige Einträge“.`);
+    }
+    // eslint-disable-next-line security/detect-object-injection -- Zahlindex in ein eigenes Array.
+    const zeile = zeilen[i];
+    const grenze = REGISTER_GRENZEN.bytes['Übrige Einträge'];
+    if (bytesVon(zeile) > grenze)
+      melde(i, `${kennung} hat ${bytesVon(zeile)} Bytes, erlaubt sind ${grenze}.`);
+    const zellen = zeile
+      .split('|')
+      .slice(1, -1)
+      .map((zelle) => zelle.trim());
+    if (zellen.length !== 4) {
+      melde(i, `${kennung}: vier Spalten erwartet (Kennung, Titel, Kategorie · Status, Anker).`);
+      return;
+    }
+    const [kategorie, rest = ''] = zellen[2].split(' · ');
+    const status = STATUS.find((wort) => rest === wort || rest.startsWith(`${wort} `));
+    if (!KATEGORIEN.has(kategorie)) melde(i, `${kennung}: Kategorie „${kategorie}“ gibt es nicht.`);
+    if (!status) melde(i, `${kennung}: Status „${rest}“ gibt es nicht.`);
+    else if (imPruefpaket(kategorie, status)) {
+      melde(i, `${kennung} ist ${kategorie} und nicht verworfen: gehört ins Prüfpaket.`);
+    }
+  };
+
+  zeilen.forEach((zeile, i) => {
+    const ueberschrift = zeile.match(/^## (.+)$/);
+    if (ueberschrift) abschnitt = ueberschrift[1].trim();
+    const kopf = zeile.match(/^### (ANN-\d{3})\b/)?.[1];
+    const tabelle = zeile.match(/^\| (ANN-\d{3}) \|/)?.[1];
+    const kennung = kopf ?? tabelle;
+    if (!kennung) return;
+    erster ??= i;
+    kennungen.push(kennung);
+    if (kopf) eintrag(i, kennung);
+    else reihe(i, kennung);
+  });
+
+  if (erster !== null && erster > REGISTER_GRENZEN.vorspann) {
+    verstoesse.push(
+      `${pfad}: Vorspann ${erster} Zeilen, erlaubt sind ${REGISTER_GRENZEN.vorspann}.`,
+    );
+  }
+  return { verstoesse, kennungen };
 }

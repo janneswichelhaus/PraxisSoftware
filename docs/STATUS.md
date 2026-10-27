@@ -8,8 +8,8 @@ steht in den PRs und in Git. Abgelegte Dokumente (Archiv, Chroniken, erledigte H
 
 **Aufräumen** (Auftrag Jannes 25.10., Entscheidungen 26. und 27.10., ROADMAP 7.22): Schritte 1 bis 4,
 alle sieben Fehler, M1, M5, M7, M9, das Barometer, die Vorab-PR, 3b und sein Nachzug gemergt
-(#308 bis #322). Schritt 5 (Doku): Teil A (Archiv nach Git, Befunde, neun Entscheidungen als
-ANN-756 bis -763) liegt als #323 vor; Teil B (Annahmenregister) ist in Arbeit. Bauplan ist
+(#308 bis #322). Schritt 5 (Doku): Teil A gemergt (#323); Teil B (Register 1.876 statt 7.830 Zeilen,
+Prüfpaket 208, Regel F im Doku-Gate) liegt als #324 vor. Bauplan ist
 `development/TIEFENANALYSE.md`.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
@@ -17,7 +17,8 @@ Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Aufräumen 5, Teile B und C: Register und Prüfpaket, dann ADRs, Prinzipien und Rest.
+Aufräumen 5, Teil C: ADRs, Prinzipien und Rest; dann Abschluss und die CI-Beschleunigung
+(Vorschlag vom 27.10.; offen: Lint und Typecheck bei reiner Doku, ADR-013 Punkt 2).
 Schritt 3 Termine des Design-Reviews (3a bis 3d), dann Schritte 4
 bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff; Briefings in
 `design/review-2026-10/`. Ohne Handoff: BEF-223 (Zeitumstellung; Pfad A).

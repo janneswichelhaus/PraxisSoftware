@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   OBERGRENZEN,
   OFFENE_BEFUNDE,
+  REGISTER_GRENZEN,
   SKILL_GRENZE_BYTES,
   aktuelleFassungen,
   prinzipienAbschnitte,
@@ -9,6 +10,7 @@ import {
   pruefeBefundkennungen,
   pruefeEindeutigkeit,
   pruefeObergrenzen,
+  pruefeRegister,
   pruefeVerweise,
   vermerkZeilen,
 } from './docs-check-regeln.mjs';
@@ -199,6 +201,24 @@ describe('eindeutige Nummern', () => {
   });
 });
 
+describe('eindeutige Nummern im Register (Regel D mit Tabellenzeilen)', () => {
+  it('zaehlt im Register auch die Tabellenzeile, anderswo nicht', () => {
+    const register = 'docs/decisions/ASSUMPTIONS.md';
+    expect(
+      pruefeEindeutigkeit(
+        [
+          {
+            pfad: register,
+            text: '### ANN-001 — Frist\n\n| ANN-001 | Frist | Technik · offen | `x` |',
+          },
+          { pfad: 'TIEFENANALYSE.md', text: '| ANN-001 | Datenschutz | widerspricht ADR-010 |' },
+        ],
+        new Set([register]),
+      ),
+    ).toEqual([`ANN-001 ist mehrfach vergeben: ${register}:1, ${register}:3.`]);
+  });
+});
+
 describe('Befundkennungen nach dem Archiv (Regel D)', () => {
   it('laesst nur offene Kennungen als Ueberschrift zu, nicht neue und nicht erledigte', () => {
     expect(
@@ -226,6 +246,113 @@ describe('Befundkennungen nach dem Archiv (Regel D)', () => {
   it('die Liste waechst nicht: hoechstens die 24 vom 2026-10-27, keine ueber BEF-226', () => {
     expect(OFFENE_BEFUNDE.size).toBeLessThanOrEqual(24);
     for (const kennung of OFFENE_BEFUNDE) expect(Number(kennung.slice(4))).toBeLessThanOrEqual(226);
+  });
+});
+
+describe('Annahmenregister nach der Verdichtung (Regel F)', () => {
+  const STATUS_DS =
+    'Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung';
+  const STATUS_PP =
+    'Praxisprozess · entschieden (Jannes) · 2026-09-08 · Jannes · erledigt · Wiedervorlage: —';
+  const register = (pruefpaket, fachregeln, zeilen, vorspann = '# Register\n') =>
+    [
+      vorspann,
+      '## Prüfpaket\n',
+      ...pruefpaket,
+      '## Fachregeln\n',
+      ...fachregeln,
+      '## Übrige Einträge\n',
+      '| Kennung | Titel | Kategorie · Status | Anker |',
+      '| --- | --- | --- | --- |',
+      ...zeilen,
+      '',
+    ].join('\n');
+  const eintrag = (kennung, status, absatz = '**Annahme.** Kurz.') =>
+    `### ${kennung} — Titel\n\n${status}\\\n${absatz}\n`;
+  const pruefe = (text) => pruefeRegister('r.md', text);
+
+  it('laesst ein Register im Zielformat durch und liefert alle Kennungen', () => {
+    const text = register(
+      [eintrag('ANN-001', STATUS_DS)],
+      [eintrag('ANN-002', STATUS_PP, '**Regel.** Kurz.')],
+      ['| ANN-003 | Titel | Datenschutz · verworfen (→ ANN-001) | `app.x` |'],
+    );
+    expect(pruefe(text)).toEqual({ verstoesse: [], kennungen: ['ANN-001', 'ANN-002', 'ANN-003'] });
+  });
+
+  it('verlangt den Zusatz Prüfpaket genau bei Datenschutz oder Recht, die nicht verworfen sind', () => {
+    const text = register(
+      [eintrag('ANN-001', STATUS_DS.replace('Prüfpaket', 'erledigt'))],
+      [eintrag('ANN-002', STATUS_PP.replace('erledigt', 'Prüfpaket'))],
+      ['| ANN-003 | Titel | Recht · offen | `app.x` |'],
+    );
+    expect(pruefe(text).verstoesse).toEqual([
+      'r.md:7: ANN-001: Zusatz „erledigt“, erwartet „Prüfpaket“.',
+      'r.md:14: ANN-002: Zusatz „Prüfpaket“, erwartet „erledigt“.',
+      'r.md:21: ANN-003 ist Recht und nicht verworfen: gehört ins Prüfpaket.',
+    ]);
+  });
+
+  it('meldet einen Eintrag im falschen Abschnitt', () => {
+    const text = register([], [eintrag('ANN-001', STATUS_DS)], []);
+    expect(pruefe(text).verstoesse).toEqual(['r.md:7: ANN-001 gehört ins Prüfpaket.']);
+  });
+
+  it('kennt nur die Kategorien und Status des Lebenszyklus', () => {
+    const text = register(
+      [],
+      [
+        eintrag(
+          'ANN-001',
+          STATUS_PP.replace(
+            'Praxisprozess · entschieden (Jannes)',
+            'Oberfläche · entschieden (Claude)',
+          ),
+        ),
+      ],
+      [],
+    );
+    expect(pruefe(text).verstoesse).toEqual([
+      'r.md:9: ANN-001: Kategorie „Oberfläche“ gibt es nicht.',
+      'r.md:9: ANN-001: Status „entschieden (Claude)“ gibt es nicht.',
+    ]);
+  });
+
+  it('verlangt sechs Felder: ein Mittelpunkt in der Instanz bricht die Statuszeile', () => {
+    const text = register(
+      [],
+      [eintrag('ANN-001', STATUS_PP.replace('Jannes · erledigt', 'Jannes · Leinwand · erledigt'))],
+      [],
+    );
+    expect(pruefe(text).verstoesse).toEqual([
+      'r.md:9: ANN-001: Die Statuszeile braucht sechs Felder bis „Wiedervorlage: …“.',
+    ]);
+  });
+
+  it('haelt die Grenzen je Eintrag, je Zeile und fuer den Vorspann', () => {
+    const lang = 'x'.repeat(REGISTER_GRENZEN.bytes.Fachregeln);
+    const text = register(
+      [],
+      [eintrag('ANN-001', STATUS_PP, `**Regel.** ${lang}\n\nNoch ein Absatz.`)],
+      [
+        `| ANN-002 | ${'y'.repeat(REGISTER_GRENZEN.bytes['Übrige Einträge'])} | Technik · offen | \`x\` |`,
+      ],
+      '# Register\n'.repeat(REGISTER_GRENZEN.vorspann),
+    );
+    expect(pruefe(text).verstoesse).toEqual([
+      'r.md:46: ANN-001 hat 7 Zeilen, erlaubt sind 5.',
+      'r.md:46: ANN-001 hat 749 Bytes, erlaubt sind 600.',
+      'r.md:57: ANN-002 hat 279 Bytes, erlaubt sind 240.',
+      'r.md: Vorspann 45 Zeilen, erlaubt sind 40.',
+    ]);
+  });
+
+  it('die Grenzen werden nur gesenkt', () => {
+    expect(REGISTER_GRENZEN).toEqual({
+      vorspann: 40,
+      zeilenJeEintrag: 5,
+      bytes: { Prüfpaket: 800, Fachregeln: 600, 'Übrige Einträge': 240 },
+    });
   });
 });
 

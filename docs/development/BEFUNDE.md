@@ -368,6 +368,42 @@ Außer diesem Eintrag führt kein Dokument die Bedingung.
 
 **Beobachtung.** Beide Prüfungen lassen jeden Import aus `@/lib/` durch, weil dort anbieterfreie Hilfen liegen. Zwei Module dort sprechen aber den Server an (`functions.invoke` im KI-Gateway und in der Ortsfunktion); die Vorschau sperrt nur die Ortsmodule einzeln. Läge eine Praxisabfrage unter `src/lib`, sähe keine der beiden Prüfungen einen Import aus Plattform oder Vorschau. Schritt 3 hat die Tagesliste deshalb als Modul `day-plan` angelegt statt in `src/lib` (DEVELOPMENT.md „Modulgrenzen“). **Erwartet.** Ein Test hält fest, welche Dateien unter `src/lib` `getSupabase()` benutzen dürfen, oder die Trennungsprüfungen sperren genau diese; dazu je eine Gegenprobe.
 
+### Termine — Ein Termin wird nie `invoiced`, obwohl ADR-018 die Invariante verlangt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-27 |
+| Bereich | Abrechnung, Termine |
+| Quelle  | Aufräumen 5, Teil B (ANN-081, Tiefenanalyse 5b) |
+| Status  | offen (Vorschlag, Pfad A) |
+| Berührt | `public.issue_invoice`, Storno; ADR-018 Abschnitt 3; ANN-081 |
+
+**Beobachtung.** `issue_invoice` setzt nur `billable_services.status = 'invoiced'`; kein Weg setzt den Termin auf `invoiced`. ADR-018 Abschnitt 3 verlangt `status = 'invoiced'` genau dann, wenn eine ausgestellte, nicht stornierte Rechnung den Termin führt, mit Test beider Richtungen. ANN-081 beschreibt den heutigen Stand als Übergang. **Erwartet.** Ausstellung und Storno setzen den Terminstatus in derselben Transaktion, mit Test, oder ADR-018 nimmt `invoiced` am Termin zurück (Entscheidung Jannes).
+
+### Training — `get_training_profile` protokolliert jedes Lesen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-27 |
+| Bereich | Training, Auditlog |
+| Quelle  | Aufräumen 5, Teil B (ANN-287) |
+| Status  | offen (Vorschlag, Pfad A) |
+| Berührt | `public.get_training_profile`; `app.log_record_access`; ADR-010 Punkt 16 |
+
+**Beobachtung.** Die Funktion schreibt `training_relationship.viewed` mit einem eigenen `insert` bei jedem Aufruf. ADR-010 Punkt 16 erlaubt höchstens einen Eintrag je Person, Verhältnis und Tag; das hält `app.log_record_access`, das alle anderen Lesewege nutzen. **Erwartet.** Eine Migration ersetzt den `insert` durch `app.log_record_access`, ein Test ruft zweimal am Tag und erwartet einen Eintrag.
+
+### Katalogtexte — Kommentare der Datenbank versprechen Protokolle und Kennwörter, die es nicht mehr gibt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-27 |
+| Bereich | Datenbank (`COMMENT ON`) |
+| Quelle  | Aufräumen 5, Teil B (Abgleich der Annahmen mit der Basis) |
+| Status  | offen |
+| Berührt | `set_appointment_grid`, `set_practice_target`, `list_revenue_by_staff`, `set_staff_compensation_model`, `waive_appointment_fee`, `*_training_basis`, `add_training_protocol_addendum`, `end_training_relationship`, `set_staff_member_schedulable`, `update_home_visit_addresses`, `finalize_overdue_treatment_notes`, `complete_appointment`, `record_no_show`, `get_appointment_brief`, `assign_prescription_scan`; `renew_platform_representation_code`, `redeem_platform_invitation` („Kennwort“); Tabelle `deletion_journal` („ohne eigene Frist“) |
+
+**Beobachtung.** Die Katalogtexte nennen Auditaktionen, die seit ADR-010 Fassung 3 niemand schreibt, ein Kennwort, das es seit ADR-025 nicht gibt, und eine Frist, die ADR-012 Punkt 12 inzwischen setzt. Die Basis-Migration ist ausgeliefert und bleibt unverändert. **Erwartet.** Die nächste Migration an einer dieser Funktionen zieht deren `COMMENT ON` nach, ohne Logik zu ändern.
+
 ### Kommentare — 30 lange Kommentarblöcke nennen noch die Pfade vor dem Domänenschnitt
 
 |         |   |
@@ -387,4 +423,5 @@ Außer diesem Eintrag führt kein Dokument die Bedingung.
 `src/features/calendar/appointments/TermineUebertragenPage.tsx` (`CAL-EPIC-004.md`),
 `src/features/patients/treatment-bases/TreatmentBasisFormFields.tsx` (`VER-EPIC-002.md`),
 `src/features/clinical/assessments/schema.ts` (`score-inventar.md`). Beim Anfassen den Pfad als
-`git show eb43569:<pfad>` nennen oder streichen.
+`git show eb43569:<pfad>` nennen oder streichen. Ebenso `src/features/calendar/today/api.ts`: „es gibt
+keinen Service Worker“ gilt seit ADR-024 nicht mehr.

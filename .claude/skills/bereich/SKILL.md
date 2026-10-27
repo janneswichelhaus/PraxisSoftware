@@ -44,7 +44,7 @@ Sie ist die Spezifikation des Auftrags (Rang 3) und enthält:
   Playwright-Ablauftest bei 375 px, der Tipps zählt, auf Seed-Daten.
 - **Startinhalte** im Lieferumfang (Bibliothek, Vorlagen, Textbausteine, Preisblatt-Entwurf).
 - **Out of Scope**, **K1-Ergebnis**, betroffene ADRs (Index in `CLAUDE.md`, dann ganz lesen).
-- **Annahmen** nur, wo Spec, Prinzipien und ADRs schweigen: `ANN-NNN`, ≤ 1 KB, Anker im Code.
+- **Annahmen** nur, wo Spec, Prinzipien und ADRs schweigen: `ANN-NNN`, ≤ 800 Bytes, Anker im Code.
 
 MDR-Grenze (ADR-006 Punkt 10): Katalog und Auswahl ja, Empfehlung nach Diagnose nie.
 

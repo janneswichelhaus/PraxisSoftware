@@ -2,7 +2,7 @@
 
 ## Status
 
-**Angenommen** (2026-10-11, Jannes). **Fassung 2** (2026-10-17, Jannes): Punkt 12 nimmt Rückmeldungen nach `PROJECT_PRINCIPLES.md` 0.27, §20.2 aus; alles Übrige gilt unverändert. **W1 anders als empfohlen: (c)** — „Bei Konkurrenten wie
+**Angenommen** (2026-10-11, Jannes). **Fassung 2** (2026-10-17, Jannes): Punkt 12 nimmt Rückmeldungen nach `PROJECT_PRINCIPLES.md` 0.27, §20.2 aus; alles Übrige gilt unverändert. **Fassung 3** (2026-10-27): Punkt 15 nennt die Ausnahme für die Tagebucherinnerung, die ADR-027 Punkt 12 (Jannes, 2026-10-18) mit Erinnerungen je Mahlzeit voraussetzt; bis dahin überbrückt als ANN-662. Alles Übrige gilt unverändert. **W1 anders als empfohlen: (c)** — „Bei Konkurrenten wie
 iPrax ist eine Dokumentation ohne Empfang möglich. Ich möchte diese Funktion auch haben.“ Dazu die
 Freigabe ohne Netz per Passkey (Punkt 9), auf Rückfrage gewählt. **W2 bis W5 wie empfohlen.** Die
 Punkte folgen aus §2.2, §3.4, §3.5, §10, §13, §18, §20 und den ADRs 001, 002, 008, 010, 011, 015,
@@ -245,6 +245,9 @@ Klickverfolgung.
   nächsten Morgen oder entfällt, wenn es dann keinen Sinn mehr hat.
 - **Obergrenze:** höchstens eine Benachrichtigung je Art und Tag und eine Zahl je Woche über alle
   Arten (Vorschlag zehn). Darüber geht nichts mehr hinaus; die Übersicht zeigt es trotzdem.
+- *(Fassung 3)* **Ausnahme Tagebucherinnerung** (ADR-027 Punkt 12): höchstens eine je Mahlzeit,
+  Tag und Weg, und sie zählt nicht in die Wochengrenze. Was beim Abholen älter als zwei Stunden ist
+  oder dessen Uhrzeit, Tagebuch oder Einwilligung sich geändert hat, entfällt (ANN-662).
 - **Kein Nachfassen:** Bleibt eine Reaktion aus, wird nicht erneut benachrichtigt.
 - Ruhezeit, Obergrenzen und Zeitpunkt der Terminerinnerung sind Konstanten an einer Stelle.
 

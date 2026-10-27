@@ -19,7 +19,7 @@ wenn der Index sie nennt, dann ganz.
 ## Annahmen statt Rückfragen
 
 Fehlt eine fachliche oder architektonische Festlegung (Datenschutz, Recht, Praxisprozess,
-Technik): recherchieren, entscheiden, als `ANN-NNN` eintragen (≤ 1 KB), an genau einer Codestelle
+Technik): recherchieren, entscheiden, als `ANN-NNN` eintragen (≤ 800 B), an genau einer Codestelle
 reversibel verankern (§15.1). Werkzeug- und Linter-Details sind keine Annahme und kein ADR
 (Skript, `docs/DEVELOPMENT.md`). **Stopp nur** bei Widerspruch zu einer MUSS-Anforderung,
 Aufweichen von Sicherheitsmaßnahme, Test oder Gate, echten Daten, Produktionscredentials, Secrets,

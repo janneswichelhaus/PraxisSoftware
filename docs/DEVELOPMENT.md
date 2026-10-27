@@ -528,14 +528,26 @@ immer mit jsdom. Playwright prüft vor der Anmeldung nur das Projekt `mobile`
 (Pixel 7); die Breiten setzt jede Spezifikation selbst (ANN-571).
 
 `pnpm docs:check` ist ein Gate nach ADR-013 (Prüfung 2.10) und läuft im Job
-„Format, Lint, Dokumentation, Typecheck" direkt hinter dem Lint. Es prüft die
-Obergrenzen der Pflichtlektüre (`OBERGRENZEN` in `scripts/docs-check-regeln.mjs`) und im
-Annahmenregister höchstens 14 Zeilen **je Eintrag**; dass jede `ANN-NNN` des Registers einen Anker
-in `src/`, `supabase/migrations/` oder `.github/workflows/` hat; dass jeder relative
-Markdown-Verweis auf eine vorhandene Datei zeigt; Querverweise und eindeutige Nummern (G19), dazu
-dass ein Befund nur eine der offenen Kennungen aus `OFFENE_BEFUNDE` trägt; und dass die
-Fortschrittstabelle der Roadmap genau die ist, die `pnpm fortschritt --schreiben` aus
-`development/fortschritt.json` erzeugt.
+„Format, Lint, Dokumentation, Typecheck" direkt hinter dem Lint. Es prüft nur, was sich maschinell
+entscheiden lässt; die Regeln stehen in `scripts/docs-check-regeln.mjs`, jede Grenze wird nur
+gesenkt (der Test hält die Werte fest):
+
+- **Obergrenzen (E):** Was jede Session ganz liest (CLAUDE.md, STATUS, Skills, ARBEITSBEREICHE,
+  DESIGN.md, PLATTFORM.md), hat eine Grenze in Bytes, weil sich Zeilen mit einer langen Zeile
+  umgehen lassen; `OPEN_DECISIONS.md` eine in Zeilen.
+- **Annahmenregister (F):** Vorspann höchstens 40 Zeilen; Einträge im Prüfpaket und bei den
+  Fachregeln höchstens 5 Zeilen und 800 bzw. 600 Bytes, die übrigen als Tabellenzeile bis 240
+  Bytes. Kategorie und Status nur aus dem Lebenszyklus; der Zusatz `Prüfpaket` genau dann, wenn
+  Datenschutz oder Recht und nicht verworfen, und dann im Abschnitt „Prüfpaket“. Jede Kennung hat
+  einen Anker in `src/`, `supabase/migrations/` oder `.github/workflows/`; Tests zählen nicht.
+- **Links:** Jeder relative Markdown-Verweis zeigt auf eine vorhandene Datei.
+- **Querverweise (A bis C):** Genannte ADR-Fassungen, Versionen und Abschnitte der Prinzipien gibt
+  es (Index: `docs/adr/README.md`); wer eine Fassung als „Grundlage“ nennt, nennt die geltende;
+  unter „Änderungsvermerk“, „Änderungshistorie“ oder „Chronik“ darf die Vergangenheit stehen.
+- **Nummern (D):** Jede `ANN-`, `BEF-` und `IDEA-`Kennung steht einmal als Überschrift oder als
+  Zeile des Registers; ein Befund trägt nur eine der offenen Kennungen aus `OFFENE_BEFUNDE`.
+- **Fortschritt:** Die Tabelle der Roadmap ist genau die, die `pnpm fortschritt --schreiben` aus
+  `development/fortschritt.json` erzeugt.
 
 `pnpm migrationen:check` läuft im eigenen Job „Ausgelieferte Migrationen
 unveraendert" neben den Teilen von `test:db`; der Pflichtcheck „Migrationen

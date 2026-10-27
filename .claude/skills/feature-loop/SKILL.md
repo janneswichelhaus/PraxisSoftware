@@ -29,7 +29,7 @@ er **Pfad A** — Checkliste, gezieltes `pnpm test:db`, Zweitreview wo Nr. 8 es 
   `docs/product/kernablaeufe.md` mit Budget, wenn Oberfläche dabei ist.
 - **Befunde** des Bereichs aus `docs/development/BEFUNDE.md` als erste Stories.
 - **Annahmen** nur, wo Spec, Prinzipien und ADRs schweigen: recherchieren (Projektdokumente,
-  Gesetz, Behördenleitlinien), entscheiden, `ANN-NNN` ≤ 1 KB mit Anker. Technische Details
+  Gesetz, Behördenleitlinien), entscheiden, `ANN-NNN` ≤ 800 Bytes mit Anker. Technische Details
   (Benennung, Query-Form, Komponenten) sind keine Annahmen.
 
 Es wird nicht auf eine Freigabe gewartet.

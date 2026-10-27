@@ -1,35 +1,6 @@
 /**
- * Gate fuer die Dokumentation (ADR-013 Pruefung 2.10).
- *
- * Sechs Zusicherungen, die sich objektiv pruefen lassen; die ersten drei wurden
- * in der Runde R2 teuer erkauft, vier und fuenf mit G19, sechs mit Umbau U3:
- *
- *   1. **Obergrenzen.** Was jede Session ganz liest (CLAUDE.md, STATUS, jeder
- *      Skill, ARBEITSBEREICHE, DESIGN.md), hat eine Grenze in Bytes; im
- *      Annahmenregister kein Eintrag ueber 14 Zeilen. Werte und Begruendung
- *      in `docs-check-regeln.mjs` (Regel E).
- *      Eine Obergrenze ist keine Schoenheitsregel: Ein Dokument, das niemand
- *      mehr ganz liest, wird zur Dopplungsquelle (PROJECT_PRINCIPLES.md 16).
- *   2. **Register-Anker.** Jede Annahme im Register greift an genau einer
- *      Stelle im Code (15.1). Ein Eintrag ohne Anker ist eine Behauptung.
- *   3. **Links.** Ein relativer Verweis zeigt auf eine vorhandene Datei. Tote
- *      Verweise sind der haeufigste Weg, auf dem Dokumentation still veraltet.
- *   4. **Querverweise** (G19, BEF-028). Genannte ADR-Fassungen, Versionen und
- *      Abschnitte von `PROJECT_PRINCIPLES.md` gibt es; wer eine Fassung als
- *      Grundlage nennt, nennt die geltende; Aenderungsvermerke duerfen die
- *      Vergangenheit nennen. Regeln und Grenzen in `docs-check-regeln.mjs`.
- *   5. **Eindeutige Nummern.** Jede `ANN-`, `BEF-` und `IDEA-`-Kennung steht
- *      hoechstens einmal als Ueberschrift - zwei parallele Sitzungen haben
- *      schon einmal dieselbe Nummer vergeben.
- *   6. **Eine Quelle fuer den Fortschritt** (Umbau U3). Die Tabelle im
- *      Abschnitt „Fortschritt" der Roadmap ist genau die, die
- *      `pnpm fortschritt --schreiben` aus `fortschritt.json` erzeugt.
- *
- * Bewusst ohne Abhaengigkeiten: nur `node:fs`, `node:path` und `node:child_process`
- * fuer `git ls-files`. Ein Gate, das selbst ein Paket braucht, ist ein Gate
- * mehr, das ausfallen kann.
- *
- * Aufruf: `pnpm docs:check`. Exit 1 mit einer Liste der Verstoesse.
+ * Gate fuer die Dokumentation (ADR-013 Pruefung 2.10): Obergrenzen, Register, Links, Querverweise,
+ * Nummern und Fortschrittstabelle. Was es prueft und warum: `docs/DEVELOPMENT.md`, docs:check.
  */
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -44,6 +15,7 @@ import {
   pruefeBefundkennungen,
   pruefeEindeutigkeit,
   pruefeObergrenzen,
+  pruefeRegister,
   pruefeVerweise,
 } from './docs-check-regeln.mjs';
 
@@ -55,20 +27,6 @@ const skillGrenzen = existsSync(SKILLS)
       .map((eintrag) => ({ pfad: `${SKILLS}/${eintrag.name}/SKILL.md`, bytes: SKILL_GRENZE_BYTES }))
   : [];
 const grenzen = [...OBERGRENZEN, ...skillGrenzen];
-
-/**
- * Das Annahmenregister waechst nach 15.1 mit jeder getroffenen Annahme und
- * wird ausdruecklich NICHT als Ganzes gelesen - gearbeitet wird mit dem
- * Pruefpaket, einem `grep` ueber die Statuszeilen. Eine Gesamtgrenze musste
- * deshalb mit jeder neuen Annahme angehoben werden (elfmal zwischen
- * 2026-09-18 und 2026-09-22, von 800 auf 1222) und schuetzte nichts. Seit
- * Umbau U3 gilt die Grenze **je Eintrag**: vom Kopf `### ANN-NNN` bis vor den
- * naechsten, hoechstens 14 Zeilen - das laengste bestehende Format (Kopf,
- * Statuszeile, Abloesung, vier Absaetze mit Leerzeilen). Dazu eine Grenze fuer
- * den Vorspann bis zum ersten Eintrag.
- */
-const REGISTER_JE_EINTRAG = 14;
-const REGISTER_VORSPANN = 90;
 
 const REGISTER = 'docs/decisions/ASSUMPTIONS.md';
 
@@ -99,28 +57,10 @@ verstoesse.push(
   ),
 );
 
-if (existsSync(REGISTER)) {
-  const zeilen = readFileSync(REGISTER, 'utf8').split('\n');
-  const koepfe = zeilen.flatMap((zeile, i) => (/^### ANN-\d{3}\b/.test(zeile) ? [i] : []));
-  if (koepfe.length > 0 && koepfe[0] > REGISTER_VORSPANN) {
-    verstoesse.push(
-      `${REGISTER}: Vorspann ${koepfe[0]} Zeilen, erlaubt sind ${REGISTER_VORSPANN}.`,
-    );
-  }
-  koepfe.forEach((kopf, n) => {
-    // Der letzte Eintrag endet mit der Datei; `split` liefert nach dem
-    // abschliessenden Zeilenumbruch ein leeres Element, das nicht zaehlt.
-    const ende = n + 1 < koepfe.length ? koepfe[n + 1] : zeilen.length - 1;
-    const laenge = ende - kopf;
-    if (laenge > REGISTER_JE_EINTRAG) {
-      // eslint-disable-next-line security/detect-object-injection -- Zahlindex in ein eigenes Array.
-      const kennung = zeilen[kopf].slice(4, 11);
-      verstoesse.push(
-        `${REGISTER}: ${kennung} hat ${laenge} Zeilen, erlaubt sind ${REGISTER_JE_EINTRAG} je Eintrag.`,
-      );
-    }
-  });
-}
+const register = existsSync(REGISTER)
+  ? pruefeRegister(REGISTER, readFileSync(REGISTER, 'utf8'))
+  : { verstoesse: [], kennungen: [] };
+verstoesse.push(...register.verstoesse);
 
 // -----------------------------------------------------------------------------
 // 2. Register-Anker
@@ -133,15 +73,11 @@ const ankertext = ankerQuellen
   .map((pfad) => (statSync(pfad).isFile() ? readFileSync(pfad, 'utf8') : ''))
   .join('\n');
 
-if (existsSync(REGISTER)) {
-  const register = readFileSync(REGISTER, 'utf8');
-  for (const treffer of register.matchAll(/^### (ANN-\d{3})\b/gm)) {
-    const kennung = treffer[1];
-    if (!ankertext.includes(kennung)) {
-      verstoesse.push(
-        `${REGISTER}: ${kennung} hat keinen Anker in src/, supabase/migrations/ oder .github/workflows/.`,
-      );
-    }
+for (const kennung of register.kennungen) {
+  if (!ankertext.includes(kennung)) {
+    verstoesse.push(
+      `${REGISTER}: ${kennung} hat keinen Anker in src/, supabase/migrations/ oder .github/workflows/.`,
+    );
   }
 }
 
@@ -183,7 +119,7 @@ const kontext = {
   abschnitte: prinzipienAbschnitte(prinzipien),
 };
 for (const { pfad, text } of markdown) verstoesse.push(...pruefeVerweise(pfad, text, kontext));
-verstoesse.push(...pruefeEindeutigkeit(markdown));
+verstoesse.push(...pruefeEindeutigkeit(markdown, new Set([REGISTER])));
 verstoesse.push(...pruefeBefundkennungen(markdown));
 
 // -----------------------------------------------------------------------------
@@ -207,6 +143,6 @@ if (verstoesse.length > 0) {
 console.log(
   'Dokumentationsgate gruen: %d Obergrenzen, %d Register-Eintraege mit Anker und Laengengrenze, Links und Querverweise in %d Markdown-Dateien, Fortschrittstabelle aktuell.',
   grenzen.length,
-  (readFileSync(REGISTER, 'utf8').match(/^### ANN-\d{3}\b/gm) ?? []).length,
+  register.kennungen.length,
   dateien.filter((p) => p.endsWith('.md')).length,
 );
