@@ -9,6 +9,7 @@ import {
   resetDatabaseOhneTermine,
   tagInTagen,
 } from './helpers/db';
+import { tageweise } from './helpers/wiederherstellung';
 
 /**
  * O-001 (Befund B8, ANN-534): Einen eben angelegten Termin zurücknehmen.
@@ -150,6 +151,7 @@ describe('undo_appointment_creation (O-001, ANN-534)', () => {
       expect(rows).toEqual([
         { target_table: 'appointments', retention_class: 'termin_ohne_nachweis' },
       ]);
+      expect(await tageweise('appointments', [termin.id])).toEqual([true]);
     });
 
     it.each([

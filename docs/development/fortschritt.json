@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-26",
+  "stand": "2026-10-27",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -1656,6 +1656,15 @@
           "fertig_am": "2026-10-26",
           "nachweis": "#318 (Branch claude/step-4-central-register-ur5k1y), Migrationen 20261225130000_datenregister.sql, 20261225140000_loeschjournal_je_zeile.sql und 20261225150000_zusammenfuehren_im_journal.sql, supabase/tests/data-registry.test.ts (Katalog), ein Restore-Test je Lösch-RPC (ohne Migrationen rot), patient-merge.test.ts (Zeilenzählung, Restore von vor dem Zusammenführen), voller pnpm test:db in en_US wie die CI, Zweitreview mit Nachprüfung",
           "vermerk": "Auftrag Jannes 26.10.2026, ROADMAP 7.21; Fehler 2 und 3 der Tiefenanalyse; Pfad A; ANN-751, ANN-752, ANN-150 Fassung 3, ANN-652 Fassung 2; BEF-198 erledigt"
+        },
+        {
+          "id": "aufraeumen-nachzug-318",
+          "name": "Aufräumen, Nachzug aus #318: Zugänge beim Zusammenführen, Löschungen von Hand tageweise",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-27",
+          "nachweis": "#319 (Branch claude/step-4-central-register-ur5k1y), Migrationen 20261225160000_zugaenge_beim_zusammenfuehren.sql und 20261225170000_loeschungen_von_hand_tageweise.sql, supabase/tests/patient-merge.test.ts (Zugang zieht um, Auskunft, Wächter), data-registry.test.ts (Katalog „keine eigene Laufkennung“, Regel), je Löschweg eine Prüfung „tageweise“ (ohne Migrationen rot), voller pnpm test:db, Zweitreview",
+          "vermerk": "Entscheidungen Jannes 27.10.2026, ROADMAP 7.22; Pfad A; ANN-753, ANN-752 Fassung 2; Befund „sekundengenau“ aus BEFUNDE.md erledigt"
         },
         {
           "id": "aufraeumen-3b",

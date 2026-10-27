@@ -9,6 +9,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { tageweise } from './helpers/wiederherstellung';
 
 /**
  * Pruefung am Server (ABN-024, BEF-105; ADR-017 Fassung 3, Punkte 49 bis 52).
@@ -195,6 +196,7 @@ describe('Pruefung am Server (ABN-024)', () => {
 
       // BEF-170: Das Verwerfen haelt auch ueber eine Wiederherstellung.
       expect(await journal(datei.file_id)).toEqual(['patientenakte']);
+      expect(await tageweise('patient_files', [datei.file_id])).toEqual([true]);
     });
   }
 

@@ -9,6 +9,7 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { tageweise } from './helpers/wiederherstellung';
 
 /**
  * Loeschen, Dokumentart korrigieren, Loeschauftraege quittieren
@@ -190,6 +191,7 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
       expect(eintraege[0]).toMatchObject({ retention_class: 'patientenakte', reapplied_at: null });
       // Faellig mit der Loeschung - nicht frueher, nicht spaeter.
       expect(eintraege[0]!.due_at).toEqual(eintraege[0]!.deleted_at);
+      expect(await tageweise('patient_files', [datei.file_id])).toEqual([true]);
 
       // Die Sicherung ist aelter als die Loeschung: Zeile zurueck, Auftrag fort.
       await asPostgres('delete from public.storage_deletion_orders');

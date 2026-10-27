@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { AUSKUNFT_KATEGORIEN, TRAINING_KATEGORIEN } from '@/features/datenschutz/kategorien';
 import { SEED, asAnon, asPostgres, asUser, resetDatabase } from './helpers/db';
+import { tageweise } from './helpers/wiederherstellung';
 
 // Das Register der Querschnittsfunktionen (ADR-008 Punkt 13, ANN-751): Jede Tabelle in public trägt
 // Personenbezug und die Entscheidungen zu Auskunft, Aufbewahrung, Löschjournal und Zusammenführen.
@@ -312,6 +313,75 @@ describe('Register der Querschnittsfunktionen (ADR-008 Punkt 13)', () => {
              and not exists (select 1 from kette where kette.t = r.table_name)
            order by 1`),
       ).toEqual([]);
+    });
+
+    it('gibt Löschungen von Hand keine eigene Laufkennung (ANN-752)', async () => {
+      // Ohne Lauf bündelt das Journal je Praxis und Tag (§20). Eine Kennung vergeben nur die Läufe und
+      // das Zusammenführen: Das erneute Zusammenführen nach einem Restore braucht seine Zeit (ANN-150).
+      const schreiber = `
+        with helfer as (
+          select n.nspname || '.' || p.proname as name
+            from pg_catalog.pg_proc p
+            join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+           where n.nspname in ('public', 'app') and p.proargnames && array['p_run_id', 'p_run'])
+        select n.nspname || '.' || p.proname as name, p.prosrc
+          from pg_catalog.pg_proc p
+          join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+         where n.nspname in ('public', 'app')
+           and (p.prosrc ~* 'insert\\s+into\\s+public\\.deletion_journal'
+                or exists (select 1 from helfer h
+                            where p.prosrc ~* (replace(h.name, '.', '\\.') || '\\(')))`;
+      expect(
+        await liste(`with s as (${schreiber}) select name as t from s
+                      where prosrc ~* 'gen_random_uuid\\(\\)' order by 1`),
+      ).toEqual([
+        'app.merge_patients_core',
+        'public.apply_retention',
+        'public.discard_stale_reimbursement_receipts',
+      ]);
+      // Eine Kennung je Eintrag statt je Lauf hat nur das Zusammenführen, sein Eintrag ist einer.
+      expect(
+        await liste(`with s as (${schreiber}) select name as t from s
+                      where prosrc ~* 'insert\\s+into\\s+public\\.deletion_journal[^;]*gen_random_uuid\\(\\)'
+                         or prosrc ~* '\\(([^;()]*,)?\\s*extensions\\.gen_random_uuid\\(\\)'
+                      order by 1`),
+      ).toEqual(['app.merge_patients_core']);
+    });
+
+    it('stellt einen Eintrag ohne Lauf je Praxis und Tag, in einem Lauf zu diesem (ANN-752)', async () => {
+      const aufgabe = async () =>
+        (
+          await asPostgres<{ id: string }>(
+            `insert into public.tasks (organization_id, patient_id, title, status, done_at)
+             values ($1::uuid, $2::uuid, 'Erledigt', 'done', now()) returning id`,
+            [SEED.organizationId, SEED.patients.max],
+          )
+        ).rows[0]!.id;
+      const eintrag = (id: string, lauf = 'null') =>
+        `insert into public.deletion_journal
+           (organization_id, run_id, target_table, target_id, retention_class, due_at)
+         values ('${SEED.organizationId}', ${lauf}, 'tasks', '${id}', 'aufgabe', now());`;
+
+      // Ohne Lauf: Eintrag und eine Löschung danach stehen tageweise, die Transaktion wird kein Lauf.
+      const ohneLauf = crypto.randomUUID();
+      const erste = await aufgabe();
+      await asPostgres(`${eintrag(ohneLauf)} delete from public.tasks where id = '${erste}';`);
+      expect(await tageweise('tasks', [ohneLauf, erste])).toEqual([true, true]);
+
+      // In einem Lauf gehört der Eintrag zu diesem Lauf, mit der genauen Zeit.
+      const lauf = crypto.randomUUID();
+      const imLauf = crypto.randomUUID();
+      const zweite = await aufgabe();
+      await asPostgres(
+        `${eintrag(zweite, `'${lauf}'`)} delete from public.tasks where id = '${zweite}'; ${eintrag(imLauf)}`,
+      );
+      const { rows } = await asPostgres<{ n: number }>(
+        `select count(*)::int as n from public.deletion_journal
+          where target_id = any($1::uuid[]) and run_id = $2::uuid
+            and deleted_at <> date_trunc('day', deleted_at)`,
+        [[zweite, imLauf], lauf],
+      );
+      expect(rows[0]!.n).toBe(2);
     });
 
     it('begründet jede Löschung von Hand ohne eigenes Journal', async () => {

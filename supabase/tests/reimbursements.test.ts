@@ -12,6 +12,7 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { gleichzeitig } from './helpers/gleichzeitig';
+import { tageweise } from './helpers/wiederherstellung';
 
 /**
  * Erstattungen: Einkauf mit Belegen, Ladestrom ebenso (ANN-598 bis ANN-602); Rechte, Belege als Dateien
@@ -1366,12 +1367,14 @@ describe('Erstattungen (ERS-001)', () => {
     it('führt verworfene, aufgeräumte und abgewiesene Belege und löscht sie nach einer Wiederherstellung erneut', async () => {
       const verworfen = await beleg(users.therapist);
       const alt = await beleg(users.therapist);
+      const auchAlt = await beleg(users.therapist);
       const abgewiesen = await beleg(users.therapist);
       const sicherung = await asPostgres<Record<string, unknown>>(
         `select * from public.staff_reimbursement_receipts order by id`,
       );
       await asUserCommitted(users.therapist, VERWERFEN, [verworfen.receipt_id]);
       await belegVor(alt.receipt_id, '25 hours');
+      await belegVor(auchAlt.receipt_id, '25 hours');
       await asPostgres('select public.discard_stale_reimbursement_receipts()');
       expect(await ergebnis(abgewiesen.receipt_id, false, true, true)).toBe('rejected');
 
@@ -1380,10 +1383,23 @@ describe('Erstattungen (ERS-001)', () => {
           where target_table = 'staff_reimbursement_receipts' order by target_id`,
       );
       expect(journal).toEqual(
-        [verworfen.receipt_id, alt.receipt_id, abgewiesen.receipt_id]
+        [verworfen.receipt_id, alt.receipt_id, auchAlt.receipt_id, abgewiesen.receipt_id]
           .sort()
           .map((id) => ({ target_id: id, retention_class: 'erstattung' })),
       );
+      // Von Hand und nach einem Befund tageweise (ANN-752); der tägliche Lauf mit einer Kennung.
+      expect(
+        await tageweise('staff_reimbursement_receipts', [
+          verworfen.receipt_id,
+          abgewiesen.receipt_id,
+        ]),
+      ).toEqual([true, true]);
+      const { rows: laeufe } = await asPostgres<{ n: number }>(
+        `select count(distinct run_id)::int as n from public.deletion_journal
+          where target_id = any($1::uuid[])`,
+        [[alt.receipt_id, auchAlt.receipt_id]],
+      );
+      expect(laeufe[0]!.n).toBe(1);
 
       // Die Sicherung bringt die Zeilen zurück - ohne den Wächter, wie ein Restore.
       await asPostgres(

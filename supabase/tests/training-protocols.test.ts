@@ -11,6 +11,7 @@ import {
   erwarteAbgewiesenenLeseversuch,
   erwarteAbgewiesenenSchreibversuch,
 } from './helpers/abgewiesen';
+import { tageweise } from './helpers/wiederherstellung';
 
 /**
  * TRN-EPIC-004: Das Trainingsprotokoll (TRN-009) und `documented` am
@@ -311,6 +312,7 @@ describe('TRN-009: Trainingsprotokoll', () => {
         [entwurf.id],
       );
       expect(journal).toEqual([{ target_table: 'training_protocols', geloescht: true }]);
+      expect(await tageweise('training_protocols', [entwurf.id])).toEqual([true]);
       const { rows: termin } = await asPostgres<{ cancelled_by: string }>(
         'select cancelled_by from public.appointments where id = $1',
         [TRAINING_HEUTE],

@@ -8,6 +8,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { tageweise } from './helpers/wiederherstellung';
 
 /**
  * Einwilligungen in der Behandlung über die Plattform (POR-016; ADR-023
@@ -182,6 +183,7 @@ describe('Einwilligungen in der Behandlung über die Plattform (POR-016)', () =>
       [FOTO],
     );
     expect(journal.rows).toEqual([{ retention_class: 'patientenfoto' }]);
+    expect(await tageweise('patient_files', [FOTO])).toEqual([true]);
   });
 
   it('rechtliche Vertretung: erteilt mit ihrem Namen am Vermerk, protokolliert als Vertretung', async () => {

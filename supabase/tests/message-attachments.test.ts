@@ -12,6 +12,7 @@ import {
 } from './helpers/db';
 import { gleichzeitig } from './helpers/gleichzeitig';
 import { praxistag } from './helpers/plaene';
+import { tageweise } from './helpers/wiederherstellung';
 
 /**
  * Foto und Video an einer Rückfrage (KOM-005, ADR-017 Abschnitt L).
@@ -555,6 +556,9 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     );
     expect(rows.map((r) => r.target_id).sort()).toEqual([a.attachment_id, b.attachment_id].sort());
     expect(rows.every((r) => r.retention_class === 'rueckfrageanhang')).toBe(true);
+    expect(
+      await tageweise('platform_message_attachments', [a.attachment_id, b.attachment_id]),
+    ).toEqual([true, true]);
     const { rows: auftraege } = await asPostgres<{ object_key: string; ordered_by: string }>(
       `select object_key, ordered_by from public.storage_deletion_orders
        where bucket_id = 'rueckfrageanhang' order by ordered_at`,
@@ -573,8 +577,8 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     const eins = await fragen(tina);
     const zwei = await fragen(tina);
     await einwilligen(tina);
-    await anhaengen(tina, eins);
-    await anhaengen(tina, zwei, 'image/jpeg', null);
+    const x = await anhaengen(tina, eins);
+    const y = await anhaengen(tina, zwei, 'image/jpeg', null);
     await einwilligen(tina, false);
 
     const { rows } = await asPostgres<{ n: number }>(
@@ -589,6 +593,9 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
        where target_table = 'platform_message_attachments'`,
     );
     expect(journal[0]!.n).toBe(2);
+    expect(
+      await tageweise('platform_message_attachments', [x.attachment_id, y.attachment_id]),
+    ).toEqual([true, true]);
   });
 
   it('die Akte vermerkt nur den Widerruf vom Papier - und er löscht ebenso (ANN-333)', async () => {
@@ -611,7 +618,7 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     ).toContain('on the platform');
 
     await einwilligen(erika);
-    await anhaengen(erika, vorgang, 'image/jpeg', null);
+    const anhang = await anhaengen(erika, vorgang, 'image/jpeg', null);
     await asUserCommitted(users.office, VERMERK, [
       patients.erika,
       'consent_withdrawn',
@@ -619,6 +626,7 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     ]);
     expect((await ansicht(erika)).messages[0]!.attachments).toEqual([]);
     expect((await ansicht(erika)).attachment_consent).toBe('withdrawn');
+    expect(await tageweise('platform_message_attachments', [anhang.attachment_id])).toEqual([true]);
   });
 
   it('unter Legal Hold gesperrt statt gelöscht, danach vom Lauf gelöscht (ANN-335)', async () => {
@@ -794,6 +802,9 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     expect(await ergebnis(gut.attachment_id, true)).toBe('already_verified');
     // Eine Tonspur ist ein Befund (Punkt 63).
     expect(await ergebnis(schlecht.attachment_id, false)).toBe('rejected');
+    expect(await tageweise('platform_message_attachments', [schlecht.attachment_id])).toEqual([
+      true,
+    ]);
 
     const daten = await ansicht(tina);
     expect(daten.messages[0]!.attachments.map((x) => [x.id, x.server_verified])).toEqual([

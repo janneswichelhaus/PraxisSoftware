@@ -75,3 +75,21 @@ export async function journal(tabelle: string, ids: unknown[]): Promise<Journale
   );
   return rows;
 }
+
+/**
+ * Ob die Einträge zu Zeilen tageweise stehen wie jede Löschung von Hand (ANN-752): mit der
+ * Tageskennung der Praxis, fällig und gelöscht um Mitternacht. In der Reihenfolge der Kennungen.
+ */
+export async function tageweise(tabelle: string, ids: unknown[]): Promise<boolean[]> {
+  const { rows } = await asPostgres<{ tageweise: boolean }>(
+    `select j.run_id = md5('tageweise:' || j.organization_id::text || ':'
+                           || j.deleted_at::date::text)::uuid
+            and j.deleted_at = date_trunc('day', j.deleted_at) and j.due_at = j.deleted_at
+              as tageweise
+       from public.deletion_journal j
+      where j.target_table = $1 and j.target_id = any($2::uuid[])
+      order by j.target_id`,
+    [tabelle, ids],
+  );
+  return rows.map((r) => r.tageweise);
+}

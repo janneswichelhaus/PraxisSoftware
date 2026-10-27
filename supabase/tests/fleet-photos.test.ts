@@ -12,6 +12,7 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { gleichzeitig } from './helpers/gleichzeitig';
+import { tageweise } from './helpers/wiederherstellung';
 
 /**
  * Fotos am Rad (FLT-002, ANN-552): ADR-017 sinngemäß wie die Anhänge an
@@ -758,6 +759,9 @@ describe('Fotos am Rad (FLT-002)', () => {
         expect((await journal()).sort()).toEqual(
           [typ.photo_id, summe.photo_id, metadaten.photo_id].sort(),
         );
+        expect(
+          await tageweise('fleet_photos', [typ.photo_id, summe.photo_id, metadaten.photo_id]),
+        ).toEqual([true, true, true]);
       } finally {
         await schalter(false);
       }
@@ -1203,6 +1207,7 @@ describe('Fotos am Rad (FLT-002)', () => {
       // Etwa weil doch eine Person im Bild war.
       await asUserCommitted(users.teamLead, LOESCHEN, [v.photo_id]);
       expect(await journal()).toEqual([v.photo_id]);
+      expect(await tageweise('fleet_photos', [v.photo_id])).toEqual([true]);
 
       // Ein Restore bringt die Zeile zurück; das Journal zieht nach.
       await asPostgres(
