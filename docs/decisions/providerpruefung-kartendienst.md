@@ -1,307 +1,76 @@
 # Providerprüfung Kartendienst (MAP-001)
+Stand: 2026-10-14 · gehört zu [ADR-019](../adr/ADR-019-map-service.md) · Katalog nach ADR-002 Punkt 3
 
-Stand: 2026-10-14 · Gehört zu ADR-019 (Fassung 5) · Prüfkatalog nach ADR-002
-Punkt 3 und `PROJECT_PRINCIPLES.md` §3.5
+Arbeitsliste für den Vertragscheck durch Jannes und für B2; entschieden wird in ADR-019. Die Webhosts
+der Anbieter sind aus der Entwicklungsumgebung gesperrt: **belegt** heißt abgerufen (PTVs Clients auf
+GitHub, Apple, Android, eigener Test mit Browser oder Schlüssel) oder schriftlich vom Anbieter,
+**Hinweis** heißt Suchauszug, Vertragliches ist `CONTRACT_CONFIRMATION_REQUIRED`; nicht raten.
+Recherchegang, Vergleich, Quellen: `git show 9452575:docs/decisions/providerpruefung-kartendienst.md`.
 
-Dieses Dokument hält fest, **was zum Kartendienst belegt ist, was nur als
-Hinweis vorliegt und was vor einer produktiven Freigabe vertraglich zu
-bestätigen ist.** Es trifft keine Entscheidung — die steht in ADR-019. Es ist
-die Arbeitsliste für den Vertragscheck durch Jannes und die
-Datenschutzberatung (B2) und wird bei jeder Verifikation fortgeschrieben.
+## Teil 1 — PTV Developer (PTV Logistics GmbH, Karlsruhe): die 13 Prüfpunkte
+| Nr. | Punkt | Befund | Belegtiefe |
+| --- | --- | --- | --- |
+| 1 | Karte (Vector Maps OSM, MapLibre) | Kacheln `https://api.myptv.com/maps-osm/v1/vector-tiles/{z}/{x}/{y}` (Zoom 0 bis 17), Style `https://vectormaps-resources.myptv.com/styles-osm/latest/standard-osm.json`; Kopf `ApiKey` nur am Kachelendpunkt, der Ressourcenhost liefert Style, Sprites und Glyphen ohne Schlüssel und ohne CORS-Vorabanfrage, eine fremde Kopfzeile blockiert dort die Anfrage (BEF-021); der Style bringt seine Quellenangabe mit (BEF-022); `maps/v1` liefe auf HERE-Daten | belegt (GitHub, Browser 2026-09-21); Attribution „PTV Group, OpenStreetMap contributors“: Hinweis |
+| 2 | Geocoding | `geocoding-osm/v1` auf OSM-Daten hält den Datenweg frei von Dritten; `geocoding/v1` läuft auf HERE-Daten | HERE-Variante belegt, OSM Hinweis |
+| 3 | Fahrrad- und Lastenradrouting | `api.myptv.com/routing-osm/v1/routes` mit `OSM_BICYCLE`, `OSM_CARGO_BICYCLE`; `results` als Liste (`POLYLINE,LEGS`), `distance` [m], `travelTime` [s], `polyline` als GeoJSON-Zeichenkette; `routing/v1` rechnet auf HERE-Daten (BEF-023); höchstens 25 Wegpunkte (sonst `ROUTING_TOO_MANY_WAYPOINTS`) und beim Fahrrad 1000 km Luftlinie | belegt (Schlüssel, 2026-09-21); Grenzen: Hinweis |
+| 4 | Fahrzeitmatrix | Matrix Routing OSM: `TRAVEL_TIMES` [s], `DISTANCES` [m], Index `k = i·N + j`; alle Orte in einem Rechteck von 100 km Kantenlänge, sonst `MATRIXROUTING_LOCATIONS_TOO_FAR_AWAY` | belegt (Client); Fahrrad Hinweis; Relationen je Anfrage nicht belegt |
+| 5 | spätere Optimierung | Route und Sequence Optimization kennen die OSM-Profile | belegt |
+| 6–12 | Vertrag und Datenschutz | Stand nach dem AVV: Teil 4b und Teil 5; Vertragspartner nach „Country Matrix“ | `CONTRACT_CONFIRMATION_REQUIRED` |
+| 13 | Schlüssel | einer je Abo, `ApiKey` oder `apiKey`; keine Domainbindung dokumentiert, deshalb Routing, Matrix und Geocoding nur serverseitig | Bindung: `CONTRACT_CONFIRMATION_REQUIRED` |
 
-## Belegtiefe — wie die Einträge zu lesen sind
+## Teil 3 — Externe Navigation
+| Ziel | Befund | Belegtiefe |
+| --- | --- | --- |
+| Google Maps URLs | `https://www.google.com/maps/dir/?api=1&destination=…&travelmode=bicycling`; Zwischenziele mit `\|`, drei im mobilen Browser, sonst neun; Wegpunkt als Ort, Adresse oder Koordinate; höchstens 2 048 Zeichen | Hinweis, Seite gesperrt (zuletzt 2026-09-22) |
+| Apple Maps (iOS 18.4+) | `https://maps.apple.com/directions?destination=…&mode=cycling`; Zwischenziele als wiederholtes `waypoint`, ohne Höchstzahl | belegt (2026-09-22) |
+| Android `geo:` | `geo:lat,lon`, `geo:0,0?q=…`; die Systemnavigation wählt die App, kein Verkehrsmittel | belegt (2026-09-22) |
 
-Die Recherche vom 2026-09-08 lief aus der Cloud-Entwicklungsumgebung. Deren
-Egress-Proxy sperrt **alle** Webhosts von PTV (`developer.myptv.com`,
-`api.myptv.com`, `legaldocs.myptv.com`, `ptvlogistics.com`, `ptvgroup.com`),
-MapTiler, GraphHopper, HERE, TomTom und den größten Teil von Google
-(`developers.google.com`, `business.safety.google`, `policies.google.com`);
-ebenso `web.archive.org`. Erreichbar waren `github.com` (darunter PTVs
-offizielle Organisation `ptv-logistics` mit per OpenAPI generierten Clients
-und Tutorials), `developer.apple.com`, `developer.android.com` und Teile von
-`cloud.google.com`. Alles Übrige stammt aus **Suchmaschinen-Auszügen** der
-jeweils genannten offiziellen Seite — die Seite selbst wurde nicht geöffnet,
-der Wortlaut ist nicht geprüft.
+Bis die Neun am Gerät bestätigt ist (MAP-005, Schritt 4), gilt in `src/lib/location/navigation.ts`
+für jede Ziel-App die kleinere Zahl, drei Zwischenziele; neun im mobilen Browser verlöre Stopps still.
 
-| Kennzeichen                          | Bedeutung                                                                                                  |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| **belegt (Primärquelle)**            | offizielle Seite oder offizielles Repository tatsächlich abgerufen, Wortlaut zitierbar                     |
-| **Hinweis (Suchauszug)**             | Auszug einer offiziellen Seite aus der Suche; Seite nicht abgerufen. Plausibel, aber nicht zitierfähig     |
-| **`CONTRACT_CONFIRMATION_REQUIRED`** | nicht aus Primärquellen belegbar; vor Echtdaten gegen die geltenden Vertragsunterlagen zu verifizieren     |
-| **nicht belegt**                     | keine Quelle gefunden — weder Beleg noch Gegenbeleg                                                        |
+## Teil 4 und 4a — Kosten, Rückmeldung von PTV (2026-09-21)
+Der Bedarf liegt unter jedem Freikontingent. PTV schrieb: Betrieb nur im Standard Plan, frei bis
+50 000 Transaktionen je Account; Domainbindung, Matrixgröße, Rate-Limits, §203 StGB, Subprozessoren,
+Retention, EU-Region unbeantwortet. **Schlüssel (Jannes, 2026-09-21):** Bis PTV einen zweiten
+bestätigt, nutzt MAP-003 auch serverseitig den Kachelschlüssel, befristet abweichend von ADR-019
+Punkt 19 (nur synthetische Koordinaten); **die Trennung ist Vorbedingung des Betriebs** (Gate 7).
 
-Regel aus dem Auftrag: **nicht raten.** Ein Punkt ohne Primärquelle bleibt
-offen, auch wenn ein Suchauszug ihn nahelegt.
+## Teil 4b — AVV von PTV (Version 2.0.0 vom 05.11.2025, vorliegend seit 2026-10-14)
+Zweimal geprüft (Art. 28 DSGVO, §203 StGB), Vorarbeit für B2, keine Rechtsberatung. Teil des
+Hauptvertrags, Abschluss per Checkbox (Ziff. 2), PTV Auftragsverarbeiter (5, 8.2); die Pflichtinhalte
+nach Art. 28 Abs. 3 lit. a bis h sind formal enthalten (4.1 bis 4.7, 6, 7, 8.4, 9.3).
 
-## Teil 1 — PTV Developer: die 13 Prüfpunkte
+**Lücken:** (1) Er gilt nur für Daten, die für PTV personenbezogen sind; „reine Adressdaten ohne
+Namen“, die der Adapter schickt, nennt er als möglicherweise anonym. (2) Keine besonderen Kategorien,
+obwohl Wohnkoordinaten im Konto einer Physiotherapiepraxis Gesundheitsdaten sind (EuGH C-184/20,
+C-21/23). (3) Keine Speicherdauer für Anfragen und Protokolle. (4) Eigene Zwecke nur mittelbar
+ausgeschlossen. (5) Keine Zusage „nur EU/EWR“ (8.5). (6) Kein Bezug auf §203 StGB. (7) PTV Developer,
+OSM-APIs und Kachelweg ungenannt. 1 bis 5 und 7 schließt eine Ergänzung nach 9.3, 6 eine Erklärung
+von PTV (Bitkom-Muster 2018, LÄK Thüringen); die Anfrage liegt bei Jannes und **ruht bis 2027**.
 
-Anbieter laut Impressum-Auszügen: **PTV Logistics GmbH, Stumpfstraße 1,
-76131 Karlsruhe** (Amtsgericht Mannheim HRB 745512) — Hinweis (Suchauszug);
-welche PTV-Gesellschaft für einen deutschen Kunden Vertragspartner ist,
-bestimmt laut Auszug eine „Country Matrix" — `CONTRACT_CONFIRMATION_REQUIRED`.
+**Offen für B2:** Sind namenlose Koordinaten im Konto der Praxis schon ein fremdes Geheimnis (bis
+dahin vorsorglich der volle Weg nach §203 Abs. 3 Satz 2 und Abs. 4 StGB)? Ersetzt eine Weisung die
+Festlegung nach Art. 28 Abs. 3 Satz 1 DSGVO? Strafbarkeit bei Beschäftigten in Irland,
+Haftungsobergrenze (9.2). **Abzulegen (G14):** AVV, Checkbox-Nachweis mit Datum,
+Unterverarbeiterliste und TOM zum Abschlusstag, die Antwort von PTV; von einem ungeproxten Rechner
+dazu Datenschutzerklärung, Country Matrix und Bedingungen (`legaldocs.myptv.com`), FAQ und die Seiten
+zu OSM-Profilen, Wegpunkten, Matrixgröße und Rate-Limits (`developer.myptv.com`).
 
-### Technik
+## Teil 5 — Gate-Liste vor Echtdaten
+Das Vertrags-/§203-/DSFA-Gate aus ADR-019 Punkt 9: Keiner der Punkte blockiert MAP-002 bis MAP-005
+mit synthetischen Daten, alle blockieren MAP-006. Fällt einer der Punkte 1 bis 5 negativ aus, wechselt
+hinter `src/lib/location/contract.ts` der Anbieter: MapTiler (Karte), HERE (Routing, Matrix).
 
-| Nr. | Punkt                                | Ergebnis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Belegtiefe                                                                                          |
-| --- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| 1   | Vector Maps OSM + MapLibre           | Kacheln im Mapbox-Vector-Tile-Format unter `https://api.myptv.com/maps-osm/v1/vector-tiles/{z}/{x}/{y}` (minzoom 0, maxzoom 17); Sprites und Glyphen unter `vectormaps-resources.myptv.com`; Style `…/styles-osm/latest/standard-osm.json`. PTVs eigene Tutorials rendern mit MapLibre GL JS und übergeben den Schlüssel per `transformRequest` (Query `apiKey`) oder Header `ApiKey`. **Im Browser geprüft am 2026-09-21 (BEF-021):** Der Kopf `ApiKey` funktioniert **nur** am Kachelendpunkt `api.myptv.com` — dort beantwortet der Anbieter die CORS-Vorabanfrage und lehnt einen falschen Schlüssel mit 401 ab. `vectormaps-resources.myptv.com` beantwortet die Vorabanfrage **nicht** und liefert Style, Sprites und Glyphen ohne Schlüssel aus; eine fremde Kopfzeile blockiert dort die ganze Anfrage. Attribution „PTV Group, OpenStreetMap contributors". Die Nicht-OSM-Variante `maps/v1` läuft auf HERE-Daten. | **belegt (Primärquelle)** — `github.com/ptv-logistics/tutorials-geocoding-scenario`, `…/tutorials-vector-map-overlays-react-app`, `…/leaflet-ptv-developer`; Style-URL **im Browser bestätigt (2026-09-21)**; Attribution: Hinweis (Suchauszug) |
-| 2   | Geocoding                            | Zwei APIs: **Geocoding & Places API** auf HERE-Daten (`geocoding/v1`, strukturiert `by-address`, Freitext `by-text`, rückwärts `by-position`) und **Geocoding OSM API** auf OSM-Daten (`geocoding-osm/v1/places/by-text`, auch mit getrennten Adressfeldern). Für uns relevant ist die OSM-Variante — sie hält den Datenweg frei von einem Drittanbieter. Ob HERE bei der HERE-Variante Anfragedaten erhält, sagt keine Quelle.                                                              | Endpunkte HERE-Variante: **belegt** (`clients-geocoding-api`); OSM-Variante: Hinweis (Suchauszug); Drittanbieterfluss: `CONTRACT_CONFIRMATION_REQUIRED` |
-| 3   | Fahrrad-/Lastenradrouting            | Routing OSM API: Profil ist ein String aus den vordefinierten OSM-Profilen. PTVs Tutorial `tutorials-pickups-and-deliveries` verwendet **`OSM_BICYCLE`** und **`OSM_CARGO_BICYCLE`**. Antwort: `distance` [m], `travelTime` [s], `polyline` (u. a. `GEO_JSON`), Ergebnisse `LEGS`, `LEGS_POLYLINE`, `POLYLINE`. Fehlercode `ROUTING_TOO_MANY_WAYPOINTS`; Grenze laut Auszug 25 Wegpunkte und 1000 km Luftlinie bei Fahrrad. **Mit Schlüssel geprüft am 2026-09-21 (BEF-023):** Die OSM-Profile liegen unter dem eigenen Pfad `api.myptv.com/routing-osm/v1/routes` — auf `routing/v1` antwortet `ROUTING_PROFILE_NOT_FOUND`, dort heißt das Fahrradprofil `BICYCLE` und rechnet auf HERE-Daten (1762 m / 488 s gegen 1731 m / 312 s auf OSM für dieselbe Teststrecke). `results` ist eine Liste (`POLYLINE,LEGS`), ein zweiter gleichnamiger Parameter wird abgelehnt; `polylineFormat` gibt es nicht, GeoJSON ist der Vorgabewert und kommt als **Zeichenkette** im Feld `polyline`.                                                                      | Profile, Antwortfelder: **belegt (Primärquelle)** — `clients-routing-osm-api`, Tutorial; Wegpunktgrenze: Hinweis (Suchauszug) |
-| 4   | Fahrzeitmatrix für Fahrrad           | Matrix Routing OSM API: derselbe Profilmechanismus (Default `EUR_OSM_CAR`, OSM-Profile referenzierbar); Ergebnisse `TRAVEL_TIMES` [s], `DISTANCES` [m], Index `k = i·N + j`; alle Orte in einem Rechteck von höchstens 100 km Kantenlänge (`MATRIXROUTING_LOCATIONS_TOO_FAR_AWAY`); Höchstzahl der Relationen je Anfrage im Client nicht beziffert.                                                                                                                                              | **belegt (Primärquelle)** — `clients-matrix-routing-osm-api`; Fahrradfreigabe der Matrix ausdrücklich: Hinweis (Suchauszug); Größe: nicht belegt |
-| 5   | spätere Route-/Sequenzoptimierung    | Route Optimization API und Sequence Optimization API kennen OSM-Profile („matchSideOfStreet … is disabled if an OSM profile is used"); das Tutorial schickt `OSM_BICYCLE`/`OSM_CARGO_BICYCLE` an `routeoptimization/v1/plans`. Eine eigene „OSM"-Optimierungs-API gibt es nicht.                                                                                                                                                                                                             | **belegt (Primärquelle)** — `clients-route-optimization-api`, `clients-sequence-optimization-api`, Tutorial |
-| 13  | API-Key-/Credential-Modell           | Ein Schlüssel je Abo, Header `ApiKey` oder Query `apiKey`; Verwaltung über die Account API. **Keine Referrer-/Domainbindung dokumentiert** — die Browser-Tutorials legen den Schlüssel schlicht in `window.apiKey`. Folge für uns: Routing, Matrix, Geocoding **serverseitig**; für die Kacheln ein eigener Schlüssel mit Kontingent, bis die Bindungsfrage geklärt ist.                                                                                                                       | Übergabe: **belegt (Primärquelle)**; Domainbindung: **nicht belegt** → `CONTRACT_CONFIRMATION_REQUIRED` (Support-Anfrage) |
-
-### Vertrag und Datenschutz
-
-Kein einziges PTV-Vertragsdokument war abrufbar. **Alle Punkte 6 bis 12 sind
-`CONTRACT_CONFIRMATION_REQUIRED`.** Seit dem 2026-10-14 liegt der AVV selbst
-vor; was er zu diesen Punkten belegt, steht in Teil 4b. Die Spalte „Hinweis" nennt, was
-Suchauszüge nahelegen — als Leseanleitung für den Vertragscheck, nicht als
-Beleg.
-
-| Nr. | Punkt                       | Hinweis (Suchauszug, ungeprüft)                                                                                                                                                                                                                                                                                                                                              | Zu verifizieren                                                                                                                                              |
-| --- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 6   | DPA-Anwendbarkeit           | Ein „Data Processing Agreement PTV Cloud Services" (EN/DE) liegt unter `legaldocs.myptv.com`. Auszug der General Terms of Service: „The Parties shall enter into an agreement on order data processing according to Art. 28 GDPR in accordance with the respectively applicable template". Ein Einwilligungsdokument zählt „PTV Developer, PTV Route Optimizer, PTV Map&Guide Internet" zu den PTV Cloud Services. | Ist PTV Developer im DPA ausdrücklich erfasst? Gilt der DPA als mit dem Abo geschlossen oder braucht es eine Unterschrift? Deckt er die OSM-APIs ab?          |
-| 7   | Processor-Rolle             | Auszug eines PTV-DPA: „The Customer is the controller within the meaning of Art. 4 (1) (7) GDPR, and PTV is the processor within the meaning of Art. 4 No. 8 GDPR."                                                                                                                                                                                                       | Aus welchem der beiden PTV-DPAs (EU Cloud Services vs. US) stammt der Satz? Weisungsbindung nach Art. 28 Abs. 3 lit. a — im US-Dokument steht nur „best efforts". |
-| 8   | Vertraulichkeitsregel       | Auszüge: „PTV, employees of PTV and subcontractors of PTV will implement and maintain appropriate … measures for Customer's Confidential Information"; „PTV shall treat the data confidential". **Kein Treffer** für „§ 203", „Berufsgeheimnis" oder „professional secrecy" auf einer PTV-Domain.                                                                    | Genügt die Klausel für §203 Abs. 3–4 StGB (Verpflichtung der mitwirkenden Person, Hinweis auf die Strafbarkeit)? Voraussichtlich ist eine **gesonderte schriftliche Verpflichtung** anzufragen. |
-| 9   | EU-Hosting                  | Auszug `developer.myptv.com`: „All data is stored and remains within the European Union". Auszug Data Privacy Statement PTV Cloud Services: Verarbeitung auf Azure durch Microsoft Ireland „only within the European Union and the European Economic Area"; „No data is transferred outside the European Union for PTV Cloud Services".                             | Azure-Region wird nirgends genannt. Gilt die Aussage für die OSM-APIs und die Kachelauslieferung (CDN)?                                                     |
-| 10  | Subprozessoren              | Ein Dokument „Subprocessors PTV Cloud Services" existiert; Inhalt unbekannt. Aus dem Privacy Statement ableitbar: Microsoft Ireland Operations Ltd. (Azure). Widerspruchsverfahren: 30 Tage, sonst Sonderkündigung mit anteiliger Erstattung.                                                                                                                             | Vollständige Liste; ob HERE oder TomTom bei den **OSM**-APIs als Subprozessor auftreten (bei OSM-Daten eigentlich nicht — zu bestätigen).                   |
-| 11  | Retention                   | **Keine Aussage** zur Aufbewahrung von API-Anfragen (Adressen, Koordinaten, IP, Logs) gefunden. Bekannt nur: Kundendaten 90 Tage nach Vertragsende gelöscht; Map-Matching-Tracks 7 Tage; Nutzungsdaten der Account API 60 Tage.                                                                                                                                       | Konkrete Speicherdauer von Request/Response und Logs; Zweckbindung. **Flag:** in den US-Terms steht ein Recht zur statistischen Auswertung nicht-personenbezogener Eingaben „to further improve the PTV Cloud Services" — prüfen, ob die EU-Terms das ebenfalls enthalten, und geocodierte Patientenadressen ausdrücklich ausnehmen. |
-| 12  | Dev-/Test-/Prod-Vertragsmodell | FAQ-Auszug: „The free subscription is only for testing and integration purposes. If you want to roll out your application for commercial use, you need to contact us". Produktseite: Free Plan „productive use is excluded", Transaktionen „limited to five hundred per day"; FAQ nennt dagegen „100,000 transactions per month" — Widerspruch, ohne Abruf nicht auflösbar. Standard Plan „productive use for simple applications … pay-as-you-go". Je Konto genau ein Free-Abo. | Konditionen des Standard Plans; ob Paid Plans Self-Service oder Bestellformular sind; ob der DPA Teil des Paid Plans ist. **Keine Euro-Beträge** in irgendeinem Auszug. |
-
-**Dokumente, die Jannes von einem ungeproxten Rechner laden und ablegen
-sollte** (Roadmap G14, DSFA-Unterlagen):
-
-- `https://legaldocs.myptv.com/en/myptv-legal-documents` (Index)
-- Data Processing Agreement PTV Cloud Services (EN/DE)
-- Subprocessors PTV Cloud Services
-- Data Privacy Statement PTV Cloud Services
-- General Terms and Conditions for SaaS Services (EU), General Terms of Service
-- Country Matrix (Vertragspartner)
-- `https://developer.myptv.com/en/terms-privacy`, `/en/help/faq-help`
-- Dokumentationsseiten „OSM Profiles", „Waypoints" (Routing OSM), Matrix-FAQ
-  (Größenlimit), Rate-Limit-Tabelle
-
-## Teil 2 — Vergleich, so knapp wie für die Entscheidung nötig
-
-Kriterien in der Reihenfolge ihres Gewichts nach §16: Datenschutzarchitektur
-(Processor-Rolle, EU-Verarbeitung, Retention) vor technischer Abdeckung vor
-Reife vor Preis.
-
-| Anbieter               | Rolle / Vertrag                                                                                                                                                                                                | EU-Verarbeitung                                                                                | Retention / Zweitnutzung                                                                                                     | Karte (MapLibre)                                                                 | Fahrradrouting · Matrix                                                                                              | Reife                                                     | Belegtiefe                                                  |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------- |
-| **PTV Developer**      | Processor laut DPA-Auszug; deutscher Anbieter (Karlsruhe); DPA für „PTV Cloud Services"                                                                                                                       | „All data … remains within the EU", Azure über Microsoft Ireland                                | keine Aussage gefunden; Auswertungsklausel in US-Terms                                                                       | ja, OSM-Vektorkacheln, eigene MapLibre-Tutorials                                 | `OSM_BICYCLE`, `OSM_CARGO_BICYCLE` · Matrix ja (100-km-Box) · Optimierung später möglich                              | GA; Free Plan nur Test                                    | Technik: belegt (GitHub) · Vertrag: Suchauszüge             |
-| **MapTiler**           | „acts as a Data Processor" (Security-Seite); DPA-Dokument nicht auffindbar                                                                                                                                     | `api.maptiler.eu` — EU-only Request Processing **nur auf Paid Plans**; Hosting OVHcloud, Google Firebase; CH/EWR | „does not handle visitor IP addresses at any time" (Cloudflare max. 20 min)                                                   | ja — SDK erweitert MapLibre GL JS (**belegt**, GitHub)                            | Directions API **Beta** (Juli 2026), Fahrradprofil ja; Matrix und Optimierung angekündigt/„available for testing"; Lastenrad nicht belegt | Karte GA, Routing Beta                                    | Suchauszüge; SDK belegt                                     |
-| **GraphHopper**        | GraphHopper GmbH, München; **kein DPA/AVV auffindbar**                                                                                                                                                         | Hetzner, Deutschland                                                                            | **jede Anfrage (Body, Header, IP, Zeit) bis zu 5 Wochen**, u. a. „to improve performance, quality and usability"              | keine eigene Karte                                                               | Profile `bike`, `ecargobike` u. a.; Matrix und Route Optimization mit denselben Profilen                               | GA                                                        | Suchauszüge                                                 |
-| **HERE**               | „controller or processor, depending on the product"; Data Protection Addendum unter `legal.here.com` existiert                                                                                                | **nicht belegt**                                                                                | „Essential Data Processing"-Endpunkte: **nicht auffindbar** — weder Domains noch Aussage zur Nichtnutzung für Produktverbesserung | ja, Vector Tile API v2 mit Style-URL für MapLibre                                | Fahrrad „currently offered as a beta feature"; Matrix für Fahrrad ja; Waypoint Sequencing Fahrrad nicht belegt          | Fahrrad Beta; Base Plan mit Kreditkarte                    | Suchauszüge; zentraler Punkt nicht belegt                   |
-| **TomTom**             | „Data Processing Schedule" mit SCC Modul 2/3; Geltung für Self-Service-Konten nicht belegt                                                                                                                     | „route requests through the appropriate regional servers" — keine ausdrückliche EU-Zusage       | nicht belegt                                                                                                                 | Maps SDK for JavaScript **Public Preview** (0.x, „breaking changes will occur", auf MapLibre) | `travelMode=bicycle` ja                                                                                              | SDK Public Preview, Vorgänger „Deprecated"                | Suchauszüge                                                 |
-| **Google Maps Platform** | **Controller-Controller Data Protection Terms**; keine Art.-28-Bedingungen für die Maps Platform gefunden (Cloud Data Processing Addendum nennt sie nicht — **belegt**, `cloud.google.com`)                | keine EU-Datenresidenz für die Maps Platform belegt                                             | als eigener Verantwortlicher nicht weisungsgebunden                                                                          | ja                                                                               | ja                                                                                                                   | GA                                                        | 2018er-Fassung der C2C-Terms belegt; aktuelle: Suchauszüge  |
-
-Richtigstellungen zu Google (Standardvertragsklauseln, §203): ADR-019,
-„Korrekturen gegenüber Fassung 1".
-
-## Teil 3 — Externe Navigation (Handoff-Ziele)
-
-| Ziel                       | Was belegt ist                                                                                                                                                                                                                                                                                              | Belegtiefe                                                                   |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Google Maps URLs           | `https://www.google.com/maps/dir/?api=1&destination=…&travelmode=bicycling`; Zwischenziele mit `\|` getrennt; „up to three waypoints supported on mobile browsers, and a maximum of nine waypoints supported otherwise"; Zwischenziele nicht bei `transit`. **Ergänzt am 2026-09-22 (MAP-005):** ein Wegpunkt darf „a place name, address, or comma-separated latitude/longitude coordinates" sein, und eine URL trägt höchstens **2 048 Zeichen**. | Hinweis (Suchauszug von `developers.google.com/maps/documentation/urls/get-started`) — **die Seite selbst bleibt aus der Cloud-Umgebung gesperrt (403), zuletzt geprüft am 2026-09-22** |
-| Apple Maps (iOS 18.4+)     | `https://maps.apple.com/directions?destination=<lat,lon oder Adresse>&mode=cycling` — `destination` nimmt „an address, coordinate, or a place name"; Modi `driving`, `walking`, `transit`, `cycling`. **Ergänzt am 2026-09-22 (MAP-005):** Zwischenziele als **wiederholter** Parameter `waypoint` („You can specify multiple waypoints by repeating the `waypoint` parameter") — **ohne genannte Höchstzahl**; dazu `avoid`, `transit-preferences`, `start`. Altes Schema: `daddr` mit `dirflg` `d`/`w`/`r` — **kein Fahrrad-Flag**. | **belegt (Primärquelle)** — `developer.apple.com` (Unified Map URLs, Map Links), am 2026-09-22 erneut abgerufen |
-| Android `geo:`-URI         | `geo:lat,lon`, `geo:0,0?q=lat,lon(label)`, `geo:0,0?q=my+street+address` — die Systemnavigation wählt die App; kein Verkehrsmittel-Parameter. „All strings passed in the `geo` URI must be encoded."                                                                                                     | **belegt (Primärquelle)** — `developer.android.com/guide/components/intents-common`, am 2026-09-22 erneut abgerufen |
-
-Zur früheren Zahl „20 Zwischenziele": ADR-019, „Korrekturen gegenüber Fassung 1".
-
-**Was MAP-005 daraus gemacht hat.** Die Zahl neun ist damit weiterhin **nicht
-gegen die Anbieterdokumentation selbst** geprüft — der einzige Weg dorthin
-führt über einen ungeproxten Rechner. Solange gilt in
-`src/lib/location/navigation.ts` die kleinere der beiden Zahlen (drei
-Zwischenziele), und zwar für jede Ziel-App: Die Anwendung weiß nicht, ob ein
-Tap in der App oder im mobilen Browser landet, und neun Wegpunkte im mobilen
-Browser hieße, Stopps **still** zu verlieren. Apple nennt keine Höchstzahl;
-eine undokumentierte Grenze ist kein Freibrief, deshalb dieselbe Zahl.
-Schritt 4 der Abnahme (MAP-005) beantwortet beides am Gerät — trägt ein
-Tageslink mehr, steigt die Konstante in einer Zeile.
-
-## Teil 4 — Kosten- und Vertragscheckpoint
-
-Nur, was Auszüge hergeben. **Keine Schätzungen.**
-
-| Frage                                            | Antwort                                                                                                                                                                                                                                                                                                                                                      |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Was geht mit kostenlosen Dev-Zugängen?           | **PTV Free Plan:** alle Dienste zum Testen, ein Schlüssel, „testing and integration purposes" — damit MAP-002 bis MAP-005 mit synthetischen Daten. **MapTiler Free:** 100 000 Requests/Monat. **GraphHopper Free:** nur nichtkommerziell, eingeschränkte Profile. **HERE Base Plan:** Kreditkarte nötig, Free Tier vorhanden. **TomTom:** tägliches Freikontingent (50 000 Kacheln, 2 500 andere). |
-| Was braucht für Produktion einen Paid Plan?      | **PTV:** ja — „productive use is excluded" im Free Plan; Standard Plan mit Pay-as-you-go. **MapTiler:** der EU-Endpunkt `api.maptiler.eu` nur auf Paid Plans. **GraphHopper:** kommerzielle Nutzung nur bezahlt. **HERE/TomTom:** Pay-as-you-go über dem Freikontingent.                                                                                    |
-| Wer braucht Sales / individuellen Vertrag?       | **PTV:** für kommerziellen Rollout „contact us" (FAQ); einzelne Funktionen „must be explicitly included in your individual PTV Developer license agreement". **GraphHopper:** DPA nicht auffindbar → voraussichtlich Enterprise-Kontakt. **HERE:** DPA und etwaige „Essential"-Endpunkte: unklar, ob Self-Service. **TomTom:** Geltung des Data Processing Schedule für Self-Service-Konten unklar. **Google:** Self-Service, aber nur Controller-Controller. |
-| Öffentlich bekannte Preise                       | **MapTiler:** Free 0 $, Flex 25 $/Monat (500 000 Requests), Unlimited 295 $/Monat (5 Mio.). **TomTom:** ab 0,08 $ je 1 000 Kacheln, 0,75 $ je 1 000 Geocodings (Auszug). **PTV, GraphHopper, HERE:** keine Beträge in Auszügen.                                                                                                                            |
-| Keine belastbare öffentliche Preisinformation    | **PTV** (Standard Plan, Pay-as-you-go-Sätze), **GraphHopper** (Monatspreise), **HERE** (Pro-Dienst-Preise nur in Drittquellen), MapTiler-Routing („flat rate per driver, per shift", ohne Betrag).                                                                                                                                                          |
-
-Für die Praxisgröße (eine Person, später wenige, einige Hausbesuche am Tag)
-liegt der Bedarf bei Größenordnung Dutzende Routing-/Matrix-Aufrufe je Tag und
-einigen tausend Kachelabrufen — deutlich unterhalb jedes genannten
-Freikontingents. Ob PTVs Standard Plan dafür wirtschaftlich ist, lässt sich
-ohne Preisliste nicht sagen.
-
-## Teil 4a — Rückmeldung des Anbieters vom 2026-09-21
-
-Erster direkter Kontakt, **nicht** aus einer Recherche: PTV Logistics
-(Vertrieb) auf eine Anfrage von Jannes. Der Testzugang war zuvor deaktiviert
-worden, weil sich die Registrierung „keiner unternehmerischen Tätigkeit"
-zuordnen ließ; nach der Erläuterung (Physiotherapie als Katalogberuf nach
-§ 18 Abs. 1 Nr. 1 EStG, § 14 BGB erfasst auch die selbständige berufliche
-Tätigkeit) wurde er **wieder aktiviert**.
-
-| Punkt                                | Antwort des Anbieters                                                                                                                                                    | Belegtiefe                       |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
-| Produktiver Betrieb                  | Erfordert den **Standard Plan**. Innerhalb des enthaltenen Freikontingents von **50 000 Transaktionen je Account** bleibt die Nutzung kostenfrei, die Kreditkarte wird nicht belastet. | **belegt** (E-Mail 2026-09-21)   |
-| Datenschutzunterlagen                | Verwiesen auf zwei Dokumente: „Bedingungen für die Registrierung und Nutzung einer MyPTV-ID" und „Datenschutzerklärung PTV Cloud Dienste". **Kein AVV nach Art. 28 DSGVO** und keine Stelle, die ihn zeichnet. | **belegt** (E-Mail 2026-09-21)   |
-| Domain-/Referrerbindung des Schlüssels | **Nicht beantwortet.**                                                                                                                                                   | offen                            |
-| Relationen je Matrix-Anfrage         | **Nicht beantwortet.**                                                                                                                                                   | offen                            |
-| Rate-Limits der OSM-APIs (Free Plan) | **Nicht beantwortet.**                                                                                                                                                   | offen                            |
-| § 203 StGB, Subprozessoren, Retention, EU-Region | **Nicht beantwortet**; verwiesen auf Produktseite, Tutorials, FAQ und Support-Portal.                                                                         | offen                            |
-
-**Einordnung.** Eine Datenschutzerklärung ist eine Information, kein
-Auftragsverarbeitungsvertrag: Sie trägt weder die Weisungsbindung noch § 203,
-weder Subunternehmerliste noch Löschfristen. Von der Gate-Liste in Teil 5 ist
-damit **kein Punkt** erledigt; Punkt 7 hat mit dem Standard Plan und dem
-Freikontingent immerhin eine belastbare Hälfte. Die offenen Fragen gehen mit
-der Nachfassanfrage an den Support und, soweit rechtlich, mit **B2** an die
-Datenschutzberatung.
-
-**Überholt am 2026-10-14:** Der AVV existiert (Version 2.0.0, Teil 4b). Die
-Aussage des Vertriebs gilt damit nicht mehr; die übrigen offenen Punkte dieser
-Tabelle bleiben offen.
-
-**Entscheidung von Jannes (2026-09-21) zum Schlüsselmodell.** Solange PTV
-keinen zweiten Schlüssel bestätigt hat, benutzt **MAP-003 denselben Schlüssel**
-wie die Kacheln, auch serverseitig. Das weicht von ADR-019 Punkt 19 ab, der
-für die Kacheln einen eigenen Schlüssel verlangt — bewusst und befristet: Der
-Prototyp verarbeitet ausschließlich synthetische Koordinaten, ein Missbrauch
-des im Browser sichtbaren Schlüssels kostet damit Kontingent und keine Daten
-(50 000 Transaktionen sind frei). **Die Trennung ist Vorbedingung des
-produktiven Betriebs** und gehört zu Punkt 7 der Gate-Liste; der Loop, der die
-Edge Function baut, verankert die Befristung an einer Codestelle und meldet
-sie als Annahme.
-
-**Technisch selbst geprüft (2026-09-21, im Browser):** Der Kopf `ApiKey`
-funktioniert am Kachelendpunkt `api.myptv.com`; `vectormaps-resources.myptv.com`
-liefert Style, Sprites und Glyphen ohne Schlüssel aus und beantwortet keine
-CORS-Vorabanfrage (BEF-021). Der Style dieses Hosts bringt seine eigene
-Quellenangabe mit (BEF-022).
-
-## Teil 4b — AVV PTV liegt vor (2026-10-14)
-
-Jannes hat den Vertrag als PDF bereitgestellt: „Auftragsverarbeitungsvertrag
-PTV", **Version 2.0.0 vom 05.11.2025**, © PTV Logistics GmbH, 8 Seiten. Er ist
-vollständig gelesen und gilt hier als **belegt (Primärquelle)**; geprüft in
-zwei unabhängigen Durchgängen gegen Art. 28 DSGVO und gegen § 203 StGB. Das
-ist keine Rechtsberatung, sondern Vorarbeit für B2. Die
-Dokumente, auf die der AVV verweist (Unterverarbeiterliste, TOM,
-Datenschutzerklärung), bleiben aus der Cloud-Umgebung gesperrt.
-
-**Was er regelt.** Der AVV ist Bestandteil des Hauptvertrags und kommt bei
-einer Bestellung über die Website mit der Checkbox zustande (Ziff. 2). Der
-Kunde ist Verantwortlicher, PTV Auftragsverarbeiter (Ziff. 5, 8.2). Die
-Pflichtinhalte nach Art. 28 Abs. 3 lit. a bis h sind formal enthalten:
-
-- Weisungsbindung mit Hinweis bei rechtswidriger Weisung (4.1)
-- TOM nach Art. 32 (4.2), Vertraulichkeit des Personals (4.3)
-- Meldung von Verletzungen „unverzüglich" (4.4)
-- Unterstützung bei Betroffenenrechten und Art. 32 bis 36 (4.5, 8.4)
-- Löschung oder Rückgabe am Vertragsende (4.7)
-- Nachweise und Inspektionen, Kosten beim Kunden (6)
-- allgemeine Genehmigung von Unterverarbeitern: 14 Tage Vorlauf, Einspruch,
-  Sonderkündigung nach 30 Tagen (7.1); Haftung für Unterverarbeiter (7.2)
-- Änderungen und Ergänzungen in Textform mit ausdrücklichem Hinweis (9.3)
-
-**Was für diese Praxis fehlt.**
-
-1. **Personenbezug „für PTV" (Ziff. 1.3, 3.1).** Der AVV gilt nur für Daten,
-   die für PTV personenbezogen sind, und nennt „reine Adressdaten ohne Namen"
-   als Beispiel für Daten, die für PTV anonym sein können. Genau solche Daten
-   schickt der Adapter (ADR-019). Fallen sie nach PTVs Lesart heraus, greift
-   die Auswertung „nicht personenbezogener" Eingaben aus den
-   MyPTV-ID-Bedingungen (Hinweis, Suchauszug).
-2. **Datenarten, Betroffene, Art. 9.** Nur Beispiele, „im Ermessen des
-   Kunden"; besondere Kategorien kommen nicht vor. Für die Praxis sind
-   Wohnkoordinaten im Konto einer Physiotherapiepraxis Gesundheitsdaten
-   (EuGH C-184/20, C-21/23; Sekundärquellen).
-3. **Speicherdauer** von Anfragen, Antworten und Protokollen während der
-   Laufzeit: keine Aussage.
-4. **Eigene Zwecke** nur mittelbar ausgeschlossen (4.1); kein ausdrückliches
-   Verbot einer anonymisierten oder aggregierten Nutzung.
-5. **Ort.** Keine Zusage „nur EU/EWR"; Ziff. 8.5 erlaubt Unterverarbeiter in
-   Drittländern mit Angemessenheitsbeschluss oder Standardvertragsklauseln.
-6. **§ 203 StGB.** Ziff. 4.3 ist die Vertraulichkeit nach Art. 28 Abs. 3
-   lit. b: kein Bezug auf § 203, keine Belehrung über die Strafbarkeit; 7.2
-   gibt nur „datenschutzrechtliche Pflichten" an Unterverarbeiter weiter.
-7. **Dienste.** Der AVV ist ein Muster für alle PTV-Produkte und nennt weder
-   PTV Developer noch die OSM-APIs noch den Kachelweg.
-
-Lücken 1 bis 5 und 7 schließt eine Ergänzung nach Ziff. 9.3; eine einseitige
-Weisung nach 4.1 trägt die Festlegungen nach Art. 28 Abs. 3 Satz 1
-womöglich nicht allein. Lücke 6 braucht eine Erklärung von PTV, Vorlage das
-Bitkom-Muster von 2018 oder das Muster der LÄK Thüringen. Die Anfrage an
-`datenschutz@ptvlogistics.com` liegt seit dem 2026-10-14 als Entwurf bei
-Jannes. **Sie ruht bis 2027** (Jannes, 2026-10-15): Die Anbieterprüfungen
-laufen gesammelt vor dem Go-live-Gate (M3); mit synthetischen Daten blockiert
-das nichts.
-
-**Stand der Gate-Liste nach dem AVV**
-
-| Nr.      | Stand                                                                                                                                                                                                                         |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1        | teilweise: AVV liegt vor; Geltung für PTV Developer, die OSM-APIs und das Konto ist zu bestätigen                                                                                                                              |
-| 2        | erfüllt (4.1), außer der Weisungsbindung bei Übermittlungen in Drittländer                                                                                                                                                    |
-| 3        | offen: Ergänzung zu § 203 angefragt                                                                                                                                                                                            |
-| 4        | Verfahren erfüllt (7.1, 7.2); Liste für PTV Developer offen. Laut Suchauszug: Microsoft Ireland Operations Ltd. (Azure), colpari GmbH (Support), Intercom                                                                      |
-| 5        | offen                                                                                                                                                                                                                         |
-| 6        | offen: „nur EU" steht nur in Datenschutzerklärungen, nicht im Vertrag                                                                                                                                                          |
-| 7        | Abschluss per Checkbox mit dem Standard Plan; Schlüsselbindung offen. Mit hinterlegter Kreditkarte kostet ein Missbrauch des Kachelschlüssels über dem Freikontingent Geld; die Begründung der befristeten Entscheidung aus Teil 4a trägt dann nicht mehr |
-| 8, 9, 11 | vom AVV nicht berührt                                                                                                                                                                                                         |
-| 10       | offen                                                                                                                                                                                                                         |
-
-**Offen für B2:** ob namenlose Koordinaten im Konto der Praxis schon ein
-fremdes Geheimnis sind (bis dahin vorsorglich der volle Weg über § 203 Abs. 3
-Satz 2 und Abs. 4); ob eine Weisung die Festlegung nach Art. 28 Abs. 3 Satz 1
-ersetzt; die Strafbarkeit bei Beschäftigten in Irland; die
-Haftungsobergrenze aus dem Hauptvertrag (Ziff. 9.2).
-
-**Abzulegen (G14):** AVV-PDF, Nachweis der Checkbox mit Datum,
-Unterverarbeiterliste und TOM zum Abschlusstag, die Antwort von PTV.
-
-## Teil 5 — Was vor Echtdaten offen bleibt (Gate-Liste)
-
-Diese Punkte sind das **Provider-/§203-/DSFA-Gate** aus ADR-019. Keiner
-blockiert MAP-002 bis MAP-005 mit synthetischen Daten. Alle blockieren
-MAP-006. Stand je Punkt nach dem AVV vom 05.11.2025: Teil 4b.
-
-1. DPA-Text liegt vor, nennt PTV Developer und die genutzten OSM-APIs
-   (Punkt 6, 7).
-2. Weisungsbindung nach Art. 28 Abs. 3 lit. a DSGVO im EU-DPA (Punkt 7).
-3. Schriftliche Verpflichtung nach §203 Abs. 4 StGB oder eine Klausel, die die
-   Datenschutzberatung (B2) als gleichwertig einstuft (Punkt 8).
-4. Subprozessorliste für die OSM-APIs; Bestätigung, dass kein Drittanbieter
-   Anfragedaten erhält (Punkt 10).
-5. Retention von Request/Response/Logs; Ausschluss der Zweitnutzung für
-   Produktverbesserung, ausdrücklich auch für „nicht personenbezogene"
-   Eingaben (Punkt 11).
-6. EU-Region der Verarbeitung einschließlich Kachelauslieferung (Punkt 9).
-7. Vertragsmodell und Preis des Paid Plans; Bindung des Kachelschlüssels an
-   die Domain oder gleichwertiger Schutz (Punkt 12, 13).
-8. Providerprüfung der Supabase Edge Runtime als Laufzeit des serverseitigen
-   Adapters (ADR-015 Punkt 20, OPS-001).
-9. DSFA-Wiedervorlage „wesentliche Änderung der Routing-/Standortverarbeitung"
-   (ADR-007 Punkt 2), Nennung in Datenschutzinformation (PAT-006) und
-   Verzeichnis der Verarbeitungstätigkeiten (G14).
-10. **Kachelweg** (ADR-019 Fassung 5, Punkt 34): Der DPA nennt die
-    Vector-Maps-API und den Host für Style, Sprites und Glyphen
-    (`vectormaps-resources.myptv.com`, BEF-021) ausdrücklich; belegt ist, was
-    der Anbieter aus Kachelanfragen speichert (IP-Adresse, Ausschnitt,
-    Referrer), wie lange und ohne Zweitnutzung, und ob ein CDN außerhalb der
-    Subprozessorliste ausliefert.
-11. **Schätzungen** (ADR-019 Fassung 5, Punkt 38): Belegt ist, ob und woran
-    Matrix- und Routenantworten der OSM-APIs eine Ersatzschätzung (Luftlinie,
-    nicht routbarer Punkt) kenntlich machen.
-
-Fällt Punkt 1 bis 5 negativ aus, bleibt der Adapter, und der Anbieter wechselt
-— das ist der Zweck des Vertrags in `src/lib/location/contract.ts`. Zweiter
-Kandidat für die Karte ist MapTiler (EU-Endpunkt, Processor), für Routing
-und Matrix HERE — beide mit eigener Prüfung nach diesem Katalog.
+| Nr. | Gate-Punkt | Stand nach dem AVV |
+| --- | --- | --- |
+| 1 | DPA-Text liegt vor und nennt PTV Developer und die genutzten OSM-APIs (Punkte 6, 7) | teilweise: Geltung für PTV Developer, die OSM-APIs und das Konto offen |
+| 2 | Weisungsbindung nach Art. 28 Abs. 3 lit. a DSGVO (Punkt 7) | erfüllt (4.1), außer bei Übermittlung in Drittländer |
+| 3 | Schriftliche Verpflichtung nach §203 Abs. 4 StGB oder eine Klausel, die B2 als gleichwertig einstuft (Punkt 8) | offen, Ergänzung angefragt |
+| 4 | Subprozessorliste für die OSM-APIs; kein Drittanbieter erhält Anfragedaten (Punkt 10) | Verfahren erfüllt (7.1, 7.2); Liste offen, laut Auszug Microsoft Ireland (Azure), colpari, Intercom |
+| 5 | Retention von Anfrage, Antwort und Logs; keine Zweitnutzung, ausdrücklich auch nicht „nicht personenbezogener“ Eingaben (Punkt 11) | offen; bekannt nur 90 Tage nach Vertragsende, US-Terms erlauben statistische Auswertung |
+| 6 | EU-Region der Verarbeitung samt Kachelauslieferung (Punkt 9) | offen: „nur EU“ steht nur in Datenschutzerklärungen |
+| 7 | Vertragsmodell und Preis des Paid Plans; Kachelschlüssel an die Domain gebunden oder gleichwertig geschützt (Punkte 12, 13) | Abschluss per Checkbox mit dem Standard Plan; Bindung offen; mit hinterlegter Kreditkarte kostet ein Missbrauch Geld, die Begründung aus Teil 4a trägt dann nicht mehr |
+| 8 | Providerprüfung der Supabase Edge Runtime als Laufzeit des Adapters (ADR-015 Punkt 20, OPS-001) | offen, nicht vom AVV berührt |
+| 9 | DSFA-Wiedervorlage (ADR-007 Punkt 2), Datenschutzinformation (PAT-006) und Verzeichnis der Verarbeitungstätigkeiten (G14) | offen, nicht vom AVV berührt |
+| 10 | Kachelweg (ADR-019 Punkt 34): DPA nennt Vector-Maps-API und Ressourcenhost (BEF-021); belegt ist, was der Anbieter aus Kachelanfragen speichert (IP, Ausschnitt, Referrer), wie lange, ohne Zweitnutzung, und ob ein CDN außerhalb der Liste ausliefert | offen |
+| 11 | Schätzungen (ADR-019 Punkt 38): belegt ist, ob und woran Matrix- und Routenantworten eine Ersatzschätzung kenntlich machen | offen, nicht vom AVV berührt |

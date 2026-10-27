@@ -14,23 +14,11 @@ Punkte der Checkliste) — **die Liste steht nur dort**, nicht hier. Danach nur,
 berührt: die geänderten Migrationen, Policies, Funktionen und Tests, und die ADRs, die er nennt
 (ADR-004 Rollen und RLS, ADR-008 Löschung, ADR-009 Abrechnung, ADR-010 Audit, ADR-011 Logs).
 
-## Worauf du je Punkt besonders achtest
+## Über die Checkliste hinaus
 
-- **RLS und Policies:** Jede neue oder geänderte Policy hat Negativtests in `supabase/tests/`:
-  andere Organisation, Rolle ohne Recht, Patientenkonto, fremde Person, anderer Leistungsbereich.
-- **`SECURITY DEFINER`:** `search_path = ''`, Rolle und Organisation in der Funktion geprüft,
-  Auditeintrag in derselben Transaktion.
-- **Datenminimierung:** Projektionen liefern nur, was die Rolle sehen darf; nichts wird im Client
-  ausgeblendet statt am Server weggelassen.
-- **Audit:** nur Aktionen aus dem Katalog; eine neue Auditaktion ohne ADR-Änderung und Label
-  `freigabe-audit` ist rot.
-- **Neue Tabellen:** Datenklasse und Frist (`COMMENT`, `retention_assignments`) und ein Löschtest.
-- **Keine Namen und keine klinischen Inhalte** in URL, Logs und Audit-Kontext.
-- **Secrets, `service_role`, Produktionsadressen** im Diff sind immer rot.
-- **Externe Datenflüsse** nur geprüft und in Dev/Test gegen Mock; Rechnungsdaten mit Snapshot und
-  Storno-Kette.
-- **Annahmen:** jede im Register, mit Anker; keine fällt in die Stoppliste aus §15.1.
-- **Ausgelieferte Migrationen** sind unverändert; Korrekturen sind neue Migrationen.
+Immer rot: eine Auditaktion außerhalb des Katalogs (`supabase/audit-aktionen.txt`) oder eine neue
+ohne ADR-Änderung und Label `freigabe-audit`; Secrets, `service_role` oder Produktionsadressen im
+Diff; eine geänderte ausgelieferte Migration statt einer neuen.
 
 ## Ausgabe
 

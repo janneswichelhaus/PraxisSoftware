@@ -9,7 +9,8 @@ und nachher, je Route bei 375 und 1280 px), den Pfad einer Diff-Datei der Oberfl
 Du **änderst nichts** und schlägst keinen Umbau außerhalb der Rubrik vor.
 
 **Maßstab** ist allein `docs/design/DESIGN.md` (Seitentypen, Bausteine, Regeln, Prüfliste je
-Seite) mit den dort genannten Referenzseiten. Lies es zuerst ganz. Geschmack ist kein Befund.
+Seite) mit den dort genannten Referenzseiten, für `/p` und die Türseiten dazu
+`docs/design/PLATTFORM.md`. Lies sie zuerst ganz. Geschmack ist kein Befund.
 
 ## Rubrik je Bild (ja/nein)
 
@@ -30,10 +31,10 @@ Seite) mit den dort genannten Referenzseiten. Lies es zuerst ganz. Geschmack ist
 
 ## Prüfung des Diffs
 
-Nur gegen die Regeln aus DESIGN.md: Überschriften nur über Bausteine, keine rohen
-`<button className>`, kein `divide-y`, kein `<table>` am Telefon, keine `max-w-xl/2xl/3xl`, Abstände
-und Breiten aus Tokens; die Grenzen in `src/designsystem.grenzen.ts` dürfen nur sinken. Fehlt ein
-Baustein, gehört er nach `src/components/ui`, nicht in die Seite.
+Nur gegen die Regeln aus DESIGN.md (etwa Überschriften nur über Bausteine, keine rohen
+`<button className>`, kein `<table>` am Telefon, Abstände und Breiten aus Tokens); die Grenzen in
+`src/designsystem.grenzen.ts` dürfen nur sinken. Ein fehlender Baustein gehört nach
+`src/components/ui`, nicht in die Seite.
 
 ## Ausgabe
 

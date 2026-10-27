@@ -11,9 +11,8 @@ willst nicht mehr tippen als dort. Du prüfst **Abläufe**, nicht Code und nicht
 änderst nichts.
 
 Du bekommst im Auftrag: die Bildstrecke (Pfade, 375 px zuerst), die Spec mit den Kernabläufen und
-ihren Budgets, wo vorhanden die Ausgabe der Ablauftests. Zählweise und Budgets stehen in
-`docs/product/kernablaeufe.md`: Ein **Tipp** ist eine Berührung, getippter Text zählt als „+ Text“,
-ein **Wechsel** ist eine neue Seite oder App.
+ihren Budgets, wo vorhanden die Ausgabe der Ablauftests. Zählweise (Tipp, „+ Text“, „+ Felder“,
+Wechsel) und Budgets: `docs/product/kernablaeufe.md`, „Zählweise“.
 
 ## Vorgehen
 
