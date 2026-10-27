@@ -302,7 +302,7 @@ Gilt seit Aufräumen Schritt 3 (ANN-748):
 ```bash
 pnpm format:check    # Prettier - eigenes CI-Gate, nicht Teil von lint
 pnpm format          # dieselbe Prüfung, schreibend
-pnpm lint            # ESLint inkl. statischer Sicherheitsanalyse, mit 6 GB Heap
+pnpm lint            # ESLint inkl. statischer Sicherheitsanalyse, zwei Läufe je 3 GB Heap
 pnpm typecheck       # TypeScript strict
 pnpm test            # Komponenten (jsdom) und reine Logik (Node, Projekt logik)
 pnpm test:watch      # dieselben Tests, laufend
@@ -320,11 +320,14 @@ pnpm build
 pnpm preview         # den gebauten Stand lokal ausliefern
 ```
 
-`pnpm lint` braucht 6 GB Heap (typisiertes Linting über App, Tests, Skripte und Edge Functions,
-gemessen bis 3,5 GB). Eine `.test.ts`-Datei läuft ohne DOM, sonst `// @vitest-environment jsdom` in
-der ersten Zeile; `.test.tsx` läuft mit jsdom. Playwright prüft vor der Anmeldung nur `mobile`
-(Pixel 7), die Breiten setzt jede Spezifikation (ANN-571); ein System-Chromium über
-`PLAYWRIGHT_CHROMIUM_EXECUTABLE`. Das Modell setzt `.claude/settings.json`, den Aufwand `CLAUDE.md`.
+`pnpm lint` prüft in zwei Läufen nacheinander (`scripts/lint.mjs`), erst die Anwendung, dann die
+Tests, je mit 3 GB Heap: Jeder hält nur sein TypeScript-Programm, Spitze 2,7 statt 5,1 GB, nicht
+langsamer. `scripts/lint.test.mjs` hält fest, dass beide genau die Dateien von `eslint .` prüfen.
+Kein `--cache`: Typbasierte Regeln übersähen einen neuen Fehler in einer unveränderten Datei. Eine
+`.test.ts`-Datei läuft ohne DOM, sonst `// @vitest-environment jsdom` in der ersten Zeile;
+`.test.tsx` läuft mit jsdom. Playwright prüft vor der Anmeldung nur `mobile` (Pixel 7), die Breiten
+setzt jede Spezifikation (ANN-571); ein System-Chromium über `PLAYWRIGHT_CHROMIUM_EXECUTABLE`. Das
+Modell setzt `.claude/settings.json`, den Aufwand `CLAUDE.md`.
 
 **docs:check** ist ein Gate nach ADR-013 (Prüfung 2.10) im Job „Format, Lint, Dokumentation,
 Typecheck“. Die Regeln stehen in `scripts/docs-check-regeln.mjs`, jede Grenze wird nur gesenkt, nie
