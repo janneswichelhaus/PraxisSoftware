@@ -1,59 +1,15 @@
 import type { NavigationApp, NavigationTarget, PostalAddress } from './contract';
 
 /**
- * Übergabe an eine externe Navigations-App (UX-002, MAP-005, ADR-019 Punkt 20
- * bis 23).
- *
- * ANN-018 (docs/decisions/ASSUMPTIONS.md): Übergabeziel und URL-Format. Dies
- * ist die eine Stelle, an der die Annahme greift - ändert die
- * Datenschutzprüfung das Ziel, den Feldzuschnitt oder die Ziel-App, ändert sich
- * genau diese Datei.
- *
- * Drei Regeln, die diese Datei trägt und die im Review geprüft werden:
- *
- *   1. **Nur das Ziel und der Fahrradmodus.** Kein Name, keine Uhrzeit, keine
- *      Termin- oder Patientenkennung, keine Notiz, keine Diagnose. Was hier
- *      nicht im Typ steht, kann auch nicht mitgehen.
- *   2. **Erst beim Tippen.** Die Funktionen hier werden im Klickhandler
- *      aufgerufen, nie beim Rendern. Eine gebaute URL wird nirgends
- *      gespeichert und nie automatisch geöffnet (ADR-019 Punkt 20).
- *   3. **Kein eingebetteter Rahmen.** Die Anwendung übermittelt nichts; die
- *      Verbindung baut das Gerät der Person nach ihrem Tippen auf.
- *
- * **Seit MAP-005 kennt die Datei alle drei Ziel-Apps aus ADR-019 Punkt 22.**
- * Bis dahin war es allein Google Maps, weil die Roadmap-Zeile von UX-EPIC-001
- * nicht mehr verlangte. Eine Einstellung, welche App die bevorzugte ist, gibt
- * es weiterhin **nicht**: Welche auf den tatsächlich genutzten Geräten
- * zuverlässig im Fahrradmodus öffnet, beantwortet die Gerätebewertung
- * (MAP-005c, `docs/sichtung/kartendienst.md`) - erst deren Ergebnis
- * begründet eine Vorauswahl (ADR-019, „Bewusst nicht Bestandteil").
+ * Übergabe an eine externe Navigations-App (ADR-019 Punkt 20 bis 23, ANN-018): nur Ziel und
+ * Fahrradmodus, erst im Klickhandler, nie gespeichert, kein eingebetteter Rahmen. Eine bevorzugte
+ * App gibt es erst, wenn die Gerätesichtung (`docs/sichtung/README.md`, S-3) sie begründet.
  */
 
 /**
- * Höchstzahl der Zwischenziele einer Google-Maps-URL laut Anbieter:
- * „up to three waypoints supported on mobile browsers, and a maximum of nine
- * waypoints supported otherwise".
- *
- * **Erzwungen wird die kleinere der beiden Zahlen** (`MAX_ZWISCHENZIELE`), und
- * zwar für jede Ziel-App. Der Grund ist nicht Vorsicht, sondern dass die
- * Anwendung die entscheidende Frage nicht beantworten kann: Ob ein Tippen auf
- * dem Telefon in der Google-Maps-App landet (neun) oder im mobilen Browser
- * (drei), entscheidet das Gerät, nicht diese Datei. Wer neun übergibt und im
- * Browser landet, verliert die Stopps ab dem vierten **still** - genau das,
- * was das Teilen in Abschnitte verhindern soll.
- *
- * Der Preis sind mehr Abschnitte auf dem Schreibtisch, und der ist sichtbar:
- * Ein Abschnitt ist ein beschrifteter Knopf, ein verschluckter Stopp ist
- * nichts. Ob die Ziel-Apps auf den Geräten der Praxis mehr tragen, beantwortet
- * Schritt 4 der Gerätebewertung (MAP-005c); fällt sie positiv aus, wandert die
- * Zahl hier von drei auf neun - eine Zeile.
- *
- * **Belegtiefe.** Suchauszug von
- * `developers.google.com/maps/documentation/urls/get-started`; die Seite selbst
- * ist aus der Cloud-Umgebung gesperrt (Egress-Proxy, 403), zuletzt geprüft am
- * 2026-09-22. Derselbe Auszug deckt Koordinaten als Wegpunkt und eine
- * Obergrenze von 2 048 Zeichen je URL
- * (`docs/decisions/providerpruefung-kartendienst.md`, Teil 6).
+ * Google Maps trägt neun Zwischenziele, im mobilen Browser drei (providerpruefung-kartendienst.md,
+ * Teil 3). Erzwungen wird die kleinere Zahl: Wo ein Tippen landet, entscheidet das Gerät, und
+ * Stopps fehlen sonst still. Mehr erst nach der Gerätesichtung (`docs/sichtung/README.md`, S-3).
  */
 export const MAX_ZWISCHENZIELE_DOKUMENTIERT = 9;
 

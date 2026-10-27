@@ -1,20 +1,9 @@
 import { ladeDefinitionen, type Bibliothek } from './definitionen';
 
 /**
- * Die Bibliothek, wie die Anwendung sie sieht (FRB-007).
- *
- * `import.meta.glob` sammelt die Definitionsdateien zur Bauzeit ein. Zwei
- * Folgen, die beide gewollt sind:
- *
- *   - Eine neue Definition ist **eine Datei** — kein Import, keine Liste, kein
- *     Commit an einer Komponente. Das ist das Leitprinzip des Arbeitsauftrags.
- *   - Eine fehlerhafte Definition bricht den Start, nicht erst die Erhebung.
- *     Ein Fragebogen, der bei der Patientin auf halber Strecke stehenbleibt,
- *     wäre der schlechtere Zeitpunkt.
- *
- * Seit FRB-EPIC-001 liegen die drei freien Instrumente dort, noch inaktiv
- * (ANN-099); die übrigen Inhalte kommen mit den Phasen P2, P4 und P5
- * (`docs/development/FRB-BAUSTEINE-UND-SCORES.md`) als reine Datenlieferungen.
+ * Sammelt die Definitionsdateien zur Bauzeit ein: Eine neue Definition ist eine Datei, und eine
+ * fehlerhafte bricht den Start, nicht erst die Erhebung bei der Patientin. Die freien Instrumente
+ * liegen inaktiv bereit (ANN-099); weitere kommen als reine Datenlieferungen.
  */
 const rohdaten: Record<string, unknown> = import.meta.glob('./definitionen/**/*.json', {
   eager: true,

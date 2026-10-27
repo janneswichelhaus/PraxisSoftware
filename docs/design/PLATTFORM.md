@@ -2,10 +2,10 @@
 
 Gleiche Marke, gleiche Farben, gleiche Bausteine, eigene Sprache. Für Patient:innen und Kund:innen
 bis 78, am eigenen Telefon, zuhause. Gilt für `/p`, `/einladung` und die Türseiten (`Vollseite`); es
-gilt [DESIGN.md](DESIGN.md), soweit hier nichts anderes steht. Werte und Bildschirme:
-Handoff 2026-10-22 (`git show eb43569:docs/design/handoff-2026-10-22-plattform-erster-eindruck.md`); Befunde:
-[Design-Review Lauf 1](review-2026-10/lauf-1-bericht.md); Inhalt und Reihenfolge der Ansichten:
-DSN-001 (`docs/development/PLATTFORM-ANSICHTEN.md`).
+gilt [DESIGN.md](DESIGN.md), soweit hier nichts anderes steht. In Git: Werte und Bildschirme im
+Handoff 2026-10-22 (`git show eb43569:docs/design/handoff-2026-10-22-plattform-erster-eindruck.md`),
+Befunde im Design-Review Lauf 1 (`git show 9452575:docs/design/review-2026-10/lauf-1-bericht.md`),
+Inhalt und Folge der Ansichten in DSN-001 (`git show 9452575:docs/development/PLATTFORM-ANSICHTEN.md`).
 
 ## Grundsätze
 
@@ -23,18 +23,22 @@ unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
 
 ## Was auf der Plattform anders gilt
 
-| DESIGN.md                   | Plattform                                                                                                                                                                                                                                  |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Keine Schatten              | Eine Tiefenstufe `shadow-plattform`, nur für Hero-, Aufgaben- und Besuchskarte (ANN-678). Listen bleiben Linie.                                                                                                                            |
-| Schriftrollen in px         | Skala in rem: Gruß `text-gruss` 34/800 (Rechner 40), Seitentitel `text-plattform-titel` 28/800 (32), Hero `text-hero` 26/800 (32, unter 23rem 22), Abschnitt `text-abschnitt` 22/700; Zeile 18/600, Text 18/400, Leise `ink-muted` 18/400. |
-| Etiketten in Versalien      | Keine Versalien. Die Bausteine heben `uppercase` unter `.plattform-schrift` auf (DR-154).                                                                                                                                                  |
-| Keine Erklärsätze           | Ein Satz Orientierung, wo sonst unklar bleibt, was passiert (leer, nach dem Absenden, wer meine Angaben sieht); nie eine Gebrauchsanweisung der Oberfläche.                                                                                |
-| Silbentrennung im Fließtext | Nur lange Wörter ab zwölf Buchstaben; nie in Namen, Anschriften, Überschriften, Knöpfen und Reitern (DR-114); unter 23rem auch Plan- und Übungsnamen (`trennen-schmal`, ANN-707).                                                          |
-| Ziele ≥ 44 px               | Knöpfe 48, antippbare Karten ≥ 80, Zeilen und Textlinks ≥ 44; Abstand zwischen Zielen ≥ 8, nicht in der Wochenleiste (ANN-708). Hauptknopf der Durchführung 56 (`gross`).                                                                  |
-| Rhythmus 4/8/12/16/24/32    | Dazu 40 (Telefon) und 48 (Rechner) zwischen Abschnitten; Seitenrand 20, Türseiten 24.                                                                                                                                                      |
-| Hover 120 ms                | Druck an Knopf, Zeile und Karte: 98 % und vertiefte Fläche in 120 ms; bei „Bewegung reduzieren“ nur die Fläche (DR-117).                                                                                                                   |
-| Bilder `Medienbild` 4:3     | Eigene Fotos der Praxis, keine KI-Bilder; 4:3 oder 16:9 im Radius 16, Personen rund (`Personenbild` `karte`, 56). Markenform ist das Laufrad, nie neben der Wortmarke.                                                                     |
-| Liste in Karte              | Die Hauptsache als Hero-Karte (Tiefgrün, Papier-Schrift), höchstens drei Aufgabenkarten; alles Weitere als `ListRow`, jede Zeile ganz das Ziel.                                                                                            |
+| DESIGN.md                   | Plattform                                                                                                                                                                         |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Keine Schatten              | Eine Tiefenstufe `shadow-plattform`, nur für Hero-, Aufgaben- und Besuchskarte (ANN-678). Listen bleiben Linie.                                                                   |
+| Schriftrollen in px         | Skala in rem, Werte unter der Tabelle.                                                                                                                                            |
+| Etiketten in Versalien      | Keine Versalien. Die Bausteine heben `uppercase` unter `.plattform-schrift` auf (DR-154).                                                                                         |
+| Keine Erklärsätze           | Ein Satz Orientierung, wo sonst unklar bleibt, was passiert (leer, nach dem Absenden, wer meine Angaben sieht); nie eine Gebrauchsanweisung der Oberfläche.                       |
+| Silbentrennung im Fließtext | Nur lange Wörter ab zwölf Buchstaben; nie in Namen, Anschriften, Überschriften, Knöpfen und Reitern (DR-114); unter 23rem auch Plan- und Übungsnamen (`trennen-schmal`, ANN-707). |
+| Ziele ≥ 44 px               | Knöpfe 48, antippbare Karten ≥ 80, Zeilen und Textlinks ≥ 44; Abstand zwischen Zielen ≥ 8, nicht in der Wochenleiste (ANN-708). Hauptknopf der Durchführung 56 (`gross`).         |
+| Rhythmus 4/8/12/16/24/32    | Dazu 40 (Telefon) und 48 (Rechner) zwischen Abschnitten; Seitenrand 20, Türseiten 24.                                                                                             |
+| Hover 120 ms                | Druck an Knopf, Zeile und Karte: 98 % und vertiefte Fläche in 120 ms; bei „Bewegung reduzieren“ nur die Fläche (DR-117).                                                          |
+| Bilder `Medienbild` 4:3     | Eigene Fotos der Praxis, keine KI-Bilder; 4:3 oder 16:9 im Radius 16, Personen rund (`Personenbild` `karte`, 56). Markenform ist das Laufrad, nie neben der Wortmarke.            |
+| Liste in Karte              | Die Hauptsache als Hero-Karte (Tiefgrün, Papier-Schrift), höchstens drei Aufgabenkarten; alles Weitere als `ListRow`, jede Zeile ganz das Ziel.                                   |
+
+**Skala:** Gruß `text-gruss` 34/800 (Rechner 40), Seitentitel `text-plattform-titel` 28/800 (32),
+Hero `text-hero` 26/800 (32, unter 23rem 22), Abschnitt `text-abschnitt` 22/700; Zeile 18/600, Text
+18/400, Leise `ink-muted` 18/400.
 
 ## Bausteine der Plattform
 

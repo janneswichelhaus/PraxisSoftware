@@ -1,65 +1,50 @@
 # Praxisplattform
 
-Zentrale Softwareplattform für eine privat abrechnende Physiotherapiepraxis mit
-Schwerpunkt Hausbesuche.
-
-**Früher Entwicklungsstand.** Es existieren ausschließlich synthetische
-Testdaten; ein Produktivbetrieb ist ausdrücklich nicht freigegeben.
+Zentrale Softwareplattform für eine privat abrechnende Physiotherapiepraxis mit Schwerpunkt
+Hausbesuche. **Früher Entwicklungsstand.** Es existieren ausschließlich synthetische Testdaten; ein
+Produktivbetrieb ist ausdrücklich nicht freigegeben.
 
 ## Grundlagen
 
-Verbindlich sind [`PROJECT_PRINCIPLES.md`](PROJECT_PRINCIPLES.md) und die
-Architecture Decision Records in [`docs/adr/`](docs/adr/); die Rangfolge aller
-Dokumente steht in `PROJECT_PRINCIPLES.md` §21. Offene Entscheidungen und
-vorläufige Annahmen: [`docs/decisions/`](docs/decisions/). Reihenfolge der
-Umsetzung: [`docs/development/ROADMAP.md`](docs/development/ROADMAP.md). Was
-echt angebunden ist und was gekennzeichnete Vorschau:
-[`docs/development/ARBEITSBEREICHE.md`](docs/development/ARBEITSBEREICHE.md).
+Verbindlich sind [`PROJECT_PRINCIPLES.md`](PROJECT_PRINCIPLES.md) und die Architecture Decision
+Records in [`docs/adr/`](docs/adr/); die Rangfolge aller Dokumente steht in `PROJECT_PRINCIPLES.md`
+§21. Offene Entscheidungen und vorläufige Annahmen: [`docs/decisions/`](docs/decisions/).
+Reihenfolge: [`docs/development/ROADMAP.md`](docs/development/ROADMAP.md); was echt angebunden ist
+und was Vorschau: [`docs/development/ARBEITSBEREICHE.md`](docs/development/ARBEITSBEREICHE.md).
+Einrichtung, Testkonten und Befehle: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
-## Stack
+## Stack und Struktur
 
-TypeScript · React · Vite · Tailwind CSS · TanStack Query · Zod · Supabase
-(PostgreSQL, Auth, Storage) · Vitest · Playwright · GitHub Actions ([ADR-015](docs/adr/ADR-015-initial-technical-stack.md))
-
-## Struktur
+TypeScript · React · Vite · Tailwind CSS · TanStack Query · Zod · Supabase (PostgreSQL, Auth,
+Storage) · Vitest · Playwright · GitHub Actions ([ADR-015](docs/adr/ADR-015-initial-technical-stack.md))
 
 ```
-src/
-  app/         Anwendungsrahmen, Navigation, Provider
-  components/  wiederverwendbare UI-Bausteine
-  features/    fachliche Module (patients, appointments, documentation, staff, audit, …)
-  lib/         Konfiguration, Supabase-Client, Betriebslog-Ausgang (protokoll.ts)
-  routes/      Routendefinition
-supabase/
-  migrations/  Datenbankmigrationen
-  tests/       Migrations- und RLS-Tests gegen echtes PostgreSQL
-  seed.sql     synthetische Testdaten
+src/               app/ (Rahmen, Navigation), components/ (UI-Bausteine), features/ (14 Domänen,
+                   scripts/domaenen.mjs), lib/ (Konfiguration, Supabase-Client, Betriebslog), routes/
+supabase/          migrations/, tests/ (Migrations- und RLS-Tests gegen PostgreSQL), seed.sql
 tests/e2e/         Playwright
 scripts/           Prüf- und Hilfsskripte
 marke/             Wortmarke und App-Symbole (einzige Quelle)
+quellen/           Fremdmaterial mit Prüfsumme
 docs/adr/          Architecture Decision Records
 docs/decisions/    offene Entscheidungen, Anfragen und Annahmenregister
-docs/development/  Roadmap, Arbeitsbereiche, Befunde, Archiv
-docs/sichtung/     Bildsichtung, Sichtliste am Gerät, alte Sichtungen zur Triage
+docs/development/  Roadmap, Arbeitsbereiche, Befunde
+docs/design/       Seitenrezeptur (DESIGN.md), Plattform, Leitfaden
+docs/sichtung/     Bildsichtung und Sichtliste am Gerät
 docs/datenschutz/  Verfahren und Nachweise für den Datenschutzprozess (ADR-007)
 docs/betrieb/      Runbooks für den Betrieb (Bootstrap, OPS-007)
-docs/product/      Ideenspeicher für spätere Funktionen (nicht normativ)
+docs/product/      Kernabläufe, Startinhalte, Ideenspeicher (nicht normativ)
 ```
 
 ## Sicherheitsgrundsätze im Code
 
-- Autorisierung liegt in PostgreSQL Row Level Security. Ausgeblendete
-  UI-Elemente sind keine Zugriffskontrolle ([ADR-004](docs/adr/ADR-004-authorization-model.md)).
+- Autorisierung liegt in PostgreSQL Row Level Security; ausgeblendete UI-Elemente sind keine
+  Zugriffskontrolle ([ADR-004](docs/adr/ADR-004-authorization-model.md)).
 - Der Browser erhält ausschließlich den öffentlichen `anon`-Schlüssel.
 - Zugriffe auf Patientenakten werden protokolliert ([ADR-010](docs/adr/ADR-010-audit-and-privileged-access.md)).
 - Keine patientenbezogenen Daten in Logs ([ADR-011](docs/adr/ADR-011-logging-and-observability.md)).
 
-## Schnellstart
-
-Einrichtung, Testkonten und Befehle: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
-
 ## Lizenz
 
-Proprietär, alle Rechte vorbehalten. Der Quellcode ist öffentlich einsehbar,
-aber **nicht** zur Nutzung, Vervielfältigung oder Weitergabe freigegeben;
-Einzelheiten in [`LICENSE`](LICENSE).
+Proprietär, alle Rechte vorbehalten. Der Quellcode ist öffentlich einsehbar, aber **nicht** zur
+Nutzung, Vervielfältigung oder Weitergabe freigegeben; Einzelheiten in [`LICENSE`](LICENSE).

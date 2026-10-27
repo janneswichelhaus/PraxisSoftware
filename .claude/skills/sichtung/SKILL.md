@@ -1,13 +1,13 @@
 ---
 name: sichtung
-description: Jannes sichtet über Bilder - Bildstrecke (vorher/nachher, 375 und 1280 px) durchwischen, höchstens 20 Punkte, etwa 10 Minuten; Claude trägt Befunde nach BEFUNDE.md und den Fortschritt ein. Mit /sichtung triage <Datei> werden alte Sichtungsschritte per Bildstrecke geschlossen. Nichts bauen. Nur auf ausdrücklichen Aufruf mit /sichtung, /sichtung <PR oder Bereich> oder /sichtung triage <Datei>.
+description: Jannes sichtet über Bilder - Bildstrecke (vorher/nachher, 375 und 1280 px) durchwischen, höchstens 20 Punkte, etwa 10 Minuten; Claude trägt Befunde nach BEFUNDE.md und den Fortschritt ein. Mit /sichtung gerät geht er die Sichtliste am Gerät durch. Nichts bauen. Nur auf ausdrücklichen Aufruf mit /sichtung, /sichtung <PR oder Bereich> oder /sichtung gerät.
 disable-model-invocation: true
 ---
 
 # Sichtung
 
 Jannes prüft Belege, nicht Klickanleitungen: die **Bildstrecke** einer PR, etwa 10 Minuten am
-Handy. Regeln: `docs/sichtung/README.md`. **Nichts bauen.**
+Handy. Regeln und Sichtliste: `docs/sichtung/README.md`. **Nichts bauen.**
 
 ## Bildsichtung
 
@@ -18,26 +18,18 @@ Handy. Regeln: `docs/sichtung/README.md`. **Nichts bauen.**
    höchstens **20 Punkte**: die Fragen der PR und je Bild eine Prüffrage aus der Prüfliste in
    `docs/design/DESIGN.md` oder dem Budget aus `docs/product/kernablaeufe.md`. Nicht Schritt für
    Schritt abfragen — Jannes antwortet gesammelt: „ok“ oder „Befund: <Bild>, <was>“.
-3. **Am Gerät** nur, was ein Bild nicht zeigt: Kamera, Passkey, Flugmodus, Sonne, Halterung am Rad —
-   höchstens fünf Punkte je PR, auf der Test-Umgebung.
-4. **Befunde** ohne Nummer nach `docs/development/BEFUNDE.md` (Bereich, Rolle, Bild, erwartet,
-   gesehen) — **keine echten Daten,
-   keine Namen außer Seed**. Sie werden die erste Story der nächsten Überholung des Bereichs.
+3. **Am Gerät** nur, was ein Bild nicht zeigt: höchstens fünf neue Punkte je PR, als nächste
+   Nummer `S-n` auf die Sichtliste im README.
+4. **Befunde** ohne Nummer nach `docs/development/BEFUNDE.md` in deren Form (Bild als Quelle, Rolle
+   im Bereich) — **keine echten Daten, keine Namen außer Seed**. Sie werden die erste Story der
+   nächsten Überholung des Bereichs.
 5. **Abschluss.** In `docs/development/fortschritt.json` die gesichteten Posten auf `gesichtet` mit
    `gesichtet_am`, dann `pnpm fortschritt --schreiben`; STATUS in drei Zeilen;
    `pnpm format:check && pnpm docs:check`, Commit, Push, PR.
 
-## Triage alter Sichtungsschritte (`/sichtung triage <Datei>`)
+## Sichtliste am Gerät (`/sichtung gerät`)
 
-Für eine Datei aus `docs/sichtung/` je offenem Schritt genau eine Einordnung, ohne Jannes:
-
-- **durch Bild belegt** — die Route steht in einer aktuellen Bildstrecke, und das Bild zeigt, was
-  der Schritt erwartet;
-- **durch Test belegt** — ein E2E- oder Komponententest prüft genau das (Datei und Testname nennen);
-- **Gerät** — braucht Kamera, Passkey, Flugmodus, Sonne oder echten Kartendienst: auf die
-  Sichtliste im README;
-- **Bildstrecke** — noch nicht abgebildet: kommt in die Bildstrecke der nächsten Überholung.
-
-In der Datei unter „Ergebnis“ Datum und die Einordnung je Schritt eintragen, im README den Stand.
-Eine Einordnung ist kein Häkchen: „durch Bild belegt“ nur mit Bildpfad, „durch Test belegt“ nur
-mit Testnamen.
+Claude stellt die offenen Punkte `S-n` aus `docs/sichtung/README.md` zusammen, je Punkt Ort
+(Test-Umgebung oder lokal im WLAN), Konto und was zu tun ist; Jannes antwortet gesammelt. Ein
+gesichteter Punkt fällt aus der Liste (Ergebnis in die PR), seine Nummer wird nicht neu vergeben;
+Befunde wie oben. Es entstehen keine neuen Klickschritt-Dateien.
