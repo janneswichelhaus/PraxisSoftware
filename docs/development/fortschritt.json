@@ -1679,7 +1679,10 @@
           "id": "aufraeumen-3b",
           "name": "Aufräumen Schritt 3b, Teil 2: Module in 14 Domänenordnern, je Domäne eine schmale index.ts, Regel gegen tiefe Importe",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-27",
+          "nachweis": "#321 (Branch claude/step-4-central-register-ur5k1y): 45 Module in 14 Domänenordnern, je Domäne eine index.ts (260 Namen), ESLint-Regel modulgrenzen/nur-ueber-schnittstelle mit Gegenprobe (vor Story 2 373 Funde), Trennungsprüfung der Plattform verschärft, volle Unit- und Logik-Suite, pnpm test:db, Zweitreview",
+          "vermerk": "Auftrag Jannes 27.10.2026, ROADMAP 7.22; Pfad A; ANN-755; ADR-013 Fassung 6"
         }
       ]
     },

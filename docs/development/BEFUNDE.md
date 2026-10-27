@@ -687,3 +687,15 @@ Marke vorsieht.
 | Berührt | `scripts/bildstrecke/routen.mjs`, `routenquelle.mjs`, `scripts/definitionen-sql.mjs`, `katalog-sql.mjs`; `src/components/ui/Buehne.tsx`, `Reiterleiste.tsx`, `Rueckmeldung.tsx`; `src/dateinamen.test.ts`, `src/protokollierung.test.ts`; `src/features/calendar/tours/TagesrouteAufklapper.tsx`, `core/preview/trennung.test.ts`, `fleet/api.ts`, `fleet/standortvorlage.test.ts`, `nutrition/lebensmittel.ts`, `patients/akte.ts`, `portal/platform/trennung.test.ts`, `portal/platform/zeit.ts`, `privacy/datenschutz/kategorien.ts`, `training/api.ts`, `workforce/staff/rollenhinweise.ts`; `src/lib/ki/gateway.ts`, `src/lib/location/matrix.ts`, `route.ts` (zwei Blöcke), `src/lib/vertretung.ts`; `supabase/functions/location-provider/abschottung.test.ts`, `mock.ts`, `supabase/functions/patient-file-verify/video.ts`; `supabase/tests/patient-files.test.ts`, `staff-leave.test.ts` |
 
 **Beobachtung.** Beim Umzug der Module in die 14 Domänenordner zogen Pfade in Importen, Tests, Skripten und Doku mit. In diesen Kommentarblöcken mit mehr als drei Zeilen steht noch die alte Form `src/features/<modul>/…`: Die Kommentarregel verlangt, einen angefassten Block auf drei Zeilen zu kürzen, und der Umzug sollte mechanisch bleiben. **Erwartet.** Beim nächsten Anfassen der Datei den Block kürzen und den Pfad nachziehen (`<domäne>/<modul>` nach `scripts/domaenen.mjs`).
+
+### Startbild — Nach der Anmeldung läuft das Intro beim nächsten Neuladen noch einmal
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-27 |
+| Bereich | Rahmen: Startbild (`src/app/Startbild.tsx`) und Anmeldung |
+| Quelle  | Angemeldete Browsertests zu Aufräumen 3b im Cloud-Container; nachgeprüft per Playwright auf Seed-Daten (`main`, `ec45596`) |
+| Status  | offen (Vorschlag) |
+| Berührt | `raeumen` in `src/features/core/auth/SessionProvider.tsx`; `tests/e2e/authenticated/patient-record-documentation.spec.ts` |
+
+**Beobachtung.** ANN-243 Fassung 2: einmal je Tab beim Öffnen, nicht nach der Anmeldung und nicht beim Neuladen. Öffnen zeigt das Intro, Neuladen vor der Anmeldung nicht. Die Anmeldung löscht den Merker aber, weil `SessionProvider` den Schritt von „niemand“ zu einer Person als Kontowechsel wertet; das nächste Neuladen zeigt das Intro noch einmal. In den Browsertests fing es so im Akte-Test („zeigt Therapeutin und Office denselben Eintrag …“) einen Klick ab. Der Test meldet sich zweimal an und lief lokal dreimal in die 30 s, auf dem Stand von `main` und mit Teil 2 gleich; in der CI ist er grün. **Erwartet.** Den Merker nur löschen, wenn vorher eine Person angemeldet war (Abmelden, Kontowechsel), mit einem Test für Anmelden und Neuladen; danach den Akte-Test ohne Intro messen.
