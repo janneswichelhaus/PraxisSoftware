@@ -184,7 +184,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-08 · Jannes · erledigt · Wie
 
 **Begründung.** ADR-016 Punkt 7 legt Voreinstellung und Konfigurierbarkeit fest, nicht den Bezugstag für nachträglich angelegte Einträge; ohne den Anlagetag wäre ein Nachtrag zu einem alten Termin nach Minuten festgeschrieben. Der spätere Bezug wahrt „in unmittelbarem zeitlichen Zusammenhang" (§630f Abs. 1 S. 1 BGB) und ist die restriktivere Option; der Rollenschnitt folgt §4.1. Unsicher: ob eine Frist je Organisation genügt (offene Folgefrage in ADR-016).
 
-**Anker.** `app.documentation_deadline()` und die Spalte `organizations.documentation_auto_finalize_days` in `supabase/migrations/20260904120000_treatment_note_auto_finalisation.sql`; `FRIST_WERTE` in `src/features/documentation/api.ts`; Abnahmeschritt DOK-004 in `docs/development/archiv/abnahme/etappe-1-kernprozess.md`.
+**Anker.** `app.documentation_deadline()` und die Spalte `organizations.documentation_auto_finalize_days` in `supabase/migrations/20260904120000_treatment_note_auto_finalisation.sql`; `FRIST_WERTE` in `src/features/clinical/documentation/api.ts`; Abnahmeschritt DOK-004 in `docs/development/archiv/abnahme/etappe-1-kernprozess.md`.
 
 **Änderungspfad.** Anderer Bezugstag oder eine Uhrzeit statt Mitternacht: `app.documentation_deadline()` in einer Migration ersetzen · Aufwand `klein`. Frist je Person oder je Terminart: eigene Spalte und Auswertung in derselben Funktion · Aufwand `mittel`. Bereits finalisierte Einträge bleiben finalisiert.
 
@@ -196,7 +196,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-010 Punkt 3 verlangt die zur Nachvollziehbarkeit erforderlichen Metadaten; ein Platzhalter-Account oder die zuletzt schreibende Person als vermeintlich finalisierende wäre eine falsche Angabe (Art. 5 Abs. 1 lit. d DSGVO) und liefe ADR-016 Punkt 1 zuwider. Unsicher: ob die Prüfung eine Kennzeichnung des Auslösers verlangt; heute stehen dort `surface = scheduler` und das Fristende.
 
-**Anker.** Spalte `audit_log.actor_kind` und Constraint `audit_log_actor_consistent` in `supabase/migrations/20260904120000_treatment_note_auto_finalisation.sql`; `list_audit_events` ebendort; Anzeige in `src/features/audit/AuditLogPage.tsx`.
+**Anker.** Spalte `audit_log.actor_kind` und Constraint `audit_log_actor_consistent` in `supabase/migrations/20260904120000_treatment_note_auto_finalisation.sql`; `list_audit_events` ebendort; Anzeige in `src/features/privacy/audit/AuditLogPage.tsx`.
 
 **Änderungspfad.** Zusätzliche Kennzeichnung des Auslösers: Kontext des Inserts in `finalize_overdue_treatment_notes` erweitern · Aufwand `klein`. Eigener Pseudo-Account statt Systemakteur: Spalte zurückbauen und Konto im Seed anlegen · Aufwand `mittel`, ausdrücklich nicht empfohlen.
 
@@ -224,7 +224,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-13 · Jannes · Prüfpaket · Wie
 
 **Stand 2026-09-28 (Jannes).** **Office darf Grundlagen erfassen und bearbeiten** (Sichtung Kernprozess, Schritt 1: „gang und gäbe in jeder Praxis“). Ablauf dazu: Die Therapeut:in fotografiert die Verordnung vor Ort, Office tippt sie aus einer Büroliste mit dem Foto daneben ab (PRX-EPIC-003). Umgesetzt in PRX-010 (2026-09-29) über `app.can_write_treatment_bases()`: Schreiben dürfen jetzt alle vier Praxisrollen; der Verordnungsscan folgt dem Schreibrecht an der Grundlage (`app.can_write_patient_file`, ADR-017 Punkt 13), die übrigen klinischen Dateiarten bleiben bei den therapeutischen Rollen. Office tippt die Verordnung ab — eigene klinische Dokumentation schreibt es weiterhin nicht (ADR-004 Punkt 3): Die Empfehlung zum Verordnungsende steht nicht im Formular und kommt aus dem Therapiebericht. Stehen an einer Bestandsgrundlage Therapieziel, Verordnerhinweis oder Empfehlung, dürfen nur die therapeutischen Rollen sie durch den Wechsel auf Selbstzahler oder das Löschen der Grundlage abräumen (`app.can_clear_treatment_basis_clinical_texts`, Zweitreview PRX-EPIC-003). Einen eigenen Prüfpunkt bekommt die Freigabe nicht — der Eintrag steht wegen E15 ohnehin im Prüfpaket, und Office liest die Diagnose dort schon.
 
-**Anker.** `app.can_read_treatment_bases()`, `app.can_read_treatment_basis_clinical()` (Rollenschnitt nach E15) und `app.can_write_treatment_bases()` (seit `supabase/migrations/20260929150000_prx_010_office_writes_treatment_bases.sql` mit office) sowie die Lesepfade `list_patient_treatment_bases` und `list_patient_treatment_bases_clinical` in `supabase/migrations/20260918120000_treatment_basis.sql` (ADR-020 hat die Verordnung zur Behandlungsgrundlage umbenannt); Rollenweiche in `src/features/treatment-bases/grundlagen.ts`.
+**Anker.** `app.can_read_treatment_bases()`, `app.can_read_treatment_basis_clinical()` (Rollenschnitt nach E15) und `app.can_write_treatment_bases()` (seit `supabase/migrations/20260929150000_prx_010_office_writes_treatment_bases.sql` mit office) sowie die Lesepfade `list_patient_treatment_bases` und `list_patient_treatment_bases_clinical` in `supabase/migrations/20260918120000_treatment_basis.sql` (ADR-020 hat die Verordnung zur Behandlungsgrundlage umbenannt); Rollenweiche in `src/features/patients/treatment-bases/grundlagen.ts`.
 
 **Änderungspfad.** Anderer Rollenschnitt beim Lesen oder Schreiben: die betroffene `app.can_*`-Funktion ersetzen · Aufwand `klein` — `office` wieder von der Diagnose auszuschließen widerspräche E15. Heilmittel als klinisch einstufen: Spaltenliste und Oberfläche anpassen · Aufwand `mittel`. Andere Frist: eigene Datenklasse und Löschregel in LOE-001 · Aufwand `mittel`.
 
@@ -248,7 +248,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Rechtsgrundlage ist Art. 6 Abs. 1 lit. b/f DSGVO, nicht Art. 9 — die Kartei allein sagt nichts über eine Gesundheit aus. Die Kopplung der Frist an die Verordnung folgt ADR-008 Punkt 2, weil eine Verordnung ohne auflösbaren Verordner als Behandlungsunterlage unvollständig wäre. Der Verzicht auf LANR und BSNR folgt der Datenminimierung (Art. 5 Abs. 1 lit. c DSGVO): GKV-Merkmale, und die Praxis rechnet privat ab (ADR-009). Unsicher: ob die Prüfung eine eigene Zeile im Verarbeitungsverzeichnis und eine Information nach Art. 14 DSGVO verlangt.
 
-**Anker.** Tabelle `public.prescribers` mit Tabellenkommentar und Policy `prescribers_select_staff_only` in `supabase/migrations/20260907110000_prescriptions.sql`; Formularfelder in `src/features/treatment-bases/PrescriberFormFields.tsx`.
+**Anker.** Tabelle `public.prescribers` mit Tabellenkommentar und Policy `prescribers_select_staff_only` in `supabase/migrations/20260907110000_prescriptions.sql`; Formularfelder in `src/features/patients/treatment-bases/PrescriberFormFields.tsx`.
 
 **Änderungspfad.** Eigene Löschregel oder kürzere Frist: Regel in LOE-001 ergänzen · Aufwand `klein`, solange keine Verordnung verweist. Information nach Art. 14 DSGVO: Textbaustein in G8/G14 · Aufwand `klein`, außerhalb des Codes. **Abnahme (Jannes, 2026-10-02):** bestätigt; berufliche Kontaktdaten sind personenbezogene Stammdaten, für sich keine Gesundheitsdaten.
 
@@ -260,7 +260,7 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 **Begründung.** ADR-006 Punkt 2 erlaubt Erfassen, Speichern und Darstellen von Gesundheitsinformationen, Punkt 4 verbietet eigene Therapieempfehlungen; eine von einem Menschen geschriebene Empfehlung zu speichern und anzuzeigen fällt unter Punkt 2. Die Differenz „verordnet minus genutzt" ist eine veröffentlichte Rechenvorschrift ohne klinische Aussage. Regulatorisch zählt auch die Beschriftung, deshalb heißt das Feld „Empfehlung der Therapeut:in zum Verordnungsende". Unsicher: ob die externe Prüfung aus B1 den Sachsatz bereits als Handlungsaufforderung liest.
 
-**Anker.** Spalte `treatment_bases.follow_up_recommendation` mit Spaltenkommentar in `supabase/migrations/20260918120000_treatment_basis.sql`; Bestandstext im Formular in `src/features/treatment-bases/TreatmentBasisFormFields.tsx` (seit VER-EPIC-002 nicht mehr neu erfassbar, ANN-065); Darstellung von Empfehlung und Restkontingent in `src/features/treatment-bases/PatientTreatmentBasesPage.tsx`, der Sachsatz „Kontingent ausgeschöpft“ in `src/features/appointments/AppointmentSeriesPage.tsx`; seit DOK-005 die Spalte `therapy_reports.recommendation` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql` und ihre Anzeige an der Verordnung in `src/features/therapy-reports/BerichteDerVerordnung.tsx`.
+**Anker.** Spalte `treatment_bases.follow_up_recommendation` mit Spaltenkommentar in `supabase/migrations/20260918120000_treatment_basis.sql`; Bestandstext im Formular in `src/features/patients/treatment-bases/TreatmentBasisFormFields.tsx` (seit VER-EPIC-002 nicht mehr neu erfassbar, ANN-065); Darstellung von Empfehlung und Restkontingent in `src/features/patients/treatment-bases/PatientTreatmentBasesPage.tsx`, der Sachsatz „Kontingent ausgeschöpft“ in `src/features/calendar/appointments/AppointmentSeriesPage.tsx`; seit DOK-005 die Spalte `therapy_reports.recommendation` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql` und ihre Anzeige an der Verordnung in `src/features/clinical/therapy-reports/BerichteDerVerordnung.tsx`.
 
 **Änderungspfad.** Feld oder Sachsatz anders beschriften: eine Stelle in der Oberfläche · Aufwand `klein`. Feld ganz entfernen: Spalte und Formularfeld zurückbauen · Aufwand `klein`. Eine automatische Erinnerung oder Bewertung wäre keine Änderung dieser Annahme, sondern `MDR_REVIEW_REQUIRED` nach ADR-006 Punkt 6 und ein eigenes Epic nach B9 und B10. **Abnahme (Jannes, 2026-10-02):** bestätigt; Empfehlungen stammen von der Therapeut:in, die App zeigt nur den organisatorischen Kontingentstand.
 
@@ -310,7 +310,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Die Koordinate ist für den Betreiber der Navigations-App so identifizierend wie die Adresse, enthält aber keinen Freitext und keinen Anhaltspunkt außer dem Punkt; Adresse und Klingelhinweis bleiben lokal. Die Feldliste folgt Art. 5 Abs. 1 lit. c DSGVO und ADR-019 Punkt 12. Unsicher: ob ein Pin ohne sichtbare Hausnummer auf dem Rad verwirrt (MAP-005 prüft das auf echten Geräten) und ob die Übergabe an einen eigenen Verantwortlichen Art. 9 oder §203 StGB berührt — Rechtsfrage an B2 (ADR-019 Punkt 23).
 
-**Anker.** `src/lib/location/contract.ts`, Typ `NavigationTarget`; seit UX-002 `src/lib/location/navigation.ts` — die eine Stelle für Feldliste, Ländercode, URL-Format je Ziel-App und Wegpunktlimit (`MAX_ZWISCHENZIELE`), mit Tests in `navigation.test.ts`; „nur auf Aktion" in `src/features/appointments/NavigationStarten.tsx` und seit MAP-006 in `src/features/tours/Tourenliste.tsx`. Seit MAP-006d übergibt `navigationsZiel` die Koordinate des Hausbesuchs, sobald `list_day_plan` sie liefert (`supabase/migrations/20260925130000_map_006d_day_plan_coordinates.sql`).
+**Anker.** `src/lib/location/contract.ts`, Typ `NavigationTarget`; seit UX-002 `src/lib/location/navigation.ts` — die eine Stelle für Feldliste, Ländercode, URL-Format je Ziel-App und Wegpunktlimit (`MAX_ZWISCHENZIELE`), mit Tests in `navigation.test.ts`; „nur auf Aktion" in `src/features/calendar/appointments/NavigationStarten.tsx` und seit MAP-006 in `src/features/calendar/tours/Tourenliste.tsx`. Seit MAP-006d übergibt `navigationsZiel` die Koordinate des Hausbesuchs, sobald `list_day_plan` sie liefert (`supabase/migrations/20260925130000_map_006d_day_plan_coordinates.sql`).
 
 **Änderungspfad.** Adresse statt Koordinate, anderes Limit, andere Ziel-App: eine Funktion · Aufwand `klein`. Verlangt B2 eine Einwilligung vor dem Handoff: Einwilligungsstruktur aus PAT-006 und Prüfung vor dem Bauen der URL · Aufwand `mittel`. Verlangt B2, den Handoff zu unterlassen: die Funktion entfällt, die Tagesliste zeigt die Adresse · Aufwand `klein`.
 
@@ -322,7 +322,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Ein Entwurf muss die Anlage einer fehlenden Verordner:in überleben; mit der Standard-`gcTime` von fünf Minuten für einen unbeobachteten Cache-Eintrag ist das nicht verlässlich, und den Cache dafür umzuwidmen hieße, seine nächsten Eigenheiten (Rehydrierung, `refetchOnMount`) zu erben. 30 Minuten sind eine Schätzung, keine Messung. Die Benutzerbindung verhindert, dass ein Kontowechsel im selben Tab einen fremden Entwurf übernimmt; das Verwerfen bei Abmeldung ist Verteidigung in der Tiefe, weil die Verordnung klinischen Freitext enthält (§18, ADR-011). Nichts verlässt den Arbeitsspeicher — kein `localStorage`, kein `sessionStorage`, kein Weg über die URL.
 
-**Anker.** `src/lib/abstecher.ts` (Bindung an Vorgang und Benutzer, `abstecherVerwerfenFuer`); Verwendung in `src/features/treatment-bases/TreatmentBasisFormPage.tsx` und `PrescriberFormPage.tsx`; Rückfrage vor dem freiwilligen Abmelden in `src/app/AbstecherAbmeldewache.tsx` (Fassung 2; bis ABN-019 `MAX_ALTER_MS` und `alleEntwuerfeVerwerfen` im `SessionProvider`).
+**Anker.** `src/lib/abstecher.ts` (Bindung an Vorgang und Benutzer, `abstecherVerwerfenFuer`); Verwendung in `src/features/patients/treatment-bases/TreatmentBasisFormPage.tsx` und `PrescriberFormPage.tsx`; Rückfrage vor dem freiwilligen Abmelden in `src/app/AbstecherAbmeldewache.tsx` (Fassung 2; bis ABN-019 `MAX_ALTER_MS` und `alleEntwuerfeVerwerfen` im `SessionProvider`).
 
 **Änderungspfad.** Wieder eine Frist: eine Zahl in `src/lib/abstecher.ts` · Aufwand `klein`. Mehrere gleichzeitige Entwürfe je Person oder Ausdehnung auf mehrere Tabs: eigener Mechanismus (etwa `BroadcastChannel`) · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** geändert: Ablauf und automatische Abmeldung dürfen keine Eingaben still löschen; der Entwurf wird geschützt gesichert, Wiederaufnahme nur mit demselben Konto (BEF-110, ADR-025 Punkt 4). **Fassung 2 (ABN-019, 2026-10-02, BEF-110 Punkt 1):** Kein stiller Verfall mehr: Ein Abstecher-Entwurf bleibt im Arbeitsspeicher, bis das Formular ihn zurückholt oder die Person ihn ausdrücklich verwirft. Beim freiwilligen Abmelden fragt `AbstecherAbmeldewache` („Zurück“ oder „Verwerfen und abmelden“); eine automatische Abmeldung oder Sperre lässt ihn liegen, gebunden an das Konto, und kein anderes findet ihn. Ein Neuladen verwirft ihn weiter. Ein serverseitiger Entwurf kommt, wenn SEC-EPIC-001 den Entwurfspfad baut (ADR-025 Punkt 4).
 
@@ -346,7 +346,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-001 nennt den Tagesplan als das, was offline verfügbar sein soll, und lässt den Mechanismus offen; der Zwischenspeicher der laufenden Seite genügt dem Zweck ohne neue Technik und kann die Lage aus ADR-001 („dokumentiert geglaubt, nirgends gespeichert") nicht erzeugen, weil er nur liest. Ein dauerhafter lokaler Bestand hieße Gesundheitsdaten auf einem mobilen Gerät mit allem, was daran hängt — nach §16 kein Weg, den man nebenbei geht. Unsicher: ob acht Stunden für einen langen Tag reichen und ob die Prüfung den Zugangshinweis im Arbeitsspeicher anders bewertet als auf dem Bildschirm. Zu Fassung 2: ADR-012 nennt das Degraded-Verfahren einen Praxisprozess, dessen Tagesinformationen die Anwendung unterstützen soll, und gibt dafür ausdrücklich der begrenzten Offline-Fähigkeit aus ADR-001 einen zweiten Zweck; ein Papierexport mit Anschriften aller Patient:innen eines Tages wäre ein Datenabfluss ohne Löschfrist, den die Praxis nicht braucht. Unsicher: Nach einem Neuladen oder im Ausfall vor dem ersten Laden ist die Liste weg, sofern sie nicht vorher gedruckt wurde — ob das für einen mehrstündigen Ausfall reicht, zeigt erst Probewoche 1. Zu Fassung 3: Das Argument „Datenabfluss ohne Löschfrist“ ist mit Jannes' Entscheidung vom 2026-10-09 bewusst zurückgestellt – ein Blatt ohne Anschrift trägt im Ausfall nicht; es enthält nur die eigenen Termine eines Tages, dieselben Angaben wie das Handy, und wird nach dem Tag vernichtet wie jeder Tageszettel (Praxisprozess, nicht Software).
 
-**Anker.** `TAGESPLAN_VORHALTEDAUER_MS` in `src/features/today/api.ts` — die eine Zahl; das Druckblatt in `src/features/today/TagesplanDruck.tsx` (Fassung 3); die Feldliste ist die Rückgabe von `public.list_day_plan` (`supabase/migrations/20260910100000_day_plan.sql`); Leeren beim Wechsel der Identität in `src/features/auth/SessionProvider.tsx` (seit FIX-005 dort, verglichen wird die Benutzerkennung, nicht die Ereignisart).
+**Anker.** `TAGESPLAN_VORHALTEDAUER_MS` in `src/features/calendar/today/api.ts` — die eine Zahl; das Druckblatt in `src/features/calendar/today/TagesplanDruck.tsx` (Fassung 3); die Feldliste ist die Rückgabe von `public.list_day_plan` (`supabase/migrations/20260910100000_day_plan.sql`); Leeren beim Wechsel der Identität in `src/features/core/auth/SessionProvider.tsx` (seit FIX-005 dort, verglichen wird die Benutzerkennung, nicht die Ereignisart).
 
 **Änderungspfad.** Andere Vorhaltedauer: eine Zahl · Aufwand `klein`. Nichts über einen Fehlversuch hinaus stehen lassen: `gcTime` auf 0 und Kennzeichnung entfernen · Aufwand `klein`, mit dem Verlust der Anschrift im Funkloch als Folge. Echter Offline-Modus: eigenes Epic nach ADR-001 · Aufwand `groß`. Fassung 2 zurücknehmen: Druckblatt des Tagesplans über die Druck-Basis aus dem vorhandenen Lesepfad, Zeile G10 wieder öffnen · Aufwand `klein`. Fassung 3 enger: Felder im Druckblatt streichen (etwa Besonderheit oder Anschrift) · Aufwand `klein`.
 
@@ -370,7 +370,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** ADR-003 stellt fest, dass `organization_id` keine Mandantenfähigkeit schafft und echter Mehrmandantenbetrieb ein eigenes Vorhaben bliebe; es gibt genau eine Praxis, und der Name aus der Datenbank sagt neben der Marke nichts Zusätzliches — im aktuellen Stand wäre er sogar irreführend („Test Praxis Tuebingen"). Die Alternative, den Namen als zugängliche Bezeichnung zu hinterlegen, wurde verworfen, weil Vorlesesoftware dann etwas anderes sagt, als zu sehen ist.
 
-**Anker.** `src/app/AppShell.tsx` (Kopfzeile), `src/features/auth/LoginPage.tsx`, `index.html`; festgehalten in `AppShell.test.tsx` und `LoginPage.test.tsx`. `organizationName` in `src/features/session/types.ts` bleibt geladen, nur nicht angezeigt.
+**Anker.** `src/app/AppShell.tsx` (Kopfzeile), `src/features/core/auth/LoginPage.tsx`, `index.html`; festgehalten in `AppShell.test.tsx` und `LoginPage.test.tsx`. `organizationName` in `src/features/core/session/types.ts` bleibt geladen, nur nicht angezeigt.
 
 **Änderungspfad.** Namen wieder anzeigen: ein Element in `AppShell.tsx`, Abstand nach `schutzraum()` in `src/components/ui/markeRegeln.ts` · Aufwand `klein`. Mehrere Praxen: eigenes Vorhaben nach ADR-003 · Aufwand `mittel`, durch diese Annahme nicht vorweggenommen. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -382,7 +382,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 **Begründung.** §20 beschränkt das Lesen dieser Angaben auf `owner` und die betroffene Person, §4.7 verbietet, Geschütztes auszuliefern und erst im Client auszublenden. Ein Schreibrecht ohne Leserecht wäre deshalb die gefährlichere Variante: Das Formular des Office bekäme die Felder als `null` und löschte sie beim Speichern. Die Privatanschrift wird für Terminplanung und Vertretung nicht gebraucht (Art. 5 Abs. 1 lit. c DSGVO). Jannes hat die Auslegung am 2026-09-11 bestätigt; offen ist nur, ob die Datenschutzprüfung die Aufteilung im Rahmen der TOM so bestätigt.
 
-**Anker.** `app.can_manage_staff_private_details()` in `supabase/migrations/20260911100000_staff_permission_split.sql` — genau ein Ausdruck; `canManageStaffPrivateDetails` in `src/features/session/types.ts` steuert nur die Darstellung.
+**Anker.** `app.can_manage_staff_private_details()` in `supabase/migrations/20260911100000_staff_permission_split.sql` — genau ein Ausdruck; `canManageStaffPrivateDetails` in `src/features/core/session/types.ts` steuert nur die Darstellung.
 
 **Änderungspfad.** Office soll Privatangaben schreiben und lesen: diese Funktion und die Lese-Policy auf `staff_private_details` gemeinsam erweitern · Aufwand `klein`, aber mit Änderung an §20, also erst nach ausdrücklicher Entscheidung. Umgekehrt: `app.can_manage_staff_master_data()` auf `owner` zurück · Aufwand `klein`.
 
@@ -394,7 +394,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** `PROJECT_PRINCIPLES.md` §4 verlangt als SOLLTE, dass der Praxisinhaber ein neues Teammitglied selbst anlegt, ohne technische Administration; diese Annahme erfüllt das für Rolle und Einladung, nicht für das Konto. Der Rest scheitert an drei Stellen: `supabase/config.toml` setzt `enable_signup = false` (§4.2), Selbstregistrierung einzuschalten wäre das Aufweichen einer Sicherheitsmaßnahme (§15.1, Stopp); die Admin-API verlangt den `service_role`-Schlüssel und damit eine serverseitige Funktion, und die Edge Runtime ist nach OPS-001 (2026-09-21) nicht freigegeben; ein Versandweg fehlt, weil der eingebaute Versand nur an Adressen des Projektteams zustellt (`providerpruefung-supabase.md`, Teil 3 und 4; BEF-026) und B13 deshalb wieder offen ist. Bleibt der manuelle Handgriff — eine Minute je Zugang und die restriktivere Seite (§16). Unsicher: ob die Praxis ihn bei Personalwechseln auf Dauer akzeptiert.
 
-**Anker.** `sendeZugangsMail` in `src/features/staff/konto-api.ts` (`shouldCreateUser: false`); die tragende Eigenschaft in `claim_staff_invitation` (`supabase/migrations/20260911110000_staff_account_invitations.sql`): ein Konto ohne passende offene Einladung bleibt zugriffslos.
+**Anker.** `sendeZugangsMail` in `src/features/workforce/staff/konto-api.ts` (`shouldCreateUser: false`); die tragende Eigenschaft in `claim_staff_invitation` (`supabase/migrations/20260911110000_staff_account_invitations.sql`): ein Konto ohne passende offene Einladung bleibt zugriffslos.
 
 **Änderungspfad.** Sobald B13 einen Versandweg hat und eine serverseitige Funktion freigegeben ist: eine Funktion mit dem `service_role`-Schlüssel als Secret, aufgerufen aus `sendeZugangsMail`; Datenmodell, Rollen und RPCs bleiben unverändert · Aufwand `mittel`. Zurückzunehmen ist nichts — der heutige Stand ist die restriktive Variante.
 
@@ -422,7 +422,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Das BSI hat die Empfehlung zum regelmäßigen Kennwortwechsel 2020 aus dem IT-Grundschutz gestrichen, und NIST SP 800-63B rät von erzwungener Komplexität und periodischem Wechsel ab: Beides führt zu vorhersehbaren Mustern und aufgeschriebenen Kennwörtern. Länge trägt, und 12 Zeichen sind der von beiden Quellen genannte untere Wert für Konten ohne zweiten Faktor; gegen mehr spricht die Eingabe auf dem Telefon am Hausbesuch (§16). Unsicher: ob die TOM-Prüfung mehr verlangt und ob der Anmeldedienst die Regel serverseitig in derselben Höhe durchsetzt — verbindlich ist die Einstellung beim Provider (OPS-001).
 
-**Anker.** `KENNWORT_MINDESTLAENGE` in `src/features/account/api.ts` — eine Zahl, mit `minimum_password_length` in `supabase/config.toml` zusammengehalten durch `src/features/account/api.test.ts` (seit SEC-EPIC-002 nur noch für Testkonten).
+**Anker.** `KENNWORT_MINDESTLAENGE` in `src/features/workplace/account/api.ts` — eine Zahl, mit `minimum_password_length` in `supabase/config.toml` zusammengehalten durch `src/features/workplace/account/api.test.ts` (seit SEC-EPIC-002 nur noch für Testkonten).
 
 **Änderungspfad.** Andere Länge: eine Zahl · Aufwand `klein`, zusätzlich die Provider-Einstellung nachziehen. Zeichenklassen oder Wechselzwang: eine Regel in `kennwortProblem` und eine Provider-Einstellung · Aufwand `klein`, inhaltlich aber gegen die genannten Quellen und deshalb nur auf ausdrückliches Verlangen der Prüfung.
 
@@ -436,7 +436,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-010 Punkt 10 verlangt MFA für privilegierten Produktionszugriff, nicht für die Alltagsrolle `owner` (Punkt 11 hält beide Domänen getrennt). Ein Zwang wäre eine Verschärfung über den ADR hinaus mit gefährlicher Nebenwirkung: Es gibt genau einen `owner`-Zugang (Bus-Faktor 1, ADR-012) ohne zweiten Faktor — er wäre im selben Moment ausgesperrt, und der Weg zurück wäre ein privilegierter Produktionszugriff, den ADR-010 Punkt 9 ausschließt. Erst einrichten, dann erzwingen. Unsicher: ob die Datenschutzprüfung MFA für Vollzugriff auf Gesundheitsdaten als TOM verlangt — das wäre kein Widerspruch, sondern der geplante zweite Schritt.
 
-**Anker.** Der Test „setzt heute nichts durch" in `supabase/tests/staff-accounts.test.ts` hält fest, dass keine Funktion und keine Policy den Claim `aal` liest (die ungenutzte `app.has_strong_authentication()` ist seit 2026-10-25 entfernt); Hinweis in `src/features/account/MeinKontoPage.tsx`.
+**Anker.** Der Test „setzt heute nichts durch" in `supabase/tests/staff-accounts.test.ts` hält fest, dass keine Funktion und keine Policy den Claim `aal` liest (die ungenutzte `app.has_strong_authentication()` ist seit 2026-10-25 entfernt); Hinweis in `src/features/workplace/account/MeinKontoPage.tsx`.
 
 **Änderungspfad.** Durchsetzung einschalten, sobald mindestens zwei `owner`-Zugänge einen bestätigten Faktor haben: eine Prüfung auf `aal2` in die Policies der Zugangsverwaltung aufnehmen und den genannten Test umdrehen · Aufwand `klein`. Vorher nicht — die Rücknahme wäre ein privilegierter Produktionszugriff und damit `groß`.
 
@@ -512,7 +512,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-018 nennt den Zweck: ohne Grund ist die Absagequote nicht lesbar — wer abgesagt hat und ob verlegt wurde, ist die ganze dafür nötige Auskunft. Ein Freitextfeld leistet nichts zusätzlich, ist aber die wahrscheinlichste Stelle, an der eine Gesundheitsangabe in einen klinikfreien Datensatz rutscht; §4.6 und §5 halten den Termin davon frei, §16 verlangt die datensparsamere Option. Dass der Grund nicht ins Auditlog wandert, folgt derselben Linie: Die Terminzeile fällt nach drei Jahren (ANN-001), das Auditlog läuft nach eigener Frist (ANN-029). Unsicher: ob die Praxis eine fünfte Kategorie vermisst, sobald ADR-009 das Ausfallhonorar regelt.
 
-**Anker.** `public.appointments.cancellation_reason` mit Constraint `appointments_cancellation_reason_values` und die Prüfung in `public.cancel_appointment`, beide in `supabase/migrations/20260912110000_cancellation_reason.sql`; Beschriftungen in `cancellationReasonLabels` (`src/features/appointments/api.ts`).
+**Anker.** `public.appointments.cancellation_reason` mit Constraint `appointments_cancellation_reason_values` und die Prüfung in `public.cancel_appointment`, beide in `supabase/migrations/20260912110000_cancellation_reason.sql`; Beschriftungen in `cancellationReasonLabels` (`src/features/calendar/appointments/api.ts`).
 
 **Änderungspfad.** Weiterer Wert: ein Eintrag in der Constraint, einer in `cancellationReasonLabels` · Aufwand `klein`, ohne Migration bestehender Zeilen. Freitext zusätzlich: neue Spalte, Redaction-Regel im Logging, Aufnahme in die Löschprüfung und eine Aussage in der DSFA · Aufwand `mittel`, und die Abwägung oben spricht dagegen.
 
@@ -562,7 +562,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-12 · Jannes · erledigt · Wie
 
 **Begründung.** Ohne die Verknüpfung böte die Anwendung beim zweiten Aufruf dieselben Behandlungen erneut an; eine Addition von genutzt und verplant zählte jede durchgeführte Behandlung doppelt. Die genutzte Menge automatisch fortzuschreiben wäre eine Aussage über die Leistung und gehört zu ABR-002. Die harte Grenze sitzt bereits an der Constraint `prescription_items_used_within_prescribed`; eine zweite am Kalender blockierte alltägliche Planung, ohne die Abrechnung sicherer zu machen. Der 3/4-Wechsel hält die Serie auf zwei festen Wochentagen. Unsicher: ob Jannes eine Rückfrage bei Überschreitung will und ob Gebietstage feste Wochentage verlangen.
 
-**Anker.** `app.prescription_slot_counts()` und `app.appointment_series_limit()` sowie die Spalte `appointments.prescription_id` in `supabase/migrations/20260912160000_appointment_series.sql`; `rhythmen` und `SERIE_HOECHSTZAHL` in `src/features/appointments/serie.ts`.
+**Anker.** `app.prescription_slot_counts()` und `app.appointment_series_limit()` sowie die Spalte `appointments.prescription_id` in `supabase/migrations/20260912160000_appointment_series.sql`; `rhythmen` und `SERIE_HOECHSTZAHL` in `src/features/calendar/appointments/serie.ts`.
 
 **Änderungspfad.** Harte Grenze: eine Prüfung in `create_appointment_series` gegen `remaining` · Aufwand `klein`. Weitere Rhythmen oder freier Tagesabstand: ein Eintrag in `rhythmen` · Aufwand `klein`.
 
@@ -576,7 +576,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Was auf Papier steht, lässt sich nicht zurückrufen: Der Zettel beantwortet genau eine Frage, alles weitere wäre Offenlegung ohne Zweck (§5, §4.6). ADR-010 Punkt 2 verlangt das Öffnen einer Akte als auditierbares Ereignis — der Zettel ist derselbe Blick über eine andere Adresse, ein eigener Ereignistyp hätte den Katalog verlängert, ohne mehr zu sagen. Der Vermerk wanderte in Fassung 2 hinter den Druck, weil ein abgebrochener Druckdialog der Regelfall ist und ein Vermerk, der eine Aushändigung behauptet, ein unrichtiges Datum wäre (Art. 5 Abs. 1 lit. d DSGVO). Unsicher: ob die Prüfung ein eigenes Ereignis „Dokument ausgegeben" vorzöge.
 
-**Anker.** `public.list_patient_appointment_slip()` in `supabase/migrations/20260912170000_appointment_slip.sql` — Spaltenliste und Auditeintrag sind die Grenze; `src/features/appointments/AppointmentSlipPage.tsx`; Tests in `supabase/tests/appointment-slip.test.ts`.
+**Anker.** `public.list_patient_appointment_slip()` in `supabase/migrations/20260912170000_appointment_slip.sql` — Spaltenliste und Auditeintrag sind die Grenze; `src/features/calendar/appointments/AppointmentSlipPage.tsx`; Tests in `supabase/tests/appointment-slip.test.ts`.
 
 **Änderungspfad.** Zur Reihenfolge aus Fassung 1 zurück: Klickhandler und Bestätigungskasten in `AppointmentSlipPage.tsx` · Aufwand `klein`. Mehr oder weniger Inhalt: Spaltenliste und Darstellung · Aufwand `klein`. Eigenes Auditereignis: ein Eintrag im Katalog und ein geänderter `insert` · Aufwand `klein`. Versand nach B15: eigenes Epic · Aufwand `groß`.
 
@@ -604,7 +604,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** §3.5 verlangt die Prüfung vor der Freischaltung eines Dienstleisters; ein Handoff schaltet keinen frei — die Nachricht entsteht im Postfach, das die Praxis ohnehin betreibt (dieselbe Konstruktion wie der Navigations-Handoff, ANN-018). Eine Terminliste ist ein Gesundheitsdatum; die DSK-Orientierungshilfe zur E-Mail-Übermittlung (16.06.2021) verlangt dafür Ende-zu-Ende- und Transportverschlüsselung, erkennt aber den ausdrücklichen Wunsch nach Aufklärung an (so auch die Hinweise von Bundesärztekammer/KBV). Unsicher und deshalb im Prüfpaket: Dieselben Quellen sagen, dass das Schutzniveau nicht durch Vereinbarung absenkbar ist — die Antwort dieser Annahme ist deshalb Datenminimierung, nicht Einwilligung. Der Vermerk steht hinter der Übergabe, weil die Anwendung den Ausgang eines Handoffs nicht sieht (§13).
 
-**Anker.** `src/features/appointments/terminmail.ts` — Inhalt, Betreff, Längengrenze und Übergabe an einer Stelle; Oberfläche `src/features/appointments/TermineMailen.tsx` in `AppointmentSlipPage.tsx`; Tests in `terminmail.test.ts` und `TermineMailen.test.tsx`.
+**Anker.** `src/features/calendar/appointments/terminmail.ts` — Inhalt, Betreff, Längengrenze und Übergabe an einer Stelle; Oberfläche `src/features/calendar/appointments/TermineMailen.tsx` in `AppointmentSlipPage.tsx`; Tests in `terminmail.test.ts` und `TermineMailen.test.tsx`.
 
 **Änderungspfad.** Inhalt oder Betreff ändern: `terminMailText` und `MAIL_BETREFF` · Aufwand `klein`. Den Weg zurücknehmen: `TermineMailen` aus `AppointmentSlipPage.tsx` entfernen, beide Dateien löschen; der Weg `email` bleibt als Vermerk von Hand · Aufwand `klein`. Dokumentierten Wunsch je Patient:in verlangen: Kennzeichen in den Kontaktdaten plus Bedingung · Aufwand `mittel`, gehört zu PAT-006. Echter Versand: eigenes Epic · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -618,7 +618,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Die Praxis rechnet privat ab; die Fristen des Heilmittelkatalogs sind GKV-Regeln und gelten für eine Privatverordnung nicht unmittelbar, und welche Frist ein privater Kostenträger ansetzt, steht in seinem Tarif. Eine erfundene Frist zeigte eine Verordnung als erledigt, die es nicht ist — genau davor warnt §13. Gezählt wurden bis VER-EPIC-002 Leistungseinheiten, weil ein Termin abgesagt werden kann und seinen Platz zurückgibt, eine genutzte Einheit aber genutzt bleibt; seit ANN-064 steht dieselbe Überlegung an der genutzten **Terminzahl**, die aus derselben Spalte kommt und ebenso wenig zurückfällt.
 
-**Anker.** `verordnungszustand()` in `src/features/treatment-bases/grundlagen.ts` — die eine Stelle, an der die Regel steht; Tests in `src/features/treatment-bases/PatientTreatmentBasesPage.test.tsx`.
+**Anker.** `verordnungszustand()` in `src/features/patients/treatment-bases/grundlagen.ts` — die eine Stelle, an der die Regel steht; Tests in `src/features/patients/treatment-bases/PatientTreatmentBasesPage.test.tsx`.
 
 **Änderungspfad.** Schwelle ändern (etwa „ausgeschöpft erst, wenn jeder Termin stattgefunden hat"): `verordnungszustand()` · Aufwand `klein`. Ablauf nach Zeit ergänzen: Feld `valid_until` an `prescriptions`, im Formular und in `create/update_prescription` gepflegt · Aufwand `mittel`, mit Migration. **Abnahme (Jannes, 2026-10-02):** bestätigt mit Präzisierung: ausgeschöpft bei genutzte ≥ mögliche **Behandlungstermine**; gebuchte Termine sind nur verplant; mehrere Heilmittel oder Doppelbehandlung erzeugen keine weiteren Termine; kein Ablauf nach Zeit. Die heutige Zählung aus der größten Positionsmenge zählt zu wenig — BEF-096. **Umgesetzt in ABN-001 (2026-10-02):** `used` zählt seitdem durchgeführte Termine, siehe ANN-210.
 
@@ -630,7 +630,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Der Weg über `{{ .ConfirmationURL }}` verlangt `detectSessionInUrl: true`; dann stünde ein vollwertiges Zugriffs- und Erneuerungstoken im Adressfragment — im Verlauf und für jedes Skript lesbar. Ein `token_hash` ist einmalig, kurzlebig und für sich keine Sitzung (§16). Selbst zerlegte Fragmente mit `setSession` wären Eigenbau an der Sitzungsmechanik, den §3.4 ausschließt; PKCE verlangt den Prüfschlüssel im selben Browserprofil und bricht im häufigsten Praxisfall (angefordert am Praxisrechner, geöffnet am Telefon). Die beiden Seiten geben keine Auskunft über den Kontobestand, weil abgelaufener, benutzter und vorab geöffneter Link denselben Fehler liefern (§13).
 
-**Anker.** `src/features/auth/linkEinloesen.ts` — `loeseLinkEin`, die Unterscheidung von `LinkUngueltigError` und `VerbindungError`, beide Pfadkonstanten und `istEinloesePfad` (die Liste steht dort und nicht im Gate, weil genau diese Trennung einmal schiefging); Vorlagen unter `supabase/templates/`, Einträge in `supabase/config.toml`. Seit Fassung 2 zusätzlich `einmalCodeAusAdresse` in `src/features/auth/linkEinloesen.ts` mit Test `src/features/auth/einmalCode.test.ts`.
+**Anker.** `src/features/core/auth/linkEinloesen.ts` — `loeseLinkEin`, die Unterscheidung von `LinkUngueltigError` und `VerbindungError`, beide Pfadkonstanten und `istEinloesePfad` (die Liste steht dort und nicht im Gate, weil genau diese Trennung einmal schiefging); Vorlagen unter `supabase/templates/`, Einträge in `supabase/config.toml`. Seit Fassung 2 zusätzlich `einmalCodeAusAdresse` in `src/features/core/auth/linkEinloesen.ts` mit Test `src/features/core/auth/einmalCode.test.ts`.
 
 **Änderungspfad.** Anderer Wortlaut in der Mail: die Vorlagen · Aufwand `klein`. Zurück auf `detectSessionInUrl: true`: eine Zeile in `src/lib/supabase.ts` und die Vorlagen auf `{{ .ConfirmationURL }}` · Aufwand `klein`, mit den Token im Verlauf als Folge. Auf PKCE wechseln · Aufwand `klein`, aber der geräteübergreifende Fall bricht — nicht empfohlen. Eigener Mailversand: eigenes Epic, neuer Dienstleister nach §3.5 und Rücknahme von B13 · Aufwand `groß`.
 
@@ -644,7 +644,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Der Vermerk kann dem Vorgang nicht folgen, weil dieser dem Konto die eigene Sitzung nimmt und `log_account_security_event` `auth.uid()` verlangt — nachher melden hieße gar nicht melden, und ein Auditlog, dessen Einträge nicht zu den Tatsachen passen, ist nach ADR-010 wertlos. Das läuft ANN-041 Fassung 2 entgegen, und zwar bewusst: Dort ist der Ausgang nicht beobachtbar, hier ist er beobachtbar, aber nicht mehr aufschreibbar. Das gemeinsame Prinzip ist dasselbe — nichts festhalten, wofür man nicht einstehen kann.
 
-**Anker.** `src/features/account/api.ts` — Dateikopf und `meldeVersuch`; der Text in `src/features/account/MeinKontoPage.tsx`, Abschnitt „Sitzungen"; Tests in `src/features/account/api.test.ts`.
+**Anker.** `src/features/workplace/account/api.ts` — Dateikopf und `meldeVersuch`; der Text in `src/features/workplace/account/MeinKontoPage.tsx`, Abschnitt „Sitzungen"; Tests in `src/features/workplace/account/api.test.ts`.
 
 **Änderungspfad.** Anderer Wortlaut: der Text in `MeinKontoPage` · Aufwand `klein`. Restfenster verkleinern: `jwt_expiry` in `config.toml` und im Cloudprojekt · Aufwand `klein`, mit häufigerem Erneuern als Folge. Vermerk serverseitig aus dem Vorgang erzeugen: Migration mit autonomer Transaktion · Aufwand `mittel`. Sofortiger Widerruf einzelner Token · Aufwand `groß`, zweite Berechtigungsschicht ohne Not.
 
@@ -658,7 +658,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Wer am Praxisrechner Feierabend macht, meldet nicht sein Diensttelefon mit ab — er müsste sich beim nächsten Hausbesuch neu anmelden, unterwegs und womöglich im Funkloch; die weiter reichende Wirkung ist hier nicht die sicherere, sondern die überraschende. Zwei Wege mit unterschiedlicher Reichweite sind zudem nur verständlich, wenn sie sich unterscheiden. Die Angabe steht ausdrücklich im Code, weil der Default des Anmeldedienstes sich ändern kann und die Absicht aus einem Fehlen nicht zu lesen wäre.
 
-**Anker.** `src/features/auth/SessionProvider.tsx` (`signOut`); Test in `src/features/auth/SessionProvider.test.tsx`.
+**Anker.** `src/features/core/auth/SessionProvider.tsx` (`signOut`); Test in `src/features/core/auth/SessionProvider.test.tsx`.
 
 **Änderungspfad.** Zurück auf global: die Angabe entfernen oder auf `'global'` setzen · Aufwand `klein`; dann ist der Text in `MeinKontoPage.tsx` mitzuändern und „Alle Sitzungen beenden" verliert seinen Zweck. Wahl beim Abmelden anbieten · Aufwand `klein`, aber eine Entscheidung mehr an einer Stelle, an der niemand eine treffen will.
 
@@ -700,7 +700,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Der Regelfall ist das laufende Telefonat — dafür darf niemand ein Datum tippen; der Ausnahmefall ist der Anrufbeantworter von gestern Abend, an dem eine Forderung hängt. Ein einzelnes vorbelegtes Feld hätte beides vermischt: Wer die Vorbelegung stehen lässt, hätte eine Angabe gemacht, ohne sie zu treffen. Ein Zeitstempel aus dem Browser verlangte, dass die Oberfläche eine Wanduhrzeit umrechnet — eine Rechnung, die sie sonst nirgends macht und die auf einem Gerät in anderer Zeitzone still falsch wäre.
 
-**Anker.** `AbsageAktion` in `src/features/appointments/AppointmentDetailPage.tsx` und der Parameterblock von `public.cancel_appointment` in `supabase/migrations/20260912200000_cancellation_notice.sql`; Tests in `AppointmentDetailPage.test.tsx` und `supabase/tests/cancellation-notice.test.ts`.
+**Anker.** `AbsageAktion` in `src/features/calendar/appointments/AppointmentDetailPage.tsx` und der Parameterblock von `public.cancel_appointment` in `supabase/migrations/20260912200000_cancellation_notice.sql`; Tests in `AppointmentDetailPage.test.tsx` und `supabase/tests/cancellation-notice.test.ts`.
 
 **Änderungspfad.** Vorbelegung entfernen und eine Antwort verlangen: ein Anfangswert und eine Prüfung · Aufwand `klein`. Den Eingang zur Pflichtangabe für jede Absage machen · Aufwand `klein`, aber dann trägt jede Absage am Telefon einen Tap mehr. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -726,7 +726,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Der Weg „Akte → Verordnung → Kalender → freie Stelle" ist genau dann etwas wert, wenn am Ende nicht noch einmal gesucht werden muss; ein Formular, das nach der eben ausgewählten Person fragt, ist eine Rückfrage ohne Erkenntnis. Der Filter grenzt weiterhin nur die Darstellung ein, nicht den Lesepfad (AKTE-003): Der Kalender liest den Ausschnitt ohnehin vollständig, sichtbar ist, was die RLS liefert.
 
-**Anker.** `KalenderParameter.verordnung` in `src/features/appointments/calendar.ts` und `freieZeit` in `src/features/appointments/CalendarPage.tsx`; Tests in `CalendarPage.test.tsx` und `calendar.test.ts`.
+**Anker.** `KalenderParameter.verordnung` in `src/features/calendar/appointments/calendar.ts` und `freieZeit` in `src/features/calendar/appointments/CalendarPage.tsx`; Tests in `CalendarPage.test.tsx` und `calendar.test.ts`.
 
 **Änderungspfad.** Kontextweg herausnehmen: zwei Stellen · Aufwand `klein`. Patientenfilter beim Planen nur hervorheben statt ausblenden: eine Änderung in der Darstellung des Gitters · Aufwand `klein` bis `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -740,7 +740,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Eine Besprechung, die bei einer Person um 9 und bei einer anderen um 10 steht, hat niemand gemeint — sie entsteht aber zwangsläufig, wenn das Verschieben je Kalender einzeln geschieht und irgendwo unterbricht; die Belegungsprüfung bleibt richtigerweise an der einzelnen Zeile, ergänzt wird nur die Klammer darüber. Absage für sich und Absage für alle sehen ähnlich aus und bedeuten Verschiedenes, deshalb zwei Schaltflächen mit zwei Namen. Eine Heuristik über Titel und Uhrzeit würde zwei getrennte Vorgänge stillschweigend verheiraten — eine nachträgliche Umdeutung vorhandener Daten (§13).
 
-**Anker.** `supabase/migrations/20260913100000_event_groups.sql`: `event_group_id`, `update_appointment_event`, `cancel_appointment_event`, `list_event_participants` und der Trigger `appointments_event_group_guard`; `updateAppointmentEvent` in `src/features/appointments/api.ts`; Oberfläche in `EditEventPage.tsx` und `AppointmentDetailPage.tsx`.
+**Anker.** `supabase/migrations/20260913100000_event_groups.sql`: `event_group_id`, `update_appointment_event`, `cancel_appointment_event`, `list_event_participants` und der Trigger `appointments_event_group_guard`; `updateAppointmentEvent` in `src/features/calendar/appointments/api.ts`; Oberfläche in `EditEventPage.tsx` und `AppointmentDetailPage.tsx`.
 
 **Änderungspfad.** Beteiligte nachträglich hinzufügen: Personenliste im Formular und ein Einfügezweig in `update_appointment_event` · Aufwand `mittel`. Trennung zwischen Ereignis und Teilnahme aufgeben: der Trigger bleibt, `update_appointment` verlöre seinen Ereigniszweig · Aufwand `klein`, Folge `mittel` (Personentausch nur noch über Absage und Neueintrag). **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -752,7 +752,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Ein signierter Verweis entsteht im Browser; eine serverseitige Zwischenstelle gibt es nicht, weil eine Edge Function für produktive Gesundheitsdaten nach ADR-015 Punkt 20 nicht freigegeben ist. Die erste Fassung verließ sich darauf, dass nur `issue_patient_file_link` den Objektschlüssel herausgibt. Der Schlüssel ist aber für jede lesende Rolle ableitbar und nach einem Öffnen ohnehin bekannt (BEF-004); ein versteckter Zufallsanteil hätte daran nichts geändert. Die RLS ist die einzige Stelle, die die Storage-API vor Signieren, Laden, Auflisten, Kopieren und Löschen fragt. Die Storage-API 1.72 prüft Signieren, Laden, Kopieren und Entfernen mit der Rolle der anfragenden Person gegen diese RLS, meldet dabei die Operation in `storage.operation` und liest einen bereits signierten Verweis als Superuser — belegt am Code der API und gegen die laufende API im E2E-Test. Grenzen: Eine Auflistung prüft jede Zeile des Buckets und verbraucht dabei offene Freigaben der anfragenden Person, nie fremde; Verschieben prüft die Quelle in einer zurückgerollten Transaktion und scheitert nur, weil es keine UPDATE-Policy gibt; eine verfallene, nicht genutzte Freigabe liegt bis zur nächsten Ausstellung in der Organisation. Unsicher: ob eine spätere Version der Storage-API anders abfragt und ob 30 Sekunden für eine langsame Verbindung reichen.
 
-**Anker.** `app.patient_file_access_grant_ttl()`, `app.may_read_patient_file_object`, `app.may_read_storage_object_for_deletion`, `issue_patient_file_link` und `claim_storage_deletion_order` in `supabase/migrations/20260915120000_patient_file_access_grants.sql`; `oeffneDatei` in `src/features/files/api.ts`; Tests in `supabase/tests/patient-file-access.test.ts` und `tests/e2e/authenticated/patient-file-access.spec.ts`.
+**Anker.** `app.patient_file_access_grant_ttl()`, `app.may_read_patient_file_object`, `app.may_read_storage_object_for_deletion`, `issue_patient_file_link` und `claim_storage_deletion_order` in `supabase/migrations/20260915120000_patient_file_access_grants.sql`; `oeffneDatei` in `src/features/patients/files/api.ts`; Tests in `supabase/tests/patient-file-access.test.ts` und `tests/e2e/authenticated/patient-file-access.spec.ts`.
 
 **Änderungspfad.** Andere Wartezeit: `app.patient_file_access_grant_ttl()` · Aufwand `klein`. Fällt OPS-001 Punkt 5 positiv aus (Entzug eines Verweises ohne Support), kommt ein Werkzeug hinzu · Aufwand `klein`. Wird die Edge Runtime freigegeben, kann die Ausstellung serverseitig unterschreiben, und die Freigabetabelle entfällt · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -764,7 +764,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Die **Größe** in `metadata` misst die Storage-API an den empfangenen Bytes und ist damit eine echte zweite Quelle — der Grund, warum es Phase (c) gibt. Für den **MIME-Typ gilt das nicht** (R3-014): Dort übernimmt die API unverändert den `contentType` desselben Uploads, und den leitet der Browser aus der Dateiendung ab; Phase (c) vergleicht insoweit zwei Angaben derselben Quelle. Deshalb prüft der Browser seit R3-014 vor Phase (a) zusätzlich die ersten Bytes gegen das angekündigte Format — keine Virenprüfung und keine Hürde für jemanden, der den Browser selbst steuert, aber eine umbenannte Fremddatei fällt damit auf. Die Datenbank sieht die Bytes nie und könnte die Summe nur nachrechnen, wenn sie die Datei lädt; den HTTP-Zugang dafür zu schaffen (`pg_net`, Edge Function) wäre eine neue wesentliche Abhängigkeit und ein Stopp nach §15.1. Die Summe ist deshalb eine festgehaltene Erklärung — aus derselben Sitzung wie der Upload, über den Auditeintrag einer Person und einem Zeitpunkt zugeordnet; wer auf einem Praxisgerät Bytes fälschen wollte, könnte auch eine falsche Datei hochladen (ADR-017 Punkt 8 und 20).
 
-**Anker.** `supabase/migrations/20260913110000_patient_files.sql`: `confirm_patient_file_upload` (Vergleich gegen `storage.objects.metadata`) und der Kommentar an `patient_files.checksum_sha256`; `pruefsumme` in `src/features/files/api.ts` und `dateiInhaltAblehnungsgrund` in `src/lib/dateien/pruefung.ts`; Tests in `supabase/tests/patient-files.test.ts`, Abschnitt „Phase (c): bestaetigen".
+**Anker.** `supabase/migrations/20260913110000_patient_files.sql`: `confirm_patient_file_upload` (Vergleich gegen `storage.objects.metadata`) und der Kommentar an `patient_files.checksum_sha256`; `pruefsumme` in `src/features/patients/files/api.ts` und `dateiInhaltAblehnungsgrund` in `src/lib/dateien/pruefung.ts`; Tests in `supabase/tests/patient-files.test.ts`, Abschnitt „Phase (c): bestaetigen".
 
 **Änderungspfad.** Prüfsumme serverseitig nachrechnen: braucht einen Vorgang, der die Datei liest — freigegebene Edge Runtime oder ein Betriebswerkzeug, das den Abgleich aus DAT-003 erweitert · Aufwand `mittel`, zusätzlich eine Providerentscheidung, wenn er außer Haus läuft. Prüfsumme ganz weglassen · Aufwand `klein`, aber ADR-017 Punkt 9 und ADR-009 Punkt 9 verlören ihren einzigen technischen Anker — nicht empfohlen. **Abnahme (Jannes, 2026-10-02):** geändert: Der Dateityp wird serverseitig am Inhalt geprüft; Speicher-MIME und Browser-Prüfsumme sind keine unabhängigen Nachweise, die Prüfsumme gilt als „nicht serverseitig verifiziert“ (BEF-105). **Fassung 2 (ABN-024/025, 2026-10-02, BEF-105, ADR-017 Abschnitt I):** Typ an der Signatur, SHA-256 und Metadaten prüft der Server am Inhalt — die Edge Function `patient-file-verify`, gebaut, scharf mit OPS-001. Ergebnis an der Zeile (`verified_at`, je Prüfung ein Feld); ohne Ergebnis steht an der Datei „nicht serverseitig geprüft“. Der Schalter `app.patient_file_verification_required()` steht auf `false`: Bis OPS-001 wird eine Datei mit der Bestätigung `ready`; scharf bleibt sie `pending`, bis das Ergebnis vorliegt. Ein Befund verwirft (Zeile weg, Löschauftrag, `patient_file.verification_failed`). Anker: `supabase/migrations/20261004101000_abn_024_patient_file_verification.sql`. Scharfschalten: eine Migration, die den Schalter auf `true` setzt, Go-live-Vorbedingung.
 
@@ -790,7 +790,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-16, bestätigt 2026-09-17 · Ja
 
 **Begründung.** E14 und `PROJECT_PRINCIPLES.md` 0.10 §8 regeln ausdrücklich den Hausbesuch — die Gebühr hängt an der Anfahrt, und die drei Protokollschritte („15 Minuten gewartet, geklingelt, angerufen") beschreiben eine Haustür. An der Praxistür gibt es nichts zu klingeln; eine Bestätigung, die niemand wahrheitsgemäß geben kann, wäre die Grundlage einer Forderung gegen eine Patientin. Für das Nichtantreffen in der Praxis gibt es keine Festlegung, und eine zu Unrecht vorgemerkte Forderung ist teurer zurückzunehmen als eine nachzutragende (§16). **Bestätigt am 2026-09-17:** Jannes hat festgelegt, dass die Praxis **ausschließlich Hausbesuche** durchführt und keine Räume hat. Damit ist die Lücke nicht mehr nur vorläufig geschlossen, sondern gegenstandslos: Den Fall „Nichtantreffen in der Praxis" gibt es nicht. Die Artprüfung im Schreibpfad bleibt trotzdem stehen — sie kostet nichts und hält die Regel an den Fall gebunden, den E14 beschreibt (ADR-004, Defense-in-Depth). Was diese Festlegung darüber hinaus für die Terminart `practice`, für Standorte und das Praxisraster bedeutet, ist **nicht** Gegenstand dieser Annahme und offen.
 
-**Anker.** Die Artprüfung in `public.record_no_show` und in `public.complete_treatment` in `supabase/migrations/20260916100000_home_visit_scenarios.sql`; `istHausbesuch` in `src/features/appointments/AppointmentDetailPage.tsx`; Tests in `supabase/tests/home-visit-scenarios.test.ts`.
+**Anker.** Die Artprüfung in `public.record_no_show` und in `public.complete_treatment` in `supabase/migrations/20260916100000_home_visit_scenarios.sql`; `istHausbesuch` in `src/features/calendar/appointments/AppointmentDetailPage.tsx`; Tests in `supabase/tests/home-visit-scenarios.test.ts`.
 
 **Änderungspfad.** Regel auf alle Behandlungstermine ausdehnen: die Artprüfung in beiden Funktionen fällt weg, die Protokolltexte werden neutral formuliert, der geführte Ablauf gilt für jeden Termin · Aufwand `klein`. Eigene Regel je Terminart (etwa Gebühr ohne Protokoll in der Praxis): eine Verzweigung mehr an derselben Stelle · Aufwand `klein`.
 
@@ -816,7 +816,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wie
 
 **Begründung.** Festlegung von Jannes (BEF-012): Nachtragen und Zurücklegen gehören zum Praxisalltag. Keine Leitplanke verlangt eine Sperre; das Muster „bestätigen statt sperren" gibt es schon für die Arbeitszeit (CAL-005). Ein Kennzeichen im Auditkontext statt eines Merkmals am Termin, weil es eine Aussage über den Vorgang ist, nicht über den Termin (ADR-010); eine Grenze nach hinten wäre eine erfundene Frist (§13). Unsicher: ob die Abrechnung nachgetragene Termine je unterscheiden muss.
 
-**Anker.** `p_confirmed_past` und `in_the_past` in `supabase/migrations/20260918100000_past_appointments_confirmed.sql`; `VergangenheitError`, `liegtInVergangenheit` in `src/features/appointments/api.ts`; Tests in `supabase/tests/create-appointment.test.ts`, `supabase/tests/change-appointment.test.ts`.
+**Anker.** `p_confirmed_past` und `in_the_past` in `supabase/migrations/20260918100000_past_appointments_confirmed.sql`; `VergangenheitError`, `liegtInVergangenheit` in `src/features/calendar/appointments/api.ts`; Tests in `supabase/tests/create-appointment.test.ts`, `supabase/tests/change-appointment.test.ts`.
 
 **Änderungspfad.** Grenze nach hinten (etwa 90 Tage): eine Bedingung in beiden Funktionen und ein Satz in der Rückfrage · Aufwand `klein`. Begründung verlangen: ein Textparameter mit Auditvermerk nach dem Muster der Absage · Aufwand `klein` bis `mittel`. Zurück zur Sperre: `p_confirmed_past` ignorieren · Aufwand `klein`.
 
@@ -828,7 +828,7 @@ Technik · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wiedervor
 
 **Begründung.** UI-000 hatte „kein modaler Dialog" als Regel; BEF-016 zeigt die Grenze: Ein Hinweis außerhalb des Sichtfelds ist keiner. Die Festlegung von Jannes gilt „immer" für solche Warnungen; die Grenze ist der Ort, nicht die Art der Frage. Ohne Paket, weil `<dialog>` in jsdom kein `showModal` kennt und der Fokuskreis klein ist (ADR-015).
 
-**Anker.** `src/components/ui/Dialogfenster.tsx` (`Dialogfenster`, `Hinweisfenster`), `ArbeitszeitRueckfrage` in `src/features/appointments/AppointmentFormFields.tsx`, Kommentar in `src/components/ui/Rueckfrage.tsx`; Tests in `src/components/ui/Dialogfenster.test.tsx`.
+**Anker.** `src/components/ui/Dialogfenster.tsx` (`Dialogfenster`, `Hinweisfenster`), `ArbeitszeitRueckfrage` in `src/features/calendar/appointments/AppointmentFormFields.tsx`, Kommentar in `src/components/ui/Rueckfrage.tsx`; Tests in `src/components/ui/Dialogfenster.test.tsx`.
 
 **Änderungspfad.** Alle Rückfragen modal: `Rueckfrage` auf `Dialogfenster` umstellen · Aufwand `mittel` (acht Aufrufer, Tests mit `role="group"`). Zurück zum Kasten im Fluss: `Dialogfenster` durch einen Kasten mit Bildlauf zum Element ersetzen · Aufwand `klein`.
 
@@ -840,7 +840,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** CAL-EPIC-004 überlässt dem SPEC die Wahl, ob eine Kennung beides trägt. Sie kann es nicht: „dieses Vorkommen" ist genau die Gruppe, und eine doppelt belegte Spalte machte jede Änderung an einer Woche zu einer Änderung an allen. Der Schnitt nach vorn folgt `PROJECT_PRINCIPLES.md` §13: Ein Teammeeting, das letzte Woche stattgefunden hat, nachträglich als abgesagt zu führen, wäre eine Aussage über die Vergangenheit, die niemand getroffen hat; dieselbe Grenze zieht `update_appointment_event` schon für den Tag (CAL-003). Die Serie bleibt dabei Erzeugungsregel und kein Zustandsträger (ADR-018 Punkt 5): keine Tabelle, kein Serienstatus. Unsicher: ob die Praxis eine Serie je um Tage verschieben will statt sie neu zu legen.
 
-**Anker.** `event_series_id`, `create_event_series`, `update_event_series`, `cancel_event_series` in `supabase/migrations/20260918110000_event_series.sql`; `createEventSeries`, `updateEventSeries`, `cancelEventSeries` in `src/features/appointments/api.ts`.
+**Anker.** `event_series_id`, `create_event_series`, `update_event_series`, `cancel_event_series` in `supabase/migrations/20260918110000_event_series.sql`; `createEventSeries`, `updateEventSeries`, `cancelEventSeries` in `src/features/calendar/appointments/api.ts`.
 
 **Änderungspfad.** Serienweite Vorgänge auch auf begonnene Vorkommen: die `having`-Bedingung in beiden Funktionen streichen · Aufwand `klein`. Serie um Tage verschieben: ein weiterer Parameter und eine Neuberechnung der Tage in `update_event_series` · Aufwand `mittel`. Zurück zu einer Kennung: nicht ohne Verlust von „dieses Vorkommen" · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -852,7 +852,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Der Kalender ist für das ganze Team sichtbar; eine Fehlzeit mit Patientenbezug wäre eine Offenbarung ohne Anlass (`PROJECT_PRINCIPLES.md` §4.6, ADR-011 für die Logs). Eine automatische Inhaltsprüfung wäre die schlechtere Antwort: Sie müsste Patientennamen gegen den Bestand prüfen, dabei genau die Daten anfassen, die sie schützen soll, und ergäbe trotzdem falsche Treffer („Frau Meier" ist auch eine Kollegin). Deshalb die Regel am Feld, wo sie gelesen wird, plus die technische Zusicherung, dass der Text die Anwendung nicht verlässt. Unsicher: ob die Datenschutzprüfung eine Protokollierung der Bezeichnung bei Änderungen verlangt.
 
-**Anker.** Hinweis und Längengrenze am Feld `Bezeichnung` in `src/features/appointments/EreignisFormFields.tsx`; der Auditkontext ohne Titel in `supabase/migrations/20260913100000_event_groups.sql` (`create_appointment_event`, `update_appointment_event`).
+**Anker.** Hinweis und Längengrenze am Feld `Bezeichnung` in `src/features/calendar/appointments/EreignisFormFields.tsx`; der Auditkontext ohne Titel in `supabase/migrations/20260913100000_event_groups.sql` (`create_appointment_event`, `update_appointment_event`).
 
 **Änderungspfad.** Bezeichnung aus einer Liste statt Freitext: ein Wertebereich in der Datenbank und eine Auswahl im Formular · Aufwand `mittel`. Prüfung gegen den Patientenbestand: eine Abfrage im Schreibpfad · Aufwand `mittel` — widerspräche der Begründung. Titel im Auditkontext: ein Feld in `jsonb_build_object` · Aufwand `klein`, aber eine neue Datenschutzentscheidung. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -904,7 +904,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wie
 
 **Begründung.** Das Kontingent war bis VER-EPIC-002 die Summe der Positionen: Eine Verordnung über sechs Termine mit KG-Doppelbehandlung, MT-Doppelbehandlung und Hausbesuch bot achtzehn Termine an — die Serienplanung hätte dreimal so viele Termine vergeben, wie das Rezept hergibt (§13). Jannes' Vorgabe trennt die beiden Größen ausdrücklich („Die Terminzahl zählt Behandlungstermine, keine Summe von Heilmitteln"); eine eigene Spalte ist die einzige Abbildung, die sie nicht wieder vermischt — ein abgeleiteter Wert (Summe, Maximum) wäre genau die Vermischung, die der Befund meint. Die Leistungsmenge bleibt, weil ABR-EPIC-001 sie braucht und §11 verbietet, sie vorsorglich wegzuwerfen. Dass das Formular keine Mengen mehr schreibt, ist der Preis dafür, dass es sie auch nicht mehr überschreiben kann: Eine Bestandsverordnung mit sieben genutzten von zehn Einheiten geht durch das vereinfachte Formular unverändert hindurch. Die Ableitung für den Bestand nimmt das Maximum, weil es nie über der alten Summe liegt — die Serienplanung kann dadurch nur weniger anbieten als vorher, nie mehr. Unsicher: ob die Praxis Leistungsmengen je Heilmittel später doch abweichend von der Terminzahl pflegen will; dann braucht ABR-001 dafür einen eigenen Weg.
 
-**Anker.** Spalte `appointment_count` samt Kommentar und die Ableitung für den Bestand in `supabase/migrations/20260918130000_appointment_count.sql`; dort auch `app.treatment_basis_slot_counts` (die drei Zahlen) und `app.write_treatment_base_items` (Mengen bleiben stehen). In der Oberfläche `treatmentBasisFormSchema` und `rpcPositionen` in `src/features/treatment-bases/api.ts`.
+**Anker.** Spalte `appointment_count` samt Kommentar und die Ableitung für den Bestand in `supabase/migrations/20260918130000_appointment_count.sql`; dort auch `app.treatment_basis_slot_counts` (die drei Zahlen) und `app.write_treatment_base_items` (Mengen bleiben stehen). In der Oberfläche `treatmentBasisFormSchema` und `rpcPositionen` in `src/features/patients/treatment-bases/api.ts`.
 
 **Änderungspfad.** Leistungsmenge wieder von Hand pflegen: ein Zahlenfeld je angehaktem Heilmittel im Formular, `rpcPositionen` schickt die Menge mit — der Schreibpfad nimmt sie bereits entgegen · Aufwand `klein`. Terminzahl wieder aus den Positionen ableiten: `app.treatment_basis_slot_counts` und die Spalte zurückbauen · Aufwand `mittel`, und der Befund von 2026-09-13 wäre zurück. Abgleich (2026-10-02, Abnahme Block 3): Terminzahl und Leistungsmenge bleiben getrennt; „genutzt“ an der Grundlage wird künftig aus durchgeführten Terminen gezählt, nicht aus `used_quantity` — BEF-096. Abgleich (2026-10-02, Abnahme Block 4): Neben Terminzahl und Heilmittelmenge ist das Honorar eine dritte, getrennte Größe — je Behandlungstermin einmal das Terminhonorar (ADR-009 Fassung 4 Punkt 22, BEF-099). **ABN-001 (2026-10-02):** `app.treatment_basis_slot_counts` zählt genutzte Termine statt der größten Positionsmenge (ANN-210); die Terminzahl an der Grundlage bleibt.
 
@@ -916,7 +916,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Die Feldvorgabe verlangt ein gemeinsames Feld „Anmerkungen" und nennt es die Nachfolge des Verordnerhinweises. Auf `prescriber_note` abgebildet hätte ein **Selbstzahler gar kein Anmerkungsfeld** mehr: ADR-020 Punkt 4 hält die klinischen Felder dort leer, und seit VER-EPIC-002 erzwingt das eine Constraint. `note` ist das einzige Feld, das beide Bauarten tragen und das die Vorgabe „allen vier Praxisrollen anzeigen" ohne das klinische Leserecht erfüllt — der Loop öffnet damit keine Sicht, die es nicht schon gab (§4.3, E15). Die Grenze zwischen organisatorischer und klinischer Projektion bleibt unangetastet: Diagnose, Therapieziel, Verordnerhinweis und Empfehlung stehen weiter ausschließlich in der klinischen Sicht. Zusammengeführt wird nichts, weil jede Zusammenführung beim zweiten Speichern denselben Text ein zweites Mal anhängen könnte. Unsicher: ob die Datenschutzprüfung Text, den das Office vom Rezept abschreibt, in der organisatorischen Spalte beanstandet — dann zieht der Hinweistext am Feld nach, oder das Feld wandert auf `prescriber_note` und der Selbstzahler bekommt ein eigenes.
 
-**Anker.** Das Feld „Anmerkungen" auf `note` in `src/features/treatment-bases/TreatmentBasisFormFields.tsx`, die Beschriftung in `src/features/treatment-bases/grundlagenfelder.ts`; die Bestandstexte liefert `bestandstexte()` in `src/features/treatment-bases/api.ts`, und `public.update_treatment_basis` in `supabase/migrations/20260918130000_appointment_count.sql` fasst die drei Spalten nicht an.
+**Anker.** Das Feld „Anmerkungen" auf `note` in `src/features/patients/treatment-bases/TreatmentBasisFormFields.tsx`, die Beschriftung in `src/features/patients/treatment-bases/grundlagenfelder.ts`; die Bestandstexte liefert `bestandstexte()` in `src/features/patients/treatment-bases/api.ts`, und `public.update_treatment_basis` in `supabase/migrations/20260918130000_appointment_count.sql` fasst die drei Spalten nicht an.
 
 **Änderungspfad.** „Anmerkungen" auf `prescriber_note` legen: das Feld im Formular umhängen, den Parameter in beiden Schreibpfaden wieder aufnehmen, ein zweites Feld für den Selbstzahler vorsehen · Aufwand `klein` bis `mittel`. Bestandstexte ganz entfernen: `bestandstexte()` streichen und die drei Spalten in einer Migration leeren · Aufwand `klein`, aber ein Textverlust ohne Weg zurück. **Abnahme (Jannes, 2026-10-02):** organisatorische Anmerkungen und Erhalt der Bestandstexte bestätigt. Neue behandlungsrelevante Hinweise brauchen weiterhin einen klinischen Ort, den das Büro liest wie die Therapeut:innen — BEF-098.
 
@@ -926,11 +926,11 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes, sobald ein Heilmittel fehlt; der Leistungskatalog aus ABR-EPIC-001 ist eine eigene Preisliste und trifft das Heilmittel über seine Katalogposition (ANN-073)
 
-**Annahme.** Die vordefinierte Heilmittelauswahl steht als fünf Einträge in `src/features/treatment-bases/heilmittel.ts`: Krankengymnastik, KG als Doppelbehandlung, Manuelle Therapie, MT als Doppelbehandlung, Hausbesuch. Jeder Eintrag ist ein eigenes Kästchen und schließt keinen anderen aus. Die **Datenbank prüft den Wert nicht**: Ein Heilmittel außerhalb der Liste bleibt gültig, wird im Formular als angehakter Bestandseintrag mit seiner Menge angezeigt und verschwindet nur, wenn jemand es ausdrücklich abhakt.
+**Annahme.** Die vordefinierte Heilmittelauswahl steht als fünf Einträge in `src/features/patients/treatment-bases/heilmittel.ts`: Krankengymnastik, KG als Doppelbehandlung, Manuelle Therapie, MT als Doppelbehandlung, Hausbesuch. Jeder Eintrag ist ein eigenes Kästchen und schließt keinen anderen aus. Die **Datenbank prüft den Wert nicht**: Ein Heilmittel außerhalb der Liste bleibt gültig, wird im Formular als angehakter Bestandseintrag mit seiner Menge angezeigt und verschwindet nur, wenn jemand es ausdrücklich abhakt.
 
 **Begründung.** Die Vorgabe verlangt eine vordefinierte Auswahl und schließt eine freie Katalogverwaltung ausdrücklich aus; Preise kommen mit ABR-001. Eine Tabelle mit Pflegeoberfläche wäre ein Zukunftsfeature auf Vorrat (ADR-014 §11) und teurer zurückzunehmen als fünf Zeilen. Dass die Datenbank den Wert nicht prüft, ist der Punkt: Eine Prüfung wiese eine Bestandsposition („Wärmetherapie") beim nächsten Speichern ab — das Gegenteil von „Bestandswerte bleiben erhalten". Die Doppelbehandlung ist ein eigener Eintrag und kein Zusatzhaken, weil sie eine andere Leistung ist; nur so ist die Kombination KG-Doppelbehandlung + MT-Doppelbehandlung + Hausbesuch vollständig möglich. Die gespeicherten Bezeichnungen „Krankengymnastik" und „Manuelle Therapie" sind unverändert die aus VER-EPIC-001, damit eine Bestandsverordnung ihr Kästchen wiederfindet. Unsicher: ob die Praxis weitere Heilmittel braucht, bevor ABR-001 den Leistungskatalog bringt — dann kommt ein Eintrag dazu, nicht eine Verwaltungsoberfläche.
 
-**Anker.** `HEILMITTEL` und `istBestand()` in `src/features/treatment-bases/heilmittel.ts`.
+**Anker.** `HEILMITTEL` und `istBestand()` in `src/features/patients/treatment-bases/heilmittel.ts`.
 
 **Änderungspfad.** Weiteres Heilmittel: eine Zeile in `heilmittel.ts` · Aufwand `klein`. Eintrag entfernen: dieselbe Zeile streichen — vorhandene Positionen bleiben als Bestand stehen · Aufwand `klein`. Echte Katalogtabelle mit Preisen: gehört zu ABR-001, dort mit Versionierung und Steuerkennzeichen (ADR-009) · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt; der Verzicht auf eine Liste in der Datenbank hebt die serverseitige Prüfung von Pflichtfeldern, Mengen und Berechtigungen nicht auf. Abgleich (2026-10-02, Abnahme Block 4): Die Heilmittelliste beschreibt Verordnung und Erbrachtes, nicht den Preis; sie verändert das Terminhonorar nicht (BEF-099).
 
@@ -954,7 +954,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Die Vorgabe nennt eine einzige Grenze ausdrücklich: „nie mit abgerechneter Leistung". Leistungen gibt es noch nicht (ABR-EPIC-001), und der einzige objektive Marker dafür ist heute der Terminzustand `invoiced` — er ist deshalb die Grenze, die die Datenbank zieht. Ein abgesagter Termin kommt dazu, weil er nichts mehr plant: Ihn umzuhängen änderte rückwirkend die Zahlen zweier Grundlagen, ohne dass ihm etwas folgt. Ein durchgeführter Termin bleibt dagegen übertragbar — genau dann fällt im Alltag auf, dass die Behandlung schon zur Folgeverordnung gehörte. Das Kontingent des Ziels zu prüfen wäre widersprüchlich: Denselben Termin dort neu anzulegen ist erlaubt (CAL-022), ihn dorthin zu übertragen also zu verbieten, wäre eine Regel, die nur den bequemeren Weg trifft. Dass `updated_at` stehen bleibt, folgt aus CAL-012: Mitgeteilt wurde ein Zeitpunkt, und der ändert sich nicht. Unsicher: ob die Praxis einen bereits durchgeführten Termin überhaupt übertragen will — dann kommt `completed`/`documented` zur Ausschlussliste.
 
-**Anker.** Die Bedingung `status not in ('cancelled', 'invoiced')` in `public.transfer_appointments_to_treatment_basis`, `supabase/migrations/20260918140000_appointment_coverage.sql`; das Angebot der Oberfläche in `angebot` in `src/features/appointments/TermineUebertragenPage.tsx`.
+**Anker.** Die Bedingung `status not in ('cancelled', 'invoiced')` in `public.transfer_appointments_to_treatment_basis`, `supabase/migrations/20260918140000_appointment_coverage.sql`; das Angebot der Oberfläche in `angebot` in `src/features/calendar/appointments/TermineUebertragenPage.tsx`.
 
 **Änderungspfad.** Weitere Zustände ausschließen: die Liste in der Funktion ergänzen und den Testfall spiegeln · Aufwand `klein`. Kontingent des Ziels doch prüfen: eine Abfrage vor dem Schreiben, Fehlermeldung mit Zahl · Aufwand `klein`, widerspricht aber CAL-022. Die Leistungsprüfung steht seit R3-001 neben der Zustandsprüfung; sie zurückzunehmen hieße, abgerechnete Termine wieder übertragbar zu machen. **Abnahme (Jannes, 2026-10-02):** Übertragung samt Überplanung und durchgeführter Termine als nachvollziehbare Zuordnungskorrektur bestätigt; abgerechnete Leistungen bleiben ausgeschlossen. Erfasste, nicht abgerechnete Leistungen müssen mitziehen, damit Termin, Leistung und Verbrauch zusammenpassen — BEF-097. **Fassung 2 (ABN-002, 2026-10-02, Abnahme Jannes):** Erfasste, nicht abgerechnete Leistungen ziehen in derselben Transaktion auf die Position des Ziels mit demselben Heilmittel mit, die genutzte Menge wandert; ohne passende Position oder bei erschöpftem Kontingent wird der ganze Vorgang abgewiesen (`supabase/migrations/20261002121000_abn_002_transfer_services.sql`). Durchgeführte Termine bietet die Oberfläche zugeklappt an (ANN-211).
 
@@ -966,7 +966,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** AKTE-006 verlangt „je Verordnung ein Abschnitt … und die Termine darunter" und sagt nichts darüber, ob die Trennung in kommend und vergangen dabei fällt. Sie fallen zu lassen hieße, die Frage aufzugeben, für die der Bereich gebaut wurde (AKTE-003: „was steht an, und was war"). Beide Listen blättern über einen eigenen Keyset-Cursor; eine Gruppe je Grundlage über beide Richtungen bräuchte je Grundlage zwei davon — bei fünf Grundlagen zehn Abfragen beim Öffnen — und zeigte in einer Akte über zehn Jahre zwanzig Abschnitte, von denen zwei Arbeitsvorrat sind. Dass nur das Geladene gruppiert wird, ist der Preis des Blätterns; die Deckung daneben ist davon unabhängig und ändert sich beim Weiterblättern nicht. Unsicher: ob Jannes die Grundlage als oberste Ebene erwartet und die Trennung kommend/vergangen darunter — dann tauschen die beiden Ebenen die Plätze, und jede Gruppe bekommt zwei Listen.
 
-**Anker.** `gruppiere()` und `Gruppenkopf` in `src/features/appointments/PatientAppointmentsPage.tsx`.
+**Anker.** `gruppiere()` und `Gruppenkopf` in `src/features/calendar/appointments/PatientAppointmentsPage.tsx`.
 
 **Änderungspfad.** Grundlage als oberste Ebene: `Terminliste` je Gruppe zweimal aufrufen, Cursor je Gruppe und Richtung · Aufwand `mittel`. Gruppierung ganz zurücknehmen: `gruppiere()` streichen, die flache Liste mit dem Grundlagenlink je Zeile steht in der Historie · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -992,7 +992,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** §4.1 zählt Praxiseinstellungen zur Inhaberrolle, §4.3 gibt dem Office Rechnungen und Zahlungsstatus — nicht die Preisbildung. Lesen muss der Katalog für alle offen sein, sonst sähe die Erfassung ihre eigenen Preise nicht. Die Erfassung auf zwei Rollen zu beschränken hält den Bedienweg an einer Stelle: Eine zweite Oberfläche am Termin wäre eine zweite Implementierung derselben Regel, und die Regel selbst ist ohnehin serverseitig. Unsicher: ob das im Alltag trägt — bei einer Praxis, in der Jannes beide Rollen hat, fällt der Unterschied nicht auf, bei einer angestellten Therapeutin schon.
 
-**Anker.** `app.can_read_service_catalog()` und `app.can_manage_service_catalog()` in `supabase/migrations/20260919100000_service_catalog.sql`; `app.can_read_billable_services()` und `app.can_record_billable_services()` in `supabase/migrations/20260919110000_billable_services.sql`; die Anzeigeweiche `canManageServiceCatalog` und `canRecordBillableServices` in `src/features/session/types.ts`.
+**Anker.** `app.can_read_service_catalog()` und `app.can_manage_service_catalog()` in `supabase/migrations/20260919100000_service_catalog.sql`; `app.can_read_billable_services()` und `app.can_record_billable_services()` in `supabase/migrations/20260919110000_billable_services.sql`; die Anzeigeweiche `canManageServiceCatalog` und `canRecordBillableServices` in `src/features/core/session/types.ts`.
 
 **Änderungspfad.** Therapeut:innen erfassen lassen: die beiden `can_*_billable_services()` um `therapist` und `team_lead` erweitern, dazu `canRecordBillableServices` · Aufwand `klein`; ein Einstieg am Termin käme als eigene Aufgabe dazu · Aufwand `mittel`. Office Preise pflegen lassen: `app.can_manage_service_catalog()` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** an ANN-140 angepasst: Preise pflegt owner; Behandelnde bestätigen erbrachte Leistungen an ihren eigenen dokumentierten Terminen, owner und Büro an allen; Zurücknehmen und Ausfallhonorar bleiben bei owner und Büro.
 
@@ -1056,7 +1056,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** ADR-009 Punkt 2 verlangt die Trennung und nennt die Fälle; die offene Folgefrage „benötigt das eigene Empfängertypen?" ist damit beantwortet — die Art entscheidet über Anrede und Aktenzeichen, nicht über Berechtigungen (der Empfänger ist kein Zugang zur Akte, B5 bleibt unberührt). Eine Zeile „die Patientin selbst" wäre eine Kopie ihrer Anschrift und damit ein zweiter Wert für denselben Sachverhalt, der still veraltet — genau das schließt §13 aus. Die Aufteilung einer Rechnung auf Beihilfe und Versicherung nach Quote ist bewusst nicht gebaut und nicht vorbereitet (ADR-014): Sie käme als eigene Aufgabe mit eigener Summenlogik. Unsicher: ob die Praxis sie braucht; bei privat abrechnenden Praxen reicht regelmäßig eine Rechnung, die der Patient selbst einreicht.
 
-**Anker.** Tabelle `invoice_recipients`, `app.can_read_invoicing()` und `app.can_manage_invoicing()` in `supabase/migrations/20260919140000_invoice_recipients.sql`; die Anzeigeweiche `canManageInvoicing` in `src/features/session/types.ts`.
+**Anker.** Tabelle `invoice_recipients`, `app.can_read_invoicing()` und `app.can_manage_invoicing()` in `supabase/migrations/20260919140000_invoice_recipients.sql`; die Anzeigeweiche `canManageInvoicing` in `src/features/core/session/types.ts`.
 
 **Änderungspfad.** Weitere Art: der `check` an `recipient_kind` und die Beschriftungen in `src/features/billing/api.ts` · Aufwand `klein`. Rechnung auf zwei Empfänger aufteilen: eigene Quotenzeilen an der Rechnung, zwei Dokumente je Ausstellung · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt. Standard ist die behandelte Person; PKV oder Beihilfe werden durch einen Erstattungsanspruch nicht von selbst Rechnungsempfänger.
 
@@ -1138,11 +1138,11 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: mit P6 (Ergebnisse erheben und speichern)
 
-**Annahme.** Definitionen von Untersuchungsbausteinen und Scores liegen als JSON-Dateien unter `src/features/assessments/definitionen/` und werden zur Bauzeit eingesammelt. Sie tragen **kein** `organization_id`, stehen in keiner Tabelle und sind für alle Mandanten gleich. Ergebnisse gehen den umgekehrten Weg: Sie sind Gesundheitsdaten und kommen mit Datenklasse, Frist und RLS in die Datenbank.
+**Annahme.** Definitionen von Untersuchungsbausteinen und Scores liegen als JSON-Dateien unter `src/features/clinical/assessments/definitionen/` und werden zur Bauzeit eingesammelt. Sie tragen **kein** `organization_id`, stehen in keiner Tabelle und sind für alle Mandanten gleich. Ergebnisse gehen den umgekehrten Weg: Sie sind Gesundheitsdaten und kommen mit Datenklasse, Frist und RLS in die Datenbank.
 
 **Begründung.** Der Arbeitsauftrag §0 verlangt „als Daten abgelegt, nicht als Code und nicht als PDF", §1 „ein neuer Score ist eine neue Datei". ADR-014 führt als offene Folgefrage ausdrücklich, wie „Daten ohne Organisationsbezug, etwa Instrumenten- und Leistungskatalog" zu behandeln sind; für die Bibliothek beantwortet das diese Annahme. Der Unterschied zum Leistungskatalog (`service_catalog_items`, in der Datenbank) ist sachlich: Preise gehören der Praxis und ändern sich je Mandant, ein validierter Fragebogen gehört niemandem und ändert sich nur mit seiner Fassung. Nur so ist `definition_version` etwas Festes — läge die Bibliothek je Mandant in der Datenbank, hieße „1.2.0" in zwei Praxen womöglich Verschiedenes.
 
-**Anker.** `ladeDefinitionen()` in `src/features/assessments/definitionen.ts`; das Einsammeln in `src/features/assessments/bibliothek.ts`.
+**Anker.** `ladeDefinitionen()` in `src/features/clinical/assessments/definitionen.ts`; das Einsammeln in `src/features/clinical/assessments/bibliothek.ts`.
 
 **Änderungspfad.** Bibliothek je Mandant (eigene Instrumente einer Praxis): Tabelle mit `organization_id`, RLS, Löschpfad; der Ladepfad bekommt eine zweite Quelle, das Schema bleibt · Aufwand `mittel`. Zurück in den Code: nicht vorgesehen — das wäre das Leitprinzip selbst. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -1154,7 +1154,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Der Arbeitsauftrag §1 verlangt eine Version je Definition und die Mitschrift der verwendeten Fassung an jedem Ergebnis, sagt aber nicht, welcher Form. Ein Datum sagt nur, *wann* geändert wurde; die Frage im Verlauf ist aber, **ob** zwei Werte vergleichbar sind — und das hängt daran, ob ein Item verschwunden ist oder ein Tippfehler verschwand. D2 bis D6 im Plan zeigen, dass beides kommt.
 
-**Anker.** `versionSchema` in `src/features/assessments/schema.ts`.
+**Anker.** `versionSchema` in `src/features/clinical/assessments/schema.ts`.
 
 **Änderungspfad.** Datum oder Zähler: ein regulärer Ausdruck, ein Testfall, die vorhandenen Dateien · Aufwand `klein`, solange kein Ergebnis gespeichert ist; danach `mittel`, weil gespeicherte Fassungen mitwandern. **Abnahme (Jannes, 2026-10-02):** präzisiert: Patch nur für bedeutungserhaltende Korrekturen (Schreibfehler). Geänderter Frageninhalt, Antwortmöglichkeiten oder Berechnung sind fachliche Änderungen; ihre Vergleichbarkeit wird geprüft und vermerkt — die Nummer garantiert sie nicht (BEF-101). **Fassung 2 (ABN-014, 2026-10-02, BEF-101 Punkt 4):** Die Nummer sagt nicht, ob Werte vergleichbar sind. `meta.vergleichbar_mit` vermerkt es je Fassung; eine reine Patch-Änderung muss dort stehen (Ladepfad `definitionen.ts`), geänderter Inhalt, andere Optionen oder eine andere Berechnung werden je Änderung geprüft. Frühere Fassungen liegen unter `definitionen/scores/archiv/` und bleiben im Release; eine Erhebung wird mit ihrer eigenen Fassung angezeigt (`fassungFuer`), der Verlauf zeichnet nur vergleichbare Fassungen in eine Reihe. Eine eingetragene Fassung ändert sich nie (Trigger an `questionnaire_definitions`, Prüfung in `scripts/definitionen-sql.mjs`).
 
@@ -1166,7 +1166,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Der Arbeitsauftrag §3 nennt zwei Werte. Die Quellen brauchen einen dritten: Das Inventar führt beim Anamnesebogen „Richtung: n/a (kein Score)" und bei der Tegner-Skala „hoch = aktiver" — nicht besser. Aus „aktiver" ein „besser" zu machen wäre eine eigene Bewertung und damit genau das, was ADR-006 Punkt 11 verbietet. Ein Pflichtfeld mit einem falschen Wert ist schlechter als ein ehrlicher dritter.
 
-**Anker.** `RICHTUNGEN` in `src/features/assessments/schema.ts`, samt der Prüfung, dass ein Instrument ohne Gesamtwert und ohne Subskala keine Richtung behaupten darf.
+**Anker.** `RICHTUNGEN` in `src/features/clinical/assessments/schema.ts`, samt der Prüfung, dass ein Instrument ohne Gesamtwert und ohne Subskala keine Richtung behaupten darf.
 
 **Änderungspfad.** Zurück auf zwei Werte: die Aufzählung, die Prüfung und je ein Feld in den betroffenen Definitionen · Aufwand `klein` — aber nur zusammen mit einer Antwort darauf, was der Anamnesebogen dann tragen soll. **Abnahme (Jannes, 2026-10-02):** bestätigt als fehlende Wertung „besser/schlechter“; Tegner zeigt seinen Zahlenwert mit „höher = aktiver“ (BEF-101). **Fassung 2 (ABN-014, 2026-10-02, BEF-101 Punkt 3):** Rechnet ein Instrument mit Richtung `nicht_anwendbar` etwas, ist `scoring.leseart` Pflicht (Tegner: „höher = aktiver“). Der Wert steht mit diesem Satz im Verlauf und in den Instrumenten, ohne Wertung.
 
@@ -1178,7 +1178,7 @@ Recht · entschieden (Jannes) · 2026-09-21 · Jannes · Prüfpaket · Wiedervor
 
 **Begründung.** Die Roadmap-Zeile FRB-001 verlangt die Bibliothek „versioniert, mit Lizenzfeld", `IDEA-OUT-001` begründet es: Viele etablierte Fragebögen sind urheberrechtlich geschützt, und was für diese 18 gilt, gilt nicht für das neunzehnte. B8 führt den **schriftlichen Beleg des Lizenzgebers** weiter als offen; die Erklärung von Jannes trägt das Bauen, nicht die Freigabe. Die Kopplung an `aktiv` steht im Schema und nicht in der Oberfläche, weil ein ausgeblendetes Element keine Zugriffskontrolle ist (`CLAUDE.md`, Harte Regeln).
 
-**Anker.** `lizenzstatusSchema` und die Prüfung `aktiv → freigegeben` in `src/features/assessments/schema.ts`.
+**Anker.** `lizenzstatusSchema` und die Prüfung `aktiv → freigegeben` in `src/features/clinical/assessments/schema.ts`.
 
 **Änderungspfad.** Fällt die Auskunft des Lizenzgebers anders aus: Status je betroffener Datei auf `lizenz_erforderlich`, `aktiv` auf `false` · Aufwand `klein` — eine Zeile je Instrument, und das Instrument verschwindet aus der Auswahl, ohne dass Ergebnisse verlorengehen.
 
@@ -1190,7 +1190,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Keines der 18 Instrumente braucht es: Was das Inventar an Auslassungen kennt, betrifft ganze Subskalen (KOOS: „Nicht-Sportler: Sport-Subskala auslassen") oder einzelne Antworten („nicht zutreffend" beim FAAM) und steht dort in der Missing-Value-Regel. `CLAUDE.md` verbietet prophylaktische Zukunftsfeatures, ADR-014 führt dieselbe Grenze als Negativliste. Ein Feld ohne Fall wird falsch benutzt, bevor jemand festgelegt hat, was es heißen soll — und steht dann in Definitionsdateien, die niemand mehr anfasst. Der Widerspruch zur Skizze des Auftrags ist nach Rang aufgelöst (`CLAUDE.md`: Rang 1 und 2 vor Rang 3).
 
-**Anker.** Der Kommentar an `scoreItemSchema` in `src/features/assessments/schema.ts`, der die Auslassung samt Grund festhält.
+**Anker.** Der Kommentar an `scoreItemSchema` in `src/features/clinical/assessments/schema.ts`, der die Auslassung samt Grund festhält.
 
 **Änderungspfad.** Ein Instrument mit echter Sprungregel: Feld am Item, Prüfung gegen bekannte Item-Kennungen, ein Testfall · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -1266,7 +1266,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 *Vermerk 2026-09-26 (DOK-006b):* Dritter Zweck **Fotos im Behandlungsverlauf** (`patient_photos`) — dort ist die Einwilligung die Grundlage selbst (ADR-017 Punkt 35); dazu die Ablehnung als eigener Vermerk (ANN-127).
 
-**Anker.** Constraint `purpose` und `public.record_patient_privacy_entry()` in `supabase/migrations/20260922130000_datenschutzvermerke.sql`, zuletzt geändert in `20260926150000_dok_006b_patient_photos.sql`; `EINWILLIGUNGSZWECKE` in `src/features/datenschutz/vermerke.ts`; Texte in `src/features/datenschutz/patienteninformation.ts`.
+**Anker.** Constraint `purpose` und `public.record_patient_privacy_entry()` in `supabase/migrations/20260922130000_datenschutzvermerke.sql`, zuletzt geändert in `20260926150000_dok_006b_patient_photos.sql`; `EINWILLIGUNGSZWECKE` in `src/features/privacy/datenschutz/vermerke.ts`; Texte in `src/features/privacy/datenschutz/patienteninformation.ts`.
 
 **Änderungspfad.** Zweck ergänzen oder streichen: ein Wert in Constraint, Konstante und Beschriftung, ein Satz in der Datenschutzinformation · Aufwand `klein`. Einwilligung vor dem Mailweg prüfen: Abfrage des Stands in `AppointmentSlipPage.tsx` vor der Übergabe · Aufwand `mittel`. Unterschrift in der Anwendung: eigenes Epic · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt, mit den Patientenfotos als drittem Zweck (ANN-127).
 
@@ -1302,7 +1302,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-019 Punkt 2 und MAP-LOOPS erlauben „Vorname-Kürzel oder Nummer — nie Vollname". Die Nummer ist die sparsamere Wahl (Art. 5 Abs. 1 lit. c DSGVO): Eine Karte ist auf dem Lenker für Umstehende lesbar, und schon ein Kürzel mit Straße daneben identifiziert in einer kleinen Stadt; die Liste trägt den Namen ohnehin. Ein gespeicherter persönlicher Startort wäre eine Beschäftigtenadresse beim Kartendienst und eine Form der Standortangabe über Mitarbeitende (§20) — das braucht eine eigene Prüfung und ist nicht gebaut.
 
-**Anker.** `kartenmarker` und `START_LABEL` in `src/features/tours/tagesroute.ts`; Test „trägt nur Koordinate und Nummer" in `tagesroute.test.ts`; Startwahl als Zustand der Seite in `src/features/tours/TourenPage.tsx`.
+**Anker.** `kartenmarker` und `START_LABEL` in `src/features/calendar/tours/tagesroute.ts`; Test „trägt nur Koordinate und Nummer" in `tagesroute.test.ts`; Startwahl als Zustand der Seite in `src/features/calendar/tours/TourenPage.tsx`.
 
 **Änderungspfad.** Kürzel statt Nummer: `kartenmarker` bekommt den Termin mit, Test anpassen · Aufwand `klein`. Persönlicher Startort: eigene Prüfung nach §20, Spalte an `staff_private_details` mit Koordinate, Schreiber nur die Person selbst · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -1314,7 +1314,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** ADR-019 Punkt 16 verbietet die Speicherung von Fahrzeiten, §8.1 verlangt die serverseitige Rundung, sobald eine Fahrzeit vorliegt; die Datenbank kann den Dienst nicht selbst fragen (ANN-017). Beides zusammen geht nur mit einer hereingereichten Fahrzeit — und die darf nur dann vom Client kommen, wenn aus ihr nichts gesperrt oder freigegeben wird. E12 Punkt 4 hat Jannes am 2026-09-12 bis zu echten Zahlen offengelassen; die Roadmap nennt „Warnung bei Unterschreitung". Unsicher: ob eine Sperre später gewünscht ist — dann muss die Fahrzeit serverseitig entstehen.
 
-**Anker.** `app.earliest_follow_up_start` und `public.check_travel_buffers` in `supabase/migrations/20260925120000_map_006c_travel_buffer.sql`; Testfall 09:05–10:05 plus 12 Minuten = 10:20 in `supabase/tests/travel-buffer.test.ts`; Anzeige in `src/features/tours/Fahrten.tsx` und `FahrpufferHinweis.tsx`.
+**Anker.** `app.earliest_follow_up_start` und `public.check_travel_buffers` in `supabase/migrations/20260925120000_map_006c_travel_buffer.sql`; Testfall 09:05–10:05 plus 12 Minuten = 10:20 in `supabase/tests/travel-buffer.test.ts`; Anzeige in `src/features/calendar/tours/Fahrten.tsx` und `FahrpufferHinweis.tsx`.
 
 **Änderungspfad.** Sperre statt Warnung: Fahrzeit serverseitig über einen Aufruf der Function aus einem Hintergrundpfad, Prüfung in `create_appointment`/`update_appointment` · Aufwand `mittel`. Kurze Speicherung statt Live-Abruf: Tabelle mit Frist „Routing-Rohdaten" (ADR-008, 30 Tage) · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Warnung statt Sperre bestätigt; Luftlinien- oder Ersatzschätzungen des Anbieters werden gekennzeichnet oder als „Fahrzeit nicht verfügbar“ behandelt (BEF-109). **Fassung 2 (ABN-028, 2026-10-02, BEF-109, ADR-019 Punkt 38):** Eine Ersatzschätzung ist keine Fahrzeit. Trägt eine Matrixantwort ein Schätzungskennzeichen (`estimatedByDirectDistance`, `isEstimated`, `estimated`, `directDistance`) oder je Relation irgendein anderes gesetztes Kennzeichen, wird die Relation `null` (Fahrzeit und Strecke); eine geschätzte Route endet als `not_found`. Die Oberfläche sagt „Fahrzeit nicht verfügbar – nicht geprüft“, der Fahrpuffer gilt dort als ungeprüft. Welches Kennzeichen PTV tatsächlich trägt, ist nicht belegt (Gate-Liste Punkt 11). Anker: `SCHAETZUNG`, `geschaetzteRelationen`, `routeGeschaetzt` in `supabase/functions/location-provider/ptv.ts`. **Wiedervorlage (Jannes, 2026-10-05):** Die Fahrzeiten des Dienstes sind zu kurz (rund 23 statt 15 km/h); jede Fahrzeit wird vor Anzeige und Prüfung mit dem Fahrzeitfaktor der Praxis multipliziert (ANN-237, Voreinstellung 1,5). Warnung statt Sperre bleibt.
 
@@ -1326,7 +1326,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Das Inventar sagt für ODI, RMDQ, NDI, FABQ, PCS und weitere „im PDF nicht geregelt" (D6); der Arbeitsauftrag §5 Punkt 3 und `quellen/README.md` Regel 2 verbieten, eine Lücke mit Plausiblem zu füllen. Ein fehlender Wert ist sichtbar und harmlos, ein erfundener steht im Verlauf und behauptet Vergleichbarkeit. ADR-006 Punkt 2 deckt nur die Rechnung nach **veröffentlichter** Vorschrift.
 
-**Anker.** `wende()` in `src/features/assessments/rechnen.ts`; Testfall „gibt keinen Wert, solange ein gewertetes Item fehlt" in `rechnen.test.ts`.
+**Anker.** `wende()` in `src/features/clinical/assessments/rechnen.ts`; Testfall „gibt keinen Wert, solange ein gewertetes Item fehlt" in `rechnen.test.ts`.
 
 **Änderungspfad.** Je Score eine eigene Missing-Value-Regel, sobald D6 für ihn entschieden ist: maschinenlesbares Feld neben `missing_value_regel`, Auswertung in `wende()`, Referenzfall mit fehlender Antwort · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt: keine eigenmächtige Ersetzung durch 0 oder Hochrechnung; veröffentlichte Regeln des Instruments, auch zu fehlenden Antworten, haben Vorrang; ohne belegte Regel bleibt die Skala ohne Ergebnis und die fehlenden Items werden genannt.
 
@@ -1340,7 +1340,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Stand 2026-09-28 (Jannes).** **PSFS wird gestrichen** und nicht integriert. Für die **Veränderungsfrage** gilt der Wortlaut oben — eine Frage, sieben Stufen von „sehr viel schlechter“ bis „sehr viel besser“ — als **Praxisvorgabe**, freigegeben von Jannes; eine Vorlage als PDF ist nicht nötig, weil es keine einheitliche deutsche Fassung gibt und das Instrument weder Normwerte noch Cut-offs trägt. Für die NRS gibt Jannes die Frage **„Heutiges Befinden (im Bezug auf die typischen Beschwerden)“** vor (2026-09-28), Skala 0 bis 10 mit **0 = keine Beschwerden** und **10 = stärkste vorstellbare Beschwerden** (freigegeben 2026-09-29); damit ist der Wortlaut beider Instrumente Praxisvorgabe. Umgesetzt wird beides im ersten Schritt von FRB-EPIC-004 (Freigabe als Quelldatei unter `quellen/scores/`, Version `1.0.0`, `aktiv: true`; `psfs.json` entfällt).
 
-**Anker.** Die Prüfung `aktiv` ohne `quelle.datei` in `scoreDefinitionSchema`, `src/features/assessments/schema.ts`; die drei Dateien unter `src/features/assessments/definitionen/scores/`.
+**Anker.** Die Prüfung `aktiv` ohne `quelle.datei` in `scoreDefinitionSchema`, `src/features/clinical/assessments/schema.ts`; die drei Dateien unter `src/features/clinical/assessments/definitionen/scores/`.
 
 **Änderungspfad.** Bogen in `quellen/scores/pdf/` ablegen, Wortlaut der Datei gegen ihn halten, `quelle.datei` setzen, Version `1.0.0`, `aktiv: true` · Aufwand `klein` je Instrument. Andere Stufenzahl oder fünf Aktivitäten: Items ergänzen, Referenzfall anpassen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Stand übernommen: PSFS entfällt; NRS und Veränderungsfrage werden mit Jannes’ freigegebenem Wortlaut als **Praxisvorgaben** umgesetzt (FRB-EPIC-004); die Frage zu „Beschwerden“ wird nicht als unveränderte, validierte Schmerz-NRS bezeichnet. Die Definitionsdateien stehen noch auf dem alten Stand und werden in FRB-EPIC-004 nachgezogen.
 
@@ -1380,7 +1380,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Das Inventar sagt „Kein Scoring - reine Informationserfassung"; ein erfundener Punktwert wäre die Rekonstruktion, die der Arbeitsauftrag §5 Punkt 2 verbietet. Eine Position in der Liste statt einer Kennung wäre in der Kopie nach Art. 15 unlesbar. Name und Alter doppelt zu erheben ergäbe eine zweite Quelle, die abweichen kann (Art. 5 Abs. 1 lit. c und d DSGVO).
 
-**Anker.** `optionSchema` und `optionKennung` in `src/features/assessments/schema.ts`; Definition `src/features/assessments/definitionen/scores/anamnese_v8.json`; Tests `anamnese.test.ts`, Wortlaut gegen den Extrakt in `definitionen.test.ts`.
+**Anker.** `optionSchema` und `optionKennung` in `src/features/clinical/assessments/schema.ts`; Definition `src/features/clinical/assessments/definitionen/scores/anamnese_v8.json`; Tests `anamnese.test.ts`, Wortlaut gegen den Extrakt in `definitionen.test.ts`.
 
 **Änderungspfad.** Andere Aufteilung des Bogens: neue Version der Definition (`1.1.0`), alte Erhebungen behalten ihre `definition_version` · Aufwand `klein`. Kennung statt Punktwert auch an gewerteten Scores: Kennungen in den Dateien nachtragen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -1392,7 +1392,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** §7 verlangt, dass abgeschlossene Fragebögen in der beantworteten Version erhalten bleiben; ADR-016 Punkt 5 und 6 geben das Muster „nie überschreiben, Korrektur mit Grund" vor, das hier ohne Versionstabelle auskommt, weil ein Bogen als Ganzes ersetzt wird. Eine automatische Finalisierung schützt bei der Behandlungsdokumentation vor einem fehlenden Nachweis (§630f); ein halb ausgefüllter Bogen, der sich selbst abschließt, wäre dagegen eine Aussage der Person, die sie nicht vollständig gemacht hat. Office liest nach ADR-004 Fassung 2, schreibt aber keine klinischen Inhalte.
 
-**Anker.** `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql` (`app.guard_questionnaire_response`, `app.can_write_questionnaire_response`, `save_questionnaire_response`); `canWriteQuestionnaire` in `src/features/session/types.ts`; Tests `supabase/tests/questionnaire-responses.test.ts`.
+**Anker.** `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql` (`app.guard_questionnaire_response`, `app.can_write_questionnaire_response`, `save_questionnaire_response`); `canWriteQuestionnaire` in `src/features/core/session/types.ts`; Tests `supabase/tests/questionnaire-responses.test.ts`.
 
 **Änderungspfad.** Automatische Finalisierung: Frist und Lauf nach dem Muster von DOK-002 ergänzen · Aufwand `mittel`. Office darf erfassen (Papierbogen abtippen): Rolle in beiden Funktionen ergänzen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; die Korrektur bleibt mit der ursprünglichen Erhebung verknüpft, Erhebungsdatum und Korrekturzeitpunkt getrennt, im Verlauf keine zusätzliche Messung (BEF-101). **Fassung 2 (ABN-014, 2026-10-02, BEF-101 Punkt 2):** Eine Korrektur behält den Erhebungstag der korrigierten Erhebung — der Server weist einen anderen ab, auch am Entwurf der Korrektur; die Erhebungsseite zeigt ihn als Text. Der Korrekturzeitpunkt ist `created_at`, die Akte nennt „Korrektur vom …“. Im Verlauf steht die Korrektur am Erhebungstag, nicht als zusätzliche Messung.
 
@@ -1404,7 +1404,7 @@ Recht · entschieden (Jannes) · 2026-09-26 · Jannes (Regeln fachlich bestätig
 
 **Begründung.** §7.1 erlaubt Hervorhebung nach transparenten Regeln und verbietet Score, Risikoklasse und Handlungsempfehlung; ADR-006 Punkt 11 fasst auch Farbe und Symbol als Aussage. Die Auswahl folgt den Rahmenwerken der IFOMPT (Finucane et al. 2020 für die Wirbelsäule, Rushton et al. 2023 für die Halsgefäße) und Goodman/Heick/Lazaro 2018; sie ist eine fachliche Auswahl, die Jannes bestätigen sollte. Das Beispiel „Tumoranamnese und Gewichtsverlust" aus §7.1 wäre eine Verknüpfung — konservativ nach ADR-006 Punkt 13 nicht gebaut, bis die Prüfung sie freigibt.
 
-**Anker.** `hervorhebungSchema` in `src/features/assessments/schema.ts`; `hervorhebungen` im Anamnesebogen `src/features/assessments/definitionen/scores/anamnese_v8.json`; `src/features/assessments/hervorhebung.ts`; Tests `hervorhebung.test.tsx`.
+**Anker.** `hervorhebungSchema` in `src/features/clinical/assessments/schema.ts`; `hervorhebungen` im Anamnesebogen `src/features/clinical/assessments/definitionen/scores/anamnese_v8.json`; `src/features/clinical/assessments/hervorhebung.ts`; Tests `hervorhebung.test.tsx`.
 
 **Änderungspfad.** Andere Fragen oder Optionen: Liste `hervorhebungen` in der Definition, neue Version · Aufwand `klein`. Verknüpfte Regeln nach Freigabe: Regel um eine Liste von Bedingungen erweitern · Aufwand `mittel`.
 
@@ -1416,7 +1416,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Die Definitionen liegen als Dateien im Release (ANN-083) und nicht in der Datenbank; eine zweite Fassung in SQL wäre eine zweite Quelle, die abweichen kann. Schreiben dürfen heute nur angemeldete behandelnde Rollen, für die die Anwendung vertrauenswürdig ist; ein Fehler schadet der eigenen Akte, nicht einer fremden. Kennungen sind unveränderlich (Arbeitsauftrag §1), deshalb bleibt eine alte Erhebung mit der neueren Definition lesbar.
 
-**Anker.** `app.assert_questionnaire_answers` in `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql`; `antwortenSchema` in `src/features/assessments/antworten.ts`.
+**Anker.** `app.assert_questionnaire_answers` in `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql`; `antwortenSchema` in `src/features/clinical/assessments/antworten.ts`.
 
 **Änderungspfad.** Prüfung auch auf dem Server (spätestens für den Patientenlink): die Definition beim Build als Tabelle oder JSON-Schema in eine Migration erzeugen und in `save_questionnaire_response` prüfen · Aufwand `mittel`. Frühere Fassungen der Definition aufbewahren: Datei je Version unter `definitionen/` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** so **nicht** bestätigt: Der Server prüft auch Instrument, Version, Optionen, Wertebereiche und unzulässige Kombinationen, aus denselben Definitionsdateien; historische Erhebungen werden mit ihrer ursprünglichen Definition angezeigt und ausgewertet (BEF-101). Bis zur Umsetzung gilt die bisherige Prüfung. **Fassung 2 (ABN-014, 2026-10-02, BEF-101 Punkt 1):** Der Server prüft Instrument und Fassung, Items, Form je Typ, Optionen, Skalenbereich, freie Angaben, exklusive Optionen und Körperbereiche (`app.assert_questionnaire_answers(instrument, version, answers)` in `supabase/migrations/20261003101000_abn_014_questionnaire_definitions.sql`) — gegen `public.questionnaire_definitions`, erzeugt aus denselben Dateien (ANN-219). Die Anwendung prüft weiter vorab mit Zod.
 
@@ -1428,7 +1428,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** `IDEA-OUT-005` verlangt Ereignisse neben der Kurve und „weniger Mittelwert, mehr Rohdaten"; ADR-006 Punkt 11 verbietet jede abgeleitete Aussage, auch als Farbe. „Schübe" aus der Idee sind eine Erkrankung und bekommen keine eigene Art, bis ein Fall sie braucht (ADR-014). Eine geplante Operation gehört vorher in den Verlauf.
 
-**Anker.** `patient_course_events` in `supabase/migrations/20260926110000_frb_002e_course_events.sql`; `EREIGNISARTEN` und `messreihen` in `src/features/assessments/verlauf.ts`; `Messreihenbild` in `src/features/assessments/Messreihenbild.tsx`.
+**Anker.** `patient_course_events` in `supabase/migrations/20260926110000_frb_002e_course_events.sql`; `EREIGNISARTEN` und `messreihen` in `src/features/clinical/assessments/verlauf.ts`; `Messreihenbild` in `src/features/clinical/assessments/Messreihenbild.tsx`.
 
 **Änderungspfad.** Weitere Art: Constraint und `EREIGNISARTEN` gemeinsam erweitern (Test hält beide gleich) · Aufwand `klein`. Mehr als 50 Termine: eigener Lesepfad nur mit Tagen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Rohwerte und Ereignisarten bestätigt; „Entfernen“ löscht künftig nicht mehr, Inhalt, Urheber und Entfernungszeitpunkt bleiben in der Akte nachvollziehbar, das Auditlog bleibt bei Metadaten (BEF-102). **Fassung 2 (ABN-013, 2026-10-02):** `remove_patient_course_event` setzt `removed_at`/`removed_by` statt zu löschen; der Verlauf filtert, `list_removed_patient_course_events` zeigt die Einträge unter „Entfernte Ereignisse“ (geladen erst beim Aufklappen, protokolliert wie der Verlauf), die Auskunft führt sie mit `removed_at`; Frist wie die Akte. `supabase/migrations/20261003100000_abn_013_course_event_removal.sql`.
 
@@ -1440,7 +1440,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-26 · Jannes · — · Wiedervo
 
 **Begründung.** Jannes hat den Kreis gewählt; er verdeckt die Anatomie nicht, bleibt bei nahen Markierungen unterscheidbar, übersteht Schwarz-Weiß-Druck und deutet keine Stärke an wie ein roter, auslaufender Punkt (ADR-006 Punkt 11). Der Bereich macht die Stelle in Akte, Verlauf und Auskunft lesbar; der nächste Anker statt eines Umrisses je Bereich braucht keine zweite, passgenaue Zeichnung.
 
-**Anker.** `KOERPERBEREICHE`, `bereichAn` und `MAX_ABSTAND` in `src/features/assessments/koerperschema.ts`; `src/features/assessments/koerperschema.webp`; `KoerperschemaFeld` in `src/features/assessments/KoerperschemaFeld.tsx`.
+**Anker.** `KOERPERBEREICHE`, `bereichAn` und `MAX_ABSTAND` in `src/features/clinical/assessments/koerperschema.ts`; `src/features/clinical/assessments/koerperschema.webp`; `KoerperschemaFeld` in `src/features/clinical/assessments/KoerperschemaFeld.tsx`.
 
 **Änderungspfad.** Genauere Bereiche: Anker ergänzen oder verschieben (Test prüft, dass jeder Anker seinen Bereich trifft) · Aufwand `klein`. Andere Zeichnung: Datei tauschen und Anker neu setzen; gespeicherte Stellen bleiben relativ zum Bild · Aufwand `mittel`.
 
@@ -1452,11 +1452,11 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 
 **Begründung.** BEF-035 und BEF-036 (Sichtung am 2026-09-26): Das Menü im Gitter deckte die Felder zu, auf denen die Spanne weitergeht, und Aufziehen verlangte am Finger einen langen Druck. Wo das Menü stattdessen steht, lässt der Befund offen; eine Leiste am Fensterrand ist die Stelle, die bei jeder Spalte, jeder Zoomstufe und jeder Bildschirmbreite frei von der Spalte bleibt. „40 Minuten weiter" im Befund ist eine Spanne von 40 Minuten, deshalb zählt das zweite Feld als Ende, nicht als letztes Feld. Unsicher: ob die Leiste am Handy zu viel vom Raster verdeckt, wenn die Auswahl tief unten liegt.
 
-**Anker.** `naechsteAuswahl` in `src/features/appointments/useSpanneAufziehen.ts`; die Leiste in `src/features/appointments/AnlegenMenue.tsx`, ihr Platz am Ende von `CalendarGrid` in `src/features/appointments/CalendarGrid.tsx`.
+**Anker.** `naechsteAuswahl` in `src/features/calendar/appointments/useSpanneAufziehen.ts`; die Leiste in `src/features/calendar/appointments/AnlegenMenue.tsx`, ihr Platz am Ende von `CalendarGrid` in `src/features/calendar/appointments/CalendarGrid.tsx`.
 
 **Änderungspfad.** Das zweite Feld mitzählen: in `naechsteAuswahl` das Ende um das Praxisraster verlängern · Aufwand `klein`. Menü zurück an die Auswahl, aber seitlich oder oberhalb: den Platz in `CalendarGrid` ändern · Aufwand `klein`.
 
-**Beantwortet (Jannes, Runde 3, 2026-10-06):** Die Leiste verdeckte am Handy zu viel. Seitdem ist sie unter 640 px dichter (keine Hinweiszeilen, je zwei Wahlen in einer Reihe), der Gesten-Hinweis steht nur bis zur ersten Spanne (ANN-255), und die Seite rollt eine verdeckte Auswahl ins obere Drittel über der Leiste (`auswahlBildlauf` in `src/features/appointments/auswahlBildlauf.ts`).
+**Beantwortet (Jannes, Runde 3, 2026-10-06):** Die Leiste verdeckte am Handy zu viel. Seitdem ist sie unter 640 px dichter (keine Hinweiszeilen, je zwei Wahlen in einer Reihe), der Gesten-Hinweis steht nur bis zur ersten Spanne (ANN-255), und die Seite rollt eine verdeckte Auswahl ins obere Drittel über der Leiste (`auswahlBildlauf` in `src/features/calendar/appointments/auswahlBildlauf.ts`).
 
 ### ANN-109 — Über dem Kalender stehen Monat, Person mit Woche und „Jetzt"; alles Übrige liegt hinter der Ecke des Rasters
 
@@ -1466,7 +1466,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 
 **Begründung.** BEF-039 (Sichtung am 2026-09-26) nennt das Ziel und lässt offen, wohin Person, Standort, Status, Tag/Woche und Raster wandern. Die Person gehört zu dem, was oben stehen soll — sie wählbar zu machen, wo sie steht, spart ein zweites Feld. Die Pfeile bleiben bei der Woche, weil Blättern die häufigste Bewegung ist; Tag/Woche ist daneben auch über die Spaltenköpfe erreichbar (CAL-012), Zoom über zwei Finger (BEF-038), Anlegen über das Raster (BEF-035). Die Ecke ist die einzige Stelle, die „am Raster" liegt und bei jedem Bildlauf sichtbar bleibt. Unsicher: ob die Pfeile oben bleiben sollen oder das Wischen sie ersetzt; ob der Unterreiter „Kalender · Touren" ebenfalls weichen soll (BEF-001, nicht Teil dieses Loops).
 
-**Anker.** Kopfzeile, `optionenKnopf` und das Feld „Ansicht und Filter" in `CalendarPage` (`src/features/appointments/CalendarPage.tsx`); `Monatskalender` in `src/features/appointments/Monatskalender.tsx`; `ecke`, `jetzt` und `sprung` an `CalendarGrid`; die Lupe (`sucheOffen`) in `src/app/AppShell.tsx`.
+**Anker.** Kopfzeile, `optionenKnopf` und das Feld „Ansicht und Filter" in `CalendarPage` (`src/features/calendar/appointments/CalendarPage.tsx`); `Monatskalender` in `src/features/calendar/appointments/Monatskalender.tsx`; `ecke`, `jetzt` und `sprung` an `CalendarGrid`; die Lupe (`sucheOffen`) in `src/app/AppShell.tsx`.
 
 **Änderungspfad.** Ein Element zurück nach oben: aus dem Feld „Ansicht und Filter" in die Kopfzeile verschieben · Aufwand `klein`. Suche auch am Rechner als Lupe: die Klasse `max-sm:hidden` am Suchfeld für alle Breiten setzen und die Lupe überall zeigen · Aufwand `klein`.
 
@@ -1516,11 +1516,11 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 
 **Begründung.** BEF-044: Dass man im Kalender ist, zeigen Seitenleiste und Tableiste; die Zeile kostete Höhe über dem Raster. Die Tourenseite fragt dasselbe wie der Kalender — Tag und Person —, deshalb reisen beide mit. Unter „Ansicht und Filter" statt im Kopf über dem Raster, weil der Kopf am Handy seit BEF-039 voll ist (Monat, Person mit Woche, „Jetzt"). In den beiden anderen Bereichen führt die Zeile zu Zielen, die anders nicht erreichbar sind; sie zu streichen, wäre ein eigener Umbau. Unsicher: ob Jannes die Tour mit einem Tipp statt mit zwei erreichen will.
 
-**Anker.** `unterpunkte` des Bereichs `termine` in `src/app/navigation.tsx`; der Knopf „Tour" in der Gruppe „Ansicht" in `src/features/appointments/CalendarPage.tsx`.
+**Anker.** `unterpunkte` des Bereichs `termine` in `src/app/navigation.tsx`; der Knopf „Tour" in der Gruppe „Ansicht" in `src/features/calendar/appointments/CalendarPage.tsx`.
 
 **Änderungspfad.** Ein Tipp: den Knopf aus der Gruppe in den Kopf über dem Raster ziehen (ab `sm`, am Handy neben „Jetzt") · Aufwand `klein`. Zeile zurück: `unterpunkte` wieder füllen · Aufwand `klein`. Die Tour als echte Ansicht im Raster (ohne Seitenwechsel) · Aufwand `mittel`.
 
-**Fassung 2 (Jannes, Runde 3, 2026-10-06):** „Tour" steht mit einem Tipp im Kopf, rechts neben „Tag | Team" bzw. „Woche | Team", auf allen Breiten; im Feld „Ansicht und Filter" entfällt sie, die Anlegewege stehen dort zugeklappt unter „Ohne Raster anlegen". Anker jetzt: der Link „Tour" nach der Gruppe „Ansicht" in `src/features/appointments/CalendarPage.tsx`.
+**Fassung 2 (Jannes, Runde 3, 2026-10-06):** „Tour" steht mit einem Tipp im Kopf, rechts neben „Tag | Team" bzw. „Woche | Team", auf allen Breiten; im Feld „Ansicht und Filter" entfällt sie, die Anlegewege stehen dort zugeklappt unter „Ohne Raster anlegen". Anker jetzt: der Link „Tour" nach der Gruppe „Ansicht" in `src/features/calendar/appointments/CalendarPage.tsx`.
 
 ### ANN-114 — Flächen-Ansichten reichen bis an den Rand, Listen und Texte behalten die Kappung
 
@@ -1558,7 +1558,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozes
 
 **Anker.** Spalte und `public.set_treatment_table_required` in `supabase/migrations/20260926130000_ux_003a_treatment_table.sql`, dort auch `patient_directory`, `export_patient_record` und `list_day_plan`; Oberfläche `src/features/patients/Behandlungsliege.tsx`; Tests `supabase/tests/treatment-table.test.ts`.
 
-**Änderungspfad.** Enger (etwa ohne Office): eigene Rollenfunktion statt `app.can_update_patient()` im Schreibpfad und eine Projektion ohne die Spalte · Aufwand `mittel`. Als Befundinhalt führen (klinische Dokumentation): Spalte in den Befund verlegen, Datenumzug und neuer Lesepfad der Tagesliste · Aufwand `groß` — deshalb vor echten Daten zu klären. **Fassung 2 (UBK-EPIC-001, 2026-10-05, BEF-051):** Die Liege gehört an den **Hausbesuch**: Liege-Zeile, die Zählung „ab n. Besuch“ (`hausbesucheDesTages` in `src/features/today/tagesstart.ts`) und die Pille an der Karte (`Tageskarte`) berücksichtigen nur `appointment_type = 'home_visit'`; an einem Tag nur mit Praxisterminen gibt es keine Liege-Zeile. Der Server liefert das Merkmal weiter an jedem Behandlungstermin; es dort am Praxistermin zu leeren, wäre sauberer (Datenminimierung), kostet aber eine Migration und ist als Folgeschritt vorgeschlagen. **Bestätigt (Jannes, 2026-10-05):** „Die Liege ist nur bei Hausbesuchen relevant.“ Änderungspfad: die Funktion und die Bedingung an der Pille · Aufwand `klein`.
+**Änderungspfad.** Enger (etwa ohne Office): eigene Rollenfunktion statt `app.can_update_patient()` im Schreibpfad und eine Projektion ohne die Spalte · Aufwand `mittel`. Als Befundinhalt führen (klinische Dokumentation): Spalte in den Befund verlegen, Datenumzug und neuer Lesepfad der Tagesliste · Aufwand `groß` — deshalb vor echten Daten zu klären. **Fassung 2 (UBK-EPIC-001, 2026-10-05, BEF-051):** Die Liege gehört an den **Hausbesuch**: Liege-Zeile, die Zählung „ab n. Besuch“ (`hausbesucheDesTages` in `src/features/calendar/today/tagesstart.ts`) und die Pille an der Karte (`Tageskarte`) berücksichtigen nur `appointment_type = 'home_visit'`; an einem Tag nur mit Praxisterminen gibt es keine Liege-Zeile. Der Server liefert das Merkmal weiter an jedem Behandlungstermin; es dort am Praxistermin zu leeren, wäre sauberer (Datenminimierung), kostet aber eine Migration und ist als Folgeschritt vorgeschlagen. **Bestätigt (Jannes, 2026-10-05):** „Die Liege ist nur bei Hausbesuchen relevant.“ Änderungspfad: die Funktion und die Bedingung an der Pille · Aufwand `klein`.
 
 ### ANN-117 — Tagesstart: erster Weg und „ab dem n-ten Besuch" zählen nach den Besuchen des Tages
 
@@ -1568,9 +1568,9 @@ Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes (Sichtung Kernproz
 
 **Begründung.** §9 und `UMBAU.md` (Ein Behandlungstag, Punkte 1, 2 und 4): ruhige Oberfläche, erster Weg, Vorschau auf den nächsten, Liege schon beim Losfahren sichtbar. Die Zählung folgt dem, was man am Rad vor sich hat — „der zweite Besuch heute" meint auch nach dem ersten noch denselben. Die Uhrzeit steht dabei, damit die Zahl nicht nachgezählt werden muss. Unsicher: ob Jannes nach einem erledigten Besuch lieber ab dem nächsten neu zählt.
 
-**Anker.** `besucheDesTages`, `wegeDesTages` und `liegeHeute` in `src/features/today/tagesstart.ts`; Tests `src/features/today/tagesstart.test.ts`.
+**Anker.** `besucheDesTages`, `wegeDesTages` und `liegeHeute` in `src/features/calendar/today/tagesstart.ts`; Tests `src/features/calendar/today/tagesstart.test.ts`.
 
-**Änderungspfad.** Andere Zählung oder anderer Wortlaut: die drei Funktionen und ihre Tests · Aufwand `klein`. Plan des Teams immer offen: die Bedingung `teamplanZugeklappt` in `src/features/today/MyDayPage.tsx` · Aufwand `klein`. **Fassung 2 (UBK-EPIC-001, 2026-10-05, Auftrag Jannes: „nächster Weg nach Uhrzeit statt nach Abhaken“):** Noch anzufahren ist ein Besuch, der bestätigt ist **und dessen Ende noch nicht erreicht ist** (`stehtAus` in `tagesstart.ts`); nach seinem Ende gibt die Übersicht den nächsten Weg frei, auch ohne Haken, und nach einem frühen Haken ebenso. Der vorbeigegangene, nicht abgehakte Besuch bleibt im Zeitstrahl mit „Nicht abgeschlossen“ und dem Haken stehen; erst wenn kein Weg mehr aussteht, wird er die ausgeklappte Karte („Seit … offen“). Liege-Zeile, Wegbalken und Fahrzeitabfrage folgen derselben Regel; „n von m Besuchen erledigt“ zählt weiter nur Abgehaktes, und der Tagesabschluss sagt „Alle Besuche erledigt“ nur dann, sonst „Kein Weg mehr offen“ (seit ANN-546 ohne eigene Karte). Gezählt wird für „ab n. Besuch“ seit BEF-051 nur unter Hausbesuchen (ANN-116 Fassung 2). Tests: `tagesstart.test.ts` („Die Uhr statt des Hakens“), `MyDayPage.test.tsx` (UBK-EPIC-001).
+**Änderungspfad.** Andere Zählung oder anderer Wortlaut: die drei Funktionen und ihre Tests · Aufwand `klein`. Plan des Teams immer offen: die Bedingung `teamplanZugeklappt` in `src/features/calendar/today/MyDayPage.tsx` · Aufwand `klein`. **Fassung 2 (UBK-EPIC-001, 2026-10-05, Auftrag Jannes: „nächster Weg nach Uhrzeit statt nach Abhaken“):** Noch anzufahren ist ein Besuch, der bestätigt ist **und dessen Ende noch nicht erreicht ist** (`stehtAus` in `tagesstart.ts`); nach seinem Ende gibt die Übersicht den nächsten Weg frei, auch ohne Haken, und nach einem frühen Haken ebenso. Der vorbeigegangene, nicht abgehakte Besuch bleibt im Zeitstrahl mit „Nicht abgeschlossen“ und dem Haken stehen; erst wenn kein Weg mehr aussteht, wird er die ausgeklappte Karte („Seit … offen“). Liege-Zeile, Wegbalken und Fahrzeitabfrage folgen derselben Regel; „n von m Besuchen erledigt“ zählt weiter nur Abgehaktes, und der Tagesabschluss sagt „Alle Besuche erledigt“ nur dann, sonst „Kein Weg mehr offen“ (seit ANN-546 ohne eigene Karte). Gezählt wird für „ab n. Besuch“ seit BEF-051 nur unter Hausbesuchen (ANN-116 Fassung 2). Tests: `tagesstart.test.ts` („Die Uhr statt des Hakens“), `MyDayPage.test.tsx` (UBK-EPIC-001).
 
 ### ANN-118 — Übertragung der MT-Bausteine: drei Lücken offen, SIG vollständig, Hinweise getrennt, kein Grenzwert
 
@@ -1580,7 +1580,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Plan D2 (am Original-PDF nachgesehen) und Arbeitsauftrag §2: Lücken sichtbar lassen, nicht aus eigenem Wissen füllen. Das Schema aus FRB-EPIC-000 kannte nur leere unvollständige Blöcke; die Vorlage bricht aber zweimal nach verwertbaren Punkten ab. Die Navicular-Klammer ist ein Schwellenwert neben dem eigenen Messwert samt Therapiefolge — `cutoff-anzeige` in `src/app/mdr.ts` und ADR-006 Punkte 4, 10 und 11 gehen dem Wortlautgebot des Arbeitsauftrags im Rang vor (Zweitreview). Unsicher: ob Deutungsklammern im Label wie „(zentrale Problematik?)" beim Babinski die externe Prüfung (B1) bestehen; sie bleiben als Wortlaut stehen.
 
-**Anker.** `blockSchema` in `src/features/assessments/schema.ts`; Regeln in `src/features/assessments/definitionen/bausteine/README.md`; Test `src/features/assessments/bausteine.test.ts`.
+**Anker.** `blockSchema` in `src/features/clinical/assessments/schema.ts`; Regeln in `src/features/clinical/assessments/definitionen/bausteine/README.md`; Test `src/features/clinical/assessments/bausteine.test.ts`.
 
 **Änderungspfad.** Lücken nachliefern: Items in die Regionsdatei, Version heben, Zähltest anpassen · Aufwand `klein`. Andere Seitenregel oder Hinweis entfernen: das Feld in den Regionsdateien · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; die drei unvollständigen Bereiche bleiben sichtbar als unvollständig gekennzeichnet, Fehlendes wird nicht selbst ergänzt.
 
@@ -1592,7 +1592,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Plan D3 schlägt Stehenlassen vor, der Arbeitsauftrag §2 verlangt es bis zu Jannes' Freigabe, und der Wortlauttest hält jede Bezeichnung gegen die Quelldatei. Ohne Antwort gilt der Vorschlag (STATUS, Blocker D2/D3). Nachteil: Die Tippfehler erscheinen im Dokumentationstext der Akte.
 
-**Anker.** `src/features/assessments/definitionen/bausteine/README.md`; Test „lässt die Tippfehler der Vorlage stehen" in `src/features/assessments/bausteine.test.ts`.
+**Anker.** `src/features/clinical/assessments/definitionen/bausteine/README.md`; Test „lässt die Tippfehler der Vorlage stehen" in `src/features/clinical/assessments/bausteine.test.ts`.
 
 **Änderungspfad.** Korrigieren: Labels in den Regionsdateien, Version heben, Quelldatei mit Vermerk anpassen, damit der Wortlauttest die neue Schreibweise hält · Aufwand `klein`. Kennungen bleiben. **Abnahme (Jannes, 2026-10-02):** geändert: offensichtliche Tippfehler werden für künftige Einträge korrigiert, Kennungen bleiben, bestehende Dokumentation ändert sich nicht (BEF-103). **Fassung 2 (ABN-015, 2026-10-02, BEF-103 Punkt 4):** „Relocation Test“, „Supination“, „Lachman-Test“ und „Painful Arc Sign“ sind korrigiert, als Patch-Version 1.0.1 von Schulter, Ellenbogen und Knie; Kennungen bleiben, bestehende Dokumentation ändert sich nicht. Der Wortlauttest in `bausteine.test.ts` führt die Korrekturen in `KORRIGIERT`.
 
@@ -1604,9 +1604,9 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Plan Abschnitt 4 und Phase P3: der erzeugte Text ist ein Vorschlag, erst die Übernahme macht ihn zum Eintrag, und nichts Finalisiertes wird überschrieben; ADR-016 Punkt 4 verlangt, dass festgeschrieben wird, was gelesen wurde, und nach Punkt 7 würde ein ungesehen angehängter Entwurf automatisch zu Version 1; §13 verbietet den stillen Verlust — beim Verlassen der Seite wiegt der Verlust schwerer, und der angehängte Text steht danach sichtbar im Entwurf am Termin (Zweitreview). Strukturierte Ergebnisse brauchen Datenklasse, Frist und RLS und sind P6 — heute vorzubauen wäre Vorratsbau (ADR-014). Die Kopierschaltfläche des Plans entfällt, weil der Text direkt ins Feld geht und eine Zwischenablage mit Gesundheitsdaten auf manchen Geräten synchronisiert wird. Unsicher: ob Jannes den Befund als eigenen Eintrag neben der Verlaufsdoku sehen will.
 
-**Anker.** `useBausteinAuswahl` in `src/features/assessments/bausteinauswahl.ts` und `dokumentationstext` in `src/features/assessments/dokumentationstext.ts`; Einbindung in `src/features/documentation/TreatmentNotePage.tsx` und `CompleteTreatmentPage.tsx`; Tests dort und in `src/features/assessments/BausteinFeld.test.tsx`.
+**Anker.** `useBausteinAuswahl` in `src/features/clinical/assessments/bausteinauswahl.ts` und `dokumentationstext` in `src/features/clinical/assessments/dokumentationstext.ts`; Einbindung in `src/features/clinical/documentation/TreatmentNotePage.tsx` und `CompleteTreatmentPage.tsx`; Tests dort und in `src/features/clinical/assessments/BausteinFeld.test.tsx`.
 
-**Änderungspfad.** Einzelergebnisse speichern: Tabelle mit Datenklasse, Frist und Policy nach Plan P6, die Auswahl als Entwurf dort ablegen · Aufwand `groß`. Eigener Befund-Eintrag: neuer Eintragstyp nach ADR-016 · Aufwand `groß`. Vorschlag nie automatisch anhängen: die beiden `entwurfSichern` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bausteine und Erstbefund als Termindokumentation bestätigt. Geändert: Kein unbestätigter Vorschlag wird beim Verlassen oder Speichern ungesehen an den Entwurf gehängt; die Eingaben bleiben dennoch erhalten (BEF-103). Bis zur Umsetzung gilt die bisherige Regel. **Fassung 2 (ABN-015, 2026-10-02, BEF-103 Punkt 1):** Ein nicht übernommener Vorschlag geht **nie** in den Entwurf, auch nicht beim Verlassen. Häkchen, Werte und Seiten werden getrennt vom Entwurf gesichert (`treatment_draft_findings`, `save_treatment_draft_findings`/`get_treatment_draft_findings`, nur dokumentierende Rollen, protokolliert), beim Öffnen zurückgeholt und beim Festschreiben verworfen. „Festschreiben“ hält weiter an, solange ein Vorschlag offen ist; „Entwurf“ nicht mehr. `supabase/migrations/20261003102000_abn_015_treatment_draft_findings.sql`, `src/features/documentation/befundangaben.ts`.
+**Änderungspfad.** Einzelergebnisse speichern: Tabelle mit Datenklasse, Frist und Policy nach Plan P6, die Auswahl als Entwurf dort ablegen · Aufwand `groß`. Eigener Befund-Eintrag: neuer Eintragstyp nach ADR-016 · Aufwand `groß`. Vorschlag nie automatisch anhängen: die beiden `entwurfSichern` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bausteine und Erstbefund als Termindokumentation bestätigt. Geändert: Kein unbestätigter Vorschlag wird beim Verlassen oder Speichern ungesehen an den Entwurf gehängt; die Eingaben bleiben dennoch erhalten (BEF-103). Bis zur Umsetzung gilt die bisherige Regel. **Fassung 2 (ABN-015, 2026-10-02, BEF-103 Punkt 1):** Ein nicht übernommener Vorschlag geht **nie** in den Entwurf, auch nicht beim Verlassen. Häkchen, Werte und Seiten werden getrennt vom Entwurf gesichert (`treatment_draft_findings`, `save_treatment_draft_findings`/`get_treatment_draft_findings`, nur dokumentierende Rollen, protokolliert), beim Öffnen zurückgeholt und beim Festschreiben verworfen. „Festschreiben“ hält weiter an, solange ein Vorschlag offen ist; „Entwurf“ nicht mehr. `supabase/migrations/20261003102000_abn_015_treatment_draft_findings.sql`, `src/features/clinical/documentation/befundangaben.ts`.
 
 ### ANN-121 — Der Therapiebericht ist ein gespeicherter Datensatz; beim Abschluss friert er als Snapshot ein
 
@@ -1616,7 +1616,7 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 **Begründung.** Die Roadmap nennt eine Druckansicht, aber eine rein flüchtige Ansicht könnte später nicht belegen, was an die Verordner:in ging — der Bericht gehört als Schreiben zur Akte (§630f BGB) und in die Auskunft nach Art. 15. Das Muster ist der Rechnungs-Snapshot (ANN-077): Spätere Änderungen an Dokumentation oder Stammdaten erreichen einen abgeschlossenen Bericht nicht. Unsicher: ob die Prüfung die abgelegte Datei selbst verlangt; die kommt erst mit Weg 3.
 
-**Anker.** `public.therapy_reports`, `app.therapy_report_unveraenderlich` und `public.complete_therapy_report` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`; `src/features/therapy-reports/api.ts`.
+**Anker.** `public.therapy_reports`, `app.therapy_report_unveraenderlich` und `public.complete_therapy_report` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`; `src/features/clinical/therapy-reports/api.ts`.
 
 **Änderungspfad.** Nur Druckansicht ohne Ablage: Tabelle und Funktionen zurückbauen, die Empfehlung braucht dann einen eigenen Ort · Aufwand `mittel`. Serverseitiges PDF: Ablage nach ADR-017 an den abgeschlossenen Bericht hängen · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt; eine Berichtskorrektur nennt den ersetzten Bericht, Grund, Zeitpunkt und Verfasser:in (BEF-104). **Fassung 2 (ABN-016, 2026-10-02, BEF-104):** Eine Korrektur ist ein neuer Bericht derselben Verordnung mit `supersedes_report_id` und `change_reason` (3–500 Zeichen), nur zu einem abgeschlossenen, höchstens einmal; Zeitpunkt und Verfasser:in sind `created_at`/`created_by`. Das Dokument nennt sie (`korrektur`), das Blatt heißt „korrigierte Fassung“, die Verordnung zeigt die Kette und „Korrigieren“ nur am geltenden Bericht. `supabase/migrations/20261003103000_abn_016_therapy_report_correction.sql`.
 
@@ -1628,7 +1628,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** §17 und ADR-006 Punkt 4: Eine Vorauswahl „wichtiger" Einträge wäre eine Auswahl nach klinischem Gehalt. Übernehmen ohne Kürzen folgt der engen Lesart aus ADR-006 Punkt 8. Die Auswahl hält den Bericht zugleich knapp — an die Verordner:in geht, was sie braucht, nicht die Akte (Art. 5 Abs. 1 lit. c DSGVO). Skalen und Verlaufsereignisse fehlen, bis FRB-EPIC-004 sie liefert.
 
-**Anker.** `app.therapy_report_pruefen` und `app.therapy_report_dokument` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`; `src/features/therapy-reports/TherapieberichtPage.tsx`.
+**Anker.** `app.therapy_report_pruefen` und `app.therapy_report_dokument` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`; `src/features/clinical/therapy-reports/TherapieberichtPage.tsx`.
 
 **Änderungspfad.** Andere Auswahlmenge oder Obergrenze: die beiden Funktionen und `EINTRAEGE_MAX` · Aufwand `klein`. Verlaufsereignisse oder Skalen dazu: ein Feld im Dokument und ein Abschnitt im Blatt · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bewusste Auswahl ohne Vorbelegung bestätigt; der eigene Berichtstext bleibt Kern, Einträge sind ergänzende Auszüge; die Grenze von 50 ist sichtbar und schneidet nichts still ab (BEF-104). **Fassung 2 (ABN-016, 2026-10-02, BEF-104):** Beim Auswählen steht „n von 50 Einträgen gewählt“; bei 50 lässt sich kein weiterer Haken setzen. Der eigene Berichtstext bleibt der Kern, die Einträge sind ergänzende Auszüge.
 
@@ -1652,7 +1652,7 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 **Begründung.** Die Weitergabe an die verordnende Ärzt:in ist eine Offenbarung nach § 203 StGB und braucht eine Grundlage — üblich ist die Anforderung des Berichts auf der Verordnung mit Wissen der Patient:in oder eine ausdrückliche Einwilligung. Welche die Praxis verwendet, ist eine Frage der Datenschutzberatung (§15.2) und blockiert das Bauen mit synthetischen Daten nicht, wohl aber den ersten echten Bericht. Ein Versand aus der Anwendung wäre ein neuer externer Datenfluss (ADR-002) und ist nicht Teil von DOK-005.
 
-**Anker.** Der Hinweis unter dem Druckknopf in `src/features/therapy-reports/TherapieberichtDruckPage.tsx`.
+**Anker.** Der Hinweis unter dem Druckknopf in `src/features/clinical/therapy-reports/TherapieberichtDruckPage.tsx`.
 
 **Änderungspfad.** Vermerk „Bericht angefordert / Einwilligung liegt vor" vor dem Druck: ein Feld am Bericht und eine Bedingung am Knopf · Aufwand `klein`. Versand aus der Anwendung: eigenes Epic nach ADR-002 · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt; die Grundlage der Übermittlung klärt B2 — der Hinweis „Die Anwendung verschickt nichts“ ersetzt diese Klärung nicht.
 
@@ -1688,7 +1688,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-017 Punkt 35: „Eine Ablehnung ist ein eigener Vermerk, kein Widerruf", und ohne Einwilligung wird genauso behandelt (Art. 7 Abs. 4 DSGVO) — die Erstaufnahme soll „abgelehnt" als erledigt führen, nicht als offenen Punkt. Eine Ablehnung während einer erteilten Einwilligung wäre in der Sache ein Widerruf mit anderer Rechtsfolge; deshalb abgewiesen. Den Druckbogen jetzt zu ändern hieße, eine neue Fassung der Datenschutzinformation vor der Prüfung ihres Wortlauts auszugeben.
 
-**Anker.** Constraints `record_kind`, `purpose` und `purpose_shape` sowie `public.record_patient_privacy_entry()` in `supabase/migrations/20260926150000_dok_006b_patient_photos.sql`; `vermerkartSchema`, `EINWILLIGUNGSZWECKE` und `datenschutzstand` in `src/features/datenschutz/vermerke.ts`; `FOTO_WIDERRUF` in `src/features/datenschutz/PatientDatenschutzPage.tsx`.
+**Anker.** Constraints `record_kind`, `purpose` und `purpose_shape` sowie `public.record_patient_privacy_entry()` in `supabase/migrations/20260926150000_dok_006b_patient_photos.sql`; `vermerkartSchema`, `EINWILLIGUNGSZWECKE` und `datenschutzstand` in `src/features/privacy/datenschutz/vermerke.ts`; `FOTO_WIDERRUF` in `src/features/privacy/datenschutz/PatientDatenschutzPage.tsx`.
 
 **Änderungspfad.** Ablehnung nur für Fotos: eine Bedingung in `record_patient_privacy_entry` und in `moeglicheVermerke` · Aufwand `klein`. Fotoeinwilligung als eigener Druckbogen neben der Datenschutzinformation: ein Blatt in `vorlage.ts` und eine neue Fassung · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Ablehnung als eigener Vermerk bestätigt; Widerruf und Löschung gelten nur für Foto-Arbeitshilfen, nicht für Dokumentationsfotos der Akte, und nie gegen Aufbewahrungspflicht oder Legal Hold (BEF-106). **Fassung 3 (ABN-023, 2026-10-02, BEF-106):** Die Einwilligung `patient_photos` ist nur noch Voraussetzung der Arbeitshilfe; ohne sie oder bei Ablehnung bietet der Fotobereich das Dokumentationsfoto an und sagt bei der Arbeitshilfe, warum sie nicht geht. Der Widerruf löscht nur Arbeitshilfen (`app.delete_due_patient_photos` kennt nur `patientenfoto`); die Texte am Einwilligungsstand sagen es.
 
@@ -1700,7 +1700,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-017 Punkt 40 lässt als einzige Herausgabe die an die Person selbst zu und überlässt Einzeldatei oder Paket und das Auditereignis dem Bau. Einzeldateien brauchen kein Archivformat (Punkt 18 schließt Archive aus) und halten das Protokoll je Foto genau. Ein eigenes Ereignis trennt den Export nach außen vom Öffnen in der Praxis (ADR-010 Punkt 2). Unsicher: ob die Prüfung für Art. 20 ein strukturiertes Paket mit Metadaten erwartet.
 
-**Anker.** `public.hand_out_patient_photo()` in `supabase/migrations/20260926160000_dok_006d_patient_photo_handout.sql`; `gibPatientenfotoHeraus` in `src/features/files/patientenfotos.ts`.
+**Anker.** `public.hand_out_patient_photo()` in `supabase/migrations/20260926160000_dok_006d_patient_photo_handout.sql`; `gibPatientenfotoHeraus` in `src/features/patients/files/patientenfotos.ts`.
 
 **Änderungspfad.** Paket mit allen Fotos und einer Übersicht: eine zweite Funktion und ein Archivformat, das Punkt 18 dafür ausdrücklich zulässt · Aufwand `mittel`. Herausgabe auch durch office: Rollenprüfung in `app.auskunft_organisation` bzw. der Funktion · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** owner und Protokollierung bestätigt; geändert: Die vollständige Kopie enthält die Fotos selbst, und noch vorhandene, gesperrte Fotos sind nicht pauschal ausgeschlossen (BEF-107). **Fassung 2 (ABN-017, 2026-10-02, BEF-107):** Die Auskunft führt jedes vorhandene Foto (`patient_photos`), auch gesperrte; owner gibt auch ein gesperrtes, noch vorhandenes Foto als Datei heraus (`hand_out_patient_photo`, Audit mit `gesperrt`), die Liste dazu liefert `list_patient_photos_for_access_request`. Bewusst getragen: Die Datenbank kennt keinen Auskunftsvorgang und prüft den Zweck deshalb nicht; die Sperre gilt für `owner` bei der Herausgabe nicht, unabhängig davon, von welcher Seite aus sie geschieht. Das Restrisiko — owner gibt ein gesperrtes Foto ohne Verlangen heraus — fängt das Auditereignis mit `gesperrt` auf, das jede solche Herausgabe einzeln nachweist. Strenger: ein Auskunftsvorgang als Datensatz und dessen Kennung als Pflichtargument · Aufwand `mittel`. Wiedervorlage B2. **Fassung 3 (ABN-023, 2026-10-02):** Auskunft und Herausgabe führen beide Fotoarten mit ihrer Art (`patient_photos.art`, `list_patient_photos_for_access_request.document_type`); das Dokumentationsfoto ist nie gesperrt und wird aus dem Bucket `patientenakte` herausgegeben.
 
@@ -1712,7 +1712,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Jannes, 2026-09-26: An den Extremitäten geht es meist um eine Seite, die Seitenwahl an jedem Test war zu umständlich. Keine Vorauswahl, weil eine falsche Seite in der Akte schwerer wiegt als ein Tipp mehr. Die Wirbelsäule ist keine seitige Region; dort ist bei Nerventests gerade der Seitenvergleich der Befund. Mitnehmen beim Wechsel, weil der Wechsel meist einen Vertipper korrigiert; Wegfallen statt Verstecken, weil unsichtbare Angaben im Text auftauchen würden, ohne dass man sie sieht (§13). Unsicher: ob „beidseits" bei gleichen Ergebnissen lieber zwei Zeilen zeigen soll.
 
-**Anker.** `seitenDes` und `seiteUmstellen` in `src/features/assessments/dokumentationstext.ts`; Oberfläche `SeitenWahl` in `BausteinFeld.tsx`; Tests in `dokumentationstext.test.ts` und `BausteinFeld.test.tsx`.
+**Anker.** `seitenDes` und `seiteUmstellen` in `src/features/clinical/assessments/dokumentationstext.ts`; Oberfläche `SeitenWahl` in `BausteinFeld.tsx`; Tests in `dokumentationstext.test.ts` und `BausteinFeld.test.tsx`.
 
 **Änderungspfad.** Vorauswahl oder zuletzt gewählte Seite: Anfangswert in `useBausteinAuswahl` · Aufwand `klein`. Regionsseite auch an der Wirbelsäule: `seitlicheRegion` · Aufwand `klein`. „bds." nie zusammenfassen: `eintraege` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Seitenwahl bestätigt; beim Wechsel von „beidseits“ auf eine Seite gehen Ergebnisse der anderen Seite nicht still verloren (BEF-103). **Fassung 2 (ABN-015, 2026-10-02, BEF-103 Punkt 2):** Von „beidseits“ auf eine Seite fragt das Feld vorher und nennt die Zahl der Angaben, die verloren gingen (`verworfeneAngaben`); Abbrechen lässt alles stehen.
 
@@ -1724,7 +1724,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Jannes, 2026-09-26: Der übernommene Text war zu unübersichtlich; Zeichen für o.B. und positiv, „nicht getestet" ausgeschrieben, die Ausgangsstellung nicht im Text, Absätze und Aufzählungspunkte. Die Wahl der beiden Zeichen ist unsere: Sie unterscheiden sich in Form und Farbe (auch ohne Farbsehen lesbar), ✅ ist das übliche „in Ordnung", ❗ markiert den Befund, dem man im Verlauf nachgeht. Die Zeichen geben nur wieder, was die Therapeut:in selbst gewählt hat — Erfassen und Darstellen nach ADR-006 Punkt 2, keine abgeleitete Bewertung und keine Ampel im Sinn von Punkt 11. Der Text ist Klartext mit Unicode-Zeichen; Akte, Druck und Textfeld zeigen ihn unverändert, und kein Druckweg der Plattform setzt ihn in eine Schrift ohne diese Zeichen (der Therapiebericht nach DOK-005 übernimmt keinen Dokumentationstext). Die Gruppenzeile bleibt, weil ein Unterpunkt wie „Passiver Provokationstest" ohne „MES" nicht eindeutig ist. Unsicher: ob Verordner:innen, die einen Auszug der Akte erhalten, die Zeichen ohne Legende lesen.
 
-**Anker.** `ERGEBNIS_ZEICHEN` und `dokumentationstext` in `src/features/assessments/dokumentationstext.ts`; `ausgangsstellung` in `bausteinItemSchema` (`schema.ts`) und in `definitionen/bausteine/06-huefte.json` (Version 1.1.0); Tests in `dokumentationstext.test.ts`, `schema.test.ts`, `bausteine.test.ts`.
+**Anker.** `ERGEBNIS_ZEICHEN` und `dokumentationstext` in `src/features/clinical/assessments/dokumentationstext.ts`; `ausgangsstellung` in `bausteinItemSchema` (`schema.ts`) und in `definitionen/bausteine/06-huefte.json` (Version 1.1.0); Tests in `dokumentationstext.test.ts`, `schema.test.ts`, `bausteine.test.ts`.
 
 **Änderungspfad.** Andere Zeichen oder Wörter statt Zeichen: `ERGEBNIS_ZEICHEN` · Aufwand `klein`. Weitere Ausgangsstellungen: das Feld in der Regionsdatei, Version heben · Aufwand `klein`. „Nicht getestet" je Zeile statt gesammelt: `schreibe` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Gliederung bestätigt; im gespeicherten Text stehen „o.B.“ bzw. „positiv“ ausgeschrieben, die Zeichen ergänzen nur (BEF-103). **Fassung 2 (ABN-015, 2026-10-02, BEF-103 Punkt 3):** Im Text steht das Ergebnis ausgeschrieben hinter dem Test („✅ Lachman-Test re.: o.B.“, „❗ …: positiv“); das Zeichen ergänzt nur.
 
@@ -1748,7 +1748,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisve
 
 **Begründung.** `IDEA-PRX-003` verlangt, die Dringlichkeit „organisatorisch zu fassen …, nicht als klinische Einstufung“: Eine Reihung nach Beschwerdebild wäre eine Risikoklassifikation und ist nach ADR-006 Punkt 4 ausgeschlossen. Ein Datum und ein benannter Grund sind prüfbar und deterministisch (§6.2); eine Punktzahl wäre eine Bewertung, die niemand nachvollziehen kann. Unsicher: ob Jannes einen vierten Grund braucht (etwa „nach Krankenhausaufenthalt“ — das wäre klinisch und gehört dann in die Notiz der Akte, nicht hierher).
 
-**Anker.** Constraint `priority_reason` an `public.waitlist_entries` und `app.waitlist_check_input` in `supabase/migrations/20260928100000_prx_001_waitlist.sql`; Beschriftungen `reasonLabels` in `src/features/waitlist/api.ts`; Test „kennt nur organisatorische Gruende“ in `supabase/tests/waitlist.test.ts`.
+**Anker.** Constraint `priority_reason` an `public.waitlist_entries` und `app.waitlist_check_input` in `supabase/migrations/20260928100000_prx_001_waitlist.sql`; Beschriftungen `reasonLabels` in `src/features/calendar/waitlist/api.ts`; Test „kennt nur organisatorische Gruende“ in `supabase/tests/waitlist.test.ts`.
 
 **Änderungspfad.** Ein weiterer Grund: Wert in Constraint und Prüfung, Beschriftung in `api.ts` · Aufwand `klein`. Eine andere Reihung: `order by` in `list_waitlist_entries` · Aufwand `klein`.
 
@@ -1760,7 +1760,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-008 kennt keine Klasse „Warteliste“; am nächsten liegt „Terminanfragen ohne Behandlungsverhältnis — 12 Monate nach letztem Kontakt“ (interne Initialentscheidung). Ein Wartelisteneintrag ist eine Terminanfrage **mit** Behandlungsverhältnis, sein Zweck endet mit dem Schließen; zwölf Monate lassen nachvollziehen, warum jemand eingeplant wurde, ohne ihn in die zehnjährige Akte zu ziehen — er ist kein Behandlungsnachweis. Unsicher: ob die Datenschutzprüfung eine kürzere Frist verlangt (Zweck erfüllt mit dem Termin).
 
-**Anker.** Klasse `warteliste` und zwei Zuordnungen in `supabase/migrations/20260928100000_prx_001_waitlist.sql`; Regel in `public.apply_retention`, Reihenfolge in `public.reapply_deletion_journal`; Beschriftung in `src/features/retention/klassen.ts`; Tests „Warteliste im Loeschlauf“ in `supabase/tests/waitlist.test.ts`.
+**Anker.** Klasse `warteliste` und zwei Zuordnungen in `supabase/migrations/20260928100000_prx_001_waitlist.sql`; Regel in `public.apply_retention`, Reihenfolge in `public.reapply_deletion_journal`; Beschriftung in `src/features/privacy/retention/klassen.ts`; Tests „Warteliste im Loeschlauf“ in `supabase/tests/waitlist.test.ts`.
 
 **Änderungspfad.** Andere Frist: `retention_interval` der Klasse `warteliste` (Datenänderung) · Aufwand `klein`. Löschen sofort beim Schließen: Regel im Lauf auf `closed_at` ohne Intervall · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; offene Einträge werden regelmäßig auf Aktualität geprüft (BEF-108). **Fassung 2 (ABN-018, 2026-10-02, BEF-108 Punkt 1):** Offene Einträge, die länger als `app.waitlist_review_interval()` (acht Wochen, ANN-220) unverändert sind, tragen `review_due` und stehen unter „Warteliste prüfen“ in Offene Punkte; „Noch aktuell“ (`confirm_waitlist_entry`, Audit `waitlist_entry.reviewed`) beginnt die Frist neu.
 
@@ -1772,7 +1772,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiede
 
 **Begründung.** Die Liste zeigt organisatorische Angaben — Name, Telefon, Postleitzahl, Wunschzeiten, Grund —, dieselben, die Kalender und Tagesliste ohne Leseprotokoll zeigen (ADR-010 Punkt 2 nennt klinische Dokumente, Verordnung, Scan und Export als lesepflichtig). Ein Leseeintrag je Aufruf einer Arbeitsliste, die das Büro mehrmals am Tag öffnet, verwässerte das Protokoll, ohne einen Zugriff sichtbar zu machen, den der Kalender nicht ohnehin erlaubt. Unsicher: Die Notiz könnte gegen die Anweisung am Feld Gesundheitsangaben enthalten.
 
-**Anker.** `public.list_waitlist_entries` in `supabase/migrations/20260928100000_prx_001_waitlist.sql` (kein Auditeintrag im Erfolgsfall); Katalog in `src/features/audit/actions.ts`; Fall in `supabase/tests/abgewiesene-lesepfade.test.ts`.
+**Anker.** `public.list_waitlist_entries` in `supabase/migrations/20260928100000_prx_001_waitlist.sql` (kein Auditeintrag im Erfolgsfall); Katalog in `src/features/privacy/audit/actions.ts`; Fall in `supabase/tests/abgewiesene-lesepfade.test.ts`.
 
 **Änderungspfad.** Leseprotokoll: ein `waitlist.viewed` je Aufruf in `list_waitlist_entries`, Wert im Auditkatalog · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -1784,7 +1784,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisve
 
 **Begründung.** `IDEA-PRX-031`: „eine Vorbelegung, keine Optimierung … Termine bleiben frei vergebbar; die Regel warnt, sie verbietet nicht“. Die genaue Postleitzahl ist die Angabe, die an jeder Anschrift sicher vorliegt und sich deterministisch vergleichen lässt (§6.2) — ein Stadtteil stünde nicht in der Adresse, ein Präfix fasste in Städten ganz andere Gegenden zusammen. Die Grenze um 12:00 am Beginn ist die einfachste Regel, die ein Mensch am Kalender nachrechnen kann. Die Regel sagt nichts über Personen oder Touren (B6) und braucht keinen Kartendienst (E12).
 
-**Anker.** `app.territory_day_status` in `supabase/migrations/20260928110000_prx_002_territories.sql` (die eine Stelle der Regel), `check_territory_days` für die Formulare; Hinweis `src/features/territories/TerritoryHint.tsx`; Tests in `supabase/tests/territories.test.ts`.
+**Anker.** `app.territory_day_status` in `supabase/migrations/20260928110000_prx_002_territories.sql` (die eine Stelle der Regel), `check_territory_days` für die Formulare; Hinweis `src/features/calendar/territories/TerritoryHint.tsx`; Tests in `supabase/tests/territories.test.ts`.
 
 **Änderungspfad.** Andere Grenze der Tageshälfte oder Präfixe statt genauer Postleitzahlen: nur `app.territory_day_status` und die Prüfung in `save_territory` · Aufwand `klein`. Sperre statt Warnung: Prüfung in `create_appointment` mit Rückfrage wie bei der Arbeitszeit · Aufwand `mittel`.
 
@@ -1796,7 +1796,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisve
 
 **Begründung.** §8 nennt die Fahrzeit unter den harten Constraints für Terminvorschläge; E12 Punkt 3/4 und ANN-097 lassen die Fahrzeit aber nur live und nur als Warnung zu, und eine pauschale Fahrzeit ist ausgeschlossen. Nach Rang (§21) gilt die Prinzipienregel, umgesetzt so weit, wie die geltenden Festlegungen tragen: Die Fahrzeit wird für jeden geprüften Vorschlag berücksichtigt, die Entscheidung bleibt beim Menschen, und ein Vorschlag verschwindet nicht wegen einer Zahl, deren Grundlage (Wegprofil, Abstellzeit) noch niemand an echten Tagen geprüft hat. Die Grenze von zehn hält eine Suche bei einem Matrixaufruf mit höchstens elf Punkten je Seite (ANN-091: 25). Dichtes Packen ist die einfachste deterministische Regel, die Lücken schließt statt neue zu reißen; eine Bewertung nach Wegen wäre Optimierung (`IDEA-PRX-031`: „keine Optimierung“). Unsicher: ob Jannes knappe Vorschläge lieber ganz ausblendet — dann wird aus der Warnung ein Filter.
 
-**Anker.** `public.find_free_slots` und `public.rate_slot_travel` in `supabase/migrations/20260928120000_prx_003_slot_search.sql`; `TRAVEL_CHECK_LIMIT` und `orderByTravel` in `src/features/slot-search/api.ts`; Tests in `supabase/tests/slot-search.test.ts`.
+**Anker.** `public.find_free_slots` und `public.rate_slot_travel` in `supabase/migrations/20260928120000_prx_003_slot_search.sql`; `TRAVEL_CHECK_LIMIT` und `orderByTravel` in `src/features/calendar/slot-search/api.ts`; Tests in `supabase/tests/slot-search.test.ts`.
 
 **Änderungspfad.** Knappe Wege ausblenden: Filter in `orderByTravel` · Aufwand `klein`. Mehr geprüfte Vorschläge: `TRAVEL_CHECK_LIMIT` bis zur Grenze der Matrix · Aufwand `klein`. Andere Packregel (etwa halbstündlich): `generate_series` in `find_free_slots` · Aufwand `klein`.
 
@@ -1808,7 +1808,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisverw
 
 **Begründung.** `IDEA-PRX-016` verlangt den Blick „aufklappbar und auditiert“; §4.2 macht die Vertretung zum Regelfall, und ADR-010 Punkt 2 und ADR-016 Punkt 9 machen das Lesen eines Eintrags protokollpflichtig — ein Kurzblick, der den Wortlaut zeigt, darf dieser Spur nicht ausweichen. Zugeklappt, weil die Tagesansicht im Treppenhaus mitgelesen wird (`IDEA-PRX-035`, §4.6). Der Wortlaut statt einer Zusammenfassung, weil jede Verdichtung eine Auswahl über klinischen Inhalt wäre (ADR-006 Punkt 2 und 4). Unsicher: ob der Entwurf gezeigt werden soll; ein unfertiger Text kann in die Irre führen, fehlt aber sonst genau dann, wenn die Kollegin am Vortag noch nicht finalisiert hat.
 
-**Anker.** `public.get_appointment_brief` in `supabase/migrations/20260929100000_prx_006_appointment_brief.sql`; Oberfläche `src/features/appointments/Kurzblick.tsx`; Tests in `supabase/tests/appointment-brief.test.ts`.
+**Anker.** `public.get_appointment_brief` in `supabase/migrations/20260929100000_prx_006_appointment_brief.sql`; Oberfläche `src/features/calendar/appointments/Kurzblick.tsx`; Tests in `supabase/tests/appointment-brief.test.ts`.
 
 **Änderungspfad.** Nur finalisierte Einträge: Bedingung `t.status = 'final'` in der Auswahl · Aufwand `klein`. Aufklappen ohne eigenes Ereignis (nur `treatment_note.viewed`): Einfügung in `get_appointment_brief` streichen, Wert im Katalog belassen · Aufwand `klein`. Weitere Felder (Wortlaut der Verordnung): Rückgabe erweitern · Aufwand `klein`.
 
@@ -1820,7 +1820,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisve
 
 **Begründung.** `IDEA-PRX-035` lässt offen, ob von Hand oder abgeleitet und ob am Termin, an der Person oder am Tag; ohne diese Entscheidung war nichts spezifizierbar. Abgeleitet scheidet aus: ein Vorschlag „aus den letzten Befunden“ wäre eine Auswertung klinischer Inhalte (ADR-006 Punkt 2 und 4). An der Person, weil sich das Material von Besuch zu Besuch wiederholt — eine Liste je Termin müsste jedes Mal neu entstehen und wäre am Serientermin leer. Ohne Namen am Tag, weil die Übersicht im Treppenhaus mitgelesen wird und „Kinesiotape für Frau X“ etwas über ihre Behandlung sagt (§4.6). Unsicher: ob die Praxis Material je Besuch braucht (etwa „diesmal den neuen Plan“) — dann trüge der Termin eine zweite, kurze Liste.
 
-**Anker.** Spalte, Formregel `app.take_along_items_valid` und `public.set_take_along_items` in `supabase/migrations/20260929110000_prx_007_take_along.sql`; Anzeige am Termin `src/features/appointments/Kurzblick.tsx`; Pflege `src/features/patients/Mitnehmen.tsx`; Tests in `supabase/tests/take-along.test.ts`.
+**Anker.** Spalte, Formregel `app.take_along_items_valid` und `public.set_take_along_items` in `supabase/migrations/20260929110000_prx_007_take_along.sql`; Anzeige am Termin `src/features/calendar/appointments/Kurzblick.tsx`; Pflege `src/features/patients/Mitnehmen.tsx`; Tests in `supabase/tests/take-along.test.ts`.
 
 **Änderungspfad.** Material je Termin: eigene Spalte an `appointments` mit derselben Formregel, Kurzblick und Tagesliste lesen beide · Aufwand `mittel`. Zusammenzählung wieder in der Übersicht: `mitnehmenHeute` und seine Zeile aus der Git-Historie (bis zum UI-Redesign Schritt 3) · Aufwand `klein`. Andere Grenzen: nur `app.take_along_items_valid` und die Konstanten in `src/features/patients/api.ts` · Aufwand `klein`.
 
@@ -1832,7 +1832,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiede
 
 **Begründung.** `IDEA-PRX-037` warnt: „Rechnung offen“ am Termin ist eine Zahlungsinformation in einer Ansicht, die auch eine Vertretung sieht; ADR-004 und §4.3 geben Rechnungen und Zahlungsstatus owner und office, und `app.can_read_invoicing` zieht genau diese Grenze schon. Ob abkassiert oder ein offener Betrag angesprochen wird, entscheidet das Büro, nicht die Vertretung an der Tür. Die Frage „ab wann offen“ beantwortet ADR-009 über den Rechnungszustand; eine zweite Regel am Termin wäre eine zweite Wahrheit — deshalb liest die Liste der offenen Posten jetzt dieselbe Funktion. Die Kostenträgerart ist kein neues Feld: Sie ergibt sich aus der Bauart der Grundlage und dem Empfänger (ADR-009 Punkt 2, ADR-020). Unsicher: ob Behandelnde am Hausbesuch wissen sollen, dass etwas offen ist, um es anzusprechen.
 
-**Anker.** `public.get_appointment_billing_context`, `app.appointment_basis_position` und `app.open_invoices` in `supabase/migrations/20260929120000_prx_008_appointment_billing_context.sql`; Anzeige `src/features/appointments/Abrechnungslage.tsx`; Tests in `supabase/tests/appointment-billing-context.test.ts`.
+**Anker.** `public.get_appointment_billing_context`, `app.appointment_basis_position` und `app.open_invoices` in `supabase/migrations/20260929120000_prx_008_appointment_billing_context.sql`; Anzeige `src/features/calendar/appointments/Abrechnungslage.tsx`; Tests in `supabase/tests/appointment-billing-context.test.ts`.
 
 **Änderungspfad.** Behandelnde sehen „Rechnung offen“ ohne Betrag: eigene Bedingung für `open_invoice_count` statt `v_darf` · Aufwand `klein`. „Offen“ erst ab Fälligkeit: Bedingung in `app.open_invoices` — trifft dann auch die offenen Posten · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt einschließlich BEF-096 (Nichtantreffen verbraucht keinen Behandlungstermin). Finanzangaben bleiben bei owner und Büro; die gemeinsamen klinischen Leserechte aus Block 2 (BEF-095) gelten für Büro und Behandelnde.
 
@@ -1846,7 +1846,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisve
 
 **Begründung.** Jannes hat am 2026-09-28 entschieden, dass Behandelnde abhaken; `IDEA-PRX-039` empfiehlt, das als Oberfläche von ABR-002 zu bauen und nicht als zweiten Weg — so gelten Dokumentationskopplung (§19, ANN-072), Kontingent (ADR-020 Punkt 5) und Schutz vor Doppelerfassung (ADR-009 Punkt 4) ohne Ausnahme. Die Grenze „eigener Termin“ folgt dem Zweck: Was geleistet wurde, weiß, wer behandelt hat; eine Vertretung übernimmt den Termin und damit die Kennung. Das Zurücknehmen beim Büro folgt der Warnung aus `IDEA-PRX-039`: Abhaken darf nicht so aussehen, als ließe es sich durch erneutes Antippen zurücknehmen. Die „Freigabe zur Abrechnung“ braucht keinen eigenen Zustand, weil abgerechnet wird, was erfasst ist, monatlich je Person (ANN-077). Unsicher: ob Behandelnde auch Termine einer Kollegin abhaken sollen, etwa nach einem Tausch ohne Umbuchung.
 
-**Anker.** `app.can_record_services_for_appointment` in `supabase/migrations/20260929130000_prx_009_record_at_appointment.sql` (die eine Stelle der Rollenregel), genutzt von `get_billable_service_draft`, `record_billable_services` und `get_appointment_services`; Anzeigeweiche `canRecordAtAppointment` in `src/features/session/types.ts`; Oberfläche `src/features/appointments/HeilmittelBestaetigen.tsx`; Tests in `supabase/tests/record-at-appointment.test.ts`.
+**Anker.** `app.can_record_services_for_appointment` in `supabase/migrations/20260929130000_prx_009_record_at_appointment.sql` (die eine Stelle der Rollenregel), genutzt von `get_billable_service_draft`, `record_billable_services` und `get_appointment_services`; Anzeigeweiche `canRecordAtAppointment` in `src/features/core/session/types.ts`; Oberfläche `src/features/calendar/appointments/HeilmittelBestaetigen.tsx`; Tests in `supabase/tests/record-at-appointment.test.ts`.
 
 **Änderungspfad.** Auch fremde Termine: Bedingung in `app.can_record_services_for_appointment` streichen · Aufwand `klein`. Behandelnde dürfen zurücknehmen: `delete_billable_services` auf dieselbe Funktion umstellen · Aufwand `klein`. Zurück zu ANN-071: Funktion auf `app.can_record_billable_services()` verkürzen · Aufwand `klein`. Abgleich (2026-10-02, Abnahme Block 4): Bestätigt werden die erbrachten Heilmittel (Mengen); das Terminhonorar entsteht je durchgeführtem Termin einmal, unabhängig von der Auswahl (ADR-009 Fassung 4 Punkt 22, BEF-099).
 
@@ -1858,7 +1858,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-
 
 **Begründung.** Jannes 2026-09-28 (Sichtung Kernprozess): Therapeut:in fotografiert, Office tippt ab. ADR-017 Punkt 10 nennt die Patient:in als zulässigen Bezugsdatensatz; Klasse und Frist sind dieselben wie an der Grundlage (Patientenakte, ADR-008 Punkt 4), die Datei fällt mit der Akte. Punkt 8 verbietet, ein abgelegtes Objekt zu verändern — ein Verschieben im Speicher wäre genau das; deshalb wandert der Bezug, nicht der Ort. Der Pfad besteht nur aus Kennungen (Punkt 5), ein „falscher“ Elternteil im Pfad sagt nichts über die Person hinaus. Ein eigener Zustand „zu erfassen“ wäre ein zweiter Wahrheitsort neben dem leeren Bezug. Unsicher: ob eine falsch zugeordnete Grundlage beim Löschen ihr Foto mitnehmen soll (heute ja, wie jeden Scan — die Kaskade stammt aus DAT-001).
 
-**Anker.** `list_open_prescription_scans`, `assign_prescription_scan` und der Trigger `patient_files_object_key` (`app.set_patient_file_object_key`) in `supabase/migrations/20260929160000_prx_011_prescription_without_paper.sql`; Oberfläche `src/features/files/PrescriptionPhoto.tsx`, `src/features/open-points/PrescriptionsToCapture.tsx`, `src/features/treatment-bases/ScanBesideForm.tsx`; Tests in `supabase/tests/prescription-scans.test.ts`.
+**Anker.** `list_open_prescription_scans`, `assign_prescription_scan` und der Trigger `patient_files_object_key` (`app.set_patient_file_object_key`) in `supabase/migrations/20260929160000_prx_011_prescription_without_paper.sql`; Oberfläche `src/features/patients/files/PrescriptionPhoto.tsx`, `src/features/workplace/open-points/PrescriptionsToCapture.tsx`, `src/features/patients/treatment-bases/ScanBesideForm.tsx`; Tests in `supabase/tests/prescription-scans.test.ts`.
 
 **Änderungspfad.** Das Foto soll beim Löschen einer Grundlage zurück in die offenen Punkte: Fremdschlüssel `patient_files_treatment_basis_id_fkey` auf `on delete set null` für Scans · Aufwand `mittel`. Ohne Umweg über die Person (Foto nur an bestehender Grundlage): Constraint `patient_files_scan_belongs_to_treatment_basis` wiederherstellen und den Knopf am Termin entfernen · Aufwand `klein`.
 
@@ -1870,7 +1870,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-00
 
 **Begründung.** `IDEA-PRX-019`: „Ein Bezug erweitert keine Berechtigung“ (§4.7) — wer Aufgaben sieht, sieht die Kartei ohnehin, und in einer kleinen Praxis übernimmt, wer gerade Zeit hat. ADR-008 kennt keine Klasse „Aufgabe“; am nächsten liegen die Warteliste (ANN-133, zwölf Monate nach dem Schließen) und die Terminanfragen ohne Behandlungsverhältnis (zwölf Monate nach letztem Kontakt). Eine erledigte Aufgabe ist ein abgeschlossener organisatorischer Vorgang; was fachlich bleiben muss, steht in Dokumentation oder Grundlage. Unsicher: ob Freitext mit Namen Dritter („Rückruf Frau X“) eine kürzere Frist verlangt.
 
-**Anker.** `app.can_manage_tasks()`, Klasse `aufgabe` mit zwei Zuordnungen und die Regel in `public.apply_retention` in `supabase/migrations/20260929170000_prx_012_tasks.sql`; Anzeigeweiche `canManageTasks` in `src/features/session/types.ts`; Beschriftung in `src/features/retention/klassen.ts`; Tests in `supabase/tests/tasks.test.ts`.
+**Anker.** `app.can_manage_tasks()`, Klasse `aufgabe` mit zwei Zuordnungen und die Regel in `public.apply_retention` in `supabase/migrations/20260929170000_prx_012_tasks.sql`; Anzeigeweiche `canManageTasks` in `src/features/core/session/types.ts`; Beschriftung in `src/features/privacy/retention/klassen.ts`; Tests in `supabase/tests/tasks.test.ts`.
 
 **Änderungspfad.** Nur eigene und zugewiesene Aufgaben sichtbar: Bedingung in `list_tasks` und den Schreibpfaden ergänzen · Aufwand `mittel`. Andere Frist: `retention_interval` der Klasse `aufgabe` (Datenänderung) · Aufwand `klein`. Office ausschließen: `app.can_manage_tasks()` · Aufwand `klein`.
 
@@ -1882,7 +1882,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-
 
 **Begründung.** Roadmap PRX-EPIC-003 nennt die fünf Punkte (Jannes, Umbau U2, §5); abgeleitet statt gepflegt, weil ein Haken neben der Akte der zweite Wahrheitsort wäre, der auseinanderläuft. „Einwilligungen“ ist als Datenschutzinformation und Behandlungsvertrag gelesen: das sind die beiden Blätter der Aufnahme (PAT-006), die übrigen Einwilligungen sind freiwillig und dürfen nicht als „fehlend“ drängen (Art. 7 Abs. 4 DSGVO, Freiwilligkeit). Ein „nein“ als Standard war von einer Entscheidung nicht zu unterscheiden — genau das soll die Liste aber sehen. Die Datenbank trägt nur synthetische Daten; das Leeren der Bestands-„nein“ kostet deshalb nichts. Unsicher: ob ein Anamnesebogen auf Papier (als Foto, DOK-006) den Punkt ebenfalls erledigen soll.
 
-**Anker.** `app.intake_checklist` (die eine Stelle der Regeln), `app.intake_finding_instruments`, `get_intake_checklist` und `list_open_intakes` sowie die Spalte in `supabase/migrations/20260929180000_prx_013_intake_checklist.sql`; Beschriftung und Ziele in `src/features/intake/api.ts`; Liege mit drei Zuständen in `src/features/patients/Behandlungsliege.tsx`; Tests in `supabase/tests/intake-checklist.test.ts`.
+**Anker.** `app.intake_checklist` (die eine Stelle der Regeln), `app.intake_finding_instruments`, `get_intake_checklist` und `list_open_intakes` sowie die Spalte in `supabase/migrations/20260929180000_prx_013_intake_checklist.sql`; Beschriftung und Ziele in `src/features/patients/intake/api.ts`; Liege mit drei Zuständen in `src/features/patients/Behandlungsliege.tsx`; Tests in `supabase/tests/intake-checklist.test.ts`.
 
 **Änderungspfad.** Ein Punkt mehr oder anders: `app.intake_checklist` und die Liste in `intake/api.ts` · Aufwand `klein`. Papierbogen zählt: im Punkt `anamnesis` zusätzlich eine Datei einer neuen Dokumentart prüfen · Aufwand `mittel`. Zurück zu „nein“ als Standard: Spalte wieder `not null default false` · Aufwand `klein`.
 
@@ -1896,7 +1896,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-00
 
 **Begründung.** `IDEA-PRX-041` fragt, ob der Stand an den Termin oder an einen eigenen Vorgang gehört und ob „nicht erreicht“ ein Merkmal der Patientin wird (§20); am Termin und kurzlebig beantwortet beides am engsten. „Erreicht“ ist dieselbe Aussage wie „telefonisch mitgeteilt“ — ein zweiter Ort dafür liefe auseinander. Vierzehn Tage genügen, um einen Ausfall („trotz zweimal Nachricht nicht erschienen“) im Gespräch nachzuvollziehen; länger wäre ein Verlauf über das Erreichbarkeitsverhalten einer Person. Unsicher: ob die Praxis bei Ausfallhonoraren (ANN-035) den Anrufstand länger als Beleg braucht.
 
-**Anker.** Tabelle, Klasse `anrufstand`, `list_call_list` und `record_call_outcome` sowie die Regel in `public.apply_retention` in `supabase/migrations/20260929190000_prx_014_call_list.sql`; Oberfläche `src/features/open-points/CallListPage.tsx`; Tests in `supabase/tests/call-list.test.ts`.
+**Anker.** Tabelle, Klasse `anrufstand`, `list_call_list` und `record_call_outcome` sowie die Regel in `public.apply_retention` in `supabase/migrations/20260929190000_prx_014_call_list.sql`; Oberfläche `src/features/workplace/open-points/CallListPage.tsx`; Tests in `supabase/tests/call-list.test.ts`.
 
 **Änderungspfad.** Andere Frist: `retention_interval` der Klasse `anrufstand` · Aufwand `klein`. Verlauf aller Versuche statt eines Stands: eigene Zeile je Versuch statt `on conflict` · Aufwand `mittel`. Auch die Anrufliste nach „Tag umplanen“ (CAL-009) speichert ihren Stand hier: dieselbe Funktion für abgesagte Termine öffnen · Aufwand `mittel`.
 
@@ -1920,7 +1920,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-
 
 **Begründung.** `IDEA-LZK-009`: „Ein Vorschlag darf keine Frist starten, sondern nur fragen“ — der Abschluss bleibt der ausdrückliche Vorgang aus LOE-001b, weil an ihm die Löschung in zehn Jahren hängt. `IDEA-LZK-007` trennt die Empfehlung der Therapeutin (Dokumentation, DOK-005) von einer automatischen Einstufung (B9); die Liste zeigt deshalb nur, ob eine Empfehlung da ist. 14 Tage entsprechen der Kennzahl 4 aus STA-EPIC-001, sechs Monate dem üblichen Abstand, nach dem eine Folgeverordnung nicht mehr „Anschluss“ ist. Unsicher: ob Office die Abschlussliste sehen soll, um Therapeut:innen anzusprechen (IDEA-LZK-009 lässt es offen).
 
-**Anker.** `app.reminder_prescription_horizon()`, `app.reminder_care_idle()`, `list_ending_prescriptions` und `list_care_without_conclusion` in `supabase/migrations/20260929210000_prx_016_reminders.sql`; Oberfläche `src/features/open-points/Reminders.tsx`; Tests in `supabase/tests/reminders.test.ts`.
+**Anker.** `app.reminder_prescription_horizon()`, `app.reminder_care_idle()`, `list_ending_prescriptions` und `list_care_without_conclusion` in `supabase/migrations/20260929210000_prx_016_reminders.sql`; Oberfläche `src/features/workplace/open-points/Reminders.tsx`; Tests in `supabase/tests/reminders.test.ts`.
 
 **Änderungspfad.** Andere Schwellen: die beiden `app.reminder_*`-Funktionen · Aufwand `klein`. Office sieht die Abschlussliste: Rollenprüfung in `list_care_without_conclusion` auf `app.can_read_patient_directory()` · Aufwand `klein`. Mit Erinnerung an die Therapeut:in (Benachrichtigung): gehört zu KOM-EPIC-003 · Aufwand `groß`.
 
@@ -1984,7 +1984,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-
 
 **Anker.** Abschnitt (1) in `public.get_practice_statistics`, `supabase/migrations/20260929230000_sta_001_practice_statistics.sql`; Tests „(1) Umsatz und Zahlungseingang“ in `supabase/tests/practice-statistics.test.ts`.
 
-**Änderungspfad.** Netto statt brutto: Summe über `snapshot -> 'tax_groups' -> net_cents` an derselben Stelle · Aufwand `klein`. Ziel am Zahlungseingang: Spalte in `practice_targets` und Zuordnung in `src/features/statistics/kennzahlen.ts` · Aufwand `klein`.
+**Änderungspfad.** Netto statt brutto: Summe über `snapshot -> 'tax_groups' -> net_cents` an derselben Stelle · Aufwand `klein`. Ziel am Zahlungseingang: Spalte in `practice_targets` und Zuordnung in `src/features/billing/statistics/kennzahlen.ts` · Aufwand `klein`.
 
 ### ANN-152 — Statistik: Auslastung zählt Behandlungs- und Trainingstermine innerhalb der Arbeitszeit, nur als Praxissumme
 
@@ -2030,7 +2030,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-
 
 **Begründung.** Die Roadmap verlangt zu jeder Zahl die eine Handlung, die sie auslöst (Mahnung, Anrufliste, freie Fenster, Verordner:in anfragen); alle Ziele gibt es schon als Seiten. Eine Anfragefunktion wäre ein neuer Versandweg (ADR-002) und ein eigenes Epic.
 
-**Anker.** `src/features/statistics/kennzahlen.ts` (Richtung, Ziel erreicht, Handlung je Kennzahl) mit Tests in `src/features/statistics/kennzahlen.test.ts`.
+**Anker.** `src/features/billing/statistics/kennzahlen.ts` (Richtung, Ziel erreicht, Handlung je Kennzahl) mit Tests in `src/features/billing/statistics/kennzahlen.test.ts`.
 
 **Änderungspfad.** Richtung oder Ziel einer Handlung ändern: Eintrag in `kennzahlen.ts` · Aufwand `klein`.
 
@@ -2042,7 +2042,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (B6 aufgelöst) · P
 
 **Begründung.** Jannes hat B6 am 2026-09-29 aufgelöst, weil Vergütungsmodelle mit Umsatzbeteiligung geplant sind; wer beteiligt ist, braucht die eigene Zahl. Zugeordnet wird nach der Behandlung, weil der Umsatz dort entsteht — die Person, die die Rechnung schreibt, ist meist das Büro. Das Protokoll kompensiert, dass es sich um Beschäftigtendaten handelt (ADR-010). Unsicher: ob die Prüfung eine Information der Beschäftigten (Art. 13 DSGVO) vor dem ersten Einsatz verlangt — empfohlen.
 
-**Anker.** `public.list_revenue_by_staff` in `supabase/migrations/20260929234000_sta_006_revenue_by_staff.sql`, Posten aus `app.revenue_staff_lines` in `supabase/migrations/20260929232000_sta_004_revenue_series.sql`; Laden auf Klick in `src/features/statistics/StatisticsPage.tsx`; Tests in `supabase/tests/revenue-series.test.ts`.
+**Anker.** `public.list_revenue_by_staff` in `supabase/migrations/20260929234000_sta_006_revenue_by_staff.sql`, Posten aus `app.revenue_staff_lines` in `supabase/migrations/20260929232000_sta_004_revenue_series.sql`; Laden auf Klick in `src/features/billing/statistics/StatisticsPage.tsx`; Tests in `supabase/tests/revenue-series.test.ts`.
 
 **Änderungspfad.** Nach Zahlungseingang statt Rechnungsstellung: Zahlung anteilig auf die Zeilen verteilen (wie ANN-088) · Aufwand `mittel`. Personen ohne Umsatzbeteiligung für owner ausblenden: Bedingung in `list_revenue_by_staff` · Aufwand `klein`.
 
@@ -2054,7 +2054,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (B6 aufgelöst) ·
 
 **Begründung.** Die Sicht auf den eigenen Umsatz soll an einer vereinbarten Tatsache hängen, nicht an einer Rolle; eine fehlende Angabe darf niemandem Zahlen zeigen. Sätze und Abrechnung der Beteiligung sind ein eigenes Epic.
 
-**Anker.** `public.staff_compensation_models`, `app.has_revenue_share` und `public.set_staff_compensation_model` in `supabase/migrations/20260929233000_sta_005_compensation_model.sql`; Abschnitt „Vergütung“ in `src/features/staff/StaffEinsatz.tsx`.
+**Anker.** `public.staff_compensation_models`, `app.has_revenue_share` und `public.set_staff_compensation_model` in `supabase/migrations/20260929233000_sta_005_compensation_model.sql`; Abschnitt „Vergütung“ in `src/features/workforce/staff/StaffEinsatz.tsx`.
 
 **Änderungspfad.** Weitere Modelle: Wert in der Check-Constraint und in der Auswahl · Aufwand `klein`. Die Person wählt selbst in der Anwendung: eigener Schreibweg mit Bestätigung durch owner · Aufwand `mittel`.
 
@@ -2102,7 +2102,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-021 Punkt 8 verlangt für das Training das Auditniveau der Akte; ADR-010 protokolliert das Öffnen, nicht die Trefferliste. Der Tag des Vertragsendes bestimmt die Frist und gehört deshalb in den Eintrag (wie `patient.care_concluded`).
 
-**Anker.** `public.get_training_client`, `public.list_training_clients` und die Schreibwege in `supabase/migrations/20260930100000_trn_001_training_clients.sql`; Katalog in `src/features/audit/actions.ts`.
+**Anker.** `public.get_training_client`, `public.list_training_clients` und die Schreibwege in `supabase/migrations/20260930100000_trn_001_training_clients.sql`; Katalog in `src/features/privacy/audit/actions.ts`.
 
 **Änderungspfad.** Trefferliste protokollieren: ein Eintrag je Aufruf in `list_training_clients` · Aufwand `klein`.
 
@@ -2162,7 +2162,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-022 Punkt 11 nimmt die Belegung als Restoffenbarung hin und nennt nur Zeit und Mitarbeitende. Die offene Folgefrage „Sieht die Trainingsrolle interne Termine?“ bleibt bei der engeren Antwort aus CAL-026. ADR-022 verlangt für Trainingstermine das Auditniveau der Behandlungstermine – nicht mehr.
 
-**Anker.** `app.can_read_calendar`, `public.list_appointments`, `public.list_day_plan`, `public.get_training_appointment` und `public.list_training_client_appointments` in `supabase/migrations/20260930112000_trn_006_calendar_by_context.sql`; `canSeeCalendar` in `src/features/session/types.ts`.
+**Anker.** `app.can_read_calendar`, `public.list_appointments`, `public.list_day_plan`, `public.get_training_appointment` und `public.list_training_client_appointments` in `supabase/migrations/20260930112000_trn_006_calendar_by_context.sql`; `canSeeCalendar` in `src/features/core/session/types.ts`.
 
 **Änderungspfad.** Interne Termine für die Trainingsbetreuung: `app.may_read_appointment_context` für `internal` um `app.can_read_training_relationships()` erweitern · Aufwand `klein`. Termindetail protokollieren: Eintrag in `get_training_appointment` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Die Trainingsbetreuung sieht relevante belegte Zeiten als anonyme Blöcke „belegt“, ohne Kontext, Namen oder Inhalt, damit sie freie Zeiten erkennt (BEF-112; `PROJECT_PRINCIPLES.md` §4.8, Belegung). **Fassung 2 (ABN-021, 2026-10-02, BEF-112):** Die Trainingsbetreuung sieht im Kalender belegte Zeiten der Mitarbeitenden, die sie buchen kann, als anonyme Blöcke „belegt“ (`list_busy_blocks`: genau Person, Beginn, Ende; angrenzende Zeiten verschmolzen; ohne abgesagte; Praxisrollen bekommen nichts; kein Audit, die Belegung ist die in ADR-022 Punkt 11 getragene Restoffenbarung). Räume gibt es im Datenmodell nicht. `supabase/migrations/20261003108000_abn_021_busy_blocks.sql`.
 
@@ -2212,7 +2212,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Ein Trainingsprotokoll kann Angaben zur Gesundheit enthalten (Schmerz, Belastbarkeit), die im Training unter Art. 9 Abs. 2 lit. a DSGVO stehen (ADR-021 Punkt 4). §4.8 nennt das Büro im Training „nur organisatorisch“; für die Abrechnung braucht es den Zustand des Termins, nicht den Inhalt der Einheit. Das ist enger als in der Behandlung, wo das Büro die Dokumentation liest (ADR-004 Fassung 2). Unsicher: ob das Büro für Rückfragen der Kund:in zur Rechnung den Inhalt braucht.
 
-**Anker.** `app.can_access_training_protocols` in `supabase/migrations/20260930130000_trn_009_training_protocols.sql`; `canWriteTrainingProtocols` in `src/features/session/types.ts`; Tests in `supabase/tests/training-protocols.test.ts`.
+**Anker.** `app.can_access_training_protocols` in `supabase/migrations/20260930130000_trn_009_training_protocols.sql`; `canWriteTrainingProtocols` in `src/features/core/session/types.ts`; Tests in `supabase/tests/training-protocols.test.ts`.
 
 **Änderungspfad.** Büro liest mit: `app.can_access_training_protocols` in eine Lese- und eine Schreibfunktion teilen und `office` in die Lesefunktion aufnehmen, dazu `canWriteTrainingProtocols` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Das Büro liest Trainingsprotokolle und sieht ihren Zustand; Schreiben und Abschließen bleiben bei owner und Trainingsbetreuung. Nachgezogen in `PROJECT_PRINCIPLES.md` 0.19 §4.8 und ADR-021 Fassung 2 Punkt 10; scharf erst mit der DSFA (B2). Umsetzung BEF-113. **Fassung 2 (ABN-022, 2026-10-02, BEF-113 Punkt 1):** Lesen und Schreiben getrennt: `app.can_read_training_protocols()` (owner, Trainingsbetreuung, Büro) für `get_training_protocol` und `list_training_protocols`, protokolliert als `training_protocol.viewed`; Schreiben, Abschließen und Nachträge bleiben bei `app.can_access_training_protocols()` (owner, trainer). Das Büro sieht Protokoll und Einheiten nur zum Lesen. **Scharf mit echten Daten erst, wenn die DSFA (B2) das Lesen durch das Büro bestätigt.**
 
@@ -2260,7 +2260,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-023 Punkt 11 (Fassung 2): „Abgeglichen heißt: Die Person hat die Adresse selbst bestätigt.“ Eine Adresse aus einer Überweisung oder von Angehörigen genügt nicht, weil in der mobilen Versorgung die Adresse in der Akte oft der Tochter gehört. Ein Häkchen ist die kleinste Form, die das nachweisbar macht, ohne ein neues Datum über die Person zu erheben. Unsicher ist, ob die Prüfung einen Vermerk je Adresse am Verhältnis statt an der Einladung verlangt.
 
-**Anker.** `public.invite_platform_access` und `public.platform_invitation_mail` in `supabase/migrations/20260930141000_por_002_platform_accesses.sql` (Constraint `platform_access_invitations_email_channel`); `MailEinladung` in `src/features/platform-access/PlattformAbschnitt.tsx`.
+**Anker.** `public.invite_platform_access` und `public.platform_invitation_mail` in `supabase/migrations/20260930141000_por_002_platform_accesses.sql` (Constraint `platform_access_invitations_email_channel`); `MailEinladung` in `src/features/portal/platform-access/PlattformAbschnitt.tsx`.
 
 **Änderungspfad.** Bestätigung am Verhältnis statt an der Einladung: zwei Spalten an den Kontakttabellen, die Einladung liest sie statt des Häkchens · Aufwand `mittel`.
 
@@ -2286,7 +2286,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Punkt 15 verlangt die Prüfung am Server und nicht in der Oberfläche. Ohne Geburtsdatum lässt sich die Grenze nicht prüfen. Die restriktive Seite gilt (§16), und das Ergänzen kostet einen Handgriff. Unsicher ist, wie oft das im Training stört.
 
-**Anker.** Prüfung in `public.invite_platform_access`, Grenze in `app.platform_min_age_years` (`supabase/migrations/20260930141000_por_002_platform_accesses.sql`); Hinweis in `src/features/platform-access/api.ts` (`einladefehler`).
+**Anker.** Prüfung in `public.invite_platform_access`, Grenze in `app.platform_min_age_years` (`supabase/migrations/20260930141000_por_002_platform_accesses.sql`); Hinweis in `src/features/portal/platform-access/api.ts` (`einladefehler`).
 
 **Änderungspfad.** Ohne Geburtsdatum einladen und die Volljährigkeit als Vermerk der einladenden Person festhalten: ein Häkchen wie bei ANN-188 · Aufwand `klein`.
 
@@ -2324,7 +2324,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Jannes (2026-09-30): „Die behandelnde Person ist in der Situation klar, der Status für die Behandelnde irrelevant.“ Die Zuordnung bleibt in den Daten und im Kalender sichtbar; die Seite zeigt nur, was in der Situation nicht schon feststeht (§5). Für das Büro, das fremde Termine öffnet, steht die Person weiter im Kopf.
 
-**Anker.** `fremdePerson` in `src/features/appointments/AppointmentHeadline.tsx`.
+**Anker.** `fremdePerson` in `src/features/calendar/appointments/AppointmentHeadline.tsx`.
 
 **Änderungspfad.** Person immer zeigen: die Bedingung `fremdePerson` entfernen · Aufwand `klein`. Status immer sichtbar: den Zweig für `confirmed` in derselben Datei durch das Abzeichen ersetzen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -2336,7 +2336,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-01 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Der Design-Handoff vom 2026-10-01 (Entscheidung Jannes: Wegbalken mit Farbstufen nach Puffer) braucht die Fahrzeit, bevor losgefahren wird; ohne Abruf beim Öffnen gäbe es keinen Balken. ADR-019 Punkt 12, 13, 15 und 16 sind unverändert erfüllt, „nur auf Aktion" gilt nach dem ADR für den Handoff, nicht für Routen; neu ist allein die Häufigkeit: ein Aufruf je Besuch der Übersicht, im Zwischenspeicher der Seite gehalten und 30 Sekunden nach dem Verlassen verworfen. Unsicher: ob die Prüfung die häufigeren Aufrufe anders bewertet als in Tour und Kalender, und ob das Kontingent des Anbieters sie trägt.
 
-**Anker.** `FAHRZEITEN_BEIM_OEFFNEN` und `useTagesfahrzeiten` in `src/features/today/fahrzeiten.ts`; Datenweg 3 in `docs/datenschutz/kartendienst.md`; Tests `src/features/today/fahrzeiten.test.ts` und „schickt nur Koordinaten und Profil" in `src/features/today/MyDayPage.test.tsx`.
+**Anker.** `FAHRZEITEN_BEIM_OEFFNEN` und `useTagesfahrzeiten` in `src/features/calendar/today/fahrzeiten.ts`; Datenweg 3 in `docs/datenschutz/kartendienst.md`; Tests `src/features/calendar/today/fahrzeiten.test.ts` und „schickt nur Koordinaten und Profil" in `src/features/calendar/today/MyDayPage.test.tsx`.
 
 **Änderungspfad.** Wieder nur auf Tipp: `FAHRZEITEN_BEIM_OEFFNEN` auf `false` — Wegbalken, Übergänge und „Anfahrt ≈ …" entfallen ohne weitere Änderung · Aufwand `klein`. Abruf auf Tipp mit Wegbalken: ein Knopf „Fahrzeiten zeigen", der den Abruf je Seitenbesuch freigibt · Aufwand `klein`.
 
@@ -2362,7 +2362,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Begründung.** Der Handoff nennt für den ersten Weg eine „Startort-Zeit"; einen geplanten Aufbruch kennt die Anwendung aber nicht, und eine erfundene Uhrzeit rechnete einen Puffer vor, den es nicht gibt. „Jetzt" ist die einzige Zeit, die stimmt. Nach dem Ende des Termins davor gilt dasselbe: Wer um 10:40 noch beim Besuch von 09:30 ist, soll „Zu spät, Abfahrt sofort" lesen und nicht den geplanten Puffer. Ein persönlicher Startort (Wohnung) bleibt ausgeschlossen (§20, ANN-096). Unsicher: ob Jannes morgens lieber einen festen Aufbruch sähe, etwa den Arbeitszeitbeginn.
 
-**Anker.** `naechsterWeg` in `src/features/today/tagesstart.ts`; Tests „Der naechste Weg" in `src/features/today/tagesstart.test.ts`.
+**Anker.** `naechsterWeg` in `src/features/calendar/today/tagesstart.ts`; Tests „Der naechste Weg" in `src/features/calendar/today/tagesstart.test.ts`.
 
 **Änderungspfad.** Fester Aufbruch aus dem Arbeitszeitbeginn: `naechsterWeg` bekommt die Uhrzeit hereingereicht, die Übersicht liest den Wochenplan · Aufwand `mittel`. Immer der geplante Abstand: die Bedingung `jetzt <= …` in `naechsterWeg` entfernen · Aufwand `klein`.
 
@@ -2376,7 +2376,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Der Handoff verlangt die Pille und ausdrücklich keine Migration („zunächst aus dem Anfang des Zugangshinweises"). Eine enge Regel hält den Fehler klein: Ein nicht erkanntes Stockwerk steht weiter im Hinweis, einen Tipp entfernt; ein falsch erkanntes gibt es nur, wenn der Hinweis wirklich so anfängt. Unsicher: wie die Praxis Stockwerke tatsächlich schreibt — das zeigt die Sichtung.
 
-**Anker.** `zugangMitStockwerk` in `src/features/today/stockwerk.ts`; Tests `src/features/today/stockwerk.test.ts`.
+**Anker.** `zugangMitStockwerk` in `src/features/calendar/today/stockwerk.ts`; Tests `src/features/calendar/today/stockwerk.test.ts`.
 
 **Änderungspfad.** Eigenes Feld: Spalte `home_visit_floor` mit Migration und Schreibpfad (`IDEA-PRX-050`), die Karte liest sie direkt, `stockwerk.ts` entfällt · Aufwand `mittel`. Weitere Schreibweisen: die Wortlisten in `stockwerk.ts` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -2390,7 +2390,7 @@ Prozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Der Design-Handoff vom 2026-10-01 streicht den Satz „Hat die Patient:in vorher abgesagt? …" (Abschnitt 1). ADR-018 Punkt 9.3 verlangt aber, dass die Oberfläche **durch alle drei** Hausbesuch-Szenarien führt; ein ADR geht der Design-Spezifikation vor (`PROJECT_PRINCIPLES.md` §21). Die kürzeste Form, die beides hält: der Fall wird genannt und der Weg gezeigt, die Regel steht dort, wo abgesagt wird.
 
-**Anker.** `HomeVisitFlow` in `src/features/appointments/HomeVisitFlow.tsx`; Test `AppointmentDetailPage.test.tsx` („Vorher abgesagt?").
+**Anker.** `HomeVisitFlow` in `src/features/calendar/appointments/HomeVisitFlow.tsx`; Test `AppointmentDetailPage.test.tsx` („Vorher abgesagt?").
 
 **Änderungspfad.** Ganz streichen, wenn Jannes entscheidet, dass die Absage-Rückfrage das Szenario allein erklärt (dann ADR-018 Punkt 9.3 so lesen oder ergänzen) · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
@@ -2414,7 +2414,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Pr�
 
 **Begründung.** Wie beim Kurzblick (ANN-137) folgt ein protokolliertes Lesen klinischer Einträge einer Handlung, nicht dem Öffnen einer Seite; sonst stünde in jedem Protokoll ein Lesen, das niemand wollte, und am Rechner im Büro läse die Seite mit. ADR-016 Punkt 4 verlangt einen ausdrücklichen Schritt; der Knopf heißt nach dem, was er tut („Festschreiben"), und die Folge bleibt für Vorlesesoftware am Knopf (DOK-20).
 
-**Anker.** `BisherigeEintraege` in `src/features/documentation/BisherigeEintraege.tsx`, eingehängt in `CompleteTreatmentPage.tsx`; Test `CompleteTreatmentPage.test.tsx` („liest die bisherigen Einträge erst, wenn jemand den Verlauf öffnet").
+**Anker.** `BisherigeEintraege` in `src/features/clinical/documentation/BisherigeEintraege.tsx`, eingehängt in `CompleteTreatmentPage.tsx`; Test `CompleteTreatmentPage.test.tsx` („liest die bisherigen Einträge erst, wenn jemand den Verlauf öffnet").
 
 **Änderungspfad.** Ab 640 px offen beginnen: Anfangswert von `verlaufOffen` an die Breite binden · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; gleiche Leserechte und gleiche Protokollierung für Büro und Behandelnde (BEF-095).
 
@@ -2426,7 +2426,7 @@ Prozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** ANN-005 schloss eine Markierung als fehlend aus, damit der Abschluss keine Pflicht zur Dokumentation vortäuscht. Die ausdrückliche Entscheidung von Jannes vom 01.10. geht dieser Annahme vor; die Pflicht selbst bleibt unverändert – gesperrt wird weiterhin erst die Rechnung, nicht der Abschluss (ADR-018, Konsequenzen). Dieselbe Regel gilt schon für die Übersicht (`istOffen`): eine Aufgabe, die jemand nicht erledigen kann, wäre Rauschen.
 
-**Anker.** Fassung 2: `app.can_read_treatment_note()` in `list_day_plan` und `list_appointments` (`supabase/migrations/20261002124000_abn_005_documentation_read_right.sql`), `canReadTreatmentNote` in `TreatmentNoteSection` (Bedingung `faellig`) und im Kalender (kein Ausblenden mehr in `CalendarPage.tsx`); `offenGrund` in `src/features/today/api.ts`.
+**Anker.** Fassung 2: `app.can_read_treatment_note()` in `list_day_plan` und `list_appointments` (`supabase/migrations/20261002124000_abn_005_documentation_read_right.sql`), `canReadTreatmentNote` in `TreatmentNoteSection` (Bedingung `faellig`) und im Kalender (kein Ausblenden mehr in `CalendarPage.tsx`); `offenGrund` in `src/features/calendar/today/api.ts`.
 
 **Änderungspfad.** Auch dem Büro zeigen: Bedingung `darfSchreiben` streichen · Aufwand `klein`. **Fassung 2 (ABN-005, 2026-10-02, Abnahme Jannes, BEF-095):** Stand, „Doku offen“ und Lese-Links folgen dem einen Leserecht für Dokumentation; die Aufgabe („Doku“ schreiben, `istOffen` für die Arbeitskarte) bleibt bei den Schreibenden. Wieder nur Schreibenden zeigen: die Bedingung `darfSchreiben` zurück in `TreatmentNoteSection` und das Ausblenden in `CalendarPage` · Aufwand `klein`.
 
@@ -2440,7 +2440,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiede
 
 **Begründung.** Die feste Spalte und die Zeilenliste hätten Raster, Zieh-Geste und Breitenrechnung umgebaut; die Karte bringt dieselben Handgriffe ohne diesen Umbau. Der schlanke Kopf ist eine Sichtungsentscheidung (BEF-039), die der Handoff nicht ausdrücklich aufhebt.
 
-**Anker.** `TerminPanel` in `src/features/appointments/TerminPanel.tsx`, Umschalter und Wochenende in `CalendarPage.tsx`, Kachel in `CalendarGrid.tsx`; Migration `20261001200000_cal_doku_stand_im_kalender.sql`; Tests `CalendarPage.test.tsx`, `supabase/tests/list-appointments.test.ts`.
+**Anker.** `TerminPanel` in `src/features/calendar/appointments/TerminPanel.tsx`, Umschalter und Wochenende in `CalendarPage.tsx`, Kachel in `CalendarGrid.tsx`; Migration `20261001200000_cal_doku_stand_im_kalender.sql`; Tests `CalendarPage.test.tsx`, `supabase/tests/list-appointments.test.ts`.
 
 **Änderungspfad.** Panel ab 1200 px als Spalte: Rasterbreite in `CalendarPage` um 320 px kürzen · Aufwand `mittel`. Tagesliste am Handy mit Wegbalken: eigene Darstellung aus `list_day_plan` · Aufwand `mittel`.
 
@@ -2478,7 +2478,7 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 **Begründung.** ADR-023 Punkt 13 (Fassung 2): „Gespeichert wird davon nichts, weder Scan noch Ausweisnummer. Der Vermerk hält nur fest, was wer wann gesehen hat." Die Folgefrage zum Aufgabenkreis schlägt den Vermerk „Betreuerausweis gesehen, Aufgabenkreis …" vor. Ein Häkchen statt Freitext hält Gesundheitsangaben aus dem Vermerk heraus. Unsicher: ob der Aufgabenkreis „Gesundheitssorge" genügt oder ob „Vermögenssorge" für Rechnungen dazukommen muss (B5).
 
-**Anker.** `app.assert_platform_representation` und Constraint `platform_accesses_kind_fields` in `supabase/migrations/20261002100000_por_005_representation.sql`; `NACHWEISDOKUMENT` in `src/lib/vertretung.ts`; Formular `VertretungEinrichten` in `src/features/platform-access/Vertretungen.tsx`.
+**Anker.** `app.assert_platform_representation` und Constraint `platform_accesses_kind_fields` in `supabase/migrations/20261002100000_por_005_representation.sql`; `NACHWEISDOKUMENT` in `src/lib/vertretung.ts`; Formular `VertretungEinrichten` in `src/features/portal/platform-access/Vertretungen.tsx`.
 
 **Änderungspfad.** Weitere Dokumentarten oder ein zweiter Aufgabenkreis: Werteliste und Prüfung in `app.assert_platform_representation`, Constraint nachziehen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: zweites Häkchen „Aufgabenkreis umfasst Vermögenssorge“. Rechnungen und Zahlungen sieht eine Vertretung nur, wenn der geprüfte Bereich sie umfasst; Gesundheitssorge allein gibt keinen Abrechnungszugriff. Freigegeben werden nur nachgewiesene Bereiche, nie pauschal alles (BEF-119).
 
@@ -2506,7 +2506,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** ADR-023 Punkt 13: „Der Zweifel wird vermerkt, eine Diagnose nicht." Ein Merkmal an der Akte („nicht einwilligungsfähig") wäre eine Gesundheitsangabe mit eigener Wirkung und würde die Person auf Dauer festlegen. Ein Auditeintrag weist nach, dass und warum keine Begleitung eingerichtet wurde, und fällt nach drei Jahren (ANN-029). Unsicher: ob die Prüfung eine Sperre am Verhältnis erwartet.
 
-**Anker.** `public.note_companion_capacity_doubt` in `supabase/migrations/20261002100000_por_005_representation.sql`; Knopf im Formular `VertretungEinrichten` in `src/features/platform-access/Vertretungen.tsx`.
+**Anker.** `public.note_companion_capacity_doubt` in `supabase/migrations/20261002100000_por_005_representation.sql`; Knopf im Formular `VertretungEinrichten` in `src/features/portal/platform-access/Vertretungen.tsx`.
 
 **Änderungspfad.** Sperre am Verhältnis: Spalte mit Datum und Rücknahme, Prüfung in `app.assert_platform_representation` · Aufwand `mittel`.
 
@@ -2556,7 +2556,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** Die Abnahme (BEF-097) verlangt, dass auch durchgeführte Termine als Zuordnungskorrektur übertragen werden können; der Server erlaubt es seit CAL-022 (ANN-068). Ohne einen Weg in der Oberfläche bliebe die Korrektur unerreichbar. Zugeklappt und ohne Vorauswahl, weil der Regelfall die ungedeckten künftigen Termine sind und eine Korrektur der Vergangenheit eine bewusste Handlung bleiben soll (§13: nichts wandert unbemerkt). Unsicher: ob die Praxis die Korrektur häufiger braucht und der Abschnitt offen stehen sollte.
 
-**Anker.** `vergangenesAngebot` und der Aufklapper „Vergangene Termine“ in `src/features/appointments/TermineUebertragenPage.tsx`; Test in `TermineUebertragenPage.test.tsx`.
+**Anker.** `vergangenesAngebot` und der Aufklapper „Vergangene Termine“ in `src/features/calendar/appointments/TermineUebertragenPage.tsx`; Test in `TermineUebertragenPage.test.tsx`.
 
 **Änderungspfad.** Abschnitt offen zeigen oder vorwählen: `Disclosure offen` beziehungsweise Startwert der Auswahl ändern · Aufwand `klein`. Vergangene gar nicht anbieten: den Abschnitt entfernen, der Server bleibt unverändert · Aufwand `klein`.
 
@@ -2568,7 +2568,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** Ein Gebührenanlass ist an einen ausgefallenen Termin gebunden; ein verschobener Termin ist kein ausgefallener. Den Anlass an eine Zeitänderung zu hängen, hieße entweder einen dritten Anlass an einem bestätigten Termin einzuführen oder den Termin bei der Zeitänderung still in Absage und Neuanlage zu zerlegen — beides größer als die Abnahme verlangt. Unsicher: Wer im Alltag den Termin nur verschiebt, verschenkt die Gebühr, ohne es zu merken.
 
-**Anker.** `app.is_late_cancellation` und die Gründeliste in `public.cancel_appointment` (`supabase/migrations/20261002130000_abn_006_patient_moved_and_fee_waiver.sql`); `selectableCancellationReasons` in `src/features/appointments/api.ts`; Tests in `supabase/tests/cancellation-notice.test.ts` („Verlegung: wer sie veranlasst hat“).
+**Anker.** `app.is_late_cancellation` und die Gründeliste in `public.cancel_appointment` (`supabase/migrations/20261002130000_abn_006_patient_moved_and_fee_waiver.sql`); `selectableCancellationReasons` in `src/features/calendar/appointments/api.ts`; Tests in `supabase/tests/cancellation-notice.test.ts` („Verlegung: wer sie veranlasst hat“).
 
 **Änderungspfad.** Am Terminformular bei einer Zeitänderung unter 24 Stunden fragen „Hat die Patient:in verlegt?“ und dann den Weg über Absage und Neuanlage gehen · Aufwand `mittel`.
 
@@ -2580,7 +2580,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** Ein Verzicht ist eine Entscheidung über eine Forderung und gehört zu den Rollen, die Forderungen erfassen; die Behandelnden erfassen am eigenen Termin die Heilmittel, nicht das Ausfallhonorar (ANN-140). Endgültig, weil der Verzicht in der Regel der Patient:in mitgeteilt wird — wie die Absage selbst (ADR-018 Punkt 2). Kein Freitextgrund, weil ein freies Feld am Termin die wahrscheinlichste Stelle für eine Gesundheitsangabe ist (ANN-034).
 
-**Anker.** `public.waive_appointment_fee` und `app.billable_fee_basis` in `supabase/migrations/20261002130000_abn_006_patient_moved_and_fee_waiver.sql`; `GebuehrVerzicht` in `src/features/appointments/AppointmentDetailPage.tsx`; Tests in `supabase/tests/cancellation-notice.test.ts` („Verzicht auf die Gebühr“) und `AppointmentDetailPage.test.tsx`.
+**Anker.** `public.waive_appointment_fee` und `app.billable_fee_basis` in `supabase/migrations/20261002130000_abn_006_patient_moved_and_fee_waiver.sql`; `GebuehrVerzicht` in `src/features/calendar/appointments/AppointmentDetailPage.tsx`; Tests in `supabase/tests/cancellation-notice.test.ts` („Verzicht auf die Gebühr“) und `AppointmentDetailPage.test.tsx`.
 
 **Änderungspfad.** Rücknahme erlauben: eine zweite Funktion, die beide Spalten leert und protokolliert · Aufwand `klein`. Codierter Grund: eine Spalte mit Werteliste · Aufwand `klein`. Weitere Rollen: die Rollenprüfung in `waive_appointment_fee` · Aufwand `klein`.
 
@@ -2592,7 +2592,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** Die Abnahme verlangt den Hinweis „getrennt von den organisatorischen Anmerkungen“ und lässt die behandelnden Rollen schreiben. Im gemeinsamen Formular wäre das Feld für das Büro sichtbar, aber gesperrt, und ein Formular, das die Rolle anders behandelt, ist die Stelle, an der so etwas verrutscht. Eine eigene Funktion hält die Rechte an einer Stelle und lässt `create_treatment_basis` und `update_treatment_basis` unverändert (ANN-065). Unsicher: Das Büro tippt die Verordnung ab und sieht den Hinweis auf dem Rezept zuerst; nach dieser Annahme muss es ihn der Therapeut:in weitergeben.
 
-**Anker.** `public.set_treatment_basis_clinical_note` in `supabase/migrations/20261002131000_abn_007_clinical_prescription_note.sql`; `KlinischerHinweis` in `src/features/treatment-bases/KlinischerHinweis.tsx`; Tests in `supabase/tests/treatment-basis-clinical-note.test.ts` und `PatientTreatmentBasesPage.test.tsx`.
+**Anker.** `public.set_treatment_basis_clinical_note` in `supabase/migrations/20261002131000_abn_007_clinical_prescription_note.sql`; `KlinischerHinweis` in `src/features/patients/treatment-bases/KlinischerHinweis.tsx`; Tests in `supabase/tests/treatment-basis-clinical-note.test.ts` und `PatientTreatmentBasesPage.test.tsx`.
 
 **Änderungspfad.** Das Büro schreiben lassen: die Rollenprüfung auf `app.can_write_treatment_bases()` umstellen und `canWriteTreatmentBases` im Client · Aufwand `klein`. Ins Formular legen: das Feld im Formular wieder aufnehmen und den Parameter an beide Schreibpfade geben · Aufwand `mittel`.
 
@@ -2618,7 +2618,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** Die Abnahme verlangt die Freigabe je nachgewiesenem Bereich und nennt die Vermögenssorge für Rechnungen ausdrücklich. Zwei Bereiche decken, was POR-EPIC-002 und -003 zeigen; feiner (etwa Termine getrennt von Unterlagen) wäre eine Unterscheidung, die die Praxis vor Ort nicht prüfen kann. Unsicher: ob B5 auch beim Sorgerecht einen ausdrücklichen Vermerk der Gesundheitssorge verlangt (heute: das Sorgerecht umfasst sie).
 
-**Anker.** `platform_accesses.health_scope`, `.finance_scope`, `app.platform_access_allows` und `app.assert_platform_representation` in `supabase/migrations/20261002134000_abn_010_representation_scopes.sql`; Formular in `src/features/platform-access/Vertretungen.tsx`; Wortlaut in `src/lib/vertretung.ts`; Tests in `supabase/tests/platform-acting-for.test.ts` („Rechte je Art“) und `platform-representation.test.ts`.
+**Anker.** `platform_accesses.health_scope`, `.finance_scope`, `app.platform_access_allows` und `app.assert_platform_representation` in `supabase/migrations/20261002134000_abn_010_representation_scopes.sql`; Formular in `src/features/portal/platform-access/Vertretungen.tsx`; Wortlaut in `src/lib/vertretung.ts`; Tests in `supabase/tests/platform-acting-for.test.ts` („Rechte je Art“) und `platform-representation.test.ts`.
 
 **Änderungspfad.** Ein weiterer Bereich: eine Spalte, ein Satz im Wortlaut, ein Fall in `platform_access_allows` · Aufwand `klein`. Vertretung nur für Rechnungen: die Pflicht zur Gesundheitssorge in `assert_platform_representation` und der Constraint lockern, die Gesundheitsfähigkeiten an `health_scope` binden · Aufwand `mittel`.
 
@@ -2650,7 +2650,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: mit dem Patientenlink (POR-EPIC-002) oder dem nächsten neuen Instrument
 
-**Annahme.** Der Server prüft Antworten gegen `public.questionnaire_definitions`, eine Zeile je Fassung (Kennung@Version) mit der Definitionsdatei als jsonb, dazu `app.questionnaire_body_regions()` mit den Kennungen der Körperbereiche. Beides schreibt eine Migration, die `pnpm definitionen:sql --schreiben` aus den Dateien unter `src/features/assessments/definitionen/scores/` (samt `archiv/`) und `koerperschema.ts` erzeugt; jede Fassung trägt einen Marker mit Prüfsumme. Eine eingetragene Fassung ändert sich nie: Das Skript weist eine geänderte Datei derselben Version ab, ein Trigger sperrt Update und Löschen. Die Regeln der Prüfung stehen in plpgsql (`app.assert_questionnaire_answers`) und folgen `antwortSchema`.
+**Annahme.** Der Server prüft Antworten gegen `public.questionnaire_definitions`, eine Zeile je Fassung (Kennung@Version) mit der Definitionsdatei als jsonb, dazu `app.questionnaire_body_regions()` mit den Kennungen der Körperbereiche. Beides schreibt eine Migration, die `pnpm definitionen:sql --schreiben` aus den Dateien unter `src/features/clinical/assessments/definitionen/scores/` (samt `archiv/`) und `koerperschema.ts` erzeugt; jede Fassung trägt einen Marker mit Prüfsumme. Eine eingetragene Fassung ändert sich nie: Das Skript weist eine geänderte Datei derselben Version ab, ein Trigger sperrt Update und Löschen. Die Regeln der Prüfung stehen in plpgsql (`app.assert_questionnaire_answers`) und folgen `antwortSchema`.
 
 **Begründung.** BEF-101 verlangt dieselben Definitionsdateien wie die Anwendung, „etwa als vom Build erzeugte Tabelle oder Funktion“. Eine Tabelle statt einer erzeugten Funktion je Instrument, weil eine Fassung damit Daten bleibt: Sie lässt sich in einem Test mit der Datei vergleichen (`supabase/tests/questionnaire-definitions.test.ts`), und neue Fassungen brauchen keinen neuen Code. Eine Migration statt eines Seeds, weil die Prüfung in jeder Umgebung gelten muss. Unsicher: Die Regeln je Typ stehen zweimal (Zod und plpgsql); ein Unterschied fiele nur über die Tests in `questionnaire-responses.test.ts` auf.
 
@@ -2666,7 +2666,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** BEF-108 verlangt eine regelmäßige Prüfung und überlässt die Zeit dem Loop. Eine Verordnung ist 28 Tage nach Ausstellung zu beginnen (Heilmittel-Richtlinie, bei Privatverordnungen üblich übernommen); wer acht Wochen wartet, hat oft schon woanders einen Termin oder eine neue Verordnung. Kürzer (vier Wochen) erzeugte bei ruhigen Phasen ständig Rückfragen an dieselben Personen. Unsicher: wie lang die Warteliste der Praxis tatsächlich ist.
 
-**Anker.** `app.waitlist_review_interval()` und `confirm_waitlist_entry` in `supabase/migrations/20261003105000_abn_018_waitlist_review_merge_records_holds.sql`; `src/features/open-points/WaitlistReview.tsx`.
+**Anker.** `app.waitlist_review_interval()` und `confirm_waitlist_entry` in `supabase/migrations/20261003105000_abn_018_waitlist_review_merge_records_holds.sql`; `src/features/workplace/open-points/WaitlistReview.tsx`.
 
 **Änderungspfad.** Andere Frist: die Konstante in einer Migration ändern · Aufwand `klein`. Frist je Praxis: Spalte an `organizations` und Einstellung · Aufwand `klein`.
 
@@ -2678,7 +2678,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** ADR-017 Punkt 44 verlangt die Wahl, bevor die Kamera startet, ohne Vorauswahl, und überlässt den Wortlaut dem Bau. Die Wahl steht vor dem Dialog statt in ihm, weil die Kamera beim Öffnen des Dialogs startet; so läuft sie nie, solange noch nicht entschieden ist. Die Frist steht in der Option selbst, damit niemand ein Foto ungewollt zehn Jahre aufbewahrt oder nach einem Jahr verliert (Konsequenzen der Fassung 3).
 
-**Anker.** `FOTOART_WAHL` und `Aufnahme` in `src/features/files/FotosImVerlauf.tsx`.
+**Anker.** `FOTOART_WAHL` und `Aufnahme` in `src/features/patients/files/FotosImVerlauf.tsx`.
 
 **Änderungspfad.** Anderer Wortlaut: die Konstante · Aufwand `klein`. Wahl im Kameradialog selbst: eine Stufe vor dem Kamerastart in `Kameradialog.tsx` · Aufwand `klein`.
 
@@ -2692,7 +2692,7 @@ Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · 
 
 **Begründung.** ADR-017 Punkt 50 legt den Ausführungsort fest, nicht den Auslöser. Ein Datenbank-Trigger mit Netzaufruf bräuchte eine Erweiterung (`pg_net`) und damit eine neue Abhängigkeit; ein Speicher-Webhook ist Einrichtung beim Anbieter. Der Aufruf aus der Anwendung erfüllt Punkt 52 („die hochladende Person informiert“) ohne weiteren Weg. Bis OPS-001 verhindert das die Cloud-Umgebung nicht, denn die Prüfung ist dort nie Bedingung (Punkt 51). Unsicher: Bei scharfem Schalter bleibt eine Datei ohne Antwort der Function unsichtbar `pending` und fällt nach 24 Stunden weg — die Person sieht dann nur, dass sie fehlt.
 
-**Anker.** `pruefeAmServer` in `src/features/files/api.ts`; `supabase/functions/patient-file-verify/`; `patient_file_for_verification` in `supabase/migrations/20261004104000_abn_zweitreview_verification.sql`; `[functions.patient-file-verify]` in `supabase/config.toml`.
+**Anker.** `pruefeAmServer` in `src/features/patients/files/api.ts`; `supabase/functions/patient-file-verify/`; `patient_file_for_verification` in `supabase/migrations/20261004104000_abn_zweitreview_verification.sql`; `[functions.patient-file-verify]` in `supabase/config.toml`.
 
 **Änderungspfad.** Auslöser am Server: Speicher-Webhook oder `pg_net`-Trigger auf `confirmation_requested_at` · Aufwand `mittel` (neue Einrichtung). Meldung „Prüfung steht aus“ bei scharfem Schalter: die Bestätigung gibt den Zustand zurück · Aufwand `klein`.
 
@@ -2704,7 +2704,7 @@ Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · 
 
 **Begründung.** ADR-017 Punkt 54 verlangt ein PDF „in einem abgeschotteten Rahmen ohne Skriptrechte“. Geprüft in Chromium (2026-10-02): Ein `iframe` mit `sandbox` zeigt kein PDF (der Betrachter ist im abgeschotteten Rahmen gesperrt), ohne `sandbox` schon; zudem verbietet die Content-Security-Policy der Test-Umgebung Rahmen aus Objekt-URLs (`default-src 'self'`) und `object-src 'none'`. Beides zu öffnen schwächte eine Sicherheitsmaßnahme ab — nach §15.1 ein Stopp, keine Annahme. Punkt 54 lässt für Geräte, die das PDF im Rahmen nicht zeigen, ausdrücklich Punkt 55 zu; bis Jannes entscheidet, gilt das für alle.
 
-**Anker.** `istAnzeigbar` in `src/lib/dateien/pruefung.ts`; `ladeDateiZumAnzeigen`, `ladeDateiHerunter` in `src/features/files/api.ts`; `issue_patient_file_link(uuid, boolean)` in `supabase/migrations/20261004102000_abn_027_open_means_display.sql`.
+**Anker.** `istAnzeigbar` in `src/lib/dateien/pruefung.ts`; `ladeDateiZumAnzeigen`, `ladeDateiHerunter` in `src/features/patients/files/api.ts`; `issue_patient_file_link(uuid, boolean)` in `supabase/migrations/20261004102000_abn_027_open_means_display.sql`.
 
 **Änderungspfad.** PDF in der Anwendung: Rahmen ohne `sandbox` aus einer Objekt-URL mit festem Typ `application/pdf` (der PDF-Betrachter des Browsers läuft in eigenem Ursprung) und `frame-src blob:` in `inhaltsrichtlinie` (`scripts/testumgebung.mjs`), dazu `istAnzeigbar` um PDF erweitern · Aufwand `klein`, braucht die Entscheidung von Jannes und einen Vermerk an ADR-017 Punkt 54.
 
@@ -2718,7 +2718,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Akte · Kopf, Rei
 
 **Begründung.** Jannes (2026-10-03): Es gibt zwei Bögen — den Anamnesebogen (vor dem ersten Termin, klinisch) und den Anmeldebogen (Datenschutz, Vertrag, Kontaktdaten); die Checkliste soll ausschließlich Anmeldebogen und Verordnungsgrundlage enthalten. Das Blatt ist noch nicht gestaltet; die beiden Vermerke sind heute die eine Stelle, an der sein Vorliegen steht, und sie bleiben einzeln nachweisbar (PAT-006, Fassung der Datenschutzinformation). Unsicher: ob die Praxis künftig einen einzigen Vermerk „Anmeldebogen unterschrieben“ will.
 
-**Anker.** `app.intake_checklist` und `list_open_intakes` in `supabase/migrations/20261004110000_akte_anmeldebogen_checklist.sql`; `INTAKE_ITEMS`, Beschriftung und Ziel in `src/features/intake/api.ts`; `BEGRIFFE.anmeldebogen` in `src/lib/begriffe.ts`; Tests in `supabase/tests/intake-checklist.test.ts`.
+**Anker.** `app.intake_checklist` und `list_open_intakes` in `supabase/migrations/20261004110000_akte_anmeldebogen_checklist.sql`; `INTAKE_ITEMS`, Beschriftung und Ziel in `src/features/patients/intake/api.ts`; `BEGRIFFE.anmeldebogen` in `src/lib/begriffe.ts`; Tests in `supabase/tests/intake-checklist.test.ts`.
 
 **Änderungspfad.** Ein Vermerk statt zweier: neue Vermerkart in `patient_privacy_records` und der Punkt `registration_form` in `app.intake_checklist` · Aufwand `mittel`. Ein Punkt mehr: `app.intake_checklist` und `INTAKE_ITEMS` · Aufwand `klein`.
 
@@ -2732,7 +2732,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Übersicht · Tag
 
 **Begründung.** Jannes legt Ziel und Inhalt fest („oben der Eintrag zu diesem Termin, neu oder vorhanden, darunter die bisherigen Einträge“). Offen war nur, ob in der Akte selbst getippt wird. Nein: Formulare stehen bewusst außerhalb des Aktenrahmens, damit ein Tipp auf die Bereichsleiste keinen Text verwirft (UX-009, AKTE-000). Gelesen wird über die vorhandenen Wege (`fetchAppointment`, `get_treatment_note`), jeder gelieferte Eintrag wird protokolliert (ADR-010). Unsicher: ob der zusätzliche Tipp bis zum Schreiben im Alltag stört — dann könnte „Doku“ direkt auf die Schreibseite führen, die die bisherigen Einträge schon daneben zeigt.
 
-**Anker.** `doku` in der Karte von `src/features/today/MyDayPage.tsx`; `DieserTermin` in `src/features/documentation/PatientRecordDocumentation.tsx`; `?termin=` in `src/features/documentation/PatientDokuPage.tsx`; Tests `src/features/documentation/DieserTermin.test.tsx`, `src/features/today/MyDayPage.test.tsx`.
+**Anker.** `doku` in der Karte von `src/features/calendar/today/MyDayPage.tsx`; `DieserTermin` in `src/features/clinical/documentation/PatientRecordDocumentation.tsx`; `?termin=` in `src/features/clinical/documentation/PatientDokuPage.tsx`; Tests `src/features/clinical/documentation/DieserTermin.test.tsx`, `src/features/calendar/today/MyDayPage.test.tsx`.
 
 **Änderungspfad.** Direkt auf die Schreibseite: das Ziel `doku` in `MyDayPage.tsx` · Aufwand `klein`. In der Akte schreiben: ein Formular in `DieserTermin` mit eigenem Verlustschutz · Aufwand `mittel`.
 
@@ -2744,7 +2744,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Kalender ohne Zug
 
 **Begründung.** Jannes (2026-10-03): Neu angelegte Therapeut:innen sollen sofort im Kalender stehen, ohne ihren Zugang selbst zu aktivieren. Ein Zugang, den owner samt Kennwort anlegt, bräuchte einen Admin-Schlüssel am Server und weichte die Bestätigung der E-Mail-Adresse auf – das hat Jannes verworfen. Der zweite Weg ergänzt den ersten, statt ihn zu ersetzen; bestehende Konten und Tests bleiben unberührt. Unsicher: ob ein Zugang mit Behandlungsrolle die Person künftig auch automatisch in den Kalender nehmen soll, ohne dass owner das Merkmal setzt – heute tut er das über den bisherigen Weg ohnehin.
 
-**Anker.** `app.is_assignable_therapist`, `app.is_assignable_trainer`, `set_staff_member_schedulable` in `supabase/migrations/20261005090000_akte_009_kalender_ohne_zugang.sql`; Abschnitt „Kalender“ in `src/features/staff/StaffEinsatz.tsx`; Tests `supabase/tests/staff-schedulable.test.ts`.
+**Anker.** `app.is_assignable_therapist`, `app.is_assignable_trainer`, `set_staff_member_schedulable` in `supabase/migrations/20261005090000_akte_009_kalender_ohne_zugang.sql`; Abschnitt „Kalender“ in `src/features/workforce/staff/StaffEinsatz.tsx`; Tests `supabase/tests/staff-schedulable.test.ts`.
 
 **Änderungspfad.** Kalender nur noch über das Merkmal (der Zugang reicht nicht mehr): den zweiten Zweig in beiden Prädikaten streichen und das Merkmal aus den bestehenden Konten befüllen · Aufwand `mittel`. Auch office darf das Merkmal setzen: `app.can_manage_staff_master_data` statt `app.can_manage_staff_accounts` · Aufwand `klein`.
 
@@ -2756,7 +2756,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken
 
 **Begründung.** Jannes (2026-10-03): „Wenn man auf Anmeldebogen tippt, soll man direkt ein Foto machen können, ähnlich wie bei Verordnung. Datenschutzinformation und Behandlungsvertrag kann also weg.“ Keine neue Dokumentart: `vertrag` trägt den Behandlungsvertrag schon heute und ist organisatorisch klassifiziert. Eine neue Art hätte Katalog, Fristen und Rollenschnitt berührt, ohne dass sich am Inhalt etwas ändert. Unsicher ist zweierlei. Erstens, ob die Fassung der Datenschutzinformation am Foto ablesbar bleibt, wenn das Blatt sich ändert. Zweitens, ob ein anderer hochgeladener Vertrag den Punkt fälschlich erledigt.
 
-**Anker.** Der Punkt `registration_form` in `app.intake_checklist` (`supabase/migrations/20261005100000_akte_anmeldebogen_foto.sql`); `AnmeldebogenFoto` in `src/features/datenschutz/Anmeldebogen.tsx`; Tests in `supabase/tests/intake-checklist.test.ts`, `src/features/patients/PatientRecordLayout.test.tsx` und `src/features/datenschutz/Anmeldebogen.test.tsx`.
+**Anker.** Der Punkt `registration_form` in `app.intake_checklist` (`supabase/migrations/20261005100000_akte_anmeldebogen_foto.sql`); `AnmeldebogenFoto` in `src/features/privacy/datenschutz/Anmeldebogen.tsx`; Tests in `supabase/tests/intake-checklist.test.ts`, `src/features/patients/PatientRecordLayout.test.tsx` und `src/features/privacy/datenschutz/Anmeldebogen.test.tsx`.
 
 **Änderungspfad.** Eigene Dokumentart `anmeldebogen`: Katalogeintrag, `dokumentarten.ts` und die Bedingung in `app.intake_checklist` · Aufwand `klein`. Wieder mit Vermerken: die Optionen in `moeglicheVermerke` · Aufwand `klein`.
 
@@ -2770,7 +2770,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** Auf einem Privatrezept steht meist ein Heilmittel mit seiner Anzahl; mehrere Heilmittel werden in der Regel je Termin zusammen erbracht. Die größte Anzahl ist deshalb die beste Vorgabe, die Summe wäre bei „6 × KG + 6 × Wärme“ doppelt so groß. Unsicher: Rezepte mit gestaffelten Heilmitteln (erst MT, dann KG) – dafür bleibt das Feld änderbar.
 
-**Anker.** `terminzahl` in `src/features/treatment-bases/DatenUebertragenFenster.tsx`; Test in `src/features/treatment-bases/GrundlagenKacheln.test.tsx`.
+**Anker.** `terminzahl` in `src/features/patients/treatment-bases/DatenUebertragenFenster.tsx`; Test in `src/features/patients/treatment-bases/GrundlagenKacheln.test.tsx`.
 
 **Änderungspfad.** Summe statt Maximum oder Pflichtfeld: die eine Zeile `groessteAnzahl` · Aufwand `klein`.
 
@@ -2794,7 +2794,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-03 · Jannes (LOG-EPIC-001, Freig
 
 **Begründung.** Kleine Praxis, wenige Rollen, Lesen des Protokolls nur durch owner, unveränderliche Akte mit `created_by`, `finalized_by` und Versionen als Nachweis: Wer an welchem Tag in welcher Akte war, genügt für Art. 5, 15 und 32 DSGVO; die Zeile je Datensatz erzeugte hunderte Einträge am Tag ohne Mehrwert. PR (b) und (c): Schreibvorgänge weist das Datenmodell nach (Lücken geschlossen: `reopened_by`, `ordered_by`, Zweifel am Zugang), 26 Aktionen; Fristen 12 Monate Lesen und Sicherheit, 3 Jahre übrige; Legal Hold über die ganze Akte; Löschjournal 60 Tage. Unsicher: ob die Prüfung eine feinere Körnung als den Tag verlangt.
 
-**Anker.** `app.log_record_access` und `app.record_denied_read` in `supabase/migrations/20261006100000_log_001a_protokoll_lesen.sql`; die Lesepfade in `supabase/migrations/20261006100100_log_001a_lesepfade.sql`; Katalog `src/features/audit/actions.ts`; Tests in `supabase/tests/audit-protokoll-lesen.test.ts`.
+**Anker.** `app.log_record_access` und `app.record_denied_read` in `supabase/migrations/20261006100000_log_001a_protokoll_lesen.sql`; die Lesepfade in `supabase/migrations/20261006100100_log_001a_lesepfade.sql`; Katalog `src/features/privacy/audit/actions.ts`; Tests in `supabase/tests/audit-protokoll-lesen.test.ts`.
 
 **Änderungspfad.** Feinere Körnung: Tagesgrenze im Helfer durch Stunde ersetzen · Aufwand `klein`. Zurück zu je Datensatz: die Lesepfade wieder einzeln schreiben lassen · Aufwand `groß`.
 
@@ -2842,7 +2842,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-05 · Jannes (Auftrag UBK-EPIC-00
 
 **Begründung.** Abends den nächsten Tag samt Liege sehen und morgens den Vortag abhaken sind die beiden Fälle, die der Auftrag meint. Ein Datum in der Adresse ist kein Personenbezug (ADR-013 Punkt 9 Nr. 5) und macht den Tag mit „zurück“ erreichbar. Der Bezugszeitpunkt statt einer zweiten Logik hält ANN-117 Fassung 2 an einer Stelle. Am Freitag zeigt „Folgetag“ den Samstag – so entschieden (Jannes, 2026-10-05).
 
-**Anker.** `gewaehlterTag`, `bezugszeitpunkt` und `tagesWort` in `src/features/today/tageswahl.ts`; `TagWechsel` in `src/features/today/MyDayPage.tsx`; Tests `tageswahl.test.ts`, `MyDayPage.test.tsx` („UBK-003“).
+**Anker.** `gewaehlterTag`, `bezugszeitpunkt` und `tagesWort` in `src/features/calendar/today/tageswahl.ts`; `TagWechsel` in `src/features/calendar/today/MyDayPage.tsx`; Tests `tageswahl.test.ts`, `MyDayPage.test.tsx` („UBK-003“).
 
 **Änderungspfad.** Wochenende überspringen oder größere Sprünge: `tagePlus` in `TagWechsel` durch eine Werktagsfunktion ersetzen · Aufwand `klein`. Haken auch an künftigen Tagen: die Bedingung `datum > heute` in `MeinTag` · Aufwand `klein`.
 
@@ -2854,7 +2854,7 @@ Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · 
 
 **Begründung.** ADR-019 Punkt 3 nennt Fahrzeiten im Kalender als Ziel, Punkt 12, 13 und 16 werden eingehalten (nur Koordinaten und Profil, nichts gespeichert). Vergangene Tage werden nicht mehr geplant und kosten beim Anbieter nur Kontingent. Der Startort entspricht ANN-196 („Start am Rad“), ohne eine Beschäftigtenadresse beim Dienst (ADR-019, `startort.ts`). Unsicher: ob eine Tagesansicht mit vielen Personen das Kontingent des Anbieters spürbar belastet – je Person und Tag eine Route, im Zwischenspeicher der Sitzung.
 
-**Anker.** `FAHRWEGE_IM_KALENDER`, `fahrwegeAusRoute` und `useFahrwege` in `src/features/appointments/fahrwege.ts`; Darstellung `fahrwege` in `CalendarGrid.tsx`; Tests `fahrwege.test.ts`, `CalendarGrid.test.tsx`, `CalendarPage.test.tsx` („Fahrwege als Bloecke“).
+**Anker.** `FAHRWEGE_IM_KALENDER`, `fahrwegeAusRoute` und `useFahrwege` in `src/features/calendar/appointments/fahrwege.ts`; Darstellung `fahrwege` in `CalendarGrid.tsx`; Tests `fahrwege.test.ts`, `CalendarGrid.test.tsx`, `CalendarPage.test.tsx` („Fahrwege als Bloecke“).
 
 **Änderungspfad.** Abschalten: `FAHRWEGE_IM_KALENDER = false` · Aufwand `klein`. Erst auf Tipp abrufen oder nur mit Personenfilter: die Bedingung `gefragt` in `useFahrwege` · Aufwand `klein`. Ohne ersten Weg vom Startort: `start` in `useFahrwege` auf `null` · Aufwand `klein`. **UBK-015 (2026-10-05):** Der erste Weg beginnt an der Garage, falls gesetzt, und nach dem letzten Besuch steht der Rückweg als Block (ANN-240).
 
@@ -2866,7 +2866,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes (Sichtung: Fahrzei
 
 **Begründung.** Eine Fahrzeit aus einer veralteten Koordinate sieht aus wie eine richtige und verleitet zur falschen Planung (Sichtung 2026-10-05: 10 Minuten statt rund einer halben Stunde); ungeprüft ist nicht „kurz“ (MAP-004b, ADR-019 Punkt 38 sinngemäß). Der Snapshot am Termin bleibt die Regel (ANN-003, ABN-004); umgestellt wird weiter nie von selbst. Die neue Angabe ist ein Ja/Nein ohne Namen und Adresse (ADR-019 Punkt 12, ADR-004 Projektionen).
 
-**Anker.** `supabase/migrations/20261008100000_ubk_007_day_route_address_outdated.sql`; `UmstellenNachVerorten` in `src/features/patients/AdresseVerorten.tsx`; `VERALTET_TEXT` in `src/features/today/tagesstart.ts`; `veralteteWege` in `src/features/appointments/fahrwege.ts`; Tests `supabase/tests/day-route.test.ts`, `AdresseVerorten.test.tsx`, `fahrwege.test.ts`, `CalendarGrid.test.tsx`, `MyDayPage.test.tsx`.
+**Anker.** `supabase/migrations/20261008100000_ubk_007_day_route_address_outdated.sql`; `UmstellenNachVerorten` in `src/features/patients/AdresseVerorten.tsx`; `VERALTET_TEXT` in `src/features/calendar/today/tagesstart.ts`; `veralteteWege` in `src/features/calendar/appointments/fahrwege.ts`; Tests `supabase/tests/day-route.test.ts`, `AdresseVerorten.test.tsx`, `fahrwege.test.ts`, `CalendarGrid.test.tsx`, `MyDayPage.test.tsx`.
 
 **Änderungspfad.** Ohne Warnblock im Kalender: `veralteteWege` nicht mehr aufnehmen · Aufwand `klein`. Beim Verorten automatisch umstellen statt fragen: `UmstellenNachVerorten` ruft das Umstellen selbst auf · Aufwand `klein`, berührt aber ANN-003 (vorher entscheiden). Die alte Koordinate trotzdem zeigen: die `case`-Zweige in `list_day_route` · Aufwand `klein`.
 
@@ -2878,7 +2878,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes (Faktor 1,5, Wiede
 
 **Begründung.** PTV rechnet mit `OSM_CARGO_BICYCLE` praktisch mit festen ~23 km/h (gemessen an vier Abschnitten 22,6 bis 23,5 km/h), Google lag bei rund 15 km/h (Walhau 43 → Steinäckerstraße 91: 33 statt 22 Minuten); Google bleibt als Rechendienst ausgeschlossen (ADR-019 Punkt 10), ein Steigungsmodell und eine Rüstzeit will Jannes nicht. Angewendet wird im Browser, weil die Fahrzeit dort entsteht und die Datenbank sie nur hereingereicht bekommt (ANN-097); ein Zuschlag im Server wäre eine zweite Stelle, und die Anzeige hätte ihn nicht. Je Organisation statt je Standort, weil dieselben Räder überall fahren (ADR-003: kein Vorbau für mehrere Standorte). Unsicher: ob ein fester Faktor kurze Wege (Ampeln, Abstellen zählen relativ mehr) unter- und lange überschätzt.
 
-**Anker.** `planungsfahrzeit` in `src/features/tours/fahrzeitfaktor.ts` (dazu `usePlanungsroute`, `usePlanungsrouten`, `usePlanungsmatrix`; Rückfall `useFahrzeitfaktor`); `supabase/migrations/20261009100000_ubk_010_travel_time_factor.sql`; Einstellung `FahrzeitfaktorEinstellung.tsx` unter Planung; Tests `fahrzeitfaktor.test.tsx` (mit Quelltextprüfung: Route und Matrix im Fachcode nur über diese Datei), `supabase/tests/travel-time-factor.test.ts`, `CalendarPage.test.tsx`, `fahrpuffer.test.tsx`.
+**Anker.** `planungsfahrzeit` in `src/features/calendar/tours/fahrzeitfaktor.ts` (dazu `usePlanungsroute`, `usePlanungsrouten`, `usePlanungsmatrix`; Rückfall `useFahrzeitfaktor`); `supabase/migrations/20261009100000_ubk_010_travel_time_factor.sql`; Einstellung `FahrzeitfaktorEinstellung.tsx` unter Planung; Tests `fahrzeitfaktor.test.tsx` (mit Quelltextprüfung: Route und Matrix im Fachcode nur über diese Datei), `supabase/tests/travel-time-factor.test.ts`, `CalendarPage.test.tsx`, `fahrpuffer.test.tsx`.
 
 **Änderungspfad.** Anderer Wert: Einstellung unter Organisatorisches → Planung · Aufwand keiner. Anderer Bereich oder feinere Schritte: Check in der Migration, `FAHRZEITFAKTOR_WERTE` · Aufwand `klein`. Faktor nach Weglänge oder zusätzlich ein fester Zuschlag je Weg: allein `planungsfahrzeit` · Aufwand `klein`. Faktor je Standort: Spalte an `locations`, Lesen in `fahrzeitfaktor-api.ts` · Aufwand `mittel`.
 
@@ -2890,7 +2890,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** Zuschnitt Jannes (UBK-EPIC-002): nur Auskunft, live beim Verstellen, kein Name eines anderen Termins nötig („vom Termin davor (bis 10:00 Uhr)“). Die Rundung bleibt an einer Stelle (§8.1, ANN-097); `check_travel_fit` liest dafür keine Termine, sondern bekommt Zeiten und Fahrzeiten herein und gibt einem Aufrufer nichts, was er nicht schon hat. Die Koordinate der Akte gibt die Terminsuche denselben Rollen bereits (`find_free_slots`), ANN-016 bleibt für die Kartei bestehen. Zum Kartendienst geht eine Route über höchstens drei Koordinaten (ADR-019 Punkt 12, 13), mit Fahrzeitfaktor (ANN-237). Unsicher: ob der Arbeitsbeginn als Tagesrand im Alltag stört, wenn der erste Termin bewusst auf den Arbeitsbeginn gelegt ist.
 
-**Anker.** `supabase/migrations/20261009110000_ubk_012_travel_fit.sql` (`get_visit_position`, `check_travel_fit`); `luftStufe`, `nachbarnDes`, `tagesrand`, `useWegpruefung` in `src/features/appointments/wegpruefung.ts`; Anzeige `Wegauskunft.tsx`; `tagesorte` in `src/features/tours/startort.ts`; Tests `supabase/tests/travel-fit.test.ts`, `wegpruefung.test.tsx`, `Wegauskunft.test.tsx`, `NewAppointmentPage.test.tsx`, `EditAppointmentPage.test.tsx`. **UBK-013:** Beim Ziehen im Kalender steht dieselbe Auskunft in einer Leiste am unteren Rand (gefragt nach 250 ms Stillstand, nicht vorgelesen) und in der Rückfrage nach dem Loslassen; ohne Recht auf die Tagesroute (Trainingsbetreuung) fragt das Ziehen nicht — `wegfrageFuer` in `CalendarPage.tsx`, `WegauskunftFuer` in `Wegauskunft.tsx`, Test „UBK-013“ in `CalendarPage.test.tsx`.
+**Anker.** `supabase/migrations/20261009110000_ubk_012_travel_fit.sql` (`get_visit_position`, `check_travel_fit`); `luftStufe`, `nachbarnDes`, `tagesrand`, `useWegpruefung` in `src/features/calendar/appointments/wegpruefung.ts`; Anzeige `Wegauskunft.tsx`; `tagesorte` in `src/features/calendar/tours/startort.ts`; Tests `supabase/tests/travel-fit.test.ts`, `wegpruefung.test.tsx`, `Wegauskunft.test.tsx`, `NewAppointmentPage.test.tsx`, `EditAppointmentPage.test.tsx`. **UBK-013:** Beim Ziehen im Kalender steht dieselbe Auskunft in einer Leiste am unteren Rand (gefragt nach 250 ms Stillstand, nicht vorgelesen) und in der Rückfrage nach dem Loslassen; ohne Recht auf die Tagesroute (Trainingsbetreuung) fragt das Ziehen nicht — `wegfrageFuer` in `CalendarPage.tsx`, `WegauskunftFuer` in `Wegauskunft.tsx`, Test „UBK-013“ in `CalendarPage.test.tsx`.
 
 **Änderungspfad.** Ohne Tagesrand: in `useWegpruefung` nur Termine als Nachbarn · Aufwand `klein`. Andere Stufen: `luftStufe` · Aufwand `klein`. Sperre statt Auskunft: die Fahrzeit müsste im Server entstehen (Änderungspfad von ANN-097) · Aufwand `mittel`. Auch am Trainingsformular: `Wegauskunft` dort einbinden, Rechte von `get_visit_position` für den Trainingskontakt prüfen · Aufwand `mittel`.
 
@@ -2902,7 +2902,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** Zuschnitt Jannes (UBK-EPIC-002, Teil 2 von CAL-015c, `IDEA-PRX-042`): passt / knapp / nicht, kein Name in der URL, bei Fehler „nicht geprüft“; die Woche ausdrücklich nicht. Die Stufen sind die des Wegbalkens (ANN-195) und von „Passt es?“ (ANN-238). 60 Minuten sind die Vorbelegung des Formulars (§8.1); der Lückenfinder kennt die Verordnung nicht. Ohne BEF-053 Punkt 1 färbte er Zeiten, die nur ausgeblendet, aber belegt sind; gezeigt wird nichts Neues, der Ausschnitt ist ohnehin geladen (AKTE-003). Die Matrix ist gegen den echten Dienst nie geprüft (PTV aus der Cloud gesperrt) — deshalb der eigene Sichtungsschritt. Unsicher: ob eine Fehlzeit als Grenze zu streng ist und ob 60 Minuten für Erstbefunde zu kurz sind.
 
-**Anker.** `freieLuecken` in `src/lib/zeitband.ts`; `umfeldDer`, `useLueckenfinder`, `MIN_LUECKE_MINUTEN` in `src/features/appointments/lueckenfinder.ts`; `usePlanungsmatrizen` in `src/features/tours/fahrzeitfaktor.ts`; `lueckenDarstellung` und `zurueckgenommen` in `CalendarGrid.tsx`; `lueckenSpalten`, `lueckenHinweis` in `CalendarPage.tsx`; Tests `zeitband.test.ts`, `lueckenfinder.test.tsx`, `CalendarPage.test.tsx` („UBK-014“, „AKTE-003“).
+**Anker.** `freieLuecken` in `src/lib/zeitband.ts`; `umfeldDer`, `useLueckenfinder`, `MIN_LUECKE_MINUTEN` in `src/features/calendar/appointments/lueckenfinder.ts`; `usePlanungsmatrizen` in `src/features/calendar/tours/fahrzeitfaktor.ts`; `lueckenDarstellung` und `zurueckgenommen` in `CalendarGrid.tsx`; `lueckenSpalten`, `lueckenHinweis` in `CalendarPage.tsx`; Tests `zeitband.test.ts`, `lueckenfinder.test.tsx`, `CalendarPage.test.tsx` („UBK-014“, „AKTE-003“).
 
 **Änderungspfad.** Andere Dauer, etwa aus der Verordnung: `dauer` in `useLueckenfinder` aus dem Kalenderstand · Aufwand `klein`. Ein Band je Tag statt je Lücke: Darstellung in `CalendarGrid.tsx` · Aufwand `klein`. Auch in der Woche: `lueckenSpalten` für Tage statt Personen · Aufwand `klein`, kostet zwei Matrizen je Tag. Andere Termine wieder ausblenden: `zurueckgenommen` in `CalendarPage.tsx` · Aufwand `klein`.
 
@@ -2916,7 +2916,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** Zuschnitt Jannes (UBK-EPIC-002): „eine Praxisadresse, keine persönliche“ (§20) — eine Wohnadresse von Mitarbeitenden wäre ein Beschäftigtendatum beim Kartendienst; die Oberfläche sagt das, erzwingen lässt es sich nicht. Den Startort auf die Garage zu setzen, verschöbe die Praxistermine an die Garage. Je Standort statt je Person, weil die Räder der Praxis gehören (`IDEA-PRX-017` bleibt für einen Startort je Tag). Kein Auditeintrag (ADR-010 Fassung 3, wie der Startort); Datenklasse und Frist des Standorts.
 
-**Anker.** `supabase/migrations/20261009120000_ubk_015_garage.sql` (`set_location_garage`, `clear_location_garage`, Trigger `locations_drop_garage_coordinate`); `garagenpunkt`, `tagesorte`, `saveGarage`, `clearGarage` in `src/features/tours/startort.ts`; `GarageEinstellung` in `StartortEinstellung.tsx`; `Ortswahl` in `TourenPage.tsx`; `rueckweg` in `useFahrten` (`fahrpuffer.ts`) und in `fahrwegeAusRoute` (`src/features/appointments/fahrwege.ts`); Tests `supabase/tests/garage.test.ts`, `TourenPage.test.tsx`, `StartortEinstellung.test.tsx`, `fahrwege.test.ts`, `tagesroute.test.ts`, `CalendarGrid.test.tsx`.
+**Anker.** `supabase/migrations/20261009120000_ubk_015_garage.sql` (`set_location_garage`, `clear_location_garage`, Trigger `locations_drop_garage_coordinate`); `garagenpunkt`, `tagesorte`, `saveGarage`, `clearGarage` in `src/features/calendar/tours/startort.ts`; `GarageEinstellung` in `StartortEinstellung.tsx`; `Ortswahl` in `TourenPage.tsx`; `rueckweg` in `useFahrten` (`fahrpuffer.ts`) und in `fahrwegeAusRoute` (`src/features/calendar/appointments/fahrwege.ts`); Tests `supabase/tests/garage.test.ts`, `TourenPage.test.tsx`, `StartortEinstellung.test.tsx`, `fahrwege.test.ts`, `tagesroute.test.ts`, `CalendarGrid.test.tsx`.
 
 **Änderungspfad.** Rückweg auch in der Übersicht: `tagesorte(...).ende` in `useTagesfahrzeiten` · Aufwand `klein`. Ein Startort je Tag oder Person: eigenes Epic nach §20-Prüfung (`IDEA-PRX-017`) · Aufwand `mittel`. Tour ohne Wahl, immer Garage: `Ortswahl` entfernen · Aufwand `klein`.
 
@@ -2988,7 +2988,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** DSN-001 D4 und PROJECT_PRINCIPLES.md 8.2: Die Plattform bietet eine Anfrage, keinen Kalenderzugriff; ein vereinbarter Termin entsteht nur durch die Praxis. Ein eigener Datensatz hält den Kalender frei von unbestätigten Einträgen und macht den Wunsch mit Urheber (Person, Begleitung, Vertretung) nachvollziehbar. 14 Tage sind der Horizont, in dem eine Praxis realistisch Termine vergibt; längere Wünsche gehören in die Notiz. Ein Jahr ist die kürzeste Frist, mit der ein Wunsch für Rückfragen zum Ausfallhonorar (Absagewunsch, ANN-247) erhalten bleibt. Unsicher: ob die Praxis einen Wunsch lieber an den angelegten Termin heften möchte (`resulting_appointment_id` ist dafür da, aber die Oberfläche fragt nicht danach).
 
-**Anker.** `supabase/migrations/20261010110000_por_009_platform_appointment_requests.sql` (Tabelle, `request_platform_appointment`, `platform_appointment_requests`, `withdraw_platform_appointment_request`, Klasse `terminwunsch` in `apply_retention`); `WUNSCHTAGE` in `src/features/platform/Wunschfelder.tsx`; `terminwunsch` in `src/features/retention/klassen.ts`; Tests `supabase/tests/platform-appointment-requests.test.ts`, `retention-run.test.ts`, `Terminwunsch.test.tsx`.
+**Anker.** `supabase/migrations/20261010110000_por_009_platform_appointment_requests.sql` (Tabelle, `request_platform_appointment`, `platform_appointment_requests`, `withdraw_platform_appointment_request`, Klasse `terminwunsch` in `apply_retention`); `WUNSCHTAGE` in `src/features/portal/platform/Wunschfelder.tsx`; `terminwunsch` in `src/features/privacy/retention/klassen.ts`; Tests `supabase/tests/platform-appointment-requests.test.ts`, `retention-run.test.ts`, `Terminwunsch.test.tsx`.
 
 **Änderungspfad.** Anderer Horizont: `WUNSCHTAGE` und der Check `cardinality(preferred_days) <= 14` in einer neuen Migration · Aufwand `klein`. Längere oder kürzere Frist: die Regel `terminwunsch` in `apply_retention` · Aufwand `klein`. Wunsch als Terminzustand `requested`: eigenes Epic mit ADR-018-Änderung · Aufwand `groß`.
 
@@ -3000,7 +3000,7 @@ Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Pr
 
 **Begründung.** Wer rechtzeitig absagt, darf nicht dafür zahlen, dass das Büro den Wunsch erst am nächsten Morgen liest – das ist der Sinn eines Absagewegs rund um die Uhr (PROJECT_PRINCIPLES.md 4.6). Ein Hinweis vor dem Abschicken ist Transparenzpflicht gegenüber der Person (§ 630c BGB sinngemäß, AGB-Recht); er muss mit dem Wortlaut übereinstimmen, den die Person bei der Aufnahme gelesen hat, sonst widerspricht sich die Praxis. Unsicher: ob eine Absage über die Plattform rechtlich als „Zugang“ beim Praxisinhaber gilt, bevor jemand sie liest (§ 130 BGB: Zugang bei Abrufbarkeit unter gewöhnlichen Umständen – spricht dafür), und ob die Frist am Wochenende anders gelten müsste.
 
-**Anker.** `supabase/migrations/20261010130000_por_011_practice_requests.sql` (`cancel_appointment_from_request`: `received_on`/`received_at` aus `created_at` des Wunsches); `late_notice` in `20261010120000_por_010_platform_appointment_change.sql`; `src/lib/ausfallhonorar.ts` (ein Wortlaut für Plattform und `src/features/datenschutz/patienteninformation.ts`); Tests `supabase/tests/platform-requests-practice.test.ts` („D4“), `platform-appointment-change.test.ts`, `Terminaenderung.test.tsx`, `PlatformRequests.test.tsx`.
+**Anker.** `supabase/migrations/20261010130000_por_011_practice_requests.sql` (`cancel_appointment_from_request`: `received_on`/`received_at` aus `created_at` des Wunsches); `late_notice` in `20261010120000_por_010_platform_appointment_change.sql`; `src/lib/ausfallhonorar.ts` (ein Wortlaut für Plattform und `src/features/privacy/datenschutz/patienteninformation.ts`); Tests `supabase/tests/platform-requests-practice.test.ts` („D4“), `platform-appointment-change.test.ts`, `Terminaenderung.test.tsx`, `PlatformRequests.test.tsx`.
 
 **Änderungspfad.** Eingang = Bearbeitungszeit: in `cancel_appointment_from_request` `now()` statt `created_at` · Aufwand `klein`. Anderer Wortlaut: nur `src/lib/ausfallhonorar.ts` · Aufwand `klein`. Frist mit Wochenendregel: `app.cancellation_notice_period` / `app.is_late_cancellation` (ADR-018-Änderung) · Aufwand `mittel`.
 
@@ -3012,7 +3012,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** DSN-001 4.1: „Befundbogen vorab, etwa 10 Minuten“. Eine Begleitung liest mit und schreibt Terminwünsche, aber Angaben zur eigenen Gesundheit macht die Person selbst (ADR-023 Punkt 19, ANN-206). Herkunft am Datensatz statt im Protokoll (ADR-010 Fassung 3). Abschluss beim Absenden, weil eine Erhebung, die die Person nachträglich ändern kann, für die Therapeut:in keine verlässliche Grundlage ist; wer sich vertippt hat, sagt es beim Termin (Dokumentationsgrundsatz wie ANN-119). Unsicher: ob die Vorabangaben eine eigene Information nach Art. 13 DSGVO brauchen (die Patienteninformation nennt die Plattform bereits).
 
-**Anker.** `supabase/migrations/20261010140000_por_012_platform_questionnaire.sql` (`source`, `source_access_id`, Recht `questionnaire` in `app.platform_access_allows`, `app.platform_questionnaire_instrument`, `platform_questionnaire`, `save_platform_questionnaire_response`, `complete_platform_questionnaire_response`, `discard_platform_questionnaire_response`); `fuerDiePlattform` in `src/features/platform/instrumentwahl.ts`; Vermerk in `src/features/assessments/PatientBefundPage.tsx`; Tests `supabase/tests/platform-questionnaire.test.ts`, `Befundbogen.test.tsx`, `PatientBefundPage.test.tsx`.
+**Anker.** `supabase/migrations/20261010140000_por_012_platform_questionnaire.sql` (`source`, `source_access_id`, Recht `questionnaire` in `app.platform_access_allows`, `app.platform_questionnaire_instrument`, `platform_questionnaire`, `save_platform_questionnaire_response`, `complete_platform_questionnaire_response`, `discard_platform_questionnaire_response`); `fuerDiePlattform` in `src/features/portal/platform/instrumentwahl.ts`; Vermerk in `src/features/clinical/assessments/PatientBefundPage.tsx`; Tests `supabase/tests/platform-questionnaire.test.ts`, `Befundbogen.test.tsx`, `PatientBefundPage.test.tsx`.
 
 **Änderungspfad.** Auch für Begleitungen: `questionnaire` in `app.platform_access_allows` zur Gruppe `request` · Aufwand `klein`. Änderbar nach dem Absenden: `complete_platform_questionnaire_response` setzt `entwurf` statt `abgeschlossen`, Akte zeigt den Stand · Aufwand `mittel`. Weitere Instrumente: `ausgefuellt_von: 'patient'` in der Definition, keine Codeänderung · Aufwand `klein`.
 
@@ -3024,7 +3024,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** DSN-001 D3: „freigegebene Dokumente“, nicht die Akte. Freigabe statt Übergabe-Kopie, weil das Original in der Ablage bleibt (ADR-017 Punkt 10) und der Widerruf sonst wirkungslos wäre. Fotos ausgeschlossen, weil ihre Einwilligung einen anderen Zweck hat (ADR-017 Fassung 3, ANN-216) und ein Foto ohne Kontext der Person nicht hilft. `patient_file.downloaded` steht schon im Katalog; die Plattform ist nur ein weiterer Akteur (ADR-010 Fassung 3, ADR-023 Punkt 24). Unsicher: ob ein Arztbrief Dritter (der Ärzt:in) ohne Weiteres an die Person herausgegeben werden darf – § 630g BGB gibt der Person Einsicht in die vollständige Akte, spricht dafür.
 
-**Anker.** `supabase/migrations/20261010160000_por_014_platform_files.sql` (`released_at`/`released_by`, Constraints `patient_files_release_stamp`, `patient_files_release_not_photo`, `set_patient_file_release`, `platform_files`, `issue_platform_file_link`, Plattformzweig in `app.may_read_patient_file_object`); `setzeFreigabe` in `src/features/files/api.ts`; `darfFreigeben`/`istFoto` in `Dateiliste.tsx`; `ladeDokumentHerunter`/`ladeDokumentZumAnzeigen` in `src/features/platform/api.ts`; Tests `supabase/tests/platform-files.test.ts`, `Dateiliste.test.tsx`, `Dokumente.test.tsx`.
+**Anker.** `supabase/migrations/20261010160000_por_014_platform_files.sql` (`released_at`/`released_by`, Constraints `patient_files_release_stamp`, `patient_files_release_not_photo`, `set_patient_file_release`, `platform_files`, `issue_platform_file_link`, Plattformzweig in `app.may_read_patient_file_object`); `setzeFreigabe` in `src/features/patients/files/api.ts`; `darfFreigeben`/`istFoto` in `Dateiliste.tsx`; `ladeDokumentHerunter`/`ladeDokumentZumAnzeigen` in `src/features/portal/platform/api.ts`; Tests `supabase/tests/platform-files.test.ts`, `Dateiliste.test.tsx`, `Dokumente.test.tsx`.
 
 **Änderungspfad.** Büro darf freigeben: Rollenprüfung in `set_patient_file_release` · Aufwand `klein`. Freigabe je Dokumentart statt je Datei: eigene Regel in `platform_files` · Aufwand `mittel`. Ohne Protokoll des Abrufs: `issue_platform_file_link` ohne Audit-Insert – nur mit ADR-010-Änderung · Aufwand `klein`.
 
@@ -3038,7 +3038,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** DSN-001 D3: eigene Rechnungen ohne eigenen Schritt. Der Snapshot ist der Beleg, den die Person auch auf Papier bekäme – eine zweite Darstellung widerspräche ADR-009 Punkt 12 (Beträge nur vom Server). Entwürfe sind interne Arbeit der Praxis. Zahlungsstand aus denselben Funktionen wie die Praxisseite (`app.invoice_paid_cents`, `app.invoice_payment_state`), damit die Person nichts anderes liest als das Büro. Unsicher: ob eine Beihilferechnung die Person verwirrt, wenn sie nicht zahlen soll – die Zeile „an Beihilfestelle“ sagt es, erklärt es aber nicht.
 
-**Anker.** `supabase/migrations/20261010150000_por_013_platform_invoices.sql` (`platform_invoices`, `platform_invoice`); `zahlungsstand`, `anJemandAnderen`, `positionen` in `src/features/platform/zahlungsstand.ts`; Tests `supabase/tests/platform-invoices.test.ts`, `Rechnungen.test.tsx`.
+**Anker.** `supabase/migrations/20261010150000_por_013_platform_invoices.sql` (`platform_invoices`, `platform_invoice`); `zahlungsstand`, `anJemandAnderen`, `positionen` in `src/features/portal/platform/zahlungsstand.ts`; Tests `supabase/tests/platform-invoices.test.ts`, `Rechnungen.test.tsx`.
 
 **Änderungspfad.** Rechnung nur für den Adressaten: Filter `recipient.kind = 'self'` in beiden Funktionen · Aufwand `klein`. Ohne Diagnose oder Geburtsdatum auf der Plattform: die Schlüssel in `platform_invoice` aus `document` entfernen (`- 'treatment_bases'`) · Aufwand `klein`. Ohne Bankverbindung auf der Plattform: Schlüssel aus `document` in `platform_invoice` entfernen · Aufwand `klein`. Online bezahlen: eigenes Epic nach Anbieterprüfung (ADR-002) · Aufwand `groß`.
 
@@ -3050,7 +3050,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** DSN-001 4.1 und D3: „nächster Termin“, „alle Termine“. Zwölf Monate decken eine Verordnungsserie und die Rückfrage zur letzten Rechnung ab; ältere Termine stehen auf den Rechnungen (ANN-250). Zustände werden übersetzt, weil `documented`/`invoiced` Begriffe der Praxis sind, die Person aber wissen will, ob der Termin stattgefunden hat. Datensparsamkeit (PROJECT_PRINCIPLES.md 3.2): Was die Person nicht braucht, verlässt den Server nicht. Unsicher: ob zwölf Monate zu kurz sind, wenn eine Behandlung pausiert und wieder aufgenommen wird.
 
-**Anker.** `supabase/migrations/20261010100000_por_008_platform_appointments.sql` (`app.platform_appointment_history`, `platform_appointments`; neu gefasst in `20261010120000_por_010_platform_appointment_change.sql`); `terminBeschreibung` in `src/features/platform/terminbeschreibung.ts`; Tests `supabase/tests/platform-appointments.test.ts` (Spaltenliste, Fremdzugriff), `Termine.test.tsx`.
+**Anker.** `supabase/migrations/20261010100000_por_008_platform_appointments.sql` (`app.platform_appointment_history`, `platform_appointments`; neu gefasst in `20261010120000_por_010_platform_appointment_change.sql`); `terminBeschreibung` in `src/features/portal/platform/terminbeschreibung.ts`; Tests `supabase/tests/platform-appointments.test.ts` (Spaltenliste, Fremdzugriff), `Termine.test.tsx`.
 
 **Änderungspfad.** Anderer Zeitraum: `app.platform_appointment_history` in einer neuen Migration · Aufwand `klein`. Weitere Spalten (etwa das Honorar): Spaltenliste in `platform_appointments` und Test der Datensparsamkeit · Aufwand `klein`, vorher ADR-023 Punkt 22 prüfen.
 
@@ -3086,7 +3086,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (Leinwand, Reihe 6
 
 **Begründung.** BEF-054: Am Handy kamen zuerst Filter und Karte, die Liste - wofür man die Tour öffnet - erst nach zwei Bildschirmen. Variante A der Runde 3, gewählt von Jannes. Unsicher: ob die Karte am Tablet über oder unter der Liste besser steht.
 
-**Anker.** Felder `tour-felder`, `felderOffen` und das Raster der zwei Spalten in `src/features/tours/TourenPage.tsx`; Kopfzeile aus `src/features/tours/tourKopf.ts`.
+**Anker.** Felder `tour-felder`, `felderOffen` und das Raster der zwei Spalten in `src/features/calendar/tours/TourenPage.tsx`; Kopfzeile aus `src/features/calendar/tours/tourKopf.ts`.
 
 **Änderungspfad.** Karte am Tablet unter die Liste: `sm:order-first` am Kartenbereich streichen · Aufwand `klein`. Felder auch am Handy offen: `felderOffen` mit `true` beginnen · Aufwand `klein`.
 
@@ -3098,7 +3098,7 @@ Technik · entschieden (Claude) · 2026-10-06 · Claude (Runde 3, Handoff Kalend
 
 **Begründung.** Der Handoff verlangt den Hinweis nur bis zum ersten Lernen. `localStorage` statt `sessionStorage`, weil eine gelernte Geste in einem neuen Tab nicht wieder erklärt werden muss. Der Wert trägt keinen Inhalt über Person, Praxis oder Akte (ANN-019 bleibt gewahrt); er ist wie der Startbild-Merker (ANN-243) ein reiner Bedienzustand. Unsicher: ob ein geteiltes Praxisgerät den Hinweis für eine neue Kollegin wieder zeigen sollte.
 
-**Anker.** `GESTEN_MERKER`, `spanneGelernt` und `spanneMerken` in `src/features/appointments/gestenMerker.ts`, gelesen in `src/features/appointments/AnlegenMenue.tsx`.
+**Anker.** `GESTEN_MERKER`, `spanneGelernt` und `spanneMerken` in `src/features/calendar/appointments/gestenMerker.ts`, gelesen in `src/features/calendar/appointments/AnlegenMenue.tsx`.
 
 **Änderungspfad.** Je Sitzung neu: `localStorage` durch `sessionStorage` ersetzen · Aufwand `klein`. Beim Abmelden löschen: den Merker in `raeumen` des `SessionProvider` entfernen wie den Startbild-Merker · Aufwand `klein`.
 
@@ -3122,7 +3122,7 @@ Technik · entschieden (Claude) · 2026-10-06 · Claude (SEC-EPIC-001, ADR-025 P
 
 **Begründung.** ADR-025 Punkt 4 verlangt beides: sichern, und wenn das nicht gelingt, den Text im Speicher halten und nach der Freigabe zeigen. Ein Merker je Seite für den Text hieße, in jede der rund zwanzig geschützten Seiten einzugreifen; die verborgen stehende Seite hält ihn ohne Umbau. Der Preis: In diesem Fall bleiben die Daten dieser Seite bis zur Freigabe im Arbeitsspeicher, unsichtbar und nicht bedienbar; der Server gibt keine neue Zeile heraus. Der Vorlauf, weil ein Entwurf nur angenommen wird, solange der Server die Sitzung noch offen sieht. Kennwort ohne zweiten Faktor, weil die Anmeldung ihn heute auch nicht verlangt (ANN-028, bestätigt 2026-10-06). Passkeys stehen beim Anmeldedienst als Beta und brauchen Einstellungen im Dashboard (OPS-001); bis dahin genügt das Kennwort. `jwt_expiry` bleibt 3600 Sekunden: Die Sperre hängt nicht daran, sie liegt in der Datenbank. Unsicher: ob Jannes am Hausbesuch nach 60 Minuten das Kennwort tippen mag — dafür ist der Passkey gedacht.
 
-**Anker.** `VORLAUF_MS`, `SICHERUNG_HOECHSTENS_MS` in `src/features/auth/sitzungssperre/sperrstand.ts`; Phasen `gesperrt` und `halten` in `src/features/auth/sitzungssperre/Sitzungssperre.tsx`; Freigabe in `Sperrseite.tsx`; Sicherungen über `useSperrsicherung` in `Textverlustschutz.tsx` und `Fotoverlustschutz.tsx`.
+**Anker.** `VORLAUF_MS`, `SICHERUNG_HOECHSTENS_MS` in `src/features/core/auth/sitzungssperre/sperrstand.ts`; Phasen `gesperrt` und `halten` in `src/features/core/auth/sitzungssperre/Sitzungssperre.tsx`; Freigabe in `Sperrseite.tsx`; Sicherungen über `useSperrsicherung` in `Textverlustschutz.tsx` und `Fotoverlustschutz.tsx`.
 
 **Änderungspfad.** Ungesicherten Text verwerfen statt halten: in `sperren` immer `gesperrt` wählen · Aufwand `klein`. Passkey: hinter einem Schalter in `Sperrseite` `signInWithPasskey` anbieten, sobald OPS-001 ihn bestätigt · Aufwand `mittel`. Längerer Vorlauf: `VORLAUF_MS` · Aufwand `klein`.
 
@@ -3136,7 +3136,7 @@ Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Design-Runde Doku
 
 **Begründung.** Jannes hat für BEF-057 Option 2 gewählt („dichter am Handy“). Die Skala aus Option 3 kommt dazu, weil elf Stufen zu je 29 px die Mindestgröße von 44 px (Oberflächen-Checkliste Punkt 1) verfehlen und ein Fehltipp einen Messwert verfälscht, der im Verlauf weiterlebt; die Empfehlung im Befund nannte genau diese Verbindung. Die zweireihige Skala sieht am Handy anders aus als der Papierbogen — Inhalt, Reihenfolge und Anker bleiben gleich. Unsicher: ob Jannes die Skala lieber einreihig mit kleineren Stufen hätte.
 
-**Anker.** `spaltenAmHandy` in `Skala` (`src/features/assessments/FragebogenFelder.tsx`); `ergebnis-knoepfe` und die Blockklassen in `src/features/assessments/BausteinFeld.tsx`; `src/features/documentation/TextbausteinLeiste.tsx`; `src/features/documentation/TreatmentNoteAddendumPage.tsx`. Geprüft in `tests/e2e/befund.spec.ts` und `tests/e2e/bausteine.spec.ts`.
+**Anker.** `spaltenAmHandy` in `Skala` (`src/features/clinical/assessments/FragebogenFelder.tsx`); `ergebnis-knoepfe` und die Blockklassen in `src/features/clinical/assessments/BausteinFeld.tsx`; `src/features/clinical/documentation/TextbausteinLeiste.tsx`; `src/features/clinical/documentation/TreatmentNoteAddendumPage.tsx`. Geprüft in `tests/e2e/befund.spec.ts` und `tests/e2e/bausteine.spec.ts`.
 
 **Änderungspfad.** Skala einreihig: `spaltenAmHandy` auf `stufen.length` · Aufwand `klein`. Blockrahmen zurück: die Klassen am `<details>` des Blocks · Aufwand `klein`.
 
@@ -3160,7 +3160,7 @@ Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Auftrag Jannes: �
 
 **Begründung.** Leitfaden L2 „Kein Kasten im Kasten“, Beispiel Jannes (Stammdaten). Eine Bestandsaufnahme am 06.10.2026 fand rund 60 Stellen; die meisten entstanden durch zwei gemeinsame Bausteine, die selbst Karten waren und fast immer in einer Karte stehen. Die Linie links trennt eine Meldung weiter sichtbar vom Inhalt, ohne einen weiteren Rahmen. Der Erklärsatz war Löschkandidat 3 (reiner Text, kein Verhalten). Unsicher: ob Jannes die rote Fehlerfläche lieber ganz ohne Füllung hätte.
 
-**Anker.** `ErrorState` in `src/components/ui/Feedback.tsx`, `Rueckfrage` in `src/components/ui/Rueckfrage.tsx` (Test „Kein Kasten im Kasten“ in `src/components/ui/bausteine.test.tsx`); `PlattformAbschnitt` in `src/features/platform-access/PlattformAbschnitt.tsx`; Liste in `docs/design/leitfaden-schlank.md`.
+**Anker.** `ErrorState` in `src/components/ui/Feedback.tsx`, `Rueckfrage` in `src/components/ui/Rueckfrage.tsx` (Test „Kein Kasten im Kasten“ in `src/components/ui/bausteine.test.tsx`); `PlattformAbschnitt` in `src/features/portal/platform-access/PlattformAbschnitt.tsx`; Liste in `docs/design/leitfaden-schlank.md`.
 
 **Änderungspfad.** Karte zurück: die Klassen der beiden Bausteine · Aufwand `klein`. Erklärsatz zurück: `hinweis` am Abschnitt · Aufwand `klein`.
 
@@ -3172,7 +3172,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** Art. 7 Abs. 3 DSGVO: Der Widerruf muss so einfach sein wie die Erteilung, auch nach dem Vertrag; eine neue Einwilligung nach dem Ende hätte keinen Zweck. Der Export setzt sich aus den Plattformprojektionen zusammen, die nach der Lesefrist nichts zeigen; eine zweite Feldliste nur für danach widerspräche ADR-023 Punkt 22. Das weicht von DSN-001 D2 ab („Ich" behält den Export) — Rechnungen und Dokumente fehlen dort schon seit POR-EPIC-002. Das Ende einer Vertretung kann aus der Volljährigkeit kommen. Unsicher: ob die Prüfung den Export nach dem Ende auf der Plattform verlangt.
 
-**Anker.** `app.platform_own_access_after_reading` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`; `entscheidend` in `src/features/platform/PlattformApp.tsx`. Geprüft in `supabase/tests/platform-consents.test.ts` und `supabase/tests/platform-export.test.ts`.
+**Anker.** `app.platform_own_access_after_reading` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`; `entscheidend` in `src/features/portal/platform/PlattformApp.tsx`. Geprüft in `supabase/tests/platform-consents.test.ts` und `supabase/tests/platform-export.test.ts`.
 
 **Änderungspfad.** D2 vollständig („Ich" mit Rechnungen, Dokumenten, Export nach der Lesefrist): Projektionen mit eigenem Zweig für den eigenen Zugang · Aufwand `mittel`.
 
@@ -3184,7 +3184,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** Art. 7 Abs. 1 DSGVO: Die Praxis muss nachweisen, worin eingewilligt wurde; ohne Fassung zeigte ein späterer Text eine andere Einwilligung. Die Rückfrage macht sie ausdrücklich (Art. 9 Abs. 2 lit. a). Der Wortlaut ist ein Entwurf und wird in B2 geprüft. Unsicher: ob eine Textänderung bestehende Einwilligungen berührt (heute nicht).
 
-**Anker.** `EINWILLIGUNGSFASSUNG` und `EINWILLIGUNGSTEXTE` in `src/features/platform/einwilligungstexte.ts`; `app.platform_consent_wording_version` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`. Gleichlauf geprüft in `src/features/platform/einwilligungstexte.test.ts`.
+**Anker.** `EINWILLIGUNGSFASSUNG` und `EINWILLIGUNGSTEXTE` in `src/features/portal/platform/einwilligungstexte.ts`; `app.platform_consent_wording_version` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`. Gleichlauf geprüft in `src/features/portal/platform/einwilligungstexte.test.ts`.
 
 **Änderungspfad.** Neuer Wortlaut: Text und Fassung an beiden Stellen anheben · Aufwand `klein`. Bestehende Einwilligungen neu einholen: eigener Loop · Aufwand `mittel`.
 
@@ -3196,7 +3196,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** DSN-001 Abschnitt 6 legt Widerrufe in die Übersicht. Wer ihn nicht erfährt, schickt den nächsten Bericht oder die nächste Mail ohne Grundlage. Ein Haken „gesehen“ wäre eine Aufgabe mehr, und das Datenmodell zeigt den Widerruf ohnehin dauerhaft. 14 Tage decken Urlaub und Wochenende. Unsicher: ob Jannes eine Quittung will.
 
-**Anker.** `app.platform_withdrawal_notice_days` und `list_platform_consent_withdrawals` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`; `src/features/open-points/consent-withdrawals-api.ts`.
+**Anker.** `app.platform_withdrawal_notice_days` und `list_platform_consent_withdrawals` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`; `src/features/workplace/open-points/consent-withdrawals-api.ts`.
 
 **Änderungspfad.** Andere Frist: die Zahl · Aufwand `klein`. Quittung: Spalte und Funktion · Aufwand `mittel`.
 
@@ -3220,7 +3220,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** ADR-010 Punkt 16 nennt unter „Exporte“ die Auskunft nach Art. 15; eine neue Aktion bräuchte eine ADR-Änderung, ohne Mehrwert. Art. 15 Abs. 3 und Art. 20 verlangen eine Kopie bzw. ein gängiges maschinenlesbares Format; die Kopie der Akte bleibt der Weg in der Praxis (ADR-023 Punkt 12). Unsicher: ob die Prüfung die Dokumente selbst im Export will (heute einzeln abrufbar).
 
-**Anker.** `public.platform_export` in `supabase/migrations/20261013120000_por_018_platform_export.sql`; `Datenexport` in `src/features/platform/Datenexport.tsx`.
+**Anker.** `public.platform_export` in `supabase/migrations/20261013120000_por_018_platform_export.sql`; `Datenexport` in `src/features/portal/platform/Datenexport.tsx`.
 
 **Änderungspfad.** Eigene Aktion: ADR-010 ändern, Katalog, Freigabe · Aufwand `mittel`. Dokumente im Export: ZIP im Browser · Aufwand `mittel`.
 
@@ -3232,7 +3232,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** DSN-001 4.3 und `IDEA-LZK-005`: Beim Hausbesuch sitzt die Therapeutin daneben, ein erzwungener Einstieg wäre ein Hindernis; eine Einwilligung, die jemand anders klickt, ist keine (Art. 7 Abs. 1). Je Zugang, weil jeder Zugang seine eigenen Einwilligungen hat (§4.8). Ein Einstieg darf nie den Weg zu den eigenen Daten versperren. Nachweis am Zugang statt im Protokoll (ADR-010 Fassung 3). Unsicher: ob zwei Einstiege bei zwei Verhältnissen stören.
 
-**Anker.** `skip_platform_onboarding` und `platform_onboarding` in `supabase/migrations/20261013130000_por_019_platform_onboarding.sql`; `UebersichtOderEinstieg` in `src/features/platform/PlattformApp.tsx`; `src/features/platform/Einstieg.tsx`.
+**Anker.** `skip_platform_onboarding` und `platform_onboarding` in `supabase/migrations/20261013130000_por_019_platform_onboarding.sql`; `UebersichtOderEinstieg` in `src/features/portal/platform/PlattformApp.tsx`; `src/features/portal/platform/Einstieg.tsx`.
 
 **Änderungspfad.** Einstieg je Konto: Stand an `user_profiles` statt am Zugang · Aufwand `mittel`. Benachrichtigungen: Schritt mit ADR-024 · Aufwand `klein`.
 
@@ -3304,7 +3304,7 @@ Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Pr
 
 **Begründung.** § 312k BGB verlangt den Knopf nur, wenn sich der Vertrag auf der Website schließen lässt; die Praxis baut ihn trotzdem, weil „monatlich kündbar mit Kündigungsknopf“ die Vorgabe ist (Roadmap) und der Weg einfach sein soll. Ein Abschluss über die Plattform brächte Widerrufsbelehrung und Informationspflichten mit sich (`IDEA-ANG-004`: „ein eigenes Feature, kein Knopf“). Die Bestätigung in Textform per Mail hängt an B13; bis dahin ist die Seite zum Speichern der dauerhafte Datenträger. Nur die ordentliche Kündigung; eine außerordentliche läuft über die Praxis. Unsicher: ob ein Vertrag beim Hausbesuch ein Widerrufsrecht nach § 312g BGB auslöst, das eine Belehrung im Gespräch verlangt.
 
-**Anker.** `public.cancel_platform_aftercare`, `public.list_platform_aftercare_cancellations` in `supabase/migrations/20261014120000_ang_003_aftercare_cancellation.sql`; `src/features/platform/Abo.tsx`. Geprüft in `supabase/tests/aftercare-cancellation.test.ts` und `src/features/platform/Abo.test.tsx`.
+**Anker.** `public.cancel_platform_aftercare`, `public.list_platform_aftercare_cancellations` in `supabase/migrations/20261014120000_ang_003_aftercare_cancellation.sql`; `src/features/portal/platform/Abo.tsx`. Geprüft in `supabase/tests/aftercare-cancellation.test.ts` und `src/features/portal/platform/Abo.test.tsx`.
 
 **Änderungspfad.** Abschluss über die Plattform: eigener Loop mit Widerrufsbelehrung · Aufwand `groß`. Bestätigung per Mail: Versand mit B13 · Aufwand `klein`.
 
@@ -3328,7 +3328,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** §4.6: Das Abo ist der Zweck, die Plattform nach der Behandlung weiter zu nutzen; nach einer Kündigung bleibt der Zugriff 30 Tage lesend (DSN-001 4.3). Eine Stelle (`app.platform_access_ended_at`) trägt das Ende für Projektionen, Löschlauf und Konto, deshalb ändert sich nur der Tag, ab dem gezählt wird. Getrennte Verhältnisse bleiben getrennt (§4.8, ADR-021). Die Inhalte der Stufe 2 (Verlauf, Rückfragen, Plan als PDF) gibt es noch nicht; sie kommen mit ihren Loops. Unsicher: ob die Prüfung für die Zeit des Abos eine eigene Rechtsgrundlage für die Plattform verlangt (Vertrag über die Nachsorge, Art. 9 Abs. 2 lit. h).
 
-**Anker.** `app.platform_read_from` und `app.platform_access_ended_at` in `supabase/migrations/20261014130000_ang_004_platform_follows_aftercare.sql`; Hinweis in `src/features/platform/Uebersicht.tsx`. Geprüft in `supabase/tests/aftercare-platform-access.test.ts`.
+**Anker.** `app.platform_read_from` und `app.platform_access_ended_at` in `supabase/migrations/20261014130000_ang_004_platform_follows_aftercare.sql`; Hinweis in `src/features/portal/platform/Uebersicht.tsx`. Geprüft in `supabase/tests/aftercare-platform-access.test.ts`.
 
 **Änderungspfad.** Andere Lesezeit nach dem Abo: der Tag in der einen Funktion · Aufwand `klein`.
 
@@ -3400,7 +3400,7 @@ Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Pr
 
 **Begründung.** §4.10 und §19: Das Paket ist nicht pausierbar; von den drei denkbaren Antworten in `IDEA-ANG-003` bleiben „läuft parallel weiter“ und „Restguthaben wird erstattet“. Parallel ist die einfache und die vorhersehbare: Die Bereiche teilen keine Forderung (ADR-009 Punkt 16), und die Person weiß vor dem Kauf, was gilt. Eine automatische Erstattung wäre ein Korrekturbeleg ohne Regel für die Höhe. Unsicher: ob § 627 BGB eine Kündigung mit anteiliger Rückzahlung erzwingt (siehe ANN-277).
 
-**Anker.** Keine Sperre in `app.training_package_start_blocker` für eine Behandlung nach dem Beginn, Kopf von `supabase/migrations/20261015120000_ang_007_package_covers_appointments.sql`; Bedingungen in `src/features/platform/paketbedingungen.ts`. Geprüft in `supabase/tests/training-packages.test.ts`.
+**Anker.** Keine Sperre in `app.training_package_start_blocker` für eine Behandlung nach dem Beginn, Kopf von `supabase/migrations/20261015120000_ang_007_package_covers_appointments.sql`; Bedingungen in `src/features/portal/platform/paketbedingungen.ts`. Geprüft in `supabase/tests/training-packages.test.ts`.
 
 **Änderungspfad.** Erstattung des Restes: Korrekturrechnung über den nicht genutzten Teil · Aufwand `mittel`.
 
@@ -3412,7 +3412,7 @@ Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Pr
 
 **Begründung.** `IDEA-ANG-004`: Der Preis steht vollständig da, mit Laufzeit, Umfang und Bedingungen, ohne Beratungsgespräch als Zwischenschritt. Die Preisangabenverordnung verlangt gegenüber Verbrauchern den Gesamtpreis einschließlich Umsatzsteuer (§ 3 PAngV); unter § 19 UStG wird keine ausgewiesen. Ein Abschluss über die Plattform brächte Widerrufsbelehrung und Informationspflichten des Fernabsatzes mit (§ 312d BGB) und gehört nach §4.10 zum Übergang aus der Behandlung (KND-EPIC-001). Die Bereiche bleiben getrennt (§4.8). Unsicher: ob die Praxis die Preise auch Patient:innen am Ende der Behandlung zeigen will; das gehört zu KND-EPIC-001.
 
-**Anker.** `public.platform_training_offers` und `public.platform_training_packages` in `supabase/migrations/20261015130000_ang_008_platform_training_package.sql`; Wortlaut in `src/features/platform/paketbedingungen.ts`, Seite `src/features/platform/Paket.tsx`. Geprüft in `supabase/tests/training-packages.test.ts` und `src/features/platform/Paket.test.tsx`.
+**Anker.** `public.platform_training_offers` und `public.platform_training_packages` in `supabase/migrations/20261015130000_ang_008_platform_training_package.sql`; Wortlaut in `src/features/portal/platform/paketbedingungen.ts`, Seite `src/features/portal/platform/Paket.tsx`. Geprüft in `supabase/tests/training-packages.test.ts` und `src/features/portal/platform/Paket.test.tsx`.
 
 **Änderungspfad.** Abschluss über die Plattform: eigener Loop mit Widerrufsbelehrung (KND-EPIC-001) · Aufwand `groß`. Preise auch für die Behandlung: eine Bedingung in der einen Funktion · Aufwand `klein`.
 
@@ -3424,7 +3424,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** §4.10: Das Abschlussgespräch führt die behandelnde Person, und angeboten wird mündlich. §4.8 verbietet den Schluss von einer Rolle des einen Bereichs auf den anderen, „auch nicht mittelbar über die gemeinsame Identität“; eine Fehlermeldung „hat schon ein Trainingsverhältnis“ wäre genau so ein Schluss für eine Therapeut:in. Das Angebot hängt an der Akte (ADR-021 Punkt 5) und enthält Angaben aus der Behandlung, also gehört es den Rollen der Akte. Unsicher: ob Jannes das Anbieten auf owner und Büro beschränken will, weil es ein Angebot über Geld ist.
 
-**Anker.** `app.can_update_patient()` in `public.create_training_offer` und `public.withdraw_training_offer` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; Abschnitt `src/features/training-offers/Trainingsangebot.tsx`. Geprüft in `supabase/tests/training-offers.test.ts`.
+**Anker.** `app.can_update_patient()` in `public.create_training_offer` und `public.withdraw_training_offer` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; Abschnitt `src/features/patients/training-offers/Trainingsangebot.tsx`. Geprüft in `supabase/tests/training-offers.test.ts`.
 
 **Änderungspfad.** Nur owner und Büro: `app.can_manage_training_packages()` statt `app.can_update_patient()` in den beiden Funktionen, die Oberfläche folgt `canManageInvoicing` · Aufwand `klein`.
 
@@ -3436,7 +3436,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** ADR-021 Punkt 7 verlangt eine dokumentierte Kopie mit Einwilligung, nie eine Referenz; `IDEA-LZK-003` nennt als Beispiele Kontraindikationen, Belastungsgrenzen und Verletzungshistorie – Zusammenfassungen, die eine Therapeut:in schreibt, keine Rohfelder. Eine Einwilligung ist nur informiert (Art. 4 Nr. 11, Art. 7 DSGVO), wenn die Person genau sieht, was weitergeht; bei einem Befundfeld voller Fachbegriffe sähe sie das nicht. Fünf Angaben genügen für die Beispiele und halten die Seite am Telefon lesbar. Unsicher: ob die Prüfung eine Übernahme von Befundzahlen (etwa Bewegungsausmaß) verlangt.
 
-**Anker.** `app.training_offer_handover_valid` und die Spalte `handover_items` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; `UEBERGABE_HOECHSTENS` in `src/features/training-offers/api.ts`. Geprüft in `supabase/tests/training-offers.test.ts`.
+**Anker.** `app.training_offer_handover_valid` und die Spalte `handover_items` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; `UEBERGABE_HOECHSTENS` in `src/features/patients/training-offers/api.ts`. Geprüft in `supabase/tests/training-offers.test.ts`.
 
 **Änderungspfad.** Mehr oder längere Angaben: die Zahlen in der einen Funktion und in `api.ts` · Aufwand `klein`. Befundfelder zur Auswahl: eigene Kopierfunktion je Feld · Aufwand `groß`.
 
@@ -3460,7 +3460,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** §4.8 (Rang 1): Aus einer Rolle der Behandlung folgt kein Wissen über das Training, auch nicht über die gemeinsame Identität. „Angenommen am …“ hätte einer Therapeut:in ohne Trainingsrolle einen Vertrag gezeigt; auch „nicht mehr offen“ vor dem Ende der Gültigkeit verriete ihn. Die erste Fassung dieser Annahme (die Akte sieht dass und wann) fiel im Zweitreview gegen §4.8 und wurde nach Rang aufgelöst. Owner und Büro sehen das Trainingsverhältnis ohnehin über ihre Trainingsrolle. Unsicher: ob die behandelnde Person den Ausgang des Abschlussgesprächs für ihre Dokumentation braucht.
 
-**Anker.** `app.training_offer_practice_state` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; `AKTE_ERFAEHRT` in `src/features/platform/vertragstexte.ts`. Geprüft in `supabase/tests/training-offers.test.ts` und `supabase/tests/training-contracts.test.ts`.
+**Anker.** `app.training_offer_practice_state` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; `AKTE_ERFAEHRT` in `src/features/portal/platform/vertragstexte.ts`. Geprüft in `supabase/tests/training-offers.test.ts` und `supabase/tests/training-contracts.test.ts`.
 
 **Änderungspfad.** Annahme mit Einwilligung der Person zurück in die Akte: Zeitpunkt in `get_patient_training_offers`, ein Satz auf der Seite zum Buchen und ein Häkchen dafür · Aufwand `klein`.
 
@@ -3472,7 +3472,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** §4.10 und E-3: „In den letzten ein bis zwei Terminen einer Verordnung erinnert die App an das Abschlussgespräch.“ Am Termin sieht die behandelnde Person den Hinweis dann, wenn das Gespräch ansteht; die Erinnerung „Verordnungen, die enden“ gibt es schon für die Folgeverordnung. Eine jüngere Grundlage heißt: Die Behandlung geht weiter. Ob die Person schon trainiert, fragt die Erinnerung nicht – das wäre ein Schluss von der Behandlung aufs Training (§4.8). Unsicher: ob Jannes auch ohne Terminzahl erinnert werden will, etwa beim Selbstzahler mit offener Anzahl.
 
-**Anker.** `app.closing_talk_due` in `supabase/migrations/20261016110000_knd_001_closing_talk.sql`; Pille in `src/features/today/Tagesliste.tsx`, Satz in `src/features/appointments/TerminKompakt.tsx`. Geprüft in `supabase/tests/closing-talk.test.ts`.
+**Anker.** `app.closing_talk_due` in `supabase/migrations/20261016110000_knd_001_closing_talk.sql`; Pille in `src/features/calendar/today/Tagesliste.tsx`, Satz in `src/features/calendar/appointments/TerminKompakt.tsx`. Geprüft in `supabase/tests/closing-talk.test.ts`.
 
 **Änderungspfad.** Nur der letzte Termin oder drei: die Zahl `- 1` in der einen Funktion · Aufwand `klein`.
 
@@ -3498,7 +3498,7 @@ Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Pr
 
 **Begründung.** §4.10: Geschlossen wird über das eigene Konto, mit Widerrufsbelehrung. Ob ein Vertrag nach einem Gespräch beim Hausbesuch und einem Klick im Konto Fernabsatz oder außerhalb von Geschäftsräumen ist (§§ 312b, 312c BGB), ändert am Widerrufsrecht nichts; die Musterbelehrung erfüllt die Pflicht (Art. 246a § 1 Abs. 2 Satz 2 EGBGB). § 312j Abs. 3 verlangt die Beschriftung des Knopfs, §§ 356 Abs. 4 und 357a Abs. 2 das ausdrückliche Verlangen für den frühen Beginn, § 312f Abs. 2 eine Bestätigung auf einem dauerhaften Datenträger – bis B13 die Seite zum Speichern wie bei ANN-272. Unsicher: ob die Seite zum Speichern als dauerhafter Datenträger genügt.
 
-**Anker.** `app.training_contract_wording_version` und `public.accept_platform_training_offer` in `supabase/migrations/20261016130000_knd_003_training_contract.sql`; Wortlaut in `src/features/platform/vertragstexte.ts`. Geprüft in `supabase/tests/training-contracts.test.ts`, `src/features/platform/vertragstexte.test.ts` und `src/features/platform/Angebot.test.tsx`.
+**Anker.** `app.training_contract_wording_version` und `public.accept_platform_training_offer` in `supabase/migrations/20261016130000_knd_003_training_contract.sql`; Wortlaut in `src/features/portal/platform/vertragstexte.ts`. Geprüft in `supabase/tests/training-contracts.test.ts`, `src/features/portal/platform/vertragstexte.test.ts` und `src/features/portal/platform/Angebot.test.tsx`.
 
 **Änderungspfad.** Anderer Wortlaut: Text und `VERTRAGSFASSUNG` mit der Funktion anheben · Aufwand `klein`. Bestätigung per Mail: Versand mit B13 · Aufwand `klein`.
 
@@ -3522,7 +3522,7 @@ Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Pr
 
 **Begründung.** § 356a BGB verlangt seit dem 19. Juni 2026 bei Verträgen über eine Online-Oberfläche eine Widerrufsfunktion mit Bestätigungsschritt und Eingangsbestätigung auf einem dauerhaften Datenträger. Was bei frühem Beginn als Wertersatz bleibt (§ 357a Abs. 2 BGB), hängt an den schon erbrachten Einheiten und ist eine Einzelfallrechnung; eine automatische Stornierung wäre ein Beleg ohne Regel für die Höhe. Unsicher: ob die Praxis Widerrufe per Brief ebenfalls in der Anwendung vermerken will.
 
-**Anker.** `public.withdraw_platform_training_contract` und `public.list_platform_training_withdrawals` in `supabase/migrations/20261016140000_knd_004_training_withdrawal.sql`; Knopf in `src/features/platform/Vertrag.tsx`. Geprüft in `supabase/tests/training-contracts.test.ts` und `src/features/platform/Vertrag.test.tsx`.
+**Anker.** `public.withdraw_platform_training_contract` und `public.list_platform_training_withdrawals` in `supabase/migrations/20261016140000_knd_004_training_withdrawal.sql`; Knopf in `src/features/portal/platform/Vertrag.tsx`. Geprüft in `supabase/tests/training-contracts.test.ts` und `src/features/portal/platform/Vertrag.test.tsx`.
 
 **Änderungspfad.** Widerruf per Brief vermerken: Praxisfunktion mit Herkunft `practice` wie bei der Abo-Kündigung · Aufwand `klein`. Automatische Rückabwicklung ohne frühen Beginn: Paket entfernen bzw. stornieren im selben Aufruf · Aufwand `mittel`.
 
@@ -3558,7 +3558,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** IDEA-TRN-005 beschreibt die Bibliothek als „kuratierte fachliche Leistung“: Wer sie ändert, ändert, was alle Pläne der Praxis später anbieten – dieselbe Überlegung wie bei den praxisweiten Textbausteinen (`app.can_manage_shared_text_snippets`). Das Büro leitet keine Übung an; was es nicht braucht, sieht es nicht (§3.5 Datenminimierung). Offen ist, ob Therapeut:innen und Trainingsbetreuung selbst Übungen anlegen sollen – das fragt die Freigabe des Epics.
 
-**Anker.** `app.can_read_exercise_library()` und `app.can_manage_exercise_library()` in `supabase/migrations/20261017100000_ueb_001_exercise_library.sql`; Darstellung `canReadExerciseLibrary` in `src/features/session/types.ts`. Geprüft in `supabase/tests/exercise-library.test.ts`.
+**Anker.** `app.can_read_exercise_library()` und `app.can_manage_exercise_library()` in `supabase/migrations/20261017100000_ueb_001_exercise_library.sql`; Darstellung `canReadExerciseLibrary` in `src/features/core/session/types.ts`. Geprüft in `supabase/tests/exercise-library.test.ts`.
 
 **Änderungspfad.** Mehr Rollen pflegen lassen: die Rollenliste in `app.can_manage_exercise_library()` erweitern · Aufwand `klein`. Das Büro lesen lassen: dasselbe in `app.can_read_exercise_library()` und `canReadExerciseLibrary` · Aufwand `klein`.
 
@@ -3572,7 +3572,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** IDEA-TRN-004 verlangt, je Schritt **eine** Achse zu ändern, damit eine Reaktion zuzuordnen bleibt; zwei Varianten, die sich in zwei Achsen unterscheiden, sind zwei Schritte. IDEA-TRN-005 nennt Regression und Progression als Richtung – „leichter“ und „schwerer“ sagen dasselbe ohne Fachwort. Die Verbindungen werden nur angezeigt; eine Funktion, die sich entlang der Kanten bewegt, wäre nach ADR-006 Punkt 10 eine Vorauswahl und entsteht nicht.
 
-**Anker.** `app.exercise_axes()`, der eindeutige Index `exercise_variant_links_pair_unique` und die Kreisprüfung in `public.link_exercise_variants` in `supabase/migrations/20261017110000_ueb_002_variant_links.sql`; `ACHSEN` in `src/features/exercises/types.ts`. Geprüft in `supabase/tests/exercise-variant-links.test.ts`.
+**Anker.** `app.exercise_axes()`, der eindeutige Index `exercise_variant_links_pair_unique` und die Kreisprüfung in `public.link_exercise_variants` in `supabase/migrations/20261017110000_ueb_002_variant_links.sql`; `ACHSEN` in `src/features/exercise/exercises/types.ts`. Geprüft in `supabase/tests/exercise-variant-links.test.ts`.
 
 **Änderungspfad.** Andere oder weitere Achsen: beide Listen und eine Migration mit der neuen Funktion · Aufwand `klein`. Mehrere Achsen je Verbindung: Spalte als Feld, Index und Prüfung anpassen · Aufwand `mittel`.
 
@@ -3584,7 +3584,7 @@ Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · 
 
 **Begründung.** Region und Gerät sind die beiden Ordnungen, die ADR-006 Punkt 10 ausdrücklich als keine klinische Vorauswahl nennt. Eine feste Regionsliste macht den Filter verlässlich; das Körperschema der Fragebögen (`app.questionnaire_body_regions`) ist mit Seiten und 40 Feldern für eine Übung zu fein. Für Geräte gibt es keine Liste, die eine Praxis vorab kennt.
 
-**Anker.** `app.exercise_body_regions()` in `supabase/migrations/20261017100000_ueb_001_exercise_library.sql` und `KOERPERREGIONEN` in `src/features/exercises/types.ts`; `supabase/tests/exercise-library.test.ts` hält beide gleich.
+**Anker.** `app.exercise_body_regions()` in `supabase/migrations/20261017100000_ueb_001_exercise_library.sql` und `KOERPERREGIONEN` in `src/features/exercise/exercises/types.ts`; `supabase/tests/exercise-library.test.ts` hält beide gleich.
 
 **Änderungspfad.** Region ändern oder ergänzen: beide Listen und eine Migration mit der neuen Funktion · Aufwand `klein`. Mehrere Regionen je Übung: Spalte als Feld statt Text · Aufwand `mittel`.
 
@@ -3620,7 +3620,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** Ein Behandlungsplan ist Teil der Behandlung: Schreiben folgt der Behandlungsdokumentation (`app.can_write_treatment_note`, owner ohne Therapierolle schreibt nicht), Lesen ADR-004 Punkt 3 (das Büro liest alle klinischen Inhalte der Akte). Im Training öffnet ADR-021 Punkt 10 dem Büro **nur** das Protokoll; ein Plan gehört nicht dazu. Die Trainingsrollen folgen Profil und Protokoll (ANN-184, ANN-287). Kein Durchgriff nach ADR-021 Punkt 6.
 
-**Anker.** `app.can_read_exercise_plans(text)` und `app.can_write_exercise_plans(text)` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`; Darstellung `canReadExercisePlans` in `src/features/session/types.ts`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+**Anker.** `app.can_read_exercise_plans(text)` und `app.can_write_exercise_plans(text)` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`; Darstellung `canReadExercisePlans` in `src/features/core/session/types.ts`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
 
 **Änderungspfad.** Andere Rollen: die Listen in beiden Funktionen und in `canReadExercisePlans` ändern · Aufwand `klein`.
 
@@ -3634,9 +3634,9 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** Die Felder decken die Achsen aus IDEA-TRN-004 ab, die eine Dosis sind (Last, Wiederholungen, Sätze, Tempo, Dichte, Frequenz); die übrigen Achsen ändern die Variante. Last als Text, weil Bänder, Rucksack und Körpergewicht keine Zahl in kg sind. Die doppelte Progression (IDEA-TRN-007) braucht einen Bereich und eine Last, sonst gibt es nichts zu steigern.
 
-**Anker.** Spalten und Prüfungen von `public.exercise_plan_items` und `public.save_exercise_plan_item` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`; Darstellung `src/features/exercise-plans/dosierung.ts`.
+**Anker.** Spalten und Prüfungen von `public.exercise_plan_items` und `public.save_exercise_plan_item` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`; Darstellung `src/features/exercise/exercise-plans/dosierung.ts`.
 
-**Änderungspfad.** Andere Grenzen oder Felder: Constraint, Funktion und Formular `src/features/exercise-plans/PositionFormular.tsx` · Aufwand `klein`.
+**Änderungspfad.** Andere Grenzen oder Felder: Constraint, Funktion und Formular `src/features/exercise/exercise-plans/PositionFormular.tsx` · Aufwand `klein`.
 
 ### ANN-300 — Mit der Zuweisung wird der Plan eingefroren; danach ändern sich nur Laufzeit und Ende
 
@@ -3670,7 +3670,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** IDEA-ORG-006: Pläne ohne Ablaufdatum laufen ewig weiter; ein Ende erzwingt eine bewusste Entscheidung je Zyklus. Sechs Wochen entsprechen einem üblichen Behandlungs- und Trainingsblock; 26 Wochen sind die Grenze, ab der eine Übungsfolge kaum noch zur Lage passt. Die Wiedervorlage hängt nur am Datum – sie wertet keine Angabe der Person aus (ADR-006 Punkt 11). Das Büro schreibt keine Pläne und entscheidet deshalb nicht darüber.
 
-**Anker.** `app.exercise_plan_max_days()` in `supabase/migrations/20261018110000_ueb_005_assign_exercise_plan.sql` und `app.exercise_plan_review_days()` in `supabase/migrations/20261018130000_ueb_007_plan_review.sql`; `LAUFZEIT_VORSCHLAG_TAGE` in `src/features/exercise-plans/laufzeit.ts`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+**Anker.** `app.exercise_plan_max_days()` in `supabase/migrations/20261018110000_ueb_005_assign_exercise_plan.sql` und `app.exercise_plan_review_days()` in `supabase/migrations/20261018130000_ueb_007_plan_review.sql`; `LAUFZEIT_VORSCHLAG_TAGE` in `src/features/exercise/exercise-plans/laufzeit.ts`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
 
 **Änderungspfad.** Andere Zahlen: die Funktion bzw. die Konstante ändern · Aufwand `klein`. Wiedervorlage auch für das Büro: Rollenprüfung der Liste erweitern · Aufwand `klein`.
 
@@ -3682,7 +3682,7 @@ Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · 
 
 **Begründung.** §4.6 und DSN-001 D2 verlangen den Plan als PDF, auch nach dem Ende der Behandlung; ADR-023 Punkt 7 versorgt Personen ohne Konto mit Plänen als PDF. Ein PDF-Generator wäre eine neue Abhängigkeit oder ein neuer Ausführungsort (ADR-015, OPS-001); der Browserdruck braucht keines von beiden. Die Datei entsteht auf dem Gerät und wird nicht abgelegt – aufbewahrt wird der Plan selbst (ANN-300).
 
-**Anker.** `Planblatt` in `src/features/exercise-plans/Planblatt.tsx`; Seite der Praxis `PlanblattSeite.tsx`. Geprüft in `src/features/exercise-plans/Plaene.test.tsx`.
+**Anker.** `Planblatt` in `src/features/exercise/exercise-plans/Planblatt.tsx`; Seite der Praxis `PlanblattSeite.tsx`. Geprüft in `src/features/exercise/exercise-plans/Plaene.test.tsx`.
 
 **Änderungspfad.** Ein abgelegtes PDF: serverseitige Erzeugung mit Ablage nach ADR-017, sobald der Dokumentweg der Rechnung (Weg 3) steht · Aufwand `mittel`. Andere Inhalte auf dem Blatt: die eine Komponente · Aufwand `klein`.
 
@@ -3708,7 +3708,7 @@ Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · 
 
 **Begründung.** IDEA-ORG-003 verlangt „Abbrechen ohne Datenverlust“ und nennt „keine Verbindung“ als Lage. ADR-015 Punkt 16 schließt einen Service Worker aus, ADR-024 steht aus; Gesundheitsdaten im Browser abzulegen wäre eine Offline-Erfassung, die ADR-001 erst mit Geräteregeln zulässt. ADR-001 verlangt, dass niemand glaubt, gespeichert zu haben, was nur lokal liegt. Ist-Werte gehören zu Verlauf und Tracking (Block 7, §17 Verbot 2).
 
-**Anker.** `public.sync_platform_exercise_session`, `app.platform_access_writable` und der Index `exercise_plan_sessions_one_open` in `supabase/migrations/20261019110000_ueb_010_exercise_sessions.sql`; Ansicht `src/features/platform/Durchfuehrung.tsx`. Geprüft in `supabase/tests/platform-exercise-sessions.test.ts` und `src/features/platform/Durchfuehrung.test.tsx`.
+**Anker.** `public.sync_platform_exercise_session`, `app.platform_access_writable` und der Index `exercise_plan_sessions_one_open` in `supabase/migrations/20261019110000_ueb_010_exercise_sessions.sql`; Ansicht `src/features/portal/platform/Durchfuehrung.tsx`. Geprüft in `supabase/tests/platform-exercise-sessions.test.ts` und `src/features/portal/platform/Durchfuehrung.test.tsx`.
 
 **Änderungspfad.** Offline-Erfassung mit späterem Abgleich: nach ADR-024, Warteschlange im Gerät und additive Übertragung · Aufwand `groß`. Erfassen auch in der Lesefrist: `app.platform_access_writable` aus der Prüfung nehmen · Aufwand `klein`. Ist-Werte je Durchgang: Spalten an `exercise_plan_session_sets` und Felder in der Ansicht · Aufwand `mittel`.
 
@@ -3732,7 +3732,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** IDEA-ORG-004: Aus Sicht der Person ist beides „was diese Woche ansteht“; für die Praxis bleibt der bestehende Kalender die Arbeitsansicht. Der zugewiesene Plan ist eingefroren (ANN-300), feste Tage der Fachperson müssten in den Schnappschuss und machten jede Verschiebung zu einer neuen Fassung; die Person kennt ihre Woche selbst. Die Praxis braucht die Tage für keinen Zweck (Art. 5 Abs. 1 lit. c DSGVO). Eine Kalenderweitergabe nach außen wäre eine eigene Entscheidung nach ADR-002 (IDEA-ORG-004, „Vorsicht“).
 
-**Anker.** `public.exercise_plan_days`, `app.exercise_plan_weekdays` und `public.set_platform_exercise_days` in `supabase/migrations/20261019120000_ueb_011_exercise_days.sql`; `src/features/platform/uebungstage.ts`. Geprüft in `supabase/tests/platform-exercise-days.test.ts`.
+**Anker.** `public.exercise_plan_days`, `app.exercise_plan_weekdays` und `public.set_platform_exercise_days` in `supabase/migrations/20261019120000_ueb_011_exercise_days.sql`; `src/features/portal/platform/uebungstage.ts`. Geprüft in `supabase/tests/platform-exercise-days.test.ts`.
 
 **Änderungspfad.** Tage legt die Fachperson fest: Spalte am Plan, Feld im Entwurf, Wahl der Person entfällt · Aufwand `mittel`. Die Praxis sieht die Tage am Plan: ein Schlüssel in `get_exercise_plan` · Aufwand `klein`.
 
@@ -3744,7 +3744,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** IDEA-KOM-001: Ein offener Chat hat keine Erledigungslogik, lässt sich nicht nach Zuständigkeit ordnen und ist der Akte nicht zuordenbar (§10). Unveränderliche Einträge sind die Voraussetzung dafür, dass in der Akte steht, was geschrieben wurde (IDEA-KOM-007, ADR-006 Punkt 3, § 630f BGB), und machen den Nachweis am Datensatz statt im Auditlog möglich (ADR-010 Fassung 3 Punkt 15). Ohne Namen der Fachperson wie beim Plan (UEB-009, ADR-023 Punkt 22).
 
-**Anker.** `public.platform_messages`, `public.platform_message_entries` mit dem Trigger `platform_message_entries_guard` in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`; Ansicht `src/features/platform/Nachrichten.tsx`. Geprüft in `supabase/tests/platform-messages.test.ts`.
+**Anker.** `public.platform_messages`, `public.platform_message_entries` mit dem Trigger `platform_message_entries_guard` in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`; Ansicht `src/features/portal/platform/Nachrichten.tsx`. Geprüft in `supabase/tests/platform-messages.test.ts`.
 
 **Änderungspfad.** Offener Chat ohne Vorgang: anderes Datenmodell · Aufwand `groß`. Namen der Fachperson auf der Plattform: ein Schlüssel in `public.platform_messages(uuid)` · Aufwand `klein`. Nur die Praxis erledigt: ein Zweig weniger in `close_platform_message` · Aufwand `klein`.
 
@@ -3756,7 +3756,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** IDEA-KOM-002: „Eine Zusage ohne Überwachung ist schlechter als keine“ – die Praxis muss sehen, was fällig ist. DSN-001 4.1 nennt die Frist einen Platzhalter aus Praxisstammdaten. Benachrichtigungen regelt erst ADR-024 (KOM-EPIC-003). Ein Feiertagskalender wäre eine eigene Datenquelle je Bundesland für eine Zusage „in der Regel“.
 
-**Anker.** Spalte `organizations.message_response_workdays`, `app.add_workdays` und `app.message_due_on` in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`; der Wortlaut in `src/features/platform/nachrichtentexte.ts`. Geprüft in `supabase/tests/platform-messages.test.ts`.
+**Anker.** Spalte `organizations.message_response_workdays`, `app.add_workdays` und `app.message_due_on` in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`; der Wortlaut in `src/features/portal/platform/nachrichtentexte.ts`. Geprüft in `supabase/tests/platform-messages.test.ts`.
 
 **Änderungspfad.** Andere Frist: die Zahl in den Praxisstammdaten · Aufwand `klein`. Feiertage berücksichtigen: Kalendertabelle und `app.add_workdays` · Aufwand `mittel`. Erinnerung an die Praxis bei Überschreitung: mit KOM-EPIC-003 nach ADR-024 · Aufwand `mittel`.
 
@@ -3768,7 +3768,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** ADR-004 Punkt 3: Das Büro liest klinische Inhalte wie Therapeut:innen, schreibt aber keine klinische Dokumentation. Eine Antwort auf eine Frage zu Beschwerden oder zur Ausführung einer Übung ist eine fachliche Auskunft und gehört zu den therapeutischen Rollen (§4.2); Termine und Rechnungen sind Sache des Büros (§4.3). Eine Trefferliste ohne Inhalt ist kein Lesen (ADR-010 Konsequenzen).
 
-**Anker.** `app.can_read_platform_message` und `app.can_answer_platform_message` in `supabase/migrations/20261020110000_kom_002_practice_messages.sql`; Seite `src/features/messages/RueckfragenPage.tsx`. Geprüft in `supabase/tests/practice-messages.test.ts`.
+**Anker.** `app.can_read_platform_message` und `app.can_answer_platform_message` in `supabase/migrations/20261020110000_kom_002_practice_messages.sql`; Seite `src/features/portal/messages/RueckfragenPage.tsx`. Geprüft in `supabase/tests/practice-messages.test.ts`.
 
 **Änderungspfad.** Büro antwortet auf alles: ein Zweig in `app.can_answer_platform_message` · Aufwand `klein`. Büro liest Übung und Beschwerden nicht: ein Zweig in `app.can_read_platform_message` · Aufwand `klein`.
 
@@ -3794,7 +3794,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Begründung.** §10 verlangt die Zuordnung durch die Therapeut:in, §5 und § 630f BGB Nachvollziehbarkeit ohne Überschreiben; IDEA-KOM-007 verlangt sichtbare Herkunft ohne Veränderung. Der Vorgang liegt schon im Behandlungsverhältnis und ist unveränderlich (ANN-308) – eine Kopie wäre ein zweiter Datensatz desselben Inhalts mit eigener Frist, ohne Gewinn. Das Büro schreibt keine klinische Dokumentation (ADR-004 Punkt 3); die Zuordnung ist eine klinische Einordnung. Endgültig, weil eine Akte nicht nachträglich verkleinert wird (ADR-016 Punkt 5). Unsicher: ob die drei Jahre für nicht zugeordnete Nachrichten mit klinischem Inhalt genügen, wenn die Zuordnung unterbleibt – der Pflichtsatz aus §10 liegt bei der Praxis.
 
-**Anker.** `app.can_assign_platform_message`, `public.assign_platform_message_to_record`, Trigger `platform_messages_record_final` und `public.list_record_platform_messages` in `supabase/migrations/20261020120000_kom_004_messages_in_record.sql`; die Regel im Löschlauf in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`; Oberfläche `src/features/messages/InDieAkte.tsx`. Geprüft in `supabase/tests/record-messages.test.ts`.
+**Anker.** `app.can_assign_platform_message`, `public.assign_platform_message_to_record`, Trigger `platform_messages_record_final` und `public.list_record_platform_messages` in `supabase/migrations/20261020120000_kom_004_messages_in_record.sql`; die Regel im Löschlauf in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`; Oberfläche `src/features/portal/messages/InDieAkte.tsx`. Geprüft in `supabase/tests/record-messages.test.ts`.
 
 **Änderungspfad.** Zuordnung als Kopie in einen Dokumentationseintrag: eigener Eintragstyp nach ADR-016 · Aufwand `mittel`. Zuordnung rücknehmbar: Trigger und eine Funktion · Aufwand `klein`. Büro ordnet zu: ein Zweig in `app.can_assign_platform_message` · Aufwand `klein`. Alle Nachrichten der Behandlung wie die Akte aufbewahren: Klasse `patientenkommunikation` auf die Frist der Akte · Aufwand `klein`.
 
@@ -3830,7 +3830,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 10.10.2026)
 
 **Begründung.** BEF-137 macht aus vier einzelnen Lesegrenzen eine Regel (§4.3, ADR-021 Fassung 3 Punkt 10). Eine Regel an einer Stelle hält sie für die nächsten Loops gleich und macht die Rücknahme nach der DSFA klein. Therapeut:innen und Teamleitung stehen nicht darin (kein Durchgriff, Punkt 6).
 
-**Anker.** `app.can_read_training_content` in `supabase/migrations/20261021100000_abn_030_office_reads_training.sql`; `canReadTrainingContent` in `src/features/session/types.ts`. Geprüft in `supabase/tests/training-profile.test.ts`, `exercise-plans.test.ts`, `practice-messages.test.ts`, `exercise-library.test.ts` und `src/features/session/types.test.ts`.
+**Anker.** `app.can_read_training_content` in `supabase/migrations/20261021100000_abn_030_office_reads_training.sql`; `canReadTrainingContent` in `src/features/core/session/types.ts`. Geprüft in `supabase/tests/training-profile.test.ts`, `exercise-plans.test.ts`, `practice-messages.test.ts`, `exercise-library.test.ts` und `src/features/core/session/types.test.ts`.
 
 **Änderungspfad.** Das Büro im Training wieder ausnehmen (etwa nach der DSFA): `office` aus `app.can_read_training_content` und `canReadTrainingContent` nehmen, dazu `app.can_read_exercise_library` · Aufwand `klein`. Einen Inhalt einzeln ausnehmen: dessen Leseprüfung auf eine eigene Funktion stellen · Aufwand `klein`.
 
@@ -3844,7 +3844,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 10.10.2026)
 
 **Begründung.** BEF-135, ADR-017 Fassung 4 Punkte 56 und 57. Den Schlüssel `patientenfoto` zu entfernen, kostete eine Migration über Katalog, Klassen, Löschlauf und Herausgabe, solange noch eine Arbeitshilfe liegen kann. Eine Einwilligung, die nichts mehr erlaubt, soll niemand neu erteilen; der Widerruf muss bleiben, weil er vorhandene Arbeitshilfen löscht. Der Server nimmt eine Erteilung noch an – sie bleibt ohne Wirkung, weil keine Arbeitshilfe mehr entsteht.
 
-**Anker.** `prepare_patient_file_upload` in `supabase/migrations/20261021120000_abn_032_no_new_photo_aids.sql`; `HINWEIS_DOKUMENTATION` und `Aufnahme` in `src/features/files/FotosImVerlauf.tsx`; `einwilligungAngeboten` in `src/lib/einwilligung.ts`. Geprüft in `supabase/tests/patient-photos.test.ts`, `documentation-photos.test.ts`, `FotosImVerlauf.test.tsx`, `src/lib/einwilligung.test.ts`.
+**Anker.** `prepare_patient_file_upload` in `supabase/migrations/20261021120000_abn_032_no_new_photo_aids.sql`; `HINWEIS_DOKUMENTATION` und `Aufnahme` in `src/features/patients/files/FotosImVerlauf.tsx`; `einwilligungAngeboten` in `src/lib/einwilligung.ts`. Geprüft in `supabase/tests/patient-photos.test.ts`, `documentation-photos.test.ts`, `FotosImVerlauf.test.tsx`, `src/lib/einwilligung.test.ts`.
 
 **Änderungspfad.** Arbeitshilfe wieder zulassen: die Abweisung in `prepare_patient_file_upload` streichen, `einwilligungAngeboten` leeren und die Wahl in `Aufnahme` zurückholen (Git-Verlauf) · Aufwand `mittel`. Arbeitshilfe ganz entfernen, wenn keine mehr liegt: Art, Klasse, Bucket und Einwilligungszweck per Migration · Aufwand `groß`.
 
@@ -3858,7 +3858,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 10.10.202
 
 **Begründung.** BEF-136: 45 Minuten sind eine mögliche Termindauer, 60 bevorzugt. Eine Lücke, die nur 45 trägt, soll man auf einen Blick von einer vollen unterscheiden, ohne eine neue Farbe einzuführen (die Farben sagen die Fahrzeit, ANN-195). Zwei Fragen je Lücke in einem Aufruf von `check_travel_fit` statt zweier Aufrufe.
 
-**Anker.** `KURZE_TERMINDAUER_MINUTEN` und die Auswahl in `useLueckenfinder` in `src/features/appointments/lueckenfinder.ts`; `LUECKEN_DAUERN` in `CalendarPage.tsx`; `kuerzer` in `CalendarGrid.tsx`. Geprüft in `lueckenfinder.test.tsx`, `CalendarGrid.test.tsx`, `CalendarPage.test.tsx`.
+**Anker.** `KURZE_TERMINDAUER_MINUTEN` und die Auswahl in `useLueckenfinder` in `src/features/calendar/appointments/lueckenfinder.ts`; `LUECKEN_DAUERN` in `CalendarPage.tsx`; `kuerzer` in `CalendarGrid.tsx`. Geprüft in `lueckenfinder.test.tsx`, `CalendarGrid.test.tsx`, `CalendarPage.test.tsx`.
 
 **Änderungspfad.** Andere oder weitere Dauern: `LUECKEN_DAUERN` · Aufwand `klein`. Die Dauer aus der Verordnung: siehe ANN-239 · Aufwand `klein`.
 
@@ -3896,7 +3896,7 @@ Praxisprozess · offen · 2026-10-10 · — · — · Wiedervorlage: Jannes (Sic
 
 **Begründung.** BEF-056 (2): Der Text soll immer einen Weg in die Akte finden (ADR-016 Punkt 6). Als Entwurf, weil ein Konflikt keine Finalisierung auslösen darf (Punkt 4) – festgeschrieben wird ausdrücklich. `history.state` schreiben Browser für die Sitzungswiederherstellung auf das Gerät; das wäre ein lokaler Zwischenspeicher für Gesundheitsdaten (ADR-015, ANN-015). Für das Ersetzen eines fremden Entwurfs gilt ADR-016 Punkt 3 (Entwurf frei änderbar); dass es nur ausdrücklich geschieht, sichert ANN-319.
 
-**Anker.** `textUebergeben`, `nachtragFestschreiben` und `useTextUebernahme` in `src/features/documentation/uebernahme.ts`; `TextUebernehmen` in `Zustaende.tsx`. Geprüft in `TreatmentNotePage.test.tsx` („Übernahme im Konfliktfall“), `CompleteTreatmentPage.test.tsx`, `TreatmentNoteRevisionPage.test.tsx`, `TreatmentNoteAddendumPage.test.tsx`.
+**Anker.** `textUebergeben`, `nachtragFestschreiben` und `useTextUebernahme` in `src/features/clinical/documentation/uebernahme.ts`; `TextUebernehmen` in `Zustaende.tsx`. Geprüft in `TreatmentNotePage.test.tsx` („Übernahme im Konfliktfall“), `CompleteTreatmentPage.test.tsx`, `TreatmentNoteRevisionPage.test.tsx`, `TreatmentNoteAddendumPage.test.tsx`.
 
 **Änderungspfad.** Nachtrag sofort festschreiben: im Hook nach dem Anlegen `nachtragFestschreiben` aufrufen · Aufwand `klein`. Den fremden Entwurf nie ersetzen: im Speicherweg nach einem Konflikt sperren · Aufwand `klein`.
 
@@ -3932,7 +3932,7 @@ Datenschutz · offen · 2026-10-10 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Begründung.** Art. 13 Abs. 1 lit. a DSGVO verlangt die Kontaktdaten des Verantwortlichen; ein Terminzettel, der um rechtzeitige Absage bittet, muss sagen, wo – eine zu späte Absage kann ein Ausfallhonorar auslösen (§8, ADR-018). BEF-052, Entscheidung Jannes 2026-10-09, Option 1. Dasselbe Muster wie der Briefkopf des Therapieberichts (ANN-123): Die Anschrift der eigenen Praxis ist gegenüber den eigenen Beschäftigten nicht schutzbedürftig, das Leserecht auf die ganze Stammdatenzeile bleibt bei owner und office (ADR-013 Punkt 9 Nr. 3). Kein Auditeintrag: Es ist kein Personendatum (ADR-010 Punkte 15 und 16). Unsicher: ob eine Einzelpraxis mit Privatanschrift das anders sieht (wie ANN-123); ob die Prüfung für den Verantwortlichen mehr verlangt als Anschrift und einen Kontaktweg (etwa eine Datenschutzbeauftragte, ADR-007).
 
-**Anker.** `public.get_practice_sender()` in `supabase/migrations/20261024100000_ux_009a_absender.sql`; im Client `src/features/datenschutz/absender.ts`. Geprüft in `supabase/tests/practice-sender.test.ts`.
+**Anker.** `public.get_practice_sender()` in `supabase/migrations/20261024100000_ux_009a_absender.sql`; im Client `src/features/privacy/datenschutz/absender.ts`. Geprüft in `supabase/tests/practice-sender.test.ts`.
 
 **Änderungspfad.** Nur der Name der Organisation: den Zweig mit `practice_billing_profiles` streichen · Aufwand `klein`. Eigener Absender je Standort: Felder an `locations` und hier lesen · Aufwand `mittel`. Mit Wortmarke: `Wortmarke` in `AbsenderBlock` einsetzen, vorher `marke/README.md` ändern · Aufwand `klein`.
 
@@ -3980,7 +3980,7 @@ Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 P
 
 **Begründung.** ADR-025 Punkt 13 verlangt Passkey und PIN beim Einlösen der Einladung; die Pflicht vor der Anwendung fängt auch eine abgebrochene Einrichtung. Eine Pflicht in der Test-Umgebung bräche die Tests hinter der Anmeldung, die mit Kennwort anmelden (Punkt 15). Ohne Kennwort sperrte das Entfernen des letzten Passkeys das Konto selbst aus; der Rückweg wäre eine neue Einladung oder beim Inhaber Break Glass (Punkt 14). Unsicher: ob Jannes die Pflicht auch in der Test-Umgebung sehen will, um sie zu sichten.
 
-**Anker.** `Einrichtungspflicht` in `src/features/auth/einrichtung/Einrichtungspflicht.tsx`; `freigegeben > 1` in `PasskeyAbschnitt`, `src/features/auth/einrichtung/AnmeldungVerwalten.tsx`.
+**Anker.** `Einrichtungspflicht` in `src/features/core/auth/einrichtung/Einrichtungspflicht.tsx`; `freigegeben > 1` in `PasskeyAbschnitt`, `src/features/core/auth/einrichtung/AnmeldungVerwalten.tsx`.
 
 **Änderungspfad.** Pflicht auch in der Test-Umgebung: `pflicht` an `readAppUmgebung() !== 'development'` binden und den Anmeldehelfer der E2E-Tests um „Später einrichten“ ergänzen · Aufwand `klein`. Letzten Passkey doch entfernbar: die Bedingung streichen · Aufwand `klein`.
 
@@ -3992,7 +3992,7 @@ Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 P
 
 **Begründung.** ADR-025 Punkt 12: verloren heißt neue Einladung für das bestehende Konto; für Praxiskonten ist das heute der Anmeldelink des Anmeldedienstes (STAFF-005 löst ihn später ab). Den Namen der Auditaktion zu ändern wäre neue Protokollierung und braucht eine Änderung von ADR-010 mit Jannes' Freigabe (`freigabe-audit`); die Beschriftung ändert nur die Anzeige. Unsicher: ob der Anmeldelink per Mail für Praxiskonten nach B13 so bleiben soll (ADR-023 Punkt 18 schließt ihn nur für Plattformkonten aus).
 
-**Anker.** `sendeNeuenAnmeldelink` in `src/features/staff/konto-api.ts`; Beschriftung in `src/features/audit/actions.ts`.
+**Anker.** `sendeNeuenAnmeldelink` in `src/features/workforce/staff/konto-api.ts`; Beschriftung in `src/features/privacy/audit/actions.ts`.
 
 **Änderungspfad.** Eigene Auditaktion `staff_account.sign_in_link_requested`: ADR-010 ändern, Migration und Katalog · Aufwand `mittel`, nur mit Freigabe.
 
@@ -4004,7 +4004,7 @@ Datenschutz · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, Zweit
 
 **Begründung.** ADR-025 Punkt 6 verlangt die Durchsetzung in der Datenbank. In die Tabellen des Anmeldedienstes greift die Migration nicht ein (kein Trigger dort); gelesen wird nur `auth.webauthn_credentials`. Ohne diese Tabelle oder bei einem Fehler zählt der Passkey nicht (fail-closed). Unsicher: ob `last_used_at` beim Anbieter so gesetzt wird wie im Quelltext (`passkey_authentication.go`); Restlücke: Mit einem gesperrten Token lassen sich fremde Passkeys beim Anmeldedienst löschen (keine Übernahme, aber Aussperren bis zur neuen Einladung).
 
-**Anker.** `app.passkey_sign_in_approved`, `app.last_first_factor` und `public.approve_own_passkey` in `supabase/migrations/20261025120000_sec_009_passkey_freigabe.sql`; `gibPasskeyFrei` in `src/features/auth/passkey.ts`.
+**Anker.** `app.passkey_sign_in_approved`, `app.last_first_factor` und `public.approve_own_passkey` in `supabase/migrations/20261025120000_sec_009_passkey_freigabe.sql`; `gibPasskeyFrei` in `src/features/core/auth/passkey.ts`.
 
 **Änderungspfad.** Bietet der Anmeldedienst einen Hook für die Registrierung, dort sperren und die Freigabe entfallen lassen · Aufwand `mittel`. Längeres Freigabefenster: `app.pin_fresh_authentication()` · Aufwand `klein`.
 
@@ -4052,7 +4052,7 @@ Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR-0
 
 **Begründung.** Punkt 61 verlangt eine eigene, ausdrückliche Einwilligung ohne Sammelerklärung und „erteilt und widerrufen auf der Plattform wie POR-016“. Ein Widerruf muss so einfach sein wie die Erteilung und darf nicht an einem Kanal scheitern (Art. 7 Abs. 3 DSGVO); deshalb nimmt die Akte ihn an. Im Training vermerkt die Praxis bisher nur Gesundheitsangaben vom Papier (POR-017); der Widerruf zu Anhängen geht dort über die Plattform. Unsicher: ob B2 einen Widerruf vom Papier im Training verlangt.
 
-**Anker.** `public.record_patient_privacy_entry` und `public.record_platform_consent` in `supabase/migrations/20261026110000_kom_005b_attachment_projections.sql`; `einwilligungAngeboten` in `src/lib/einwilligung.ts`; Wortlaut in `src/features/platform/einwilligungstexte.ts`.
+**Anker.** `public.record_patient_privacy_entry` und `public.record_platform_consent` in `supabase/migrations/20261026110000_kom_005b_attachment_projections.sql`; `einwilligungAngeboten` in `src/lib/einwilligung.ts`; Wortlaut in `src/features/portal/platform/einwilligungstexte.ts`.
 
 **Änderungspfad.** Widerruf vom Papier auch im Training: ein Zweig in `record_training_consent_entry` · Aufwand `klein`. Anderer Wortlaut: Text und Fassung an beiden Stellen · Aufwand `klein`.
 
@@ -4088,7 +4088,7 @@ Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR-0
 
 **Begründung.** Punkt 64 verlangt, Zeit- und Programmangaben des Containers zu prüfen und auf dem Gerät zu leeren. Chromium schreibt „Chrome“ als Programm in den WebM-Kopf, Safari Zeitstempel in den MP4-Kopf. Auffüllen mit Nullbytes und Umbenennen in `free` sind in beiden Formaten zulässig und lassen alle Längen und Verweise unverändert – kein Neukodieren. Unsicher: welche Kästen Safari am iPhone tatsächlich schreibt; das prüft die Sichtung.
 
-**Anker.** `src/features/platform/videometadaten.ts` und die Prüfung in `supabase/functions/patient-file-verify/video.ts`; Aufnahme in `src/features/platform/Videodialog.tsx`, Bitrate in `src/features/platform/videoformat.ts`.
+**Anker.** `src/features/portal/platform/videometadaten.ts` und die Prüfung in `supabase/functions/patient-file-verify/video.ts`; Aufnahme in `src/features/portal/platform/Videodialog.tsx`, Bitrate in `src/features/portal/platform/videoformat.ts`.
 
 **Änderungspfad.** Weitere Angaben leeren: eine Regel an beiden Stellen · Aufwand `klein`. Dauer am Server prüfen: Containerauswertung in der Function · Aufwand `mittel`.
 
@@ -4112,7 +4112,7 @@ Praxisprozess · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR
 
 **Begründung.** Punkt 68 erlaubt die Zeitmarke und nichts darüber hinaus; ganze Sekunden reichen bei 30 Sekunden Länge. Ein Eintrag ist unveränderlich (ANN-308); nur der Verweis auf das Video darf mit ihm fallen.
 
-**Anker.** Spalten `attachment_id` und `attachment_mark_seconds` an `platform_message_entries` und `public.answer_platform_message` in den Migrationen von KOM-005; `src/features/platform/Anhaenge.tsx` und `src/features/platform/anhangtexte.ts`.
+**Anker.** Spalten `attachment_id` und `attachment_mark_seconds` an `platform_message_entries` und `public.answer_platform_message` in den Migrationen von KOM-005; `src/features/portal/platform/Anhaenge.tsx` und `src/features/portal/platform/anhangtexte.ts`.
 
 **Änderungspfad.** Bruchteile von Sekunden oder mehrere Marken je Antwort: Spaltentyp bzw. eigene Tabelle · Aufwand `mittel`.
 
@@ -4148,7 +4148,7 @@ Praxisprozess · offen · 2026-10-11 · — · — · Wiedervorlage: Jannes in d
 
 **Begründung.** BEF-129 (Zweitreview KND-EPIC-001, H5) bot zwei Wege an: Bedingung statt 14 Tage oder Sperre im Monatsentwurf. Die Bedingung ändert nur eine Lesefunktion und lässt ANN-290 („die Praxis wickelt ab, nichts storniert sich selbst“) stehen; eine Sperre im Entwurf griffe in die Abrechnung (ADR-009) und müsste beim Wertersatz nach § 357a Abs. 2 BGB wieder Ausnahmen kennen. Der Zustand ergibt sich aus dem Paket selbst – kein Vermerk „gesehen“, keine neue Auditaktion (ADR-010). Behält die Praxis ein Paket bewusst (Wertersatz bei frühem Beginn, ein Widerruf, den sie für verspätet hält), endet der Hinweis mit dem Vertragsende am Trainingsverhältnis – das lässt sich erst nach dem letzten Pakettag eintragen (ANN-277); ohne diese Grenze stünde er bis zur Aufbewahrungslöschung (Zweitreview). Unsicher: ob die Praxis einen bewusst behaltenen Widerruf früher aus der Liste nehmen will.
 
-**Anker.** Bedingung in `public.list_platform_training_withdrawals` in `supabase/migrations/20261028100000_bef_129_widerruf_bis_abgewickelt.sql`; Anzeige in `src/features/open-points/TrainingWithdrawals.tsx`. Geprüft in `supabase/tests/training-contracts.test.ts` („bleibt nach 14 Tagen in Offene Punkte …“) und `src/features/open-points/TrainingWithdrawals.test.tsx`.
+**Anker.** Bedingung in `public.list_platform_training_withdrawals` in `supabase/migrations/20261028100000_bef_129_widerruf_bis_abgewickelt.sql`; Anzeige in `src/features/workplace/open-points/TrainingWithdrawals.tsx`. Geprüft in `supabase/tests/training-contracts.test.ts` („bleibt nach 14 Tagen in Offene Punkte …“) und `src/features/workplace/open-points/TrainingWithdrawals.test.tsx`.
 
 **Änderungspfad.** Zurück zu 14 Tagen: die Bedingung `training_package_id is not null` streichen · Aufwand `klein`. Ein Paket bewusst behalten: Vermerk „abgewickelt“ am Vertrag mit Praxisfunktion · Aufwand `mittel`. Statt des Hinweises den Monatsentwurf sperren: Prüfung in `create_training_invoice_draft` · Aufwand `mittel`.
 
@@ -4160,7 +4160,7 @@ Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (BEF-145; ADR-007 Pu
 
 **Begründung.** Art. 15 DSGVO umfasst alle Daten zur Person; dass jemand für sie handelt und worauf das beruht, gehört dazu, und der Name der Vertretung steht schon an Terminwünschen und Datenschutzvermerken. Für den Vermerk zur Einwilligungsfähigkeit greift keine Ausnahme nach Art. 15 Abs. 4 – er betrifft die Person selbst, ist ein fester Wert ohne Diagnose und begründet eine Entscheidung über sie. Unsicher: ob die Datenschutzprüfung den Vermerk therapeutisch anders behandelt sehen will (§ 630g BGB kennt eine Einschränkung nur für die Einsicht in die Akte, und nur aus erheblichen therapeutischen Gründen).
 
-**Anker.** Abschnitt `platform_accesses` in `supabase/migrations/20261103100000_bef_145_plattformzugang_in_der_auskunft.sql`; Beschriftung in `src/features/datenschutz/kategorien.ts`; Tests „enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id …“, „nennt die Zugaenge zur Plattform …“ und „nennt eine rechtliche Vertretung mit … Zweifelvermerk und Ende“ in `supabase/tests/betroffenenrechte.test.ts`.
+**Anker.** Abschnitt `platform_accesses` in `supabase/migrations/20261103100000_bef_145_plattformzugang_in_der_auskunft.sql`; Beschriftung in `src/features/privacy/datenschutz/kategorien.ts`; Tests „enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id …“, „nennt die Zugaenge zur Plattform …“ und „nennt eine rechtliche Vertretung mit … Zweifelvermerk und Ende“ in `supabase/tests/betroffenenrechte.test.ts`.
 
 **Änderungspfad.** Den Vermerk zur Einwilligungsfähigkeit nur auf Verlangen herausgeben: die zwei Felder streichen und einen Hinweis in `nicht_enthalten` ergänzen · Aufwand `klein`.
 
@@ -4256,7 +4256,7 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 
 **Begründung.** IDEA-TRK-004 nennt „täglich, wöchentlich, vor jeder Einheit“ und verlangt, Verpasstes nicht nachzuholen und nicht anzumahnen. Ein Takt in Tagen deckt täglich und wöchentlich mit einer Zahl; „vor jeder Einheit“ hinge an den Übungstagen und brächte eine zweite Regel, die Angaben nach einer Einheit (ANN-348) decken den Fall schon. 28 Tage als Grenze: länger ist kein Check-in, sondern ein Assessment (OUT-EPIC-001). Unsicher: ob die Praxis einen festen Wochentag statt „vom letzten an“ will.
 
-**Anker.** `app.checkin_due_on` und `set_checkin_schedule` in `supabase/migrations/20261105110000_trk_002_checkins.sql` (dort auch `merge_patients`); `TAKTE` in `src/features/checkins/api.ts`; Tests in `supabase/tests/checkins.test.ts` und „Check-ins ziehen mit …“ in `supabase/tests/patient-merge.test.ts`.
+**Anker.** `app.checkin_due_on` und `set_checkin_schedule` in `supabase/migrations/20261105110000_trk_002_checkins.sql` (dort auch `merge_patients`); `TAKTE` in `src/features/exercise/checkins/api.ts`; Tests in `supabase/tests/checkins.test.ts` und „Check-ins ziehen mit …“ in `supabase/tests/patient-merge.test.ts`.
 
 **Änderungspfad.** `app.checkin_due_on` und die Grenze `interval_days` ändern · Aufwand `klein`.
 
@@ -4280,7 +4280,7 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 
 **Begründung.** Wie beim Befundbogen (ANN-248) und der Einheit (ANN-306) ist eine Angabe zur Gesundheit eine Aussage der Person, die eine Begleitung nicht für sie macht (ADR-023 Punkt 13). DSN-001 D5 (bestätigt) schließt Alarm und Benachrichtigung je Check-in aus; ein Alarm auf einen Wert wäre Verbot 2 (ADR-006 Punkt 11). Unsicher: ob „Check-in ausgeblieben“ als organisatorischer Punkt in der Übersicht der Praxis (D5) gebraucht wird – er ist nicht gebaut (Vorschlag im Bericht).
 
-**Anker.** Recht `checkin` in `app.platform_access_allows`, `submit_platform_checkin` in `supabase/migrations/20261105120000_trk_003_platform_checkins.sql`; `nachDemCheckin` in `src/features/platform/checkintexte.ts`; Tests „Begleitung liest …“ und „im Training nur mit Einwilligung …“ in `supabase/tests/checkins.test.ts`.
+**Anker.** Recht `checkin` in `app.platform_access_allows`, `submit_platform_checkin` in `supabase/migrations/20261105120000_trk_003_platform_checkins.sql`; `nachDemCheckin` in `src/features/portal/platform/checkintexte.ts`; Tests „Begleitung liest …“ und „im Training nur mit Einwilligung …“ in `supabase/tests/checkins.test.ts`.
 
 **Änderungspfad.** `'checkin'` in `app.platform_access_allows` in die Zeile der Rechte für alle Zugänge verschieben · Aufwand `klein`.
 
@@ -4316,7 +4316,7 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 
 **Begründung.** IDEA-TRK-006 nennt Uhrzeit, Seite, Messmittel, Aufwärmen, Schmerzmittel und Position als Bedingungen, ohne die eine Kurve Rauschen ist. Für Selbstauskünfte wirken davon Uhrzeit, Schmerzmittel und Seite; Messmittel, Aufwärmen und Position betreffen Kraft- und Bewegungsmessungen, die erst mit den Assessments (OUT-EPIC-001) entstehen. Der Zusammenhang ist keine Größe der Zeitreihe, sondern ihre Lesart – deshalb neben den fünf (ANN-349), aber nur auf Wahl der Praxis (Datenminimierung, IDEA-TRK-002). Die Bedarfsmedikation als eigene Verlaufsgröße bleibt bei ALT-EPIC-001. Unsicher: ob „24 Stunden“ oder „seit dem letzten Check-in“ für Jannes der nützlichere Bezug ist.
 
-**Anker.** Spalte `role` in `app.tracking_parameters()`, `app.checkin_keys_valid` und `submit_platform_checkin` in `supabase/migrations/20261106110000_trk_005_context.sql`; `rolle` und `nurFragen` in `src/lib/erfassungsgroessen.ts`; Tests „nimmt den Zusammenhang mit einer Frage …“ in `supabase/tests/checkins.test.ts`, „nimmt den Zusammenhang dazu …“ in `src/features/checkins/ZwischenDenTerminen.test.tsx`.
+**Anker.** Spalte `role` in `app.tracking_parameters()`, `app.checkin_keys_valid` und `submit_platform_checkin` in `supabase/migrations/20261106110000_trk_005_context.sql`; `rolle` und `nurFragen` in `src/lib/erfassungsgroessen.ts`; Tests „nimmt den Zusammenhang mit einer Frage …“ in `supabase/tests/checkins.test.ts`, „nimmt den Zusammenhang dazu …“ in `src/features/exercise/checkins/ZwischenDenTerminen.test.tsx`.
 
 **Änderungspfad.** Eine Angabe zum Zusammenhang ist eine Zeile mit `role = 'context'` in beiden Katalogen · Aufwand `klein`; zur Frage machen: `role` auf `question` · Aufwand `klein`.
 
@@ -4328,7 +4328,7 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 
 **Begründung.** Die Roadmap verlangt für TRK-EPIC-002 „als Zeitreihe lesbar“; ADR-006 Punkt 11 erlaubt Anzeigen und Verlauf, verbietet jede abgeleitete Bewertung. Eine Tabelle zeigt den Wert, wie er angegeben wurde, und macht Lücken sichtbar (IDEA-TRK-002, IDEA-TRK-004: Verpasstes ist selbst eine Information); die Verlaufsgrafik mit Ereignissen ist OUT-EPIC-001. Die Angaben nach den Einheiten lesen dieselben Rollen wie die Pläne (ANN-298, ANN-351); neben den Check-ins zeigen sie Bewegungssicherheit und Schmerz zwischen den Terminen an einer Stelle. Jüngste links, weil beim nächsten Termin die letzte Angabe zählt. Unsicher: ob Jannes die Spalten lieber in Zeitrichtung (älteste links) liest.
 
-**Anker.** `src/components/ui/Verlaufstabelle.tsx`; `app.checkin_sessions_json` und `get_checkins` in `supabase/migrations/20261106120000_trk_006_time_series.sql`; Tests „zeigt der Praxis daneben die Angaben nach den Einheiten …“ in `supabase/tests/checkins.test.ts`, `src/features/checkins/ZwischenDenTerminen.test.tsx`, `tests/e2e/checkin.spec.ts`.
+**Anker.** `src/components/ui/Verlaufstabelle.tsx`; `app.checkin_sessions_json` und `get_checkins` in `supabase/migrations/20261106120000_trk_006_time_series.sql`; Tests „zeigt der Praxis daneben die Angaben nach den Einheiten …“ in `supabase/tests/checkins.test.ts`, `src/features/exercise/checkins/ZwischenDenTerminen.test.tsx`, `tests/e2e/checkin.spec.ts`.
 
 **Änderungspfad.** Reihenfolge der Spalten in `Verlaufstabelle` umdrehen · Aufwand `klein`; Einheiten weglassen: `sessions` aus `get_checkins` nehmen · Aufwand `klein`.
 
@@ -4356,7 +4356,7 @@ Datenschutz · offen · 2026-10-12 · — · — · Wiedervorlage: Datenschutzpr
 
 **Begründung.** ADR-024 Punkte 4, 5, 7, 8 (W2 a): der Plan der Einheit und die Warteschlange, nur der zugewiesene, laufende Plan, Löschung bei Abmelden, Kontowechsel, Übertragung, Wegfall beim Server und nach sieben Tagen. Ein Weg für online und offline statt zweier: Ein Haken, der online direkt zum Server ginge, wäre beim Funkloch mitten in der Einheit ein anderer Fall mit anderem Verhalten. Die Feldliste an einer Stelle folgt dem Gedanken von ADR-001 („sonst wächst sie zur Vollakte“). Unsicher: ob die Datenschutzprüfung die unverschlüsselte Ablage auf dem privaten Telefon der Person trägt (ADR-024, Folgefragen) – der Plan liegt ihr ohnehin als PDF vor.
 
-**Anker.** `OFFLINE_FRIST_TAGE`, `fachAendern`, `ablageLeeren` in `src/lib/geraeteablage.ts`; `ablageplanSchema`, `plaeneAblegen`, `ereignisAblegen`, `uebertragen` in `src/features/platform/ablage.ts`; `PlattformAblage` in `src/features/platform/PlattformAblage.tsx`; Räumung in `src/features/auth/SessionProvider.tsx`. Tests in `src/lib/geraeteablage.test.ts`, `src/features/platform/ablage.test.ts`, `src/features/platform/Durchfuehrung.test.tsx`.
+**Anker.** `OFFLINE_FRIST_TAGE`, `fachAendern`, `ablageLeeren` in `src/lib/geraeteablage.ts`; `ablageplanSchema`, `plaeneAblegen`, `ereignisAblegen`, `uebertragen` in `src/features/portal/platform/ablage.ts`; `PlattformAblage` in `src/features/portal/platform/PlattformAblage.tsx`; Räumung in `src/features/core/auth/SessionProvider.tsx`. Tests in `src/lib/geraeteablage.test.ts`, `src/features/portal/platform/ablage.test.ts`, `src/features/portal/platform/Durchfuehrung.test.tsx`.
 
 **Änderungspfad.** Verschlüsseln (W2 c): eine Hülle um `speicherInIndexedDb` · Aufwand `klein`; nur im Speicher der Seite (W2 b): `speicherImSpeicher` überall · Aufwand `klein`; andere Feldliste: `ablageplanSchema` · Aufwand `klein`.
 
@@ -4368,7 +4368,7 @@ Technik · offen · 2026-10-12 · — · — · Wiedervorlage: OPS-001 (Passkeys
 
 **Begründung.** ADR-025 Punkt 16 verlangt die Prüfung „gegen den öffentlichen Schlüssel eines Passkeys des eigenen Kontos, den sie bei der letzten Freigabe mit Netz abgelegt hat“ und §3.4 (zweite Ausnahme) Zeremonie und Signaturprüfung aus Browser und Web Crypto. Ein öffentlicher Schlüssel ist kein Geheimnis; die Datenbank hält ihn am bestehenden Datensatz der Freigabe (Datenklasse Accountdaten) und gibt ihn nur dem eigenen Konto in offener Sitzung. Prüfen, ob der abgegebene Schlüssel wirklich zum Passkey beim Anmeldedienst gehört, kann die Datenbank nicht; wer ihn verfälscht, braucht dafür eine offene Sitzung desselben Kontos und gewinnt ohne Netz nur die Ablage dieses Geräts. Die Relying Party des Ursprungs, weil der Anmeldedienst sie je Umgebung als Domain der Anwendung führt (ADR-025, Konsequenzen). Unsicher: ob eine Umgebung die Relying Party als übergeordnete Domain einrichtet – dann findet der Browser ohne Netz keinen Passkey.
 
-**Anker.** `public.approve_own_passkey`, `public.own_offline_passkeys` und der Constraint `passkey_approvals_offline_key` in `supabase/migrations/20261107110000_trk_009_offline_passkey.sql`; `offlineschluesselAus`, `schluesselAblegen`, `pruefeZusicherung`, `freigebenOhneNetz` in `src/features/auth/freigabeOhneNetz.ts`; Phasen `ohneNetz` und `lokal` in `src/features/auth/sitzungssperre/Sitzungssperre.tsx`; `SperreOhneNetz.tsx`; `LokaleUebungen.tsx`. Tests in `supabase/tests/offline-passkey.test.ts`, `src/features/auth/freigabeOhneNetz.test.ts`, `src/features/auth/sitzungssperre/SperreOhneNetz.test.tsx`, `tests/e2e/ohne-netz.spec.ts` (virtueller Authenticator).
+**Anker.** `public.approve_own_passkey`, `public.own_offline_passkeys` und der Constraint `passkey_approvals_offline_key` in `supabase/migrations/20261107110000_trk_009_offline_passkey.sql`; `offlineschluesselAus`, `schluesselAblegen`, `pruefeZusicherung`, `freigebenOhneNetz` in `src/features/core/auth/freigabeOhneNetz.ts`; Phasen `ohneNetz` und `lokal` in `src/features/core/auth/sitzungssperre/Sitzungssperre.tsx`; `SperreOhneNetz.tsx`; `LokaleUebungen.tsx`. Tests in `supabase/tests/offline-passkey.test.ts`, `src/features/core/auth/freigabeOhneNetz.test.ts`, `src/features/core/auth/sitzungssperre/SperreOhneNetz.test.tsx`, `tests/e2e/ohne-netz.spec.ts` (virtueller Authenticator).
 
 **Änderungspfad.** Schlüssel vom Anmeldedienst lesen, sobald er ihn herausgibt: `own_offline_passkeys` aus `auth.webauthn_credentials` statt aus der Freigabe · Aufwand `mittel`; andere Relying Party: eine Konstante in `freigebenOhneNetz` · Aufwand `klein`; Freigabe ohne Netz abschalten: `ohneNetz` in `src/app/App.tsx` nicht setzen · Aufwand `klein`.
 
@@ -4380,7 +4380,7 @@ Datenschutz · offen · 2026-10-12 · — · — · Wiedervorlage: Datenschutzpr
 
 **Begründung.** ADR-024 Punkt 6: „Ein Entwurf fällt nie von selbst“ (§13) und „Ein anderes Konto auf demselben Gerät sieht sie nie“. Wäre die Einrichtung an die übrige Ablage gebunden, fiele sie mit jedem Abmelden, und die Gerätevorgabe würde jeden Morgen weggeklickt statt bedacht. Beim Server steht sie nicht, weil die Anwendung die Vorgabe ohnehin nicht prüfen kann (Punkt 6) und eine Liste eingerichteter Geräte ein Merkmal über die Person wäre, das die Praxis für die Arbeit nicht braucht (§20). Die Gerätevorgabe ist eine organisatorische Maßnahme der Praxis; die Betriebsdokumentation (BETRIEB-001, ADR-012) soll denselben Wortlaut übernehmen. Unsicher: ob die Datenschutzprüfung für nicht übertragene Entwürfe eine Höchstdauer verlangt; ADR-024 nimmt das Restrisiko des verlorenen Geräts ausdrücklich in Kauf.
 
-**Anker.** `dauerfachLesen`, `dauerfachAendern` in `src/lib/geraeteablage.ts`; `ABLAGE_FUER_PRAXISKONTEN`, `GERAETEVORGABE`, `einrichten`, `ausschalten` in `src/features/offline-documentation/servicePhone.ts`; `DiensttelefonAbschnitt.tsx`; Bedingung `ohneEmpfang` in `src/features/account/MeinKontoPage.tsx`. Geprüft in `src/lib/geraeteablage.test.ts` („Dauerablage je Konto“), `tagesplan.test.ts`, `DiensttelefonAbschnitt.test.tsx`.
+**Anker.** `dauerfachLesen`, `dauerfachAendern` in `src/lib/geraeteablage.ts`; `ABLAGE_FUER_PRAXISKONTEN`, `GERAETEVORGABE`, `einrichten`, `ausschalten` in `src/features/clinical/offline-documentation/servicePhone.ts`; `DiensttelefonAbschnitt.tsx`; Bedingung `ohneEmpfang` in `src/features/workplace/account/MeinKontoPage.tsx`. Geprüft in `src/lib/geraeteablage.test.ts` („Dauerablage je Konto“), `tagesplan.test.ts`, `DiensttelefonAbschnitt.test.tsx`.
 
 **Änderungspfad.** W1 nach (a) zurücknehmen: `ABLAGE_FUER_PRAXISKONTEN = false`, Entwürfe vorher übertragen · Aufwand `klein`. Einrichtung zusätzlich beim Server vermerken (etwa für eine Geräteliste der Praxis): eigene Tabelle mit Datenklasse · Aufwand `mittel`. Höchstdauer für Entwürfe: eine Konstante und ein Hinweis vor dem Fallen in `entwuerfe.ts` · Aufwand `klein`.
 
@@ -4392,7 +4392,7 @@ Datenschutz · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes nach d
 
 **Begründung.** ADR-024 Punkt 6 nennt „Uhrzeit, Terminart, Name, Hausbesuchsadresse und Telefon“ und verlangt die Liste an genau einer Stelle (ADR-001: „sonst wächst sie zur Vollakte“). Kennung und Zustand braucht die Ansicht, um einen Entwurf dem Termin zuzuordnen und eine Absage zu zeigen. Zugangshinweis und Besonderheit sind Freitext und tragen erfahrungsgemäß Gesundheitsangaben („Rollator im Flur“, „Diabetes“); sie stehen nicht in der Liste des ADR. Der nächste Morgen nicht, weil der Start vor acht Uhr im Funkloch selten ist und ein zweiter Tag die Menge verdoppelt; wer ihn braucht, öffnet die Übersicht am Vorabend nicht neu, sondern morgens mit Verbindung.
 
-**Anker.** `tagesplanTerminSchema`, `alsTagesplanTermin`, `tagesplanAblegen`, `tagesplanLesen`, `useTagesplanAblegen` in `src/features/offline-documentation/tagesplan.ts`; `PraxisAblage.tsx`; `AblageRaeumen` in `src/app/App.tsx`. Geprüft in `src/features/offline-documentation/tagesplan.test.ts`.
+**Anker.** `tagesplanTerminSchema`, `alsTagesplanTermin`, `tagesplanAblegen`, `tagesplanLesen`, `useTagesplanAblegen` in `src/features/clinical/offline-documentation/tagesplan.ts`; `PraxisAblage.tsx`; `AblageRaeumen` in `src/app/App.tsx`. Geprüft in `src/features/clinical/offline-documentation/tagesplan.test.ts`.
 
 **Änderungspfad.** Zugangshinweis aufnehmen: ein Feld im Schema und in `alsTagesplanTermin`, mit Review · Aufwand `klein`. Den nächsten Morgen dazunehmen: zweiter Tag in `tagesplanAblegen` und `tagesplanLesen` · Aufwand `klein`.
 
@@ -4404,7 +4404,7 @@ Technik · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sic
 
 **Begründung.** ADR-024 Punkt 7 (additiv, wiederholbar, kein Einmischen, Wege aus ANN-320), Punkt 8 (Urteil beim Eingang, „still verschwindet keine Dokumentation“), ADR-001 Punkt 5 (kein Last-Write-Wins), ADR-016 Punkt 3 (Entwurf ohne Versionen – deshalb kein automatisches Anhängen an den Entwurf einer Kollegin). Die Kennung wird nur je Konto wiedererkannt (eindeutig je `created_by`), damit eine fremde Kennung weder etwas gewährt noch verrät (ADR-023 Punkt 19). Die Frist der automatischen Finalisierung beginnt mit dem Eingang, weil `app.documentation_deadline` das Spätere von Behandlung und Anlage nimmt (ANN-008). Eine Uhr aus der Zukunft ist eine falsche Uhr; der Entwurf soll daran nicht hängen bleiben, deshalb wird gekappt statt abgewiesen.
 
-**Anker.** `public.sync_offline_treatment_note`, Spalten `offline_id`, `reported_written_at`, Index `treatment_notes_offline_id_per_author` in `supabase/migrations/20261108100000_off_002_offline_treatment_note.sql`; `entwurfUebertragen` in `src/features/offline-documentation/api.ts`; `entwurfSchreiben`, `entwuerfeUebertragen`, `bearbeitungBeginnen` in `entwuerfe.ts`; `AufDemGeraet.tsx`, `AufDemGeraetPage.tsx`, `PraxisAblage.tsx`. Geprüft in `supabase/tests/offline-treatment-note.test.ts`, `entwuerfe.test.ts`, `api.test.ts`, `AufDemGeraet.test.tsx`.
+**Anker.** `public.sync_offline_treatment_note`, Spalten `offline_id`, `reported_written_at`, Index `treatment_notes_offline_id_per_author` in `supabase/migrations/20261108100000_off_002_offline_treatment_note.sql`; `entwurfUebertragen` in `src/features/clinical/offline-documentation/api.ts`; `entwurfSchreiben`, `entwuerfeUebertragen`, `bearbeitungBeginnen` in `entwuerfe.ts`; `AufDemGeraet.tsx`, `AufDemGeraetPage.tsx`, `PraxisAblage.tsx`. Geprüft in `supabase/tests/offline-treatment-note.test.ts`, `entwuerfe.test.ts`, `api.test.ts`, `AufDemGeraet.test.tsx`.
 
 **Änderungspfad.** Bei Konflikt mit einem Entwurf automatisch als Nachtrag anlegen: ein Zweig in `sync_offline_treatment_note` · Aufwand `klein`. Auch mit Verbindung auf dem Gerät schreiben: die Bedingung `online` in `Terminzeile` · Aufwand `klein`. Den Vermerk ohne Netz erlauben: Spalte im RPC und im Schreibfeld · Aufwand `mittel`.
 
@@ -4416,7 +4416,7 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 
 **Begründung.** ADR-024 Punkt 6 verlangt beim Abmelden „die Zahl und die Wahl, erst zu übertragen“ und dass ein Verwerfen ausdrücklich ist; „Auf dem Gerät lassen“ folgt aus „Ein Entwurf fällt nie von selbst“ und gibt dem, der das Gerät am Abend abgibt und morgen wieder nimmt, einen Weg ohne Verlust. Die ADR-Konsequenz „Für Praxiskonten gilt dasselbe am Termin“ macht die Schreibseite ohne Verbindung zum Eingang in die Ablage; ANN-319 und ANN-320 bleiben für Geräte ohne Einrichtung. Der Hinweis oben ist die Anzeige „Noch nicht übertragen“ aus Punkt 6 (§ 630f BGB: zeitnah).
 
-**Anker.** `praxisOhneNetz`, `LokaleDokumentation` in `src/features/offline-documentation/ohneNetz.tsx`; `ohneNetzFuer` in `src/app/ohneNetz.ts`; `einleitung` in `SperreOhneNetz.tsx` und `Sitzungssperre.tsx`; `EntwurfAbmeldewache.tsx`; `Geraetehinweis.tsx` in `src/app/AppShell.tsx`; `AufGeraetSichern.tsx` in `src/features/documentation/CompleteTreatmentPage.tsx`. Geprüft in `ohneEmpfang.test.tsx` und `tests/e2e/ohne-empfang.spec.ts`.
+**Anker.** `praxisOhneNetz`, `LokaleDokumentation` in `src/features/clinical/offline-documentation/ohneNetz.tsx`; `ohneNetzFuer` in `src/app/ohneNetz.ts`; `einleitung` in `SperreOhneNetz.tsx` und `Sitzungssperre.tsx`; `EntwurfAbmeldewache.tsx`; `Geraetehinweis.tsx` in `src/app/AppShell.tsx`; `AufGeraetSichern.tsx` in `src/features/clinical/documentation/CompleteTreatmentPage.tsx`. Geprüft in `ohneEmpfang.test.tsx` und `tests/e2e/ohne-empfang.spec.ts`.
 
 **Änderungspfad.** Ohne „Auf dem Gerät lassen“: den mittleren Knopf in `EntwurfAbmeldewache` streichen · Aufwand `klein`. Auch die Bearbeiten-Seite eines Entwurfs (`TreatmentNotePage`) ohne Verbindung sichern lassen: `AufGeraetSichern` dort einsetzen · Aufwand `klein`.
 
@@ -4428,7 +4428,7 @@ Datenschutz · offen · 2026-10-12 · — · Prüfpaket · Wiedervorlage: Jannes
 
 **Begründung.** IDEA-OUT-005 nennt Termine, Planwechsel, Operationen, Urlaube, Krankheit und Medikationsänderungen als Markierungen; ohne sie werden Kurven falsch gelesen. ADR-021 Punkt 5 verlangt Fachdaten am Verhältnis, Punkt 6 keinen Durchgriff – deshalb eine eigene Tabelle statt der Ereignisse der Akte. Operation, Erkrankung und Medikation sind Gesundheitsangaben; im Training trägt sie nur die Einwilligung (ADR-021 Punkt 4, Art. 9 Abs. 2 lit. a DSGVO), dieselbe Regel wie für „schwierig, weil …“ (ANN-306). Eine Auswahlzahl als Höhe zu zeichnen, stellte „brennend“ größer dar als „dumpf“ – eine Aussage, die die Angabe nicht macht (ADR-006 Punkt 11). Schübe sind keine eigene Art, um die Arten von Akte und Training gleich zu halten; sie stehen unter „Erkrankung“ oder „Sonstiges“. Kein neuer Auditeintrag: Lesen steht als Öffnen des Verhältnisses (ADR-010 Fassung 3).
 
-**Anker.** Tabelle `training_course_events`, `app.training_health_consent`, `add_training_course_event`, `remove_training_course_event`, `app.progress_plan_events_json`, `app.progress_appointment_days_json` und `get_checkins` in `supabase/migrations/20261109100000_out_001_progress_events.sql`; `alsBild` in `src/lib/verlaufsbild.ts`; `verlaufsmarkierungen` in `src/features/checkins/markierungen.ts`, `Verlaufsereignisse` in `src/features/checkins/Verlauf.tsx`. Geprüft in `supabase/tests/progress-events.test.ts`, `src/lib/verlaufsbild.test.ts`, `src/features/checkins/ZwischenDenTerminen.test.tsx`.
+**Anker.** Tabelle `training_course_events`, `app.training_health_consent`, `add_training_course_event`, `remove_training_course_event`, `app.progress_plan_events_json`, `app.progress_appointment_days_json` und `get_checkins` in `supabase/migrations/20261109100000_out_001_progress_events.sql`; `alsBild` in `src/lib/verlaufsbild.ts`; `verlaufsmarkierungen` in `src/features/exercise/checkins/markierungen.ts`, `Verlaufsereignisse` in `src/features/exercise/checkins/Verlauf.tsx`. Geprüft in `supabase/tests/progress-events.test.ts`, `src/lib/verlaufsbild.test.ts`, `src/features/exercise/checkins/ZwischenDenTerminen.test.tsx`.
 
 **Änderungspfad.** Ohne Einwilligung vermerken lassen (etwa nur „Urlaub“): ein Zweig nach Art in `add_training_course_event` · Aufwand `klein`. Eigene Art „Schub“: Constraint beider Tabellen und `EREIGNISARTEN` · Aufwand `mittel`. Auch Auswahlgrößen zeichnen (als Zeile von Wörtern): `alsBild` und ein zweiter Bildtyp · Aufwand `mittel`.
 
@@ -4452,7 +4452,7 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 
 **Begründung.** IDEA-OUT-006 nennt die Auslassung je Übung „das ehrlichste Signal“; Darstellen ist zulässig, die Ursachenzuschreibung ist Behandlungsauswahl (ADR-006 Punkte 4, 10, 13; Eintrag `uebungsanalyse` in `src/app/mdr.ts` sperrt die ableitende Hälfte und bleibt unberührt). Ein Haken ist die einzige Erfassung je Übung (UEB-010); Last je Satz zu erfassen wäre ein neues Erfassungsepic mit Plattformoberfläche und gehört nicht hierher (ADR-014: nichts vorbauen). Nur beendete Einheiten, weil eine abgebrochene nichts über die letzte Übung sagt, die die Person noch gar nicht erreicht hat. Zahlen statt Prozent, weil bei vier Einheiten eine Quote eine Genauigkeit vortäuscht (IDEA-OUT-005, Zusatz).
 
-**Anker.** `sets_by_item` in `app.exercise_plan_sessions_json` (`supabase/migrations/20261109120000_out_003_sets_by_item.sql`); `uebungsanalyse`, `ausfuehrung`, `ZULETZT` in `src/features/exercise-plans/uebungsanalyse.ts`; `JeUebung` in `PlanPage.tsx`. Geprüft in `supabase/tests/platform-exercise-sessions.test.ts`, `uebungsanalyse.test.ts`, `Plaene.test.tsx`.
+**Anker.** `sets_by_item` in `app.exercise_plan_sessions_json` (`supabase/migrations/20261109120000_out_003_sets_by_item.sql`); `uebungsanalyse`, `ausfuehrung`, `ZULETZT` in `src/features/exercise/exercise-plans/uebungsanalyse.ts`; `JeUebung` in `PlanPage.tsx`. Geprüft in `supabase/tests/platform-exercise-sessions.test.ts`, `uebungsanalyse.test.ts`, `Plaene.test.tsx`.
 
 **Änderungspfad.** Auch nicht beendete Einheiten zählen: Filter in `uebungsanalyse` · Aufwand `klein`. Über Planfassungen hinweg je Übung (Variante): Zusammenführung über `previous_item_id` · Aufwand `mittel`. Last und Wiederholungen je Satz erfassen: Spalten an `exercise_plan_session_sets`, Eingabe in der Durchführung · Aufwand `groß`.
 
@@ -4464,7 +4464,7 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 
 **Begründung.** IDEA-OUT-008: für Patient:innen reduziert, ohne Fachbegriffe; „reduzieren, nicht beschönigen“ und vollständiger Zugang auf Wunsch (§ 630g BGB, Art. 15) – deshalb Rohwerte als Punkte und die volle Tabelle einen Tipp entfernt, kein geglätteter Verlauf und kein Ausblenden hoher Werte. Ein Satz, der nicht von den Werten abhängt, ist keine Ableitung (ADR-006 Punkt 12, sinngemäß). Ereignisse der Praxis sind Vermerke in deren Worten („Erkrankung · Grippe“), oft nicht mit der Person abgestimmt; Planwechsel sieht die Person schon unter „Übungen“. Assessments und Auslassungen ohne Einordnung lesen sich für die Person leicht als Urteil; die Praxis bespricht sie im Termin (IDEA-OUT-008, „Vorsicht“). Über Art. 15 und den eigenen Export bleibt alles erreichbar.
 
-**Anker.** `session_history` in `public.platform_checkins` (`supabase/migrations/20261109130000_out_004_own_progress.sql`); `MeineAngaben`, `EigeneBilder` in `src/features/platform/Checkin.tsx`. Geprüft in `supabase/tests/checkins.test.ts` („zeigt der Praxis daneben …“), `src/features/platform/Checkin.test.tsx`.
+**Anker.** `session_history` in `public.platform_checkins` (`supabase/migrations/20261109130000_out_004_own_progress.sql`); `MeineAngaben`, `EigeneBilder` in `src/features/portal/platform/Checkin.tsx`. Geprüft in `supabase/tests/checkins.test.ts` („zeigt der Praxis daneben …“), `src/features/portal/platform/Checkin.test.tsx`.
 
 **Änderungspfad.** Ereignisse auch der Person zeigen: `events` in `platform_checkins` und Markierungen in `EigeneBilder` · Aufwand `mittel`. Eigene Assessments zeigen: Plattformprojektion und Abschnitt · Aufwand `mittel`. Die Tabelle offen statt zugeklappt: `offen` an `Disclosure` · Aufwand `klein`.
 
@@ -4488,7 +4488,7 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 
 **Begründung.** IDEA-ALT-001 will Art, ungefähre Dauer und Intensität „grob und ohne Genauigkeitsanspruch“, damit eine Trainingsreaktion deutbar wird – das ist die Lesart einer Zeitreihe, also Zusammenhang (IDEA-TRK-006). Die größte Belastung reicht für den Zweck (der Umzug am Samstag) und ist mit einem Tipp beantwortet; ein eigenes Aktivitätstagebuch wäre eine zweite Erfassung mit eigener Tabelle, Frist und Oberfläche, ohne dass der Zweck mehr verlangt (Art. 5 Abs. 1 lit. c DSGVO, ADR-014). Kein Freitext, weil er Dritte und Diagnosen aufnimmt. Keine Summe und keine Rangliste, weil die Anzeige sonst bei Schmerzpatient:innen zur Selbstbewertung wird (IDEA-ALT-001 „Vorsicht“, IDEA-ALT-007; ADR-006 Punkt 11). „Nichts Besonderes“ unterscheidet „keine Belastung“ von „nicht beantwortet“.
 
-**Anker.** `app.tracking_parameters()` in `supabase/migrations/20261110110000_alt_002_activity_context.sql`; `activity_kind`, `activity_minutes`, `activity_intensity` in `src/lib/erfassungsgroessen.ts`; `KONTEXTGRUPPEN` in `src/features/checkins/ZwischenDenTerminen.tsx`, `aktivitaet` in `src/features/platform/Checkin.tsx`. Geprüft in `supabase/tests/checkins.test.ts`, `supabase/tests/erfassungsgroessen.test.ts`, `src/features/platform/Checkin.test.tsx`.
+**Anker.** `app.tracking_parameters()` in `supabase/migrations/20261110110000_alt_002_activity_context.sql`; `activity_kind`, `activity_minutes`, `activity_intensity` in `src/lib/erfassungsgroessen.ts`; `KONTEXTGRUPPEN` in `src/features/exercise/checkins/ZwischenDenTerminen.tsx`, `aktivitaet` in `src/features/portal/platform/Checkin.tsx`. Geprüft in `supabase/tests/checkins.test.ts`, `supabase/tests/erfassungsgroessen.test.ts`, `src/features/portal/platform/Checkin.test.tsx`.
 
 **Änderungspfad.** Mehrere Aktivitäten oder ein Tagebuch je Tag: eigene Tabelle und Plattformseite wie die Gewohnheiten · Aufwand `mittel`. Weitere Arten: ein Wort in `optionen` und die Obergrenze im Katalog · Aufwand `klein`.
 
@@ -4500,7 +4500,7 @@ Datenschutz · offen · 2026-10-12 · — · Prüfpaket · Wiedervorlage: Jannes
 
 **Begründung.** IDEA-ALT-002: wenige, sehr kleine Gewohnheiten mit Auslöser, Ort und Zeitpunkt; Serien nie an Klinisches knüpfen und bei Krankheit pausieren statt brechen. Ohne Serie gibt es nichts, das bricht – die sicherste Lesart der „Vorsicht“; die Pause bleibt, damit die Praxis sieht, dass die Person bewusst aussetzt. Die Praxis trägt ein, weil die Gewohnheit im Termin vereinbart wird (wie der Plan, UEB-004); die Person vermerkt, weil nur sie es weiß (wie der Check-in, ANN-352). Sieben Tage, damit ein Blick pro Woche reicht und alte Angaben nicht nachträglich umgeschrieben werden. Ob Gewohnheiten im Training Gesundheitsangaben sind, ist nicht eindeutig; sie stehen im Zusammenhang mit Beschwerden und Plan, deshalb die strengere Seite (Art. 9 Abs. 2 lit. a DSGVO, ADR-021 Punkt 4, wie ANN-306). Das Zurücknehmen löscht, weil es die eigene Angabe der Person ist und kein Praxisvorgang (ADR-010 Fassung 3: das Datenmodell weist Schreibvorgänge nach – hier der jüngste Stand der Angabe). Kein neuer Auditeintrag: Lesen steht als Öffnen des Verhältnisses bzw. als Vertretung.
 
-**Anker.** Tabellen `habits`, `habit_marks`, `app.habits_max_running`, `app.habit_mark_days`, `add_habit`, `end_habit`, `platform_habits`, `mark_platform_habit`, `pause_platform_habit` und die Erweiterungen von `get_checkins`, `export_patient_record`, `platform_export`, `merge_patients` in `supabase/migrations/20261110120000_alt_003_habits.sql`; `tagesreihe` in `src/lib/gewohnheiten.ts`; `src/features/checkins/Gewohnheiten.tsx`, `src/features/platform/Gewohnheiten.tsx`, Kachel in `Uebersicht.tsx`. Geprüft in `supabase/tests/habits.test.ts`, `patient-merge.test.ts`, `src/lib/gewohnheiten.test.ts`, `ZwischenDenTerminen.test.tsx`, `src/features/platform/Gewohnheiten.test.tsx`, `tests/e2e/alltag.spec.ts`.
+**Anker.** Tabellen `habits`, `habit_marks`, `app.habits_max_running`, `app.habit_mark_days`, `add_habit`, `end_habit`, `platform_habits`, `mark_platform_habit`, `pause_platform_habit` und die Erweiterungen von `get_checkins`, `export_patient_record`, `platform_export`, `merge_patients` in `supabase/migrations/20261110120000_alt_003_habits.sql`; `tagesreihe` in `src/lib/gewohnheiten.ts`; `src/features/exercise/checkins/Gewohnheiten.tsx`, `src/features/portal/platform/Gewohnheiten.tsx`, Kachel in `Uebersicht.tsx`. Geprüft in `supabase/tests/habits.test.ts`, `patient-merge.test.ts`, `src/lib/gewohnheiten.test.ts`, `ZwischenDenTerminen.test.tsx`, `src/features/portal/platform/Gewohnheiten.test.tsx`, `tests/e2e/alltag.spec.ts`.
 
 **Änderungspfad.** Mehr oder weniger als drei: `app.habits_max_running` · Aufwand `klein`. Längerer Nachtrag: `app.habit_mark_days` · Aufwand `klein`. Im Training ohne Einwilligung: die Prüfungen in `add_habit` und `app.platform_habit_for_writing` · Aufwand `klein`. Die Person trägt selbst ein: eine Plattformfunktion wie `add_habit` mit dem Recht `checkin` · Aufwand `mittel`. Zurücknehmen nachvollziehbar statt löschen: Spalten `removed_at`/`removed_by_access_id` an `habit_marks` · Aufwand `mittel`.
 
@@ -4552,7 +4552,7 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
 
 **Begründung.** Fremdschlüssel, RLS und Schnappschuss der Bibliothek bleiben; die Praxis passt ihre Kopie frei an (Analyse 12.10., Variante a).
 
-**Anker.** `app.import_exercise_catalog_for` in der Migration UEB-012; `src/features/exercises/katalog/index.ts`.
+**Anker.** `app.import_exercise_catalog_for` in der Migration UEB-012; `src/features/exercise/exercises/katalog/index.ts`.
 
 **Änderungspfad.** Neue Fassung übernehmen anbieten: Vergleich `catalog_version` · Aufwand `mittel`.
 
@@ -4564,7 +4564,7 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Ü
 
 **Begründung.** Ordnungen zum Suchen, die der ADR ausdrücklich zulässt; ein Krankheitsbild lüde zum Abgleich mit der Akte ein.
 
-**Anker.** `app.exercise_goals`, `app.exercise_starting_positions`, `app.exercise_equipment_labels` in der Migration UEB-012; `src/features/exercises/katalog/typen.ts`.
+**Anker.** `app.exercise_goals`, `app.exercise_starting_positions`, `app.exercise_equipment_labels` in der Migration UEB-012; `src/features/exercise/exercises/katalog/typen.ts`.
 
 **Änderungspfad.** Ein Wert mehr: Liste an beiden Stellen · Aufwand `klein`.
 
@@ -4576,7 +4576,7 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Ü
 
 **Begründung.** 115 von 196 Standarddosierungen brauchen eines der drei Felder (Analyse 12.10.).
 
-**Anker.** `app.exercise_dosage_valid` und `save_exercise_plan_item` in der Migration UEB-012; `src/features/exercises/katalog/dosierung.ts`.
+**Anker.** `app.exercise_dosage_valid` und `save_exercise_plan_item` in der Migration UEB-012; `src/features/exercise/exercises/katalog/dosierung.ts`.
 
 **Änderungspfad.** Häufigkeit je Woche an der Position: eine Spalte · Aufwand `mittel`.
 
@@ -4602,7 +4602,7 @@ Recht · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Go-live; Jan
 
 **Begründung.** Fehlerhafte Anleitung wäre ein Behandlungsfehler; Bauen mit synthetischen Daten wartet nicht darauf.
 
-**Anker.** `set_exercise_variant_reviewed` und `save_exercise_variant` in der Migration UEB-012; Hinweis in `src/features/exercises/UebungPage.tsx`.
+**Anker.** `set_exercise_variant_reviewed` und `save_exercise_variant` in der Migration UEB-012; Hinweis in `src/features/exercise/exercises/UebungPage.tsx`.
 
 **Änderungspfad.** Zuweisen nur geprüfter Varianten: Prüfung in `assign_exercise_plan` · Aufwand `klein`.
 
@@ -4626,7 +4626,7 @@ Recht · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Datenschutz-
 
 **Begründung.** Art. 50 KI-VO zielt auf Deepfakes und Anbieter generativer Systeme; Wortlaut nicht selbst geprüft, deshalb Prüfpaket.
 
-**Anker.** Meldung in `KatalogUebernehmen`, `src/features/exercises/UebungenPage.tsx`.
+**Anker.** Meldung in `KatalogUebernehmen`, `src/features/exercise/exercises/UebungenPage.tsx`.
 
 **Änderungspfad.** Pflichthinweis am Bild: ein Satz in `Uebungsbild` · Aufwand `klein`.
 
@@ -4674,7 +4674,7 @@ Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Analyse A2: Anlegen-Knöpfe in voller Größe brachen am Telefon unter den Titel; die Akte zeigte schon die kompakte Form. Die Tour ist abgenommen und soll sich nicht ungefragt ändern.
 
-**Anker.** `KnopfGroesse` in `src/components/ui/knopfGroesse.ts`; `groesse="normal"` in `src/features/tours/TourenPage.tsx`.
+**Anker.** `KnopfGroesse` in `src/components/ui/knopfGroesse.ts`; `groesse="normal"` in `src/features/calendar/tours/TourenPage.tsx`.
 
 **Änderungspfad.** Wieder 48 px: Provider in `PageHeader` entfernen · Aufwand `klein`.
 
@@ -4748,7 +4748,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Eine ganze Woche mit einem Knopf hieße sieben Aufrufe ohne gemeinsame Transaktion – ein halb gespeicherter Plan. Dafür bräuchte es eine neue Serverfunktion (alles oder nichts).
 
-**Anker.** Kommentar `ANN-435` an `Wochenplan` in `src/features/scheduling/SchedulingPage.tsx`.
+**Anker.** Kommentar `ANN-435` an `Wochenplan` in `src/features/calendar/scheduling/SchedulingPage.tsx`.
 
 **Änderungspfad.** Wochenformular: RPC für die ganze Woche, Formular über alle Zeilen · Aufwand `mittel`.
 
@@ -4772,7 +4772,7 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 **Begründung.** Analyse Training 12.10., Abschnitt 5: rund 35 Tipps für fünf Übungen. Eine Serverfunktion für viele Positionen bräuchte eine Migration.
 
-**Anker.** `fuegeHinzu` und `standardDosis` in `src/features/exercise-plans/hinzufuegen.ts`.
+**Anker.** `fuegeHinzu` und `standardDosis` in `src/features/exercise/exercise-plans/hinzufuegen.ts`.
 
 **Änderungspfad.** Ein Aufruf für alle: RPC mit Liste, eine Transaktion · Aufwand `mittel`.
 
@@ -4786,7 +4786,7 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 **Begründung.** Referenzanalyse Training, Abschnitt 9, Weg A; Zuweisen in fünf Tipps (K12).
 
-**Anker.** `vorlagenZeilen` und `vorlagenListe` in `src/features/exercise-plans/vorlagen.ts`; `vorlagen.test.ts`.
+**Anker.** `vorlagenZeilen` und `vorlagenListe` in `src/features/exercise/exercise-plans/vorlagen.ts`; `vorlagen.test.ts`.
 
 **Änderungspfad.** Vorlagen der Praxis: eigene Tabelle und Migration · Aufwand `mittel`.
 
@@ -4798,7 +4798,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** DESIGN.md Seitentyp „Arbeitsseite“; die Schreibseite (Handoff 2026-10-01, 6a) ist so abgenommen.
 
-**Anker.** `Schreibflaeche` in `src/features/documentation/Schreibflaeche.tsx`.
+**Anker.** `Schreibflaeche` in `src/features/clinical/documentation/Schreibflaeche.tsx`.
 
 **Änderungspfad.** „Abbrechen“ zurück: je Seite ein `ButtonLink` in die Aktionsleiste · Aufwand `klein`.
 
@@ -4810,7 +4810,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** 46 Fragen untereinander waren bei 375 px 9.751 px lang.
 
-**Anker.** `ABSCHNITT_GROESSE` in `src/features/assessments/abschnitte.ts`.
+**Anker.** `ABSCHNITT_GROESSE` in `src/features/clinical/assessments/abschnitte.ts`.
 
 **Änderungspfad.** Andere Größe: die Konstante; ohne Abschnitte: `teile.length === 1` in `ErhebungPage` · Aufwand `klein`.
 
@@ -4822,7 +4822,7 @@ Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** 13 Listen untereinander, am Telefon sieben von zehn nur „Kein …“; zuerst, was eine Person oder Frist warten lässt.
 
-**Anker.** `useEingang` in `src/features/open-points/eingang.ts`; Reihenfolge in `OpenPointsPage.tsx`.
+**Anker.** `useEingang` in `src/features/workplace/open-points/eingang.ts`; Reihenfolge in `OpenPointsPage.tsx`.
 
 **Änderungspfad.** Reihenfolge oder leere Gruppen zeigen: die Seite · Aufwand `klein`.
 
@@ -4858,7 +4858,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Auftrag Welle B: ein Speichern je Formular statt gestrichelter Knöpfe je Abschnitt; beide Serverfunktionen bleiben getrennt.
 
-**Anker.** `StaffEinsatz` in `src/features/staff/StaffEinsatz.tsx`.
+**Anker.** `StaffEinsatz` in `src/features/workforce/staff/StaffEinsatz.tsx`.
 
 **Änderungspfad.** Zwei Formulare mit je eigenem Knopf · Aufwand `klein`.
 
@@ -4870,7 +4870,7 @@ Oberfläche · verworfen · 2026-10-24 · ANN-698 · erledigt · Wiedervorlage: 
 
 **Begründung.** DESIGN.md: höchstens vier Kacheln; bisher bis zu zehn Kacheln mit kleinem Link am Fuß. Eine Zeile ist für Menschen bis 78 ein größeres Ziel. Reihenfolge aus DSN-001 4.1.
 
-**Anker.** `Uebersicht` in `src/features/platform/Uebersicht.tsx`.
+**Anker.** `Uebersicht` in `src/features/portal/platform/Uebersicht.tsx`.
 
 **Änderungspfad.** Wieder `TileGrid` mit `Tile` je Punkt · Aufwand `klein`.
 
@@ -4886,7 +4886,7 @@ Oberfläche · verworfen · 2026-10-25 · Handoff 2026-10-24 · erledigt · Wied
 
 **Begründung.** DESIGN.md Lücke 9.10; die Figuren der Übungsbibliothek kommen ohne Umbau in das `Medienbild`.
 
-**Anker.** `Dosierungsmarken` in `src/features/platform/Dosierungsmarken.tsx`, die die Kacheln ablösen.
+**Anker.** `Dosierungsmarken` in `src/features/portal/platform/Dosierungsmarken.tsx`, die die Kacheln ablösen.
 
 **Änderungspfad.** Dosierung wieder als Satz (`dosierungAlltag`) · Aufwand `klein`.
 
@@ -4898,7 +4898,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** 46 Fragen waren am Telefon über 11.000 px lang; die Regel liest nur die Definition, keinen Bogen beim Namen.
 
-**Anker.** `FRAGEN_JE_SCHRITT` und `bogenschritte` in `src/features/platform/bogenschritte.ts`.
+**Anker.** `FRAGEN_JE_SCHRITT` und `bogenschritte` in `src/features/portal/platform/bogenschritte.ts`.
 
 **Änderungspfad.** Zahl ändern oder einen Schritt je Bogen · Aufwand `klein`.
 
@@ -4910,7 +4910,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Die Seite war bei zwei Zugängen 5.122 px lang; beides wird selten geändert, und die Einrichtungspflicht sorgt für Passkey und PIN. Routen bleiben unverändert.
 
-**Anker.** `Benachrichtigungen` in `src/features/platform/Benachrichtigungen.tsx`, `Einstellungen` in `src/features/platform/Einstellungen.tsx`.
+**Anker.** `Benachrichtigungen` in `src/features/portal/platform/Benachrichtigungen.tsx`, `Einstellungen` in `src/features/portal/platform/Einstellungen.tsx`.
 
 **Änderungspfad.** Disclosure entfernen oder eigene Unterseiten · Aufwand `klein`.
 
@@ -4922,7 +4922,7 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 **Begründung.** Analyse Training 12.10., Abschnitt 1.2: zwei Formulare und ein Seitenwechsel je fehlender Übung.
 
-**Anker.** `NeueUebungFormular` in `src/features/exercises/Formulare.tsx`.
+**Anker.** `NeueUebungFormular` in `src/features/exercise/exercises/Formulare.tsx`.
 
 **Änderungspfad.** Beides in einer Transaktion: RPC `save_exercise_with_variant` · Aufwand `mittel`.
 
@@ -4934,7 +4934,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Zehn Felder untereinander am Telefon (Analyse 12.10., Abschnitt 1.1); der Tausch ohne Fassung war selten.
 
-**Anker.** `PositionFormular` in `src/features/exercise-plans/PositionFormular.tsx`.
+**Anker.** `PositionFormular` in `src/features/exercise/exercise-plans/PositionFormular.tsx`.
 
 **Änderungspfad.** Tausch zurück: Auswahlblatt mit Einzelwahl im Fenster · Aufwand `klein`.
 
@@ -4946,7 +4946,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Ordnungen nach ADR-006 Punkt 10, von Hand gesetzt; ein Abzeichen an fast jeder Zeile wäre kein Ausnahmezeichen.
 
-**Anker.** `filtere` und `facetten` in `src/features/exercises/suche.ts`.
+**Anker.** `filtere` und `facetten` in `src/features/exercise/exercises/suche.ts`.
 
 **Änderungspfad.** „Nur mit diesen Hilfsmitteln“ (Teilmenge): eine Zeile in `passtHilfsmittel` · Aufwand `klein`.
 
@@ -4960,7 +4960,7 @@ Praxisprozess · verworfen · 2026-10-14 · ANN-513 · erledigt · Wiedervorlage
 
 **Begründung.** Kernablauf K5 (≤ 6 Tipps); dasselbe Muster wie beim Festschreiben (UX-007, ADR-016 Punkt 4): ausdrücklich durch Beschriftung und sichtbare Folge.
 
-**Anker.** `einTipp` in `Auswahl`, `src/features/appointments/HeilmittelBestaetigen.tsx`.
+**Anker.** `einTipp` in `Auswahl`, `src/features/calendar/appointments/HeilmittelBestaetigen.tsx`.
 
 **Änderungspfad.** Rückfrage auch hier: `einTipp` in `HeilmittelAmAbschluss` weglassen · Aufwand `klein`.
 
@@ -4972,7 +4972,7 @@ Datenschutz · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Begründung.** Wie Anruf und Terminmail aus dem eigenen Postfach (CAL-013); B15 (automatische Nachrichten) bleibt unberührt. Der Text nennt weder Namen noch Gesundheitsangaben (Art. 5 Abs. 1 lit. c DSGVO); Praxisname und Nummer zeigen dem Netzbetreiber trotzdem die Beziehung (Zweitreview, §203).
 
-**Anker.** `verspaetungsText`/`smsHref` in `src/features/today/besuchswege.ts`.
+**Anker.** `verspaetungsText`/`smsHref` in `src/features/calendar/today/besuchswege.ts`.
 
 **Änderungspfad.** Abschalten: `SpaeterDa` nicht mehr einsetzen · Aufwand `klein`.
 
@@ -4984,7 +4984,7 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 **Begründung.** Muster U2, Kernablauf K7; der Server prüft Arbeitszeit, Raster und Überschneidung, reserviert wird nichts (§8).
 
-**Anker.** `FolgeterminVorschlaege` in `src/features/appointments/FolgeterminVorschlaege.tsx`.
+**Anker.** `FolgeterminVorschlaege` in `src/features/calendar/appointments/FolgeterminVorschlaege.tsx`.
 
 **Änderungspfad.** Grundlage mitgeben: `treatment_basis_id` der Abrechnungslage an `createAppointment` · Aufwand `klein`.
 
@@ -4996,7 +4996,7 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
 **Begründung.** Analyse „Alltag unterwegs“ Rang 5, Lösung S; Entwürfe werden nach einem Tag festgeschrieben (ADR-016 Punkt 7), eine Woche reicht für Liegengebliebenes.
 
-**Anker.** `NACHZUHOLEN_TAGE` in `src/features/today/NochOffen.tsx`.
+**Anker.** `NACHZUHOLEN_TAGE` in `src/features/calendar/today/NochOffen.tsx`.
 
 **Änderungspfad.** Heilmittel früherer Tage: schlanke Lesefunktion (Rang 5, Lösung M) · Aufwand `mittel`.
 
@@ -5008,7 +5008,7 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 **Begründung.** Analyse Rang 9: Die Uhr misst, was das Kästchen bisher nur behauptete; sie läuft nur im Speicher der Seite.
 
-**Anker.** `Wartezeit` in `src/features/appointments/HomeVisitFlow.tsx`.
+**Anker.** `Wartezeit` in `src/features/calendar/appointments/HomeVisitFlow.tsx`.
 
 **Änderungspfad.** Vorhaken nach Ablauf, wenn Jannes es will: ein Rückruf beim Ablauf der Uhr · Aufwand `klein`.
 
@@ -5022,7 +5022,7 @@ Praxisprozess · verworfen · 2026-10-15 · Jannes · — · Wiedervorlage: —
 
 **Begründung.** Jede Übung bekommt ein ehrliches Bild ohne Schemaänderung; Fassung 1 bleibt pfadgleich (ANN-381), die Bewegung beschreibt der Text.
 
-**Anker.** `istAusgangsstellung` in `src/features/exercises/bild/schema.ts`.
+**Anker.** `istAusgangsstellung` in `src/features/exercise/exercises/bild/schema.ts`.
 
 **Änderungspfad.** Eigene Zeichnung für Drehung oder Hand: neue Fassung `v: 2` · Aufwand `mittel`.
 
@@ -5034,7 +5034,7 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
 **Begründung.** DESIGN.md Regel 4 (ein Hauptknopf je Ansicht, Design-Review R2 U2); „Doku“ führt auf die Schreibseite, deren Festschreiben auch abschließt – der Haken ist der Sonderweg ohne Doku.
 
-**Anker.** `karte()` in `src/features/today/MyDayPage.tsx`.
+**Anker.** `karte()` in `src/features/calendar/today/MyDayPage.tsx`.
 
 **Änderungspfad.** Haken als Hauptknopf: Variante in `karte()` tauschen · Aufwand `klein`.
 
@@ -5046,7 +5046,7 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
 **Begründung.** Design-Review R2 U4: Beim Büro stand „Morgen“ vor „Heute · Dienstag“; ein erledigter Tag hat dagegen nichts mehr zu tun.
 
-**Anker.** `ohneBesuch` in `src/features/today/MyDayPage.tsx`.
+**Anker.** `ohneBesuch` in `src/features/calendar/today/MyDayPage.tsx`.
 
 **Änderungspfad.** Andere Reihenfolge: die beiden Stellen von `strahl` in `MeinTag` · Aufwand `klein`.
 
@@ -5060,7 +5060,7 @@ Praxisprozess · verworfen · 2026-10-14 · ANN-512 · erledigt · Wiedervorlage
 
 **Begründung.** Praxis-Review R2 P1: ein Fehltipp kostete den Weg über den Kalender. Rollen und Zustände prüft der Server (`app.can_reopen_appointment`), dieselben wie beim Haken.
 
-**Anker.** `HakenRueckgaengig` in `src/features/today/Besuchsknoepfe.tsx`.
+**Anker.** `HakenRueckgaengig` in `src/features/calendar/today/Besuchsknoepfe.tsx`.
 
 **Änderungspfad.** Stattdessen Rückfrage: `Rueckfrage` um den Haken legen · Aufwand `klein`.
 
@@ -5072,7 +5072,7 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
 **Begründung.** R2 P1 und U3 bringen eine Zeile mehr; `uebersicht.spec.ts` hält den Hauptknopf über der Tableiste, beim dritten Besuch mit 3 px Reserve.
 
-**Anker.** `wegTitel` in `src/features/today/MyDayPage.tsx`.
+**Anker.** `wegTitel` in `src/features/calendar/today/MyDayPage.tsx`.
 
 **Änderungspfad.** Fahrzeit immer zeigen: `max-sm:hidden` streichen, Platz anderswo sparen · Aufwand `klein`.
 
@@ -5096,7 +5096,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Sie doppelt die Karten zum Teil (Nachprüfung A9). Weg kann sie erst, wenn „Daten übertragen“ an Karte und Foto steht. Das ist ein Umbau von Jannes’ Entwurf „Akte entschlacken“ (03.10.).
 
-**Anker.** Kommentar `ANN-486` in `src/features/treatment-bases/GrundlagenKacheln.tsx`.
+**Anker.** Kommentar `ANN-486` in `src/features/patients/treatment-bases/GrundlagenKacheln.tsx`.
 
 **Änderungspfad.** Leiste streichen und „Daten übertragen“ an `Verordnungskopf` und `OffeneVerordnungsfotos` hängen · Aufwand `mittel`.
 
@@ -5108,7 +5108,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Der Satz zieht die Grenze aus ADR-006 Punkt 11 und DSN-001 D5: Die Anwendung wertet nicht aus und alarmiert nicht. Damit ist er ein MDR-Satz nach DESIGN.md Regel 6 und keine Erklärung (Nachprüfung A10).
 
-**Anker.** Kommentar `ANN-487` in `src/features/checkins/ZwischenDenTerminen.tsx`.
+**Anker.** Kommentar `ANN-487` in `src/features/exercise/checkins/ZwischenDenTerminen.tsx`.
 
 **Änderungspfad.** Satz streichen oder in ein „So geht’s“ legen · Aufwand `klein`.
 
@@ -5120,7 +5120,7 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Zeitspann
 
 **Begründung.** DESIGN.md (Formular) erlaubt zwei Felder nebeneinander erst ab 640 px; Beginn und Ende einer Fehlzeit stehen am Telefon ebenso untereinander (Design-Review R2 T6).
 
-**Anker.** Kommentar `ANN-489` an `BlockFelder` in `src/features/scheduling/SchedulingPage.tsx`.
+**Anker.** Kommentar `ANN-489` an `BlockFelder` in `src/features/calendar/scheduling/SchedulingPage.tsx`.
 
 **Änderungspfad.** Nimmt Jannes die Zeitspanne als Paar in DESIGN.md auf: `grid-cols` ohne `sm:` · Aufwand `klein`.
 
@@ -5144,7 +5144,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Fünf gleichrangige Zahlen sind mehr als die vier Kacheln einer Seite (DESIGN.md Prüfliste 5); die fünfte als Zeile unter vier Kacheln sah am Telefon aus wie eine fünfte Kachel (Review R2-O8, neu1). Gruppen in einer Karte trennt eine Linie (Regel 2).
 
-**Anker.** `Kennzahlliste` in `src/features/statistics/StatisticsPage.tsx`.
+**Anker.** `Kennzahlliste` in `src/features/billing/statistics/StatisticsPage.tsx`.
 
 **Änderungspfad.** Vier als `TileGrid`, die fünfte anderswo: `Kennzahlliste` ersetzen · Aufwand `mittel`.
 
@@ -5156,7 +5156,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Sichtung L1: „Nachtschmerze/n“ bei 18 px auf der Plattform. `ch` misst in Hanken Grotesk bei den Wörtern des Bogens 4 bis 37 % mehr als gesetzt, die Schätzung liegt so auf der sicheren Seite. Am Telefon wird der Bogen der Plattform dadurch länger.
 
-**Anker.** `laengstesWort` in `src/features/assessments/darstellung.ts`.
+**Anker.** `laengstesWort` in `src/features/clinical/assessments/darstellung.ts`.
 
 **Änderungspfad.** Nur lange Optionen über die volle Breite statt der ganzen Frage einspaltig · Aufwand `klein`.
 
@@ -5168,7 +5168,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
 **Begründung.** Sichtung L1: Im Bild schrumpften sie mit der Zeichnung auf rund 12 px Grau. Die Lage folgt den bisherigen Bildkoordinaten (x 40, 400, 440, 790 von 820).
 
-**Anker.** `KoerperschemaBild` in `src/features/assessments/KoerperschemaFeld.tsx`.
+**Anker.** `KoerperschemaBild` in `src/features/clinical/assessments/KoerperschemaFeld.tsx`.
 
 **Änderungspfad.** Zurück in das SVG mit größerer Schrift · Aufwand `klein`.
 
@@ -5192,7 +5192,7 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** K9: vorher 7 Tipps über Fenster, Bildlauf und Liste, jetzt 4 (Kachel, Absagen, Grund, Ja). Die Bestätigung trägt die Kalenderseite, weil der abgesagte Termin aus dem Filter fällt.
 
-**Anker.** `darfAbsagen` in `src/features/appointments/TerminPanel.tsx`.
+**Anker.** `darfAbsagen` in `src/features/calendar/appointments/TerminPanel.tsx`.
 
 **Änderungspfad.** Auslöser wieder nur im Fenster „Aktionen“ · Aufwand `klein`.
 
@@ -5204,7 +5204,7 @@ Datenschutz · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** K3 ≤ 1 Tipp, vorher 3 über Kalender und Fenster. ANN-138 (kein Material offen neben dem Namen) und ANN-200 (Lesen nur nach Handlung) bleiben gewahrt.
 
-**Anker.** `mitEintrag` in `src/features/today/Tagesliste.tsx`.
+**Anker.** `mitEintrag` in `src/features/calendar/today/Tagesliste.tsx`.
 
 **Änderungspfad.** Letzten Eintrag wieder nur im Kurzblick · Aufwand `klein`.
 
@@ -5216,7 +5216,7 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** K6 fehlte; jetzt 3 Tipps + Text ab der Karte. Lesepfad und Protokoll des Kurzblicks, kein neuer Pfad.
 
-**Anker.** `WieZuletzt` in `src/features/documentation/WieZuletzt.tsx`.
+**Anker.** `WieZuletzt` in `src/features/clinical/documentation/WieZuletzt.tsx`.
 
 **Änderungspfad.** Chip entfernen oder je Abschnitt übernehmen (Handoff 6a) · Aufwand `klein`.
 
@@ -5228,7 +5228,7 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Vorher ≈ 9 Tipps samt erneuter Suche, jetzt 2 bis im Plan, 4 bis zugewiesen. Trainingspläne bleiben beim bisherigen Weg.
 
-**Anker.** `planFuerUebung` in `src/features/exercise-plans/zielplan.ts`.
+**Anker.** `planFuerUebung` in `src/features/exercise/exercise-plans/zielplan.ts`.
 
 **Änderungspfad.** Ziel wählbar machen (Entwurf oder neuer Plan) · Aufwand `klein`.
 
@@ -5346,7 +5346,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-
 
 **Begründung.** §6.3, ADR-016 Punkt 10: Ein ungeprüfter Vorschlag darf nie in die Akte, auch nicht durch Fristablauf. Kein Eintrag in `src/app/mdr.ts`: Transkription und Einordnung deckt ADR-006 Punkt 8.
 
-**Anker.** `useDiktat` in `src/features/documentation/diktat.ts`.
+**Anker.** `useDiktat` in `src/features/clinical/documentation/diktat.ts`.
 
 **Änderungspfad.** Vorschlag oder Audio aufbewahren: Tabelle mit Datenklasse und Frist, Löschlauf, DSFA · Aufwand `groß`.
 
@@ -5358,7 +5358,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-
 
 **Begründung.** BEF-153 will die Spracheingabe als bevorzugten, prominenten Weg; DESIGN.md Regel 4 lässt einen Hauptknopf je Ansicht. Die Übernahme ist ein Tipp mehr, weil §6.3 sie verlangt.
 
-**Anker.** `sprechenHaupt` in `src/features/documentation/CompleteTreatmentPage.tsx`.
+**Anker.** `sprechenHaupt` in `src/features/clinical/documentation/CompleteTreatmentPage.tsx`.
 
 **Änderungspfad.** Andere Regel: die Bedingung und `Sprechleiste` · Aufwand `klein`.
 
@@ -5476,7 +5476,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-1
 
 **Begründung.** B2 (Jannes, 14.10.2026). Gerundet wird weiter im Server (ANN-097): Das Angebot rechnet nur mit seiner Luft, nach dem Tipp prüft er neu.
 
-**Anker.** `wegangebot` in `src/features/appointments/wegpruefung.ts`; Anzeige `Wegauskunft.tsx`.
+**Anker.** `wegangebot` in `src/features/calendar/appointments/wegpruefung.ts`; Anzeige `Wegauskunft.tsx`.
 
 **Änderungspfad.** Andere Regel, auch über die Gegenseite hinweg: `wegangebot` · Aufwand `klein`.
 
@@ -5488,7 +5488,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-1
 
 **Begründung.** B5 (Jannes, 14.10.2026): Jede Therapeut:in legt sich eigene für den Alltag an. Nur Oberfläche: `list_text_snippets` und `create_text_snippet` bleiben unverändert.
 
-**Anker.** Filter in `src/features/documentation/TextbausteinLeiste.tsx`; Seite `TextbausteinePage.tsx`.
+**Anker.** Filter in `src/features/clinical/documentation/TextbausteinLeiste.tsx`; Seite `TextbausteinePage.tsx`.
 
 **Änderungspfad.** Bausteine der Praxis wieder in der Leiste: Filter weg, Kästchen „Baustein der Praxis“ zurück · Aufwand `klein`.
 
@@ -5500,7 +5500,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-
 
 **Begründung.** B6: Nach einem abgehakten Besuch fehlte der Balken. Als eigene Zeile schöbe er bei 375 × 667 den Hauptknopf unter die Tableiste (ANN-484). „Jetzt“ statt Ende davor weicht vom Auftrag ab, folgt Jannes’ Abnahme zu ANN-196: sonst Puffer am Balken, „zu knapp“ in der Kachel.
 
-**Anker.** `weg` in `src/features/today/Tagesliste.tsx`.
+**Anker.** `weg` in `src/features/calendar/today/Tagesliste.tsx`.
 
 **Änderungspfad.** Wie im Auftrag: Zweig „jetzt“ in `wegZumBesuch` streichen · Aufwand `klein`. Balken über der Karte, Platz anderswo sparen · Aufwand `klein`.
 
@@ -5512,7 +5512,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-
 
 **Begründung.** B12. Vor dem Beginn ist ein Ausfall nicht feststellbar, mit Doku weist `record_no_show` ab. Die Karte ist die Zeile ihres Termins, daher dieselbe Regel. Ein Name für dasselbe; am Telefon rücken die Knöpfe unter Name und Ort.
 
-**Anker.** `ausfallMoeglich` in `src/features/today/besuchswege.ts`.
+**Anker.** `ausfallMoeglich` in `src/features/calendar/today/besuchswege.ts`.
 
 **Änderungspfad.** Bedingungen in `ausfallMoeglich` ändern · Aufwand `klein`.
 
@@ -5536,7 +5536,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-1
 
 **Begründung.** Befund B8: Unmögliches nicht vorschlagen. Ungeprüft ist nicht unmöglich (ANN-136). Gezeigt wird erst, was entschieden ist – keine Zeile verrutscht unter dem Daumen.
 
-**Anker.** `urteilAus` in `src/features/appointments/folgetermin.ts`.
+**Anker.** `urteilAus` in `src/features/calendar/appointments/folgetermin.ts`.
 
 **Änderungspfad.** Knappe auch weglassen: `stufe !== 'passt'` in `urteilAus` · Aufwand `klein`.
 
@@ -5564,7 +5564,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-
 
 **Begründung.** Befund B9: einzeln wählbar, kein unerwartetes Übertragen. Die Vorauswahl ist der Inhalt der Vorlage, für jede Person gleich (ADR-006 Punkt 10).
 
-**Anker.** `vorausgewaehlt` in `src/features/exercise-plans/vorlagen.ts`.
+**Anker.** `vorausgewaehlt` in `src/features/exercise/exercise-plans/vorlagen.ts`.
 
 **Änderungspfad.** Nichts vorwählen: `vorausgewaehlt` liefert eine leere Liste · Aufwand `klein`.
 
@@ -5576,7 +5576,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-
 
 **Begründung.** Befund B9: Bei einem Wechsel der Therapeut:in soll sichtbar sein, welche Fassung gilt; eine neue Fassung soll auf der Plattform als aktualisierter Plan erkennbar sein. Keine neue Spalte nötig.
 
-**Anker.** `standZeile` in `src/features/exercise-plans/fassung.ts`.
+**Anker.** `standZeile` in `src/features/exercise/exercise-plans/fassung.ts`.
 
 **Änderungspfad.** Nummer als Spalte führen: Migration mit Datenumzug · Aufwand `mittel`.
 
@@ -5613,7 +5613,7 @@ Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: Sichtung de
 
 **Begründung.** Roadmap-Zeile nennt fünf Dinge; Jannes hat die Checkliste am 03.10. auf zwei begrenzt (ANN-224). Die Führung bringt die übrigen am Termin in Reihenfolge, ohne Dauermahnung.
 
-**Anker.** `erstaufnahmestand` in `src/features/intake/stand.ts`; `src/features/intake/ErstaufnahmePage.tsx`.
+**Anker.** `erstaufnahmestand` in `src/features/patients/intake/stand.ts`; `src/features/patients/intake/ErstaufnahmePage.tsx`.
 
 **Änderungspfad.** Liege oder Anamnese wieder als offener Punkt: `app.intake_checklist` und `INTAKE_ITEMS` · Aufwand `klein`.
 
@@ -5649,7 +5649,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes · erledigt · Wiede
 
 **Begründung.** Auftrag Jannes: Die Karte wiederholte Punkte und „n von m“ im Kopf. DESIGN.md „Rhythmus“: Abschnitt zu Abschnitt 32.
 
-**Anker.** Container `flex flex-col gap-8` in `MyDayPage` (`src/features/today/MyDayPage.tsx`).
+**Anker.** Container `flex flex-col gap-8` in `MyDayPage` (`src/features/calendar/today/MyDayPage.tsx`).
 
 **Änderungspfad.** Karte zurück: Git-Verlauf von `Tagesabschluss` · Aufwand `klein`.
 
@@ -5661,7 +5661,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes · erledigt · Wiede
 
 **Begründung.** Auftrag Jannes. Die Marke wird nie gedreht (`marke/README.md`).
 
-**Anker.** `tagesfortschritt` in `src/features/today/tagesstart.ts`; `ProgressDots`.
+**Anker.** `tagesfortschritt` in `src/features/calendar/today/tagesstart.ts`; `ProgressDots`.
 
 **Änderungspfad.** Ohne Rad: Effekt `feier` in `MyDayPage` · Aufwand `klein`.
 
@@ -5809,7 +5809,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Jannes (Dur
 
 **Begründung.** ANN-386 verlangt, dass Jannes jede Übung ansieht; ein Sammelvermerk lüde zum Abhaken ohne Lesen ein (§ 630c BGB). Vorher: suchen, öffnen, vermerken, zurück je Übung.
 
-**Anker.** `offeneDurchsicht` in `src/features/exercises/durchsicht.ts`.
+**Anker.** `offeneDurchsicht` in `src/features/exercise/exercises/durchsicht.ts`.
 
 **Änderungspfad.** Sammelvermerk je Region: eine RPC über `set_exercise_variant_reviewed` · Aufwand `mittel`.
 
@@ -5857,7 +5857,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervo
 
 **Begründung.** Auftrag Jannes (16.10.): Mit dem Vermerk gilt die Dokumentation ohne weiteren Eintrag. Der Satz statt eines leeren Eintrags hält den Eintrag in Akte, Druck und Auskunft lesbar; das Merkmal `visit_without_treatment` bleibt die Quelle, der Server bleibt bei „nie leer“.
 
-**Anker.** `inhaltMitVermerk` in `src/features/documentation/api.ts`.
+**Anker.** `inhaltMitVermerk` in `src/features/clinical/documentation/api.ts`.
 
 **Änderungspfad.** Leeren Eintrag zulassen: Server-Prüfung in `create_treatment_note`/`update_treatment_note` (Migration, Pfad A) · Aufwand `mittel`.
 
@@ -5953,7 +5953,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17, Fassung 2 2026-10-26 · Jan
 
 **Begründung.** In der Adresse (Fassung 1) wuchs der Rückweg je Termin um 37 Zeichen und fiel ab etwa acht Terminen still weg; Jannes 2026-10-26: Rückweg kurz, Zustand im Tab. Keine Ablage für das Arbeiten ohne Netz (ADR-024 Abschnitt B): weder Namen noch Rufnummern, und ohne Netz lädt die Seite den Tag nicht. Ein Anrufprotokoll am Server wäre eine neue Datenklasse ohne Auftrag.
 
-**Anker.** `src/lib/tabstand.ts`; `leseAnrufliste` in `src/features/appointments/tagumplanen.ts`.
+**Anker.** `src/lib/tabstand.ts`; `leseAnrufliste` in `src/features/calendar/appointments/tagumplanen.ts`.
 
 **Änderungspfad.** Anrufstand am Server: eigene Tabelle mit Frist, Pfad A · Aufwand `mittel`.
 
@@ -5977,7 +5977,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 **Begründung.** Referenzabgleich (Lieferdienste: Kontakt, dann Uhr, Abschluss erst danach): Wer früh anruft, bekommt die Tür vielleicht noch auf; 4 Tipps statt 5. ADR-018 Punkt 9 nennt die drei Schritte ohne Reihenfolge.
 
-**Anker.** `src/features/appointments/niemandOeffnet.ts`, `HomeVisitFlow.tsx`.
+**Anker.** `src/features/calendar/appointments/niemandOeffnet.ts`, `HomeVisitFlow.tsx`.
 
 **Änderungspfad.** Reihenfolge oder Begründungsweg: `niemandOeffnet.ts` · Aufwand `klein`.
 
@@ -6001,7 +6001,7 @@ Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervor
 
 **Begründung.** § 3 Abs. 2 BUrlG (Feiertage sind keine Werktage); Feiertage nach FeiertG NRW § 2 und Feiertagsgesetz BW; halbe Tage kennt das BUrlG nicht als Anspruch.
 
-**Anker.** `app.leave_days`, `app.is_public_holiday`; `src/features/vacation/feiertage.ts`.
+**Anker.** `app.leave_days`, `app.is_public_holiday`; `src/features/workforce/vacation/feiertage.ts`.
 
 **Änderungspfad.** Weitere Länder oder halbe Tage: Liste und Zählung an diesen zwei Stellen · Aufwand `klein`.
 
@@ -6049,7 +6049,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 **Begründung.** `set_staff_working_hours` nimmt nur zuordenbare Personen an, das Merkmal setzt nur owner (ANN-226). Eine neue Therapeut:in soll gleich im Kalender stehen (G5).
 
-**Anker.** `kontextFuer` in `src/features/staff/einrichtung.ts`.
+**Anker.** `kontextFuer` in `src/features/workforce/staff/einrichtung.ts`.
 
 **Änderungspfad.** office darf das Merkmal setzen (ANN-226), dann genügt `canManageWorkingHours` · Aufwand `klein`.
 
@@ -6061,7 +6061,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 **Begründung.** Spec G5 „falls Therapie“; Wochenpläne gibt es am Server nur für Behandelnde, die Trainingsbetreuung nutzt die Radflotte nicht (`app.can_read_fleet`).
 
-**Anker.** `behandelt` in `src/features/staff/einrichtung.ts`.
+**Anker.** `behandelt` in `src/features/workforce/staff/einrichtung.ts`.
 
 **Änderungspfad.** Die Liste `BEHANDELND` · Aufwand `klein`.
 
@@ -6073,7 +6073,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 **Begründung.** 14 Daten und Tageszeiten passen bei 375 × 667 in 18 px nicht auf eine Seite (G6); der Vertrag von `request_platform_appointment(_change)` bleibt, die Praxis sieht Daten wie bisher.
 
-**Anker.** `wunschtage` in `src/features/platform/terminablauf.ts`.
+**Anker.** `wunschtage` in `src/features/portal/platform/terminablauf.ts`.
 
 **Änderungspfad.** Zurück zu Daten an dieser Stelle, ohne Datenänderung · Aufwand `klein`.
 
@@ -6085,7 +6085,7 @@ Technik · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Am body erbten die Fenster die 18 px nicht (gemessen 14–16 px); DESIGN.md verlangt auf der Plattform alles ≥ 18 px.
 
-**Anker.** `MitFensterZiel` in `src/features/platform/PlattformApp.tsx`.
+**Anker.** `MitFensterZiel` in `src/features/portal/platform/PlattformApp.tsx`.
 
 **Änderungspfad.** Ziel im Baustein `Dialogfenster` statt in der Plattform · Aufwand `klein`.
 
@@ -6097,7 +6097,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 **Begründung.** Ein Änderungswunsch ohne Tage lässt die Praxis raten; „Egal“ deckt den Fall „jede Tageszeit“ ab (G6).
 
-**Anker.** `wannFehlt` und `vollstaendig` in `src/features/platform/terminablauf.ts`.
+**Anker.** `wannFehlt` und `vollstaendig` in `src/features/portal/platform/terminablauf.ts`.
 
 **Änderungspfad.** Bedingung dort lockern · Aufwand `klein`.
 
@@ -6133,7 +6133,7 @@ Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervor
 
 **Begründung.** Festlegung Jannes 2026-10-16; § 5 Abs. 2 (Pflege) gilt für eine Physiopraxis nicht, deshalb 11 Stunden. Weniger Stunden sind ein Gespräch, kein Antrag.
 
-**Anker.** `app.working_time_problems`, `src/features/working-time/rules.ts` (`LIMITS`).
+**Anker.** `app.working_time_problems`, `src/features/workforce/working-time/rules.ts` (`LIMITS`).
 
 **Änderungspfad.** Grenzen in beiden Ankern · Aufwand `klein`.
 
@@ -6181,7 +6181,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 **Begründung.** Produktbeschreibung AZ-001: Pause nur, wenn es sie gibt, verschiebbar und in der Dauer änderbar; über 6 Stunden verlangt § 4 ArbZG sie.
 
-**Anker.** `src/features/working-time/dayForm.ts`.
+**Anker.** `src/features/workforce/working-time/dayForm.ts`.
 
 **Änderungspfad.** Mehr als eine Pause je Tag: Blöcke statt Felder · Aufwand `mittel`.
 
@@ -6193,7 +6193,7 @@ Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervor
 
 **Begründung.** Festlegung Jannes 2026-10-16 (kein Antrag, Zurückweisen möglich); Stunden ohne Lage genügen der Aufzeichnung nicht (EuGH C-55/18, BAG 1 ABR 22/21); clockin lässt bis 31 Tage nachtragen.
 
-**Anker.** `app.time_account_check`, `src/features/timeaccount/rules.ts`.
+**Anker.** `app.time_account_check`, `src/features/workforce/timeaccount/rules.ts`.
 
 **Änderungspfad.** Fristen an beiden Ankern · Aufwand `klein`.
 
@@ -6315,7 +6315,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wie
 
 **Begründung.** §20: nichts an den Server, keine Zählung; ADR-024 Punkt 12 Fassung 2.
 
-**Anker.** `passenderZeitpunkt` in `src/features/today/zwischendurch.ts`.
+**Anker.** `passenderZeitpunkt` in `src/features/calendar/today/zwischendurch.ts`.
 
 **Änderungspfad.** Abstand oder Häufigkeit: dort · Aufwand `klein`.
 
@@ -6339,7 +6339,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 **Begründung.** Auftrag Jannes 2026-10-17 („nicht simpel genug“); Stunden ohne Lage genügen der Aufzeichnung nicht (ANN-593). Ältere Korrekturen mit Plus bleiben.
 
-**Anker.** `app.time_account_check`, `src/features/timeaccount/rules.ts`.
+**Anker.** `app.time_account_check`, `src/features/workforce/timeaccount/rules.ts`.
 
 **Änderungspfad.** Höchstdauer: `OVERTIME_MAX`, `CORRECTION_MAX` · Aufwand `klein`.
 
@@ -7051,7 +7051,7 @@ Technik · entschieden (Jannes) · 2026-10-22 · Jannes · erledigt · Wiedervor
 
 **Begründung.** DR-112: Bei 200 % waren „Übungen“ und „Nachrichten“ abgeschnitten, bei „Sehr groß“ gekappt, bei „Groß“ stießen die Wörter aneinander. Handoff 2026-10-22, Abschnitt 3; Jannes am 22.10.2026, Entscheidung 2 („nur Zeichen“ verworfen). Gemessen, damit auch Systemschrift und Übersetzung greifen; bei 375 px ist „Normal“ eine Reihe, „Groß“ zwei. Mit mitwachsenden Abständen passte „Nachrichten“ bei „Sehr groß“ ab 360 px nicht in seine Hälfte (Zweitreview).
 
-**Anker.** `reiterstufe` in `src/features/platform/geruestbreite.ts` (Messung in `Navigation.tsx`).
+**Anker.** `reiterstufe` in `src/features/portal/platform/geruestbreite.ts` (Messung in `Navigation.tsx`).
 
 **Änderungspfad.** Andere Luft oder Schwelle in `reiterstufe` und der Messreihe · Aufwand `klein`.
 
@@ -7063,7 +7063,7 @@ Technik · entschieden (Jannes) · 2026-10-23 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Handoff 2026-10-22, Entscheidung 1 und Abschnitt 7; Jannes am 22.10.2026 (Variante B). DR-116: Das Startbild landete auf der Plattform ohne Landeplatz. Der Merker bleibt beim Abmelden, weil sein Löschen die Sitzungsverwaltung berührte.
 
-**Anker.** `StartbildBeimOeffnen` in `src/app/App.tsx`; `useMarkenmoment` in `src/features/platform/markenmoment.ts`.
+**Anker.** `StartbildBeimOeffnen` in `src/app/App.tsx`; `useMarkenmoment` in `src/features/portal/platform/markenmoment.ts`.
 
 **Änderungspfad.** Plattformwege aus der Prüfung nehmen, Klasse `markenmoment` entfernen · Aufwand `klein`.
 
@@ -7075,7 +7075,7 @@ Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritt 1c (Türs
 
 **Begründung.** DR-120; Handoff 2026-10-22, Festlegungen aus dem Entwurf. In zwei Reihen ist die Leiste bis zu 164 px hoch (gemessen bei „Sehr groß“, 375 px); über der Tastatur bliebe dem Feld kaum Platz.
 
-**Anker.** Regel `.reiterleiste` in `src/index.css`, gesetzt an der `Reiterleiste` in `src/features/platform/Navigation.tsx`; auf der Einladung `tippt` in `EinladungPage.tsx` (Schritt 1c): Die Schritte bleiben nach dem ersten Fokus im Feld weg, sonst rückte „Weiter“ beim Antippen unter dem Finger weg.
+**Anker.** Regel `.reiterleiste` in `src/index.css`, gesetzt an der `Reiterleiste` in `src/features/portal/platform/Navigation.tsx`; auf der Einladung `tippt` in `EinladungPage.tsx` (Schritt 1c): Die Schritte bleiben nach dem ersten Fokus im Feld weg, sonst rückte „Weiter“ beim Antippen unter dem Finger weg.
 
 **Änderungspfad.** Weitere Teile über dieselbe Regel zurücktreten lassen oder die Leiste stehen lassen · Aufwand `klein`.
 
@@ -7087,7 +7087,7 @@ Technik · offen · 2026-10-22 · — · — · Wiedervorlage: Schritte 1c und 1
 
 **Begründung.** DR-112; Handoff 2026-10-22, Abschnitte 0, 3 und 4. Bei 188 px passen vier Ziele nicht nebeneinander, und zwei Reihen nähmen ein Drittel der Höhe.
 
-**Anker.** `Menue` in `src/features/platform/Navigation.tsx`; Rand in `geruestSpalte` (`geruestbreite.ts`); `gezeichnete-abfrage` in `AnmeldungEinrichten.tsx`.
+**Anker.** `Menue` in `src/features/portal/platform/Navigation.tsx`; Rand in `geruestSpalte` (`geruestbreite.ts`); `gezeichnete-abfrage` in `AnmeldungEinrichten.tsx`.
 
 **Änderungspfad.** Andere Grenze an `max-[23rem]:`, ohne Menü die Leiste in zwei Reihen · Aufwand `klein`.
 
@@ -7147,7 +7147,7 @@ Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-22, Abschnitt 0 (Festlegungen aus dem Entwurf) und 5.2: Eine Fertig-Seite kostet einen Tipp und sagt nichts, was „Willkommen“ nicht auch sagen kann. Die Bestätigung gilt wie jede einmalige Rückmeldung genau einmal (DR-160).
 
-**Anker.** `NACH_DER_EINRICHTUNG` in `src/features/platform/pfade.ts`, gelesen von `useEinmaligeRueckmeldung('eingerichtet')` im Einstieg (Schritt 1d).
+**Anker.** `NACH_DER_EINRICHTUNG` in `src/features/portal/platform/pfade.ts`, gelesen von `useEinmaligeRueckmeldung('eingerichtet')` im Einstieg (Schritt 1d).
 
 **Änderungspfad.** Eine Fertig-Seite in `AnmeldungEinrichten` vor `onFertig` · Aufwand `klein`.
 
@@ -7159,7 +7159,7 @@ Praxisprozess · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
 **Begründung.** Die Einladung ist nach dem E-Mail-Schritt verbraucht (`redeem_platform_invitation` vor der Einmal-Anmeldung, Zweitreview POR-003). Ein versehentlicher Tipp aufs ✕ kostete sonst eine neue Einladung. Der geführte Ablauf (ANN-572) verlangt ein ✕, der Handoff nennt dafür kein Verhalten; das Fenster folgt der Rückfrage vor dem Weggehen (ANN-566).
 
-**Anker.** `abbrechen` in `src/features/auth/einrichtung/AnmeldungEinrichten.tsx`.
+**Anker.** `abbrechen` in `src/features/core/auth/einrichtung/AnmeldungEinrichten.tsx`.
 
 **Änderungspfad.** Ohne Rückfrage: `onSchliessen={onAbmelden}` · Aufwand `klein`.
 
@@ -7171,7 +7171,7 @@ Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-22, Abschnitt 5.2 („Plattform-Fassung für Plattformkonten“). Gesperrt ist der Abfragespeicher geräumt (ADR-025 Punkt 3); die Marke steht in der Sitzung, die die Sperre ohnehin hält, und setzt allein der Dienst. Ein Merker auf dem Gerät entfällt. Zweitreview 1c: die erste Fassung nach der Adresse traf Kaltstart und Einsicht falsch.
 
-**Anker.** `istPlattformkonto` in `src/features/auth/sitzungssperre/Sitzungssperre.tsx`; Marke in `supabase/seed.sql`.
+**Anker.** `istPlattformkonto` in `src/features/core/auth/sitzungssperre/Sitzungssperre.tsx`; Marke in `supabase/seed.sql`.
 
 **Änderungspfad.** Ein Plattformkonto ohne Marke (etwa nachträglich angelegt) bekommt sie beim Anmeldedienst nachgetragen, oder die Sperre fragt `app.is_platform_account` über den Sperrstand · Aufwand `mittel`.
 
@@ -7195,7 +7195,7 @@ Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: —
 
 **Begründung.** ADR-025 Punkt 11: die PIN „nie auf dem Gerät“. `new-password` nach einer Adresse mit `autocomplete="username"` liest jeder Passwortmanager als neues Konto und bietet an, die PIN zur Adresse zu speichern. Der ADR (Rang 2) geht dem Handoff (Rang 3) vor (`PROJECT_PRINCIPLES.md` §21). Zweitreview 1c.
 
-**Anker.** `PinFestlegen` in `src/features/auth/einrichtung/PinFestlegen.tsx`; Test „bietet die PIN auch in der Einrichtung keinem Passwortmanager an“.
+**Anker.** `PinFestlegen` in `src/features/core/auth/einrichtung/PinFestlegen.tsx`; Test „bietet die PIN auch in der Einrichtung keinem Passwortmanager an“.
 
 **Änderungspfad.** `new-password` nur mit Änderung von ADR-025 Punkt 11 (Freigabe Jannes) · Aufwand `klein`.
 
@@ -7207,7 +7207,7 @@ Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-22, Abschnitt 0 („Eine Hauptsache“, Abweichung von DSN-001 4.1: der Termin ist keine Aufgabe) und 5.1. An einer Stelle, damit Einstieg und Übersicht dieselbe Hauptsache meinen.
 
-**Anker.** `ersteAufgabe` in `src/features/platform/hauptsache.ts`; die Übersicht baut darauf (ANN-698).
+**Anker.** `ersteAufgabe` in `src/features/portal/platform/hauptsache.ts`; die Übersicht baut darauf (ANN-698).
 
 **Änderungspfad.** Reihenfolge oder Arten in `ersteAufgabe` · Aufwand `klein`.
 
@@ -7219,7 +7219,7 @@ Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Begründung.** Handoff 2026-10-22, 5.3; Art. 9 Abs. 2 lit. a DSGVO, EDSA-Leitlinien 05/2020. `record_platform_consent` kennt keine Ablehnung. Unsicher: ob die Prüfung eine Bestätigung verlangt.
 
-**Anker.** `offeneEinwilligungen` in `src/features/platform/einstiegsablauf.ts`, `Einwilligungsfrage` in `Einstieg.tsx`.
+**Anker.** `offeneEinwilligungen` in `src/features/portal/platform/einstiegsablauf.ts`, `Einwilligungsfrage` in `Einstieg.tsx`.
 
 **Änderungspfad.** Rückfrage vor dem Ja wie unter „Ich“ (`klein`) oder ein Nein als Ablehnung speichern (RPC, `mittel`).
 
@@ -7231,7 +7231,7 @@ Datenschutz · offen · 2026-10-23 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Begründung.** Handoff 2026-10-22, Abschnitte 5.3 und 10; ADR-024 Punkte 15 und 11 (Mail ist der Regelweg). Unsicher: ob eine Wahl für sechs Arten der Wahl je Art genügt.
 
-**Anker.** `MITTEILUNGSARTEN` in `src/features/platform/einstiegsablauf.ts`, `Mitteilungen` in `Einstieg.tsx`.
+**Anker.** `MITTEILUNGSARTEN` in `src/features/portal/platform/einstiegsablauf.ts`, `Mitteilungen` in `Einstieg.tsx`.
 
 **Änderungspfad.** Andere Arten in der Liste oder ohne Push ein Hinweis statt des Schalters · Aufwand `klein`.
 
@@ -7243,7 +7243,7 @@ Technik · offen · 2026-10-23 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-22, Festlegungen aus dem Entwurf und Abschnitt 10; DR-160 (eine Bestätigung gilt einmal). Eine Fertig-Seite kostete einen Tipp ohne neue Auskunft.
 
-**Anker.** `useEinmaligeRueckmeldung('eingerichtet')` in `src/features/platform/Einstieg.tsx`.
+**Anker.** `useEinmaligeRueckmeldung('eingerichtet')` in `src/features/portal/platform/Einstieg.tsx`.
 
 **Änderungspfad.** Eigene Seite nach „PIN speichern“ (1c) oder die Rückmeldung auch auf der Übersicht · Aufwand `klein`.
 
@@ -7267,7 +7267,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-22, 5.1 nennt die Zeitzone der Praxis; die Plattform kennt sie nicht (Projektion) und rechnet überall in der des Geräts (`zeit.ts`). Für Kund:innen in Tübingen ist es dieselbe Uhr.
 
-**Anker.** `grussNachTageszeit` in `src/features/platform/zeit.ts`.
+**Anker.** `grussNachTageszeit` in `src/features/portal/platform/zeit.ts`.
 
 **Änderungspfad.** Zeitzone der Praxis in den Plattformkontext und dort rechnen · Aufwand `mittel`.
 
@@ -7279,7 +7279,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-22, Abschnitt 0 und 5.1; Abweichung von DSN-001 4.1: der Termin ist ein eigener Abschnitt „Nächster Besuch“. „heute“ und „morgen“ statt eines Wochentags, der in sechs Tagen wiederkäme.
 
-**Anker.** `hauptsache`, `inLesefrist` und `terminTitel` in `src/features/platform/hauptsache.ts`.
+**Anker.** `hauptsache`, `inLesefrist` und `terminTitel` in `src/features/portal/platform/hauptsache.ts`.
 
 **Änderungspfad.** Reihenfolge oder Wortlaut dort · Aufwand `klein`.
 
@@ -7293,7 +7293,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** DR-126: Abschnitte sprangen nach, Fehler von fünf der neun Abfragen erschienen nicht. Eine Übersicht mit fehlender Rechnung oder Antwort sähe vollständig aus.
 
-**Anker.** `laedt` und `gescheitert` in `src/features/platform/Uebersicht.tsx`.
+**Anker.** `laedt` und `gescheitert` in `src/features/portal/platform/Uebersicht.tsx`.
 
 **Änderungspfad.** Einzelne Abfragen als „optional“ ausnehmen und den Abschnitt weglassen · Aufwand `klein`.
 
@@ -7305,7 +7305,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-22, 5.1 und Abschnitt 3; ADR-027 Punkt 1 (Beratung an Behandlung oder Training).
 
-**Anker.** `heute` in `src/features/platform/Uebersicht.tsx`.
+**Anker.** `heute` in `src/features/portal/platform/Uebersicht.tsx`.
 
 **Änderungspfad.** Einträge oder Reihenfolge dort · Aufwand `klein`.
 
@@ -7317,7 +7317,7 @@ Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #297, Frage 3) · �
 
 **Begründung.** Handoff 2026-10-22, 5.1 nennt „Steht aus“; die Liste der Rechnungen sagt „offen“. Zwei Wörter für denselben Stand derselben Rechnung verwirren; Briefing 6 kann beide zusammen umbenennen.
 
-**Anker.** `zahlungsstand` in `src/features/platform/zahlungsstand.ts`; der Ton in `Uebersicht.tsx`.
+**Anker.** `zahlungsstand` in `src/features/portal/platform/zahlungsstand.ts`; der Ton in `Uebersicht.tsx`.
 
 **Änderungspfad.** Das Wort dort ändern, gilt dann für Liste und Übersicht · Aufwand `klein`.
 
@@ -7329,7 +7329,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: Briefing 7 (Ich)
 
 **Begründung.** Jannes, PR #297 Frage 2 (aus #294 Frage 1): „Später“ bleibt endgültig, die Übersicht erinnert, solange nichts an ist. ADR-024 Punkt 15: eingeschaltet wird im Einstieg oder unter „Ich“; Abschalten kostet nichts, also keine Karte nach „Aus“.
 
-**Anker.** `mitteilungenOffen` in `src/features/platform/einstiegsablauf.ts`.
+**Anker.** `mitteilungenOffen` in `src/features/portal/platform/einstiegsablauf.ts`.
 
 **Änderungspfad.** Auch nach „Aus“ zeigen oder den Schalter selbst auf die Übersicht · Aufwand `klein`.
 
@@ -7353,7 +7353,7 @@ Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 1) · er
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 0, Frage 1: Das Datenmodell kennt keine Dauer; ein Feld der Fachperson wäre eine Migration (Pfad A).
 
-**Anker.** `dauerDerEinheit` in `src/features/platform/dauer.ts`.
+**Anker.** `dauerDerEinheit` in `src/features/portal/platform/dauer.ts`.
 
 **Änderungspfad.** Werte dort ändern · Aufwand `klein`; ein Feld am Plan stattdessen · Aufwand `mittel`.
 
@@ -7365,7 +7365,7 @@ Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 2) · er
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 0, Frage 2; DSN-001 Abschnitt 7 Nr. 7 („Abbrechen ist immer sichtbar“) bleibt erfüllt, der Ausweg steht im Kopf.
 
-**Anker.** `Durchfuehrungskopf` in `src/features/platform/Durchfuehrungskopf.tsx`.
+**Anker.** `Durchfuehrungskopf` in `src/features/portal/platform/Durchfuehrungskopf.tsx`.
 
 **Änderungspfad.** Wort dort ändern · Aufwand `klein`.
 
@@ -7377,7 +7377,7 @@ Technik · entschieden (Jannes) · 2026-10-24 · Jannes (PR #299, Frage 3) · er
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 0, Frage 3; ADR-001 und ADR-024 Punkt 8: Was nur auf dem Telefon liegt, darf nicht nach „bei der Praxis“ aussehen.
 
-**Anker.** `Endseite` in `src/features/platform/Endseite.tsx`.
+**Anker.** `Endseite` in `src/features/portal/platform/Endseite.tsx`.
 
 **Änderungspfad.** Zurück zur Rückmeldung am Reiter (`Beendetziel`) · Aufwand `klein`.
 
@@ -7425,7 +7425,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 0; ADR-024 Punkt 8 (die Ansicht zeigt „auf dem Gerät“ oder „übertragen“, bis nichts mehr wartet).
 
-**Anker.** `useRuhigerStand` in `src/features/platform/Durchfuehrungsfuss.tsx`.
+**Anker.** `useRuhigerStand` in `src/features/portal/platform/Durchfuehrungsfuss.tsx`.
 
 **Änderungspfad.** Wartezeit dort ändern oder streichen · Aufwand `klein`.
 
@@ -7437,7 +7437,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 0 („Weiter üben“ öffnet die erste Übung mit offenem Durchgang); Grundlage sind `open_session.sets` und die Haken auf dem Gerät. Für „alles gehakt“ schweigt der Handoff.
 
-**Anker.** `ersteOffeneUebung` in `src/features/platform/haken.ts`.
+**Anker.** `ersteOffeneUebung` in `src/features/portal/platform/haken.ts`.
 
 **Änderungspfad.** Bei „alles gehakt“ direkt zum Abschluss oder zu Übung 1 · Aufwand `klein`.
 
@@ -7449,7 +7449,7 @@ Datenschutz · offen · 2026-10-24 · — · Prüfpaket · Wiedervorlage: vor de
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 5.5 („{Name} sieht sie …“); der Plan trägt keinen Namen, die Übersicht nimmt ihn ebenso aus dem nächsten Termin.
 
-**Anker.** `wer` in `Durchfuehrung`, `src/features/platform/Durchfuehrung.tsx`.
+**Anker.** `wer` in `Durchfuehrung`, `src/features/portal/platform/Durchfuehrung.tsx`.
 
 **Änderungspfad.** Immer das Wort des Bereichs · Aufwand `klein`; ein Name am Plan · Aufwand `mittel` (Pfad A).
 
@@ -7461,7 +7461,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 0 und 5.6 (BEF-197); der Wortlaut folgt dem des Reiters, ohne Uhrzeit, weil die Ablage keine trägt. Quelle der Verbindung bleibt `navigator.onLine` (ANN-015).
 
-**Anker.** `Einheit` in `src/features/platform/Durchfuehrung.tsx` (`ohneVerbindung && verbunden`).
+**Anker.** `Einheit` in `src/features/portal/platform/Durchfuehrung.tsx` (`ohneVerbindung && verbunden`).
 
 **Änderungspfad.** Wortlaut dort ändern · Aufwand `klein`.
 
@@ -7473,7 +7473,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-24, Abschnitte 0, 4 und 5.3; PLATTFORM.md (Seitentyp Durchführung). Für wen geübt wird, muss sichtbar bleiben (ADR-023); ohne Reiterleiste braucht jede Lage einen Weg hinaus.
 
-**Anker.** `vollbild` in `src/features/platform/PlattformApp.tsx`.
+**Anker.** `vollbild` in `src/features/portal/platform/PlattformApp.tsx`.
 
 **Änderungspfad.** Bedingung dort ändern · Aufwand `klein`.
 
@@ -7485,7 +7485,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 0; ADR-021 Punkt 4 (keine Fragen zum Befinden ohne Einwilligung). Für den Fall ohne Haken schweigt der Handoff; ein Ende ohne Haken speichert die Durchführung nie.
 
-**Anker.** `direkt` in `Einheit`, `src/features/platform/Durchfuehrung.tsx`.
+**Anker.** `direkt` in `Einheit`, `src/features/portal/platform/Durchfuehrung.tsx`.
 
 **Änderungspfad.** Die Seite immer zeigen · Aufwand `klein`.
 
@@ -7497,7 +7497,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** ADR-024 Punkt 8 und ADR-001; Handoff 2026-10-24, 3 und 5.6. Ohne Netz sagt die Zeile im Kopf, wo die Haken liegen; „übertragen“ daneben widerspräche ihr (Design-Review 2b, H2).
 
-**Anker.** `stand` in `Einheit`, `src/features/platform/Durchfuehrung.tsx`.
+**Anker.** `stand` in `Einheit`, `src/features/portal/platform/Durchfuehrung.tsx`.
 
 **Änderungspfad.** Ohne Netz „übertragen“ für Haken vom Server zeigen · Aufwand `klein`.
 
@@ -7509,7 +7509,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** ADR-001, ADR-024 Punkt 8: „Gespeichert“ nur, was bei der Praxis liegt. `empty` heißt: Die Einheit hatte beim Server keinen Haken – alle waren schon anderswo da, zurückgenommen oder nie angekommen (ANN-357, TRK-007). Das Ende mit Satz und Angaben liegt dann nicht bei der Praxis.
 
-**Anker.** `NICHTS_OFFEN` in `src/features/platform/ablage.ts`.
+**Anker.** `NICHTS_OFFEN` in `src/features/portal/platform/ablage.ts`.
 
 **Änderungspfad.** Im zweiten Fall „Gespeichert“ zeigen (der Server müsste das unterscheiden) · Aufwand `mittel`.
 
@@ -7523,7 +7523,7 @@ Technik · verworfen · 2026-10-25 · ANN-730 · erledigt · Wiedervorlage: kein
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 0 und 10 (Prüffrage); `recent_sessions` kennt nur Tag und Ende, keine Haken.
 
-**Anker.** `heutigeEinheit` in `src/features/platform/haken.ts` (bis BEF-218 `heuteErledigt` in `vorschau.ts`).
+**Anker.** `heutigeEinheit` in `src/features/portal/platform/haken.ts` (bis BEF-218 `heuteErledigt` in `vorschau.ts`).
 
 **Änderungspfad.** Haken der beendeten Einheit in die Projektion · Aufwand `mittel` (Pfad A).
 
@@ -7535,7 +7535,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** BEF-197, Handoff 2026-10-24, Abschnitt 5.6 („sonst ohne Zeit“); die Feldliste der Ablage bleibt unverändert (ADR-024 Punkt 5).
 
-**Anker.** `PlanVomGeraet` in `src/features/platform/Uebungen.tsx`.
+**Anker.** `PlanVomGeraet` in `src/features/portal/platform/Uebungen.tsx`.
 
 **Änderungspfad.** Zeitpunkt des Ladens in die Ablage · Aufwand `mittel` (Review ADR-024).
 
@@ -7547,7 +7547,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-24, Abschnitte 0 und 3 (DR-127, DR-129); den künftigen Plan nennt der Handoff nicht.
 
-**Anker.** `lageDesPlans` in `src/features/platform/vorschau.ts`.
+**Anker.** `lageDesPlans` in `src/features/portal/platform/vorschau.ts`.
 
 **Änderungspfad.** Lagen dort ändern · Aufwand `klein`.
 
@@ -7559,7 +7559,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 0; Quelle ist `navigator.onLine` (ANN-015).
 
-**Anker.** `Uebungstage` in `src/features/platform/Uebungen.tsx`.
+**Anker.** `Uebungstage` in `src/features/portal/platform/Uebungen.tsx`.
 
 **Änderungspfad.** `gesperrt` dort weglassen · Aufwand `klein`.
 
@@ -7571,7 +7571,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-24, Abschnitte 0 und 4 (im Briefing verlangt).
 
-**Anker.** `Spalten` in `src/features/platform/Uebungen.tsx` (dazu `breit` in `PlattformApp.tsx`).
+**Anker.** `Spalten` in `src/features/portal/platform/Uebungen.tsx` (dazu `breit` in `PlattformApp.tsx`).
 
 **Änderungspfad.** `Spalten` einspaltig, `breit` nur für die Übersicht · Aufwand `klein`.
 
@@ -7583,7 +7583,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 0; dort steht nicht, was als doppelt gilt.
 
-**Anker.** `wasManBraucht` in `src/features/platform/vorschau.ts`.
+**Anker.** `wasManBraucht` in `src/features/portal/platform/vorschau.ts`.
 
 **Änderungspfad.** Vergleich dort ändern · Aufwand `klein`.
 
@@ -7595,7 +7595,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-24, Abschnitte 3 und 5.1 (N1); wie der Fragebogen der Übersicht (`naechster.staff_name`). Der Plan selbst trägt keinen Namen.
 
-**Anker.** `name` in `Uebungen` (`src/features/platform/Uebungen.tsx`).
+**Anker.** `name` in `Uebungen` (`src/features/portal/platform/Uebungen.tsx`).
 
 **Änderungspfad.** Name aus dem Plan in die Projektion · Aufwand `mittel` (Pfad A).
 
@@ -7607,7 +7607,7 @@ Technik · offen · 2026-10-24 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-24, Abschnitt 9 Punkt 3; die Vorschau im Reiter nennt ohne Netz beides.
 
-**Anker.** `uebungenText` in `src/features/platform/Uebersicht.tsx`.
+**Anker.** `uebungenText` in `src/features/portal/platform/Uebersicht.tsx`.
 
 **Änderungspfad.** Ohne Netz nur den Satz · Aufwand `klein`.
 
@@ -7621,7 +7621,7 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
 **Begründung.** BEF-218; ADR-024 Punkt 8 (ehrlich, wo die Einheit liegt); ein Satz Orientierung nur einmal (PLATTFORM.md).
 
-**Anker.** `heutigeEinheit` in `src/features/platform/haken.ts`.
+**Anker.** `heutigeEinheit` in `src/features/portal/platform/haken.ts`.
 
 **Änderungspfad.** Wieder allein `open_session.sets` lesen · Aufwand `klein`.
 
@@ -7633,7 +7633,7 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
 **Begründung.** Handoff 2026-10-24, 5.7 („Stand {Datum}“); Person und Praxis gleichen die Fassung auf Papier über den Stand ab (Design-Review 2d, H3). Das System kennt fünf Radien, 4 gehört nicht dazu (DS-001); bei 200 % blieben mit Rahmen rund 110 px für den Text.
 
-**Anker.** `stand` in `src/features/exercise-plans/Planblatt.tsx`; die Vorschau in `PlanblattPlattform` (`src/features/platform/Uebungen.tsx`).
+**Anker.** `stand` in `src/features/exercise/exercise-plans/Planblatt.tsx`; die Vorschau in `PlanblattPlattform` (`src/features/portal/platform/Uebungen.tsx`).
 
 **Änderungspfad.** Stand als Beginn der Fassung (`runs_from`) auf beiden Seiten oder ein sechster Radius im System · Aufwand `klein`.
 
@@ -7645,7 +7645,7 @@ Technik · offen · 2026-10-25 · — · — · Wiedervorlage: —
 
 **Begründung.** Aufräumen Schritt 3 (Jannes, 2026-10-25): schmale Schnittstellen ohne Barrel-Falle, ab Termine, gegenseitige Abhängigkeiten auflösen; ADR-015 will fachliche Module ohne Schichtenbau.
 
-**Anker.** Regel `nur-ueber-index` in `scripts/eslint-modulgrenzen.mjs`; `src/features/appointments/index.ts`; `src/features/appointments/erweiterungen.ts`.
+**Anker.** Regel `nur-ueber-index` in `scripts/eslint-modulgrenzen.mjs`; `src/features/calendar/appointments/index.ts`; `src/features/calendar/appointments/erweiterungen.ts`.
 
 **Änderungspfad.** Regel aus `eslint.config.js` nehmen, Kern zurück nach Termine · Aufwand `mittel`.
 
@@ -7717,6 +7717,18 @@ Technik · offen · 2026-10-27 · — · — · Wiedervorlage: —
 
 **Begründung.** Aufräumen 3b (Jannes, 2026-10-27). Wörtlich wären rund 180 Importe aus Bausteinen umzubauen, ohne dass ein Zyklus mehr fällt; die Folge hat die wenigsten Importe gegen sich.
 
-**Anker.** Regel `nach-unten` in `scripts/eslint-modulgrenzen.mjs`; `PosNummernLaden` in `src/features/treatment-bases/DatenUebertragenFenster.tsx`.
+**Anker.** Regel `nach-unten` in `scripts/eslint-modulgrenzen.mjs`; `PosNummernLaden` in `src/features/patients/treatment-bases/DatenUebertragenFenster.tsx`.
 
 **Änderungspfad.** Wörtliche Lesart: Regel auf jeden Import einer fremden Domäne ausweiten, Bausteine über Seiten einsetzen · Aufwand `groß`.
+
+### ANN-755 — Schnittstelle je Domäne: was direkt bleibt
+
+Technik · offen · 2026-10-27 · — · — · Wiedervorlage: —
+
+**Annahme.** Jede der 14 Domänen hat eine `index.ts`, die jeden Export einzeln nennt; eine fremde Domäne wird nur darüber importiert, die eigene nie. Direkt bleiben Seiten, die in keiner Schnittstelle stehen, der Rahmen in `src/routes` und `src/app`, Tests und die Plattform-App mit ihren freigegebenen Bausteinen (ADR-023 Punkt 26).
+
+**Begründung.** Aufräumen 3b (Jannes, 2026-10-27): keine tiefen Importe in fremde Domänen. Über die Schnittstellen liefe der Rahmen im Kreis (`src/app/Vollseite`, Plattform, Akte, Kern), und die Trennungsprüfung der Plattform müsste ganze Domänen erlauben.
+
+**Anker.** Regel `nur-ueber-schnittstelle` in `scripts/eslint-modulgrenzen.mjs`; die `index.ts` je Domäne.
+
+**Änderungspfad.** Auch der Rahmen über die Schnittstellen: was Fachmodule aus `src/app` nutzen, nach `src/components` · Aufwand `mittel`.

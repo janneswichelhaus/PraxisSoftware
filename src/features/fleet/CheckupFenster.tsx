@@ -20,7 +20,7 @@ import {
   type Verlustschutztexte,
 } from '@/app/Textverlustschutz';
 import { Kameradialog } from '@/components/ui/Kameradialog';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core';
 import { FLOTTE_SCHLUESSEL, recordCheckup, type BikeDetail } from './api';
 import {
   CHECK_ITEMS,

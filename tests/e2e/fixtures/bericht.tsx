@@ -1,16 +1,16 @@
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import {
   berichtQueryKey,
   quellenQueryKey,
   type Bericht,
   type Berichtsdokument,
   type Quellenzeile,
-} from '@/features/therapy-reports/api';
-import { TherapieberichtPage } from '@/features/therapy-reports/TherapieberichtPage';
-import { TherapieberichtDruckPage } from '@/features/therapy-reports/TherapieberichtDruckPage';
+} from '@/features/clinical/therapy-reports/api';
+import { TherapieberichtPage } from '@/features/clinical/therapy-reports/TherapieberichtPage';
+import { TherapieberichtDruckPage } from '@/features/clinical/therapy-reports/TherapieberichtDruckPage';
 import '@/index.css';
 
 /**

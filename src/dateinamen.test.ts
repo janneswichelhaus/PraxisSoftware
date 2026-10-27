@@ -70,14 +70,14 @@ function importadressen(dateien: readonly string[]): string[] {
 describe('Dateinamen', () => {
   it('erkennt Pfade, die nur in der Schreibweise abweichen', () => {
     const dateien = [
-      'src/features/files/Patientenfotos.tsx',
-      'src/features/files/patientenfotos.ts',
-      'src/features/files/kamera.ts',
-      'src/features/files/kamera.test.ts',
+      'src/features/patients/files/Patientenfotos.tsx',
+      'src/features/patients/files/patientenfotos.ts',
+      'src/features/patients/files/kamera.ts',
+      'src/features/patients/files/kamera.test.ts',
     ];
     expect(kollisionen(dateien)).toEqual([]);
     expect(kollisionen(importadressen(dateien))).toEqual([
-      ['src/features/files/Patientenfotos', 'src/features/files/patientenfotos'],
+      ['src/features/patients/files/Patientenfotos', 'src/features/patients/files/patientenfotos'],
     ]);
     expect(kollisionen(verzeichnisse(['src/Features/a.ts', 'src/features/b.ts']))).toEqual([
       ['src/Features', 'src/features'],

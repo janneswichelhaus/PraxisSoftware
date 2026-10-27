@@ -2,12 +2,15 @@ import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import { SessionContext } from '@/features/auth/sessionContext';
+import { SessionContext } from '@/features/core/auth/sessionContext';
 import type {
   Vertretung,
   Plattformzugang as ZugangDerPraxis,
-} from '@/features/platform-access/api';
-import { EinladungVorOrt, PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
+} from '@/features/portal/platform-access/api';
+import {
+  EinladungVorOrt,
+  PlattformAbschnitt,
+} from '@/features/portal/platform-access/PlattformAbschnitt';
 import {
   aboSchluessel,
   angeboteSchluessel,
@@ -47,17 +50,17 @@ import {
   type Terminwunsch,
   type Trainingsangebot,
   type Trainingsvertrag,
-} from '@/features/platform/api';
-import { EinladungPage } from '@/features/platform/EinladungPage';
-import { checkinsKey, type CheckinDaten } from '@/features/checkins/api';
-import { ZwischenDenTerminen } from '@/features/checkins/ZwischenDenTerminen';
+} from '@/features/portal/platform/api';
+import { EinladungPage } from '@/features/portal/platform/EinladungPage';
+import { checkinsKey, type CheckinDaten } from '@/features/exercise/checkins/api';
+import { ZwischenDenTerminen } from '@/features/exercise/checkins/ZwischenDenTerminen';
 import { TrainingAssessments } from '@/features/training/TrainingAssessments';
 import { assessmentsKey, type Assessmentsicht } from '@/features/training/assessments-api';
 import {
   PASSKEYS_SCHLUESSEL,
   PIN_SCHLUESSEL,
-} from '@/features/auth/einrichtung/AnmeldungVerwalten';
-import { PlattformApp } from '@/features/platform/PlattformApp';
+} from '@/features/core/auth/einrichtung/AnmeldungVerwalten';
+import { PlattformApp } from '@/features/portal/platform/PlattformApp';
 import '@/index.css';
 
 /**

@@ -40,7 +40,7 @@ bis 10 fest (ANN-579, ANN-591, ANN-597, ANN-602); eine Löschsperre an der Perso
    Ablauf braucht, den es schon gibt, nutzt oder ersetzt ihn — zwei Wahrheiten über dieselbe Sache
    widersprechen sich irgendwann (darauf verweisen ADR-009, ADR-021 und ADR-022).
 2. **Vorschau ist technisch getrennt.** Die Verzeichnisse in `VORSCHAUBEREICHE`
-   (`src/features/preview/trennung.test.ts`) haben keinen Datenbankzugriff, kein Netz, keine
+   (`src/features/core/preview/trennung.test.ts`) haben keinen Datenbankzugriff, kein Netz, keine
    Persistenz und keine Importe aus echten `api.ts`-Modulen; `ehrlichkeit.test.tsx` prüft, dass
    keine Erfolgsmeldung behauptet wird. Beide Tests werden nie angepasst, um grün zu werden — ein
    Treffer heißt, dass die Arbeit in den echten Bereich gehört.

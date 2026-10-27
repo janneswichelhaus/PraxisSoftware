@@ -1,12 +1,12 @@
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AnmeldungEinrichten } from '@/features/auth/einrichtung/AnmeldungEinrichten';
+import { AnmeldungEinrichten } from '@/features/core/auth/einrichtung/AnmeldungEinrichten';
 import {
   PASSKEYS_SCHLUESSEL,
   PIN_SCHLUESSEL,
   PasskeyAbschnitt,
   PinAbschnitt,
-} from '@/features/auth/einrichtung/AnmeldungVerwalten';
+} from '@/features/core/auth/einrichtung/AnmeldungVerwalten';
 import '@/index.css';
 
 /**

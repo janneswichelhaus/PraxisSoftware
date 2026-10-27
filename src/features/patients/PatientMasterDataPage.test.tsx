@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
-import type * as ZugangApi from '@/features/platform-access/api';
-import type * as VermerkeApi from '@/features/datenschutz/vermerke';
-import type * as FilesApi from '@/features/files/api';
-import type * as IntakeApi from '@/features/intake/api';
+import type * as ZugangApi from '@/features/portal/platform-access/api';
+import type * as VermerkeApi from '@/features/privacy/datenschutz/vermerke';
+import type * as FilesApi from '@/features/patients/files/api';
+import type * as IntakeApi from '@/features/patients/intake/api';
 import type * as BillingApi from '@/features/billing/api';
 import type * as Geocode from '@/lib/location/geocode';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
@@ -63,7 +63,7 @@ const fetchVeralteteHausbesuche = vi.fn(() => Promise.resolve([] as unknown[]));
 const aktualisiereHausbesuchAdressen = vi.fn();
 // Der Abschnitt „Plattform" hat eigene Tests (POR-002, POR-005); hier nur
 // ohne Zugang und ohne Vertretung.
-vi.mock('@/features/platform-access/api', async (importOriginal) => ({
+vi.mock('@/features/portal/platform-access/api', async (importOriginal) => ({
   ...(await importOriginal<typeof ZugangApi>()),
   getPlatformAccess: () => Promise.resolve(null),
   listPlatformRepresentations: () => Promise.resolve([]),
@@ -72,20 +72,20 @@ vi.mock('@/features/platform-access/api', async (importOriginal) => ({
 // AKTE-007: Anmeldebogen und Dateien stehen jetzt hier; ihre Inhalte prüfen
 // eigene Tests, hier nur, dass und für wen sie stehen.
 const fetchDatenschutzvermerke = vi.fn();
-vi.mock('@/features/datenschutz/vermerke', async (importOriginal) => ({
+vi.mock('@/features/privacy/datenschutz/vermerke', async (importOriginal) => ({
   ...(await importOriginal<typeof VermerkeApi>()),
   fetchDatenschutzvermerke: (id: string) =>
     fetchDatenschutzvermerke(id) as Promise<VermerkeApi.Datenschutzvermerk[]>,
 }));
 const fetchPatientFiles = vi.fn();
-vi.mock('@/features/files/api', async (importOriginal) => ({
+vi.mock('@/features/patients/files/api', async (importOriginal) => ({
   ...(await importOriginal<typeof FilesApi>()),
   fetchPatientFiles: (id: string) => fetchPatientFiles(id) as Promise<FilesApi.PatientFile[]>,
 }));
 
 // Akte entschlacken (2026-10-03): Zustand des Anmeldebogens und „Rechnung an".
 const fetchIntakeChecklist = vi.fn();
-vi.mock('@/features/intake/api', async (importOriginal) => ({
+vi.mock('@/features/patients/intake/api', async (importOriginal) => ({
   ...(await importOriginal<typeof IntakeApi>()),
   fetchIntakeChecklist: (id: string) =>
     fetchIntakeChecklist(id) as Promise<IntakeApi.IntakeChecklist>,

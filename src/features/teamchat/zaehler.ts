@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { isStaff, type CurrentUser } from '@/features/session/types';
+import { isStaff, type CurrentUser } from '@/features/core';
 import { ZAEHLER_KEY, ZAEHLER_MS, fetchZaehler } from './api';
 
 /**

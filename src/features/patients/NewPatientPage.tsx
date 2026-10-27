@@ -30,7 +30,7 @@ import {
   STAMMDATEN_REIHENFOLGE,
   stammdatenFeldId,
 } from './stammdatenfelder';
-import { fetchAssignableTherapists } from '@/features/staff/api';
+import { fetchAssignableTherapists } from '@/features/workforce';
 
 /** Der Vorgang heißt hier wie in der Liste und in der Kopfsuche (PAT-21). */
 const ANLEGEN = `${BEGRIFFE.patientIn} anlegen`;

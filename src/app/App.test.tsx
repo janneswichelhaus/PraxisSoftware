@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
-import type * as CurrentUserModul from '@/features/session/useCurrentUser';
-import type * as KontoApi from '@/features/staff/konto-api';
-import type * as PlattformApi from '@/features/platform/api';
-import { grussNachTageszeit } from '@/features/platform/zeit';
+import type * as CurrentUserModul from '@/features/core/session/useCurrentUser';
+import type * as KontoApi from '@/features/workforce/staff/konto-api';
+import type * as PlattformApi from '@/features/portal/platform/api';
+import { grussNachTageszeit } from '@/features/portal/platform/zeit';
 
 /**
  * Die Vollseiten nach der Anmeldung (MARKE-001): Erstladen gescheitert
@@ -20,17 +20,17 @@ import { grussNachTageszeit } from '@/features/platform/zeit';
  * Anmeldedienst und ein kaputtes Profil in der Datenbank bräuchte.
  */
 
-vi.mock('@/features/auth/SessionProvider', () => ({
+vi.mock('@/features/core/auth/SessionProvider', () => ({
   SessionProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
 // Die Sitzungssperre hat eigene Tests (`Sitzungssperre.test.tsx`); hier
 // geht es um die Zustände dahinter.
-vi.mock('@/features/auth/sitzungssperre/Sitzungssperre', () => ({
+vi.mock('@/features/core/auth/sitzungssperre/Sitzungssperre', () => ({
   Sitzungssperre: ({ children }: { children: ReactNode }) => children,
 }));
 
-vi.mock('@/features/auth/sessionContext', () => ({
+vi.mock('@/features/core/auth/sessionContext', () => ({
   useSession: () => ({
     session: { user: { id: '00000000-0000-0000-0000-000000000001' } },
     initialising: false,
@@ -44,12 +44,12 @@ vi.mock('@/features/auth/sessionContext', () => ({
  * `error instanceof …` gegen `undefined`.
  */
 const { KeinProfilError, ZugangGesperrtError } = await vi.importActual<typeof CurrentUserModul>(
-  '@/features/session/useCurrentUser',
+  '@/features/core/session/useCurrentUser',
 );
 
 let fehler: Error = new Error('Etwas ist schiefgegangen.');
 
-vi.mock('@/features/session/useCurrentUser', async (importOriginal) => {
+vi.mock('@/features/core/session/useCurrentUser', async (importOriginal) => {
   const actual = await importOriginal<typeof CurrentUserModul>();
   return {
     ...actual,
@@ -63,7 +63,7 @@ vi.mock('@/features/session/useCurrentUser', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/staff/konto-api', async (importOriginal) => ({
+vi.mock('@/features/workforce/staff/konto-api', async (importOriginal) => ({
   ...(await importOriginal<typeof KontoApi>()),
   nimmZugangAn: () => Promise.resolve(),
 }));
@@ -71,7 +71,7 @@ vi.mock('@/features/staff/konto-api', async (importOriginal) => ({
 /** POR-004: Was die Plattformprojektion für ein Konto ohne Profil liefert. */
 let plattformzugaenge: PlattformApi.Plattformzugang[] = [];
 
-vi.mock('@/features/platform/api', async (importOriginal) => ({
+vi.mock('@/features/portal/platform/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladePlattformkontext: () => Promise.resolve(plattformzugaenge),
 }));

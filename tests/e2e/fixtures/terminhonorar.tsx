@@ -16,7 +16,7 @@ import { InvoiceDetailPage } from '@/features/billing/InvoiceDetailPage';
 import { InvoicePrintPage } from '@/features/billing/InvoicePrintPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { rechnungsansicht } from '@/features/billing/testdaten';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

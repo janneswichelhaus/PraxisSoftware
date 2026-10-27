@@ -14,17 +14,17 @@ import { useQueryClient } from '@tanstack/react-query';
  * Kommt beim Nachladen „gesperrt" zurück, ersetzt die Sperrseite sofort.
  */
 
-vi.mock('@/features/auth/SessionProvider', () => ({
+vi.mock('@/features/core/auth/SessionProvider', () => ({
   SessionProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
-vi.mock('@/features/auth/sitzungssperre/Sitzungssperre', () => ({
+vi.mock('@/features/core/auth/sitzungssperre/Sitzungssperre', () => ({
   Sitzungssperre: ({ children }: { children: ReactNode }) => children,
 }));
 
 const KONTO = '00000000-0000-0000-0000-000000000001';
 
-vi.mock('@/features/auth/sessionContext', () => ({
+vi.mock('@/features/core/auth/sessionContext', () => ({
   useSession: () => ({
     session: { user: { id: KONTO } },
     initialising: false,

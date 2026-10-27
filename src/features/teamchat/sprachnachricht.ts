@@ -4,7 +4,7 @@ import {
   waehleFormat,
   type Aufnahmefehler,
 } from '@/lib/aufnahme';
-import { tontyp } from '@/features/platform/videometadaten';
+import { tontyp } from '@/features/portal';
 
 /**
  * Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N): was das Gerät

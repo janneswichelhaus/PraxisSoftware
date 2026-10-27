@@ -5,9 +5,9 @@ import { CHROMIUM_PNG, basis, jpegVomHandy } from '../../../src/lib/dateien/test
 import { erstelleHandler } from './handler';
 import type { Instanz } from './instanz';
 import { sha256 } from './pruefung';
-import { bereinigeTon, bereinigeVideo } from '../../../src/features/platform/videometadaten';
+import { bereinigeTon, bereinigeVideo } from '../../../src/features/portal/platform/videometadaten';
 import { alleBytes } from '../../../src/lib/dateien/metadaten';
-import { webmAusChromium } from '../../../src/features/platform/testvideos';
+import { webmAusChromium } from '../../../src/features/portal/platform/testvideos';
 import type { Ankuendigung, Protokolleintrag } from './typen';
 
 /**

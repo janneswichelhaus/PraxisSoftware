@@ -2,42 +2,42 @@ import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import type { OffenerScan } from '@/features/files/api';
-import type { CallEntry } from '@/features/open-points/call-list-api';
-import { CALL_LIST_KEY } from '@/features/open-points/call-list-api';
-import { CallListPage } from '@/features/open-points/CallListPage';
-import { OPEN_INTAKES_KEY, type OpenIntake } from '@/features/intake/api';
-import { OpenPointsPage } from '@/features/open-points/OpenPointsPage';
-import { OPEN_SCANS_KEY, WAITLIST_REVIEW_KEY } from '@/features/open-points/eingang';
+import type { OffenerScan } from '@/features/patients/files/api';
+import type { CallEntry } from '@/features/workplace/open-points/call-list-api';
+import { CALL_LIST_KEY } from '@/features/workplace/open-points/call-list-api';
+import { CallListPage } from '@/features/workplace/open-points/CallListPage';
+import { OPEN_INTAKES_KEY, type OpenIntake } from '@/features/patients/intake/api';
+import { OpenPointsPage } from '@/features/workplace/open-points/OpenPointsPage';
+import { OPEN_SCANS_KEY, WAITLIST_REVIEW_KEY } from '@/features/workplace/open-points/eingang';
 import {
   ENDING_KEY,
   IDLE_KEY,
   type CareWithoutConclusion,
   type EndingPrescription,
-} from '@/features/open-points/reminders-api';
+} from '@/features/workplace/open-points/reminders-api';
 import { PATIENT_OVERVIEW_KEY, type Patienteneintrag } from '@/features/patients/uebersicht';
 import {
   PLATFORM_REQUESTS_KEY,
   type PlatformRequest,
-} from '@/features/open-points/platform-requests-api';
-import { TASKS_KEY, type Task } from '@/features/open-points/tasks-api';
-import { FAELLIG_SCHLUESSEL } from '@/features/exercise-plans/api';
-import { rueckfragenKey, type Rueckfragezeile } from '@/features/messages/api';
-import { ABO_KUENDIGUNGEN_KEY } from '@/features/open-points/aftercare-cancellations-api';
-import { CONSENT_WITHDRAWALS_KEY } from '@/features/open-points/consent-withdrawals-api';
+} from '@/features/workplace/open-points/platform-requests-api';
+import { TASKS_KEY, type Task } from '@/features/workplace/open-points/tasks-api';
+import { FAELLIG_SCHLUESSEL } from '@/features/exercise/exercise-plans/api';
+import { rueckfragenKey, type Rueckfragezeile } from '@/features/portal/messages/api';
+import { ABO_KUENDIGUNGEN_KEY } from '@/features/workplace/open-points/aftercare-cancellations-api';
+import { CONSENT_WITHDRAWALS_KEY } from '@/features/workplace/open-points/consent-withdrawals-api';
 import { flotteSchluessel } from '@/features/fleet/api';
 import { testFlotte } from '@/features/fleet/testdaten';
-import type { CurrentUser } from '@/features/session/types';
-import type { StaffMember } from '@/features/staff/api';
-import { urlaubSchluessel, type Urlaubsstand } from '@/features/vacation/api';
-import { urlaubsfenster } from '@/features/vacation/fenster';
-import { WORKING_TIME_KEY, type WorkingTime } from '@/features/working-time/api';
+import type { CurrentUser } from '@/features/core/session/types';
+import type { StaffMember } from '@/features/workforce/staff/api';
+import { urlaubSchluessel, type Urlaubsstand } from '@/features/workforce/vacation/api';
+import { urlaubsfenster } from '@/features/workforce/vacation/fenster';
+import { WORKING_TIME_KEY, type WorkingTime } from '@/features/workforce/working-time/api';
 import {
   reimbursementsKey,
   type Overview,
   type Reimbursement,
-} from '@/features/reimbursements/api';
-import type { WaitlistEntry } from '@/features/waitlist/api';
+} from '@/features/workforce/reimbursements/api';
+import type { WaitlistEntry } from '@/features/calendar/waitlist/api';
 import '@/index.css';
 import { todayInTimeZone } from '@/lib/datum';
 

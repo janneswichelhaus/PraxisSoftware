@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { MDR_REVIEW_REQUIRED, freigabeVollstaendig, mdrSperre, type MdrEintrag } from './mdr';
 import { arbeitsbereiche } from './navigation';
 import { funktionskatalog } from './funktionen';
-import { roleKeySchema, type RoleKey } from '@/features/session/types';
+import { roleKeySchema, type RoleKey } from '@/features/core/session/types';
 import { testUser } from '@/test-utils';
 
 /**

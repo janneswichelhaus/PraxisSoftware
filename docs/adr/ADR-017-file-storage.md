@@ -521,7 +521,7 @@ tut; Punkt 33 entscheidet es hier.
     `klinisches_bild` bleibt Bildgebung und Aufnahmen aus ärztlicher oder
     klinischer Hand (Röntgen, MRT, Ultraschall, das Wundfoto im
     Klinikbericht) und ist nie ein Foto, das die Praxis selbst macht; die
-    Erläuterung in `src/features/files/dokumentarten.ts` wird in DOK-006
+    Erläuterung in `src/features/patients/files/dokumentarten.ts` wird in DOK-006
     entsprechend geschärft. Bilder, die Patient:innen der Praxis schicken,
     regelt Punkt 42.
     *Vermerk 2026-10-02 (Fassung 3): Aus zwei Arten werden
@@ -1893,7 +1893,7 @@ Diesmal aus der lokalen Umgebung abgerufen, ohne Egress-Sperre:
   einen Test und stützt sich nicht auf diese Aussage.
 - **MDN, `Request.cache`**: Mit `no-store` holt der Browser die Antwort ohne
   Blick in seinen Zwischenspeicher und legt sie dort nicht ab (Punkt 40).
-- **Bestand, geprüft im Zweitreview dieser Fassung:** `src/features/files/api.ts`
+- **Bestand, geprüft im Zweitreview dieser Fassung:** `src/features/patients/files/api.ts`
   signiert mit dem Anzeigenamen als Downloadnamen, `Dateiliste.tsx` öffnet
   den Verweis in einem neuen Fenster (Punkt 40);
   `app.can_execute_storage_deletion` lässt nur `owner` Löschaufträge
@@ -1929,7 +1929,7 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
   `storage.objects.metadata`; Signatur nur im Client
   (`dateiInhaltAblehnungsgrund`), Metadaten nur im Client (`metadaten.ts`,
   entfernt auch ICC) — Punkte 49 und 53.
-- `src/features/files/api.ts` signiert mit Downloadnamen, `Dateiliste.tsx`
+- `src/features/patients/files/api.ts` signiert mit Downloadnamen, `Dateiliste.tsx`
   öffnet ein Fenster; `ladePatientenfoto` ist der vorhandene Anzeigeweg
   (Punkt 54).
 - **§ 630f Abs. 1 Satz 2 BGB** (Berichtigungen nur, wenn der ursprüngliche

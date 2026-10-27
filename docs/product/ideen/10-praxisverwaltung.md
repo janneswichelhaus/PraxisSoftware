@@ -1188,7 +1188,7 @@ Einwilligung der Person. Kein Rückschluss auf Alter in Auswertungen (§20).
 
 **Stand.** Die Tageskarte zeigt das Stockwerk seit dem UI-Redesign als Pille
 und liest es vorerst vom Anfang des Zugangshinweises (ANN-197,
-`src/features/today/stockwerk.ts`). Der Handoff sagt ausdrücklich: Feld als
+`src/features/calendar/today/stockwerk.ts`). Der Handoff sagt ausdrücklich: Feld als
 Folgeaufgabe notieren, nicht migrieren.
 
 **Idee.** Ein kurzes Feld „Stockwerk/Lage" in den Stammdaten neben dem
@@ -1282,7 +1282,7 @@ Name, keine Leistung, keine Diagnose: Der Verwendungszweck landet beim
 Zahlungsdienst und auf Kontoauszügen Dritter. Erzeugt wird der Code im Browser
 beim Drucken, **nie über einen fremden QR-Dienst im Netz** (das wäre ein neuer
 Empfänger mit Rechnungsdaten, ADR-002). Eine QR-Bibliothek gibt es seit POR-EPIC-001
-(`qrcode-generator`, erzeugt im Browser, `src/features/platform-access/QrCode.tsx`)
+(`qrcode-generator`, erzeugt im Browser, `src/features/portal/platform-access/QrCode.tsx`)
 — ob sie den EPC-Zeichensatz und die Fehlerkorrekturstufe M trägt, ist im Loop
 zu prüfen; eine zweite Bibliothek kommt nicht dazu. Der Code
 gehört zum ausgestellten Dokument und muss aus dem Rechnungs-Snapshot entstehen,
@@ -1340,7 +1340,7 @@ entscheiden.
 |---|---|
 | Status | notiert |
 | Quelle | Jannes, 2026-10-03 (Akte · Kopf, Reiter und Hinweis) |
-| Berührt | PAT-006, AKTE-007, ANN-224, `src/features/datenschutz/AufnahmeblaetterPage.tsx`; §3.1 |
+| Berührt | PAT-006, AKTE-007, ANN-224, `src/features/privacy/datenschutz/AufnahmeblaetterPage.tsx`; §3.1 |
 
 **Stand.** Seit AKTE-007 heißt das Blatt der Aufnahme „Anmeldebogen":
 Kontaktdaten, Datenschutzinformation und Behandlungsvertrag auf einem Blatt.

@@ -6,20 +6,16 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
 import { Objektkopf, Warnzeile } from '@/components/ui/Objektkopf';
 import { Reiterleiste } from '@/components/ui/Reiterleiste';
-import { AnmeldebogenFoto } from '@/features/datenschutz/Anmeldebogen';
-import { useOffeneErstaufnahme } from '@/features/intake/useOffeneErstaufnahme';
+import { AnmeldebogenFoto } from '@/features/privacy';
+import { useOffeneErstaufnahme } from '@/features/patients/intake/useOffeneErstaufnahme';
 import {
   useAktuelleGrundlage,
   versicherungsart,
-} from '@/features/treatment-bases/useAktuelleGrundlage';
+} from '@/features/patients/treatment-bases/useAktuelleGrundlage';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import {
-  canManageAppointments,
-  canWriteTreatmentBases,
-  type CurrentUser,
-} from '@/features/session/types';
+import { canManageAppointments, canWriteTreatmentBases, type CurrentUser } from '@/features/core';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import {

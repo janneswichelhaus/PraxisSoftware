@@ -7,7 +7,7 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
-import { canManageTasks, isOwner, type CurrentUser } from '@/features/session/types';
+import { canManageTasks, isOwner, type CurrentUser } from '@/features/core';
 import {
   REAKTIONEN,
   TEAMCHAT_KEY,

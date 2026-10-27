@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as RouterModul from 'react-router-dom';
 import { morgenOrtszeit, renderWithProviders, testPatient } from '@/test-utils';
-import type * as StaffApi from '@/features/staff/api';
+import type * as StaffApi from '@/features/workforce/staff/api';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
@@ -26,7 +26,7 @@ const fetchPatient = vi.fn();
 const updatePatient = vi.fn();
 const navigate = vi.fn();
 const fetchAssignableTherapists = vi.fn();
-vi.mock('@/features/staff/api', async (importOriginal) => ({
+vi.mock('@/features/workforce/staff/api', async (importOriginal) => ({
   ...(await importOriginal<typeof StaffApi>()),
   fetchAssignableTherapists: () =>
     fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,

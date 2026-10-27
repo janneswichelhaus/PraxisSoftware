@@ -5,12 +5,8 @@ import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
-import { canWriteTrainingClients, type CurrentUser } from '@/features/session/types';
-import {
-  appointmentToFormValues,
-  tageslageNeuLaden,
-  updateAppointment,
-} from '@/features/appointments';
+import { canWriteTrainingClients, type CurrentUser } from '@/features/core';
+import { appointmentToFormValues, tageslageNeuLaden, updateAppointment } from '@/features/calendar';
 import { getTrainingAppointment } from './api';
 import { TrainingTerminFormular } from './TrainingTerminFormular';
 import { todayInTimeZone } from '@/lib/datum';

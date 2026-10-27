@@ -22,11 +22,7 @@ import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { leseRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
-import {
-  canManageBillingProfile,
-  canManageInvoicing,
-  type CurrentUser,
-} from '@/features/session/types';
+import { canManageBillingProfile, canManageInvoicing, type CurrentUser } from '@/features/core';
 import {
   KeineStammdaten,
   bereichLabels,

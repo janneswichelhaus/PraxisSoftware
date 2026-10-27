@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { aktionen, freigegeben, unterschied, LABEL } from './audit-aktionen-check.mjs';
-import { AUDIT_ACTIONS } from '../src/features/audit/actions';
+import { AUDIT_ACTIONS } from '../src/features/privacy/audit/actions';
 
 /**
  * Rückfallschutz der Protokollierung (LOG-EPIC-001, ADR-010): Die Menge der

@@ -461,28 +461,37 @@ ist Markdown, damit eine Aufräumrunde als reine Doku durch die CI geht.
 
 ## Modulgrenzen
 
-Gilt seit Aufräumen Schritt 3 (ANN-748), zuerst für „Termine“ (`src/features/appointments`):
+Gilt seit Aufräumen Schritt 3 (ANN-748), zuerst für „Termine“ (`src/features/calendar/appointments`):
 
 - **Ein Modul mit `index.ts` wird von außen nur darüber importiert.** Die Datei nennt jeden Export
   einzeln, kein `export *`; Seiten verdrahtet `src/routes` weiter direkt, Tests mocken weiter tiefe
   Pfade. Die ESLint-Regel `modulgrenzen/nur-ueber-index` (`scripts/eslint-modulgrenzen.mjs`) steht
   auf Warnung, `pnpm lint` lässt mit `--max-warnings 0` aber keine stehen.
 - **Ein Modul umstellen:** `index.ts` mit genau den Namen anlegen, die andere Bereiche nutzen,
-  `pnpm lint` zeigt jeden tiefen Import, danach auf `@/features/<modul>` umschreiben.
+  `pnpm lint` zeigt jeden tiefen Import, danach auf `@/features/<domäne>/<modul>` umschreiben.
 - **Kein Ring:** Was mehrere Bereiche über den Termin wissen müssen, liegt in `src/lib`
   (`termin.ts` Art, Zustand, Länge und Wege; `zeitband.ts`); `src/lib` importiert kein Modul.
   **Abfragen der Praxis gehören nie nach `src/lib`:** Die Trennungsprüfungen von Plattform und
   Vorschau erlauben `@/lib/` pauschal und sähen sie nicht. Die Tagesliste hat dafür das Modul
   `day-plan`. Braucht Termine einen Abschnitt eines anderen Bereichs, setzt die App ihn über
   `TerminErweiterungen` ein (`src/app/terminErweiterungen.ts`), statt dass Termine ihn importiert.
-- **Domänenfolge (ANN-754):** Die Module gehören zu 14 Domänen (`DOMAENEN` in
-  `scripts/eslint-modulgrenzen.mjs`), von unten nach oben core < patients < privacy < fleet <
-  billing < workforce < calendar < clinical < nutrition < exercise < portal < training < workplace
-  < teamchat. Seiten (`*Page.tsx`, `*Seite.tsx`, `*Layout.tsx`) setzen zusammen und importieren
-  jede Domäne; jede andere Datei importiert eine fremde Domäne nur nach unten. Braucht ein Baustein
-  etwas von oben, reicht die Seite es herein (Ladefunktion, Abschnitt), oder das Geteilte zieht
-  nach `src/lib`. Die Regel `modulgrenzen/nach-unten` meldet jeden Import nach oben und jedes
-  Modul ohne Domäne; ein neues Modul bekommt seine Domäne in `DOMAENEN`.
+- **Domänen (ANN-754):** `src/features` hat 14 Ordner, je Domäne einen (`DOMAENEN` in
+  `scripts/domaenen.mjs`), von unten nach oben core < patients < privacy < fleet < billing <
+  workforce < calendar < clinical < nutrition < exercise < portal < training < workplace <
+  teamchat. Ein Modul liegt in `src/features/<domäne>/<modul>/`; heißt es wie seine Domäne
+  (patients, billing, fleet, nutrition, training, teamchat), an deren Wurzel. Seiten (`*Page.tsx`,
+  `*Seite.tsx`, `*Layout.tsx`) setzen zusammen und importieren jede Domäne; jede andere Datei
+  importiert eine fremde Domäne nur nach unten. Braucht ein Baustein etwas von oben, reicht die
+  Seite es herein (Ladefunktion, Abschnitt), oder das Geteilte zieht nach `src/lib`. Die Regel
+  `modulgrenzen/nach-unten` meldet jeden Import nach oben und jeden Ordner, der keine Domäne ist;
+  ein neues Modul bekommt seinen Ordner unter seiner Domäne und seinen Namen in `DOMAENEN`.
+- **Schnittstelle je Domäne (ANN-755):** Jede Domäne hat eine `index.ts`, die jeden Export einzeln
+  nennt. Eine fremde Domäne wird nur über `@/features/<domäne>` importiert, die eigene nie: Die
+  `index.ts` führte im Kreis zurück. Direkt bleiben Seiten, die in keiner Schnittstelle stehen,
+  `src/routes` und `src/app`, Tests und die Plattform-App mit ihren freigegebenen Bausteinen
+  (ADR-023 Punkt 26). Braucht eine Domäne einen weiteren Namen von einer anderen, kommt er in deren
+  `index.ts`; die Regel `modulgrenzen/nur-ueber-schnittstelle` zeigt jeden tiefen Import. Innerhalb
+  einer Domäne gilt die `index.ts` eines Moduls weiter (Termine, ANN-748).
 - `pnpm aufraeumen` zählt gegenseitige Abhängigkeiten, die Module im größten Abhängigkeitsring und
   die Module mit Schnittstelle.
 
@@ -640,7 +649,7 @@ zeitgesteuerten Vorgangs — heute die automatische Finalisierung — tragen
 „System", der Benutzerfilter blendet sie aus (ANN-009).
 
 Der Ereigniskatalog steht doppelt: als Check-Constraint auf `audit_log.action`
-und in `src/features/audit/actions.ts`. Ein Datenbanktest hält beide
+und in `src/features/privacy/audit/actions.ts`. Ein Datenbanktest hält beide
 deckungsgleich.
 
 ## Bekannte Einschränkungen

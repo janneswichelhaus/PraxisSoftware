@@ -10,7 +10,7 @@ import {
   isOwner,
   isTherapyStaff,
   type CurrentUser,
-} from '@/features/session/types';
+} from '@/features/core/session/types';
 
 /**
  * Der Katalog, den die Kopfleistensuche durchsucht (UX-013).

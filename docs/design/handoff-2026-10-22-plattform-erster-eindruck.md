@@ -4,7 +4,7 @@
 > Erster Eindruck“ (<https://claude.ai/artifact/Bxmw59n2BHREsQPjrfUwYJ>, privat bei Jannes), gebaut
 > mit dem „Own Motion Designsystem“ (<https://claude.ai/artifact/HmuUQAQau7HT48PkmvSFQK>), das die
 > Werte aus `src/index.css` und 23 Bausteine aus `src/components/ui` trägt. Umgesetzt wird in den
-> bestehenden Bausteinen und Plattformseiten (`src/features/platform`, `src/features/auth`,
+> bestehenden Bausteinen und Plattformseiten (`src/features/portal/platform`, `src/features/core/auth`,
 > `src/app`), mit deren Namen, Props und Verhalten. Neu sind **Werte, Anordnung und Wortlaute**, eine
 > **Schriftskala der Plattform** und sechs Bausteine. Routen, Rechte, Projektionen, Lesepfade, Audit
 > und die Sitzungssperre bleiben unverändert; Name und Rufnummer kommen als eigener Datenschritt
@@ -127,7 +127,7 @@ Props: `zeichen` (Inline-SVG, Raster 24, Strich 2), `titel`, `satz`, `to`.
   rechts 24 `ink-muted` (entfällt bei „Sehr groß“).
 - Höchstens drei je Seite; alles Weitere als `ListRow`.
 
-### Besuchskarte (_neu_, `src/features/platform/Besuchskarte.tsx`)
+### Besuchskarte (_neu_, `src/features/portal/platform/Besuchskarte.tsx`)
 
 Der nächste Termin mit Person. Die ganze Karte ist der Link zum Termin; innen 20, Abstand 16, Linie
 `line`, `rounded-card`, `shadow-plattform`. Oben Datum `text-abschnitt` („Samstag, 24. Oktober“),
@@ -154,7 +154,7 @@ Neue Prop `markenform` (_neu_): Kreis 64 `surface-inverse` mit dem Laufrad in `s
 18/600 und ein Satz, was als Nächstes kommt. Beispiel: „Noch keine Termine“ / „Die Praxis trägt Ihren
 ersten Termin hier ein.“ (_neu_).
 
-### Notfallkarte (_neu_, `src/features/platform/Notfallkarte.tsx`, für Briefing 5)
+### Notfallkarte (_neu_, `src/features/portal/platform/Notfallkarte.tsx`, für Briefing 5)
 
 Fläche `surface-sunken`, `rounded-card`, innen 20; vorn ein Telefon-Zeichen 24, daneben `Notfallsatz`
 unverändert (112 und 116117 als `Notrufnummer`, Ziel ≥ 44). Steht über jedem Eingabefeld für
@@ -220,7 +220,7 @@ Plattformseiten bleiben einspaltig in `max-w-spalte`.
 
 ## 5 · Bildschirme
 
-### 5.1 Übersicht (`src/features/platform/Uebersicht.tsx`)
+### 5.1 Übersicht (`src/features/portal/platform/Uebersicht.tsx`)
 
 Von oben: Gruß · Hauptsache · Heute · Nächster Besuch · Neu für Sie. Abschnitte ohne Eintrag entfallen.
 

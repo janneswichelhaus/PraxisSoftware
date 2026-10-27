@@ -1,11 +1,11 @@
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import type { CurrentUser } from '@/features/session/types';
-import type { Datenschutzvermerk } from '@/features/datenschutz/vermerke';
-import { AnmeldebogenDateien } from '@/features/files/Aktendateien';
-import { Ansicht, Patientenfotos, type Geladen } from '@/features/files/FotosImVerlauf';
-import type { Patientenfoto } from '@/features/files/patientenfotos';
+import type { CurrentUser } from '@/features/core/session/types';
+import type { Datenschutzvermerk } from '@/features/privacy/datenschutz/vermerke';
+import { AnmeldebogenDateien } from '@/features/patients/files/Aktendateien';
+import { Ansicht, Patientenfotos, type Geladen } from '@/features/patients/files/FotosImVerlauf';
+import type { Patientenfoto } from '@/features/patients/files/patientenfotos';
 import { hatFarbprofil, nachSrgb } from '@/lib/dateien/farbe';
 import { alleBytes, entferneMetadaten, jpegSegmente } from '@/lib/dateien/metadaten';
 import {

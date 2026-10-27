@@ -1,7 +1,7 @@
 # Abschliessender Katalog der Aktionen des Auditlogs (ADR-010 Punkt 16, LOG-EPIC-001).
 #
 # Deckungsgleich mit der Check-Constraint audit_log_action_check und mit
-# AUDIT_ACTIONS in src/features/audit/actions.ts (Tests in
+# AUDIT_ACTIONS in src/features/privacy/audit/actions.ts (Tests in
 # scripts/audit-aktionen-check.test.mjs und supabase/tests/audit.test.ts).
 # Aendert sich diese Menge, ist die CI rot - ausser der Pull Request traegt das
 # Label "freigabe-audit", gesetzt vom Inhaber des Repositorys

@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import { InstrumentePage } from '@/features/assessments/InstrumentePage';
+import { InstrumentePage } from '@/features/clinical/assessments/InstrumentePage';
 import '@/index.css';
 
 /**

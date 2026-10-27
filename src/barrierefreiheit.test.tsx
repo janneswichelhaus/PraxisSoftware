@@ -2,17 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from '@/features/patients/api';
-import type * as TreatmentBasesApi from '@/features/treatment-bases/api';
-import type * as FilesApi from '@/features/files/api';
-import type * as AppointmentsApi from '@/features/appointments/api';
-import type * as Bausteine from '@/features/documentation/textbausteine';
-import type * as KontoApi from '@/features/staff/konto-api';
-import type * as AccountApi from '@/features/account/api';
+import type * as TreatmentBasesApi from '@/features/patients/treatment-bases/api';
+import type * as FilesApi from '@/features/patients/files/api';
+import type * as AppointmentsApi from '@/features/calendar/appointments/api';
+import type * as Bausteine from '@/features/clinical/documentation/textbausteine';
+import type * as KontoApi from '@/features/workforce/staff/konto-api';
+import type * as AccountApi from '@/features/workplace/account/api';
 import { Route, Routes } from 'react-router-dom';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
-import type * as AbsenderModul from '@/features/datenschutz/absender';
+import type * as AbsenderModul from '@/features/privacy/datenschutz/absender';
 import { pruefeBarrierefreiheit } from './barrierefreiheit';
-import type * as StaffApi from '@/features/staff/api';
+import type * as StaffApi from '@/features/workforce/staff/api';
 
 /**
  * Automatische Barrierefreiheitsprüfung auf den Kernseiten (UI-000).
@@ -40,7 +40,7 @@ vi.mock('@/features/patients/api', async (importOriginal) => ({
   logPatientRecordView: () => Promise.resolve(),
 }));
 
-vi.mock('@/features/files/api', async (importOriginal) => ({
+vi.mock('@/features/patients/files/api', async (importOriginal) => ({
   ...(await importOriginal<typeof FilesApi>()),
   fetchPatientFiles: () =>
     Promise.resolve([
@@ -60,7 +60,7 @@ vi.mock('@/features/files/api', async (importOriginal) => ({
     ]),
 }));
 
-vi.mock('@/features/treatment-bases/api', async (importOriginal) => ({
+vi.mock('@/features/patients/treatment-bases/api', async (importOriginal) => ({
   ...(await importOriginal<typeof TreatmentBasesApi>()),
   fetchPrescribers: () => Promise.resolve([]),
   fetchPatientTreatmentBases: () => Promise.resolve([]),
@@ -68,7 +68,7 @@ vi.mock('@/features/treatment-bases/api', async (importOriginal) => ({
 }));
 
 // UX-009a: Absender auf Terminzettel und Aufnahmeblatt.
-vi.mock('@/features/datenschutz/absender', async (importOriginal) => ({
+vi.mock('@/features/privacy/datenschutz/absender', async (importOriginal) => ({
   ...(await importOriginal<typeof AbsenderModul>()),
   fetchPraxisAbsender: () =>
     Promise.resolve({
@@ -82,7 +82,7 @@ vi.mock('@/features/datenschutz/absender', async (importOriginal) => ({
     }),
 }));
 
-vi.mock('@/features/appointments/api', async (importOriginal) => ({
+vi.mock('@/features/calendar/appointments/api', async (importOriginal) => ({
   ...(await importOriginal<typeof AppointmentsApi>()),
   fetchTreatmentBasisSlots: () =>
     Promise.resolve({
@@ -110,14 +110,14 @@ vi.mock('@/features/appointments/api', async (importOriginal) => ({
     ]),
 }));
 
-vi.mock('@/features/staff/api', async (importOriginal) => ({
+vi.mock('@/features/workforce/staff/api', async (importOriginal) => ({
   ...(await importOriginal<typeof StaffApi>()),
   fetchAssignableTherapists: () =>
     Promise.resolve([{ staff_member_id: 'st-1', display_name: 'Anna Beispiel' }]),
   fetchLocations: () => Promise.resolve([{ id: 'ort-1', name: 'Hauptstandort' }]),
 }));
 
-vi.mock('@/features/documentation/textbausteine', async (importOriginal) => ({
+vi.mock('@/features/clinical/documentation/textbausteine', async (importOriginal) => ({
   ...(await importOriginal<typeof Bausteine>()),
   fetchTextSnippets: () =>
     Promise.resolve([
@@ -132,7 +132,7 @@ vi.mock('@/features/documentation/textbausteine', async (importOriginal) => ({
     ]),
 }));
 
-vi.mock('@/features/staff/konto-api', async (importOriginal) => ({
+vi.mock('@/features/workforce/staff/konto-api', async (importOriginal) => ({
   ...(await importOriginal<typeof KontoApi>()),
   fetchStaffAccount: () =>
     Promise.resolve({
@@ -144,16 +144,17 @@ vi.mock('@/features/staff/konto-api', async (importOriginal) => ({
   fetchStaffInvitations: () => Promise.resolve([]),
 }));
 
-vi.mock('@/features/account/api', async (importOriginal) => ({
+vi.mock('@/features/workplace/account/api', async (importOriginal) => ({
   ...(await importOriginal<typeof AccountApi>()),
   ladeMfaFaktoren: () => Promise.resolve([]),
 }));
 
 const { PatientMasterDataFields } = await import('@/features/patients/PatientMasterDataFields');
 const { TreatmentBasisFormFields } =
-  await import('@/features/treatment-bases/TreatmentBasisFormFields');
-const { Verordnungsbereich } = await import('@/features/treatment-bases/PatientTreatmentBasesPage');
-const { DokuDateien } = await import('@/features/files/Aktendateien');
+  await import('@/features/patients/treatment-bases/TreatmentBasisFormFields');
+const { Verordnungsbereich } =
+  await import('@/features/patients/treatment-bases/PatientTreatmentBasesPage');
+const { DokuDateien } = await import('@/features/patients/files/Aktendateien');
 const { Rueckfrage } = await import('@/components/ui/Rueckfrage');
 const { Section } = await import('@/components/ui/Section');
 const { DetailList, DetailRow } = await import('@/components/ui/DetailList');
@@ -161,15 +162,18 @@ const { SearchField } = await import('@/components/ui/SearchField');
 const { Verbindungsanzeige } = await import('@/app/Verbindungsanzeige');
 const { SearchCombobox } = await import('@/components/ui/SearchCombobox');
 const { Funktionssuche } = await import('@/app/Funktionssuche');
-const { Tageskarte } = await import('@/features/today/Tagesliste');
-const { NavigationZumTermin } = await import('@/features/appointments/NavigationStarten');
-const { TextbausteinLeiste } = await import('@/features/documentation/TextbausteinLeiste');
-const { AppointmentSeriesPage } = await import('@/features/appointments/AppointmentSeriesPage');
-const { AppointmentSlipPage } = await import('@/features/appointments/AppointmentSlipPage');
-const { MitteilungVermerken } = await import('@/features/appointments/MitteilungVermerken');
-const { Monatskalender } = await import('@/features/appointments/Monatskalender');
-const { AnlegenMenue } = await import('@/features/appointments/AnlegenMenue');
-const { CalendarGrid } = await import('@/features/appointments/CalendarGrid');
+const { Tageskarte } = await import('@/features/calendar/today/Tagesliste');
+const { NavigationZumTermin } = await import('@/features/calendar/appointments/NavigationStarten');
+const { TextbausteinLeiste } = await import('@/features/clinical/documentation/TextbausteinLeiste');
+const { AppointmentSeriesPage } =
+  await import('@/features/calendar/appointments/AppointmentSeriesPage');
+const { AppointmentSlipPage } =
+  await import('@/features/calendar/appointments/AppointmentSlipPage');
+const { MitteilungVermerken } =
+  await import('@/features/calendar/appointments/MitteilungVermerken');
+const { Monatskalender } = await import('@/features/calendar/appointments/Monatskalender');
+const { AnlegenMenue } = await import('@/features/calendar/appointments/AnlegenMenue');
+const { CalendarGrid } = await import('@/features/calendar/appointments/CalendarGrid');
 
 /** Ein Hausbesuch mit allem, was die Tageskarte zeigen kann. */
 const tagesEintrag = {
@@ -606,8 +610,8 @@ describe('Barrierefreiheit der Hausbesuchsansichten (UX-EPIC-001)', () => {
 // das, was axe zuverlaessig prueft. Die Kontrollkaestchen sind dazu der einzige
 // neue Baustein dieses Epics.
 // ---------------------------------------------------------------------------
-const { StaffAccountSection } = await import('@/features/staff/StaffAccountSection');
-const { MeinKontoPage } = await import('@/features/account/MeinKontoPage');
+const { StaffAccountSection } = await import('@/features/workforce/staff/StaffAccountSection');
+const { MeinKontoPage } = await import('@/features/workplace/account/MeinKontoPage');
 
 describe('Barrierefreiheit der Zugangsverwaltung (STAFF-EPIC-002)', () => {
   it('haelt das Einladungsformular mit Rollenwahl sauber', async () => {

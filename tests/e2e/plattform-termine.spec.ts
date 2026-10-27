@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 import type AxeCore from 'axe-core';
-import { naechsteWerktage } from '../../src/features/platform/zeit';
+import { naechsteWerktage } from '../../src/features/portal/platform/zeit';
 
 /**
  * Termine auf der Plattform als geführte Abläufe (Überholung 6, G6) im echten

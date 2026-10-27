@@ -16,7 +16,7 @@ import { istAktiv } from '@/components/ui/subnavAktiv';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { Zaehlmarke } from '@/components/ui/Zaehlmarke';
-import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
+import { canWriteTreatmentNote, type CurrentUser } from '@/features/core/session/types';
 import { useTeamchatZaehler } from '@/features/teamchat/zaehler';
 import { Funktionssuche } from './Funktionssuche';
 import { useAbmeldeanfrage, useAbmeldung } from './abmeldeschutz';
@@ -34,8 +34,8 @@ import {
 import { useSeitenwechsel } from './seitenwechsel';
 import { Profilhinweis } from './Profilhinweis';
 import { Verbindungsanzeige } from './Verbindungsanzeige';
-import { Geraetehinweis } from '@/features/offline-documentation/Geraetehinweis';
-import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/offline-documentation/servicePhone';
+import { Geraetehinweis } from '@/features/clinical/offline-documentation/Geraetehinweis';
+import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/clinical/offline-documentation/servicePhone';
 
 /**
  * Rahmen der angemeldeten Anwendung.

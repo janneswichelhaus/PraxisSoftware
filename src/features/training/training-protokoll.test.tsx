@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as TrainingApi from './api';
-import type * as AppointmentsApi from '@/features/appointments/api';
+import type * as AppointmentsApi from '@/features/calendar/appointments/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -39,7 +39,7 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/appointments/api', async (importOriginal) => {
+vi.mock('@/features/calendar/appointments/api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
   return {
     ...actual,

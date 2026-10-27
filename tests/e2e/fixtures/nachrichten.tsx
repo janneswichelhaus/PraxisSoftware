@@ -1,15 +1,15 @@
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import { SessionContext } from '@/features/auth/sessionContext';
+import { SessionContext } from '@/features/core/auth/sessionContext';
 import {
   ANTWORTFRIST_KEY,
   rueckfrageKey,
   rueckfragenKey,
   type Rueckfrage,
   type Rueckfragezeile,
-} from '@/features/messages/api';
-import { RueckfragePage, RueckfragenPage } from '@/features/messages/RueckfragenPage';
+} from '@/features/portal/messages/api';
+import { RueckfragePage, RueckfragenPage } from '@/features/portal/messages/RueckfragenPage';
 import {
   nachrichtenSchluessel,
   plaeneSchluessel,
@@ -17,11 +17,11 @@ import {
   wuenscheSchluessel,
   type Nachrichten,
   type Plattformzugang,
-} from '@/features/platform/api';
-import { PlattformApp } from '@/features/platform/PlattformApp';
-import { kalendertag } from '@/features/platform/zeit';
-import { bereinigeVideo } from '@/features/platform/videometadaten';
-import type { CurrentUser } from '@/features/session/types';
+} from '@/features/portal/platform/api';
+import { PlattformApp } from '@/features/portal/platform/PlattformApp';
+import { kalendertag } from '@/features/portal/platform/zeit';
+import { bereinigeVideo } from '@/features/portal/platform/videometadaten';
+import type { CurrentUser } from '@/features/core/session/types';
 import { pruefeVideo } from '../../../supabase/functions/patient-file-verify/video';
 import '@/index.css';
 

@@ -2,13 +2,13 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
-import { AuditLogPage } from '@/features/audit/AuditLogPage';
-import type { AuditEvent } from '@/features/audit/api';
-import type { Loeschauftrag } from '@/features/files/api';
-import { VorschauProvider } from '@/features/preview/VorschauProvider';
-import { AufbewahrungPage } from '@/features/retention/AufbewahrungPage';
-import type { Datenklasse } from '@/features/retention/api';
-import type { CurrentUser } from '@/features/session/types';
+import { AuditLogPage } from '@/features/privacy/audit/AuditLogPage';
+import type { AuditEvent } from '@/features/privacy/audit/api';
+import type { Loeschauftrag } from '@/features/patients/files/api';
+import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
+import { AufbewahrungPage } from '@/features/privacy/retention/AufbewahrungPage';
+import type { Datenklasse } from '@/features/privacy/retention/api';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client';
-import { PlattformSperrseite } from '@/features/auth/sitzungssperre/PlattformSperrseite';
-import { Sperrseite } from '@/features/auth/sitzungssperre/Sperrseite';
-import type { Sperrgrund } from '@/features/auth/sitzungssperre/sperrstand';
+import { PlattformSperrseite } from '@/features/core/auth/sitzungssperre/PlattformSperrseite';
+import { Sperrseite } from '@/features/core/auth/sitzungssperre/Sperrseite';
+import type { Sperrgrund } from '@/features/core/auth/sitzungssperre/sperrstand';
 import '@/index.css';
 
 /**

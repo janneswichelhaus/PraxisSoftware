@@ -5,7 +5,7 @@ import {
   DATENKLASSEN,
   GRUNDLAGE_TEXTE,
   OBERGRENZE_TEXTE,
-} from '@/features/retention/klassen';
+} from '@/features/privacy/retention/klassen';
 
 /**
  * Retention Schedule (LOE-001a, ADR-008).

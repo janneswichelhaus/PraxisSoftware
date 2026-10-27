@@ -98,7 +98,7 @@ export const MDR_REVIEW_REQUIRED: readonly MdrEintrag[] = [
     grundlage: [
       'ADR-006 Punkt 6',
       'ADR-006, offene Folgefrage zum veröffentlichten Cutoff',
-      'src/features/assessments/schema.ts (interpretationSchema)',
+      'src/features/clinical/assessments/schema.ts (interpretationSchema)',
     ],
     keineAusgabe:
       'Gespeichert wird im Wortlaut der Quelle, angezeigt wird nichts davon: Ob ein ' +

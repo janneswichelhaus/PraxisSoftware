@@ -31,7 +31,7 @@ describe('istDoku', () => {
   it('nimmt kein Markdown außerhalb von docs/ - quellen/README.md liest ein Test', () => {
     expect(istDoku('quellen/README.md')).toBe(false);
     expect(istDoku('.claude/skills/bereich/SKILL.md')).toBe(false);
-    expect(istDoku('src/features/assessments/definitionen/scores/README.md')).toBe(false);
+    expect(istDoku('src/features/clinical/assessments/definitionen/scores/README.md')).toBe(false);
   });
 });
 

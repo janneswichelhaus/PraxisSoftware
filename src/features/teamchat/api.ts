@@ -6,9 +6,9 @@ import {
 } from '@/lib/dateien/pruefung';
 import { nachSrgb } from '@/lib/dateien/farbe';
 import { alleBytes, bereinigeBild } from '@/lib/dateien/metadaten';
-import { bereinigeTon, tontyp } from '@/features/platform/videometadaten';
+import { bereinigeTon, tontyp } from '@/features/portal';
 import { istPersonenfarbe, type Personenfarbe } from '@/components/ui/personenfarben';
-import { roleKeySchema } from '@/features/session/types';
+import { roleKeySchema } from '@/features/core';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import { alsBase64, ausBase64 } from './profilbild';

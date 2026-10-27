@@ -1,5 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { AUSKUNFT_KATEGORIEN, TRAINING_KATEGORIEN } from '@/features/datenschutz/kategorien';
+import {
+  AUSKUNFT_KATEGORIEN,
+  TRAINING_KATEGORIEN,
+} from '@/features/privacy/datenschutz/kategorien';
 import { SEED, asAnon, asPostgres, asUser, resetDatabase } from './helpers/db';
 import { tageweise } from './helpers/wiederherstellung';
 

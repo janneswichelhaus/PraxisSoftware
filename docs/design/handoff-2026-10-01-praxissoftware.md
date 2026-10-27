@@ -160,7 +160,7 @@ type AufklapperProps = { titel: string; anzahl?: number; offenAb?: 'lg'; inKarte
 
 Zwei Spalten per Container-Query auf `main` (`@container (min-width: 900px)`) oder, ohne Container-Queries, ab `lg` (1024) plus Seitenleiste. Die Kontextspalte wird unterhalb nicht ausgeblendet, sondern als Aufklapper in die Hauptspalte gesetzt (Tagesplan des Teams, Alle Angaben).
 
-## 5 · Übersicht (`src/features/today/MyDayPage.tsx`)
+## 5 · Übersicht (`src/features/calendar/today/MyDayPage.tsx`)
 
 **Reihenfolge Hauptspalte**
 
@@ -215,7 +215,7 @@ Alle acht sind im Prototyp umgesetzt (Tweaks „Uhrzeit“ und „Fahrzeit“ ze
 
 Prototyp-Hilfen ohne Repo-Entsprechung: Tweak „Uhrzeit“, Tweak „Fahrzeit“. Erledigt-Status ergibt sich im Prototyp aus der Uhr; im Repo bleibt er Serverzustand.
 
-## 6 · Termin (`src/features/appointments/AppointmentDetailPage.tsx`)
+## 6 · Termin (`src/features/calendar/appointments/AppointmentDetailPage.tsx`)
 
 - `Rueckweg` 44 hoch, 14 ink-muted, „← Übersicht“.
 - Kopf: Kicker 12 Versalien „Termin · Hausbesuch“ (Fehlzeit: „Fehlzeit“), `h1` Name als Link in die Akte (26/32, 800, Unterstrich 2 px Offset 5, Hover ohne), darunter Badge (`appointmentStatusTon`) + `zustandsHinweis` 14 ink-muted. Rechts „Bearbeiten“ kompakt sekundär (nur `darfAendern`; Fehlzeit zusätzlich „Fehlzeit bearbeiten“).
@@ -264,7 +264,7 @@ _Frühere Fassung (Zyklus 2, ersetzt):_ Eine Seite für Festschreiben und Entwur
 - Kontextspalte ≥ 900 in allen Bereichen: Karte „Behandlungsgrundlage“ (Verordner:in, Umfang, ausgestellt, Fortschritt, „1 von 6 verbraucht · 4 geplant · 1 frei“), Karte „Kontakt“ (Mobil, E-Mail, Anschrift).
 - Keine Fußnote „Zugriffe auf Patientenakten werden protokolliert.“ mehr (gestrichen, siehe Abschnitt 1).
 
-## 7a · Kalender (`src/features/appointments/CalendarPage.tsx`, `CalendarGrid.tsx`) · Zyklus 4, 01.10.
+## 7a · Kalender (`src/features/calendar/appointments/CalendarPage.tsx`, `CalendarGrid.tsx`) · Zyklus 4, 01.10.
 
 Entscheidungen von Jannes: Woche nur mit eigenen Terminen, zusätzlich **Team-Tagesansicht** (Therapeut:innen nebeneinander), Handy = Tagesliste mit Wegbalken, Haken erst nach Tipp auf die Kachel.
 

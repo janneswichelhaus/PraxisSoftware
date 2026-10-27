@@ -3,10 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
-import { VorschauProvider } from '@/features/preview/VorschauProvider';
+import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { SammeldruckPage } from '@/features/billing/SammeldruckPage';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

@@ -8,15 +8,15 @@ import {
   LEISTUNGEN_KEY,
   MONATE_KEY,
   ZIELE_KEY,
-} from '@/features/statistics/api';
-import { StatisticsPage } from '@/features/statistics/StatisticsPage';
+} from '@/features/billing/statistics/api';
+import { StatisticsPage } from '@/features/billing/statistics/StatisticsPage';
 import {
   beispielJePerson,
   beispielKennzahlen,
   beispielLeistungen,
   beispielMonate,
-} from '@/features/statistics/testdaten';
-import type { CurrentUser } from '@/features/session/types';
+} from '@/features/billing/statistics/testdaten';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

@@ -3,14 +3,14 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
-import { VorschauProvider } from '@/features/preview/VorschauProvider';
+import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
 import { BikePage } from '@/features/fleet/BikePage';
 import { BreakdownPage } from '@/features/fleet/BreakdownPage';
 import { CheckupPage } from '@/features/fleet/CheckupPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
 import { KeyPage } from '@/features/fleet/KeyPage';
 import { WerkstattblattPage } from '@/features/fleet/WerkstattblattPage';
-import type { CurrentUser, RoleKey } from '@/features/session/types';
+import type { CurrentUser, RoleKey } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

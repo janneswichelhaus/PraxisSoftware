@@ -19,8 +19,8 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { centZuEingabe, formatEuro, parseEuroZuCent } from '@/lib/geld';
 import type { Formularfehler } from '@/lib/formularfehler';
-import { HEILMITTEL } from '@/features/treatment-bases/heilmittel';
-import { canManageServiceCatalog, type CurrentUser } from '@/features/session/types';
+import { HEILMITTEL } from '@/features/patients';
+import { canManageServiceCatalog, type CurrentUser } from '@/features/core';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import {
   artLabels,

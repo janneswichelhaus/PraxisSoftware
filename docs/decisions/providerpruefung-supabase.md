@@ -93,7 +93,7 @@ ADR **aus Verträgen zu belegen**, nicht aus Dokumentation.
 für den positiven Fall vorgesehen, den Entzug als *zusätzliches* Werkzeug
 aufzunehmen. Der Fall tritt nicht ein. Damit bleibt die Gültigkeit von **60
 Sekunden** (ADR-017 Punkt 15) die einzige Grenze, und die Zeile
-`cacheControl: '0'` in [`src/features/files/api.ts`](../../src/features/files/api.ts)
+`cacheControl: '0'` in [`src/features/patients/files/api.ts`](../../src/features/patients/files/api.ts)
 ist keine Feinheit, sondern das, was diese Grenze überhaupt trägt: Der
 Vorgabewert der Bibliothek ist 3600. Der Kommentar an dieser Stelle hat das
 vorweggenommen; diese Prüfung bestätigt es aus der Anbieterseite. **Beides darf
@@ -223,7 +223,7 @@ drei Nähten — sie zu benennen ist Teil dieser Prüfung, die Auswahl ist es ni
   `auth.uid()` und damit jede Policy. Der Ersatz ist ein eigenes Epic.
 - **Nicht mitnehmbar ist die Dateiablage:** Objektschlüssel, signierte Verweise
   und die Zwei-Phasen-Übergabe aus ADR-017 sind an diese Schnittstelle gebaut.
-  Der Vertrag in `src/features/files/api.ts` ist die Stelle, an der ein Wechsel
+  Der Vertrag in `src/features/patients/files/api.ts` ist die Stelle, an der ein Wechsel
   ansetzen würde.
 
 Ein zweiter Kandidat wird hier **nicht** benannt: Das wäre eine

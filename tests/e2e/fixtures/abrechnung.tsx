@@ -25,7 +25,7 @@ import { RevenuePage } from '@/features/billing/RevenuePage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
 import { rechnungsansicht } from '@/features/billing/testdaten';
 import { FAELLIGE_MONATE_SCHLUESSEL } from '@/features/billing/nachsorge-api';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

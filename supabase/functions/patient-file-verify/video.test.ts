@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { alleBytes } from '../../../src/lib/dateien/metadaten';
-import { enthaelt, mp4AusSafari, webmAusChromium } from '../../../src/features/platform/testvideos';
-import { bereinigeTon, bereinigeVideo } from '../../../src/features/platform/videometadaten';
+import {
+  enthaelt,
+  mp4AusSafari,
+  webmAusChromium,
+} from '../../../src/features/portal/platform/testvideos';
+import { bereinigeTon, bereinigeVideo } from '../../../src/features/portal/platform/videometadaten';
 import { pruefeInhalt, pruefeTeamanhang, sha256 } from './pruefung';
 import { pruefeTon, pruefeVideo } from './video';
 

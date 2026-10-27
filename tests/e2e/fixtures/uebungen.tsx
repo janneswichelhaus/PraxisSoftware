@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { katalogeintrag } from '@/features/exercises/katalog';
-import { OHNE_KATALOG } from '@/features/exercises/testdaten';
+import { katalogeintrag } from '@/features/exercise/exercises/katalog';
+import { OHNE_KATALOG } from '@/features/exercise/exercises/testdaten';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
@@ -9,10 +9,10 @@ import {
   type Bibliothek,
   type Uebung,
   type Variante,
-} from '@/features/exercises/api';
-import { UebungenPage } from '@/features/exercises/UebungenPage';
-import { UebungPage } from '@/features/exercises/UebungPage';
-import type { CurrentUser, RoleKey } from '@/features/session/types';
+} from '@/features/exercise/exercises/api';
+import { UebungenPage } from '@/features/exercise/exercises/UebungenPage';
+import { UebungPage } from '@/features/exercise/exercises/UebungPage';
+import type { CurrentUser, RoleKey } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

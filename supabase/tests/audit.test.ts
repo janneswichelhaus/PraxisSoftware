@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SEED, asAnon, asPostgres, asUser, resetDatabase, jwtClaims } from './helpers/db';
-import { AUDIT_ACTIONS } from '@/features/audit/actions';
+import { AUDIT_ACTIONS } from '@/features/privacy/audit/actions';
 
 const { users, patients, organizationId } = SEED;
 

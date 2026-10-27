@@ -1,9 +1,9 @@
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import { SessionContext } from '@/features/auth/sessionContext';
-import { planSchluessel, type Plan } from '@/features/exercise-plans/api';
-import { PlanblattSeite } from '@/features/exercise-plans/PlanblattSeite';
+import { SessionContext } from '@/features/core/auth/sessionContext';
+import { planSchluessel, type Plan } from '@/features/exercise/exercise-plans/api';
+import { PlanblattSeite } from '@/features/exercise/exercise-plans/PlanblattSeite';
 import {
   plaeneSchluessel,
   termineSchluessel,
@@ -12,18 +12,18 @@ import {
   type EigenerPlan,
   type Plattformzugang,
   type Termin,
-} from '@/features/platform/api';
-import { PlattformApp } from '@/features/platform/PlattformApp';
+} from '@/features/portal/platform/api';
+import { PlattformApp } from '@/features/portal/platform/PlattformApp';
 import {
   DurchfuehrungKontext,
   ereignisAblegen,
   plaeneAblegen,
   uebertragen,
   wartendeEinheiten,
-} from '@/features/platform/ablage';
-import { kalendertag } from '@/features/platform/zeit';
-import { isoWochentag } from '@/features/platform/uebungstage';
-import type { CurrentUser } from '@/features/session/types';
+} from '@/features/portal/platform/ablage';
+import { kalendertag } from '@/features/portal/platform/zeit';
+import { isoWochentag } from '@/features/portal/platform/uebungstage';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 
 /**

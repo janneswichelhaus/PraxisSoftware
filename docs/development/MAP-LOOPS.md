@@ -15,7 +15,7 @@ in ADR-019, Abschnitte C und E. Zusätzlich gilt für beide:
   „Testadresse" aus dem Seed.
 - Fehlt der PTV-Schlüssel, läuft der Loop gegen den `mock`-Adapter und meldet
   das im Bericht — er blockiert nicht.
-- Die Prototypen liegen unter `src/features/tours/karte/`, bis MAP-006 sie
+- Die Prototypen liegen unter `src/features/calendar/tours/karte/`, bis MAP-006 sie
   anbindet. **Die Kennzeichnung „Vorschau" ist am 2026-09-22 entfallen**
   (Entscheidung von Jannes, `ARBEITSBEREICHE.md`, Regel 4): Ein Warnkasten
   über einer Seite, die nur er benutzt, sagte ihm nichts Neues. Was die Seite

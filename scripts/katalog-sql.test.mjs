@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { KATALOG } from '../src/features/exercises/katalog';
-import { GRUPPEN as TS_GRUPPEN } from '../src/features/exercises/katalog/typen';
+import { KATALOG } from '../src/features/exercise/exercises/katalog';
+import { GRUPPEN as TS_GRUPPEN } from '../src/features/exercise/exercises/katalog/typen';
 import {
   ANFANG,
   ENDE,

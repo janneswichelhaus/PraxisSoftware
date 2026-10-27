@@ -5,7 +5,7 @@ import {
   canReadTreatmentBases,
   canReadTreatmentNote,
   type CurrentUser,
-} from '@/features/session/types';
+} from '@/features/core';
 import type { Patient } from './api';
 
 /**

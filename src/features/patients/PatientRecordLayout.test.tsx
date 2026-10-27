@@ -3,13 +3,13 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import type * as PatientsApi from './api';
-import type * as DokumentationApi from '@/features/documentation/api';
-import type * as VerordnungenApi from '@/features/treatment-bases/api';
-import type * as AppointmentsApi from '@/features/appointments/api';
-import type * as IntakeApi from '@/features/intake/api';
-import type * as FilesApi from '@/features/files/api';
+import type * as DokumentationApi from '@/features/clinical/documentation/api';
+import type * as VerordnungenApi from '@/features/patients/treatment-bases/api';
+import type * as AppointmentsApi from '@/features/calendar/appointments/api';
+import type * as IntakeApi from '@/features/patients/intake/api';
+import type * as FilesApi from '@/features/patients/files/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
-import type { RoleKey } from '@/features/session/types';
+import type { RoleKey } from '@/features/core/session/types';
 import { RUECKWEG_PARAM, rueckwegBeschriftung } from '@/lib/rueckweg';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -40,7 +40,7 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/appointments/api', async (importOriginal) => {
+vi.mock('@/features/calendar/appointments/api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
   return {
     ...actual,
@@ -51,7 +51,7 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/treatment-bases/api', async (importOriginal) => {
+vi.mock('@/features/patients/treatment-bases/api', async (importOriginal) => {
   const actual = await importOriginal<typeof VerordnungenApi>();
   return {
     ...actual,
@@ -65,12 +65,12 @@ vi.mock('@/features/treatment-bases/api', async (importOriginal) => {
 });
 
 const ladeDateiHoch = vi.fn();
-vi.mock('@/features/files/api', async (importOriginal) => ({
+vi.mock('@/features/patients/files/api', async (importOriginal) => ({
   ...(await importOriginal<typeof FilesApi>()),
   ladeDateiHoch: (auftrag: FilesApi.UploadAuftrag) => ladeDateiHoch(auftrag) as Promise<string>,
 }));
 
-vi.mock('@/features/intake/api', async (importOriginal) => {
+vi.mock('@/features/patients/intake/api', async (importOriginal) => {
   const actual = await importOriginal<typeof IntakeApi>();
   return {
     ...actual,
@@ -79,7 +79,7 @@ vi.mock('@/features/intake/api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/documentation/api', async (importOriginal) => {
+vi.mock('@/features/clinical/documentation/api', async (importOriginal) => {
   const actual = await importOriginal<typeof DokumentationApi>();
   return {
     ...actual,
@@ -97,10 +97,11 @@ const { AkteEinstieg, AlterAktenbereich, PatientRecordLayout } =
   await import('./PatientRecordLayout');
 const { ALTE_AKTENBEREICHE } = await import('./akte');
 const { PatientMasterDataPage } = await import('./PatientMasterDataPage');
-const { PatientAppointmentsPage } = await import('@/features/appointments/PatientAppointmentsPage');
+const { PatientAppointmentsPage } =
+  await import('@/features/calendar/appointments/PatientAppointmentsPage');
 const { PatientTreatmentBasesPage } =
-  await import('@/features/treatment-bases/PatientTreatmentBasesPage');
-const { PatientDokuPage } = await import('@/features/documentation/PatientDokuPage');
+  await import('@/features/patients/treatment-bases/PatientTreatmentBasesPage');
+const { PatientDokuPage } = await import('@/features/clinical/documentation/PatientDokuPage');
 
 /**
  * Die Akte wird als Routenbaum gerendert und nicht als einzelne Komponente:

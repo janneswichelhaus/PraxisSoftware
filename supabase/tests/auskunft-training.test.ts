@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { TRAINING_KATEGORIEN } from '@/features/datenschutz/kategorien';
+import { TRAINING_KATEGORIEN } from '@/features/privacy/datenschutz/kategorien';
 import {
   SEED,
   asAnon,

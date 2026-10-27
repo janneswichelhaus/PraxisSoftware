@@ -15,9 +15,10 @@ import { telHref } from '@/lib/telefon';
 import {
   PlattformAbschnitt,
   PlattformzugangBeenden,
-} from '@/features/platform-access/PlattformAbschnitt';
-import { usePlattformzugang, zugangBeendbar } from '@/features/platform-access/zustand';
-import { RueckfragenAbschnitt } from '@/features/messages/RueckfragenAbschnitt';
+  usePlattformzugang,
+  zugangBeendbar,
+  RueckfragenAbschnitt,
+} from '@/features/portal';
 import {
   canConcludePatientCare,
   canManageInvoicing,
@@ -25,22 +26,25 @@ import {
   canReadPatientDirectory,
   isOwner,
   type CurrentUser,
-} from '@/features/session/types';
+} from '@/features/core';
 import { ANMELDEBOGEN_ANKER, EINWILLIGUNGEN_ANKER, usePatientRecord } from './akte';
-import { AnmeldebogenFoto, Datenschutz } from '@/features/datenschutz/Anmeldebogen';
-import { empfaengerartLabels, fetchEmpfaenger } from '@/features/billing/api';
-import { Honorarvereinbarung } from '@/features/billing/Honorarvereinbarung';
-import { Nachsorgeabo } from '@/features/billing/Nachsorgeabo';
-import { Trainingsangebot } from '@/features/training-offers/Trainingsangebot';
-import { nachsorgeSchluessel } from '@/features/billing/nachsorge-api';
-import { fetchIntakeChecklist } from '@/features/intake/api';
-import { zugangMitStockwerk } from '@/features/today/stockwerk';
+import { AnmeldebogenFoto, Datenschutz } from '@/features/privacy';
+import {
+  empfaengerartLabels,
+  fetchEmpfaenger,
+  Honorarvereinbarung,
+  Nachsorgeabo,
+  nachsorgeSchluessel,
+} from '@/features/billing';
+import { Trainingsangebot } from '@/features/patients/training-offers/Trainingsangebot';
+import { fetchIntakeChecklist } from '@/features/patients/intake/api';
+import { zugangMitStockwerk } from '@/features/calendar';
 import {
   useAktuelleGrundlage,
   versicherungsart,
-} from '@/features/treatment-bases/useAktuelleGrundlage';
+} from '@/features/patients/treatment-bases/useAktuelleGrundlage';
 import { BEGRIFFE } from '@/lib/begriffe';
-import { AnmeldebogenDateien, SonstigeDateien } from '@/features/files/Aktendateien';
+import { AnmeldebogenDateien, SonstigeDateien } from '@/features/patients/files/Aktendateien';
 import { AdresseVerorten } from './AdresseVerorten';
 import { Behandlungsliege } from './Behandlungsliege';
 import { Mitnehmen } from './Mitnehmen';

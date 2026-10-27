@@ -2,22 +2,25 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
-import { VorschauProvider } from '@/features/preview/VorschauProvider';
+import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
 import { PatientRecordLayout } from '@/features/patients/PatientRecordLayout';
 import { PatientMasterDataPage } from '@/features/patients/PatientMasterDataPage';
-import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
-import { PatientRecordDocumentation } from '@/features/documentation/PatientRecordDocumentation';
-import type { PatientTreatmentNotesEntry, TreatmentNote } from '@/features/documentation/api';
+import { PatientAppointmentsPage } from '@/features/calendar/appointments/PatientAppointmentsPage';
+import { PatientRecordDocumentation } from '@/features/clinical/documentation/PatientRecordDocumentation';
+import type {
+  PatientTreatmentNotesEntry,
+  TreatmentNote,
+} from '@/features/clinical/documentation/api';
 import type { Patient } from '@/features/patients/api';
-import type { PatientAppointment } from '@/features/appointments/api';
+import type { PatientAppointment } from '@/features/calendar/appointments/api';
 import type {
   ClinicalTreatmentBasis,
   TreatmentBasis,
   TreatmentBasisKontingent,
-} from '@/features/treatment-bases/api';
-import { PatientTreatmentBasesPage } from '@/features/treatment-bases/PatientTreatmentBasesPage';
-import type { PatientFile } from '@/features/files/api';
-import type { CurrentUser, RoleKey } from '@/features/session/types';
+} from '@/features/patients/treatment-bases/api';
+import { PatientTreatmentBasesPage } from '@/features/patients/treatment-bases/PatientTreatmentBasesPage';
+import type { PatientFile } from '@/features/patients/files/api';
+import type { CurrentUser, RoleKey } from '@/features/core/session/types';
 import '@/index.css';
 import { todayInTimeZone, tagePlus } from '@/lib/datum';
 

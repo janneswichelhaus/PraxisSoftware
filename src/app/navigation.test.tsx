@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { testUser } from '@/test-utils';
 import type { SubNavEintrag } from '@/components/ui/SubNav';
-import type { RoleKey } from '@/features/session/types';
+import type { RoleKey } from '@/features/core/session/types';
 import {
   type Ansicht,
   aktiverBereich,

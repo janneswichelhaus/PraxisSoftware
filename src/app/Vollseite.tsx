@@ -3,7 +3,7 @@ import { Wortmarke } from '@/components/ui/Wortmarke';
 import { useSchriftgroesseAnwenden } from '@/lib/schriftgroesse';
 import { ANMELDEN_TITEL } from './tabtitel';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
-import { useRechner } from '@/features/platform/geruestbreite';
+import { useRechner } from '@/features/portal/platform/geruestbreite';
 
 /**
  * Eine Seite außerhalb des Anwendungsrahmens (AUTH-12, AUTH-13).

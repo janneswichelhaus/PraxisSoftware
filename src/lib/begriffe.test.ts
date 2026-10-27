@@ -1,8 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { FEHLZEIT_BEISPIELE } from '@/features/appointments/calendar';
-import { dayPlanStatusLabels } from '@/features/today/api';
+import { FEHLZEIT_BEISPIELE } from '@/features/calendar/appointments/calendar';
+import { dayPlanStatusLabels } from '@/features/calendar/today/api';
 import { ABGELOESTE_BEGRIFFE, BEGRIFFE, BEREICHE, type AbgeloesterBegriff } from './begriffe';
 import { appointmentStatusLabels } from './termin';
 

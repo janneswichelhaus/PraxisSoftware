@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { TextArea } from '@/components/ui/TextArea';
-import { BausteinFeld } from '@/features/assessments/BausteinFeld';
-import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
-import { bausteinEinfuegen } from '@/features/documentation/textbausteine';
+import { BausteinFeld } from '@/features/clinical/assessments/BausteinFeld';
+import { useBausteinAuswahl } from '@/features/clinical/assessments/bausteinauswahl';
+import { bausteinEinfuegen } from '@/features/clinical/documentation/textbausteine';
 import '@/index.css';
 
 /**

@@ -3,7 +3,7 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Textlink } from '@/components/ui/Textlink';
 import { textlinkKlassen } from '@/components/ui/buttonStile';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core/session/types';
 import { arbeitsbereiche } from './navigation';
 
 /**

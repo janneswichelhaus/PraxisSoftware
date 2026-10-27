@@ -4,7 +4,7 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/Feedback';
 import { Verlauf } from '@/components/ui/Verlauf';
-import type { CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/core';
 import { fetchMitglieder, mitgliederKey, type Kanal, type Nachricht } from './api';
 import {
   ausgangVerwerfen,

@@ -103,7 +103,7 @@ Modularer Monolith nach [ADR-015](../adr/ADR-015-initial-technical-stack.md),
 fachlich geschnitten:
 
 ```
-src/features/assessments/
+src/features/clinical/assessments/
   schema.ts                  Zod-Schema beider Datenmodelle + Validator
   definitionen/
     bausteine/<region>.json  9 Dateien, eine je Region

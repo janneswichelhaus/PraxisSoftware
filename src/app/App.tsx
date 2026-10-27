@@ -2,27 +2,27 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ablageLeeren } from '@/lib/geraeteablage';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Route, RouterProvider, Routes, createBrowserRouter, useLocation } from 'react-router-dom';
-import { SessionProvider } from '@/features/auth/SessionProvider';
-import { Sitzungssperre } from '@/features/auth/sitzungssperre/Sitzungssperre';
-import { Einrichtungspflicht } from '@/features/auth/einrichtung/Einrichtungspflicht';
-import { useSession } from '@/features/auth/sessionContext';
-import { LoginPage } from '@/features/auth/LoginPage';
-import { ZugangPage } from '@/features/auth/ZugangPage';
-import { EINLADUNG_PFAD, ZUGANG_PFAD, istEinloesePfad } from '@/features/auth/linkEinloesen';
+import { SessionProvider } from '@/features/core/auth/SessionProvider';
+import { Sitzungssperre } from '@/features/core/auth/sitzungssperre/Sitzungssperre';
+import { Einrichtungspflicht } from '@/features/core/auth/einrichtung/Einrichtungspflicht';
+import { useSession } from '@/features/core/auth/sessionContext';
+import { LoginPage } from '@/features/core/auth/LoginPage';
+import { ZugangPage } from '@/features/core/auth/ZugangPage';
+import { EINLADUNG_PFAD, ZUGANG_PFAD, istEinloesePfad } from '@/features/core/auth/linkEinloesen';
 import {
   KeinProfilError,
   ZugangGesperrtError,
   useCurrentUser,
-} from '@/features/session/useCurrentUser';
-import { ZugangEinrichtenPage } from '@/features/staff/ZugangEinrichtenPage';
-import { EinladungPage } from '@/features/platform/EinladungPage';
-import { KONTEXT_SCHLUESSEL, ladePlattformkontext } from '@/features/platform/api';
-import { PlattformApp } from '@/features/platform/PlattformApp';
-import { PLATTFORM_PFAD } from '@/features/platform/pfade';
-import { PlattformAblage } from '@/features/platform/PlattformAblage';
+} from '@/features/core/session/useCurrentUser';
+import { ZugangEinrichtenPage } from '@/features/workforce/staff/ZugangEinrichtenPage';
+import { EinladungPage } from '@/features/portal/platform/EinladungPage';
+import { KONTEXT_SCHLUESSEL, ladePlattformkontext } from '@/features/portal/platform/api';
+import { PlattformApp } from '@/features/portal/platform/PlattformApp';
+import { PLATTFORM_PFAD } from '@/features/portal/platform/pfade';
+import { PlattformAblage } from '@/features/portal/platform/PlattformAblage';
 import { ohneNetzFuer } from './ohneNetz';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
-import { TerminErweiterungenKontext } from '@/features/appointments';
+import { TerminErweiterungenKontext } from '@/features/calendar/appointments';
 import { TERMIN_ERWEITERUNGEN } from './terminErweiterungen';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';

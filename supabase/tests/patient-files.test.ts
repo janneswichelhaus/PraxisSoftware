@@ -16,7 +16,7 @@ import {
   DOKUMENTARTEN,
   KLINISCHE_DOKUMENTARTEN,
   dokumentartLabels,
-} from '@/features/files/dokumentarten';
+} from '@/features/patients/files/dokumentarten';
 
 /**
  * Dateiablage der Patientenakte (DAT-001, ADR-017).

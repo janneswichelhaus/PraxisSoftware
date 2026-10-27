@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const wurzel = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SCORES = join(wurzel, 'src/features/assessments/definitionen/scores');
+const SCORES = join(wurzel, 'src/features/clinical/assessments/definitionen/scores');
 const MIGRATIONEN = join(wurzel, 'supabase/migrations');
 
 const DEFINITION_MARKER =
@@ -71,7 +71,7 @@ export async function sammleDefinitionen(verzeichnis = SCORES) {
 export async function sammleKoerperbereiche() {
   // Ein fester Pfad: Node liest die TypeScript-Datei selbst (Typen werden
   // entfernt), Vitest übersetzt sie wie jede andere.
-  const modul = await import('../src/features/assessments/koerperschema.ts');
+  const modul = await import('../src/features/clinical/assessments/koerperschema.ts');
   return modul.KOERPERBEREICHE.map((b) => b.id);
 }
 
@@ -135,7 +135,7 @@ export function fehlendeMigration(fassungen, koerperbereiche, stand) {
       `  select array[${koerperbereiche.map(sqlText).join(', ')}]::text[]`,
       '$$;',
       '',
-      "comment on function app.questionnaire_body_regions() is 'Kennungen der Koerperbereiche aus src/features/assessments/koerperschema.ts, erzeugt von scripts/definitionen-sql.mjs (ABN-014).';",
+      "comment on function app.questionnaire_body_regions() is 'Kennungen der Koerperbereiche aus src/features/clinical/assessments/koerperschema.ts, erzeugt von scripts/definitionen-sql.mjs (ABN-014).';",
       '',
     );
   }
@@ -144,7 +144,7 @@ export function fehlendeMigration(fassungen, koerperbereiche, stand) {
     '-- =============================================================================',
     '-- Erzeugt von scripts/definitionen-sql.mjs - nicht von Hand aendern.',
     '-- Fassungen der Fragebogen-Definitionen fuer die Serverpruefung (ANN-219).',
-    '-- Quelle: src/features/assessments/definitionen/scores/.',
+    '-- Quelle: src/features/clinical/assessments/definitionen/scores/.',
     '-- =============================================================================',
     '',
   ];

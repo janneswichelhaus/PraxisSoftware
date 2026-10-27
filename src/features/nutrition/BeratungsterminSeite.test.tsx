@@ -5,7 +5,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type * as ErnaehrungApi from './api';
 import { testUser } from '@/test-utils';
 import { BeratungsterminSeite } from './BeratungsterminSeite';
-import type * as StaffApi from '@/features/staff/api';
+import type * as StaffApi from '@/features/workforce/staff/api';
 
 const fetchErnaehrung = vi.fn();
 const beratungsterminAnlegen = vi.fn();
@@ -18,7 +18,7 @@ vi.mock('./api', async (importOriginal) => ({
 
 const fetchAssignableTherapists = vi.fn();
 const fetchAssignableTrainers = vi.fn();
-vi.mock('@/features/staff/api', async (importOriginal) => ({
+vi.mock('@/features/workforce/staff/api', async (importOriginal) => ({
   ...(await importOriginal<typeof StaffApi>()),
   fetchAssignableTherapists: () => fetchAssignableTherapists() as unknown,
   fetchAssignableTrainers: () => fetchAssignableTrainers() as unknown,

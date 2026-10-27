@@ -33,8 +33,8 @@ import {
   canCounselNutrition,
   isOwner,
   type CurrentUser,
-} from '@/features/session/types';
-import { Trainingspaket } from '@/features/billing/Trainingspaket';
+} from '@/features/core';
+import { Trainingspaket } from '@/features/billing';
 import { Suchreiterleiste } from '@/components/ui/Reiterleiste';
 import { useOffenerReiter, type Suchreiter } from '@/components/ui/offenerReiter';
 import {
@@ -58,16 +58,16 @@ import { TrainingEinheiten } from './TrainingProtocol';
 import {
   PlattformAbschnitt,
   PlattformzugangBeenden,
-} from '@/features/platform-access/PlattformAbschnitt';
-import { usePlattformzugang, zugangBeendbar } from '@/features/platform-access/zustand';
-import { RueckfragenAbschnitt } from '@/features/messages/RueckfragenAbschnitt';
+  usePlattformzugang,
+  zugangBeendbar,
+  RueckfragenAbschnitt,
+} from '@/features/portal';
 import { TrainingEinwilligung } from './TrainingEinwilligung';
 import { TrainingProfil } from './TrainingProfil';
 import { TrainingVertraege } from './TrainingVertraege';
-import { PlanAbschnitt } from '@/features/exercise-plans/PlanAbschnitt';
-import { ZwischenDenTerminen } from '@/features/checkins/ZwischenDenTerminen';
+import { PlanAbschnitt, ZwischenDenTerminen } from '@/features/exercise';
 import { TrainingAssessments } from './TrainingAssessments';
-import { ErnaehrungReiter } from '@/features/nutrition/ErnaehrungReiter';
+import { ErnaehrungReiter } from '@/features/nutrition';
 
 /**
  * Eine Trainingskund:in (TRN-002).

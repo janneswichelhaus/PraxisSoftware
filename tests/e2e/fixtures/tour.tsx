@@ -2,20 +2,20 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
-import { TourenPage } from '@/features/tours/TourenPage';
+import { TourenPage } from '@/features/calendar/tours/TourenPage';
 import type { Routenergebnis } from '@/lib/location/route';
-import { startpunkt, type Standort } from '@/features/tours/startort';
+import { startpunkt, type Standort } from '@/features/calendar/tours/startort';
 import {
   PRAXISPROFIL,
   fahrzeitZwischen,
   routenplan,
   stoppsDesTages,
   type Tagesstopp,
-} from '@/features/tours/tagesroute';
-import type { CurrentUser } from '@/features/session/types';
+} from '@/features/calendar/tours/tagesroute';
+import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';
 import { todayInTimeZone } from '@/lib/datum';
-import type { DayPlanEntry } from '@/features/day-plan/api';
+import type { DayPlanEntry } from '@/features/calendar/day-plan/api';
 
 /**
  * Einstieg der Prüfseite aus `tour.html` (UBK-009).

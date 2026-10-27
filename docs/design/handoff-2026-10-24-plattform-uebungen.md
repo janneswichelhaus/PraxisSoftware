@@ -7,8 +7,8 @@ Vorgaben zu ihr entfallen (ADR-023 Fassung 7).
 > Übungen“ (<https://claude.ai/artifact/LA686ZFMyxQYMJXD23CttT>, privat bei Jannes), gebaut mit dem
 > „Own Motion Designsystem“ (<https://claude.ai/artifact/HmuUQAQau7HT48PkmvSFQK>) auf der
 > Plattform-Sprache aus Briefing 1. Umgesetzt wird in den bestehenden Seiten und Bausteinen
-> (`src/features/platform/Uebungen.tsx`, `Durchfuehrung.tsx`, `Uebungsinhalt.tsx`,
-> `src/features/exercise-plans/Planblatt.tsx`) mit deren Namen, Props und Verhalten. Neu sind
+> (`src/features/portal/platform/Uebungen.tsx`, `Durchfuehrung.tsx`, `Uebungsinhalt.tsx`,
+> `src/features/exercise/exercise-plans/Planblatt.tsx`) mit deren Namen, Props und Verhalten. Neu sind
 > **Anordnung, Werte und Wortlaute** und fünf Bausteine. Routen, Rechte, Projektionen, die Ablage auf
 > dem Gerät mit ihrer Feldliste (ADR-024 Punkt 5), die Warteschlange und das Urteil des Servers beim
 > Eingang (Punkt 8) bleiben unverändert. Neue Daten braucht der Entwurf nicht (Abschnitt 0, Frage 1).
@@ -204,7 +204,7 @@ sich die Dauer nicht schätzen (Abschnitt 0, Frage 1), steht nur „3 Übungen�
   unter dem Video, Hauptzahl 40 in `ink` mit der Einheit daneben. Speicherort und Auslieferung der
   Videos sind eine eigene Entscheidung (ADR-017) und kein Teil dieses Handoffs.
 
-### Dosierungsmarken (_neu_, `src/features/platform/Dosierungsmarken.tsx`, ersetzt `Dosierungskacheln`)
+### Dosierungsmarken (_neu_, `src/features/portal/platform/Dosierungsmarken.tsx`, ersetzt `Dosierungskacheln`)
 
 - Statt der Kacheln eine Liste `ul` mit `aria-label` „Dosierung“: Marken mindestens 40 hoch, innen
   6/14, `rounded-pill`, Fläche `surface-sunken` ohne Rand (Angaben, keine Knöpfe), 18/600, Zeichen 20

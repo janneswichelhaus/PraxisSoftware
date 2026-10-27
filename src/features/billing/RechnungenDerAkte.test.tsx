@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import type * as BillingApi from './api';
-import type { RoleKey } from '@/features/session/types';
+import type { RoleKey } from '@/features/core/session/types';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 const PATIENT = '66666666-6666-4666-8666-000000000001';

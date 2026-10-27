@@ -12,14 +12,14 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { praxistag } from './helpers/plaene';
-import { KATALOG, katalogeintrag } from '@/features/exercises/katalog';
-import { ausruestungVon } from '@/features/exercises/katalog/schema';
+import { KATALOG, katalogeintrag } from '@/features/exercise/exercises/katalog';
+import { ausruestungVon } from '@/features/exercise/exercises/katalog/schema';
 import {
   AUSGANGSSTELLUNGEN,
   HILFSMITTEL_LABEL,
   ZIELE,
   type Katalogeintrag,
-} from '@/features/exercises/katalog/typen';
+} from '@/features/exercise/exercises/katalog/typen';
 
 /**
  * Der Übungskatalog in der Datenbank (UEB-012, ANN-381 bis ANN-386).
