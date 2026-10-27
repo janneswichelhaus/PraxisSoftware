@@ -162,7 +162,7 @@ wenn der Gateway das Diktat anbietet. Sperrt eine Policy das Mikrofon und meldet
 - Vor E2E-Läufen `reset` ohne `--reich`: Die Tests zählen auf den schlanken Seed. Port 54329 bleibt
   `pnpm test:db`; `TEST_DATABASE_URL` nie auf 54339 richten. Die Werte stehen in
   `.env.development.local`, nicht in `.env.local`: Die liest auch Vitest, und mit echten Werten
-  scheitern `App.nachladen.test.tsx` und `SchedulingPage.test.tsx`.
+  scheitern `App.nachladen.test.tsx` und `ArbeitszeitJePerson.test.tsx`.
 
 ## Bildstrecke: die ganze App als Bilder
 
@@ -486,10 +486,11 @@ Gilt seit Aufräumen Schritt 3 (ANN-748), zuerst für „Termine“ (`src/featur
   `modulgrenzen/nach-unten` meldet jeden Import nach oben und jeden Ordner, der keine Domäne ist;
   ein neues Modul bekommt seinen Ordner unter seiner Domäne und seinen Namen in `DOMAENEN`.
 - **Schnittstelle je Domäne (ANN-755):** Jede Domäne hat eine `index.ts`, die jeden Export einzeln
-  nennt. Eine fremde Domäne wird nur über `@/features/<domäne>` importiert, die eigene nie: Die
-  `index.ts` führte im Kreis zurück. Direkt bleiben Seiten, die in keiner Schnittstelle stehen,
-  `src/routes` und `src/app`, Tests und die Plattform-App mit ihren freigegebenen Bausteinen
-  (ADR-023 Punkt 26). Braucht eine Domäne einen weiteren Namen von einer anderen, kommt er in deren
+  nennt. Eine fremde Domäne wird nur über `@/features/<domäne>` importiert, auch von Seiten; die
+  eigene nie: Die `index.ts` führte im Kreis zurück. Seiten stehen in keiner Schnittstelle, nur der
+  Router bindet sie ein; braucht eine andere Domäne einen Baustein, steht er in eigener Datei.
+  Direkt bleiben `src/routes` und `src/app`, Tests und die Plattform-App mit ihren freigegebenen
+  Bausteinen (ADR-023 Punkt 26). Braucht eine Domäne einen weiteren Namen von einer anderen, kommt er in deren
   `index.ts`; die Regel `modulgrenzen/nur-ueber-schnittstelle` zeigt jeden tiefen Import. Innerhalb
   einer Domäne gilt die `index.ts` eines Moduls weiter (Termine, ANN-748).
 - `pnpm aufraeumen` zählt gegenseitige Abhängigkeiten, die Module im größten Abhängigkeitsring und

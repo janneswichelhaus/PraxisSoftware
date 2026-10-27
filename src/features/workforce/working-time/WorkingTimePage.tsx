@@ -10,9 +10,9 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { useSearchParams } from 'react-router-dom';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { ArbeitszeitJePerson } from '@/features/calendar/scheduling/SchedulingPage';
 import { EmptyState, LoadingState } from '@/components/ui/Feedback';
 import { Section } from '@/components/ui/Section';
+import { ArbeitszeitJePerson } from '@/features/calendar';
 import { canManageWorkingHours, isOwner, isTherapyStaff, type CurrentUser } from '@/features/core';
 import { RUECKWEG_PARAM } from '@/lib/rueckweg';
 import {

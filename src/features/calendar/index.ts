@@ -40,6 +40,7 @@ export {
   waehlbareAbsagegruende,
 } from './appointments';
 export { type DayPlanEntry } from './day-plan/api';
+export { ArbeitszeitJePerson } from './scheduling/ArbeitszeitJePerson';
 export {
   istRasterWert,
   RASTER_WERTE,

@@ -211,13 +211,10 @@ describe('anDerSchnittstelleVorbei (ANN-755)', () => {
     });
   });
 
-  it('lässt die Schnittstelle, Seiten, die eigene Domäne und src/lib durch', () => {
+  it('lässt die Schnittstelle, die eigene Domäne und src/lib durch', () => {
     expect(anDerSchnittstelleVorbei(personal, '@/features/calendar')).toBeNull();
     expect(anDerSchnittstelleVorbei(personal, '@/features/calendar/index')).toBeNull();
     expect(anDerSchnittstelleVorbei(personal, '@/features/patients')).toBeNull();
-    expect(
-      anDerSchnittstelleVorbei(personal, '@/features/calendar/scheduling/SchedulingPage'),
-    ).toBeNull();
     expect(
       anDerSchnittstelleVorbei('src/features/calendar/today/x.ts', '../appointments/api'),
     ).toBeNull();
@@ -226,6 +223,18 @@ describe('anDerSchnittstelleVorbei (ANN-755)', () => {
     ).toBeNull();
     expect(anDerSchnittstelleVorbei(personal, '@/lib/datum')).toBeNull();
     expect(anDerSchnittstelleVorbei(personal, 'react')).toBeNull();
+  });
+
+  it('meldet auch eine fremde Seite: Seiten bindet nur der Router ein', () => {
+    expect(
+      anDerSchnittstelleVorbei(personal, '@/features/calendar/appointments/CalendarPage'),
+    ).toEqual({ domaene: 'calendar' });
+    expect(
+      anDerSchnittstelleVorbei(
+        'src/features/calendar/today/MyDayPage.tsx',
+        '../appointments/CalendarPage',
+      ),
+    ).toBeNull();
   });
 
   it('überlässt die Wurzel einer Domäne der Schnittstelle, nicht der Regel für Module', () => {
@@ -249,7 +258,7 @@ describe('Regel nur-ueber-schnittstelle am Baum', () => {
         filename: in_('src/features/workforce/vacation/UrlaubTerminePage.tsx'),
       },
       {
-        code: "import { SchedulingPage } from '@/features/calendar/scheduling/SchedulingPage';",
+        code: "import { ArbeitszeitJePerson } from '@/features/calendar';",
         filename: in_('src/features/workforce/working-time/WorkingTimePage.tsx'),
       },
       {
@@ -258,6 +267,11 @@ describe('Regel nur-ueber-schnittstelle am Baum', () => {
       },
     ],
     invalid: [
+      {
+        code: "import { CalendarPage } from '@/features/calendar/appointments/CalendarPage';",
+        filename: in_('src/features/workforce/working-time/WorkingTimePage.tsx'),
+        errors: [{ messageId: 'vorbei' }],
+      },
       {
         code: "import { fetchTerminTage } from '@/features/calendar/appointments';",
         filename: in_('src/features/workforce/vacation/UrlaubTerminePage.tsx'),

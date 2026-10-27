@@ -56,7 +56,7 @@ vi.mock('@/features/clinical/documentation/api', async (importOriginal) => {
   };
 });
 
-const { ArbeitszeitJePerson } = await import('./SchedulingPage');
+const { ArbeitszeitJePerson } = await import('./ArbeitszeitJePerson');
 
 function rendern(rollen: Parameters<typeof testUser>[0] = ['office'], anzeigename?: string) {
   return renderWithProviders(

@@ -4748,7 +4748,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Eine ganze Woche mit einem Knopf hieße sieben Aufrufe ohne gemeinsame Transaktion – ein halb gespeicherter Plan. Dafür bräuchte es eine neue Serverfunktion (alles oder nichts).
 
-**Anker.** Kommentar `ANN-435` an `Wochenplan` in `src/features/calendar/scheduling/SchedulingPage.tsx`.
+**Anker.** Kommentar `ANN-435` an `Wochenplan` in `src/features/calendar/scheduling/ArbeitszeitJePerson.tsx`.
 
 **Änderungspfad.** Wochenformular: RPC für die ganze Woche, Formular über alle Zeilen · Aufwand `mittel`.
 
@@ -5120,7 +5120,7 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Zeitspann
 
 **Begründung.** DESIGN.md (Formular) erlaubt zwei Felder nebeneinander erst ab 640 px; Beginn und Ende einer Fehlzeit stehen am Telefon ebenso untereinander (Design-Review R2 T6).
 
-**Anker.** Kommentar `ANN-489` an `BlockFelder` in `src/features/calendar/scheduling/SchedulingPage.tsx`.
+**Anker.** Kommentar `ANN-489` an `BlockFelder` in `src/features/calendar/scheduling/ArbeitszeitJePerson.tsx`.
 
 **Änderungspfad.** Nimmt Jannes die Zeitspanne als Paar in DESIGN.md auf: `grid-cols` ohne `sm:` · Aufwand `klein`.
 
@@ -5869,7 +5869,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervo
 
 **Begründung.** Auftrag Jannes (16.10.): sofort offensichtlich, Hintergrund deaktiviert. Folgt FIX-016 (Rückfragen als Fenster). Ein versehentliches Enter darf nichts verwerfen (§13).
 
-**Anker.** `useTextverlustschutz` in `src/app/Textverlustschutz.tsx`; `Wechselrueckfrage` in `scheduling/SchedulingPage.tsx` und `billing/CatalogPage.tsx`.
+**Anker.** `useTextverlustschutz` in `src/app/Textverlustschutz.tsx`; `Wechselrueckfrage` in `scheduling/ArbeitszeitJePerson.tsx` und `billing/CatalogPage.tsx`.
 
 **Änderungspfad.** Zurück zur Zeile: der Block `offen` in `useTextverlustschutz` · Aufwand `klein`.
 
@@ -7723,11 +7723,11 @@ Technik · offen · 2026-10-27 · — · — · Wiedervorlage: —
 
 ### ANN-755 — Schnittstelle je Domäne: was direkt bleibt
 
-Technik · offen · 2026-10-27 · — · — · Wiedervorlage: —
+Technik · entschieden (Jannes) · Fassung 2 2026-10-27 · Jannes: Seiten ebenfalls über die `index.ts` · erledigt
 
-**Annahme.** Jede der 14 Domänen hat eine `index.ts`, die jeden Export einzeln nennt; eine fremde Domäne wird nur darüber importiert, die eigene nie. Direkt bleiben Seiten, die in keiner Schnittstelle stehen, der Rahmen in `src/routes` und `src/app`, Tests und die Plattform-App mit ihren freigegebenen Bausteinen (ADR-023 Punkt 26).
+**Annahme.** Jede der 14 Domänen hat eine `index.ts`, die jeden Export einzeln nennt. Eine fremde Domäne wird nur darüber importiert, auch von Seiten; die eigene nie. Seiten stehen in keiner Schnittstelle, nur der Router bindet sie ein. Direkt bleiben `src/routes`, `src/app`, Tests und die Plattform-App mit ihren freigegebenen Bausteinen (ADR-023 Punkt 26).
 
-**Begründung.** Aufräumen 3b (Jannes, 2026-10-27): keine tiefen Importe in fremde Domänen. Über die Schnittstellen liefe der Rahmen im Kreis (`src/app/Vollseite`, Plattform, Akte, Kern), und die Trennungsprüfung der Plattform müsste ganze Domänen erlauben.
+**Begründung.** Aufräumen 3b (Jannes, 2026-10-27). Über die Schnittstellen liefe der Rahmen im Kreis (`src/app/Vollseite`, Plattform, Akte, Kern); die Trennungsprüfung der Plattform müsste ganze Domänen erlauben.
 
 **Anker.** Regel `nur-ueber-schnittstelle` in `scripts/eslint-modulgrenzen.mjs`; die `index.ts` je Domäne.
 
