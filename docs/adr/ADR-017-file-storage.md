@@ -1,1956 +1,380 @@
 # ADR-017: Dateiablage — Ort, Zugriff, kurzlebige Verweise, Aufbewahrung, Virenprüfung
-
 ## Status
-
-**Angenommen, Fassungen 8, 10, 11 und 12; Fassung 9 vorgeschlagen** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
-alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
-Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
-Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
-2026-10-09 von Jannes in der Abnahme der Annahmen entschieden (Abschnitt K);
-**Fassung 5** am 2026-10-10 bestätigt, die Fragen 23 bis 29 wie empfohlen
-(Abschnitt L); **Fassung 6** am 2026-10-15 von Jannes entschieden (Umkehr der
-Punkte 29 und 69 für Anhänge an Rückfragen); **Fassung 7** am 2026-10-18 von
-Jannes entschieden (Umkehr von Punkt 29 für jeden Upload); **Fassung 8** am 2026-10-18
-bestätigt, die Fragen 30 bis 32 wie empfohlen (Abschnitt M); **Fassung 9** am 2026-10-18
-vorgeschlagen, im Kern von Jannes entschieden (Abschnitt N, Bestätigungsfragen 33 und 34);
-**Fassung 10** am 2026-10-19 von Jannes beauftragt und am selben Tag bestätigt, die Fragen 35
-bis 37 wie empfohlen (Abschnitt O); **Fassung 11** am 2026-10-20 von Jannes entschieden
-(Befund, Punkt 89); **Fassung 12** am 2026-10-20 vorgeschlagen und am selben Tag von Jannes angenommen, Fragen wie empfohlen (BEF-188, Abschnitt P).
-**Fassung 12 (2026-10-20, am selben Tag angenommen).** Anlass ist BEF-188 aus dem Zweitreview zu BEF-146:
-Die Auskunft nennt jeden Anhang an einer Rückfrage, die Datei selbst konnte die Praxis aber
-nicht herausgeben - einen gesperrten gar nicht, einen sichtbaren nur ansehen. **Abschnitt P
-(Punkt 96)** gibt owner die Kopie je Anhang, wie Punkt 40 für die Fotos der Akte (ANN-128,
-ABN-017). Das ist eine **begrenzte Ergänzung**: Punkt 67 („protokolliert wird nichts Neues“)
-gilt weiter für das Ansehen; neu protokolliert wird nur die Herausgabe, nach ADR-010
-Fassung 5. Vermerk an Punkt 67.
-**Fassung 11 (2026-10-20, Jannes).** Anlass ist Jannes' Befund: „Profilbilder können beim
-Auswählen nicht zugeschnitten werden. Das soll möglich sein.“ Das ist die **Umkehr eines
-einzelnen Punktes** nach der Fassungsregel in `README.md`: In Punkt 89 entfällt „Der Ausschnitt
-ist fest … ohne Bearbeitung“; die Person wählt den Ausschnitt selbst, durch Verschieben und
-Vergrößern bis zum Dreifachen. Es ist die Alternative aus Bestätigungsfrage 37. Alles Übrige in
-Punkt 89 und Abschnitt O bleibt: 256 × 256, höchstens 64 KiB, nur auf dem Gerät gerechnet,
-ohne Metadaten, ohne Gesichtserkennung, nie an das AI Gateway. Vermerke an Punkt 89 und an
-Frage 37.
-**Fassung 10 (2026-10-19, am selben Tag angenommen).** Anlass ist Jannes' Auftrag: „Bitte füge Profilbilder
-pro Mitarbeiter ein beziehungsweise die Möglichkeit, Profilbilder festzulegen.“ **Abschnitt O
-(Punkte 88 bis 95)** gibt Profilbilder im Teamchat frei: ein Bild, das sich jede Person selbst
-gibt, auf dem Gerät zum Quadrat gerechnet, am Inhalt geprüft. Das ist die **Umkehr eines
-einzelnen Punktes** nach der Fassungsregel in `README.md`: Punkt 1 („Dateien liegen in Supabase
-Storage“) gilt für Profilbilder nicht, sie liegen als Zeile in der Datenbank (Punkt 91); der alte
-Wortlaut bleibt. Vermerke an den Punkten 1, 15, 50 und 51. Gebaut wird mit synthetischen
-Bildern (§15.2).
-**Fassung 9 (2026-10-18, vorgeschlagen).** Anlass sind Jannes' Antworten auf die Fragen der PR
-#273: „Fragen wie empfohlen, außer Sprachnachrichten – die möchte ich ermöglichen.“ **Abschnitt N
-(Punkte 82 bis 87)** gibt Sprachnachrichten im Teamchat frei; Video bleibt ausgeschlossen. Das
-ist die **Umkehr eines einzelnen Punktes** nach der Fassungsregel in `README.md`: In Punkt 71
-entfällt „kein Ton, keine Sprachnachricht“, und Punkt 33 gibt das Mikrofon der eigenen Herkunft
-frei; der alte Wortlaut bleibt lesbar. Dazu nimmt Punkt 74 die Antwort auf Frage 5 auf: Senden
-schon während des Hochladens. Vermerke an den Punkten 18, 19, 33, 42, 62, 71, 74 und 77 und an
-„Bewusst nicht Bestandteil“. Offen sind die Einzelheiten (Bestätigungsfragen 33 und 34); gebaut
-wird mit dem künstlichen Mikrofon von Chromium (§15.2).
-**Fassung 8 (2026-10-18, am selben Tag angenommen).** Anlass ist Frage 1 der PR #272: Fotos und PDF im
-Teamchat, ohne Virenprüfung, gelöscht mit der Nachricht — so hat Jannes entschieden.
-**Abschnitt M (Punkte 71 bis 81)** gibt Anhänge im Teamchat frei. Das ist eine **Ergänzung**:
-Für diese Anhänge schränkt sie die Punkte 30 und 42 ein, die je einen Vermerk tragen; für alle
-übrigen Dateien gelten sie unverändert. Die Einzelheiten (Bestätigungsfragen 30 bis 32) hat
-Jannes am selben Tag wie empfohlen beantwortet; gebaut wird mit synthetischen Dateien (§15.2).
-**Fassung 7 (2026-10-18, Entscheidung Jannes).** „Keine Virenprüfung in der gesamten
-Anwendung!“ Das ist die **Umkehr eines einzelnen Punktes** nach der Fassungsregel in
-`README.md`: Punkt 29 verliert die MUSS-Pflicht zur Virenprüfung auch für alle übrigen Uploads
-von außen, heutige und künftige (Portal, Formular, Teamchat). Die Anwendung prüft keine Datei auf
-Schadsoftware; es gibt dafür keinen Prüfer, keinen Anbieter und keinen eigenen ADR. Wer einen Weg
-aus Punkt 30 freigibt, braucht dafür keine Virenprüfung. Der alte Wortlaut bleibt in Punkt 29
-lesbar, die Punkte 28, 30, 42, 50 und 69 sowie Konsequenzen und „Bewusst nicht Bestandteil“
-tragen einen Vermerk. Alle übrigen Punkte bleiben stehen, insbesondere die Kompensation aus Punkt 28, die
-Prüfung am Inhalt (Abschnitt I), die Minderungen aus Punkt 69 und die Kennzeichnung „nicht auf
-Schadsoftware geprüft“; der Schalter `app.message_attachment_scan_required()` bleibt aus (KOM-013).
-**Fassung 6 (2026-10-15, Entscheidung Jannes).** „Ich möchte keinen Virenscanner und trotzdem
-Bilder und Videos von Patienten zulassen.“ Das ist die **Umkehr einzelner Punkte** nach der
-Fassungsregel in `README.md`: Punkt 29 verliert für Anhänge an Rückfragen (Abschnitt L) die
-MUSS-Pflicht zur Virenprüfung, Punkt 69 den Satz, nach dem ohne Prüfergebnis kein Anhang einer
-echten Person `ready` wird; Punkt 70 verliert die Bedingung „ADR zum Prüfer“. ADR-026 ist damit
-abgelehnt. Der alte Wortlaut bleibt in den Punkten lesbar. Alle übrigen Punkte bleiben stehen,
-insbesondere die Minderungen aus Punkt 69 (Aufnahme nur in der Anwendung, Signatur und Container
-am Server, Anzeige nur im Medienelement, nie ein Download) und die Kennzeichnung „nicht auf
-Schadsoftware geprüft“. Für alle anderen Uploads von außen (Punkt 30) gilt Punkt 29 unverändert.
-**Fassung 5 (2026-10-10, am selben Tag angenommen).** Anlass ist KOM-EPIC-002.
-**Abschnitt L (Punkte 59 bis 70)**: Foto und Video an einer Rückfrage auf der
-Plattform, mit eigener Einwilligung, eigener Klasse und 30 Tagen Frist; die
-Virenprüfung wird Bedingung des Scharfschaltens. Das ist eine **Ergänzung**:
-Für diese Anhänge schränkt sie die Punkte 14, 18, 29, 30, 37 und 42 ein, die
-je einen Vermerk tragen; für alle übrigen Dateien gelten sie unverändert.
-
-**Fassung 4 (2026-10-09).** Anlass ist die Abnahme der Annahmen vom 2026-10-09
-(BEF-135 zu ANN-221, BEF-133 zu ANN-223). **Abschnitt K (Punkte 56 bis 58)**:
-Ein Foto aus der Dokumentation ist immer ein Dokumentationsfoto, gefragt wird
-nicht; eine neue Arbeitshilfe entsteht nicht mehr, bestehende laufen nach
-ihrer Frist aus; ein PDF öffnet im Rahmen ohne `sandbox`. Das ist die
-**Umkehr einzelner Punkte** nach der Fassungsregel in `README.md`: Punkt 44
-(Wahl vor der Aufnahme) entfällt, Punkt 43 verliert die Arbeitshilfe für neue
-Aufnahmen, Punkt 54 den „abgeschotteten Rahmen ohne Skriptrechte" für PDF. Die
-Punkte 1 bis 55 bleiben sonst stehen; 43, 44 und 54 tragen einen Vermerk.
-
-Fassung 2 ergänzt **Abschnitt G** (Punkte 31 bis 42): **Fotos von
-Patient:innen** mit eigener Einwilligung als Rechtsgrundlage, eigener
-Datenklasse und kurzer Frist, Aufnahme **nur über die Kamera der Anwendung**
-und ohne Aufnahmemetadaten; dazu die Regeln für Fotos von Dokumenten, die
-auf demselben Weg entstehen. Sie ist der erste Schritt von **DOK-006**
-([`../development/ROADMAP.md`](../development/ROADMAP.md), Block 2), den
-Punkt 30 bisher versperrt. **Die Punkte 1 bis 30 bleiben Wort für Wort
-stehen.** Für die neue Art `patientenfoto` schränkt Fassung 2 drei von ihnen
-ein — Punkt 13 (keine Artkorrektur), Punkt 15 (kein Downloadname, Anzeige
-nach Punkt 40) und Punkt 23 (die Klasse folgt der Art, nicht dem
-Bezugsdatensatz); für alle anderen Arten gelten sie unverändert. Diese drei
-Punkte, Punkt 30, „Bewusst nicht Bestandteil" und die HEIC-Folgefrage tragen
-einen Vermerk.
-
-**Fassung 3 (2026-10-02, am selben Tag angenommen).** Anlass ist die Abnahme der Annahmen vom 2026-10-02
-(Block 6: BEF-105, BEF-106; dazu BEF-059 aus dem UX-Review). Fassung 3 fügt
-drei Abschnitte hinzu:
-
-- **Abschnitt H (Punkte 43 bis 48): drei Arten von Fotos.** Neben Dokumentfoto
-  und Foto-Arbeitshilfe (bisher „Patientenfoto") gibt es das
-  **Dokumentationsfoto**: medizinisch notwendig, Teil der Akte, Grundlage
-  Behandlung (Art. 9 Abs. 2 lit. h DSGVO), Klasse `patientenakte`, zehn Jahre.
-  Das ist eine **Umkehr eines einzelnen Punktes** nach der Fassungsregel in
-  `README.md`: Punkt 35 stellte **jedes** Foto der Person auf Einwilligung;
-  Jannes hat das in der Abnahme ausdrücklich umgekehrt (ANN-126). Für die
-  Foto-Arbeitshilfe gelten die Punkte 35 bis 38 unverändert.
-- **Abschnitt I (Punkte 49 bis 53): Prüfung am Server.** Typ an der Signatur,
-  Prüfsumme nachgerechnet, Metadaten nachgeprüft — in einer Edge Function,
-  gebaut ja, scharf mit OPS-001. Dazu die Farbe (sRGB). Er ergänzt Punkt 7 (c)
-  und Punkt 34; ANN-053 hat Jannes in der Abnahme geändert, ANN-125 ergänzt.
-- **Abschnitt J (Punkte 54 und 55): Öffnen heißt Anzeigen.** Die Anzeige ohne
-  Downloadnamen aus Punkt 40 gilt für alle Arten; Herunterladen ist eine eigene
-  Aktion. Er schränkt Punkt 15 ein (BEF-059).
-
-**Die Punkte 1 bis 42 bleiben Wort für Wort stehen**; die Punkte 7, 15, 31, 32,
-35, 36 und 38 tragen einen Vermerk „Fassung 3". §5 der Prinzipien, der für
-jedes Foto der Person eine Einwilligung verlangte, ist mit Version 0.20
-nachgezogen (§21): Die Einwilligung gilt dort nur noch für die
-Foto-Arbeitshilfe.
-
-**Was die Annahme nicht erledigt:** Einordnung, Wortlaut der Einwilligung und
-Frist sind Datenschutz und Recht. Die Annahme gibt den Bau von DOK-006 frei;
-Fotos echter Personen gibt es erst nach B2 und der DSFA (Punkt 41), und für
-die Ablage insgesamt bleiben OPS-001 und OPS-003 die Bedingung.
-
-Dieser ADR **legt keine Datei an und gibt keinen produktiven Speicher frei.**
-Er legt fest, wie eine Datei in dieser Anwendung entsteht, wer sie sieht, wie
-sie ausgeliefert wird, wann sie verschwindet und was vorher geprüft sein muss.
-Die produktive Geltung hängt zusätzlich an **OPS-001**, der Providerprüfung für
-Supabase nach ADR-002 (Roadmap G1: „Erst nach positivem OPS-001"). Warum der
-ADR trotzdem jetzt geschrieben wird, steht im Kontext.
-
-*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.* *Protokolliert wird das Herunterladen einer Datei durch die Praxis (`patient_file.downloaded`), nicht das Anzeigen und nicht der Abruf über die Plattform (ADR-010 Punkt 22); wer eine Datei gelöscht hat, steht am Löschauftrag (`ordered_by`).*
-
-## Datum
-
-2026-09-12 (Fassung 1); 2026-09-26 (Fassung 2, am selben Tag angenommen);
-2026-10-02 (Fassung 3, am selben Tag angenommen); 2026-10-09 (Fassung 4);
-2026-10-10 (Fassung 5, am selben Tag angenommen); 2026-10-15 (Fassung 6);
-2026-10-18 (Fassung 7); 2026-10-18 (Fassung 8, am selben Tag angenommen); 2026-10-18
-(Fassung 9, vorgeschlagen); 2026-10-19 (Fassung 10, am selben Tag angenommen); 2026-10-20
-(Fassung 11)
+**Angenommen** (Jannes), geltend **Fassung 12** (2026-10-20); Fassung 9 vorgeschlagen, Fragen 33, 34 offen.
 
 ## Kontext
-
-Punkt **E8** in `docs/decisions/OPEN_DECISIONS.md` ist seit dem 2026-09-05 als
-ADR-017 beauftragt und seitdem offen. Er blockiert nicht abstrakt, sondern
-konkret: **DAT-EPIC-001** (Bucket, Berechtigungen, signierte Verweise,
-Datenklasse, Audit; Roadmap G4) ist der nächste Loop und kann ohne diese
-Entscheidung nicht sinnvoll beginnen. **VER-004** (Verordnungsscan am Rezept)
-wartet seit dem 2026-09-07 — die Migration `20260907110000_prescriptions.sql`
-führt ihn im Kopfkommentar ausdrücklich als „braucht ADR-017". **ABR-003b**
-(Rechnungs-PDF, Roadmap Nov 2026) braucht ihn ebenfalls: ADR-009 Punkt 9
-verlangt, dass eine ausgestellte Rechnung unveränderbar ist, und B14 hält fest,
-dass ein Browser-Druck genau das nicht leisten kann, weil die Anwendung die
-erzeugte Datei nie zu sehen bekommt.
-
-Vorgegeben ist die Richtung bereits an drei Stellen:
-
-- **ADR-015 Punkt 10** wählt **Supabase Storage** als Dateiablage — ohne eine
-  einzige Regel dazu. Derselbe ADR führt als offene Folgefrage: „Wie verhält
-  sich Supabase Storage zu den Anforderungen aus §12 (Dateizugriffe) und
-  ADR-008 (Retention von Dateien)?" Diese Frage wird hier beantwortet.
-- **§4.7 und ADR-004 Punkt 6** stellen Dateien ausdrücklich mit Suche, Exporten
-  und späteren KI-Funktionen in eine Reihe: Sie **müssen dieselben
-  Berechtigungsregeln respektieren**. ADR-004 nennt sie zugleich den
-  „wahrscheinlichsten Umgehungsweg des Modells". **§12** führt „Dateizugriffe"
-  in der Liste der besonders kritischen, testpflichtigen Funktionen.
-- **ADR-008** verlangt für jede fachliche Entität eine Datenklasse mit Frist
-  und stellt selbst die offene Folgefrage, wie Dateien zu behandeln sind, die
-  in mehreren Kontexten referenziert sind. **ADR-012 Punkt 5** sagt in einem
-  Satz, was dieser ADR ausbuchstabieren muss: „Datei- und Objektspeicher
-  benötigt eine eigenständige Backup- und Versionierungsstrategie."
-
-**Warum der ADR vor OPS-001 geschrieben wird.** Die Roadmap bindet ihn an ein
-positives Ergebnis der Providerprüfung (G1), und Risiko R2 sagt dasselbe noch
-einmal. Das ist richtig für die **Freigabe**, nicht für den **Text**: Supabase
-Storage ist kein neuer Dienstleister, sondern derselbe Anbieter, dasselbe
-Projekt, derselbe Vertrag und dieselbe Unterauftragskette wie die Datenbank,
-die ADR-015 bereits gewählt hat. Es entsteht also kein zweiter Prüfvorgang nach
-ADR-002 Punkt 3, sondern ein **Satz zusätzlicher Prüfpunkte für OPS-001** — und
-den kann OPS-001 nur mitprüfen, wenn er vorher benannt ist. Fällt OPS-001
-negativ aus, fällt mit der Datenbank auch die Ablage; die Regeln dieses ADR
-(Datenbank führt, kurzlebige Verweise, Rollenschnitt an der Dokumentart,
-zweistufige Löschung) gelten dann für den Nachfolger genauso, weil keine von
-ihnen an einem Anbieterdetail hängt. Diese Reihenfolge ist damit die
-umkehrbarere von beiden (§16).
-
-**Recherchelage.** `supabase.com` ist aus der Cloud-Entwicklungsumgebung durch
-den Egress-Proxy gesperrt — wie schon bei ADR-019. Belegbar war die
-**Dokumentation im Quelltext** (`raw.githubusercontent.com`, Repository
-`supabase/supabase`, Verzeichnis `apps/docs/content/guides/`) und der
-**Quelltext der Client-Bibliothek** (`supabase/storage-js`). Beides ist die
-Quelle der veröffentlichten Seiten, nicht deren Nacherzählung. Aussagen aus
-Community-Diskussionen und Suchauszügen sind unten als solche gekennzeichnet
-und gehören in den Prüfkatalog von OPS-001, nicht in diese Entscheidung.
-
-**Neu zur Fassung 2.** Im Produktgespräch vom 2026-09-23
-(`git show eb43569:docs/development/archiv/UMBAU.md`) hat Jannes zwei Dinge
-festgelegt: Fotos von Patient:innen gehören in den Ablauf, „damit andere
-Therapeut:innen einen Eindruck haben und für Vergleiche im Verlauf", und
-Fotos entstehen nur über die Kamera der App, weil sonst Gesundheitsdaten in
-der privaten Mediathek und ihrem Cloud-Backup liegen. §5 hat daraus gemacht:
-Fotos von Dokumenten gehören in die Akte, Aufnahmen des Teams SOLLTEN über
-die Kamera der Anwendung entstehen, und Fotos von Patient:innen „setzen eine
-eigene Einwilligung voraus, und Frist und Umgang mit Aufnahmemetadaten
-entscheidet der Loop, der sie baut". Punkt 30 nennt dieselben drei
-Bedingungen und gibt deshalb nichts frei. Diese Fassung entscheidet sie.
-
-Drei Befunde am Bestand bestimmen den Zuschnitt. **Erstens** gibt es das
-Einwilligungsmodell schon: `patient_privacy_records` hält Erteilung und
-Widerruf je Zweck als unveränderliche Vermerke fest (PAT-006, ANN-093), und
-ANN-093 nennt „Fotos zur Verlaufsdokumentation" ausdrücklich als möglichen
-weiteren Zweck. **Zweitens** hat der Katalog eine Lücke: Die Dokumentart
-`klinisches_bild` ist in der Oberfläche mit „Bildgebung oder Aufnahme mit
-klinischer Aussage" erläutert — das liest sich, als dürfe man ein Foto der
-Person schon heute unter dieser Art ablegen, ohne Einwilligung und mit zehn
-Jahren Frist. **Drittens** sperrt die Test-Umgebung die Kamera per
-Kopfzeile (`Permissions-Policy: camera=()`, `scripts/testumgebung.mjs`). Eine
-Sicherheitsmaßnahme zu öffnen ist nach §15.1 nichts, was ein Loop nebenbei
-tut; Punkt 33 entscheidet es hier.
+ADR-015 Punkt 10 wählt Supabase Storage; dieser ADR (E8) setzt vor OPS-001 die Regeln aus §4.7, §12,
+ADR-004 Punkt 6, ADR-008 und ADR-012 Punkt 5, da Storage Anbieter, Projekt und Vertrag der Datenbank
+teilt (§16). **Nicht Bestandteil:** Freigabe von Supabase (OPS-001, ADR-002), Entstehung des
+Rechnungs-PDF (B14; ein Browser-Druck ist keines), elektronische Signaturen (IDEA-PRX-015 verworfen,
+E-13), Volltextsuche, Texterkennung, Bildtransformation (Punkt 34 ist keine), KI auf Dateiinhalten
+samt Transkription (ADR-005), Sprachdokumentation (§6.3), Aussehen der Oberfläche.
 
 ## Entscheidung
-
 ### A. Ort, Abgrenzung, Anbieter
-
-1. **Dateien liegen in Supabase Storage desselben Projekts wie die Datenbank**,
-   in derselben ausdrücklich freigegebenen EU-Region (ADR-015 Punkt 10 und 19).
-   Kein zweiter Anbieter, kein fremdes CDN, **kein öffentlicher Bucket** —
-   auch nicht „nur für ein Logo".
-   *Vermerk 2026-10-19 (Fassung 10, Umkehr für Profilbilder): Ein Profilbild im Teamchat liegt
-   als Zeile in der Datenbank, nicht in einem Bucket (Punkt 91).*
-2. **Storage ist kein neuer Dienstleister** und bekommt deshalb keine eigene
-   Providerprüfung, sondern **fünf zusätzliche Punkte im Katalog von OPS-001**
-   (Abschnitt „Was OPS-001 zusätzlich prüfen muss"). **Bis OPS-001 positiv
-   dokumentiert ist, entsteht kein produktiver Bucket und wird keine Datei mit
-   Personenbezug hochgeladen** (ADR-015 Punkt 18, Roadmap G1).
-3. **Ein privater Bucket je Datenklasse**, angelegt erst mit der ersten Datei
-   dieser Klasse — nicht auf Vorrat (ADR-014, §14). Für DAT-EPIC-001 ist das
-   genau einer: `patientenakte`. Der Bucket für Abrechnungsbelege entsteht mit
-   ABR-EPIC-002b. Getrennt wird nach Datenklasse, weil Frist, Löschweg und
-   Rollenschnitt an ihr hängen und nicht an der Datei.
-4. **Anwendungsdateien gehören nicht in die Ablage.** Wortmarke und App-Symbole
-   werden als byte-gleiche Kopien aus `marke/` über `public/marke/`
-   ausgeliefert (MARKE-001, `src/marke.test.ts`). Die Ablage ist für Dokumente
-   der Praxis und ihrer Patient:innen da.
-5. **Objektschlüssel tragen nur Kennungen:**
-   `<organization_id>/<bezugsdatensatz_id>/<datei_id>` — ohne Dateiendung, ohne
-   Namen, ohne Datum, ohne Dokumenttitel. Der Anzeigename steht in der
-   Datenbank (Punkt 6). Grund: Der Schlüssel steht in URLs, in Fehlermeldungen
-   und in Logs des Anbieters, die wir nicht filtern können (ADR-011, §3.6). Ein
-   Schlüssel wie `Mueller_Anna_MRT_Befund.pdf` wäre ein Patientendatum in genau
-   diesen Kanälen. Die erste Ebene ist immer die Organisation (ADR-003), damit
-   Mandantentrennung auch im Objektspeicher sichtbar und in einer Policy
-   prüfbar ist.
+1. **Ort.** Supabase Storage im Datenbankprojekt, EU-Region (ADR-015 Punkte 10, 19), *(Fassung 10)*
+   außer Profilbildern (Punkt 91); kein zweiter Anbieter, fremdes CDN, öffentlicher Bucket.
+2. **Kein neuer Dienstleister.** OPS-001 prüft zusätzlich, aus Verträgen belegt: (1) der AVV deckt
+   die Storage-Objekte (§3.5); (2) Unterauftragskette, Region, Verschlüsselung im Ruhezustand
+   (ADR-002 Punkt 3); (3) wann ein gelöschtes Objekt auch aus Cache, Replikaten, Sicherungen weg ist
+   (ADR-008 Punkt 3); (4) S3-Zugang, Kosten, Ziel der Objektsicherung als eigene Verarbeitung (EU,
+   AVV); (5) ein Entzug signierter Verweise ohne Support käme hinzu, ohne Punkt 15 zu verlängern.
+   Vor positivem OPS-001 kein produktiver Bucket, keine Datei mit Personenbezug (ADR-015 Punkt 18).
+3. **Ein privater Bucket je Datenklasse,** angelegt mit ihrer ersten Datei (ADR-014, §14;
+   `app.patient_file_bucket_for`): `patientenakte`, für Abrechnungsbelege mit ABR-EPIC-002b.
+4. **Keine Anwendungsdateien;** Wortmarke, App-Symbole byte-gleich aus `marke/` (MARKE-001).
+5. **Schlüssel aus Kennungen:** `<organization_id>/<bezugsdatensatz_id>/<datei_id>`, ohne Endung,
+   Name, Datum, Titel (ADR-011, §3.6); Organisation vorn, in Policies prüfbar (ADR-003).
 
 ### B. Die Datenbank führt, nicht der Bucket
-
-6. **Zu jeder Datei gehört genau eine Zeile in einer Fachtabelle** — für
-   DAT-001 `patient_files` — mit Organisation, Bezugsdatensatz, **Dokumentart**
-   aus festem Katalog, Anzeigename, MIME-Typ, Größe, **SHA-256-Prüfsumme**,
-   Zustand, hochgeladen von und hochgeladen am. **Diese Zeile ist die
-   Wahrheit.** Ein Objekt ohne Zeile ist Abfall, eine Zeile ohne Objekt ist ein
-   Fehler (Punkt 27).
-7. **Der Upload läuft in zwei Phasen mit einer Bestätigung.**
-   (a) Die Anwendung legt die Zeile im Zustand `pending` an und leitet daraus
-   den Objektschlüssel ab — hier wird die Berechtigung geprüft, **bevor** Bytes
-   fließen. (b) Der Browser lädt das Objekt unter genau diesem Schlüssel hoch.
-   (c) Ein serverseitiger Vorgang prüft Größe, MIME-Typ und Prüfsumme gegen die
-   Vorgabe und setzt `ready`. **Nur `ready` ist sichtbar und verweisfähig.**
-   Eine `pending`-Zeile, die älter als **24 Stunden** ist, wird samt Objekt
-   verworfen. Ohne (a) gäbe es keine Stelle für die Berechtigungsprüfung, ohne
-   (c) wäre „hochgeladen" eine Behauptung des Browsers.
-   *Vermerk 2026-10-02 (Fassung 3): Der MIME-Typ in den
-   Objektmetadaten übernimmt die Angabe des Browsers und ist keine zweite
-   Quelle (ANN-053). Typ, Prüfsumme und Metadaten prüft der Server am Inhalt
-   (Punkte 49 bis 52).*
-8. **Dateien sind unveränderlich.** Kein Überschreiben (`upsert` aus, kein
-   UPDATE-Recht auf `storage.objects`), keine Korrektur an Ort und Stelle. Eine
-   berichtigte Fassung ist eine **neue Datei mit Verweis auf die ersetzte**;
-   die ersetzte bleibt bis zu ihrer Frist. Das ist dieselbe Logik wie ADR-016
-   für die Dokumentation und §13: Ein Befund oder eine Rechnung, die sich unter
-   demselben Verweis ändern kann, ist kein Dokument mehr.
-9. **Die Prüfsumme ist kein Selbstzweck.** Sie ist der Nachweis, dass die
-   abgelegte Fassung die erzeugte ist — die Bedingung, unter der ADR-009
-   Punkt 9 („eine ausgestellte Rechnung ist unveränderbar") für ein PDF
-   überhaupt prüfbar wird, und der einzige Weg, einen stillen Bitfehler oder
-   eine unvollständige Wiederherstellung zu erkennen.
-10. **Jede Datei hängt an einem Bezugsdatensatz** — Verordnung, Patient:in,
-    Rechnung, Termin —, nie frei im Raum. **Es gibt keine allgemeine Ablage.**
-    Ohne Eigentümer gibt es weder eine Berechtigung noch eine Frist; ADR-008
-    nennt eine Datenklasse ohne Fristzuordnung „einen Mangel, nicht einen
-    Sonderfall". Eine Datei, die in mehreren Kontexten gebraucht wird
-    (offene Folgefrage in ADR-008), wird **nicht mehrfach referenziert, sondern
-    einmal abgelegt und von einem Ort aus verlinkt** — sonst hätte sie zwei
-    Fristen.
+6. **Die Zeile ist die Wahrheit.** Je Datei eine Zeile (`patient_files`): Organisation,
+   Bezugsdatensatz, Dokumentart, Anzeigename, MIME-Typ, Größe, SHA-256, Zustand, hochgeladen von und
+   am. Objekt ohne Zeile ist Abfall, Zeile ohne Objekt ein Fehler.
+7. **Zwei Phasen.** (a) `prepare_patient_file_upload` legt die Zeile `pending` an und prüft die
+   Berechtigung, bevor Bytes fließen; (b) der Browser lädt unter dem Schlüssel hoch; (c)
+   `confirm_patient_file_upload` prüft Größe und MIME-Typ und setzt `ready`, die Prüfsumme die
+   Prüfung am Inhalt (Punkt 49). Nur `ready` ist
+   sichtbar und verweisbar; `pending` über 24 Stunden fällt samt Objekt. *(Fassung 3)* Der MIME-Typ
+   ist Browserangabe (ANN-053); Inhalt: Punkt 49.
+8. **Unveränderlich:** kein Überschreiben (`upsert` aus, kein UPDATE auf `storage.objects`);
+   Berichtigung als neue Datei mit Verweis auf die ersetzte (bleibt bis zur Frist; ADR-016, §13).
+9. **Die Prüfsumme** belegt die abgelegte Fassung (ADR-009 Punkt 9) und deckt Bitfehler auf.
+10. **Bezugsdatensatz Pflicht** (etwa Verordnung, Patient:in, Rechnung, Termin), keine allgemeine
+    Ablage (ADR-008); bei mehreren Kontexten einmal abgelegt und verlinkt, nie doppelt.
 
 ### C. Zugriff und Auslieferung
-
-11. **Berechtigungen laufen über den zentralen Policy-Layer und zusätzlich über
-    RLS auf `storage.objects`** (ADR-004 Punkt 5 und 6, §4.7). Der
-    `service_role`-Schlüssel erreicht niemals den Browser. Die Policies auf
-    `storage.objects` leiten sich aus denselben `app.can_*`-Funktionen ab wie
-    die Fachtabellen; sie sind keine zweite, eigene Rechtelogik.
-12. **Jede Datei trägt eine Dokumentart aus einem festen Katalog, und die Art
-    bestimmt den Rollenschnitt.** Klinisch — Befund, Arztbrief,
-    **Verordnungsscan**, klinisches Bild — sehen `owner`, `therapist`,
-    `team_lead`. Organisatorisch — Einwilligung, Vertrag, Rechnung,
-    Kostenvoranschlag — sieht zusätzlich `office` (§4.3). **Keine freie Eingabe
-    der Art, keine Datei ohne Art.** Der Verordnungsscan ist klinisch, obwohl
-    die Verordnung selbst organisatorische Felder hat (ANN-011): **Ein Scan
-    lässt sich nicht projizieren.** Er zeigt alles, was auf dem Blatt steht,
-    einschließlich Diagnose — die Trennung in zwei Sichten, die bei der
-    strukturierten Verordnung funktioniert, gibt es beim Bild davon nicht.
-    Deshalb folgt eine Datei immer dem **strengsten** Teil ihres Inhalts.
-    *Vermerk 2026-09-13 (E15, ADR-004 Fassung 2):* `office` liest künftig
-    auch die klinischen Dokumentarten. Die Dokumentart bleibt Katalog und
-    Rollenschnitt — für Patient:innen (Etappe 4), Dritte und die
-    Rechnungssicht; für die Praxisrollen ist die Grenze mit ROL-EPIC-001
-    (PR #41) entfallen. Hochladen, Löschen und die Korrektur der Art folgen
-    weiter dem Schreibrecht (Punkt 13).
-13. **Wer hochladen, die Art ändern oder löschen darf, folgt dem Schreibrecht
-    am Bezugsdatensatz**, nicht dem Leserecht an der Datei. Eine Korrektur der
-    Dokumentart ist ein protokollierter Vorgang der therapeutischen Rollen: Sie
-    verschiebt eine Sichtbarkeitsgrenze und ist damit keine Stammdatenpflege.
-    *Vermerk 2026-09-26 (Fassung 2): Die Art `patientenfoto`
-    wird nicht korrigiert, weder hin noch weg (Punkt 32).*
-14. **Patient:innen laden in V1 nichts hoch und sehen nichts.** Es gibt kein
-    Portal (ADR-014, §14), und dieser ADR baut keines vor.
-    *Vermerk 2026-10-10 (Fassung 5): Foto und Video an der eigenen Rückfrage
-    lädt die Person hoch (Punkt 59).*
-15. **Ausgeliefert wird ausschließlich über kurzlebige signierte Verweise:**
-    erzeugt **auf ausdrückliche Aktion** („Datei öffnen"), **je Zugriff neu**,
-    Gültigkeit **60 Sekunden**, mit dem Anzeigenamen als Downloadnamen. Nie im
-    Voraus, nie für eine ganze Liste, nie gespeichert, nie in einer E-Mail, nie
-    in der Adresszeile der Anwendung (ADR-011; dieselbe Regel wie bei den
-    Rückwegen aus UX-012: kein Name in der Adresszeile).
-    *Vermerk 2026-09-26 (Fassung 2): Ein Verweis auf ein
-    `patientenfoto` trägt keinen Downloadnamen; angezeigt wird nach Punkt 40.*
-    *Vermerk 2026-10-02 (Fassung 3): Für alle Arten trägt der
-    Verweis zum Anzeigen keinen Downloadnamen (Punkt 54); den Downloadnamen
-    trägt nur der Verweis der eigenen Aktion „Herunterladen" (Punkt 55).*
-    *Vermerk 2026-10-19 (Fassung 10): Ein Profilbild hat keinen Verweis; es kommt mit der
-    Antwort an die angemeldete Sitzung (Punkt 92).*
-16. **Objekte werden mit `cacheControl: '0'` hochgeladen.** Der Standardwert
-    der Bibliothek ist `3600`. Grund, belegt aus der Anbieterdokumentation:
-    Eine am CDN zwischengespeicherte Antwort zu einem signierten Verweis kann
-    weiter ausgeliefert werden, **nachdem das Token abgelaufen ist**; dieselbe
-    Seite empfiehlt, für einen echten Entzug das Objekt zu löschen. Ohne diesen
-    Punkt wäre die kurze Gültigkeit aus Punkt 15 eine Zusage, die der Cache
-    nicht hält.
-17. **Ein signierter Verweis ist nicht widerrufbar.** Belegt: Er bleibt bis zu
-    seinem Ablauf gültig, unabhängig von einem Wechsel der Auth-Schlüssel; ein
-    vorzeitiger Entzug geht nur über den Support des Anbieters. Daraus folgen
-    Punkt 15 und 16 — und: **Es gibt keinen Teilen-Link.** Wer einer Ärztin
-    einen Befund schickt, tut das außerhalb der Anwendung und trägt die
-    Verantwortung dafür. Einen Versandweg baut die Anwendung nicht, bevor
-    PAT-006 (Datenschutzinformation) und B2 (Datenschutzberatung) geklärt sind.
-18. **Formate und Größe sind eine Allowlist, doppelt durchgesetzt** — am Bucket
-    und noch einmal bei der Bestätigung aus Punkt 7c: **PDF, JPEG, PNG,
-    höchstens 10 MB je Datei.** Ausgeschlossen sind **SVG, HTML,
-    Office-Dokumente, Archive, Videos und alles Ausführbare**: SVG und HTML
-    tragen Skript und würden auf der Domäne des Anbieters ausgeliefert; Videos
-    sind eine eigene Risikoklasse mit eigener Einwilligung und eigener Frist
-    (`IDEA-KOM-003`) und nicht Gegenstand dieses ADR.
-    *Vermerk 2026-10-10 (Fassung 5): Für Anhänge an Rückfragen sind
-    WebM und MP4 ohne Tonspur erlaubt (Punkt 63).*
-    *Vermerk 2026-10-18 (Fassung 9): Für Sprachnachrichten im Teamchat sind
-    WebM (Opus) und MP4 (AAC) nur mit Ton erlaubt (Punkt 84).*
-19. **Angezeigt wird nur, was sich sicher anzeigen lässt:** PDF und Bild im
-    eigenen Rahmen der Anwendung, sonst nichts. Kein eingebettetes HTML, keine
-    Bibliothek, die Fremdinhalte ausführt, keine Vorschaubilder, die der
-    Anbieter aus dem Original rechnet.
-    *Vermerk 2026-10-18 (Fassung 9): Eine Sprachnachricht spielt im
-    Medienelement des Browsers aus einer Objekt-URL, ohne Herunterladen
-    (Punkt 86) - wie ein Video an der Rückfrage (Punkt 69).*
+11. **Zwei Schichten:** Policy-Layer und RLS auf `storage.objects` aus denselben
+    `app.can_*`-Funktionen (ADR-004 Punkte 5, 6, §4.7); `service_role` erreicht nie den Browser.
+12. **Dokumentart.** Fester Katalog, keine freie Eingabe, keine Datei ohne Art; klinisch (Befund,
+    Arztbrief, Verordnungsscan, klinisches Bild) für `owner`, `therapist`, `team_lead`,
+    organisatorisch (Einwilligung, Vertrag, Rechnung, Kostenvoranschlag) auch `office` (§4.3); der
+    strengste Inhalt entscheidet (ANN-011). *(Vermerk E15, ADR-004 Fassung 2)* `office` liest auch
+    Klinisches (ROL-EPIC-001); der Schnitt bleibt für Patient:innen, Dritte, Rechnungssicht.
+13. **Schreibrecht** am Bezugsdatensatz für Hochladen, Artkorrektur, Löschen; die Artkorrektur ist
+    ein protokollierter Vorgang therapeutischer Rollen, *(Fassungen 2, 3)* nie bei Fotos (Punkt 47).
+14. **Patient:innen laden in V1 nichts hoch, sehen nichts,** *(Fassung 5)* außer nach Punkt 59.
+15. **Ausgeliefert nur über signierte Verweise,** auf ausdrückliche Aktion, je Zugriff neu, 60
+    Sekunden gültig; nie im Voraus, für Listen, gespeichert, per E-Mail, in der Adresszeile
+    (ADR-011). *(Fassung 3)* Downloadnamen nur beim Herunterladen (Punkt 55). *(Fassung 10)*
+    Profilbilder: Punkt 92.
+16. **`cacheControl: '0'`:** Das CDN liefert nach Ablauf nichts; Entzug nur durch Löschen.
+17. **Kein Teilen-Link:** Verweise sind unwiderruflich (außer per Support). Befunde an Ärzt:innen
+    gehen außerhalb der Anwendung, auf Verantwortung der Sendenden; Versand erst nach PAT-006, B2.
+18. **Allowlist** am Bucket und bei der Bestätigung (Punkt 7c): PDF, JPEG, PNG, höchstens 10 MB,
+    erweitert nur für einen Fall; nie SVG, HTML, Office, Archive, Videos, Ausführbares.
+    *(Fassung 5)* WebM, MP4 ohne Ton an Rückfragen (Punkt 63); *(Fassung 9)* WebM (Opus), MP4 (AAC)
+    nur mit Ton als Sprachnachricht (Punkt 84).
+19. **Sichere Anzeige:** PDF, Bild im eigenen Rahmen; kein eingebettetes HTML, keine Bibliothek, die
+    Fremdes ausführt, keine Anbietervorschau. Video an Rückfragen im Medienelement
+    (Punkt 69); *(Fassung 9)* Ton ebenso.
 
 ### D. Audit
-
-20. **Auditpflichtig sind drei Ereignisse** — sie erfüllen „Zugriff auf
-    klinische Dokumente" und „Download/Export klinischer Daten" aus ADR-010
-    Punkt 2: `patient_file.uploaded`, `patient_file.link_issued`,
-    `patient_file.deleted`. Der Eintrag trägt Datei- und Patientenkennung,
-    Dokumentart und Zeitpunkt — **nie den Anzeigenamen, nie den
-    Objektschlüssel, nie Inhalt** (ADR-010 Punkt 3, ADR-011).
-21. **Protokolliert wird die Ausstellung des Verweises, nicht das Laden der
-    Datei.** Das ist eine Grenze und keine Nachlässigkeit: Die Anfrage am
-    Objekt läuft zwischen Browser und Anbieter, die Anwendung sieht sie nicht.
-    Wer den Verweis erzeugt hat, **hatte** den Zugriff; ob die Bytes geflossen
-    sind, steht nicht fest. Diese Aussage gehört so in die DSFA und in die
-    Verfahrensbeschreibung, statt einen stärkeren Nachweis zu behaupten.
-    Punkt 15 hält den Unterschied klein: ein Verweis je bewusstem Zugriff, nie
-    auf Vorrat für eine Liste.
-    *Vermerk 2026-09-15 (FIX-015, BEF-004):* Die Ausstellung ist seitdem
-    erzwungen, nicht nur der vorgesehene Weg. Signieren, Laden, Auflisten und
-    Kopieren lässt die Storage-API nur gegen eine einmalige, 30 Sekunden
-    gültige Freigabe zu, die `issue_patient_file_link` mit dem Auditeintrag
-    anlegt; entfernt wird ein Objekt nur gegen die Freigabe aus
-    `claim_storage_deletion_order` (`storage_deletion.claimed`), und diese
-    Freigabe taugt nur zum Entfernen. `storage_deletion.claimed` ist damit ein
-    Ereignis des Löschauftrags, kein Dateizugriff; Punkt 20 bleibt bei seinen
-    drei Dateiereignissen. Die Grenze dieses Punkts bleibt: Ein ausgestellter
-    Verweis gilt seine 60 Sekunden, und ob die Bytes geflossen sind, steht
-    weiter nicht fest (ANN-052).
-22. **Das Auflisten der Dateien einer Akte ist kein eigenes Auditereignis.**
-    Das Öffnen der Akte ist bereits auditiert; ADR-010 wägt genauso zwischen
-    Aussagekraft und Logvolumen ab („Detailansicht ja, Trefferliste nein").
+20. **ADR-010 regelt das Auditlog** *(Vermerk LOG-EPIC-001; dort Punkte 14 bis 16, 22)*: von Dateien
+    `patient_file.downloaded` (Punkt 55) und die Herausgabe an die Person (Punkte 40, 96), nicht
+    Anzeigen, nicht Plattformabruf; Schreibvorgänge
+    belegt das Datenmodell (Zeile, `ordered_by`). Protokollvorgaben dieses ADR gelten nur, soweit
+    ADR-010 sie nennt; nie Anzeigename, Objektschlüssel, Inhalt (ADR-011).
+21. **Protokolliert wird die Ausstellung des Download-Verweises, nicht das Laden** (Punkt 55); ob
+    Bytes flossen, steht nicht fest (so in DSFA und Verfahrensbeschreibung).
+    *(Vermerk FIX-015, BEF-004, ANN-052)* Signieren, Laden, Auflisten, Kopieren nur gegen einmalige,
+    30 Sekunden gültige Freigaben aus `issue_patient_file_link`, Entfernen nur gegen die nur dafür
+    taugende aus `claim_storage_deletion_order`.
+22. **Das Auflisten der Dateien** ist kein Auditereignis, das Öffnen der Akte schon (ADR-010).
 
 ### E. Aufbewahrung, Löschung, Sicherung
-
-23. **Die Datei erbt die Datenklasse ihres Bezugsdatensatzes** und steht damit
-    im Retention Schedule (LOE-001a, Tabellen `retention_classes` und
-    `retention_assignments`): Verordnungsscan und klinische Dokumente gehören
-    zur Klasse `patientenakte` — zehn Jahre nach Abschluss der Versorgung
-    (§630f BGB, ADR-008 Punkt 4, Anker `patients.care_concluded_on`).
-    Abrechnungsbelege bekommen die steuerliche Klasse, die mit ABR-EPIC-002b
-    entsteht. **Keine Datei ohne Klasse.**
-    *Vermerk 2026-09-26 (Fassung 2): Ausnahme `patientenfoto` —
-    seine Klasse folgt der Art, nicht dem Bezugsdatensatz (Punkt 38).*
-24. **Ein Legal Hold der Patient:in erfasst ihre Dateien mit** (ANN-033). Es
-    gibt keinen eigenen Hold je Datei — das wäre ein zweiter Mechanismus für
-    dieselbe Frage.
-25. **Löschen ist zweistufig und selbst nachweispflichtig.** Der Löschlauf
-    (`apply_retention`, LOE-002a) löscht die Zeile und schreibt einen
-    **Löschauftrag für das Objekt**; ein angemeldeter Vorgang der Anwendung
-    führt ihn aus und **quittiert** ihn. Erst die Quittung schließt die
-    Löschung ab. Offene Aufträge sind sichtbar und gehören in den monatlichen
-    Bericht (ADR-010 Punkt 6), nicht in eine stille Warteschlange. Grund: Eine
-    Datenbankfunktion kann kein Objekt löschen, und eine Edge Function ist für
-    produktive Gesundheitsdaten nach ADR-015 Punkt 20 nicht freigegeben. Das
-    Löschjournal weist die Zeile nach (ANN-031), die Quittung das Objekt — ohne
-    sie wäre „gelöscht" nur für die Hälfte der Daten belegt.
-26. **Der Objektspeicher läuft im Datenbank-Backup nicht mit.** Belegt aus der
-    Anbieterdokumentation: Datenbanksicherungen enthalten die über die
-    Storage-API abgelegten Objekte nicht, weil die Datenbank nur deren
-    Metadaten führt; das Zurückspielen einer alten Sicherung bringt später
-    gelöschte Objekte nicht zurück. Daraus folgt dreierlei:
-    - ADR-012 Punkt 5 wird zur **Vorbedingung**: **Ohne dokumentierten und
-      getesteten Sicherungs- und Wiederherstellungsweg für den Bucket wird
-      produktiv keine Datei angenommen.** Das gehört in OPS-003 (Roadmap G7)
-      und in den Restore-Test vor Go-live (ADR-012 Punkt 6).
-    - Die Wiederherstellung ist **dreistufig**: Datenbank zurückspielen,
-      Objekte zurückspielen, **dann Löschjournal und offene Löschaufträge
-      erneut anwenden** — auf beiden Seiten (ADR-008 Punkt 8).
-    - Der Zielwert **RPO ≤ 1 Stunde** aus ADR-012 Punkt 1 gilt auch für
-      Dateien. Ein täglicher Abzug erfüllt ihn nicht; die Taktung ist in
-      OPS-003 zu entscheiden.
-27. **Abgleich statt Vertrauen.** Ein wiederkehrender Abgleich meldet
-    **verwaiste Objekte** (kein Datensatz) und **fehlende Objekte** (Datensatz
-    ohne Objekt). Verwaiste werden gelöscht; fehlende sind ein **sichtbarer
-    Fehler an der Datei** — keine leere Fläche, kein stiller Ausgleich (§13:
-    Dokumentation darf nicht unbemerkt verloren gehen).
+23. **Klasse vom Bezugsdatensatz,** keine Datei ohne (`retention_classes`): Verordnungsscan,
+    Klinisches `patientenakte` (§ 630f BGB, ADR-008 Punkte 4, 11: zehn Jahre nach Abschluss der
+    Versorgung), Abrechnungsbelege die steuerliche Klasse. *(Fassung 2)* `patientenfoto`: Punkt 38.
+24. **Der Legal Hold** der Patient:in erfasst ihre Dateien (ANN-033), keiner je Datei.
+25. **Löschen mit Quittung:** `apply_retention` löscht die Zeile und schreibt einen Auftrag
+    (`storage_deletion_orders`), ein angemeldeter Vorgang führt ihn aus, erst
+    `receipt_storage_deletion_order` schließt ab. Offene Aufträge sind sichtbar, im monatlichen
+    Bericht (ADR-010 Punkt 6); nach Freigabe der Edge Runtime (OPS-001) darf er automatisch laufen.
+    Das Löschjournal (ANN-031) belegt die Zeile.
+26. **Objekte sichern** (nicht im Datenbank-Backup): keine produktive Datei ohne dokumentierte und
+    getestete Sicherung und Wiederherstellung (ADR-012 Punkte 5, 6; OPS-003). Wiederherstellung:
+    Datenbank, Objekte, dann Löschjournal, offene Aufträge erneut (ADR-008 Punkt 8); RPO ≤ 1 Stunde
+    (ADR-012 Punkt 1).
+27. **Abgleich,** wiederkehrend: verwaiste Objekte löschen, fehlende als sichtbaren Fehler zeigen
+    (`list_missing_patient_file_objects`), nie still (§13).
 
 ### F. Virenprüfung und Uploads Dritter
-
-28. **In V1 wird nicht auf Schadsoftware geprüft.** Belegt: Der Anbieter
-    analysiert Dateiinhalte nicht. Hochgeladen wird ausschließlich von
-    angemeldeten Praxiskonten auf Praxisgeräten, und keine Datei wird jemals
-    ausgeführt. Die Kompensation sind Punkt 8 (Unveränderbarkeit), Punkt 18
-    (Allowlist und Größe), Punkt 19 (Auslieferung nur als Anzeige oder
-    Download) und die Endgeräte-Richtlinie aus BETRIEB-001.
-    *Vermerk 2026-10-18 (Fassung 7): nicht nur in V1 — die Anwendung prüft nie
-    auf Schadsoftware (Punkt 29).*
-29. **Vor dem ersten Upload durch Patient:innen oder andere Externe ist eine
-    Virenprüfung MUSS** (Roadmap G1). Der Ablauf steht schon fest, damit später
-    niemand ihn erfindet: Die Datei bleibt `pending`, bis ein Prüfergebnis
-    vorliegt; ein Befund heißt **kein `ready`**, Objekt gelöscht, Auditeintrag,
-    Meldung an die Praxis. **Der Ausführungsort einer solchen Prüfung ist eine
-    neue wesentliche Abhängigkeit** und damit nach §15.1 ein Stopp: eigener
-    ADR, eigener Auftrag, eigene Providerprüfung, wenn sie außer Haus läuft.
-    *Vermerk 2026-10-10 (Fassung 5): Die Prüfung ist Bedingung des
-    Scharfschaltens, nicht des Bauens mit synthetischen Testkonten; den
-    Prüfer wählt ein eigener ADR (Punkt 69).*
-    *Vermerk 2026-10-15 (Fassung 6, Umkehr): Für Anhänge an Rückfragen
-    (Abschnitt L) entfällt die Virenprüfung — Entscheidung Jannes; sie werden
-    ohne Prüfergebnis `ready` und tragen „nicht auf Schadsoftware geprüft“.
-    Für jeden anderen Upload von außen gilt der Punkt weiter.*
-    *Vermerk 2026-10-18 (Fassung 7, Umkehr): Der Punkt entfällt für jeden
-    Upload — Entscheidung Jannes: „Keine Virenprüfung in der gesamten
-    Anwendung!“ Ein Upload von außen wird ohne Prüfergebnis `ready`; die
-    Kompensation bleiben Punkt 28 und die Prüfung am Inhalt (Punkte 49 bis 52).*
-30. **Dieser ADR gibt nicht frei:** Fotos und Videos von Patient:innen
-    (`IDEA-KOM-003` — eigene Einwilligung, kurze Frist, Entfernung der
-    Aufnahmemetadaten), Anhänge im Teamchat (TEAM-001), Uploads aus einem
-    Portal, den Versand von Dokumenten aus der Anwendung heraus.
-    *Vermerk 2026-09-26 (Fassung 2):* Fotos von Patient:innen
-    gibt Abschnitt G frei — unter genau den drei Bedingungen, die dieser
-    Punkt nennt. Für Videos, Teamchat, Portal und Versand gilt er unverändert
-    (Punkt 42).
-    *Vermerk 2026-10-10 (Fassung 5): Foto und Video an einer Rückfrage über
-    die Plattform gibt Abschnitt L frei.*
-    *Vermerk 2026-10-18 (Fassung 7): Wer einen dieser Wege freigibt, braucht
-    dafür keine Virenprüfung (Punkt 29).*
-    *Vermerk 2026-10-18 (Fassung 8): Anhänge im Teamchat gibt Abschnitt M frei.*
+28. **Keine Virenprüfung** *(Fassung 7)*, auch nicht beim Anbieter. Hoch laden Praxiskonten auf
+    Praxisgeräten, von außen nur nach L; Kompensation: Punkte 8, 18, 19, 49 bis 52,
+    BETRIEB-001.
+29. *Entfallen (Fassung 7):* Virenprüfung vor Uploads von außen (an Rückfragen schon Fassung 6),
+    Jannes: „Keine Virenprüfung in der gesamten Anwendung!“; ADR-026 abgelehnt.
+30. **Nicht freigegeben:** Fotos und Videos von Patient:innen (`IDEA-KOM-003`), Anhänge im Teamchat
+    (TEAM-001), Uploads aus einem Portal, Versand aus der Anwendung (Punkt 42), außer nach G
+    (Fassung 2), L (Fassung 5), M (Fassung 8).
 
 ### G. Fotos (Fassung 2)
-
-31. **Zwei Arten von Fotos.** Ein **Foto eines Dokuments** — Verordnung,
-    Anamnesebogen auf Papier, unterschriebene Einwilligung — ist eine Datei
-    nach den Abschnitten A bis F mit ihrer bisherigen Dokumentart und Klasse
-    `patientenakte`; neu sind für sie nur der Aufnahmeweg (Punkt 33) und die
-    Entfernung der Metadaten (Punkt 34). Ein **Foto, das die Praxis von der
-    Person aufnimmt** — Körperregion, Haltung, Schwellung, Narbe,
-    Ausgangsstellung — ist die neue Dokumentart **`patientenfoto`** mit
-    eigener Einwilligung, Klasse und Frist (Punkte 35 bis 38). Die Grenze
-    folgt Punkt 12: Zeigt eine Aufnahme der Praxis die Person, ist sie ein
-    Patientenfoto, auch wenn zugleich ein Dokument darauf zu sehen ist.
-    **Fremde Dokumente behalten ihre Art**, auch wenn sie die Person zeigen:
-    `klinisches_bild` bleibt Bildgebung und Aufnahmen aus ärztlicher oder
-    klinischer Hand (Röntgen, MRT, Ultraschall, das Wundfoto im
-    Klinikbericht) und ist nie ein Foto, das die Praxis selbst macht; die
-    Erläuterung in `src/features/patients/files/dokumentarten.ts` wird in DOK-006
-    entsprechend geschärft. Bilder, die Patient:innen der Praxis schicken,
-    regelt Punkt 42.
-    *Vermerk 2026-10-02 (Fassung 3): Aus zwei Arten werden
-    drei. Ein Foto der Person ist entweder Dokumentationsfoto oder
-    Foto-Arbeitshilfe (`patientenfoto`); Punkt 43.*
-32. **Derselbe Weg, ein eigener Bucket.** Patientenfotos laufen durch
-    **dieselbe Fachtabelle und dieselben Vorgänge** wie jede Datei — zwei
-    Phasen mit Bestätigung, unveränderlich, kurzlebige Verweise, drei
-    Auditereignisse, zweistufige Löschung, Abgleich (Punkte 6 bis 27) — mit
-    genau drei Abweichungen: keine Artkorrektur (Punkt 13), Anzeige ohne
-    Downloadnamen (Punkte 15 und 40), Klasse nach der Art statt nach dem
-    Bezugsdatensatz (Punkte 23 und 38). Kein zweiter Upload- oder Löschweg.
-    Nach Punkt 3 liegen sie in einem **eigenen privaten Bucket
-    `patientenfotos`**, weil Frist und Löschweg an der Klasse hängen; seine
-    Allowlist ist enger als Punkt 18: **nur JPEG**, höchstens 10 MB.
-    Bezugsdatensatz ist die **Patient:in** (Punkt 10), nicht Termin oder
-    Eintrag: Das Foto lebt kürzer als die Dokumentation, und ein finalisierter
-    Eintrag (ADR-016) darf nicht auf etwas zeigen, das nach einem Jahr fehlt.
-    Die Art `patientenfoto` wird **nicht korrigiert**, weder hin noch weg —
-    eine Korrektur verschöbe Bucket, Klasse und Einwilligungsbindung; ein Foto
-    in der falschen Art wird gelöscht und neu aufgenommen.
-    *Vermerk 2026-10-02 (Fassung 3): Das Dokumentationsfoto
-    läuft denselben Weg, aber im Bucket `patientenakte` (Punkt 45); auch
-    zwischen den beiden Fotoarten gibt es keine Korrektur (Punkt 47).*
-33. **Aufnahme nur über die Kamera der Anwendung.** Ein Patientenfoto
-    entsteht **ausschließlich** im Kameradialog der Anwendung: Live-Bild über
-    `getUserMedia` (nur Bild, nie Ton), Auslöser in der Anwendung, das Foto
-    wird aus dem Kamerabild gerechnet. **Für `patientenfoto` gibt es keinen
-    Dateiwähler**, auch nicht als Ausweg bei verweigerter Kamerafreigabe. Für
-    Fotos von Dokumenten ist der Kameradialog auf dem Handy der angebotene
-    Weg; der Dateiwähler bleibt für vorhandene Dateien (PDF einer Arztpraxis,
-    Scan am Schreibtisch) — §5 verlangt dort ein SOLLTE, kein MUSS.
-    - **Nicht `<input type="file" capture>`.** Die Spezifikation macht
-      `capture` zu einer Empfehlung an den Browser, nicht zu einer Zusage, und
-      die Aufnahme übernimmt die Kamera-App des Geräts. Was diese App ablegt
-      und welche Metadaten sie schreibt, liegt außerhalb der Anwendung. Nur
-      der eigene Dialog hält das Bild vom Sensor bis zum Upload in einer Hand.
-    - **Bis zum Upload liegt das Bild nur im Arbeitsspeicher der Seite:**
-      kein IndexedDB, kein Cache, kein Download, keine Warteschlange für
-      später (ADR-001 Punkt 2; einen Service Worker gibt es nach ADR-015
-      nicht). Ohne Verbindung gibt es kein Foto. Scheitert der Upload, sagt
-      die Anwendung es, bietet die Wiederholung an, solange die Seite offen
-      ist, und warnt vor dem Verlassen (§13). Die Kamera läuft nur, solange
-      der Dialog offen ist, und endet beim Auslösen und beim Abbrechen.
-    - **Die Permissions-Policy gibt die Kamera nur der eigenen Herkunft
-      frei** (`camera=(self)`); Mikrofon, Zahlung und USB bleiben gesperrt.
-      Die Öffnung in `scripts/testumgebung.mjs` und in jeder künftigen
-      Auslieferung ist damit entschieden und gehört in DOK-006.
-      *Vermerk 2026-10-18 (Fassung 9, Umkehr für das Mikrofon): Für
-      Sprachnachrichten im Teamchat gibt die Policy auch das Mikrofon nur der
-      eigenen Herkunft frei (`microphone=(self)`, Punkt 83); Zahlung und USB
-      bleiben gesperrt. Das Diktat (§6.3) bietet die Seite weiter nur an, wenn
-      das Gateway es als eingerichtet meldet.*
-    - **Die Herkunft aus der Kamera ist eine Eigenschaft des Aufnahmewegs,
-      keine Prüfung des Servers** — die Datenbank sieht die Bytes nie
-      (ANN-053). Wer den Browser selbst steuert, kann anderes hochladen; die
-      Kompensation ist dieselbe wie in Punkt 28: Hochladen nur durch
-      angemeldete Praxiskonten auf Praxisgeräten.
-34. **Aufnahmemetadaten entstehen nicht, und wo es sie gibt, entfernt sie das
-    Gerät.** Ein Bild aus dem Kameradialog wird aus Pixeln kodiert und trägt
-    keine EXIF-, XMP- oder IPTC-Daten: keinen Ort, kein Gerät, keine
-    Aufnahmezeit, kein eingebettetes Vorschaubild. **Einem Bild (JPEG, PNG)
-    aus dem Dateiwähler** entfernt das Gerät vor dem Upload die
-    Metadatensegmente **verlustfrei**: Die Bilddaten bleiben Byte für Byte,
-    erhalten bleibt als einzige Angabe die Ausrichtung. So wird kein fremdes
-    Dokument — Arztbrief, Röntgenbild — neu kodiert und verschlechtert. Das
-    eingebettete Vorschaubild ist der unterschätzte Teil: Es kann zeigen, was
-    im Bild selbst weggeschnitten wurde. Der zweite Grund ist §20: Ort und
-    Uhrzeit eines Hausbesuchsfotos sind zugleich die Adresse der Patient:in
-    und ein Bewegungsprofil der Therapeut:in. Die Prüfsumme (Punkt 9) wird
-    über die bereinigten Bytes gebildet; sie belegt die abgelegte Fassung,
-    nicht die empfangene. Was die Anwendung **stattdessen** festhält, steht
-    nur in der Zeile aus Punkt 6: hochgeladen am, von wem, Anzeigename — kein
-    Ort, kein Gerätemodell, auch nicht in der Datenbank. Wie Punkt 33 ist das
-    eine Eigenschaft des Wegs; **nachgewiesen wird sie durch Tests**, nicht
-    durch diesen Satz: Ein Bild mit Ortsangabe und Vorschaubild geht durch
-    den Dateiwähler, und in den hochgeladenen Bytes stehen weder Ort noch
-    Vorschaubild, die Bilddaten sind unverändert; ein Bild aus dem
-    Kameradialog trägt gar kein EXIF-Segment. PDF bleibt unverändert
-    (Folgefragen).
-35. **Die eigene Einwilligung ist die Rechtsgrundlage.** Ein Patientenfoto
-    stützt sich auf die **ausdrückliche Einwilligung** der Person (Art. 9
-    Abs. 2 lit. a DSGVO), nicht auf den Behandlungsvertrag. §5 verlangt sie
-    ohnehin; entschieden wird hier, dass sie die **Grundlage** ist und nicht
-    nur eine Zusage neben ihr. Grund: Das Foto ist eine **Arbeitshilfe** für
-    Übergabe und Vergleich, nicht die Dokumentation. §630f Abs. 2 BGB
-    verlangt die Aufzeichnung der wesentlichen Maßnahmen und Ergebnisse; das
-    leistet der Eintrag. Daraus folgt die Regel, ohne die diese Einordnung
-    nicht trägt: **Ein Foto ersetzt keinen Eintrag.** Was die Therapeut:in
-    auf einem Foto oder im Vergleich zweier Fotos als wesentlich sieht, steht
-    in Worten in der Dokumentation. ANN-093 stellt die Behandlung nicht auf
-    Einwilligung, weil sie wegen der jederzeitigen Widerrufbarkeit die
-    schwächere Grundlage wäre (Art. 7 Abs. 3 DSGVO); beim Foto ist genau das
-    gewollt — wer widerruft, soll die Fotos loswerden.
-    - **Ein Zweck im vorhandenen Modell**, kein zweites: ein weiterer Wert in
-      `patient_privacy_records` (ANN-093). Papier bleibt Papier (E-13); die
-      Anwendung hält Erteilung und Widerruf mit dem Tag auf dem Papier fest,
-      ein Scan kann als `einwilligung` abgelegt werden. Eine **Ablehnung** ist
-      ein eigener Vermerk, kein Widerruf: Das Modell kennt heute nur Erteilung
-      und Widerruf und bekommt dafür eine dritte Art.
-    - **Umfang**, den der Wortlaut abdecken muss (der Wortlaut selbst geht in
-      B2): Aufnahme durch das Praxisteam während der Behandlung, Ablage bei
-      der Person in der Anwendung — neben der Behandlungsakte nach §630f BGB,
-      nicht in ihr —, Sichtbarkeit nach Punkt 37, Vergleich im Verlauf, Frist
-      nach Punkt 38, Widerruf jederzeit mit Löschung. **Nicht** abgedeckt und
-      nicht gebaut: Weitergabe an Dritte einschließlich der verordnenden
-      Praxis, Veröffentlichung, Schulung, Werbung, jede KI-Verarbeitung.
-    - **Ohne Einwilligung wird genauso behandelt** (Art. 7 Abs. 4 DSGVO). Die
-      Erstaufnahme (PRX-EPIC-003) führt die Fotoeinwilligung deshalb mit
-      „abgelehnt" als erledigtem Stand, nicht als offenem Punkt.
-    - Das Gesicht wird nur aufgenommen, wenn es die betroffene Region ist;
-      der Kameradialog sagt das (Art. 5 Abs. 1 lit. c DSGVO).
-
-    *Vermerk 2026-10-02 (Fassung 3): **Umkehr in einem
-    Punkt.** Fassung 2 stellte jedes Foto der Person auf Einwilligung; in der
-    Abnahme vom 2026-10-02 hat Jannes entschieden, dass medizinisch
-    notwendige Dokumentationsfotos zur Akte gehören (BEF-106, ANN-126). Dieser
-    Punkt gilt deshalb nur noch für die **Foto-Arbeitshilfe**
-    (`patientenfoto`); das Dokumentationsfoto regeln die Punkte 43 bis 48.
-    Der Wortlaut oben bleibt stehen.*
-36. **Die Einwilligung prüft der Server, der Widerruf sperrt sofort.** Die
-    Prüfung sitzt in **einer** Funktion, die Vorbereitung und Bestätigung des
-    Uploads (Punkt 7), die Liste und die Verweisausstellung (Punkt 15)
-    gleichermaßen fragen — nicht in der Oberfläche (§4.7). Neue Fotos setzen
-    voraus, dass die jüngste Zeile des Zwecks eine Erteilung ist. Für ein
-    vorhandenes Foto gilt: **Es ist gesperrt und fällig, sobald nach seiner
-    Aufnahme ein Widerruf vermerkt ist** — gleich, ob danach eine neue
-    Einwilligung folgt; die neue gilt nur für neue Fotos.
-    - **Was sofort wirkt**, in derselben Transaktion wie der Vermerk: die
-      Sperre auf allen vier Wegen, das Löschen der Zeilen und die
-      Löschaufträge für die Objekte (Art. 17 Abs. 1 lit. b DSGVO). Das Objekt
-      selbst entfernt danach der Weg aus Punkt 25 mit Quittung; bis dahin ist
-      es ohne Zeile nicht erreichbar, und der offene Auftrag ist sichtbar. Wie
-      lange ein Auftrag höchstens warten darf, ist die offene Folgefrage zu
-      Punkt 25.
-    - **Die Löschung schreibt ins Löschjournal** (`deletion_journal`,
-      ANN-031) wie der Löschlauf, damit sie nach einer Wiederherstellung
-      erneut angewendet wird (Punkt 26, ADR-008 Punkt 8). **Grenze:** Ein
-      Widerrufsvermerk, der nach der letzten Datenbanksicherung entstand,
-      geht mit einer Wiederherstellung verloren, und die Einwilligung gälte
-      wieder als erteilt. Das Papier bleibt die Quelle (E-13); das
-      Wiederherstellungsverfahren (OPS-003) trägt Vermerke aus dem
-      RPO-Fenster nach.
-    - Den Widerruf vermerkt, wer Vermerke schreiben darf, auch `office`. Die
-      Löschung ist die Rechtsfolge der Erklärung der Person, nicht die
-      Ausübung des Löschrechts aus Punkt 37.
-    - Steht ein **Legal Hold** (Punkt 24, ANN-033), bleiben die Fotos
-      gesperrt — keine Anzeige, kein Verweis — und werden gelöscht, sobald er
-      endet (Art. 17 Abs. 3 lit. e DSGVO).
-
-    *Vermerk 2026-10-02 (Fassung 3): Der Widerruf wirkt nur
-    auf Foto-Arbeitshilfen. Er hebt weder eine gesetzliche Aufbewahrungspflicht
-    noch einen Legal Hold auf, und Dokumentationsfotos berührt er nicht
-    (Punkt 46).*
-37. **Rollenschnitt: klinisch.** Aufnehmen und löschen dürfen `owner`,
-    `therapist` und `team_lead` (Punkt 13) — ein misslungenes Foto sofort,
-    jedes andere jederzeit. Lesen folgt §4.3: `office` sieht Patientenfotos
-    wie jeden klinischen Inhalt, jeder Zugriff ist auditiert; wer das enger
-    will, ändert §4.3 und nicht diesen ADR. Das Foto gehört zum
-    **Behandlungsverhältnis** (§4.8, ADR-021): Im Training gibt es in V1 keine
-    Fotos, und eine Übernahme dorthin ist nicht vorgesehen. Auf der Plattform
-    für Patient:innen (§4.6) erscheinen Patientenfotos in V1 nicht; das zu
-    ändern wäre eine eigene Entscheidung.
-    *Vermerk 2026-10-10 (Fassung 5): Anhänge an Rückfragen gibt es auch im
-    Training; sie sind keine Fotos der Praxis (Punkt 59).*
-38. **Frist: zwölf Monate nach der Aufnahme, spätestens drei Monate nach
-    Abschluss der Versorgung.** Die neue Datenklasse **`patientenfoto`**
-    steht im Retention Schedule (LOE-001a). Fällig ist ein Foto zum
-    **frühesten** von drei Zeitpunkten: zwölf Monate nach der Aufnahme, drei
-    Monate nach dem festgehaltenen Abschluss der Versorgung, Widerruf nach
-    Punkt 36.
-    - **Anker des Abschlusses ist `care_concluded_at`**, der Zeitpunkt, zu
-      dem die Praxis den Abschluss festhält — nicht der fachliche Tag
-      `care_concluded_on`. Der darf zurückdatiert werden (ANN-032); ein um
-      vier Monate zurückdatierter Abschluss machte sonst jedes Foto sofort
-      fällig, und der Puffer für einen versehentlichen Abschluss wäre keiner.
-    - **Zwei Anker, eine Stelle.** Die Klassenzeile kennt heute einen Anker
-      und ein Intervall. Sie bekommt eine **optionale Obergrenze** — einen
-      zweiten Anker mit eigenem Intervall —, damit beide Zahlen in der Zeile
-      stehen und keine im Code (ANN-001).
-    - Der Löschlauf (`apply_retention`) löscht fällige Zeilen
-      **automatisch** und schreibt die Löschaufträge; die Objekte folgen
-      über Punkt 25. Ein Legal Hold hält an. Jedes Foto zeigt das Datum, an
-      dem es spätestens gelöscht wird.
-    - **Keine Verlängerung in V1**: Wer nach einem Jahr noch vergleichen
-      will, macht ein neues Foto; was das alte gezeigt hat, steht nach Punkt
-      35 im Eintrag.
-
-    *Vermerk 2026-10-02 (Fassung 3): Die Frist gilt nur für
-    die Foto-Arbeitshilfe. Ein Dokumentationsfoto hat die Frist der Akte
-    (Punkt 45).*
-
-    Zu den Zahlen: Übergabe und Vergleich gehören zur laufenden Versorgung.
-    Zwölf Monate decken eine Rehabilitation nach Operation mit mehreren
-    Folgeverordnungen; die Grenze ab Aufnahme hält die Frist auch dann kurz,
-    wenn niemand die Versorgung abschließt — der Abschluss ist ein Vorgang
-    von Hand (ANN-032). Drei Monate nach dem Abschluss fangen die Pause
-    zwischen zwei Verordnungen und einen versehentlichen, zurückgenommenen
-    Abschluss ab. Beide Zahlen sind nach ADR-008 interne
-    Initialentscheidungen, die der DSFA-Prozess validiert.
-39. **Vergleich ohne Bewertung.** Zwei Fotos derselben Person nebeneinander,
-    gleich groß, jedes mit Aufnahmedatum, Anzeigename und aufnehmender Person
-    — mehr nicht. Der Vergleich öffnet zwei Fotos und stellt damit zwei
-    Verweise aus, also zwei Auditeinträge (Punkte 20 und 21). **Jede Aussage
-    über den Unterschied** („Schwellung geringer") ist nach §17 und ADR-006
-    Punkt 11 unzulässig, gleich ob als Text, Farbe oder Symbol. **Diese
-    Fassung schließt zusätzlich** jede automatische Ausrichtung,
-    Überlagerung, Vermessung oder Markierung im Bild aus — nicht weil ADR-006
-    sie verböte, sondern aus Datensparsamkeit: Ohne technische Auswertung
-    bleiben die Fotos außerhalb der biometrischen Daten (Erwägungsgrund 51
-    DSGVO; Gesundheitsdaten bleiben sie), und eine Messung im Bild wäre der
-    erste Schritt zu einer abgeleiteten Aussage. Die Bewertung trifft die
-    Therapeut:in und schreibt sie in den Eintrag. Patientenfotos gehen
-    **nie** an das AI Gateway (ADR-005, „Bewusst nicht Bestandteil" unten) —
-    auch nicht in die Erkennung des Verordnungsfotos aus KI-EPIC-002, die nur
-    Dokumente sieht.
-40. **Anzeige nur in der Anwendung, keine Galerie, kein Download.** Ein
-    Patientenfoto wird im eigenen Rahmen angezeigt (Punkt 19) und **nicht zum
-    Herunterladen oder Teilen angeboten**.
-    - **Der Anzeigeweg ist festgelegt**, weil der vorhandene das Gegenteil
-      täte: Heute signiert die Dateiliste mit dem Anzeigenamen als
-      Downloadnamen und öffnet den Verweis in einem neuen Fenster — die
-      Antwort käme als Anhang und läge im Download-Ordner des Handys. Für
-      `patientenfoto` gilt: Verweis **ohne** Downloadnamen, Laden per `fetch`
-      mit `cache: 'no-store'` in den Speicher der Seite, Anzeige aus einer
-      Objekt-URL, die beim Schließen freigegeben wird; nie ein Fenster auf
-      den Verweis. `no-store` ist dabei eine Anweisung an den Browser, nicht
-      die Kopfzeile aus Punkt 16: Der Browser liest die Antwort nicht aus
-      seinem Zwischenspeicher und legt sie dort nicht ab.
-    - Die Liste zeigt Datum, Anzeigename, aufnehmende Person und Löschdatum —
-      **keine Vorschaubilder**: Eine Vorschau je Eintrag wäre ein Verweis je
-      Eintrag, und Punkt 15 verbietet Verweise auf Vorrat für eine Liste.
-    - **Die einzige Herausgabe ist die an die Person selbst**: eine Kopie
-      nach Art. 15 Abs. 3 DSGVO und, weil die Einwilligung die Grundlage ist,
-      die Herausgabe nach Art. 20 DSGVO. Das tut `owner` im Verfahren der
-      Betroffenenrechte (OPS-006), auditiert. Die vorhandene Auskunft führt
-      Dateien heute ohne Inhalt; den Weg dafür legt der Bau fest
-      (Folgefragen).
-    - **Ein Bildschirmfoto kann eine Webanwendung nicht verhindern** — das
-      gehört so in die Verfahrensbeschreibung, wie Punkt 21 die Grenze der
-      Protokollierung benennt, und in die Endgeräte-Richtlinie aus
-      BETRIEB-001.
-41. **Gebaut wird mit synthetischen Bildern, scharfgeschaltet nach B2.** In
-    Tests liefert Chromium eine künstliche Kamera mit Testbild; ein Foto
-    einer echten Person — auch aus dem Team — gehört nicht in Tests,
-    Bildschirmfotos oder die Test-Umgebung (§3.1). Bei der Sichtung am Handy
-    wird ein Gegenstand fotografiert. Mit echten Personen wird die Funktion
-    erst eingeschaltet, wenn B2 Wortlaut und Einordnung der Einwilligung
-    (Punkt 35) und die Frist (Punkt 38) geprüft hat und die DSFA (ADR-007,
-    G14) die Verarbeitung enthält — zusätzlich zu den Bedingungen aus Punkt 2
-    und 26. Das Bauen wartet darauf nicht (§15.2).
-42. **Weiter nicht freigegeben:** Videos und Audio von Patient:innen, Fotos
-    im Trainingsverhältnis, Uploads durch Patient:innen oder über die
-    Plattform (dann gilt Punkt 29), Anhänge im Teamchat, Versand aus der
-    Anwendung. **Bilder, die Patient:innen der Praxis auf anderem Weg
-    schicken**, werden in V1 nicht abgelegt — weder als `patientenfoto`, das
-    nur im Kameradialog entsteht, noch als `klinisches_bild`, das aus
-    ärztlicher Hand stammt. Was sie zeigen, gehört in den Eintrag.
-    *Vermerk 2026-10-10 (Fassung 5): Ausgenommen sind Foto und Video, die
-    die Person in der Anwendung an ihre Rückfrage hängt (Abschnitt L); für
-    alles andere gilt der Punkt unverändert.*
-    *Vermerk 2026-10-18 (Fassung 7): „dann gilt Punkt 29“ entfällt; eine
-    Freigabe braucht keine Virenprüfung mehr.*
-    *Vermerk 2026-10-18 (Fassung 8): Fotos und PDF im Teamchat gibt Abschnitt M
-    frei; Video und Ton bleiben auch dort ausgeschlossen.*
-    *Vermerk 2026-10-18 (Fassung 9): Sprachnachrichten im Teamchat gibt
-    Abschnitt N frei; Video bleibt dort ausgeschlossen, Video und Audio von
-    Patient:innen überall.*
+31. **Dokument oder Person.** Ein Foto eines Dokuments (Verordnung, Anamnesebogen, Einwilligung) ist
+    eine Datei nach A bis F, mit seiner Art, Klasse `patientenakte`, neu nur Aufnahme und Metadaten
+    (Punkte 33, 34). Was die Praxis von der Person aufnimmt (Körperregion, Haltung, Narbe), ist ein
+    Foto der Person, auch mit Dokument im Bild, *(Fassung 3)* nach Punkt 43; `klinisches_bild`
+    bleibt fremde ärztliche Bildgebung.
+32. **Eigener Bucket.** `patientenfoto` nimmt den Weg jeder Datei (Punkte 6 bis 27), mit drei
+    Abweichungen: keine Artkorrektur, kein Downloadname, Klasse nach der Art (Punkte 13, 15, 38).
+    Bucket `patientenfotos`, nur JPEG, höchstens 10 MB, Bezugsdatensatz die Patient:in; falsche Art:
+    löschen, neu aufnehmen. *(Fassung 3)* Punkte 45, 47.
+33. **Nur der Kameradialog** (`getUserMedia`, nur Bild), ohne Dateiwähler, auch bei verweigerter
+    Kamera, nie `<input type="file" capture>` (W3C HTML Media Capture). Bis zum Upload nur im
+    Arbeitsspeicher (ADR-001 Punkt 2): ohne Verbindung kein Foto, bei Fehler Hinweis und
+    Wiederholung, solange die Seite offen ist, Warnung vor dem Verlassen (§13); die Kamera läuft nur
+    im offenen Dialog bis zum Auslösen. Dokumentfotos: Kameradialog angeboten, Dateiwähler bleibt
+    (§5: SOLLTE). Permissions-Policy für die eigene Herkunft in jeder Auslieferung samt
+    `scripts/testumgebung.mjs` (ganzer Wert getestet): `camera=(self)`, Mikrofon gesperrt, *(Fassung
+    9, Frage 34)* `microphone=(self)` (Punkt 83); Zahlung und USB gesperrt; Diktat (§6.3) nur mit
+    eingerichtetem Gateway. Die Herkunft prüft kein Server (ANN-053; Punkt 28).
+34. **Keine Aufnahmemetadaten.** Kamerabilder entstehen aus Pixeln ohne EXIF, XMP, IPTC (kein Ort,
+    Gerät, Zeit, Vorschaubild); JPEG und PNG aus dem Dateiwähler verlieren vor dem Upload
+    verlustfrei ihre Metadatensegmente bis auf die Ausrichtung (Farbprofil: Punkt 53). Prüfsumme
+    über die bereinigten Bytes; Ort und Gerät hält niemand fest (§20). Tests belegen es (Bild mit
+    Ort und Vorschaubild, Kamerabild ohne EXIF); PDF bleibt unverändert.
+35. **Einwilligung als Grundlage** der Arbeitshilfe, eigen und ausdrücklich (Art. 9 Abs. 2 lit. a
+    DSGVO), nicht der Behandlungsvertrag, *(Fassung 3)* nicht beim Dokumentationsfoto. Ein Foto
+    ersetzt keinen Eintrag (§ 630f Abs. 2 BGB), Wesentliches steht in Worten darin; der Widerruf
+    (Art. 7 Abs. 3 DSGVO) beseitigt die Fotos. Zweck in `patient_privacy_records` (ANN-093), Papier
+    bleibt Quelle (E-13): Vermerk mit dem Tag des Papiers, Scan als `einwilligung`, Ablehnung als
+    dritter Vermerk (ANN-127). Der Wortlaut (B2) deckt Aufnahme im Team, Ablage neben der Akte,
+    Sichtbarkeit, Vergleich, Frist, Widerruf mit Löschung; nicht abgedeckt und nicht gebaut:
+    Weitergabe (auch an Verordnende), Veröffentlichung, Schulung, Werbung, KI. Ohne Einwilligung
+    gleiche Behandlung (Art. 7 Abs. 4 DSGVO), die Erstaufnahme (PRX-EPIC-003) führt „abgelehnt“ als
+    erledigt. Gesicht nur als betroffene Region, der Dialog sagt es (Art. 5 Abs. 1 lit. c DSGVO).
+36. **Server prüft, Widerruf sperrt.** Eine Prüfung (`app.patient_photo_accessible`) für
+    Vorbereitung, Bestätigung, Liste, Verweis, nicht in der Oberfläche (§4.7). Neue Fotos brauchen
+    eine Erteilung als jüngsten Vermerk; ein Foto mit späterem Widerruf ist gesperrt und fällig,
+    auch bei neuer Einwilligung. In derselben Transaktion: Sperre auf allen vier Wegen, Zeilen und
+    Löschaufträge (Art. 17 Abs. 1 lit. b DSGVO), `deletion_journal` (ANN-031); Objekt nach Punkt 25.
+    Geht ein Widerruf durch Wiederherstellung verloren, trägt OPS-003 ihn vom Papier nach (E-13).
+    Vermerken darf auch `office`; die Löschung folgt der Erklärung, nicht Punkt 37. Unter Legal Hold
+    gesperrt, gelöscht mit seinem Ende (Art. 17 Abs. 3 lit. e DSGVO). *(Fassung 3)* Punkt 46.
+37. **Klinische Rollen:** Aufnehmen, löschen jederzeit `owner`, `therapist`, `team_lead` (Punkt 13;
+    *(Fassung 3)* Dokumentationsfoto: Punkt 48); `office` liest wie Klinisches, enger nur über §4.3.
+    Fotos gehören zur Behandlung (§4.8, ADR-021), in V1 nicht zu Training und Plattform (§4.6).
+38. **Frist** *(Fassung 3: nur der Arbeitshilfe)*: zwölf Monate nach Aufnahme, spätestens drei
+    Monate nach Abschluss der Versorgung oder mit dem Widerruf; Klasse `patientenfoto`, Anker
+    `care_concluded_at`, nicht der zurückdatierbare `care_concluded_on` (ANN-032), Obergrenze per
+    `app.retention_upper_interval` (ANN-001). `apply_retention` löscht automatisch, Legal Hold hält
+    an, Löschdatum sichtbar; keine Verlängerung in V1; Zahlen validiert die DSFA (ADR-008).
+39. **Vergleich ohne Bewertung:** zwei Fotos derselben Person gleich groß nebeneinander, nur mit
+    Datum, Name, aufnehmender Person; keine Aussage zum Unterschied (§17, ADR-006 Punkt 11), keine
+    automatische Ausrichtung, Überlagerung, Vermessung, Markierung (Erwägungsgrund 51 DSGVO). Nie an
+    das AI Gateway (ADR-005), auch nicht zur Verordnungserkennung (KI-EPIC-002).
+40. **Nur in der Anwendung:** keine Galerie, kein Download, kein Teilen; Verweis ohne Downloadnamen,
+    `fetch` mit `cache: 'no-store'`, Anzeige aus einer Objekt-URL, beim Schließen freigegeben, kein
+    Fenster. Liste: Datum, Name, aufnehmende Person, Löschdatum, keine Vorschau. Einzige Herausgabe
+    an die Person (Art. 15 Abs. 3, Art. 20 DSGVO) durch `owner` (OPS-006) als Einzeldatei,
+    `patient_file.handed_out` (ANN-128). Bildschirmfotos: Verfahrensbeschreibung, BETRIEB-001.
+41. **Synthetisch gebaut,** mit Chromiums künstlicher Kamera; kein Foto echter Personen in Tests,
+    Bildschirmfotos, Test-Umgebung (§3.1). Echte Personen erst nach B2 (Einwilligung, Frist) und
+    DSFA (ADR-007, G14), dazu Punkte 2, 26; das Bauen wartet nicht (§15.2).
+42. **Weiter nicht frei:** Video und Audio von Patient:innen, Fotos im Training, Uploads durch
+    Patient:innen oder über die Plattform, Video im Teamchat, Versand; geschickte Bilder legt die
+    Praxis in V1 nicht ab, ihr Inhalt gehört in den Eintrag. Ausnahmen: L, M; N gibt nur Ton aus dem
+    Team frei, Audio von Patient:innen bleibt überall aus.
 
 ### H. Drei Arten von Fotos (Fassung 3)
-
-**Anlass.** In der Abnahme vom 2026-10-02 hat Jannes ANN-126 geändert (BEF-106):
-Medizinisch notwendige Fotos gehören zur Akte, mit deren Frist; die kurzen
-Fristen und der Widerruf gelten nur für zusätzliche, vorübergehende
-Arbeitshilfen; ein Widerruf hebt weder gesetzliche Aufbewahrungspflichten
-noch einen Legal Hold auf. Das ist die Alternative, die Fassung 2 unter
-Bestätigungsfrage 9 selbst benannt hat, und die verbreitetere Lesart in den
-dort zitierten Quellen. Fassung 3 führt sie nicht als Ersatz ein, sondern
-**neben** der Arbeitshilfe: Beide Zwecke gibt es in der Praxis.
-
-43. **Drei Arten, eine Grenze je Zweck.**
-    - **Foto eines Dokuments** — unverändert nach Punkt 31: bisherige
-      Dokumentart, Klasse `patientenakte`.
-    - **Dokumentationsfoto** — neue Dokumentart **`dokumentationsfoto`**: ein
-      Foto, das die Praxis von der Person aufnimmt, weil es für die
-      Dokumentation der Behandlung **erforderlich** ist — der Ausgangsbefund
-      einer Fehlstellung, eine Wunde oder Narbe im Verlauf, eine Schwellung,
-      die den Behandlungsplan bestimmt. Es ist **Teil der Akte** nach § 630f
-      BGB.
-    - **Foto-Arbeitshilfe** — die bisherige Art `patientenfoto`, in der
-      Oberfläche künftig „Arbeitshilfe": ein Foto für Übergabe und Vergleich,
-      das die Dokumentation nicht braucht. Für sie gelten die Punkte 35 bis 38
-      unverändert.
-      *Vermerk 2026-10-09 (Fassung 4): Eine neue Arbeitshilfe entsteht nicht
-      mehr; Punkt 57.*
-
-    Die Grenze ist der Zweck, nicht das Motiv: Dieselbe Narbe kann
-    Dokumentationsfoto oder Arbeitshilfe sein. Ob ein Foto für die
-    Dokumentation erforderlich ist, entscheidet die Therapeut:in fachlich,
-    wie bei jedem anderen Inhalt der Akte; die Anwendung prüft das nicht.
-    Fremde Bilder (`klinisches_bild`) bleiben nach Punkt 31 außen vor.
-44. **Die Wahl fällt vor der Aufnahme, ohne Vorauswahl.** Der Kameradialog
-    fragt, bevor die Kamera startet: „Teil der Dokumentation (Akte, zehn
-    Jahre)" oder „Arbeitshilfe (höchstens zwölf Monate, nur mit
-    Einwilligung)". Keine der beiden ist vorbelegt (dasselbe Muster wie
-    ANN-129 und BEF-059). Ohne erteilte Foto-Einwilligung ist nur die erste
-    Wahl möglich; die zweite steht mit dem Grund da, nicht ausgeblendet. Den
-    Wortlaut legt der Bau als Annahme fest.
-    *Vermerk 2026-10-09 (Fassung 4): Entfällt; es wird nicht gefragt
-    (Punkt 56).*
-45. **Das Dokumentationsfoto folgt der Akte.**
-    - **Grundlage** ist die Behandlung: Art. 9 Abs. 2 lit. h DSGVO in
-      Verbindung mit § 22 Abs. 1 Nr. 1 lit. b BDSG — wie die Behandlung
-      selbst, die nach ANN-093 keine Einwilligung braucht. Es braucht
-      **keine Einwilligung**; die
-      Prüfung aus Punkt 36 gilt für diese Art nicht. Die Einordnung geht in
-      B2 und blockiert das Bauen nicht (§15.2).
-    - **Klasse `patientenakte`**, zehn Jahre nach Abschluss der Versorgung
-      (Punkt 23 gilt wieder ohne Ausnahme, Anker `care_concluded_on`), Legal
-      Hold nach Punkt 24.
-    - **Bucket `patientenakte`.** Punkt 3 trennt Buckets nach Datenklasse,
-      nicht nach Art; ein eigener Bucket hätte keinen eigenen Löschweg. Die
-      engere Allowlist — **nur JPEG** — setzt die Vorbereitung des Uploads je
-      Art durch (Punkt 7 a), wie heute für `patientenfoto`.
-    - **Derselbe Weg wie die Arbeitshilfe** in allem außer Grundlage, Frist
-      und Bucket: nur über den Kameradialog (Punkt 33), keine
-      Aufnahmemetadaten (Punkt 34), Vergleich ohne Bewertung (Punkt 39),
-      Anzeige ohne Download, keine Vorschaubilder (Punkt 40), nie an das AI
-      Gateway, Bezugsdatensatz die Patient:in (Punkt 32), Rollenschnitt
-      klinisch (Punkt 37), nicht im Training, nicht auf der Plattform in V1.
-      Das Gesicht nur, wenn es die betroffene Region ist (Punkt 35).
-    - **Auch ein Dokumentationsfoto ersetzt keinen Eintrag** (§5, §17): Was
-      es zeigt und wie es zu bewerten ist, steht in Worten im Eintrag; das
-      Foto belegt, der Eintrag sagt.
-46. **Der Widerruf wirkt nur auf Arbeitshilfen.** Widerruft die Person ihre
-    Foto-Einwilligung, gilt Punkt 36 für ihre Arbeitshilfen, nicht für ihre
-    Dokumentationsfotos. Verlangt sie die Löschung eines Dokumentationsfotos,
-    beantwortet das Verfahren der Betroffenenrechte (OPS-006) das Verlangen
-    wie für jeden Inhalt der Akte: Die Aufbewahrungspflicht geht vor (Art. 17
-    Abs. 3 lit. b DSGVO). Ein Legal Hold hält beide Arten an.
-47. **Keine Korrektur zwischen den Arten**, in keine Richtung (Punkt 32
-    gilt für beide Fotoarten). Aus einer Arbeitshilfe wird kein
-    Dokumentationsfoto: Das verlängerte die Frist von einem Jahr auf zehn,
-    gestützt auf eine Einwilligung, die für ein Jahr gegeben wurde. Wer
-    nachträglich merkt, dass ein Foto zur Dokumentation gehört, nimmt ein
-    neues auf; geht das nicht mehr, steht der Befund in Worten im Eintrag.
-48. **Löschen eines Dokumentationsfotos nur am Tag der Aufnahme.** Am
-    Aufnahmetag darf die aufnehmende Person — oder `owner` — eine
-    Fehlaufnahme löschen, protokolliert wie jede Löschung (Punkt 20). Danach
-    ist das Foto Teil der Dokumentation und wird nur noch vom Löschlauf
-    entfernt: § 630f Abs. 1 BGB verlangt, dass der ursprüngliche Inhalt
-    erkennbar bleibt, und ADR-016 lässt finalisierte Dokumentation nicht
-    verschwinden. Für die Arbeitshilfe bleibt es bei Punkt 37 (jederzeit).
+43. **Drei Arten nach Zweck:** Foto eines Dokuments (Punkt 31); `dokumentationsfoto`, für die
+    Dokumentation erforderlich (Ausgangsbefund, Wunde, Narbe, Schwellung), Teil der Akte (§ 630f
+    BGB); Arbeitshilfe (`patientenfoto`) für Übergabe, Vergleich, Punkte 35 bis 38, *(Fassung 4)*
+    keine neue. Den Zweck wählt die Therapeut:in fachlich; die DSFA (G14) bewertet beide getrennt.
+44. *Entfallen (Fassung 4):* die Wahl der Fotoart vor der Aufnahme (Punkt 56).
+45. **Dokumentationsfoto zur Akte.** Grundlage die Behandlung (Art. 9 Abs. 2 lit. h DSGVO, § 22
+    Abs. 1 Nr. 1 lit. b BDSG, ANN-093), keine Einwilligung, nicht Punkt 36; Einordnung in B2
+    (§15.2). Klasse und Bucket `patientenakte` (Punkte 23, 24), nur JPEG (Punkt 7a); sonst wie die
+    Arbeitshilfe (Punkte 32 bis 34, 37, 39, 40; Gesicht: 35). Ersetzt keinen Eintrag (§5, §17).
+46. **Widerruf nur für Arbeitshilfen;** Löschverlangen zu Dokumentationsfotos beantwortet OPS-006:
+    Die Aufbewahrungspflicht geht vor (Art. 17 Abs. 3 lit. b DSGVO). Legal Hold hält beide.
+47. **Keine Korrektur zwischen den Arten,** in keine Richtung; was nachträglich zur Dokumentation
+    gehört, wird neu aufgenommen oder in Worten eingetragen.
+48. **Löschen am Aufnahmetag:** nur dann die aufnehmende Person oder `owner` (Fehlaufnahme,
+    Punkt 20), danach nur der Löschlauf (§ 630f Abs. 1 BGB, ADR-016).
 
 ### I. Prüfung am Server und Farbe (Fassung 3)
-
-**Anlass.** ANN-053 und ANN-125 hat Jannes in der Abnahme geändert (BEF-105):
-Der Dateityp wird am **Inhalt** geprüft, nicht am MIME-Typ, den Browser und
-Speicher angeben; die Prüfsumme aus dem Browser gilt als „nicht serverseitig
-verifiziert", solange der Server sie nicht nachrechnet; die Metadatenfreiheit
-wird zusätzlich am Server abgesichert; Ausrichtung **und** Farbdarstellung
-bleiben erhalten.
-
-49. **Phase (c) bekommt eine Prüfung am Inhalt.** Nach der Bestätigung aus
-    Punkt 7 liest ein serverseitiger Vorgang das Objekt und prüft drei Dinge:
-    (1) den **Typ an der Signatur** der ersten Bytes gegen die Allowlist
-    (Punkt 18 und 45) und gegen die Ankündigung, (2) die **SHA-256**,
-    nachgerechnet über die abgelegten Bytes, gegen die angekündigte
-    Prüfsumme, (3) bei JPEG und PNG die **Metadatenfreiheit** nach derselben
-    Erlaubnisliste, nach der das Gerät bereinigt (Punkt 34, ANN-125). Das
-    Ergebnis steht in der Zeile aus Punkt 6: geprüft am und Ergebnis je
-    Prüfung. Erst damit ist die Prüfsumme aus Punkt 9 ein Nachweis des
-    Servers und nicht mehr eine Erklärung des Browsers.
-50. **Ausführungsort ist eine Edge Function desselben Projekts**
-    (`patient-file-verify`). Das ist kein neuer Anbieter (Punkt 2), aber die
-    Edge Runtime, die ADR-015 Punkt 20 für Gesundheitsdaten nicht
-    automatisch freigibt — dieselbe Lage wie beim Kartendienst (ADR-019
-    Punkt 15) und beim Zugangsdienst (ADR-023). Deshalb: **gebaut ja, scharf
-    mit OPS-001.** Die Function liest mit dem Service-Schlüssel, den nur sie
-    hat, schreibt nur das Prüfergebnis und loggt nur Dateikennung,
-    Ergebnisklasse und Dauer (ADR-011) — nie Bytes, Namen oder
-    Objektschlüssel. Sie ist zugleich der Ort, an dem später die
-    Virenprüfung aus Punkt 29 läuft; der Ablauf dort (kein `ready`, Objekt
-    gelöscht, Auditeintrag, Meldung) ist derselbe wie in Punkt 52.
-    *Vermerk 2026-10-18 (Fassung 7): Eine Virenprüfung läuft hier nie
-    (Punkt 29); die Function prüft nur am Inhalt.*
-    *Vermerk 2026-10-19 (Fassung 10): Ein Profilbild prüft die Datenbank selbst, in der
-    Transaktion, die es ablegt (Punkt 90).*
-51. **Bis zur Prüfung ist eine Datei als „nicht serverseitig geprüft"
-    gekennzeichnet**, sichtbar an der Datei. In Umgebungen ohne Edge Runtime
-    — die Cloud-Entwicklungsumgebung, die Test-Umgebung mit synthetischen
-    Daten — bleibt es dabei, und die Datei ist trotzdem `ready`. **Mit dem
-    Scharfschalten wird die Prüfung Bedingung für `ready`**: ein benannter
-    Schalter an genau einer Stelle, der in die Go-live-Vorbedingungen
-    (ADR-007 Punkt 5) gehört, wie der Schalter des Kartendienstes (ANN-094).
-    Ohne ihn wäre die Prüfung eine Zusage, die eine ausgefallene Function
-    still bricht.
-    *Vermerk 2026-10-19 (Fassung 10): Für Profilbilder gibt es diesen Zustand nicht; sie sind
-    von Anfang an geprüft (Punkt 90).*
-52. **Ein Befund der Prüfung heißt Verwerfen, nicht Nachbessern.** Passt der
-    Typ nicht, weicht die Prüfsumme ab oder stehen Metadaten außerhalb der
-    Erlaubnisliste im Bild, wird die Datei nicht `ready` (oder gesperrt, wenn
-    sie es nach Punkt 51 schon war), das Objekt über den Löschauftrag
-    entfernt (Punkt 25), ein Auditeintrag `patient_file.verification_failed`
-    geschrieben und die hochladende Person informiert. Der Server **schreibt
-    keine Bytes um**: Eine Bereinigung am Server änderte die abgelegte
-    Fassung nach der Prüfsumme (Punkt 8 und 9), und ein Rest an Metadaten ist
-    ein Fehler des Geräts oder ein gesteuerter Browser — beides soll
-    auffallen, nicht still repariert werden.
-53. **Farbe: sRGB vor dem Entfernen.** Bilder aus dem Kameradialog entstehen
-    in sRGB und tragen kein Profil (Punkt 34); für sie ändert sich nichts.
-    Trägt ein Bild aus dem Dateiwähler ein **eingebettetes Farbprofil**,
-    rechnet das Gerät es vor dem Entfernen der Metadaten **nach sRGB um**
-    und kodiert es neu; danach braucht es kein Profil mehr und wird richtig
-    dargestellt. Ohne Profil bleibt es bei Punkt 34: Bilddaten byte-gleich.
-    Das ist eine **begrenzte Ausnahme** von „verlustfrei" in Punkt 34 — nur
-    bei vorhandenem Profil, denn ohne Umrechnung zeigt ein Weitraumbild
-    falsche Farben, und ein Profil zu behalten hieße, Hersteller- und
-    Geräteangaben aus seinem Kopf mitzunehmen (ANN-125). Die Ausrichtung
-    bleibt in beiden Fällen erhalten. Die Prüfsumme wird wie bisher über die
-    abgelegten Bytes gebildet.
+49. **Prüfung am Inhalt** nach Phase (c): (1) Typ an der Signatur gegen Allowlist (Punkte 18, 45)
+    und Ankündigung, (2) SHA-256 der abgelegten Bytes gegen die angekündigte, (3) bei JPEG und PNG
+    Metadatenfreiheit nach der Liste des Geräts (Punkt 34, ANN-125); Ergebnis an der Zeile
+    (`record_patient_file_verification`).
+50. **Edge Function `patient-file-verify`** desselben Projekts: kein neuer Anbieter, aber Edge
+    Runtime (ADR-015 Punkt 20), daher scharf erst mit OPS-001. Eigener Service-Schlüssel, schreibt
+    nur das Ergebnis, loggt nur Kennung, Ergebnisklasse, Dauer (ADR-011). *(Fassung 7)* Keine
+    Virenprüfung. *(Fassung 10)* Punkt 90.
+51. **Bis dahin gekennzeichnet:** ungeprüft sichtbar „nicht serverseitig geprüft“, ohne Edge Runtime
+    trotzdem `ready`; scharf macht `app.patient_file_verification_required` die Prüfung zur
+    Bedingung (ADR-007 Punkt 5, ANN-094).
+52. **Befund heißt Verwerfen:** Falscher Typ, andere Prüfsumme, fremde Metadaten: nicht `ready` oder
+    gesperrt, Objekt per Löschauftrag weg, die hochladende Person informiert; nie umschreiben
+    (Punkte 8, 9).
+53. **sRGB:** Ein Bild aus dem Dateiwähler mit Farbprofil rechnet das Gerät vor dem Entfernen nach
+    sRGB um und kodiert neu (begrenzte Ausnahme, ANN-125); ohne Profil byte-gleich.
 
 ### J. Öffnen heißt Anzeigen (Fassung 3)
-
-**Anlass.** BEF-059 (UX-Review 2026-09-27): „Öffnen" signiert heute mit dem
-Anzeigenamen als Downloadnamen (Punkt 15) und öffnet ein neues Fenster. Am
-iPhone kommt eine Download-Rückfrage, und die Datei liegt danach im
-Download-Ordner, womöglich in iCloud Drive — das, was Punkt 40 für Fotos
-ausschließt und was Punkt 19 („im eigenen Rahmen der Anwendung") für alle
-Dateien schon meint.
-
-54. **Der Anzeigeweg aus Punkt 40 gilt für alle Arten.** „Öffnen" stellt
-    einen Verweis **ohne** Downloadnamen aus, lädt per `fetch` mit
-    `cache: 'no-store'` in den Speicher der Seite und zeigt im eigenen
-    Rahmen: ein Bild als Bild, ein PDF in einem abgeschotteten Rahmen ohne
-    Skriptrechte, aus einer Objekt-URL, die beim Schließen freigegeben wird.
-    Nie ein Fenster auf den Verweis. Auditiert wird wie bisher die
-    Ausstellung (Punkt 20, 21). Eine neue Bibliothek zum Darstellen von PDF
-    gehört nicht dazu (§15.1); zeigt ein Gerät ein PDF im Rahmen nicht
-    vollständig, bleibt dafür Punkt 55.
-    *Vermerk 2026-10-09 (Fassung 4): Ein PDF zeigt der Rahmen ohne `sandbox`;
-    Punkt 58.*
-55. **Herunterladen ist eine eigene, ausdrückliche Aktion.** Für alle Arten
-    **außer den beiden Fotoarten** gibt es neben „Öffnen" den Knopf
-    „Herunterladen": Er stellt einen eigenen Verweis **mit** Downloadnamen
-    aus, und der Auditeintrag `patient_file.link_issued` trägt dabei das
-    Kennzeichen „Download". Wer ihn tippt, holt die Datei bewusst auf das
-    Gerät — für einen Arztbrief, der gedruckt werden soll. Fotos von
-    Patient:innen bleiben bei Punkt 40: kein Download, einzige Herausgabe
-    an die Person selbst durch `owner` (ANN-128).
+54. **Der Anzeigeweg aus Punkt 40 gilt für alle Arten** (BEF-059), *(Fassung 4)* PDF: Punkt 58;
+    keine neue PDF-Bibliothek.
+55. **Herunterladen** außer `dokumentationsfoto` und `patientenfoto` als eigene Aktion mit
+    Downloadnamen: `patient_file.downloaded`.
 
 ### K. Ein Zweck für Fotos der Person, PDF im Rahmen (Fassung 4)
-
-**Anlass.** In der Abnahme vom 2026-10-09 hat Jannes ANN-221 und ANN-223
-geändert: Ein Foto, das aus der Dokumentation heraus entsteht, ist immer Teil
-der Dokumentation; an Anmeldebogen und Rezept erinnert die Anwendung; andere
-Zwecke gibt es nicht (BEF-135). Ein PDF öffnet in der Anwendung (BEF-133).
-Das ist die Alternative, die Bestätigungsfrage 15 selbst benannt hat („nur
-noch Dokumentationsfotos und keine Arbeitshilfe mehr").
-
-56. **Ein Foto aus der Dokumentation ist ein Dokumentationsfoto.** Der
-    Kameradialog im Verlauf fragt nicht nach dem Zweck; was er aufnimmt, ist
-    ein Dokumentationsfoto nach Punkt 45. Fotos von Anmeldebogen und Rezept
-    entstehen an ihrer eigenen Stelle (Anmeldebogen, Verordnung) als Foto
-    eines Dokuments nach Punkt 31; dort erinnert die Anwendung, solange sie
-    fehlen. Punkt 44 entfällt.
-57. **Keine neue Arbeitshilfe.** Die Vorbereitung eines Uploads weist die Art
-    `patientenfoto` ab, an genau einer Stelle; die Einwilligung zu Fotos wird
-    nicht mehr angeboten. Was als Arbeitshilfe schon liegt (in der
-    Entwicklung nur synthetisch), bleibt nach den Punkten 35 bis 38 bestehen,
-    bis Frist oder Widerruf es löschen — Widerruf und Löschlauf bleiben
-    deshalb, ebenso Art, Klasse und Bucket. Den Schlüssel zu entfernen
-    kostete eine Migration über Katalog, Klassen und Funktionen und gewönne
-    nichts, solange noch eine Arbeitshilfe liegen kann.
-58. **Ein PDF öffnet im Rahmen ohne `sandbox`.** Punkt 54 gilt, aber der
-    Rahmen eines PDF trägt kein `sandbox`: Chromium zeigt ein PDF im
-    abgeschotteten Rahmen nicht (geprüft 2026-10-02, ANN-223). Die Objekt-URL
-    entsteht aus den geladenen Bytes mit **festem Typ `application/pdf`**,
-    nie mit dem Typ des Speichers; der PDF-Betrachter des Browsers läuft in
-    eigenem Ursprung und führt kein Skript der Anwendung aus. Die
-    Content-Security-Policy erlaubt dafür `frame-src blob:` und sonst nichts
-    Neues; `object-src 'none'` bleibt. Punkt 55 bleibt der Ausweg, wenn ein
-    Gerät das PDF im Rahmen nicht vollständig zeigt.
+56. **Fotos aus der Dokumentation** sind Dokumentationsfotos, ohne Rückfrage (BEF-135, ANN-221);
+    Anmeldebogen und Rezept als Foto eines Dokuments an ihrer Stelle, die daran erinnert, solange
+    sie fehlen.
+57. **Keine neue Arbeitshilfe:** `prepare_patient_file_upload` weist `patientenfoto` ab, die
+    Fotoeinwilligung wird nicht mehr angeboten; vorhandene (synthetische) laufen nach Punkten 35 bis
+    38 aus; Widerruf, Löschlauf, Art, Klasse und Bucket bleiben.
+58. **PDF ohne `sandbox`** (BEF-133, ANN-223): Objekt-URL mit festem Typ `application/pdf`; die CSP
+    erlaubt nur zusätzlich `frame-src blob:`, `object-src 'none'` bleibt; Ausweg Punkt 55.
 
 ### L. Foto und Video an einer Rückfrage (Fassung 5)
-
-**Anlass.** KOM-EPIC-002 ([`../development/ROADMAP.md`](../development/ROADMAP.md),
-Block 6) soll eine Rückfrage auf der Plattform um ein Foto oder Video
-ergänzen. §4.6 nennt „Rückfragen mit Foto oder Video“ als Teil des
-Nachsorge-Abos; dieser ADR schließt genau das bisher aus: Patient:innen laden
-nichts hoch (Punkt 14), Videos sind nicht erlaubt (Punkt 18), Uploads über die
-Plattform und Videos sind nicht freigegeben (Punkte 30 und 42), und vor dem
-ersten Upload von außen steht die Virenprüfung (Punkt 29). Den Loop kann
-deshalb keine Annahme freigeben, nur eine Fassung dieses ADR. Sie folgt den
-Mindestanforderungen aus `IDEA-KOM-003` und den Mustern der Abschnitte G bis
-K; neu ist nur, was ein Upload von außen und ein Video verlangen.
-
-59. **Was freigegeben wird.** Die Person — selbst oder ihre gesetzliche
-    Vertretung, nie eine Begleitperson (ADR-023) — hängt an **eine eigene
-    Rückfrage** (KOM-EPIC-001, `platform_messages`) **ein Foto oder ein
-    Video** an, höchstens drei Anhänge je Vorgang. Freigegeben ist das im
-    **Nachsorge-Abo** (§4.6, Stufe 2) und im **Trainingsverhältnis** (§4.10,
-    Rückfragen); **nicht während der Behandlung** (§4.6, Stufe 1: sichere
-    Kommunikation ohne Medien). Die Praxis schickt keine Anhänge zurück; sie
-    antwortet in Worten, auf ein Video auch mit Zeitmarke (Punkt 68). Für
-    diese Anhänge — und nur für sie — sind die Punkte 14, 18, 30, 37 (keine
-    Fotos im Training) und 42 eingeschränkt; für alle übrigen Uploads gelten
-    sie unverändert.
-60. **Eigene Klasse, eigener Bucket, eigene Tabelle — derselbe Weg.** Ein
-    Anhang ist kein Teil der Akte und kein Teil des Trainingsprotokolls,
-    sondern ein Hilfsmittel für eine Antwort. Er bekommt eine eigene
-    Datenklasse **`rueckfrageanhang`**, einen eigenen privaten Bucket (Punkt 3)
-    und eine eigene Fachtabelle; **Bezugsdatensatz ist die Rückfrage**
-    (Punkt 10). Sonst läuft er den Weg jeder Datei: zwei Phasen mit
-    Bestätigung (Punkt 7), unveränderlich (Punkt 8), Prüfsumme (Punkt 9),
-    kurzlebige Verweise ohne Downloadnamen (Punkte 15 bis 17, 54),
-    `cacheControl: '0'`, zweistufige Löschung mit Quittung (Punkt 25),
-    Abgleich (Punkt 27), Prüfung am Server (Punkte 49 bis 52). Der
-    Objektschlüssel trägt nur Kennungen (Punkt 5).
-61. **Grundlage ist eine eigene, ausdrückliche Einwilligung** (Art. 9 Abs. 2
-    lit. a DSGVO) — ein eigener Zweck im vorhandenen Modell
-    (`patient_privacy_records` im Abo, `training_consent_records` im Training;
-    erteilt und widerrufen auf der Plattform wie POR-016), nicht in einer
-    Sammel-Einwilligung. Sie wird angeboten, wenn die Person zum ersten Mal
-    etwas anhängen will; ohne sie bleibt die Rückfrage in Worten möglich
-    (Art. 7 Abs. 4 DSGVO). **Der Widerruf sperrt sofort und löscht alle
-    Anhänge der Person** in derselben Transaktion, mit Löschjournal und
-    Löschaufträgen (Punkt 36 gilt sinngemäß). Den Wortlaut legt der Bau als
-    Annahme fest; er geht in B2.
-62. **Aufnahme nur in der Anwendung, kein Dateiwähler.** Ein Foto entsteht im
-    Kameradialog (Punkt 33), ein Video in einem Aufnahmedialog derselben Art:
-    Live-Bild über `getUserMedia`, Aufnahme mit `MediaRecorder`, **nur Bild,
-    nie Ton** — das Mikrofon bleibt in der Permissions-Policy gesperrt —,
-    **höchstens 30 Sekunden**. Kein Dateiwähler, auch nicht als Ausweg: Er
-    brächte die Mediathek mit ihren Metadaten und fremde Inhalte (Dritte,
-    Bildschirmfotos) in den Weg, und er öffnete die Tür für beliebige
-    Dateien. Bis zum Upload liegt die Aufnahme nur im Arbeitsspeicher der
-    Seite (Punkt 33). Das Gesicht nur, wenn es die Bewegung zeigt; der Dialog
-    sagt das (Punkt 35).
-    *Vermerk 2026-10-18 (Fassung 9): Seit Punkt 83 ist das Mikrofon in der
-    Permissions-Policy der eigenen Herkunft freigegeben, für jede Seite der
-    Anwendung. „Nie Ton“ halten hier weiter drei andere Schichten: Der
-    Aufnahmedialog fragt nur das Bild an (`audio: false`, E2E
-    `tests/e2e/anhaenge.spec.ts`), das Gerät sendet keine Aufnahme mit
-    Tonspur (Punkt 64), und der Server lehnt eine Tonspur ab (Punkt 63).
-    Hat eine Person dem Browser das Mikrofon dauerhaft erlaubt, fragt er
-    nicht noch einmal; dann bleibt gegen fremden Code nur die
-    Content-Security-Policy (`script-src 'self'`).*
-63. **Formate.** Foto: **JPEG**. Video: was der Browser in `MediaRecorder`
-    liefert — **WebM (VP8/VP9) oder MP4 (H.264)** —, ohne Tonspur.
-    Höchstens **10 MB** je Anhang, durchgesetzt am Bucket und bei der
-    Vorbereitung; die Aufnahme begrenzt die Bitrate, damit 30 Sekunden
-    hineinpassen. Der Server prüft die Signatur (Punkt 49) und lehnt eine
-    Tonspur ab.
-64. **Keine Aufnahmemetadaten.** Ein Foto aus Pixeln trägt keine (Punkt 34).
-    Ein Video aus `MediaRecorder` trägt weder Ort noch Gerät; was der
-    Container an Zeit- oder Programmangaben mitbringt, ist am Bau zu prüfen
-    und, wenn vorhanden, auf dem Gerät zu leeren. **Nachgewiesen wird das
-    durch Tests** an Aufnahmen aus Chromium und, bei der Sichtung, am
-    iPhone (Punkt 34 gilt sinngemäß).
-65. **Frist: 30 Tage nach der Aufnahme.** Die Klasse `rueckfrageanhang` hat
-    einen Anker (Aufnahme) und ein Intervall (30 Tage) und steht im Retention
-    Schedule. Der Löschlauf löscht fällige Anhänge automatisch, ein Legal
-    Hold hält an, jeder Anhang zeigt sein Löschdatum. Wird der Vorgang
-    früher gelöscht, gehen die Anhänge mit. **Keine Verlängerung.** Grund:
-    Die Praxis antwortet in Werktagen (KOM-EPIC-001), und ein Anhang soll
-    „nicht liegen bleiben“ (Roadmap). Der Wert ist eine interne
-    Initialentscheidung nach ADR-008, die die DSFA validiert.
-66. **Kein Weg in die Akte oder ins Trainingsprotokoll.** Wird eine
-    Rückfrage der Akte zugeordnet (KOM-004), gehen nur die Worte mit; die
-    Anhänge behalten Klasse und Frist. Was ein Anhang zeigt und was daraus
-    folgt, schreibt die Therapeut:in in Worten in den Eintrag (Punkt 35:
-    ein Bild ersetzt keinen Eintrag). Aus einem Anhang wird kein
-    Dokumentationsfoto (Punkte 47 und 56: das entsteht nur im Kameradialog
-    der Praxis).
-67. **Wer sieht und wer löscht.** Sehen: die Person und ihre gesetzliche
-    Vertretung, **nicht die Begleitperson**; in der Praxis, wer die Rückfrage
-    lesen darf (`app.can_read_platform_message`, also auch `office` nach §4.3
-    und BEF-137). Öffnen ist Anzeigen (Punkt 54): kein Download, kein Teilen,
-    keine Vorschaubilder in Listen (Punkt 40); protokolliert wird nichts
-    Neues, denn das Öffnen des Vorgangs steht schon als `*.viewed` im
-    Protokoll und Anzeigen ist nach ADR-010 Punkt 14 kein Ereignis.
-    Löschen: die Person **jederzeit**; in der Praxis, wer auf die Rückfrage
-    antworten darf, etwa bei einem Anhang, der Dritte zeigt — nachgewiesen
-    am Löschauftrag (`ordered_by`).
-    *Vermerk 2026-10-20 (Fassung 12): Die Kopie an die Person nach Art. 15
-    Abs. 3 DSGVO ist kein Ansehen; sie regelt Punkt 96 und wird protokolliert.*
-68. **Antwort mit Zeitmarke, ohne Bewegungsurteil.** Die Antwort der Praxis
-    kann auf eine Stelle im Video zeigen („bei 0:12“); auf der Plattform
-    springt ein Tipp dorthin. Mehr nicht: **keine Zeichnung ins Bild, kein
-    Einzelbild als neue Datei, keine Gegenüberstellung zweier Aufnahmen**,
-    keine automatische Auswertung (Punkt 39 gilt sinngemäß;
-    `IDEA-KOM-005`). Anhänge gehen **nie** an das AI Gateway (ADR-005,
-    ADR-006).
-69. **Virenprüfung: Bedingung des Scharfschaltens, nicht des Bauens.** Punkt
-    29 bleibt MUSS für jede echte Datei von außen: **Ohne Prüfergebnis wird
-    kein Anhang einer echten Person `ready`.** Nach §15.2 der Prinzipien
-    (Rang 1) darf eine offene Anbieterprüfung aber nicht den Bau anhalten.
-    Deshalb: ein benannter Schalter an genau einer Stelle
-    (`app.message_attachment_scan_required()`), heute aus. Ist er aus, wird
-    ein Anhang mit synthetischen Daten nach den Prüfungen aus Punkt 49 `ready`
-    und ist sichtbar als „nicht auf Schadsoftware geprüft“ gekennzeichnet;
-    ist er an, bleibt er `pending`, bis ein Prüfergebnis vorliegt, und ein
-    Befund verwirft ihn (Punkt 52). **Den Prüfer — Ausführungsort, Anbieter,
-    Kosten — wählt ein eigener ADR** mit Providerprüfung nach ADR-002; das
-    bleibt ein Stopp nach §15.1. Schalter und ADR stehen im Go-live-Gate
-    (ADR-007 Punkt 5). Bis dahin mindern den Weg: Aufnahme nur in der
-    Anwendung (Punkt 62), Signatur und Container am Server (Punkt 63),
-    Anzeige nur im Medienelement des Browsers aus einer Objekt-URL, nie ein
-    Download.
-    *Vermerk 2026-10-12: Den Prüfer schlägt [ADR-026](ADR-026-malware-scanning.md) vor
-    (vorgeschlagen, W1 bis W4 offen).*
-    *Vermerk 2026-10-15 (Fassung 6, Umkehr): Fassung 5 lautete „Ohne
-    Prüfergebnis wird kein Anhang einer echten Person `ready`“ und „Den Prüfer
-    wählt ein eigener ADR“. Beides entfällt: Jannes lässt Anhänge von außen
-    ohne Virenprüfung zu, der Schalter bleibt aus, ADR-026 ist abgelehnt. Die
-    Minderungen dieses Punktes bleiben die Kompensation.*
-    *Vermerk 2026-10-18 (Fassung 7): Auch „Punkt 29 bleibt MUSS für jede echte
-    Datei von außen“ entfällt (Punkt 29).*
-70. **Scharf erst nach** B2 (Einwilligung, Frist, Einordnung des Videos als
-    besonders identifizierend), der DSFA mit dieser Verarbeitung (G14),
-    OPS-001 (Edge Runtime für Punkt 49), OPS-003 (Sicherung des Buckets,
-    Punkt 26) und dem ADR zum Prüfer (Punkt 69). Gebaut wird mit
-    synthetischen Bildern und Videos aus der künstlichen Kamera von Chromium
-    (Punkt 41).
-    *Vermerk 2026-10-15 (Fassung 6): „dem ADR zum Prüfer (Punkt 69)“ entfällt;
-    die übrigen Bedingungen bleiben.*
+59. **Freigabe** (KOM-EPIC-002): Die Person oder ihre gesetzliche Vertretung, nie eine Begleitperson
+    (ADR-023), hängt an die eigene Rückfrage (KOM-EPIC-001) ein Foto oder Video, höchstens drei je
+    Vorgang, im Nachsorge-Abo (§4.6, Stufe 2) und im Training (§4.10), nicht in der Behandlung
+    (Stufe 1). Antwort der Praxis ohne Anhänge. Ausnahme nur hierfür von Punkten 14, 18, 30, 37, 42.
+60. **Eigener Weg:** `platform_message_attachments`, Klasse `rueckfrageanhang`, eigener Bucket,
+    Bezug die Rückfrage; sonst Punkte 5, 7 bis 9, 15 bis 17, 25, 27, 49 bis 52, 54.
+61. **Eigene Einwilligung** (Art. 9 Abs. 2 lit. a DSGVO) als Zweck in `patient_privacy_records`
+    (Abo) und `training_consent_records`, auf der Plattform erteilt und widerrufen (POR-016), beim
+    ersten Anhängen angeboten, nie gesammelt; ohne sie Rückfrage in Worten (Art. 7 Abs. 4 DSGVO).
+    Widerruf löscht sofort alle Anhänge der Person (Punkt 36); Wortlaut als Annahme, B2.
+62. **Nur in der Anwendung:** Foto im Kameradialog, Video im gleichartigen Dialog (`MediaRecorder`),
+    nur Bild, höchstens 30 Sekunden, nur im Arbeitsspeicher, nie Dateiwähler; Gesicht nur, wenn es
+    die Bewegung zeigt; der Dialog sagt es (Punkt 35). *(Fassung 9)* Trotz freiem Mikrofon kein Ton:
+    Dialog (`audio: false`), Gerät, Server (Punkte 63, 64), gegen fremden Code die CSP (`script-src
+    'self'`).
+63. **Formate:** Foto JPEG, Video WebM (VP8/VP9) oder MP4 (H.264) ohne Tonspur, höchstens 10 MB (am
+    Bucket und bei der Vorbereitung durchgesetzt), Bitrate für 30 Sekunden; der Server prüft die
+    Signatur und lehnt Ton ab.
+64. **Keine Metadaten:** Ort, Gerät fehlen; Zeit-, Programmangaben leert das Gerät (Tests, iPhone).
+65. **Frist 30 Tage** nach Aufnahme, automatisch, Legal Hold hält an, Löschdatum sichtbar, fällt mit
+    dem Vorgang, keine Verlängerung; die DSFA validiert (ADR-008).
+66. **Nicht in Akte oder Trainingsprotokoll:** Bei Zuordnung (KOM-004) gehen nur die Worte mit; was
+    ein Anhang zeigt, schreibt die Therapeut:in in Worten in den Eintrag (Punkt 35); Anhänge
+    behalten Klasse und Frist, werden kein Dokumentationsfoto.
+67. **Sehen und Löschen:** Sehen: Person und gesetzliche Vertretung, nie Begleitperson; in der
+    Praxis, wer die Rückfrage lesen darf (`app.can_read_platform_message`, auch `office`, BEF-137).
+    Öffnen ist Anzeigen ohne Download, Teilen, Vorschau, ohne neues Protokoll (ADR-010 Punkt 14).
+    Löschen: die Person jederzeit, die Praxis mit Antwortrecht (`ordered_by`). *(Fassung 12)* Punkt
+    96.
+68. **Zeitmarke, kein Urteil:** Die Antwort darf auf eine Videostelle zeigen, auf der Plattform
+    springt ein Tipp dorthin; keine Zeichnung, kein
+    Einzelbild als Datei, kein Nebeneinander, keine Auswertung (`IDEA-KOM-005`), nie AI Gateway.
+69. **Ohne Virenprüfung** *(Fassung 6)*: Anhänge werden nach Punkt 49 `ready` mit sichtbarem „nicht
+    auf Schadsoftware geprüft“, `app.message_attachment_scan_required()` bleibt aus (KOM-013); dafür
+    Aufnahme nur in der Anwendung, Signatur- und Containerprüfung, nur im Medienelement.
+70. **Scharf erst nach** B2 (Einwilligung, Frist, Video als identifizierend), DSFA (G14), OPS-001,
+    OPS-003, *(Fassung 6)* ohne Prüfer-ADR; gebaut mit Aufnahmen aus Chromium.
 
 ### M. Anhänge im Teamchat (Fassung 8)
-
-**Anlass.** Frage 1 der PR #272 (TEAM-002), beantwortet von Jannes am 2026-10-18: Fotos und PDF im
-Teamchat, ohne Virenprüfung (Fassung 7), gelöscht mit der Nachricht. §10 nennt „Anhängen“ für die
-interne Kommunikation; die Punkte 30 und 42 gaben es bisher nicht frei. Diese Fassung folgt den
-Mustern der Abschnitte A bis F und L; neu ist nur, was eine Nachricht im Team verlangt.
-
-71. **Was freigegeben wird.** Wer im Teamchat schreiben darf (ANN-611), hängt an eine Nachricht —
-    im Kanal, im privaten Kanal, in der Direkt- oder Gruppennachricht, in der Radflotte, auch an
-    eine Antwort im Thread — **bis zu fünf Dateien**: **Fotos (JPEG, PNG) und PDF, höchstens 10 MB
-    je Datei** (Punkt 18). Kein Video, kein Ton, keine Sprachnachricht (Punkt 42 bleibt). Eine
-    geplante Nachricht trägt keine Anhänge. Hoch lädt nur ein Praxiskonto (Punkt 28); Konten von
-    Patient:innen, Kund:innen und der Plattform nie.
-    *Vermerk 2026-10-18 (Fassung 9, Entscheidung Jannes): „kein Ton, keine Sprachnachricht“
-    entfällt - Sprachnachrichten regelt Abschnitt N. Kein Video bleibt.*
-72. **Kein Weg für Patientendaten.** Ein Anhang im Teamchat ist kein Teil der Akte und wird es
-    nicht (Punkt 66 sinngemäß). Fotos von Patient:innen, Befunde und Arztbriefe gehören in die Akte
-    (Abschnitte G bis K), Patientenkommunikation nicht in den Teamchat (§10). Der Satz unter der
-    Eingabe („Befunde und Diagnosen gehören in die Akte.“) gilt auch für Anhänge; prüfen kann die
-    Anwendung es nicht.
-73. **Eigene Tabelle, eigener Bucket, Klasse `teamchat` — derselbe Weg.** Bezugsdatensatz ist die
-    Nachricht (Punkt 10); der Bucket folgt der Klasse (Punkt 3). Sonst läuft ein Anhang den Weg
-    jeder Datei: zwei Phasen mit Bestätigung (Punkt 7) — hochgeladen vor dem Senden, beim Senden an
-    die Nachricht gebunden —, unveränderlich (Punkt 8), Prüfsumme (Punkt 9), Objektschlüssel nur
-    aus Kennungen (Punkt 5), kurzlebige Verweise ohne Downloadnamen auf ausdrückliche Aktion
-    (Punkte 15 bis 17, 54), `cacheControl: '0'` (Punkt 16), zweistufige Löschung mit Quittung
-    (Punkt 25), Abgleich (Punkt 27), Prüfung am Inhalt (Punkte 49 bis 52, scharf mit OPS-001).
-    Ein Anhang, der 24 Stunden nach dem Hochladen an keiner Nachricht hängt, wird verworfen
-    (Punkt 7).
-74. **Aufnahme.** Ein Foto entsteht im Kameradialog der Anwendung (Punkt 33) oder kommt über den
-    Dateiwähler, ein PDF nur über den Dateiwähler. Bilder verlieren vor dem Hochladen auf dem
-    Gerät ihre Metadaten (Punkte 34 und 53). Bis zum Hochladen liegt eine Datei nur im
-    Arbeitsspeicher der Seite: Ohne Netz gibt es keinen Anhang, ein gescheitertes Hochladen bietet
-    die Anwendung erneut an, solange die Seite offen ist (Punkt 33). Die Nachricht geht erst
-    hinaus, wenn ihre Anhänge hochgeladen sind; nur das Senden selbst darf dann im Ausgang auf
-    Empfang warten (ANN-641).
-    *Vermerk 2026-10-18 (Fassung 9, Frage 5 der PR #273 wie empfohlen): „Senden“ geht schon,
-    während Anhänge hochladen. Die Nachricht wartet dann sichtbar im Ausgang, im Arbeitsspeicher
-    wie ihre Anhänge, und geht von selbst, sobald alle oben sind; zum Server geht sie weiterhin
-    erst danach. Scheitert ein Anhang endgültig, bleibt sie mit dem Grund stehen (ANN-654).*
-75. **Frist: die der Nachricht.** Ein Anhang fällt mit seiner Nachricht — zwölf Monate ab ihrem
-    Tag (ADR-008 Punkt 12, ANN-610), sofort, wenn sie gelöscht wird oder nur als Anker ohne Inhalt
-    stehen bleibt, und mit ihrem Gespräch. Immer mit Löschjournal und Löschauftrag, nach einer
-    Wiederherstellung erneut angewandt (Punkt 26). Keine Verlängerung.
-76. **Wer sieht.** Wer die Nachricht lesen darf: private Kanäle, Direkt- und Gruppennachrichten
-    nur ihre Mitglieder, auch `owner` nicht (ANN-642). Der Server prüft das bei jeder
-    Lesefreigabe, nicht die Oberfläche (§4.7).
-77. **Anzeigen, nicht herunterladen.** In der Nachricht steht je Anhang eine Zeile mit Art, Name
-    und Größe, **ohne Vorschaubild**: Eine Vorschau je Anhang wäre ein Verweis auf Vorrat
-    (Punkte 15 und 40). Öffnen zeigt im eigenen Rahmen (Punkte 54 und 58) — ein Bild als Bild,
-    ein PDF im Rahmen. **Kein Herunterladen, kein Teilen** (wie Punkt 67): Was dauerhaft gebraucht
-    wird, gehört in den Fachprozess (§10).
-    *Vermerk 2026-10-18 (Fassung 9): Eine Sprachnachricht steht mit Dauer und Größe da und spielt
-    im Medienelement des Browsers (Punkt 86).*
-78. **Nichts Neues im Protokoll** ([ADR-010](ADR-010-audit-and-privileged-access.md) Punkte 15
-    bis 17). Wer was wann angehängt hat, steht an der Zeile; Anzeigen ist kein Ereignis
-    (ADR-010 Punkt 14).
-79. **Löschen.** Vor dem Senden entfernt die Verfasser:in einen Anhang einzeln; danach fällt er mit
-    der Nachricht — wer sie löschen darf, löscht ihre Anhänge mit (ANN-611). Einen einzelnen
-    gesendeten Anhang löscht in V1 niemand.
-80. **Dateien je Gespräch.** Die Details eines Gesprächs listen seine Anhänge — Art, Name, Größe,
-    von wem, wann —, ohne Vorschaubild; Öffnen wie Punkt 77. In Anhängen wird nicht gesucht (keine
-    Texterkennung, „Bewusst nicht Bestandteil“).
-81. **Scharf erst nach** OPS-001 und OPS-003 (Punkte 2 und 26) wie jede Datei. Gebaut wird mit
-    synthetischen Dateien (Punkt 41).
+71. **Freigabe:** Wer im Teamchat schreibt (ANN-611, nur Praxiskonten), hängt in Kanal, privatem
+    Kanal, Direkt-, Gruppennachricht, Radflotte, Thread bis zu fünf Fotos (JPEG, PNG) oder PDF an,
+    je höchstens 10 MB, nicht an geplante; kein Video, *(Fassung 9)* Sprachnachrichten nach N.
+72. **Keine Patientendaten:** Anhänge nie in die Akte; Fotos von Patient:innen, Befunde, Arztbriefe
+    gehören in sie (§10), der Hinweis „Befunde und Diagnosen gehören in die Akte.“ gilt auch hier.
+73. **Eigener Weg:** `team_message_attachments`, eigener Bucket, Klasse `teamchat`, Bezug die
+    Nachricht, sonst Punkt 60; vor dem Senden hochgeladen, ohne Nachricht nach 24 Stunden verworfen.
+74. **Aufnahme:** Foto im Kameradialog oder per Dateiwähler samt Mediathek, PDF per Dateiwähler;
+    Metadaten fallen auf dem Gerät (Punkte 34, 53); nur im Arbeitsspeicher, Wiederholung, solange
+    die Seite offen ist. Die Nachricht geht erst hinaus, wenn ihre Anhänge oben sind;
+    nur das Senden selbst wartet dann im Ausgang (ANN-641). *(Fassung 9)* Senden geht schon beim
+    Hochladen: Sie wartet sichtbar im Ausgang, im Arbeitsspeicher wie ihre Anhänge, und geht von
+    selbst, wenn alle oben sind; scheitert einer endgültig, bleibt sie mit Grund stehen (ANN-654).
+75. **Frist der Nachricht** (zwölf Monate, ADR-008 Punkt 12, ANN-610): fällt mit ihr, ihrem Inhalt
+    (Anker ohne Inhalt), dem Gespräch, mit Löschjournal und Löschauftrag; keine Verlängerung.
+76. **Sehen:** wer die Nachricht lesen darf; privat nur Mitglieder, auch nicht `owner` (ANN-642).
+77. **Anzeigen:** eine Zeile mit Art, Name, Größe, ohne Vorschau, Öffnen im Rahmen (Punkte 54, 58),
+    kein Herunterladen, kein Teilen (§10). *(Fassung 9)* Punkt 86.
+78. **Protokoll:** nichts Neues (ADR-010 Punkte 14 bis 17); die Zeile zeigt, wer was wann anhängte.
+79. **Löschen:** vor dem Senden einzeln, danach mit der Nachricht (ANN-611), einzeln in V1 nie.
+80. **Je Gespräch:** Liste mit Art, Name, Größe, wer, wann, ohne Vorschau; keine Suche darin.
+81. **Scharf** mit OPS-001 und OPS-003; gebaut mit synthetischen Dateien.
 
 ### N. Sprachnachrichten im Teamchat (Fassung 9)
-
-**Anlass.** Frage 4 der PR #273 (TEAM-003), beantwortet von Jannes am 2026-10-18:
-„Sprachnachrichten möchte ich ermöglichen“ - entgegen der Empfehlung, Ton und Video auszulassen.
-Video bleibt aus. Dieser Abschnitt folgt Abschnitt M und für die Aufnahme dem Diktat (§6.3); neu
-ist nur, was Ton verlangt. Stimme ist ein eigenes Datum über Beschäftigte (§20): Sie dient der
-Absprache, nie einer Auswertung.
-
-82. **Was freigegeben wird.** Wer im Teamchat schreiben darf, hängt an eine Nachricht eine
-    **Sprachnachricht**, aufgenommen in der Anwendung - wo Punkt 71 Anhänge zulässt, als einer der
-    höchstens fünf Anhänge, nicht an einer geplanten Nachricht. Kein Video, kein Ton aus einer
-    Datei (der Dateiwähler bleibt bei Fotos und PDF), keine Transkription: Eine Sprachnachricht
-    geht nie an das AI Gateway (ADR-005) und wird nicht durchsucht (Punkt 80).
-83. **Aufnahme nur in der Anwendung, ausdrücklich und sichtbar.** Die Aufnahme beginnt nur auf den
-    Tipp „Sprachnachricht aufnehmen“ und läuft sichtbar mit ihrer Zeit (wie §6.3): Sie endet mit
-    „Fertig“, nach höchstens **zwei Minuten**, sobald die Seite verborgen wird oder das Mikrofon
-    wegfällt; „Abbrechen“ verwirft. Danach sind die Spuren des Mikrofons beendet. Bis zum
-    Hochladen liegt die Aufnahme nur im Arbeitsspeicher (Punkt 33). Die Permissions-Policy gibt
-    dafür das Mikrofon der eigenen Herkunft frei (Vermerk an Punkt 33).
-84. **Format und Prüfung.** Was `MediaRecorder` liefert - **WebM (Opus) oder MP4 (AAC)** -, **nur
-    Ton**, mit begrenzter Bitrate; höchstens 10 MB wie jede Datei (Punkt 18). Das Gerät leert
-    Programm- und Zeitangaben wie beim Video (Punkt 64); der Server prüft die ganze Struktur,
-    nur Tonspuren und keine Angaben im Kopf (Punkt 49), ohne Bytes umzuschreiben (Punkt 52). Die
-    Dauer misst das Gerät; sie dient nur der Anzeige (ANN-655).
-85. **Hinweis statt Prüfung.** Der Aufnahmedialog sagt, dass Gespräche mit Patient:innen und
-    Befunde nicht in den Teamchat gehören (Punkt 72). Prüfen kann die Anwendung es nicht.
-86. **Abspielen, nicht herunterladen.** In der Nachricht steht eine Zeile mit Dauer und Größe
-    (Punkt 77). Erst ein Tipp lädt die Datei (Punkt 15); sie spielt im Medienelement des Browsers
-    aus einer Objekt-URL, ohne Herunterladen (`controlsList="nodownload"`). Spielt ein Gerät das
-    Format nicht ab (WebM vor iOS 17.4), sagt das Fenster es. Frist, Sichtbarkeit, Protokoll und
-    Löschen wie jeder Anhang (Punkte 75, 76, 78 und 79).
-87. **Scharf erst nach** OPS-001 und OPS-003 wie jeder Anhang (Punkt 81). Die Datenschutzprüfung
-    vor dem Go-live (ADR-007) nimmt Sprachnachrichten als eigene Verarbeitung auf (ANN-655).
-    Gebaut wird mit dem künstlichen Mikrofon von Chromium (Punkt 41).
+82. **Freigabe:** eine in der Anwendung aufgenommene Sprachnachricht als einer der fünf Anhänge,
+    nicht an geplante; kein Video, kein Ton aus Dateien, keine Transkription, kein AI Gateway
+    (ADR-005), keine Suche; Stimme nur zur Absprache, nie zur Auswertung (§20).
+83. **Aufnahme sichtbar:** nur auf den Tipp „Sprachnachricht aufnehmen“, mit laufender Zeit (§6.3);
+    Ende mit „Fertig“, nach zwei Minuten, bei verborgener Seite oder fehlendem Mikrofon; „Abbrechen“
+    verwirft; danach enden die Spuren; nur im Arbeitsspeicher.
+84. **Format:** WebM (Opus) oder MP4 (AAC) aus `MediaRecorder`, nur Ton, begrenzte Bitrate,
+    höchstens 10 MB; das Gerät leert Angaben, der Server prüft die Struktur (nur Tonspuren, kein
+    Kopf mit Angaben) ohne Umschreiben; Dauer vom Gerät, nur zur Anzeige (ANN-655).
+85. **Hinweis im Dialog:** Gespräche mit Patient:innen und Befunde gehören nicht hierher.
+86. **Abspielen:** eine Zeile mit Dauer und Größe; erst ein Tipp lädt, dann im Medienelement ohne
+    Download (`controlsList="nodownload"`), mit Hinweis, wo ein Gerät das Format nicht kann (WebM
+    vor iOS 17.4); sonst Punkte 75, 76, 78, 79.
+87. **Scharf** mit OPS-001 und OPS-003, eigene Verarbeitung in der Prüfung vor dem Go-live (ADR-007,
+    ANN-655); gebaut mit Chromiums künstlichem Mikrofon.
 
 ### O. Profilbilder im Teamchat (Fassung 10)
-
-**Anlass.** Auftrag Jannes vom 2026-10-19 (TEAM-007): Profilbilder pro Mitarbeiter:in und die
-Möglichkeit, sie festzulegen. Ein Profilbild ist ein Bild einer beschäftigten Person, das sie
-sich selbst gibt - ein Datum über Beschäftigte (§20), kein Dokument und nie ein Bild von
-Patient:innen. Es steht vor jeder Nachricht und in jeder Liste von Personen; daran hängt der
-Zuschnitt dieses Abschnitts.
-
-88. **Was freigegeben wird.** Wer am Teamchat teilnimmt (ANN-611), gibt **sich selbst** ein
-    Profilbild - freiwillig, jederzeit ersetzbar und entfernbar. Niemand setzt oder entfernt das
-    Bild einer anderen Person, auch `owner` nicht. Es erscheint im Teamchat und in „Mein Konto“;
-    nicht auf der Plattform, nicht in Dokumenten, Rechnungen oder Exporten. Was auf dem Bild
-    steht, prüft die Anwendung nicht; Patient:innen gehören nicht darauf (Punkt 72 sinngemäß).
-89. **Auf dem Gerät gerechnet.** Aus einem Foto - Dateiwähler, die Mediathek ist hier gewollt
-    (Punkt 74 sinngemäß) - rechnet das Gerät ein **Quadrat von 256 × 256 Bildpunkten** als JPEG
-    aus Pixeln, **höchstens 64 KiB**. Das Original verlässt das Gerät nie und liegt nur im
-    Arbeitsspeicher der Seite (Punkt 33); Aufnahmemetadaten entstehen nicht, und was der
-    Kodierer an Segmenten mitgibt, entfernt das Gerät (Punkt 34). Der Ausschnitt ist fest - die
-    Mitte, beim Hochformat der obere Teil -, ohne Gesichtserkennung, ohne Bearbeitung, nie an
-    das AI Gateway (Punkt 39 sinngemäß, ADR-005).
-    *Vermerk 2026-10-20 (Fassung 11, Befund Jannes): Der Ausschnitt ist nicht mehr fest. Nach der
-    Wahl des Fotos verschiebt die Person das Quadrat und vergrößert bis zum Dreifachen; das
-    Quadrat bleibt im Foto. Ohne Eingriff gilt der Ausschnitt von oben. Gerechnet wird erst beim
-    Speichern, auf dem Gerät; der Rest dieses Punktes bleibt.*
-90. **Prüfung am Inhalt in derselben Transaktion.** Der Server läuft das ganze JPEG ab -
-    Signatur, Aufbau bis zum Bildende, nichts dahinter - und lässt nur Segmente der Bilddaten und
-    das Adobe-Segment in seiner festen Länge zu: kein EXIF, XMP, IPTC, ICC, kein Kommentar, kein
-    Vorschaubild, auch nicht hinter dem ersten Scan; dazu genau ein Bildrahmen von 256 × 256 und
-    die Größe. Belegt ist damit „kein Segment mit Metadaten“, nicht „kein Byte außer Pixeln“: In
-    Tabellen und Bilddaten lassen sich Bytes nicht als Inhalt prüfen. Ein Befund lehnt ab, ohne
-    Bytes umzuschreiben (Punkt 52). Anders als Punkt 50 keine Edge Function: Die Bytes liegen
-    in der Datenbank, also prüft sie selbst, und die Prüfung ist ab dem ersten Bild scharf.
-91. **In der Datenbank, nicht im Bucket - Umkehr von Punkt 1 für diese eine Art.** Gründe:
-    (a) Ein Bild, das in jeder Liste von Personen steht, bräuchte im Bucket einen Verweis je
-    Person und Liste - genau das schließt Punkt 15 aus. (b) Eine Zeile unter den Rechten des
-    Teamchats hat keinen Verweis, der sich weitergeben, zwischenspeichern oder nicht widerrufen
-    ließe (Punkte 16 und 17). (c) Löschen ist das der Zeile, mit Löschjournal, ohne Löschauftrag
-    und Quittung; Sicherung und Wiederherstellung laufen mit der Datenbank (Punkt 26 entfällt).
-    (d) Klein und begrenzt: ein Bild je Person, höchstens 64 KiB. Sonst wie jede Datei: eine
-    eigene Tabelle, deren Zeile die Wahrheit ist (Punkt 6), Bezugsdatensatz der
-    Mitarbeiterdatensatz (Punkt 10), **unveränderlich** (Punkt 8) - ein neues Bild ist eine
-    neue Zeile, das alte fällt.
-92. **Wer sieht.** Wer am Teamchat der Praxis teilnimmt; nie ein Konto von Patient:innen,
-    Kund:innen oder der Plattform, nie eine andere Praxis. Der Server prüft bei jedem Abruf.
-    Ausgeschiedene zeigen kein Bild. Das Bild kommt als Text in der Antwort an die angemeldete
-    Sitzung und wird aus einer Objekt-URL im Arbeitsspeicher der Seite gezeigt (Punkt 40
-    sinngemäß); einen Knopf zum Herunterladen gibt es nicht. In Listen steht es ausdrücklich -
-    es ist das Bild der Person für ihr Team, kein Inhalt einer Datei.
-93. **Frist und Löschung.** Eigene Klasse **`profilbild`**: Das Bild fällt, wenn die Person es
-    entfernt oder ersetzt, und mit dem Ausscheiden (Mitarbeiterdatensatz inaktiv) - sofort, mit
-    Eintrag im Löschjournal, nach einer Wiederherstellung erneut angewandt (ADR-008 Punkt 8).
-    Keine Frist nach Zeit.
-94. **Nichts Neues im Protokoll** (ADR-010 Punkte 15 bis 17): Die Zeile zeigt, wann ein Bild
-    gesetzt wurde; Anzeigen ist kein Ereignis.
-95. **Scharf** wie jede Zeile der Datenbank mit OPS-001. Grundlage ist die Einwilligung durch das
-    eigene Hochladen (ANN-667); die Datenschutzprüfung vor dem Go-live (ADR-007) nimmt
-    Profilbilder als eigene Verarbeitung auf. Gebaut wird mit synthetischen Bildern; ein Foto
-    einer echten Person gehört nicht in Tests, Bildstrecke oder Test-Umgebung (Punkt 41).
+88. **Freigabe** (TEAM-007): Wer am Teamchat teilnimmt (ANN-611), setzt sich selbst ein Profilbild,
+    freiwillig, jederzeit ersetzbar und entfernbar, niemand sonst, auch nicht `owner`; zu sehen im
+    Teamchat und in „Mein Konto“, nie auf der Plattform, in Dokumenten, Rechnungen, Exporten; nie
+    Patient:innen darauf (ungeprüft).
+89. **Auf dem Gerät gerechnet:** aus einem Foto (Dateiwähler samt Mediathek) ein JPEG aus Pixeln,
+    256 × 256, höchstens 64 KiB, ohne Metadaten; das Original bleibt im Arbeitsspeicher. *(Fassung
+    11)* Ausschnitt verschiebt und vergrößert (bis dreifach) die Person, das Quadrat bleibt im Foto;
+    sonst Mitte, beim Hochformat oben; gerechnet beim Speichern. Keine Gesichtserkennung, kein AI
+    Gateway.
+90. **Prüfung in derselben Transaktion** (`app.profile_picture_problem`): ganzes JPEG, nur
+    Bilddaten- und Adobe-Segment, ein Rahmen 256 × 256, höchstens 64 KiB; belegt ist „kein Segment
+    mit Metadaten“, nicht „kein Byte außer Pixeln“; ablehnen ohne Umschreiben, sofort scharf.
+91. **In der Datenbank** *(Fassung 10, Umkehr von Punkt 1)*: `staff_profile_pictures`, ein Bild je
+    Person, kein Verweis (Punkte 15 bis 17), Löschen mit Löschjournal ohne Auftrag, Sicherung mit
+    der Datenbank (Punkt 26 entfällt); Bezug der Mitarbeiterdatensatz, unveränderlich.
+92. **Sehen:** wer am Teamchat der Praxis teilnimmt, nie Patient:innen, Kund:innen, Plattform,
+    andere Praxis, bei jedem Abruf geprüft; Ausgeschiedene ohne Bild. Als Text an die Sitzung,
+    gezeigt aus einer Objekt-URL, ohne Download, in Listen ausdrücklich.
+93. **Löschen:** Klasse `profilbild`, sofort mit Entfernen, Ersetzen, Ausscheiden
+    (`app.staff_profile_picture_on_leave`), mit Löschjournal (ADR-008 Punkt 8); keine Zeitfrist.
+94. **Protokoll:** nichts Neues (ADR-010 Punkte 14 bis 17); die Zeile zeigt das Setzen.
+95. **Scharf** mit OPS-001; Grundlage die Einwilligung durch eigenes Hochladen (ANN-667), eigene
+    Verarbeitung in der Prüfung vor dem Go-live (ADR-007); nur synthetische Bilder.
 
 ### P. Herausgabe der Anhänge an Rückfragen (Fassung 12)
-
-96. **Die Kopie an die Person, je Anhang, durch owner.** Verlangt die Person
-    eine Kopie (Art. 15 Abs. 3 DSGVO) oder ihre Daten zum Mitnehmen (Art. 20,
-    die Einwilligung aus Punkt 61 ist die Grundlage), gibt `owner` jeden
-    bestätigten Anhang ihrer Rückfragen als Einzeldatei heraus — auf der Seite
-    der Betroffenenrechte, an der Akte und am Trainingsverhältnis, mit derselben
-    Prüfung wie die jeweilige Auskunft. **Auch einen gesperrten:** Die Sperre
-    unter Legal Hold (ANN-335) gilt der Arbeit mit dem Anhang, nicht der
-    Auskunft an die Person selbst (wie Punkt 40 seit ABN-017). Unbestätigte
-    bleiben außen vor (Punkt 7); die Auskunft nennt sie. Jede Kopie steht im
-    Protokoll als `message_attachment.handed_out` am Gegenstand
-    `platform_message_attachment`, mit der Akte oder dem Verhältnis und ob der
-    Anhang gesperrt war (ADR-010 Fassung 5, ANN-672). Der Weg ist der aus
-    Punkt 21: eine einmalige Freigabe für genau diesen Anhang und dieses Konto,
-    ein Verweis ohne Downloadnamen; den Dateinamen setzt die Seite, ohne Namen
-    der Person. An der Rückfrage selbst bleibt es beim Ansehen (Punkte 54, 67);
-    „Die Praxis schickt keine Anhänge zurück“ (Punkt 59) meint die Antwort,
-    nicht die Auskunft.
-
-## Was OPS-001 zusätzlich prüfen muss
-
-Fünf Punkte, die der Katalog aus ADR-002 Punkt 3 für die Datenbank ohnehin
-stellt, für den Objektspeicher aber **gesondert** beantworten muss. Alle fünf
-sind **aus Verträgen zu belegen**, nicht aus Dokumentation und erst recht nicht
-aus Forendiskussionen:
-
-| # | Prüfpunkt | Warum |
-|---|---|---|
-| 1 | Deckt der AVV/DPA die **Storage-Objekte** ausdrücklich mit ab, nicht nur die Datenbank? | §3.5 verlangt den Nachweis je Verarbeitung; „das Projekt ist abgedeckt" ist keine Fundstelle |
-| 2 | **Unterauftragskette des Objektspeichers**: Welcher Objektspeicher liegt darunter, in welcher Region, mit welcher Verschlüsselung im Ruhezustand? | ADR-002 Punkt 3; Suchauszüge nennen AWS (S3) in der Projektregion und AES-256, teils mit anbietereigenen Schlüsseln — **nicht belegt**, gehört in den Vertrag |
-| 3 | **Löschung beim Anbieter**: Wann ist ein gelöschtes Objekt tatsächlich weg — Cache, Replikate, anbietereigene Sicherungen? | ADR-008 Punkt 3 verlangt echte Löschung; die Quittung aus Punkt 25 belegt nur unsere Seite |
-| 4 | **Sicherung der Objekte**: Steht ein S3-kompatibler Zugang zur Verfügung, was kostet er, und wo liegt das Sicherungsziel? | Punkt 26; das Sicherungsziel ist eine eigene Verarbeitung mit denselben Anforderungen (EU, AVV) |
-| 5 | **Signierte Verweise**: Gibt es einen Entzug vor Ablauf, der nicht über den Support läuft? | Punkt 17; fällt die Antwort positiv aus, wird die Gültigkeit aus Punkt 15 nicht länger, sondern der Entzug ein zusätzliches Werkzeug |
+96. **Kopie je Anhang durch `owner`** (BEF-188): Verlangt die Person eine Kopie (Art. 15 Abs. 3
+    DSGVO) oder ihre Daten (Art. 20 DSGVO, Einwilligung aus Punkt 61), gibt `owner` jeden
+    bestätigten Anhang ihrer Rückfragen als Einzeldatei heraus (Betroffenenrechte an Akte und
+    Trainingsverhältnis), geprüft wie die Auskunft, auch gesperrte: Der Legal Hold (ANN-335) gilt
+    der Arbeit, nicht der Auskunft (wie Punkt 40, ABN-017); Unbestätigte nennt die Auskunft nur.
+    Protokoll: `message_attachment.handed_out` am Gegenstand `platform_message_attachment`, mit Akte
+    oder Verhältnis und Sperrstand (ADR-010 Fassung 5, ANN-672). Weg wie Punkt 21: Freigabe nur für
+    diesen Anhang und dieses Konto, ohne Downloadnamen, Dateiname ohne Namen der Person. An der
+    Rückfrage bleibt es beim Ansehen; Punkt 59 meint die Antwort.
 
 ## Konsequenzen
-
-- **Es gibt ab jetzt zwei Speicher, die auseinanderlaufen können.** Sicherung,
-  Wiederherstellung, Löschung und Abgleich sind von hier an zweiseitig. Das ist
-  der eigentliche Preis dafür, überhaupt Dateien zu führen — nicht der Bucket.
-- **Ein kopierter Verweis funktioniert nach einer Minute nicht mehr.** Wer eine
-  Datei „schnell rüberschicken" will, wird das als Schikane erleben. Es ist
-  genau die Zusage, die Punkt 17 einhalten kann, und keine, die er nicht
-  einhalten kann.
-- **`cacheControl: '0'` verschenkt den CDN-Nutzen.** Bei einer Praxis mit einer
-  Handvoll Zugriffen am Tag ist das messbar nichts; bei einem Bildarchiv wäre
-  es eine Entscheidung mit Kostenfolge.
-- **Aus der Anwendung heraus geht kein Dokument nach außen.** Für die
-  Zusammenarbeit mit Ärzt:innen bleiben Post, Fax und das eigene Postfach, wie
-  bei den Terminmails (CAL-013). Das ist bewusst eng, bis B2 antwortet.
-- **Der Rollenschnitt an der Dokumentart ist eine Pflegeliste mit scharfer
-  Kante.** Eine falsch gewählte Art ist eine Offenlegung nach §13, kein
-  Schönheitsfehler. Deshalb Vorbelegung aus dem Kontext (der Scan an der
-  Verordnung ist klinisch), Korrektur nur durch therapeutische Rollen, und die
-  Korrektur ist protokolliert.
-- **Eine Datei kostet zwei Vorgänge, drei Zustände, einen Abgleich und eine
-  Quittung.** Das ist deutlich mehr als „Datei hochladen" — und es ist die
-  Mindestmenge, mit der §12 („Dateizugriffe sind testpflichtig"), ADR-008
-  (echte Löschung) und §13 (kein stiller Verlust) gleichzeitig erfüllbar sind.
-- **Der Testaufbau der Cloudumgebung muss wachsen.** `pnpm test:db` läuft gegen
-  reines PostgreSQL mit dem Shim in `supabase/tests/helpers/supabase-shim.sql`;
-  der bildet heute `auth` nach, aber **kein `storage`-Schema**. Ohne eine
-  minimale Nachbildung von `storage.objects` bliebe ausgerechnet der
-  Dateizugriff im wichtigsten Gate der Cloudumgebung ungeprüft. Das gehört in
-  DAT-001 und ist dort kein Nebenschauplatz.
-- **Die Virenprüfung ist gestundet, nicht erlassen.** Jede Erweiterung auf
-  Uploads von außen bezahlt sie nach — mit einem eigenen ADR und
-  gegebenenfalls einem neuen Dienstleister.
-  *Vermerk 2026-10-18 (Fassung 7): Sie ist erlassen (Punkt 29). Eine
-  Erweiterung auf Uploads von außen bezahlt keine Virenprüfung nach.*
-- **Für das Rechnungs-PDF ist damit eine Option gestorben.** Ein reiner
-  Browser-Druck erzeugt eine Datei, die die Anwendung nie sieht: kein
-  Objektschlüssel, keine Prüfsumme, keine Frist, kein Auditeintrag. B14 bleibt
-  offen, aber die Tendenz aus `OPEN_DECISIONS.md` (serverseitige Erzeugung)
-  wird durch diesen ADR nicht schwächer.
-
-### Konsequenzen der Fassung 2
-
-- **Ein Foto lebt kürzer als die Akte.** Das ist der Preis dafür, Fotos auf
-  Einwilligung zu stellen: Wer über ein Jahr hinaus vergleichen will, hat das
-  alte Foto nicht mehr, sondern nur den Eintrag dazu. Die Regel „ein Foto
-  ersetzt keinen Eintrag" (Punkt 35) ist deshalb keine Stilfrage, sondern die
-  Bedingung, unter der die Frist aus Punkt 38 nicht zur Dokumentationslücke
-  wird.
-- **Die Einordnung ist die Wette dieser Fassung.** Nach den Quellen dieser
-  Recherche stützen Praxen medizinisch notwendige Verlaufsfotos überwiegend
-  auf Art. 9 Abs. 2 lit. h DSGVO und führen sie als Teil der Akte. Punkt 35
-  geht bewusst den anderen Weg. Hält B2 ihn nicht, gilt die Alternative aus
-  Bestätigungsfrage 9: Klasse `patientenakte`, zehn Jahre, der Widerruf
-  stoppt nur neue Fotos. Der Umbau ist `mittel` — eine Klassenzeile und das
-  Verhalten beim Widerruf —, weil vor der Prüfung keine echten Fotos
-  existieren (Punkt 41).
-- **Keine Galerie.** Die Liste ohne Vorschaubilder ist spürbar weniger bequem
-  als die Mediathek des Handys. Sie folgt aus Punkt 15 und ist dieselbe
-  Abwägung wie der Verweis mit 60 Sekunden.
-- **Die Kamera gibt es nur über HTTPS.** `getUserMedia` steht nur in einem
-  sicheren Kontext zur Verfügung. Der Test im heimischen WLAN über eine
-  IP-Adresse (E-2a) hat deshalb keine Kamera; die Test-Umgebung und
-  `localhost` haben sie.
-- **Eine Sicherheitskopfzeile wird geöffnet**, eng und hier entschieden:
-  `camera=(self)` statt `camera=()`. Der Test der Kopfzeilen in
-  `scripts/testumgebung.test.mjs` prüft die Permissions-Policy heute nicht
-  und bekommt eine Prüfung ihres ganzen Werts, damit sie nicht weiter
-  aufgeht.
-- **Das Öffnen einer Datei bekommt einen zweiten Anzeigeweg** (Punkt 40):
-  Für Patientenfotos lädt die Anwendung selbst und zeigt aus dem Speicher,
-  statt ein Fenster auf den Verweis zu öffnen. Die übrigen Arten öffnen
-  weiter wie in Fassung 1.
-- **Widerruf und Frist sind je Foto zu rechnen**, nicht aus dem jüngsten
-  Stand der Einwilligung (Punkt 36), und der Löschweg nach Widerruf schreibt
-  ins Löschjournal. Beides braucht Datenbanktests mit der Folge Erteilung,
-  Widerruf, Legal Hold, neue Erteilung.
-- **Eine falsch gewählte Art bleibt die scharfe Kante** (Konsequenz zu
-  Punkt 12). Wer ein Foto der Person über den Dateiwähler als
-  `klinisches_bild` ablegt, umgeht Einwilligung und Frist, und kein Server
-  kann das am Inhalt erkennen. Dagegen stehen die geschärfte Erläuterung
-  (Punkt 31), der Kameradialog als einziger Weg zu `patientenfoto` und die
-  Sperre der Artkorrektur (Punkt 32).
-- **Der Prüfaufbau wächst um eine künstliche Kamera** (Chromium mit
-  Testbild) und um Datenbanktests für die Einwilligungsprüfung auf allen vier
-  Wegen, das Löschen beim Widerruf, den Legal Hold und die gesperrte
-  Artkorrektur (`pnpm test:db`, §12: Dateizugriffe sind testpflichtig).
-- **Nachzuziehen nach der Annahme:** §5 sagt heute „noch nicht freigegeben
-  (ADR-017 Punkt 30)" und bekommt in einem eigenen Commit mit neuer Version
-  einen Verweis auf Abschnitt G (§21); die Zeile in `README.md` und der Index
-  in `CLAUDE.md` nennen die Fassung. Die Annahme zur Einordnung (Punkt 35)
-  und zur Frist (Punkt 38) wird mit dem Bau registriert, dort, wo sie im
-  Code greift — der Klasse `patientenfoto` —, und ANN-093 bekommt den
-  dritten Zweck. *Erledigt am 2026-09-26: §5 mit Version 0.18 der
-  Prinzipien, `README.md`, Index in `CLAUDE.md` und die Zeile DOK-006 der
-  Roadmap. Annahme und dritter Zweck bleiben beim Bau.* *Erledigt mit
-  DOK-006 am 2026-09-26: ANN-126 (Einordnung und Frist, an der Klasse
-  `patientenfoto`), ANN-127 (Ablehnung, dritter Zweck; ANN-093 mit Vermerk),
-  dazu ANN-125 (Metadaten) und ANN-128 (Herausgabe).*
-
-### Konsequenzen der Fassung 3
-
-- **Zwei Fotoarten heißt eine Entscheidung mehr je Foto.** Wer fotografiert,
-  muss vorher wissen, wofür. Das ist der Preis dafür, dass ein Foto weder
-  ungewollt zehn Jahre liegt noch ungewollt nach einem Jahr fehlt. Die Wahl
-  ohne Vorauswahl (Punkt 44) macht sie bewusst; ein Tipp mehr am Handy.
-- **Zehn Jahre Körperfotos sind jetzt möglich.** Genau das hatte Fassung 2
-  vermieden. Dagegen stehen die Erforderlichkeit (Punkt 43), der
-  Kameradialog als einziger Weg, die Anzeige ohne Download und die gesperrte
-  Löschung nach dem Aufnahmetag (Punkt 48) — Letztere schützt die Akte, nicht
-  die Person. Die DSFA (G14) bewertet beide Arten getrennt.
-- **§5 der Prinzipien ist nachgezogen** (Rang 1, §21, Version 0.20): Die
-  eigene Einwilligung verlangt er nur noch für die Foto-Arbeitshilfe.
-- **Die Art `patientenfoto` behält ihren Schlüssel**, nur die Oberfläche
-  sagt „Arbeitshilfe". Ein umbenannter Schlüssel kostete eine Migration über
-  Katalog, Klassen, Funktionen und Tests und brächte nichts außer dem Namen.
-- **Die Prüfung am Server gibt es in der Cloud-Umgebung nicht.** Wie beim
-  Kartendienst und beim Zugangsdienst läuft die Edge Function nur lokal mit
-  `supabase start`; geprüft wird dort mit Deno-Tests, und das Gate
-  `pnpm test:db` sieht nur die Spalten, das Kennzeichen und den Schalter
-  (Punkt 51). Bis OPS-001 bleibt jede Datei „nicht serverseitig geprüft" —
-  das ist ehrlich und keine Lücke, denn vor OPS-001 gibt es keine echte
-  Datei (Punkt 2).
-- **Ein Bild mit Farbprofil wird nicht mehr byte-gleich abgelegt** (Punkt 53).
-  Für ein fremdes Dokument mit Profil — selten, meist ein Foto aus einer
-  Kamera-App — ist die abgelegte Fassung neu kodiert. Die Lesbarkeit leidet
-  bei hoher Qualitätsstufe nicht; der Unterschied ist nur in den Bytes.
-- **Öffnen bleibt in der Anwendung**, auch für PDF (Punkt 54). Ob ein iPhone
-  ein PDF im abgeschotteten Rahmen ganz zeigt oder nur die erste Seite, ist
-  am echten Gerät zu prüfen; der Ausweg ist „Herunterladen" (Punkt 55), keine
-  neue Bibliothek.
-- **Nachzuziehen nach der Annahme:** §5 der Prinzipien (eigener Commit, neue
-  Version, §21); ANN-053, ANN-125, ANN-126 und ANN-127 in neuer Fassung mit
-  dem Bau (ABN-EPIC-001c); `README.md` und der Index in `CLAUDE.md` nennen die
-  Fassung; die Erläuterungen in `dokumentarten.ts` und die Klassenliste.
-  *Erledigt am 2026-10-02: §5 mit Version 0.20, `README.md`. Annahmen,
-  Erläuterungen und Klassenliste bleiben beim Bau.*
-
-## Bewusst nicht Bestandteil dieser Entscheidung
-
-- Die Freigabe von Supabase als produktivem Auftragsverarbeiter — die bleibt
-  bei OPS-001 und ADR-002.
-- Der Weg, auf dem das Rechnungs-PDF **entsteht** (B14, ABR-EPIC-002a). Dieser
-  ADR sagt nur, wie es abgelegt wird, wenn es existiert.
-- Anbieter, Ausführungsort und Kosten einer späteren Virenprüfung.
-  *Vermerk 2026-10-18 (Fassung 7): Eine Virenprüfung gibt es nicht
-  (Punkt 29).*
-- Fotos, Videos und Audiodateien von Patient:innen, einschließlich der
-  Sprachdokumentation aus §6.3 und ADR-005. *Vermerk 2026-09-26 (Fassung 2): Fotos regelt Abschnitt G; Videos und Audio bleiben
-  ausgeschlossen (Punkt 42).* *Vermerk 2026-10-18 (Fassung 9): Sprachnachrichten im Teamchat
-  (Abschnitt N) sind Ton aus dem Team, nicht von Patient:innen; für diese bleibt es dabei.*
-- Anhänge im internen Teamchat (TEAM-001) und in der Patientenkommunikation.
-  *Vermerk 2026-10-18 (Fassung 8): Anhänge im Teamchat regelt Abschnitt M; an Rückfragen
-  Abschnitt L.*
-- Volltextsuche in Dateien, Texterkennung, Bildtransformationen und jede Form
-  von KI auf Dateiinhalten (ADR-005 bleibt maßgeblich), auch keine Transkription
-  von Sprachnachrichten (Fassung 9, Punkt 82). *Vermerk 2026-09-26
-  (Fassung 2): Das Entfernen von Metadaten auf dem Gerät
-  (Punkt 34) ist keine Bildtransformation in diesem Sinn; Ausrichtung,
-  Vermessung und Markierung schließt Punkt 39 aus.*
-- Elektronische Signaturen. `IDEA-PRX-015` (Unterschrift am Hausbesuch) ist am
-  2026-09-06 verworfen; Behandlungsvertrag und Datenschutzinformation bleiben
-  Papier mit Vermerk (E-13, Roadmap G8).
-- Die Oberfläche: Wie ein Upload aussieht, wo die Dateiliste in der Akte steht
-  und wie eine fehlende Datei gemeldet wird, entscheidet DAT-EPIC-001.
-  *Vermerk 2026-09-26 (Fassung 2): Für Patientenfotos legt
-  Abschnitt G Aufnahme- und Anzeigeweg fest (Punkte 33 und 40); das Aussehen
-  entscheidet DOK-006.*
+- **Zwei Speicher** laufen auseinander, bleiben Sicherung, Löschung oder Abgleich einseitig.
+- **Scharfe Kante:** Eine falsche Dokumentart legt offen (§13); ein Foto der Person als
+  `klinisches_bild` umginge Einwilligung und Frist. Dagegen Vorbelegung der Art aus dem Kontext (der
+  Scan an der Verordnung ist klinisch) und Punkt 13.
+- **Nach außen** bleiben Post, Fax, Postfach (CAL-013), bis B2 antwortet.
+- **Die Kamera** gibt es nur über HTTPS oder `localhost`, nicht über eine IP-Adresse im WLAN (E-2a).
 
 ## Offene Folgefragen
-
-- **HEIC.** Ein mit dem iPhone aufgenommenes Foto kommt je nach Einstellung als
-  HEIC an und wäre nach Punkt 18 abgelehnt. Ob der Dateiwähler zuverlässig
-  JPEG liefert, ist in DAT-001 am echten Gerät zu prüfen — die Antwort ändert
-  die Allowlist, nicht die Regel dahinter. *Vermerk 2026-09-26 (Fassung 2): Für den Kameradialog erledigt — er liefert JPEG
-  (Punkt 33). Für den Dateiwähler bleibt die Frage offen; Punkt 34 entfernt
-  dort nur Metadaten und wandelt kein Format um.*
-- **Wie wird eine ersetzte Datei angezeigt** (Punkt 8)? Sichtbar mit Vermerk
-  „ersetzt" wie bei der Dokumentation (ADR-016), oder nur für therapeutische
-  Rollen? Fällt mit der Oberfläche in DAT-001.
-- **Wer führt den Löschauftrag aus** (Punkt 25), wenn Jannes im Urlaub ist?
-  Der Auftrag wartet — aber wie lange darf er warten, bevor die Löschung nicht
-  mehr „unverzüglich" ist? Gehört in BETRIEB-001 und in das Löschkonzept (G14).
-- **Zählt die Ausstellung eines Verweises als „größerer Datenexport"** im Sinne
-  von ADR-010, wenn jemand zwanzig Dateien nacheinander öffnet? Die
-  Schwellenfrage ist in ADR-010 offen und wird durch Dateien dringlicher.
-- **Was passiert mit den Dateien, wenn OPS-001 negativ ausfällt** und die
-  Plattform wechselt? Die Regeln überleben, die Policies auf `storage.objects`
-  nicht. Der Aufwand wäre `mittel` und beträfe nur die Ablageschicht.
-
-**Zur Fassung 2:**
-
-- **Vertretung.** Wer erklärt die Fotoeinwilligung für ein Kind oder eine
-  Person mit rechtlicher Betreuung, und soll der Vermerk festhalten, wer
-  unterschrieben hat? `patient_privacy_records` kennt heute nur den Tag. Die
-  Frage betrifft alle Zwecke aus ANN-093 und gehört mit ihnen in B2.
-- **Bildqualität.** Reicht die Auflösung aus `getUserMedia` auf iPhone und
-  Android für eine lesbare Verordnung? In DOK-006 am echten Gerät mit einem
-  Musterrezept zu prüfen. Reicht sie nicht, bleibt für Dokumente der
-  Dateiwähler mit Metadatenentfernung (Punkte 33 und 34); für Patientenfotos
-  ändert sich nichts. *Vermerk 2026-09-26: DOK-006 ist mit synthetischen
-  Bildern gebaut; die Prüfung am echten Gerät ist Schritt 10 der Sichtung
-  [Befund](../sichtung/befund.md).*
-- **Herausgabe an die Person** (Punkt 40). Die Auskunft aus OPS-006 führt
-  Dateien heute ohne Inhalt. Wie `owner` die Kopie nach Art. 15 Abs. 3 DSGVO
-  und die Herausgabe nach Art. 20 DSGVO erzeugt — Einzeldatei oder Paket,
-  mit welchem Auditereignis —, legt der Bau von DOK-006 fest; der Weg ist
-  der einzige, auf dem ein Patientenfoto die Anwendung verlässt.
-  *Vermerk 2026-09-26 (DOK-006): Einzeldatei durch `owner`, Auditereignis
-  `patient_file.handed_out` (ANN-128).*
-- **Bilder, die Patient:innen schicken** (Punkt 42). Ob die Praxis sie
-  später als `patientenfoto` ablegen darf — mit Einwilligung, Frist und
-  Metadatenentfernung, aber ohne Kameradialog —, entscheidet ein Fall, der
-  es zeigt, zusammen mit der Frage, auf welchem Weg sie überhaupt in die
-  Praxis kommen.
-- **PDF-Metadaten** (Autor, Erzeuger, Datum) bleiben unverändert. Sie stammen
-  von Scanner oder Arztpraxis und tragen weder Ort noch Vorschaubild; ob sie
-  bereinigt werden sollen, entscheidet ein Fall, der es zeigt.
-- **Verlängerung im Einzelfall** (`IDEA-KOM-003`: „Verlängerung nur
-  bewusst"). In V1 nicht (Punkt 38); sie käme als eigener, protokollierter
-  Vorgang mit Obergrenze, wenn die Praxis den Bedarf zeigt.
-
-**Zur Fassung 3:**
-
-- **Vertretung beim Dokumentationsfoto.** Es braucht keine Einwilligung,
-  aber die Person sollte wissen, dass fotografiert wird. Reicht die
-  Datenschutzinformation (PAT-006), oder sagt die Therapeut:in es jedes Mal?
-  Gehört mit dem Wortlaut in B2.
-- **Dokumentationsfotos auf der Plattform.** Als Teil der Akte fallen sie
-  unter das Auskunftsrecht (Art. 15, schon heute über die Auskunft,
-  ABN-EPIC-001b); ob sie auch auf der Plattform erscheinen, entscheidet
-  POR-EPIC-002 mit den freigegebenen Dokumenten, nicht dieser ADR.
-- **Woran erkennt der Server Restmetadaten in einem PDF?** Punkt 49 prüft nur
-  JPEG und PNG, weil das Gerät nur dort bereinigt; PDF bleibt bei der
-  Folgefrage aus Fassung 2.
-
-## Bestätigungsfragen für Jannes — beantwortet am 2026-09-12
-
-**Alle acht wie empfohlen bestätigt.** Damit ist Punkt E8 in
-`docs/decisions/OPEN_DECISIONS.md` erledigt und DAT-EPIC-001 baubar. Die Fragen
-bleiben mitsamt ihrer Begründung stehen: Wer in zwei Jahren wissen will, warum
-ein Verweis nur eine Minute lebt oder warum `office` den Verordnungsscan nicht
-sieht, findet hier die Abwägung und nicht nur das Ergebnis.
-
-**Was die Bestätigung nicht erledigt:** Die **produktive** Ablage bleibt an
-OPS-001 gebunden (fünf Prüfpunkte oben) und an den dokumentierten
-Sicherungsweg für den Objektspeicher aus Frage 7 (OPS-003, Roadmap G7). Beides
-ist Vorbedingung für die erste echte Datei, nicht für DAT-EPIC-001.
-
-1. **Kurzlebige Verweise mit 60 Sekunden, kein Teilen-Link** (Punkt 15 bis 17)
-   — auch um den Preis, dass man eine Datei nicht „mal eben" per Link
-   weitergeben kann?
-   *Empfehlung: ja.* Ein Verweis, der sich nicht widerrufen lässt, darf nicht
-   lange leben. Weitergeben geht weiterhin — bewusst, außerhalb der Anwendung.
-2. **Rollenschnitt an der Dokumentart, Verordnungsscan klinisch** (Punkt 12) —
-   `office` sieht den Scan also **nicht**, obwohl es die Verordnungsdaten
-   organisatorisch sieht (ANN-011)?
-   *Empfehlung: ja.* Ein Scan zeigt das ganze Blatt samt Diagnose; projizieren
-   lässt sich nur ein Datensatz, kein Bild.
-3. **Formate PDF, JPEG, PNG und höchstens 10 MB je Datei** (Punkt 18)?
-   *Empfehlung: ja.* Deckt Rezeptscan, Arztbrief und Foto ab; alles andere
-   kommt, wenn ein Fall es verlangt — nicht auf Vorrat.
-4. **Keine Virenprüfung in V1**, Pflicht ab dem ersten Upload von außen
-   (Punkt 28 und 29)?
-   *Empfehlung: ja* — so steht es auch in der Roadmap G1. Es lädt nur die
-   Praxis von eigenen Geräten hoch, und keine Datei wird ausgeführt.
-5. **Dateien sind unveränderlich; eine Korrektur ist eine neue Datei**
-   (Punkt 8), die alte bleibt bis zur Frist sichtbar?
-   *Empfehlung: ja.* Alles andere wäre ein Dokument, das sich unter der Hand
-   ändert.
-6. **Zweistufige Löschung mit Quittung statt Edge Function** (Punkt 25) — das
-   Löschen der Dateien braucht also einen angemeldeten Vorgang und ist nicht
-   vollautomatisch?
-   *Empfehlung: ja, vorerst.* Sobald OPS-001 die Edge Runtime freigibt, kann
-   derselbe Auftrag automatisch abgearbeitet werden; der Nachweisweg bleibt.
-7. **Keine Datei produktiv, bevor die Objektsicherung dokumentiert und getestet
-   ist** (Punkt 26) — auch wenn das DAT-EPIC-001 nicht blockiert, aber den
-   Echtbetrieb mit Dateien an OPS-003 bindet?
-   *Empfehlung: ja.* Eine Datei, die nur in einem Speicher liegt, ist eine
-   Datei, die man verlieren kann; ADR-012 verlangt das ohnehin.
-8. **Die fünf zusätzlichen Prüfpunkte gehen in OPS-001** (Abschnitt oben) —
-   die Providerprüfung wird dadurch etwas länger. *Einverstanden?*
-   *Empfehlung: ja.* Sie jetzt zu benennen kostet eine halbe Seite; sie später
-   nachzureichen kostet eine zweite Anfrage beim Anbieter.
-
-## Bestätigungsfragen zu Fassung 2 — beantwortet am 2026-09-26
-
-**Alle sechs wie empfohlen bestätigt.** Die Fragen bleiben mitsamt ihrer
-Begründung und den verworfenen Alternativen stehen. Die Nummerierung setzt
-die der Fassung 1 fort. **Was die Bestätigung nicht erledigt:** Einordnung, Wortlaut
-und Frist sind Datenschutz und Recht; Jannes' Ja zählt fürs Bauen, die
-Freigabe mit echten Personen hängt an B2 und der DSFA (Punkt 41).
-
-9. **Fotos von Patient:innen stehen auf Einwilligung, sind Arbeitshilfe und
-   nicht Teil der zehnjährigen Akte; der Widerruf löscht sofort; ein Foto
-   ersetzt keinen Eintrag** (Punkte 35 und 36)?
-   *Empfehlung: ja.* §5 verlangt nur die eigene Einwilligung und lässt die
-   Frist offen; diese Lesart ist die sparsamste, die dazu passt. *Alternative:*
-   Das Foto ist Teil der Akte (Art. 9 Abs. 2 lit. h DSGVO), bleibt zehn
-   Jahre, die Einwilligung ist nur Zusage, und ein Widerruf verhindert nur
-   neue Fotos — rechtlich die verbreitetere Lesart, aber zehn Jahre
-   Körperfotos aus einem Handy-Ablauf.
-10. **Frist zwölf Monate nach der Aufnahme, spätestens drei Monate nach
-    Abschluss der Versorgung, keine Verlängerung** (Punkt 38)?
-    *Empfehlung: ja.* Deckt Rehabilitation und Folgeverordnungen, endet auch
-    ohne Abschluss. *Alternative:* 24 Monate ab Aufnahme, wenn du über lange
-    Verläufe vergleichen willst.
-11. **Patientenfotos nur über den Kameradialog der Anwendung, ohne
-    Dateiwähler, und die Kamera in der Permissions-Policy nur für die eigene
-    Herkunft** (Punkt 33)?
-    *Empfehlung: ja.* Nur so landet nichts in der Mediathek und ihrem
-    Cloud-Backup — genau dein Anlass vom 2026-09-23.
-12. **Jedes Bild verliert vor dem Upload auf dem Gerät seine Metadaten** —
-    auch fremde Bilder aus dem Dateiwähler wie ein Arztbrief oder ein
-    Röntgenbild, dort verlustfrei und nur die Ausrichtung behaltend
-    (Punkt 34)?
-    *Empfehlung: ja.* Eine Regel für alle Bilder; die Bilddaten fremder
-    Dokumente bleiben unverändert, abgelegt wird aber nicht mehr das
-    byte-gleiche Original.
-13. **Keine Vorschaubilder in der Liste, kein Download, kein Teilen**
-    (Punkt 40) — auch wenn das weniger bequem ist als die Mediathek? Einzige
-    Herausgabe ist die Kopie an die Person selbst über `owner`.
-    *Empfehlung: ja.* Jede Vorschau wäre ein Verweis auf Vorrat; ein Foto
-    öffnest du bewusst.
-14. **Office sieht Patientenfotos wie jeden klinischen Inhalt** (Punkt 37,
-    §4.3)?
-    *Empfehlung: ja* — so hast du es mit E15 festgelegt, und das Auditlog
-    kompensiert. Willst du Office bei Fotos ausnehmen, ändert das §4.3, nicht
-    diesen ADR; der Mechanismus dafür (`app.can_see_patient_file_type`)
-    existiert noch.
-
-## Bestätigungsfragen zu Fassung 3 — beantwortet am 2026-10-02
-
-**Alle acht wie empfohlen bestätigt.** Die Richtung hatte Jannes in der
-Abnahme vom 2026-10-02 entschieden (BEF-105, BEF-106; ANN-053, ANN-125,
-ANN-126); bestätigt ist hier, wie sie im ADR steht. Frage 20 weicht damit
-von „gegebenenfalls nachbereinigt" ab: Ein Befund verwirft. Die
-Nummerierung setzt die der Fassung 2 fort. **Was die Bestätigung nicht
-erledigt:** Die Einordnung des Dokumentationsfotos (lit. h) geht in B2,
-Fotos echter Personen gibt es weiter erst nach B2 und der DSFA (Punkt 41),
-und die Prüfung am Server wird erst mit OPS-001 scharf.
-
-15. **Drei Fotoarten: Dokumentationsfoto zur Akte (zehn Jahre, ohne
-    Einwilligung), Arbeitshilfe wie bisher (zwölf Monate, Einwilligung)**
-    (Punkte 43, 45, 46)?
-    *Empfehlung: ja* — das ist deine Entscheidung aus der Abnahme, nur
-    ausgeschrieben. *Alternative:* nur noch Dokumentationsfotos und keine
-    Arbeitshilfe mehr — einfacher, aber jedes Übergabefoto läge dann zehn
-    Jahre.
-16. **Die Wahl fällt vor der Aufnahme, ohne Vorauswahl, und es gibt keine
-    Korrektur zwischen den Arten** (Punkte 44 und 47)?
-    *Empfehlung: ja.* Eine Arbeitshilfe nachträglich zur Akte zu machen,
-    verlängerte eine Einwilligung für ein Jahr auf zehn. *Alternative:* die
-    Übernahme Arbeitshilfe → Dokumentation als protokollierter Vorgang der
-    Therapeut:in — bequemer, wenn eine Wunde schon verheilt ist.
-17. **Ein Dokumentationsfoto löschen nur am Aufnahmetag** (aufnehmende
-    Person oder owner), danach nur der Löschlauf (Punkt 48)?
-    *Empfehlung: ja* — es ist Dokumentation, und die verschwindet nach
-    ADR-016 nicht. *Alternative:* wie jede Datei der Akte jederzeit durch
-    therapeutische Rollen (Punkt 13), protokolliert.
-18. **Dokumentationsfotos im Bucket `patientenakte`** statt in einem eigenen
-    (Punkt 45)?
-    *Empfehlung: ja* — Punkt 3 trennt nach Datenklasse, und die Klasse ist
-    dieselbe. Die Grenze „nur JPEG" setzt die Vorbereitung je Art durch.
-19. **Prüfung am Server in einer Edge Function, gebaut jetzt, scharf mit
-    OPS-001; bis dahin „nicht serverseitig geprüft" sichtbar und trotzdem
-    `ready`; mit dem Scharfschalten wird die Prüfung Bedingung** (Punkte 49
-    bis 51)?
-    *Empfehlung: ja.* So bleibt die Cloud-Umgebung benutzbar, und in der
-    Produktion gibt es keine Datei ohne Prüfung. *Alternative:* schon jetzt
-    `pending` bis zur Prüfung — dann gibt es ohne `supabase start` gar keine
-    Dateien mehr, auch nicht in der Test-Umgebung.
-20. **Ein Befund heißt Verwerfen statt Nachbereinigen am Server** (Punkt 52)?
-    Du hattest „gegebenenfalls nachbereinigt" geschrieben.
-    *Empfehlung: verwerfen.* Das Gerät bereinigt schon; ein Rest ist ein
-    Fehler oder ein gesteuerter Browser und soll auffallen. Eine
-    Nachbereinigung am Server änderte die Datei nach ihrer Prüfsumme.
-    *Alternative:* Der Server bereinigt, rechnet die Prüfsumme neu und
-    vermerkt es — mehr Code in der Function, dafür kein verlorener Upload.
-21. **Farbe: Bilder mit Farbprofil werden auf dem Gerät nach sRGB umgerechnet
-    und neu kodiert; ohne Profil bleibt alles byte-gleich** (Punkt 53)?
-    *Empfehlung: ja.* *Alternative:* das Profil behalten und nur Hersteller-
-    und Geräteangaben in seinem Kopf leeren — verlustfrei, aber eine eigene
-    Bereinigung des Profilformats (ANN-125, Aufwand `mittel`).
-22. **Öffnen zeigt jede Datei in der Anwendung; Herunterladen ist ein eigener
-    Knopf mit Kennzeichen im Protokoll, nicht für Fotos** (Punkte 54 und 55)?
-    *Empfehlung: ja.* Ein Rezept soll man ansehen können, ohne dass es im
-    Download-Ordner landet; einen Arztbrief drucken geht weiter.
-
-## Bestätigungsfragen zu Fassung 5 — beantwortet am 2026-10-10
-
-**Alle sieben wie empfohlen bestätigt.** Damit ist KOM-EPIC-002 baubar. Die
-Nummerierung setzt die der Fassung 3
-fort. **Was eine Bestätigung nicht erledigt:** Wortlaut der Einwilligung,
-Frist und Einordnung des Videos gehen in B2; den Prüfer wählt ein eigener ADR
-(Punkt 69).
-
-23. **Anhänge an Rückfragen im Nachsorge-Abo und im Training, nicht während
-    der Behandlung; höchstens drei je Vorgang** (Punkt 59)?
-    *Empfehlung: ja.* So steht es in §4.6; im Training ist eine Aufnahme der
-    Übung der größte Nutzen. *Alternative:* nur im Abo — dann bleibt Punkt 37
-    für das Training unberührt.
-24. **Video ja — nur in der Anwendung aufgenommen, ohne Ton, höchstens
-    30 Sekunden, kein Dateiwähler** (Punkte 62 und 63)?
-    *Empfehlung: ja.* Ohne Ton, ohne Mediathek, ohne fremde Dateien bleibt das
-    Video so klein wie möglich. *Alternative:* nur Fotos — einfacher und
-    ohne Containerprüfung, aber ohne den Nutzen, den die Zeitmarke bringt.
-25. **Frist 30 Tage nach der Aufnahme, keine Verlängerung, kein Weg in die
-    Akte** (Punkte 65 und 66)?
-    *Empfehlung: ja.* *Alternative:* 90 Tage, wenn du über mehrere Wochen
-    vergleichen willst — dann gälte Punkt 68 trotzdem: kein Vergleich in der
-    Anwendung.
-26. **Eigene Einwilligung je Verhältnis, auf der Plattform erteilt; der
-    Widerruf löscht sofort alle Anhänge** (Punkt 61)?
-    *Empfehlung: ja* — die Mindestanforderung aus `IDEA-KOM-003`.
-27. **Virenprüfung als Bedingung des Scharfschaltens mit Schalter, der Prüfer
-    in einem eigenen ADR** (Punkt 69)? Fassung 1 sagte „vor dem ersten
-    Upload“; mit synthetischen Testkonten gälte das nur noch für echte
-    Personen.
-    *Empfehlung: ja* — §15.2 verlangt diesen Schnitt, und keine echte Datei
-    wird ohne Prüfung `ready`. *Alternative:* erst den Prüfer-ADR, dann
-    KOM-EPIC-002 — dann wartet der Loop auf eine Anbieterprüfung.
-28. **Die Begleitperson sieht keine Anhänge; die Person löscht jederzeit, die
-    Praxis mit Antwortrecht auch; nichts Neues im Protokoll** (Punkt 67)?
-    *Empfehlung: ja.* Ein Video zeigt Wohnung und Körper; die Begleitung
-    liest die Worte, nicht die Bilder.
-29. **Antwort mit Zeitmarke, aber keine Zeichnung, kein Einzelbild, keine
-    Gegenüberstellung** (Punkt 68)?
-    *Empfehlung: ja.* Eine Linie im Bild ist der erste Schritt zu einer
-    Messung (Punkt 39). *Alternative:* `IDEA-KOM-004` vollständig — dann als
-    eigene Fassung, nicht nebenbei.
-
-## Bestätigungsfragen zu Fassung 10 — beantwortet am 2026-10-19
-
-Den Kern hat Jannes am 2026-10-19 beauftragt (Anlass von Abschnitt O); die Einzelheiten hat er am
-selben Abend wie empfohlen beantwortet („handle nach den empfohlenen Antworten“). Die Nummerierung
-setzt die der Fassung 9 fort.
-
-35. **Profilbilder als Zeile in der Datenbank statt im Bucket** (Punkt 91)?
-    *Empfehlung: ja.* Ein Bild in jeder Liste braucht so keinen Verweis, die Prüfung ist sofort
-    scharf, und Löschen ist eine Zeile. *Alternative:* ein Bucket `profilbilder` mit Verweisen
-    für die ganze Liste - dann Umkehr von Punkt 15, Löschaufträge und eine Edge Function.
-36. **Nur die Person selbst setzt und entfernt ihr Bild, `owner` nicht** (Punkt 88)?
-    *Empfehlung: ja.* Freiwillig heißt: Niemand sonst entscheidet über das eigene Gesicht.
-    *Alternative:* `owner` darf ein Bild entfernen, nicht setzen - etwa bei einem unpassenden.
-37. **256 × 256, höchstens 64 KiB, fester Ausschnitt** (Punkte 89 und 90)?
-    *Empfehlung: ja.* Scharf bis 96 px auf jedem Telefon, wenige Kilobyte je Person.
-    *Alternative:* Ausschnitt zum Verschieben und Vergrößern - eine eigene Bedienung.
-    *Vermerk 2026-10-20 (Fassung 11): Auf Jannes' Befund gilt für den Ausschnitt die
-    Alternative; 256 × 256 und 64 KiB bleiben.*
-
-## Bestätigungsfragen zu Fassung 9 — offen
-
-Den Kern hat Jannes am 2026-10-18 entschieden (Anlass von Abschnitt N). Offen sind die
-Einzelheiten; die Nummerierung setzt die der Fassung 8 fort.
-
-33. **Höchstens zwei Minuten je Sprachnachricht** (Punkt 83)?
-    *Empfehlung: ja.* Für eine Absprache unterwegs genügen zwei Minuten; je kürzer, desto weniger
-    nimmt eine Aufnahme aus dem Hintergrund mit. *Alternative:* fünf Minuten wie das Diktat.
-34. **Das Mikrofon für die eigene Herkunft freigeben** (`microphone=(self)`, Vermerk an Punkt 33)?
-    *Empfehlung: ja.* Ohne diese Freigabe kann der Browser keine Sprachnachricht aufnehmen. Das
-    Diktat bleibt hinter dem Gateway, Zahlung und USB bleiben gesperrt. Die Freigabe gilt für
-    jede Seite, auch die der Patient:innen: Das Video an der Rückfrage bleibt ohne Ton, aber nicht
-    mehr auch durch die Policy (Vermerk an Punkt 62). *Alternative:* keine - dann gibt es keine
-    Sprachnachrichten.
-
-## Bestätigungsfragen zu Fassung 8 — beantwortet am 2026-10-18
-
-Den Kern hat Jannes am 2026-10-18 entschieden (Anlass von Abschnitt M); die Einzelheiten hat er
-am selben Tag wie empfohlen beantwortet. Die Nummerierung setzt die der Fassung 5 fort.
-
-30. **Bis zu fünf Fotos (JPEG, PNG) oder PDF je Nachricht, je 10 MB, auch in Antworten und in der
-    Radflotte; keine Anhänge an geplanten Nachrichten** (Punkt 71)?
-    *Empfehlung: ja.* Fünf decken einen Schaden am Rad aus mehreren Blickwinkeln; ein Plan oder
-    eine Liste kommt als PDF. *Alternative:* drei wie an der Rückfrage (Punkt 59).
-31. **Eine Zeile je Anhang ohne Vorschaubild; Öffnen zeigt, Herunterladen gibt es nicht**
-    (Punkt 77)?
-    *Empfehlung: ja.* Ein Vorschaubild je Anhang bräuchte beim Blättern einen Verweis je Bild,
-    was Punkt 15 ausschließt; ohne Download bleibt die Datei in der Anwendung. *Alternative:*
-    Vorschaubilder wie bei Slack — dann als eigene Fassung, die Punkt 15 für den Teamchat umkehrt.
-32. **Fotos auch aus der Mediathek über den Dateiwähler, nicht nur aus dem Kameradialog**
-    (Punkt 74)?
-    *Empfehlung: ja.* Im Team sind es Bildschirmfotos und Fotos vom Rad; für Fotos von
-    Patient:innen gibt es die Akte (Punkt 72). *Alternative:* nur der Kameradialog wie bei
-    Patientenfotos (Punkt 33).
-
-## Quellen der Recherche vom 2026-09-12
-
-`supabase.com` ist aus dieser Umgebung gesperrt (Egress-Proxy). Abgerufen
-wurden stattdessen die Quelltexte derselben Dokumentation und der Bibliothek:
-
-- `raw.githubusercontent.com/supabase/supabase` — `apps/docs/content/guides/`:
-  `platform/backups.mdx` („Database backups do not include objects you store
-  via the Storage API"; „Restoring an old backup does not restore objects you
-  deleted after that backup"), `storage/security/access-control.mdx`
-  („By default Storage does not allow any uploads to buckets without RLS
-  policies"), `storage/serving/downloads.mdx` (private Buckets, signierte
-  Verweise: „remain valid until their expiry time regardless of any Auth key
-  changes"; Entzug nur über den Support), `storage/uploads/file-limits.mdx`
-  (globales Limit und niedrigeres Limit je Bucket),
-  `storage/uploads/standard-uploads.mdx` (6-MB-Schwelle zu Resumable Uploads),
-  `storage/cdn/fundamentals.mdx`, `storage/cdn/smart-cdn.mdx`
-  (Invalidierung „up to 60 seconds"; eine zwischengespeicherte Antwort „can
-  continue to be served for the same signed URL until the CDN cache duration
-  expires, even if the token in that URL has already expired").
-- `raw.githubusercontent.com/supabase/storage-js` —
-  `src/packages/StorageFileApi.ts`: Standardwert `cacheControl: '3600'`,
-  Umsetzung als `cache-control: max-age=…`; `createSignedUrl(path, expiresIn,
-  { download })`.
-- **Nur als Suchauszug, nicht belegt** und deshalb in OPS-001 verwiesen:
-  Verschlüsselung im Ruhezustand (AES-256, teils anbietereigene Schlüssel),
-  AWS/S3 als darunterliegender Objektspeicher in der Projektregion, fehlende
-  Inhaltsanalyse auf Schadsoftware (Community-Diskussionen im Repository
-  `supabase/supabase`).
-- Die zehnjährige Frist aus **§630f BGB** ist bereits über ADR-008 Punkt 4 und
-  die Klasse `patientenakte` im Retention Schedule verankert; sie wurde in
-  dieser Sitzung nicht erneut aus der Primärquelle geprüft
-  (`gesetze-im-internet.de` ist aus dieser Umgebung ebenfalls gesperrt).
-
-**Rechtsberatung ersetzt das nicht.** Die datenschutzrechtliche Einordnung der
-Ablage geht mit dem DSFA-Paket (G14) an die Prüfung; die vertraglichen Punkte
-gehen mit OPS-001 an den Anbieter.
-
-## Quellen der Recherche vom 2026-09-26 (Fassung 2)
-
-Diesmal aus der lokalen Umgebung abgerufen, ohne Egress-Sperre:
-
-- **§630f BGB** (`gesetze-im-internet.de/bgb/__630f.html`), jetzt aus der
-  Primärquelle: Absatz 2 verlangt, „sämtliche aus fachlicher Sicht für die
-  derzeitige und künftige Behandlung wesentlichen Maßnahmen und deren
-  Ergebnisse aufzuzeichnen", Absatz 3 die zehnjährige Aufbewahrung der
-  Behandlungsakte. Punkt 35 stützt sich auf Absatz 2: Die Pflicht gilt dem
-  Inhalt, den der Eintrag trägt.
-- **W3C, HTML Media Capture** (`w3.org/TR/html-media-capture/`): Mit
-  `capture` SOLL der Browser einen Aufnahmedialog öffnen — eine Empfehlung,
-  keine Zusage (Punkt 33). Dieselbe Spezifikation verbietet dem Browser, die
-  Aufnahme abzulegen; sie bindet aber nur den Browser, nicht die Kamera-App,
-  an die er übergibt.
-- **MDN, `MediaDevices.getUserMedia()`**: nur in sicheren Kontexten (HTTPS,
-  `localhost`), sonst ist `navigator.mediaDevices` nicht vorhanden; Freigabe
-  über `Permissions-Policy: camera=(self)`; Bild und Ton werden getrennt
-  angefordert.
-- **Neukodierung über `canvas`** entfernt EXIF, XMP, IPTC und eingebettete
-  Vorschaubilder — **nur aus Sekundärquellen** (Entwicklerartikel auf
-  `dev.to`, Werkzeugseiten). Deshalb verlangt Punkt 34 den Nachweis durch
-  einen Test und stützt sich nicht auf diese Aussage.
-- **MDN, `Request.cache`**: Mit `no-store` holt der Browser die Antwort ohne
-  Blick in seinen Zwischenspeicher und legt sie dort nicht ab (Punkt 40).
-- **Bestand, geprüft im Zweitreview dieser Fassung:** `src/features/patients/files/api.ts`
-  signiert mit dem Anzeigenamen als Downloadnamen, `Dateiliste.tsx` öffnet
-  den Verweis in einem neuen Fenster (Punkt 40);
-  `app.can_execute_storage_deletion` lässt nur `owner` Löschaufträge
-  ausführen (Punkt 36); `retention_classes` kennt einen Anker je Klasse
-  (Punkt 38); `care_concluded_on` darf zurückdatiert werden (ANN-032,
-  Punkt 38); Vermerke schreibt auch `office` (Punkt 36).
-- **Einordnung von Verlaufsfotos** — **nur Sekundärquellen**
-  (Datenschutzberatungen und Praxisleitfäden, darunter
-  `community.robin-data.io`, `dr-datenschutz.de`, `munas.de`): Medizinisch
-  notwendige Fotodokumentation wird dort überwiegend auf Art. 9 Abs. 2 lit. h
-  DSGVO gestützt und als Teil der Akte geführt; eine Einwilligung verlangen
-  sie für Zwecke darüber hinaus. Punkt 35 weicht davon bewusst ab; das ist
-  der erste Prüfpunkt für B2 (Konsequenzen, Bestätigungsfrage 9).
-- **Erwägungsgrund 51 DSGVO**: Lichtbilder sind nur dann biometrische Daten,
-  wenn sie mit speziellen technischen Mitteln verarbeitet werden, die eine
-  eindeutige Identifizierung ermöglichen (Punkt 39). Aus der Erinnerung
-  zitiert, nicht in dieser Sitzung abgerufen.
-
-**Rechtsberatung ersetzt auch das nicht.** Einordnung, Wortlaut der
-Einwilligung und Frist gehen mit B2 an die Prüfung (Punkt 41).
-
-## Quellen zur Fassung 3
-
-Keine neue Recherche im Netz; die Fassung schreibt Entscheidungen aus der
-Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
-
-- `docs/development/BEFUNDE.md` BEF-059, BEF-105, BEF-106 und
-  `docs/development/BEFUNDE-LOESUNGEN.md` (Stand und beste Lösung je Befund);
-  die Abnahmevermerke an ANN-053, ANN-125, ANN-126 in `ASSUMPTIONS.md`.
-- `app.patient_file_bucket_for` (`20260926150000_dok_006b_patient_photos.sql`):
-  Buckets je Klasse, `patientenfoto` im eigenen (Punkt 45).
-- `confirm_patient_file_upload` vergleicht Größe und MIME-Typ gegen
-  `storage.objects.metadata`; Signatur nur im Client
-  (`dateiInhaltAblehnungsgrund`), Metadaten nur im Client (`metadaten.ts`,
-  entfernt auch ICC) — Punkte 49 und 53.
-- `src/features/patients/files/api.ts` signiert mit Downloadnamen, `Dateiliste.tsx`
-  öffnet ein Fenster; `ladePatientenfoto` ist der vorhandene Anzeigeweg
-  (Punkt 54).
-- **§ 630f Abs. 1 Satz 2 BGB** (Berichtigungen nur, wenn der ursprüngliche
-  Inhalt erkennbar bleibt) und **Art. 17 Abs. 3 lit. b DSGVO** (kein
-  Löschrecht, soweit eine rechtliche Pflicht die Verarbeitung erfordert):
-  aus der Erinnerung zitiert, nicht in dieser Sitzung abgerufen — gehören mit
-  Punkt 46 und 48 in B2.
+- **Frage 33** (Fassung 9): höchstens zwei Minuten je Sprachnachricht (Punkt 83)? Empfehlung ja.
+- **Frage 34** (Fassung 9): Mikrofon für die eigene Herkunft, jede Seite (Punkt 33)? Empfehlung ja.
+- **HEIC** (Punkt 18): Liefert der Dateiwähler am iPhone verlässlich JPEG?
+- **Ersetzte Datei** (Punkt 8): „ersetzt“ für alle sichtbar (ADR-016) oder nur therapeutisch?
+- **Löschauftrag** (Punkt 25): Wer, wenn Jannes im Urlaub ist, wie lange? BETRIEB-001, G14.
+- **OPS-001 negativ:** Regeln bleiben, die Policies auf `storage.objects` nicht (Aufwand `mittel`).
+- **Vertretung** (B2, ANN-093): Wer willigt für Kinder, Betreute ein? Nennt der Vermerk, wer?
+- **Dokumentationsfoto** (B2): Genügt PAT-006, oder sagt die Therapeut:in es jedes Mal?
+- **Bildqualität:** Lesbar? Schritt 10 in `git show 9452575:docs/sichtung/befund.md`.
+- **Geschickte Bilder** (42), **PDF-Metadaten** (49), **Verlängerung** (38): entscheidet ein Fall.
+- **Dokumentationsfotos auf der Plattform:** entscheidet POR-EPIC-002.
 
 ## Änderungshistorie
-
-| Fassung | Datum | Änderung |
-|---|---|---|
-| 1 | 2026-09-12 | angenommen, alle acht Bestätigungsfragen wie empfohlen |
-| 2 | 2026-09-26 | **angenommen am selben Tag, Fragen 9 bis 14 wie empfohlen:** Abschnitt G (Punkte 31 bis 42) gibt Fotos von Patient:innen frei — Einwilligung als Rechtsgrundlage, eigene Klasse `patientenfoto` mit zwölf Monaten Frist, Aufnahme nur über den Kameradialog, keine Aufnahmemetadaten, Vergleich ohne Bewertung, Anzeige ohne Download; Fotos von Dokumenten auf demselben Weg. Punkte 1 bis 30 bleiben stehen; für `patientenfoto` eingeschränkt sind Punkt 13 (keine Artkorrektur), 15 (kein Downloadname) und 23 (Klasse nach der Art), je mit Vermerk; weitere Vermerke an Punkt 30, „Bewusst nicht Bestandteil" und der HEIC-Folgefrage. Anlass: DOK-006, Produktgespräch vom 2026-09-23 |
-| 3 | 2026-10-02 | **angenommen am selben Tag, Fragen 15 bis 22 wie empfohlen:** Abschnitt H (Punkte 43 bis 48) — drei Fotoarten, das Dokumentationsfoto gehört zur Akte (lit. h, zehn Jahre, Bucket `patientenakte`), der Widerruf wirkt nur auf Arbeitshilfen; **Umkehr von Punkt 35** für das Dokumentationsfoto (Fassungsregel, Entscheidung Jannes in der Abnahme, BEF-106). Abschnitt I (Punkte 49 bis 53) — Prüfung von Typ, Prüfsumme und Metadaten am Server in einer Edge Function, scharf mit OPS-001; sRGB vor dem Entfernen der Metadaten (BEF-105). Abschnitt J (Punkte 54 und 55) — Öffnen zeigt jede Datei in der Anwendung, Herunterladen ist ein eigener Knopf (BEF-059). Punkte 1 bis 42 bleiben stehen; Vermerke an 7, 15, 31, 32, 35, 36, 38. §5 der Prinzipien mit Version 0.20 nachgezogen |
-| 4 | 2026-10-09 | **Entschieden von Jannes in der Abnahme der Annahmen vom 2026-10-09:** Abschnitt K (Punkte 56 bis 58) — ein Foto aus der Dokumentation ist ohne Wahl ein Dokumentationsfoto, Erinnerung an Anmeldebogen und Rezept an ihrer Stelle (BEF-135); keine neue Arbeitshilfe, bestehende laufen aus, die Einwilligung zu Fotos wird nicht mehr angeboten; ein PDF öffnet im Rahmen ohne `sandbox` aus einer Objekt-URL mit festem Typ, CSP `frame-src blob:` (BEF-133). Umkehr der Punkte 44 und — für PDF — 54, Vermerke an 43, 44, 54. §5 der Prinzipien mit Version 0.22 nachgezogen |
-| 5 | 2026-10-10 | **Angenommen am selben Tag, Fragen 23 bis 29 wie empfohlen:** Abschnitt L (Punkte 59 bis 70) — Foto und Video an einer Rückfrage im Nachsorge-Abo und im Training, eigene Einwilligung, Klasse `rueckfrageanhang` mit 30 Tagen, Aufnahme nur in der Anwendung ohne Ton, Antwort mit Zeitmarke ohne Bewegungsurteil, Virenprüfung als Bedingung des Scharfschaltens mit Schalter und eigenem ADR für den Prüfer. Schränkt für diese Anhänge die Punkte 14, 18, 29, 30, 37 und 42 ein, je mit Vermerk; §5 der Prinzipien mit Version 0.24 nachgezogen. Anlass: KOM-EPIC-002 |
-| 6 | 2026-10-15 | **Entschieden von Jannes:** Anhänge an Rückfragen ohne Virenprüfung. Umkehr von Punkt 29 (für Abschnitt L) und des Prüfergebnis-Satzes in Punkt 69, in Punkt 70 entfällt der ADR zum Prüfer; ADR-026 abgelehnt. Schalter `external_attachments_enabled` von selbst an (KOM-013). Alle übrigen Punkte, die Minderungen aus Punkt 69 und Punkt 29 für andere Uploads von außen bleiben |
-| 7 | 2026-10-18 | **Entschieden von Jannes:** „Keine Virenprüfung in der gesamten Anwendung!“ Umkehr von Punkt 29 für jeden Upload, auch künftige von außen (Portal, Formular, Teamchat); eine Freigabe nach Punkt 30 braucht keine Virenprüfung. Vermerke an den Punkten 28, 29, 30, 42, 50 und 69, an den Konsequenzen und an „Bewusst nicht Bestandteil“. Alle übrigen Punkte bleiben, auch die Kennzeichnung „nicht auf Schadsoftware geprüft“ und der ausgeschaltete Schalter `app.message_attachment_scan_required()`. Anlass: Antwort auf Frage 1 der PR #272 (TEAM-002) |
-| 8 | 2026-10-18 | **Angenommen am selben Tag, im Kern von Jannes entschieden, Fragen 30 bis 32 wie empfohlen:** Abschnitt M (Punkte 71 bis 81) — Fotos (JPEG, PNG) und PDF an Teamchat-Nachrichten, bis zu fünf je Nachricht, ohne Virenprüfung, Klasse `teamchat`, Frist der Nachricht, derselbe Weg wie jede Datei, Anzeige ohne Vorschaubild und ohne Download, nichts Neues im Protokoll, Dateien je Gespräch. Schränkt für diese Anhänge die Punkte 30 und 42 ein, je mit Vermerk; Vermerk an „Bewusst nicht Bestandteil“. Anlass: TEAM-003 |
-| 9 | 2026-10-18 | **Vorgeschlagen, im Kern von Jannes entschieden:** Abschnitt N (Punkte 82 bis 87) — Sprachnachrichten im Teamchat, aufgenommen nur in der Anwendung (ausdrücklich, sichtbar, höchstens zwei Minuten), WebM (Opus) oder MP4 (AAC) nur mit Ton, Prüfung der Struktur am Server, Abspielen ohne Herunterladen, keine Transkription; Umkehr für das Mikrofon in Punkt 33 (`microphone=(self)`) und für „kein Ton“ in Punkt 71; Punkt 74 nimmt Senden während des Hochladens auf (Frage 5 der PR #273). Vermerke an den Punkten 18, 19, 33, 42, 62, 71, 74 und 77 und an „Bewusst nicht Bestandteil“. Bestätigungsfragen 33 und 34 offen. Anlass: Antworten auf die Fragen der PR #273, TEAM-004 und TEAM-005 |
-| 10 | 2026-10-19 | **Angenommen am selben Tag, im Kern von Jannes beauftragt, Fragen 35 bis 37 wie empfohlen:** Abschnitt O (Punkte 88 bis 95) - Profilbilder im Teamchat, nur für sich selbst gesetzt, auf dem Gerät zu 256 × 256 JPEG ohne Metadaten gerechnet, am Inhalt in derselben Transaktion geprüft, Klasse `profilbild` (fällt mit Entfernen, Ersetzen, Ausscheiden). **Umkehr von Punkt 1** für Profilbilder: Zeile in der Datenbank statt Bucket. Vermerke an den Punkten 1, 15, 50 und 51. Anlass: Auftrag Jannes, TEAM-007 |
-| 11 | 2026-10-20 | **Entschieden von Jannes (Befund):** Der Ausschnitt des Profilbilds ist wählbar - verschieben und bis dreifach vergrößern, auf dem Gerät, Standard wie bisher. Umkehr von „Der Ausschnitt ist fest … ohne Bearbeitung“ in Punkt 89 (Alternative der Bestätigungsfrage 37). Vermerke an Punkt 89 und Frage 37 |
-| 12 | 2026-10-20 | **Angenommen am selben Tag, Fragen wie empfohlen (BEF-188):** Abschnitt P (Punkt 96) - owner gibt jeden bestätigten Anhang an einer Rückfrage als Kopie an die Person heraus, auch gesperrte, protokolliert als `message_attachment.handed_out` (ADR-010 Fassung 5, ANN-672). Vermerk an Punkt 67 |
+- Fassung 1 (2026-09-12, Jannes): angenommen, Fragen 1 bis 8 wie empfohlen; E8 erledigt.
+- Fassung 2 (2026-09-26, Jannes, Fragen 9 bis 14): Abschnitt G; §5 der Prinzipien, Version 0.18.
+- Fassung 3 (2026-10-02, Jannes, Fragen 15 bis 22): H bis J (BEF-105, BEF-106, ANN-126); §5, 0.20.
+- Fassung 4 (2026-10-09, Jannes, Abnahme): Abschnitt K; Punkt 44 entfällt; §5, 0.22.
+- Fassung 5 (2026-10-10, Jannes, Fragen 23 bis 29): Abschnitt L (KOM-EPIC-002); §5, 0.24.
+- Fassung 6 (2026-10-15, Jannes): Rückfrage-Anhänge ohne Virenprüfung, ADR-026 abgelehnt, Schalter
+  `external_attachments_enabled` von selbst an (KOM-013).
+- Fassung 7 (2026-10-18, Jannes, Frage 1 der PR #272): keine Virenprüfung, Punkt 29 entfällt.
+- Fassung 8 (2026-10-18, Jannes, Fragen 30 bis 32): Abschnitt M (TEAM-003).
+- Fassung 9 (2026-10-18, vorgeschlagen, Kern Jannes): Abschnitt N (TEAM-004/005), Punkte 33, 71, 74.
+- Fassung 10 (2026-10-19, Jannes, Fragen 35 bis 37): Abschnitt O (TEAM-007), Umkehr von Punkt 1.
+- Fassung 11 (2026-10-20, Jannes, Befund): Ausschnitt des Profilbilds wählbar (Punkt 89).
+- Fassung 12 (2026-10-20, Jannes, Fragen wie empfohlen): Abschnitt P (BEF-188, ANN-672).
+- Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.

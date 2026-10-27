@@ -1,490 +1,114 @@
 # ADR-009: Privatabrechnung
-
 ## Status
-
-**Angenommen — Fassung 6** (2026-10-14). Fassung 1 am 2026-08-28, Fassung 2
-(Punkte 15 bis 20, zwei Leistungsbereiche, E18) am 2026-09-20, Fassung 3
-(Punkt 21, Nachsorge-Abo und Trainingspaket) am 2026-09-23, Fassung 4
-(Punkt 22, Terminhonorar; Präzisierungen an Punkt 5 und 17) am 2026-10-02 aus
-der Abnahme der Annahmen durch den Projektinhaber, Fassung 5 (Punkt 23,
-Rechnungsdarstellung beim Terminhonorar, B17) am 2026-10-05, Fassung 6
-(Punkt 24, Leistung mit dem Haken und Freigabe zur Abrechnung, B7) am
-2026-10-14. Die Punkte 1 bis 23 gelten unverändert; Punkt 23 spricht seit
-Fassung 6 von den erfassten statt den bestätigten Heilmitteln, Punkt 13 trägt
-einen Erledigungsvermerk.
-
-*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
-
-## Datum
-
-2026-08-28 (Fassung 1); 2026-09-20 (Fassung 2); 2026-09-23 (Fassung 3); 2026-10-02 (Fassung 4); 2026-10-05 (Fassung 5); 2026-10-14 (Fassung 6)
+Angenommen 2026-08-28 (Jannes, B4), geltend Fassung 6 (2026-10-14); Protokoll nur nach ADR-010.
 
 ## Kontext
-
-§1 von `PROJECT_PRINCIPLES.md` nennt Privatrechnungen als einen der
-Kernprozesse, §4.3 gibt dem Office Zugriff auf Rechnungen und Zahlungsstatus,
-§12 zählt Rechnungsdaten zu den besonders kritischen Funktionen und §13
-verbietet, Rechnungen unbemerkt falsch zuzuordnen. Mehr steht in der Baseline
-nicht.
-
-Dahinter liegen mehrere Entscheidungen, die das Datenmodell festlegen. Ob die
-Praxis selbst abrechnet oder über einen Abrechnungsdienstleister, ändert die
-Anforderungen an Einwilligungen und Datenflüsse grundlegend. Rechnungsempfänger
-sind bei Beihilfe, privater Versicherung, Betreuung oder minderjährigen
-Patienten regelmäßig nicht die Patienten selbst. Und die Abrechnung unterliegt
-mit den GoBD-Anforderungen einem eigenen Unveränderbarkeitsregime, das neben
-der klinischen Versionierung aus §5 steht und anderen Regeln folgt: dort
-Korrektur mit Historie, hier Storno und Neuausstellung.
-
-Hinzu kommt eine fachliche Kopplung, die in der Praxis regelmäßig
-auseinanderläuft: Eine Leistung entsteht am Termin, eine Rechnung entsteht
-später und fasst mehrere Leistungen zusammen. Werden beide nicht getrennt
-modelliert, entstehen Doppelabrechnungen oder nicht abgerechnete Leistungen.
-
-Diese Entscheidung war als Punkt B4 in `docs/decisions/OPEN_DECISIONS.md`
-offen.
-
-**Neu zur Fassung 2.** Fassung 1 kannte einen Leistungsbereich. Seit den
-Festlegungen des Projektinhabers vom 2026-09-17 (E18) deckt die Anwendung
-zwei ab: Heilbehandlung und Leistungen ohne Heilbehandlungszweck. ADR-021
-trennt sie nach dem **Rechtsverhältnis**, ADR-022 gibt jedem Termin **genau
-einen Kontext**, ADR-006 Fassung 3 zieht die Zweckbestimmung über beide. Für
-die Abrechnung ist das keine Nebenwirkung, sondern der Kern: Der Betrieb ist
-**regelbesteuert**, und damit stehen steuerfreie Heilbehandlungen (§ 4 Nr. 14
-lit. a UStG) und steuerpflichtige Trainingsleistungen nebeneinander auf
-denselben Bildschirmen.
-
-Punkt 6 sagt bereits, dass steuerliche Eigenschaften je Leistung gespeichert
-und nicht abgeleitet werden. Was er nicht sagt: **woran** sie hängen dürfen,
-wenn es zwei Bereiche gibt. Die naheliegende und falsche Antwort ist der
-Kunde — „Trainingskundin, also 19 Prozent". Sie ist falsch, weil eine Person
-beide Verhältnisse haben kann (ADR-021) und weil eine Heilbehandlung auch
-dann steuerfrei bleibt, wenn sie in derselben Woche neben einer
-Trainingsstunde steht.
-
-Der teuerste Fehler steht daneben: Wer an einem steuerfreien Posten
-Umsatzsteuer ausweist, **schuldet sie nach § 14c UStG** — unabhängig davon,
-ob sie je gezahlt wurde und ob der Ausweis ein Versehen war. Das ist kein
-Bedienfehler, den Sorgfalt abfängt, sondern eine Rechenoperation, die
-unterbleiben muss. § 14 Abs. 4 UStG verlangt zugleich bei steuerfreien
-Posten den **Grund der Befreiung** als Pflichtangabe (Nr. 8) und erlaubt bei
-der fortlaufenden Nummer ausdrücklich **mehrere Zahlenreihen** (Nr. 4).
-
-Hinzu kommt die getrennte Gewinnermittlung: Physiotherapie ist
-freiberuflich, Personal Training gewerblich. Als Einzelunternehmen droht
-keine Abfärbung nach § 15 Abs. 3 Nr. 1 EStG, bei einer späteren
-Personengesellschaft schon. Die Zahlen dafür müssen von Anfang an getrennt
-entstehen; sie später auseinanderzurechnen kostet ein Vielfaches.
-
-**Geprüft am Bestand (2026-09-20).** Die Abrechnung der Etappe 1 ist gebaut,
-und sie trägt die Steuermerkmale bereits am richtigen Ort: Eine
-Katalogposition hat `tax_treatment` (`exempt_healthcare`, `taxable`,
-`not_taxable`) und `tax_rate_permille`, und
-`app.build_invoice_document` rechnet die enthaltene Steuer nur an
-steuerpflichtigen Gruppen und unter der Kleinunternehmerregelung gar nicht.
-Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
+Zu entscheiden waren Abrechnungsweg, abweichende Empfänger und GoBD-Unveränderbarkeit neben der
+klinischen Versionierung (§5); seit E18 zwei Leistungsbereiche (ADR-021, ADR-022) in einem
+regelbesteuerten Betrieb mit getrennter Gewinnermittlung (Abfärbung, § 15 Abs. 3 Nr. 1 EStG). Nicht
+Gegenstand: Gebührenkatalog, Steuerbewertung einzelner Leistungsarten (G13), E-Rechnung, Mahnwesen
+und Ausfallhonorar, Zahlungsanbieter, Bank, GoBD-Verfahrensdokumentation; Leistungsziffern sind
+organisatorisch (C1).
 
 ## Entscheidung
-
-1. Die erste Produktversion **führt die Privatabrechnung innerhalb der
-   Plattform durch**. **Factoring beziehungsweise externe
-   Abrechnungsdienstleister sind nicht Bestandteil von V1.**
-2. **Patient und Rechnungsempfänger werden als getrennte Entitäten
-   modelliert.**
-3. **Abrechenbare Leistungen existieren unabhängig von Rechnungen** und werden
-   aus durchgeführten Terminen beziehungsweise anderen abrechenbaren
-   Ereignissen erzeugt.
-4. **Eine Leistung darf nicht unbeabsichtigt mehrfach abgerechnet werden.**
-5. **Leistungskatalog und Preisvereinbarungen werden versioniert.**
-   Historische Leistungen und Rechnungen dürfen durch spätere Preisänderungen
-   nicht verändert werden.
-   *(Fassung 4)* Maßgeblich für den Preis einer Leistung ist die am
-   **Leistungstag** geltende **mit der Person vereinbarte Honorarregelung**;
-   nur wo keine besteht, gilt der allgemeine Tarif. Eine neue allgemeine
-   Preisliste verändert bestehende Vereinbarungen nicht von selbst.
-6. **Steuerliche Eigenschaften werden explizit pro Leistung beziehungsweise
-   Leistungsversion gespeichert und nicht durch KI bestimmt.**
-7. Rechnungen besitzen mindestens die Zustände **Entwurf, ausgestellt,
-   versendet, teilweise bezahlt, bezahlt, überfällig und
-   korrigiert/storniert**.
-8. Eine **Rechnungsnummer wird erst bei Ausstellung vergeben**. Die Vergabe
-   **MUSS eindeutig erfolgen**, und eine einmal vergebene Nummer **darf nicht
-   wiederverwendet werden**.
-9. Eine **ausgestellte Rechnung ist unveränderbar**. Korrekturen erfolgen
-   durch nachvollziehbare **Korrektur-/Stornodokumente** und gegebenenfalls
-   eine neue Rechnung.
-10. **Beim Ausstellen werden alle rechnungsrelevanten Stammdaten,
-    Leistungsdaten, Preise und Steuerinformationen als historischer Snapshot
-    gespeichert.**
-11. Das **ausgestellte Rechnungsdokument wird in seiner damaligen Form
-    aufbewahrt**.
-12. **Zahlungen werden als eigene Transaktionen modelliert** und ermöglichen
-    **Teilzahlungen sowie spätere Rückzahlungen**.
-13. Therapeutische Leistungen **sollen grundsätzlich erst endgültig fakturiert
-    werden können, wenn die zugehörige Dokumentation finalisiert ist**.
-    **Berechtigte Overrides müssen begründet und protokolliert werden.**
-    *In V1 gibt es keinen Override (`PROJECT_PRINCIPLES.md` §19); der Satz
-    gilt, falls einer eingeführt wird.*
-14. V1 unterstützt **PDF-Rechnungen für private Rechnungsempfänger**. Die
-    Architektur **darf spätere strukturierte E-Rechnungen nicht verhindern**.
-15. *(Fassung 2)* **Das Steuerkennzeichen hängt am Posten, nie am Kunden.**
-    Die steuerliche Einordnung einer Rechnungszeile folgt ausschließlich der
-    abgerechneten Leistung beziehungsweise ihrer Katalogversion (Punkt 5 und
-    6) — **nicht** dem Rechtsverhältnis (ADR-021), **nicht** dem Terminkontext
-    (ADR-022), **nicht** dem Rechnungsempfänger (Punkt 2) und **nicht** der
-    Person. Drei Kennzeichen sind vorgesehen: **steuerfreie Heilbehandlung**
-    (§ 4 Nr. 14 lit. a UStG), **steuerpflichtige Leistung ohne
-    Heilbehandlungszweck** zum Regelsatz (Personal Training, Prävention,
-    Gerätetraining) und **steuerpflichtige Leistung zum ermäßigten Satz** für
-    verordnungsfähige Leistungen ohne Verordnung. Das dritte wird **angelegt,
-    aber nicht aktiviert**, bis die Steuerberatung es freigibt (B4); seine
-    Rechtslage ist umstritten. Das vorhandene Kennzeichen **nicht steuerbar**
-    (kein Leistungsaustausch, der Fall des Ausfallhonorars) bleibt daneben
-    bestehen.
-16. *(Fassung 2)* **Eine Rechnung trägt genau einen Leistungsbereich.**
-    Gemischte Rechnungen über Heilbehandlung und Trainingsleistung sind
-    **ausgeschlossen**; der Bereich einer Rechnung ergibt sich aus ihren
-    Posten und nicht aus ihrem Empfänger. Eine erfasste Leistung trägt ihren
-    Bereich aus der Katalogposition. Widerspricht er dem Kontext des Termins,
-    an dem sie entstanden ist (ADR-022), ist das ein **Fehler bei der
-    Erfassung** und keine stille Korrektur. Die Regel ist eine Invariante des
-    Datenmodells, keine Regel der Oberfläche.
-17. *(Fassung 2)* **Je Leistungsbereich ein eigener Nummernkreis.** Punkt 8
-    gilt unverändert; er wird nur je Kreis gelesen. Jeder Kreis läuft
-    **lückenlos** innerhalb seines Kalenderjahres, und **jede vergebene Nummer
-    bleibt innerhalb der Organisation einmalig** — mehrere Zahlenreihen sind
-    nach § 14 Abs. 4 Nr. 4 UStG ausdrücklich zulässig, doppelte Nummern nicht.
-    *(Fassung 4)* Gesetzlich verlangt ist die **Einmaligkeit**; die
-    **Lückenlosigkeit** ist eine **interne Regel der Praxis**, die Rückfragen
-    einer Prüfung vorbeugt, keine Pflicht aus § 14 UStG.
-    Am ausgestellten Dokument muss erkennbar sein, aus welchem Kreis seine
-    Nummer stammt. Korrektur- und Stornodokumente (Punkt 9) nehmen ihre Nummer
-    aus dem Kreis der Rechnung, die sie betreffen.
-18. *(Fassung 2)* **Der § 14c-Riegel: An einem steuerfreien oder nicht
-    steuerbaren Posten wird kein Steuerbetrag ausgewiesen** — weder an der
-    Zeile noch an der Steuergruppe noch in der Summe; unter der
-    Kleinunternehmerregelung (§ 19 UStG) gilt das für die gesamte Rechnung.
-    Bei steuerfreien Posten ist der **Grund der Steuerbefreiung Pflichtangabe**
-    (§ 14 Abs. 4 Nr. 8 UStG); er gehört in den Snapshot nach Punkt 10, nicht
-    nur in die Darstellung. Die Sperre wirkt **vor der Ausstellung** und
-    **serverseitig**; die Oberfläche ist nicht die Stelle (ADR-004, §4.7). Sie
-    ist eine der Invarianten, die `pnpm test:db` prüft, und der Testfall ist
-    **verbindlich**. Eine ausgestellte Rechnung mit falschem Ausweis wird
-    nicht repariert, sondern nach Punkt 9 storniert und neu ausgestellt.
-19. *(Fassung 2)* **Die Plattform führt eine Auswertung „Einnahmen je
-    Leistungsart".** Sie trennt die Erlöse **je Leistungsbereich** und
-    schlüsselt sie innerhalb des Bereichs je Steuerkennzeichen und Satz auf.
-    Sie rechnet ausschließlich aus ausgestellten Rechnungen (Snapshot,
-    Punkt 10), Korrektur- und Stornodokumenten (Punkt 9) und gebuchten
-    Zahlungen (Punkt 12). Sie **benennt ihre Grundlage ausdrücklich** — Zufluss
-    oder Rechnungsstellung — und mischt beide **nie in einer Zahl**; welche
-    Grundlage die Gewinnermittlung verlangt, entscheidet die Steuerberatung
-    (B9) und nicht die Software. Sie ist **deterministisch und ohne KI**
-    (Punkt 6, ADR-005) und **kein steuerlicher Abschluss**: eine Summe, keine
-    Bewertung.
-20. *(Fassung 2)* **V1 macht von der Kleinbetragsrechnung keinen Gebrauch.**
-    Jede Rechnung trägt den vollen Satz der Pflichtangaben nach § 14 Abs. 4
-    UStG, auch unter 250 Euro. § 33 UStDV ist eine Erleichterung, keine
-    Pflicht; was sie erspart, ist im Wesentlichen die Angabe des
-    Leistungsempfängers — und genau die braucht diese Praxis für Beihilfe und
-    private Versicherung ohnehin (Punkt 2).
-21. *(Fassung 3)* **Wiederkehrende und vorausbezahlte Leistungen sind
-    abrechenbare Ereignisse** (`PROJECT_PRINCIPLES.md` §19). Das
-    **Nachsorge-Abo** der Patient:innen erzeugt je Monat eine Leistung und eine
-    Monatsrechnung im Bereich `therapy`; es beginnt frühestens mit dem Ende
-    der Behandlungsgrundlage (ADR-020) und ist monatlich kündbar. Das **Trainingspaket** gilt für einen festen Zeitraum,
-    ist nicht pausierbar und wird als eine Leistung des Bereichs `training`
-    berechnet. Für beide gelten die Punkte 1 bis 20 unverändert —
-    insbesondere Snapshot, ein Leistungsbereich je Rechnung und das
-    Steuerkennzeichen am Posten (Punkt 15). Welches Kennzeichen Abo und Paket
-    tragen, klärt die Steuerberatung (B4); bis dahin gilt eine Annahme nach
-    §15.1 an genau einer Stelle.
-
-22. *(Fassung 4)* **Das Behandlungshonorar ist ein Terminhonorar.** Je
-    durchgeführtem Behandlungstermin entsteht **genau einmal** das vereinbarte
-    Sitzungshonorar (Stand 2026-10-02: 140 € je 60-Minuten-Termin,
-    einschließlich Dokumentation und Hausbesuch). Drei Größen werden
-    **getrennt** geführt und nie auseinander errechnet:
-    - **verordnete Heilmittel** mit ihren Mengen an der Behandlungsgrundlage
-      (ADR-020);
-    - **erbrachte Leistungen** je Termin, also welche Heilmittel tatsächlich
-      angewandt wurden; sie schreiben die Heilmittelmengen fort;
-    - die **Honorarberechnung**, also das Terminhonorar nach Tarif oder
-      Vereinbarung (Punkt 5).
-
-    Die Auswahl der Heilmittel (KG, MT, Hausbesuch, Doppelbehandlung)
-    **verändert den Preis nicht** von selbst. Tarife und patientenbezogene
-    Honorarvereinbarungen sind versioniert mit Gültigkeitsbeginn. Eine
-    Preisänderung verändert **keine** erfasste Leistung und **keine** Rechnung
-    (Punkt 10). Bestehende Katalogpositionen und bisherige Abrechnungen bleiben
-    erhalten und lesbar. Das Ausfallhonorar bleibt ein eigener Anlass
-    (ADR-018). **Offen** ist, wie das Honorar auf der Rechnung erscheint: als
-    eine Zeile je Termin oder aufgeteilt auf Einzelpositionen, etwa für die
-    Erstattung durch Beihilfe und private Versicherung
-    (`OPEN_DECISIONS.md` B17). Die Aufteilung ist dann Darstellung; der Betrag
-    je Termin bleibt das Terminhonorar. *(Beantwortet mit Punkt 23.)*
-
-23. *(Fassung 5)* **Die Rechnung über Terminhonorare zeigt Einzelpositionen je
-    Heilmittel.** Beihilfe (Paragraf 23 BBhV mit Anlage 9, entsprechend die
-    Landesverordnungen) erstattet Heilmittel **je Leistung** bis zu einem
-    Höchstbetrag und nur mit ärztlicher Verordnung; die private
-    Krankenversicherung erstattet nach ihrem Tarif und erwartet dieselbe
-    Gliederung. Eine Zeile „Behandlung“ ließe sich keinem Höchstbetrag
-    zuordnen. Deshalb gilt:
-    - Je Termin wird das Terminhonorar auf die **am Termin bestätigten
-      Heilmittel** aufgeteilt. *(Fassung 6: die am Termin erfassten; bestätigt
-      wird am Termin nichts mehr, Punkt 24.)* Die Summe der Positionen eines Termins ist
-      **genau** das Terminhonorar; die Aufteilung verändert keinen Betrag,
-      sie gliedert ihn.
-    - Aufgeteilt wird **anteilig nach den Preisen der Heilmittel in der am
-      Leistungstag geltenden Preisliste** (Gewichte); Restcents nach dem
-      größten Bruchteil, bei Gleichstand an die erste Position. Die Regel
-      steht an **genau einer Stelle** und ist dort austauschbar.
-    - Die Rechnung nennt je Position Kürzel (Heilmittel-Positionsnummer),
-      Bezeichnung, Einzelpreis, Menge und die **Behandlungstage**, dazu die
-      Verordnung mit Datum, verordnender Ärzt:in und Diagnose (ICD-10,
-      ANN-229).
-    - **Eine Rechnung fasst die Leistungen einer Behandlungsgrundlage
-      zusammen** (je Verordnung), nicht mehr eines Kalendermonats. Leistungen
-      an Terminen ohne Grundlage bleiben beim Kalendermonat.
-    - Punkt 15 gilt unverändert: Das Steuerkennzeichen jeder Position ist das
-      ihrer Katalogposition.
-    Ob neben der Position ein Vergleichsbetrag (Kassen- oder Beihilfesatz)
-    steht, ist nicht entschieden; ohne Entscheidung steht keiner da.
-
-24. *(Fassung 6)* **Der Haken ist die Leistung; abgerechnet wird nach
-    Freigabe der Grundlage.** Der Projektinhaber hat festgelegt (B7): keine
-    Heilmittelbestätigung am Termin; der Haken heißt „Leistung erbracht";
-    ist die Grundlage vollständig, schlägt die Anwendung vor, sie in die
-    Abrechnung zu stellen, ein Tipp bestätigt; danach sind Doku, Zeitpunkt und
-    Anzahl der Termine nicht mehr änderbar. Daraus folgt:
-    - **Die Leistung entsteht serverseitig**, sobald ein Behandlungstermin mit
-      Grundlage abgehakt **und** dokumentiert ist, in beliebiger Reihenfolge:
-      je Heilmittel der Grundlage mit Restmenge eine Einheit, dazu das
-      Terminhonorar (Punkt 22). Punkt 13 (erst nach finalisierter Doku) und
-      Punkt 4 (keine Mehrfacherfassung) gelten unverändert. Ohne Grundlage,
-      Preisliste oder Honorar entsteht nichts; dann erfasst das Büro.
-    - **Wer den Haken zurücknimmt, nimmt die Leistung mit**, solange keine
-      Rechnung und kein Rechnungsentwurf sie führt; sonst bleibt der Haken.
-    - **Freigabe zur Abrechnung** an der Grundlage (Zeitpunkt und Person,
-      [ADR-020](ADR-020-treatment-basis.md) Punkt 9), sobald jeder ihrer
-      Termine abgehakt und dokumentiert, abgesagt oder nicht angetroffen ist
-      — auch vor dem letzten verordneten Termin. Danach sperrt der Server Doku,
-      Zeitpunkt und Anzahl ihrer Termine; zurückholen geht, bis eine Rechnung
-      sie führt.
-    - Die Rechnung entsteht weiter im Büro; die Freigabe ist ihre Vorstufe,
-      keine Bedingung.
-    Annahmen: ANN-513 bis ANN-515.
+1. **Abrechnung in der Plattform, ohne Factoring in V1** (§19).
+2. **Patient und Rechnungsempfänger sind getrennte Entitäten** (§19).
+3. **Abrechenbare Leistungen existieren unabhängig von Rechnungen** (§19, Punkt 21).
+4. **Keine Leistung wird unbeabsichtigt mehrfach abgerechnet** (§19); das Datenmodell erzwingt es.
+5. **Leistungskatalog und Preisvereinbarungen sind versioniert** (§19). *(Fassung 4)* Maßgeblich ist
+   die am Leistungstag geltende Honorarvereinbarung mit der Person, nur ohne sie der allgemeine
+   Tarif; eine neue Preisliste ändert keine bestehende Vereinbarung von selbst.
+6. **Steuerliche Eigenschaften je Leistung bzw. Version, nie durch KI** (§19).
+7. **Rechnungen haben mindestens die Zustände** Entwurf, ausgestellt, versendet, teilweise bezahlt,
+   bezahlt, überfällig und korrigiert/storniert.
+8. **Rechnungsnummer erst bei Ausstellung, eindeutig, nie wiederverwendet** (§19).
+9. **Ausgestellte Rechnungen sind unveränderbar,** korrigiert per eigenem Dokument (§19).
+10. **Beim Ausstellen entsteht ein historischer Snapshot** (§19).
+11. **Das Dokument wird in seiner damaligen Form aufbewahrt** (§19, Frist: ADR-008 Punkt 5).
+12. **Zahlungen sind eigene Transaktionen** (§19).
+13. **Therapeutische Leistungen sollen erst nach finalisierter Doku fakturierbar sein,** ein
+    Override nur begründet und protokolliert, in V1 keiner (§19).
+14. **PDF-Rechnungen aus dem Snapshot, ohne strukturierte E-Rechnungen zu verbauen** (§19).
+15. *(Fassung 2)* **Das Steuerkennzeichen hängt am Posten, nie am Kunden:** allein an der Leistung
+    bzw. Katalogversion, nicht am Rechtsverhältnis (ADR-021), Terminkontext (ADR-022), Empfänger
+    (Punkt 2) oder an der Person. Kennzeichen: steuerfreie Heilbehandlung (§ 4 Nr. 14 lit. a UStG);
+    steuerpflichtig zum Regelsatz ohne Heilbehandlungszweck; steuerpflichtig ermäßigt für
+    verordnungsfähige Leistungen ohne Verordnung, nur angelegt und bis zur Freigabe der
+    Steuerberatung inaktiv (B4); nicht steuerbar (kein Leistungsaustausch, Ausfallhonorar). Die
+    Kennzeichen sind Werte von `tax_treatment` und `tax_rate_permille` an der Katalogposition, kein
+    eigenes Feld.
+16. *(Fassung 2)* **Eine Rechnung trägt genau einen Leistungsbereich,** aus den Posten, nicht dem
+    Empfänger; das Datenmodell erzwingt es. Die Leistung hat ihn von der Katalogposition; ein
+    Widerspruch zum Terminkontext (ADR-022) wird als Erfassungsfehler abgewiesen.
+17. *(Fassung 2)* **Je Leistungsbereich ein eigener Nummernkreis** je Organisation und Kalenderjahr;
+    Punkt 8 gilt je Kreis, auch bei gleichzeitigen Zugriffen. Jede Nummer ist organisationsweit
+    einmalig (§ 14 Abs. 4 Nr. 4 UStG), jeder Kreis lückenlos, *(Fassung 4)* das aber als Regel der
+    Praxis, nicht als Pflicht aus § 14 UStG. Das Dokument zeigt seinen Kreis; Korrektur- und
+    Stornodokumente nehmen die Nummer aus dem Kreis ihrer Rechnung. Form vorläufig: ANN-075.
+18. *(Fassung 2)* **Der § 14c-Riegel:** An steuerfreien und nicht steuerbaren Posten steht kein
+    Steuerbetrag, nicht an Zeile, Steuergruppe oder Summe, unter § 19 UStG auf der ganzen Rechnung;
+    der Grund der Steuerbefreiung ist Pflichtangabe (§ 14 Abs. 4 Nr. 8 UStG) im Snapshot. Die Sperre
+    wirkt vor der Ausstellung und serverseitig (`app.assert_invoice_tax_lawful`), verbindlicher
+    Testfall in `pnpm test:db`; falscher Ausweis heißt Storno und Neuausstellung (Punkt 9).
+19. *(Fassung 2)* **Die Plattform führt die Auswertung „Einnahmen je Leistungsart“:** Erlöse je
+    Leistungsbereich, darin je Steuerkennzeichen und Satz, nur aus ausgestellten Rechnungen,
+    Korrektur- und Stornodokumenten und gebuchten Zahlungen. Sie benennt ihre Grundlage (Zufluss
+    oder Rechnungsstellung) und mischt beide nie in einer Zahl; welche gilt, klärt B9.
+    Deterministisch, ohne KI (ADR-005), kein steuerlicher Abschluss.
+20. *(Fassung 2)* **V1 macht von der Kleinbetragsrechnung (§ 33 UStDV) keinen Gebrauch:** Jede
+    Rechnung trägt alle Pflichtangaben nach § 14 Abs. 4 UStG, auch unter 250 Euro.
+21. *(Fassung 3)* **Wiederkehrende und vorausbezahlte Leistungen sind abrechenbare Ereignisse**
+    (§19): das Nachsorge-Abo monatlich als Leistung und Rechnung in `therapy`, frühestens ab Ende
+    der Behandlungsgrundlage (ADR-020), monatlich kündbar; das Trainingspaket für einen festen
+    Zeitraum, nicht pausierbar, eine Leistung in `training`. Für beide gelten die Punkte 1 bis 20.
+    Ihr Kennzeichen klärt B4, bis dahin eine Annahme nach §15.1 an genau einer Stelle.
+22. *(Fassung 4)* **Das Behandlungshonorar ist ein Terminhonorar:** je durchgeführtem
+    Behandlungstermin genau einmal das vereinbarte Sitzungshonorar (Stand 2026-10-02: 140 € je
+    60 Minuten samt Dokumentation und Hausbesuch). Getrennt, nie auseinander errechnet: verordnete
+    Heilmittel mit Mengen an der Grundlage (ADR-020), erbrachte Leistungen je Termin (sie schreiben
+    die Mengen fort), Honorar nach Tarif oder Vereinbarung (Punkt 5). Die Heilmittelauswahl
+    verändert den Preis nicht von selbst; Tarife und Vereinbarungen gelten ab einem Datum,
+    Bisheriges bleibt lesbar. Das Ausfallhonorar bleibt ein eigener Anlass (ADR-018).
+23. *(Fassung 5)* **Die Rechnung über Terminhonorare zeigt Einzelpositionen je Heilmittel,** weil
+    die Beihilfe je Leistung erstattet (Paragraf 23 BBhV mit Anlage 9): Das Honorar wird auf die am Termin
+    erfassten Heilmittel *(Fassung 6)* aufgeteilt, gewichtet nach der am Leistungstag geltenden
+    Preisliste, Summe je Termin genau das Honorar; Restcents nach dem größten Bruchteil, bei
+    Gleichstand an die erste Position, austauschbar an genau einer Stelle (`app.session_fee_lines`).
+    Je Position Kürzel (Heilmittel-Positionsnummer), Bezeichnung, Einzelpreis, Menge und
+    Behandlungstage, dazu Verordnung mit Datum, verordnender Ärzt:in und Diagnose (ICD-10, ANN-229).
+    Eine Rechnung je Grundlage (Verordnung), ohne Grundlage je Kalendermonat. Kein Vergleichsbetrag
+    (Kassen- oder Beihilfesatz) ohne Entscheidung.
+24. *(Fassung 6)* **Der Haken ist die Leistung; abgerechnet wird nach Freigabe der Grundlage:**
+    keine Heilmittelbestätigung am Termin, der Haken heißt „Leistung erbracht“. Die Leistung
+    entsteht serverseitig, sobald ein Behandlungstermin mit Grundlage abgehakt und dokumentiert ist,
+    gleich in welcher Reihenfolge: je Heilmittel mit Restmenge eine Einheit, dazu das Terminhonorar
+    (Punkt 22); Punkte 4 und 13 gelten. Ohne Grundlage, Preisliste oder Honorar entsteht nichts,
+    dann erfasst das Büro. Die Rücknahme des Hakens nimmt die Leistung mit, solange weder Rechnung
+    noch Entwurf sie führt, sonst bleibt der Haken. Ist die Grundlage vollständig, schlägt die
+    Anwendung die Freigabe vor, ein Tipp bestätigt (ADR-020 Punkt 9). Die Rechnung entsteht weiter
+    im Büro; die Freigabe ist ihre Vorstufe, keine Bedingung.
 
 ## Konsequenzen
-
-- Ohne Factoring in V1 verlassen Patientendaten die Plattform nicht zu
-  Abrechnungszwecken. Die sonst nötige ausdrückliche Einwilligung für die
-  Übermittlung an einen Abrechnungsdienstleister entfällt in V1; ein späterer
-  Wechsel wäre ein eigener ADR mit eigener Einwilligungs- und
-  DSFA-Betrachtung (ADR-007 nennt neue Datenflüsse als Wiedervorlagegrund).
-- Die Trennung von Patient und Rechnungsempfänger ist die Voraussetzung für
-  Beihilfe, private Versicherung, Betreuung und minderjährige Patienten. Sie
-  greift in den offenen Punkt B5 (Vertretung und Angehörigenzugriff), ohne ihn
-  zu entscheiden: Hier geht es um den Adressaten der Rechnung, nicht um
-  Zugriffsrechte auf die Akte.
-- Leistung und Rechnung sind getrennte Lebenszyklen. Eine Leistung trägt einen
-  eigenen Abrechnungsstatus; die Regel gegen unbeabsichtigte Mehrfachabrechnung
-  wird damit zu einer prüfbaren Invariante des Datenmodells und nicht zu einer
-  Sorgfaltsfrage im Bedienablauf. Das ist die direkte Umsetzung von §13.
-- Versionierte Kataloge und Preise bedeuten, dass eine Leistung auf eine
-  Katalogversion verweist und nicht auf einen aktuellen Preis. Preispflege
-  wird dadurch aufwendiger und historisch korrekt.
-- Steuerliche Eigenschaften je Leistungsversion sind eine bewusste Absage an
-  eine globale Steuerlogik: Heilbehandlungen und nicht befreite Angebote wie
-  Prävention oder Selbstzahler-Training können nebeneinander existieren. Der
-  ausdrückliche Ausschluss von KI an dieser Stelle folgt der Trennung aus
-  ADR-005 und der Abgrenzung aus ADR-006.
-- Der Zustandsautomat der Rechnung ist normativ. Das schließt die bisher
-  fehlende Modellierung der Rechnungsseite; der Terminstatus bleibt davon
-  unberührt und weiterhin offen. *(Seit ADR-018 entschieden; die Kopplung an
-  die Rechnung steht dort in Punkt 2 und 3.)*
-- Nummernvergabe erst bei Ausstellung heißt, dass Entwürfe keine Nummer tragen
-  und beliebig verworfen werden können, ohne Lücken zu erzeugen. Die Eindeutigkeit
-  und Nichtwiederverwendung ist unter gleichzeitigen Zugriffen sicherzustellen.
-- Unveränderbarkeit plus Snapshot bedeutet: Eine Rechnung ist nach Ausstellung
-  von späteren Änderungen an Stammdaten, Preisen und Katalog unabhängig. Damit
-  entsteht bewusst Datenredundanz — sie ist hier Zweck und nicht Fehler.
-- Neben der klinischen Versionierung aus §5 existiert damit ein zweites
-  Unveränderbarkeitsregime mit anderer Korrekturlogik. Beide dürfen nicht
-  vermischt werden: klinische Korrektur erzeugt eine neue Version, eine
-  Rechnungskorrektur erzeugt ein eigenes Dokument.
-- Die Aufbewahrung des ausgestellten Dokuments in seiner damaligen Form
-  verbindet diesen ADR mit ADR-008: Rechnungen und Buchungsbelege folgen der
-  steuerlichen Frist, nicht der Frist der Patientenakte.
-- Zahlungen als eigene Transaktionen erlauben Teilzahlungen, Überzahlungen und
-  Rückzahlungen, ohne den Rechnungsdatensatz zu verändern. Der Zahlungsstatus
-  ist damit abgeleitet, nicht gesetzt.
-- Die Kopplung von Fakturierung an finalisierte Dokumentation verbindet
-  Abrechnung und klinische Doku. Sie kann im Alltag stören — deshalb der
-  begründete und protokollierte Override, der Teil des Audit-Umfangs aus
-  ADR-004 wird. Zugleich hängt sie an ADR-001: Finalisierung ist ein
-  serverseitiger Vorgang und offline nicht möglich.
-- PDF in V1 mit offener Tür zur E-Rechnung heißt praktisch, dass die
-  Rechnungsdaten strukturiert vorliegen müssen und das PDF eine Darstellung
-  ist — nicht die einzige Quelle.
-
-**Zur Fassung 2:**
-
-- **Punkt 15 kostet kein neues Feld.** Die drei Kennzeichen sind keine vierte
-  Spalte, sondern **Werte des vorhandenen Paars** aus `tax_treatment` und
-  `tax_rate_permille` an der Katalogposition
-  (`supabase/migrations/20260919100000_service_catalog.sql`): steuerfreie
-  Heilbehandlung ist `exempt_healthcare`, die beiden steuerpflichtigen Fälle
-  sind `taxable` mit verschiedenem Satz, das Ausfallhonorar bleibt
-  `not_taxable`. Ein zweites Feld daneben wären zwei Wahrheiten über
-  dieselbe Position — genau die zweite Implementierung, die
-  `ARBEITSBEREICHE.md` verhindern soll. Die Constraint, die den Satz an die
-  Einordnung bindet, steht dort bereits.
-- **Der § 14c-Riegel ist zur Hälfte gebaut und zur Hälfte offen.**
-  `app.build_invoice_document` rechnet die enthaltene Steuer heute schon nur
-  an steuerpflichtigen Gruppen und unter § 19 UStG gar nicht — die
-  Rechenseite von Punkt 18 steht. **Der Grund der Steuerbefreiung steht
-  heute auf keiner Rechnung**, weder im Snapshot noch im Ausdruck; das ist
-  die konkreteste Lücke dieser Fassung und eine Pflichtangabe, kein
-  Schönheitsfehler. Sie wird eine Roadmap-Zeile, kein Nachtrag im Vorbeigehen.
-- **Getrennte Nummernkreise fassen zwei Annahmen enger, ohne sie
-  umzukehren.** `invoice_number_series` ist heute je Organisation und
-  Kalenderjahr geführt (ANN-075) und braucht einen dritten Schlüsselteil;
-  das Kürzel in den Praxis-Stammdaten wird eines je Bereich. ANN-079 gilt
-  weiter, jetzt je Kreis gelesen: Das Storno nimmt die Nummer der Rechnung,
-  die es betrifft. **Ein Übergangsproblem entsteht nicht** — produktiv ist
-  noch keine Rechnung ausgestellt (B12: kein Altsystem), der vorhandene
-  Kreis wird der Kreis der Heilbehandlung, der zweite beginnt bei 1.
-- **Punkt 16 gibt ANN-077 einen dritten Schlüssel.** Eine Rechnung bündelt
-  heute Person und Kalendermonat; künftig Person, Kalendermonat **und**
-  Leistungsbereich. Eine Person mit beiden Verhältnissen bekommt in einem
-  Monat damit **zwei** Rechnungen. Das ist gewollt: Es ist der Preis dafür,
-  dass keine Summe über zwei Steuerregime läuft und die getrennte
-  Gewinnermittlung ohne Nachrechnen funktioniert.
-- **Das § 14c-Risiko ist rechnerisch, nicht organisatorisch.** Die Schuld
-  entsteht mit dem **Ausweis**, nicht mit der Zahlung und nicht mit der
-  Absicht. Deshalb sitzt die Sperre vor der Ausstellung und nicht in einer
-  Prüfroutine danach, und deshalb steht sie in der Datenbank und nicht in der
-  Oberfläche: Eine ausgestellte Rechnung ist unveränderbar (Punkt 9) — was
-  einmal falsch draufsteht, kostet ein Storno.
-- **Die Auswertung aus Punkt 19 ist die einzige neue Funktion dieser
-  Fassung.** Sie rechnet aus Snapshots und Zahlungen, die **keine klinischen
-  Inhalte** tragen (Punkt 10), und braucht deshalb keinen Zugriff auf die
-  Akte. Wer sie sehen darf, folgt ADR-004 und §4.3 und wird hier nicht neu
-  entschieden. Dass sie ihre Grundlage benennt statt sie zu wählen, ist
-  dieselbe Zurückhaltung wie beim Umsatzsteuerstatus der Praxis: Die Software
-  rät den steuerlichen Rahmen nicht.
-- **Punkt 20 spart eine zweite Dokumentform.** Eine eigene Darstellung für
-  Rechnungen unter 250 Euro wäre ein zweiter Weg mit eigenen Fehlern und
-  eigenem Testbedarf — für eine Erleichterung, die diese Praxis nicht braucht.
-  Die Entscheidung gilt für V1 und ist billig zurückzunehmen.
-- **Kein Code, kein Schema, keine Migration, kein Test.** Nichts davon
-  entsteht mit dieser Fassung. Sie macht den Loop zulässig, der es baut; sie
-  beginnt ihn nicht.
-
-## Bewusst nicht Bestandteil dieser Entscheidung
-
-- Die Auswahl eines Leistungs- und Gebührenkatalogs sowie dessen Inhalte.
-- Die abschließende steuerrechtliche Bewertung einzelner Leistungsarten und
-  die Umsatzsteuerbehandlung im Einzelfall.
-- Das Format und der Zeitpunkt einer späteren strukturierten E-Rechnung.
-- Mahnwesen, Ausfallhonorar und Zahlungserinnerungen.
-- Zahlungsanbieter, Bankanbindung, Kontoauszugsabgleich.
-- Der Terminstatus-Automat (entschieden mit ADR-018, 2026-09-11).
-- Die Einordnung von Leistungsziffern als organisatorische oder klinische
-  Daten (C1 — entschieden 2026-09-05: organisatorisch; der Umfang des
-  Behandlungsnachweises ist mit E15 vom 2026-09-13 nur noch eine
-  Rechnungssicht, ADR-004 Fassung 2).
-- Vertretungs- und Vollmachtsregelungen für den Zugriff auf Daten
-  (B5 — Rahmen vorläufig entschieden 2026-09-08, Verfahren offen).
-- Die Verfahrensdokumentation nach GoBD als Dokument.
-- *(Fassung 2)* Die **Aktivierung des ermäßigten Kennzeichens** aus Punkt 15
-  und die steuerliche Einordnung einzelner Katalogpositionen. Beides gehört
-  zur Steuerberatung (B4, Roadmap G13); Fassung 2 legt nur an, wo es hängt.
-- *(Fassung 2)* Die **Wahl der Gewinnermittlungsart**, getrennte Konten und
-  die Frage einer späteren Personengesellschaft (B9). Punkt 19 liefert die
-  Zahlen, nicht die Rechtsform.
-- *(Fassung 2)* Das **Format der Nummernkreise** und ihre Kürzel. Die Bezeichner
-  bleiben Sache des SPEC (ADR-014); die Antwort aus G13 kann sie ändern, ohne
-  Punkt 17 zu berühren.
-- *(Fassung 2)* Der **Nachzug an `PROJECT_PRINCIPLES.md`** §1, §4 und §14. Das
-  ist Schritt 5 aus E18 und kommt zuletzt, nicht hier. §19 trägt diesen ADR
-  und ändert sich nicht.
+Ohne Factoring verlassen Abrechnungsdaten die Plattform nicht; ein Dienstleister bräuchte ADR,
+Einwilligung und DSFA (ADR-007). Der Empfänger ist Adressat, kein Zugang zur Akte (B5). Klinische
+Korrektur erzeugt eine Version, Rechnungskorrektur ein Dokument, nie vermischt. Nummernlose Entwürfe
+lassen sich lückenlos verwerfen; Zahlungen erlauben auch Überzahlungen, der Zahlungsstand wird
+gerechnet. Bei beiden Verhältnissen: getrennte Rechnungen, keine Summe über zwei Steuerregime.
 
 ## Offene Folgefragen
-
-- ~~Welche abrechenbaren Ereignisse gibt es neben durchgeführten Terminen?~~ *Beantwortet mit Punkt 21 (Fassung 3) und `PROJECT_PRINCIPLES.md` §19; die Liste dort ist nicht abschließend.*
-- Wie wird die Nichtwiederverwendung von Rechnungsnummern unter gleichzeitigen
-  Zugriffen und bei fehlgeschlagenen Ausstellungsvorgängen technisch
-  garantiert?
-- ~~Wie wird ein Nummernkreis geführt — pro Organisation, pro Jahr,
-  fortlaufend?~~ *(Beantwortet mit Punkt 17, Fassung 2: je Organisation,
-  Kalenderjahr **und Leistungsbereich**, lückenlos je Kreis und einmalig über
-  alle Kreise. Die Form der Nummer hält ANN-075 vorläufig fest.)*
-- Wer darf einen Override der Fakturierungssperre setzen, und wie wird er
-  ausgewertet?
-- Wie verhält sich der Rechnungszustand „überfällig" zu Zahlungszielen und
-  Mahnwesen, das hier nicht entschieden wird?
-- Welche Felder umfasst der Snapshot genau, und wie wird er gegen spätere
-  Schemaänderungen robust gehalten?
-- Wie wird eine Storno- und Korrekturkette dargestellt, wenn mehrfach
-  korrigiert wird?
-- Wie werden Rechnungen an Beihilfestellen und private Versicherer
-  adressiert, und benötigt das eigene Empfängertypen?
-- Wie greifen Zugriffsrechte des Office (§4.3) auf Rechnungen mit
-  Leistungsangaben, solange C1 nicht entschieden ist?
-
-**Neu mit Fassung 6:**
-
-- Soll die Vorbelegung (je Heilmittel mit Restmenge eine Einheit) bei
-  Verordnungen mit mehreren Heilmitteln anders laufen, etwa nur das erste?
-  Heute korrigiert das Büro vor der Rechnung.
-
-**Neu mit Fassung 5:**
-
-- Braucht eine Beihilfestelle neben der Position einen Vergleichsbetrag, und
-  stimmen die Gewichte (Preise der Heilmittel) mit dem überein, was ein
-  Erstattungsfall tatsächlich anerkennt? Prüfen am ersten echten
-  Erstattungsfall.
-- Reicht die Klammer „eine Rechnung je Verordnung“ bei langen Verordnungen,
-  oder braucht es zusätzlich eine Monatsgrenze?
-- Wer ein Honorar über dem Erstattungsbetrag vereinbart, muss vor der
-  Behandlung in Textform über die Kosten informieren (§ 630c Abs. 3 BGB).
-  Wie die Plattform das unterstützt, ist nicht entschieden.
-
-**Neu mit Fassung 4:**
-
-- ~~Wie erscheint das Terminhonorar auf der Rechnung — eine Zeile oder
-  Einzelpositionen je Heilmittel —, und was verlangen Beihilfe und private
-  Versicherung für die Erstattung? (`OPEN_DECISIONS.md` B17, mit B4.)~~
-  *Beantwortet mit Punkt 23 (Fassung 5).*
-
-**Neu mit Fassung 2:**
-
-- Wie wird der **Grund der Steuerbefreiung** geführt — als fester Text je
-  Kennzeichen oder als Feld an der Katalogposition? Das Zweite erlaubt
-  verschiedene Befreiungstatbestände, das Erste verhindert einen falschen.
-- Wie wird eine Leistung abgerechnet, die **beide Bereiche berührt** — etwa
-  eine Hausbesuchspauschale zu einem Trainingstermin? Ist sie je Bereich eine
-  eigene Katalogposition, oder folgt sie der Hauptleistung?
-- Trägt die Auswertung aus Punkt 19 auch **Ausfallhonorare** (nicht steuerbar,
-  kein Leistungsaustausch), und in welchem Bereich erscheinen sie?
-- Was gilt, wenn ein **Kennzeichen nachträglich falsch** war — etwa nach einer
-  Klärung durch die Steuerberatung? Punkt 9 gibt die Antwort für die
-  ausgestellte Rechnung; offen ist, wie eine Katalogposition korrigiert wird,
-  ohne die Historie zu verfälschen (Punkt 5).
-- Wie wird geprüft, dass **kein Weg an Punkt 16 vorbeiführt** — reicht eine
-  Constraint über die Posten einer Rechnung, oder braucht es die Prüfung schon
-  bei der Bündelung?
+- Override (Punkt 13): Wer setzt ihn, wer wertet aus?
+- Vorbelegung bei mehreren Heilmitteln anders, etwa nur das erste? Bisher korrigiert das Büro.
+- Vergleichsbetrag und Gewichte für die Beihilfe: offen bis zum ersten Erstattungsfall (B17).
+- Reicht „eine Rechnung je Verordnung“ bei langen Verordnungen, oder braucht es eine Monatsgrenze?
+- Textform-Information bei Honorar über der Erstattung (§ 630c Abs. 3 BGB): Wie hilft die Plattform?
+- Offen mit B4: Befreiungsgrund als Text oder Feld (ANN-082), Leistung beider Bereiche,
+  Ausfallhonorar in Punkt 19, Korrektur eines falschen Kennzeichens ohne Historienbruch.
 
 ## Änderungshistorie
-
-| Fassung | Datum      | Änderung |
-| ------- | ---------- | -------- |
-| 1       | 2026-08-28 | Erstfassung, angenommen. Punkte 1 bis 14. |
-| 2       | 2026-09-20 | **Punkte 15 bis 20 ergänzt, angenommen:** Das Steuerkennzeichen hängt am **Posten**, nie am Kunden, am Rechtsverhältnis oder am Terminkontext (Punkt 15, drei Kennzeichen; das ermäßigte bleibt bis B4 inaktiv). Eine Rechnung trägt **genau einen Leistungsbereich**, gemischte sind ausgeschlossen (Punkt 16). Daraus folgen **getrennte Nummernkreise** je Bereich und Kalenderjahr, lückenlos je Kreis und einmalig über alle (Punkt 17, § 14 Abs. 4 Nr. 4 UStG) — das beantwortet die offene Folgefrage aus Fassung 1 zur Führung des Nummernkreises. Punkt 18 ist der **§ 14c-Riegel**: kein Steuerausweis am steuerfreien Posten, der Befreiungsgrund als Pflichtangabe im Snapshot, die Sperre serverseitig und als verbindlicher Testfall in `pnpm test:db`. Punkt 19 führt die Auswertung **„Einnahmen je Leistungsart"** für die getrennte Gewinnermittlung ein; sie benennt ihre Grundlage, statt sie zu wählen. Punkt 20 verzichtet in V1 auf die **Kleinbetragsrechnung** nach § 33 UStDV. Anlass: Festlegungen des Projektinhabers vom 2026-09-17 (E18 Abschnitt 3), **Schritt 4 von sieben**. Die Punkte 1 bis 14 sind unverändert und werden nur enger gefasst; kein Code, kein Schema, keine Migration. |
-| 3       | 2026-09-23 | **Punkt 21 ergänzt:** Nachsorge-Abo (Bereich `therapy`, Monatsrechnung, frühestens ab Ende der Behandlungsgrundlage, monatlich kündbar) und Trainingspaket (fester Zeitraum, nicht pausierbar) als abrechenbare Ereignisse. Erledigungsvermerk an Punkt 13 (kein Override in V1). Punkte 1 bis 20 unverändert. Anlass: Entscheidungen des Projektinhabers vom 2026-09-23 (`git show eb43569:docs/development/archiv/UMBAU.md`, E-4). |
-| 4       | 2026-10-02 | **Punkt 22 ergänzt: Terminhonorar** — je durchgeführtem Behandlungstermin genau einmal das vereinbarte Sitzungshonorar; verordnete Heilmittel, erbrachte Leistungen und Honorarberechnung getrennt; die Heilmittelauswahl verändert den Preis nicht; Tarif und patientenbezogene Vereinbarung versioniert. **Punkt 5 präzisiert:** die mit der Person vereinbarte Regelung geht dem allgemeinen Tarif vor. **Punkt 17 präzisiert:** Lückenlosigkeit ist interne Praxisregel, gesetzlich verlangt ist die Einmaligkeit. Rechnungsdarstellung offen (B17). Anlass: Abnahme der Annahmen, Block 4 (Jannes). Punkte 1 bis 21 sonst unverändert. |
-| 5       | 2026-10-05 | **Punkt 23 ergänzt: Rechnungsdarstellung beim Terminhonorar** (B17 entschieden, Jannes): Einzelpositionen je bestätigtem Heilmittel, das Terminhonorar anteilig nach den Preisen der Heilmittel aufgeteilt, Summe je Termin genau das Honorar; Behandlungstage je Position, Verordnung und Diagnose auf der Rechnung; eine Rechnung je Behandlungsgrundlage statt je Kalendermonat. Anlass: Prüfung einer Musterrechnung gegen die Vorgaben von Beihilfe (Paragraf 23 BBhV, Anlage 9) und privater Krankenversicherung. Punkte 1 bis 22 unverändert. |
-| 6       | 2026-10-14 | **Punkt 24 ergänzt: Der Haken ist die Leistung** (B7, Jannes): keine Heilmittelbestätigung am Termin; Haken und festgeschriebene Doku erfassen die Leistung von selbst, die Rücknahme des Hakens nimmt sie mit, solange keine Rechnung sie führt; Freigabe zur Abrechnung an der Grundlage mit Sperre von Doku, Zeitpunkt und Terminzahl. Punkt 23 spricht von erfassten statt bestätigten Heilmitteln (Vermerk). Punkte 1 bis 22 unverändert. |
+- Fassung 1 (2026-08-28, Jannes): Erstfassung, Punkte 1 bis 14 (B4).
+- Fassung 2 (2026-09-20, Jannes, E18): Punkte 15 bis 20, Steuerkennzeichen, Nummernkreise, § 14c.
+- Fassung 3 (2026-09-23, Jannes): Punkt 21, Nachsorge-Abo und Trainingspaket; Vermerk an Punkt 13.
+- Fassung 4 (2026-10-02, Jannes): Punkt 22 Terminhonorar; Vereinbarung vor Tarif, Lückenlosigkeit.
+- Fassung 5 (2026-10-05, Jannes, B17): Punkt 23, Positionen je Heilmittel, Rechnung je Verordnung.
+- Fassung 6 (2026-10-14, Jannes, B7): Punkt 24, Haken und Freigabe; Punkt 23 „erfasste“ Heilmittel.
+- Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.

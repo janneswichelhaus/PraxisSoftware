@@ -1,225 +1,62 @@
 # ADR-016: Klinische Dokumentation — Entwurf, Finalisierung und Änderbarkeit
-
 ## Status
-
-Angenommen — **Fassung 4** (2026-10-14).
-
-Fassung 4 ergänzt Punkt 4 (die Finalisierung hakt den Termin nicht ab, B4)
-und fügt Punkt 11 an (Sperre nach der Freigabe zur Abrechnung, B7); die
-übrigen Punkte sind unverändert.
-
-Fassung 3 kehrt Punkt 9 (Auditpflicht) auf Entscheidung des Projektinhabers um
-(LOG-EPIC-001); die übrigen Punkte sind unverändert.
-
-Fassung 2 ergänzt Punkt 10 und lässt die Punkte 1 bis 9 unverändert. Fassung 1
-vom 2026-09-01 bleibt in der Git-Historie nachlesbar; was geändert wurde, steht
-unten in der Änderungshistorie.
-
-## Datum
-
-2026-09-01 (Fassung 1); 2026-09-08 (Fassung 2); 2026-10-03 (Fassung 3); 2026-10-14 (Fassung 4)
+Angenommen, Fassung 4 (2026-10-14); Fassung 3 kehrte Punkt 9 um (LOG-EPIC-001); Punkt 8 folgt
+ADR-004 Fassung 2 (E15, 2026-09-13).
 
 ## Kontext
-
-`PROJECT_PRINCIPLES.md` §5 verlangt für die klinische Dokumentation
-„finalisiert" und „nachvollziehbar", definiert beide Begriffe aber nicht.
-`docs/decisions/OPEN_DECISIONS.md` führt sie in Abschnitt D als offen und nennt
-die entscheidende Konsequenz: „Versionierung mit abrufbarem Originalinhalt (wie
-§630f BGB verlangt) oder nur Änderungs-Log? Zwei verschiedene Datenmodelle."
-
-Jannes hat am 2026-09-01 die Anforderung genannt und die Entscheidung
-ausdrücklich delegiert: die Dokumentation soll sich an iPrax orientieren —
-**jede:r Therapeut:in kann dokumentieren, und Einträge können auch im
-Nachhinein geändert oder ergänzt werden.** Ob iPrax solche Änderungen
-speichert, ist ihm nicht bekannt.
-
-Diese Frage ist nur zum Teil eine Produktentscheidung. §630f Abs. 1 BGB
-verlangt, dass bei Berichtigungen und Änderungen einer Patientenakte
-**neben dem ursprünglichen Inhalt** erkennbar bleibt, wann sie vorgenommen
-wurden, und stellt ausdrücklich klar, dass das auch für elektronisch geführte
-Akten sicherzustellen ist. Ein reines Änderungs-Log, das den alten Inhalt
-überschreibt, erfüllt das nicht. Der Freiheitsgrad liegt also nicht bei der
-Frage *ob* versioniert wird, sondern nur bei Zuschnitt und Bedienung.
-
-Weitere Randbedingungen aus bereits getroffenen Entscheidungen:
-
-- [ADR-004](ADR-004-authorization-model.md): Therapeut:innen sehen
-  grundsätzlich alle Akten der Organisation; Office hat keinen Zugriff auf
-  klinische Freitexte. *Vermerk 2026-09-13: Mit ADR-004 Fassung 2 (E15)
-  liest Office die Dokumentation im selben Umfang wie Therapeut:innen; die
-  Office-Projektion aus DOK-003 (Behandlungsnachweis) ist mit ROL-EPIC-001
-  (2026-09-15) zur Rechnungssicht geworden. Schreibrechte und Versionierung bleiben unverändert.*
-- [ADR-001](ADR-001-online-first-limited-offline.md): Finalisierung erst nach
-  Serversynchronisation; nicht finalisierte Entwürfe dürfen offline entstehen.
-- [ADR-009](ADR-009-private-billing-model.md): Fakturierung grundsätzlich erst
-  nach finalisierter Dokumentation.
-- [ADR-008](ADR-008-data-retention-and-deletion.md): klinische Unterlagen
-  10 Jahre nach Behandlungsabschluss.
-- [ADR-010](ADR-010-audit-and-privileged-access.md): auditpflichtige
-  Ereignisse, nur Metadaten ohne klinische Inhalte.
+§5 verlangt „finalisiert“ und „nachvollziehbar“, ohne sie zu definieren; Jannes will, dass jede:r
+Therapeut:in dokumentiert und Einträge nachträglich ändern oder ergänzen kann. § 630f Abs. 1 BGB
+verlangt, dass bei Änderungen neben dem ursprünglichen Inhalt erkennbar bleibt, wann sie erfolgten,
+auch elektronisch. Bewusst nicht Bestandteil: Struktur eines Eintrags (DOK-001), Signatur,
+qualifizierter Zeitstempel, Löschung außerhalb von ADR-008, Doku außerhalb der Heilbehandlung (B9),
+Diktat und KI-Entwürfe als Funktion außer Punkt 10 (ADR-005, ADR-006, E13).
 
 ## Entscheidung
-
-1. **Jede:r Therapeut:in darf dokumentieren, ergänzen und korrigieren** — auch
-   Einträge, die eine andere Person verfasst hat. Es gibt keine Beschränkung
-   auf den ursprünglichen Verfasser. Vertretung ist in einer kleinen Praxis der
-   Regelfall, und ADR-004 gibt Therapeut:innen ohnehin Zugriff auf alle Akten.
-   **Die Urheberschaft je Version bleibt dauerhaft erhalten.**
-
-2. **Ein Dokumentationseintrag hat genau zwei Zustände: `Entwurf` und
-   `finalisiert`.**
-
-3. **Entwurf.** Frei änderbar ohne Versionierung. Für alle Therapeut:innen
-   sichtbar, aber deutlich als Entwurf gekennzeichnet. Kein Nachweis im Sinne
-   von §630f, keine Grundlage für eine Abrechnung (ADR-009). Ein Entwurf darf
-   offline entstehen (ADR-001).
-
-4. **Finalisierung** ist ein ausdrücklicher Schritt durch eine:n Therapeut:in.
-   Ab diesem Zeitpunkt ist der Eintrag Bestandteil der Akte. Finalisieren darf
-   jede:r Therapeut:in, nicht nur der Verfasser.
-   *(Fassung 4)* Die Finalisierung **hakt den Termin nicht ab**: Festschreiben
-   und Abhaken sind getrennte Schritte ([ADR-018](ADR-018-appointment-states.md)
-   Punkt 10).
-
-5. **Nach der Finalisierung erzeugt jede Änderung eine neue Version.** Der
-   Inhalt jeder früheren Version bleibt **vollständig abrufbar**, zusammen mit
-   Zeitpunkt und Urheber der Änderung. Es wird nicht überschrieben und nicht
-   gelöscht. Das ist die Anforderung aus §630f Abs. 1 S. 2 und 3 BGB und keine
-   Ermessensfrage.
-
-6. **Ergänzung ist der Regelfall, Änderung die Ausnahme.** Eine nachträgliche
-   Ergänzung wird als **eigener, mit dem Ursprungseintrag verknüpfter Eintrag**
-   geführt, nicht als Änderung des alten Textes. Die Änderung eines
-   finalisierten Eintrags bleibt echten Korrekturen vorbehalten und verlangt
-   eine kurze Begründung.
-
-7. **Automatische Finalisierung.** Ein Entwurf wird nach Ablauf einer
-   konfigurierbaren Frist automatisch finalisiert; Voreinstellung ist das Ende
-   des auf die Behandlung folgenden Kalendertages. Der Entwurfsstand wird dabei
-   unverändert zur Version 1.
-
-8. **Sichtbarkeit.** Office sieht weder Inhalte noch Versionen klinischer
-   Einträge (ADR-004). Der Versionsverlauf unterliegt derselben
-   rollenabhängigen Projektion wie der Eintrag selbst.
-
-9. **Auditpflicht** (Fassung 3). Erstellen, Finalisieren und Ändern weist der
-   Eintrag selbst nach: `created_by`, `finalized_by`, `finalized_at` und die
-   Versionen mit Urheber und Zeitpunkt (Punkte 4 bis 6). Das Lesen ist
-   auditpflichtig nach [ADR-010](ADR-010-audit-and-privileged-access.md)
-   Fassung 3 als „Akte geöffnet“: höchstens ein Eintrag je Person, Akte und
-   Kalendertag, als Metadaten ohne klinischen Inhalt. *Fassung 2 lautete:
-   „Erstellen, Finalisieren, Ändern und Lesen eines Eintrags sind
-   auditpflichtig nach ADR-010 — als Metadaten, ohne klinischen Inhalt im
-   Auditlog.“*
-
-10. **Ein KI-Vorschlag ist kein Entwurf** (Fassung 2). Ein Transkript oder ein
-    strukturierter Vorschlag, der aus einem Diktat oder einer anderen
-    KI-Verarbeitung entsteht, ist **kein Dokumentationseintrag im Sinne von
-    Punkt 2** und tritt weder in den Zustand `Entwurf` noch in den Zustand
-    `finalisiert` ein. Er wird erst durch eine **ausdrückliche Übernahme**
-    durch eine:n Therapeut:in zu einem `Entwurf`; ab diesem Schritt gilt der
-    Text als von dieser Person verfasst und läuft normal weiter. **Die
-    automatische Finalisierung nach Punkt 7 erfasst einen nicht übernommenen
-    KI-Vorschlag nicht** — unter keinen Umständen. Die inhaltlichen
-    Anforderungen an eine Sprachdokumentation stehen in
-    `PROJECT_PRINCIPLES.md` §6.3.
-
-11. **Sperre nach der Freigabe zur Abrechnung** (Fassung 4). Ist die
-    Behandlungsgrundlage eines Termins in die Abrechnung gestellt
-    ([ADR-020](ADR-020-treatment-basis.md) Punkt 9), lassen sich seine
-    Einträge weder ändern noch ergänzen — kein Entwurf, keine Korrektur, kein
-    Nachtrag —, bis die Grundlage zurückgeholt ist. Zurückholen geht, solange
-    keine Rechnung sie führt; danach erst nach einem Storno
-    ([ADR-009](ADR-009-private-billing-model.md) Punkt 9). Bis zur Freigabe
-    gilt Punkt 1 unverändert. Freigegeben wird nur ohne offenen Entwurf; die
-    automatische Finalisierung (Punkt 7) trifft deshalb nie auf eine gesperrte
-    Grundlage. Der Server sperrt, nicht die Oberfläche (ANN-515).
+1. **Jede:r Therapeut:in darf dokumentieren, ergänzen und korrigieren**, auch Einträge anderer,
+   ohne Beschränkung auf den Verfasser; **die Urheberschaft je Version bleibt dauerhaft erhalten**.
+2. **Ein Dokumentationseintrag hat genau zwei Zustände: `Entwurf` und `finalisiert`.**
+3. **Entwurf:** frei änderbar ohne Versionierung, klar gekennzeichnet und allen Therapeut:innen
+   sichtbar; kein Nachweis (§ 630f BGB), nicht abrechenbar (ADR-009), offline möglich (ADR-001).
+4. **Finalisierung** ist ein ausdrücklicher Schritt, den jede:r Therapeut:in tun darf; ab da gehört
+   der Eintrag zur Akte. Sie **hakt den Termin nicht ab** (Fassung 4, ADR-018 Punkt 10).
+5. **Nach der Finalisierung erzeugt jede Änderung eine neue Version**; jede frühere bleibt mit
+   Zeitpunkt und Urheber vollständig abrufbar, nichts wird überschrieben oder gelöscht
+   (§ 630f Abs. 1 S. 2 und 3 BGB).
+6. **Ergänzung ist der Regelfall, Änderung die Ausnahme:** Ergänzung als eigener, verknüpfter
+   Eintrag; Änderung eines finalisierten Eintrags nur für echte Korrekturen, mit kurzer Begründung.
+7. **Automatische Finalisierung** nach konfigurierbarer Frist, voreingestellt das Ende des auf die
+   Behandlung folgenden Kalendertages; der Entwurfsstand wird unverändert zur Version 1.
+8. **Sichtbarkeit:** Der Versionsverlauf folgt derselben rollenabhängigen Projektion wie der
+   Eintrag; Office liest seit ADR-004 Fassung 2 im Umfang der Therapeut:innen und schreibt nicht.
+9. **Auditpflicht** (Fassung 3): Schreibvorgänge weist der Eintrag selbst nach (`created_by`,
+   `finalized_by`, `finalized_at`, Versionen); das Lesen steht als „Akte geöffnet“ höchstens einmal
+   je Person, Akte und Kalendertag im Auditlog (ADR-010), ohne klinischen Inhalt.
+10. **Ein KI-Vorschlag ist kein Entwurf** (Fassung 2, §6.3): Transkript oder strukturierter
+    Vorschlag aus Diktat oder anderer KI-Verarbeitung ist kein Eintrag nach Punkt 2. Erst die
+    ausdrückliche Übernahme durch eine:n Therapeut:in macht ihn zum `Entwurf`, verfasst von dieser
+    Person; die automatische Finalisierung erfasst einen nicht übernommenen Vorschlag nie.
+11. **Sperre nach der Freigabe zur Abrechnung** (Fassung 4): Ist die Grundlage eines Termins
+    freigegeben (ADR-020 Punkt 9), sind seine Einträge gesperrt, kein Entwurf, keine Korrektur, kein
+    Nachtrag, bis sie zurückgeholt ist, mit Rechnung erst nach Storno (ADR-009 Punkt 9); davor gilt
+    Punkt 1. Freigegeben wird nur ohne offenen Entwurf, Punkt 7 trifft also nie Gesperrtes; der
+    Server sperrt, nicht die Oberfläche (ANN-515).
 
 ## Konsequenzen
-
-- **Abschnitt D aus `OPEN_DECISIONS.md` ist für „finalisiert" und
-  „nachvollziehbar" damit entschieden.** Die übrigen Begriffe dort bleiben
-  offen.
-- Das Datenmodell trägt Eintrag und Version als getrennte Ebenen. Der
-  aktuelle Stand ist die jüngste Version; Lesepfade liefern
-  standardmäßig diese und den Verlauf nur auf Anforderung.
-- Punkt 7 erzeugt bewusst Reibung: eine automatische Finalisierung kann einen
-  unfertigen Eintrag festschreiben. Die Alternative — ein Entwurf, der nie
-  finalisiert wird — ist rechtlich der schlechtere Fall, weil dann gar keine
-  Dokumentation im Sinne von §630f vorliegt. Version 1 lässt sich jederzeit
-  durch eine Version 2 korrigieren; ein fehlender Eintrag lässt sich nicht
-  nachträglich zeitnah machen. **Das ist der Punkt dieser Entscheidung, der am
-  ehesten nachjustiert werden muss**, sobald die Praxis damit gearbeitet hat.
-- Punkt 6 hält den Verlauf lesbar. Würde jede Ergänzung als Änderung geführt,
-  entstünden lange Versionsketten, in denen nicht mehr erkennbar ist, was
-  Korrektur und was Zusatz war.
-- Die Speichermenge wächst, weil nichts überschrieben wird. Bei Textinhalten
-  ist das im Verhältnis zur Aufbewahrungspflicht von zehn Jahren
-  vernachlässigbar.
-- Löschung nach ADR-008 erfasst **alle** Versionen eines Eintrags. Ein
-  Versionsverlauf, der eine wirksame Löschung überlebt, wäre ein Fehler und
-  muss im Test von LOE-002 abgedeckt sein.
-- Die Anforderung „jede:r darf ändern" plus „Urheberschaft je Version bleibt"
-  macht das Audit-Log zur einzigen verbleibenden Kontrolle — dieselbe Lage wie
-  bei C4 in `OPEN_DECISIONS.md`. Der Versionsverlauf ist hier die
-  kompensierende Maßnahme, weil er fachlich und nicht nur technisch lesbar ist.
-- **Punkt 10 nimmt Punkt 7 bewusst einen Teil seiner Reichweite.** Liegt zu
-  einer Behandlung nur ein ungeprüfter KI-Vorschlag vor, entsteht durch
-  Fristablauf **kein** Eintrag. Das kehrt die Abwägung aus Punkt 7 um — dort
-  ist ein unfertiger Eintrag besser als keiner — und ist hier trotzdem richtig:
-  ein automatisch festgeschriebener, von niemandem gelesener Maschinentext ist
-  kein Nachweis im Sinne von §630f, sondern ein Inhalt ohne Urheber. §6 nennt
-  KI-Ergebnisse mit klinischer Wirkung ausdrücklich Entwürfe bis zur
-  menschlichen Freigabe, und §16 stellt Datenintegrität über Bequemlichkeit.
-  Die selbst geschriebene Dokumentation der Therapeut:in bleibt davon
-  unberührt und wird weiter nach Punkt 7 finalisiert.
-- Punkt 10 verlangt die Trennung, nicht eine bestimmte Form. Dem Datenmodell
-  bleiben zwei Wege: der KI-Vorschlag lebt außerhalb des Dokumentationseintrags,
-  bis er übernommen wird, oder er bekommt einen eigenen Zustand **vor**
-  `Entwurf`. Welchen Weg die Umsetzung wählt, entscheidet die
-  Feature-Spezifikation. Die Prüfung ist in beiden Fällen dieselbe und gehört
-  in `pnpm test:db`: die automatische Finalisierung darf nie etwas
-  festschreiben, das niemand übernommen hat.
-- Für die Aufbewahrung ist nichts Neues nötig: ADR-008 führt „nicht angenommene
-  KI-Entwürfe" bereits als eigene Datenklasse mit kurzer Frist und „angenommene
-  KI-Inhalte" mit der Frist des Zieldokuments.
-
-## Bewusst nicht Bestandteil dieser Entscheidung
-
-- Die inhaltliche Struktur eines Eintrags (Vorlagen, Felder, SOAP oder
-  Freitext). Das gehört in die Feature-Spezifikation von DOK-001.
-- Eine elektronische Signatur oder ein qualifizierter Zeitstempel.
-- Die Löschbarkeit einer finalisierten Dokumentation außerhalb von ADR-008.
-- Der Umgang mit Dokumentation außerhalb der Heilbehandlung (B9).
-- Diktat, Spracherkennung und KI-gestützte Entwürfe **als Funktion**: Anbieter,
-  Architektur, Aufbewahrung des Rohaudios, Bedienung und Zeitpunkt. Dafür
-  gelten ADR-005 und ADR-006 zusätzlich; die inhaltlichen Anforderungen stehen
-  in `PROJECT_PRINCIPLES.md` §6.3, die offene Ausgestaltung in
-  `docs/decisions/OPEN_DECISIONS.md` E13. **Entschieden ist hier allein die
-  Abgrenzung aus Punkt 10.**
+- Eintrag und Version sind getrennte Ebenen; Lesepfade liefern die jüngste Version, den Verlauf auf
+  Anforderung. Weil jede:r ändern darf, kompensiert der lesbare Verlauf (wie C4). Löschung nach
+  ADR-008 erfasst alle Versionen (Test in LOE-002); Fristen der KI-Entwürfe: ADR-008.
+- Punkt 7 schreibt auch Unfertiges fest und wird am ehesten nachjustiert; Selbstgeschriebenes
+  finalisiert weiter nach Punkt 7. Wie Punkt 10 trennt, wählt die Feature-Spezifikation;
+  `pnpm test:db` prüft, dass die automatische Finalisierung nie Unübernommenes festschreibt.
 
 ## Offene Folgefragen
-
-- Ist die Voreinstellung „Ende des Folgetages" für die automatische
-  Finalisierung praxistauglich, insbesondere bei Hausbesuchen am Freitag?
-- Wird die Begründung bei einer Korrektur (Punkt 6) zum Pflichtfeld oder bleibt
-  sie optional?
-- Wie wird der Versionsverlauf dargestellt, ohne dass er den Alltagsblick auf
-  die Akte überlagert?
-- Gilt Punkt 1 auch für Auszubildende oder Praktikant:innen, sobald es eine
-  solche Rolle gibt? ADR-004 kennt sie heute nicht.
-- *(Fassung 4)* Sollen Nachträge nach der Freigabe zur Abrechnung möglich
-  bleiben (Punkt 11)? Heute nur nach dem Zurückholen.
-- Wie verhält sich die Frist aus Punkt 7 zu einer späten Übernahme nach
-  Punkt 10? Der Fristanker ist heute die Behandlung (ANN-008), nicht die
-  Entstehung des Entwurfs — eine Übernahme nach Fristablauf erzeugte damit
-  einen Entwurf, der sofort automatisch finalisiert würde. Offen als E13.
+- offen: Frist am Freitag, Begründungspflicht, Azubi-Rolle (OPEN_DECISIONS, Folgefragen); E13.
+- Wie zeigt die Oberfläche den Versionsverlauf, ohne den Alltagsblick auf die Akte zu überlagern?
+- Sollen Nachträge nach der Freigabe möglich sein (Punkt 11)? Heute erst nach dem Zurückholen.
 
 ## Änderungshistorie
-
-| Fassung | Datum      | Änderung                                                                                                                                                                                                                                                            |
-| ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1       | 2026-09-01 | Erstfassung, angenommen.                                                                                                                                                                                                                                            |
-| 2       | 2026-09-08 | **Punkt 10 ergänzt:** ein KI-Vorschlag ist kein `Entwurf` und wird von der automatischen Finalisierung nach Punkt 7 nicht erfasst; erst die ausdrückliche Übernahme macht ihn zum Entwurf. Dazu drei Konsequenzen, die Abgrenzung zu Diktat/KI-Entwürfen präzisiert und eine offene Folgefrage zum Fristanker. Anlass: Entscheidung von Jannes zur Sprachdokumentation, verbindlich in `PROJECT_PRINCIPLES.md` §6.3 (Version 0.5). Die Punkte 1 bis 9 sind unverändert. |
-| 3       | 2026-10-03 | **Punkt 9 umgekehrt** (LOG-EPIC-001, Entscheidung des Projektinhabers): Schreibvorgänge weist der Eintrag selbst nach, das Lesen steht als „Akte geöffnet“ einmal je Person, Akte und Tag im Auditlog (ADR-010 Fassung 3). Die übrigen Punkte sind unverändert. |
-| 4       | 2026-10-14 | **Punkt 4 ergänzt** (B4): Die Finalisierung hakt den Termin nicht ab. **Punkt 11 neu** (B7): Nach der Freigabe zur Abrechnung sind die Einträge der Grundlage gesperrt, bis sie zurückgeholt ist. Dazu eine offene Folgefrage zu Nachträgen. Die übrigen Punkte sind unverändert. |
+- Fassung 1 (2026-09-01, von Jannes delegiert): angenommen, Begriffe aus Abschnitt D entschieden.
+- Fassung 2 (2026-09-08, Jannes): Punkt 10, ein KI-Vorschlag ist kein Entwurf (§6.3).
+- Fassung 3 (2026-10-03, Jannes, LOG-EPIC-001): Punkt 9 umgekehrt, Lesen einmal je Akte und Tag.
+- Fassung 4 (2026-10-14, B4, B7): hakt nicht ab (Punkt 4), Sperre nach Abrechnungsfreigabe.
+- Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.
