@@ -500,7 +500,7 @@ Gilt seit Aufräumen Schritt 3 (ANN-748), zuerst für „Termine“ (`src/featur
 ```bash
 pnpm format:check    # Prettier - eigenes CI-Gate, nicht Teil von lint
 pnpm format          # dieselbe Prüfung, schreibend
-pnpm lint            # ESLint inkl. statischer Sicherheitsanalyse
+pnpm lint            # ESLint inkl. statischer Sicherheitsanalyse, mit 6 GB Heap
 pnpm typecheck       # TypeScript strict
 pnpm test            # Komponenten (jsdom) und reine Logik (Node, Projekt logik)
 pnpm test:watch      # dieselben Tests, laufend
@@ -516,6 +516,10 @@ pnpm scan:secrets    # Secret-Scan über versionierte Dateien
 pnpm build
 pnpm preview         # den gebauten Stand lokal ausliefern
 ```
+
+`pnpm lint` startet ESLint selbst mit 6 GB Heap. Das typisierte Linting hält die Programme von App,
+Tests, Skripten und Edge Functions zugleich, gemessen bis 3,5 GB; Node nimmt in kleinen Containern
+von sich aus nur 2 GB und brach dort ab.
 
 Eine `.test.ts`-Datei läuft ohne DOM; braucht sie `window` oder `document`,
 steht `// @vitest-environment jsdom` in ihrer ersten Zeile. `.test.tsx` läuft
