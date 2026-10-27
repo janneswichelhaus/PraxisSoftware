@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
-import { useSchriftgroesseAnwenden } from '@/features/platform/schriftgroesse';
+import { useSchriftgroesseAnwenden } from '@/lib/schriftgroesse';
 import { EINLADUNG_TITEL } from './tabtitel';
 import { Vollseite } from './Vollseite';
 

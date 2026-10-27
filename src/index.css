@@ -415,17 +415,9 @@
   --container-vorschau: 28.75rem;
 }
 
-/* Schrift der Plattform (POR-020, DSN-001 Abschnitt 7 Punkt 1,
-   `IDEA-QSN-006`, ANN-267): Keine Schrift unter 18 px - die kleinen Stufen
-   des Systems (Beschriftung 12, Hinweis 14, Liste 15, Fließtext 16 px)
-   werden im Plattformgerüst auf 18 px gehoben. Die Rangfolge tragen dort
-   Gewicht, Farbe und Abstand, nicht die Größe. Als Tokens am Gerüst, nicht
-   je Seite: Jede neue Plattformseite erbt die Regel. Die Laufweite der
-   Versalien wird kleiner, weil 18 px in 0.14em zu breit laufen.
-
-   Die Einstellung „Schriftgröße" (Ich → Einstellungen) skaliert darüber
-   hinaus die Wurzelschrift: `data-schrift` an `<html>`, gesetzt nur,
-   solange die Plattform zu sehen ist (`src/features/platform/schriftgroesse.ts`). */
+/* Schrift der Plattform (ANN-267): nichts unter 18 px, als Tokens am Gerüst, damit jede neue
+   Plattformseite die Regel erbt; die Rangfolge tragen Gewicht, Farbe und Abstand. „Schriftgröße“
+   skaliert dazu die Wurzelschrift (`data-schrift`, gesetzt von `src/lib/schriftgroesse.ts`). */
 .plattform-schrift {
   font-size: 1.125rem;
   line-height: 1.5;
@@ -444,6 +436,7 @@
   --text-liste: 1.125rem;
   --text-leiste: 1.125rem;
   --text-kleingedruckt: 1.125rem;
+  /* 18 px laufen in der Laufweite der Versalien (0.14em) zu breit. */
   --tracking-label: 0.06em;
 }
 /* Bei 200 % Vergrößerung bleibt am Telefon kaum Breite (375 px werden

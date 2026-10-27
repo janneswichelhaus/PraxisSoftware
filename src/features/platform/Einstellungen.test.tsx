@@ -30,7 +30,7 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Einstellungen } = await import('./Einstellungen');
-const { gespeicherteSchriftgroesse } = await import('./schriftgroesse');
+const { gespeicherteSchriftgroesse } = await import('@/lib/schriftgroesse');
 
 const ZUGANG: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000002',

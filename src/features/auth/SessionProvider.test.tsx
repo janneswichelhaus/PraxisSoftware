@@ -30,6 +30,7 @@ vi.mock('@/lib/abstecher', async (original) => ({
 const { SessionProvider } = await import('./SessionProvider');
 const { gemerkterSuchbegriff, suchbegriffMerken } = await import('@/lib/suchbegriff');
 const { tabstandLegen, tabstandLesen } = await import('@/lib/tabstand');
+const { beimAbmeldenLeeren } = await import('@/lib/abmelden');
 const { useSession } = await import('./sessionContext');
 const { useSitzungEndeteVonAussen } = await import('./sitzungsende');
 
@@ -168,6 +169,21 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     act(() => melde?.('TOKEN_REFRESHED', sitzung('anna')));
 
     expect(gemerkterSuchbegriff('radflotte')).toBe('Nina');
+  });
+
+  it('leert, was Fachmodule eingetragen haben, beim Kontowechsel und Abmelden, nicht beim Verlängern', async () => {
+    const leeren = vi.fn();
+    beimAbmeldenLeeren(leeren);
+    await anbieterZeigen();
+
+    act(() => melde?.('TOKEN_REFRESHED', sitzung('anna')));
+    expect(leeren).not.toHaveBeenCalled();
+
+    act(() => melde?.('SIGNED_IN', sitzung('bert')));
+    expect(leeren).toHaveBeenCalledTimes(1);
+
+    act(() => melde?.('SIGNED_OUT', null));
+    expect(leeren).toHaveBeenCalledTimes(2);
   });
 
   it('leert die Anrufliste im Tab beim Abmelden und beim Kontowechsel, nicht beim Verlängern', async () => {

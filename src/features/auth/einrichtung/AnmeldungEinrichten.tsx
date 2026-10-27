@@ -8,7 +8,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Vollseite } from '@/app/Vollseite';
 import { ANMELDEN_TITEL, EINLADUNG_TITEL } from '@/app/tabtitel';
 import { SCHLOSS, TELEFON } from '@/app/tuerzeichen';
-import { useSchriftgroesseAnwenden } from '@/features/platform/schriftgroesse';
+import { useSchriftgroesseAnwenden } from '@/lib/schriftgroesse';
 import { useFokusNachWechsel } from '../fokus';
 import { PASSKEY_SAETZE, PasskeyFehler, passkeyEinrichten, passkeyMoeglich } from '../passkey';
 import type { Einrichtungsstand } from './einrichtungsstand';

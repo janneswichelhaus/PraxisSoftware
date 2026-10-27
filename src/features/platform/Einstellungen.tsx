@@ -15,7 +15,7 @@ import {
   SCHRIFTGROESSE_NAME,
   useSchriftgroesse,
   type Schriftgroesse,
-} from './schriftgroesse';
+} from '@/lib/schriftgroesse';
 import { useWahl } from './wahl';
 import { datum } from './zeit';
 

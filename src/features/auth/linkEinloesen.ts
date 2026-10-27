@@ -1,5 +1,4 @@
 import { getSupabase } from '@/lib/supabase';
-import { EINLADUNG_PFAD } from '@/features/platform/einladung';
 
 /**
  * Einlösen eines Links aus einer Auth-Mail (FIX-001, ANN-043).
@@ -76,6 +75,9 @@ export async function loeseLinkEin(tokenHash: string, typ: LinkTyp): Promise<voi
 
 /** Der Pfad, auf den die Zugangsmail an eine offene Einladung führt. */
 export const ZUGANG_PFAD = '/zugang';
+
+/** Der Pfad, auf den QR-Code und Mail einer Einladung zur Plattform führen (ADR-023 Punkt 8). */
+export const EINLADUNG_PFAD = '/einladung';
 
 /**
  * Löst dieser Pfad einen Link ein?

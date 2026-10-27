@@ -5,14 +5,13 @@ import { protokolliereFehler } from '@/lib/protokoll';
 import { startbildZuruecksetzen } from '@/lib/startbildMerker';
 import { suchbegriffeLeeren } from '@/lib/suchbegriff';
 import { tabstaendeLeeren } from '@/lib/tabstand';
+import { abmeldenAufraeumen } from '@/lib/abmelden';
 import { getSupabase } from '@/lib/supabase';
 import { istEigeneAbmeldung, meldeSelbstAb } from './eigeneAbmeldung';
 import { geraetBeimAbmeldenLoesen } from '@/lib/push';
 import { SessionContext, type SessionState } from './sessionContext';
 import { SitzungsendeContext } from './sitzungsende';
-import { uebergabenLeeren } from '@/features/documentation/uebernahme';
 import { ablageLeeren } from '@/lib/geraeteablage';
-import { teamchatLeeren } from '@/features/teamchat/speicher';
 
 /**
  * Sitzungszustand und die Grenze zwischen zwei Konten (UX-011, ANN-021).
@@ -76,20 +75,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
    */
   const raeumen = useCallback(() => {
     queryClient.clear();
-    // Ein nicht abgeholter Text aus dem Konfliktfall der Dokumentation geht
-    // mit (Zweitreview UX-EPIC-007, ANN-320): Er tauchte sonst nach einem
-    // Kontowechsel am selben Gerät in einer Korrektur auf.
-    uebergabenLeeren();
     // Der Merker des Startbilds geht mit (RAH-009, ANN-243): Wer die
     // Anwendung danach in diesem Tab neu öffnet, sieht das Intro wieder.
     startbildZuruecksetzen();
     // TRK-008 (ADR-024 Punkt 5): Die Ablage auf dem Gerät fällt beim
     // Abmelden und beim Kontowechsel - Plan, Warteschlange, Schlüssel.
     void ablageLeeren();
-    // TEAM-002 (ANN-641): Entwürfe, Ausgang, Scrollstände und die letzte
-    // Suche des Teamchats - bis dahin stand ein Entwurf nach einem
-    // Kontowechsel im selben Kanal der nächsten Person.
-    teamchatLeeren();
+    // Was Fachmodule im Arbeitsspeicher halten, etwa ein nicht abgeholter Text der Dokumentation
+    // (ANN-320) oder Entwürfe, Ausgang und Suche des Teamchats (ANN-641), tragen sie selbst ein.
+    abmeldenAufraeumen();
     // Gemerkte Suchbegriffe der Listen, meist Namen, findet das nächste Konto nicht vor.
     suchbegriffeLeeren();
     // Der Stand laufender Vorgänge im Tab, etwa die Anrufliste, ebenso wenig (ANN-574).

@@ -57,7 +57,7 @@ import { geruestSpalte, useRechner } from './geruestbreite';
 import { Kopf, Reiterleiste } from './Navigation';
 import { PLATTFORM_PFAD } from './pfade';
 import { Rechnung, Rechnungen } from './Rechnungen';
-import { useSchriftgroesseAnwenden } from './schriftgroesse';
+import { useSchriftgroesseAnwenden } from '@/lib/schriftgroesse';
 import { Termine } from './Termine';
 import { Verbindungszeile } from './Verbindungszeile';
 import { Vertretungsband } from './Vertretungsband';
