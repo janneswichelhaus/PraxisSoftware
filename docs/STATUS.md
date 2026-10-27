@@ -7,16 +7,17 @@ steht in den PRs und in Git. Abgelegte Dokumente (Archiv, Chroniken, erledigte H
 ## Jetzt
 
 **Aufräumen** (Auftrag Jannes 25.10., Entscheidungen 26. und 27.10., ROADMAP 7.22): Schritte 1 bis 4,
-alle sieben Fehler, M1, M5, M7, M9, das Barometer, die Vorab-PR und 3b gemergt (#308 bis #321).
-Der Nachzug zu #321 (Startbild nach der Anmeldung, `pnpm lint` mit 6 GB, Seiten über die
-Schnittstelle) liegt als #322 vor. Bauplan ist `development/TIEFENANALYSE.md`.
+alle sieben Fehler, M1, M5, M7, M9, das Barometer, die Vorab-PR, 3b und sein Nachzug gemergt
+(#308 bis #322). Schritt 5 (Doku): Teil A (Archiv nach Git, Befunde, neun Entscheidungen als
+ANN-756 bis -763) liegt als #323 vor; Teil B (Annahmenregister) ist in Arbeit. Bauplan ist
+`development/TIEFENANALYSE.md`.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Aufräumen nach ROADMAP 7.22: 5 (Doku).
+Aufräumen 5, Teile B und C: Register und Prüfpaket, dann ADRs, Prinzipien und Rest.
 Schritt 3 Termine des Design-Reviews (3a bis 3d), dann Schritte 4
 bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff; Briefings in
 `design/review-2026-10/`. Ohne Handoff: BEF-223 (Zeitumstellung; Pfad A).
@@ -24,7 +25,7 @@ bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Hando
 ## Bei Jannes
 
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
-  https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
+  https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; E13); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
   ANN-479 ansehen (Besuch).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
@@ -46,5 +47,5 @@ bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Hando
 
 ## Letzte Session
 
-27.10.2026, Branch `claude/step-4-central-register-ur5k1y`: 3b gemergt (#320, #321), Nachzug als
-#322. Keine Migration. Lokal: `git pull`.
+27.10.2026, Branch `claude/step-4-central-register-ur5k1y`: Nachzug #322 gemergt, Aufräumen 5
+Teil A als #323. Keine Migration. Lokal: `git pull`.
