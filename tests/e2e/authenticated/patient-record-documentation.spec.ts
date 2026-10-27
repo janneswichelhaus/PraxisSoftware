@@ -70,6 +70,8 @@ test.describe('DOK-003, ROL-001: Dokumentation in der Akte', () => {
   test('zeigt Therapeutin und Office denselben Eintrag, dem Office ohne Schreibweg', async ({
     page,
   }) => {
+    // Zwei Konten nacheinander im selben Tab, je mit Anmeldung: bei voller Maschine über 30 s.
+    test.slow();
     await anmelden(page, KONTEN.therapist);
     const terminId = await finalisierterEintrag(page, laufTag());
 

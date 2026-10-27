@@ -47,12 +47,9 @@ export function gegenDieFolge(datei, spezifizierer) {
   return EBENEN.indexOf(ziel.domaene) > EBENEN.indexOf(von) ? { hoeher: ziel.domaene, von } : null;
 }
 
-/** Seiten stehen in keiner Schnittstelle; wer eine einbindet, importiert sie direkt. */
-const istSeitenziel = (rest) => /(Page|Seite|Layout)$/.test(rest);
-
 /**
- * Was ein Import an der Schnittstelle einer Domäne vorbei holt: `{ domaene }` aus einer fremden,
- * `{ eigene }` über die eigene index.ts, die die Domäne im Kreis zu sich selbst führte; sonst `null`.
+ * Was ein Import an der Schnittstelle einer Domäne vorbei holt: `{ domaene }` aus einer fremden, auch
+ * eine Seite, die nur der Router einbindet; `{ eigene }` über die eigene index.ts, die im Kreis führte.
  */
 export function anDerSchnittstelleVorbei(datei, spezifizierer) {
   const ziel = importziel(datei, spezifizierer);
@@ -60,7 +57,7 @@ export function anDerSchnittstelleVorbei(datei, spezifizierer) {
   const eigene = /^src\/features\/[^/]+\//.test(datei) ? ortIn(datei).domaene : null;
   const schnittstelle = ziel.modul === ziel.domaene && ['', 'index'].includes(ziel.rest);
   if (ziel.domaene === eigene) return schnittstelle ? { eigene } : null;
-  return schnittstelle || istSeitenziel(ziel.rest) ? null : { domaene: ziel.domaene };
+  return schnittstelle ? null : { domaene: ziel.domaene };
 }
 
 const nurUeberSchnittstelle = {
@@ -70,7 +67,7 @@ const nurUeberSchnittstelle = {
     schema: [],
     messages: {
       vorbei:
-        '{{domaene}} ist eine fremde Domäne: aus @/features/{{domaene}} importieren, nicht aus {{pfad}} (ANN-755).',
+        '{{domaene}} ist eine fremde Domäne: aus @/features/{{domaene}} importieren, nicht aus {{pfad}}; eine Seite bindet nur der Router ein (ANN-755).',
       eigene:
         'Innerhalb von {{eigene}} direkt importieren, nicht über @/features/{{eigene}}: Die index.ts führte im Kreis zurück.',
     },

@@ -75,9 +75,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
    */
   const raeumen = useCallback(() => {
     queryClient.clear();
-    // Der Merker des Startbilds geht mit (RAH-009, ANN-243): Wer die
-    // Anwendung danach in diesem Tab neu öffnet, sieht das Intro wieder.
-    startbildZuruecksetzen();
     // TRK-008 (ADR-024 Punkt 5): Die Ablage auf dem Gerät fällt beim
     // Abmelden und beim Kontowechsel - Plan, Warteschlange, Schlüssel.
     void ablageLeeren();
@@ -100,15 +97,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
     function uebernehmen(naechste: Session | null) {
       const kennung = naechste?.user.id ?? null;
-      const wechsel = letzteKennung.current !== undefined && letzteKennung.current !== kennung;
+      const vorige = letzteKennung.current;
+      const wechsel = vorige !== undefined && vorige !== kennung;
       // Den Wechsel in einem anderen Tab erlebt dieser nach einem Neuladen nicht mit; sein Stand im
       // Tab gehört dann womöglich dem vorigen Konto.
-      if (letzteKennung.current === undefined) {
+      if (vorige === undefined) {
         tabstaendeLeeren(kennung === null ? undefined : { konto: kennung });
       }
       letzteKennung.current = kennung;
 
       if (wechsel) raeumen();
+      // Nach dem Abmelden oder einem Kontowechsel zeigt das nächste Öffnen das Startbild wieder,
+      // nach der Anmeldung zeigt ein Neuladen es nicht (ANN-243).
+      if (wechsel && vorige !== null) startbildZuruecksetzen();
       if (kennung !== null) setEndeVonAussen(false);
       else if (wechsel && !istEigeneAbmeldung()) setEndeVonAussen(true);
 
@@ -163,6 +164,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const { error } = await meldeSelbstAb(() => getSupabase().auth.signOut({ scope: 'local' }));
         if (error) {
           raeumen();
+          startbildZuruecksetzen();
           // Ohne Kontoangabe (ADR-011), wie bei den Kontoereignissen.
           protokolliereFehler({ ereignis: 'auth.abmeldung_fehlgeschlagen' });
         }

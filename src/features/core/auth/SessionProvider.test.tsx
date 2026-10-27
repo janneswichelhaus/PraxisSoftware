@@ -31,6 +31,7 @@ const { SessionProvider } = await import('./SessionProvider');
 const { gemerkterSuchbegriff, suchbegriffMerken } = await import('@/lib/suchbegriff');
 const { tabstandLegen, tabstandLesen } = await import('@/lib/tabstand');
 const { beimAbmeldenLeeren } = await import('@/lib/abmelden');
+const { STARTBILD_MERKER } = await import('@/lib/startbildMerker');
 const { useSession } = await import('./sessionContext');
 const { useSitzungEndeteVonAussen } = await import('./sitzungsende');
 
@@ -264,6 +265,62 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     await screen.findByText('keine Sitzung');
 
     expect(alleAbstecherVerwerfen).not.toHaveBeenCalled();
+  });
+});
+
+/** Einmal je Tab beim Öffnen, nicht nach der Anmeldung (ANN-243 Fassung 2). */
+describe('SessionProvider — Merker des Startbilds', () => {
+  beforeEach(() => sessionStorage.setItem(STARTBILD_MERKER, '1'));
+
+  it('lässt ihn bei der Anmeldung stehen, damit ein Neuladen danach kein zweites Intro zeigt', async () => {
+    getSession.mockResolvedValue({ data: { session: null } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SessionProvider>
+          <Probe />
+        </SessionProvider>
+      </QueryClientProvider>,
+    );
+    await screen.findByText('keine Sitzung');
+    patientenAblegen();
+
+    act(() => melde?.('SIGNED_IN', sitzung('anna')));
+
+    expect(await screen.findByText('anna')).toBeInTheDocument();
+    expect(sessionStorage.getItem(STARTBILD_MERKER)).toBe('1');
+    // Abgeräumt wird bei der Anmeldung weiter alles andere.
+    expect(patientenImSpeicher()).toBeUndefined();
+  });
+
+  it('löscht ihn beim Kontowechsel und beim Abmelden', async () => {
+    await anbieterZeigen();
+
+    act(() => melde?.('SIGNED_IN', sitzung('bert')));
+    expect(sessionStorage.getItem(STARTBILD_MERKER)).toBeNull();
+
+    sessionStorage.setItem(STARTBILD_MERKER, '1');
+    act(() => melde?.('SIGNED_OUT', null));
+    expect(sessionStorage.getItem(STARTBILD_MERKER)).toBeNull();
+  });
+
+  it('löscht ihn auch, wenn das Abmelden scheitert und der Anbieter selbst nachräumt', async () => {
+    signOut.mockResolvedValue({ error: new Error('Sitzung nicht lesbar') });
+    await anbieterZeigen();
+    patientenAblegen();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Abmelden' }));
+
+    await waitFor(() => expect(sessionStorage.getItem(STARTBILD_MERKER)).toBeNull());
+    // Ohne Ereignis des Anmeldedienstes ist dieses Nachräumen der einzige Schutz.
+    expect(patientenImSpeicher()).toBeUndefined();
+  });
+
+  it('behält ihn beim turnusmäßigen Verlängern', async () => {
+    await anbieterZeigen();
+
+    act(() => melde?.('TOKEN_REFRESHED', sitzung('anna')));
+
+    expect(sessionStorage.getItem(STARTBILD_MERKER)).toBe('1');
   });
 });
 
