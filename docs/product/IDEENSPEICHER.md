@@ -1,284 +1,192 @@
 # Ideenspeicher
+> **Nicht normativ** (Rang 6, `PROJECT_PRINCIPLES.md` §21): kein Auftrag, keine Spezifikation,
+> keine Freigabe. Aus keinem Eintrag folgt Scope, und eine offene Frage aus
+> `../decisions/OPEN_DECISIONS.md` beantwortet er nicht.
 
-> **Dieses Dokument und der gesamte Ordner `docs/product/` sind nicht
-> normativ.**
->
-> Hier steht, was langfristig einmal in der Plattform stecken könnte — roh,
-> unbewertet, unvollständig. Es ist **kein Implementierungsauftrag**, **keine
-> Feature-Spezifikation** und **keine Freigabe**. Aus keinem Eintrag darf eine
-> Erweiterung eines aktuellen Feature-Scopes abgeleitet werden.
+**Wozu.** Jannes sammelt Ideen über lange Zeit; jede hat eine stabile Kennung und bleibt
+auffindbar. Wer weiß, was kommen kann, benennt heute passend. Benennen kostet nichts, Vorbauen
+ist verboten.
 
-## Rang
+**Ein Loop darf** im SPEC-Schritt die Zeilen des passenden Bereichs lesen, daraus bessere
+Rückfragen ableiten und bei einer ohnehin anstehenden Entscheidung die Variante wählen, die eine
+Richtung nicht verbaut, solange das nichts zusätzlich kostet. **Verboten** sind Spalten, Tabellen,
+Felder, Endpunkte, Status oder Oberfläche „für später“ (§11, ADR-014), ein Eintrag als Begründung
+für Scope und die eigene Antwort auf eine hier offene Frage. Kostet ein Hinweis Mehrarbeit oder
+eine fachliche Entscheidung: stoppen, als Frage in den Bericht, ohne ihn weiterbauen.
 
-Rang 6 der Rangfolge in `PROJECT_PRINCIPLES.md` §21, die **schwächste** Ebene:
-Ein Eintrag verliert gegen alles darüber. Eine offene Frage aus
-`../decisions/OPEN_DECISIONS.md` beantwortet er nicht, egal wie ausgearbeitet
-die Idee hier aussieht.
+**Weg.** Idee → offene Entscheidung, falls nötig → ADR, falls teuer rückgängig zu machen →
+Spezifikation → `/feature-loop` oder `/bereich`; danach steht die Zeile auf `überführt → Ziel`.
 
-## Wozu das Ganze
+**Status** (kein Freitext): `notiert` (von Jannes), `vorschlag` (von Claude, unbestätigt),
+`bestätigt` (Richtung bestätigt, weiter kein Auftrag), `entscheidung nötig` (allein oder als
+Zusatz), `zurückgestellt (Kennung)`, `überführt → Ziel`, `verworfen (Kennung)`. Zusätze mit ` · `:
+`ausgearbeitet`, `Abgrenzung` (hält fest, was nicht gebaut wird), `Einordnung` (bewertet Fremdes),
+`Bedenken` (begründetes Abraten).
 
-Jannes sammelt Funktionsideen laufend und über lange Zeiträume. Ohne festen
-Ort landen sie im Chatverlauf und sind im nächsten Loop weg. Dieser Ordner ist
-der Ort. Er hat drei Aufgaben:
+**Neue Idee** (`/idee`): eine Zeile nach der letzten ihres Bereichs, Kennung `IDEA-<Kürzel>-NNN`
+mit der nächsten freien Nummer (nie wiederverwendet, nie umnummeriert), der Kern der Idee als
+Titel, Status `notiert`. Herleitung und Bedenken stehen im Commit, nicht hier.
 
-1. **Nichts verlieren.** Jede Idee bekommt eine stabile ID und bleibt
-   auffindbar, auch wenn sie zwei Jahre liegt.
-2. **Später gezielt wiederfinden.** Der Index unten sagt, welche Datei für
-   welche Aufgabe relevant ist — genauso wie der ADR-Index in `CLAUDE.md`.
-3. **Sackgassen vermeiden.** Wer weiß, was später kommen soll, benennt Dinge
-   heute anders. Benennen kostet nichts. **Vorbauen kostet — und ist
-   verboten.**
+**Früherer Wortlaut.** Idee, Warum, Vorsicht, Offen, Quellen und die Referenz-Recherchen
+(iPrax, Navigation, Slack, Wettbewerb) bis 2026-10-27: `git show 9452575:docs/product/ideen/`
+listet die Dateien, `git show 9452575:docs/product/ideen/<datei>` zeigt eine.
 
-## Was ein Loop damit darf — und was nicht
+## Ideen
+**Bereiche** (Kürzel der Kennung): LZK Lebenszyklus und Zugang · TRN Trainingspläne und Progression
+· TRK Tracking und Parameter · KOM Rückfragen, Medien, Kommunikation · OUT Assessments, Outcomes,
+Fortschritt · ALT Alltag, Gewohnheiten, Ernährung · ORG Übersicht, Kalender, Sessions · KI
+KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · PRX Praxisverwaltung.
 
-**Erlaubt:**
-
-- Im SPEC-Schritt **die eine** zum Auftrag passende Bereichsdatei lesen. Nicht
-  alle. Der Index unten sagt, welche.
-- Daraus **bessere Rückfragen** an Jannes ableiten.
-- Bei einer ohnehin anstehenden Entscheidung (Benennung, Feldzuschnitt,
-  Query-Form) die Variante wählen, die eine hier notierte Richtung nicht
-  unnötig verbaut — **solange das im aktuellen Scope nichts zusätzlich
-  kostet**.
-
-**Verboten:**
-
-- Zusätzliche Spalten, Tabellen, Felder, Endpunkte, Statuswerte oder
-  UI-Elemente „für später" (`PROJECT_PRINCIPLES.md` §11,
-  [ADR-014](../adr/ADR-014-foundational-data-model.md)).
-- Einen Eintrag von hier als Begründung für Scope zitieren. Er begründet
-  **nie** eine Implementierung.
-- Eine hier notierte offene Frage selbst beantworten.
-
-**Wenn ein Hinweis von hier Mehrarbeit oder eine fachliche Entscheidung
-bedeuten würde:** stoppen, im Bericht als offene Frage nennen, weiterarbeiten
-ohne ihn.
-
-## Weg von der Idee zum Code
-
-```
-Idee (hier)
-  → offene Entscheidung (docs/decisions/OPEN_DECISIONS.md), falls eine nötig ist
-  → ADR (docs/adr/), falls die Entscheidung teuer rückgängig zu machen ist
-  → Feature-Spezifikation
-  → /feature-loop oder /bereich
-```
-
-Ist ein Eintrag diesen Weg gegangen, steht er auf `überführt` mit Ziel.
-Überführte Einträge behalten Kopf und Stand-Zeile; die Begründung liegt im
-Ziel und in Git.
-
-## Statusmodell
-
-| Status               | Bedeutung                                                                     |
-| -------------------- | ----------------------------------------------------------------------------- |
-| `notiert`            | Von Jannes eingebracht. Festgehalten, nicht bewertet.                         |
-| `vorschlag`          | Von Claude vorgeschlagen. **Noch nicht von Jannes bestätigt.**                |
-| `bestätigt`          | Jannes hat die Richtung bestätigt. Weiterhin **kein Auftrag**.                |
-| `entscheidung nötig` | Vor jeder Spezifikation braucht es eine Entscheidung (siehe „Berührt"). Steht allein oder als Zusatz zu `notiert`, `vorschlag` oder `bestätigt`. |
-| `zurückgestellt`     | Durch eine Entscheidung (`OPEN_DECISIONS.md`, ADR, Prinzipien) vorerst ausgeschlossen; **Verweis auf die Entscheidung Pflicht**, in Klammern. Kommt nur mit einer neuen Entscheidung zurück. |
-| `überführt`          | Als ADR, offene Entscheidung, Feature-Spec oder gebaute Story weitergeführt. **Ziel nach einem Pfeil** (`überführt → CAL-009`). |
-| `verworfen`          | Bewusst nicht weiterverfolgt. Bleibt mit Begründung stehen; Verweis auf die Entscheidung in Klammern, wenn es eine Kennung gibt. |
-
-**Erlaubte Zusätze**, mit ` · ` an den Status gehängt:
-
-| Zusatz          | Bedeutung                                                                   | Zu                                   |
-| --------------- | --------------------------------------------------------------------------- | ------------------------------------ |
-| `ausgearbeitet` | Von Jannes eingebracht oder bestätigt, von Claude ausgearbeitet.            | `notiert`, `vorschlag`, `bestätigt`  |
-| `Abgrenzung`    | Der Eintrag hält fest, was **nicht** gebaut wird.                           | `notiert`, `vorschlag`, `bestätigt`  |
-| `Einordnung`    | Der Eintrag bewertet etwas Fremdes (Referenz, Begriff), schlägt nichts vor. | `notiert`, `vorschlag`, `bestätigt`  |
-| `Bedenken`      | Festgehalten, aber mit begründetem Abraten.                                 | `notiert`, `vorschlag`               |
-
-**Freitext im Statusfeld ist nicht zulässig** — kein Datum, kein Name, keine
-Begründung, keine Bedingung. Erlaubt sind allein die Werte und Zusätze oben,
-der Pfeil mit Ziel bei `überführt` und die Kennung in Klammern bei
-`zurückgestellt` und `verworfen`. **Erläuterungen stehen in einer Zeile
-`**Stand.**` unter der Tabelle** — was gebaut ist, wer wann entschieden hat,
-was übrig bleibt. Umsetzungsstände im Einzelnen stehen nicht hier, sondern in
-`../development/ARBEITSBEREICHE.md` und `../development/ROADMAP.md`; ein
-Eintrag verweist nur auf die Kennung.
-
-## Eintragsformat
-
-Jeder Eintrag folgt demselben Aufbau, damit er maschinell und menschlich
-schnell erfassbar bleibt:
-
-```markdown
-### IDEA-XXX-000 — Titel
-
-| | |
-|---|---|
-| Status | notiert |
-| Quelle | Jannes, 2026-09-01 |
-| Berührt | ADR-006, B1 |
-
-**Stand.** Nur wenn nötig: was davon gebaut ist (Kennung), wer wann
-entschieden hat, was übrig bleibt. Ein Satz, kein Umsetzungsbericht.
-
-**Idee.** Ein bis drei Sätze.
-
-**Warum.** Fachliche Begründung.
-
-**Vorsicht.** Regulatorisches, Datenschutz, bekannte Fallstricke. Weglassen,
-wenn es nichts gibt.
-
-**Offen.** Was entschieden werden muss, bevor das spezifiziert werden kann.
-```
-
-IDs werden **nie wiederverwendet** und **nie umnummeriert**, auch nicht nach
-einem Verwurf. Neue Einträge hängen hinten an.
-
-## Bestätigungen
-
-- **2026-09-01** — Jannes hat alle 58 damals als `vorschlag` geführten Einträge
-  (Zählung 2026-09-01; heute tragen 60 Einträge die Quelle Claude, 2026-09-01)
-  auf `bestätigt` gesetzt. Sie sind damit als Zielrichtung bestätigt und
-  weiterhin **kein Auftrag**: gebaut wird nur, was in
-  `docs/development/ROADMAP.md` an der Reihe ist und im Loop eine eigene
-  Spezifikation bekommt.
-- **2026-09-06** — Mit den Antworten auf das Roadmap-Review: `IDEA-PRX-003`
-  (Stufe 2), `IDEA-PRX-011`, `IDEA-PRX-012` und `IDEA-PRX-014` bestätigt;
-  `IDEA-PRX-015` verworfen (keine Unterschrift nötig). Zwei eigene Vorgaben
-  von Jannes zum Lastenrad-Hausbesuchskonzept als bestätigt eingetragen:
-  `IDEA-PRX-029` Tagesroute auf der Karte und `IDEA-PRX-030` Navigationslink
-  zu Google Maps. Neu notiert: `IDEA-LZK-008` Kund:innen des Personal
-  Trainings ohne vorherige Heilbehandlung. Die übrigen `PRX`-Einträge bleiben
-  `vorschlag`.
-- **2026-09-08** — Zwei eigene Entscheidungen von Jannes verlassen den
-  Ideenspeicher und werden verbindlich: das **Terminfenster**
-  (`IDEA-PRX-002` → `PROJECT_PRINCIPLES.md` §8.1) und die
-  **Sprachdokumentation** (`IDEA-KI-007` → §6.3, dazu ADR-005 Punkt 9,
-  ADR-006 Punkt 8, ADR-016 Punkt 10). Beide Einträge stehen jetzt auf
-  `überführt` und verweisen nur noch; was an ihnen offen geblieben ist, steht
-  als E12 und E13 in `../decisions/OPEN_DECISIONS.md`. **Entschieden heißt
-  weiterhin nicht gebaut** — beide sind noch nicht umgesetzt.
-
-- **2026-09-11** — Jannes hat zwei Design-Kanvas geteilt. Der Logo-Kanvas
-  liegt jetzt als Beleg im Markenverzeichnis (`marke/kanvas/`) — er gehört
-  nicht hierher, weil `marke/` für die Marke verbindlich ist und nicht Rang 6.
-  Aus dem zweiten, „Own Motion · Praxis", sind `IDEA-PRX-034` bis `-037`
-  entstanden: der Entwurf selbst, die Merkliste „Mitnehmen", die Indikation in
-  der Tagesliste (mit Bedenken) und die Abrechnungslage am Termin. Die
-  Kanvas-Datei lag zunächst **nicht** im Repository: Sie zeigt vier Personen
-  mit Anschrift und Indikation, und §3.1 lässt nur synthetische Daten zu.
-  **Jannes hat noch am selben Tag bestätigt, dass die Namen erfunden sind** —
-  die Datei liegt seitdem unter `kanvas/own-motion-praxis.html`.
-
-- **2026-09-11, zweite Runde** — Jannes hat zwei Entscheidungen getroffen und
-  eine abgegeben. **Monogramm** für das Kleinformat der Marke (Befund 2 in
-  `marke/README.md`, umgesetzt). **`IDEA-PRX-036` verworfen** in der Form
-  „Indikation ständig sichtbar in der Tagesliste" — die Entscheidung hat er
-  ausdrücklich abgegeben, die Begründung steht am Eintrag. Das Bedürfnis lebt
-  in `IDEA-PRX-016` weiter: aufklappbar und auditiert am Termin, nicht offen
-  in einer Liste, die im Treppenhaus mitgelesen wird.
-
-- **2026-09-12** — Aus dem Gespräch über die Oberfläche: `IDEA-PRX-042`
-  notiert — eine Person auswählen, durch den Kalender scrollen, die Lücke
-  selbst finden, und der Kalender färbt ein, wo der Termin mit Fahrweg
-  hinpasst (Tiefgarage als Start und Feierabendziel). Der erste Teil ginge
-  ohne Kartendienst, die Einfärbung **nicht**: Sie hängt am Gate aus ADR-019
-  und kommt frühestens mit MAP-006. Die Rückmeldungen zur bestehenden
-  Oberfläche aus demselben Gespräch stehen **nicht** hier, sondern als Epic
-  `UI-002` in `../development/ROADMAP.md` — sie korrigieren Gebautes und sind
-  keine Idee für später.
-
-- **2026-09-13** — Bereinigung nach den Entscheidungen des Tages:
-  Statusmodell um `zurückgestellt` und die Zusätze erweitert, Freitext im
-  Statusfeld nicht mehr zulässig, alle Einträge auf diese Form gebracht.
-  **Überführt**, weil gebaut: `IDEA-PRX-001`, `-007`, `-011`, `-014`, `-020`,
-  `-042` Teil 1, `IDEA-LZK-006` in Teilen; überführt in Entscheidungen und
-  Loops, **noch nicht gebaut**: `IDEA-PRX-029` und `-032` (ADR-019, MAP-Loops),
-  `-030` außer dem Einzel-Link aus UX-002, `-028` (→ `IDEA-KI-007`).
-  **Zurückgestellt** oder **verworfen** nach B9, B10 und B11. Die UI-Befunde
-  `IDEA-PRX-038` und `-040` stehen als BEF-001 und BEF-002 in
-  `../development/BEFUNDE.md`.
-
-- **2026-09-19** — Aus der Entscheidungsrunde zu ABR-EPIC-003 kommen zwei
-  Funktionsideen von Jannes hierher statt in den Code: `IDEA-OUT-009` (ein
-  Bild ruft die Durchführung eines Tests in Erinnerung) und `IDEA-PRX-043`
-  (die vorhandenen Textbausteine stehen auch im Befund zur Verfügung). Dazu
-  eine Stand-Zeile an `IDEA-OUT-001`: Jannes hat erklärt, die Praxis dürfe den
-  DIGOTOR-Bogen verwenden, und weitere Bögen angekündigt — der schriftliche
-  Beleg des Lizenzgebers bleibt offen (B8), das Lizenzfeld damit erst recht.
-  **Keine der drei ist ein Auftrag**; gebaut wird, was die Roadmap aufruft.
-
-- **2026-09-22** — Eine Idee von Jannes hat es in den seltenen Fall geschafft,
-  eine verbindliche Festlegung zu bewegen: die **Führung auf dem Rad
-  innerhalb der Software** (`IDEA-PRX-044`). Sie steht seitdem auf `überführt`
-  — ADR-019 Fassung 3 löst Punkt 6 ab („eine eigene Turn-by-Turn-Engine ist
-  nicht Ziel") und ergänzt Abschnitt F; `PROJECT_PRINCIPLES.md` 0.14 zieht mit
-  §20.1 nach. **Das Ortungsverbot in §20 ist dabei nicht gefallen**, sondern
-  um vier Bedingungen und ein DARF-NICHT ergänzt worden: Die Führung läuft auf
-  dem Gerät und meldet der Praxis keinen Standort. Der Weg dorthin gehört zur
-  Sache — erst die Prüfung, dass der Anbieter eine Führung **nicht** als
-  Auftragsverarbeitung liefert, hat den Zuschnitt ergeben, der ohne Ortung
-  auskommt. Gebaut ist nichts: **MAP-007** steht hinter MAP-006, hinter dem
-  Gate und hinter **E-24**.
-
-- **2026-09-21** — Jannes hat gefragt, ob eine lesbare Patientennummer wie in
-  iPrax bei uns Datenschutzfragen lösen würde, und den Gedanken nach der
-  Prüfung noch am selben Tag **verworfen** (`IDEA-QSN-011`). Der Eintrag
-  bleibt mit der Begründung stehen: Eine Nummer wäre ein zusätzliches
-  personenbezogenes Datum, die Stellen mit namensfreiem Bezug tragen ihn
-  bereits, und ADR-021 Punkt 3 ließe sie weder an `persons` noch je
-  Verhältnis unterbringen. `PROJECT_PRINCIPLES.md` §1.1 bleibt unberührt.
-
-- **2026-09-28** — Vier Wünsche von Jannes in einer Nachricht: der
-  **Zahlungs-QR-Code** auf der Rechnung (`IDEA-PRX-053`, neu), der
-  **Kostenvoranschlag** zur Abklärung mit der privaten Krankenversicherung
-  (`IDEA-PRX-046`, neu, Entscheidung zu Snapshot und Aufbewahrung nötig), die
-  **FIBU-Schnittstelle** (bestätigt `IDEA-PRX-026`, dort Datei vor
-  Live-Anbindung) und das **Praxispostfach in der Anwendung** mit erkannten
-  Terminwünschen und KI-Antwortentwürfen (`IDEA-KOM-008`). Für Letzteres fehlt
-  noch das Postfach selbst; dessen Wahl ist ein neuer Dienstleister nach
-  ADR-002 und geht jeder Integration voraus. **Keiner der Einträge ist ein
-  Auftrag.**
-
-- **2026-10-03** — Jannes fragt, ob die Verordnung vom Foto automatisch
-  erkannt werden kann: als Empfehlung beantwortet, nicht gebaut
-  (`IDEA-PRX-055`, neu). Weg über das AI Gateway, Anbieterwahl ist ein
-  Stopp nach ADR-002. **Kein Auftrag.**
-
-- **2026-10-05** — Jannes wünscht sich im Loop UBK-EPIC-002 eine
-  Optimierung der Tagesreihenfolge; den Lückenfinder über die ganze Woche
-  will er nicht. Als `IDEA-PRX-056` (Reihenfolgevorschlag für den Tag)
-  abgelegt; vor jedem Bau eine neue Fassung von ADR-019. **Kein Auftrag.**
-
-- **2026-10-08** — Jannes will Schäden am Lastenrad im 3D-Modell markieren:
-  im Check-Up, in der Pannenmeldung, auf einer Seite je Rad und in einer PDF
-  für die Werkstatt. Als `IDEA-PRX-057` bestätigt; `IDEA-PRX-048` bleibt
-  Abgrenzung nur noch für das Rad als Schmuck. Eingespielt wird es an seiner
-  Stelle in FLT-EPIC-001; Entwurf und Dateien im
-  Handoff (`git show eb43569:docs/design/handoff-2026-10-08-lastenrad-3d.md`).
-
-## Index — welche Datei wofür
-
-| Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------ |
-| [kernablaeufe.md](kernablaeufe.md)                                           | 15 Kernabläufe aus Jannes' Behandlungstag mit Tipp-Budgets bei 375 px; Maßstab für `/bereich` | —      |
-| [referenz-navigation.md](ideen/referenz-navigation.md)                       | Informationsarchitektur, Navigation, Vergleichssoftware, Screenshot-Referenzen              | —      |
-| [referenz-wettbewerb.md](ideen/referenz-wettbewerb.md)                       | Funktionen von iPrax, THEORG, thevea, appointmed, Optica u. a. mit Quellen; „wie lösen es andere" | —  |
-| [referenz-iprax.md](ideen/referenz-iprax.md)                                 | Bildschirmfotos aus iPrax (2026-09-16): Anlegen-Menü im Kalender, Zeitspanne aufziehen, personenzentrierte Unterbereiche | —      |
-| [referenz-slack.md](ideen/referenz-slack.md)                                 | Slack für den Teamchat (2026-10-18): Funktionsmatrix, Etappen, Regelkonflikte (Dateien, Push, KI) | —      |
-| [10-praxisverwaltung.md](ideen/10-praxisverwaltung.md)                       | Terminplanung, Warteliste, Akte, Verordnung, Privatabrechnung, Hausbesuch, Kennzahlen       | PRX    |
-| [00-lebenszyklus-und-zugang.md](ideen/00-lebenszyklus-und-zugang.md)         | Patient wird Klient, Betreuung nach Rezeptende, Portalzugang, Onboarding, Rechtsrahmen      | LZK    |
-| [01-trainingsplaene-und-progression.md](ideen/01-trainingsplaene-und-progression.md) | Trainingspläne, Übungsbibliothek, Progressionsregeln, Periodisierung, Autoregulation | TRN    |
-| [02-tracking-und-parameter.md](ideen/02-tracking-und-parameter.md)           | Was gemessen wird: Schmerz, Anstrengung, Bewegungssicherheit, Check-ins, Wearables           | TRK    |
-| [03-rueckfragen-medien-kommunikation.md](ideen/03-rueckfragen-medien-kommunikation.md) | Rückfragen, Foto-/Videoanhänge, Chat, Benachrichtigungen, Notfallabgrenzung        | KOM    |
-| [04-assessments-outcomes-fortschritt.md](ideen/04-assessments-outcomes-fortschritt.md) | Assessments, PROMs, Testbatterien, Fortschrittsdarstellung, Übungsanalyse          | OUT    |
-| [05-alltag-gewohnheiten-ernaehrung.md](ideen/05-alltag-gewohnheiten-ernaehrung.md) | Gewohnheiten, Aktivitäten, Schlaf, Ernährung, Verhaltensänderung                        | ALT    |
-| [06-uebersicht-kalender-sessions.md](ideen/06-uebersicht-kalender-sessions.md) | Übersicht/Dashboard, Kalender, Sessions, Durchführung einer Trainingseinheit             | ORG    |
-| [07-ki-assistenz.md](ideen/07-ki-assistenz.md)                               | KI-Analyse, Assistenzfunktionen, Grenzen nach ADR-005 und ADR-006                           | KI     |
-| [08-querschnitt-plattform.md](ideen/08-querschnitt-plattform.md)             | Themen über alle Bereiche: Zeitstrahl, Sprache, Barrierefreiheit, Export, Testbarkeit       | QSN    |
-| [09-angebote-und-abrechnung.md](ideen/09-angebote-und-abrechnung.md)         | Paketpreise, Vorauszahlung, Rabatte, Anreize, Preisdarstellung im Portal                    | ANG    |
-| [kanvas/own-motion-praxis.html](kanvas/own-motion-praxis.html)               | Design-Kanvas „Own Motion · Praxis" von Jannes (2026-09-11): 1,2 MB gebündelter HTML-Export, nur **Beleg** für `IDEA-PRX-034` bis `-037`; keine Vorgabe, nichts daraus übernehmen | —      |
-
-## Pflege
-
-- Neue Ideen von Jannes kommen als `notiert` in die passende Bereichsdatei.
-- Entsteht in einem Loop eine Idee außerhalb des Auftrags, wird sie hier als
-  `vorschlag` abgelegt — **nicht** gebaut.
-- Der Ordner ist von Prettier ausgenommen (wie `docs/adr/` und
-  `docs/decisions/`) und wird von Hand gepflegt.
-
-Zuletzt aktualisiert: 2026-10-16 (`IDEA-PRX-058`). Ältere Stände: `git log -- docs/product/`.
+| Kennung | Idee | Status |
+| --- | --- | --- |
+| IDEA-LZK-001 | Zugang ab dem Moment, in dem jemand Patient wird | notiert |
+| IDEA-LZK-002 | Betreuungsepisode als eigene Entität mit Typ | bestätigt · entscheidung nötig |
+| IDEA-LZK-003 | Zweckbindung beim Übergang, nicht stiller Datenfluss | bestätigt |
+| IDEA-LZK-004 | Klientenprofil als Voraussetzungsprofil | bestätigt |
+| IDEA-LZK-005 | Onboarding mit Überspringen-Möglichkeit für die Praxis | bestätigt |
+| IDEA-LZK-006 | Offboarding als eigener Vorgang | überführt → LOE-001b |
+| IDEA-LZK-007 | Empfehlung und Erinnerung am Rezeptende | notiert |
+| IDEA-LZK-008 | Kund:innen des Personal Trainings ohne vorherige Heilbehandlung | notiert |
+| IDEA-LZK-009 | Erinnerung an den vergessenen Abschluss der Versorgung | überführt → PRX-016 |
+| IDEA-TRN-001 | Progression regelt die Plattform, nicht die Person | notiert |
+| IDEA-TRN-002 | Regelwerk statt Automatik: Therapeut gibt den Korridor frei | bestätigt |
+| IDEA-TRN-003 | Ampelmodell auf Basis der Schmerzreaktion | zurückgestellt (B10) |
+| IDEA-TRN-004 | Progression ist mehrdimensional, nicht „mehr Gewicht" | bestätigt |
+| IDEA-TRN-005 | Übungsbibliothek als Graph, nicht als Liste | bestätigt |
+| IDEA-TRN-006 | Autoregulation über RIR statt starrer Prozentwerte | bestätigt |
+| IDEA-TRN-007 | Doppelte Progression als robuster Standardfall | bestätigt |
+| IDEA-TRN-008 | Phasenwechsel über Kriterien, nicht über den Kalender | bestätigt |
+| IDEA-TRN-009 | Adhärenz ist eine Eingangsgröße der Progression | bestätigt |
+| IDEA-TRN-010 | Wiedereinstieg nach Unterbrechung | bestätigt |
+| IDEA-TRN-011 | Plan-Schnappschuss bei Zuweisung | bestätigt |
+| IDEA-TRN-012 | Trockenlauf, bevor Automatik scharf geschaltet wird | bestätigt |
+| IDEA-TRN-013 | Belastungssteuerung über die Woche: mit Vorsicht | bestätigt |
+| IDEA-TRN-014 | Progressionsschema je Übungsgruppe, angezeigt neben der letzten Einheit | vorschlag |
+| IDEA-TRN-015 | Übungen in der Dokumentation strukturiert erfassen | vorschlag |
+| IDEA-TRN-016 | Planvorlagen der Praxis ohne Person | vorschlag |
+| IDEA-TRK-001 | Parameter nach Erfassungstakt ordnen | bestätigt |
+| IDEA-TRK-002 | Weniger Fragen, dafür beantwortet | bestätigt |
+| IDEA-TRK-003 | Bewegungssicherheit als eigene Größe neben Schmerz | notiert · ausgearbeitet |
+| IDEA-TRK-004 | Check-in mit einstellbarem Takt | notiert · ausgearbeitet |
+| IDEA-TRK-005 | Schmerz differenziert erfassen | bestätigt |
+| IDEA-TRK-006 | Kontext mit erfassen, sonst ist die Zeitreihe Rauschen | bestätigt |
+| IDEA-TRK-007 | Wearables und Gesundheits-Apps: später, und mit eigener Prüfung | bestätigt |
+| IDEA-TRK-008 | Offline-Erfassung im Training | bestätigt |
+| IDEA-KOM-001 | Strukturierte Rückfrage statt offenem Chat | notiert · ausgearbeitet |
+| IDEA-KOM-002 | Asynchron mit Zusage, plus klare Notfallabgrenzung | bestätigt |
+| IDEA-KOM-003 | Foto- und Videoanhänge: eigene Datenklasse | notiert · entscheidung nötig |
+| IDEA-KOM-004 | Antwort mit Zeitmarke und Anmerkung im Video | bestätigt |
+| IDEA-KOM-005 | Kein automatisches Bewegungsurteil aus Video | bestätigt · Abgrenzung |
+| IDEA-KOM-006 | Benachrichtigungen mit Regeln, nicht nach Gefühl | bestätigt |
+| IDEA-KOM-007 | Klinisch relevante Inhalte kommen in die Akte | bestätigt |
+| IDEA-KOM-008 | Praxispostfach in der Anwendung: Terminwünsche erkennen, Antworten vorformulieren | notiert · entscheidung nötig |
+| IDEA-OUT-001 | Instrumentenbibliothek mit Lizenzfeld | bestätigt |
+| IDEA-OUT-002 | Berechnen ja, bewerten nein | bestätigt · entscheidung nötig |
+| IDEA-OUT-003 | Patientenspezifische Funktionsskala als Ziel-Werkzeug | bestätigt |
+| IDEA-OUT-004 | Globale Veränderungsfrage | bestätigt |
+| IDEA-OUT-005 | Verlaufsgrafiken mit Ereignissen | bestätigt |
+| IDEA-OUT-006 | Übungsanalyse: Ausführung, Schmerz und Auslassung zusammen | notiert · ausgearbeitet |
+| IDEA-OUT-007 | Assessments mit Protokoll und Wiedervorlage | notiert · ausgearbeitet |
+| IDEA-OUT-008 | Fortschritt in zwei Sprachen | bestätigt |
+| IDEA-OUT-009 | Ein Bild ruft den Test in Erinnerung | notiert |
+| IDEA-OUT-010 | Bewegungsstern für LWS und HWS | vorschlag |
+| IDEA-OUT-011 | Richtung getrennt statt „rechts/links" in einem Test | vorschlag |
+| IDEA-OUT-012 | Segmenthöhe antippen statt tippen | vorschlag |
+| IDEA-OUT-013 | Eigene Ergebnisse für wiederholte Bewegungen | vorschlag |
+| IDEA-OUT-014 | Schnellnotizen unter „positiv" | vorschlag |
+| IDEA-OUT-015 | Kopfzeile mit den positiven Tests | vorschlag |
+| IDEA-OUT-016 | Instrumente in der Praxis pflegen: ändern, hinzufügen, entfernen | vorschlag |
+| IDEA-ALT-001 | Alltagsaktivität als Kontext, nicht als Wettbewerb | notiert · ausgearbeitet |
+| IDEA-ALT-002 | Gewohnheiten mit sehr kleinen Zielen | notiert · ausgearbeitet |
+| IDEA-ALT-003 | Schlaf und Stress mitführen | bestätigt |
+| IDEA-ALT-004 | Bedarfsmedikation als Verlaufsgröße | bestätigt |
+| IDEA-ALT-005 | Ernährung nur als Protokoll und Zielwert | bestätigt |
+| IDEA-ALT-006 | Kalorienzählen ist nicht für alle harmlos | bestätigt · Abgrenzung |
+| IDEA-ALT-007 | Kein Vergleich zwischen Patient:innen | bestätigt · Abgrenzung |
+| IDEA-ORG-001 | Übersicht zeigt, was zu tun ist, nicht wie es läuft | bestätigt |
+| IDEA-ORG-002 | Behandlungstermin und Trainingseinheit sind zwei Dinge | bestätigt |
+| IDEA-ORG-003 | Durchführungsansicht für die Einheit | bestätigt |
+| IDEA-ORG-004 | Kalender führt Termine und Trainingstage zusammen | bestätigt |
+| IDEA-ORG-005 | Sitzungsvorbereitung für die Praxis | bestätigt |
+| IDEA-ORG-006 | Planlaufzeit und Wiedervorlage | bestätigt |
+| IDEA-KI-001 | Der Rahmen zuerst, dann Features | bestätigt |
+| IDEA-KI-002 | Zulässige Anwendungsfälle | bestätigt |
+| IDEA-KI-003 | Quellenbindung als Bauprinzip | bestätigt |
+| IDEA-KI-004 | Ausdrücklich ausgeschlossen | bestätigt · Abgrenzung |
+| IDEA-KI-005 | Nutzung sichtbar machen | bestätigt |
+| IDEA-KI-006 | Was in der Referenzsoftware „KI-Analyse" heißt | bestätigt · Einordnung |
+| IDEA-KI-007 | Sprachdokumentation: Diktat, Transkription, geprüfter Entwurf | überführt → `PROJECT_PRINCIPLES.md` §6.3 |
+| IDEA-QSN-001 | Ein Zeitstrahl über alle Bereiche | bestätigt |
+| IDEA-QSN-002 | Zwei Sprachebenen im Datenmodell | bestätigt |
+| IDEA-QSN-003 | Datenexport als Funktion, nicht als Anfrage | bestätigt |
+| IDEA-QSN-004 | Regelwerke gegen synthetische Verläufe testen | bestätigt |
+| IDEA-QSN-005 | Alles Automatische braucht einen protokollierten Override | bestätigt |
+| IDEA-QSN-006 | Die Oberfläche muss für 78-Jährige funktionieren | bestätigt |
+| IDEA-QSN-007 | Fremde Begriffe nicht ungeprüft übernehmen | bestätigt |
+| IDEA-QSN-008 | Interoperabilität als Fernziel benennen, nicht bauen | bestätigt |
+| IDEA-QSN-009 | Mandantenfähigkeit mit Branding pro Praxis | notiert |
+| IDEA-QSN-010 | Beschäftigtenangaben über die Stammdaten hinaus | notiert |
+| IDEA-QSN-011 | Lesbare Patientennummer neben dem technischen Schlüssel | verworfen |
+| IDEA-QSN-012 | Zwischen den Bereichen wischen | zurückgestellt (ANN-663) |
+| IDEA-ANG-001 | Coaching als Paketpreis | bestätigt |
+| IDEA-ANG-002 | Rabatt für eine Google-Bewertung: so nicht | verworfen (B11) |
+| IDEA-ANG-003 | Rückfall in die Heilbehandlung während eines Pakets | bestätigt |
+| IDEA-ANG-004 | Preise sichtbar, bevor jemand fragt | bestätigt |
+| IDEA-PRX-001 | Zugangshinweis je Patient:in | überführt → PAT-005 |
+| IDEA-PRX-002 | Fahrpuffer als Praxisregel, ohne Kartendienst | überführt → `PROJECT_PRINCIPLES.md` §8.1 |
+| IDEA-PRX-003 | Warteliste mit Zeitfenstern und Nachrücken | überführt → PRX-EPIC-001 (gebaut 2026-09-28) |
+| IDEA-PRX-004 | Tag umplanen bei Ausfall, mit Anrufliste | überführt → CAL-009 |
+| IDEA-PRX-005 | Anrufliste für morgen | überführt → PRX-014 |
+| IDEA-PRX-006 | Terminzettel und Terminübersicht als PDF | überführt → CAL-011, CAL-013 |
+| IDEA-PRX-007 | Folgetermin und Schnellanlage | überführt → UX-003 |
+| IDEA-PRX-008 | Automatische Terminsuche | überführt → PRX-EPIC-001 (gebaut 2026-09-28) |
+| IDEA-PRX-009 | Verordnungszähler am Termin | überführt → PRX-EPIC-002 (gebaut 2026-09-28) |
+| IDEA-PRX-010 | Rechnungsempfänger-Stammdaten und verknüpfte Kontakte | vorschlag |
+| IDEA-PRX-011 | Persönliche Textbausteine in der Dokumentation | überführt → UX-008 |
+| IDEA-PRX-012 | Zahlungserinnerung als Dokument | bestätigt |
+| IDEA-PRX-013 | Sammelrechnung je Person und Monat mit Behandlungsnachweis | vorschlag |
+| IDEA-PRX-014 | Tagesplan-Cache für den Funkloch-Moment | überführt → UX-011 |
+| IDEA-PRX-015 | Unterschrift am Hausbesuch, digitale Vorlagen | verworfen (E-13) |
+| IDEA-PRX-016 | Vertretungs-Kurzblick am Termin | überführt → PRX-EPIC-002 (gebaut 2026-09-28) |
+| IDEA-PRX-017 | Startort je Tag | vorschlag |
+| IDEA-PRX-018 | Dublettenprüfung und Zusammenführen | überführt → PRX-015 |
+| IDEA-PRX-019 | Aufgaben und Wiedervorlagen mit Patientenbezug | überführt → PRX-012 |
+| IDEA-PRX-020 | Globale Suche und Schnellanlegen | überführt → UX-004 |
+| IDEA-PRX-021 | Farbcodierung je Terminart und Person | vorschlag |
+| IDEA-PRX-022 | Kartenzahlung beim Hausbesuch | notiert · entscheidung nötig |
+| IDEA-PRX-023 | Verordnung per Kamera erfassen | überführt → PRX-011 |
+| IDEA-PRX-024 | Kalender-Abo für den eigenen Kalender | vorschlag · Bedenken |
+| IDEA-PRX-025 | Kennzahlen für die Praxisführung | bestätigt (Roadmap: STA-EPIC-001) |
+| IDEA-PRX-026 | Export für die Steuerberatung | bestätigt |
+| IDEA-PRX-027 | Körperschema im Befund | vorschlag |
+| IDEA-PRX-028 | Diktat in der Dokumentation | überführt → `IDEA-KI-007` / `PROJECT_PRINCIPLES.md` §6.3 |
+| IDEA-PRX-029 | Tagesroute auf der Karte | überführt → ADR-019 / MAP-002 bis MAP-006 |
+| IDEA-PRX-030 | Navigationslink zu Google Maps, je Weg und für den Tag | überführt → UX-002 / ADR-019 / ANN-018 |
+| IDEA-PRX-031 | Gebietstage für die Terminvergabe | überführt → PRX-EPIC-001 (gebaut 2026-09-28) |
+| IDEA-PRX-032 | Fahrzeit je Weg aus dem Kartendienst | überführt → MAP-003 / MAP-004 / MAP-006 |
+| IDEA-PRX-044 | Führung auf dem Rad innerhalb der Software | überführt → ADR-019 Fassung 3, Abschnitt F / §20.1 / MAP-007 |
+| IDEA-PRX-033 | Planungskarte der aktiven Adressen | vorschlag · Bedenken |
+| IDEA-PRX-034 | Entwurf „Own Motion · Praxis": der Tagesplan als Startseite | notiert |
+| IDEA-PRX-035 | „Mitnehmen": Materialliste aus den letzten Befunden | überführt → PRX-EPIC-002 (gebaut 2026-09-28) |
+| IDEA-PRX-036 | Indikation in der Tagesliste | verworfen |
+| IDEA-PRX-037 | Abrechnungslage am Termin | überführt → PRX-EPIC-002 (gebaut 2026-09-28) |
+| IDEA-PRX-038 | Dokumentieren ohne Scrollen: was wirklich im Weg steht | überführt → `docs/development/BEFUNDE.md` |
+| IDEA-PRX-039 | Termin abhaken: Heilmittel, Kontingent und die Freigabe zur Abrechnung | überführt → PRX-EPIC-002 (gebaut 2026-09-28) |
+| IDEA-PRX-040 | Aktionen der Tageskarte neu ordnen | überführt → `docs/development/BEFUNDE.md` |
+| IDEA-PRX-041 | Anrufliste mit gespeichertem Stand | überführt → PRX-014 |
+| IDEA-PRX-042 | Terminieren mit ausgewählter Person: der Kalender als Suchfläche | überführt → CAL-015c, UBK-014 |
+| IDEA-PRX-043 | Textbausteine auch im Befund | notiert |
+| IDEA-PRX-045 | Kalender endlos wischen: am Ende des Tags oder der Woche geht es weiter | vorschlag |
+| IDEA-PRX-047 | Vergütungsmodelle mit Umsatzbeteiligung | bestätigt (Grundlage in STA-005, das Übrige offen) |
+| IDEA-PRX-048 | Lastenrad als 3D-Modell (Design-Export „Lastenrad") | notiert · Abgrenzung |
+| IDEA-PRX-049 | Geburtsdatum aller Mitarbeitenden hinterlegt | notiert |
+| IDEA-PRX-050 | Stockwerk als eigenes Feld am Hausbesuch (`home_visit_floor`) | notiert |
+| IDEA-PRX-051 | Wochentakt der Liege in der Übersicht | notiert |
+| IDEA-PRX-052 | Bestätigung des Abschlusses auf der Übersicht | notiert |
+| IDEA-PRX-053 | Zahlungs-QR-Code auf Rechnung und Zahlungserinnerung | notiert |
+| IDEA-PRX-046 | Kostenvoranschlag zur Abklärung mit der privaten Krankenversicherung | notiert · entscheidung nötig |
+| IDEA-PRX-054 | Eigener Anmeldebogen der Praxis zum Ausdrucken | notiert |
+| IDEA-PRX-055 | Verordnung vom Foto automatisch erkennen | notiert |
+| IDEA-PRX-056 | Reihenfolgevorschlag für den Tag | notiert · entscheidung nötig |
+| IDEA-PRX-057 | Schäden am Lastenrad im 3D-Modell markieren | bestätigt · ausgearbeitet |
+| IDEA-PRX-058 | Aus dem Check-Up gleich Panne melden oder das Rad sperren lassen | vorschlag |
