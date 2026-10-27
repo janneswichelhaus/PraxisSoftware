@@ -6,7 +6,7 @@ import type * as PatientsApi from './api';
 import type * as DokumentationApi from '@/features/documentation/api';
 import type * as VerordnungenApi from '@/features/treatment-bases/api';
 import type * as AppointmentsApi from '@/features/appointments/api';
-import type * as IntakeApi from '@/features/open-points/intake-api';
+import type * as IntakeApi from '@/features/intake/api';
 import type * as FilesApi from '@/features/files/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import type { RoleKey } from '@/features/session/types';
@@ -70,7 +70,7 @@ vi.mock('@/features/files/api', async (importOriginal) => ({
   ladeDateiHoch: (auftrag: FilesApi.UploadAuftrag) => ladeDateiHoch(auftrag) as Promise<string>,
 }));
 
-vi.mock('@/features/open-points/intake-api', async (importOriginal) => {
+vi.mock('@/features/intake/api', async (importOriginal) => {
   const actual = await importOriginal<typeof IntakeApi>();
   return {
     ...actual,

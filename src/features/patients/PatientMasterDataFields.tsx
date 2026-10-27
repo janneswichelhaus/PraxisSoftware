@@ -7,7 +7,6 @@ import type { StammdatenFeld } from './api';
 import { stammdatenFeldId } from './stammdatenfelder';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Disclosure } from '@/components/ui/Card';
-import type { AssignableTherapist } from '@/features/staff/api';
 
 /** Was die Anlage hinter „Weitere Angaben“ stellt (K11). */
 const WEITERE: readonly StammdatenFeld[] = [
@@ -88,7 +87,7 @@ export function PatientMasterDataFields({
   werte: Record<StammdatenFeld, string>;
   fehler: Partial<Record<StammdatenFeld, string>>;
   onChange: (feld: StammdatenFeld, wert: string) => void;
-  therapeutinnen: AssignableTherapist[];
+  therapeutinnen: readonly { staff_member_id: string; display_name: string }[];
   therapeutinnenStand?: TherapeutinnenStand;
   /**
    * BEF-140, ANN-340: „Telefon (geschäftlich)" erscheint nur noch, wenn der

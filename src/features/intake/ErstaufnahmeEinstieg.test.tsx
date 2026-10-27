@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
-import type * as IntakeApi from '@/features/open-points/intake-api';
+import type * as IntakeApi from '@/features/intake/api';
 import type * as PatientenApi from '@/features/patients/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const fetchIntakeChecklist = vi.fn();
-vi.mock('@/features/open-points/intake-api', async (importOriginal) => {
+vi.mock('@/features/intake/api', async (importOriginal) => {
   const actual = await importOriginal<typeof IntakeApi>();
   return {
     ...actual,

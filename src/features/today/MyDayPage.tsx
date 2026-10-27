@@ -75,7 +75,7 @@ import {
 } from './tagesstart';
 import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
 import { OpenPointsSummary } from '@/features/open-points/OpenPointsSummary';
-import { OPEN_INTAKES_KEY, fetchOpenIntakes } from '@/features/open-points/intake-api';
+import { OPEN_INTAKES_KEY, fetchOpenIntakes } from '@/features/intake/api';
 import { useBarometerHinweise } from '@/features/feedback/barometerHinweis';
 import { REJECTED_TIME_OFF_KEY, fetchRejectedTimeOff } from '@/features/timeaccount/api';
 import { HinweisZwischendurch } from './HinweisZwischendurch';

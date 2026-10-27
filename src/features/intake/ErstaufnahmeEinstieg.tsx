@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Warnzeile } from '@/components/ui/Objektkopf';
-import { openItemsText } from '@/features/open-points/intake-api';
-import { useOffeneErstaufnahme } from '@/features/open-points/useOffeneErstaufnahme';
+import { openItemsText } from '@/features/intake/api';
+import { useOffeneErstaufnahme } from '@/features/intake/useOffeneErstaufnahme';
 import { fetchPatient } from '@/features/patients/api';
 import { canReadPatientDirectory, type CurrentUser } from '@/features/session/types';
 import { mitRueckweg } from '@/lib/rueckweg';

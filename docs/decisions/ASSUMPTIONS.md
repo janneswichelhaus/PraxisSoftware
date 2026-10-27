@@ -1882,9 +1882,9 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-
 
 **Begründung.** Roadmap PRX-EPIC-003 nennt die fünf Punkte (Jannes, Umbau U2, §5); abgeleitet statt gepflegt, weil ein Haken neben der Akte der zweite Wahrheitsort wäre, der auseinanderläuft. „Einwilligungen“ ist als Datenschutzinformation und Behandlungsvertrag gelesen: das sind die beiden Blätter der Aufnahme (PAT-006), die übrigen Einwilligungen sind freiwillig und dürfen nicht als „fehlend“ drängen (Art. 7 Abs. 4 DSGVO, Freiwilligkeit). Ein „nein“ als Standard war von einer Entscheidung nicht zu unterscheiden — genau das soll die Liste aber sehen. Die Datenbank trägt nur synthetische Daten; das Leeren der Bestands-„nein“ kostet deshalb nichts. Unsicher: ob ein Anamnesebogen auf Papier (als Foto, DOK-006) den Punkt ebenfalls erledigen soll.
 
-**Anker.** `app.intake_checklist` (die eine Stelle der Regeln), `app.intake_finding_instruments`, `get_intake_checklist` und `list_open_intakes` sowie die Spalte in `supabase/migrations/20260929180000_prx_013_intake_checklist.sql`; Beschriftung und Ziele in `src/features/open-points/intake-api.ts`; Liege mit drei Zuständen in `src/features/patients/Behandlungsliege.tsx`; Tests in `supabase/tests/intake-checklist.test.ts`.
+**Anker.** `app.intake_checklist` (die eine Stelle der Regeln), `app.intake_finding_instruments`, `get_intake_checklist` und `list_open_intakes` sowie die Spalte in `supabase/migrations/20260929180000_prx_013_intake_checklist.sql`; Beschriftung und Ziele in `src/features/intake/api.ts`; Liege mit drei Zuständen in `src/features/patients/Behandlungsliege.tsx`; Tests in `supabase/tests/intake-checklist.test.ts`.
 
-**Änderungspfad.** Ein Punkt mehr oder anders: `app.intake_checklist` und die Liste in `intake-api.ts` · Aufwand `klein`. Papierbogen zählt: im Punkt `anamnesis` zusätzlich eine Datei einer neuen Dokumentart prüfen · Aufwand `mittel`. Zurück zu „nein“ als Standard: Spalte wieder `not null default false` · Aufwand `klein`.
+**Änderungspfad.** Ein Punkt mehr oder anders: `app.intake_checklist` und die Liste in `intake/api.ts` · Aufwand `klein`. Papierbogen zählt: im Punkt `anamnesis` zusätzlich eine Datei einer neuen Dokumentart prüfen · Aufwand `mittel`. Zurück zu „nein“ als Standard: Spalte wieder `not null default false` · Aufwand `klein`.
 
 **Ablösung.** abgelöst durch ANN-224 in der Zahl der Punkte (seit AKTE-007 nur Verordnungsfoto und Anmeldebogen); der dritte Zustand der Liege gilt weiter.
 
@@ -2718,7 +2718,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Akte · Kopf, Rei
 
 **Begründung.** Jannes (2026-10-03): Es gibt zwei Bögen — den Anamnesebogen (vor dem ersten Termin, klinisch) und den Anmeldebogen (Datenschutz, Vertrag, Kontaktdaten); die Checkliste soll ausschließlich Anmeldebogen und Verordnungsgrundlage enthalten. Das Blatt ist noch nicht gestaltet; die beiden Vermerke sind heute die eine Stelle, an der sein Vorliegen steht, und sie bleiben einzeln nachweisbar (PAT-006, Fassung der Datenschutzinformation). Unsicher: ob die Praxis künftig einen einzigen Vermerk „Anmeldebogen unterschrieben“ will.
 
-**Anker.** `app.intake_checklist` und `list_open_intakes` in `supabase/migrations/20261004110000_akte_anmeldebogen_checklist.sql`; `INTAKE_ITEMS`, Beschriftung und Ziel in `src/features/open-points/intake-api.ts`; `BEGRIFFE.anmeldebogen` in `src/lib/begriffe.ts`; Tests in `supabase/tests/intake-checklist.test.ts`.
+**Anker.** `app.intake_checklist` und `list_open_intakes` in `supabase/migrations/20261004110000_akte_anmeldebogen_checklist.sql`; `INTAKE_ITEMS`, Beschriftung und Ziel in `src/features/intake/api.ts`; `BEGRIFFE.anmeldebogen` in `src/lib/begriffe.ts`; Tests in `supabase/tests/intake-checklist.test.ts`.
 
 **Änderungspfad.** Ein Vermerk statt zweier: neue Vermerkart in `patient_privacy_records` und der Punkt `registration_form` in `app.intake_checklist` · Aufwand `mittel`. Ein Punkt mehr: `app.intake_checklist` und `INTAKE_ITEMS` · Aufwand `klein`.
 
@@ -3244,7 +3244,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Begründung.** DSN-001 Abschnitt 7 und `IDEA-QSN-006`: 18 px, 200 % ohne waagerechtes Scrollen, Kontrast 4,5 : 1. Die Schriftgröße im Browser zu speichern ist Datenminimierung (Art. 5 Abs. 1 lit. c) und passt zu Geräten, die sich Angehörige teilen. Für die Ziele nennt DSN-001 48 px; WCAG 2.5.5 verlangt 44, und Textlinks auf 48 zu heben hätte die Praxisbausteine verändert. Unsicher: ob Jannes die Versalien der Abschnittstitel in 18 px zu laut findet.
 
-**Anker.** `.plattform-schrift` und `html[data-schrift]` in `src/index.css`; `src/features/platform/schriftgroesse.ts`; `listenzeile` in `src/components/ui/ListRow.tsx`. Geprüft in `tests/e2e/plattform-barrierefreiheit.spec.ts`.
+**Anker.** `.plattform-schrift` und `html[data-schrift]` in `src/index.css`; `src/lib/schriftgroesse.ts`; `listenzeile` in `src/components/ui/ListRow.tsx`. Geprüft in `tests/e2e/plattform-barrierefreiheit.spec.ts`.
 
 **Änderungspfad.** Andere Grundgröße: die Tokens in `.plattform-schrift` · Aufwand `klein`. Ziele 48 px: Mindesthöhe der Textlinks im Gerüst · Aufwand `klein`. Größe am Konto speichern: Spalte und Projektion · Aufwand `mittel`.
 

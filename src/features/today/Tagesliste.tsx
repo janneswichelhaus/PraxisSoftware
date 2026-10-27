@@ -7,7 +7,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { TravelBar } from '@/components/ui/TravelBar';
 import { LetzterEintragVorDerTuer } from '@/features/appointments';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { openItemsText, type IntakeItem } from '@/features/open-points/intake-api';
+import { openItemsText, type IntakeItem } from '@/features/intake/api';
 import { adressZeilen, dayPlanStatusLabels, dayPlanStatusTon, offenGrund } from './api';
 import { zugangMitStockwerk } from './stockwerk';
 import { einordnung, terminName, type Wegstrecke } from './tagesstart';

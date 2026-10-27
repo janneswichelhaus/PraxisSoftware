@@ -7,7 +7,7 @@ import { Disclosure } from '@/components/ui/Card';
 import { Objektkopf, Warnzeile } from '@/components/ui/Objektkopf';
 import { Reiterleiste } from '@/components/ui/Reiterleiste';
 import { AnmeldebogenFoto } from '@/features/datenschutz/Anmeldebogen';
-import { useOffeneErstaufnahme } from '@/features/open-points/useOffeneErstaufnahme';
+import { useOffeneErstaufnahme } from '@/features/intake/useOffeneErstaufnahme';
 import {
   useAktuelleGrundlage,
   versicherungsart,

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import type * as AssessmentsApi from '@/features/assessments/api';
-import type * as IntakeApi from '@/features/open-points/intake-api';
+import type * as IntakeApi from '@/features/intake/api';
 import type * as PatientenApi from '@/features/patients/api';
 import type * as Vermerke from '@/features/datenschutz/vermerke';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
@@ -18,7 +18,7 @@ vi.mock('@/features/patients/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientenApi>();
   return { ...actual, fetchPatient: (id: string) => fetchPatient(id) as Promise<unknown> };
 });
-vi.mock('@/features/open-points/intake-api', async (importOriginal) => {
+vi.mock('@/features/intake/api', async (importOriginal) => {
   const actual = await importOriginal<typeof IntakeApi>();
   return {
     ...actual,

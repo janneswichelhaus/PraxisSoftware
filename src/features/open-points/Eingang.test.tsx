@@ -35,7 +35,7 @@ vi.mock('@/features/files/api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchOffeneScans: () => fetchOffeneScans(),
 }));
-vi.mock('./intake-api', async (importOriginal) => ({
+vi.mock('@/features/intake/api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchOpenIntakes: () => fetchOpenIntakes(),
 }));

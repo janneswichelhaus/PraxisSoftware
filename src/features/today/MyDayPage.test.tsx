@@ -219,7 +219,7 @@ vi.mock('@/features/timeaccount/api', async (importOriginal) => ({
 
 // PRX-013: offene Erstaufnahmen; ohne Angabe keine.
 const fetchOpenIntakes = vi.fn(() => Promise.resolve([] as unknown[]));
-vi.mock('@/features/open-points/intake-api', async (importOriginal) => ({
+vi.mock('@/features/intake/api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchOpenIntakes: () => fetchOpenIntakes(),
 }));
