@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { entferneMetadaten } from '../../../src/features/files/metadaten';
+import { entferneMetadaten } from '../../../src/lib/dateien/metadaten';
 import {
   CHROMIUM_JPEG,
   CHROMIUM_PNG,
@@ -10,7 +10,7 @@ import {
   pngVomHandy,
   text,
   verbinde,
-} from '../../../src/features/files/testbilder';
+} from '../../../src/lib/dateien/testbilder';
 import { metadatenfrei, pruefeInhalt, sha256, typPasst } from './pruefung';
 
 /**

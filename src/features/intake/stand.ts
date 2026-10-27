@@ -1,5 +1,4 @@
-import type { Erhebung } from '@/features/assessments/api';
-import type { IntakeChecklist, IntakeItem } from '@/features/open-points/intake-api';
+import type { IntakeChecklist, IntakeItem } from '@/features/intake/api';
 
 /**
  * Wo eine geführte Erstaufnahme steht (Bereichsüberholung „Erstaufnahme
@@ -44,7 +43,7 @@ export function erstaufnahmestand({
 }: {
   checkliste: IntakeChecklist;
   /** `null`, wenn die Rolle keine Fragebögen lesen darf. */
-  erhebungen: readonly Pick<Erhebung, 'instrument_id' | 'status'>[] | null;
+  erhebungen: readonly { instrument_id: string; status: 'entwurf' | 'abgeschlossen' }[] | null;
   /** `treatment_table_required`: `null` heißt „noch nicht entschieden“. */
   liege: boolean | null;
 }): Erstaufnahmestand {

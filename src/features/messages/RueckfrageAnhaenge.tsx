@@ -6,7 +6,7 @@ import { ListRows } from '@/components/ui/ListRow';
 import { Rueckfrage as Nachfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Arbeitszeile } from '@/features/open-points/Arbeitszeile';
+import { Arbeitszeile } from '@/components/ui/Arbeitszeile';
 import {
   RUECKFRAGEN_KEY,
   deleteRueckfrageAnhang,

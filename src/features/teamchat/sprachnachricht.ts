@@ -3,7 +3,7 @@ import {
   mikrofonErlaubt,
   waehleFormat,
   type Aufnahmefehler,
-} from '@/features/documentation/aufnahme';
+} from '@/lib/aufnahme';
 import { tontyp } from '@/features/platform/videometadaten';
 
 /**

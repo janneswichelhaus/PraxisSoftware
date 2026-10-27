@@ -15,7 +15,7 @@ import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import type { CurrentUser } from '@/features/session/types';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
-import { Arbeitszeile } from './Arbeitszeile';
+import { Arbeitszeile } from '@/components/ui/Arbeitszeile';
 import {
   CALL_LIST_KEY,
   fetchCallList,

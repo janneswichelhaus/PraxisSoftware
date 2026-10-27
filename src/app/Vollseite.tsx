@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode, type Ref } from 'react';
 import { Wortmarke } from '@/components/ui/Wortmarke';
-import { useSchriftgroesseAnwenden } from '@/features/platform/schriftgroesse';
+import { useSchriftgroesseAnwenden } from '@/lib/schriftgroesse';
 import { ANMELDEN_TITEL } from './tabtitel';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { useRechner } from '@/features/platform/geruestbreite';

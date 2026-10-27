@@ -7,7 +7,7 @@ import type { Sperrstand } from './sperrstand';
 import type * as PasskeyModul from '../passkey';
 import type * as PinModul from '../appPin';
 import type { PinErgebnis } from '../appPin';
-import { useSperrsicherung } from './sperrsicherung';
+import { useSperrsicherung } from '@/lib/sperrsicherung';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Button } from '@/components/ui/Button';
 import { FENSTERZIEL, PortalZielKontext } from '@/components/ui/portalZiel';

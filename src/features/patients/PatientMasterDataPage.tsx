@@ -33,7 +33,7 @@ import { Honorarvereinbarung } from '@/features/billing/Honorarvereinbarung';
 import { Nachsorgeabo } from '@/features/billing/Nachsorgeabo';
 import { Trainingsangebot } from '@/features/training-offers/Trainingsangebot';
 import { nachsorgeSchluessel } from '@/features/billing/nachsorge-api';
-import { fetchIntakeChecklist } from '@/features/open-points/intake-api';
+import { fetchIntakeChecklist } from '@/features/intake/api';
 import { zugangMitStockwerk } from '@/features/today/stockwerk';
 import {
   useAktuelleGrundlage,

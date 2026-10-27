@@ -9,13 +9,13 @@ import type * as RouterModul from 'react-router-dom';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { testFlotte } from '@/features/fleet/testdaten';
 import { renderWithProviders, testUser } from '@/test-utils';
+import type { Zeitblock } from '@/lib/datum';
 
 const NEU = '55555555-5555-4555-8555-0000000000aa';
 
 const createStaffMember = vi.fn<(werte: unknown, privat?: boolean) => Promise<string>>();
 const setzeKalender = vi.fn<(id: string, kalender: unknown) => Promise<void>>();
-const saveWorkingHours =
-  vi.fn<(id: string, tag: number, bloecke: SchedulingApi.Zeitblock[]) => Promise<void>>();
+const saveWorkingHours = vi.fn<(id: string, tag: number, bloecke: Zeitblock[]) => Promise<void>>();
 const fetchFleet = vi.fn<() => Promise<FleetApi.Fleet>>();
 const takeKey = vi.fn<(radId: string, staffId: string | null) => Promise<void>>();
 const ladeZugangEin =
@@ -46,7 +46,7 @@ vi.mock('@/features/scheduling/api', async (importOriginal) => {
   const actual = await importOriginal<typeof SchedulingApi>();
   return {
     ...actual,
-    saveWorkingHours: (id: string, tag: number, bloecke: SchedulingApi.Zeitblock[]) =>
+    saveWorkingHours: (id: string, tag: number, bloecke: Zeitblock[]) =>
       saveWorkingHours(id, tag, bloecke),
   };
 });

@@ -10,24 +10,26 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { ladeDateiHerunter, ladeDateiZumAnzeigen, setzeFreigabe, type PatientFile } from './api';
-import { Dateiansicht } from './Dateiansicht';
+import { Dateiansicht } from '@/components/ui/Dateiansicht';
 import { Fotoverlustschutz } from './Fotoverlustschutz';
-import { Kameradialog } from './Kameradialog';
-import { fotoVomHeutigenTag, useKamera } from './kamera';
+import { Kameradialog } from '@/components/ui/Kameradialog';
+import { fotoVomHeutigenTag, useKamera } from '@/lib/dateien/kamera';
 import { useDateiLoeschen, useDateiUpload, useDateien, useDokumentartKorrigieren } from './dateien';
 import {
-  DATEI_ACCEPT,
-  dateiAblehnungsgrund,
   dokumentartHinweise,
   dokumentartLabels,
   namensvorschlag,
-  formatBytes,
-  istAnzeigbar,
   istKlinisch,
-  NICHT_SERVERSEITIG_GEPRUEFT,
   sichtbarkeitHinweis,
   type Dokumentart,
 } from './dokumentarten';
+import {
+  DATEI_ACCEPT,
+  dateiAblehnungsgrund,
+  formatBytes,
+  istAnzeigbar,
+  NICHT_SERVERSEITIG_GEPRUEFT,
+} from '@/lib/dateien/pruefung';
 import {
   canCorrectPatientFileType,
   canWriteClinicalPatientFiles,

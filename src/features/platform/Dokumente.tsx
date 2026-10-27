@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Dateiansicht } from '@/features/files/Dateiansicht';
+import { Dateiansicht } from '@/components/ui/Dateiansicht';
 import {
   dokumenteSchluessel,
   ladeDokumentHerunter,

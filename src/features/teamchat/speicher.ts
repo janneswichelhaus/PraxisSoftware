@@ -1,3 +1,4 @@
+import { beimAbmeldenLeeren } from '@/lib/abmelden';
 import { ordneKanaele, type Kanal } from './api';
 import { anhaengeLeeren } from './entwurfsanhaenge';
 import { ausgangLeeren } from './ausgang';
@@ -22,6 +23,7 @@ export function teamchatLeeren(): void {
   sucheLeeren();
   zuletzt = null;
 }
+beimAbmeldenLeeren(teamchatLeeren);
 
 let zuletzt: { kontoId: string; kanalId: string } | null = null;
 

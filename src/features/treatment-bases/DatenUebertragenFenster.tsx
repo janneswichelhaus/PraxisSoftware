@@ -24,7 +24,6 @@ import {
   type TreatmentBasisDetail,
 } from './api';
 import { HAUSBESUCH, HEILMITTEL } from './heilmittel';
-import { usePosNummern } from './posNummern';
 import { ScanBesideForm } from './ScanBesideForm';
 import { todayInTimeZone } from '@/lib/datum';
 
@@ -36,6 +35,9 @@ interface Zeile {
   anzahl: string;
 }
 
+/** Lädt die Pos.-Nr. je Heilmittel; die Seite reicht sie aus der Abrechnung herein (ANN-754). */
+export type PosNummernLaden = (heute: string) => Promise<ReadonlyMap<string, string>>;
+
 /** Wofür das Fenster offen ist: ein Foto ohne Daten oder eine Verordnung. */
 export type Uebertragung =
   | { art: 'foto'; fileId: string; fotoVom: string | null }
@@ -44,29 +46,21 @@ export type Uebertragung =
 const POSITIONEN_OHNE_HAUSBESUCH = HEILMITTEL.filter((h) => h.remedy !== HAUSBESUCH);
 
 /**
- * „Daten übertragen" (Akte entschlacken, 2026-10-03): die Verordnung vom Foto
- * abtippen - oder die Daten einer Verordnung ändern.
- *
- * Die Daten gehen in die Rechnung: Diagnose, Verordnungsdatum, verordnende
- * Ärzt:in und die Positionen. Das Foto ist nur die Quelle zum Abtippen und
- * erscheint erst auf Tipp (ADR-017 Punkte 15 und 20, `ScanBesideForm`). Die
- * Preise kommen aus der Preisliste, nie vom Rezept; die Pos.-Nr. steht nur zur
- * Orientierung daneben (`usePosNummern`).
- *
- * Geschrieben wird über die bestehenden Wege (`create_`/`update_treatment_basis`,
- * `assign_prescription_scan`) und den ICD-10-Code über seine eigene Funktion;
- * verbindlich prüft der Server. Selbstzahler und eine neue Verordner:in
- * gehen weiter über das ausführliche Formular.
+ * „Daten übertragen": eine Verordnung vom Foto abtippen oder ändern. Das Foto erscheint erst auf
+ * Tipp (ADR-017 Punkte 15 und 20); die Preise kommen aus der Preisliste, nie vom Rezept, die
+ * Pos.-Nr. steht nur zur Orientierung daneben. Verbindlich prüft der Server.
  */
 export function DatenUebertragenFenster({
   patientId,
   user,
   uebertragung,
+  ladePosNummern,
   onSchliessen,
 }: {
   patientId: string;
   user: CurrentUser;
   uebertragung: Uebertragung;
+  ladePosNummern: PosNummernLaden;
   onSchliessen: () => void;
 }) {
   const bestandId = uebertragung.art === 'grundlage' ? uebertragung.grundlageId : null;
@@ -97,6 +91,7 @@ export function DatenUebertragenFenster({
           user={user}
           fileId={uebertragung.art === 'foto' ? uebertragung.fileId : null}
           bestand={bestand.data ?? null}
+          ladePosNummern={ladePosNummern}
           onSchliessen={onSchliessen}
         />
       ) : null}
@@ -121,17 +116,25 @@ function Formular({
   user,
   fileId,
   bestand,
+  ladePosNummern,
   onSchliessen,
 }: {
   patientId: string;
   user: CurrentUser;
   fileId: string | null;
   bestand: TreatmentBasisDetail | null;
+  ladePosNummern: PosNummernLaden;
   onSchliessen: () => void;
 }) {
   const queryClient = useQueryClient();
   const heute = user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : '';
-  const posNummern = usePosNummern(heute);
+  // Ohne Preisliste oder bei einem Ladefehler bleibt die Nummer weg; erfasst wird trotzdem.
+  const posNummern = useQuery({
+    queryKey: ['pos-nummern', heute],
+    queryFn: () => ladePosNummern(heute),
+    enabled: heute !== '',
+    retry: false,
+  }).data;
   const verordner = useQuery({ queryKey: ['prescribers'], queryFn: fetchPrescribers });
 
   const hausbesuchBestand = bestand?.items.find((item) => item.remedy === HAUSBESUCH) ?? null;
@@ -334,7 +337,7 @@ function Formular({
                   <option value="">Bitte wählen …</option>
                   {POSITIONEN_OHNE_HAUSBESUCH.map((h) => (
                     <option key={h.remedy} value={h.remedy}>
-                      {posNummern.get(h.remedy)
+                      {posNummern?.get(h.remedy)
                         ? `${h.beschriftung} · Pos. ${posNummern.get(h.remedy)}`
                         : h.beschriftung}
                     </option>

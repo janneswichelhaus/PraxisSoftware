@@ -43,14 +43,6 @@ const ERLAUBT: readonly RegExp[] = [
   // des Releases (ANN-083), kein Datenzugriff; die Erhebungen selbst kommen
   // über die Plattformprojektion.
   /^@\/features\/assessments\/(FragebogenFelder|antworten|darstellung|instrumente|schema)$/,
-  // POR-014: die Bildansicht - ein Baustein ohne Datenzugriff (ADR-017 Punkt 54).
-  // KOM-007: der Kameradialog und die Bereinigung der Bytes - Bausteine ohne
-  // Datenzugriff; das Foto an der Rückfrage entsteht wie in der Praxis nur im
-  // eigenen Dialog (ADR-017 Punkte 33, 34, 62).
-  /^@\/features\/files\/(Dateiansicht|Kameradialog|kamera|metadaten)$/,
-  // KOM-007: der Videodialog schließt vor der Sitzungssperre wie der
-  // Kameradialog - die Sperre gilt für alle Konten gleich (ADR-025).
-  /^@\/features\/auth\/sitzungssperre\/sperrsicherung$/,
   // TRK-009: die Freigabe ohne Netz per Passkey und was die Sperre ohne Netz
   // öffnet - die Sperre gilt für alle Konten gleich (ADR-025 Punkt 16).
   /^@\/features\/auth\/(freigabeOhneNetz|sitzungssperre\/Sitzungssperre)$/,

@@ -2,6 +2,7 @@ import type { RefObject } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { mitRueckweg } from '@/lib/rueckweg';
+import { beimAbmeldenLeeren } from '@/lib/abmelden';
 import type { Textverlustschutz } from '@/app/Textverlustschutz';
 import {
   createTreatmentNoteAddendum,
@@ -51,6 +52,7 @@ export function uebergabeErledigt(noteId: string): void {
 export function uebergabenLeeren(): void {
   uebergaben.clear();
 }
+beimAbmeldenLeeren(uebergabenLeeren);
 
 /**
  * Schreibt einen Nachtrag fest, nachdem sein Text gesichert ist (BEF-056).

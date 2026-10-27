@@ -239,3 +239,13 @@ export function zeitraumText(von: string, bis: string, ohneJahr: number | null =
   if (a.jahr === b.jahr) return `${a.tag}. ${a.monat} – ${b.tag}. ${b.monat}${jahr(b.jahr)}`;
   return `${a.tag}. ${a.monat} ${a.jahr} – ${b.tag}. ${b.monat} ${b.jahr}`;
 }
+
+/** ISO-8601-Wochentage: 1 = Montag … 7 = Sonntag, wie in der Datenbank. */
+export const WOCHENTAGE = [1, 2, 3, 4, 5, 6, 7] as const;
+export type Wochentag = (typeof WOCHENTAGE)[number];
+
+/** Ein Zeitblock im Formular. Beide Werte sind `HH:MM` in Ortszeit. */
+export interface Zeitblock {
+  von: string;
+  bis: string;
+}

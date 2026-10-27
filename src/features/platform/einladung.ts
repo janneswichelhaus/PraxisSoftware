@@ -13,9 +13,6 @@ import { getSupabase } from '@/lib/supabase';
  * keine Einmal-Anmeldung. Der Browser sieht den Admin-Schlüssel nie.
  */
 
-/** Der Pfad, auf den der QR-Code und die Mail führen. */
-export const EINLADUNG_PFAD = '/einladung';
-
 /** Der Code steht im Fragment (`#code=…`), nicht in der Suche: Er geht an keinen Server. */
 export function codeAusFragment(fragment: string): string | null {
   const roh = new URLSearchParams(fragment.replace(/^#/, '')).get('code');

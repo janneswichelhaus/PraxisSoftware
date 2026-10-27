@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
+import { useSperrsicherung } from '@/lib/sperrsicherung';
 import {
   ZWECK_DIKTAT,
   diktatAufbereiten,
@@ -14,7 +14,7 @@ import {
   useAufnahme,
   type Aufnahme,
   type Aufnahmefehler,
-} from './aufnahme';
+} from '@/lib/aufnahme';
 
 /**
  * Das Diktat auf der Schreibseite (BEF-153, KI-EPIC-001, PROJECT_PRINCIPLES.md

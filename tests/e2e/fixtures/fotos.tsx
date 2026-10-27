@@ -6,8 +6,8 @@ import type { Datenschutzvermerk } from '@/features/datenschutz/vermerke';
 import { AnmeldebogenDateien } from '@/features/files/Aktendateien';
 import { Ansicht, Patientenfotos, type Geladen } from '@/features/files/FotosImVerlauf';
 import type { Patientenfoto } from '@/features/files/patientenfotos';
-import { hatFarbprofil, nachSrgb } from '@/features/files/farbe';
-import { alleBytes, entferneMetadaten, jpegSegmente } from '@/features/files/metadaten';
+import { hatFarbprofil, nachSrgb } from '@/lib/dateien/farbe';
+import { alleBytes, entferneMetadaten, jpegSegmente } from '@/lib/dateien/metadaten';
 import {
   basis,
   CHROMIUM_JPEG,
@@ -17,7 +17,7 @@ import {
   pngVomHandy,
   text,
   verbinde,
-} from '@/features/files/testbilder';
+} from '@/lib/dateien/testbilder';
 import '@/index.css';
 
 /**

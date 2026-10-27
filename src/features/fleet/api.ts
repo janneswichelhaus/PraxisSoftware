@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
-import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from '@/features/files/dokumentarten';
-import { nachSrgb } from '@/features/files/farbe';
-import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
+import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from '@/lib/dateien/pruefung';
+import { nachSrgb } from '@/lib/dateien/farbe';
+import { alleBytes, bereinigeBild } from '@/lib/dateien/metadaten';
 import { ABSCHLUSSARTEN, type Abschlussart } from './pannenablauf';
 import { BIKE_TYPES, type CheckRating, type Severity } from './zones';
 import { SEITEN, type SeitenKey, type Werbeflaechen } from './checkupablauf';

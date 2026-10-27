@@ -9,7 +9,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { unverstaendlicheStellen } from '@/lib/ki/gateway';
-import { aufnahmedauer } from './aufnahme';
+import { aufnahmedauer } from '@/lib/aufnahme';
 import { AUFNAHME_OFFEN, DIKTAT_OFFEN, type Diktat } from './diktat';
 
 /**

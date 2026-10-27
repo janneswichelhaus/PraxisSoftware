@@ -5,7 +5,7 @@ import type * as PatientsApi from './api';
 import type * as ZugangApi from '@/features/platform-access/api';
 import type * as VermerkeApi from '@/features/datenschutz/vermerke';
 import type * as FilesApi from '@/features/files/api';
-import type * as IntakeApi from '@/features/open-points/intake-api';
+import type * as IntakeApi from '@/features/intake/api';
 import type * as BillingApi from '@/features/billing/api';
 import type * as Geocode from '@/lib/location/geocode';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
@@ -85,7 +85,7 @@ vi.mock('@/features/files/api', async (importOriginal) => ({
 
 // Akte entschlacken (2026-10-03): Zustand des Anmeldebogens und „Rechnung an".
 const fetchIntakeChecklist = vi.fn();
-vi.mock('@/features/open-points/intake-api', async (importOriginal) => ({
+vi.mock('@/features/intake/api', async (importOriginal) => ({
   ...(await importOriginal<typeof IntakeApi>()),
   fetchIntakeChecklist: (id: string) =>
     fetchIntakeChecklist(id) as Promise<IntakeApi.IntakeChecklist>,

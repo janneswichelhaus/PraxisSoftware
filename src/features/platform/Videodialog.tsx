@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
-import { kameraVerfuegbar } from '@/features/files/kamera';
+import { useSperrsicherung } from '@/lib/sperrsicherung';
+import { kameraVerfuegbar } from '@/lib/dateien/kamera';
 import { VIDEO_BITRATE, videoformat } from './videoformat';
 
 /**

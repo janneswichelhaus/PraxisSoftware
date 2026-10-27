@@ -9,7 +9,7 @@ import { Section } from '@/components/ui/Section';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { abfragen } from './eingang';
-import { intakeItemLabels, intakeItemTarget, openItemsText } from './intake-api';
+import { intakeItemLabels, intakeItemTarget, openItemsText } from '@/features/intake/api';
 
 /** So viele Zeilen zeigt die Gruppe, bevor „Alle … anzeigen" kommt. */
 const KURZ = 5;

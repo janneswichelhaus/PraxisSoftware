@@ -3,9 +3,9 @@ import {
   MAX_BYTES,
   dateiAblehnungsgrund,
   dateiInhaltAblehnungsgrund,
-} from '@/features/files/dokumentarten';
-import { nachSrgb } from '@/features/files/farbe';
-import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
+} from '@/lib/dateien/pruefung';
+import { nachSrgb } from '@/lib/dateien/farbe';
+import { alleBytes, bereinigeBild } from '@/lib/dateien/metadaten';
 import { bereinigeTon, tontyp } from '@/features/platform/videometadaten';
 import { istPersonenfarbe, type Personenfarbe } from '@/components/ui/personenfarben';
 import { roleKeySchema } from '@/features/session/types';

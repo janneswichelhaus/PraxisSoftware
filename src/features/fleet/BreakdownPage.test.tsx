@@ -20,7 +20,7 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 // Die Kamera gibt es in jsdom nicht: Der Stellvertreter löst mit einem Tipp aus.
-vi.mock('@/features/files/Kameradialog', () => ({
+vi.mock('@/components/ui/Kameradialog', () => ({
   Kameradialog: ({ titel, onAufnahme }: { titel: string; onAufnahme: (foto: Blob) => void }) => (
     <div role="group" aria-label={`Kamera: ${titel}`}>
       <button type="button" onClick={() => onAufnahme(new Blob([titel], { type: 'image/jpeg' }))}>

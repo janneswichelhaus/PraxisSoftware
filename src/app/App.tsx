@@ -8,7 +8,7 @@ import { Einrichtungspflicht } from '@/features/auth/einrichtung/Einrichtungspfl
 import { useSession } from '@/features/auth/sessionContext';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { ZugangPage } from '@/features/auth/ZugangPage';
-import { ZUGANG_PFAD, istEinloesePfad } from '@/features/auth/linkEinloesen';
+import { EINLADUNG_PFAD, ZUGANG_PFAD, istEinloesePfad } from '@/features/auth/linkEinloesen';
 import {
   KeinProfilError,
   ZugangGesperrtError,
@@ -16,7 +16,6 @@ import {
 } from '@/features/session/useCurrentUser';
 import { ZugangEinrichtenPage } from '@/features/staff/ZugangEinrichtenPage';
 import { EinladungPage } from '@/features/platform/EinladungPage';
-import { EINLADUNG_PFAD } from '@/features/platform/einladung';
 import { KONTEXT_SCHLUESSEL, ladePlattformkontext } from '@/features/platform/api';
 import { PlattformApp } from '@/features/platform/PlattformApp';
 import { PLATTFORM_PFAD } from '@/features/platform/pfade';

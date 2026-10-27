@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import type * as Dokumentarten from '@/features/files/dokumentarten';
-import type * as Metadaten from '@/features/files/metadaten';
+import type * as Pruefung from '@/lib/dateien/pruefung';
+import type * as Metadaten from '@/lib/dateien/metadaten';
 import { enthaelt, webmAusChromium } from '@/features/platform/testvideos';
 
 /**
@@ -17,11 +17,11 @@ vi.mock('@/lib/supabase', () => ({
 }));
 // Inhaltsprüfung und Bereinigung lesen die Bytes über den Browser; hier geht
 // es nur um den Weg danach (Hochladen, Einordnen des Fehlers, Verwerfen).
-vi.mock('@/features/files/dokumentarten', async (importOriginal) => ({
-  ...(await importOriginal<typeof Dokumentarten>()),
+vi.mock('@/lib/dateien/pruefung', async (importOriginal) => ({
+  ...(await importOriginal<typeof Pruefung>()),
   dateiInhaltAblehnungsgrund: () => Promise.resolve(null),
 }));
-vi.mock('@/features/files/metadaten', async (importOriginal) => ({
+vi.mock('@/lib/dateien/metadaten', async (importOriginal) => ({
   ...(await importOriginal<typeof Metadaten>()),
   alleBytes: async (datei: Blob) => new Uint8Array(await datei.arrayBuffer()),
 }));

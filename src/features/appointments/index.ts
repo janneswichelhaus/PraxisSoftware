@@ -31,6 +31,7 @@ export { fetchKurzblick } from './kurzblick-api';
 export { dokumentiertOhneHaken, hakenFehlt, hakenZuruecknehmbar } from './haken';
 export { tageslageNeuLaden } from './tageslage';
 export { tagUmplanenAdresse } from './tagumplanen';
+export { fetchTerminTage, type TerminTag } from './terminTage';
 export { speicherfehlerText, terminFehlerliste, terminFeldfehler } from './terminformular';
 export { TerminErweiterungenKontext, type TerminErweiterungen } from './erweiterungen';
 

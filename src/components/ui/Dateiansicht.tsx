@@ -1,6 +1,6 @@
 import { useEffect, useState, type Ref } from 'react';
 import { Button } from '@/components/ui/Button';
-import { istPdf } from './dokumentarten';
+import { istPdf } from '@/lib/dateien/pruefung';
 
 /**
  * Eine Datei der Akte, angezeigt im eigenen Rahmen der Anwendung (ABN-027,

@@ -6,7 +6,7 @@ import type { OffenerScan } from '@/features/files/api';
 import type { CallEntry } from '@/features/open-points/call-list-api';
 import { CALL_LIST_KEY } from '@/features/open-points/call-list-api';
 import { CallListPage } from '@/features/open-points/CallListPage';
-import { OPEN_INTAKES_KEY, type OpenIntake } from '@/features/open-points/intake-api';
+import { OPEN_INTAKES_KEY, type OpenIntake } from '@/features/intake/api';
 import { OpenPointsPage } from '@/features/open-points/OpenPointsPage';
 import { OPEN_SCANS_KEY, WAITLIST_REVIEW_KEY } from '@/features/open-points/eingang';
 import {

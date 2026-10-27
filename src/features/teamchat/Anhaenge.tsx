@@ -11,9 +11,9 @@ import { Medienbild } from '@/components/ui/Medienbild';
 import { MikrofonSymbol } from '@/components/ui/MikrofonSymbol';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
-import { aufnahmedauer } from '@/features/documentation/aufnahme';
-import { PdfRahmen } from '@/features/files/Dateiansicht';
-import { NICHT_SERVERSEITIG_GEPRUEFT, formatBytes } from '@/features/files/dokumentarten';
+import { aufnahmedauer } from '@/lib/aufnahme';
+import { PdfRahmen } from '@/components/ui/Dateiansicht';
+import { NICHT_SERVERSEITIG_GEPRUEFT, formatBytes } from '@/lib/dateien/pruefung';
 import {
   DATEIEN_HOECHSTENS,
   TeamchatFehler,

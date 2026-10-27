@@ -1,4 +1,4 @@
-import { alleBytes } from '@/features/files/metadaten';
+import { alleBytes } from '@/lib/dateien/metadaten';
 
 /**
  * Ein Video verlässt das Gerät ohne Programm- und Zeitangaben (KOM-006,

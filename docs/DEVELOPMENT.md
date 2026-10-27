@@ -475,6 +475,14 @@ Gilt seit Aufräumen Schritt 3 (ANN-748), zuerst für „Termine“ (`src/featur
   Vorschau erlauben `@/lib/` pauschal und sähen sie nicht. Die Tagesliste hat dafür das Modul
   `day-plan`. Braucht Termine einen Abschnitt eines anderen Bereichs, setzt die App ihn über
   `TerminErweiterungen` ein (`src/app/terminErweiterungen.ts`), statt dass Termine ihn importiert.
+- **Domänenfolge (ANN-754):** Die Module gehören zu 14 Domänen (`DOMAENEN` in
+  `scripts/eslint-modulgrenzen.mjs`), von unten nach oben core < patients < privacy < fleet <
+  billing < workforce < calendar < clinical < nutrition < exercise < portal < training < workplace
+  < teamchat. Seiten (`*Page.tsx`, `*Seite.tsx`, `*Layout.tsx`) setzen zusammen und importieren
+  jede Domäne; jede andere Datei importiert eine fremde Domäne nur nach unten. Braucht ein Baustein
+  etwas von oben, reicht die Seite es herein (Ladefunktion, Abschnitt), oder das Geteilte zieht
+  nach `src/lib`. Die Regel `modulgrenzen/nach-unten` meldet jeden Import nach oben und jedes
+  Modul ohne Domäne; ein neues Modul bekommt seine Domäne in `DOMAENEN`.
 - `pnpm aufraeumen` zählt gegenseitige Abhängigkeiten, die Module im größten Abhängigkeitsring und
   die Module mit Schnittstelle.
 

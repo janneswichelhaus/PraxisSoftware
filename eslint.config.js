@@ -92,13 +92,12 @@ export default tseslint.config(
     },
   },
   {
-    /* Ein Modul mit index.ts zeigt nach außen nur, was dort steht (ANN-748). Zunächst als Warnung;
-       `pnpm lint` lässt mit --max-warnings 0 keine stehen. Tests mocken tief, src/routes
-       verdrahtet die Seiten. */
+    /* Modulgrenzen (ANN-748, ANN-754) als Warnung; `pnpm lint` lässt mit --max-warnings 0 keine
+       stehen. Tests mocken tief, src/routes verdrahtet die Seiten. */
     files: ['src/**/*.{ts,tsx}'],
     ignores: ['src/**/*.test.{ts,tsx}', 'src/routes/**'],
     plugins: { modulgrenzen },
-    rules: { 'modulgrenzen/nur-ueber-index': 'warn' },
+    rules: { 'modulgrenzen/nur-ueber-index': 'warn', 'modulgrenzen/nach-unten': 'warn' },
   },
   {
     /* Die erklaerten Ausgaenge fuer Betriebslogs (ADR-011 Punkt 6, OPS-004).

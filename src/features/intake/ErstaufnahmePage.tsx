@@ -15,7 +15,7 @@ import { erhebenPfad } from '@/features/assessments/darstellung';
 import { erhebbareInstrumente } from '@/features/assessments/instrumente';
 import { AnmeldebogenFoto, Datenschutz } from '@/features/datenschutz/Anmeldebogen';
 import { PrescriptionPhoto } from '@/features/files/PrescriptionPhoto';
-import { fetchIntakeChecklist } from '@/features/open-points/intake-api';
+import { fetchIntakeChecklist } from '@/features/intake/api';
 import { fetchPatient, type Patient } from '@/features/patients/api';
 import { Behandlungsliege } from '@/features/patients/Behandlungsliege';
 import {

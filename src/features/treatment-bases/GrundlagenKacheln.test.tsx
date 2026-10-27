@@ -81,6 +81,7 @@ vi.mock('@/features/billing/api', async (importOriginal) => ({
 }));
 
 const { GrundlagenKacheln } = await import('./GrundlagenKacheln');
+const { ladePosNummern } = await import('@/features/billing/posNummern');
 
 function scan(rest: Partial<DateienApi.PatientFile> = {}): DateienApi.PatientFile {
   return {
@@ -154,6 +155,7 @@ function zeigen(roles: Parameters<typeof testUser>[0] = ['therapist']) {
       user={testUser(roles)}
       aktuell={[laufend, selbstzahler]}
       abgeschlossen={[alt]}
+      ladePosNummern={ladePosNummern}
     />,
     `/patienten/${PATIENT}/verordnungen`,
   );
@@ -279,6 +281,7 @@ describe('GrundlagenKacheln', () => {
         user={testUser(['therapist'])}
         aktuell={[eintrag({ diagnosis_icd10: null })]}
         abgeschlossen={[]}
+        ladePosNummern={ladePosNummern}
       />,
       `/patienten/${PATIENT}/verordnungen`,
     );
@@ -338,6 +341,7 @@ describe('GrundlagenKacheln', () => {
         user={testUser(['therapist'])}
         aktuell={[]}
         abgeschlossen={[]}
+        ladePosNummern={ladePosNummern}
       />,
     );
     await waitFor(() => expect(fetchPatientFiles).toHaveBeenCalled());

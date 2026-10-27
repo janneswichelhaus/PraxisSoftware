@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
-import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
+import { useSperrsicherung } from '@/lib/sperrsicherung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { kameraVerfuegbar } from './kamera';
+import { kameraVerfuegbar } from '@/lib/dateien/kamera';
 
 /**
  * Der Kameradialog der Anwendung (DOK-006, ADR-017 Punkt 33).

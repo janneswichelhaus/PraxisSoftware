@@ -29,7 +29,7 @@ import {
 import { ABO_KUENDIGUNGEN_KEY, fetchAboKuendigungen } from './aftercare-cancellations-api';
 import { CALL_LIST_KEY, fetchCallList, stillToCall } from './call-list-api';
 import { CONSENT_WITHDRAWALS_KEY, fetchConsentWithdrawals } from './consent-withdrawals-api';
-import { OPEN_INTAKES_KEY, fetchOpenIntakes } from './intake-api';
+import { OPEN_INTAKES_KEY, fetchOpenIntakes } from '@/features/intake/api';
 import { PLATFORM_REQUESTS_KEY, fetchPlatformRequests } from './platform-requests-api';
 import {
   ENDING_KEY,

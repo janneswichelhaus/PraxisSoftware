@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { canReadPatientDirectory, type CurrentUser } from '@/features/session/types';
-import { fetchIntakeChecklist, type IntakeItem } from './intake-api';
+import { fetchIntakeChecklist, type IntakeItem } from './api';
 
 /**
  * Was zur Erstaufnahme einer Person noch fehlt (PRX-013) - nur für die Rollen

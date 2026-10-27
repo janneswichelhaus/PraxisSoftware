@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Kameradialog } from './Kameradialog';
-import { KAMERA_FRIST, kameraVerfuegbar, useKamera } from './kamera';
+import { KAMERA_FRIST, kameraVerfuegbar, useKamera } from '@/lib/dateien/kamera';
 
 /**
  * Der Kameradialog (DOK-006, ADR-017 Punkt 33).

@@ -6,11 +6,9 @@ import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react
 import { Outlet, RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { testUser } from '@/test-utils';
-import {
-  SperrsicherungKontext,
-  type Sicherung,
-} from '@/features/auth/sitzungssperre/sperrsicherung';
-import { Testrecorder, installiereAufnahme } from '@/features/documentation/testaufnahme';
+import { abmeldenAufraeumen } from '@/lib/abmelden';
+import { SperrsicherungKontext, type Sicherung } from '@/lib/sperrsicherung';
+import { Testrecorder, installiereAufnahme } from '@/lib/testaufnahme';
 import type { CurrentUser, RoleKey } from '@/features/session/types';
 import type * as TeamchatApi from './api';
 import type { Kanal, Nachricht, Zaehler } from './api';
@@ -2155,7 +2153,7 @@ describe('Senden während des Hochladens (TEAM-005, ANN-654)', () => {
     zeige('/team/k-allgemein');
     await mitAnhangSenden(nutzer, 'Gleich da');
     expect(await screen.findByText('Lädt Anhänge hoch …')).toBeInTheDocument();
-    act(() => teamchatLeeren());
+    act(() => abmeldenAufraeumen());
     const [, , , , signal] = api.ladeAnhangHoch.mock.calls[0] as [
       string,
       Blob,

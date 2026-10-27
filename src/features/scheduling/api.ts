@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
+import { WOCHENTAGE, type Wochentag, type Zeitblock } from '@/lib/datum';
 
 /**
  * Datenzugriff auf Praxisraster und Arbeitszeiten (CAL-005).
@@ -20,10 +21,6 @@ export type RasterWert = (typeof RASTER_WERTE)[number];
 export function istRasterWert(wert: number | null | undefined): wert is RasterWert {
   return RASTER_WERTE.includes(wert as RasterWert);
 }
-
-/** ISO-8601-Wochentage: 1 = Montag … 7 = Sonntag, wie in der Datenbank. */
-export const WOCHENTAGE = [1, 2, 3, 4, 5, 6, 7] as const;
-export type Wochentag = (typeof WOCHENTAGE)[number];
 
 export const wochentagLabels: Record<Wochentag, string> = {
   1: 'Montag',
@@ -81,12 +78,6 @@ const exceptionSchema = z.object({
 });
 
 export type WorkingHourException = z.infer<typeof exceptionSchema>;
-
-/** Ein Zeitblock im Formular. Beide Werte sind `HH:MM` in Ortszeit. */
-export interface Zeitblock {
-  von: string;
-  bis: string;
-}
 
 export async function fetchWorkingHours(): Promise<WorkingHour[]> {
   const { data, error } = await getSupabase()
