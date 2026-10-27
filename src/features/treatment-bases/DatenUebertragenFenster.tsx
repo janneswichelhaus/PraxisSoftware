@@ -35,7 +35,7 @@ interface Zeile {
   anzahl: string;
 }
 
-/** Lädt die Pos.-Nr. je Heilmittel; die Seite reicht sie aus der Abrechnung herein. */
+/** Lädt die Pos.-Nr. je Heilmittel; die Seite reicht sie aus der Abrechnung herein (ANN-754). */
 export type PosNummernLaden = (heute: string) => Promise<ReadonlyMap<string, string>>;
 
 /** Wofür das Fenster offen ist: ein Foto ohne Daten oder eine Verordnung. */

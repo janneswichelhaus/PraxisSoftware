@@ -7708,3 +7708,15 @@ Datenschutz · entschieden (Jannes) · 2026-10-27 · Jannes · Prüfpaket · Wie
 **Anker.** Ausnahme unter `app.patient_merge` in `app.platform_accesses_guard`, Umhängen in `app.merge_patients_core`; geprüft in `supabase/tests/patient-merge.test.ts`.
 
 **Änderungspfad.** Zurück zu `set null`: Umhängen und Ausnahme entfernen · Aufwand `klein`.
+
+### ANN-754 — Domänenfolge: Seiten setzen zusammen, sonst nur nach unten
+
+Technik · offen · 2026-10-27 · — · — · Wiedervorlage: —
+
+**Annahme.** „Nur Seiten führen fremde Domänen zusammen“ heißt: Seiten (`*Page`, `*Seite`, `*Layout`) importieren jede Domäne, jede andere Datei eine fremde nur nach unten in der Folge core < patients < privacy < fleet < billing < workforce < calendar < clinical < nutrition < exercise < portal < training < workplace < teamchat. So bleibt der Domänengraph ohne Zyklen.
+
+**Begründung.** Aufräumen 3b (Jannes, 2026-10-27). Wörtlich wären rund 180 Importe aus Bausteinen umzubauen, ohne dass ein Zyklus mehr fällt; die Folge hat die wenigsten Importe gegen sich.
+
+**Anker.** Regel `nach-unten` in `scripts/eslint-modulgrenzen.mjs`; `PosNummernLaden` in `src/features/treatment-bases/DatenUebertragenFenster.tsx`.
+
+**Änderungspfad.** Wörtliche Lesart: Regel auf jeden Import einer fremden Domäne ausweiten, Bausteine über Seiten einsetzen · Aufwand `groß`.
