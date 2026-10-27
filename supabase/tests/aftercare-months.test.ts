@@ -8,6 +8,7 @@ import {
   resetDatabaseOhneTermine,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 
 /**
  * Je Abo-Monat eine Leistung und eine Monatsrechnung (ANG-002, ADR-009
@@ -317,9 +318,28 @@ describe('Abo-Monate (ANG-002)', () => {
         [leistung],
       );
       expect(zeilen).toHaveLength(1);
+      const gesichert = {
+        leistungen: await sichern('billable_services', 'id = $1', [leistung]),
+        zeilen: await sichern('invoice_items', 'billable_service_id = $1', [leistung]),
+      };
       await asUserCommitted(users.office, ZURUECK, [leistung]);
       const { rows: rest } = await asPostgres('select 1 from public.billable_services');
       expect(rest).toHaveLength(0);
+
+      // Leistung und Rechnungszeile stehen im Journal; ein Restore bringt keine
+      // von beiden zurück, die stornierte Rechnung bleibt (ANN-752).
+      for (const [tabelle, zeilen] of [
+        ['billable_services', gesichert.leistungen],
+        ['invoice_items', gesichert.zeilen],
+      ] as const) {
+        expect(await journal(tabelle, [zeilen[0]!['id']])).toEqual([
+          { target_id: zeilen[0]!['id'], retention_class: 'abrechnungsdaten', reapplied_at: null },
+        ]);
+        await zurueckspielen(tabelle, zeilen);
+      }
+      await asPostgres(NACHZIEHEN);
+      expect(await stehen('billable_services', gesichert.leistungen)).toBe(0);
+      expect(await stehen('invoice_items', gesichert.zeilen)).toBe(0);
       // Die stornierte Rechnung bleibt mit ihrem Snapshot (ADR-009 Punkt 10).
       const { rows: rechnung } = await asPostgres<{ code: string; storno: boolean }>(
         `select i.snapshot -> 'items' -> 0 ->> 'code' as code,

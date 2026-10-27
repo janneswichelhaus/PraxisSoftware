@@ -7,6 +7,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 
 /**
  * Tarif und Honorarvereinbarung (ABR-030, ADR-009 Fassung 5 Punkte 5 und 22,
@@ -162,9 +163,19 @@ describe('Tarif und Honorarvereinbarung', () => {
       await expect(asUserCommitted(users.office, ENTFERNEN, [rows[0]!.id])).rejects.toThrow(
         /not allowed/,
       );
-      await asUserCommitted(users.ownerTherapist, ENTFERNEN, [rows[0]!.id]);
+      const id = rows[0]!.id;
+      const gesichert = await sichern('patient_fee_agreements', 'id = $1', [id]);
+      await asUserCommitted(users.ownerTherapist, ENTFERNEN, [id]);
       const { rows: rest } = await asPostgres('select 1 from public.patient_fee_agreements');
       expect(rest).toHaveLength(0);
+
+      // Im Journal: Ein Restore bringt die entfernte Vereinbarung nicht zurück (ANN-752).
+      expect(await journal('patient_fee_agreements', [id])).toEqual([
+        { target_id: id, retention_class: 'abrechnungsdaten', reapplied_at: null },
+      ]);
+      await zurueckspielen('patient_fee_agreements', gesichert);
+      await asPostgres(NACHZIEHEN);
+      expect(await stehen('patient_fee_agreements', gesichert)).toBe(0);
     });
 
     it('laesst nur owner den Tarif setzen', async () => {

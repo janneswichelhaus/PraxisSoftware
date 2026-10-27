@@ -10,6 +10,7 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 
 /**
  * Aufgaben und Wiedervorlagen (PRX-012, ANN-142).
@@ -311,6 +312,35 @@ describe('Aufgaben im Loeschlauf (ANN-142)', () => {
     );
     await asPostgres('select public.apply_retention()');
     expect(await vorhanden(alt)).toBe(true);
+  });
+
+  it('journalisiert eine von Hand gelöschte Aufgabe; ein Restore bringt sie nicht zurück (ANN-752)', async () => {
+    const id = await anlegen();
+    const gesichert = await sichern('tasks', 'id = $1', [id]);
+    await asUserCommitted(users.office, LOESCHEN, [id]);
+    expect(await journal('tasks', [id])).toEqual([
+      { target_id: id, retention_class: 'aufgabe', reapplied_at: null },
+    ]);
+
+    await zurueckspielen('tasks', gesichert);
+    await asPostgres(NACHZIEHEN);
+    expect(await stehen('tasks', gesichert)).toBe(0);
+  });
+
+  it('bündelt Löschungen von Hand je Praxis und Tag, ohne Uhrzeit (ANN-752)', async () => {
+    const erste = await anlegen();
+    const zweite = await anlegen();
+    await asUserCommitted(users.office, LOESCHEN, [erste]);
+    await asUserCommitted(users.therapist, LOESCHEN, [zweite]);
+    // Kein sekundengenauer Nachweis über Beschäftigte in der Übersicht der Praxisleitung.
+    const { rows } = await asPostgres<{ laeufe: number; mitternacht: boolean }>(
+      `select count(distinct run_id)::int as laeufe,
+              bool_and(deleted_at = date_trunc('day', deleted_at) and due_at = deleted_at)
+                as mitternacht
+         from public.deletion_journal where target_id = any($1::uuid[])`,
+      [[erste, zweite]],
+    );
+    expect(rows[0]).toEqual({ laeufe: 1, mitternacht: true });
   });
 
   it('loescht nach einer Wiederherstellung erneut', async () => {

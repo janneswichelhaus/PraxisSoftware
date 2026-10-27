@@ -2,7 +2,8 @@
 
 ## Status
 
-Angenommen — **Fassung 6** (2026-10-18): Datenklasse „Ernährungsberatung“
+Angenommen — **Fassung 7** (2026-10-26): Register der Querschnittsfunktionen (Punkt 13).
+Fassung 6 (2026-10-18): Datenklasse „Ernährungsberatung“
 (ADR-027), 3 Jahre nach dem Ende des Profils. Fassung 5 (2026-10-17): Die rollierende Löschung des
 Teamchats (Punkt 12 neu). Fassung 4 (2026-10-17): Rückmeldungen von Beschäftigten
 (§20.2) als eigene Datenklasse im Retention Schedule. Fassung 3 (2026-10-14): Der Fristanker der klinischen
@@ -12,7 +13,8 @@ Auditlogs, des Löschjournals und der Löschaufträge im Retention Schedule
 
 ## Datum
 
-2026-08-28 · Fassung 2: 2026-10-03 · Fassung 3: 2026-10-14 · Fassung 4: 2026-10-17 · Fassung 5: 2026-10-17
+2026-08-28 · Fassung 2: 2026-10-03 · Fassung 3: 2026-10-14 · Fassung 4: 2026-10-17 · Fassung 5: 2026-10-17 ·
+Fassung 7: 2026-10-26
 
 ## Kontext
 
@@ -81,6 +83,16 @@ gehört zu den Vorbedingungen des Produktivstarts.
     letzte Antwort fällt. Ein solcher Anker ist kein Soft-Delete (Punkt 10),
     weil nichts Personenbezogenes mehr darin steht. Was dauerhaft gelten
     soll, gehört in den Fachprozess (§10); Umsetzung ANN-610.
+13. *(Fassung 7)* **Jede Tabelle steht im Register der Querschnittsfunktionen**
+    (`public.data_registry`) mit ihrem Personenbezug und den Entscheidungen zu
+    Auskunft, Löschjournal und Zusammenführen; die Aufbewahrung zeigt per
+    Fremdschlüssel darauf. Eine Ausnahme trägt ihre Begründung. Ein Test wird
+    rot, wenn eine Tabelle fehlt oder eine Entscheidung unbegründet ist
+    (Umsetzung ANN-751). Eine Tabelle mit eigenem Journal schreibt es bei
+    jeder gelöschten Zeile selbst, gleich auf welchem Weg sie fällt; so trägt
+    Punkt 8 auch Löschwege, die erst später entstehen (Umsetzung ANN-752).
+    Eine zusammengeführte Akte steht dort als Zusammenführung; nach einer
+    Wiederherstellung wird sie erneut zusammengeführt (ANN-150 Fassung 3).
 
 ### Initialer Retention Schedule
 
@@ -199,3 +211,4 @@ Verankerung im Code und Änderungspfad.
 | 4 | 2026-10-17 | Datenklasse „Rückmeldungen von Beschäftigten“ (ORG-006, §20.2, ANN-607): 12 Monate ab Ende des Monats der Abgabe. Übrige Punkte unverändert. |
 | 5 | 2026-10-17 | Punkt 12 neu (TEAM-001, ANN-610): rollierende Löschung des Teamchats je Nachricht; Anker ohne Inhalt im Thread; beantwortet die Folgefrage dazu. Übrige Punkte unverändert. |
 | 6 | 2026-10-18 | Datenklasse „Ernährungsberatung“ (ADR-027): 3 Jahre nach dem Ende des Profils, Anker am Profil, unabhängig von der Frist des Verhältnisses. Übrige Punkte unverändert. |
+| 7 | 2026-10-26 | Punkt 13 neu (Aufräumen Schritt 4, Jannes 2026-10-26): Register der Querschnittsfunktionen mit Vollständigkeitstest; Löschjournal je gelöschter Zeile über einen Auslöser, Zusammenführen im Journal (Fehler 2 und 3 der Tiefenanalyse). Übrige Punkte unverändert. |

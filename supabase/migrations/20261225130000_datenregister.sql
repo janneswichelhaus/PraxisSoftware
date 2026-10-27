@@ -1,0 +1,223 @@
+-- Das Register der Querschnittsfunktionen (ADR-008 Punkt 13, ANN-751): je Tabelle in public eine
+-- Zeile mit Personenbezug und den Entscheidungen zu Auskunft, Löschjournal und Zusammenführen. Die
+-- Aufbewahrung steht in retention_assignments und zeigt per Fremdschlüssel hierher.
+
+create table public.data_registry (
+  table_name             text primary key check (table_name ~ '^[a-z_]+$'),
+  subject_kind           text not null check (subject_kind in ('patient', 'training',
+                           'patient_training', 'platform_account', 'staff', 'third_party',
+                           'pseudonymous', 'none')),
+  export_mode            text not null check (export_mode in ('section', 'nested', 'platform_only',
+                           'excluded', 'manual', 'not_personal')),
+  export_patient         text[] not null default '{}',
+  export_training        text[] not null default '{}',
+  export_parent          text references public.data_registry (table_name),
+  journal_mode           text not null check (journal_mode in ('row', 'via_parent', 'rule', 'none')),
+  journal_key            text not null default 'id' check (journal_key ~ '^[a-z_]+$'),
+  journal_class          text references public.retention_classes (key),
+  journal_class_training text references public.retention_classes (key),
+  journal_daily          boolean not null default false,
+  journal_rank           smallint unique,
+  merge_mode             text not null check (merge_mode in ('repoint', 'combine', 'via_parent',
+                           'blocks', 'not_applicable')),
+  decision_note          text check (decision_note is null
+                           or length(btrim(decision_note)) between 1 and 500),
+  constraint data_registry_section check (
+    (export_mode = 'section') = (cardinality(export_patient) + cardinality(export_training) > 0)),
+  -- Ein Abschnitt steht in jeder Kopie, zu der die Tabelle gehört, und in keiner anderen.
+  constraint data_registry_section_sides check (
+    export_mode <> 'section'
+    or ((subject_kind in ('patient', 'patient_training')) = (cardinality(export_patient) > 0)
+        and (subject_kind in ('training', 'patient_training')) = (cardinality(export_training) > 0))),
+  constraint data_registry_nested check ((export_mode = 'nested') = (export_parent is not null)),
+  constraint data_registry_not_personal check ((subject_kind = 'none') = (export_mode = 'not_personal')),
+  constraint data_registry_manual check (
+    export_mode <> 'manual' or subject_kind in ('staff', 'third_party')),
+  constraint data_registry_platform_only check (
+    export_mode <> 'platform_only' or subject_kind = 'platform_account'),
+  constraint data_registry_row check (
+    (journal_mode = 'row') = (journal_rank is not null and journal_class is not null)),
+  constraint data_registry_row_only check (
+    journal_mode = 'row'
+    or (journal_class_training is null and not journal_daily and journal_key = 'id')),
+  constraint data_registry_merge_scope check (
+    merge_mode = 'not_applicable' or subject_kind in ('patient', 'patient_training', 'platform_account')),
+  constraint data_registry_reasoned check (
+    decision_note is not null
+    or not (export_mode in ('excluded', 'manual', 'platform_only')
+            or (journal_mode in ('rule', 'none') and subject_kind <> 'none')
+            or merge_mode in ('combine', 'blocks')
+            or (merge_mode = 'not_applicable' and subject_kind in ('patient', 'patient_training'))))
+);
+
+comment on table public.data_registry is
+  'Register der Querschnittsfunktionen (ADR-008 Punkt 13, ANN-751): je Tabelle Personenbezug, Auskunft, Löschjournal und Zusammenführen; Vollständigkeit prüft supabase/tests/data-registry.test.ts. Datenklasse: Konfiguration, kein Personenbezug.';
+
+alter table public.data_registry enable row level security;
+revoke all on table public.data_registry from anon, authenticated;
+
+insert into public.data_registry (
+  table_name, subject_kind, export_mode, export_patient, export_training, export_parent,
+  journal_mode, journal_key, journal_class, journal_class_training, journal_daily, journal_rank,
+  merge_mode, decision_note
+) values
+  ('account_pins', 'staff', 'manual', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Kein eigener Löschweg; Frist der Beschäftigtendaten offen (ANN-030), ein Restore bringt den früheren Stand wie jede Änderung zurück.'),
+  ('aftercare_subscriptions', 'patient', 'section', array['aftercare_subscriptions'], '{}', null, 'row', 'id', 'abrechnungsdaten', null, false, 77, 'repoint', null),
+  ('appointment_call_states', 'patient', 'section', array['appointment_call_states'], '{}', null, 'row', 'id', 'anrufstand', null, false, 140, 'via_parent', null),
+  ('appointment_notifications', 'patient_training', 'section', array['appointment_notifications'], array['appointment_notifications'], null, 'via_parent', 'id', null, null, false, null, 'via_parent', 'Ein Schalter je Termin: Abschalten löscht die Zeile, ein Restore stellt den Schalter zurück wie jede Änderung.'),
+  ('appointment_session_fees', 'patient_training', 'section', array['session_fees'], array['session_fees'], null, 'row', 'id', 'abrechnungsdaten', null, false, 75, 'via_parent', null),
+  ('appointments', 'patient_training', 'section', array['appointments'], array['appointments'], null, 'row', 'id', 'patientenakte', 'trainingsverhaeltnis', false, 465, 'repoint', null),
+  ('audit_log', 'patient_training', 'section', array['access_log'], array['access_log'], null, 'row', 'id', 'auditlog', null, false, 570, 'not_applicable', 'Bleibt an seiner Kennung; die Kopie der bleibenden Akte löst sie über patient_merge_records auf (ANN-150).'),
+  ('billable_services', 'patient_training', 'section', array['billable_services'], array['billable_services'], null, 'row', 'id', 'abrechnungsdaten', null, false, 70, 'repoint', null),
+  ('checkin_schedules', 'patient_training', 'section', array['checkin_schedules'], array['checkin_schedules'], null, 'row', 'id', 'patientenakte', 'trainingsverhaeltnis', false, 420, 'repoint', 'Den Takt behält die bleibende Akte; hat sie keinen, zieht der der Dublette mit (ANN-350).'),
+  ('checkin_values', 'patient_training', 'nested', '{}', '{}', 'checkins', 'via_parent', 'id', null, null, false, null, 'via_parent', null),
+  ('checkins', 'patient_training', 'section', array['checkins'], array['checkins'], null, 'row', 'id', 'patientenakte', 'trainingsverhaeltnis', false, 430, 'repoint', null),
+  ('custom_foods', 'patient_training', 'nested', '{}', '{}', 'nutrition_profiles', 'row', 'id', 'ernaehrungsberatung', null, false, 357, 'via_parent', null),
+  ('data_registry', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('deletion_journal', 'pseudonymous', 'excluded', '{}', '{}', null, 'rule', 'id', null, null, false, null, 'not_applicable', 'Nachweis gelöschter Zeilen ohne Inhalt, ein Schlüssel ohne Schloss (ANN-031); fällt nach 60 Tagen nach der Regel loeschjournal.'),
+  ('exercise_plan_days', 'patient_training', 'nested', '{}', '{}', 'exercise_plans', 'via_parent', 'id', null, null, false, null, 'via_parent', null),
+  ('exercise_plan_items', 'patient_training', 'nested', '{}', '{}', 'exercise_plans', 'via_parent', 'id', null, null, false, null, 'via_parent', 'Positionen werden nur im Entwurf entfernt; danach fallen sie mit dem Plan.'),
+  ('exercise_plan_session_sets', 'patient_training', 'nested', '{}', '{}', 'exercise_plan_sessions', 'via_parent', 'id', null, null, false, null, 'via_parent', 'Der Abgleich einer Einheit ersetzt ihre Sätze; sonst fallen sie mit der Einheit.'),
+  ('exercise_plan_session_values', 'patient_training', 'nested', '{}', '{}', 'exercise_plan_sessions', 'via_parent', 'id', null, null, false, null, 'via_parent', null),
+  ('exercise_plan_sessions', 'patient_training', 'nested', '{}', '{}', 'exercise_plans', 'via_parent', 'id', null, null, false, null, 'via_parent', 'Der Abgleich einer Einheit ersetzt ihre Sätze; Einheiten fallen mit dem Plan.'),
+  ('exercise_plan_template_items', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('exercise_plan_templates', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('exercise_plans', 'patient_training', 'section', array['exercise_plans'], array['exercise_plans'], null, 'row', 'id', 'patientenakte', 'trainingsverhaeltnis', false, 450, 'repoint', null),
+  ('exercise_variant_links', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('exercise_variants', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('exercises', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('fleet_bikes', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'betriebsdaten', null, false, 230, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('fleet_blocks', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'radflotte_ereignis', null, false, 190, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('fleet_breakdowns', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'radflotte_ereignis', null, false, 220, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('fleet_checkups', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'radflotte_ereignis', null, false, 210, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('fleet_depots', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('fleet_key_handovers', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'schluesselverlauf', null, false, 180, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('fleet_photo_access_grants', 'staff', 'excluded', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Technische Freigabe eines signierten Verweises, höchstens 60 Sekunden gültig; sie sagt etwas über das lesende Konto, nicht über die Person, und ist nach einem Restore abgelaufen.'),
+  ('fleet_photos', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'radflotte_ereignis', null, false, 200, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('fleet_spots', 'staff', 'manual', '{}', '{}', null, 'via_parent', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('food_catalog', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('food_sources', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('habit_marks', 'patient_training', 'nested', '{}', '{}', 'habits', 'via_parent', 'id', null, null, false, null, 'via_parent', 'Ein Tag wird vermerkt oder wieder zurückgenommen; die Marken fallen mit der Gewohnheit.'),
+  ('habits', 'patient_training', 'section', array['habits'], array['habits'], null, 'row', 'id', 'patientenakte', 'trainingsverhaeltnis', false, 440, 'repoint', null),
+  ('invoice_cancellations', 'patient_training', 'section', array['invoice_cancellations'], array['invoice_cancellations'], null, 'row', 'id', 'abrechnungsdaten', null, false, 20, 'via_parent', null),
+  ('invoice_items', 'patient_training', 'section', array['invoice_items'], array['invoice_items'], null, 'row', 'id', 'abrechnungsdaten', null, false, 40, 'via_parent', null),
+  ('invoice_number_series', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('invoice_payment_reminders', 'patient_training', 'section', array['invoice_payment_reminders'], array['invoice_payment_reminders'], null, 'row', 'id', 'abrechnungsdaten', null, false, 10, 'via_parent', null),
+  ('invoice_recipients', 'patient', 'section', array['invoice_recipients'], '{}', null, 'row', 'id', 'abrechnungsdaten', null, false, 60, 'repoint', null),
+  ('invoices', 'patient_training', 'section', array['invoices'], array['invoices'], null, 'row', 'id', 'abrechnungsdaten', null, false, 50, 'repoint', null),
+  ('legal_holds', 'patient', 'section', array['legal_holds'], '{}', null, 'row', 'id', 'patientenakte', null, false, 490, 'repoint', null),
+  ('locations', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('message_attachment_access_grants', 'patient_training', 'excluded', '{}', '{}', null, 'none', 'id', null, null, false, null, 'via_parent', 'Technische Freigabe eines signierten Verweises, höchstens 60 Sekunden gültig; sie sagt etwas über das lesende Konto, nicht über die Person, und ist nach einem Restore abgelaufen.'),
+  ('notification_deliveries', 'platform_account', 'platform_only', '{}', '{}', null, 'rule', 'id', null, null, false, null, 'via_parent', 'Zustellaufträge, für die Praxis unsichtbar (ANN-344); fallen nach der Regel benachrichtigung.'),
+  ('notification_kind_switches', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('nutrition_consent_records', 'patient_training', 'nested', '{}', '{}', 'nutrition_profiles', 'via_parent', 'id', null, null, false, null, 'via_parent', null),
+  ('nutrition_diary_entries', 'patient_training', 'nested', '{}', '{}', 'nutrition_profiles', 'row', 'id', 'ernaehrungsberatung', null, false, 355, 'via_parent', null),
+  ('nutrition_diary_favorites', 'patient_training', 'nested', '{}', '{}', 'nutrition_profiles', 'via_parent', 'id', null, null, false, null, 'via_parent', 'Ein Favorit wird gesetzt oder zurückgenommen; Favoriten fallen mit Profil oder Lebensmittel.'),
+  ('nutrition_diary_reminders', 'platform_account', 'platform_only', '{}', '{}', null, 'rule', 'id', null, null, false, null, 'via_parent', 'Erinnerungen je Zugang, für die Praxis unsichtbar (ANN-344); fallen mit dem Ende des Zugangs nach der Regel.'),
+  ('nutrition_profiles', 'patient_training', 'section', array['nutrition_profiles'], array['nutrition_profiles'], null, 'row', 'id', 'ernaehrungsberatung', null, false, 360, 'repoint', null),
+  ('nutrition_water_days', 'patient_training', 'nested', '{}', '{}', 'nutrition_profiles', 'via_parent', 'id', null, null, false, null, 'via_parent', null),
+  ('nutrition_weight_entries', 'patient_training', 'nested', '{}', '{}', 'nutrition_profiles', 'via_parent', 'id', null, null, false, null, 'via_parent', null),
+  ('organizations', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('passkey_approvals', 'staff', 'manual', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Kein eigener Löschweg; Frist der Beschäftigtendaten offen (ANN-030), ein Restore bringt den früheren Stand wie jede Änderung zurück.'),
+  ('patient_care_details', 'patient', 'section', array['patient_care_details'], '{}', null, 'via_parent', 'id', null, null, false, null, 'combine', 'Feldweise zusammengelegt (ANN-147); die Zeile der Dublette fällt mit ihr.'),
+  ('patient_contact_details', 'patient', 'section', array['patient_contact_details'], '{}', null, 'via_parent', 'id', null, null, false, null, 'combine', 'Feldweise zusammengelegt, die Anschrift als Block (ANN-147); die Zeile der Dublette fällt mit ihr.'),
+  ('patient_course_events', 'patient', 'section', array['patient_course_events'], '{}', null, 'via_parent', 'id', null, null, false, null, 'repoint', null),
+  ('patient_fee_agreements', 'patient', 'section', array['fee_agreements'], '{}', null, 'row', 'id', 'abrechnungsdaten', null, false, 76, 'repoint', null),
+  ('patient_file_access_grants', 'patient', 'excluded', '{}', '{}', null, 'none', 'id', null, null, false, null, 'via_parent', 'Technische Freigabe eines signierten Verweises, höchstens 60 Sekunden gültig; sie sagt etwas über das lesende Konto, nicht über die Person, und ist nach einem Restore abgelaufen.'),
+  ('patient_file_document_types', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('patient_files', 'patient', 'section', array['patient_files', 'patient_photos'], '{}', null, 'row', 'id', 'patientenakte', null, false, 100, 'repoint', null),
+  ('patient_merge_records', 'patient', 'section', array['patient_merge_records'], '{}', null, 'via_parent', 'id', null, null, false, null, 'repoint', null),
+  ('patient_privacy_records', 'patient', 'section', array['patient_privacy_records'], '{}', null, 'via_parent', 'id', null, null, false, null, 'repoint', null),
+  ('patient_questionnaire_responses', 'patient', 'section', array['patient_questionnaire_responses'], '{}', null, 'via_parent', 'id', null, null, false, null, 'repoint', 'Verworfen werden nur Entwürfe; was eingereicht ist, fällt mit der Akte.'),
+  ('patients', 'patient', 'section', array['patients'], '{}', null, 'row', 'id', 'patientenakte', null, false, 520, 'combine', 'Versorgungsstand beider Akten zusammengelegt, die Dublette fällt; im Journal als Zusammenführung (ANN-150).'),
+  ('payments', 'patient_training', 'section', array['payments'], array['payments'], null, 'row', 'id', 'abrechnungsdaten', null, false, 30, 'via_parent', null),
+  ('persons', 'patient_training', 'section', array['persons'], array['persons'], null, 'row', 'id', 'personenstammdaten', null, false, 560, 'combine', 'Die Person der Dublette fällt nur, wenn nichts anderes an ihr hängt (ANN-150).'),
+  ('platform_access_invitations', 'platform_account', 'nested', '{}', '{}', 'platform_accesses', 'via_parent', 'id', null, null, false, null, 'via_parent', null),
+  ('platform_accesses', 'patient_training', 'section', array['platform_accesses'], array['platform_accesses'], null, 'row', 'id', 'plattformzugang', null, false, 515, 'blocks', 'Ein laufender Zugang der Dublette sperrt das Zusammenführen (BEF-132); ein beendeter verliert den Bezug und fällt nach seiner Frist.'),
+  ('platform_account_deletions', 'platform_account', 'excluded', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Auftrag, ein Konto beim Anmeldedienst zu löschen, nur mit dessen Kennung; die Löschung selbst steht als auth_users im Journal.'),
+  ('platform_appointment_requests', 'patient_training', 'section', array['platform_appointment_requests'], array['platform_appointment_requests'], null, 'row', 'id', 'terminwunsch', null, false, 150, 'repoint', null),
+  ('platform_mailbox_confirmations', 'platform_account', 'excluded', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Ohne Schreiber in der Anwendung (BEF-229); fällt mit dem Konto beim Anmeldedienst.'),
+  ('platform_message_attachments', 'patient_training', 'nested', '{}', '{}', 'platform_messages', 'row', 'id', 'rueckfrageanhang', null, false, 160, 'via_parent', null),
+  ('platform_message_entries', 'patient_training', 'nested', '{}', '{}', 'platform_messages', 'via_parent', 'id', null, null, false, null, 'via_parent', null),
+  ('platform_messages', 'patient_training', 'section', array['platform_messages'], array['platform_messages'], null, 'row', 'id', 'patientenkommunikation', 'trainingsverhaeltnis', false, 170, 'repoint', null),
+  ('platform_notification_settings', 'platform_account', 'platform_only', '{}', '{}', null, 'rule', 'id', null, null, false, null, 'via_parent', 'Je Zugang selbst gewählt und für die Praxis unsichtbar (ANN-344); fällt mit dem Ende des Zugangs nach der Regel.'),
+  ('platform_push_subscriptions', 'platform_account', 'platform_only', '{}', '{}', null, 'rule', 'id', null, null, false, null, 'via_parent', 'Push-Registrierung eines Geräts, für die Praxis unsichtbar (ANN-344); fällt mit dem Ende des Zugangs nach der Regel.'),
+  ('practice_billing_profiles', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('practice_targets', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('prescribers', 'third_party', 'manual', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Verordner:innen sind Dritte; ihre Auskunft beantwortet die Inhaberin aus der Kartei (ANN-750). Kein Löschweg.'),
+  ('questionnaire_definitions', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('retention_assignments', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('retention_classes', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('roles', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('service_catalog_items', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('service_catalog_versions', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('session_activity', 'staff', 'manual', '{}', '{}', null, 'rule', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Sitzungsvermerk; nach einem Restore fällt er nach der Regel sitzungsvermerk.'),
+  ('session_unlocks', 'staff', 'manual', '{}', '{}', null, 'rule', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Sitzungsvermerk; nach einem Restore fällt er nach der Regel sitzungsvermerk.'),
+  ('staff_account_invitations', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'zugangseinladung', null, false, 555, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('staff_colors', 'staff', 'manual', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Kein eigener Löschweg; Frist der Beschäftigtendaten offen (ANN-030), ein Restore bringt den früheren Stand wie jede Änderung zurück.'),
+  ('staff_compensation_models', 'staff', 'manual', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Kein eigener Löschweg; Frist der Beschäftigtendaten offen (ANN-030), ein Restore bringt den früheren Stand wie jede Änderung zurück.'),
+  ('staff_feedback', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'rueckmeldung', null, false, 300, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('staff_feedback_blocks', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('staff_leave_entitlements', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'urlaub', null, false, 250, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('staff_leave_requests', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'urlaub', null, false, 240, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('staff_members', 'staff', 'manual', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Kein eigener Löschweg; Frist der Beschäftigtendaten offen (ANN-030), ein Restore bringt den früheren Stand wie jede Änderung zurück.'),
+  ('staff_payout_accounts', 'staff', 'manual', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Kein eigener Löschweg; Frist der Beschäftigtendaten offen (ANN-030), ein Restore bringt den früheren Stand wie jede Änderung zurück.'),
+  ('staff_private_details', 'staff', 'manual', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Kein eigener Löschweg; Frist der Beschäftigtendaten offen (ANN-030), ein Restore bringt den früheren Stand wie jede Änderung zurück.'),
+  ('staff_profile_pictures', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'profilbild', null, true, 310, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('staff_reimbursement_receipt_access_grants', 'staff', 'excluded', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Technische Freigabe eines signierten Verweises, höchstens 60 Sekunden gültig; sie sagt etwas über das lesende Konto, nicht über die Person, und ist nach einem Restore abgelaufen.'),
+  ('staff_reimbursement_receipts', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'erstattung', null, false, 280, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('staff_reimbursements', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'erstattung', null, false, 290, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('staff_time_account_entries', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'zeitkonto', null, false, 270, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('staff_working_hour_exceptions', 'staff', 'manual', '{}', '{}', null, 'via_parent', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Abweichungen fallen mit ihrem Antrag oder werden beim Ändern ersetzt.'),
+  ('staff_working_hours', 'staff', 'manual', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Kein eigener Löschweg; Frist der Beschäftigtendaten offen (ANN-030), ein Restore bringt den früheren Stand wie jede Änderung zurück.'),
+  ('staff_working_time_requests', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'arbeitszeit', null, false, 260, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('storage_deletion_orders', 'pseudonymous', 'excluded', '{}', '{}', null, 'rule', 'id', null, null, false, null, 'not_applicable', 'Auftrag, ein Objekt zu löschen, nur mit Objektschlüssel; fällt nach der Regel loeschauftrag, bewusst ohne Journal.'),
+  ('tasks', 'patient', 'section', array['tasks'], '{}', null, 'row', 'id', 'aufgabe', null, false, 120, 'repoint', null),
+  ('team_attachment_access_grants', 'staff', 'excluded', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Technische Freigabe eines signierten Verweises, höchstens 60 Sekunden gültig; sie sagt etwas über das lesende Konto, nicht über die Person, und ist nach einem Restore abgelaufen.'),
+  ('team_channel_members', 'staff', 'manual', '{}', '{}', null, 'via_parent', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Ein Zustand am Gespräch; Ändern ist keine Löschung, mit dem Gespräch fällt er.'),
+  ('team_channel_settings', 'staff', 'manual', '{}', '{}', null, 'via_parent', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Ein Zustand am Gespräch; Ändern ist keine Löschung, mit dem Gespräch fällt er.'),
+  ('team_channels', 'none', 'not_personal', '{}', '{}', null, 'row', 'id', 'teamchat', null, true, 350, 'not_applicable', null),
+  ('team_message_attachments', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'teamchat', null, true, 320, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('team_message_mentions', 'staff', 'manual', '{}', '{}', null, 'via_parent', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Ein Zustand am Gespräch; Ändern ist keine Löschung, mit dem Gespräch fällt er.'),
+  ('team_message_pins', 'staff', 'manual', '{}', '{}', null, 'via_parent', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Ein Zustand am Gespräch; Ändern ist keine Löschung, mit dem Gespräch fällt er.'),
+  ('team_message_reactions', 'staff', 'manual', '{}', '{}', null, 'via_parent', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Ein Zustand am Gespräch; Ändern ist keine Löschung, mit dem Gespräch fällt er.'),
+  ('team_messages', 'staff', 'manual', '{}', '{}', null, 'row', 'id', 'teamchat', null, true, 340, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750).'),
+  ('team_read_states', 'staff', 'manual', '{}', '{}', null, 'via_parent', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Ein Zustand am Gespräch; Ändern ist keine Löschung, mit dem Gespräch fällt er.'),
+  ('team_saved_messages', 'staff', 'manual', '{}', '{}', null, 'via_parent', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Ein Zustand am Gespräch; Ändern ist keine Löschung, mit dem Gespräch fällt er.'),
+  ('team_thread_states', 'staff', 'manual', '{}', '{}', null, 'via_parent', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Ein Zustand am Gespräch; Ändern ist keine Löschung, mit dem Gespräch fällt er.'),
+  ('territories', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('territory_postal_codes', 'none', 'not_personal', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', null),
+  ('therapy_reports', 'patient', 'section', array['therapy_reports'], '{}', null, 'via_parent', 'id', null, null, false, null, 'repoint', 'Verworfen werden nur Entwürfe; ein fertiger Bericht fällt mit Akte oder Grundlage.'),
+  ('training_assessment_results', 'training', 'nested', '{}', '{}', 'training_assessments', 'via_parent', 'id', null, null, false, null, 'not_applicable', null),
+  ('training_assessments', 'training', 'section', '{}', array['training_assessments'], null, 'row', 'id', 'trainingsverhaeltnis', null, false, 400, 'not_applicable', null),
+  ('training_bases', 'training', 'section', '{}', array['training_bases'], null, 'row', 'id', 'trainingsverhaeltnis', null, false, 540, 'not_applicable', null),
+  ('training_consent_records', 'training', 'section', '{}', array['training_consent_records'], null, 'row', 'id', 'trainingsverhaeltnis', null, false, 390, 'not_applicable', null),
+  ('training_contact_details', 'training', 'section', '{}', array['training_contact_details'], null, 'row', 'training_relationship_id', 'trainingsverhaeltnis', null, false, 530, 'not_applicable', null),
+  ('training_contracts', 'training', 'section', '{}', array['training_contracts'], null, 'via_parent', 'id', null, null, false, null, 'not_applicable', null),
+  ('training_course_events', 'training', 'section', '{}', array['training_course_events'], null, 'row', 'id', 'trainingsverhaeltnis', null, false, 410, 'not_applicable', null),
+  ('training_offers', 'patient', 'section', array['training_offers'], '{}', null, 'via_parent', 'id', null, null, false, null, 'repoint', null),
+  ('training_packages', 'training', 'section', '{}', array['training_packages'], null, 'row', 'id', 'abrechnungsdaten', null, false, 78, 'not_applicable', null),
+  ('training_profiles', 'training', 'section', '{}', array['training_profiles'], null, 'row', 'training_relationship_id', 'trainingsverhaeltnis', null, false, 370, 'not_applicable', null),
+  ('training_protocol_addenda', 'training', 'nested', '{}', '{}', 'training_protocols', 'via_parent', 'id', null, null, false, null, 'not_applicable', null),
+  ('training_protocols', 'training', 'section', '{}', array['training_protocols'], null, 'row', 'id', 'trainingsverhaeltnis', null, false, 130, 'not_applicable', null),
+  ('training_relationships', 'training', 'section', '{}', array['training_relationships'], null, 'row', 'id', 'trainingsverhaeltnis', null, false, 550, 'not_applicable', 'Trainingsverhältnisse werden nicht zusammengeführt (ADR-021).'),
+  ('training_takeovers', 'training', 'section', '{}', array['training_takeovers'], null, 'row', 'id', 'trainingsverhaeltnis', null, false, 380, 'not_applicable', null),
+  ('treatment_base_items', 'patient', 'section', array['treatment_base_items'], '{}', null, 'via_parent', 'id', null, null, false, null, 'via_parent', 'Bearbeiten der Grundlage ersetzt die Positionen; gelöscht wird sie nur mit der Grundlage.'),
+  ('treatment_bases', 'patient', 'section', array['treatment_bases'], '{}', null, 'row', 'id', 'patientenakte', null, false, 470, 'repoint', null),
+  ('treatment_basis_versions', 'patient', 'section', array['treatment_basis_versions'], '{}', null, 'via_parent', 'id', null, null, false, null, 'via_parent', 'Eine Fassung ohne Änderung fällt beim Speichern weg; sonst fällt sie mit der Grundlage.'),
+  ('treatment_draft_findings', 'patient', 'section', array['treatment_draft_findings'], '{}', null, 'via_parent', 'id', null, null, false, null, 'via_parent', 'Befundangaben eines Entwurfs; sie fallen mit dem Festschreiben oder mit dem Termin.'),
+  ('treatment_note_versions', 'patient', 'section', array['treatment_note_versions'], '{}', null, 'via_parent', 'id', null, null, false, null, 'via_parent', null),
+  ('treatment_notes', 'patient', 'section', array['treatment_notes'], '{}', null, 'row', 'id', 'patientenakte', null, false, 90, 'via_parent', null),
+  ('treatment_text_snippets', 'staff', 'manual', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Kein eigener Löschweg; Frist der Beschäftigtendaten offen (ANN-030), ein Restore bringt den früheren Stand wie jede Änderung zurück.'),
+  ('user_profiles', 'staff', 'manual', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Kein eigener Löschweg; Frist der Beschäftigtendaten offen (ANN-030), ein Restore bringt den früheren Stand wie jede Änderung zurück.'),
+  ('user_roles', 'staff', 'manual', '{}', '{}', null, 'none', 'id', null, null, false, null, 'not_applicable', 'Beschäftigtendaten: keine Auskunftsfunktion in der Anwendung; die Inhaberin beantwortet die Auskunft aus den Daten der Person (ANN-750). Kein eigener Löschweg; Frist der Beschäftigtendaten offen (ANN-030), ein Restore bringt den früheren Stand wie jede Änderung zurück.'),
+  ('waitlist_entries', 'patient', 'section', array['waitlist_entries'], '{}', null, 'row', 'id', 'warteliste', null, false, 110, 'repoint', null)
+;
+
+insert into public.retention_assignments (table_name, class_key, deletion_mode, scope_note)
+values ('data_registry', 'konfiguration', 'keine',
+        'Register der Querschnittsfunktionen; Konfiguration ohne Personenbezug.');
+
+alter table public.retention_assignments
+  add constraint retention_assignments_registry_fkey
+  foreign key (table_name) references public.data_registry (table_name) on delete restrict;

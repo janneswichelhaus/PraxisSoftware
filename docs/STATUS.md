@@ -6,20 +6,19 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 ## Jetzt
 
 **Aufräumen** (Auftrag Jannes 25.10., Entscheidungen 26.10., ROADMAP 7.21): Schritte 1 bis 3 und 4a,
-Fehler 1 und 4 bis 7, M1, M5, M7, M9 und das Barometer gemergt (#308 bis #316). Der Nachzug aus #316
-(Anrufliste, 3D-Rad-Rest, Upload der Akte) ist gebaut, Schritt 4 (Register, Fehler 2 und 3) folgt im
-selben Branch. Bauplan ist `development/TIEFENANALYSE.md`.
+Fehler 1 und 4 bis 7, M1, M5, M7, M9, das Barometer und der Nachzug aus #316 gemergt (#308 bis #317).
+Schritt 4 (Register, Löschjournal je Zeile, Zusammenführen im Journal; Fehler 2 und 3) liegt als #318
+vor. Bauplan ist `development/TIEFENANALYSE.md`.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Aufräumen nach ROADMAP 7.21: 4 (Register), 3b (Domänenschnitt), 5 (Doku).
+Aufräumen nach ROADMAP 7.21: 3b (Domänenschnitt), 5 (Doku).
 Schritt 3 Termine des Design-Reviews (3a bis 3d), dann Schritte 4
 bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff; Briefings in
-`design/review-2026-10/`. Ohne Handoff: BEF-198 (Löschjournal; Pfad A), BEF-223 (Zeitumstellung;
-Pfad A).
+`design/review-2026-10/`. Ohne Handoff: BEF-223 (Zeitumstellung; Pfad A).
 
 ## Bei Jannes
 
@@ -46,6 +45,6 @@ Pfad A).
 
 ## Letzte Session
 
-26.10.2026, Branch `claude/step-4-central-register-ur5k1y`: Nachzug aus #316 (Anrufliste im Tab,
-3D-Rad-Rest, Upload der Akte nur durch die vorbereitende Person), dann Schritt 4. Migrationen, kein
-Seed. Lokal: `git pull`, danach `./scripts/cloud-stack.sh reset` oder `supabase db reset`.
+26.10.2026, Branch `claude/step-4-central-register-ur5k1y`: Nachzug aus #316 gemergt (#317), danach
+Schritt 4 als #318. Drei Migrationen, Seed geändert. Lokal: `git pull`, danach
+`./scripts/cloud-stack.sh reset` oder `supabase db reset`.

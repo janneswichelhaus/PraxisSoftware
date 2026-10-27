@@ -12,6 +12,7 @@ import {
   resetDatabaseOhneTermine,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 
 /**
  * Das Trainingspaket (ANG-EPIC-002, ADR-009 Punkt 21, PROJECT_PRINCIPLES.md
@@ -481,6 +482,10 @@ describe('Trainingspaket am Trainingsverhaeltnis (ANG-006)', () => {
 
     it('entfernt Paket und Leistung, solange nichts abgerechnet ist', async () => {
       const id = await anlegen(trainingRelationships.tina, TP3, heute);
+      const gesichert = {
+        pakete: await sichern('training_packages', 'id = $1', [id]),
+        leistungen: await sichern('billable_services', 'training_package_id = $1', [id]),
+      };
       await asUserCommitted(users.office, ENTFERNEN, [id]);
       const { rows } = await asPostgres<{ n: string }>(
         `select (select count(*) from public.training_packages where id = $1)
@@ -488,6 +493,21 @@ describe('Trainingspaket am Trainingsverhaeltnis (ANG-006)', () => {
         [id],
       );
       expect(rows[0]!.n).toBe('0');
+
+      // Beides im Journal; ein Restore bringt keins zurück (ANN-752).
+      for (const [tabelle, zeilen] of [
+        ['training_packages', gesichert.pakete],
+        ['billable_services', gesichert.leistungen],
+      ] as const) {
+        expect(zeilen).toHaveLength(1);
+        expect(await journal(tabelle, [zeilen[0]!['id']])).toEqual([
+          { target_id: zeilen[0]!['id'], retention_class: 'abrechnungsdaten', reapplied_at: null },
+        ]);
+        await zurueckspielen(tabelle, zeilen);
+      }
+      await asPostgres(NACHZIEHEN);
+      expect(await stehen('training_packages', gesichert.pakete)).toBe(0);
+      expect(await stehen('billable_services', gesichert.leistungen)).toBe(0);
     });
 
     it('nicht auf einem Rechnungsentwurf', async () => {

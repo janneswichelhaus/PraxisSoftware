@@ -1125,12 +1125,14 @@ describe('Loeschjournal', () => {
       'deleted_at',
       'due_at',
       'id',
+      'merged_into',
       'organization_id',
       'reapplied_at',
       'retention_class',
       'run_id',
       'target_id',
       'target_table',
+      'transaction_id',
     ]);
   });
 

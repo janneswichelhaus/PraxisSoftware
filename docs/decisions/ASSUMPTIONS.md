@@ -1972,7 +1972,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** Umhängen der Legal Holds, Löschen der leeren Akte und Auditeintrag in `public.merge_patients`, Sperre der Akte in `public.place_legal_hold`, beide in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Hinweis „nicht rückgängig“ in `src/features/patients/ZusammenfuehrenPage.tsx`; Tests in `supabase/tests/patient-merge.test.ts`.
 
-**Änderungspfad.** Rückgängig innerhalb einer Frist: Herkunft je gewanderter Zeile speichern · Aufwand `groß`. Journaleintrag für die gefallene Akte: eine Zeile in `merge_patients` und eine Regel im Nachziehen nach dem Restore · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** geändert: Der Nachweis des Zusammenführens bleibt so lange wie die betroffene Akte, nicht nur drei Jahre im Auditlog; alle Gründe bestehender Legal Holds bleiben wirksam (BEF-108). **Fassung 2 (ABN-018, 2026-10-02, BEF-108 Punkte 2 und 3):** Das Zusammenführen hebt keine Sperre mehr auf; eine Akte kann mehrere aktive Legal Holds tragen (Index ohne `unique`), `place_legal_hold` nimmt eine weitere mit eigenem Grund an, der Aufbewahrungsstand nennt alle Gründe. Der Nachweis steht als `patient_merge_records` an der bleibenden Akte (so lange wie sie, zieht bei einem weiteren Zusammenführen mit) und in „Verwaltung“ der Akte. `supabase/migrations/20261003105000_abn_018_waitlist_review_merge_records_holds.sql`.
+**Änderungspfad.** Rückgängig innerhalb einer Frist: Herkunft je gewanderter Zeile speichern · Aufwand `groß`. Journaleintrag für die gefallene Akte: eine Zeile in `merge_patients` und eine Regel im Nachziehen nach dem Restore · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** geändert: Der Nachweis des Zusammenführens bleibt so lange wie die betroffene Akte, nicht nur drei Jahre im Auditlog; alle Gründe bestehender Legal Holds bleiben wirksam (BEF-108). **Fassung 2 (ABN-018, 2026-10-02, BEF-108 Punkte 2 und 3):** Das Zusammenführen hebt keine Sperre mehr auf; eine Akte kann mehrere aktive Legal Holds tragen (Index ohne `unique`), `place_legal_hold` nimmt eine weitere mit eigenem Grund an, der Aufbewahrungsstand nennt alle Gründe. Der Nachweis steht als `patient_merge_records` an der bleibenden Akte (so lange wie sie, zieht bei einem weiteren Zusammenführen mit) und in „Verwaltung“ der Akte. `supabase/migrations/20261003105000_abn_018_waitlist_review_merge_records_holds.sql`. **Fassung 3 (Jannes 2026-10-26, Aufräumen Schritt 4):** Das Zusammenführen steht im Löschjournal: ein Eintrag für die Dublette mit `merged_into` auf die bleibende Akte, sonst keiner (ANN-752). Kommt eine Sicherung von vor dem Zusammenführen zurück, führt `reapply_deletion_journal` die Dublette nach den Löschungen erneut zusammen, mit dem Vermerk zur alten Zeit und ohne `merged_by`; das Ziel folgt späteren Zusammenführungen der bleibenden Akte. Trägt das Journal deren Löschung, fällt die Dublette mit; kennt die Sicherung sie nur nicht, bleibt die Dublette. Sperrt der Plan, bleibt nur dieser Eintrag offen und wird gemeldet. Kern ohne Rollenprüfung: `app.merge_patients_core`.
 
 ### ANN-151 — Statistik: Umsatz ist brutto nach Rechnungsstellung, als Praxissumme mit der Aufteilung je Bereich; der Zahlungseingang steht getrennt daneben
 
@@ -6719,17 +6719,17 @@ Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026)
 
 **Abnahme (Jannes, 2026-10-18).** Bestätigt wie gebaut (PR #272, Frage 5); ob „Von“ bleibt, entscheidet die Datenschutzprüfung. Bleibt im Prüfpaket.
 
-### ANN-652 — Teamchat: ungesendete Anhänge fallen beim Verwerfen mit Journal, nach 24 Stunden ohne
+### ANN-652 — Teamchat: ungesendete Anhänge fallen beim Verwerfen oder nach 24 Stunden, mit Journal
 
-Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007); Fassung 2 vom 2026-10-26
 
-**Annahme.** Ein Anhang, der an keiner Nachricht hängt, fällt beim Entfernen oder nach einem Befund der Prüfung sofort - mit Löschauftrag und Eintrag im Löschjournal, tageweise gebündelt wie jedes Löschen im Teamchat (ohne Uhrzeit) -, sonst im täglichen Lauf nach 24 Stunden ohne Journal. Gebunden wird nur, was jünger als 24 Stunden ist; ungesendet sieht ihn niemand; je Person liegen höchstens 20.
+**Annahme.** Ein Anhang, der an keiner Nachricht hängt, fällt beim Entfernen oder nach einem Befund der Prüfung sofort, sonst im täglichen Lauf nach 24 Stunden - mit Löschauftrag und Eintrag im Löschjournal, tageweise gebündelt wie jedes Löschen im Teamchat (ohne Uhrzeit). Gebunden wird nur, was jünger als 24 Stunden ist; ungesendet sieht ihn niemand; je Person liegen höchstens 20. **Fassung 2 (2026-10-26):** Auch der Lauf schreibt das Journal, über den Auslöser der Tabelle (ANN-752).
 
-**Begründung.** ADR-017 Punkte 7, 52 und 73; ADR-008 Punkt 8: Ohne Journal käme ein verworfener, jüngerer Anhang mit einem Restore bindbar zurück (Zweitreview TEAM-003, wie ERS-001). Was der Lauf verwirft, ist nach einem Restore älter als 24 Stunden, weder bindbar noch lesbar und fällt im nächsten Lauf. Gesendete fallen über das Journal ihrer Nachricht.
+**Begründung.** ADR-017 Punkte 7, 52 und 73; ADR-008 Punkt 8: Ohne Journal käme ein verworfener, jüngerer Anhang mit einem Restore bindbar zurück (Zweitreview TEAM-003, wie ERS-001). Der Lauf bräuchte keins, sein Fall ist nach einem Restore weder bindbar noch lesbar; eine Ausnahme vom Auslöser wäre aber eine Lücke mehr. Gesendete fallen mit ihrer Nachricht.
 
 **Anker.** `public.discard_team_attachment`, `public.discard_stale_team_attachments`.
 
-**Änderungspfad.** Auch der Lauf schreibt das Journal (eine Einfügung wie in ERS-001) · Aufwand `klein`.
+**Änderungspfad.** Der Lauf wieder ohne Journal: Pause wie beim Nachziehen (`app.journal_paused`) · Aufwand `klein`.
 
 ### ANN-653 — Teamchat: Nachricht nur mit Anhängen
 
@@ -7660,3 +7660,39 @@ Praxisprozess · offen · 2026-10-26 · — · — · Wiedervorlage: —
 **Anker.** `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql`; Test „Ältere Ladestrom-Anträge mit Rechenweg“ in `reimbursements.test.ts`.
 
 **Änderungspfad.** Eigene Art „Strom“: `submit_purchase_reimbursement` und `staff_reimbursements_kind_fields` erweitern · Aufwand `mittel`.
+
+### ANN-750 — Auskunft für Beschäftigte und Verordner:innen von Hand
+
+Datenschutz · offen · 2026-10-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung
+
+**Annahme.** Für Beschäftigtendaten (Personal, Zeit, Urlaub, Erstattung, Radflotte, Teamchat, Praxiskonten) und für Verordner:innen gibt es keine Auskunftsfunktion; eine Auskunft nach Art. 15 DSGVO stellt die Inhaberin aus den Daten der Person zusammen. Das Register führt diese Tabellen als `manual`, mit Begründung.
+
+**Begründung.** Die Kopien der Anwendung gelten Akte und Trainingsverhältnis; eine dritte wäre ein eigener Auftrag. Unsicher: ob die Prüfung für Beschäftigte eine Funktion verlangt.
+
+**Anker.** Die Zeilen `manual` in `supabase/migrations/20261225130000_datenregister.sql`.
+
+**Änderungspfad.** Kopie für Beschäftigte wie `export_patient_record`, Register auf `section` · Aufwand `mittel`.
+
+### ANN-751 — Ein Register je Tabelle über dem Aufbewahrungsplan
+
+Technik · offen · 2026-10-26 · — · — · Wiedervorlage: —
+
+**Annahme.** `public.data_registry` führt je Tabelle in `public` eine Zeile: Personenbezug, Auskunft (Abschnitt, verschachtelt, nur Plattform, ausgenommen, von Hand), Löschjournal (je Zeile, über den Elter, nach Regel, keins) samt Reihenfolge des Nachziehens und Zusammenführen. `retention_assignments` zeigt per Fremdschlüssel darauf; Ausnahmen tragen eine Begründung.
+
+**Begründung.** Schritt 4 der Tiefenanalyse (Abschnitt 3b.8, Jannes 2026-10-26): Die Entscheidungen standen verteilt in Funktionen und Testlisten, Lücken fielen nicht auf.
+
+**Anker.** `supabase/migrations/20261225130000_datenregister.sql`; geprüft in `supabase/tests/data-registry.test.ts`.
+
+**Änderungspfad.** Generische Auskunft, Löschung oder Zusammenführung aus dem Register: je Funktion eine Migration · Aufwand `mittel`.
+
+### ANN-752 — Löschjournal: ein Auslöser je Tabelle, Läufe ergänzen ihn
+
+Datenschutz · offen · 2026-10-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Jede Tabelle mit eigenem Journal im Register trägt den Auslöser `journal_deletion`: Jede gelöschte Zeile steht im Löschjournal, ob ein Lauf, eine Funktion von Hand oder eine Kaskade sie nahm. Ein Lauf ergänzt den Eintrag; je Zeile und Transaktion bleibt einer. Ohne Lauf bündelt der Auslöser je Praxis und Tag, ohne Uhrzeit (§20). Nachziehen, Zusammenführen und Seed schalten ihn ab.
+
+**Begründung.** ADR-008 Punkt 8: Nach einem Restore kehrt nichts Gelöschtes zurück. Die Tiefenanalyse fand elf Löschwege ohne Eintrag (Fehler 2, BEF-198); ein Auslöser schließt auch künftige.
+
+**Anker.** `app.journal_deletion`, `app.deletion_journal_once`; geprüft in `supabase/tests/data-registry.test.ts`.
+
+**Änderungspfad.** Einträge wieder je Löschweg: Auslöser entfernen · Aufwand `mittel`.

@@ -48,67 +48,8 @@ async function fehlercode(konto: string | null, id: string): Promise<string | un
   }
 }
 
-/**
- * Was ueber einen Elterndatensatz haengt und als Teil seines Abschnitts in
- * der Kopie steht, oder was bewusst nicht hineingehoert - mit Grund.
- */
-const BEWUSST_AUSSEN = new Map<string, string>([
-  ['exercise_plan_items', 'Die Positionen stehen als `items` an ihrem Plan in `exercise_plans`.'],
-  ['exercise_plan_days', 'Die Übungstage stehen als `weekdays` an ihrem Plan in `exercise_plans`.'],
-  [
-    'exercise_plan_sessions',
-    'Die Einheiten stehen als `sessions` an ihrem Plan in `exercise_plans`.',
-  ],
-  [
-    'exercise_plan_session_sets',
-    'Die abgehakten Sätze stehen als `sets_done` an ihrer Einheit in `exercise_plans`.',
-  ],
-  [
-    'exercise_plan_session_values',
-    'Die Angaben zur Einheit stehen als `values` an ihrer Einheit in `exercise_plans`.',
-  ],
-  ['checkin_values', 'Die Angaben eines Check-ins stehen als `values` an ihm in `checkins`.'],
-  ['habit_marks', 'Die vermerkten Tage stehen als `marks` an ihrer Gewohnheit in `habits`.'],
-  [
-    'training_assessment_results',
-    'Die Messwerte stehen als `results` an ihrem Assessment in `training_assessments`.',
-  ],
-  [
-    'training_protocol_addenda',
-    'Die Nachträge stehen als `addenda` an ihrem Protokoll in `training_protocols`.',
-  ],
-  [
-    'platform_message_entries',
-    'Die Einträge stehen als `entries` an ihrer Rückfrage in `platform_messages`.',
-  ],
-  [
-    'platform_message_attachments',
-    'Die Fotos und Videos stehen als `attachments` an ihrer Rückfrage in `platform_messages`.',
-  ],
-  [
-    'platform_access_invitations',
-    'Die Einladungen stehen als `invitations` an ihrem Zugang in `platform_accesses`.',
-  ],
-  ['nutrition_consent_records', 'Stehen als `consent_history` am Profil in `nutrition_profiles`.'],
-  ['nutrition_weight_entries', 'Stehen als `weights` am Profil in `nutrition_profiles`.'],
-  ['nutrition_diary_entries', 'Stehen unter `diary` am Profil in `nutrition_profiles`.'],
-  ['nutrition_water_days', 'Stehen unter `diary` am Profil in `nutrition_profiles`.'],
-  ['nutrition_diary_favorites', 'Stehen unter `diary` am Profil in `nutrition_profiles`.'],
-  [
-    'custom_foods',
-    'Die eigenen stehen als `own_foods` am Profil in `nutrition_profiles`; die der Praxis sind keine Daten der Person.',
-  ],
-  [
-    'patient_privacy_records',
-    'Datenschutzvermerke der Akte (`patient_id`); sie stehen in der Auskunft zur Akte (ADR-021).',
-  ],
-  // Je Zugang gewählt, für die Praxis unsichtbar (ANN-344); `nicht_enthalten`
-  // nennt sie (BEF-189).
-  ['platform_notification_settings', 'Benachrichtigungen je Zugang (ANN-344, BEF-189).'],
-  ['platform_push_subscriptions', 'Benachrichtigungen je Zugang (ANN-344, BEF-189).'],
-  ['notification_deliveries', 'Benachrichtigungen je Zugang (ANN-344, BEF-189).'],
-  ['nutrition_diary_reminders', 'Benachrichtigungen je Zugang (ANN-344, BEF-189).'],
-]);
+// Welche Tabellen in die Kopie gehören, verschachtelt stehen oder bewusst fehlen, hält das Register
+// der Querschnittsfunktionen fest (supabase/tests/data-registry.test.ts, ANN-751).
 
 describe('export_training_record (BEF-182)', () => {
   beforeEach(async () => {
@@ -133,27 +74,6 @@ describe('export_training_record (BEF-182)', () => {
       expect(text, verboten).not.toContain(verboten);
     }
     expect(daten.nicht_enthalten.map((h) => h.was)).toContain('Daten einer Behandlung');
-  });
-
-  it('enthält jede Tabelle des Aufbewahrungsplans am Trainingsverhältnis oder am Plattformzugang', async () => {
-    // Zweitreview: nicht nur Spalten am Verhältnis - auch die Klasse
-    // `trainingsverhaeltnis` (so fielen Messwerte und Nachträge auf) und
-    // Tabellen am Plattformzugang (so fielen die Einladungen auf).
-    const { rows } = await asPostgres<{ table_name: string }>(
-      `select distinct ra.table_name from public.retention_assignments ra
-       where ra.class_key = 'trainingsverhaeltnis'
-          or exists (
-            select 1 from information_schema.columns c
-            where c.table_schema = 'public' and c.table_name = ra.table_name
-              and c.column_name in ('training_relationship_id', 'relationship_kind',
-                                    'platform_access_id', 'access_id'))
-       order by 1`,
-    );
-    const daten = await kopie(users.ownerTherapist, trainingRelationships.tina);
-    const fehlend = rows
-      .map((z) => z.table_name)
-      .filter((name) => !(name in daten.tabellen) && !BEWUSST_AUSSEN.has(name));
-    expect(fehlend).toEqual([]);
   });
 
   it('nimmt Messwerte, Nachträge und Verfasser mit - ohne Kennungen von Konten und Zugängen', async () => {

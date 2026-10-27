@@ -8,6 +8,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/wiederherstellung';
 
 /**
  * Ernährungstagebuch (ERN-007, ADR-027 Punkte 2, 3, 9 bis 11; ADR-023
@@ -355,7 +356,16 @@ describe('Ernährungstagebuch: Auskunft, Export, Widerruf, Löschen mit dem Prof
     expect(
       await fehler(asUser(users.plattformErika, AENDERN, [ZUGANG, eintrag.id, 'dinner', 80, null])),
     ).toBe('42501');
+    const gesichert = await sichern('nutrition_diary_entries', 'id = $1', [eintrag.id]);
     await asUserCommitted(users.plattformErika, LOESCHEN, [ZUGANG, eintrag.id]);
+
+    // Im Journal, damit ein Restore den gelöschten Eintrag nicht zurückbringt (ANN-752).
+    expect(await journal('nutrition_diary_entries', [eintrag.id])).toEqual([
+      { target_id: eintrag.id, retention_class: 'ernaehrungsberatung', reapplied_at: null },
+    ]);
+    await zurueckspielen('nutrition_diary_entries', gesichert);
+    await asPostgres(NACHZIEHEN);
+    expect(await stehen('nutrition_diary_entries', gesichert)).toBe(0);
   });
 
   it('fällt mit dem Profil (Datenklasse Ernährungsberatung)', async () => {
