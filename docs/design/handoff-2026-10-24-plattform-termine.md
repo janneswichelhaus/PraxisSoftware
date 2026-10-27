@@ -18,8 +18,8 @@ Vorgaben zu ihr entfallen (ADR-023 Fassung 7).
 Stand 24.10.2026. Quellen: Design-Review Lauf 1 ([Bericht](review-2026-10/lauf-1-bericht.md),
 Befunde DR-132 bis DR-136 und DR-159), BEF-220 und BEF-221,
 [Briefing 3](review-2026-10/lauf-1-briefings/03-termine.md), [PLATTFORM.md](PLATTFORM.md) und die
-Handoffs zu [Briefing 1](handoff-2026-10-22-plattform-erster-eindruck.md) und
-[Briefing 2](handoff-2026-10-24-plattform-uebungen.md), deren Werte hier gelten, soweit nichts
+Handoffs zu Briefing 1 (`git show eb43569:docs/design/handoff-2026-10-22-plattform-erster-eindruck.md`) und
+Briefing 2 (`git show eb43569:docs/design/handoff-2026-10-24-plattform-uebungen.md`), deren Werte hier gelten, soweit nichts
 anderes steht. DSN-001 (`docs/development/PLATTFORM-ANSICHTEN.md`) bleibt die Vorgabe für Inhalt;
 Abweichungen stehen in Abschnitt 0.
 

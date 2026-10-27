@@ -1,9 +1,9 @@
 # Sichtung — Rahmen (Seitenleiste, Kopfzeile, Tableiste, Akte, Startbild)
 
 Stand 2026-10-10 · Handoff Rahmen vom 2026-10-05
-([`../design/handoff-2026-10-05-rahmen.md`](../design/handoff-2026-10-05-rahmen.md)), gebaut in
+(`git show eb43569:docs/design/handoff-2026-10-05-rahmen.md`), gebaut in
 RAH-EPIC-001 (RAH-001 bis RAH-010), ein Branch, eine Pull Request. Schritte 4 bis 6:
-SLK-EPIC-001 nach dem Leitfaden [`../design/leitfaden-schlank.md`](../design/leitfaden-schlank.md); Schritt 7: SKN-EPIC-001 nach dem Handoff [`../design/handoff-2026-10-06-schrift-und-knoepfe.md`](../design/handoff-2026-10-06-schrift-und-knoepfe.md); Schritt 11: DOK-EPIC-001 (BEF-057 Option 2); Schritt 12: ABR-EPIC-008 (BEF-061 Option 1 und 3); Schritte 8 bis 10: KUT-EPIC-001 nach dem Handoff [`../design/handoff-2026-10-06-kalender-und-tour.md`](../design/handoff-2026-10-06-kalender-und-tour.md); Schritte 13 bis 15: UX-EPIC-006 (BEF-046, BEF-047).
+SLK-EPIC-001 nach dem Leitfaden [`../design/leitfaden-schlank.md`](../design/leitfaden-schlank.md); Schritt 7: SKN-EPIC-001 nach dem Handoff `git show eb43569:docs/design/handoff-2026-10-06-schrift-und-knoepfe.md`; Schritt 11: DOK-EPIC-001 (BEF-057 Option 2); Schritt 12: ABR-EPIC-008 (BEF-061 Option 1 und 3); Schritte 8 bis 10: KUT-EPIC-001 nach dem Handoff `git show eb43569:docs/design/handoff-2026-10-06-kalender-und-tour.md`; Schritte 13 bis 15: UX-EPIC-006 (BEF-046, BEF-047).
 
 **Deckt ab:** Design-Runde 1 (Rahmen): Tokens und Manifest, Seitenleiste und beschriftete
 Symbolspalte (2b), Kopfzeile am Handy (1b), Tableiste nach Reife, Untermenü „Sicherheit und

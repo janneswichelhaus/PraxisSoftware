@@ -77,7 +77,6 @@ bleibt. Sie trägt Bedeutung: Einrückung unterscheidet Test von Unterpunkt.
 | Datei                                                                        | Was darin steht                                                                                   |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | [`scores/Score-Inventar_Praxissoftware_v1.xlsx`](scores/Score-Inventar_Praxissoftware_v1.xlsx) | Arbeit von Jannes, vier Blätter: Anleitung, Inventar, Scoring, Quellen. **Die Quelle.**            |
-| [`scores/score-inventar.md`](scores/score-inventar.md)                       | dieselben drei Datenblätter als lesbarer Text, ein Abschnitt je Score. Wiedergabe, nicht Quelle.   |
 | `scores/pdf/`                                                                | die 18 Original-PDFs von digotor.info. **Die Quelle der Itemtexte.**                              |
 | `scores/pdf-text/`                                                           | deren Textextrakte (`pdftotext -layout -enc UTF-8`) — Arbeitsfassung, jederzeit neu zu erzeugen.   |
 
@@ -159,11 +158,10 @@ ae289cf87941dcd1aea418e017aac5563fb58b48e75f7be30d6aed12327b28cc  scores/pdf/VIS
 
 ### Abgeleitete Dateien ohne Prüfsumme
 
-Drei Dinge hier sind aus den Quellen gewonnen und nicht selbst Quelle. Eine
+Diese Dateien sind aus den Quellen gewonnen und nicht selbst Quelle. Eine
 Prüfsumme darauf würde bei jeder Korrektur reißen, ohne etwas zu schützen:
 
 - `README.md` — dieses Register.
-- `scores/score-inventar.md` — Wiedergabe der Tabelle.
 - `scores/pdf-text/*.txt` — Arbeitsfassung der PDFs. Der Test besteht nur
   darauf, dass zu **jeder** PDF ein Extrakt gehört und umgekehrt; über den
   Inhalt entscheidet die PDF, und die hat eine Prüfsumme.
@@ -176,7 +174,7 @@ Prüfsumme darauf würde bei jeder Korrektur reißen, ohne etwas zu schützen:
 ## Wiederbeschaffung und Neuerzeugung
 
 Sollte eine Score-PDF verlorengehen: Sie steht unter ihrem Direktlink bei
-digotor.info — je Score in [`scores/score-inventar.md`](scores/score-inventar.md)
+digotor.info — je Score im Blatt „Quellen“ von `scores/Score-Inventar_Praxissoftware_v1.xlsx`
 — und gehört nach `quellen/scores/pdf/` unter genau dem Dateinamen aus dem
 Register. Für die neun MT-Lernübersichten gibt es keinen Link: Ihre Quelle ist
 Jannes' eigene Ablage.

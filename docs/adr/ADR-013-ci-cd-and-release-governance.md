@@ -4,6 +4,12 @@
 
 **Angenommen** (2026-08-28).
 
+**Fassung 7 (2026-10-27)** — Punkt 9 Nr. 8 und der Satz nach der Checkliste
+verweisen auf `CLAUDE.md` („Arbeitsweise“) und die Skills `feature-loop` und
+`bereich` statt auf die Weiterleitungen `SESSION-START.md` und
+`GRAPH-ENGINEERING-WORKFLOW.md` in `docs/development/`, die seit Aufräumen Schritt 5 nur noch in
+Git liegen. Redaktionell, die Bedeutung bleibt.
+
 **Fassung 6 (2026-10-27)** — Punkt 9 nennt den RPC-Auslöser mit dem Muster
 `src/features/**/api.ts`. Seit Aufräumen Schritt 3b liegen die Module in
 Domänenordnern (`src/features/<domäne>/<modul>/`); das alte Muster
@@ -33,7 +39,7 @@ die Review-Checkliste fest, die Punkt 8 seit Fassung 1 verlangt.
 ## Datum
 
 2026-08-28 · Fassung 2: 2026-09-13 · Fassung 3: 2026-09-15 · Fassung 4: 2026-09-23 ·
-Fassung 5: 2026-10-16 · Fassung 6: 2026-10-27
+Fassung 5: 2026-10-16 · Fassung 6: 2026-10-27 · Fassung 7: 2026-10-27
 
 ## Kontext
 
@@ -150,7 +156,7 @@ Dieser ADR schließt den offenen Punkt E7.
       Session durch einen Review-Subagenten mit eigenem Kontext, der nur den
       Diff und diese Checkliste als Auftrag bekommt; ist das nicht möglich,
       in einer eigenen Review-Session; Modell und Aufwand richten sich nach
-      `.claude/settings.json` und `docs/development/SESSION-START.md`. Der
+      `.claude/settings.json` und `CLAUDE.md` („Arbeitsweise“). Der
       Pull Request wartet bis dahin auf den Merge durch den Projektinhaber.
       Befunde daraus werden ein eigener Loop.
    9. Rechnungsdaten: Snapshot, Unveränderbarkeit, Storno-Kette
@@ -159,7 +165,7 @@ Dieser ADR schließt den offenen Punkt E7.
        E2E-Prüfungen, wo Docker verfügbar ist.
 
    Wo die Checkliste im Ablauf sitzt (Gate A4, Zweitreview A5), steht in
-   `docs/development/GRAPH-ENGINEERING-WORKFLOW.md`; die Punkte selbst stehen
+   `CLAUDE.md` („Arbeitsweise“, K1) und den Skills `feature-loop` und `bereich`; die Punkte selbst stehen
    nur hier. Eine Änderung an der Liste ist eine neue Fassung dieses ADR.
 
 ## Konsequenzen
@@ -252,3 +258,4 @@ Dieser ADR schließt den offenen Punkt E7.
 | 4 | 2026-09-23 | Punkt 9 Nr. 1: Negativfälle „fremde Person" und „anderer Leistungsbereich". Übrige Punkte unverändert. |
 | 5 | 2026-10-16 | Punkt 2: Pull Requests nur mit Dokumentation ohne Tests, Build und Datenbankprüfungen; auf `main` läuft nach dem Merge alles. Entschieden von Jannes. |
 | 6 | 2026-10-27 | Punkt 9: RPC-Auslöser `src/features/**/api.ts` statt `src/features/*/api.ts`, weil die Module seit Aufräumen 3b in Domänenordnern liegen; redaktionell, Bedeutung unverändert. |
+| 7 | 2026-10-27 | Punkt 9 Nr. 8 und Satz nach der Checkliste: Verweis auf `CLAUDE.md` und die Skills statt auf zwei Weiterleitungen, die mit Aufräumen 5 nach Git gingen; redaktionell, Bedeutung unverändert. |

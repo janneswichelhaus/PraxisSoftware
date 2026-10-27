@@ -1,7 +1,8 @@
 # Status · Stand 2026-10-27
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
-steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
+steht in den PRs und in Git. Abgelegte Dokumente (Archiv, Chroniken, erledigte Handoffs) zeigt
+`git show eb43569:<pfad>`.
 
 ## Jetzt
 

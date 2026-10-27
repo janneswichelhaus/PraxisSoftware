@@ -208,7 +208,7 @@ Community-Diskussionen und Suchauszügen sind unten als solche gekennzeichnet
 und gehören in den Prüfkatalog von OPS-001, nicht in diese Entscheidung.
 
 **Neu zur Fassung 2.** Im Produktgespräch vom 2026-09-23
-([`../development/UMBAU.md`](../development/UMBAU.md)) hat Jannes zwei Dinge
+(`git show eb43569:docs/development/archiv/UMBAU.md`) hat Jannes zwei Dinge
 festgelegt: Fotos von Patient:innen gehören in den Ablauf, „damit andere
 Therapeut:innen einen Eindruck haben und für Vergleiche im Verlauf", und
 Fotos entstehen nur über die Kamera der App, weil sonst Gesundheitsdaten in

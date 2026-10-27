@@ -74,7 +74,7 @@ der Stand hier. Neue Klickschritt-Dateien entstehen nicht mehr.
 | [ux-review.md](ux-review.md)                 | UX-Review — UX-EPIC-007 bis -009    | offen; 1 bis 3 UX-EPIC-007                                                                                     |
 
 Die Abnahmeschritte vor dem 2026-09-23 liegen unverändert in
-[`../development/archiv/abnahme/`](../development/archiv/abnahme/). Befunde aus jeder Sichtung gehen
+`git show eb43569:docs/development/archiv/abnahme/`. Befunde aus jeder Sichtung gehen
 nach [`../development/BEFUNDE.md`](../development/BEFUNDE.md) und werden die erste Story der
 nächsten Überholung desselben Bereichs. Eine Sichtung ersetzt keinen Test
 (`PROJECT_PRINCIPLES.md` §12).

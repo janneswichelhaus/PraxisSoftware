@@ -16,13 +16,13 @@ Dokumentenhierarchie, ist **kein Auftrag** und führt **keine zweite
 Reihenfolge**: Was wann gebaut wird, steht ausschließlich in `ROADMAP.md`.
 Ein Befund wird verbindlich erst im SPEC-Schritt des Loops, der ihn aufnimmt.
 Die Lösungsanalyse zu den Befunden bis 2026-10-02 liegt in
-[`archiv/BEFUNDE-LOESUNGEN.md`](archiv/BEFUNDE-LOESUNGEN.md); auch sie hat keinen Rang.
+`git show eb43569:docs/development/archiv/BEFUNDE-LOESUNGEN.md`; auch sie hat keinen Rang.
 
 **Befunde gehen in Bereichsüberholungen** (seit 2026-10-12): Die offenen
 Befunde eines Bereichs werden die ersten Stories seiner nächsten Überholung
 (`/bereich`); andere werden gebündelt in einem Auftrag erledigt, nicht als
 eigener Einzel-Story-Loop. Abläufe misst nicht mehr eine Ablaufrunde
-([`archiv/OPTIMIERUNG.md`](archiv/OPTIMIERUNG.md)), sondern die Tipp-Budgets in
+(`git show eb43569:docs/development/archiv/OPTIMIERUNG.md`), sondern die Tipp-Budgets in
 [`../product/kernablaeufe.md`](../product/kernablaeufe.md).
 
 ## Form
@@ -213,7 +213,7 @@ an beiden Abfragen; danach kann der Pfad denselben Ausgang bekommen wie die
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                  |
 | Bereich | Rahmen aller Seiten: Seitenleiste und Symbolspalte (ab 640 px), Kopfzeile, Untermenü über der Akte (unter 640 px), Web-Manifest                                                                                                                                                                                                             |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390/820/1440 px, Gegenprüfung; Review-IDs NAV-06, NAV-18, PAT-09, AUTH-07                                                                                                                                                                                                                 |
-| Status  | entschieden 2026-10-05 (Jannes), Option 1, dazu Variante 2b (beschriftete Symbolspalte statt Bereichsname), 1b (Abmelden als Symbol) und 4b (Rückweg-Pfeil in der Kopfkarte); gebaut in RAH-EPIC-001 (2026-10-06, Handoff `docs/design/handoff-2026-10-05-rahmen.md`): Salbei-Strich, Hover ohne Fläche, Symbolspalte 84 px beschriftet, „Abmelden“ als Symbolknopf mit „Wird abgemeldet …“, Untermenü in der Akte ausgeblendet (seit 2026-10-03) und Rückweg als Pfeil, `theme_color`/`background_color` |
+| Status  | entschieden 2026-10-05 (Jannes), Option 1, dazu Variante 2b (beschriftete Symbolspalte statt Bereichsname), 1b (Abmelden als Symbol) und 4b (Rückweg-Pfeil in der Kopfkarte); gebaut in RAH-EPIC-001 (2026-10-06, Handoff `git show eb43569:docs/design/handoff-2026-10-05-rahmen.md`): Salbei-Strich, Hover ohne Fläche, Symbolspalte 84 px beschriftet, „Abmelden“ als Symbolknopf mit „Wird abgemeldet …“, Untermenü in der Akte ausgeblendet (seit 2026-10-03) und Rückweg als Pfeil, `theme_color`/`background_color` |
 | Berührt | `src/app/AppShell.tsx` (Z. 43–51, 165–194, 237, 262), `src/components/ui/buttonStile.ts` (Z. 33), `src/app/navigation.tsx` (Z. 234), `src/features/patients/PatientRecordLayout.tsx` (Z. 247–260), `index.html`, `public/manifest.webmanifest`, `src/marke.test.ts`; DS-001; ANN-109, ANN-110, ANN-113; AKTE-000, UX-002h; BEF-001, BEF-044 |
 
 **Beobachtung.**

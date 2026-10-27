@@ -307,7 +307,7 @@ Hauptordner kopieren. Die Session legt ihren Branch selbst an (Schritt 1 von
 Die Anwendung am eigenen Handy, von überall: `https://<kontoname>.uber.space`
 (heute `prtest`), dahinter das Supabase-Projekt `praxis-test` in Frankfurt. Nur
 synthetische Daten, kein Produktivprojekt (§3.1, §3.2). Einrichtung und Wahl
-des Anbieters: [`hosting-optionen.md`](decisions/hosting-optionen.md).
+des Anbieters: [`betrieb/test-umgebung.md`](betrieb/test-umgebung.md).
 
 **Was automatisch passiert.** Nach jeder grünen CI auf `main` spielt
 `.github/workflows/test-umgebung.yml` den geprüften Commit ein: Konfiguration
@@ -358,7 +358,7 @@ Kartendienst in der Content-Security-Policy; der kostenlose PTV-Plan hat nur
 einen Schlüssel, und der Serverschlüssel gehört nie ins Bundle (ADR-019
 Punkt 19). Die Einstellungen
 der Function setzt Jannes im Supabase-Projekt selbst
-([`hosting-optionen.md`](decisions/hosting-optionen.md), Schritt 2e); der
+([`betrieb/test-umgebung.md`](betrieb/test-umgebung.md), Schritt 5); der
 Workflow schreibt sie nicht. Nur synthetische Adressen (ADR-019 Punkt 15).
 Scheitert das Ausliefern der Function, etwa bei einer Störung der
 Verwaltungs-API von Supabase, bleibt der Lauf trotzdem grün mit einer Warnung:

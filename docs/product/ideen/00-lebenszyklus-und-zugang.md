@@ -187,7 +187,7 @@ Einwilligung, die jemand anders für die Person geklickt hat, ist keine.
 
 **Stand.** Die Aufbewahrungsuhr ist gebaut: „Abschluss der Versorgung" als
 ausdrücklicher, rücknehmbarer Vorgang in der Akte startet die zehnjährige
-Aufbewahrung (LOE-001b, ANN-032; `../../development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`). Der
+Aufbewahrung (LOE-001b, ANN-032; `git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`). Der
 Rest — Datenexport beim Abschluss (Art. 20 DSGVO, siehe `IDEA-QSN-003`) und
 ein definierter Zugangszustand — bleibt `bestätigt` und ist kein Auftrag. Der
 Hinweis auf vergessene Abschlüsse steht als `IDEA-LZK-009`.

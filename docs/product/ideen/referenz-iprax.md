@@ -40,7 +40,7 @@ personenzentriert: erst die Person, dann der Bereich.
 
 Entschieden ist es **hier nicht** — dieser Ordner entscheidet nichts. Die
 Festlegungen stehen in
-[`../../development/archiv/CAL-EPIC-004.md`](../../development/archiv/CAL-EPIC-004.md), die
+`git show eb43569:docs/development/archiv/CAL-EPIC-004.md`, die
 Änderung an §8.1 in `PROJECT_PRINCIPLES.md` 0.11, die offenen Punkte als E16
 und E17 in [`../../decisions/OPEN_DECISIONS.md`](../../decisions/OPEN_DECISIONS.md).
 

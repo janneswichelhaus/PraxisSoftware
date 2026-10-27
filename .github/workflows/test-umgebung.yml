@@ -8,7 +8,7 @@
 # menschlicher Freigabe (ADR-013 Punkt 6); dieser Workflow kennt keine.
 #
 # Secrets liegen allein in der GitHub-Umgebung `test`
-# (docs/decisions/hosting-optionen.md, Schritt 2d). Fehlt eines der sieben
+# (docs/betrieb/test-umgebung.md, Schritt 4). Fehlt eines der sieben
 # Pflicht-Secrets, wird die Auslieferung uebersprungen statt rot.
 #
 # Kartendienst (optional, Jannes 2026-10-04): Mit dem Secret
@@ -67,7 +67,7 @@ jobs:
     name: Ausliefern
     # Automatisch nur nach einem gruenen CI-Lauf fuer einen Push auf main aus
     # diesem Repository; von Hand nur vom main-Branch. Die GitHub-Umgebung
-    # `test` ist zusaetzlich auf `main` beschraenkt (hosting-optionen.md, 2d) -
+    # `test` ist zusaetzlich auf `main` beschraenkt (test-umgebung.md, Schritt 4) -
     # erst das haelt einen Workflow auf einem anderen Branch von den Secrets fern.
     if: >-
       (github.event_name == 'workflow_run'
@@ -299,7 +299,7 @@ jobs:
           chmod 600 ~/.ssh/deploy
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/deploy_known_hosts
           # IPv4: Ueber IPv6 bricht die Verbindung zu Uberspace ab
-          # (hosting-optionen.md, 2026-09-25). Nur der festgehaltene
+          # (docs/betrieb/test-umgebung.md, Stand 2026-09-25). Nur der festgehaltene
           # Serverschluessel wird akzeptiert. Alle Aufrufe teilen EINE
           # Verbindung (ControlMaster): Uberspace setzt schnell
           # aufeinanderfolgende neue SSH-Verbindungen zurueck - der dritte
