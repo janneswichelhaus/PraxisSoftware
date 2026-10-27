@@ -104,6 +104,7 @@ interface Bestand {
   aufgabe: string;
   warteliste: string;
   sperre: string;
+  zugang: string;
 }
 
 /**
@@ -250,6 +251,27 @@ async function fuelle(patient: string): Promise<Bestand> {
      values ($1, 'patient', $2, 'Synthetische Anfrage', $3) returning id`,
     [ORG, patient, users.ownerTherapist],
   );
+  // Ein entzogener Zugang mit Einladung an die eigene Adresse; er zieht mit (ANN-753).
+  const zugang = await q(
+    `with zugang as (
+       insert into public.platform_accesses
+         (organization_id, relationship_kind, relationship_id, patient_id, status, created_by,
+          revoked_at, revoked_by, revoked_reason)
+       values ($1, 'treatment', $2, $2, 'revoked', $3, now(), $3, 'practice')
+       returning id
+     ), einladung as (
+       insert into public.platform_access_invitations
+         (organization_id, platform_access_id, purpose, channel, code_hash, email,
+          address_confirmed_by, address_confirmed_at, status, expires_at, sent_at, revoked_at,
+          created_by)
+       select $1, zugang.id, 'activate', 'email', md5(zugang.id::text) || md5($2::text),
+              'zugang-' || left($2::text, 8) || '@example.invalid', $3, now(), 'revoked',
+              now() + interval '7 days', now(), now(), $3
+       from zugang
+     )
+     select id from zugang`,
+    [ORG, patient, users.office],
+  );
 
   return {
     termin,
@@ -267,13 +289,15 @@ async function fuelle(patient: string): Promise<Bestand> {
     aufgabe,
     warteliste,
     sperre,
+    zugang,
   };
 }
 
-/** Ganze Zeile als JSON, ohne die Kennung der Akte. */
+/** Ganze Zeile als JSON, ohne die Kennung der Akte und das Verhältnis, das mit ihr wechselt. */
 async function zeile(tabelle: string, id: string): Promise<Record<string, unknown>> {
   const { rows } = await asPostgres<{ z: Record<string, unknown> }>(
-    `select to_jsonb(t) - 'patient_id' as z from public.${tabelle} t where t.id = $1`,
+    `select to_jsonb(t) - 'patient_id' - 'relationship_id' as z from public.${tabelle} t
+      where t.id = $1`,
     [id],
   );
   return rows[0]!.z;
@@ -457,6 +481,7 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
       ['therapy_reports', 'bericht'],
       ['tasks', 'aufgabe'],
       ['waitlist_entries', 'warteliste'],
+      ['platform_accesses', 'zugang'],
     ];
 
     beforeAll(async () => {
@@ -512,6 +537,11 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
       for (const [tabelle, schluessel] of TABELLEN) {
         expect(await patientVon(tabelle, b[schluessel]), `${tabelle}`).toBe(ziel.patient);
       }
+      const { rows: zugang } = await asPostgres<{ relationship_id: string }>(
+        'select relationship_id from public.platform_accesses where id = $1',
+        [b.zugang],
+      );
+      expect(zugang[0]!.relationship_id).toBe(ziel.patient);
       const { rows } = await asPostgres<{ subject_id: string }>(
         'select subject_id from public.legal_holds where id = $1',
         [b.sperre],
@@ -530,6 +560,18 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
           expect(nachher, `${tabelle}`).toEqual(vorher[schluessel]);
         }
       }
+    });
+
+    it('nennt den entzogenen Zugang der Dublette in der Auskunft der bleibenden Akte (ANN-753)', async () => {
+      const { rows } = await asUser<{
+        daten: { tabellen: Record<string, { invitations: { email: string | null }[] }[]> };
+      }>(users.ownerTherapist, 'select public.export_patient_record($1::uuid) as daten', [
+        ziel.patient,
+      ]);
+      const adressen = rows[0]!.daten.tabellen['platform_accesses']!.flatMap((z) =>
+        z.invitations.map((i) => i.email),
+      );
+      expect(adressen).toContain(`zugang-${quelle.patient.slice(0, 8)}@example.invalid`);
     });
 
     it('lässt Eintrag und Versionen unberührt', async () => {
@@ -687,6 +729,16 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
           users.ownerTherapist,
           `select set_config('app.patient_merge', 'on', true);
            update public.invoices set patient_id = '${patients.petra}' where id = '${b.rechnung}'`,
+        ),
+      ).rejects.toThrow(/permission denied/);
+      // Auch der entzogene Zugang zieht nur im Vorgang um (ANN-753).
+      await expect(
+        asUser(
+          users.ownerTherapist,
+          `select set_config('app.patient_merge', 'on', true);
+           update public.platform_accesses
+              set patient_id = '${patients.petra}', relationship_id = '${patients.petra}'
+            where id = '${b.zugang}'`,
         ),
       ).rejects.toThrow(/permission denied/);
     });
@@ -1130,6 +1182,27 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
         [gesperrt],
       );
       expect(await sperren(quelle.patient)).toEqual([]);
+    });
+
+    it('hält Bezug und Verhältnis eines Zugangs außerhalb des Zusammenführens fest (ANN-753)', async () => {
+      const quelle = await legeAkteAn({ vorname: 'Erika', nachname: 'Beispiel-Fest' });
+      const id = await zugang(quelle.patient, 'invited');
+      const umhaengen = `update public.platform_accesses
+          set patient_id = '${patients.erika}', relationship_id = '${patients.erika}'
+        where id = '${id}'`;
+      // Ein laufender Zugang zieht auch unter dem Riegel des Zusammenführens nicht um.
+      await expect(
+        asPostgres(`select set_config('app.patient_merge', 'on', true); ${umhaengen}`),
+      ).rejects.toThrow(/platform access kind and proof are fixed/);
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select public.revoke_platform_access($1::uuid)',
+        [id],
+      );
+      await expect(asPostgres(umhaengen)).rejects.toThrow(
+        /platform access kind and proof are fixed/,
+      );
+      expect(await patientVon('platform_accesses', id)).toBe(quelle.patient);
     });
 
     it('zählt Rückfragen und Terminwünsche der Dublette, auch im Vermerk', async () => {

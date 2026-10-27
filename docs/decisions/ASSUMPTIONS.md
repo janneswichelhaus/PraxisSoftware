@@ -7696,3 +7696,15 @@ Datenschutz · offen · 2026-10-26 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `app.journal_deletion`, `app.deletion_journal_once`; geprüft in `supabase/tests/data-registry.test.ts`.
 
 **Änderungspfad.** Einträge wieder je Löschweg: Auslöser entfernen · Aufwand `mittel`.
+
+### ANN-753 — Zusammenführen: beendete Plattformzugänge der Dublette ziehen mit
+
+Datenschutz · entschieden (Jannes) · 2026-10-27 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung
+
+**Annahme.** Beim Zusammenführen zieht ein entzogener Plattformzugang der Dublette samt Verhältnis und Einladungen auf die bleibende Akte und steht in deren Auskunft; Frist und Legal Hold folgen ihr wie bei deren eigenen Zugängen. Ein laufender Zugang sperrt das Zusammenführen weiter. Sonst bleiben Bezug und Verhältnis eines Zugangs fest.
+
+**Begründung.** Bisher verlor der Zugang den Bezug (`set null`) und stand bis drei Jahre nach seinem Ende in keiner Auskunft (L-A4 der Tiefenanalyse).
+
+**Anker.** Ausnahme unter `app.patient_merge` in `app.platform_accesses_guard`, Umhängen in `app.merge_patients_core`; geprüft in `supabase/tests/patient-merge.test.ts`.
+
+**Änderungspfad.** Zurück zu `set null`: Umhängen und Ausnahme entfernen · Aufwand `klein`.
