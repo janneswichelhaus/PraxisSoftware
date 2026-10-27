@@ -34,6 +34,7 @@ import {
 import { useBerichteDerAkte } from '@/features/therapy-reports/useBerichteDerAkte';
 import { empfehlungDerVerordnung, type Berichtszeile } from '@/features/therapy-reports/api';
 import { AbrechnungDerGrundlage } from './Freigabe';
+import { ladePosNummern } from '@/features/billing/posNummern';
 import { RechnungenDerAkte } from '@/features/billing/RechnungenDerAkte';
 import {
   fetchPrescribers,
@@ -763,6 +764,7 @@ export function PatientTreatmentBasesPage() {
         user={user}
         aktuell={aktuell}
         abgeschlossen={abgeschlossen}
+        ladePosNummern={ladePosNummern}
       />
       <Verordnungsbereich patient={patient} user={user} />
       {/* AKTE-007: Verordnungsfotos, die noch an keiner Grundlage hängen. Seit

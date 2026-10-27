@@ -1,4 +1,4 @@
-import { WOCHENTAGE, type Wochentag, type Zeitblock } from '@/features/scheduling/api';
+import { WOCHENTAGE, type Wochentag, type Zeitblock } from '@/lib/datum';
 
 /**
  * Wochenpläne zum Einrichten einer neuen Kolleg:in (Überholung 6, G5) -

@@ -16,7 +16,14 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { dateLong, formatDate, todayInTimeZone } from '@/lib/datum';
+import {
+  WOCHENTAGE,
+  dateLong,
+  formatDate,
+  todayInTimeZone,
+  type Wochentag,
+  type Zeitblock,
+} from '@/lib/datum';
 import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import {
   EINGABETEXTE,
@@ -25,7 +32,6 @@ import {
 } from '@/app/Textverlustschutz';
 import { canManageWorkingHours, type CurrentUser } from '@/features/session/types';
 import {
-  WOCHENTAGE,
   bloeckeText,
   fetchWorkingHourExceptions,
   fetchWorkingHours,
@@ -33,8 +39,6 @@ import {
   saveWorkingWeek,
   wochenBloecke,
   wochentagLabels,
-  type Wochentag,
-  type Zeitblock,
 } from './api';
 import {
   LEERER_BLOCK,

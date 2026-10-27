@@ -9,7 +9,11 @@ import { dateibereich } from '@/features/files/dokumentarten';
 import { canWriteTreatmentBases, type CurrentUser } from '@/features/session/types';
 import { formatDate } from '@/lib/datum';
 import { istVerordnung } from './api';
-import { DatenUebertragenFenster, type Uebertragung } from './DatenUebertragenFenster';
+import {
+  DatenUebertragenFenster,
+  type PosNummernLaden,
+  type Uebertragung,
+} from './DatenUebertragenFenster';
 import type { VerordnungMitZahlen } from './grundlagen';
 import { heilmittelKurz } from './heilmittel';
 
@@ -51,11 +55,13 @@ export function GrundlagenKacheln({
   user,
   aktuell,
   abgeschlossen,
+  ladePosNummern,
 }: {
   patientId: string;
   user: CurrentUser;
   aktuell: readonly VerordnungMitZahlen[];
   abgeschlossen: readonly VerordnungMitZahlen[];
+  ladePosNummern: PosNummernLaden;
 }) {
   const navigate = useNavigate();
   const { dateien } = useDateien(patientId, user);
@@ -141,6 +147,7 @@ export function GrundlagenKacheln({
           patientId={patientId}
           user={user}
           uebertragung={offen}
+          ladePosNummern={ladePosNummern}
           onSchliessen={() => setOffen(null)}
         />
       ) : null}

@@ -1,4 +1,5 @@
-import type { WorkingHourException, Zeitblock } from './api';
+import type { Zeitblock } from '@/lib/datum';
+import type { WorkingHourException } from './api';
 
 /**
  * Regeln für die Zeitblöcke im Formular der Arbeitszeiten (ORG-02, ORG-05).

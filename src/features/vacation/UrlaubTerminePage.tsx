@@ -5,11 +5,10 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { DaysToReschedule } from '@/features/appointments';
+import { DaysToReschedule, fetchTerminTage } from '@/features/appointments';
 import type { CurrentUser } from '@/features/session/types';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { URLAUB_SCHLUESSEL } from './api';
-import { fetchTermineImUrlaub } from './termine';
 import { todayInTimeZone, istIsoDatum, zeitraumText } from '@/lib/datum';
 import { fetchAssignableTherapists } from '@/features/staff/api';
 
@@ -38,7 +37,7 @@ export function UrlaubTerminePage({ user }: { user: CurrentUser }) {
 
   const tage = useQuery({
     queryKey: [...URLAUB_SCHLUESSEL, 'appointments', person, ab, bis],
-    queryFn: () => fetchTermineImUrlaub(person!, ab, bis!, zeitzone),
+    queryFn: () => fetchTerminTage(person!, ab, bis!, zeitzone),
     enabled: offen,
     retry: false,
   });
