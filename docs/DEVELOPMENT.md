@@ -529,13 +529,13 @@ immer mit jsdom. Playwright prüft vor der Anmeldung nur das Projekt `mobile`
 
 `pnpm docs:check` ist ein Gate nach ADR-013 (Prüfung 2.10) und läuft im Job
 „Format, Lint, Dokumentation, Typecheck" direkt hinter dem Lint. Es prüft die
-Obergrenzen von `CLAUDE.md` (150), `docs/STATUS.md` (60) und
-`OPEN_DECISIONS.md` (400) und im Annahmenregister höchstens 14 Zeilen **je
-Eintrag**; dass jede `ANN-NNN` des Registers einen Anker in `src/`,
-`supabase/migrations/` oder `.github/workflows/` hat; dass jeder relative
-Markdown-Verweis auf eine vorhandene Datei zeigt; Querverweise und eindeutige
-Nummern (G19); und dass die Fortschrittstabelle der Roadmap genau die ist, die
-`pnpm fortschritt --schreiben` aus `development/fortschritt.json` erzeugt.
+Obergrenzen der Pflichtlektüre (`OBERGRENZEN` in `scripts/docs-check-regeln.mjs`) und im
+Annahmenregister höchstens 14 Zeilen **je Eintrag**; dass jede `ANN-NNN` des Registers einen Anker
+in `src/`, `supabase/migrations/` oder `.github/workflows/` hat; dass jeder relative
+Markdown-Verweis auf eine vorhandene Datei zeigt; Querverweise und eindeutige Nummern (G19), dazu
+dass ein Befund nur eine der offenen Kennungen aus `OFFENE_BEFUNDE` trägt; und dass die
+Fortschrittstabelle der Roadmap genau die ist, die `pnpm fortschritt --schreiben` aus
+`development/fortschritt.json` erzeugt.
 
 `pnpm migrationen:check` läuft im eigenen Job „Ausgelieferte Migrationen
 unveraendert" neben den Teilen von `test:db`; der Pflichtcheck „Migrationen

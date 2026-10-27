@@ -207,6 +207,52 @@ export function pruefeEindeutigkeit(dateien) {
   return verstoesse;
 }
 
+// Die offenen Befunde, als das Archiv nach Git ging (2026-10-27): Neue Kennungen werden nicht
+// vergeben, und eine erledigte kommt nicht unter ihrer alten Nummer wieder - Regel D sieht
+// geloeschte Nummern nicht mehr.
+export const OFFENE_BEFUNDE = new Set([
+  'BEF-010',
+  'BEF-028',
+  'BEF-034',
+  'BEF-082',
+  'BEF-127',
+  'BEF-140',
+  'BEF-142',
+  'BEF-166',
+  'BEF-167',
+  'BEF-177',
+  'BEF-184',
+  'BEF-194',
+  'BEF-195',
+  'BEF-201',
+  'BEF-202',
+  'BEF-212',
+  'BEF-217',
+  'BEF-220',
+  'BEF-221',
+  'BEF-222',
+  'BEF-223',
+  'BEF-224',
+  'BEF-225',
+  'BEF-226',
+]);
+
+/** Regel D fuer Befunde: Als Ueberschrift steht nur noch eine Kennung aus `offen`. */
+export function pruefeBefundkennungen(dateien, offen = OFFENE_BEFUNDE) {
+  const verstoesse = [];
+  for (const { pfad, text } of dateien) {
+    text.split('\n').forEach((zeile, i) => {
+      const kennung = zeile.match(/^#{1,6} (BEF-\d{3})\b/)?.[1];
+      if (kennung && !offen.has(kennung)) {
+        verstoesse.push(
+          `${pfad}:${i + 1}: ${kennung} ist keine offene Kennung - neue Befunde tragen keine Nummer.`,
+        );
+      }
+    });
+  }
+  return verstoesse;
+}
+
 /**
  * Regel E: Obergrenzen der Dokumente, die ganz gelesen werden.
  *

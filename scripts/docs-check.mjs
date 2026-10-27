@@ -41,6 +41,7 @@ import {
   aktuelleFassungen,
   prinzipienAbschnitte,
   prinzipienVersionen,
+  pruefeBefundkennungen,
   pruefeEindeutigkeit,
   pruefeObergrenzen,
   pruefeVerweise,
@@ -183,6 +184,7 @@ const kontext = {
 };
 for (const { pfad, text } of markdown) verstoesse.push(...pruefeVerweise(pfad, text, kontext));
 verstoesse.push(...pruefeEindeutigkeit(markdown));
+verstoesse.push(...pruefeBefundkennungen(markdown));
 
 // -----------------------------------------------------------------------------
 // 6. Fortschrittstabelle aus fortschritt.json
