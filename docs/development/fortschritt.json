@@ -1667,8 +1667,17 @@
           "vermerk": "Entscheidungen Jannes 27.10.2026, ROADMAP 7.22; Pfad A; ANN-753, ANN-752 Fassung 2; Befund „sekundengenau“ aus BEFUNDE.md erledigt"
         },
         {
+          "id": "aufraeumen-3b-1",
+          "name": "Aufräumen Schritt 3b, Teil 1: geteilte Hilfen nach src/lib und src/components, die 14 Rückimporte umgedreht, Regel nach-unten",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-27",
+          "nachweis": "#320 (Branch claude/step-4-central-register-ur5k1y): Domänengraph ohne Seiten ohne Zyklen (vorher 13 von 14 Domänen in einem Ring), ESLint-Regel modulgrenzen/nach-unten mit Gegenprobe (auf main 14 Funde), Tests der Regel, volle Unit- und Logik-Suite, Zweitreview",
+          "vermerk": "Auftrag Jannes 27.10.2026, ROADMAP 7.22; Pfad A (Sitzungen); ANN-754"
+        },
+        {
           "id": "aufraeumen-3b",
-          "name": "Aufräumen Schritt 3b: Domänenschnitt mit 14 Domänen, nur Seiten importieren fremde Domänen",
+          "name": "Aufräumen Schritt 3b, Teil 2: Module in 14 Domänenordnern, je Domäne eine schmale index.ts, Regel gegen tiefe Importe",
           "gewicht": 1,
           "status": "offen"
         }

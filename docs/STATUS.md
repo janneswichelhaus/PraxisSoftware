@@ -6,16 +6,16 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 ## Jetzt
 
 **Aufräumen** (Auftrag Jannes 25.10., Entscheidungen 26. und 27.10., ROADMAP 7.22): Schritte 1 bis 4,
-alle sieben Fehler, M1, M5, M7, M9 und das Barometer gemergt (#308 bis #318). Die Vorab-PR zu 3b
-(Zugänge beim Zusammenführen, Löschungen von Hand tageweise) liegt als #319 vor. Bauplan ist
-`development/TIEFENANALYSE.md`.
+alle sieben Fehler, M1, M5, M7, M9, das Barometer und die Vorab-PR zu 3b gemergt (#308 bis #319).
+3b Teil 1 (geteilte Hilfen nach `src/lib`, Domänengraph ohne Zyklen, Regel `nach-unten`) liegt als
+#320 vor. Bauplan ist `development/TIEFENANALYSE.md`.
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 vorbereitet (Handoff mit fünf Fragen, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Aufräumen nach ROADMAP 7.22: 3b in zwei Teilen (Entflechtung; Domänen mit Schnittstellen), 5 (Doku).
+Aufräumen nach ROADMAP 7.22: 3b Teil 2 (Domänenordner, Schnittstellen), 5 (Doku).
 Schritt 3 Termine des Design-Reviews (3a bis 3d), dann Schritte 4
 bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff; Briefings in
 `design/review-2026-10/`. Ohne Handoff: BEF-223 (Zeitumstellung; Pfad A).
@@ -45,6 +45,5 @@ bis 7 (Selbstauskunft, Nachrichten, Unterlagen, Ich), je mit freigegebenem Hando
 
 ## Letzte Session
 
-27.10.2026, Branch `claude/step-4-central-register-ur5k1y`: Schritt 4 gemergt (#318), die Vorab-PR
-zu 3b als #319. Zwei Migrationen. Lokal: `git pull`, danach `./scripts/cloud-stack.sh reset` oder
-`supabase db reset`.
+27.10.2026, Branch `claude/step-4-central-register-ur5k1y`: Vorab-PR gemergt (#319), 3b Teil 1 als
+#320. Keine Migration. Lokal: `git pull`.
