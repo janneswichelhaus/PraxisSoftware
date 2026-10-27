@@ -7,12 +7,12 @@ Voraussetzung, gelten §15.1 und §15.2. `IDEA-`Kennungen nennen die Herkunft. G
 7.22: `git show 9452575:docs/development/ROADMAP.md`.
 
 ## Aufräumen (Auftrag Jannes 2026-10-25, Entscheidungen 2026-10-26 und 2026-10-27)
-Kein Neustart: Größe, Kopplung und Kommentarlast sinken schrittweise, je eine PR. Bauplan ist
-[`TIEFENANALYSE.md`](TIEFENANALYSE.md), gelöscht mit dem Abschluss des Blocks; den Stand misst
-`/aufraeumen`. Gemergt sind die Schritte 1 bis 4b und 3b (#308 bis #322, je ein Posten in der
-Fortschrittstabelle). **Schritt 5:** Doku unter 10.000 Zeilen, Git als Archiv, Prüfpaket mit 208
-Einträgen und Gate für den Zusatz, ANN-662 gegen ADR-024 und ANN-541 gegen ADR-009 auflösen
-(Jannes 2026-10-26); Teil A gemergt (#323), Teil B fertig (#324), Teil C in Arbeit.
+Kein Neustart: Größe, Kopplung und Kommentarlast sinken schrittweise, je eine PR. Bauplan war die
+Tiefenanalyse (`git show eaae99b:docs/development/TIEFENANALYSE.md`); den Stand misst `/aufraeumen`.
+Gemergt sind die Schritte 1 bis 4b und 3b (#308 bis #322, je ein Posten in der Fortschrittstabelle).
+**Schritt 5:** Doku unter 10.000 Zeilen, Git als Archiv, Prüfpaket mit 208 Einträgen und Gate für
+den Zusatz (Jannes 2026-10-26); Teil A (#323) und Teil B mit ANN-662 und ANN-541 (#324) gemergt,
+Teil C mit dem Abschluss des Blocks und der Gesamtgrenze im Gate in #325.
 
 Die sieben **Fehler aus der Tiefenanalyse** sind behoben (#314 bis #318). Ohne Produktionsaufrufer
 bleiben bewusst (Jannes 2026-10-26): `list_patient_treatment_evidence` (Behandlungsnachweis, §4.4,
@@ -392,6 +392,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | Aufräumen, Nachzug zu #321: Startbild nach der Anmeldung (ANN-243), pnpm lint mit 6 GB Heap, Seiten holen fremde Domänen über deren index.ts | fertig | 2026-10-27 | #322 | — | Entscheidungen Jannes 27.10.2026 zu #321; Pfad A (Sitzungen); ANN-755 Fassung 2 |
 | B | Aufräumen Schritt 5, Teil A: Archiv, Chroniken und erledigte Handoffs nach Git, neun Entscheidungen gesichert, Befunde nur noch offen | fertig | 2026-10-27 | #323 | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Freigabe Git als Archiv vom 26.10. |
 | B | Aufräumen Schritt 5, Teil B: Annahmenregister verdichtet, Prüfpaket mit 208 Einträgen, Regel F im Doku-Gate | fertig | 2026-10-27 | #324 | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Tiefenanalyse Punkte 3 und 4 |
+| B | Aufräumen Schritt 5, Teil C: ADRs, Prinzipien und Prozessdoku verdichtet, Gesamtgrenze im Doku-Gate, Abschluss des Blocks | fertig | 2026-10-27 | #325 | — | Auftrag Jannes 27.10.2026; Tiefenanalyse 5c Schritte 3 bis 6 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |

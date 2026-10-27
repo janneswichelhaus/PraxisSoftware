@@ -222,3 +222,38 @@ ADR-024 überholt) steht in `app/Verbindungsanzeige.tsx`, `calendar/today/api.ts
 `clinical/assessments/api.ts`, `clinical/documentation/api.ts` und im Testtitel in `marke.test.ts`.
 **Erwartet.** Beim nächsten Anfassen auf drei Zeilen kürzen, den Pfad nach `scripts/domaenen.mjs`
 nachziehen, Abgelegtes als `git show <commit>:<pfad>` nennen oder streichen.
+
+### Doku — ADR-Wortlaut widerspricht Code, anderen ADRs oder den Prinzipien
+2026-10-27 · ADRs, Prinzipien · Aufräumen 5, Teil C (Gegenlesen) · offen, Entscheidung Jannes\
+**Beobachtung.** Beim Verdichten blieb der Wortlaut, auch wo er schon vorher nicht stimmte: ADR-017
+Punkt 25 (Monatsbericht, ADR-010 Punkt 6 entfallen); ADR-024 Punkt 15 (je Art) gegen
+`app.notification_rule` (je Weg); ADR-025 Punkt 4 ohne Ausnahme für ADR-024 Punkt 6; ADR-023 Punkt 1
+(einzige Ausnahme, §3.4 kennt zwei), 5 (`user_profiles`), 13 (Vertretung gegen `finance_scope`);
+ADR-025 Punkt 8 (Konstante je Kontoart); ADR-004 (Konsequenzen, keine allmächtige Kennung) gegen
+`service_role` in drei Functions; ADR-020 Punkt 5 und 8; ADR-018 Punkt 1 (`requested`, `tentative`);
+ADR-008 Punkt 1 gegen `retention_classes.basis`; ADR-027 Punkt 22 gegen `PAL_STUFEN`; §1.2 und §7.1
+gegen ADR-009 Punkt 15 und ADR-006. **Erwartet.** Je ADR eine Fassung und eine neue Version der
+Prinzipien nach Jannes' Entscheidung.
+
+### Aufräumen — Das Terminformular steht fünfmal im Code
+2026-10-27 · Kalender, Training · /aufraeumen 2026-10-27 · offen (Vorschlag) · `NewEventPage`,
+`NewEventSeriesPage`, `NewAppointmentPage`, `EditAppointmentPage`, `TrainingTerminFormular`\
+**Beobachtung.** Die vier größten Doppelungen im Programm (92, 60, 32 und 32 Zeilen) sind dasselbe
+Formular. **Erwartet.** Ein gemeinsames Terminformular mit Varianten; geschätzt −250 Zeilen,
+doppelte Zeilen 2,6 → 2,3 %. Aufwand mittel, Standardweg, Risiko Kalender-E2E; nach Schritt 3 des
+Design-Reviews.
+
+### Aufräumen — Die Akte und ihre Untermodule hängen gegenseitig voneinander ab
+2026-10-27 · Patienten · /aufraeumen 2026-10-27 · offen (Vorschlag) · `patients` mit
+`treatment-bases`, `files`, `intake`, `billing`\
+**Beobachtung.** Vier der acht gegenseitigen Abhängigkeiten laufen über `patients`: Die Akte bindet
+Unterseiten ein, die Unterseiten holen Hilfen (`akte.ts`, `api.ts`) aus der Akte. **Erwartet.** Die
+geteilten Hilfen in ein Blattmodul, das nichts einbindet; gegenseitige Abhängigkeiten 8 → 4,
+kleinerer Ring. Aufwand klein bis mittel, Standardweg, Risiko gering (nur Importe).
+
+### Aufräumen — `portal/platform/api.ts` hat 2.240 Zeilen
+2026-10-27 · Plattform · /aufraeumen 2026-10-27 · offen (Vorschlag) · `src/features/portal/platform/api.ts`\
+**Beobachtung.** Die größte Programmdatei bündelt Ich, Termine, Wünsche, Befundbogen, Rechnungen,
+Dokumente und Einwilligungen; jeder Schritt des Design-Reviews ändert sie. **Erwartet.** Je Bereich
+eine Datei hinter derselben Schnittstelle, ohne Verhaltensänderung; weniger Konflikte paralleler
+Arbeit, eine Datei über 500 Zeilen weniger. Aufwand klein, Standardweg, Risiko gering.
