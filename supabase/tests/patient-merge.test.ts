@@ -995,6 +995,14 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
         [foto],
       );
       expect(journal.rows).toEqual([{ retention_class: 'patientenfoto' }]);
+      // Wie jede Löschung derselben Transaktion gehört das Foto zum Lauf des Zusammenführens (ANN-752).
+      const { rows: lauf } = await asPostgres<{ gleich: boolean }>(
+        `select f.run_id = z.run_id as gleich
+           from public.deletion_journal f, public.deletion_journal z
+          where f.target_id = $1 and z.target_id = $2 and z.merged_into is not null`,
+        [foto, quelle.patient],
+      );
+      expect(lauf).toEqual([{ gleich: true }]);
     });
   });
 

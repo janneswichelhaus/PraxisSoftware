@@ -7687,13 +7687,13 @@ Technik · offen · 2026-10-26 · — · — · Wiedervorlage: —
 
 ### ANN-752 — Löschjournal: ein Auslöser je Tabelle, Läufe ergänzen ihn
 
-Datenschutz · offen · 2026-10-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · offen · 2026-10-26, Fassung 2 2026-10-27 (Jannes) · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Jede Tabelle mit eigenem Journal im Register trägt den Auslöser `journal_deletion`: Jede gelöschte Zeile steht im Löschjournal, ob ein Lauf, eine Funktion von Hand oder eine Kaskade sie nahm. Ein Lauf ergänzt den Eintrag; je Zeile und Transaktion bleibt einer. Ohne Lauf bündelt der Auslöser je Praxis und Tag, ohne Uhrzeit (§20). Nachziehen, Zusammenführen und Seed schalten ihn ab.
+**Annahme.** Jede Tabelle mit eigenem Journal im Register trägt den Auslöser `journal_deletion`: Jede gelöschte Zeile steht im Löschjournal, auch aus Kaskaden. Ein Lauf ergänzt den Eintrag; je Zeile und Transaktion bleibt einer. Ohne Lauf je Praxis und Tag, ohne Uhrzeit (§20); wer selbst einträgt, gibt keinen Lauf mit (Fassung 2). Genaue Zeit nur beim Zusammenführen (ANN-150). Nachziehen, Zusammenführen und Seed schalten den Auslöser ab.
 
-**Begründung.** ADR-008 Punkt 8: Nach einem Restore kehrt nichts Gelöschtes zurück. Die Tiefenanalyse fand elf Löschwege ohne Eintrag (Fehler 2, BEF-198); ein Auslöser schließt auch künftige.
+**Begründung.** ADR-008 Punkt 8: Nach einem Restore kehrt nichts Gelöschtes zurück; der Auslöser deckt auch künftige Löschwege (BEF-198).
 
-**Anker.** `app.journal_deletion`, `app.deletion_journal_once`; geprüft in `supabase/tests/data-registry.test.ts`.
+**Anker.** `app.journal_deletion`, `app.deletion_journal_once`; Test `supabase/tests/data-registry.test.ts`.
 
 **Änderungspfad.** Einträge wieder je Löschweg: Auslöser entfernen · Aufwand `mittel`.
 

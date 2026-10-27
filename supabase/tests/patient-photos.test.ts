@@ -11,6 +11,7 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { erwarteAbgewiesenenSchreibversuch } from './helpers/abgewiesen';
+import { tageweise } from './helpers/wiederherstellung';
 
 /**
  * Fotos von Patient:innen (DOK-006b, ADR-017 Abschnitt G).
@@ -439,6 +440,7 @@ describe('Patientenfotos (DOK-006b)', () => {
           [[eins.file_id, zwei.file_id]],
         ),
       ).toBe(2);
+      expect(await tageweise('patient_files', [eins.file_id, zwei.file_id])).toEqual([true, true]);
       // Wer den Widerruf festgehalten und damit geloescht hat, steht am
       // Vermerk und an den Loeschauftraegen (ANN-230), nicht im Auditlog.
       const { rows: geloescht } = await asPostgres<{ ordered_by: string }>(
@@ -557,6 +559,7 @@ describe('Patientenfotos (DOK-006b)', () => {
           [datei.file_id],
         ),
       ).toBe(1);
+      expect(await tageweise('patient_files', [datei.file_id])).toEqual([true]);
       // Wer mit dem Aufheben die Loeschung ausgeloest hat, steht am
       // Loeschauftrag (ANN-230), nicht im Auditlog.
       expect(
@@ -624,6 +627,8 @@ describe('Patientenfotos (DOK-006b)', () => {
           [alt.file_id],
         ),
       ).toBe(1);
+      // Der Löschlauf behält seine Kennung und die genaue Zeit.
+      expect(await tageweise('patient_files', [alt.file_id])).toEqual([false]);
       expect(
         await anzahl(
           'select count(*) from public.storage_deletion_orders where bucket_id = $1 and object_key = $2',
@@ -830,6 +835,7 @@ describe('Patientenfotos (DOK-006b)', () => {
           [datei.file_id],
         ),
       ).toBe(1);
+      expect(await tageweise('patient_files', [datei.file_id])).toEqual([true]);
     });
 
     it('zeigt der Trainingsbetreuung keine Fotos - anderer Leistungsbereich (§4.8)', async () => {
@@ -1098,6 +1104,7 @@ describe('Patientenfotos (DOK-006b)', () => {
           [datei.file_id],
         ),
       ).toBe(1);
+      expect(await tageweise('patient_files', [datei.file_id])).toEqual([true]);
     });
 
     it('B3: haelt unter Legal Hold die Sperre fest - auch nach der Wiederaufnahme, bis der Hold endet', async () => {
