@@ -1692,6 +1692,15 @@
           "fertig_am": "2026-10-27",
           "nachweis": "#322 (Branch claude/step-4-central-register-ur5k1y): SessionProvider.test.tsx (Anmeldung lässt den Merker stehen, ohne Fix rot), tests/e2e/authenticated/startbild.spec.ts (ohne Fix rot), Akte-Test mit test.slow(), pnpm lint im Container grün, Regel nur-ueber-schnittstelle ohne Ausnahme für Seitenziele mit Gegenprobe, volle Unit- und Logik-Suite",
           "vermerk": "Entscheidungen Jannes 27.10.2026 zu #321; Pfad A (Sitzungen); ANN-755 Fassung 2"
+        },
+        {
+          "id": "aufraeumen-5a",
+          "name": "Aufräumen Schritt 5, Teil A: Archiv, Chroniken und erledigte Handoffs nach Git, neun Entscheidungen gesichert, Befunde nur noch offen",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-27",
+          "nachweis": "#323 (Branch claude/step-4-central-register-ur5k1y): -18.823 Zeilen, ANN-756 bis ANN-763 mit Anker, BEFUNDE.md 390 statt 689 Zeilen, Gate OFFENE_BEFUNDE mit Gegenprobe, Prinzipien 0.30, ADR-013 Fassung 7, volle Unit- und Logik-Suite",
+          "vermerk": "Auftrag Jannes 27.10.2026, ROADMAP 7.22; Freigabe Git als Archiv vom 26.10."
         }
       ]
     },

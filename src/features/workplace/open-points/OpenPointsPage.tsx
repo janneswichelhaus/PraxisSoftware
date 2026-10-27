@@ -127,6 +127,8 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
         {darf.plaene ? (
           <PlanWiedervorlage bereiche={darf.planBereiche} rueckweg="/offen" nurWennVorhanden />
         ) : null}
+        {/* Keine Liste ausgebliebener Check-ins: Fällig steht ein Check-in an der Akte und am
+            Trainingsverhältnis (ANN-762). */}
         {darf.warteliste ? <WaitlistReview timeZone={timeZone} /> : null}
         {darf.verordnungOffen ? <OffeneVerordnungen /> : null}
         {darf.ohneBehandlung ? <AktenOhneBehandlung timeZone={timeZone} /> : null}

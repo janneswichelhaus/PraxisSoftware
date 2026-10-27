@@ -36,14 +36,11 @@ const BAUSTEIN_PDF = join(QUELLEN, 'bausteine/pdf');
 const BAUSTEIN_EXTRAKT = join(QUELLEN, 'bausteine/pdf-text');
 
 /**
- * Dateien, die kein Registereintrag brauchen, weil sie aus den Quellen gewonnen
- * sind: das Register selbst, die lesbare Wiedergabe der Tabelle und die
- * Textextrakte der PDFs. Eine Prüfsumme darauf würde bei jeder Korrektur und
- * bei jeder Neuerzeugung reißen, ohne etwas zu schützen.
+ * Ohne Registereintrag, weil aus den Quellen gewonnen: das Register selbst und die Textextrakte der
+ * PDFs. Eine Prüfsumme darauf risse bei jeder Neuerzeugung, ohne etwas zu schützen.
  */
 const OHNE_PRUEFSUMME = (datei: string): boolean =>
   datei === 'README.md' ||
-  datei === 'scores/score-inventar.md' ||
   datei.startsWith('scores/pdf-text/') ||
   datei.startsWith('bausteine/pdf-text/');
 

@@ -24,7 +24,7 @@ in ADR-019, Abschnitte C und E. Zusätzlich gilt für beide:
   ADR-019 Punkt 9 ist ein Kriterium der Sichtung und keine Entwicklungsnotiz.
 
 Die gebauten Zuschnitte MAP-002 bis MAP-005 liegen in
-[`archiv/MAP-LOOPS-ERLEDIGT.md`](archiv/MAP-LOOPS-ERLEDIGT.md).
+`git show eb43569:docs/development/archiv/MAP-LOOPS-ERLEDIGT.md`.
 
 ---
 

@@ -1,7 +1,7 @@
 # Sichtung — Etappe G: Betriebsreife
 
 Stand 2026-09-23 · ersetzt für die Sichtung die Einzelschritte in
-[`../development/archiv/abnahme/etappe-g-betriebsreife.md`](../development/archiv/abnahme/etappe-g-betriebsreife.md); dort stehen sie weiter zum Nachschlagen.
+`git show eb43569:docs/development/archiv/abnahme/etappe-g-betriebsreife.md`; dort stehen sie weiter zum Nachschlagen.
 
 **Deckt ab:** FIX-EPIC-001, DAT-001, DAT-002, DAT-003, FIX-015, OPS-006, OPS-007, PAT-006, SEC-EPIC-001, SEC-EPIC-002
 **Wo:** lokal nach [`../DEVELOPMENT.md`](../DEVELOPMENT.md) bis zur Test-Umgebung (OPS-002a), danach dort am Handy. Konten: `DEVELOPMENT.md`, „Testkonten".

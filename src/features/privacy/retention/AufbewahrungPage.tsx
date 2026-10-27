@@ -103,7 +103,7 @@ function Fristzeile({ klasse }: { klasse: Datenklasse }) {
   );
 }
 
-/** Das Abzeichen einer Frist auf Annahme (BEF-065): das Wort für die Praxisleitung. */
+/** Das Abzeichen einer Frist auf Annahme: das Wort für die Praxisleitung (ANN-761). */
 function Annahme() {
   return <Badge ton="warnung">Annahme – Prüfung offen</Badge>;
 }

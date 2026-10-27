@@ -173,13 +173,14 @@ Rahmen (`app/AppShell.tsx`), Rechnungsliste als Vorbild der `Datenliste`.
 
 ## Was in älteren Handoffs überholt ist
 
-- [01.10.](handoff-2026-10-01-praxissoftware.md): Farbtabelle (Grundton B gilt, L5); Terminseite,
+Diese Handoffs liegen nur noch in Git (`git show eb43569:docs/design/`).
+
+- 01.10. Praxissoftware: Farbtabelle (Grundton B gilt, L5); Terminseite,
   Abschnitt 6 (seit 03.10. ein Fenster, `TerminAktionen`); Kontextspalte und Kachelreihe im Kopf der
   Akte, Abschnitt 7 (entfallen; Abzeichen und `Warnzeile`); Knöpfe, Haken und Segment mit 40 px (44,
   ANN-199); Hinweissätze unter Abschnitten (Hilfe auf Abruf); Bewegung „kein Fade, kein Bounce“
   (Federn und Übergänge nach ANN-567, Richtungen nach ANN-663; Hover bleibt 120 ms).
-- [05.10.](handoff-2026-10-05-rahmen.md): Fläche `#eceee8` für Startbild und Manifest (Weiß).
-- [06.10. Kalender und Tour](handoff-2026-10-06-kalender-und-tour.md): Kopfknöpfe der Tour 48 px
-  bleiben bis zur Sichtung (ANN-403).
-- [08.10. Lastenrad 3D](handoff-2026-10-08-lastenrad-3d.md): 3D-Rad, Nadeln und ihre Farben entfallen; Bauteile als Liste (M1, 26.10.).
+- 05.10. Rahmen: Fläche `#eceee8` für Startbild und Manifest (Weiß).
+- 06.10. Kalender und Tour: Kopfknöpfe der Tour 48 px bleiben bis zur Sichtung (ANN-403).
+- 08.10. Lastenrad 3D: 3D-Rad, Nadeln und ihre Farben entfallen; Bauteile als Liste (M1, 26.10.).
 - Kanvas „Own Motion · Praxis“ (`docs/product/kanvas/`): überholt.

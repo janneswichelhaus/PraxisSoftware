@@ -2,16 +2,8 @@ import { Textlink } from '@/components/ui/Textlink';
 import type { Prescriber } from './api';
 
 /**
- * Telefon, Fax und E-Mail einer Verordner:in als Wege, nicht als Felder
- * (BEF-060, Entscheidung Jannes 2026-10-09).
- *
- * Bis UX-EPIC-007 standen die Kontaktdaten nur im Bearbeitungsformular: Wer
- * eine Folgeverordnung anfordern wollte, schrieb die Nummer aus einem offenen
- * Formular ab. Telefon und E-Mail sind Links (`tel:`, `mailto:`), das Fax ist
- * Text - ein Fax verschickt die Anwendung nicht.
- *
- * Es sind Angaben zur Praxis der Verordner:in, keine Patientendaten; sie
- * stehen dort, wo sie gebraucht werden, und werden nicht weitergegeben.
+ * Telefon und E-Mail der Verordner:in als Links, damit niemand eine Nummer aus dem Formular
+ * abschreibt; das Fax bleibt Text, ein Fax verschickt die Anwendung nicht (ANN-759).
  */
 export function Kontaktwege({
   verordner,

@@ -1,8 +1,8 @@
 # Sichtung — Kernprozess (Etappen 0 und 1)
 
 Stand 2026-09-26 · ersetzt für die Sichtung die Einzelschritte in
-[`../development/archiv/abnahme/etappe-0-patienten-und-termine.md`](../development/archiv/abnahme/etappe-0-patienten-und-termine.md) und
-[`../development/archiv/abnahme/etappe-1-kernprozess.md`](../development/archiv/abnahme/etappe-1-kernprozess.md); dort stehen sie weiter zum Nachschlagen.
+`git show eb43569:docs/development/archiv/abnahme/etappe-0-patienten-und-termine.md` und
+`git show eb43569:docs/development/archiv/abnahme/etappe-1-kernprozess.md`; dort stehen sie weiter zum Nachschlagen.
 
 **Deckt ab:** PAT-002, CAL-001 bis CAL-006, STAFF-001, CAL-010a, CAL-007, CAL-011 bis CAL-017, AKTE-000 bis AKTE-005, UX-012, UI-002, FIX-EPIC-003, ROL-EPIC-001, CAL-018, CAL-EPIC-004a, CAL-EPIC-004b, CAL-EPIC-004c, FIX-EPIC-004, UX-013, GRD-001, VER-EPIC-002, ABR-EPIC-001, ABR-EPIC-002a, ABR-EPIC-002b, ABR-EPIC-003, UX-EPIC-002 (BEF-033 bis BEF-044, Begriffe, Navigation), UX-EPIC-003 (Tagesstart, Behandlungsliege)
 **Wo:** lokal nach [`../DEVELOPMENT.md`](../DEVELOPMENT.md) bis zur Test-Umgebung (OPS-002a), danach dort am Handy. Konten: `DEVELOPMENT.md`, „Testkonten".

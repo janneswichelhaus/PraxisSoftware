@@ -31,7 +31,7 @@ mit 1b.
 der Nacharbeit #298, dazu die Daten N1/N2 #292. Der Knopf der Hauptsache bleibt auch bei „Sehr
 groß“ wie im Handoff (Frage 1 aus #297). Offen aus Schritt 1 sind nur Vorschläge: BEF-194, BEF-195.
 
-Grundlage: der Handoff [handoff-2026-10-22-plattform-erster-eindruck.md](../handoff-2026-10-22-plattform-erster-eindruck.md)
+Grundlage: der Handoff `git show eb43569:docs/design/handoff-2026-10-22-plattform-erster-eindruck.md`
 (Entwurf vom 22.10.2026 mit Jannes' Entscheidungen; freigegeben mit seinem Merge). Fünf Pull
 Requests, in dieser Reihenfolge:
 
@@ -55,7 +55,7 @@ Jeder Schritt braucht 1a (Sprache, Bausteine) und seinen freigegebenen Entwurf; 
 sie unabhängig und können in zwei Strängen laufen. Ablauf je Schritt: Briefing und Ist-Bilder an
 Claude Design, Entwürfe und Entscheidungen bei Jannes, Handoff ins Repository (sein Merge gibt ihn
 frei), dann je Teilschritt ein Pull Request. Schritt 2: Handoff
-[handoff-2026-10-24-plattform-uebungen.md](../handoff-2026-10-24-plattform-uebungen.md), gemergt mit
+`git show eb43569:docs/design/handoff-2026-10-24-plattform-uebungen.md`, gemergt mit
 #299 und freigegeben; die vier Fragen darin hat Jannes am 24.10.2026 wie empfohlen entschieden.
 Umgesetzt wird in 2a bis 2d nach seinem Abschnitt 9. Schritt 3: Handoff
 [handoff-2026-10-24-plattform-termine.md](../handoff-2026-10-24-plattform-termine.md) mit fünf

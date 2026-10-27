@@ -30,7 +30,7 @@ der Entscheidungen führt allein `../IDEENSPEICHER.md` unter „Bestätigungen".
 **Stand.** Gebaut: Zugangshinweis und Besonderheit vor dem Hausbesuch in den
 Stammdaten (PAT-005, 2026-09-07), in der Tagesliste des Hausbesuchstags
 (UX-001) und seit UI-002a im Kopf der Akte
-(`../../development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`). Bevorzugte Zeiten sind kein Feld —
+(`git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`). Bevorzugte Zeiten sind kein Feld —
 das wäre `IDEA-PRX-003`.
 
 ---
@@ -45,7 +45,7 @@ das wäre `IDEA-PRX-003`.
 
 **Stand.** Überführt am 2026-09-08: Der Kern steht als §8.1 in den Prinzipien
 und ist gebaut — Raster (CAL-005) und Terminfenster mit **60 oder 45 Minuten**
-(CAL-010a, CAL-015b, ANN-037; `../../development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`). Der
+(CAL-010a, CAL-015b, ANN-037; `git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`). Der
 hier vorgeschlagene **Mechanismus ist durch E12 Punkt 3 und 4 (2026-09-12)
 überholt**: kein pauschaler Mindestabstand, keine von Hand gepflegten
 Fahrminuten; der Fahrpuffer kommt erst mit MAP-006 aus dem Kartendienst.
@@ -94,7 +94,7 @@ ADR-006 Punkt 4 ausgeschlossen.
 | Berührt | ADR-018, CAL-EPIC-003a (CAL-009), §4.3; `IDEA-PRX-041` |
 
 **Stand.** Gebaut als CAL-009 am 2026-09-12 („Tag umplanen mit Anrufliste",
-`../../development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`); nicht gebaut sind „vorgemerkt"
+`git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`); nicht gebaut sind „vorgemerkt"
 (ADR-018: nur beschrieben), die Übergabe an eine Kollegin und ein
 gespeicherter Erledigt-Haken — Letzteres ist `IDEA-PRX-041`.
 
@@ -135,7 +135,7 @@ bis zu 30 Prozent. Das Telefon ist der Kanal, den es schon gibt.
 (CAL-011, Inhalt verbindlich in ANN-039) und derselbe Inhalt als E-Mail-Entwurf
 im Praxispostfach (CAL-013, Handoff nach dem B15-Nachtrag, ANN-041), dazu der
 Mitteilungsvermerk am Termin (CAL-012) — Stand in
-`../../development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`. Der PDF-Teil und die Tourenliste
+`git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`. Der PDF-Teil und die Tourenliste
 bleiben `vorschlag`.
 
 ---
@@ -151,7 +151,7 @@ bleiben `vorschlag`.
 **Stand.** Gebaut am 2026-09-11: Folgetermin und Vorbelegung „Hausbesuch, ich,
 heute" (UX-003) sowie Tap auf freie Zeit im Kalender mit Patientensuche
 (UX-005); das Ende kommt aus dem Terminfenster, nicht aus der Dauer des
-Ausgangstermins (CAL-010a) — `../../development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`.
+Ausgangstermins (CAL-010a) — `git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`.
 
 ---
 
@@ -227,7 +227,7 @@ Vertretungszugriff auf die Akte ist etwas anderes (B5).
 
 **Stand.** Bestätigt durch Jannes am 2026-09-06 (E-9) und am 2026-09-11 als
 UX-008 gebaut: persönlich oder praxisweit, kein Patientenbezug, keine
-Platzhalter, kein Sprachmodell (ANN-020; `../../development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`).
+Platzhalter, kein Sprachmodell (ANN-020; `git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`).
 
 ---
 
@@ -285,7 +285,7 @@ eingereicht; C1 hat die Kürzel für das Office freigegeben.
 UX-011 gebaut: Die zuletzt geladene Tagesliste bleibt im Funkloch lesbar und
 als älterer Stand gekennzeichnet — kein Offline-Modus, kein Service Worker,
 keine Akte offline; Feldliste und Vorhaltedauer stehen als ANN-021
-(`../../development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`).
+(`git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`).
 
 ---
 
@@ -404,7 +404,7 @@ Teamchat (TEAM-001): eine Aufgabe ist ein Vorgang, keine Nachricht.
 **Stand.** Gebaut am 2026-09-11: Patientensuche von jeder Seite, serverseitig
 ab drei Zeichen, umlautunempfindlich, RLS-gestützt (UX-004; seit UX-012a mit
 unterscheidbarem Fehlerzustand); der Weg vom Kalender zur Akte über den Tap
-auf freie Zeit (UX-005) — `../../development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`. Das
+auf freie Zeit (UX-005) — `git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`. Das
 „Neu"-Menü und Tastenkürzel am Rechner bleiben `vorschlag`.
 
 ---
@@ -614,7 +614,7 @@ DSFA-Gate aus ADR-019 Punkt 9. Noch nichts davon ist gebaut.
 genehmigt) und am 2026-09-11 als UX-002 gebaut: „Navigation starten" aus
 Tagesliste und Termin übergibt nur die Anschrift ohne Namen, im Fahrradmodus,
 erst beim Tippen (ADR-019 Punkt 20, ANN-018;
-`../../development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`). Apple Maps und `geo:` kommen mit
+`git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`). Apple Maps und `geo:` kommen mit
 MAP-005; der Tages-Link mit allen Zielen ist nicht gebaut.
 
 ---
@@ -990,7 +990,7 @@ wurde — heute steht das nur als Absagegrund an jedem einzelnen Termin.
 
 **Stand.** Teil 1 — Person beziehungsweise Verordnung auswählen, durch den
 Kalender scrollen, freie Lücke antippen — ist am 2026-09-12 als CAL-015c
-gebaut (ANN-050; `../../development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`, „Von der Verordnung
+gebaut (ANN-050; `git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`, „Von der Verordnung
 in den Kalender"). Teil 2 — die Einfärbung, wo der Termin mit Fahrweg
 hineinpasst — ist am 2026-10-05 als UBK-014 gebaut (ANN-239): je freie Lücke
 passt / knapp / passt nicht, nur in der Tagesansicht; die offene Frage unten
@@ -1035,7 +1035,7 @@ muss, ob zwei Termine erreichbar sind, verlangt bereits §9; sichtbar zu machen,
   Patientenfilter des Kalenders trägt bereits nur die Kennung.
 
 **Was schon davon steht.** Der erste Teil ist gebaut (CAL-015c, siehe Stand;
-`../../development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`), nur die Einfärbung wartet auf MAP-006.
+`git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`), nur die Einfärbung wartet auf MAP-006.
 
 **Offene Frage.** Ist die Einfärbung ein Band je Tag („ab 14:20 erreichbar"),
 eine Markierung je freier Lücke oder eine Abstufung (erreichbar / knapp /
@@ -1437,7 +1437,7 @@ berücksichtigt.
 **Stand.** Nicht gebaut. Jannes hat am 2026-10-08 entschieden, es an seiner
 Stelle in FLT-EPIC-001 (Roadmap Block 8) einzuspielen, nicht vorgezogen.
 Entwurf, Entscheidungen, Dateien und Akzeptanzkriterien stehen im
-[Handoff](../../design/handoff-2026-10-08-lastenrad-3d.md).
+Handoff (`git show eb43569:docs/design/handoff-2026-10-08-lastenrad-3d.md`).
 
 **Idee.** Ein drehbares 3D-Modell des Praxis-Lastenrads (Load 60 mit Riemen,
 Transportbox mit dem Aufkleber aus `marke/README.md`) im Fahrrad-Check-Up, in

@@ -1,7 +1,7 @@
 # Sichtung — Etappe T: Kartendienst
 
 Stand 2026-09-25 · ersetzt für die Sichtung die Einzelschritte in
-[`../development/archiv/abnahme/etappe-t-kartendienst.md`](../development/archiv/abnahme/etappe-t-kartendienst.md); dort stehen sie weiter zum Nachschlagen.
+`git show eb43569:docs/development/archiv/abnahme/etappe-t-kartendienst.md`; dort stehen sie weiter zum Nachschlagen.
 
 **Deckt ab:** MAP-002 bis MAP-006, seit UBK-EPIC-002 Fahrzeitfaktor, Garage und Rückweg (8, 9) und der Lückenfinder (13). Seit MAP-006 gibt es den Prototyp `/touren/karte` nicht mehr; alles läuft auf der echten Tourenseite `/touren` mit den **synthetischen** Adressen des Seeds (Anna Beispiel hat heute zwei Hausbesuche).
 **Wo:** lokal nach [`../DEVELOPMENT.md`](../DEVELOPMENT.md) bis zur Test-Umgebung (OPS-002a), danach dort am Handy. Konten: `DEVELOPMENT.md`, „Testkonten".

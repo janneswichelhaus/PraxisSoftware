@@ -1,7 +1,7 @@
 # Sichtung — Etappe L: Zwei Leistungsbereiche
 
 Stand 2026-09-23 · ersetzt für die Sichtung die Einzelschritte in
-[`../development/archiv/abnahme/etappe-l-leistungsbereiche.md`](../development/archiv/abnahme/etappe-l-leistungsbereiche.md); dort stehen sie weiter zum Nachschlagen.
+`git show eb43569:docs/development/archiv/abnahme/etappe-l-leistungsbereiche.md`; dort stehen sie weiter zum Nachschlagen.
 
 **Deckt ab:** ABR-EPIC-004, LEI-EPIC-001, CAL-EPIC-005, ABR-EPIC-005, ABR-EPIC-006, CAL-027
 **Wo:** lokal nach [`../DEVELOPMENT.md`](../DEVELOPMENT.md) bis zur Test-Umgebung (OPS-002a), danach dort am Handy. Konten: `DEVELOPMENT.md`, „Testkonten".

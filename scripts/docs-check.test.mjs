@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   OBERGRENZEN,
+  OFFENE_BEFUNDE,
   SKILL_GRENZE_BYTES,
   aktuelleFassungen,
   prinzipienAbschnitte,
   prinzipienVersionen,
+  pruefeBefundkennungen,
   pruefeEindeutigkeit,
   pruefeObergrenzen,
   pruefeVerweise,
@@ -194,6 +196,36 @@ describe('eindeutige Nummern', () => {
         { pfad: 'b.md', text: '### E-20 — Rückfrage zu IDEA-PRX-004' },
       ]),
     ).toEqual([]);
+  });
+});
+
+describe('Befundkennungen nach dem Archiv (Regel D)', () => {
+  it('laesst nur offene Kennungen als Ueberschrift zu, nicht neue und nicht erledigte', () => {
+    expect(
+      pruefeBefundkennungen(
+        [
+          {
+            pfad: 'a.md',
+            text: '### BEF-010 — offen\n### BEF-171 — erledigt\n### BEF-231 — neu\nsiehe BEF-999',
+          },
+        ],
+        new Set(['BEF-010']),
+      ),
+    ).toEqual([
+      'a.md:2: BEF-171 ist keine offene Kennung - neue Befunde tragen keine Nummer.',
+      'a.md:3: BEF-231 ist keine offene Kennung - neue Befunde tragen keine Nummer.',
+    ]);
+  });
+
+  it('ein Befund ohne Nummer ist kein Verstoss', () => {
+    expect(
+      pruefeBefundkennungen([{ pfad: 'a.md', text: '### Kommentare — lange Bloecke' }]),
+    ).toEqual([]);
+  });
+
+  it('die Liste waechst nicht: hoechstens die 24 vom 2026-10-27, keine ueber BEF-226', () => {
+    expect(OFFENE_BEFUNDE.size).toBeLessThanOrEqual(24);
+    for (const kennung of OFFENE_BEFUNDE) expect(Number(kennung.slice(4))).toBeLessThanOrEqual(226);
   });
 });
 

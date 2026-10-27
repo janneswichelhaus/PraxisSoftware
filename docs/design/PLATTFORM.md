@@ -3,7 +3,7 @@
 Gleiche Marke, gleiche Farben, gleiche Bausteine, eigene Sprache. Für Patient:innen und Kund:innen
 bis 78, am eigenen Telefon, zuhause. Gilt für `/p`, `/einladung` und die Türseiten (`Vollseite`); es
 gilt [DESIGN.md](DESIGN.md), soweit hier nichts anderes steht. Werte und Bildschirme:
-[Handoff 2026-10-22](handoff-2026-10-22-plattform-erster-eindruck.md); Befunde:
+Handoff 2026-10-22 (`git show eb43569:docs/design/handoff-2026-10-22-plattform-erster-eindruck.md`); Befunde:
 [Design-Review Lauf 1](review-2026-10/lauf-1-bericht.md); Inhalt und Reihenfolge der Ansichten:
 DSN-001 (`docs/development/PLATTFORM-ANSICHTEN.md`).
 

@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-26.
+Zuletzt aktualisiert: 2026-10-27.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -112,7 +112,7 @@ Praxisprozess · verworfen · 2026-10-14 · ANN-032, ANN-510 · erledigt · Wied
 
 **Begründung.** Der Wechsel nimmt eine Person aus dem laufenden Betrieb und ist damit Praxisführung und Verwaltung (`PROJECT_PRINCIPLES.md` §4.1, §4.3, §4.5), kein Behandlungsschritt; der „Abschluss der Behandlung" ist in ADR-008 eigene Folgefrage und braucht ein eigenes Feld mit ADR-Bezug.
 
-**Anker.** `app.can_change_patient_status()` und `set_patient_status` in `supabase/migrations/20260829110000_patient_status.sql`; Abnahmeschritt PAT-003 in `docs/development/archiv/abnahme/etappe-0-patienten-und-termine.md`.
+**Anker.** `app.can_change_patient_status()` und `set_patient_status` in `supabase/migrations/20260829110000_patient_status.sql`; Abnahmeschritt PAT-003 in `git show eb43569:docs/development/archiv/abnahme/etappe-0-patienten-und-termine.md`.
 
 **Änderungspfad.** Rollenschnitt: Migration, die `app.can_change_patient_status()` ersetzt · Aufwand `klein`. Behandlungsabschluss: eigenes Feld und eigene Regel statt dieser Funktion · Aufwand `mittel`, weil die klinische Retention daran hängt.
 
@@ -124,7 +124,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Behandlungsnachweis (§4.4) und spätere Abrechnung (§19, Snapshot-Prinzip aus ADR-009) brauchen den damaligen Ort; die Datenminimierung nach Art. 5 Abs. 1 lit. c DSGVO ist gewahrt, solange nur die für die Anfahrt nötigen Felder kopiert werden. Wunder Punkt ist der abgesagte Hausbesuch: Er behält die Adresse drei Jahre, obwohl keine Anfahrt stattfand.
 
-**Anker.** Spalten `visit_*` und Constraint `appointments_address_matches_type` in `supabase/migrations/20260830100100_appointments.sql`; einziger Schreiber ist `create_appointment`; Abnahmeschritt CAL-001 in `docs/development/archiv/abnahme/etappe-0-patienten-und-termine.md`.
+**Anker.** Spalten `visit_*` und Constraint `appointments_address_matches_type` in `supabase/migrations/20260830100100_appointments.sql`; einziger Schreiber ist `create_appointment`; Abnahmeschritt CAL-001 in `git show eb43569:docs/development/archiv/abnahme/etappe-0-patienten-und-termine.md`.
 
 **Änderungspfad.** Kürzere Frist oder Entfernen bei abgesagten Terminen: `visit_*` in `cancel_appointment` auf `null` setzen · Aufwand `klein`. Referenz statt Kopie: Migration entfernt die Spalten, der Nachweis liest die Stammdaten · Aufwand `mittel`, mit dem Verlust der historischen Adresse als Folge. **Abnahme (Jannes, 2026-10-02):** bestätigt. **Fassung 2 (ABN-004, 2026-10-02, Abnahme Jannes, BEF-092):** Die Kopie bleibt, aber die Akte nennt künftige bestätigte Hausbesuche mit abweichender Adresse (`list_home_visits_with_outdated_address`) und aktualisiert sie nur auf ausdrücklichen Auftrag, einzeln oder alle (`update_home_visit_addresses`, Audit `appointment.updated` mit `visit_address`), `supabase/migrations/20261002123000_abn_004_home_visit_addresses.sql`. Vergangene Termine behalten ihre damalige Adresse.
 
@@ -150,7 +150,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-08 · Jannes · erledigt · Wie
 
 **Begründung.** §19 bindet die Fakturierung an die Dokumentation, nicht an den Terminstatus; DOK-001 und DOK-002 (ADR-016) haben die Kopplung bewusst nicht eingeführt — ein Entwurf darf unbegrenzt Entwurf bleiben, und ein Termin mit Dokumentation bleibt absagbar (`docs/DEVELOPMENT.md`, Bekannte Einschränkungen 9 und 10).
 
-**Anker.** `complete_appointment` und `reopen_appointment` in `supabase/migrations/20260830110000_appointment_completion.sql`; Abnahmeschritt CAL-004 in `docs/development/archiv/abnahme/etappe-0-patienten-und-termine.md`.
+**Anker.** `complete_appointment` und `reopen_appointment` in `supabase/migrations/20260830110000_appointment_completion.sql`; Abnahmeschritt CAL-004 in `git show eb43569:docs/development/archiv/abnahme/etappe-0-patienten-und-termine.md`.
 
 **Änderungspfad.** Entweder eine Prüfung in `complete_appointment` ergänzen oder den Abschluss aus der Finalisierung heraus auslösen · Aufwand `klein` bis `mittel`. ABR-EPIC-001 hat sie getroffen: Eine Leistung entsteht nur aus `documented` oder einem Gebührenanlass (ANN-072), der Terminabschluss bleibt ohne Pflicht.
 
@@ -184,7 +184,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-08 · Jannes · erledigt · Wie
 
 **Begründung.** ADR-016 Punkt 7 legt Voreinstellung und Konfigurierbarkeit fest, nicht den Bezugstag für nachträglich angelegte Einträge; ohne den Anlagetag wäre ein Nachtrag zu einem alten Termin nach Minuten festgeschrieben. Der spätere Bezug wahrt „in unmittelbarem zeitlichen Zusammenhang" (§630f Abs. 1 S. 1 BGB) und ist die restriktivere Option; der Rollenschnitt folgt §4.1. Unsicher: ob eine Frist je Organisation genügt (offene Folgefrage in ADR-016).
 
-**Anker.** `app.documentation_deadline()` und die Spalte `organizations.documentation_auto_finalize_days` in `supabase/migrations/20260904120000_treatment_note_auto_finalisation.sql`; `FRIST_WERTE` in `src/features/clinical/documentation/api.ts`; Abnahmeschritt DOK-004 in `docs/development/archiv/abnahme/etappe-1-kernprozess.md`.
+**Anker.** `app.documentation_deadline()` und die Spalte `organizations.documentation_auto_finalize_days` in `supabase/migrations/20260904120000_treatment_note_auto_finalisation.sql`; `FRIST_WERTE` in `src/features/clinical/documentation/api.ts`; Abnahmeschritt DOK-004 in `git show eb43569:docs/development/archiv/abnahme/etappe-1-kernprozess.md`.
 
 **Änderungspfad.** Anderer Bezugstag oder eine Uhrzeit statt Mitternacht: `app.documentation_deadline()` in einer Migration ersetzen · Aufwand `klein`. Frist je Person oder je Terminart: eigene Spalte und Auswertung in derselben Funktion · Aufwand `mittel`. Bereits finalisierte Einträge bleiben finalisiert.
 
@@ -1368,7 +1368,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Anker.** `htaccess()` und `inhaltsrichtlinie()` in `scripts/testumgebung.mjs`; Test `scripts/testumgebung.test.mjs`; Schritt „Zweite Tuer" in `.github/workflows/test-umgebung.yml`.
 
-**Änderungspfad.** Wertet Uberspace die `.htaccess` nicht aus: Kopfzeilen und Umleitung über die Webserver-Einstellungen von Uberspace (`uberspace web header`, falls vorhanden) oder Anbieterwechsel nach `hosting-optionen.md` Option 2 · Aufwand `mittel`. Kachelschlüssel in der Test-Umgebung: Kachelanbieter in `inhaltsrichtlinie()` · Aufwand `klein`.
+**Änderungspfad.** Wertet Uberspace die `.htaccess` nicht aus: Kopfzeilen und Umleitung über die Webserver-Einstellungen von Uberspace (`uberspace web header`, falls vorhanden) oder Anbieterwechsel nach `git show eb43569:docs/decisions/hosting-optionen.md` Option 2 · Aufwand `mittel`. Kachelschlüssel in der Test-Umgebung: Kachelanbieter in `inhaltsrichtlinie()` · Aufwand `klein`.
 
 **Abnahme (Jannes, 2026-10-02).** Bestätigt. Anmeldung und Datenbankberechtigungen sind die verpflichtende Sicherung; die zusätzliche Passwort-Tür bleibt optional.
 
@@ -1566,7 +1566,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes (Sichtung Kernproz
 
 **Annahme.** Die Übersicht zeigt oben den **nächsten noch anzufahrenden** Besuch (Status bestätigt) als „Erster Weg" — „Nächster Weg", sobald heute schon ein Besuch lag — und den übernächsten als knappe Vorschau „Danach". „Liege heute: ja, ab n. Besuch (Uhrzeit)" zählt n in der Folge der Behandlungsbesuche des Tages ohne Absagen (Fehlzeiten und Training zählen nicht, wie bei „Offen heute"); ein erledigter Besuch zählt mit, braucht aber keine Liege mehr. Braucht keine noch ausstehende Behandlung die Liege, steht dort „nein". Der Plan des Teams ist für behandelnde Rollen zugeklappt, für das Büro offen. **Seit dem Design-Handoff vom 2026-10-01** steht der Tag als Zeitstrahl da: Der nächste Besuch ist die ausgeklappte Karte, die Vorschau „Danach" ist entfallen, und die Liege-Zeile lautet „Ja · ab n. Besuch Uhrzeit" oder „Nein"; die Zählung gilt unverändert.
 
-**Begründung.** §9 und `UMBAU.md` (Ein Behandlungstag, Punkte 1, 2 und 4): ruhige Oberfläche, erster Weg, Vorschau auf den nächsten, Liege schon beim Losfahren sichtbar. Die Zählung folgt dem, was man am Rad vor sich hat — „der zweite Besuch heute" meint auch nach dem ersten noch denselben. Die Uhrzeit steht dabei, damit die Zahl nicht nachgezählt werden muss. Unsicher: ob Jannes nach einem erledigten Besuch lieber ab dem nächsten neu zählt.
+**Begründung.** §9 und `git show eb43569:docs/development/archiv/UMBAU.md` (Ein Behandlungstag, Punkte 1, 2 und 4): ruhige Oberfläche, erster Weg, Vorschau auf den nächsten, Liege schon beim Losfahren sichtbar. Die Zählung folgt dem, was man am Rad vor sich hat — „der zweite Besuch heute" meint auch nach dem ersten noch denselben. Die Uhrzeit steht dabei, damit die Zahl nicht nachgezählt werden muss. Unsicher: ob Jannes nach einem erledigten Besuch lieber ab dem nächsten neu zählt.
 
 **Anker.** `besucheDesTages`, `wegeDesTages` und `liegeHeute` in `src/features/calendar/today/tagesstart.ts`; Tests `src/features/calendar/today/tagesstart.test.ts`.
 
@@ -3060,7 +3060,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (Leinwand, Reihe 5
 
 **Annahme.** Kein Lesetext unter 12 px; die Tableiste steht in 12 px ohne seitlichen Innenabstand (statt 11 px, Variante L-B), die Symbolspalte ebenso. Kleingedrucktes am Seitenende hat 14 px über den Baustein `Kleingedrucktes` (Variante K-A). Ein gesperrter Haupt- oder Sekundärknopf zeigt eine gestrichelte Kontur in `line-strong` ohne Fläche, der leise Knopf nur leisen Text (Variante B). Einzige Schrift unter 12 px ist die Absenderzeile auf Papier (`--text-absenderzeile`); Haken und Kreuz im Zeitstrahl sind gezeichnet.
 
-**Begründung.** BEF-068 Option 2 und BEF-069 Option 1 (Jannes 2026-10-05), Varianten auf der Leinwand am 2026-10-06 gewählt. Gemessen: „Organisation“ in 12/600 ist 69 px breit, bei 360 px hat jedes Ziel 72 px (vorher mit 11 px und Innenabstand 0,8 px Luft). Gestrichelt statt durchgezogen, weil ein gesperrter Hauptknopf neben einem aktiven Sekundärknopf sonst fast gleich aussah. Handoff `docs/design/handoff-2026-10-06-schrift-und-knoepfe.md`.
+**Begründung.** BEF-068 Option 2 und BEF-069 Option 1 (Jannes 2026-10-05), Varianten auf der Leinwand am 2026-10-06 gewählt. Gemessen: „Organisation“ in 12/600 ist 69 px breit, bei 360 px hat jedes Ziel 72 px (vorher mit 11 px und Innenabstand 0,8 px Luft). Gestrichelt statt durchgezogen, weil ein gesperrter Hauptknopf neben einem aktiven Sekundärknopf sonst fast gleich aussah. Handoff `git show eb43569:docs/design/handoff-2026-10-06-schrift-und-knoepfe.md`.
 
 **Anker.** `--text-leiste`, `--text-kleingedruckt`, `--text-absenderzeile` in `src/index.css`; die Varianten in `src/components/ui/buttonStile.ts`; Wächter „Kein Lesetext unter 12 px“ in `src/designsystem.test.ts`; E2E `tests/e2e/tableiste.spec.ts`.
 
@@ -7732,3 +7732,99 @@ Technik · entschieden (Jannes) · Fassung 2 2026-10-27 · Jannes: Seiten ebenfa
 **Anker.** Regel `nur-ueber-schnittstelle` in `scripts/eslint-modulgrenzen.mjs`; die `index.ts` je Domäne.
 
 **Änderungspfad.** Auch der Rahmen über die Schnittstellen: was Fachmodule aus `src/app` nutzen, nach `src/components` · Aufwand `mittel`.
+
+### ANN-756 — Anmeldung: Die Maske nennt die Ursache, nie ein Konto
+
+Technik · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Anmelde- und Sperrseite haben eigene Sätze für keine Verbindung, Störung des Dienstes und zu viele Versuche, nach einem Ende von außen „Sie wurden abgemeldet“. Falsches Kennwort, unbekanntes und unbestätigtes Konto bleiben ein Satz. Eine Höchstdauer der Sitzung gibt es nicht.
+
+**Begründung.** Entscheidung Jannes 2026-10-09 (BEF-047, Option 2): Im Funkloch stand „Kennwort prüfen“, und die Maske darf kein Verzeichnis der Konten sein. Die vergessene Sitzung am Praxisrechner begrenzt die Sitzungssperre (ADR-025).
+
+**Anker.** `ANMELDESAETZE` und `anmeldesatz()` in `src/features/core/auth/anmeldefehler.ts`.
+
+**Änderungspfad.** Höchstdauer über den Anmeldedienst (`timebox` in `[auth.sessions]`) · Aufwand `klein`.
+
+### ANN-757 — Hausbesuch: Abschluss über „Was ist passiert?“, nicht über „Finalisieren“
+
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Am offenen Hausbesuch bietet die Dokumentation kein „Finalisieren“; abgeschlossen wird über „Was ist passiert?“. Je Ansicht gibt es einen Hauptknopf, „Nur Termin abschließen“ steht eingeklappt.
+
+**Begründung.** Entscheidung Jannes 2026-10-09 (BEF-055, Option 3). Die Finalisierung setzt den Termin auf „dokumentiert“; „Tür geöffnet, nicht behandelt“ und „nicht angetroffen“ (ADR-018 Punkt 9) wären danach nicht mehr wählbar. Die automatische Finalisierung zum Fristende bleibt (ADR-016 Punkt 7).
+
+**Anker.** `ueberAbschluss` in `src/features/clinical/documentation/TreatmentNoteSection.tsx`.
+
+**Änderungspfad.** „Finalisieren“ wieder anbieten, die Folge in der Rückfrage nennen · Aufwand `klein`.
+
+### ANN-758 — Fotos im Verlauf: eine Zeile, zum Aufklappen
+
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Ohne Fotos steht im Behandlungsverlauf eine Zeile, mit Fotos „Fotos (n)“ zum Aufklappen, nach einer Aufnahme offen. „Bisherige Doku“ springt zum ersten Eintrag.
+
+**Begründung.** Entscheidung Jannes 2026-10-09 (BEF-058): Der Fotobereich stand vor dem Verlauf, auch ohne Fotos.
+
+**Anker.** `fotosOffen` in `src/features/patients/files/FotosImVerlauf.tsx`.
+
+**Änderungspfad.** Fotobereich wieder offen vor dem Verlauf · Aufwand `klein`.
+
+### ANN-759 — Behandlungsgrundlage: eine Hauptaktion je Zustand, Kontaktwege als Links
+
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Die Karte einer Behandlungsgrundlage hat je Zustand eine Hauptaktion; Bearbeiten, Bericht und Scan stehen ruhig. Telefon und E-Mail der Verordner:in sind Links in der Liste und an der Karte, das Fax ist Text.
+
+**Begründung.** Entscheidung Jannes 2026-10-09 (BEF-060, 2b und 3a): Wer eine Folgeverordnung anforderte, schrieb die Nummer aus einem offenen Formular ab. Es sind Angaben zur Praxis der Verordner:in; sie werden nicht weitergegeben.
+
+**Anker.** `Kontaktwege` in `src/features/patients/treatment-bases/Kontaktwege.tsx`.
+
+**Änderungspfad.** Kontaktdaten nur im Formular · Aufwand `klein`.
+
+### ANN-760 — Rückfrage mit Kontrollwerten vor Ausstellen, Löschen und Entziehen
+
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** „Rechnung ausstellen“ fragt nach und nennt Empfänger, Betrag und Nummernkreis. Ebenso fragen das unwiderrufliche Löschen von Fotos und das Entziehen einer Rolle nach, mit ihren Folgen.
+
+**Begründung.** Entscheidung Jannes 2026-10-09 (BEF-063, BEF-064, Option 2): Ausstellen ging mit einem Tipp, während folgenlose Schritte nachfragten. Die Werte stammen aus dem Stand, den der Server festschreibt (ADR-009 Punkt 10).
+
+**Anker.** `Kontrollwerte` in `src/features/billing/InvoiceDetailPage.tsx`.
+
+**Änderungspfad.** Rückfrage ohne Kontrollwerte · Aufwand `klein`.
+
+### ANN-761 — Nachweisseiten: für die Praxisleitung, der Nachweis als Zusatz
+
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Protokoll, Aufbewahrung und MDR-Sperre sind für die Praxisleitung im Alltag geschrieben: oben, was zu tun ist oder gilt, in Praxissprache; Kennungen, Fundstellen und Grundlagen als Zusatz darunter oder zugeklappt.
+
+**Begründung.** Entscheidung Jannes 2026-10-09 (BEF-065, Option 2), mit Freigabe des geänderten Satzes im E2E-Test der MDR-Sperre; die Kennung `MDR_REVIEW_REQUIRED` bleibt gleich streng geprüft.
+
+**Anker.** `Annahme` in `src/features/privacy/retention/AufbewahrungPage.tsx`.
+
+**Änderungspfad.** Nachweis wieder vor die Arbeit · Aufwand `mittel` (drei Seiten).
+
+### ANN-762 — Übersicht: keine Liste „Check-in ausgeblieben“
+
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Die Übersicht der Praxis führt keine Liste ausgebliebener Check-ins. Die Fälligkeit steht an der Akte und am Trainingsverhältnis.
+
+**Begründung.** Entscheidung Jannes 2026-10-15: „Nein“ (BEF-149 verworfen).
+
+**Anker.** Gruppen der Übersicht in `src/features/workplace/open-points/OpenPointsPage.tsx`; Fälligkeit `app.checkin_due_on`.
+
+**Änderungspfad.** Eigene Gruppe aus `app.checkin_due_on` · Aufwand `mittel`.
+
+### ANN-763 — Auskunft nach Art. 15 auch je Trainingsverhältnis
+
+Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung
+
+**Annahme.** Die Praxis erteilt die Auskunft auch je Trainingsverhältnis: nur `owner`, auf Knopfdruck, als eigene Kopie ohne interne Kennungen. Geprüft und protokolliert wird sie wie die zur Akte, ein Eintrag `patient_record.exported` je Kopie.
+
+**Begründung.** Art. 15 DSGVO; das Training ist ein eigenes Rechtsverhältnis mit eigener Kopie (ADR-021). Entscheidung Jannes 2026-10-18 (BEF-182).
+
+**Anker.** `fetchTrainingAuskunft` in `src/features/privacy/datenschutz/api.ts`; `public.export_training_record`.
+
+**Änderungspfad.** Auskunft zum Training mit der zur Akte zusammenlegen · Aufwand `mittel`.

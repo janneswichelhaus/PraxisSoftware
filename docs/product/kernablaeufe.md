@@ -3,8 +3,8 @@
 Stand 2026-10-12. Rang 6 wie alles unter `docs/product/`: **Maßstab, kein Scope.** Verbindlich
 wird ein Budget erst, wenn die Arbeitsablauf-Spec eines Auftrags (`/bereich`, Rang 3) es übernimmt.
 Herkunft: Jannes' Behandlungstag vom 2026-09-23 (Schritte T1–T9 in
-[`../development/archiv/UMBAU.md`](../development/archiv/UMBAU.md)), die Zielwerte der früheren
-Ablaufrunden ([`../development/archiv/OPTIMIERUNG.md`](../development/archiv/OPTIMIERUNG.md),
+`git show eb43569:docs/development/archiv/UMBAU.md`), die Zielwerte der früheren
+Ablaufrunden (`git show eb43569:docs/development/archiv/OPTIMIERUNG.md`,
 Scorecard) und der Referenzabgleich vom 2026-10-12 (Jane, Cliniko, Physitrack, appointmed, iPrax).
 
 **Zählweise.** Bei 375 px auf synthetischen Seed-Daten. Ein **Tipp** ist eine Berührung (Knopf,

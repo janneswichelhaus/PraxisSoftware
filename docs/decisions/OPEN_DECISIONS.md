@@ -27,7 +27,7 @@ Punkt 7 — MUSS) und das Vorliegen der sieben Dokumente aus ADR-007 Punkt 5.
 
 **Kennungen:** `E12`, `E13` … (ohne Bindestrich) sind offene Punkte dieses
 Dokuments, `E-20` und `E-21` (mit Bindestrich) Rückfragen des Roadmap-Reviews vom
-2026-09-06 — beantwortet. `E-1` bis `E-7` in `../development/archiv/UMBAU.md` sind
+2026-09-06 — beantwortet. `E-1` bis `E-7` in `git show eb43569:docs/development/archiv/UMBAU.md` sind
 Jannes' Entscheidungen vom 2026-09-23, eine eigene Reihe. Erledigte Punkte behalten
 Überschrift und Verweis (Volltext: Git-Historie bis `7160fd5`). Dringlichkeit:
 **P1** vor dem ersten fachlichen Datenmodell des Bereichs, **P2** vor dem
@@ -56,9 +56,9 @@ Feature, **P3** später.
 | B11 | Paketpreise, Vorauszahlung, Anreize | **neu entschieden 2026-09-22**: Training als Paket, Plattform darin enthalten; Portal-Abo der Patient:innen als Monatsrechnung | Roadmap ANG-EPIC-001/002; Steuer mit B4; Volltext: `ANFRAGEN.md` § B11 |
 | B12 | Stichtag der Umstellung und Rechnungsnummernkreis | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4 | — |
 | B13 | E-Mail-Versand aus der Plattform (Konten, Patient:innen) | **Richtung entschieden 2026-10-10 (Jannes): eigener SMTP-Anbieter**; welcher, klärt die Anbieterprüfung in Block 11 (ADR-002) · Option a (nur Auth-Mails des Providers) trägt nicht (BEF-026) | unten; Roadmap „Bei Jannes", R8 |
-| B14 | PDF-Erzeugung für Rechnungen und Tagesplan | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **entschieden 2026-09-19**: Weg 1 jetzt, Weg 3 nach OPS-001 | unten; [`rechnungs-pdf-optionen.md`](rechnungs-pdf-optionen.md) |
+| B14 | PDF-Erzeugung für Rechnungen und Tagesplan | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **entschieden 2026-09-19**: Weg 1 jetzt, Weg 3 nach OPS-001 | unten; `git show eb43569:docs/decisions/rechnungs-pdf-optionen.md` |
 | B15 | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter | **neu entschieden 2026-09-22**: automatische Erinnerung und Online-Anfrage gehören zu V1, gebaut hinter Adapter; Anbieter offen · Terminmail aus dem eigenen Postfach gebaut (CAL-013, ANN-041) | unten |
-| B16 | Hosting der Oberfläche (Test-Umgebung, später Produktion) | **entschieden 2026-09-23**: Uberspace; Konten stehen seit 2026-09-25 | unten; [`hosting-optionen.md`](hosting-optionen.md) |
+| B16 | Hosting der Oberfläche (Test-Umgebung, später Produktion) | **entschieden 2026-09-23**: Uberspace; Konten stehen seit 2026-09-25 | unten; [`betrieb/test-umgebung.md`](../betrieb/test-umgebung.md) |
 | B17 | Rechnungsdarstellung beim Terminhonorar: (a) eine Zeile je Termin, (b) mit den angewandten Heilmitteln als Hinweis, (c) Einzelpositionen je Heilmittel mit fester Aufteilung — für Beihilfe und private Versicherung | **entschieden 2026-10-05** (Jannes): (c) Einzelpositionen je Heilmittel, das Honorar anteilig nach den Heilmittelpreisen aufgeteilt; eine Rechnung je Verordnung (ABR-EPIC-007, ANN-233, ANN-077 Fassung 2) | [ADR-009](../adr/ADR-009-private-billing-model.md) Punkte 22 und 23; Vergleichsbetrag offen bis zum ersten Erstattungsfall |
 | C1 | Leistungsziffern und Office | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §4.4; Umfang des Nachweises ANN-006 (mit E15 verworfen); siehe E15 |
 | C2 | Klinische Inhalte in organisatorischer Kommunikation | entschieden 2026-09-05 durch Jannes; **überholt durch E15 (2026-09-13)** | `PROJECT_PRINCIPLES.md` 0.4 §10; siehe E15 |
@@ -88,7 +88,7 @@ Feature, **P3** später.
 | E14 | Gebühr beim Nichtantreffen am Hausbesuch | **erledigt 2026-09-13** — Hausbesuch-Szenarien verbindlich; Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); **umgesetzt 2026-09-16 in CAL-018** | `PROJECT_PRINCIPLES.md` 0.10 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 3; Rechnungstext Fall 1 mit B4 |
 | E15 | Office sieht klinische Inhalte | **entschieden (Jannes) 2026-09-13**; umgesetzt 2026-09-15 in ROL-EPIC-001; Prüfvermerk für B2 | `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, [ADR-004](../adr/ADR-004-authorization-model.md) Fassung 2; C1 und C2 überholt |
 | E16 | Abrechnungsgrundlage neben der Verordnung (Privatrezept, Selbstzahler, weitere) | **erledigt 2026-09-16** (Jannes), gebaut in GRD-001 — Teil A: abgerechnet wird auch vor dem Ende einer Grundlage · Teil B: **eine** Klammer „Behandlungsgrundlage", die Verordnung ist eine Bauart davon | [ADR-020](../adr/ADR-020-treatment-basis.md) (angenommen 2026-09-16); unten; gebaut in GRD-001 |
-| E17 | Kopfleistensuche: was sie findet, und wo die Patientensuche wohnt | **erledigt 2026-09-16**, **Fassung 2 2026-09-18** (Jannes) — Namen bleiben zusätzlich in der Leiste | unten; UX-004; `../development/archiv/CAL-EPIC-004.md` (UX-013) |
+| E17 | Kopfleistensuche: was sie findet, und wo die Patientensuche wohnt | **erledigt 2026-09-16**, **Fassung 2 2026-09-18** (Jannes) — Namen bleiben zusätzlich in der Leiste | unten; UX-004; `git show eb43569:docs/development/archiv/CAL-EPIC-004.md` (UX-013) |
 | E-20 | ADR-019 Fassung 2 bestätigen | **erledigt 2026-09-13** — angenommen; produktive Freigabe am Gate **offen** (ADR-019 Punkt 9) | unten (E-20 / E-21); [ADR-019](../adr/ADR-019-map-service.md); Gate in B7 |
 | E-21 | Reihenfolge MAP-002 zu UX-EPIC-001 | **erledigt 2026-09-13** — gegenstandslos, UX-EPIC-001 seit 2026-09-11 fertig | unten (E-20 / E-21); Roadmap |
 
@@ -219,7 +219,7 @@ Richtung entschieden · 2026-10-10 · Jannes · eigener SMTP-Anbieter; welcher, 
 Am 2026-09-06 entschieden war Option a: nur die Auth-Mails des Providers, kein
 zweiter Dienst. Das trägt nicht mehr: Die Providerprüfung (OPS-001) zeigt, dass
 der eingebaute Versand nur an Adressen des Projektteams zustellt, und die
-Plattform (E-4 in `../development/archiv/UMBAU.md`) braucht Mails an Patient:innen —
+Plattform (E-4 in `git show eb43569:docs/development/archiv/UMBAU.md`) braucht Mails an Patient:innen —
 Einladung, Anmeldung, Hinweise. Zur Wahl standen ein eigener
 SMTP-Anbieter (gewählt; neuer Dienstleister, Prüfung nach ADR-002 in Block
 11) und kein Mailversand. Gebaut wird bis dahin hinter einem Adapter mit
@@ -232,7 +232,7 @@ Druckansichten entschieden · 2026-09-06 · Rechnungs-PDF entschieden · 2026-09
 
 Druckansichten mit `@media print` sind gebaut — keine Abhängigkeit, kein neuer
 Ausführungsort. **Entschieden am 2026-09-19** nach der Vorlage
-([`rechnungs-pdf-optionen.md`](rechnungs-pdf-optionen.md)): **Weg 1
+(`git show eb43569:docs/decisions/rechnungs-pdf-optionen.md`): **Weg 1
 (Browser-Druck) jetzt, Weg 3 (serverseitig) nach OPS-001**; Weg 2 entfällt.
 Weg 1 legt nichts an, was später im Weg stünde — er erfüllt ADR-009 Punkt 11
 aber **nicht**: Aufbewahrt wird bis Weg 3 der Snapshot, nicht das verschickte
@@ -256,7 +256,7 @@ ANN-041.
 
 entschieden · 2026-09-23 · Jannes · Uberspace
 
-Vorlage und Einrichtungsanleitung: [`hosting-optionen.md`](hosting-optionen.md). Rücknahmepreis
+Einrichtungsanleitung: [`betrieb/test-umgebung.md`](../betrieb/test-umgebung.md). Rücknahmepreis
 klein; volle Prüfung nach ADR-002 vor echten Daten (G5). Konten stehen seit 2026-09-25; weiter mit OPS-002a.
 
 ### C6 — AI Privacy Gateway: Schutzumfang und Provider
@@ -354,7 +354,7 @@ erledigt · 2026-09-16 · **Fassung 2: 2026-09-18** · Jannes · Die Leiste such
 **Namen**, serverseitig wie in UX-004. Fassung 1 hätte sie ganz verlagert; der
 Schritt mehr aus einem Termin heraus entfällt damit wieder. Die Patientensuche
 steht **zusätzlich** im Bereich „Patient:innen", klinische Inhalte findet die
-Leiste nicht (ANN-061). Gebaut in UX-013. Wo: UX-004; `../development/archiv/CAL-EPIC-004.md`.
+Leiste nicht (ANN-061). Gebaut in UX-013. Wo: UX-004; `git show eb43569:docs/development/archiv/CAL-EPIC-004.md`.
 
 ### E-20 / E-21 — Rückfragen aus MAP-001 (ADR-019 Fassung 2)
 

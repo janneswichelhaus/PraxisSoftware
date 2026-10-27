@@ -249,7 +249,7 @@ einem Verwurf. Neue Einträge hängen hinten an.
   für die Werkstatt. Als `IDEA-PRX-057` bestätigt; `IDEA-PRX-048` bleibt
   Abgrenzung nur noch für das Rad als Schmuck. Eingespielt wird es an seiner
   Stelle in FLT-EPIC-001; Entwurf und Dateien im
-  [Handoff](../design/handoff-2026-10-08-lastenrad-3d.md).
+  Handoff (`git show eb43569:docs/design/handoff-2026-10-08-lastenrad-3d.md`).
 
 ## Index — welche Datei wofür
 

@@ -3,8 +3,8 @@
 Stand 2026-10-17. Beantwortet zwei Fragen: **Worauf kann ich mich in der laufenden Anwendung
 verlassen?** Und: **Wo steht schon etwas, das kein zweites Mal gebaut werden darf?** Ohne Rang
 (§21), keine Reihenfolge (die steht in [`ROADMAP.md`](ROADMAP.md)). Die ausführliche Fassung mit
-Einzelheiten je Route (Stand 26.09.) liegt in
-[`archiv/ARBEITSBEREICHE-bis-2026-10-12.md`](archiv/ARBEITSBEREICHE-bis-2026-10-12.md).
+Einzelheiten je Route (Stand 26.09.) liegt in Git:
+`git show eb43569:docs/development/archiv/ARBEITSBEREICHE-bis-2026-10-12.md`.
 
 **Zustände:** **echt** — Datenbank, RLS und Audit, nutzbar mit synthetischen Daten. **Vorschau** —
 bedienbar, aber nur im Arbeitsspeicher, ohne Server. **offen** — eine Entscheidung fehlt; die

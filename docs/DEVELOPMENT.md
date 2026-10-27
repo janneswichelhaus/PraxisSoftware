@@ -307,7 +307,7 @@ Hauptordner kopieren. Die Session legt ihren Branch selbst an (Schritt 1 von
 Die Anwendung am eigenen Handy, von überall: `https://<kontoname>.uber.space`
 (heute `prtest`), dahinter das Supabase-Projekt `praxis-test` in Frankfurt. Nur
 synthetische Daten, kein Produktivprojekt (§3.1, §3.2). Einrichtung und Wahl
-des Anbieters: [`hosting-optionen.md`](decisions/hosting-optionen.md).
+des Anbieters: [`betrieb/test-umgebung.md`](betrieb/test-umgebung.md).
 
 **Was automatisch passiert.** Nach jeder grünen CI auf `main` spielt
 `.github/workflows/test-umgebung.yml` den geprüften Commit ein: Konfiguration
@@ -358,7 +358,7 @@ Kartendienst in der Content-Security-Policy; der kostenlose PTV-Plan hat nur
 einen Schlüssel, und der Serverschlüssel gehört nie ins Bundle (ADR-019
 Punkt 19). Die Einstellungen
 der Function setzt Jannes im Supabase-Projekt selbst
-([`hosting-optionen.md`](decisions/hosting-optionen.md), Schritt 2e); der
+([`betrieb/test-umgebung.md`](betrieb/test-umgebung.md), Schritt 5); der
 Workflow schreibt sie nicht. Nur synthetische Adressen (ADR-019 Punkt 15).
 Scheitert das Ausliefern der Function, etwa bei einer Störung der
 Verwaltungs-API von Supabase, bleibt der Lauf trotzdem grün mit einer Warnung:
@@ -529,13 +529,13 @@ immer mit jsdom. Playwright prüft vor der Anmeldung nur das Projekt `mobile`
 
 `pnpm docs:check` ist ein Gate nach ADR-013 (Prüfung 2.10) und läuft im Job
 „Format, Lint, Dokumentation, Typecheck" direkt hinter dem Lint. Es prüft die
-Obergrenzen von `CLAUDE.md` (150), `docs/STATUS.md` (60) und
-`OPEN_DECISIONS.md` (400) und im Annahmenregister höchstens 14 Zeilen **je
-Eintrag**; dass jede `ANN-NNN` des Registers einen Anker in `src/`,
-`supabase/migrations/` oder `.github/workflows/` hat; dass jeder relative
-Markdown-Verweis auf eine vorhandene Datei zeigt; Querverweise und eindeutige
-Nummern (G19); und dass die Fortschrittstabelle der Roadmap genau die ist, die
-`pnpm fortschritt --schreiben` aus `development/fortschritt.json` erzeugt.
+Obergrenzen der Pflichtlektüre (`OBERGRENZEN` in `scripts/docs-check-regeln.mjs`) und im
+Annahmenregister höchstens 14 Zeilen **je Eintrag**; dass jede `ANN-NNN` des Registers einen Anker
+in `src/`, `supabase/migrations/` oder `.github/workflows/` hat; dass jeder relative
+Markdown-Verweis auf eine vorhandene Datei zeigt; Querverweise und eindeutige Nummern (G19), dazu
+dass ein Befund nur eine der offenen Kennungen aus `OFFENE_BEFUNDE` trägt; und dass die
+Fortschrittstabelle der Roadmap genau die ist, die `pnpm fortschritt --schreiben` aus
+`development/fortschritt.json` erzeugt.
 
 `pnpm migrationen:check` läuft im eigenen Job „Ausgelieferte Migrationen
 unveraendert" neben den Teilen von `test:db`; der Pflichtcheck „Migrationen

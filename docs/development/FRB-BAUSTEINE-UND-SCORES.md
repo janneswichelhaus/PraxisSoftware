@@ -18,7 +18,7 @@ bauen, woran sie gemessen werden und was vorher entschieden sein muss.
 | Inhalt                        | Umfang                                                                         | Quelle                                                                                                    |
 | ----------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | MT-Untersuchungsbausteine     | 9 Regionen, Basis- und weiterführende Untersuchung, Spezialblöcke, Therapie     | [`bausteine/mt-untersuchung-quelldaten.md`](../../quellen/bausteine/mt-untersuchung-quelldaten.md)         |
-| Scores (PROMs)                | 18 Instrumente (14 davon Priorität A), zusammen 311 bezifferte Items          | [`scores/score-inventar.md`](../../quellen/scores/score-inventar.md), 18 PDFs im Repository                |
+| Scores (PROMs)                | 18 Instrumente (14 davon Priorität A), zusammen 311 bezifferte Items          | `scores/score-inventar.md` (`git show eb43569:quellen/scores/score-inventar.md`), 18 PDFs im Repository                |
 | Eckdaten und Rechenvorschrift | je Score: Items, Antwortformat, Wertebereich, Richtung, Subskalen, MCID/MDC      | Blätter **Inventar** und **Scoring** der Tabelle                                                          |
 | Itemtexte                     | **nur in den PDFs**                                                             | `quellen/scores/pdf/`, dazu die Extrakte in `quellen/scores/pdf-text/`                                     |
 
@@ -115,7 +115,7 @@ src/features/clinical/assessments/
 `zod` ist schon Abhängigkeit — **keine neue Dependency** für Schema oder
 Validierung. Für den Druck gilt derselbe Weg wie bei Tagesplan, Terminzettel
 und Tourenliste: eine `@media print`-Fassung, keine PDF-Bibliothek
-(vergleiche [`../decisions/rechnungs-pdf-optionen.md`](../decisions/rechnungs-pdf-optionen.md),
+(vergleiche `git show eb43569:docs/decisions/rechnungs-pdf-optionen.md`,
 Weg 1). Vor Arbeit an einem Vorschaubereich gilt
 [ARBEITSBEREICHE.md](ARBEITSBEREICHE.md).
 
