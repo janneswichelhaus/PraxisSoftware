@@ -2948,7 +2948,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-06 · Jannes (Rückfrage UBK-017:
 
 Praxisprozess · entschieden (Jannes) · Fassung 2 2026-10-15 · Jannes: „Intro direkt nach Öffnen der Anwendung“ · erledigt
 
-**Annahme.** Das Startbild läuft einmal je Tab beim Öffnen, vor und unabhängig von der Anmeldung; nicht nach der Anmeldung, beim Neuladen oder nach der Sperre. Merker `startbild-gezeigt` im `sessionStorage`, gesetzt beim Start, gelöscht beim Identitätswechsel. Die Marke landet auf der Wortmarke der Vollseite, sonst im Rahmen. Nur Speichen und Nabe drehen, die Felge bleibt aufrecht.
+**Annahme.** Das Startbild läuft einmal je Tab beim Öffnen, vor und unabhängig von der Anmeldung; nicht nach der Anmeldung, beim Neuladen oder nach der Sperre. Merker `startbild-gezeigt` im `sessionStorage`, gesetzt beim Start, gelöscht beim Abmelden und Kontowechsel, nicht bei der Anmeldung. Die Marke landet auf der Wortmarke der Vollseite, sonst im Rahmen. Nur Speichen und Nabe drehen, die Felge bleibt aufrecht.
 
 **Begründung.** Das Intro ist der Start der Anwendung, nicht der Anmeldung. Kein Inhalt im Speicher (ANN-019).
 
