@@ -1,23 +1,9 @@
 import { z } from 'zod';
 
 /**
- * Das Schema der Untersuchungsbausteine (FRB-005).
- *
- * Leitprinzip des Arbeitsauftrags vom 2026-09-21
- * (`quellen/ARBEITSAUFTRAG_Bausteine-und-Scores.md`, §1): **Der Code kennt
- * keinen einzigen Test namentlich — er kennt nur das Schema.** Ein neuer Test
- * ist eine neue Datei unter `definitionen/`, kein Commit an einer Komponente.
- *
- * Die Feldnamen folgen wörtlich dem Arbeitsauftrag (§2), nicht der sonst hier
- * üblichen deutschen Benennung: Die Definitionsdateien sollen sich gegen die
- * Vorgabe halten lassen, ohne dass jemand eine Übersetzungstabelle im Kopf
- * mitführt. Die TypeScript-Typen tragen deutsche Namen, weil sie unsere sind.
- *
- * Was hier **nicht** entsteht: Oberfläche, Datenbank, Auswertung. Das Schema
- * beschreibt die Definition, nicht das Ergebnis; Ergebnisse sind
- * Gesundheitsdaten und kommen mit ihrer Datenklasse, ihrer Frist und ihrer
- * RLS-Policy in einem eigenen Loop (Phase P6 in
- * `docs/development/FRB-BAUSTEINE-UND-SCORES.md`).
+ * Der Code kennt keinen Test namentlich, nur dieses Schema; die Feldnamen folgen wörtlich
+ * `quellen/ARBEITSAUFTRAG_Bausteine-und-Scores.md` (§1, §2). Ergebnisse sind Gesundheitsdaten und
+ * brauchen Datenklasse, Frist und RLS-Policy, deshalb entstehen sie nicht hier.
  */
 
 /**

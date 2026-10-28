@@ -1,16 +1,7 @@
 /**
- * Die Function selbst, ohne Laufzeit (MAP-003a, mit der Matrix aus MAP-004a).
- *
- * Hier steht der ganze Ablauf — Vorabanfrage, Methode, Sitzung, Prüfung der
- * Eingabe, Wahl der Aufgabe, Adapteraufruf, Antwort, Log —, und nichts davon
- * kennt Deno, eine Umgebungsvariable oder einen Anbieter. Alles, was von außen
- * kommt, ist eine Abhängigkeit im Aufruf: Genau deshalb ist diese Datei
- * vollständig mit Unit-Tests prüfbar, obwohl `supabase start` in der
- * Cloud-Umgebung nicht läuft (`MAP-LOOPS.md`, „Einschränkung der Umgebung").
- *
- * **Diese Function schreibt nichts.** Sie hat keinen Datenbankzugriff, keinen
- * Client, keine Tabelle; das Ergebnis wird angezeigt und verworfen (ADR-019
- * Punkt 16). Der einzige Kontakt zur eigenen Instanz ist die Sitzungsprüfung.
+ * Der ganze Ablauf der Function ohne Laufzeit, Umgebung und Anbieter, damit er ohne
+ * `supabase start` vollständig per Unit-Test prüfbar ist. Sie schreibt nichts: kein
+ * Datenbankzugriff, das Ergebnis wird angezeigt und verworfen (ADR-019 Punkt 16).
  */
 
 import {

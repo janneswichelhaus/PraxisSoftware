@@ -1,42 +1,17 @@
 # ADR-011: Logging und Observability
-
 ## Status
-
-Angenommen — **Fassung 2** (2026-10-03): Punkt 4 teilt die Auditlogs in
-Lese- und Sicherheitsereignisse (12 Monate) und übrige Einträge (3 Jahre)
-und bestätigt die 12 Monate für Sicherheitsereignisse (LOG-EPIC-001). Alles
-Übrige gilt unverändert.
-
-## Datum
-
-2026-08-28 · Fassung 2: 2026-10-03
+Angenommen (2026-08-28), Fassung 2 (2026-10-03); schließt E5, konkretisiert §3.6.
 
 ## Kontext
-
-§3.1 von `PROJECT_PRINCIPLES.md` verbietet echte Patientendaten in
-Entwicklungslogs. Produktionslogs waren in der Baseline nicht adressiert,
-obwohl sie in der Praxis regelmäßig Patientenbezüge enthalten: Stacktraces mit
-Nutzdaten, Request-Bodies in Debug-Ausgaben, Fehlermeldungen mit Freitext.
-[ADR-002](ADR-002-hosting-data-residency.md) hat die Regel gesetzt, dass
-Produktionslogs keine unnötigen Patientendaten und keine medizinischen
-Freitexte enthalten dürfen, ohne sie zu konkretisieren.
-
-Hinzu kommt eine Vermischung, die in vielen Systemen Schaden anrichtet:
-Betriebslogs, Sicherheitslogs und Auditlogs haben verschiedene Zwecke,
-verschiedene Empfänger, verschiedene Aufbewahrungsfristen und verschiedene
-Schutzbedarfe. Werden sie in einen Topf geworfen, gilt am Ende für alle die
-laxeste Regel.
-
-Externe Observability-Dienste sind der klassische stille Abfluss: Sie werden
-eingebunden, weil sie Fehlersuche erleichtern, und übertragen dabei
-unkontrolliert Nutzdaten an einen Dritten.
-
-Dieser ADR schließt den offenen Punkt E5 und konkretisiert §3.6.
+Entschieden wird, was Betriebs-, Sicherheits- und Auditlogs enthalten und wie lange; §3.1 und
+ADR-002 regeln das nur allgemein, externe Observability-Dienste sind ein stiller Abfluss. Bewusst
+nicht Bestandteil: Wahl und Einsatz eines externen Dienstes (in V1 keiner, OPS-004, gehalten von
+`src/protokollierung.test.ts`; sonst Prüfung nach ADR-002), Logformat, Transport, Aggregation,
+Alarmierung, Metriken, Tracing, Performance-Monitoring, Schwellen für Sicherheitsalarme, Schema der
+Audit-Einträge (ADR-010), nicht konfigurierbare Logs der Infrastrukturanbieter.
 
 ## Entscheidung
-
-1. **Operational Logging, Security Logging und Audit Logging werden getrennt
-   behandelt.**
+1. **Operational Logging, Security Logging und Audit Logging werden getrennt behandelt.**
 2. **Operational Logs DÜRFEN NICHT enthalten:**
    - Patientennamen
    - Adressen
@@ -49,9 +24,9 @@ Dieser ADR schließt den offenen Punkt E5 und konkretisiert §3.6.
    - Cookies
    - Authorization Header
    - sonstige unnötige personenbezogene Inhalte
-3. Zur technischen Korrelation werden **interne Objekt- und Request-IDs**
-   verwendet.
-4. **Initiale Retention:**
+3. **Korrelation** über interne Objekt- und Request-IDs, aufgelöst nur in einem berechtigten Kontext.
+4. **Initiale Retention** (Audit Logs: alle Ereignisse aus ADR-010, Klassen unabhängig von der Akte,
+   ANN-029):
 
    | Logart | Frist |
    |---|---|
@@ -60,99 +35,32 @@ Dieser ADR schließt den offenen Punkt E5 und konkretisiert §3.6.
    | Audit Logs: Lese- und Sicherheitsereignisse (Fassung 2) | 12 Monate |
    | Audit Logs: übrige Einträge | 3 Jahre |
    | AI-Gateway-Auditmetadaten | 3 Jahre |
-
-5. **Externe Error- und Observability-Dienste unterliegen denselben
-   Datenschutz- und Hostinganforderungen wie andere Auftragsverarbeiter**
-   (§3.5, ADR-002).
-6. **Vor Übermittlung an externe Observability-Dienste MUSS eine zentrale
-   Redaction/Sanitization stattfinden.**
+5. **Externe Error- und Observability-Dienste unterliegen denselben Datenschutz- und
+   Hostinganforderungen wie andere Auftragsverarbeiter** (§3.5, ADR-002, auch § 203 StGB); ohne
+   bestandene Prüfung nicht einsetzbar.
+6. **Vor Übermittlung an externe Observability-Dienste MUSS eine zentrale Redaction/Sanitization
+   stattfinden:** Genau eine Stelle filtert nach außen, `src/lib/protokoll.ts`, kein SDK-Aufruf aus
+   Fachmodulen; sie lässt per Erlaubnisliste nur feste Bezeichner aus dem Quelltext, interne UUIDs
+   und endliche Zahlen durch (OPS-004). In CI liest `src/lib/protokoll.test.ts` Punkt 2 aus diesem
+   Dokument und prüft jeden Eintrag synthetisch, `src/protokollierung.test.ts` hält die erklärten
+   Ausgänge fest.
 
 ## Konsequenzen
-
-- Die drei Logarten sind getrennte Systeme mit eigenen Regeln. Ein Ereignis
-  kann in mehreren auftauchen, aber nie durch Umwidmung: Ein Auditereignis
-  wird nicht dadurch erzeugt, dass etwas in ein Betriebslog geschrieben wird.
-- Die Verbotsliste ist bewusst konkret und damit prüfbar. Sie lässt sich als
-  automatisierter Test formulieren, der gegen erzeugte Logausgaben läuft,
-  statt nur als Vorsatz zu existieren.
-- Korrelation über interne IDs bedeutet, dass eine Fehlersuche in der Regel
-  einen zweiten Schritt braucht: Die ID muss in einem berechtigten Kontext
-  aufgelöst werden. Das verlangsamt Debugging und ist der Preis dafür, dass
-  Logs allein keine Patientendaten offenbaren.
-- Das Verbot vollständiger KI-Prompts und -Outputs im Betriebslog trennt
-  sauber von den AI-Gateway-Auditmetadaten aus ADR-005 und ADR-008: Dort wird
-  nachgewiesen, dass und wofür ein Aufruf stattfand, nicht was im Einzelnen
-  übertragen wurde.
-- Die kurze Frist für Betriebslogs von 30 Tagen begrenzt den Schaden eines
-  Fehlers in der Redaction. Sie begrenzt zugleich die Möglichkeit, seltene
-  Fehler rückwirkend zu untersuchen. Das ist eine bewusste Abwägung nach §16.
-- Die Fristen sind mit ADR-008 konsistent gewählt und ergänzen dessen
-  Retention Schedule um die Betriebslogs, die dort nicht aufgeführt waren.
-- Ein Observability-Dienst wird damit ein Auftragsverarbeiter mit vollem
-  Prüfkatalog aus ADR-002, einschließlich der Eignung im Hinblick auf
-  §203 StGB. Dienste, die diese Prüfung nicht bestehen, sind nicht einsetzbar,
-  auch wenn sie technisch bequem wären.
-- Zentrale Redaction vor der Übermittlung heißt: Es gibt genau eine Stelle,
-  die Ausgaben nach außen filtert, und keine direkten Aufrufe eines SDK aus
-  Fachmodulen. Das ist strukturell dieselbe Entscheidung wie beim AI Gateway
-  aus ADR-005 und aus demselben Grund.
-- Redaction ist nie vollständig. Sie ist die zweite Verteidigungslinie hinter
-  der Regel, sensible Inhalte gar nicht erst zu loggen.
-
-## Bewusst nicht Bestandteil dieser Entscheidung
-
-- Die Auswahl eines Log-, Error-Tracking- oder Observability-Dienstes.
-- Ob überhaupt ein externer Observability-Dienst eingesetzt wird.
-  *Vermerk OPS-004 (2026-09-22): In V1 keiner — Folge aus Punkt 5 und
-  ADR-002, kein neuer Anbieter ohne fachliche Notwendigkeit. Gehalten von
-  `src/protokollierung.test.ts`; die Entscheidung selbst bleibt
-  ausgenommen und braucht für einen Dienst die Prüfung nach ADR-002.*
-- Logformat, Transport, Aggregation und Alarmierung.
-- Metriken, Tracing und Performance-Monitoring als eigene Disziplin.
-- Die Schwellen und Regeln für Sicherheitsalarme.
-- Das Schema der Audit-Einträge; das bleibt bei
-  [ADR-010](ADR-010-audit-and-privileged-access.md) offen.
-- Aufbewahrung und Zugriff auf Logs der eingesetzten Infrastrukturanbieter,
-  soweit diese nicht von uns konfigurierbar sind.
+- Ein Ereignis kann in mehreren Logarten stehen, nie durch Umwidmung: Ein Eintrag im Betriebslog
+  erzeugt kein Auditereignis. AI-Gateway-Auditmetadaten (ADR-005, ADR-008) belegen, dass und wofür
+  ein Aufruf stattfand, nicht was übertragen wurde. Redaction ist nie vollständig, nur die zweite
+  Verteidigungslinie hinter der Regel, sensible Inhalte gar nicht erst zu loggen.
 
 ## Offene Folgefragen
-
-- Wie wird die Verbotsliste automatisiert geprüft, und wann läuft diese
-  Prüfung — in CI, zur Laufzeit, oder beides? *Beantwortet mit OPS-004
-  (2026-09-22): **beides**, und die beiden Teile prüfen Verschiedenes.* Zur
-  Laufzeit filtert `src/lib/protokoll.ts` als die eine Stelle aus Punkt 6 —
-  mit einer **Erlaubnisliste**, weil kein Muster einen Patientennamen
-  zuverlässig erkennt: Heraus kommt nur ein fester Bezeichner aus dem
-  Quelltext, eine interne UUID oder eine endliche Zahl. In CI liest
-  `src/lib/protokoll.test.ts` die elf Punkte dieser Liste aus **diesem
-  Dokument** und schickt zu jedem eine synthetische Probe hindurch, und
-  `src/protokollierung.test.ts` hält fest, dass es bei den erklärten Ausgängen
-  bleibt — sonst wäre die Redaction eine Empfehlung. Offen bleibt der Teil,
-  den ein Filter nicht leisten kann: dass sensible Inhalte gar nicht erst
-  übergeben werden.
-- Wie werden Stacktraces behandelt, die Nutzdaten in Variablenwerten
-  transportieren?
-- Wie werden interne IDs so gewählt, dass sie selbst keine Rückschlüsse
-  erlauben und dennoch stabil korrelierbar bleiben?
-- Wer darf Betriebs- und Sicherheitslogs lesen, und ist dieser Zugriff
-  seinerseits auditpflichtig (ADR-010)? *Für das Auditlog beantwortet mit
-  ADR-010 Fassung 2 (Punkt 13); für Betriebs- und Sicherheitslogs offen bis
-  OPS-004.*
-- **Vermerk 2026-09-13:** „Audit Logs" in Punkt 4 meint alle Auditereignisse
-  aus ADR-010 Punkt 2, nicht nur Patientenakten-Zugriffe. Die Frist ist mit
-  ANN-029 als eigene Datenklasse `auditlog` (drei Jahre, unabhängig von der
-  Akte) verankert; ADR-008 Punkt „Patientenakten-Auditlogs 3 Jahre" ist
-  damit die engere Formulierung desselben Werts.
-- Wie verhält sich die Redaction zu Logs, die der Infrastrukturanbieter
-  selbst erzeugt und die wir nicht filtern können?
-- Wie werden Logs behandelt, die auf dem Endgerät im Offline-Betrieb entstehen
-  (ADR-001)?
-- Was passiert bei einem festgestellten Redaction-Fehler — greift dann der
-  Data-Breach-Prozess aus ADR-007?
+- Wie wird gesichert, dass sensible Inhalte gar nicht erst übergeben werden (was kein Filter kann)?
+- Wie werden Stacktraces behandelt, die Nutzdaten in Variablenwerten tragen?
+- Wie bleiben interne IDs ohne Rückschluss und trotzdem stabil korrelierbar?
+- Wer darf Betriebs- und Sicherheitslogs lesen, und ist das auditpflichtig? (OPS-004, G6)
+- Wie verhält sich die Redaction zu Logs, die der Infrastrukturanbieter selbst erzeugt?
+- Wie werden Logs behandelt, die auf dem Endgerät im Offline-Betrieb entstehen (ADR-001)?
+- Greift bei einem festgestellten Redaction-Fehler der Data-Breach-Prozess aus ADR-007?
 
 ## Änderungshistorie
-
-| Fassung | Datum | Änderung |
-|---|---|---|
-| 1 | 2026-08-28 | Angenommen. |
-| 2 | 2026-10-03 | LOG-EPIC-001: Punkt 4 trennt im Auditlog Lese- und Sicherheitsereignisse (12 Monate, bestätigt) von den übrigen Einträgen (3 Jahre); welche Aktion wohin gehört, regelt [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Übrige Punkte unverändert. |
+- Fassung 1 (2026-08-28): angenommen.
+- Fassung 2 (2026-10-03, LOG-EPIC-001): Punkt 4, Lese- und Sicherheitsereignisse 12 Monate.
+- Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.

@@ -1,123 +1,71 @@
 # Architecture Decision Records (ADR)
+Ein ADR hält eine technische Entscheidung fest: was entschieden wurde, warum und was daraus
+folgt. Rang 2 nach `PROJECT_PRINCIPLES.md` (§21); ein ADR überschreibt die Prinzipien nicht.
 
-In diesem Ordner liegen die **Architecture Decision Records** des Projekts.
+## Wann ein ADR
+Wenn eine Entscheidung später teuer rückgängig zu machen ist oder jemand fragen könnte, warum
+es nicht anders gemacht wurde: Datenhaltung, Autorisierung, externe Anbieter, Umgang mit
+Patientendaten, Grundsätze der Fehlerbehandlung. Kein ADR für Umsetzungsdetails. Der übliche
+Weg: offener Punkt in `docs/decisions/OPEN_DECISIONS.md` → ADR → dort als erledigt vermerkt;
+eine bestätigte Annahme aus `docs/decisions/ASSUMPTIONS.md` mit teurer Rücknahme geht denselben
+Weg und behält dort einen Verweis auf das ADR.
 
-Ein ADR ist nichts Kompliziertes: Es ist eine kurze Aktennotiz zu einer
-technischen Entscheidung. Es hält fest, **was** entschieden wurde, **warum**,
-und **was daraus folgt** — damit in zwei Jahren noch nachvollziehbar ist,
-warum etwas so gebaut wurde.
+## Aufbau
+`ADR-NNN-kurzer-titel.md`, fortlaufend nummeriert. **Status** in höchstens drei Zeilen
+(vorgeschlagen, angenommen, abgelehnt oder abgelöst durch ADR-NNN; Datum; wer; geltende
+Fassung), **Kontext** in höchstens 15 Zeilen, **Entscheidung** als nummerierte Punkte mit fettem
+Kurztitel (die Nummern sind stabil, Code und Dokumente zitieren sie), **Konsequenzen** in
+höchstens 15 Zeilen, **Offene Folgefragen** nur, solange sie offen sind, und am Ende die
+**Änderungshistorie** mit einer Zeile je Fassung. Ein ADR zitiert, statt zu wiederholen: Was in
+den Prinzipien, einem anderen ADR oder der Datenbank steht, nennt er beim Namen.
 
-## Beispiel
+## Fassungen
+Ein angenommener ADR wird inhaltlich nicht umgeschrieben. Eine Ergänzung oder Präzisierung, die
+die bisherigen Punkte unberührt lässt, oder die Antwort auf eine eigene offene Folgefrage ist
+eine **neue Fassung**: Statuszeile, `(Fassung N)` an den neuen Stellen, eine Zeile in der
+Änderungshistorie. Wird eine Aussage zurückgenommen oder umgekehrt, ist das ein neuer ADR mit
+„abgelöst durch ADR-NNN“ am alten. **Ausnahme** (2026-09-13): Kehrt der Projektinhaber einen
+einzelnen Punkt ausdrücklich um und bleiben die übrigen unberührt, DARF das eine neue Fassung
+sein, wenn Status und Änderungshistorie die Umkehr benennen. Berührt eine Fassung die
+Prinzipien, folgt `PROJECT_PRINCIPLES.md` in einem eigenen Commit mit neuer Version (§21). Wird
+ein offener Punkt anderswo entschieden, bekommt er einen kursiven Erledigungsvermerk.
 
-> **Entscheidung:** Wir bauen online-first mit begrenztem Offline-Modus.
->
-> **Warum:** Hausbesuche können Funklöcher haben, vollständige Offline-Akten
-> erhöhen aber das Datenschutzrisiko.
->
-> **Konsequenz:** Heutige Tour und Entwürfe offline verfügbar; vollständige
-> Akte nur online.
-
-## Aufbau eines ADR
-
-Kurz halten. Eine Seite reicht fast immer.
-
-- **Titel** — die Entscheidung in einem Satz
-- **Status** — vorgeschlagen / angenommen / abgelöst durch ADR-NNN;
-  bei einer späteren begrenzten Ergänzung zusätzlich die **Fassung** mit Datum
-- **Datum**
-- **Kontext** — welches Problem stand an, welche Rahmenbedingungen galten
-- **Entscheidung** — was wir tun
-- **Konsequenzen** — was daraus folgt, auch die unangenehmen Seiten;
-  gegebenenfalls die verworfenen Alternativen mit einem Satz Begründung
-
-## Dateibenennung
-
-`ADR-NNN-kurzer-titel.md`, fortlaufend nummeriert, zum Beispiel
-`ADR-001-online-first-limited-offline.md`.
-
-## Wann ein ADR geschrieben wird
-
-Immer dann, wenn eine Entscheidung später teuer rückgängig zu machen ist oder
-wenn sich jemand fragen könnte, warum es nicht anders gemacht wurde:
-Datenhaltung, Autorisierung, Auswahl externer Anbieter, Umgang mit
-Patientendaten, Grundsätze der Fehlerbehandlung.
-
-Kein ADR nötig für alltägliche Umsetzungsdetails.
-
-## Wann ein bestehender ADR eine neue Fassung bekommt
-
-Ein **angenommener** ADR wird nicht umgeschrieben. Kommt später eine Festlegung
-hinzu, die seine bisherigen Punkte unberührt lässt — eine Ergänzung, eine
-Präzisierung, die Antwort auf eine seiner eigenen offenen Folgefragen —, dann
-bekommt er eine **neue Fassung**: die Statuszeile nennt sie, die neuen Punkte
-tragen den Hinweis `(Fassung N)`, und eine **Änderungshistorie** am Ende sagt
-in einer Zeile, was sich geändert hat und was unverändert geblieben ist. Die
-vorige Fassung bleibt in der Git-Historie lesbar.
-
-Wird dagegen eine bestehende Aussage **zurückgenommen oder umgekehrt**, ist das
-kein Fassungswechsel, sondern ein neuer ADR mit Status „abgelöst durch
-ADR-NNN" am alten. **Eine Ausnahme** (festgelegt 2026-09-13): Kehrt der
-Projektinhaber einen **einzelnen Punkt** eines angenommenen ADR ausdrücklich
-um und bleiben die übrigen Punkte unberührt, DARF das als neue Fassung
-geführt werden — wenn die Statuszeile und die Änderungshistorie die Umkehr
-als solche benennen und der alte Wortlaut im Punkt lesbar bleibt
-(durchgestrichen oder als „Fassung N lautete"). Wird die Entscheidung als
-Ganzes umgekehrt, bleibt es beim neuen ADR. Berührt einer der Wege eine
-Prinzipienaussage, wird `PROJECT_PRINCIPLES.md` in einem eigenen Commit mit
-neuer Version nachgezogen (§21).
-
-Eine Fassung **zitiert, statt zu wiederholen**: Steht eine Festlegung bereits
-in `PROJECT_PRINCIPLES.md` oder einem anderen ADR, verweist die Fassung auf
-die Stelle und ergänzt nur, was dieser ADR technisch daraus macht. Jeder ADR
-mit mehr als einer Fassung führt am Ende eine **Änderungshistorie** als Tabelle
-`Fassung | Datum | Änderung`.
-
-Wird ein Punkt, den ein ADR als offen führt, anderswo entschieden (ADR,
-Annahme, Prinzipienversion), bekommt die Stelle einen kurzen
-**Erledigungsvermerk** in Kursiv („*Beantwortet mit …*") oder eine
-Durchstreichung — der Wortlaut des angenommenen Punktes bleibt.
-
-## Verhältnis zu den anderen Dokumenten
-
-- `PROJECT_PRINCIPLES.md` — die verbindlichen Produkt- und Sicherheitsprinzipien (die aktuelle Version steht in dessen Dokumentinformation)
-- `docs/decisions/OPEN_DECISIONS.md` — was noch **nicht** entschieden ist; ohne Rang
-- `docs/decisions/ASSUMPTIONS.md` — begründete, **vorläufige** Annahmen, die eine Lücke füllen, bis sie bestätigt sind (`PROJECT_PRINCIPLES.md` §15.1)
-- `docs/adr/` — was entschieden wurde und warum
-
-Der übliche Weg: Ein Punkt aus `OPEN_DECISIONS.md` wird entschieden, bekommt
-hier ein ADR und wird dort als erledigt markiert. Betrifft die Entscheidung die
-Prinzipien, wird `PROJECT_PRINCIPLES.md` in einem eigenen Commit nachgezogen.
-Eine bestätigte Annahme aus `ASSUMPTIONS.md`, deren Rücknahme teuer wäre, geht
-denselben Weg und behält dort einen Verweis auf das ADR.
+**Verdichtung** (2026-10-27, Aufräumen 5, Auftrag Jannes): Ein ADR DARF ohne neue Fassung
+kürzer gefasst werden, wenn sich kein Inhalt ändert, alle Punktnummern und Fassungen bleiben und
+die Änderungshistorie das vermerkt. Frühere und durchgestrichene Wortlaute stehen dann in Git
+(`git log -p -- docs/adr/<datei>`). Das Gate begrenzt jede ADR-Datei auf 16 KB (ADR-017 40 KB,
+ADR-023 18 KB, `DATEIGRENZEN`).
 
 ## Bestehende ADRs
+Die Statusspalte nennt die geltende Fassung (Quelle des Gates); was jede Fassung änderte, steht
+in der Änderungshistorie des ADR.
 
 | ADR | Titel | Status |
 |---|---|---|
 | [ADR-001](ADR-001-online-first-limited-offline.md) | Online-first mit begrenzter Offline-Fähigkeit | Angenommen |
 | [ADR-002](ADR-002-hosting-data-residency.md) | Hosting und Datenstandort | Angenommen |
 | [ADR-003](ADR-003-organization-location-model.md) | organization_id und location_id im Datenmodell | Angenommen |
-| [ADR-004](ADR-004-authorization-model.md) | Berechtigungsmodell | Angenommen, **Fassung 2 (2026-09-13)**: Office liest klinische Inhalte (E15, Umkehr von Punkt 3) |
+| [ADR-004](ADR-004-authorization-model.md) | Berechtigungsmodell | Angenommen, Fassung 2 (2026-09-13) |
 | [ADR-005](ADR-005-provider-independent-ai.md) | Providerunabhängige KI-Anbindung | Angenommen, Fassung 2 (2026-09-08) |
-| [ADR-006](ADR-006-medical-device-boundary.md) | Abgrenzung gegenüber Medical Device Software | **Angenommen, Fassung 3 (2026-09-20, E18 Schritt 3)** — Zweckbestimmung über beide Leistungsbereiche, dazu die drei Feature-Verbote als Ausschlusskriterien (keine Übungsauswahl aus Diagnose oder Befund, keine automatisierte Verlaufsauswertung mit Handlungsempfehlung, kein Screening-Fragebogen mit Trainingsfreigabe); Ausgabeverbote, keine Datenverbote; kein Code, keine Migration; **Fassung 4 (2026-10-18, Jannes)**: Ernährung mit Bedarf und Zielwerten aus offengelegten Formeln, ohne Diagnose als Eingabe, mit Untergrenzen (Punkt 14; Umkehr des letzten Satzes von Punkt 13 für die Ernährung) |
+| [ADR-006](ADR-006-medical-device-boundary.md) | Abgrenzung gegenüber Medical Device Software | Angenommen, Fassung 4 (2026-10-18) |
 | [ADR-007](ADR-007-data-protection-impact-assessment.md) | Datenschutz-Folgenabschätzung und Datenschutzprozess | Angenommen |
-| [ADR-008](ADR-008-data-retention-and-deletion.md) | Aufbewahrung und Löschung personenbezogener Daten | Angenommen, Fassung 2 (2026-10-03): Fristen von Auditlog, Löschjournal und Löschaufträgen; **Fassung 3 (2026-10-14)**: Fristanker der Akte aus letzter Behandlung oder Leistung (B1); **Fassung 4 (2026-10-17)**: Rückmeldungen von Beschäftigten, 12 Monate (§20.2); **Fassung 5 (2026-10-17)**: Teamchat je Nachricht, Anker im Thread (Punkt 12); **Fassung 6 (2026-10-18)**: Datenklasse Ernährungsberatung, 3 Jahre nach Ende des Profils (ADR-027) |
-| [ADR-009](ADR-009-private-billing-model.md) | Privatabrechnung | Angenommen, Fassung 2 (2026-09-20): Steuerkennzeichen am Posten, ein Leistungsbereich je Rechnung, getrennte Nummernkreise, § 14c-Riegel, „Einnahmen je Leistungsart", kein § 33 UStDV; **Fassung 3 (2026-09-23)**: Nachsorge-Abo und Trainingspaket als abrechenbare Ereignisse; **Fassung 4 (2026-10-02)**: Terminhonorar je Behandlungstermin, Vereinbarung vor Tarif, Lückenlosigkeit als Praxisregel; **Fassung 5 (2026-10-05)**: Rechnung über Terminhonorare mit Einzelpositionen je Heilmittel, eine Rechnung je Verordnung (B17); **Fassung 6 (2026-10-14)**: Der Haken ist die Leistung, Freigabe der Grundlage zur Abrechnung mit Sperre (B7) |
-| [ADR-010](ADR-010-audit-and-privileged-access.md) | Audit-Logging und privilegierter Produktionszugriff | Angenommen, Fassung 3 (2026-10-03): Datenmodell als Nachweis, abschließender Katalog von 26 Aktionen, Auswertung bei Anlass; **Fassung 4 (2026-10-09)**: Abruf freigegebener Dokumente über die Plattform ohne Protokoll (Punkt 22); **Fassung 5 (2026-10-20, angenommen)**: Kopie eines Anhangs an einer Rückfrage an die Person als 27. Aktion (BEF-188) |
-| [ADR-011](ADR-011-logging-and-observability.md) | Logging und Observability | Angenommen, Fassung 2 (2026-10-03): Lese- und Sicherheitsereignisse 12 Monate |
-| [ADR-012](ADR-012-backup-and-business-continuity.md) | Backup, Wiederherstellung und Betriebskontinuität | Angenommen, Fassung 2 (2026-10-03): Backups 30 Tage |
-| [ADR-013](ADR-013-ci-cd-and-release-governance.md) | CI/CD und Release-Governance | Angenommen, Fassung 2 (2026-09-13): „kritische Änderung" definiert, Review-Checkliste festgelegt (Punkt 9); **Fassung 3 (2026-09-15)**: Dokumentationsprüfung als zehnte Pflichtprüfung, Merge durch den Projektinhaber statt Auto-Merge; **Fassung 4 (2026-09-23)**: Negativfälle „fremde Person" und „anderer Leistungsbereich"; **Fassung 5 (2026-10-16)**: Pull Requests nur mit Dokumentation ohne Tests, Build und Datenbankprüfungen; **Fassung 6 (2026-10-27)**: RPC-Auslöser in Punkt 9 als `src/features/**/api.ts` (Domänenordner, redaktionell); **Fassung 7 (2026-10-27)**: Verweise in Punkt 9 auf `CLAUDE.md` und die Skills statt auf Weiterleitungen (redaktionell) |
-| [ADR-014](ADR-014-foundational-data-model.md) | Grundlegende Datenmodell-Entscheidungen | Angenommen, **Fassung 2 (2026-09-23)**: „Abonnements" in der Negativliste meint nur das Abrechnungsmodell der Software; das Nachsorge-Abo ist freigegeben |
+| [ADR-008](ADR-008-data-retention-and-deletion.md) | Aufbewahrung und Löschung personenbezogener Daten | Angenommen, Fassung 7 (2026-10-26) |
+| [ADR-009](ADR-009-private-billing-model.md) | Privatabrechnung | Angenommen, Fassung 6 (2026-10-14) |
+| [ADR-010](ADR-010-audit-and-privileged-access.md) | Audit-Logging und privilegierter Produktionszugriff | Angenommen, Fassung 5 (2026-10-20) |
+| [ADR-011](ADR-011-logging-and-observability.md) | Logging und Observability | Angenommen, Fassung 2 (2026-10-03) |
+| [ADR-012](ADR-012-backup-and-business-continuity.md) | Backup, Wiederherstellung und Betriebskontinuität | Angenommen, Fassung 2 (2026-10-03) |
+| [ADR-013](ADR-013-ci-cd-and-release-governance.md) | CI/CD und Release-Governance | Angenommen, Fassung 7 (2026-10-27) |
+| [ADR-014](ADR-014-foundational-data-model.md) | Grundlegende Datenmodell-Entscheidungen | Angenommen, Fassung 2 (2026-09-23) |
 | [ADR-015](ADR-015-initial-technical-stack.md) | Initialer technischer Stack | Angenommen; Punkt 16 abgelöst durch ADR-024 (2026-10-11) |
-| [ADR-016](ADR-016-clinical-documentation-record.md) | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | Angenommen, Fassung 3 (2026-10-03): Lesen einmal je Akte und Tag; **Fassung 4 (2026-10-14)**: Finalisierung hakt nicht ab, Sperre nach der Freigabe zur Abrechnung (B4, B7) |
-| [ADR-017](ADR-017-file-storage.md) | Dateiablage: Ort, Zugriff, kurzlebige Verweise, Aufbewahrung, Virenprüfung | Angenommen (bestätigt 2026-09-12); produktive Ablage zusätzlich an OPS-001 und OPS-003 gebunden; **Fassung 2 (2026-09-26)**: Fotos von Patient:innen (Abschnitt G) — Einwilligung als Grundlage, Klasse `patientenfoto` mit zwölf Monaten Frist, Aufnahme nur im Kameradialog, keine Aufnahmemetadaten, Anzeige ohne Download; echte Fotos erst nach B2 und DSFA; **Fassung 3 (2026-10-02, angenommen)**: drei Fotoarten (Dokumentationsfoto zur Akte, Art. 9 Abs. 2 lit. h, zehn Jahre), Prüfung von Typ, Prüfsumme und Metadaten am Server (scharf mit OPS-001), Öffnen heißt Anzeigen; **Fassung 4 (2026-10-09)**: Fotos aus der Dokumentation ohne Wahl, keine neue Arbeitshilfe, PDF im Rahmen ohne `sandbox`; **Fassung 5 (2026-10-10)**: Foto und Video an der Rückfrage (Abschnitt L) — eigene Einwilligung, Klasse `rueckfrageanhang` mit 30 Tagen, Aufnahme nur in der Anwendung ohne Ton, Virenprüfung als Bedingung des Scharfschaltens; **Fassung 6 (2026-10-15, Jannes)**: Anhänge an Rückfragen ohne Virenprüfung zugelassen (Umkehr der Punkte 29 und 69); **Fassung 7 (2026-10-18, Jannes)**: keine Virenprüfung in der gesamten Anwendung, auch nicht für künftige Uploads von außen (Umkehr von Punkt 29); **Fassung 8 (2026-10-18, angenommen)**: Fotos und PDF im Teamchat (Abschnitt M), Frist der Nachricht, ohne Vorschaubild und Download; **Fassung 9 (2026-10-18, vorgeschlagen, Kern von Jannes)**: Sprachnachrichten im Teamchat (Abschnitt N), Mikrofon für die eigene Herkunft, Senden während des Hochladens; **Fassung 10 (2026-10-19, angenommen, Fragen wie empfohlen)**: Profilbilder im Teamchat (Abschnitt O) — nur für sich selbst, 256 × 256 auf dem Gerät gerechnet, am Inhalt geprüft, als Zeile in der Datenbank statt im Bucket (Umkehr von Punkt 1); **Fassung 11 (2026-10-20, Jannes)**: Ausschnitt des Profilbilds wählbar, verschieben und bis dreifach vergrößern (Umkehr in Punkt 89); **Fassung 12 (2026-10-20, angenommen)**: Herausgabe der Anhänge an Rückfragen an die Person, auch gesperrter (Abschnitt P, BEF-188) |
-| [ADR-018](ADR-018-appointment-states.md) | Zustandsautomat des Termins | Angenommen (bestätigt 2026-09-11), Fassung 2 (2026-09-12): 24-Stunden-Frist; **Fassung 3 (2026-09-13)**: Hausbesuch-Szenarien (Nichtantreffen nach Protokoll mit Gebühr, „Tür geöffnet" gilt als durchgeführt), `confirmed → documented`, Storno-Rückweg; **Fassung 4 (2026-10-02)**: Verlegung durch die Patient:in unter 24 Stunden mit Gebühr, Verzicht als eigener Vermerk; **Fassung 5 (2026-10-14)**: Haken als Merkmal am Behandlungstermin, jederzeit zurücknehmbar, Finalisierung hakt nicht ab (B4, B7) |
-| [ADR-019](ADR-019-map-service.md) | Kartendienst: In-App-Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff | **Angenommen (2026-09-22), Fassung 4** — Fassung 3 löst Punkt 6 ab und ergänzt Abschnitt F (Führung auf dem Gerät, Bedingungen aus §20.1); Fassung 4 rückt das Gate vom Baubeginn auf das Scharfschalten (§15.2), ohne seinen Umfang zu ändern; PTV Developer als Kandidat, produktive Freigabe am Vertrags-/§203-/DSFA-Gate; **Fassung 5 (2026-10-02, angenommen)**: Kacheln im Gate, ein Schalter für beide Wege, `synthetic` in der Produktion technisch ausgeschlossen, eindeutige Treffer, keine Ersatzschätzungen; **Fassung 6 (2026-10-17)**: Kilometersumme am eigenen Antrag auf Ladestrom (Ausnahme zu Punkt 16 und 17); **Fassung 7 (2026-10-26, Jannes)**: die Kilometer für den Ladestrom entfallen mit seiner Rechnung, die Ausnahme der Fassung 6 ist zurückgenommen |
-| [ADR-020](ADR-020-treatment-basis.md) | Behandlungsgrundlage: Verordnung und Selbstzahler unter einer Klammer | Angenommen (bestätigt 2026-09-16, E16), Fassung 1.1 (2026-09-18): Bezeichner im SPEC von GRD-001 festgelegt, keine Entscheidung geändert; **Fassung 2 (2026-10-14)**: Stand der Grundlage und Freigabe zur Abrechnung (B1, B7) |
-| [ADR-021](ADR-021-service-areas-and-legal-relationships.md) | Leistungsbereiche und Rechtsverhältnisse: Behandlung und Training getrennt | **Angenommen (2026-09-20, E18 Schritt 1)** — Trennung nach Rechtsverhältnis, drei harte Regeln, einheitlich das strengere § 203-Niveau; kein Code, keine Migration; **Fassung 2 (2026-10-02)**: Büro liest Trainingsprotokolle, schreibt nicht; **Fassung 3 (2026-10-09)**: Büro liest im Training alles, schreibt nichts Fachliches; **Fassung 4 (2026-10-18)**: Ernährungsprofil davon ausgenommen (Punkt 11, ADR-027) |
-| [ADR-022](ADR-022-appointment-context-and-training-basis.md) | Terminkontext und Trainingsgrundlage: ein Kalender, ein Kontext je Termin | **Angenommen (2026-09-20, E18 Schritt 2)** — eine Spalte mit drei Kontexten statt eines zweiten Feldes (`internal` ist `kind = 'event'`), je Kontext genau ein Verhältnis, Trainingsgrundlage ohne klinische Felder, keine Behandlungsdokumentation am Trainingstermin; kein Code, keine Migration |
-| [ADR-023](ADR-023-platform-access.md) | Plattformzugang: Konto je Person, Zugang je Verhältnis, Vertretung als eigene Beziehung | **Angenommen (2026-09-30)**, W1 bis W6 wie empfohlen; **Fassung 2 (2026-09-30)**: Konto 30 Tage, Zugang mit Nachweis drei Jahre (Punkt 5), bestätigte Mailadresse, Ausweis und Vollmacht ansehen, Bedingungen der Begleitung — Zugriff folgt dem Zugang je Verhältnis, Praxis- oder Plattformkonto, Einladung vor Ort per QR, Vertretung in zwei Arten, Test über alle Tabellen; kein Code, keine Migration; **Fassung 3 (2026-10-09)**: Punkt 24 ohne Dokumentabruf; **Fassung 4 (2026-10-10)**: Anmeldung per Passkey statt E-Mail und Kennwort (ADR-025 Fassung 2); **Fassung 5 (2026-10-14)**: Einsicht der Praxis in die Plattform (D7) — owner, eigener aktiver Zugang, nur lesend, keine neue Protokollaktion; **Fassung 6 (2026-10-20, Jannes)**: eine Begleitung exportiert ihre eigene Wahl zu Benachrichtigungen, nichts von der Person (Punkt 13, BEF-189); **Fassung 7 (2026-10-26, Jannes)**: die Einsicht der Praxis entfällt (Punkte 19 und 25); **Fassung 8 (2026-10-27)**: Zugang zum Training aus dem Vertrag ohne eigene Einladung (Punkte 7 und 11, §4.10, ANN-291) |
-| [ADR-024](ADR-024-offline-and-notifications.md) | Offline-Erfassung und Benachrichtigungen: schmaler Service Worker, Dokumentation und Durchführung ohne Netz, Mitteilungen ohne Inhalt | **Angenommen (2026-10-11, Jannes)**: W1 (c) Tagesplan und Dokumentation ohne Empfang auf dem eingerichteten Diensttelefon, Freigabe ohne Netz per Passkey; W2 bis W5 wie empfohlen; löst ADR-015 Punkt 16 ab; kein Code, keine Migration; **Fassung 2 (2026-10-17)**: Punkt 12 nimmt Rückmeldungen nach §20.2 aus; **Fassung 3 (2026-10-27)**: Punkt 15 nennt die Ausnahme der Tagebucherinnerung aus ADR-027 Punkt 12 |
-| [ADR-025](ADR-025-session-lock.md) | Sitzungssperre: erneute Freigabe nach 60 Minuten und nach Inaktivität, serverseitig durchgesetzt | **Angenommen in den Anforderungen (2026-10-02, Jannes)**; W1 (a) 30 Minuten (Jannes, 2026-10-06) und W2 (a) entschieden, gebaut in SEC-EPIC-001 (ANN-256, ANN-257); **Fassung 2 (2026-10-10)**: Passkey als Anmeldung, App-PIN als Rückweg der Freigabe, kein Kennwort, W3 ohne Schalter, gebaut in SEC-EPIC-002 (G22, ANN-324 bis ANN-331) — Entwürfe gehen nicht verloren, Prüfung vor dem ersten Zeichnen; **Fassung 4 (2026-10-11)**: Freigabe ohne Netz per Passkey, nur für die Daten auf dem Gerät (Punkt 16, ADR-024) |
-| [ADR-026](ADR-026-malware-scanning.md) | Virenprüfung der Anhänge von außen: Prüfdienst in Deutschland, Prüfung vor `ready`, Ausfall heißt kein `ready` | **Abgelehnt (2026-10-15, Jannes)**: keine Virenprüfung; Anhänge von außen sind nach ADR-017 Fassung 6 trotzdem zugelassen, gekennzeichnet als „nicht auf Schadsoftware geprüft“; seit 2026-10-18 gilt das für die gesamte Anwendung (ADR-017 Fassung 7); der Vorschlag (G DATA VaaS) bleibt als Recherchestand |
-| [ADR-027](ADR-027-nutrition-counselling.md) | Ernährungsberatung als Zusatz zu Behandlung und Training, mit klassischem Ernährungstagebuch | **Angenommen (2026-10-18, Jannes)**: Profil an genau einem Verhältnis mit eigener Einwilligung, nur Fähigkeit „Ernährungsberatung“ (owner); Lebensmitteldaten aus BLS 4.0 und Open-Food-Facts-Auszug auf eigenem Server; klassische Tracker-Anzeige, optionale Erinnerungen, Gewicht; Zielwerte nach Abschnitt E; löst den Zuschnitt aus B9 Punkt 6 (2026-09-22) ab; kein Code, keine Migration |
+| [ADR-016](ADR-016-clinical-documentation-record.md) | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | Angenommen, Fassung 4 (2026-10-14) |
+| [ADR-017](ADR-017-file-storage.md) | Dateiablage: Ort, Zugriff, kurzlebige Verweise, Aufbewahrung, Virenprüfung | Angenommen bis Fassung 12 (2026-10-20), Fassung 9 vorgeschlagen |
+| [ADR-018](ADR-018-appointment-states.md) | Zustandsautomat des Termins | Angenommen, Fassung 5 (2026-10-14) |
+| [ADR-019](ADR-019-map-service.md) | Kartendienst: In-App-Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff | Angenommen, Fassung 7 (2026-10-26) |
+| [ADR-020](ADR-020-treatment-basis.md) | Behandlungsgrundlage: Verordnung und Selbstzahler unter einer Klammer | Angenommen, Fassung 2 (2026-10-14) |
+| [ADR-021](ADR-021-service-areas-and-legal-relationships.md) | Leistungsbereiche und Rechtsverhältnisse: Behandlung und Training getrennt | Angenommen, Fassung 4 (2026-10-18) |
+| [ADR-022](ADR-022-appointment-context-and-training-basis.md) | Terminkontext und Trainingsgrundlage: ein Kalender, ein Kontext je Termin | Angenommen (2026-09-20) |
+| [ADR-023](ADR-023-platform-access.md) | Plattformzugang: Konto je Person, Zugang je Verhältnis, Vertretung als eigene Beziehung | Angenommen, Fassung 8 (2026-10-27) |
+| [ADR-024](ADR-024-offline-and-notifications.md) | Offline-Erfassung und Benachrichtigungen: schmaler Service Worker, Dokumentation und Durchführung ohne Netz, Mitteilungen ohne Inhalt | Angenommen, Fassung 3 (2026-10-27) |
+| [ADR-025](ADR-025-session-lock.md) | Sitzungssperre: erneute Freigabe nach 60 Minuten und nach Inaktivität, serverseitig durchgesetzt | Angenommen, Fassung 4 (2026-10-11) |
+| [ADR-026](ADR-026-malware-scanning.md) | Virenprüfung der Anhänge von außen: Prüfdienst in Deutschland, Prüfung vor `ready`, Ausfall heißt kein `ready` | Abgelehnt (2026-10-15) |
+| [ADR-027](ADR-027-nutrition-counselling.md) | Ernährungsberatung als Zusatz zu Behandlung und Training, mit klassischem Ernährungstagebuch | Angenommen (2026-10-18) |

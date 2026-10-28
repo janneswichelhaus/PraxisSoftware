@@ -1,832 +1,214 @@
 # Roadmap
+Version 7.23 · Stand 2026-10-27 · **in Kraft**
 
-Version 7.22 · Stand 2026-10-27 · **in Kraft**
-
-Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
-sonst nichts. Fassung 7.0 arbeitet das Produktgespräch vom 2026-09-23 ein
-(`git show eb43569:docs/development/archiv/UMBAU.md`): Handy und Bedienbarkeit kommen nach vorn, die
-Plattform für Patient:innen hat zwei Stufen, die externen Anfragen gehen ab
-Anfang 2027 parallel zum Bauen hinaus. Fassung 7.13 stellt die Arbeitsweise auf
-Bereichsüberholungen um (Block unten). Ältere Fassungen und ausführliche
-Fortschrittsvermerke: `git show eb43569:docs/development/ROADMAP-CHRONIK.md`.
+Reihenfolge der Umsetzung; sie begründet keinen Scope (der entsteht in der Spec), ist kein Auftrag
+(die nächste Aufgabe steht in [`../STATUS.md`](../STATUS.md)) und überschreibt nichts; fehlt eine
+Voraussetzung, gelten §15.1 und §15.2. `IDEA-`Kennungen nennen die Herkunft. Gebaute Zuschnitte bis
+7.22: `git show 9452575:docs/development/ROADMAP.md`.
 
 ## Aufräumen (Auftrag Jannes 2026-10-25, Entscheidungen 2026-10-26 und 2026-10-27)
+Kein Neustart: Größe, Kopplung und Kommentarlast sinken schrittweise, je eine PR. Bauplan war die
+Tiefenanalyse (`git show eaae99b:docs/development/TIEFENANALYSE.md`); den Stand misst `/aufraeumen`.
+Gemergt sind die Schritte 1 bis 4b und 3b (#308 bis #322, je ein Posten in der Fortschrittstabelle).
+**Schritt 5:** Doku unter 10.000 Zeilen, Git als Archiv, Prüfpaket mit 208 Einträgen und Gate für
+den Zusatz (Jannes 2026-10-26); Teil A (#323) und Teil B mit ANN-662 und ANN-541 (#324) gemergt,
+Teil C mit dem Abschluss des Blocks und der Gesamtgrenze im Gate in #325.
 
-Kein Neustart: Größe, Kopplung und Kommentarlast werden schrittweise abgebaut, je eine PR, in der
-Reihenfolge 3, 4a, 4, 3b, 5. Schritt 3 kommt vor Schritt 3 „Termine“ des Design-Reviews, Schritt 4
-direkt danach. Bauplan ist [`TIEFENANALYSE.md`](TIEFENANALYSE.md); sie wird gelöscht, wenn der Block
-abgeschlossen ist. Wie es steht, misst `/aufraeumen` (`AUFRAEUMEN.md`).
+Die sieben **Fehler aus der Tiefenanalyse** sind behoben (#314 bis #318). Ohne Produktionsaufrufer
+bleiben bewusst (Jannes 2026-10-26): `list_patient_treatment_evidence` (Behandlungsnachweis, §4.4,
+ADR-004 Punkt 4; offen ist ihre Oberfläche für Streitfälle außerhalb der Praxis), die drei
+Legal-Hold-Funktionen (ADR-008), `reapply_deletion_journal`, `bootstrap_practice`, die zwei
+Importfunktionen des Lebensmittelkatalogs und `app.appointment_window_options`.
 
-| Schritt | Inhalt | Weg | Stand |
+**Teamchat, Radflotte und Barometer** bleiben fester Teil des Systems; Teamchat, Radflotte und
+Personal bekommen keine neuen Funktionen, bis Schritt 3 und 4 stehen; Einsparungen ohne Verlust im
+Kernbetrieb darf `/aufraeumen` vorschlagen. **Vereinfachungen** (Tiefenanalyse 4.6, 2026-10-26): M1,
+M5, M7 und M9 sind zurückgebaut, das Barometer nur namentlich (Option A, §20.2, ANN-607); es bleiben
+M2 Check-Up, M3 Teamchat (ohne Ausbau), M4 Barometer, M6 Ernährung und M8 Üben ohne Netz.
+
+## Design-Review der Plattform, Lauf 1
+Schritte 0 bis 2 sind gebaut (DRP-EPIC-001 bis -010). Je Schritt ein Handoff (sein Merge gibt frei),
+je Teilschritt eine PR, geprüft mit `pnpm bildstrecke --nur=plattform,anmeldung`,
+`plattform-barrierefreiheit.spec.ts` und der Ratsche in `src/designsystem.test.ts`. Befunde DR-101
+bis DR-162 und Ideen N3 bis N9: `git show 9452575:docs/design/review-2026-10/lauf-1-bericht.md`;
+Reihenfolge und Abgleich mit Lauf 2 (Praxis-App): `lauf-1-umsetzung.md` im selben Ordner.
+
+| Schritt | Inhalt | Vorgabe | Stand |
 | --- | --- | --- | --- |
-| 1 | Kommentarregel mit Prüfung (`pnpm kommentare:check`), die 14 extremsten Kopfkommentare gekürzt, `/aufraeumen` rein diagnostisch, `CLAUDE.md` auf unter 7 KB verdichtet | Standard | gemergt (#308) |
-| 2 | Migrationen vor dem Start zu einer Basis zusammenfassen: vorher Schemaabzug (Tabellen, Constraints, Indizes, Policies, Trigger, Funktionen), danach automatischer Diff ohne Unterschied und alle Tests grün; einmalige Ausnahme vom Migrationen-Gate (freigegeben); dazu eine Übersicht der DB-Funktionen nach Art und der verwaisten | Pfad A | gemergt (#309, #310); Funktionen ohne Aufrufer entfernt, Rechte der API-Rollen nachgezogen |
-| 3 | Modulschnittstellen: je Modul eine schmale `index.ts` ohne pauschale Re-Exporte, ESLint-Regel gegen tiefe Importe (zuerst Warnung); beginnend mit „Termine“, dort die gegenseitigen Abhängigkeiten auflösen; zusammengehörige kleine Module prüfen. Teil 1, Rest: die Zeit- und Kalenderhilfen aller Module in `src/lib/datum.ts` | Pfad A | gemergt (#312); Rest gebaut (Branch `ccr-30ca4f76-x8pvfg`) |
-| 4a | Teillöschung unter Belegfrist: Screening, Assessments, Check-ins, Gewohnheiten und Übungspläne eines beendeten Trainingsverhältnisses (17 Tabellen) fallen nach drei Jahren, auch wenn die Belege acht Jahre bleiben (ADR-021 Punkt 4, ANN-183; Jannes 2026-10-26) | Pfad A | gemergt (#316), mit Restore und Entscheidung je Tabelle im Test; den Löschlauf startet nur noch pg_cron |
-| 4 | Register für Datenauskunft, Aufbewahrung, Löschjournal und Zusammenführung; ein Test wird rot, wenn eine Tabelle mit Patientenbezug darin nicht klassifiziert ist. Vorweg der Nachzug aus #316: Rückweg der Anrufliste kurz, Zustand im Tab (ANN-574 Fassung 2); 3D-Rad-Rest im geführten Ablauf entfernt; Bestätigen und Verwerfen eines Uploads der Akte nur durch die vorbereitende Person (Jannes 2026-10-26) | Pfad A | gemergt (#317, #318); Register, Löschjournal je Zeile und Zusammenführen im Journal (ANN-751, ANN-752, ANN-150 Fassung 3) |
-| 4b | Nachzug aus #318 vor 3b: beendete Plattformzugänge der Dublette ziehen beim Zusammenführen mit (L-A4, ANN-753); Löschungen von Hand stehen je Praxis und Tag ohne Uhrzeit im Journal, auch die elf weiteren Wege mit demselben Muster (ANN-752 Fassung 2) (Jannes 2026-10-27) | Pfad A | gemergt (#319) |
-| 3b | Domänenschnitt „Ziel“ der Tiefenanalyse (14 Domänen, Abschnitt 1a.5; Jannes 2026-10-26): geteilte Hilfen nach `src/lib`, eine Regel, nach der nur Seiten fremde Domänen importieren, die 17 Rückkanten umdrehen, danach die Ordner zusammenlegen. In zwei Teilen (Jannes 2026-10-27): Teil 1 Entflechtung (geteilte Hilfen, Rückkanten), Teil 2 Domänen mit schmaler `index.ts` und scharfer Regel (keine tiefen Importe, Seiten führen zusammen, keine Zyklen) | Pfad A | Teil 1 gemergt (#320, ANN-754), Teil 2 als #321 (ANN-755) |
-| 5 | Doku-Konsolidierung (54.000 Zeilen -> <10.000 Zeilen, Bereinigung von 732 ANN und 230 BEF). Git ist das Archiv: Archiv, Chroniken und erledigte Handoffs gehen ersatzlos. Das Prüfpaket umfasst 208 Einträge mit einem Gate für den Zusatz; dabei werden 17 fehlende und 11 falsche Zusätze korrigiert und ANN-662 gegen ADR-024 sowie ANN-541 gegen ADR-009 aufgelöst (Jannes 2026-10-26) | Standard | offen |
-
-**Fehler aus der Tiefenanalyse**, verbindlich aufgenommen (Jannes 2026-10-26; Belege in
-`TIEFENANALYSE.md` 0.3 und 3b.6). 4 bis 7 kommen als kleine eigene PRs:
-
-| Nr. | Fehler | Weg | Wohin |
-| --- | --- | --- | --- |
-| 1 | Die Teillöschung unter Belegfrist lässt 17 Tabellen mit Art.-9-Daten des Trainings bis zu fünf Jahre zu lang stehen | Pfad A | behoben mit Schritt 4a (dritte PR) |
-| 2 | 12 Lösch-RPCs schreiben kein Löschjournal; nach einem Restore kämen Zeilen aus 16 Tabellen zurück (umfasst BEF-198) | Pfad A | behoben mit Schritt 4: ein Auslöser je Tabelle mit eigenem Journal (ANN-752) |
-| 3 | Das Zusammenführen hat weder einen Vollständigkeitstest noch einen Nachweis für einen Restore | Pfad A | behoben mit Schritt 4: Katalogtests aus dem Register, Eintrag im Löschjournal, erneutes Zusammenführen beim Nachziehen (ANN-150 Fassung 3) |
-| 4 | Ein Trainings-Nachtrag gilt bei 403 als gespeichert (`addTrainingProtocolAddendum`) | Pfad A | gemergt (#314) |
-| 5 | Das Upload-Recht der Akte prüft weder die hochladende Person noch das 24-Stunden-Fenster; zwei Bestätigungen sperren, ohne unter der Sperre nachzuprüfen | Pfad A, Zweitreview | gemergt (#315) |
-| 6 | Die Mitarbeiterliste schreibt den Suchbegriff, meist einen Namen, in Adresse und Rückweg | Pfad A | gemergt, samt Radflotte (#314) |
-| 7 | DB-Funktionen ohne Produktionsaufrufer: #311 hat neun der 19 entfernt. `app.mdr_released` ist entfernt. `list_patient_treatment_evidence` bleibt als Behandlungsnachweis nach `PROJECT_PRINCIPLES.md` §4.4 (MUSS, ADR-004 Punkt 4; Jannes 2026-10-26); ihre Oberfläche, die Sicht für Streitfälle außerhalb der Praxis, ist noch nicht gebaut. Es bleiben die drei Funktionen zum Legal Hold (ADR-008), `reapply_deletion_journal`, `bootstrap_practice`, die beiden Importfunktionen des Lebensmittelkatalogs und `app.appointment_window_options` (Jannes 2026-10-26) | Pfad A | erledigt (#315) |
-
-**Teamchat, Radflotte, Personal, Barometer:** Teamchat, Radflotte und Barometer bleiben fester Teil
-des Systems; sie werden nicht als Module gelöscht (Jannes 2026-10-26). Teamchat, Radflotte und
-Personal bekommen keine neuen Funktionen, bis Schritt 3 und 4 stehen. Einsparungen ohne Verlust im
-Kernbetrieb darf `/aufraeumen` vorschlagen.
-
-**Vereinfachungen M1 bis M9** (Tiefenanalyse 4.6), entschieden von Jannes am 2026-10-26:
-zurückgebaut werden **M1** (3D-Rad wird die Liste der 27 Bauteile, `three` entfällt; der Auftrag
-vom 08.10. ist zurückgenommen), **M5** (keine Ladestrom-Automatik, der Betrag mit Beleg bleibt;
-ANN-615), **M7** (Zweitansicht „Einsicht“ entfällt, Pfad A) und **M9** (Reste der Übungsbilder).
-Es bleiben **M2** Check-Up, **M3** Teamchat samt Sprachnachricht (ohne Ausbau), **M4** Barometer,
-**M6** Ernährung und **M8** Üben ohne Netz. **Barometer, Option A:** nur noch namentlich, ab der
-ersten beschäftigten Person, ohne die Wahl „ohne Namen“ und ohne die Schwellen 3 und 5; die freie
-Rückmeldung behält Wahl und Schwellen. Das ändert `PROJECT_PRINCIPLES.md` §20.2 Nr. 1 und 4
-(freigegeben) und ANN-607, mit Migration über Pfad A.
-**Stand:** M9, M1, M5, M7 und das Barometer nach Option A sind gebaut (dritte PR). Im Check-Up
-zeigt „Wo genau?“ die Bauteile des Prüfpunkts als Knöpfe, die Panne die Liste der 27; Ladestrom
-läuft als Einkauf mit Beleg (ANN-749); `PROJECT_PRINCIPLES.md` steht auf 0.29.
-
-**Reihenfolge der nächsten PRs** (Jannes 2026-10-26): erstens Fehler 4 und 6 und der wackelnde Test
-zu „Tag umplanen“ an der Ursache; zweitens Fehler 5 und 7 mit Zweitreview; drittens Schritt 4a,
-danach M9, M1, M5, M7 und das Barometer nach Option A.
-
-## Bereichsüberholungen (Auftrag Jannes 2026-10-12)
-
-Jannes' Vorgaben vom 2026-10-12: Design der ganzen App hat Vorrang (Maßstab sind die schon
-optimierten Seiten), Übungen kommen als mitgelieferte Bibliothek, größere Schritte, weniger
-Doku, praxisnah, Smartphone zuerst. Gearbeitet wird deshalb in **Bereichsüberholungen**
-(`/bereich`, `.claude/skills/bereich/SKILL.md`): ein Arbeitsbereich in einem Zug, von den
-Abläufen und dem Referenzabgleich aus, mit Bildstrecke vorher/nachher und einer PR. Bedienbarkeit
-und Design laufen damit bereichsweise mit, statt als UI-003 am Ende zu stehen.
-
-**Reihenfolge — Vorschlag, Jannes entscheidet:**
-
-| # | Überholung | Inhalt | Kernabläufe ([`../product/kernablaeufe.md`](../product/kernablaeufe.md)) |
-| --- | --- | --- | --- |
-| 1 | **Design der ganzen App, Übungsbibliothek, Besuch in einem Zug** — gebaut (PR #239) | Seitenrezeptur `docs/design/DESIGN.md` flächig samt Plattform, Katalog mit Zeichnungen, Besuch von der Tür bis zur Navigation in 6 Tipps, Prozess verschlankt | K5, K12, K15 |
-| 2 | **Restbefunde der Praxis-Prüfung** — gebaut (PR #240) | Letzten Eintrag übernehmen, Absage in 4 Tipps, Material und letzte Doku an der Karte, Übung aus der Bibliothek zuweisen | K3, K6, K9 |
-| 3 | **Erstaufnahme geführt** — gebaut (Branch `ccr-248b0353-fbdcs9`) | Eine Seite vom Terminpanel bis zur Doku: Verordnungsfoto, Bogen, Einwilligungen, Anamnese, Liege; Neuaufnahme am Telefon in drei Tipps | K10, K11 |
-| 4 | **Monatsabrechnung in einem Lauf** — gebaut (Branch `ccr-92feaef7-zkxssj`) | Lauf aus „Abzurechnen“ mit Prüfliste und Rückfrage, Sammeldruck, Zahlungseingang gesammelt; §-19-Hinweis im Schnappschuss (BEF-165) | K13, K14 |
-| 5 | **Übungen, zweite Runde** — gebaut (Branch `claude/sweet-gauss-z8te7o`) | Durchsicht des Katalogs, eigene Vorlagen; eigene Bilder und Videos der Praxis, sobald es sie gibt (Zeichnungen entfallen seit 2026-10-15, ANN-539) | K12 |
-| 6 | **Geführte Abläufe** (Jannes 2026-10-16) | Baustein `GefuehrterAblauf` aus dem Check-Up (Abfolge als reine Logik, eine Frage je Seite, Abschluss mit Korrektur); damit Ausfallhonorar, Panne, Tag umplanen, Schlüsselübergabe, Zugang einrichten, Terminwunsch und Terminänderung auf der Plattform; Erstaufnahme und Neuaufnahme nur angleichen | K8, K10, K11, G1–G6 |
-| 7 | **Urlaub** (URL-001, vorgezogen) — gebaut (Branch `ccr-350340fc-pnh5ti-urlaub`) | Antrag geführt, Genehmigung, Wirkung auf Kalender und Kapazität; gemeinsame Antragsmechanik für 8 bis 10 | G7 |
-| 8 | **Arbeitszeitänderung** (AZ-001, neu) — gebaut (Branch `ccr-350340fc-pnh5ti-arbeitszeit`; bewegliche Pause folgt) | Antrag einmalig oder dauerhaft, nie weniger Arbeitszeit (Stunden dürfen zwischen Tagen wandern); bewegliche Mittagspause: eigene Dauer, ungefähr mittig, nicht festgeschrieben, mit Folgen für Kalender und Slotsuche (Jannes 2026-10-16) | G8 |
-| 9 | **Zeitkonto** (ZK-001, vorgezogen) — gebaut (Branch `ccr-350340fc-pnh5ti-zeitkonto`) | Buchungen und Saldo je Person, Eintrag geführt; keine Genehmigung, Zurückweisen mit Grund möglich (Jannes 2026-10-16) | G9 |
-| 10 | **Erstattungen** (ERS-001, vorgezogen) — gebaut (Branch `ccr-350340fc-pnh5ti-erstattungen`) | Antrag geführt (Art zuerst, Belege als Dateien), Genehmigung, Auszahlung | G10 |
-| 11 | **Teamchat** (TEAM-001, vorgezogen) | Kanäle, Direktnachrichten, Threads, Erwähnungen | — |
-
-**6 bis 11 vorgezogen** (Jannes 2026-10-16): Die Vorschaubereiche aus Block 8 werden jetzt
-ersetzt, je eine Session mit `/bereich`. Inhalt und Abläufe vorbereitet in
-[`../product/gefuehrte-ablaeufe-und-antraege.md`](../product/gefuehrte-ablaeufe-und-antraege.md),
-Budgets G1–G10 in [`../product/kernablaeufe.md`](../product/kernablaeufe.md). Reihenfolge: 6
-zuerst, weil 7 bis 10 den Baustein nutzen; 7 vor 8 bis 10, weil er die Antragsmechanik legt; 11
-ist unabhängig und kann jederzeit dazwischen.
-
-Die Kette unten bleibt gültig; ihre offenen Epics folgen nach den
-Überholungen oder werden in die passende Überholung gezogen, wenn sie denselben Bereich
-berühren. Befunde eines Bereichs werden in dessen Überholung erledigt.
-
-### Ernährungsberatung (Jannes 2026-10-18, ADR-027)
-
-Ersetzt ALT-EPIC-002. Je Epic ein `/feature-loop` (Pfad A: neue Tabellen, RLS, Einwilligung);
-ein Epic ist fertig, wenn sein Budget am Seed gemessen ist (375 px, Playwright).
-
-| Reihe | Epic | Zuschnitt | Fertig, wenn … |
-| --- | --- | --- | --- |
-| 1 | **ERN-EPIC-001** Profil und Bedarf | Profil an Akte oder Trainingsverhältnis (owner), Einwilligung „Ernährungsberatung“, Körperdaten, Ziel, PAL, Zielwerte nach ADR-027 Abschnitt E mit Rechenweg und Überschreibung, Notizen; Gewicht durch Person und Beratung mit Verlauf und Zielgewicht; Tagebuch auf der Plattform ein- und ausschaltbar; Katalogposition mit Steuerkennzeichen; Datenklasse, Auskunft, Export, Löschlauf | Profil in ≤ 4 Tipps + Felder angelegt; Formeln gegen veröffentlichte Rechenbeispiele getestet; Negativfälle Büro, Therapie, Trainingsbetreuung, Begleitung, fremde Organisation |
-| 2 | **ERN-EPIC-002** Lebensmitteldaten | Import BLS 4.0 (Bedingungen vorher geprüft) und Open-Food-Facts-Auszug Deutschland auf eigenem Server, Quellenangabe, Suche mit Tippfehlertoleranz, Portionen, eigene Lebensmittel der Person und der Praxis | „Apfel“, „Haferflocken“, „Vollkornbrot“ und zehn weitere Stichwörter treffen unter den ersten drei; Suche < 300 ms am Seed |
-| 3 | **ERN-EPIC-003** Tagebuch | Mahlzeiten, zuletzt, Favoriten, kopieren, Wasser, Tagesansicht mit „noch übrig“ und Makros, „Zahlen ausblenden“, Erinnerungen nach ADR-024 (Katalog, aus bis eingeschaltet), die Beratung liest mit | aus „zuletzt“ ≤ 3 Tipps, per Suche ≤ 5 Tipps + Text, Wasser 1 Tipp; einhändig bei 375 px |
-| — | **Beratung abrechnen** | eigener Terminanlass „Ernährungsberatung“ mit der Position am Termin (`record_billable_services`), Rechnung im Bereich des Profils; Pfad A (Jannes 2026-10-18, ANN-622) | Sitzung am Termin mit Position erfasst und abgerechnet |
-| — | **Politurrunde** | bestehende Bereiche nach Bildstrecke und Befunden, keine neuen Funktionen | Jannes wählt die Bereiche |
-| 4 | **ERN-EPIC-004** Barcode | Scan mit der Kamera ohne Bildspeicherung, Nachschlagen nur im eigenen Auszug, unbekannt → Suche oder eigenes Lebensmittel | Produkt per Scan in ≤ 3 Tipps |
-| 5 | **ERN-EPIC-005** Pläne und Rezepte | Rezepte aus Zutaten, Tagesvorschläge und Pläne von der Beratung, Startinhalte (≈ 30 Rezepte) | Plan in ≤ 10 Minuten zugewiesen; Rezept mit einem Tipp ins Tagebuch |
-| 6 | **ERN-EPIC-006** Verlauf für die Beratung | Wochenmittel neben Zielwerten, Gewicht, neben Check-ins und Training im Verlauf | Sitzung aus einer Ansicht vorbereitet |
-
-## Was dieses Dokument ist und was nicht
-
-- **Es legt die Reihenfolge fest, nie den Scope.** Was ein Eintrag konkret
-  umfasst, entsteht erst im SPEC-Schritt des Loops. Die Zeilen hier sind
-  Zuschnitte, keine Spezifikationen.
-- **Es ist kein Auftrag.** Gebaut wird, was Jannes mit `/weiter` (oder
-  `/feature-loop`) beauftragt; die nächste Aufgabe steht allein in [`../STATUS.md`](../STATUS.md).
-- **Es überschreibt nichts.** `PROJECT_PRINCIPLES.md` (Rang 1), die ADRs
-  (Rang 2) und die Spezifikation des Loops (Rang 3) gehen vor. Fehlt einem
-  Eintrag eine Voraussetzung, gilt §15.1 (Annahme, reversibel an einer Stelle)
-  und §15.2 (eine offene externe Klärung hält das Bauen nicht an).
-- Verweise wie `IDEA-PRX-004` zeigen die **Herkunft** im Ideenspeicher
-  (Rang 6) und importieren nichts. Seit 6.0 steht jede nicht verworfene Idee
-  an einer Stelle dieses Plans — oder im Abschnitt „Nicht in V1" mit Grund.
-- Befunde sammelt [`BEFUNDE.md`](BEFUNDE.md), den Stand der Oberfläche
-  [`ARBEITSBEREICHE.md`](ARBEITSBEREICHE.md), die Kernabläufe mit Tipp-Budgets
-  [`../product/kernablaeufe.md`](../product/kernablaeufe.md) (die früheren
-  Ablaufrunden: `git show eb43569:docs/development/archiv/OPTIMIERUNG.md`).
-
-Eine Session liest hier nur die Zeile ihrer Aufgabe und den Absatz darüber
-(`.claude/skills/weiter/SKILL.md`) und stellt am Ende
-`fortschritt.json` und [`../STATUS.md`](../STATUS.md) nach; die Tabelle unter
-„Fortschritt" entsteht daraus.
-
----
+| 3 Termine | Liste, Seite des Termins, Wunsch, Ändern und Absagen in zwei Schritten (DR-132 bis DR-136, BEF-220, BEF-221); 3a Bausteine, 3b Liste, 3c Seite des Termins, 3d Abläufe; die Regel am Server zur Lesefrist (Frage 5, BEF-222) ist Pfad A und eigener Auftrag | Handoff `git show 9452575:docs/design/handoff-2026-10-24-plattform-termine.md`, Abschnitte 0 und 9 | freigegeben (#303); ohne Antwort auf die fünf Fragen gilt die Empfehlung |
+| 4 Selbstauskunft und Tagebuch | DR-141 bis DR-146, DR-161; Inhalt des Fragebogens bleibt, nur Form und Schrittfolge | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/04-selbstauskunft.md` | Handoff fehlt |
+| 5 Nachrichten | DR-137 bis DR-139; Wortlaut des Notfallhinweises bleibt | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/05-nachrichten.md` | Handoff fehlt |
+| 6 Unterlagen und Verträge | DR-147 bis DR-149, DR-162; Vertragsabschluss als geführter Ablauf, Widerrufsbelehrung unverändert | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/06-unterlagen-vertraege.md` | Handoff fehlt |
+| 7 Ich und Datenschutz | DR-151, DR-152; Einwilligungen ohne Drängen | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/07-ich-datenschutz.md` | Handoff fehlt |
 
 ## Ziel und Umfang
+**Die Praxis eröffnet im Juli 2027**, der einzige Termin (2026-09-05), ohne Vorgängersystem und
+Bestandsdaten; **zur Eröffnung läuft das Endprodukt** (2026-09-22, §14), anfangs vor allem für
+Jannes, bald mit einer Bürokraft; neue Teammitglieder bindet der Owner selbst ein (§4). V1 umfasst:
 
-**Die Praxis eröffnet im Juli 2027** — das ist der einzige Termin dieses
-Dokuments (entschieden 2026-09-05, auf einen Termin zurückgeführt am
-2026-09-21). Kein Vorgängersystem, keine Bestandsdaten, kein Parallelbetrieb.
-Alles andere steht in einer **Reihenfolge**, nicht in einem Kalender.
-
-**Zur Eröffnung läuft das Endprodukt** (Jannes, 2026-09-22;
-`PROJECT_PRINCIPLES.md` §14). Zur Eröffnung arbeitet vor allem Jannes selbst
-damit, bald kommt eine Bürokraft dazu; ein neues Teammitglied bindet der
-Owner in der Anwendung selbst ein (§4). V1 umfasst:
-
-1. **Kernprozess** der Heilbehandlung — Akte, Verordnung, Termine,
-   Dokumentation, Leistungen, Rechnung, Zahlung, Löschung, Audit (gebaut).
-2. **Tagesroute** mit Karte, Fahrzeiten, Handoff und Führung auf dem Gerät —
-   am Handy in der Halterung, mit Vorschau auf den nächsten Weg und dem
-   Hinweis auf die Behandlungsliege (§9).
-3. **Befund** mit Anamnese (vorab ausfüllbar), Scores, Untersuchungsbausteinen,
-   Therapiebericht; eine Erstaufnahme, die nichts vergisst, und Fotos in der
-   Akte (§5).
-4. **Praxisverwaltung** aus dem Ideenspeicher: Warteliste, Anruflisten,
-   Aufgaben, Kennzahlen, Export für die Steuerberatung, Kartenzahlung.
+1. **Kernprozess:** Akte, Verordnung, Termine, Doku, Leistungen, Rechnung, Zahlung, Löschung, Audit.
+2. **Tagesroute** mit Karte, Fahrzeiten, Handoff und Führung am Handy, Hinweis auf die Liege (§9).
+3. **Befund** mit Anamnese, Scores, Bausteinen, Therapiebericht, Erstaufnahme und Fotos (§5).
+4. **Praxisverwaltung:** Warteliste, Anruflisten, Aufgaben, Kennzahlen, Steuerexport, Kartenzahlung.
 5. **Trainingsbereich** in der Sicht der Betreuung.
-6. **Plattform für Patient:innen und Kund:innen** (§4.6, §4.10).
-   Trainingskund:innen sehen die Punkte aus
-   [`../product/ideen/referenz-navigation.md`](../product/ideen/referenz-navigation.md)
-   außer dem, was §17 verbietet. Patient:innen haben **zwei Stufen**: während
-   der Behandlung kostenlos (Befundbogen, Termine und Wünsche, Rechnungen,
-   Heimübungsplan, Check-ins), danach das Nachsorge-Abo. Die Ansichten für
-   Patient:innen und Betreuung entwirft DSN-001 vor Block 4
-   ([`PLATTFORM-ANSICHTEN.md`](PLATTFORM-ANSICHTEN.md)).
-7. **Angebote:** das **Nachsorge-Abo** der Patient:innen nach dem Ende der
-   Behandlung als Monatsrechnung; das **Trainingspaket** nach Zeitraum, nicht
-   pausierbar, mit der Plattform im Preis; der Übergang aus der Behandlung
-   über das Abschlussgespräch (§4.10).
-8. **Praxisbetrieb:** Radflotte, Teamkommunikation (das „Slack-Äquivalent"),
-   Urlaub, Zeitkonto, Erstattungen.
-9. **KI-Assistenz** innerhalb von §6 und §17 — Sprachdokumentation,
-   Strukturieren, Patientensprache, Antwortentwürfe, Zusammenfassung.
+6. **Plattform:** Patient:innen in zwei Stufen (§4.6), Kund:innen nach der Referenz-Navigation ohne
+   das von §17 Verbotene (§4.10, `git show 9452575:docs/product/ideen/referenz-navigation.md`);
+   Ansichten nach DSN-001 (`git show 9452575:docs/development/PLATTFORM-ANSICHTEN.md`).
+7. **Angebote:** Nachsorge-Abo, Trainingspaket nach Zeitraum mit Plattform, Übergang (§4.10).
+8. **Praxisbetrieb:** Radflotte, Teamkommunikation, Urlaub, Arbeitszeit, Zeitkonto, Erstattungen.
+9. **KI-Assistenz** innerhalb von §6 und §17.
 
-**Externe Prüfungen laufen ab Anfang 2027 parallel zum Bauen** (Jannes,
-2026-09-23, §15.2): OPS-001, B1, B2 mit DSFA, B4 und die Anbieterprüfungen
-gehen hinaus, sobald ihre Unterlagen stehen — spätestens im Januar 2027. Das
-Bauen wartet auf keine Antwort; scharfgeschaltet wird erst nach den Prüfungen.
-**Dauert das Bauen länger, wird nicht gekürzt** (Jannes, 2026-09-22): Dann
-eröffnet die Praxis mit dem Papierprozess (H4), und die Software folgt.
-
-### Nicht in V1 — und warum
-
-Was Jannes' Umfang nennt, aber an Rang 1 oder 2 scheitert. Kommt nur mit einer
-neuen Fassung der genannten Stelle zurück, nicht mit einem Loop.
-
+### Nicht in V1: scheitert an Rang 1 oder 2, zurück nur mit einer neuen Fassung der Stelle
 | Was | Herkunft | Grund |
 | --- | --- | --- |
-| Automatische Progression, Regelwerk mit Korridor, Autoregulation als Vorschlag, Phasenwechsel und Wiedereinstieg als Automatik, Belastungssteuerung | `IDEA-TRN-001`/`-002`/`-006`/`-008` bis `-010`/`-012`/`-013`, `IDEA-QSN-004` | §17 Verbot 1, ADR-006 Punkt 10; B10. Im Register `src/app/mdr.ts` (`progression-regelwerk`). Die **von Hand** gesetzte Progression im Plan (`IDEA-TRN-004`, `-007`) bleibt in UEB-EPIC-002 |
+| Automatische Progression, Regelwerk mit Korridor, Autoregulation als Vorschlag, Phasenwechsel und Wiedereinstieg als Automatik, Belastungssteuerung | `IDEA-TRN-001`/`-002`/`-006`/`-008` bis `-010`/`-012`/`-013`, `IDEA-QSN-004` | §17 Verbot 1, ADR-006 Punkt 10; B10; Register `src/app/mdr.ts` (`progression-regelwerk`). Die **von Hand** gesetzte Progression (`IDEA-TRN-004`, `-007`) ist gebaut |
 | Ampel aus der Schmerzreaktion, Bewertung eines Verlaufs | `IDEA-TRN-003`, `IDEA-OUT-002` (bewertende Hälfte) | §17 Verbot 2; B10 |
-| „KI-Analyse" als Einschätzung, ableitende Übungsanalyse, Cut-off-Anzeige | Navigationspunkte 7 und 15, `IDEA-KI-006`, `IDEA-OUT-006` | §17, ADR-006 Punkt 13; Register in `src/app/mdr.ts`. Die **anzeigende** Übungsanalyse und die Zusammenfassung ohne Bewertung sind in V1 |
+| „KI-Analyse“ als Einschätzung, ableitende Übungsanalyse, Cut-off-Anzeige | Navigationspunkte 7 und 15 der Trainingsansicht (Fassung bis 7.22, Block 3), `IDEA-KI-006`, `IDEA-OUT-006` | §17, ADR-006 Punkt 13; Register in `src/app/mdr.ts`. Die **anzeigende** Übungsanalyse und die Zusammenfassung ohne Bewertung sind in V1 |
 | Wearables und Gesundheits-Apps | `IDEA-TRK-007` | §14 (gesperrt), ADR-014; bräuchte eine native App (ADR-015 Punkt 21) |
 | Mandantenfähigkeit mit Branding, Vermarktung | `IDEA-QSN-009` | §14, ADR-003 |
 | Interoperabilität | `IDEA-QSN-008` | Die Idee selbst: benennen, nicht bauen |
 | Verworfen | `IDEA-PRX-015`, `IDEA-PRX-036`, `IDEA-ANG-002` | E-13; Entscheidung 2026-09-11; B11 |
 | GKV, E-Rechnung, Kassenbuch und TSE, Factoring | Produktvision §1.1 | Privatabrechnung (§19); keine Barkasse vorgesehen |
 
----
-
 ## Grundsätze der Reihenfolge
+Jannes 2026-09-22 und 2026-09-23; ein Loop, der abweicht, sagt, gegen welchen.
 
-Getroffen am 2026-09-22 (Jannes hat die Reihenfolge delegiert), ergänzt am
-2026-09-23. Sie begründen die Kette unten; ein Loop, der von ihr abweicht,
-sagt, gegen welchen Grundsatz.
-
-1. **Erst schließen, dann öffnen.** Was die Behandlung am Tag braucht
-   (Tagesroute, Befund, Praxisverwaltung), kommt vor allem, was sich nach
-   außen öffnet. Das Produkt der Eröffnung ist die Behandlung.
-2. **Fundament vor Oberfläche.** Was das Datenmodell oder die Rechte vieler
-   Bereiche prägt, kommt vor dem, was darauf aufsetzt: Trainingsverhältnis vor
-   Plattform, Plattformzugang vor Abo, Abo vor Plänen im Portal, Rückfragen vor
-   Teamchat (dieselbe Nachrichtenmechanik, strengere Regeln zuerst). Additiv
-   einziehen ist billig, nachträglich trennen teuer (ADR-014).
-3. **Risiko vor Komfort — aber Bedienbarkeit ist kein Komfort.** Die
-   Plattform öffnet die Anwendung für Menschen außerhalb der Praxis — die
-   größte neue Angriffsfläche. Sie steht deshalb in der Mitte, nicht am Ende;
-   Komfort (Farben, Planungskarte, Politur) steht am Ende. Begriffe,
-   Bedienprinzipien und die Tagesansicht am Handy kommen dagegen **früh**
-   (Block 1a): Jede weitere Oberfläche setzt darauf auf, und Nacharbeit wird
-   mit jedem Bereich teurer. Organisation und Steuerung sind für den Owner
-   Kernfunktionen, nicht Komfort.
-4. **MDR-nahe zuletzt** (ADR-006 Punkt 13): Tracking, Fortschritt und KI
-   kommen nach den Bereichen, die nur erfassen und darstellen.
-5. **Jeder neue Anbieter bleibt abschaltbar.** Eine Funktion, die an einem
-   noch ungeprüften Dienst hängt (Karte, Mail, SMS, KI, Zahlung), wird hinter
-   einem Adapter mit `mock`-Weg gebaut und ist ohne ihn benutzbar oder
-   abgeschaltet. So kann ein negatives Prüfergebnis eine Funktion kosten,
-   aber nicht die Eröffnung.
-6. **Sehen, was gebaut ist.** Jede Oberfläche kommt mit einer Bildstrecke
-   vorher/nachher (375 und 1280 px) in der Pull Request; gesichtet wird über die
-   Bilder (Regel 1).
-
----
+1. **Erst schließen, dann öffnen:** Was die Behandlung am Tag braucht, vor dem, was sich öffnet.
+2. **Fundament vor Oberfläche:** Additiv einziehen ist billig, nachträglich trennen teuer (ADR-014).
+3. **Risiko vor Komfort, aber Bedienbarkeit ist kein Komfort:** Politur zuletzt, Bedienung früh.
+4. **MDR-nahe zuletzt** (ADR-006 Punkt 13): Tracking, Fortschritt, KI nach Erfassen und Darstellen.
+5. **Jeder neue Anbieter bleibt abschaltbar:** Adapter mit `mock`-Weg, ohne ihn benutzbar oder
+   abgeschaltet; ein negatives Prüfergebnis kostet eine Funktion, nicht die Eröffnung.
+6. **Sehen, was gebaut ist:** jede Oberfläche mit Bildstrecke vorher/nachher in der PR (Regel 1).
 
 ## Die Kette bis zur Eröffnung
+Die Blöcke 0 bis 8 (Erledigt, Rückstand und Umbau, 1a Handy und UX-Fundament, Kern fertig,
+Training, Plattformzugang, Angebote, Pläne und Rückfragen, Verlauf und Alltag, Praxisbetrieb) sind
+gebaut bis auf FRB-EPIC-004 → -005 (Block 2) und ERN-EPIC-004 → -005 → -006 → ORG-EPIC-001 (Block
+7; die ERN-Epics ersetzen ALT-EPIC-002). Offen bei Jannes aus diesen Blöcken: Sichtungen (Rückstand,
+Handy, Training, Verlauf), D2/D3 aus dem FRB-Plan, Bilder zu den Tests, Abo- und Paketpreise (bis
+dahin synthetisch), die Tübinger Standortvorlage (Depot, Werkstatt). Danach in fester Reihenfolge:
 
-Blöcke in fester Reihenfolge; ein Block beginnt, wenn der vorige gebaut ist.
-Innerhalb eines Blocks gilt die Pfeilfolge. Die Einzelheiten je Loop stehen
-in den Etappen darunter.
+| # | Block | Code | Docs und Jannes |
+| --- | --- | --- | --- |
+| 9 | **Assistenz und Komfort** | KI-EPIC-001 → KI-EPIC-002 → MAP-007 → PRX-EPIC-004 → UI-003 | Sichtung |
+| 10 | **Feature-Freeze** | nur Befunde | Betriebsdokumentation · Probewoche 1 · Kollegin-Test · **M2** |
+| 11 | **Prüfungen**, ab Anfang 2027 **parallel** | Befunde aus den Prüfungen | DSFA-Paket (G14) und Anfragen bis Ende 2026 vorbereiten, dann Antworten einarbeiten · OPS-001-Unterlagen · B1, B2, B4, B8 · Anbieterverträge |
+| 12 | **Betriebsreife** | OPS-002 → OPS-003 → OPS-004 Rest → OPS-007-Probe | BETRIEB-001 · Rückfallplan · Kurzanleitung · Cloudprojekt (G3) · Restore-Test 1 und 2 · Notfallzugang |
+| 13 | **Gate und Produktion** | keine Epics | Nachweistabelle MUSS → Test · **M3** Gate · **M4** Produktion |
+| 14 | **Eröffnung** | Hotfixes | Erster-Tag-Protokoll · Schulung · Probewoche 2 · Restore-Test 3 · Change-Freeze · **M5** · **M6** |
 
-| # | Block | Code-Loops | Docs-Sessions | Jannes |
-| --- | --- | --- | --- | --- |
-| 0 | **Erledigt** | alle Loops bis PAT-006 — Fortschrittstabelle | ADR-017 bis ADR-022, E18, OPS-001-Dokument | Sichtung |
-| 1 | **Rückstand und Umbau** | ~~G19~~ (gebaut 2026-09-22) → ~~G6a~~ → ~~G6b~~ (gebaut 2026-09-23) → ~~G6c~~ (gebaut 2026-09-26) | Umbau U1 bis U4 (`git show eb43569:docs/development/archiv/UMBAU.md`) | ~~G6c: Wahl zu den Schreibpfaden~~ (2026-09-26: wie empfohlen); vier Sichtungen des Rückstands ([`../sichtung/`](../sichtung/README.md)) |
-| 1a | **Handy und UX-Fundament** | ~~OPS-002a~~ (gebaut 2026-09-25) → ~~UX-EPIC-002~~ (gebaut 2026-09-26) → ~~UX-EPIC-003~~ (gebaut 2026-09-26) | ~~Umbau U5~~ (B16: Uberspace, 2026-09-23) | ~~Supabase-Testprojekt, Uberspace und GitHub-Secrets anlegen~~ (2026-09-25, `git show eb43569:docs/decisions/hosting-optionen.md`); ~~Begriffe sammeln, die stören~~ (2026-09-26: alle in Ordnung); erste Sichtung am Handy |
-| 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → DOK-006 → PRX-EPIC-001 → PRX-EPIC-002 → UX-EPIC-004 → PRX-EPIC-003 → PRX-EPIC-003b → STA-EPIC-001 | — | D2/D3 aus dem FRB-Plan; Sichtung |
-| 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
-| 4 | **Plattformzugang** | ~~POR-EPIC-001~~ (gebaut 2026-09-30) → ~~-001b~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001**~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001b**~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001c**~~ (gebaut 2026-10-02) → ~~**ABR-EPIC-007**~~ (gebaut 2026-10-05) → ~~POR-EPIC-002~~ (gebaut 2026-10-06) → ~~-003~~ (gebaut 2026-10-07) | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | ~~DSN-001 bestätigen~~ (2026-09-30: wie empfohlen) · ~~ADR-023 bestätigen~~ (2026-09-30: wie empfohlen) |
-| 5 | **Angebote** | ~~ANG-EPIC-001~~ (gebaut 2026-10-07) → ~~ANG-EPIC-002~~ (gebaut 2026-10-07) → ~~KND-EPIC-001~~ (gebaut 2026-10-07) | — | Abo- und Paketpreise (bis dahin synthetisch) |
-| 6 | **Pläne und Rückfragen** | ~~UEB-EPIC-001~~ (gebaut 2026-10-07) → ~~-002~~ (gebaut 2026-10-07) → ~~-003~~ (gebaut 2026-10-08) → ~~KOM-EPIC-001~~ (gebaut 2026-10-09) → -002 → -003 | ~~**ADR-024** Offline-Erfassung und Benachrichtigungen (vor KOM-EPIC-003)~~ (angenommen 2026-10-11) | ~~ADR-024 bestätigen~~ (2026-10-11: W1 c, sonst wie empfohlen) |
-| 7 | **Verlauf und Alltag** | TRK-EPIC-001 → -002 → -003 → OFF-EPIC-001 → OUT-EPIC-001 → ALT-EPIC-001 → ~~ALT-EPIC-002~~ (ersetzt durch ERN-EPIC-001 bis -006, oben) → ORG-EPIC-001 | — | Sichtung |
-| 8 | **Praxisbetrieb** | FLT-EPIC-001 → TEAM-001 → URL-001 → ZK-001 → ERS-001 | — | Tübinger Standortvorlage (Depot, Werkstatt) |
-| 9 | **Assistenz und Komfort** | KI-EPIC-001 → KI-EPIC-002 → MAP-007 → PRX-EPIC-004 → UI-003 | — | Sichtung |
-| 10 | **Feature-Freeze** | nur Befunde | Betriebsdokumentation | Probewoche 1 · Kollegin-Test · **M2** |
-| 11 | **Prüfungen** — ab Anfang 2027, **parallel** zu den Blöcken, die dann laufen | Befunde aus den Prüfungen | DSFA-Paket (G14) und Anfragen bis Ende 2026 vorbereiten, dann Antworten einarbeiten | OPS-001-Unterlagen · B1, B2, B4, B8 · Anbieterverträge |
-| 12 | **Betriebsreife** | OPS-002 → OPS-003 → OPS-004 Rest → OPS-007-Probe | BETRIEB-001 · Rückfallplan · Kurzanleitung | Cloudprojekt (G3) · Restore-Test 1 und 2 · Notfallzugang |
-| 13 | **Gate und Produktion** | keine Epics | Nachweistabelle MUSS → Test | **M3** Gate · **M4** Produktion |
-| 14 | **Eröffnung** | Hotfixes | Erster-Tag-Protokoll · Schulung | Probewoche 2 · Restore-Test 3 · Change-Freeze · **M5** · **M6** |
+**Block 11 läuft ab Anfang 2027 neben dem Bauen** (E-1); Block 12 beginnt, sobald OPS-001 positiv
+ist und das Cloudprojekt steht, ohne auf B1 und B2 zu warten. Docs-Sessions dürfen vorher laufen.
+Ein offenes Epic zieht die Bereichsüberholung seines Bereichs mit (`/bereich`, Jannes 2026-10-12;
+die Überholungen 1 bis 11 sind gebaut).
 
-**Block 11 läuft ab Anfang 2027 neben dem Bauen** (E-1), Block 12 beginnt,
-sobald OPS-001 positiv ist und das Cloudprojekt steht; auf B1 und B2 wartet
-er nicht. Die Test-Umgebung aus Block 1a enthält nur synthetische Daten und
-ist kein Cloudprojekt für echte Daten.
-
-**Docs-Sessions laufen neben dem Code.** DSN-001, ADR-023 und ADR-024 dürfen früher
-geschrieben werden als ihr Block — sie sollen angenommen sein, wenn ihr erster
-Loop beginnt, damit Jannes' Bestätigung nicht auf dem Weg liegt.
-
----
-
-## Meilensteine
-
-Ein Meilenstein ist erreicht, wenn **alle** Kriterien erfüllt sind. Er trägt
-kein Datum; eine Planungssession meldet **erreicht** oder **offen** und nennt das
-fehlende Kriterium.
-
+## Meilensteine: erreicht, wenn alle Kriterien erfüllt sind (ohne Datum)
 | MS | Name | Kriterien |
 | --- | --- | --- |
 | M1 | Kernprozess Ende-zu-Ende | Ein synthetischer Fall läuft **lokal** durch: Verordnung → Serie → Termin durchgeführt → Dokumentation finalisiert → Leistung → Rechnung → Zahlung · derselbe Fall als E2E-Test hinter der Anmeldung · von Jannes gesichtet · jede Datenklasse hat Löschpfad und Test |
-| M2 | Software fertig (Feature-Freeze V1) | Blöcke 1 bis 9 gebaut **und gesichtet** · Probewoche 1 durchlaufen, Befunde geschlossen · Kollegin-Test durchlaufen · DSFA-Paket und Anfragen verschickt · kein offener Befund der Klasse „Datenverlust/Falschzuordnung" |
-| M3 | Go-live-Gate | Ergebnisse aus B1, B2 (DSFA) und B4 liegen vor und sind eingearbeitet · OPS-001 positiv · jede Anbieterprüfung positiv **oder** die Funktion abgeschaltet · ADR-007 sieben Vorbedingungen · kein Register-Eintrag Datenschutz/Recht auf `offen` oder `entschieden (Jannes)` · Restore-Test 1 und 2 · Deployment aus Tag mit Freigabe · Redaction-Prüfung grün · Betriebsdokumentation (13 Positionen) · OPS-007 gegen die Test-Umgebung geprobt · Rückfallplan unterschrieben · Messrunde der Kernabläufe ([`../product/kernablaeufe.md`](../product/kernablaeufe.md); Verfahren bis 2026-10-12 in `git show eb43569:docs/development/archiv/OPTIMIERUNG.md`) · Sitzungssperre nach ADR-025 gebaut und gesichtet (G20) |
+| M2 | Software fertig (Feature-Freeze V1) | Blöcke 1 bis 9 gebaut **und gesichtet** · jede Funktion mit ungeprüftem Anbieter ist ohne ihn benutzbar oder abgeschaltet · Probewoche 1 durchlaufen, Befunde geschlossen · Kollegin-Test durchlaufen · DSFA-Paket und Anfragen verschickt · kein offener Befund der Klasse „Datenverlust/Falschzuordnung“ |
+| M3 | Go-live-Gate | Ergebnisse aus B1, B2 (DSFA) und B4 liegen vor und sind eingearbeitet · OPS-001 positiv · jede Anbieterprüfung positiv **oder** die Funktion abgeschaltet · ADR-007 sieben Vorbedingungen · kein Register-Eintrag Datenschutz/Recht auf `offen` oder `entschieden (Jannes)` · Restore-Test 1 und 2 · Deployment aus Tag mit Freigabe · Redaction-Prüfung grün · Betriebsdokumentation (13 Positionen) · OPS-007 gegen die Test-Umgebung geprobt · Rückfallplan unterschrieben · Messrunde der Kernabläufe ([`../product/kernablaeufe.md`](../product/kernablaeufe.md)) · Sitzungssperre nach ADR-025 gebaut und gesichtet (G20) · Branch Protection mit Secret Scanning und Push Protection |
 | M4 | Produktionssystem steht | Produktivprojekt in freigegebener EU-Region aus dem freigegebenen Tag · OPS-007 durchlaufen · keine synthetischen Daten · Backup, Monitoring und Release-Takt nach BETRIEB-001 aktiv |
 | M5 | Eröffnung | **Juli 2027.** Probewoche 2 durchlaufen · Restore-Test 3 · Change-Freeze eingehalten · Datenschutzinformation und Behandlungsvertrag nennen alle Auftragsverarbeiter · erster Behandlungstag läuft mit der Software |
-| M6 | Erster Betriebsmonat | Vier Wochen ohne Befund der Klasse „Datenverlust/Falschzuordnung" · Störfallliste ausgewertet · Optimierungsrunde durchgeführt |
-
----
+| M6 | Erster Betriebsmonat | Vier Wochen ohne Befund der Klasse „Datenverlust/Falschzuordnung“ · Störfallliste ausgewertet · Optimierungsrunde durchgeführt |
 
 ## Abweichungsregeln
-
-1. **Sichtung statt Abnahme je Epic** (Jannes, 2026-09-23, E-6; über Bilder seit
-   2026-10-12). Ein Loop ohne Oberfläche ist fertig mit grüner CI, `pnpm test:db`
-   und Zweitreview. Eine PR mit Oberfläche bringt eine Bildstrecke vorher/nachher
-   (375 und 1280 px), von Claude selbst geprüft; Jannes sichtet sie in etwa zehn
-   Minuten mit `/sichtung` nach [`../sichtung/README.md`](../sichtung/README.md),
-   höchstens 20 Punkte. Am Gerät bleibt nur, was ein Bild nicht zeigt. Die
-   offenen Klickschritte der alten Dateien werden per Bildstrecke triagiert.
-2. **Das Bauen dauert länger.** Der Umfang wird nicht gekürzt (Jannes,
-   2026-09-22). Die Anfragen laufen trotzdem ab Anfang 2027. Steht M4 zur Eröffnung
-   nicht, eröffnet die Praxis mit dem Papierprozess (H4), und die Software
-   folgt — nie auf Kosten einer Sicherheits- oder Datenschutzmaßnahme (§16).
-3. **Eine Prüfung widerlegt eine Annahme.** Die Annahme wird an ihrer einen
-   Stelle umgestellt (§15.2); die betroffene Funktion bleibt bis dahin
-   abgeschaltet (Grundsatz 5), alles andere geht weiter.
-4. **Eine neue Idee kommt dazu.** Ideen nach dem 2026-09-22 gehen in den
-   Ideenspeicher und stehen **nach V1**, bis Jannes sie ausdrücklich in eine
-   Etappe legt. Nach M2 kommt nichts mehr dazu.
-
----
+1. **Sichtung statt Abnahme je Epic** (E-6; über Bilder seit 2026-10-12): ohne Oberfläche fertig mit
+   grüner CI, `pnpm test:db` und Zweitreview; mit Oberfläche sichtet Jannes die selbst geprüfte
+   Bildstrecke mit `/sichtung` ([`../sichtung/`](../sichtung/README.md)), höchstens 20 Punkte.
+2. **Das Bauen dauert länger:** Der Umfang wird nicht gekürzt (2026-09-22), die Anfragen laufen; ohne
+   M4 eröffnet die Praxis mit Papier (H4), nie auf Kosten des Datenschutzes (§16).
+3. **Eine Prüfung widerlegt eine Annahme:** Sie wird an ihrer einen Stelle umgestellt (§15.2); die
+   Funktion bleibt bis dahin abgeschaltet (Grundsatz 5), alles andere geht weiter.
+4. **Eine neue Idee kommt dazu:** Ideen nach dem 2026-09-22 gehen in den Ideenspeicher und stehen
+   **nach V1**, bis Jannes sie ausdrücklich in eine Etappe legt. Nach M2 kommt nichts mehr dazu.
 
 ## Risiken
-
 | Nr | Risiko | Eintritt | Wirkung | Frühindikator | Gegenmaßnahme |
 | --- | --- | --- | --- | --- | --- |
-| R1 | **Die Prüfungen kommen zu spät für Juli 2027.** B2 mit DSFA und B1 brauchen erfahrungsgemäß vier bis sechs Monate | mittel | sehr hoch | Die Anfragen sind im Januar 2027 nicht verschickt | Anfragen ab Anfang 2027 parallel zum Bauen (E-1); DSFA-Paket und Anfragen bis Ende 2026 vorbereiten; was danach noch gebaut wird, geht als Nachtrag hinterher; Rückfall H4 |
-| R2 | Providerprüfung Supabase negativ — und das erst 2027 | niedrig | sehr hoch | Gate-Punkt 3 (§203 Abs. 4 StGB) unbeantwortet | Nähte eines Wechsels in Teil 7 von [`../decisions/providerpruefung-supabase.md`](../decisions/providerpruefung-supabase.md); die Unterlagen aus Teil 9 zu laden kostet nichts und ist keine Anfrage |
-| R3 | Jannes' Zeit reicht nicht für Abnahmen — **eingetreten** (über 30 Epics seit 2026-09-12 ohne Abnahme) | eingetreten | hoch | Ein Block endet ohne Sichtung | Sichtung statt Abnahme je Epic (Regel 1), seit 2026-10-12 über die Bildstrecke jeder PR (etwa zehn Minuten); offene Klickschritte per Bildstrecke triagiert; Test-Umgebung fürs Handy (Block 1a) |
+| R1 | **Die Prüfungen kommen zu spät für Juli 2027.** B2 mit DSFA und B1 brauchen erfahrungsgemäß vier bis sechs Monate | mittel | sehr hoch | Die Anfragen sind im Januar 2027 nicht verschickt | Anfragen ab Anfang 2027 parallel zum Bauen (E-1); DSFA-Paket und Anfragen bis Ende 2026 vorbereiten; später Gebautes als Nachtrag; Rückfall H4 |
+| R2 | Providerprüfung Supabase negativ, und das erst 2027 | niedrig | sehr hoch | Gate-Punkt 3 (§203 Abs. 4 StGB) unbeantwortet | Nähte eines Wechsels in Teil 7 von [`../decisions/providerpruefung-supabase.md`](../decisions/providerpruefung-supabase.md); die Unterlagen aus Teil 9 zu laden kostet nichts und ist keine Anfrage |
+| R3 | Jannes' Zeit reicht nicht für Abnahmen (**eingetreten**: über 30 Epics ohne Abnahme) | eingetreten | hoch | Ein Block endet ohne Sichtung | Sichtung statt Abnahme (Regel 1) über die Bildstrecke jeder PR; offene Klickschritte per Bildstrecke triagiert; Test-Umgebung fürs Handy |
 | R12 | Die Oberfläche passt nicht zur Arbeit am Rad und wird spät nachgearbeitet | mittel | hoch | Jannes findet Begriffe oder Abläufe unklar | UX-Fundament in Block 1a; Begriffsliste als Maßstab jeder neuen Oberfläche; Sichtung am Handy |
-| R4 | Der Umfang ist rund dreimal so groß wie in 5.49 | hoch | hoch | Block 4 beginnt nicht, während Block 2 noch offen ist | Reihenfolge nach Grundsatz 3 (Komfort zuletzt); Bereichsüberholungen in großen Schritten mit unveränderten Gates, Bildstrecke und Zweitreview je kritischem Teil; Tempo im Wochenupdate zählen |
-| R5 | Die Plattform öffnet die Anwendung nach außen (Konten für Patient:innen und Kund:innen) | mittel | sehr hoch | ein Portalpfad ohne Negativfall in `pnpm test:db` | ADR-023 vor dem ersten Loop; jede Portalsicht mit Negativfall „fremde Person"; Zweitreview Pflicht (ADR-013 Punkt 9) |
-| R6 | Befunde aus der Sichtung kommen als Welle | hoch | mittel | Rückstand wächst | Abweichungsregel 1; Befunde als erste Story der nächsten Loop derselben Etappe |
-| R7 | MDR: Tracking, Fortschritt und KI rücken an die Grenze | mittel | sehr hoch | eine Story, die eine Aussage **über** Daten erzeugt statt sie zu zeigen | §17 und das Register `src/app/mdr.ts`; „Nicht in V1" oben; B1 prüft den ganzen Umfang |
-| R8 | Kein Mailversand an Patient:innen: Die Plattform braucht Einladungen und Hinweise, der eingebaute Versand stellt nur ans Projektteam zu (BEF-026, B13) | hoch | hoch | POR-EPIC-001 ohne Zustellweg | Versand hinter einem Adapter mit `mock`-Weg (Grundsatz 5); eigener SMTP-Anbieter als Anbieterprüfung in Block 11 |
+| R4 | Der Umfang ist rund dreimal so groß wie in 5.49 | hoch | hoch | Block 4 beginnt nicht, während Block 2 noch offen ist | Reihenfolge nach Grundsatz 3; Bereichsüberholungen in großen Schritten mit unveränderten Gates, Bildstrecke und Zweitreview je kritischem Teil; Tempo in der Planung zählen (`/weiter`) |
+| R5 | Die Plattform öffnet die Anwendung nach außen (Konten für Patient:innen und Kund:innen) | mittel | sehr hoch | ein Portalpfad ohne Negativfall in `pnpm test:db` | ADR-023; jede Portalsicht mit Negativfall „fremde Person“; Zweitreview Pflicht (ADR-013 Punkt 9) |
+| R6 | Befunde aus der Sichtung kommen als Welle | hoch | mittel | Rückstand wächst | Abweichungsregel 1; Befunde als erste Story der nächsten Überholung desselben Bereichs |
+| R7 | MDR: Tracking, Fortschritt und KI rücken an die Grenze | mittel | sehr hoch | eine Story, die eine Aussage **über** Daten erzeugt statt sie zu zeigen | §17 und das Register `src/app/mdr.ts`; „Nicht in V1“ oben; B1 prüft den ganzen Umfang |
+| R8 | Kein Mailversand an Patient:innen: Die Plattform braucht Einladungen und Hinweise, der eingebaute Versand stellt nur ans Projektteam zu (BEF-026, B13) | hoch | hoch | Plattform ohne Zustellweg | Versand hinter einem Adapter mit `mock`-Weg (Grundsatz 5); eigener SMTP-Anbieter als Anbieterprüfung in Block 11 |
 | R9 | `pg_cron`, PITR und Logfrist halten beim Provider nicht (R14 alt) | mittel | mittel | Produktivprojekt ohne PITR | PITR als Bedingung im Anlage-Runbook (G3); Logfrist `BETRIEBSLOG_FRIST_TAGE` in `src/lib/protokoll.ts`, Entscheidung bei Jannes |
 | R10 | Mobile Endgeräte ohne Richtlinie | mittel | hoch | TOM ohne Abschnitt Endgeräte | Endgeräte-Richtlinie in G14/G16; MFA einrichtbar (ANN-028) |
 | R11 | PTV Developer scheitert am Vertrags-/§203-Gate | mittel | mittel | ein Gate-Punkt aus Teil 5 negativ | Adapter hinter `contract.ts`; zweite Wahl MapTiler und HERE mit eigener Prüfung |
 
----
+## Offene Loops bis M2
+Zuschnitt, keine Spec. Ernährung (ADR-027): je Epic Pfad A, fertig mit dem Budget am Seed gemessen
+(375 px, Playwright); die gebauten Epics prüfen `ernaehrung.spec.ts` und `tagebuch.spec.ts`.
 
-## Etappen
-
-Gebaute Etappen stehen nur noch mit ihrem Abschluss hier; ihre Zuschnitte
-liegen in der Chronik. Die Spalte „Quelle" nennt die Herkunft im
-Ideenspeicher — sie begründet keinen Scope, sie sagt nur, woher der Zuschnitt
-kommt.
-
-### Gebaut
-
-- **Etappe 1 — Kernprozess** (bis M1): DOK-EPIC, VER-EPIC-001/002, UI-000,
-  UX-EPIC-001, LOE-EPIC-001, CAL-EPIC-003a/b, ROL-EPIC-001, CAL-018,
-  CAL-EPIC-004a/b/c, FIX-EPIC-004, UX-013, GRD-001, ABR-EPIC-001 bis 003,
-  FIX-EPIC-001. Offen ist allein **M1** selbst (Sichtung und E2E-Fall).
-- **Etappe L — Zwei Leistungsbereiche im Fundament:** ABR-EPIC-004,
-  LEI-EPIC-001, CAL-EPIC-005, ABR-EPIC-005, ABR-EPIC-006 (fertig 2026-09-21).
-- **Etappe T, erster Teil:** MAP-002 bis MAP-005 (fertig 2026-09-22).
-- **Etappe G, gebaute Teile:** G1 ADR-017, G2 STAFF-EPIC-002, G4
-  DAT-EPIC-001, G6 OPS-004 (zwei Teile), G8 PAT-006, G9 OPS-006, G11 OPS-007
-  (Runbook, lokal geprobt).
-- **Querschnitt:** FRB-EPIC-000 (Schema der Instrumente), das Register
-  `MDR_REVIEW_REQUIRED`, CAL-027.
-
-**Bewusst ungeplant bleiben** zwei Umbauten ohne fachlichen Gewinn: das
-Adressfragment `verordnungen` → `grundlagen` (ANN-062) und die Teilung von
-`src/features/patients/treatment-bases`. Beide nimmt ein Loop mit, der ohnehin dort
-arbeitet.
-
-### Block 1 — Rückstand
-
-| Loop | Ergebnis | Zuschnitt |
-| --- | --- | --- |
-| ~~**G19**~~ | **gebaut 2026-09-22** — Das Dokumentationsgate prüft, ob Aussagen über andere Dokumente stimmen (BEF-028) | Verweise auf ADR-Fassungen und Prinzipienversionen gegen den Stand, `§NN` gegen vorhandene Abschnitte, Eindeutigkeit der `ANN-`/`BEF-`/`IDEA-`-Nummern; Nennungen in Änderungsvermerken bleiben erlaubt |
-| ~~**G6a**~~ | **gebaut 2026-09-23** — Abgewiesene Lesezugriffe auf klinische Dokumente sind nachweisbar (ADR-010 Punkt 2) | Die fünf Lesepfade auf Behandlungsdokumentation und klinische Behandlungsgrundlage weisen mit null Zeilen und einem `denied`-Eintrag ab, geschrieben über `app.record_denied_read`. `audit.test.ts` hält die Liste der Pfade fest |
-| ~~**G6b**~~ | **gebaut 2026-09-23** — Die übrigen abgewiesenen Lesezugriffe sind nachweisbar | Bestandsaufnahme per `pg_proc`: 119 Funktionen mit `not allowed to …`. 34 weitere Lesepfade weisen mit null Zeilen (skalar `null`) und `denied` ab; Aktion wie beim erfolgreichen Zugriff oder eine von zehn denied-only-Aktionen je Datenbereich. Maßstab: Die Oberfläche ruft den Pfad für die abgewiesene Rolle nie auf. Ausnahme `list_assignable_therapists` (trainer auf den Teamseiten, BEF-034) |
-| ~~**G6c**~~ | **gebaut 2026-09-26** — Abgewiesene Schreibzugriffe sind nachweisbar | Zehn Pfade für Rollen und Konten, Legal Hold und Löschaufträge schreiben über `app.record_denied_write` einen `denied`-Eintrag und antworten mit HTTP 403 in bestätigter Transaktion; der Client prüft den Status (ANN-115). **Entschieden (Jannes, 2026-09-26): wie empfohlen** — (a) für Rollen und Konten, Legal Hold und Löschaufträge, (c) für den Rest. Zur Wahl standen: (a) bestätigte Transaktion mit HTTP 403 über `response.status` von PostgREST, lokal mit `supabase start` zu prüfen; (b) Ereignis ins Betriebslog statt ins Auditlog, hängt an G3 und R9; (c) Schreibpfade bleiben ohne Eintrag. G6c baut als nächster Loop, **vor** Training und Plattform |
-
-### Block 1a — Handy und UX-Fundament
-
-Jannes will sehen, was gebaut ist, und zwar am Handy in der Halterung am Rad
-(E-2, E-5). Die Oberfläche ist heute auch am Desktop unübersichtlich, und
-Beschriftungen folgen eher dem Datenmodell als der Praxis. Vor jeder weiteren
-Oberfläche kommen deshalb die Test-Umgebung und das Fundament der Bedienung.
-
-| Loop | Ergebnis | Zuschnitt | Voraussetzung |
+| Block | Loop | Ergebnis und Zuschnitt | Vorgabe |
 | --- | --- | --- | --- |
-| ~~**OPS-002a**~~ | **gebaut 2026-09-25** — Jannes öffnet die Anwendung auf dem eigenen Handy, von überall; Auslieferung nach grüner CI auf `main`, Seed auf Knopfdruck (ANN-100, ANN-101) | Test-Umgebung nach G5, **vorgezogen**: Supabase-Projekt in der EU nur mit synthetischen Daten, Hosting der Oberfläche nach B16 (`git show eb43569:docs/decisions/hosting-optionen.md`), eigene Domain, Zugang geschützt, Deployment aus `main` nur dorthin; Seed mit einer Praxiswoche. Kein Produktivprojekt (§3.2) | Jannes legt Konten an (B16) |
-| **UX-EPIC-002** | Die Anwendung spricht die Sprache der Praxis | Begriffsliste aus Jannes' Sammlung (Beschriftungen, Knöpfe, Meldungen) als eine Quelle im Code; Bedienprinzipien (ein Hauptknopf je Ansicht, was nicht gebraucht wird, ist eingeklappt, Handy zuerst); Navigation und Arbeitsbereiche danach durchgesehen; Bildschirmfotos vorher und nachher | ~~Begriffsliste von Jannes~~ (2026-09-26: Begriffe in Ordnung); BEF-035 bis BEF-040, UX-002f bis UX-002h und BEF-041 bis BEF-044 gebaut 2026-09-26 (ANN-108 bis ANN-114); Sichtung am Handy offen |
-| ~~**UX-EPIC-003**~~ | **gebaut 2026-09-26** — Der Tag beginnt am Rad mit dem, was zählt: Liege heute, erster Weg, Vorschau, bisherige Doku (ANN-116, ANN-117); Sichtung in Kernprozess Schritt 10 und 12 | Tagesansicht fürs Handy als Startseite (aus PRX-EPIC-002 vorgezogen): erster Weg, Vorschau auf den nächsten, kurze Hinweise zur Person, **Behandlungsliege heute: ja, ab dem n-ten Besuch** (§9; Merkmal an der Person, in der Akte setzbar, im Befund ab FRB-EPIC-003), bisherige Doku mit einem Tipp; offene Punkte der Erstaufnahme als Hinweis, sobald PRX-EPIC-003 sie liefert | UX-EPIC-002 |
+| 2 | **FRB-EPIC-004** | Skalen in der Verlaufsdoku antippen statt tippen: startet mit der Aktivierung von NRS und Veränderungsfrage (ANN-099; Wortlaut freigegeben 2026-09-28/29 als **Praxisvorgaben**, nicht als validierte Schmerz-NRS; **PSFS gestrichen**; die Definitionsdateien werden hier nachgezogen); Erhebung an der Dokumentation, gespeichert und als Zeile im Vorschlag, kein zweiter Wert neben der Erhebung (§13); die **Veränderungsfrage steht ab dem zweiten Termin je Patient:in oben** (Jannes 2026-09-28) | §5, FRB-EPIC-001; Plan bis 2026-10-27: `git show 9452575:docs/development/FRB-BAUSTEINE-UND-SCORES.md` (Leitprinzip, MDR-Grenze; die Phasen P4 bis P6 mit D4 bis D6 sind nicht eingeplant) |
+| 2 | **FRB-EPIC-005** | Ein Bild ruft den Test in Erinnerung: optionales Bild je Test in der Definition, beim Abhaken gezeigt, ohne Bewertung (ADR-006); startet, sobald Bilder vorliegen (eigene Zeichnung, Lizenz nach B8 oder Foto nach §20) | `IDEA-OUT-009` |
+| 7 | **ERN-EPIC-004** | Barcode: Scan mit der Kamera ohne Bildspeicherung, Nachschlagen nur im eigenen Auszug, unbekannt → Suche oder eigenes Lebensmittel; fertig mit Produkt per Scan in ≤ 3 Tipps | ADR-027 |
+| 7 | **ERN-EPIC-005** | Pläne und Rezepte: Rezepte aus Zutaten, Tagesvorschläge und Pläne von der Beratung, Startinhalte (≈ 30 Rezepte); fertig mit Plan in ≤ 10 Minuten zugewiesen, Rezept mit einem Tipp ins Tagebuch | ADR-027 |
+| 7 | **ERN-EPIC-006** | Verlauf für die Beratung: Wochenmittel neben Zielwerten, Gewicht, neben Check-ins und Training im Verlauf; fertig mit Sitzung aus einer Ansicht vorbereitet | ADR-027 |
+| 7 | **ORG-EPIC-001** | Eine Person auf einen Blick, die Sitzung ist vorbereitet: Zeitstrahl über alle Bereiche, Sitzungsvorbereitung für die Praxis, Übersicht je Person | `IDEA-QSN-001`, `IDEA-ORG-001`, `-005` |
+| 9 | **KI-EPIC-001** | Diktieren statt tippen, mit geprüftem Entwurf: Gateway nach ADR-005 mit `mock`-Adapter, Sprachdokumentation nach §6.3 mit Weg ohne Sprechen (§5), Nutzung sichtbar; Anbieter C6 in Block 11 | `IDEA-KI-001`, `-005`, `-007` |
+| 9 | **KI-EPIC-002** | Sprache umformen, ohne Inhalt hinzuzufügen: Freitext strukturieren, Patientensprache, Antwortentwürfe, Zusammenfassung ohne Bewertung, **Felder der Verordnung aus dem Foto vorschlagen**, jeweils mit Quellenbindung und menschlicher Freigabe | `IDEA-KI-002`, `-003`, `-004` |
+| 9 | **MAP-007** | Führung auf dem Gerät, ohne dass die Praxis die Position erfährt (ADR-019 Abschnitt F, §20.1: Position nur auf dem Gerät, Start nur auf Aktion, Übermittlung nur zur Neuberechnung, keine Auswertung). Zuerst **E-24** (liefern die Radprofile Manöver? ein Aufruf; ohne Ja entfällt das Epic), B2 in erweiterter Fassung und das Aufrufkontingent; Stories MAP-007a bis -f, keine rein visuelle Führung (ADR-019 Punkt 31), synthetische Adressen | `IDEA-PRX-044`; Vorgabe `git show 9452575:docs/development/MAP-LOOPS.md` |
+| 9 | **PRX-EPIC-004** | Komfort für die Praxisführung: Kennzahlen für Training, Abo und Pakete (auf STA-EPIC-001), Export für die Steuerberatung (Format als Annahme bis B4), Farbcodierung je Terminart und Person, Kalender-Abo (Bedenken: ohne Namen), Planungskarte der aktiven Adressen (Bedenken), Kartenzahlung beim Hausbesuch hinter Adapter (Grundsatz 5) | `IDEA-PRX-026`, `-021`, `-024`, `-033`, `-022` |
+| 9 | **UI-003** | Feinschliff und Barrierefreiheit über alle Seiten (G17): Feindesign, PWA-Manifest, was die Bereichsüberholungen übrig lassen | — |
 
-### Block 2 — Kern fertig
-
-**Etappe T, Rest.** Zuschnitt in [`MAP-LOOPS.md`](MAP-LOOPS.md). Gebaut wird
-mit synthetischen Adressen; das Gate aus ADR-019 Punkt 9 steht vor dem
-Scharfschalten, nicht vor dem Bau (ADR-019 Fassung 4, §15.2).
-
-| Loop | Ergebnis | Zuschnitt | Quelle |
-| --- | --- | --- | --- |
-| ~~**MAP-006**~~ | **gebaut 2026-09-25** — Die Tagesroute liegt auf der Karte, mit Route, Fahrzeiten und Erreichbarkeit im Kalender | Koordinaten bei der Adresse (ANN-016), Startort je Tag, Route und Fahrzeiten, Tourenliste druckbar, Handoff mit Koordinaten; **Fahrpuffer aus §8.1** mit Aufrundungsregel als Testfall (09:05–10:05 plus 12 Minuten ergibt 10:20) und Warnung bei Unterschreitung (E12 Punkt 3 und 4); ersetzt die Vorschau `/touren` | `IDEA-PRX-017`, `-029`, `-032` |
-
-**Etappe 2 — Befund.** Plan, Phasen und Vorentscheidungen in
-[`FRB-BAUSTEINE-UND-SCORES.md`](FRB-BAUSTEINE-UND-SCORES.md); Material in
-[`../../quellen/README.md`](../../quellen/README.md). Zur Eröffnung ist jede
-Patientin eine Neuaufnahme — deshalb gleich nach der Tagesroute.
-
-| Loop | Ergebnis | Zuschnitt | Quelle |
-| --- | --- | --- | --- |
-| ~~**FRB-EPIC-001**~~ | **gebaut 2026-09-25** — Die Instrumente liegen als versionierte Bibliothek mit Lizenzfeld vor; NRS, PSFS und Veränderungsfrage inaktiv bis zur Vorlage (ANN-099) | Instrumentenbibliothek (P1-Schema aus FRB-EPIC-000), freie Instrumente NRS und PSFS, globale Veränderungsfrage; berechnen ja, bewerten nein | `IDEA-OUT-001`, `-003`, `-004` |
-| ~~**FRB-EPIC-002**~~ | **gebaut 2026-09-26** — Anamnese und Verlauf stehen in der Akte: Anamnesebogen V8 aktiv, Hervorhebung nach acht offengelegten Regeln (ANN-104), Körperschema, Verlauf als Punkte mit Ereignissen (ANN-106) | Anamnesebogen nach §7 in der Praxis ausfüllbar (vorab über die Plattform ab POR-EPIC-002, auf Papier als Foto nach DOK-006), Red Flags nach §7.1 hervorgehoben, Verlauf mit Ereignismarkierungen ohne Bewertung, Körperschema im Befund; B8 als Annahme | `IDEA-OUT-005`, `IDEA-PRX-027` |
-| ~~**FRB-EPIC-003**~~ | **gebaut 2026-09-26** — Der Befund entsteht aus Bausteinen zum Abhaken: neun Regionen wörtlich als Daten, Vorschlag in den Eintrag, Liege im Befund (ANN-118 bis ANN-120); Bilder und Skalen als FRB-EPIC-004/005 ausgegliedert, Sichtung Befund Schritte 6 und 7 | Phasen P2 und P3 des FRB-Plans: neun Regionen als Daten (Zähltest), Renderer mit Live-Vorschau des Texts, Textbausteine auch im Befund, ein Bild ruft den Test in Erinnerung; **Liege-Merkmal im Befund**; Bausteine und Skalen auch für die Verlaufsdoku — der Weg ohne Sprechen (§5) | `IDEA-PRX-043`, `IDEA-OUT-009` |
-| ~~**DOK-005**~~ | **gebaut 2026-09-26** — Ein Therapiebericht an die Verordner:in entsteht aus Befund und Verlauf: gespeichert und beim Abschluss eingefroren, Inhalt angekreuzt und wörtlich, Empfehlung mit Quelle und Datum an der Verordnung (ANN-121 bis ANN-124); Sichtung Befund Schritte 8 und 9 | Bericht als Druckansicht (B14 Weg 1), Inhalt nur übernommen, nicht interpretiert (§17); dazu die **Empfehlung zum Verordnungsende** mit Quelle und Datum (Wiedervorlage aus VER-EPIC-002, ANN-014) | `PROJECT_PRINCIPLES.md` §4.2 |
-| ~~**DOK-006**~~ | **gebaut 2026-09-26** — Fotos liegen in der Akte, ohne in der Mediathek des Handys zu landen: Kameradialog für Dokumente und Patientenfotos, Metadaten vor dem Upload entfernt (ANN-125), Patientenfotos auf eigener Einwilligung mit eigener Klasse und Löschung beim Widerruf (ANN-126, ANN-127), Vergleich zweier Fotos im Verlauf, Herausgabe nur an die Person (ANN-128); Sichtung Befund Schritte 10 bis 12 | Aufnahme über die Kamera der Anwendung für Verordnung und Papierbögen; **Fotos von Patient:innen** mit eigener Einwilligung, Frist und Entfernung der Aufnahmemetadaten — freigegeben mit ADR-017 Fassung 2 (Abschnitt G, angenommen 2026-09-26); Vergleich zweier Fotos im Verlauf, ohne Bewertung (§17) | Jannes 2026-09-23; §5 |
-| **FRB-EPIC-004** | Skalen in der Verlaufsdoku — die aktuelle Lage antippen statt tippen | Startet mit der Aktivierung von NRS und Veränderungsfrage (ANN-099; Wortlaut beider freigegeben 2026-09-28/29 als **Praxisvorgaben**, nicht als validierte Schmerz-NRS; **PSFS gestrichen**; die Definitionsdateien werden hier nachgezogen): Skalen an der Dokumentation erheben, als Erhebung gespeichert und als Zeile in den Vorschlag; kein zweiter Wert neben der Erhebung (§13). Die **Veränderungsfrage steht ab dem zweiten Termin je Patient:in oben in der Dokumentation** (Jannes 2026-09-28). Aus FRB-EPIC-003 ausgegliedert (Jannes 2026-09-26) | §5, FRB-EPIC-001 |
-| **FRB-EPIC-005** | Ein Bild ruft den Test in Erinnerung | Startet, sobald Bilder vorliegen (eigene Zeichnung, Lizenz nach B8 oder Foto nach §20): optionales Bild je Test in der Definition, beim Abhaken gezeigt, ohne Bewertung (ADR-006). Aus FRB-EPIC-003 ausgegliedert (Jannes 2026-09-26) | `IDEA-OUT-009` |
-
-**Etappe P — Praxisverwaltung.** Die Ideen aus
-[`../product/ideen/10-praxisverwaltung.md`](../product/ideen/10-praxisverwaltung.md),
-die den Tag erleichtern. Der Komfortteil steht als PRX-EPIC-004 in Block 9;
-die Kennzahlen sind als **STA-EPIC-001** daraus vorgezogen (2026-09-26,
-Grundsatz 3: Steuerung ist für den Owner Kernfunktion, nicht Komfort).
-
-| Loop | Ergebnis | Zuschnitt | Quelle |
-| --- | --- | --- | --- |
-| ~~**PRX-EPIC-001**~~ | **gebaut 2026-09-28** — Ein freier Platz findet eine Patientin: Warteliste mit organisatorischer Dringlichkeit (ANN-132 bis ANN-134), Gebietstage als Warnung (ANN-135), Terminsuche als Vorschlagsliste mit Fahrweg als Kennzeichen (ANN-136), Nachrücken in einer Transaktion; Sichtung Praxisverwaltung Schritte 1 bis 3 | Warteliste mit Zeitfenstern und Nachrücken, automatische Terminsuche als Vorschlagsliste, Gebietstage für die Terminvergabe | `IDEA-PRX-003`, `-008`, `-031` |
-| ~~**PRX-EPIC-002**~~ | **gebaut 2026-09-28** — Am Termin steht, was man vor der Tür wissen muss: Kurzblick aufklappbar und protokolliert (ANN-137), Material von Hand an der Person, am Tag ohne Namen (ANN-138), „Termin n von m“ und Abrechnungslage nur fürs Büro (ANN-139), Heilmittel bestätigen am eigenen Termin (ANN-140); BEF-055 Teil 1; Sichtung Praxisverwaltung Schritte 4 bis 6 | Vertretungs-Kurzblick (aufklappbar, auditiert), „Mitnehmen" aus den letzten Befunden, Abrechnungslage und Verordnungszähler am Termin, Termin abhaken mit Heilmittel und Kontingent | `IDEA-PRX-034`, `-016`, `-035`, `-037`, `-009`, `-039` |
-| ~~**UX-EPIC-004**~~ | **gebaut 2026-09-29** — Ruhiger und übersichtlicher: Befunde BEF-071 bis BEF-081 aus den Sichtungen Praxisverwaltung und Kernprozess (Rückweg aus der Terminsuche, Kalenderstand, heute im Monat, kurze Kacheln, Meldungen im Sichtfeld, Erklärungen eingeklappt, erledigte Tests auf einer Zeile, Bausteine ohne Verwaltung, Verlauf als Karten, Abschnitt „Abrechnung“, „Protokoll“ statt „Auditlog“); vor PRX-EPIC-003 auf Wunsch von Jannes | UX-004a bis UX-004e | BEF-071 bis BEF-081 |
-| ~~**UX-EPIC-005**~~ | **gebaut 2026-09-30** — Entrümpeln auf Wunsch von Jannes (BEF-084 bis BEF-087): Terminseite mit Kopfzeile (Datum, Zeit, Mitteilungszeichen) und Kacheln statt Tabelle, behandelnde Person nur an fremden Terminen (ANN-193), der Hausbesuch als Regelfall ohne Wort in allen Kacheln und Zeilen (ANN-192), „Niemand öffnet?“ als zugeklappte Schrittfolge mit Rufnummern, Zeit außerhalb der Arbeitszeit im Kalender grau schraffiert; zweiter Durchgang über alle Bereiche (Akte, Terminformulare, Übersicht und Büro, Organisation, Abrechnung, Training): Regelfälle ohne Abzeichen, leere Werte ohne Zeile, Systemerklärungen weg oder zugeklappt; Sichtung Praxisverwaltung Schritt 9 | UX-005a bis UX-005i | BEF-084 bis BEF-091 |
-| ~~**UX-EPIC-006**~~ | **gebaut 2026-10-10** — Ein Funkloch kostet keinen Text und sagt, was los ist: Nachladefehler lassen Praxis und Plattform stehen (Zeile mit „Erneut versuchen“), Erstladen als Vollseite mit festem Satz; Anmelde- und Sperrseite nennen keine Verbindung, Störung, zu viele Versuche und ein Sitzungsende von außen; neun Wege mit deutschem Satz statt Prüftext; Sichtung Rahmen Schritte 13 bis 15 | UX-Review, Entscheidung Jannes 2026-10-09: BEF-046 (Nachladefehler lässt die Anwendung stehen, Erstladen mit „Erneut versuchen“), BEF-047 Teil 2 (Anmeldeseite nennt die Ursache), BEF-070 (deutsche Sätze statt Prüftext an allen neun Wegen). Kritischer Pfad (Sitzungen), Zweitreview | `BEFUNDE.md` |
-| ~~**UX-EPIC-007**~~ | **gebaut 2026-10-10** — Dokumentation und Akte: Der Entwurf sichert sich nach drei Sekunden Pause von selbst (ANN-319), im Konfliktfall wird der Text Nachtrag oder Korrektur (ANN-320), der Nachtrag wird auf seiner Seite festgeschrieben; am Termin ein Hauptknopf „Doku“, „Nur Termin abschließen“ eingeklappt, am offenen Hausbesuch kein „Finalisieren“; Fotos „Fotos (n)“, „Bisherige Doku“ springt zum Verlauf; Dokumentart ohne Vorauswahl, Namen „‹Art› vom ‹Datum›“; Hauptaktion je Verordnungszustand, Kontaktwege der Verordner:in; Sichtung UX-Review Schritte 1 bis 3 | BEF-056 (Entwurf von selbst sichern, Übernahme im Konfliktfall, Nachtrag festschreiben), BEF-055 (am offenen Hausbesuch „Was ist passiert?“, ein Hauptknopf), BEF-058 (Fotobereich klein, Sprung zum ersten Eintrag), BEF-059 Teile 2 und 3 (Dokumentart ohne Vorauswahl, Namensschema), BEF-060 Rest (Hauptaktion je Zustand, Kontaktwege der Verordner:in). Kritischer Pfad (Finalisierung), Zweitreview | `BEFUNDE.md` |
-| ~~**UX-EPIC-008**~~ | **gebaut 2026-10-10** — Unumkehrbares fragt nach, Korrekturen finden ihren Weg: Rückfrage mit Empfänger, Betrag und Kreis vor dem Ausstellen, Foto-Widerruf nennt die Zahl der Arbeitshilfen; nach dem Storno nur „Korrekturrechnung erstellen“, das Datenmodell sperrt jeden anderen Entwurf, je stornierter Rechnung eine eigene Korrektur (ANN-321); Empfänger bearbeitbar mit Standard; Rückfrage beim Entziehen einer Rolle, Instrumente für alle Rollen der Behandlungsseite (ANN-322); Sichtung UX-Review Schritte 4 bis 6 | BEF-063 (Rückfrage mit Kontrollwerten bei Rechnung ausstellen und Fotos löschen), BEF-064 (Rückfrage beim Entziehen einer Rolle, Instrumente für alle Praxisrollen), BEF-062 (ein Weg zur Korrekturrechnung, Empfänger bearbeitbar mit Standard). Kritischer Pfad (Abrechnung, Rollen), Zweitreview | `BEFUNDE.md` |
-| ~~**UX-EPIC-009**~~ | **gebaut 2026-10-10** — Papier, Nachweise und Wörter sprechen Praxissprache: Die Übersicht druckt jeden eigenen Termin mit Anschrift, Zugang und Rufnummer (ANN-021 Fassung 3); Aufnahmeblatt und Terminzettel tragen den Absender aus den Praxis-Stammdaten, der Zettel am Praxistermin die Standortanschrift (ANN-323); Protokoll mit Filtern in der Adresse, gruppierten Aktionen, rotem „Abgewiesen“ und festem Stand beim Blättern; Aufbewahrung beginnt mit „Zu tun“; MDR-Sperre in Praxissprache; Begriffe nach Spalte „Vorschlag“ (ANN-111); Sichtung UX-Review Schritte 7 bis 9 | BEF-052 (Übersicht vollständig drucken, Absender auf Aufnahmeblatt und Terminzettel), BEF-065 (Nachweisseiten für die Praxisleitung, E2E-Satz der MDR-Sperre freigegeben), BEF-067 (Begriffe nach Spalte „Vorschlag“ in `begriffe.ts`) | `BEFUNDE.md` |
-| ~~**PRX-EPIC-003**~~ | **gebaut 2026-09-29** — Nichts fällt durch: Office erfasst Grundlagen (ANN-011), Verordnungsfoto am Termin und „Grundlage erfassen“ mit dem Foto daneben (ANN-141), Aufgaben und Wiedervorlagen (ANN-142), Erstaufnahme-Checkliste aus der Akte (ANN-143), Anrufliste mit gespeichertem Stand (ANN-144), Dublettenhinweis (ANN-145), Erinnerungen am Rezeptende und an den Abschluss (ANN-146), alles unter **Übersicht → Offene Punkte**; BEF-060 Teile 1 und 2; Zusammenführen als PRX-EPIC-003b ausgegliedert (Jannes 2026-09-29); Sichtung Praxisverwaltung Schritte 10 bis 12 | **Verordnung ohne Papier** (Jannes 2026-09-28): Therapeut:in fotografiert am Termin mit der Kamera der App (Verordnungsscan), daraus ein offener Punkt „Verordnung zu erfassen“ in einer Büroliste; Office öffnet „Grundlage erfassen“ mit dem Foto daneben und tippt ab — dafür **Schreibrecht für `office`** an der Grundlage (ANN-011). KI-Vorschlag der Felder bleibt in KI-EPIC-002 (Block 9). **Erstaufnahme-Checkliste** (Verordnungsfoto, Befundbogen, Einwilligungen, Befund, Liege; offen in Tagesansicht, Aktenkopf und Büroliste, bis erledigt — §5), Aufgaben und Wiedervorlagen mit Patientenbezug, Anrufliste für morgen mit gespeichertem Stand, Dublettenprüfung und Zusammenführen, Verordnung per Kamera, Erinnerung am Rezeptende und an den vergessenen Abschluss | `IDEA-PRX-019`, `-005`, `-041`, `-018`, `-023`, `IDEA-LZK-007`, `-009` |
-| ~~**PRX-EPIC-003b**~~ | **gebaut 2026-09-29** — Zwei Akten derselben Person werden eine: `owner` übernimmt aus den Stammdaten eine Dublette mit Vorschau und Bestätigung; alles wandert, Unveränderliches wechselt nur den Bezug; Stammdaten, Versorgungsstand, Sperren und Nachweis nach ANN-147 bis ANN-150; Sichtung Praxisverwaltung Schritt 13 | Zusammenführen einer Dublette durch `owner`, auditiert, nie automatisch: Termine, Grundlagen, Dokumentation, Rechnungen, Dateien, Einwilligungen, Aufgaben und Warteliste wandern auf die richtige Akte — der Bezug wechselt, der Inhalt nicht (finalisierte Dokumentation, ausgestellte Rechnungen bleiben unverändert); die leere Akte fällt mit Nachweis. Aus PRX-EPIC-003 ausgegliedert (Jannes 2026-09-29); Zweitreview Pflicht | `IDEA-PRX-018` |
-| ~~**STA-EPIC-001**~~ | **gebaut 2026-09-29** — Die Praxis wird über fünf Zahlen gesteuert: eigener Bereich **Statistiken** nur für `owner`, eine Serverfunktion für Umsatz und Zahlungseingang (getrennt, ANN-151), offene Posten nach Alter, Auslastung als Praxissumme (ANN-152), Verordnungen ohne Anschluss, Ausfälle (ANN-153); Zielwerte je Karte, Handlung je Kennzahl (ANN-155), Monatsvergleich und CSV; dazu Grafiken (12 Monate, Umsatz nach Therapeut:in, Leistungen), Vergütungsmodell und eigener Umsatz bei Umsatzbeteiligung (B6 aufgelöst, ANN-156, ANN-157); Sichtung Praxisverwaltung Schritte 14 und 15 | Eigener Arbeitsbereich **Statistiken**, nur `owner` (ADR-004), nur Praxissummen (§20, B6): **(1)** Umsatz und Zahlungseingang des Monats gegen Vormonat und Ziel, **(2)** offene Posten mit Alter, **(3)** Auslastung der nächsten zwei Wochen (gebuchte gegen verfügbare Behandlungsstunden), **(4)** Verordnungen, die in 14 Tagen enden oder deren Kontingent aufgebraucht ist, ohne Anschluss — samt ungedeckten Terminen, **(5)** Ausfälle der letzten vier Wochen mit Ausfallhonoraren. Zu jeder Zahl ein Zielwert (von Jannes einstellbar) und **die eine Handlung**, die sie auslöst (Mahnung, Anrufliste, freie Fenster, Verordner:in anfragen); Zeitraumvergleich; CSV. Berechnung deterministisch in einer Quelle mit Testfällen je Kennzahl, Werte aus Abrechnung (ADR-009) und Terminen (ADR-018), keine zweite Datenhaltung | `IDEA-PRX-025` |
-
-### Block 3 — Etappe TR: Trainingsbereich
-
-**Freigegeben nach `PROJECT_PRINCIPLES.md` §14** (seit 2026-09-22). Etappe L
-hat das Fundament gebaut; was fehlt, ist jede Tür dorthin: Kein Schreibweg
-legt ein Trainingsverhältnis an, die Rolle Trainingsbetreuung ist nicht
-zuweisbar (`WAEHLBARE_ROLLEN` in `src/features/workforce/staff/StaffAccountSection.tsx`),
-kein Schreibweg setzt `kind = 'training'`, und `invoices.patient_id` ist
-`not null` — eine Trainingskund:in ohne Behandlungsverhältnis
-(`IDEA-LZK-008`) bekommt heute keine Rechnung.
-
-| Loop | Ergebnis | Zuschnitt | Voraussetzung |
-| --- | --- | --- | --- |
-| ~~**TRN-EPIC-001**~~ | **gebaut 2026-09-30** — Eine Trainingskund:in entsteht in der Anwendung — ohne Akte — und jemand darf sie betreuen: Bereich **Training** (Liste, Anlegen mit Dublettenhinweis, Detail, Vertrag beenden), Schreibwege mit Audit auf Aktenniveau, Kontaktdaten am Verhältnis, Trainingsbetreuung zuweisbar; ANN-172 bis ANN-175; Sichtung Training Schritte 1 bis 3 | **TRN-001** Schreibwege für das Trainingsverhältnis mit Policies nach §4.9 und Audit auf § 203-Niveau (ADR-021 Punkt 8) · **TRN-002** Person **ohne** Behandlungsverhältnis anlegen, `patients` bleibt unberührt; eine vorhandene Person bekommt ihr zweites Verhältnis ohne Dublette · **TRN-003** Rolle Trainingsbetreuung zuweisbar, Bereichsliste für ein solches Konto; „kein Durchgriff" in **beide** Richtungen als Negativfall | LEI-EPIC-001 |
-| ~~**TRN-EPIC-002**~~ | **gebaut 2026-09-30** — Ein Trainingstermin steht im selben Kalender, und die Betreuung sieht nur ihn: Anlegen über `create_training_appointment`, Verschieben und Absagen über die vorhandenen Wege, Kontextriegel beim Schreiben in beide Richtungen, Vereinbarungen anlegen und abschließen, Kalender und Tagesliste für die Trainingsbetreuung; ANN-176 bis ANN-180; Sichtung Training Schritte 4 bis 6 | **TRN-004** Anlegen, Verschieben, Absagen im Kontext `training` über die vorhandenen Schreibwege (ADR-022 Punkte 1, 9, 10) · **TRN-005** Trainingsgrundlage bedienbar, Einzelstunde ohne Klammer bleibt möglich (Punkt 5) · **TRN-006** Kalender, Tagesliste und Suche je Kontext gefiltert; die Belegung sagt „belegt" und nichts darüber hinaus (Punkt 11), als Negativfall in `pnpm test:db` | TRN-EPIC-001 |
-| ~~**TRN-EPIC-003**~~ | **gebaut 2026-09-30** — Eine Trainingsleistung landet als Rechnung im eigenen Nummernkreis: Leistung aus dem durchgeführten Trainingstermin am Trainingsverhältnis (ANN-181), Rechnung im Kreis `TR` an die Kund:in selbst mit Anschrift aus dem Training (ANN-182), Belegfrist hält im Löschlauf nur die Belege (ANN-183); § 14c-Riegel, Befreiungsgrund, Sammelrechnung und Auswertung unverändert, am Training belegt; Sichtung Training Schritte 7 bis 9 | **TRN-007** Leistung am Trainingsverhältnis statt an `patients` (ADR-021 Punkt 5) · **TRN-008** zweite, nullbare Verknüpfung an `invoices` für `training`; § 14c-Riegel, Befreiungsgrund, Nummernkreis je Bereich, Sammelrechnung (ANN-077) und Auswertung bleiben unverändert | TRN-EPIC-001; ABR-EPIC-004 bis 006 |
-| ~~**TRN-EPIC-004**~~ | **gebaut 2026-09-30** — Was in einer Einheit passiert ist, steht als Protokoll in der Anwendung, nicht als Befund: Trainingsprotokoll am Trainingstermin als Fachdatum des Verhältnisses (eigene Tabelle, Datenklasse des Verhältnisses), nur owner und Trainingsbetreuung (ANN-184), unveränderlich nach dem Abschluss (ANN-185), der Abschluss setzt `documented`; Abschließen und Wiederöffnen am Trainingstermin (ANN-186); Einheiten bei der Kund:in; Sichtung Training Schritte 10 bis 12 | **TRN-009** Trainingsprotokoll als Fachdatum des Verhältnisses mit eigener Datenklasse und Frist, **kein** Eintrag nach ADR-016, keine klinische Bewertung (ADR-006 Punkte 9 und 11) · **TRN-010** `documented` am Trainingstermin erreichbar (ADR-018 Punkt 3, gelesen nach ADR-022 Punkt 8) | TRN-EPIC-002 |
-
-**TRN-EPIC-003 setzt `documented` nicht voraus:** § 19 bindet die Fakturierung
-an die finalisierte **Behandlungs**dokumentation und trägt für `training`
-nicht. Den Gebührenanlass im Dienstvertrag über Training (ADR-018 Punkt 8)
-trägt bis zur Antwort eine Annahme.
-
-#### Die fünfzehn Navigationspunkte, einzeln zugeordnet
-
-Die Leiste der fremden Coaching-Software ([`../product/ideen/referenz-navigation.md`](../product/ideen/referenz-navigation.md);
-Jannes hat sie am 2026-09-22 erneut geteilt und zum Umfang erklärt).
-Übernommen werden Umfang und Ablauf, nie Text, Symbol oder Gestaltung. Die
-Leiste ist die **Ansicht der Trainingskund:innen** (§4.10, Jannes
-2026-09-23); die Ansichten für Patient:innen und Betreuung entwirft DSN-001.
-
-| # | Bereich | Was daraus bei uns wird | Wo im Plan |
-| - | ------- | ----------------------- | ---------- |
-| 1 | Übersicht | was zu tun ist, nicht wie es läuft (`IDEA-ORG-001`) | TRN-EPIC-001 (Betreuung), ORG-EPIC-001, Kund:innensicht POR-EPIC-002 |
-| 2 | Kalender | Termine im **einen** Kalender (ADR-022 Punkt 1) | TRN-EPIC-002; eigene Sicht POR-EPIC-002 |
-| 3 | Sessions | absolvierte Einheiten = Trainingsprotokoll, **kein** Zähler, der Termine und Einheiten mischt (`IDEA-ORG-002`) | TRN-EPIC-004; Durchführungsansicht UEB-EPIC-003 |
-| 4 | Check-ins | Selbstauskunft mit Takt (`IDEA-TRK-004`) | TRK-EPIC-001 |
-| 5 | Fortschritt | Verlauf mit Ereignissen (`IDEA-OUT-005`) | OUT-EPIC-001; **Verbot 2** — Kurve ja, Ampel nein |
-| 6 | Trainingspläne | Zusammenstellen, Zuweisen, Schnappschuss (`IDEA-TRN-011`) | UEB-EPIC-001 bis 003; **Verbot 1** |
-| 7 | Übungsanalyse | Ausführung, Schmerz, Auslassung je Übung (`IDEA-OUT-006`) | anzeigend in OUT-EPIC-001; ableitend „Nicht in V1" (`src/app/mdr.ts`) |
-| 8 | Aktivitäten | Alltagsbewegung als Kontext (`IDEA-ALT-001`) | ALT-EPIC-001 |
-| 9 | Assessments | Tests zu definierten Zeitpunkten (`IDEA-OUT-007`) | FRB-EPIC-001/002 (Behandlung), OUT-EPIC-001 (Training); **Verbot 3** |
-| 10 | Athletenprofil | Stammdaten und Ziele; heißt bei uns nicht so | TRN-EPIC-001; Voraussetzungsprofil KND-EPIC-001 |
-| 11 | Gewohnheiten | sehr kleine Ziele, keine Serie als Druckmittel (`IDEA-ALT-002`) | ALT-EPIC-001 |
-| 12 | Ernährung | klassisches Tagebuch mit Lebensmitteldaten, Zielwerte aus Formeln, Gewicht (ADR-027) | ERN-EPIC-001 bis -006, als Zusatz auch in der Behandlung |
-| 13 | Chat | strukturierte Rückfrage mit Notfallabgrenzung (`IDEA-KOM-001`, `-002`) | KOM-EPIC-001 |
-| 14 | Einstellungen | Konfiguration je Kund:in, Coach-Kontrolle sichtbar (`IDEA-QSN-005`, `IDEA-LZK-005`) | POR-EPIC-003 |
-| 15 | KI-Analyse | abgesetzter Knopf (`IDEA-KI-006`) | als Einschätzung „Nicht in V1" (`src/app/mdr.ts`); Zusammenfassung ohne Bewertung in KI-EPIC-002 |
-
-### Block 4 — Etappe 4: Plattformzugang
-
-Die Plattform nach §4.6 (Patient:innen) und §4.10 (Kund:innen). **Konto und
-Akte sind getrennt**; wer beide Verhältnisse hat, sieht beide Bereiche
-getrennt (§4.8). Vor dem ersten Loop stehen zwei Docs-Sessions. **DSN-001**
-entwirft die Ansichten für Patient:innen (beide Stufen aus §4.6) und für die
-Betreuung — [`PLATTFORM-ANSICHTEN.md`](PLATTFORM-ANSICHTEN.md), sieben
-Festlegungen D1 bis D7, von Jannes am 2026-09-30 wie empfohlen bestätigt; die
-Ansicht der Trainingskund:innen steht mit §4.10 und bekommt dort nur ihren Platz im selben Gerüst. **ADR-023**: Konten
-externer Personen neben den Praxisrollen, Einladung und Zustellweg (R8),
-Identitätsprüfung und Vertretung (B5 als Annahme, reversibel an einer Stelle),
-Sitzungsregeln, RLS-Muster „nur eigene Daten", Abgrenzung zur Praxisoberfläche —
-[`ADR-023-platform-access.md`](../adr/ADR-023-platform-access.md), am 2026-09-30
-angenommen, W1 bis W6 wie empfohlen. Nach W6 steht die Vertretung als eigener
-Loop **POR-EPIC-001b** zwischen -001 und -002.
-
-| Loop | Ergebnis | Zuschnitt | Quelle |
-| --- | --- | --- | --- |
-| **POR-EPIC-001** | Eine Patientin oder Kund:in hat einen eigenen Zugang, der nur ihre Daten zeigt | Konto zu Person, Einladung aus der Akte bzw. dem Trainingsverhältnis, Anmeldung, Sperren und Entziehen ohne Wirkung auf die Akte; Negativfall „fremde Person" für jede Sicht | `IDEA-LZK-001` |
-| **POR-EPIC-001b** | Angehörige, Betreuung und Sorgeberechtigte handeln mit eigenem Konto für eine Person | Vertretung als eigener Zugang (ADR-023 Punkte 13 bis 15): rechtliche Vertretung und Begleitung, Nachweisvermerk, „Sie handeln für …", Auditeinträge unterscheidbar, Begleitung durch die Person selbst beendbar, unter 18 nur Sorgeberechtigte; Negativfälle je Art | B5, ADR-023 W3, W6 |
-| ~~**ABN-EPIC-001**~~ (gebaut 2026-10-02) | Was die Abnahme der Annahmen (2026-10-02) in den Blöcken 2, 3, 4 und 9 anders entschieden hat, ist gebaut | Block 2: BEF-092 (Hinweis auf künftige Hausbesuche mit alter Adresse), BEF-093 („Mitgeteilt“ verfällt nur bei relevanten Änderungen), BEF-094 (kurzfristige Verlegung durch die Patient:in, Gebührenverzicht; ADR-018 Fassung 4), BEF-095 (ein zentrales Leserecht für Dokumentation); Block 3: BEF-096 (Kontingent zählt Behandlungstermine), BEF-097 (Leistungen ziehen bei einer Übertragung mit), BEF-098 (klinischer Ort für Hinweise aus der Verordnung); Block 4: BEF-100 (Steuernummer oder USt-IdNr., Storno mit Zahlung, Teilzahlungen kumulativ); Block 9: BEF-115 (Kontolöschung über die Admin-API), BEF-116 (Umfang der Begleitung), BEF-117 (eine Altersberechnung), BEF-118 (Wiederherstellung nur nach bestätigtem Postfach), BEF-119 (Vertretung nur für nachgewiesene Bereiche). Zuschnitt in der Session vom 2026-10-02, von Jannes freigegeben | Abnahme, `ASSUMPTIONS.md` |
-| ~~**ABN-EPIC-001b**~~ (gebaut 2026-10-02) | Was die Abnahme in den Blöcken 5 bis 8 anders entschieden hat, ist gebaut — ohne BEF-105, -106, -109 (ABN-EPIC-001c) | Block 5: BEF-101 (Erhebungen serverseitig gegen die Definition, Korrektur, Tegner, Versionen), BEF-102 (Verlaufsereignis nachvollziehbar entfernen), BEF-103 (Bausteine: keine unbestätigten Vorschläge im Entwurf, Seitenwechsel, Ergebnis ausgeschrieben, Tippfehler), BEF-104 (Berichtskorrektur mit Kette, Grenze sichtbar); Block 6: BEF-105 (Dateityp am Inhalt, Prüfsumme, Metadaten serverseitig, Farbe), BEF-106 (Dokumentationsfotos zur Akte; neue Fassung ADR-017), BEF-107 (Art. 15 mit Zugriffen und Fotos), BEF-108 (Warteliste prüfen, Nachweis des Zusammenführens, alle Legal-Hold-Gründe); Block 7: BEF-109 (Kartendienst: `synthetic` nie in Produktion, Kacheln in der Anbieterprüfung, eindeutige Treffer, Ersatzschätzungen kennzeichnen), BEF-110 (Abstecher-Entwurf nicht still löschen, MDR-Freigabe mit Nachweis); Block 8: BEF-111 (Trainingskontakt mit getrennter Hausnummer, Rechnung nur mit vollständiger Anschrift), BEF-112 (anonyme Belegt-Blöcke für die Trainingsbetreuung), BEF-113 (Büro liest Trainingsprotokolle, Nachtrag, Verwerfen mit Hinweis und Löschjournal) | Abnahme, `ASSUMPTIONS.md` |
-| ~~**ABN-EPIC-001c**~~ (gebaut 2026-10-02) | Dateityp, Prüfsumme und Metadaten serverseitig, Dokumentationsfotos zur Akte, Kartendienst-Gate in Produktion | BEF-105 (Edge Function `patient-file-verify`, Spalten „verifiziert“, sRGB im Client), BEF-106 (Dokumentart `dokumentationsfoto` in der Aktenklasse, Wahl vor der Aufnahme), BEF-109 (`APP_ENVIRONMENT` im Gate, eindeutige Treffer, Ersatzschätzungen als „Fahrzeit nicht verfügbar“). **Vorher eine Docs-Session:** neue Fassung ADR-017 (drei Fotoarten, Rechtsgrundlage und Frist je Art) und ADR-019 (Kartenkacheln im Gate), beide von Jannes zu entscheiden — *Erledigt 2026-10-02: ADR-017 Fassung 3 und ADR-019 Fassung 5 angenommen (alle Fragen wie empfohlen), §5 mit Prinzipien 0.20 nachgezogen, Gate-Liste um Punkte 10 und 11 ergänzt.* Edge Functions bauen ja, scharf erst mit OPS-001. Aus ABN-EPIC-001b ausgegliedert (Zuschnitt 2026-10-02, Freigabe Jannes) | Abnahme, `git show eb43569:docs/development/archiv/BEFUNDE-LOESUNGEN.md` |
-| ~~**ABN-EPIC-002**~~ (gebaut 2026-10-09, ohne BEF-138) | Was die Abnahme der Annahmen vom 2026-10-09 (ANN-073 bis ANN-307) anders entschieden hat, ist gebaut | **Zuerst die Dokumente**, nach Jannes' Entscheidung vom 2026-10-09: `PROJECT_PRINCIPLES.md` §4.3 und ADR-021 Punkt 10 (BEF-137), ADR-017 (BEF-135; Punkt 54 für BEF-133), ADR-010 und ADR-023 Punkt 24 (BEF-138). Dann: BEF-137 (das Büro liest alles, auch im Training – Profil, Bibliothek, Trainingspläne –, schreibt nichts Fachliches, jeder Lesezugriff protokolliert, scharf erst nach B2), BEF-134 (Hinweis aus der Verordnung: alle Praxisrollen außer der reinen Trainingsbetreuung), BEF-135 (Fotos aus der Dokumentation ohne Rückfrage, Erinnerung an Anmeldebogen und Rezept, keine Arbeitshilfe), BEF-136 (Lückenfinder auch für 45 Minuten, 60 bevorzugt), BEF-133 (PDF in der Anwendung). BEF-138 (Abruf über die Plattform ohne Protokoll) als eigener Pull Request, weil er das Label `freigabe-audit` braucht | Abnahme, `ASSUMPTIONS.md`, `BEFUNDE.md` |
-| **ABR-EPIC-007** | Je Behandlungstermin entsteht einmal das vereinbarte Terminhonorar | ADR-009 Fassung 4 Punkt 22, BEF-099: Tarif und patientenbezogene Honorarvereinbarung versioniert (Vereinbarung vor Tarif, Leistungstag), Honorar getrennt von verordneten und erbrachten Heilmitteln, Heilmittelmengen ohne Preis fortgeschrieben, Bestand an Katalog und Rechnungen erhalten, Rechnungsdarstellung austauschbar bis B17; ein Test über Terminzahl, Heilmittelmenge und Betrag. Dazu BEF-114: Paketpreise im Training (drei oder sechs Monate, ADR-009 Punkt 21), Forderung aus der Paketvereinbarung, Termine im Paket ohne eigene Forderung; Preis, Umfang und Zahlungsweise legt Jannes vorher fest | Abnahme Block 4 |
-| **POR-EPIC-002** | Die eigene Sicht zeigt Termine, Rechnungen und freigegebene Dokumente | Termine mit Anfrage und Änderungswunsch — **ein Wunsch, den das Büro bestätigt** (§8) —, Befundbogen vorab ausfüllen, eigene Rechnungen, freigegebene Dokumente (ADR-017), Übersicht „was zu tun ist" | §4.6, §4.10, `IDEA-ORG-001` |
-| **POR-EPIC-003** | Einwilligungen, Export und Einstellungen liegen in der eigenen Hand | Einwilligung erteilen und widerrufen (auf PAT-006), Datenexport als Funktion, Onboarding mit Überspringen, Einstellungen mit sichtbarer Coach-Kontrolle, Oberfläche für 78-Jährige | `IDEA-QSN-003`, `IDEA-LZK-005`, `IDEA-QSN-005`, `-006` |
-
-### Block 5 — Etappe 8: Angebote und Kund:innen
-
-| Loop | Ergebnis | Zuschnitt | Quelle |
-| --- | --- | --- | --- |
-| **ANG-EPIC-001** | Nach der Behandlung geht es mit dem Nachsorge-Abo weiter | Nachsorge-Abo nach §4.6 und ADR-009 Punkt 21: Beginn frühestens mit dem Ende der Behandlungsgrundlage, monatlich kündbar mit Kündigungsknopf, Monatsrechnung im Bereich `therapy` (kein Zahlungsdienst); Zugang zu den Abo-Bereichen folgt dem Abo-Status; nach Kündigung 30 Tage lesend und Plan als PDF; Steuerkennzeichen als Annahme (B4) | Jannes 2026-09-22 und 2026-09-23 (E-4) |
-| **ANG-EPIC-002** | Training wird als Paket verkauft, und die Plattform ist darin enthalten | Paket **nach Zeitraum, nicht pausierbar** (§4.10), Preise sichtbar bevor jemand fragt, Rückfall in die Heilbehandlung während eines Pakets | `IDEA-ANG-001`, `-003`, `-004` (B11 neu entschieden 2026-09-22) |
-| **KND-EPIC-001** | Die Betreuung geht nach der Behandlung weiter, ohne dass Daten still mitwandern | Übergang nach §4.10 (E-3): Erinnerung an das Abschlussgespräch in den letzten Terminen, Trainingsvertrag per Link im eigenen Konto mit Widerrufsbelehrung und Einwilligung, Übernahme nur freigegebener Angaben als dokumentierte Kopie (ADR-021 Punkt 7); Betreuungsepisode mit Typ, Voraussetzungsprofil, Offboarding | `IDEA-LZK-002`, `-003`, `-004`, `-006` |
-
-### Block 6 — Etappe 3 und Etappe 6: Pläne und Rückfragen
-
-**Keine automatische Anpassung**, keine Progression als Vorschlag — erfassen,
-speichern, strukturieren, darstellen (ADR-006 Punkt 2, §17 Verbot 1).
-Vor KOM-EPIC-003 steht **ADR-024** (Docs-Session): Offline-Erfassung und
-Benachrichtigungen brauchen einen Service Worker; ADR-015 Punkt 16 schließt
-ihn bisher aus und wird dort abgelöst, nicht umgangen. ADR-024 beantwortet
-dabei auch, ob die begrenzte Offline-Fähigkeit für Therapeut:innen aus
-ADR-001 Punkt 3 (Tagesplan, Entwürfe) in V1 kommt. Web-Push läuft über die
-Push-Dienste der Browserhersteller — ein Datenweg, den ADR-024 nach ADR-002
-bewertet.
-
-| Loop | Ergebnis | Zuschnitt | Quelle |
-| --- | --- | --- | --- |
-| **UEB-EPIC-001** | Es gibt eine Übungsbibliothek, die für Therapie und Training trägt | Übung und Variante getrennt, Achsen und Nachbarschaften, zwei Sprachebenen | `IDEA-TRN-005`, `IDEA-QSN-002`, `-007` |
-| **UEB-EPIC-002** | Ein Plan wird zusammengestellt, zugewiesen und eingefroren | Plan mit Schnappschuss bei Zuweisung, Progression **von Hand** mehrdimensional und als doppelte Progression, Planlaufzeit mit Wiedervorlage; für `therapy` und `training` getrennt | `IDEA-TRN-004`, `-007`, `-011`, `IDEA-ORG-006` |
-| **UEB-EPIC-003** | Der Plan ist dort, wo trainiert wird | Plan als PDF (voller Nutzen ohne Portal), Plan im Portal — der Heimübungsplan während der Behandlung ohne Abo (§4.6) —, Durchführungsansicht für die Einheit, Trainingstage im Kalender | `IDEA-ORG-003`, `-004` |
-| **KOM-EPIC-001** | Eine Frage kommt strukturiert an und landet, wo sie hingehört | Strukturierte Rückfrage statt offenem Chat, Zusage einer Antwortzeit und Notfallabgrenzung, klinisch Relevantes in die Akte | `IDEA-KOM-001`, `-002`, `-007` |
-| **KOM-EPIC-002** | Ein Foto oder Video hilft bei der Antwort, ohne liegen zu bleiben | Anhänge als eigene Datenklasse mit kurzer Frist und Metadatenentfernung (ADR-017), Antwort mit Zeitmarke im Video, **kein** Bewegungsurteil. **Vorher eine Docs-Session:** ADR-017 gibt Uploads über die Plattform und Videos nicht frei (Punkte 14, 18, 30, 42) und verlangt vorher die Virenprüfung (Punkt 29) — *Erledigt 2026-10-10: Abschnitt L (Punkte 59 bis 70) angenommen, alle Fragen wie empfohlen; Prinzipien 0.24* | `IDEA-KOM-003`, `-004`, `-005` |
-| **KOM-EPIC-003** | Wer etwas tun soll, erfährt es — nach Regeln | Benachrichtigungen mit Regeln (ADR-024), automatische Terminerinnerung und Online-Terminanfrage (B15 neu entschieden 2026-09-22), E-Mail vor SMS, Messenger ausgeschlossen; Versand hinter Adapter (Grundsatz 5) | `IDEA-KOM-006`, B15 |
-
-### Block 7 — Etappe 5 und 7: Verlauf und Alltag
-
-Erfassen und darstellen, **nicht** auswerten (§17 Verbot 2). Gesundheitsangaben
-im Training brauchen die Einwilligung (Art. 9 Abs. 2 lit. a) — als Funktion
-aus POR-EPIC-003, als Rechtsfrage bei B2.
-
-| Loop | Ergebnis | Zuschnitt | Quelle |
-| --- | --- | --- | --- |
-| **TRK-EPIC-001** | Kund:innen protokollieren Einheiten und beantworten Check-ins | Einheit protokollieren, Check-in mit einstellbarem Takt, wenige Fragen, Parameter nach Erfassungstakt | `IDEA-TRK-001`, `-002`, `-004` |
-| **TRK-EPIC-002** | Was erfasst wird, ist als Zeitreihe lesbar | Schmerz differenziert, Bewegungssicherheit neben Schmerz, Kontext mit erfasst | `IDEA-TRK-003`, `-005`, `-006` |
-| **TRK-EPIC-003** | Erfassen geht auch ohne Netz | Durchführung ohne Netz nach ADR-024 Punkte 4, 5, 7 bis 9, mit dem Service Worker (Abschnitt A) und der Freigabe ohne Netz per Passkey (ADR-025 Punkt 16) | `IDEA-TRK-008` |
-| **OFF-EPIC-001** | Dokumentieren geht auch ohne Empfang | Tagesplan und Dokumentationsentwürfe auf dem eingerichteten Diensttelefon nach ADR-024 Punkt 6, Übertragung additiv, Finalisieren erst danach; echte Daten erst nach der DSFA | ADR-024 W1 (c), Jannes 2026-10-11 |
-| **OUT-EPIC-001** | Fortschritt ist sichtbar, ohne bewertet zu werden | Verlaufsgrafiken mit Ereignissen, Assessments mit Protokoll und Wiedervorlage auf der Trainingsseite, anzeigende Übungsanalyse, Fortschritt in zwei Sprachen | `IDEA-OUT-005` bis `-008` |
-| **ALT-EPIC-001** | Alltag steht als Kontext daneben | Aktivitäten ohne Wettbewerb, Gewohnheiten mit sehr kleinen Zielen, Schlaf und Stress, Bedarfsmedikation als Verlaufsgröße, kein Vergleich zwischen Personen | `IDEA-ALT-001` bis `-004`, `-007` |
-| ~~**ALT-EPIC-002**~~ | ~~Ernährung als Protokoll und Zielwert~~ | **Ersetzt (2026-10-18) durch ERN-EPIC-001 bis -006** (ADR-027, Abschnitt „Ernährungsberatung“ oben) | `IDEA-ALT-005`, `-006` |
-| **ORG-EPIC-001** | Eine Person auf einen Blick, und die Sitzung ist vorbereitet | Zeitstrahl über alle Bereiche, Sitzungsvorbereitung für die Praxis, Übersicht je Person | `IDEA-QSN-001`, `IDEA-ORG-001`, `-005` |
-
-### Block 8 — Spur A2: Praxisbetrieb
-
-Ersetzt die Vorschaubereiche aus [`ARBEITSBEREICHE.md`](ARBEITSBEREICHE.md)
-(„Praxisbetrieb") — ersetzt, nicht daneben gebaut. Beschäftigtendaten ohne
-Leistungskontrolle (§20, B6).
-**Seit 2026-10-16 vorgezogen** als Bereichsüberholungen 7 bis 11 (oben); dazu AZ-001
-(Arbeitszeitänderung).
-
-| Loop | Ergebnis | Ersetzt Vorschau | Voraussetzung |
-| --- | --- | --- | --- |
-| **FLT-EPIC-001** | Räder sind eine Planungsressource: Depot, Schlüssel, Check-Up, Pannenassistent; **Schäden am 3D-Rad markieren** in Check-Up und Panne, Seite „Stellen am Rad", PDF für die Werkstatt | `/betrieb/flotte…` | Tübinger Standortvorlage (Jannes); Rad im Kalender; Entwurf, Entscheidungen und AC aus dem Handoff Lastenrad 3D (`git show eb43569:docs/design/handoff-2026-10-08-lastenrad-3d.md`), Abschnitte 0 und 8 (`IDEA-PRX-057`, Jannes 2026-10-08) |
-| **TEAM-001** | Das Team spricht in der Anwendung: Kanäle, Direktnachrichten, Threads, Erwähnungen | `/team` | Nachrichtenmechanik aus KOM-EPIC-001; Speicherfrist als Annahme (ANN-001); Anhänge nach ADR-017 |
-| **URL-001** | Urlaub mit Antrag und Genehmigung wirkt auf Kalender und Kapazität | `/betrieb/urlaub` | Beschäftigtenangaben (`IDEA-QSN-010`) als Teil des Loops |
-| **ZK-001** | Zeitkonto mit Buchungen und Saldo je Person, ohne Auswertung über Beschäftigte | `/betrieb/zeitkonto` | B6 |
-| **ERS-001** | Erstattungen von eingereicht bis ausgezahlt, Belege als Dateien | `/betrieb/erstattungen` | ADR-017; Belegfristen als Annahme (B4) |
-| **AZ-001** | Arbeitszeitänderung beantragen: einmalig oder dauerhaft, ohne Reduktion; genehmigt wirkt sie auf den Wochenplan | `/betrieb/arbeitszeit` (neu) | URL-001 (Antragsmechanik); Arbeitszeiten aus CAL-005 |
-
-### Block 9 — Etappe 10 und Komfort
-
-| Loop | Ergebnis | Zuschnitt | Quelle |
-| --- | --- | --- | --- |
-| **KI-EPIC-001** | Diktieren statt tippen, mit geprüftem Entwurf | Gateway nach ADR-005 mit `mock`-Adapter, Sprachdokumentation nach §6.3 mit Weg ohne Sprechen (§5), Nutzung sichtbar; Anbieter C6 in Block 11 | `IDEA-KI-001`, `-005`, `-007` |
-| **KI-EPIC-002** | Sprache umformen, ohne Inhalt hinzuzufügen | Freitext strukturieren, Patientensprache, Antwortentwürfe, Zusammenfassung ohne Bewertung, **Felder der Verordnung aus dem Foto vorschlagen** — jeweils mit Quellenbindung und menschlicher Freigabe | `IDEA-KI-002`, `-003`, `-004` |
-| **MAP-007** | Führung auf dem Gerät, ohne dass die Praxis die Position erfährt | Zuschnitt in [`MAP-LOOPS.md`](MAP-LOOPS.md); zuerst **E-24** (liefern die Radprofile Manöver? — ein Aufruf; ohne Ja entfällt das Epic) | `IDEA-PRX-044`, §20.1 |
-| **PRX-EPIC-004** | Komfort für die Praxisführung | Kennzahlen für Training, Abo und Pakete nachziehen (auf STA-EPIC-001), Export für die Steuerberatung (Format als Annahme bis B4), Farbcodierung je Terminart und Person, Kalender-Abo (Bedenken: ohne Namen), Planungskarte der aktiven Adressen (Bedenken), Kartenzahlung beim Hausbesuch hinter Adapter (Grundsatz 5) | `IDEA-PRX-026`, `-021`, `-024`, `-033`, `-022` |
-| **UI-003** | Feinschliff und Barrierefreiheit über alle Seiten (G17) | Feindesign, PWA-Manifest, was die Bereichsüberholungen (oben) übrig lassen | — |
-
-### Blöcke 10 bis 14 — vom Freeze bis zur Eröffnung
-
-**Etappe G — Betriebsreife.** Die offenen Pakete, ohne Termine:
+## Blöcke 10 bis 14: vom Freeze bis zur Eröffnung
+**Etappe G, Betriebsreife** (G18 ist das Gate M3; G20 und G22 nach ADR-025 sind gebaut):
 
 | # | Paket | Stand und Inhalt | Wer |
 | --- | --- | --- | --- |
-| G3 | OPS-001 Providerprüfung und Cloudprojekt | Dokument steht seit 2026-09-21, **nichts bestanden**. Ab Anfang 2027 (E-1): Unterlagen aus Teil 9, zwei Supportfragen, Gate-Punkte 1 bis 6 mit B2; **dann** Cloudprojekt in EU-Region, Dev/Test/Prod, PITR als Bedingung | Jannes (Anlage) |
-| G5 | OPS-002 Deployment und Freigabe | Frontend-Hosting mit Prüfung nach ADR-002, Release aus Tag, Migrationen nur über die Pipeline, Rollback, Review-Checkliste aus ADR-013 in der Pipeline; die **Test-Umgebung** ist als OPS-002a nach Block 1a vorgezogen | Claude, Jannes (Freigabe) |
-| G6 | OPS-004 Rest | Alarmierung, Security-Log 12 Monate, Erkennung für Art. 33, Audit-Abfrage als Runbook — setzen G3 voraus | Claude |
-| G7 | OPS-003 Backup und Restore | PITR, Sicherung des Objektspeichers (eigener Weg, RPO ≤ 1 h), dreistufige Wiederherstellung, Notfallzugang, Betriebsdokumentation mit 13 Positionen | Jannes und Claude |
-| G10 | E2 Ausfallkonzept | Praxisprozess für einen Tag ohne Anwendung (ADR-012 Punkt 8), eine Seite; die Tagesliste der Übersicht ist die Bereitstellung (ANN-021 Fassung 2). Zugleich Rückfallplan H4 | Jannes |
+| G3 | OPS-001 Providerprüfung und Cloudprojekt | Dokument seit 2026-09-21, **nichts bestanden**. Ab Anfang 2027 (E-1): Unterlagen aus Teil 9, zwei Supportfragen, Gate-Punkte 1 bis 6 mit B2; **dann** Cloudprojekt in EU-Region, Dev/Test/Prod, PITR als Bedingung; Löschlauf und Finalisierung laufen nur mit `pg_cron`, die Registrierung nachweisen (ANN-007); Einstellungen des Anmeldedienstes für G20 (`jwt_expiry`, ANN-044) | Jannes (Anlage) |
+| G5 | OPS-002 Deployment und Freigabe | Frontend-Hosting mit Prüfung nach ADR-002, Release aus Tag, Migrationen nur über die Pipeline, Rollback, Review-Checkliste aus ADR-013 in der Pipeline; die Test-Umgebung ist als OPS-002a vorgezogen | Claude, Jannes (Freigabe) |
+| G6 | OPS-004 Rest | Alarmierung, Security-Log 12 Monate, Erkennung für Art. 33, Audit-Abfrage als Runbook; setzt G3 voraus | Claude |
+| G7 | OPS-003 Backup und Restore | PITR, Sicherung des Objektspeichers (eigener Weg, RPO ≤ 1 h), dreistufige Wiederherstellung, Notfallzugang, Betriebsdokumentation mit 13 Positionen; das Löschjournal vor der Rückspielung sichern, danach einspielen, dann `reapply_deletion_journal()` und offen gebliebene Zusammenführungen nachziehen (ADR-008 Punkt 8, ADR-012, ANN-031, ANN-150) | Jannes und Claude |
+| G10 | E2 Ausfallkonzept | Praxisprozess für einen Tag ohne Anwendung (ADR-012 Punkt 8), eine Seite; die Tagesliste der Übersicht ist die Bereitstellung (ANN-021). Zugleich Rückfallplan H4 | Jannes |
 | G11 | OPS-007 Bootstrap | Runbook und Funktion gebaut, lokal geprobt; Probe gegen die Test-Umgebung nach G5 | Jannes (Durchlauf) |
 | G12 | ADR-019 Gate | Vertragscheck PTV Developer (Punkt 9), Paid Plan und Server-Schlüssel, DSFA-Wiedervorlage | Jannes mit B2 |
-| G13 | Steuerliche Grundeinstellungen | Umsatzsteuer-Status, Wortlaut des Befreiungshinweises, Kürzel `RG`/`TR`, ermäßigter Satz, Steuer auf Abo und Pakete, echte Preise — bis dahin Annahmen (ANN-074/075/082) | Jannes mit B4 |
-| G14 | DSFA-Paket | Schwellwertprüfung, VVT, TOM mit Endgeräte-Richtlinie, Löschkonzept, Subprozessoren, Datenschutzinformationen, Betroffenenrechte, Breach-Prozess, Nachweistabelle MUSS → Test, Zweckbestimmung — **fertig bis Ende 2026**, verschickt ab Anfang 2027 (E-1), Nachträge für später Gebautes | Claude (Entwurf), Jannes, B2 |
-| G15 | B1 Regulatorische Prüfung | Zweckbestimmung, MDR-Abgrenzung, EU AI Act — über den **ganzen** V1-Umfang | Jannes, extern |
+| G13 | Steuerliche Grundeinstellungen | Umsatzsteuer-Status, Wortlaut des Befreiungshinweises, Kürzel `RG`/`TR`, ermäßigter Satz, Steuer auf Abo und Pakete, echte Preise; bis dahin Annahmen (ANN-074/075/082) | Jannes mit B4 |
+| G14 | DSFA-Paket | Schwellwertprüfung, VVT, TOM mit Endgeräte-Richtlinie, Löschkonzept, Subprozessoren, Datenschutzinformationen, Betroffenenrechte, Breach-Prozess, Nachweistabelle MUSS → Test, Zweckbestimmung; **fertig bis Ende 2026**, verschickt ab Anfang 2027 (E-1), Nachträge für später Gebautes | Claude (Entwurf), Jannes, B2 |
+| G15 | B1 Regulatorische Prüfung | Zweckbestimmung, MDR-Abgrenzung, EU AI Act über den **ganzen** V1-Umfang | Jannes, extern |
 | G16 | BETRIEB-001 | Störungsmeldung, Triage, Hotfix-Weg, Release-Takt nach M4, Change-Freeze um M5, Endgeräte, Vertretung | Jannes mit Claude |
-| G20 | **SEC-EPIC-001 Sitzungssperre** ([ADR-025](../adr/ADR-025-session-lock.md)) | Erneute Freigabe spätestens 60 Minuten nach Anmeldung oder Freigabe, Inaktivitätssperre (Vorschlag 30 Minuten, W1), Prüfung der Fristen bei jeder Rückkehr vor dem ersten Zeichnen, Durchsetzung in der Datenbank an `app.current_organization_id()` und `app.platform_readable_access` mit Test über alle Tabellen, Freigabe per Passkey hinter Schalter (Beta, W3) mit Kennwort als Rückweg, offene Dokumentation als Entwurf gesichert, Zielwert für `jwt_expiry` (ANN-044). Abmelden bleibt wie es ist (ANN-044, ANN-045). Kritische Änderung mit Zweitreview; gebaut wird lokal, die Einstellungen des Anmeldedienstes kommen mit G3 | Claude, Jannes (W1 bis W3) |
-| G21 | **STAFF-005 Einladung ganz aus der Anwendung** | Neue Mitarbeitende werden aus der Anwendung eingeladen, ohne ein Konto auf der Oberfläche des Anmeldedienstes anzulegen (Jannes, 2026-10-02, zu ANN-025): Zugangsdienst wie bei der Plattform (ADR-023 Punkt 9), Einladung vor Ort per QR oder per Mail (B13); löst ANN-025 ab | Claude |
-| G22 | **SEC-EPIC-002 Anmeldung ohne Kennwort** ([ADR-025](../adr/ADR-025-session-lock.md) Fassung 2, Punkte 7, 9 bis 15) | Passkey als Anmeldung und Freigabe, App-PIN als Rückweg der Freigabe (nur bestehende Sitzung, Hash aus `pgcrypto`, Fehlversuche, keine Frist), kein Kennwort: Anmeldeseite, Sperrseite, Einladung (Plattform und STAFF-005) richten Passkey und PIN ein, `/kennwort-neu` entfällt; Kennwort nur für Testkonten außerhalb der Produktion; Notzugang des Inhabers in der Betriebsdokumentation. Kritische Änderung mit Zweitreview. Eingeschaltet ohne Schalter (W3); auf der Test-Umgebung, sobald Passkeys im Dashboard von `praxis-test` eingerichtet sind | Claude; Jannes (Dashboard) |
-| G18 | Go-live-Gate (M3) | Kriterien siehe Meilensteine | Jannes |
+| G21 | **STAFF-005 Einladung ganz aus der Anwendung** | Neue Mitarbeitende werden ohne Konto auf der Oberfläche des Anmeldedienstes eingeladen (Jannes 2026-10-02, zu ANN-025): Zugangsdienst wie bei der Plattform (ADR-023 Punkt 9), Einladung vor Ort per QR oder per Mail (B13); löst ANN-025 ab | Claude |
 
-**Etappe H — Eröffnung.** H1 **Probewoche 1** (Block 10, auf der Test-Umgebung
-am Telefon, eine Praxiswoche aus dem Seed, eine zweite Person) · H2
-Kurzanleitung „erster Tag", Schulung je Rolle · H3 Produktionssystem (M4) ·
-H4 **Rückfallplan**: Tagesliste morgens öffnen (ANN-021 Fassung 2),
-Papierdokumentation mit Nachtrag binnen 24 h, **Rechnungen ruhen** (keine
-handschriftliche Nummer, eine Nummernlücke nach §14 UStG ist nicht heilbar),
-Abbruchkriterien, Export nach G9 · H5 **Probewoche 2** auf der Test-Umgebung
-mit dem Eröffnungsstand · H6 Eröffnung (M5) mit Change-Freeze, Restore-Test 3,
-Störfallliste ab Tag 1 · H7 erster Betriebsmonat (M6).
-
----
+**Etappe H, Eröffnung:** H1 **Probewoche 1** (Test-Umgebung, Praxiswoche aus dem Seed, zweite
+Person) · H2 Kurzanleitung, Schulung je Rolle · H3 Produktionssystem (M4) · H4 **Rückfallplan**
+(Tagesliste morgens, ANN-021; Papier mit Nachtrag binnen 24 h; **Rechnungen ruhen**, eine
+Nummernlücke nach §14 UStG ist nicht heilbar; Abbruchkriterien; Export nach G9) ·
+H5 **Probewoche 2** · H6 Eröffnung (M5) mit Change-Freeze, Restore-Test 3, Störfallliste · H7 erster
+Monat (M6).
 
 ## Entscheidungen und Prüfungen
+**Externe Prüfungen** (OPS-001, B1 bis B5, B8, B9, Anbieter) mit der Festlegung, die bis zur Antwort
+trägt: [`OPEN_DECISIONS.md`](../decisions/OPEN_DECISIONS.md), Abschnitt „Externe Prüfungen“.
 
-### Externe Prüfungen — ab Anfang 2027, parallel zum Bauen
+**Bei Jannes, hält kein Bauen auf:** Logfrist (R14 alt: ADR-011 Punkt 4 senken oder Ausleitung als
+zweiter Auftragsverarbeiter; entschieden 2026-10-10: nach G3, vor echten Daten) · B13/BEF-026:
+welcher SMTP-Anbieter (Block 11; STAFF-004 ruht bis dahin) · Sichtung des Kartendienstes mit MAP-005
+Teil B am Telefon (bis dahin `MAX_ZWISCHENZIELE` bei drei) · die drei Lücken der MT-Vorlage (D2/D3
+gelten wie vorgeschlagen, ANN-118, ANN-119) · ob Secret Scanning und Push Protection an sind
+(`docs/DEVELOPMENT.md`, „Manuelle Schritte“).
 
-Gehen ab Anfang 2027 hinaus, sobald ihre Unterlagen stehen (E-1); was danach
-noch gebaut wird, folgt als Nachtrag. Bis zur Antwort trägt jeweils die
-genannte Festlegung. Wortlaut der Anfragen: [`../decisions/ANFRAGEN.md`](../decisions/ANFRAGEN.md).
-
-| Punkt | Gegenstand | Wer | Bis dahin trägt |
-| --- | --- | --- | --- |
-| OPS-001 | Supabase: zwölf Gate-Punkte, Objektspeicher, Edge Runtime | Jannes, Support | [`providerpruefung-supabase.md`](../decisions/providerpruefung-supabase.md) |
-| B2 | DSFA-Schwellwert, DSB, DSFA über den ganzen Umfang; E15, Einwilligung im Training, Office-Sicht (§4.8), Screening-Frist, Handoff und Führung (ADR-019 Punkt 23, §20.1), Plattform, Ernährung, Fotos von Patient:innen, Zweckbindung der Erinnerung an das Abschlussgespräch (§4.10) | externe Datenschutzberatung | vorläufige Festlegungen und Register |
-| B1 | Zweckbestimmung, MDR-Abgrenzung, EU AI Act; B10 mit | externe Prüfstelle | ADR-006, §17, Register `src/app/mdr.ts` |
-| B4 | Steuer: Leistungsarten, § 19 UStG, Nummernkreise, ermäßigter Satz, Nachsorge-Abo, Pakete nach Zeitraum, E14 Fall 1, Belegfristen, Gewinnermittlung (B9, ANN-088) | Steuerberatung | ANN-074/075/082/088 |
-| B3 | Validierung der Fristen (ANN-001) | im DSFA-Prozess | ANN-001 |
-| B5 | Identität und Vertretung im Portal | Jannes, ggf. Beratung | ADR-023 |
-| B8 | schriftlicher Lizenzbeleg | Lizenzgeber | Jannes' Bestätigung vom 2026-09-21 |
-| B9 | Ernährungsberatung berufsrechtlich (auch bei Patient:innen, ADR-027), Betreuung ohne Heilbehandlung | Beratung | B9 in `OPEN_DECISIONS.md` |
-| Anbieter | PTV (Gate ADR-019), SMTP (B13, BEF-026), SMS (B15), KI (C6, ADR-005), Zahlungsdienst (falls Kartenzahlung), Frontend-Hosting (G5) | Jannes mit Claude-Dokument | `mock`-Adapter (Grundsatz 5) |
-
-### Bei Jannes — hält kein Bauen auf
-
-- **R14 alt / Logfrist:** (a) ADR-011 Punkt 4 auf das senken, was die
-  Plattform hält, oder (b) Ausleitungsweg als zweiter Auftragsverarbeiter.
-  **Entschieden (Jannes, 2026-10-10): nach G3**, wenn Produktivprojekt und
-  Tarif feststehen. Gebraucht vor echten Daten.
-- **B13 / BEF-026:** **Richtung entschieden (Jannes, 2026-10-10): eigener
-  SMTP-Anbieter.** Welcher, prüft Block 11 (ADR-002). STAFF-004 ruht bis dahin.
-- **Sichtung** nach Regel 1: vier Dateien in [`../sichtung/`](../sichtung/README.md),
-  darunter der Kartendienst mit MAP-005 Teil B am Telefon (Wegpunktlimit,
-  `MAX_ZWISCHENZIELE` bleibt bis dahin bei drei).
-- **Begriffe sammeln**, die in der Anwendung stören (Stichworte oder
-  Bildschirmfotos) — Grundlage für UX-EPIC-002.
-- **D2/D3** aus dem FRB-Plan: gelten wie vorgeschlagen (ANN-118, ANN-119);
-  die drei Lücken der MT-Vorlage und Korrekturen jederzeit nachliefern.
-- **Material für FRB-EPIC-005:** Bilder zu den Tests (NRS und
-  Veränderungsfrage für FRB-EPIC-004 freigegeben, PSFS gestrichen).
-- **Preise** für Katalog, Abo und Pakete — vor Block 5 als synthetische Werte,
-  echte vor M3.
-- **Branch Protection:** `main` ist geschützt; ob Secret Scanning und Push
-  Protection an sind, ist in den Einstellungen zu prüfen
-  (`docs/DEVELOPMENT.md`, „Manuelle Schritte") — Kriterium von M3.
-
-### Was neben der Reihenfolge festzuhalten ist
-
-- **Das PTV-Free-Abo trägt nur den Prototyp** (Test und Integration, 500
-  Transaktionen/Tag); der Betrieb braucht den Standard Plan und hängt am Gate
-  aus ADR-019 Punkt 9. Der Server-Schlüssel ist ein lokales Secret bei Jannes.
-- **Das Lastenradprofil ist gewählt** (2026-09-22) und hängt am Kommentar zu
-  `TravelProfile` in `src/lib/location/contract.ts`.
-- **Die Matrix-Schreibweise** ist nicht gegen die echte API geprüft
-  (`api.myptv.com` aus der Cloud gesperrt) — Schritt 2 der Sichtung Kartendienst.
-- **Vor der ersten echten Datei:** `tests/e2e/authenticated/patient-file-access.spec.ts`
-  regelmäßig gegen die Test-Umgebung laufen lassen (ANN-052).
-- **Kleine Wartung:** `supabase/config.toml` Abschnitt `[inbucket]` nach
-  `[local_smtp]` umbenennen.
-
----
-
-## Sessions starten
-
-Die Reihenfolge ist verbindlich (E-15), einen Kalender gibt es nicht.
-
-1. **Vorher:** `git pull --ff-only origin main`.
-2. **Aufruf:** als erste Nachricht. Im Normalfall `/weiter` — er nimmt die
-   erste Aufgabe aus [`../STATUS.md`](../STATUS.md) und führt sie als
-   `/bereich` oder `/feature-loop` aus; ein Auftrag darf mehrere Aufgaben oder
-   einen ganzen Bereich nennen. Welche Prüfungen ein Diff braucht, sagt K1 in
-   `CLAUDE.md` („Arbeitsweise").
-3. **Nachher:** die Bildstrecke ansehen, die Fragen der PR mit je einem Satz
-   beantworten („wie empfohlen" reicht). Merge nach der „Definition of Done".
-
-Antworten am besten mit Kennung (`B4: liegt vor, Ergebnis …`), Entscheidungen
-als „entschieden: …".
-
-| Zweck | Aufruf |
-| --- | --- |
-| **Nächste Aufgabe** | `/weiter` — oder `/weiter <Kennung>`, `/weiter <A>, <B>` |
-| **Bereichsüberholung** | `/bereich <Bereich>` — ein Arbeitsbereich in einem Zug, eine PR mit Bildstrecke |
-| **Einzelauftrag** | `/feature-loop <Auftrag>` — Epic oder Befundbündel an Datenmodell oder Rechten |
-| **Idee** | `/idee <Idee in zwei Sätzen>` — nur Ideenspeicher, nichts bauen |
-| **Sichtung** | `/sichtung` — Bildstrecke der jüngsten PR; `/sichtung triage <Datei>` für alte Klickschritte |
-| Befund | `Befund: <Beobachtung, Bereich, Rolle>. In docs/development/BEFUNDE.md eintragen, nicht bauen.` |
-| Antworten eintragen | `Docs-Session ohne Code: meine Antworten in docs/development/ROADMAP.md und docs/decisions/OPEN_DECISIONS.md einarbeiten. Antworten: …` |
-| Zweitreview | `Zweitreview <Kennung>: den Diff des offenen Pull Requests mit .claude/agents/sicherheits-reviewer.md gegen die Review-Checkliste aus ADR-013 Punkt 9 prüfen. Nichts bauen.` — Pflicht, sobald eine PR ihn als ausstehend nennt |
-| Roadmap prüfen | `Planungssession ohne Code: Gesamtstand prüfen (git fetch, Branches, Pull Requests), docs/development/ROADMAP.md gegen den Stand nachstellen, nächsten Auftrag vorschlagen. Nichts bauen.` |
-
-Docs-Sessions für ADRs und Providerprüfungen laufen über `/weiter`, sobald sie
-in STATUS stehen; ihre Vorgabe ist die Zeile hier und die dort genannten ADRs.
-
----
-
-## Definition of Done
-
-**Je Story:** vertikaler Schnitt, Tests, Annahmen mit Anker, bei Oberfläche die
-Prüfliste in `docs/design/DESIGN.md` und die übrigen Punkte aus
-[`../sichtung/README.md`](../sichtung/README.md). **Je neue Tabelle zusätzlich:** Datenklasse und
-Frist als `COMMENT`, Löschpfad in LOE-002, ein `test:db`-Fall, der die Löschung
-dieser Klasse prüft. **Je Portalsicht zusätzlich:** Negativfall „fremde
-Person" in `pnpm test:db`.
-
-**Je PR:** Prüfungen nach dem Skill (`/bereich` Schritt 6–7, `/feature-loop`
-Schritt C) · bei Pfad A Checkliste aus ADR-013 Punkt 9 und Zweitreview ·
-`fortschritt.json` nachgestellt und `pnpm fortschritt --schreiben` · STATUS in
-drei Zeilen · bei Oberfläche die Bildstrecke vorher/nachher (375 und 1280 px)
-in der PR · **Jannes mergt nach grüner CI**; steht ein Zweitreview aus, erst
-danach · ohne Oberfläche ist die PR damit gesichtet, mit Oberfläche nach der
-Bildsichtung (Regel 1) · Befunde nach `BEFUNDE.md` und als erste Story in die
-nächste Überholung desselben Bereichs.
-
-**V1 fertig (M2):** alle Etappen der Blöcke 1 bis 9 gesichtet; jede Funktion
-mit ungeprüftem Anbieter ist ohne ihn benutzbar oder abgeschaltet.
-
----
-
-## Arbeitsweise und Budget
-
-Seit 2026-10-12 (Auftrag Jannes) ersetzt diese Liste das frühere Credit-Budget
-(„ein Loop je Session", „ein Thema je Session", „Loops klein schneiden",
-„keine Subagenten"; Wortlaut in Git, Fassung 7.12). Maßgeblich ist `CLAUDE.md`,
-„Arbeitsweise".
-
-**Zuschnitt**
-
-1. **Ein Auftrag wird vollständig abgearbeitet** — ein Bereich (`/bereich`) oder
-   eine Liste von Epics (`/feature-loop`), ohne Zwischenstopp. Anhalten nur bei
-   der Stoppliste aus §15.1, nach drei erfolglosen Reparaturversuchen derselben
-   Ursache oder bei vollem Kontext (dann übergeben, nicht abbrechen).
-2. **Kleine Agentenschritte, große Lieferung:** je Story ein Commit und die eng
-   betroffenen Checks; eine PR je Bereich, bei einem für sich
-   zweitreviewpflichtigen Fundament eine PR je Epic.
-3. **Ein Branch je Bereich**, vor der PR auf `main` gebracht; gemergte Branches
-   werden gelöscht.
-
-**Lesen**
-
-4. `STATUS.md`, die Zeile der Aufgabe hier, die Spec; ADRs nach dem Index in
-   `CLAUDE.md` — die benannten ganz, bei RLS, Löschung und Abrechnung mehr als zwei.
-5. Ideenspeicher und Referenzdateien gezielt; Recherche über Subagenten, damit
-   der Hauptkontext frei bleibt.
-
-**Parallelität**
-
-6. **Subagenten und Workflows sind erlaubt** für Recherche und Referenzabgleich,
-   für Design-, Praxis- und Sicherheitsreview (`.claude/agents/`) und für
-   Oberflächenarbeit an unabhängigen Routen in eigenen Worktrees.
-7. **Fundament seriell:** Migrationen, Policies und RPCs baut ein Agent nach dem
-   anderen, mit gezieltem `pnpm test:db` und Zweitreview, bevor die Oberfläche
-   darauf aufsetzt.
-
-**Verifikation**
-
-8. Während der Entwicklung nur die eng betroffenen Checks; die vollständige
-   Runde **einmal** am Ende. Keine identischen teuren Läufe ohne Änderung.
-9. `pnpm test:db` bei Migrationen und Policies — auch in der Cloudumgebung.
-10. **Zweitreview** vor dem Merge nach ADR-013 Punkt 9, Nr. 8.
-11. **Bildstrecke** bei jeder Oberfläche, vorher/nachher, selbst angesehen.
-
-**Rhythmus**
-
-12. **Planungsreview, wenn eine Überholung oder ein Block fertig ist:**
-    Meilensteinstand, Prüfungsstand, Risiken, nächste Überholung.
-
-Das Modell steht projektweit in `.claude/settings.json`; bei Migration, RLS,
-Policy oder Zweitreview startet die Session mit `/effort xhigh`
-(`CLAUDE.md`, „K1 zuerst“).
-
----
-
-## Wochenupdate
-
-Auftrag für eine Planungssession, von Hand gestartet (die Montagsroutine ist seit 2026-09-23 abgeschaltet). Sie **baut nichts.**
-
-1. `docs/STATUS.md`, die Abschnitte „Bereichsüberholungen", „Die Kette bis zur
-   Eröffnung" und „Meilensteine" dieser Datei, die Ausgabe von
-   `node scripts/fortschritt.mjs` (braucht kein `pnpm install`) und
-   `git log --since='8 days ago' --oneline` lesen.
-2. Feststellen, welche Loops seit dem letzten Update fertig **und gesichtet**
-   wurden; offene Sichtungen zählen (Tabelle in `docs/sichtung/README.md`).
-3. Die erste Aufgabe aus `STATUS.md` nennen und prüfen, ob sie zur Kette passt.
-4. Prüfen, ob ein Meilenstein erreicht ist. **Termine gibt es nicht zu
-   prüfen** — mit einer Ausnahme: R1, ob M2 rechtzeitig vor der Eröffnung in
-   Sicht ist.
-5. Antwort in festem Format, höchstens zwölf Zeilen: _was als Nächstes ansteht ·
-   offene Sichtungen · Jannes entscheidet oder liefert · M1 bis M6 je erreicht
-   oder offen, mit dem fehlenden Kriterium in einem Wort_.
-
-Die abgeschaltete Routine beschreibt `docs/DEVELOPMENT.md`, „Wochenroutine".
-
----
+**Festzuhalten:** Das PTV-Free-Abo trägt nur den Prototyp; der Betrieb braucht den Standard Plan
+(ADR-019 Punkt 9), der Server-Schlüssel ist ein lokales Secret bei Jannes. Das Lastenradprofil hängt
+an `TravelProfile` (`src/lib/location/contract.ts`); die Matrix-Schreibweise ist nicht gegen die
+echte API geprüft. Vor der ersten echten Datei OPS-001, ein getesteter Sicherungsweg für den
+Objektspeicher (ADR-017, OPS-003) und `patient-file-access.spec.ts` gegen die Test-Umgebung
+(ANN-052). Wartung: `[inbucket]` in `supabase/config.toml` wird `[local_smtp]`. Ungeplant: das
+Adressfragment `verordnungen` → `grundlagen` (ANN-062) und die Teilung von
+`src/features/patients/treatment-bases` nimmt ein Loop mit, der ohnehin dort arbeitet.
 
 ## Fortschritt
-
-**Einzige Quelle ist [`fortschritt.json`](fortschritt.json)** (Umbau U3). Ein
-Loop stellt dort seinen Posten nach — `status`, `fertig_am`, `nachweis`, nach
-einer Sichtung `gesichtet_am` — und erzeugt die Tabelle unten mit
-`pnpm fortschritt --schreiben`; `pnpm docs:check` meldet jede Abweichung. Die
-Tabelle nennt jeden Posten, der nicht mehr `offen` ist.
-
-- **fertig** — gebaut, PR mit Doku-Pflichten nach dem Skill; zählt `0,85`.
-- **gesichtet** — mit Oberfläche mit Bildern geprüft und von Jannes freigegeben
-  ([`../sichtung/`](../sichtung/README.md)); ohne Oberfläche gemergt
-  mit grüner CI, `pnpm test:db` und Zweitreview (Regel 1); bei Entscheidungen
-  und Prüfungen bestätigt. Zählt `1`.
-- `vorläufig` und `entwurf` zählen `0,5`, `in Arbeit` `0,4`.
-
-```bash
-pnpm fortschritt            # eine Zahl bis M5, je Block
-pnpm fortschritt --posten   # jeder einzelne Posten
-```
-
-Fünf Blöcke: **A** Kernprozess (20), **B** V1-Ausbau (32), **C** Betriebsreife
-(18), **D** Eröffnung (12), **E** Entscheidungen und Prüfungen (18). Die
-feinere Tabelle je Loop bis 2026-09-23 und die ausführlichen Vermerke bis 5.50
-stehen in `git show eb43569:docs/development/ROADMAP-CHRONIK.md`.
+Einzige Quelle ist [`fortschritt.json`](fortschritt.json) (`status`, `fertig_am`, `nachweis`,
+`gesichtet_am`); die Tabelle schreibt `pnpm fortschritt --schreiben`, `pnpm docs:check` prüft sie.
+Ausführliche Nachweise bis 2026-10-27: `git show 9452575:docs/development/fortschritt.json`.
+**fertig** zählt 0,85, **gesichtet** 1 (Regel 1), `vorläufig` und `entwurf` 0,5, `in Arbeit` 0,4.
+Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnung, **E** Prüfungen.
 
 <!-- fortschritt:anfang (erzeugt von pnpm fortschritt --schreiben, nicht von Hand aendern) -->
 | Block | Posten | Status | Fertig am | Nachweis | Gesichtet am | Vermerk |
@@ -860,7 +242,7 @@ stehen in `git show eb43569:docs/development/ROADMAP-CHRONIK.md`.
 | A | CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L) | gesichtet | 2026-09-21 | `e268f96`, `0c8920c`, `120445f` | 2026-09-29 | — |
 | A | ABR-EPIC-005 Leistungsbereich je Rechnung, getrennte Nummernkreise (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
 | A | ABR-EPIC-006 Auswertung „Einnahmen je Leistungsart" (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
-| B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | gesichtet | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034); `21f4866` … `ac8516f` (UX-002i bis UX-002l, BEF-041 bis BEF-044) | 2026-09-28 | Sichtung Kernprozess 2026-09-28 (Android und Windows) |
+| B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | gesichtet | 2026-09-26 | `aafe0cd` … `ac8516f` | 2026-09-28 | Sichtung Kernprozess 2026-09-28 (Android und Windows) |
 | B | UX-EPIC-003 Tagesansicht fürs Handy (Block 1a) | gesichtet | 2026-09-26 | `46ebc9e` … (UX-003a, UX-003c, Zweitreview) | 2026-09-28 | Sichtung Kernprozess 2026-09-28, Schritte 10 und 12 |
 | B | MAP-002 In-App-Kartenprototyp | fertig | 2026-09-21 | `c85c56e` … `ea2d9aa` | — | — |
 | B | MAP-003 Fahrradroute als Linie | fertig | 2026-09-21 | `cbc6c07`, `71756aa`, `d66ea31` | — | — |
@@ -888,35 +270,35 @@ stehen in `git show eb43569:docs/development/ROADMAP-CHRONIK.md`.
 | B | TRN-EPIC-002 Trainingstermine | fertig | 2026-09-30 | TRN-004 bis TRN-006 | — | Sichtung: Training Schritte 4 bis 6 |
 | B | TRN-EPIC-003 Trainingsrechnung | fertig | 2026-09-30 | TRN-007, TRN-008, Zweitreview | — | Sichtung: Training Schritte 7 bis 9 |
 | B | TRN-EPIC-004 Trainingsprotokoll | fertig | 2026-09-30 | TRN-009, TRN-010, Zweitreview | — | Sichtung: Training Schritte 10 bis 12 |
-| B | DSN-001 Ansichten der Plattform für Patient:innen und Betreuung (Docs) | gesichtet | 2026-09-30 | docs/development/PLATTFORM-ANSICHTEN.md | — | D1 bis D7 von Jannes bestätigt (2026-09-30, wie empfohlen) |
+| B | DSN-001 Ansichten der Plattform für Patient:innen und Betreuung (Docs) | gesichtet | 2026-09-30 | git show 9452575:docs/development/PLATTFORM-ANSICHTEN.md | — | D1 bis D7 von Jannes bestätigt (2026-09-30, wie empfohlen) |
 | B | POR-EPIC-001 Plattformzugang | fertig | 2026-09-30 | POR-001 bis POR-004, Zweitreview | — | Sichtung: Plattform Schritte 1 und 2 |
 | B | POR-EPIC-001b Vertretung | fertig | 2026-10-02 | POR-005 bis POR-007, Zweitreview | — | Sichtung: Plattform Schritte 3 und 4 |
 | B | ABN-EPIC-001 Abnahme der Annahmen, Blöcke 2, 3, 4 und 9 | fertig | 2026-10-02 | ABN-001 bis ABN-012, Zweitreview | — | Sichtung: Plattform Schritte 5 bis 7 |
 | B | ABN-EPIC-001b Abnahme der Annahmen, Blöcke 5 bis 8 | fertig | 2026-10-02 | ABN-013 bis ABN-022, Zweitreview | — | ohne BEF-105, -106, -109 (ABN-EPIC-001c); Sichtung: Befund und Training je Schritte 13 bis 15 |
 | B | ABN-EPIC-001c Dateien, Dokumentationsfotos, Kartendienst (BEF-105, -106, -109) | fertig | 2026-10-02 | ABN-023 bis ABN-028, Zweitreview; vorher ADR-017 Fassung 3, ADR-019 Fassung 5 (PR #170) | — | Edge Function patient-file-verify gebaut, scharf mit OPS-001; PDF in der App offen (ANN-223); Sichtung: Befund Schritte 10 bis 12, Kartendienst Schritt 9 |
 | B | ABN-EPIC-002 Abnahme vom 09.10.2026 (BEF-133 bis BEF-137) | fertig | 2026-10-09 | ABN-029 bis ABN-034, Zweitreview; Prinzipien 0.22, ADR-021 Fassung 3, ADR-017 Fassung 4 | — | BEF-138 als eigener Pull Request (bef-138); Sichtung: Befund Schritte 10 bis 12 |
-| B | BEF-138 Abruf freigegebener Dokumente über die Plattform ohne Protokoll | fertig | 2026-10-10 | ADR-010 Fassung 4 (Punkt 22), ADR-023 Fassung 3, Prinzipien 0.23; Migration 20261022100000, platform-files.test.ts; Zweitreview | — | Merge erst mit Label freigabe-audit (Jannes); Sichtung: Plattform Schritt 12 |
+| B | BEF-138 Abruf freigegebener Dokumente über die Plattform ohne Protokoll | fertig | 2026-10-10 | ADR-010 Fassung 4 (Punkt 22) | — | Merge erst mit Label freigabe-audit (Jannes); Sichtung: Plattform Schritt 12 |
 | B | BEF-139 Das Büro antwortet im Training auch auf „Sonstiges“ | gesichtet | 2026-10-10 | ANN-311 Fassung 3; Migration 20261022130000, practice-messages.test.ts (Gegenprobe ohne Migration rot); Zweitreview | — | ohne Oberfläche; Sichtung Pläne Schritt 12 angepasst |
-| B | BEF-140 Zwei Löschkandidaten aus dem Leitfaden (Übersicht, Telefon geschäftlich) | fertig | 2026-10-11 | ANN-340; MyDayPage.test.tsx, EditPatientPage.test.tsx, NewPatientPage.test.tsx, uebersicht.spec.ts; Sichtung UX-Review Schritt 10 | — | nur Oberfläche; „Andere Ziel-App prüfen“ folgt nach der Sichtung Kartendienst |
+| B | BEF-140 Zwei Löschkandidaten aus dem Leitfaden (Übersicht, Telefon geschäftlich) | fertig | 2026-10-11 | ANN-340 | — | nur Oberfläche; „Andere Ziel-App prüfen“ folgt nach der Sichtung Kartendienst |
 | B | BEF-141 Listen zeigen den Empfänger ausgestellter Rechnungen aus dem Snapshot | gesichtet | 2026-10-11 | ANN-339; Migration 20261027100000, invoices.test.ts (Gegenprobe ohne Migration rot); Zweitreview | — | ohne Oberfläche außer dem Hinweis am Empfängerformular |
-| B | BEF-129 Widerruf des Trainingsvertrags bleibt in Offene Punkte, bis das Paket entfernt ist | fertig | 2026-10-11 | ANN-341; Migration 20261028100000, training-contracts.test.ts, TrainingWithdrawals.test.tsx; Sichtung Angebote Schritt 10; Zweitreview | — | Bedingung statt 14 Tage; Monatsentwurf unverändert |
+| B | BEF-129 Widerruf des Trainingsvertrags bleibt in Offene Punkte, bis das Paket entfernt ist | fertig | 2026-10-11 | ANN-341 | — | Bedingung statt 14 Tage; Monatsentwurf unverändert |
 | B | BEF-128 Abo-Monat lässt sich nach einem Storno zurücknehmen | gesichtet | 2026-10-11 | Migration 20261029100000, aftercare-months.test.ts (Gegenprobe ohne Migration rot); Zweitreview | — | ohne Oberfläche; der vorhandene Knopf „Erfassung zurücknehmen“ trägt jetzt auch nach einem Storno |
 | B | BEF-124 Verordnung mit Verlauf, Löschen nur ohne Termine | fertig | 2026-10-16 | ANN-562; Migration 20261121100000, treatment-basis-history.test.ts, retention-run.test.ts; Zweitreview | — | Verlauf eingeklappt auf der Bearbeiten-Seite der Grundlage |
 | B | BEF-131 Terminwünsche ziehen beim Zusammenführen mit | gesichtet | 2026-10-11 | Migration 20261030100000, patient-merge.test.ts (Gegenprobe ohne Migration rot); Zweitreview | — | ohne Oberfläche; der Plattformzugang der Dublette bleibt BEF-132 |
-| B | BEF-132 Plattformzugang an der Dublette sperrt das Zusammenführen | fertig | 2026-10-11 | Migration 20261031100000, patient-merge.test.ts, practice-messages.test.ts und message-attachments.test.ts (Gegenprobe ohne Migration rot), dublette.spec.ts; Zweitreview | — | ein Satz und zwei Zähler in der Vorschau, Prüfseite dublette.html?sperre=plattform; Sichtungsdatei Praxisverwaltung voll, kein neuer Schritt |
-| B | BEF-143 Stornierte Rechnung nennt ihre Positionen aus dem Snapshot | fertig | 2026-10-11 | Migration 20261101100000, invoice-cancellations.test.ts (Gegenprobe ohne Migration rot), InvoiceDetailPage.test.tsx, terminhonorar.spec.ts; Zweitreview | — | Korrektur nur angeboten, wenn sie eine Zeile hätte (correction_pending); Prüfseite terminhonorar.html?seite=storniert; Sichtung UX-Review Schritt 11 |
-| B | BEF-144 Terminwünsche in der Auskunft aus der Akte | gesichtet | 2026-10-11 | Migrationen 20261102100000 und 20261102110000, betroffenenrechte.test.ts und practice-messages.test.ts (Gegenprobe ohne Migration rot); Zweitreview | — | ohne Oberfläche außer der Beschriftung des Abschnitts; daneben: gleichzeitiges Erledigen überschreibt den Vermerk nicht mehr (Hinweis Zweitreview BEF-132) |
+| B | BEF-132 Plattformzugang an der Dublette sperrt das Zusammenführen | fertig | 2026-10-11 | Migration 20261031100000 | — | ein Satz und zwei Zähler in der Vorschau, Prüfseite dublette.html?sperre=plattform; Sichtungsdatei Praxisverwaltung voll, kein neuer Schritt |
+| B | BEF-143 Stornierte Rechnung nennt ihre Positionen aus dem Snapshot | fertig | 2026-10-11 | Migration 20261101100000 | — | Korrektur nur angeboten, wenn sie eine Zeile hätte (correction_pending); Prüfseite terminhonorar.html?seite=storniert; Sichtung UX-Review Schritt 11 |
+| B | BEF-144 Terminwünsche in der Auskunft aus der Akte | gesichtet | 2026-10-11 | Migrationen 20261102100000 und 20261102110000 | — | ohne Oberfläche außer der Beschriftung des Abschnitts; daneben: gleichzeitiges Erledigen überschreibt den Vermerk nicht mehr (Hinweis Zweitreview BEF-132) |
 | B | BEF-145 Vollständigkeitstest der Auskunft, Zugänge zur Plattform in der Auskunft | gesichtet | 2026-10-11 | Migration 20261103100000, betroffenenrechte.test.ts (Gegenprobe ohne Migration rot); Zweitreview | — | Test über jede Tabelle des Aufbewahrungsplans mit patient_id; fand platform_accesses (ANN-342); ohne Oberfläche außer der Beschriftung des Abschnitts |
 | B | LOG-EPIC-001 Protokollierung auf das Mindestmaß | fertig | 2026-10-03 | PRs #177 bis #180 (gestapelt), ADR-010 Fassung 3, PROJECT_PRINCIPLES 0.21 | — | ohne Oberfläche außer Hinweistexten; nach grüner CI mergen (E-6); offen bei Jannes: pg_cron-Nachweis, Backupfrist, AV-Verträge, Plattformlogs |
 | B | ABR-EPIC-007 Terminhonorar | fertig | 2026-10-05 | ABR-030 bis ABR-032, ADR-009 Fassung 5 (B17 entschieden), Zweitreview | — | ohne BEF-114 (Paketpreise Training, wartet auf Preis, Umfang, Zahlungsweise); Sichtung: Plattform Schritte 8 und 9 |
 | B | UBK-EPIC-001 Übersicht nach der Uhr, Tageswechsel, Tageskarte, Fahrwege im Kalender (BEF-051) | fertig | 2026-10-05 | UBK-001 bis UBK-005, Branch `claude/feature-loop-ubersicht-kalender-hy71mv` | — | Auftrag Jannes, eingeschoben; Sichtung: UI-Redesign Schritte 3, 13 und 14 |
 | B | UBK-EPIC-002 Fahrzeiten im Alltag: Fahrzeitfaktor, Passt es?, Lückenfinder, Garage und Rückweg, Fahrweg antippbar, Ort auf der Kachel | fertig | 2026-10-06 | UBK-010 bis UBK-017, Branch `claude/friendly-wright-4r8083`, vier Migrationen, Zweitreview | — | Auftrag Jannes, eingeschoben; Sichtung: Kartendienst Schritte 8, 9 und 13, UI-Redesign Schritte 14 und 15 |
-| B | RAH-EPIC-001 Design-Runde 1 Rahmen: Seitenleiste und Symbolspalte, Kopfzeile, Tableiste nach Reife, Sicherheit und Aufbewahrung, Praxiseinstellungen, Rückweg in der Akte, Tab-Titel, Startbild | fertig | 2026-10-06 | RAH-001 bis RAH-010, Branch `claude/epic-cori-rmq1ty`, Handoff docs/design/handoff-2026-10-05-rahmen.md, Prüfseite tests/e2e/fixtures/startbild.html | — | Auftrag Jannes (Design-Runde 1, 05.10.2026), eingeschoben; Sichtung: Rahmen Schritte 1 bis 3 |
-| B | SLK-EPIC-001 Schlank und klar, erste Runde: Telefax der Patient:innen gelöscht, Doku an jeder Zeile der Übersicht, Stammdaten in einem Block, Grundton B | fertig | 2026-10-06 | SLK-001 bis SLK-004, Branch `claude/confident-wozniak-vj9h7h`, Leitfaden docs/design/leitfaden-schlank.md, eine Migration, Zweitreview ohne blockierenden Befund | — | Auftrag Jannes (06.10.2026), eingeschoben; Sichtung: Rahmen Schritte 4 bis 6 |
-| B | SKN-EPIC-001 Design-Runde 2 Schrift und Knöpfe: Leiste 12 px, Kleingedrucktes 14 px, gesperrter Knopf gestrichelt, dichte Angaben auf 12 px, Zeitstrahl-Symbol | fertig | 2026-10-06 | SKN-001 bis SKN-007 (SKN-008 wartet auf die Zwei-Faktor-Frage), Handoff docs/design/handoff-2026-10-06-schrift-und-knoepfe.md, Prüfseite tests/e2e/fixtures/ui-bausteine.html, E2E tests/e2e/tableiste.spec.ts | — | Auftrag Jannes (Design-Runde 2, Freigabe 06.10.2026); Sichtung: Rahmen Schritt 7 |
-| B | ABR-EPIC-008 Design-Runde Abrechnung: Rechnungsliste mit Suche, Filter, Monat und Weitere laden, Gesamtzahl, Spalten ab 1024 px | fertig | 2026-10-06 | ABR-033/034, Migration 20261012110000_abr_033_rechnungsliste_suche.sql, supabase/tests/invoices.test.ts, src/features/billing/Rechnungsliste.tsx | — | BEF-061 Option 1 und 3 (Entscheidung Jannes 2026-10-05), ANN-259; Sichtung: Rahmen Schritt 12 |
-| B | DOK-EPIC-001 Design-Runde Dokumentation: Skala zweireihig mit gewähltem Wert, Bausteinfeld ohne Kasten im Kasten, Bausteinleiste einreihig, Ursprung im Nachtrag zugeklappt | fertig | 2026-10-06 | DOK-001 bis DOK-004, E2E tests/e2e/befund.spec.ts (Skala 44 px, zwei Reihen) und tests/e2e/bausteine.spec.ts (Testzeile eine Reihe) | — | BEF-057 Option 2 (Entscheidung Jannes 2026-10-05) mit der Skala aus Option 3 (ANN-258); Sichtung: Rahmen Schritt 11 |
-| B | KUT-EPIC-001 Design-Runde 3 Kalender und Tour: Woche 7.5rem, Tour im Kopf, Anlegen-Leiste dichter mit Bildlauf, Tour am Handy Liste vor Karte, zwei Spalten am Rechner, Karte mit zwei Fingern | fertig | 2026-10-06 | KUT-001 bis KUT-006, Handoff docs/design/handoff-2026-10-06-kalender-und-tour.md, E2E tests/e2e/kalender.spec.ts (Tipp im unteren Drittel, Tour im Kopf) | — | Auftrag Jannes (Design-Runde 3 alles A, Freigabe 06.10.2026); BEF-053, BEF-054 erledigt; Sichtung: Rahmen Schritte 8 bis 10 |
+| B | RAH-EPIC-001 Design-Runde 1 Rahmen: Seitenleiste und Symbolspalte, Kopfzeile, Tableiste nach Reife, Sicherheit und Aufbewahrung, Praxiseinstellungen, Rückweg in der Akte, Tab-Titel, Startbild | fertig | 2026-10-06 | Branch `claude/epic-cori-rmq1ty` | — | Auftrag Jannes (Design-Runde 1, 05.10.2026), eingeschoben; Sichtung: Rahmen Schritte 1 bis 3 |
+| B | SLK-EPIC-001 Schlank und klar, erste Runde: Telefax der Patient:innen gelöscht, Doku an jeder Zeile der Übersicht, Stammdaten in einem Block, Grundton B | fertig | 2026-10-06 | Branch `claude/confident-wozniak-vj9h7h` | — | Auftrag Jannes (06.10.2026), eingeschoben; Sichtung: Rahmen Schritte 4 bis 6 |
+| B | SKN-EPIC-001 Design-Runde 2 Schrift und Knöpfe: Leiste 12 px, Kleingedrucktes 14 px, gesperrter Knopf gestrichelt, dichte Angaben auf 12 px, Zeitstrahl-Symbol | fertig | 2026-10-06 | SKN-001 bis SKN-007 (SKN-008 wartet auf die Zwei-Faktor-Frage) | — | Auftrag Jannes (Design-Runde 2, Freigabe 06.10.2026); Sichtung: Rahmen Schritt 7 |
+| B | ABR-EPIC-008 Design-Runde Abrechnung: Rechnungsliste mit Suche, Filter, Monat und Weitere laden, Gesamtzahl, Spalten ab 1024 px | fertig | 2026-10-06 | ABR-033/034 | — | BEF-061 Option 1 und 3 (Entscheidung Jannes 2026-10-05), ANN-259; Sichtung: Rahmen Schritt 12 |
+| B | DOK-EPIC-001 Design-Runde Dokumentation: Skala zweireihig mit gewähltem Wert, Bausteinfeld ohne Kasten im Kasten, Bausteinleiste einreihig, Ursprung im Nachtrag zugeklappt | fertig | 2026-10-06 | DOK-001 bis DOK-004 | — | BEF-057 Option 2 (Entscheidung Jannes 2026-10-05) mit der Skala aus Option 3 (ANN-258); Sichtung: Rahmen Schritt 11 |
+| B | KUT-EPIC-001 Design-Runde 3 Kalender und Tour: Woche 7.5rem, Tour im Kopf, Anlegen-Leiste dichter mit Bildlauf, Tour am Handy Liste vor Karte, zwei Spalten am Rechner, Karte mit zwei Fingern | fertig | 2026-10-06 | KUT-001 bis KUT-006 | — | Auftrag Jannes (Design-Runde 3 alles A, Freigabe 06.10.2026); BEF-053, BEF-054 erledigt; Sichtung: Rahmen Schritte 8 bis 10 |
 | B | POR-EPIC-002 Eigene Termine, Rechnungen, Dokumente | fertig | 2026-10-06 | POR-008 bis POR-015, Zweitreview | — | Sichtung: Plattform Schritte 10 bis 12 |
 | B | POR-EPIC-003 Einwilligungen, Export, Einstellungen | fertig | 2026-10-07 | POR-016 bis POR-020, Zweitreview | — | Sichtung: Plattform Schritte 13 bis 15 |
 | B | ANG-EPIC-001 Nachsorge-Abo als Monatsrechnung | fertig | 2026-10-07 | ANG-001 bis ANG-004, Zweitreview | — | Sichtung: Angebote Schritte 1 bis 3 |
@@ -937,50 +319,50 @@ stehen in `git show eb43569:docs/development/ROADMAP-CHRONIK.md`.
 | B | ERN-EPIC-001 Ernährung: Profil und Bedarf | fertig | 2026-10-18 | ERN-001 bis ERN-003, Zweitreview | — | — |
 | B | ERN-EPIC-002 Ernährung: Lebensmitteldaten | fertig | 2026-10-19 | ERN-004 bis ERN-006, Zweitreview | — | — |
 | B | ERN-EPIC-003 Ernährung: Tagebuch | fertig | 2026-10-19 | ERN-007 bis ERN-010, Budgets in tagebuch.spec.ts, Zweitreview | — | — |
-| B | Ernährung: Beratung abrechnen | fertig | 2026-10-19 | ERN-011 und ERN-012, Migration 20261222100000_ern_011_beratung_am_termin.sql, supabase/tests/nutrition-appointments.test.ts, Zweitreview | — | ANN-622 (Abnahme Jannes), ANN-664, ANN-665; Sichtung per Bildstrecke im PR |
-| B | FLT-EPIC-001 Radflotte | fertig | 2026-10-15 | FLT-001 bis FLT-004, Branch ccr-658a5e25-l0njkl, Migrationen 20261119100000_flt_001_radflotte.sql und 20261119110000_flt_002_fotos_am_rad.sql, supabase/tests/fleet.test.ts und fleet-photos.test.ts, tests/e2e/radflotte.spec.ts (R1 bis R7) und rad3d.spec.ts, Zweitreview | — | Auftrag Jannes (15.10.2026), ersetzt die Vorschau; ANN-550 bis ANN-558; Rad im Kalender und weitere Bauarten offen; Sichtung per Bildstrecke im PR. Nachtrag 16.10.: FLT-007 bis FLT-009 (Werbeflächen, Seitenfotos, Meldungen für den Arbeitgeber, Check-Up-Rhythmus; Migration 20261122100000, ANN-568 bis ANN-570) |
-| B | TEAM-001 Teamkommunikation: Kanäle, Direktnachrichten, Threads, Erwähnungen, Suche, eigener Lesestand, rollierende Löschung | fertig | 2026-10-17 | Branch claude/modest-turing-i5qgn9, Migration 20261204100000_team_001_teamchat.sql, supabase/tests/teamchat.test.ts, src/features/teamchat/*.test.ts(x), tests/e2e/authenticated/teamchat.spec.ts, Zweitreview in zwei Runden | — | Überholung 11 (Auftrag Jannes 17.10.2026), ersetzt die Vorschau; ADR-008 Fassung 5 Punkt 12; ANN-609 bis ANN-614; Aufbau wie Slack (Für dich, Threads); keine Startkanäle (Jannes), Nachrichten der Radflotte in der Radflotte; Anhänge (ADR-017 Punkt 30), Push (ADR-024) und Vorgangsbezug offen |
-| B | TEAM-002 Teamchat wie Slack: Chatfläche mit Gesprächen, Gespräch und Thread nebeneinander, private Kanäle, Gruppen, Reaktionen, Anheften, Für später, Planen, Suche mit Filtern, Lesestand je Thread, Zustellung ohne Doppel | fertig | 2026-10-18 | Branch claude/epic-cerf-vq8hz1, Migration 20261210100000_team_002_teamchat_wie_slack.sql, supabase/tests/teamchat-zustellung.test.ts und teamchat-slack.test.ts, src/features/teamchat/*.test.ts(x), tests/e2e/authenticated/teamchat.spec.ts (13 Abläufe), Zweitreview in vier Runden, Design- und Praxis-Review in zwei Runden | — | Überholung Teamchat (Auftrag Jannes 18.10.2026); ANN-640 bis ANN-651; Funktionsmatrix und Etappen in product/ideen/referenz-slack.md; Dateien (ADR-017), Push und Mail (ADR-024 Punkt 12), Huddles, KI, Canvas und Workflows offen als Entscheidung |
-| B | TEAM-003 Anhänge im Teamchat: Fotos und PDF bis fünf je Nachricht, Anzeigen im Fenster ohne Herunterladen, Dateien je Gespräch, gelöscht mit der Nachricht | fertig | 2026-10-18 | PR #273, Migration 20261212100000_team_003_teamchat_anhaenge.sql, supabase/tests/teamchat-anhaenge.test.ts, supabase/functions/patient-file-verify/*.test.ts, src/features/teamchat/entwurfsanhaenge.test.ts, fehler.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (17 Abläufe), Zweitreview in drei Runden, Design- und Praxis-Review | — | Etappe E4 (Frage 1 aus PR #272, Jannes 18.10.2026: wie empfohlen, ohne Virenprüfung); ADR-017 Fassung 8 Abschnitt M vorgeschlagen (Bestätigungsfragen 30 bis 32); ANN-652, ANN-653; scharf erst nach OPS-001 und OPS-003 (Punkt 81); Clips bleiben aus (Punkt 71) |
-| B | TEAM-004 Sprachnachrichten im Teamchat: aufnehmen in der App (höchstens zwei Minuten, sichtbar), nur Ton ohne Angaben, abspielen ohne Herunterladen | fertig | 2026-10-18 | PR #273, Migration 20261213100000_team_004_sprachnachrichten.sql, supabase/tests/teamchat-anhaenge.test.ts, supabase/functions/patient-file-verify/video.test.ts, src/features/portal/platform/videometadaten.test.ts, src/features/teamchat/sprachnachricht.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (künstliches Mikrofon), Zweitreview in drei Runden, Design- und Praxis-Review (Aufnahmeanzeige und Mikrofon als Bausteine, Abspielen mit eigenem Knopf, Fenster über Abfragezustand) | — | Antwort auf Frage 4 der PR #273 (Jannes 18.10.2026: Sprachnachrichten ermöglichen); ADR-017 Fassung 9 Abschnitt N vorgeschlagen (Bestätigungsfragen 33, 34), Mikrofon der eigenen Herkunft freigegeben; ANN-655; keine Transkription, kein Video; scharf erst nach OPS-001 und OPS-003 (Punkt 87) |
-| B | TEAM-005 Senden, während Anhänge hochladen: Nachricht wartet sichtbar im Ausgang und geht von selbst, Bearbeiten holt Text und Anhänge zurück | fertig | 2026-10-18 | PR #273, src/features/teamchat/ausgang.ts, entwurfsanhaenge.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (zähes Netz), ausgang.test.ts, Zweitreview in drei Runden, Praxis-Review (Anhänge im Ausgang alle zwei Minuten weiter) | — | Antwort auf Frage 5 der PR #273 (wie empfohlen); ADR-017 Punkt 74 Vermerk (Fassung 9); ANN-654; alles nur im Arbeitsspeicher (Punkt 33) |
-| B | TEAM-006 Farbe je Person im Teamchat: acht Farben, vergeben mit dem Mitarbeiterdatensatz, selbst gewählt in Mein Konto, Initialen auf der Farbe vor jeder Nachricht und in jeder Liste | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp, Migration 20261223100000_team_006_farbe_je_person.sql, supabase/tests/teamchat-profil.test.ts, src/lib/kontrast.test.ts und designsystem.test.ts (Farben nur als Fläche und Umriss), src/features/teamchat/TeamChat.test.tsx, src/features/workplace/account/MeinKontoPage.test.tsx, tests/e2e/authenticated/profilbild.spec.ts, Zweitreview | — | Auftrag Jannes 19.10.2026 (Chat noch nicht zufrieden: Farbe je Mitarbeiter:in); ANN-666; Baustein Personenbild; keine Farbe im Rot, Orange oder Gelb der Statusfarben |
-| B | TEAM-007 Profilbild im Teamchat: nur für sich selbst, auf dem Gerät zu 256 × 256 gerechnet, am Inhalt geprüft, in der Datenbank, fällt mit Entfernen, Ersetzen und Ausscheiden | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp, Migration 20261223110000_team_007_profilbild.sql, supabase/tests/teamchat-profil.test.ts (Prüfung am Inhalt, Rechte, Löschjournal, Wiederherstellung) und testumgebung.test.ts, src/features/teamchat/profilbild.test.ts, MeinKontoPage.test.tsx, TeamChat.test.tsx, tests/e2e/authenticated/profilbild.spec.ts (Foto mit Ortsangabe aus dem echten Browser), Zweitreview | — | Auftrag Jannes 19.10.2026; ADR-017 Fassung 10 Abschnitt O angenommen (Umkehr von Punkt 1, Fragen 35 bis 37 wie empfohlen); ANN-667 im Prüfpaket; Vorschläge für mehr Übersicht in product/ideen/referenz-slack.md |
-| B | TEAM-008 Bilder auch in den Listen des Teamchats: Für dich, Threads, Suche, Für später und Angeheftetes zeigen Bild oder Farbe der Person, die schrieb | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp, Migration 20261223120000_team_008_bilder_in_listen.sql, supabase/tests/teamchat-profil.test.ts (alle fünf Listen, entfernte Nachricht ohne Verfasser:in, Rechte), TeamChat.test.tsx | — | Antwort auf Frage 5 der PR zu TEAM-006 und TEAM-007 (wie empfohlen); Threads nennen jetzt auch den Namen neben dem Bild (DESIGN.md Regel 5) |
-| B | TEAM-009 Personenkarte im Teamchat: Tipp auf ein Bild zeigt Bild, Name, Praxisrollen und Direktnachricht - keine Anwesenheit, kein Status, keine Kontaktdaten | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp, Migration 20261223130000_team_009_personenkarte.sql, supabase/tests/teamchat-profil.test.ts (Rollen, Ausgeschiedene, fremde Praxis, Rechte, kein Audit), TeamChat.test.tsx, tests/e2e/authenticated/profilbild.spec.ts | — | Antwort auf Frage 5 der PR zu TEAM-006 und TEAM-007 (wie empfohlen); ANN-668 |
-| B | BEF-183 Reiterleiste: „›“ als 44-px-Knopf neben der Liste holt den ersten ganz verdeckten Reiter nach vorn | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp, src/components/ui/Objektkopf.test.tsx, PatientRecordLayout.test.tsx, tests/e2e/authenticated/ernaehrung.spec.ts (Reiter über reiterAntippen, „›“ zählt mit), Design-Review | — | Entscheidung Jannes 2026-10-18; nur rechts ein Knopf, damit „Behandlungsgrundlagen“ bei 375 px ganz hineinpasst |
-| B | BEF-150 Ränder der Entwürfe auf dem Diensttelefon: erneut senden, unlesbare mitzählen, Rückfrage vor dem Verwerfen, Tagesplan bei Rollenwegfall räumen | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp, src/features/clinical/offline-documentation/entwuerfe.test.ts, AufDemGeraet.test.tsx, ohneEmpfang.test.tsx, tagesplan.test.ts | — | /weiter aus STATUS „Danach“; Entwürfe fallen nie still (§13) |
-| B | BEF-147 Benachrichtigungen im eigenen Datenexport: Wahl, Geräte ohne Schlüssel, Tagebuch-Erinnerungen, Zustellaufträge | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp, Migration 20261223140000_bef_147_export_benachrichtigungen.sql, supabase/tests/platform-export.test.ts, Zweitreview | — | Die Praxis sieht die Wahl weiter nicht (ANN-344) |
-| B | BEF-148 Zustellaufträge meldet nur, wer den Anspruch hält; Löschlauf räumt Push-Registrierungen beendeter Zugänge | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp, Migration 20261223150000_bef_148_zustellung_mit_anspruch.sql, supabase/tests/benachrichtigungen.test.ts, supabase/functions/notifications/*.test.ts, Zweitreview | — | Vor dem Scharfschalten des Versands (OPS-001) |
-| B | BEF-146 Vollständigkeitstest der Auskunft sieht auch den Plattformzugang; Anhänge an Rückfragen in der Auskunft | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp, Migration 20261223160000_bef_146_rueckfrageanhaenge_in_der_auskunft.sql, supabase/tests/betroffenenrechte.test.ts, Zweitreview | — | Vier Tabellen bewusst außerhalb der Auskunft der Praxis (ANN-344), im eigenen Export |
-| B | BEF-182 Auskunft nach Art. 15 je Trainingsverhältnis: export_training_record und Seite in den Stammdaten | fertig | 2026-10-20 | Branch ccr-37917f35-emdjjp, Migration 20261223170000_bef_182_auskunft_trainingsverhaeltnis.sql, supabase/tests/auskunft-training.test.ts, src/features/privacy/datenschutz/TrainingAuskunftPage.test.tsx, Zweitreview | — | Nur owner; dieselbe Auditaktion wie an der Akte, Gegenstand das Verhältnis |
-| B | BEF-189 Benachrichtigungsdaten fallen mit dem Ende der Lesezeit; Begleitung exportiert ihre eigene Wahl | fertig | 2026-10-20 | Branch ccr-37917f35-emdjjp, Migration 20261223180000_bef_189_benachrichtigungen_mit_dem_ende.sql, supabase/tests/benachrichtigungen.test.ts, supabase/tests/platform-export.test.ts, Zweitreview | — | ADR-023 Fassung 6, ANN-669 entschieden |
-| B | BEF-188 Fotos und Videos an Rückfragen an die Person herausgeben, auch gesperrte | fertig | 2026-10-20 | Branch claude/cool-allen-m2aaci, Migration 20261223190000_bef_188_herausgabe_rueckfrageanhaenge.sql, supabase/tests/message-attachments.test.ts, src/features/portal/messages/AnhangHerausgabe.test.tsx | — | ADR-017 Fassung 12, ADR-010 Fassung 5, ANN-672; Merge erst mit Label freigabe-audit |
-| B | BEF-190 Profilbild: Ausschnitt beim Auswählen verschieben und vergrößern | fertig | 2026-10-20 | Branch ccr-37917f35-emdjjp, src/features/teamchat/ProfilbildZuschnitt.test.tsx, src/features/teamchat/profilbild.test.ts, tests/e2e/authenticated/profilbild.spec.ts | — | ADR-017 Fassung 11, ANN-670 |
-| B | BEF-192 Tag umplanen: Anruf als Hauptknopf, „Anrufen“ im Abschluss wählt direkt | fertig | 2026-10-20 | Branch ccr-9f54aa20-cgnb8q, src/features/calendar/appointments/TagUmplanenPage.test.tsx, src/components/ui/Anrufknoepfe.test.tsx, Bildstrecke vorher/nachher | — | — |
+| B | Ernährung: Beratung abrechnen | fertig | 2026-10-19 | ERN-011 und ERN-012 | — | ANN-622 (Abnahme Jannes), ANN-664, ANN-665; Sichtung per Bildstrecke im PR |
+| B | FLT-EPIC-001 Radflotte | fertig | 2026-10-15 | Branch ccr-658a5e25-l0njkl | — | Auftrag Jannes (15.10.2026), ersetzt die Vorschau; ANN-550 bis ANN-558; Rad im Kalender und weitere Bauarten offen; Sichtung per Bildstrecke im PR. Nachtrag 16.10.: FLT-007 bis FLT-009 (Werbeflächen, Seitenfotos, Meldungen für den Arbeitgeber, Check-Up-Rhythmus; Migration 20261122100000, ANN-568 bis ANN-570) |
+| B | TEAM-001 Teamkommunikation: Kanäle, Direktnachrichten, Threads, Erwähnungen, Suche, eigener Lesestand, rollierende Löschung | fertig | 2026-10-17 | Branch claude/modest-turing-i5qgn9 | — | Überholung 11 (Auftrag Jannes 17.10.2026), ersetzt die Vorschau; ADR-008 Fassung 5 Punkt 12; ANN-609 bis ANN-614; Aufbau wie Slack (Für dich, Threads); keine Startkanäle (Jannes), Nachrichten der Radflotte in der Radflotte; Anhänge (ADR-017 Punkt 30), Push (ADR-024) und Vorgangsbezug offen |
+| B | TEAM-002 Teamchat wie Slack: Chatfläche mit Gesprächen, Gespräch und Thread nebeneinander, private Kanäle, Gruppen, Reaktionen, Anheften, Für später, Planen, Suche mit Filtern, Lesestand je Thread, Zustellung ohne Doppel | fertig | 2026-10-18 | Branch claude/epic-cerf-vq8hz1 | — | Überholung Teamchat (Auftrag Jannes 18.10.2026); ANN-640 bis ANN-651; Funktionsmatrix und Etappen: git show 9452575:docs/product/ideen/referenz-slack.md; Dateien (ADR-017), Push und Mail (ADR-024 Punkt 12), Huddles, KI, Canvas und Workflows offen als Entscheidung |
+| B | TEAM-003 Anhänge im Teamchat: Fotos und PDF bis fünf je Nachricht, Anzeigen im Fenster ohne Herunterladen, Dateien je Gespräch, gelöscht mit der Nachricht | fertig | 2026-10-18 | #273 | — | Etappe E4 (Frage 1 aus PR #272, Jannes 18.10.2026: wie empfohlen, ohne Virenprüfung); ADR-017 Fassung 8 Abschnitt M vorgeschlagen (Bestätigungsfragen 30 bis 32); ANN-652, ANN-653; scharf erst nach OPS-001 und OPS-003 (Punkt 81); Clips bleiben aus (Punkt 71) |
+| B | TEAM-004 Sprachnachrichten im Teamchat: aufnehmen in der App (höchstens zwei Minuten, sichtbar), nur Ton ohne Angaben, abspielen ohne Herunterladen | fertig | 2026-10-18 | #273 | — | Antwort auf Frage 4 der PR #273 (Jannes 18.10.2026: Sprachnachrichten ermöglichen); ADR-017 Fassung 9 Abschnitt N vorgeschlagen (Bestätigungsfragen 33, 34), Mikrofon der eigenen Herkunft freigegeben; ANN-655; keine Transkription, kein Video; scharf erst nach OPS-001 und OPS-003 (Punkt 87) |
+| B | TEAM-005 Senden, während Anhänge hochladen: Nachricht wartet sichtbar im Ausgang und geht von selbst, Bearbeiten holt Text und Anhänge zurück | fertig | 2026-10-18 | #273 | — | Antwort auf Frage 5 der PR #273 (wie empfohlen); ADR-017 Punkt 74 Vermerk (Fassung 9); ANN-654; alles nur im Arbeitsspeicher (Punkt 33) |
+| B | TEAM-006 Farbe je Person im Teamchat: acht Farben, vergeben mit dem Mitarbeiterdatensatz, selbst gewählt in Mein Konto, Initialen auf der Farbe vor jeder Nachricht und in jeder Liste | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp | — | Auftrag Jannes 19.10.2026 (Chat noch nicht zufrieden: Farbe je Mitarbeiter:in); ANN-666; Baustein Personenbild; keine Farbe im Rot, Orange oder Gelb der Statusfarben |
+| B | TEAM-007 Profilbild im Teamchat: nur für sich selbst, auf dem Gerät zu 256 × 256 gerechnet, am Inhalt geprüft, in der Datenbank, fällt mit Entfernen, Ersetzen und Ausscheiden | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp | — | Auftrag Jannes 19.10.2026; ADR-017 Fassung 10 Abschnitt O angenommen (Umkehr von Punkt 1, Fragen 35 bis 37 wie empfohlen); ANN-667 im Prüfpaket; Vorschläge für mehr Übersicht: git show 9452575:docs/product/ideen/referenz-slack.md |
+| B | TEAM-008 Bilder auch in den Listen des Teamchats: Für dich, Threads, Suche, Für später und Angeheftetes zeigen Bild oder Farbe der Person, die schrieb | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp | — | Antwort auf Frage 5 der PR zu TEAM-006 und TEAM-007 (wie empfohlen); Threads nennen jetzt auch den Namen neben dem Bild (DESIGN.md Regel 5) |
+| B | TEAM-009 Personenkarte im Teamchat: Tipp auf ein Bild zeigt Bild, Name, Praxisrollen und Direktnachricht - keine Anwesenheit, kein Status, keine Kontaktdaten | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp | — | Antwort auf Frage 5 der PR zu TEAM-006 und TEAM-007 (wie empfohlen); ANN-668 |
+| B | BEF-183 Reiterleiste: „›“ als 44-px-Knopf neben der Liste holt den ersten ganz verdeckten Reiter nach vorn | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp | — | Entscheidung Jannes 2026-10-18; nur rechts ein Knopf, damit „Behandlungsgrundlagen“ bei 375 px ganz hineinpasst |
+| B | BEF-150 Ränder der Entwürfe auf dem Diensttelefon: erneut senden, unlesbare mitzählen, Rückfrage vor dem Verwerfen, Tagesplan bei Rollenwegfall räumen | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp | — | /weiter aus STATUS „Danach“; Entwürfe fallen nie still (§13) |
+| B | BEF-147 Benachrichtigungen im eigenen Datenexport: Wahl, Geräte ohne Schlüssel, Tagebuch-Erinnerungen, Zustellaufträge | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp | — | Die Praxis sieht die Wahl weiter nicht (ANN-344) |
+| B | BEF-148 Zustellaufträge meldet nur, wer den Anspruch hält; Löschlauf räumt Push-Registrierungen beendeter Zugänge | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp | — | Vor dem Scharfschalten des Versands (OPS-001) |
+| B | BEF-146 Vollständigkeitstest der Auskunft sieht auch den Plattformzugang; Anhänge an Rückfragen in der Auskunft | fertig | 2026-10-19 | Branch ccr-37917f35-emdjjp | — | Vier Tabellen bewusst außerhalb der Auskunft der Praxis (ANN-344), im eigenen Export |
+| B | BEF-182 Auskunft nach Art. 15 je Trainingsverhältnis: export_training_record und Seite in den Stammdaten | fertig | 2026-10-20 | Branch ccr-37917f35-emdjjp | — | Nur owner; dieselbe Auditaktion wie an der Akte, Gegenstand das Verhältnis |
+| B | BEF-189 Benachrichtigungsdaten fallen mit dem Ende der Lesezeit; Begleitung exportiert ihre eigene Wahl | fertig | 2026-10-20 | Branch ccr-37917f35-emdjjp | — | ADR-023 Fassung 6, ANN-669 entschieden |
+| B | BEF-188 Fotos und Videos an Rückfragen an die Person herausgeben, auch gesperrte | fertig | 2026-10-20 | Branch claude/cool-allen-m2aaci | — | ADR-017 Fassung 12, ADR-010 Fassung 5, ANN-672; Merge erst mit Label freigabe-audit |
+| B | BEF-190 Profilbild: Ausschnitt beim Auswählen verschieben und vergrößern | fertig | 2026-10-20 | Branch ccr-37917f35-emdjjp | — | ADR-017 Fassung 11, ANN-670 |
+| B | BEF-192 Tag umplanen: Anruf als Hauptknopf, „Anrufen“ im Abschluss wählt direkt | fertig | 2026-10-20 | Branch ccr-9f54aa20-cgnb8q | — | — |
 | B | BEF-193 Plattform „Ich“: Kopf in einer Zeile, Adresse unter „Konto“ | fertig | 2026-10-20 | Branch ccr-9f54aa20-cgnb8q, src/features/portal/platform/PlattformApp.test.tsx, Bildstrecke vorher/nachher | — | — |
-| B | BEF-176 Panne und Einstiege am Lastenrad: Anrufknöpfe statt Platzhalter, Ruhetag aus dem Datum, Depotfrage geteilt, Panne an der Karte des nächsten Wegs, G1 Anruf als Hauptknopf | fertig | 2026-10-21 | Branch ccr-4626bc96-m83ovf, src/features/fleet/BreakdownPage.test.tsx, src/features/fleet/pannenablauf.test.ts, src/features/fleet/standortvorlage.test.ts, src/features/calendar/appointments/HomeVisitFlow.test.tsx, tests/e2e/radflotte.spec.ts, Bildstrecke vorher/nachher | — | ANN-673 |
-| B | BEF-178 Löschsperre für Beschäftigtendaten: owner sperrt eine Person, Urlaub, Arbeitszeit, Zeitkonto und Erstattungen fallen nicht, solange sie läuft | fertig | 2026-10-21 | Branch ccr-24200d06-dhr3ze, Migration 20261223200000_bef_178_loeschsperre_beschaeftigte.sql, supabase/tests/legal-hold-staff.test.ts, supabase/tests/abgewiesene-schreibpfade.test.ts, src/features/privacy/retention/AufbewahrungPage.test.tsx, Bildstrecke vorher/nachher, Zweitreview | — | ANN-674; ohne Auditeintrag, Katalog unverändert |
-| B | BEF-179 und BEF-180 Zeitkonto: Zurückweisung unter „noch offen“ in der Übersicht, Freizeitausgleich am Tag selbst zurücknehmen | fertig | 2026-10-21 | Branch ccr-fc77ad4b-t5zz1m, Migrationen 20261223210000_bef_180_zuruecknehmen_am_tag.sql und 20261223220000_bef_179_zurueckweisung_in_der_uebersicht.sql, supabase/tests/time-account.test.ts, src/features/calendar/today/NochOffen.test.tsx, src/features/calendar/today/MyDayPage.test.tsx, src/features/workforce/timeaccount/api.test.ts, tests/e2e/authenticated/zeitkonto.spec.ts, Bildstrecke vorher/nachher, Zweitreview | — | ANN-594 geändert, ANN-675; ohne Auditeintrag und ohne Benachrichtigung |
-| B | BEF-170 Akte: einzeln gelöschte Dateien ins Löschjournal, damit eine Wiederherstellung sie nicht zurückbringt | fertig | 2026-10-24 | Branch ccr-c5a4a21f-ys0el3, Migration 20261224100000_bef_170_dateien_ins_loeschjournal.sql, supabase/tests/patient-file-deletion.test.ts, supabase/tests/patient-file-verification.test.ts, supabase/tests/patient-photos.test.ts, Zweitreview | — | Pfad A (Löschpfad); auch das Verwerfen nach der Prüfung am Inhalt; ohne Auditeintrag |
-| B | BEF-219 Arbeitszeit: Die Zusammenfassung „Änderung beantragen?“ rollt auch mit vielen Terminen außerhalb nicht; der Test legt sie selbst an | fertig | 2026-10-25 | Branch ccr-544f8ce7-u1sqpf, src/features/workforce/working-time/RequestWorkingTimePage.test.tsx, tests/e2e/authenticated/arbeitszeit.spec.ts (Reserve einer Zeile, Gegenprobe mit dem alten Abschluss rot), Messung am Cloud-Stack bei 375 × 667 und 1280 px | — | nur Oberfläche und Test; ohne Migration, ohne Auditeintrag |
+| B | BEF-176 Panne und Einstiege am Lastenrad: Anrufknöpfe statt Platzhalter, Ruhetag aus dem Datum, Depotfrage geteilt, Panne an der Karte des nächsten Wegs, G1 Anruf als Hauptknopf | fertig | 2026-10-21 | Branch ccr-4626bc96-m83ovf | — | ANN-673 |
+| B | BEF-178 Löschsperre für Beschäftigtendaten: owner sperrt eine Person, Urlaub, Arbeitszeit, Zeitkonto und Erstattungen fallen nicht, solange sie läuft | fertig | 2026-10-21 | Branch ccr-24200d06-dhr3ze | — | ANN-674; ohne Auditeintrag, Katalog unverändert |
+| B | BEF-179 und BEF-180 Zeitkonto: Zurückweisung unter „noch offen“ in der Übersicht, Freizeitausgleich am Tag selbst zurücknehmen | fertig | 2026-10-21 | Branch ccr-fc77ad4b-t5zz1m | — | ANN-594 geändert, ANN-675; ohne Auditeintrag und ohne Benachrichtigung |
+| B | BEF-170 Akte: einzeln gelöschte Dateien ins Löschjournal, damit eine Wiederherstellung sie nicht zurückbringt | fertig | 2026-10-24 | Branch ccr-c5a4a21f-ys0el3 | — | Pfad A (Löschpfad); auch das Verwerfen nach der Prüfung am Inhalt; ohne Auditeintrag |
+| B | BEF-219 Arbeitszeit: Die Zusammenfassung „Änderung beantragen?“ rollt auch mit vielen Terminen außerhalb nicht; der Test legt sie selbst an | fertig | 2026-10-25 | Branch ccr-544f8ce7-u1sqpf | — | nur Oberfläche und Test; ohne Migration, ohne Auditeintrag |
 | B | BEF-191 Teamchat: neues Profilbild an Nachrichten, die schon dastehen | fertig | 2026-10-20 | Branch ccr-37917f35-emdjjp, src/features/teamchat/teambilder.test.tsx, tests/e2e/authenticated/profilbild.spec.ts | — | — |
-| B | BEF-175 Geführter Ablauf: Fokus ohne Rollen, Rollfläche, Sperre in allen Fensterzielen, Zurückgeste | fertig | 2026-10-20 | Branch ccr-c66528c5-m3o7aq, src/components/ui/Dialogfenster.test.tsx, src/components/ui/GefuehrterAblauf.test.tsx, src/features/clinical/documentation/Textverlustschutz.test.tsx, tests/e2e/radflotte.spec.ts | — | Politurrunde, ANN-671 |
-| B | Politurrunde Ernährungsberatung: Akte, Formulare, Tagebuch und Lebensmittel nach DESIGN.md | fertig | 2026-10-20 | Branch ccr-c66528c5-m3o7aq, Bildstrecke vorher/nachher, tests/e2e/plattform-barrierefreiheit.spec.ts, tests/e2e/authenticated/tagebuch.spec.ts, tests/e2e/authenticated/ernaehrung.spec.ts | — | — |
-| B | URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine | fertig | 2026-10-17 | Branch ccr-350340fc-pnh5ti-urlaub, Migration 20261124100000_url_001_urlaub_antraege.sql, supabase/tests/staff-leave.test.ts, scheduling-rules.test.ts, tests/e2e/authenticated/urlaub.spec.ts, Zweitreview in zwei Runden | — | Bereichsüberholung 7 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; gemeinsame Antragsmechanik für 8 bis 10; ANN-576 bis ANN-580; Sichtung per Bildstrecke im PR |
-| B | AZ-001 Arbeitszeitänderung: Antrag einmalig oder dauerhaft geführt (G8), Entscheiden (G8b), Wochenplan in Fassungen ab einem Datum, Prüfungen nach ArbZG am Server | fertig | 2026-10-17 | Branch ccr-350340fc-pnh5ti-arbeitszeit, Migration 20261125100000_az_001_arbeitszeit_antraege.sql, supabase/tests/working-time-requests.test.ts, src/features/workforce/working-time/*.test.ts(x), tests/e2e/authenticated/arbeitszeit.spec.ts, Zweitreview | — | Bereichsüberholung 8 der Roadmap (Auftrag Jannes 16.10.2026); ANN-588 bis ANN-592; bewegliche Mittagspause als eigener Loop danach; Sichtung per Bildstrecke im PR |
-| B | ZK-001 Zeitkonto: Mehrarbeit und Freizeitausgleich mit Beginn und Ende geführt eintragen (G9), Zurückweisen mit Grund (G9b), Konten je Person für owner und Büro, Freizeitausgleich als Abweichung in den Arbeitszeiten | fertig | 2026-10-17 | Branch ccr-350340fc-pnh5ti-zeitkonto, Migration 20261126100000_zk_001_zeitkonto.sql, supabase/tests/time-account.test.ts, src/features/workforce/timeaccount/*.test.ts(x), tests/e2e/authenticated/zeitkonto.spec.ts, Zweitreview in zwei Runden | — | Bereichsüberholung 9 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-593 bis ANN-597; Fristen mit Übertrag; Löschsperre für Beschäftigtendaten seit BEF-178 (ANN-674); Sichtung per Bildstrecke im PR |
-| B | ERS-001 Erstattungen: Ladestrom je Monat und Einkauf mit Belegen geführt beantragen (G10), Genehmigen oder Ablehnen mit Grund und Auszahlen getrennt (G10b), IBAN maskiert, voll nur in der Auszahlung für owner | fertig | 2026-10-17 | Branch ccr-350340fc-pnh5ti-erstattungen, Migration 20261127100000_ers_001_erstattungen.sql, supabase/tests/reimbursements.test.ts, src/features/workforce/reimbursements/*.test.ts(x), tests/e2e/authenticated/erstattungen.spec.ts, Zweitreview | — | Bereichsüberholung 10 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-598 bis ANN-602; Belege im Bucket erstattungsbelege mit nachgelagerter Prüfung; Löschsperre für Beschäftigtendaten seit BEF-178 (ANN-674); Sichtung per Bildstrecke im PR |
-| B | ORG-001 bis ORG-007 Überholung Organisation: fünf Reiter mit Ansichten, Tableiste je Rolle, eine Arbeitszeit für alle, Einstellungen als eigene Seite, Eingang mit Neuer Antrag, Barometer und Rückmeldung an die Praxisleitung (§20.2), Hinweise zwischendurch, Zeitkonto mit Dauerregler und Minusstunden | fertig | 2026-10-17 | Branch claude/modest-turing-i5qgn9, Migrationen 20261201100000_org_007_minusstunden.sql und 20261203100000_org_006_rueckmeldungen.sql, supabase/tests/staff-feedback.test.ts, time-account.test.ts, src/app/navigation.test.tsx, src/features/workplace/organisation/*.test.tsx, src/features/workplace/feedback/*.test.ts(x), Zweitreview in drei Runden, Bildstrecke vorher/nachher | — | Auftrag Jannes 17.10.2026; Prinzipien 0.27 §20.2, ADR-024 Fassung 2, ADR-008 Fassung 4, ADR-019 Fassung 6; ANN-603, ANN-604, ANN-606 bis ANN-608 |
-| B | ORG-008 Ladestrom automatisch: geplante Arbeitsstunden × km je Stunde × Wh/km × ct/kWh, Werte als Einstellung der Praxis für owner, Vorschlag je offenem Monat im Eingang | fertig | 2026-10-17 | Branch claude/modest-turing-i5qgn9, Migration 20261202100000_org_008_ladestrom.sql, supabase/tests/reimbursements.test.ts, src/features/workforce/reimbursements/*.test.ts(x), tests/e2e/authenticated/erstattungen.spec.ts, Zweitreview | — | Auftrag Jannes 17.10.2026; ANN-605 löst ANN-599 ab, gestellte Anträge behalten ihre Werte; Kilometer aus Touren nach ADR-019 Fassung 6 als BEF-181 |
-| B | BEF-181 Ladestrom aus den Kilometern der geplanten Touren: Edge Function rechnet beim Beantragen die Routen je Tag, nur die Monatssumme am Antrag, Büro ohne Kilometer und Betrag | fertig | 2026-10-17 | Branch ccr-0d8db4ad-3ufjj1, Migration 20261205100000_bef_181_ladestrom_aus_touren.sql, supabase/tests/electricity-tour-distance.test.ts, supabase/functions/electricity-distance/*.test.ts, tests/e2e/authenticated/erstattungen.spec.ts, Zweitreview | — | ADR-019 Fassung 6; ANN-615 bis ANN-617; ohne Gate (Punkt 9) bleibt der Wert je Stunde |
-| B | Wochenplan in einem Zug: geänderte Tage unter ihrer Zeile öffnen, mit einem Knopf speichern, alle oder keiner | fertig | 2026-10-17 | Branch ccr-0d8db4ad-3ufjj1, Migration 20261205110000_wochenplan_in_einem_zug.sql, supabase/tests/working-week.test.ts, src/features/calendar/scheduling/SchedulingPage.test.tsx, tests/e2e/authenticated/scheduling-workflows.spec.ts | — | Praxis-Review der Überholung Organisation (PR #267, Frage 2) |
+| B | BEF-175 Geführter Ablauf: Fokus ohne Rollen, Rollfläche, Sperre in allen Fensterzielen, Zurückgeste | fertig | 2026-10-20 | Branch ccr-c66528c5-m3o7aq | — | Politurrunde, ANN-671 |
+| B | Politurrunde Ernährungsberatung: Akte, Formulare, Tagebuch und Lebensmittel nach DESIGN.md | fertig | 2026-10-20 | Branch ccr-c66528c5-m3o7aq | — | — |
+| B | URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine | fertig | 2026-10-17 | Branch ccr-350340fc-pnh5ti-urlaub | — | Bereichsüberholung 7 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; gemeinsame Antragsmechanik für 8 bis 10; ANN-576 bis ANN-580; Sichtung per Bildstrecke im PR |
+| B | AZ-001 Arbeitszeitänderung: Antrag einmalig oder dauerhaft geführt (G8), Entscheiden (G8b), Wochenplan in Fassungen ab einem Datum, Prüfungen nach ArbZG am Server | fertig | 2026-10-17 | Branch ccr-350340fc-pnh5ti-arbeitszeit | — | Bereichsüberholung 8 der Roadmap (Auftrag Jannes 16.10.2026); ANN-588 bis ANN-592; bewegliche Mittagspause als eigener Loop danach; Sichtung per Bildstrecke im PR |
+| B | ZK-001 Zeitkonto: Mehrarbeit und Freizeitausgleich mit Beginn und Ende geführt eintragen (G9), Zurückweisen mit Grund (G9b), Konten je Person für owner und Büro, Freizeitausgleich als Abweichung in den Arbeitszeiten | fertig | 2026-10-17 | Branch ccr-350340fc-pnh5ti-zeitkonto | — | Bereichsüberholung 9 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-593 bis ANN-597; Fristen mit Übertrag; Löschsperre für Beschäftigtendaten seit BEF-178 (ANN-674); Sichtung per Bildstrecke im PR |
+| B | ERS-001 Erstattungen: Ladestrom je Monat und Einkauf mit Belegen geführt beantragen (G10), Genehmigen oder Ablehnen mit Grund und Auszahlen getrennt (G10b), IBAN maskiert, voll nur in der Auszahlung für owner | fertig | 2026-10-17 | Branch ccr-350340fc-pnh5ti-erstattungen | — | Bereichsüberholung 10 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-598 bis ANN-602; Belege im Bucket erstattungsbelege mit nachgelagerter Prüfung; Löschsperre für Beschäftigtendaten seit BEF-178 (ANN-674); Sichtung per Bildstrecke im PR |
+| B | ORG-001 bis ORG-007 Überholung Organisation: fünf Reiter mit Ansichten, Tableiste je Rolle, eine Arbeitszeit für alle, Einstellungen als eigene Seite, Eingang mit Neuer Antrag, Barometer und Rückmeldung an die Praxisleitung (§20.2), Hinweise zwischendurch, Zeitkonto mit Dauerregler und Minusstunden | fertig | 2026-10-17 | Branch claude/modest-turing-i5qgn9 | — | Auftrag Jannes 17.10.2026; Prinzipien 0.27 §20.2, ADR-024 Fassung 2, ADR-008 Fassung 4, ADR-019 Fassung 6; ANN-603, ANN-604, ANN-606 bis ANN-608 |
+| B | ORG-008 Ladestrom automatisch: geplante Arbeitsstunden × km je Stunde × Wh/km × ct/kWh, Werte als Einstellung der Praxis für owner, Vorschlag je offenem Monat im Eingang | fertig | 2026-10-17 | Branch claude/modest-turing-i5qgn9 | — | Auftrag Jannes 17.10.2026; ANN-605 löst ANN-599 ab, gestellte Anträge behalten ihre Werte; Kilometer aus Touren nach ADR-019 Fassung 6 als BEF-181 |
+| B | BEF-181 Ladestrom aus den Kilometern der geplanten Touren: Edge Function rechnet beim Beantragen die Routen je Tag, nur die Monatssumme am Antrag, Büro ohne Kilometer und Betrag | fertig | 2026-10-17 | Branch ccr-0d8db4ad-3ufjj1 | — | ADR-019 Fassung 6; ANN-615 bis ANN-617; ohne Gate (Punkt 9) bleibt der Wert je Stunde |
+| B | Wochenplan in einem Zug: geänderte Tage unter ihrer Zeile öffnen, mit einem Knopf speichern, alle oder keiner | fertig | 2026-10-17 | Branch ccr-0d8db4ad-3ufjj1 | — | Praxis-Review der Überholung Organisation (PR #267, Frage 2) |
 | B | DES-EPIC-001 Design der ganzen App nach DESIGN.md: Bausteine, Ratsche, Bereiche B1 bis B8, Runde 2 nach Design- und Praxis-Review | fertig | 2026-10-13 | PR #239, docs/design/DESIGN.md, src/designsystem.test.ts, Bildstrecke vorher/nachher | — | Auftrag Jannes (12.10.2026); Sichtung per Bildstrecke im PR |
 | B | Restbefunde der Praxis-Prüfung: Vor der Tür (K3), Wie zuletzt (K6), Absage in vier Tipps (K9), Übung aus der Bibliothek in den Plan | fertig | 2026-10-14 | Branch ccr-d79ef3d1-5rclb1, tests/e2e/besuch.spec.ts, tests/e2e/authenticated/kernablaeufe.spec.ts | — | Bereichsüberholung 2 der Roadmap; Sichtung per Bildstrecke im PR |
 | B | Erstaufnahme geführt: eine Seite vom Terminpanel bis zur Doku (K10), Neuaufnahme am Telefon in drei Tipps (K11) | fertig | 2026-10-15 | Branch ccr-248b0353-fbdcs9, tests/e2e/authenticated/kernablaeufe.spec.ts (K10 10 Tipps, K11 3 Tipps) | — | Bereichsüberholung 3 der Roadmap; ANN-542, ANN-543; Sichtung per Bildstrecke im PR |
-| B | Monatsabrechnung in einem Lauf (K13), Zahlungseingang gesammelt (K14), Sammeldruck, §-19-Hinweis im Schnappschuss (BEF-165) | fertig | 2026-10-15 | Branch ccr-92feaef7-zkxssj, Migration 20261118100000_abr_040_monatslauf.sql, tests/e2e/abrechnungslauf.spec.ts (K13 3 Tipps), Zweitreview | — | Bereichsüberholung 4 der Roadmap; ANN-544; Sichtung per Bildstrecke im PR |
-| B | Übungen, zweite Runde: Vorlagen der Praxis (Als Vorlage speichern, Aus Vorlage, Seite Vorlagen), Durchsicht des Katalogs am Stück | fertig | 2026-10-16 | Branch claude/sweet-gauss-z8te7o, Migration 20261120100000_ueb_014_eigene_vorlagen.sql, supabase/tests/exercise-plan-templates.test.ts, tests/e2e/plaene.spec.ts (K12 aus eigener Vorlage 5 Tipps), tests/e2e/authenticated/kernablaeufe.spec.ts (Durchsicht 1 Tipp je Übung), Zweitreview | — | Bereichsüberholung 5 der Roadmap; ANN-560, ANN-561; eigene Bilder und Videos offen (ANN-539); Sichtung per Bildstrecke im PR |
-| B | Geführte Abläufe: Baustein GefuehrterAblauf, Niemand öffnet (G1), Tag umplanen (G2), Panne (G3), Schlüssel übergeben (G4), Mitarbeiter:in einrichten (G5), Plattform-Termin (G6) | fertig | 2026-10-16 | Branch ccr-350340fc-pnh5ti, Migration 20261123100000_ueb6_tag_umplanen_auswahl_schluesseluebergabe.sql, supabase/tests/appointment-states.test.ts und fleet.test.ts, tests/e2e/besuch.spec.ts, radflotte.spec.ts, einrichten.spec.ts, plattform-termine.spec.ts, authenticated/appointment-states.spec.ts und mitarbeiter-einrichten.spec.ts, Zweitreview | — | Bereichsüberholung 6 der Roadmap (Auftrag Jannes 16.10.2026); ANN-572 bis ANN-575, ANN-581 bis ANN-587; Sichtung per Bildstrecke im PR |
+| B | Monatsabrechnung in einem Lauf (K13), Zahlungseingang gesammelt (K14), Sammeldruck, §-19-Hinweis im Schnappschuss (BEF-165) | fertig | 2026-10-15 | Branch ccr-92feaef7-zkxssj | — | Bereichsüberholung 4 der Roadmap; ANN-544; Sichtung per Bildstrecke im PR |
+| B | Übungen, zweite Runde: Vorlagen der Praxis (Als Vorlage speichern, Aus Vorlage, Seite Vorlagen), Durchsicht des Katalogs am Stück | fertig | 2026-10-16 | Branch claude/sweet-gauss-z8te7o | — | Bereichsüberholung 5 der Roadmap; ANN-560, ANN-561; eigene Bilder und Videos offen (ANN-539); Sichtung per Bildstrecke im PR |
+| B | Geführte Abläufe: Baustein GefuehrterAblauf, Niemand öffnet (G1), Tag umplanen (G2), Panne (G3), Schlüssel übergeben (G4), Mitarbeiter:in einrichten (G5), Plattform-Termin (G6) | fertig | 2026-10-16 | Branch ccr-350340fc-pnh5ti | — | Bereichsüberholung 6 der Roadmap (Auftrag Jannes 16.10.2026); ANN-572 bis ANN-575, ANN-581 bis ANN-587; Sichtung per Bildstrecke im PR |
 | B | UEB-012 Mitgelieferter Übungskatalog: 196 Übungen, 193 gezeichnete Figuren, 15 Vorlagen, Übernahme durch owner | fertig | 2026-10-13 | PR #239, Migration 20261111100000_ueb_012_exercise_catalog.sql, supabase/tests/exercise-catalog.test.ts, Zweitreview | — | Auftrag Jannes (12.10.2026); Inhalte KI-erstellt, „ungeprüft“ bis zur Durchsicht (ANN-386) |
 | B | BES-EPIC-001 Besuch in einem Zug: Danach auf der Schreibseite, Folgetermin mit einem Tipp, Später da?, Niemand öffnet?, Heute noch offen | fertig | 2026-10-13 | PR #239, tests/e2e/besuch.spec.ts (höchstens 6 Tipps) | — | Auftrag Jannes (12.10.2026), Kernablauf K5 |
 | B | Durchsicht 14.10.: Befunde B1 bis B13 (Leistung, Haken, Liste; Einsicht in die Plattform; Spracheingabe mit Nachbildung; Oberfläche) | gesichtet | 2026-10-14 | PRs #241, #242, #243, #244, BEF-151 bis BEF-163, Bericht mit Bildpaaren | 2026-10-15 | Auftrag Jannes (14.10.2026); nach dem Bericht mit Bildpaaren gemergt, alle Annahmen bestätigt; Anbieter für die Spracheingabe offen |
@@ -988,28 +370,29 @@ stehen in `git show eb43569:docs/development/ROADMAP-CHRONIK.md`.
 | B | DRP-EPIC-002 Plattform: eigene Sprache aus dem Design-Review (Schritt 1a – Skala in rem, keine Versalien, Bausteine, PLATTFORM.md) | fertig | 2026-10-22 | DRP-004 bis DRP-006, Branch `claude/plattform-1a-sprache`, tests/e2e/plattform-bausteine.spec.ts | — | Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1a (Handoff 2026-10-22); ANN-678 |
 | B | DRP-EPIC-003 Plattform: Gerüst aus dem Design-Review (Schritt 1b – Kopf, Reiterleiste in drei Stufen, Rechneransicht, Markenmoment B) | fertig | 2026-10-23 | DRP-007 bis DRP-009, Branch `claude/plattform-1b-geruest`, tests/e2e/plattform-barrierefreiheit.spec.ts | — | Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1b (Handoff 2026-10-22); ANN-679 bis ANN-683 |
 | B | DRP-EPIC-004 Plattform: Türen aus dem Design-Review (Schritt 1c – Einladung, Einrichtung, Anmeldung, Sperre, Zugang beendet) | fertig | 2026-10-23 | DRP-010 bis DRP-014, Branch `claude/stoic-archimedes-520zje`, tests/e2e/tueren.spec.ts | — | Auftrag Jannes (23.10.2026), Design-Review Lauf 1 Schritt 1c (Handoff 2026-10-22, Abschnitt 5.2); ANN-684 bis ANN-689 |
-| B | DRP-DATEN Plattform: eigener Name und Rufnummer der Praxis in der Projektion (Handoff 2026-10-22, Abschnitt 9: N1, N2) | fertig | 2026-10-22 | DRP-N1, DRP-N2, Branch `claude/plattform-daten-n1-n2`, Migration 20261223230000_drp_n1_n2_plattform_name_rufnummer.sql, supabase/tests/platform-own-name-phone.test.ts | — | Auftrag Jannes (22.10.2026), Design-Review Lauf 1, Datenschritt nach Pfad A; ANN-690, ANN-691 |
-| B | DRP-EPIC-005 Plattform: Einstieg aus dem Design-Review (Schritt 1d – geführter Ablauf mit „Später“, Einwilligungen als Wahl, ein Schalter für Mitteilungen, „Alles bereit“) | fertig | 2026-10-24 | DRP-015 bis DRP-019, Branch `claude/lucid-keller-zholly`, src/features/portal/platform/Einstieg.test.tsx, tests/e2e/plattform-einstieg.spec.ts | — | Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1d (Handoff 2026-10-22, Abschnitt 5.3), parallel zu 1c; ANN-692 bis ANN-696 |
-| B | DRP-EPIC-006 Plattform: Übersicht aus dem Design-Review (Schritt 1e – Gruß, eine Hauptsache, Heute, Nächster Besuch, Neu für Sie; Training, Begleitung, Lesefrist; Laden, Fehler, zweispaltig) | fertig | 2026-10-24 | DRP-020 bis DRP-022, Branch `ccr-c5a4a21f-ys0el3`, src/features/portal/platform/Uebersicht.test.tsx, tests/e2e/plattform-barrierefreiheit.spec.ts | — | Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 1e (Handoff 2026-10-22, Abschnitt 5.1); ANN-697 bis ANN-702, Fragen aus #297 wie empfohlen entschieden; Schritt 1 abgenommen (Jannes, 24.10.2026) |
+| B | DRP-DATEN Plattform: eigener Name und Rufnummer der Praxis in der Projektion (Handoff 2026-10-22, Abschnitt 9: N1, N2) | fertig | 2026-10-22 | Branch `claude/plattform-daten-n1-n2` | — | Auftrag Jannes (22.10.2026), Design-Review Lauf 1, Datenschritt nach Pfad A; ANN-690, ANN-691 |
+| B | DRP-EPIC-005 Plattform: Einstieg aus dem Design-Review (Schritt 1d – geführter Ablauf mit „Später“, Einwilligungen als Wahl, ein Schalter für Mitteilungen, „Alles bereit“) | fertig | 2026-10-24 | Branch `claude/lucid-keller-zholly` | — | Auftrag Jannes (22.10.2026), Design-Review Lauf 1 Schritt 1d (Handoff 2026-10-22, Abschnitt 5.3), parallel zu 1c; ANN-692 bis ANN-696 |
+| B | DRP-EPIC-006 Plattform: Übersicht aus dem Design-Review (Schritt 1e – Gruß, eine Hauptsache, Heute, Nächster Besuch, Neu für Sie; Training, Begleitung, Lesefrist; Laden, Fehler, zweispaltig) | fertig | 2026-10-24 | Branch `ccr-c5a4a21f-ys0el3` | — | Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 1e (Handoff 2026-10-22, Abschnitt 5.1); ANN-697 bis ANN-702, Fragen aus #297 wie empfohlen entschieden; Schritt 1 abgenommen (Jannes, 24.10.2026) |
 | B | DRP-EPIC-007 Plattform: Bausteine der Übungen aus dem Design-Review (Schritt 2a – Bühne, Dosierungsmarken, Hakenzeile mit Pausenring, Kopf, Fuß und Endseite der Durchführung, Wochenleiste, Dauer der Einheit, Trennung unter 23rem) | fertig | 2026-10-24 | DRP-023 bis DRP-029, Branch `claude/new-session-27nejg`, tests/e2e/plattform-uebungsbausteine.spec.ts | — | Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2a (Handoff 2026-10-24, Abschnitt 9); Fragen 1 bis 4 wie empfohlen entschieden; ANN-704 bis ANN-710; die Seiten stellen 2b und 2c um |
-| B | DRP-EPIC-008 Plattform: Durchführung der Übungen aus dem Design-Review (Schritt 2b – Vollbild mit Kopf und Fuß, Übertragungsstand, Pause als Ring, Wechsel der Übung, „Weiter üben“ an der offenen Übung, Beenden mit einem Hauptknopf, Endseite, ohne Netz) | fertig | 2026-10-24 | DRP-030 bis DRP-035, Branch `claude/drp-2b-durchfuehrung`, src/features/portal/platform/Durchfuehrung.test.tsx, tests/e2e/plattform-uebungen.spec.ts, tests/e2e/ohne-netz.spec.ts | — | Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2b (Handoff 2026-10-24, Abschnitt 9 Punkt 2), parallel zu 2c; ANN-711 bis ANN-717; BEF-210, BEF-211 und BEF-213 erledigt (Pfad A, Zweitreview), BEF-214 erledigt, BEF-212 offen |
-| B | DRP-EPIC-009 Plattform: Reiter der Übungen aus dem Design-Review (Schritt 2c – Vorschau der Einheit in allen Lagen mit Dauer, Übungskarte der Übersicht, Plan mit Wochenleiste, Übungszeilen und „Zum Plan“, mehrere Pläne, Lesefrist, kein Plan, Training; Skelett, Fehler, Plan vom Gerät, „Praxis antwortet nicht“; Fenster „Übung zum Nachlesen“; Rechner zweispaltig) | fertig | 2026-10-24 | DRP-040 bis DRP-044, Branch `claude/uebungen-reiter-2c`, src/features/portal/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts | — | Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2c (Handoff 2026-10-24, Abschnitt 9 Punkt 3), parallel zu 2b; ANN-720 bis ANN-727; BEF-196 und BEF-197 mit 2b erledigt, BEF-216 durch 2b; BEF-215, BEF-217 und BEF-218 offen |
-| B | BEF-215 und BEF-218 Übungen: ein Inhalt für Fenster und Durchführung, die Vorschau kennt die Einheit auf dem Gerät | fertig | 2026-10-25 | Branch ccr-544f8ce7-u1sqpf, src/features/portal/platform/haken.test.ts, vorschau.test.ts, Uebungen.test.tsx, PlattformAblage.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Lagen geraet-geuebt und geraet-begonnen, Fenster bei 188 px und „Sehr groß“), Zweitreview, Design-Review | — | Folge von DRP-EPIC-009 vor dem Planblatt 2d; ANN-730 ersetzt ANN-720, ANN-466 verworfen; nur Oberfläche, ohne Migration, ohne Auditeintrag |
-| B | DRP-EPIC-010 Plattform: Planblatt aus dem Design-Review (Schritt 2d – „Plan als PDF“ mit Satz und Hauptknopf, Vorschau als Blatt, Druck A4 mit Wortmarke, Stand, Übungstage und Dosierung in einer Zeile; die Praxis bekommt den Druck mit) | fertig | 2026-10-25 | DRP-045, Branch ccr-544f8ce7-u1sqpf, src/features/exercise/exercise-plans/Plaene.test.tsx, src/features/portal/platform/Uebungen.test.tsx, tests/e2e/plattform-uebungen.spec.ts (Titel, ein Hauptknopf, Druck mit Marke 40 und Text 16, 188 px und „Sehr groß“), Design-Review | — | Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 2d (Handoff 2026-10-24, Abschnitt 9 Punkt 4); ANN-731; nur Oberfläche, ohne Migration, ohne Auditeintrag; Safari am iPhone nicht geprüft |
-| B | Aufräumen Schritt 1: Kommentarregel mit Prüfung, die extremsten Kopfkommentare gekürzt, /aufraeumen, CLAUDE.md verdichtet | fertig | 2026-10-25 | Branch ccr-51128c80-r6lmjn, scripts/kommentare-check.test.mjs, scripts/aufraeumen.test.mjs, Kommentarregel in der CI, transpilierter Code der 14 gekürzten Dateien unverändert | — | Auftrag Jannes (25.10.2026), ROADMAP 7.16; CLAUDE.md auf unter 7 KB verdichtet; ohne Migration, ohne Oberfläche |
-| B | Aufräumen Schritt 2: Migrationen zu einer Basis zusammenfassen, Schema per Diff identisch, Übersicht der DB-Funktionen | fertig | 2026-10-25 | Branch ccr-51128c80-r6lmjn, node scripts/basis-migration.mjs pruefen (Schema, Rechte mit Supabase-Vorgaben und Daten identisch), scripts/basis-migration.test.mjs, supabase/tests/basis-uebernehmen.test.ts, pnpm test:db | — | Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; 341 Migrationen zu einer Basis; Test-Umgebung per Handstart basis_uebernehmen umgestellt (#209); Nachzug: neun Funktionen ohne Aufrufer entfernt, Rechte der API-Rollen und Vorgaben im Shim (Migrationen 20261225010000, 20261225020000, supabase/tests/rechte-api-rollen.test.ts) |
-| B | Aufräumen Schritt 3: Modulschnittstellen mit schmaler index.ts, ESLint gegen tiefe Importe, zuerst Termine | fertig | 2026-10-26 | #312 (Branch ccr-51128c80-r6lmjn), scripts/eslint-modulgrenzen.test.mjs, scripts/aufraeumen.test.mjs, pnpm lint ohne Warnung, verschobene Deklarationen gegen main verglichen, pnpm test und pnpm test:db; Teil 1, Rest: Branch ccr-30ca4f76-x8pvfg, pnpm test, pnpm test:db, E2E der berührten Bereiche, Bildstrecke main gegen Branch ohne sichtbare Änderung | — | Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; ANN-748; Termine ohne gegenseitige Abhängigkeit, 17 statt 32 Paare; BEF-024 erledigt; Teil 1, Rest (Jannes 26.10.2026): Zeit- und Kalenderhilfen aller Module in src/lib/datum.ts, 16 statt 17 Paare |
-| B | Aufräumen, Fehler 4 und 6 der Tiefenanalyse: Trainings-Nachtrag bei 403 nicht mehr „gespeichert“, kein Suchbegriff in Adresse und Rückweg; Tag umplanen ohne Wettlauf mit der Adresse | fertig | 2026-10-26 | Branch claude/pr-313-decisions-2mdcwc, src/features/training/nachtrag-api.test.ts, src/lib/suchbegriff.test.ts, StaffListPage.test.tsx, FleetPage.test.tsx, PatientsListPage.test.tsx, SessionProvider.test.tsx, TagUmplanenPage.test.tsx (Adresse zurückgehalten), Gegenproben gegen main rot, Adressprüfung in der laufenden App, Bildstrecke main gegen Branch ohne Änderung, Review in frischem Kontext | — | Entscheidungen Jannes 26.10.2026 zu #313, ROADMAP 7.18; Pfad A ohne Auslöser aus Nr. 8; ohne Migration; Fehler 6 auch in der Radflotte; gemerkte Suchbegriffe fallen mit dem Kontowechsel; neuer Befund: Rückweg der Anrufliste über 512 Zeichen |
-| B | Aufräumen, Fehler 5 und 7 der Tiefenanalyse: Upload-Recht der Akte wie die übrigen Dateiarten, Bestätigen und Verwerfen von Radflotte, Rückfrage und Akte ohne Wettlauf, app.mdr_released entfernt | fertig | 2026-10-26 | Branch claude/pr-313-decisions-2mdcwc (zweite PR), Migrationen 20261225030000_upload_recht_akte_und_sperren.sql und 20261225040000_mdr_released_entfernt.sql, supabase/tests/patient-files.test.ts, fleet-photos.test.ts und message-attachments.test.ts (Wettlauf über helpers/gleichzeitig), Gegenprobe ohne Migration rot, E2E patient-file-access und kernablaeufe, Zweitreview | — | Entscheidungen Jannes 26.10.2026, ROADMAP 7.19; Pfad A mit Zweitreview (SECURITY DEFINER, Funktion hinter der Storage-Policy); list_patient_treatment_evidence bleibt wegen PROJECT_PRINCIPLES.md §4.4 (MUSS), Rückfrage |
-| B | Aufräumen Schritt 4a: Teillöschung unter Belegfrist löscht die 17 Trainingstabellen nach drei Jahren | fertig | 2026-10-26 | #316 (Branch claude/pr-313-decisions-2mdcwc, dritte PR), Migration 20261225050000_teilloeschung_training_vollstaendig.sql, supabase/tests/training-invoices.test.ts (Entscheidung je Tabelle, Restore) | — | Entscheidung Jannes 26.10.2026, ROADMAP 7.20; Pfad A; ADR-021 Punkt 4, ANN-183 |
-| B | Aufräumen, Nachzug aus #316: Rückweg der Anrufliste kurz, Zustand im Tab; 3D-Rad-Rest im geführten Ablauf entfernt; Upload der Akte nur durch die vorbereitende Person bestätigen und verwerfen | fertig | 2026-10-26 | Branch claude/step-4-central-register-ur5k1y, src/lib/tabstand.test.ts, tagumplanen.test.ts, TagUmplanenPage.test.tsx (15 Termine mit echten Kennungen, gegen main rot), SessionProvider.test.tsx, Migration 20261225120000_upload_akte_vorbereitende_person.sql, supabase/tests/patient-files.test.ts (ohne Migration rot), E2E appointment-states, Zweitreview | — | Entscheidungen Jannes 26.10.2026, ROADMAP 7.21; ANN-574 Fassung 2; Pfad A mit Zweitreview (SECURITY DEFINER); drei Befunde aus BEFUNDE.md erledigt |
-| B | Aufräumen Schritt 4: Register für Auskunft, Aufbewahrung, Löschjournal und Zusammenführung mit Vollständigkeitstest | fertig | 2026-10-26 | #318 (Branch claude/step-4-central-register-ur5k1y), Migrationen 20261225130000_datenregister.sql, 20261225140000_loeschjournal_je_zeile.sql und 20261225150000_zusammenfuehren_im_journal.sql, supabase/tests/data-registry.test.ts (Katalog), ein Restore-Test je Lösch-RPC (ohne Migrationen rot), patient-merge.test.ts (Zeilenzählung, Restore von vor dem Zusammenführen), voller pnpm test:db in en_US wie die CI, Zweitreview mit Nachprüfung | — | Auftrag Jannes 26.10.2026, ROADMAP 7.21; Fehler 2 und 3 der Tiefenanalyse; Pfad A; ANN-751, ANN-752, ANN-150 Fassung 3, ANN-652 Fassung 2; BEF-198 erledigt |
-| B | Aufräumen, Nachzug aus #318: Zugänge beim Zusammenführen, Löschungen von Hand tageweise | fertig | 2026-10-27 | #319 (Branch claude/step-4-central-register-ur5k1y), Migrationen 20261225160000_zugaenge_beim_zusammenfuehren.sql und 20261225170000_loeschungen_von_hand_tageweise.sql, supabase/tests/patient-merge.test.ts (Zugang zieht um, Auskunft, Wächter), data-registry.test.ts (Katalog „keine eigene Laufkennung“, Regel), je Löschweg eine Prüfung „tageweise“ (ohne Migrationen rot), voller pnpm test:db, Zweitreview | — | Entscheidungen Jannes 27.10.2026, ROADMAP 7.22; Pfad A; ANN-753, ANN-752 Fassung 2; Befund „sekundengenau“ aus BEFUNDE.md erledigt |
-| B | Aufräumen Schritt 3b, Teil 1: geteilte Hilfen nach src/lib und src/components, die 14 Rückimporte umgedreht, Regel nach-unten | fertig | 2026-10-27 | #320 (Branch claude/step-4-central-register-ur5k1y): Domänengraph ohne Seiten ohne Zyklen (vorher 13 von 14 Domänen in einem Ring), ESLint-Regel modulgrenzen/nach-unten mit Gegenprobe (auf main 14 Funde), Tests der Regel, volle Unit- und Logik-Suite, Zweitreview | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Pfad A (Sitzungen); ANN-754 |
-| B | Aufräumen Schritt 3b, Teil 2: Module in 14 Domänenordnern, je Domäne eine schmale index.ts, Regel gegen tiefe Importe | fertig | 2026-10-27 | #321 (Branch claude/step-4-central-register-ur5k1y): 45 Module in 14 Domänenordnern, je Domäne eine index.ts (260 Namen), ESLint-Regel modulgrenzen/nur-ueber-schnittstelle mit Gegenprobe (vor Story 2 373 Funde), Trennungsprüfung der Plattform verschärft, volle Unit- und Logik-Suite, pnpm test:db, Zweitreview | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Pfad A; ANN-755; ADR-013 Fassung 6 |
-| B | Aufräumen, Nachzug zu #321: Startbild nach der Anmeldung (ANN-243), pnpm lint mit 6 GB Heap, Seiten holen fremde Domänen über deren index.ts | fertig | 2026-10-27 | #322 (Branch claude/step-4-central-register-ur5k1y): SessionProvider.test.tsx (Anmeldung lässt den Merker stehen, ohne Fix rot), tests/e2e/authenticated/startbild.spec.ts (ohne Fix rot), Akte-Test mit test.slow(), pnpm lint im Container grün, Regel nur-ueber-schnittstelle ohne Ausnahme für Seitenziele mit Gegenprobe, volle Unit- und Logik-Suite | — | Entscheidungen Jannes 27.10.2026 zu #321; Pfad A (Sitzungen); ANN-755 Fassung 2 |
-| B | Aufräumen Schritt 5, Teil A: Archiv, Chroniken und erledigte Handoffs nach Git, neun Entscheidungen gesichert, Befunde nur noch offen | fertig | 2026-10-27 | #323 (Branch claude/step-4-central-register-ur5k1y): -18.823 Zeilen, ANN-756 bis ANN-763 mit Anker, BEFUNDE.md 390 statt 689 Zeilen, Gate OFFENE_BEFUNDE mit Gegenprobe, Prinzipien 0.30, ADR-013 Fassung 7, volle Unit- und Logik-Suite | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Freigabe Git als Archiv vom 26.10. |
-| B | Aufräumen Schritt 5, Teil B: Annahmenregister verdichtet, Prüfpaket mit 208 Einträgen, Regel F im Doku-Gate | fertig | 2026-10-27 | #324 (Branch claude/step-4-central-register-ur5k1y): Register 1.876 statt 7.830 Zeilen, 626 Kennungen, Prüfpaket 208, Regel F mit Tests, ADR-024 Fassung 3, ADR-023 Fassung 8, 62 Befunde aus zwei Gegenlesungen eingearbeitet, volle Unit- und Logik-Suite | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Tiefenanalyse Punkte 3 und 4 |
+| B | DRP-EPIC-008 Plattform: Durchführung der Übungen aus dem Design-Review (Schritt 2b – Vollbild mit Kopf und Fuß, Übertragungsstand, Pause als Ring, Wechsel der Übung, „Weiter üben“ an der offenen Übung, Beenden mit einem Hauptknopf, Endseite, ohne Netz) | fertig | 2026-10-24 | Branch `claude/drp-2b-durchfuehrung` | — | Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2b (Handoff 2026-10-24, Abschnitt 9 Punkt 2), parallel zu 2c; ANN-711 bis ANN-717; BEF-210, BEF-211 und BEF-213 erledigt (Pfad A, Zweitreview), BEF-214 erledigt, BEF-212 offen |
+| B | DRP-EPIC-009 Plattform: Reiter der Übungen aus dem Design-Review (Schritt 2c – Vorschau der Einheit in allen Lagen mit Dauer, Übungskarte der Übersicht, Plan mit Wochenleiste, Übungszeilen und „Zum Plan“, mehrere Pläne, Lesefrist, kein Plan, Training; Skelett, Fehler, Plan vom Gerät, „Praxis antwortet nicht“; Fenster „Übung zum Nachlesen“; Rechner zweispaltig) | fertig | 2026-10-24 | Branch `claude/uebungen-reiter-2c` | — | Auftrag Jannes (24.10.2026), Design-Review Lauf 1 Schritt 2c (Handoff 2026-10-24, Abschnitt 9 Punkt 3), parallel zu 2b; ANN-720 bis ANN-727; BEF-196 und BEF-197 mit 2b erledigt, BEF-216 durch 2b; BEF-215, BEF-217 und BEF-218 offen |
+| B | BEF-215 und BEF-218 Übungen: ein Inhalt für Fenster und Durchführung, die Vorschau kennt die Einheit auf dem Gerät | fertig | 2026-10-25 | Branch ccr-544f8ce7-u1sqpf | — | Folge von DRP-EPIC-009 vor dem Planblatt 2d; ANN-730 ersetzt ANN-720, ANN-466 verworfen; nur Oberfläche, ohne Migration, ohne Auditeintrag |
+| B | DRP-EPIC-010 Plattform: Planblatt aus dem Design-Review (Schritt 2d – „Plan als PDF“ mit Satz und Hauptknopf, Vorschau als Blatt, Druck A4 mit Wortmarke, Stand, Übungstage und Dosierung in einer Zeile; die Praxis bekommt den Druck mit) | fertig | 2026-10-25 | Branch ccr-544f8ce7-u1sqpf | — | Auftrag Jannes (25.10.2026), Design-Review Lauf 1 Schritt 2d (Handoff 2026-10-24, Abschnitt 9 Punkt 4); ANN-731; nur Oberfläche, ohne Migration, ohne Auditeintrag; Safari am iPhone nicht geprüft |
+| B | Aufräumen Schritt 1: Kommentarregel mit Prüfung, die extremsten Kopfkommentare gekürzt, /aufraeumen, CLAUDE.md verdichtet | fertig | 2026-10-25 | Branch ccr-51128c80-r6lmjn | — | Auftrag Jannes (25.10.2026), ROADMAP 7.16; CLAUDE.md auf unter 7 KB verdichtet; ohne Migration, ohne Oberfläche |
+| B | Aufräumen Schritt 2: Migrationen zu einer Basis zusammenfassen, Schema per Diff identisch, Übersicht der DB-Funktionen | fertig | 2026-10-25 | Branch ccr-51128c80-r6lmjn | — | Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; 341 Migrationen zu einer Basis; Test-Umgebung per Handstart basis_uebernehmen umgestellt (#209); Nachzug: neun Funktionen ohne Aufrufer entfernt, Rechte der API-Rollen und Vorgaben im Shim (Migrationen 20261225010000, 20261225020000, supabase/tests/rechte-api-rollen.test.ts) |
+| B | Aufräumen Schritt 3: Modulschnittstellen mit schmaler index.ts, ESLint gegen tiefe Importe, zuerst Termine | fertig | 2026-10-26 | #312 | — | Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; ANN-748; Termine ohne gegenseitige Abhängigkeit, 17 statt 32 Paare; BEF-024 erledigt; Teil 1, Rest (Jannes 26.10.2026): Zeit- und Kalenderhilfen aller Module in src/lib/datum.ts, 16 statt 17 Paare |
+| B | Aufräumen, Fehler 4 und 6 der Tiefenanalyse: Trainings-Nachtrag bei 403 nicht mehr „gespeichert“, kein Suchbegriff in Adresse und Rückweg; Tag umplanen ohne Wettlauf mit der Adresse | fertig | 2026-10-26 | Branch claude/pr-313-decisions-2mdcwc | — | Entscheidungen Jannes 26.10.2026 zu #313, ROADMAP 7.18; Pfad A ohne Auslöser aus Nr. 8; ohne Migration; Fehler 6 auch in der Radflotte; gemerkte Suchbegriffe fallen mit dem Kontowechsel; neuer Befund: Rückweg der Anrufliste über 512 Zeichen |
+| B | Aufräumen, Fehler 5 und 7 der Tiefenanalyse: Upload-Recht der Akte wie die übrigen Dateiarten, Bestätigen und Verwerfen von Radflotte, Rückfrage und Akte ohne Wettlauf, app.mdr_released entfernt | fertig | 2026-10-26 | Branch claude/pr-313-decisions-2mdcwc | — | Entscheidungen Jannes 26.10.2026, ROADMAP 7.19; Pfad A mit Zweitreview (SECURITY DEFINER, Funktion hinter der Storage-Policy); list_patient_treatment_evidence bleibt wegen PROJECT_PRINCIPLES.md §4.4 (MUSS), Rückfrage |
+| B | Aufräumen Schritt 4a: Teillöschung unter Belegfrist löscht die 17 Trainingstabellen nach drei Jahren | fertig | 2026-10-26 | #316 | — | Entscheidung Jannes 26.10.2026, ROADMAP 7.20; Pfad A; ADR-021 Punkt 4, ANN-183 |
+| B | Aufräumen, Nachzug aus #316: Rückweg der Anrufliste kurz, Zustand im Tab; 3D-Rad-Rest im geführten Ablauf entfernt; Upload der Akte nur durch die vorbereitende Person bestätigen und verwerfen | fertig | 2026-10-26 | Branch claude/step-4-central-register-ur5k1y | — | Entscheidungen Jannes 26.10.2026, ROADMAP 7.21; ANN-574 Fassung 2; Pfad A mit Zweitreview (SECURITY DEFINER); drei Befunde aus BEFUNDE.md erledigt |
+| B | Aufräumen Schritt 4: Register für Auskunft, Aufbewahrung, Löschjournal und Zusammenführung mit Vollständigkeitstest | fertig | 2026-10-26 | #318 | — | Auftrag Jannes 26.10.2026, ROADMAP 7.21; Fehler 2 und 3 der Tiefenanalyse; Pfad A; ANN-751, ANN-752, ANN-150 Fassung 3, ANN-652 Fassung 2; BEF-198 erledigt |
+| B | Aufräumen, Nachzug aus #318: Zugänge beim Zusammenführen, Löschungen von Hand tageweise | fertig | 2026-10-27 | #319 | — | Entscheidungen Jannes 27.10.2026, ROADMAP 7.22; Pfad A; ANN-753, ANN-752 Fassung 2; Befund „sekundengenau“ aus BEFUNDE.md erledigt |
+| B | Aufräumen Schritt 3b, Teil 1: geteilte Hilfen nach src/lib und src/components, die 14 Rückimporte umgedreht, Regel nach-unten | fertig | 2026-10-27 | #320 | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Pfad A (Sitzungen); ANN-754 |
+| B | Aufräumen Schritt 3b, Teil 2: Module in 14 Domänenordnern, je Domäne eine schmale index.ts, Regel gegen tiefe Importe | fertig | 2026-10-27 | #321 | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Pfad A; ANN-755; ADR-013 Fassung 6 |
+| B | Aufräumen, Nachzug zu #321: Startbild nach der Anmeldung (ANN-243), pnpm lint mit 6 GB Heap, Seiten holen fremde Domänen über deren index.ts | fertig | 2026-10-27 | #322 | — | Entscheidungen Jannes 27.10.2026 zu #321; Pfad A (Sitzungen); ANN-755 Fassung 2 |
+| B | Aufräumen Schritt 5, Teil A: Archiv, Chroniken und erledigte Handoffs nach Git, neun Entscheidungen gesichert, Befunde nur noch offen | fertig | 2026-10-27 | #323 | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Freigabe Git als Archiv vom 26.10. |
+| B | Aufräumen Schritt 5, Teil B: Annahmenregister verdichtet, Prüfpaket mit 208 Einträgen, Regel F im Doku-Gate | fertig | 2026-10-27 | #324 | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Tiefenanalyse Punkte 3 und 4 |
+| B | Aufräumen Schritt 5, Teil C: ADRs, Prinzipien und Prozessdoku verdichtet, Gesamtgrenze im Doku-Gate, Abschluss des Blocks | fertig | 2026-10-27 | #325 | — | Auftrag Jannes 27.10.2026; Tiefenanalyse 5c Schritte 3 bis 6 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |
@@ -1022,8 +405,8 @@ stehen in `git show eb43569:docs/development/ROADMAP-CHRONIK.md`.
 | C | G11 OPS-007 Bootstrap Produktion (Runbook) | in_arbeit | 2026-09-22 | `a870992`, `f3b9497` | — | Probe gegen die Test-Umgebung offen |
 | C | G12 ADR-019 Kartendienst (Fassung 2, angenommen 2026-09-13) | gesichtet | — | — | — | — |
 | C | G19 Dokumentationsgate erweitern | fertig | 2026-09-22 | `7b95c22`, PR #102 | — | — |
-| C | G20 SEC-EPIC-001 Sitzungssperre (ADR-025) | fertig | 2026-10-06 | SEC-001 bis SEC-003, Migration 20261012100000_sec_001_sitzungssperre.sql, supabase/tests/sitzungssperre.test.ts, src/features/core/auth/sitzungssperre/, Prüfseite tests/e2e/fixtures/sperre.html | — | Auftrag Jannes (06.10.2026: nach 30/60 min automatisch sperren); W1 (a), W2 (a); W3 entschieden mit ADR-025 Fassung 2 (2026-10-10), Passkey und App-PIN in G22; Sichtung: Betriebsreife Schritt 15 |
-| C | G22 SEC-EPIC-002 Anmeldung ohne Kennwort (ADR-025 Fassung 2) | fertig | 2026-10-10 | SEC-004 bis SEC-009, Migrationen 20261025100000_sec_004_app_pin.sql und 20261025120000_sec_009_passkey_freigabe.sql, supabase/tests/app-pin.test.ts, src/features/core/auth/passkey.ts, src/features/core/auth/einrichtung/, Zweitreview | — | Passkey und App-PIN, kein Kennwort (ADR-025 Fassung 2); scharf auf der Test-Umgebung, sobald Jannes Passkeys im Dashboard von praxis-test einschaltet; Sichtung: Betriebsreife Schritte 12, 15; Plattform Schritt 1 |
+| C | G20 SEC-EPIC-001 Sitzungssperre (ADR-025) | fertig | 2026-10-06 | SEC-001 bis SEC-003 | — | Auftrag Jannes (06.10.2026: nach 30/60 min automatisch sperren); W1 (a), W2 (a); W3 entschieden mit ADR-025 Fassung 2 (2026-10-10), Passkey und App-PIN in G22; Sichtung: Betriebsreife Schritt 15 |
+| C | G22 SEC-EPIC-002 Anmeldung ohne Kennwort (ADR-025 Fassung 2) | fertig | 2026-10-10 | SEC-004 bis SEC-009 | — | Passkey und App-PIN, kein Kennwort (ADR-025 Fassung 2); scharf auf der Test-Umgebung, sobald Jannes Passkeys im Dashboard von praxis-test einschaltet; Sichtung: Betriebsreife Schritte 12, 15; Plattform Schritt 1 |
 | E | D → ADR-018 Terminzustände | gesichtet | — | — | — | — |
 | E | E10 Schreibrecht Mitarbeiterdaten | gesichtet | — | — | — | — |
 | E | E8 → ADR-017 Dateiablage | gesichtet | — | — | — | — |
@@ -1043,33 +426,10 @@ stehen in `git show eb43569:docs/development/ROADMAP-CHRONIK.md`.
 | E | B9 Betreuung ohne Heilbehandlung, Ernährung | vorlaeufig | — | — | — | — |
 <!-- fortschritt:ende -->
 
----
-
 ## Änderungsvermerk
-
 | Version | Datum | Änderung |
 | --- | --- | --- |
-| 7.22 | 2026-10-27 | **Aufräumen**, Entscheidungen zu #318 (Jannes): beendete Zugänge ziehen beim Zusammenführen mit, ein gesperrtes erneutes Zusammenführen bleibt offen und gemeldet, Löschungen von Hand stehen tageweise im Journal (Vorab-PR #319); 3b in zwei Teilen. Kette der Blöcke sonst unverändert. |
-| 7.21 | 2026-10-26 | **Aufräumen**, Entscheidungen zu #314 bis #316 (Jannes): `list_patient_treatment_evidence` bleibt, Fehler 7 erledigt; Rückweg der Anrufliste kurz statt längerer Grenze; Nachzug aus #316 vor Schritt 4, danach Schritt 4 mit Fehler 2 und 3. Kette der Blöcke sonst unverändert. |
-| 7.20 | 2026-10-26 | **Aufräumen**, Schritt 4a, M9, M1, M5, M7 und das Barometer nach Option A gebaut (dritte PR); Fehler 4 bis 6 gemergt. Kette der Blöcke sonst unverändert. |
-| 7.19 | 2026-10-26 | **Aufräumen**, Fehler 5 behoben; von Fehler 7 `app.mdr_released` entfernt, `list_patient_treatment_evidence` bleibt bis zur Entscheidung, weil §4.4 der Prinzipien den Behandlungsnachweis verlangt. Kette der Blöcke sonst unverändert. |
-| 7.18 | 2026-10-26 | **Aufräumen**, Entscheidungen zu M1 bis M9 (Jannes): M1, M5, M7 und M9 werden zurückgebaut, M2, M3, M4, M6 und M8 bleiben; Barometer nach Option A, nur namentlich; Fehler 7 mit festem Umfang; Reihenfolge der nächsten drei PRs; Fehler 4 und 6 behoben. Kette der Blöcke sonst unverändert. |
-| 7.17 | 2026-10-26 | **Aufräumen**, Entscheidungen zur Tiefenanalyse (Jannes): Schritte 4a (Teillöschung im Training) und 3b (Domänenschnitt), Reihenfolge 3, 4a, 4, 3b, 5; zu Schritt 5 Git als Archiv und das Prüfpaket mit Gate; sieben Fehler verbindlich aufgenommen; Teamchat, Radflotte und Barometer bleiben, Teamchat, Radflotte und Personal ohne Ausbau bis Schritt 3 und 4 stehen; M1 bis M9 einzeln. Kette der Blöcke sonst unverändert. |
-| 7.16 | 2026-10-25 | **Aufräumen** (Auftrag Jannes): neuer Block oben mit vier Schritten (Kommentarregel und `/aufraeumen`, Migrationen zusammenfassen, Modulschnittstellen ab „Termine“, Register für Auskunft, Aufbewahrung, Löschjournal und Zusammenführung); Schritt 3 vor Schritt 3 „Termine“ des Design-Reviews; als Schritt 5 die Doku-Konsolidierung (Jannes, 25.10.). Ausbau nicht kritischer Visualisierungen der Radflotte eingefroren. Kette der Blöcke sonst unverändert. |
-| 7.15 | 2026-10-18 | **Ernährungsberatung** (Jannes, ADR-027): ALT-EPIC-002 ersetzt durch ERN-EPIC-001 bis -006 mit Budgets und einer Politurrunde nach ERN-EPIC-003; Zusatz zu Behandlung und Training, Eigenbau statt Anbieter. Prinzipien 0.28, ADR-006 Fassung 4, ADR-008 Fassung 6, ADR-021 Fassung 4. |
-| 7.13 | 2026-10-12 | **Bereichsüberholungen** (Auftrag Jannes: Design der ganzen App, Übungsbibliothek, größere Schritte, weniger Doku): neuer Block oben mit Reihenfolge als Vorschlag; „Credit-Budget" wird „Arbeitsweise und Budget" (Auftrag vollständig abarbeiten, Subagenten und Worktrees erlaubt, Fundament seriell); Sichtung über Bildstrecke (Regel 1, Definition of Done, Fortschritt); Sandbox-Pfad und Ablaufrunden entfallen, Kernabläufe mit Tipp-Budgets in [`../product/kernablaeufe.md`](../product/kernablaeufe.md). Kette der Blöcke unverändert. |
-| 7.12 | 2026-10-10 | **G22 SEC-EPIC-002 Anmeldung ohne Kennwort** eingeschoben (Jannes: „jetzt bauen und scharf schalten“, im Alltag Passkey, Rückweg eigene App-PIN, kein Kennwort): ADR-025 Fassung 2, ADR-023 Fassung 4, Prinzipien 0.25 (§3.4, Ausnahme für die App-PIN). Nächster Bau-Loop vor KOM-EPIC-002; Reihenfolge der Blöcke sonst unverändert. |
-| 7.11 | 2026-10-08 | **FLT-EPIC-001** um das Markieren am 3D-Rad ergänzt (Jannes: an der Stelle der Roadmap umsetzen, nicht vorziehen): Check-Up und Pannenmeldung mit Stellen am 3D-Modell, Seite „Stellen am Rad", PDF für die Werkstatt. Entwurf, Entscheidungen, Leinwand-Dateien und Akzeptanzkriterien im Handoff Lastenrad 3D (`git show eb43569:docs/design/handoff-2026-10-08-lastenrad-3d.md`), `IDEA-PRX-057`. Reihenfolge der Blöcke unverändert. |
-| 7.10 | 2026-10-05 | **UBK-EPIC-001** eingeschoben und gebaut (Auftrag Jannes): Übersicht nach der Uhr statt nach dem Haken (ANN-117 Fassung 2), Tageswechsel (ANN-234), Tageskarte als Ganzes zum Termin mit „i“ am Namen, Fahrwege als Blöcke im Kalender (ANN-235); BEF-051 mitgenommen. Reihenfolge der Blöcke unverändert; POR-EPIC-002 bleibt der nächste Bau-Loop. |
-| 7.9 | 2026-10-05 | **ABR-EPIC-007 gebaut** (Freigabe Jannes, „wie empfohlen“): Terminhonorar mit Tarif und Honorarvereinbarung; B17 entschieden mit ADR-009 Fassung 5 (Einzelpositionen je Heilmittel, eine Rechnung je Verordnung). **BEF-114 Paketpreise im Training** herausgelöst: eigener kleiner Loop, sobald Preis, Umfang und Zahlungsweise feststehen. Reihenfolge der Blöcke unverändert. |
-| 7.8 | 2026-10-02 | **ABN-EPIC-001b geschnitten und gebaut** (Freigabe Jannes): gebaut sind BEF-101 bis -104, -107, -108, -110 bis -113 (ABN-013 bis ABN-022). **BEF-105, -106 und -109 folgen als ABN-EPIC-001c** vor ABR-EPIC-007: Sie brauchen neue Fassungen von ADR-017 und ADR-019, die Jannes entscheidet, und Edge Functions, die in der Cloud nicht prüfbar sind. Die Empfängeranschrift prüft `issue_invoice` auf Entscheidung von Jannes für alle Rechnungen. Reihenfolge der Blöcke unverändert. |
-| 7.7 | 2026-10-02 | **ABN-EPIC-001 geschnitten** (Freigabe Jannes): gebaut sind die Befunde der Blöcke 2, 3, 4 und 9 (BEF-092 bis -098, -100, -115 bis -119); die Blöcke 5 bis 8 (BEF-101 bis -113) folgen als **ABN-EPIC-001b** direkt danach, vor ABR-EPIC-007. Reihenfolge der Blöcke unverändert. |
-| 7.6 | 2026-10-02 | **ABN-EPIC-001** und **ABR-EPIC-007 Terminhonorar** (ADR-009 Fassung 4) vor POR-EPIC-002 für die Änderungen aus der Abnahme (BEF-092 bis BEF-119, Blöcke 2 bis 9). Abnahme der Annahmen, Block 1 (Jannes): neue Anforderung **Sitzungssperre** als [ADR-025](../adr/ADR-025-session-lock.md) und Arbeitspaket **G20 SEC-EPIC-001** vor dem Produktivstart, Kriterium von M3; **G21 STAFF-005** Einladung neuer Mitarbeitender ganz aus der Anwendung (zu ANN-025). Reihenfolge der Blöcke unverändert. |
-| 7.5 | 2026-09-30 | **UX-EPIC-005 Entrümpeln** eingeschoben (Jannes: Terminseite ohne Wiederholungen, „Niemand öffnet?“ hinter einem Knopf, Arbeitszeit im Kalender sichtbar, weitere Stellen mit unnötigen Angaben). Reihenfolge der Blöcke unverändert; POR-EPIC-001 bleibt der nächste Bau-Loop. |
-| 7.4 | 2026-09-29 | **PRX-EPIC-003b Dubletten zusammenführen** aus PRX-EPIC-003 ausgegliedert (Jannes, Freigabe PRX-EPIC-003: „alles wie empfohlen“); in PRX-EPIC-003 bleibt der Hinweis beim Anlegen. BEF-060 Teile 1 und 2 in PRX-EPIC-003. |
-| 7.3 | 2026-09-29 | **UX-EPIC-004** eingeschoben vor PRX-EPIC-003 (Jannes: „Anschließend BEF-071 bis 079 bauen“, dazu BEF-080 und BEF-081 aus derselben Sichtung). |
-| 7.2 | 2026-09-26 | **STA-EPIC-001 Statistiken** aus PRX-EPIC-004 vorgezogen ans Ende von Block 2 (nach PRX-EPIC-003): eigener Bereich mit fünf Kennzahlen zur Praxissteuerung, von Claude im Auftrag von Jannes entschieden. PRX-EPIC-004 behält Export, Farben, Kalender-Abo, Planungskarte, Kartenzahlung und die Kennzahlen für Training und Angebote. |
-| 7.1 | 2026-09-25 | **MAP-006 gebaut** (Block 2): Koordinaten bei der Adresse, echte Tourenseite mit Karte, Route, Fahrzeiten und Fahrpuffer nach §8.1 als Warnung, Handoff mit Koordinaten, Datenschutz-Paket [`kartendienst.md`](../datenschutz/kartendienst.md). Vorschau `/touren` und Prototyp `/touren/karte` entfallen. ANN-094 bis ANN-097; E12 Punkt 3a vorläufig beantwortet. |
-| 7.0 | 2026-09-23 | **Umbau U2** nach dem Produktgespräch (`git show eb43569:docs/development/archiv/UMBAU.md`). Neuer **Block 1a „Handy und UX-Fundament"** (OPS-002a Test-Umgebung vorgezogen, UX-EPIC-002 Begriffe und Bedienprinzipien, UX-EPIC-003 Tagesansicht fürs Handy mit Liege und Vorschau). Neu **DOK-006** Fotos in der Akte, **DSN-001** Ansichten der Plattform vor Block 4; Erstaufnahme-Checkliste in PRX-EPIC-003, Liege und Weg ohne Sprechen in FRB-EPIC-003, Verordnungsfoto mit KI-Vorschlag in KI-EPIC-002. ANG-EPIC-001 ist das **Nachsorge-Abo**, ANG-EPIC-002 das Paket nach Zeitraum, KND-EPIC-001 der Übergang aus der Behandlung. **Anfragen ab Anfang 2027 parallel** (Block 11, R1). Regel 1 und Definition of Done: **Sichtung statt Abnahme je Epic**, Bildschirmfotos in jeder Oberflächen-PR. Grundsatz 3: Bedienbarkeit ist kein Komfort. `UI-001` des Blocks 9 heißt **UI-003** (Kennung war doppelt). Vermerke 6.0 bis 6.2 in die Chronik. |
+| 7.23 | 2026-10-27 | **Aufräumen 5, Teil C:** auf Ziel, Kette, Meilensteine und offene Zeilen verdichtet. Gebaute Zuschnitte, die Tabelle der Aufräumschritte, „Sessions starten“, „Definition of Done“, „Arbeitsweise und Budget“ und „Wochenupdate“ entfallen; ihre Regeln stehen in `CLAUDE.md` und den Skills, die Planung in `/weiter`. Externe Prüfungen nach `OPEN_DECISIONS.md`; MAP-LOOPS, der FRB-Plan, DSN-001 und das Design-Review Lauf 1 als Zeilen mit `git show`. Kette der Blöcke unverändert. |
 
-Ältere Vermerke: `git show eb43569:docs/development/ROADMAP-CHRONIK.md`.
+Vermerke bis 7.22: `git show 9452575:docs/development/ROADMAP.md`; vor 7.0:
+`git show eb43569:docs/development/ROADMAP-CHRONIK.md`.

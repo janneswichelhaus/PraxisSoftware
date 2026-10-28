@@ -189,7 +189,6 @@ export function pruefeEindeutigkeit(dateien, register = new Set()) {
 // geloeschte Nummern nicht mehr.
 export const OFFENE_BEFUNDE = new Set([
   'BEF-010',
-  'BEF-028',
   'BEF-034',
   'BEF-082',
   'BEF-127',
@@ -252,11 +251,55 @@ export const OBERGRENZEN = [
   // Die Sprache der Plattform (Handoff 2026-10-22): eigene Datei, weil DESIGN.md an
   // seiner Grenze steht; mit eigener Grenze, damit sie nicht DESIGN.md wird.
   { pfad: 'docs/design/PLATTFORM.md', bytes: 8 * 1024 },
-  { pfad: 'docs/decisions/OPEN_DECISIONS.md', zeilen: 400 },
+  { pfad: 'docs/decisions/OPEN_DECISIONS.md', zeilen: 150 },
 ];
 
 /** Grenze je Skill (`.claude/skills/<name>/SKILL.md`): Ein Skill laedt beim Aufruf ganz. */
 export const SKILL_GRENZE_BYTES = 8 * 1024;
+
+// Jede Markdown-Datei hat eine Grenze (Aufraeumen 5): die Standardgrenze, groessere einzeln. Mehr
+// Platz fuer eine Datei heisst weniger fuer die anderen, denn die Gesamtgrenze bleibt.
+export const STANDARDGRENZE = { zeilen: 300, bytes: 16 * 1024 };
+export const DATEIGRENZEN = new Map([
+  ['PROJECT_PRINCIPLES.md', { zeilen: 760, bytes: 54 * 1024 }],
+  ['docs/DEVELOPMENT.md', { zeilen: 400, bytes: 28 * 1024 }],
+  ['docs/adr/ADR-017-file-storage.md', { zeilen: 450, bytes: 40 * 1024 }],
+  ['docs/adr/ADR-023-platform-access.md', { zeilen: 250, bytes: 18 * 1024 }],
+  ['docs/decisions/ASSUMPTIONS.md', { zeilen: 1650, bytes: 280 * 1024 }],
+  ['docs/development/BEFUNDE.md', { zeilen: 300, bytes: 25 * 1024 }],
+  ['docs/development/ROADMAP.md', { zeilen: 480, bytes: 80 * 1024 }],
+  ['marke/README.md', { zeilen: 260, bytes: 24 * 1024 }],
+  ['quellen/bausteine/mt-untersuchung-quelldaten.md', { zeilen: 430, bytes: 13 * 1024 }],
+]);
+
+/** Grenze je Markdown-Datei aus `git ls-files`: einzeln, sonst die Standardgrenze. */
+export function dateigrenzen(pfade) {
+  return pfade
+    .filter((pfad) => pfad.endsWith('.md'))
+    .map((pfad) => ({ pfad, ...(DATEIGRENZEN.get(pfad) ?? STANDARDGRENZE) }));
+}
+
+// Alle Markdown-Dateien zusammen (Aufraeumen 5, Auftrag Jannes 2026-10-27). Gesenkt, nie gehoben:
+// Eine Gesamtgrenze traegt nur, wenn Wachstum nach Git abfliesst statt in die Dateien.
+export const GESAMTGRENZE = { zeilen: 10_000, bytes: 900 * 1024 };
+
+/** Prueft die Summe ueber `[{ pfad, text }]` gegen die Gesamtgrenze. */
+export function pruefeGesamtgrenze(dateien, grenze = GESAMTGRENZE) {
+  let zeilen = 0;
+  let bytes = 0;
+  for (const { text } of dateien) {
+    zeilen += text.split('\n').length - 1;
+    bytes += new TextEncoder().encode(text).length;
+  }
+  const verstoesse = [];
+  if (zeilen > grenze.zeilen) {
+    verstoesse.push(`Markdown gesamt: ${zeilen} Zeilen, erlaubt sind ${grenze.zeilen}.`);
+  }
+  if (bytes > grenze.bytes) {
+    verstoesse.push(`Markdown gesamt: ${bytes} Bytes, erlaubt sind ${grenze.bytes}.`);
+  }
+  return verstoesse;
+}
 
 const bytesVon = (text) => new TextEncoder().encode(text).length;
 
@@ -333,8 +376,8 @@ export function pruefeRegister(pfad, text) {
     const grenze = REGISTER_GRENZEN.bytes[abschnitt];
     const bytes = bytesVon(block.join('\n').trimEnd());
     if (bytes > grenze) melde(i, `${kennung} hat ${bytes} Bytes, erlaubt sind ${grenze}.`);
-    // Prettier setzt nach der Ueberschrift eine Leerzeile; die Statuszeile ist die naechste danach,
-    // mit hartem Umbruch (`\\`) vor dem Absatz.
+    // Die Statuszeile ist die erste nicht leere Zeile nach der Ueberschrift, mit hartem Umbruch
+    // (`\\`) vor dem Absatz; eine Leerzeile nach der Ueberschrift ist erlaubt, aber nicht noetig.
     const s =
       i +
       Math.max(

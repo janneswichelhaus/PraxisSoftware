@@ -1,14 +1,7 @@
 /**
- * Der Einstiegspunkt der Edge Function `platform-access` (POR-003).
- *
- * Die einzige Datei, die die Laufzeit kennt: Sie liest die Secrets, baut die
- * Abhängigkeiten zusammen und reicht jede Anfrage an `handler.ts` weiter.
- *
- * **Vorbehalt (ADR-023 Punkt 9).** Die Function hält den Admin-Schlüssel und
- * legt Konten an. Supabase Edge Functions sind nach ADR-015 Punkt 20 nicht
- * für produktive Gesundheitsdaten freigegeben; scharf wird sie erst nach der
- * Prüfung der Edge Runtime in OPS-001. Lokal läuft sie nur, wenn die Laufzeit
- * für den Lauf bewusst eingeschaltet wird (`docs/sichtung/plattform.md`).
+ * Einziger Einstieg mit Laufzeit; hält den Admin-Schlüssel und legt Konten an (ADR-023 Punkt 9),
+ * scharf erst nach der Prüfung der Edge Runtime (ADR-015 Punkt 20). Lokal nur für einen Lauf
+ * eingeschaltet (`docs/DEVELOPMENT.md`, „Edge Functions lokal“).
  */
 
 import { erstelleAnmeldedienst, fehlendeEinrichtung } from './anmeldedienst.ts';

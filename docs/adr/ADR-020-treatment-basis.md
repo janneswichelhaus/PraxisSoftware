@@ -1,173 +1,42 @@
 # ADR-020: Die Behandlungsgrundlage — Verordnung und Selbstzahler unter einer Klammer
-
 ## Status
-
-**Angenommen** — vom Projektinhaber am 2026-09-16 bestätigt, alle acht Punkte
-wie vorgeschlagen, dazu die Folgefrage zum Privatrezept (keine dritte Bauart).
-E16 in `../decisions/OPEN_DECISIONS.md` ist damit geschlossen; der ADR steht im
-Index in `CLAUDE.md` und in der Tabelle in `PROJECT_PRINCIPLES.md` §21 (0.11.1).
-Er ändert keine Aussage der Prinzipien — er führt §14 und §19 für die
-Planungsklammer aus.
-
-**Fassung 2 (2026-10-14)** — nach den Befunden B1 und B7 des Projektinhabers
-(BEF-151, BEF-157): Die Grundlage trägt die **Freigabe zur Abrechnung** und
-einen Stand an einer Stelle (Punkt 9 neu). Das beantwortet die offene
-Folgefrage, ob eine Grundlage vor ihrem letzten Termin enden kann. Die Punkte
-1 bis 8 gelten unverändert.
-
-*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
-
-## Datum
-
-2026-09-16 · Fassung 2: 2026-10-14
+Angenommen 2026-09-16 (Jannes, E16), geltend Fassung 2 (2026-10-14); Protokoll nur nach ADR-010.
 
 ## Kontext
-
-Termine hängen heute an genau einer Klammer: der **Verordnung**
-(`prescriptions`, VER-001). Sie trägt Verordner:in, Ausstellungsdatum,
-Diagnose und die verordnete Menge je Position; die Terminserie plant gegen ihr
-Kontingent (CAL-007), und die Akte zeigt Termine mit ihr (AKTE-003).
-
-Jannes hat am 2026-09-16 festgelegt, dass Termine in der Akte **je
-Abrechnungsgrundlage** gruppiert erscheinen sollen — „das kann ein
-Privatrezept sein, aber auch eine Rechnung für Selbstzahler". Ein Selbstzahler
-hat heute keine Klammer: Seine Termine stehen ohne Überschrift, ohne
-vereinbarte Anzahl und ohne Deckung.
-
-Zwei Wege standen zur Wahl. **Die Rechnung als Klammer** scheidet aus: Seit
-E16 Teil A wird auch vor dem Ende einer Serie abgerechnet — vier von zehn
-Terminen jetzt, der Rest später —, also gehören zu einem Behandlungsblock
-mehrere Rechnungen. **Eine zweite Tabelle neben `prescriptions`** wäre eine
-zweite Planungsmechanik mit eigener Serienplanung, eigener Deckung und eigenen
-Policies, für dieselbe Sache.
-
-Der Umbau ist jetzt billig — die Datenbank trägt ausschließlich synthetische
-Daten — und wird mit jedem Loop teurer, der auf `prescriptions` aufsetzt:
-VER-EPIC-002, CAL-EPIC-004c und ABR-EPIC-001 stehen unmittelbar bevor.
+Termine sollen in der Akte je Abrechnungsgrundlage gruppiert sein, auch ohne Verordnung beim
+Selbstzahler (Jannes, 2026-09-16). Nicht Gegenstand: Preise, Pakete, Vorauszahlung (B11, ABR-001).
 
 ## Entscheidung
-
-**1. Ein Termin hängt an einer Behandlungsgrundlage.** Die **Verordnung** ist
-eine Bauart davon, der **Selbstzahler** die zweite. Weitere Bauarten sind
-möglich; sie werden **nicht** vorgebaut (ADR-014, §11).
-
-**2. Umgesetzt wird das durch Erweitern der bestehenden Tabelle, nicht durch
-eine zweite.** `prescriptions` wird umbenannt; der Bezeichner ist neutral und
-englisch wie das übrige Schema (Vorschlag: `treatment_bases` mit
-`treatment_base_items`, der SPEC entscheidet). `prescription_kind` bekommt
-neben `first` und `follow_up` den Wert `self_pay`. Bestandszeilen behalten
-ihre Art; es werden keine Inhalte migriert.
-
-**3. Was eine Verordnung braucht, verlangt die Datenbank weiter — aber nur von
-ihr.** `prescriber_id` wird nullable, mit einer Prüfung, die sie für `first`
-und `follow_up` erzwingt und für `self_pay` ausschließt. `issued_on` bleibt
-Pflicht und bedeutet bei einem Selbstzahler den Tag der Vereinbarung.
-
-**4. Die klinischen Felder bleiben klinisch.** Diagnose, Leitsymptomatik,
-Therapieziel, Hinweis der Verordner:in und Empfehlung zum Verordnungsende
-bleiben, wo sie sind; bei einem Selbstzahler bleiben sie leer. Die Datenklasse
-der Tabelle ändert sich **nicht** (klinische Patientenakte, zehn Jahre,
-ADR-008), und der Rollenschnitt aus ADR-004 Fassung 2 und E15 gilt
-unverändert. Eine leere Diagnose macht eine Zeile nicht organisatorisch.
-
-**5. Die Menge heißt für beide Bauarten gleich.** `prescribed_quantity` trägt
-fachlich die „Anzahl möglicher Termine" (VER-EPIC-002) — verordnet beim
-Rezept, vereinbart beim Selbstzahler. Die Constraint
-`used_quantity <= prescribed_quantity` **bleibt für beide bestehen**: Sie
-schützt die Abrechnung (§13), nicht die Planung. Über das Kontingent hinaus
-**geplant** werden darf weiterhin (CAL-022).
-
-**6. Die Grundlage ist eine Planungsklammer, keine Rechnungseinheit.**
-Leistungen und Rechnungen bleiben von ihr unabhängig (§19, ADR-009 Punkte 3
-und 4). Mehrere Rechnungen je Grundlage sind der Normalfall, nicht die
-Ausnahme.
-
-**7. Die Oberfläche nennt die Bauart, nicht das Oberwort.** Sie zeigt
-„Verordnung vom 3. September" oder „Selbstzahler seit 3. September"; das Wort
-Behandlungsgrundlage erscheint nur dort, wo beide Bauarten zugleich gemeint
-sind. Der Bezeichner im Schema ist eine Sache des Modells, nicht des
-Bildschirms.
-
-**8. Auditereignisse bekommen neue Werte, und die Historie bleibt unberührt.**
-Neben `prescription.viewed/created/updated/deleted` treten die Werte der neuen
-Benennung. Die alten Werte bleiben im zulässigen Wertebereich, weil
-Auditzeilen **niemals** umgeschrieben werden (ADR-010). Dasselbe gilt für
-`subject_type`.
-
-**9. Stand und Freigabe zur Abrechnung** *(Fassung 2)*. Jede Grundlage hat
-einen Stand aus einer Stelle (ANN-514): **läuft**, **Termine fehlen**,
-**Haken oder Doku fehlt**, **abrechnen**, **in der Abrechnung**,
-**abgerechnet**. Sind alle ihre Termine abgehakt und dokumentiert, abgesagt
-oder nicht angetroffen, kann sie **in die Abrechnung gestellt** werden — auch
-vor dem letzten verordneten Termin; vorgeschlagen wird es, wenn alle
-verordneten Termine erbracht sind. Zeitpunkt und Person der Freigabe und des
-Zurückholens stehen an der Grundlage (ADR-010 Punkt 15). Danach sind Doku,
-Zeitpunkt und Anzahl ihrer Termine gesperrt (ANN-515,
-[ADR-016](ADR-016-clinical-documentation-record.md) Punkt 11); zurückholen
-geht, solange keine Rechnung sie führt. Punkt 6 gilt weiter: Die Freigabe
-ist keine Rechnung, und Rechnungen entstehen im Büro
-([ADR-009](ADR-009-private-billing-model.md) Punkt 24).
+1. **Ein Termin hängt an einer Behandlungsgrundlage** der Bauart Verordnung (auch das Privatrezept;
+   die Art ist nicht der GKV-Rezepttyp) oder Selbstzahler; weitere nicht auf Vorrat (ADR-014, §11).
+2. **Erweitert wird die bestehende Tabelle, keine zweite:** `prescriptions` heißt seit Fassung 1.1
+   `treatment_bases`; Bestandszeilen behalten ihre Art, Inhalte werden nicht migriert.
+3. **Was eine Verordnung braucht, verlangt die Datenbank nur von ihr:** `prescriber_id` bei `first`
+   und `follow_up`, nie bei `self_pay`; `issued_on` immer (Selbstzahler: Tag der Vereinbarung).
+4. **Die klinischen Felder bleiben klinisch** und beim Selbstzahler leer
+   (`treatment_bases_clinical_only_for_prescription`); Datenklasse (klinische Patientenakte, zehn
+   Jahre, ADR-008) und Rollenschnitt (ADR-004, E15) bleiben, auch bei leerer Diagnose.
+5. **Die Menge heißt für beide Bauarten gleich:** `prescribed_quantity` ist die Anzahl möglicher
+   Termine, eine Planungsgröße, verordnet oder vereinbart; `used_quantity <= prescribed_quantity`
+   gilt für beide, schützt die Abrechnung (§13), nicht die Planung: mehr planen darf man (CAL-022).
+6. **Planungsklammer, keine Rechnungseinheit:** Leistungen und Rechnungen bleiben unabhängig von der
+   Grundlage (§19, ADR-009 Punkte 3 und 4); mehrere Rechnungen je Grundlage sind normal (E16).
+7. **Die Oberfläche nennt die Bauart** („Verordnung vom …“, „Selbstzahler seit …“),
+   „Behandlungsgrundlage“ nur, wo beide gemeint sind; die Adressen vorerst `verordnungen` (ANN-062).
+8. **Neue Auditwerte, unberührte Historie:** Zu `prescription.*` treten Werte der neuen Benennung;
+   alte bleiben zulässig, auch in `subject_type`: Auditzeilen werden nie umgeschrieben (ADR-010).
+9. *(Fassung 2)* **Stand und Freigabe zur Abrechnung.** Freigeben geht, sobald jeder Termin abgehakt
+   und dokumentiert, abgesagt oder nicht angetroffen ist, auch vor dem letzten verordneten
+   (Vorschlag, wenn alle erbracht sind). Danach sperrt der Server Doku, Zeitpunkt und Anzahl der
+   Termine (`app.treatment_basis_locked`, ADR-016 Punkt 11); zurückholen geht, solange keine
+   Rechnung sie führt (ADR-009 Punkt 24); beides mit Zeitpunkt und Person (ADR-010 Punkt 15). Den
+   Stand rechnet nur `app.treatment_basis_billing`.
 
 ## Konsequenzen
-
-- **Ein eigener Loop vor VER-EPIC-002** (GRD-001): Migration, die acht
-  Datenbankfunktionen (`create/update/delete/get_prescription`,
-  `list_patient_prescriptions`, `…_clinical`, `get_prescription_slots`,
-  `list_patient_prescription_slots`), Policies, Projektionen, Oberfläche,
-  Abnahmeschritte und `pnpm test:db` für beide Bauarten samt Negativfällen.
-- **Ein Selbstzahler bekommt Gruppierung, Terminzahl, Deckung und
-  Serienplanung geschenkt** — er benutzt dieselbe Mechanik wie eine
-  Verordnung.
-- **Der Preis ist die Umbenennung.** Sie berührt Tabellen, Funktionen,
-  Policies, Auditwerte, Typen im Frontend und Texte. Sie ist jetzt eine
-  mechanische Änderung und wäre nach drei weiteren Loops auf `prescriptions`
-  eine Operation am offenen Herzen.
-- **Verworfen: zweite Tabelle.** Zwei Planungsmechaniken für dieselbe Sache;
-  jede Regel — Deckung, Übertragung, Serie — müsste zweimal gebaut und zweimal
-  getestet werden.
-- **Verworfen: alles beim Alten lassen und Selbstzahlertermine ohne Klammer
-  führen.** Dann bleibt die von Jannes verlangte Gruppierung für den halben
-  Patientenstamm leer, und die Anzahl vereinbarter Termine steht nirgends.
-
-## Bewusst nicht Bestandteil dieser Entscheidung
-
-- **Keine Preise, keine Pakete, keine Vorauszahlung.** Eine Anzahl möglicher
-  Termine ist eine Planungsgröße — kein verkauftes Paket und keine Anzahlung
-  (B11: vorerst nicht anbieten; Preise kommen mit ABR-001).
-- **Keine Änderung an Abrechnung, Leistungen oder Rechnungszuständen**
-  (ADR-009 unverändert). *Seit Fassung 2 trägt die Grundlage die Freigabe zur
-  Abrechnung (Punkt 9); Leistungen und Rechnungszustände bleiben, wie
-  ADR-009 sie regelt.*
-- **Keine neue Bauart auf Vorrat.** „Weitere Methoden" bekommen ihren Wert,
-  wenn sie gebraucht werden.
-- **Keine Änderung am Rollenschnitt** (ADR-004, E15) und keine an der
-  Aufbewahrung (ADR-008).
-
-## Offene Folgefragen
-
-- ~~Der **genaue Bezeichner** in Schema und Code.~~ **Festgelegt am 2026-09-18
-  im SPEC von GRD-001** wie oben vorgeschlagen: `treatment_bases` mit
-  `treatment_base_items`, der Verweis darauf `treatment_basis_id` (auch an
-  `appointments` und `patient_files`), die Bauart in `treatment_basis_kind`.
-  `prescribed_quantity`, `prescribers` und `prescriber_id` behalten ihre Namen
-  (Punkt 5). Die **Adressen der Oberfläche** bleiben vorerst bei
-  `verordnungen` — Punkt 7 regelt den Bildschirm, nicht die Adresszeile
-  (ANN-062).
-- ~~Ist das „Privatrezept" eine dritte Bauart?~~ **Beantwortet am 2026-09-16
-  (Jannes): nein.** Die vorhandene Verordnung **ist** das Privatrezept — die
-  Praxis rechnet privat ab, und `prescription_kind` war von Anfang an bewusst
-  nicht der GKV-Rezepttyp (ADR-009). Es bleibt bei zwei Bauarten:
-  Verordnung (`first`, `follow_up`) und Selbstzahler (`self_pay`).
-- ~~Ob eine Grundlage **abgeschlossen** werden kann, ohne dass alle Termine
-  stattgefunden haben — heute endet eine Verordnung faktisch mit ihrem
-  Kontingent. Gehört zu CAL-EPIC-004c.~~ *Beantwortet mit Fassung 2
-  (Punkt 9): Sie kann in die Abrechnung gestellt werden, sobald nichts mehr
-  offen ist.*
+Selbstzahler nutzen Gruppierung, Terminzahl, Deckung und Serienplanung der Verordnung.
 
 ## Änderungshistorie
-
-| Fassung | Datum | Änderung |
-| --- | --- | --- |
-| 1 | 2026-09-16 | Erstfassung, vorgeschlagen nach E16 (Jannes, 2026-09-16) |
-| 1.1 | 2026-09-18 | Keine Änderung an einer Entscheidung: Die erste offene Folgefrage ist mit dem SPEC von GRD-001 beantwortet und als beantwortet vermerkt. Gebaut in GRD-001 (PR gegen `main`). |
-| 2 | 2026-10-14 | Punkt 9 neu (B1, B7): Stand der Grundlage an einer Stelle, Freigabe zur Abrechnung mit Sperre, Zurückholen ohne Rechnung. Beantwortet die Folgefrage zum früheren Ende. Punkte 1 bis 8 unverändert. |
+- Fassung 1 (2026-09-16, Jannes, E16): Punkte 1 bis 8; das Privatrezept ist keine dritte Bauart.
+- Fassung 1.1 (2026-09-18, SPEC von GRD-001): Bezeichner festgelegt, keine Entscheidung geändert.
+- Fassung 2 (2026-10-14, Jannes, B1, B7): Punkt 9, Stand der Grundlage, Freigabe zur Abrechnung.
+- Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.

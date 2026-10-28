@@ -1,19 +1,7 @@
 /**
- * Der Einstiegspunkt der Edge Function `location-provider` (MAP-003a).
- *
- * Diese Datei ist bewusst die einzige, die die Laufzeit kennt: Sie liest die
- * Secrets, baut die Abhängigkeiten zusammen und reicht jede Anfrage an
- * `handler.ts` weiter. Alles Prüfbare liegt daneben — deshalb kostet die
- * fehlende Deno-Laufzeit in der Cloud-Umgebung keine Testabdeckung außer für
- * diese fünfzehn Zeilen Verdrahtung.
- *
- * **Vorbehalt.** Supabase Edge Functions sind nach ADR-015 Punkt 20 nicht für
- * produktive Gesundheitsdaten freigegeben; ADR-019 Punkt 15 lässt sie für
- * diesen Datenweg ausdrücklich nur mit **synthetischen Koordinaten** laufen,
- * bis die Prüfung der Edge Runtime in OPS-001 vorliegt. Deshalb steht im
- * versionierten `supabase/config.toml` weiterhin `[edge_runtime] enabled =
- * false`: Wer den Prototyp lokal fahren will, schaltet sie für den Lauf
- * bewusst ein (`docs/sichtung/kartendienst.md`).
+ * Einziger Einstieg mit Laufzeit: liest die Secrets und reicht an `handler.ts` weiter. Nur mit
+ * synthetischen Koordinaten (ADR-015 Punkt 20, ADR-019 Punkt 15); lokal nur für einen Lauf
+ * eingeschaltet (`docs/DEVELOPMENT.md`, „Edge Functions lokal“).
  */
 
 import { richteEin } from './auswahl.ts';

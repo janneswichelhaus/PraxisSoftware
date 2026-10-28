@@ -6,8 +6,9 @@ die **Untersuchungs- und Behandlungsbausteine der Manuellen Therapie** und die
 übergeben, zusammen mit einem Arbeitsauftrag:
 [`ARBEITSAUFTRAG_Bausteine-und-Scores.md`](ARBEITSAUFTRAG_Bausteine-und-Scores.md).
 
-Der Plan, wie daraus Code wird, steht nicht hier, sondern in
-[`../docs/development/FRB-BAUSTEINE-UND-SCORES.md`](../docs/development/FRB-BAUSTEINE-UND-SCORES.md).
+Der Plan, wie daraus Code wird, steht nicht hier: offen sind FRB-EPIC-004 und -005 in
+[`../docs/development/ROADMAP.md`](../docs/development/ROADMAP.md); der Plan bis 2026-10-27:
+`git show 9452575:docs/development/FRB-BAUSTEINE-UND-SCORES.md`.
 
 ## Was dieses Verzeichnis ist — und was nicht
 
@@ -100,7 +101,7 @@ Repository. Die Frage war ihm vorgelegt, samt dem Unterschied zwischen der
 Nutzung in der Praxissoftware und der Weiterveröffentlichung über ein
 öffentliches Repository; er hat sie in Kenntnis dessen so entschieden. Das ist
 **D1** im Plan
-([`../docs/development/FRB-BAUSTEINE-UND-SCORES.md`](../docs/development/FRB-BAUSTEINE-UND-SCORES.md)),
+(`git show 9452575:docs/development/FRB-BAUSTEINE-UND-SCORES.md`, Abschnitt 6),
 damit erledigt — und die Score-Definitionen dürfen ihre Itemtexte tragen.
 
 **Eine Rücknahme ist kein Löschen.** Ein Blob bleibt in der Historie, auch wenn

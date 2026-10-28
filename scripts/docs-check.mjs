@@ -10,10 +10,12 @@ import {
   OBERGRENZEN,
   SKILL_GRENZE_BYTES,
   aktuelleFassungen,
+  dateigrenzen,
   prinzipienAbschnitte,
   prinzipienVersionen,
   pruefeBefundkennungen,
   pruefeEindeutigkeit,
+  pruefeGesamtgrenze,
   pruefeObergrenzen,
   pruefeRegister,
   pruefeVerweise,
@@ -26,9 +28,10 @@ const skillGrenzen = existsSync(SKILLS)
       .filter((eintrag) => eintrag.isDirectory())
       .map((eintrag) => ({ pfad: `${SKILLS}/${eintrag.name}/SKILL.md`, bytes: SKILL_GRENZE_BYTES }))
   : [];
-const grenzen = [...OBERGRENZEN, ...skillGrenzen];
 
 const REGISTER = 'docs/decisions/ASSUMPTIONS.md';
+// Register, deren Kennungen auch als Tabellenzeile stehen (Regel D).
+const TABELLENREGISTER = new Set([REGISTER, 'docs/product/IDEENSPEICHER.md']);
 
 /**
  * Wo eine Annahme verankert sein darf.
@@ -46,6 +49,7 @@ function getrackteDateien() {
 }
 
 const dateien = getrackteDateien();
+const grenzen = [...OBERGRENZEN, ...skillGrenzen, ...dateigrenzen(dateien)];
 
 // -----------------------------------------------------------------------------
 // 1. Obergrenzen
@@ -119,7 +123,8 @@ const kontext = {
   abschnitte: prinzipienAbschnitte(prinzipien),
 };
 for (const { pfad, text } of markdown) verstoesse.push(...pruefeVerweise(pfad, text, kontext));
-verstoesse.push(...pruefeEindeutigkeit(markdown, new Set([REGISTER])));
+verstoesse.push(...pruefeEindeutigkeit(markdown, TABELLENREGISTER));
+verstoesse.push(...pruefeGesamtgrenze(markdown));
 verstoesse.push(...pruefeBefundkennungen(markdown));
 
 // -----------------------------------------------------------------------------

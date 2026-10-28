@@ -1,529 +1,195 @@
 # ADR-023: Plattformzugang — Konto je Person, Zugang je Verhältnis, Vertretung als eigene Beziehung
-
 ## Status
-
-**Angenommen** (2026-09-30), alle 26 Punkte und die Wahlpunkte **W1 bis W6 wie empfohlen**
-(Jannes, 2026-09-30). Die Punkte folgen aus §3.4, §4.6 bis §4.10, dem B5-Rahmen und den ADRs
-004, 008, 010, 015 und 021; wo es eine echte Wahl gab, steht sie am Ende. POR-EPIC-001 kann
-beginnen (Roadmap Block 4). Die Punkte 11, 13 und 5 gehen als Fragen ins Prüfpaket (B2, B5). Löst keinen ADR ab. Setzt [DSN-001](../development/PLATTFORM-ANSICHTEN.md)
-voraus (bestätigt 2026-09-30), dessen Abschnitte 3 und 10 diese Fragen hierher verweisen.
-
-**Fassung 2 (2026-09-30)**: Jannes hat sie am selben Tag nach der Durchsicht der drei Prüffragen
-freigegeben. **Punkt 5 ändert seine Frist**: Konto und Zugang werden getrennt, der Zugang mit
-seinem Nachweis hält drei Jahre statt zwölf Monate. Den Wortlaut der Fassung 1 zeigt der Punkt
-selbst. **Punkte 11 und 13 werden geschärft**: Mail nur an eine persönlich bestätigte Adresse,
-Ausweis und Vollmacht bei Vertretungen ansehen, Bedingungen der Einwilligung zur Begleitung. Die
-übrigen 23 Punkte und W1 bis W6 bleiben unverändert.
-
-**Fassung 3 (2026-10-09, BEF-138)**: Jannes hat in der Abnahme der Annahmen entschieden, dass
-der Abruf eines freigegebenen Dokuments über die Plattform nicht protokolliert wird. Geändert ist
-nur **Punkt 24** (mit Vermerk an W5); Rang 2 dazu ist ADR-010 Fassung 4.
-
-**Fassung 4 (2026-10-10)**: Anmeldung ohne Kennwort nach [ADR-025](ADR-025-session-lock.md)
-Fassung 2 (Jannes): Passkey als Anmeldung, App-PIN als Rückweg der Freigabe, kein Kennwort. Geändert
-sind die Punkte **1, 7, 8, 10, 13, 17 und 18** und die Liste „Nicht entschieden“, jeweils mit
-Vermerk. Rang 1 dazu: `PROJECT_PRINCIPLES.md` 0.25, §3.4.
-
-**Fassung 5 (2026-10-14, E-001, Befund B11)**: Die Vorschau der Praxis (DSN-001 D7) ist als
-**Einsicht** gebaut; ergänzt sind **Punkt 25** und **Punkt 19** (je mit Vermerk): nur `owner`,
-nur am eigenen, aktiven Zugang der Person, gelesen über einen Verteiler mit fester Liste lesender
-Projektionen in einer nur lesenden Transaktion; die Übungstage bleiben bei der Person (ANN-307).
-Nichts geschieht im Namen der Person; protokolliert wird nach Punkt 24 mit den vorhandenen
-Aktionen (ADR-010). Die übrigen Punkte bleiben unverändert.
-
-**Fassung 6 (2026-10-20, BEF-189)**: Jannes hat entschieden (wie empfohlen), dass eine
-**Begleitung ihre eigene Wahl zu Benachrichtigungen exportiert**: Arten und Wege, Ruhezeit, Geräte
-und Zustellungen ihres Zugangs. Das ist ihr eigenes Datum, nicht das der Person; alles andere bleibt
-ihr verschlossen. Geändert ist nur **Punkt 13** (Tabelle, mit Vermerk); protokolliert wird nach
-Punkt 24 wie jeder Export, ohne neue Aktion (ADR-010 Punkt 16). Die übrigen Punkte bleiben.
-
-**Fassung 7 (2026-10-26, Aufräumen M7)**: Jannes hat die **Einsicht** der Praxis in die Plattform
-einer Person zurückgenommen. **Punkt 19** kennt wieder nur den Weg über den eigenen aktiven Zugang,
-**Punkt 25** hat keine Vorschau mehr; beide mit Vermerk. Damit fällt ein Lesepfad der Praxis auf
-Plattformdaten weg. Die übrigen Punkte bleiben.
-
-**Fassung 8 (2026-10-27)**: **Punkte 7 und 11** nennen die Ausnahme aus §4.10 der Prinzipien:
-Schließt eine Person mit eigenem Zugang den Trainingsvertrag über ihr Konto, entsteht der Zugang zum
-neuen Trainingsverhältnis ohne eigene Einladung; die Identität prüfte die Einladung zur Behandlung.
-So hat Jannes es am 2026-10-09 entschieden (bis dahin überbrückt als ANN-291). Die übrigen Punkte
-bleiben.
-
-**Ergänzt durch [ADR-025](ADR-025-session-lock.md)** (2026-10-02): Die Punkte 17 und 18 bekommen eine Sitzungssperre.
-
-*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.* *Den Zweifel an der Einwilligungsfähigkeit (Punkt 13) vermerkt die Praxis am Zugang der rechtlichen Vertretung (`companion_declined_*`), nicht im Auditlog (ANN-207 Fassung 2).*
-
-## Datum
-
-2026-09-30 · Fassung 2: 2026-09-30 · Fassung 3: 2026-10-09 · Fassung 4: 2026-10-10 · Fassung 5:
-2026-10-14 · Fassung 6: 2026-10-20
+Angenommen (2026-09-30, Jannes), Fassung 8 (2026-10-27); setzt DSN-001 voraus
+(`git show 9452575:docs/development/PLATTFORM-ANSICHTEN.md`), löst keinen ADR ab, ergänzt durch
+ADR-025 (Sperre zu Punkten 17 und 18). Protokollvorgaben gelten nur, soweit ADR-010 Punkt 16 sie
+aufführt; Schreibvorgänge weist das Datenmodell nach (Vermerk 2026-10-03).
 
 ## Kontext
-
-Die Plattform öffnet die Anwendung für Menschen außerhalb der Praxis: Patient:innen (§4.6) und
-Kund:innen des Trainings (§4.10). Das ist das größte Risiko der Roadmap (R5): Ein Fehler zeigt
-einer Person die Daten einer anderen. Vorher müssen fünf Fragen geklärt sein, die DSN-001
-bewusst offen lässt: wie ein Konto entsteht, wie die Person nachweist, wer sie ist, wer für sie
-handeln darf, wie lange eine Sitzung hält und wie die Datenbank „nur eigene Daten" durchsetzt.
-
-**Was heute besteht** (Stand `main`, 2026-09-30):
-
-- **Anmeldung** läuft ausschließlich über Supabase Auth (ADR-015 Punkt 8). Selbstregistrierung
-  ist aus (`enable_signup = false` in `supabase/config.toml`). Praxiskonten entstehen in drei
-  Schritten: Einladung, Anmeldung beim Anmeldedienst, Annahme. Die Einladung vergibt die
-  Berechtigung. **Ein Konto, zu dem keine offene Einladung passt, hat keinen Zugriff** (ANN-025,
-  `claim_staff_invitation`). Das Konto selbst legt heute noch ein Mensch auf der Oberfläche des
-  Anmeldedienstes an: Die Admin-API braucht den `service_role`-Schlüssel und damit eine
-  serverseitige Funktion. Die Edge Runtime ist für produktive Gesundheitsdaten nicht freigegeben
-  (ADR-015 Punkt 20, OPS-001).
-- **`user_profiles`** verbindet ein Konto mit Organisation und Person, höchstens eines je Person
-  und Organisation (`unique (organization_id, person_id)`). `is_active` wird bei jeder Anfrage
-  gelesen (ANN-044).
-- **Die Rolle `patient`** steht seit der Gründungsmigration im Rollenkatalog, wurde aber nie
-  vergeben. Einige frühe Policies enthalten trotzdem einen **Selbstzugriff über die Person**:
-  `patients_select_scoped`, `persons_select_scoped`, `patient_contact_details_select_scoped` und
-  `log_patient_record_view` lassen jedes Konto die Zeilen seiner eigenen `person_id` lesen.
-  Dieses Muster ist älter als ADR-021 und hat zwei Fehler. Es fragt nach der Person statt nach
-  dem Verhältnis und bricht damit §4.8, sobald eine Person beide Verhältnisse hat. Und es kennt
-  keine Sperre des Zugangs, nur `is_active` am ganzen Konto.
-- **Praxispfade** fragen durchweg nach Praxisrollen (`app.is_staff()`, `app.has_any_role(…)`).
-  Drei Tabellen stehen jedem Konto der Organisation offen: `organizations`, `locations` und der
-  Rollenkatalog `roles`.
-- **Mailversand an Patient:innen gibt es nicht** (B13 wieder offen, BEF-026). Der eingebaute
-  Versand des Anbieters stellt nur an das Projektteam zu. Bis zur Entscheidung wird hinter einem
-  Adapter mit `mock`-Weg gebaut (Roadmap R8).
-- **B5-Rahmen** (Jannes, 2026-09-08): Ein Konto gehört einer Person. Vertretung ist eine eigene
-  Beziehung mit eigenem Konto und steht unterscheidbar im Auditlog, **niemals** als Weitergabe
-  der Zugangsdaten. Der Portalzugang ist nicht die Einsicht nach § 630g BGB. Offen ist das
-  Verfahren.
-
-Die Menschen, um die es geht, sind oft hochbetagt und werden zu Hause behandelt. Sie haben
-Angehörige, eine Betreuung oder eine Vorsorgevollmacht (B5: in der mobilen Versorgung „der
-Regelfall"). Ein Verfahren, das nur mit Mail und Kennwortmanager funktioniert, erreicht sie
-nicht (§2.2, `IDEA-QSN-006`).
+Die Plattform öffnet die Anwendung für Patient:innen (§4.6) und Kund:innen des Trainings (§4.10),
+oft hochbetagt und vertreten (§2.2); ein Fehler zeigt einer Person fremde Daten (R5). Zu entscheiden
+sind im Rahmen von B5 (Jannes, 2026-09-08) Konto, Identität, Vertretung, Sitzung und Durchsetzung.
+Nicht Bestandteil: Benachrichtigungen (ADR-024), Einwilligungen als Funktion (POR-EPIC-003), Schema
+(SPEC, ADR-014), Wortlaute (`src/lib/begriffe.ts`), SMS (B15).
 
 ## Entscheidung
+Abschnitt C (Identität und Vertretung) umfasst die Punkte 11 bis 16.
 
-### A. Konto und Zugang
-
-**1. Ein Anmeldedienst für alle Konten.** Konten externer Personen sind Konten bei Supabase Auth,
-wie die der Praxis. Es gibt keine zweite Identitätsinfrastruktur, kein eigenes Kennwortverfahren,
-keine eigene Sitzungsmechanik (§3.4). Die Selbstregistrierung bleibt aus: **Ein Plattformkonto
-entsteht nur aus einer Einladung der Praxis** (Punkte 6 bis 9). *Fassung 4: Einzige Ausnahme vom
-eigenen Prüfverfahren ist die App-PIN, die eine gesperrte Sitzung freigibt (ADR-025 Punkt 11, §3.4).*
-
-**2. Ein Konto ist Praxiskonto oder Plattformkonto, nie beides.** Praxiskonten tragen Rollen in
-`user_roles` (ADR-004). Ein Plattformkonto trägt **keine** Zeile in `user_roles`. Die Datenbank
-erzwingt, dass ein Konto nicht beides zugleich hat; ein Test hält das fest. Wer ein Praxiskonto
-hat, bekommt in V1 keinen Plattformzugang (**W1**).
-
-**3. Zugriff folgt dem Zugang, nicht der Person.** Der Plattformzugang ist ein eigener Datensatz,
-im Folgenden **Zugang** genannt (Bezeichner und Schema entscheidet der SPEC, ADR-014). Ein Zugang
-verbindet **ein** Konto mit **einem** Verhältnis: einem Behandlungsverhältnis (`patients`) oder
-einem Trainingsverhältnis. Er hat einen Zustand:
-
-| Zustand       | Bedeutung                                    | Weiter nach                           |
-| ------------- | -------------------------------------------- | ------------------------------------- |
-| `invited`     | Einladung offen, noch kein Konto gebunden    | `active`, `revoked`, abgelaufen       |
-| `active`      | Konto gebunden, Plattform nutzbar            | `locked`, `revoked`                   |
-| `locked`      | vorübergehend gesperrt, rücknehmbar          | `active`, `revoked`                   |
-| `revoked`     | entzogen, endgültig                          | — (ein neuer Zugang ist eine neue Einladung) |
-
-Die Rollen aus §4.6 und §4.10 sind **keine Einträge in `user_roles`**. Sie ergeben sich aus den
-aktiven Zugängen: Ein aktiver Zugang zu einem Behandlungsverhältnis bedeutet §4.6 für genau
-dieses Verhältnis, nicht für die Person. Der Katalogeintrag `patient` wird nie vergeben. Ob der
-SPEC ihn entfernt, entscheidet er; ein Test hält fest, dass keine Zeile in `user_roles` ihn trägt.
-
-**4. Ein Konto je Person, höchstens ein Zugang je Konto und Verhältnis.** Hat eine Person beide
-Verhältnisse, hat sie ein Konto und bis zu zwei Zugänge. Ein Verhältnis kann mehrere Zugänge
-haben: den der Person selbst und die ihrer Vertretungen (Punkt 13). Jeder Zugang wird für sich
-eingeladen, gesperrt und entzogen. Eine
-Sperre im Training berührt die Behandlung nicht (§4.8). Der Bereichsschalter aus DSN-001 D6
-zeigt nur Verhältnisse mit aktivem Zugang.
-
-**5. Konto ist nicht Akte** (§4.6, §4.10, ADR-008 Punkt 9). Sperren und Entziehen ändern nur den
-Zugang, nie das Verhältnis und nie seine Frist. Endet das Verhältnis (Abschluss der Versorgung,
-Vertragsende), endet der Zugang nicht von selbst. Das Ende steuert, was die Person noch sieht:
-30 Tage lesend, dann nur noch „Ich" (DSN-001 D2).
-
-*(Fassung 2)* **Konto und Zugang haben getrennte Fristen**, weil sie verschiedene Daten sind:
-
-| Was | Frist | Warum |
-| --- | --- | --- |
-| **Konto** (Anmeldedaten beim Anmeldedienst, `user_profiles`) | 30 Tage nach dem Ende des letzten Zugangs bzw. seiner Lesefrist (D2) | Zweck erledigt; der Puffer fängt ein versehentliches Entziehen ab |
-| **Zugang mit Nachweis** (Übergabeweg, Bestätigung der Adresse, Vertretungsart, Nachweisvermerk, Einwilligung zur Begleitung und ihr Widerruf) | 3 Jahre nach dem Ende des Zugangs | so lange wie die Auditeinträge, die auf ihn zeigen (ADR-010 Punkt 5, ANN-029); zugleich die regelmäßige Verjährung nach § 195 BGB für den Nachweis der Einwilligung (Art. 7 Abs. 1 DSGVO) |
-
-Datenklasse: **Zugangs- und Authentifizierungsdatum**. Fällt das Verhältnis im Löschlauf, endet
-sein Zugang; der Nachweis läuft von da an seine drei Jahre und trägt dabei keinen Inhalt aus dem
-Verhältnis. Ein Auditeintrag über einen Zugriff zeigt damit nie auf einen Zugang, der schon
-gelöscht ist. Beide Fristen sind interne Initialentscheidungen und gehen in die Validierung
-nach ADR-008.
-*Fassung 1 lautete: „Datenklasse des Zugangs: Zugangs- und Authentifizierungsdatum wie die
-Einladung (ANN-026), zwölf Monate nach seinem Ende (ADR-008, Tabelle). Fällt das Verhältnis im
-Löschlauf, fällt sein Zugang mit. Das Konto fällt, sobald kein Zugang mehr darauf zeigt und
-seine Frist abgelaufen ist."*
-
-### B. Einladung und Zustellweg
-
-**6. Eingeladen wird aus dem Verhältnis, von den Rollen, die es schreiben.** Behandlung: `owner`,
-`therapist`, `team_lead`, `office` (`app.can_update_patient()`). Training: `owner`, `trainer`,
-`office` (`app.can_write_training_relationships()`, ANN-172). Dieselben Rollen sperren, entsperren
-und entziehen. Jeder dieser Vorgänge ist ein Auditereignis (ADR-010 Punkt 2: „Änderungen von
-Portal-/Vertreterzugriffen"), ein abgewiesener Versuch ebenso (G6c). Angezeigt wird das im
-Abschnitt **Plattform** an Akte und Trainingsverhältnis (DSN-001 Abschnitt 6).
-
-**7. Dreischritt wie bei den Praxiskonten.** Die **Einladung** vergibt die Berechtigung und ist
-14 Tage gültig (ANN-026). Das **Konto** entsteht beim Anmeldedienst. Die **Annahme** bindet es an
-den Zugang. Die tragende Eigenschaft aus ANN-025 gilt unverändert: Ohne passende offene Einladung
-bleibt ein Konto ohne jeden Zugriff. Die Einladung trägt einen einmaligen Code. Gespeichert wird
-nur dessen Hash, nie der Code selbst, und er steht in keinem Log (ADR-011). Angemeldet wird mit
-**Passkey**; die E-Mail-Adresse bleibt die Kennung des Kontos (*Fassung 4*, ADR-025 Punkte 9 bis 11;
-*bis Fassung 3: „E-Mail-Adresse und Kennwort“*). Wer keine E-Mail-Adresse oder kein Gerät mit Passkey
-hat, bekommt in V1 kein eigenes Konto. Er kann über eine Vertretung (Punkt 13) oder mit Plänen als
-PDF versorgt werden. *(Fassung 8)* Ausnahme nach §4.10: Bucht eine Person mit eigenem Zugang den
-Trainingsvertrag über ihr Konto, bekommt dasselbe Konto im selben Aufruf einen aktiven Zugang zum
-neuen Trainingsverhältnis, ohne Einladung (ANN-291).
-
-**8. Zwei Übergabewege, eine Einladung** (**W2**):
-
-- **Vor Ort (Regelweg).** Die Praxis öffnet die Einladung auf ihrem Gerät, die Person scannt den
-  Code als QR mit ihrem eigenen Telefon und legt dort Adresse, Passkey und PIN fest (*Fassung 4*;
-  vorher „Adresse und Kennwort“, ADR-025 Punkt 13). Das braucht
-  keinen Mailversand, und die Übergabe selbst ist die Identitätsprüfung (Punkt 11).
-- **Per Mail**, nur an die Adresse, die im Verhältnis steht, über den Zustellweg aus Punkt 10.
-
-Beide Wege enden auf einer öffentlichen Seite der Anwendung, die die Einladung einlöst. Sie
-kommt als dritte zu `/kennwort-neu` und `/zugang` hinzu (*Fassung 4: `/kennwort-neu` entfällt*) und folgt ANN-043: `token_hash` statt
-Sitzung in der Adresszeile. Für abgelaufene, benutzte und unbekannte Codes gibt sie dieselbe
-Auskunft (§13).
-
-**9. Das Konto legt ein serverseitiger Zugangsdienst an.** Der manuelle Handgriff aus ANN-025
-trägt bei Patient:innen nicht: Er wäre je Person und Einladung nötig. Eine serverseitige Funktion
-hält den Admin-Schlüssel als Secret. Sie prüft die offene Einladung und den Code, legt das Konto
-beim Anmeldedienst an und bindet es in einem Aufruf. Der Browser sieht den Schlüssel nie. Die
-Funktion läuft als Edge Function. Gebaut und getestet wird sie lokal mit synthetischen Daten
-(§15.2). **Scharfgeschaltet wird sie erst**, wenn die Edge Runtime für produktive Daten geprüft
-ist (ADR-015 Punkt 20, OPS-001). Das ist ein Gate für das Scharfschalten, kein Gate für das Bauen.
-
-**10. Mails laufen über einen Adapter mit `mock`-Weg** (Roadmap R8, Grundsatz 5). `mock` stellt
-lokal und im Test in das Postfach des lokalen Stacks zu. Der produktive Weg ist ein eigener
-Versanddienst: B13, Anbieterprüfung nach ADR-002 in Block 11, eigener ADR bei der Wahl. Die
-Plattform muss **ohne Mail benutzbar** sein. Das leistet der Weg vor Ort, und zwar auch für einen
-verlorenen Passkey: Die Praxis übergibt eine neue Einladung für das bestehende Konto, und die
-Person richtet damit einen neuen Passkey ein (*Fassung 4*; vorher „vergessenes Kennwort“, „neues
-Kennwort“). ~~Der Wiederherstellungslink per Mail kommt mit B13 hinzu.~~ *Fassung 4: Einen
-Wiederherstellungslink gibt es nicht; Plattformkonten bekommen keine Mail des Anmeldedienstes
-(ANN-331).*
-
-### C. Identität und Vertretung
-
-**11. Die Identität prüft die Praxis, die die Person kennt.** Ein Zugang entsteht nur zu einem
-Verhältnis, das die Praxis schon führt. Geprüft wird mit **persönlicher Übergabe** (Punkt 8, vor
-Ort) oder mit **Mail an die Adresse im Verhältnis**, die die einladende Person mit der
-Patient:in oder Kund:in abgeglichen hat. *(Fassung 2)* Abgeglichen heißt: **Die Person hat die
-Adresse selbst bestätigt**, im Gespräch oder am Termin. Eine Adresse, die nur aus einer
-Überweisung, einem Formular oder von Angehörigen stammt, genügt nicht. Gerade in der mobilen
-Versorgung gehört die Adresse in der Akte oft der Tochter oder der ganzen Familie. Die Einladung
-hält fest, wer sie auf welchem Weg übergeben hat und wer die Adresse wann bestätigt hat. Ändert
-sich die Adresse, braucht es eine neue Einladung. Es gibt **keinen
-Ausweisscan, kein Video-Ident, keinen externen Identitätsdienst**: Die Praxis kennt die Person,
-und ein neuer Anbieter wäre ein neues Risiko ohne neue Sicherheit. Das Verfahren gilt vorläufig
-bis zur Antwort auf B5 und ist an einer Stelle austauschbar, der Einladungsfunktion. *(Fassung 8)*
-Für den Zugang aus dem Trainingsvertrag (Punkt 7) gilt die Prüfung der Einladung zur Behandlung.
-
-**12. Die Plattform ist keine Akteneinsicht** (B5 Rahmensatz 2, DSN-001 Abschnitt 2 Satz 3). Sie
-zeigt nur, was für sie bestimmt ist (Punkt 22). Die Einsicht nach § 630g BGB bleibt ein eigener
-Vorgang auf Antrag, mit eigener Identitätsprüfung und dokumentiertem Umfang. Er läuft in der
-Praxis, als Kopie der Akte durch `owner` (OPS-006, `patient_record.exported`), und die Plattform ändert
-ihn nicht.
-
-**13. Vertretung ist ein Zugang mit eigenem Konto.** Die vertretende Person hat ihr eigenes Konto
-(eigene Person, eigene Adresse, eigener Passkey; *bis Fassung 3: eigenes Kennwort*). Ihr Zugang zeigt auf das Verhältnis der
-vertretenen Person. Gehört das Konto nicht zur Person des Verhältnisses, ist der Zugang eine
-Vertretung und braucht eine **Art** und einen **Nachweisvermerk**: wer welches Dokument wann
-gesehen hat. *(Fassung 2)* Angesehen werden **der Ausweis der vertretenden Person** und bei
-rechtlicher Vertretung **Vollmacht, Betreuerausweis oder Sorgerechtsnachweis**. Gespeichert wird
-davon nichts, weder Scan noch Ausweisnummer. Der Vermerk hält nur fest, was wer wann gesehen hat.
-Zwei Arten (**W3**):
-
-| Art                     | Wer                                                                      | Darf                                                                                            |
-| ----------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| **Rechtliche Vertretung** | Sorgeberechtigte, Betreuung mit passendem Aufgabenkreis, Vorsorgevollmacht | alles, was die Person darf, auch Einwilligungen erteilen und widerrufen                          |
-| **Begleitung**          | Angehörige oder Vertraute, mit dokumentierter Zustimmung der Person      | lesen, Terminwünsche und Nachrichten schreiben; **keine** Einwilligung, kein Widerruf, kein Datenexport der Person; *(Fassung 6)* die eigene Wahl zu Benachrichtigungen exportiert sie selbst |
-
-Die Zustimmung zur Begleitung ist zugleich die Entbindung von der Schweigepflicht gegenüber
-dieser Person (§ 203 StGB). *(Fassung 2)* Weil die Begleitung Gesundheitsdaten sieht und die
-Heilbehandlung (Art. 9 Abs. 2 lit. h DSGVO) die Weitergabe an Angehörige nicht trägt, ist sie eine
-**ausdrückliche Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO** und muss deren Bedingungen erfüllen:
-
-- **konkret**: Sie nennt die begleitende Person und den Umfang, also die Bereiche aus der Tabelle,
-  und ob frühere Nachrichten mit den Antworten der Praxis sichtbar sind.
-- **informiert, freiwillig, jederzeit widerruflich**: Der Widerruf wirkt wie ein Entziehen.
-- **nachweisbar** (Art. 7 Abs. 1): Am besten erteilt die Person sie selbst in ihrem Konto unter
-  „Ich". Hat sie kein Konto, bestätigt sie sie auf dem Praxisgerät; der Vermerk nennt, wer dabei
-  war.
-- **von einer einwilligungsfähigen Person**: Hat die Praxis daran Zweifel, gibt es keine
-  Begleitung, sondern nur die rechtliche Vertretung. Der Zweifel wird vermerkt, eine Diagnose
-  nicht.
-
-Den Wortlaut legt POR-EPIC-001b fest, geprüft wird er in B2. Das Weitergeben von Zugangsdaten
-bleibt verboten (B5). Die Nutzungshinweise sagen
-das, und weil es technisch nicht zu verhindern ist, muss der erlaubte Weg der leichtere sein:
-Eine Begleitung ist vor Ort in zwei Minuten eingerichtet.
-
-**14. Vertretung ist sichtbar und unterscheidbar.** Jeder Vorgang über einen Vertretungszugang
-trägt den Zugang im Auditeintrag. Akteur ist das Konto der vertretenden Person, Gegenstand das
-Verhältnis der vertretenen (B5 Rahmensatz 1). Die Ansicht zeigt dauerhaft „Sie handeln für …"
-(DSN-001 Abschnitt 10). Hat die vertretene Person selbst ein Konto, sieht sie unter „Ich", wer
-für sie Zugang hat. Eine Begleitung kann sie dort selbst beenden. Eine rechtliche Vertretung
-beendet nur die Praxis.
-
-**15. Minderjährige haben keinen eigenen Zugang** (**W4**). Unter 18 Jahren gibt es nur die
-rechtliche Vertretung durch Sorgeberechtigte. Mit dem 18. Geburtstag endet deren Wirkung aus dem
-Sorgerecht. Das prüft der Server am Geburtsdatum der Person, nicht die Oberfläche. Die Grenze ist
-eine Zahl an einer Stelle.
-
-**16. Wer eine Rechnung empfängt, hat deshalb noch keinen Zugang.** Der Adressat einer Rechnung
-(ADR-009, Rechnungsempfänger ≠ Patient:in) bekommt daraus keinen Plattformzugang. Er sieht die
-Rechnung nur, wenn er zugleich Vertretung ist. Die behandelte Person sieht ihre eigenen
-Rechnungen auch dann, wenn sie an jemand anderen adressiert sind (DSN-001 D3). Damit ist die
-Frage beantwortet, die D3 hierher verweist.
-
-### D. Sitzung
-
-**17. Sitzungen führt der Anmeldedienst, für alle Konten gleich.** Es gibt ein Projekt und eine
-Konfiguration: `jwt_expiry`, Rotation der Erneuerungstoken und die Einstellungen für Passkeys
-gelten für Praxis- und Plattformkonten gleich (*Fassung 4*; die Mindestlänge des Kennworts aus
-ANN-027 entfällt mit dem Kennwort). Eine eigene Sitzungsregel für die Plattform würde Eigenbau
-bedeuten (§3.4); die Sitzungssperre mit App-PIN regelt ADR-025 für alle Konten gleich.
-
-**18. Was an der Plattform anders ist:**
-
-- Anmeldung per **Passkey**, keine Anmeldung allein per Mail-Link. Sonst hinge jede Anmeldung an
-  B13. *Bis Fassung 3: „mit E-Mail und Kennwort“.*
-- Ein zweiter Faktor ist einrichtbar, wird aber nicht verlangt (wie ANN-028). *Fassung 4: Ein
-  Passkey verbindet Besitz und Prüfung am Gerät; der Warnhinweis aus ANN-028 entfällt für Konten mit
-  Passkey.*
-- „Abmelden" unter „Ich" beendet die Sitzung auf diesem Gerät (ANN-045). „Überall abmelden"
-  steht daneben.
-- **Sperren und Entziehen wirken bei der nächsten Anfrage.** Jede Plattformprojektion liest den
-  Zustand des Zugangs, so wie die Praxispfade `is_active` lesen (ANN-044). Ein ausgestelltes
-  Zugriffstoken zeigt danach nichts mehr, obwohl es bis `jwt_expiry` gültig bleibt.
-- Kein Offline-Modus, kein Service Worker (ADR-015 Punkt 16). Das regelt ADR-024. *Vermerk
-  2026-10-11: ADR-024 angenommen; ohne Netz geht auf der Plattform nur die Durchführung (Punkte 4
-  und 5).*
-
-### E. Durchsetzung — „nur eigene Daten"
-
-**19. Die Plattform liest und schreibt nur über Plattformprojektionen.** Das sind eigene
-Funktionen, die den Zugriff aus `auth.uid()` über einen **aktiven Zugang** zum Verhältnis
-ableiten. Eine Kennung, die der Browser mitschickt, wählt höchstens unter den eigenen Zugängen
-aus und gewährt nie etwas. Für Plattformkonten gibt es keine Tabellen-Policy auf Praxistabellen
-und kein direktes `SELECT`. Das ist ADR-004 Punkt 5, angewandt auf die neue Seite: Die
-Projektion entscheidet, RLS bleibt die zweite Linie. ~~*(Fassung 5)* Der Wächter der Projektionen
-kennt seitdem einen zweiten, nur lesenden Weg: die Einsicht der Praxisinhaber:in (Punkt 25). Er
-gilt nur innerhalb des Verteilers `platform_preview`, der Rolle, Sitzung und Zugang selbst prüft,
-und schaltet die Transaktion auf „nur lesen" (ANN-529). Eine Kennung aus dem Browser gewährt
-weiterhin nichts.~~ *(Fassung 7)* Die Einsicht ist entfallen; der Wächter kennt wieder nur den
-eigenen aktiven Zugang der Person oder ihrer Vertretung.
-
-**20. Der Selbstzugriff über `person_id` entfällt.** Die Klauseln
-`person_id = app.current_person_id()` bzw. `id = app.current_person_id()` in
+1. **Ein Anmeldedienst für alle Konten:** Plattformkonten sind Konten bei Supabase Auth wie die der
+Praxis, ohne zweite Identitätsinfrastruktur, eigenes Kennwort- oder Sitzungsverfahren (§3.4);
+einzige Ausnahme vom eigenen Prüfverfahren ist die App-PIN der gesperrten Sitzung (Fassung 4;
+ADR-025 Punkt 11). Ohne Selbstregistrierung entsteht ein Plattformkonto nur aus einer Einladung der
+Praxis (Punkte 6 bis 9).
+2. **Ein Konto ist Praxiskonto oder Plattformkonto, nie beides:** Nur Praxiskonten tragen Rollen in
+`user_roles` (ADR-004); die Datenbank erzwingt das, ein Test hält es fest. Mit Praxiskonto gibt es
+in V1 keinen Plattformzugang, nur Pläne als PDF (W1).
+3. **Zugriff folgt dem Zugang, nicht der Person:** Ein Zugang (`public.platform_accesses`) verbindet
+ein Konto mit einem Behandlungs- (`patients`) oder Trainingsverhältnis; Zustände `invited`
+(Einladung offen, kein Konto, kann ablaufen) → `active` ⇄ `locked` (vorübergehend), aus jedem nach
+`revoked` (endgültig; neu heißt neue Einladung). Die Rollen aus §4.6 und §4.10 gibt ein aktiver
+Zugang für genau sein Verhältnis, nicht für die Person, nie über `user_roles`; der Katalogeintrag
+`patient` wird nie vergeben (Test).
+4. **Ein Konto je Person, höchstens ein Zugang je Konto und Verhältnis:** Mit beiden Verhältnissen
+hat eine Person ein Konto und bis zu zwei Zugänge, ein Verhältnis neben ihrem Zugang die ihrer
+Vertretungen (Punkt 13). Jeder Zugang wird für sich eingeladen, gesperrt und entzogen, eine Sperre
+im Training berührt die Behandlung nicht (§4.8). Der Bereichsschalter (DSN-001 D6) zeigt nur
+Verhältnisse mit aktivem Zugang.
+5. **Konto ist nicht Akte** (§4.6, §4.10, ADR-008 Punkt 9): Sperren und Entziehen ändern nur den
+Zugang, nie das Verhältnis oder seine Frist. Endet das Verhältnis (Abschluss der Versorgung,
+Vertragsende), endet der Zugang nicht von selbst; die Person sieht 30 Tage lesend, dann nur „Ich"
+(DSN-001 D2). Getrennte Fristen *(Fassung 2)*, Klasse `plattformzugang`: das Konto (Anmeldedaten,
+`user_profiles`) 30 Tage nach dem Ende des letzten Zugangs bzw. seiner Lesefrist, der Zugang mit
+seinem Nachweis drei Jahre nach seinem Ende wie die auf ihn zeigenden Auditeinträge
+(ADR-010 Punkt 5, ANN-029; § 195 BGB, Art. 7 Abs. 1 DSGVO).
+6. **Eingeladen wird aus dem Verhältnis, von den Rollen, die es schreiben**
+(`app.can_update_patient()`, `app.can_write_training_relationships()`, ANN-172); sie sperren,
+entsperren und entziehen auch. Der Abschnitt „Plattform" von Akte und Trainingsverhältnis zeigt das
+und was die Person auf der Plattform hat.
+7. **Dreischritt wie bei den Praxiskonten:** Die Einladung vergibt die Berechtigung und gilt 14 Tage
+(ANN-026), das Konto entsteht beim Anmeldedienst, die Annahme bindet es an den Zugang; ohne passende
+offene Einladung bleibt ein Konto ohne jeden Zugriff (ANN-025). Ihr einmaliger Code wird nur als
+Hash gespeichert, nie geloggt (ADR-011). Kennung bleibt die E-Mail-Adresse, angemeldet wird per
+Passkey (Fassung 4; ADR-025 Punkte 9 bis 11); ohne E-Mail-Adresse oder Gerät mit Passkey gibt es in
+V1 kein eigenes Konto, versorgt wird über eine Vertretung (Punkt 13) oder mit Plänen als PDF.
+Ausnahme nach §4.10 *(Fassung 8)*: Wer mit eigenem Zugang den Trainingsvertrag über sein Konto
+bucht, bekommt im selben Aufruf ohne Einladung einen aktiven Zugang zum neuen Trainingsverhältnis
+(ANN-291).
+8. **Zwei Übergabewege, eine Einladung** (W2): Regelweg vor Ort, ohne Mail: Die Praxis öffnet die
+Einladung auf ihrem Gerät, die Person scannt den Code als QR mit ihrem eigenen Telefon und legt dort
+Adresse, Passkey und PIN fest (Fassung 4; ADR-025 Punkt 13). Per Mail nur an die Adresse im
+Verhältnis (Punkt 10). Beide enden auf einer öffentlichen Einlöseseite neben `/zugang` (ANN-043) mit
+gleicher Auskunft für abgelaufene, benutzte und unbekannte Codes (§13).
+9. **Das Konto legt ein serverseitiger Zugangsdienst an:** eine Edge Function, die den
+Admin-Schlüssel als Secret hält (nie im Browser), offene Einladung und Code prüft und das Konto beim
+Anmeldedienst in einem Aufruf anlegt und bindet. Scharf erst, wenn die Edge Runtime für produktive
+Daten geprüft ist (ADR-015 Punkt 20, OPS-001); gebaut und getestet wird vorher lokal mit
+synthetischen Daten (§15.2).
+10. **Mails laufen über einen Adapter mit `mock`-Weg** (Roadmap R8), produktiv über einen eigenen
+Versanddienst (B13; Prüfung nach ADR-002, eigener ADR). Die Plattform muss ohne Mail benutzbar sein,
+über den Weg vor Ort, auch bei verlorenem Passkey (neue Einladung für das bestehende Konto,
+ADR-025 Punkt 12). Einen Wiederherstellungslink gibt es nicht, Plattformkonten bekommen keine Mail
+des Anmeldedienstes (Fassung 4, ANN-331).
+11. **Die Identität prüft die Praxis, die die Person kennt:** Ein Zugang entsteht nur zu einem
+Verhältnis, das sie schon führt, geprüft durch persönliche Übergabe (Punkt 8) oder Mail an die
+Adresse im Verhältnis, die die Person der einladenden Person selbst bestätigt hat, im Gespräch oder
+am Termin *(Fassung 2)*; eine Adresse nur aus Überweisung, Formular oder von Angehörigen genügt
+nicht. Die Einladung hält fest, wer sie wie übergab und wer die Adresse wann bestätigte; eine neue
+Adresse braucht eine neue Einladung. Kein Ausweisscan, kein Video-Ident, kein externer
+Identitätsdienst. Das Verfahren ist an einer Stelle austauschbar, der Einladungsfunktion. Für den
+Zugang aus dem Trainingsvertrag (Punkt 7) gilt die Prüfung der Einladung zur Behandlung (Fassung 8).
+12. **Die Plattform ist keine Akteneinsicht** (B5 Rahmensatz 2) und zeigt nur, was für sie bestimmt
+ist (Punkt 22). Die Einsicht nach § 630g BGB bleibt ein eigener Vorgang auf Antrag mit eigener
+Identitätsprüfung und dokumentiertem Umfang, in der Praxis als Kopie der Akte durch `owner`
+(OPS-006, `patient_record.exported`); die Plattform ändert ihn nicht.
+13. **Vertretung ist ein Zugang mit eigenem Konto** (eigene Person, Adresse, Passkey) zum Verhältnis
+der vertretenen Person. Gehört das Konto nicht zur Person des Verhältnisses, braucht der Zugang Art
+und Nachweisvermerk, wer welches Dokument wann sah *(Fassung 2: Ausweis der vertretenden Person, bei
+rechtlicher Vertretung Vollmacht, Betreuerausweis oder Sorgerechtsnachweis; gespeichert wird nichts
+davon, kein Scan, keine Ausweisnummer)*. Zwei Arten (W3): Die **rechtliche Vertretung**
+(Sorgeberechtigte, Betreuung mit passendem Aufgabenkreis, Vorsorgevollmacht) darf alles, was die
+Person darf, auch Einwilligungen erteilen und widerrufen; die **Begleitung** (Angehörige, Vertraute,
+mit dokumentierter Zustimmung der Person) darf lesen sowie Terminwünsche und Nachrichten schreiben,
+ohne
+Einwilligung, Widerruf oder Datenexport der Person, exportiert aber ihre eigene Wahl zu
+Benachrichtigungen (Arten, Wege, Ruhezeit, Geräte, Zustellungen ihres Zugangs), protokolliert wie
+jeder Export ohne neue Aktion (Fassung 6). Die Zustimmung zur Begleitung entbindet gegenüber der
+begleitenden Person von der Schweigepflicht (§ 203 StGB) und ist eine ausdrückliche Einwilligung
+nach Art. 9 Abs. 2 lit. a DSGVO *(Fassung 2)*: konkret (begleitende Person, Bereiche, ob frühere
+Nachrichten samt Antworten der Praxis sichtbar sind), informiert, freiwillig, jederzeit widerruflich
+(wie Entziehen), nachweisbar (Art. 7 Abs. 1 DSGVO; am besten von der Person unter „Ich", ohne Konto
+auf dem Praxisgerät bestätigt mit Vermerk, wer dabei war) und von einer einwilligungsfähigen Person
+(bei Zweifel der Praxis nur rechtliche Vertretung; der Zweifel steht an deren Zugang,
+`companion_declined_*`, ANN-207, nicht im Auditlog, ohne Diagnose). Wortlaut: POR-EPIC-001b (W6),
+geprüft in B2. Zugangsdaten weiterzugeben bleibt verboten (B5, Nutzungshinweise); der erlaubte Weg
+muss der leichtere sein, eine Begleitung ist vor Ort in zwei Minuten eingerichtet.
+14. **Vertretung ist sichtbar und unterscheidbar:** Jeder Vorgang über einen Vertretungszugang trägt
+den Zugang im Auditeintrag, Akteur ist das Konto der vertretenden Person, Gegenstand das Verhältnis
+der vertretenen (B5 Rahmensatz 1); `list_audit_events` muss Plattformkonten und Vertretungen
+unterscheidbar zeigen, mit neuen Werten neben den alten (ADR-010 Punkt 4). Die Ansicht zeigt
+dauerhaft „Sie handeln für …". Hat die vertretene Person ein Konto, sieht sie unter „Ich", wer für
+sie Zugang hat, und kann dort eine Begleitung beenden; eine rechtliche Vertretung beendet nur die
+Praxis.
+15. **Minderjährige haben keinen eigenen Zugang** (W4): Unter 18 Jahren gibt es nur die rechtliche
+Vertretung durch Sorgeberechtigte, deren Wirkung aus dem Sorgerecht mit dem 18. Geburtstag endet;
+das prüft der Server am Geburtsdatum, nicht die Oberfläche, die Grenze ist eine Zahl an einer Stelle
+(`app.platform_min_age_years`, gerechnet in `app.majority_date`).
+16. **Wer eine Rechnung empfängt, hat deshalb noch keinen Zugang** (ADR-009: Rechnungsempfänger ≠
+Patient:in) und sieht sie nur, wenn er zugleich Vertretung ist. Die behandelte Person sieht ihre
+eigenen Rechnungen auch, wenn sie an jemand anderen adressiert sind (DSN-001 D3).
+17. **Sitzungen führt der Anmeldedienst, für alle Konten gleich:** ein Projekt, eine Konfiguration;
+`jwt_expiry`, Rotation der Erneuerungstoken und Passkey-Einstellungen gelten für Praxis- und
+Plattformkonten gleich (Fassung 4). Keine eigene Sitzungsregel der Plattform (§3.4), die
+Sitzungssperre regelt ADR-025.
+18. **Was an der Plattform anders ist:** keine Anmeldung allein per Mail-Link (Fassung 4: Passkey,
+Punkt 7). Ein zweiter Faktor ist einrichtbar, nicht verlangt (ANN-028), dessen Warnhinweis entfällt
+für Konten mit Passkey. „Abmelden" unter „Ich" beendet die Sitzung auf diesem Gerät (ANN-045),
+„Überall abmelden" steht daneben. Sperren und Entziehen wirken bei der nächsten Anfrage, auch bei
+noch gültigem Zugriffstoken: Jede Plattformprojektion liest den Zustand des Zugangs wie die
+Praxispfade `is_active` (ANN-044). Ohne Netz geht nur die Durchführung (ADR-024 Punkte 4 und 5).
+19. **Die Plattform liest und schreibt nur über Plattformprojektionen,** Funktionen, die den Zugriff
+aus `auth.uid()` über einen aktiven Zugang zum Verhältnis ableiten; eine Kennung aus dem Browser
+wählt höchstens unter den eigenen Zugängen und gewährt nie etwas. Für Plattformkonten gibt es keine
+Tabellen-Policy auf Praxistabellen und kein direktes `SELECT` (ADR-004 Punkt 5). Der Wächter kennt
+nur den eigenen aktiven Zugang der Person oder ihrer Vertretung (Fassung 7).
+20. **Der Selbstzugriff über `person_id` entfällt:** Die Klauseln mit `app.current_person_id()` in
 `patients_select_scoped`, `persons_select_scoped`, `patient_contact_details_select_scoped` und
-`log_patient_record_view` werden auf Praxiskonten beschränkt oder gestrichen, bevor der erste
-Zugang aktiv werden kann. Das ist der erste Schritt von POR-EPIC-001. Selbstbezüge von
-Mitarbeitenden auf ihre eigenen Daten (`staff_private_details`, Textbausteine, Vergütung) sind
-davon nicht betroffen: Sie gehören zum Praxiskonto.
-
-**21. Praxispfade verweigern Plattformkonten, und ein Test beweist es für alle.** Die drei offenen
-Tabellen (`organizations`, `locations`, `roles`) werden auf Praxiskonten beschränkt. Was die
-Plattform davon braucht, etwa Name und Marke der Praxis im Kopf, liefert eine Projektion. Ein
-Test in `pnpm test:db` meldet ein Plattformkonto in jedem Zustand an. Er geht **alle** Tabellen
-aus `pg_tables` und alle an `authenticated` freigegebenen Funktionen durch und verlangt: keine
-Zeile, jeder Aufruf abgewiesen. Ausgenommen sind nur die Plattformprojektionen und die
-Funktionen, die für jedes Konto gelten (etwa der Vermerk eines eigenen Sicherheitsereignisses,
-STAFF-004). Diese Ausnahmen stehen als Liste im Test, und ein Eintrag dort ist Teil des Reviews.
-Eine neue Tabelle oder Funktion ist damit automatisch geprüft, so wie `retention.test.ts` jede
-neue Tabelle an ihre Datenklasse bindet.
-
-**22. Was für die Plattform bestimmt ist, steht am Objekt, nicht in der Oberfläche.** Eine
-Rechnung ist sichtbar, weil sie gestellt ist, ein Dokument, weil es einzeln freigegeben ist
-(DSN-001 D3). Ein Termin ist sichtbar ohne interne Notiz, ein Plan, weil er der Person zugewiesen
-ist. Jede Projektion gibt nur die Felder einer festen Liste heraus. Befund,
-Behandlungsdokumentation, interne Notizen und Patientenfotos kommen in keiner vor (DSN-001
-Abschnitt 2 Satz 3, ADR-017 Punkt 37).
-
-**23. Jede Plattformprojektion hat ihre Negativfälle** (ADR-013 Punkt 9 Nr. 1, Fassung 4):
-
-- fremde Person
-- anderes Verhältnis derselben Person ohne Zugang (anderer Leistungsbereich)
-- Zugang `invited`, `locked` und `revoked`
-- abgelaufene Lesefrist (D2)
-- Praxiskonto
-- andere Organisation
-- bei Einwilligung, Widerruf und Export zusätzlich die Begleitung
-
-**24. Protokolliert wird, was nachzuweisen ist** (**W5**). In jedem Fall: jede Änderung an einem
-Zugang, jeder Schreibvorgang der Person (Wunsch, Nachricht, Einwilligung, Widerruf),
-~~jeder Dokumentabruf (Verweis als Download, ADR-010 Punkt 14),~~ jeder Datenexport und **jeder
-Zugriff über eine Vertretung, auch lesend**. *(Fassung 3)* Der Abruf eines freigegebenen
-Dokuments wird nicht protokolliert; die Freigabe steht am Datensatz. Ruft eine Vertretung ab,
-zählt das als ihr Lesen, höchstens ein Eintrag je Tag und Akte
-([ADR-010](ADR-010-audit-and-privileged-access.md) Punkt 22). Das bloße Lesen der eigenen Daten durch die Person selbst
-wird nicht einzeln protokolliert. Ein solcher Eintrag würde nur zeigen, dass jemand seine eigenen
-Termine gesehen hat, und das wiegt die Menge der Einträge nicht auf (Art. 5 Abs. 1 lit. c DSGVO).
-Die Vorschau der Praxis (DSN-001 D7) ist davon getrennt und wird wie ein Lesezugriff auf die Akte
-protokolliert.
-
-### F. Abgrenzung zur Praxisoberfläche
-
-**25. Eine Anwendung, zwei Oberflächen.** Es gibt kein zweites Deployment und keine zweite
-Anwendung (ADR-015 Punkt 1). Das Gate unterscheidet nach der Art des Kontos: Ein Praxiskonto
-bekommt die Praxisoberfläche, ein Plattformkonto das Gerüst aus DSN-001 unter eigenem Pfadpräfix
-(der SPEC wählt es). Ein Plattformkonto sieht nie Seitenleiste, Funktionssuche oder Praxisbegriffe.
-~~Ein Praxiskonto sieht das Plattformgerüst nur als Vorschau (D7, später).~~ Die Weiche im Router
-dient der Bedienung. **Der Schutz liegt in den Punkten 19 bis 21.** ~~*(Fassung 5)* Die Vorschau
-heißt **Einsicht**: Nur die Praxisinhaber:in öffnet sie, am aktiven eigenen Zugang einer Person
-(ANN-525, ANN-526). Gelesen wird über `platform_preview` mit fester Liste lesender Projektionen;
-der Server schaltet die Transaktion dabei auf „nur lesen" (ANN-529) und schreibt den Lesezugriff
-wie beim Öffnen der Akte (Punkt 24, keine neue Aktion). Die Oberfläche zeigt keine Schreibknöpfe,
-Seiten, die nur schreiben, sind nicht erreichbar, Dokumente und Anhänge werden nicht geöffnet
-(ANN-527); die Sicht einer Vertretung zeigt die Einsicht nicht (ANN-528). Was die Praxis nach
-einer Entscheidung nicht sieht, sieht sie auch hier nicht: Die Übungstage kommen leer, die Seiten
-sagen, dass nur die Person sie sieht (ANN-307).~~ *(Fassung 7)* Ein Praxiskonto sieht das
-Plattformgerüst nicht, auch nicht als Vorschau (Jannes, 2026-10-26). Was die Person auf der
-Plattform hat, steht für die Praxis im Abschnitt „Plattform“ der Akte.
-
-**26. Der Plattformcode ist ein eigenes Feature** unter `src/features/` (ADR-015 Punkt 23). Er
-spricht nur Plattformprojektionen an. Ein Test oder eine Lint-Regel prüft, dass er keine
-Datenzugriffe der Praxisfeatures importiert. Gemeinsam sind nur Komponenten, Begriffe und
-`marke/`.
+`log_patient_record_view` werden auf Praxiskonten beschränkt oder gestrichen. Selbstbezüge von
+Mitarbeitenden (`staff_private_details`, Textbausteine, Vergütung) gehören zum Praxiskonto und
+bleiben.
+21. **Praxispfade verweigern Plattformkonten, ein Test beweist es für alle:** `organizations`,
+`locations` und `roles` nur für Praxiskonten, das Nötige liefert eine Projektion. Ein Test in
+`pnpm test:db` meldet ein Plattformkonto in jedem Zustand an und verlangt für alle Tabellen aus
+`pg_tables` und alle an `authenticated` freigegebenen Funktionen, auch neue: keine Zeile, jeder
+Aufruf abgewiesen; ausgenommen nur Plattformprojektionen und Funktionen für jedes Konto, als Liste
+im Test, deren Einträge Teil des Reviews sind.
+22. **Was für die Plattform bestimmt ist, steht am Objekt, nicht in der Oberfläche:** eine Rechnung,
+weil sie gestellt ist, ein Dokument, weil es einzeln freigegeben ist (DSN-001 D3), ein Termin ohne
+interne Notiz, ein Plan, weil er der Person zugewiesen ist. Jede Projektion gibt nur die Felder
+einer festen Liste heraus; Befund, Behandlungsdokumentation, interne Notizen und Patientenfotos
+kommen in keiner vor (ADR-017 Punkt 37).
+23. **Jede Plattformprojektion hat ihre Negativfälle** (ADR-013 Fassung 4, Punkt 9 Nr. 1): fremde
+Person; anderes Verhältnis derselben Person ohne Zugang (anderer Leistungsbereich); Zugang
+`invited`, `locked` und `revoked`; abgelaufene Lesefrist (D2); Praxiskonto; andere Organisation; bei
+Einwilligung, Widerruf und Export zusätzlich die Begleitung.
+24. **Protokolliert wird, was nachzuweisen ist** (W5): jede Änderung an einem Zugang und jeder
+abgewiesene Versuch dazu (G6c), jeder Schreibvorgang der Person (Wunsch, Nachricht, Einwilligung,
+Widerruf), jeder Datenexport und jeder Zugriff über eine Vertretung, auch lesend. *(Fassung 3)* Für
+den Abruf freigegebener Dokumente gilt ADR-010 Punkt 22. Das bloße Lesen der eigenen Daten durch
+die Person wird nicht einzeln protokolliert (Art. 5 Abs. 1 lit. c DSGVO).
+25. **Eine Anwendung, zwei Oberflächen:** kein zweites Deployment, keine zweite Anwendung oder
+Subdomain (ADR-015 Punkt 1). Das Gate unterscheidet nach Kontoart: Praxiskonten bekommen die
+Praxisoberfläche, Plattformkonten das Gerüst aus DSN-001 unter eigenem Pfadpräfix, nie Seitenleiste,
+Funktionssuche oder Praxisbegriffe. Die Weiche im Router dient der Bedienung, der Schutz liegt in
+den Punkten 19 bis 21. Ein Praxiskonto sieht das Plattformgerüst nicht, auch nicht als Vorschau
+(Fassung 7; dafür Punkt 6).
+26. **Der Plattformcode ist ein eigenes Feature** unter `src/features/` (ADR-015 Punkt 23) und
+spricht nur Plattformprojektionen an; ein Test oder eine Lint-Regel prüft, dass er keine
+Datenzugriffe der Praxisfeatures importiert. Gemeinsam sind nur Komponenten, Begriffe und `marke/`.
 
 ## Konsequenzen
-
-- **POR-EPIC-001 beginnt mit Aufräumen, nicht mit Bauen.** Erst Punkt 20 (Selbstzugriff) und
-  Punkt 21 (offene Tabellen, Test über alle Tabellen), dann der Zugang. Umgekehrt stünde ein
-  aktiver Zugang einen Moment lang auf alten Policies, die nach der Person fragen.
-- **Der Löschlauf lernt das Konto.** `app.delete_patient_record` lässt die `persons`-Zeile stehen,
-  solange `user_profiles` auf sie zeigt (`20260911180000_retention_run.sql`). Ohne Nachzug hielte
-  ein Plattformkonto die Stammdaten einer gelöschten Akte fest. Mit dem Verhältnis endet deshalb
-  sein Zugang, und das Konto fällt nach Punkt 5; der Löschlauf oder der Zugangsdienst entfernt es
-  beim Anmeldedienst. *(Fassung 2)* Der Nachweis des Zugangs überdauert das Verhältnis um seine
-  drei Jahre. Er darf dabei nicht an der `persons`-Zeile der Person des Verhältnisses hängen und
-  nicht deren Namen tragen, sonst hielte er ihre Stammdaten ebenso fest. Er trägt die Kennung des
-  Verhältnisses wie ein Auditeintrag. Bei einer Vertretung trägt er außerdem den Namen der
-  vertretenden Person, als Teil des Nachweises, weil deren Konto nach 30 Tagen fällt. Den Weg
-  legt der SPEC fest; ein Test in `retention-run` beweist ihn. Das ist
-  dieselbe Art Folge wie die vierte Prüfung aus ADR-021.
-- **Die Plattform ist gebaut, bevor sie scharf sein darf.** Zugangsdienst (Punkt 9) und
-  Mailversand (Punkt 10) laufen mit `mock` und lokal. Echte Konten brauchen OPS-001 für die Edge
-  Runtime, für Mails zusätzlich B13 mit eigener Anbieterprüfung. Beides steht in Block 11 und 12
-  und hält POR-EPIC-001 bis -003 nicht auf (§15.2).
-- **Personen ohne E-Mail-Adresse** bleiben in V1 ohne eigenes Konto (Punkt 7). Für hochbetagte
-  Patient:innen ist das hinnehmbar, weil die Begleitung (Punkt 13) genau diesen Fall trägt. Eine
-  Anmeldung per SMS hinge an B15 und ist nicht Teil dieses ADR.
-- **Das Auditlog bekommt einen zweiten Akteurstyp.** Bisher ist jeder Akteur ein Praxiskonto.
-  Plattformkonten und Vertretungen kommen hinzu. `list_audit_events` muss sie unterscheidbar
-  zeigen (Punkt 14). Auditzeilen werden nie umgeschrieben; neue Werte treten neben die alten.
-- **Die Datenschutzprüfung bekommt drei Fragen** (B2, B5): Genügt die persönliche Übergabe als
-  Identitätsprüfung (Punkt 11)? Genügt die dokumentierte Zustimmung zur Begleitung als
-  Schweigepflichtentbindung (Punkt 13)? Welche Frist gilt für Zugangsdaten (Punkt 5)? Fassung 2
-  hat zu allen drei eine begründete Antwort vorgelegt; die Prüfung bestätigt oder ändert sie.
-  Bis dahin gelten die Punkte als vorläufige Festlegung. Jeder ist an genau einer Stelle
-  verankert, die der Loop benennt, der ihn baut.
-- **Verworfen: der Selbstzugriff über `person_id`.** Er ist billig, weil er schon da ist. Aber er
-  schließt über die gemeinsame Identität von einem Verhältnis aufs andere (§4.8) und kennt keine
-  Sperre je Verhältnis.
-- **Verworfen: die Rolle `patient` in `user_roles`.** Eine Rolle gilt für die Person in der ganzen
-  Organisation. Die Plattform braucht einen Zugriff je Verhältnis und je Zustand. Zwei Quellen für
-  dieselbe Frage würden auseinanderlaufen.
-- **Verworfen: ein eigenes Portal als zweite Anwendung oder Subdomain.** Das hieße zweites
-  Deployment, zweite Auth-Konfiguration und zweite Prüfung, für eine Trennung, die ohnehin in der
-  Datenbank liegt (Punkt 19).
-- **Verworfen: Anmeldung nur per Mail-Link.** Ohne Kennwort ist sie für Ältere bequemer, bindet
-  aber jede Anmeldung an einen Versandweg, der fehlt (B13).
-- **Verworfen: Identitätsnachweis per Ausweis oder Video-Ident.** Ein neuer Anbieter mit
-  Gesundheitsbezug, ein Ausweisbild als neues Datum, und kein Gewinn gegenüber einer Praxis, die
-  die Person seit Wochen behandelt.
-
-## Bewusst nicht Bestandteil dieser Entscheidung
-
-- **Benachrichtigungen und Offline-Erfassung**: ADR-024.
-- **Einwilligungen als Funktion** (erteilen, nachweisen, widerrufen): POR-EPIC-003, auf PAT-006.
-  Dieser ADR legt nur fest, **wer** sie abgeben darf (Punkt 13).
-- **Das konkrete Schema**: Tabellen, Spalten, Funktionsnamen, Pfadpräfix. Das entscheidet der
-  SPEC (ADR-014).
-- **Die Wahl eines Versanddienstes**: B13, Block 11, eigener ADR nach ADR-002.
-- **Das Einsichtsverfahren nach § 630g BGB** und seine Identitätsprüfung (Punkt 12).
-- **Wortlaut** der Einladung, der Nutzungshinweise und der Hinweise zur Vertretung: im Loop und in
-  `src/lib/begriffe.ts`.
-- **Anmeldung per SMS**: erst, wenn B15 entschieden ist. *Passkeys sind mit Fassung 4 entschieden
-  (ADR-025 Fassung 2).*
+- **Der Löschlauf lernt das Konto:** Fällt das Verhältnis im Löschlauf, endet sein Zugang, und das
+Konto fällt nach Punkt 5 auch beim Anmeldedienst, damit es keine `persons`-Zeile einer gelöschten
+Akte hält (`app.delete_patient_record`). Der Nachweis läuft ohne Inhalt aus dem Verhältnis weiter:
+nicht an der `persons`-Zeile der Person und ohne ihren Namen, mit der Kennung des Verhältnisses wie
+ein Auditeintrag, bei einer Vertretung mit dem Namen der vertretenden Person; ein Test in
+`retention-run` beweist es.
 
 ## Offene Folgefragen
-
-- Was gilt beim **Tod** der vertretenen Person oder wenn eine Betreuung aufgehoben wird? Vorschlag:
-  Die Praxis entzieht den Zugang, sobald sie davon erfährt. Ein automatischer Weg fehlt, weil die
-  Anwendung davon nichts erfährt.
-- Wie prüft die Praxis den **Aufgabenkreis einer Betreuung** (Gesundheitssorge)? Vorschlag:
-  Vermerk „Betreuerausweis gesehen, Aufgabenkreis …" im Nachweis (Punkt 13). Rechtlich zu
-  bestätigen in B5.
-- Braucht eine Person mit **Praxiskonto** doch einen Plattformzugang (W1 b oder c)? Das fällt an,
-  sobald eine Mitarbeiterin in Behandlung ist und ihre Übungen sehen will.
-- ~~Wie lange bleibt ein Konto **ohne jeden Zugang** bestehen, bevor es fällt? (Punkt 5, B2.)~~
-  *Beantwortet mit Fassung 2, Punkt 5: 30 Tage; der Zugang mit Nachweis drei Jahre.*
-
-## Wahlpunkte — bestätigt
-
-**Jannes hat am 2026-09-30 alle sechs wie empfohlen bestätigt.** Die verworfenen Optionen
-bleiben als Rückweg stehen. Jede Wahl ist nach §15.1 reversibel gedacht. Die Rücknahme ist je Punkt genannt, verankert wird
-im Loop, der sie baut.
-
-**W1 — Person mit Praxiskonto.** (a) In V1 kein Plattformzugang für Personen mit Praxiskonto; sie
-bekommen Pläne als PDF. (b) Ein zweites Konto mit anderer Adresse; dafür muss
-`unique (organization_id, person_id)` in `user_profiles` fallen. (c) Ein Konto mit Umschalter
-zwischen Praxis und Plattform.
-**Empfehlung (a).** Der Fall ist selten. Mitarbeitende sehen ihre Akte als Therapeut:in ohnehin
-(§4.2). (c) würde Punkt 2 aufweichen und damit die klarste Grenze der Plattform. Rücknahme nach
-(b) `mittel`: eine Constraint, das Gate, der Löschlauf.
-
-**W2 — Übergabe der Einladung.** (a) Vor Ort per QR als Regelweg, Mail als zweiter Weg. (b) Nur per
-Mail.
-**Empfehlung (a).** Der Weg vor Ort funktioniert ohne B13, ist für 78-Jährige beim Hausbesuch der
-natürliche Moment und ist zugleich die Identitätsprüfung (Punkt 11). Rücknahme `klein`.
-
-**W3 — Arten der Vertretung.** (a) Zwei: rechtliche Vertretung und Begleitung. (b) Nur rechtliche
-Vertretung; Angehörige ohne Vollmacht bekommen keinen Zugang. (c) Eine Art ohne Unterschied.
-**Empfehlung (a).** In der mobilen Versorgung ist die Tochter, die die Termine koordiniert, häufiger
-als die Betreuerin. (b) würde sie zur Weitergabe der Zugangsdaten drängen, (c) sie Einwilligungen
-abgeben lassen, die ihr nicht zustehen. Rücknahme `klein`: eine Art mehr oder weniger.
-
-**W4 — Altersgrenze für ein eigenes Konto.** (a) 18 Jahre. (b) 16 Jahre, angelehnt an
-Art. 8 DSGVO.
-**Empfehlung (a).** Die restriktivere Seite (§16). Art. 8 regelt Einwilligungen in Dienste der
-Informationsgesellschaft, nicht den Zugang zu Behandlungsdaten. Rücknahme `klein`: eine Zahl.
-
-**W5 — Was protokolliert wird.** (a) Wie Punkt 24: alles Schreibende, Downloads, Export, jede
-Vertretung, das eigene Lesen nicht. *(Fassung 3: Downloads nicht mehr, Punkt 24.)* (b) Zusätzlich jedes Öffnen einer Plattformansicht durch die
-Person selbst.
-**Empfehlung (a).** Nachvollziehbarkeit ist die Kompensation für fremde Zugriffe (ADR-004), und
-fremd ist hier nur die Vertretung. Rücknahme `klein`: ein Ereignis mehr in den Projektionen.
-
-**W6 — Wann die Vertretung gebaut wird.** (a) In POR-EPIC-001, mit dem eigenen Zugang. (b) Als
-eigener Loop **POR-EPIC-001b** direkt danach, vor POR-EPIC-002. Der Zugang aus POR-EPIC-001 ist
-so gebaut, dass die Vertretung hinzukommt, ohne ihn umzubauen.
-**Empfehlung (b).** POR-EPIC-001 ist mit Aufräumen, Zugang, Zugangsdienst und dem Test über alle
-Tabellen schon ein kritischer Loop mit Zweitreview (ADR-013 Punkt 9). Die Vertretung bringt einen
-zweiten Akteurstyp und eigene Negativfälle mit und verdient einen eigenen Review. Vor POR-EPIC-002
-muss sie stehen, denn ab dort gibt es etwas zu sehen. Rücknahme `klein`: Reihenfolge.
+- offen: B5 (OPEN_DECISIONS, ANFRAGEN Fragen 1 bis 4); bis dahin gelten Punkte 5, 11, 13 vorläufig.
+- Tod der Vertretenen, Aufhebung der Betreuung: Vorschlag, Entzug durch die Praxis, sobald bekannt.
+- Zugang mit Praxiskonto, wenn eine Mitarbeiterin in Behandlung ihre Übungen sehen will? W1 b:
+zweites Konto, `unique (organization_id, person_id)` fällt; c: Umschalter.
 
 ## Änderungshistorie
-
-| Fassung | Datum | Änderung |
-| --- | --- | --- |
-| 1 | 2026-09-30 | Erstfassung nach DSN-001 (bestätigt 2026-09-30); 26 Punkte, Wahlpunkte W1 bis W6; am selben Tag angenommen, W1 bis W6 wie empfohlen. |
-| 2 | 2026-09-30 | **Punkt 5 geändert** (Jannes): Konto 30 Tage nach dem letzten Zugang, Zugang mit Nachweis drei Jahre wie das Auditlog statt zwölf Monate; Wortlaut der Fassung 1 im Punkt. Punkt 11: Mail nur an eine von der Person selbst bestätigte Adresse. Punkt 13: Ausweis und Vollmacht ansehen, nichts speichern; Einwilligung zur Begleitung nach Art. 9 Abs. 2 lit. a mit vier Bedingungen. Erledigungsvermerk in den Folgefragen. Übrige Punkte und W1 bis W6 unverändert. |
-| 3 | 2026-10-09 | BEF-138, Entscheidung von Jannes in der Abnahme vom 2026-10-09 (ANN-249): **Punkt 24** ohne „jeder Dokumentabruf"; der Abruf eines freigegebenen Dokuments wird nicht protokolliert, bei einer Vertretung zählt er als Lesen (ADR-010 Fassung 4, Punkt 22). W5 mit Vermerk. Übrige Punkte unverändert. |
-| 4 | 2026-10-10 | Anmeldung ohne Kennwort nach ADR-025 Fassung 2 (Jannes): Passkey als Anmeldung, App-PIN als Rückweg der Freigabe, kein Kennwort. Geändert sind die Punkte 1, 7, 8, 10, 13, 17 und 18 und die Liste „Nicht entschieden“, jeweils mit Vermerk. *Zeile nachgetragen 2026-10-14 aus der Statuszeile.* |
-| 5 | 2026-10-14 | E-001 (Befund B11): **Punkt 25** mit Vermerk — die Vorschau (DSN-001 D7) ist als Einsicht gebaut: owner, eigener aktiver Zugang, Verteiler `platform_preview` mit fester Liste, nur lesende Transaktion, Protokoll nach Punkt 24 mit den vorhandenen Aktionen (ANN-525 bis ANN-529), ohne die Übungstage (ANN-307). **Punkt 19** mit Vermerk: der zweite, nur lesende Weg des Wächters. Übrige Punkte unverändert. |
-| 6 | 2026-10-20 | BEF-189, Entscheidung von Jannes (wie empfohlen): **Punkt 13** — eine Begleitung exportiert ihre eigene Wahl zu Benachrichtigungen (`platform_export_notifications`), nichts von der Person; protokolliert nach Punkt 24 ohne neue Aktion. Übrige Punkte unverändert. |
-| 7 | 2026-10-26 | Aufräumen M7, Entscheidung von Jannes: Die Einsicht der Praxis in die Plattform entfällt. **Punkt 19** und **Punkt 25** mit Vermerk; Verteiler `platform_preview` und die Freigabe im Wächter sind entfernt (Migration `20261225070000_einsicht_entfernt.sql`). Übrige Punkte unverändert. |
+- Fassung 1 (2026-09-30, Jannes): angenommen, W1 bis W6 wie empfohlen.
+- Fassung 2 (2026-09-30, Jannes): Konto 30 Tage, Zugang mit Nachweis drei Jahre statt zwölf Monate
+(Punkt 5), bestätigte Mailadresse, Ausweis und Vollmacht ansehen, Bedingungen der Begleitung
+(Punkte 11, 13).
+- Fassung 3 (2026-10-09, Jannes, BEF-138, ANN-249): Punkt 24 ohne Dokumentabruf.
+- Fassung 4 (2026-10-10, Jannes): Passkey statt E-Mail und Kennwort (ADR-025 Fassung 2).
+- Fassung 5 (2026-10-14, E-001, Befund B11): Einsicht der Praxis (D7) für `owner`, nur lesend.
+- Fassung 6 (2026-10-20, Jannes, BEF-189): Export der Begleitung (Punkt 13).
+- Fassung 7 (2026-10-26, Jannes): Einsicht der Praxis entfällt (Punkte 19, 25).
+- Fassung 8 (2026-10-27, Jannes): Trainingszugang aus dem Vertrag ohne Einladung (Punkte 7, 11,
+ANN-291).
+- Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.

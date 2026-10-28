@@ -1,461 +1,93 @@
 # ADR-018: Zustandsautomat des Termins
-
 ## Status
-
-**Angenommen** — vom Projektinhaber am 2026-09-11 bestätigt, alle sieben
-Fragen wie empfohlen. `PROJECT_PRINCIPLES.md` §8 ist mit Version 0.7
-nachgezogen (§21), Punkt D in `OPEN_DECISIONS.md` ist geschlossen.
-
-**Fassung 2 (2026-09-12)** — begrenzte Ergänzung nach einer Festlegung des
-Projektinhabers: Die Frist für das Ausfallhonorar ist entschieden (24 Stunden,
-Punkt 8), und das Nichtantreffen verliert seine Pflichtentscheidung über das
-Honorar (Punkt 4 neu gefasst). Fassung 1 hatte beides ausdrücklich offen
-gelassen beziehungsweise anders geregelt; was sich ändert, steht in Punkt 8
-und ist dort als Änderung gekennzeichnet. Alles Übrige gilt unverändert.
-
-**Fassung 3 (2026-09-13)** — nach einer verbindlichen Festlegung des
-Projektinhabers zu den Hausbesuch-Szenarien (E14 in `OPEN_DECISIONS.md`
-erledigt; `PROJECT_PRINCIPLES.md` 0.10 §8): Das Nichtantreffen nach Protokoll
-löst eine Ausfallgebühr aus, und „Tür geöffnet, keine Behandlung" gilt als
-durchgeführt (Punkt 9 neu; Punkt 8 Nr. 5 und Punkt 4 entsprechend geändert).
-Außerdem holt Fassung 3 drei Korrekturen aus dem Dokumentations-Audit nach:
-der Übergang `confirmed → documented` aus ANN-036 steht jetzt im ADR, der
-Storno-Rückweg nach `cancelled` ist benannt, und „genau ein Anlass" ist
-berichtigt. Fassung 2 hatte Punkt 4 aus Fassung 1 umgekehrt; Fassung 3 kehrt
-ihn in der Sache zurück — beides Festlegungen des Projektinhabers, beides hier
-als Umkehr benannt (Fassungsregel in `docs/adr/README.md`).
-
-**Fassung 4 (2026-10-02)** — nach der Abnahme der Annahmen durch den
-Projektinhaber (BEF-094, ANN-047): Punkt 8 Nr. 4 neu gefasst. Eine
-kurzfristige Verlegung durch die Patient:in löst die 24-Stunden-Regel aus wie
-eine Absage; die Verlegung nennt deshalb, wer sie veranlasst hat. Neu ist
-Nr. 6, der bewusste Verzicht auf eine Gebühr als eigener Vermerk. Umsetzung
-ABN-006. Alles Übrige gilt unverändert.
-
-**Fassung 5 (2026-10-14)** — nach den Befunden B4 und B7 des Projektinhabers
-(BEF-154, BEF-157): Am Behandlungstermin ist der **Haken** ein Merkmal neben
-dem Zustand (Punkt 10 neu). Die Finalisierung hakt nicht mehr ab; das kehrt
-den Zusatz „setzt `completed_at` mit" aus Fassung 3 in Punkt 2 für den
-Behandlungstermin um — eine ausdrückliche Umkehr eines einzelnen Punktes durch
-den Projektinhaber, der alte Wortlaut bleibt in der Tabelle lesbar. Punkt 9
-Nr. 2 trägt dazu einen Vermerk. Alles Übrige gilt unverändert.
-
-*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
-
-## Datum
-
-2026-09-11 · Fassung 2: 2026-09-12 · Fassung 3: 2026-09-13 · Fassung 4: 2026-10-02 · Fassung 5: 2026-10-14
+Angenommen 2026-09-11 (Jannes), Fassung 5 (2026-10-14); Umkehr in Punkt 2 und 4; Protokoll: ADR-010.
 
 ## Kontext
-
-§8 von `PROJECT_PRINCIPLES.md` behandelt bestätigte Termine als fix und
-verbietet, sie automatisch zu verschieben — sagt aber ausdrücklich: „Der
-Zustandsautomat des Termins ist noch nicht definiert." `OPEN_DECISIONS.md`
-führt ihn als Punkt D mit Dringlichkeit P1.
-
-Zwei Teile davon sind bereits entschieden:
-
-- **Umfang (Jannes, 2026-09-05):** der vollständige Automat — angefragt,
-  vorgemerkt, bestätigt, abgesagt, nicht angetroffen, durchgeführt,
-  dokumentiert, abgerechnet. Ausdrücklich **nicht** die Minimalvariante mit
-  nur „nicht angetroffen".
-- **Eine Vorfrage (Jannes, 2026-09-08):** „angefragt" und „vorgemerkt" werden
-  **nur vorgesehen, nicht gebaut**. Ohne Patientenportal gibt es niemanden,
-  der einen Termin anfragt, und ADR-014 verbietet das Vorbauen.
-  *Voraussetzung entfallen am 2026-09-22: Die Plattform gehört zum Umfang der
-  Eröffnung (`PROJECT_PRINCIPLES.md` §4.6, §8, §14). Die Zustände werden damit
-  zu einem konkreten Auftrag und entstehen mit dem Loop, der Terminwünsche
-  einführt.*
-
-Offen ist die Ausgestaltung: Übergänge und ihre Auslöser, die Migration der
-heute vorhandenen Status, ob „dokumentiert" und „abgerechnet" gesetzt oder
-abgeleitet werden, das Ausfallhonorar am Nichtantreffen und das Verhältnis von
-Terminserie zu Terminstatus.
-
-**Was heute existiert.** `public.appointments.status` kennt drei Werte:
-`scheduled` (CAL-001), `completed` und `cancelled` (CAL-004). Ein
-abgeschlossener Termin belegt seinen Zeitraum weiter, ist nicht direkt
-bearbeitbar und muss zum Ändern ausdrücklich wieder geöffnet werden. Jeder
-Wechsel schreibt einen Auditeintrag. `complete_treatment` (UX-007) fasst
-Dokumentation und Abschluss in **einer** Transaktion zusammen, ohne eigene
-Fachlogik: sie ruft die bestehenden Funktionen.
-
-**Was daran hängt.** ADR-009 lässt Leistungen aus „durchgeführten Terminen"
-entstehen und führt das Ausfallhonorar bei den bewusst offenen Punkten. §19
-bindet die Fakturierung an eine finalisierte Dokumentation — bisher ohne
-technischen Anker, weshalb ANN-005 diese Kopplung an Leistung und Rechnung
-verweist statt an den Terminstatus.
+Offen war der Automat (Punkt D, §8), von Jannes vollständig verlangt, nicht minimal (2026-09-05).
+Nicht Gegenstand: Werteliste der Absagegründe (CAL-008); Höhe, Steuerkennzeichen und Abrechnungsweg
+des Ausfallhonorars (ABR-001, ABR-003); Terminserie (CAL-007), Terminfenster (CAL-010a, §8.1).
 
 ## Entscheidung
-
-### 1. Ein Statusfeld, acht Werte, sechs davon erreichbar
-
-Der Zustand bleibt **ein** Feld auf `appointments`. Die Werte sind englische
-Bezeichner wie bisher; die deutschen Beschriftungen liegen in der Oberfläche
-(dasselbe Muster wie der Retention Schedule in LOE-001a).
-
-| Wert | Deutsch | In V1 |
-|---|---|---|
-| `requested` | angefragt | **nur beschrieben, nicht gebaut** |
-| `tentative` | vorgemerkt | **nur beschrieben, nicht gebaut** |
-| `confirmed` | bestätigt | erreichbar |
-| `cancelled` | abgesagt | erreichbar |
-| `no_show` | nicht angetroffen | erreichbar |
-| `completed` | durchgeführt | erreichbar |
-| `documented` | dokumentiert | erreichbar |
-| `invoiced` | abgerechnet | erreichbar (mit ABR-003) |
-
-`requested` und `tentative` stehen **nicht** in der Datenbank-Constraint. Sie
-sind hier benannt, damit die späteren Portal-Features (Etappe 4) keinen
-zweiten Automaten erfinden — mehr nicht. Ein Wert, den niemand setzen kann,
-wäre Vorbau (ADR-014).
-
-### 2. Die Übergänge und wer sie auslöst
-
-Alles, was schreibt, ist eine `SECURITY DEFINER`-Funktion mit eigener
-Rollenprüfung und eigenem Auditereignis (ADR-004, ADR-010). Es gibt **keinen**
-freien Statuswechsel über die Tabelle.
-
-| Von | Nach | Auslöser | Wer |
-|---|---|---|---|
-| — | `confirmed` | `create_appointment` | Rollen der Terminverwaltung |
-| `confirmed` | `cancelled` | `cancel_appointment` (Grund Pflicht) | Terminverwaltung |
-| `confirmed` | `no_show` | `record_no_show` (Ausfallhonorar-Kennzeichen) | Terminverwaltung |
-| `confirmed` | `completed` | `complete_appointment`, auch aus `complete_treatment` | therapeutische Rollen |
-| `completed` | `documented` | Finalisierung der Dokumentation (ADR-016) | derselbe Vorgang, dieselbe Transaktion |
-| `confirmed` | `documented` | Finalisierung der Dokumentation eines noch nicht abgeschlossenen Termins, auch automatisch nach ADR-016 Punkt 7; setzt `completed_at` am Trainingstermin mit (**Fassung 3**, aus ANN-036), am Behandlungstermin seit **Fassung 5** nicht mehr (Punkt 10). *Fassung 3 lautete: „setzt `completed_at` mit"* | derselbe Vorgang, dieselbe Transaktion |
-| `documented` ohne Haken | `documented` mit Haken | `complete_appointment` am Behandlungstermin (**Fassung 5**, Punkt 10) | therapeutische Rollen |
-| `documented` mit Haken | `documented` ohne Haken | `reopen_appointment` am Behandlungstermin (**Fassung 5**, Punkt 10) | therapeutische Rollen |
-| `completed` | `confirmed` | `reopen_appointment` | therapeutische Rollen |
-| `no_show` | `confirmed` | `reopen_appointment` | therapeutische Rollen |
-| `documented` | `invoiced` | Ausstellung der Rechnung (ABR-003) | derselbe Vorgang, dieselbe Transaktion |
-| `no_show` | `invoiced` | Ausstellung der Rechnung über das Ausfallhonorar | wie oben |
-| `cancelled` | `invoiced` | Ausstellung der Rechnung über die Ausfallgebühr einer Absage mit Gebührenanlass (**Fassung 2**, Punkt 8) | wie oben |
-| `invoiced` | `documented`, `no_show` bzw. `cancelled` | Storno der Rechnung (ADR-009) — zurück in den Zustand vor der Ausstellung (**Fassung 3**: `cancelled` ergänzt) | wie oben |
-
-**`cancelled` ist endgültig.** Ein versehentlich abgesagter Termin wird neu
-angelegt, nicht wiederbelebt: Die Absage ist gegenüber der Patientin
-kommuniziert worden, und ein stiller Rückweg würde diese Tatsache verwischen.
-Endgültig heißt: **kein Rückweg nach `confirmed`.** Der Übergang nach
-`invoiced` und zurück per Storno (Fassung 2 und 3) ändert daran nichts — der
-Termin bleibt eine Absage, der Gebührenanlass ist ein Merkmal daneben.
-
-**`documented` kehrt nicht nach `confirmed` zurück.** Ist die Dokumentation
-finalisiert, ist sie Bestandteil der Akte (ADR-016). Ein Irrtum wird dort
-korrigiert — als Korrektur mit Begründung, die eine neue Version erzeugt —,
-nicht dadurch, dass der Termin wieder aufgemacht wird. Eine Korrektur ändert
-den Terminstatus **nicht**.
-
-### 3. `documented` und `invoiced` werden gesetzt, nicht abgeleitet
-
-Beide Werte setzt **der Vorgang, dem die Tatsache gehört**, in derselben
-Transaktion: die Finalisierung beziehungsweise die Rechnungsausstellung. Es
-gibt keine Oberfläche, die sie von Hand setzt, und keinen nachgelagerten Lauf,
-der sie nachträgt.
-
-Damit gilt als prüfbare Invariante: `status = 'documented'` **genau dann**,
-wenn zu diesem Termin eine finalisierte Dokumentation existiert;
-`status = 'invoiced'` **genau dann**, wenn eine ausgestellte, nicht stornierte
-Rechnung ihn führt. Beide Richtungen gehören in `pnpm test:db`.
-
-Die Alternative — beide nur aus den Quelltabellen ableiten und gar nicht im
-Status führen — wäre normalisierter, verlangte aber für jede Terminliste einen
-Join auf Dokumentation und Rechnung. Das trifft die Tagesliste und den
-Kalender, also die beiden meistgelesenen Sichten. Die gewählte Lösung zahlt
-dafür mit der Pflicht, die Invariante zu testen.
-
-### 4. Das Ausfallhonorar ist ein Kennzeichen, kein Geldbetrag
-
-**Fassung 2, 2026-09-12 — neu gefasst.** Der Termin trägt ein Kennzeichen
-**Gebührenanlass** (`fee_basis`): entweder nichts, oder den Grund, aus dem eine
-Gebühr entstehen soll. Es sagt damit nur, **ob** abgerechnet werden soll und
-**woraus**. **Wie viel** steht im Leistungskatalog (ABR-001), und ob eine
-Rechnung entsteht, entscheidet ABR-003. ADR-009 führt das Ausfallhonorar
-bewusst als offenen Punkt; dieser ADR nimmt ihm nichts vorweg außer dem
-Anknüpfungspunkt.
-
-Gesetzt wird das Kennzeichen **ausschließlich vom Server**: aus der Frist in
-Punkt 8 (`late_cancellation`) und — **Fassung 3** — aus dem bestätigten
-Protokoll des Nichtantreffens in Punkt 9 (`no_show`). Es gibt in V1 damit
-zwei Anlässe; Bestandszeilen aus Fassung 1 tragen `no_show` bereits.
-
-*In Fassung 1 stand hier:* „`no_show` trägt ein **Pflicht**kennzeichen
-‚Ausfallhonorar ja/nein', gesetzt im selben Schritt wie den Zustand." Fassung 2
-hatte diese Entscheidung gestrichen; **Fassung 3** ersetzt sie nicht durch
-eine Wahl, sondern durch eine Regel: Nach bestätigtem Protokoll entsteht die
-Gebühr immer (Punkt 9). *(Fassung 2 sagte hier: „genau einen Anlass:
-`late_cancellation`" — das war schon wegen der Bestandszeilen mit `no_show`
-ungenau.)*
-
-### 5. Die Serie hat keinen Status
-
-Eine Terminserie (CAL-007) ist eine Erzeugungsregel, kein Zustandsträger.
-Jeder Termin trägt seinen eigenen Status, und jede Änderung an einem Termin
-der Serie ist ein eigener Vorgang mit eigenem Auditeintrag. „Die Serie
-absagen" ist eine Bedienhilfe, die n Einzelabsagen auslöst — keine neunte
-Zustandsänderung.
-
-### 6. Migration der heutigen Daten
-
-In derselben Migration, die die Constraint ersetzt:
-
-- `scheduled` → `confirmed`,
-- `cancelled` → `cancelled` (unverändert; siehe unten zum Grund),
-- `completed` → `completed`, **außer** der Termin trägt bereits eine
-  finalisierte Dokumentation: dann `documented`.
-
-Die Umbenennung `scheduled` → `confirmed` berührt jede Abfrage, jeden Filter,
-die EXCLUDE-Constraint und die Planungsregeln. Das ist mechanische, aber breite
-Arbeit; sie gehört in CAL-008 und in keinen späteren Loop. Der Preis wird hier
-bewusst bezahlt: Ein Feld, das `scheduled` heißt und „bestätigt" bedeutet,
-wäre eine Lüge im Datenmodell, die jede spätere Portal-Erweiterung erbt.
-
-**Der Absagegrund wird nicht rückwirkend erfunden.** Er ist Pflicht für jede
-**neue** Absage; bestehende Zeilen behalten `null`. Dieselbe Abgrenzung wie
-beim Terminfenster (CAL-010a) und beim Raster (CAL-005): Bestandsdaten bleiben
-gültig.
-
-### 7. Was der Automat nicht regelt
-
-- **Keine automatischen Übergänge durch Zeitablauf.** Ein Termin, dessen Zeit
-  vorbei ist, wird **nicht** von selbst `completed` oder `no_show`. Was
-  stattgefunden hat, weiß nur die behandelnde Person. (Die automatische
-  Finalisierung aus ADR-016 Punkt 7 bleibt davon unberührt: sie schreibt eine
-  Dokumentation fest, die bereits existiert.)
-- **Keine Zustandsänderung offline** (ADR-001).
-- **Keine Statusänderung ohne Auditeintrag** (ADR-010).
-
-### 8. Die Frist des Ausfallhonorars — und warum das Nichtantreffen keine trägt
-
-**Neu in Fassung 2 (2026-09-12).** Der Projektinhaber hat festgelegt:
-
-> Patientenabsage weniger als 24 Stunden vor Behandlungsbeginn →
-> Ausfallgebühr. Person beim Hausbesuch vor Ort nicht angetroffen → Termin
-> abhaken mit Vermerk.
-
-Daraus folgen fünf Festlegungen:
-
-1. **Der Eingang der Absage ist ein eigenes Datum.** `cancellation_received_at`
-   hält fest, **wann die Absage die Praxis erreicht hat**; `cancelled_at` hält
-   unverändert fest, **wann sie eingetragen wurde**. Die beiden fallen im
-   Alltag auseinander: Der Anruf kommt abends aufs Band, eingetragen wird am
-   nächsten Morgen. Ohne die Trennung entschiede die Schreibgeschwindigkeit des
-   Büros über eine Forderung gegen eine Patientin.
-2. **Die Frist rechnet der Server**, aus dem Eingang und dem vereinbarten
-   Beginn des Termins, nie aus der Eingabezeit und nie im Browser. Sie ist eine
-   Geldfrage (§19); eine im Browser gerechnete Frist wäre weder prüfbar noch
-   verlässlich.
-3. **Weniger als 24 Stunden heißt weniger als 24 Stunden.** Genau 24 Stunden
-   liegen **außerhalb** der Regel. Gerechnet wird in absoluten Stunden auf
-   Zeitstempeln mit Zone; eine Zeitumstellung verschiebt die Grenze deshalb um
-   die Stunde, die sie auch in Wirklichkeit verschiebt.
-4. **Fassung 4 — Was die Patient:in veranlasst, löst aus.** Die Absage durch
-   die Patient:in (`patient_request`) und die **Verlegung durch die
-   Patient:in** (`patient_moved`) lösen die Regel aus: Auch eine kurzfristige
-   Verlegung gibt den vereinbarten Termin frei. Eine Verlegung nennt deshalb,
-   wer sie veranlasst hat; die Praxisverlegung (`practice_moved`) und die
-   praxisbedingte Absage (`practice_request`) lösen nie aus, „Sonstiger Grund"
-   (`other`) ebenfalls nicht. Der Bestandswert `moved` aus der Zeit davor
-   bleibt gültig und wird nicht umgedeutet. Ein Termin, dessen Zeit nur
-   geändert wird, ist nicht ausgefallen und trägt keinen Anlass (ANN-212).
-   *In Fassung 2 stand hier:* „Nur die Patientenabsage löst aus. […]
-   ‚Verlegt' und ‚Sonstiger Grund' lösen ebenfalls keine automatische Gebühr
-   aus — beides sagt über den Anlass zu wenig."
-5. ~~**Das Nichtantreffen trägt keine Gebührenentscheidung.** Der Vermerk ist
-   ein datensparsamer organisatorischer Abschluss: ein Tap, kein Formular. Aus
-   ihm allein entsteht **keine** Gebühr. Ob das Nichtantreffen beim Hausbesuch
-   eine eigene Gebührenregel bekommen soll, ist **offen**.~~ **Mit Fassung 3
-   entschieden — siehe Punkt 9**, seit CAL-018 (2026-09-16) auch gebaut. Am
-   Praxis- und am Videotermin gilt der hier beschriebene Stand weiter
-   (ANN-055).
-6. **Fassung 4 — Der Verzicht ist ein eigener Vermerk.** Die Praxis kann im
-   Einzelfall bewusst auf eine Gebühr verzichten. Der Verzicht löscht den
-   Anlass nicht: `fee_basis` bleibt, daneben stehen Zeitpunkt und Person des
-   Verzichts, und das Auditlog führt `appointment.fee_waived`. Danach ist der
-   Anlass nicht mehr abrechenbar. Wer verzichten darf und bis wann, regelt
-   ANN-213.
-
-Der Termin bleibt in allen Fällen als **abgesagt** beziehungsweise **nicht
-angetroffen** erkennbar. Der Gebührenanlass ist ein Merkmal daneben, kein
-eigener Zustand: Eine Absage mit Gebühr ist eine Absage.
-
-**Was das für Bestandsdaten heißt.** Nichts. Historische Vorgänge werden nicht
-nachträglich umgedeutet und bekommen keine Gebühr: Für eine Absage ohne
-festgehaltenen Eingang gibt es keine Frist zu rechnen, und ein bereits
-gesetztes Ausfallhonorar-Kennzeichen aus Fassung 1 wandert unverändert als
-`fee_basis = 'no_show'` mit — es war eine ausdrückliche Entscheidung eines
-Menschen und bleibt eine.
-
-**Was daran hängt.** Der Löschlauf (ADR-008, ANN-035): Ein Vorgang mit
-Gebührenanlass wird **nicht** nach der Dreijahresfrist gelöscht — er ist die
-Grundlage einer Forderung. Das galt bisher für den No-show mit Kennzeichen und
-gilt ab jetzt genauso für die Absage mit `late_cancellation`. Und die
-Rechnung: Zu den Übergängen in Punkt 2 tritt mit ABR-003
-`cancelled → invoiced` für eine Absage mit Gebührenanlass, parallel zu
-`no_show → invoiced` (seit Fassung 3 auch in der Tabelle in Punkt 2).
-
-### 9. Die drei Hausbesuch-Szenarien
-
-**Neu in Fassung 3 (2026-09-13).** Der Projektinhaber hat verbindlich
-festgelegt (E14 erledigt, `PROJECT_PRINCIPLES.md` 0.10 §8):
-
-> Tür geöffnet, Behandlung findet auf Angabe der Patient:in nicht statt →
-> Termin gilt als durchgeführt, Pflichtvermerk in der Dokumentation, normale
-> Abrechnung, keine Ausfallgebühr. Nicht angetroffen nach Protokoll
-> (15 Minuten gewartet, geklingelt, angerufen) → nicht wahrgenommen,
-> Ausfallgebühr. Absage unter 24 Stunden → Ausfallgebühr.
-
-Daraus folgen vier Festlegungen:
-
-1. **Das Nichtantreffen setzt den Gebührenanlass, sobald das Protokoll
-   bestätigt ist.** `record_no_show` verlangt die Bestätigung der drei
-   Protokollschritte als Pflichtangabe und setzt dann `fee_basis = 'no_show'`
-   serverseitig; ohne Bestätigung gibt es kein Nichtantreffen — der Termin
-   bleibt `confirmed`, bis die behandelnde Person entscheidet. Der Vermerk
-   bleibt datensparsam: Er erscheint weder als Behandlung noch als verbrauchte
-   Verordnungsleistung.
-2. **„Tür geöffnet, keine Behandlung" ist kein eigener Zustand.** Der Termin
-   wird über `complete_treatment` abgeschlossen und dokumentiert; die
-   Dokumentation trägt einen **Pflichtvermerk** (ein Merkmal am Eintrag, dessen
-   Zuschnitt CAL-018 festlegt — kein Freitext als einzige Quelle). Damit
-   entsteht `documented`, und die Rechnung folgt dem regulären Weg aus Punkt 2.
-   Eine Ausfallgebühr entsteht nicht; `fee_basis` bleibt leer.
-   *(Fassung 5: `complete_treatment` dokumentiert nur noch; abgehakt wird
-   getrennt nach Punkt 10, und mit dem Haken entsteht die Leistung wie an
-   jedem Behandlungstermin — normal abgerechnet, ADR-009 Punkt 24.)*
-3. **Die Oberfläche führt erklärend durch die drei Szenarien** — welcher Fall
-   vorliegt, was daraus folgt, welche Angabe fehlt. Die Erklärung ist
-   Bedienhilfe, keine Auswertung; sie wertet nichts je Person aus (§20).
-4. **Rechnungstext und Rechtsgrundlage für Szenario 1** (Vergütung ohne
-   erbrachte Behandlung) legt dieser ADR nicht fest; sie gehen als Festlegung
-   des Projektinhabers in die Anfrage B4 (`OPEN_DECISIONS.md`, E14).
-
-**Umgesetzt mit CAL-018 (2026-09-16).** `record_no_show` verlangt am
-Hausbesuchstermin die Bestätigung des Protokolls und setzt daraufhin
-`fee_basis = 'no_show'`; der Pflichtvermerk aus Nr. 2 ist das Merkmal
-`treatment_notes.visit_without_treatment`, gesetzt im Abschluss. Für Praxis-
-und Videotermine trifft E14 keine Aussage; dort bleibt es beim Vermerk ohne
-Gebühr (ANN-055, Wiedervorlage bei Jannes).
-
-### 10. Der Haken am Behandlungstermin
-
-**Neu in Fassung 5 (2026-10-14).** Der Projektinhaber hat festgelegt (B4, B7):
-
-> Dokumentieren und Abhaken sind getrennt. Eine festgeschriebene Doku hakt den
-> Termin nicht ab; abgehakt wird in der Übersicht oder im Kalender, und dort
-> lässt es sich jederzeit rückgängig machen. Der Haken heißt: Leistung
-> erbracht.
-
-Daraus folgen fünf Festlegungen:
-
-1. **Der Haken ist ein Merkmal, kein neunter Zustand.** Am Behandlungstermin
-   tragen `completed_at` und `completed_by` den Haken. `completed` bleibt
-   „abgehakt, noch nicht dokumentiert"; ein `documented` Termin steht mit
-   oder ohne Haken.
-2. **Die Finalisierung setzt den Haken nicht** ([ADR-016](ADR-016-clinical-documentation-record.md)
-   Punkt 4); sie hebt wie bisher auf `documented` (Punkt 3).
-3. **Zurücknehmen geht jederzeit:** aus `completed` nach `confirmed` wie
-   bisher, an `documented` nur das Merkmal — `documented` kehrt nicht nach
-   `confirmed` zurück (Punkt 2). Wer und wann stehen in `reopened_by` und
-   `reopened_at`.
-4. **Mit dem Haken entsteht die Leistung, mit der Rücknahme fällt sie**
-   ([ADR-009](ADR-009-private-billing-model.md) Punkt 24), solange keine
-   Rechnung und kein Rechnungsentwurf sie führt; sonst hält der Vorgang an.
-   Ist die Grundlage in die Abrechnung gestellt, ist der Haken gesperrt
-   ([ADR-020](ADR-020-treatment-basis.md) Punkt 9).
-5. **Am Trainingstermin bleibt es beim Bisherigen** (ADR-022 Punkt 6,
-   ANN-036): Das Protokoll schließt die Einheit mit ab.
-
-Umsetzung: ANN-512 in `supabase/migrations/20261112120000_a_003_haken_als_merkmal.sql`.
+1. **Ein Statusfeld, acht Werte, sechs davon erreichbar** (`appointments_status_check`): `confirmed`
+   (bestätigt), `cancelled` (abgesagt), `no_show` (nicht angetroffen), `completed` (durchgeführt),
+   `documented` (dokumentiert), `invoiced` (abgerechnet). `requested` (angefragt) und `tentative`
+   (vorgemerkt) sind beschrieben, gegen einen zweiten Automaten im Portal, aber nicht gebaut und
+   nicht in der Constraint (ADR-014); sie entstehen erst mit der Plattform (§4.6).
+2. **Die Übergänge.** Geschrieben wird nur über `SECURITY DEFINER`-Funktionen mit eigener
+   Rollenprüfung (ADR-004), nie frei über die Tabelle. `cancelled` ist endgültig, auch über
+   `invoiced` und zurück: Versehentlich Abgesagtes wird neu angelegt. `documented` kehrt nicht nach
+   `confirmed` zurück: korrigiert wird in der Dokumentation (ADR-016), ohne Statusänderung.
+   - Terminverwaltung: `create_appointment` (→ `confirmed`), `cancel_appointment` mit Grund
+     (`confirmed` → `cancelled`), `record_no_show` (`confirmed` → `no_show`, Anlass nach Punkt 9).
+   - Therapeutische Rollen: `complete_appointment` (`confirmed` → `completed`), `reopen_appointment`
+     (`completed`, `no_show` → `confirmed`), an `documented` je nur der Haken (Fassung 5).
+   - Im selben Vorgang: Finalisierung (ADR-016, auch automatisch) aus `completed` und `confirmed`
+     (Fassung 3) → `documented`; Rechnung (ABR-003) `documented`, `no_show`, `cancelled` mit Anlass
+     (Fassung 2) → `invoiced`; ihr Storno (ADR-009) zurück, auch → `cancelled` (Fassung 3).
+3. **`documented` und `invoiced` werden gesetzt, nicht abgeleitet:** vom Vorgang, dem die Tatsache
+   gehört, in derselben Transaktion, nie von Hand oder nachträglich. Invariante, beide Richtungen in
+   `pnpm test:db`: `documented` genau dann, wenn eine finalisierte Dokumentation existiert,
+   `invoiced` genau dann, wenn eine ausgestellte, nicht stornierte Rechnung den Termin führt.
+4. **Das Ausfallhonorar ist ein Kennzeichen, kein Geldbetrag und kein Zustand** (Fassung 2, 3):
+   `fee_basis` sagt nur, ob und woraus eine Gebühr entsteht; wie viel, sagt der Leistungskatalog
+   (ABR-001), ob eine Rechnung entsteht, ABR-003. Nur der Server setzt ihn, `late_cancellation` nach
+   Punkt 8, `no_show` nach Punkt 9; Bestandszeilen aus Fassung 1 tragen `no_show`.
+5. **Die Serie hat keinen Status:** Sie ist eine Erzeugungsregel (CAL-007), jeder Termin hat seinen
+   Status; „die Serie absagen“ heißt n Einzelabsagen.
+6. **Migration der Bestandsdaten** (CAL-008): `scheduled` → `confirmed`, `completed` mit
+   finalisierter Dokumentation → `documented`, sonst bleibt der Wert. Der Absagegrund ist Pflicht
+   für jede neue Absage; Bestandszeilen behalten `null`, er wird nicht rückwirkend erfunden.
+7. **Was der Automat nicht regelt:** keine Übergänge durch Zeitablauf (ein vergangener Termin wird
+   nicht von selbst `completed` oder `no_show`; ADR-016 Punkt 7 bleibt unberührt), keine
+   Zustandsänderung offline (ADR-001), keine Statusänderung ohne Nachweis (ADR-010 Punkt 15).
+8. **Die Frist des Ausfallhonorars** (Fassung 2): Sagt die Patient:in weniger als 24 Stunden vor
+   Behandlungsbeginn ab, entsteht eine Ausfallgebühr. Nr. 1: Der Eingang der Absage in der Praxis
+   ist ein eigenes Datum (`cancellation_received_at`), getrennt vom Eintrag (`cancelled_at`). Nr. 2:
+   Die Frist rechnet der Server aus Eingang und vereinbartem Beginn, nie aus der Eingabezeit und nie
+   im Browser (§19). Nr. 3: Genau 24 Stunden liegen außerhalb; gezählt wird in absoluten Stunden mit
+   Zeitzone, auch über die Zeitumstellung. Nr. 4 (Fassung 4): Es zählt, was die Patient:in
+   veranlasst: `patient_request` und `patient_moved` (eine Verlegung nennt, wer sie veranlasst), nie
+   `practice_moved`, `practice_request` oder `other`; der Bestandswert `moved` gilt unverändert;
+   wird nur die Zeit geändert, ist nichts ausgefallen (ANN-212). Nr. 5 (Fassung 3): Das
+   Nichtantreffen am Hausbesuch regelt Punkt 9, am Praxis- und Videotermin bleibt es ein Tap ohne
+   Formular und Gebühr (ANN-055). Nr. 6 (Fassung 4): Ein bewusster Verzicht im Einzelfall lässt
+   `fee_basis` stehen und vermerkt Zeitpunkt und Person (`fee_waived_at`, `fee_waived_by`); danach
+   ist der Anlass nicht mehr abrechenbar, wer und bis wann: ANN-213. Bestandsdaten bekommen
+   nachträglich keine Gebühr, und ein Vorgang mit Gebührenanlass wird nicht nach der Dreijahresfrist
+   gelöscht (ADR-008, ANN-035).
+9. **Die drei Hausbesuch-Szenarien** (Fassung 3, E14, §8). Nr. 1: Nach bestätigtem Protokoll (15
+   Minuten gewartet, geklingelt, angerufen) setzt `record_no_show` den Anlass `no_show`; ohne
+   Bestätigung bleibt der Termin `confirmed`, bis die behandelnde Person entscheidet; der Vermerk
+   zählt nicht als Behandlung oder verbrauchte Verordnungsleistung. Nr. 2 (Szenario 1): „Tür
+   geöffnet, keine Behandlung“ (auf Angabe der Patient:in) ist kein eigener Zustand: Er gilt als
+   durchgeführt, wird über `complete_treatment` mit Pflichtvermerk
+   `treatment_notes.visit_without_treatment` dokumentiert (nie Freitext als einzige Quelle), nach
+   Punkt 10 abgehakt und normal abgerechnet, ohne Gebühr. Nr. 3: Die Oberfläche erklärt die
+   Szenarien, ohne Auswertung je Person (§20). Nr. 4: Rechnungstext und Rechtsgrundlage für Nr. 2
+   (Vergütung ohne erbrachte Behandlung) klärt B4.
+10. **Der Haken am Behandlungstermin** (Fassung 5, BEF-154, BEF-157): Dokumentieren und Abhaken sind
+    getrennt, abgehakt wird in Übersicht oder Kalender, der Haken heißt „Leistung erbracht“. Nr. 1:
+    Ein Merkmal, kein neunter Zustand (`completed_at`, `completed_by`); `completed` heißt abgehakt,
+    nicht dokumentiert, `documented` steht mit oder ohne Haken. Nr. 2: Die Finalisierung hakt nicht
+    ab (ADR-016 Punkt 4). Nr. 3: Zurücknehmen geht jederzeit (Punkt 2); wer und wann: `reopened_by`,
+    `reopened_at`. Nr. 4: Mit dem Haken entsteht die Leistung, mit der Rücknahme fällt sie (ADR-009
+    Punkt 24), solange keine Rechnung, auch kein Entwurf, sie führt, sonst hält der Vorgang an; nach
+    der Freigabe der Grundlage ist der Haken gesperrt (ADR-020 Punkt 9). Nr. 5: Am Trainingstermin
+    hakt das Protokoll mit ab (ADR-022 Punkt 6, ANN-036).
 
 ## Konsequenzen
-
-- §19 bekommt seinen technischen Anker: „Fakturierung erst nach finalisierter
-  Dokumentation" ist ab jetzt prüfbar als „nur aus `documented` oder aus
-  einem Vorgang mit Gebührenanlass (`no_show`, `late_cancellation`)". Einen
-  Override gibt es nicht — `PROJECT_PRINCIPLES.md` 0.10 §19 sagt das seit
-  Fassung 3 ausdrücklich. **ANN-005 bleibt trotzdem in Kraft** — ein Termin
-  lässt sich weiterhin ohne Dokumentation abschließen; die Sperre sitzt an der
-  Rechnung, nicht am Abschluss. Der Eintrag bekommt bei ABR-002 seine
-  Wiedervorlage.
-- Der Auditkatalog wächst um `appointment.no_show`, `appointment.documented`
-  und `appointment.invoiced`; `appointment.completed`, `.cancelled` und
-  `.reopened` bleiben.
-- Die Finalisierung der Dokumentation ändert ab jetzt einen Termin mit. Das
-  ist ein neuer Seiteneffekt an einer Funktion, die ADR-016 gehört — er wird
-  dort im Kopfkommentar benannt, damit ihn niemand für einen Fehler hält.
-- Zwei Zustände existieren nur auf dem Papier. Wer die Liste liest, muss die
-  Spalte „In V1" mitlesen; deshalb steht sie in der Tabelle und nicht in einer
-  Fußnote.
-- Die Umbenennung ist eine einmalige, breite Änderung mit Testabdeckung als
-  einzigem Schutz. Sie wird teurer, je länger sie wartet — jeder weitere Loop
-  schreibt `scheduled` in neue Abfragen.
-- `cancelled` als Endzustand bedeutet: Wer versehentlich absagt, legt neu an.
-  Das ist unbequem und beabsichtigt.
-
-## Bewusst nicht Bestandteil dieser Entscheidung
-
-- Die Werteliste der Absagegründe (CAL-008) und ihre Beschriftungen.
-- Höhe, Steuerkennzeichen und Abrechnungsweg des Ausfallhonorars (ABR-001,
-  ABR-003).
-- Die Regeln der Terminserie selbst (CAL-007) und das Terminfenster
-  (CAL-010a, §8.1).
-- Das Patientenportal und alles, was `requested` und `tentative` erreichbar
-  machen würde (Etappe 4). *Heute Block 4 der Roadmap; siehe den Vermerk im
-  Kontext.*
-- ~~Die Frage, ob eine Absage kurz vor dem Termin anders behandelt wird als
-  eine frühe — eine Fristenregel für Ausfallhonorare ist Praxisprozess, nicht
-  Datenmodell.~~ **Mit Fassung 2 entschieden** (Punkt 8). Die Einschätzung war
-  richtig und nicht vollständig: Die Regel ist Praxisprozess, aber sie braucht
-  ein Datum, das das Datenmodell bis dahin nicht hatte — den Eingang der
-  Absage.
+§19 bekommt seinen Anker: Fakturiert wird nur aus `documented` oder mit Gebührenanlass, ohne
+Override; abhaken geht ohne Dokumentation, die Sperre sitzt an der Rechnung (ANN-005).
 
 ## Offene Folgefragen
-
-- ~~Braucht „nicht angetroffen" eine eigene Frist im Retention Schedule, oder
-  fällt es unter „abgesagte Termine und No-shows ohne Rechnung" (ADR-008,
-  ANN-001)?~~ Mit ANN-035 beantwortet: dieselbe Klasse, Anker ist der Vermerk.
-- ~~**Neu mit Fassung 2:** Soll das Nichtantreffen beim Hausbesuch eine eigene
-  Gebührenregel bekommen — und wenn ja, welche?~~ Mit Fassung 3 (Punkt 9)
-  entschieden: ja, nach bestätigtem Protokoll, immer.
-- Wie verhält sich der Automat zu einem Termin, der von einer anderen Person
-  abgeschlossen wird als der behandelnden?
-- Soll die Praxis sehen können, wie oft eine Patientin nicht angetroffen wurde
-  — und wäre das eine Auswertung im Sinne von §20?
-
-## Bestätigungsfragen für Jannes — beantwortet am 2026-09-11
-
-**Alle sieben wie empfohlen bestätigt.** Die Fragen bleiben mitsamt ihrer
-Begründung stehen: Wer in zwei Jahren wissen will, warum `documented` kein
-abgeleitetes Merkmal ist oder warum eine Absage keinen Rückweg hat, findet
-hier die Abwägung und nicht nur das Ergebnis.
-
-1. **`documented` und `invoiced` als Werte derselben Statusspalte** (Punkt 3)
-   — oder lieber getrennte Merkmale neben dem Status?
-   *Empfehlung: dieselbe Spalte.* Der Kalender und die Tagesliste bleiben
-   dadurch einfache Abfragen; der Preis ist eine getestete Invariante.
-2. **`scheduled` → `confirmed` umbenennen** (Punkt 6)?
-   *Empfehlung: ja, in CAL-008.* Einmal breit, dafür heißt das Feld, was es
-   bedeutet.
-3. **Absagegrund als Pflicht** für neue Absagen, Bestandszeilen ohne Grund?
-   *Empfehlung: ja.* Ohne Grund ist die Absagequote später nicht lesbar; mit
-   rückwirkender Pflicht wäre die Migration eine Erfindung.
-4. **`documented` ist nicht wieder zu öffnen** (Punkt 2)?
-   *Empfehlung: ja.* Korrigiert wird in der Dokumentation, nicht im Kalender.
-5. **`cancelled` ist endgültig** — versehentliche Absage heißt neu anlegen?
-   *Empfehlung: ja.*
-6. **Ausfallhonorar-Kennzeichen als Pflichtentscheidung** beim Nichtantreffen,
-   Vorbelegung „nein"?
-   *Empfehlung: ja.* Die Entscheidung fällt im Hausflur, nicht im Büro.
-7. Nach deiner Bestätigung ziehe ich **§8 der Prinzipien** nach (§21, eigener
-   Commit) und markiere Punkt D in `OPEN_DECISIONS.md` als erledigt. *Einverstanden?*
+- Wie verhält sich der Automat, wenn eine andere Person abschließt als die behandelnde?
+- Soll die Praxis sehen, wie oft eine Patient:in nicht angetroffen wurde (Auswertung nach §20)?
 
 ## Änderungshistorie
-
-| Fassung | Datum | Änderung |
-|---|---|---|
-| 1 | 2026-09-11 | Angenommen, alle sieben Fragen wie empfohlen. |
-| 2 | 2026-09-12 | Punkt 8 neu (24-Stunden-Frist, Eingang der Absage, nur Patientenabsage); Punkt 4 neu gefasst (Pflichtentscheidung beim Nichtantreffen entfällt) — eine Umkehr von Frage 6. |
-| 3 | 2026-09-13 | Punkt 9 neu (Hausbesuch-Szenarien, E14 erledigt): Nichtantreffen nach Protokoll setzt `no_show` als Gebührenanlass; „Tür geöffnet, keine Behandlung" gilt als durchgeführt mit Pflichtvermerk. Punkt 8 Nr. 5 aufgehoben, Punkt 4 auf zwei Anlässe berichtigt. Korrekturen aus dem Audit: `confirmed → documented` (ANN-036) und Storno-Rückweg nach `cancelled` in der Tabelle; Klarstellung zu „endgültig". Umsetzung CAL-018. Punkte 1, 3, 5–7 unverändert. |
-| 4 | 2026-10-02 | Punkt 8 Nr. 4 neu (Verlegung durch die Patient:in löst aus, `patient_moved`/`practice_moved`), Nr. 6 neu (Verzicht als eigener Vermerk). Umsetzung ABN-006, BEF-094. |
-| 5 | 2026-10-14 | Punkt 10 neu (Haken als Merkmal am Behandlungstermin, jederzeit zurücknehmbar, Leistung mit dem Haken; B4, B7). Umkehr in Punkt 2: Die Finalisierung setzt `completed_at` am Behandlungstermin nicht mehr; zwei Zeilen für den Haken am `documented` Termin. Vermerk an Punkt 9 Nr. 2. Übrige Punkte unverändert. |
+- Fassung 1 (2026-09-11, Jannes): angenommen, sieben Fragen wie empfohlen; §8 nachgezogen.
+- Fassung 2 (2026-09-12, Jannes): Punkt 8, 24-Stunden-Frist; Punkt 4 neu, Umkehr von Frage 6.
+- Fassung 3 (2026-09-13, Jannes, E14): Punkt 9, Hausbesuch-Szenarien; Umkehr in Punkt 4;
+  `confirmed → documented`, Storno-Rückweg.
+- Fassung 4 (2026-10-02, Jannes, BEF-094): Punkt 8 Nr. 4, Verlegung mit Gebühr, und Nr. 6, Verzicht.
+- Fassung 5 (2026-10-14, Jannes): Punkt 10 Haken (B4, B7); Umkehr in Punkt 2: Doku hakt nicht ab.
+- Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.
