@@ -50,8 +50,9 @@ Wahl, die sofort gilt; Zustand als Wort) · `Wahlreihe` mit `sofort` (Knöpfe st
 wählen nichts, etwa eine Einwilligung) · `Zwischentitel` mit `stufe="abschnitt"` (Kartentitel 22) ·
 `Vertretungsband` („Sie handeln für …“ im Gerüst und im Einstieg). Übungen: `Buehne`,
 `Dosierungsmarken`, `Hakenzeile`, `Wochenleiste`, `Uebungszeile`, `Durchfuehrungskopf`/`-fuss`,
-`Abschlussseite`. Prüfseiten `tests/e2e/fixtures/plattform-bausteine.html` und
-`plattform-uebungsbausteine.html`.
+`Abschlussseite`. Termine: `Terminzeile`, `Wunschzeile`, `WerUndWo`, `FragenZumTermin`,
+`Wahlflaechen`, `HeroKarte` mit `ziel`; Zeichen und Knöpfe brechen nur zwischen Wörtern (ANN-765).
+Prüfseiten `tests/e2e/fixtures/plattform-*bausteine.html`.
 
 ## Seitentypen und Gerüst
 

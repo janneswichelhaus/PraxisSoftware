@@ -6,23 +6,22 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Aufräumen** (Auftrag Jannes 25.10., Entscheidungen 26. und 27.10., ROADMAP 7.22): Schritte 1 bis 4,
-alle sieben Fehler, M1, M5, M7, M9, das Barometer, die Vorab-PR, 3b und sein Nachzug gemergt
-(#308 bis #322). Schritt 5 (Doku) mit dem Abschluss des Blocks gemergt (#323 bis #325).
-**CI-Beschleunigung** (Zusatzauftrag 27.10.): Lint in zwei Läufen je 3 GB und die schnellere
-Einrichtung von „E2E hinter der Anmeldung“ liegen als #326 vor; offen bleibt die Abkürzung für
-reine Doku (Lint und Typecheck auslassen, ADR-013 Punkt 2, Entscheidung Jannes).
-Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
-#304, #307); Schritt 3 Termine ist mit #303 freigegeben (Roadmap, BEF-220 bis -222).
-Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
+**Design-Review Schritt 3 Termine** (Auftrag Jannes 28.10., Fragen wie empfohlen): 3a bis 3c
+lagen ungemergt auf `ccr-544f8ce7-u1sqpf` (25.10., vor dem Aufräumen) und werden je als PR
+übertragen, ohne die Einsicht der Praxis (M7), Annahmen ab ANN-764; 3a liegt als PR vor.
+Aufräumen (#308 bis #325) und CI-Beschleunigung (#326) sind gemergt; offen ist die Abkürzung für
+reine Doku (ADR-013 Punkt 2, Entscheidung Jannes). Befunde aus archivierten Sitzungen: BEF-201,
+BEF-202.
 
 ## Danach
 
-Die drei Vorschläge der Aufräumrunde stehen in `development/BEFUNDE.md` (zuerst Nr. 2, Akte und
-Untermodule).
-Schritt 3 Termine des Design-Reviews (3a bis 3d), dann Schritte 4 bis 7 (Selbstauskunft,
-Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff; Handoff und Briefings nennt die
-Roadmap („Design-Review der Plattform“). Ohne Handoff: BEF-223 (Zeitumstellung; Pfad A).
+3b Liste, 3c Seite des Termins (Design-Review steht aus), 3d Abläufe; den alten Branch erst nach
+3c löschen. Dann BEF-223 (Zeitumstellung, Pfad A) als eigene PR, eine Bildsichtung der Schritte 2
+und 3, dann Schritt 4 (Handoff während 3d), danach 5 bis 7 je mit Handoff (Roadmap). Erst dann
+die Vorschläge der Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
+**Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
+Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
+Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Bei Jannes
 
@@ -50,5 +49,6 @@ Roadmap („Design-Review der Plattform“). Ohne Handoff: BEF-223 (Zeitumstellu
 
 ## Letzte Session
 
-28.10.2026, Branch `claude/step-4-central-register-ur5k1y`: CI-Beschleunigung als #326 (Lint in
-zwei Läufen, E2E-Einrichtung, vier Teile). Keine Migration. Lokal: `git pull`.
+28.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: Schritt 3a übertragen (Bausteine der Termine,
+ANN-764 bis -771, Kommentare nach der neuen Regel); Bildstrecke mit `--neu-laden` (Befund
+„Bildstrecke“). Keine Migration. Lokal: `git pull`.
