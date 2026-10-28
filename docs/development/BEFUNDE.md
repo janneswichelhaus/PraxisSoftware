@@ -194,7 +194,7 @@ Jannes) · `praxiswoche.sql`\
 **Beobachtung.** Erikas Übersicht meldet „Die Übersicht lässt sich gerade nicht laden.“: Die alte
 Praxiswoche gab Terminen md5-Kennungen ohne Versions- und Variantenbits (`d644f009-734a-46c3-07d2-…`),
 `z.string().uuid()` verwirft die ganze Terminliste, ohne Fehler im Netz oder in der Konsole. Der
-Generator ist seit `b7a1c64b` (12.10.) richtig, die Test-Umgebung seit dem 6.10. nicht neu aufgesetzt.
+Generator ist seit `b7a1c64b` (12.10.) richtig, die Test-Umgebung danach nicht neu aufgesetzt worden.
 Nachgestellt mit dem Seed vom 6.10. und allen Migrationen; mit gültigen Kennungen lädt die Übersicht.
 **Erwartet.** Test-Umgebung neu aufsetzen (Workflow „Test-Umgebung“, „neu aufsetzen“).
 
