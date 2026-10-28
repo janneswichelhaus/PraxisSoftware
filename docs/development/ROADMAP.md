@@ -393,6 +393,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | Aufräumen Schritt 5, Teil A: Archiv, Chroniken und erledigte Handoffs nach Git, neun Entscheidungen gesichert, Befunde nur noch offen | fertig | 2026-10-27 | #323 | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Freigabe Git als Archiv vom 26.10. |
 | B | Aufräumen Schritt 5, Teil B: Annahmenregister verdichtet, Prüfpaket mit 208 Einträgen, Regel F im Doku-Gate | fertig | 2026-10-27 | #324 | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Tiefenanalyse Punkte 3 und 4 |
 | B | Aufräumen Schritt 5, Teil C: ADRs, Prinzipien und Prozessdoku verdichtet, Gesamtgrenze im Doku-Gate, Abschluss des Blocks | fertig | 2026-10-27 | #325 | — | Auftrag Jannes 27.10.2026; Tiefenanalyse 5c Schritte 3 bis 6 |
+| B | CI-Beschleunigung: Lint in zwei Läufen je 3 GB, E2E-Einrichtung ohne fremde Schriften, Studio und zweiten Reset, vier Teile | fertig | 2026-10-28 | #326 | — | Zusatzauftrag Jannes 27.10.2026; Abkürzung für reine Doku offen (ADR-013 Punkt 2) |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |

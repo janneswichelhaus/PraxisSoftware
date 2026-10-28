@@ -48,7 +48,7 @@ mit dem Arbeitsbaum, je ohne und mit den Vorgaben von Supabase. Alte Migrationen
 `git show aabe5d0:<pfad>`; eine lokale Datenbank von vorher braucht einmal einen Reset.
 
 **CI:** `pnpm test:db` läuft in vier Teilen (`--shard=<n>/4`), die E2E-Tests hinter der Anmeldung
-in drei (ANN-571); die Pflichtchecks sind nur grün, wenn alle Teile es sind
+auch (ANN-571); die Pflichtchecks sind nur grün, wenn alle Teile es sind
 (`src/werkzeugkette.test.ts`). **Nur Doku:** Ändert ein Pull Request nur Markdown unter `docs/` oder
 im Wurzelverzeichnis, entfallen Tests, Build, Datenbank- und E2E-Prüfungen (ADR-013 Punkt 2,
 `scripts/nur-doku.mjs` in der Fassung des Zielbranchs); Markdown aus `VON_TESTS_GELESEN` und jede
@@ -302,7 +302,7 @@ Gilt seit Aufräumen Schritt 3 (ANN-748):
 ```bash
 pnpm format:check    # Prettier - eigenes CI-Gate, nicht Teil von lint
 pnpm format          # dieselbe Prüfung, schreibend
-pnpm lint            # ESLint inkl. statischer Sicherheitsanalyse, mit 6 GB Heap
+pnpm lint            # ESLint inkl. statischer Sicherheitsanalyse, zwei Läufe je 3 GB Heap
 pnpm typecheck       # TypeScript strict
 pnpm test            # Komponenten (jsdom) und reine Logik (Node, Projekt logik)
 pnpm test:watch      # dieselben Tests, laufend
@@ -320,10 +320,13 @@ pnpm build
 pnpm preview         # den gebauten Stand lokal ausliefern
 ```
 
-`pnpm lint` braucht 6 GB Heap (typisiertes Linting über App, Tests, Skripte und Edge Functions,
-gemessen bis 3,5 GB). Eine `.test.ts`-Datei läuft ohne DOM, sonst `// @vitest-environment jsdom` in
-der ersten Zeile; `.test.tsx` läuft mit jsdom. Playwright prüft vor der Anmeldung nur `mobile`
-(Pixel 7), die Breiten setzt jede Spezifikation (ANN-571); ein System-Chromium über
+`pnpm lint` prüft in zwei Läufen nacheinander (`scripts/lint.mjs`), erst die Anwendung, dann die
+Tests, je mit 3 GB Heap: Jeder hält nur sein TypeScript-Programm, Spitze 2,7 statt 5,1 GB bei etwa
+gleicher Dauer. `scripts/lint.test.mjs` hält fest, dass beide genau die Dateien von `eslint .`
+prüfen. Kein `--cache`: Typbasierte Regeln übersähen einen neuen Fehler in einer unveränderten
+Datei. Eine `.test.ts`-Datei läuft ohne DOM, sonst `// @vitest-environment jsdom` in der ersten
+Zeile; `.test.tsx` läuft mit jsdom. Playwright prüft vor der Anmeldung nur `mobile` (Pixel 7), die
+Breiten setzt jede Spezifikation (ANN-571); ein System-Chromium über
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`. Das Modell setzt `.claude/settings.json`, den Aufwand `CLAUDE.md`.
 
 **docs:check** ist ein Gate nach ADR-013 (Prüfung 2.10) im Job „Format, Lint, Dokumentation,

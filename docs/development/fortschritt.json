@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-27",
+  "stand": "2026-10-28",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -1719,6 +1719,15 @@
           "fertig_am": "2026-10-27",
           "nachweis": "#325",
           "vermerk": "Auftrag Jannes 27.10.2026; Tiefenanalyse 5c Schritte 3 bis 6"
+        },
+        {
+          "id": "ci-beschleunigung",
+          "name": "CI-Beschleunigung: Lint in zwei Läufen je 3 GB, E2E-Einrichtung ohne fremde Schriften, Studio und zweiten Reset, vier Teile",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-28",
+          "nachweis": "#326",
+          "vermerk": "Zusatzauftrag Jannes 27.10.2026; Abkürzung für reine Doku offen (ADR-013 Punkt 2)"
         }
       ]
     },
