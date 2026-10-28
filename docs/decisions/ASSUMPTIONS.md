@@ -1575,5 +1575,5 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-767 | Termine: Wünsche nach Wochentag mit „oder“ statt jedes Datum | Technik · offen | `wunschInWorten` in `src/features/portal/platform/termintexte.ts` |
 | ANN-768 | Termine: „Praxis anrufen“ als Hauptknopf am vergangenen Termin | Technik · offen | `FragenZumTermin` in `src/features/portal/platform/Terminbausteine.tsx` |
 | ANN-769 | Termine: die Rufnummer bricht bei 200 % zwischen ihren Gruppen | Technik · offen | `Fragezeile` in `src/features/portal/platform/Terminbausteine.tsx` |
-| ANN-770 | „Wer und wo“: unter 23rem das Zeichen über der Anschrift | Technik · offen | `WerUndWo` in `src/features/portal/platform/Terminbausteine.tsx` |
+| ANN-770 | „Wer und wo“ und Fragen: unter 23rem gestapelt, bei „Sehr groß“ nebeneinander | Technik · offen | `WerUndWo` in `src/features/portal/platform/Terminbausteine.tsx` |
 | ANN-771 | Hero-Karte: das Personenbild auf seiner Farbe, nicht auf Papier | Technik · offen | `Personenbild` in `src/components/ui/HeroKarte.tsx` |

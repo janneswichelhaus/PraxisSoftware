@@ -33,7 +33,7 @@ type Bereich = Plattformzugang['relationship_kind'];
 /**
  * Ein Termin als Zeile: Tag, Zeit, Art und Person, darunter das Statuszeichen; die ganze Zeile führt
  * zur Seite des Termins. Bei „Sehr groß“ und unter 23rem steht der Kreis über dem Text und der Pfeil
- * entfällt, damit „Änderung angefragt“ in einer Zeile bleibt.
+ * entfällt, damit der Text die ganze Breite hat; bei 200 % bricht das Zeichen zwischen Wörtern.
  */
 export function Terminzeile({
   termin,

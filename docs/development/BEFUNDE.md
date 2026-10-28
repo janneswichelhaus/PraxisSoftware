@@ -187,6 +187,15 @@ läuft jeder Wechsel in der Anwendung in „keine Netzruhe nach 20 s“: 34 von 
 die Bilder selbst vollständig; mit `--neu-laden` keines. **Erwartet.** Den Zähler nach jedem `goto`
 auf null setzen oder offene Anfragen je Dokument führen; Gegenprobe mit `--nur=plattform`.
 
+### Termine — Zeichen und Zeilen der Bausteine gibt es schon an anderer Stelle
+2026-10-28 · Plattform, Termine · Design-Review zu 3a · offen (Vorschlag, mit 3c) ·
+`Terminsymbole.tsx`, `Terminliste.tsx`, `Fragezeile`\
+**Beobachtung.** Training, Kalender, Telefon, Nachricht und Pfeil in `Terminsymbole` zeichnen
+dieselben Pfade wie `Navigation.tsx`, `Notfallkarte.tsx`, `Uebungszeile.tsx` und `Linkliste.tsx`, auf
+Raster 24 statt 20 (DESIGN.md 9.15). `Terminliste` gleicht `Uebungsliste`, `Fragezeile` der
+`Linkliste` bis auf das `tel:`-Ziel und eine zweite Zeile. **Erwartet.** Mit 3c die Fragezeilen als
+Erweiterung von `Linkliste`, die Zeichen einmal in `src/components/ui`, das Raster in PLATTFORM.md.
+
 ### Trennung — Die Prüfungen erlauben `@/lib/` pauschal, auch einen Datenzugriff dort
 2026-10-25 · beide `trennung.test.ts` · Zweitreview Aufräumen 3 · offen (Vorschlag)\
 **Beobachtung.** Beide lassen jeden Import aus `@/lib/` durch; zwei Module dort (`ki/gateway.ts`,

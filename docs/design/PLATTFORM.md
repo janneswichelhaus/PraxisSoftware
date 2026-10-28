@@ -31,7 +31,7 @@ unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
 | Keine Erklärsätze           | Ein Satz Orientierung, wo sonst unklar bleibt, was passiert (leer, nach dem Absenden, wer meine Angaben sieht); nie eine Gebrauchsanweisung der Oberfläche.                       |
 | Silbentrennung im Fließtext | Nur lange Wörter ab zwölf Buchstaben; nie in Namen, Anschriften, Überschriften, Knöpfen und Reitern (DR-114); unter 23rem auch Plan- und Übungsnamen (`trennen-schmal`, ANN-707). |
 | Ziele ≥ 44 px               | Knöpfe 48, antippbare Karten ≥ 80, Zeilen und Textlinks ≥ 44; Abstand zwischen Zielen ≥ 8, nicht in der Wochenleiste (ANN-708). Hauptknopf der Durchführung 56 (`gross`).         |
-| Rhythmus 4/8/12/16/24/32    | Dazu 40 (Telefon) und 48 (Rechner) zwischen Abschnitten; Seitenrand 20, Türseiten 24.                                                                                             |
+| Rhythmus 4/8/12/16/24/32    | Dazu 40 (Telefon) und 48 (Rechner) zwischen Abschnitten; Seitenrand 20, Türseiten 24; in Zeilen und Zeichen auch 2, 6, 10 und 14 (Handoffs).                                      |
 | Hover 120 ms                | Druck an Knopf, Zeile und Karte: 98 % und vertiefte Fläche in 120 ms; bei „Bewegung reduzieren“ nur die Fläche (DR-117).                                                          |
 | Bilder `Medienbild` 4:3     | Eigene Fotos der Praxis, keine KI-Bilder; 4:3 oder 16:9 im Radius 16, Personen rund (`Personenbild` `karte`, 56). Markenform ist das Laufrad, nie neben der Wortmarke.            |
 | Liste in Karte              | Die Hauptsache als Hero-Karte (Tiefgrün, Papier-Schrift), höchstens drei Aufgabenkarten; alles Weitere als `ListRow`, jede Zeile ganz das Ziel.                                   |

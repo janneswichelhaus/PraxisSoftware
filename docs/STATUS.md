@@ -8,7 +8,7 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 **Design-Review Schritt 3 Termine** (Auftrag Jannes 28.10., Fragen wie empfohlen): 3a bis 3c
 lagen ungemergt auf `ccr-544f8ce7-u1sqpf` (25.10., vor dem Aufräumen) und werden je als PR
-übertragen, ohne die Einsicht der Praxis (M7), Annahmen ab ANN-764; 3a liegt als PR vor.
+übertragen, ohne die Einsicht der Praxis (M7), Annahmen ab ANN-764; 3a liegt als #327 vor.
 Aufräumen (#308 bis #325) und CI-Beschleunigung (#326) sind gemergt; offen ist die Abkürzung für
 reine Doku (ADR-013 Punkt 2, Entscheidung Jannes). Befunde aus archivierten Sitzungen: BEF-201,
 BEF-202.
