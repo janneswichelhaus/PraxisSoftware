@@ -261,9 +261,9 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     const satz = page.getByRole('status').filter({ hasText: 'Sie können hier noch bis' });
     const titel = page.getByRole('heading', { level: 1, name: 'Termine' });
     expect((await satz.boundingBox())?.y ?? 0).toBeLessThan((await titel.boundingBox())?.y ?? 0);
-    await expect(
-      page.getByText('Neue Termine vereinbaren Sie bei Bedarf direkt mit der Praxis.'),
-    ).toBeVisible();
+    await expect(satz).toContainText(
+      'Neue Termine vereinbaren Sie bei Bedarf direkt mit der Praxis.',
+    );
     await expect(page.getByRole('heading', { level: 2, name: 'Vergangene Termine' })).toBeVisible();
     await expect(page.getByRole('list', { name: 'Vergangene Termine' })).toBeVisible();
     await expect(page.getByRole('link', { name: /Termin wünschen/ })).toHaveCount(0);
@@ -290,6 +290,45 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
         expect(karte.x).toBeGreaterThan(liste.x + liste.width);
         expect(liste.width).toBeGreaterThanOrEqual(519.5);
       }
+    });
+  }
+
+  // Ein Aufklapper oder Abschnitt mit eigenem Rand zählte im Stapel doppelt (Design-Review 3b).
+  // In rem, weil der Rhythmus mit „Sehr groß“ wächst: 40 und 48 px bei 16 px Schrift.
+  for (const [breite, schrift, abstand] of [
+    [375, undefined, 2.5],
+    [1280, undefined, 3],
+    [1024, 'sehr-gross', 3],
+  ] as const) {
+    test(`Abstand zwischen den Abschnitten bei ${breite} px${schrift ? ' und „Sehr groß“' : ''}: ${abstand}rem`, async ({
+      page,
+    }) => {
+      await oeffne(page, 'termine', breite, schrift);
+      const abstaende = await page
+        .getByRole('heading', { level: 2, name: 'Weitere Termine' })
+        .evaluate((titel) => {
+          const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+          // Sichtbar ist der Inhalt einer Hülle, nicht die Hülle: ihr Rand stünde innen.
+          const kante = (k: Element) =>
+            (k.tagName === 'DIV' && k.children.length === 1
+              ? k.children[0]!
+              : k
+            ).getBoundingClientRect();
+          const luecken = (stapel: Element) => {
+            const kinder = [...stapel.children].map(kante);
+            return kinder
+              .slice(1)
+              .map((k, i) => Math.round(((k.top - kinder[i]!.bottom) / rem) * 100) / 100);
+          };
+          // Der Stapel der Listen, dazu am Rechner der Abstand zwischen Karte und Listen.
+          const stapel = titel.closest('section')!.parentElement!.parentElement!;
+          const raster = stapel.closest('[data-spalten="zwei"]');
+          const untereinander =
+            raster && getComputedStyle(raster).display === 'flex' ? luecken(raster) : [];
+          return [...luecken(stapel), ...untereinander];
+        });
+      expect(abstaende.length).toBeGreaterThan(1);
+      expect(new Set(abstaende)).toEqual(new Set([abstand]));
     });
   }
 

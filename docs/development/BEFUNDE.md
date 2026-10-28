@@ -133,8 +133,9 @@ ein Prüfpunkt ist; wenn ja, Trenngrenze senken oder Titel und Marken kleiner.
 ### BEF-221 — Termine: der vergangene Termin nennt keine Nummer, obwohl sie vorliegt
 2026-10-24 · Plattform, ein Termin · Briefing 3 · offen (Schritt 3, DR-133) · `Terminaenderung.tsx`\
 **Beobachtung.** „Bei Fragen rufen Sie bitte die Praxis an.“ ohne Nummer und Knopf, obwohl der
-Kontext `practice_phone` trägt (ANN-691) und die Türen „Praxis anrufen“ zeigen (ANN-688).
-**Erwartet.** Mit Nummer „Praxis anrufen“ als Anruf-Link, sonst „Der Praxis schreiben“; nie ein
+Kontext `practice_phone` trägt (ANN-691) und die Türen „Praxis anrufen“ zeigen (ANN-688). Auf der
+Liste fehlt der Weg ebenso in der Lesefrist („Neue Termine vereinbaren Sie … mit der Praxis.“) und
+beim Fehler, wenn jemand kurzfristig absagen muss (Praxis-Review 3b). **Erwartet.** Mit Nummer „Praxis anrufen“ als Anruf-Link, sonst „Der Praxis schreiben“; nie ein
 Satz, der eine Handlung verlangt, die die Seite nicht anbietet.
 
 ### BEF-222 — Lesefrist: der Server nimmt Terminwünsche noch an

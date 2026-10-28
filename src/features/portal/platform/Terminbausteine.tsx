@@ -84,7 +84,7 @@ export function Terminzeile({
 }
 
 /** Zeichen und Wort; ein offener Wunsch wartet auf die Praxis („…“). */
-function Statuszeichen({ wort, ton }: { wort: string; ton: Ton }) {
+export function Statuszeichen({ wort, ton }: { wort: string; ton: Ton }) {
   return ton === 'akzent' ? (
     <Badge ton={ton} eigenesZeichen={STATUSZEICHEN.wartet}>
       {wort}

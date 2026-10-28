@@ -364,6 +364,8 @@
      376 px, im Teamchat wie in der Radflotte dieselbe Spalte. */
   --spacing-gespraechsspalte: 18rem;
   --spacing-threadspalte: 21rem;
+  /* Der Tag in „Diese Woche“ der Plattform, links neben seinen Einträgen (ANN-777). */
+  --spacing-tagesspalte: 6.5rem;
 
   /* Innenabstand einer Kachel: 12 oben und unten, 14 an den Seiten
      (Design-Handoff 2026-10-01, Abschnitt 2, dort als ein Wert „12px 14px"
@@ -413,6 +415,10 @@
   /* Reiter „Übungen“ am Rechner: die Vorschau rechts, 340 bis 460 (ANN-724). */
   --container-vorschau-min: 21.25rem;
   --container-vorschau: 28.75rem;
+  /* Reiter „Termine“ am Rechner (ANN-775): die Listen links ab 32.5rem; zwei Spalten ab Liste,
+     Abstand 3rem und Vorschau, also 56.75rem Inhaltsbreite. */
+  --container-terminliste-min: 32.5rem;
+  --container-terminspalten: 56.75rem;
 }
 
 /* Schrift der Plattform (ANN-267): nichts unter 18 px, als Tokens am Gerüst, damit jede neue

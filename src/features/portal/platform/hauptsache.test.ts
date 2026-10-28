@@ -343,7 +343,11 @@ describe('Texte eines Termins als Hauptsache', () => {
       terminTitel({ ...t, appointment_type: 'video' }, 'treatment', 'Max Mustermann', JETZT),
     ).toBe('Videotermin für Max Mustermann');
     // Tag und Monat mit geschütztem Leerzeichen: In der Hero-Karte brechen sie nicht auseinander.
-    expect(terminZeit(t, true, JETZT)).toBe('Samstag, 24.\u00a0Oktober, 09:30 bis 10:30');
+    // Der Tag in Worten wie in den Zeilen: morgen „Morgen“, sonst der Wochentag.
+    expect(terminZeit(t, true, JETZT)).toBe('Morgen, 24.\u00a0Oktober, 09:30 bis 10:30');
+    expect(terminZeit(termin('2026-10-27'), true, JETZT)).toBe(
+      'Dienstag, 27.\u00a0Oktober, 09:30 bis 10:30',
+    );
     expect(terminZeit(t, false, JETZT)).toBe('24.\u00a0Oktober, 09:30 bis 10:30');
     // Über sechs Tage steht das Datum schon im Titel.
     expect(terminZeit(termin('2026-11-02'), false, JETZT)).toBe('09:30 bis 10:30');

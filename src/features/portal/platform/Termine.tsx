@@ -42,8 +42,15 @@ import {
   terminZeit,
 } from './hauptsache';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
-import { Terminzeile, Wunschzeile } from './Terminbausteine';
-import { artUndPerson, artzeichen, heroEtikett, leereTage, tagDerWoche } from './termintexte';
+import { Statuszeichen, Terminzeile, Wunschzeile } from './Terminbausteine';
+import {
+  artUndPerson,
+  artzeichen,
+  heroEtikett,
+  leereTage,
+  tagDerWoche,
+  terminZustand,
+} from './termintexte';
 import { terminBeschreibung } from './terminbeschreibung';
 import { tageAb, uebungstageAm } from './uebungstage';
 import { WUENSCHE_OHNE_NETZ } from './wunschtexte';
@@ -104,19 +111,13 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
     // Gemessen wird der Inhalt: Ob zwei Spalten passen, sagt `ZWEI_SPALTEN`.
     <div className={`@container flex flex-col ${rechner ? 'gap-12' : 'gap-10'}`}>
       {satz ? (
+        // Der Satz zu neuen Terminen steht hier statt im Kopf, der höchstens eine Zeile trägt.
         <Statusmeldung ton="warnung" className={rechner ? 'max-w-spalte' : ''}>
-          {satz}
+          <span>{satz}</span>{' '}
+          <span>Neue Termine vereinbaren Sie bei Bedarf direkt mit der Praxis.</span>
         </Statusmeldung>
       ) : null}
-      <PageHeader
-        title="Termine"
-        stufe="seite"
-        description={
-          lesefrist ? (
-            <span>Neue Termine vereinbaren Sie bei Bedarf direkt mit der Praxis.</span>
-          ) : undefined
-        }
-      />
+      <PageHeader title="Termine" stufe="seite" />
       {gesendet === '1' ? (
         // Über zwei Spalten reicht sie über beide, sonst so breit wie die eine.
         <Rueckmeldung
@@ -129,7 +130,7 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
         <Ladezustand rechner={rechner} />
       ) : termine.data === undefined || teile === undefined ? (
         // Ohne Termine bleibt der Wunsch möglich - der Satz sagt es.
-        <div className={`flex flex-col gap-10 ${rechner ? 'max-w-spalte' : ''}`}>
+        <div className={`flex flex-col ${rechner ? 'max-w-spalte gap-12' : 'gap-10'}`}>
           <ErrorState
             title="Ihre Termine lassen sich gerade nicht laden."
             description={
@@ -176,10 +177,10 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
  */
 const ZWEI_SPALTEN = {
   raster:
-    'max-w-spalte flex flex-col gap-10 @min-[56.75rem]:grid @min-[56.75rem]:max-w-none @min-[56.75rem]:grid-cols-[minmax(32.5rem,1fr)_minmax(var(--container-vorschau-min),var(--container-vorschau))] @min-[56.75rem]:items-start @min-[56.75rem]:gap-12',
-  rechts: '@min-[56.75rem]:col-start-2 @min-[56.75rem]:row-start-1',
-  links: '@min-[56.75rem]:col-start-1 @min-[56.75rem]:row-start-1',
-  breite: 'max-w-spalte @min-[56.75rem]:max-w-none',
+    'max-w-spalte flex flex-col gap-12 @terminspalten:grid @terminspalten:max-w-none @terminspalten:grid-cols-[minmax(var(--container-terminliste-min),1fr)_minmax(var(--container-vorschau-min),var(--container-vorschau))] @terminspalten:items-start',
+  rechts: '@terminspalten:col-start-2 @terminspalten:row-start-1',
+  links: '@terminspalten:col-start-1 @terminspalten:row-start-1',
+  breite: 'max-w-spalte @terminspalten:max-w-none',
 };
 
 /** Nach Beginn, die Reihenfolge des Servers ist keine Zusage. */
@@ -259,6 +260,7 @@ function Liste({
   // Jede Zeile führt zur Seite ihres Termins, auch eine vergangene oder abgesagte (ANN-776).
   const zielVon = (t: Termin) => mit(`${PLATTFORM_PFAD}/termine/${t.id}`);
 
+  const offenerWunsch = naechster ? terminZustand(naechster) : null;
   const hauptsache = naechster ? (
     <HeroKarte
       etikett={heroEtikett(
@@ -269,6 +271,7 @@ function Liste({
       )}
       titel={terminTitel(naechster, bereich, vertretung ? zugang.represented_name : null, jetzt)}
       satz={terminZeit(naechster, vertretung, jetzt)}
+      zustand={offenerWunsch ? <Statuszeichen {...offenerWunsch} /> : undefined}
       person={personDesTermins(naechster, vertretung)}
       ziel={{ text: 'Termin ansehen', to: zielVon(naechster) }}
     />
@@ -370,14 +373,17 @@ function Liste({
         </Section>
       </div>
     ) : (
-      // Vergangenes auf Abruf: Es wird mit jeder Behandlung länger (DESIGN.md, Regel 6).
-      <Disclosure summary="Vergangene Termine" anzahl={vergangene.length} kopf="betont">
-        <Terminliste name="Vergangene Termine">
-          {vergangene.map((t) => (
-            <Terminzeile key={t.id} termin={t} bereich={bereich} to={zielVon(t)} jetzt={jetzt} />
-          ))}
-        </Terminliste>
-      </Disclosure>
+      // Vergangenes auf Abruf: Es wird mit jeder Behandlung länger (DESIGN.md, Regel 6). Den
+      // Abstand davor trägt der Stapel (`gap`), nicht der Aufklapper.
+      <div className="[&>details]:mt-0">
+        <Disclosure summary="Vergangene Termine" anzahl={vergangene.length} kopf="betont">
+          <Terminliste name="Vergangene Termine">
+            {vergangene.map((t) => (
+              <Terminzeile key={t.id} termin={t} bereich={bereich} to={zielVon(t)} jetzt={jetzt} />
+            ))}
+          </Terminliste>
+        </Disclosure>
+      </div>
     );
 
   if (zweispaltig) {
@@ -594,11 +600,11 @@ function DieseWoche({
 }
 
 /**
- * Zeile der Woche: Tag in 6.5rem und Inhalt. Unter 23rem und bei „Sehr groß“ steht der Tag über dem
- * Inhalt, sonst bräche „Übungstag“ im Wort (ANN-777).
+ * Zeile der Woche: links der Tag, rechts der Inhalt. Unter 23rem und bei „Sehr groß“ steht der Tag
+ * über dem Inhalt, sonst bräche „Übungstag“ im Wort (ANN-777).
  */
 const WOCHENZEILE =
-  'grid min-h-14 grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-3 px-4 py-3 hyphens-manual max-[23rem]:grid-cols-1 max-[23rem]:gap-1 max-[23rem]:px-3 [[data-schrift=sehr-gross]_&]:grid-cols-1 [[data-schrift=sehr-gross]_&]:gap-1';
+  'grid min-h-14 grid-cols-[var(--spacing-tagesspalte)_minmax(0,1fr)] items-start gap-3 px-4 py-3 hyphens-manual max-[23rem]:grid-cols-1 max-[23rem]:gap-1 max-[23rem]:px-3 [[data-schrift=sehr-gross]_&]:grid-cols-1 [[data-schrift=sehr-gross]_&]:gap-1';
 
 /** Ein Eintrag der Woche: Zeichen 20 in der Hauptfarbe, daneben der Text. */
 function Eintrag({ zeichen, children }: { zeichen: Terminzeichen; children: string }) {
@@ -634,11 +640,8 @@ function Ladezustand({ rechner }: { rechner: boolean }) {
       ) : (
         <div className="flex flex-col gap-10">
           <HeroSkelett />
-          <span className="flex flex-col gap-4">
-            <Skelett form="titel" className="w-45 max-w-full" />
-            <Skelett form="liste" />
-            <Skelett form="hauptknopf" />
-          </span>
+          {liste}
+          <Skelett form="hauptknopf" />
         </div>
       )}
     </SkelettBereich>

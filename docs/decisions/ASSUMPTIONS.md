@@ -1577,9 +1577,9 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-769 | Termine: die Rufnummer bricht bei 200 % zwischen ihren Gruppen | Technik · offen | `Fragezeile` in `src/features/portal/platform/Terminbausteine.tsx` |
 | ANN-770 | „Wer und wo“ und Fragen: unter 23rem gestapelt, bei „Sehr groß“ nebeneinander | Technik · offen | `WerUndWo` in `src/features/portal/platform/Terminbausteine.tsx` |
 | ANN-771 | Hero-Karte: das Personenbild auf seiner Farbe, nicht auf Papier | Technik · offen | `Personenbild` in `src/components/ui/HeroKarte.tsx` |
-| ANN-772 | Termine: der nächste Termin als Hero-Karte, ein offener Wunsch dazu nur unter „Ihre Wünsche“ | Technik · offen | `hauptsache` in `src/features/portal/platform/Termine.tsx` |
+| ANN-772 | Termine: der nächste Termin als Hero-Karte, ein offener Wunsch dazu als Statuszeichen an der Karte | Technik · offen | `hauptsache` in `src/features/portal/platform/Termine.tsx` |
 | ANN-773 | Termine: ohne Netz Wünschen und Zurückziehen gesperrt, ein Satz sagt warum | Technik · offen | `WUENSCHE_OHNE_NETZ` in `src/features/portal/platform/wunschtexte.ts` |
-| ANN-774 | Termine: in der Lesefrist weder „Termin wünschen“ noch Woche, das Vergangene offen | Technik · offen | `wuenschen` in `src/features/portal/platform/Termine.tsx` |
+| ANN-774 | Termine: in der Lesefrist kein Knopf und keine Woche, der Satz zu neuen Terminen in der Meldung | Technik · offen | `wuenschen` in `src/features/portal/platform/Termine.tsx` |
 | ANN-775 | Termine: am Rechner Hero und Knopf rechts, die Listen links ab 32.5rem | Technik · offen | `ZWEI_SPALTEN` in `src/features/portal/platform/Termine.tsx` |
 | ANN-776 | Termine: jede Zeile führt zur Seite ihres Termins, auch vergangene und abgesagte | Technik · offen | `zielVon` in `src/features/portal/platform/Termine.tsx` |
 | ANN-777 | „Diese Woche“: bei „Sehr groß“ der Tag über seinen Einträgen | Technik · offen | `WOCHENZEILE` in `src/features/portal/platform/Termine.tsx` |

@@ -69,6 +69,8 @@ import { useMarkenmoment } from './markenmoment';
 import { THEMA_NAME } from './nachrichtentexte';
 import { paketStand } from './paketbedingungen';
 import { BENACHRICHTIGUNGEN_ANKER, PLATTFORM_PFAD, bereichParameter } from './pfade';
+import { Statuszeichen } from './Terminbausteine';
+import { terminZustand } from './termintexte';
 import { umfangSatz, umfangText } from './vorschau';
 import { zahlungsstand } from './zahlungsstand';
 import {
@@ -670,6 +672,8 @@ function Hauptsachekarte({
     case 'termin': {
       const t = haupt.termin;
       const zeile = terminPerson(t, vertretung);
+      // Ein offener Änderungs- oder Absagewunsch steht an der Karte wie in der Liste (ANN-772).
+      const offenerWunsch = terminZustand(t);
       return (
         <HeroKarte
           titel={terminTitel(
@@ -679,6 +683,7 @@ function Hauptsachekarte({
             jetzt,
           )}
           satz={terminZeit(t, vertretung, jetzt)}
+          zustand={offenerWunsch ? <Statuszeichen {...offenerWunsch} /> : undefined}
           person={t.staff_name && zeile ? { name: t.staff_name, zeile } : undefined}
           aktion={{ text: 'Termin ansehen', to: mit(`${PLATTFORM_PFAD}/termine`) }}
           markenmoment={markenmoment}

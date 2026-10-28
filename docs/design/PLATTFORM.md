@@ -51,8 +51,8 @@ wählen nichts, etwa eine Einwilligung) · `Zwischentitel` mit `stufe="abschnitt
 `Vertretungsband` („Sie handeln für …“ im Gerüst und im Einstieg). Übungen: `Buehne`,
 `Dosierungsmarken`, `Hakenzeile`, `Wochenleiste`, `Uebungszeile`, `Durchfuehrungskopf`/`-fuss`,
 `Abschlussseite`. Termine: `Terminzeile`, `Wunschzeile`, `WerUndWo`, `FragenZumTermin`,
-`Wahlflaechen`, `HeroKarte` mit `ziel`, `HeroSkelett`, `EmptyState` mit `zeichen`; Zeichen und
-Knöpfe brechen nur zwischen Wörtern (ANN-765).
+`Wahlflaechen`, `HeroKarte` mit `ziel` und `zustand`, `HeroSkelett`, `EmptyState` mit `zeichen`;
+Zeichen und Knöpfe brechen nur zwischen Wörtern (ANN-765).
 Prüfseiten `tests/e2e/fixtures/plattform-*bausteine.html`.
 
 ## Seitentypen und Gerüst

@@ -2,17 +2,9 @@ import { nurFragen } from '@/lib/erfassungsgroessen';
 import type { Bogenstand, EigeneCheckins, EigenePlaene, Plattformzugang, Termin } from './api';
 import { dauerDerEinheit } from './dauer';
 import { PLATTFORM_PFAD } from './pfade';
+import { tagInWorten } from './termintexte';
 import { uebungstageAm } from './uebungstage';
-import {
-  datum,
-  fest,
-  kuenftig,
-  letzterTag,
-  tagOhneJahr,
-  tagUndMonat,
-  tageBis,
-  uhrzeit,
-} from './zeit';
+import { datum, fest, kuenftig, letzterTag, tagUndMonat, tageBis, uhrzeit } from './zeit';
 
 /**
  * Die erste Aufgabe - was als Hauptsache oben auf der Übersicht steht
@@ -236,8 +228,8 @@ export function terminTitel(
 
 /**
  * Wann, als Satz unter dem Titel: „23. Oktober, 18:00 bis 19:00“, Tag und Monat ungetrennt; für
- * eine Vertretung mit dem Wochentag, weil der Titel keinen Tag trägt. Steht das Datum schon im
- * Titel (über sechs Tage), nur die Zeit.
+ * eine Vertretung mit dem Tag in Worten wie in den Zeilen, weil der Titel keinen Tag trägt. Steht
+ * das Datum schon im Titel (über sechs Tage), nur die Zeit.
  */
 export function terminZeit(
   termin: Termin,
@@ -245,7 +237,7 @@ export function terminZeit(
   jetzt: Date = new Date(),
 ): string {
   const zeit = `${uhrzeit(termin.starts_at)} bis ${uhrzeit(termin.ends_at)}`;
-  if (mitWochentag) return `${fest(tagOhneJahr(termin.starts_at))}, ${zeit}`;
+  if (mitWochentag) return `${tagInWorten(termin.starts_at, jetzt)}, ${zeit}`;
   if (tageBis(termin.starts_at, jetzt) > 6) return zeit;
   return `${fest(tagUndMonat(termin.starts_at, jetzt))}, ${zeit}`;
 }

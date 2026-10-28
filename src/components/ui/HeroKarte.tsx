@@ -23,6 +23,7 @@ export function HeroKarte({
   etikett = 'Als Nächstes',
   titel,
   satz,
+  zustand,
   person,
   angaben,
   aktion,
@@ -34,6 +35,8 @@ export function HeroKarte({
   etikett?: ReactNode;
   titel: string;
   satz?: ReactNode;
+  /** Ein Statuszeichen unter dem Satz, etwa ein offener Wunsch zum Termin. */
+  zustand?: ReactNode;
   /** Wer kommt, mit Bild: „Anna Beispiel kommt zu Ihnen“; darunter auf Wunsch der Ort. */
   person?:
     { name: string; farbe?: Personenfarbe | null; zeile: string; ort?: string | null } | undefined;
@@ -81,6 +84,7 @@ export function HeroKarte({
         )}
       </h2>
       {satz ? <p className="relative">{satz}</p> : null}
+      {zustand ? <p className="relative">{zustand}</p> : null}
       {angaben && angaben.length > 0 ? (
         <ul className="relative flex flex-col gap-2.5">
           {angaben.map((a) => (

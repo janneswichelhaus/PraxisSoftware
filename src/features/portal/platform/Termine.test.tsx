@@ -140,6 +140,7 @@ describe('Termine (POR-008, Schritt 3b)', () => {
     const ziel = within(karte).getByRole('link');
     expect(ziel).toHaveAttribute('href', `/p/termine/${HAUSBESUCH.id}?bereich=treatment`);
     expect(within(karte).queryByRole('button')).not.toBeInTheDocument();
+    expect(karte).not.toHaveTextContent('angefragt');
     // Ohne Abo und Lesefrist fragt die Seite nicht nach dem Abo.
     expect(ladeAbo).not.toHaveBeenCalled();
   });
@@ -289,6 +290,13 @@ describe('Termine (POR-008, Schritt 3b)', () => {
 });
 
 describe('Hero je Lage (Handoff, Abschnitt 3)', () => {
+  it('ein offener Absagewunsch steht als Statuszeichen an der Karte (ANN-772)', async () => {
+    ladeTermine.mockResolvedValue([{ ...HAUSBESUCH, open_request_kind: 'cancel' }]);
+    renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine');
+    const karte = await screen.findByRole('region', { name: /^Besuch / });
+    expect(within(karte).getByText('Absage angefragt')).toBeInTheDocument();
+  });
+
   it('heute: „Besuch heute“, der erste Termin heißt „Ihr erster Besuch“', async () => {
     const heute: Termin = { ...HAUSBESUCH, starts_at: in_(0, 23), ends_at: in_(1, 0) };
     ladeTermine.mockResolvedValue([heute]);
@@ -413,9 +421,10 @@ describe('Lesefrist (Frage 5)', () => {
     expect(
       screen.getByRole('status').compareDocumentPosition(titel) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(
-      screen.getByText('Neue Termine vereinbaren Sie bei Bedarf direkt mit der Praxis.'),
-    ).toBeInTheDocument();
+    // Der Satz zu neuen Terminen steht in der Meldung, der Kopf trägt nur den Titel.
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Neue Termine vereinbaren Sie bei Bedarf direkt mit der Praxis.',
+    );
     expect(screen.queryByRole('link', { name: /Termin wünschen/ })).not.toBeInTheDocument();
     expect(screen.queryByText('Zurzeit ist kein Termin vereinbart.')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Diese Woche' })).not.toBeInTheDocument();
@@ -490,7 +499,7 @@ describe('Rechner (ANN-775)', () => {
       screen
         .getByText('Ihr Wunsch ist bei der Praxis angekommen. Sie meldet sich bei Ihnen.')
         .closest('.max-w-spalte'),
-    ).toHaveClass('@min-[56.75rem]:max-w-none');
+    ).toHaveClass('@terminspalten:max-w-none');
   });
 
   it('ohne Termin eine Spalte, der Knopf so breit wie sein Text', async () => {

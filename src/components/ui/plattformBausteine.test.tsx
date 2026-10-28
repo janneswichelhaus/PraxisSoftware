@@ -58,6 +58,20 @@ describe('HeroKarte', () => {
     expect(karte.querySelector('[data-laufrad]')).toHaveAttribute('aria-hidden', 'true');
   });
 
+  it('zeigt ein Statuszeichen unter dem Satz', () => {
+    zeige(
+      <HeroKarte
+        titel="Besuch am Samstag"
+        satz="31. Oktober, 09:30 bis 10:30"
+        zustand={<span>Absage angefragt</span>}
+      />,
+    );
+    const karte = screen.getByRole('region', { name: 'Besuch am Samstag' });
+    const satz = within(karte).getByText('31. Oktober, 09:30 bis 10:30');
+    const zustand = within(karte).getByText('Absage angefragt');
+    expect(satz.compareDocumentPosition(zustand) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('zeigt die Person mit Bild in 56 px und läuft nur auf Wunsch ein', () => {
     const { container } = zeige(
       <HeroKarte
