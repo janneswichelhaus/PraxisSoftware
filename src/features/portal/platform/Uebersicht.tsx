@@ -56,6 +56,7 @@ import {
   handlung,
   hauptsache,
   inLesefrist,
+  lesefristSatz,
   naechsterTermin,
   terminPerson,
   terminTitel,
@@ -600,16 +601,13 @@ function Kopfteil({
 }) {
   const eigen = zugang.access_kind === 'self';
   const name = zugang.represented_name ?? 'die Person';
-  const aboEndet = abo && abo.state !== 'running' ? abo : null;
   return (
     <div className="markenmoment-gruss flex flex-col gap-6">
       {zugang.read_until ? (
         <Statusmeldung ton="warnung">
           {!eigen
             ? `Ihr Zugang für ${name} endet am ${datum(zugang.read_until)}.`
-            : aboEndet?.ends_on
-              ? `Ihr Nachsorge-Abo ${aboEndet.state === 'ending' ? 'endet' : 'endete'} am ${datum(aboEndet.ends_on)}. Sie können hier noch bis ${datum(letzterTag(zugang.read_until))} lesen.`
-              : `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(letzterTag(zugang.read_until))} lesen.`}
+            : lesefristSatz(zugang, abo)}
         </Statusmeldung>
       ) : null}
       <Gruss name={mitName ? zugang.own_name : null} jetzt={jetzt} mitDatum={mitDatum} />

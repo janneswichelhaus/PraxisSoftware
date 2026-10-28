@@ -18,3 +18,6 @@ export const WUNSCHSCHUTZ: Verlustschutztexte = {
     bleiben: 'Weiter ausfüllen',
   },
 };
+
+/** Ohne Netz sind Wünschen, Ändern und Absagen gesperrt (ANN-773): der Satz unter dem Knopf. */
+export const WUENSCHE_OHNE_NETZ = 'Wünschen, Ändern und Absagen gehen wieder mit Verbindung.';

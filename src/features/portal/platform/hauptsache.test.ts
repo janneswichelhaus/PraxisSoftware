@@ -322,10 +322,10 @@ describe('Texte eines Termins als Hauptsache', () => {
     expect(terminTitel(termin('2026-10-24'), 'treatment', null, JETZT)).toBe('Besuch morgen');
     expect(terminTitel(termin('2026-10-27'), 'treatment', null, JETZT)).toBe('Besuch am Dienstag');
     expect(terminTitel(termin('2026-11-02'), 'treatment', null, JETZT)).toBe(
-      'Besuch am 2. November',
+      'Besuch am 2.\u00a0November',
     );
     expect(terminTitel(termin('2027-01-04'), 'treatment', null, JETZT)).toBe(
-      'Besuch am 4. Januar 2027',
+      'Besuch am 4.\u00a0Januar 2027',
     );
   });
 
@@ -342,8 +342,9 @@ describe('Texte eines Termins als Hauptsache', () => {
     expect(
       terminTitel({ ...t, appointment_type: 'video' }, 'treatment', 'Max Mustermann', JETZT),
     ).toBe('Videotermin für Max Mustermann');
-    expect(terminZeit(t, true, JETZT)).toBe('Samstag, 24. Oktober, 09:30 bis 10:30');
-    expect(terminZeit(t, false, JETZT)).toBe('24. Oktober, 09:30 bis 10:30');
+    // Tag und Monat mit geschütztem Leerzeichen: In der Hero-Karte brechen sie nicht auseinander.
+    expect(terminZeit(t, true, JETZT)).toBe('Samstag, 24.\u00a0Oktober, 09:30 bis 10:30');
+    expect(terminZeit(t, false, JETZT)).toBe('24.\u00a0Oktober, 09:30 bis 10:30');
     // Über sechs Tage steht das Datum schon im Titel.
     expect(terminZeit(termin('2026-11-02'), false, JETZT)).toBe('09:30 bis 10:30');
   });

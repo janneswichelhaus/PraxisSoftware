@@ -130,13 +130,6 @@ N); Streuung und Reserve bleiben.
 „heranzie|hen“ (unter der Trenngrenze von ANN-707), „Durchgän|ge“. **Erwartet.** Entscheiden, ob das
 ein Prüfpunkt ist; wenn ja, Trenngrenze senken oder Titel und Marken kleiner.
 
-### BEF-220 — Termine: Statuszeichen und Knopf brechen mitten im Wort
-2026-10-24 · Plattform, Termine · Briefing 3 · eingeplant in Schritt 3b; die Bausteine sind mit 3a
-erledigt (ANN-765) · `Termine.tsx`\
-**Rest.** Statuszeichen, Knöpfe und die neue `Terminzeile` brechen nur zwischen Wörtern, der Zustand
-rückt ohne Platz unter den Titel. Die Liste in `Termine.tsx` zeigt noch ihre eigene Zeile; sie
-wechselt mit 3b zur `Terminzeile`.
-
 ### BEF-221 — Termine: der vergangene Termin nennt keine Nummer, obwohl sie vorliegt
 2026-10-24 · Plattform, ein Termin · Briefing 3 · offen (Schritt 3, DR-133) · `Terminaenderung.tsx`\
 **Beobachtung.** „Bei Fragen rufen Sie bitte die Praxis an.“ ohne Nummer und Knopf, obwohl der
@@ -147,9 +140,9 @@ Satz, der eine Handlung verlangt, die die Seite nicht anbietet.
 ### BEF-222 — Lesefrist: der Server nimmt Terminwünsche noch an
 2026-10-24 · Plattform, Lesefrist · Handoff Termine, Frage 5 · offen; Frage an Jannes\
 **Beobachtung.** DSN-001 D2 sagt „30 Tage lesend“, `app.platform_access_allows` erlaubt `request`
-aber jedem lesbaren Zugang (`request_platform_appointment`, `…_change`); der Reiter zeigt „Termin
-wünschen“. **Erwartet.** Nach Jannes' Antwort am Server ablehnen (Pfad A) und in der Ansicht
-weglassen, oder bewusst erlauben und D2 so fassen.
+aber jedem lesbaren Zugang (`request_platform_appointment`, `…_change`); nur der Reiter lässt
+„Termin wünschen“ weg (ANN-774). **Erwartet.** Nach Jannes' Antwort am Server ablehnen (Pfad A),
+oder bewusst erlauben, D2 so fassen und den Knopf zeigen.
 
 ### BEF-223 — Zeitumstellung: In der doppelten Stunde liegt „jetzt“ eine Stunde in der Zukunft
 2026-10-25 · Absage, Absagewunsch, Tagebuch-Erinnerungen · CI zu #304 · offen (Vorschlag, Pfad A)\

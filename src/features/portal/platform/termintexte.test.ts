@@ -10,6 +10,7 @@ import {
   heroEtikett,
   leereTage,
   rolle,
+  tagDerWoche,
   tagInWorten,
   tageSatz,
   terminZustand,
@@ -253,5 +254,10 @@ describe('leereTage („Diese Woche“)', () => {
       'So., Di. bis Fr.',
     );
     expect(leereTage([])).toBe('');
+  });
+
+  it('nennt einen belegten Tag kurz mit Wochentag (Schritt 3b)', () => {
+    expect(tagDerWoche('2026-10-26')).toBe('Mo., 26.');
+    expect(tagDerWoche('2026-11-01')).toBe('So., 1.');
   });
 });

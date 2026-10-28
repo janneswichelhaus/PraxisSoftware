@@ -70,24 +70,29 @@ function nachbildung() {
     ];
   }
 
+  // Wie der Server: jeder gesendete Wunsch steht danach unter „Ihre Wünsche“ -
+  // ein neuer ebenso wie ein Änderungs- oder Absagewunsch zum Termin.
   function wuensche() {
     const neu = aufrufe.request_platform_appointment?.at(-1);
-    return neu
-      ? [
-          {
-            id: 'dddddddd-dddd-4ddd-8ddd-0000000000b1',
-            kind: 'new',
-            appointment_id: null,
-            preferred_days: neu.p_days,
-            preferred_times: neu.p_times,
-            note: neu.p_note,
-            status: 'open',
-            created_at: new Date().toISOString(),
-            resolved_at: null,
-            answer: null,
-          },
-        ]
-      : [];
+    const zumTermin = aufrufe.request_platform_appointment_change?.at(-1);
+    const offen = (id: string, kind: string, p: Record<string, unknown>) => ({
+      id,
+      kind,
+      appointment_id: kind === 'new' ? null : p.p_appointment_id,
+      preferred_days: p.p_days,
+      preferred_times: p.p_times,
+      note: p.p_note,
+      status: 'open',
+      created_at: new Date().toISOString(),
+      resolved_at: null,
+      answer: null,
+    });
+    return [
+      ...(neu ? [offen('dddddddd-dddd-4ddd-8ddd-0000000000b1', 'new', neu)] : []),
+      ...(zumTermin
+        ? [offen('dddddddd-dddd-4ddd-8ddd-0000000000a1', zumTermin.p_kind as string, zumTermin)]
+        : []),
+    ];
   }
 
   const antworten: Record<string, (p: Record<string, unknown>) => unknown> = {
@@ -262,9 +267,19 @@ async function pruefeAbschluss(
   await page.setViewportSize({ width: 375, height: 667 });
 }
 
-/** Der Hausbesuch in der Terminliste - die ganze Zeile ist das Ziel. */
+/** Der Hausbesuch auf der Liste: der nächste Termin als Hero-Karte, die ganze Karte als Ziel. */
 function terminzeile(page: Page) {
-  return page.getByRole('link', { name: /Hausbesuch · Anna Beispiel kommt zu Ihnen/ });
+  return page.getByRole('region', { name: /^Besuch / }).getByRole('link');
+}
+
+/** Die Liste ist geladen: der nächste Termin steht als Karte. */
+function liste(page: Page) {
+  return page.getByRole('region', { name: /^Besuch / });
+}
+
+/** Die Wünsche unter „Ihre Wünsche“ - die Bestätigung nach dem Senden (Frage 3). */
+function wuensche(page: Page) {
+  return page.getByRole('list', { name: 'Ihre Wünsche' });
 }
 
 test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)', () => {
@@ -273,7 +288,7 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
   }) => {
     const server = nachbildung();
     await oeffne(page, server, 'termine');
-    await expect(page.getByRole('heading', { name: 'Kommende Termine' })).toBeVisible();
+    await expect(liste(page)).toBeVisible();
     const z = zaehler();
 
     await z.tippe(terminzeile(page));
@@ -298,7 +313,7 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
 
     await z.tippe(ende.getByRole('button', { name: 'Absage senden' }));
     await expect(page.getByText('Ihr Wunsch ist bei der Praxis angekommen.')).toBeVisible();
-    await expect(page.getByText('Absage angefragt')).toBeVisible();
+    await expect(wuensche(page)).toContainText(/Absage für .*angefragt/);
     await bild(page, 'b6-absagen-04-gesendet');
     expect(server.aufrufe.request_platform_appointment_change).toEqual([
       {
@@ -322,7 +337,7 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
   }) => {
     const server = nachbildung();
     await oeffne(page, server, 'termine');
-    await expect(page.getByRole('heading', { name: 'Kommende Termine' })).toBeVisible();
+    await expect(liste(page)).toBeVisible();
     const z = zaehler();
 
     await z.tippe(terminzeile(page));
@@ -358,7 +373,7 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
 
     await z.tippe(ende.getByRole('button', { name: 'Änderungswunsch senden' }));
     await expect(page.getByText('Ihr Wunsch ist bei der Praxis angekommen.')).toBeVisible();
-    await expect(page.getByText('Änderung angefragt').first()).toBeVisible();
+    await expect(wuensche(page)).toContainText(/Änderung für .*angefragt/);
     await bild(page, 'b6-aendern-05-gesendet');
     expect(server.aufrufe.request_platform_appointment_change).toEqual([
       {
@@ -439,7 +454,7 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
   }) => {
     const server = nachbildung();
     await oeffne(page, server, 'termine');
-    await expect(page.getByRole('heading', { name: 'Kommende Termine' })).toBeVisible();
+    await expect(liste(page)).toBeVisible();
     const z = zaehler();
 
     await z.tippe(page.getByRole('link', { name: 'Termin wünschen' }));
@@ -461,7 +476,7 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
 
     await z.tippe(ende.getByRole('button', { name: 'Wunsch senden' }));
     await expect(page.getByText('Ihr Wunsch ist bei der Praxis angekommen.')).toBeVisible();
-    await expect(page.getByText(/Terminwunsch vom/)).toBeVisible();
+    await expect(wuensche(page)).toContainText(/Terminwunsch.*angefragt.*Gesendet am /);
     await bild(page, 'b6-wunsch-03-gesendet');
     expect(server.aufrufe.request_platform_appointment).toEqual([
       { p_access_id: ZUGANG, p_days: tageAm(3), p_times: [], p_note: null },

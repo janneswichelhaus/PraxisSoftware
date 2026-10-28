@@ -1733,10 +1733,20 @@
           "id": "drp-epic-011",
           "name": "DRP-EPIC-011 Plattform: Bausteine der Termine aus dem Design-Review (Schritt 3a – Statuszeichen und Knöpfe ohne Bruch im Wort, Zeichen der Art, Terminzeile, Wunschzeile, „Wer und wo“, „Fragen zu diesem Termin?“, Wahlflächen, Wochenleiste, Hero mit Ort und Ziel, die Wörter als reine Funktionen)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-28",
           "nachweis": "#327 (Übertrag von ccr-544f8ce7-u1sqpf, Stand 25.10.)",
-          "vermerk": "Auftrag Jannes 28.10.2026; Handoff Termine Abschnitt 9 Punkt 1, Fragen wie empfohlen; ANN-764 bis ANN-771; BEF-220 teilweise; nur Oberfläche, ohne Migration, ohne Auditeintrag"
+          "vermerk": "Auftrag Jannes 28.10.2026; Handoff Termine Abschnitt 9 Punkt 1, Fragen wie empfohlen; ANN-764 bis ANN-771; BEF-220 teilweise; nur Oberfläche, ohne Migration, ohne Auditeintrag",
+          "gesichtet_am": "2026-10-28"
+        },
+        {
+          "id": "drp-epic-012",
+          "name": "DRP-EPIC-012 Plattform: Liste der Termine aus dem Design-Review (Schritt 3b – der nächste Termin als Hero-Karte, „Weitere Termine“ in Terminzeilen mit Ziel, „Termin wünschen“ als Hauptknopf, „Ihre Wünsche“, „Diese Woche“ ohne Pillen, Vergangenes auf Abruf, Lesefrist, Skelett, ohne Netz, am Rechner zwei Spalten)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-28",
+          "nachweis": "#328 (Übertrag von ccr-544f8ce7-u1sqpf, Stand 25.10.)",
+          "vermerk": "Auftrag Jannes 28.10.2026; Handoff Termine Abschnitte 5.1, 5.5, 5.6 und 9 Punkt 2, Fragen 1, 4 und 5 wie empfohlen; ANN-772 bis ANN-777; BEF-220 erledigt, BEF-222 offen (Server); nur Oberfläche, ohne Migration, ohne Auditeintrag"
         }
       ]
     },

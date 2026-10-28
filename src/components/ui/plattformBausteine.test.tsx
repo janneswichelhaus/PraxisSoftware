@@ -315,6 +315,23 @@ describe('Leerzustand mit Markenform', () => {
     expect(rad.parentElement!.parentElement!.className).toContain('rounded-card');
   });
 
+  it('setzt mit zeichen statt des Laufrads das Zeichen auf die Vertiefung (Handoff 2026-10-24, 5.1)', () => {
+    const { container } = zeige(
+      <EmptyState
+        markenform
+        inKarte
+        zeichen={<svg data-testid="uhr" />}
+        title="Ihr Wunsch ist bei der Praxis."
+      />,
+    );
+    expect(container.querySelector('[data-laufrad]')).toBeNull();
+    const kreis = screen.getByTestId('uhr').parentElement!;
+    expect(kreis).toHaveAttribute('aria-hidden', 'true');
+    expect(kreis.className).toContain('bg-surface-sunken');
+    expect(kreis.className).not.toContain('bg-surface-inverse');
+    expect(kreis.parentElement!.className).toContain('rounded-card');
+  });
+
   it('bleibt ohne markenform, wie es war', () => {
     const { container } = zeige(<EmptyState title="Keine Einträge" />);
     expect(container.querySelector('[data-laufrad]')).toBeNull();
