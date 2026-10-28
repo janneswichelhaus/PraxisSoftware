@@ -1,4 +1,4 @@
-# Status · Stand 2026-10-27
+# Status · Stand 2026-10-28
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -8,17 +8,18 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 **Aufräumen** (Auftrag Jannes 25.10., Entscheidungen 26. und 27.10., ROADMAP 7.22): Schritte 1 bis 4,
 alle sieben Fehler, M1, M5, M7, M9, das Barometer, die Vorab-PR, 3b und sein Nachzug gemergt
-(#308 bis #322). Schritt 5 (Doku): Teil A und B gemergt (#323, #324); Teil C mit dem Abschluss
-(ADRs, Prinzipien 0.31, Prozessdoku, Ideen, Sichtung, Gesamtgrenze im Gate, Bilanz) liegt als #325
-vor.
+(#308 bis #322). Schritt 5 (Doku) mit dem Abschluss des Blocks gemergt (#323 bis #325).
+**CI-Beschleunigung** (Zusatzauftrag 27.10.): Lint in zwei Läufen je 3 GB und die schnellere
+Einrichtung von „E2E hinter der Anmeldung“ liegen als #326 vor; offen bleibt die Abkürzung für
+reine Doku (Lint und Typecheck auslassen, ADR-013 Punkt 2, Entscheidung Jannes).
 Design-Review Lauf 1: Schritt 1 abgenommen (24.10.), Schritt 2 mit 2a bis 2d gemergt (#300, #302,
 #304, #307); Schritt 3 Termine ist mit #303 freigegeben (Roadmap, BEF-220 bis -222).
 Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Die CI-Beschleunigung (Vorschlag vom 27.10.; offen: Lint und Typecheck bei reiner Doku, ADR-013
-Punkt 2). Die drei Vorschläge der Aufräumrunde stehen in `development/BEFUNDE.md`.
+Die drei Vorschläge der Aufräumrunde stehen in `development/BEFUNDE.md` (zuerst Nr. 2, Akte und
+Untermodule).
 Schritt 3 Termine des Design-Reviews (3a bis 3d), dann Schritte 4 bis 7 (Selbstauskunft,
 Nachrichten, Unterlagen, Ich), je mit freigegebenem Handoff; Handoff und Briefings nennt die
 Roadmap („Design-Review der Plattform“). Ohne Handoff: BEF-223 (Zeitumstellung; Pfad A).
@@ -49,5 +50,5 @@ Roadmap („Design-Review der Plattform“). Ohne Handoff: BEF-223 (Zeitumstellu
 
 ## Letzte Session
 
-27.10.2026, Branch `claude/step-4-central-register-ur5k1y`: Aufräumen 5 Teil C mit Abschluss als
-#325. Keine Migration. Lokal: `git pull`.
+28.10.2026, Branch `claude/step-4-central-register-ur5k1y`: CI-Beschleunigung als #326 (Lint in
+zwei Läufen, E2E-Einrichtung, vier Teile). Keine Migration. Lokal: `git pull`.
