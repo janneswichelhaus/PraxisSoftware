@@ -49,6 +49,6 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-28.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: Schritt 3a übertragen (Bausteine der Termine,
-ANN-764 bis -771, Kommentare nach der neuen Regel); Bildstrecke mit `--neu-laden` (Befund
-„Bildstrecke“). Keine Migration. Lokal: `git pull`.
+28.10.2026, Branch `claude/modest-bell-fyy01m`: Bildstrecke führt offene Anfragen je Dokument
+(`scripts/bildstrecke/netzruhe.mjs`), Wechsel in der Anwendung ohne „keine Netzruhe“, Plattform
+und Anmeldung in 70 statt 286 s; `--neu-laden` nicht mehr nötig. Keine Migration.

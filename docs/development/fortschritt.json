@@ -1737,6 +1737,15 @@
           "fertig_am": "2026-10-28",
           "nachweis": "#327 (Übertrag von ccr-544f8ce7-u1sqpf, Stand 25.10.)",
           "vermerk": "Auftrag Jannes 28.10.2026; Handoff Termine Abschnitt 9 Punkt 1, Fragen wie empfohlen; ANN-764 bis ANN-771; BEF-220 teilweise; nur Oberfläche, ohne Migration, ohne Auditeintrag"
+        },
+        {
+          "id": "bildstrecke-netzruhe",
+          "name": "Bildstrecke: Netzruhe nach einem Wechsel in der Anwendung, offene Anfragen je Dokument",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-28",
+          "nachweis": "#328",
+          "vermerk": "Auftrag Jannes 28.10.2026; Befund „Bildstrecke“ vom 28.10. behoben; nur Werkzeug, keine Anwendungsdatei"
         }
       ]
     },

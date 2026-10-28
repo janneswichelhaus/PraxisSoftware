@@ -179,13 +179,20 @@ bei 188 px und „Sehr groß“ einmal über: gemessen, bevor die Schriftgröße
 **Erwartet.** Auf das gemessene Element warten (eigenes Zeitlimit, `data-schrift` am Wurzelelement);
 Grenzen bleiben.
 
-### Bildstrecke — Nach der Anmeldung bleibt der Zähler offener Anfragen über null
-2026-10-28 · `scripts/bildstrecke.mjs` · Vorher-Bilder zu Schritt 3a · offen (Vorschlag) · `netzruhe`\
-**Beobachtung.** Zwei Anfragen der Anmeldung (`own_offline_passkeys`) und das Monogramm brechen beim
-ersten `goto` ab und melden mit dem Lesewächter (`context.route`) weder Ende noch Abbruch. Danach
-läuft jeder Wechsel in der Anwendung in „keine Netzruhe nach 20 s“: 34 von 78 Bildern der Plattform,
-die Bilder selbst vollständig; mit `--neu-laden` keines. **Erwartet.** Den Zähler nach jedem `goto`
-auf null setzen oder offene Anfragen je Dokument führen; Gegenprobe mit `--nur=plattform`.
+### Bildstrecke — Eine geänderte Projektdatei lädt die Seiten eines laufenden Laufs neu
+2026-10-28 · `scripts/bildstrecke.mjs` · Gegenproben zur Netzruhe · offen (Vorschlag) · `aufnehmen`\
+**Beobachtung.** Ändert sich während eines Laufs eine Datei, die Tailwind nach Klassen durchsucht
+und die kein Code ist (`docs/*.md`, `*.json`), schickt sein Vite-Plugin allen offenen Seiten
+`full-reload`, ohne Zeile im Log von `pnpm dev`. Drei Bilder kamen so ganz weiß und als „leer“,
+binnen vier Sekunden nach einer Änderung an `STATUS.md` oder `fortschritt.json`; Läufe ohne
+Änderung hatten keines. **Erwartet.** Die Bildstrecke erkennt ein Neuladen, das sie nicht selbst
+auslöst (`domcontentloaded` ohne eigenes `goto`), und nimmt das Bild neu auf.
+
+### Kalender — Für `trainer` antwortet `list_fleet` mit 403
+2026-10-28 · `/kalender`, `trainer` · Gesamtlauf der Bildstrecke · offen (Vorschlag) · `list_fleet`\
+**Beobachtung.** Bei 375 und 1280 meldet die Bildstrecke `403 /rest/v1/rpc/list_fleet`: Eine Abfrage
+auf der Seite lädt die Radflotte, die Datenbank weist `trainer` ab. **Erwartet.** Die Seite fragt
+für `trainer` nur, was die Rolle lesen darf; kein 403 im Gesamtlauf.
 
 ### Termine — Zeichen und Zeilen der Bausteine gibt es schon an anderer Stelle
 2026-10-28 · Plattform, Termine · Design-Review zu 3a · offen (Vorschlag, mit 3c) ·
