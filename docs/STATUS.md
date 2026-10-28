@@ -25,6 +25,8 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Bei Jannes
 
+- Test-Umgebung neu aufsetzen (Workflow „Test-Umgebung“, „neu aufsetzen“): Termine der alten
+  Praxiswoche haben keine gültige UUID, Erikas Übersicht scheitert (`development/BEFUNDE.md`).
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; E13); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
@@ -50,5 +52,5 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 ## Letzte Session
 
 28.10.2026, Branch `claude/modest-bell-fyy01m`: Bildstrecke führt offene Anfragen je Dokument
-(`scripts/bildstrecke/netzruhe.mjs`), Wechsel in der Anwendung ohne „keine Netzruhe“, Plattform
-und Anmeldung in 70 statt 286 s; `--neu-laden` nicht mehr nötig. Keine Migration.
+(`scripts/bildstrecke/netzruhe.mjs`), Plattform und Anmeldung in 70 statt 286 s. Fehler der
+Plattform-Übersicht in der Test-Umgebung: alte Termin-Kennungen (neu aufsetzen). Keine Migration.

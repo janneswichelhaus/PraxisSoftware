@@ -188,6 +188,16 @@ binnen vier Sekunden nach einer Änderung an `STATUS.md` oder `fortschritt.json`
 Änderung hatten keines. **Erwartet.** Die Bildstrecke erkennt ein Neuladen, das sie nicht selbst
 auslöst (`domcontentloaded` ohne eigenes `goto`), und nimmt das Bild neu auf.
 
+### Test-Umgebung — Die Termine der Praxiswoche vom 6.10. haben keine gültige UUID
+2026-10-28 · Test-Umgebung, Übersicht der Plattform · Bild von Jannes, nachgestellt · offen (bei
+Jannes) · `praxiswoche.sql`\
+**Beobachtung.** Erikas Übersicht meldet „Die Übersicht lässt sich gerade nicht laden.“: Die alte
+Praxiswoche gab Terminen md5-Kennungen ohne Versions- und Variantenbits (`d644f009-734a-46c3-07d2-…`),
+`z.string().uuid()` verwirft die ganze Terminliste, ohne Fehler im Netz oder in der Konsole. Der
+Generator ist seit `b7a1c64b` (12.10.) richtig, die Test-Umgebung seit dem 6.10. nicht neu aufgesetzt.
+Nachgestellt mit dem Seed vom 6.10. und allen Migrationen; mit gültigen Kennungen lädt die Übersicht.
+**Erwartet.** Test-Umgebung neu aufsetzen (Workflow „Test-Umgebung“, „neu aufsetzen“).
+
 ### Kalender — Für `trainer` antwortet `list_fleet` mit 403
 2026-10-28 · `/kalender`, `trainer` · Gesamtlauf der Bildstrecke · offen (Vorschlag) · `list_fleet`\
 **Beobachtung.** Bei 375 und 1280 meldet die Bildstrecke `403 /rest/v1/rpc/list_fleet`: Eine Abfrage
