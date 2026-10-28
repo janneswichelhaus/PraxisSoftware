@@ -606,10 +606,14 @@ function DieseWoche({
 const WOCHENZEILE =
   'grid min-h-14 grid-cols-[var(--spacing-tagesspalte)_minmax(0,1fr)] items-start gap-3 px-4 py-3 hyphens-manual max-[23rem]:grid-cols-1 max-[23rem]:gap-1 max-[23rem]:px-3 [[data-schrift=sehr-gross]_&]:grid-cols-1 [[data-schrift=sehr-gross]_&]:gap-1';
 
-/** Ein Eintrag der Woche: Zeichen 20 in der Hauptfarbe, daneben der Text. */
+/**
+ * Ein Eintrag der Woche: Zeichen 20 in der Hauptfarbe, daneben der Text. Unter 23rem steht das
+ * Zeichen darüber wie an den Karten: Daneben blieben bei 200 % nur 110 px, zu knapp für
+ * „Heimübungen“.
+ */
 function Eintrag({ zeichen, children }: { zeichen: Terminzeichen; children: string }) {
   return (
-    <span className="flex items-start gap-2">
+    <span className="flex items-start gap-2 max-[23rem]:flex-col max-[23rem]:gap-1">
       <Terminsymbol zeichen={zeichen} className="text-accent mt-0.5 size-5 shrink-0" />
       <span className="min-w-0">{children}</span>
     </span>
