@@ -1728,6 +1728,15 @@
           "fertig_am": "2026-10-28",
           "nachweis": "#326",
           "vermerk": "Zusatzauftrag Jannes 27.10.2026; Abkürzung für reine Doku offen (ADR-013 Punkt 2)"
+        },
+        {
+          "id": "drp-epic-011",
+          "name": "DRP-EPIC-011 Plattform: Bausteine der Termine aus dem Design-Review (Schritt 3a – Statuszeichen und Knöpfe ohne Bruch im Wort, Zeichen der Art, Terminzeile, Wunschzeile, „Wer und wo“, „Fragen zu diesem Termin?“, Wahlflächen, Wochenleiste, Hero mit Ort und Ziel, die Wörter als reine Funktionen)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-28",
+          "nachweis": "#327 (Übertrag von ccr-544f8ce7-u1sqpf, Stand 25.10.)",
+          "vermerk": "Auftrag Jannes 28.10.2026; Handoff Termine Abschnitt 9 Punkt 1, Fragen wie empfohlen; ANN-764 bis ANN-771; BEF-220 teilweise; nur Oberfläche, ohne Migration, ohne Auditeintrag"
         }
       ]
     },

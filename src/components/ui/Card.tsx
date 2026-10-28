@@ -181,11 +181,9 @@ export function Disclosure({
       <summary className={`${kopfKlassen} ${aufklappKoepfe[kopf]}`}>
         <Aufklappzeichen />
         {summary}
-        {/* Der Zähler ist ein eigenes Element neben dem Titel: Der Titel darf
-            eine Überschrift sein, und die gehört nicht in ein `span`. Das
-            Leerzeichen davor steht für Vorlesesoftware da; sichtbar trägt den
-            Abstand der Kopf selbst. */}
-        {anzahl === undefined ? null : <span className="-ml-1"> ({anzahl})</span>}
+        {/* Eigenes Element, weil der Titel eine Überschrift sein darf und die nicht in ein `span`
+            gehört; das Leerzeichen ist für Vorlesesoftware, die Zahl bricht auch bei 200 % nie. */}
+        {anzahl === undefined ? null : <span className="-ml-1 whitespace-nowrap"> ({anzahl})</span>}
       </summary>
       <div className={inKarte ? 'border-line mt-1 border-t pt-3 pb-2.5' : 'mt-2'}>{children}</div>
     </details>

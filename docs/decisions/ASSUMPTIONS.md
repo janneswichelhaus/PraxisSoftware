@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-10-27.
+Zuletzt aktualisiert: 2026-10-28.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1569,3 +1569,11 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-760 | Rückfrage mit Kontrollwerten vor Ausstellen, Löschen und Entziehen | Praxisprozess · entschieden (Jannes) | `Kontrollwerte` in `src/features/billing/InvoiceDetailPage.tsx` |
 | ANN-761 | Nachweisseiten: für die Praxisleitung, der Nachweis als Zusatz | Praxisprozess · entschieden (Jannes) | `src/features/privacy/retention/AufbewahrungPage.tsx` |
 | ANN-762 | Übersicht der Praxis: keine Liste „Check-in ausgeblieben“ | Praxisprozess · entschieden (Jannes) | `src/features/workplace/open-points/OpenPointsPage.tsx` |
+| ANN-764 | Termine: „Heute“ und „Morgen“ nach dem Tag des Geräts | Technik · offen | `tagInWorten` in `src/features/portal/platform/termintexte.ts` |
+| ANN-765 | Plattform: Statuszeichen und Knöpfe brechen nur zwischen Wörtern | Technik · offen | `WORTWEISE` in `src/components/ui/buttonStile.ts` |
+| ANN-766 | Termine: die Rolle ohne Geschlecht, Name mit Satzrest | Technik · offen | `rolle` in `src/features/portal/platform/termintexte.ts` |
+| ANN-767 | Termine: Wünsche nach Wochentag mit „oder“ statt jedes Datum | Technik · offen | `wunschInWorten` in `src/features/portal/platform/termintexte.ts` |
+| ANN-768 | Termine: „Praxis anrufen“ als Hauptknopf am vergangenen Termin | Technik · offen | `FragenZumTermin` in `src/features/portal/platform/Terminbausteine.tsx` |
+| ANN-769 | Termine: die Rufnummer bricht bei 200 % zwischen ihren Gruppen | Technik · offen | `Fragezeile` in `src/features/portal/platform/Terminbausteine.tsx` |
+| ANN-770 | „Wer und wo“ und Fragen: unter 23rem gestapelt, bei „Sehr groß“ nebeneinander | Technik · offen | `WerUndWo` in `src/features/portal/platform/Terminbausteine.tsx` |
+| ANN-771 | Hero-Karte: das Personenbild auf seiner Farbe, nicht auf Papier | Technik · offen | `Personenbild` in `src/components/ui/HeroKarte.tsx` |

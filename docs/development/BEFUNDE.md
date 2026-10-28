@@ -1,5 +1,5 @@
 # Befunde an der laufenden Anwendung
-Stand 2026-10-27. **Befunde aus Sichtungen, Screenrecordings und Reviews an der laufenden
+Stand 2026-10-28. **Befunde aus Sichtungen, Screenrecordings und Reviews an der laufenden
 Anwendung**: Beobachtungen an Gebautem, keine Ideen (die gehören nach `docs/product/`). Die Liste
 ist die **Eingabe für die erste Story des nächsten Loops derselben Spur** (Roadmap-Regel R6), seit
 2026-10-12 der nächsten Überholung des Bereichs (`/bereich`), sonst gebündelt in einem Auftrag. Sie
@@ -131,11 +131,11 @@ N); Streuung und Reserve bleiben.
 ein Prüfpunkt ist; wenn ja, Trenngrenze senken oder Titel und Marken kleiner.
 
 ### BEF-220 — Termine: Statuszeichen und Knopf brechen mitten im Wort
-2026-10-24 · Plattform, Termine · Briefing 3 · offen; mit Schritt 3 des Design-Reviews neu gefasst ·
-`Termine.tsx`\
-**Beobachtung.** „Sehr groß“: „Änderun|g angefrag|t“, 188 px: „zurückzieh|en“, ohne Strich:
-`overflow-wrap: anywhere` gibt jedem Element eine Mindestbreite von einem Zeichen. **Erwartet.**
-Nach PLATTFORM.md nur zwischen Wörtern brechen; ohne Platz rückt der Zustand unter den Titel.
+2026-10-24 · Plattform, Termine · Briefing 3 · eingeplant in Schritt 3b; die Bausteine sind mit 3a
+erledigt (ANN-765) · `Termine.tsx`\
+**Rest.** Statuszeichen, Knöpfe und die neue `Terminzeile` brechen nur zwischen Wörtern, der Zustand
+rückt ohne Platz unter den Titel. Die Liste in `Termine.tsx` zeigt noch ihre eigene Zeile; sie
+wechselt mit 3b zur `Terminzeile`.
 
 ### BEF-221 — Termine: der vergangene Termin nennt keine Nummer, obwohl sie vorliegt
 2026-10-24 · Plattform, ein Termin · Briefing 3 · offen (Schritt 3, DR-133) · `Terminaenderung.tsx`\
@@ -178,6 +178,23 @@ abfragen; die Grenze 44 px bleibt.
 bei 188 px und „Sehr groß“ einmal über: gemessen, bevor die Schriftgröße des Geräts gilt.
 **Erwartet.** Auf das gemessene Element warten (eigenes Zeitlimit, `data-schrift` am Wurzelelement);
 Grenzen bleiben.
+
+### Bildstrecke — Nach der Anmeldung bleibt der Zähler offener Anfragen über null
+2026-10-28 · `scripts/bildstrecke.mjs` · Vorher-Bilder zu Schritt 3a · offen (Vorschlag) · `netzruhe`\
+**Beobachtung.** Zwei Anfragen der Anmeldung (`own_offline_passkeys`) und das Monogramm brechen beim
+ersten `goto` ab und melden mit dem Lesewächter (`context.route`) weder Ende noch Abbruch. Danach
+läuft jeder Wechsel in der Anwendung in „keine Netzruhe nach 20 s“: 34 von 78 Bildern der Plattform,
+die Bilder selbst vollständig; mit `--neu-laden` keines. **Erwartet.** Den Zähler nach jedem `goto`
+auf null setzen oder offene Anfragen je Dokument führen; Gegenprobe mit `--nur=plattform`.
+
+### Termine — Zeichen und Zeilen der Bausteine gibt es schon an anderer Stelle
+2026-10-28 · Plattform, Termine · Design-Review zu 3a · offen (Vorschlag, mit 3c) ·
+`Terminsymbole.tsx`, `Terminliste.tsx`, `Fragezeile`\
+**Beobachtung.** Training, Kalender, Telefon, Nachricht und Pfeil in `Terminsymbole` zeichnen
+dieselben Pfade wie `Navigation.tsx`, `Notfallkarte.tsx`, `Uebungszeile.tsx` und `Linkliste.tsx`, auf
+Raster 24 statt 20 (DESIGN.md 9.15). `Terminliste` gleicht `Uebungsliste`, `Fragezeile` der
+`Linkliste` bis auf das `tel:`-Ziel und eine zweite Zeile. **Erwartet.** Mit 3c die Fragezeilen als
+Erweiterung von `Linkliste`, die Zeichen einmal in `src/components/ui`, das Raster in PLATTFORM.md.
 
 ### Trennung — Die Prüfungen erlauben `@/lib/` pauschal, auch einen Datenzugriff dort
 2026-10-25 · beide `trennung.test.ts` · Zweitreview Aufräumen 3 · offen (Vorschlag)\
