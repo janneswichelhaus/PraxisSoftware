@@ -393,6 +393,8 @@ test.describe('Check-in ohne Netz und ohne Ablauf (Handoff 5.1)', () => {
     expect(await axeVerstoesse(page)).toEqual([]);
   });
 
+  // „Meine Angaben“ führt mit dem Rückweg „Check-in“ zurück.
+  const MEINE_ANGABEN = '/p/angaben?bereich=treatment&zurueck=%2Fp%2Fcheckin%3Fbereich%3Dtreatment';
   const ZUSTAENDE = [
     {
       seite: 'checkin-leer',
@@ -410,13 +412,13 @@ test.describe('Check-in ohne Netz und ohne Ablauf (Handoff 5.1)', () => {
       seite: 'checkin-beantwortet',
       titel: 'Schon beantwortet',
       satz: /^Ihr nächster Check-in ist ab \p{L}+, \d{1,2}\.\s\p{L}+ dran\.$/u,
-      weg: ['Meine Angaben', '/p/angaben?bereich=treatment'],
+      weg: ['Meine Angaben', MEINE_ANGABEN],
     },
     {
       seite: 'checkin-lesefrist',
       titel: 'Kein Check-in mehr',
       satz: /^Ihre Behandlung ist beendet\. Sie können hier noch bis .+ lesen\.$/,
-      weg: ['Meine Angaben', '/p/angaben?bereich=treatment'],
+      weg: ['Meine Angaben', MEINE_ANGABEN],
     },
     {
       seite: 'checkin-begleitung',
