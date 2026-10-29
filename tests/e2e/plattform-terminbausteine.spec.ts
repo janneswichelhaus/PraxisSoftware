@@ -147,7 +147,7 @@ test.describe('Bausteine der Termine (Schritt 3a)', () => {
     [188, undefined],
     [375, 'sehr-gross'],
   ] as const) {
-    test(`bei ${breite} px${schrift ? ' und „Sehr groß“' : ' (200 %)'}: kein Rollen, kein Wort bricht in Zeichen und Knöpfen (BEF-220)`, async ({
+    test(`bei ${breite} px${schrift ? ' und „Sehr groß“' : ' (200 %)'}: kein Rollen, kein Wort bricht in Zeichen und Knöpfen (ANN-765)`, async ({
       page,
     }) => {
       await oeffne(page, breite, schrift);

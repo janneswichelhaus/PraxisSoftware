@@ -2,8 +2,9 @@ import { nurFragen } from '@/lib/erfassungsgroessen';
 import type { Bogenstand, EigeneCheckins, EigenePlaene, Plattformzugang, Termin } from './api';
 import { dauerDerEinheit } from './dauer';
 import { PLATTFORM_PFAD } from './pfade';
+import { tagInWorten } from './termintexte';
 import { uebungstageAm } from './uebungstage';
-import { kuenftig, tagOhneJahr, tagUndMonat, tageBis, uhrzeit } from './zeit';
+import { datum, fest, kuenftig, letzterTag, tagUndMonat, tageBis, uhrzeit } from './zeit';
 
 /**
  * Die erste Aufgabe - was als Hauptsache oben auf der Übersicht steht
@@ -55,6 +56,23 @@ export function inLesefrist(
   aboLaeuft = false,
 ): boolean {
   return zugang.access_kind === 'self' && zugang.read_until !== null && !aboLaeuft;
+}
+
+/**
+ * Der Satz über dem Titel, wenn der eigene Zugang endet: nach einem Nachsorge-Abo dessen Ende,
+ * sonst das der Behandlung bzw. Trainingszeit, und bis wann noch gelesen werden kann. `read_until`
+ * ist die Mitternacht nach dem letzten Tag.
+ */
+export function lesefristSatz(
+  zugang: Pick<Plattformzugang, 'relationship_kind' | 'read_until'>,
+  abo: { state: string; ends_on: string | null } | null,
+): string | null {
+  if (!zugang.read_until) return null;
+  const bis = datum(letzterTag(zugang.read_until));
+  if (abo && abo.state !== 'running' && abo.ends_on) {
+    return `Ihr Nachsorge-Abo ${abo.state === 'ending' ? 'endet' : 'endete'} am ${datum(abo.ends_on)}. Sie können hier noch bis ${bis} lesen.`;
+  }
+  return `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${bis} lesen.`;
 }
 
 export function ersteAufgabe(lage: Aufgabenlage): Aufgabe | null {
@@ -205,13 +223,13 @@ export function terminTitel(
   if (tage <= 0) return `${art} heute`;
   if (tage === 1) return `${art} morgen`;
   if (tage <= 6) return `${art} am ${WOCHENTAG.format(new Date(termin.starts_at))}`;
-  return `${art} am ${tagUndMonat(termin.starts_at, jetzt)}`;
+  return `${art} am ${fest(tagUndMonat(termin.starts_at, jetzt))}`;
 }
 
 /**
- * Wann, als Satz unter dem Titel: „23. Oktober, 18:00 bis 19:00“; für eine
- * Vertretung mit dem Wochentag, weil der Titel keinen Tag trägt. Steht das
- * Datum schon im Titel (über sechs Tage), nur die Zeit.
+ * Wann, als Satz unter dem Titel: „23. Oktober, 18:00 bis 19:00“, Tag und Monat ungetrennt; für
+ * eine Vertretung mit dem Tag in Worten wie in den Zeilen, weil der Titel keinen Tag trägt. Steht
+ * das Datum schon im Titel (über sechs Tage), nur die Zeit.
  */
 export function terminZeit(
   termin: Termin,
@@ -219,9 +237,9 @@ export function terminZeit(
   jetzt: Date = new Date(),
 ): string {
   const zeit = `${uhrzeit(termin.starts_at)} bis ${uhrzeit(termin.ends_at)}`;
-  if (mitWochentag) return `${tagOhneJahr(termin.starts_at)}, ${zeit}`;
+  if (mitWochentag) return `${tagInWorten(termin.starts_at, jetzt)}, ${zeit}`;
   if (tageBis(termin.starts_at, jetzt) > 6) return zeit;
-  return `${tagUndMonat(termin.starts_at, jetzt)}, ${zeit}`;
+  return `${fest(tagUndMonat(termin.starts_at, jetzt))}, ${zeit}`;
 }
 
 /**

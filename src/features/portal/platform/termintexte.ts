@@ -2,7 +2,7 @@ import type { Ton } from '@/components/ui/Badge';
 import type { Artzeichen } from '@/components/ui/Terminsymbole';
 import type { Plattformzugang, Termin, Terminwunsch } from './api';
 import { WOCHENTAGE, WOCHENTAG_NAME, type Wochentag } from './terminablauf';
-import { kuenftig, tageBis, tagUndMonat, uhrzeit } from './zeit';
+import { fest, kuenftig, tageBis, tagUndMonat, uhrzeit } from './zeit';
 
 /**
  * Die Wörter der Termine als reine Funktionen, gerechnet auf der Uhr des Geräts wie jede Zeit der
@@ -55,11 +55,6 @@ function wochentag(wert: string, kurz = false): string {
   return (kurz ? WOCHENTAG_KURZ : WOCHENTAG).format(tag).replace(/\.?$/, kurz ? '.' : '');
 }
 
-/** Tag und Monat brechen nicht auseinander („4. November“ mit geschütztem Leerzeichen). */
-function fest(text: string): string {
-  return text.replace(/(\d+\.) /, '$1\u00a0');
-}
-
 /**
  * Der Tag eines Termins in Worten, „Heute“ und „Morgen“ nach dem Tag des Geräts, damit Zeile und Hero
  * denselben Tag meinen wie `terminTitel` (ANN-764); ein anderes Jahr steht dabei.
@@ -68,6 +63,11 @@ export function tagInWorten(zeitpunkt: string, jetzt: Date = new Date()): string
   const tage = tageBis(zeitpunkt, jetzt);
   const wort = tage === 0 ? 'Heute' : tage === 1 ? 'Morgen' : wochentag(zeitpunkt);
   return `${wort}, ${fest(tagUndMonat(zeitpunkt, jetzt))}`;
+}
+
+/** „Mo., 26.“ - ein Tag in „Diese Woche“ (Kalendertag `YYYY-MM-DD`). */
+export function tagDerWoche(kalendertag: string): string {
+  return `${wochentag(kalendertag, true)}, ${new Date(`${kalendertag}T12:00:00`).getDate()}.`;
 }
 
 /** „Mi., 4. November“ - der Tag eines Termins im Titel eines Wunschs. */

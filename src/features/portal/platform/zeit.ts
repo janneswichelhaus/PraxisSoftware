@@ -42,13 +42,18 @@ export function tagOhneJahr(zeitpunkt: string): string {
   return TAG_OHNE_JAHR.format(new Date(zeitpunkt));
 }
 
+/** Tag und Monat brechen nicht auseinander („4. November“ mit geschütztem Leerzeichen). */
+export function fest(text: string): string {
+  return text.replace(/(\d+\.) /, '$1\u00a0');
+}
+
 /**
  * „Samstag, 24. Oktober“ für einen Kalendertag `YYYY-MM-DD` - Tag und Monat
  * mit geschütztem Leerzeichen, damit „24.“ und „Oktober“ nicht auf zwei
  * Zeilen stehen (Endseite und „Einheit beenden“ der Durchführung).
  */
 export function tagFest(kalendertag: string): string {
-  return tagOhneJahr(`${kalendertag}T12:00:00`).replace(/(\d+\.) /, '$1\u00a0');
+  return fest(tagOhneJahr(`${kalendertag}T12:00:00`));
 }
 
 const TAG_MONAT = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long' });

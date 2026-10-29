@@ -58,6 +58,20 @@ describe('HeroKarte', () => {
     expect(karte.querySelector('[data-laufrad]')).toHaveAttribute('aria-hidden', 'true');
   });
 
+  it('zeigt ein Statuszeichen unter dem Satz', () => {
+    zeige(
+      <HeroKarte
+        titel="Besuch am Samstag"
+        satz="31. Oktober, 09:30 bis 10:30"
+        zustand={<span>Absage angefragt</span>}
+      />,
+    );
+    const karte = screen.getByRole('region', { name: 'Besuch am Samstag' });
+    const satz = within(karte).getByText('31. Oktober, 09:30 bis 10:30');
+    const zustand = within(karte).getByText('Absage angefragt');
+    expect(satz.compareDocumentPosition(zustand) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('zeigt die Person mit Bild in 56 px und läuft nur auf Wunsch ein', () => {
     const { container } = zeige(
       <HeroKarte
@@ -313,6 +327,23 @@ describe('Leerzustand mit Markenform', () => {
     const { container } = zeige(<EmptyState markenform inKarte title="Noch keine Termine" />);
     const rad = container.querySelector('[data-laufrad]')!;
     expect(rad.parentElement!.parentElement!.className).toContain('rounded-card');
+  });
+
+  it('setzt mit zeichen statt des Laufrads das Zeichen auf die Vertiefung (Handoff 2026-10-24, 5.1)', () => {
+    const { container } = zeige(
+      <EmptyState
+        markenform
+        inKarte
+        zeichen={<svg data-testid="uhr" />}
+        title="Ihr Wunsch ist bei der Praxis."
+      />,
+    );
+    expect(container.querySelector('[data-laufrad]')).toBeNull();
+    const kreis = screen.getByTestId('uhr').parentElement!;
+    expect(kreis).toHaveAttribute('aria-hidden', 'true');
+    expect(kreis.className).toContain('bg-surface-sunken');
+    expect(kreis.className).not.toContain('bg-surface-inverse');
+    expect(kreis.parentElement!.className).toContain('rounded-card');
   });
 
   it('bleibt ohne markenform, wie es war', () => {

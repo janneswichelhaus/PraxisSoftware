@@ -51,7 +51,8 @@ wählen nichts, etwa eine Einwilligung) · `Zwischentitel` mit `stufe="abschnitt
 `Vertretungsband` („Sie handeln für …“ im Gerüst und im Einstieg). Übungen: `Buehne`,
 `Dosierungsmarken`, `Hakenzeile`, `Wochenleiste`, `Uebungszeile`, `Durchfuehrungskopf`/`-fuss`,
 `Abschlussseite`. Termine: `Terminzeile`, `Wunschzeile`, `WerUndWo`, `FragenZumTermin`,
-`Wahlflaechen`, `HeroKarte` mit `ziel`; Zeichen und Knöpfe brechen nur zwischen Wörtern (ANN-765).
+`Wahlflaechen`, `HeroKarte` mit `ziel` und `zustand`, `HeroSkelett`, `EmptyState` mit `zeichen`;
+Zeichen und Knöpfe brechen nur zwischen Wörtern (ANN-765).
 Prüfseiten `tests/e2e/fixtures/plattform-*bausteine.html`.
 
 ## Seitentypen und Gerüst
@@ -71,8 +72,8 @@ Initialen. Reiterleiste in drei Stufen (ANN-679): eine Reihe, solange die Wörte
 nicht aus der Einstellung gelesen -, sonst zwei; unter 23rem der `Menueknopf` im Kopf (ANN-682). Bei
 offener Tastatur tritt sie zurück (ANN-676, ANN-681). Ab 1024 px Navigation im Kopf, Inhalt
 `max-w-inhalt`, jede Seite einspaltig in `max-w-spalte` außer der Übersicht (ab 900 px
-Inhaltsbreite zwei Spalten) und den Übungen (ANN-724); geschaltet über `data-rechner`
-(`useRechner`). Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12;
+Inhaltsbreite zwei Spalten), den Übungen und den Terminen (ANN-724, ANN-775); geschaltet über
+`data-rechner` (`useRechner`). Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12;
 Titel in rem (ANN-683). Statt Startbild Markenmoment B beim ersten Erscheinen der Übersicht je Tab
 (ANN-680). Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit Daten.
 
