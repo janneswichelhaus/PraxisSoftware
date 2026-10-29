@@ -369,6 +369,51 @@ describe('Absage unter 24 Stunden: Zeitumstellung und Wiederholung', () => {
     expect(rows[0]?.knapp).toBe(true);
   });
 
+  /**
+   * Die doppelte Stunde der Umstellung (26.10.2025, 03:00 MESZ wird 02:00 MEZ): 02:30 zeigt die Uhr
+   * zweimal. Gemeint ist die frühere (ANN-786); PostgreSQL läse die spätere.
+   */
+  it('liest eine doppelte Ortszeit als die frühere, eine fehlende wie PostgreSQL (ANN-786)', async () => {
+    const { rows } = await asPostgres<{ utc: string }>(
+      `select (app.local_time_instant(t, z) at time zone 'UTC')::text as utc
+         from (values
+           (1, timestamp '2025-10-26 02:30', 'Europe/Berlin'),
+           (2, timestamp '2025-10-26 02:00', 'Europe/Berlin'),
+           (3, timestamp '2025-10-26 01:59', 'Europe/Berlin'),
+           (4, timestamp '2025-10-26 03:00', 'Europe/Berlin'),
+           (5, timestamp '2025-03-30 02:30', 'Europe/Berlin'),
+           (6, timestamp '2025-04-06 01:45', 'Australia/Lord_Howe')
+         ) f(n, t, z)
+        order by n`,
+    );
+    expect(rows.map((r) => r.utc)).toEqual([
+      '2025-10-26 00:30:00', // doppelt: die frühere, noch Sommerzeit
+      '2025-10-26 00:00:00', // der Beginn der doppelten Stunde
+      '2025-10-25 23:59:00', // davor gibt es die Uhrzeit einmal
+      '2025-10-26 02:00:00', // danach ebenso
+      '2025-03-30 01:30:00', // im Frühjahr fehlt sie: wie PostgreSQL
+      '2025-04-05 14:45:00', // eine halbe Stunde Rückstellung
+    ]);
+  });
+
+  it('nimmt einen Eingang aus der doppelten Stunde als den früheren an (ANN-786)', async () => {
+    const termin = await terminIn(48);
+    await asUserCommitted(users.office, ABSAGEN, [
+      termin.id,
+      termin.updated_at,
+      'patient_request',
+      '2025-10-26',
+      '02:30:00',
+    ]);
+    const { rows } = await asPostgres<{ eingang: string }>(
+      `select (cancellation_received_at at time zone 'UTC')::text as eingang
+         from public.appointments where id = $1`,
+      [termin.id],
+    );
+    // 02:30 Sommerzeit; als Winterzeit gelesen stünde hier 01:30.
+    expect(rows[0]?.eingang).toBe('2025-10-26 00:30:00');
+  });
+
   it('sagt einen bereits abgesagten Termin nicht noch einmal ab', async () => {
     const termin = await terminIn(2);
     await asUserCommitted(users.office, ABSAGEN, [

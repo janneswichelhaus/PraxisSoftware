@@ -137,14 +137,6 @@ aber jedem lesbaren Zugang (`request_platform_appointment`, `…_change`); nur d
 „Termin wünschen“ weg (ANN-774). **Erwartet.** Nach Jannes' Antwort am Server ablehnen (Pfad A),
 oder bewusst erlauben, D2 so fassen und den Knopf zeigen.
 
-### BEF-223 — Zeitumstellung: In der doppelten Stunde liegt „jetzt“ eine Stunde in der Zukunft
-2026-10-25 · Absage, Absagewunsch, Tagebuch-Erinnerungen · CI zu #304 · offen (Vorschlag, Pfad A)\
-**Beobachtung.** Zeigt Berlin 02:00 bis 03:00 zweimal, liest PostgreSQL die spätere Stunde:
-`cancel_appointment(_from_request)` mit „jetzt“ scheitert an
-`cancellation cannot be received in the future`, `enqueue_nutrition_diary_reminders` erinnert eine
-Stunde zu spät; einmal im Jahr, auch im Testlauf. **Erwartet.** In Ortszeit vergleichen, eine
-doppelte Ortszeit als die frühere lesen; je ein Test mit fester Uhrzeit aus dieser Stunde.
-
 ### BEF-224 — Arbeitszeit: Während die Vorschau lädt oder scheitert, rollt der Abschluss
 2026-10-25 · Arbeitszeit ändern · Design-Review zu BEF-219 · offen (Vorschlag) ·
 `RequestWorkingTimePage.tsx`\
@@ -164,6 +156,12 @@ abfragen; die Grenze 44 px bleibt.
 bei 188 px und „Sehr groß“ einmal über: gemessen, bevor die Schriftgröße des Geräts gilt.
 **Erwartet.** Auf das gemessene Element warten (eigenes Zeitlimit, `data-schrift` am Wurzelelement);
 Grenzen bleiben.
+
+### Testlauf — Tests mit relativer Ortszeit kippen in der zweiten doppelten Stunde
+2026-10-29 · `eingangVorBeginn`, `geradeFaellig` · Zweitreview zu BEF-223 · offen (Vorschlag)\
+**Beobachtung.** Dort gilt eine Ortszeit als die frühere (ANN-786); am Umstellungstag fehlt dann
+01:00 bis 02:00 und 04:00 bis 06:00 UTC eine Gebühr oder Erinnerung. **Erwartet.** Die Helfer
+wählen eine eindeutige Ortszeit, Grenzen bleiben.
 
 ### Termin — Ein Browsertest misst „Abhaken“, während das Fenster noch aufgeht
 2026-10-29 · `tests/e2e/termin.spec.ts` (Hausbesuch) · Browsertests zu 3c, auch auf `main` · offen
