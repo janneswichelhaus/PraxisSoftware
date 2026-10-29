@@ -1778,12 +1778,12 @@
         },
         {
           "id": "bef-223",
-          "name": "BEF-223 Zeitumstellung: eine doppelte Ortszeit gilt als die frühere (Absage, Erinnerung an das Tagebuch), der Absagewunsch gibt seinen Zeitpunkt genau weiter",
+          "name": "BEF-223 Zeitumstellung: doppelte Ortszeit gilt als die frühere",
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-29",
           "nachweis": "#332",
-          "vermerk": "Plan Jannes 28.10.2026, Pfad A; ANN-786; Migration ohne Datenumzug, ohne Auditeintrag"
+          "vermerk": "Pfad A, ANN-786"
         }
       ]
     },

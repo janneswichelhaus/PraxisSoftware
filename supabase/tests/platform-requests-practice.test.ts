@@ -327,6 +327,33 @@ describe('cancel_appointment_from_request (POR-011, D4)', () => {
     }
   });
 
+  it('lässt keine API-Rolle die Absage mit genauem Eingang direkt rufen (ANN-786)', async () => {
+    // Einen genauen Eingang gibt nur der Absagewunsch weiter; die Oberfläche nennt Datum und Uhrzeit.
+    const { rows } = await asPostgres<{ rolle: string }>(
+      `select r.rolname as rolle
+         from pg_roles r
+        where r.rolname in ('anon', 'authenticated', 'service_role')
+          and has_function_privilege(r.oid,
+                'app.cancel_appointment_received(uuid, timestamptz, text, date, time, timestamptz)',
+                'execute')`,
+    );
+    expect(rows).toEqual([]);
+    const direkt = await abgefangen(
+      asUser(
+        users.office,
+        `select app.cancel_appointment_received($1::uuid, $2::timestamptz, 'patient_request',
+                                                null, null, now() - interval '2 days')`,
+        [MORGEN, await stand(MORGEN)],
+      ),
+    );
+    expect(direkt?.message).toMatch(/permission denied/i);
+    const termin = await asPostgres<{ status: string }>(
+      `select status from public.appointments where id = $1`,
+      [MORGEN],
+    );
+    expect(termin.rows[0]!.status).toBe('confirmed');
+  });
+
   it('weist einen Aenderungswunsch, einen veralteten Stand und fremde Rollen ab', async () => {
     const aenderung = (
       await asUserCommitted<{ id: string }>(users.plattformErika, AENDERN, [

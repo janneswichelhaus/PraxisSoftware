@@ -7,8 +7,8 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 ## Jetzt
 
 **Design-Review Schritt 3 Termine** ist gemergt (#327, #328, #330, #331), ohne die Einsicht der
-Praxis (M7); fünf Fragen aus #331 sind offen. BEF-223 (Zeitumstellung, Pfad A) liegt als PR vor und
-wartet auf das Zweitreview vor dem Merge.
+Praxis (M7); fünf Fragen aus #331 sind offen. BEF-223 (Pfad A) liegt als PR vor, Zweitreview ohne
+roten Punkt.
 Aufräumen (#308 bis #325) und CI-Beschleunigung (#326) sind gemergt; offen ist die Abkürzung für
 reine Doku (ADR-013 Punkt 2, Entscheidung Jannes). Befunde aus archivierten Sitzungen: BEF-201,
 BEF-202.
@@ -51,6 +51,5 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-29.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: 3d gemergt (#331). BEF-223 behoben: Eine doppelte
-Ortszeit gilt als die frühere, der Absagewunsch gibt seinen Zeitpunkt genau weiter (ANN-786).
-Migration ohne Datenumzug. Lokal: `git pull`.
+29.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: 3d gemergt (#331); BEF-223 behoben (ANN-786), Migration
+ohne Datenumzug. Lokal: `git pull`.
