@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test-utils';
@@ -8,12 +8,15 @@ import type { EigeneErnaehrung, EigenesTagebuch, Plattformzugang } from './api';
 
 /**
  * Ernährung auf der Plattform (Handoff 2026-10-29, 5.6): das Tagebuch von heute als Hero-Karte,
- * Gewicht mit den letzten drei Einträgen, Zielwerte als Zeilen, Seltenes unter „Mehr“.
+ * Gewicht mit den letzten drei Einträgen, Zielwerte als Zeilen, Seltenes unter „Mehr“; ohne Netz
+ * gesperrt, was schreibt (5.9).
  */
 
 const ladeErnaehrung = vi.fn();
 const ladeTagebuch = vi.fn();
 const ernaehrungGewichtEintragen = vi.fn();
+const ernaehrungTagebuchSchalten = vi.fn();
+const ernaehrungZielgewichtSetzen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -21,6 +24,10 @@ vi.mock('./api', async (importOriginal) => ({
   ladeTagebuch: (...a: unknown[]) => ladeTagebuch(...a) as Promise<EigenesTagebuch | null>,
   ernaehrungGewichtEintragen: (...a: unknown[]) =>
     ernaehrungGewichtEintragen(...a) as Promise<void>,
+  ernaehrungTagebuchSchalten: (...a: unknown[]) =>
+    ernaehrungTagebuchSchalten(...a) as Promise<void>,
+  ernaehrungZielgewichtSetzen: (...a: unknown[]) =>
+    ernaehrungZielgewichtSetzen(...a) as Promise<void>,
 }));
 
 const { Ernaehrung } = await import('./Ernaehrung');
@@ -204,6 +211,12 @@ beforeEach(() => {
   ladeErnaehrung.mockResolvedValue(ernaehrung());
   ladeTagebuch.mockResolvedValue(tagebuch());
   ernaehrungGewichtEintragen.mockResolvedValue(undefined);
+  ernaehrungTagebuchSchalten.mockResolvedValue(undefined);
+  ernaehrungZielgewichtSetzen.mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
 });
 
 describe('Ernährung auf der Plattform (Handoff 2026-10-29, 5.6)', () => {
@@ -258,15 +271,16 @@ describe('Ernährung auf der Plattform (Handoff 2026-10-29, 5.6)', () => {
     expect(feld).toHaveAccessibleDescription('kg');
     expect(screen.getByRole('button', { name: 'Eintragen' })).toBeVisible();
     const verlauf = screen.getByRole('list', { name: 'Ihr Gewichtsverlauf' });
-    // Die jüngsten zuerst, der Tag in Worten, das Jahr nur, wenn es nicht das laufende ist.
+    // Die jüngsten zuerst, der Tag in Worten, das Jahr nur, wenn es nicht das laufende ist; Tag und
+    // Gewicht stehen je in einem eigenen Teil der Zeile (`ListRow`).
     expect(
       within(verlauf)
         .getAllByRole('listitem')
         .map((z) => z.textContent),
     ).toEqual([
-      '22.\u00a0Oktober · in der Praxis 73,5 kg',
-      '15.\u00a0Oktober 74,1 kg',
-      '8.\u00a0Oktober · in der Praxis 74,6 kg',
+      '22.\u00a0Oktober · in der Praxis73,5 kg',
+      '15.\u00a0Oktober74,1 kg',
+      '8.\u00a0Oktober · in der Praxis74,6 kg',
     ]);
     const aeltere = screen.getByText('Ältere Einträge').closest('details')!;
     expect(aeltere).toHaveTextContent('(2)');
@@ -293,6 +307,47 @@ describe('Ernährung auf der Plattform (Handoff 2026-10-29, 5.6)', () => {
     expect(screen.getByLabelText('Gewicht heute')).toHaveAccessibleDescription(
       'kg Heute steht schon 73,1 kg. Eintragen ersetzt es.',
     );
+  });
+
+  it('sperrt ohne Netz, was schreibt, erreichbar und mit Satz; Gewicht und Ziele bleiben lesbar', async () => {
+    const nutzer = userEvent.setup();
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    const { container } = renderWithProviders(<Ernaehrung zugang={ZUGANG} />, ADRESSE);
+    const eintragen = await screen.findByRole('button', { name: 'Eintragen' });
+    // Gesperrt, aber mit dem Fokus erreichbar, damit der Satz vorgelesen wird.
+    expect(eintragen).toBeEnabled();
+    expect(eintragen).toHaveAttribute('aria-disabled', 'true');
+    expect(eintragen).toHaveAccessibleDescription('Eintragen geht wieder mit Verbindung.');
+    await nutzer.type(screen.getByLabelText('Gewicht heute'), '73,1');
+    await nutzer.click(eintragen);
+    expect(ernaehrungGewichtEintragen).not.toHaveBeenCalled();
+    expect(screen.getByRole('list', { name: 'Ihr Gewichtsverlauf' })).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Ihre Zielwerte' })).toHaveTextContent('1466');
+
+    const mehr = screen.getByRole('region', { name: 'Mehr' });
+    await nutzer.click(within(mehr).getByText('Zielgewicht · 68,0 kg'));
+    const speichern = within(mehr).getByRole('button', { name: 'Speichern' });
+    expect(speichern).toHaveAttribute('aria-disabled', 'true');
+    expect(speichern).toHaveAccessibleDescription('Speichern geht wieder mit Verbindung.');
+    await nutzer.click(speichern);
+    expect(ernaehrungZielgewichtSetzen).not.toHaveBeenCalled();
+
+    await nutzer.click(within(mehr).getByText(/tagebuch · an$/));
+    const schalter = within(mehr).getByRole('checkbox', { name: 'Ernährungstagebuch führen' });
+    expect(schalter).toHaveAttribute('aria-disabled', 'true');
+    expect(schalter).toHaveAccessibleDescription('Ändern geht wieder mit Verbindung.');
+    await nutzer.click(schalter);
+    expect(schalter).toBeChecked();
+    expect(ernaehrungTagebuchSchalten).not.toHaveBeenCalled();
+
+    // Die Rückfrage kennt keine Sperre: Ihr Auslöser steht gesperrt da und öffnet nichts.
+    await nutzer.click(within(mehr).getByText(/^Einwilligung · /));
+    const widerrufen = within(mehr).getByRole('button', { name: 'Einwilligung widerrufen' });
+    expect(widerrufen).toHaveAttribute('aria-disabled', 'true');
+    expect(widerrufen).toHaveAccessibleDescription('Widerrufen geht wieder mit Verbindung.');
+    await nutzer.click(widerrufen);
+    expect(within(mehr).queryByRole('button', { name: 'Widerrufen' })).toBeNull();
+    await pruefeBarrierefreiheit(container);
   });
 
   it('Zielwerte als Zeilen mit Abzeichen, der Satz zur Zeit bis zum Zielgewicht, der Rechenweg', async () => {

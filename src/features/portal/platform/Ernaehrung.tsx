@@ -1,6 +1,7 @@
 import { useId, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { useIstVerbunden } from '@/app/verbindung';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
@@ -10,13 +11,14 @@ import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { HeroKarte } from '@/components/ui/HeroKarte';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Pfeilzeichen } from '@/components/ui/Tagebuchbausteine';
+import { GESPERRT, KAESTCHEN_GESPERRT, Pfeilzeichen } from '@/components/ui/Tagebuchbausteine';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { leseZahl } from '@/features/nutrition/eingabe';
 import { Rechenweg } from '@/features/nutrition/Rechenweg';
@@ -131,18 +133,21 @@ function Inhalt({
       </Abschnitt>
       <Abschnitt titel="Mehr">
         <Aufklappzeilen linieOben>
-          {p.diary_enabled && !mitHeute ? (
-            <Zeile to={tagebuchVonDerErnaehrung(search)} titel="Tagebuch" />
-          ) : null}
-          <Zeile
-            to={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel${search}`}
-            titel="Lebensmittel"
-            meta={
-              eigene > 0
-                ? `Nachschlagen · ${eigene} ${eigene === 1 ? 'eigenes' : 'eigene'}`
-                : 'Nachschlagen und eigene anlegen'
-            }
-          />
+          <ListRows rahmen={false} className={`border-line border-b ${ZEILEN}`}>
+            {p.diary_enabled && !mitHeute ? (
+              <ListRow to={tagebuchVonDerErnaehrung(search)} titel="Tagebuch" status={WEITER} />
+            ) : null}
+            <ListRow
+              to={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel${search}`}
+              titel="Lebensmittel"
+              meta={
+                eigene > 0
+                  ? `Nachschlagen · ${eigene} ${eigene === 1 ? 'eigenes' : 'eigene'}`
+                  : 'Nachschlagen und eigene anlegen'
+              }
+              status={WEITER}
+            />
+          </ListRows>
           <Zielgewicht zugang={zugang} daten={daten} />
           <Tagebuchschalter zugang={zugang} daten={daten} />
           <Einwilligung zugang={zugang} daten={daten} />
@@ -207,7 +212,8 @@ const OFFEN = 3;
 
 function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
   const neuLaden = useNeuLaden(zugang);
-  const feldId = useId();
+  const verbunden = useIstVerbunden();
+  const ohneNetzId = useId();
   const [wert, setWert] = useState('');
   const [fehler, setFehler] = useState<string | undefined>();
   const [eingetragen, setEingetragen] = useState(0);
@@ -226,39 +232,34 @@ function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErna
   const heute = verlauf.find((eintrag) => eintrag.measured_on === daten.today);
   const hinweis = heute
     ? `Heute steht schon ${kg(heute.weight_kg)}${heute.source === 'practice' ? ' aus der Praxis' : ''}. Eintragen ersetzt es.`
-    : null;
-  const beschrieben = [
-    `${feldId}-einheit`,
-    hinweis ? `${feldId}-hinweis` : null,
-    fehler ? `${feldId}-fehler` : null,
-  ]
-    .filter(Boolean)
-    .join(' ');
+    : undefined;
+  // Die Zeilen in 400 wie im Entwurf; die Zeile selbst ist der Baustein.
   const zeile = (eintrag: (typeof verlauf)[number]) => (
-    <li
+    <ListRow
       key={eintrag.measured_on}
-      className="border-line flex min-h-13 items-center justify-between gap-x-3 border-b py-2 max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:justify-center"
-    >
-      <span>
-        {amTag(eintrag.measured_on, daten.today)}
-        {eintrag.source === 'practice' ? (
-          <>
-            {' '}
-            <span className="text-ink-muted">· in der Praxis</span>
-          </>
-        ) : null}
-      </span>{' '}
-      <span className="shrink-0 whitespace-nowrap tabular-nums">{kg(eintrag.weight_kg)}</span>
-    </li>
+      titel={
+        <span className="font-normal">
+          {amTag(eintrag.measured_on, daten.today)}
+          {eintrag.source === 'practice' ? (
+            <>
+              {' '}
+              <span className="text-ink-muted">· in der Praxis</span>
+            </>
+          ) : null}
+        </span>
+      }
+      betrag={<span className="font-normal whitespace-nowrap">{kg(eintrag.weight_kg)}</span>}
+    />
   );
   return (
     <Abschnitt titel="Gewicht">
       {daten.can_write ? (
         <form
           aria-label="Gewicht eintragen"
-          className="feld flex flex-col gap-2"
+          className="max-w-formular flex flex-col gap-2"
           onSubmit={(event) => {
             event.preventDefault();
+            if (!verbunden) return;
             const kilo = leseZahl(wert);
             if (kilo === null || kilo < 20 || kilo > 350) {
               setFehler('Bitte Ihr Gewicht in kg angeben, etwa 72,5.');
@@ -268,47 +269,34 @@ function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErna
             eintragen.mutate(kilo);
           }}
         >
-          <label htmlFor={feldId} className="text-ink font-semibold">
-            Gewicht heute
-          </label>
-          {hinweis ? (
-            <p id={`${feldId}-hinweis`} className="text-ink-muted">
-              {hinweis}
-            </p>
-          ) : null}
-          {/* Die Einheit steht im Feld; „Heute eintragen“ ist der Hauptknopf der Seite. Passt der
-              Knopf nicht daneben, steht er darunter. */}
-          <div className="flex flex-wrap gap-2 [.plattform-schrift[data-rechner]_&]:max-w-md">
-            <span className="relative block min-w-40 flex-1">
-              <input
-                id={feldId}
-                inputMode="decimal"
-                autoComplete="off"
-                placeholder={verlauf[0] ? `etwa ${zahl(verlauf[0].weight_kg, 1)}` : undefined}
-                aria-describedby={beschrieben}
-                aria-invalid={fehler ? true : undefined}
-                value={wert}
-                onChange={(event) => setWert(event.target.value)}
-                className={`bg-surface-field text-ink placeholder:text-ink-muted rounded-field h-12 w-full border pr-12 pl-4 text-base ${
-                  fehler ? 'border-danger' : 'border-line-strong'
-                }`}
-              />
-              <span
-                id={`${feldId}-einheit`}
-                className="text-ink-muted pointer-events-none absolute inset-y-0 right-4 flex items-center"
+          {/* „Heute eintragen“ ist der Hauptknopf der Seite, dieser hier der zweite. */}
+          <Field
+            label="Gewicht heute"
+            hint={hinweis}
+            einheit="kg"
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder={verlauf[0] ? `etwa ${zahl(verlauf[0].weight_kg, 1)}` : undefined}
+            value={wert}
+            error={fehler}
+            onChange={(event) => setWert(event.target.value)}
+            daneben={
+              <Button
+                type="submit"
+                variant="secondary"
+                disabled={eintragen.isPending}
+                className={GESPERRT}
+                {...(verbunden ? {} : { 'aria-disabled': true, 'aria-describedby': ohneNetzId })}
               >
-                kg
-              </span>
-            </span>
-            <Button type="submit" variant="secondary" disabled={eintragen.isPending}>
-              {eintragen.isPending ? 'Wird eingetragen …' : heute ? 'Ersetzen' : 'Eintragen'}
-            </Button>
-          </div>
-          {fehler ? (
-            <p id={`${feldId}-fehler`} className="feldfehler text-danger">
-              {fehler}
+                {eintragen.isPending ? 'Wird eingetragen …' : heute ? 'Ersetzen' : 'Eintragen'}
+              </Button>
+            }
+          />
+          {verbunden ? null : (
+            <p id={ohneNetzId} className="text-ink-muted">
+              Eintragen geht wieder mit Verbindung.
             </p>
-          ) : null}
+          )}
           {eintragen.isError ? (
             <Statusmeldung ton="fehler">{eintragen.error.message}</Statusmeldung>
           ) : null}
@@ -317,15 +305,23 @@ function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErna
       ) : null}
       {verlauf.length > 0 ? (
         <div>
-          <ul aria-label="Ihr Gewichtsverlauf" className="border-line border-t">
+          <ListRows
+            rahmen={false}
+            beschriftung="Ihr Gewichtsverlauf"
+            className="border-line border-y"
+          >
             {verlauf.slice(0, OFFEN).map(zeile)}
-          </ul>
+          </ListRows>
           {verlauf.length > OFFEN ? (
             <Aufklappzeilen>
               <Disclosure summary="Ältere Einträge" anzahl={verlauf.length - OFFEN}>
-                <ul aria-label="Ältere Einträge" className="border-line border-t">
+                <ListRows
+                  rahmen={false}
+                  beschriftung="Ältere Einträge"
+                  className="border-line border-t"
+                >
                   {verlauf.slice(OFFEN).map(zeile)}
-                </ul>
+                </ListRows>
               </Disclosure>
             </Aufklappzeilen>
           ) : null}
@@ -418,24 +414,19 @@ function Zielzeile({
   );
 }
 
-/** Eine Zeile unter „Mehr“: die ganze Zeile ist das Ziel, der Pfeil sagt „weiter“. */
-function Zeile({ to, titel, meta }: { to: string; titel: string; meta?: string }) {
-  return (
-    <Link
-      to={to}
-      className="border-line hover:bg-surface-sunken active:bg-surface-sunken ease-druck focus-visible:outline-ink flex min-h-16 items-center justify-between gap-3 border-b py-2 transition-[background-color,scale] duration-120 focus-visible:outline-3 focus-visible:outline-offset-2 motion-safe:active:scale-98"
-    >
-      <span className="flex min-w-0 flex-col">
-        <span className="text-ink font-semibold">{titel}</span>
-        {meta ? <span className="text-ink-muted">{meta}</span> : null}
-      </span>
-      <Pfeilzeichen richtung="rechts" className="text-ink-muted size-5.5" />
-    </Link>
-  );
-}
+/** Der Pfeil einer Zeile unter „Mehr“ sagt „weiter“; unter 23rem stünde er allein in einer Zeile. */
+const WEITER = (
+  <Pfeilzeichen richtung="rechts" className="text-ink-muted size-5.5 max-[23rem]:hidden" />
+);
+
+/** Unter 23rem hat die Seite 12 Rand: Das Ziel einer Zeile reicht nur so weit hinaus. */
+const ZEILEN =
+  'max-[23rem]:[&_.listenzeile]:-mx-3 max-[23rem]:[&_.listenzeile]:w-[calc(100%+1.5rem)] max-[23rem]:[&_.listenzeile]:px-3';
 
 function Zielgewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
   const neuLaden = useNeuLaden(zugang);
+  const verbunden = useIstVerbunden();
+  const ohneNetzId = useId();
   const p = daten.profile;
   const [wert, setWert] = useState(p.target_weight_kg === null ? '' : zahl(p.target_weight_kg, 1));
   const [fehler, setFehler] = useState<string | undefined>();
@@ -465,6 +456,7 @@ function Zielgewicht({ zugang, daten }: { zugang: Plattformzugang; daten: Eigene
         className="flex flex-col gap-3"
         onSubmit={(event) => {
           event.preventDefault();
+          if (!verbunden) return;
           const kilo = leseZahl(wert);
           if (wert.trim() !== '' && (kilo === null || kilo < unten || kilo > 300)) {
             setFehler(`Bitte mindestens ${kg(unten)} angeben.`);
@@ -488,8 +480,19 @@ function Zielgewicht({ zugang, daten }: { zugang: Plattformzugang; daten: Eigene
         ) : null}
         {setzen.isError ? <Statusmeldung ton="fehler">{setzen.error.message}</Statusmeldung> : null}
         {gespeichert > 0 ? <Rueckmeldung key={gespeichert}>Gespeichert.</Rueckmeldung> : null}
+        {verbunden ? null : (
+          <p id={ohneNetzId} className="text-ink-muted text-base">
+            Speichern geht wieder mit Verbindung.
+          </p>
+        )}
         <Formularfuss dicht>
-          <Button type="submit" variant="secondary" disabled={setzen.isPending}>
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={setzen.isPending}
+            className={GESPERRT}
+            {...(verbunden ? {} : { 'aria-disabled': true, 'aria-describedby': ohneNetzId })}
+          >
             {setzen.isPending ? 'Wird gespeichert …' : 'Speichern'}
           </Button>
         </Formularfuss>
@@ -500,6 +503,7 @@ function Zielgewicht({ zugang, daten }: { zugang: Plattformzugang; daten: Eigene
 
 function Tagebuchschalter({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
   const neuLaden = useNeuLaden(zugang);
+  const verbunden = useIstVerbunden();
   const schalten = useMutation({
     mutationFn: (an: boolean) => ernaehrungTagebuchSchalten(zugang.access_id, an),
     onSuccess: () => neuLaden(),
@@ -508,18 +512,30 @@ function Tagebuchschalter({ zugang, daten }: { zugang: Plattformzugang; daten: E
   // Einschalten braucht die Einwilligung; ausschalten geht immer.
   const bedienbar = an || daten.can_write;
   const angehalten = an && daten.profile.consent?.state === 'withdrawn';
+  const gesperrt = bedienbar && !verbunden;
+  const hinweis = [
+    angehalten ? 'Angehalten, weil die Einwilligung widerrufen ist.' : null,
+    gesperrt ? 'Ändern geht wieder mit Verbindung.' : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
   return (
     // Weiche Trennstelle: Bei 200 % brach das lange Wort sonst ohne Strich mitten im Wort.
     <Disclosure
       summary={`Ernährungs\u00ADtagebuch · ${angehalten ? 'angehalten' : an ? 'an' : 'aus'}`}
     >
-      <Checkbox
-        label="Ernährungstagebuch führen"
-        hint={angehalten ? 'Angehalten, weil die Einwilligung widerrufen ist.' : undefined}
-        checked={an}
-        disabled={!bedienbar || schalten.isPending}
-        onChange={(event) => schalten.mutate(event.target.checked)}
-      />
+      <div className={gesperrt ? KAESTCHEN_GESPERRT : undefined}>
+        <Checkbox
+          label="Ernährungstagebuch führen"
+          hint={hinweis || undefined}
+          checked={an}
+          disabled={!bedienbar || schalten.isPending}
+          aria-disabled={gesperrt ? true : undefined}
+          onChange={(event) => {
+            if (!gesperrt) schalten.mutate(event.target.checked);
+          }}
+        />
+      </div>
       {schalten.isError ? (
         <Statusmeldung ton="fehler" className="mt-2">
           {schalten.error.message}
@@ -531,6 +547,8 @@ function Tagebuchschalter({ zugang, daten }: { zugang: Plattformzugang; daten: E
 
 function Einwilligung({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
   const neuLaden = useNeuLaden(zugang);
+  const verbunden = useIstVerbunden();
+  const ohneNetzId = useId();
   const stand = daten.profile.consent;
   const erteilt = stand?.state === 'granted';
   const schreiben = useMutation({
@@ -551,16 +569,29 @@ function Einwilligung({ zugang, daten }: { zugang: Plattformzugang; daten: Eigen
       <p className="text-ink max-w-prose text-base leading-relaxed">{ERNAEHRUNG_EINWILLIGUNG}</p>
       {erteilt ? (
         <div className="mt-4">
-          <Rueckfrage
-            ausloeser="Einwilligung widerrufen"
-            ausloeserVariante="quiet"
-            bestaetigen="Widerrufen"
-            bestaetigenLaeuft="Wird widerrufen …"
-            fehler={schreiben.error?.message}
-            onBestaetigen={() => schreiben.mutateAsync(false)}
-          >
-            <p>Danach wird nichts mehr eingetragen. Ihre Praxis erfährt davon.</p>
-          </Rueckfrage>
+          {verbunden ? (
+            <Rueckfrage
+              ausloeser="Einwilligung widerrufen"
+              ausloeserVariante="quiet"
+              bestaetigen="Widerrufen"
+              bestaetigenLaeuft="Wird widerrufen …"
+              fehler={schreiben.error?.message}
+              onBestaetigen={() => schreiben.mutateAsync(false)}
+            >
+              <p>Danach wird nichts mehr eingetragen. Ihre Praxis erfährt davon.</p>
+            </Rueckfrage>
+          ) : (
+            // Die Rückfrage kennt keine Sperre: ohne Netz steht ihr Auslöser gesperrt da.
+            <Button
+              type="button"
+              variant="quiet"
+              className={GESPERRT}
+              aria-disabled
+              aria-describedby={ohneNetzId}
+            >
+              Einwilligung widerrufen
+            </Button>
+          )}
         </div>
       ) : daten.can_grant ? (
         <div className="mt-4">
@@ -568,7 +599,11 @@ function Einwilligung({ zugang, daten }: { zugang: Plattformzugang; daten: Eigen
             type="button"
             variant="secondary"
             disabled={schreiben.isPending}
-            onClick={() => schreiben.mutate(true)}
+            className={GESPERRT}
+            {...(verbunden ? {} : { 'aria-disabled': true, 'aria-describedby': ohneNetzId })}
+            onClick={() => {
+              if (verbunden) schreiben.mutate(true);
+            }}
           >
             {schreiben.isPending ? 'Wird gespeichert …' : 'Erneut einwilligen'}
           </Button>
@@ -578,6 +613,11 @@ function Einwilligung({ zugang, daten }: { zugang: Plattformzugang; daten: Eigen
             </Statusmeldung>
           ) : null}
         </div>
+      ) : null}
+      {!verbunden && (erteilt || daten.can_grant) ? (
+        <p id={ohneNetzId} className="text-ink-muted mt-2 text-base">
+          {erteilt ? 'Widerrufen' : 'Einwilligen'} geht wieder mit Verbindung.
+        </p>
       ) : null}
     </Disclosure>
   );
@@ -600,7 +640,7 @@ function Ladezustand() {
         </span>
         {['w-40', 'w-36', 'w-32'].map((breite) => (
           <span key={breite} className="flex items-center justify-between gap-3 py-4">
-            <Skelett form="zeile" className={`${breite} max-w-[60%]`} />
+            <Skelett form="zeile" className={`${breite} max-w-3/5`} />
             <Skelett form="zeile" className="w-16" />
           </span>
         ))}
@@ -609,7 +649,7 @@ function Ladezustand() {
         <Skelett form="titel" className="w-36 max-w-full" />
         {['w-18', 'w-14', 'w-31', 'w-10'].map((breite) => (
           <span key={breite} className="flex items-center justify-between gap-3 py-3">
-            <Skelett form="zeile" className={`${breite} max-w-[55%]`} />
+            <Skelett form="zeile" className={`${breite} max-w-1/2`} />
             <Skelett form="zeile" className="w-20" />
           </span>
         ))}

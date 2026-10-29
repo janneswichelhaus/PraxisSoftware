@@ -1439,8 +1439,8 @@ client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
     started_on: '2026-09-27',
     formula_sex: 'female',
     activity_pal: 1.4,
-    // Schritt 4e: In der Ansicht „Ernährung“ ist das Tagebuch an, die Hero-Karte „Heute“ steht.
-    diary_enabled: seite === 'ernaehrung',
+    // Schritt 4e: In den Ansichten der Ernährung ist das Tagebuch an, die Hero-Karte „Heute“ steht.
+    diary_enabled: seite === 'ernaehrung' || seite === 'ernaehrung-ohne-netz',
     body_fat_percent: null,
     diary_changed_at: null,
     target_weight_kg: 68.0,
@@ -1574,8 +1574,16 @@ if (seite === 'tagebuch-fehler') {
     queryFn: () => Promise.reject(new Error('Ihr Tagebuch konnte nicht geladen werden.')),
   });
 }
-if (seite === 'tagebuch-ohne-netz') {
+if (seite === 'tagebuch-ohne-netz' || seite === 'ernaehrung-ohne-netz') {
   Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false });
+}
+// `tagebuch-eintragen-aus`: Das Tagebuch ist ausgeschaltet, das Eintragen zeigt den Weg zurück.
+if (seite === 'tagebuch-eintragen-aus') {
+  client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, tagebuchHeute.today), {
+    ...tagebuchHeute,
+    enabled: false,
+    can_write: false,
+  });
 }
 client.setQueryData(checkinsKey('treatment', MAX), {
   today: inTagen(0, 0).slice(0, 10),
@@ -1830,11 +1838,13 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'checkin-alltag':
     case 'gewohnheiten':
     case 'ernaehrung':
+    case 'ernaehrung-ohne-netz':
     case 'tagebuch':
     case 'tagebuch-laden':
     case 'tagebuch-fehler':
     case 'tagebuch-ohne-netz':
     case 'tagebuch-eintragen':
+    case 'tagebuch-eintragen-aus':
     case 'lebensmittel':
     case 'lebensmittel-neu':
     case 'angaben':
@@ -1899,12 +1909,14 @@ function inhalt(): { pfad: string; element: ReactNode } {
         'gewohnheiten-leer': '/p/gewohnheiten?bereich=treatment',
         'gewohnheiten-laden': '/p/gewohnheiten?bereich=treatment',
         ernaehrung: '/p/ernaehrung?bereich=treatment',
+        'ernaehrung-ohne-netz': '/p/ernaehrung?bereich=treatment',
         tagebuch: '/p/ernaehrung/tagebuch?bereich=treatment',
         'tagebuch-laden': '/p/ernaehrung/tagebuch?bereich=treatment',
         'tagebuch-fehler': '/p/ernaehrung/tagebuch?bereich=treatment',
         'tagebuch-ohne-netz': '/p/ernaehrung/tagebuch?bereich=treatment',
         // Wie aus der Pille „Mittagessen“: Tag, Mahlzeit und der Rückweg zum Tag.
         'tagebuch-eintragen': `/p/ernaehrung/tagebuch/eintragen?bereich=treatment&tag=${inTagen(0, 0).slice(0, 10)}&mahlzeit=lunch&zurueck=${encodeURIComponent('/p/ernaehrung/tagebuch?bereich=treatment')}`,
+        'tagebuch-eintragen-aus': `/p/ernaehrung/tagebuch/eintragen?bereich=treatment&tag=${inTagen(0, 0).slice(0, 10)}&mahlzeit=lunch&zurueck=${encodeURIComponent('/p/ernaehrung/tagebuch?bereich=treatment')}`,
         lebensmittel: '/p/ernaehrung/lebensmittel?bereich=treatment',
         'lebensmittel-neu': '/p/ernaehrung/lebensmittel/neu?bereich=treatment',
       };

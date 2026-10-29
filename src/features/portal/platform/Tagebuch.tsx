@@ -19,6 +19,8 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import {
   Eintragszeile,
+  GESPERRT,
+  KAESTCHEN_GESPERRT,
   Mahlzeitziel,
   Minuszeichen,
   Pfeilzeichen,
@@ -324,7 +326,7 @@ function Wasser({
   });
   const ziel = daten.targets?.water_ml;
   const menge = daten.day.water_ml;
-  const beschreibung = gesperrt ? { 'aria-describedby': ohneNetzId } : {};
+  const sperre = gesperrt ? { 'aria-disabled': true, 'aria-describedby': ohneNetzId } : {};
   return (
     <Abschnitt
       titel="Wasser"
@@ -355,9 +357,12 @@ function Wasser({
             type="button"
             variant="secondary"
             groesse="gross"
-            disabled={gesperrt || zaehlen.isPending}
-            onClick={() => zaehlen.mutate(glas)}
-            {...beschreibung}
+            disabled={zaehlen.isPending}
+            className={GESPERRT}
+            onClick={() => {
+              if (!gesperrt) zaehlen.mutate(glas);
+            }}
+            {...sperre}
           >
             <Pluszeichen className="size-5.5 max-[23rem]:hidden" />
             <span className="sr-only">+</span> 1 Glas ({zahl(glas)}&nbsp;ml)
@@ -367,10 +372,12 @@ function Wasser({
             variant="secondary"
             groesse="gross"
             beschriftung="Ein Glas weniger"
-            className="min-h-14 min-w-16 max-[23rem]:min-w-14"
-            disabled={gesperrt || zaehlen.isPending || menge === 0}
-            onClick={() => zaehlen.mutate(-glas)}
-            {...beschreibung}
+            className={`min-h-14 min-w-16 max-[23rem]:min-w-14 ${GESPERRT}`}
+            disabled={zaehlen.isPending || menge === 0}
+            onClick={() => {
+              if (!gesperrt) zaehlen.mutate(-glas);
+            }}
+            {...sperre}
           >
             <Minuszeichen />
           </Symbolknopf>
@@ -493,15 +500,15 @@ function Ladezustand() {
           <span className="flex flex-col gap-2">
             <span className="flex items-center justify-between gap-2">
               <Skelett form="zeile" className="w-21" />
-              <Skelett form="titel" className="w-38 max-w-[55%]" />
+              <Skelett form="titel" className="w-38 max-w-1/2" />
             </span>
             <Skelett form="balken" />
           </span>
           {['w-16', 'w-31', 'w-11'].map((breite) => (
             <span key={breite} className="flex flex-col gap-1.5">
               <span className="flex items-center justify-between gap-2">
-                <Skelett form="zeile" className={`${breite} max-w-[45%]`} />
-                <Skelett form="zeile" className="w-24 max-w-[45%]" />
+                <Skelett form="zeile" className={`${breite} max-w-2/5`} />
+                <Skelett form="zeile" className="w-24 max-w-2/5" />
               </span>
               <Skelett form="balken" className="max-h-2" />
             </span>
@@ -510,7 +517,7 @@ function Ladezustand() {
         <span className="flex flex-col gap-3">
           <span className="flex items-center justify-between gap-2">
             <Skelett form="titel" className="w-23" />
-            <Skelett form="zeile" className="w-31 max-w-[50%]" />
+            <Skelett form="zeile" className="w-31 max-w-1/2" />
           </span>
           <Skelett form="balken" />
           <span className="grid grid-cols-[minmax(0,1fr)_4rem] gap-2 max-[23rem]:grid-cols-[minmax(0,1fr)_3.5rem]">
@@ -522,11 +529,11 @@ function Ladezustand() {
       <span className="flex flex-col gap-3">
         <Skelett form="titel" className="w-35 max-w-full" />
         <span className="flex items-center justify-between gap-2 pt-3">
-          <Skelett form="zeile" className="w-45 max-w-[70%]" />
+          <Skelett form="zeile" className="w-45 max-w-2/3" />
           <Skelett form="kreis" className="shrink-0" />
         </span>
         <span className="flex items-center justify-between gap-3">
-          <Skelett form="zeile" className="w-48 max-w-[60%]" />
+          <Skelett form="zeile" className="w-48 max-w-3/5" />
           <Skelett form="zeile" className="w-18" />
         </span>
         <span className="flex flex-wrap gap-2 pt-4">
@@ -552,6 +559,9 @@ function EintragFenster({
   onSchliessen: () => void;
 }) {
   const neuLaden = useNeuLaden(zugang);
+  const verbunden = useIstVerbunden();
+  const ohneNetzId = useId();
+  const sperre = verbunden ? {} : { 'aria-disabled': true, 'aria-describedby': ohneNetzId };
   const portion = eintrag.portion_label !== null;
   const [mahlzeit, setMahlzeit] = useState<Mahlzeit>(eintrag.meal);
   const [wert, setWert] = useState(feldtext(portion ? eintrag.portion_count : eintrag.amount));
@@ -571,7 +581,7 @@ function EintragFenster({
       onSchliessen();
     },
   });
-  const loeschenKnopf = (
+  const loeschenKnopf = verbunden ? (
     <Rueckfrage
       ausloeser="Löschen"
       ausloeserVariante="quiet"
@@ -582,6 +592,15 @@ function EintragFenster({
     >
       <p>„{eintrag.name}“ wird aus dem Tagebuch gelöscht.</p>
     </Rueckfrage>
+  ) : (
+    <Button type="button" variant="quiet" className={GESPERRT} {...sperre}>
+      Löschen
+    </Button>
+  );
+  const ohneNetz = verbunden ? null : (
+    <p id={ohneNetzId} className="text-ink-muted">
+      {daten.can_write ? 'Ändern und Löschen gehen' : 'Löschen geht'} wieder mit Verbindung.
+    </p>
   );
   return (
     <Dialogfenster
@@ -595,6 +614,7 @@ function EintragFenster({
           className="flex flex-col gap-4"
           onSubmit={(event) => {
             event.preventDefault();
+            if (!verbunden) return;
             const n = leseZahl(wert);
             const grenze = portion ? 20 : 5000;
             if (n === null || n <= 0 || n > grenze) {
@@ -626,15 +646,19 @@ function EintragFenster({
           {aendern.isError ? (
             <Statusmeldung ton="fehler">{aendern.error.message}</Statusmeldung>
           ) : null}
+          {ohneNetz}
           <Formularfuss dicht>
-            <Button type="submit" disabled={aendern.isPending}>
+            <Button type="submit" disabled={aendern.isPending} className={GESPERRT} {...sperre}>
               {aendern.isPending ? 'Wird gespeichert …' : 'Speichern'}
             </Button>
           </Formularfuss>
           <div>{loeschenKnopf}</div>
         </form>
       ) : (
-        loeschenKnopf
+        <div className="flex flex-col gap-4">
+          {ohneNetz}
+          <div>{loeschenKnopf}</div>
+        </div>
       )}
     </Dialogfenster>
   );
@@ -643,6 +667,8 @@ function EintragFenster({
 /** Eine Mahlzeit oder den ganzen Tag von einem anderen Tag hierher kopieren (ERN-008). */
 function Kopieren({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTagebuch }) {
   const neuLaden = useNeuLaden(zugang);
+  const verbunden = useIstVerbunden();
+  const ohneNetzId = useId();
   const tag = daten.day.day;
   const [von, setVon] = useState(tag > daten.started_on ? tagePlus(tag, -1) : tag);
   const [teil, setTeil] = useState<Mahlzeit | 'tag'>('tag');
@@ -661,6 +687,7 @@ function Kopieren({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTa
         className="flex flex-col gap-4"
         onSubmit={(event) => {
           event.preventDefault();
+          if (!verbunden) return;
           setKopiert(null);
           kopieren.mutate();
         }}
@@ -694,8 +721,19 @@ function Kopieren({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTa
                 : `${kopiert} Einträge kopiert.`}
           </Rueckmeldung>
         ) : null}
+        {verbunden ? null : (
+          <p id={ohneNetzId} className="text-ink-muted">
+            Kopieren geht wieder mit Verbindung.
+          </p>
+        )}
         <Formularfuss dicht>
-          <Button type="submit" variant="secondary" disabled={kopieren.isPending || !von}>
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={kopieren.isPending || !von}
+            className={GESPERRT}
+            {...(verbunden ? {} : { 'aria-disabled': true, 'aria-describedby': ohneNetzId })}
+          >
             {kopieren.isPending ? 'Wird kopiert …' : 'Hierher kopieren'}
           </Button>
         </Formularfuss>
@@ -707,6 +745,7 @@ function Kopieren({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTa
 /** „Zahlen ausblenden“ (ADR-027 Punkt 11) - die Einstellung der Person. */
 function Einstellungen({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTagebuch }) {
   const neuLaden = useNeuLaden(zugang);
+  const verbunden = useIstVerbunden();
   const [aus, setAus] = useState(daten.hide_numbers);
   const schalten = useMutation({
     mutationFn: (neu: boolean) => zahlenAusblenden(zugang.access_id, neu),
@@ -717,12 +756,17 @@ function Einstellungen({ zugang, daten }: { zugang: Plattformzugang; daten: Eige
   });
   return (
     <Disclosure summary="Einstellungen">
-      <Checkbox
-        label="Zahlen ausblenden"
-        hint="Mahlzeiten ohne Kalorien und Nährwerte."
-        checked={aus}
-        onChange={(event) => schalten.mutate(event.target.checked)}
-      />
+      <div className={verbunden ? undefined : KAESTCHEN_GESPERRT}>
+        <Checkbox
+          label="Zahlen ausblenden"
+          hint={`Mahlzeiten ohne Kalorien und Nährwerte.${verbunden ? '' : ' Ändern geht wieder mit Verbindung.'}`}
+          checked={aus}
+          aria-disabled={verbunden ? undefined : true}
+          onChange={(event) => {
+            if (verbunden) schalten.mutate(event.target.checked);
+          }}
+        />
+      </div>
       {schalten.isError ? (
         <Statusmeldung ton="fehler" className="mt-2">
           {schalten.error.message}

@@ -97,6 +97,9 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'tagebuch-fehler', merkmal: 'Tagebuch' },
   { seite: 'tagebuch-ohne-netz', merkmal: 'Tagebuch' },
   { seite: 'tagebuch-eintragen', merkmal: 'Mittagessen eintragen' },
+  // Die Ernährung ohne Netz und das Eintragen bei ausgeschaltetem Tagebuch.
+  { seite: 'ernaehrung-ohne-netz', merkmal: 'Ernährung' },
+  { seite: 'tagebuch-eintragen-aus', merkmal: 'Mittagessen eintragen' },
   { seite: 'lebensmittel', merkmal: 'Lebensmittel' },
   { seite: 'lebensmittel-neu', merkmal: /Lebensmittel/ },
   // „Meine Angaben“ mit der Seite einer Frage und allen Antworten, leer; die Gewohnheiten.
@@ -694,13 +697,52 @@ test.describe('Ernährung und Tagebuch', () => {
       'Snacks eintragen',
     ]) {
       const knopf = page.getByRole('button', { name });
+      // `aria-disabled`: gesperrt, aber mit dem Fokus erreichbar, damit der Satz vorgelesen wird.
       await expect(knopf).toBeDisabled();
       await expect(knopf).toHaveAccessibleDescription(satz);
       await expect(knopf).toHaveCSS('border-style', 'dashed');
+      await knopf.focus();
+      await expect(knopf).toBeFocused();
     }
     await expect(page.getByText('Haferflocken')).toBeVisible();
     await expect(page.getByRole('button', { name: /Haferflocken/ })).toHaveCount(0);
     await expect(page.getByRole('link', { name: /eintragen$/ })).toHaveCount(0);
+  });
+
+  test('375 px ohne Netz: die Ernährung lesbar, Eintragen und Speichern gestrichelt mit Satz', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await oeffne(page, 'ernaehrung-ohne-netz', 'Ernährung');
+    await expect(page.getByText(/^Keine Verbindung\./)).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Ihr Gewichtsverlauf' })).toBeVisible();
+    await page.getByText('Zielgewicht · 68,0 kg').click();
+    for (const [name, satz] of [
+      ['Eintragen', 'Eintragen geht wieder mit Verbindung.'],
+      ['Speichern', 'Speichern geht wieder mit Verbindung.'],
+    ] as const) {
+      const knopf = page.getByRole('button', { name, exact: true });
+      await expect(knopf).toBeDisabled();
+      await expect(knopf).toHaveAccessibleDescription(satz);
+      await expect(knopf).toHaveCSS('border-style', 'dashed');
+      await knopf.focus();
+      await expect(knopf).toBeFocused();
+    }
+    expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
+    expect(await kleineZiele(page), 'Ziele unter 44 px').toEqual([]);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+
+  test('Eintragen bei ausgeschaltetem Tagebuch: Markenform, Satz und der Weg zurück', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await oeffne(page, 'tagebuch-eintragen-aus', 'Mittagessen eintragen');
+    await expect(page.getByText('Hier lässt sich gerade nichts eintragen.')).toBeVisible();
+    await expect(page.getByText('Ihr Tagebuch ist ausgeschaltet.')).toBeVisible();
+    await page.getByRole('link', { name: 'Zum Tagebuch' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Tagebuch' })).toBeVisible();
   });
 
   test('der Rückweg führt vom Eintragen zum selben Tag und von dort zur Ernährung', async ({

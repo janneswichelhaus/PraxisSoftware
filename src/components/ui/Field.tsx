@@ -17,6 +17,10 @@ interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> {
    * „Kennwort“ oder „PIN“ (SEC-EPIC-002). Ohne Angabe „Kennwort“.
    */
   geheimnis?: string | undefined;
+  /** Eine kurze Einheit rechts im Feld, etwa „kg“; Vorlesesoftware hört sie als Beschreibung. */
+  einheit?: string | undefined;
+  /** Neben dem Feld, etwa der Knopf zum Eintragen; passt er nicht daneben, steht er darunter. */
+  daneben?: ReactNode;
 }
 
 function EyeIcon({ crossedOut }: { crossedOut: boolean }) {
@@ -55,30 +59,37 @@ export function Field({
   error,
   feldId,
   geheimnis = 'Kennwort',
+  einheit,
+  daneben,
   className = '',
   type,
   ...props
 }: FieldProps) {
   const erzeugt = useId();
   const id = feldId ?? erzeugt;
+  const einheitId = einheit ? `${id}-einheit` : undefined;
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
-  const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
+  const describedBy = [einheitId, hintId, errorId].filter(Boolean).join(' ') || undefined;
   const isPassword = type === 'password';
   const [visible, setVisible] = useState(false);
+  // Mit `daneben` bricht die Reihe um: Titel, Hinweis und Fehler je eine ganze Zeile.
+  const voll = daneben ? ' basis-full' : '';
 
   return (
     // `feld`: Der Titel reagiert auf den Fokus (ANN-567, `index.css`).
-    <div className="feld flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-ink text-sm font-medium">
+    <div
+      className={daneben ? 'feld flex flex-wrap gap-x-2 gap-y-1.5' : 'feld flex flex-col gap-1.5'}
+    >
+      <label htmlFor={id} className={`text-ink text-sm font-medium${voll}`}>
         {label}
       </label>
       {hint ? (
-        <p id={hintId} className="text-ink-muted text-sm">
+        <p id={hintId} className={`text-ink-muted text-sm${voll}`}>
           {hint}
         </p>
       ) : null}
-      <div className="relative">
+      <div className={daneben ? 'relative min-w-40 flex-1' : 'relative'}>
         <input
           id={id}
           type={isPassword ? (visible ? 'text' : 'password') : type}
@@ -95,7 +106,7 @@ export function Field({
             // ein bedienbares, nur der Mauszeiger wechselte. Der Rand bleibt
             // `line-strong` und hält die Form auch auf `canvas`.
             'disabled:bg-surface-sunken disabled:cursor-not-allowed',
-            isPassword ? 'pr-11' : '',
+            isPassword ? 'pr-11' : einheit ? 'pr-12' : '',
             error ? 'border-danger' : 'border-line-strong',
             className,
           ]
@@ -103,6 +114,14 @@ export function Field({
             .join(' ')}
           {...props}
         />
+        {einheit ? (
+          <span
+            id={einheitId}
+            className="text-ink-muted pointer-events-none absolute inset-y-0 right-4 flex items-center"
+          >
+            {einheit}
+          </span>
+        ) : null}
         {isPassword ? (
           <button
             type="button"
@@ -114,8 +133,9 @@ export function Field({
           </button>
         ) : null}
       </div>
+      {daneben}
       {error ? (
-        <p id={errorId} className="feldfehler text-danger text-sm">
+        <p id={errorId} className={`feldfehler text-danger text-sm${voll}`}>
           {error}
         </p>
       ) : null}

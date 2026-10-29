@@ -15,11 +15,15 @@ import type { EigenesTagebuch, Plattformzugang } from './api';
 
 const ladeTagebuch = vi.fn();
 const wasserZaehlen = vi.fn();
+const zahlenAusblenden = vi.fn();
+const tagebuchKopieren = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladeTagebuch: (...a: unknown[]) => ladeTagebuch(...a) as Promise<EigenesTagebuch | null>,
   wasserZaehlen: (...a: unknown[]) => wasserZaehlen(...a) as Promise<void>,
+  zahlenAusblenden: (...a: unknown[]) => zahlenAusblenden(...a) as Promise<void>,
+  tagebuchKopieren: (...a: unknown[]) => tagebuchKopieren(...a) as Promise<number>,
 }));
 
 const { Tagebuch } = await import('./Tagebuch');
@@ -235,7 +239,8 @@ describe('Tagebuch auf der Plattform (Handoff 2026-10-29, 5.7)', () => {
     expect(screen.queryByText(/Zur Ernährung/)).toBeNull();
   });
 
-  it('sperrt ohne Netz, was schreibt, mit Satz; die Einträge bleiben lesbar', async () => {
+  it('sperrt ohne Netz, was schreibt, erreichbar und mit Satz; die Einträge bleiben lesbar', async () => {
+    const nutzer = userEvent.setup();
     Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
     const { container } = renderWithProviders(<Tagebuch zugang={ZUGANG} />, ADRESSE);
     const wasser = await screen.findByRole('region', { name: 'Wasser' });
@@ -249,10 +254,32 @@ describe('Tagebuch auf der Plattform (Handoff 2026-10-29, 5.7)', () => {
       'Snacks eintragen',
     ]) {
       const knopf = screen.getByRole('button', { name });
-      expect(knopf).toBeDisabled();
+      // Gesperrt, aber mit dem Fokus erreichbar, damit der Satz vorgelesen wird.
+      expect(knopf).toBeEnabled();
+      expect(knopf).toHaveAttribute('aria-disabled', 'true');
       expect(knopf).toHaveAccessibleDescription('Eintragen geht wieder mit Verbindung.');
     }
+    await nutzer.click(screen.getByRole('button', { name: GLAS }));
+    await nutzer.click(screen.getByRole('button', { name: 'Ein Glas weniger' }));
+    expect(wasserZaehlen).not.toHaveBeenCalled();
     expect(screen.queryByRole('link', { name: /eintragen$/ })).toBeNull();
+
+    await nutzer.click(screen.getByText('Von einem anderen Tag kopieren'));
+    const kopieren = screen.getByRole('button', { name: 'Hierher kopieren' });
+    expect(kopieren).toHaveAttribute('aria-disabled', 'true');
+    expect(kopieren).toHaveAccessibleDescription('Kopieren geht wieder mit Verbindung.');
+    await nutzer.click(kopieren);
+    expect(tagebuchKopieren).not.toHaveBeenCalled();
+
+    await nutzer.click(screen.getByText('Einstellungen'));
+    const zahlen = screen.getByRole('checkbox', { name: 'Zahlen ausblenden' });
+    expect(zahlen).toHaveAttribute('aria-disabled', 'true');
+    expect(zahlen).toHaveAccessibleDescription(
+      'Mahlzeiten ohne Kalorien und Nährwerte. Ändern geht wieder mit Verbindung.',
+    );
+    await nutzer.click(zahlen);
+    expect(zahlen).not.toBeChecked();
+    expect(zahlenAusblenden).not.toHaveBeenCalled();
     expect(screen.getByText('Haferflocken')).toBeVisible();
     expect(screen.queryByRole('button', { name: /Haferflocken/ })).toBeNull();
     await pruefeBarrierefreiheit(container);

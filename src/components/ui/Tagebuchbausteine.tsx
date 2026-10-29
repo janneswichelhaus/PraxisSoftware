@@ -47,9 +47,20 @@ const DRUCK =
 const FOKUS = 'focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink';
 
 /**
+ * Ohne Netz gesperrt, aber mit dem Fokus erreichbar, damit der Satz dazu vorgelesen wird: das Bild
+ * eines abgeschalteten Knopfs, gestrichelt (ANN-802). Dazu `aria-disabled` und ein Riegel im Handler.
+ */
+export const GESPERRT =
+  'aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-line-strong aria-disabled:bg-transparent aria-disabled:text-ink-muted aria-disabled:hover:bg-transparent [.plattform-schrift_&]:aria-disabled:active:bg-transparent motion-safe:[.plattform-schrift_&]:aria-disabled:active:scale-100';
+
+/** Um ein Kästchen (`Checkbox`) ohne Netz: leise wie gesperrt; einen gestrichelten Rand nimmt es nicht an. */
+export const KAESTCHEN_GESPERRT =
+  '[&_input]:accent-ink-muted [&_input]:cursor-not-allowed [&_label]:cursor-not-allowed [&_label>span]:text-ink-muted';
+
+/**
  * Der Weg zum Eintragen an einer Mahlzeit des Tagebuchs (Handoff 2026-10-29, Abschnitt 3): rund mit
  * „+“ an einer Mahlzeit mit Einträgen, als Pille mit dem Namen an einer leeren. Gesperrt (ohne Netz)
- * ein gestrichelter Knopf, der über `beschreibung` sagt, warum.
+ * ein gestrichelter Knopf, mit dem Fokus erreichbar, der über `beschreibung` sagt, warum.
  */
 export function Mahlzeitziel({
   form,
@@ -83,10 +94,10 @@ export function Mahlzeitziel({
     return (
       <button
         type="button"
-        disabled
+        aria-disabled="true"
         aria-label={`${name} eintragen`}
         aria-describedby={beschreibung}
-        className={`${grund} text-ink-muted cursor-not-allowed border-dashed`}
+        className={`${grund} text-ink-muted cursor-not-allowed border-dashed ${FOKUS}`}
       >
         {inhalt}
       </button>

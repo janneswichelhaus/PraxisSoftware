@@ -1,7 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useIstVerbunden } from '@/app/verbindung';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
@@ -13,6 +15,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
+import { GESPERRT, KAESTCHEN_GESPERRT } from '@/components/ui/Tagebuchbausteine';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import {
@@ -106,7 +109,18 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
             <Ladezustand />
           )
         ) : !tagebuch.data || !tagebuch.data.can_write || !ernaehrung.data ? (
-          <EmptyState inKarte title="Hier lässt sich gerade nichts eintragen." />
+          <EmptyState
+            markenform
+            title="Hier lässt sich gerade nichts eintragen."
+            description={ohneEintragen(tagebuch.data, ernaehrung.data)}
+            aktion={
+              tagebuch.data ? (
+                <ButtonLink to={zumTag} variant="secondary">
+                  Zum Tagebuch
+                </ButtonLink>
+              ) : undefined
+            }
+          />
         ) : (
           <Suche
             zugang={zugang}
@@ -122,6 +136,14 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
   );
 }
 
+/** Warum hier nichts einzutragen ist, als ein Satz; der Weg zurück steht daneben (ANN-801). */
+function ohneEintragen(tagebuch: EigenesTagebuch | null, ernaehrung: EigeneErnaehrung | null) {
+  if (!tagebuch || !ernaehrung) return 'Zurzeit läuft keine Ernährungsberatung.';
+  if (!tagebuch.enabled) return 'Ihr Tagebuch ist ausgeschaltet.';
+  if (ernaehrung.can_grant) return 'Ohne Ihre Einwilligung wird nichts eingetragen.';
+  return 'Ihr Zugang ist nur noch zum Lesen.';
+}
+
 /** Die Form der Seite, solange sie lädt: das Suchfeld und Zeilen darunter. */
 function Ladezustand() {
   return (
@@ -131,7 +153,7 @@ function Ladezustand() {
       <Skelett form="titel" className="mt-4 w-24" />
       {['w-40', 'w-32', 'w-36'].map((breite) => (
         <span key={breite} className="flex flex-col gap-2 py-2">
-          <Skelett form="zeile" className={`${breite} max-w-[70%]`} />
+          <Skelett form="zeile" className={`${breite} max-w-2/3`} />
           <Skelett form="zeile" className="w-52 max-w-full" />
         </span>
       ))}
@@ -158,6 +180,8 @@ function Suche({
   mahlzeit: Mahlzeit;
 }) {
   const ohneZahlen = tagebuch.hide_numbers;
+  const verbunden = useIstVerbunden();
+  const ohneNetzId = useId();
   const letzte = (f: Lebensmittel) =>
     [...tagebuch.recent, ...tagebuch.favorites].find((s) => gleich(s.food, f));
   return (
@@ -169,6 +193,11 @@ function Suche({
       ohneBegriff={(oeffnen) => (
         // Unter 23rem rückt „+“ unter den Namen: Ein Lebensmittel bricht nur zwischen Wörtern.
         <div className="flex flex-col gap-8 max-[23rem]:[&_li]:flex-wrap max-[23rem]:[&_li>:first-child]:basis-full max-[23rem]:[&_li>:nth-child(2)]:ml-auto max-[23rem]:[&_li>:nth-child(2)]:pb-2 [&>*]:mt-0">
+          {verbunden ? null : (
+            <p id={ohneNetzId} className="text-ink-muted">
+              Eintragen geht wieder mit Verbindung.
+            </p>
+          )}
           {tagebuch.favorites.length > 0 ? (
             <Listenabschnitt titel="Favoriten">
               {tagebuch.favorites.map((s) => (
@@ -180,6 +209,7 @@ function Suche({
                   mahlzeit={mahlzeit}
                   ohneZahlen={ohneZahlen}
                   onOeffnen={oeffnen}
+                  ohneNetz={verbunden ? undefined : ohneNetzId}
                 />
               ))}
             </Listenabschnitt>
@@ -197,6 +227,7 @@ function Suche({
                 mahlzeit={mahlzeit}
                 ohneZahlen={ohneZahlen}
                 onOeffnen={oeffnen}
+                ohneNetz={verbunden ? undefined : ohneNetzId}
               />
             ))}
           </Listenabschnitt>
@@ -245,6 +276,7 @@ function Schnellzeile({
   mahlzeit,
   ohneZahlen,
   onOeffnen,
+  ohneNetz,
 }: {
   zugang: Plattformzugang;
   s: Schnellwahl;
@@ -252,6 +284,8 @@ function Schnellzeile({
   mahlzeit: Mahlzeit;
   ohneZahlen: boolean;
   onOeffnen: (f: Lebensmittel) => void;
+  /** Ohne Netz die Kennung des Satzes, der sagt, warum „+“ gesperrt ist. */
+  ohneNetz?: string | undefined;
 }) {
   const eintragen = useEintragen(zugang, s.food, tag, mahlzeit);
   const anfang = letzteMenge(s);
@@ -279,7 +313,11 @@ function Schnellzeile({
                 beschriftung={`${s.food.name} eintragen (${text})`}
                 variant="secondary"
                 disabled={eintragen.isPending}
-                onClick={() => eintragen.mutate(menge.angabe)}
+                className={GESPERRT}
+                {...(ohneNetz ? { 'aria-disabled': true, 'aria-describedby': ohneNetz } : {})}
+                onClick={() => {
+                  if (!ohneNetz) eintragen.mutate(menge.angabe);
+                }}
               >
                 <span aria-hidden="true" className="text-xl">
                   +
@@ -318,6 +356,7 @@ function useEintragen(zugang: Plattformzugang, f: Lebensmittel, tag: string, mah
 /** Favorit an oder ab - sofort gespeichert. */
 function Favorit({ zugang, f, an }: { zugang: Plattformzugang; f: Lebensmittel; an: boolean }) {
   const queryClient = useQueryClient();
+  const verbunden = useIstVerbunden();
   const [wert, setWert] = useState(an);
   const setzen = useMutation({
     mutationFn: (neu: boolean) => favoritSetzen(zugang.access_id, f, neu),
@@ -328,11 +367,15 @@ function Favorit({ zugang, f, an }: { zugang: Plattformzugang; f: Lebensmittel; 
       queryClient.invalidateQueries({ queryKey: tagebuchSchluessel(zugang.access_id) }),
   });
   return (
-    <div>
+    <div className={verbunden ? undefined : KAESTCHEN_GESPERRT}>
       <Checkbox
         label="Favorit"
+        hint={verbunden ? undefined : 'Ändern geht wieder mit Verbindung.'}
         checked={wert}
-        onChange={(event) => setzen.mutate(event.target.checked)}
+        aria-disabled={verbunden ? undefined : true}
+        onChange={(event) => {
+          if (verbunden) setzen.mutate(event.target.checked);
+        }}
       />
       {setzen.isError ? (
         <Statusmeldung ton="fehler" className="mt-2">
@@ -368,6 +411,8 @@ export function MengeWaehlen({
   const [wert, setWert] = useState(start.wert);
   const [fehler, setFehler] = useState<string | undefined>();
   const eintragen = useEintragen(zugang, f, tag, mahlzeit);
+  const verbunden = useIstVerbunden();
+  const ohneNetzId = useId();
   const geprueft = mengePruefen(f, einheit, wert);
   const wahlen = [
     ...f.portions.map((p) => ({ wert: p.label, text: p.label })),
@@ -379,6 +424,7 @@ export function MengeWaehlen({
       className="flex flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
+        if (!verbunden) return;
         if ('fehler' in geprueft) {
           setFehler(geprueft.fehler);
           return;
@@ -419,8 +465,18 @@ export function MengeWaehlen({
       {eintragen.isError ? (
         <Statusmeldung ton="fehler">{eintragen.error.message}</Statusmeldung>
       ) : null}
+      {verbunden ? null : (
+        <p id={ohneNetzId} className="text-ink-muted">
+          Eintragen geht wieder mit Verbindung.
+        </p>
+      )}
       <Formularfuss dicht>
-        <Button type="submit" disabled={eintragen.isPending}>
+        <Button
+          type="submit"
+          disabled={eintragen.isPending}
+          className={GESPERRT}
+          {...(verbunden ? {} : { 'aria-disabled': true, 'aria-describedby': ohneNetzId })}
+        >
           {eintragen.isPending ? 'Wird eingetragen …' : 'Eintragen'}
         </Button>
       </Formularfuss>
