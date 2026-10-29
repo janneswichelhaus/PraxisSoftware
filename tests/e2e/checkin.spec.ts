@@ -55,7 +55,7 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
       expect(await axeVerstoesse(page)).toEqual([]);
     });
 
-    test(`Zeile, Dank und Meine Angaben bei ${breite} px`, async ({ page }) => {
+    test(`Zeile und Dank auf der Übersicht bei ${breite} px`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?seite=checkin-uebersicht`);
       await expect(page.getByText('3 kurze Fragen', { exact: false })).toBeVisible();
@@ -71,7 +71,10 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
         page.getByText(/Danke\. Ihre Therapeut:in sieht Ihre Angaben beim nächsten Termin/),
       ).toBeVisible();
       await expect(page.getByRole('link', { name: /Check-in beantworten/ })).toHaveCount(0);
+    });
 
+    test(`Meine Angaben bei ${breite} px`, async ({ page }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?seite=angaben`);
       await expect(page.getByRole('heading', { name: 'Meine Angaben' })).toBeVisible();
       // OUT-004: je Frage ein Punktbild in den Worten der Frage, Punkte ohne Linie.
