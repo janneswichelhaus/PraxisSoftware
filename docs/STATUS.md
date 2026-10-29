@@ -6,19 +6,17 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Design-Review Schritt 3 Termine** (Auftrag Jannes 28.10., Fragen wie empfohlen): 3a bis 3c
-lagen ungemergt auf `ccr-544f8ce7-u1sqpf` (25.10., vor dem Aufräumen) und werden je als PR
-übertragen, ohne die Einsicht der Praxis (M7); 3a und 3b sind gemergt (#327, #328), 3c liegt
-als PR vor.
+**Design-Review Schritt 3 Termine** (Auftrag Jannes 28.10., Fragen wie empfohlen): 3a bis 3c sind
+gemergt (#327, #328, #330), 3d (Wünschen, Ändern, Absagen in je zwei Schritten) liegt als PR vor
+(#331). Damit ist Schritt 3 gebaut; auf `ccr-544f8ce7-u1sqpf` ist nichts mehr zu übertragen.
 Aufräumen (#308 bis #325) und CI-Beschleunigung (#326) sind gemergt; offen ist die Abkürzung für
 reine Doku (ADR-013 Punkt 2, Entscheidung Jannes). Befunde aus archivierten Sitzungen: BEF-201,
 BEF-202.
 
 ## Danach
 
-3d Abläufe, neu nach dem Handoff (auf dem alten Branch nie gebaut); nach dem Merge von 3c bleibt
-dort nichts zu übertragen, dann den Branch löschen. Dann BEF-223 (Zeitumstellung, Pfad A) als eigene PR, eine Bildsichtung der Schritte 2
-und 3, dann Schritt 4 (Handoff während 3d), danach 5 bis 7 je mit Handoff (Roadmap). Erst dann
+BEF-223 (Zeitumstellung, Pfad A) als eigene PR, eine Bildsichtung der Schritte 2 und 3, dann
+Schritt 4 (Handoff fehlt noch), danach 5 bis 7 je mit Handoff (Roadmap). Erst dann
 die Vorschläge der Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
 Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
@@ -33,6 +31,7 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
   ANN-479 ansehen (Besuch).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
+- Alten Branch `ccr-544f8ce7-u1sqpf` löschen; Rollen bei 375 × 667 (#330, #331).
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
 - Sichtliste am Gerät: 13 Punkte (`sichtung/README.md`, S-1 bis S-13); die übrigen alten
   Sichtungsschritte sind erledigt oder überholt.
@@ -52,7 +51,6 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-29.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: 3b gemergt und gesichtet; 3c übertragen (Seite des
-Termins, ANN-778 bis -781, BEF-221 erledigt, auch Lesefrist und Fehler der Liste). Parallel #329:
-Die Bildstrecke führt offene Anfragen je Dokument; Erikas Übersicht scheitert in der Test-Umgebung an
-alten Termin-Kennungen (bei Jannes). Keine Migration. Lokal: `git pull`.
+29.10.2026, Branch `ccr-28253615-djlvqj`: 3d gebaut (#331): Tage als Segment, Tageszeiten als
+Wahlflächen, Zusammenfassungen als Karte, am Rechner ein Fenster von 36rem, ohne Netz Senden gesperrt
+(ANN-782 bis -784). Keine Migration. Lokal: `git pull`.

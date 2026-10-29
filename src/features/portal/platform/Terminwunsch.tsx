@@ -71,7 +71,7 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
       }),
     onSuccess: () => {
       freigeben();
-      // Zur Liste mit Rückmeldung: Dort steht der Wunsch gleich unter „Ihre Wünsche“ (ANN-786).
+      // Zur Liste mit Rückmeldung: Dort steht der Wunsch gleich unter „Ihre Wünsche“ (ANN-784).
       void navigate(`${terminliste}${terminliste.includes('?') ? '&' : '?'}gesendet=1`, {
         replace: true,
       });

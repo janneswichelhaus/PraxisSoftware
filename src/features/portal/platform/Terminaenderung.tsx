@@ -78,7 +78,7 @@ export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
     !termin.open_request_kind;
   if (!termin || !aenderbar || !art) return <Terminseite zugang={zugang} />;
 
-  // ✕ führt zur Seite des Termins, wie sie war: mit Bereich und Rückweg, ohne `art` (ANN-782).
+  // ✕ führt zur Seite des Termins, wie sie war: mit Bereich und Rückweg, ohne `art` (ANN-779).
   const seiteDesTermins = new URLSearchParams(suche);
   seiteDesTermins.delete('art');
   // `toString` statt `size`: Das kennt Safari erst ab Version 17.
@@ -103,7 +103,7 @@ const FRAGEN: Record<Seite, string> = {
 
 /**
  * Der geführte Ablauf zu einem bestätigten künftigen Termin ohne offenen Wunsch; wo der Handoff mehr
- * zeigt, als 375 × 667 fasst, rollt der Inhalt, Frage und Fuß stehen (ANN-783).
+ * zeigt, als 375 × 667 fasst, rollt der Inhalt, Frage und Fuß stehen (ANN-782).
  */
 function Aenderungsablauf({
   zugang,

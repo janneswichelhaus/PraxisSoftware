@@ -150,7 +150,8 @@ export function Wannangabe({
 
 /**
  * Der Fuß der Zusammenfassung: was der Knopf bewirkt, darunter der eine Hauptknopf. Ohne Netz steht
- * dort, dass gerade nichts gesendet wird, und der Knopf bleibt gesperrt, bis sie zurück ist (ANN-787).
+ * dort, dass gerade nichts gesendet wird, und der Knopf bleibt gesperrt, bis das Netz zurück ist
+ * (ANN-773).
  */
 export function Sendefuss({
   hinweis,
@@ -201,7 +202,7 @@ export function Zusammenfassungsanfang() {
 
 /**
  * Die Nachricht an die Praxis: eingeklappt und freiwillig. Mit `alsTitel` ist die Frage selbst der
- * Aufklapper, das Feld heißt nur für Vorlesesoftware nach ihr (ANN-785). Wer aufklappt, will
+ * Aufklapper, das Feld heißt nur für Vorlesesoftware nach ihr. Wer aufklappt, will
  * schreiben: Das Feld bekommt den Fokus; steht etwas darin, ist sie offen.
  */
 export function Nachricht({

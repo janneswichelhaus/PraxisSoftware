@@ -350,7 +350,7 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     // Was beim Freigeben gilt, steht fest über dem Knopf.
     await expect(ende.getByRole('status')).toContainText('es entsteht kein Ausfallhonorar');
     await expect(ende.getByRole('status')).toBeInViewport({ ratio: 1 });
-    // Karte und Satz des Handoffs sind bei 375 × 667 höher als die Fläche (ANN-783): Der Inhalt
+    // Karte und Satz des Handoffs sind bei 375 × 667 höher als die Fläche (ANN-782): Der Inhalt
     // rollt, Frage, Wahl und Fuß stehen; der freiwillige Aufklapper liegt darunter.
     await expect(ende.getByRole('button', { name: 'Ändern: Lieber am' })).toBeInViewport({
       ratio: 1,
@@ -399,7 +399,7 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     const warnung = hinweis.getByRole('alert');
     await expect(warnung).toContainText('weniger als 24 Stunden');
     await expect(warnung).toContainText('berechnen wir ein Ausfallhonorar');
-    // Die ganze Regel steht offen darunter (ANN-783): Der Inhalt rollt, Warnung und Knopf bleiben.
+    // Die ganze Regel steht offen darunter (ANN-782): Der Inhalt rollt, Warnung und Knopf bleiben.
     await expect(hinweis.getByText(/Genau 24 Stunden vorher genügt/)).toBeVisible();
     await expect(warnung).toBeInViewport({ ratio: 1 });
     await expect(hinweis.getByRole('button', { name: 'Verstanden, weiter' })).toBeInViewport({

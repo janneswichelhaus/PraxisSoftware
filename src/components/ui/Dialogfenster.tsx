@@ -74,7 +74,7 @@ export function Dialogfenster({
    * um, statt abgeschnitten zu werden - bei 200 % ginge sonst der Tag des Termins verloren.
    */
   plattform?: boolean;
-  /** Am Rechner so breit wie ein Formular (36rem) und 40rem hoch: ein kurzer Ablauf (ANN-784). */
+  /** Am Rechner so breit wie ein Formular (36rem) und 40rem hoch: ein kurzer Ablauf (ANN-783). */
   schmal?: boolean;
   children: ReactNode;
 }) {

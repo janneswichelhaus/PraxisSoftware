@@ -64,8 +64,9 @@ ohne Gerüst; Kopf mit „Später weiter“ und Balken, Fuß mit Stand und Haupt
 (Einladung, Anmeldung, Einrichten, Sperre, Zugang beendet) · Blatt (Planblatt, Rechnung). Der geführte Ablauf kann „Später“ statt ✕ tragen,
 einen Balken je Schritt und das Band einer Vertretung unter dem Fortschritt; mit `plattform` 20 Rand,
 unter 23rem 12 und alles in einer Rollfläche, die Frage ohne Rollen (ein Bild darüber schrumpft in
-4:3). Ein Titel mit einem Wort über elf Zeichen steht unter 23rem in 22 (ANN-696). Abschaltbar; so
-der Einstieg, DRP-EPIC-005.
+4:3); mit `schmal` am Rechner ein Fenster von 36rem, je Weg zwei Schritte (Termine, ANN-783). Ein
+Titel mit einem Wort über elf Zeichen steht unter 23rem in 22 (ANN-696). Abschaltbar; so der
+Einstieg, DRP-EPIC-005.
 
 **Gerüst** (`src/features/portal/platform/Navigation.tsx`): Kopf 72 mit Wortmarke 28 und „Ich“ mit
 Initialen. Reiterleiste in drei Stufen (ANN-679): eine Reihe, solange die Wörter passen - gemessen,

@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-10-28.
+Zuletzt aktualisiert: 2026-10-29.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1578,7 +1578,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-770 | „Wer und wo“ und Fragen: unter 23rem gestapelt, bei „Sehr groß“ nebeneinander | Technik · offen | `WerUndWo` in `src/features/portal/platform/Terminbausteine.tsx` |
 | ANN-771 | Hero-Karte: das Personenbild auf seiner Farbe, nicht auf Papier | Technik · offen | `Personenbild` in `src/components/ui/HeroKarte.tsx` |
 | ANN-772 | Termine: der nächste Termin als Hero-Karte, ein offener Wunsch dazu als Statuszeichen an der Karte | Technik · offen | `hauptsache` in `src/features/portal/platform/Termine.tsx` |
-| ANN-773 | Termine: ohne Netz Wünschen und Zurückziehen gesperrt, ein Satz sagt warum | Technik · offen | `WUENSCHE_OHNE_NETZ` in `src/features/portal/platform/wunschtexte.ts` |
+| ANN-773 | Termine: ohne Netz Wünschen, Zurückziehen und Senden gesperrt, ein Satz sagt warum | Technik · offen | `WUENSCHE_OHNE_NETZ` in `src/features/portal/platform/wunschtexte.ts` |
 | ANN-774 | Termine: in der Lesefrist kein Knopf und keine Woche, der Satz zu neuen Terminen in der Meldung | Technik · offen | `wuenschen` in `src/features/portal/platform/Termine.tsx` |
 | ANN-775 | Termine: am Rechner Hero und Knopf rechts, die Listen links ab 32.5rem | Technik · offen | `ZWEI_SPALTEN` in `src/features/portal/platform/Termine.tsx` |
 | ANN-776 | Termine: jede Zeile führt zur Seite ihres Termins, auch vergangene und abgesagte | Technik · offen | `zielVon` in `src/features/portal/platform/Termine.tsx` |
@@ -1587,3 +1587,6 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-779 | Seite des Termins: von der Übersicht reist der Rückweg als `zurueck` mit und heißt „Übersicht“ | Technik · offen | `zumTermin` in `src/features/portal/platform/Uebersicht.tsx` |
 | ANN-780 | Termine: der Weg zur Praxis beim Fehler, ohne Netz beim Laden und in der Lesefrist (nur Anruf, vor dem Vergangenen) | Technik · offen | `PraxisErreichen` in `src/features/portal/platform/Terminbausteine.tsx` |
 | ANN-781 | Seite des Termins: die Reihenfolge des Handoffs, auch wenn bei 375 × 667 „Termin absagen“ erst nach Rollen steht | Technik · offen | `Terminseite` in `src/features/portal/platform/Terminseite.tsx` |
+| ANN-782 | Abläufe der Termine: wo der Handoff mehr zeigt, als 375 × 667 fasst, rollt der Inhalt; Frage, Warnung und Fuß bleiben im Bild | Technik · offen | `Aenderungsablauf` in `src/features/portal/platform/Terminaenderung.tsx` |
+| ANN-783 | Abläufe der Termine: am Rechner ein Fenster von 36rem, von 640 bis 1023 px das große wie jeder Ablauf | Technik · offen | `schmal` in `src/components/ui/Dialogfenster.tsx` |
+| ANN-784 | Abläufe der Termine: nach dem Senden zur Liste mit Rückmeldung, keine Endseite (Frage 3) | Technik · offen | `senden` in `src/features/portal/platform/Terminwunsch.tsx` |
