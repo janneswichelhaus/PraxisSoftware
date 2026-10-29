@@ -288,12 +288,15 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
 
     await z.tippe(page.getByRole('link', { name: 'Termin absagen' }));
     const hinweis = fenster(page, 'Ausfallhonorar');
-    await expect(hinweis.getByRole('status')).toContainText('kein Ausfallhonorar');
+    await expect(hinweis.getByText('Schritt 1 von 2', { exact: true })).toBeVisible();
+    await expect(hinweis.getByText(/es entsteht kein Ausfallhonorar/)).toBeVisible();
     await pruefeSeite(page, hinweis, 'b6-absagen-02-ausfallhonorar');
 
     await z.tippe(hinweis.getByRole('button', { name: 'Verstanden, weiter' }));
     const ende = fenster(page, 'Ist alles richtig?');
+    await expect(ende.getByText('Schritt 2 von 2', { exact: true })).toBeVisible();
     await expect(ende.getByText('Termin absagen', { exact: true })).toBeVisible();
+    await expect(ende.getByText('Hausbesuch · Anna Beispiel', { exact: true })).toBeVisible();
     await expect(ende.getByText(/Als Eingang Ihrer Absage gilt der Zeitpunkt/)).toBeInViewport({
       ratio: 1,
     });
@@ -317,7 +320,7 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     ]);
     test.info().annotations.push({
       type: 'G6 Absagen',
-      description: `${z.tipps} Tipps (vorher 3 auf einer rollenden Seite)`,
+      description: `${z.tipps} Tipps in zwei Schritten ab der Seite des Termins`,
     });
     expect(z.tipps).toBeLessThanOrEqual(4);
   });
@@ -334,19 +337,19 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     await expect(page.getByRole('heading', { level: 1, name: TAG })).toBeVisible();
     await z.tippe(page.getByRole('link', { name: 'Termin ändern' }));
     const wann = fenster(page, 'Wann passt es Ihnen?');
-    await expect(wann.getByText('Schritt 2 von 3', { exact: true })).toBeVisible();
-    // Wochentage, Tageszeiten und „Egal“ zusammen auf einer Seite ohne Rollen.
+    await expect(wann.getByText('Schritt 1 von 2', { exact: true })).toBeVisible();
+    // Die Leiste der Tage, die Tageszeiten und „Egal“ zusammen auf einer Seite ohne Rollen.
     await pruefeSeite(page, wann, 'b6-aendern-02-wann-passt-es');
 
-    await z.tippe(wann.getByRole('checkbox', { name: 'Montag' }));
-    await z.tippe(wann.getByRole('checkbox', { name: 'Vormittag' }));
+    await z.tippe(wann.getByRole('button', { name: 'Montag' }));
+    await z.tippe(wann.getByRole('button', { name: 'Vormittag' }));
     await z.tippe(wann.getByRole('button', { name: 'Weiter' }));
     const ende = fenster(page, 'Ist alles richtig?');
-    await expect(ende.getByText('Montag', { exact: true })).toBeVisible();
-    await expect(ende.getByText('Vormittag', { exact: true })).toBeVisible();
+    await expect(ende.getByText('Lieber am', { exact: true })).toBeVisible();
+    await expect(ende.getByText('Montag, vormittags', { exact: true })).toBeVisible();
     // Was beim Freigeben gilt, steht fest über dem Knopf.
-    await expect(ende.getByRole('status')).toContainText('es entsteht kein Ausfallhonorar');
-    await expect(ende.getByRole('status')).toBeInViewport({ ratio: 1 });
+    const freigabe = ende.getByText(/es entsteht kein Ausfallhonorar/);
+    await expect(freigabe).toBeInViewport({ ratio: 1 });
     await pruefeAbschluss(page, ende, 'Änderungswunsch senden', 'b6-aendern-03-zusammenfassung', {
       breit: true,
     });
@@ -376,7 +379,7 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     ]);
     test.info().annotations.push({
       type: 'G6 Ändern',
-      description: `${z.tipps} Tipps + Text (vorher 5 + Text auf einer rollenden Seite)`,
+      description: `${z.tipps} Tipps + Text in zwei Schritten ab der Seite des Termins`,
     });
     expect(z.tipps).toBeLessThanOrEqual(6);
   });
@@ -387,23 +390,26 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     const server = nachbildung();
     await oeffne(page, server, 'termin-absagen&kurzfristig');
     const hinweis = fenster(page, 'Ausfallhonorar');
-    const warnung = hinweis.getByRole('status');
+    const warnung = hinweis.getByRole('alert');
     await expect(warnung).toContainText('weniger als 24 Stunden');
     await expect(warnung).toContainText('berechnen wir ein Ausfallhonorar');
-    await pruefeSeite(page, hinweis, 'b6-absagen-kurzfristig-01-ausfallhonorar');
-    // Die ganze Regel auf Abruf - aufgeklappt rollt nur der Inhalt, der Knopf bleibt.
-    await hinweis.getByText('Unsere Regel zum Ausfallhonorar').click();
+    await expect(warnung).toBeInViewport({ ratio: 1 });
+    // Die ganze Regel steht gleich offen darunter; es rollt nur der Inhalt, der Knopf bleibt.
     await expect(hinweis.getByText(/Genau 24 Stunden vorher genügt/)).toBeVisible();
     await expect(hinweis.getByRole('button', { name: 'Verstanden, weiter' })).toBeInViewport({
       ratio: 1,
     });
-    await bild(page, 'b6-absagen-kurzfristig-02-regel');
+    await bild(page, 'b6-absagen-kurzfristig-01-ausfallhonorar');
+    // Zugeklappt kommt die Seite ohne Rollen aus.
+    await hinweis.getByText('Unsere Regel zum Ausfallhonorar').click();
+    await expect(hinweis.getByText(/Genau 24 Stunden vorher genügt/)).toBeHidden();
+    await pruefeSeite(page, hinweis, 'b6-absagen-kurzfristig-02-regel-zu');
 
     await hinweis.getByRole('button', { name: 'Verstanden, weiter' }).click();
     const ende = fenster(page, 'Ist alles richtig?');
     // Die Warnung noch einmal, fest direkt über „Absage senden“.
-    await expect(ende.getByRole('status')).toContainText('weniger als 24 Stunden');
-    await expect(ende.getByRole('status')).toBeInViewport({ ratio: 1 });
+    const nochmal = ende.getByText(/weniger als 24 Stunden/);
+    await expect(nochmal).toBeInViewport({ ratio: 1 });
     await pruefeAbschluss(
       page,
       ende,
@@ -421,13 +427,12 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     const server = nachbildung();
     await oeffne(page, server, 'termin-aendern&kurzfristig');
     const wann = fenster(page, 'Wann passt es Ihnen?');
-    await wann.getByRole('checkbox', { name: 'Dienstag' }).click();
-    await wann.getByRole('checkbox', { name: 'Donnerstag' }).click();
-    await wann.getByRole('checkbox', { name: 'Egal' }).click();
+    await wann.getByRole('button', { name: 'Dienstag' }).click();
+    await wann.getByRole('button', { name: 'Donnerstag' }).click();
+    await wann.getByRole('button', { name: 'Egal' }).click();
     await wann.getByRole('button', { name: 'Weiter' }).click();
     const ende = fenster(page, 'Ist alles richtig?');
-    const warnung = ende.getByRole('status');
-    await expect(warnung).toContainText('wie eine kurzfristige Absage');
+    const warnung = ende.getByText(/wie eine kurzfristige Absage/);
     await expect(warnung).toBeInViewport({ ratio: 1 });
     await pruefeAbschluss(
       page,
@@ -451,11 +456,11 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     await expect(wann.getByText('Schritt 1 von 2', { exact: true })).toBeVisible();
     await pruefeSeite(page, wann, 'b6-wunsch-01-wann-passt-es', true);
 
-    await z.tippe(wann.getByRole('checkbox', { name: 'Mittwoch' }));
-    await z.tippe(wann.getByRole('checkbox', { name: 'Egal' }));
+    await z.tippe(wann.getByRole('button', { name: 'Mittwoch' }));
+    await z.tippe(wann.getByRole('button', { name: 'Egal' }));
     await z.tippe(wann.getByRole('button', { name: 'Weiter' }));
     const ende = fenster(page, 'Ist alles richtig?');
-    await expect(ende.getByText('Jede Tageszeit', { exact: true })).toBeVisible();
+    await expect(ende.getByText('Mittwoch, zu jeder Tageszeit', { exact: true })).toBeVisible();
     await expect(ende.getByText(/Ein vereinbarter Termin ist das noch nicht/)).toBeInViewport({
       ratio: 1,
     });
@@ -472,7 +477,7 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     ]);
     test.info().annotations.push({
       type: 'G6 Wünschen',
-      description: `${z.tipps} Tipps (vorher 4 auf einer rollenden Seite)`,
+      description: `${z.tipps} Tipps in zwei Schritten`,
     });
     expect(z.tipps).toBeLessThanOrEqual(5);
   });

@@ -1,135 +1,189 @@
 import { useId, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { ListRow } from '@/components/ui/ListRow';
+import { ListRows } from '@/components/ui/ListRow';
+import { OhneNetzSymbol } from '@/components/ui/OhneNetzSymbol';
 import { TextArea } from '@/components/ui/TextArea';
-import { TAGESZEITEN, TAGESZEIT_NAME } from './api';
+import { Wahlflaechen, type Wahl } from '@/components/ui/Wahlflaechen';
+import { Wochenleiste, type Wochentag as Leistentag } from '@/components/ui/Wochenleiste';
+import { TAGESZEITEN, TAGESZEIT_NAME, type Tageszeit } from './api';
 import {
   NOTIZ_MAX,
   WOCHENTAGE,
   WOCHENTAG_NAME,
   egalUmschalten,
   tagUmschalten,
-  tageText,
   wunschtage,
+  wunschzeiten,
   zeitUmschalten,
-  zeitenText,
-  zeitraumText,
   type Wann,
+  type Wochentag,
 } from './terminablauf';
+import { bisTag, tageSatz, wunschInWorten } from './termintexte';
+import { WUNSCHSCHUTZ } from './wunschtexte';
 
 /**
- * Was „Termin wünschen“ und „Termin ändern“ teilen (POR-009, POR-010,
- * Überholung 6): die Seite „Wann passt es Ihnen?“, die Nachricht an die
- * Praxis und die Zeilen der Zusammenfassung.
+ * Was „Termin wünschen“ und „Termin ändern“ teilen: die Seite „Wann passt es Ihnen?“, die Karte der
+ * Zusammenfassung und die Nachricht an die Praxis.
  */
 
+const TAGE: readonly Leistentag[] = WOCHENTAGE.map((nummer) => ({
+  nummer,
+  kurz: WOCHENTAG_NAME[nummer].slice(0, 2),
+  lang: WOCHENTAG_NAME[nummer],
+}));
+
+const ZEITWAHLEN: readonly Wahl[] = [
+  ...TAGESZEITEN.map((zeit) => ({ schluessel: zeit, text: TAGESZEIT_NAME[zeit] })),
+  { schluessel: 'egal', text: 'Egal' },
+];
+
 /**
- * „Wann passt es Ihnen?“: Montag bis Freitag und die drei Tageszeiten samt
- * „Egal“ als Häkchen, je zwei nebeneinander - zusammen auf einer Seite ohne
- * Rollen bei 375 × 667 in 18 px; warum Wochentage statt Daten, steht in
- * `terminablauf.ts`. Die Beschriftung ist das Ziel, mindestens 44 px hoch;
- * bei sehr wenig Breite (200 %) steht alles untereinander. Nichts ist
- * vorbelegt.
+ * „Wann passt es Ihnen?“: Montag bis Freitag als Leiste mit dem Satz darunter, die Tageszeiten als
+ * Wahlflächen; „Egal“ nimmt die anderen zurück und umgekehrt. Nichts ist vorbelegt.
  */
-export function Wunschfelder({ wann, onWann }: { wann: Wann; onWann: (wann: Wann) => void }) {
+export function Wunschfelder({
+  wann,
+  werktage,
+  onWann,
+}: {
+  wann: Wann;
+  /** Die angebotenen Werktage: Der Satz nennt den letzten, der gesendet würde. */
+  werktage: readonly string[];
+  onWann: (wann: Wann) => void;
+}) {
   return (
     <div className="flex flex-col gap-5">
-      <fieldset className="min-w-0">
-        <legend className="text-ink text-liste mb-1 font-semibold">An welchen Tagen?</legend>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 max-[20rem]:grid-cols-1">
-          {WOCHENTAGE.map((tag, index) => (
-            <Checkbox
-              key={tag}
-              label={WOCHENTAG_NAME[tag]}
-              checked={wann.tage.includes(tag)}
-              onChange={() => onWann(tagUmschalten(wann, tag))}
-              // Der Fokus beginnt bei der ersten Antwort, nicht im Kopf.
-              {...(index === 0 ? { 'data-autofocus': true } : {})}
-            />
-          ))}
-        </div>
-      </fieldset>
-      <fieldset className="min-w-0">
-        <legend className="text-ink text-liste mb-1 font-semibold">Zu welcher Tageszeit?</legend>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 max-[20rem]:grid-cols-1">
-          {TAGESZEITEN.map((zeit) => (
-            <Checkbox
-              key={zeit}
-              label={TAGESZEIT_NAME[zeit]}
-              checked={wann.zeiten !== 'egal' && wann.zeiten.includes(zeit)}
-              onChange={() => onWann(zeitUmschalten(wann, zeit))}
-            />
-          ))}
-          <Checkbox
-            label="Egal"
-            checked={wann.zeiten === 'egal'}
-            onChange={() => onWann(egalUmschalten(wann))}
-          />
-        </div>
-      </fieldset>
+      <Wochenleiste
+        titel="An welchen Tagen?"
+        ebene={2}
+        autofokus
+        wochentage={TAGE}
+        tage={wann.tage}
+        onUmschalten={(tag) => onWann(tagUmschalten(wann, tag as Wochentag))}
+        satz={tageSatz(wann.tage, wunschtage(wann.tage, werktage))}
+      />
+      <Wahlflaechen
+        titel="Zu welcher Tageszeit?"
+        wahlen={ZEITWAHLEN}
+        gewaehlt={wann.zeiten === 'egal' ? ['egal'] : wann.zeiten}
+        onUmschalten={(schluessel) =>
+          onWann(
+            schluessel === 'egal'
+              ? egalUmschalten(wann)
+              : zeitUmschalten(wann, schluessel as Tageszeit),
+          )
+        }
+      />
     </div>
   );
 }
 
+/** Die Karte der Zusammenfassung: ihre Angaben mit einer Linie dazwischen. */
+export function Zusammenfassungskarte({ children }: { children: ReactNode }) {
+  return <ListRows className="max-[23rem]:px-3">{children}</ListRows>;
+}
+
 /**
- * Eine Angabe der Zusammenfassung: Bezeichnung, Wert und - wo sie sich ändern
- * lässt - „Ändern“ in voller Größe (DESIGN.md „Plattform“). Der Name des
- * Knopfs beginnt mit dem sichtbaren Wort (WCAG 2.5.3). `zeit` vorn wie in der
- * Terminliste: Tag über Uhrzeit.
+ * Eine Angabe der Karte: die Bezeichnung in Leise, der Wert fett, ein Zusatz in Leise und, wo sie
+ * sich ändern lässt, „Ändern“ kompakt rechts. Der Name des Knopfs beginnt mit dem Wort (WCAG 2.5.3).
  */
-export function Angabe({
+export function Kartenangabe({
   titel,
-  zeit,
+  wert,
+  zusatz,
+  vorn,
   onAendern,
-  children,
 }: {
-  titel: string;
-  zeit?: ReactNode;
+  titel?: string;
+  wert: string;
+  /** Eine oder mehrere Zeilen in Leise unter dem Wert. */
+  zusatz?: string | readonly string[] | undefined;
+  /** Ein Zeichen vor der Angabe, etwa der Kreis einer Absage. */
+  vorn?: ReactNode;
   onAendern?: (() => void) | undefined;
-  children?: ReactNode;
 }) {
+  const zeilen = (typeof zusatz === 'string' ? [zusatz] : (zusatz ?? [])).filter(Boolean);
+  if (onAendern) {
+    // „Ändern“ steht in der Zeile der Bezeichnung, damit die Wahl die ganze Breite hat (ANN-784);
+    // im Baum bleibt der Knopf hinter dem Wert. Unter 23rem steht er darunter.
+    return (
+      <li className="border-line grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-t py-3 hyphens-manual first:border-t-0 max-[23rem]:grid-cols-1">
+        <p className="col-start-1 row-start-1 flex min-h-11 items-center">
+          <span className="text-ink-muted">{titel}</span>
+        </p>
+        <p className="col-span-full flex flex-col">
+          <span className="font-semibold">{wert}</span>
+          {zeilen.map((zeile) => (
+            <span key={zeile} className="text-ink-muted">
+              {zeile}
+            </span>
+          ))}
+        </p>
+        <Button
+          variant="secondary"
+          groesse="kompakt"
+          aria-label={`Ändern: ${titel ?? wert}`}
+          className="col-start-2 row-start-1 self-start max-[23rem]:col-start-1 max-[23rem]:row-start-auto max-[23rem]:mt-2 max-[23rem]:justify-self-start"
+          onClick={onAendern}
+        >
+          Ändern
+        </Button>
+      </li>
+    );
+  }
   return (
-    <ListRow
-      zeit={zeit}
-      titel={titel}
-      meta={children}
-      aktion={
-        onAendern ? (
-          <Button
-            variant="secondary"
-            groesse="normal"
-            aria-label={`Ändern: ${titel}`}
-            onClick={onAendern}
-          >
-            Ändern
-          </Button>
-        ) : undefined
-      }
-    />
+    <li className="border-line flex items-start gap-3 border-t py-3.5 first:border-t-0 max-[23rem]:flex-col max-[23rem]:py-3">
+      {vorn}
+      <p className="flex min-w-0 grow flex-col hyphens-manual">
+        {titel ? <span className="text-ink-muted">{titel}</span> : null}
+        <span className="font-semibold">{wert}</span>
+        {zeilen.map((zeile) => (
+          <span key={zeile} className="text-ink-muted">
+            {zeile}
+          </span>
+        ))}
+      </p>
+    </li>
   );
 }
 
 /**
- * „Wann passt es Ihnen?“ in der Zusammenfassung - eine Zeile für die eine
- * Seite: Tage, Tageszeit und bis wann die Tage reichen, je eine Zeile.
+ * Die gewählten Tage und Tageszeiten in denselben Worten wie die Wunschzeile der Liste
+ * („Dienstag oder Donnerstag, vormittags“), darunter bis wann die Tage reichen.
  */
-export function Wannzeile({
+export function Wannangabe({
+  titel,
   wann,
   werktage,
   onAendern,
 }: {
+  titel: string;
   wann: Wann;
   werktage: readonly string[];
   onAendern: () => void;
 }) {
+  const tage = wunschtage(wann.tage, werktage);
+  const wert = wunschInWorten({ preferred_days: tage, preferred_times: wunschzeiten(wann.zeiten) });
   return (
-    <Angabe titel="Wann" onAendern={onAendern}>
-      <span className="block">{tageText(wann.tage)}</span>
-      <span className="block">{zeitenText(wann.zeiten)}</span>
-      <span className="block">{zeitraumText(wunschtage(wann.tage, werktage))}</span>
-    </Angabe>
+    <Kartenangabe titel={titel} wert={wert ?? ''} zusatz={bisTag(tage)} onAendern={onAendern} />
+  );
+}
+
+/**
+ * Reißt die Verbindung im Ablauf ab, wartet das Senden (ANN-783): der Satz ruhig und mit dem Zeichen
+ * über dem gesperrten Knopf, die Angaben bleiben stehen. Die Region steht immer im Baum.
+ */
+export function OhneNetzHinweis({ id, verbunden }: { id: string; verbunden: boolean }) {
+  return (
+    <div role="status">
+      {verbunden ? null : (
+        <p id={id} className="text-ink-muted mb-2 flex items-start gap-2 text-sm">
+          <OhneNetzSymbol />
+          <span>{WUNSCHSCHUTZ.ohneVerbindung}</span>
+        </p>
+      )}
+    </div>
   );
 }
 

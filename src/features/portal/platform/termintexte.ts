@@ -218,9 +218,15 @@ export function tageSatz(
   kalendertage: readonly string[],
   jetzt: Date = new Date(),
 ): string {
+  const bis = bisTag(kalendertage, jetzt);
+  if (tage.length === 0 || !bis) return 'Wählen Sie einen oder mehrere Tage.';
+  return `${tageMitOder(tage)} – ${bis}.`;
+}
+
+/** „bis Donnerstag, 12. November“: der letzte gesendete Tag; ohne Tage leer. */
+export function bisTag(kalendertage: readonly string[], jetzt: Date = new Date()): string {
   const letzter = kalendertage[kalendertage.length - 1];
-  if (tage.length === 0 || !letzter) return 'Wählen Sie einen oder mehrere Tage.';
-  return `${tageMitOder(tage)} – bis ${wochentag(letzter)}, ${fest(tagUndMonat(letzter, jetzt))}.`;
+  return letzter ? `bis ${wochentag(letzter)}, ${fest(tagUndMonat(letzter, jetzt))}` : '';
 }
 
 /**

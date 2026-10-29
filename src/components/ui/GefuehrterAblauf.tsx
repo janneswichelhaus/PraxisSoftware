@@ -46,6 +46,7 @@ export function GefuehrterAblauf({
   inhaltUnten = false,
   band,
   plattform = false,
+  schmalesFenster = false,
   children,
 }: {
   /** Die Frage der Seite: Überschrift und Name des Fensters. */
@@ -96,6 +97,8 @@ export function GefuehrterAblauf({
    * Seite rollt samt Kopf und Fuß, statt oben und unten je ein Drittel festzuhalten (ANN-682).
    */
   plattform?: boolean;
+  /** Am Rechner ein Fenster so breit wie ein Formular, innen 24; darunter wie am Telefon. */
+  schmalesFenster?: boolean;
   children?: ReactNode;
 }) {
   const gesperrt = useTippsperre(seite, tippsperre);
@@ -121,7 +124,8 @@ export function GefuehrterAblauf({
   // Beschriftung in der Frage steht („Wofür?“ in „Wie viel und wofür?“).
   const rollflaeche = { tabIndex: 0 } as const;
   const mitFuss = fuss !== undefined && fuss !== null && fuss !== false;
-  const rand = plattform ? 'px-5 max-[23rem]:px-3' : 'px-4';
+  const rand =
+    `${plattform ? 'px-5 max-[23rem]:px-3' : 'px-4'} ${schmalesFenster ? 'lg:px-6' : ''}`.trim();
   // Das Band reicht über den Rand hinaus bis an die Kanten des Fensters.
   const bandleiste = band ? (
     <div className={`mt-3 ${plattform ? '-mx-5 max-[23rem]:-mx-3' : '-mx-4'}`}>{band}</div>
@@ -234,6 +238,7 @@ export function GefuehrterAblauf({
   return (
     <Dialogfenster
       vollbild
+      schmal={schmalesFenster}
       titel={titel}
       beschreibung={objekt}
       onSchliessen={onSchliessen}

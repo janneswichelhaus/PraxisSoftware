@@ -37,6 +37,7 @@ export function Wochenleiste({
   satz,
   gesperrt = false,
   ebene = 3,
+  autofokus = false,
 }: {
   /** Die Überschrift der Gruppe, etwa „Ihre Übungstage“ (`h3`) oder „An welchen Tagen?“ (`h2`). */
   titel: string;
@@ -50,6 +51,8 @@ export function Wochenleiste({
   gesperrt?: boolean;
   /** Die Ebene der Überschrift: im Reiter 3, als Frage eines Ablaufs 2. */
   ebene?: 2 | 3;
+  /** Als erste Antwort eines Ablaufs beginnt der Fokus beim ersten Tag, nicht im Kopf. */
+  autofokus?: boolean;
 }) {
   const titelId = useId();
   // Der Haken federt nur nach einem Tipp, nicht beim ersten Zeichnen.
@@ -68,7 +71,7 @@ export function Wochenleiste({
         style={{ '--spalten': wochentage.length } as CSSProperties}
         className={`border-line-strong rounded-button max-w-wochenleiste grid grid-cols-[repeat(var(--spalten),minmax(0,1fr))] overflow-hidden border max-[23rem]:grid-cols-3 max-[23rem]:gap-2 max-[23rem]:overflow-visible max-[23rem]:border-0 ${linie}`}
       >
-        {wochentage.map((w) => {
+        {wochentage.map((w, index) => {
           const an = tage.includes(w.nummer);
           return (
             <button
@@ -76,6 +79,7 @@ export function Wochenleiste({
               type="button"
               aria-pressed={an}
               disabled={gesperrt}
+              {...(autofokus && index === 0 ? { 'data-autofocus': true } : {})}
               onClick={() => {
                 setGetippt(w.nummer);
                 onUmschalten(w.nummer);

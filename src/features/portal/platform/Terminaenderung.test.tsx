@@ -1,19 +1,22 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter, useLocation } from 'react-router-dom';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import {
+  AUSFALLHONORAR_RECHTZEITIG,
+  AUSFALLHONORAR_REGEL,
+  AUSFALLHONORAR_SPAET,
+} from '@/lib/ausfallhonorar';
 import type * as PlattformApi from './api';
 import type { Plattformzugang, Termin } from './api';
 import { renderWithProviders } from '@/test-utils';
 
 /**
- * Termin ändern oder absagen (POR-010, DSN-001 4.1, D4), seit Überholung 6
- * als geführter Ablauf im Fenster: „Was möchten Sie?“, beim Absagen der
- * Hinweis zum Ausfallhonorar als eigene Seite - unter 24 Stunden deutlich -,
- * beim Ändern „Wann passt es Ihnen?“, dann die Zusammenfassung. Beides geht
- * als Wunsch an den Server, nie als Absage.
+ * Ändern und Absagen in je zwei Schritten ab der Seite des Termins: beim Absagen der Hinweis zum
+ * Ausfallhonorar, beim Ändern „Wann passt es Ihnen?“, dann die Karte der Zusammenfassung. Beides
+ * geht als Wunsch an den Server, nie als Absage; ✕ führt zur Seite des Termins.
  */
 
 const ladeTermine = vi.fn();
@@ -31,6 +34,7 @@ vi.mock('./api', async (importOriginal) => ({
 const { Terminaenderung } = await import('./Terminaenderung');
 const { WUNSCHTAGE } = await import('./terminablauf');
 const { terminKurz } = await import('./terminbeschreibung');
+const { tagInWorten, vonBis } = await import('./termintexte');
 const { naechsteWerktage } = await import('./zeit');
 
 const ZUGANG: Plattformzugang = {
@@ -66,13 +70,29 @@ const TERMIN: Termin = {
   open_request_kind: null,
 };
 
+const KURZFRISTIG: Termin = {
+  ...TERMIN,
+  starts_at: inStunden(20),
+  ends_at: inStunden(21),
+  late_notice: true,
+};
+
+const SEITE_DES_TERMINS = `/p/termine/${TERMIN.id}?bereich=treatment`;
+const ABSAGEN = `${SEITE_DES_TERMINS}&art=cancel`;
+const AENDERN = `${SEITE_DES_TERMINS}&art=change`;
+
+/** Tag und Zeit des Termins, wie die Karte sie nennt; der Vergleich liest Leerraum als Leerzeichen. */
+function tagUndZeit(termin: Termin): string {
+  return `${tagInWorten(termin.starts_at)}, ${vonBis(termin)}`.replace(/\s+/g, ' ');
+}
+
 /** Wo die Anwendung gerade steht - nach dem Senden oder Schließen. */
 function Ort() {
   const { pathname, search } = useLocation();
   return <p data-testid="ort">{`${pathname}${search}`}</p>;
 }
 
-function zeige(termin: Termin, pfad = `/p/termine/${termin.id}?bereich=treatment`) {
+function zeige(termin: Termin, pfad: string) {
   ladeTermine.mockResolvedValue([termin]);
   return renderWithProviders(
     <>
@@ -83,18 +103,15 @@ function zeige(termin: Termin, pfad = `/p/termine/${termin.id}?bereich=treatment
   );
 }
 
-/** Mit der Terminliste davor im Verlauf - für das Zurück des Browsers. */
-function zeigeMitVerlauf(termin: Termin) {
+/** Mit der Liste und der Seite des Termins davor im Verlauf - für ✕ und das Zurück des Browsers. */
+function zeigeMitVerlauf(termin: Termin, pfad: string) {
   ladeTermine.mockResolvedValue([termin]);
   const router = createMemoryRouter(
     [
       { path: '/p/termine/:terminId', element: <Terminaenderung zugang={ZUGANG} /> },
       { path: '*', element: <Ort /> },
     ],
-    {
-      initialEntries: ['/p/termine?bereich=treatment', `/p/termine/${termin.id}?bereich=treatment`],
-      initialIndex: 1,
-    },
+    { initialEntries: ['/p/termine?bereich=treatment', SEITE_DES_TERMINS, pfad], initialIndex: 2 },
   );
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   render(
@@ -112,51 +129,51 @@ function tageAm(...wochentage: number[]): string[] {
   );
 }
 
+function folgt(vorher: Element, nachher: Element): boolean {
+  return (vorher.compareDocumentPosition(nachher) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   terminAendernWuenschen.mockResolvedValue('dddddddd-dddd-4ddd-8ddd-000000000001');
 });
 
-describe('Terminaenderung (POR-010, Überholung 6)', () => {
-  it('fragt im Fenster „Was möchten Sie?“, mit dem Termin im Kopf und zwei Antworten', async () => {
-    zeige(TERMIN);
-    const fenster = await screen.findByRole('dialog', { name: 'Was möchten Sie?' });
-    expect(within(fenster).getByText('Schritt 1 von 3')).toBeInTheDocument();
-    expect(within(fenster).getByText(terminKurz(TERMIN))).toBeInTheDocument();
-    expect(
-      within(fenster).getByText('Hausbesuch · Anna Beispiel kommt zu Ihnen'),
-    ).toBeInTheDocument();
-    expect(within(fenster).getByRole('button', { name: 'Termin ändern' })).toHaveFocus();
-    expect(within(fenster).getByRole('button', { name: 'Termin absagen' })).toBeInTheDocument();
-    expect(within(fenster).queryByRole('button', { name: '← Zurück' })).not.toBeInTheDocument();
-  });
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
-  it('führt mit ✕ „Abbrechen“ zurück zur Terminliste', async () => {
-    const nutzer = userEvent.setup();
-    zeige(TERMIN);
-    await nutzer.click(await screen.findByRole('button', { name: 'Abbrechen' }));
-    expect(screen.getByTestId('ort')).toHaveTextContent(/^\/p\/termine\?bereich=treatment$/);
-  });
-
-  it('sagt beim Absagen auf eigener Seite, dass kein Ausfallhonorar entsteht, und sendet die Absage', async () => {
-    const nutzer = userEvent.setup();
-    zeige(TERMIN);
-    await nutzer.click(await screen.findByRole('button', { name: 'Termin absagen' }));
-    const hinweis = screen.getByRole('dialog', { name: 'Ausfallhonorar' });
-    expect(within(hinweis).getByText('Schritt 2 von 3')).toBeInTheDocument();
-    expect(within(hinweis).getByRole('status')).toHaveTextContent('kein Ausfallhonorar');
+describe('Terminaenderung (POR-010, Schritt 3d)', () => {
+  it('beginnt mit ?art=cancel beim Ausfallhonorar: Schritt 1 von 2, ohne „Zurück“, die Regel zu', async () => {
+    zeige(TERMIN, ABSAGEN);
+    const seite = await screen.findByRole('dialog', { name: 'Ausfallhonorar' });
+    expect(within(seite).getByText('Schritt 1 von 2')).toBeInTheDocument();
+    expect(within(seite).getByText(terminKurz(TERMIN))).toBeInTheDocument();
+    expect(within(seite).queryByRole('button', { name: '← Zurück' })).not.toBeInTheDocument();
+    expect(within(seite).getByText(AUSFALLHONORAR_RECHTZEITIG)).toBeInTheDocument();
+    // Rechtzeitig ist keine Warnung: nichts, was Vorlesesoftware unterbricht.
+    expect(within(seite).queryByRole('alert')).not.toBeInTheDocument();
     // Die ganze Regel steht auf Abruf darunter.
-    expect(within(hinweis).getByText('Unsere Regel zum Ausfallhonorar')).toBeInTheDocument();
-    await nutzer.click(within(hinweis).getByRole('button', { name: 'Verstanden, weiter' }));
+    expect(within(seite).getByText('Unsere Regel zum Ausfallhonorar')).toBeInTheDocument();
+    expect(within(seite).getByText(AUSFALLHONORAR_REGEL[0]!)).not.toBeVisible();
+  });
+
+  it('sendet die Absage: die Karte mit Tag, Zeit, Art und Person, der Satz zum Eingang', async () => {
+    const nutzer = userEvent.setup();
+    zeige(TERMIN, ABSAGEN);
+    await nutzer.click(await screen.findByRole('button', { name: 'Verstanden, weiter' }));
 
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
-    expect(within(ende).getByText('Schritt 3 von 3')).toBeInTheDocument();
+    expect(within(ende).getByText('Schritt 2 von 2')).toBeInTheDocument();
     expect(within(ende).getByText('Termin absagen')).toBeInTheDocument();
+    expect(within(ende).getByText(tagUndZeit(TERMIN))).toBeInTheDocument();
+    expect(within(ende).getByText('Hausbesuch · Anna Beispiel')).toBeInTheDocument();
+    // An der Absage gibt es nichts zu wählen, also auch nichts zu ändern.
+    expect(within(ende).queryByRole('button', { name: /^Ändern/ })).not.toBeInTheDocument();
     expect(
       within(ende).getByText(/Als Eingang Ihrer Absage gilt der Zeitpunkt/),
     ).toBeInTheDocument();
     // Rechtzeitig: keine zweite Warnung über dem Knopf.
-    expect(within(ende).queryByRole('status')).not.toBeInTheDocument();
+    expect(within(ende).queryByText(AUSFALLHONORAR_SPAET)).not.toBeInTheDocument();
     // Die Nachricht ist eingeklappt und freiwillig.
     const feld = within(ende).getByLabelText('Möchten Sie der Praxis etwas mitteilen?');
     expect(feld).not.toBeVisible();
@@ -181,48 +198,60 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     );
   });
 
-  it('warnt unter 24 Stunden deutlich vor dem Ausfallhonorar, vor dem Knopf (ADR-018 Punkt 8)', async () => {
+  it('warnt unter 24 Stunden mit offener Regel und noch einmal über „Absage senden“ (ADR-018 Punkt 8)', async () => {
     const nutzer = userEvent.setup();
-    zeige({ ...TERMIN, starts_at: inStunden(20), ends_at: inStunden(21), late_notice: true });
-    await nutzer.click(await screen.findByRole('button', { name: 'Termin absagen' }));
-    const seite = screen.getByRole('dialog', { name: 'Ausfallhonorar' });
-    const hinweis = within(seite).getByRole('status');
-    expect(hinweis).toHaveTextContent('weniger als 24 Stunden');
-    expect(hinweis).toHaveTextContent('berechnen wir ein Ausfallhonorar');
-    expect(hinweis).toHaveClass('text-warnung');
-    // Der Hinweis steht vor dem Knopf (BEF-079 darf hier nicht entstehen).
-    const weiter = within(seite).getByRole('button', { name: 'Verstanden, weiter' });
-    expect(hinweis.compareDocumentPosition(weiter) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    await nutzer.click(weiter);
-    // Und in der Zusammenfassung noch einmal, direkt über „Absage senden“.
-    const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
-    const warnung = within(ende).getByRole('status');
+    zeige(KURZFRISTIG, ABSAGEN);
+    const seite = await screen.findByRole('dialog', { name: 'Ausfallhonorar' });
+    const warnung = within(seite).getByRole('alert');
     expect(warnung).toHaveTextContent('weniger als 24 Stunden');
-    expect(warnung).toHaveClass('text-warnung');
-    const senden = within(ende).getByRole('button', { name: 'Absage senden' });
-    expect(warnung.compareDocumentPosition(senden) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(warnung).toHaveTextContent('berechnen wir ein Ausfallhonorar');
+    expect(within(warnung).getByText(AUSFALLHONORAR_SPAET)).toHaveClass('text-warnung');
+    expect(within(seite).getByText(AUSFALLHONORAR_REGEL[0]!)).toBeVisible();
+    await pruefeBarrierefreiheit(document.body);
+    // Die Frist steht vor dem Knopf, nicht dahinter.
+    const weiter = within(seite).getByRole('button', { name: 'Verstanden, weiter' });
+    expect(folgt(warnung, weiter)).toBe(true);
+    await nutzer.click(weiter);
+
+    const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
+    const nochmal = within(ende).getByText(AUSFALLHONORAR_SPAET);
+    expect(nochmal.closest('[role="status"]')).toHaveClass('text-warnung');
+    expect(folgt(nochmal, within(ende).getByRole('button', { name: 'Absage senden' }))).toBe(true);
   });
 
-  it('sendet einen Änderungswunsch mit den Wochentagen als Kalendertage und der Tageszeit', async () => {
+  it('sendet einen Änderungswunsch: nichts vorbelegt, die Karte mit „Lieber am“', async () => {
     const nutzer = userEvent.setup();
-    zeige(TERMIN);
-    await nutzer.click(await screen.findByRole('button', { name: 'Termin ändern' }));
-    const wann = screen.getByRole('dialog', { name: 'Wann passt es Ihnen?' });
-    expect(within(wann).getByText('Schritt 2 von 3')).toBeInTheDocument();
-    expect(within(wann).getByRole('checkbox', { name: 'Montag' })).toHaveFocus();
-    // Nichts ist vorbelegt.
+    zeige(TERMIN, AENDERN);
+    const wann = await screen.findByRole('dialog', { name: 'Wann passt es Ihnen?' });
+    expect(within(wann).getByText('Schritt 1 von 2')).toBeInTheDocument();
+    expect(within(wann).getByText(terminKurz(TERMIN))).toBeInTheDocument();
+    expect(within(wann).queryByRole('button', { name: '← Zurück' })).not.toBeInTheDocument();
+    expect(within(wann).getByRole('button', { name: 'Montag' })).toHaveFocus();
     for (const name of ['Montag', 'Freitag', 'Vormittag', 'Egal']) {
-      expect(within(wann).getByRole('checkbox', { name })).not.toBeChecked();
+      expect(within(wann).getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false');
     }
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Montag' }));
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Vormittag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Montag' }));
+    expect(within(wann).getByRole('status')).toHaveTextContent(/^Montag – bis Montag, /);
+    await nutzer.click(within(wann).getByRole('button', { name: 'Vormittag' }));
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
 
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
-    expect(within(ende).getByText('Termin ändern')).toBeInTheDocument();
-    expect(within(ende).getByText('Montag')).toBeInTheDocument();
-    expect(within(ende).getByText('Vormittag')).toBeInTheDocument();
-    expect(within(ende).getByRole('status')).toHaveTextContent('es entsteht kein Ausfallhonorar');
+    expect(within(ende).getByText('Schritt 2 von 2')).toBeInTheDocument();
+    // Der Termin selbst steht im Kopf, die Karte nennt die Wahl.
+    expect(within(ende).getByText(terminKurz(TERMIN))).toBeInTheDocument();
+    expect(within(ende).getByText('Lieber am')).toBeInTheDocument();
+    expect(within(ende).getByText('Montag, vormittags')).toBeInTheDocument();
+    expect(within(ende).getByText(/^bis Montag, /)).toBeInTheDocument();
+    // Zu ändern ist nur die Wahl, nicht der Termin selbst.
+    expect(
+      within(ende)
+        .getAllByRole('button', { name: /^Ändern/ })
+        .map((knopf) => knopf.getAttribute('aria-label')),
+    ).toEqual(['Ändern: Lieber am']);
+    expect(within(ende).getByText(/es entsteht kein Ausfallhonorar/)).toHaveAttribute(
+      'role',
+      'status',
+    );
     await nutzer.click(within(ende).getByRole('button', { name: 'Änderungswunsch senden' }));
     await waitFor(() =>
       expect(terminAendernWuenschen).toHaveBeenCalledWith({
@@ -238,42 +267,39 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
 
   it('warnt beim Ändern unter 24 Stunden vor dem Freigeben', async () => {
     const nutzer = userEvent.setup();
-    zeige(
-      { ...TERMIN, starts_at: inStunden(20), ends_at: inStunden(21), late_notice: true },
-      `/p/termine/${TERMIN.id}?bereich=treatment&art=change`,
-    );
+    zeige(KURZFRISTIG, AENDERN);
     const wann = await screen.findByRole('dialog', { name: 'Wann passt es Ihnen?' });
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Dienstag' }));
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Egal' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Dienstag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Egal' }));
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
-    const hinweis = within(ende).getByRole('status');
-    expect(hinweis).toHaveTextContent('wie eine kurzfristige Absage');
-    expect(hinweis).toHaveClass('text-warnung');
+    expect(within(ende).getByText(/wie eine kurzfristige Absage/)).toHaveClass('text-warnung');
   });
 
   it('sagt auf „Wann passt es Ihnen?“, was fehlt; „Egal“ nimmt die einzelnen Tageszeiten zurück', async () => {
     const nutzer = userEvent.setup();
-    zeige(TERMIN, `/p/termine/${TERMIN.id}?bereich=treatment&art=change`);
+    zeige(TERMIN, AENDERN);
     const wann = await screen.findByRole('dialog', { name: 'Wann passt es Ihnen?' });
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
     expect(within(wann).getByRole('alert')).toHaveTextContent(
       'Bitte wählen Sie mindestens einen Tag.',
     );
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Freitag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Freitag' }));
     expect(within(wann).queryByRole('alert')).not.toBeInTheDocument();
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
     expect(within(wann).getByRole('alert')).toHaveTextContent(
       'Bitte wählen Sie eine Tageszeit oder „Egal“.',
     );
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Nachmittag' }));
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Egal' }));
-    expect(within(wann).getByRole('checkbox', { name: 'Nachmittag' })).not.toBeChecked();
+    await nutzer.click(within(wann).getByRole('button', { name: 'Nachmittag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Egal' }));
+    expect(within(wann).getByRole('button', { name: 'Nachmittag' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
 
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
-    expect(within(ende).getByText('Freitag')).toBeInTheDocument();
-    expect(within(ende).getByText('Jede Tageszeit')).toBeInTheDocument();
+    expect(within(ende).getByText('Freitag, zu jeder Tageszeit')).toBeInTheDocument();
     await nutzer.click(within(ende).getByRole('button', { name: 'Änderungswunsch senden' }));
     await waitFor(() =>
       expect(terminAendernWuenschen).toHaveBeenCalledWith(
@@ -282,43 +308,28 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     );
   });
 
-  it('beginnt mit ?art=cancel beim Ausfallhonorar; „← Zurück“ führt zu „Was möchten Sie?“', async () => {
-    const nutzer = userEvent.setup();
-    zeige(TERMIN, `/p/termine/${TERMIN.id}?bereich=treatment&art=cancel`);
-    const hinweis = await screen.findByRole('dialog', { name: 'Ausfallhonorar' });
-    expect(within(hinweis).getByText('Schritt 2 von 3')).toBeInTheDocument();
-    await nutzer.click(within(hinweis).getByRole('button', { name: '← Zurück' }));
-    const art = screen.getByRole('dialog', { name: 'Was möchten Sie?' });
-    // Die Wahl aus der Adresse steht als gewählt da.
-    expect(within(art).getByRole('button', { name: 'Termin absagen' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect(within(art).getByRole('button', { name: 'Termin ändern' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
-  });
-
   it('kehrt nach „Ändern“ aus der Zusammenfassung gleich dorthin zurück', async () => {
     const nutzer = userEvent.setup();
-    zeige(TERMIN, `/p/termine/${TERMIN.id}?bereich=treatment&art=change`);
+    zeige(TERMIN, AENDERN);
     const wann = await screen.findByRole('dialog', { name: 'Wann passt es Ihnen?' });
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Montag' }));
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Vormittag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Montag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Vormittag' }));
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
     await nutzer.click(
       within(screen.getByRole('dialog', { name: 'Ist alles richtig?' })).getByRole('button', {
-        name: 'Ändern: Wann',
+        name: 'Ändern: Lieber am',
       }),
     );
     const wieder = screen.getByRole('dialog', { name: 'Wann passt es Ihnen?' });
     // Die Wahl von vorhin steht noch da.
-    expect(within(wieder).getByRole('checkbox', { name: 'Montag' })).toBeChecked();
-    await nutzer.click(within(wieder).getByRole('checkbox', { name: 'Mittwoch' }));
+    expect(within(wieder).getByRole('button', { name: 'Montag' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await nutzer.click(within(wieder).getByRole('button', { name: 'Mittwoch' }));
     await nutzer.click(within(wieder).getByRole('button', { name: 'Weiter' }));
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
-    expect(within(ende).getByText('Montag und Mittwoch')).toBeInTheDocument();
+    expect(within(ende).getByText('Montag oder Mittwoch, vormittags')).toBeInTheDocument();
     await nutzer.click(within(ende).getByRole('button', { name: 'Änderungswunsch senden' }));
     await waitFor(() =>
       expect(terminAendernWuenschen).toHaveBeenCalledWith(
@@ -327,35 +338,15 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     );
   });
 
-  it('wechselt aus der Zusammenfassung vom Ändern zum Absagen - über den Hinweis', async () => {
+  it('führt beim Absagen mit „← Zurück“ zum Hinweis, der wieder Schritt 1 ist', async () => {
     const nutzer = userEvent.setup();
-    zeige(TERMIN, `/p/termine/${TERMIN.id}?bereich=treatment&art=change`);
-    const wann = await screen.findByRole('dialog', { name: 'Wann passt es Ihnen?' });
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Montag' }));
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Egal' }));
-    await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
-    await nutzer.click(
-      within(screen.getByRole('dialog', { name: 'Ist alles richtig?' })).getByRole('button', {
-        name: 'Ändern: Termin ändern',
-      }),
-    );
-    await nutzer.click(
-      within(screen.getByRole('dialog', { name: 'Was möchten Sie?' })).getByRole('button', {
-        name: 'Termin absagen',
-      }),
-    );
-    await nutzer.click(
-      within(screen.getByRole('dialog', { name: 'Ausfallhonorar' })).getByRole('button', {
-        name: 'Verstanden, weiter',
-      }),
-    );
-    const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
-    expect(within(ende).getByText('Termin absagen')).toBeInTheDocument();
-    expect(within(ende).queryByText('Wann')).not.toBeInTheDocument();
-    // „← Zurück“ führt auf den Hinweis dieses Wegs, nicht auf „Wann passt es Ihnen?“.
-    await nutzer.click(within(ende).getByRole('button', { name: '← Zurück' }));
-    expect(screen.getByRole('dialog', { name: 'Ausfallhonorar' })).toBeInTheDocument();
-    await nutzer.click(screen.getByRole('button', { name: 'Verstanden, weiter' }));
+    zeige(KURZFRISTIG, ABSAGEN);
+    await nutzer.click(await screen.findByRole('button', { name: 'Verstanden, weiter' }));
+    await nutzer.click(screen.getByRole('button', { name: '← Zurück' }));
+    const seite = screen.getByRole('dialog', { name: 'Ausfallhonorar' });
+    expect(within(seite).getByText('Schritt 1 von 2')).toBeInTheDocument();
+    expect(within(seite).queryByRole('button', { name: '← Zurück' })).not.toBeInTheDocument();
+    await nutzer.click(within(seite).getByRole('button', { name: 'Verstanden, weiter' }));
     await nutzer.click(screen.getByRole('button', { name: 'Absage senden' }));
     await waitFor(() =>
       expect(terminAendernWuenschen).toHaveBeenCalledWith(
@@ -364,16 +355,25 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     );
   });
 
-  it('fragt vor dem Schließen, sobald etwas gewählt ist', async () => {
+  it('führt mit ✕ „Abbrechen“ zur Seite des Termins und lässt den Ablauf nicht im Verlauf (ANN-782)', async () => {
     const nutzer = userEvent.setup();
-    zeige(TERMIN);
-    await nutzer.click(await screen.findByRole('button', { name: 'Termin ändern' }));
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Montag' }));
+    const router = zeigeMitVerlauf(TERMIN, ABSAGEN);
+    await nutzer.click(await screen.findByRole('button', { name: 'Abbrechen' }));
+    await waitFor(() => expect(router.state.location.search).toBe('?bereich=treatment'));
+    expect(router.state.location.pathname).toBe(`/p/termine/${TERMIN.id}`);
+    expect(router.state.historyAction).toBe('REPLACE');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('fragt vor dem Schließen, sobald etwas gewählt ist; „Verwerfen“ führt zur Seite des Termins', async () => {
+    const nutzer = userEvent.setup();
+    zeige(TERMIN, AENDERN);
+    await nutzer.click(await screen.findByRole('button', { name: 'Montag' }));
     await nutzer.click(screen.getByRole('button', { name: 'Abbrechen' }));
     const rueckfrage = screen.getByRole('dialog', { name: 'Ihr Wunsch ist noch nicht gesendet' });
     await nutzer.click(within(rueckfrage).getByRole('button', { name: 'Weiter ausfüllen' }));
-    expect(screen.getByRole('checkbox', { name: 'Montag' })).toBeChecked();
-    expect(screen.getByTestId('ort')).toHaveTextContent(`/p/termine/${TERMIN.id}`);
+    expect(screen.getByRole('button', { name: 'Montag' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('ort')).toHaveTextContent(AENDERN);
 
     await nutzer.click(screen.getByRole('button', { name: 'Abbrechen' }));
     await nutzer.click(
@@ -382,47 +382,87 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
         { name: 'Verwerfen' },
       ),
     );
-    await waitFor(() =>
-      expect(screen.getByTestId('ort')).toHaveTextContent(/^\/p\/termine\?bereich=treatment$/),
-    );
+    await waitFor(() => expect(screen.getByTestId('ort').textContent).toBe(SEITE_DES_TERMINS));
     expect(terminAendernWuenschen).not.toHaveBeenCalled();
+  });
+
+  it('geht mit dem Zurück des Browsers einen Schritt zurück, auf der ersten Seite zur Seite des Termins', async () => {
+    const nutzer = userEvent.setup();
+    const router = zeigeMitVerlauf(TERMIN, ABSAGEN);
+    await nutzer.click(await screen.findByRole('button', { name: 'Verstanden, weiter' }));
+    expect(await screen.findByRole('dialog', { name: 'Ist alles richtig?' })).toBeInTheDocument();
+    // Die Zurückgeste des Telefons: ein Schritt zurück, nicht aus dem Ablauf.
+    await act(() => router.navigate(-1));
+    expect(await screen.findByRole('dialog', { name: 'Ausfallhonorar' })).toBeInTheDocument();
+    expect(router.state.location.search).toBe('?bereich=treatment&art=cancel');
+    // Auf der ersten Seite ist nichts zu verlieren: Die Geste führt zur Seite des Termins.
+    await act(() => router.navigate(-1));
+    await waitFor(() => expect(router.state.location.search).toBe('?bereich=treatment'));
+    expect(router.state.location.pathname).toBe(`/p/termine/${TERMIN.id}`);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('ohne Netz wartet das Senden mit dem Satz über dem Knopf; die Angaben bleiben (ANN-783)', async () => {
+    const nutzer = userEvent.setup();
+    zeige(TERMIN, AENDERN);
+    await nutzer.click(await screen.findByRole('button', { name: 'Donnerstag' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Mittag' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
+    const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
+
+    // Die Verbindung reißt in der Zusammenfassung ab.
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    act(() => void window.dispatchEvent(new Event('offline')));
+    const senden = within(ende).getByRole('button', { name: 'Änderungswunsch senden' });
+    expect(senden).toBeDisabled();
+    expect(senden).toHaveAccessibleDescription(
+      /Ohne Verbindung lässt sich Ihr Wunsch gerade nicht/,
+    );
+    // Der Satz steht einmal, ruhig und nicht als Fehler.
+    expect(screen.getAllByText(/Ohne Verbindung lässt sich Ihr Wunsch/)).toHaveLength(1);
+    expect(within(ende).queryByRole('alert')).not.toBeInTheDocument();
+
+    // Ist sie zurück, geht es ohne neue Eingabe weiter.
+    online.mockReturnValue(true);
+    act(() => void window.dispatchEvent(new Event('online')));
+    expect(within(ende).queryByText(/Ohne Verbindung/)).not.toBeInTheDocument();
+    await nutzer.click(senden);
+    await waitFor(() =>
+      expect(terminAendernWuenschen).toHaveBeenCalledWith(
+        expect.objectContaining({ tage: tageAm(4), zeiten: ['midday'] }),
+      ),
+    );
   });
 
   it('besteht axe auf jeder Seite beider Wege', async () => {
     const nutzer = userEvent.setup();
-    zeige(TERMIN);
-    await screen.findByRole('dialog', { name: 'Was möchten Sie?' });
-    await pruefeBarrierefreiheit(document.body);
-    await nutzer.click(screen.getByRole('button', { name: 'Termin absagen' }));
+    const { unmount } = zeige(TERMIN, ABSAGEN);
+    await screen.findByRole('dialog', { name: 'Ausfallhonorar' });
     await pruefeBarrierefreiheit(document.body);
     await nutzer.click(screen.getByRole('button', { name: 'Verstanden, weiter' }));
     await nutzer.click(screen.getByText('Nachricht an die Praxis (freiwillig)'));
     await pruefeBarrierefreiheit(document.body);
-    await nutzer.click(screen.getByRole('button', { name: 'Ändern: Termin absagen' }));
-    await nutzer.click(screen.getByRole('button', { name: 'Termin ändern' }));
+    unmount();
+
+    zeige(TERMIN, AENDERN);
+    await screen.findByRole('dialog', { name: 'Wann passt es Ihnen?' });
     await pruefeBarrierefreiheit(document.body);
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Montag' }));
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Mittag' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Montag' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Mittag' }));
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
     expect(screen.getByRole('dialog', { name: 'Ist alles richtig?' })).toBeInTheDocument();
     await pruefeBarrierefreiheit(document.body);
   });
 
-  it('geht mit dem Zurück des Browsers einen Schritt zurück, auf der ersten Seite hinaus', async () => {
-    const nutzer = userEvent.setup();
-    const router = zeigeMitVerlauf(TERMIN);
-    await nutzer.click(await screen.findByRole('button', { name: 'Termin absagen' }));
-    expect(await screen.findByRole('dialog', { name: 'Ausfallhonorar' })).toBeInTheDocument();
-    // Die Zurückgeste des Telefons: ein Schritt zurück, nicht aus dem Ablauf.
-    await act(() => router.navigate(-1));
-    expect(await screen.findByRole('dialog', { name: 'Was möchten Sie?' })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe(`/p/termine/${TERMIN.id}`);
-    // Auf der ersten Seite ist nichts zu verlieren: Die Geste führt zur Liste.
-    await act(() => router.navigate(-1));
-    expect(await screen.findByTestId('ort')).toHaveTextContent(/^\/p\/termine\?bereich=treatment$/);
+  // Was sich nicht ändern lässt, zeigt die Seite des Termins.
+  it('zeigt ohne ?art= die Seite des Termins, keinen Ablauf', async () => {
+    zeige(TERMIN, SEITE_DES_TERMINS);
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Passt der Termin nicht?' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  // Was sich nicht ändern lässt, zeigt die Seite des Termins.
   it('zeigt bei offenem Wunsch keinen Ablauf, sondern die Seite mit dem Wunsch', async () => {
     zeige({ ...TERMIN, open_request_kind: 'cancel' }, `/p/termine/${TERMIN.id}?art=cancel`);
     expect(
@@ -443,7 +483,7 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
   });
 
   it('sagt, wenn der Termin nicht gefunden wurde', async () => {
-    zeige(TERMIN, '/p/termine/aaaaaaaa-aaaa-4aaa-8aaa-0000000000ff?bereich=treatment');
+    zeige(TERMIN, '/p/termine/aaaaaaaa-aaaa-4aaa-8aaa-0000000000ff?bereich=treatment&art=cancel');
     expect(await screen.findByText('Dieser Termin wurde nicht gefunden.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '← Termine' })).toHaveAttribute(
       'href',
@@ -456,7 +496,7 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     terminAendernWuenschen.mockRejectedValue(
       new Error('Zu diesem Termin liegt schon ein Wunsch vor. Die Praxis meldet sich.'),
     );
-    zeige(TERMIN, `/p/termine/${TERMIN.id}?bereich=treatment&art=cancel`);
+    zeige(TERMIN, ABSAGEN);
     await nutzer.click(await screen.findByRole('button', { name: 'Verstanden, weiter' }));
     await nutzer.click(screen.getByRole('button', { name: 'Absage senden' }));
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
@@ -465,7 +505,7 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
 
   it('sendet keine Nachricht über 500 Zeichen', async () => {
     const nutzer = userEvent.setup();
-    zeige(TERMIN, `/p/termine/${TERMIN.id}?bereich=treatment&art=cancel`);
+    zeige(TERMIN, ABSAGEN);
     await nutzer.click(await screen.findByRole('button', { name: 'Verstanden, weiter' }));
     await nutzer.click(screen.getByText('Nachricht an die Praxis (freiwillig)'));
     const feld = screen.getByLabelText('Möchten Sie der Praxis etwas mitteilen?');

@@ -29,6 +29,7 @@ export function Dialogfenster({
   schliessenBeschriftung = 'Schließen',
   titelImInhalt = false,
   ohneKopfzeile = false,
+  schmal = false,
   children,
 }: {
   /** Überschrift und zugängliche Bezeichnung des Fensters. */
@@ -67,6 +68,8 @@ export function Dialogfenster({
    * Fenster nach nichts. Escape und ein Klick daneben schließen weiter.
    */
   ohneKopfzeile?: boolean;
+  /** Im Vollbild: erst am Rechner ein Fenster, so breit wie ein Formular; darunter randlos. */
+  schmal?: boolean;
   children: ReactNode;
 }) {
   const titelId = useId();
@@ -201,7 +204,7 @@ export function Dialogfenster({
   if (vollbild) {
     return createPortal(
       <div
-        className="fenster-schleier bg-ink/40 fixed inset-0 z-50 flex justify-center sm:items-center sm:p-8"
+        className={`fenster-schleier bg-ink/40 fixed inset-0 z-50 flex justify-center ${schmal ? 'lg:items-center lg:p-8' : 'sm:items-center sm:p-8'}`}
         onMouseDown={(event) => {
           if (event.target === event.currentTarget) schliessenRef.current();
         }}
@@ -215,7 +218,11 @@ export function Dialogfenster({
           onKeyDown={tastatur}
           // Am Telefon randlos über Kopfzeile und Tableiste, mit Platz für
           // Kerbe und Wischleiste; ab 640 px ein Fenster mit Rand wie oben.
-          className="fenster-kommt bg-surface sm:border-line-strong sm:rounded-card flex h-dvh w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-[min(52rem,calc(100dvh-4rem))] sm:max-w-5xl sm:border-2 sm:pt-0 sm:pb-0"
+          className={`fenster-kommt bg-surface flex h-dvh w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] ${
+            schmal
+              ? 'lg:border-line-strong lg:rounded-card lg:max-w-formular lg:h-[min(52rem,calc(100dvh-4rem))] lg:border-2 lg:pt-0 lg:pb-0'
+              : 'sm:border-line-strong sm:rounded-card sm:h-[min(52rem,calc(100dvh-4rem))] sm:max-w-5xl sm:border-2 sm:pt-0 sm:pb-0'
+          }`}
         >
           {ohneKopfzeile && titelImInhalt ? null : (
             <div className="border-line flex min-h-14 shrink-0 items-center gap-2 border-b py-1 pr-2 pl-4">
