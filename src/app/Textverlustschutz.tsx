@@ -260,7 +260,10 @@ export function useTextverlustschutz({
    * fragt der Schutz wie vor jedem Weggehen.
    */
   schrittZurueck?: (() => void) | undefined;
-  /** Die Seite sagt am gesperrten Knopf selbst, dass ohne Verbindung nichts geht; die Zeile oben entfällt. */
+  /**
+   * Die Seite sagt am gesperrten Knopf selbst, dass ohne Verbindung nichts geht; die Zeile oben
+   * entfällt.
+   */
   ohneVerbindungImFuss?: boolean;
 }): Textverlustschutz {
   // Angehalten wird für beides: ungespeicherten Text und Offenes, das sich

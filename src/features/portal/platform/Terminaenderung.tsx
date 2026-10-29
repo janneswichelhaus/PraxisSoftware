@@ -81,13 +81,15 @@ export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
   // ✕ führt zur Seite des Termins, wie sie war: mit Bereich und Rückweg, ohne `art` (ANN-782).
   const seiteDesTermins = new URLSearchParams(suche);
   seiteDesTermins.delete('art');
+  // `toString` statt `size`: Das kennt Safari erst ab Version 17.
+  const rest = seiteDesTermins.toString();
   const bereich = bereichParameter(suche);
   return (
     <Aenderungsablauf
       zugang={zugang}
       termin={termin}
       art={art}
-      terminseite={`${pathname}${seiteDesTermins.size > 0 ? `?${seiteDesTermins.toString()}` : ''}`}
+      terminseite={`${pathname}${rest ? `?${rest}` : ''}`}
       terminliste={`${PLATTFORM_PFAD}/termine?${bereich ? `${bereich}&` : ''}gesendet=1`}
     />
   );
