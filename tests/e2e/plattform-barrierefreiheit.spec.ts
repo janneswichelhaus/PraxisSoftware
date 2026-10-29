@@ -21,6 +21,8 @@ import type AxeCore from 'axe-core';
 const PRUEFSEITE = '/tests/e2e/fixtures/plattform.html';
 /** Der Gruß der Übersicht hängt an der Tageszeit (Handoff 2026-10-22, 5.1). */
 const GRUSS = /^Guten (Morgen|Tag|Abend)/;
+/** Der Titel der Seite eines Termins: der Tag in Worten. */
+const TAG = /^(Heute|Morgen|Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), /;
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 
 /**
@@ -38,11 +40,16 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'einstieg', merkmal: /^Willkommen/, fenster: true },
   { seite: 'einstieg-begleitung', merkmal: /^Willkommen/, fenster: true },
   { seite: 'termine', merkmal: 'Termine' },
-  // Überholung 6 (G6): Wünschen, Ändern und Absagen sind geführte Abläufe im
-  // Fenster - geprüft wird die erste Seite und die nach `?art=`; die übrigen
-  // Seiten prüft `plattform-termine.spec.ts` im Ablauf.
+  // Wünschen, Ändern und Absagen sind geführte Abläufe im Fenster: geprüft werden die erste
+  // Seite und die nach `?art=`, die übrigen in `plattform-termine.spec.ts`. Ohne `?art=` ist
+  // `/p/termine/<id>` die Seite des Termins, ihr Titel der Tag.
   { seite: 'wunsch', merkmal: 'Wann passt es Ihnen?', fenster: true },
-  { seite: 'termin', merkmal: 'Was möchten Sie?', fenster: true },
+  { seite: 'termin', merkmal: TAG },
+  { seite: 'termin&kurzfristig', merkmal: TAG },
+  { seite: 'termin-angefragt', merkmal: TAG },
+  { seite: 'termin-vergangen', merkmal: TAG },
+  { seite: 'termin-vergangen&ohne-nummer', merkmal: TAG },
+  { seite: 'termin-abgesagt', merkmal: TAG },
   { seite: 'termin-absagen', merkmal: 'Ausfallhonorar', fenster: true },
   { seite: 'termin-aendern', merkmal: 'Wann passt es Ihnen?', fenster: true },
   { seite: 'rechnungen', merkmal: 'Rechnungen' },

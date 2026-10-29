@@ -251,7 +251,7 @@ describe('Hauptsache (ANN-698)', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Anna Beispiel kommt zu Ihnen/ })).toHaveAttribute(
       'href',
-      '/p/termine?bereich=treatment',
+      `/p/termine/${TERMIN.id}?bereich=treatment&von=uebersicht`,
     );
     // Geld wird nie Hauptsache (Handoff, Abschnitt 0).
     const neu = screen.getByRole('list', { name: 'Neu für Sie' });
@@ -309,9 +309,10 @@ describe('Hauptsache (ANN-698)', () => {
     zeige();
     const hero = await screen.findByRole('region', { name: /^Besuch (am|morgen|heute)/ });
     expect(within(hero).getByText('Anna Beispiel kommt zu Ihnen')).toBeInTheDocument();
+    // Zur Seite des Termins; ihr Rückweg heißt dann „Übersicht“ (ANN-779).
     expect(within(hero).getByRole('link', { name: 'Termin ansehen' })).toHaveAttribute(
       'href',
-      '/p/termine?bereich=treatment',
+      `/p/termine/${TERMIN.id}?bereich=treatment&von=uebersicht`,
     );
     expect(screen.queryByRole('heading', { name: /Besuch$/ })).not.toBeInTheDocument();
     expect(hero).not.toHaveTextContent('angefragt');

@@ -50,15 +50,15 @@ Wahl, die sofort gilt; Zustand als Wort) · `Wahlreihe` mit `sofort` (Knöpfe st
 wählen nichts, etwa eine Einwilligung) · `Zwischentitel` mit `stufe="abschnitt"` (Kartentitel 22) ·
 `Vertretungsband` („Sie handeln für …“ im Gerüst und im Einstieg). Übungen: `Buehne`,
 `Dosierungsmarken`, `Hakenzeile`, `Wochenleiste`, `Uebungszeile`, `Durchfuehrungskopf`/`-fuss`,
-`Abschlussseite`. Termine: `Terminzeile`, `Wunschzeile`, `WerUndWo`, `FragenZumTermin`,
-`Wahlflaechen`, `HeroKarte` mit `ziel` und `zustand`, `HeroSkelett`, `EmptyState` mit `zeichen`;
+`Abschlussseite`. Termine: `Terminkopf`, `Terminzeile`, `Wunschzeile`, `WerUndWo`,
+`FragenZumTermin` mit `titel`, `Wahlflaechen`, `HeroKarte` mit `ziel` und `zustand`, `HeroSkelett`, `EmptyState` mit `zeichen`;
 Zeichen und Knöpfe brechen nur zwischen Wörtern (ANN-765).
 Prüfseiten `tests/e2e/fixtures/plattform-*bausteine.html`.
 
 ## Seitentypen und Gerüst
 
 **Seitentypen:** Heute (Übersicht: Gruß, Hauptsache, Heute, Nächster Besuch, Neu für Sie; ANN-698
-bis ANN-702) · Liste · Objekt ·
+bis ANN-702) · Liste · Objekt (Termin) ·
 geführter Ablauf (Einladung, Einstieg, Wunsch, Absage, Check-in, Fragebogen) · Durchführung (Vollbild
 ohne Gerüst; Kopf mit „Später weiter“ und Balken, Fuß mit Stand und Hauptknopf 56; ANN-714) · Tür
 (Einladung, Anmeldung, Einrichten, Sperre, Zugang beendet) · Blatt (Planblatt, Rechnung). Der geführte Ablauf kann „Später“ statt ✕ tragen,

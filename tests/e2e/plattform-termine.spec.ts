@@ -4,20 +4,9 @@ import type AxeCore from 'axe-core';
 import { naechsteWerktage } from '../../src/features/portal/platform/zeit';
 
 /**
- * Termine auf der Plattform als geführte Abläufe (Überholung 6, G6) im echten
- * Browser bei 375 × 667, mit gezählten Tipps ab der Terminliste:
- *
- *   * **Absagen** ≤ 4 Tipps (vorher 3 auf einer rollenden Formularseite);
- *   * **Ändern** ≤ 6 Tipps + Text (vorher 5 + Text, ebenso rollend);
- *   * **Wünschen** 5 Tipps (vorher 4, rollend) - ohne eigenes Budget.
- *
- * Die Nachricht aufklappen und schreiben zählt als „Text“ - vorher kostete das
- * Antippen des Felds denselben Tipp. Je Seite: kein Rollen (der Abschluss rollt
- * höchstens seinen Inhalt, Fuß und Hauptknopf stehen fest im Bild), Ziele ≥ 44
- * px, Schrift ≥ 18 px, axe ohne Befund, und ein Bild nach `.tmp/screenshots/`.
- *
- * Der Server ist eine Nachbildung über abgefangene Anfragen; Rechte, Fristen und
- * Grenzen prüft `pnpm test:db`. Alles ist synthetisch.
+ * Ändern, Absagen und Wünschen im echten Browser bei 375 × 667 mit gezählten Tipps ab der Liste
+ * (Budgets in `docs/product/kernablaeufe.md`; die Nachricht zählt als Text). Der Server ist eine
+ * Nachbildung über abgefangene Anfragen, Rechte und Fristen prüft `pnpm test:db`.
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/plattform.html';
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
@@ -25,6 +14,8 @@ const BILDER = '.tmp/screenshots';
 /** Der Hausbesuch der Prüfseite (`fixtures/plattform.tsx`). */
 const TERMIN = 'aaaaaaaa-aaaa-4aaa-8aaa-0000000000f1';
 const ZUGANG = 'cafecafe-cafe-4afe-8afe-000000000002';
+/** Der Titel der Seite eines Termins: der Tag in Worten. */
+const TAG = /^(Heute|Morgen|Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), /;
 /** Wie viele Werktage „Wann passt es Ihnen?“ anbietet (`WUNSCHTAGE`). */
 const WUNSCHTAGE = 14;
 
@@ -292,11 +283,10 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     const z = zaehler();
 
     await z.tippe(terminzeile(page));
-    const art = fenster(page, 'Was möchten Sie?');
-    await expect(art.getByText('Schritt 1 von 3', { exact: true })).toBeVisible();
-    await pruefeSeite(page, art, 'b6-absagen-01-was-moechten-sie', true);
+    await expect(page.getByRole('heading', { level: 1, name: TAG })).toBeVisible();
+    await bild(page, 'b6-absagen-01-seite-des-termins', true);
 
-    await z.tippe(art.getByRole('button', { name: 'Termin absagen' }));
+    await z.tippe(page.getByRole('link', { name: 'Termin absagen' }));
     const hinweis = fenster(page, 'Ausfallhonorar');
     await expect(hinweis.getByRole('status')).toContainText('kein Ausfallhonorar');
     await pruefeSeite(page, hinweis, 'b6-absagen-02-ausfallhonorar');
@@ -341,9 +331,8 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     const z = zaehler();
 
     await z.tippe(terminzeile(page));
-    const art = fenster(page, 'Was möchten Sie?');
-    await pruefeSeite(page, art, 'b6-aendern-01-was-moechten-sie', true);
-    await z.tippe(art.getByRole('button', { name: 'Termin ändern' }));
+    await expect(page.getByRole('heading', { level: 1, name: TAG })).toBeVisible();
+    await z.tippe(page.getByRole('link', { name: 'Termin ändern' }));
     const wann = fenster(page, 'Wann passt es Ihnen?');
     await expect(wann.getByText('Schritt 2 von 3', { exact: true })).toBeVisible();
     // Wochentage, Tageszeiten und „Egal“ zusammen auf einer Seite ohne Rollen.

@@ -3,12 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { kannZurueck, aendern, zurueck, type Abfolge } from '@/components/ui/abfolge';
 import { useTextverlustschutz } from '@/app/Textverlustschutz';
@@ -45,25 +42,14 @@ import {
 } from './terminablauf';
 import { terminBeschreibung, terminKurz } from './terminbeschreibung';
 import { Angabe, Nachricht, Wannzeile, Wunschfelder, Zusammenfassungsanfang } from './Wunschfelder';
+import { Terminseite } from './Terminseite';
 import { WUNSCHSCHUTZ } from './wunschtexte';
-import { naechsteWerktage, tagKurz, tagLang, zeitraum } from './zeit';
+import { naechsteWerktage, tagKurz, zeitraum } from './zeit';
 
 /**
- * Ein eigener Termin mit den zwei Wünschen (POR-010, DSN-001 4.1, D4):
- * **ändern** oder **absagen**. Beides ist ein Wunsch, den die Praxis
- * bestätigt (§8).
- *
- * Seit Überholung 6 (G6) ein geführter Ablauf im Fenster, in 18 px wie die
- * ganze Plattform: „Was möchten Sie?“ → beim Absagen der Hinweis zum
- * Ausfallhonorar als eigene Seite im festen Wortlaut, unter 24 Stunden
- * deutlich (ADR-018 Punkt 8; ob das so ist, hat der Server gerechnet,
- * `late_notice`, nie der Browser) → beim Ändern „Wann passt es Ihnen?“ →
- * Zusammenfassung mit „Ändern“ je Angabe, die Nachricht eingeklappt, ein
- * Hauptknopf. Die Frist steht vor dem Knopf, nicht dahinter (BEF-079). Mit
- * `?art=cancel` oder `?art=change` beginnt gleich die passende Seite.
- *
- * Ist der Termin nicht mehr änderbar oder liegt schon ein Wunsch vor, sagt
- * die Seite das wie bisher.
+ * Ändern oder Absagen als geführter Ablauf, beides ein Wunsch, den die Praxis bestätigt (§8). Die
+ * Frist zum Ausfallhonorar rechnet der Server (`late_notice`, ADR-018 Punkt 8), sie steht vor dem
+ * Knopf. Mit `?art=` beginnt gleich die passende Seite; ohne änderbaren Termin `Terminseite`.
  */
 export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
   // Die Kennung aus dem Pfad `/p/termine/<id>` - nicht aus `useParams`, damit
@@ -81,48 +67,14 @@ export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
     queryFn: () => ladeTermine(zugang.access_id),
   });
   const termin = termine.data?.find((t) => t.id === terminId);
-
-  if (termine.isPending) {
-    return (
-      <>
-        <Rueckweg standard={terminliste} beschriftung="Zu den Terminen" />
-        <LoadingState label="Ihr Termin wird geladen …" />
-      </>
-    );
-  }
-  if (!termin) {
-    return (
-      <>
-        <Rueckweg standard={terminliste} beschriftung="Zu den Terminen" />
-        <ErrorState
-          title="Dieser Termin wurde nicht gefunden."
-          description="Vielleicht hat die Praxis ihn geändert. Bitte sehen Sie in Ihre Terminliste."
-        />
-      </>
-    );
-  }
+  // Lädt der Termin noch, fehlt er oder lässt er sich nicht mehr ändern, steht die Seite des
+  // Termins da: mit „Praxis anrufen“ statt eines Satzes ohne Nummer.
   const aenderbar =
-    termin.status === 'confirmed' && new Date(termin.starts_at).getTime() > Date.now();
-  if (!aenderbar || termin.open_request_kind) {
-    return (
-      <>
-        <Rueckweg standard={terminliste} beschriftung="Zu den Terminen" />
-        <Terminkopf termin={termin} />
-        {!aenderbar ? (
-          <p className="text-ink max-w-prose text-base leading-relaxed">
-            Dieser Termin lässt sich hier nicht mehr ändern. Bei Fragen rufen Sie bitte die Praxis
-            an.
-          </p>
-        ) : (
-          <Statusmeldung ton="neutral">
-            {termin.open_request_kind === 'cancel'
-              ? 'Ihr Absagewunsch ist bei der Praxis. Sie meldet sich bei Ihnen.'
-              : 'Ihr Änderungswunsch ist bei der Praxis. Sie meldet sich bei Ihnen.'}
-          </Statusmeldung>
-        )}
-      </>
-    );
-  }
+    termin !== undefined &&
+    termin.status === 'confirmed' &&
+    new Date(termin.starts_at).getTime() > Date.now() &&
+    !termin.open_request_kind;
+  if (!termin || !aenderbar) return <Terminseite zugang={zugang} />;
   return (
     <Aenderungsablauf
       zugang={zugang}
@@ -376,24 +328,6 @@ function Terminzeit({ termin }: { termin: Termin }) {
       <span>{tagKurz(termin.starts_at)}</span>
       <span className="text-sm font-medium">{zeitraum(termin.starts_at, termin.ends_at)}</span>
     </span>
-  );
-}
-
-function Terminkopf({ termin }: { termin: Termin }) {
-  const { titel, ort } = terminBeschreibung(termin);
-  return (
-    <PageHeader
-      kicker="Termin"
-      title={tagLang(termin.starts_at)}
-      description={
-        <>
-          <span className="text-ink block font-semibold">
-            {zeitraum(termin.starts_at, termin.ends_at)} · {titel}
-          </span>
-          {ort ? <span className="block">{ort}</span> : null}
-        </>
-      }
-    />
   );
 }
 

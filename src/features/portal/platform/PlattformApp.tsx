@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Navigate, Route, Routes, matchPath, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, matchPath, useLocation, useSearchParams } from 'react-router-dom';
 import { Profilhinweis } from '@/app/Profilhinweis';
 import { MARKE, tabName, tabTitel } from '@/app/tabtitel';
 import { Anrufknoepfe } from '@/components/ui/Anrufknoepfe';
@@ -67,6 +67,7 @@ import { PlanblattPlattform, Uebungen } from './Uebungen';
 import { Durchfuehrung } from './Durchfuehrung';
 import { datum, kalendertag } from './zeit';
 import { Terminaenderung } from './Terminaenderung';
+import { Terminseite } from './Terminseite';
 import { Terminwunsch } from './Terminwunsch';
 import { useWahl, wahlAdresse, wahlName } from './wahl';
 
@@ -231,7 +232,7 @@ function Geruest({
                 <MitZugang
                   bereiche={lesbar}
                   zugaenge={zugaenge}
-                  seite={(z) => <Terminaenderung zugang={z} />}
+                  seite={(z) => <TerminOderAblauf zugang={z} />}
                 />
               }
             />
@@ -1005,4 +1006,10 @@ function VertretungZeile({
       )}
     </li>
   );
+}
+
+/** `/p/termine/<id>`: ohne `?art=` die Seite des Termins, mit `?art=` der Ablauf (ANN-778). */
+function TerminOderAblauf({ zugang }: { zugang: Plattformzugang }) {
+  const [suche] = useSearchParams();
+  return suche.has('art') ? <Terminaenderung zugang={zugang} /> : <Terminseite zugang={zugang} />;
 }

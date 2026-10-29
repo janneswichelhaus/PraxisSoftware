@@ -114,7 +114,8 @@ const zugaenge: Plattformzugang[] = [
     access_kind: 'self',
     represented_name: null,
     own_name: 'Erika Beispiel',
-    practice_phone: '+49 7071 0000000',
+    // `&ohne-nummer`: Die Praxis hat keine Rufnummer hinterlegt.
+    practice_phone: parameter.has('ohne-nummer') ? null : '+49 7071 0000000',
   },
   {
     access_id: 'cafecafe-cafe-4afe-8afe-000000000003',
@@ -937,16 +938,16 @@ client.setQueryData(plaeneSchluessel(begleitung.access_id), {
 });
 client.setQueryData(checkinsSchluessel(begleitung.access_id), null);
 client.setQueryData(gewohnheitenSchluessel(begleitung.access_id), null);
-// `termine-laden`: Die Termine laden ohne Ende; `termine-fehler`: Sie scheitern, auch beim
-// Erscheinen nicht noch einmal versucht.
-if (seite === 'termine-laden') {
+// `termine-laden` und `termin-laden`: Die Termine laden ohne Ende; `termine-fehler` und
+// `termin-fehler`: Sie scheitern, auch beim Erscheinen nicht noch einmal versucht.
+if (seite === 'termine-laden' || seite === 'termin-laden') {
   client.removeQueries({ queryKey: termineSchluessel(zugaenge[0]!.access_id) });
   void client.prefetchQuery({
     queryKey: termineSchluessel(zugaenge[0]!.access_id),
     queryFn: () => new Promise<Termin[]>(() => undefined),
   });
 }
-if (seite === 'termine-fehler') {
+if (seite === 'termine-fehler' || seite === 'termin-fehler') {
   client.removeQueries({ queryKey: termineSchluessel(zugaenge[0]!.access_id) });
   client.setQueryDefaults(termineSchluessel(zugaenge[0]!.access_id), { retryOnMount: false });
   void client.prefetchQuery({
@@ -1495,6 +1496,11 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'termine-training':
     case 'wunsch':
     case 'termin':
+    case 'termin-angefragt':
+    case 'termin-vergangen':
+    case 'termin-abgesagt':
+    case 'termin-laden':
+    case 'termin-fehler':
     case 'termin-absagen':
     case 'termin-aendern':
     case 'rechnungen':
@@ -1539,6 +1545,11 @@ function inhalt(): { pfad: string; element: ReactNode } {
         'termine-training': '/p/termine?bereich=training',
         wunsch: '/p/termine/wunsch?bereich=treatment',
         termin: `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment`,
+        'termin-angefragt': '/p/termine/aaaaaaaa-aaaa-4aaa-8aaa-0000000000f2?bereich=treatment',
+        'termin-vergangen': '/p/termine/aaaaaaaa-aaaa-4aaa-8aaa-0000000000f3?bereich=treatment',
+        'termin-abgesagt': '/p/termine/aaaaaaaa-aaaa-4aaa-8aaa-0000000000f4?bereich=treatment',
+        'termin-laden': `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment`,
+        'termin-fehler': `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment`,
         'termin-absagen': `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment&art=cancel`,
         'termin-aendern': `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment&art=change`,
         rechnungen: '/p/rechnungen?bereich=treatment',

@@ -1583,3 +1583,6 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-775 | Termine: am Rechner Hero und Knopf rechts, die Listen links ab 32.5rem | Technik · offen | `ZWEI_SPALTEN` in `src/features/portal/platform/Termine.tsx` |
 | ANN-776 | Termine: jede Zeile führt zur Seite ihres Termins, auch vergangene und abgesagte | Technik · offen | `zielVon` in `src/features/portal/platform/Termine.tsx` |
 | ANN-777 | „Diese Woche“: bei „Sehr groß“ der Tag über seinen Einträgen | Technik · offen | `WOCHENZEILE` in `src/features/portal/platform/Termine.tsx` |
+| ANN-778 | Termine: Ändern und Absagen beginnen auf der Seite des Termins | Technik · offen | `TerminOderAblauf` in `src/features/portal/platform/PlattformApp.tsx` |
+| ANN-779 | Seite des Termins: von der Übersicht heißt der Rückweg „Übersicht“ | Technik · offen | `Rueckweg` in `src/features/portal/platform/Terminseite.tsx` |
+| ANN-780 | Termine: in der Lesefrist und beim Fehler der Liste der Weg zur Praxis | Technik · offen | `PraxisErreichen` in `src/features/portal/platform/Termine.tsx` |

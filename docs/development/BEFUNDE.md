@@ -130,14 +130,6 @@ N); Streuung und Reserve bleiben.
 „heranzie|hen“ (unter der Trenngrenze von ANN-707), „Durchgän|ge“. **Erwartet.** Entscheiden, ob das
 ein Prüfpunkt ist; wenn ja, Trenngrenze senken oder Titel und Marken kleiner.
 
-### BEF-221 — Termine: der vergangene Termin nennt keine Nummer, obwohl sie vorliegt
-2026-10-24 · Plattform, ein Termin · Briefing 3 · offen (Schritt 3, DR-133) · `Terminaenderung.tsx`\
-**Beobachtung.** „Bei Fragen rufen Sie bitte die Praxis an.“ ohne Nummer und Knopf, obwohl der
-Kontext `practice_phone` trägt (ANN-691) und die Türen „Praxis anrufen“ zeigen (ANN-688). Auf der
-Liste fehlt der Weg ebenso in der Lesefrist („Neue Termine vereinbaren Sie … mit der Praxis.“) und
-beim Fehler, wenn jemand kurzfristig absagen muss (Praxis-Review 3b). **Erwartet.** Mit Nummer „Praxis anrufen“ als Anruf-Link, sonst „Der Praxis schreiben“; nie ein
-Satz, der eine Handlung verlangt, die die Seite nicht anbietet.
-
 ### BEF-222 — Lesefrist: der Server nimmt Terminwünsche noch an
 2026-10-24 · Plattform, Lesefrist · Handoff Termine, Frage 5 · offen; Frage an Jannes\
 **Beobachtung.** DSN-001 D2 sagt „30 Tage lesend“, `app.platform_access_allows` erlaubt `request`
@@ -182,12 +174,12 @@ die Bilder selbst vollständig; mit `--neu-laden` keines. **Erwartet.** Den Zäh
 auf null setzen oder offene Anfragen je Dokument führen; Gegenprobe mit `--nur=plattform`.
 
 ### Termine — Zeichen und Zeilen der Bausteine gibt es schon an anderer Stelle
-2026-10-28 · Plattform, Termine · Design-Review zu 3a · offen (Vorschlag, mit 3c) ·
+2026-10-28 · Plattform, Termine · Design-Review zu 3a · offen (Vorschlag, nach 3d) ·
 `Terminsymbole.tsx`, `Terminliste.tsx`, `Fragezeile`\
 **Beobachtung.** Training, Kalender, Telefon, Nachricht und Pfeil in `Terminsymbole` zeichnen
 dieselben Pfade wie `Navigation.tsx`, `Notfallkarte.tsx`, `Uebungszeile.tsx` und `Linkliste.tsx`, auf
 Raster 24 statt 20 (DESIGN.md 9.15). `Terminliste` gleicht `Uebungsliste`, `Fragezeile` der
-`Linkliste` bis auf das `tel:`-Ziel und eine zweite Zeile. **Erwartet.** Mit 3c die Fragezeilen als
+`Linkliste` bis auf das `tel:`-Ziel und eine zweite Zeile. **Erwartet.** Nach 3d die Fragezeilen als
 Erweiterung von `Linkliste`, die Zeichen einmal in `src/components/ui`, das Raster in PLATTFORM.md.
 
 ### Trennung — Die Prüfungen erlauben `@/lib/` pauschal, auch einen Datenzugriff dort

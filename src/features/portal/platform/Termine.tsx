@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
 import { Button } from '@/components/ui/Button';
@@ -8,7 +8,6 @@ import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { HeroKarte } from '@/components/ui/HeroKarte';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 import { HeroSkelett, Skelett, SkelettBereich } from '@/components/ui/Skelett';
@@ -24,7 +23,6 @@ import {
   plaeneSchluessel,
   termineSchluessel,
   wuenscheSchluessel,
-  wunschZurueckziehen,
   type EigenePlaene,
   type Plattformzugang,
   type Termin,
@@ -42,7 +40,13 @@ import {
   terminZeit,
 } from './hauptsache';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
-import { Statuszeichen, Terminzeile, Wunschzeile } from './Terminbausteine';
+import {
+  FragenZumTermin,
+  Statuszeichen,
+  Terminzeile,
+  Wunschzeile,
+  Zurueckziehen,
+} from './Terminbausteine';
 import {
   artUndPerson,
   artzeichen,
@@ -147,6 +151,7 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
               breit={!rechner}
             />
           ) : null}
+          <PraxisErreichen zugang={zugang} mit={mit} />
         </div>
       ) : (
         <>
@@ -414,6 +419,29 @@ function Liste({
       {nurWunsch ? knopf : null}
       {woche}
       {vergangenAbschnitt}
+      {lesefrist ? <PraxisErreichen zugang={zugang} mit={mit} /> : null}
+    </div>
+  );
+}
+
+/**
+ * Der Weg zur Praxis, wo die Liste sonst keinen bietet: in der Lesefrist, deren Satz auf die Praxis
+ * verweist, und beim Fehler, etwa für eine kurzfristige Absage (ANN-780).
+ */
+function PraxisErreichen({
+  zugang,
+  mit,
+}: {
+  zugang: Plattformzugang;
+  mit: (pfad: string) => string;
+}) {
+  return (
+    <div>
+      <FragenZumTermin
+        titel="Die Praxis erreichen"
+        rufnummer={zugang.practice_phone}
+        schreiben={mit(`${PLATTFORM_PFAD}/nachrichten/neu`)}
+      />
     </div>
   );
 }
@@ -487,51 +515,6 @@ function Wunschknopf({
         {WUENSCHE_OHNE_NETZ}
       </p>
     </div>
-  );
-}
-
-/**
- * „Wunsch zurückziehen“ mit der Rückfrage an Ort und Stelle. Danach lädt die Liste auch die Termine
- * neu: Ein zurückgezogener Änderungs- oder Absagewunsch nimmt das Statuszeichen am Termin mit.
- */
-function Zurueckziehen({
-  zugang,
-  wunschId,
-  verbunden,
-  ohneNetzId,
-}: {
-  zugang: Plattformzugang;
-  wunschId: string;
-  verbunden: boolean;
-  ohneNetzId: string;
-}) {
-  const queryClient = useQueryClient();
-  const zurueckziehen = useMutation({
-    mutationFn: () => wunschZurueckziehen(zugang.access_id, wunschId),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: wuenscheSchluessel(zugang.access_id) }),
-        queryClient.invalidateQueries({ queryKey: termineSchluessel(zugang.access_id) }),
-      ]),
-  });
-  if (!verbunden) {
-    return (
-      <Button type="button" variant="quiet" disabled aria-describedby={ohneNetzId}>
-        Wunsch zurückziehen
-      </Button>
-    );
-  }
-  return (
-    <Rueckfrage
-      ausloeser="Wunsch zurückziehen"
-      ausloeserVariante="quiet"
-      bestaetigen="Ja, zurückziehen"
-      bestaetigenLaeuft="Wird zurückgezogen …"
-      fehler={zurueckziehen.error?.message}
-      onBestaetigen={() => zurueckziehen.mutateAsync()}
-    >
-      <p>Die Praxis bearbeitet diesen Wunsch dann nicht weiter.</p>
-    </Rueckfrage>
   );
 }
 
