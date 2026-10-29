@@ -165,6 +165,15 @@ bei 188 px und „Sehr groß“ einmal über: gemessen, bevor die Schriftgröße
 **Erwartet.** Auf das gemessene Element warten (eigenes Zeitlimit, `data-schrift` am Wurzelelement);
 Grenzen bleiben.
 
+### Termin — Ein Browsertest misst „Abhaken“, während das Fenster noch aufgeht
+2026-10-29 · `tests/e2e/termin.spec.ts` (Hausbesuch) · Browsertests zu 3c, auch auf `main` · offen
+(Vorschlag)\
+**Beobachtung.** Unter Last kamen 43,99998 statt mindestens 44 px: Gemessen wird gleich nach
+`toBeVisible()`, während `fenster-kommt` noch läuft (`document.getAnimations()`), und der Knopf ist
+genau 44 hoch. Auf `main` einer von drei vollen Läufen, auf dem Branch zwei von vier, einzeln nie.
+**Erwartet.** Vor dem Messen das Ende der Animationen abwarten oder mit `expect.poll` messen; die
+Grenze 44 px bleibt.
+
 ### Bildstrecke — Nach der Anmeldung bleibt der Zähler offener Anfragen über null
 2026-10-28 · `scripts/bildstrecke.mjs` · Vorher-Bilder zu Schritt 3a · offen (Vorschlag) · `netzruhe`\
 **Beobachtung.** Zwei Anfragen der Anmeldung (`own_offline_passkeys`) und das Monogramm brechen beim
