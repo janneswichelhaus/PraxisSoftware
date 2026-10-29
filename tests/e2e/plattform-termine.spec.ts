@@ -288,11 +288,13 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
 
     await z.tippe(page.getByRole('link', { name: 'Termin absagen' }));
     const hinweis = fenster(page, 'Ausfallhonorar');
-    await expect(hinweis.getByRole('status')).toContainText('kein Ausfallhonorar');
+    await expect(hinweis.getByText('Schritt 1 von 2', { exact: true })).toBeVisible();
+    await expect(hinweis.getByText(/es entsteht kein Ausfallhonorar/)).toBeVisible();
     await pruefeSeite(page, hinweis, 'b6-absagen-02-ausfallhonorar');
 
     await z.tippe(hinweis.getByRole('button', { name: 'Verstanden, weiter' }));
     const ende = fenster(page, 'Ist alles richtig?');
+    await expect(ende.getByText('Schritt 2 von 2', { exact: true })).toBeVisible();
     await expect(ende.getByText('Termin absagen', { exact: true })).toBeVisible();
     await expect(ende.getByText(/Als Eingang Ihrer Absage gilt der Zeitpunkt/)).toBeInViewport({
       ratio: 1,
@@ -334,7 +336,7 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     await expect(page.getByRole('heading', { level: 1, name: TAG })).toBeVisible();
     await z.tippe(page.getByRole('link', { name: 'Termin ändern' }));
     const wann = fenster(page, 'Wann passt es Ihnen?');
-    await expect(wann.getByText('Schritt 2 von 3', { exact: true })).toBeVisible();
+    await expect(wann.getByText('Schritt 1 von 2', { exact: true })).toBeVisible();
     // Wochentage, Tageszeiten und „Egal“ zusammen auf einer Seite ohne Rollen.
     await pruefeSeite(page, wann, 'b6-aendern-02-wann-passt-es');
 
@@ -342,16 +344,24 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     await z.tippe(wann.getByRole('button', { name: 'Vormittag', exact: true }));
     await z.tippe(wann.getByRole('button', { name: 'Weiter' }));
     const ende = fenster(page, 'Ist alles richtig?');
+    await expect(ende.getByText('Ihr Termin', { exact: true })).toBeVisible();
+    await expect(ende.getByText('Lieber am', { exact: true })).toBeVisible();
     await expect(ende.getByText('Montag, vormittags', { exact: true })).toBeVisible();
     // Was beim Freigeben gilt, steht fest über dem Knopf.
     await expect(ende.getByRole('status')).toContainText('es entsteht kein Ausfallhonorar');
     await expect(ende.getByRole('status')).toBeInViewport({ ratio: 1 });
+    // Karte und Satz des Handoffs sind bei 375 × 667 höher als die Fläche (ANN-783): Der Inhalt
+    // rollt, Frage, Wahl und Fuß stehen; der freiwillige Aufklapper liegt darunter.
+    await expect(ende.getByRole('button', { name: 'Ändern: Lieber am' })).toBeInViewport({
+      ratio: 1,
+    });
     await pruefeAbschluss(page, ende, 'Änderungswunsch senden', 'b6-aendern-03-zusammenfassung', {
       breit: true,
+      rollt: true,
     });
 
     // Text: die Nachricht aufklappen und schreiben - das Feld hat gleich den Fokus.
-    await ende.getByText('Nachricht an die Praxis (freiwillig)').click();
+    await ende.getByText('Was sollen wir noch wissen? (freiwillig)').click();
     await expect(ende.getByLabel('Was sollen wir noch wissen?')).toBeFocused();
     await page.keyboard.type('Bitte nicht vor 10 Uhr.');
     await expect(ende.getByRole('button', { name: 'Änderungswunsch senden' })).toBeInViewport({
@@ -386,17 +396,20 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     const server = nachbildung();
     await oeffne(page, server, 'termin-absagen&kurzfristig');
     const hinweis = fenster(page, 'Ausfallhonorar');
-    const warnung = hinweis.getByRole('status');
+    const warnung = hinweis.getByRole('alert');
     await expect(warnung).toContainText('weniger als 24 Stunden');
     await expect(warnung).toContainText('berechnen wir ein Ausfallhonorar');
-    await pruefeSeite(page, hinweis, 'b6-absagen-kurzfristig-01-ausfallhonorar');
-    // Die ganze Regel auf Abruf - aufgeklappt rollt nur der Inhalt, der Knopf bleibt.
-    await hinweis.getByText('Unsere Regel zum Ausfallhonorar').click();
+    // Die ganze Regel steht offen darunter (ANN-783): Der Inhalt rollt, Warnung und Knopf bleiben.
     await expect(hinweis.getByText(/Genau 24 Stunden vorher genügt/)).toBeVisible();
+    await expect(warnung).toBeInViewport({ ratio: 1 });
     await expect(hinweis.getByRole('button', { name: 'Verstanden, weiter' })).toBeInViewport({
       ratio: 1,
     });
-    await bild(page, 'b6-absagen-kurzfristig-02-regel');
+    expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
+    expect(await kleineZiele(page), 'Ziele unter 44 px').toEqual([]);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    expect(await ueberlaeuft(page)).toBe(false);
+    await bild(page, 'b6-absagen-kurzfristig-01-ausfallhonorar');
 
     await hinweis.getByRole('button', { name: 'Verstanden, weiter' }).click();
     const ende = fenster(page, 'Ist alles richtig?');

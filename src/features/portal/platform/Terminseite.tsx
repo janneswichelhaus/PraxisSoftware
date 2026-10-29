@@ -135,7 +135,17 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
       {kommend && termin.open_request_kind ? (
         <OffenerWunsch zugang={zugang} termin={termin} wunsch={wunsch} verbunden={verbunden} />
       ) : kommend ? (
-        <AendernOderAbsagen termin={termin} mit={mit} verbunden={verbunden} rechner={rechner} />
+        <AendernOderAbsagen
+          zumAblauf={(art) => {
+            // Der Ablauf behält Bereich und Rückweg; ✕ kehrt so auf genau diese Seite zurück.
+            const adresse = new URLSearchParams(suche);
+            adresse.set('art', art);
+            return `${pathname}?${adresse.toString()}`;
+          }}
+          spaet={termin.late_notice === true}
+          verbunden={verbunden}
+          rechner={rechner}
+        />
       ) : abgesagt ? (
         <NeuerWunsch
           pfad={mit(`${PLATTFORM_PFAD}/termine/wunsch`)}
@@ -175,34 +185,30 @@ function Rahmen({ liste, children }: { liste: string; children: ReactNode }) {
  * gesperrt mit dem Satz der Liste (ANN-773).
  */
 function AendernOderAbsagen({
-  termin,
-  mit,
+  zumAblauf,
+  spaet,
   verbunden,
   rechner,
 }: {
-  termin: Termin;
-  mit: (pfad: string) => string;
+  zumAblauf: (art: 'change' | 'cancel') => string;
+  spaet: boolean;
   verbunden: boolean;
   rechner: boolean;
 }) {
   const satzId = useId();
-  const ziel = (art: 'change' | 'cancel') => {
-    const pfad = mit(`${PLATTFORM_PFAD}/termine/${termin.id}`);
-    return `${pfad}${pfad.includes('?') ? '&' : '?'}art=${art}`;
-  };
   const breite = rechner ? 'self-start' : 'w-full';
   return (
     <div>
       <Section
         titel="Passt der Termin nicht?"
         hinweis={
-          termin.late_notice
+          spaet
             ? undefined
             : 'Ändern und Absagen sind Wünsche an die Praxis. Sie meldet sich bei Ihnen.'
         }
       >
         <div className="flex flex-col gap-3">
-          {termin.late_notice ? (
+          {spaet ? (
             <Statusmeldung ton="warnung" className="font-semibold">
               {AUSFALLHONORAR_SPAET}
             </Statusmeldung>
@@ -211,7 +217,7 @@ function AendernOderAbsagen({
             {verbunden ? (
               <>
                 <ButtonLink
-                  to={ziel('change')}
+                  to={zumAblauf('change')}
                   variant="secondary"
                   groesse="normal"
                   className={breite}
@@ -219,7 +225,7 @@ function AendernOderAbsagen({
                   Termin ändern
                 </ButtonLink>
                 <ButtonLink
-                  to={ziel('cancel')}
+                  to={zumAblauf('cancel')}
                   variant="secondary"
                   groesse="normal"
                   className={breite}

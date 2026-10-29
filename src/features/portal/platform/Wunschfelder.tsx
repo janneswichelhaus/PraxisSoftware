@@ -168,8 +168,8 @@ export function Zusammenfassungsanfang() {
 
 /**
  * Die Nachricht an die Praxis: eingeklappt und freiwillig. Mit `alsTitel` ist die Frage selbst der
- * Aufklapper („Was sollen wir noch wissen? (freiwillig)“), das Feld heißt nur für Vorlesesoftware
- * nach ihr. Wer aufklappt, will schreiben: Das Feld bekommt den Fokus; steht etwas darin, ist sie offen.
+ * Aufklapper, das Feld heißt nur für Vorlesesoftware nach ihr (ANN-785). Wer aufklappt, will
+ * schreiben: Das Feld bekommt den Fokus; steht etwas darin, ist sie offen.
  */
 export function Nachricht({
   frage,
