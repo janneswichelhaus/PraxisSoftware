@@ -447,6 +447,7 @@ function Ablauf({
                 Senden geht wieder mit Verbindung. Ihre Antworten bleiben stehen.
               </p>
             )}
+            {/* Der Notfallsatz nur hier vor dem Senden, nicht bei den Warnzeichen (ANN-794). */}
             <p className="text-ink-muted">
               <strong className="text-ink">{NICHT_AKUT}</strong> <Notfallsatz />
             </p>

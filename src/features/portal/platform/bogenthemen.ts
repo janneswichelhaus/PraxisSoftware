@@ -28,7 +28,7 @@ interface Themenplan {
   folgefragen: Readonly<Record<string, { wahl: string; fragen: readonly string[] }>>;
 }
 
-/** Je Vorlage die Themen mit den Kennungen ihrer Items, in der Folge des Vordrucks. */
+/** Je Vorlage die Themen mit den Kennungen ihrer Items, in der Folge des Vordrucks (ANN-792). */
 const PLAENE: Readonly<Record<string, Themenplan>> = {
   anamnese_v8: {
     themen: [
@@ -143,7 +143,7 @@ function passt(plan: Themenplan, items: readonly ScoreItem[]): boolean {
 /** Die Hinweise für Papier entfallen auf der Plattform, ebenso ein Doppelpunkt am Ende. */
 const PAPIERHINWEIS = /\s*\(bitte (?:einzeichnen|kennzeichnen)\)/g;
 
-/** Der Wortlaut der Vorlage ohne Hinweis für Papier: „Wo haben Sie Ihre Beschwerden?“. */
+/** Der Wortlaut der Vorlage ohne Hinweis für Papier (ANN-793): „Wo haben Sie Ihre Beschwerden?“. */
 export function wortlaut(item: ScoreItem): string {
   return item.text.replace(PAPIERHINWEIS, '').replace(/:\s*$/, '').trim();
 }

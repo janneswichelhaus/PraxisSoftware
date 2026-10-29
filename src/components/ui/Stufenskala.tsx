@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { HakenSymbol } from './HakenSymbol';
 
 /**
- * Skala 0 bis 10 in zwei gleich langen Reihen, unter 23rem drei je Reihe, in einem Feld ab 44rem eine.
- * Schalter wie beim Barometer: Ein zweiter Tipp nimmt die Antwort zurück, nichts ist vorgewählt.
+ * Skala 0 bis 10 in zwei gleich langen Reihen, unter 23rem drei je Reihe, ab 44rem Feld eine
+ * (ANN-787). Schalter wie beim Barometer: Ein zweiter Tipp nimmt zurück, nichts ist vorgewählt.
  */
 export function Stufenskala({
   beschriftetVon,

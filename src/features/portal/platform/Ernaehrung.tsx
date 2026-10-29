@@ -158,8 +158,8 @@ function Inhalt({
 }
 
 /**
- * Das Tagebuch von heute als Hero-Karte. Den Stand liefert die Abfrage des Tagebuchs selbst
- * (`ladeErnaehrung` kennt ihn nicht); bis sie antwortet, stehen nur Titel und Knopf.
+ * Das Tagebuch von heute als Hero-Karte (ANN-797). Den Stand liefert die Abfrage des Tagebuchs
+ * selbst (`ladeErnaehrung` kennt ihn nicht); bis sie antwortet, stehen nur Titel und Knopf.
  */
 function Heute({ zugang, ziel }: { zugang: Plattformzugang; ziel: string }) {
   const { data } = useQuery({

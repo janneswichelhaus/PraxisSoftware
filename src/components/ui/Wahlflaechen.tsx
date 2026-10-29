@@ -109,7 +109,10 @@ const HOEHE = {
   paar: 'min-h-16',
 } as const;
 
-/** Der Schrägstrich für sich: Das Wort davor trennt an der Silbe, die Zeile darf an ihm enden. */
+/**
+ * Der Schrägstrich für sich: Das Wort davor trennt an der Silbe, die Zeile darf an ihm enden
+ * (ANN-788).
+ */
 function mitUmbruch(text: string): ReactNode {
   return text.split('/').map((teil, index) =>
     index === 0 ? (

@@ -44,7 +44,7 @@ interface Erfassung {
 }
 
 /**
- * Je Frage mit Zahl eine Reihe, in der Folge des Katalogs (ANN-364): Eine Wortwahl wie die
+ * Je Frage mit Zahl eine Reihe, in der Folge des Katalogs (ANN-364, ANN-799): Eine Wortwahl wie die
  * Schmerzart und der Zusammenhang stehen nur in der Tabelle, ihre Zahl ist kein Maß.
  */
 function reihen(erfassungen: readonly Erfassung[], takt: Erfassungstakt): Reihe[] {

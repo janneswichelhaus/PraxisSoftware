@@ -21,7 +21,7 @@ import { ProgressBar } from './ProgressBar';
  */
 export const TIPPSPERRE_MS = 700;
 
-/** Für Band und Verbindungszeile eines breiten Ablaufs: dieselbe Kante wie der Inhalt. */
+/** Für Band und Verbindungszeile eines breiten Ablaufs: dieselbe Kante wie der Inhalt (ANN-789). */
 export const BREITE_ABLAUFSPALTE =
   'max-w-formular [.plattform-schrift[data-rechner]_&]:max-w-spalte mx-auto box-content px-5 max-[23rem]:px-3';
 const AM_RECHNER_OHNE_LINIE =

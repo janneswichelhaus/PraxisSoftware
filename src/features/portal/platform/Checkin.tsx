@@ -106,6 +106,7 @@ interface Seite {
 
 type Werte = Record<string, number | null>;
 
+/** Je Hauptfrage eine Seite, der Zusammenhang und die Belastung je eine (ANN-790). */
 function ablaufseiten(schluessel: readonly string[]): Seite[] {
   const groessen = schluessel
     .map((k) => erfassungsgroesse(k))
@@ -191,7 +192,7 @@ const HAUPTKNOPF =
   'w-full [.plattform-schrift[data-rechner]_&]:w-auto [.plattform-schrift[data-rechner]_&]:min-w-40';
 /**
  * Ohne Netz gesperrt, aber mit dem Fokus erreichbar, damit der Satz dazu vorgelesen wird: dasselbe
- * Bild wie ein abgeschalteter Hauptknopf, gestrichelt (ANN-252).
+ * Bild wie ein abgeschalteter Hauptknopf, gestrichelt (ANN-252, ANN-802).
  */
 const GESPERRT =
   'aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-line-strong aria-disabled:bg-transparent aria-disabled:text-ink-muted aria-disabled:hover:bg-transparent [.plattform-schrift_&]:aria-disabled:active:bg-transparent motion-safe:[.plattform-schrift_&]:aria-disabled:active:scale-100';
@@ -247,7 +248,7 @@ function Ablauf({
   }
 
   function weiter() {
-    // „Weiter“ geht auch ohne Antwort; nur eine Zahl außerhalb ihres Bereichs hält an.
+    // „Weiter“ geht auch ohne Antwort; nur eine Zahl außerhalb ihres Bereichs hält an (ANN-791).
     const falsch = pruefen(sichtbar(seite, werte), werte);
     if (falsch) {
       setHinweis(falsch);
@@ -415,7 +416,7 @@ function Ladezustand() {
 }
 
 /**
- * Kein Ablauf: Leerzustand mit Markenform, Titel, Satz und, wo es einen gibt, dem Weg (Handoff 5.1).
+ * Kein Ablauf: Leerzustand mit Markenform, Titel, Satz und, wo es einen gibt, dem Weg (ANN-801).
  * Die Begleitung und die Lesefrist kennt die Seite aus dem Zugang.
  */
 function Zustand({

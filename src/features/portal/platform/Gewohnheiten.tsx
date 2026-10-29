@@ -123,6 +123,7 @@ function ohne(tag: string, wert?: boolean) {
   };
 }
 
+/** Eine Gewohnheit: Titel, Ort, die Tage oder pausiert als ruhige Zeile (ANN-800). */
 function Eintrag({
   zugang,
   gewohnheit,

@@ -193,9 +193,9 @@ Nachgestellt mit dem Seed vom 6.10. und allen Migrationen; mit gültigen Kennung
 ### Fragebogen — Der Server nimmt Antworten der Plattform auf das Praxisfeld an
 2026-10-29 · Plattform, Fragebogen · Handoff Selbstauskunft, Abschnitt 10 · offen (Pfad A) ·
 `save_platform_questionnaire_response`\
-**Beobachtung.** Seit Schritt 4 zeigt die Plattform Items mit `ausgefuellt_von: "therapeut"`
-(„Anmerkungen Therapeut:“) nicht mehr; der Server prüft beim Speichern und Absenden nur die
-Vorlage und nähme eine Antwort darauf an. **Erwartet.** Ablehnen am Server, mit Datenbanktest.
+**Beobachtung.** Seit Schritt 4 zeigt die Plattform Items mit `ausgefuellt_von: "therapeut"` nicht
+mehr; der Server prüft beim Speichern nur die Vorlage und nähme eine Antwort darauf an.
+**Erwartet.** Ablehnen am Server, mit Datenbanktest.
 
 ### Kalender — Für `trainer` antwortet `list_fleet` mit 403
 2026-10-28 · `/kalender`, `trainer` · Gesamtlauf der Bildstrecke · offen (Vorschlag) · `list_fleet`\

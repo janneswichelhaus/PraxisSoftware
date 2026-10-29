@@ -237,7 +237,7 @@ function gramm(wert: number): string {
 
 /**
  * „297 von 1466 kcal“ statt „noch übrig“, über dem Ziel ebenso, der Balken bleibt dann voll und
- * kein Wort kommt dazu (Frage 4 des Handoffs). Ohne Zielwerte nur die Energie.
+ * kein Wort kommt dazu (ANN-795). Ohne Zielwerte nur die Energie.
  */
 function EnergieUndNaehrstoffe({ daten }: { daten: EigenesTagebuch }) {
   const ziele = daten.targets;
@@ -383,7 +383,7 @@ function Wasser({
 
 /**
  * Je Mahlzeit mit Einträgen ein Block mit „+“, die leeren zusammen in einer Zeile mit Pillen
- * (Handoff 2026-10-29, Abschnitt 3); ohne Schreibrecht nur zum Lesen.
+ * (ANN-796); ohne Schreibrecht nur zum Lesen.
  */
 function Mahlzeiten({
   daten,

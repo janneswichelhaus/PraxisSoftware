@@ -77,7 +77,7 @@ nicht aus der Einstellung gelesen -, sonst zwei; unter 23rem der `Menueknopf` im
 offener Tastatur tritt sie zurück (ANN-676, ANN-681). Ab 1024 px Navigation im Kopf, Inhalt
 `max-w-inhalt`, jede Seite einspaltig in `max-w-spalte` außer der Übersicht (ab 900 px
 Inhaltsbreite zwei Spalten), den Übungen, den Terminen und dem Tagebuch (ANN-724, ANN-775,
-ANN-TAGEBUCH); geschaltet über `data-rechner` (`useRechner`). Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12;
+ANN-796); geschaltet über `data-rechner` (`useRechner`). Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12;
 Titel in rem (ANN-683). Statt Startbild Markenmoment B beim ersten Erscheinen der Übersicht je Tab
 (ANN-680). Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit Daten.
 

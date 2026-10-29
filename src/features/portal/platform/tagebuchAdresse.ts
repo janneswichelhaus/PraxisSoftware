@@ -61,7 +61,10 @@ export function eintragenAdresse(
   });
 }
 
-/** Vom Eintragen zurück zum Tag: der Rückweg aus der Adresse, sonst der Tag ohne Herkunft. */
+/**
+ * Vom Eintragen zurück zum Tag: der Rückweg aus der Adresse, sonst der Tag ohne Herkunft
+ * (ANN-798).
+ */
 export function zurueckZumTag(suche: string, tag: string | null, heute?: string): string {
   const ziel = new URLSearchParams(suche).get(RUECKWEG_PARAM);
   if (istInternerPfad(ziel) && (ziel === TAGEBUCH_PFAD || ziel.startsWith(`${TAGEBUCH_PFAD}?`))) {
