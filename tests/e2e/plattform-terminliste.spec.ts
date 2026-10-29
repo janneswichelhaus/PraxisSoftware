@@ -3,12 +3,14 @@ import { expect, test, type Page } from '@playwright/test';
 import type AxeCore from 'axe-core';
 
 /**
- * Die Liste im echten Browser: jede Lage bei 375 px mit Schrift, Zielen, axe und höchstens einem
- * Hauptknopf; bei 188 px (200 %) und „Sehr groß“ ohne Rollen, ohne Bruch im Wort und ohne
- * angeschnittenen Text; am Rechner zwei Spalten. Die Wörter prüft `Termine.test.tsx`.
+ * Liste und Seite des Termins im echten Browser: jede Lage bei 375 px mit Schrift, Zielen, axe und
+ * höchstens einem Hauptknopf; bei 188 px (200 %) und „Sehr groß“ ohne Rollen, ohne Bruch im Wort,
+ * nichts angeschnitten; am Rechner zwei Spalten bzw. die Knöpfe nebeneinander.
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/plattform.html';
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
+/** Der Titel der Seite eines Termins: der Tag in Worten. */
+const TAG = /^(Heute|Morgen|Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), /;
 
 /** Jede Lage der Liste mit ihrem Hauptknopf - in der Lesefrist und mit Wunsch keiner. */
 const LAGEN: { seite: string; hauptknopf: string | null }[] = [
@@ -23,7 +25,28 @@ const LAGEN: { seite: string; hauptknopf: string | null }[] = [
   { seite: 'termine-begleitung', hauptknopf: 'Termin wünschen' },
 ];
 
-async function oeffne(page: Page, seite: string, breite: number, schrift?: 'sehr-gross') {
+/** Jede Lage der Seite eines Termins mit ihrem Hauptknopf - nur vergangen mit Nummer einer. */
+const SEITEN: { seite: string; hauptknopf: RegExp | null }[] = [
+  { seite: 'termin', hauptknopf: null },
+  { seite: 'termin&kurzfristig', hauptknopf: null },
+  { seite: 'termin-angefragt', hauptknopf: null },
+  { seite: 'termin-vergangen', hauptknopf: /^Praxis anrufen\s+\+49 7071 0000000$/ },
+  { seite: 'termin-vergangen&ohne-nummer', hauptknopf: null },
+  { seite: 'termin-abgesagt', hauptknopf: null },
+];
+
+/** Die Seite eines Termins: Der Tag steht als Titel. */
+async function oeffneTermin(page: Page, seite: string, breite: number, schrift?: 'sehr-gross') {
+  await oeffne(page, seite, breite, schrift, TAG);
+}
+
+async function oeffne(
+  page: Page,
+  seite: string,
+  breite: number,
+  schrift?: 'sehr-gross',
+  titel: string | RegExp = 'Termine',
+) {
   if (schrift) {
     await page.addInitScript((wert) => {
       window.localStorage.setItem('plattform-schriftgroesse', wert);
@@ -31,7 +54,7 @@ async function oeffne(page: Page, seite: string, breite: number, schrift?: 'sehr
   }
   await page.setViewportSize({ width: breite, height: 900 });
   await page.goto(`${PRUEFSEITE}?seite=${seite}`);
-  await expect(page.getByRole('heading', { level: 1, name: 'Termine' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: titel })).toBeVisible();
   // Liste oder Fehler stehen - das Skelett ist eine eigene Prüfung.
   await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0);
 }
@@ -204,10 +227,10 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     await expect(karte).toContainText('Testweg 7, 72072 Tuebingen');
     const box = await karte.boundingBox();
     if (!box) throw new Error('Karte ohne Maße');
-    // Unten rechts in der Karte, weit weg vom Titel. Die Prüfseite führt im
-    // Speicher; bis zur Seite des Termins (3c) öffnet dort der Ablauf.
+    // Unten rechts in der Karte, weit weg vom Titel.
     await page.mouse.click(box.x + box.width - 16, box.y + box.height - 16);
-    await expect(page.getByRole('dialog', { name: 'Was möchten Sie?' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: TAG })).toBeVisible();
+    await expect(page.locator('main').getByRole('link', { name: 'Termine' })).toBeVisible();
   });
 
   test('„Weitere Termine“ mit Zustand, Vergangenes gedämpft auf Abruf, jede Zeile mit Ziel', async ({
@@ -267,6 +290,32 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     await expect(page.getByRole('heading', { level: 2, name: 'Vergangene Termine' })).toBeVisible();
     await expect(page.getByRole('list', { name: 'Vergangene Termine' })).toBeVisible();
     await expect(page.getByRole('link', { name: /Termin wünschen/ })).toHaveCount(0);
+    // Der Satz verweist auf die Praxis: Der Anruf steht vor dem Vergangenen, ohne Rollen bei
+    // 375 × 667; Schreiben nimmt die Praxis in der Lesefrist nicht mehr an (ANN-780, ANN-313).
+    await page.setViewportSize({ width: 375, height: 667 });
+    const anrufen = page.getByRole('link', { name: /^Praxis anrufen/ });
+    await expect(anrufen).toHaveAttribute('href', 'tel:+4970710000000');
+    await expect(anrufen).toBeInViewport();
+    await expect(page.getByRole('link', { name: 'Der Praxis schreiben' })).toHaveCount(0);
+    const weg = await page
+      .getByRole('heading', { level: 2, name: 'Die Praxis erreichen' })
+      .boundingBox();
+    const vergangen = await page
+      .getByRole('heading', { level: 2, name: 'Vergangene Termine' })
+      .boundingBox();
+    expect(weg!.y).toBeLessThan(vergangen!.y);
+  });
+
+  test('Fehler: neben „Termin wünschen“ der Weg zur Praxis, etwa für eine kurzfristige Absage', async ({
+    page,
+  }) => {
+    await oeffne(page, 'termine-fehler', 375);
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Die Praxis erreichen' }),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Praxis anrufen/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Der Praxis schreiben' })).toBeVisible();
+    expect(await hauptknoepfe(page)).toEqual(['Termin wünschen']);
   });
 
   for (const schrift of [undefined, 'sehr-gross'] as const) {
@@ -392,5 +441,128 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     expect(spalte?.width ?? 0).toBeLessThanOrEqual(768.5);
     // In einer Spalte so breit wie sein Text.
     expect(knopfLeer?.width ?? 0).toBeLessThan(400);
+  });
+});
+
+test.describe('Seite des Termins (Schritt 3c)', () => {
+  for (const { seite, hauptknopf } of SEITEN) {
+    test(`${seite} bei 375 px: Schrift, Ziele, axe, höchstens ein Hauptknopf`, async ({ page }) => {
+      await oeffneTermin(page, seite, 375);
+      expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
+      expect(await kleineZiele(page), 'Ziele unter 44 px').toEqual([]);
+      const knoepfe = await hauptknoepfe(page);
+      if (hauptknopf) {
+        expect(knoepfe).toHaveLength(1);
+        expect(knoepfe[0]).toMatch(hauptknopf);
+      } else {
+        expect(knoepfe).toEqual([]);
+      }
+      expect(await ueberlaeuft(page)).toBe(false);
+      expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    });
+
+    for (const [breite, schrift] of [
+      [188, undefined],
+      [375, 'sehr-gross'],
+    ] as const) {
+      test(`${seite} bei ${breite} px${schrift ? ' und „Sehr groß“' : ' (200 %)'}: kein Rollen, kein Bruch im Wort, nichts angeschnitten`, async ({
+        page,
+      }) => {
+        await oeffneTermin(page, seite, breite, schrift);
+        expect(await ueberlaeuft(page)).toBe(false);
+        expect(await gebrocheneWoerter(page), 'gebrochene Wörter').toEqual([]);
+        expect(await angeschnitten(page), 'angeschnitten').toEqual([]);
+      });
+    }
+  }
+
+  test('kommend: der Rückweg „Termine“, Ändern und Absagen führen in den Ablauf', async ({
+    page,
+  }) => {
+    await oeffneTermin(page, 'termin', 375);
+    const zurueck = page.locator('main').getByRole('link', { name: 'Termine' });
+    expect((await zurueck.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await expect(page.getByText('Ändern und Absagen sind Wünsche an die Praxis.')).toBeVisible();
+    await page.getByRole('link', { name: 'Termin ändern' }).click();
+    await expect(page.getByRole('dialog', { name: 'Wann passt es Ihnen?' })).toBeVisible();
+  });
+
+  test('unter 24 Stunden: die Warnung über den Knöpfen, fett, mit Zeichen', async ({ page }) => {
+    await oeffneTermin(page, 'termin&kurzfristig', 375);
+    const warnung = page.locator('main').getByRole('status').filter({ hasText: 'Ausfallhonorar' });
+    await expect(warnung).toBeVisible();
+    await expect(warnung).toHaveCSS('font-weight', '600');
+    const knopf = await page.getByRole('link', { name: 'Termin ändern' }).boundingBox();
+    expect((await warnung.boundingBox())?.y ?? 0).toBeLessThan(knopf?.y ?? 0);
+  });
+
+  test('vergangen: „Praxis anrufen“ als Hauptknopf, 60 hoch, wählt die Nummer', async ({
+    page,
+  }) => {
+    await oeffneTermin(page, 'termin-vergangen', 375);
+    const anrufen = page.getByRole('link', { name: /Praxis anrufen/ });
+    await expect(anrufen).toHaveAttribute('href', 'tel:+4970710000000');
+    expect((await anrufen.boundingBox())?.height).toBeGreaterThanOrEqual(59.5);
+    await oeffneTermin(page, 'termin-vergangen&ohne-nummer', 375);
+    await expect(page.getByRole('link', { name: /Praxis anrufen/ })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Der Praxis schreiben' })).toBeVisible();
+  });
+
+  test('Laden: Skelett in der Form des Kopfs, ohne Knopf; Fehler mit „Erneut versuchen“', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.goto(`${PRUEFSEITE}?seite=termin-laden`);
+    const skelett = page.locator('main [aria-busy="true"]');
+    await expect(skelett).toContainText('Termin wird geladen');
+    await expect(page.locator('main button')).toHaveCount(0);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+
+    await page.goto(`${PRUEFSEITE}?seite=termin-fehler`);
+    await expect(page.getByText('Ihr Termin lässt sich gerade nicht laden.')).toBeVisible();
+    await expect(page.getByRole('button', { name: /erneut/i })).toBeVisible();
+    await expect(page.locator('main').getByRole('link', { name: 'Termine' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Die Praxis erreichen' }),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Praxis anrufen/ })).toBeVisible();
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+  });
+
+  test('ohne Netz: Ändern und Absagen gesperrt mit Satz, „Praxis anrufen“ bleibt (Frage 4)', async ({
+    page,
+    context,
+  }) => {
+    await oeffneTermin(page, 'termin', 375);
+    await context.setOffline(true);
+    for (const name of ['Termin ändern', 'Termin absagen']) {
+      const knopf = page.getByRole('button', { name });
+      await expect(knopf).toBeDisabled();
+      await expect(knopf).toHaveAccessibleDescription(
+        'Wünschen, Ändern und Absagen gehen wieder mit Verbindung.',
+      );
+      await expect(knopf).toHaveCSS('border-style', 'dashed');
+    }
+    await expect(page.getByRole('link', { name: /Praxis anrufen/ })).toBeVisible();
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    await context.setOffline(false);
+    await expect(page.getByRole('link', { name: 'Termin absagen' })).toBeVisible();
+  });
+
+  test('am Rechner: in einer Spalte, Ändern und Absagen nebeneinander, so breit wie ihr Text', async ({
+    page,
+  }) => {
+    await oeffneTermin(page, 'termin', 1280);
+    const aendern = await page.getByRole('link', { name: 'Termin ändern' }).boundingBox();
+    const absagen = await page.getByRole('link', { name: 'Termin absagen' }).boundingBox();
+    const kopf = await page.locator('main header').boundingBox();
+    if (!aendern || !absagen || !kopf) throw new Error('ohne Maße');
+    expect(Math.abs(aendern.y - absagen.y)).toBeLessThanOrEqual(1);
+    expect(aendern.width).toBeLessThan(300);
+    const wer = await page.getByRole('region', { name: 'Wer und wo' }).boundingBox();
+    expect(wer?.width ?? 0).toBeLessThanOrEqual(768.5);
+    // Der Titel in der Stufe des Rechners (32).
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCSS('font-size', '32px');
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
   });
 });

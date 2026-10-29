@@ -1,13 +1,24 @@
 import type { ReactNode } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Anrufknoepfe } from '@/components/ui/Anrufknoepfe';
 import { Badge, STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Personenbild } from '@/components/ui/Personenbild';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Terminliste } from '@/components/ui/Terminliste';
 import { Terminkreis, Terminsymbol } from '@/components/ui/Terminsymbole';
 import { telHref } from '@/lib/telefon';
-import type { Plattformzugang, Termin, Terminwunsch } from './api';
+import {
+  termineSchluessel,
+  wuenscheSchluessel,
+  wunschZurueckziehen,
+  type Plattformzugang,
+  type Termin,
+  type Terminwunsch,
+} from './api';
+import { PLATTFORM_PFAD } from './pfade';
 import {
   artUndPerson,
   artzeichen,
@@ -198,19 +209,23 @@ export function WerUndWo({
  * Abschnitt allein in seinem Block, sonst zählte sein Abstand doppelt.
  */
 export function FragenZumTermin({
+  titel = 'Fragen zu diesem Termin?',
   rufnummer,
   schreiben,
   anrufenAlsHauptknopf = false,
 }: {
+  titel?: string;
   /** `practice_phone` aus dem Zugang (N2, ANN-691), sonst `null`. */
   rufnummer: string | null;
-  /** Neue Nachricht an die Praxis, mit dem Bereich in der Adresse. */
-  schreiben: string;
+  /** Neue Nachricht an die Praxis, mit dem Bereich; `null` in der Lesefrist (ANN-313). */
+  schreiben: string | null;
   anrufenAlsHauptknopf?: boolean;
 }) {
   const hauptknopf = anrufenAlsHauptknopf && rufnummer;
+  const anrufzeile = Boolean(rufnummer) && !hauptknopf;
+  if (!hauptknopf && !anrufzeile && !schreiben) return null;
   return (
-    <Section titel="Fragen zu diesem Termin?">
+    <Section titel={titel}>
       <div className="flex flex-col gap-4">
         {hauptknopf ? (
           <Anrufknoepfe
@@ -219,19 +234,55 @@ export function FragenZumTermin({
             zweizeilig
           />
         ) : null}
-        <Terminliste>
-          {rufnummer && !hauptknopf ? (
-            <Fragezeile
-              zeichen="telefon"
-              wort="Praxis anrufen"
-              zusatz={rufnummer}
-              ziel={{ href: telHref(rufnummer) }}
-            />
-          ) : null}
-          <Fragezeile zeichen="nachricht" wort="Der Praxis schreiben" ziel={{ to: schreiben }} />
-        </Terminliste>
+        {anrufzeile || schreiben ? (
+          <Terminliste>
+            {rufnummer && !hauptknopf ? (
+              <Fragezeile
+                zeichen="telefon"
+                wort="Praxis anrufen"
+                zusatz={rufnummer}
+                ziel={{ href: telHref(rufnummer) }}
+              />
+            ) : null}
+            {schreiben ? (
+              <Fragezeile
+                zeichen="nachricht"
+                wort="Der Praxis schreiben"
+                ziel={{ to: schreiben }}
+              />
+            ) : null}
+          </Terminliste>
+        ) : null}
       </div>
     </Section>
+  );
+}
+
+/**
+ * Der Weg zur Praxis, wo eine Seite sonst keinen bietet: in der Lesefrist, deren Satz auf die Praxis
+ * verweist, und wenn die Termine nicht laden, etwa für eine kurzfristige Absage (ANN-780). In der
+ * Lesefrist nur der Anruf: Fragen nimmt die Praxis dann nicht mehr an (ANN-313).
+ */
+export function PraxisErreichen({
+  zugang,
+  mit,
+  lesefrist,
+  className = '',
+}: {
+  zugang: Plattformzugang;
+  mit: (pfad: string) => string;
+  lesefrist: boolean;
+  className?: string;
+}) {
+  if (lesefrist && !zugang.practice_phone) return null;
+  return (
+    <div className={className}>
+      <FragenZumTermin
+        titel="Die Praxis erreichen"
+        rufnummer={zugang.practice_phone}
+        schreiben={lesefrist ? null : mit(`${PLATTFORM_PFAD}/nachrichten/neu`)}
+      />
+    </div>
   );
 }
 
@@ -278,5 +329,51 @@ function Fragezeile({
         </Link>
       )}
     </li>
+  );
+}
+
+/**
+ * „Wunsch zurückziehen“ mit der Rückfrage an Ort und Stelle. Danach laden auch die Termine neu: Ein
+ * zurückgezogener Änderungs- oder Absagewunsch nimmt das Statuszeichen am Termin mit. Ohne Netz
+ * gesperrt; `ohneNetzId` zeigt auf den Satz, der sagt, warum (ANN-773).
+ */
+export function Zurueckziehen({
+  zugang,
+  wunschId,
+  verbunden,
+  ohneNetzId,
+}: {
+  zugang: Plattformzugang;
+  wunschId: string;
+  verbunden: boolean;
+  ohneNetzId: string;
+}) {
+  const queryClient = useQueryClient();
+  const zurueckziehen = useMutation({
+    mutationFn: () => wunschZurueckziehen(zugang.access_id, wunschId),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: wuenscheSchluessel(zugang.access_id) }),
+        queryClient.invalidateQueries({ queryKey: termineSchluessel(zugang.access_id) }),
+      ]),
+  });
+  if (!verbunden) {
+    return (
+      <Button type="button" variant="quiet" disabled aria-describedby={ohneNetzId}>
+        Wunsch zurückziehen
+      </Button>
+    );
+  }
+  return (
+    <Rueckfrage
+      ausloeser="Wunsch zurückziehen"
+      ausloeserVariante="quiet"
+      bestaetigen="Ja, zurückziehen"
+      bestaetigenLaeuft="Wird zurückgezogen …"
+      fehler={zurueckziehen.error?.message}
+      onBestaetigen={() => zurueckziehen.mutateAsync()}
+    >
+      <p>Die Praxis bearbeitet diesen Wunsch dann nicht weiter.</p>
+    </Rueckfrage>
   );
 }

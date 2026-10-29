@@ -370,6 +370,47 @@ describe('Laden, Fehler, ohne Netz (Handoff 5.6)', () => {
       'href',
       '/p/termine/wunsch?bereich=treatment',
     );
+    // Ohne Nummer bleibt der Weg zur Praxis „Der Praxis schreiben“ (ANN-780).
+    const weg = screen
+      .getByRole('heading', { level: 2, name: 'Die Praxis erreichen' })
+      .closest('section')!;
+    expect(within(weg).queryByRole('link', { name: /Praxis anrufen/ })).not.toBeInTheDocument();
+    expect(within(weg).getByRole('link', { name: 'Der Praxis schreiben' })).toHaveAttribute(
+      'href',
+      '/p/nachrichten/neu?bereich=treatment',
+    );
+  });
+
+  it('beim Fehler mit Nummer auch „Praxis anrufen“, etwa für eine kurzfristige Absage (ANN-780)', async () => {
+    ladeTermine.mockRejectedValue(new Error('Ihre Termine konnten nicht geladen werden.'));
+    renderWithProviders(
+      <Termine zugang={{ ...ZUGANG, practice_phone: '+49 7071 0000000' }} />,
+      '/p/termine',
+    );
+    const weg = (
+      await screen.findByRole('heading', { level: 2, name: 'Die Praxis erreichen' })
+    ).closest('section')!;
+    expect(within(weg).getByRole('link', { name: /Praxis anrufen/ })).toHaveAttribute(
+      'href',
+      'tel:+4970710000000',
+    );
+  });
+
+  it('lädt ohne Netz: unter dem Skelett der Weg zur Praxis (ANN-780)', () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    ladeTermine.mockReturnValue(new Promise<Termin[]>(() => undefined));
+    renderWithProviders(
+      <Termine zugang={{ ...ZUGANG, practice_phone: '+49 7071 0000000' }} />,
+      '/p/termine',
+    );
+    expect(screen.getByText('Termine werden geladen')).toHaveClass('sr-only');
+    const weg = screen
+      .getByRole('heading', { level: 2, name: 'Die Praxis erreichen' })
+      .closest('section')!;
+    expect(within(weg).getByRole('link', { name: /Praxis anrufen/ })).toHaveAttribute(
+      'href',
+      'tel:+4970710000000',
+    );
   });
 
   it('ohne Netz bleibt alles lesbar, „Termin wünschen“ ist gesperrt, mit Satz (Frage 4)', async () => {
@@ -430,6 +471,31 @@ describe('Lesefrist (Frage 5)', () => {
     expect(screen.queryByRole('heading', { name: 'Diese Woche' })).not.toBeInTheDocument();
     expect(vergangen.closest('summary')).toBeNull();
     expect(screen.getByRole('list', { name: 'Vergangene Termine' })).toBeVisible();
+    // Ohne Nummer gibt es keinen Weg, den die Seite anbieten könnte: Schreiben nimmt die Praxis in
+    // der Lesefrist nicht mehr an (ANN-313), also auch keinen leeren Abschnitt (ANN-780).
+    expect(screen.queryByRole('heading', { name: 'Die Praxis erreichen' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Der Praxis schreiben' })).not.toBeInTheDocument();
+  });
+
+  it('mit Nummer bietet die Lesefrist „Praxis anrufen“ als Zeile, vor dem Vergangenen (ANN-780)', async () => {
+    ladeTermine.mockResolvedValue([PRAXIS_VERGANGEN]);
+    renderWithProviders(
+      <Termine zugang={{ ...ENDE, practice_phone: '+49 7071 0000000' }} />,
+      '/p/termine',
+    );
+    const titel = await screen.findByRole('heading', { level: 2, name: 'Die Praxis erreichen' });
+    const weg = titel.closest('section')!;
+    expect(within(weg).getByRole('link', { name: /Praxis anrufen/ })).toHaveAttribute(
+      'href',
+      'tel:+4970710000000',
+    );
+    // Nur der Anruf: Fragen nimmt die Praxis in der Lesefrist nicht mehr an (ANN-313).
+    expect(within(weg).getAllByRole('listitem')).toHaveLength(1);
+    expect(screen.queryByRole('link', { name: 'Der Praxis schreiben' })).not.toBeInTheDocument();
+    const vergangen = screen.getByRole('heading', { level: 2, name: 'Vergangene Termine' });
+    expect(
+      titel.compareDocumentPosition(vergangen) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('mit laufendem Nachsorge-Abo ist noch keine Lesefrist (ANN-274)', async () => {

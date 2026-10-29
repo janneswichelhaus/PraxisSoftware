@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
 import { Button } from '@/components/ui/Button';
@@ -8,7 +8,6 @@ import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { HeroKarte } from '@/components/ui/HeroKarte';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 import { HeroSkelett, Skelett, SkelettBereich } from '@/components/ui/Skelett';
@@ -16,15 +15,12 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Terminliste } from '@/components/ui/Terminliste';
 import { Terminsymbol, type Terminzeichen } from '@/components/ui/Terminsymbole';
 import {
-  aboSchluessel,
-  ladeAbo,
   ladePlaene,
   ladeTermine,
   ladeWuensche,
   plaeneSchluessel,
   termineSchluessel,
   wuenscheSchluessel,
-  wunschZurueckziehen,
   type EigenePlaene,
   type Plattformzugang,
   type Termin,
@@ -34,15 +30,21 @@ import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import { useRechner } from './geruestbreite';
 import {
   ersterTermin,
-  inLesefrist,
   lesefristSatz,
   naechsterTermin,
   terminPerson,
   terminTitel,
   terminZeit,
 } from './hauptsache';
+import { useLesefrist } from './lesefrist';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
-import { Statuszeichen, Terminzeile, Wunschzeile } from './Terminbausteine';
+import {
+  PraxisErreichen,
+  Statuszeichen,
+  Terminzeile,
+  Wunschzeile,
+  Zurueckziehen,
+} from './Terminbausteine';
 import {
   artUndPerson,
   artzeichen,
@@ -80,19 +82,9 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
     queryKey: plaeneSchluessel(zugang.access_id),
     queryFn: () => ladePlaene(zugang.access_id),
   });
-  // Die Lesefrist beginnt erst nach einem Nachsorge-Abo (ANN-274), wie auf
-  // der Übersicht. Gefragt wird nur, wenn sie überhaupt in Frage kommt.
-  const abo = useQuery({
-    queryKey: aboSchluessel(zugang.access_id),
-    queryFn: () => ladeAbo(zugang.access_id),
-    enabled: inLesefrist(zugang) && zugang.relationship_kind === 'treatment',
-  });
-  const lesefrist = inLesefrist(
-    zugang,
-    abo.data?.state === 'running' || abo.data?.state === 'ending',
-  );
-  // Ohne Antwort des Servers bleibt das Skelett, auch ohne Netz - wie auf
-  // der Übersicht sagt dann die Verbindungszeile, was fehlt.
+  const { lesefrist, abo } = useLesefrist(zugang);
+  // Ohne Antwort des Servers bleibt das Skelett, auch ohne Netz: Wie auf der Übersicht sagt die
+  // Verbindungszeile, was fehlt, darunter steht der Weg zur Praxis (ANN-780).
   const laedt =
     (termine.data === undefined && !termine.isError) ||
     (abo.isPending && abo.fetchStatus === 'fetching');
@@ -127,7 +119,17 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
         </Rueckmeldung>
       ) : null}
       {laedt ? (
-        <Ladezustand rechner={rechner} />
+        <>
+          <Ladezustand rechner={rechner} />
+          {verbunden ? null : (
+            <PraxisErreichen
+              zugang={zugang}
+              mit={mit}
+              lesefrist={lesefrist}
+              className={rechner ? 'max-w-spalte' : ''}
+            />
+          )}
+        </>
       ) : termine.data === undefined || teile === undefined ? (
         // Ohne Termine bleibt der Wunsch möglich - der Satz sagt es.
         <div className={`flex flex-col ${rechner ? 'max-w-spalte gap-12' : 'gap-10'}`}>
@@ -147,6 +149,7 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
               breit={!rechner}
             />
           ) : null}
+          <PraxisErreichen zugang={zugang} mit={mit} lesefrist={lesefrist} />
         </div>
       ) : (
         <>
@@ -408,6 +411,8 @@ function Liste({
   return (
     <div className={`flex flex-col ${rechner ? 'max-w-spalte gap-12' : 'gap-10'}`}>
       {hauptsache}
+      {/* Vor dem Vergangenen, ohne Rollen erreichbar: Der Satz der Lesefrist verweist hierher. */}
+      {lesefrist ? <PraxisErreichen zugang={zugang} mit={mit} lesefrist /> : null}
       {weitereAbschnitt}
       {nurWunsch ? null : knopf}
       {wuenscheAbschnitt}
@@ -487,51 +492,6 @@ function Wunschknopf({
         {WUENSCHE_OHNE_NETZ}
       </p>
     </div>
-  );
-}
-
-/**
- * „Wunsch zurückziehen“ mit der Rückfrage an Ort und Stelle. Danach lädt die Liste auch die Termine
- * neu: Ein zurückgezogener Änderungs- oder Absagewunsch nimmt das Statuszeichen am Termin mit.
- */
-function Zurueckziehen({
-  zugang,
-  wunschId,
-  verbunden,
-  ohneNetzId,
-}: {
-  zugang: Plattformzugang;
-  wunschId: string;
-  verbunden: boolean;
-  ohneNetzId: string;
-}) {
-  const queryClient = useQueryClient();
-  const zurueckziehen = useMutation({
-    mutationFn: () => wunschZurueckziehen(zugang.access_id, wunschId),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: wuenscheSchluessel(zugang.access_id) }),
-        queryClient.invalidateQueries({ queryKey: termineSchluessel(zugang.access_id) }),
-      ]),
-  });
-  if (!verbunden) {
-    return (
-      <Button type="button" variant="quiet" disabled aria-describedby={ohneNetzId}>
-        Wunsch zurückziehen
-      </Button>
-    );
-  }
-  return (
-    <Rueckfrage
-      ausloeser="Wunsch zurückziehen"
-      ausloeserVariante="quiet"
-      bestaetigen="Ja, zurückziehen"
-      bestaetigenLaeuft="Wird zurückgezogen …"
-      fehler={zurueckziehen.error?.message}
-      onBestaetigen={() => zurueckziehen.mutateAsync()}
-    >
-      <p>Die Praxis bearbeitet diesen Wunsch dann nicht weiter.</p>
-    </Rueckfrage>
   );
 }
 

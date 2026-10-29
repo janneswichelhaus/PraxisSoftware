@@ -16,6 +16,7 @@ import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { nurFragen } from '@/lib/erfassungsgroessen';
 import {
   aboSchluessel,
@@ -509,7 +510,8 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
     rechts.push(
       teil(
         <Section titel={erster ? 'Ihr erster Besuch' : 'Nächster Besuch'}>
-          <Besuchskarte termin={naechster} to={p('/termine')} />
+          {/* Wie der Hero: zur Seite des Termins. */}
+          <Besuchskarte termin={naechster} to={zumTermin(naechster.id, mit)} />
         </Section>,
         'besuch',
       ),
@@ -685,7 +687,11 @@ function Hauptsachekarte({
           satz={terminZeit(t, vertretung, jetzt)}
           zustand={offenerWunsch ? <Statuszeichen {...offenerWunsch} /> : undefined}
           person={t.staff_name && zeile ? { name: t.staff_name, zeile } : undefined}
-          aktion={{ text: 'Termin ansehen', to: mit(`${PLATTFORM_PFAD}/termine`) }}
+          // Zur Seite des Termins; ihr Rückweg heißt dann „Übersicht“ (ANN-779).
+          aktion={{
+            text: 'Termin ansehen',
+            to: zumTermin(t.id, mit),
+          }}
           markenmoment={markenmoment}
         />
       );
@@ -917,3 +923,11 @@ const ZEICHEN = {
     </svg>
   ),
 };
+
+/**
+ * Die Seite des Termins von der Übersicht aus: Der Rückweg reist mit, wie überall in der App, und
+ * heißt dann „Übersicht“ (ANN-779).
+ */
+function zumTermin(terminId: string, mit: (pfad: string) => string): string {
+  return mitRueckweg(mit(`${PLATTFORM_PFAD}/termine/${terminId}`), mit(PLATTFORM_PFAD));
+}
