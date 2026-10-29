@@ -306,6 +306,27 @@ describe('cancel_appointment_from_request (POR-011, D4)', () => {
     expect(termin.rows[0]!.fee_basis).toBeNull();
   });
 
+  it('nimmt den Zeitpunkt des Wunsches genau, auch aus der doppelten Stunde (ANN-786)', async () => {
+    // Am 26.10.2025 ist 00:30 UTC 02:30 Sommerzeit und 01:30 UTC dieselbe Uhrzeit in Winterzeit.
+    for (const [termin, zeitpunkt] of [
+      [MORGEN, '2025-10-26 00:30:00+00'],
+      [IN_DREI_TAGEN, '2025-10-26 01:30:00+00'],
+    ] as const) {
+      const wunsch = await absagewunsch(termin);
+      await asPostgres(
+        `update public.platform_appointment_requests set created_at = $2::timestamptz where id = $1`,
+        [wunsch, zeitpunkt],
+      );
+      await asUserCommitted(users.office, ABSAGE, [wunsch, await stand(termin)]);
+      const { rows } = await asPostgres<{ gleich: boolean }>(
+        `select cancellation_received_at = $2::timestamptz as gleich
+           from public.appointments where id = $1`,
+        [termin, zeitpunkt],
+      );
+      expect(rows[0]?.gleich, zeitpunkt).toBe(true);
+    }
+  });
+
   it('weist einen Aenderungswunsch, einen veralteten Stand und fremde Rollen ab', async () => {
     const aenderung = (
       await asUserCommitted<{ id: string }>(users.plattformErika, AENDERN, [

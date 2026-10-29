@@ -137,14 +137,6 @@ aber jedem lesbaren Zugang (`request_platform_appointment`, `…_change`); nur d
 „Termin wünschen“ weg (ANN-774). **Erwartet.** Nach Jannes' Antwort am Server ablehnen (Pfad A),
 oder bewusst erlauben, D2 so fassen und den Knopf zeigen.
 
-### BEF-223 — Zeitumstellung: In der doppelten Stunde liegt „jetzt“ eine Stunde in der Zukunft
-2026-10-25 · Absage, Absagewunsch, Tagebuch-Erinnerungen · CI zu #304 · offen (Vorschlag, Pfad A)\
-**Beobachtung.** Zeigt Berlin 02:00 bis 03:00 zweimal, liest PostgreSQL die spätere Stunde:
-`cancel_appointment(_from_request)` mit „jetzt“ scheitert an
-`cancellation cannot be received in the future`, `enqueue_nutrition_diary_reminders` erinnert eine
-Stunde zu spät; einmal im Jahr, auch im Testlauf. **Erwartet.** In Ortszeit vergleichen, eine
-doppelte Ortszeit als die frühere lesen; je ein Test mit fester Uhrzeit aus dieser Stunde.
-
 ### BEF-224 — Arbeitszeit: Während die Vorschau lädt oder scheitert, rollt der Abschluss
 2026-10-25 · Arbeitszeit ändern · Design-Review zu BEF-219 · offen (Vorschlag) ·
 `RequestWorkingTimePage.tsx`\

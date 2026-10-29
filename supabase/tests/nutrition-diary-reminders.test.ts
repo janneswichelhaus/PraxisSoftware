@@ -323,11 +323,23 @@ describe('Erinnerungen an das Tagebuch (ERN-009)', () => {
       `insert into public.notification_deliveries
          (organization_id, access_id, kind, channel, subject_id, subject_at, due_at)
        select r.organization_id, r.access_id, 'nutrition_diary_reminder', 'email', r.id,
-              ((now() at time zone o.time_zone)::date + r.remind_at) at time zone o.time_zone, now()
+              app.nutrition_diary_reminder_due(now(), o.time_zone, r.remind_at), now()
        from public.nutrition_diary_reminders r join public.organizations o on o.id = r.organization_id`,
     );
     expect((await asServiceRole(ABHOLEN)).rows).toEqual([]);
     expect((await auftraege()).at(-1)).toMatchObject({ drop_reason: 'daily_cap' });
+  });
+
+  it('rechnet die Fälligkeit in der doppelten Stunde mit der früheren Ortszeit (ANN-786)', async () => {
+    const { rows } = await asPostgres<{ erster: string; zweiter: string }>(
+      `select (app.nutrition_diary_reminder_due(timestamptz '2025-10-26 00:40+00', 'Europe/Berlin',
+                 time '02:30') at time zone 'UTC')::text as erster,
+              (app.nutrition_diary_reminder_due(timestamptz '2025-10-26 01:40+00', 'Europe/Berlin',
+                 time '02:30') at time zone 'UTC')::text as zweiter`,
+    );
+    // Um 02:40 Sommerzeit gerade fällig, um 02:40 Winterzeit seit einer Stunde vorbei: keine
+    // zweite Erinnerung und keine, die eine Stunde zu spät kommt.
+    expect(rows[0]).toEqual({ erster: '2025-10-26 00:30:00', zweiter: '2025-10-26 00:30:00' });
   });
 
   it('fremdes Konto, fremde Organisation, Lesefrist: kein Einschalten, kein Lesen', async () => {

@@ -1775,6 +1775,15 @@
           "fertig_am": "2026-10-29",
           "nachweis": "#331",
           "vermerk": "Auftrag Jannes 28.10.2026; Handoff Termine 5.3 und 5.4; ANN-782 bis ANN-785; nur Oberfläche, ohne Migration"
+        },
+        {
+          "id": "bef-223",
+          "name": "BEF-223 Zeitumstellung: eine doppelte Ortszeit gilt als die frühere (Absage, Erinnerung an das Tagebuch), der Absagewunsch gibt seinen Zeitpunkt genau weiter",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-29",
+          "nachweis": "#332",
+          "vermerk": "Plan Jannes 28.10.2026, Pfad A; ANN-786; Migration ohne Datenumzug, ohne Auditeintrag"
         }
       ]
     },

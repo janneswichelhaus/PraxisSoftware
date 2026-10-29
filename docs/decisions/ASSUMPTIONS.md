@@ -1591,3 +1591,4 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-783 | Abläufe: ohne Netz der Satz ruhig über dem gesperrten Senden, nicht noch einmal als Fehler; beim Absagen „Praxis anrufen“ | Technik · offen | `OhneNetzHinweis` in `src/features/portal/platform/Wunschfelder.tsx` |
 | ANN-784 | Zusammenfassung: „Ändern“ in der Zeile der Bezeichnung | Technik · offen | `bezeichnung` in `src/components/ui/ListRow.tsx` |
 | ANN-785 | Termin ändern: Zusammenfassung ohne „Ihr Termin“ (steht im Kopf), sonst rollt sie bei 375 × 667 | Technik · offen | `Wannangabe` in `src/features/portal/platform/Terminaenderung.tsx` |
+| ANN-786 | Zeitumstellung: eine doppelte Ortszeit gilt als die frühere; ein Absagewunsch gibt seinen Zeitpunkt genau weiter | Technik · offen | `local_time_instant` in `supabase/migrations/20261225180000_doppelte_ortszeit.sql` |
