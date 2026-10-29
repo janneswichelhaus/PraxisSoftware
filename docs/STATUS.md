@@ -25,6 +25,8 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Bei Jannes
 
+- Test-Umgebung neu aufsetzen (Workflow „Test-Umgebung“, „neu aufsetzen“): Termine der alten
+  Praxiswoche haben keine gültige UUID, Erikas Übersicht scheitert (`development/BEFUNDE.md`).
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; E13); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
@@ -49,6 +51,6 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-28.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: 3a gemergt und gesichtet; 3b übertragen (Liste der
-Termine, ANN-772 bis -777, BEF-220 erledigt, BEF-222 nur noch am Server offen). Keine Migration.
-Lokal: `git pull`.
+28.10.2026: 3b übertragen (`ccr-0b8e7ef6-hhpe6n`; ANN-772 bis -777, BEF-220 erledigt, BEF-222 am
+Server offen). `claude/modest-bell-fyy01m`: Bildstrecke führt offene Anfragen je Dokument (70 statt
+286 s); Erikas Übersicht scheitert in der Test-Umgebung an alten Termin-Kennungen. Keine Migration.
