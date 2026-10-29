@@ -6,7 +6,7 @@ import { useIstVerbunden } from '@/app/verbindung';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
-import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
+import { BREITE_ABLAUFSPALTE, GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -406,13 +406,11 @@ function Ablauf({
       plattform
       fussLinie
       breit
-      unterDemKopf={<Verbindungszeile />}
+      titelStufe="frage"
+      unterDemKopf={<Verbindungszeile innen={BREITE_ABLAUFSPALTE} />}
       band={
         zugang.access_kind === 'self' ? undefined : (
-          <Vertretungsband
-            zugang={zugang}
-            innen="max-w-formular [.plattform-schrift[data-rechner]_&]:max-w-spalte mx-auto box-content px-5 max-[23rem]:px-3"
-          />
+          <Vertretungsband zugang={zugang} innen={BREITE_ABLAUFSPALTE} />
         )
       }
       vorDemTitel={

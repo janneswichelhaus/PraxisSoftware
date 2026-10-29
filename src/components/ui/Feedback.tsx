@@ -97,7 +97,7 @@ export function EmptyState({
           <span className="text-ink text-liste font-semibold">{title}</span>
           {description ? <span className="text-ink">{description}</span> : null}
         </span>
-        {aktion ? <div className="flex flex-wrap gap-3">{aktion}</div> : null}
+        {aktion ? <div className="flex max-w-full flex-wrap gap-3">{aktion}</div> : null}
       </div>
     );
   }

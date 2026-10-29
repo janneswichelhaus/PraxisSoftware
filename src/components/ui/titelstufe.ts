@@ -11,13 +11,16 @@
  * Wort - meist ein Name wie „Langenscheidt“ -, steht er dort in 22 wie der
  * Hero-Titel, damit der Name nicht mitten im Wort bricht (DR-114, ANN-696).
  */
-export type Titelstufe = 'seite' | 'gruss';
+export type Titelstufe = 'seite' | 'gruss' | 'frage';
 
 const TITELSTUFE: Record<Titelstufe, string> = {
   seite:
     'text-accent text-plattform-titel [.plattform-schrift[data-rechner]_&]:text-plattform-titel-rechner whitespace-pre-line',
   gruss:
     'text-accent text-gruss [.plattform-schrift[data-rechner]_&]:text-gruss-rechner whitespace-pre-line',
+  // Die Frage eines Ablaufs in 22, in rem: Sie wächst mit „Sehr groß“; unter 23rem trennt ein
+  // langes Wort an der Silbe, statt mitten im Wort zu brechen.
+  frage: 'text-ink text-abschnitt trennen-schmal',
 };
 
 /** So viele Zeichen trägt ein Wort in 28 unter 23rem (188 px, 12 px Rand). */
@@ -35,6 +38,7 @@ function laengstesWort(titel: string): number {
 }
 
 export function titelklassen(stufe: Titelstufe, titel: string): string {
+  if (stufe === 'frage') return TITELSTUFE.frage;
   const schmal =
     laengstesWort(titel) > ZEICHEN_IN_28_SCHMAL
       ? 'max-[23rem]:text-hero-schmal'

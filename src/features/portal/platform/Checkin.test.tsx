@@ -560,9 +560,10 @@ describe('Check-in: Zustände ohne Ablauf (Handoff 5.1)', () => {
     expect(
       screen.getByText('Ihr nächster Check-in ist ab Montag, 19. Oktober dran.'),
     ).toBeInTheDocument();
+    // „Meine Angaben“ führt mit dem Rückweg „Check-in“ zurück hierher.
     expect(screen.getByRole('link', { name: 'Meine Angaben' })).toHaveAttribute(
       'href',
-      '/p/angaben?bereich=treatment',
+      '/p/angaben?bereich=treatment&zurueck=%2Fp%2Fcheckin%3Fbereich%3Dtreatment',
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await pruefeBarrierefreiheit(container);

@@ -21,6 +21,16 @@ import { ProgressBar } from './ProgressBar';
  */
 export const TIPPSPERRE_MS = 700;
 
+/** Für Band und Verbindungszeile eines breiten Ablaufs: dieselbe Kante wie der Inhalt. */
+export const BREITE_ABLAUFSPALTE =
+  'max-w-formular [.plattform-schrift[data-rechner]_&]:max-w-spalte mx-auto box-content px-5 max-[23rem]:px-3';
+const AM_RECHNER_OHNE_LINIE =
+  '[.plattform-schrift[data-rechner]_&]:border-b-0 [.plattform-schrift[data-rechner]_&]:border-t-0';
+const AM_RECHNER_OHNE_ABSTAND = '[.plattform-schrift[data-rechner]_&]:pt-0';
+const AM_RECHNER_LINIE_UNTEN = '[.plattform-schrift[data-rechner]_&]:border-b';
+const AM_RECHNER_LINIE_OBEN =
+  '[.plattform-schrift[data-rechner]_&]:border-t [.plattform-schrift[data-rechner]_&]:pt-4';
+
 /**
  * Der geführte Ablauf (DESIGN.md „Geführter Ablauf“, ANN-572): ein Fenster, eine Frage je Seite, die
  * Antwort führt weiter; Kopf, Schritt, Tippsperre, Ansage und Rückfrage bekommt jeder Ablauf gleich.
@@ -157,16 +167,20 @@ export function GefuehrterAblauf({
       </p>
       {spaeter && objekt ? (
         // Mit Namen: erste Reihe Name und „Später“, darunter „← Zurück“ und der Stand.
+        // Die Linie reicht am Telefon über die ganze Breite, am Rechner über die Spalte; wird es
+        // eng, rückt „Später“ in eine eigene Reihe, statt den Namen mitten im Wort zu brechen.
         <div className="shrink-0">
-          <div
-            className={`border-line flex min-h-15 items-center gap-2 border-b py-1 pr-2 ${plattform ? 'pl-5 max-[23rem]:pl-3' : 'pl-4'}`}
-          >
-            <p className="text-ink min-w-0 flex-1 font-semibold">{objekt}</p>
-            {abschluss ? null : (
-              <Button variant="quiet" className="shrink-0" onClick={onSchliessen}>
-                Später
-              </Button>
-            )}
+          <div className={`border-line border-b ${AM_RECHNER_OHNE_LINIE} ${rand}`}>
+            <div
+              className={`${spalte} border-line mx-auto flex min-h-15 w-full flex-wrap items-center gap-x-2 py-1 ${AM_RECHNER_LINIE_UNTEN}`}
+            >
+              <p className="text-ink min-w-0 flex-[1_1_7rem] font-semibold">{objekt}</p>
+              {abschluss ? null : (
+                <Button variant="quiet" className="-mr-3 ml-auto shrink-0" onClick={onSchliessen}>
+                  Später
+                </Button>
+              )}
+            </div>
           </div>
           {unterDemKopf}
           <div className={`pt-2 ${rand}`}>
@@ -233,11 +247,16 @@ export function GefuehrterAblauf({
     </>
   );
 
+  // Der Rand liegt außen, damit Fuß und Inhalt an derselben Kante der Spalte stehen.
   const fussLeiste = mitFuss ? (
     <div
-      className={`shrink-0 ${rand} ${fussLinie ? 'border-line border-t pt-4 pb-5' : abschluss ? 'border-line border-t pt-2 pb-4' : 'pt-2 pb-4'}`}
+      className={`shrink-0 ${rand} ${fussLinie ? `border-line border-t pt-4 pb-5 ${AM_RECHNER_OHNE_LINIE} ${AM_RECHNER_OHNE_ABSTAND}` : abschluss ? 'border-line border-t pt-2 pb-4' : 'pt-2 pb-4'}`}
     >
-      {fuss}
+      <div
+        className={`${spalte} mx-auto w-full ${fussLinie ? `border-line ${AM_RECHNER_LINIE_OBEN}` : ''}`}
+      >
+        {fuss}
+      </div>
     </div>
   ) : null;
 
@@ -272,7 +291,7 @@ export function GefuehrterAblauf({
           )}
         </div>
       </div>
-      {fussLeiste ? <div className={`${spalte} mx-auto w-full shrink-0`}>{fussLeiste}</div> : null}
+      {fussLeiste}
     </div>
   );
 

@@ -176,6 +176,7 @@ describe('rueckwegBeschriftung', () => {
     ['/mein-konto', 'Zurück zu „Mein Konto“'],
     // DR-144: von „Ich“ der Plattform zurück dorthin, wie der Kopf ihn nennt.
     ['/p/ich', 'Ich'],
+    ['/p/checkin?bereich=treatment', 'Check-in'],
     // Von der Übersicht zur Seite eines Termins und zurück (ANN-779).
     ['/p?bereich=treatment', 'Übersicht'],
   ])('beschriftet %s mit %s (UXR-002)', (pfad, erwartet) => {

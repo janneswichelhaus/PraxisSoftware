@@ -7,7 +7,7 @@ import { Angabefeld } from '@/components/ui/Angabefeld';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
-import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
+import { BREITE_ABLAUFSPALTE, GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
@@ -19,6 +19,7 @@ import {
   nurFragen,
   type Erfassungsgroesse,
 } from '@/lib/erfassungsgroessen';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   checkinsSchluessel,
   checkinAbsenden,
@@ -27,7 +28,6 @@ import {
   type Plattformzugang,
 } from './api';
 import { leserIn } from './checkintexte';
-import { useRechner } from './geruestbreite';
 import { lesefristSatz } from './hauptsache';
 import { useLesefrist } from './lesefrist';
 import { NICHT_AKUT } from './nachrichtentexte';
@@ -195,9 +195,6 @@ const HAUPTKNOPF =
  */
 const GESPERRT =
   'aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-line-strong aria-disabled:bg-transparent aria-disabled:text-ink-muted aria-disabled:hover:bg-transparent [.plattform-schrift_&]:aria-disabled:active:bg-transparent motion-safe:[.plattform-schrift_&]:aria-disabled:active:scale-100';
-/** Der Text des Bands an der Kante der Spalte, am Rechner der breiten. */
-const BAND_INNEN =
-  'max-w-formular [.plattform-schrift[data-rechner]_&]:max-w-spalte mx-auto box-content px-5 max-[23rem]:px-3';
 
 function Ablauf({
   zugang,
@@ -213,7 +210,6 @@ function Ablauf({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const verbunden = useIstVerbunden();
-  const rechner = useRechner();
   const ohneNetzId = useId();
   const [nummer, setNummer] = useState(0);
   const [werte, setWerte] = useState<Werte>({});
@@ -321,12 +317,13 @@ function Ablauf({
       plattform
       fussLinie
       breit
+      titelStufe="frage"
       // Ohne Netz unter der ersten Reihe des Kopfs; die Zeile steht immer im Baum, damit
       // Vorlesesoftware den Wechsel ansagt.
-      unterDemKopf={<Verbindungszeile rechner={rechner} />}
+      unterDemKopf={<Verbindungszeile innen={BREITE_ABLAUFSPALTE} />}
       band={
         zugang.access_kind === 'self' ? undefined : (
-          <Vertretungsband zugang={zugang} innen={BAND_INNEN} />
+          <Vertretungsband zugang={zugang} innen={BREITE_ABLAUFSPALTE} />
         )
       }
       vorDemTitel={
@@ -437,7 +434,10 @@ function Zustand({
 }) {
   const antworten = (daten?.history.length ?? 0) + (daten?.session_history.length ?? 0) > 0;
   const meineAngaben = antworten ? (
-    <ButtonLink to={mit(`${PLATTFORM_PFAD}/angaben`)} variant="secondary">
+    <ButtonLink
+      to={mitRueckweg(mit(`${PLATTFORM_PFAD}/angaben`), mit(`${PLATTFORM_PFAD}/checkin`))}
+      variant="secondary"
+    >
       Meine Angaben
     </ButtonLink>
   ) : undefined;

@@ -424,18 +424,25 @@ describe('GefuehrterAblauf mit Namen im Kopf (Selbstauskunft)', () => {
     const fenster = screen.getByRole('dialog', { name: 'Wie stark sind Ihre Schmerzen in Ruhe?' });
     const name = within(fenster).getByText('Check-in');
     const reihe = name.parentElement!;
-    expect(reihe).toHaveClass('border-b', 'min-h-15');
+    // Die Reihe steht in der Spalte; die Linie reicht am Telefon über die ganze Breite.
+    expect(reihe).toHaveClass(
+      'min-h-15',
+      'flex-wrap',
+      '[.plattform-schrift[data-rechner]_&]:max-w-spalte',
+    );
+    expect(reihe.parentElement).toHaveClass('border-b');
     expect(within(reihe).getByRole('button', { name: 'Später' })).toBeInTheDocument();
     // Die Zeile unter dem Kopf steht zwischen erster und zweiter Reihe.
-    expect(reihe.nextElementSibling).toHaveTextContent('Keine Verbindung.');
+    expect(reihe.parentElement!.nextElementSibling).toHaveTextContent('Keine Verbindung.');
     expect(within(fenster).getByRole('button', { name: '← Zurück' })).toBeInTheDocument();
     expect(within(fenster).getByText('Frage 2 von 3')).toBeInTheDocument();
     // Fuß mit Linie, Spalte am Rechner 48rem.
+    // Der Rand liegt außen: Knopf und Inhalt stehen an derselben Kante der Spalte.
     const weiter = within(fenster).getByRole('button', { name: 'Weiter' });
-    expect(weiter.parentElement).toHaveClass('border-t');
-    expect(weiter.parentElement!.parentElement!.className).toContain(
+    expect(weiter.parentElement!.className).toContain(
       '[.plattform-schrift[data-rechner]_&]:max-w-spalte',
     );
+    expect(weiter.parentElement!.parentElement).toHaveClass('border-t', 'px-5');
     await nutzer.click(within(reihe).getByRole('button', { name: 'Später' }));
     expect(onSchliessen).toHaveBeenCalledTimes(1);
     await pruefeBarrierefreiheit(document.body);
