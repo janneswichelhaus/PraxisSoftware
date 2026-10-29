@@ -24,6 +24,8 @@ const FORM = {
   hauptknopf: 'h-12 rounded-button',
   /** Die Tage einer Gewohnheit: die Leiste mit Datum, 72 hoch. */
   tage: 'h-18 rounded-button',
+  /** Ein Balken des Tagebuchs: 12 hoch, mit `max-h-2` 8 für die Nährstoffe. */
+  balken: 'h-3 rounded-pill',
 } as const;
 
 /**

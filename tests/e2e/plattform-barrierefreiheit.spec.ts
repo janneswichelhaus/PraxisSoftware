@@ -81,6 +81,11 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'ernaehrung', merkmal: 'Ernährung' },
   // Politurrunde 2026-10-20: Tagebuch und Lebensmittel, die täglichen Seiten.
   { seite: 'tagebuch', merkmal: 'Tagebuch' },
+  // Schritt 4e: das Tagebuch beim Laden, mit Fehler und ohne Netz, dazu das Eintragen.
+  { seite: 'tagebuch-laden', merkmal: 'Tagebuch' },
+  { seite: 'tagebuch-fehler', merkmal: 'Tagebuch' },
+  { seite: 'tagebuch-ohne-netz', merkmal: 'Tagebuch' },
+  { seite: 'tagebuch-eintragen', merkmal: 'Mittagessen eintragen' },
   { seite: 'lebensmittel', merkmal: 'Lebensmittel' },
   { seite: 'lebensmittel-neu', merkmal: /Lebensmittel/ },
   // „Meine Angaben“ mit der Seite einer Frage und allen Antworten, leer; die Gewohnheiten.
@@ -588,5 +593,96 @@ test.describe('Markenmoment B auf der Übersicht', () => {
     await expect(page.getByRole('heading', { level: 1, name: GRUSS })).toBeVisible();
     await expect(page.locator('.markenmoment')).toHaveCount(0);
     expect(await bewegungen(page)).toEqual([]);
+  });
+});
+
+/**
+ * Ernährung und Tagebuch (Handoff 2026-10-29, 5.6 bis 5.8): am Rechner das Tagebuch unter der
+ * Tagesleiste zweispaltig, die Ernährung einspaltig; ohne Netz gesperrt, was schreibt.
+ */
+test.describe('Ernährung und Tagebuch', () => {
+  async function box(page: Page, name: string) {
+    const b = await page.getByRole('region', { name }).boundingBox();
+    return { x: b?.x ?? 0, y: b?.y ?? 0, breite: b?.width ?? 0, hoehe: b?.height ?? 0 };
+  }
+
+  test('1280 px: Energie links, Wasser rechts, 48 dazwischen; Mahlzeiten über beide', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await oeffne(page, 'tagebuch', 'Tagebuch');
+    const energie = await box(page, 'Energie und Nährstoffe');
+    const wasser = await box(page, 'Wasser');
+    const mahlzeiten = await box(page, 'Mahlzeiten');
+    expect(Math.abs(wasser.y - energie.y)).toBeLessThanOrEqual(1);
+    expect(wasser.x - (energie.x + energie.breite)).toBeCloseTo(48, 0);
+    expect(mahlzeiten.breite).toBeCloseTo(wasser.x + wasser.breite - energie.x, 0);
+    expect(mahlzeiten.y).toBeGreaterThan(energie.y + energie.hoehe);
+    expect(
+      (await page.locator('main > div').first().boundingBox())?.width ?? 0,
+    ).toBeLessThanOrEqual(768.5);
+    expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
+    expect(await kleineZiele(page), 'Ziele unter 44 px').toEqual([]);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+
+  test('1280 px: die Ernährung einspaltig, die Hero-Karte „Heute“ zuerst', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await oeffne(page, 'ernaehrung', 'Ernährung');
+    await expect(
+      page.getByRole('region', { name: 'Heute' }).getByRole('link', { name: 'Heute eintragen' }),
+    ).toBeVisible();
+    const folge = [];
+    for (const name of ['Heute', 'Gewicht', 'Ihre Zielwerte', 'Mehr']) {
+      const abschnitt = await box(page, name);
+      expect(abschnitt.breite).toBeLessThanOrEqual(768.5);
+      folge.push(abschnitt.y);
+    }
+    expect(folge).toEqual([...folge].sort((a, b) => a - b));
+    expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
+    expect(await kleineZiele(page), 'Ziele unter 44 px').toEqual([]);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+
+  test('375 px ohne Netz: alles lesbar, was schreibt, gestrichelt gesperrt mit Satz', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await oeffne(page, 'tagebuch-ohne-netz', 'Tagebuch');
+    await expect(page.getByText(/^Keine Verbindung\./)).toBeVisible();
+    const satz = 'Eintragen geht wieder mit Verbindung.';
+    for (const name of [
+      /^\+ 1 Glas/,
+      'Ein Glas weniger',
+      'Frühstück eintragen',
+      'Mittagessen eintragen',
+      'Abendessen eintragen',
+      'Snacks eintragen',
+    ]) {
+      const knopf = page.getByRole('button', { name });
+      await expect(knopf).toBeDisabled();
+      await expect(knopf).toHaveAccessibleDescription(satz);
+      await expect(knopf).toHaveCSS('border-style', 'dashed');
+    }
+    await expect(page.getByText('Haferflocken')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Haferflocken/ })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /eintragen$/ })).toHaveCount(0);
+  });
+
+  test('der Rückweg führt vom Eintragen zum selben Tag und von dort zur Ernährung', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await oeffne(page, 'tagebuch-eintragen', 'Mittagessen eintragen');
+    // Heute steht keine Zeile mit dem Tag unter dem Titel.
+    await expect(page.getByText(/^(Heute|Gestern)$/)).toHaveCount(0);
+    await page.getByRole('link', { name: '← Tagebuch' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Tagebuch' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '← Ernährung' })).toBeVisible();
+    await page.getByRole('link', { name: 'Snacks eintragen' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Snacks eintragen' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '← Tagebuch' })).toBeVisible();
   });
 });

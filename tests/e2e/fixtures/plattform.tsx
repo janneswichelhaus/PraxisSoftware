@@ -1232,7 +1232,8 @@ client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
     started_on: '2026-09-27',
     formula_sex: 'female',
     activity_pal: 1.4,
-    diary_enabled: false,
+    // Schritt 4e: In der Ansicht „Ernährung“ ist das Tagebuch an, die Hero-Karte „Heute“ steht.
+    diary_enabled: seite === 'ernaehrung',
     body_fat_percent: null,
     diary_changed_at: null,
     target_weight_kg: 68.0,
@@ -1258,9 +1259,29 @@ if (seite === 'uebersicht-training') {
   client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), null);
 }
 // Politurrunde 2026-10-20: das Tagebuch von heute - ein Frühstück, die übrigen
-// Mahlzeiten leer, zwei Gläser Wasser (wie im Seed bei Erika).
+// Mahlzeiten leer, zwei Gläser Wasser (wie im Seed bei Erika). Schritt 4e: zwei
+// Einträge wie in der Leinwand, Haferflocken unter „Zuletzt“ für das Eintragen.
 const ohneSummen = { energy_kcal: 0, protein_g: 0, fat_g: 0, carbohydrate_g: 0 };
-client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'), {
+const haferflocken = {
+  kind: 'catalog' as const,
+  id: 'f00df00d-f00d-4f00-8f00-000000000001',
+  source: 'bls' as const,
+  name: 'Haferflocken',
+  brand: null,
+  base_unit: 'g' as const,
+  per_100: {
+    energy_kcal: 370,
+    protein_g: 13.5,
+    fat_g: 7,
+    carbohydrate_g: 58.7,
+    sugar_g: null,
+    fibre_g: null,
+    saturated_fat_g: null,
+    salt_g: null,
+  },
+  portions: [{ label: 'Portion', amount: 50 }],
+};
+const tagebuchHeute: EigenesTagebuch = {
   today: inTagen(0, 0).slice(0, 10),
   started_on: '2026-09-27',
   enabled: true,
@@ -1268,7 +1289,7 @@ client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'), {
   can_delete: true,
   glass_ml: 250,
   hide_numbers: false,
-  recent: [],
+  recent: [{ food: haferflocken, amount: 50, portion_label: 'Portion', portion_count: 1 }],
   favorites: [],
   targets: { energy_kcal: 1466, protein_g: 59, fat_g: 49, carbohydrate_g: 197, water_ml: 2570 },
   day: {
@@ -1295,17 +1316,60 @@ client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'), {
             fat_g: 3.5,
             carbohydrate_g: 29.3,
           },
+          {
+            id: 'e1e1e1e1-e1e1-4e1e-8e1e-000000000002',
+            eaten_on: inTagen(0, 0).slice(0, 10),
+            meal: 'breakfast',
+            food_kind: 'catalog',
+            food_id: null,
+            name: 'Banane roh',
+            brand: null,
+            base_unit: 'g',
+            amount: 120,
+            portion_label: '1 Stück (mittel)',
+            portion_amount: 120,
+            portion_count: 1,
+            energy_kcal: 112,
+            protein_g: 1.4,
+            fat_g: 0.2,
+            carbohydrate_g: 25.3,
+          },
         ],
-        totals: { energy_kcal: 185, protein_g: 6.7, fat_g: 3.5, carbohydrate_g: 29.3 },
+        totals: { energy_kcal: 297, protein_g: 8.1, fat_g: 3.7, carbohydrate_g: 54.6 },
       },
       { meal: 'lunch', entries: [], totals: ohneSummen },
       { meal: 'dinner', entries: [], totals: ohneSummen },
       { meal: 'snack', entries: [], totals: ohneSummen },
     ],
-    totals: { energy_kcal: 185, protein_g: 6.7, fat_g: 3.5, carbohydrate_g: 29.3 },
+    totals: { energy_kcal: 297, protein_g: 8.1, fat_g: 3.7, carbohydrate_g: 54.6 },
     water_ml: 500,
   },
-} satisfies EigenesTagebuch);
+};
+client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'), tagebuchHeute);
+// Das Eintragen fragt den Tag aus der Adresse ab, hier ausdrücklich heute.
+client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, tagebuchHeute.today), tagebuchHeute);
+// `tagebuch-laden`: Der Tag lädt ohne Ende; `tagebuch-fehler`: Er scheitert, auch beim
+// Erscheinen nicht noch einmal versucht; `tagebuch-ohne-netz`: Das Gerät meldet keine Verbindung.
+if (seite === 'tagebuch-laden') {
+  client.removeQueries({ queryKey: tagebuchSchluessel(zugaenge[0]!.access_id, 'heute') });
+  void client.prefetchQuery({
+    queryKey: tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'),
+    queryFn: () => new Promise<EigenesTagebuch>(() => undefined),
+  });
+}
+if (seite === 'tagebuch-fehler') {
+  client.removeQueries({ queryKey: tagebuchSchluessel(zugaenge[0]!.access_id, 'heute') });
+  client.setQueryDefaults(tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'), {
+    retryOnMount: false,
+  });
+  void client.prefetchQuery({
+    queryKey: tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'),
+    queryFn: () => Promise.reject(new Error('Ihr Tagebuch konnte nicht geladen werden.')),
+  });
+}
+if (seite === 'tagebuch-ohne-netz') {
+  Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false });
+}
 client.setQueryData(checkinsKey('treatment', MAX), {
   today: inTagen(0, 0).slice(0, 10),
   can_write: true,
@@ -1560,6 +1624,10 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'gewohnheiten':
     case 'ernaehrung':
     case 'tagebuch':
+    case 'tagebuch-laden':
+    case 'tagebuch-fehler':
+    case 'tagebuch-ohne-netz':
+    case 'tagebuch-eintragen':
     case 'lebensmittel':
     case 'lebensmittel-neu':
     case 'angaben':
@@ -1625,6 +1693,11 @@ function inhalt(): { pfad: string; element: ReactNode } {
         'gewohnheiten-laden': '/p/gewohnheiten?bereich=treatment',
         ernaehrung: '/p/ernaehrung?bereich=treatment',
         tagebuch: '/p/ernaehrung/tagebuch?bereich=treatment',
+        'tagebuch-laden': '/p/ernaehrung/tagebuch?bereich=treatment',
+        'tagebuch-fehler': '/p/ernaehrung/tagebuch?bereich=treatment',
+        'tagebuch-ohne-netz': '/p/ernaehrung/tagebuch?bereich=treatment',
+        // Wie aus der Pille „Mittagessen“: Tag, Mahlzeit und der Rückweg zum Tag.
+        'tagebuch-eintragen': `/p/ernaehrung/tagebuch/eintragen?bereich=treatment&tag=${inTagen(0, 0).slice(0, 10)}&mahlzeit=lunch&zurueck=${encodeURIComponent('/p/ernaehrung/tagebuch?bereich=treatment')}`,
         lebensmittel: '/p/ernaehrung/lebensmittel?bereich=treatment',
         'lebensmittel-neu': '/p/ernaehrung/lebensmittel/neu?bereich=treatment',
       };

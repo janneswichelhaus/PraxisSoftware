@@ -130,7 +130,7 @@ function formelzeile(
   return `${glieder.join(' ').replace(/^\+ /, '')} = ${zahl(variante.kcal)} kcal`;
 }
 
-function Rechenweg({ z }: { z: BerechneteZielwerte }) {
+export function Rechenweg({ z }: { z: BerechneteZielwerte }) {
   const e = z.energy;
   return (
     <dl className="text-liste flex flex-col gap-3">

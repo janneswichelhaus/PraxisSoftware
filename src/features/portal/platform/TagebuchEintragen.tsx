@@ -1,18 +1,20 @@
 import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import {
   LebensmittelSuche,
   Quellenangabe,
@@ -47,7 +49,7 @@ import {
   type EigenesTagebuch,
   type Plattformzugang,
 } from './api';
-import { tagebuchAdresse, tagName } from './tagebuchAdresse';
+import { tagName, zurueckZumTag } from './tagebuchAdresse';
 
 /**
  * Ein Lebensmittel ins Tagebuch (ERN-007, ADR-027 Punkte 9 und 10):
@@ -75,37 +77,65 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
     queryFn: () => ladeTagebuch(zugang.access_id, tagAusAdresse),
   });
   // Ohne Tag in der Adresse: heute.
-  const tag = tagAusAdresse ?? tagebuch.data?.today ?? null;
+  const heute = tagebuch.data?.today;
+  const tag = tagAusAdresse ?? heute ?? null;
+  // Zurück zum selben Tag, mit dessen eigenem Rückweg; die Zeile mit dem Tag nur, wenn nicht heute.
+  const zumTag = zurueckZumTag(search, tagAusAdresse, heute);
+  const geladen = tagebuch.data !== undefined && ernaehrung.data !== undefined;
+  const gescheitert =
+    (tagebuch.data === undefined && tagebuch.isError) ||
+    (ernaehrung.data === undefined && ernaehrung.isError);
 
   return (
     <>
-      <Rueckweg standard={tagebuchAdresse(tagAusAdresse, search)} beschriftung="Zum Tagebuch" />
+      <Rueckweg standard={zumTag} beschriftung="Tagebuch" />
       <PageHeader
         title={`${MAHLZEIT_NAMEN[mahlzeit]} eintragen`}
-        description={tag && tagebuch.data ? tagName(tag, tagebuch.data.today) : undefined}
+        description={tag && heute && tag !== heute ? tagName(tag, heute) : undefined}
+        stufe="seite"
       />
-      <Abfragezustand
-        abfrage={tagebuch}
-        laden="Wird geladen …"
-        fehler="Ihr Tagebuch konnte nicht geladen werden."
-        inKarte
-        leer={{
-          wenn: (daten) => !daten || !daten.can_write || !ernaehrung.data,
-          titel: 'Hier lässt sich gerade nichts eintragen.',
-        }}
-      >
-        {(daten) => (
+      <div className="mt-4">
+        {!geladen ? (
+          gescheitert ? (
+            <ErrorState
+              title="Ihr Tagebuch konnte nicht geladen werden."
+              description={VERBINDUNG_PRUEFEN}
+              onErneut={() => Promise.all([tagebuch.refetch(), ernaehrung.refetch()])}
+            />
+          ) : (
+            <Ladezustand />
+          )
+        ) : !tagebuch.data || !tagebuch.data.can_write || !ernaehrung.data ? (
+          <EmptyState inKarte title="Hier lässt sich gerade nichts eintragen." />
+        ) : (
           <Suche
             zugang={zugang}
-            ernaehrung={ernaehrung.data!}
-            tagebuch={daten!}
+            ernaehrung={ernaehrung.data}
+            tagebuch={tagebuch.data}
             tag={tag!}
             mahlzeit={mahlzeit}
           />
         )}
-      </Abfragezustand>
+      </div>
       <Quellenangabe laden={lebensmittelQuellen} />
     </>
+  );
+}
+
+/** Die Form der Seite, solange sie lädt: das Suchfeld und Zeilen darunter. */
+function Ladezustand() {
+  return (
+    <SkelettBereich beschriftung="Ihr Tagebuch wird geladen" className="flex flex-col gap-4">
+      <Skelett form="zeile" className="w-44 max-w-full" />
+      <Skelett form="hauptknopf" />
+      <Skelett form="titel" className="mt-4 w-24" />
+      {['w-40', 'w-32', 'w-36'].map((breite) => (
+        <span key={breite} className="flex flex-col gap-2 py-2">
+          <Skelett form="zeile" className={`${breite} max-w-[70%]`} />
+          <Skelett form="zeile" className="w-52 max-w-full" />
+        </span>
+      ))}
+    </SkelettBereich>
   );
 }
 
@@ -137,7 +167,8 @@ function Suche({
       eigene={ernaehrung.profile.own_foods}
       ohneZahlen={ohneZahlen}
       ohneBegriff={(oeffnen) => (
-        <div className="flex flex-col gap-8 [&>*]:mt-0">
+        // Unter 23rem rückt „+“ unter den Namen: Ein Lebensmittel bricht nur zwischen Wörtern.
+        <div className="flex flex-col gap-8 max-[23rem]:[&_li]:flex-wrap max-[23rem]:[&_li>:first-child]:basis-full max-[23rem]:[&_li>:nth-child(2)]:ml-auto max-[23rem]:[&_li>:nth-child(2)]:pb-2 [&>*]:mt-0">
           {tagebuch.favorites.length > 0 ? (
             <Listenabschnitt titel="Favoriten">
               {tagebuch.favorites.map((s) => (
@@ -276,7 +307,7 @@ function useEintragen(zugang: Plattformzugang, f: Lebensmittel, tag: string, mah
       tagebuchEintragen(zugang.access_id, tag, mahlzeit, f, angabe),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: tagebuchSchluessel(zugang.access_id) });
-      void navigate(tagebuchAdresse(tag, search), {
+      void navigate(zurueckZumTag(search, tag), {
         replace: true,
         state: { eingetragen: f.name },
       });

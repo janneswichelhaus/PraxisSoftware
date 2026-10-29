@@ -589,9 +589,10 @@ describe('Training, Begleitung, Lesefrist', () => {
       }),
     ).toHaveAttribute('href', '/p/uebungen?bereich=training');
     // Mit weicher Trennstelle, damit das Wort bei „Sehr groß“ nur dort bricht.
+    // Der Rückweg reist mit: Im Tagebuch heißt er dann „Übersicht“.
     expect(screen.getByRole('link', { name: /^Ernährungs\u00ADtagebuch/ })).toHaveAttribute(
       'href',
-      '/p/ernaehrung/tagebuch?bereich=training',
+      `/p/ernaehrung/tagebuch?bereich=training&zurueck=${encodeURIComponent('/p?bereich=training')}`,
     );
     expect(screen.getByRole('link', { name: /^Trainingspaket 6 Monate/ })).toHaveAttribute(
       'href',

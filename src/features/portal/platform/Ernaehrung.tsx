@@ -1,23 +1,28 @@
-import { useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
-import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Link, useLocation } from 'react-router-dom';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
+import { HeroKarte } from '@/components/ui/HeroKarte';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
-import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { Section } from '@/components/ui/Section';
+import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Pfeilzeichen } from '@/components/ui/Tagebuchbausteine';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { leseZahl } from '@/features/nutrition/eingabe';
-import { Zielwertliste } from '@/features/nutrition/Rechenweg';
-import { ERNAEHRUNG_EINWILLIGUNG, kg, zahl } from '@/features/nutrition/texte';
+import { Rechenweg } from '@/features/nutrition/Rechenweg';
+import { kcal } from '@/features/nutrition/tagebuch';
+import { ERNAEHRUNG_EINWILLIGUNG, FEHLT_TEXTE, kg, zahl } from '@/features/nutrition/texte';
+import type { Zielwerte as Werte } from '@/features/nutrition/zielwerte';
 import {
   ernaehrungSchluessel,
   ernaehrungEinwilligen,
@@ -25,88 +30,124 @@ import {
   ernaehrungTagebuchSchalten,
   ernaehrungZielgewichtSetzen,
   ladeErnaehrung,
+  ladeTagebuch,
+  tagebuchSchluessel,
   type EigeneErnaehrung,
+  type EigenesTagebuch,
   type Plattformzugang,
 } from './api';
+import { Abschnitt, Aufklappzeilen } from './Ernaehrungsteile';
 import { PLATTFORM_PFAD } from './pfade';
-import { datum } from './zeit';
+import { literZahl, literZiel, tagebuchVonDerErnaehrung } from './tagebuchAdresse';
+import { fest, tagUndMonat } from './zeit';
 
 /**
- * Ernährung auf der Plattform (ERN-002, ADR-027, PROJECT_PRINCIPLES.md 4.11):
- * die eigenen Zielwerte mit Rechenweg, das Gewicht, das Zielgewicht, der
- * Schalter des Tagebuchs und die Einwilligung.
- *
- * Nur für die Person und ihre rechtliche Vertretung; die Begleitung sieht
- * nichts davon (der Server gibt ihr nichts). Gerechnet hat der Server; hier
- * steht keine Aussage über die Gesundheit und kein Etikett zum Gewicht
- * (ADR-006 Punkt 14).
+ * Ernährung auf der Plattform (ADR-027): das Tagebuch von heute als Hauptsache, Gewicht, Zielwerte
+ * mit Rechenweg, Seltenes unter „Mehr“. Nur für die Person und ihre rechtliche Vertretung; gerechnet
+ * hat der Server, kein Etikett zum Gewicht und keine Aussage über die Gesundheit (ADR-006 Punkt 14).
  */
 export function Ernaehrung({ zugang }: { zugang: Plattformzugang }) {
   const abfrage = useQuery({
     queryKey: ernaehrungSchluessel(zugang.access_id),
     queryFn: () => ladeErnaehrung(zugang.access_id),
   });
+  const { data } = abfrage;
 
   return (
     <>
       <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
-      <PageHeader title="Ernährung" />
-      <Abfragezustand
-        abfrage={abfrage}
-        laden="Ihre Ernährung wird geladen …"
-        fehler="Ihre Ernährung konnte nicht geladen werden."
-        inKarte
-        leer={{ wenn: (daten) => !daten, titel: 'Zurzeit keine Ernährungsberatung.' }}
-      >
-        {(daten) => <Inhalt zugang={zugang} daten={daten!} />}
-      </Abfragezustand>
+      <PageHeader title="Ernährung" stufe="seite" />
+      {data === undefined ? (
+        abfrage.isError ? (
+          <div className="mt-8">
+            <ErrorState
+              title="Ihre Ernährung konnte nicht geladen werden."
+              description={VERBINDUNG_PRUEFEN}
+              onErneut={() => abfrage.refetch()}
+            />
+          </div>
+        ) : (
+          <Ladezustand />
+        )
+      ) : data === null ? (
+        <div className="mt-8">
+          <EmptyState
+            markenform
+            title="Zurzeit keine Ernährungsberatung"
+            description="Vereinbaren Sie eine Ernährungsberatung mit Ihrer Praxis, finden Sie sie hier."
+          />
+        </div>
+      ) : (
+        <Inhalt
+          zugang={zugang}
+          daten={data}
+          nachladen={
+            abfrage.isError ? (
+              <NachladeHinweis
+                laeuft={abfrage.isFetching}
+                onErneut={() => void abfrage.refetch()}
+              />
+            ) : null
+          }
+        />
+      )}
     </>
   );
 }
 
-function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
+/** Ein Tag in Worten, das Jahr nur, wenn es nicht das laufende der Praxis ist. */
+function amTag(tag: string, heute: string): string {
+  return fest(tagUndMonat(tag, new Date(`${heute}T12:00:00`)));
+}
+
+function Inhalt({
+  zugang,
+  daten,
+  nachladen,
+}: {
+  zugang: Plattformzugang;
+  daten: EigeneErnaehrung;
+  nachladen: ReactNode;
+}) {
   const p = daten.profile;
   const { search } = useLocation();
   const widerrufen = p.consent?.state === 'withdrawn';
+  // Die Hauptsache nur, wo eingetragen werden kann; sonst steht der Zustand unter „Mehr“.
+  const mitHeute = daten.can_write && p.diary_enabled && p.ended_on === null;
+  const eigene = p.own_foods.length;
   return (
-    <div className="flex flex-col gap-8 [&>*]:mt-0">
+    <div className="mt-10 flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:mt-12 [.plattform-schrift[data-rechner]_&]:gap-12">
+      {nachladen}
       {widerrufen ? (
         <Statusmeldung ton="warnung">
-          Einwilligung widerrufen am {datum(p.consent!.occurred_on)}. Es wird nichts mehr
-          eingetragen.
+          Einwilligung widerrufen am {amTag(p.consent!.occurred_on, daten.today)}. Es wird nichts
+          mehr eingetragen.
         </Statusmeldung>
       ) : null}
-      {/* Die eine Aufgabe zuerst; Seltenes eingeklappt (DESIGN.md Grundsatz 4). */}
-      {p.diary_enabled ? (
-        <ListRows beschriftung="Tagebuch">
-          <ListRow
-            to={`${PLATTFORM_PFAD}/ernaehrung/tagebuch${search}`}
-            titel="Tagebuch"
-            meta="Heute eintragen, Wasser zählen"
-          />
-        </ListRows>
-      ) : null}
+      {mitHeute ? <Heute zugang={zugang} ziel={tagebuchVonDerErnaehrung(search)} /> : null}
       <Gewicht zugang={zugang} daten={daten} />
-      <Section titel="Ihre Zielwerte">
-        <Zielwertliste zielwerte={p.targets} />
-      </Section>
-      {/* ERN-EPIC-002: nachschlagen und eigene Lebensmittel anlegen. */}
-      <ListRows beschriftung="Lebensmittel">
-        <ListRow
-          to={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel${search}`}
-          titel="Lebensmittel"
-          meta={
-            p.own_foods.length > 0
-              ? `Nachschlagen · ${p.own_foods.length} eigene`
-              : 'Nachschlagen und eigene anlegen'
-          }
-        />
-      </ListRows>
-      <div className="flex flex-col gap-2">
-        <Zielgewicht zugang={zugang} daten={daten} />
-        <Tagebuch zugang={zugang} daten={daten} />
-        <Einwilligung zugang={zugang} daten={daten} />
-      </div>
+      <Abschnitt titel="Ihre Zielwerte">
+        <Zielwerte zielwerte={p.targets} />
+      </Abschnitt>
+      <Abschnitt titel="Mehr">
+        <Aufklappzeilen linieOben>
+          {p.diary_enabled && !mitHeute ? (
+            <Zeile to={tagebuchVonDerErnaehrung(search)} titel="Tagebuch" />
+          ) : null}
+          <Zeile
+            to={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel${search}`}
+            titel="Lebensmittel"
+            meta={
+              eigene > 0
+                ? `Nachschlagen · ${eigene} ${eigene === 1 ? 'eigenes' : 'eigene'}`
+                : 'Nachschlagen und eigene anlegen'
+            }
+          />
+          <Zielgewicht zugang={zugang} daten={daten} />
+          <Tagebuchschalter zugang={zugang} daten={daten} />
+          <Einwilligung zugang={zugang} daten={daten} />
+        </Aufklappzeilen>
+      </Abschnitt>
       <Kleingedrucktes>
         Ihre Zielwerte rechnet die Anwendung aus veröffentlichten Formeln für Ernährung und
         Körpergewicht im Alltag. Sie sagen nichts über Ihre Gesundheit; Ihre Praxis kann sie
@@ -116,13 +157,57 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnae
   );
 }
 
+/**
+ * Das Tagebuch von heute als Hero-Karte. Den Stand liefert die Abfrage des Tagebuchs selbst
+ * (`ladeErnaehrung` kennt ihn nicht); bis sie antwortet, stehen nur Titel und Knopf.
+ */
+function Heute({ zugang, ziel }: { zugang: Plattformzugang; ziel: string }) {
+  const { data } = useQuery({
+    queryKey: tagebuchSchluessel(zugang.access_id, 'heute'),
+    queryFn: () => ladeTagebuch(zugang.access_id, null),
+  });
+  return (
+    <HeroKarte
+      etikett="Tagebuch"
+      titel="Heute"
+      satz={
+        data
+          ? standZeilen(data).map((zeile) => (
+              <span key={zeile} className="block tabular-nums">
+                {zeile}
+              </span>
+            ))
+          : undefined
+      }
+      aktion={{ text: 'Heute eintragen', to: ziel }}
+    />
+  );
+}
+
+/** „297 von 1466 kcal“ und „Wasser 0,5 von 2,6 l“; mit „Zahlen ausblenden“ nur das Wasser. */
+function standZeilen(t: EigenesTagebuch): string[] {
+  const ziele = t.targets;
+  const wasser = ziele
+    ? `Wasser ${literZahl(t.day.water_ml)} von ${literZiel(ziele.water_ml)}`
+    : `Wasser ${literZahl(t.day.water_ml)}\u00a0l`;
+  if (t.hide_numbers) return [wasser];
+  const energie = ziele
+    ? `${zahl(t.day.totals.energy_kcal)} von ${kcal(ziele.energy_kcal)}`
+    : kcal(t.day.totals.energy_kcal);
+  return [energie, wasser];
+}
+
 function useNeuLaden(zugang: Plattformzugang) {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: ernaehrungSchluessel(zugang.access_id) });
 }
 
+/** Die jüngsten Einträge stehen offen, ältere hinter dem Aufklapper. */
+const OFFEN = 3;
+
 function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
   const neuLaden = useNeuLaden(zugang);
+  const feldId = useId();
   const [wert, setWert] = useState('');
   const [fehler, setFehler] = useState<string | undefined>();
   const [eingetragen, setEingetragen] = useState(0);
@@ -134,15 +219,44 @@ function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErna
       await neuLaden();
     },
   });
-  const schreibbar = daten.can_write;
+  const verlauf = [...daten.profile.weights].sort((a, b) =>
+    b.measured_on.localeCompare(a.measured_on),
+  );
   // Je Tag gilt ein Gewicht (ANN-621); steht heute schon eines, steht es da.
-  const heute = daten.profile.weights.find((eintrag) => eintrag.measured_on === daten.today);
+  const heute = verlauf.find((eintrag) => eintrag.measured_on === daten.today);
+  const hinweis = heute
+    ? `Heute steht schon ${kg(heute.weight_kg)}${heute.source === 'practice' ? ' aus der Praxis' : ''}. Eintragen ersetzt es.`
+    : null;
+  const beschrieben = [
+    `${feldId}-einheit`,
+    hinweis ? `${feldId}-hinweis` : null,
+    fehler ? `${feldId}-fehler` : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const zeile = (eintrag: (typeof verlauf)[number]) => (
+    <li
+      key={eintrag.measured_on}
+      className="border-line flex min-h-13 items-center justify-between gap-x-3 border-b py-2 max-[23rem]:flex-col max-[23rem]:items-start max-[23rem]:justify-center"
+    >
+      <span>
+        {amTag(eintrag.measured_on, daten.today)}
+        {eintrag.source === 'practice' ? (
+          <>
+            {' '}
+            <span className="text-ink-muted">· in der Praxis</span>
+          </>
+        ) : null}
+      </span>{' '}
+      <span className="shrink-0 whitespace-nowrap tabular-nums">{kg(eintrag.weight_kg)}</span>
+    </li>
+  );
   return (
-    <Section titel="Gewicht">
-      {schreibbar ? (
+    <Abschnitt titel="Gewicht">
+      {daten.can_write ? (
         <form
           aria-label="Gewicht eintragen"
-          className="flex flex-col gap-3"
+          className="feld flex flex-col gap-2"
           onSubmit={(event) => {
             event.preventDefault();
             const kilo = leseZahl(wert);
@@ -154,46 +268,169 @@ function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErna
             eintragen.mutate(kilo);
           }}
         >
-          <Field
-            label="Gewicht heute (kg)"
-            hint={
-              heute
-                ? `Heute steht schon ${kg(heute.weight_kg)}${heute.source === 'practice' ? ' aus der Praxis' : ''}. Eintragen ersetzt es.`
-                : undefined
-            }
-            inputMode="decimal"
-            autoComplete="off"
-            value={wert}
-            error={fehler}
-            onChange={(event) => setWert(event.target.value)}
-          />
+          <label htmlFor={feldId} className="text-ink font-semibold">
+            Gewicht heute
+          </label>
+          {hinweis ? (
+            <p id={`${feldId}-hinweis`} className="text-ink-muted">
+              {hinweis}
+            </p>
+          ) : null}
+          {/* Die Einheit steht im Feld; „Heute eintragen“ ist der Hauptknopf der Seite. Passt der
+              Knopf nicht daneben, steht er darunter. */}
+          <div className="flex flex-wrap gap-2 [.plattform-schrift[data-rechner]_&]:max-w-md">
+            <span className="relative block min-w-40 flex-1">
+              <input
+                id={feldId}
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder={verlauf[0] ? `etwa ${zahl(verlauf[0].weight_kg, 1)}` : undefined}
+                aria-describedby={beschrieben}
+                aria-invalid={fehler ? true : undefined}
+                value={wert}
+                onChange={(event) => setWert(event.target.value)}
+                className={`bg-surface-field text-ink placeholder:text-ink-muted rounded-field h-12 w-full border pr-12 pl-4 text-base ${
+                  fehler ? 'border-danger' : 'border-line-strong'
+                }`}
+              />
+              <span
+                id={`${feldId}-einheit`}
+                className="text-ink-muted pointer-events-none absolute inset-y-0 right-4 flex items-center"
+              >
+                kg
+              </span>
+            </span>
+            <Button type="submit" variant="secondary" disabled={eintragen.isPending}>
+              {eintragen.isPending ? 'Wird eingetragen …' : heute ? 'Ersetzen' : 'Eintragen'}
+            </Button>
+          </div>
+          {fehler ? (
+            <p id={`${feldId}-fehler`} className="feldfehler text-danger">
+              {fehler}
+            </p>
+          ) : null}
           {eintragen.isError ? (
             <Statusmeldung ton="fehler">{eintragen.error.message}</Statusmeldung>
           ) : null}
           {eingetragen > 0 ? <Rueckmeldung key={eingetragen}>Eingetragen.</Rueckmeldung> : null}
-          <Formularfuss dicht>
-            <Button type="submit" disabled={eintragen.isPending}>
-              {eintragen.isPending ? 'Wird eingetragen …' : heute ? 'Ersetzen' : 'Eintragen'}
-            </Button>
-          </Formularfuss>
         </form>
       ) : null}
-      {daten.profile.weights.length > 0 ? (
-        <ListRows
-          beschriftung="Ihr Gewichtsverlauf"
-          rahmen={false}
-          className={schreibbar ? 'mt-4' : ''}
-        >
-          {daten.profile.weights.map((eintrag) => (
-            <ListRow
-              key={eintrag.measured_on}
-              titel={kg(eintrag.weight_kg)}
-              meta={`${datum(eintrag.measured_on)}${eintrag.source === 'practice' ? ' · in der Praxis' : ''}`}
-            />
-          ))}
-        </ListRows>
+      {verlauf.length > 0 ? (
+        <div>
+          <ul aria-label="Ihr Gewichtsverlauf" className="border-line border-t">
+            {verlauf.slice(0, OFFEN).map(zeile)}
+          </ul>
+          {verlauf.length > OFFEN ? (
+            <Aufklappzeilen>
+              <Disclosure summary="Ältere Einträge" anzahl={verlauf.length - OFFEN}>
+                <ul aria-label="Ältere Einträge" className="border-line border-t">
+                  {verlauf.slice(OFFEN).map(zeile)}
+                </ul>
+              </Disclosure>
+            </Aufklappzeilen>
+          ) : null}
+        </div>
       ) : null}
-    </Section>
+    </Abschnitt>
+  );
+}
+
+/**
+ * Die Zielwerte als Zeilen, Abzeichen unter dem Wert; was die Zeit bis zum Zielgewicht angeht,
+ * steht als Satz darunter. Der Rechenweg steht daneben (ADR-006 Punkt 14 b).
+ */
+function Zielwerte({ zielwerte }: { zielwerte: Werte }) {
+  if (zielwerte.status === 'missing') {
+    return (
+      <p className="text-ink-muted">
+        Für Zielwerte fehlt noch:{' '}
+        {zielwerte.missing.map((feld) => FEHLT_TEXTE[feld] ?? feld).join(', ')}.
+      </p>
+    );
+  }
+  const z = zielwerte;
+  const wochen = z.target_weight.kg !== null ? z.target_weight.weeks : null;
+  return (
+    <>
+      <dl className="border-line border-t">
+        <Zielzeile
+          name="Energie"
+          wert={kcal(z.energy.kcal)}
+          gesetzt={z.energy.overridden}
+          warnung={z.energy.below_bmr ? 'unter dem Grundumsatz' : null}
+        />
+        <Zielzeile
+          name="Eiweiß"
+          wert={`${zahl(z.protein.g)}\u00a0g`}
+          gesetzt={z.protein.overridden}
+        />
+        <Zielzeile
+          name="Kohlenhydrate"
+          wert={`${zahl(z.carbohydrate.g)}\u00a0g`}
+          gesetzt={z.carbohydrate.overridden}
+        />
+        <Zielzeile name="Fett" wert={`${zahl(z.fat.g)}\u00a0g`} gesetzt={z.fat.overridden} />
+        <Zielzeile name="Wasser" wert={literZiel(z.water.ml)} gesetzt={z.water.overridden} />
+        {z.target_weight.kg !== null ? (
+          <Zielzeile
+            name="Zielgewicht"
+            wert={kg(z.target_weight.kg)}
+            warnung={
+              z.target_weight.below_floor ? `unter BMI ${zahl(z.target_weight.bmi_floor, 1)}` : null
+            }
+          />
+        ) : null}
+      </dl>
+      {wochen !== null ? (
+        <p className="text-ink-muted">
+          Rechnerisch etwa {zahl(wochen)} {wochen === 1 ? 'Woche' : 'Wochen'} bis zum Zielgewicht.
+        </p>
+      ) : null}
+      <Aufklappzeilen>
+        <Disclosure summary="Rechenweg">
+          <Rechenweg z={z} />
+        </Disclosure>
+      </Aufklappzeilen>
+    </>
+  );
+}
+
+function Zielzeile({
+  name,
+  wert,
+  gesetzt = false,
+  warnung = null,
+}: {
+  name: string;
+  wert: string;
+  gesetzt?: boolean;
+  warnung?: string | null;
+}) {
+  return (
+    <div className="border-line flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b py-3 max-[23rem]:flex-col">
+      <dt className="text-ink-muted">{name}</dt>
+      <dd className="ml-auto flex flex-col items-end gap-1 text-right max-[23rem]:ml-0 max-[23rem]:items-start max-[23rem]:text-left">
+        <span className="whitespace-nowrap tabular-nums">{wert}</span>
+        {gesetzt ? <Badge ton="akzent">von der Beratung gesetzt</Badge> : null}
+        {warnung ? <Badge ton="warnung">{warnung}</Badge> : null}
+      </dd>
+    </div>
+  );
+}
+
+/** Eine Zeile unter „Mehr“: die ganze Zeile ist das Ziel, der Pfeil sagt „weiter“. */
+function Zeile({ to, titel, meta }: { to: string; titel: string; meta?: string }) {
+  return (
+    <Link
+      to={to}
+      className="border-line hover:bg-surface-sunken active:bg-surface-sunken ease-druck focus-visible:outline-ink flex min-h-16 items-center justify-between gap-3 border-b py-2 transition-[background-color,scale] duration-120 focus-visible:outline-3 focus-visible:outline-offset-2 motion-safe:active:scale-98"
+    >
+      <span className="flex min-w-0 flex-col">
+        <span className="text-ink font-semibold">{titel}</span>
+        {meta ? <span className="text-ink-muted">{meta}</span> : null}
+      </span>
+      <Pfeilzeichen richtung="rechts" className="text-ink-muted size-5.5" />
+    </Link>
   );
 }
 
@@ -261,7 +498,7 @@ function Zielgewicht({ zugang, daten }: { zugang: Plattformzugang; daten: Eigene
   );
 }
 
-function Tagebuch({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
+function Tagebuchschalter({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
   const neuLaden = useNeuLaden(zugang);
   const schalten = useMutation({
     mutationFn: (an: boolean) => ernaehrungTagebuchSchalten(zugang.access_id, an),
@@ -272,7 +509,10 @@ function Tagebuch({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErn
   const bedienbar = an || daten.can_write;
   const angehalten = an && daten.profile.consent?.state === 'withdrawn';
   return (
-    <Disclosure summary={`Ernährungstagebuch · ${angehalten ? 'angehalten' : an ? 'an' : 'aus'}`}>
+    // Weiche Trennstelle: Bei 200 % brach das lange Wort sonst ohne Strich mitten im Wort.
+    <Disclosure
+      summary={`Ernährungs\u00ADtagebuch · ${angehalten ? 'angehalten' : an ? 'an' : 'aus'}`}
+    >
       <Checkbox
         label="Ernährungstagebuch führen"
         hint={angehalten ? 'Angehalten, weil die Einwilligung widerrufen ist.' : undefined}
@@ -299,9 +539,9 @@ function Einwilligung({ zugang, daten }: { zugang: Plattformzugang; daten: Eigen
     onSuccess: () => neuLaden(),
   });
   const zustand = erteilt
-    ? `erteilt am ${datum(stand.occurred_on)}`
+    ? `erteilt am ${amTag(stand.occurred_on, daten.today)}`
     : stand
-      ? `widerrufen am ${datum(stand.occurred_on)}`
+      ? `widerrufen am ${amTag(stand.occurred_on, daten.today)}`
       : 'nicht erteilt';
   return (
     <Disclosure summary={`Einwilligung · ${zustand}`}>
@@ -340,5 +580,40 @@ function Einwilligung({ zugang, daten }: { zugang: Plattformzugang; daten: Eigen
         </div>
       ) : null}
     </Disclosure>
+  );
+}
+
+/** Die Form der Seite, solange sie lädt: Hero, Gewicht mit Zeilen, Zielwerte. */
+function Ladezustand() {
+  return (
+    <SkelettBereich
+      beschriftung="Ihre Ernährung wird geladen"
+      className="mt-10 flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:mt-12 [.plattform-schrift[data-rechner]_&]:gap-12"
+    >
+      <Skelett form="hero" />
+      <span className="flex flex-col gap-3">
+        <Skelett form="titel" className="w-24" />
+        <Skelett form="zeile" className="w-32 max-w-full" />
+        <span className="grid grid-cols-[minmax(0,1fr)_7rem] gap-2">
+          <Skelett form="hauptknopf" />
+          <Skelett form="hauptknopf" />
+        </span>
+        {['w-40', 'w-36', 'w-32'].map((breite) => (
+          <span key={breite} className="flex items-center justify-between gap-3 py-4">
+            <Skelett form="zeile" className={`${breite} max-w-[60%]`} />
+            <Skelett form="zeile" className="w-16" />
+          </span>
+        ))}
+      </span>
+      <span className="flex flex-col gap-3">
+        <Skelett form="titel" className="w-36 max-w-full" />
+        {['w-18', 'w-14', 'w-31', 'w-10'].map((breite) => (
+          <span key={breite} className="flex items-center justify-between gap-3 py-3">
+            <Skelett form="zeile" className={`${breite} max-w-[55%]`} />
+            <Skelett form="zeile" className="w-20" />
+          </span>
+        ))}
+      </span>
+    </SkelettBereich>
   );
 }

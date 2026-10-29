@@ -98,8 +98,9 @@ test('Erika trägt auf der Plattform ihr Gewicht ein und sieht keine Notizen', a
   await page.goto('/p/ich');
   await page.getByRole('link', { name: /Ernährung/ }).click();
   await expect(page.getByRole('heading', { name: 'Ernährung', level: 1 })).toBeVisible();
-  await page.getByLabel('Gewicht heute (kg)').fill('73,1');
-  await page.getByRole('button', { name: 'Eintragen' }).click();
+  // Die Einheit steht im Feld; steht heute schon ein Gewicht, heißt der Knopf „Ersetzen“.
+  await page.getByLabel('Gewicht heute', { exact: true }).fill('73,1');
+  await page.getByRole('button', { name: /^(Eintragen|Ersetzen)$/ }).click();
   await expect(page.getByText('Eingetragen.')).toBeVisible();
   await expect(page.getByText('73,1 kg').first()).toBeVisible();
   // Keine Notizen der Beratung auf der Plattform (ADR-023 Punkt 22).

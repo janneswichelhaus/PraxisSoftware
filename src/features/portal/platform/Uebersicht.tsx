@@ -363,7 +363,8 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
         // Weiche Trennstelle: Bei „Sehr groß“ brach das Wort sonst vor dem „h“.
         titel: 'Ernährungs\u00ADtagebuch',
         satz: 'Mahlzeit eintragen',
-        to: p('/ernaehrung/tagebuch'),
+        // Der Rückweg reist mit und heißt im Tagebuch dann „Übersicht“ (ANN-779).
+        to: mitRueckweg(p('/ernaehrung/tagebuch'), mit(PLATTFORM_PFAD)),
       });
     }
     // Wer im Einstieg nichts gewählt hat (etwa mit „Später“), findet hier den
