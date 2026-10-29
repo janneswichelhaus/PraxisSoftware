@@ -174,7 +174,7 @@ export function GefuehrterAblauf({
             <div
               className={`${spalte} border-line mx-auto flex min-h-15 w-full flex-wrap items-center gap-x-2 py-1 ${AM_RECHNER_LINIE_UNTEN}`}
             >
-              <p className="text-ink min-w-0 flex-[1_1_7rem] font-semibold">{objekt}</p>
+              <p className="text-ink min-w-min flex-1 font-semibold wrap-break-word">{objekt}</p>
               {abschluss ? null : (
                 <Button variant="quiet" className="-mr-3 ml-auto shrink-0" onClick={onSchliessen}>
                   Später
