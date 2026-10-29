@@ -164,17 +164,22 @@ test.describe('Übungen auf der Plattform', () => {
       // Der Klick auf „Zum Abschluss“ beendet nichts: Der Knopf darunter wartet.
       await expect(page.getByRole('button', { name: 'Einheit beenden' })).toBeEnabled();
       expect(await hauptknoepfe(page)).toEqual(['Einheit beenden']);
-      // Die Skala: Stufen 48 hoch, 8 Abstand, zwei Reihen 0 bis 5 und 6 bis 10 (Handoff 5.4, 6).
+      // Die Skala: Stufen 48 hoch, 8 Abstand; zwei Reihen 0 bis 5 und 6 bis 10, am Rechner im
+      // breiten Fenster eine (Handoff 5.4, 6).
       const stufen = page
         .getByRole('group', { name: 'Wie anstrengend war die Einheit?' })
-        .locator('label');
+        .getByRole('button');
       const [null_, eins, sechs] = await Promise.all(
         [0, 1, 6].map(async (i) => (await stufen.nth(i).boundingBox())!),
       );
       expect(null_!.height).toBeGreaterThanOrEqual(48);
       expect(eins!.x - (null_!.x + null_!.width)).toBeGreaterThanOrEqual(8);
-      expect(sechs!.y).toBeGreaterThan(null_!.y + null_!.height);
-      expect(sechs!.x).toBeCloseTo(null_!.x, 0);
+      if (breite >= 1024) {
+        expect(Math.round(sechs!.y)).toBe(Math.round(null_!.y));
+      } else {
+        expect(sechs!.y).toBeGreaterThan(null_!.y + null_!.height);
+        expect(sechs!.x).toBeCloseTo(null_!.x, 0);
+      }
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);
 
@@ -259,14 +264,22 @@ test.describe('Übungen auf der Plattform', () => {
       await page.getByRole('button', { name: 'Zum Abschluss' }).click();
       await expect(page.getByRole('heading', { level: 1, name: 'Einheit beenden' })).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
-      // Die Enden der Skala stehen untereinander; „keine“ bricht nicht (BEF-214).
-      const keine = (await page.getByText('0 = keine', { exact: true }).boundingBox())!;
-      const staerkste = (await page.getByText(/^10 = stärkste/).boundingBox())!;
-      expect(staerkste.y).toBeGreaterThanOrEqual(keine.y + keine.height - 1);
-      const zeile = await page
-        .getByText('0 = keine', { exact: true })
-        .evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
-      expect(keine.height).toBeLessThan(zeile * 1.5);
+      // Die Enden der Skala stehen als Satz über den Stufen; kein Wort darin bricht.
+      const anker = page.getByText(/^0 heißt „keine“, 10 heißt „stärkste vorstellbare“/);
+      await expect(anker).toBeVisible();
+      expect(
+        await anker.evaluate((el) => {
+          const knoten = el.firstChild!;
+          return [...(knoten.textContent ?? '').matchAll(/\S+/g)]
+            .filter((wort) => {
+              const bereich = document.createRange();
+              bereich.setStart(knoten, wort.index);
+              bereich.setEnd(knoten, wort.index + wort[0].length);
+              return new Set([...bereich.getClientRects()].map((r) => Math.round(r.top))).size > 1;
+            })
+            .map((wort) => wort[0]);
+        }),
+      ).toEqual([]);
     });
   }
 

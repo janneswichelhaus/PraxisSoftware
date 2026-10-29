@@ -269,14 +269,14 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
     for (const gruppe of [anstrengung, schmerz]) {
       expect(
         within(gruppe)
-          .getAllByRole('radio')
-          .some((r) => (r as HTMLInputElement).checked),
+          .getAllByRole('button')
+          .some((b) => b.getAttribute('aria-pressed') === 'true'),
       ).toBe(false);
     }
-    await user.click(within(anstrengung).getByLabelText('6'));
-    // Gewählt und wieder entfernt heißt: keine Angabe.
-    await user.click(within(schmerz).getByLabelText('2'));
-    await user.click(within(schmerz).getByRole('button', { name: /Angabe entfernen/ }));
+    await user.click(within(anstrengung).getByRole('button', { name: '6' }));
+    // Gewählt und mit einem zweiten Tipp zurückgenommen heißt: keine Angabe.
+    await user.click(within(schmerz).getByRole('button', { name: '2' }));
+    await user.click(within(schmerz).getByRole('button', { name: '2' }));
     await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
     await waitFor(() =>
       expect(gesendet().at(-1)).toEqual(

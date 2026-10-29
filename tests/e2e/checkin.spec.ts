@@ -39,9 +39,9 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
       await page.goto(`${PRUEFSEITE}?seite=checkin`);
       const ruhe = page.getByRole('group', { name: 'Wie stark sind Ihre Schmerzen in Ruhe?' });
       await expect(ruhe).toBeVisible();
-      await expect(ruhe.getByText('Ihre letzte Angabe: 3')).toBeVisible();
+      await expect(page.getByText('Ihre letzte Angabe: 3').first()).toBeVisible();
       // Jede Stufe ein eigenes Ziel von mindestens 44 × 44 px.
-      const stufen = ruhe.locator('label');
+      const stufen = ruhe.getByRole('button');
       await expect(stufen).toHaveCount(11);
       for (const stufe of await stufen.all()) {
         const box = (await stufe.boundingBox())!;
@@ -49,7 +49,8 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
         expect(box.height).toBeGreaterThanOrEqual(44);
       }
       await stufen.nth(4).click();
-      await expect(ruhe.getByText('gewählt: 4')).toBeVisible();
+      await expect(stufen.nth(4)).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.getByText('gewählt: 4')).toHaveCount(1);
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);
     });

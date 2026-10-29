@@ -70,11 +70,11 @@ describe('Check-in (TRK-003)', () => {
     const ruhe = await screen.findByRole('group', {
       name: 'Wie stark sind Ihre Schmerzen in Ruhe?',
     });
-    expect(within(ruhe).getByText('Ihre letzte Angabe: 4')).toBeInTheDocument();
+    expect(screen.getByText('Ihre letzte Angabe: 4')).toBeInTheDocument();
     expect(
       within(ruhe)
-        .getAllByRole('radio')
-        .some((r) => (r as HTMLInputElement).checked),
+        .getAllByRole('button')
+        .some((b) => b.getAttribute('aria-pressed') === 'true'),
     ).toBe(false);
     expect(screen.queryByRole('group', { name: /Belastung/ })).not.toBeInTheDocument();
     const minuten = screen.getByLabelText('Wie viele Minuten waren Sie heute Morgen steif?');
@@ -82,7 +82,7 @@ describe('Check-in (TRK-003)', () => {
     expect(screen.getByText(/sieht Ihre Angaben beim nächsten Termin/)).toBeInTheDocument();
     await pruefeBarrierefreiheit(container);
 
-    await nutzer.click(within(ruhe).getByLabelText('2'));
+    await nutzer.click(within(ruhe).getByRole('button', { name: '2' }));
     await nutzer.type(minuten, '30');
     await nutzer.click(screen.getByRole('button', { name: 'Absenden' }));
     await waitFor(() =>
@@ -123,11 +123,11 @@ describe('Check-in (TRK-003)', () => {
     const mittel = screen.getByRole('group', {
       name: 'Haben Sie in den letzten 24 Stunden Schmerzmittel genommen?',
     });
-    await nutzer.click(within(mittel).getByLabelText('ja'));
+    await nutzer.click(within(mittel).getByRole('button', { name: 'ja' }));
     await nutzer.click(screen.getByRole('button', { name: 'Absenden' }));
     expect(screen.getByText('Bitte beantworten Sie mindestens eine Frage.')).toBeInTheDocument();
     expect(checkinAbsenden).not.toHaveBeenCalled();
-    await nutzer.click(screen.getByLabelText('dumpf'));
+    await nutzer.click(screen.getByRole('button', { name: 'dumpf' }));
     await nutzer.click(screen.getByRole('button', { name: 'Absenden' }));
     await waitFor(() =>
       expect(checkinAbsenden).toHaveBeenCalledWith(ZUGANG.access_id, {
@@ -154,12 +154,14 @@ describe('Check-in (TRK-003)', () => {
     expect(screen.queryByRole('heading', { name: 'Zum Zusammenhang' })).not.toBeInTheDocument();
     expect(screen.getByText('Eine kurze Frage', { exact: false })).toBeInTheDocument();
     await pruefeBarrierefreiheit(container);
-    await nutzer.click(screen.getByLabelText('schwere körperliche Arbeit (etwa Umzug, Heben)'));
+    await nutzer.click(
+      screen.getByRole('button', { name: 'schwere körperliche Arbeit (etwa Umzug, Heben)' }),
+    );
     await nutzer.type(
       screen.getByLabelText('Wie lange hat diese Belastung ungefähr gedauert?'),
       '360',
     );
-    await nutzer.click(screen.getByLabelText('anstrengend'));
+    await nutzer.click(screen.getByRole('button', { name: 'anstrengend' }));
     await nutzer.click(screen.getByRole('button', { name: 'Absenden' }));
     expect(screen.getByText('Bitte beantworten Sie mindestens eine Frage.')).toBeInTheDocument();
     expect(checkinAbsenden).not.toHaveBeenCalled();
