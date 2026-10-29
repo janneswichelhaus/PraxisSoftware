@@ -132,7 +132,8 @@ erreicht, Fehler- oder Ladezustand, leere Seite. Schreibende Anfragen hält ein 
 meldet sie; die Bildstrecke verändert keine Daten. Teilmengen: `--nur=abrechnung,/training`,
 `--konten=therapist`, `--breiten=375`; `--vergleich=<vorher>` schreibt `vergleich.html`
 (`--nur-bogen` erzeugt nur die Bögen neu). Eine neue Route ohne Eintrag in `routen.mjs` macht
-`pnpm test` rot (`scripts/bildstrecke/bildstrecke.test.mjs`).
+`pnpm test` rot (`scripts/bildstrecke/bildstrecke.test.mjs`). Während eines Laufs nichts im Projekt
+ändern: Eine geänderte Markdown- oder JSON-Datei lädt über Tailwind alle offenen Seiten neu.
 
 ## Lokale Sichtung unter Windows (Git Bash)
 

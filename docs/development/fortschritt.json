@@ -1750,6 +1750,15 @@
           "gesichtet_am": "2026-10-29"
         },
         {
+          "id": "bildstrecke-netzruhe",
+          "name": "Bildstrecke: Netzruhe nach einem Wechsel in der Anwendung, offene Anfragen je Dokument",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-28",
+          "nachweis": "#329",
+          "vermerk": "Auftrag Jannes 28.10.2026; Befund „Bildstrecke“ vom 28.10. behoben; nur Werkzeug, keine Anwendungsdatei"
+        },
+        {
           "id": "drp-epic-013",
           "name": "DRP-EPIC-013 Plattform: Seite des Termins aus dem Design-Review (Schritt 3c – Kopf mit Art, Tag und Zeit, „Wer und wo“, je Lage ein Abschnitt: „Termin ändern“ und „Termin absagen“, offener Wunsch mit „Wunsch zurückziehen“, vergangen „Praxis anrufen“ als Hauptknopf, abgesagt „Neuen Termin wünschen“; „Termin ansehen“ auf der Übersicht mit Rückweg dorthin; der Weg zur Praxis in Lesefrist und Fehler der Liste)",
           "gewicht": 1,

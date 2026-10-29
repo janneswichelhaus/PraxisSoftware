@@ -1,11 +1,13 @@
+import { EventEmitter } from 'node:events';
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ALTE_AKTENBEREICHE } from '@/features/patients/akte';
 import { PLATTFORM_PFAD } from '@/features/portal/platform/pfade';
 import { KONTEN, PLATTFORMKONTEN } from '../testkonten.mjs';
 import { AUSGENOMMEN, BEREICHE, ROUTEN } from './routen.mjs';
 import { musterAlsAusdruck, routenmusterAusQuelle } from './routenquelle.mjs';
 import { schreibanfrage } from './lesewaechter.mjs';
+import { RUHE_MS, netzBeobachten } from './netzruhe.mjs';
 import { kontaktbogenHtml, kurzname, maskieren, vergleichHtml } from './kontaktbogen.mjs';
 
 /**
@@ -194,6 +196,58 @@ describe('Lesewächter', () => {
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/log_therapy_report_export`)).toBe(
       'rpc log_therapy_report_export',
     );
+  });
+});
+
+describe('Netzruhe', () => {
+  beforeEach(() => vi.useFakeTimers({ now: 0 }));
+  afterEach(() => vi.useRealTimers());
+
+  function beobachtet() {
+    const seite = new EventEmitter();
+    return { seite, netz: netzBeobachten(seite) };
+  }
+
+  it('ist ruhig, wenn RUHE_MS lang keine Anfrage offen war', () => {
+    const { seite, netz } = beobachtet();
+    const anfrage = {};
+    seite.emit('request', anfrage);
+    vi.advanceTimersByTime(RUHE_MS);
+    expect(netz.ruhig()).toBe(false);
+    seite.emit('requestfinished', anfrage);
+    vi.advanceTimersByTime(RUHE_MS - 1);
+    expect(netz.ruhig()).toBe(false);
+    vi.advanceTimersByTime(1);
+    expect(netz.ruhig()).toBe(true);
+  });
+
+  it('ein neues Dokument vergisst Anfragen ohne Ende, ein Wechsel im Verlauf nicht', () => {
+    const { seite, netz } = beobachtet();
+    // So endet eine Anfrage, die das Laden der nächsten Seite abbricht: ohne Ereignis.
+    seite.emit('request', {});
+    seite.emit('domcontentloaded');
+    vi.advanceTimersByTime(RUHE_MS);
+    expect(netz.ruhig()).toBe(true);
+    seite.emit('request', {});
+    seite.emit('framenavigated', {});
+    vi.advanceTimersByTime(RUHE_MS);
+    expect(netz.ruhig()).toBe(false);
+  });
+
+  it('eine alte Anfrage, die erst im neuen Dokument endet, zählt keine neue ab', () => {
+    const { seite, netz } = beobachtet();
+    const alt = {};
+    const neu = {};
+    seite.emit('request', alt);
+    seite.emit('domcontentloaded');
+    seite.emit('request', neu);
+    seite.emit('requestfinished', alt);
+    seite.emit('requestfailed', alt);
+    vi.advanceTimersByTime(RUHE_MS);
+    expect(netz.ruhig()).toBe(false);
+    seite.emit('requestfailed', neu);
+    vi.advanceTimersByTime(RUHE_MS);
+    expect(netz.ruhig()).toBe(true);
   });
 });
 

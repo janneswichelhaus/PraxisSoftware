@@ -38,6 +38,7 @@ import {
 } from './testkonten.mjs';
 import { BEREICHE, ROUTEN } from './bildstrecke/routen.mjs';
 import { lesewaechterAnbringen } from './bildstrecke/lesewaechter.mjs';
+import { netzBeobachten } from './bildstrecke/netzruhe.mjs';
 import { kontaktbogenHtml, kurzname, vergleichHtml } from './bildstrecke/kontaktbogen.mjs';
 
 const BASIS = (process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173').replace(/\/$/, '');
@@ -237,20 +238,12 @@ async function kontextOeffnen(gruppe) {
     reducedMotion: 'reduce',
   });
   await kontext.addInitScript(startbildUeberspringen, STARTBILD_MERKER);
-  const beobachtung = { aktuell: null, offen: 0, zuletzt: Date.now() };
+  const beobachtung = { aktuell: null };
   await lesewaechterAnbringen(kontext, (beschreibung) => {
     beobachtung.aktuell?.blockiert.add(beschreibung);
   });
   const seite = await kontext.newPage();
-  // Offene Anfragen zaehlen - fuer die Netzruhe nach einem Wechsel innerhalb
-  // der Anwendung, bei dem `goto` mit `networkidle` nicht hilft.
-  const offen = (schritt) => () => {
-    beobachtung.offen = Math.max(0, beobachtung.offen + schritt);
-    beobachtung.zuletzt = Date.now();
-  };
-  seite.on('request', offen(1));
-  seite.on('requestfinished', offen(-1));
-  seite.on('requestfailed', offen(-1));
+  const netz = netzBeobachten(seite);
   seite.on('dialog', (dialog) => void dialog.accept().catch(() => undefined));
   seite.on('console', (nachricht) => {
     // „Failed to load resource" nennt die Datei nicht - die kommt genauer aus
@@ -277,7 +270,7 @@ async function kontextOeffnen(gruppe) {
     await anmelden(seite, BASIS, gruppe.konto);
     beobachtung.aktuell = null;
   }
-  return { gruppe, kontext, seite, beobachtung, neuLaden: true };
+  return { gruppe, kontext, seite, beobachtung, netz, neuLaden: true };
 }
 
 /** Wartet, bis 500 ms lang keine Anfrage offen war (hoechstens `grenze` ms). */
@@ -285,8 +278,7 @@ async function netzruhe(sitzung, grenze = 20_000) {
   const ende = Date.now() + grenze;
   await sitzung.seite.waitForTimeout(150);
   while (Date.now() < ende) {
-    const { offen, zuletzt } = sitzung.beobachtung;
-    if (offen === 0 && Date.now() - zuletzt >= 500) return true;
+    if (sitzung.netz.ruhig()) return true;
     await sitzung.seite.waitForTimeout(100);
   }
   return false;
