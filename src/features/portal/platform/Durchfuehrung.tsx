@@ -780,7 +780,7 @@ function Abschluss({
           }}
         >
           {fragen ? (
-            <section aria-labelledby={fragenId} className="flex flex-col gap-4">
+            <section aria-labelledby={fragenId} className="flex flex-col gap-6">
               <div>
                 <Zwischentitel ebene={2} stufe="abschnitt" id={fragenId}>
                   Wie war es heute?

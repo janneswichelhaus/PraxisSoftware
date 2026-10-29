@@ -164,21 +164,34 @@ test.describe('Übungen auf der Plattform', () => {
       // Der Klick auf „Zum Abschluss“ beendet nichts: Der Knopf darunter wartet.
       await expect(page.getByRole('button', { name: 'Einheit beenden' })).toBeEnabled();
       expect(await hauptknoepfe(page)).toEqual(['Einheit beenden']);
-      // Die Skala: Stufen 48 hoch, 8 Abstand; zwei Reihen 0 bis 5 und 6 bis 10, am Rechner im
-      // breiten Fenster eine (Handoff 5.4, 6).
+      // Die Angaben (Handoff 2026-10-29, 5.3): je Frage `h3` 18/600, darunter der Satz der
+      // Anker, dann die Stufenskala; keine letzte Angabe.
+      const frage = page.getByRole('heading', {
+        level: 3,
+        name: 'Wie anstrengend war die Einheit?',
+      });
+      await expect(frage).toHaveCSS('font-size', '18px');
+      await expect(frage).toHaveCSS('font-weight', '600');
+      const anker = page.getByText('0 heißt „gar nicht“, 10 heißt „maximal“.');
+      await expect(anker).toBeVisible();
+      await expect(page.getByText(/Ihre letzte Angabe/)).toHaveCount(0);
+      // Die Skala: Stufen 56 hoch (am Rechner 60), 8 Abstand; zwei gleich lange Reihen 0 bis 5
+      // und 6 bis 10, in der breiten Spalte am Rechner eine (Handoff 3, „Skala“).
       const stufen = page
         .getByRole('group', { name: 'Wie anstrengend war die Einheit?' })
         .getByRole('button');
-      const [null_, eins, sechs] = await Promise.all(
-        [0, 1, 6].map(async (i) => (await stufen.nth(i).boundingBox())!),
+      const [null_, eins, fuenf, sechs, zehn] = await Promise.all(
+        [0, 1, 5, 6, 10].map(async (i) => (await stufen.nth(i).boundingBox())!),
       );
-      expect(null_!.height).toBeGreaterThanOrEqual(48);
+      expect(null_!.y).toBeGreaterThan((await anker.boundingBox())!.y);
+      expect(null_!.height).toBeGreaterThanOrEqual(breite >= 1024 ? 59.5 : 55.5);
       expect(eins!.x - (null_!.x + null_!.width)).toBeGreaterThanOrEqual(8);
       if (breite >= 1024) {
         expect(Math.round(sechs!.y)).toBe(Math.round(null_!.y));
       } else {
         expect(sechs!.y).toBeGreaterThan(null_!.y + null_!.height);
         expect(sechs!.x).toBeCloseTo(null_!.x, 0);
+        expect(zehn!.x + zehn!.width).toBeCloseTo(fuenf!.x + fuenf!.width, 0);
       }
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);

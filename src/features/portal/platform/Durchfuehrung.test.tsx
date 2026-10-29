@@ -273,6 +273,23 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
           .some((b) => b.getAttribute('aria-pressed') === 'true'),
       ).toBe(false);
     }
+    // Handoff 5.3: je Frage `h3`, darunter der Satz der Anker, die Stufenskala; keine letzte Angabe.
+    expect(
+      screen
+        .getAllByRole('heading', { level: 3 })
+        .map((h) => h.textContent)
+        .slice(0, 3),
+    ).toEqual([
+      'Wie anstrengend war die Einheit?',
+      'Wie stark waren Schmerzen während der Einheit?',
+      'Wie sicher haben Sie sich bei den Übungen gefühlt?',
+    ]);
+    expect(screen.getByText('0 heißt „gar nicht“, 10 heißt „maximal“.')).toBeInTheDocument();
+    expect(
+      screen.getByText('0 heißt „gar nicht sicher“, 10 heißt „völlig sicher“.'),
+    ).toBeInTheDocument();
+    expect(within(anstrengung).getByRole('button', { name: '10 – maximal' })).toBeInTheDocument();
+    expect(screen.queryByText(/Ihre letzte Angabe/)).not.toBeInTheDocument();
     await user.click(within(anstrengung).getByRole('button', { name: '6' }));
     // Gewählt und mit einem zweiten Tipp zurückgenommen heißt: keine Angabe.
     await user.click(within(schmerz).getByRole('button', { name: '2' }));

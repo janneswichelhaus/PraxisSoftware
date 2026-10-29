@@ -1172,6 +1172,96 @@ client.setQueryData(checkinsSchluessel(zugaenge[0]!.access_id), {
       ],
 } satisfies EigeneCheckins);
 client.setQueryData(checkinsSchluessel(zugaenge[1]!.access_id), null);
+// Schritt 4b: der Check-in als geführter Ablauf und seine Zustände (Handoff 5.1) - fällig in der
+// Behandlung, im Training mit der Belastung oder ohne Einwilligung, in der Lesefrist ohne Abo, beim
+// Laden und mit Fehler ohne Antwort des Servers.
+if (['checkin-frage', 'checkin-letzte', 'checkin-ohne-netz'].includes(seite)) {
+  client.setQueryData<EigeneCheckins | null>(checkinsSchluessel(zugaenge[0]!.access_id), (alt) =>
+    alt ? { ...alt, due: true, can_answer: true, due_on: inTagen(0, 0).slice(0, 10) } : alt,
+  );
+}
+if (seite === 'checkin-ohne-netz') {
+  Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
+}
+if (seite === 'checkin-training' || seite === 'checkin-einwilligung') {
+  const darf = seite === 'checkin-training';
+  client.setQueryData(checkinsSchluessel(zugaenge[1]!.access_id), {
+    today: inTagen(0, 0).slice(0, 10),
+    schedule: {
+      interval_days: 7,
+      parameter_keys: [
+        'pain_rest',
+        'pain_load',
+        'daily_impairment',
+        'activity_kind',
+        'activity_minutes',
+        'activity_intensity',
+      ],
+    },
+    due_on: inTagen(0, 0).slice(0, 10),
+    due: true,
+    can_answer: darf,
+    consent_needed: !darf,
+    last_values: darf ? { pain_rest: 3, pain_load: 6, daily_impairment: 4 } : {},
+    history: darf ? checkinVerlauf.slice(0, 1) : [],
+    session_history: [],
+  } satisfies EigeneCheckins);
+}
+if (seite === 'checkin-lesefrist') {
+  client.setQueryData(aboSchluessel(zugaenge[0]!.access_id), null);
+  client.setQueryData<EigeneCheckins | null>(checkinsSchluessel(zugaenge[0]!.access_id), (alt) =>
+    alt ? { ...alt, due: true, can_answer: false } : alt,
+  );
+}
+if (seite === 'checkin-laden' || seite === 'checkin-fehler') {
+  const schluessel = checkinsSchluessel(zugaenge[0]!.access_id);
+  client.removeQueries({ queryKey: schluessel });
+  client.setQueryDefaults(schluessel, { retryOnMount: false });
+  void client.prefetchQuery({
+    queryKey: schluessel,
+    queryFn: () =>
+      seite === 'checkin-laden'
+        ? new Promise<EigeneCheckins | null>(() => undefined)
+        : Promise.reject(new Error('Ihr Check-in konnte nicht geladen werden.')),
+  });
+}
+/**
+ * `checkin-letzte`, `checkin-ohne-netz` und `checkin-training`: der Ablauf auf seiner letzten Seite
+ * mit einer Antwort, vorgespult wie mit dem Finger - einen Zwischenstand kennt er nicht.
+ */
+const checkinAntwort: string | undefined = (
+  { 'checkin-letzte': '3', 'checkin-ohne-netz': '3', 'checkin-training': 'Sport' } as Record<
+    string,
+    string
+  >
+)[seite];
+if (checkinAntwort) void zurLetztenFrage(checkinAntwort);
+
+async function zurLetztenFrage(antwort: string) {
+  const knopf = (text: string) =>
+    [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(
+      (k) => k.textContent === text,
+    );
+  async function warte<T>(finde: () => T | undefined): Promise<T> {
+    for (;;) {
+      const fund = finde();
+      if (fund) return fund;
+      await new Promise((weiter) => setTimeout(weiter, 50));
+    }
+  }
+  // Nach jedem „Weiter“ steht ein neuer Fuß da; die Seite davor ist dann weg.
+  let vorher: HTMLButtonElement | undefined;
+  for (;;) {
+    const ziel = await warte(() => {
+      const fund = knopf('Weiter') ?? knopf('Angaben senden');
+      return fund === vorher ? undefined : fund;
+    });
+    if (ziel.textContent === 'Angaben senden') break;
+    vorher = ziel;
+    ziel.click();
+  }
+  (await warte(() => knopf(antwort))).click();
+}
 // Eine laufende Gewohnheit mit Tagen, eine pausierte; `gewohnheiten-pausiert` andersherum,
 // `gewohnheiten-leer` ohne Gewohnheit.
 const gewohnheitPausiert = seite === 'gewohnheiten-pausiert';
@@ -1913,6 +2003,50 @@ function inhalt(): { pfad: string; element: ReactNode } {
         element: (
           <PlattformApp
             zugaenge={[{ ...zugaenge[0]!, read_until: inTagen(58, 0) }]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    // Schritt 4b: der Check-in als geführter Ablauf und seine Zustände (Handoff 5.1).
+    case 'checkin-frage':
+    case 'checkin-letzte':
+    case 'checkin-ohne-netz':
+    case 'checkin-beantwortet':
+    case 'checkin-laden':
+    case 'checkin-fehler':
+    case 'checkin-training':
+    case 'checkin-einwilligung':
+    case 'checkin-leer':
+      return {
+        pfad: ['checkin-training', 'checkin-einwilligung', 'checkin-leer'].includes(seite)
+          ? '/p/checkin?bereich=training'
+          : '/p/checkin?bereich=treatment',
+        element: (
+          <PlattformApp
+            zugaenge={zugaenge}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    case 'checkin-lesefrist':
+      return {
+        pfad: '/p/checkin?bereich=treatment',
+        element: (
+          <PlattformApp
+            zugaenge={[{ ...zugaenge[0]!, read_until: inTagen(29, 0) }]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    case 'checkin-begleitung':
+      return {
+        pfad: `/p/checkin?zugang=${begleitung.access_id}`,
+        element: (
+          <PlattformApp
+            zugaenge={[zugaenge[0]!, begleitung]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />

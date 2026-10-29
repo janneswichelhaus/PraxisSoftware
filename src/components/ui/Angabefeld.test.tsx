@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { erfassungsgroesse } from '@/lib/erfassungsgroessen';
 import { Angabefeld } from './Angabefeld';
+import { TitelKontext } from './fenstertitel';
 
 const gedrueckt = (gruppe: HTMLElement) =>
   within(gruppe)
@@ -24,6 +25,10 @@ describe('Angabefeld, Skala 0 bis 10', () => {
       />,
     );
     const gruppe = screen.getByRole('group', { name: 'Wie stark sind Ihre Schmerzen in Ruhe?' });
+    // Außerhalb eines Ablaufs ist die Frage eine Überschrift (Handoff 5.3: `h3` 18/600).
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Wie stark sind Ihre Schmerzen in Ruhe?' }),
+    ).toBeInTheDocument();
     expect(within(gruppe).getAllByRole('button')).toHaveLength(11);
     expect(gedrueckt(gruppe)).toEqual([]);
     expect(
@@ -34,6 +39,29 @@ describe('Angabefeld, Skala 0 bis 10', () => {
     expect(screen.queryByRole('button', { name: /Angabe entfernen/ })).not.toBeInTheDocument();
     await userEvent.click(within(gruppe).getByRole('button', { name: '4' }));
     expect(onChange).toHaveBeenCalledWith(4);
+  });
+
+  it('im Ablauf benennt der Titel des Fensters die Skala; die Frage steht nicht doppelt da', () => {
+    render(
+      <TitelKontext.Provider value={{ id: 'frage', titel: ruhe.frage }}>
+        <h2 id="frage">{ruhe.frage}</h2>
+        <Angabefeld
+          groesse={ruhe}
+          wert={null}
+          zuletzt={3}
+          zuletztAm="21. Oktober"
+          imAblauf
+          onChange={() => {}}
+        />
+      </TitelKontext.Provider>,
+    );
+    expect(screen.getByRole('group', { name: ruhe.frage })).toBeInTheDocument();
+    expect(screen.getAllByText(ruhe.frage)).toHaveLength(1);
+    expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument();
+    expect(
+      screen.getByText('0 heißt „keine“, 10 heißt „stärkste vorstellbare“.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Ihre letzte Angabe: 3 am 21. Oktober')).toBeInTheDocument();
   });
 
   it('nimmt die Antwort mit einem zweiten Tipp zurück', async () => {
@@ -74,12 +102,26 @@ describe('Angabefeld, Auswahl in Wörtern (ANN-354)', () => {
 });
 
 describe('Angabefeld, Zahl mit Einheit', () => {
-  it('beschriftet das Feld mit der Frage und nennt die letzte Angabe darunter', () => {
-    const steif = erfassungsgroesse('morning_stiffness_minutes')!;
+  const steif = erfassungsgroesse('morning_stiffness_minutes')!;
+
+  it('beschriftet das Feld mit der Frage und nennt die letzte Angabe darüber', () => {
     render(<Angabefeld groesse={steif} wert={null} zuletzt={20} onChange={() => {}} />);
-    expect(screen.getByLabelText('Wie viele Minuten waren Sie heute Morgen steif?')).toHaveValue(
-      null,
+    const feld = screen.getByLabelText('Wie viele Minuten waren Sie heute Morgen steif?');
+    expect(feld).toHaveValue(null);
+    expect(feld).toHaveAttribute('inputmode', 'numeric');
+    // Über dem Feld, nicht darunter, wo die offene Tastatur sie verdeckte (Handoff 5.1).
+    const letzte = screen.getByText('Ihre letzte Angabe: 20 Minuten');
+    expect(letzte.compareDocumentPosition(feld) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('im Ablauf heißt das Feld nach dem Titel des Fensters', () => {
+    render(
+      <TitelKontext.Provider value={{ id: 'frage', titel: steif.frage }}>
+        <h2 id="frage">{steif.frage}</h2>
+        <Angabefeld groesse={steif} wert={null} imAblauf onChange={() => {}} />
+      </TitelKontext.Provider>,
     );
-    expect(screen.getByText('Ihre letzte Angabe: 20 Minuten')).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton', { name: steif.frage })).toBeInTheDocument();
+    expect(screen.getAllByText(steif.frage)).toHaveLength(1);
   });
 });

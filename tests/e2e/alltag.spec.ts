@@ -37,18 +37,40 @@ test.describe('Alltag als Kontext (ALT-EPIC-001)', () => {
     test(`Schlaf, Schmerzmittel und Belastung im Check-in bei ${breite} px`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?seite=checkin-alltag`);
-      await expect(page.getByText('3 kurze Fragen', { exact: false })).toBeVisible();
+      // Der Check-in als geführter Ablauf (Handoff 5.1): je Frage eine Seite, die Belastung auf einer.
+      const erste = page.getByRole('dialog', { name: 'Wie stark sind Ihre Schmerzen in Ruhe?' });
+      await expect(erste.getByText('Frage 1 von 4', { exact: true })).toBeVisible();
+      await erste.getByRole('button', { name: 'Weiter' }).click();
+      const schlaf = 'Wie viele Stunden haben Sie letzte Nacht ungefähr geschlafen?';
+      const zweite = page.getByRole('dialog', { name: schlaf });
+      await expect(zweite.getByRole('spinbutton', { name: schlaf })).toBeVisible();
+      await zweite.getByRole('button', { name: 'Weiter' }).click();
+      const dritte = page.getByRole('dialog', {
+        name: 'An wie vielen der letzten 7 Tage haben Sie Schmerzmittel bei Bedarf genommen?',
+      });
+      await expect(dritte.getByText('von 7 Tagen', { exact: true })).toBeVisible();
+      await dritte.getByRole('button', { name: 'Weiter' }).click();
+      const belastung = page.getByRole('dialog', { name: 'Außerhalb der Übungen' });
       await expect(
-        page.getByLabel('Wie viele Stunden haben Sie letzte Nacht ungefähr geschlafen?'),
+        belastung.getByRole('heading', { name: 'Außerhalb der Übungen', exact: true }),
       ).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Außerhalb der Übungen' })).toBeVisible();
-      const art = page.getByRole('group', {
+      const art = belastung.getByRole('group', {
         name: 'Was war seit dem letzten Check-in Ihre größte körperliche Belastung außerhalb der Übungen?',
       });
-      await art.getByText('schwere körperliche Arbeit (etwa Umzug, Heben)').click();
-      for (const ziel of await art.locator('label').all()) {
+      const schwer = art.getByRole('button', {
+        name: 'schwere körperliche Arbeit (etwa Umzug, Heben)',
+      });
+      await schwer.click();
+      await expect(schwer).toHaveAttribute('aria-pressed', 'true');
+      // Jede Wahl eine ganze Zeile, mindestens 44 hoch.
+      for (const ziel of await art.getByRole('button').all()) {
         expect((await ziel.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       }
+      await expect(
+        belastung.getByRole('spinbutton', {
+          name: 'Wie lange hat diese Belastung ungefähr gedauert?',
+        }),
+      ).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);
     });

@@ -6,7 +6,7 @@ import { Wahlflaechen } from './Wahlflaechen';
 
 /**
  * Eine freiwillige Angabe: Skala 0 bis 10, Zahl mit Einheit oder Wahl in Wörtern. Nichts ist
- * vorausgewählt, die letzte Angabe steht nur als Hinweis darunter (ANN-349). Keine Farbe je Wert,
+ * vorausgewählt, die letzte Angabe steht nur als Hinweis dabei (ANN-349). Keine Farbe je Wert,
  * keine Einordnung (ADR-006 Punkt 11).
  */
 export function Angabefeld({
@@ -45,11 +45,15 @@ export function Angabefeld({
       // `feld`: Der Titel reagiert auf den Fokus (ANN-567, `index.css`).
       <div className="feld flex flex-col gap-2">
         {zeigeFrage ? (
-          <label htmlFor={feldId} id={frageId} className="text-ink text-liste font-medium">
+          <label htmlFor={feldId} id={frageId} className="text-ink text-liste font-semibold">
             {groesse.frage}
           </label>
         ) : null}
-        <div className="flex items-center gap-2">
+        {/* Über dem Feld: Darunter verdeckte sie die Tastatur, die das Feld öffnet (Handoff 5.1). */}
+        {letzte}
+        {/* Unter 23rem rückt die Einheit unter das Feld, statt mitten im Wort zu brechen
+            („Minute|n“): `break-word` lässt ihr die Breite ihres längsten Worts. */}
+        <div className="flex flex-wrap items-center gap-2">
           <input
             id={feldId}
             type="number"
@@ -68,9 +72,8 @@ export function Angabefeld({
               onChange(Number.isFinite(zahl) ? zahl : null);
             }}
           />
-          <span className="text-ink">{groesse.einheit}</span>
+          <span className="text-ink wrap-break-word">{groesse.einheit}</span>
         </div>
-        {letzte}
       </div>
     );
   }
@@ -106,11 +109,13 @@ export function Angabefeld({
   const anker = ankerSatz(groesse);
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
+      {/* Im Ablauf steht der Satz der Anker 6 unter dem Titel des Fensters, der 16 Abstand
+          mitbringt (Handoff 5.1). */}
+      <div className={`flex flex-col gap-1.5 ${zeigeFrage ? '' : '-mt-2.5'}`.trim()}>
         {zeigeFrage ? (
-          <p id={frageId} className="text-ink text-liste font-medium">
+          <h3 id={frageId} className="text-ink text-base font-semibold">
             {groesse.frage}
-          </p>
+          </h3>
         ) : null}
         {anker ? <p className="text-ink-muted">{anker}</p> : null}
       </div>

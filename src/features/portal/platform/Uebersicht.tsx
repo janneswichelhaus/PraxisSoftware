@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { CSSProperties, ReactNode } from 'react';
+import { Fragment, type CSSProperties, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
 import { Aufgabenkarte } from '@/components/ui/Aufgabenkarte';
@@ -67,7 +67,8 @@ import {
 } from './hauptsache';
 import { fuerDiePlattform } from './instrumentwahl';
 import { useMarkenmoment } from './markenmoment';
-import { THEMA_NAME } from './nachrichtentexte';
+import { NOTRUFNUMMERN, THEMA_NAME } from './nachrichtentexte';
+import { Notrufnummer } from './Notfallsatz';
 import { paketStand } from './paketbedingungen';
 import { BENACHRICHTIGUNGEN_ANKER, PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { Statuszeichen } from './Terminbausteine';
@@ -260,7 +261,11 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
       // Fehler: der Gruß ohne Namen und ohne Datum (Leinwand „Fehler“).
       mitDatum={gescheitert.length === 0}
     >
-      {nachCheckin === '1' ? <Rueckmeldung>{nachDemCheckin(zugang)}</Rueckmeldung> : null}
+      {nachCheckin === '1' ? (
+        <Rueckmeldung>
+          <MitNotrufnummern satz={nachDemCheckin(zugang)} />
+        </Rueckmeldung>
+      ) : null}
       {nachBogen === '1' ? (
         <Rueckmeldung>
           Danke. Ihr Fragebogen ist bei der Praxis. Ihre Therapeut:in sieht Ihre Angaben beim
@@ -837,6 +842,26 @@ function vergangen(
 
 function fragenText(anzahl: number): string {
   return anzahl === 1 ? 'Eine kurze Frage' : `${anzahl} kurze Fragen`;
+}
+
+/**
+ * Der Satz nach dem Check-in mit 112 und 116117 zum Antippen (Handoff 5.1). Der Satz bleibt die
+ * Konstante; Link wird nur eine Nummer aus `NOTRUFNUMMERN`, wie im `Notfallsatz`.
+ */
+function MitNotrufnummern({ satz }: { satz: string }) {
+  return satz
+    .split(/(\d+)/)
+    .map((teil, index) =>
+      istNotrufnummer(teil) ? (
+        <Notrufnummer key={index} nummer={teil} />
+      ) : (
+        <Fragment key={index}>{teil}</Fragment>
+      ),
+    );
+}
+
+function istNotrufnummer(teil: string): teil is (typeof NOTRUFNUMMERN)[number] {
+  return (NOTRUFNUMMERN as readonly string[]).includes(teil);
 }
 
 /**

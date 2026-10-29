@@ -108,6 +108,27 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'gewohnheiten', merkmal: 'Gewohnheiten' },
   { seite: 'gewohnheiten-pausiert', merkmal: 'Gewohnheiten' },
   { seite: 'gewohnheiten-leer', merkmal: 'Gewohnheiten' },
+  // Schritt 4b: der Check-in als geführter Ablauf - das Fenster heißt nach der Frage - und seine
+  // Zustände unter dem Titel „Check-in“.
+  { seite: 'checkin-frage', merkmal: 'Wie stark sind Ihre Schmerzen in Ruhe?', fenster: true },
+  {
+    seite: 'checkin-letzte',
+    merkmal: 'Wie stark schränken Ihre Beschwerden Sie im Alltag ein?',
+    fenster: true,
+  },
+  {
+    seite: 'checkin-ohne-netz',
+    merkmal: 'Wie stark schränken Ihre Beschwerden Sie im Alltag ein?',
+    fenster: true,
+  },
+  { seite: 'checkin-training', merkmal: 'Außerhalb der Übungen', fenster: true },
+  { seite: 'checkin-leer', merkmal: 'Check-in' },
+  { seite: 'checkin-einwilligung', merkmal: 'Check-in' },
+  { seite: 'checkin-beantwortet', merkmal: 'Check-in' },
+  { seite: 'checkin-lesefrist', merkmal: 'Check-in' },
+  { seite: 'checkin-begleitung', merkmal: 'Check-in' },
+  { seite: 'checkin-laden', merkmal: 'Check-in' },
+  { seite: 'checkin-fehler', merkmal: 'Check-in' },
 ];
 
 async function oeffne(page: Page, seite: string, merkmal: RegExp | string, fenster = false) {
@@ -885,4 +906,111 @@ test.describe('Fragebogen vor dem ersten Termin in jedem Thema', () => {
     expect(weiter?.x ?? 0).toBeGreaterThan((ja?.x ?? 0) + 400);
     expect(await axeVerstoesse(page), 'axe').toEqual([]);
   });
+});
+
+/**
+ * Der Check-in (Handoff 2026-10-29, 5.1 und 8): genau ein Hauptknopf je Seite des Ablaufs, ohne
+ * Netz gestrichelt gesperrt; in den Zuständen keiner neben dem Weg. Im Ablauf rollt bei 188 px
+ * auch mit „Sehr groß“ nichts quer.
+ */
+test.describe('Check-in: ein Hauptknopf, 188 px und „Sehr groß“', () => {
+  const ABLAUF = [
+    {
+      seite: 'checkin-frage',
+      merkmal: 'Wie stark sind Ihre Schmerzen in Ruhe?',
+      knopf: 'Weiter',
+    },
+    {
+      seite: 'checkin-letzte',
+      merkmal: 'Wie stark schränken Ihre Beschwerden Sie im Alltag ein?',
+      knopf: 'Angaben senden',
+    },
+    {
+      seite: 'checkin-ohne-netz',
+      merkmal: 'Wie stark schränken Ihre Beschwerden Sie im Alltag ein?',
+      knopf: null,
+    },
+    { seite: 'checkin-training', merkmal: 'Außerhalb der Übungen', knopf: 'Angaben senden' },
+  ] as const;
+  const ZUSTAENDE = [
+    'checkin-leer',
+    'checkin-einwilligung',
+    'checkin-beantwortet',
+    'checkin-lesefrist',
+    'checkin-begleitung',
+    'checkin-laden',
+    'checkin-fehler',
+  ];
+
+  /** Knöpfe und Links auf der Hauptfarbe, ohne gewählte Stufen und ohne Gesperrtes darunter. */
+  async function hauptknoepfe(page: Page): Promise<string[]> {
+    return page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.className = 'bg-accent';
+      document.body.append(probe);
+      const hauptfarbe = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return [...document.querySelectorAll<HTMLElement>('button:not([aria-pressed]), a')]
+        .filter((el) => el.getBoundingClientRect().height > 0 && !el.closest('[inert]'))
+        .filter((el) => getComputedStyle(el).backgroundColor === hauptfarbe)
+        .map((el) => (el.textContent ?? '').trim());
+    });
+  }
+
+  /** Eine Fläche im Fenster, die breiter ist als ihr Platz (rollte oder schnitte quer). */
+  async function fensterRolltQuer(page: Page): Promise<string[]> {
+    return page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('[role="dialog"], [role="dialog"] *')]
+        .filter(
+          (el) =>
+            !el.closest('.sr-only') &&
+            getComputedStyle(el).overflowX !== 'visible' &&
+            el.scrollWidth > el.clientWidth + 1,
+        )
+        .map((el) => `${el.tagName} ${el.scrollWidth}/${el.clientWidth}`),
+    );
+  }
+
+  for (const { seite, merkmal, knopf } of ABLAUF) {
+    test(`${seite}: genau ein Hauptknopf bei 375 und 1280 px`, async ({ page }) => {
+      for (const breite of [375, 1280]) {
+        await page.setViewportSize({ width: breite, height: 900 });
+        await oeffne(page, seite, merkmal, true);
+        if (knopf) {
+          expect(await hauptknoepfe(page)).toEqual([knopf]);
+        } else {
+          expect(await hauptknoepfe(page)).toEqual([]);
+          await expect(page.getByRole('button', { name: 'Angaben senden' })).toHaveAttribute(
+            'aria-disabled',
+            'true',
+          );
+        }
+      }
+    });
+
+    for (const schrift of ['normal', 'sehr-gross'] as const) {
+      test(`${seite}: bei 188 px, „${schrift === 'normal' ? 'Normal' : 'Sehr groß'}“, rollt nichts quer`, async ({
+        page,
+      }) => {
+        if (schrift !== 'normal') {
+          await page.addInitScript((wert) => {
+            window.localStorage.setItem('plattform-schriftgroesse', wert);
+          }, schrift);
+        }
+        await page.setViewportSize({ width: 188, height: 406 });
+        await oeffne(page, seite, merkmal, true);
+        expect(await ueberlaeuft(page)).toBe(false);
+        expect(await fensterRolltQuer(page)).toEqual([]);
+        expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
+      });
+    }
+  }
+
+  for (const seite of ZUSTAENDE) {
+    test(`${seite}: kein Hauptknopf, der Weg ist ein Zweitknopf`, async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 900 });
+      await oeffne(page, seite, 'Check-in');
+      expect(await hauptknoepfe(page)).toEqual([]);
+    });
+  }
 });
