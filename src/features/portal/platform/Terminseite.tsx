@@ -1,15 +1,16 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState } from '@/components/ui/Feedback';
+import { NachladeHinweis } from '@/components/ui/Rueckmeldung';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Terminkopf } from '@/components/ui/Terminkopf';
-import { ZurueckSymbol } from '@/components/ui/ZurueckSymbol';
 import { AUSFALLHONORAR_SPAET } from '@/lib/ausfallhonorar';
 import {
   ladeTermine,
@@ -21,6 +22,7 @@ import {
   type Terminwunsch,
 } from './api';
 import { useRechner } from './geruestbreite';
+import { useLesefrist } from './lesefrist';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import {
   FragenZumTermin,
@@ -42,8 +44,8 @@ import { kuenftig } from './zeit';
 
 /**
  * Die Seite eines Termins, Ziel jeder Terminzeile (ANN-776). Ändern und Absagen beginnen hier und
- * öffnen den Ablauf mit `?art=` (ANN-778). Jeder Abschnitt steht allein in seinem Block, sonst
- * zählte sein Abstand doppelt.
+ * öffnen den Ablauf mit `?art=` (ANN-778), in der Reihenfolge des Handoffs (ANN-781). Jeder
+ * Abschnitt steht allein in seinem Block, sonst zählte sein Abstand doppelt.
  */
 export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
   const verbunden = useIstVerbunden();
@@ -62,39 +64,40 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
     queryKey: wuenscheSchluessel(zugang.access_id),
     queryFn: () => ladeWuensche(zugang.access_id),
   });
+  const { lesefrist } = useLesefrist(zugang);
   const termin = termine.data?.find((t) => t.id === terminId);
-  const rueckweg = <Rueckweg mit={mit} />;
+  const liste = mit(`${PLATTFORM_PFAD}/termine`);
+  const praxis = <PraxisErreichen zugang={zugang} mit={mit} lesefrist={lesefrist} />;
 
   if (termine.data === undefined && !termine.isError) {
     return (
-      <div className="flex flex-col gap-8">
-        {rueckweg}
+      <Rahmen liste={liste}>
         <Ladezustand />
-      </div>
+        {/* Ohne Netz bleibt das Skelett stehen, der Weg zur Praxis geht trotzdem (ANN-780). */}
+        {verbunden ? null : praxis}
+      </Rahmen>
     );
   }
   if (termine.data === undefined) {
     return (
-      <div className="flex flex-col gap-8">
-        {rueckweg}
+      <Rahmen liste={liste}>
         <ErrorState
           title="Ihr Termin lässt sich gerade nicht laden."
           description="Versuchen Sie es gleich noch einmal."
           onErneut={() => termine.refetch()}
         />
-        <PraxisErreichen zugang={zugang} mit={mit} />
-      </div>
+        {praxis}
+      </Rahmen>
     );
   }
   if (!termin) {
     return (
-      <div className="flex flex-col gap-8">
-        {rueckweg}
+      <Rahmen liste={liste}>
         <ErrorState
           title="Dieser Termin wurde nicht gefunden."
           description="Vielleicht hat die Praxis ihn geändert. Bitte sehen Sie in Ihre Terminliste."
         />
-      </div>
+      </Rahmen>
     );
   }
 
@@ -107,10 +110,11 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
   const wunsch = termin.open_request_kind
     ? wuensche.data?.find((w) => w.appointment_id === termin.id && w.status === 'open')
     : undefined;
+  // Scheitert das Nachladen, bleibt der Stand stehen und sagt, dass er veraltet sein kann.
+  const veraltet = termine.isError || (termin.open_request_kind !== null && wuensche.isError);
 
   return (
-    <div className="flex flex-col gap-8">
-      {rueckweg}
+    <Rahmen liste={liste}>
       <Terminkopf
         zeichen={artzeichen(termin.appointment_type, bereichArt)}
         art={artLang(termin.appointment_type, bereichArt)}
@@ -118,6 +122,15 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
         zeit={vonBis(termin)}
         zustand={zustand ? <Statuszeichen {...zustand} /> : undefined}
       />
+      {veraltet ? (
+        <NachladeHinweis
+          laeuft={termine.isFetching || wuensche.isFetching}
+          onErneut={() => {
+            void termine.refetch();
+            void wuensche.refetch();
+          }}
+        />
+      ) : null}
       <WerUndWo termin={termin} vertretung={vertretung} jetzt={jetzt} />
       {kommend && termin.open_request_kind ? (
         <OffenerWunsch zugang={zugang} termin={termin} wunsch={wunsch} verbunden={verbunden} />
@@ -130,33 +143,29 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
           rechner={rechner}
         />
       ) : null}
-      <div>
-        <FragenZumTermin
-          rufnummer={zugang.practice_phone}
-          schreiben={mit(`${PLATTFORM_PFAD}/nachrichten/neu`)}
-          anrufenAlsHauptknopf={!kommend && !abgesagt}
-        />
-      </div>
-    </div>
+      {lesefrist && !zugang.practice_phone ? null : (
+        <div>
+          <FragenZumTermin
+            rufnummer={zugang.practice_phone}
+            schreiben={lesefrist ? null : mit(`${PLATTFORM_PFAD}/nachrichten/neu`)}
+            anrufenAlsHauptknopf={!kommend && !abgesagt}
+          />
+        </div>
+      )}
+    </Rahmen>
   );
 }
 
 /**
- * Der Weg zurück: „Termine“, von der Übersicht „Übersicht“. Woher, sagt `?von=uebersicht` am Link
- * von Hero- und Besuchskarte; ein anderes Ziel nimmt er nicht an (ANN-779).
+ * Der Rückweg „Termine“ über dem Stapel, von der Übersicht aus „Übersicht“ (`?zurueck=`, ANN-779).
+ * Sein Abstand kommt aus dem Baustein, nicht aus dem Stapel.
  */
-function Rueckweg({ mit }: { mit: (pfad: string) => string }) {
-  const [suche] = useSearchParams();
-  const vonUebersicht = suche.get('von') === 'uebersicht';
+function Rahmen({ liste, children }: { liste: string; children: ReactNode }) {
   return (
-    <ButtonLink
-      variant="quiet"
-      to={mit(vonUebersicht ? PLATTFORM_PFAD : `${PLATTFORM_PFAD}/termine`)}
-      className="-mb-6 -ml-2 gap-1 self-start pl-2"
-    >
-      <ZurueckSymbol />
-      {vonUebersicht ? 'Übersicht' : 'Termine'}
-    </ButtonLink>
+    <div>
+      <Rueckweg standard={liste} beschriftung="Termine" />
+      <div className="flex flex-col gap-8">{children}</div>
+    </div>
   );
 }
 
@@ -276,6 +285,7 @@ function OffenerWunsch({
     <div>
       <Section
         titel={termin.open_request_kind === 'cancel' ? 'Ihr Absagewunsch' : 'Ihr Änderungswunsch'}
+        trennen
       >
         <div className="flex flex-col gap-3">
           {wann ? <p className="hyphens-manual">{wann}</p> : null}
@@ -284,7 +294,7 @@ function OffenerWunsch({
             Die Praxis meldet sich bei Ihnen. Bis dahin gilt der Termin.
           </p>
           {wunsch ? (
-            <div className="-ml-5 self-start">
+            <div className="self-start">
               <Zurueckziehen
                 zugang={zugang}
                 wunschId={wunsch.id}
@@ -346,11 +356,13 @@ function NeuerWunsch({
 function Ladezustand() {
   return (
     <SkelettBereich beschriftung="Termin wird geladen">
-      <span className="flex flex-col gap-3">
-        <Skelett form="zeile" className="w-40 max-w-full" />
-        <Skelett form="gruss" className="w-72 max-w-full" />
-        <Skelett form="titel" className="w-44 max-w-full" />
-        <Skelett form="karte" className="mt-5 min-h-36" />
+      <span className="flex flex-col gap-8">
+        <span className="flex flex-col gap-3">
+          <Skelett form="zeile" className="w-40 max-w-full" />
+          <Skelett form="gruss" className="w-72 max-w-full" />
+          <Skelett form="titel" className="w-44 max-w-full" />
+        </span>
+        <Skelett form="karte" className="min-h-36" />
       </span>
     </SkelettBereich>
   );

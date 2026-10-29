@@ -217,11 +217,13 @@ export function FragenZumTermin({
   titel?: string;
   /** `practice_phone` aus dem Zugang (N2, ANN-691), sonst `null`. */
   rufnummer: string | null;
-  /** Neue Nachricht an die Praxis, mit dem Bereich in der Adresse. */
-  schreiben: string;
+  /** Neue Nachricht an die Praxis, mit dem Bereich; `null` in der Lesefrist (ANN-313). */
+  schreiben: string | null;
   anrufenAlsHauptknopf?: boolean;
 }) {
   const hauptknopf = anrufenAlsHauptknopf && rufnummer;
+  const anrufzeile = Boolean(rufnummer) && !hauptknopf;
+  if (!hauptknopf && !anrufzeile && !schreiben) return null;
   return (
     <Section titel={titel}>
       <div className="flex flex-col gap-4">
@@ -232,17 +234,25 @@ export function FragenZumTermin({
             zweizeilig
           />
         ) : null}
-        <Terminliste>
-          {rufnummer && !hauptknopf ? (
-            <Fragezeile
-              zeichen="telefon"
-              wort="Praxis anrufen"
-              zusatz={rufnummer}
-              ziel={{ href: telHref(rufnummer) }}
-            />
-          ) : null}
-          <Fragezeile zeichen="nachricht" wort="Der Praxis schreiben" ziel={{ to: schreiben }} />
-        </Terminliste>
+        {anrufzeile || schreiben ? (
+          <Terminliste>
+            {rufnummer && !hauptknopf ? (
+              <Fragezeile
+                zeichen="telefon"
+                wort="Praxis anrufen"
+                zusatz={rufnummer}
+                ziel={{ href: telHref(rufnummer) }}
+              />
+            ) : null}
+            {schreiben ? (
+              <Fragezeile
+                zeichen="nachricht"
+                wort="Der Praxis schreiben"
+                ziel={{ to: schreiben }}
+              />
+            ) : null}
+          </Terminliste>
+        ) : null}
       </div>
     </Section>
   );
@@ -250,21 +260,27 @@ export function FragenZumTermin({
 
 /**
  * Der Weg zur Praxis, wo eine Seite sonst keinen bietet: in der Lesefrist, deren Satz auf die Praxis
- * verweist, und wenn die Termine nicht laden, etwa für eine kurzfristige Absage (ANN-780).
+ * verweist, und wenn die Termine nicht laden, etwa für eine kurzfristige Absage (ANN-780). In der
+ * Lesefrist nur der Anruf: Fragen nimmt die Praxis dann nicht mehr an (ANN-313).
  */
 export function PraxisErreichen({
   zugang,
   mit,
+  lesefrist,
+  className = '',
 }: {
   zugang: Plattformzugang;
   mit: (pfad: string) => string;
+  lesefrist: boolean;
+  className?: string;
 }) {
+  if (lesefrist && !zugang.practice_phone) return null;
   return (
-    <div>
+    <div className={className}>
       <FragenZumTermin
         titel="Die Praxis erreichen"
         rufnummer={zugang.practice_phone}
-        schreiben={mit(`${PLATTFORM_PFAD}/nachrichten/neu`)}
+        schreiben={lesefrist ? null : mit(`${PLATTFORM_PFAD}/nachrichten/neu`)}
       />
     </div>
   );

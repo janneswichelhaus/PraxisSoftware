@@ -51,5 +51,5 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 ## Letzte Session
 
 29.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: 3b gemergt und gesichtet; 3c übertragen (Seite des
-Termins, ANN-778 bis -780, BEF-221 erledigt, auch Lesefrist und Fehler der Liste). Keine Migration.
+Termins, ANN-778 bis -781, BEF-221 erledigt, auch Lesefrist und Fehler der Liste). Keine Migration.
 Lokal: `git pull`.

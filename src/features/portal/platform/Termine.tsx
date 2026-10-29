@@ -15,8 +15,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Terminliste } from '@/components/ui/Terminliste';
 import { Terminsymbol, type Terminzeichen } from '@/components/ui/Terminsymbole';
 import {
-  aboSchluessel,
-  ladeAbo,
   ladePlaene,
   ladeTermine,
   ladeWuensche,
@@ -32,13 +30,13 @@ import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import { useRechner } from './geruestbreite';
 import {
   ersterTermin,
-  inLesefrist,
   lesefristSatz,
   naechsterTermin,
   terminPerson,
   terminTitel,
   terminZeit,
 } from './hauptsache';
+import { useLesefrist } from './lesefrist';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import {
   PraxisErreichen,
@@ -84,19 +82,9 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
     queryKey: plaeneSchluessel(zugang.access_id),
     queryFn: () => ladePlaene(zugang.access_id),
   });
-  // Die Lesefrist beginnt erst nach einem Nachsorge-Abo (ANN-274), wie auf
-  // der Übersicht. Gefragt wird nur, wenn sie überhaupt in Frage kommt.
-  const abo = useQuery({
-    queryKey: aboSchluessel(zugang.access_id),
-    queryFn: () => ladeAbo(zugang.access_id),
-    enabled: inLesefrist(zugang) && zugang.relationship_kind === 'treatment',
-  });
-  const lesefrist = inLesefrist(
-    zugang,
-    abo.data?.state === 'running' || abo.data?.state === 'ending',
-  );
-  // Ohne Antwort des Servers bleibt das Skelett, auch ohne Netz - wie auf
-  // der Übersicht sagt dann die Verbindungszeile, was fehlt.
+  const { lesefrist, abo } = useLesefrist(zugang);
+  // Ohne Antwort des Servers bleibt das Skelett, auch ohne Netz: Wie auf der Übersicht sagt die
+  // Verbindungszeile, was fehlt, darunter steht der Weg zur Praxis (ANN-780).
   const laedt =
     (termine.data === undefined && !termine.isError) ||
     (abo.isPending && abo.fetchStatus === 'fetching');
@@ -131,7 +119,17 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
         </Rueckmeldung>
       ) : null}
       {laedt ? (
-        <Ladezustand rechner={rechner} />
+        <>
+          <Ladezustand rechner={rechner} />
+          {verbunden ? null : (
+            <PraxisErreichen
+              zugang={zugang}
+              mit={mit}
+              lesefrist={lesefrist}
+              className={rechner ? 'max-w-spalte' : ''}
+            />
+          )}
+        </>
       ) : termine.data === undefined || teile === undefined ? (
         // Ohne Termine bleibt der Wunsch möglich - der Satz sagt es.
         <div className={`flex flex-col ${rechner ? 'max-w-spalte gap-12' : 'gap-10'}`}>
@@ -151,7 +149,7 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
               breit={!rechner}
             />
           ) : null}
-          <PraxisErreichen zugang={zugang} mit={mit} />
+          <PraxisErreichen zugang={zugang} mit={mit} lesefrist={lesefrist} />
         </div>
       ) : (
         <>
@@ -413,13 +411,14 @@ function Liste({
   return (
     <div className={`flex flex-col ${rechner ? 'max-w-spalte gap-12' : 'gap-10'}`}>
       {hauptsache}
+      {/* Vor dem Vergangenen, ohne Rollen erreichbar: Der Satz der Lesefrist verweist hierher. */}
+      {lesefrist ? <PraxisErreichen zugang={zugang} mit={mit} lesefrist /> : null}
       {weitereAbschnitt}
       {nurWunsch ? null : knopf}
       {wuenscheAbschnitt}
       {nurWunsch ? knopf : null}
       {woche}
       {vergangenAbschnitt}
-      {lesefrist ? <PraxisErreichen zugang={zugang} mit={mit} /> : null}
     </div>
   );
 }

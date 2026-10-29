@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
+import { focusManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
-import type { Plattformzugang, Termin, Terminwunsch } from './api';
+import type { Nachsorgeabo, Plattformzugang, Termin, Terminwunsch } from './api';
 import { renderWithProviders } from '@/test-utils';
+import { STAND_VERALTET } from '@/components/ui/abfrageTexte';
 import { AUSFALLHONORAR_SPAET } from '@/lib/ausfallhonorar';
 import { RECHNER_ABFRAGE } from './geruestbreite';
 import { tagInWorten } from './termintexte';
@@ -28,12 +30,14 @@ function ohneAbschnitt(name: string) {
 
 const ladeTermine = vi.fn();
 const ladeWuensche = vi.fn();
+const ladeAbo = vi.fn();
 const wunschZurueckziehen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladeTermine: (...args: unknown[]) => ladeTermine(...args) as Promise<Termin[]>,
   ladeWuensche: (...args: unknown[]) => ladeWuensche(...args) as Promise<Terminwunsch[]>,
+  ladeAbo: (...args: unknown[]) => ladeAbo(...args) as Promise<Nachsorgeabo | null>,
   wunschZurueckziehen: (...args: unknown[]) => wunschZurueckziehen(...args) as Promise<void>,
 }));
 
@@ -99,12 +103,14 @@ function zeige(
 beforeEach(() => {
   vi.clearAllMocks();
   ladeWuensche.mockResolvedValue([]);
+  ladeAbo.mockResolvedValue(null);
   wunschZurueckziehen.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  focusManager.setFocused(undefined);
 });
 
 describe('Seite des Termins (Schritt 3c)', () => {
@@ -140,7 +146,7 @@ describe('Seite des Termins (Schritt 3c)', () => {
       '/p/nachrichten/neu?bereich=treatment',
     );
     // Der Rückweg führt zur Liste.
-    expect(screen.getByRole('link', { name: 'Termine' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '← Termine' })).toHaveAttribute(
       'href',
       '/p/termine?bereich=treatment',
     );
@@ -239,12 +245,74 @@ describe('Seite des Termins (Schritt 3c)', () => {
     expect(zurueck).toHaveAccessibleDescription(WUENSCHE_OHNE_NETZ);
   });
 
-  it('von der Übersicht heißt der Rückweg „Übersicht“', async () => {
-    zeige(TERMIN, { pfad: `/p/termine/${TERMIN.id}?bereich=treatment&von=uebersicht` });
-    expect(await screen.findByRole('link', { name: 'Übersicht' })).toHaveAttribute(
+  it('von der Übersicht heißt der Rückweg „Übersicht“; er reist als `zurueck` mit (ANN-779)', async () => {
+    zeige(TERMIN, {
+      pfad: `/p/termine/${TERMIN.id}?bereich=treatment&zurueck=${encodeURIComponent('/p?bereich=treatment')}`,
+    });
+    expect(await screen.findByRole('link', { name: '← Übersicht' })).toHaveAttribute(
       'href',
       '/p?bereich=treatment',
     );
+  });
+
+  it('in der Lesefrist ohne „Der Praxis schreiben“: Fragen nimmt die Praxis nicht mehr an (ANN-313)', async () => {
+    const ENDE: Plattformzugang = { ...ZUGANG, read_until: '2027-01-16T00:00:00+01:00' };
+    const VERGANGEN: Termin = {
+      ...TERMIN,
+      starts_at: inStunden(-50),
+      ends_at: inStunden(-49),
+      status: 'completed',
+      late_notice: null,
+    };
+    zeige(VERGANGEN, { zugang: ENDE });
+    const fragen = await findeAbschnitt('Fragen zu diesem Termin?');
+    expect(within(fragen).getByRole('link', { name: /Praxis anrufen/ })).toHaveClass('bg-accent');
+    expect(within(fragen).queryByRole('list')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Der Praxis schreiben' })).not.toBeInTheDocument();
+    expect(ladeAbo).toHaveBeenCalledWith(ENDE.access_id);
+  });
+
+  it('in der Lesefrist ohne Nummer: keine Fragen, statt eines leeren Abschnitts', async () => {
+    zeige(
+      { ...TERMIN, starts_at: inStunden(-50), ends_at: inStunden(-49), status: 'completed' },
+      {
+        zugang: { ...ZUGANG, read_until: '2027-01-16T00:00:00+01:00', practice_phone: null },
+      },
+    );
+    await screen.findByRole('region', { name: 'Wer und wo' });
+    ohneAbschnitt('Fragen zu diesem Termin?');
+  });
+
+  it('mit laufendem Nachsorge-Abo ist noch keine Lesefrist: „Der Praxis schreiben“ bleibt (ANN-274)', async () => {
+    ladeAbo.mockResolvedValue({ state: 'running', ends_on: null });
+    zeige(
+      { ...TERMIN, starts_at: inStunden(-50), ends_at: inStunden(-49), status: 'completed' },
+      { zugang: { ...ZUGANG, read_until: '2027-01-16T00:00:00+01:00' } },
+    );
+    const fragen = await findeAbschnitt('Fragen zu diesem Termin?');
+    expect(
+      await within(fragen).findByRole('link', { name: 'Der Praxis schreiben' }),
+    ).toBeInTheDocument();
+  });
+
+  it('scheitert das Nachladen, bleibt der Termin stehen und sagt, dass er veraltet sein kann', async () => {
+    zeige(TERMIN);
+    await screen.findByRole('region', { name: 'Wer und wo' });
+    ladeTermine.mockRejectedValue(new Error('Netz weg'));
+    act(() => focusManager.setFocused(true));
+    expect(await screen.findByText(STAND_VERALTET)).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Wer und wo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+  });
+
+  it('lädt ohne Netz: unter dem Skelett der Weg zur Praxis (ANN-780)', () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    ladeTermine.mockReturnValue(new Promise<Termin[]>(() => undefined));
+    renderWithProviders(<Terminseite zugang={ZUGANG} />, `/p/termine/${TERMIN.id}`);
+    expect(screen.getByText('Termin wird geladen')).toHaveClass('sr-only');
+    expect(
+      within(abschnittNamens('Die Praxis erreichen')).getByRole('link', { name: /Praxis anrufen/ }),
+    ).toHaveAttribute('href', 'tel:+4970710000000');
   });
 
   it('lädt als Skelett, sagt einen Fehler und einen fehlenden Termin', async () => {

@@ -445,7 +445,7 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
   it('sagt, wenn der Termin nicht gefunden wurde', async () => {
     zeige(TERMIN, '/p/termine/aaaaaaaa-aaaa-4aaa-8aaa-0000000000ff?bereich=treatment');
     expect(await screen.findByText('Dieser Termin wurde nicht gefunden.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Termine' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '← Termine' })).toHaveAttribute(
       'href',
       '/p/termine?bereich=treatment',
     );

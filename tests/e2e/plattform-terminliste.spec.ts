@@ -290,14 +290,20 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     await expect(page.getByRole('heading', { level: 2, name: 'Vergangene Termine' })).toBeVisible();
     await expect(page.getByRole('list', { name: 'Vergangene Termine' })).toBeVisible();
     await expect(page.getByRole('link', { name: /Termin wünschen/ })).toHaveCount(0);
-    // Der Satz verweist auf die Praxis, die Seite bietet den Weg dorthin (ANN-780).
-    await expect(
-      page.getByRole('heading', { level: 2, name: 'Die Praxis erreichen' }),
-    ).toBeVisible();
-    await expect(page.getByRole('link', { name: /^Praxis anrufen/ })).toHaveAttribute(
-      'href',
-      'tel:+4970710000000',
-    );
+    // Der Satz verweist auf die Praxis: Der Anruf steht vor dem Vergangenen, ohne Rollen bei
+    // 375 × 667; Schreiben nimmt die Praxis in der Lesefrist nicht mehr an (ANN-780, ANN-313).
+    await page.setViewportSize({ width: 375, height: 667 });
+    const anrufen = page.getByRole('link', { name: /^Praxis anrufen/ });
+    await expect(anrufen).toHaveAttribute('href', 'tel:+4970710000000');
+    await expect(anrufen).toBeInViewport();
+    await expect(page.getByRole('link', { name: 'Der Praxis schreiben' })).toHaveCount(0);
+    const weg = await page
+      .getByRole('heading', { level: 2, name: 'Die Praxis erreichen' })
+      .boundingBox();
+    const vergangen = await page
+      .getByRole('heading', { level: 2, name: 'Vergangene Termine' })
+      .boundingBox();
+    expect(weg!.y).toBeLessThan(vergangen!.y);
   });
 
   test('Fehler: neben „Termin wünschen“ der Weg zur Praxis, etwa für eine kurzfristige Absage', async ({
