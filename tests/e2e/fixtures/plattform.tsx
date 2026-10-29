@@ -973,6 +973,123 @@ if (seite === 'uebersicht-fehler') {
   });
 }
 
+// Schritt 4c: Antworten je Thema des Fragebogens. `fragebogen-thema` öffnet mit einem Entwurf beim
+// Thema `&thema=` (ohne Angabe 3), der Abschluss mit drei offenen Themen, gesendet vor zwei Tagen.
+const BOGEN_ANTWORTEN: readonly Record<string, unknown>[] = [
+  { beruf: { text: 'Lehrerin' }, sport_hobby: { text: 'Radfahren, Garten' } },
+  {
+    beschwerden_ort: {
+      markierungen: [
+        { x: 0.185, y: 0.19, bereich: 'schulter_rechts' },
+        { x: 0.726, y: 0.147, bereich: 'nacken' },
+      ],
+    },
+  },
+  { schmerzen_aktuell: { auswahl: 'ja' }, schmerzstaerke: { wert: 4 } },
+  {
+    schmerzart: { auswahl: ['nachtschmerzen'] },
+    beweglichkeit_veraendert: { auswahl: 'ja' },
+    kraft_vermindert: { auswahl: 'nein' },
+  },
+  {
+    merkmale: { auswahl: ['kribbeln'] },
+    weitere_beschwerden: { text: 'Morgens steif im Nacken.' },
+  },
+  {
+    beschwerden_seit: { text: 'Seit etwa drei Monaten' },
+    beschwerden_zeitlich: { auswahl: 'mit_unterbrechungen' },
+    beschwerden_verlauf: { auswahl: 'gleichbleibend' },
+  },
+  {
+    verbessert_durch: { auswahl: ['gehen', 'ruhe'] },
+    verschlechtert_durch: { auswahl: ['sitzen', 'sonstiges'], freitext: 'Lange Autofahrten' },
+  },
+  {
+    schmerz_durchschnitt: { wert: 5 },
+    unsicher_umgang: { auswahl: 'nein' },
+    stark_gestoert: { auswahl: 'ja' },
+    kurze_wege: { auswahl: 'nein' },
+    mehrere_koerperteile: { auswahl: 'nein' },
+    lange_anhalten: { auswahl: 'nein' },
+    andere_gesundheitsprobleme: { auswahl: 'nein' },
+    niedergeschlagen: { auswahl: 'nein' },
+  },
+  { aktivitaet_schaedlich: { auswahl: 'nein' }, seit_sechs_monaten: { auswahl: 'nein' } },
+  {
+    symptome_neurologisch: { auswahl: ['nein'] },
+    symptome_organisch: { auswahl: ['nein'] },
+    symptome_allgemein: { auswahl: ['nein'] },
+  },
+  {
+    tumor: { auswahl: 'nein' },
+    erkrankungen: { auswahl: ['nein'] },
+    ereignisse: { auswahl: ['nein'] },
+    wechseljahre_schwangerschaft: { auswahl: ['nein'] },
+  },
+  { medikamente: { auswahl: ['schmerzmittel'] } },
+  {
+    rauchen: { auswahl: 'nein' },
+    ernaehrung: { auswahl: 'ja' },
+    bewegung: { auswahl: 'ja' },
+    krafttraining: { auswahl: 'nein' },
+    schlaf: { auswahl: 'ja' },
+    stress_arbeit: { wert: 3 },
+    stress_alltag: { wert: 2 },
+  },
+  {
+    bisherige_massnahmen: { auswahl: ['roentgen', 'physiotherapie'] },
+    erwartungen_ziele: { text: 'Wieder ohne Schmerzen Rad fahren.' },
+  },
+];
+function bogen(antworten: Record<string, unknown>, abgeschlossen = false) {
+  return {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-0000000000c4',
+    instrument_id: 'anamnese_v8',
+    definition_version: '1.0.0',
+    status: abgeschlossen ? 'abgeschlossen' : 'entwurf',
+    recorded_on: inTagen(-2, 0).slice(0, 10),
+    source: 'platform',
+    answers: abgeschlossen ? null : antworten,
+    updated_at: inTagen(-2, 10),
+    completed_at: abgeschlossen ? inTagen(-2, 10) : null,
+  };
+}
+if (seite === 'fragebogen-thema') {
+  const bisher = BOGEN_ANTWORTEN.slice(0, Number(parameter.get('thema') ?? '3') - 1);
+  client.setQueryData(befundbogenSchluessel(zugaenge[0]!.access_id), [
+    bogen(Object.assign({}, ...bisher) as Record<string, unknown>),
+  ]);
+}
+if (seite === 'fragebogen-abschluss' || seite === 'fragebogen-ohne-netz') {
+  // Offen: 12 a und b, die Medikamente und 39.
+  const beantwortet = [...BOGEN_ANTWORTEN.slice(0, 6), ...BOGEN_ANTWORTEN.slice(7, 11)];
+  const antworten = Object.assign({}, ...beantwortet, BOGEN_ANTWORTEN[12], {
+    bisherige_massnahmen: BOGEN_ANTWORTEN[13]!.bisherige_massnahmen,
+  }) as Record<string, unknown>;
+  client.setQueryData(befundbogenSchluessel(zugaenge[0]!.access_id), [bogen(antworten)]);
+}
+if (seite === 'fragebogen-ohne-netz') {
+  Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
+}
+if (seite === 'fragebogen-gesendet') {
+  client.setQueryData(befundbogenSchluessel(zugaenge[0]!.access_id), [bogen({}, true)]);
+}
+if (seite === 'fragebogen-laden') {
+  client.removeQueries({ queryKey: befundbogenSchluessel(zugaenge[0]!.access_id) });
+  void client.prefetchQuery({
+    queryKey: befundbogenSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => new Promise<never>(() => undefined),
+  });
+}
+if (seite === 'fragebogen-ladefehler') {
+  client.removeQueries({ queryKey: befundbogenSchluessel(zugaenge[0]!.access_id) });
+  client.setQueryDefaults(befundbogenSchluessel(zugaenge[0]!.access_id), { retryOnMount: false });
+  void client.prefetchQuery({
+    queryKey: befundbogenSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => Promise.reject(new Error('Ihr Fragebogen konnte nicht geladen werden.')),
+  });
+}
+
 // TRK-EPIC-001: Check-in der Behandlung, im Training keiner eingestellt.
 const checkinVerlauf: EigeneCheckins['history'] = [
   {
@@ -1712,6 +1829,35 @@ function inhalt(): { pfad: string; element: ReactNode } {
         ),
       };
     }
+    // Schritt 4c: der Fragebogen in einem Thema, beim Abschluss und in seinen Lagen.
+    case 'fragebogen-thema':
+    case 'fragebogen-abschluss':
+    case 'fragebogen-ohne-netz':
+    case 'fragebogen-gesendet':
+    case 'fragebogen-training':
+    case 'fragebogen-laden':
+    case 'fragebogen-ladefehler':
+      return {
+        pfad: `/p/befundbogen?bereich=${seite === 'fragebogen-training' ? 'training' : 'treatment'}`,
+        element: (
+          <PlattformApp
+            zugaenge={zugaenge}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    case 'fragebogen-begleitung':
+      return {
+        pfad: `/p/befundbogen?zugang=${begleitung.access_id}`,
+        element: (
+          <PlattformApp
+            zugaenge={[zugaenge[0]!, begleitung]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
     case 'ende':
       return {
         pfad: '/p/ich',

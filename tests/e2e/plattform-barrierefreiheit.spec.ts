@@ -55,7 +55,18 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'rechnungen', merkmal: 'Rechnungen' },
   { seite: 'rechnung', merkmal: 'Rechnung RG-2026-0007' },
   { seite: 'dokumente', merkmal: 'Dokumente' },
-  { seite: 'befundbogen', merkmal: 'Fragebogen vor dem ersten Termin' },
+  // Schritt 4c: der Fragebogen als geführter Ablauf - Thema 1, Thema 3 aus einem Entwurf, der
+  // Abschluss, auch ohne Netz; dazu seine Lagen auf der Seite. Jedes Thema prüft der Block unten.
+  { seite: 'befundbogen', merkmal: 'Zu Ihrer Person', fenster: true },
+  { seite: 'fragebogen-thema', merkmal: 'Ihre Schmerzen heute', fenster: true },
+  { seite: 'fragebogen-thema&thema=8', merkmal: 'Die vergangenen zwei Wochen', fenster: true },
+  { seite: 'fragebogen-abschluss', merkmal: 'Ist alles richtig?', fenster: true },
+  { seite: 'fragebogen-ohne-netz', merkmal: 'Ist alles richtig?', fenster: true },
+  { seite: 'fragebogen-gesendet', merkmal: 'Fragebogen vor dem ersten Termin' },
+  { seite: 'fragebogen-training', merkmal: 'Fragebogen vor dem ersten Termin' },
+  { seite: 'fragebogen-begleitung', merkmal: 'Fragebogen vor dem ersten Termin' },
+  { seite: 'fragebogen-laden', merkmal: 'Fragebogen vor dem ersten Termin' },
+  { seite: 'fragebogen-ladefehler', merkmal: 'Fragebogen vor dem ersten Termin' },
   { seite: 'ich', merkmal: 'Ich' },
   { seite: 'einwilligungen', merkmal: 'Einwilligungen' },
   { seite: 'daten', merkmal: 'Meine Daten' },
@@ -684,5 +695,194 @@ test.describe('Ernährung und Tagebuch', () => {
     await page.getByRole('link', { name: 'Snacks eintragen' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Snacks eintragen' })).toBeVisible();
     await expect(page.getByRole('link', { name: '← Tagebuch' })).toBeVisible();
+  });
+});
+
+/**
+ * Der Fragebogen vor dem ersten Termin in jedem Thema und im Abschluss (Handoff Selbstauskunft,
+ * Abschnitt 8): Schrift, Ziele, axe, kein Rollen und genau ein Hauptknopf bei 375 und 188 px, je
+ * Thema ein Tipp. Was der Bogen sendet, beantwortet eine Nachbildung und zählt mit.
+ */
+test.describe('Fragebogen vor dem ersten Termin in jedem Thema', () => {
+  async function nachbilden(page: Page, { sendenScheitert = false } = {}) {
+    const aufrufe: { name: string; parameter: Record<string, unknown> }[] = [];
+    await page.route('**/rest/v1/**', async (route) => {
+      const name = new URL(route.request().url()).pathname.split('/rpc/')[1] ?? '';
+      const parameter = (route.request().postDataJSON() ?? {}) as Record<string, unknown>;
+      aufrufe.push({ name, parameter });
+      if (name === 'save_platform_questionnaire_response') {
+        await route.fulfill({ json: 'bbbbbbbb-bbbb-4bbb-8bbb-0000000000c4' });
+      } else if (name === 'complete_platform_questionnaire_response') {
+        await route.fulfill(
+          sendenScheitert ? { status: 500, json: { message: 'kaputt' } } : { json: true },
+        );
+      } else {
+        await route.fulfill({ json: [] });
+      }
+    });
+    return aufrufe;
+  }
+
+  /** Tippt, sobald die Tippsperre nach dem Wechsel der Seite vorbei ist. */
+  async function tippe(ziel: ReturnType<Page['getByRole']>) {
+    await expect(ziel).toBeVisible();
+    await expect(async () => {
+      expect(await ziel.evaluate((el) => el.closest('.pointer-events-none') === null)).toBe(true);
+    }).toPass();
+    await ziel.click();
+  }
+
+  /** Die Hauptknöpfe im Fenster: gefüllte Knöpfe, ohne die gewählte Stufe einer Skala. */
+  async function hauptknoepfe(page: Page): Promise<string[]> {
+    return page
+      .locator('[role="dialog"] button.bg-accent:not([aria-pressed])')
+      .evaluateAll((knoepfe) => knoepfe.map((k) => (k.textContent ?? '').trim()));
+  }
+
+  /** Rollt eine Fläche im Fenster waagerecht - auch das ist Rollen, nicht nur die Seite. */
+  async function rolltImFenster(page: Page): Promise<string[]> {
+    return page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('[role="dialog"] *')]
+        .filter((el) => {
+          const quer = getComputedStyle(el).overflowX;
+          return (quer === 'auto' || quer === 'scroll') && el.scrollWidth > el.clientWidth + 1;
+        })
+        .map((el) => el.className.toString().slice(0, 60)),
+    );
+  }
+
+  async function pruefe(page: Page, name: string) {
+    await bewegungAbwarten(page);
+    expect(await kleineSchrift(page), `${name}: Schrift unter 18 px`).toEqual([]);
+    expect(await kleineZiele(page), `${name}: Ziele unter 44 px`).toEqual([]);
+    expect(await axeVerstoesse(page), `${name}: axe`).toEqual([]);
+    expect(await ueberlaeuft(page), `${name}: waagerechtes Rollen`).toBe(false);
+    expect(await rolltImFenster(page), `${name}: waagerechtes Rollen im Fenster`).toEqual([]);
+    expect(await hauptknoepfe(page), `${name}: ein Hauptknopf`).toHaveLength(1);
+  }
+
+  for (const breite of [375, 188]) {
+    test(`${breite} px: jedes der 14 Themen und der Abschluss, je Thema ein Tipp`, async ({
+      page,
+    }) => {
+      test.setTimeout(240_000);
+      await nachbilden(page);
+      await page.setViewportSize({ width: breite, height: 812 });
+      await page.goto(`${PRUEFSEITE}?seite=befundbogen`);
+      let tipps = 0;
+      for (let nummer = 1; nummer <= 14; nummer += 1) {
+        await expect(
+          page.getByRole('dialog').getByText(`Thema ${nummer} von 14`, { exact: true }),
+        ).toBeVisible();
+        await pruefe(page, `Thema ${nummer}`);
+        await tippe(page.getByRole('button', { name: 'Weiter', exact: true }));
+        tipps += 1;
+      }
+      expect(tipps).toBe(14);
+      const abschluss = page.getByRole('dialog', { name: 'Ist alles richtig?' });
+      await expect(abschluss.getByText('Abschluss', { exact: true })).toBeVisible();
+      await pruefe(page, 'Abschluss');
+      expect(await hauptknoepfe(page)).toEqual(['Bogen senden']);
+    });
+  }
+
+  test('375 px: „Ändern“ aus dem Abschluss bis zurück in zwei Tipps, gespeichert beim Wechsel', async ({
+    page,
+  }) => {
+    const aufrufe = await nachbilden(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${PRUEFSEITE}?seite=fragebogen-abschluss`);
+    const abschluss = page.getByRole('dialog', { name: 'Ist alles richtig?' });
+    const offen = abschluss.getByRole('list', { name: 'Noch offen' });
+    await expect(offen.getByRole('button')).toHaveCount(3);
+    await tippe(offen.getByRole('button', { name: /^Medikamente/ }));
+    const thema = page.getByRole('dialog', { name: /^30\. Nehmen Sie momentan Medikamente/ });
+    await expect(thema.getByText('Thema 12 von 14', { exact: true })).toBeVisible();
+    await tippe(thema.getByRole('button', { name: 'Schmerzmittel' }));
+    await pruefe(page, 'Thema 12 aus dem Abschluss');
+    await tippe(thema.getByRole('button', { name: 'Übernehmen' }));
+    await expect(abschluss).toBeVisible();
+    await expect(offen.getByRole('button')).toHaveCount(2);
+    const gespeichert = aufrufe.filter((a) => a.name === 'save_platform_questionnaire_response');
+    expect(gespeichert).toHaveLength(1);
+    expect(gespeichert[0]!.parameter).toMatchObject({
+      p_response_id: 'bbbbbbbb-bbbb-4bbb-8bbb-0000000000c4',
+      p_answers: { medikamente: { auswahl: ['schmerzmittel'] } },
+    });
+  });
+
+  test('375 px: „Später“ speichert und führt zur Übersicht', async ({ page }) => {
+    const aufrufe = await nachbilden(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${PRUEFSEITE}?seite=befundbogen`);
+    const fenster = page.getByRole('dialog', { name: 'Zu Ihrer Person' });
+    await fenster.getByLabel('Beruf').fill('Lehrerin');
+    await tippe(fenster.getByRole('button', { name: 'Später' }));
+    await expect(page.getByRole('heading', { level: 1, name: GRUSS })).toBeVisible();
+    expect(aufrufe.find((a) => a.name === 'save_platform_questionnaire_response')).toMatchObject({
+      parameter: { p_response_id: null, p_answers: { beruf: { text: 'Lehrerin' } } },
+    });
+  });
+
+  test('375 px: scheitert das Senden, steht der Fehler über dem Satz, dann „Erneut senden“', async ({
+    page,
+  }) => {
+    await nachbilden(page, { sendenScheitert: true });
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${PRUEFSEITE}?seite=fragebogen-abschluss`);
+    const abschluss = page.getByRole('dialog', { name: 'Ist alles richtig?' });
+    await tippe(abschluss.getByRole('button', { name: 'Bogen senden' }));
+    await expect(abschluss.getByRole('alert')).toHaveText(
+      /Ihre Angaben konnten nicht gespeichert werden\. Bitte versuchen Sie es erneut\./,
+    );
+    await expect(abschluss.getByRole('button', { name: 'Erneut senden' })).toBeVisible();
+    await pruefe(page, 'Senden gescheitert');
+  });
+
+  test('375 px: ohne Netz ist „Bogen senden“ gestrichelt gesperrt, mit Satz', async ({
+    page,
+    context,
+  }) => {
+    await nachbilden(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${PRUEFSEITE}?seite=fragebogen-abschluss`);
+    const abschluss = page.getByRole('dialog', { name: 'Ist alles richtig?' });
+    await expect(abschluss).toBeVisible();
+    await context.setOffline(true);
+    const senden = abschluss.getByRole('button', { name: 'Bogen senden' });
+    await expect(senden).toHaveAttribute('aria-disabled', 'true');
+    await expect(senden).toHaveAccessibleDescription(
+      'Senden geht wieder mit Verbindung. Ihre Antworten bleiben stehen.',
+    );
+    await expect(senden).toHaveCSS('border-style', 'dashed');
+    await expect(abschluss.getByText(/^Keine Verbindung\./)).toBeVisible();
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    await context.setOffline(false);
+    await expect(senden).not.toHaveAttribute('aria-disabled', 'true');
+  });
+
+  test('1280 px: Skala in einer Reihe, ja und nein je höchstens 15rem, „Weiter“ rechts', async ({
+    page,
+  }) => {
+    await nachbilden(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${PRUEFSEITE}?seite=fragebogen-thema`);
+    const thema = page.getByRole('dialog', { name: 'Ihre Schmerzen heute' });
+    await expect(thema).toBeVisible();
+    const stufen = await thema
+      .getByRole('group', { name: '3. Wie stark sind Ihre Schmerzen?' })
+      .getByRole('button')
+      .evaluateAll((knoepfe) => knoepfe.map((k) => Math.round(k.getBoundingClientRect().top)));
+    expect(new Set(stufen).size).toBe(1);
+    const paar = thema.getByRole('group', { name: '2. Haben Sie aktuell Schmerzen?' });
+    for (const name of ['ja', 'nein']) {
+      const flaeche = await paar.getByRole('button', { name }).boundingBox();
+      expect(flaeche?.width ?? 999).toBeLessThanOrEqual(240.5);
+    }
+    const weiter = await thema.getByRole('button', { name: 'Weiter' }).boundingBox();
+    const ja = await paar.getByRole('button', { name: 'ja' }).boundingBox();
+    expect(weiter?.width ?? 0).toBeGreaterThanOrEqual(159.5);
+    expect(weiter?.x ?? 0).toBeGreaterThan((ja?.x ?? 0) + 400);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
   });
 });

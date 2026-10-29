@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { Fragment, useId, useState, type ReactNode } from 'react';
 import { HakenSymbol } from './HakenSymbol';
 import { Zwischentitel } from './Zwischentitel';
 
@@ -59,15 +59,19 @@ export function Wahlflaechen({
                 setGetippt(w.schluessel);
                 onUmschalten(w.schluessel);
               }}
-              className={`rounded-button ease-druck focus-visible:outline-ink flex min-w-0 items-center justify-between gap-3 text-left wrap-break-word hyphens-manual transition-colors duration-120 focus-visible:outline-3 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:border-dashed ${HOEHE[form]} ${
+              className={`rounded-button ease-druck focus-visible:outline-ink flex min-w-0 items-center justify-between gap-3 text-left wrap-break-word hyphens-manual transition-colors duration-120 focus-visible:outline-3 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:border-dashed max-[23rem]:gap-2 ${HOEHE[form]} ${
                 // Die Linie 2 der Wahl nimmt sich ihren Pixel aus dem Innenabstand:
                 // Das Wort springt beim Wählen nicht.
                 an
-                  ? 'border-accent bg-accent-soft text-accent active:bg-surface-sunken border-2 px-[calc(1rem-1px)] py-[calc(0.5rem-1px)] font-bold'
-                  : 'border-line-strong bg-surface text-ink active:bg-surface-sunken border px-4 py-2 font-semibold'
+                  ? 'border-accent bg-accent-soft text-accent active:bg-surface-sunken border-2 px-[calc(1rem-1px)] py-[calc(0.5rem-1px)] font-bold max-[23rem]:px-[calc(0.75rem-1px)]'
+                  : 'border-line-strong bg-surface text-ink active:bg-surface-sunken border px-4 py-2 font-semibold max-[23rem]:px-3'
               }`}
             >
-              <span className="trennen-schmal min-w-0">{w.text}</span>
+              {/* Unter 23rem und bei „Sehr groß“ passt nicht jedes Wort neben den Kreis: Es trennt dann
+                  an der Silbe („Medika-mente?“), statt ohne Strich mitten im Wort zu brechen. */}
+              <span className="min-w-0 [hyphenate-limit-chars:8_3_3] max-[23rem]:hyphens-auto [[data-schrift=sehr-gross]_&]:hyphens-auto">
+                {mitUmbruch(w.text)}
+              </span>
               {an ? (
                 <span
                   aria-hidden="true"
@@ -95,7 +99,8 @@ const RASTER = {
   raster:
     'grid grid-cols-2 gap-3 max-[23rem]:grid-cols-1 [[data-schrift=sehr-gross]_&]:grid-cols-1',
   zeilen: 'grid grid-cols-1 gap-2',
-  paar: 'grid grid-cols-2 gap-3 max-[23rem]:grid-cols-1',
+  // Am Rechner je höchstens 15rem: Über die breite Spalte gezogen läge „nein“ weit weg von „ja“.
+  paar: 'grid grid-cols-2 gap-3 max-[23rem]:grid-cols-1 [.plattform-schrift[data-rechner]_&]:grid-cols-[repeat(2,minmax(0,15rem))]',
 } as const;
 
 const HOEHE = {
@@ -103,3 +108,17 @@ const HOEHE = {
   zeilen: 'min-h-14',
   paar: 'min-h-16',
 } as const;
+
+/** Der Schrägstrich für sich: Das Wort davor trennt an der Silbe, die Zeile darf an ihm enden. */
+function mitUmbruch(text: string): ReactNode {
+  return text.split('/').map((teil, index) =>
+    index === 0 ? (
+      teil
+    ) : (
+      <Fragment key={index}>
+        <span className="inline-block">/</span>
+        {teil}
+      </Fragment>
+    ),
+  );
+}
