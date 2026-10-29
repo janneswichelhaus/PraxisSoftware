@@ -7,6 +7,8 @@ import { Disclosure } from '@/components/ui/Card';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { HakenSymbol } from '@/components/ui/HakenSymbol';
+import { ListRow } from '@/components/ui/ListRow';
+import { Zeichenkreis } from '@/components/ui/Terminsymbole';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { kannZurueck, aendern, zurueck, type Abfolge } from '@/components/ui/abfolge';
 import { useTextverlustschutz } from '@/app/Textverlustschutz';
@@ -43,7 +45,6 @@ import {
 import { terminKurz } from './terminbeschreibung';
 import { artUndPerson, tagInWorten, vonBis } from './termintexte';
 import {
-  Kartenangabe,
   Nachricht,
   OhneNetzHinweis,
   Wannangabe,
@@ -202,6 +203,15 @@ function Aenderungsablauf({
   ) : null;
   const tagUndZeit = `${tagInWorten(termin.starts_at, jetzt)}, ${vonBis(termin)}`;
   const artPerson = artUndPerson(termin, zugang.relationship_kind);
+  // Direkt über dem Knopf, der wartet; beim Absagen mit „Praxis anrufen“ (ANN-783).
+  const ohneNetz = (abstand: string) => (
+    <OhneNetzHinweis
+      id={ohneNetzId}
+      verbunden={verbunden}
+      anruf={art === 'cancel' ? zugang.practice_phone : null}
+      className={abstand}
+    />
+  );
 
   return (
     <GefuehrterAblauf
@@ -220,12 +230,16 @@ function Aenderungsablauf({
       schmalesFenster
       fuss={
         seite === 'ausfallhonorar' ? (
-          <Button className="w-full" onClick={() => gehe(zurZusammenfassung(abfolge))}>
-            Verstanden, weiter
-          </Button>
+          <>
+            {ohneNetz('mb-3')}
+            <Button className="w-full" onClick={() => gehe(zurZusammenfassung(abfolge))}>
+              Verstanden, weiter
+            </Button>
+          </>
         ) : seite === 'wann' ? (
           <>
             {fehlerzeile}
+            {ohneNetz('mb-3')}
             <Button className="w-full" onClick={wannWeiter}>
               Weiter
             </Button>
@@ -233,15 +247,17 @@ function Aenderungsablauf({
         ) : (
           <>
             {fehlerzeile}
-            <OhneNetzHinweis id={ohneNetzId} verbunden={verbunden} />
             <Formularfuss
               dicht
               zusatz={
-                art === 'cancel' ? (
-                  <Absagehinweis spaet={spaet} />
-                ) : (
-                  <Freigabehinweis spaet={spaet} />
-                )
+                <>
+                  {art === 'cancel' ? (
+                    <Absagehinweis spaet={spaet} />
+                  ) : (
+                    <Freigabehinweis spaet={spaet} />
+                  )}
+                  {ohneNetz('mt-3')}
+                </>
               }
             >
               <Button
@@ -276,10 +292,19 @@ function Aenderungsablauf({
           <Zusammenfassungsanfang />
           <Zusammenfassungskarte>
             {art === 'cancel' ? (
-              <Kartenangabe
-                vorn={<Absagekreis />}
-                wert="Termin absagen"
-                zusatz={[tagUndZeit, artPerson]}
+              <ListRow
+                bild={
+                  <Zeichenkreis ton="gefahr">
+                    <span className="text-xl font-bold">×</span>
+                  </Zeichenkreis>
+                }
+                titel="Termin absagen"
+                meta={
+                  <>
+                    <span className="block">{tagUndZeit}</span>
+                    <span className="block">{artPerson}</span>
+                  </>
+                }
               />
             ) : (
               // Der Termin steht im Kopf; als eigene Zeile rollte die Seite bei 375 × 667 (ANN-785).
@@ -306,18 +331,6 @@ function Aenderungsablauf({
   );
 }
 
-/** Der Kreis der Absage in der Zusammenfassung: ein Kreuz, das Wort steht daneben. */
-function Absagekreis() {
-  return (
-    <span
-      aria-hidden="true"
-      className="bg-danger-soft text-danger rounded-pill inline-flex size-10 shrink-0 items-center justify-center text-xl font-bold"
-    >
-      ×
-    </span>
-  );
-}
-
 /**
  * Der Hinweis zum Ausfallhonorar vor dem Absagewunsch als eigene Seite, fester Wortlaut: rechtzeitig
  * mit Haken, unter 24 Stunden als Warnung mit der ganzen Regel offen darunter. Die Frist steht vor
@@ -333,22 +346,16 @@ function Ausfallhonorar({ spaet }: { spaet: boolean }) {
             role="alert"
             className="bg-warnung-soft rounded-card flex items-start gap-4 p-5 max-[23rem]:flex-col max-[23rem]:p-3"
           >
-            <span
-              aria-hidden="true"
-              className="bg-warnung text-warnung-soft rounded-pill inline-flex size-10 shrink-0 items-center justify-center text-xl font-bold"
-            >
-              !
-            </span>
+            <Zeichenkreis ton="warnung">
+              <span className="text-xl font-bold">!</span>
+            </Zeichenkreis>
             <p className="text-warnung font-semibold">{AUSFALLHONORAR_SPAET}</p>
           </div>
         ) : (
           <div className="border-line bg-surface rounded-card flex items-start gap-4 border p-5 max-[23rem]:flex-col max-[23rem]:p-3">
-            <span
-              aria-hidden="true"
-              className="bg-accent-soft text-accent rounded-pill inline-flex size-10 shrink-0 items-center justify-center"
-            >
+            <Zeichenkreis>
               <HakenSymbol className="size-5" />
-            </span>
+            </Zeichenkreis>
             <p>{AUSFALLHONORAR_RECHTZEITIG}</p>
           </div>
         )}

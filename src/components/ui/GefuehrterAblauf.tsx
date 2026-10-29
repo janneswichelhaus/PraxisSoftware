@@ -239,6 +239,7 @@ export function GefuehrterAblauf({
     <Dialogfenster
       vollbild
       schmal={schmalesFenster}
+      plattform={plattform}
       titel={titel}
       beschreibung={objekt}
       onSchliessen={onSchliessen}

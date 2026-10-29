@@ -104,8 +104,9 @@ describe('Terminwunsch (POR-009, Schritt 3d)', () => {
     for (const name of ['Vormittag', 'Mittag', 'Nachmittag', 'Egal']) {
       expect(within(zeiten).getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false');
     }
-    expect(within(fenster).getByRole('status')).toHaveTextContent(
-      'Wählen Sie einen oder mehrere Tage.',
+    expect(within(fenster).getByText('Wählen Sie einen oder mehrere Tage.')).toHaveAttribute(
+      'role',
+      'status',
     );
     expect(within(tage).getByRole('button', { name: 'Montag' })).toHaveFocus();
     expect(within(fenster).getByRole('button', { name: 'Weiter' })).toBeInTheDocument();
@@ -126,7 +127,7 @@ describe('Terminwunsch (POR-009, Schritt 3d)', () => {
     zeige();
     await nutzer.click(screen.getByRole('button', { name: 'Dienstag' }));
     await nutzer.click(screen.getByRole('button', { name: 'Montag' }));
-    expect(screen.getByRole('status')).toHaveTextContent(/^Montag oder Dienstag – bis /);
+    expect(screen.getByText(/^Montag oder Dienstag – bis /)).toHaveAttribute('role', 'status');
     await nutzer.click(screen.getByRole('button', { name: 'Nachmittag' }));
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
 

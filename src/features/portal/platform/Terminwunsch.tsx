@@ -139,6 +139,7 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
         seite === 'wann' ? (
           <>
             {fehlerzeile}
+            <OhneNetzHinweis id={ohneNetzId} verbunden={verbunden} className="mb-3" />
             <Button className="w-full" onClick={wannWeiter}>
               Weiter
             </Button>
@@ -146,11 +147,16 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
         ) : (
           <>
             {fehlerzeile}
-            <OhneNetzHinweis id={ohneNetzId} verbunden={verbunden} />
             {/* §8: Ein Wunsch ist kein Termin - das steht direkt über dem Knopf. */}
             <Formularfuss
               dicht
-              zusatz="Die Praxis sucht einen Termin und meldet sich bei Ihnen. Ein vereinbarter Termin ist das noch nicht."
+              zusatz={
+                <>
+                  Die Praxis sucht einen Termin und meldet sich bei Ihnen. Ein vereinbarter Termin
+                  ist das noch nicht.
+                  <OhneNetzHinweis id={ohneNetzId} verbunden={verbunden} className="mt-3" />
+                </>
+              }
             >
               <Button
                 onClick={absenden}

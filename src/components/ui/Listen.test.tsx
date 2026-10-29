@@ -120,6 +120,41 @@ describe('ListRow mit Bild, Betrag und Aktion (Design-Fundament)', () => {
   });
 });
 
+describe('ListRow mit Bezeichnung (Zusammenfassung eines Ablaufs, ANN-784)', () => {
+  it('setzt die Bezeichnung über den Titel und den Knopf in ihre Zeile, im Baum hinter den Titel', async () => {
+    const aendern = vi.fn();
+    const { container } = renderWithProviders(
+      <ListRows>
+        <ListRow
+          bezeichnung="Lieber am"
+          titel="Dienstag oder Donnerstag, vormittags"
+          meta="bis Dienstag, 17. November"
+          aktion={
+            <Button variant="secondary" aria-label="Ändern: Lieber am" onClick={aendern}>
+              Ändern
+            </Button>
+          }
+        />
+      </ListRows>,
+    );
+    const zeile = screen.getByRole('listitem');
+    const bezeichnung = within(zeile).getByText('Lieber am');
+    const titel = within(zeile).getByText('Dienstag oder Donnerstag, vormittags');
+    const knopf = within(zeile).getByRole('button', { name: 'Ändern: Lieber am' });
+    expect(klassenVon(bezeichnung)).toContain('text-ink-muted');
+    expect(klassenVon(titel)).toContain('font-semibold');
+    expect(within(zeile).getByText('bis Dienstag, 17. November')).toBeInTheDocument();
+    // Sichtbar in der Zeile der Bezeichnung, im Baum erst nach dem Titel.
+    expect(klassenVon(knopf.parentElement)).toContain('row-start-1');
+    expect(titel.compareDocumentPosition(knopf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Knöpfe in Zeilen sind kompakt (44).
+    expect(knopf).toHaveClass('min-h-11');
+    await userEvent.setup().click(knopf);
+    expect(aendern).toHaveBeenCalledTimes(1);
+    await pruefeBarrierefreiheit(container);
+  });
+});
+
 describe('Listenabschnitt (Design-Fundament)', () => {
   it('trägt Titel mit Zahl, Aktion und die Zeilen in einer Karte', async () => {
     const { container } = renderWithProviders(

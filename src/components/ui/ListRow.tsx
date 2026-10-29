@@ -69,6 +69,7 @@ export function ListRows({
 export function ListRow({
   zeit,
   bild,
+  bezeichnung,
   titel,
   meta,
   status,
@@ -90,6 +91,11 @@ export function ListRow({
   zeit?: ReactNode;
   /** Bild vorn: `Medienbild vorschau` (56 × 56 px) oder `Personenbild`. */
   bild?: ReactNode;
+  /**
+   * Eine Zeile in Leise über dem Titel, etwa „Lieber am“ in der Zusammenfassung eines Ablaufs. Mit
+   * `aktion` steht der Knopf in dieser Zeile, Titel und Nebenzeile darunter in ganzer Breite.
+   */
+  bezeichnung?: ReactNode;
   titel: ReactNode;
   /** Nebenzeile unter dem Titel. */
   meta?: ReactNode;
@@ -171,6 +177,9 @@ export function ListRow({
         </span>
       )}
       <span className="min-w-0">
+        {bezeichnung === undefined ? null : (
+          <span className="text-ink-muted block">{bezeichnung}</span>
+        )}
         <span
           className={`block ${dicht ? 'text-liste truncate' : 'text-base'} ${
             gedaempft ? 'text-ink-muted font-medium' : 'text-ink font-semibold'
@@ -211,6 +220,25 @@ export function ListRow({
       {inhalt}
     </div>
   );
+
+  if (bezeichnung !== undefined && aktion && !to && !onClick && !darunter) {
+    // Der Knopf in der Zeile der Bezeichnung, damit der Titel die ganze Breite hat (ANN-784); im Baum
+    // bleibt er hinter dem Titel. Unter 23rem steht er darunter.
+    return (
+      <li className="border-line grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-t py-2 first:border-t-0 max-[23rem]:grid-cols-1">
+        <span className="text-ink-muted col-start-1 row-start-1 flex min-h-11 items-center">
+          {bezeichnung}
+        </span>
+        <span className="col-span-full min-w-0">
+          <span className="text-ink block text-base font-semibold">{titel}</span>
+          {meta ? <span className="text-ink-muted block text-sm">{meta}</span> : null}
+        </span>
+        <div className="col-start-2 row-start-1 flex items-center gap-2 max-[23rem]:col-start-1 max-[23rem]:row-start-auto max-[23rem]:mt-2">
+          <KnopfGroesse value="kompakt">{aktion}</KnopfGroesse>
+        </div>
+      </li>
+    );
+  }
 
   if (!aktion) {
     return (

@@ -92,16 +92,18 @@ function Ort() {
   return <p data-testid="ort">{`${pathname}${search}`}</p>;
 }
 
-function zeige(termin: Termin, pfad: string) {
+function zeige(termin: Termin, pfad: string, zugang: Plattformzugang = ZUGANG) {
   ladeTermine.mockResolvedValue([termin]);
   return renderWithProviders(
     <>
-      <Terminaenderung zugang={ZUGANG} />
+      <Terminaenderung zugang={zugang} />
       <Ort />
     </>,
     pfad,
   );
 }
+
+const MIT_NUMMER: Plattformzugang = { ...ZUGANG, practice_phone: '+49 7071 0000000' };
 
 /** Mit der Liste und der Seite des Termins davor im Verlauf - für ✕ und das Zurück des Browsers. */
 function zeigeMitVerlauf(termin: Termin, pfad: string) {
@@ -231,7 +233,7 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
       expect(within(wann).getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false');
     }
     await nutzer.click(within(wann).getByRole('button', { name: 'Montag' }));
-    expect(within(wann).getByRole('status')).toHaveTextContent(/^Montag – bis Montag, /);
+    expect(within(wann).getByText(/^Montag – bis Montag, /)).toHaveAttribute('role', 'status');
     await nutzer.click(within(wann).getByRole('button', { name: 'Vormittag' }));
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
 
@@ -404,7 +406,7 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
 
   it('ohne Netz wartet das Senden mit dem Satz über dem Knopf; die Angaben bleiben (ANN-783)', async () => {
     const nutzer = userEvent.setup();
-    zeige(TERMIN, AENDERN);
+    zeige(TERMIN, AENDERN, MIT_NUMMER);
     await nutzer.click(await screen.findByRole('button', { name: 'Donnerstag' }));
     await nutzer.click(screen.getByRole('button', { name: 'Mittag' }));
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
@@ -421,6 +423,8 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
     // Der Satz steht einmal, ruhig und nicht als Fehler.
     expect(screen.getAllByText(/Ohne Verbindung lässt sich Ihr Wunsch/)).toHaveLength(1);
     expect(within(ende).queryByRole('alert')).not.toBeInTheDocument();
+    // Ein Änderungswunsch kann warten; den Anruf bietet nur die Absage an.
+    expect(within(ende).queryByRole('link', { name: /Praxis anrufen/ })).not.toBeInTheDocument();
 
     // Ist sie zurück, geht es ohne neue Eingabe weiter.
     online.mockReturnValue(true);
@@ -432,6 +436,26 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
         expect.objectContaining({ tage: tageAm(4), zeiten: ['midday'] }),
       ),
     );
+  });
+
+  it('ohne Netz bietet die Absage „Praxis anrufen“ an, denn die Frist läuft weiter (ANN-783)', async () => {
+    const nutzer = userEvent.setup();
+    zeige(KURZFRISTIG, ABSAGEN, MIT_NUMMER);
+    await nutzer.click(await screen.findByRole('button', { name: 'Verstanden, weiter' }));
+    const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
+    expect(within(ende).queryByRole('link', { name: /Praxis anrufen/ })).not.toBeInTheDocument();
+
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    act(() => void window.dispatchEvent(new Event('offline')));
+    expect(within(ende).getByRole('button', { name: 'Absage senden' })).toBeDisabled();
+    expect(within(ende).getByRole('link', { name: /Praxis anrufen/ })).toHaveAttribute(
+      'href',
+      'tel:+4970710000000',
+    );
+    await pruefeBarrierefreiheit(document.body);
+    // Die Abfragen merken sich „offline“ über das Ereignis: Der nächste Test beginnt verbunden.
+    online.mockReturnValue(true);
+    act(() => void window.dispatchEvent(new Event('online')));
   });
 
   it('besteht axe auf jeder Seite beider Wege', async () => {

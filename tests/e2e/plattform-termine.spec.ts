@@ -191,6 +191,18 @@ async function kleineZiele(page: Page): Promise<string[]> {
   });
 }
 
+/** Text in Kopf und Inhalt des Fensters, der gekürzt („…“) statt umbrochen steht. */
+async function gekuerzt(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>('[role="dialog"] :is(h2, p)')]
+      .filter(
+        (el) =>
+          getComputedStyle(el).textOverflow === 'ellipsis' && el.scrollWidth > el.clientWidth + 1,
+      )
+      .map((el) => (el.textContent ?? '').trim().slice(0, 40)),
+  );
+}
+
 async function axeVerstoesse(page: Page): Promise<string[]> {
   await page.addScriptTag({ path: AXE });
   return page.evaluate(async () => {
@@ -255,6 +267,8 @@ async function pruefeAbschluss(
   await bild(page, name, breit);
   await page.setViewportSize({ width: 188, height: 667 });
   expect(await ueberlaeuft(page), `${name} bei 200 %`).toBe(false);
+  // Der Kopf nennt Tag, Zeit und Art des Termins: bei 200 % umbrochen, nicht gekürzt.
+  expect(await gekuerzt(page), `${name}: gekürzt bei 200 %`).toEqual([]);
   await page.setViewportSize({ width: 375, height: 667 });
 }
 

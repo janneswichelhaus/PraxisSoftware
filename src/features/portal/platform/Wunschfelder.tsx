@@ -1,11 +1,13 @@
 import { useId, useRef, useState, type ReactNode } from 'react';
+import { Anrufknoepfe } from '@/components/ui/Anrufknoepfe';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
-import { ListRows } from '@/components/ui/ListRow';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { OhneNetzSymbol } from '@/components/ui/OhneNetzSymbol';
 import { TextArea } from '@/components/ui/TextArea';
 import { Wahlflaechen, type Wahl } from '@/components/ui/Wahlflaechen';
 import { Wochenleiste, type Wochentag as Leistentag } from '@/components/ui/Wochenleiste';
+import { telHref } from '@/lib/telefon';
 import { TAGESZEITEN, TAGESZEIT_NAME, type Tageszeit } from './api';
 import {
   NOTIZ_MAX,
@@ -85,70 +87,6 @@ export function Zusammenfassungskarte({ children }: { children: ReactNode }) {
 }
 
 /**
- * Eine Angabe der Karte: die Bezeichnung in Leise, der Wert fett, ein Zusatz in Leise und, wo sie
- * sich ändern lässt, „Ändern“ kompakt rechts. Der Name des Knopfs beginnt mit dem Wort (WCAG 2.5.3).
- */
-export function Kartenangabe({
-  titel,
-  wert,
-  zusatz,
-  vorn,
-  onAendern,
-}: {
-  titel?: string;
-  wert: string;
-  /** Eine oder mehrere Zeilen in Leise unter dem Wert. */
-  zusatz?: string | readonly string[] | undefined;
-  /** Ein Zeichen vor der Angabe, etwa der Kreis einer Absage. */
-  vorn?: ReactNode;
-  onAendern?: (() => void) | undefined;
-}) {
-  const zeilen = (typeof zusatz === 'string' ? [zusatz] : (zusatz ?? [])).filter(Boolean);
-  if (onAendern) {
-    // „Ändern“ steht in der Zeile der Bezeichnung, damit die Wahl die ganze Breite hat (ANN-784);
-    // im Baum bleibt der Knopf hinter dem Wert. Unter 23rem steht er darunter.
-    return (
-      <li className="border-line grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 border-t py-3 hyphens-manual first:border-t-0 max-[23rem]:grid-cols-1">
-        <p className="col-start-1 row-start-1 flex min-h-11 items-center">
-          <span className="text-ink-muted">{titel}</span>
-        </p>
-        <p className="col-span-full flex flex-col">
-          <span className="font-semibold">{wert}</span>
-          {zeilen.map((zeile) => (
-            <span key={zeile} className="text-ink-muted">
-              {zeile}
-            </span>
-          ))}
-        </p>
-        <Button
-          variant="secondary"
-          groesse="kompakt"
-          aria-label={`Ändern: ${titel ?? wert}`}
-          className="col-start-2 row-start-1 self-start max-[23rem]:col-start-1 max-[23rem]:row-start-auto max-[23rem]:mt-2 max-[23rem]:justify-self-start"
-          onClick={onAendern}
-        >
-          Ändern
-        </Button>
-      </li>
-    );
-  }
-  return (
-    <li className="border-line flex items-start gap-3 border-t py-3.5 first:border-t-0 max-[23rem]:flex-col max-[23rem]:py-3">
-      {vorn}
-      <p className="flex min-w-0 grow flex-col hyphens-manual">
-        {titel ? <span className="text-ink-muted">{titel}</span> : null}
-        <span className="font-semibold">{wert}</span>
-        {zeilen.map((zeile) => (
-          <span key={zeile} className="text-ink-muted">
-            {zeile}
-          </span>
-        ))}
-      </p>
-    </li>
-  );
-}
-
-/**
  * Die gewählten Tage und Tageszeiten in denselben Worten wie die Wunschzeile der Liste
  * („Dienstag oder Donnerstag, vormittags“), darunter bis wann die Tage reichen.
  */
@@ -166,22 +104,58 @@ export function Wannangabe({
   const tage = wunschtage(wann.tage, werktage);
   const wert = wunschInWorten({ preferred_days: tage, preferred_times: wunschzeiten(wann.zeiten) });
   return (
-    <Kartenangabe titel={titel} wert={wert ?? ''} zusatz={bisTag(tage)} onAendern={onAendern} />
+    <ListRow
+      bezeichnung={titel}
+      titel={wert ?? ''}
+      meta={bisTag(tage)}
+      aktion={
+        // Der Name beginnt mit dem Wort auf dem Knopf (WCAG 2.5.3).
+        <Button
+          variant="secondary"
+          groesse="kompakt"
+          aria-label={`Ändern: ${titel}`}
+          onClick={onAendern}
+        >
+          Ändern
+        </Button>
+      }
+    />
   );
 }
 
 /**
- * Reißt die Verbindung im Ablauf ab, wartet das Senden (ANN-783): der Satz ruhig und mit dem Zeichen
- * über dem gesperrten Knopf, die Angaben bleiben stehen. Die Region steht immer im Baum.
+ * Reißt die Verbindung im Ablauf ab, wartet das Senden (ANN-783): der Satz ruhig mit dem Zeichen über
+ * dem gesperrten Knopf. Beim Absagen läuft die Frist weiter; ein Anruf braucht kein Netz.
  */
-export function OhneNetzHinweis({ id, verbunden }: { id: string; verbunden: boolean }) {
+export function OhneNetzHinweis({
+  id,
+  verbunden,
+  anruf = null,
+  className = '',
+}: {
+  id: string;
+  verbunden: boolean;
+  /** Die Rufnummer der Praxis für „Praxis anrufen“, sonst `null`. */
+  anruf?: string | null;
+  /** Der Abstand zum Knopf darunter oder zum Satz darüber. */
+  className?: string;
+}) {
+  // Die Region steht immer im Baum: Mit ihrem Text entstanden, sagte Vorlesesoftware sie nicht an.
   return (
     <div role="status">
       {verbunden ? null : (
-        <p id={id} className="text-ink-muted mb-2 flex items-start gap-2 text-sm">
-          <OhneNetzSymbol />
-          <span>{WUNSCHSCHUTZ.ohneVerbindung}</span>
-        </p>
+        <div className={`flex flex-col gap-3 ${className}`}>
+          <p id={id} className="text-ink-muted flex items-start gap-2 text-sm">
+            <OhneNetzSymbol />
+            <span>{WUNSCHSCHUTZ.ohneVerbindung}</span>
+          </p>
+          {anruf ? (
+            <Anrufknoepfe
+              nummern={[{ label: 'Praxis', anzeige: anruf, href: telHref(anruf) }]}
+              zweizeilig
+            />
+          ) : null}
+        </div>
       )}
     </div>
   );

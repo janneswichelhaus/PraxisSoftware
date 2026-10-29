@@ -82,6 +82,31 @@ export function Terminsymbol({
   );
 }
 
+const KREISTOENE = {
+  akzent: 'bg-accent-soft text-accent',
+  leise: 'bg-surface-sunken text-ink-muted',
+  gefahr: 'bg-danger-soft text-danger',
+  warnung: 'bg-warnung text-warnung-soft',
+} as const;
+
+/** Ein Kreis von 40 in rem mit einem Zeichen darin, etwa „ד einer Absage oder „!“ einer Warnung. */
+export function Zeichenkreis({
+  ton = 'akzent',
+  children,
+}: {
+  ton?: keyof typeof KREISTOENE;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`rounded-pill inline-flex size-10 shrink-0 items-center justify-center ${KREISTOENE[ton]}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 /**
  * Der Kreis vor einer Termin- oder Wunschzeile, 40 in rem: die Art auf
  * Salbei hell in der Hauptfarbe, gedämpft (vergangen, abgesagt) und der
@@ -94,15 +119,9 @@ export function Terminkreis({
   zeichen: Artzeichen | 'kalender';
   gedaempft?: boolean;
 }) {
-  const leise = gedaempft || zeichen === 'kalender';
   return (
-    <span
-      aria-hidden="true"
-      className={`rounded-pill inline-flex size-10 shrink-0 items-center justify-center ${
-        leise ? 'bg-surface-sunken text-ink-muted' : 'bg-accent-soft text-accent'
-      }`}
-    >
+    <Zeichenkreis ton={gedaempft || zeichen === 'kalender' ? 'leise' : 'akzent'}>
       <Terminsymbol zeichen={zeichen} />
-    </span>
+    </Zeichenkreis>
   );
 }

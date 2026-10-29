@@ -30,6 +30,7 @@ export function Dialogfenster({
   titelImInhalt = false,
   ohneKopfzeile = false,
   schmal = false,
+  plattform = false,
   children,
 }: {
   /** Überschrift und zugängliche Bezeichnung des Fensters. */
@@ -70,6 +71,11 @@ export function Dialogfenster({
   ohneKopfzeile?: boolean;
   /** Im Vollbild: erst am Rechner ein Fenster, so breit wie ein Formular; darunter randlos. */
   schmal?: boolean;
+  /**
+   * Der Kopf auf dem Rand der Plattform (20, unter 23rem 12); unter 23rem und bei „Sehr groß“ bricht
+   * er um, statt zu kürzen: Bei 200 % ginge sonst die Uhrzeit eines Termins verloren.
+   */
+  plattform?: boolean;
   children: ReactNode;
 }) {
   const titelId = useId();
@@ -201,6 +207,11 @@ export function Dialogfenster({
     }
   }
 
+  const kopfRand = `${plattform ? 'pl-5 max-[23rem]:pl-3' : 'pl-4'} ${schmal ? 'lg:pl-6' : ''}`;
+  const kuerzen = plattform
+    ? 'truncate max-[23rem]:overflow-visible max-[23rem]:whitespace-normal [[data-schrift=sehr-gross]_&]:overflow-visible [[data-schrift=sehr-gross]_&]:whitespace-normal'
+    : 'truncate';
+
   if (vollbild) {
     return createPortal(
       <div
@@ -225,17 +236,19 @@ export function Dialogfenster({
           }`}
         >
           {ohneKopfzeile && titelImInhalt ? null : (
-            <div className="border-line flex min-h-14 shrink-0 items-center gap-2 border-b py-1 pr-2 pl-4">
+            <div
+              className={`border-line flex min-h-14 shrink-0 items-center gap-2 border-b py-1 pr-2 ${kopfRand}`}
+            >
               <div className="min-w-0 flex-1">
                 {titelImInhalt ? (
-                  <p className="text-ink truncate font-semibold">{beschreibung}</p>
+                  <p className={`text-ink font-semibold ${kuerzen}`}>{beschreibung}</p>
                 ) : (
                   <>
-                    <h2 id={titelId} className="text-ink text-h4 truncate font-bold">
+                    <h2 id={titelId} className={`text-ink text-h4 font-bold ${kuerzen}`}>
                       {titel}
                     </h2>
                     {beschreibung ? (
-                      <p className="text-ink-muted truncate text-sm">{beschreibung}</p>
+                      <p className={`text-ink-muted text-sm ${kuerzen}`}>{beschreibung}</p>
                     ) : null}
                   </>
                 )}
