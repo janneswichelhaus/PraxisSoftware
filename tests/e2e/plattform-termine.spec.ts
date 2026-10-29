@@ -338,12 +338,11 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     // Wochentage, Tageszeiten und „Egal“ zusammen auf einer Seite ohne Rollen.
     await pruefeSeite(page, wann, 'b6-aendern-02-wann-passt-es');
 
-    await z.tippe(wann.getByRole('checkbox', { name: 'Montag' }));
-    await z.tippe(wann.getByRole('checkbox', { name: 'Vormittag' }));
+    await z.tippe(wann.getByRole('button', { name: 'Montag', exact: true }));
+    await z.tippe(wann.getByRole('button', { name: 'Vormittag', exact: true }));
     await z.tippe(wann.getByRole('button', { name: 'Weiter' }));
     const ende = fenster(page, 'Ist alles richtig?');
-    await expect(ende.getByText('Montag', { exact: true })).toBeVisible();
-    await expect(ende.getByText('Vormittag', { exact: true })).toBeVisible();
+    await expect(ende.getByText('Montag, vormittags', { exact: true })).toBeVisible();
     // Was beim Freigeben gilt, steht fest über dem Knopf.
     await expect(ende.getByRole('status')).toContainText('es entsteht kein Ausfallhonorar');
     await expect(ende.getByRole('status')).toBeInViewport({ ratio: 1 });
@@ -421,9 +420,9 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     const server = nachbildung();
     await oeffne(page, server, 'termin-aendern&kurzfristig');
     const wann = fenster(page, 'Wann passt es Ihnen?');
-    await wann.getByRole('checkbox', { name: 'Dienstag' }).click();
-    await wann.getByRole('checkbox', { name: 'Donnerstag' }).click();
-    await wann.getByRole('checkbox', { name: 'Egal' }).click();
+    await wann.getByRole('button', { name: 'Dienstag', exact: true }).click();
+    await wann.getByRole('button', { name: 'Donnerstag', exact: true }).click();
+    await wann.getByRole('button', { name: 'Egal', exact: true }).click();
     await wann.getByRole('button', { name: 'Weiter' }).click();
     const ende = fenster(page, 'Ist alles richtig?');
     const warnung = ende.getByRole('status');
@@ -451,11 +450,11 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     await expect(wann.getByText('Schritt 1 von 2', { exact: true })).toBeVisible();
     await pruefeSeite(page, wann, 'b6-wunsch-01-wann-passt-es', true);
 
-    await z.tippe(wann.getByRole('checkbox', { name: 'Mittwoch' }));
-    await z.tippe(wann.getByRole('checkbox', { name: 'Egal' }));
+    await z.tippe(wann.getByRole('button', { name: 'Mittwoch', exact: true }));
+    await z.tippe(wann.getByRole('button', { name: 'Egal', exact: true }));
     await z.tippe(wann.getByRole('button', { name: 'Weiter' }));
     const ende = fenster(page, 'Ist alles richtig?');
-    await expect(ende.getByText('Jede Tageszeit', { exact: true })).toBeVisible();
+    await expect(ende.getByText('Mittwoch, zu jeder Tageszeit', { exact: true })).toBeVisible();
     await expect(ende.getByText(/Ein vereinbarter Termin ist das noch nicht/)).toBeInViewport({
       ratio: 1,
     });

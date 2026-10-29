@@ -5,6 +5,7 @@ import {
   artLang,
   artUndPerson,
   artzeichen,
+  bisTag,
   gedaempft,
   gesendetAm,
   heroEtikett,
@@ -221,6 +222,12 @@ describe('Wunsch in Worten', () => {
       'Montag bis Freitag – bis Freitag, 13.\u00a0November.',
     );
     expect(tageSatz([], [], JETZT)).toBe('Wählen Sie einen oder mehrere Tage.');
+  });
+
+  it('bis wann die Tage reichen: der letzte Tag in Worten, ein anderes Jahr dabei', () => {
+    expect(bisTag(['2026-10-27', '2026-11-12'], JETZT)).toBe('bis Donnerstag, 12. November');
+    expect(bisTag(['2027-01-05'], JETZT)).toBe('bis Dienstag, 5. Januar 2027');
+    expect(bisTag([], JETZT)).toBe('');
   });
 
   it('titelt mit dem Termin des Wunschs, sonst mit der Art des Wunschs', () => {

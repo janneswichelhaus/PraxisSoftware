@@ -9,11 +9,9 @@ import type { Plattformzugang } from './api';
 import { renderWithProviders } from '@/test-utils';
 
 /**
- * „Termin wünschen" (POR-009, DSN-001 4.1), seit Überholung 6 als geführter
- * Ablauf im Fenster: „Wann passt es Ihnen?“ mit Wochentagen und Tageszeiten
- * samt „Egal“, dann die Zusammenfassung; ohne Tag geht es nicht weiter. Der
- * Wunsch geht als Wunsch an den Server, nie als Termin, und das steht über dem
- * Knopf (§8).
+ * „Termin wünschen“ in zwei Schritten (Handoff „Termine“ 5.3): die Tage als Segment Montag bis
+ * Freitag mit Satz, die Tageszeiten als Wahlflächen, dann die Karte der Zusammenfassung. Der Wunsch
+ * geht als Wunsch an den Server, nie als Termin, und das steht über dem Knopf (§8).
  */
 
 const terminWuenschen = vi.fn();
@@ -87,12 +85,23 @@ beforeEach(() => {
   terminWuenschen.mockResolvedValue('dddddddd-dddd-4ddd-8ddd-000000000001');
 });
 
-describe('Terminwunsch (POR-009, Überholung 6)', () => {
-  it('fragt im Fenster nach Wochentagen und Tageszeiten samt „Egal“, nichts vorbelegt', () => {
+/** Ein Tag oder eine Tageszeit: ein Schalter mit `aria-pressed`. */
+function wahl(name: string, in_: HTMLElement = document.body) {
+  return within(in_).getByRole('button', { name });
+}
+
+describe('Terminwunsch (Handoff „Termine“ 5.3)', () => {
+  it('fragt im Fenster nach den Tagen als Segment und den Tageszeiten als Wahlflächen, nichts vorbelegt', () => {
     zeige();
     const fenster = screen.getByRole('dialog', { name: 'Wann passt es Ihnen?' });
     expect(within(fenster).getByText('Termin wünschen')).toBeInTheDocument();
     expect(within(fenster).getByText('Schritt 1 von 2')).toBeInTheDocument();
+    expect(
+      within(fenster).getByRole('heading', { level: 2, name: 'An welchen Tagen?' }),
+    ).toBeInTheDocument();
+    expect(
+      within(fenster).getByRole('heading', { level: 2, name: 'Zu welcher Tageszeit?' }),
+    ).toBeInTheDocument();
     for (const name of [
       'Montag',
       'Dienstag',
@@ -104,12 +113,45 @@ describe('Terminwunsch (POR-009, Überholung 6)', () => {
       'Nachmittag',
       'Egal',
     ]) {
-      expect(within(fenster).getByRole('checkbox', { name })).not.toBeChecked();
+      expect(wahl(name, fenster)).toHaveAttribute('aria-pressed', 'false');
     }
-    expect(within(fenster).queryByRole('checkbox', { name: /Samstag|Sonntag/ })).toBeNull();
-    expect(within(fenster).getByRole('checkbox', { name: 'Montag' })).toHaveFocus();
+    expect(within(fenster).queryByRole('button', { name: /Samstag|Sonntag/ })).toBeNull();
+    expect(within(fenster).getByRole('status')).toHaveTextContent(
+      'Wählen Sie einen oder mehrere Tage.',
+    );
+    // Der Fokus beginnt bei der ersten Antwort, nicht im Kopf.
+    expect(wahl('Montag', fenster)).toHaveFocus();
     expect(within(fenster).getByRole('button', { name: 'Weiter' })).toBeInTheDocument();
     expect(within(fenster).getByRole('button', { name: 'Abbrechen' })).toBeInTheDocument();
+  });
+
+  it('sagt unter den Tagen, welche gewählt sind und bis wann sie reichen', async () => {
+    const nutzer = userEvent.setup();
+    zeige();
+    await nutzer.click(wahl('Donnerstag'));
+    await nutzer.click(wahl('Dienstag'));
+    expect(wahl('Dienstag')).toHaveAttribute('aria-pressed', 'true');
+    const satz = screen.getByRole('status');
+    // Der letzte gesendete Tag: je nach heute ein Dienstag oder ein Donnerstag.
+    expect(satz).toHaveTextContent(
+      /^Dienstag oder Donnerstag – bis (Dienstag|Donnerstag), \d+\.\s\S+\.$/,
+    );
+    await nutzer.click(wahl('Dienstag'));
+    expect(satz).toHaveTextContent(/^Donnerstag – bis Donnerstag, /);
+  });
+
+  it('„Egal“ nimmt die einzelnen Tageszeiten zurück und umgekehrt', async () => {
+    const nutzer = userEvent.setup();
+    zeige();
+    await nutzer.click(wahl('Vormittag'));
+    await nutzer.click(wahl('Nachmittag'));
+    await nutzer.click(wahl('Egal'));
+    expect(wahl('Egal')).toHaveAttribute('aria-pressed', 'true');
+    expect(wahl('Vormittag')).toHaveAttribute('aria-pressed', 'false');
+    expect(wahl('Nachmittag')).toHaveAttribute('aria-pressed', 'false');
+    await nutzer.click(wahl('Mittag'));
+    expect(wahl('Mittag')).toHaveAttribute('aria-pressed', 'true');
+    expect(wahl('Egal')).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('verlangt mindestens einen Tag, bevor es weitergeht', async () => {
@@ -124,15 +166,18 @@ describe('Terminwunsch (POR-009, Überholung 6)', () => {
   it('sendet Tage, Tageszeiten und Zeile als Wunsch; §8 steht über dem Knopf', async () => {
     const nutzer = userEvent.setup();
     zeige();
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Dienstag' }));
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Montag' }));
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Nachmittag' }));
+    await nutzer.click(wahl('Dienstag'));
+    await nutzer.click(wahl('Montag'));
+    await nutzer.click(wahl('Nachmittag'));
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
 
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
     expect(within(ende).getByText('Schritt 2 von 2')).toBeInTheDocument();
-    expect(within(ende).getByText('Montag und Dienstag')).toBeInTheDocument();
-    expect(within(ende).getByText('Nachmittag')).toBeInTheDocument();
+    // Die Karte: was gewünscht ist in den Worten der Liste, darunter bis wann.
+    expect(within(ende).getByText('Wann')).toBeInTheDocument();
+    expect(within(ende).getByText('Montag oder Dienstag, nachmittags')).toBeInTheDocument();
+    expect(within(ende).getByText(/^bis (Montag|Dienstag), \d+\./)).toBeInTheDocument();
+    expect(within(ende).getByRole('button', { name: 'Ändern: Wann' })).toBeInTheDocument();
     const satz = within(ende).getByText(/Ein vereinbarter Termin ist das noch nicht/);
     const knopf = within(ende).getByRole('button', { name: 'Wunsch senden' });
     expect(satz.compareDocumentPosition(knopf) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -160,14 +205,14 @@ describe('Terminwunsch (POR-009, Überholung 6)', () => {
   it('sendet bei „Egal“ keine Tageszeit und führt mit „← Zurück“ zur Wahl, die stehen bleibt', async () => {
     const nutzer = userEvent.setup();
     zeige();
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Donnerstag' }));
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Egal' }));
+    await nutzer.click(wahl('Donnerstag'));
+    await nutzer.click(wahl('Egal'));
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
-    expect(screen.getByText('Jede Tageszeit')).toBeInTheDocument();
+    expect(screen.getByText('Donnerstag, zu jeder Tageszeit')).toBeInTheDocument();
     await nutzer.click(screen.getByRole('button', { name: '← Zurück' }));
     const wann = screen.getByRole('dialog', { name: 'Wann passt es Ihnen?' });
-    expect(within(wann).getByRole('checkbox', { name: 'Donnerstag' })).toBeChecked();
-    expect(within(wann).getByRole('checkbox', { name: 'Egal' })).toBeChecked();
+    expect(wahl('Donnerstag', wann)).toHaveAttribute('aria-pressed', 'true');
+    expect(wahl('Egal', wann)).toHaveAttribute('aria-pressed', 'true');
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
     await nutzer.click(screen.getByRole('button', { name: 'Wunsch senden' }));
     await waitFor(() =>
@@ -181,8 +226,9 @@ describe('Terminwunsch (POR-009, Überholung 6)', () => {
     const nutzer = userEvent.setup();
     zeige();
     await pruefeBarrierefreiheit(document.body);
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Freitag' }));
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Vormittag' }));
+    await nutzer.click(wahl('Freitag'));
+    await nutzer.click(wahl('Vormittag'));
+    await pruefeBarrierefreiheit(document.body);
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
     await nutzer.click(screen.getByText('Nachricht an die Praxis (freiwillig)'));
     expect(screen.getByRole('dialog', { name: 'Ist alles richtig?' })).toBeInTheDocument();
@@ -192,14 +238,14 @@ describe('Terminwunsch (POR-009, Überholung 6)', () => {
   it('geht mit dem Zurück des Browsers einen Schritt zurück und fragt auf der ersten Seite', async () => {
     const nutzer = userEvent.setup();
     const router = zeigeMitVerlauf();
-    await nutzer.click(await screen.findByRole('checkbox', { name: 'Montag' }));
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Mittag' }));
+    await nutzer.click(await screen.findByRole('button', { name: 'Montag' }));
+    await nutzer.click(wahl('Mittag'));
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
     expect(await screen.findByRole('dialog', { name: 'Ist alles richtig?' })).toBeInTheDocument();
 
     await act(() => router.navigate(-1));
     const wann = await screen.findByRole('dialog', { name: 'Wann passt es Ihnen?' });
-    expect(within(wann).getByRole('checkbox', { name: 'Montag' })).toBeChecked();
+    expect(wahl('Montag', wann)).toHaveAttribute('aria-pressed', 'true');
 
     // Auf der ersten Seite mit einer Wahl: die Rückfrage, in den Worten des Wunschs.
     await act(() => router.navigate(-1));
@@ -214,8 +260,8 @@ describe('Terminwunsch (POR-009, Überholung 6)', () => {
     const nutzer = userEvent.setup();
     terminWuenschen.mockRejectedValue(new Error('Bitte wählen Sie höchstens 14 Tage.'));
     zeige('/p/termine/wunsch');
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Montag' }));
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Vormittag' }));
+    await nutzer.click(wahl('Montag'));
+    await nutzer.click(wahl('Vormittag'));
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
     await nutzer.click(screen.getByRole('button', { name: 'Wunsch senden' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('höchstens 14 Tage');

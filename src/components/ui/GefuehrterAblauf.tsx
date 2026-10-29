@@ -46,6 +46,7 @@ export function GefuehrterAblauf({
   inhaltUnten = false,
   band,
   plattform = false,
+  schmal: schmalesFenster = false,
   children,
 }: {
   /** Die Frage der Seite: Überschrift und Name des Fensters. */
@@ -96,6 +97,8 @@ export function GefuehrterAblauf({
    * Seite rollt samt Kopf und Fuß, statt oben und unten je ein Drittel festzuhalten (ANN-682).
    */
   plattform?: boolean;
+  /** Am Rechner ein Fenster von 36rem mit 24 Rand statt des großen (Handoff „Termine“, 5.5). */
+  schmal?: boolean;
   children?: ReactNode;
 }) {
   const gesperrt = useTippsperre(seite, tippsperre);
@@ -121,10 +124,14 @@ export function GefuehrterAblauf({
   // Beschriftung in der Frage steht („Wofür?“ in „Wie viel und wofür?“).
   const rollflaeche = { tabIndex: 0 } as const;
   const mitFuss = fuss !== undefined && fuss !== null && fuss !== false;
-  const rand = plattform ? 'px-5 max-[23rem]:px-3' : 'px-4';
+  const rand = plattform ? `px-5 max-[23rem]:px-3 ${schmalesFenster ? 'lg:px-6' : ''}` : 'px-4';
   // Das Band reicht über den Rand hinaus bis an die Kanten des Fensters.
   const bandleiste = band ? (
-    <div className={`mt-3 ${plattform ? '-mx-5 max-[23rem]:-mx-3' : '-mx-4'}`}>{band}</div>
+    <div
+      className={`mt-3 ${plattform ? `-mx-5 max-[23rem]:-mx-3 ${schmalesFenster ? 'lg:-mx-6' : ''}` : '-mx-4'}`}
+    >
+      {band}
+    </div>
   ) : null;
   const balken = stand?.von ? (
     balkenJeSchritt ? (
@@ -170,13 +177,26 @@ export function GefuehrterAblauf({
         </div>
       ) : (
         <div className={`shrink-0 pt-2 ${rand}`}>
-          <div className="flex min-h-11 items-center gap-3">
+          {/* Auf der Plattform „← Zurück“ 48 hoch wie im Einstieg; wird es eng (200 %), rückt der
+              Schritt in eine eigene Reihe, statt Wort für Wort zu brechen. */}
+          <div
+            className={`flex items-center gap-3 ${plattform ? 'min-h-12 flex-wrap gap-y-1' : 'min-h-11'}`}
+          >
             {zurueckGehen ? (
-              <Button variant="quiet" groesse="kompakt" onClick={zurueckGehen}>
+              <Button
+                variant="quiet"
+                groesse={plattform ? 'normal' : 'kompakt'}
+                className={plattform ? '-ml-3' : ''}
+                onClick={zurueckGehen}
+              >
                 ← Zurück
               </Button>
             ) : null}
-            {stand ? <p className="text-ink-muted ml-auto text-sm">{stand.text}</p> : null}
+            {stand ? (
+              <p className={`text-ink-muted ml-auto text-sm ${plattform ? 'shrink-0' : ''}`}>
+                {stand.text}
+              </p>
+            ) : null}
           </div>
           {balkenJeSchritt && balken ? <div className="mt-2 flex">{balken}</div> : balken}
           {bandleiste}
@@ -240,6 +260,8 @@ export function GefuehrterAblauf({
       schliessenBeschriftung={schliessen}
       titelImInhalt
       ohneKopfzeile={spaeter}
+      plattform={plattform}
+      schmal={schmalesFenster}
     >
       {/* Jede Seite beginnt neu (`key`): Eingaben einer anderen Seite stehen
           nicht im Weg, und der Fokus geht auf ihr `data-autofocus`. */}

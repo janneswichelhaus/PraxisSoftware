@@ -6,8 +6,7 @@ import {
   weiter,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { TAGESZEITEN, TAGESZEIT_NAME, type Tageszeit } from './api';
-import { wochentagMitDatum } from './zeit';
+import { TAGESZEITEN, type Tageszeit } from './api';
 
 /**
  * Termin ändern, absagen und wünschen als geführter Ablauf (Überholung 6, G6;
@@ -106,31 +105,6 @@ export function wunschtage(tage: readonly Wochentag[], werktage: readonly string
 /** Die Tageszeiten für den Server: „Egal“ heißt keine Angabe - jede Tageszeit. */
 export function wunschzeiten(zeiten: Zeitwahl): Tageszeit[] {
   return zeiten === 'egal' ? [] : TAGESZEITEN.filter((z) => zeiten.includes(z));
-}
-
-/** „Montag“, „Montag und Mittwoch“, „Montag, Mittwoch und Freitag“. */
-function aufzaehlung(teile: readonly string[]): string {
-  if (teile.length <= 1) return teile[0] ?? '';
-  return `${teile.slice(0, -1).join(', ')} und ${teile[teile.length - 1]!}`;
-}
-
-/** Die Tage der Zusammenfassung, in der Folge der Woche. */
-export function tageText(tage: readonly Wochentag[]): string {
-  const gewaehlt = WOCHENTAGE.filter((t) => tage.includes(t));
-  if (gewaehlt.length === WOCHENTAGE.length) return 'Montag bis Freitag';
-  return aufzaehlung(gewaehlt.map((t) => WOCHENTAG_NAME[t]));
-}
-
-/** Die Tageszeit der Zusammenfassung. */
-export function zeitenText(zeiten: Zeitwahl): string {
-  if (zeiten === 'egal') return 'Jede Tageszeit';
-  return aufzaehlung(wunschzeiten(zeiten).map((z) => TAGESZEIT_NAME[z]));
-}
-
-/** Bis wann die gewählten Tage reichen: „bis Mittwoch, 04.11.“ - der letzte gesendete Tag. */
-export function zeitraumText(kalendertage: readonly string[]): string {
-  const letzter = kalendertage[kalendertage.length - 1];
-  return letzter ? `bis ${wochentagMitDatum(letzter)}` : '';
 }
 
 /** Ist die Nachricht zu lang? Dann der Satz dazu, sonst `null`. */

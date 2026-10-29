@@ -29,6 +29,8 @@ export function Dialogfenster({
   schliessenBeschriftung = 'Schließen',
   titelImInhalt = false,
   ohneKopfzeile = false,
+  plattform = false,
+  schmal = false,
   children,
 }: {
   /** Überschrift und zugängliche Bezeichnung des Fensters. */
@@ -67,6 +69,13 @@ export function Dialogfenster({
    * Fenster nach nichts. Escape und ein Klick daneben schließen weiter.
    */
   ohneKopfzeile?: boolean;
+  /**
+   * Die Kopfzeile im Rand der Plattform (20, unter 23rem 12, am Rechner 24); die Beschreibung bricht
+   * um, statt abgeschnitten zu werden - bei 200 % ginge sonst der Tag des Termins verloren.
+   */
+  plattform?: boolean;
+  /** Am Rechner so breit wie ein Formular (36rem) und 40rem hoch: ein kurzer Ablauf. */
+  schmal?: boolean;
   children: ReactNode;
 }) {
   const titelId = useId();
@@ -215,13 +224,19 @@ export function Dialogfenster({
           onKeyDown={tastatur}
           // Am Telefon randlos über Kopfzeile und Tableiste, mit Platz für
           // Kerbe und Wischleiste; ab 640 px ein Fenster mit Rand wie oben.
-          className="fenster-kommt bg-surface sm:border-line-strong sm:rounded-card flex h-dvh w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-[min(52rem,calc(100dvh-4rem))] sm:max-w-5xl sm:border-2 sm:pt-0 sm:pb-0"
+          className={`fenster-kommt bg-surface sm:border-line-strong sm:rounded-card flex h-dvh w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-[min(52rem,calc(100dvh-4rem))] sm:max-w-5xl sm:border-2 sm:pt-0 sm:pb-0 ${schmal ? 'lg:max-w-formular lg:h-[min(40rem,calc(100dvh-4rem))]' : ''}`}
         >
           {ohneKopfzeile && titelImInhalt ? null : (
-            <div className="border-line flex min-h-14 shrink-0 items-center gap-2 border-b py-1 pr-2 pl-4">
+            <div
+              className={`border-line flex min-h-14 shrink-0 items-center gap-2 border-b py-1 pr-2 ${plattform ? 'pl-5 max-[23rem]:pl-3 lg:pl-6' : 'pl-4'}`}
+            >
               <div className="min-w-0 flex-1">
                 {titelImInhalt ? (
-                  <p className="text-ink truncate font-semibold">{beschreibung}</p>
+                  <p
+                    className={`text-ink font-semibold ${plattform ? 'leading-snug hyphens-manual' : 'truncate'}`}
+                  >
+                    {beschreibung}
+                  </p>
                 ) : (
                   <>
                     <h2 id={titelId} className="text-ink text-h4 truncate font-bold">
@@ -528,9 +543,15 @@ export function Fenstertitel({ stufe }: { stufe?: Titelstufe | undefined } = {})
   const kontext = useContext(TitelKontext);
   if (!kontext) return null;
   return (
+    // Auf der Plattform ohne eigene Stufe 22/700 in rem wie ein Abschnitt: Mit „Sehr groß“ wächst die
+    // Frage mit, und „Ausfallhonorar“ passt bei 200 % noch in eine Zeile.
     <h2
       id={kontext.id}
-      className={stufe ? titelklassen(stufe, kontext.titel) : 'text-ink text-h3 font-bold'}
+      className={
+        stufe
+          ? titelklassen(stufe, kontext.titel)
+          : 'text-ink text-h3 [.plattform-schrift_&]:text-abschnitt font-bold'
+      }
     >
       {kontext.titel}
     </h2>

@@ -7,6 +7,7 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Terminliste } from '@/components/ui/Terminliste';
 import { kannZurueck, aendern, zurueck, type Abfolge } from '@/components/ui/abfolge';
 import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import {
@@ -41,7 +42,13 @@ import {
   type Seite,
 } from './terminablauf';
 import { terminBeschreibung, terminKurz } from './terminbeschreibung';
-import { Angabe, Nachricht, Wannzeile, Wunschfelder, Zusammenfassungsanfang } from './Wunschfelder';
+import {
+  Angabe,
+  Nachricht,
+  Wannangabe,
+  Wunschfelder,
+  Zusammenfassungsanfang,
+} from './Wunschfelder';
 import { Terminseite } from './Terminseite';
 import { WUNSCHSCHUTZ } from './wunschtexte';
 import { naechsteWerktage, tagKurz, zeitraum } from './zeit';
@@ -282,6 +289,7 @@ function Aenderungsablauf({
       ) : seite === 'wann' ? (
         <Wunschfelder
           wann={angaben.wann}
+          werktage={werktage}
           onWann={(wann) => {
             setHinweis(null);
             setAngaben((bisher) => ({ ...bisher, wann }));
@@ -290,24 +298,23 @@ function Aenderungsablauf({
       ) : (
         <div className="flex flex-col gap-3">
           <Zusammenfassungsanfang />
-          <ListRows rahmen={false}>
-            {/* Der Wunsch an seinem Termin, Tag über Uhrzeit wie in der
-                Liste - „Ändern“ führt zurück zu „Was möchten Sie?“. */}
+          <Terminliste>
             <Angabe
-              zeit={<Terminzeit termin={termin} />}
               titel={art === 'cancel' ? 'Termin absagen' : 'Termin ändern'}
+              wert={<Terminzeit termin={termin} />}
               onAendern={() => gehe(aendern(abfolge, 'art'))}
             />
             {art === 'change' ? (
-              <Wannzeile
+              <Wannangabe
+                titel="Wann"
                 wann={angaben.wann}
                 werktage={werktage}
                 onAendern={() => gehe(aendern(abfolge, 'wann'))}
               />
             ) : null}
-          </ListRows>
+          </Terminliste>
           <Nachricht
-            label={
+            frage={
               art === 'cancel'
                 ? 'Möchten Sie der Praxis etwas mitteilen?'
                 : 'Was sollen wir noch wissen?'

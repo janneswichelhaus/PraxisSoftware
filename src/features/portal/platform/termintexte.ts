@@ -208,6 +208,12 @@ export function wunschInWorten(
   return `${tageMitOder(tage)}, ${zeiten.length > 0 ? mitOder(zeiten) : 'zu jeder Tageszeit'}`;
 }
 
+/** „bis Donnerstag, 12. November“ - der letzte gesendete Kalendertag; ohne Tage leer. */
+export function bisTag(kalendertage: readonly string[], jetzt: Date = new Date()): string {
+  const letzter = kalendertage[kalendertage.length - 1];
+  return letzter ? `bis ${wochentag(letzter)}, ${fest(tagUndMonat(letzter, jetzt))}` : '';
+}
+
 /**
  * Der Satz unter den Tagen im Wunsch (Handoff Abschnitt 3, „Tage“):
  * „Dienstag oder Donnerstag – bis Donnerstag, 12. November.“ mit dem
@@ -218,9 +224,8 @@ export function tageSatz(
   kalendertage: readonly string[],
   jetzt: Date = new Date(),
 ): string {
-  const letzter = kalendertage[kalendertage.length - 1];
-  if (tage.length === 0 || !letzter) return 'Wählen Sie einen oder mehrere Tage.';
-  return `${tageMitOder(tage)} – bis ${wochentag(letzter)}, ${fest(tagUndMonat(letzter, jetzt))}.`;
+  if (tage.length === 0 || kalendertage.length === 0) return 'Wählen Sie einen oder mehrere Tage.';
+  return `${tageMitOder(tage)} – ${bisTag(kalendertage, jetzt)}.`;
 }
 
 /**

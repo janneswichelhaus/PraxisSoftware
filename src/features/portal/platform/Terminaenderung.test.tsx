@@ -209,19 +209,18 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     await nutzer.click(await screen.findByRole('button', { name: 'Termin ändern' }));
     const wann = screen.getByRole('dialog', { name: 'Wann passt es Ihnen?' });
     expect(within(wann).getByText('Schritt 2 von 3')).toBeInTheDocument();
-    expect(within(wann).getByRole('checkbox', { name: 'Montag' })).toHaveFocus();
+    expect(within(wann).getByRole('button', { name: 'Montag' })).toHaveFocus();
     // Nichts ist vorbelegt.
     for (const name of ['Montag', 'Freitag', 'Vormittag', 'Egal']) {
-      expect(within(wann).getByRole('checkbox', { name })).not.toBeChecked();
+      expect(within(wann).getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false');
     }
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Montag' }));
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Vormittag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Montag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Vormittag' }));
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
 
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
     expect(within(ende).getByText('Termin ändern')).toBeInTheDocument();
-    expect(within(ende).getByText('Montag')).toBeInTheDocument();
-    expect(within(ende).getByText('Vormittag')).toBeInTheDocument();
+    expect(within(ende).getByText('Montag, vormittags')).toBeInTheDocument();
     expect(within(ende).getByRole('status')).toHaveTextContent('es entsteht kein Ausfallhonorar');
     await nutzer.click(within(ende).getByRole('button', { name: 'Änderungswunsch senden' }));
     await waitFor(() =>
@@ -243,8 +242,8 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
       `/p/termine/${TERMIN.id}?bereich=treatment&art=change`,
     );
     const wann = await screen.findByRole('dialog', { name: 'Wann passt es Ihnen?' });
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Dienstag' }));
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Egal' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Dienstag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Egal' }));
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
     const hinweis = within(ende).getByRole('status');
@@ -260,20 +259,22 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     expect(within(wann).getByRole('alert')).toHaveTextContent(
       'Bitte wählen Sie mindestens einen Tag.',
     );
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Freitag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Freitag' }));
     expect(within(wann).queryByRole('alert')).not.toBeInTheDocument();
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
     expect(within(wann).getByRole('alert')).toHaveTextContent(
       'Bitte wählen Sie eine Tageszeit oder „Egal“.',
     );
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Nachmittag' }));
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Egal' }));
-    expect(within(wann).getByRole('checkbox', { name: 'Nachmittag' })).not.toBeChecked();
+    await nutzer.click(within(wann).getByRole('button', { name: 'Nachmittag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Egal' }));
+    expect(within(wann).getByRole('button', { name: 'Nachmittag' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
 
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
-    expect(within(ende).getByText('Freitag')).toBeInTheDocument();
-    expect(within(ende).getByText('Jede Tageszeit')).toBeInTheDocument();
+    expect(within(ende).getByText('Freitag, zu jeder Tageszeit')).toBeInTheDocument();
     await nutzer.click(within(ende).getByRole('button', { name: 'Änderungswunsch senden' }));
     await waitFor(() =>
       expect(terminAendernWuenschen).toHaveBeenCalledWith(
@@ -304,8 +305,8 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     const nutzer = userEvent.setup();
     zeige(TERMIN, `/p/termine/${TERMIN.id}?bereich=treatment&art=change`);
     const wann = await screen.findByRole('dialog', { name: 'Wann passt es Ihnen?' });
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Montag' }));
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Vormittag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Montag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Vormittag' }));
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
     await nutzer.click(
       within(screen.getByRole('dialog', { name: 'Ist alles richtig?' })).getByRole('button', {
@@ -314,11 +315,14 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     );
     const wieder = screen.getByRole('dialog', { name: 'Wann passt es Ihnen?' });
     // Die Wahl von vorhin steht noch da.
-    expect(within(wieder).getByRole('checkbox', { name: 'Montag' })).toBeChecked();
-    await nutzer.click(within(wieder).getByRole('checkbox', { name: 'Mittwoch' }));
+    expect(within(wieder).getByRole('button', { name: 'Montag' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await nutzer.click(within(wieder).getByRole('button', { name: 'Mittwoch' }));
     await nutzer.click(within(wieder).getByRole('button', { name: 'Weiter' }));
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
-    expect(within(ende).getByText('Montag und Mittwoch')).toBeInTheDocument();
+    expect(within(ende).getByText('Montag oder Mittwoch, vormittags')).toBeInTheDocument();
     await nutzer.click(within(ende).getByRole('button', { name: 'Änderungswunsch senden' }));
     await waitFor(() =>
       expect(terminAendernWuenschen).toHaveBeenCalledWith(
@@ -331,8 +335,8 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     const nutzer = userEvent.setup();
     zeige(TERMIN, `/p/termine/${TERMIN.id}?bereich=treatment&art=change`);
     const wann = await screen.findByRole('dialog', { name: 'Wann passt es Ihnen?' });
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Montag' }));
-    await nutzer.click(within(wann).getByRole('checkbox', { name: 'Egal' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Montag' }));
+    await nutzer.click(within(wann).getByRole('button', { name: 'Egal' }));
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
     await nutzer.click(
       within(screen.getByRole('dialog', { name: 'Ist alles richtig?' })).getByRole('button', {
@@ -368,11 +372,11 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     const nutzer = userEvent.setup();
     zeige(TERMIN);
     await nutzer.click(await screen.findByRole('button', { name: 'Termin ändern' }));
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Montag' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Montag' }));
     await nutzer.click(screen.getByRole('button', { name: 'Abbrechen' }));
     const rueckfrage = screen.getByRole('dialog', { name: 'Ihr Wunsch ist noch nicht gesendet' });
     await nutzer.click(within(rueckfrage).getByRole('button', { name: 'Weiter ausfüllen' }));
-    expect(screen.getByRole('checkbox', { name: 'Montag' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Montag' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('ort')).toHaveTextContent(`/p/termine/${TERMIN.id}`);
 
     await nutzer.click(screen.getByRole('button', { name: 'Abbrechen' }));
@@ -401,8 +405,8 @@ describe('Terminaenderung (POR-010, Überholung 6)', () => {
     await nutzer.click(screen.getByRole('button', { name: 'Ändern: Termin absagen' }));
     await nutzer.click(screen.getByRole('button', { name: 'Termin ändern' }));
     await pruefeBarrierefreiheit(document.body);
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Montag' }));
-    await nutzer.click(screen.getByRole('checkbox', { name: 'Mittag' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Montag' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Mittag' }));
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
     expect(screen.getByRole('dialog', { name: 'Ist alles richtig?' })).toBeInTheDocument();
     await pruefeBarrierefreiheit(document.body);

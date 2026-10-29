@@ -12,15 +12,12 @@ import {
   seitenfolge,
   stand,
   tagUmschalten,
-  tageText,
   ungespeichert,
   vollstaendig,
   wannFehlt,
   wunschtage,
   wunschzeiten,
   zeitUmschalten,
-  zeitenText,
-  zeitraumText,
   zurZusammenfassung,
   type Angaben,
   type Seite,
@@ -216,26 +213,5 @@ describe('Wann passt es Ihnen?', () => {
   it('gibt dem Server bei „Egal“ keine Tageszeit - das heißt dort jede', () => {
     expect(wunschzeiten('egal')).toEqual([]);
     expect(wunschzeiten(['afternoon', 'morning'])).toEqual(['morning', 'afternoon']);
-  });
-});
-
-describe('Zusammenfassung', () => {
-  it('nennt die Tage in Worten', () => {
-    expect(tageText([1])).toBe('Montag');
-    expect(tageText([3, 1])).toBe('Montag und Mittwoch');
-    expect(tageText([1, 3, 5])).toBe('Montag, Mittwoch und Freitag');
-    expect(tageText([1, 2, 3, 4, 5])).toBe('Montag bis Freitag');
-  });
-
-  it('nennt die Tageszeit in Worten', () => {
-    expect(zeitenText('egal')).toBe('Jede Tageszeit');
-    expect(zeitenText(['midday'])).toBe('Mittag');
-    expect(zeitenText(['afternoon', 'morning'])).toBe('Vormittag und Nachmittag');
-    expect(zeitenText(['morning', 'midday', 'afternoon'])).toBe('Vormittag, Mittag und Nachmittag');
-  });
-
-  it('sagt, bis wann die gewählten Tage reichen', () => {
-    expect(zeitraumText(wunschtage([1, 3], WERKTAGE))).toBe('bis Mittwoch, 04.11.');
-    expect(zeitraumText([])).toBe('');
   });
 });

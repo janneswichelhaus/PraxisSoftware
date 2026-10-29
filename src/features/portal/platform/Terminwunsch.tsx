@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { Formularfuss } from '@/components/ui/Formularfuss';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
-import { ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Terminliste } from '@/components/ui/Terminliste';
 import { aendern, kannZurueck, zurueck, type Abfolge } from '@/components/ui/abfolge';
 import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import { wuenscheSchluessel, terminWuenschen, type Plattformzugang } from './api';
@@ -24,20 +23,20 @@ import {
   type Seite,
   type Wann,
 } from './terminablauf';
-import { Nachricht, Wannzeile, Wunschfelder, Zusammenfassungsanfang } from './Wunschfelder';
+import {
+  Nachricht,
+  Sendefuss,
+  Wannangabe,
+  Wunschfelder,
+  Zusammenfassungsanfang,
+} from './Wunschfelder';
 import { WUNSCHSCHUTZ } from './wunschtexte';
 import { naechsteWerktage } from './zeit';
 
 /**
- * „Termin wünschen" (POR-009, DSN-001 4.1): Welche Tage und Tageszeiten
- * passen, dazu eine freie Zeile. Nach dem Senden steht der Wunsch in der
- * Terminliste als „angefragt – die Praxis meldet sich"; einen Termin macht
- * daraus die Praxis (§8).
- *
- * Seit Überholung 6 ein geführter Ablauf im Fenster, in 18 px wie die ganze
- * Plattform: „Wann passt es Ihnen?“ → Zusammenfassung mit „Ändern“, die
- * Nachricht eingeklappt, ein Hauptknopf. Dass ein Wunsch noch kein Termin
- * ist, steht direkt über dem Knopf.
+ * „Termin wünschen“ in zwei Schritten (Handoff „Termine“ 5.3): „Wann passt es Ihnen?“, dann die
+ * Zusammenfassung; danach steht der Wunsch in der Liste. Einen Termin macht daraus die Praxis (§8),
+ * das steht direkt über dem Knopf.
  */
 export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
   const navigate = useNavigate();
@@ -128,6 +127,9 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
       onZurueck={kannZurueck(abfolge) ? zurueckGehen : undefined}
       schutz={schutz}
       abschluss={seite === 'zusammenfassung'}
+      balkenJeSchritt
+      plattform
+      schmal
       fuss={
         seite === 'wann' ? (
           <>
@@ -140,14 +142,18 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
           <>
             {fehlerzeile}
             {/* §8: Ein Wunsch ist kein Termin - das steht direkt über dem Knopf. */}
-            <Formularfuss
-              dicht
-              zusatz="Die Praxis sucht einen Termin und meldet sich bei Ihnen. Ein vereinbarter Termin ist das noch nicht."
+            <Sendefuss
+              hinweis={
+                <p className="text-ink-muted">
+                  Die Praxis sucht einen Termin und meldet sich bei Ihnen. Ein vereinbarter Termin
+                  ist das noch nicht.
+                </p>
+              }
             >
-              <Button onClick={absenden} disabled={senden.isPending}>
+              <Button className="w-full" onClick={absenden} disabled={senden.isPending}>
                 {senden.isPending ? 'Wird gesendet …' : 'Wunsch senden'}
               </Button>
-            </Formularfuss>
+            </Sendefuss>
           </>
         )
       }
@@ -155,22 +161,24 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
       {seite === 'wann' ? (
         <Wunschfelder
           wann={wann}
+          werktage={werktage}
           onWann={(neu) => {
             setHinweis(null);
             setWann(neu);
           }}
         />
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-5">
           <Zusammenfassungsanfang />
-          <ListRows rahmen={false}>
-            <Wannzeile
+          <Terminliste>
+            <Wannangabe
+              titel="Wann"
               wann={wann}
               werktage={werktage}
               onAendern={() => gehe(aendern(abfolge, 'wann'))}
             />
-          </ListRows>
-          <Nachricht label="Was sollen wir noch wissen?" wert={notiz} onWert={setNotiz} />
+          </Terminliste>
+          <Nachricht frage="Was sollen wir noch wissen?" wert={notiz} onWert={setNotiz} />
         </div>
       )}
     </GefuehrterAblauf>
