@@ -46,10 +46,13 @@ const zeichen: Partial<Record<Meldungston, string>> = {
  */
 export function Statusmeldung({
   ton = 'neutral',
+  zeichen: eigenesZeichen,
   children,
   className = '',
 }: {
   ton?: Meldungston;
+  /** Ein Zeichen statt des Zeichens des Tons, etwa das durchgestrichene WLAN ohne Netz. */
+  zeichen?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -59,14 +62,23 @@ export function Statusmeldung({
       role={ton === 'fehler' ? 'alert' : 'status'}
       // Erfolg, Warnung und Fehler gleiten ein (ANN-567); `neutral` steht oft
       // dauerhaft da, etwa „3 von 12 Terminen“, und bleibt ruhig.
-      className={`${ton === 'neutral' ? '' : 'meldung-rein'} ${farben[ton]} text-sm ${className}`}
+      className={`${ton === 'neutral' ? '' : 'meldung-rein'} ${farben[ton]} text-sm ${eigenesZeichen ? 'flex items-start gap-2.5' : ''} ${className}`}
     >
-      {bild ? (
-        <span aria-hidden="true" className="mr-1.5">
-          {bild}
-        </span>
-      ) : null}
-      {children}
+      {eigenesZeichen ? (
+        <>
+          {eigenesZeichen}
+          <span>{children}</span>
+        </>
+      ) : (
+        <>
+          {bild ? (
+            <span aria-hidden="true" className="mr-1.5">
+              {bild}
+            </span>
+          ) : null}
+          {children}
+        </>
+      )}
     </p>
   );
 }

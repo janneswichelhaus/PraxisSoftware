@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -28,6 +28,7 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Terminaenderung } = await import('./Terminaenderung');
+const { WUNSCHSCHUTZ } = await import('./wunschtexte');
 const { WUNSCHTAGE } = await import('./terminablauf');
 const { terminKurz } = await import('./terminbeschreibung');
 const { tagInWorten, vonBis } = await import('./termintexte');
@@ -139,6 +140,18 @@ beforeEach(() => {
   vi.clearAllMocks();
   terminAendernWuenschen.mockResolvedValue('dddddddd-dddd-4ddd-8ddd-000000000001');
 });
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+/** Die Verbindung reißt ab oder kommt zurück, wie der Browser es meldet. */
+function verbindung(da: boolean) {
+  vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(da);
+  act(() => {
+    window.dispatchEvent(new Event(da ? 'online' : 'offline'));
+  });
+}
 
 describe('Terminaenderung: Ändern (Handoff „Termine“ 5.4)', () => {
   it('beginnt mit „Wann passt es Ihnen?“ als Schritt 1 von 2, den Termin im Kopf, ohne „← Zurück“', async () => {
@@ -392,6 +405,21 @@ describe('Terminaenderung: Absagen (Handoff „Termine“ 5.4)', () => {
     await act(() => router.navigate(-1));
     expect(await screen.findByRole('link', { name: 'Termin absagen' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('ohne Netz: „Absage senden“ gesperrt mit dem Satz im Fuß, mit Verbindung wieder frei', async () => {
+    const nutzer = userEvent.setup();
+    zeige(TERMIN, ABSAGEN);
+    await nutzer.click(await screen.findByRole('button', { name: 'Verstanden, weiter' }));
+    verbindung(false);
+    const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
+    const knopf = within(ende).getByRole('button', { name: 'Absage senden' });
+    expect(knopf).toBeDisabled();
+    expect(knopf).toHaveAccessibleDescription(WUNSCHSCHUTZ.ohneVerbindung);
+    expect(within(ende).getAllByText(WUNSCHSCHUTZ.ohneVerbindung)).toHaveLength(1);
+    verbindung(true);
+    expect(knopf).toBeEnabled();
+    expect(within(ende).getByText(/Als Eingang Ihrer Absage gilt/)).toBeInTheDocument();
   });
 
   it('zeigt die Abweisung des Servers als Satz und bleibt in der Zusammenfassung', async () => {

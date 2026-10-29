@@ -42,6 +42,7 @@ function Pruefseite({
   kompakt = false,
   auchSuchparameter = false,
   schrittZurueck,
+  ohneVerbindungImFuss = false,
 }: {
   ungespeichert?: boolean;
   speichern?: () => Promise<boolean>;
@@ -51,6 +52,7 @@ function Pruefseite({
   kompakt?: boolean;
   auchSuchparameter?: boolean;
   schrittZurueck?: () => void;
+  ohneVerbindungImFuss?: boolean;
 }) {
   const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
     ungespeichert,
@@ -60,6 +62,7 @@ function Pruefseite({
     kompakt,
     auchSuchparameter,
     schrittZurueck,
+    ohneVerbindungImFuss,
   });
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
@@ -187,6 +190,12 @@ describe('Textverlustschutz: Hinweis ohne Verbindung', () => {
   it('zeigt den Hinweis nicht, wenn nichts ungespeichert ist', () => {
     setzeVerbindung(false);
     renderWithProviders(<Pruefseite ungespeichert={false} />, '/dokumentation');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('schweigt ohne Verbindung, wenn die Seite es am gesperrten Knopf selbst sagt', () => {
+    setzeVerbindung(false);
+    renderWithProviders(<Pruefseite ohneVerbindungImFuss />, '/dokumentation');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

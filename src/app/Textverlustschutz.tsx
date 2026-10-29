@@ -195,6 +195,7 @@ export function useTextverlustschutz({
   selbst,
   auchSuchparameter = false,
   schrittZurueck,
+  ohneVerbindungImFuss = false,
 }: {
   /** Steht im Feld etwas, das noch nicht auf dem Server liegt? */
   ungespeichert: boolean;
@@ -259,6 +260,8 @@ export function useTextverlustschutz({
    * fragt der Schutz wie vor jedem Weggehen.
    */
   schrittZurueck?: (() => void) | undefined;
+  /** Die Seite sagt am gesperrten Knopf selbst, dass ohne Verbindung nichts geht; die Zeile oben entfällt. */
+  ohneVerbindungImFuss?: boolean;
 }): Textverlustschutz {
   // Angehalten wird für beides: ungespeicherten Text und Offenes, das sich
   // nicht speichern lässt.
@@ -583,7 +586,7 @@ export function useTextverlustschutz({
 
   const schutz = (
     <>
-      {!verbunden && ungespeichert ? (
+      {!verbunden && ungespeichert && !ohneVerbindungImFuss ? (
         <Statusmeldung ton="fehler" className="mt-3">
           {texte.ohneVerbindung}
         </Statusmeldung>

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -22,6 +22,7 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Terminwunsch } = await import('./Terminwunsch');
+const { WUNSCHSCHUTZ } = await import('./wunschtexte');
 const { WUNSCHTAGE } = await import('./terminablauf');
 const { naechsteWerktage } = await import('./zeit');
 
@@ -84,6 +85,18 @@ beforeEach(() => {
   vi.clearAllMocks();
   terminWuenschen.mockResolvedValue('dddddddd-dddd-4ddd-8ddd-000000000001');
 });
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+/** Die Verbindung reißt ab oder kommt zurück, wie der Browser es meldet. */
+function verbindung(da: boolean) {
+  vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(da);
+  act(() => {
+    window.dispatchEvent(new Event(da ? 'online' : 'offline'));
+  });
+}
 
 /** Ein Tag oder eine Tageszeit: ein Schalter mit `aria-pressed`. */
 function wahl(name: string, in_: HTMLElement = document.body) {
@@ -254,6 +267,33 @@ describe('Terminwunsch (Handoff „Termine“ 5.3)', () => {
     expect(screen.getByRole('dialog', { name: 'Wann passt es Ihnen?' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/p/termine/wunsch');
     expect(terminWuenschen).not.toHaveBeenCalled();
+  });
+
+  it('ohne Netz: Die Angaben stehen, „Wunsch senden“ ist gesperrt, der Satz steht im Fuß', async () => {
+    const nutzer = userEvent.setup();
+    zeige();
+    await nutzer.click(wahl('Montag'));
+    await nutzer.click(wahl('Vormittag'));
+    await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
+    verbindung(false);
+
+    const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
+    const knopf = within(ende).getByRole('button', { name: 'Wunsch senden' });
+    expect(knopf).toBeDisabled();
+    expect(knopf).toHaveAccessibleDescription(WUNSCHSCHUTZ.ohneVerbindung);
+    // Der Satz steht einmal, ruhig im Fuß - nicht zusätzlich rot im Kopf.
+    expect(within(ende).getAllByText(WUNSCHSCHUTZ.ohneVerbindung)).toHaveLength(1);
+    expect(within(ende).queryByRole('alert')).not.toBeInTheDocument();
+    expect(within(ende).getByText('Montag, vormittags')).toBeInTheDocument();
+
+    verbindung(true);
+    expect(knopf).toBeEnabled();
+    expect(within(ende).queryByText(WUNSCHSCHUTZ.ohneVerbindung)).not.toBeInTheDocument();
+    expect(
+      within(ende).getByText(/Ein vereinbarter Termin ist das noch nicht/),
+    ).toBeInTheDocument();
+    await nutzer.click(knopf);
+    await waitFor(() => expect(terminWuenschen).toHaveBeenCalledTimes(1));
   });
 
   it('zeigt die Abweisung des Servers als Satz', async () => {

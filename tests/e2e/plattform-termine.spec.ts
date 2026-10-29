@@ -488,4 +488,32 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     });
     expect(z.tipps).toBeLessThanOrEqual(5);
   });
+  test('ohne Netz: Senden ist gesperrt, der Satz steht im Fuß; mit Verbindung geht es weiter', async ({
+    page,
+    context,
+  }) => {
+    const server = nachbildung();
+    await oeffne(page, server, 'wunsch');
+    const wann = fenster(page, 'Wann passt es Ihnen?');
+    await wann.getByRole('button', { name: 'Dienstag', exact: true }).click();
+    await wann.getByRole('button', { name: 'Vormittag', exact: true }).click();
+    await wann.getByRole('button', { name: 'Weiter' }).click();
+    const ende = fenster(page, 'Ist alles richtig?');
+    await expect(ende.getByText('Dienstag, vormittags', { exact: true })).toBeVisible();
+
+    await context.setOffline(true);
+    const knopf = ende.getByRole('button', { name: 'Wunsch senden' });
+    await expect(knopf).toBeDisabled();
+    const satz = ende.getByText(/^Ohne Verbindung lässt sich Ihr Wunsch gerade nicht senden/);
+    await expect(satz).toBeInViewport({ ratio: 1 });
+    await expect(knopf).toBeInViewport({ ratio: 1 });
+    // Einmal, ruhig im Fuß - nicht zusätzlich als Fehler im Kopf.
+    await expect(ende.getByRole('alert')).toHaveCount(0);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    await bild(page, 'b6-wunsch-04-ohne-netz', true);
+
+    await context.setOffline(false);
+    await expect(knopf).toBeEnabled();
+    await expect(ende.getByText(/Ein vereinbarter Termin ist das noch nicht/)).toBeVisible();
+  });
 });

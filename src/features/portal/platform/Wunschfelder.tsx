@@ -1,6 +1,9 @@
 import { useId, useRef, useState, type ReactNode } from 'react';
+import { useIstVerbunden } from '@/app/verbindung';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
+import { OhneNetzSymbol } from '@/components/ui/OhneNetzSymbol';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { Wahlflaechen } from '@/components/ui/Wahlflaechen';
 import { Wochenleiste } from '@/components/ui/Wochenleiste';
@@ -18,6 +21,7 @@ import {
   type Wochentag,
 } from './terminablauf';
 import { bisTag, tageSatz, wunschInWorten } from './termintexte';
+import { WUNSCHSCHUTZ } from './wunschtexte';
 
 /**
  * Was „Termin wünschen“ und „Termin ändern“ teilen (Handoff „Termine“ 5.3 und 5.4): die Seite „Wann
@@ -144,12 +148,41 @@ export function Wannangabe({
   );
 }
 
-/** Der Fuß der Zusammenfassung: was der Knopf bewirkt, darunter der eine Hauptknopf. */
-export function Sendefuss({ hinweis, children }: { hinweis: ReactNode; children: ReactNode }) {
+/**
+ * Der Fuß der Zusammenfassung: was der Knopf bewirkt, darunter der eine Hauptknopf. Ohne Netz steht
+ * dort, dass gerade nichts gesendet wird, und der Knopf bleibt gesperrt, bis sie zurück ist (ANN-787).
+ */
+export function Sendefuss({
+  hinweis,
+  knopf,
+  laeuft,
+  onSenden,
+}: {
+  hinweis: ReactNode;
+  /** Die Beschriftung des Hauptknopfs, etwa „Wunsch senden“. */
+  knopf: string;
+  laeuft: boolean;
+  onSenden: () => void;
+}) {
+  const verbunden = useIstVerbunden();
+  const satzId = useId();
   return (
     <div className="flex flex-col gap-3">
-      {hinweis}
-      {children}
+      {verbunden ? (
+        hinweis
+      ) : (
+        <div id={satzId}>
+          <Statusmeldung zeichen={<OhneNetzSymbol />}>{WUNSCHSCHUTZ.ohneVerbindung}</Statusmeldung>
+        </div>
+      )}
+      <Button
+        className="w-full"
+        onClick={onSenden}
+        disabled={laeuft || !verbunden}
+        aria-describedby={verbunden ? undefined : satzId}
+      >
+        {laeuft ? 'Wird gesendet …' : knopf}
+      </Button>
     </div>
   );
 }

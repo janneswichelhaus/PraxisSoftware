@@ -135,6 +135,7 @@ function Aenderungsablauf({
     ungespeichert: ungespeichert(abfolge, wann, notiz),
     kompakt: true,
     texte: WUNSCHSCHUTZ,
+    ohneVerbindungImFuss: true,
     // Der Ablauf hängt an `?art=`: Auch der Weg zur Seite des Termins verlässt ihn.
     auchSuchparameter: true,
     // Die Zurückgeste des Telefons geht einen Schritt zurück, nicht aus dem Ablauf.
@@ -226,15 +227,10 @@ function Aenderungsablauf({
                   <Freigabehinweis spaet={spaet} />
                 )
               }
-            >
-              <Button className="w-full" onClick={absenden} disabled={senden.isPending}>
-                {senden.isPending
-                  ? 'Wird gesendet …'
-                  : art === 'cancel'
-                    ? 'Absage senden'
-                    : 'Änderungswunsch senden'}
-              </Button>
-            </Sendefuss>
+              knopf={art === 'cancel' ? 'Absage senden' : 'Änderungswunsch senden'}
+              laeuft={senden.isPending}
+              onSenden={absenden}
+            />
           </>
         ) : (
           <>

@@ -56,6 +56,7 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
     ungespeichert: ungespeichert(abfolge, wann, notiz),
     kompakt: true,
     texte: WUNSCHSCHUTZ,
+    ohneVerbindungImFuss: true,
     // Die Zurückgeste des Telefons geht einen Schritt zurück, nicht aus dem Ablauf.
     schrittZurueck: kannZurueck(abfolge) ? () => zurueckGehen() : undefined,
   });
@@ -150,11 +151,10 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
                   ist das noch nicht.
                 </p>
               }
-            >
-              <Button className="w-full" onClick={absenden} disabled={senden.isPending}>
-                {senden.isPending ? 'Wird gesendet …' : 'Wunsch senden'}
-              </Button>
-            </Sendefuss>
+              knopf="Wunsch senden"
+              laeuft={senden.isPending}
+              onSenden={absenden}
+            />
           </>
         )
       }
