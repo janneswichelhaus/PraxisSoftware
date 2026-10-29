@@ -516,6 +516,11 @@ test.describe('Seite des Termins (Schritt 3c)', () => {
     await expect(page.getByText('Ihr Termin lässt sich gerade nicht laden.')).toBeVisible();
     await expect(page.getByRole('button', { name: /erneut/i })).toBeVisible();
     await expect(page.locator('main').getByRole('link', { name: 'Termine' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Die Praxis erreichen' }),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Praxis anrufen/ })).toBeVisible();
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
   });
 
   test('ohne Netz: Ändern und Absagen gesperrt mit Satz, „Praxis anrufen“ bleibt (Frage 4)', async ({

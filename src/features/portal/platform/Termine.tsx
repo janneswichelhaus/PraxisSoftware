@@ -41,7 +41,7 @@ import {
 } from './hauptsache';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import {
-  FragenZumTermin,
+  PraxisErreichen,
   Statuszeichen,
   Terminzeile,
   Wunschzeile,
@@ -420,28 +420,6 @@ function Liste({
       {woche}
       {vergangenAbschnitt}
       {lesefrist ? <PraxisErreichen zugang={zugang} mit={mit} /> : null}
-    </div>
-  );
-}
-
-/**
- * Der Weg zur Praxis, wo die Liste sonst keinen bietet: in der Lesefrist, deren Satz auf die Praxis
- * verweist, und beim Fehler, etwa für eine kurzfristige Absage (ANN-780).
- */
-function PraxisErreichen({
-  zugang,
-  mit,
-}: {
-  zugang: Plattformzugang;
-  mit: (pfad: string) => string;
-}) {
-  return (
-    <div>
-      <FragenZumTermin
-        titel="Die Praxis erreichen"
-        rufnummer={zugang.practice_phone}
-        schreiben={mit(`${PLATTFORM_PFAD}/nachrichten/neu`)}
-      />
     </div>
   );
 }

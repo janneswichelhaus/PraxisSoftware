@@ -18,6 +18,7 @@ import {
   type Termin,
   type Terminwunsch,
 } from './api';
+import { PLATTFORM_PFAD } from './pfade';
 import {
   artUndPerson,
   artzeichen,
@@ -244,6 +245,28 @@ export function FragenZumTermin({
         </Terminliste>
       </div>
     </Section>
+  );
+}
+
+/**
+ * Der Weg zur Praxis, wo eine Seite sonst keinen bietet: in der Lesefrist, deren Satz auf die Praxis
+ * verweist, und wenn die Termine nicht laden, etwa für eine kurzfristige Absage (ANN-780).
+ */
+export function PraxisErreichen({
+  zugang,
+  mit,
+}: {
+  zugang: Plattformzugang;
+  mit: (pfad: string) => string;
+}) {
+  return (
+    <div>
+      <FragenZumTermin
+        titel="Die Praxis erreichen"
+        rufnummer={zugang.practice_phone}
+        schreiben={mit(`${PLATTFORM_PFAD}/nachrichten/neu`)}
+      />
+    </div>
   );
 }
 

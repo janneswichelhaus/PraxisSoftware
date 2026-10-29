@@ -22,7 +22,13 @@ import {
 } from './api';
 import { useRechner } from './geruestbreite';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
-import { FragenZumTermin, Statuszeichen, WerUndWo, Zurueckziehen } from './Terminbausteine';
+import {
+  FragenZumTermin,
+  PraxisErreichen,
+  Statuszeichen,
+  WerUndWo,
+  Zurueckziehen,
+} from './Terminbausteine';
 import {
   artLang,
   artzeichen,
@@ -76,6 +82,7 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
           description="Versuchen Sie es gleich noch einmal."
           onErneut={() => termine.refetch()}
         />
+        <PraxisErreichen zugang={zugang} mit={mit} />
       </div>
     );
   }

@@ -262,6 +262,10 @@ describe('Seite des Termins (Schritt 3c)', () => {
       await screen.findByText('Ihr Termin lässt sich gerade nicht laden.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /erneut/i })).toBeInTheDocument();
+    // Auch ohne Termin bleibt der Weg zur Praxis, etwa für eine kurzfristige Absage (ANN-780).
+    expect(
+      within(abschnittNamens('Die Praxis erreichen')).getByRole('link', { name: /Praxis anrufen/ }),
+    ).toHaveAttribute('href', 'tel:+4970710000000');
     zweite.unmount();
 
     zeige(TERMIN, { pfad: '/p/termine/aaaaaaaa-aaaa-4aaa-8aaa-0000000000ff' });
