@@ -141,12 +141,13 @@ function Geruest({
   ];
   const praxis = zugaenge[0]?.organization_name ?? '';
   const rechner = useRechner();
-  // Die Übersicht und der Reiter „Übungen“ (ANN-724) nutzen am Rechner die
-  // ganze Breite (zwei Spalten); ohne lesbaren Zugang steht dort die Tür in
-  // der Spalte.
+  // Übersicht, Übungen (ANN-724) und Termine (ANN-775) nutzen am Rechner die ganze Breite in zwei
+  // Spalten; ohne lesbaren Zugang steht dort die Tür in der Spalte.
   const { pathname } = useLocation();
   const breit =
-    (pathname === PLATTFORM_PFAD || pathname === `${PLATTFORM_PFAD}/uebungen`) && lesbar.length > 0;
+    [PLATTFORM_PFAD, `${PLATTFORM_PFAD}/uebungen`, `${PLATTFORM_PFAD}/termine`].includes(
+      pathname,
+    ) && lesbar.length > 0;
   // Die Durchführung steht im Vollbild (Handoff 2026-10-24, Abschnitt 4):
   // ohne Kopf, Verbindungszeile und Reiterleiste des Gerüsts - ihr eigener
   // Kopf mit „Später weiter“ ist der Weg hinaus, ihr Fuß trägt den Hauptknopf
@@ -168,12 +169,9 @@ function Geruest({
           stehen, die Zeile sagt es. */}
       <Profilhinweis />
       <HandelnFuer bereiche={lesbar} rechner={rechner} />
-      {/* Handoff 2026-10-22, Abschnitt 4: am Telefon 20 px Rand und 12 oben,
-          unter 23rem 12 px; am Rechner `max-w-inhalt` mit 40 px. Darin steht
-          jede Seite einspaltig in `max-w-spalte`, an der Kante der Marke -
-          außer der Übersicht, die ab 900 px Inhaltsbreite zwei Spalten hat
-          (`Uebersicht.tsx`). Unten bleibt Luft statt Platz für eine feste
-          Leiste: Die Reiterleiste steht am Ende der Seite (`Navigation.tsx`). */}
+      {/* Jede Seite einspaltig in `max-w-spalte`, außer Übersicht, Übungen und Termine (siehe
+          `breit`); unten Luft statt Platz für eine feste Leiste, weil die Reiterleiste am Ende der
+          Seite steht (`Navigation.tsx`). */}
       <main
         id="inhalt"
         tabIndex={-1}

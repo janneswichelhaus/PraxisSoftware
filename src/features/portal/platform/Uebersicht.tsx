@@ -56,6 +56,7 @@ import {
   handlung,
   hauptsache,
   inLesefrist,
+  lesefristSatz,
   naechsterTermin,
   terminPerson,
   terminTitel,
@@ -68,6 +69,8 @@ import { useMarkenmoment } from './markenmoment';
 import { THEMA_NAME } from './nachrichtentexte';
 import { paketStand } from './paketbedingungen';
 import { BENACHRICHTIGUNGEN_ANKER, PLATTFORM_PFAD, bereichParameter } from './pfade';
+import { Statuszeichen } from './Terminbausteine';
+import { terminZustand } from './termintexte';
 import { umfangSatz, umfangText } from './vorschau';
 import { zahlungsstand } from './zahlungsstand';
 import {
@@ -600,16 +603,13 @@ function Kopfteil({
 }) {
   const eigen = zugang.access_kind === 'self';
   const name = zugang.represented_name ?? 'die Person';
-  const aboEndet = abo && abo.state !== 'running' ? abo : null;
   return (
     <div className="markenmoment-gruss flex flex-col gap-6">
       {zugang.read_until ? (
         <Statusmeldung ton="warnung">
           {!eigen
             ? `Ihr Zugang für ${name} endet am ${datum(zugang.read_until)}.`
-            : aboEndet?.ends_on
-              ? `Ihr Nachsorge-Abo ${aboEndet.state === 'ending' ? 'endet' : 'endete'} am ${datum(aboEndet.ends_on)}. Sie können hier noch bis ${datum(letzterTag(zugang.read_until))} lesen.`
-              : `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(letzterTag(zugang.read_until))} lesen.`}
+            : lesefristSatz(zugang, abo)}
         </Statusmeldung>
       ) : null}
       <Gruss name={mitName ? zugang.own_name : null} jetzt={jetzt} mitDatum={mitDatum} />
@@ -672,6 +672,8 @@ function Hauptsachekarte({
     case 'termin': {
       const t = haupt.termin;
       const zeile = terminPerson(t, vertretung);
+      // Ein offener Änderungs- oder Absagewunsch steht an der Karte wie in der Liste (ANN-772).
+      const offenerWunsch = terminZustand(t);
       return (
         <HeroKarte
           titel={terminTitel(
@@ -681,6 +683,7 @@ function Hauptsachekarte({
             jetzt,
           )}
           satz={terminZeit(t, vertretung, jetzt)}
+          zustand={offenerWunsch ? <Statuszeichen {...offenerWunsch} /> : undefined}
           person={t.staff_name && zeile ? { name: t.staff_name, zeile } : undefined}
           aktion={{ text: 'Termin ansehen', to: mit(`${PLATTFORM_PFAD}/termine`) }}
           markenmoment={markenmoment}

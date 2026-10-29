@@ -8,15 +8,15 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 **Design-Review Schritt 3 Termine** (Auftrag Jannes 28.10., Fragen wie empfohlen): 3a bis 3c
 lagen ungemergt auf `ccr-544f8ce7-u1sqpf` (25.10., vor dem Aufräumen) und werden je als PR
-übertragen, ohne die Einsicht der Praxis (M7), Annahmen ab ANN-764; 3a liegt als #327 vor.
+übertragen, ohne die Einsicht der Praxis (M7); 3a ist gemergt (#327), 3b liegt als PR vor.
 Aufräumen (#308 bis #325) und CI-Beschleunigung (#326) sind gemergt; offen ist die Abkürzung für
 reine Doku (ADR-013 Punkt 2, Entscheidung Jannes). Befunde aus archivierten Sitzungen: BEF-201,
 BEF-202.
 
 ## Danach
 
-3b Liste, 3c Seite des Termins (Design-Review steht aus), 3d Abläufe; den alten Branch erst nach
-3c löschen. Dann BEF-223 (Zeitumstellung, Pfad A) als eigene PR, eine Bildsichtung der Schritte 2
+3c Seite des Termins (Design-Review steht aus), 3d Abläufe; den alten Branch erst nach 3c
+löschen. Dann BEF-223 (Zeitumstellung, Pfad A) als eigene PR, eine Bildsichtung der Schritte 2
 und 3, dann Schritt 4 (Handoff während 3d), danach 5 bis 7 je mit Handoff (Roadmap). Erst dann
 die Vorschläge der Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
@@ -51,6 +51,6 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-28.10.2026, Branch `claude/modest-bell-fyy01m`: Bildstrecke führt offene Anfragen je Dokument
-(`scripts/bildstrecke/netzruhe.mjs`), Plattform und Anmeldung in 70 statt 286 s. Fehler der
-Plattform-Übersicht in der Test-Umgebung: alte Termin-Kennungen (neu aufsetzen). Keine Migration.
+28.10.2026: 3b übertragen (`ccr-0b8e7ef6-hhpe6n`; ANN-772 bis -777, BEF-220 erledigt, BEF-222 am
+Server offen). `claude/modest-bell-fyy01m`: Bildstrecke führt offene Anfragen je Dokument (70 statt
+286 s); Erikas Übersicht scheitert in der Test-Umgebung an alten Termin-Kennungen. Keine Migration.

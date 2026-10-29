@@ -64,6 +64,7 @@ export function EmptyState({
   aktion,
   inKarte = false,
   markenform = false,
+  zeichen,
 }: {
   title: string;
   description?: string | undefined;
@@ -72,6 +73,8 @@ export function EmptyState({
   inKarte?: boolean;
   /** Mit der Markenform der Plattform; in einer Karte nur mit `inKarte`. */
   markenform?: boolean;
+  /** Nur mit `markenform`: ein Zeichen statt des Laufrads, wenn schon etwas unterwegs ist. */
+  zeichen?: ReactNode;
 }) {
   if (markenform) {
     // Linksbündig wie die Plattform. Die Karte nur auf Wunsch: Steht der
@@ -84,9 +87,11 @@ export function EmptyState({
       >
         <span
           aria-hidden="true"
-          className="bg-surface-inverse rounded-pill flex size-16 shrink-0 items-center justify-center"
+          className={`rounded-pill flex size-16 shrink-0 items-center justify-center ${
+            zeichen ? 'bg-surface-sunken text-ink [&_svg]:size-8' : 'bg-surface-inverse'
+          }`}
         >
-          <Laufrad kraeftig className="text-salbei size-11" />
+          {zeichen ?? <Laufrad kraeftig className="text-salbei size-11" />}
         </span>
         <span className="flex flex-col gap-1">
           <span className="text-ink text-liste font-semibold">{title}</span>

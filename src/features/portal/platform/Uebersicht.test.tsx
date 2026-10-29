@@ -314,6 +314,15 @@ describe('Hauptsache (ANN-698)', () => {
       '/p/termine?bereich=treatment',
     );
     expect(screen.queryByRole('heading', { name: /Besuch$/ })).not.toBeInTheDocument();
+    expect(hero).not.toHaveTextContent('angefragt');
+  });
+
+  it('zeigt einen offenen Absagewunsch an der Karte wie in der Liste (ANN-772)', async () => {
+    ladeBefundbogen.mockResolvedValue(BOGEN_FERTIG);
+    ladeTermine.mockResolvedValue([{ ...TERMIN, open_request_kind: 'cancel' }]);
+    zeige();
+    const hero = await screen.findByRole('region', { name: /^Besuch (am|morgen|heute)/ });
+    expect(within(hero).getByText('Absage angefragt')).toBeInTheDocument();
   });
 
   it('sagt ohne Aufgabe und ohne Termin, dass gerade nichts zu tun ist', async () => {

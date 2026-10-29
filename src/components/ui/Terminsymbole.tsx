@@ -2,13 +2,13 @@ import type { ReactNode } from 'react';
 
 /**
  * Die Zeichen der Termine, Raster 24 mit Linie 2 in `currentColor`: die Art (Haus, Praxis, Video,
- * im Training die Hantel), Kalender, Ort, Telefon, Nachricht und Pfeile. `aria-hidden`, weil das
- * Wort daneben die Bedeutung trägt.
+ * im Training die Hantel), Kalender, Uhr, Ort, Telefon, Nachricht und Pfeile. `aria-hidden`, weil
+ * das Wort daneben die Bedeutung trägt.
  */
 export type Artzeichen = 'haus' | 'praxis' | 'video' | 'training';
 
 export type Terminzeichen =
-  Artzeichen | 'kalender' | 'ort' | 'telefon' | 'nachricht' | 'pfeil' | 'vor';
+  Artzeichen | 'kalender' | 'uhr' | 'ort' | 'telefon' | 'nachricht' | 'pfeil' | 'vor';
 
 const PFADE: Record<Terminzeichen, ReactNode> = {
   haus: (
@@ -35,6 +35,12 @@ const PFADE: Record<Terminzeichen, ReactNode> = {
     <>
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M3 10h18M8 3v4M16 3v4" />
+    </>
+  ),
+  uhr: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
     </>
   ),
   ort: (

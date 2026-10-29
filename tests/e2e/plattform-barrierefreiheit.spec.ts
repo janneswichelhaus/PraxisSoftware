@@ -145,9 +145,13 @@ async function kleineZiele(page: Page): Promise<string[]> {
       'main a, main button, main input, main select, main textarea, header a, header button, nav a, ' +
         '[role="dialog"] a, [role="dialog"] button, [role="dialog"] input, [role="dialog"] select, [role="dialog"] textarea',
     )) {
+      // Eine Checkbox trifft man über ihre Zeile; der Titel einer Hero-Karte mit Ziel deckt mit
+      // seinem `::after` die ganze Karte.
       const ziel = el.matches('input[type="radio"], input[type="checkbox"]')
         ? (el.closest('label') ?? el)
-        : el;
+        : el.matches('.hero-ziel')
+          ? (el.closest('section') ?? el)
+          : el;
       const box = ziel.getBoundingClientRect();
       if (box.width === 0 || box.height === 0) continue;
       if (box.height < 43.5) {
@@ -399,8 +403,9 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
     ).toBeLessThanOrEqual(1120.5);
     expect(await axeVerstoesse(page), 'axe').toEqual([]);
 
-    // Jede andere Seite einspaltig in `max-w-spalte` (48rem).
-    await oeffne(page, 'termine', 'Termine');
+    // Jede andere Seite einspaltig in `max-w-spalte` (48rem) - außer
+    // „Übungen“ und „Termine“ (ANN-724, ANN-775; `plattform-terminliste.spec.ts`).
+    await oeffne(page, 'rechnungen', 'Rechnungen');
     const spalte = await page.locator('main > div').first().boundingBox();
     expect(spalte?.width ?? 0).toBeLessThanOrEqual(768.5);
   });
