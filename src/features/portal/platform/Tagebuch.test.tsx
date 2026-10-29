@@ -17,6 +17,8 @@ const ladeTagebuch = vi.fn();
 const wasserZaehlen = vi.fn();
 const zahlenAusblenden = vi.fn();
 const tagebuchKopieren = vi.fn();
+const ladeErinnerungen = vi.fn();
+const erinnerungenSpeichern = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -24,6 +26,8 @@ vi.mock('./api', async (importOriginal) => ({
   wasserZaehlen: (...a: unknown[]) => wasserZaehlen(...a) as Promise<void>,
   zahlenAusblenden: (...a: unknown[]) => zahlenAusblenden(...a) as Promise<void>,
   tagebuchKopieren: (...a: unknown[]) => tagebuchKopieren(...a) as Promise<number>,
+  ladeErinnerungen: (...a: unknown[]) => ladeErinnerungen(...a) as Promise<unknown>,
+  erinnerungenSpeichern: (...a: unknown[]) => erinnerungenSpeichern(...a) as Promise<void>,
 }));
 
 const { Tagebuch } = await import('./Tagebuch');
@@ -280,6 +284,21 @@ describe('Tagebuch auf der Plattform (Handoff 2026-10-29, 5.7)', () => {
     await nutzer.click(zahlen);
     expect(zahlen).not.toBeChecked();
     expect(zahlenAusblenden).not.toHaveBeenCalled();
+
+    ladeErinnerungen.mockResolvedValue({
+      reminders: [{ meal: 'breakfast', time: '08:00' }],
+      email: true,
+      push: false,
+      switched_off: false,
+      quiet_from: 22,
+      quiet_until: 22,
+    });
+    await nutzer.click(screen.getByText(/^Erinnerungen/));
+    const speichern = await screen.findByRole('button', { name: 'Speichern' });
+    expect(speichern).toHaveAttribute('aria-disabled', 'true');
+    expect(speichern).toHaveAccessibleDescription('Speichern geht wieder mit Verbindung.');
+    await nutzer.click(speichern);
+    expect(erinnerungenSpeichern).not.toHaveBeenCalled();
     expect(screen.getByText('Haferflocken')).toBeVisible();
     expect(screen.queryByRole('button', { name: /Haferflocken/ })).toBeNull();
     await pruefeBarrierefreiheit(container);

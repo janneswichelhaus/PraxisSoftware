@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIstVerbunden } from '@/app/verbindung';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
@@ -8,6 +9,7 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { GESPERRT } from '@/components/ui/Tagebuchbausteine';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { MAHLZEIT_NAMEN, MAHLZEITEN, type Mahlzeit } from '@/features/nutrition/tagebuch';
@@ -69,6 +71,8 @@ export function TagebuchErinnerungen({ zugang }: { zugang: Plattformzugang }) {
 
 function Wahl({ zugang, daten }: { zugang: Plattformzugang; daten: Tagebucherinnerungen }) {
   const queryClient = useQueryClient();
+  const verbunden = useIstVerbunden();
+  const ohneNetzId = useId();
   const [zeiten, setZeiten] = useState<Partial<Record<Mahlzeit, string>>>(() =>
     Object.fromEntries(daten.reminders.map((r) => [r.meal, r.time])),
   );
@@ -99,6 +103,7 @@ function Wahl({ zugang, daten }: { zugang: Plattformzugang; daten: Tagebucherinn
       className="flex flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
+        if (!verbunden) return;
         speichern.mutate();
       }}
     >
@@ -160,8 +165,19 @@ function Wahl({ zugang, daten }: { zugang: Plattformzugang; daten: Tagebucherinn
         <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
       ) : null}
       {gespeichert > 0 ? <Rueckmeldung key={gespeichert}>Gespeichert.</Rueckmeldung> : null}
+      {verbunden ? null : (
+        <p id={ohneNetzId} className="text-ink-muted">
+          Speichern geht wieder mit Verbindung.
+        </p>
+      )}
       <Formularfuss dicht>
-        <Button type="submit" variant="secondary" disabled={speichern.isPending || ohneWeg}>
+        <Button
+          type="submit"
+          variant="secondary"
+          disabled={speichern.isPending || ohneWeg}
+          className={GESPERRT}
+          {...(verbunden ? {} : { 'aria-disabled': true, 'aria-describedby': ohneNetzId })}
+        >
           {speichern.isPending ? 'Wird gespeichert …' : 'Speichern'}
         </Button>
       </Formularfuss>
