@@ -276,7 +276,8 @@ describe('Meine Angaben: Seite einer Frage', () => {
         'href',
         '/p/angaben?bereich=treatment',
       );
-      expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
+      // Ein Seitentitel steht auch hier (DESIGN.md: jede Seite mit Kopf).
+      expect(screen.getByRole('heading', { level: 1, name: 'Meine Angaben' })).toBeInTheDocument();
       await pruefeBarrierefreiheit(container);
       unmount();
     }

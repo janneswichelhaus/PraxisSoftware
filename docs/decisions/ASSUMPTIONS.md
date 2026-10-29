@@ -1590,7 +1590,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-785 | Termin ändern: Zusammenfassung ohne „Ihr Termin“ (steht im Kopf), sonst rollt sie bei 375 × 667 | Technik · entschieden (Jannes) | `Wannangabe` in `src/features/portal/platform/Terminaenderung.tsx` |
 | ANN-786 | Zeitumstellung: doppelte Ortszeit gilt als die frühere; der Absagewunsch gibt seinen Zeitpunkt genau weiter | Technik · offen | `local_time_instant` in `supabase/migrations/20261225180000_doppelte_ortszeit.sql` |
 | ANN-787 | Skala: zwei gleiche Reihen, ab 44rem eine; Anker als Satz darüber, letzte Angabe mit Tag; zweiter Tipp nimmt zurück | Technik · offen | `Stufenskala` in `src/components/ui/Stufenskala.tsx` |
-| ANN-788 | Unter 23rem trennen Fragen, Wahlflächen und Kurznamen an der Silbe, Wahlflächen auch bei „Sehr groß“ | Technik · offen | `mitUmbruch` in `src/components/ui/Wahlflaechen.tsx` |
+| ANN-788 | Unter 23rem trennen Fragen, Kurznamen, Themenzeilen (ab 10) und Wahlflächen (ab 8, auch „Sehr groß“) an der Silbe | Technik · offen | `mitUmbruch` in `src/components/ui/Wahlflaechen.tsx` |
 | ANN-789 | Ablauf: Name im Kopf, am Rechner Spalte 48rem; im Fuß nur Zustand, Notfallsatz, Hauptknopf | Technik · offen | `BREITE_ABLAUFSPALTE` in `src/components/ui/GefuehrterAblauf.tsx` |
 | ANN-790 | Check-in: eine Frage je Seite, „Weiter“ auch ohne Antwort, Senden von der letzten ohne Zusammenfassung | Praxisprozess · entschieden (Jannes) | `ablaufseiten` in `src/features/portal/platform/Checkin.tsx` |
 | ANN-791 | Check-in: eine Zahl außerhalb ihres Bereichs hält „Weiter“ an | Technik · offen | `weiter` in `src/features/portal/platform/Checkin.tsx` |

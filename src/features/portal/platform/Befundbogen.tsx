@@ -135,10 +135,10 @@ function Ladezustand() {
     <SkelettBereich beschriftung="Ihr Fragebogen wird geladen" className="flex flex-col gap-3">
       <Skelett form="zeile" className="w-[90%]" />
       <Skelett form="zeile" className="w-[70%]" />
-      <Skelett form="titel" className="mt-5 w-1/2" />
-      <Skelett form="zeile" className="mt-5 w-1/4" />
+      <Skelett form="titel" className="mt-4 w-1/2" />
+      <Skelett form="zeile" className="mt-4 w-1/4" />
       <Skelett form="hauptknopf" />
-      <Skelett form="zeile" className="mt-5 w-1/3" />
+      <Skelett form="zeile" className="mt-4 w-1/3" />
       <Skelett form="hauptknopf" />
     </SkelettBereich>
   );
@@ -415,7 +415,7 @@ function Ablauf({
       }
       vorDemTitel={
         ersterBlick || seite === 0 ? (
-          <div className="flex flex-col gap-5 pb-2">
+          <div className="flex flex-col gap-4 pb-2">
             {ersterBlick ? (
               <Statusmeldung>Ihre bisherigen Antworten sind gespeichert.</Statusmeldung>
             ) : null}

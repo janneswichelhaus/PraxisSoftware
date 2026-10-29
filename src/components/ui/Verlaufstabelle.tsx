@@ -49,7 +49,7 @@ export function Verlaufstabelle({
           <tr>
             <th
               scope="col"
-              className="bg-surface border-line sticky left-0 border-b p-2 text-left font-semibold"
+              className="bg-surface border-line sticky left-0 border-b p-2 text-left font-semibold max-[23rem]:[.plattform-schrift_&]:static"
             >
               Angabe
             </th>
@@ -59,7 +59,7 @@ export function Verlaufstabelle({
                 scope="col"
                 className="border-line border-b border-l p-2 text-right align-bottom font-semibold whitespace-nowrap tabular-nums"
               >
-                {formatDate(s.datum)}
+                <Spaltendatum datum={s.datum} />
                 {s.zeit ? (
                   <span className="text-ink-muted block text-xs font-normal">{s.zeit} Uhr</span>
                 ) : null}
@@ -84,7 +84,7 @@ export function Verlaufstabelle({
               <th
                 scope="row"
                 // Kein Bruch mitten im Wort (die Plattform bricht sonst überall).
-                className="bg-surface border-line sticky left-0 min-w-36 border-t p-2 text-left font-normal break-normal hyphens-auto [.plattform-schrift_&]:[hyphenate-limit-chars:12_5_5]"
+                className="bg-surface border-line sticky left-0 min-w-36 border-t p-2 text-left font-normal break-normal hyphens-auto [.plattform-schrift_&]:[hyphenate-limit-chars:12_5_5] max-[23rem]:[.plattform-schrift_&]:static"
               >
                 {zeilenname(g)}
               </th>
@@ -122,4 +122,19 @@ function zeilenname(g: Erfassungsgroesse): string {
 /** Die Zahl, wie angegeben, oder das Wort einer Auswahl (ANN-354). */
 function zellenwert(g: Erfassungsgroesse, wert: number): string {
   return g.optionen ? (g.optionen[wert - g.min] ?? String(wert)) : String(wert);
+}
+
+/**
+ * „21.10.2026“; unter 23rem auf der Plattform ohne Jahr („21.10.“), und die Kopfspalte rollt mit:
+ * Neben ihr bliebe sonst kein Tag lesbar.
+ */
+function Spaltendatum({ datum }: { datum: string }) {
+  const lang = formatDate(datum);
+  if (lang.length !== 10) return <>{lang}</>;
+  return (
+    <>
+      {lang.slice(0, 6)}
+      <span className="max-[23rem]:[.plattform-schrift_&]:hidden">{lang.slice(6)}</span>
+    </>
+  );
 }

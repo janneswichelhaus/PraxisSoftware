@@ -220,9 +220,11 @@ function Fragekopf({ groesse }: { groesse: Erfassungsgroesse }) {
   );
 }
 
+/** Ein alter Link: der Seitentitel der Angaben, darunter der Leerzustand mit Weg. */
 function Unbekannt({ pfad }: { pfad: (pfad: string) => string }) {
   return (
     <div className="mt-2">
+      <PageHeader title="Meine Angaben" />
       <EmptyState
         markenform
         title="Diese Angabe gibt es hier nicht."
