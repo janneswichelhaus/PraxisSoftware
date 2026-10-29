@@ -23,18 +23,18 @@ unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
 
 ## Was auf der Plattform anders gilt
 
-| DESIGN.md                   | Plattform                                                                                                                                                                         |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Keine Schatten              | Eine Tiefenstufe `shadow-plattform`, nur für Hero-, Aufgaben- und Besuchskarte (ANN-678). Listen bleiben Linie.                                                                   |
-| Schriftrollen in px         | Skala in rem, Werte unter der Tabelle.                                                                                                                                            |
-| Etiketten in Versalien      | Keine Versalien. Die Bausteine heben `uppercase` unter `.plattform-schrift` auf (DR-154).                                                                                         |
-| Keine Erklärsätze           | Ein Satz Orientierung, wo sonst unklar bleibt, was passiert (leer, nach dem Absenden, wer meine Angaben sieht); nie eine Gebrauchsanweisung der Oberfläche.                       |
-| Silbentrennung im Fließtext | Nur lange Wörter ab zwölf Buchstaben; nie in Namen, Anschriften, Überschriften, Knöpfen und Reitern (DR-114); unter 23rem auch Plan- und Übungsnamen (`trennen-schmal`, ANN-707). |
-| Ziele ≥ 44 px               | Knöpfe 48, antippbare Karten ≥ 80, Zeilen und Textlinks ≥ 44; Abstand zwischen Zielen ≥ 8, nicht in der Wochenleiste (ANN-708). Hauptknopf der Durchführung 56 (`gross`).         |
-| Rhythmus 4/8/12/16/24/32    | Dazu 40 (Telefon) und 48 (Rechner) zwischen Abschnitten; Seitenrand 20, Türseiten 24; in Zeilen und Zeichen auch 2, 6, 10 und 14 (Handoffs).                                      |
-| Hover 120 ms                | Druck an Knopf, Zeile und Karte: 98 % und vertiefte Fläche in 120 ms; bei „Bewegung reduzieren“ nur die Fläche (DR-117).                                                          |
-| Bilder `Medienbild` 4:3     | Eigene Fotos der Praxis, keine KI-Bilder; 4:3 oder 16:9 im Radius 16, Personen rund (`Personenbild` `karte`, 56). Markenform ist das Laufrad, nie neben der Wortmarke.            |
-| Liste in Karte              | Die Hauptsache als Hero-Karte (Tiefgrün, Papier-Schrift), höchstens drei Aufgabenkarten; alles Weitere als `ListRow`, jede Zeile ganz das Ziel.                                   |
+| DESIGN.md                   | Plattform                                                                                                                                                  |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Keine Schatten              | Eine Tiefenstufe `shadow-plattform`, nur für Hero-, Aufgaben- und Besuchskarte (ANN-678). Listen bleiben Linie.                                            |
+| Schriftrollen in px         | Skala in rem, Werte unter der Tabelle.                                                                                                                     |
+| Etiketten in Versalien      | Keine Versalien. Die Bausteine heben `uppercase` unter `.plattform-schrift` auf (DR-154).                                                                  |
+| Keine Erklärsätze           | Ein Satz Orientierung, wo sonst unklar bleibt, was passiert (leer, nach dem Senden, wer meine Angaben sieht); nie eine Gebrauchsanweisung.                 |
+| Silbentrennung im Fließtext | Ab zwölf Buchstaben; nie in Namen, Anschriften, Titeln, Knöpfen, Reitern; unter 23rem auch Plan-, Übungsnamen und Wahlflächen (`trennen-schmal`, ANN-707). |
+| Ziele ≥ 44 px               | Knöpfe 48, Karten ≥ 80, Stufen 56, Zeilen und Textlinks ≥ 44; Abstand ≥ 8, nicht in der Wochenleiste (ANN-708). Hauptknopf der Durchführung 56.            |
+| Rhythmus 4/8/12/16/24/32    | Dazu 40 (Telefon) und 48 (Rechner) zwischen Abschnitten; Seitenrand 20, Türseiten 24; in Zeilen und Zeichen auch 2, 6, 10 und 14 (Handoffs).               |
+| Hover 120 ms                | Druck an Knopf, Zeile und Karte: 98 % und vertiefte Fläche in 120 ms; bei „Bewegung reduzieren“ nur die Fläche (DR-117).                                   |
+| Bilder `Medienbild` 4:3     | Eigene Fotos, keine KI-Bilder; 4:3 oder 16:9 im Radius 16, Personen rund (`Personenbild` `karte`, 56); Laufrad als Markenform, nie neben der Wortmarke.    |
+| Liste in Karte              | Die Hauptsache als Hero-Karte (Tiefgrün, Papier-Schrift), höchstens drei Aufgabenkarten; alles Weitere als `ListRow`, jede Zeile ganz das Ziel.            |
 
 **Skala:** Gruß `text-gruss` 34/800 (Rechner 40), Seitentitel `text-plattform-titel` 28/800 (32),
 Hero `text-hero` 26/800 (32, unter 23rem 22), Abschnitt `text-abschnitt` 22/700; Zeile 18/600, Text
@@ -52,7 +52,9 @@ wählen nichts, etwa eine Einwilligung) · `Zwischentitel` mit `stufe="abschnitt
 `Dosierungsmarken`, `Hakenzeile`, `Wochenleiste`, `Uebungszeile`, `Durchfuehrungskopf`/`-fuss`,
 `Abschlussseite`. Termine: `Terminkopf`, `Terminzeile`, `Wunschzeile`, `WerUndWo`,
 `FragenZumTermin` mit `titel`, `Wahlflaechen`, `HeroKarte` mit `ziel` und `zustand`, `HeroSkelett`, `EmptyState` mit `zeichen`;
-Zeichen und Knöpfe brechen nur zwischen Wörtern (ANN-765).
+Zeichen und Knöpfe brechen nur zwischen Wörtern (ANN-765). Selbstauskunft: `Stufenskala` (eine
+Reihe ab 44rem), `Wahlflaechen` mit `form`, `Angabezeile`, `Antwortbalken`, `ProgressBar` mit
+`kante`, `Wochenleiste` mit `zahl`.
 Prüfseiten `tests/e2e/fixtures/plattform-*bausteine.html`.
 
 ## Seitentypen und Gerüst
@@ -65,15 +67,17 @@ ohne Gerüst; Kopf mit „Später weiter“ und Balken, Fuß mit Stand und Haupt
 einen Balken je Schritt und das Band einer Vertretung unter dem Fortschritt; mit `plattform` 20 Rand,
 unter 23rem 12 und alles in einer Rollfläche, die Frage ohne Rollen (ein Bild darüber schrumpft in
 4:3). Ein Titel mit einem Wort über elf Zeichen steht unter 23rem in 22 (ANN-696). Abschaltbar; so
-der Einstieg, DRP-EPIC-005.
+der Einstieg, DRP-EPIC-005. Mit `objekt` steht der Name im Kopf, mit `breit` am Rechner eine Spalte
+von 48rem; im festen Fuß nur Zustand, Notfallsatz und Hauptknopf. Der Check-in sendet ohne
+Zusammenfassung; ein Thema des Fragebogens rollt.
 
 **Gerüst** (`src/features/portal/platform/Navigation.tsx`): Kopf 72 mit Wortmarke 28 und „Ich“ mit
 Initialen. Reiterleiste in drei Stufen (ANN-679): eine Reihe, solange die Wörter passen - gemessen,
 nicht aus der Einstellung gelesen -, sonst zwei; unter 23rem der `Menueknopf` im Kopf (ANN-682). Bei
 offener Tastatur tritt sie zurück (ANN-676, ANN-681). Ab 1024 px Navigation im Kopf, Inhalt
 `max-w-inhalt`, jede Seite einspaltig in `max-w-spalte` außer der Übersicht (ab 900 px
-Inhaltsbreite zwei Spalten), den Übungen und den Terminen (ANN-724, ANN-775); geschaltet über
-`data-rechner` (`useRechner`). Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12;
+Inhaltsbreite zwei Spalten), den Übungen, den Terminen und dem Tagebuch (ANN-724, ANN-775,
+ANN-TAGEBUCH); geschaltet über `data-rechner` (`useRechner`). Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12;
 Titel in rem (ANN-683). Statt Startbild Markenmoment B beim ersten Erscheinen der Übersicht je Tab
 (ANN-680). Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit Daten.
 

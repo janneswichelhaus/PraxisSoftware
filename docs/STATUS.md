@@ -6,18 +6,16 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Design-Review Schritt 3 Termine** ist gemergt (#327, #328, #330, #331), ohne die Einsicht der
-Praxis (M7); fünf Fragen aus #331 sind offen. BEF-223 (Pfad A) liegt als PR vor, Zweitreview ohne
-roten Punkt.
-Aufräumen (#308 bis #325) und CI-Beschleunigung (#326) sind gemergt; offen ist die Abkürzung für
-reine Doku (ADR-013 Punkt 2, Entscheidung Jannes). Befunde aus archivierten Sitzungen: BEF-201,
-BEF-202.
+**Schritt 4 Selbstauskunft und Tagebuch** liegt als eine PR vor (#333, 4a bis 4e; Handoff in der
+Leinwand); Schritte 2 und 3 sind gesichtet (29.10.). Offen ist die Abkürzung für reine Doku
+(ADR-013 Punkt 2, Entscheidung Jannes). Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Eine Bildsichtung der Schritte 2
-und 3, dann Schritt 4 (Handoff während 3d), danach 5 bis 7 je mit Handoff (Roadmap). Erst dann
-die Vorschläge der Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
+Bildsichtung von Schritt 4, dann die Antworten zu #331 als kleine Aufträge: „Handlung vor Inhalt“;
+der Satz zum Verlegen unter 24 Stunden (Seite des Termins, Schritt 1); die Absage mit Tag und
+Uhrzeit des Eingangs; BEF-222 und das Praxisfeld am Server (je Pfad A). Danach Schritte 5 bis 7 je
+mit Handoff, dann die Vorschläge der Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
 Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
 Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
@@ -51,5 +49,5 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-29.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: 3d gemergt (#331); BEF-223 behoben (ANN-786), Migration
-ohne Datenumzug. Lokal: `git pull`.
+29.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: Schritt 4 gebaut (4a bis 4e, #333), Schritte 2 und 3
+gesichtet, Antworten zu #331 als Aufträge. Lokal: `git pull`.

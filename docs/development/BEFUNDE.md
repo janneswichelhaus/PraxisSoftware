@@ -1,5 +1,5 @@
 # Befunde an der laufenden Anwendung
-Stand 2026-10-28. **Befunde aus Sichtungen, Screenrecordings und Reviews an der laufenden
+Stand 2026-10-29. **Befunde aus Sichtungen, Screenrecordings und Reviews an der laufenden
 Anwendung**: Beobachtungen an Gebautem, keine Ideen (die gehören nach `docs/product/`). Die Liste
 ist die **Eingabe für die erste Story des nächsten Loops derselben Spur** (Roadmap-Regel R6), seit
 2026-10-12 der nächsten Überholung des Bereichs (`/bereich`), sonst gebündelt in einem Auftrag. Sie
@@ -131,11 +131,10 @@ N); Streuung und Reserve bleiben.
 ein Prüfpunkt ist; wenn ja, Trenngrenze senken oder Titel und Marken kleiner.
 
 ### BEF-222 — Lesefrist: der Server nimmt Terminwünsche noch an
-2026-10-24 · Plattform, Lesefrist · Handoff Termine, Frage 5 · offen; Frage an Jannes\
+2026-10-24 · Plattform, Lesefrist · Handoff Termine, Frage 5 · offen; Pfad A (Jannes, 29.10.)\
 **Beobachtung.** DSN-001 D2 sagt „30 Tage lesend“, `app.platform_access_allows` erlaubt `request`
 aber jedem lesbaren Zugang (`request_platform_appointment`, `…_change`); nur der Reiter lässt
-„Termin wünschen“ weg (ANN-774). **Erwartet.** Nach Jannes' Antwort am Server ablehnen (Pfad A),
-oder bewusst erlauben, D2 so fassen und den Knopf zeigen.
+„Termin wünschen“ weg (ANN-774). **Erwartet.** Am Server ablehnen, mit Datenbanktest.
 
 ### BEF-224 — Arbeitszeit: Während die Vorschau lädt oder scheitert, rollt der Abschluss
 2026-10-25 · Arbeitszeit ändern · Design-Review zu BEF-219 · offen (Vorschlag) ·
@@ -190,6 +189,13 @@ Praxiswoche gab Terminen md5-Kennungen ohne Versions- und Variantenbits (`d644f0
 Generator ist seit `b7a1c64b` (12.10.) richtig, die Test-Umgebung danach nicht neu aufgesetzt worden.
 Nachgestellt mit dem Seed vom 6.10. und allen Migrationen; mit gültigen Kennungen lädt die Übersicht.
 **Erwartet.** Test-Umgebung neu aufsetzen (Workflow „Test-Umgebung“, „neu aufsetzen“).
+
+### Fragebogen — Der Server nimmt Antworten der Plattform auf das Praxisfeld an
+2026-10-29 · Plattform, Fragebogen · Handoff Selbstauskunft, Abschnitt 10 · offen (Pfad A) ·
+`save_platform_questionnaire_response`\
+**Beobachtung.** Seit Schritt 4 zeigt die Plattform Items mit `ausgefuellt_von: "therapeut"`
+(„Anmerkungen Therapeut:“) nicht mehr; der Server prüft beim Speichern und Absenden nur die
+Vorlage und nähme eine Antwort darauf an. **Erwartet.** Ablehnen am Server, mit Datenbanktest.
 
 ### Kalender — Für `trainer` antwortet `list_fleet` mit 403
 2026-10-28 · `/kalender`, `trainer` · Gesamtlauf der Bildstrecke · offen (Vorschlag) · `list_fleet`\
