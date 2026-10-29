@@ -995,6 +995,23 @@ const checkinVerlauf: EigeneCheckins['history'] = [
 ];
 const checkinFaellig =
   seite === 'checkin' || seite === 'checkin-uebersicht' || seite === 'checkin-alltag';
+// „Meine Angaben“: vier Antworten je Frage wie auf der Leinwand, und ganz ohne Antwort.
+const angabenLeer = seite === 'angaben-leer';
+const angabenVerlauf: EigeneCheckins['history'] = seite.startsWith('angaben')
+  ? [
+      ...checkinVerlauf,
+      {
+        answered_on: inTagen(-29, 0).slice(0, 10),
+        recorded_by_kind: 'self',
+        values: { pain_rest: 6, pain_load: 7, daily_impairment: 5 },
+      },
+      {
+        answered_on: inTagen(-43, 0).slice(0, 10),
+        recorded_by_kind: 'self',
+        values: { pain_rest: 5, pain_load: 6, daily_impairment: 5 },
+      },
+    ]
+  : checkinVerlauf;
 client.setQueryData(checkinsSchluessel(zugaenge[0]!.access_id), {
   today: inTagen(0, 0).slice(0, 10),
   // ALT-001, ALT-002: Schlafdauer, Schmerzmittel bei Bedarf und die Belastung
@@ -1018,54 +1035,76 @@ client.setQueryData(checkinsSchluessel(zugaenge[0]!.access_id), {
   can_answer: checkinFaellig,
   consent_needed: false,
   last_values: { pain_rest: 3, pain_load: 6, daily_impairment: 4 },
-  history: checkinVerlauf,
+  history: angabenLeer ? [] : angabenVerlauf,
   // OUT-004: die eigenen Angaben nach den Übungen.
-  session_history: [
-    {
-      performed_on: inTagen(-2, 0).slice(0, 10),
-      plan_title: 'Heimprogramm Knie',
-      recorded_by_kind: 'self',
-      values: { session_exertion: 6, session_pain: 2, session_confidence: 7 },
-    },
-    {
-      performed_on: inTagen(-5, 0).slice(0, 10),
-      plan_title: 'Heimprogramm Knie',
-      recorded_by_kind: 'self',
-      values: { session_exertion: 5, session_confidence: 5 },
-    },
-  ],
+  session_history: angabenLeer
+    ? []
+    : [
+        {
+          performed_on: inTagen(-2, 0).slice(0, 10),
+          plan_title: 'Heimprogramm Knie',
+          recorded_by_kind: 'self',
+          values: { session_exertion: 6, session_pain: 2, session_confidence: 7 },
+        },
+        {
+          performed_on: inTagen(-5, 0).slice(0, 10),
+          plan_title: 'Heimprogramm Knie',
+          recorded_by_kind: 'self',
+          values: { session_exertion: 5, session_confidence: 5 },
+        },
+      ],
 } satisfies EigeneCheckins);
 client.setQueryData(checkinsSchluessel(zugaenge[1]!.access_id), null);
-// ALT-003: eine laufende Gewohnheit mit Tagen, eine pausierte.
+// Eine laufende Gewohnheit mit Tagen, eine pausierte; `gewohnheiten-pausiert` andersherum,
+// `gewohnheiten-leer` ohne Gewohnheit.
+const gewohnheitPausiert = seite === 'gewohnheiten-pausiert';
 client.setQueryData(gewohnheitenSchluessel(zugaenge[0]!.access_id), {
   today: inTagen(0, 0).slice(0, 10),
   mark_days: 7,
   can_mark: true,
   consent_needed: false,
-  habits: [
-    {
-      id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000001',
-      action: 'zwei Minuten Mobilität',
-      cue: 'Nach dem Zähneputzen',
-      place: 'im Bad',
-      starts_on: inTagen(-20, 0).slice(0, 10),
-      paused: false,
-      ended_at: null,
-      marks: [0, -1, -2, -4, -5].map((t) => inTagen(t, 0).slice(0, 10)),
-    },
-    {
-      id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000002',
-      action: 'eine Treppe statt Aufzug',
-      cue: 'Im Büro',
-      place: null,
-      starts_on: inTagen(-12, 0).slice(0, 10),
-      paused: true,
-      ended_at: null,
-      marks: [],
-    },
-  ],
+  habits:
+    seite === 'gewohnheiten-leer'
+      ? []
+      : [
+          {
+            id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000001',
+            action: 'zwei Minuten Mobilität',
+            cue: 'Nach dem Zähneputzen',
+            place: 'im Bad',
+            starts_on: inTagen(-20, 0).slice(0, 10),
+            paused: gewohnheitPausiert,
+            ended_at: null,
+            marks: [0, -1, -2, -4, -5].map((t) => inTagen(t, 0).slice(0, 10)),
+          },
+          {
+            id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000002',
+            action: 'eine Treppe statt Aufzug',
+            cue: 'Im Büro',
+            place: null,
+            starts_on: inTagen(-12, 0).slice(0, 10),
+            paused: !gewohnheitPausiert,
+            ended_at: null,
+            marks: gewohnheitPausiert ? [-1, -3].map((t) => inTagen(t, 0).slice(0, 10)) : [],
+          },
+        ],
 } satisfies EigeneGewohnheiten);
 client.setQueryData(gewohnheitenSchluessel(zugaenge[1]!.access_id), null);
+// `angaben-laden` und `gewohnheiten-laden`: Die Abfrage lädt ohne Ende, das Skelett bleibt stehen.
+if (seite === 'angaben-laden') {
+  client.removeQueries({ queryKey: checkinsSchluessel(zugaenge[0]!.access_id) });
+  void client.prefetchQuery({
+    queryKey: checkinsSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => new Promise<EigeneCheckins>(() => undefined),
+  });
+}
+if (seite === 'gewohnheiten-laden') {
+  client.removeQueries({ queryKey: gewohnheitenSchluessel(zugaenge[0]!.access_id) });
+  void client.prefetchQuery({
+    queryKey: gewohnheitenSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => new Promise<EigeneGewohnheiten>(() => undefined),
+  });
+}
 // ERN-002: die laufende Ernährungsberatung an der Akte - die Projektion von
 // `platform_nutrition` aus dem Seed (Erika), im Training keine.
 client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
@@ -1524,6 +1563,14 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'lebensmittel':
     case 'lebensmittel-neu':
     case 'angaben':
+    case 'angaben-frage':
+    case 'angaben-frage-uebungen':
+    case 'angaben-tabelle':
+    case 'angaben-leer':
+    case 'angaben-laden':
+    case 'gewohnheiten-pausiert':
+    case 'gewohnheiten-leer':
+    case 'gewohnheiten-laden':
     case 'vertrag': {
       const pfade: Record<string, string> = {
         angebot: '/p/angebot?bereich=treatment',
@@ -1566,8 +1613,16 @@ function inhalt(): { pfad: string; element: ReactNode } {
         'checkin-uebersicht': '/p?bereich=treatment',
         'checkin-danke': '/p?bereich=treatment&checkin=1',
         angaben: '/p/angaben?bereich=treatment',
+        'angaben-frage': '/p/angaben/pain_rest?bereich=treatment',
+        'angaben-frage-uebungen': '/p/angaben/session_exertion?bereich=treatment',
+        'angaben-tabelle': '/p/angaben/tabelle?bereich=treatment',
+        'angaben-leer': '/p/angaben?bereich=treatment',
+        'angaben-laden': '/p/angaben?bereich=treatment',
         'checkin-alltag': '/p/checkin?bereich=treatment',
         gewohnheiten: '/p/gewohnheiten?bereich=treatment',
+        'gewohnheiten-pausiert': '/p/gewohnheiten?bereich=treatment',
+        'gewohnheiten-leer': '/p/gewohnheiten?bereich=treatment',
+        'gewohnheiten-laden': '/p/gewohnheiten?bereich=treatment',
         ernaehrung: '/p/ernaehrung?bereich=treatment',
         tagebuch: '/p/ernaehrung/tagebuch?bereich=treatment',
         lebensmittel: '/p/ernaehrung/lebensmittel?bereich=treatment',

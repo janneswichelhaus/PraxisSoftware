@@ -83,6 +83,15 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'tagebuch', merkmal: 'Tagebuch' },
   { seite: 'lebensmittel', merkmal: 'Lebensmittel' },
   { seite: 'lebensmittel-neu', merkmal: /Lebensmittel/ },
+  // „Meine Angaben“ mit der Seite einer Frage und allen Antworten, leer; die Gewohnheiten.
+  { seite: 'angaben', merkmal: 'Meine Angaben' },
+  { seite: 'angaben-frage', merkmal: 'Schmerz in Ruhe' },
+  { seite: 'angaben-frage-uebungen', merkmal: 'Anstrengung' },
+  { seite: 'angaben-tabelle', merkmal: 'Alle Antworten' },
+  { seite: 'angaben-leer', merkmal: 'Meine Angaben' },
+  { seite: 'gewohnheiten', merkmal: 'Gewohnheiten' },
+  { seite: 'gewohnheiten-pausiert', merkmal: 'Gewohnheiten' },
+  { seite: 'gewohnheiten-leer', merkmal: 'Gewohnheiten' },
 ];
 
 async function oeffne(page: Page, seite: string, merkmal: RegExp | string, fenster = false) {

@@ -84,7 +84,7 @@ export function Verlaufstabelle({
               <th
                 scope="row"
                 // Kein Bruch mitten im Wort (die Plattform bricht sonst überall).
-                className="bg-surface border-line sticky left-0 min-w-36 border-t p-2 text-left font-normal break-normal hyphens-auto"
+                className="bg-surface border-line sticky left-0 min-w-36 border-t p-2 text-left font-normal break-normal hyphens-auto [.plattform-schrift_&]:[hyphenate-limit-chars:12_5_5]"
               >
                 {zeilenname(g)}
               </th>

@@ -22,6 +22,8 @@ const FORM = {
   /** Die Liste der Termine (168) und ihr Hauptknopf (48) als Fläche. */
   liste: 'h-42 rounded-card',
   hauptknopf: 'h-12 rounded-button',
+  /** Die Tage einer Gewohnheit: die Leiste mit Datum, 72 hoch. */
+  tage: 'h-18 rounded-button',
 } as const;
 
 /**

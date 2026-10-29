@@ -105,7 +105,7 @@ const REGELN: readonly [RegExp, TabName][] = [
   [/^\/p\/nachrichten(\/|$)/, 'Nachrichten'],
   [/^\/p\/uebungen(\/|$)/, 'Übungen'],
   [/^\/p\/checkin$/, 'Check-in'],
-  [/^\/p\/angaben$/, 'Meine Angaben'],
+  [/^\/p\/angaben(\/|$)/, 'Meine Angaben'],
   // „Befundbogen“ ist ein Wort der Praxis; die Person füllt einen Fragebogen aus.
   [/^\/p\/befundbogen$/, 'Fragebogen'],
   [/^\/p\/gewohnheiten$/, 'Gewohnheiten'],

@@ -19,6 +19,16 @@ async function ueberlaeuft(page: Page): Promise<boolean> {
   );
 }
 
+/** Gezeichnete Linien im Inhalt außer dem Pfeil einer Zeile: ein Verlauf als Linie deutete. */
+async function linienbilder(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      [...document.querySelectorAll('main polyline, main path')].filter(
+        (linie) => !linie.closest('[data-pfeil]'),
+      ).length,
+  );
+}
+
 async function axeVerstoesse(page: Page): Promise<string[]> {
   await page.addScriptTag({ path: AXE });
   return page.evaluate(async () => {
@@ -76,18 +86,48 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
     test(`Meine Angaben bei ${breite} px`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?seite=angaben`);
-      await expect(page.getByRole('heading', { name: 'Meine Angaben' })).toBeVisible();
-      // OUT-004: je Frage ein Punktbild in den Worten der Frage, Punkte ohne Linie.
-      const ruhe = page.getByRole('figure').filter({ hasText: 'Schmerzen in Ruhe' });
+      await expect(page.getByRole('heading', { level: 1, name: 'Meine Angaben' })).toBeVisible();
+      // Je Frage eine Zeile mit dem letzten Wert und seinem Tag, mindestens 72 hoch.
+      const ruhe = page.getByRole('link', { name: /^Schmerz in Ruhe\s*, 3 von 10, zuletzt am / });
       await expect(ruhe).toBeVisible();
-      expect(await ruhe.locator('circle').count()).toBeGreaterThan(1);
-      await expect(ruhe.locator('polyline, path')).toHaveCount(0);
+      expect((await ruhe.boundingBox())!.height).toBeGreaterThanOrEqual(72);
       await expect(page.getByRole('heading', { name: 'Nach den Übungen' })).toBeVisible();
+      expect(await linienbilder(page)).toBe(0);
       expect(await ueberlaeuft(page)).toBe(false);
-      // TRK-006: je Größe eine Zeile; die Tabelle scrollt in sich, nicht die Seite.
-      await page.getByText('Alle Antworten als Tabelle').first().click();
+      expect(await axeVerstoesse(page)).toEqual([]);
+      // Der Wert steht neben dem Namen; bei 200 % (188 px) passt er nicht mehr und rückt darunter.
+      const lage = async () => ({
+        name: (await ruhe.getByText('Schmerz in Ruhe', { exact: true }).boundingBox())!,
+        wert: (await ruhe.locator('span[aria-hidden="true"]').boundingBox())!,
+      });
+      const breit = await lage();
+      expect(breit.wert.x).toBeGreaterThan(breit.name.x + breit.name.width);
+      await page.setViewportSize({ width: 188, height: 900 });
+      const schmal = await lage();
+      expect(schmal.wert.y).toBeGreaterThan(schmal.name.y + schmal.name.height);
+      expect(await ueberlaeuft(page)).toBe(false);
+      await page.setViewportSize({ width: breite, height: 900 });
+
+      // Die Seite der Frage: jede Antwort als Zeile mit Balken und Zahl, die jüngste oben.
+      await ruhe.click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Schmerz in Ruhe' })).toBeVisible();
+      const antworten = page
+        .getByRole('list', { name: 'Ihre Angaben zu Schmerz in Ruhe' })
+        .getByRole('listitem');
+      await expect(antworten).toHaveCount(4);
+      await expect(antworten.first()).toContainText(': 3');
+      await expect(antworten.nth(1)).toContainText('Vertretung');
+      expect(await linienbilder(page)).toBe(0);
+      expect(await ueberlaeuft(page)).toBe(false);
+      expect(await axeVerstoesse(page)).toEqual([]);
+
+      // Zurück und zu allen Antworten: Die Tabelle rollt in sich, nicht die Seite.
+      await page.getByRole('link', { name: '← Meine Angaben' }).click();
+      await page.getByRole('link', { name: 'Alle Antworten als Tabelle' }).click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Alle Antworten' })).toBeVisible();
       const tabelle = page.getByRole('table', { name: /Meine Angaben aus dem Check-in/ });
       await expect(tabelle.getByRole('row', { name: /Schmerzart/ })).toContainText('stechend');
+      await expect(page.getByText('Ein Strich heißt: nicht angegeben.')).toHaveCount(2);
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);
     });

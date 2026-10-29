@@ -55,26 +55,40 @@ test.describe('Alltag als Kontext (ALT-EPIC-001)', () => {
 
     test(`Gewohnheiten der Person bei ${breite} px`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 900 });
+      const vermerkt: unknown[] = [];
+      await page.route('**/rest/v1/rpc/mark_platform_habit', async (route) => {
+        vermerkt.push(route.request().postDataJSON());
+        await route.fulfill({ json: null });
+      });
+      // Das Neuladen danach bleibt offen: So steht der Tipp, wie er getippt wurde.
+      await page.route('**/rest/v1/rpc/platform_habits', () => undefined);
       await page.goto(`${PRUEFSEITE}?seite=gewohnheiten`);
-      await expect(page.getByRole('heading', { name: 'Gewohnheiten' })).toBeVisible();
-      const tage = page.getByRole('group', { name: 'Tage für „zwei Minuten Mobilität“' });
+      await expect(page.getByRole('heading', { level: 1, name: 'Gewohnheiten' })).toBeVisible();
+      const tage = page.getByRole('group', {
+        name: 'Nach dem Zähneputzen: zwei Minuten Mobilität',
+      });
       const knoepfe = tage.getByRole('button');
       await expect(knoepfe).toHaveCount(7);
       for (const knopf of await knoepfe.all()) {
         const box = (await knopf.boundingBox())!;
-        expect(box.height).toBeGreaterThanOrEqual(44);
+        expect(box.height).toBeGreaterThanOrEqual(72);
         expect(box.width).toBeGreaterThanOrEqual(44);
       }
-      await expect(tage.getByRole('button', { name: /heute/ })).toHaveAttribute(
+      await expect(tage.getByRole('button', { name: /^heute, / })).toHaveAttribute(
         'aria-pressed',
         'true',
       );
       await expect(page.getByText('Pausiert. Setzen Sie fort, wenn es wieder geht.')).toBeVisible();
-      await expect(page.locator('main, body').first()).not.toContainText(
-        /in Folge|Tage am Stück|%|geschafft/,
-      );
+      await expect(page.locator('main')).not.toContainText(/in Folge|Tage am Stück|%|geschafft/);
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);
+
+      // Vermerken ist ein Tipp auf den Tag, ohne Rückfrage.
+      const aeltester = knoepfe.first();
+      await expect(aeltester).toHaveAttribute('aria-pressed', 'false');
+      await aeltester.click();
+      await expect(aeltester).toHaveAttribute('aria-pressed', 'true');
+      await expect.poll(() => vermerkt).toEqual([expect.objectContaining({ p_done: true })]);
     });
 
     test(`Gewohnheiten in „Zwischen den Terminen“ bei ${breite} px`, async ({ page }) => {
