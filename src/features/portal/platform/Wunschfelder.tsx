@@ -1,135 +1,163 @@
 import { useId, useRef, useState, type ReactNode } from 'react';
+import { Anrufknoepfe } from '@/components/ui/Anrufknoepfe';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { ListRow } from '@/components/ui/ListRow';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { OhneNetzSymbol } from '@/components/ui/OhneNetzSymbol';
 import { TextArea } from '@/components/ui/TextArea';
-import { TAGESZEITEN, TAGESZEIT_NAME } from './api';
+import { Wahlflaechen, type Wahl } from '@/components/ui/Wahlflaechen';
+import { Wochenleiste, type Wochentag as Leistentag } from '@/components/ui/Wochenleiste';
+import { telHref } from '@/lib/telefon';
+import { TAGESZEITEN, TAGESZEIT_NAME, type Tageszeit } from './api';
 import {
   NOTIZ_MAX,
   WOCHENTAGE,
   WOCHENTAG_NAME,
   egalUmschalten,
   tagUmschalten,
-  tageText,
   wunschtage,
+  wunschzeiten,
   zeitUmschalten,
-  zeitenText,
-  zeitraumText,
   type Wann,
+  type Wochentag,
 } from './terminablauf';
+import { bisTag, tageSatz, wunschInWorten } from './termintexte';
+import { WUNSCHSCHUTZ } from './wunschtexte';
 
 /**
- * Was „Termin wünschen“ und „Termin ändern“ teilen (POR-009, POR-010,
- * Überholung 6): die Seite „Wann passt es Ihnen?“, die Nachricht an die
- * Praxis und die Zeilen der Zusammenfassung.
+ * Was „Termin wünschen“ und „Termin ändern“ teilen: die Seite „Wann passt es Ihnen?“, die Karte der
+ * Zusammenfassung und die Nachricht an die Praxis.
  */
 
+const TAGE: readonly Leistentag[] = WOCHENTAGE.map((nummer) => ({
+  nummer,
+  kurz: WOCHENTAG_NAME[nummer].slice(0, 2),
+  lang: WOCHENTAG_NAME[nummer],
+}));
+
+const ZEITWAHLEN: readonly Wahl[] = [
+  ...TAGESZEITEN.map((zeit) => ({ schluessel: zeit, text: TAGESZEIT_NAME[zeit] })),
+  { schluessel: 'egal', text: 'Egal' },
+];
+
 /**
- * „Wann passt es Ihnen?“: Montag bis Freitag und die drei Tageszeiten samt
- * „Egal“ als Häkchen, je zwei nebeneinander - zusammen auf einer Seite ohne
- * Rollen bei 375 × 667 in 18 px; warum Wochentage statt Daten, steht in
- * `terminablauf.ts`. Die Beschriftung ist das Ziel, mindestens 44 px hoch;
- * bei sehr wenig Breite (200 %) steht alles untereinander. Nichts ist
- * vorbelegt.
+ * „Wann passt es Ihnen?“: Montag bis Freitag als Leiste mit dem Satz darunter, die Tageszeiten als
+ * Wahlflächen; „Egal“ nimmt die anderen zurück und umgekehrt. Nichts ist vorbelegt.
  */
-export function Wunschfelder({ wann, onWann }: { wann: Wann; onWann: (wann: Wann) => void }) {
+export function Wunschfelder({
+  wann,
+  werktage,
+  onWann,
+}: {
+  wann: Wann;
+  /** Die angebotenen Werktage: Der Satz nennt den letzten, der gesendet würde. */
+  werktage: readonly string[];
+  onWann: (wann: Wann) => void;
+}) {
   return (
     <div className="flex flex-col gap-5">
-      <fieldset className="min-w-0">
-        <legend className="text-ink text-liste mb-1 font-semibold">An welchen Tagen?</legend>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 max-[20rem]:grid-cols-1">
-          {WOCHENTAGE.map((tag, index) => (
-            <Checkbox
-              key={tag}
-              label={WOCHENTAG_NAME[tag]}
-              checked={wann.tage.includes(tag)}
-              onChange={() => onWann(tagUmschalten(wann, tag))}
-              // Der Fokus beginnt bei der ersten Antwort, nicht im Kopf.
-              {...(index === 0 ? { 'data-autofocus': true } : {})}
-            />
-          ))}
-        </div>
-      </fieldset>
-      <fieldset className="min-w-0">
-        <legend className="text-ink text-liste mb-1 font-semibold">Zu welcher Tageszeit?</legend>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 max-[20rem]:grid-cols-1">
-          {TAGESZEITEN.map((zeit) => (
-            <Checkbox
-              key={zeit}
-              label={TAGESZEIT_NAME[zeit]}
-              checked={wann.zeiten !== 'egal' && wann.zeiten.includes(zeit)}
-              onChange={() => onWann(zeitUmschalten(wann, zeit))}
-            />
-          ))}
-          <Checkbox
-            label="Egal"
-            checked={wann.zeiten === 'egal'}
-            onChange={() => onWann(egalUmschalten(wann))}
-          />
-        </div>
-      </fieldset>
+      <Wochenleiste
+        titel="An welchen Tagen?"
+        ebene={2}
+        autofokus
+        wochentage={TAGE}
+        tage={wann.tage}
+        onUmschalten={(tag) => onWann(tagUmschalten(wann, tag as Wochentag))}
+        satz={tageSatz(wann.tage, wunschtage(wann.tage, werktage))}
+      />
+      <Wahlflaechen
+        titel="Zu welcher Tageszeit?"
+        wahlen={ZEITWAHLEN}
+        gewaehlt={wann.zeiten === 'egal' ? ['egal'] : wann.zeiten}
+        onUmschalten={(schluessel) =>
+          onWann(
+            schluessel === 'egal'
+              ? egalUmschalten(wann)
+              : zeitUmschalten(wann, schluessel as Tageszeit),
+          )
+        }
+      />
     </div>
   );
 }
 
+/** Die Karte der Zusammenfassung: ihre Angaben mit einer Linie dazwischen. */
+export function Zusammenfassungskarte({ children }: { children: ReactNode }) {
+  return <ListRows className="max-[23rem]:px-3">{children}</ListRows>;
+}
+
 /**
- * Eine Angabe der Zusammenfassung: Bezeichnung, Wert und - wo sie sich ändern
- * lässt - „Ändern“ in voller Größe (DESIGN.md „Plattform“). Der Name des
- * Knopfs beginnt mit dem sichtbaren Wort (WCAG 2.5.3). `zeit` vorn wie in der
- * Terminliste: Tag über Uhrzeit.
+ * Die gewählten Tage und Tageszeiten in denselben Worten wie die Wunschzeile der Liste
+ * („Dienstag oder Donnerstag, vormittags“), darunter bis wann die Tage reichen.
  */
-export function Angabe({
+export function Wannangabe({
   titel,
-  zeit,
+  wann,
+  werktage,
   onAendern,
-  children,
 }: {
   titel: string;
-  zeit?: ReactNode;
-  onAendern?: (() => void) | undefined;
-  children?: ReactNode;
+  wann: Wann;
+  werktage: readonly string[];
+  onAendern: () => void;
 }) {
+  const tage = wunschtage(wann.tage, werktage);
+  const wert = wunschInWorten({ preferred_days: tage, preferred_times: wunschzeiten(wann.zeiten) });
   return (
     <ListRow
-      zeit={zeit}
-      titel={titel}
-      meta={children}
+      bezeichnung={titel}
+      titel={wert ?? ''}
+      meta={bisTag(tage)}
       aktion={
-        onAendern ? (
-          <Button
-            variant="secondary"
-            groesse="normal"
-            aria-label={`Ändern: ${titel}`}
-            onClick={onAendern}
-          >
-            Ändern
-          </Button>
-        ) : undefined
+        // Der Name beginnt mit dem Wort auf dem Knopf (WCAG 2.5.3).
+        <Button
+          variant="secondary"
+          groesse="kompakt"
+          aria-label={`Ändern: ${titel}`}
+          onClick={onAendern}
+        >
+          Ändern
+        </Button>
       }
     />
   );
 }
 
 /**
- * „Wann passt es Ihnen?“ in der Zusammenfassung - eine Zeile für die eine
- * Seite: Tage, Tageszeit und bis wann die Tage reichen, je eine Zeile.
+ * Reißt die Verbindung im Ablauf ab, wartet das Senden (ANN-783): der Satz ruhig mit dem Zeichen über
+ * dem gesperrten Knopf. Beim Absagen läuft die Frist weiter; ein Anruf braucht kein Netz.
  */
-export function Wannzeile({
-  wann,
-  werktage,
-  onAendern,
+export function OhneNetzHinweis({
+  id,
+  verbunden,
+  anruf = null,
+  className = '',
 }: {
-  wann: Wann;
-  werktage: readonly string[];
-  onAendern: () => void;
+  id: string;
+  verbunden: boolean;
+  /** Die Rufnummer der Praxis für „Praxis anrufen“, sonst `null`. */
+  anruf?: string | null;
+  /** Der Abstand zum Knopf darunter oder zum Satz darüber. */
+  className?: string;
 }) {
+  // Die Region steht immer im Baum: Mit ihrem Text entstanden, sagte Vorlesesoftware sie nicht an.
   return (
-    <Angabe titel="Wann" onAendern={onAendern}>
-      <span className="block">{tageText(wann.tage)}</span>
-      <span className="block">{zeitenText(wann.zeiten)}</span>
-      <span className="block">{zeitraumText(wunschtage(wann.tage, werktage))}</span>
-    </Angabe>
+    <div role="status">
+      {verbunden ? null : (
+        <div className={`flex flex-col gap-3 ${className}`}>
+          <p id={id} className="text-ink-muted flex items-start gap-2 text-sm">
+            <OhneNetzSymbol />
+            <span>{WUNSCHSCHUTZ.ohneVerbindung}</span>
+          </p>
+          {anruf ? (
+            <Anrufknoepfe
+              nummern={[{ label: 'Praxis', anzeige: anruf, href: telHref(anruf) }]}
+              zweizeilig
+            />
+          ) : null}
+        </div>
+      )}
+    </div>
   );
 }
 

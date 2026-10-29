@@ -83,17 +83,17 @@ test.describe('Plattform', () => {
       // Überholung 6: Wünschen und Absagen führen im Fenster Seite für Seite.
       await page.goto(`${PRUEFSEITE}?seite=wunsch`);
       await expect(page.getByRole('dialog', { name: 'Wann passt es Ihnen?' })).toBeVisible();
-      // Die Trefferfläche ist die Zeile mit Beschriftung (Checkbox: min-h-11).
-      const zeile = page.locator('label', { hasText: 'Vormittag' });
-      expect((await zeile.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      // Die Tageszeiten sind Wahlflächen, mindestens 44 hoch.
+      const flaeche = page.getByRole('button', { name: 'Vormittag' });
+      expect((await flaeche.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       expect(await ueberlaeuft(page)).toBe(false);
 
       // Das Absagen beginnt auf der Seite des Termins.
       await page.goto(`${PRUEFSEITE}?seite=termin`);
       await page.getByRole('link', { name: 'Termin absagen' }).click();
       await expect(
-        page.getByRole('dialog', { name: 'Ausfallhonorar' }).getByRole('status'),
-      ).toContainText('kein Ausfallhonorar');
+        page.getByRole('dialog', { name: 'Ausfallhonorar' }).getByText(/kein Ausfallhonorar/),
+      ).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
 
       await page.goto(`${PRUEFSEITE}?seite=rechnungen`);

@@ -13,6 +13,7 @@ import {
   tagDerWoche,
   tagInWorten,
   tageSatz,
+  bisTag,
   terminZustand,
   terminzeileName,
   wunschInWorten,
@@ -221,6 +222,11 @@ describe('Wunsch in Worten', () => {
       'Montag bis Freitag – bis Freitag, 13.\u00a0November.',
     );
     expect(tageSatz([], [], JETZT)).toBe('Wählen Sie einen oder mehrere Tage.');
+  });
+
+  it('bis wann die Tage reichen, wie in der Karte der Zusammenfassung', () => {
+    expect(bisTag(['2026-10-27', '2026-11-12'], JETZT)).toBe('bis Donnerstag, 12.\u00a0November');
+    expect(bisTag([], JETZT)).toBe('');
   });
 
   it('titelt mit dem Termin des Wunschs, sonst mit der Art des Wunschs', () => {

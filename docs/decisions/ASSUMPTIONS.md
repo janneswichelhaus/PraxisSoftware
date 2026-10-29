@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-10-28.
+Zuletzt aktualisiert: 2026-10-29.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1587,3 +1587,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-779 | Seite des Termins: von der Übersicht reist der Rückweg als `zurueck` mit und heißt „Übersicht“ | Technik · offen | `zumTermin` in `src/features/portal/platform/Uebersicht.tsx` |
 | ANN-780 | Termine: der Weg zur Praxis beim Fehler, ohne Netz beim Laden und in der Lesefrist (nur Anruf, vor dem Vergangenen) | Technik · offen | `PraxisErreichen` in `src/features/portal/platform/Terminbausteine.tsx` |
 | ANN-781 | Seite des Termins: die Reihenfolge des Handoffs, auch wenn bei 375 × 667 „Termin absagen“ erst nach Rollen steht | Technik · offen | `Terminseite` in `src/features/portal/platform/Terminseite.tsx` |
+| ANN-782 | Ändern, Absagen: ✕ ersetzt den Ablauf im Verlauf durch die Seite des Termins; `?art=` weg gilt als Weggehen | Technik · offen | `Aenderungsablauf` in `src/features/portal/platform/Terminaenderung.tsx` |
+| ANN-783 | Abläufe: ohne Netz der Satz ruhig über dem gesperrten Senden, nicht noch einmal als Fehler; beim Absagen „Praxis anrufen“ | Technik · offen | `OhneNetzHinweis` in `src/features/portal/platform/Wunschfelder.tsx` |
+| ANN-784 | Zusammenfassung: „Ändern“ in der Zeile der Bezeichnung | Technik · offen | `bezeichnung` in `src/components/ui/ListRow.tsx` |
+| ANN-785 | Termin ändern: Zusammenfassung ohne „Ihr Termin“ (steht im Kopf), sonst rollt sie bei 375 × 667 | Technik · offen | `Wannangabe` in `src/features/portal/platform/Terminaenderung.tsx` |

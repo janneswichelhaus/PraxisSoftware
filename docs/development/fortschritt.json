@@ -1766,6 +1766,15 @@
           "fertig_am": "2026-10-29",
           "nachweis": "#330 (Übertrag von ccr-544f8ce7-u1sqpf, Stand 25.10.)",
           "vermerk": "Auftrag Jannes 28.10.2026; Handoff Termine Abschnitte 3, 5.2 und 9 Punkt 3, Frage 2 wie empfohlen; ANN-778 bis ANN-781; BEF-221 erledigt; nur Oberfläche, ohne Migration, ohne Auditeintrag"
+        },
+        {
+          "id": "drp-epic-014",
+          "name": "DRP-EPIC-014 Plattform: Abläufe zum Termin aus dem Design-Review (Schritt 3d – Wünschen, Ändern und Absagen in je zwei Schritten, Zusammenfassung als Karte, am Rechner ein Fenster)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-29",
+          "nachweis": "#331",
+          "vermerk": "Auftrag Jannes 28.10.2026; Handoff Termine 5.3 und 5.4; ANN-782 bis ANN-785; nur Oberfläche, ohne Migration"
         }
       ]
     },
