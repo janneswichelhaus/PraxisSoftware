@@ -7,11 +7,12 @@ DARF NICHT einer MUSS- oder DARF-NICHT-Anforderung widersprechen und keine Siche
 Datenschutzmaßnahme aufweichen. Was das bräuchte, ist eine Änderungsanfrage an Jannes. Überbrückt
 eine Annahme einen Punkt aus `OPEN_DECISIONS.md`, bleibt der Punkt dort offen.
 
-**Aufbau.** Das **Prüfpaket** (Datenschutz und Recht), die **Fachregeln** (Praxisprozess und
-Technik, die das Bauen tragen) und die **übrigen Einträge** als Tabellenzeile. Jede Kennung steht
-genau einmal und wird nie neu vergeben. Den früheren Wortlaut hält Git
-(`git log -p -- docs/decisions/ASSUMPTIONS.md`); Einzelmigrationen vor der Basis vom 2026-10-25
-zeigt `git show aabe5d0:<pfad>`.
+**Aufbau.** Das **Prüfpaket** (Datenschutz und Recht), die offenen **Fachregeln** (Praxisprozess
+und Technik, die das Bauen tragen) und die **übrigen Einträge** als Tabellenzeile, darunter jede
+Fachregel, die Jannes entschieden hat. Jede Kennung steht genau einmal und wird nie neu vergeben.
+Den früheren Wortlaut hält Git (`git log -p -- docs/decisions/ASSUMPTIONS.md`, die entschiedenen
+Fachregeln `git show 676e6b6:docs/decisions/ASSUMPTIONS.md`); Einzelmigrationen vor der Basis vom
+2026-10-25 zeigt `git show aabe5d0:<pfad>`.
 
 **Statuszeile** `Kategorie · Status · Datum · Instanz · Zusatz · Wiedervorlage`:
 
@@ -26,10 +27,11 @@ zeigt `git show aabe5d0:<pfad>`.
 
 **Neuer Eintrag:** Kopf, Statuszeile und ein Absatz, höchstens 800 Bytes; im Prüfpaket
 **Annahme**, **Grundlage**, **Anker** und **Rücknahme**, als Fachregel **Regel**, **Grundlage** und
-**Anker**. Aufwand der Rücknahme: `klein` (eine Stelle), `mittel` (ein Modul oder eine Migration
-ohne Datenumzug), `groß` (mehrere Module oder Datenumzug). Jannes bestätigt nur Annahmen mit
-Aufwand `groß` oder einen Praxisprozess nach §2.3; die PR fragt danach. Die Stelle, an der eine
-Annahme greift, nennt ihre Kennung im Kommentar; `pnpm docs:check` prüft Anker, Zusatz, Grenzen.
+**Anker**; entscheidet Jannes eine Fachregel, wird sie zur Tabellenzeile. Aufwand der Rücknahme:
+`klein` (eine Stelle), `mittel` (ein Modul oder eine Migration ohne Datenumzug), `groß` (mehrere
+Module oder Datenumzug). Jannes bestätigt nur Annahmen mit Aufwand `groß` oder einen Praxisprozess
+nach §2.3; die PR fragt danach. Die Stelle, an der eine Annahme greift, nennt ihre Kennung im
+Kommentar; `pnpm docs:check` prüft Anker, Zusatz, Grenzen.
 
 **Prüfpaket:** Vor Produktivstart MUSS jeder Eintrag dort auf `bestätigt (Prüfung)`, `geändert`,
 `verworfen` oder `in ADR überführt` stehen (ADR-007; ROADMAP M3). Wer prüft, nennt die
@@ -873,202 +875,6 @@ Datenschutz · entschieden (Jannes) · 2026-10-30 · Jannes · Prüfpaket · Wie
 **Annahme.** Widerruf: „Die Praxis löscht dann sofort alle Fotos, die als Arbeitshilfe entstanden sind; Fotos der Behandlungsdokumentation bleiben in der Akte.“ Fassung `2026-11` (ANN-262). **Grundlage.** ADR-017 Punkte 36 und 46; Art. 7 Abs. 3, Art. 17 Abs. 3 lit. b DSGVO; Jannes 2026-10-30. **Anker.** `EINWILLIGUNGSTEXTE` in `src/features/portal/platform/einwilligungstexte.ts`. **Rücknahme.** Wortlaut und Fassung an beiden Stellen · Aufwand `klein`.
 
 ## Fachregeln
-### ANN-042 — Ausgeschöpft ist eine Verordnung, wenn ihre möglichen Termine genutzt sind
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Ausgeschöpft bei genutzten ≥ möglichen Terminen; genutzt zählen abgehakte Termine, gebuchte sind nur verplant. Sonst ist sie offen oder vollständig verplant; einen Ablauf nach Zeit gibt es nicht. **Grundlage.** Entscheidung Jannes 2026-10-02; ANN-064, ANN-210. **Anker.** `verordnungszustand` in `src/features/patients/treatment-bases/grundlagen.ts`.
-
-### ANN-055 — Protokoll und Ausfallgebühr des Nichtantreffens gelten am Hausbesuch
-Praxisprozess · entschieden (Jannes) · 2026-09-17 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Nur am Hausbesuchstermin verlangt `record_no_show` das bestätigte Protokoll und setzt den Gebührenanlass, nur dort nimmt `complete_treatment` den Vermerk „Tür geöffnet, keine Behandlung“ an; an Praxis- und Videoterminen bleibt Nichtantreffen ohne Gebühr. **Grundlage.** ADR-018 Punkt 9; Entscheidung Jannes 2026-09-17 (nur Hausbesuche). **Anker.** `public.record_no_show`.
-
-### ANN-057 — Ein vergangener Tag braucht eine Bestätigung, kein Auditkennzeichen
-Praxisprozess · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** `create_appointment` und `update_appointment` nehmen einen Tag vor dem heutigen Praxistag nur mit `p_confirmed_past` an; keine Grenze nach hinten, kein Begründungstext. Einen nachgetragenen Termin zeigen `created_at` und `starts_at`, ein Kennzeichen gibt es nicht. **Grundlage.** Entscheidung Jannes 2026-09-18; ADR-010 Punkt 15. **Anker.** `public.create_appointment`.
-
-### ANN-064 — Die Terminzahl steht an der Grundlage, die Leistungsmenge an der Position
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Die Zahl möglicher Termine steht in `treatment_bases.appointment_count`; mehrere Heilmittel erzeugen keine weiteren Termine. Die Leistungsmenge bleibt an der Position; genutzt zählen abgehakte Termine (ANN-210, ANN-513). **Grundlage.** ADR-020 Punkt 5, der die Zahl noch `prescribed_quantity` nennt; Entscheidung Jannes 2026-10-02. **Anker.** `app.treatment_basis_slot_counts`.
-
-### ANN-067 — Gedeckt sind die frühesten Termine einer Grundlage, gerechnet statt zugeteilt
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Die Termine einer Grundlage ohne abgesagte und nicht angetroffene werden nach Beginn und Kennung geordnet; die ersten `appointment_count` sind gedeckt, jeder weitere geplant, aber ungedeckt. Gespeichert wird keine Zuteilung. **Grundlage.** Entscheidung Jannes 2026-10-02. **Anker.** `app.appointment_basis_position`.
-
-### ANN-068 — Übertragen wird jeder Termin der Patient:in außer abgesagten und abgerechneten
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Übertragbar ist jeder Termin der Patient:in, auch ein durchgeführter, außer abgesagten und abgerechneten; alles oder nichts, Überplanung erlaubt. Erfasste Leistungen ziehen auf die Position desselben Heilmittels mit; fehlt sie oder ist sie erschöpft, wird abgewiesen. **Grundlage.** Entscheidung Jannes 2026-10-02. **Anker.** `public.transfer_appointments_to_treatment_basis`.
-
-### ANN-076 — Der Rechnungsempfänger ist eine eigene Zeile, Vorgabe ist die Patientin selbst
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Ein Rechnungsempfänger ist eine eigene Zeile je Patientin mit einer von fünf Arten; höchstens eine trägt die Vorgabe, ohne sie geht die Rechnung an die Patientin selbst, die keine Zeile bekommt. Eine Rechnung hat genau einen Empfänger; pflegen dürfen `owner` und Büro. **Grundlage.** ADR-009 Punkt 2; Entscheidung Jannes 2026-10-02. **Anker.** `public.invoice_recipients`.
-
-### ANN-078 — Zahlungen sind Transaktionen mit Richtung, der Zahlungsstand wird gerechnet
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Eine Zahlung ist eine eigene Zeile an einer ausgestellten Rechnung: Eingang oder Rückzahlung, positiver Betrag in Cent, Überweisung, anderer Weg oder Verrechnung, nie Bargeld. Zahlungsstand und Überfälligkeit werden gerechnet; eine Zahlung wird nur mit Grund storniert, nie geändert. **Grundlage.** ADR-009 Punkt 12; Entscheidung Jannes 2026-09-19. **Anker.** `app.invoice_payment_state`.
-
-### ANN-080 — Zahlungserinnerung ohne Stufen, mit festgeschriebenem Betrag
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Aus einer überfälligen Rechnung entsteht eine Erinnerung mit festgeschriebenem offenem Betrag und neuer Frist von vierzehn Tagen, ohne Stufen, Gebühren, Zinsen, Automatik und eigene Nummer. Höchstens eine je Rechnung und Tag, keine an bezahlter oder stornierter Rechnung. **Grundlage.** Abnahme Jannes 2026-10-02 (`IDEA-PRX-012`). **Anker.** `c_frist_tage` in `public.create_payment_reminder`.
-
-### ANN-081 — Bis ADR-018 Punkt 2 umgesetzt ist, ist abgerechnet die Leistung, nicht der Termin
-Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** ADR-018 Punkt 2 und 3 verlangen den Terminzustand `invoiced`; gesetzt wird er nie, `issue_invoice` setzt nur `billable_services.status`. Bis dahin prüft jede Grenze „abgerechnet“ die Leistung, heute der Transfer-Guard. **Grundlage.** Abweichung von ADR-018 Punkt 3, bestätigt von Jannes 2026-10-02. **Anker.** `public.transfer_appointments_to_treatment_basis`.
-
-### ANN-097 — Fahrpuffer: Fahrzeit live und mit Faktor, Rundung im Server, Warnung statt Sperre
-Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Die Fahrzeit wird live abgerufen, nicht gespeichert, mit dem Faktor der Praxis multipliziert (ANN-237) und nur im Server nach §8.1 gerundet. Eine Unterschreitung warnt, sperrt nie; eine Ersatzschätzung gilt als „Fahrzeit nicht verfügbar“. **Grundlage.** ADR-019 Punkt 16 und 38; Entscheidung Jannes 2026-10-02 und 2026-10-05. **Anker.** `public.check_travel_buffers`.
-
-### ANN-099 — Ohne Vorlage inaktiv; PSFS entfällt, NRS und Veränderungsfrage werden Praxisvorgabe
-Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Ohne Vorlage in `quellen/` bleibt ein Instrument `0.x` und inaktiv; PSFS entfällt, NRS („Heutiges Befinden“, 0 bis 10) und Veränderungsfrage werden Praxisvorgaben `1.0.0`. Die NRS heißt nie validierte Schmerz-NRS. Offen (FRB-EPIC-004): alle drei `0.1.0`, inaktiv, `psfs.json` da. **Grundlage.** Entscheidung Jannes 2026-09-28 und 2026-09-29. **Anker.** `scoreDefinitionSchema`.
-
-### ANN-103 — Ein Fragebogen ist Entwurf oder abgeschlossen; korrigiert wird als neue Erhebung
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Eine Erhebung ist `entwurf` oder `abgeschlossen` (unveränderlich, ohne automatische Finalisierung); eine Korrektur ist eine neue Erhebung mit Verweis, Grund und dem Erhebungstag der alten. In der Praxis erheben owner, therapist und team_lead. **Grundlage.** §7; ADR-016 Punkt 5 und 6; Abnahme Jannes 2026-10-02. **Anker.** `app.guard_questionnaire_response`.
-
-### ANN-122 — Was in den Bericht geht, kreuzt die Therapeut:in an; nichts ist vorbelegt, alles wörtlich
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Zur Wahl stehen finalisierte Einträge und abgeschlossene, geltende Erhebungen; nichts ist angekreuzt, höchstens 50 Einträge, die Grenze steht sichtbar da. Übernommen wird wörtlich mit Tag und Verfasser:in; Kern bleibt der eigene Berichtstext. **Grundlage.** §17; ADR-006 Punkt 4 und 8; Abnahme Jannes 2026-10-02. **Anker.** `app.therapy_report_pruefen`.
-
-### ANN-132 — Die Dringlichkeit auf der Warteliste ist organisatorisch: drei Gründe und ein Datum
-Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Ein Eintrag trägt genau einen Grund (Wunsch der Person, Verordnung endet, Vorgabe der Praxis) und optional ein Datum „bis spätestens“; danach ordnet die Liste, dann nach Wartezeit. Keine Stufe, kein Freitext, kein Beschwerdebild. **Grundlage.** ADR-006 Punkt 4; §6.2; Sichtung Jannes 2026-09-28. **Anker.** `app.waitlist_check_input`.
-
-### ANN-135 — Gebietstage: genaue Postleitzahl, Tageshälfte am Beginn, Warnung statt Sperre
-Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Ein Gebiet ist eine Liste genauer Postleitzahlen mit Wochentagen und Tageshälften, eine Postleitzahl gehört zu höchstens einem; Vormittag heißt Beginn vor 12:00 Praxiszeit. Ein Hausbesuch außerhalb des Gebietstags seiner Postleitzahl wird gemeldet, nie gesperrt. **Grundlage.** `IDEA-PRX-031`; §6.2; Sichtung Jannes 2026-09-28. **Anker.** `app.territory_day_status`.
-
-### ANN-136 — Terminsuche: dicht gepackte Vorschläge, Fahrzeit als Warnung für die ersten zehn
-Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Je freier Lücke kommt der erste Rasterpunkt der Wunschzeit, dann dicht folgende Plätze, höchstens 50 in 42 Tagen, Gebietstage vorn. Für die ersten zehn Hausbesuche prüft eine Matrix live die Fahrzeit; ein knapper Weg rückt nach hinten, verworfen und gespeichert wird nichts. **Grundlage.** §8; ANN-097; Sichtung Jannes 2026-09-28. **Anker.** `public.find_free_slots`.
-
-### ANN-138 — „Mitnehmen“: von Hand gepflegte Liste an der Person, nie aus der Akte abgeleitet
-Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Was aufs Rad muss, ist eine Liste an der Person (höchstens zehn Einträge zu 1 bis 60 Zeichen), nie aus Befund oder Doku abgeleitet, mit Rollen und Datenklasse der Behandlungsliege, ohne Auditeintrag. Sie steht im Kurzblick am Termin und in der Akte. **Grundlage.** ADR-006 Punkt 2 und 4; ADR-010 Punkt 16; Sichtung Jannes 2026-09-29. **Anker.** `public.set_take_along_items`.
-
-### ANN-146 — Erinnerungen fragen nur: Verordnung endet, Akte ohne Behandlung
-Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** „Verordnung endet“ zeigt Verordnungen ohne Anschluss, deren Kontingent genutzt oder bei letztem Termin binnen 14 Tagen ganz verplant ist, und ob eine Empfehlung vorliegt. „Akte ohne Behandlung“ zeigt Akten ohne Fristanker (ANN-511), sechs Monate ohne Termin; beide setzen nichts. **Grundlage.** `IDEA-LZK-009`; ADR-008 Punkt 11; Abnahme Jannes 2026-09-29. **Anker.** `app.ending_treatment_bases`.
-
-### ANN-157 — Vergütungsmodell: zwei Werte, owner trägt ein, ohne Angabe kein Umsatz für die Person
-Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Je Person eine Angabe, Festgehalt oder Umsatzbeteiligung; `owner` trägt sie ein, nachgewiesen über `changed_by`, nicht im Auditlog. Ohne Angabe zählt die Person wie Festgehalt und sieht keinen Umsatz; lesen dürfen `owner` und die Person selbst. **Grundlage.** ADR-010 Punkt 15; Entscheidung Jannes (B6). **Anker.** `public.set_staff_compensation_model`, `app.has_revenue_share`.
-
-### ANN-179 — Eine Vereinbarung im Training sperrt nicht, wenn die Anzahl erreicht ist
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Die Vereinbarung legen owner, Trainingsbetreuung und Büro an, schließen ab und öffnen wieder, ohne Auditeintrag. Die Zahl der Termine ist Anzeige, keine Sperre; abgeschlossen nimmt sie keine neuen Termine, ohne Vereinbarung ist ein Termin eine Einzelstunde. **Grundlage.** ADR-022 Punkt 5; ADR-010 Punkt 15. **Anker.** `public.create_training_basis`, `public.conclude_training_basis`.
-
-### ANN-181 — Im Training entsteht eine Leistung aus dem durchgeführten Termin, im Paketzeitraum keine
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Abrechenbar ist ein Trainingstermin ab `completed`, ohne Protokoll und Ausfallhonorar; erfasst wird durch owner und office, nur mit Positionen des Bereichs `training`. Im Zeitraum eines Pakets trägt der Termin keine eigene Leistung (ANN-279). **Grundlage.** `PROJECT_PRINCIPLES.md` §19; ADR-009 Punkt 21. **Anker.** `app.appointment_is_billable`, `app.training_package_covering`.
-
-### ANN-185 — Ein abgeschlossenes Trainingsprotokoll ist unveränderlich; Korrekturen kommen als Nachtrag
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Den Entwurf ändern `owner` und `trainer`; abgeschlossen wird ausdrücklich, nie automatisch. Danach ist der Text über jeden Schreibweg unveränderlich; Korrekturen kommen als Nachtrag mit Grund, Verfasser:in und Zeitpunkt. **Grundlage.** `PROJECT_PRINCIPLES.md` §13; ADR-022 Punkte 6 und 7. **Anker.** `public.training_protocols_guard`, `public.add_training_protocol_addendum`.
-
-### ANN-186 — Am Trainingstermin vermerken owner, Trainingsbetreuung und Büro „durchgeführt“
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** „Durchgeführt“ setzen und nehmen dieselben Rollen zurück, ohne Protokoll; „dokumentiert“ erst mit abgeschlossenem Protokoll, endgültig. Daneben keine Absage, kein Nichtantreffen; ein Entwurf fällt nach Warnung weg und bleibt auch nach einem Restore weg (Löschjournal). **Grundlage.** ADR-018 Punkt 2; ADR-022 Punkt 8. **Anker.** `public.appointments_training_protocol_guard`.
-
-### ANN-190 — Ohne Geburtsdatum gibt es keine Einladung zu einem eigenen Zugang
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Ein eigener Zugang setzt Volljährigkeit voraus; der Server prüft sie beim Einladen am Geburtsdatum im Verhältnis. Fehlt es, wird nicht eingeladen, und die Praxis sieht den Hinweis, es zu ergänzen; das trifft vor allem Trainingskund:innen. **Grundlage.** ADR-023 Punkt 15; `PROJECT_PRINCIPLES.md` §16. **Anker.** `public.invite_platform_access`, `app.platform_min_age_years`.
-
-### ANN-210 — Genutzt ist ein durchgeführter Behandlungstermin, auch ohne finalisierte Dokumentation
-Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Als genutzt zählt das Kontingent einer Behandlungsgrundlage die Termine `completed`, `documented` und `invoiced`, mehrere Heilmittel im Termin einmal; verplant ist jeder Termin außer `cancelled` und `no_show`. Die Leistungsmenge je Position bleibt getrennt (ANN-073). **Grundlage.** ADR-018 Punkte 7 und 9. **Anker.** `app.treatment_basis_slot_counts`.
-
-### ANN-213 — Auf eine Gebühr verzichten owner und office, endgültig und nur vor der Erfassung
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Den Verzicht vermerken owner und office, solange aus dem Anlass weder Leistung noch Rechnung entstand; endgültig, ohne Freitextgrund. Der Anlass bleibt, Nachweis ist `fee_waived_by`; fällt der Anlass weg, fällt der Verzicht mit; solange er steht, bleibt der Termin löschgeschützt (ANN-035). **Grundlage.** ADR-018 Punkt 8; ADR-010 Punkt 15. **Anker.** `public.waive_appointment_fee`.
-
-### ANN-220 — Ein Wartelisteneintrag ist nach acht Wochen ohne Änderung zu prüfen
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Ein offener Wartelisteneintrag, den acht Wochen niemand geändert oder bestätigt hat, steht unter „Warteliste prüfen“ in Offene Punkte; „Noch aktuell“ bestätigt ihn ohne Änderung und startet die acht Wochen neu, „Bearbeiten“ führt ins Formular. **Grundlage.** Entscheidung Jannes 2026-10-09 (BEF-108). **Anker.** `app.waitlist_review_interval`, `public.confirm_waitlist_entry`.
-
-### ANN-226 — Im Kalender steht, wen owner dort hinnimmt, auch ohne eigenen Zugang
-Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Zuordenbar ist, wer aktiv beschäftigt und von owner in den Kalender genommen ist (`schedulable_treatment`, `schedulable_training`) oder einen aktiven Zugang mit passender Rolle hat. Das Merkmal setzt allein owner, ohne Auditeintrag; Zugang oder Rolle entstehen nicht. **Grundlage.** Entscheidung Jannes 2026-10-03; ADR-010 Punkt 15. **Anker.** `public.set_staff_member_schedulable`.
-
-### ANN-227 — Der Anmeldebogen ist erledigt, sobald sein Foto in der Akte liegt
-Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Das Foto des unterschriebenen Anmeldebogens geht als Datei der Art `vertrag` in die Akte, „Foto verwenden“ bestätigt. Die Vermerke zu Datenschutzinformation und Vertrag erledigen den Punkt nur im Bestand. Das Foto ist der Nachweis; die Fassung der Information zeigt es nur, wenn das Blatt sie trägt. **Grundlage.** Entscheidung Jannes 2026-10-03; ADR-017 Punkt 57. **Anker.** `app.intake_checklist`.
-
-### ANN-236 — Eine veraltete Anschrift am Termin ergibt keine Fahrzeit; nach dem Verorten fragt die Akte nach dem Umstellen
-Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Trägt ein künftiger bestätigter Hausbesuch eine andere Anschrift als die Akte, liefert `list_day_route` `address_outdated` statt einer Koordinate, und die Anzeige nennt keine Fahrzeit. Nach „Adresse verorten“ bietet die Akte das Umstellen an, nur auf Tipp. **Grundlage.** ANN-003; ADR-019 Punkt 12. **Anker.** `public.list_day_route`.
-
-### ANN-237 — Fahrzeitfaktor: ein Wert je Praxis, angewendet im Browser an genau einer Stelle
-Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Jede Fahrzeit des Kartendienstes wird mit dem Faktor der Praxis multipliziert, bevor sie angezeigt oder an `check_travel_buffers` und `rate_slot_travel` geht; Strecken nicht. Den Faktor (1,0 bis 2,5, Voreinstellung 1,5) ändert nur owner; ist er nicht lesbar, gilt 1,5. **Grundlage.** Entscheidung Jannes 2026-10-05; ANN-097. **Anker.** `src/features/calendar/tours/fahrzeitfaktor.ts`.
-
-### ANN-240 — Garage je Standort: Beginn und Ende der Tour, getrennt vom Startort; Rückweg in Tour und Kalender
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Jeder Standort kann eine Garage tragen, gesetzt von owner; der Startort bleibt Ort der Praxistermine. Der Tag am Rad beginnt und endet an der Garage, sonst an der Praxis: so rechnen alle Fahrzeiten. Den Rückweg prüft kein Fahrpuffer. Die Garage ist nie Wohnadresse (nicht erzwingbar). **Grundlage.** `PROJECT_PRINCIPLES.md` §20. **Anker.** `public.set_location_garage`.
-
-### ANN-263 — Widerrufe über die Plattform stehen 14 Tage in Offene Punkte, ohne „gesehen“
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Widerruft die Person oder ihre rechtliche Vertretung eine Einwilligung auf der Plattform, steht das 14 Tage in Offene Punkte mit Person, Zweck, Datum und Handelnden, ohne „gesehen“, für die Rollen, die Akte bzw. Trainingsverhältnis lesen. **Grundlage.** Entscheidung Jannes 2026-10-09. **Anker.** `app.platform_withdrawal_notice_days`, `public.list_platform_consent_withdrawals`.
-
-### ANN-266 — Der Einstieg gilt je Zugang, „Später“ beendet ihn, Überspringen berührt keine Einwilligung
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Den Einstieg (Willkommen, Einwilligungen, Benachrichtigungen, fertig) sieht jede Person einmal je Zugang, eine Begleitung ohne Einwilligungen; „Später“ beendet ihn. Überspringt ihn die Praxis, steht das am Zugang, Einwilligungen bleiben offen. **Grundlage.** Art. 7 Abs. 1 DSGVO; ADR-024 Punkt 15. **Anker.** `public.skip_platform_onboarding`.
-
-### ANN-268 — Das Nachsorge-Abo beginnt frühestens am Abschluss der Versorgung, höchstens 14 Tage rückwirkend
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Das Ende der Behandlungsgrundlage ist der Abschluss der Versorgung (`care_concluded_on`); vorher gibt es kein Abo. Es beginnt frühestens an diesem Tag, höchstens 14 Tage vor dem Anlegen, nach dem Ende jedes früheren; je Person läuft eines. **Grundlage.** ADR-009 Punkt 21; ADR-020. **Anker.** `app.aftercare_earliest_start`.
-
-### ANN-271 — Läuft die Behandlung wieder, wird kein Abo-Monat berechnet
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Ist die Versorgung wieder aufgenommen, lässt sich kein Abo-Monat erfassen, ebenso nie ein Monat mit nicht abgesagtem Behandlungstermin; die Liste der fälligen Monate nennt den Grund. Das Abo endet dadurch nicht: Die Praxis kündigt oder erfasst nach dem nächsten Abschluss. **Grundlage.** PROJECT_PRINCIPLES.md §4.6; ADR-009 Punkt 21. **Anker.** `app.aftercare_month_blocker`.
-
-### ANN-276 — Ein Trainingspaket wird im Voraus berechnet: eine Leistung zum Beginn, eine Rechnung
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Mit dem Paket entsteht genau eine Leistung des Bereichs `training` ohne Termin am Tag des Beginns, zum Preis der dann geltenden Preisliste; die Rechnung nennt den ganzen Zeitraum. Keine Raten; eine Fehlanlage lässt sich entfernen, solange sie auf keiner Rechnung steht. **Grundlage.** § 14 Abs. 4 Nr. 6 UStG; ADR-009 Punkte 4, 5 und 21. **Anker.** `public.create_training_package`.
-
-### ANN-278 — Kein Trainingspaket während einer laufenden Behandlung derselben Person
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Hat dieselbe Person eine Akte ohne Abschluss der Versorgung, lässt sich kein Paket anlegen; es beginnt frühestens am Abschlusstag, höchstens 14 Tage rückwirkend, nicht vor Vertragsbeginn. Anlegen nur owner und Büro, die beide Bereiche sehen; gelesen wird nur der Abschluss. **Grundlage.** PROJECT_PRINCIPLES.md §4.10; ADR-021 Punkte 3 und 6. **Anker.** `app.training_package_start_blocker`.
-
-### ANN-279 — Jeder Trainingstermin im Zeitraum eines Pakets ist mit dem Paket bezahlt
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Ein Trainingstermin im Zeitraum eines Pakets desselben Verhältnisses trägt keine eigene Leistung, eine Erfassung wird auch an den Funktionen vorbei abgewiesen; umgekehrt entsteht kein Paket über erfasste Trainingsleistungen. Gezählt wird nicht. **Grundlage.** ADR-009 Punkt 4; Entscheidung Jannes 2026-10-02. **Anker.** `app.training_package_covering`, `app.training_package_guard`.
-
-### ANN-284 — Ein Trainingsangebot gilt 14 Tage, höchstens bis zum Beginn; je Akte eines offen
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Ein Angebot lässt sich 14 Tage annehmen, längstens bis zum Trainingsbeginn; der Beginn liegt zwischen heute und 90 Tagen voraus, nicht vor dem Abschluss der Versorgung. Je Akte ist eines offen; zwei offene sperren das Zusammenführen. **Grundlage.** § 145 BGB; PROJECT_PRINCIPLES.md §4.10; ANN-278. **Anker.** `app.training_offer_state`, `public.create_training_offer`.
-
-### ANN-294 — Eine Verbindung führt von leichter nach schwerer, in genau einer Achse
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Zwei Varianten verbindet höchstens eine Verbindung, von der leichteren zur schwereren, mit genau einer der zwölf Achsen aus `app.exercise_axes`, auch über Übungen hinweg. Keine Kreise, archivierte Varianten werden nicht neu verbunden; Verbindungen werden nur angezeigt. **Grundlage.** ADR-006 Punkt 10. **Anker.** `public.link_exercise_variants`.
-
-### ANN-300 — Mit der Zuweisung friert der Plan ein; danach ändern sich nur Laufzeit und Ende
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Beim Zuweisen hält der Plan je Position Bezeichnungen, Körperregion, Kurzanleitung, Ausrüstung und Dosierung fest; Änderungen der Bibliothek berühren ihn nicht. Danach gibt es nur Laufzeitende, Beenden und Ablösen durch eine neue Fassung; gelöscht wird er nie, er fällt mit seinem Verhältnis. **Grundlage.** Entscheidung Jannes 2026-10-09. **Anker.** `public.assign_exercise_plan`.
-
-### ANN-302 — Laufzeit sechs Wochen voreingestellt, höchstens 26; Wiedervorlage sieben Tage vorher, bis entschieden ist
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Jeder zugewiesene Plan hat ein Ende, voreingestellt sechs, höchstens 26 Wochen. Sieben Tage davor steht er in Offene Punkte bei den Rollen, die ihn schreiben, auch nach dem Ende, bis jemand verlängert, neu zuweist oder beendet. **Grundlage.** ADR-006 Punkt 11. **Anker.** `app.exercise_plan_max_days`, `app.exercise_plan_review_days`.
-
-### ANN-304 — Die Plattform zeigt zugewiesene Pläne, sonst den zuletzt beendeten
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** „Übungen“ bzw. „Training“ zeigt alle zugewiesenen Pläne, auch künftige, ohne laufenden den zuletzt beendeten; nie Entwürfe oder abgelöste Fassungen. Gezeigt wird der Schnappschuss in Alltagssprache ohne Namen der Fachperson, in der Behandlung ohne Abo, auch in der Lesefrist. **Grundlage.** ADR-023 Punkt 22; PROJECT_PRINCIPLES.md §4.6. **Anker.** `app.platform_visible_exercise_plans`.
-
-### ANN-307 — Übungstage wählt die Person; sie stehen nur in ihrer eigenen Woche
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Die Übungstage wählt die Person oder rechtliche Vertretung als Wochentage, auch für die nächste Fassung; die Einheiten je Woche der Fachperson sind Empfehlung. „Diese Woche“ zeigt Termine und Übungstage; die Praxis sieht die Tage nicht (nur in der Auskunft), fremde Kalender nie. **Grundlage.** Art. 5 Abs. 1 lit. c DSGVO; ADR-002. **Anker.** `public.set_platform_exercise_days`.
-
-### ANN-308 — Eine Frage ist ein Vorgang aus unveränderlichen Einträgen
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Eine Nachricht ist ein Vorgang mit Thema (Übung, Beschwerden, Termin oder Rechnung, Sonstiges), wahlweise mit Übung eines Plans, Zustand offen, beantwortet oder erledigt; Einträge werden nie geändert. Erledigen dürfen Person und Praxis; die Antwort steht als „Praxis“ ohne Namen. **Grundlage.** § 630f BGB; ADR-010 Punkt 15; ADR-023 Punkt 22. **Anker.** Trigger `platform_message_entries_guard`.
-
-### ANN-309 — Antwortfrist in Werktagen aus den Stammdaten, überwacht über Fälligkeit
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Die Plattform nennt Notfallhinweis und Antwortzusage in Werktagen (Montag bis Freitag, Feiertage zählen mit; nur owner ändert). Fällig ist eine Frage am n-ten Werktag nach Eingang, nach einem Nachtrag auf eine Antwort neu; die Praxis sieht Fälligkeit und Überfälliges, ohne Benachrichtigung. **Grundlage.** Entscheidung Jannes 2026-10-09. **Anker.** `organizations.message_response_workdays`.
-
-### ANN-310 — Behandlung: Das Büro liest alle Rückfragen und antwortet auf Termin, Rechnung und Sonstiges
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Rückfragen lesen owner, Therapeut:innen, Teamleitung und Büro; antworten und erledigen dürfen die drei ersten alle, das Büro nur „Termin oder Rechnung“ und „Sonstiges“. Erst das Öffnen liest Inhalt, einmal je Tag als „Akte geöffnet“ protokolliert. **Grundlage.** ADR-004 Punkt 3; ADR-010 Punkt 16. **Anker.** `app.can_answer_platform_message`.
-
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus
 Technik · offen · 2026-10-10 · — · — · Wiedervorlage: —\
 **Regel.** Steht ungespeicherter Text drei Sekunden still, sichert die Seite einen Entwurf (nie Finalisierung), an Termin, Nachtrag, Therapiebericht und Erhebung, nicht an Korrektur, Vermerk „Tür geöffnet, nicht behandelt“ oder ohne Netz. Ein abgebrochener Nachtrag bleibt und wird mit der Frist Version 1. **Grundlage.** ADR-016 Punkte 3 und 7. **Anker.** `SELBST_SICHERN_PAUSE_MS` in `Textverlustschutz.tsx`.
@@ -1080,14 +886,6 @@ Praxisprozess · offen · 2026-10-10 · — · — · Wiedervorlage: —\
 ### ANN-321 — Nach einem Storno sperrt das Datenmodell den Entwurf nur in derselben Klammer
 Praxisprozess · offen · 2026-10-10 · — · — · Wiedervorlage: —\
 **Regel.** Eine durch Storno freigegebene Leistung derselben Klammer (Person bzw. Verhältnis, Bereich, Grundlage, sonst Monat) kommt nur auf die Korrekturrechnung der stornierten Rechnung, solange diese keine Korrektur hat; je offenes Storno eine eigene. **Grundlage.** Entscheidung Jannes 2026-10-09 zum Weg mit Bezug, die Klammer ist angenommen; ADR-009 Punkt 9. **Anker.** `app.open_cancellation_holding_service`.
-
-### ANN-339 — Rechnungslisten: Empfänger wie auf der Rechnung, Name der Person von heute
-Praxisprozess · entschieden (Jannes) · 2026-10-11 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Rechnungsliste, offene Posten und Zahlungen zeigen den Empfänger einer ausgestellten Rechnung aus dem Snapshot, die Person mit ihrem heutigen Namen. Die Suche findet die Rechnung unter dem Empfänger, bei einer Rechnung an die Person selbst auch unter dem heutigen Namen. **Grundlage.** Entscheidung Jannes 2026-10-11; ADR-009 Punkt 10. **Anker.** `app.invoice_recipient_name`.
-
-### ANN-340 — „Telefon (geschäftlich)“: nur noch an einer Akte, die schon eine Nummer trägt
-Praxisprozess · entschieden (Jannes) · 2026-10-11 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Beim Anlegen gibt es das Feld nicht mehr, beim Bearbeiten nur, wenn der Datensatz beim Öffnen eine Nummer trägt; dann lässt sie sich berichtigen und leeren. Spalte, Anzeige, Auskunft und Zusammenführen bleiben. **Grundlage.** Entscheidung Jannes 2026-10-11; Art. 16 DSGVO. **Anker.** `mitGeschaeftlichemTelefon` in `src/features/patients/PatientMasterDataFields.tsx`.
 
 ### ANN-341 — Ein Widerruf des Trainingsvertrags bleibt in Offene Punkte, bis sein Paket entfernt ist
 Praxisprozess · offen · 2026-10-11 · — · — · Wiedervorlage: —\
@@ -1145,26 +943,6 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: —\
 Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: —\
 **Regel.** Der Check-in kann nach der größten Belastung außerhalb der Übungen fragen: Art (sieben Wörter), ungefähre Dauer und Anstrengung (drei Stufen). Es sind Angaben zum Zusammenhang wie in ANN-355, nur in der Tabelle; kein Freitext, kein Ziel, keine Summe, kein Vergleich. **Grundlage.** Art. 5 Abs. 1 lit. c DSGVO; ADR-006 Punkt 11. **Anker.** `activity_kind` in `app.tracking_parameters`.
 
-### ANN-510 — Kein Versorgungsstatus mehr: jede Akte ist planbar
-Praxisprozess · entschieden (Jannes) · 2026-10-14 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** „Nicht in Versorgung“ entfällt: `patients.status` kennt nur `active`, einen Statuswechsel gibt es nicht, `create_appointment` prüft keinen Status. Liegengebliebenes zeigt die Patientenliste über offene Verordnungen (ANN-514). **Grundlage.** Entscheidung Jannes 2026-10-14; ersetzt ANN-002. **Anker.** Constraint `patients_status_active_only`.
-
-### ANN-516 — „Zu mahnen“: überfällig und keine Erinnerung mit laufender Frist
-Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Eine ausgestellte, nicht stornierte Rechnung ist zu mahnen, wenn ein Betrag offen ist, das Zahlungsziel vor heute liegt und keine Zahlungserinnerung eine Frist bis heute oder später trägt. Liste und Akte zeigen es nur owner und office (ANN-139). **Grundlage.** Entscheidung Jannes 2026-10-15. **Anker.** `app.invoice_reminder_due`.
-
-### ANN-534 — Eben angelegten Termin zurücknehmen: 15 Minuten, nur wer angelegt hat
-Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Wer einen Behandlungstermin mit Terminrecht angelegt hat, löscht ihn binnen 15 min, solange er geplant und unverändert ist und nichts an ihm hängt. Konnte die Patient:in ihn auf der Plattform sehen, wird er nach Rückfrage abgesagt. Kein Auditeintrag, nur Löschjournal. **Grundlage.** ADR-008 Punkt 8; ADR-018 Punkt 2; Entscheidung Jannes 2026-10-15. **Anker.** `public.undo_appointment_creation`.
-
-### ANN-536 — Katalogübungen übernimmt beim Hinzufügen nur owner, einzeln
-Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** owner übernimmt gewählte Katalogeinträge einzeln, höchstens so viele wie der Entwurf fasst, ohne Prüfvermerk (ANN-386). Die anderen Planrollen wählen aus der Bibliothek; fehlt einer Vorlage etwas, meldet der Server `missing` und schreibt nichts (ANN-293). **Grundlage.** Entscheidung Jannes 2026-10-15; ersetzt hier ANN-385. **Anker.** `v_pflegt` in `public.add_catalog_exercises_for_plan`.
-
-### ANN-539 — Übungen ohne Zeichnung; nummerierte Schritte erklären sie, bis eigene Bilder und Videos vorliegen
-Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Weder Katalog noch Bibliothek noch Plan tragen ein Bild. Übungsseite, Auswahlblatt, Planzeilen, Plattform und Planblatt zeigen Dosierung, Anleitung als nummerierte Schritte, Hilfsmittel und Hinweis. **Grundlage.** Entscheidung Jannes 2026-10-15 (keine KI-Bilder); eigene Medien wären Dateien nach ADR-017. **Anker.** `src/components/ui/Schrittliste.tsx`.
-
 ### ANN-544 — Monatslauf: Verordnung erst mit Freigabe, sonst abgeschlossener Monat
 Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: —\
 **Regel.** Der Lauf legt Entwürfe nur für fertige Zeilen an: Verordnungen erst nach der Freigabe, alles andere nur abgeschlossene Monate; Korrekturen nach Storno bleiben einzeln. Ausgestellt wird nach Rückfrage jede Rechnung einzeln (`issue_invoice`), ein Fehlschlag hält die übrigen nicht auf. **Grundlage.** ADR-009 Punkt 24: Die Freigabe bedingt die einzelne Rechnung nicht. **Anker.** `fertig` in `src/features/billing/lauf.ts`.
@@ -1185,57 +963,13 @@ Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: —\
 Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: —\
 **Regel.** Die Durchsicht zeigt owner jede übernommene, ungeprüfte, nicht archivierte Übung nach Region; „Durchgesehen“ setzt den Prüfvermerk (ANN-386), „Überspringen“ stellt sie hinten an. Einen Sammelvermerk gibt es nicht. **Grundlage.** ANN-386: Jannes sieht jede Übung an; ein Sammelvermerk lüde zum Abhaken ohne Lesen ein (§ 630c BGB). **Anker.** `offeneDurchsicht` in `src/features/exercise/exercises/durchsicht.ts`.
 
-### ANN-565 — Vermerk „ohne Behandlung“ braucht keinen eigenen Eintrag
-Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Am Vermerk „Tür geöffnet, nicht behandelt“ darf das Feld leer bleiben; dann wird der Vermerk als Satz festgeschrieben, ein eigener Text geht vor. Ohne Vermerk bleibt ein Eintrag Pflicht; der Server bleibt bei „nie leer“, Quelle ist `visit_without_treatment`. **Grundlage.** Auftrag Jannes 2026-10-16. **Anker.** `inhaltMitVermerk` in `src/features/clinical/documentation/api.ts`.
-
-### ANN-568 — Check-Up: Werbeflächen abwischen und ein Foto je Seite
-Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Nach den zwölf Prüfpunkten wischt, wer prüft, jede Werbefläche ab („Abgewischt“) oder nennt den Grund („Nicht möglich“), dann je ein Foto links, vorne, rechts, hinten. Ohne beides kein Speichern; der Server verlangt die Werbeflächen, die Fotos folgen nach dem Speichern (24 h, je Seite eines). **Grundlage.** Auftrag Jannes 2026-10-16. **Anker.** `public.record_fleet_checkup`, `fleet_photos.side`.
-
-### ANN-570 — Check-Up-Rhythmus als Hinweis, nie als Termin
-Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** owner wählt den Rhythmus (1–90 Tage, Vorgabe 14, aus); fällig ist ein Rad so lange nach dem letzten Check-Up, ohne Check-Up sofort, gesperrt nie. Die Übersicht erinnert, wer das Rad nutzt; der Kalender schlägt die früheste freie Lücke an einem Radtag vor, eingetragen wird nur auf Klick. **Grundlage.** Auftrag Jannes 2026-10-16. **Anker.** `organizations.fleet_checkup_interval_days`; `src/features/fleet/rhythmus.ts`.
-
-### ANN-574 — Tag umplanen: Auswahl abwählbar, Anrufliste im Tab
-Praxisprozess · entschieden (Jannes) · 2026-10-26 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** „Tag umplanen“ wählt alle bestätigten Behandlungstermine vor, abwählbar; `cancel_staff_day` sagt genau die Auswahl ab. Die Anrufliste (ohne Namen) liegt nur im `sessionStorage` des Tabs, je Konto nur die jüngste, und fällt mit Tab, Abmelden und Kontowechsel. **Grundlage.** Entscheidung Jannes 2026-10-26; ADR-024 Abschnitt B. **Anker.** `leseAnrufliste` in `src/features/calendar/appointments/tagumplanen.ts`.
-
-### ANN-576 — Urlaub: Antrag, Entscheidung, Storno als neuer Antrag
-Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Jede Praxisrolle mit Mitarbeiterdatensatz beantragt eigenen Urlaub. owner entscheidet, nie über den eigenen, lehnt nur mit Grund ab und trägt eigenen direkt genehmigt ein (`self_entered`); die Teamleitung entscheidet nicht. Genehmigtes hebt nur ein Storno-Antrag vor Beginn auf. **Grundlage.** BEF-066 Option 2; PROJECT_PRINCIPLES §4.5. **Anker.** `app.can_decide_staff_requests`, `public.decide_leave_request`.
-
-### ANN-578 — Genehmigter Urlaub sperrt die Tage, Termine werden genannt
-Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Genehmigter Urlaub schreibt je Tag eine Abwesenheit mit Bezug auf den Antrag, ein Storno entfernt genau diese; Arbeitszeiten überschreiben keinen Tag im Zeitraum. Abweichende Arbeitszeiten im Zeitraum halten die Genehmigung an. Termine werden je Tag genannt, nie still abgesagt. **Grundlage.** Entscheidung Jannes 2026-10-17. **Anker.** `app.apply_leave`, `staff_working_hour_exceptions.leave_request_id`.
-
-### ANN-598 — Erstattungen: Zustände und Rechte
-Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Beantragt → genehmigt oder abgelehnt (Grund) → ausgezahlt; zurückziehen solange beantragt. owner entscheidet fremde Anträge, trägt eigene genehmigt ein, vermerkt Auszahlungen. Jede Person beantragt für sich; owner und Büro sehen alle je Person, das Büro ältere Tourenanträge ohne km und Betrag (ANN-616), es entscheidet und zahlt nicht. **Grundlage.** BEF-066 Option 2 mit Büro. **Anker.** `app.can_read_all_reimbursements`.
-
 ### ANN-611 — Teamchat: wer teilnimmt, wer Kanäle führt, wer entfernt
 Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —\
 **Regel.** Jede Praxisrolle mit aktivem Mitarbeiterdatensatz nimmt teil, auch die Trainingsbetreuung; offene Kanäle legen owner und Teamleitung an und archivieren sie, ohne Startkanäle. owner entfernt fremde Nachrichten nur in offenen Kanälen und der Radflotte (`removed_by`, kein Audit); privat: ANN-642, @alle: ANN-647. **Grundlage.** §10; ADR-010 Punkt 15; Startkanäle: Jannes 2026-10-17. **Anker.** `app.can_manage_team_channels`.
 
-### ANN-647 — Teamchat: Benachrichtigung nur in der App, Stufen je Gespräch, @alle
-Praxisprozess · entschieden (Jannes) · 2026-10-18 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Der Zähler an „Nachrichten“ zählt neue Direkt- und Gruppennachrichten, Erwähnungen und fällige Erinnerungen; je Gespräch alle, nur Erwähnungen oder stumm, dazu Favorit. @alle erwähnt, wer das Gespräch liest, @hier gibt es nicht; kein Push, keine Mail. **Grundlage.** §10, §20; ADR-024 W4 sinngemäß; Entscheidung Jannes 2026-10-18. **Anker.** `public.get_team_chat_summary`.
-
-### ANN-656 — Lebensmittelkatalog als Bezugsdaten ohne Organisation
-Technik · entschieden (Jannes) · 2026-10-19 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** BLS und der Open-Food-Facts-Auszug liegen in `public.food_catalog` ohne `organization_id`, ein Nachschlagewerk ohne Personenbezug für jede Praxis; eigene Lebensmittel von Praxis und Person tragen die Organisation. Kein Tabellenrecht, gelesen wird nur über die Suchfunktionen. **Grundlage.** Ausnahme von ADR-003; Entscheidung Jannes 2026-10-19. **Anker.** `public.food_catalog`.
-
 ### ANN-673 — Panne: Rufnummern der Stelle, letzte Behandlung bleibt eine Frage
 Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 **Regel.** Werkstatt und Teamleitung stehen in der Standortvorlage mit der Rufnummer der Stelle, nie einer Person; solange ein Platzhalter steht, zeigt die Panne „noch nicht hinterlegt“ statt eines Anrufknopfs. Der Ruhetag gilt nach dem Wochentag in der Zeit der Praxis; „Letzte Behandlung am Tag?“ bleibt eine Frage. **Grundlage.** ANN-554. **Anker.** `zustaendigeRufnummer` in `src/features/fleet/standortvorlage.ts`.
-
-### ANN-756 — Anmeldung: Die Maske nennt die Ursache, nie ein Konto
-Technik · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Anmelde- und Sperrseite haben eigene Sätze für keine Verbindung, Störung des Dienstes, zu viele Versuche und eine Abmeldung von außen; falsches Kennwort, unbekanntes und unbestätigtes Konto bleiben ein Satz. Eine Höchstdauer der Anmeldung gibt es nicht, die vergessene Sitzung begrenzt die Sitzungssperre. **Grundlage.** Entscheidung Jannes 2026-10-09; ADR-025. **Anker.** `src/features/core/auth/anmeldefehler.ts`.
-
-### ANN-757 — Hausbesuch: Abschluss über „Was ist passiert?“, nicht über „Finalisieren“
-Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wiedervorlage: —\
-**Regel.** Am offenen Hausbesuch bietet die Dokumentation kein „Finalisieren“; je Ansicht steht ein Hauptknopf, „Nur Termin abschließen“ eingeklappt. Die automatische Finalisierung zum Fristende bleibt. **Grundlage.** Entscheidung Jannes 2026-10-09; ADR-018 Punkt 9; ADR-016 Punkt 7. **Anker.** `ueberAbschluss` in `src/features/clinical/documentation/TreatmentNoteSection.tsx`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
@@ -1257,6 +991,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-036 | Finalisierung hebt auch aus `confirmed` auf `documented`; den Haken setzt sie nur am Trainingstermin | Technik · in ADR überführt (ADR-018 Punkt 2) | `app.mark_appointment_documented` |
 | ANN-037 | Feste Terminlänge entfallen; Länge im Raster, geprüft nur bei Änderung | Praxisprozess · verworfen (→ ANN-056) | `app.is_valid_treatment_length` |
 | ANN-038 | Terminserie: drei Rhythmen, höchstens 30 Termine, das Kontingent begrenzt nicht | Praxisprozess · entschieden (Jannes) → ANN-210 | `app.appointment_series_limit` |
+| ANN-042 | Ausgeschöpft ist eine Verordnung, wenn ihre möglichen Termine genutzt sind | Praxisprozess · entschieden (Jannes) | `verordnungszustand` in `src/features/patients/treatment-bases/grundlagen.ts` |
 | ANN-045 | Gewöhnliches Abmelden beendet nur die eigene Sitzung (`scope: 'local'`) | Technik · entschieden (Jannes) | `src/features/core/auth/SessionProvider.tsx` |
 | ANN-046 | Navigationsschutz: Data Router, drei Wege, „Speichern“ heißt Entwurf | Technik · entschieden (Jannes) | `src/app/Textverlustschutz.tsx` |
 | ANN-047 | Ausfallgebühr nur bei Absage oder Verlegung durch die Patient:in | Praxisprozess · in ADR überführt (ADR-018 Punkt 8) | `app.is_late_cancellation` |
@@ -1266,17 +1001,26 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-051 | Ein Teamereignis ist ein Vorgang, die einzelne Teilnahme bleibt getrennt | Praxisprozess · entschieden (Jannes) | `public.update_appointment_event` |
 | ANN-053 | Server prüft Typ, SHA-256 und Metadaten am Inhalt, scharf mit der Providerprüfung | Technik · in ADR überführt (ADR-017 Punkt 49) | `app.patient_file_verification_required` |
 | ANN-054 | Dependency-Audit blockiert den Merge ab Schweregrad `high` | Technik · entschieden (Jannes) | `.github/workflows/ci.yml` |
+| ANN-055 | Protokoll und Ausfallgebühr des Nichtantreffens gelten am Hausbesuch | Praxisprozess · entschieden (Jannes) | `public.record_no_show` |
 | ANN-056 | Terminlänge ist ein Vielfaches des Rasters, geprüft nur bei Änderung | Praxisprozess · entschieden (Jannes) | `app.is_valid_treatment_length` |
+| ANN-057 | Ein vergangener Tag braucht eine Bestätigung, kein Auditkennzeichen | Praxisprozess · entschieden (Jannes) | `public.create_appointment` |
 | ANN-058 | Rückfragen fern vom Auslöser erscheinen als Fenster über dem Inhalt | Technik · entschieden (Jannes) | `src/components/ui/Dialogfenster.tsx` |
 | ANN-059 | Serie und Vorkommen sind zwei Kennungen, serienweite Vorgänge wirken nur nach vorn | Technik · entschieden (Jannes) | `public.update_event_series` |
 | ANN-062 | Adresse der Akte behält `verordnungen`, die Beschriftung nicht | Technik · entschieden (Jannes) | `src/routes/AuthenticatedRoutes.tsx` |
+| ANN-064 | Die Terminzahl steht an der Grundlage, die Leistungsmenge an der Position | Praxisprozess · entschieden (Jannes) | `app.treatment_basis_slot_counts` |
 | ANN-066 | Heilmittelkatalog ist eine Liste im Code, die Datenbank prüft den Wert nicht | Technik · entschieden (Jannes) | `src/features/patients/treatment-bases/heilmittel.ts` |
+| ANN-067 | Gedeckt sind die frühesten Termine einer Grundlage, gerechnet statt zugeteilt | Praxisprozess · entschieden (Jannes) | `app.appointment_basis_position` |
+| ANN-068 | Übertragen wird jeder Termin der Patient:in außer abgesagten und abgerechneten | Praxisprozess · entschieden (Jannes) | `public.transfer_appointments_to_treatment_basis` |
 | ANN-069 | Akte gruppiert Termine je Richtung, darin je Grundlage | Technik · entschieden (Jannes) | `src/features/calendar/appointments/PatientAppointmentsPage.tsx` |
 | ANN-070 | Katalogversion ist eine eingefrorene Preisliste, die Leistung verweist auf ihre Position | Technik · in ADR überführt (ADR-009 Punkt 5) | `app.active_service_catalog_version` |
 | ANN-071 | Preise pflegt `owner`; von Hand erfassen und lesen Leistungen `owner` und Büro | Praxisprozess · entschieden (Jannes) → ANN-513 | `app.can_record_billable_services` |
 | ANN-072 | Leistung nur aus dokumentiertem und abgehaktem Termin oder Gebührenanlass, ohne Override | Praxisprozess · entschieden (Jannes) → ANN-513 | `app.appointment_is_billable` |
 | ANN-073 | Genutzte Menge der Position schreibt die Leistungserfassung fort | Praxisprozess · entschieden (Jannes) | `billable_services.treatment_base_item_id` |
+| ANN-076 | Der Rechnungsempfänger ist eine eigene Zeile, Vorgabe ist die Patientin selbst | Praxisprozess · entschieden (Jannes) | `public.invoice_recipients` |
 | ANN-077 | Rechnung je Behandlungsgrundlage, ohne Grundlage je Person, Monat und Bereich; Diagnose im Snapshot | Praxisprozess · verworfen (→ ADR-009 Punkt 23) | `public.create_invoice_draft_for_basis` |
+| ANN-078 | Zahlungen sind Transaktionen mit Richtung, der Zahlungsstand wird gerechnet | Praxisprozess · entschieden (Jannes) | `app.invoice_payment_state` |
+| ANN-080 | Zahlungserinnerung ohne Stufen, mit festgeschriebenem Betrag | Praxisprozess · entschieden (Jannes) | `c_frist_tage` in `public.create_payment_reminder` |
+| ANN-081 | Bis ADR-018 Punkt 2 umgesetzt ist, ist abgerechnet die Leistung, nicht der Termin | Technik · entschieden (Jannes) | `public.transfer_appointments_to_treatment_basis` |
 | ANN-083 | Instrumentenbibliothek: Dateien im Release sind die Quelle, ohne Mandantenbezug; die Datenbank hält eine erzeugte Kopie (ANN-219) | Technik · entschieden (Jannes) | `src/features/clinical/assessments/definitionen.ts` |
 | ANN-084 | Definitionen tragen eine semantische Version, Vergleichbarkeit vermerkt `meta.vergleichbar_mit` | Technik · entschieden (Jannes) | `versionSchema` in `src/features/clinical/assessments/schema.ts` |
 | ANN-085 | Ein Instrument ohne Wertung trägt die Richtung `nicht_anwendbar`; rechnet es, ist `scoring.leseart` Pflicht | Technik · entschieden (Jannes) | `RICHTUNGEN` in `src/features/clinical/assessments/schema.ts` |
@@ -1285,10 +1029,13 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-090 | Fehlende Einrichtung des Kartendienstes ist die Fehlerklasse `not_configured`, nie die Nachbildung | Technik · entschieden (Jannes) | `LocationErrorCode` in `src/lib/location/contract.ts` |
 | ANN-091 | Eine Fahrzeitmatrix trägt höchstens 25 × 25 Punkte, als interne Grenze, nicht als Anbieterlimit | Technik · entschieden (Jannes) | `MAX_MATRIX_PUNKTE` in `src/lib/location/matrix.ts` |
 | ANN-095 | Verortet wird auf Handlung, ohne Rückfrage nur ein eindeutiger Treffer; die Koordinate geht in künftige Hausbesuche | Praxisprozess · entschieden (Jannes) (→ ADR-019 Punkt 37) | `public.set_patient_address_coordinate` |
+| ANN-097 | Fahrpuffer: Fahrzeit live und mit Faktor, Rundung im Server, Warnung statt Sperre | Praxisprozess · entschieden (Jannes) | `public.check_travel_buffers` |
 | ANN-098 | Fehlt ein gewerteter Wert, rechnet der Kern für die Skala keinen und nennt die fehlenden Items | Praxisprozess · entschieden (Jannes) | `src/features/clinical/assessments/rechnen.ts` |
+| ANN-099 | Ohne Vorlage inaktiv; PSFS entfällt, NRS und Veränderungsfrage werden Praxisvorgabe | Technik · entschieden (Jannes) | `scoreDefinitionSchema` |
 | ANN-100 | Test-Umgebung: Migrationen nach grüner CI, Neuaufsetzen mit Seed nur von Hand, Zugang aus einem Secret | Technik · entschieden (Jannes) | `supabase/testumgebung/neu-aufsetzen.psql` |
 | ANN-101 | Test-Umgebung: Kopfzeilen und CSP über eine erzeugte `.htaccess`, zweite Tür per Basic-Auth nur optional | Technik · entschieden (Jannes) | `scripts/testumgebung.mjs` |
 | ANN-102 | Anamnesebogen V8 ohne Punktwerte; eine Erhebung speichert die Kennung der Option | Technik · entschieden (Jannes) | `optionKennung` in `src/features/clinical/assessments/schema.ts` |
+| ANN-103 | Ein Fragebogen ist Entwurf oder abgeschlossen; korrigiert wird als neue Erhebung | Praxisprozess · entschieden (Jannes) | `app.guard_questionnaire_response` |
 | ANN-105 | Antworten prüft auch der Server gegen die Definition ihrer Fassung, nicht nur ihre Form | Technik · verworfen (→ ANN-219) | `app.assert_questionnaire_answers` |
 | ANN-106 | Verlauf: Rohwerte als Punkte, fünf Ereignisarten; Entfernen setzt `removed_at` statt zu löschen | Praxisprozess · entschieden (Jannes) | `public.patient_course_events` |
 | ANN-107 | Das Körperschema ist Jannes' Zeichnung; ein Kreis an der Stelle, gespeichert Stelle und nächster Bereich | Praxisprozess · entschieden (Jannes) | `src/features/clinical/assessments/koerperschema.ts` |
@@ -1304,19 +1051,31 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-118 | MT-Bausteine wörtlich: drei Lücken bleiben als unvollständig sichtbar, Hinweise getrennt, kein Grenzwert | Praxisprozess · entschieden (Jannes) | `blockSchema` in `src/features/clinical/assessments/schema.ts` |
 | ANN-119 | Offensichtliche Tippfehler der Bausteinvorlage sind korrigiert (1.0.1), Kennungen und Dokumentation bleiben | Praxisprozess · entschieden (Jannes) | `src/features/clinical/assessments/definitionen/bausteine/README.md` |
 | ANN-120 | Bausteine erzeugen Text für die Doku des Termins; Häkchen und Werte sichert `treatment_draft_findings` bis zum Festschreiben | Praxisprozess · entschieden (Jannes) | `public.save_treatment_draft_findings` |
+| ANN-122 | Was in den Bericht geht, kreuzt die Therapeut:in an; nichts ist vorbelegt, alles wörtlich | Praxisprozess · entschieden (Jannes) | `app.therapy_report_pruefen` |
 | ANN-129 | Seite an Extremitäten und Kiefer einmal je Region, an der Wirbelsäule je Test; „beidseits“ fragt vor dem Verwerfen | Praxisprozess · entschieden (Jannes) | `src/features/clinical/assessments/dokumentationstext.ts` |
 | ANN-130 | Bausteintext gegliedert, Ergebnis ausgeschrieben, Zeichen nur ergänzend; Ausgangsstellung nur beim Abhaken | Praxisprozess · entschieden (Jannes) | `src/features/clinical/assessments/dokumentationstext.ts` |
 | ANN-131 | Rechnung, Storno und Erinnerung für den Fensterumschlag nach DIN 5008 Form B, Fenster links | Praxisprozess · entschieden (Jannes) | `src/features/billing/Briefkopf.tsx` |
+| ANN-132 | Die Dringlichkeit auf der Warteliste ist organisatorisch: drei Gründe und ein Datum | Praxisprozess · entschieden (Jannes) | `app.waitlist_check_input` |
+| ANN-135 | Gebietstage: genaue Postleitzahl, Tageshälfte am Beginn, Warnung statt Sperre | Praxisprozess · entschieden (Jannes) | `app.territory_day_status` |
+| ANN-136 | Terminsuche: dicht gepackte Vorschläge, Fahrzeit als Warnung für die ersten zehn | Praxisprozess · entschieden (Jannes) | `public.find_free_slots` |
+| ANN-138 | „Mitnehmen“: von Hand gepflegte Liste an der Person, nie aus der Akte abgeleitet | Praxisprozess · entschieden (Jannes) | `public.set_take_along_items` |
 | ANN-140 | Heilmittel am Termin bestätigen entfällt, die Leistung entsteht mit Haken und Doku; die Rollenregel am eigenen Termin bleibt | Praxisprozess · verworfen (→ ANN-513) | `app.can_record_services_for_appointment` |
 | ANN-141 | Verordnung ohne Papier: Das Foto hängt bis zum Erfassen an der Person, sein Objektschlüssel bleibt | Praxisprozess · entschieden (Jannes) | `public.assign_prescription_scan` |
 | ANN-143 | Erstaufnahme aus der Akte abgeleitet, heute zwei Punkte; die Liege leer heißt „noch nicht entschieden“ | Praxisprozess · verworfen (→ ANN-224) | `app.intake_checklist` |
 | ANN-145 | Dublettenhinweis: gleicher Nachname und gleiches Geburtsdatum oder gleicher Vorname, nur als Hinweis | Praxisprozess · entschieden (Jannes) | `public.find_possible_duplicates` |
+| ANN-146 | Erinnerungen fragen nur: Verordnung endet, Akte ohne Behandlung | Praxisprozess · entschieden (Jannes) | `app.ending_treatment_bases` |
 | ANN-147 | Zusammenführen: die bleibende Akte behält ihre Stammdaten, Leeres füllt die Dublette, Freitexte werden angehängt | Praxisprozess · entschieden (Jannes) | `app.merge_patients_core` |
 | ANN-149 | Zusammenführen sperrt statt zu raten: Konto oder nicht entzogener Zugang an der Dublette, zwei Monatsentwürfe, zwei offene Wartelisteneinträge, Textlänge | Praxisprozess · entschieden (Jannes) | `app.patient_merge_plan` |
 | ANN-151 | Statistik: Umsatz brutto nach Rechnungsstellung als Praxissumme mit Aufteilung je Bereich, Zahlungseingang getrennt | Praxisprozess · entschieden (Jannes) | `public.get_practice_statistics` |
 | ANN-153 | Statistik: Ausfälle sind Absagen und Verlegungen durch Patient:innen und Nichtantreffen; Honorar ist, was erfasst ist | Praxisprozess · entschieden (Jannes) | `public.get_practice_statistics` |
 | ANN-155 | Statistik: Richtung der Zielwerte und genau eine Handlung je Kennzahl | Praxisprozess · entschieden (Jannes) | `src/features/billing/statistics/kennzahlen.ts` |
+| ANN-157 | Vergütungsmodell: zwei Werte, owner trägt ein, ohne Angabe kein Umsatz für die Person | Praxisprozess · entschieden (Jannes) | `public.set_staff_compensation_model`, `app.has_revenue_share` |
+| ANN-179 | Eine Vereinbarung im Training sperrt nicht, wenn die Anzahl erreicht ist | Praxisprozess · entschieden (Jannes) | `public.create_training_basis`, `public.conclude_training_basis` |
+| ANN-181 | Im Training entsteht eine Leistung aus dem durchgeführten Termin, im Paketzeitraum keine | Praxisprozess · entschieden (Jannes) | `app.appointment_is_billable`, `app.training_package_covering` |
+| ANN-185 | Ein abgeschlossenes Trainingsprotokoll ist unveränderlich; Korrekturen kommen als Nachtrag | Praxisprozess · entschieden (Jannes) | `public.training_protocols_guard`, `public.add_training_protocol_addendum` |
+| ANN-186 | Am Trainingstermin vermerken owner, Trainingsbetreuung und Büro „durchgeführt“ | Praxisprozess · entschieden (Jannes) | `public.appointments_training_protocol_guard` |
 | ANN-187 | Ein Plattformkonto hat kein Profil in `user_profiles`; Praxis- und Plattformkonto schließen sich aus | Technik · entschieden (Jannes) | `app.user_profiles_not_platform_account` |
+| ANN-190 | Ohne Geburtsdatum gibt es keine Einladung zu einem eigenen Zugang | Praxisprozess · entschieden (Jannes) | `public.invite_platform_access`, `app.platform_min_age_years` |
 | ANN-192 | Der Hausbesuch ist die Regel und trägt kein Wort; Praxis- und Videotermin tragen ihr Kennzeichen | Praxisprozess · entschieden (Jannes) | `src/lib/termin.ts` |
 | ANN-193 | Die behandelnde Person steht am Termin nur, wenn sie nicht die angemeldete ist | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/AppointmentHeadline.tsx` |
 | ANN-195 | Der Wegbalken rechnet in echten Minuten; die Rundung aus §8.1 bleibt beim Server | Praxisprozess · entschieden (Jannes) | `src/components/ui/travelPlan.ts` |
@@ -1326,22 +1085,30 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-199 | Haken und kompakte Knöpfe bleiben bei 44 px | Praxisprozess · entschieden (Jannes) | `src/components/ui/buttonStile.ts` |
 | ANN-201 | „Doku offen“ sehen alle mit Leserecht der Dokumentation; die Aufgabe bleibt bei den Schreibenden | Praxisprozess · entschieden (Jannes) | `src/features/calendar/today/api.ts` |
 | ANN-202 | Kalender nach dem Handoff: Panel als Karte, schlanker Kopf, Woche Montag bis Sonntag | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/TerminPanel.tsx` |
+| ANN-210 | Genutzt ist ein durchgeführter Behandlungstermin, auch ohne finalisierte Dokumentation | Praxisprozess · entschieden (Jannes) | `app.treatment_basis_slot_counts` |
 | ANN-211 | Durchgeführte Termine lassen sich übertragen, stehen aber zugeklappt und nicht vorgewählt | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/TermineUebertragenPage.tsx` |
 | ANN-212 | Eine Verlegung mit Gebühr ist eine Absage „Patient:in hat verlegt“; nur die Zeit ändern bleibt gebührenfrei | Praxisprozess · in ADR überführt (ADR-018 Punkt 8) | `app.is_late_cancellation` |
+| ANN-213 | Auf eine Gebühr verzichten owner und office, endgültig und nur vor der Erfassung | Praxisprozess · entschieden (Jannes) | `public.waive_appointment_fee` |
 | ANN-217 | Den Zugangsdienst ruft nach dem Löschlauf der Zeitplan des Betriebs; bis OPS-001 bleiben fällige Konten gesperrt stehen | Technik · entschieden (Jannes) | `public.claim_platform_account_deletions` |
 | ANN-219 | Fragebogendefinitionen kommen als erzeugte Migration auf den Server, nicht als zweite Fassung von Hand | Technik · entschieden (Jannes) | `scripts/definitionen-sql.mjs` |
+| ANN-220 | Ein Wartelisteneintrag ist nach acht Wochen ohne Änderung zu prüfen | Praxisprozess · entschieden (Jannes) | `app.waitlist_review_interval`, `public.confirm_waitlist_entry` |
 | ANN-221 | Fotoart vor dem Kamerastart wählen, mit Frist und Einwilligung im Wortlaut | Praxisprozess · verworfen (→ ANN-316) | `src/features/patients/files/FotosImVerlauf.tsx` |
 | ANN-222 | Die Anwendung löst die Prüfung am Server nach der Bestätigung aus; fehlt die Function, bleibt die Datei ungeprüft | Technik · entschieden (Jannes) | `supabase/functions/patient-file-verify/` |
 | ANN-223 | „Öffnen“ zeigt Bilder und PDF in der Anwendung, das PDF im Rahmen ohne `sandbox` | Technik · in ADR überführt (ADR-017 Punkt 58) | `src/components/ui/Dateiansicht.tsx` |
 | ANN-224 | Erstaufnahme: nur Verordnungsfoto und Anmeldebogen; die zwei Vermerke erledigen den Anmeldebogen nur noch im Bestand | Praxisprozess · entschieden (Jannes) (→ ANN-227) | `app.intake_checklist` |
 | ANN-225 | „Doku“ auf der Tageskarte führt in den Reiter Doku mit dem Termin oben; geschrieben wird auf der Schreibseite | Praxisprozess · entschieden (Jannes) | `src/features/calendar/today/MyDayPage.tsx` |
+| ANN-226 | Im Kalender steht, wen owner dort hinnimmt, auch ohne eigenen Zugang | Praxisprozess · entschieden (Jannes) | `public.set_staff_member_schedulable` |
+| ANN-227 | Der Anmeldebogen ist erledigt, sobald sein Foto in der Akte liegt | Praxisprozess · entschieden (Jannes) | `app.intake_checklist` |
 | ANN-228 | Ohne eigene Angabe sind die Termine einer Verordnung die größte Anzahl ihrer Positionen | Praxisprozess · entschieden (Jannes) | `src/features/patients/treatment-bases/DatenUebertragenFenster.tsx` |
 | ANN-231 | Terminhonorar: Tarif an der Preisliste, Vereinbarung je Person mit Gültigkeitsbeginn geht vor | Praxisprozess · in ADR überführt (ADR-009 Punkt 5) | `app.session_fee_on` |
 | ANN-232 | Das Terminhonorar entsteht einmal je Termin und wird bei der Erfassung festgeschrieben | Praxisprozess · in ADR überführt (ADR-009 Punkt 22) | `public.appointment_session_fees` |
 | ANN-234 | Die Übersicht wechselt den Tag um je einen Kalendertag, der Tag steht in der Adresse | Praxisprozess · entschieden (Jannes) | `src/features/calendar/today/tageswahl.ts` |
 | ANN-235 | Fahrwege im Kalender: beim Anzeigen abgerufen, ab heute, erster Weg von Garage oder Praxis (ANN-240) | Technik · entschieden (Jannes) | `src/features/calendar/appointments/fahrwege.ts` |
+| ANN-236 | Eine veraltete Anschrift am Termin ergibt keine Fahrzeit; nach dem Verorten fragt die Akte nach dem Umstellen | Praxisprozess · entschieden (Jannes) | `public.list_day_route` |
+| ANN-237 | Fahrzeitfaktor: ein Wert je Praxis, angewendet im Browser an genau einer Stelle | Praxisprozess · entschieden (Jannes) | `src/features/calendar/tours/fahrzeitfaktor.ts` |
 | ANN-238 | „Passt es?“: Luft nach §8.1, Nachbarn aus der Tagesroute, Tagesrand an Garage oder Praxis (ANN-240) | Praxisprozess · entschieden (Jannes) | `public.check_travel_fit` |
 | ANN-239 | Lückenfinder: Tagesansicht mit Patientenfilter, eine Stufe je Lücke, 60 Minuten, sonst 45 (ANN-317) | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/lueckenfinder.ts` |
+| ANN-240 | Garage je Standort: Beginn und Ende der Tour, getrennt vom Startort; Rückweg in Tour und Kalender | Praxisprozess · entschieden (Jannes) | `public.set_location_garage` |
 | ANN-241 | Fahrweg im Kalender antippbar: ganzer Block als Fläche, Menü mit Navigation und Tour | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/FahrwegMenue.tsx` |
 | ANN-243 | Startbild einmal je Tab beim Öffnen, Merker im Sitzungsspeicher des Tabs | Praxisprozess · entschieden (Jannes) | `src/lib/startbildMerker.ts` |
 | ANN-244 | Tableiste nach Reife: ein Bereich ganz in Vorschau bekommt keinen der vier Plätze; heute keiner (ANN-314), Plätze je Rolle nach ANN-604 | Praxisprozess · entschieden (Jannes) | `tableiste` in `src/app/navigation.tsx` |
@@ -1352,16 +1119,32 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-258 | Skala am Handy in zwei Reihen, Befund aus Bausteinen ohne Kasten im Kasten | Praxisprozess · offen | `spaltenAmHandy` in `src/features/clinical/assessments/FragebogenFelder.tsx` |
 | ANN-259 | Rechnungsliste: Suche als Teilstring ohne Platzhalter, „offen“ schließt überfällige ein, Seiten zu 100 | Praxisprozess · offen | `public.list_invoices` |
 | ANN-260 | Leitfaden L2: Meldungen und Rückfragen mit Linie links statt als Karte; Erklärsatz über „Plattform“ entfällt | Praxisprozess · offen | `src/components/ui/Feedback.tsx`, `src/components/ui/Rueckfrage.tsx` |
+| ANN-263 | Widerrufe über die Plattform stehen 14 Tage in Offene Punkte, ohne „gesehen“ | Praxisprozess · entschieden (Jannes) | `app.platform_withdrawal_notice_days`, `public.list_platform_consent_withdrawals` |
+| ANN-266 | Der Einstieg gilt je Zugang, „Später“ beendet ihn, Überspringen berührt keine Einwilligung | Praxisprozess · entschieden (Jannes) | `public.skip_platform_onboarding` |
 | ANN-267 | Plattform: keine Schrift unter 18 px, Schriftgröße nur auf dem Gerät, Ziele mindestens 44 px | Praxisprozess · entschieden (Jannes) | `.plattform-schrift` in `src/index.css` |
+| ANN-268 | Das Nachsorge-Abo beginnt frühestens am Abschluss der Versorgung, höchstens 14 Tage rückwirkend | Praxisprozess · entschieden (Jannes) | `app.aftercare_earliest_start` |
+| ANN-271 | Läuft die Behandlung wieder, wird kein Abo-Monat berechnet | Praxisprozess · entschieden (Jannes) | `app.aftercare_month_blocker` |
+| ANN-276 | Ein Trainingspaket wird im Voraus berechnet: eine Leistung zum Beginn, eine Rechnung | Praxisprozess · entschieden (Jannes) | `public.create_training_package` |
+| ANN-278 | Kein Trainingspaket während einer laufenden Behandlung derselben Person | Praxisprozess · entschieden (Jannes) | `app.training_package_start_blocker` |
+| ANN-279 | Jeder Trainingstermin im Zeitraum eines Pakets ist mit dem Paket bezahlt | Praxisprozess · entschieden (Jannes) | `app.training_package_covering`, `app.training_package_guard` |
+| ANN-284 | Ein Trainingsangebot gilt 14 Tage, höchstens bis zum Beginn; je Akte eines offen | Praxisprozess · entschieden (Jannes) | `app.training_offer_state`, `public.create_training_offer` |
 | ANN-286 | Ans Abschlussgespräch erinnern Tageskarte und Termin an den letzten zwei Terminen einer Grundlage, bis ein Angebot in der Akte steht | Praxisprozess · entschieden (Jannes) | `app.closing_talk_due` |
 | ANN-293 | Übungsbibliothek pflegt nur owner; lesen alle Praxisrollen, auch das Büro | Praxisprozess · entschieden (Jannes) → ADR-021 Punkt 10 | `app.can_manage_exercise_library`, `app.can_read_exercise_library` |
+| ANN-294 | Eine Verbindung führt von leichter nach schwerer, in genau einer Achse | Praxisprozess · entschieden (Jannes) | `public.link_exercise_variants` |
 | ANN-295 | Feste Körperregionen ohne Seite, Ausrüstung als freie Schlagworte | Technik · entschieden (Jannes) | `app.exercise_body_regions` |
 | ANN-296 | Übungen werden archiviert; Löschen nur ohne Abhängige | Praxisprozess · entschieden (Jannes) | `public.set_exercise_archived`, `public.delete_exercise` |
 | ANN-298 | Behandlungspläne schreiben Therapeut:innen, Trainingspläne owner und Trainingsbetreuung; das Büro liest beide | Praxisprozess · entschieden (Jannes) → ADR-021 Punkt 10 | `app.can_read_exercise_plans` |
 | ANN-299 | Dosierung je Position: Sätze, Wiederholungen oder Dauer, Last und Tempo frei | Praxisprozess · entschieden (Jannes) | `public.save_exercise_plan_item` |
+| ANN-300 | Mit der Zuweisung friert der Plan ein; danach ändern sich nur Laufzeit und Ende | Praxisprozess · entschieden (Jannes) | `public.assign_exercise_plan` |
 | ANN-301 | Progression von Hand als neue Fassung: je Position höchstens ein Schritt in genau einer Achse | Praxisprozess · entschieden (Jannes) | `app.exercise_plan_step_check` |
+| ANN-302 | Laufzeit sechs Wochen voreingestellt, höchstens 26; Wiedervorlage sieben Tage vorher, bis entschieden ist | Praxisprozess · entschieden (Jannes) | `app.exercise_plan_max_days`, `app.exercise_plan_review_days` |
 | ANN-303 | Plan als PDF: Druckblatt aus dem Schnappschuss über den Browser, ohne Ablage | Technik · entschieden (Jannes) | `src/features/exercise/exercise-plans/Planblatt.tsx` |
+| ANN-304 | Die Plattform zeigt zugewiesene Pläne, sonst den zuletzt beendeten | Praxisprozess · entschieden (Jannes) | `app.platform_visible_exercise_plans` |
 | ANN-305 | Durchführung: Haken über die Warteschlange des Geräts; in der Lesefrist wird nicht erfasst, je Plan und Tag eine offene Einheit | Technik · entschieden (Jannes) → ANN-357, ANN-358 | `app.assert_platform_exercise` |
+| ANN-307 | Übungstage wählt die Person; sie stehen nur in ihrer eigenen Woche | Praxisprozess · entschieden (Jannes) | `public.set_platform_exercise_days` |
+| ANN-308 | Eine Frage ist ein Vorgang aus unveränderlichen Einträgen | Praxisprozess · entschieden (Jannes) | Trigger `platform_message_entries_guard` |
+| ANN-309 | Antwortfrist in Werktagen aus den Stammdaten, überwacht über Fälligkeit | Praxisprozess · entschieden (Jannes) | `organizations.message_response_workdays` |
+| ANN-310 | Behandlung: Das Büro liest alle Rückfragen und antwortet auf Termin, Rechnung und Sonstiges | Praxisprozess · entschieden (Jannes) | `app.can_answer_platform_message` |
 | ANN-313 | In der Lesefrist werden keine Fragen mehr gestellt | Praxisprozess · entschieden (Jannes) | `app.assert_platform_message` |
 | ANN-314 | Kommunikation ist mit den Rückfragen nicht mehr ganz Vorschau; der Bereich öffnet heute auf dem Teamchat (ANN-614) | Technik · entschieden (Jannes) → ANN-614 | `src/app/navigation.tsx` |
 | ANN-317 | Lückenfinder: erst 60 Minuten, sonst 45, gekennzeichnet „nur 45 Min.“ | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/lueckenfinder.ts` |
@@ -1373,6 +1156,8 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-328 | Mitarbeitende: „Neuen Anmeldelink senden“ statt „Kennwort zurücksetzen“, im Protokoll unter dem alten Namen | Technik · offen | `sendeNeuenAnmeldelink`, `src/features/privacy/audit/actions.ts` |
 | ANN-337 | Prüfung am Server für Anhänge hängt am Schalter der Akte; der Schalter der Virenprüfung bleibt aus | Technik · offen | `app.patient_file_verification_required`, `app.message_attachment_scan_required` |
 | ANN-338 | Zeitmarke: eine ganze Sekunde in einem Video desselben Vorgangs | Praxisprozess · in ADR überführt (ADR-017 Punkt 68) | `attachment_mark_seconds`, `public.answer_platform_message` |
+| ANN-339 | Rechnungslisten: Empfänger wie auf der Rechnung, Name der Person von heute | Praxisprozess · entschieden (Jannes) | `app.invoice_recipient_name` |
+| ANN-340 | „Telefon (geschäftlich)“: nur noch an einer Akte, die schon eine Nummer trägt | Praxisprozess · entschieden (Jannes) | `mitGeschaeftlichemTelefon` in `src/features/patients/PatientMasterDataFields.tsx` |
 | ANN-347 | Push nur an die Push-Dienste der Browserhersteller, höchstens fünf Geräte je Zugang | Technik · offen | `app.push_endpoint_allowed`, `app.notification_rule` |
 | ANN-356 | Unter dem Punktbild steht die Zeitreihe als Tabelle je Größe, jüngste links; die Angaben nach den Einheiten daneben | Praxisprozess · offen (→ ANN-364, ANN-367) | `Verlaufstabelle` |
 | ANN-357 | Eine Einheit wird als Ganzes übertragen; ihr Tag ist die Angabe des Geräts, höchstens sieben Tage zurück | Technik · offen | `public.sync_platform_exercise_session` |
@@ -1435,10 +1220,12 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-500 | Absage im Terminpanel, Grund als Chips | Praxisprozess · offen | `darfAbsagen` in `src/features/calendar/appointments/TerminPanel.tsx` |
 | ANN-502 | „Wie zuletzt“ übernimmt den letzten Haupteintrag | Praxisprozess · offen | `WieZuletzt` in `src/features/clinical/documentation/WieZuletzt.tsx` |
 | ANN-503 | Übung aus der Bibliothek in Entwurf, neue Fassung oder neuen Plan | Praxisprozess · offen | `planFuerUebung` in `src/features/exercise/exercise-plans/zielplan.ts` |
+| ANN-510 | Kein Versorgungsstatus mehr: jede Akte ist planbar | Praxisprozess · entschieden (Jannes) | Constraint `patients_status_active_only` |
 | ANN-512 | Der Haken ist ein Merkmal neben dem Zustand; Festschreiben hakt nicht ab | Praxisprozess · in ADR überführt (ADR-018 Punkt 10) | `app.mark_appointment_documented` |
 | ANN-513 | Haken und Doku erfassen die Leistung von selbst | Praxisprozess · in ADR überführt (ADR-009 Punkt 24) | `app.record_default_services` |
 | ANN-514 | Stand der Grundlage an einer Stelle; freigeben, sobald nichts offen ist | Praxisprozess · in ADR überführt (ADR-020 Punkt 9) | `app.treatment_basis_billing`, `app.can_release_treatment_basis` |
 | ANN-515 | Nach der Freigabe sperrt der Server Doku, Zeit und Terminzahl | Praxisprozess · in ADR überführt (ADR-020 Punkt 9) | `app.appointments_basis_lock` |
+| ANN-516 | „Zu mahnen“: überfällig und keine Erinnerung mit laufender Frist | Praxisprozess · entschieden (Jannes) | `app.invoice_reminder_due` |
 | ANN-517 | Patientenliste: sortieren und zeigen statt Namenssuche ab drei Zeichen | Praxisprozess · entschieden (Jannes) | `leseSortierung` in `src/features/patients/uebersicht.ts` |
 | ANN-521 | Schreibseite: „Sprechen“ ist Hauptknopf, solange das Feld leer ist | Praxisprozess · entschieden (Jannes) | `sprechenHaupt` in `src/features/clinical/documentation/CompleteTreatmentPage.tsx` |
 | ANN-522 | Diktat: vier Abschnitte der Vorlage, Leeres entfällt | Praxisprozess · entschieden (Jannes) | `DIKTAT_ABSCHNITTE` in `src/lib/ki/gateway.ts` |
@@ -1453,9 +1240,12 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-531 | Textbausteine: in der Leiste nur eigene, keine neuen Bausteine der Praxis | Praxisprozess · entschieden (Jannes) | `src/features/clinical/documentation/TextbausteinLeiste.tsx` |
 | ANN-532 | Wegbalken an der Karte, am Telefon an Stelle der Minutenangabe | Technik · entschieden (Jannes) | `src/features/calendar/today/Tagesliste.tsx` |
 | ANN-533 | „Ausfall“ ab Beginn des Termins und nur ohne Doku | Praxisprozess · entschieden (Jannes) | `ausfallMoeglich` in `src/features/calendar/today/besuchswege.ts` |
+| ANN-534 | Eben angelegten Termin zurücknehmen: 15 Minuten, nur wer angelegt hat | Praxisprozess · entschieden (Jannes) | `public.undo_appointment_creation` |
 | ANN-535 | Folgeterminvorschläge: zu knapp fällt weg, ungeprüft bleibt | Praxisprozess · entschieden (Jannes) | `urteilAus` in `src/features/calendar/appointments/folgetermin.ts` |
+| ANN-536 | Katalogübungen übernimmt beim Hinzufügen nur owner, einzeln | Praxisprozess · entschieden (Jannes) | `v_pflegt` in `public.add_catalog_exercises_for_plan` |
 | ANN-537 | Eine Vorlage zeigt ihre Übungen als Vorschau, vorgewählt außer schon Geplantem | Praxisprozess · entschieden (Jannes) | `vorausgewaehlt` in `src/features/exercise/exercise-plans/vorlagen.ts` |
 | ANN-538 | Stand eines Plans: Fassung aus der Kette, Tag der Zuweisung, wer zugewiesen hat | Praxisprozess · entschieden (Jannes) | `standZeile` in `src/features/exercise/exercise-plans/fassung.ts` |
+| ANN-539 | Übungen ohne Zeichnung; nummerierte Schritte erklären sie, bis eigene Bilder und Videos vorliegen | Praxisprozess · entschieden (Jannes) | `src/components/ui/Schrittliste.tsx` |
 | ANN-542 | Erstaufnahme geführt: eine Seite ohne eigenen Zustand, Checkliste bleibt bei zwei Punkten | Praxisprozess · offen | `erstaufnahmestand` in `src/features/patients/intake/stand.ts` |
 | ANN-543 | Neuaufnahme am Telefon: das Seltene eingeklappt, „Weiter“ springt ins nächste Feld | Praxisprozess · offen | `WEITERE` in `src/features/patients/PatientMasterDataFields.tsx` |
 | ANN-546 | Übersicht ohne Abschlusskarte, ein Abstand zwischen den Abschnitten | Technik · entschieden (Jannes) | `MyDayPage` in `src/features/calendar/today/MyDayPage.tsx` |
@@ -1466,12 +1256,18 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-559 | Auslieferung: SSH-Verbindung mit bis zu fünf Versuchen | Technik · offen | `SSH_PAUSEN` in `scripts/testumgebung.mjs` |
 | ANN-563 | Check-Up geführt: eine Seite je Prüfpunkt, jeder Punkt bestätigt | Praxisprozess · offen | `src/features/fleet/CheckupFenster.tsx`, `TIPPSPERRE_MS` in `src/components/ui/GefuehrterAblauf.tsx` |
 | ANN-564 | Auslieferung: Dateien früherer Stände bleiben 7 Tage | Technik · offen | `.github/workflows/test-umgebung.yml` |
+| ANN-565 | Vermerk „ohne Behandlung“ braucht keinen eigenen Eintrag | Praxisprozess · entschieden (Jannes) | `inhaltMitVermerk` in `src/features/clinical/documentation/api.ts` |
 | ANN-566 | Rückfrage vor dem Verlassen als Fenster, Fokus nie auf „Verwerfen“ | Praxisprozess · entschieden (Jannes) | `useTextverlustschutz` in `src/app/Textverlustschutz.tsx` |
 | ANN-567 | Bewegung nur als Gestaltung (Leinwand „Lebendig“), reduziert springt alles | Technik · entschieden (Jannes) | `src/index.css`, `tests/e2e/bewegung.spec.ts` |
+| ANN-568 | Check-Up: Werbeflächen abwischen und ein Foto je Seite | Praxisprozess · entschieden (Jannes) | `public.record_fleet_checkup`, `fleet_photos.side` |
+| ANN-570 | Check-Up-Rhythmus als Hinweis, nie als Termin | Praxisprozess · entschieden (Jannes) | `organizations.fleet_checkup_interval_days`; `src/features/fleet/rhythmus.ts` |
 | ANN-571 | CI in parallelen Teilen, E2E vor der Anmeldung nur am Telefon | Technik · entschieden (Jannes) | `.github/workflows/ci.yml`, `playwright.config.ts` |
 | ANN-572 | Geführter Ablauf als Baustein: Frage oben, Antworten im festen Fuß | Technik · entschieden (Jannes) (→ DESIGN.md) | `src/components/ui/GefuehrterAblauf.tsx` |
 | ANN-573 | Niemand öffnet: erst anrufen, dann die Uhr abwarten | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/niemandOeffnet.ts` |
+| ANN-574 | Tag umplanen: Auswahl abwählbar, Anrufliste im Tab | Praxisprozess · entschieden (Jannes) | `leseAnrufliste` in `src/features/calendar/appointments/tagumplanen.ts` |
 | ANN-575 | Schlüssel von Hand zu Hand in einem Vorgang, der Datensatz ist der Nachweis | Praxisprozess · entschieden (Jannes) | `public.hand_over_fleet_key` |
+| ANN-576 | Urlaub: Antrag, Entscheidung, Storno als neuer Antrag | Praxisprozess · entschieden (Jannes) | `app.can_decide_staff_requests`, `public.decide_leave_request` |
+| ANN-578 | Genehmigter Urlaub sperrt die Tage, Termine werden genannt | Praxisprozess · entschieden (Jannes) | `app.apply_leave`, `staff_working_hour_exceptions.leave_request_id` |
 | ANN-581 | Einrichten: Wochenplan nur mit owner, die Person dafür in den Kalender | Praxisprozess · entschieden (Jannes) | `kontextFuer` in `src/features/workforce/staff/einrichtung.ts` |
 | ANN-582 | Einrichten: Wochenplan und Rad nur, wenn die Person behandelt | Praxisprozess · entschieden (Jannes) | `behandelt` in `src/features/workforce/staff/einrichtung.ts` |
 | ANN-583 | Plattform: Wunschtage als Wochentage | Praxisprozess · entschieden (Jannes) | `wunschtage` in `src/features/portal/platform/terminablauf.ts` |
@@ -1481,6 +1277,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-587 | Schlüssel übergeben: ein Ablauf für Tresor und Hand zu Hand | Praxisprozess · entschieden (Jannes) | `src/features/fleet/schluesselablauf.ts` |
 | ANN-592 | Arbeitszeitänderung: Pause im Formular | Praxisprozess · entschieden (Jannes) | `src/features/workforce/working-time/dayForm.ts` |
 | ANN-595 | Freizeitausgleich nur an Tagen nach Wochenplan, in der Arbeitszeit, als Abweichung; solange er gilt, ändern Planung und Anträge den Tag nicht | Technik · entschieden (Jannes) | `public.record_time_account_entry` |
+| ANN-598 | Erstattungen: Zustände und Rechte | Praxisprozess · entschieden (Jannes) | `app.can_read_all_reimbursements` |
 | ANN-599 | Ladestrom als Einkauf mit Beleg statt Arbeitstage mal festem Satz | Praxisprozess · verworfen (→ ANN-749) | `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql` |
 | ANN-600 | Einkauf: bis zehn Belege je Antrag als Datei, zweiphasig im eigenen Bucket | Technik · entschieden (Jannes) | `public.prepare_reimbursement_receipt_upload` |
 | ANN-604 | Organisation: fünf Reiter, Ansichten darunter, Leiste je Rolle | Praxisprozess · entschieden (Jannes) | `betriebUnterpunkte` in `src/app/navigation.tsx` |
@@ -1497,11 +1294,13 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-641 | Teamchat: Zustellung mit Gerätekennung, Blättern mit Cursor | Technik · offen | `app.team_message_key` |
 | ANN-643 | Teamchat: Antworten auch im Kanal, Ausgangsnachrichten später senden | Praxisprozess · offen | `public.post_team_message` |
 | ANN-645 | Teamchat: Anheften für alle, die lesen, ohne „von wem“ und „wann“ | Praxisprozess · offen | `public.set_team_message_pinned` |
+| ANN-647 | Teamchat: Benachrichtigung nur in der App, Stufen je Gespräch, @alle | Praxisprozess · entschieden (Jannes) | `public.get_team_chat_summary` |
 | ANN-648 | Teamchat: Chatfläche mit Gesprächsliste, Threadspalte und Tastatur | Praxisprozess · offen | `src/features/teamchat/flaeche.ts` |
 | ANN-649 | Teamchat: Formatierung wie Slack, nur als React-Elemente, ohne Linkvorschau | Technik · offen | `src/features/teamchat/formatierung.ts` |
 | ANN-650 | Teamchat: eine Nachricht als Aufgabe in die Offenen Punkte übernehmen | Praxisprozess · offen | `src/features/teamchat/AlsAufgabe.tsx` |
 | ANN-653 | Teamchat: Nachricht nur mit Anhängen, ohne Text | Praxisprozess · offen | `app.team_message_body` |
 | ANN-654 | Teamchat: Senden, während Anhänge hochladen | Technik · in ADR überführt (ADR-017 Punkt 74) | `anhaengeBereit` in `src/features/teamchat/ausgang.ts` |
+| ANN-656 | Lebensmittelkatalog als Bezugsdaten ohne Organisation | Technik · entschieden (Jannes) | `public.food_catalog` |
 | ANN-658 | Lebensmittelsuche: Trigramme, Rangfolge, Marken über nächste Nachbarn | Technik · entschieden (Jannes) | `app.food_search` |
 | ANN-659 | Lebensmittelkatalog: Import nur durch den Betrieb, Zurückziehen statt Löschen, Startportionen | Technik · entschieden (Jannes) | `app.finish_food_catalog_import` |
 | ANN-660 | Tagebucheintrag trägt den Stand des Lebensmittels | Technik · offen | `public.nutrition_diary_entries` |
@@ -1562,6 +1361,8 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-751 | Ein Register je Tabelle über dem Aufbewahrungsplan | Technik · in ADR überführt (ADR-008 Punkt 13) | `public.data_registry` |
 | ANN-754 | Domänenfolge: Seiten setzen zusammen, sonst nur nach unten | Technik · entschieden (Jannes) (→ DEVELOPMENT.md) | `scripts/eslint-modulgrenzen.mjs` |
 | ANN-755 | Schnittstelle je Domäne: eine fremde Domäne nur über ihre index.ts, auch von Seiten | Technik · entschieden (Jannes) (→ DEVELOPMENT.md) | `scripts/eslint-modulgrenzen.mjs` |
+| ANN-756 | Anmeldung: Die Maske nennt die Ursache, nie ein Konto | Technik · entschieden (Jannes) | `src/features/core/auth/anmeldefehler.ts` |
+| ANN-757 | Hausbesuch: Abschluss über „Was ist passiert?“, nicht über „Finalisieren“ | Praxisprozess · entschieden (Jannes) | `ueberAbschluss` in `src/features/clinical/documentation/TreatmentNoteSection.tsx` |
 | ANN-758 | Fotos im Verlauf: eine Zeile, zum Aufklappen | Praxisprozess · entschieden (Jannes) | `fotosOffen` in `src/features/patients/files/FotosImVerlauf.tsx` |
 | ANN-759 | Behandlungsgrundlage: eine Hauptaktion je Zustand, Kontaktwege als Links | Praxisprozess · entschieden (Jannes) | `src/features/patients/treatment-bases/Kontaktwege.tsx` |
 | ANN-760 | Rückfrage mit Kontrollwerten vor Ausstellen, Löschen und Entziehen | Praxisprozess · entschieden (Jannes) | `Kontrollwerte` in `src/features/billing/InvoiceDetailPage.tsx` |
@@ -1609,7 +1410,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-803 | Leerzustand wie im Entwurf (mittig, Kreis 96); in der Karte nur, wo Karten daneben stehen | Technik · offen | `EmptyState` in `src/components/ui/Feedback.tsx` |
 | ANN-804 | Termine: Handlung vor Inhalt, der Knopf mit 16 unter der Hero-Karte | Technik · entschieden (Jannes) | `Terminseite` in `src/features/portal/platform/Terminseite.tsx` |
 | ANN-805 | Satz zum Verlegen unter 24 Stunden: Seite wie empfohlen, auf Schritt 1 kurz (sonst rollt er) | Praxisprozess · entschieden (Jannes) | `AUSFALLHONORAR_VERLEGEN` in `src/lib/ausfallhonorar.ts` |
-| ANN-806 | Absagewunsch mit Tag und Uhrzeit des Eingangs, auf der Uhr des Geräts | Technik · offen | `absageEingegangen` in `src/features/portal/platform/termintexte.ts` |
+| ANN-806 | Absagewunsch mit Tag und Uhrzeit des Eingangs, auf der Uhr des Geräts; „angefragt“ bleibt daneben | Technik · entschieden (Jannes) | `absageEingegangen` in `src/features/portal/platform/termintexte.ts` |
 | ANN-807 | Lesefrist: Wünsche am Server abgewiesen, Absage per Anruf, Zurückziehen bleibt | Technik · offen | `request_platform_appointment` in `supabase/migrations/20261225190000_lesefrist_terminwuensche.sql` |
 | ANN-808 | Fragebogen: Das Praxisfeld schreibt und sieht die Plattform nicht; es bleibt, außer beim Verwerfen | Technik · offen | `save_platform_questionnaire_response` in `supabase/migrations/20261225200000_fragebogen_praxisfeld.sql` |
 | ANN-809 | Lesefrist vom Server für jeden Zugang, bei Vertretungen mit Namen | Technik · entschieden (Jannes) | `inLesefrist` in `src/features/portal/platform/hauptsache.ts` |
