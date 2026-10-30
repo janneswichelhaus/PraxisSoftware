@@ -23,7 +23,7 @@ import {
   artUndPerson,
   artzeichen,
   gedaempft as istGedaempft,
-  gesendetAm,
+  wunschEingang,
   rolle,
   tagInWorten,
   terminZustand,
@@ -147,7 +147,7 @@ export function Wunschzeile({
             <span className="font-semibold">Antwort der Praxis:</span> {wunsch.answer}
           </p>
         ) : null}
-        <p className="text-ink-muted hyphens-manual">{gesendetAm(wunsch, jetzt)}</p>
+        <p className="text-ink-muted hyphens-manual">{wunschEingang(wunsch, jetzt)}</p>
         {zurueckziehen ? <div className="mt-1">{zurueckziehen}</div> : null}
       </div>
     </li>

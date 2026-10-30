@@ -193,6 +193,36 @@ describe('Seite des Termins (Schritt 3c)', () => {
     );
   });
 
+  it('offene Absage: der Eingang mit Tag und Uhrzeit, aus dem Zeitpunkt des Wunschs (ANN-806)', async () => {
+    const eingang = new Date(2026, 9, 29, 14, 32);
+    ladeWuensche.mockResolvedValue([
+      {
+        ...WUNSCH,
+        kind: 'cancel',
+        preferred_days: [],
+        preferred_times: [],
+        note: null,
+        created_at: eingang.toISOString(),
+      },
+    ]);
+    zeige({ ...TERMIN, open_request_kind: 'cancel' });
+    const wunsch = await findeAbschnitt('Ihr Absagewunsch');
+    await waitFor(() =>
+      expect(wunsch).toHaveTextContent(
+        /Ihre Absage ist am 29\. Oktober( 2026)? um 14:32 eingegangen\./,
+      ),
+    );
+    expect(wunsch).toHaveTextContent('Bis dahin gilt der Termin.');
+  });
+
+  it('offene Änderung: ohne Satz zum Eingang', async () => {
+    ladeWuensche.mockResolvedValue([WUNSCH]);
+    zeige({ ...TERMIN, open_request_kind: 'change' });
+    const wunsch = await findeAbschnitt('Ihr Änderungswunsch');
+    await waitFor(() => expect(wunsch).toHaveTextContent('Montag oder Dienstag, vormittags'));
+    expect(wunsch).not.toHaveTextContent('eingegangen');
+  });
+
   it('vergangen mit Nummer: „Praxis anrufen“ als Hauptknopf, in der Liste nur „Schreiben“', async () => {
     zeige({
       ...TERMIN,

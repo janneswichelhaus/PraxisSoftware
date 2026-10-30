@@ -32,6 +32,7 @@ import {
   Zurueckziehen,
 } from './Terminbausteine';
 import {
+  absageEingegangen,
   artLang,
   artzeichen,
   tagInWorten,
@@ -293,6 +294,10 @@ function OffenerWunsch({
         <div className="flex flex-col gap-3">
           {wann ? <p className="hyphens-manual">{wann}</p> : null}
           {wunsch?.note ? <p className="text-ink-muted">„{wunsch.note}“</p> : null}
+          {/* Der Eingang entscheidet über das Ausfallhonorar: mit Tag und Uhrzeit (ANN-806). */}
+          {wunsch && termin.open_request_kind === 'cancel' ? (
+            <p>{absageEingegangen(wunsch)}</p>
+          ) : null}
           <p className="text-ink-muted">
             Die Praxis meldet sich bei Ihnen. Bis dahin gilt der Termin.
           </p>

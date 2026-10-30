@@ -252,6 +252,32 @@ export function gesendetAm(wunsch: Pick<Terminwunsch, 'created_at'>, jetzt = new
 }
 
 /**
+ * „am 29. Oktober um 14:32“: Der Zeitpunkt des Absagewunschs ist ihr Eingang und entscheidet über
+ * das Ausfallhonorar (ADR-018 Punkt 8 Nr. 1, ANN-247), deshalb mit Uhrzeit (ANN-806).
+ */
+function eingang(wunsch: Pick<Terminwunsch, 'created_at'>, jetzt: Date): string {
+  return `am ${fest(tagUndMonat(wunsch.created_at, jetzt))} um ${uhrzeit(wunsch.created_at)}`;
+}
+
+/** Die Zeile eines Wunschs: bei einer Absage „Eingegangen am … um …“, sonst „Gesendet am …“. */
+export function wunschEingang(
+  wunsch: Pick<Terminwunsch, 'kind' | 'created_at'>,
+  jetzt = new Date(),
+): string {
+  return wunsch.kind === 'cancel'
+    ? `Eingegangen ${eingang(wunsch, jetzt)}`
+    : gesendetAm(wunsch, jetzt);
+}
+
+/** „Ihre Absage ist am 29. Oktober um 14:32 eingegangen.“ auf der Seite des Termins. */
+export function absageEingegangen(
+  wunsch: Pick<Terminwunsch, 'created_at'>,
+  jetzt = new Date(),
+): string {
+  return `Ihre Absage ist ${eingang(wunsch, jetzt)} eingegangen.`;
+}
+
+/**
  * Die leeren Tage von „Diese Woche“ in einer Zeile (Handoff Abschnitt 3):
  * „So., Di., Do., Fr.“; drei und mehr aufeinanderfolgende als Spanne „So.,
  * Di. bis Fr.“. Erwartet Kalendertage `YYYY-MM-DD` in ihrer Folge.
