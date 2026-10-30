@@ -62,6 +62,8 @@ async function oeffne(
   await page.setViewportSize({ width: breite, height: 900 });
   await page.goto(`${PRUEFSEITE}?seite=${seite}`);
   await expect(page.getByRole('heading', { level: 1, name: titel })).toBeVisible();
+  // Gemessen wird erst mit der Schrift des Geräts, sonst kippt die Prüfung unter Last.
+  if (schrift) await expect(page.locator(`html[data-schrift="${schrift}"]`)).toHaveCount(1);
   // Liste oder Fehler stehen - das Skelett ist eine eigene Prüfung.
   await expect(page.locator('main [aria-busy="true"]')).toHaveCount(0);
 }
@@ -470,6 +472,22 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     });
   }
 
+  // Bei „Sehr groß“ mit einem Bereich bei 375 × 812 (#334 Frage 5). Mit Bereichsschalter folgt der
+  // Knopf dort erst nach kurzem Rollen, wie als Begleitung bei normaler Schrift.
+  for (const seite of [
+    'termine&ein-bereich',
+    'termine-heute&ein-bereich',
+    'termine-absage-angefragt&ein-bereich',
+    'termine-leer&ein-bereich',
+  ]) {
+    test(`${seite}: „Termin wünschen“ steht bei „Sehr groß“ und 375 × 812 ohne Rollen unter der Hauptsache (ANN-804)`, async ({
+      page,
+    }) => {
+      await oeffne(page, seite, 375, 'sehr-gross');
+      expect(await imErstenBild(page, 'Termin wünschen', 812)).toBe(true);
+    });
+  }
+
   test('Absage zum nächsten Termin angefragt: die Karte bleibt, der Wunsch steht darunter', async ({
     page,
   }) => {
@@ -585,6 +603,16 @@ test.describe('Seite des Termins (Schritt 3c)', () => {
         .first()
         .boundingBox())!;
       expect(absagen.y).toBeLessThan(werUndWo.y);
+    });
+  }
+
+  for (const seite of ['termin', 'termin&kurzfristig']) {
+    test(`${seite}: Ändern und Absagen stehen bei „Sehr groß“ und 375 × 812 ohne Rollen im Bild (ANN-804)`, async ({
+      page,
+    }) => {
+      await oeffneTermin(page, seite, 375, 'sehr-gross');
+      expect(await imErstenBild(page, 'Termin ändern', 812), 'Termin ändern').toBe(true);
+      expect(await imErstenBild(page, 'Termin absagen', 812), 'Termin absagen').toBe(true);
     });
   }
 

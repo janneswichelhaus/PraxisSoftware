@@ -129,6 +129,37 @@ describe('HeroKarte', () => {
     );
   });
 
+  it('macht mit `ganzeKarte` die ganze Karte zum Ziel des Knopfs (ANN-817)', () => {
+    zeige(
+      <HeroKarte
+        titel="Unterlagen sichern"
+        satz="Rechnungen und Dokumente können Sie bis 18. November herunterladen."
+        aktion={{ text: 'Unterlagen ansehen', to: '/p/ich' }}
+        ganzeKarte
+      />,
+    );
+    const karte = screen.getByRole('region', { name: 'Unterlagen sichern' });
+    const knopf = within(karte).getByRole('link', { name: 'Unterlagen ansehen' });
+    // Ein Ziel, kein zweites im Titel; sein `::after` deckt die Karte, die Fokus und Druck zeigt.
+    expect(within(karte).getAllByRole('link')).toHaveLength(1);
+    expect(knopf.className).toContain('after:absolute');
+    expect(knopf.className).toContain('after:inset-0');
+    expect(knopf.className).not.toMatch(/(^| )relative( |$)/);
+    expect(karte.className).toContain('has-[.hero-ziel:focus-visible]:outline-3');
+    expect(karte.className).toContain('active:bg-accent');
+    // Gedrückt gibt nur die Karte nach: Skaliert, fasste der Knopf sein `::after` selbst.
+    expect(knopf.className).toContain('active:scale-none!');
+  });
+
+  it('steht am Telefon bei „Sehr groß“ innen 12 wie unter 23rem (ANN-816)', () => {
+    zeige(<HeroKarte titel="Besuch am Montag" aktion={{ text: 'Termin ansehen', to: '/p' }} />);
+    const karte = screen.getByRole('region', { name: 'Besuch am Montag' });
+    expect(karte.className).toContain('max-[23rem]:p-3');
+    expect(karte.className).toContain('max-lg:[[data-schrift=sehr-gross]_&]:p-3');
+    // Ohne `ganzeKarte` bleibt das Ziel der Knopf.
+    expect(within(karte).getByRole('link').className).toMatch(/(^| )relative( |$)/);
+  });
+
   it('bietet statt des Knopfs eine leise Aktion als Textlink an', () => {
     zeige(
       <HeroKarte

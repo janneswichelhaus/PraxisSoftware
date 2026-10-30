@@ -650,7 +650,10 @@ function Gruss({ name, jetzt, mitDatum }: { name: string | null; jetzt: Date; mi
   );
 }
 
-/** Die Hauptsache als Hero-Karte; gibt es keine, der Leerzustand mit Markenform. */
+/**
+ * Die Hauptsache als Hero-Karte, die ganze Karte als Ziel (ANN-817); gibt es keine, der
+ * Leerzustand mit Markenform.
+ */
 function Hauptsachekarte({
   haupt,
   zugang,
@@ -680,6 +683,7 @@ function Hauptsachekarte({
           // nur mit dem Recht `billing` (`app.platform_access_allows`): für sie „Die Unterlagen“.
           satz={`${vertretung ? 'Die Unterlagen' : 'Rechnungen und Dokumente'} können Sie bis ${tagUndMonat(letzterTag(haupt.bis), jetzt)} herunterladen.`}
           aktion={{ text: 'Unterlagen ansehen', to: `${PLATTFORM_PFAD}/ich` }}
+          ganzeKarte
           markenmoment={markenmoment}
         />
       );
@@ -704,6 +708,7 @@ function Hauptsachekarte({
             text: heroWeg(t, inLesefrist(zugang), jetzt),
             to: zumTermin(t.id, mit),
           }}
+          ganzeKarte
           markenmoment={markenmoment}
         />
       );
@@ -722,6 +727,7 @@ function Hauptsachekarte({
             titel={fuer ? `Fragebogen für ${fuer}` : `Fragebogen vor Ihrem ${welcher} Termin`}
             satz={`Etwa 10 Minuten. ${wer} sieht ${fuer ? 'die' : 'Ihre'} Angaben beim ${welcher} Termin.`}
             aktion={aktion}
+            ganzeKarte
             markenmoment={markenmoment}
           />
         );
@@ -732,6 +738,7 @@ function Hauptsachekarte({
             titel={fuer ? `Check-in für ${fuer}` : 'Ihr Check-in für heute'}
             satz={`${fragenText(a.fragen)}, freiwillig, etwa 1 Minute.`}
             aktion={aktion}
+            ganzeKarte
             markenmoment={markenmoment}
           />
         );
@@ -741,6 +748,7 @@ function Hauptsachekarte({
           titel={fuer ? `Übungen für ${fuer}` : 'Ihre Übungen für heute'}
           satz={uebungenText(a, verbunden)}
           aktion={aktion}
+          ganzeKarte
           markenmoment={markenmoment}
         />
       );

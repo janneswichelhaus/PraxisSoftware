@@ -7,17 +7,24 @@ import { Terminsymbol } from './Terminsymbole';
 import type { Personenfarbe } from './personenfarben';
 
 /**
- * Die ganze Karte als Ziel: Ring außen beim Fokus des Titels; beim Drücken 98 % und die hellere
- * Hauptfarbe, bei „Bewegung reduzieren“ nur die Farbe.
+ * Die ganze Karte als Ziel: Ring außen beim Fokus des Titels oder Knopfs; beim Drücken 98 % und die
+ * hellere Hauptfarbe, bei „Bewegung reduzieren“ nur die Farbe.
  */
 const ZIEL =
   'has-[.hero-ziel:focus-visible]:outline-3 has-[.hero-ziel:focus-visible]:outline-offset-3 has-[.hero-ziel:focus-visible]:outline-ink ' +
   'active:bg-accent motion-safe:active:scale-98 transition-[scale,background-color] duration-120 ease-druck';
 
 /**
+ * Mit `ganzeKarte` reicht das Ziel des Knopfs über die Karte (`::after`; ANN-817). Nur die Karte gibt
+ * nach: Ein skalierter Knopf fasste sein `::after` selbst, und das Loslassen träfe daneben.
+ */
+const KNOPF_FUER_DIE_KARTE =
+  "hero-ziel after:rounded-image after:absolute after:inset-0 after:z-10 after:content-[''] focus-visible:outline-none active:scale-none!";
+
+/**
  * Die eine Hauptsache eines Bildschirms der Plattform, höchstens einmal je Seite (PLATTFORM.md);
  * das Laufrad ist Markenform, keine Information. Rechnermaße unter `data-rechner` (ANN-683); unter
- * 23rem innen 12, weil bei 24 der Knopf „Fragebogen beginnen“ mitten im Wort brach.
+ * 23rem und am Telefon bei „Sehr groß“ innen 12, weil bei 24 Knöpfe mitten im Wort brachen (ANN-816).
  */
 export function HeroKarte({
   etikett = 'Als Nächstes',
@@ -29,6 +36,7 @@ export function HeroKarte({
   aktion,
   ziel,
   leiseAktion,
+  ganzeKarte = false,
   schmalOhneRad = false,
   markenmoment = false,
 }: {
@@ -47,17 +55,22 @@ export function HeroKarte({
   ziel?: { text: string; to: string } | undefined;
   /** Statt des Knopfs ein Textlink in Papier-Schrift. */
   leiseAktion?: { text: string; to: string } | undefined;
+  /** Mit `aktion`: Die ganze Karte führt dorthin, der Knopf bleibt sichtbar. */
+  ganzeKarte?: boolean;
   /** Unter 23rem ohne Laufrad und innen 16 statt 12. */
   schmalOhneRad?: boolean;
   markenmoment?: boolean;
 }) {
   const titelId = useId();
+  const kartenknopf = ganzeKarte && aktion !== undefined;
   return (
     <section
       aria-labelledby={titelId}
       className={`bg-surface-inverse text-surface rounded-image shadow-plattform relative isolate flex flex-col gap-2 overflow-hidden p-6 [[data-rechner]_&]:p-8 ${
-        schmalOhneRad ? 'max-[23rem]:p-4' : 'max-[23rem]:p-3'
-      } ${markenmoment ? 'hero-erscheint' : ''} ${ziel ? ZIEL : ''}`}
+        schmalOhneRad
+          ? 'max-[23rem]:p-4 max-lg:[[data-schrift=sehr-gross]_&]:p-4'
+          : 'max-[23rem]:p-3 max-lg:[[data-schrift=sehr-gross]_&]:p-3'
+      } ${markenmoment ? 'hero-erscheint' : ''} ${ziel || kartenknopf ? ZIEL : ''}`}
     >
       {/* Unter allem Inhalt (`-z-10` in der eigenen Schicht der Karte): So
           bleibt der Titel ohne eigene Position, und das `::after` des Links
@@ -115,7 +128,7 @@ export function HeroKarte({
         <ButtonLink
           variant="marke"
           to={aktion.to}
-          className="relative mt-2 w-full [[data-rechner]_&]:w-auto [[data-rechner]_&]:self-start [[data-rechner]_&]:px-7"
+          className={`mt-2 w-full [[data-rechner]_&]:w-auto [[data-rechner]_&]:self-start [[data-rechner]_&]:px-7 ${kartenknopf ? KNOPF_FUER_DIE_KARTE : 'relative'}`}
         >
           {aktion.text}
         </ButtonLink>

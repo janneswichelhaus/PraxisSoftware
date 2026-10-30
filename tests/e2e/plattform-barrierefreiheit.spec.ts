@@ -833,6 +833,25 @@ test.describe('„Sehr groß“: nichts unter der Reiterleiste', () => {
     });
   }
 
+  // Die Prüfseite führt im Speicher, die Adresse bleibt: Es zählt der Titel der Zielseite.
+  for (const [seite, ziel] of [
+    ['handeln-fuer', TAG],
+    ['uebersicht-lesefrist-begleitung', 'Ich'],
+  ] as const) {
+    test(`${seite}: Liegt der Knopf unter der Leiste, führt die Hero-Karte selbst weiter (ANN-817)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 375, height: 812 });
+      await oeffne(page, seite, GRUSS);
+      const titel = page.locator('main section[aria-labelledby] h2');
+      await titel.scrollIntoViewIfNeeded();
+      const box = (await titel.boundingBox())!;
+      // Mitten auf den Titel, weit über dem Knopf.
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      await expect(page.getByRole('heading', { level: 1, name: ziel })).toBeVisible();
+    });
+  }
+
   test('handeln-fuer: Der Bereichsschalter bricht nicht im Namen, er rückt untereinander (BEF-195)', async ({
     page,
   }) => {

@@ -232,6 +232,20 @@ describe('Gruß der Übersicht (Handoff 5.1)', () => {
 });
 
 describe('Hauptsache (ANN-698)', () => {
+  it('macht die ganze Hero-Karte zum Ziel; der Knopf bleibt sichtbar (ANN-817)', async () => {
+    ladeTermine.mockResolvedValue([TERMIN]);
+    ladeBefundbogen.mockResolvedValue(BOGEN_FERTIG);
+    zeige();
+    const hero = await screen.findByRole('region', { name: /^Besuch / });
+    const ziel = within(hero).getByRole('link', { name: 'Ansehen, ändern, absagen' });
+    // Das Ziel des Knopfs reicht über die ganze Karte; sie zeigt Fokus und Druck.
+    expect(ziel.className).toContain('hero-ziel');
+    expect(ziel.className).toContain('after:inset-0');
+    expect(ziel.className).not.toMatch(/(^| )relative( |$)/);
+    expect(hero.className).toContain('has-[.hero-ziel:focus-visible]:outline-3');
+    expect(within(hero).getAllByRole('link')).toHaveLength(1);
+  });
+
   it('nimmt den offenen Fragebogen, zeigt den Termin als ersten Besuch und die Rechnung unter „Neu für Sie“', async () => {
     ladeTermine.mockResolvedValue([TERMIN]);
     ladeRechnungen.mockResolvedValue([RECHNUNG]);
