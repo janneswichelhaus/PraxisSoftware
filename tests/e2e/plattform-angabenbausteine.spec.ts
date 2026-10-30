@@ -147,15 +147,18 @@ test.describe('Bausteine der Selbstauskunft (Schritt 4a)', () => {
     expect(new Set(b.map((s) => Math.round(s.y))).size).toBe(1);
   });
 
-  test('ein zweiter Tipp nimmt zurück; ja und nein bleiben bei „Sehr groß“ nebeneinander', async ({
+  test('ein Doppeltipp behält die Wahl, ein späterer zweiter Tipp nimmt zurück; ja und nein bleiben bei „Sehr groß“ nebeneinander', async ({
     page,
   }) => {
     await oeffne(page, 375, 'sehr-gross');
     const vier = page
       .getByRole('group', { name: 'Wie stark sind Ihre Schmerzen in Ruhe?' })
       .getByRole('button', { name: '4' });
-    await vier.click();
+    // Zittrig doppelt getippt: Die Stufe bleibt gewählt (ANN-787).
+    await vier.dblclick();
     await expect(vier).toHaveAttribute('aria-pressed', 'true');
+    // Mit Abstand nimmt ein zweiter Tipp zurück; die Pause ist die einer Person, die sich umentscheidet.
+    await page.waitForTimeout(600);
     await vier.click();
     await expect(vier).toHaveAttribute('aria-pressed', 'false');
     const ja = await page.getByRole('button', { name: 'ja', exact: true }).boundingBox();

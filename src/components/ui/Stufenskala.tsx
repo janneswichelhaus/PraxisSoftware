@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { HakenSymbol } from './HakenSymbol';
+import { useDoppeltipp } from './doppeltipp';
 
 /**
  * Skala 0 bis 10 in zwei gleich langen Reihen, unter 23rem drei je Reihe, ab 44rem Feld eine
@@ -26,6 +27,7 @@ export function Stufenskala({
 }) {
   // Der Haken federt nur nach einem Tipp, nicht beim ersten Zeichnen.
   const [getippt, setGetippt] = useState<number | null>(null);
+  const doppeltipp = useDoppeltipp();
   const stufen = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   const elf = stufen.length === 11;
   return (
@@ -50,6 +52,8 @@ export function Stufenskala({
               aria-label={ende ? `${stufe} – ${ende}` : undefined}
               disabled={gesperrt}
               onClick={() => {
+                if (an && doppeltipp.zuFrueh(String(stufe))) return;
+                if (!an) doppeltipp.gewaehlt(String(stufe));
                 setGetippt(stufe);
                 onChange(an ? null : stufe);
               }}

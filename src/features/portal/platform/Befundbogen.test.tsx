@@ -420,8 +420,12 @@ describe('Fragebogen vor dem ersten Termin', { timeout: 20_000 }, () => {
     expect(screen.getByLabelText('26. Welche/n?')).toBeInTheDocument();
     expect(screen.getByLabelText('26. Wann?')).toBeInTheDocument();
     expect(screen.getByLabelText('26. Letzte Nachuntersuchung?')).toBeInTheDocument();
-    // Ein zweiter Tipp nimmt „ja“ zurück, die Folgefragen gehen mit.
+    // Ein zweiter Tipp nimmt „ja“ zurück, die Folgefragen gehen mit; sofort danach wäre er ein
+    // Doppeltipp und behielte die Wahl (ANN-787), deshalb kommt er hier eine Sekunde später.
+    const echt = Date.now.bind(Date);
+    const spaeter = vi.spyOn(Date, 'now').mockImplementation(() => echt() + 1000);
     await nutzer.click(within(tumor).getByRole('button', { name: 'ja' }));
+    spaeter.mockRestore();
     expect(screen.queryByLabelText('26. Welche/n?')).toBeNull();
     unmount();
 

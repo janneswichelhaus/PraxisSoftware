@@ -1,6 +1,7 @@
 import { Fragment, useId, useState, type ReactNode } from 'react';
 import { HakenSymbol } from './HakenSymbol';
 import { Zwischentitel } from './Zwischentitel';
+import { useDoppeltipp } from './doppeltipp';
 
 /** Eine Wahl: Schlüssel für die Seite, Wort für die Person. */
 export interface Wahl {
@@ -39,6 +40,7 @@ export function Wahlflaechen({
   const eigeneId = useId();
   const titelId = titel ? eigeneId : beschriftetVon;
   const [getippt, setGetippt] = useState<string | null>(null);
+  const doppeltipp = useDoppeltipp();
   return (
     <div>
       {titel ? (
@@ -56,6 +58,8 @@ export function Wahlflaechen({
               aria-pressed={an}
               disabled={gesperrt}
               onClick={() => {
+                if (an && doppeltipp.zuFrueh(w.schluessel)) return;
+                if (!an) doppeltipp.gewaehlt(w.schluessel);
                 setGetippt(w.schluessel);
                 onUmschalten(w.schluessel);
               }}

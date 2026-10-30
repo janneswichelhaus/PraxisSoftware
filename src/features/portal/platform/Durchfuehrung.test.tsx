@@ -291,9 +291,13 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
     expect(within(anstrengung).getByRole('button', { name: '10 – maximal' })).toBeInTheDocument();
     expect(screen.queryByText(/Ihre letzte Angabe/)).not.toBeInTheDocument();
     await user.click(within(anstrengung).getByRole('button', { name: '6' }));
-    // Gewählt und mit einem zweiten Tipp zurückgenommen heißt: keine Angabe.
+    // Gewählt und mit einem zweiten Tipp zurückgenommen heißt: keine Angabe. Der zweite Tipp
+    // kommt eine Sekunde später, sofort danach wäre er ein Doppeltipp (ANN-787).
     await user.click(within(schmerz).getByRole('button', { name: '2' }));
+    const echt = Date.now.bind(Date);
+    const spaeter = vi.spyOn(Date, 'now').mockImplementation(() => echt() + 1000);
     await user.click(within(schmerz).getByRole('button', { name: '2' }));
+    spaeter.mockRestore();
     await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
     await waitFor(() =>
       expect(gesendet().at(-1)).toEqual(

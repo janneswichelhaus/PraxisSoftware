@@ -35,7 +35,8 @@ describe('Stufenskala', () => {
     expect(gruppe.parentElement).toHaveClass('@container');
   });
 
-  it('wählt nichts vor, nennt die Enden und nimmt mit einem zweiten Tipp zurück', async () => {
+  it('wählt nichts vor, nennt die Enden; ein Doppeltipp behält die Wahl, ein späterer Tipp nimmt zurück', async () => {
+    const jetzt = vi.spyOn(Date, 'now').mockReturnValue(10_000);
     const onChange = vi.fn();
     const { rerender } = render(<Frage wert={null} onChange={onChange} />);
     expect(
@@ -50,7 +51,13 @@ describe('Stufenskala', () => {
     const sieben = screen.getByRole('button', { name: '7' });
     expect(sieben).toHaveAttribute('aria-pressed', 'true');
     expect(sieben.className).toContain('bg-accent');
+    // Zittrig doppelt getippt: 0,3 s nach dem Wählen nimmt der zweite Tipp nicht zurück (ANN-787).
+    jetzt.mockReturnValue(10_300);
+    await userEvent.click(sieben);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    jetzt.mockReturnValue(10_600);
     await userEvent.click(sieben);
     expect(onChange).toHaveBeenLastCalledWith(null);
+    jetzt.mockRestore();
   });
 });
