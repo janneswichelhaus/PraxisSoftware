@@ -1421,3 +1421,4 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-815 | Reiterleiste: das Wort bleibt 18 px, eine Reihe auch bei „Groß“ und „Sehr groß“; zwei nur, wenn es so nicht passt | Technik · offen | `REITERWORT` in `src/features/portal/platform/Navigation.tsx` |
 | ANN-816 | „Sehr groß“ am Telefon wie unter 23rem: Fuß der Abläufe rollt mit (unten, solange alles passt), ohne Bild, Hero innen 12 | Technik · offen | `SEHR_GROSS_ROLLT_ZUSAMMEN` in `src/components/ui/GefuehrterAblauf.tsx` |
 | ANN-817 | Übersicht: Die ganze Hero-Karte führt weiter, der Knopf bleibt sichtbar | Technik · offen | `KNOPF_FUER_DIE_KARTE` in `src/components/ui/HeroKarte.tsx` |
+| ANN-818 | Lesefrist: Ein ungesendeter Fragebogen steht als Zeile unter „Ihre Behandlung“, zum Verwerfen | Technik · entschieden (Jannes) | `angefangen` in `src/features/portal/platform/Uebersicht.tsx` |

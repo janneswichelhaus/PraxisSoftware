@@ -118,6 +118,15 @@ const BOGEN_FERTIG = [
   },
 ];
 
+/** Ein nie gesendeter Entwurf der Person (ANN-810). */
+const ENTWURF = {
+  ...BOGEN_FERTIG[0]!,
+  status: 'entwurf',
+  source: 'platform',
+  answers: { hauptbeschwerde: 'Knie rechts' },
+  completed_at: null,
+};
+
 const RECHNUNG = {
   id: 'ffffffff-ffff-4fff-8fff-000000000001',
   invoice_number: 'RG-2026-0001',
@@ -734,6 +743,50 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(screen.getByText('12. August bis 15. Oktober 2026')).toBeInTheDocument();
     // In der Lesefrist ist nichts mehr zu tun - auch kein offener Fragebogen.
     expect(screen.queryByText(/Fragebogen/)).not.toBeInTheDocument();
+  });
+
+  it('führt in der Lesefrist mit eigenem Entwurf unter „Ihre Behandlung“ zum Fragebogen (ANN-818)', async () => {
+    const vergangen = {
+      ...TERMIN,
+      starts_at: '2026-10-15T07:30:00Z',
+      ends_at: '2026-10-15T08:30:00Z',
+      status: 'completed',
+    };
+    ladeTermine.mockResolvedValue([vergangen]);
+    ladeBefundbogen.mockResolvedValue([ENTWURF]);
+    const lesefrist = { writable: false, read_until: '2026-12-31T12:00:00+01:00' };
+    const eigen = zeige({ ...ZUGANG, ...lesefrist });
+    const abschnitt = (
+      await screen.findByRole('heading', { level: 2, name: 'Ihre Behandlung' })
+    ).closest('section')!;
+    expect(within(abschnitt).getByText('Mit Anna Beispiel')).toBeInTheDocument();
+    const zeile = within(abschnitt).getByRole('link', { name: /^Angefangener Fragebogen/ });
+    expect(zeile).toHaveAttribute('href', '/p/befundbogen?bereich=treatment');
+    expect(zeile).toHaveTextContent('Nicht gesendet');
+    eigen.unmount();
+
+    // Ohne vergangenen Termin steht die Zeile allein unter dem Titel.
+    ladeTermine.mockResolvedValue([]);
+    const allein = zeige({ ...ZUGANG, ...lesefrist });
+    expect(await screen.findByRole('link', { name: /^Angefangener Fragebogen/ })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 2, name: 'Ihre Behandlung' })).toBeInTheDocument();
+    allein.unmount();
+
+    // Eine Begleitung füllt den Bogen nicht aus und verwirft ihn nicht.
+    ladeTermine.mockResolvedValue([vergangen]);
+    zeige({ ...BEGLEITUNG, ...lesefrist });
+    await screen.findByRole('heading', { level: 2, name: 'Die Behandlung' });
+    expect(screen.queryByRole('link', { name: /Angefangener Fragebogen/ })).toBeNull();
+  });
+
+  it('nennt den Entwurf vor der Lesefrist in der Hauptsache, nicht als Zeile', async () => {
+    ladeBefundbogen.mockResolvedValue([ENTWURF]);
+    zeige();
+    const hero = await screen.findByRole('region', { name: /^Fragebogen vor Ihrem/ });
+    expect(
+      within(hero).getByRole('link', { name: 'Fragebogen weiter ausfüllen' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Angefangener Fragebogen/ })).toBeNull();
   });
 
   it('zeigt die Lesefrist auch einer Begleitung, mit dem Namen der Person (ANN-809)', async () => {

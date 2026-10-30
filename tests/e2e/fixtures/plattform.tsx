@@ -509,6 +509,7 @@ const vergangeneTermine: Termin[] = [
 function termineDerBehandlung(): Termin[] {
   switch (seite) {
     case 'uebersicht-lesefrist':
+    case 'uebersicht-lesefrist-entwurf':
     case 'termine-lesefrist':
     case 'uebersicht-lesefrist-begleitung':
     case 'termine-lesefrist-begleitung':
@@ -710,7 +711,12 @@ const abo: Nachsorgeabo = {
 // (ANN-274, ANN-809).
 client.setQueryData(
   aboSchluessel(zugaenge[0]!.access_id),
-  ['uebersicht-lesefrist', 'termine-lesefrist', 'fragebogen-lesefrist'].includes(seite)
+  [
+    'uebersicht-lesefrist',
+    'uebersicht-lesefrist-entwurf',
+    'termine-lesefrist',
+    'fragebogen-lesefrist',
+  ].includes(seite)
     ? null
     : seite === 'abo-gekuendigt'
       ? {
@@ -1080,8 +1086,9 @@ if (seite === 'fragebogen-thema') {
     bogen(Object.assign({}, ...bisher) as Record<string, unknown>),
   ]);
 }
-// ANN-810: In der Lesefrist steht der angefangene Entwurf nur noch zum Verwerfen da.
-if (seite === 'fragebogen-lesefrist') {
+// ANN-810: In der Lesefrist steht der angefangene Entwurf nur noch zum Verwerfen da; die Übersicht
+// führt mit einer Zeile dorthin (ANN-818).
+if (seite === 'fragebogen-lesefrist' || seite === 'uebersicht-lesefrist-entwurf') {
   client.setQueryData(befundbogenSchluessel(zugaenge[0]!.access_id), [
     bogen(Object.assign({}, ...BOGEN_ANTWORTEN.slice(0, 4)) as Record<string, unknown>),
   ]);
@@ -2047,6 +2054,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
         ),
       };
     case 'uebersicht-lesefrist':
+    case 'uebersicht-lesefrist-entwurf':
     case 'termine-lesefrist':
       return {
         pfad: seite === 'termine-lesefrist' ? '/p/termine?bereich=treatment' : '/p',

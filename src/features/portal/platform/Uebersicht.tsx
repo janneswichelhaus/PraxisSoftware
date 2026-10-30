@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
 import { Aufgabenkarte } from '@/components/ui/Aufgabenkarte';
 import { Badge } from '@/components/ui/Badge';
+import { Inhaltsflaeche } from '@/components/ui/Card';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { HeroKarte } from '@/components/ui/HeroKarte';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
@@ -240,9 +241,18 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
     : !alleTermine.some((t) => t.status !== 'cancelled');
   // Die Lesefrist sagt der Server, auch für Vertretungen und solange ein Abo läuft (ANN-809).
   const lesefrist = inLesefrist(zugang);
+  const bogenId = fuerDiePlattform()[0]?.meta.id;
+  // Ungesendete Antworten lassen sich in der Lesefrist nur noch verwerfen; ohne Aufgabe führt diese
+  // Zeile zur Seite des Fragebogens (ANN-818). Eine Begleitung füllt ihn nicht aus.
+  const angefangen =
+    lesefrist &&
+    !begleitung &&
+    (bogen.data ?? []).some(
+      (b) => b.instrument_id === bogenId && b.status === 'entwurf' && b.source === 'platform',
+    );
   const haupt = hauptsache({
     zugang,
-    bogenId: fuerDiePlattform()[0]?.meta.id,
+    bogenId,
     boegen: bogen.data,
     checkins: checkin.data,
     plaene: plaene.data,
@@ -499,7 +509,7 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
   const rechts: ReactNode[] = [];
   if (lesefrist) {
     const zeitraum = vergangen(alleTermine, jetzt);
-    if (zeitraum) {
+    if (zeitraum || angefangen) {
       rechts.push(
         teil(
           <Section
@@ -508,9 +518,23 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
                 ? `${eigen ? 'Ihre' : 'Die'} Behandlung`
                 : `${eigen ? 'Ihr' : 'Das'} Training`
             }
-            rahmen
           >
-            <Rueckblick {...zeitraum} />
+            <div className="flex flex-col gap-4">
+              {zeitraum ? (
+                <Inhaltsflaeche>
+                  <Rueckblick {...zeitraum} />
+                </Inhaltsflaeche>
+              ) : null}
+              {angefangen ? (
+                <ListRows>
+                  <ListRow
+                    to={p('/befundbogen')}
+                    titel="Angefangener Fragebogen"
+                    meta="Nicht gesendet"
+                  />
+                </ListRows>
+              ) : null}
+            </div>
           </Section>,
           'rueckblick',
         ),

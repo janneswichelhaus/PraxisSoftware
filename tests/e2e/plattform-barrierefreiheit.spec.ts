@@ -35,6 +35,8 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   // mit Fehler - das Skelett hat keine Überschrift, nur seinen Satz.
   { seite: 'uebersicht-training', merkmal: GRUSS },
   { seite: 'uebersicht-lesefrist', merkmal: GRUSS },
+  // Mit angefangenem Fragebogen: eine Zeile führt dorthin (ANN-818).
+  { seite: 'uebersicht-lesefrist-entwurf', merkmal: GRUSS },
   { seite: 'uebersicht-fehler', merkmal: GRUSS },
   // DRP-EPIC-005: Der Einstieg ist ein geführter Ablauf im Fenster.
   { seite: 'einstieg', merkmal: /^Willkommen/, fenster: true },
