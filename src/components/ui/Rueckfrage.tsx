@@ -160,7 +160,7 @@ export function Rueckfrage({
       // öffnet sich meist in einem Abschnitt, der schon eine Karte ist; als
       // eigene Karte war sie der Kasten im Kasten. Sie bleibt keine
       // Schaltfläche (DS-001).
-      className={`border-line-strong bg-surface-sunken w-full border-l-4 py-3 pr-4 pl-4 ${
+      className={`border-line-strong bg-surface-sunken w-full border-l-4 py-3 pr-4 pl-4 text-left ${
         unterDerReihe ? 'order-last' : ''
       }`.trim()}
     >

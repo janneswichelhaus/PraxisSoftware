@@ -22,6 +22,7 @@ import {
   termineSchluessel,
   wuenscheSchluessel,
   ladeTermine,
+  ladeWuensche,
   terminAendernWuenschen,
   type Plattformzugang,
   type Termin,
@@ -154,16 +155,22 @@ function Aenderungsablauf({
         zeiten: art === 'change' ? wunschzeiten(wann.zeiten) : [],
         notiz,
       }),
-    onSuccess: (wunschId) => {
-      // Erst zur Liste, dann neu laden: Der neu geladene Termin trägt den Wunsch. Nach einer Absage
-      // nennt die Liste deren Eingang am Server, dazu reist die Kennung mit (ANN-811).
+    onSuccess: async (wunschId) => {
+      // Erst neu laden, dann zur Liste: Dort trägt der Termin schon den Wunsch, und nach einer
+      // Absage steht ihr Eingang am Server gleich oben (ANN-811). Scheitert das Laden, lädt die
+      // Liste selbst.
       freigeben();
+      await Promise.all([
+        queryClient.fetchQuery({
+          queryKey: wuenscheSchluessel(zugang.access_id),
+          queryFn: () => ladeWuensche(zugang.access_id),
+        }),
+        queryClient.invalidateQueries({ queryKey: termineSchluessel(zugang.access_id) }),
+      ]).catch(() => undefined);
       const rueckmeldung = art === 'cancel' ? `absage=${wunschId}` : 'gesendet=1';
       void navigate(`${terminliste}${terminliste.includes('?') ? '&' : '?'}${rueckmeldung}`, {
         replace: true,
       });
-      void queryClient.invalidateQueries({ queryKey: wuenscheSchluessel(zugang.access_id) });
-      void queryClient.invalidateQueries({ queryKey: termineSchluessel(zugang.access_id) });
     },
   });
 

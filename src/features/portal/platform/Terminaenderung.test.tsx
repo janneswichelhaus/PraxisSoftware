@@ -203,6 +203,30 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
     );
   });
 
+  it('lädt nach dem Senden erst neu und geht dann zur Liste: der Wunsch steht dort schon (ANN-811)', async () => {
+    const nutzer = userEvent.setup();
+    zeige(TERMIN, ABSAGEN);
+    await nutzer.click(await screen.findByRole('button', { name: 'Verstanden, weiter' }));
+    let geladen: (termine: Termin[]) => void = () => undefined;
+    ladeTermine.mockImplementationOnce(
+      () =>
+        new Promise<Termin[]>((aufloesen) => {
+          geladen = aufloesen;
+        }),
+    );
+    await nutzer.click(await screen.findByRole('button', { name: 'Absage senden' }));
+    await waitFor(() => expect(ladeTermine).toHaveBeenCalledTimes(2));
+    // Solange die Liste lädt, bleibt der Ablauf beim Senden stehen.
+    expect(screen.getByRole('button', { name: /Wird gesendet/ })).toBeInTheDocument();
+    expect(screen.getByTestId('ort')).toHaveTextContent(ABSAGEN);
+    act(() => geladen([{ ...TERMIN, open_request_kind: 'cancel' }]));
+    await waitFor(() =>
+      expect(screen.getByTestId('ort')).toHaveTextContent(
+        /^\/p\/termine\?bereich=treatment&absage=dddddddd-dddd-4ddd-8ddd-000000000001$/,
+      ),
+    );
+  });
+
   it('warnt unter 24 Stunden mit offener Regel und noch einmal über „Absage senden“ (ADR-018 Punkt 8)', async () => {
     const nutzer = userEvent.setup();
     zeige(KURZFRISTIG, ABSAGEN);

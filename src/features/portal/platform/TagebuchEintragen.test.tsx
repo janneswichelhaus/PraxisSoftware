@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
@@ -177,6 +177,33 @@ describe('Eintragen ins Tagebuch (Handoff 2026-10-29, 5.7)', () => {
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('„Haferflocken“ eingetragen.'),
     );
+  });
+
+  it('zeigt das Speichern am „+“ und trägt über den Haken nichts nach (ANN-813)', async () => {
+    const nutzer = userEvent.setup();
+    let fertig: (wert?: unknown) => void = () => undefined;
+    tagebuchEintragen.mockImplementationOnce(
+      () =>
+        new Promise((aufloesen) => {
+          fertig = aufloesen;
+        }),
+    );
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    const plus = () => screen.getByRole('button', { name: /^Haferflocken eintragen \(Portion/ });
+    await screen.findByRole('button', { name: /^Haferflocken eintragen \(Portion/ });
+    await nutzer.click(plus());
+    // Beim Speichern gesperrt gezeichnet, der Fokus bleibt; ein zweiter Tipp geht nicht durch.
+    await waitFor(() => expect(plus()).toHaveAttribute('aria-disabled', 'true'));
+    expect(plus()).toHaveFocus();
+    await nutzer.click(plus());
+    act(() => fertig());
+    await waitFor(() => expect(plus().querySelector('svg')).not.toBeNull());
+    expect(plus()).not.toHaveAttribute('aria-disabled');
+    // Steht der Haken, ist eingetragen: Ein Tipp darauf trägt nicht noch einmal ein.
+    await nutzer.click(plus());
+    await act(() => new Promise((weiter) => setTimeout(weiter, 50)));
+    expect(tagebuchEintragen).toHaveBeenCalledTimes(1);
+    expect(plus().querySelector('svg')).not.toBeNull();
   });
 
   it('trägt aus dem Fenster ein, schließt es und zeigt den Haken an der Zeile (ANN-813)', async () => {

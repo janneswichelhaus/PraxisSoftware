@@ -364,10 +364,16 @@ function Schnellzeile({
                 beschriftung={`${s.food.name} eintragen (${text})`}
                 variant="secondary"
                 className={GESPERRT}
-                {...(ohneNetz ? { 'aria-disabled': true, 'aria-describedby': ohneNetz } : {})}
+                {...(ohneNetz
+                  ? { 'aria-disabled': true, 'aria-describedby': ohneNetz }
+                  : eintragen.isPending
+                    ? { 'aria-disabled': true }
+                    : {})}
                 // Ein Riegel statt `disabled`: Ein gesperrter Knopf verlöre den Fokus (ANN-813).
+                // Steht der Haken, ist eingetragen; ein Tipp darauf trägt nichts nach.
                 onClick={() => {
-                  if (!ohneNetz && !eintragen.isPending) eintragen.mutate(menge.angabe);
+                  if (!ohneNetz && !eintragen.isPending && !bestaetigt)
+                    eintragen.mutate(menge.angabe);
                 }}
               >
                 {bestaetigt ? (
