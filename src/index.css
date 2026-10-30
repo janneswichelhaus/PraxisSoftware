@@ -403,6 +403,8 @@
   /* Titel der Hero-Karte höchstens 11 Zeichenbreiten (Handoff 2026-10-22,
      Abschnitt 3): in em, damit die Grenze mit der Schrift wächst. */
   --container-hero-titel: 11em;
+  /* Der Satz im Leerzustand höchstens 30 Zeichenbreiten (Handoff Selbstauskunft, Abschnitt 3). */
+  --container-leersatz: 30ch;
   /* Maße der Übungen (Handoff 2026-10-24, Abschnitte 3 und 4): die
      Wochenleiste höchstens 560 breit, der Kopf der Durchführung am Rechner
      bis 960, ihr Hauptknopf dort 360. In rem, damit sie mitwachsen. */

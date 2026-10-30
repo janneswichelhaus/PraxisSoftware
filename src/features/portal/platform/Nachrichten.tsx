@@ -422,7 +422,7 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
     return (
       <>
         {zurueckLink}
-        <EmptyState inKarte title="Diese Nachricht gibt es hier nicht." />
+        <EmptyState markenform title="Diese Nachricht gibt es hier nicht." />
       </>
     );
   }

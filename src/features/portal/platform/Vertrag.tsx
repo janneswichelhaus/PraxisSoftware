@@ -56,8 +56,8 @@ export function Vertrag({ zugang }: { zugang: Plattformzugang }) {
       ) : null}
       {vertrag.data === null ? (
         <EmptyState
-          inKarte
-          title="Hier steht kein Vertrag, den Sie in Ihrem Konto geschlossen haben."
+          markenform
+          title="Kein Vertrag aus Ihrem Konto"
           description="Einen Vertrag aus der Praxis bekommen Sie dort."
         />
       ) : null}

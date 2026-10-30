@@ -51,7 +51,13 @@ export function Abo({ zugang }: { zugang: Plattformzugang }) {
           />
         </div>
       ) : null}
-      {abo.data === null ? <EmptyState inKarte title="Sie haben kein Nachsorge-Abo." /> : null}
+      {abo.data === null ? (
+        <EmptyState
+          markenform
+          title="Zurzeit kein Nachsorge-Abo"
+          description="Vereinbaren Sie ein Nachsorge-Abo mit Ihrer Praxis, finden Sie es hier."
+        />
+      ) : null}
       {abo.data ? <Stand zugang={zugang} abo={abo.data} /> : null}
     </>
   );

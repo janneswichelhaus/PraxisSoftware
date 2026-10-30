@@ -74,7 +74,11 @@ export function Angebot({ zugang }: { zugang: Plattformzugang }) {
             </div>
           ) : null}
           {angebot.data === null ? (
-            <EmptyState inKarte title="Zurzeit liegt kein Angebot der Praxis vor." />
+            <EmptyState
+              markenform
+              title="Zurzeit kein Angebot"
+              description="Bietet Ihnen die Praxis nach der Behandlung ein Training an, finden Sie das Angebot hier."
+            />
           ) : null}
           {angebot.data ? (
             <Formular zugang={zugang} angebot={angebot.data} onGebucht={setBestaetigung} />

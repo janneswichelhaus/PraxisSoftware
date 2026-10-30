@@ -98,12 +98,15 @@ describe('Dokumente (POR-014)', () => {
   it('sagt ohne Freigabe, wer entscheidet, und im Training, dass es keine gibt', async () => {
     ladeDokumente.mockResolvedValue([]);
     renderWithProviders(<Dokumente zugang={ZUGANG} />, '/p/dokumente');
-    expect(await screen.findByText(/noch kein Dokument für Sie freigegeben/)).toBeInTheDocument();
+    expect(await screen.findByText('Noch kein Dokument')).toBeInTheDocument();
+    expect(
+      screen.getByText('Gibt Ihre Therapeut:in ein Dokument für Sie frei, finden Sie es hier.'),
+    ).toBeInTheDocument();
     renderWithProviders(
       <Dokumente zugang={{ ...ZUGANG, relationship_kind: 'training' }} />,
       '/p/dokumente?bereich=training',
     );
-    expect(screen.getByText('Im Training gibt es keine Dokumente.')).toBeInTheDocument();
+    expect(screen.getByText('Keine Dokumente im Training')).toBeInTheDocument();
   });
 
   it('meldet einen gescheiterten Abruf als Satz', async () => {

@@ -316,17 +316,34 @@ describe('Leerzustand mit Markenform', () => {
     expect(screen.getByText('Die Praxis trägt Ihren ersten Termin hier ein.')).toBeInTheDocument();
     const rad = container.querySelector('[data-laufrad]')!;
     expect(rad).toHaveAttribute('aria-hidden', 'true');
+    // Wie im Entwurf: Kreis 96, mittig, Titel 22, der Satz leise in höchstens 30ch (ANN-803).
     expect(rad.parentElement!.className).toContain('bg-surface-inverse');
-    // Ohne `inKarte` keine eigene Karte - sonst Kasten im Kasten.
+    expect(rad.parentElement!.className).toContain('size-24');
     const wurzel = rad.parentElement!.parentElement!;
-    expect(wurzel.className).toContain('flex-col');
+    expect(wurzel.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['flex-col', 'items-center', 'text-center', 'px-4', 'py-8']),
+    );
     expect(wurzel.className).not.toContain('rounded-card');
+    expect(screen.getByText('Noch keine Termine').className).toContain('text-abschnitt');
+    expect(screen.getByText('Die Praxis trägt Ihren ersten Termin hier ein.').className).toContain(
+      'max-w-leersatz',
+    );
   });
 
-  it('steht mit inKarte in einer Karte', () => {
-    const { container } = zeige(<EmptyState markenform inKarte title="Noch keine Termine" />);
+  it('steht auch mit inKarte ohne Karte, der Weg mittig darunter', () => {
+    const { container } = zeige(
+      <EmptyState
+        markenform
+        inKarte
+        title="Noch keine Termine"
+        aktion={<a href="/p/termine">Zu den Terminen</a>}
+      />,
+    );
     const rad = container.querySelector('[data-laufrad]')!;
-    expect(rad.parentElement!.parentElement!.className).toContain('rounded-card');
+    expect(rad.parentElement!.parentElement!.className).not.toContain('rounded-card');
+    expect(
+      screen.getByRole('link', { name: 'Zu den Terminen' }).parentElement!.className,
+    ).toContain('justify-center');
   });
 
   it('setzt mit zeichen statt des Laufrads das Zeichen auf die Vertiefung (Handoff 2026-10-24, 5.1)', () => {
@@ -343,7 +360,7 @@ describe('Leerzustand mit Markenform', () => {
     expect(kreis).toHaveAttribute('aria-hidden', 'true');
     expect(kreis.className).toContain('bg-surface-sunken');
     expect(kreis.className).not.toContain('bg-surface-inverse');
-    expect(kreis.parentElement!.className).toContain('rounded-card');
+    expect(kreis.parentElement!.className).not.toContain('rounded-card');
   });
 
   it('bleibt ohne markenform, wie es war', () => {

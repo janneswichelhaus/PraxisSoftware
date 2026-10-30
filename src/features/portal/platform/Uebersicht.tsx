@@ -745,7 +745,6 @@ function Hauptsachekarte({
         <div className={markenmoment ? 'hero-erscheint' : undefined}>
           <EmptyState
             markenform
-            inKarte
             title="Gerade ist nichts zu tun."
             description="Zurzeit ist kein Termin vereinbart."
           />

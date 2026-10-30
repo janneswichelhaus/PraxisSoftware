@@ -264,6 +264,17 @@ function Liste({
   const zielVon = (t: Termin) => mit(`${PLATTFORM_PFAD}/termine/${t.id}`);
 
   const offenerWunsch = naechster ? terminZustand(naechster) : null;
+  const knopf = lesefrist ? null : (
+    <Wunschknopf
+      pfad={mit(`${PLATTFORM_PFAD}/termine/wunsch`)}
+      verbunden={verbunden}
+      zweit={nurWunsch}
+      breit={!rechner || zweispaltig}
+      satzId={ohneNetzId}
+    />
+  );
+  // Ohne Termin ist „Termin wünschen“ der Weg des Leerzustands, gleich unter seinem Satz (ANN-803).
+  const knopfImLeerzustand = !naechster && !nurWunsch && !lesefrist;
   const hauptsache = naechster ? (
     <HeroKarte
       etikett={heroEtikett(
@@ -282,7 +293,6 @@ function Liste({
     // Der Wunsch ist gesendet: die Uhr auf der Vertiefung statt des Laufrads.
     <EmptyState
       markenform
-      inKarte
       zeichen={<Terminsymbol zeichen="uhr" />}
       title="Ihr Wunsch ist bei der Praxis."
       description="Sie meldet sich bei Ihnen. Danach steht Ihr Termin hier."
@@ -290,18 +300,9 @@ function Liste({
   ) : lesefrist ? null : (
     <EmptyState
       markenform
-      inKarte
       title="Zurzeit ist kein Termin vereinbart."
       description="Über „Termin wünschen“ sagen Sie der Praxis, wann es Ihnen passt."
-    />
-  );
-  const knopf = lesefrist ? null : (
-    <Wunschknopf
-      pfad={mit(`${PLATTFORM_PFAD}/termine/wunsch`)}
-      verbunden={verbunden}
-      zweit={nurWunsch}
-      breit={!rechner || zweispaltig}
-      satzId={ohneNetzId}
+      aktion={knopf}
     />
   );
   // Sind alle kommenden abgesagt, gibt es keinen „weiteren“.
@@ -414,7 +415,7 @@ function Liste({
       {/* Vor dem Vergangenen, ohne Rollen erreichbar: Der Satz der Lesefrist verweist hierher. */}
       {lesefrist ? <PraxisErreichen zugang={zugang} mit={mit} lesefrist /> : null}
       {weitereAbschnitt}
-      {nurWunsch ? null : knopf}
+      {nurWunsch || knopfImLeerzustand ? null : knopf}
       {wuenscheAbschnitt}
       {nurWunsch ? knopf : null}
       {woche}

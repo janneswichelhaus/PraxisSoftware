@@ -102,7 +102,6 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
         plaene.data.plans.length === 0 ? (
           <div className="[[data-rechner]_&]:max-w-spalte">
             <EmptyState
-              inKarte
               markenform
               title="Noch kein Plan"
               description={
@@ -1108,7 +1107,7 @@ export function PlanblattPlattform({
           onErneut={() => plaene.refetch()}
         />
       ) : !plan ? (
-        <EmptyState title="Diesen Plan gibt es hier nicht." />
+        <EmptyState markenform title="Diesen Plan gibt es hier nicht." />
       ) : (
         <div
           className={`bg-surface-sunken rounded-card max-[23rem]:bg-transparent max-[23rem]:p-0 print:p-0 ${rechner ? 'p-6' : 'p-3'}`}

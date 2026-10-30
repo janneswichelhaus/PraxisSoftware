@@ -59,7 +59,11 @@ export function Paket({ zugang }: { zugang: Plattformzugang }) {
       {pakete.data ? <MeinePakete pakete={pakete.data} /> : null}
       {angebote.data ? <Angebote angebote={angebote.data} /> : null}
       {angebote.data === null ? (
-        <EmptyState inKarte title="Für diesen Bereich gibt es keine Pakete." />
+        <EmptyState
+          markenform
+          title="Keine Trainingspakete"
+          description="Trainingspakete gibt es nur im Training."
+        />
       ) : null}
     </>
   );

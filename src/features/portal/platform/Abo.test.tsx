@@ -120,9 +120,13 @@ describe('Nachsorge-Abo auf der Plattform (ANG-003)', () => {
     expect(screen.getByText('Danach können Sie hier noch 30 Tage lesen.')).toBeInTheDocument();
   });
 
-  it('sagt ohne Abo, dass es keins gibt', async () => {
+  it('sagt ohne Abo mit Markenform, dass es keins gibt und wie es dazu kommt', async () => {
     ladeAbo.mockResolvedValue(null);
-    renderWithProviders(<Abo zugang={ZUGANG} />);
-    expect(await screen.findByText('Sie haben kein Nachsorge-Abo.')).toBeInTheDocument();
+    const { container } = renderWithProviders(<Abo zugang={ZUGANG} />);
+    expect(await screen.findByText('Zurzeit kein Nachsorge-Abo')).toBeInTheDocument();
+    expect(
+      screen.getByText('Vereinbaren Sie ein Nachsorge-Abo mit Ihrer Praxis, finden Sie es hier.'),
+    ).toBeInTheDocument();
+    expect(container.querySelector('[data-laufrad]')).not.toBeNull();
   });
 });
