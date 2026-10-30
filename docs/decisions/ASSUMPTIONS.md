@@ -868,9 +868,9 @@ Datenschutz · entschieden (Jannes) · 2026-10-27 · Jannes · Prüfpaket · Wie
 Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung\
 **Annahme.** Die Praxis erteilt die Auskunft auch je Trainingsverhältnis: nur owner, auf Knopfdruck, als eigene Kopie ohne interne Kennungen. Geprüft und protokolliert wird sie wie die zur Akte, ein Eintrag `patient_record.exported` je Kopie. **Grundlage.** Art. 15 DSGVO; ADR-021 (eigenes Rechtsverhältnis mit eigener Kopie); Entscheidung Jannes 2026-10-18. **Anker.** `public.export_training_record`. **Rücknahme.** Mit der Auskunft zur Akte zusammenlegen · Aufwand `mittel`.
 
-### ANN-814 — Widerruf zu Fotos: Arbeitshilfen fallen, Dokumentationsfotos bleiben in der Akte
+### ANN-814 — Widerruf zu Fotos trifft nur Arbeitshilfen
 Datenschutz · entschieden (Jannes) · 2026-10-30 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)\
-**Annahme.** Zum Widerruf der Fotos sagt die Plattform: „Die Praxis löscht dann sofort alle Fotos, die als Arbeitshilfe entstanden sind; Fotos der Behandlungsdokumentation bleiben in der Akte.“ Fassung `2026-11`, ältere weist der Server ab (ANN-262). **Grundlage.** ADR-017 Punkte 36, 45 und 46; Art. 7 Abs. 3, Art. 17 Abs. 3 lit. b DSGVO; BEF-142; Entscheidung Jannes 2026-10-30. **Anker.** `EINWILLIGUNGSTEXTE` in `src/features/portal/platform/einwilligungstexte.ts`. **Rücknahme.** Wortlaut und Fassung an beiden Stellen · Aufwand `klein`.
+**Annahme.** Zum Widerruf der Fotos: „Die Praxis löscht dann sofort alle Fotos, die als Arbeitshilfe entstanden sind; Fotos der Behandlungsdokumentation bleiben in der Akte.“ Fassung `2026-11` (ANN-262). **Grundlage.** ADR-017 Punkte 36 und 46; Art. 7 Abs. 3, Art. 17 Abs. 3 lit. b DSGVO; Jannes 2026-10-30. **Anker.** `EINWILLIGUNGSTEXTE` in `src/features/portal/platform/einwilligungstexte.ts`. **Rücknahme.** Wortlaut und Fassung an beiden Stellen · Aufwand `klein`.
 
 ## Fachregeln
 ### ANN-042 — Ausgeschöpft ist eine Verordnung, wenn ihre möglichen Termine genutzt sind
@@ -1225,10 +1225,6 @@ Praxisprozess · entschieden (Jannes) · 2026-10-18 · Jannes · erledigt · Wie
 Technik · entschieden (Jannes) · 2026-10-19 · Jannes · erledigt · Wiedervorlage: —\
 **Regel.** BLS und der Open-Food-Facts-Auszug liegen in `public.food_catalog` ohne `organization_id`, ein Nachschlagewerk ohne Personenbezug für jede Praxis; eigene Lebensmittel von Praxis und Person tragen die Organisation. Kein Tabellenrecht, gelesen wird nur über die Suchfunktionen. **Grundlage.** Ausnahme von ADR-003; Entscheidung Jannes 2026-10-19. **Anker.** `public.food_catalog`.
 
-### ANN-662 — Tagebucherinnerung: eine je Mahlzeit und Tag, außerhalb der Wochengrenze
-Praxisprozess · in ADR überführt · 2026-10-19 · ADR-024 Punkt 15 · erledigt · Wiedervorlage: —\
-**Regel.** Die Art `nutrition_diary_reminder` geht höchstens einmal je Mahlzeit, Tag und Weg und zählt nicht in die Wochengrenze. Was in die Ruhezeit fiele oder beim Abholen älter als zwei Stunden ist, entfällt; die Praxis sieht die Wahl nicht, auch nicht in ihrer Auskunft (ANN-344). **Grundlage.** ADR-024 Punkt 15; ADR-027 Punkt 12. **Anker.** `app.notification_drop_reason`.
-
 ### ANN-673 — Panne: Rufnummern der Stelle, letzte Behandlung bleibt eine Frage
 Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 **Regel.** Werkstatt und Teamleitung stehen in der Standortvorlage mit der Rufnummer der Stelle, nie einer Person; solange ein Platzhalter steht, zeigt die Panne „noch nicht hinterlegt“ statt eines Anrufknopfs. Der Ruhetag gilt nach dem Wochentag in der Zeit der Praxis; „Letzte Behandlung am Tag?“ bleibt eine Frage. **Grundlage.** ANN-554. **Anker.** `zustaendigeRufnummer` in `src/features/fleet/standortvorlage.ts`.
@@ -1510,6 +1506,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-659 | Lebensmittelkatalog: Import nur durch den Betrieb, Zurückziehen statt Löschen, Startportionen | Technik · entschieden (Jannes) | `app.finish_food_catalog_import` |
 | ANN-660 | Tagebucheintrag trägt den Stand des Lebensmittels | Technik · offen | `public.nutrition_diary_entries` |
 | ANN-661 | Wasser je Tag, ein Glas sind 250 ml | Praxisprozess · offen | `app.nutrition_diary_rule` |
+| ANN-662 | Tagebucherinnerung: eine je Mahlzeit und Tag, außerhalb der Wochengrenze | Praxisprozess · in ADR überführt (ADR-024 Punkt 15) | `app.notification_drop_reason` in `supabase/migrations/20261225000000_basis.sql` |
 | ANN-663 | Richtung der Bewegung: waagerecht gleichrangig, senkrecht eine Ebene | Technik · entschieden (Jannes) | `src/components/ui/bewegung.ts` |
 | ANN-664 | Ernährungsberatung als Terminanlass neben dem Kontext, abgerechnet mit dem Haken | Praxisprozess · offen | Constraint `appointments_nutrition_occasion` |
 | ANN-666 | Farbe je Person im Teamchat: vergeben, selbst gewählt, doppelt erlaubt | Praxisprozess · offen | `app.next_staff_color()` |
@@ -1615,8 +1612,8 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-806 | Absagewunsch mit Tag und Uhrzeit des Eingangs, auf der Uhr des Geräts | Technik · offen | `absageEingegangen` in `src/features/portal/platform/termintexte.ts` |
 | ANN-807 | Lesefrist: Wünsche am Server abgewiesen, Absage per Anruf, Zurückziehen bleibt | Technik · offen | `request_platform_appointment` in `supabase/migrations/20261225190000_lesefrist_terminwuensche.sql` |
 | ANN-808 | Fragebogen: Das Praxisfeld schreibt und sieht die Plattform nicht; es bleibt, außer beim Verwerfen | Technik · offen | `save_platform_questionnaire_response` in `supabase/migrations/20261225200000_fragebogen_praxisfeld.sql` |
-| ANN-809 | Lesefrist vom Server für jeden Zugang; Vertretung liest den Satz mit Namen | Technik · entschieden (Jannes) | `inLesefrist` in `src/features/portal/platform/hauptsache.ts` |
-| ANN-810 | Fragebogen in der Lesefrist: Speichern und Senden abgewiesen, Verwerfen bleibt | Technik · entschieden (Jannes) | `EntwurfVerwerfen` in `src/features/portal/platform/Befundbogen.tsx` |
-| ANN-811 | Termine: Schritt 2 unter 24 h wie Schritt 1, nach der Absage ihr Eingang, Hero „Ansehen, ändern, absagen“ | Praxisprozess · entschieden (Jannes) | `heroWeg` in `src/features/portal/platform/termintexte.ts` |
-| ANN-812 | Gewohnheiten: nur der feste Satz, ohne Gebrauchsanweisung davor | Praxisprozess · entschieden (Jannes) | `Gewohnheiten` in `src/features/portal/platform/Gewohnheiten.tsx` |
-| ANN-813 | Tagebuch: Bestätigung am Eintrag (Haken 3 s, Satz für Vorlesesoftware), der Fokus bleibt am „+“ | Technik · entschieden (Jannes) | `BESTAETIGUNG_MS` in `src/features/portal/platform/TagebuchEintragen.tsx` |
+| ANN-809 | Lesefrist vom Server für jeden Zugang, bei Vertretungen mit Namen | Technik · entschieden (Jannes) | `inLesefrist` in `src/features/portal/platform/hauptsache.ts` |
+| ANN-810 | Fragebogen in der Lesefrist: kein Speichern und Senden, Verwerfen bleibt | Technik · entschieden (Jannes) | `EntwurfVerwerfen` in `src/features/portal/platform/Befundbogen.tsx` |
+| ANN-811 | Termine: Schritt 2 wie Schritt 1, Eingang nach der Absage, Hero „Ansehen, ändern, absagen“ | Praxisprozess · entschieden (Jannes) | `heroWeg` in `src/features/portal/platform/termintexte.ts` |
+| ANN-812 | Gewohnheiten: nur der feste Satz | Praxisprozess · entschieden (Jannes) | `Gewohnheiten` in `src/features/portal/platform/Gewohnheiten.tsx` |
+| ANN-813 | Tagebuch: Haken am Eintrag, Satz für Vorlesesoftware, Fokus bleibt am „+“ | Technik · entschieden (Jannes) | `BESTAETIGUNG_MS` in `src/features/portal/platform/TagebuchEintragen.tsx` |

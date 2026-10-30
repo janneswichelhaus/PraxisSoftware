@@ -1,5 +1,5 @@
 # Roadmap
-Version 7.23 · Stand 2026-10-27 · **in Kraft**
+Version 7.24 · Stand 2026-10-30 · **in Kraft**
 
 Reihenfolge der Umsetzung; sie begründet keinen Scope (der entsteht in der Spec), ist kein Auftrag
 (die nächste Aufgabe steht in [`../STATUS.md`](../STATUS.md)) und überschreibt nichts; fehlt eine
@@ -9,12 +9,8 @@ Voraussetzung, gelten §15.1 und §15.2. `IDEA-`Kennungen nennen die Herkunft. G
 ## Aufräumen (Auftrag Jannes 2026-10-25, Entscheidungen 2026-10-26 und 2026-10-27)
 Kein Neustart: Größe, Kopplung und Kommentarlast sinken schrittweise, je eine PR. Bauplan war die
 Tiefenanalyse (`git show eaae99b:docs/development/TIEFENANALYSE.md`); den Stand misst `/aufraeumen`.
-Gemergt sind die Schritte 1 bis 4b und 3b (#308 bis #322, je ein Posten in der Fortschrittstabelle).
-**Schritt 5:** Doku unter 10.000 Zeilen, Git als Archiv, Prüfpaket mit 208 Einträgen und Gate für
-den Zusatz (Jannes 2026-10-26); Teil A (#323) und Teil B mit ANN-662 und ANN-541 (#324) gemergt,
-Teil C mit dem Abschluss des Blocks und der Gesamtgrenze im Gate in #325.
-
-Die sieben **Fehler aus der Tiefenanalyse** sind behoben (#314 bis #318). Ohne Produktionsaufrufer
+Die Schritte 1 bis 5 sind gemergt (#308 bis #325), mit Git als Archiv und der Gesamtgrenze der Doku
+im Gate (Jannes 2026-10-26). Ohne Produktionsaufrufer
 bleiben bewusst (Jannes 2026-10-26): `list_patient_treatment_evidence` (Behandlungsnachweis, §4.4,
 ADR-004 Punkt 4; offen ist ihre Oberfläche für Streitfälle außerhalb der Praxis), die drei
 Legal-Hold-Funktionen (ADR-008), `reapply_deletion_journal`, `bootstrap_practice`, die zwei
@@ -35,9 +31,9 @@ Reihenfolge und Abgleich mit Lauf 2 (Praxis-App): `lauf-1-umsetzung.md` im selbe
 
 | Schritt | Inhalt | Vorgabe | Stand |
 | --- | --- | --- | --- |
-| 5 Nachrichten | DR-137 bis DR-139; Wortlaut des Notfallhinweises bleibt | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/05-nachrichten.md` | Handoff fehlt |
-| 6 Unterlagen und Verträge | DR-147 bis DR-149, DR-162; Vertragsabschluss als geführter Ablauf, Widerrufsbelehrung unverändert | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/06-unterlagen-vertraege.md` | Handoff fehlt |
-| 7 Ich und Datenschutz | DR-151, DR-152; Einwilligungen ohne Drängen | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/07-ich-datenschutz.md` | Handoff fehlt |
+| 5 Nachrichten | DR-137 bis DR-139; Wortlaut des Notfallhinweises bleibt | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/05-nachrichten.md` | Leinwand bei Jannes |
+| 6 Unterlagen und Verträge | DR-147 bis DR-149, DR-162; Vertragsabschluss als geführter Ablauf, Widerrufsbelehrung unverändert | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/06-unterlagen-vertraege.md` | Leinwand bei Jannes |
+| 7 Ich und Datenschutz | DR-151, DR-152; Einwilligungen ohne Drängen | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/07-ich-datenschutz.md` | Leinwand bei Jannes |
 
 ## Ziel und Umfang
 **Die Praxis eröffnet im Juli 2027**, der einzige Termin (2026-09-05), ohne Vorgängersystem und
@@ -391,7 +387,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | Aufräumen Schritt 5, Teil A: Archiv, Chroniken und erledigte Handoffs nach Git, neun Entscheidungen gesichert, Befunde nur noch offen | fertig | 2026-10-27 | #323 | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Freigabe Git als Archiv vom 26.10. |
 | B | Aufräumen Schritt 5, Teil B: Annahmenregister verdichtet, Prüfpaket mit 208 Einträgen, Regel F im Doku-Gate | fertig | 2026-10-27 | #324 | — | Auftrag Jannes 27.10.2026, ROADMAP 7.22; Tiefenanalyse Punkte 3 und 4 |
 | B | Aufräumen Schritt 5, Teil C: ADRs, Prinzipien und Prozessdoku verdichtet, Gesamtgrenze im Doku-Gate, Abschluss des Blocks | fertig | 2026-10-27 | #325 | — | Auftrag Jannes 27.10.2026; Tiefenanalyse 5c Schritte 3 bis 6 |
-| B | CI-Beschleunigung: Lint in zwei Läufen je 3 GB, E2E-Einrichtung ohne fremde Schriften, Studio und zweiten Reset, vier Teile | fertig | 2026-10-28 | #326 | — | Zusatzauftrag Jannes 27.10.2026; Abkürzung für reine Doku offen (ADR-013 Punkt 2) |
+| B | CI-Beschleunigung: Lint in zwei Läufen je 3 GB, E2E-Einrichtung ohne fremde Schriften, Studio und zweiten Reset, vier Teile | fertig | 2026-10-28 | #326 | — | Zusatzauftrag Jannes 27.10.2026 |
 | B | DRP-EPIC-011 Plattform: Bausteine der Termine aus dem Design-Review (Schritt 3a) | gesichtet | 2026-10-28 | #327 | 2026-10-28 | Auftrag Jannes 28.10.2026; Handoff Termine 9.1, Fragen wie empfohlen; ANN-764 bis ANN-771; BEF-220 teilweise; nur Oberfläche |
 | B | DRP-EPIC-012 Plattform: Liste der Termine aus dem Design-Review (Schritt 3b) | gesichtet | 2026-10-28 | #328 | 2026-10-29 | Auftrag Jannes 28.10.2026; Handoff Termine 5.1, 5.5, 5.6, 9.2, Fragen wie empfohlen; ANN-772 bis ANN-777; BEF-220 erledigt; nur Oberfläche |
 | B | Bildstrecke: Netzruhe nach einem Wechsel in der Anwendung, offene Anfragen je Dokument | fertig | 2026-10-28 | #329 | — | Auftrag Jannes 28.10.2026; Befund „Bildstrecke“ vom 28.10. behoben; nur Werkzeug, keine Anwendungsdatei |
@@ -399,6 +395,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | DRP-EPIC-014 Plattform: Abläufe zum Termin aus dem Design-Review (Schritt 3d) | gesichtet | 2026-10-29 | #331 | 2026-10-29 | Auftrag Jannes 28.10.2026; Handoff Termine 5.3 und 5.4; ANN-782 bis ANN-785; nur Oberfläche |
 | B | DRP-EPIC-015 Plattform: Selbstauskunft und Tagebuch aus dem Design-Review (Schritt 4a bis 4e) | gesichtet | 2026-10-29 | #333 | 2026-10-30 | Auftrag Jannes 29.10.2026; Handoff in der Leinwand, Fragen wie empfohlen; nur Oberfläche |
 | B | DRP-EPIC-016 Plattform: Aufträge nach Schritt 4 | fertig | 2026-10-30 | Branch ccr-4b4adbb9-mbg1ac | — | ANN-803 bis ANN-808; BEF-222 erledigt; Pfad A |
+| B | DRP-EPIC-017 Plattform: Lesefrist vom Server, Antworten zu #326, #333, #334 | fertig | 2026-10-30 | Branch ccr-5fca130a-l8m9q8 | — | ANN-809 bis ANN-814; ADR-013 Fassung 8; Pfad A |
 | B | BEF-223 Zeitumstellung: doppelte Ortszeit gilt als die frühere | fertig | 2026-10-29 | #332 | — | Pfad A, ANN-786 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
@@ -436,7 +433,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 ## Änderungsvermerk
 | Version | Datum | Änderung |
 | --- | --- | --- |
-| 7.23 | 2026-10-27 | **Aufräumen 5, Teil C:** auf Ziel, Kette, Meilensteine und offene Zeilen verdichtet. Gebaute Zuschnitte, die Tabelle der Aufräumschritte, „Sessions starten“, „Definition of Done“, „Arbeitsweise und Budget“ und „Wochenupdate“ entfallen; ihre Regeln stehen in `CLAUDE.md` und den Skills, die Planung in `/weiter`. Externe Prüfungen nach `OPEN_DECISIONS.md`; MAP-LOOPS, der FRB-Plan, DSN-001 und das Design-Review Lauf 1 als Zeilen mit `git show`. Kette der Blöcke unverändert. |
+| 7.24 | 2026-10-30 | Aufräumen verdichtet; Schritte 5 bis 7 warten auf die Leinwände (Claude Design). |
 
-Vermerke bis 7.22: `git show 9452575:docs/development/ROADMAP.md`; vor 7.0:
-`git show eb43569:docs/development/ROADMAP-CHRONIK.md`.
+Vermerk 7.23: `git show 6e6e37e:docs/development/ROADMAP.md`; bis 7.22: `git show
+9452575:docs/development/ROADMAP.md`; vor 7.0: `git show eb43569:docs/development/ROADMAP-CHRONIK.md`.

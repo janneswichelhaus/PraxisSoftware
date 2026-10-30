@@ -18,11 +18,10 @@ Release-Kadenz; Abdeckungsziele und Testarten; Schwellen und Fristen für Befund
    (6) Berechtigungs-/RLS-Tests, sobald entsprechende Policies existieren, (7) Secret Scanning, (8)
    Dependency Vulnerability Scan, (9) statische Sicherheitsanalyse, (10) Prüfung der Dokumentation
    (Fassung 3): Obergrenzen der Steuerungsdokumente, ein Anker im Code je Annahme des Registers,
-   keine toten relativen Verweise. **Reine Dokumentation** (Fassungen 5 und 8): Ändert oder ergänzt
-   ein Pull Request nur Markdown unter `docs/` oder im Wurzelverzeichnis, das kein Test liest, und
-   löscht nichts (`scripts/nur-doku.mjs` in der Fassung des Zielbranchs), laufen im Pull Request nur
-   das Format der geänderten Dateien aus (1), (7), (8), (10) und das Migrationen-Gate; Lint mit (9),
-   Typecheck (2) und (3) bis (6), deren Ergebnis dort das von `main` ist, laufen nach dem Merge auf
+   keine toten relativen Verweise. **Reine Dokumentation** (Fassung 8): Ändert oder ergänzt ein Pull
+   Request nur Markdown unter `docs/` oder im Wurzelverzeichnis, das kein Test liest, und löscht
+   nichts (`scripts/nur-doku.mjs` in der Fassung des Zielbranchs), laufen dort nur das Format der
+   Änderung aus (1), (7), (8), (10) und das Migrationen-Gate; der Rest läuft nach dem Merge auf
    `main`. Im Zweifel (die Erkennung scheitert, eine Datei passt nicht) läuft alles.
 3. **Der `main`-Branch wird geschützt.**
 4. **Force Push auf `main` ist nicht erlaubt.**
@@ -97,5 +96,5 @@ Release-Kadenz; Abdeckungsziele und Testarten; Schwellen und Fristen für Befund
 - Fassung 5 (2026-10-16, Jannes): Pull Requests nur mit Doku ohne Tests, Build, Datenbankprüfungen.
 - Fassung 6 (2026-10-27, redaktionell): RPC-Auslöser `src/features/**/api.ts` (Domänenordner).
 - Fassung 7 (2026-10-27, redaktionell): Verweise in Punkt 9 auf `CLAUDE.md` und Skills.
-- Fassung 8 (2026-10-30, Jannes): reine Doku ohne Lint und Typecheck, Format nur der Änderung.
+- Fassung 8 (2026-10-30, Jannes): reine Doku auch ohne Lint und Typecheck.
 - Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.
