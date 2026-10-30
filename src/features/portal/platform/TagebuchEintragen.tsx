@@ -98,7 +98,9 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
         stufe="seite"
       />
       {eingetragen ? (
-        <Rueckmeldung key={eingetragen.mal}>„{eingetragen.name}“ eingetragen.</Rueckmeldung>
+        <Rueckmeldung key={eingetragen.mal} className="mt-4">
+          „{eingetragen.name}“ eingetragen.
+        </Rueckmeldung>
       ) : null}
       <div className="mt-4">
         {!geladen ? (

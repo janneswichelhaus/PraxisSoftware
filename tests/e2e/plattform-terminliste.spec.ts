@@ -447,6 +447,27 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     );
   });
 
+  test('bei 188 px fließt ein Statuszeichen wie Text: „… Absage“, darunter „angefragt“ (ANN-765)', async ({
+    page,
+  }) => {
+    await oeffne(page, 'termine-absage-angefragt', 188);
+    const zeilen = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('main .rounded-pill')]
+        .filter((p) => /^\S\s*\S+ angefragt$/.test(p.textContent ?? ''))
+        .map((pille) => {
+          const zeichen = pille.querySelector('[aria-hidden="true"]')!.getBoundingClientRect();
+          const text = [...pille.childNodes].find((k) => /\w/.test(k.textContent ?? ''))!;
+          const wort = document.createRange();
+          wort.setStart(text, 0);
+          wort.setEnd(text, (text.textContent ?? '').indexOf(' '));
+          return Math.abs(wort.getBoundingClientRect().top - zeichen.top) < 2;
+        }),
+    );
+    // „… Absage angefragt“ in der Hero-Karte, „… Änderung angefragt“ unter „Weitere Termine“.
+    expect(zeilen).toHaveLength(2);
+    expect(zeilen.every(Boolean), 'Zeichen mit dem ersten Wort in einer Zeile').toBe(true);
+  });
+
   test('am Rechner: Hero und Knopf rechts, die Listen links; ohne Termin eine Spalte', async ({
     page,
   }) => {
