@@ -168,6 +168,28 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
     expect(unbekannt?.message).toContain('not available on the platform');
   });
 
+  it('nimmt keine Antwort auf das Praxisfeld an, auch nicht beim Ueberschreiben (ANN-808)', async () => {
+    const mitPraxisfeld = JSON.stringify({
+      ...ANTWORTEN,
+      anmerkungen_therapeut: { text: 'Von der Plattform' },
+    });
+    const neu = await abgefangen(
+      asUser(users.plattformErika, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', mitPraxisfeld]),
+    );
+    expect((neu as { code?: string } | null)?.code).toBe('42501');
+    expect(neu?.message).toContain('practice item');
+    const id = await speichern(users.plattformErika, ERIKA);
+    const ueber = await abgefangen(
+      asUser(users.plattformErika, SPEICHERN, [ERIKA, id, 'anamnese_v8', '1.0.0', mitPraxisfeld]),
+    );
+    expect((ueber as { code?: string } | null)?.code).toBe('42501');
+    const { rows } = await asPostgres<{ answers: Record<string, unknown> }>(
+      'select answers from public.patient_questionnaire_responses where id = $1',
+      [id],
+    );
+    expect(rows[0]!.answers).toEqual(ANTWORTEN);
+  });
+
   it('haelt die Fassung eines Entwurfs fest - eine neue Fassung heisst neu beginnen (Zweitreview)', async () => {
     const id = await speichern(users.plattformErika, ERIKA);
     await asPostgres(
