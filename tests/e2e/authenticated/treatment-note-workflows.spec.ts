@@ -66,7 +66,7 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await expect(page).toHaveURL(terminImKalender(terminId));
     await aktionenOeffnen(page);
     await expect(page.getByText(ENTWURF)).toBeVisible();
-    await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
+    await expect(page.getByText(/^!? ?Entwurf/).first()).toBeVisible();
     await expect(page.getByText(/Verfasst von Anna Beispiel/)).toBeVisible();
 
     await terminNeuLaden(page);

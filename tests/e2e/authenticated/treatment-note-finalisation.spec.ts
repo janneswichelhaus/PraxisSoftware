@@ -90,12 +90,12 @@ test.describe('DOK-002: Finalisieren', () => {
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
     await expect(page).toHaveURL(terminImKalender(terminId));
     await aktionenOeffnen(page);
-    await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
+    await expect(page.getByText(/^!? ?Entwurf/).first()).toBeVisible();
 
     await page.getByRole('button', { name: 'Finalisieren' }).click();
     await expect(page.getByRole('group', { name: 'Dokumentation finalisieren' })).toBeVisible();
     // Ein Klick allein finalisiert nichts.
-    await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
+    await expect(page.getByText(/^!? ?Entwurf/).first()).toBeVisible();
 
     await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
 
@@ -187,7 +187,7 @@ test.describe('DOK-002: Nachtragen', () => {
     // Der Ursprungseintrag bleibt unveraendert finalisiert.
     await expect(page.getByText(ENTWURF)).toBeVisible();
     await expect(page.getByText('✓ Festgeschrieben · Version 1', { exact: true })).toBeVisible();
-    await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
+    await expect(page.getByText(/^!? ?Entwurf/).first()).toBeVisible();
 
     await terminNeuLaden(page);
     await expect(page.getByText(NACHTRAG)).toBeVisible();

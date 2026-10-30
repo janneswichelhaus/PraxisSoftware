@@ -63,7 +63,7 @@ test.describe('B1: Versorgungsstatus entfällt (BEF-151, ANN-510)', () => {
 
     await page.goto(`/patienten/${PATIENTEN.max}/stammdaten`);
     await expect(page.getByRole('heading', { name: 'Max Mustermann' })).toBeVisible();
-    await expect(page.getByText(/^!?Nicht in Versorgung$/)).toHaveCount(0);
+    await expect(page.getByText(/^!? ?Nicht in Versorgung$/)).toHaveCount(0);
     await expect(page.getByRole('button', { name: /in Versorgung führen/ })).toHaveCount(0);
   });
 });
