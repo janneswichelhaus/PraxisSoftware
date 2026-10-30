@@ -246,8 +246,12 @@ describe('request_platform_appointment_change (POR-010)', () => {
   });
 
   it('entzogen, abgelaufene Lesefrist, andere Organisation, ohne Anmeldung: abgewiesen', async () => {
+    // Festgeschrieben: Ginge ein Versuch durch, stünde er in der Zählung am Ende.
+    const absage = [ERIKA, IN_DREI_TAGEN, 'cancel', [], [], null];
     const als = (konto: string | null) =>
-      abgefangen(asUser(konto, AENDERN, [ERIKA, IN_DREI_TAGEN, 'cancel', [], [], null]));
+      abgefangen(
+        konto === null ? asUser(null, AENDERN, absage) : asUserCommitted(konto, AENDERN, absage),
+      );
     const fremd = await fremdeOrganisation();
     expect((await als(fremd.owner))?.message).toContain('not allowed');
     expect(await als(null)).not.toBeNull();
@@ -265,6 +269,7 @@ describe('request_platform_appointment_change (POR-010)', () => {
               care_concluded_by = null where id = $1`,
       [patients.erika],
     );
+    expect(await abgefangen(asUser(users.plattformErika, AENDERN, absage))).toBeNull();
     await asPostgres(
       `update public.platform_accesses
           set status = 'revoked', revoked_at = now(), revoked_reason = 'practice'
@@ -284,7 +289,14 @@ describe('request_platform_appointment_change (POR-010)', () => {
       [ERIKA],
     );
     const fehler = await abgefangen(
-      asUser(users.plattformErika, AENDERN, [ERIKA, IN_DREI_TAGEN, 'cancel', [], [], null]),
+      asUserCommitted(users.plattformErika, AENDERN, [
+        ERIKA,
+        IN_DREI_TAGEN,
+        'cancel',
+        [],
+        [],
+        null,
+      ]),
     );
     expect(fehler?.message).toContain('not allowed');
     const { rows } = await asPostgres<{ n: number }>(

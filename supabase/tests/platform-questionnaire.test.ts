@@ -233,11 +233,24 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
   });
 
   it('fremde Person, Praxiskonto, andere Organisation, abgelaufene Lesefrist, entzogen: weder lesen noch speichern', async () => {
+    // Ein abgeschlossener Bogen einer anderen Person derselben Praxis: Er hält Erika nicht auf
+    // und erscheint nicht in ihrem Stand (Eingrenzung auf die eigene Person, Zweitreview).
+    await asPostgres(
+      `insert into public.patient_questionnaire_responses
+         (organization_id, patient_id, instrument_id, definition_version, recorded_on, answers,
+          status, completed_at, completed_by, created_by, updated_by)
+       values ($1, $2, 'anamnese_v8', '1.0.0', current_date, $3::jsonb,
+               'abgeschlossen', now(), $4, $4, $4)`,
+      [SEED.organizationId, patients.max, JSON.stringify(ANTWORTEN), users.therapist],
+    );
     // Erst ein Entwurf: Ein leerer Stand beweist nur etwas, wenn es etwas zu lesen gäbe.
     const id = await speichern(users.plattformErika, ERIKA);
     const fremdeAntworten = JSON.stringify({ beruf: { text: 'Fremd' } });
+    // Festgeschrieben: Ginge ein Versuch durch, stünde er im Bestand am Ende.
     const speichernAls = (konto: string) =>
-      abgefangen(asUser(konto, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', fremdeAntworten]));
+      abgefangen(
+        asUserCommitted(konto, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', fremdeAntworten]),
+      );
     const lesenAls = async (konto: string) => (await asUser<Zeile>(konto, STAND, [ERIKA])).rows;
     expect(await lesenAls(users.plattformErika)).toHaveLength(1);
     const fremd = await fremdeOrganisation();
@@ -282,7 +295,7 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
       [ERIKA],
     );
     const fehler = await abgefangen(
-      asUser(users.plattformErika, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', '{}']),
+      asUserCommitted(users.plattformErika, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', '{}']),
     );
     expect(fehler?.message).toContain('not allowed');
     expect((await asUser(users.plattformErika, STAND, [ERIKA])).rows).toEqual([]);
@@ -387,14 +400,15 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
   });
 
   it('Begleitung, Training, fremde Person, gesperrt, Praxiskonto: abgewiesen (ANN-248)', async () => {
-    // Mit einem Entwurf, sonst wären die leeren Stände unten auch ohne Prüfung leer.
+    // Mit einem Entwurf, sonst wären die leeren Stände unten auch ohne Prüfung leer; die Versuche
+    // sind festgeschrieben, damit der Bestand am Ende zählt.
     const id = await speichern(users.plattformErika, ERIKA);
     expect(
       await erlaubt(users.plattformPaula, platformAccesses.paulaBegleitungMax, 'questionnaire'),
     ).toBe(false);
     expect(await erlaubt(users.plattformErika, ERIKA, 'questionnaire')).toBe(true);
     const paula = await abgefangen(
-      asUser(users.plattformPaula, SPEICHERN, [
+      asUserCommitted(users.plattformPaula, SPEICHERN, [
         platformAccesses.paulaBegleitungMax,
         null,
         'anamnese_v8',
@@ -404,7 +418,7 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
     );
     expect(paula?.message).toContain('not allowed');
     const training = await abgefangen(
-      asUser(users.plattformErika, SPEICHERN, [
+      asUserCommitted(users.plattformErika, SPEICHERN, [
         platformAccesses.erikaTraining,
         null,
         'anamnese_v8',
@@ -417,11 +431,11 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
       (await asUser(users.plattformErika, STAND, [platformAccesses.erikaTraining])).rows,
     ).toEqual([]);
     const tina = await abgefangen(
-      asUser(users.plattformTina, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', '{}']),
+      asUserCommitted(users.plattformTina, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', '{}']),
     );
     expect(tina?.message).toContain('not allowed');
     const praxis = await abgefangen(
-      asUser(users.therapist, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', '{}']),
+      asUserCommitted(users.therapist, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', '{}']),
     );
     expect(praxis?.message).toContain('not allowed');
     await asPostgres(
@@ -429,7 +443,7 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
       [ERIKA],
     );
     const gesperrt = await abgefangen(
-      asUser(users.plattformErika, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', '{}']),
+      asUserCommitted(users.plattformErika, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', '{}']),
     );
     expect(gesperrt?.message).toContain('not allowed');
     expect((await asUser(users.plattformErika, STAND, [ERIKA])).rows).toEqual([]);
