@@ -259,6 +259,12 @@ describe('request_platform_appointment_change (POR-010)', () => {
       [patients.erika, users.therapist],
     );
     expect((await als(users.plattformErika))?.message).toContain('not allowed');
+    // Zurück in der Versorgung, damit „entzogen“ aus eigenem Grund scheitert.
+    await asPostgres(
+      `update public.patients set care_concluded_on = null, care_concluded_at = null,
+              care_concluded_by = null where id = $1`,
+      [patients.erika],
+    );
     await asPostgres(
       `update public.platform_accesses
           set status = 'revoked', revoked_at = now(), revoked_reason = 'practice'
@@ -266,6 +272,21 @@ describe('request_platform_appointment_change (POR-010)', () => {
       [ERIKA],
     );
     expect((await als(users.plattformErika))?.message).toContain('not allowed');
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.platform_appointment_requests',
+    );
+    expect(rows[0]!.n).toBe(0);
+  });
+
+  it('eingeladen, noch ohne Konto: abgewiesen, keine Zeile', async () => {
+    await asPostgres(
+      `update public.platform_accesses set status = 'invited', account_user_id = null where id = $1`,
+      [ERIKA],
+    );
+    const fehler = await abgefangen(
+      asUser(users.plattformErika, AENDERN, [ERIKA, IN_DREI_TAGEN, 'cancel', [], [], null]),
+    );
+    expect(fehler?.message).toContain('not allowed');
     const { rows } = await asPostgres<{ n: number }>(
       'select count(*)::int as n from public.platform_appointment_requests',
     );

@@ -1610,4 +1610,4 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-805 | Satz zum Verlegen unter 24 Stunden: Seite wie empfohlen, auf Schritt 1 kurz (sonst rollt er) | Praxisprozess · offen | `AUSFALLHONORAR_VERLEGEN` in `src/lib/ausfallhonorar.ts` |
 | ANN-806 | Absagewunsch mit Tag und Uhrzeit des Eingangs, auf der Uhr des Geräts | Technik · offen | `absageEingegangen` in `src/features/portal/platform/termintexte.ts` |
 | ANN-807 | Lesefrist: Wünsche am Server abgewiesen, Absage per Anruf, Zurückziehen bleibt | Technik · offen | `request_platform_appointment` in `supabase/migrations/20261225190000_lesefrist_terminwuensche.sql` |
-| ANN-808 | Fragebogen: Das Praxisfeld schreibt und sieht die Plattform nicht, es bleibt | Technik · offen | `save_platform_questionnaire_response` in `supabase/migrations/20261225200000_fragebogen_praxisfeld.sql` |
+| ANN-808 | Fragebogen: Das Praxisfeld schreibt und sieht die Plattform nicht; es bleibt, außer beim Verwerfen | Technik · offen | `save_platform_questionnaire_response` in `supabase/migrations/20261225200000_fragebogen_praxisfeld.sql` |

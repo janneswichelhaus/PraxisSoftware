@@ -29,6 +29,7 @@ const SPEICHERN = `select public.save_platform_questionnaire_response(
 const ABSENDEN = 'select public.complete_platform_questionnaire_response($1::uuid, $2::uuid) as ok';
 const VERWERFEN = 'select public.discard_platform_questionnaire_response($1::uuid, $2::uuid) as ok';
 const AKTE = 'select * from public.list_patient_questionnaire_responses($1::uuid)';
+const EXPORT = 'select public.platform_export($1::uuid) as daten';
 const PRAXIS_SPEICHERN = `select public.save_questionnaire_response(
   $1::uuid, $2::uuid, 'anamnese_v8', '1.0.0', current_date, $3::jsonb) as id`;
 
@@ -219,15 +220,31 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
     expect((await asUser<Zeile>(users.plattformErika, STAND, [ERIKA])).rows[0]!.answers).toEqual(
       ANTWORTEN,
     );
+    // Abgeschlossen ebenso, und auch die Kopie der eigenen Daten nennt die Notiz nicht.
+    await asUserCommitted(users.plattformErika, ABSENDEN, [ERIKA, id]);
+    expect((await asUser<Zeile>(users.plattformErika, STAND, [ERIKA])).rows).toEqual([
+      expect.objectContaining({ id, status: 'abgeschlossen', answers: ANTWORTEN }),
+    ]);
+    const kopie = await asUser<{ daten: unknown }>(users.plattformErika, EXPORT, [ERIKA]);
+    expect(JSON.stringify(kopie.rows[0]!.daten)).toContain('Lehrerin');
+    expect(JSON.stringify(kopie.rows[0]!.daten)).not.toMatch(
+      /anmerkungen_therapeut|Notiz der Praxis/,
+    );
   });
 
-  it('entzogen, abgelaufene Lesefrist, andere Organisation: abgewiesen, kein Bogen', async () => {
+  it('fremde Person, Praxiskonto, andere Organisation, abgelaufene Lesefrist, entzogen: weder lesen noch speichern', async () => {
+    // Erst ein Entwurf: Ein leerer Stand beweist nur etwas, wenn es etwas zu lesen gäbe.
+    const id = await speichern(users.plattformErika, ERIKA);
+    const fremdeAntworten = JSON.stringify({ beruf: { text: 'Fremd' } });
     const speichernAls = (konto: string) =>
-      abgefangen(
-        asUser(konto, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', JSON.stringify(ANTWORTEN)]),
-      );
+      abgefangen(asUser(konto, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', fremdeAntworten]));
+    const lesenAls = async (konto: string) => (await asUser<Zeile>(konto, STAND, [ERIKA])).rows;
+    expect(await lesenAls(users.plattformErika)).toHaveLength(1);
     const fremd = await fremdeOrganisation();
-    expect((await speichernAls(fremd.owner))?.message).toContain('not allowed');
+    for (const konto of [fremd.owner, users.plattformTina, users.therapist]) {
+      expect((await speichernAls(konto))?.message, konto).toContain('not allowed');
+      expect(await lesenAls(konto), konto).toEqual([]);
+    }
     await asPostgres(
       `update public.patients
           set care_concluded_on = current_date - 40, care_concluded_at = now(),
@@ -236,11 +253,14 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
       [patients.erika, users.therapist],
     );
     expect((await speichernAls(users.plattformErika))?.message).toContain('not allowed');
+    expect(await lesenAls(users.plattformErika)).toEqual([]);
+    // Zurück in der Versorgung, damit „entzogen“ aus eigenem Grund scheitert.
     await asPostgres(
       `update public.patients set care_concluded_on = null, care_concluded_at = null,
               care_concluded_by = null where id = $1`,
       [patients.erika],
     );
+    expect(await lesenAls(users.plattformErika)).toHaveLength(1);
     await asPostgres(
       `update public.platform_accesses
           set status = 'revoked', revoked_at = now(), revoked_reason = 'practice'
@@ -248,10 +268,28 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
       [ERIKA],
     );
     expect((await speichernAls(users.plattformErika))?.message).toContain('not allowed');
-    const { rows } = await asPostgres<{ n: number }>(
-      `select count(*)::int as n from public.patient_questionnaire_responses where source = 'platform'`,
+    expect(await lesenAls(users.plattformErika)).toEqual([]);
+    const { rows } = await asPostgres<{ id: string; answers: unknown }>(
+      `select id, answers from public.patient_questionnaire_responses where source = 'platform'`,
     );
-    expect(rows[0]!.n).toBe(0);
+    expect(rows).toEqual([{ id, answers: ANTWORTEN }]);
+  });
+
+  it('eingeladen, noch ohne Konto: weder lesen noch speichern', async () => {
+    const id = await speichern(users.plattformErika, ERIKA);
+    await asPostgres(
+      `update public.platform_accesses set status = 'invited', account_user_id = null where id = $1`,
+      [ERIKA],
+    );
+    const fehler = await abgefangen(
+      asUser(users.plattformErika, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', '{}']),
+    );
+    expect(fehler?.message).toContain('not allowed');
+    expect((await asUser(users.plattformErika, STAND, [ERIKA])).rows).toEqual([]);
+    const { rows } = await asPostgres<{ id: string; answers: unknown }>(
+      `select id, answers from public.patient_questionnaire_responses where source = 'platform'`,
+    );
+    expect(rows).toEqual([{ id, answers: ANTWORTEN }]);
   });
 
   it('haelt die Fassung eines Entwurfs fest - eine neue Fassung heisst neu beginnen (Zweitreview)', async () => {
@@ -349,6 +387,8 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
   });
 
   it('Begleitung, Training, fremde Person, gesperrt, Praxiskonto: abgewiesen (ANN-248)', async () => {
+    // Mit einem Entwurf, sonst wären die leeren Stände unten auch ohne Prüfung leer.
+    const id = await speichern(users.plattformErika, ERIKA);
     expect(
       await erlaubt(users.plattformPaula, platformAccesses.paulaBegleitungMax, 'questionnaire'),
     ).toBe(false);
@@ -393,5 +433,9 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
     );
     expect(gesperrt?.message).toContain('not allowed');
     expect((await asUser(users.plattformErika, STAND, [ERIKA])).rows).toEqual([]);
+    const { rows } = await asPostgres<{ id: string; answers: unknown }>(
+      `select id, answers from public.patient_questionnaire_responses where source = 'platform'`,
+    );
+    expect(rows).toEqual([{ id, answers: ANTWORTEN }]);
   });
 });
