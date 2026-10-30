@@ -143,6 +143,9 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
         .getByRole('group', { name: 'Wie stark sind Ihre Schmerzen in Ruhe?' })
         .getByRole('button');
       await expect(stufen).toHaveCount(11);
+      // Erst messen, wenn das Fenster steht: Solange es aufgeht, liegen zwei Messungen
+      // um Bruchteile eines Pixels auseinander.
+      await bewegungAbwarten(page);
       for (const stufe of await stufen.all()) {
         const box = (await stufe.boundingBox())!;
         expect(box.width).toBeGreaterThanOrEqual(44);
@@ -168,7 +171,6 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
             .evaluate((el) => el.scrollHeight <= el.clientHeight + 1),
         ).toBe(true);
       }
-      await bewegungAbwarten(page);
       expect(await hauptknoepfe(page)).toEqual(['Weiter']);
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await fensterRolltQuer(page)).toBe(false);
