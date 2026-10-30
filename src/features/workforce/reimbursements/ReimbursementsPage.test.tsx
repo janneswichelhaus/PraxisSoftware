@@ -103,7 +103,7 @@ describe('ReimbursementsPage', () => {
     );
     expect(zeilen[3]).toHaveTextContent('ausgezahlt am 5. Aug. 2026');
     // Zeichen und Wort auch ohne eigenen Ton (Regel 5).
-    expect(zeilen[4]).toHaveTextContent('×Zurückgezogen');
+    expect(zeilen[4]).toHaveTextContent('× Zurückgezogen');
     expect(zeilen[4]).toHaveTextContent('zurückgezogen am 3. Okt. 2026');
     expect(screen.getByText('Auf DE89 •••• 3000')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ändern: IBAN' })).toHaveAttribute(

@@ -61,7 +61,7 @@ async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
   await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
   // Der Zustand ist seit UIK-18 ein Etikett mit Zeichen: Das ✓ ist für
   // Vorlesesoftware ausgeblendet, steht aber im Text des Etiketts.
-  await expect(page.getByText('✓Festgeschrieben · Version 1', { exact: true })).toBeVisible();
+  await expect(page.getByText('✓ Festgeschrieben · Version 1', { exact: true })).toBeVisible();
 
   return terminId;
 }
@@ -88,7 +88,7 @@ test.describe('DOK-003, ROL-001: Dokumentation in der Akte', () => {
     // Person (Anna hat selbst finalisiert).
     await zeile.getByRole('button').click();
     const fenster = page.getByRole('dialog');
-    await expect(fenster.getByText('✓Finalisiert', { exact: true })).toHaveCount(0);
+    await expect(fenster.getByText('✓ Finalisiert', { exact: true })).toHaveCount(0);
     await expect(fenster.getByText(/^Finalisiert \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/)).toBeVisible();
     await expect(fenster.getByRole('link', { name: 'Änderungsverlauf' })).toBeVisible();
     // Nachtrag und Korrektur stehen seit dem Wegfall der Terminseite hier.
