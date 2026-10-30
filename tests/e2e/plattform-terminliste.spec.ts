@@ -35,6 +35,7 @@ const SEITEN: { seite: string; hauptknopf: RegExp | null }[] = [
   { seite: 'termin', hauptknopf: null },
   { seite: 'termin&kurzfristig', hauptknopf: null },
   { seite: 'termin-angefragt', hauptknopf: null },
+  { seite: 'termin-absage-angefragt', hauptknopf: null },
   { seite: 'termin-vergangen', hauptknopf: /^Praxis anrufen\s+\+49 7071 0000000$/ },
   { seite: 'termin-vergangen&ohne-nummer', hauptknopf: null },
   { seite: 'termin-abgesagt', hauptknopf: null },
@@ -598,6 +599,16 @@ test.describe('Seite des Termins (Schritt 3c)', () => {
     const verlegen = page.getByText(/auf einen anderen Tag, berechnen wir ein Ausfallhonorar/);
     const absagen = await page.getByRole('link', { name: 'Termin absagen' }).boundingBox();
     expect((await verlegen.boundingBox())?.y ?? 0).toBeGreaterThan(absagen?.y ?? 0);
+  });
+
+  test('Absage angefragt: der Eingang mit Tag und Uhrzeit, vor „Wer und wo“ (ANN-806)', async ({
+    page,
+  }) => {
+    await oeffneTermin(page, 'termin-absage-angefragt', 375);
+    const eingang = page.getByText(/^Ihre Absage ist am \d+\.\s\S+ um \d{2}:\d{2} eingegangen\.$/);
+    await expect(eingang).toBeVisible();
+    const werUndWo = (await page.locator('main').getByText('Anna Beispiel').first().boundingBox())!;
+    expect((await eingang.boundingBox())!.y).toBeLessThan(werUndWo.y);
   });
 
   test('vergangen: „Praxis anrufen“ als Hauptknopf, 60 hoch, wählt die Nummer', async ({

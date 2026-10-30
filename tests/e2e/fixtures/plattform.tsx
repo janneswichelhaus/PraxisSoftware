@@ -517,6 +517,7 @@ function termineDerBehandlung(): Termin[] {
         t.id === TERMIN_HAUSBESUCH ? { ...t, starts_at: inStunden(2), ends_at: inStunden(3) } : t,
       );
     case 'termine-absage-angefragt':
+    case 'termin-absage-angefragt':
       return termine.map((t) =>
         t.id === TERMIN_HAUSBESUCH ? { ...t, open_request_kind: 'cancel' as const } : t,
       );
@@ -526,7 +527,7 @@ function termineDerBehandlung(): Termin[] {
 }
 function wuenscheDerBehandlung(): Terminwunsch[] {
   if (seite === 'termine-leer' || seite === 'termine-lesefrist') return [];
-  if (seite === 'termine-absage-angefragt') {
+  if (seite === 'termine-absage-angefragt' || seite === 'termin-absage-angefragt') {
     return [
       {
         ...wuensche[0]!,
@@ -1818,6 +1819,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'wunsch':
     case 'termin':
     case 'termin-angefragt':
+    case 'termin-absage-angefragt':
     case 'termin-vergangen':
     case 'termin-abgesagt':
     case 'termin-laden':
@@ -1881,6 +1883,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
         wunsch: '/p/termine/wunsch?bereich=treatment',
         termin: `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment`,
         'termin-angefragt': '/p/termine/aaaaaaaa-aaaa-4aaa-8aaa-0000000000f2?bereich=treatment',
+        'termin-absage-angefragt': `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment`,
         'termin-vergangen': '/p/termine/aaaaaaaa-aaaa-4aaa-8aaa-0000000000f3?bereich=treatment',
         'termin-abgesagt': '/p/termine/aaaaaaaa-aaaa-4aaa-8aaa-0000000000f4?bereich=treatment',
         'termin-laden': `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment`,
