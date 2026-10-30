@@ -44,8 +44,8 @@ import { WUENSCHE_OHNE_NETZ } from './wunschtexte';
 import { kuenftig } from './zeit';
 
 /**
- * Die Seite eines Termins, Ziel jeder Terminzeile (ANN-776). Ändern und Absagen beginnen hier und
- * öffnen den Ablauf mit `?art=` (ANN-778); die Handlung steht vor „Wer und wo“ (ANN-804). Jeder
+ * Die Seite eines Termins, Ziel jeder Terminzeile (ANN-776); Ändern und Absagen öffnen den Ablauf
+ * mit `?art=` (ANN-778), die Handlung steht vor „Wer und wo“ (ANN-804 statt ANN-781). Jeder
  * Abschnitt steht allein in seinem Block, sonst zählte sein Abstand doppelt.
  */
 export function Terminseite({ zugang }: { zugang: Plattformzugang }) {

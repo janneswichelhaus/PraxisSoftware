@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-28",
+  "stand": "2026-10-30",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -1750,7 +1750,7 @@
           "status": "gesichtet",
           "fertig_am": "2026-10-28",
           "nachweis": "#328",
-          "vermerk": "Auftrag Jannes 28.10.2026; Handoff Termine 5.1, 5.5, 5.6, 9.2, Fragen wie empfohlen; ANN-772 bis ANN-777; BEF-220 erledigt, BEF-222 offen (Server); nur Oberfläche",
+          "vermerk": "Auftrag Jannes 28.10.2026; Handoff Termine 5.1, 5.5, 5.6, 9.2, Fragen wie empfohlen; ANN-772 bis ANN-777; BEF-220 erledigt; nur Oberfläche",
           "gesichtet_am": "2026-10-29"
         },
         {
@@ -1786,10 +1786,20 @@
           "id": "drp-epic-015",
           "name": "DRP-EPIC-015 Plattform: Selbstauskunft und Tagebuch aus dem Design-Review (Schritt 4a bis 4e)",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-29",
           "nachweis": "#333",
-          "vermerk": "Auftrag Jannes 29.10.2026; Handoff in der Leinwand, Fragen wie empfohlen; nur Oberfläche"
+          "vermerk": "Auftrag Jannes 29.10.2026; Handoff in der Leinwand, Fragen wie empfohlen; nur Oberfläche",
+          "gesichtet_am": "2026-10-30"
+        },
+        {
+          "id": "drp-epic-016",
+          "name": "DRP-EPIC-016 Plattform: Aufträge nach Schritt 4",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-30",
+          "nachweis": "Branch ccr-4b4adbb9-mbg1ac",
+          "vermerk": "ANN-803 bis ANN-808; BEF-222 erledigt; Pfad A"
         },
         {
           "id": "bef-223",

@@ -1583,7 +1583,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-778 | Termine: Ändern und Absagen beginnen auf der Seite des Termins | Technik · offen | `TerminOderAblauf` in `src/features/portal/platform/PlattformApp.tsx` |
 | ANN-779 | Seite des Termins: von der Übersicht reist der Rückweg als `zurueck` mit und heißt „Übersicht“ | Technik · offen | `zumTermin` in `src/features/portal/platform/Uebersicht.tsx` |
 | ANN-780 | Termine: der Weg zur Praxis beim Fehler, ohne Netz beim Laden und in der Lesefrist (nur Anruf, vor dem Vergangenen) | Technik · offen | `PraxisErreichen` in `src/features/portal/platform/Terminbausteine.tsx` |
-| ANN-781 | Seite des Termins: die Reihenfolge des Handoffs, auch wenn bei 375 × 667 „Termin absagen“ erst nach Rollen steht | Technik · offen | `Terminseite` in `src/features/portal/platform/Terminseite.tsx` |
+| ANN-781 | Seite des Termins in der Reihenfolge des Handoffs | Technik · geändert (→ ANN-804) | `Terminseite` in `src/features/portal/platform/Terminseite.tsx` |
 | ANN-782 | Ändern, Absagen: ✕ ersetzt den Ablauf im Verlauf durch die Seite des Termins; `?art=` weg gilt als Weggehen | Technik · offen | `Aenderungsablauf` in `src/features/portal/platform/Terminaenderung.tsx` |
 | ANN-783 | Abläufe: ohne Netz der Satz ruhig über dem gesperrten Senden, nicht noch einmal als Fehler; beim Absagen „Praxis anrufen“ | Technik · offen | `OhneNetzHinweis` in `src/features/portal/platform/Wunschfelder.tsx` |
 | ANN-784 | Zusammenfassung: „Ändern“ in der Zeile der Bezeichnung | Technik · offen | `bezeichnung` in `src/components/ui/ListRow.tsx` |
@@ -1605,3 +1605,9 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-800 | Gewohnheiten: Titel je Gewohnheit, Tage mit Tag im Monat und „heute“, pausiert als ruhige Zeile; der feste Satz darunter | Technik · offen | `Eintrag` in `src/features/portal/platform/Gewohnheiten.tsx` |
 | ANN-801 | Leerzustände mit Markenform, Satz und Weg; im Check-in in fester Folge der Lagen | Technik · offen | `Zustand` in `src/features/portal/platform/Checkin.tsx` |
 | ANN-802 | Ohne Netz: Schreibendes gestrichelt gesperrt, per `aria-disabled` erreichbar, mit Satz; Lesen bleibt | Technik · offen | `GESPERRT` in `src/features/portal/platform/Checkin.tsx` |
+| ANN-803 | Leerzustand wie im Entwurf (mittig, Kreis 96, ohne Karte), wo er der Inhalt der Seite ist | Technik · offen | `EmptyState` in `src/components/ui/Feedback.tsx` |
+| ANN-804 | Termine: Handlung vor Inhalt, der Knopf mit 16 unter der Hero-Karte | Technik · entschieden (Jannes) | `Terminseite` in `src/features/portal/platform/Terminseite.tsx` |
+| ANN-805 | Satz zum Verlegen unter 24 Stunden auf Seite und Schritt 1, Wortlaut der Empfehlung | Praxisprozess · offen | `AUSFALLHONORAR_VERLEGEN` in `src/lib/ausfallhonorar.ts` |
+| ANN-806 | Absagewunsch mit Tag und Uhrzeit des Eingangs, auf der Uhr des Geräts | Technik · offen | `absageEingegangen` in `src/features/portal/platform/termintexte.ts` |
+| ANN-807 | Lesefrist: Wünsche am Server abgewiesen, Zurückziehen geht weiter | Technik · offen | `request_platform_appointment` in `supabase/migrations/20261225190000_lesefrist_terminwuensche.sql` |
+| ANN-808 | Fragebogen: Antwort der Plattform auf das Praxisfeld am Server abgewiesen | Technik · offen | `save_platform_questionnaire_response` in `supabase/migrations/20261225200000_fragebogen_praxisfeld.sql` |
