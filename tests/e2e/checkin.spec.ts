@@ -265,8 +265,14 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
       const breit = await lage();
       expect(breit.wert.x).toBeGreaterThan(breit.name.x + breit.name.width);
       await page.setViewportSize({ width: 188, height: 900 });
-      const schmal = await lage();
-      expect(schmal.wert.y).toBeGreaterThan(schmal.name.y + schmal.name.height);
+      // Nach dem Wechsel der Breite schaltet die Seite vom Rechner aufs Telefon um; zwei Messungen
+      // mitten darin passen nicht zueinander. Deshalb gilt der Stand, wenn die Seite steht.
+      await expect
+        .poll(async () => {
+          const schmal = await lage();
+          return schmal.wert.y > schmal.name.y + schmal.name.height;
+        })
+        .toBe(true);
       expect(await ueberlaeuft(page)).toBe(false);
       await page.setViewportSize({ width: breite, height: 900 });
 
