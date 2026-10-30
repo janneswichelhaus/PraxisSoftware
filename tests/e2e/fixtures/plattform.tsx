@@ -700,11 +700,11 @@ const abo: Nachsorgeabo = {
   cancelled_via: null,
   can_cancel: true,
 };
-// Schritt 1e: In der Lesefrist läuft kein Abo mehr - mit laufendem Abo ist
-// keine Lesefrist (ANN-274, `inLesefrist`).
+// Schritt 1e: In der Lesefrist läuft kein Abo mehr - ob sie gilt, sagt der Server mit `writable`
+// (ANN-274, ANN-809).
 client.setQueryData(
   aboSchluessel(zugaenge[0]!.access_id),
-  seite === 'uebersicht-lesefrist' || seite === 'termine-lesefrist'
+  ['uebersicht-lesefrist', 'termine-lesefrist', 'fragebogen-lesefrist'].includes(seite)
     ? null
     : seite === 'abo-gekuendigt'
       ? {
@@ -1072,6 +1072,12 @@ if (seite === 'fragebogen-thema') {
   const bisher = BOGEN_ANTWORTEN.slice(0, Number(parameter.get('thema') ?? '3') - 1);
   client.setQueryData(befundbogenSchluessel(zugaenge[0]!.access_id), [
     bogen(Object.assign({}, ...bisher) as Record<string, unknown>),
+  ]);
+}
+// ANN-810: In der Lesefrist steht der angefangene Entwurf nur noch zum Verwerfen da.
+if (seite === 'fragebogen-lesefrist') {
+  client.setQueryData(befundbogenSchluessel(zugaenge[0]!.access_id), [
+    bogen(Object.assign({}, ...BOGEN_ANTWORTEN.slice(0, 4)) as Record<string, unknown>),
   ]);
 }
 if (seite === 'fragebogen-abschluss' || seite === 'fragebogen-ohne-netz') {
@@ -1960,6 +1966,17 @@ function inhalt(): { pfad: string; element: ReactNode } {
         element: (
           <PlattformApp
             zugaenge={zugaenge}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    case 'fragebogen-lesefrist':
+      return {
+        pfad: '/p/befundbogen?bereich=treatment',
+        element: (
+          <PlattformApp
+            zugaenge={[{ ...zugaenge[0]!, writable: false, read_until: inTagen(20, 0) }]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />
