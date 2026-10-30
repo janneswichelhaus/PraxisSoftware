@@ -6,7 +6,7 @@ import type * as PlattformApi from './api';
 import type { Nachsorgeabo, Plattformzugang, Termin, Terminwunsch } from './api';
 import { renderWithProviders } from '@/test-utils';
 import { STAND_VERALTET } from '@/components/ui/abfrageTexte';
-import { AUSFALLHONORAR_SPAET } from '@/lib/ausfallhonorar';
+import { AUSFALLHONORAR_SPAET, AUSFALLHONORAR_VERLEGEN } from '@/lib/ausfallhonorar';
 import { RECHNER_ABFRAGE } from './geruestbreite';
 import { tagInWorten } from './termintexte';
 import { WUENSCHE_OHNE_NETZ } from './wunschtexte';
@@ -158,6 +158,18 @@ describe('Seite des Termins (Schritt 3c)', () => {
     expect(within(abschnitt).getByRole('status')).toHaveTextContent(AUSFALLHONORAR_SPAET);
     expect(abschnitt).not.toHaveTextContent('Ändern und Absagen sind Wünsche');
     expect(within(abschnitt).getAllByRole('link')).toHaveLength(2);
+    // Was eine Verlegung kostet, als eigener Satz unter den Knöpfen (ANN-805).
+    const verlegen = within(abschnitt).getByText(AUSFALLHONORAR_VERLEGEN);
+    const absagen = within(abschnitt).getByRole('link', { name: 'Termin absagen' });
+    expect(
+      absagen.compareDocumentPosition(verlegen) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('mit mehr als 24 Stunden ohne den Satz zum Verlegen', async () => {
+    zeige(TERMIN);
+    const abschnitt = await findeAbschnitt('Passt der Termin nicht?');
+    expect(within(abschnitt).queryByText(AUSFALLHONORAR_VERLEGEN)).toBeNull();
   });
 
   it('offener Wunsch: im Kopf „Änderung angefragt“, der Wunsch selbst und Zurückziehen', async () => {

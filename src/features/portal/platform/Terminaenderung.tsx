@@ -16,6 +16,7 @@ import {
   AUSFALLHONORAR_RECHTZEITIG,
   AUSFALLHONORAR_REGEL,
   AUSFALLHONORAR_SPAET,
+  AUSFALLHONORAR_VERLEGEN,
 } from '@/lib/ausfallhonorar';
 import {
   termineSchluessel,
@@ -279,14 +280,24 @@ function Aenderungsablauf({
       {seite === 'ausfallhonorar' ? (
         <Ausfallhonorar spaet={spaet} />
       ) : seite === 'wann' ? (
-        <Wunschfelder
-          wann={wann}
-          werktage={werktage}
-          onWann={(neu) => {
-            setHinweis(null);
-            setWann(neu);
-          }}
-        />
+        <>
+          {spaet ? (
+            // Unter 24 Stunden zuerst, was eine Verlegung kostet; der Fokus beginnt hier (ANN-805).
+            <div tabIndex={-1} data-autofocus className="mb-5 focus:outline-none">
+              <Statusmeldung ton="warnung" className="font-semibold">
+                {AUSFALLHONORAR_VERLEGEN}
+              </Statusmeldung>
+            </div>
+          ) : null}
+          <Wunschfelder
+            wann={wann}
+            werktage={werktage}
+            onWann={(neu) => {
+              setHinweis(null);
+              setWann(neu);
+            }}
+          />
+        </>
       ) : (
         <div className="flex flex-col gap-3">
           <Zusammenfassungsanfang />

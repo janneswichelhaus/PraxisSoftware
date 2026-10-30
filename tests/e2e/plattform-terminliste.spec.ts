@@ -594,6 +594,10 @@ test.describe('Seite des Termins (Schritt 3c)', () => {
     await expect(warnung).toHaveCSS('font-weight', '600');
     const knopf = await page.getByRole('link', { name: 'Termin ändern' }).boundingBox();
     expect((await warnung.boundingBox())?.y ?? 0).toBeLessThan(knopf?.y ?? 0);
+    // Was eine Verlegung kostet, als eigener Satz unter den Knöpfen (ANN-805).
+    const verlegen = page.getByText(/auf einen anderen Tag, berechnen wir ein Ausfallhonorar/);
+    const absagen = await page.getByRole('link', { name: 'Termin absagen' }).boundingBox();
+    expect((await verlegen.boundingBox())?.y ?? 0).toBeGreaterThan(absagen?.y ?? 0);
   });
 
   test('vergangen: „Praxis anrufen“ als Hauptknopf, 60 hoch, wählt die Nummer', async ({

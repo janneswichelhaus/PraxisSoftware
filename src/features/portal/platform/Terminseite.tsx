@@ -11,7 +11,7 @@ import { Section } from '@/components/ui/Section';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Terminkopf } from '@/components/ui/Terminkopf';
-import { AUSFALLHONORAR_SPAET } from '@/lib/ausfallhonorar';
+import { AUSFALLHONORAR_SPAET, AUSFALLHONORAR_VERLEGEN } from '@/lib/ausfallhonorar';
 import {
   ladeTermine,
   ladeWuensche,
@@ -172,8 +172,8 @@ function Rahmen({ liste, children }: { liste: string; children: ReactNode }) {
 
 /**
  * Kommend und änderbar: „Termin ändern“ und „Termin absagen“ gleich gewichtet, unter 24 Stunden mit
- * der Warnung zum Ausfallhonorar statt des Satzes (`late_notice`, ADR-018 Punkt 8). Ohne Netz
- * gesperrt mit dem Satz der Liste (ANN-773).
+ * der Warnung zum Ausfallhonorar statt des Satzes (`late_notice`, ADR-018 Punkt 8) und darunter dem
+ * Satz zum Verlegen (ANN-805). Ohne Netz gesperrt mit dem Satz der Liste (ANN-773).
  */
 function AendernOderAbsagen({
   termin,
@@ -253,6 +253,8 @@ function AendernOderAbsagen({
               </>
             )}
           </div>
+          {/* Unter den Knöpfen, damit beide bei 375 × 667 im ersten Bild bleiben (ANN-804). */}
+          {termin.late_notice ? <p>{AUSFALLHONORAR_VERLEGEN}</p> : null}
           {verbunden ? null : (
             <p id={satzId} className="text-ink-muted">
               {WUENSCHE_OHNE_NETZ}

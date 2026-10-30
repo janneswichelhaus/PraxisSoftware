@@ -20,6 +20,13 @@ export const AUSFALLHONORAR_REGEL: readonly string[] = [
 export const AUSFALLHONORAR_SPAET =
   'Ihr Termin beginnt in weniger als 24 Stunden. Für diese Absage berechnen wir ein Ausfallhonorar nach unserer Preisliste.';
 
+/**
+ * Unter 24 Stunden vor dem Ändern: Nur eine Verlegung auf einen anderen Tag kostet, eine andere
+ * Uhrzeit am selben Tag nicht (ADR-018 Punkt 8 Nr. 4, ANN-212). Wortlaut vorläufig (ANN-805).
+ */
+export const AUSFALLHONORAR_VERLEGEN =
+  'Verlegen wir den Termin auf Ihren Wunsch auf einen anderen Tag, berechnen wir ein Ausfallhonorar nach unserer Preisliste.';
+
 /** Der Satz, wenn die Frist noch eingehalten ist. */
 export const AUSFALLHONORAR_RECHTZEITIG =
   'Ihre Absage geht rechtzeitig ein: Ihr Termin beginnt in mehr als 24 Stunden, es entsteht kein Ausfallhonorar.';
