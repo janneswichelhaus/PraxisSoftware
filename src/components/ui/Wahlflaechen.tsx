@@ -1,6 +1,7 @@
-import { useId, useState } from 'react';
+import { Fragment, useId, useState, type ReactNode } from 'react';
 import { HakenSymbol } from './HakenSymbol';
 import { Zwischentitel } from './Zwischentitel';
+import { useDoppeltipp } from './doppeltipp';
 
 /** Eine Wahl: Schlüssel für die Seite, Wort für die Person. */
 export interface Wahl {
@@ -15,31 +16,39 @@ export interface Wahl {
  */
 export function Wahlflaechen({
   titel,
+  beschriftetVon,
   ebene = 2,
+  form = 'raster',
   wahlen,
   gewaehlt,
   onUmschalten,
+  gesperrt = false,
 }: {
-  /** Die Frage über den Flächen, etwa „Zu welcher Tageszeit?“. */
-  titel: string;
+  /** Die Frage über den Flächen, etwa „Zu welcher Tageszeit?“; ohne sie benennt `beschriftetVon`. */
+  titel?: string;
+  /** Kennung einer Frage außerhalb, etwa des Titels eines Ablaufs. */
+  beschriftetVon?: string;
   ebene?: 2 | 3;
+  /** Raster mit zwei Spalten, ganze Zeilen, oder ja und nein auch bei „Sehr groß“ nebeneinander. */
+  form?: 'raster' | 'zeilen' | 'paar';
   wahlen: readonly Wahl[];
   /** Die Schlüssel der gewählten Flächen. */
   gewaehlt: readonly string[];
   onUmschalten: (schluessel: string) => void;
+  gesperrt?: boolean;
 }) {
-  const titelId = useId();
+  const eigeneId = useId();
+  const titelId = titel ? eigeneId : beschriftetVon;
   const [getippt, setGetippt] = useState<string | null>(null);
+  const doppeltipp = useDoppeltipp();
   return (
     <div>
-      <Zwischentitel ebene={ebene} id={titelId}>
-        {titel}
-      </Zwischentitel>
-      <div
-        role="group"
-        aria-labelledby={titelId}
-        className="grid grid-cols-2 gap-3 max-[23rem]:grid-cols-1 [[data-schrift=sehr-gross]_&]:grid-cols-1"
-      >
+      {titel ? (
+        <Zwischentitel ebene={ebene} id={eigeneId}>
+          {titel}
+        </Zwischentitel>
+      ) : null}
+      <div role="group" aria-labelledby={titelId} className={RASTER[form]}>
         {wahlen.map((w) => {
           const an = gewaehlt.includes(w.schluessel);
           return (
@@ -47,19 +56,26 @@ export function Wahlflaechen({
               key={w.schluessel}
               type="button"
               aria-pressed={an}
+              disabled={gesperrt}
               onClick={() => {
+                if (an && doppeltipp.zuFrueh(w.schluessel)) return;
+                if (!an) doppeltipp.gewaehlt(w.schluessel);
                 setGetippt(w.schluessel);
                 onUmschalten(w.schluessel);
               }}
-              className={`rounded-button ease-druck focus-visible:outline-ink flex min-h-16 min-w-0 items-center justify-between gap-3 text-left wrap-break-word hyphens-manual transition-colors duration-120 focus-visible:outline-3 focus-visible:outline-offset-2 [[data-schrift=sehr-gross]_&]:min-h-18 ${
+              className={`rounded-button ease-druck focus-visible:outline-ink flex min-w-0 items-center justify-between gap-3 text-left wrap-break-word hyphens-manual transition-colors duration-120 focus-visible:outline-3 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:border-dashed max-[23rem]:gap-2 ${HOEHE[form]} ${
                 // Die Linie 2 der Wahl nimmt sich ihren Pixel aus dem Innenabstand:
                 // Das Wort springt beim Wählen nicht.
                 an
-                  ? 'border-accent bg-accent-soft text-accent active:bg-surface-sunken border-2 px-[calc(1rem-1px)] py-[calc(0.5rem-1px)] font-bold'
-                  : 'border-line-strong bg-surface text-ink active:bg-surface-sunken border px-4 py-2 font-semibold'
+                  ? 'border-accent bg-accent-soft text-accent active:bg-surface-sunken border-2 px-[calc(1rem-1px)] py-[calc(0.5rem-1px)] font-bold max-[23rem]:px-[calc(0.75rem-1px)]'
+                  : 'border-line-strong bg-surface text-ink active:bg-surface-sunken border px-4 py-2 font-semibold max-[23rem]:px-3'
               }`}
             >
-              <span className="min-w-0">{w.text}</span>
+              {/* Unter 23rem und bei „Sehr groß“ passt nicht jedes Wort neben den Kreis: Es trennt dann
+                  an der Silbe („Medika-mente?“), statt ohne Strich mitten im Wort zu brechen. */}
+              <span className="min-w-0 [hyphenate-limit-chars:8_3_3] max-[23rem]:hyphens-auto [[data-schrift=sehr-gross]_&]:hyphens-auto">
+                {mitUmbruch(w.text)}
+              </span>
               {an ? (
                 <span
                   aria-hidden="true"
@@ -80,5 +96,36 @@ export function Wahlflaechen({
         })}
       </div>
     </div>
+  );
+}
+
+const RASTER = {
+  raster:
+    'grid grid-cols-2 gap-3 max-[23rem]:grid-cols-1 [[data-schrift=sehr-gross]_&]:grid-cols-1',
+  zeilen: 'grid grid-cols-1 gap-2',
+  // Am Rechner je höchstens 15rem: Über die breite Spalte gezogen läge „nein“ weit weg von „ja“.
+  paar: 'grid grid-cols-2 gap-3 max-[23rem]:grid-cols-1 [.plattform-schrift[data-rechner]_&]:grid-cols-[repeat(2,minmax(0,15rem))]',
+} as const;
+
+const HOEHE = {
+  raster: 'min-h-16 [[data-schrift=sehr-gross]_&]:min-h-18',
+  zeilen: 'min-h-14',
+  paar: 'min-h-16',
+} as const;
+
+/**
+ * Der Schrägstrich für sich: Das Wort davor trennt an der Silbe, die Zeile darf an ihm enden
+ * (ANN-788).
+ */
+function mitUmbruch(text: string): ReactNode {
+  return text.split('/').map((teil, index) =>
+    index === 0 ? (
+      teil
+    ) : (
+      <Fragment key={index}>
+        <span className="inline-block">/</span>
+        {teil}
+      </Fragment>
+    ),
   );
 }

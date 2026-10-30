@@ -589,9 +589,10 @@ describe('Training, Begleitung, Lesefrist', () => {
       }),
     ).toHaveAttribute('href', '/p/uebungen?bereich=training');
     // Mit weicher Trennstelle, damit das Wort bei „Sehr groß“ nur dort bricht.
+    // Der Rückweg reist mit: Im Tagebuch heißt er dann „Übersicht“.
     expect(screen.getByRole('link', { name: /^Ernährungs\u00ADtagebuch/ })).toHaveAttribute(
       'href',
-      '/p/ernaehrung/tagebuch?bereich=training',
+      `/p/ernaehrung/tagebuch?bereich=training&zurueck=${encodeURIComponent('/p?bereich=training')}`,
     );
     expect(screen.getByRole('link', { name: /^Trainingspaket 6 Monate/ })).toHaveAttribute(
       'href',
@@ -820,13 +821,21 @@ describe('Zustände', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('sagt nach dem Absenden, was mit den Angaben geschieht (D5)', async () => {
+  it('sagt nach dem Absenden, was mit den Angaben geschieht (D5), mit den Nummern zum Antippen', async () => {
     zeige(ZUGANG, '/p?bereich=treatment&checkin=1');
-    expect(
-      await screen.findByText(
-        'Danke. Ihre Therapeut:in sieht Ihre Angaben beim nächsten Termin. Bei akuten Beschwerden: 112 oder 116117.',
-      ),
-    ).toBeInTheDocument();
+    const danke = await screen.findByText(/^Danke\. Ihre Therapeut:in sieht Ihre Angaben/);
+    expect(danke).toHaveTextContent(
+      'Danke. Ihre Therapeut:in sieht Ihre Angaben beim nächsten Termin. Bei akuten Beschwerden: 112 oder 116117.',
+    );
+    // Handoff 5.1: 112 und 116117 als `Notrufnummer`, wie im Notfallsatz.
+    expect(within(danke).getByRole('link', { name: '112 anrufen' })).toHaveAttribute(
+      'href',
+      'tel:112',
+    );
+    expect(within(danke).getByRole('link', { name: '116117 anrufen' })).toHaveAttribute(
+      'href',
+      'tel:116117',
+    );
   });
 
   it('bestätigt den abgeschickten Befundbogen', async () => {

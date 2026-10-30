@@ -9,6 +9,11 @@ import type AxeCore from 'axe-core';
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/plattform.html';
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
+/**
+ * Feste Uhr: Die Prüfseite rechnet die Termine ab heute, sonst wechseln Tag und Zeilenbruch täglich.
+ * An diesem Tag lief „Freitag, 28. August“ in der CI über die Karte.
+ */
+const HEUTE = new Date('2026-10-30T08:00:00Z');
 /** Der Titel der Seite eines Termins: der Tag in Worten. */
 const TAG = /^(Heute|Morgen|Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), /;
 
@@ -52,6 +57,7 @@ async function oeffne(
       window.localStorage.setItem('plattform-schriftgroesse', wert);
     }, schrift);
   }
+  await page.clock.setFixedTime(HEUTE);
   await page.setViewportSize({ width: breite, height: 900 });
   await page.goto(`${PRUEFSEITE}?seite=${seite}`);
   await expect(page.getByRole('heading', { level: 1, name: titel })).toBeVisible();
@@ -136,6 +142,29 @@ async function gebrocheneWoerter(page: Page): Promise<string[]> {
   });
 }
 
+/**
+ * Statuszeichen breiter als der Inhalt ihrer Zeile (ANN-765): Sonst wächst die Spalte darüber hinaus,
+ * und je nach Schriftmaßen reicht der Tag in einer Zeile über die Karte.
+ */
+async function breiterAlsDieZeile(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const funde: string[] = [];
+    for (const zeichen of document.querySelectorAll<HTMLElement>('main li .rounded-pill')) {
+      const box = zeichen.getBoundingClientRect();
+      if (box.width === 0) continue;
+      const zeile = zeichen.closest('li > a, li')!;
+      const stil = getComputedStyle(zeile);
+      const rand = zeile.getBoundingClientRect();
+      const links = rand.left + parseFloat(stil.paddingLeft);
+      const rechts = rand.right - parseFloat(stil.paddingRight);
+      if (box.left < links - 1 || box.right > rechts + 1) {
+        funde.push(`${(zeichen.textContent ?? '').trim()}: ${Math.round(box.width)} px`);
+      }
+    }
+    return funde;
+  });
+}
+
 /** Text, der über den Rand eines Elements ragt, das nicht überlaufen darf. */
 async function angeschnitten(page: Page): Promise<string[]> {
   return page.evaluate(() => {
@@ -201,6 +230,7 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
         if ((await vergangen.count()) > 0) await vergangen.click();
         expect(await ueberlaeuft(page)).toBe(false);
         expect(await gebrocheneWoerter(page), 'gebrochene Wörter').toEqual([]);
+        expect(await breiterAlsDieZeile(page), 'Statuszeichen breiter als die Zeile').toEqual([]);
         expect(await angeschnitten(page), 'angeschnitten').toEqual([]);
       });
     }

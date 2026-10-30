@@ -1348,6 +1348,22 @@ export const ROUTEN = Object.freeze([
     konten: ['plattform'],
   },
   {
+    muster: '/p/angaben/tabelle',
+    pfad: '/p/angaben/tabelle?bereich=treatment',
+    bereich: 'Plattform',
+    etikett: 'Plattform – Alle Antworten',
+    konten: ['plattform'],
+    ohneDaten: 'Der Seed hat keinen Check-in: Die Seite zeigt den Leerzustand.',
+  },
+  {
+    muster: '/p/angaben/:schluessel',
+    pfad: '/p/angaben/pain_rest?bereich=treatment',
+    bereich: 'Plattform',
+    etikett: 'Plattform – Seite einer Angabe',
+    konten: ['plattform'],
+    ohneDaten: 'Der Seed hat keinen Check-in: „Diese Angabe gibt es hier nicht.“',
+  },
+  {
     muster: '/p/befundbogen',
     pfad: '/p/befundbogen?bereich=treatment',
     bereich: 'Plattform',

@@ -110,16 +110,6 @@ export function kcal(wert: number): string {
   return `${zahl(wert)}\u00a0kcal`;
 }
 
-/**
- * Was vom Energieziel übrig ist - oder wie weit darüber (ADR-027 Punkt 11:
- * Überschreitung als solche benannt, ohne Urteil).
- */
-export function nochUebrig(ziel: number, gegessen: number): { wert: string; ueber: boolean } {
-  const rest = Math.round(ziel - gegessen);
-  if (rest >= 0) return { wert: kcal(rest), ueber: false };
-  return { wert: `${kcal(-rest)} über dem Ziel`, ueber: true };
-}
-
 /** „12,5 von 80 g“. */
 export function grammVon(wert: number, ziel: number): string {
   return `${zahl(wert, wert % 1 === 0 ? 0 : 1)} von ${zahl(ziel)} g`;

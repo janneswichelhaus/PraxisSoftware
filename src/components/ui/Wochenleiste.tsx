@@ -7,6 +7,8 @@ export interface Wochentag {
   nummer: number;
   kurz: string;
   lang: string;
+  /** Der Tag im Monat als zweite Zeile, für Tage mit Datum wie die einer Gewohnheit. */
+  zahl?: string;
 }
 
 /**
@@ -31,6 +33,7 @@ export interface Wochentag {
  */
 export function Wochenleiste({
   titel,
+  beschriftetVon,
   wochentage,
   tage,
   onUmschalten,
@@ -38,31 +41,41 @@ export function Wochenleiste({
   gesperrt = false,
   ebene = 3,
   autofokus = false,
+  heute,
 }: {
   /** Die Überschrift der Gruppe, etwa „Ihre Übungstage“ (`h3`) oder „An welchen Tagen?“ (`h2`). */
-  titel: string;
+  titel?: string;
+  /** Ohne `titel`: die Kennung der Überschrift, die die Gruppe benennt, etwa einer Gewohnheit. */
+  beschriftetVon?: string;
   /** Die Tage der Woche in ihrer Reihenfolge. */
   wochentage: readonly Wochentag[];
   /** Die gewählten Tage (ISO-Nummern). */
   tage: readonly number[];
   onUmschalten: (tag: number) => void;
   /** Der Satz darunter, etwa wie oft und was empfohlen ist. */
-  satz: string;
+  satz?: string;
   gesperrt?: boolean;
   /** Die Ebene der Überschrift: im Reiter 3, als Frage eines Ablaufs 2. */
   ebene?: 2 | 3;
   /** Als erste Antwort eines Ablaufs beginnt der Fokus beim ersten Tag, nicht im Kopf. */
   autofokus?: boolean;
+  /** Die Nummer des heutigen Tags: „heute“ steht unter seiner Spalte. */
+  heute?: number;
 }) {
-  const titelId = useId();
+  const eigeneId = useId();
+  const titelId = titel ? eigeneId : beschriftetVon;
   // Der Haken federt nur nach einem Tipp, nicht beim ersten Zeichnen.
   const [getippt, setGetippt] = useState<number | null>(null);
   const linie = gesperrt ? 'border-dashed' : 'border-solid';
+  const mitZahl = wochentage.some((w) => w.zahl !== undefined);
+  const heuteSpalte = wochentage.findIndex((w) => w.nummer === heute);
   return (
     <div>
-      <Zwischentitel ebene={ebene} id={titelId}>
-        {titel}
-      </Zwischentitel>
+      {titel ? (
+        <Zwischentitel ebene={ebene} id={eigeneId}>
+          {titel}
+        </Zwischentitel>
+      ) : null}
       <div
         role="group"
         aria-labelledby={titelId}
@@ -84,20 +97,62 @@ export function Wochenleiste({
                 setGetippt(w.nummer);
                 onUmschalten(w.nummer);
               }}
-              className={`border-line-strong ease-druck focus-visible:outline-ink aria-pressed:focus-visible:outline-surface max-[23rem]:rounded-button flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-1 transition-colors duration-120 not-first:border-l focus-visible:outline-3 focus-visible:-outline-offset-3 disabled:cursor-not-allowed max-[23rem]:min-h-12 max-[23rem]:border ${linie} ${zelle(an, gesperrt)}`}
+              className={`border-line-strong ease-druck focus-visible:outline-ink aria-pressed:focus-visible:outline-surface max-[23rem]:rounded-button flex min-w-0 flex-col items-center justify-center gap-1 px-1 transition-colors duration-120 not-first:border-l focus-visible:outline-3 focus-visible:-outline-offset-3 disabled:cursor-not-allowed max-[23rem]:border ${mitZahl ? 'min-h-18 gap-0.5 max-[23rem]:min-h-16' : 'min-h-14 max-[23rem]:min-h-12'} ${linie} ${zelle(an, gesperrt)}`}
             >
-              {an ? (
-                <HakenSymbol className={`size-4 ${getippt === w.nummer ? 'haken-gesetzt' : ''}`} />
-              ) : null}
-              <span aria-hidden="true">{w.kurz}</span>
+              {w.zahl === undefined ? (
+                <>
+                  {an ? (
+                    <HakenSymbol
+                      className={`size-4 ${getippt === w.nummer ? 'haken-gesetzt' : ''}`}
+                    />
+                  ) : null}
+                  <span aria-hidden="true">{w.kurz}</span>
+                </>
+              ) : (
+                <>
+                  <span aria-hidden="true">{w.kurz}</span>
+                  {an ? (
+                    <HakenSymbol
+                      className={`size-5.5 ${getippt === w.nummer ? 'haken-gesetzt' : ''}`}
+                    />
+                  ) : (
+                    <span aria-hidden="true" className="font-normal">
+                      {w.zahl}
+                    </span>
+                  )}
+                </>
+              )}
               <span className="sr-only">{w.lang}</span>
             </button>
           );
         })}
       </div>
-      <p role="status" className="text-ink-muted mt-2">
-        {satz}
-      </p>
+      {heuteSpalte >= 0 ? (
+        // Unter dem heutigen Tag, unter 23rem in seiner Spalte des Rasters aus drei.
+        <div aria-hidden="true" className="text-ink-muted max-w-wochenleiste mt-1.5">
+          <div
+            style={{ '--spalten': wochentage.length } as CSSProperties}
+            className="grid grid-cols-[repeat(var(--spalten),minmax(0,1fr))] max-[23rem]:hidden"
+          >
+            <span className="text-center whitespace-nowrap" style={{ gridColumn: heuteSpalte + 1 }}>
+              heute
+            </span>
+          </div>
+          <div className="hidden grid-cols-3 gap-2 max-[23rem]:grid">
+            <span
+              className="text-center whitespace-nowrap"
+              style={{ gridColumn: (heuteSpalte % 3) + 1 }}
+            >
+              heute
+            </span>
+          </div>
+        </div>
+      ) : null}
+      {satz === undefined ? null : (
+        <p role="status" className="text-ink-muted mt-2">
+          {satz}
+        </p>
+      )}
     </div>
   );
 }

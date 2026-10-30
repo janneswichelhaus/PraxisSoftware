@@ -32,6 +32,46 @@ describe('Field', () => {
     const schalter = screen.getByRole('button', { name: 'Kennwort anzeigen' });
     expect(schalter).toHaveClass('text-ink-muted', 'hover:text-ink');
   });
+
+  it('setzt die Einheit ins Feld und liest sie als Beschreibung vor, vor Hinweis und Fehler', () => {
+    render(<Field label="Gewicht heute" einheit="kg" hint="etwa 72,5" error="Bitte angeben." />);
+    const feld = screen.getByLabelText('Gewicht heute');
+    expect(feld).toHaveAccessibleDescription('kg etwa 72,5 Bitte angeben.');
+    expect(feld).toHaveClass('pr-12');
+    expect(screen.getByText('kg')).toHaveClass('absolute', 'pointer-events-none');
+  });
+
+  it('stellt `daneben` neben das Feld; Titel, Hinweis und Fehler bleiben je eine ganze Zeile', () => {
+    render(
+      <Field
+        label="Gewicht heute"
+        hint="Heute steht schon 73,1 kg."
+        error="Bitte angeben."
+        daneben={<button type="submit">Eintragen</button>}
+      />,
+    );
+    const feld = screen.getByLabelText('Gewicht heute');
+    const knopf = screen.getByRole('button', { name: 'Eintragen' });
+    // Der Knopf folgt dem Feld, vor dem Fehler; die Reihe bricht um, wenn er nicht daneben passt.
+    expect(feld.parentElement?.nextElementSibling).toBe(knopf);
+    expect(feld.parentElement).toHaveClass('min-w-40', 'flex-1');
+    expect(knopf.parentElement).toHaveClass('flex-wrap');
+    for (const teil of ['Gewicht heute', 'Heute steht schon 73,1 kg.', 'Bitte angeben.']) {
+      expect(screen.getByText(teil)).toHaveClass('basis-full');
+    }
+  });
+
+  it('bleibt ohne Einheit und `daneben`, wie es war', () => {
+    render(<Field label="Menge" hint="in Gramm" />);
+    const feld = screen.getByLabelText('Menge');
+    expect(feld).toHaveAccessibleDescription('in Gramm');
+    expect(feld.parentElement).toHaveAttribute('class', 'relative');
+    expect(feld.parentElement?.parentElement).toHaveAttribute(
+      'class',
+      'feld flex flex-col gap-1.5',
+    );
+    expect(screen.getByText('Menge')).toHaveAttribute('class', 'text-ink text-sm font-medium');
+  });
 });
 
 /**

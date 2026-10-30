@@ -1,41 +1,47 @@
-import { useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { useIstVerbunden } from '@/app/verbindung';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
-import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
-import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { Section } from '@/components/ui/Section';
+import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
+import {
+  Eintragszeile,
+  GESPERRT,
+  KAESTCHEN_GESPERRT,
+  Mahlzeitziel,
+  Minuszeichen,
+  Pfeilzeichen,
+  Pluszeichen,
+} from '@/components/ui/Tagebuchbausteine';
 import { Textlink } from '@/components/ui/Textlink';
-import { Tile, TileGrid } from '@/components/ui/Tile';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { leseZahl } from '@/features/nutrition/eingabe';
 import { feldtext } from '@/features/nutrition/lebensmittel';
 import {
-  grammVon,
   kcal,
   MAHLZEIT_NAMEN,
   MAHLZEITEN,
   mengeText,
-  nochUebrig,
-  wasserText,
   type Eintrag,
   type Mahlzeit,
 } from '@/features/nutrition/tagebuch';
-import { liter, zahl } from '@/features/nutrition/texte';
+import { zahl } from '@/features/nutrition/texte';
+import { tagePlus } from '@/lib/datum';
 import {
   tagebuchSchluessel,
   ladeTagebuch,
@@ -47,122 +53,132 @@ import {
   type EigenesTagebuch,
   type Plattformzugang,
 } from './api';
-import { PLATTFORM_PFAD } from './pfade';
+import { Abschnitt, Aufklappzeilen } from './Ernaehrungsteile';
 import { TagebuchErinnerungen } from './TagebuchErinnerungen';
-import { eintragenAdresse, tagebuchAdresse, tagName } from './tagebuchAdresse';
-import { tagePlus } from '@/lib/datum';
+import {
+  eintragenAdresse,
+  ernaehrungAdresse,
+  literZahl,
+  literZiel,
+  tagebuchAdresse,
+  tagZeilen,
+} from './tagebuchAdresse';
 
 /**
- * Das Ernährungstagebuch auf der Plattform (ERN-007, ADR-027 Punkte 10 und
- * 11): ein Tag mit „noch übrig“, Eiweiß, Kohlenhydraten und Fett, Wasser mit
- * einem Tipp und den vier Mahlzeiten. Ein Tipp auf einen Eintrag ändert
- * Menge oder Mahlzeit oder löscht ihn.
- *
- * Nur für die Person und ihre rechtliche Vertretung; die Begleitung bekommt
- * nichts (der Server gibt ihr nichts). Gerechnet hat der Server; hier steht
- * keine Bewertung eines Lebensmittels (ADR-006 Punkt 14). Der Tag steht in
- * der Adresse, nie ein Lebensmittel.
+ * Das Ernährungstagebuch (ADR-027 Punkte 10 und 11): die Mahlzeiten, Wasser mit einem Tipp, Energie
+ * und Nährstoffe als „x von y“. Gerechnet hat der Server, kein Lebensmittel wird bewertet
+ * (ADR-006 Punkt 14); die Begleitung bekommt nichts, in der Adresse steht nur der Tag.
  */
-/** Die Suche ohne Tag - für den Weg zurück zur Ernährung. */
-function zurueck(suche: URLSearchParams): string {
-  const p = new URLSearchParams(suche);
-  p.delete('tag');
-  const rest = p.toString();
-  return rest === '' ? '' : `?${rest}`;
-}
-
 export function Tagebuch({ zugang }: { zugang: Plattformzugang }) {
   const [suche] = useSearchParams();
+  const { search } = useLocation();
   const tag = /^\d{4}-\d{2}-\d{2}$/.test(suche.get('tag') ?? '') ? suche.get('tag') : null;
   const abfrage = useQuery({
     queryKey: tagebuchSchluessel(zugang.access_id, tag ?? 'heute'),
     queryFn: () => ladeTagebuch(zugang.access_id, tag),
   });
+  const { data } = abfrage;
 
   return (
     <>
-      <Rueckweg
-        standard={`${PLATTFORM_PFAD}/ernaehrung${zurueck(suche)}`}
-        beschriftung="Zur Ernährung"
-      />
-      <PageHeader title="Tagebuch" />
-      <Abfragezustand
-        abfrage={abfrage}
-        laden="Ihr Tagebuch wird geladen …"
-        fehler="Ihr Tagebuch konnte nicht geladen werden."
-        inKarte
-        leer={{ wenn: (daten) => !daten, titel: 'Zurzeit keine Ernährungsberatung.' }}
-      >
-        {(daten) => <Inhalt zugang={zugang} daten={daten!} />}
-      </Abfragezustand>
+      {/* Von der Übersicht reist der Rückweg in der Adresse mit und heißt „Übersicht“. */}
+      <Rueckweg standard={ernaehrungAdresse(search)} beschriftung="Ernährung" />
+      <PageHeader title="Tagebuch" stufe="seite" />
+      {data === undefined ? (
+        abfrage.isError ? (
+          <div className="mt-8">
+            <ErrorState
+              title="Ihr Tagebuch konnte nicht geladen werden."
+              description={VERBINDUNG_PRUEFEN}
+              onErneut={() => abfrage.refetch()}
+            />
+          </div>
+        ) : (
+          <Ladezustand />
+        )
+      ) : data === null ? (
+        <div className="mt-8">
+          <EmptyState
+            markenform
+            title="Zurzeit keine Ernährungsberatung"
+            description="Vereinbaren Sie eine Ernährungsberatung mit Ihrer Praxis, finden Sie sie hier."
+          />
+        </div>
+      ) : (
+        <Inhalt
+          zugang={zugang}
+          daten={data}
+          nachladen={
+            abfrage.isError ? (
+              <NachladeHinweis
+                laeuft={abfrage.isFetching}
+                onErneut={() => void abfrage.refetch()}
+              />
+            ) : null
+          }
+        />
+      )}
     </>
   );
 }
 
-function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTagebuch }) {
-  const { state, search } = useLocation() as {
-    state: { eingetragen?: string } | null;
-    search: string;
-  };
+/** Am Rechner links die Mahlzeiten, rechts Wasser und Zahlen, Abstand 48 (ANN-796). */
+const ZWEI_SPALTEN =
+  'flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:grid [.plattform-schrift[data-rechner]_&]:grid-cols-2 [.plattform-schrift[data-rechner]_&]:items-start [.plattform-schrift[data-rechner]_&]:gap-12';
+
+/** Name und Wert einer Zeile; unter 23rem der Wert unter dem Namen. */
+const ZEILE =
+  'flex flex-wrap items-baseline justify-between gap-x-2 max-[23rem]:flex-col max-[23rem]:items-start';
+
+const OHNE_NETZ = 'Eintragen geht wieder mit Verbindung.';
+
+function Inhalt({
+  zugang,
+  daten,
+  nachladen,
+}: {
+  zugang: Plattformzugang;
+  daten: EigenesTagebuch;
+  nachladen: ReactNode;
+}) {
+  const { search } = useLocation();
+  const verbunden = useIstVerbunden();
+  const ohneNetzId = useId();
   const [offen, setOffen] = useState<Eintrag | null>(null);
-  const tag = daten.day.day;
-  const schreibbar = daten.can_write;
+  // Ohne Netz bleibt alles lesbar; was schreibt, ist gesperrt, und über den Mahlzeiten steht warum.
+  const gesperrt = daten.can_write && !verbunden;
 
   return (
-    <div className="flex flex-col gap-8 [&>*]:mt-0">
-      <Tagesleiste tag={tag} heute={daten.today} anfang={daten.started_on} />
+    <div className="mt-3 flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:gap-12">
+      <Tagesleiste tag={daten.day.day} heute={daten.today} anfang={daten.started_on} />
+      {nachladen}
       {!daten.enabled ? (
         <Statusmeldung ton="neutral">
           Ihr Tagebuch ist ausgeschaltet.{' '}
-          <Textlink to={`${PLATTFORM_PFAD}/ernaehrung${zurueck(new URLSearchParams(search))}`}>
-            Unter „Ernährung“ einschalten
-          </Textlink>
+          <Textlink to={ernaehrungAdresse(search)}>Unter „Ernährung“ einschalten</Textlink>
         </Statusmeldung>
       ) : null}
-      {state?.eingetragen ? <Rueckmeldung>„{state.eingetragen}“ eingetragen.</Rueckmeldung> : null}
-      {/* ADR-027 Punkt 11: „Zahlen ausblenden“ ist die Einstellung der Person. */}
-      {daten.hide_numbers ? null : <Uebersicht daten={daten} />}
-      <Wasser zugang={zugang} daten={daten} schreibbar={schreibbar} />
-      {MAHLZEITEN.map((mahlzeit) => {
-        const teil = daten.day.meals.find((m) => m.meal === mahlzeit)!;
-        return (
-          // Leer steht in der Karte wie das Gefüllte daneben (DESIGN.md Regel 8);
-          // „Eintragen“ in voller Größe wie jeder Knopf der Plattform.
-          <Listenabschnitt
-            key={mahlzeit}
-            titel={MAHLZEIT_NAMEN[mahlzeit]}
-            leer={{ titel: 'Nichts eingetragen.' }}
-            {...(schreibbar
-              ? {
-                  aktion: (
-                    <ButtonLink
-                      to={eintragenAdresse(tag, mahlzeit, search)}
-                      variant="secondary"
-                      aria-label={`${MAHLZEIT_NAMEN[mahlzeit]} eintragen`}
-                    >
-                      Eintragen
-                    </ButtonLink>
-                  ),
-                }
-              : {})}
-          >
-            {teil.entries.map((e) => (
-              <ListRow
-                key={e.id}
-                titel={e.name}
-                meta={mengeText(e)}
-                {...(daten.hide_numbers ? {} : { betrag: kcal(e.energy_kcal) })}
-                {...(daten.can_delete ? { onClick: () => setOffen(e) } : {})}
-              />
-            ))}
-          </Listenabschnitt>
-        );
-      })}
-      <div className="flex flex-col gap-2">
-        {daten.can_write ? <Kopieren zugang={zugang} daten={daten} /> : null}
-        {daten.can_delete ? <Einstellungen zugang={zugang} daten={daten} /> : null}
-        {daten.enabled ? <TagebuchErinnerungen zugang={zugang} /> : null}
+      {/* Das Eintragen zuerst: So steht es auch bei „Sehr groß“ im ersten Bild (ANN-796). */}
+      <div className={ZWEI_SPALTEN}>
+        <Mahlzeiten
+          daten={daten}
+          gesperrt={gesperrt}
+          ohneNetzId={ohneNetzId}
+          {...(daten.can_delete && verbunden ? { onOeffnen: setOffen } : {})}
+        />
+        <div className="flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:gap-12">
+          <Wasser zugang={zugang} daten={daten} gesperrt={gesperrt} ohneNetzId={ohneNetzId} />
+          {/* ADR-027 Punkt 11: „Zahlen ausblenden“ ist die Einstellung der Person. */}
+          {daten.hide_numbers ? null : <EnergieUndNaehrstoffe daten={daten} />}
+        </div>
       </div>
+      {daten.can_write || daten.can_delete || daten.enabled ? (
+        <Aufklappzeilen linieOben>
+          {daten.can_write ? <Kopieren zugang={zugang} daten={daten} /> : null}
+          {daten.can_delete ? <Einstellungen zugang={zugang} daten={daten} /> : null}
+          {daten.enabled ? <TagebuchErinnerungen zugang={zugang} /> : null}
+        </Aufklappzeilen>
+      ) : null}
       {offen ? (
         <EintragFenster
           zugang={zugang}
@@ -175,80 +191,112 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTage
   );
 }
 
+/** Vortag und Folgetag als Knöpfe 48 mit Rahmen; dazwischen der Tag, auch bei „Heute“ mit Datum. */
 function Tagesleiste({ tag, heute, anfang }: { tag: string; heute: string; anfang: string }) {
   const navigate = useNavigate();
   const { search } = useLocation();
+  const { name, datum } = tagZeilen(tag, heute);
   return (
-    <nav aria-label="Tag wählen" className="flex items-center justify-between gap-2">
+    <nav
+      aria-label="Tag wählen"
+      className="flex items-center justify-between gap-2 max-[23rem]:flex-wrap"
+    >
       <Symbolknopf
         beschriftung="Vortag"
+        variant="secondary"
+        groesse="gross"
         disabled={tag <= anfang}
         onClick={() => void navigate(tagebuchAdresse(tagePlus(tag, -1), search, heute))}
       >
-        <span aria-hidden="true" className="text-2xl">
-          ‹
-        </span>
+        <Pfeilzeichen richtung="links" />
       </Symbolknopf>
-      <p className="text-ink text-base font-semibold" aria-live="polite">
-        {tagName(tag, heute)}
+      {/* Unter 23rem steht der Tag über den Knöpfen, damit „Donnerstag,“ ganz bleibt. */}
+      <p
+        aria-live="polite"
+        className="min-w-0 text-center leading-snug wrap-break-word max-[23rem]:order-first max-[23rem]:basis-full"
+      >
+        <strong className="block font-bold">{name}</strong>
+        <span className="text-ink-muted block">{datum}</span>
       </p>
       <Symbolknopf
         beschriftung="Folgetag"
+        variant="secondary"
+        groesse="gross"
         disabled={tag >= heute}
         onClick={() => void navigate(tagebuchAdresse(tagePlus(tag, 1), search, heute))}
       >
-        <span aria-hidden="true" className="text-2xl">
-          ›
-        </span>
+        <Pfeilzeichen richtung="rechts" />
       </Symbolknopf>
     </nav>
   );
 }
 
-/** „Noch übrig“ als Kachel, die drei Makronährstoffe als Zeilen mit Balken. */
-function Uebersicht({ daten }: { daten: EigenesTagebuch }) {
+/** Gramm wie gespeichert: ganze Zahlen ohne, sonst mit einer Stelle („8,1“). */
+function gramm(wert: number): string {
+  return zahl(wert, wert % 1 === 0 ? 0 : 1);
+}
+
+/**
+ * „297 von 1466 kcal“ statt „noch übrig“, über dem Ziel ebenso, der Balken bleibt dann voll und
+ * kein Wort kommt dazu (ANN-795). Ohne Zielwerte nur die Energie.
+ */
+function EnergieUndNaehrstoffe({ daten }: { daten: EigenesTagebuch }) {
   const ziele = daten.targets;
   const summe = daten.day.totals;
-  if (!ziele) {
-    return (
-      <TileGrid>
-        <Tile label="Gegessen">{kcal(summe.energy_kcal)}</Tile>
-      </TileGrid>
-    );
-  }
-  const rest = nochUebrig(ziele.energy_kcal, summe.energy_kcal);
+  // Das Leerzeichen zwischen Name und Wert ist für Vorlesesoftware; im Raster zählt es nicht.
+  const energie = (
+    <>
+      <span className="font-semibold">Energie</span>{' '}
+    </>
+  );
   return (
-    <div className="flex flex-col gap-3">
-      <TileGrid>
-        <Tile
-          label={rest.ueber ? 'Energie' : 'Noch übrig'}
-          zusatz={
-            <>
-              {kcal(summe.energy_kcal)} von {kcal(ziele.energy_kcal)}
-              <ProgressBar wert={summe.energy_kcal} von={ziele.energy_kcal} />
-            </>
-          }
-        >
-          {rest.wert}
-        </Tile>
-      </TileGrid>
-      <ListRows beschriftung="Makronährstoffe">
-        <Makro label="Eiweiß" wert={summe.protein_g} ziel={ziele.protein_g} />
-        <Makro label="Kohlenhydrate" wert={summe.carbohydrate_g} ziel={ziele.carbohydrate_g} />
-        <Makro label="Fett" wert={summe.fat_g} ziel={ziele.fat_g} />
-      </ListRows>
-    </div>
+    <Abschnitt titel="Energie und Nährstoffe" abstand="gap-4">
+      {ziele ? (
+        <>
+          <div className="flex flex-col gap-2">
+            <p className={ZEILE}>
+              {energie}
+              <span className="tabular-nums">
+                <strong className="text-abschnitt">{zahl(summe.energy_kcal)}</strong>{' '}
+                <span className="text-ink-muted">von {kcal(ziele.energy_kcal)}</span>
+              </span>
+            </p>
+            <ProgressBar kante wert={summe.energy_kcal} von={ziele.energy_kcal} />
+          </div>
+          <div className="flex flex-col gap-3">
+            <Naehrstoff name="Eiweiß" wert={summe.protein_g} ziel={ziele.protein_g} />
+            <Naehrstoff
+              name="Kohlenhydrate"
+              wert={summe.carbohydrate_g}
+              ziel={ziele.carbohydrate_g}
+            />
+            <Naehrstoff name="Fett" wert={summe.fat_g} ziel={ziele.fat_g} />
+          </div>
+        </>
+      ) : (
+        <p className={ZEILE}>
+          {energie}
+          <span className="tabular-nums">
+            <strong className="text-abschnitt">{zahl(summe.energy_kcal)}</strong>
+            {'\u00a0'}kcal
+          </span>
+        </p>
+      )}
+    </Abschnitt>
   );
 }
 
-function Makro({ label, wert, ziel }: { label: string; wert: number; ziel: number }) {
+function Naehrstoff({ name, wert, ziel }: { name: string; wert: number; ziel: number }) {
   return (
-    <ListRow
-      dicht
-      titel={label}
-      betrag={grammVon(wert, ziel)}
-      darunter={<ProgressBar wert={wert} von={ziel} />}
-    />
+    <div className="flex flex-col gap-1.5">
+      <p className={ZEILE}>
+        <span className="text-ink-muted">{name}</span>{' '}
+        <span className="tabular-nums">
+          {gramm(wert)} <span className="text-ink-muted">von {zahl(ziel)}&nbsp;g</span>
+        </span>
+      </p>
+      <ProgressBar kante dicht wert={wert} von={ziel} />
+    </div>
   );
 }
 
@@ -257,15 +305,17 @@ function useNeuLaden(zugang: Plattformzugang) {
   return () => queryClient.invalidateQueries({ queryKey: tagebuchSchluessel(zugang.access_id) });
 }
 
-/** Wasser mit einem Tipp (ADR-027 Punkt 10); ein Glas zurück daneben. */
+/** Wasser mit einem Tipp (ADR-027 Punkt 10), in Litern; ein Glas zurück daneben. */
 function Wasser({
   zugang,
   daten,
-  schreibbar,
+  gesperrt,
+  ohneNetzId,
 }: {
   zugang: Plattformzugang;
   daten: EigenesTagebuch;
-  schreibbar: boolean;
+  gesperrt: boolean;
+  ohneNetzId: string;
 }) {
   const neuLaden = useNeuLaden(zugang);
   const glas = daten.glass_ml;
@@ -275,47 +325,225 @@ function Wasser({
   });
   const ziel = daten.targets?.water_ml;
   const menge = daten.day.water_ml;
+  const sperre = gesperrt ? { 'aria-disabled': true, 'aria-describedby': ohneNetzId } : {};
   return (
-    <Section titel="Wasser">
-      <p className="text-ink text-base">
-        {wasserText(menge)}
-        {/* Das Ziel wie unter „Ernährung“ und in der Akte (`liter`), nicht
-            auf zwei Stellen: dort „2,6 l“, hier sonst „2,57 l“. */}
-        {ziel ? ` von ${liter(ziel)}` : ''}
-      </p>
-      {ziel ? <ProgressBar wert={menge} von={ziel} /> : null}
-      {schreibbar ? (
-        <div className="mt-4 flex items-center gap-2">
+    <Abschnitt
+      titel="Wasser"
+      rechts={
+        <p role="status" className="tabular-nums">
+          <strong className="font-bold">{literZahl(menge)}</strong>
+          {ziel ? (
+            <>
+              {' '}
+              <span className="text-ink-muted">von {literZiel(ziel)}</span>
+            </>
+          ) : (
+            <span className="text-ink-muted">{'\u00a0'}l</span>
+          )}
+        </p>
+      }
+    >
+      {ziel ? <ProgressBar kante wert={menge} von={ziel} /> : null}
+      {daten.can_write ? (
+        <div className="grid grid-cols-[minmax(0,1fr)_4rem] gap-2 max-[23rem]:grid-cols-[minmax(0,1fr)_3.5rem]">
+          {/* Unter 23rem ohne Zeichen: Sonst ragte es bei „1 Glas (250 ml)“ über den Rand. */}
           <Button
             type="button"
             variant="secondary"
-            className="flex-1 sm:flex-none"
+            groesse="gross"
             disabled={zaehlen.isPending}
-            onClick={() => zaehlen.mutate(glas)}
+            className={GESPERRT}
+            onClick={() => {
+              if (!gesperrt) zaehlen.mutate(glas);
+            }}
+            {...sperre}
           >
-            + 1 Glas ({zahl(glas)} ml)
+            <Pluszeichen className="size-5.5 max-[23rem]:hidden" />
+            <span className="sr-only">+</span> 1 Glas ({zahl(glas)}&nbsp;ml)
           </Button>
-          {/* Mit Rand und in der Höhe von „+ 1 Glas“ (48 px): Ein leises Minus
-              war in der Sonne kaum mehr als ein Strich. */}
+          {/* 56 hoch wie „1 Glas“: Ein leises Minus war in der Sonne kaum mehr als ein Strich. */}
           <Symbolknopf
             variant="secondary"
             groesse="gross"
             beschriftung="Ein Glas weniger"
+            className={`min-h-14 min-w-16 max-[23rem]:min-w-14 ${GESPERRT}`}
             disabled={zaehlen.isPending || menge === 0}
-            onClick={() => zaehlen.mutate(-glas)}
+            onClick={() => {
+              if (!gesperrt) zaehlen.mutate(-glas);
+            }}
+            {...sperre}
           >
-            <span aria-hidden="true" className="text-xl">
-              −
-            </span>
+            <Minuszeichen />
           </Symbolknopf>
         </div>
       ) : null}
-      {zaehlen.isError ? (
-        <Statusmeldung ton="fehler" className="mt-2">
-          {zaehlen.error.message}
-        </Statusmeldung>
+      {zaehlen.isError ? <Statusmeldung ton="fehler">{zaehlen.error.message}</Statusmeldung> : null}
+    </Abschnitt>
+  );
+}
+
+/**
+ * Je Mahlzeit mit Einträgen ein Block mit „+“, die leeren zusammen in einer Zeile mit Pillen
+ * (ANN-796); ohne Schreibrecht nur zum Lesen.
+ */
+function Mahlzeiten({
+  daten,
+  gesperrt,
+  ohneNetzId,
+  onOeffnen,
+}: {
+  daten: EigenesTagebuch;
+  gesperrt: boolean;
+  ohneNetzId: string;
+  onOeffnen?: (eintrag: Eintrag) => void;
+}) {
+  const { search } = useLocation();
+  const leerId = useId();
+  const tag = daten.day.day;
+  const teile = MAHLZEITEN.map((mahlzeit) => {
+    const teil = daten.day.meals.find((m) => m.meal === mahlzeit);
+    return { mahlzeit, eintraege: teil?.entries ?? [], kcal: teil?.totals.energy_kcal ?? 0 };
+  });
+  const leer = teile.filter((t) => t.eintraege.length === 0);
+  const ziel = (mahlzeit: Mahlzeit, form: 'rund' | 'pille') => (
+    <Mahlzeitziel
+      form={form}
+      name={MAHLZEIT_NAMEN[mahlzeit]}
+      to={eintragenAdresse(tag, mahlzeit, search, daten.today)}
+      gesperrt={gesperrt}
+      beschreibung={ohneNetzId}
+    />
+  );
+  return (
+    <Abschnitt titel="Mahlzeiten">
+      {gesperrt ? (
+        <p id={ohneNetzId} className="text-ink-muted">
+          {OHNE_NETZ}
+        </p>
       ) : null}
-    </Section>
+      <div className="border-line border-t">
+        {teile
+          .filter((t) => t.eintraege.length > 0)
+          .map((t) => (
+            <div key={t.mahlzeit} className="border-line border-b py-3">
+              <Zwischentitel {...(daten.can_write ? { aktion: ziel(t.mahlzeit, 'rund') } : {})}>
+                <span className="font-bold">{MAHLZEIT_NAMEN[t.mahlzeit]}</span>
+                {daten.hide_numbers ? null : (
+                  <>
+                    {' '}
+                    <span className="text-ink-muted font-normal">· {kcal(t.kcal)}</span>
+                  </>
+                )}
+              </Zwischentitel>
+              <ul className="flex flex-col">
+                {t.eintraege.map((e) => (
+                  <li key={e.id}>
+                    <Eintragszeile
+                      name={e.name}
+                      menge={mengeFest(e)}
+                      energie={daten.hide_numbers ? undefined : kcal(e.energy_kcal)}
+                      onOeffnen={onOeffnen ? () => onOeffnen(e) : undefined}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        {leer.length > 0 ? (
+          <div className="border-line flex flex-col gap-2 border-b py-4">
+            {daten.can_write ? (
+              <>
+                <p id={leerId} className="text-ink-muted">
+                  Noch nichts eingetragen:
+                </p>
+                <ul aria-labelledby={leerId} className="flex flex-wrap gap-2">
+                  {leer.map((t) => (
+                    <li key={t.mahlzeit}>{ziel(t.mahlzeit, 'pille')}</li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="text-ink-muted">
+                Noch nichts eingetragen: {leer.map((t) => MAHLZEIT_NAMEN[t.mahlzeit]).join(', ')}
+              </p>
+            )}
+          </div>
+        ) : null}
+      </div>
+    </Abschnitt>
+  );
+}
+
+/** Die Menge ohne Umbruch hinter einer Zahl: „150 g“ und „1 Portion“ bleiben zusammen. */
+function mengeFest(eintrag: Eintrag): string {
+  return mengeText(eintrag).replace(/(\d) /g, '$1\u00a0');
+}
+
+/** Die Form der Seite, solange der Tag lädt: Tagesleiste, Mahlzeiten, Wasser, Energie mit Balken. */
+function Ladezustand() {
+  return (
+    <SkelettBereich
+      beschriftung="Ihr Tagebuch wird geladen"
+      className="mt-3 flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:gap-12"
+    >
+      <span className="flex items-center justify-between gap-2">
+        <Skelett form="hauptknopf" className="w-12 shrink-0" />
+        <span className="flex min-w-0 flex-col items-center gap-2">
+          <Skelett form="zeile" className="w-16" />
+          <Skelett form="zeile" className="w-44 max-w-full" />
+        </span>
+        <Skelett form="hauptknopf" className="w-12 shrink-0" />
+      </span>
+      <span className={ZWEI_SPALTEN}>
+        <span className="flex flex-col gap-3">
+          <Skelett form="titel" className="w-35 max-w-full" />
+          <span className="flex items-center justify-between gap-2 pt-3">
+            <Skelett form="zeile" className="w-45 max-w-2/3" />
+            <Skelett form="kreis" className="shrink-0" />
+          </span>
+          <span className="flex items-center justify-between gap-3">
+            <Skelett form="zeile" className="w-48 max-w-3/5" />
+            <Skelett form="zeile" className="w-18" />
+          </span>
+          <span className="flex flex-wrap gap-2 pt-4">
+            <Skelett form="kreis" className="min-w-36" />
+            <Skelett form="kreis" className="min-w-34" />
+            <Skelett form="kreis" className="min-w-26" />
+          </span>
+        </span>
+        <span className="flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:gap-12">
+          <span className="flex flex-col gap-3">
+            <span className="flex items-center justify-between gap-2">
+              <Skelett form="titel" className="w-23" />
+              <Skelett form="zeile" className="w-31 max-w-1/2" />
+            </span>
+            <Skelett form="balken" />
+            <span className="grid grid-cols-[minmax(0,1fr)_4rem] gap-2 max-[23rem]:grid-cols-[minmax(0,1fr)_3.5rem]">
+              <Skelett form="knopf" />
+              <Skelett form="knopf" />
+            </span>
+          </span>
+          <span className="flex flex-col gap-4">
+            <span className="flex flex-col gap-2">
+              <span className="flex items-center justify-between gap-2">
+                <Skelett form="zeile" className="w-21" />
+                <Skelett form="titel" className="w-38 max-w-1/2" />
+              </span>
+              <Skelett form="balken" />
+            </span>
+            {['w-16', 'w-31', 'w-11'].map((breite) => (
+              <span key={breite} className="flex flex-col gap-1.5">
+                <span className="flex items-center justify-between gap-2">
+                  <Skelett form="zeile" className={`${breite} max-w-2/5`} />
+                  <Skelett form="zeile" className="w-24 max-w-2/5" />
+                </span>
+                <Skelett form="balken" className="max-h-2" />
+              </span>
+            ))}
+          </span>
+        </span>
+      </span>
+    </SkelettBereich>
   );
 }
 
@@ -332,6 +560,9 @@ function EintragFenster({
   onSchliessen: () => void;
 }) {
   const neuLaden = useNeuLaden(zugang);
+  const verbunden = useIstVerbunden();
+  const ohneNetzId = useId();
+  const sperre = verbunden ? {} : { 'aria-disabled': true, 'aria-describedby': ohneNetzId };
   const portion = eintrag.portion_label !== null;
   const [mahlzeit, setMahlzeit] = useState<Mahlzeit>(eintrag.meal);
   const [wert, setWert] = useState(feldtext(portion ? eintrag.portion_count : eintrag.amount));
@@ -351,7 +582,7 @@ function EintragFenster({
       onSchliessen();
     },
   });
-  const loeschenKnopf = (
+  const loeschenKnopf = verbunden ? (
     <Rueckfrage
       ausloeser="Löschen"
       ausloeserVariante="quiet"
@@ -362,6 +593,15 @@ function EintragFenster({
     >
       <p>„{eintrag.name}“ wird aus dem Tagebuch gelöscht.</p>
     </Rueckfrage>
+  ) : (
+    <Button type="button" variant="quiet" className={GESPERRT} {...sperre}>
+      Löschen
+    </Button>
+  );
+  const ohneNetz = verbunden ? null : (
+    <p id={ohneNetzId} className="text-ink-muted">
+      {daten.can_write ? 'Ändern und Löschen gehen' : 'Löschen geht'} wieder mit Verbindung.
+    </p>
   );
   return (
     <Dialogfenster
@@ -375,6 +615,7 @@ function EintragFenster({
           className="flex flex-col gap-4"
           onSubmit={(event) => {
             event.preventDefault();
+            if (!verbunden) return;
             const n = leseZahl(wert);
             const grenze = portion ? 20 : 5000;
             if (n === null || n <= 0 || n > grenze) {
@@ -406,15 +647,19 @@ function EintragFenster({
           {aendern.isError ? (
             <Statusmeldung ton="fehler">{aendern.error.message}</Statusmeldung>
           ) : null}
+          {ohneNetz}
           <Formularfuss dicht>
-            <Button type="submit" disabled={aendern.isPending}>
+            <Button type="submit" disabled={aendern.isPending} className={GESPERRT} {...sperre}>
               {aendern.isPending ? 'Wird gespeichert …' : 'Speichern'}
             </Button>
           </Formularfuss>
           <div>{loeschenKnopf}</div>
         </form>
       ) : (
-        loeschenKnopf
+        <div className="flex flex-col gap-4">
+          {ohneNetz}
+          <div>{loeschenKnopf}</div>
+        </div>
       )}
     </Dialogfenster>
   );
@@ -423,6 +668,8 @@ function EintragFenster({
 /** Eine Mahlzeit oder den ganzen Tag von einem anderen Tag hierher kopieren (ERN-008). */
 function Kopieren({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTagebuch }) {
   const neuLaden = useNeuLaden(zugang);
+  const verbunden = useIstVerbunden();
+  const ohneNetzId = useId();
   const tag = daten.day.day;
   const [von, setVon] = useState(tag > daten.started_on ? tagePlus(tag, -1) : tag);
   const [teil, setTeil] = useState<Mahlzeit | 'tag'>('tag');
@@ -441,6 +688,7 @@ function Kopieren({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTa
         className="flex flex-col gap-4"
         onSubmit={(event) => {
           event.preventDefault();
+          if (!verbunden) return;
           setKopiert(null);
           kopieren.mutate();
         }}
@@ -474,8 +722,19 @@ function Kopieren({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTa
                 : `${kopiert} Einträge kopiert.`}
           </Rueckmeldung>
         ) : null}
+        {verbunden ? null : (
+          <p id={ohneNetzId} className="text-ink-muted">
+            Kopieren geht wieder mit Verbindung.
+          </p>
+        )}
         <Formularfuss dicht>
-          <Button type="submit" variant="secondary" disabled={kopieren.isPending || !von}>
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={kopieren.isPending || !von}
+            className={GESPERRT}
+            {...(verbunden ? {} : { 'aria-disabled': true, 'aria-describedby': ohneNetzId })}
+          >
             {kopieren.isPending ? 'Wird kopiert …' : 'Hierher kopieren'}
           </Button>
         </Formularfuss>
@@ -487,6 +746,7 @@ function Kopieren({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTa
 /** „Zahlen ausblenden“ (ADR-027 Punkt 11) - die Einstellung der Person. */
 function Einstellungen({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTagebuch }) {
   const neuLaden = useNeuLaden(zugang);
+  const verbunden = useIstVerbunden();
   const [aus, setAus] = useState(daten.hide_numbers);
   const schalten = useMutation({
     mutationFn: (neu: boolean) => zahlenAusblenden(zugang.access_id, neu),
@@ -497,12 +757,17 @@ function Einstellungen({ zugang, daten }: { zugang: Plattformzugang; daten: Eige
   });
   return (
     <Disclosure summary="Einstellungen">
-      <Checkbox
-        label="Zahlen ausblenden"
-        hint="Mahlzeiten ohne Kalorien und Nährwerte."
-        checked={aus}
-        onChange={(event) => schalten.mutate(event.target.checked)}
-      />
+      <div className={verbunden ? undefined : KAESTCHEN_GESPERRT}>
+        <Checkbox
+          label="Zahlen ausblenden"
+          hint={`Mahlzeiten ohne Kalorien und Nährwerte.${verbunden ? '' : ' Ändern geht wieder mit Verbindung.'}`}
+          checked={aus}
+          aria-disabled={verbunden ? undefined : true}
+          onChange={(event) => {
+            if (verbunden) schalten.mutate(event.target.checked);
+          }}
+        />
+      </div>
       {schalten.isError ? (
         <Statusmeldung ton="fehler" className="mt-2">
           {schalten.error.message}

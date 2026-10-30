@@ -392,3 +392,59 @@ describe('GefuehrterAblauf mit „Später“ und Balken je Schritt (5.3)', () =>
     expect(inhalt!.className).not.toContain('23rem');
   });
 });
+
+describe('GefuehrterAblauf mit Namen im Kopf (Selbstauskunft)', () => {
+  function Checkin({ seite, onSchliessen }: { seite: 1 | 2; onSchliessen: () => void }) {
+    return (
+      <GefuehrterAblauf
+        titel="Wie stark sind Ihre Schmerzen in Ruhe?"
+        objekt="Check-in"
+        schliessen="Später"
+        onSchliessen={onSchliessen}
+        seite={`frage-${seite}`}
+        stand={{ text: `Frage ${seite} von 3`, wert: seite, von: 3 }}
+        onZurueck={seite > 1 ? vi.fn() : undefined}
+        spaeter
+        balkenJeSchritt
+        plattform
+        fussLinie
+        breit
+        unterDemKopf={<p>Keine Verbindung.</p>}
+        fuss={<Button className="w-full">Weiter</Button>}
+      >
+        <p>Skala</p>
+      </GefuehrterAblauf>
+    );
+  }
+
+  it('zeigt den Namen mit „Später“ in der ersten Reihe, darunter Zurück und den Stand', async () => {
+    const nutzer = userEvent.setup();
+    const onSchliessen = vi.fn();
+    render(<Checkin seite={2} onSchliessen={onSchliessen} />);
+    const fenster = screen.getByRole('dialog', { name: 'Wie stark sind Ihre Schmerzen in Ruhe?' });
+    const name = within(fenster).getByText('Check-in');
+    const reihe = name.parentElement!;
+    // Die Reihe steht in der Spalte; die Linie reicht am Telefon über die ganze Breite.
+    expect(reihe).toHaveClass(
+      'min-h-15',
+      'flex-wrap',
+      '[.plattform-schrift[data-rechner]_&]:max-w-spalte',
+    );
+    expect(reihe.parentElement).toHaveClass('border-b');
+    expect(within(reihe).getByRole('button', { name: 'Später' })).toBeInTheDocument();
+    // Die Zeile unter dem Kopf steht zwischen erster und zweiter Reihe.
+    expect(reihe.parentElement!.nextElementSibling).toHaveTextContent('Keine Verbindung.');
+    expect(within(fenster).getByRole('button', { name: '← Zurück' })).toBeInTheDocument();
+    expect(within(fenster).getByText('Frage 2 von 3')).toBeInTheDocument();
+    // Fuß mit Linie, Spalte am Rechner 48rem.
+    // Der Rand liegt außen: Knopf und Inhalt stehen an derselben Kante der Spalte.
+    const weiter = within(fenster).getByRole('button', { name: 'Weiter' });
+    expect(weiter.parentElement!.className).toContain(
+      '[.plattform-schrift[data-rechner]_&]:max-w-spalte',
+    );
+    expect(weiter.parentElement!.parentElement).toHaveClass('border-t', 'px-5');
+    await nutzer.click(within(reihe).getByRole('button', { name: 'Später' }));
+    expect(onSchliessen).toHaveBeenCalledTimes(1);
+    await pruefeBarrierefreiheit(document.body);
+  });
+});

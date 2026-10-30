@@ -144,6 +144,7 @@ export function rueckwegBeschriftung(pfad: string): string {
   if (ohneSuche === '/p/ich') return 'Ich';
   // Ebenso „Übersicht“, von dort zur Seite eines Termins und zurück (ANN-779).
   if (ohneSuche === '/p') return 'Übersicht';
+  if (ohneSuche === '/p/checkin') return 'Check-in';
   if (ohneSuche === '/training') return `Zurück zu den ${BEGRIFFE.trainingskundInnen}`;
   if (ohneSuche.startsWith('/training/')) return `Zurück zur ${BEGRIFFE.trainingskundIn}`;
   // UEB-EPIC-001: die Übungsbibliothek und eine Übung darin.

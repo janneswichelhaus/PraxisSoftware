@@ -1,27 +1,35 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
+import { useIstVerbunden } from '@/app/verbindung';
 import { Button } from '@/components/ui/Button';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
-import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Disclosure } from '@/components/ui/Card';
+import { EmptyState, ErrorState } from '@/components/ui/Feedback';
+import { BREITE_ABLAUFSPALTE, GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { Section } from '@/components/ui/Section';
+import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-import { FragebogenFelder } from '@/features/clinical/assessments/FragebogenFelder';
+import {
+  aendern,
+  imAendern,
+  kannZurueck,
+  weiter,
+  zurueck,
+  type Abfolge,
+} from '@/components/ui/abfolge';
 import {
   antwortFehler,
   type Antwort,
   type Antworten,
 } from '@/features/clinical/assessments/antworten';
-import { beschriftung, frageFeldId } from '@/features/clinical/assessments/darstellung';
-import type { ScoreDefinition, ScoreItem } from '@/features/clinical/assessments/schema';
-import type { Formularfehler } from '@/lib/formularfehler';
+import type { ScoreDefinition } from '@/features/clinical/assessments/schema';
 import {
   befundbogenSchluessel,
   befundbogenAbsenden,
@@ -31,131 +39,220 @@ import {
   type Bogenstand,
   type Plattformzugang,
 } from './api';
-import { bogenschritte, schrittTitel } from './bogenschritte';
+import { Bogenthema } from './Bogenthema';
+import {
+  beginn,
+  bogenthemen,
+  offeneFragen,
+  offenText,
+  seitentitel,
+  type Bogenthema as Thema,
+} from './bogenthemen';
 import { BOGEN_TITEL, bogenVorlage, fuerDiePlattform } from './instrumentwahl';
+import { NICHT_AKUT } from './nachrichtentexte';
+import { Notfallsatz } from './Notfallsatz';
 import { PLATTFORM_PFAD } from './pfade';
-import { datum } from './zeit';
+import { Verbindungszeile } from './Verbindungszeile';
+import { Vertretungsband } from './Vertretungsband';
+import { fest, tagUndMonat } from './zeit';
 
 /**
- * „Befundbogen ausfüllen" (POR-012, §7, DSN-001 4.1): der Anamnesebogen vor
- * dem ersten Termin, von der Person selbst.
- *
- * Dieselben Fragen wie in der Praxis - gezeichnet vom geteilten Baustein
- * `FragebogenFelder`, geprüft mit denselben Regeln (`antwortFehler`); was
- * die Person absendet, prüft der Server noch einmal gegen die Definition
- * (ABN-014). Absenden heißt abgeschlossen: Die Therapeut:in liest den Bogen
- * beim Termin und korrigiert dort, wenn nötig (ANN-248).
- *
- * Welche Bögen hier stehen, sagt die Definition (`ausgefuellt_von: patient`,
- * aktiv); heute ist das der Anamnesebogen. Ein Entwurf wird auf dem Server
- * gesichert, nie im Browser (ADR-001).
- *
- * Auf der Plattform heißt er nach seinem Zweck „Fragebogen vor dem ersten
- * Termin“ (DR-125); Name und Fassung der Vorlage stehen im Kleingedruckten.
+ * Der Fragebogen vor dem ersten Termin, von der Person selbst: dieselben Fragen wie in der Praxis,
+ * geprüft mit denselben Regeln; der Server prüft noch einmal. Senden heißt abgeschlossen (ANN-248),
+ * ein Entwurf liegt nur auf dem Server, nie im Browser (ADR-001).
  */
 export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
   const [suche] = useSearchParams();
   const bereich = new URLSearchParams(
     Object.fromEntries([...suche.entries()].filter(([k]) => k === 'bereich' || k === 'zugang')),
   ).toString();
-  const zurueck = `${PLATTFORM_PFAD}${bereich ? `?${bereich}` : ''}`;
+  const zurueckZu = `${PLATTFORM_PFAD}${bereich ? `?${bereich}` : ''}`;
   const stand = useQuery({
     queryKey: befundbogenSchluessel(zugang.access_id),
     queryFn: () => ladeBefundbogen(zugang.access_id),
   });
   const instrument = fuerDiePlattform()[0];
+  const behandlung = instrument !== undefined && zugang.relationship_kind === 'treatment';
+  const begleitung = zugang.access_kind === 'companion';
+  const boegen = (stand.data ?? []).filter((b) => b.instrument_id === instrument?.meta.id);
+  const abgeschlossen = boegen.find((b) => b.status === 'abgeschlossen');
+
+  if (stand.data !== undefined && behandlung && !begleitung && !abgeschlossen) {
+    return (
+      <Ablauf
+        zugang={zugang}
+        definition={instrument}
+        entwurf={boegen.find((b) => b.status === 'entwurf' && b.source === 'platform')}
+        zurueck={zurueckZu}
+      />
+    );
+  }
 
   return (
     <>
-      <Rueckweg standard={zurueck} beschriftung="Zur Übersicht" />
+      <Rueckweg standard={zurueckZu} beschriftung="Übersicht" />
+      <PageHeader title={BOGEN_TITEL} />
       {stand.isPending ? (
-        <LoadingState label="Ihr Fragebogen wird geladen …" inKarte />
+        <Ladezustand />
       ) : stand.data === undefined ? (
         <ErrorState
           title="Ihr Fragebogen konnte nicht geladen werden."
           description={VERBINDUNG_PRUEFEN}
           onErneut={() => stand.refetch()}
         />
-      ) : !instrument || zugang.relationship_kind !== 'treatment' ? (
-        <>
-          <PageHeader title={BOGEN_TITEL} />
-          <p className="text-ink max-w-prose text-base leading-relaxed">
-            Hier gibt es zurzeit nichts auszufüllen.
-          </p>
-        </>
-      ) : zugang.access_kind === 'companion' ? (
-        // ANN-248: Angaben zur eigenen Gesundheit macht die Person selbst; der
-        // Server weist eine Begleitung ab, hier steht der Grund als Satz.
-        <>
-          <PageHeader title={BOGEN_TITEL} />
-          <p className="text-ink max-w-prose text-base leading-relaxed">
-            Den Fragebogen füllt {zugang.represented_name ?? 'die Person'} selbst aus. Als
-            Begleitung lesen Sie mit, machen aber keine Angaben zur Gesundheit.
-          </p>
-        </>
+      ) : !behandlung ? (
+        <EmptyState
+          markenform
+          title="Zurzeit kein Fragebogen"
+          description="Hier gibt es zurzeit nichts auszufüllen."
+        />
+      ) : begleitung ? (
+        // ANN-248: Angaben zur eigenen Gesundheit macht die Person selbst; der Server weist eine
+        // Begleitung ab, hier steht der Grund.
+        <EmptyState
+          markenform
+          title={`Fragebogen für ${zugang.represented_name ?? 'die Person'}`}
+          description={`Den Fragebogen füllt ${zugang.represented_name ?? 'die Person'} selbst aus. Als Begleitung lesen Sie mit, machen aber keine Angaben zur Gesundheit.`}
+        />
       ) : (
-        <Bogen
-          zugang={zugang}
-          definition={instrument}
-          stand={stand.data.filter((b) => b.instrument_id === instrument.meta.id)}
-          zurueck={zurueck}
+        <EmptyState
+          markenform
+          title="Ihr Fragebogen liegt der Praxis vor"
+          description={`${
+            abgeschlossen?.completed_at
+              ? `Seit ${fest(tagUndMonat(abgeschlossen.completed_at))}. `
+              : ''
+          }Hat sich etwas geändert, besprechen Sie es bitte beim Termin.`}
         />
       )}
     </>
   );
 }
 
-function Bogen({
-  zugang,
-  definition,
-  stand,
-  zurueck,
-}: {
-  zugang: Plattformzugang;
-  definition: ScoreDefinition;
-  stand: Bogenstand[];
-  zurueck: string;
-}) {
-  const abgeschlossen = stand.find((b) => b.status === 'abgeschlossen');
-  const entwurf = stand.find((b) => b.status === 'entwurf' && b.source === 'platform');
-  if (abgeschlossen) {
-    return (
-      <>
-        <PageHeader title={BOGEN_TITEL} />
-        <Statusmeldung ton="erfolg">
-          Ihr Fragebogen liegt der Praxis vor
-          {abgeschlossen.completed_at ? ` (seit ${datum(abgeschlossen.completed_at)})` : ''}. Danke!
-          Ihre Therapeut:in sieht Ihre Angaben beim nächsten Termin.
-        </Statusmeldung>
-        <p className="text-ink-muted mt-3 max-w-prose text-sm">
-          Hat sich etwas geändert, besprechen Sie es bitte beim Termin.
-        </p>
-      </>
-    );
-  }
+/** Die Form des ersten Themas, solange der Stand lädt: Sätze, Titel und zwei Felder. */
+function Ladezustand() {
   return (
-    <Formular
-      key={entwurf?.id ?? 'neu'}
-      zugang={zugang}
-      definition={definition}
-      entwurf={entwurf}
-      zurueck={zurueck}
-    />
+    <SkelettBereich beschriftung="Ihr Fragebogen wird geladen" className="flex flex-col gap-3">
+      <Skelett form="zeile" className="w-[90%]" />
+      <Skelett form="zeile" className="w-[70%]" />
+      <Skelett form="titel" className="mt-4 w-1/2" />
+      <Skelett form="zeile" className="mt-4 w-1/4" />
+      <Skelett form="hauptknopf" />
+      <Skelett form="zeile" className="mt-4 w-1/3" />
+      <Skelett form="hauptknopf" />
+    </SkelettBereich>
   );
 }
 
+/** Ein Wert, der nicht von der Reihenfolge der Schlüssel abhängt: verglichen wird der Inhalt. */
+function inhalt(wert: unknown): string {
+  return JSON.stringify(wert, (_, teil: unknown) =>
+    teil && typeof teil === 'object' && !Array.isArray(teil)
+      ? Object.fromEntries(Object.entries(teil).sort(([a], [b]) => a.localeCompare(b)))
+      : teil,
+  );
+}
+
+const SPEICHERFEHLER =
+  'Ihre Angaben konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.';
+
 /**
- * Der Bogen zum Ausfüllen, in Schritten mit sichtbarem Fortschritt
- * (`bogenschritte`, ANN-467). Geprüft wird beim „Weiter“ der Schritt, beim
- * „Absenden“ der ganze Bogen - mit denselben Regeln wie in der Praxis.
- * Zwischenspeichern geht in jedem Schritt; die Antworten sind dieselben wie
- * vorher, nur die Anzeige ist geteilt.
+ * Speichern beim Weitergehen: Jeder Wechsel sichert im Hintergrund alle Antworten, wenn sich seit
+ * dem letzten Mal etwas geändert hat. Die Vorgänge laufen nacheinander - sonst legten zwei
+ * gleichzeitige ohne Kennung zwei Entwürfe an.
  */
-function Formular({
+function useBogenspeicher({
+  zugangId,
+  definition,
+  entwurf,
+  antworten,
+  verbunden,
+}: {
+  zugangId: string;
+  definition: ScoreDefinition;
+  entwurf: Bogenstand | undefined;
+  antworten: Antworten;
+  verbunden: boolean;
+}) {
+  const [entwurfId, setEntwurfId] = useState<string | null>(entwurf?.id ?? null);
+  const [gespeichert, setGespeichert] = useState(() => inhalt(entwurf?.answers ?? {}));
+  const [fehler, setFehler] = useState<string | null>(null);
+  const kennung = useRef(entwurfId);
+  const zuletzt = useRef(gespeichert);
+  const aktuell = useRef(antworten);
+  aktuell.current = antworten;
+  const kette = useRef<Promise<unknown>>(Promise.resolve());
+
+  /** Sichert, was sich geändert hat; `true`, wenn danach alle Antworten auf dem Server liegen. */
+  const speichern = useCallback(
+    (mitEntwurf = false): Promise<boolean> => {
+      const lauf = kette.current
+        .catch(() => undefined)
+        .then(async () => {
+          const jetzt = aktuell.current;
+          const text = inhalt(jetzt);
+          if (text === zuletzt.current && (kennung.current !== null || !mitEntwurf)) return true;
+          const id = await befundbogenSpeichern({
+            zugangId,
+            entwurfId: kennung.current,
+            instrumentId: definition.meta.id,
+            version: definition.meta.version,
+            antworten: jetzt,
+          });
+          kennung.current = id;
+          zuletzt.current = text;
+          setEntwurfId(id);
+          setGespeichert(text);
+          return inhalt(aktuell.current) === text;
+        });
+      kette.current = lauf;
+      return lauf;
+    },
+    [zugangId, definition],
+  );
+
+  const ungespeichert = inhalt(antworten) !== gespeichert;
+  const ungespeichertRef = useRef(ungespeichert);
+  ungespeichertRef.current = ungespeichert;
+
+  /** Im Hintergrund, beim Wechsel der Seite; ohne Netz wartet es, bis die Verbindung zurück ist. */
+  const imHintergrund = useCallback(() => {
+    if (!navigator.onLine || !ungespeichertRef.current) return;
+    speichern().then(
+      () => setFehler(null),
+      (grund: unknown) => setFehler(grund instanceof Error ? grund.message : SPEICHERFEHLER),
+    );
+  }, [speichern]);
+
+  useEffect(() => {
+    if (verbunden) imHintergrund();
+  }, [verbunden, imHintergrund]);
+
+  return {
+    entwurfId,
+    ungespeichert,
+    fehler,
+    speichern,
+    imHintergrund,
+    /** Vor dem Senden: alles sichern, notfalls einen Entwurf anlegen; die Kennung zurück. */
+    sichern: async () => {
+      await speichern(true);
+      return kennung.current!;
+    },
+    abwarten: () => kette.current.catch(() => undefined),
+  };
+}
+
+/**
+ * Der Bogen als geführter Ablauf: ein Thema je Seite, dann „Ist alles richtig?“ mit den offenen
+ * Themen und „Bogen senden“. Ein Entwurf öffnet nach dem letzten Thema mit Antwort; „Ändern“ führt
+ * vom Abschluss in ein Thema und „Übernehmen“ zurück.
+ */
+function Ablauf({
   zugang,
   definition,
   entwurf,
-  zurueck,
+  zurueck: zurueckZu,
 }: {
   zugang: Plattformzugang;
   definition: ScoreDefinition;
@@ -164,32 +261,46 @@ function Formular({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const verbunden = useIstVerbunden();
+  const ohneNetzId = useId();
+  const themen = useMemo(() => bogenthemen(definition), [definition]);
   const [antworten, setAntworten] = useState<Antworten>(
     () => (entwurf?.answers as Antworten | null) ?? {},
   );
+  const [abfolge, setAbfolge] = useState<Abfolge<number>>(() => {
+    const start = beginn(themen, antworten);
+    return { seite: start, verlauf: Array.from({ length: start }, (_, i) => i), rueckkehr: null };
+  });
+  // Einmal, auf der ersten Seite nach dem Öffnen: dass der Entwurf da ist.
+  const [ersterBlick, setErsterBlick] = useState(() => beginn(themen, antworten) > 0);
   const [fehlerJeFrage, setFehlerJeFrage] = useState<Record<string, string>>({});
-  const [zusammenfassung, setZusammenfassung] = useState<Formularfehler[]>([]);
-  const [entwurfId, setEntwurfId] = useState<string | null>(entwurf?.id ?? null);
-  const [meldung, setMeldung] = useState<string | null>(null);
-  const [vorgang, setVorgang] = useState<'absenden' | 'speichern' | null>(null);
-  const schritte = useMemo(() => bogenschritte(definition.items), [definition]);
-  const [schritt, setSchritt] = useState(0);
-  const anfang = useRef<HTMLDivElement>(null);
-  const ersterWechsel = useRef(true);
-  const fragen = schritte[schritt] ?? [];
-  const letzter = schritt === schritte.length - 1;
+  const speicher = useBogenspeicher({
+    zugangId: zugang.access_id,
+    definition,
+    entwurf,
+    antworten,
+    verbunden,
+  });
+  const { seite } = abfolge;
+  const abschluss = seite >= themen.length;
+  const thema = themen[seite];
   const vorlage = bogenVorlage(definition);
 
-  // Nach jedem Wechsel des Schritts steht dessen Anfang im Bild und hat den
-  // Fokus - sonst ginge es am Telefon unten weiter, wo der Knopf war.
-  useEffect(() => {
-    if (ersterWechsel.current) {
-      ersterWechsel.current = false;
-      return;
-    }
-    anfang.current?.scrollIntoView?.({ block: 'start' });
-    anfang.current?.focus();
-  }, [schritt]);
+  const { freigeben, schutz } = useTextverlustschutz({
+    ungespeichert: speicher.ungespeichert,
+    speichern: speicher.speichern,
+    texte: EINGABETEXTE,
+    schrittZurueck: kannZurueck(abfolge) ? () => zurueckGehen() : undefined,
+    ohneVerbindungZeigen: false,
+  });
+
+  // Wohin es auch geht: Die Übersicht liest danach den neuen Stand.
+  useEffect(
+    () => () => {
+      void queryClient.invalidateQueries({ queryKey: befundbogenSchluessel(zugang.access_id) });
+    },
+    [queryClient, zugang.access_id],
+  );
 
   const setzen = useCallback((itemId: string, antwort: Antwort | undefined) => {
     setAntworten((bisher) => {
@@ -198,178 +309,292 @@ function Formular({
       else neu[itemId] = antwort;
       return neu;
     });
+    setFehlerJeFrage((bisher) => {
+      if (!(itemId in bisher)) return bisher;
+      const neu = { ...bisher };
+      delete neu[itemId];
+      return neu;
+    });
   }, []);
 
-  /** Prüft den Bogen; ohne `nur` den ganzen, sonst die Fragen eines Schritts. */
-  function pruefen(nur?: readonly ScoreItem[]): Formularfehler[] {
-    const jeFrage = Object.fromEntries(
-      antwortFehler(definition, antworten)
-        .filter((f) => !nur || nur.some((item) => item.id === f.itemId))
-        .map((f) => [f.itemId, f.meldung]),
-    );
-    const liste = definition.items
-      .filter((item) => jeFrage[item.id] !== undefined)
-      .map((item) => ({
-        feldId: frageFeldId(item.id),
-        feld: beschriftung(item),
-        meldung: jeFrage[item.id]!,
-      }));
-    setFehlerJeFrage(jeFrage);
-    setZusammenfassung(liste);
-    return liste;
+  function gehe(neu: Abfolge<number>) {
+    setErsterBlick(false);
+    speicher.imHintergrund();
+    senden.reset();
+    setAbfolge(neu);
   }
 
-  function wechseln(neu: number) {
-    setMeldung(null);
-    setSchritt(neu);
+  function zurueckGehen() {
+    const vorher = zurueck(abfolge);
+    if (vorher) gehe(vorher);
   }
 
-  function weiter() {
-    if (pruefen(fragen).length > 0) return;
-    wechseln(schritt + 1);
+  const spaeterLaeuft = useRef(false);
+  async function spaeter() {
+    if (spaeterLaeuft.current) return;
+    spaeterLaeuft.current = true;
+    try {
+      // Erst gespeichert, dann hinaus; scheitert es oder fehlt das Netz, fragt der Schutz.
+      if (verbunden && (await speicher.speichern())) freigeben();
+    } catch {
+      // Die Antworten stehen weiter da; die Rückfrage bietet Speichern, Verwerfen und Bleiben.
+    } finally {
+      spaeterLaeuft.current = false;
+    }
+    void navigate(zurueckZu);
   }
 
-  const neuLaden = () =>
-    queryClient.invalidateQueries({ queryKey: befundbogenSchluessel(zugang.access_id) });
-
-  const speichern = useMutation({
-    mutationFn: async (absenden: boolean) => {
-      const id = await befundbogenSpeichern({
-        zugangId: zugang.access_id,
-        entwurfId,
-        instrumentId: definition.meta.id,
-        version: definition.meta.version,
-        antworten,
-      });
-      setEntwurfId(id);
-      if (absenden) await befundbogenAbsenden(zugang.access_id, id);
-      return absenden;
+  const senden = useMutation({
+    mutationFn: async () => {
+      const id = await speicher.sichern();
+      await befundbogenAbsenden(zugang.access_id, id);
     },
-    onSuccess: async (abgesendet) => {
-      await neuLaden();
-      if (abgesendet) void navigate(`${zurueck}${zurueck.includes('?') ? '&' : '?'}bogen=1`);
-      else setMeldung('Zwischengespeichert. Sie können später weitermachen.');
+    onSuccess: () => {
+      freigeben();
+      void navigate(`${zurueckZu}${zurueckZu.includes('?') ? '&' : '?'}bogen=1`, {
+        replace: true,
+      });
     },
   });
 
   const verwerfen = useMutation({
-    mutationFn: () => befundbogenVerwerfen(zugang.access_id, entwurfId!),
-    onSuccess: async () => {
-      await neuLaden();
-      void navigate(zurueck);
+    mutationFn: async () => {
+      await speicher.abwarten();
+      await befundbogenVerwerfen(zugang.access_id, speicher.entwurfId!);
+    },
+    onSuccess: () => {
+      freigeben();
+      void navigate(zurueckZu);
     },
   });
 
-  function los(absenden: boolean) {
-    setMeldung(null);
-    if (absenden) {
-      const fehler = pruefen();
-      if (fehler.length > 0) {
-        // Der erste Schritt mit einem Fehler kommt nach vorn, die Liste zeigt
-        // nur, was dort zu sehen ist.
-        const ziel = schritte.findIndex((s) =>
-          s.some((item) => fehler.some((f) => f.feldId === frageFeldId(item.id))),
-        );
-        if (ziel >= 0 && ziel !== schritt) {
-          pruefen(schritte[ziel]);
-          setSchritt(ziel);
-        }
-        return;
-      }
+  function absenden() {
+    if (!verbunden || senden.isPending) return;
+    // Dieselben Regeln wie in der Praxis: Passt eine Antwort nicht, öffnet ihr Thema.
+    const fehler = Object.fromEntries(
+      antwortFehler(definition, antworten).map((f) => [f.itemId, f.meldung]),
+    );
+    const ziel = themen.findIndex((t) => t.fragen.some((f) => fehler[f.item.id] !== undefined));
+    if (ziel >= 0) {
+      setFehlerJeFrage(fehler);
+      gehe(aendern(abfolge, ziel));
+      return;
     }
-    setVorgang(absenden ? 'absenden' : 'speichern');
-    speichern.mutate(absenden, { onSettled: () => setVorgang(null) });
+    senden.mutate();
   }
 
+  const offen = themen
+    .map((t, index) => ({ thema: t, index, anzahl: offeneFragen(t, antworten) }))
+    .filter((eintrag) => eintrag.anzahl > 0);
+
   return (
-    <>
-      <PageHeader kicker={`Schritt ${schritt + 1} von ${schritte.length}`} title={BOGEN_TITEL} />
-      <div className="-mt-4 mb-6">
-        <ProgressBar wert={schritt + 1} von={schritte.length} />
-      </div>
-      {schritt === 0 ? (
-        <p className="text-ink mb-6 max-w-prose text-base leading-relaxed">
-          Bitte beantworten Sie die Fragen so, wie es Ihnen heute geht. Jede Frage darf offen
-          bleiben. Ihre Therapeut:in geht den Bogen mit Ihnen beim ersten Termin durch.
-        </p>
-      ) : null}
-      <form onSubmit={(e) => e.preventDefault()} noValidate>
-        <div ref={anfang} tabIndex={-1} className="outline-none">
-          <Fehlerzusammenfassung fehler={zusammenfassung} />
-          <Section titel={schrittTitel(fragen)}>
-            <FragebogenFelder
-              definition={{ ...definition, items: fragen }}
-              antworten={antworten}
-              onChange={setzen}
-              fehler={fehlerJeFrage}
-            />
-          </Section>
-        </div>
-        {speichern.isError ? (
-          <Statusmeldung ton="fehler" className="mt-6">
-            {speichern.error.message}
-          </Statusmeldung>
-        ) : null}
-        {meldung ? (
-          <Statusmeldung ton="erfolg" className="mt-6">
-            {meldung}
-          </Statusmeldung>
-        ) : null}
-        <Formularfuss
-          trenner
-          {...(letzter
-            ? {
-                zusatz:
-                  'Mit „Absenden“ geht der Bogen an die Praxis und lässt sich hier nicht mehr ändern. Zwischenspeichern können Sie jederzeit.',
-              }
-            : {})}
-        >
-          {letzter ? (
-            <Button type="button" onClick={() => los(true)} disabled={speichern.isPending}>
-              {vorgang === 'absenden' ? 'Wird gesendet …' : 'Absenden'}
-            </Button>
-          ) : (
-            <Button type="button" onClick={weiter} disabled={speichern.isPending}>
-              Weiter
-            </Button>
-          )}
-          {schritt > 0 ? (
+    <GefuehrterAblauf
+      titel={abschluss || !thema ? 'Ist alles richtig?' : seitentitel(thema)}
+      objekt={BOGEN_TITEL}
+      schliessen="Später"
+      onSchliessen={() => void spaeter()}
+      seite={String(seite)}
+      stand={
+        abschluss
+          ? { text: 'Abschluss', wert: 1, von: 1 }
+          : { text: `Thema ${seite + 1} von ${themen.length}`, wert: seite + 1, von: themen.length }
+      }
+      onZurueck={kannZurueck(abfolge) ? zurueckGehen : undefined}
+      schutz={schutz}
+      spaeter
+      balkenJeSchritt
+      plattform
+      fussLinie
+      breit
+      titelStufe="frage"
+      unterDemKopf={<Verbindungszeile innen={BREITE_ABLAUFSPALTE} />}
+      band={
+        zugang.access_kind === 'self' ? undefined : (
+          <Vertretungsband zugang={zugang} innen={BREITE_ABLAUFSPALTE} />
+        )
+      }
+      vorDemTitel={
+        ersterBlick || seite === 0 ? (
+          <div className="flex flex-col gap-4 pb-2">
+            {ersterBlick ? (
+              <Statusmeldung>Ihre bisherigen Antworten sind gespeichert.</Statusmeldung>
+            ) : null}
+            {seite === 0 ? (
+              <>
+                <p className="text-ink-muted">
+                  Bitte beantworten Sie die Fragen so, wie es Ihnen heute geht. Jede Frage darf
+                  offen bleiben. Ihre Therapeut:in geht den Bogen mit Ihnen beim ersten Termin
+                  durch.
+                </p>
+                <p className="text-ink-muted">
+                  Ihre Antworten werden beim Weitergehen gespeichert.
+                </p>
+              </>
+            ) : null}
+          </div>
+        ) : undefined
+      }
+      fuss={
+        abschluss || !thema ? (
+          <div className="flex flex-col gap-3">
+            {senden.isError || speicher.fehler ? (
+              <Statusmeldung ton="fehler">
+                {senden.isError ? senden.error.message : speicher.fehler}
+              </Statusmeldung>
+            ) : null}
+            {verbunden ? null : (
+              <p id={ohneNetzId} className="text-ink-muted">
+                Senden geht wieder mit Verbindung. Ihre Antworten bleiben stehen.
+              </p>
+            )}
+            {/* Der Notfallsatz nur hier vor dem Senden, nicht bei den Warnzeichen (ANN-794). */}
+            <p className="text-ink-muted">
+              <strong className="text-ink">{NICHT_AKUT}</strong> <Notfallsatz />
+            </p>
             <Button
-              type="button"
-              variant="secondary"
-              onClick={() => wechseln(schritt - 1)}
-              disabled={speichern.isPending}
+              className={`${HAUPTKNOPF} ${GESPERRT}`}
+              aria-disabled={verbunden ? undefined : true}
+              aria-describedby={verbunden ? undefined : ohneNetzId}
+              disabled={senden.isPending}
+              onClick={absenden}
             >
-              Zurück
+              {senden.isPending
+                ? 'Wird gesendet …'
+                : senden.isError
+                  ? 'Erneut senden'
+                  : 'Bogen senden'}
             </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {speicher.fehler ? <Statusmeldung ton="fehler">{speicher.fehler}</Statusmeldung> : null}
+            <Button className={HAUPTKNOPF} onClick={() => gehe(weiter(abfolge, seite + 1, true))}>
+              {imAendern(abfolge) ? 'Übernehmen' : 'Weiter'}
+            </Button>
+          </div>
+        )
+      }
+    >
+      {abschluss || !thema ? (
+        <Abschluss
+          themen={themen}
+          offen={offen}
+          onAendern={(index) => gehe(aendern(abfolge, index))}
+          verwerfen={
+            speicher.entwurfId ? (
+              <Rueckfrage
+                ausloeser="Antworten verwerfen"
+                ausloeserVariante="quiet"
+                bestaetigen="Ja, verwerfen"
+                bestaetigenLaeuft="Wird verworfen …"
+                fehler={verwerfen.error?.message}
+                onBestaetigen={() => verwerfen.mutateAsync()}
+              >
+                <p>Ihre gespeicherten Antworten werden gelöscht.</p>
+              </Rueckfrage>
+            ) : null
+          }
+          vorlage={vorlage}
+        />
+      ) : (
+        <>
+          <Bogenthema
+            definition={definition}
+            thema={thema}
+            antworten={antworten}
+            onAntwort={setzen}
+            fehler={fehlerJeFrage}
+          />
+          {seite === 0 && vorlage ? (
+            <Kleingedrucktes className="mt-auto pt-4">{vorlage}</Kleingedrucktes>
           ) : null}
-          <Button
-            type="button"
-            variant="quiet"
-            onClick={() => los(false)}
-            disabled={speichern.isPending}
-          >
-            {vorgang === 'speichern' ? 'Wird gespeichert …' : 'Zwischenspeichern'}
-          </Button>
-          {entwurfId ? (
-            <Rueckfrage
-              ausloeser="Entwurf verwerfen"
-              ausloeserVariante="quiet"
-              bestaetigen="Ja, verwerfen"
-              bestaetigenLaeuft="Wird verworfen …"
-              fehler={verwerfen.error?.message}
-              onBestaetigen={() => verwerfen.mutateAsync()}
-            >
-              <p>Ihre gespeicherten Antworten werden gelöscht.</p>
-            </Rueckfrage>
-          ) : (
-            <Button type="button" variant="quiet" onClick={() => void navigate(zurueck)}>
-              Abbrechen
-            </Button>
-          )}
-        </Formularfuss>
-      </form>
-      {vorlage ? <Kleingedrucktes className="mt-8">{vorlage}</Kleingedrucktes> : null}
-    </>
+        </>
+      )}
+    </GefuehrterAblauf>
+  );
+}
+
+/** Am Telefon in voller Breite, am Rechner rechts und so breit wie sein Wort, mindestens 10rem. */
+const HAUPTKNOPF =
+  '[.plattform-schrift[data-rechner]_&]:min-w-40 [.plattform-schrift[data-rechner]_&]:self-end';
+
+/** Ohne Netz gestrichelt und leise wie ein gesperrter Knopf, aber erreichbar mit seinem Satz. */
+const GESPERRT =
+  'aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:border-line-strong aria-disabled:bg-transparent aria-disabled:text-ink-muted aria-disabled:hover:bg-transparent';
+
+/** Unter 23rem hat der Ablauf 12 Rand: Die Zeile reicht nur so weit hinaus; lange Titel trennen. */
+const ZEILEN =
+  'max-[23rem]:[&_.listenzeile]:-mx-3 max-[23rem]:[&_.listenzeile]:w-[calc(100%+1.5rem)] max-[23rem]:[&_.listenzeile]:px-3 max-[23rem]:[&_.listenzeile]:hyphens-auto max-[23rem]:[&_.listenzeile]:[hyphenate-limit-chars:10_4_4]';
+
+/** „Ändern“ rechts in der Zeile; Vorlesesoftware hört es nach einem Komma, nicht angehängt. */
+function Aendern() {
+  return (
+    <span className="text-accent font-bold">
+      <span className="sr-only">, </span>Ändern
+    </span>
+  );
+}
+
+function Abschluss({
+  themen,
+  offen,
+  onAendern,
+  verwerfen,
+  vorlage,
+}: {
+  themen: readonly Thema[];
+  offen: readonly { thema: Thema; index: number; anzahl: number }[];
+  onAendern: (index: number) => void;
+  verwerfen: ReactNode;
+  vorlage: string | null;
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      <p className="text-ink-muted -mt-2">
+        Jede Frage darf offen bleiben. Offene Fragen bespricht Ihre Therapeut:in beim ersten Termin
+        mit Ihnen.
+      </p>
+      {offen.length > 0 ? (
+        <div className={ZEILEN}>
+          <Zwischentitel ebene={3}>Noch offen</Zwischentitel>
+          <ListRows rahmen={false} beschriftung="Noch offen" className="border-line border-y">
+            {offen.map(({ thema, index, anzahl }) => (
+              <ListRow
+                key={index}
+                titel={thema.titel}
+                meta={
+                  <>
+                    <span className="sr-only">, </span>
+                    {offenText(anzahl)}
+                  </>
+                }
+                status={<Aendern />}
+                onClick={() => onAendern(index)}
+              />
+            ))}
+          </ListRows>
+        </div>
+      ) : null}
+      <div className={`border-line border-b pb-2 [&>details]:mt-0 ${ZEILEN}`}>
+        <Disclosure summary="Alle Themen">
+          <ListRows rahmen={false} beschriftung="Alle Themen" className="border-line border-t">
+            {themen.map((thema, index) => (
+              <ListRow
+                key={index}
+                titel={thema.titel}
+                status={<Aendern />}
+                onClick={() => onAendern(index)}
+              />
+            ))}
+          </ListRows>
+        </Disclosure>
+      </div>
+      <p className="text-ink-muted">
+        Mit „Bogen senden“ geht der Bogen an die Praxis und lässt sich hier nicht mehr ändern.
+      </p>
+      {/* Der leise Knopf rückt an die Kante wie „← Zurück“; die offene Rückfrage nicht. */}
+      {verwerfen ? <div className="[&>button]:-ml-3">{verwerfen}</div> : null}
+      {vorlage ? <Kleingedrucktes>{vorlage}</Kleingedrucktes> : null}
+    </div>
   );
 }

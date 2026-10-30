@@ -269,14 +269,35 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
     for (const gruppe of [anstrengung, schmerz]) {
       expect(
         within(gruppe)
-          .getAllByRole('radio')
-          .some((r) => (r as HTMLInputElement).checked),
+          .getAllByRole('button')
+          .some((b) => b.getAttribute('aria-pressed') === 'true'),
       ).toBe(false);
     }
-    await user.click(within(anstrengung).getByLabelText('6'));
-    // Gewählt und wieder entfernt heißt: keine Angabe.
-    await user.click(within(schmerz).getByLabelText('2'));
-    await user.click(within(schmerz).getByRole('button', { name: /Angabe entfernen/ }));
+    // Handoff 5.3: je Frage `h3`, darunter der Satz der Anker, die Stufenskala; keine letzte Angabe.
+    expect(
+      screen
+        .getAllByRole('heading', { level: 3 })
+        .map((h) => h.textContent)
+        .slice(0, 3),
+    ).toEqual([
+      'Wie anstrengend war die Einheit?',
+      'Wie stark waren Schmerzen während der Einheit?',
+      'Wie sicher haben Sie sich bei den Übungen gefühlt?',
+    ]);
+    expect(screen.getByText('0 heißt „gar nicht“, 10 heißt „maximal“.')).toBeInTheDocument();
+    expect(
+      screen.getByText('0 heißt „gar nicht sicher“, 10 heißt „völlig sicher“.'),
+    ).toBeInTheDocument();
+    expect(within(anstrengung).getByRole('button', { name: '10 – maximal' })).toBeInTheDocument();
+    expect(screen.queryByText(/Ihre letzte Angabe/)).not.toBeInTheDocument();
+    await user.click(within(anstrengung).getByRole('button', { name: '6' }));
+    // Gewählt und mit einem zweiten Tipp zurückgenommen heißt: keine Angabe. Der zweite Tipp
+    // kommt eine Sekunde später, sofort danach wäre er ein Doppeltipp (ANN-787).
+    await user.click(within(schmerz).getByRole('button', { name: '2' }));
+    const echt = Date.now.bind(Date);
+    const spaeter = vi.spyOn(Date, 'now').mockImplementation(() => echt() + 1000);
+    await user.click(within(schmerz).getByRole('button', { name: '2' }));
+    spaeter.mockRestore();
     await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
     await waitFor(() =>
       expect(gesendet().at(-1)).toEqual(

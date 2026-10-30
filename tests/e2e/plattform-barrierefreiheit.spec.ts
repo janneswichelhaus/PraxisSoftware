@@ -55,7 +55,18 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'rechnungen', merkmal: 'Rechnungen' },
   { seite: 'rechnung', merkmal: 'Rechnung RG-2026-0007' },
   { seite: 'dokumente', merkmal: 'Dokumente' },
-  { seite: 'befundbogen', merkmal: 'Fragebogen vor dem ersten Termin' },
+  // Schritt 4c: der Fragebogen als geführter Ablauf - Thema 1, Thema 3 aus einem Entwurf, der
+  // Abschluss, auch ohne Netz; dazu seine Lagen auf der Seite. Jedes Thema prüft der Block unten.
+  { seite: 'befundbogen', merkmal: 'Zu Ihrer Person', fenster: true },
+  { seite: 'fragebogen-thema', merkmal: 'Ihre Schmerzen heute', fenster: true },
+  { seite: 'fragebogen-thema&thema=8', merkmal: 'Die vergangenen zwei Wochen', fenster: true },
+  { seite: 'fragebogen-abschluss', merkmal: 'Ist alles richtig?', fenster: true },
+  { seite: 'fragebogen-ohne-netz', merkmal: 'Ist alles richtig?', fenster: true },
+  { seite: 'fragebogen-gesendet', merkmal: 'Fragebogen vor dem ersten Termin' },
+  { seite: 'fragebogen-training', merkmal: 'Fragebogen vor dem ersten Termin' },
+  { seite: 'fragebogen-begleitung', merkmal: 'Fragebogen vor dem ersten Termin' },
+  { seite: 'fragebogen-laden', merkmal: 'Fragebogen vor dem ersten Termin' },
+  { seite: 'fragebogen-ladefehler', merkmal: 'Fragebogen vor dem ersten Termin' },
   { seite: 'ich', merkmal: 'Ich' },
   { seite: 'einwilligungen', merkmal: 'Einwilligungen' },
   { seite: 'daten', merkmal: 'Meine Daten' },
@@ -81,8 +92,46 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'ernaehrung', merkmal: 'Ernährung' },
   // Politurrunde 2026-10-20: Tagebuch und Lebensmittel, die täglichen Seiten.
   { seite: 'tagebuch', merkmal: 'Tagebuch' },
+  // Schritt 4e: das Tagebuch beim Laden, mit Fehler und ohne Netz, dazu das Eintragen.
+  { seite: 'tagebuch-laden', merkmal: 'Tagebuch' },
+  { seite: 'tagebuch-fehler', merkmal: 'Tagebuch' },
+  { seite: 'tagebuch-ohne-netz', merkmal: 'Tagebuch' },
+  { seite: 'tagebuch-eintragen', merkmal: 'Mittagessen eintragen' },
+  // Die Ernährung ohne Netz und das Eintragen bei ausgeschaltetem Tagebuch.
+  { seite: 'ernaehrung-ohne-netz', merkmal: 'Ernährung' },
+  { seite: 'tagebuch-eintragen-aus', merkmal: 'Mittagessen eintragen' },
   { seite: 'lebensmittel', merkmal: 'Lebensmittel' },
   { seite: 'lebensmittel-neu', merkmal: /Lebensmittel/ },
+  // „Meine Angaben“ mit der Seite einer Frage und allen Antworten, leer; die Gewohnheiten.
+  { seite: 'angaben', merkmal: 'Meine Angaben' },
+  { seite: 'angaben-frage', merkmal: 'Schmerz in Ruhe' },
+  { seite: 'angaben-frage-uebungen', merkmal: 'Anstrengung' },
+  { seite: 'angaben-tabelle', merkmal: 'Alle Antworten' },
+  { seite: 'angaben-leer', merkmal: 'Meine Angaben' },
+  { seite: 'gewohnheiten', merkmal: 'Gewohnheiten' },
+  { seite: 'gewohnheiten-pausiert', merkmal: 'Gewohnheiten' },
+  { seite: 'gewohnheiten-leer', merkmal: 'Gewohnheiten' },
+  // Schritt 4b: der Check-in als geführter Ablauf - das Fenster heißt nach der Frage - und seine
+  // Zustände unter dem Titel „Check-in“.
+  { seite: 'checkin-frage', merkmal: 'Wie stark sind Ihre Schmerzen in Ruhe?', fenster: true },
+  {
+    seite: 'checkin-letzte',
+    merkmal: 'Wie stark schränken Ihre Beschwerden Sie im Alltag ein?',
+    fenster: true,
+  },
+  {
+    seite: 'checkin-ohne-netz',
+    merkmal: 'Wie stark schränken Ihre Beschwerden Sie im Alltag ein?',
+    fenster: true,
+  },
+  { seite: 'checkin-training', merkmal: 'Außerhalb der Übungen', fenster: true },
+  { seite: 'checkin-leer', merkmal: 'Check-in' },
+  { seite: 'checkin-einwilligung', merkmal: 'Check-in' },
+  { seite: 'checkin-beantwortet', merkmal: 'Check-in' },
+  { seite: 'checkin-lesefrist', merkmal: 'Check-in' },
+  { seite: 'checkin-begleitung', merkmal: 'Check-in' },
+  { seite: 'checkin-laden', merkmal: 'Check-in' },
+  { seite: 'checkin-fehler', merkmal: 'Check-in' },
 ];
 
 async function oeffne(page: Page, seite: string, merkmal: RegExp | string, fenster = false) {
@@ -580,4 +629,473 @@ test.describe('Markenmoment B auf der Übersicht', () => {
     await expect(page.locator('.markenmoment')).toHaveCount(0);
     expect(await bewegungen(page)).toEqual([]);
   });
+});
+
+/**
+ * Ernährung und Tagebuch (Handoff 2026-10-29, 5.6 bis 5.8): am Rechner das Tagebuch unter der
+ * Tagesleiste zweispaltig, die Ernährung einspaltig; ohne Netz gesperrt, was schreibt.
+ */
+test.describe('Ernährung und Tagebuch', () => {
+  async function box(page: Page, name: string) {
+    const b = await page.getByRole('region', { name }).boundingBox();
+    return { x: b?.x ?? 0, y: b?.y ?? 0, breite: b?.width ?? 0, hoehe: b?.height ?? 0 };
+  }
+
+  test('1280 px: Mahlzeiten links, rechts Wasser über Energie, 48 dazwischen', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await oeffne(page, 'tagebuch', 'Tagebuch');
+    const energie = await box(page, 'Energie und Nährstoffe');
+    const wasser = await box(page, 'Wasser');
+    const mahlzeiten = await box(page, 'Mahlzeiten');
+    expect(Math.abs(wasser.y - mahlzeiten.y)).toBeLessThanOrEqual(1);
+    expect(wasser.x - (mahlzeiten.x + mahlzeiten.breite)).toBeCloseTo(48, 0);
+    expect(Math.abs(energie.x - wasser.x)).toBeLessThanOrEqual(1);
+    expect(energie.y).toBeGreaterThan(wasser.y + wasser.hoehe);
+    expect(
+      (await page.locator('main > div').first().boundingBox())?.width ?? 0,
+    ).toBeLessThanOrEqual(768.5);
+    expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
+    expect(await kleineZiele(page), 'Ziele unter 44 px').toEqual([]);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+
+  // Wer von „Heute eintragen“ kommt, sieht ohne Rollen, wo er einträgt.
+  for (const groesse of [undefined, 'sehr-gross'] as const) {
+    test(`375 × 812${groesse ? ' bei „Sehr groß“' : ''}: das Eintragen steht im ersten Bild`, async ({
+      page,
+    }) => {
+      if (groesse) {
+        await page.addInitScript((wert) => {
+          window.localStorage.setItem('plattform-schriftgroesse', wert);
+        }, groesse);
+      }
+      await page.setViewportSize({ width: 375, height: 812 });
+      await oeffne(page, 'tagebuch', 'Tagebuch');
+      const ziel = (await page
+        .getByRole('link', { name: /eintragen$/ })
+        .first()
+        .boundingBox())!;
+      // Die Reiterleiste klebt unten und deckt ab, was unter ihr liegt.
+      const leiste = await page.locator('nav.reiterleiste').boundingBox();
+      const unten = Math.min(812, leiste && leiste.height > 0 ? leiste.y : 812);
+      expect(ziel.y).toBeGreaterThanOrEqual(0);
+      expect(ziel.y + ziel.height).toBeLessThanOrEqual(unten);
+    });
+  }
+
+  test('1280 px: die Ernährung einspaltig, die Hero-Karte „Heute“ zuerst', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await oeffne(page, 'ernaehrung', 'Ernährung');
+    await expect(
+      page.getByRole('region', { name: 'Heute' }).getByRole('link', { name: 'Heute eintragen' }),
+    ).toBeVisible();
+    const folge = [];
+    for (const name of ['Heute', 'Gewicht', 'Ihre Zielwerte', 'Mehr']) {
+      const abschnitt = await box(page, name);
+      expect(abschnitt.breite).toBeLessThanOrEqual(768.5);
+      folge.push(abschnitt.y);
+    }
+    expect(folge).toEqual([...folge].sort((a, b) => a - b));
+    expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
+    expect(await kleineZiele(page), 'Ziele unter 44 px').toEqual([]);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+
+  test('375 px ohne Netz: alles lesbar, was schreibt, gestrichelt gesperrt mit Satz', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await oeffne(page, 'tagebuch-ohne-netz', 'Tagebuch');
+    await expect(page.getByText(/^Keine Verbindung\./)).toBeVisible();
+    const satz = 'Eintragen geht wieder mit Verbindung.';
+    for (const name of [
+      /^\+ 1 Glas/,
+      'Ein Glas weniger',
+      'Frühstück eintragen',
+      'Mittagessen eintragen',
+      'Abendessen eintragen',
+      'Snacks eintragen',
+    ]) {
+      const knopf = page.getByRole('button', { name });
+      // `aria-disabled`: gesperrt, aber mit dem Fokus erreichbar, damit der Satz vorgelesen wird.
+      await expect(knopf).toBeDisabled();
+      await expect(knopf).toHaveAccessibleDescription(satz);
+      await expect(knopf).toHaveCSS('border-style', 'dashed');
+      await knopf.focus();
+      await expect(knopf).toBeFocused();
+    }
+    await expect(page.getByText('Haferflocken')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Haferflocken/ })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /eintragen$/ })).toHaveCount(0);
+  });
+
+  test('375 px ohne Netz: die Ernährung lesbar, Eintragen und Speichern gestrichelt mit Satz', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await oeffne(page, 'ernaehrung-ohne-netz', 'Ernährung');
+    await expect(page.getByText(/^Keine Verbindung\./)).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Ihr Gewichtsverlauf' })).toBeVisible();
+    await page.getByText('Zielgewicht · 68,0 kg').click();
+    for (const [name, satz] of [
+      ['Eintragen', 'Eintragen geht wieder mit Verbindung.'],
+      ['Speichern', 'Speichern geht wieder mit Verbindung.'],
+    ] as const) {
+      const knopf = page.getByRole('button', { name, exact: true });
+      await expect(knopf).toBeDisabled();
+      await expect(knopf).toHaveAccessibleDescription(satz);
+      await expect(knopf).toHaveCSS('border-style', 'dashed');
+      await knopf.focus();
+      await expect(knopf).toBeFocused();
+    }
+    expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
+    expect(await kleineZiele(page), 'Ziele unter 44 px').toEqual([]);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+
+  test('Eintragen bei ausgeschaltetem Tagebuch: Markenform, Satz und der Weg zurück', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await oeffne(page, 'tagebuch-eintragen-aus', 'Mittagessen eintragen');
+    await expect(page.getByText('Hier lässt sich gerade nichts eintragen.')).toBeVisible();
+    await expect(page.getByText('Ihr Tagebuch ist ausgeschaltet.')).toBeVisible();
+    await page.getByRole('link', { name: 'Zum Tagebuch' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Tagebuch' })).toBeVisible();
+  });
+
+  test('der Rückweg führt vom Eintragen zum selben Tag und von dort zur Ernährung', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await oeffne(page, 'tagebuch-eintragen', 'Mittagessen eintragen');
+    // Heute steht keine Zeile mit dem Tag unter dem Titel.
+    await expect(page.getByText(/^(Heute|Gestern)$/)).toHaveCount(0);
+    await page.getByRole('link', { name: '← Tagebuch' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Tagebuch' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '← Ernährung' })).toBeVisible();
+    await page.getByRole('link', { name: 'Snacks eintragen' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Snacks eintragen' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '← Tagebuch' })).toBeVisible();
+  });
+});
+
+test.describe('Gewohnheiten', () => {
+  // Ein Tipp einen Fingerbreit zu tief wechselte sonst die Seite, statt den Tag zu vermerken.
+  test('375 × 812 bei „Sehr groß“: die Tage der ersten Gewohnheit stehen über den Reitern', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+    });
+    await page.setViewportSize({ width: 375, height: 812 });
+    await oeffne(page, 'gewohnheiten', 'Gewohnheiten');
+    const tage = page.getByRole('group', { name: 'Nach dem Zähneputzen: zwei Minuten Mobilität' });
+    const letzter = (await tage.getByRole('button').last().boundingBox())!;
+    const leiste = await page.locator('nav.reiterleiste').boundingBox();
+    const unten = Math.min(812, leiste && leiste.height > 0 ? leiste.y : 812);
+    expect(letzter.y + letzter.height).toBeLessThanOrEqual(unten);
+    // Der feste Satz steht unverändert, jetzt unter den Gewohnheiten.
+    const satz = await page.getByText(/^Tippen Sie die Tage an/).boundingBox();
+    expect(satz!.y).toBeGreaterThan(letzter.y);
+  });
+});
+
+/**
+ * Der Fragebogen vor dem ersten Termin in jedem Thema und im Abschluss (Handoff Selbstauskunft,
+ * Abschnitt 8): Schrift, Ziele, axe, kein Rollen und genau ein Hauptknopf bei 375 und 188 px, je
+ * Thema ein Tipp. Was der Bogen sendet, beantwortet eine Nachbildung und zählt mit.
+ */
+test.describe('Fragebogen vor dem ersten Termin in jedem Thema', () => {
+  async function nachbilden(page: Page, { sendenScheitert = false } = {}) {
+    const aufrufe: { name: string; parameter: Record<string, unknown> }[] = [];
+    await page.route('**/rest/v1/**', async (route) => {
+      const name = new URL(route.request().url()).pathname.split('/rpc/')[1] ?? '';
+      const parameter = (route.request().postDataJSON() ?? {}) as Record<string, unknown>;
+      aufrufe.push({ name, parameter });
+      if (name === 'save_platform_questionnaire_response') {
+        await route.fulfill({ json: 'bbbbbbbb-bbbb-4bbb-8bbb-0000000000c4' });
+      } else if (name === 'complete_platform_questionnaire_response') {
+        await route.fulfill(
+          sendenScheitert ? { status: 500, json: { message: 'kaputt' } } : { json: true },
+        );
+      } else {
+        await route.fulfill({ json: [] });
+      }
+    });
+    return aufrufe;
+  }
+
+  /** Tippt, sobald die Tippsperre nach dem Wechsel der Seite vorbei ist. */
+  async function tippe(ziel: ReturnType<Page['getByRole']>) {
+    await expect(ziel).toBeVisible();
+    await expect(async () => {
+      expect(await ziel.evaluate((el) => el.closest('.pointer-events-none') === null)).toBe(true);
+    }).toPass();
+    await ziel.click();
+  }
+
+  /** Die Hauptknöpfe im Fenster: gefüllte Knöpfe, ohne die gewählte Stufe einer Skala. */
+  async function hauptknoepfe(page: Page): Promise<string[]> {
+    return page
+      .locator('[role="dialog"] button.bg-accent:not([aria-pressed])')
+      .evaluateAll((knoepfe) => knoepfe.map((k) => (k.textContent ?? '').trim()));
+  }
+
+  /** Rollt eine Fläche im Fenster waagerecht - auch das ist Rollen, nicht nur die Seite. */
+  async function rolltImFenster(page: Page): Promise<string[]> {
+    return page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('[role="dialog"] *')]
+        .filter((el) => {
+          const quer = getComputedStyle(el).overflowX;
+          return (quer === 'auto' || quer === 'scroll') && el.scrollWidth > el.clientWidth + 1;
+        })
+        .map((el) => el.className.toString().slice(0, 60)),
+    );
+  }
+
+  async function pruefe(page: Page, name: string) {
+    await bewegungAbwarten(page);
+    expect(await kleineSchrift(page), `${name}: Schrift unter 18 px`).toEqual([]);
+    expect(await kleineZiele(page), `${name}: Ziele unter 44 px`).toEqual([]);
+    expect(await axeVerstoesse(page), `${name}: axe`).toEqual([]);
+    expect(await ueberlaeuft(page), `${name}: waagerechtes Rollen`).toBe(false);
+    expect(await rolltImFenster(page), `${name}: waagerechtes Rollen im Fenster`).toEqual([]);
+    expect(await hauptknoepfe(page), `${name}: ein Hauptknopf`).toHaveLength(1);
+  }
+
+  for (const breite of [375, 188]) {
+    test(`${breite} px: jedes der 14 Themen und der Abschluss, je Thema ein Tipp`, async ({
+      page,
+    }) => {
+      test.setTimeout(240_000);
+      await nachbilden(page);
+      await page.setViewportSize({ width: breite, height: 812 });
+      await page.goto(`${PRUEFSEITE}?seite=befundbogen`);
+      let tipps = 0;
+      for (let nummer = 1; nummer <= 14; nummer += 1) {
+        await expect(
+          page.getByRole('dialog').getByText(`Thema ${nummer} von 14`, { exact: true }),
+        ).toBeVisible();
+        await pruefe(page, `Thema ${nummer}`);
+        await tippe(page.getByRole('button', { name: 'Weiter', exact: true }));
+        tipps += 1;
+      }
+      expect(tipps).toBe(14);
+      const abschluss = page.getByRole('dialog', { name: 'Ist alles richtig?' });
+      await expect(abschluss.getByText('Abschluss', { exact: true })).toBeVisible();
+      await pruefe(page, 'Abschluss');
+      expect(await hauptknoepfe(page)).toEqual(['Bogen senden']);
+    });
+  }
+
+  test('375 px: „Ändern“ aus dem Abschluss bis zurück in zwei Tipps, gespeichert beim Wechsel', async ({
+    page,
+  }) => {
+    const aufrufe = await nachbilden(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${PRUEFSEITE}?seite=fragebogen-abschluss`);
+    const abschluss = page.getByRole('dialog', { name: 'Ist alles richtig?' });
+    const offen = abschluss.getByRole('list', { name: 'Noch offen' });
+    await expect(offen.getByRole('button')).toHaveCount(3);
+    await tippe(offen.getByRole('button', { name: /^Medikamente/ }));
+    const thema = page.getByRole('dialog', { name: /^30\. Nehmen Sie momentan Medikamente/ });
+    await expect(thema.getByText('Thema 12 von 14', { exact: true })).toBeVisible();
+    await tippe(thema.getByRole('button', { name: 'Schmerzmittel' }));
+    await pruefe(page, 'Thema 12 aus dem Abschluss');
+    await tippe(thema.getByRole('button', { name: 'Übernehmen' }));
+    await expect(abschluss).toBeVisible();
+    await expect(offen.getByRole('button')).toHaveCount(2);
+    const gespeichert = aufrufe.filter((a) => a.name === 'save_platform_questionnaire_response');
+    expect(gespeichert).toHaveLength(1);
+    expect(gespeichert[0]!.parameter).toMatchObject({
+      p_response_id: 'bbbbbbbb-bbbb-4bbb-8bbb-0000000000c4',
+      p_answers: { medikamente: { auswahl: ['schmerzmittel'] } },
+    });
+  });
+
+  test('375 px: „Später“ speichert und führt zur Übersicht', async ({ page }) => {
+    const aufrufe = await nachbilden(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${PRUEFSEITE}?seite=befundbogen`);
+    const fenster = page.getByRole('dialog', { name: 'Zu Ihrer Person' });
+    await fenster.getByLabel('Beruf').fill('Lehrerin');
+    await tippe(fenster.getByRole('button', { name: 'Später' }));
+    await expect(page.getByRole('heading', { level: 1, name: GRUSS })).toBeVisible();
+    expect(aufrufe.find((a) => a.name === 'save_platform_questionnaire_response')).toMatchObject({
+      parameter: { p_response_id: null, p_answers: { beruf: { text: 'Lehrerin' } } },
+    });
+  });
+
+  test('375 px: scheitert das Senden, steht der Fehler über dem Satz, dann „Erneut senden“', async ({
+    page,
+  }) => {
+    await nachbilden(page, { sendenScheitert: true });
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${PRUEFSEITE}?seite=fragebogen-abschluss`);
+    const abschluss = page.getByRole('dialog', { name: 'Ist alles richtig?' });
+    await tippe(abschluss.getByRole('button', { name: 'Bogen senden' }));
+    await expect(abschluss.getByRole('alert')).toHaveText(
+      /Ihre Angaben konnten nicht gespeichert werden\. Bitte versuchen Sie es erneut\./,
+    );
+    await expect(abschluss.getByRole('button', { name: 'Erneut senden' })).toBeVisible();
+    await pruefe(page, 'Senden gescheitert');
+  });
+
+  test('375 px: ohne Netz ist „Bogen senden“ gestrichelt gesperrt, mit Satz', async ({
+    page,
+    context,
+  }) => {
+    await nachbilden(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${PRUEFSEITE}?seite=fragebogen-abschluss`);
+    const abschluss = page.getByRole('dialog', { name: 'Ist alles richtig?' });
+    await expect(abschluss).toBeVisible();
+    await context.setOffline(true);
+    const senden = abschluss.getByRole('button', { name: 'Bogen senden' });
+    await expect(senden).toHaveAttribute('aria-disabled', 'true');
+    await expect(senden).toHaveAccessibleDescription(
+      'Senden geht wieder mit Verbindung. Ihre Antworten bleiben stehen.',
+    );
+    await expect(senden).toHaveCSS('border-style', 'dashed');
+    await expect(abschluss.getByText(/^Keine Verbindung\./)).toBeVisible();
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+    await context.setOffline(false);
+    await expect(senden).not.toHaveAttribute('aria-disabled', 'true');
+  });
+
+  test('1280 px: Skala in einer Reihe, ja und nein je höchstens 15rem, „Weiter“ rechts', async ({
+    page,
+  }) => {
+    await nachbilden(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${PRUEFSEITE}?seite=fragebogen-thema`);
+    const thema = page.getByRole('dialog', { name: 'Ihre Schmerzen heute' });
+    await expect(thema).toBeVisible();
+    const stufen = await thema
+      .getByRole('group', { name: '3. Wie stark sind Ihre Schmerzen?' })
+      .getByRole('button')
+      .evaluateAll((knoepfe) => knoepfe.map((k) => Math.round(k.getBoundingClientRect().top)));
+    expect(new Set(stufen).size).toBe(1);
+    const paar = thema.getByRole('group', { name: '2. Haben Sie aktuell Schmerzen?' });
+    for (const name of ['ja', 'nein']) {
+      const flaeche = await paar.getByRole('button', { name }).boundingBox();
+      expect(flaeche?.width ?? 999).toBeLessThanOrEqual(240.5);
+    }
+    const weiter = await thema.getByRole('button', { name: 'Weiter' }).boundingBox();
+    const ja = await paar.getByRole('button', { name: 'ja' }).boundingBox();
+    expect(weiter?.width ?? 0).toBeGreaterThanOrEqual(159.5);
+    expect(weiter?.x ?? 0).toBeGreaterThan((ja?.x ?? 0) + 400);
+    expect(await axeVerstoesse(page), 'axe').toEqual([]);
+  });
+});
+
+/**
+ * Der Check-in (Handoff 2026-10-29, 5.1 und 8): genau ein Hauptknopf je Seite des Ablaufs, ohne
+ * Netz gestrichelt gesperrt; in den Zuständen keiner neben dem Weg. Im Ablauf rollt bei 188 px
+ * auch mit „Sehr groß“ nichts quer.
+ */
+test.describe('Check-in: ein Hauptknopf, 188 px und „Sehr groß“', () => {
+  const ABLAUF = [
+    {
+      seite: 'checkin-frage',
+      merkmal: 'Wie stark sind Ihre Schmerzen in Ruhe?',
+      knopf: 'Weiter',
+    },
+    {
+      seite: 'checkin-letzte',
+      merkmal: 'Wie stark schränken Ihre Beschwerden Sie im Alltag ein?',
+      knopf: 'Angaben senden',
+    },
+    {
+      seite: 'checkin-ohne-netz',
+      merkmal: 'Wie stark schränken Ihre Beschwerden Sie im Alltag ein?',
+      knopf: null,
+    },
+    { seite: 'checkin-training', merkmal: 'Außerhalb der Übungen', knopf: 'Angaben senden' },
+  ] as const;
+  const ZUSTAENDE = [
+    'checkin-leer',
+    'checkin-einwilligung',
+    'checkin-beantwortet',
+    'checkin-lesefrist',
+    'checkin-begleitung',
+    'checkin-laden',
+    'checkin-fehler',
+  ];
+
+  /** Knöpfe und Links auf der Hauptfarbe, ohne gewählte Stufen und ohne Gesperrtes darunter. */
+  async function hauptknoepfe(page: Page): Promise<string[]> {
+    return page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.className = 'bg-accent';
+      document.body.append(probe);
+      const hauptfarbe = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return [...document.querySelectorAll<HTMLElement>('button:not([aria-pressed]), a')]
+        .filter((el) => el.getBoundingClientRect().height > 0 && !el.closest('[inert]'))
+        .filter((el) => getComputedStyle(el).backgroundColor === hauptfarbe)
+        .map((el) => (el.textContent ?? '').trim());
+    });
+  }
+
+  /** Eine Fläche im Fenster, die breiter ist als ihr Platz (rollte oder schnitte quer). */
+  async function fensterRolltQuer(page: Page): Promise<string[]> {
+    return page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('[role="dialog"], [role="dialog"] *')]
+        .filter(
+          (el) =>
+            !el.closest('.sr-only') &&
+            getComputedStyle(el).overflowX !== 'visible' &&
+            el.scrollWidth > el.clientWidth + 1,
+        )
+        .map((el) => `${el.tagName} ${el.scrollWidth}/${el.clientWidth}`),
+    );
+  }
+
+  for (const { seite, merkmal, knopf } of ABLAUF) {
+    test(`${seite}: genau ein Hauptknopf bei 375 und 1280 px`, async ({ page }) => {
+      for (const breite of [375, 1280]) {
+        await page.setViewportSize({ width: breite, height: 900 });
+        await oeffne(page, seite, merkmal, true);
+        if (knopf) {
+          expect(await hauptknoepfe(page)).toEqual([knopf]);
+        } else {
+          expect(await hauptknoepfe(page)).toEqual([]);
+          await expect(page.getByRole('button', { name: 'Angaben senden' })).toHaveAttribute(
+            'aria-disabled',
+            'true',
+          );
+        }
+      }
+    });
+
+    for (const schrift of ['normal', 'sehr-gross'] as const) {
+      test(`${seite}: bei 188 px, „${schrift === 'normal' ? 'Normal' : 'Sehr groß'}“, rollt nichts quer`, async ({
+        page,
+      }) => {
+        if (schrift !== 'normal') {
+          await page.addInitScript((wert) => {
+            window.localStorage.setItem('plattform-schriftgroesse', wert);
+          }, schrift);
+        }
+        await page.setViewportSize({ width: 188, height: 406 });
+        await oeffne(page, seite, merkmal, true);
+        expect(await ueberlaeuft(page)).toBe(false);
+        expect(await fensterRolltQuer(page)).toEqual([]);
+        expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
+      });
+    }
+  }
+
+  for (const seite of ZUSTAENDE) {
+    test(`${seite}: kein Hauptknopf, der Weg ist ein Zweitknopf`, async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 900 });
+      await oeffne(page, seite, 'Check-in');
+      expect(await hauptknoepfe(page)).toEqual([]);
+    });
+  }
 });

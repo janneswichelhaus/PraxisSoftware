@@ -58,6 +58,8 @@ test.describe('Plattform', () => {
     test(`Termine, Wünsche, Rechnungen, Dokumente und Befundbogen laufen bei ${breite} px nicht über (POR-EPIC-002)`, async ({
       page,
     }) => {
+      // Der Fragebogen hat 14 Themen, jeder Wechsel mit Tippsperre (`TIPPSPERRE_MS`).
+      test.setTimeout(90_000);
       await page.setViewportSize({ width: breite, height: 900 });
 
       // Die Übersicht trägt den Fragebogen als Hauptsache, den nächsten
@@ -112,18 +114,19 @@ test.describe('Plattform', () => {
       await expect(page.getByRole('button', { name: /Herunterladen/ }).first()).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
 
+      // Der Fragebogen als geführter Ablauf in 14 Themen, „Bogen senden“ erst im Abschluss.
       await page.goto(`${PRUEFSEITE}?seite=befundbogen`);
-      await expect(
-        page.getByRole('heading', { name: 'Fragebogen vor dem ersten Termin' }),
-      ).toBeVisible();
-      // In Schritten mit sichtbarem Fortschritt (ANN-467); „Absenden“ im letzten.
-      await expect(page.getByText(/^Schritt 1 von \d+$/)).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Absenden' })).toHaveCount(0);
+      const bogen = page.getByRole('dialog', { name: 'Zu Ihrer Person' });
+      await expect(bogen.getByText('Fragebogen vor dem ersten Termin')).toBeVisible();
+      await expect(bogen.getByText('Thema 1 von 14', { exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Bogen senden' })).toHaveCount(0);
       expect(await ueberlaeuft(page)).toBe(false);
-      while ((await page.getByRole('button', { name: 'Absenden' }).count()) === 0) {
-        await page.getByRole('button', { name: 'Weiter' }).click();
+      for (let nummer = 1; nummer <= 14; nummer += 1) {
+        await expect(page.getByText(`Thema ${nummer} von 14`, { exact: true })).toBeVisible();
+        await page.getByRole('button', { name: 'Weiter', exact: true }).click();
       }
-      await expect(page.getByRole('button', { name: 'Absenden' })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: 'Ist alles richtig?' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Bogen senden' })).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
     });
 

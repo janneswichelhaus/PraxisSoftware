@@ -41,7 +41,8 @@ import { Angebot } from './Angebot';
 import { Vertrag } from './Vertrag';
 import { Paket } from './Paket';
 import { Befundbogen } from './Befundbogen';
-import { Checkin, MeineAngaben } from './Checkin';
+import { Checkin } from './Checkin';
+import { AlleAntworten, AngabeSeite, MeineAngaben } from './MeineAngaben';
 import { Gewohnheiten } from './Gewohnheiten';
 import { Ernaehrung } from './Ernaehrung';
 import { EigenesLebensmittelAendern, EigenesLebensmittelNeu, Lebensmittel } from './Lebensmittel';
@@ -391,6 +392,27 @@ function Geruest({
                   bereiche={lesbar}
                   zugaenge={zugaenge}
                   seite={(z) => <MeineAngaben zugang={z} />}
+                />
+              }
+            />
+            {/* Unter „Meine Angaben“: alle Antworten als Tabelle und je Frage eine Seite. */}
+            <Route
+              path={`${PLATTFORM_PFAD}/angaben/tabelle`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <AlleAntworten zugang={z} />}
+                />
+              }
+            />
+            <Route
+              path={`${PLATTFORM_PFAD}/angaben/:schluessel`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <AngabeSeite zugang={z} />}
                 />
               }
             />
@@ -795,7 +817,8 @@ function IchBereich({
       {lesbar && z.relationship_kind === 'treatment' ? (
         <ListRow to={ziel('dokumente')} titel="Dokumente" />
       ) : null}
-      {lesbar ? <ListRow to={ziel('angaben')} titel="Antworten aus dem Check-in" /> : null}
+      {/* „Meine Angaben“ heißt wie die Seite: dort stehen auch die Angaben nach den Übungen. */}
+      {lesbar ? <ListRow to={ziel('angaben')} titel="Meine Angaben" /> : null}
       {/* ALT-003: die eigenen Gewohnheiten, auch ohne Kachel erreichbar. Von
           hier führt der Rückweg wieder unter „Ich“, nicht zur Übersicht (DR-144). */}
       {lesbar ? (

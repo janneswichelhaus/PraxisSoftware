@@ -1,4 +1,4 @@
-# Status · Stand 2026-10-29
+# Status · Stand 2026-10-30
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -6,18 +6,17 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Design-Review Schritt 3 Termine** ist gemergt (#327, #328, #330, #331), ohne die Einsicht der
-Praxis (M7); fünf Fragen aus #331 sind offen. BEF-223 (Pfad A) liegt als PR vor, Zweitreview ohne
-roten Punkt.
-Aufräumen (#308 bis #325) und CI-Beschleunigung (#326) sind gemergt; offen ist die Abkürzung für
-reine Doku (ADR-013 Punkt 2, Entscheidung Jannes). Befunde aus archivierten Sitzungen: BEF-201,
-BEF-202.
+**Schritt 4 Selbstauskunft und Tagebuch** liegt als PR vor (#333, mit den Antworten darauf; behebt
+das rote E2E auf `main`). Offen ist die Abkürzung für reine Doku (ADR-013 Punkt 2). Befunde aus
+archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Eine Bildsichtung der Schritte 2
-und 3, dann Schritt 4 (Handoff während 3d), danach 5 bis 7 je mit Handoff (Roadmap). Erst dann
-die Vorschläge der Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
+Bildsichtung von Schritt 4, dann kleine Aufträge: Leerzustände mit Markenform wie im Entwurf (alle
+Plattformseiten); aus #331 „Handlung vor Inhalt“, der Satz zum Verlegen unter 24 Stunden, die
+Absage mit Tag und Uhrzeit des Eingangs; BEF-222 und das Praxisfeld am Server (je Pfad A). Danach
+Schritte 5 bis 7 mit Handoff, dann die Vorschläge der Aufräumrunde (`development/BEFUNDE.md`, Nr. 2,
+dann Nr. 3).
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
 Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
 Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
@@ -33,8 +32,7 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
   ANN-479 ansehen (Besuch).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
-- Sichtliste am Gerät: 13 Punkte (`sichtung/README.md`, S-1 bis S-13); die übrigen alten
-  Sichtungsschritte sind erledigt oder überholt.
+- Sichtliste am Gerät: 13 Punkte (`sichtung/README.md`, S-1 bis S-13).
 - Widersprüche zwischen ADR-Wortlaut und Code oder Prinzipien (`development/BEFUNDE.md`, „Doku“).
 - Annahmen: bestätigen nur noch, was teuer zurückzunehmen ist (Kopf von `ASSUMPTIONS.md`);
   Datenschutz und Recht gehen ins Prüfpaket.
@@ -51,5 +49,5 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-29.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: 3d gemergt (#331); BEF-223 behoben (ANN-786), Migration
-ohne Datenumzug. Lokal: `git pull`.
+30.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: Antworten zu #333 eingebaut, Statuszeichen bei 200 %
+zeilenbreit. Lokal: `git pull`.

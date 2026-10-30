@@ -973,6 +973,123 @@ if (seite === 'uebersicht-fehler') {
   });
 }
 
+// Schritt 4c: Antworten je Thema des Fragebogens. `fragebogen-thema` öffnet mit einem Entwurf beim
+// Thema `&thema=` (ohne Angabe 3), der Abschluss mit drei offenen Themen, gesendet vor zwei Tagen.
+const BOGEN_ANTWORTEN: readonly Record<string, unknown>[] = [
+  { beruf: { text: 'Lehrerin' }, sport_hobby: { text: 'Radfahren, Garten' } },
+  {
+    beschwerden_ort: {
+      markierungen: [
+        { x: 0.185, y: 0.19, bereich: 'schulter_rechts' },
+        { x: 0.726, y: 0.147, bereich: 'nacken' },
+      ],
+    },
+  },
+  { schmerzen_aktuell: { auswahl: 'ja' }, schmerzstaerke: { wert: 4 } },
+  {
+    schmerzart: { auswahl: ['nachtschmerzen'] },
+    beweglichkeit_veraendert: { auswahl: 'ja' },
+    kraft_vermindert: { auswahl: 'nein' },
+  },
+  {
+    merkmale: { auswahl: ['kribbeln'] },
+    weitere_beschwerden: { text: 'Morgens steif im Nacken.' },
+  },
+  {
+    beschwerden_seit: { text: 'Seit etwa drei Monaten' },
+    beschwerden_zeitlich: { auswahl: 'mit_unterbrechungen' },
+    beschwerden_verlauf: { auswahl: 'gleichbleibend' },
+  },
+  {
+    verbessert_durch: { auswahl: ['gehen', 'ruhe'] },
+    verschlechtert_durch: { auswahl: ['sitzen', 'sonstiges'], freitext: 'Lange Autofahrten' },
+  },
+  {
+    schmerz_durchschnitt: { wert: 5 },
+    unsicher_umgang: { auswahl: 'nein' },
+    stark_gestoert: { auswahl: 'ja' },
+    kurze_wege: { auswahl: 'nein' },
+    mehrere_koerperteile: { auswahl: 'nein' },
+    lange_anhalten: { auswahl: 'nein' },
+    andere_gesundheitsprobleme: { auswahl: 'nein' },
+    niedergeschlagen: { auswahl: 'nein' },
+  },
+  { aktivitaet_schaedlich: { auswahl: 'nein' }, seit_sechs_monaten: { auswahl: 'nein' } },
+  {
+    symptome_neurologisch: { auswahl: ['nein'] },
+    symptome_organisch: { auswahl: ['nein'] },
+    symptome_allgemein: { auswahl: ['nein'] },
+  },
+  {
+    tumor: { auswahl: 'nein' },
+    erkrankungen: { auswahl: ['nein'] },
+    ereignisse: { auswahl: ['nein'] },
+    wechseljahre_schwangerschaft: { auswahl: ['nein'] },
+  },
+  { medikamente: { auswahl: ['schmerzmittel'] } },
+  {
+    rauchen: { auswahl: 'nein' },
+    ernaehrung: { auswahl: 'ja' },
+    bewegung: { auswahl: 'ja' },
+    krafttraining: { auswahl: 'nein' },
+    schlaf: { auswahl: 'ja' },
+    stress_arbeit: { wert: 3 },
+    stress_alltag: { wert: 2 },
+  },
+  {
+    bisherige_massnahmen: { auswahl: ['roentgen', 'physiotherapie'] },
+    erwartungen_ziele: { text: 'Wieder ohne Schmerzen Rad fahren.' },
+  },
+];
+function bogen(antworten: Record<string, unknown>, abgeschlossen = false) {
+  return {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-0000000000c4',
+    instrument_id: 'anamnese_v8',
+    definition_version: '1.0.0',
+    status: abgeschlossen ? 'abgeschlossen' : 'entwurf',
+    recorded_on: inTagen(-2, 0).slice(0, 10),
+    source: 'platform',
+    answers: abgeschlossen ? null : antworten,
+    updated_at: inTagen(-2, 10),
+    completed_at: abgeschlossen ? inTagen(-2, 10) : null,
+  };
+}
+if (seite === 'fragebogen-thema') {
+  const bisher = BOGEN_ANTWORTEN.slice(0, Number(parameter.get('thema') ?? '3') - 1);
+  client.setQueryData(befundbogenSchluessel(zugaenge[0]!.access_id), [
+    bogen(Object.assign({}, ...bisher) as Record<string, unknown>),
+  ]);
+}
+if (seite === 'fragebogen-abschluss' || seite === 'fragebogen-ohne-netz') {
+  // Offen: 12 a und b, die Medikamente und 39.
+  const beantwortet = [...BOGEN_ANTWORTEN.slice(0, 6), ...BOGEN_ANTWORTEN.slice(7, 11)];
+  const antworten = Object.assign({}, ...beantwortet, BOGEN_ANTWORTEN[12], {
+    bisherige_massnahmen: BOGEN_ANTWORTEN[13]!.bisherige_massnahmen,
+  }) as Record<string, unknown>;
+  client.setQueryData(befundbogenSchluessel(zugaenge[0]!.access_id), [bogen(antworten)]);
+}
+if (seite === 'fragebogen-ohne-netz') {
+  Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
+}
+if (seite === 'fragebogen-gesendet') {
+  client.setQueryData(befundbogenSchluessel(zugaenge[0]!.access_id), [bogen({}, true)]);
+}
+if (seite === 'fragebogen-laden') {
+  client.removeQueries({ queryKey: befundbogenSchluessel(zugaenge[0]!.access_id) });
+  void client.prefetchQuery({
+    queryKey: befundbogenSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => new Promise<never>(() => undefined),
+  });
+}
+if (seite === 'fragebogen-ladefehler') {
+  client.removeQueries({ queryKey: befundbogenSchluessel(zugaenge[0]!.access_id) });
+  client.setQueryDefaults(befundbogenSchluessel(zugaenge[0]!.access_id), { retryOnMount: false });
+  void client.prefetchQuery({
+    queryKey: befundbogenSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => Promise.reject(new Error('Ihr Fragebogen konnte nicht geladen werden.')),
+  });
+}
+
 // TRK-EPIC-001: Check-in der Behandlung, im Training keiner eingestellt.
 const checkinVerlauf: EigeneCheckins['history'] = [
   {
@@ -995,6 +1112,23 @@ const checkinVerlauf: EigeneCheckins['history'] = [
 ];
 const checkinFaellig =
   seite === 'checkin' || seite === 'checkin-uebersicht' || seite === 'checkin-alltag';
+// „Meine Angaben“: vier Antworten je Frage wie auf der Leinwand, und ganz ohne Antwort.
+const angabenLeer = seite === 'angaben-leer';
+const angabenVerlauf: EigeneCheckins['history'] = seite.startsWith('angaben')
+  ? [
+      ...checkinVerlauf,
+      {
+        answered_on: inTagen(-29, 0).slice(0, 10),
+        recorded_by_kind: 'self',
+        values: { pain_rest: 6, pain_load: 7, daily_impairment: 5 },
+      },
+      {
+        answered_on: inTagen(-43, 0).slice(0, 10),
+        recorded_by_kind: 'self',
+        values: { pain_rest: 5, pain_load: 6, daily_impairment: 5 },
+      },
+    ]
+  : checkinVerlauf;
 client.setQueryData(checkinsSchluessel(zugaenge[0]!.access_id), {
   today: inTagen(0, 0).slice(0, 10),
   // ALT-001, ALT-002: Schlafdauer, Schmerzmittel bei Bedarf und die Belastung
@@ -1018,54 +1152,166 @@ client.setQueryData(checkinsSchluessel(zugaenge[0]!.access_id), {
   can_answer: checkinFaellig,
   consent_needed: false,
   last_values: { pain_rest: 3, pain_load: 6, daily_impairment: 4 },
-  history: checkinVerlauf,
+  history: angabenLeer ? [] : angabenVerlauf,
   // OUT-004: die eigenen Angaben nach den Übungen.
-  session_history: [
-    {
-      performed_on: inTagen(-2, 0).slice(0, 10),
-      plan_title: 'Heimprogramm Knie',
-      recorded_by_kind: 'self',
-      values: { session_exertion: 6, session_pain: 2, session_confidence: 7 },
-    },
-    {
-      performed_on: inTagen(-5, 0).slice(0, 10),
-      plan_title: 'Heimprogramm Knie',
-      recorded_by_kind: 'self',
-      values: { session_exertion: 5, session_confidence: 5 },
-    },
-  ],
+  session_history: angabenLeer
+    ? []
+    : [
+        {
+          performed_on: inTagen(-2, 0).slice(0, 10),
+          plan_title: 'Heimprogramm Knie',
+          recorded_by_kind: 'self',
+          values: { session_exertion: 6, session_pain: 2, session_confidence: 7 },
+        },
+        {
+          performed_on: inTagen(-5, 0).slice(0, 10),
+          plan_title: 'Heimprogramm Knie',
+          recorded_by_kind: 'self',
+          values: { session_exertion: 5, session_confidence: 5 },
+        },
+      ],
 } satisfies EigeneCheckins);
 client.setQueryData(checkinsSchluessel(zugaenge[1]!.access_id), null);
-// ALT-003: eine laufende Gewohnheit mit Tagen, eine pausierte.
+// Schritt 4b: der Check-in als geführter Ablauf und seine Zustände (Handoff 5.1) - fällig in der
+// Behandlung, im Training mit der Belastung oder ohne Einwilligung, in der Lesefrist ohne Abo, beim
+// Laden und mit Fehler ohne Antwort des Servers.
+if (['checkin-frage', 'checkin-letzte', 'checkin-ohne-netz'].includes(seite)) {
+  client.setQueryData<EigeneCheckins | null>(checkinsSchluessel(zugaenge[0]!.access_id), (alt) =>
+    alt ? { ...alt, due: true, can_answer: true, due_on: inTagen(0, 0).slice(0, 10) } : alt,
+  );
+}
+if (seite === 'checkin-ohne-netz') {
+  Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
+}
+if (seite === 'checkin-training' || seite === 'checkin-einwilligung') {
+  const darf = seite === 'checkin-training';
+  client.setQueryData(checkinsSchluessel(zugaenge[1]!.access_id), {
+    today: inTagen(0, 0).slice(0, 10),
+    schedule: {
+      interval_days: 7,
+      parameter_keys: [
+        'pain_rest',
+        'pain_load',
+        'daily_impairment',
+        'activity_kind',
+        'activity_minutes',
+        'activity_intensity',
+      ],
+    },
+    due_on: inTagen(0, 0).slice(0, 10),
+    due: true,
+    can_answer: darf,
+    consent_needed: !darf,
+    last_values: darf ? { pain_rest: 3, pain_load: 6, daily_impairment: 4 } : {},
+    history: darf ? checkinVerlauf.slice(0, 1) : [],
+    session_history: [],
+  } satisfies EigeneCheckins);
+}
+if (seite === 'checkin-lesefrist') {
+  client.setQueryData(aboSchluessel(zugaenge[0]!.access_id), null);
+  client.setQueryData<EigeneCheckins | null>(checkinsSchluessel(zugaenge[0]!.access_id), (alt) =>
+    alt ? { ...alt, due: true, can_answer: false } : alt,
+  );
+}
+if (seite === 'checkin-laden' || seite === 'checkin-fehler') {
+  const schluessel = checkinsSchluessel(zugaenge[0]!.access_id);
+  client.removeQueries({ queryKey: schluessel });
+  client.setQueryDefaults(schluessel, { retryOnMount: false });
+  void client.prefetchQuery({
+    queryKey: schluessel,
+    queryFn: () =>
+      seite === 'checkin-laden'
+        ? new Promise<EigeneCheckins | null>(() => undefined)
+        : Promise.reject(new Error('Ihr Check-in konnte nicht geladen werden.')),
+  });
+}
+/**
+ * `checkin-letzte`, `checkin-ohne-netz` und `checkin-training`: der Ablauf auf seiner letzten Seite
+ * mit einer Antwort, vorgespult wie mit dem Finger - einen Zwischenstand kennt er nicht.
+ */
+const checkinAntwort: string | undefined = (
+  { 'checkin-letzte': '3', 'checkin-ohne-netz': '3', 'checkin-training': 'Sport' } as Record<
+    string,
+    string
+  >
+)[seite];
+if (checkinAntwort) void zurLetztenFrage(checkinAntwort);
+
+async function zurLetztenFrage(antwort: string) {
+  const knopf = (text: string) =>
+    [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(
+      (k) => k.textContent === text,
+    );
+  async function warte<T>(finde: () => T | undefined): Promise<T> {
+    for (;;) {
+      const fund = finde();
+      if (fund) return fund;
+      await new Promise((weiter) => setTimeout(weiter, 50));
+    }
+  }
+  // Nach jedem „Weiter“ steht ein neuer Fuß da; die Seite davor ist dann weg.
+  let vorher: HTMLButtonElement | undefined;
+  for (;;) {
+    const ziel = await warte(() => {
+      const fund = knopf('Weiter') ?? knopf('Angaben senden');
+      return fund === vorher ? undefined : fund;
+    });
+    if (ziel.textContent === 'Angaben senden') break;
+    vorher = ziel;
+    ziel.click();
+  }
+  (await warte(() => knopf(antwort))).click();
+}
+// Eine laufende Gewohnheit mit Tagen, eine pausierte; `gewohnheiten-pausiert` andersherum,
+// `gewohnheiten-leer` ohne Gewohnheit.
+const gewohnheitPausiert = seite === 'gewohnheiten-pausiert';
 client.setQueryData(gewohnheitenSchluessel(zugaenge[0]!.access_id), {
   today: inTagen(0, 0).slice(0, 10),
   mark_days: 7,
   can_mark: true,
   consent_needed: false,
-  habits: [
-    {
-      id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000001',
-      action: 'zwei Minuten Mobilität',
-      cue: 'Nach dem Zähneputzen',
-      place: 'im Bad',
-      starts_on: inTagen(-20, 0).slice(0, 10),
-      paused: false,
-      ended_at: null,
-      marks: [0, -1, -2, -4, -5].map((t) => inTagen(t, 0).slice(0, 10)),
-    },
-    {
-      id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000002',
-      action: 'eine Treppe statt Aufzug',
-      cue: 'Im Büro',
-      place: null,
-      starts_on: inTagen(-12, 0).slice(0, 10),
-      paused: true,
-      ended_at: null,
-      marks: [],
-    },
-  ],
+  habits:
+    seite === 'gewohnheiten-leer'
+      ? []
+      : [
+          {
+            id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000001',
+            action: 'zwei Minuten Mobilität',
+            cue: 'Nach dem Zähneputzen',
+            place: 'im Bad',
+            starts_on: inTagen(-20, 0).slice(0, 10),
+            paused: gewohnheitPausiert,
+            ended_at: null,
+            marks: [0, -1, -2, -4, -5].map((t) => inTagen(t, 0).slice(0, 10)),
+          },
+          {
+            id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000002',
+            action: 'eine Treppe statt Aufzug',
+            cue: 'Im Büro',
+            place: null,
+            starts_on: inTagen(-12, 0).slice(0, 10),
+            paused: !gewohnheitPausiert,
+            ended_at: null,
+            marks: gewohnheitPausiert ? [-1, -3].map((t) => inTagen(t, 0).slice(0, 10)) : [],
+          },
+        ],
 } satisfies EigeneGewohnheiten);
 client.setQueryData(gewohnheitenSchluessel(zugaenge[1]!.access_id), null);
+// `angaben-laden` und `gewohnheiten-laden`: Die Abfrage lädt ohne Ende, das Skelett bleibt stehen.
+if (seite === 'angaben-laden') {
+  client.removeQueries({ queryKey: checkinsSchluessel(zugaenge[0]!.access_id) });
+  void client.prefetchQuery({
+    queryKey: checkinsSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => new Promise<EigeneCheckins>(() => undefined),
+  });
+}
+if (seite === 'gewohnheiten-laden') {
+  client.removeQueries({ queryKey: gewohnheitenSchluessel(zugaenge[0]!.access_id) });
+  void client.prefetchQuery({
+    queryKey: gewohnheitenSchluessel(zugaenge[0]!.access_id),
+    queryFn: () => new Promise<EigeneGewohnheiten>(() => undefined),
+  });
+}
 // ERN-002: die laufende Ernährungsberatung an der Akte - die Projektion von
 // `platform_nutrition` aus dem Seed (Erika), im Training keine.
 client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
@@ -1193,7 +1439,8 @@ client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
     started_on: '2026-09-27',
     formula_sex: 'female',
     activity_pal: 1.4,
-    diary_enabled: false,
+    // Schritt 4e: In den Ansichten der Ernährung ist das Tagebuch an, die Hero-Karte „Heute“ steht.
+    diary_enabled: seite === 'ernaehrung' || seite === 'ernaehrung-ohne-netz',
     body_fat_percent: null,
     diary_changed_at: null,
     target_weight_kg: 68.0,
@@ -1219,9 +1466,29 @@ if (seite === 'uebersicht-training') {
   client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), null);
 }
 // Politurrunde 2026-10-20: das Tagebuch von heute - ein Frühstück, die übrigen
-// Mahlzeiten leer, zwei Gläser Wasser (wie im Seed bei Erika).
+// Mahlzeiten leer, zwei Gläser Wasser (wie im Seed bei Erika). Schritt 4e: zwei
+// Einträge wie in der Leinwand, Haferflocken unter „Zuletzt“ für das Eintragen.
 const ohneSummen = { energy_kcal: 0, protein_g: 0, fat_g: 0, carbohydrate_g: 0 };
-client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'), {
+const haferflocken = {
+  kind: 'catalog' as const,
+  id: 'f00df00d-f00d-4f00-8f00-000000000001',
+  source: 'bls' as const,
+  name: 'Haferflocken',
+  brand: null,
+  base_unit: 'g' as const,
+  per_100: {
+    energy_kcal: 370,
+    protein_g: 13.5,
+    fat_g: 7,
+    carbohydrate_g: 58.7,
+    sugar_g: null,
+    fibre_g: null,
+    saturated_fat_g: null,
+    salt_g: null,
+  },
+  portions: [{ label: 'Portion', amount: 50 }],
+};
+const tagebuchHeute: EigenesTagebuch = {
   today: inTagen(0, 0).slice(0, 10),
   started_on: '2026-09-27',
   enabled: true,
@@ -1229,7 +1496,7 @@ client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'), {
   can_delete: true,
   glass_ml: 250,
   hide_numbers: false,
-  recent: [],
+  recent: [{ food: haferflocken, amount: 50, portion_label: 'Portion', portion_count: 1 }],
   favorites: [],
   targets: { energy_kcal: 1466, protein_g: 59, fat_g: 49, carbohydrate_g: 197, water_ml: 2570 },
   day: {
@@ -1256,17 +1523,68 @@ client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'), {
             fat_g: 3.5,
             carbohydrate_g: 29.3,
           },
+          {
+            id: 'e1e1e1e1-e1e1-4e1e-8e1e-000000000002',
+            eaten_on: inTagen(0, 0).slice(0, 10),
+            meal: 'breakfast',
+            food_kind: 'catalog',
+            food_id: null,
+            name: 'Banane roh',
+            brand: null,
+            base_unit: 'g',
+            amount: 120,
+            portion_label: '1 Stück (mittel)',
+            portion_amount: 120,
+            portion_count: 1,
+            energy_kcal: 112,
+            protein_g: 1.4,
+            fat_g: 0.2,
+            carbohydrate_g: 25.3,
+          },
         ],
-        totals: { energy_kcal: 185, protein_g: 6.7, fat_g: 3.5, carbohydrate_g: 29.3 },
+        totals: { energy_kcal: 297, protein_g: 8.1, fat_g: 3.7, carbohydrate_g: 54.6 },
       },
       { meal: 'lunch', entries: [], totals: ohneSummen },
       { meal: 'dinner', entries: [], totals: ohneSummen },
       { meal: 'snack', entries: [], totals: ohneSummen },
     ],
-    totals: { energy_kcal: 185, protein_g: 6.7, fat_g: 3.5, carbohydrate_g: 29.3 },
+    totals: { energy_kcal: 297, protein_g: 8.1, fat_g: 3.7, carbohydrate_g: 54.6 },
     water_ml: 500,
   },
-} satisfies EigenesTagebuch);
+};
+client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'), tagebuchHeute);
+// Das Eintragen fragt den Tag aus der Adresse ab, hier ausdrücklich heute.
+client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, tagebuchHeute.today), tagebuchHeute);
+// `tagebuch-laden`: Der Tag lädt ohne Ende; `tagebuch-fehler`: Er scheitert, auch beim
+// Erscheinen nicht noch einmal versucht; `tagebuch-ohne-netz`: Das Gerät meldet keine Verbindung.
+if (seite === 'tagebuch-laden') {
+  client.removeQueries({ queryKey: tagebuchSchluessel(zugaenge[0]!.access_id, 'heute') });
+  void client.prefetchQuery({
+    queryKey: tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'),
+    queryFn: () => new Promise<EigenesTagebuch>(() => undefined),
+  });
+}
+if (seite === 'tagebuch-fehler') {
+  client.removeQueries({ queryKey: tagebuchSchluessel(zugaenge[0]!.access_id, 'heute') });
+  client.setQueryDefaults(tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'), {
+    retryOnMount: false,
+  });
+  void client.prefetchQuery({
+    queryKey: tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'),
+    queryFn: () => Promise.reject(new Error('Ihr Tagebuch konnte nicht geladen werden.')),
+  });
+}
+if (seite === 'tagebuch-ohne-netz' || seite === 'ernaehrung-ohne-netz') {
+  Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false });
+}
+// `tagebuch-eintragen-aus`: Das Tagebuch ist ausgeschaltet, das Eintragen zeigt den Weg zurück.
+if (seite === 'tagebuch-eintragen-aus') {
+  client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, tagebuchHeute.today), {
+    ...tagebuchHeute,
+    enabled: false,
+    can_write: false,
+  });
+}
 client.setQueryData(checkinsKey('treatment', MAX), {
   today: inTagen(0, 0).slice(0, 10),
   can_write: true,
@@ -1520,10 +1838,24 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'checkin-alltag':
     case 'gewohnheiten':
     case 'ernaehrung':
+    case 'ernaehrung-ohne-netz':
     case 'tagebuch':
+    case 'tagebuch-laden':
+    case 'tagebuch-fehler':
+    case 'tagebuch-ohne-netz':
+    case 'tagebuch-eintragen':
+    case 'tagebuch-eintragen-aus':
     case 'lebensmittel':
     case 'lebensmittel-neu':
     case 'angaben':
+    case 'angaben-frage':
+    case 'angaben-frage-uebungen':
+    case 'angaben-tabelle':
+    case 'angaben-leer':
+    case 'angaben-laden':
+    case 'gewohnheiten-pausiert':
+    case 'gewohnheiten-leer':
+    case 'gewohnheiten-laden':
     case 'vertrag': {
       const pfade: Record<string, string> = {
         angebot: '/p/angebot?bereich=treatment',
@@ -1566,10 +1898,25 @@ function inhalt(): { pfad: string; element: ReactNode } {
         'checkin-uebersicht': '/p?bereich=treatment',
         'checkin-danke': '/p?bereich=treatment&checkin=1',
         angaben: '/p/angaben?bereich=treatment',
+        'angaben-frage': '/p/angaben/pain_rest?bereich=treatment',
+        'angaben-frage-uebungen': '/p/angaben/session_exertion?bereich=treatment',
+        'angaben-tabelle': '/p/angaben/tabelle?bereich=treatment',
+        'angaben-leer': '/p/angaben?bereich=treatment',
+        'angaben-laden': '/p/angaben?bereich=treatment',
         'checkin-alltag': '/p/checkin?bereich=treatment',
         gewohnheiten: '/p/gewohnheiten?bereich=treatment',
+        'gewohnheiten-pausiert': '/p/gewohnheiten?bereich=treatment',
+        'gewohnheiten-leer': '/p/gewohnheiten?bereich=treatment',
+        'gewohnheiten-laden': '/p/gewohnheiten?bereich=treatment',
         ernaehrung: '/p/ernaehrung?bereich=treatment',
+        'ernaehrung-ohne-netz': '/p/ernaehrung?bereich=treatment',
         tagebuch: '/p/ernaehrung/tagebuch?bereich=treatment',
+        'tagebuch-laden': '/p/ernaehrung/tagebuch?bereich=treatment',
+        'tagebuch-fehler': '/p/ernaehrung/tagebuch?bereich=treatment',
+        'tagebuch-ohne-netz': '/p/ernaehrung/tagebuch?bereich=treatment',
+        // Wie aus der Pille „Mittagessen“: Tag, Mahlzeit und der Rückweg zum Tag.
+        'tagebuch-eintragen': `/p/ernaehrung/tagebuch/eintragen?bereich=treatment&tag=${inTagen(0, 0).slice(0, 10)}&mahlzeit=lunch&zurueck=${encodeURIComponent('/p/ernaehrung/tagebuch?bereich=treatment')}`,
+        'tagebuch-eintragen-aus': `/p/ernaehrung/tagebuch/eintragen?bereich=treatment&tag=${inTagen(0, 0).slice(0, 10)}&mahlzeit=lunch&zurueck=${encodeURIComponent('/p/ernaehrung/tagebuch?bereich=treatment')}`,
         lebensmittel: '/p/ernaehrung/lebensmittel?bereich=treatment',
         'lebensmittel-neu': '/p/ernaehrung/lebensmittel/neu?bereich=treatment',
       };
@@ -1584,6 +1931,35 @@ function inhalt(): { pfad: string; element: ReactNode } {
         ),
       };
     }
+    // Schritt 4c: der Fragebogen in einem Thema, beim Abschluss und in seinen Lagen.
+    case 'fragebogen-thema':
+    case 'fragebogen-abschluss':
+    case 'fragebogen-ohne-netz':
+    case 'fragebogen-gesendet':
+    case 'fragebogen-training':
+    case 'fragebogen-laden':
+    case 'fragebogen-ladefehler':
+      return {
+        pfad: `/p/befundbogen?bereich=${seite === 'fragebogen-training' ? 'training' : 'treatment'}`,
+        element: (
+          <PlattformApp
+            zugaenge={zugaenge}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    case 'fragebogen-begleitung':
+      return {
+        pfad: `/p/befundbogen?zugang=${begleitung.access_id}`,
+        element: (
+          <PlattformApp
+            zugaenge={[zugaenge[0]!, begleitung]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
     case 'ende':
       return {
         pfad: '/p/ich',
@@ -1639,6 +2015,50 @@ function inhalt(): { pfad: string; element: ReactNode } {
         element: (
           <PlattformApp
             zugaenge={[{ ...zugaenge[0]!, read_until: inTagen(58, 0) }]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    // Schritt 4b: der Check-in als geführter Ablauf und seine Zustände (Handoff 5.1).
+    case 'checkin-frage':
+    case 'checkin-letzte':
+    case 'checkin-ohne-netz':
+    case 'checkin-beantwortet':
+    case 'checkin-laden':
+    case 'checkin-fehler':
+    case 'checkin-training':
+    case 'checkin-einwilligung':
+    case 'checkin-leer':
+      return {
+        pfad: ['checkin-training', 'checkin-einwilligung', 'checkin-leer'].includes(seite)
+          ? '/p/checkin?bereich=training'
+          : '/p/checkin?bereich=treatment',
+        element: (
+          <PlattformApp
+            zugaenge={zugaenge}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    case 'checkin-lesefrist':
+      return {
+        pfad: '/p/checkin?bereich=treatment',
+        element: (
+          <PlattformApp
+            zugaenge={[{ ...zugaenge[0]!, read_until: inTagen(29, 0) }]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    case 'checkin-begleitung':
+      return {
+        pfad: `/p/checkin?zugang=${begleitung.access_id}`,
+        element: (
+          <PlattformApp
+            zugaenge={[zugaenge[0]!, begleitung]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />

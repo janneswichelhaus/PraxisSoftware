@@ -21,6 +21,20 @@ import { ProgressBar } from './ProgressBar';
  */
 export const TIPPSPERRE_MS = 700;
 
+/** Für Band und Verbindungszeile eines breiten Ablaufs: dieselbe Kante wie der Inhalt (ANN-789). */
+export const BREITE_ABLAUFSPALTE =
+  'max-w-formular [.plattform-schrift[data-rechner]_&]:max-w-spalte mx-auto box-content px-5 max-[23rem]:px-3';
+const AM_RECHNER_OHNE_LINIE =
+  '[.plattform-schrift[data-rechner]_&]:border-b-0 [.plattform-schrift[data-rechner]_&]:border-t-0';
+const AM_RECHNER_OHNE_ABSTAND = '[.plattform-schrift[data-rechner]_&]:pt-0';
+const SEHR_GROSS_ROLLT_ZUSAMMEN = {
+  seite: '[[data-schrift=sehr-gross]_&]:overflow-y-auto',
+  inhalt: '[[data-schrift=sehr-gross]_&]:flex-none [[data-schrift=sehr-gross]_&]:overflow-visible',
+};
+const AM_RECHNER_LINIE_UNTEN = '[.plattform-schrift[data-rechner]_&]:border-b';
+const AM_RECHNER_LINIE_OBEN =
+  '[.plattform-schrift[data-rechner]_&]:border-t [.plattform-schrift[data-rechner]_&]:pt-4';
+
 /**
  * Der geführte Ablauf (DESIGN.md „Geführter Ablauf“, ANN-572): ein Fenster, eine Frage je Seite, die
  * Antwort führt weiter; Kopf, Schritt, Tippsperre, Ansage und Rückfrage bekommt jeder Ablauf gleich.
@@ -47,6 +61,9 @@ export function GefuehrterAblauf({
   band,
   plattform = false,
   schmalesFenster = false,
+  unterDemKopf,
+  fussLinie = false,
+  breit = false,
   children,
 }: {
   /** Die Frage der Seite: Überschrift und Name des Fensters. */
@@ -99,6 +116,12 @@ export function GefuehrterAblauf({
   plattform?: boolean;
   /** Am Rechner ein Fenster so breit wie ein Formular, innen 24; darunter wie am Telefon. */
   schmalesFenster?: boolean;
+  /** Mit `spaeter` und `objekt` unter der ersten Reihe des Kopfs, etwa die Verbindungszeile. */
+  unterDemKopf?: ReactNode;
+  /** Die Linie über dem Fuß auf jeder Seite, nicht nur im Abschluss. */
+  fussLinie?: boolean;
+  /** Am Rechner eine Spalte von 48rem statt 36rem: Nur so passt eine Skala 0 bis 10 in eine Reihe. */
+  breit?: boolean;
   children?: ReactNode;
 }) {
   const gesperrt = useTippsperre(seite, tippsperre);
@@ -123,6 +146,9 @@ export function GefuehrterAblauf({
   // der Frage, und ein zweiter Name träfe jede Suche nach einem Feld, dessen
   // Beschriftung in der Frage steht („Wofür?“ in „Wie viel und wofür?“).
   const rollflaeche = { tabIndex: 0 } as const;
+  const spalte = breit
+    ? 'max-w-formular [.plattform-schrift[data-rechner]_&]:max-w-spalte'
+    : 'max-w-formular';
   const mitFuss = fuss !== undefined && fuss !== null && fuss !== false;
   const rand =
     `${plattform ? 'px-5 max-[23rem]:px-3' : 'px-4'} ${schmalesFenster ? 'lg:px-6' : ''}`.trim();
@@ -143,12 +169,45 @@ export function GefuehrterAblauf({
       <p className="sr-only" aria-live="polite">
         {ansage ?? (stand ? `${stand.text}: ${titel}` : titel)}
       </p>
-      {spaeter ? (
+      {spaeter && objekt ? (
+        // Mit Namen: erste Reihe Name und „Später“, darunter „← Zurück“ und der Stand.
+        // Die Linie reicht am Telefon über die ganze Breite, am Rechner über die Spalte; wird es
+        // eng, rückt „Später“ in eine eigene Reihe, statt den Namen mitten im Wort zu brechen.
+        <div className="shrink-0">
+          <div className={`border-line border-b ${AM_RECHNER_OHNE_LINIE} ${rand}`}>
+            <div
+              className={`${spalte} border-line mx-auto flex min-h-15 w-full flex-wrap items-center gap-x-2 py-1 ${AM_RECHNER_LINIE_UNTEN}`}
+            >
+              <p className="text-ink min-w-min flex-1 font-semibold wrap-break-word">{objekt}</p>
+              {abschluss ? null : (
+                <Button variant="quiet" className="-mr-3 ml-auto shrink-0" onClick={onSchliessen}>
+                  Später
+                </Button>
+              )}
+            </div>
+          </div>
+          {unterDemKopf}
+          <div className={`pt-2 ${rand}`}>
+            <div className={`${spalte} mx-auto w-full`}>
+              <div className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1">
+                {zurueckGehen ? (
+                  <Button variant="quiet" className="-ml-3" onClick={zurueckGehen}>
+                    ← Zurück
+                  </Button>
+                ) : null}
+                {stand ? <p className="text-ink-muted ml-auto shrink-0">{stand.text}</p> : null}
+              </div>
+              {balken ? <div className="mt-2 flex">{balken}</div> : null}
+            </div>
+            {bandleiste}
+          </div>
+        </div>
+      ) : spaeter ? (
         // Der Kopf ohne ✕-Zeile (5.3): „← Zurück“ und „Später“ in einer
         // Reihe, darunter der Balken mit dem Schritt daneben - an der Kante
         // des Inhalts. Wird es eng (200 %), rückt der Schritt unter den Balken.
         <div className={`shrink-0 pt-2 ${rand}`}>
-          <div className="max-w-formular mx-auto w-full">
+          <div className={`${spalte} mx-auto w-full`}>
             {/* Wird es eng (200 %), rückt „Später“ in eine eigene Reihe, statt
                 beide Wörter mitten im Wort zu brechen - mit 8 px Abstand. */}
             <div className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-2">
@@ -192,18 +251,27 @@ export function GefuehrterAblauf({
     </>
   );
 
+  // Der Rand liegt außen, damit Fuß und Inhalt an derselben Kante der Spalte stehen.
   const fussLeiste = mitFuss ? (
-    <div className={`shrink-0 pt-2 pb-4 ${rand} ${abschluss ? 'border-line border-t' : ''}`.trim()}>
-      {fuss}
+    <div
+      className={`shrink-0 ${rand} ${fussLinie ? `border-line border-t pt-4 pb-5 ${AM_RECHNER_OHNE_LINIE} ${AM_RECHNER_OHNE_ABSTAND}` : abschluss ? 'border-line border-t pt-2 pb-4' : 'pt-2 pb-4'}`}
+    >
+      <div
+        className={`${spalte} mx-auto w-full ${fussLinie ? `border-line ${AM_RECHNER_LINIE_OBEN}` : ''}`}
+      >
+        {fuss}
+      </div>
     </div>
   ) : null;
 
   // Unter 23rem rollt alles zusammen - Kopf, Inhalt und Fuß -, nicht nur der
-  // Inhalt zwischen festem Kopf und Fuß.
+  // Inhalt zwischen festem Kopf und Fuß. Mit Linie über dem Fuß (Notfallsatz) bei
+  // „Sehr groß“ auch: Inhalt und Fuß rollen zusammen, sonst deckte der Fuß die Antwort zu.
+  const sehrGross = fussLinie ? SEHR_GROSS_ROLLT_ZUSAMMEN : { seite: '', inhalt: '' };
   const schmal = plattform
     ? {
-        seite: 'max-[23rem]:flex-none',
-        inhalt: 'max-[23rem]:flex-none max-[23rem]:overflow-visible',
+        seite: `max-[23rem]:flex-none ${sehrGross.seite}`,
+        inhalt: `max-[23rem]:flex-none max-[23rem]:overflow-visible ${sehrGross.inhalt}`,
       }
     : { seite: '', inhalt: '' };
   const hoch = plattform || inhaltUnten ? 'h-full' : '';
@@ -219,7 +287,7 @@ export function GefuehrterAblauf({
       >
         {/* Im Rhythmus der Plattform so hoch wie die Fläche: Was schrumpfen darf
             (ein Bild über der Frage), gibt Platz her, bevor die Seite rollt. */}
-        <div className={`max-w-formular mx-auto flex w-full flex-col gap-4 ${hoch}`.trim()}>
+        <div className={`${spalte} mx-auto flex w-full flex-col gap-4 ${hoch}`.trim()}>
           {vorDemTitel}
           <Fenstertitel stufe={titelStufe} />
           {inhaltUnten ? (
@@ -229,9 +297,7 @@ export function GefuehrterAblauf({
           )}
         </div>
       </div>
-      {fussLeiste ? (
-        <div className="max-w-formular mx-auto w-full shrink-0">{fussLeiste}</div>
-      ) : null}
+      {fussLeiste}
     </div>
   );
 

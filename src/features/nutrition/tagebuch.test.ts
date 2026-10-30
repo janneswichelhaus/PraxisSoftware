@@ -5,7 +5,6 @@ import {
   grammVon,
   mengePruefen,
   mengeText,
-  nochUebrig,
   vorbelegung,
   wasserText,
 } from './tagebuch';
@@ -29,12 +28,6 @@ const HAFER = {
 };
 
 describe('Tagebuch (ERN-007)', () => {
-  it('nennt „noch übrig“ und eine Überschreitung als solche', () => {
-    expect(nochUebrig(1800, 1234)).toEqual({ wert: '566\u00a0kcal', ueber: false });
-    expect(nochUebrig(1800, 1800)).toEqual({ wert: '0\u00a0kcal', ueber: false });
-    expect(nochUebrig(1800, 2010)).toEqual({ wert: '210\u00a0kcal über dem Ziel', ueber: true });
-  });
-
   it('schreibt Mengen, Portionen, Gramm und Wasser', () => {
     expect(
       mengeText({ amount: 50, base_unit: 'g', portion_label: '1 Portion', portion_count: 1 }),

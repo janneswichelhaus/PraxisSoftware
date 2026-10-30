@@ -19,7 +19,14 @@ import { uhrzeit } from './zeit';
  * Quelle ist wie in der Praxis allein `navigator.onLine` (ANN-015); die Zeile
  * sagt deshalb nur, was das Gerät meldet.
  */
-export function Verbindungszeile({ rechner = false }: { rechner?: boolean }) {
+export function Verbindungszeile({
+  rechner = false,
+  innen,
+}: {
+  rechner?: boolean;
+  /** Die Kante des Texts, etwa die Spalte eines Ablaufs; sonst die des Gerüsts. */
+  innen?: string;
+}) {
   const verbunden = useIstVerbunden();
   const queryClient = useQueryClient();
   // Beim Abreißen einmal ermittelt: Was ohne Netz noch in den Speicher kommt,
@@ -36,7 +43,7 @@ export function Verbindungszeile({ rechner = false }: { rechner?: boolean }) {
     <div role="status" className="nicht-drucken">
       {verbunden ? null : (
         <div className="bg-surface-sunken text-ink">
-          <p className={`${geruestSpalte(rechner)} flex items-start gap-3 py-2.5`}>
+          <p className={`${innen ?? geruestSpalte(rechner)} flex items-start gap-3 py-2.5`}>
             <OhneNetzSymbol />
             <span>
               Keine Verbindung.

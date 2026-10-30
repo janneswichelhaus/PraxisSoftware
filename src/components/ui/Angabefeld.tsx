@@ -1,64 +1,69 @@
-import { useId, useRef, type CSSProperties } from 'react';
-import { Button } from '@/components/ui/Button';
-import { wertText, type Erfassungsgroesse } from '@/lib/erfassungsgroessen';
+import { useId } from 'react';
+import { ankerSatz, wertText, type Erfassungsgroesse } from '@/lib/erfassungsgroessen';
+import { useFenstertitelId } from './fenstertitel';
+import { Stufenskala } from './Stufenskala';
+import { Wahlflaechen } from './Wahlflaechen';
 
 /**
- * Eine freiwillige Angabe zu einer Erfassungsgröße (TRK-EPIC-001).
- *
- * Eine Skala (0 bis 10) in Stufen wie im Befundbogen – am Handy zwei Reihen,
- * jede Stufe mindestens 44 × 44 px (BEF-057, ANN-258) – oder eine Zahl mit
- * Einheit oder eine Auswahl in Wörtern (TRK-004, ANN-354). Nichts ist vorausgewählt: Der letzte Wert steht als Hinweis
- * daneben, damit niemand durchklickt (IDEA-TRK-002, ANN-349). „Angabe
- * entfernen" nimmt eine Wahl zurück; ohne Angabe bleibt der Wert leer.
- *
- * Keine Farbe je Wert, keine Einordnung (ADR-006 Punkt 11).
+ * Eine freiwillige Angabe: Skala 0 bis 10, Zahl mit Einheit oder Wahl in Wörtern. Nichts ist
+ * vorausgewählt, die letzte Angabe steht nur als Hinweis dabei (ANN-349). Keine Farbe je Wert,
+ * keine Einordnung (ADR-006 Punkt 11).
  */
 export function Angabefeld({
   groesse,
   wert,
   zuletzt,
+  zuletztAm,
   onChange,
+  imAblauf = false,
+  gesperrt = false,
 }: {
   groesse: Erfassungsgroesse;
   wert: number | null;
   /** Der Wert der letzten Angabe, nur als Hinweis. */
   zuletzt?: number | undefined;
+  /** Der Tag der letzten Angabe in Worten, etwa „21. Oktober“. */
+  zuletztAm?: string | undefined;
   onChange: (wert: number | null) => void;
+  /** Im geführten Ablauf ist die Frage der Titel des Fensters; das Feld zeigt sie nicht noch einmal. */
+  imAblauf?: boolean;
+  gesperrt?: boolean;
 }) {
-  const name = useId();
-  const titelId = useId();
-  const hinweisId = useId();
-  const feldsatz = useRef<HTMLFieldSetElement>(null);
+  const feldId = useId();
+  const frageId = useId();
+  const fenstertitel = useFenstertitelId();
+  const titelId = imAblauf && fenstertitel ? fenstertitel : frageId;
+  const zeigeFrage = !(imAblauf && fenstertitel);
   const hinweis =
-    zuletzt !== undefined ? `Ihre letzte Angabe: ${wertText(groesse, zuletzt)}` : null;
-
-  function entfernen() {
-    onChange(null);
-    feldsatz.current?.querySelector('input')?.focus();
-  }
+    zuletzt === undefined
+      ? null
+      : `Ihre letzte Angabe: ${wertText(groesse, zuletzt)}${zuletztAm ? ` am ${zuletztAm}` : ''}`;
+  const letzte = hinweis ? <p className="text-ink-muted">{hinweis}</p> : null;
 
   if (groesse.einheit) {
     return (
       // `feld`: Der Titel reagiert auf den Fokus (ANN-567, `index.css`).
-      <div className="feld flex flex-col gap-1">
-        <label htmlFor={name} className="text-ink text-liste font-medium">
-          {groesse.frage}
-        </label>
-        {hinweis ? (
-          <p id={hinweisId} className="text-ink-muted text-sm">
-            {hinweis}
-          </p>
+      <div className="feld flex flex-col gap-2">
+        {zeigeFrage ? (
+          <label htmlFor={feldId} id={frageId} className="text-ink text-liste font-semibold">
+            {groesse.frage}
+          </label>
         ) : null}
-        <div className="flex items-center gap-2">
+        {/* Über dem Feld: Darunter verdeckte sie die Tastatur, die das Feld öffnet (Handoff 5.1). */}
+        {letzte}
+        {/* Unter 23rem rückt die Einheit unter das Feld, statt mitten im Wort zu brechen
+            („Minute|n“): `break-word` lässt ihr die Breite ihres längsten Worts. */}
+        <div className="flex flex-wrap items-center gap-2">
           <input
-            id={name}
+            id={feldId}
             type="number"
             inputMode="numeric"
             min={groesse.min}
             max={groesse.max}
             step={1}
-            aria-describedby={hinweis ? hinweisId : undefined}
-            className="border-line-strong rounded-field text-ink bg-surface min-h-11 w-28 border px-3 text-base tabular-nums"
+            disabled={gesperrt}
+            aria-labelledby={zeigeFrage ? undefined : titelId}
+            className="border-line-strong rounded-field text-ink bg-surface min-h-12 w-28 border px-3 text-base tabular-nums"
             value={wert ?? ''}
             onChange={(e) => {
               const roh = e.target.value.trim();
@@ -67,92 +72,66 @@ export function Angabefeld({
               onChange(Number.isFinite(zahl) ? zahl : null);
             }}
           />
-          <span className="text-ink">{groesse.einheit}</span>
+          <span className="text-ink wrap-break-word">{groesse.einheit}</span>
         </div>
       </div>
     );
   }
 
-  const stufen = Array.from({ length: groesse.max - groesse.min + 1 }, (_, i) => groesse.min + i);
-  const spaltenAmHandy = stufen.length > 6 ? Math.ceil(stufen.length / 2) : stufen.length;
-  const auswahl = groesse.optionen !== undefined;
+  if (groesse.optionen) {
+    const wahlen = groesse.optionen.map((text, i) => ({
+      schluessel: String(groesse.min + i),
+      text,
+    }));
+    return (
+      <div className="flex flex-col gap-2">
+        <Wahlflaechen
+          {...(zeigeFrage
+            ? { titel: groesse.frage, ebene: 3 as const }
+            : { beschriftetVon: titelId })}
+          form="zeilen"
+          wahlen={wahlen}
+          gewaehlt={wert === null ? [] : [String(wert)]}
+          gesperrt={gesperrt}
+          onUmschalten={(schluessel) => {
+            const zahl = Number(schluessel);
+            onChange(wert === zahl ? null : zahl);
+          }}
+        />
+        {letzte}
+        <p aria-live="polite" className="sr-only">
+          {wert === null ? '' : `gewählt: ${wertText(groesse, wert)}`}
+        </p>
+      </div>
+    );
+  }
 
+  const anker = ankerSatz(groesse);
   return (
-    <fieldset
-      ref={feldsatz}
-      aria-labelledby={titelId}
-      aria-describedby={hinweis ? hinweisId : undefined}
-      className="flex flex-col gap-1"
-    >
-      <div className="relative mb-2">
-        <p id={titelId} className="text-ink text-liste font-medium">
-          {wert !== null ? <span aria-hidden="true" className="float-right ml-3 h-5 w-40" /> : null}
-          {groesse.frage}
-        </p>
-        {wert !== null ? (
-          <Button
-            type="button"
-            variant="quiet"
-            groesse="kompakt"
-            className="absolute -top-2.5 right-0 w-40 whitespace-nowrap"
-            onClick={entfernen}
-          >
-            Angabe entfernen<span className="sr-only">: {groesse.frage}</span>
-          </Button>
+    <div className="flex flex-col gap-4">
+      {/* Im Ablauf steht der Satz der Anker 6 unter dem Titel des Fensters, der 16 Abstand
+          mitbringt (Handoff 5.1). */}
+      <div className={`flex flex-col gap-1.5 ${zeigeFrage ? '' : '-mt-2.5'}`.trim()}>
+        {zeigeFrage ? (
+          <h3 id={frageId} className="text-ink text-base font-semibold">
+            {groesse.frage}
+          </h3>
         ) : null}
+        {anker ? <p className="text-ink-muted">{anker}</p> : null}
       </div>
-      {hinweis ? (
-        <p id={hinweisId} className="text-ink-muted text-sm">
-          {hinweis}
-        </p>
-      ) : null}
-      <div
-        // `skala`: Haken für die Plattform, die bei sehr wenig Breite weniger
-        // Stufen je Reihe setzt (POR-020). Eine Auswahl in Wörtern bricht
-        // einfach um. Auf der Plattform Stufen 48 hoch mit 8 Abstand in einer
-        // Spalte für sechs - zwei Reihen 0 bis 5 und 6 bis 10; bei „Groß“ und
-        // „Sehr groß“ so viele je Reihe, wie hineinpassen (Handoff 2026-10-24,
-        // 5.4 und 6; PLATTFORM.md, Ziele).
-        className={
-          auswahl
-            ? 'flex flex-wrap gap-2'
-            : 'skala [.plattform-schrift_&]:max-w-skala grid max-w-md grid-cols-[repeat(var(--skala-spalten),minmax(2.75rem,1fr))] gap-1 sm:max-w-none sm:grid-flow-col sm:grid-cols-none sm:gap-0.5 [.plattform-schrift_&]:grid-flow-row [.plattform-schrift_&]:grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] [.plattform-schrift_&]:gap-2'
-        }
-        style={auswahl ? undefined : ({ '--skala-spalten': spaltenAmHandy } as CSSProperties)}
-      >
-        {stufen.map((stufe) => (
-          <label
-            key={stufe}
-            className={`has-[:checked]:bg-accent has-[:checked]:border-accent has-[:checked]:text-surface border-line-strong text-ink rounded-field has-[:focus-visible]:outline-accent flex min-h-11 cursor-pointer items-center justify-center border text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 [.plattform-schrift_&]:min-h-12 ${
-              auswahl ? 'px-4' : 'tabular-nums sm:min-w-11'
-            }`}
-          >
-            <input
-              type="radio"
-              name={name}
-              className="sr-only"
-              checked={wert === stufe}
-              onChange={() => onChange(stufe)}
-            />
-            {wertText(groesse, stufe)}
-          </label>
-        ))}
-      </div>
-      {groesse.enden ? (
-        // Passen beide Enden nicht nebeneinander, steht das zweite darunter -
-        // gequetscht bräche „keine“ als „kein|e“ (BEF-214).
-        <div className="text-ink-muted [.plattform-schrift_&]:max-w-skala flex max-w-md flex-wrap justify-between gap-x-4 text-xs sm:max-w-none">
-          <span>
-            {groesse.min} = {groesse.enden[0]}
-          </span>
-          <span>
-            {groesse.max} = {groesse.enden[1]}
-          </span>
-        </div>
-      ) : null}
-      <p aria-live="polite" className="text-ink-muted text-sm tabular-nums">
+      <Stufenskala
+        beschriftetVon={titelId}
+        min={groesse.min}
+        max={groesse.max}
+        enden={groesse.enden}
+        wert={wert}
+        gesperrt={gesperrt}
+        onChange={onChange}
+      />
+      {letzte}
+      <p aria-live="polite" className="sr-only">
         {wert === null ? '' : `gewählt: ${wertText(groesse, wert)}`}
       </p>
-    </fieldset>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-10-29.
+Zuletzt aktualisiert: 2026-10-30.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1133,10 +1133,6 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: —\
 Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: —\
 **Regel.** Die Planseite zeigt je Position, in wie vielen beendeten Einheiten alle, ein Teil oder kein Satz abgehakt wurde, und die letzten fünf, je Planfassung. Keine Quote, keine Ursache, kein Austauschvorschlag; Last und Wiederholungen je Satz erfasst die Plattform nicht. **Grundlage.** ADR-006 Punkte 4, 10 und 13. **Anker.** `uebungsanalyse`, `app.exercise_plan_sessions_json`.
 
-### ANN-367 — „Meine Angaben“ zeigt der Person je Frage ein Punktbild in den Worten der Frage, ohne Ereignisse der Praxis
-Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: —\
-**Regel.** Unter „Meine Angaben“ sieht die Person je Frage ein Punktbild, überschrieben mit der Frage und den Skalenenden, aufklappbar alle Antworten als Tabelle, darüber ein fester Satz, dass Werte schwanken. Ereignisse der Praxis, Termine und Assessments stehen dort nicht. **Grundlage.** § 630g BGB; Art. 15 DSGVO; ADR-006 Punkt 12. **Anker.** `public.platform_checkins`.
-
 ### ANN-368 — Schlafdauer in ganzen Stunden und Schmerzmittel an wie vielen der letzten 7 Tage sind Fragen des Check-ins
 Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: —\
 **Regel.** Die Praxis kann zwei weitere Fragen wählen, die zu den fünf zählen: Schlafdauer der letzten Nacht in ganzen Stunden (0 bis 16) und an wie vielen der letzten 7 Tage Schmerzmittel bei Bedarf genommen wurden. Kein Wirkstoff, keine Dosis, kein Medikationsplan. **Grundlage.** ADR-006 Punkt 11. **Anker.** `sleep_hours`, `painkiller_days_7d` in `app.tracking_parameters`.
@@ -1383,6 +1379,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-359 | Der Schlüssel der Freigabe ohne Netz kommt beim Einrichten aus dem Browser; aufs Gerät holen ihn Plattformkonten und eingerichtete Diensttelefone | Technik · offen | `public.own_offline_passkeys`, `schluesselAblegen` |
 | ANN-362 | Ein Offline-Entwurf kommt als Ganzes an: angelegt, wiedererkannt oder Konflikt; nie eingemischt, nie still verworfen | Technik · offen | `public.sync_offline_treatment_note` |
 | ANN-363 | Ohne Netz öffnet der Passkey für ein Praxiskonto Tagesplan und Entwürfe; beim Abmelden bleiben Entwürfe auf Wunsch auf dem Gerät | Praxisprozess · offen | `EntwurfAbmeldewache`, `praxisOhneNetz` |
+| ANN-367 | „Meine Angaben“ je Frage als Punktbild, ohne Ereignisse der Praxis | Praxisprozess · geändert (→ ANN-799) | `public.platform_checkins` |
 | ANN-380 | Der Seed übernimmt den ganzen Übungskatalog mit festen Kennungen; ein Namenskonflikt bricht den Seed ab | Technik · offen | `app.import_exercise_catalog_for`, `supabase/seed.sql` |
 | ANN-381 | Kein Übungsbild als Posen-Beschreibung: Übungen haben keine Zeichnung | Technik · verworfen (→ ANN-539) | `supabase/migrations/20261225060000_uebungsbild_entfernt.sql` |
 | ANN-382 | Der Übungskatalog ist Produktinhalt im Release; die Praxis übernimmt ihn als Kopie mit Herkunft, ein späterer Import überschreibt nichts | Technik · offen | `app.import_exercise_catalog_for` |
@@ -1412,7 +1409,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-461 | Ein Speichern für Kalender und Vergütung der Mitarbeiter:in | Praxisprozess · offen | `StaffEinsatz` in `src/features/workforce/staff/StaffEinsatz.tsx` |
 | ANN-465 | Plattform-Übersicht: eine Hauptsache statt der Liste „Jetzt dran“ | Technik · verworfen (→ ANN-698) | `Uebersicht` in `src/features/portal/platform/Uebersicht.tsx` |
 | ANN-466 | Übung auf der Plattform: kein Bildplatz, Dosierung als Marken unter der Bühne statt Kacheln | Technik · verworfen (→ Handoff 2026-10-24) | `Dosierungsmarken` in `src/features/portal/platform/Dosierungsmarken.tsx` |
-| ANN-467 | Befundbogen auf der Plattform in Schritten zu höchstens acht Fragen | Praxisprozess · offen | `FRAGEN_JE_SCHRITT` in `src/features/portal/platform/bogenschritte.ts` |
+| ANN-467 | Befundbogen auf der Plattform in Schritten zu höchstens acht Fragen | Praxisprozess · geändert (→ ANN-792) | `FRAGEN_JE_SCHRITT` in `src/features/portal/platform/bogenschritte.ts` |
 | ANN-468 | Plattform-Einstellungen: Benachrichtigungen je Zugang und Passkey/PIN auf Abruf | Technik · offen | `Einstellungen` in `src/features/portal/platform/Einstellungen.tsx` |
 | ANN-470 | Eine neue Übung entsteht mit ihrer ersten Variante in einem Formular | Praxisprozess · offen | `NeueUebungFormular` in `src/features/exercise/exercises/Formulare.tsx` |
 | ANN-471 | Dosierung einer Position mit Zahlschritten; Übung tauschen durch Entfernen und Hinzufügen | Praxisprozess · offen | `PositionFormular` in `src/features/exercise/exercise-plans/PositionFormular.tsx` |
@@ -1590,5 +1587,21 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-782 | Ändern, Absagen: ✕ ersetzt den Ablauf im Verlauf durch die Seite des Termins; `?art=` weg gilt als Weggehen | Technik · offen | `Aenderungsablauf` in `src/features/portal/platform/Terminaenderung.tsx` |
 | ANN-783 | Abläufe: ohne Netz der Satz ruhig über dem gesperrten Senden, nicht noch einmal als Fehler; beim Absagen „Praxis anrufen“ | Technik · offen | `OhneNetzHinweis` in `src/features/portal/platform/Wunschfelder.tsx` |
 | ANN-784 | Zusammenfassung: „Ändern“ in der Zeile der Bezeichnung | Technik · offen | `bezeichnung` in `src/components/ui/ListRow.tsx` |
-| ANN-785 | Termin ändern: Zusammenfassung ohne „Ihr Termin“ (steht im Kopf), sonst rollt sie bei 375 × 667 | Technik · offen | `Wannangabe` in `src/features/portal/platform/Terminaenderung.tsx` |
+| ANN-785 | Termin ändern: Zusammenfassung ohne „Ihr Termin“ (steht im Kopf), sonst rollt sie bei 375 × 667 | Technik · entschieden (Jannes) | `Wannangabe` in `src/features/portal/platform/Terminaenderung.tsx` |
 | ANN-786 | Zeitumstellung: doppelte Ortszeit gilt als die frühere; der Absagewunsch gibt seinen Zeitpunkt genau weiter | Technik · offen | `local_time_instant` in `supabase/migrations/20261225180000_doppelte_ortszeit.sql` |
+| ANN-787 | Skala: zwei gleiche Reihen, ab 44rem eine; Anker als Satz, letzte Angabe mit Tag; ein zweiter Tipp nimmt erst nach 0,5 s zurück (auch Wahlflächen) | Technik · offen | `Stufenskala` in `src/components/ui/Stufenskala.tsx` |
+| ANN-788 | Unter 23rem trennen Fragen, Kurznamen, Themenzeilen (ab 10) und Wahlflächen (ab 8, auch „Sehr groß“) an der Silbe | Technik · offen | `mitUmbruch` in `src/components/ui/Wahlflaechen.tsx` |
+| ANN-789 | Ablauf: Name im Kopf, am Rechner Spalte 48rem; im Fuß nur Zustand, Notfallsatz, Hauptknopf | Technik · offen | `BREITE_ABLAUFSPALTE` in `src/components/ui/GefuehrterAblauf.tsx` |
+| ANN-790 | Check-in: eine Frage je Seite, „Weiter“ auch ohne Antwort, Senden von der letzten ohne Zusammenfassung | Praxisprozess · entschieden (Jannes) | `ablaufseiten` in `src/features/portal/platform/Checkin.tsx` |
+| ANN-791 | Check-in: eine Zahl außerhalb ihres Bereichs hält „Weiter“ an | Technik · offen | `weiter` in `src/features/portal/platform/Checkin.tsx` |
+| ANN-792 | Fragebogen in 14 Themen, gespeichert beim Weitergehen; Entwurf öffnet nach dem letzten beantworteten | Praxisprozess · entschieden (Jannes) | `PLAENE` in `src/features/portal/platform/bogenthemen.ts` |
+| ANN-793 | Fragebogen ohne Papierhinweise und Praxisfeld; Folgefragen zu 26 erst mit „ja“; Abschluss mit offenen Themen | Praxisprozess · offen | `wortlaut` in `src/features/portal/platform/bogenthemen.ts` |
+| ANN-794 | Fragebogen: Notfallsatz nur vor „Bogen senden“, nicht bei den Warnzeichen | Praxisprozess · entschieden (Jannes) | `NICHT_AKUT` in `src/features/portal/platform/Befundbogen.tsx` |
+| ANN-795 | Tagebuch: „297 von 1466 kcal“ statt „Noch übrig“, über dem Ziel ohne Wort; Wasser in Litern | Praxisprozess · entschieden (Jannes) | `EnergieUndNaehrstoffe` in `src/features/portal/platform/Tagebuch.tsx` |
+| ANN-796 | Tagebuch: Mahlzeiten vor Wasser und Energie, am Rechner daneben; Balken mit Kante, leere Mahlzeiten als Pillen | Technik · offen | `Mahlzeiten` in `src/features/portal/platform/Tagebuch.tsx` |
+| ANN-797 | Ernährung: Hero „Heute“ nur mit Tagebuch und Schreibrecht, gelesen wie das Tagebuch, auch von Vertretungen | Technik · entschieden (Jannes) | `Heute` in `src/features/portal/platform/Ernaehrung.tsx` |
+| ANN-798 | Rückweg nennt die Herkunft: „Übersicht“ oder „Ernährung“, auch über das Eintragen, das danach offen bleibt | Technik · offen | `zurueckZumTag` in `src/features/portal/platform/tagebuchAdresse.ts` |
+| ANN-799 | Meine Angaben als Zeilen mit letztem Wert und Tag, Seite je Frage, Tabelle als Seite; ohne Ereignisse der Praxis | Praxisprozess · offen | `reihen` in `src/features/portal/platform/MeineAngaben.tsx` |
+| ANN-800 | Gewohnheiten: Titel je Gewohnheit, Tage mit Tag im Monat und „heute“, pausiert als ruhige Zeile; der feste Satz darunter | Technik · offen | `Eintrag` in `src/features/portal/platform/Gewohnheiten.tsx` |
+| ANN-801 | Leerzustände mit Markenform, Satz und Weg; im Check-in in fester Folge der Lagen | Technik · offen | `Zustand` in `src/features/portal/platform/Checkin.tsx` |
+| ANN-802 | Ohne Netz: Schreibendes gestrichelt gesperrt, per `aria-disabled` erreichbar, mit Satz; Lesen bleibt | Technik · offen | `GESPERRT` in `src/features/portal/platform/Checkin.tsx` |

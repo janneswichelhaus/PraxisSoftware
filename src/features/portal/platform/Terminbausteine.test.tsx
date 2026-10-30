@@ -259,6 +259,35 @@ describe('Wahlflaechen und Wochenleiste', () => {
     expect(umschalten).toHaveBeenCalledWith('morning');
   });
 
+  it('Wahlflächen: ein Doppeltipp behält die Wahl, ein späterer zweiter Tipp nimmt zurück (ANN-787)', async () => {
+    const jetzt = vi.spyOn(Date, 'now').mockReturnValue(10_000);
+    const user = userEvent.setup();
+    function Probe() {
+      const [gewaehlt, setGewaehlt] = useState<string[]>([]);
+      return (
+        <Wahlflaechen
+          titel="Zu welcher Tageszeit?"
+          wahlen={[{ schluessel: 'morning', text: 'Vormittag' }]}
+          gewaehlt={gewaehlt}
+          onUmschalten={(s) =>
+            setGewaehlt((g) => (g.includes(s) ? g.filter((x) => x !== s) : [...g, s]))
+          }
+        />
+      );
+    }
+    renderWithProviders(<Probe />);
+    const vormittag = screen.getByRole('button', { name: 'Vormittag' });
+    await user.click(vormittag);
+    expect(vormittag).toHaveAttribute('aria-pressed', 'true');
+    jetzt.mockReturnValue(10_300);
+    await user.click(vormittag);
+    expect(vormittag).toHaveAttribute('aria-pressed', 'true');
+    jetzt.mockReturnValue(10_600);
+    await user.click(vormittag);
+    expect(vormittag).toHaveAttribute('aria-pressed', 'false');
+    jetzt.mockRestore();
+  });
+
   it('der Haken federt nur nach einem Tipp, nicht beim ersten Zeichnen', async () => {
     const user = userEvent.setup();
     function Probe() {

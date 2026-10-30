@@ -328,6 +328,12 @@ export function erfassungsgroesse(key: string): Erfassungsgroesse | undefined {
   return ERFASSUNGSGROESSEN.find((g) => g.key === key);
 }
 
+/** Was die Enden einer Skala heißen, als Satz über ihr: „0 heißt „keine“, 10 heißt „…“.“ */
+export function ankerSatz(groesse: Erfassungsgroesse): string | null {
+  if (!groesse.enden) return null;
+  return `${groesse.min} heißt „${groesse.enden[0]}“, ${groesse.max} heißt „${groesse.enden[1]}“.`;
+}
+
 /** Der Wert, wie er gelesen wird: „3", „20 Minuten", „stechend" (ANN-354). */
 export function wertText(groesse: Erfassungsgroesse, wert: number): string {
   if (groesse.optionen) return groesse.optionen[wert - groesse.min] ?? String(wert);

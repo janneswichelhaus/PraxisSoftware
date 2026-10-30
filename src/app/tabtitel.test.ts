@@ -63,6 +63,8 @@ describe('tabTitel', () => {
     ['/p/uebungen/blatt/p1', 'Übungen – Own Motion'],
     ['/p/checkin', 'Check-in – Own Motion'],
     ['/p/angaben', 'Meine Angaben – Own Motion'],
+    ['/p/angaben/pain_rest', 'Meine Angaben – Own Motion'],
+    ['/p/angaben/tabelle', 'Meine Angaben – Own Motion'],
     ['/p/befundbogen', 'Fragebogen – Own Motion'],
     ['/p/gewohnheiten', 'Gewohnheiten – Own Motion'],
     ['/p/ernaehrung', 'Ernährung – Own Motion'],

@@ -82,4 +82,42 @@ describe('Wochenleiste', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dienstag' }));
     expect(umschalten).not.toHaveBeenCalled();
   });
+
+  it('zeigt Tage mit Datum: Zahl darunter, vermerkt ein Haken, „heute“ unter dem letzten Tag', () => {
+    const tage: Wochentag[] = [
+      { nummer: 0, kurz: 'Fr', lang: 'Freitag, 23. Oktober', zahl: '23' },
+      { nummer: 1, kurz: 'Sa', lang: 'Samstag, 24. Oktober', zahl: '24' },
+      { nummer: 2, kurz: 'Do', lang: 'heute, Donnerstag, 29. Oktober', zahl: '29' },
+    ];
+    render(
+      <>
+        <h2 id="gewohnheit">Nach dem Zähneputzen: zwei Minuten Mobilität</h2>
+        <Wochenleiste
+          beschriftetVon="gewohnheit"
+          wochentage={tage}
+          tage={[1]}
+          heute={2}
+          onUmschalten={() => undefined}
+        />
+      </>,
+    );
+    const gruppe = screen.getByRole('group', {
+      name: 'Nach dem Zähneputzen: zwei Minuten Mobilität',
+    });
+    expect(screen.queryByRole('heading', { level: 3 })).toBeNull();
+    const freitag = within(gruppe).getByRole('button', { name: 'Freitag, 23. Oktober' });
+    expect(freitag).toHaveTextContent('Fr23');
+    expect(freitag).toHaveClass('min-h-18');
+    const samstag = within(gruppe).getByRole('button', { name: 'Samstag, 24. Oktober' });
+    expect(samstag).toHaveAttribute('aria-pressed', 'true');
+    expect(within(samstag).queryByText('24')).toBeNull();
+    expect(samstag.querySelector('svg')).not.toBeNull();
+    // „heute“ unter dem Tag: im Segment in Spalte 3, unter 23rem im Raster aus drei auch.
+    const marken = screen.getAllByText('heute');
+    expect(marken).toHaveLength(2);
+    expect(marken.every((m) => m.getAttribute('style')?.includes('grid-column: 3'))).toBe(true);
+    expect(marken.every((m) => m.closest('[aria-hidden="true"]'))).toBe(true);
+    // Ohne Satz keine leere Live-Region.
+    expect(screen.queryByRole('status')).toBeNull();
+  });
 });
