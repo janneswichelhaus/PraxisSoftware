@@ -129,13 +129,6 @@ Größe der Terminzeile, Fehler mit „Erneut versuchen“ ohne Rollen; Bilder b
 beim Neuzeichnen `null`, `?? 0` macht 0 daraus. **Erwartet.** Mit `expect.poll(() => hoehe(…))`
 abfragen; die Grenze 44 px bleibt.
 
-### BEF-226 — Plattform: Zwei Browsertests messen zu früh, unter Last kippen sie
-2026-10-25 · `plattform.spec.ts`, `plattform-uebungen.spec.ts` · Schritt 2d · offen (Vorschlag)\
-**Beobachtung.** „Herunterladen“ fehlte nach 5 s, obwohl der Dateiname stand; die Durchführung lief
-bei 188 px und „Sehr groß“ einmal über: gemessen, bevor die Schriftgröße des Geräts gilt.
-**Erwartet.** Auf das gemessene Element warten (eigenes Zeitlimit, `data-schrift` am Wurzelelement);
-Grenzen bleiben.
-
 ### Testlauf — Tests mit relativer Ortszeit kippen in der zweiten doppelten Stunde
 2026-10-29 · `eingangVorBeginn`, `geradeFaellig` · Zweitreview zu BEF-223 · offen (Vorschlag)\
 **Beobachtung.** Dort gilt eine Ortszeit als die frühere (ANN-786); am Umstellungstag fehlt dann

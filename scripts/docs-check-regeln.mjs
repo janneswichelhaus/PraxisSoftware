@@ -204,7 +204,6 @@ export const OFFENE_BEFUNDE = new Set([
   'BEF-217',
   'BEF-224',
   'BEF-225',
-  'BEF-226',
 ]);
 
 /** Regel D fuer Befunde: Als Ueberschrift steht nur noch eine Kennung aus `offen`. */
