@@ -321,16 +321,18 @@ describe('Leerzustand mit Markenform', () => {
     expect(rad.parentElement!.className).toContain('size-24');
     const wurzel = rad.parentElement!.parentElement!;
     expect(wurzel.className.split(/\s+/)).toEqual(
-      expect.arrayContaining(['flex-col', 'items-center', 'text-center', 'px-4', 'py-8']),
+      expect.arrayContaining(['flex-col', 'items-center', 'text-center', 'py-8']),
     );
+    // Ohne Karte ohne eigenen Rand: Der Weg ist so breit wie der Inhalt der Seite.
     expect(wurzel.className).not.toContain('rounded-card');
+    expect(wurzel.className).not.toMatch(/\bpx-/);
     expect(screen.getByText('Noch keine Termine').className).toContain('text-abschnitt');
     expect(screen.getByText('Die Praxis trägt Ihren ersten Termin hier ein.').className).toContain(
       'max-w-leersatz',
     );
   });
 
-  it('steht auch mit inKarte ohne Karte, der Weg mittig darunter', () => {
+  it('steht mit inKarte in der Karte, wo daneben Karten stehen (Regel 8), der Weg mittig darunter', () => {
     const { container } = zeige(
       <EmptyState
         markenform
@@ -340,7 +342,9 @@ describe('Leerzustand mit Markenform', () => {
       />,
     );
     const rad = container.querySelector('[data-laufrad]')!;
-    expect(rad.parentElement!.parentElement!.className).not.toContain('rounded-card');
+    expect(rad.parentElement!.parentElement!.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['rounded-card', 'border', 'bg-surface', 'px-4', 'py-8']),
+    );
     expect(
       screen.getByRole('link', { name: 'Zu den Terminen' }).parentElement!.className,
     ).toContain('justify-center');
@@ -360,7 +364,7 @@ describe('Leerzustand mit Markenform', () => {
     expect(kreis).toHaveAttribute('aria-hidden', 'true');
     expect(kreis.className).toContain('bg-surface-sunken');
     expect(kreis.className).not.toContain('bg-surface-inverse');
-    expect(kreis.parentElement!.className).not.toContain('rounded-card');
+    expect(kreis.parentElement!.className).toContain('rounded-card');
   });
 
   it('bleibt ohne markenform, wie es war', () => {

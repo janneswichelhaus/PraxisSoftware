@@ -16,7 +16,7 @@ import {
   AUSFALLHONORAR_RECHTZEITIG,
   AUSFALLHONORAR_REGEL,
   AUSFALLHONORAR_SPAET,
-  AUSFALLHONORAR_VERLEGEN,
+  AUSFALLHONORAR_ANDERER_TAG,
 } from '@/lib/ausfallhonorar';
 import {
   termineSchluessel,
@@ -283,9 +283,9 @@ function Aenderungsablauf({
         <>
           {spaet ? (
             // Unter 24 Stunden zuerst, was eine Verlegung kostet; der Fokus beginnt hier (ANN-805).
-            <div tabIndex={-1} data-autofocus className="mb-5 focus:outline-none">
+            <div tabIndex={-1} data-autofocus className="mb-4 focus:outline-none">
               <Statusmeldung ton="warnung" className="font-semibold">
-                {AUSFALLHONORAR_VERLEGEN}
+                {AUSFALLHONORAR_ANDERER_TAG}
               </Statusmeldung>
             </div>
           ) : null}

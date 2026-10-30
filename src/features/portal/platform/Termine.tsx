@@ -293,6 +293,7 @@ function Liste({
     // Der Wunsch ist gesendet: die Uhr auf der Vertiefung statt des Laufrads.
     <EmptyState
       markenform
+      inKarte
       zeichen={<Terminsymbol zeichen="uhr" />}
       title="Ihr Wunsch ist bei der Praxis."
       description="Sie meldet sich bei Ihnen. Danach steht Ihr Termin hier."
@@ -300,8 +301,9 @@ function Liste({
   ) : lesefrist ? null : (
     <EmptyState
       markenform
+      inKarte
       title="Zurzeit ist kein Termin vereinbart."
-      description="Über „Termin wünschen“ sagen Sie der Praxis, wann es Ihnen passt."
+      description="Vereinbart die Praxis einen Termin mit Ihnen, finden Sie ihn hier."
       aktion={knopf}
     />
   );

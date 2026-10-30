@@ -27,6 +27,10 @@ export const AUSFALLHONORAR_SPAET =
 export const AUSFALLHONORAR_VERLEGEN =
   'Verlegen wir den Termin auf Ihren Wunsch auf einen anderen Tag, berechnen wir ein Ausfallhonorar nach unserer Preisliste.';
 
+/** Derselbe Satz kurz auf Schritt 1 des Änderns: Länger rollte die Frage bei 375 × 667 (ANN-805). */
+export const AUSFALLHONORAR_ANDERER_TAG =
+  'Ein anderer Tag kostet ein Ausfallhonorar nach unserer Preisliste.';
+
 /** Der Satz, wenn die Frist noch eingehalten ist. */
 export const AUSFALLHONORAR_RECHTZEITIG =
   'Ihre Absage geht rechtzeitig ein: Ihr Termin beginnt in mehr als 24 Stunden, es entsteht kein Ausfallhonorar.';

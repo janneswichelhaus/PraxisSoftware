@@ -97,12 +97,13 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
         description={tag && heute && tag !== heute ? tagName(tag, heute) : undefined}
         stufe="seite"
       />
+      {/* Kopf zu Inhalt 24, die Rückmeldung zum Inhalt 16 (DESIGN.md, Rhythmus). */}
       {eingetragen ? (
-        <Rueckmeldung key={eingetragen.mal} className="mt-4">
+        <Rueckmeldung key={eingetragen.mal} className="mt-6">
           „{eingetragen.name}“ eingetragen.
         </Rueckmeldung>
       ) : null}
-      <div className="mt-4">
+      <div className={eingetragen ? 'mt-4' : 'mt-6'}>
         {!geladen ? (
           gescheitert ? (
             <ErrorState

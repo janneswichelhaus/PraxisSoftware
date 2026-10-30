@@ -49,7 +49,7 @@ export function LoadingState({
 /**
  * Leerer Zustand einer Seite oder Liste; `aktion` ist der nächste Schritt, wenn es einen gibt.
  * `markenform` ist die Fassung der Plattform: mittig das Laufrad im Kreis 96, Titel, ein Satz und
- * der Weg, ohne Karte, wo der Leerzustand der Inhalt der Seite ist (ANN-803).
+ * der Weg; in der Karte nur, wo daneben Karten stehen (DESIGN.md Regel 8, ANN-803).
  */
 export function EmptyState({
   title,
@@ -62,17 +62,21 @@ export function EmptyState({
   title: string;
   description?: string | undefined;
   aktion?: ReactNode;
-  /** In einer weißen Karte (Design-Handoff 2026-10-01, Abschnitt 3); nicht mit `markenform`. */
+  /** In einer weißen Karte (Design-Handoff 2026-10-01, Abschnitt 3). */
   inKarte?: boolean;
-  /** Mit der Markenform der Plattform, nie in einer Karte. */
+  /** Mit der Markenform der Plattform. */
   markenform?: boolean;
   /** Nur mit `markenform`: ein Zeichen statt des Laufrads, wenn schon etwas unterwegs ist. */
   zeichen?: ReactNode;
 }) {
   if (markenform) {
-    // Ohne Karte: Steht er auf einer sonst leeren Seite, wäre sie nur ein Rahmen um einen Satz.
+    // Ohne Karte über die Breite des Inhalts: Auf einer sonst leeren Seite wäre sie nur ein Rahmen.
     return (
-      <div className="flex flex-col items-center gap-4 px-4 py-8 text-center max-[23rem]:px-0">
+      <div
+        className={`flex flex-col items-center gap-4 py-8 text-center ${
+          inKarte ? 'rounded-card border-line bg-surface border px-4' : ''
+        }`}
+      >
         <span
           aria-hidden="true"
           className={`rounded-pill flex size-24 shrink-0 items-center justify-center ${

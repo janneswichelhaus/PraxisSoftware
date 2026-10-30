@@ -8,7 +8,7 @@ import {
   AUSFALLHONORAR_RECHTZEITIG,
   AUSFALLHONORAR_REGEL,
   AUSFALLHONORAR_SPAET,
-  AUSFALLHONORAR_VERLEGEN,
+  AUSFALLHONORAR_ANDERER_TAG,
 } from '@/lib/ausfallhonorar';
 import type * as PlattformApi from './api';
 import type { Plattformzugang, Termin } from './api';
@@ -273,7 +273,7 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
     zeige(KURZFRISTIG, AENDERN);
     const wann = await screen.findByRole('dialog', { name: 'Wann passt es Ihnen?' });
     // Schon auf Schritt 1, was eine Verlegung kostet; der Fokus beginnt dort (ANN-805).
-    const verlegen = within(wann).getByText(AUSFALLHONORAR_VERLEGEN);
+    const verlegen = within(wann).getByText(AUSFALLHONORAR_ANDERER_TAG);
     expect(verlegen).toHaveClass('text-warnung');
     await waitFor(() => expect(verlegen.parentElement).toHaveFocus());
     await nutzer.click(within(wann).getByRole('button', { name: 'Dienstag' }));

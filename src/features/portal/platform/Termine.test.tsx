@@ -205,7 +205,7 @@ describe('Termine (POR-008, Schritt 3b)', () => {
     renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine');
     expect(await screen.findByText('Zurzeit ist kein Termin vereinbart.')).toBeInTheDocument();
     expect(
-      screen.getByText('Über „Termin wünschen“ sagen Sie der Praxis, wann es Ihnen passt.'),
+      screen.getByText('Vereinbart die Praxis einen Termin mit Ihnen, finden Sie ihn hier.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Termin wünschen' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: /^Besuch / })).not.toBeInTheDocument();
