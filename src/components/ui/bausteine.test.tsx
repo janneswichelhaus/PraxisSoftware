@@ -86,6 +86,16 @@ describe('Badge', () => {
     expect(klassen).not.toContain('text-xs');
     expect(klassen).not.toContain('font-medium');
   });
+
+  it('bricht auf der Plattform notfalls nach dem Zeichen, statt breiter als die Zeile zu werden (ANN-765)', () => {
+    renderWithProviders(<Badge ton="positiv">durchgeführt</Badge>);
+    expect(screen.getByText('durchgeführt').className.split(/\s+/)).toEqual(
+      expect.arrayContaining([
+        '[.plattform-schrift_&]:max-w-full',
+        '[.plattform-schrift_&]:flex-wrap',
+      ]),
+    );
+  });
 });
 
 describe('Card', () => {

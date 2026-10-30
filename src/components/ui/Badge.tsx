@@ -56,8 +56,8 @@ export const STATUSZEICHEN = {
 
 /**
  * Kurzes Statuszeichen: Der Zustand steht als Text, der Ton ergänzt ihn nur (WCAG 1.4.1). Auf der
- * Plattform bricht es nur zwischen Wörtern und wird höchstens zeilenbreit (ANN-765); `eigenesZeichen`
- * unterscheidet Abzeichen im selben Ton am Bild, getragen vom Text daneben.
+ * Plattform bricht es nur zwischen Wörtern, notfalls nach dem Zeichen, und wird höchstens zeilenbreit
+ * (ANN-765); `eigenesZeichen` unterscheidet Abzeichen im selben Ton am Bild.
  */
 export function Badge({
   ton = 'neutral',
@@ -72,7 +72,7 @@ export function Badge({
 
   return (
     <span
-      className={`rounded-pill inline-flex min-h-7 shrink-0 items-center gap-1 px-3 text-sm font-semibold [.plattform-schrift_&]:max-w-full [.plattform-schrift_&]:py-0.5 ${WORTWEISE} ${toene[ton]}`}
+      className={`rounded-pill inline-flex min-h-7 shrink-0 items-center gap-1 px-3 text-sm font-semibold [.plattform-schrift_&]:max-w-full [.plattform-schrift_&]:flex-wrap [.plattform-schrift_&]:py-0.5 ${WORTWEISE} ${toene[ton]}`}
     >
       {/* Das Zeichen ist für Vorlesesoftware ausgeblendet: der Zustand steht
           daneben als Wort, und „Häkchen Abgeschlossen" wäre nur Rauschen. */}
