@@ -17,6 +17,7 @@ const ladeTagebuch = vi.fn();
 const ernaehrungGewichtEintragen = vi.fn();
 const ernaehrungTagebuchSchalten = vi.fn();
 const ernaehrungZielgewichtSetzen = vi.fn();
+const ernaehrungEinwilligen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -28,9 +29,11 @@ vi.mock('./api', async (importOriginal) => ({
     ernaehrungTagebuchSchalten(...a) as Promise<void>,
   ernaehrungZielgewichtSetzen: (...a: unknown[]) =>
     ernaehrungZielgewichtSetzen(...a) as Promise<void>,
+  ernaehrungEinwilligen: (...a: unknown[]) => ernaehrungEinwilligen(...a) as Promise<void>,
 }));
 
 const { Ernaehrung } = await import('./Ernaehrung');
+const { EINWILLIGUNGSFASSUNG } = await import('./einwilligungstexte');
 
 const ZUGANG: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000002',
@@ -214,6 +217,7 @@ beforeEach(() => {
   ernaehrungGewichtEintragen.mockResolvedValue(undefined);
   ernaehrungTagebuchSchalten.mockResolvedValue(undefined);
   ernaehrungZielgewichtSetzen.mockResolvedValue(undefined);
+  ernaehrungEinwilligen.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -371,6 +375,24 @@ describe('Ernährung auf der Plattform (Handoff 2026-10-29, 5.6)', () => {
     ).toBeVisible();
     expect(ziele).not.toHaveTextContent('· rechnerisch');
     expect(within(ziele).getByText('Rechenweg')).toBeVisible();
+  });
+
+  it('widerruft mit der Fassung des Texts, den die Seite zeigt, nicht mit der des Servers (ANN-262)', async () => {
+    const nutzer = userEvent.setup();
+    ladeErnaehrung.mockResolvedValue(ernaehrung({ wording_version: '2026-10' }));
+    renderWithProviders(<Ernaehrung zugang={ZUGANG} />, ADRESSE);
+    const mehr = await screen.findByRole('region', { name: 'Mehr' });
+    await nutzer.click(within(mehr).getByText(/^Einwilligung · /));
+    await nutzer.click(within(mehr).getByRole('button', { name: 'Einwilligung widerrufen' }));
+    await nutzer.click(within(mehr).getByRole('button', { name: 'Widerrufen' }));
+    await waitFor(() =>
+      expect(ernaehrungEinwilligen).toHaveBeenCalledWith(
+        ZUGANG.access_id,
+        false,
+        EINWILLIGUNGSFASSUNG,
+      ),
+    );
+    expect(EINWILLIGUNGSFASSUNG).not.toBe('2026-10');
   });
 
   it('„Mehr“: Lebensmittel, Zielgewicht, Tagebuch und Einwilligung mit dem Tag in Worten', async () => {

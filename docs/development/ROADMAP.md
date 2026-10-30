@@ -3,8 +3,7 @@ Version 7.24 · Stand 2026-10-30 · **in Kraft**
 
 Reihenfolge der Umsetzung; sie begründet keinen Scope (der entsteht in der Spec), ist kein Auftrag
 (die nächste Aufgabe steht in [`../STATUS.md`](../STATUS.md)) und überschreibt nichts; fehlt eine
-Voraussetzung, gelten §15.1 und §15.2. `IDEA-`Kennungen nennen die Herkunft. Gebaute Zuschnitte bis
-7.22: `git show 9452575:docs/development/ROADMAP.md`.
+Voraussetzung, gelten §15.1 und §15.2. `IDEA-`Kennungen nennen die Herkunft.
 
 ## Aufräumen (Auftrag Jannes 2026-10-25, Entscheidungen 2026-10-26 und 2026-10-27)
 Kein Neustart: Größe, Kopplung und Kommentarlast sinken schrittweise, je eine PR. Bauplan war die
@@ -27,13 +26,14 @@ Schritte 0 bis 4 sind gebaut (DRP-EPIC-001 bis -016), 2 bis 4 gesichtet. Je Schr
 je Teilschritt eine PR, geprüft mit `pnpm bildstrecke --nur=plattform,anmeldung`,
 `plattform-barrierefreiheit.spec.ts` und der Ratsche in `src/designsystem.test.ts`. Befunde DR-101
 bis DR-162 und Ideen N3 bis N9: `git show 9452575:docs/design/review-2026-10/lauf-1-bericht.md`;
-Reihenfolge und Abgleich mit Lauf 2 (Praxis-App): `lauf-1-umsetzung.md` im selben Ordner.
+Reihenfolge und Abgleich mit Lauf 2 (Praxis-App): `lauf-1-umsetzung.md`, Briefings in
+`lauf-1-briefings/`, im selben Ordner.
 
 | Schritt | Inhalt | Vorgabe | Stand |
 | --- | --- | --- | --- |
-| 5 Nachrichten | DR-137 bis DR-139; Wortlaut des Notfallhinweises bleibt | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/05-nachrichten.md` | Leinwand bei Jannes |
-| 6 Unterlagen und Verträge | DR-147 bis DR-149, DR-162; Vertragsabschluss als geführter Ablauf, Widerrufsbelehrung unverändert | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/06-unterlagen-vertraege.md` | Leinwand bei Jannes |
-| 7 Ich und Datenschutz | DR-151, DR-152; Einwilligungen ohne Drängen | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/07-ich-datenschutz.md` | Leinwand bei Jannes |
+| 5 Nachrichten | DR-137 bis DR-139; Wortlaut des Notfallhinweises bleibt | Briefing `05-nachrichten.md` | Leinwand bei Jannes |
+| 6 Unterlagen und Verträge | DR-147 bis DR-149, DR-162; Vertragsabschluss als geführter Ablauf, Widerrufsbelehrung unverändert | Briefing `06-unterlagen-vertraege.md` | Leinwand bei Jannes |
+| 7 Ich und Datenschutz | DR-151, DR-152; Einwilligungen ohne Drängen | Briefing `07-ich-datenschutz.md` | Leinwand bei Jannes |
 
 ## Ziel und Umfang
 **Die Praxis eröffnet im Juli 2027**, der einzige Termin (2026-09-05), ohne Vorgängersystem und
@@ -394,7 +394,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | DRP-EPIC-013 Plattform: Seite des Termins aus dem Design-Review (Schritt 3c) | gesichtet | 2026-10-29 | #330 | 2026-10-29 | Auftrag Jannes 28.10.2026; Handoff Termine 3, 5.2, 9.3, Frage 2 wie empfohlen; ANN-778 bis ANN-781; BEF-221 erledigt; nur Oberfläche |
 | B | DRP-EPIC-014 Plattform: Abläufe zum Termin aus dem Design-Review (Schritt 3d) | gesichtet | 2026-10-29 | #331 | 2026-10-29 | Auftrag Jannes 28.10.2026; Handoff Termine 5.3 und 5.4; ANN-782 bis ANN-785; nur Oberfläche |
 | B | DRP-EPIC-015 Plattform: Selbstauskunft und Tagebuch aus dem Design-Review (Schritt 4a bis 4e) | gesichtet | 2026-10-29 | #333 | 2026-10-30 | Auftrag Jannes 29.10.2026; Handoff in der Leinwand, Fragen wie empfohlen; nur Oberfläche |
-| B | DRP-EPIC-016 Plattform: Aufträge nach Schritt 4 | fertig | 2026-10-30 | Branch ccr-4b4adbb9-mbg1ac | — | ANN-803 bis ANN-808; BEF-222 erledigt; Pfad A |
+| B | DRP-EPIC-016 Plattform: Aufträge nach Schritt 4 | fertig | 2026-10-30 | #334 | — | ANN-803 bis ANN-808; BEF-222 erledigt; Pfad A |
 | B | DRP-EPIC-017 Plattform: Lesefrist vom Server, Antworten zu #326, #333, #334 | fertig | 2026-10-30 | Branch ccr-5fca130a-l8m9q8 | — | ANN-809 bis ANN-814; ADR-013 Fassung 8; Pfad A |
 | B | BEF-223 Zeitumstellung: doppelte Ortszeit gilt als die frühere | fertig | 2026-10-29 | #332 | — | Pfad A, ANN-786 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
@@ -435,5 +435,6 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | --- | --- | --- |
 | 7.24 | 2026-10-30 | Aufräumen verdichtet; Schritte 5 bis 7 warten auf die Leinwände (Claude Design). |
 
-Vermerk 7.23: `git show 6e6e37e:docs/development/ROADMAP.md`; bis 7.22: `git show
-9452575:docs/development/ROADMAP.md`; vor 7.0: `git show eb43569:docs/development/ROADMAP-CHRONIK.md`.
+Vermerk 7.23: `git show 6e6e37e:docs/development/ROADMAP.md`; bis 7.22 mit Zuschnitten:
+`git show 9452575:docs/development/ROADMAP.md`; vor 7.0: `git show
+eb43569:docs/development/ROADMAP-CHRONIK.md`.

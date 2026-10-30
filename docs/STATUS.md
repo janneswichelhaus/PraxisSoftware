@@ -6,14 +6,14 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Lesefrist vom Server, Fragebogen in der Lesefrist und die Antworten zu #326, #333, #334** liegen als
-PR vor. Offen: BEF-201, BEF-202.
+**Lesefrist vom Server und die Antworten zu #326, #333, #334** liegen als PR vor. Offen: BEF-201,
+BEF-202.
 
 ## Danach
 
 Bildsichtung von #334 und dieser PR; dann „Sehr groß“: Reiterleiste einzeilig, Fuß der Abläufe ans
-Ende, Prüfungen ohne Rollen auch so (#334 Frage 5). Schritte 5 bis 7, sobald Jannes' Leinwände aus
-Claude Design da sind; bis dahin die Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
+Ende, Prüfungen ohne Rollen auch so (#334 Frage 5). Schritte 5 bis 7 mit Jannes' Leinwänden aus
+Claude Design; bis dahin die Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
 Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
 Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
@@ -44,5 +44,4 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-30.10.2026, Branch `ccr-5fca130a-l8m9q8`: Lesefrist vom Server, Antworten zu #326, #333, #334.
-Lokal: `git pull`, Stack `reset` (drei Migrationen).
+30.10.2026, Branch `ccr-5fca130a-l8m9q8`. Lokal: `git pull`, Stack `reset` (drei Migrationen).

@@ -98,8 +98,10 @@ jobs:
 
       # Reine Doku (ADR-013 Fassung 8): nur die geaenderten Dateien; Code und
       # Konfiguration sind die von main, Lint und Typecheck saehen nichts Neues.
+      # `bash` mit pipefail: Scheitert `git diff`, wird der Schritt rot statt leer.
       - name: Format der geaenderten Dokumentation
         if: ${{ needs.aenderungen.outputs.nur_doku == 'true' }}
+        shell: bash
         env:
           BASIS: origin/${{ github.base_ref }}
         run: git diff -z --name-only --diff-filter=AM "$BASIS...HEAD" -- '*.md' | xargs -0 -r pnpm exec prettier --check --

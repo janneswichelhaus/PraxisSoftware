@@ -870,7 +870,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes · Prüfpaket · Wie
 
 ### ANN-814 — Widerruf zu Fotos trifft nur Arbeitshilfen
 Datenschutz · entschieden (Jannes) · 2026-10-30 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)\
-**Annahme.** Zum Widerruf der Fotos: „Die Praxis löscht dann sofort alle Fotos, die als Arbeitshilfe entstanden sind; Fotos der Behandlungsdokumentation bleiben in der Akte.“ Fassung `2026-11` (ANN-262). **Grundlage.** ADR-017 Punkte 36 und 46; Art. 7 Abs. 3, Art. 17 Abs. 3 lit. b DSGVO; Jannes 2026-10-30. **Anker.** `EINWILLIGUNGSTEXTE` in `src/features/portal/platform/einwilligungstexte.ts`. **Rücknahme.** Wortlaut und Fassung an beiden Stellen · Aufwand `klein`.
+**Annahme.** Widerruf: „Die Praxis löscht dann sofort alle Fotos, die als Arbeitshilfe entstanden sind; Fotos der Behandlungsdokumentation bleiben in der Akte.“ Fassung `2026-11` (ANN-262). **Grundlage.** ADR-017 Punkte 36 und 46; Art. 7 Abs. 3, Art. 17 Abs. 3 lit. b DSGVO; Jannes 2026-10-30. **Anker.** `EINWILLIGUNGSTEXTE` in `src/features/portal/platform/einwilligungstexte.ts`. **Rücknahme.** Wortlaut und Fassung an beiden Stellen · Aufwand `klein`.
 
 ## Fachregeln
 ### ANN-042 — Ausgeschöpft ist eine Verordnung, wenn ihre möglichen Termine genutzt sind
@@ -1506,7 +1506,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-659 | Lebensmittelkatalog: Import nur durch den Betrieb, Zurückziehen statt Löschen, Startportionen | Technik · entschieden (Jannes) | `app.finish_food_catalog_import` |
 | ANN-660 | Tagebucheintrag trägt den Stand des Lebensmittels | Technik · offen | `public.nutrition_diary_entries` |
 | ANN-661 | Wasser je Tag, ein Glas sind 250 ml | Praxisprozess · offen | `app.nutrition_diary_rule` |
-| ANN-662 | Tagebucherinnerung: eine je Mahlzeit und Tag, außerhalb der Wochengrenze | Praxisprozess · in ADR überführt (ADR-024 Punkt 15) | `app.notification_drop_reason` in `supabase/migrations/20261225000000_basis.sql` |
+| ANN-662 | Tagebucherinnerung: eine je Mahlzeit und Tag, außerhalb der Wochengrenze | Praxisprozess · in ADR überführt (ADR-024 Punkt 15) | `app.notification_drop_reason` |
 | ANN-663 | Richtung der Bewegung: waagerecht gleichrangig, senkrecht eine Ebene | Technik · entschieden (Jannes) | `src/components/ui/bewegung.ts` |
 | ANN-664 | Ernährungsberatung als Terminanlass neben dem Kontext, abgerechnet mit dem Haken | Praxisprozess · offen | Constraint `appointments_nutrition_occasion` |
 | ANN-666 | Farbe je Person im Teamchat: vergeben, selbst gewählt, doppelt erlaubt | Praxisprozess · offen | `app.next_staff_color()` |

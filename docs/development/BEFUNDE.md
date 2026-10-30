@@ -214,6 +214,12 @@ ADR-010 Punkt 16 erlaubt einen Eintrag je Person, Verhältnis und Tag (`app.log_
 **Erwartet.** Migration mit `app.log_record_access`; ein Test ruft zweimal am Tag und erwartet einen
 Eintrag.
 
+### Training — Die Annahme des Angebots prüft die Fassung der Einwilligung nicht
+2026-10-30 · Plattform, Angebot · Zweitreview DRP-EPIC-017 · offen · `accept_platform_training_offer`\
+**Beobachtung.** Sie prüft nur die Fassung der Vertragstexte; die Einwilligung trägt die des
+Servers, gleich welchen Text die Seite zeigte (ANN-262). **Erwartet.** Ein Parameter für die
+Fassung der Einwilligung, Abweisung bei Abweichung (Pfad A).
+
 ### Katalogtexte — Kommentare der Datenbank versprechen Protokolle und Kennwörter, die es nicht mehr gibt
 2026-10-27 · `COMMENT ON` · Aufräumen 5, Teil B · offen · `set_appointment_grid`,
 `set_practice_target`, `list_revenue_by_staff`, `set_staff_compensation_model`,

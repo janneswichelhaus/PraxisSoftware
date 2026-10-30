@@ -105,6 +105,16 @@ describe('Zugang folgt dem Nachsorge-Abo (ANG-004)', () => {
     });
   });
 
+  it('am letzten Tag des Abos liest der Zugang nur, wie am Tag des Abschlusses (ANN-809)', async () => {
+    await abschliessenVor(100);
+    await abo(100, 0);
+    expect(await kontext(ERIKA)).toMatchObject({
+      readable: true,
+      writable: false,
+      read_until: await tag('current_date + 31'),
+    });
+  });
+
   it('nach dem Ende des Abos: 30 Tage lesbar, gerechnet vom letzten Abo-Tag', async () => {
     await abschliessenVor(100);
     await abo(100, 10);
