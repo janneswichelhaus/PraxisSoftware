@@ -47,17 +47,9 @@ export function LoadingState({
 }
 
 /**
- * Leerer Zustand einer Seite oder Liste.
- *
- * `aktion` ist der nächste Schritt, wenn es einen gibt - etwa ein
- * `ButtonLink` „Zahlung erfassen" oder ein `Textlink` (UIK-16). Bis UXR-001
- * setzten Seiten ihn als eigenen Link unter den Zustand oder nannten den Ort
- * nur im Satz.
- *
- * `markenform` ist die Fassung der Plattform (Handoff Selbstauskunft,
- * Abschnitt 3): mittig das Laufrad im tiefgrünen Kreis 96, darunter der Titel
- * in 22, ein Satz, was als Nächstes kommt, und der Weg als Zweitknopf - ohne
- * Karte, wo der Leerzustand der Inhalt der Seite ist (ANN-803).
+ * Leerer Zustand einer Seite oder Liste; `aktion` ist der nächste Schritt, wenn es einen gibt.
+ * `markenform` ist die Fassung der Plattform: mittig das Laufrad im Kreis 96, Titel, ein Satz und
+ * der Weg, ohne Karte, wo der Leerzustand der Inhalt der Seite ist (ANN-803).
  */
 export function EmptyState({
   title,

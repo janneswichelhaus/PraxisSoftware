@@ -56,9 +56,8 @@ export const STATUSZEICHEN = {
 
 /**
  * Kurzes Statuszeichen: Der Zustand steht als Text, der Ton ergänzt ihn nur (WCAG 1.4.1). Auf der
- * Plattform fließt es wie Text: Es bricht nur zwischen Wörtern, das Zeichen steht mit dem ersten
- * Wort in der Zeile, und es wird höchstens zeilenbreit (ANN-765); `eigenesZeichen` unterscheidet
- * Abzeichen im selben Ton am Bild.
+ * Plattform fließt es wie Text, bricht nur zwischen Wörtern und wird höchstens zeilenbreit
+ * (ANN-765); `eigenesZeichen` unterscheidet Abzeichen im selben Ton am Bild.
  */
 export function Badge({
   ton = 'neutral',
