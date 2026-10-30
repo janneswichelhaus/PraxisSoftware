@@ -5,6 +5,7 @@ import {
   asPostgres,
   asUser,
   asUserCommitted,
+  fremdeOrganisation,
   resetDatabase,
   tagInTagen,
 } from './helpers/db';
@@ -17,7 +18,7 @@ import {
  * mit den Terminen (`late_notice`), die Oberfläche zeigt nur den Hinweis.
  */
 
-const { users, platformAccesses, patients, organizationId } = SEED;
+const { users, platformAccesses, patients, organizationId, trainingRelationships } = SEED;
 const AENDERN = `select public.request_platform_appointment_change(
   $1::uuid, $2::uuid, $3, $4::date[], $5::text[], $6) as id`;
 const TERMINE = 'select * from public.platform_appointments($1::uuid)';
@@ -242,6 +243,50 @@ describe('request_platform_appointment_change (POR-010)', () => {
       [IN_DREI_TAGEN],
     );
     expect(rows[0]!.n).toBe(0);
+  });
+
+  it('entzogen, abgelaufene Lesefrist, andere Organisation, ohne Anmeldung: abgewiesen', async () => {
+    const als = (konto: string | null) =>
+      abgefangen(asUser(konto, AENDERN, [ERIKA, IN_DREI_TAGEN, 'cancel', [], [], null]));
+    const fremd = await fremdeOrganisation();
+    expect((await als(fremd.owner))?.message).toContain('not allowed');
+    expect(await als(null)).not.toBeNull();
+    await asPostgres(
+      `update public.patients
+          set care_concluded_on = current_date - 40, care_concluded_at = now(),
+              care_concluded_by = $2::uuid
+        where id = $1`,
+      [patients.erika, users.therapist],
+    );
+    expect((await als(users.plattformErika))?.message).toContain('not allowed');
+    await asPostgres(
+      `update public.platform_accesses
+          set status = 'revoked', revoked_at = now(), revoked_reason = 'practice'
+        where id = $1`,
+      [ERIKA],
+    );
+    expect((await als(users.plattformErika))?.message).toContain('not allowed');
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.platform_appointment_requests',
+    );
+    expect(rows[0]!.n).toBe(0);
+  });
+
+  it('der Trainingstermin derselben Person ist ueber den Behandlungszugang fremd (4.8)', async () => {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.appointments
+         (organization_id, kind, training_relationship_id, staff_member_id, location_id,
+          appointment_type, status, starts_at, ends_at, created_by)
+       values ($1, 'training', $2, '55555555-5555-4555-8555-000000000002',
+               (select id from public.locations where organization_id = $1 limit 1),
+               'practice', 'confirmed', now() + interval '4 days', now() + interval '4 days 1 hour', $3)
+       returning id`,
+      [organizationId, trainingRelationships.erika, users.office],
+    );
+    const fremd = await abgefangen(
+      asUser(users.plattformErika, AENDERN, [ERIKA, rows[0]!.id, 'cancel', [], [], null]),
+    );
+    expect(fremd?.message).toContain('not found');
   });
 
   it('Begleitung darf fuer die Person absagen wollen; der Aufruf steht im Protokoll', async () => {

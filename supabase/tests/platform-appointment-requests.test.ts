@@ -5,6 +5,7 @@ import {
   asPostgres,
   asUser,
   asUserCommitted,
+  fremdeOrganisation,
   resetDatabase,
   tagInTagen,
 } from './helpers/db';
@@ -145,6 +146,34 @@ describe('request_platform_appointment (POR-009)', () => {
     expect(gesperrt?.message).toContain('not allowed');
     expect(await liste(users.plattformErika, z)).toEqual([]);
     expect(await liste(users.plattformTina, z)).toEqual([]);
+  });
+
+  it('entzogen, abgelaufene Lesefrist, andere Organisation, ohne Anmeldung: abgewiesen, keine Zeile', async () => {
+    const z = platformAccesses.erikaBehandlung;
+    const als = (konto: string | null) =>
+      abgefangen(asUser(konto, WUNSCH, [z, [tagInTagen(2)], [], null]));
+    const fremd = await fremdeOrganisation();
+    expect((await als(fremd.owner))?.message).toContain('not allowed');
+    expect(await als(null)).not.toBeNull();
+    await asPostgres(
+      `update public.patients
+          set care_concluded_on = current_date - 40, care_concluded_at = now(),
+              care_concluded_by = $2::uuid
+        where id = $1`,
+      [patients.erika, users.therapist],
+    );
+    expect((await als(users.plattformErika))?.message).toContain('not allowed');
+    await asPostgres(
+      `update public.platform_accesses
+          set status = 'revoked', revoked_at = now(), revoked_reason = 'practice'
+        where id = $1`,
+      [z],
+    );
+    expect((await als(users.plattformErika))?.message).toContain('not allowed');
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.platform_appointment_requests',
+    );
+    expect(rows[0]!.n).toBe(0);
   });
 
   it('in der Lesefrist kein neuer Wunsch; Lesen und Zurueckziehen bleiben (ANN-807)', async () => {
