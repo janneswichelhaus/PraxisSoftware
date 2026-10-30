@@ -197,7 +197,8 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
     );
     await waitFor(() =>
       expect(screen.getByTestId('ort')).toHaveTextContent(
-        /^\/p\/termine\?bereich=treatment&gesendet=1$/,
+        // Die Kennung der Absage reist mit: Die Liste nennt deren Eingang am Server (ANN-811).
+        /^\/p\/termine\?bereich=treatment&absage=dddddddd-dddd-4ddd-8ddd-000000000001$/,
       ),
     );
   });
@@ -281,7 +282,9 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
     await nutzer.click(within(wann).getByRole('button', { name: 'Egal' }));
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
-    expect(within(ende).getByText(/wie eine kurzfristige Absage/)).toHaveClass('text-warnung');
+    // Derselbe kurze Satz wie auf Schritt 1 (ANN-811).
+    expect(within(ende).getByText(AUSFALLHONORAR_ANDERER_TAG)).toHaveClass('text-warnung');
+    expect(within(ende).queryByText(/wie eine kurzfristige Absage/)).toBeNull();
   });
 
   it('sagt auf „Wann passt es Ihnen?“, was fehlt; „Egal“ nimmt die einzelnen Tageszeiten zurück', async () => {

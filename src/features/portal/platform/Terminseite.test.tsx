@@ -213,7 +213,9 @@ describe('Seite des Termins (Schritt 3c)', () => {
         /Ihre Absage ist am 29\. Oktober( 2026)? um 14:32 eingegangen\./,
       ),
     );
-    expect(wunsch).toHaveTextContent('Bis dahin gilt der Termin.');
+    // Die Praxis trägt die Absage ein; „Bis dahin gilt der Termin“ klang nach Zweifel (ANN-811).
+    expect(wunsch).toHaveTextContent('Die Praxis trägt die Absage ein und bestätigt sie Ihnen.');
+    expect(wunsch).not.toHaveTextContent('Bis dahin gilt der Termin.');
   });
 
   it('offene Änderung: ohne Satz zum Eingang', async () => {

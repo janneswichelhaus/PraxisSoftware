@@ -72,7 +72,7 @@ import { Notrufnummer } from './Notfallsatz';
 import { paketStand } from './paketbedingungen';
 import { BENACHRICHTIGUNGEN_ANKER, PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { Statuszeichen } from './Terminbausteine';
-import { terminZustand } from './termintexte';
+import { heroWeg, terminZustand } from './termintexte';
 import { umfangSatz, umfangText } from './vorschau';
 import { zahlungsstand } from './zahlungsstand';
 import {
@@ -700,7 +700,7 @@ function Hauptsachekarte({
           person={t.staff_name && zeile ? { name: t.staff_name, zeile } : undefined}
           // Zur Seite des Termins; ihr Rückweg heißt dann „Übersicht“ (ANN-779).
           aktion={{
-            text: 'Termin ansehen',
+            text: heroWeg(t, inLesefrist(zugang), jetzt),
             to: zumTermin(t.id, mit),
           }}
           markenmoment={markenmoment}

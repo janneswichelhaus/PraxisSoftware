@@ -300,7 +300,9 @@ function OffenerWunsch({
             <p>{absageEingegangen(wunsch)}</p>
           ) : null}
           <p className="text-ink-muted">
-            Die Praxis meldet sich bei Ihnen. Bis dahin gilt der Termin.
+            {termin.open_request_kind === 'cancel'
+              ? 'Die Praxis trägt die Absage ein und bestätigt sie Ihnen.'
+              : 'Die Praxis meldet sich bei Ihnen. Bis dahin gilt der Termin.'}
           </p>
           {wunsch ? (
             <div className="self-start">

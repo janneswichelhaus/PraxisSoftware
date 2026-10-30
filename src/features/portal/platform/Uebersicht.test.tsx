@@ -311,7 +311,8 @@ describe('Hauptsache (ANN-698)', () => {
     const hero = await screen.findByRole('region', { name: /^Besuch (am|morgen|heute)/ });
     expect(within(hero).getByText('Anna Beispiel kommt zu Ihnen')).toBeInTheDocument();
     // Zur Seite des Termins; der Rückweg reist mit und heißt dann „Übersicht“ (ANN-779).
-    expect(within(hero).getByRole('link', { name: 'Termin ansehen' })).toHaveAttribute(
+    // Der Weg nennt, was die Seite des Termins anbietet (ANN-811).
+    expect(within(hero).getByRole('link', { name: 'Ansehen, ändern, absagen' })).toHaveAttribute(
       'href',
       `/p/termine/${TERMIN.id}?bereich=treatment&zurueck=${encodeURIComponent('/p?bereich=treatment')}`,
     );

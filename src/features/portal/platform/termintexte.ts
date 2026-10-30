@@ -270,6 +270,23 @@ export function wunschEingang(
     : gesendetAm(wunsch, jetzt);
 }
 
+/**
+ * Der Weg der Hero-Karte: „Ansehen, ändern, absagen“, wo die Seite des Termins beides anbietet,
+ * sonst „Termin ansehen“ - so sendet niemand zum Verschieben einen neuen Wunsch (ANN-811).
+ */
+export function heroWeg(
+  termin: Pick<Termin, 'status' | 'starts_at' | 'open_request_kind'>,
+  lesefrist: boolean,
+  jetzt = new Date(),
+): string {
+  const aenderbar =
+    termin.status === 'confirmed' &&
+    kuenftig(termin.starts_at, jetzt) &&
+    !termin.open_request_kind &&
+    !lesefrist;
+  return aenderbar ? 'Ansehen, ändern, absagen' : 'Termin ansehen';
+}
+
 /** „Ihre Absage ist am 29. Oktober um 14:32 eingegangen.“ auf der Seite des Termins. */
 export function absageEingegangen(
   wunsch: Pick<Terminwunsch, 'created_at'>,

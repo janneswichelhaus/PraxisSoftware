@@ -272,6 +272,33 @@ describe('Termine (POR-008, Schritt 3b)', () => {
     await waitFor(() => expect(ladeTermine).toHaveBeenCalled());
   });
 
+  it('nennt nach einer Absage deren Eingang am Server, nicht „Ihr Wunsch ist angekommen“ (ANN-811)', async () => {
+    const eingang = new Date(2026, 9, 29, 14, 32);
+    ladeTermine.mockResolvedValue([{ ...HAUSBESUCH, open_request_kind: 'cancel' }]);
+    ladeWuensche.mockResolvedValue([
+      {
+        id: 'dddddddd-dddd-4ddd-8ddd-000000000001',
+        kind: 'cancel',
+        appointment_id: HAUSBESUCH.id,
+        preferred_days: [],
+        preferred_times: [],
+        note: null,
+        status: 'open',
+        created_at: eingang.toISOString(),
+        resolved_at: null,
+        answer: null,
+      },
+    ]);
+    renderWithProviders(
+      <Termine zugang={ZUGANG} />,
+      '/p/termine?bereich=treatment&absage=dddddddd-dddd-4ddd-8ddd-000000000001',
+    );
+    expect(
+      await screen.findByText(/^Ihre Absage ist am 29\. Oktober( 2026)? um 14:32 eingegangen\.$/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Ihr Wunsch ist bei der Praxis angekommen/)).toBeNull();
+  });
+
   it('nennt die Rückmeldung nach dem Senden genau einmal', async () => {
     ladeTermine.mockResolvedValue([HAUSBESUCH]);
     renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine?bereich=treatment&gesendet=1');
