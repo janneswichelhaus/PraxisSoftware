@@ -85,7 +85,8 @@ export function EmptyState({
         >
           {zeichen ?? <Laufrad kraeftig className="text-salbei size-15" />}
         </span>
-        <span className="text-ink text-abschnitt font-bold">{title}</span>
+        {/* Ausgewogen umbrochen: Kein Wortrest steht allein in der letzten Zeile („Check-|in“). */}
+        <span className="text-ink text-abschnitt font-bold text-balance">{title}</span>
         {description ? <p className="text-ink-muted max-w-leersatz">{description}</p> : null}
         {/* Über die ganze Breite: Ein Hauptknopf mit `w-full` bleibt am Telefon so breit. */}
         {aktion ? (

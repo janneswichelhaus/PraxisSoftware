@@ -327,6 +327,7 @@ describe('Leerzustand mit Markenform', () => {
     expect(wurzel.className).not.toContain('rounded-card');
     expect(wurzel.className).not.toMatch(/\bpx-/);
     expect(screen.getByText('Noch keine Termine').className).toContain('text-abschnitt');
+    expect(screen.getByText('Noch keine Termine').className).toContain('text-balance');
     expect(screen.getByText('Die Praxis trägt Ihren ersten Termin hier ein.').className).toContain(
       'max-w-leersatz',
     );
