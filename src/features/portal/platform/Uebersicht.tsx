@@ -677,7 +677,7 @@ function Hauptsachekarte({
         <HeroKarte
           titel="Unterlagen sichern"
           // `read_until` ist die Mitternacht nach dem letzten Tag. Rechnungen sieht eine Vertretung
-          // nur mit Vermögenssorge (ADR-023 Punkt 13), daher für sie „Die Unterlagen“.
+          // nur mit dem Recht `billing` (`app.platform_access_allows`): für sie „Die Unterlagen“.
           satz={`${vertretung ? 'Die Unterlagen' : 'Rechnungen und Dokumente'} können Sie bis ${tagUndMonat(letzterTag(haupt.bis), jetzt)} herunterladen.`}
           aktion={{ text: 'Unterlagen ansehen', to: `${PLATTFORM_PFAD}/ich` }}
           markenmoment={markenmoment}

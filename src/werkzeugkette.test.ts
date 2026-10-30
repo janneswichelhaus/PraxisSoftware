@@ -146,7 +146,7 @@ describe('Aufgeteilte Jobs in der CI', () => {
     const doku = schritt(statisch, 'Format der geaenderten Dokumentation');
     expect(doku).toContain("if: ${{ needs.aenderungen.outputs.nur_doku == 'true' }}");
     // Ohne `shell: bash` fehlt pipefail: Ein gescheitertes `git diff` prüfte still nichts.
-    expect(doku).toContain('shell: bash');
+    expect(doku).toMatch(/\n\s+shell: bash\n/);
     expect(doku).toContain('git diff -z --name-only --diff-filter=AM "$BASIS...HEAD"');
     expect(doku).toContain('pnpm exec prettier --check --');
     // Immer, auch bei reiner Doku: Dokumentation, Kommentare und Dateinamen.

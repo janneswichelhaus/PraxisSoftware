@@ -156,18 +156,19 @@ function Aenderungsablauf({
         notiz,
       }),
     onSuccess: async (wunschId) => {
-      // Erst neu laden, dann zur Liste (ANN-811): Dort trägt der Termin schon den Wunsch, und der
-      // Eingang der Absage steht gleich oben. `staleTime: 0`, sonst gälte der alte Stand als frisch;
-      // scheitert das Laden, lädt die Liste selbst.
+      // Erst die Wünsche, dann die Termine, dann zur Liste (ANN-811), sonst stünde kurz die Seite des
+      // Termins da. `staleTime: 0`, denn der alte Stand gälte als frisch; scheitert das Laden, gelten
+      // die Wünsche als veraltet, und die Liste lädt sie selbst.
       freigeben();
-      await Promise.all([
-        queryClient.fetchQuery({
-          queryKey: wuenscheSchluessel(zugang.access_id),
+      const wuensche = wuenscheSchluessel(zugang.access_id);
+      await queryClient
+        .fetchQuery({
+          queryKey: wuensche,
           queryFn: () => ladeWuensche(zugang.access_id),
           staleTime: 0,
-        }),
-        queryClient.invalidateQueries({ queryKey: termineSchluessel(zugang.access_id) }),
-      ]).catch(() => undefined);
+        })
+        .catch(() => queryClient.invalidateQueries({ queryKey: wuensche, refetchType: 'none' }));
+      await queryClient.invalidateQueries({ queryKey: termineSchluessel(zugang.access_id) });
       const rueckmeldung = art === 'cancel' ? `absage=${wunschId}` : 'gesendet=1';
       void navigate(`${terminliste}${terminliste.includes('?') ? '&' : '?'}${rueckmeldung}`, {
         replace: true,

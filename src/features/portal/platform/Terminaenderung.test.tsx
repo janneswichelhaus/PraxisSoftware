@@ -206,14 +206,13 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
     );
   });
 
-  it('lädt nach dem Senden Wünsche und Termine neu, dann erst zur Liste (ANN-811)', async () => {
-    const nutzer = userEvent.setup();
+  /** Wie in der App: Geladenes gilt 30 Sekunden als frisch und bleibt im Speicher. */
+  async function absageSendenWieInDerApp() {
     ladeTermine.mockResolvedValue([TERMIN]);
-    // Wie in der App gilt Geladenes 30 Sekunden als frisch und bleibt im Speicher; die Wünsche kennt
-    // die Seite des Termins schon.
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
     });
+    // Die Wünsche kennt die Seite des Termins schon.
     queryClient.setQueryData(wuenscheSchluessel(ZUGANG.access_id), []);
     const router = createMemoryRouter(
       [
@@ -227,25 +226,51 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
         <RouterProvider router={router} />
       </QueryClientProvider>,
     );
+    const nutzer = userEvent.setup();
     await nutzer.click(await screen.findByRole('button', { name: 'Verstanden, weiter' }));
-    let geladen: (termine: Termin[]) => void = () => undefined;
+    await nutzer.click(await screen.findByRole('button', { name: 'Absage senden' }));
+    return { queryClient, router };
+  }
+  const NACH_DER_ABSAGE = '?bereich=treatment&absage=dddddddd-dddd-4ddd-8ddd-000000000001';
+
+  it('lädt nach dem Senden erst die Wünsche, dann die Termine, dann zur Liste (ANN-811)', async () => {
+    let wuenscheDa: (wuensche: unknown[]) => void = () => undefined;
+    ladeWuensche.mockImplementationOnce(
+      () =>
+        new Promise<unknown[]>((aufloesen) => {
+          wuenscheDa = aufloesen;
+        }),
+    );
+    const { router } = await absageSendenWieInDerApp();
+    await waitFor(() => expect(ladeWuensche).toHaveBeenCalledTimes(1));
+    // Solange die Wünsche laden, bleiben die Termine, wie sie sind: Trügen sie schon den Wunsch,
+    // stünde kurz die Seite des Termins da.
+    expect(ladeTermine).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: /Wird gesendet/ })).toBeInTheDocument();
+    expect(`${router.state.location.pathname}${router.state.location.search}`).toBe(ABSAGEN);
+    let termineDa: (termine: Termin[]) => void = () => undefined;
     ladeTermine.mockImplementationOnce(
       () =>
         new Promise<Termin[]>((aufloesen) => {
-          geladen = aufloesen;
+          termineDa = aufloesen;
         }),
     );
-    await nutzer.click(await screen.findByRole('button', { name: 'Absage senden' }));
+    act(() => wuenscheDa([]));
     await waitFor(() => expect(ladeTermine).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(ladeWuensche).toHaveBeenCalledTimes(1));
-    // Solange die Liste lädt, bleibt der Ablauf beim Senden stehen.
-    expect(screen.getByRole('button', { name: /Wird gesendet/ })).toBeInTheDocument();
-    expect(`${router.state.location.pathname}${router.state.location.search}`).toBe(ABSAGEN);
-    act(() => geladen([{ ...TERMIN, open_request_kind: 'cancel' }]));
-    await waitFor(() =>
-      expect(router.state.location.search).toBe(
-        '?bereich=treatment&absage=dddddddd-dddd-4ddd-8ddd-000000000001',
-      ),
+    expect(router.state.location.search).not.toBe(NACH_DER_ABSAGE);
+    act(() => termineDa([{ ...TERMIN, open_request_kind: 'cancel' }]));
+    await waitFor(() => expect(router.state.location.search).toBe(NACH_DER_ABSAGE));
+  });
+
+  it('geht auch zur Liste, wenn die Wünsche nicht laden; sie gelten dann als veraltet', async () => {
+    ladeWuensche.mockRejectedValueOnce(
+      new Error('Ihre Terminwünsche konnten nicht geladen werden.'),
+    );
+    const { queryClient, router } = await absageSendenWieInDerApp();
+    await waitFor(() => expect(router.state.location.search).toBe(NACH_DER_ABSAGE));
+    // Veraltet heißt: Die Liste lädt sie beim Öffnen selbst, auch innerhalb der 30 Sekunden.
+    expect(queryClient.getQueryState(wuenscheSchluessel(ZUGANG.access_id))?.isInvalidated).toBe(
+      true,
     );
   });
 
