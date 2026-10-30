@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-10-29.
+Zuletzt aktualisiert: 2026-10-30.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1599,9 +1599,9 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-794 | Fragebogen: Notfallsatz nur vor „Bogen senden“, nicht bei den Warnzeichen | Praxisprozess · entschieden (Jannes) | `NICHT_AKUT` in `src/features/portal/platform/Befundbogen.tsx` |
 | ANN-795 | Tagebuch: „297 von 1466 kcal“ statt „Noch übrig“, über dem Ziel ohne Wort; Wasser in Litern | Praxisprozess · entschieden (Jannes) | `EnergieUndNaehrstoffe` in `src/features/portal/platform/Tagebuch.tsx` |
 | ANN-796 | Tagebuch: Mahlzeiten vor Wasser und Energie, am Rechner daneben; Balken mit Kante, leere Mahlzeiten als Pillen | Technik · offen | `Mahlzeiten` in `src/features/portal/platform/Tagebuch.tsx` |
-| ANN-797 | Ernährung: Hero „Heute“ nur mit Tagebuch und Schreibrecht, gelesen wie das Tagebuch | Technik · offen | `Heute` in `src/features/portal/platform/Ernaehrung.tsx` |
+| ANN-797 | Ernährung: Hero „Heute“ nur mit Tagebuch und Schreibrecht, gelesen wie das Tagebuch, auch von Vertretungen | Technik · entschieden (Jannes) | `Heute` in `src/features/portal/platform/Ernaehrung.tsx` |
 | ANN-798 | Rückweg nennt die Herkunft: „Übersicht“ oder „Ernährung“, auch über das Eintragen, das danach offen bleibt | Technik · offen | `zurueckZumTag` in `src/features/portal/platform/tagebuchAdresse.ts` |
 | ANN-799 | Meine Angaben als Zeilen mit letztem Wert und Tag, Seite je Frage, Tabelle als Seite; ohne Ereignisse der Praxis | Praxisprozess · offen | `reihen` in `src/features/portal/platform/MeineAngaben.tsx` |
-| ANN-800 | Gewohnheiten: Titel je Gewohnheit, Tage mit Tag im Monat und „heute“, pausiert als ruhige Zeile | Technik · offen | `Eintrag` in `src/features/portal/platform/Gewohnheiten.tsx` |
+| ANN-800 | Gewohnheiten: Titel je Gewohnheit, Tage mit Tag im Monat und „heute“, pausiert als ruhige Zeile; der feste Satz darunter | Technik · offen | `Eintrag` in `src/features/portal/platform/Gewohnheiten.tsx` |
 | ANN-801 | Leerzustände mit Markenform, Satz und Weg; im Check-in in fester Folge der Lagen | Technik · offen | `Zustand` in `src/features/portal/platform/Checkin.tsx` |
 | ANN-802 | Ohne Netz: Schreibendes gestrichelt gesperrt, per `aria-disabled` erreichbar, mit Satz; Lesen bleibt | Technik · offen | `GESPERRT` in `src/features/portal/platform/Checkin.tsx` |

@@ -1,4 +1,4 @@
-# Status · Stand 2026-10-29
+# Status · Stand 2026-10-30
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -6,16 +6,17 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Schritt 4 Selbstauskunft und Tagebuch** liegt als eine PR vor (#333, 4a bis 4e; Handoff in der
-Leinwand); Schritte 2 und 3 sind gesichtet (29.10.). Offen ist die Abkürzung für reine Doku
-(ADR-013 Punkt 2, Entscheidung Jannes). Befunde aus archivierten Sitzungen: BEF-201, BEF-202.
+**Schritt 4 Selbstauskunft und Tagebuch** liegt als PR vor (#333, mit den Antworten darauf; behebt
+das rote E2E auf `main`). Offen ist die Abkürzung für reine Doku (ADR-013 Punkt 2). Befunde aus
+archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Bildsichtung von Schritt 4, dann die Antworten zu #331 als kleine Aufträge: „Handlung vor Inhalt“;
-der Satz zum Verlegen unter 24 Stunden (Seite des Termins, Schritt 1); die Absage mit Tag und
-Uhrzeit des Eingangs; BEF-222 und das Praxisfeld am Server (je Pfad A). Danach Schritte 5 bis 7 je
-mit Handoff, dann die Vorschläge der Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
+Bildsichtung von Schritt 4, dann kleine Aufträge: Leerzustände mit Markenform wie im Entwurf (alle
+Plattformseiten); aus #331 „Handlung vor Inhalt“, der Satz zum Verlegen unter 24 Stunden, die
+Absage mit Tag und Uhrzeit des Eingangs; BEF-222 und das Praxisfeld am Server (je Pfad A). Danach
+Schritte 5 bis 7 mit Handoff, dann die Vorschläge der Aufräumrunde (`development/BEFUNDE.md`, Nr. 2,
+dann Nr. 3).
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
 Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
 Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
@@ -48,5 +49,5 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-29.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: Schritt 4 gebaut (4a bis 4e, #333), Schritte 2 und 3
-gesichtet, Antworten zu #331 als Aufträge. Lokal: `git pull`.
+30.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: Antworten zu #333 eingebaut, Statuszeichen bei 200 %
+zeilenbreit. Lokal: `git pull`.
