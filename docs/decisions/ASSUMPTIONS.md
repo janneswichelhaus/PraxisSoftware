@@ -1609,5 +1609,5 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-804 | Termine: Handlung vor Inhalt, der Knopf mit 16 unter der Hero-Karte | Technik · entschieden (Jannes) | `Terminseite` in `src/features/portal/platform/Terminseite.tsx` |
 | ANN-805 | Satz zum Verlegen unter 24 Stunden auf Seite und Schritt 1, Wortlaut der Empfehlung | Praxisprozess · offen | `AUSFALLHONORAR_VERLEGEN` in `src/lib/ausfallhonorar.ts` |
 | ANN-806 | Absagewunsch mit Tag und Uhrzeit des Eingangs, auf der Uhr des Geräts | Technik · offen | `absageEingegangen` in `src/features/portal/platform/termintexte.ts` |
-| ANN-807 | Lesefrist: Wünsche am Server abgewiesen, Zurückziehen geht weiter | Technik · offen | `request_platform_appointment` in `supabase/migrations/20261225190000_lesefrist_terminwuensche.sql` |
-| ANN-808 | Fragebogen: Antwort der Plattform auf das Praxisfeld am Server abgewiesen | Technik · offen | `save_platform_questionnaire_response` in `supabase/migrations/20261225200000_fragebogen_praxisfeld.sql` |
+| ANN-807 | Lesefrist: Wünsche am Server abgewiesen, Absage per Anruf, Zurückziehen bleibt | Technik · offen | `request_platform_appointment` in `supabase/migrations/20261225190000_lesefrist_terminwuensche.sql` |
+| ANN-808 | Fragebogen: Das Praxisfeld schreibt und sieht die Plattform nicht, es bleibt | Technik · offen | `save_platform_questionnaire_response` in `supabase/migrations/20261225200000_fragebogen_praxisfeld.sql` |

@@ -12,8 +12,9 @@ archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Bildsichtung dieser PR, dann Schritte 5 bis 7 mit Handoff, dann die Vorschläge der Aufräumrunde
-(`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
+Bildsichtung dieser PR; aus ihrem Zweitreview (Pfad A): Fragebogen in der Lesefrist sperren, die
+Lesefrist von Vertretungen vom Server. Dann Schritte 5 bis 7 mit Handoff, dann die Vorschläge der
+Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
 Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
 Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.

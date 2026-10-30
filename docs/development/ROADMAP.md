@@ -35,7 +35,6 @@ Reihenfolge und Abgleich mit Lauf 2 (Praxis-App): `lauf-1-umsetzung.md` im selbe
 
 | Schritt | Inhalt | Vorgabe | Stand |
 | --- | --- | --- | --- |
-| 4 Selbstauskunft und Tagebuch | DR-141 bis DR-146, DR-161 | Handoff `handoff.md` in der Leinwand <https://claude.ai/artifact/VLTxAMN9x1xjasHD42hp42> | gesichtet 30.10. (#333) |
 | 5 Nachrichten | DR-137 bis DR-139; Wortlaut des Notfallhinweises bleibt | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/05-nachrichten.md` | Handoff fehlt |
 | 6 Unterlagen und Verträge | DR-147 bis DR-149, DR-162; Vertragsabschluss als geführter Ablauf, Widerrufsbelehrung unverändert | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/06-unterlagen-vertraege.md` | Handoff fehlt |
 | 7 Ich und Datenschutz | DR-151, DR-152; Einwilligungen ohne Drängen | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/07-ich-datenschutz.md` | Handoff fehlt |
