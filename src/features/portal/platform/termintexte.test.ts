@@ -214,6 +214,17 @@ describe('Wunsch in Worten', () => {
       ),
     ).toBe('Montag, Dienstag oder Mittwoch, vormittags, mittags oder nachmittags');
     expect(wunschInWorten(wunsch({ kind: 'cancel' }))).toBeNull();
+    // Nur Samstag und Sonntag: kein Satz, der mit einem Komma beginnt.
+    expect(
+      wunschInWorten(
+        wunsch({ preferred_days: ['2026-10-31', '2026-11-01'], preferred_times: ['afternoon'] }),
+      ),
+    ).toBeNull();
+    expect(
+      wunschInWorten(
+        wunsch({ preferred_days: ['2026-10-31', '2026-11-02'], preferred_times: ['afternoon'] }),
+      ),
+    ).toBe('Montag, nachmittags');
   });
 
   it('der Satz unter den Tagen: Tage mit „oder“ und der letzte gesendete Tag', () => {

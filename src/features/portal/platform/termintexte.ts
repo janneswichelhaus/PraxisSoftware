@@ -198,11 +198,12 @@ function tageMitOder(tage: readonly Wochentag[]): string {
 export function wunschInWorten(
   wunsch: Pick<Terminwunsch, 'preferred_days' | 'preferred_times'>,
 ): string | null {
+  // Nur Werktage: Ein Wunsch nur am Wochenende stand sonst als „, nachmittags“ da.
   const tage = [
     ...new Set(
       wunsch.preferred_days.map((tag) => new Date(`${tag}T12:00:00`).getDay() as Wochentag),
     ),
-  ];
+  ].filter((tag) => WOCHENTAGE.includes(tag));
   if (tage.length === 0) return null;
   const zeiten = wunsch.preferred_times.map((z) => TAGESZEIT_ADVERB[z]);
   return `${tageMitOder(tage)}, ${zeiten.length > 0 ? mitOder(zeiten) : 'zu jeder Tageszeit'}`;
