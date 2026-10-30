@@ -44,7 +44,7 @@ import {
 import { Anleitung } from './Anleitung';
 import { Dosierungsmarken } from './Dosierungsmarken';
 import { heutigeEinheit, uebungErledigt } from './haken';
-import { inLesefrist, naechsterTermin } from './hauptsache';
+import { inLesefrist, lesefristSatz, naechsterTermin } from './hauptsache';
 import { hauptzahl } from './hauptzahl';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import {
@@ -55,7 +55,7 @@ import {
   wochenleisteSatz,
 } from './uebungstage';
 import { lageDesPlans, planDerVorschau, umfangText, wasManBraucht, weiterBei } from './vorschau';
-import { datum, letzterTag, tagUndMonat } from './zeit';
+import { tagUndMonat } from './zeit';
 
 type Position = Ablageplan['items'][number];
 
@@ -253,13 +253,13 @@ function Reiter({
 }) {
   const erster = planDerVorschau(plaene, heute);
   const reihe = [erster, ...plaene.filter((p) => p !== erster)];
-  const lesefrist = inLesefrist(zugang);
+  // Wortlaut der Übersicht (Briefing 1), bei einer Vertretung mit Namen; der Satz am Plan entfällt.
+  const lesefrist = inLesefrist(zugang) ? lesefristSatz(zugang, null) : null;
   return (
     <>
-      {lesefrist && zugang.read_until ? (
-        // Wortlaut der Übersicht (Briefing 1); der Satz am Plan entfällt.
+      {lesefrist ? (
         <Statusmeldung ton="warnung" className="mb-6">
-          {`Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(letzterTag(zugang.read_until))} lesen.`}
+          {lesefrist}
         </Statusmeldung>
       ) : null}
       <Spalten

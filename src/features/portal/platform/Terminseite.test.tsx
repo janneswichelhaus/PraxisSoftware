@@ -49,6 +49,7 @@ const ZUGANG: Plattformzugang = {
   relationship_kind: 'treatment',
   status: 'active',
   readable: true,
+  writable: true,
   read_until: null,
   access_kind: 'self',
   represented_name: null,
@@ -298,7 +299,11 @@ describe('Seite des Termins (Schritt 3c)', () => {
   });
 
   it('in der Lesefrist ohne „Der Praxis schreiben“: Fragen nimmt die Praxis nicht mehr an (ANN-313)', async () => {
-    const ENDE: Plattformzugang = { ...ZUGANG, read_until: '2027-01-16T00:00:00+01:00' };
+    const ENDE: Plattformzugang = {
+      ...ZUGANG,
+      writable: false,
+      read_until: '2027-01-16T00:00:00+01:00',
+    };
     const VERGANGEN: Termin = {
       ...TERMIN,
       starts_at: inStunden(-50),
@@ -315,7 +320,11 @@ describe('Seite des Termins (Schritt 3c)', () => {
   });
 
   it('in der Lesefrist ohne Ändern und Absagen: Der Weg ist der Anruf (ANN-807)', async () => {
-    const ENDE: Plattformzugang = { ...ZUGANG, read_until: '2027-01-16T00:00:00+01:00' };
+    const ENDE: Plattformzugang = {
+      ...ZUGANG,
+      writable: false,
+      read_until: '2027-01-16T00:00:00+01:00',
+    };
     zeige(TERMIN, { zugang: ENDE });
     const fragen = await findeAbschnitt('Fragen zu diesem Termin?');
     expect(within(fragen).getByRole('link', { name: /Praxis anrufen/ })).toHaveClass('bg-accent');
@@ -324,22 +333,59 @@ describe('Seite des Termins (Schritt 3c)', () => {
     ohneAbschnitt('Passt der Termin nicht?');
   });
 
+  it('in der Lesefrist auch für Vertretung und Begleitung nur der Anruf, wie der Server es will (ANN-809)', async () => {
+    for (const access_kind of ['legal_representative', 'companion'] as const) {
+      const { unmount } = zeige(TERMIN, {
+        zugang: {
+          ...ZUGANG,
+          access_kind,
+          represented_name: 'Max Mustermann',
+          writable: false,
+          read_until: '2027-01-16T00:00:00+01:00',
+        },
+      });
+      const fragen = await findeAbschnitt('Fragen zu diesem Termin?');
+      expect(within(fragen).getByRole('link', { name: /Praxis anrufen/ })).toHaveClass('bg-accent');
+      expect(screen.queryByRole('link', { name: 'Termin ändern' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Termin absagen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Der Praxis schreiben' })).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('das Ende einer Vertretung vor der Lesefrist lässt Ändern und Absagen stehen', async () => {
+    // Sorgerecht bis zur Volljährigkeit: `read_until` steht, geschrieben wird weiter.
+    zeige(TERMIN, {
+      zugang: {
+        ...ZUGANG,
+        access_kind: 'legal_representative',
+        represented_name: 'Max Mustermann',
+        read_until: '2031-04-30T00:00:00+02:00',
+      },
+    });
+    expect(await screen.findByRole('link', { name: 'Termin absagen' })).toBeInTheDocument();
+  });
+
   it('in der Lesefrist ohne Nummer: keine Fragen, statt eines leeren Abschnitts', async () => {
     zeige(
       { ...TERMIN, starts_at: inStunden(-50), ends_at: inStunden(-49), status: 'completed' },
       {
-        zugang: { ...ZUGANG, read_until: '2027-01-16T00:00:00+01:00', practice_phone: null },
+        zugang: {
+          ...ZUGANG,
+          writable: false,
+          read_until: '2027-01-16T00:00:00+01:00',
+          practice_phone: null,
+        },
       },
     );
     await screen.findByRole('region', { name: 'Wer und wo' });
     ohneAbschnitt('Fragen zu diesem Termin?');
   });
 
-  it('mit laufendem Nachsorge-Abo ist noch keine Lesefrist: „Der Praxis schreiben“ bleibt (ANN-274)', async () => {
-    ladeAbo.mockResolvedValue({ state: 'running', ends_on: null });
+  it('solange der Server schreiben lässt, etwa mit gekündigtem, noch laufendem Abo, ist keine Lesefrist (ANN-274, ANN-809)', async () => {
     zeige(
       { ...TERMIN, starts_at: inStunden(-50), ends_at: inStunden(-49), status: 'completed' },
-      { zugang: { ...ZUGANG, read_until: '2027-01-16T00:00:00+01:00' } },
+      { zugang: { ...ZUGANG, writable: true, read_until: '2027-01-16T00:00:00+01:00' } },
     );
     const fragen = await findeAbschnitt('Fragen zu diesem Termin?');
     expect(

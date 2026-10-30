@@ -56,6 +56,7 @@ const zugaenge: Plattformzugang[] = [
     relationship_kind: 'treatment',
     status: 'active',
     readable: true,
+    writable: true,
     read_until: null,
     access_kind: 'self',
     represented_name: null,
@@ -68,6 +69,7 @@ const zugaenge: Plattformzugang[] = [
     relationship_kind: 'training',
     status: 'active',
     readable: true,
+    writable: true,
     read_until: null,
     access_kind: 'self',
     represented_name: null,
@@ -291,7 +293,7 @@ client.setQueryData(plaeneSchluessel(zugaenge[1]!.access_id), {
 });
 // Lesefrist: Der Zugang endet; die Meldung oben sagt, bis wann gelesen wird.
 if (lage === 'lesefrist')
-  zugaenge[0] = { ...zugaenge[0]!, read_until: '2099-11-14T00:00:00+01:00' };
+  zugaenge[0] = { ...zugaenge[0]!, writable: false, read_until: '2099-11-14T00:00:00+01:00' };
 
 /**
  * Ohne Antwort der Praxis: Die Pläne kommen nie an (`laden`) oder scheitern, auch beim Erscheinen

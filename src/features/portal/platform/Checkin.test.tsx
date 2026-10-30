@@ -34,6 +34,7 @@ const ZUGANG: Plattformzugang = {
   relationship_kind: 'treatment',
   status: 'active',
   readable: true,
+  writable: true,
   read_until: null,
   access_kind: 'self',
   represented_name: null,
@@ -599,7 +600,7 @@ describe('Check-in: Zustände ohne Ablauf (Handoff 5.1)', () => {
   it('in der Lesefrist: kein Check-in mehr, der Satz der Lesefrist und „Meine Angaben“', async () => {
     ladeCheckins.mockResolvedValue(daten({ can_answer: false }));
     renderWithProviders(
-      <Checkin zugang={{ ...ZUGANG, read_until: '2026-11-28T00:00:00+01:00' }} />,
+      <Checkin zugang={{ ...ZUGANG, writable: false, read_until: '2026-11-28T00:00:00+01:00' }} />,
       PFAD,
     );
     expect(await screen.findByText('Kein Check-in mehr')).toBeInTheDocument();

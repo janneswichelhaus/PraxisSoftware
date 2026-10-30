@@ -171,6 +171,7 @@ describe('App: Plattformkonto (POR-004, ADR-023 Punkt 25)', () => {
         relationship_kind: 'training',
         status: 'active',
         readable: true,
+        writable: true,
         read_until: null,
         access_kind: 'self',
         represented_name: null,

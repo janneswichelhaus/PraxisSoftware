@@ -41,6 +41,7 @@ const ZUGANG: Plattformzugang = {
   relationship_kind: 'treatment',
   status: 'active',
   readable: true,
+  writable: true,
   read_until: null,
   access_kind: 'self',
   represented_name: null,
@@ -443,7 +444,11 @@ describe('Laden, Fehler, ohne Netz (Handoff 5.6)', () => {
 });
 
 describe('Lesefrist (Frage 5)', () => {
-  const ENDE: Plattformzugang = { ...ZUGANG, read_until: '2027-01-16T00:00:00+01:00' };
+  const ENDE: Plattformzugang = {
+    ...ZUGANG,
+    writable: false,
+    read_until: '2027-01-16T00:00:00+01:00',
+  };
 
   it('sagt das Ende über dem Titel, wünschen geht nicht, Vergangenes ist offen', async () => {
     ladeTermine.mockResolvedValue([PRAXIS_VERGANGEN]);
@@ -481,6 +486,21 @@ describe('Lesefrist (Frage 5)', () => {
     expect(screen.queryByRole('link', { name: 'Der Praxis schreiben' })).not.toBeInTheDocument();
   });
 
+  it('gilt auch für eine Begleitung, mit dem Namen der Person im Satz (ANN-809)', async () => {
+    ladeTermine.mockResolvedValue([PRAXIS_VERGANGEN]);
+    renderWithProviders(
+      <Termine
+        zugang={{ ...ENDE, access_kind: 'companion', represented_name: 'Max Mustermann' }}
+      />,
+      '/p/termine',
+    );
+    await screen.findByRole('heading', { level: 2, name: 'Vergangene Termine' });
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Die Behandlung von Max Mustermann ist beendet. Sie können hier noch bis 15.01.2027 lesen.',
+    );
+    expect(screen.queryByRole('link', { name: /Termin wünschen/ })).not.toBeInTheDocument();
+  });
+
   it('mit Nummer bietet die Lesefrist „Praxis anrufen“ als Zeile, vor dem Vergangenen (ANN-780)', async () => {
     ladeTermine.mockResolvedValue([PRAXIS_VERGANGEN]);
     renderWithProviders(
@@ -502,12 +522,12 @@ describe('Lesefrist (Frage 5)', () => {
     ).toBeTruthy();
   });
 
-  it('mit laufendem Nachsorge-Abo ist noch keine Lesefrist (ANN-274)', async () => {
+  it('solange der Server schreiben lässt, etwa mit laufendem Abo, ist keine Lesefrist (ANN-274, ANN-809)', async () => {
     ladeTermine.mockResolvedValue([HAUSBESUCH]);
-    ladeAbo.mockResolvedValue({ state: 'running', ends_on: null });
-    renderWithProviders(<Termine zugang={ENDE} />, '/p/termine');
+    renderWithProviders(<Termine zugang={{ ...ENDE, writable: true }} />, '/p/termine');
     expect(await screen.findByRole('link', { name: 'Termin wünschen' })).toBeInTheDocument();
-    expect(ladeAbo).toHaveBeenCalledWith(ENDE.access_id);
+    // Das Abo braucht nur der Satz der Lesefrist; ob sie gilt, sagt der Server.
+    expect(ladeAbo).not.toHaveBeenCalled();
     expect(screen.queryByText(/Sie können hier noch bis/)).not.toBeInTheDocument();
   });
 

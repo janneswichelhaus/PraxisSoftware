@@ -64,6 +64,7 @@ const TRAINING: Plattformzugang = {
   relationship_kind: 'training',
   status: 'active',
   readable: true,
+  writable: true,
   read_until: null,
   access_kind: 'self',
   represented_name: null,
@@ -196,6 +197,7 @@ describe('PlattformApp', () => {
       {
         ...TRAINING,
         readable: false,
+        writable: false,
         read_until: '2026-09-01T00:00:00Z',
         practice_phone: '+49 7071 000000',
       },
@@ -207,7 +209,7 @@ describe('PlattformApp', () => {
   });
 
   it('nennt in der Lesefrist, bis wann gelesen werden kann', async () => {
-    zeige([{ ...TRAINING, read_until: '2026-10-30T22:00:00Z' }]);
+    zeige([{ ...TRAINING, writable: false, read_until: '2026-10-30T22:00:00Z' }]);
     expect(await screen.findByText(/noch bis/)).toBeInTheDocument();
   });
 

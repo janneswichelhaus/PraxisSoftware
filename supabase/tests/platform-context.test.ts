@@ -22,6 +22,7 @@ import {
 
 const { users, platformAccesses, patients, trainingRelationships } = SEED;
 const KONTEXT = 'select * from public.platform_context()';
+const VOLLMACHT_KONTO = 'ab12ab12-ab12-4b12-8b12-000000000809';
 
 /** Wie eine Projektion über `app.platform_readable_access` prüft. */
 const LESBAR = `select count(*)::int as n from app.platform_readable_access($1::uuid)`;
@@ -33,6 +34,7 @@ async function kontext(konto: string) {
     relationship_kind: string;
     status: string;
     readable: boolean;
+    writable: boolean;
     read_until: string | null;
     access_kind: string;
     represented_name: string | null;
@@ -78,6 +80,7 @@ describe('platform_context', () => {
         relationship_kind: 'training',
         status: 'active',
         readable: true,
+        writable: true,
         read_until: null,
         access_kind: 'self',
         represented_name: null,
@@ -100,6 +103,7 @@ describe('platform_context', () => {
       'relationship_kind',
       'represented_name',
       'status',
+      'writable',
     ]);
   });
 
@@ -133,7 +137,7 @@ describe('platform_context', () => {
       [platformAccesses.tinaTraining],
     );
     expect(await kontext(users.plattformTina)).toEqual([
-      expect.objectContaining({ status: 'locked', readable: false }),
+      expect.objectContaining({ status: 'locked', readable: false, writable: false }),
     ]);
     expect(await lesbar(users.plattformTina, platformAccesses.tinaTraining)).toBe(false);
   });
@@ -155,16 +159,68 @@ describe('platform_context', () => {
       [trainingRelationships.tina],
     );
     expect(await kontext(users.plattformTina)).toEqual([
-      expect.objectContaining({ readable: true, read_until: expect.any(Date) as unknown }),
+      expect.objectContaining({
+        readable: true,
+        writable: false,
+        read_until: expect.any(Date) as unknown,
+      }),
     ]);
     await asPostgres(
       `update public.training_relationships set contract_ended_on = current_date - 40 where id = $1`,
       [trainingRelationships.tina],
     );
     expect(await kontext(users.plattformTina)).toEqual([
-      expect.objectContaining({ status: 'active', readable: false }),
+      expect.objectContaining({ status: 'active', readable: false, writable: false }),
     ]);
     expect(await lesbar(users.plattformTina, platformAccesses.tinaTraining)).toBe(false);
+  });
+
+  it('Lesefrist: jede Art des Zugangs schreibt nicht mehr, auch Begleitung und Vertretung (ANN-809)', async () => {
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email) values
+         ($1, 'authenticated', 'authenticated', 'vera.vollmacht@patient.invalid')`,
+      [VOLLMACHT_KONTO],
+    );
+    await asPostgres(
+      `insert into public.platform_accesses
+         (organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
+          status, created_by, activated_at, access_kind, legal_basis, representative_name,
+          proof_documents, health_scope, finance_scope, proof_recorded_by, proof_recorded_at)
+       values ($1, 'treatment', $2, $2, $3, 'active', $4, now(), 'legal_representative',
+               'power_of_attorney', 'Vera Vollmacht',
+               array['identity_document', 'power_of_attorney'], true, false, $4, now())`,
+      [SEED.organizationId, patients.max, VOLLMACHT_KONTO, users.office],
+    );
+    const schreibt = async (konto: string) =>
+      (await kontext(konto)).map((z) => [z.access_kind, z.readable, z.writable]);
+    expect(await schreibt(users.plattformPaula)).toEqual([['companion', true, true]]);
+    expect(await schreibt(VOLLMACHT_KONTO)).toEqual([['legal_representative', true, true]]);
+
+    await asPostgres(
+      `update public.patients
+          set care_concluded_on = current_date - 2, care_concluded_at = now(),
+              care_concluded_by = $2::uuid
+        where id = $1`,
+      [patients.max, users.therapist],
+    );
+    // Lesbar bis zum Ende der Lesefrist, aber ohne Schreiben - wie die Person selbst.
+    expect(await schreibt(users.plattformPaula)).toEqual([['companion', true, false]]);
+    expect(await schreibt(VOLLMACHT_KONTO)).toEqual([['legal_representative', true, false]]);
+    // Fremde Person und anderer Bereich: Erikas Behandlung und Training schreiben weiter.
+    expect((await kontext(users.plattformErika)).map((z) => z.writable)).toEqual([true, true]);
+  });
+
+  it('Lesefrist im Training: nur dieser Bereich, die Behandlung derselben Person schreibt (4.8)', async () => {
+    await asPostgres(
+      `update public.training_relationships set contract_ended_on = current_date, status = 'inactive'
+        where id = $1`,
+      [trainingRelationships.erika],
+    );
+    const erika = await kontext(users.plattformErika);
+    expect(erika.map((z) => [z.relationship_kind, z.readable, z.writable])).toEqual([
+      ['treatment', true, true],
+      ['training', true, false],
+    ]);
   });
 
   it('Praxiskonto: keine Zeile, auch nicht fuer die owner:in', async () => {

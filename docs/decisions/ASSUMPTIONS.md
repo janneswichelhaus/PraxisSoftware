@@ -1607,7 +1607,8 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-802 | Ohne Netz: Schreibendes gestrichelt gesperrt, per `aria-disabled` erreichbar, mit Satz; Lesen bleibt | Technik · offen | `GESPERRT` in `src/features/portal/platform/Checkin.tsx` |
 | ANN-803 | Leerzustand wie im Entwurf (mittig, Kreis 96); in der Karte nur, wo Karten daneben stehen | Technik · offen | `EmptyState` in `src/components/ui/Feedback.tsx` |
 | ANN-804 | Termine: Handlung vor Inhalt, der Knopf mit 16 unter der Hero-Karte | Technik · entschieden (Jannes) | `Terminseite` in `src/features/portal/platform/Terminseite.tsx` |
-| ANN-805 | Satz zum Verlegen unter 24 Stunden: Seite wie empfohlen, auf Schritt 1 kurz (sonst rollt er) | Praxisprozess · offen | `AUSFALLHONORAR_VERLEGEN` in `src/lib/ausfallhonorar.ts` |
+| ANN-805 | Satz zum Verlegen unter 24 Stunden: Seite wie empfohlen, auf Schritt 1 kurz (sonst rollt er) | Praxisprozess · entschieden (Jannes) | `AUSFALLHONORAR_VERLEGEN` in `src/lib/ausfallhonorar.ts` |
 | ANN-806 | Absagewunsch mit Tag und Uhrzeit des Eingangs, auf der Uhr des Geräts | Technik · offen | `absageEingegangen` in `src/features/portal/platform/termintexte.ts` |
 | ANN-807 | Lesefrist: Wünsche am Server abgewiesen, Absage per Anruf, Zurückziehen bleibt | Technik · offen | `request_platform_appointment` in `supabase/migrations/20261225190000_lesefrist_terminwuensche.sql` |
 | ANN-808 | Fragebogen: Das Praxisfeld schreibt und sieht die Plattform nicht; es bleibt, außer beim Verwerfen | Technik · offen | `save_platform_questionnaire_response` in `supabase/migrations/20261225200000_fragebogen_praxisfeld.sql` |
+| ANN-809 | Lesefrist vom Server für jeden Zugang; Vertretung liest den Satz mit Namen | Technik · entschieden (Jannes) | `inLesefrist` in `src/features/portal/platform/hauptsache.ts` |

@@ -110,6 +110,7 @@ const zugaenge: Plattformzugang[] = [
     relationship_kind: 'treatment',
     status: 'active',
     readable: true,
+    writable: true,
     read_until: null,
     access_kind: 'self',
     represented_name: null,
@@ -123,6 +124,7 @@ const zugaenge: Plattformzugang[] = [
     relationship_kind: 'training',
     status: 'active',
     readable: true,
+    writable: true,
     read_until: null,
     access_kind: 'self',
     represented_name: null,
@@ -508,6 +510,8 @@ function termineDerBehandlung(): Termin[] {
   switch (seite) {
     case 'uebersicht-lesefrist':
     case 'termine-lesefrist':
+    case 'uebersicht-lesefrist-begleitung':
+    case 'termine-lesefrist-begleitung':
     case 'termine-leer':
       return vergangeneTermine;
     case 'termine-nur-wunsch':
@@ -526,7 +530,8 @@ function termineDerBehandlung(): Termin[] {
   }
 }
 function wuenscheDerBehandlung(): Terminwunsch[] {
-  if (seite === 'termine-leer' || seite === 'termine-lesefrist') return [];
+  if (['termine-leer', 'termine-lesefrist', 'termine-lesefrist-begleitung'].includes(seite))
+    return [];
   if (seite === 'termine-absage-angefragt' || seite === 'termin-absage-angefragt') {
     return [
       {
@@ -821,16 +826,21 @@ client.setQueryData(
   vertragSchluessel(zugaenge[1]!.access_id),
   seite === 'vertrag' ? trainingsvertrag : null,
 );
-// Der Besuch bei Maximilian - an seiner Anschrift, nicht an Erikas.
-client.setQueryData(termineSchluessel(begleitung.access_id), [
-  {
-    ...termine[0]!,
-    visit_street: 'Lindenweg',
-    visit_house_number: '3',
-    visit_postal_code: '72070',
-    visit_city: 'Tübingen',
-  },
-]);
+// Der Besuch bei Maximilian - an seiner Anschrift, nicht an Erikas; in der Lesefrist vergangen.
+client.setQueryData(
+  termineSchluessel(begleitung.access_id),
+  seite === 'uebersicht-lesefrist-begleitung' || seite === 'termine-lesefrist-begleitung'
+    ? vergangeneTermine
+    : [
+        {
+          ...termine[0]!,
+          visit_street: 'Lindenweg',
+          visit_house_number: '3',
+          visit_postal_code: '72070',
+          visit_city: 'Tübingen',
+        },
+      ],
+);
 client.setQueryData(wuenscheSchluessel(begleitung.access_id), []);
 client.setQueryData(rechnungenSchluessel(begleitung.access_id), []);
 client.setQueryData(befundbogenSchluessel(begleitung.access_id), []);
@@ -1971,7 +1981,9 @@ function inhalt(): { pfad: string; element: ReactNode } {
         pfad: '/p/ich',
         element: (
           <PlattformApp
-            zugaenge={[{ ...zugaenge[0]!, readable: false, read_until: inTagen(-2, 12) }]}
+            zugaenge={[
+              { ...zugaenge[0]!, readable: false, writable: false, read_until: inTagen(-2, 12) },
+            ]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />
@@ -1982,7 +1994,9 @@ function inhalt(): { pfad: string; element: ReactNode } {
         pfad: '/p',
         element: (
           <PlattformApp
-            zugaenge={[{ ...zugaenge[0]!, readable: false, read_until: inTagen(-2, 12) }]}
+            zugaenge={[
+              { ...zugaenge[0]!, readable: false, writable: false, read_until: inTagen(-2, 12) },
+            ]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />
@@ -2009,7 +2023,23 @@ function inhalt(): { pfad: string; element: ReactNode } {
         pfad: seite === 'termine-lesefrist' ? '/p/termine?bereich=treatment' : '/p',
         element: (
           <PlattformApp
-            zugaenge={[{ ...zugaenge[0]!, read_until: inTagen(20, 0) }]}
+            zugaenge={[{ ...zugaenge[0]!, writable: false, read_until: inTagen(20, 0) }]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    // ANN-809: Die Lesefrist kommt vom Server, auch für eine Begleitung.
+    case 'uebersicht-lesefrist-begleitung':
+    case 'termine-lesefrist-begleitung':
+      return {
+        pfad: `${seite === 'termine-lesefrist-begleitung' ? '/p/termine' : '/p'}?zugang=${begleitung.access_id}`,
+        element: (
+          <PlattformApp
+            zugaenge={[
+              { ...zugaenge[0]!, writable: false, read_until: inTagen(20, 0) },
+              { ...begleitung, writable: false, read_until: inTagen(20, 0) },
+            ]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />
@@ -2053,7 +2083,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
         pfad: '/p/checkin?bereich=treatment',
         element: (
           <PlattformApp
-            zugaenge={[{ ...zugaenge[0]!, read_until: inTagen(29, 0) }]}
+            zugaenge={[{ ...zugaenge[0]!, writable: false, read_until: inTagen(29, 0) }]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />

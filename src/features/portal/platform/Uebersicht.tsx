@@ -238,17 +238,14 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
   const erster = naechster
     ? ersterTermin(alleTermine, naechster)
     : !alleTermine.some((t) => t.status !== 'cancelled');
-  // Ein gekündigtes Abo läuft bis zu seinem Ende - erst danach ist Lesefrist
-  // (ANN-274), auch wenn `read_until` schon steht.
-  const aboLaeuft = abo.data?.state === 'running' || abo.data?.state === 'ending';
-  const lesefrist = inLesefrist(zugang, aboLaeuft);
+  // Die Lesefrist sagt der Server, auch für Vertretungen und solange ein Abo läuft (ANN-809).
+  const lesefrist = inLesefrist(zugang);
   const haupt = hauptsache({
     zugang,
     bogenId: fuerDiePlattform()[0]?.meta.id,
     boegen: bogen.data,
     checkins: checkin.data,
     plaene: plaene.data,
-    aboLaeuft,
     naechster,
   });
 
@@ -505,7 +502,14 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
     if (zeitraum) {
       rechts.push(
         teil(
-          <Section titel={behandlung ? 'Ihre Behandlung' : 'Ihr Training'} rahmen>
+          <Section
+            titel={
+              behandlung
+                ? `${eigen ? 'Ihre' : 'Die'} Behandlung`
+                : `${eigen ? 'Ihr' : 'Das'} Training`
+            }
+            rahmen
+          >
             <Rueckblick {...zeitraum} />
           </Section>,
           'rueckblick',
@@ -609,13 +613,14 @@ function Kopfteil({
   mitDatum: boolean;
   children: ReactNode;
 }) {
-  const eigen = zugang.access_kind === 'self';
   const name = zugang.represented_name ?? 'die Person';
+  // Eine Vertretung hat außerhalb der Lesefrist ihr eigenes Ende, etwa die Volljährigkeit.
+  const eigenesEnde = zugang.access_kind !== 'self' && !inLesefrist(zugang);
   return (
     <div className="markenmoment-gruss flex flex-col gap-6">
       {zugang.read_until ? (
         <Statusmeldung ton="warnung">
-          {!eigen
+          {eigenesEnde
             ? `Ihr Zugang für ${name} endet am ${datum(zugang.read_until)}.`
             : lesefristSatz(zugang, abo)}
         </Statusmeldung>

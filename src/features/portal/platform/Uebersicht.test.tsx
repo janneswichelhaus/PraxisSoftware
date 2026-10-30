@@ -65,6 +65,7 @@ const ZUGANG: Plattformzugang = {
   relationship_kind: 'treatment',
   status: 'active',
   readable: true,
+  writable: true,
   read_until: null,
   access_kind: 'self',
   represented_name: null,
@@ -481,7 +482,11 @@ describe('Heute und Neu für Sie', () => {
     unmount();
 
     ladeBenachrichtigungen.mockResolvedValue(NIE_GEWAEHLT);
-    const lesefrist = zeige({ ...ZUGANG, read_until: '2026-12-31T12:00:00+01:00' });
+    const lesefrist = zeige({
+      ...ZUGANG,
+      writable: false,
+      read_until: '2026-12-31T12:00:00+01:00',
+    });
     expect(await screen.findByRole('region', { name: 'Unterlagen sichern' })).toBeInTheDocument();
     expect(screen.queryByText('Mitteilungen einschalten')).not.toBeInTheDocument();
     lesefrist.unmount();
@@ -701,7 +706,7 @@ describe('Training, Begleitung, Lesefrist', () => {
         status: 'completed',
       },
     ]);
-    zeige({ ...ZUGANG, read_until: '2026-12-31T12:00:00+01:00' });
+    zeige({ ...ZUGANG, writable: false, read_until: '2026-12-31T12:00:00+01:00' });
     const hero = await screen.findByRole('region', { name: 'Unterlagen sichern' });
     expect(within(hero).getByRole('link', { name: 'Unterlagen ansehen' })).toHaveAttribute(
       'href',
@@ -713,6 +718,41 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(screen.getByText('12. August bis 15. Oktober 2026')).toBeInTheDocument();
     // In der Lesefrist ist nichts mehr zu tun - auch kein offener Fragebogen.
     expect(screen.queryByText(/Fragebogen/)).not.toBeInTheDocument();
+  });
+
+  it('zeigt die Lesefrist auch einer Begleitung, mit dem Namen der Person (ANN-809)', async () => {
+    ladeTermine.mockResolvedValue([
+      {
+        ...TERMIN,
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000003',
+        starts_at: '2026-10-15T07:30:00Z',
+        ends_at: '2026-10-15T08:30:00Z',
+        status: 'completed',
+      },
+    ]);
+    zeige({ ...BEGLEITUNG, writable: false, read_until: '2026-12-31T12:00:00+01:00' });
+    expect(await screen.findByRole('region', { name: 'Unterlagen sichern' })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Die Behandlung von Max Mustermann ist beendet. Sie können hier noch bis 31.12.2026 lesen.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Ihr Zugang für/)).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Die Behandlung' })).toBeInTheDocument();
+  });
+
+  it('nennt einer Vertretung vor der Lesefrist das Ende ihres eigenen Zugangs', async () => {
+    // Sorgerecht bis zur Volljährigkeit: Die Behandlung läuft, der Server lässt schreiben.
+    zeige({
+      ...BEGLEITUNG,
+      access_kind: 'legal_representative',
+      // Mitternacht in der Zeitzone des Laufs, wie der Server sie in der der Praxis liefert.
+      read_until: new Date(2031, 3, 30).toISOString(),
+    });
+    expect(
+      await screen.findByText('Ihr Zugang für Max Mustermann endet am 30.04.2031.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Unterlagen sichern' })).not.toBeInTheDocument();
   });
 
   it('kennt während eines gekündigten, noch laufenden Abos keine Lesefrist (ANN-274)', async () => {
@@ -739,7 +779,7 @@ describe('Training, Begleitung, Lesefrist', () => {
 
   it('nennt als letzten Tag der Lesefrist den vor `read_until` (Mitternacht danach)', async () => {
     // Mitternacht in der Zeitzone des Laufs, wie der Server sie in der der Praxis liefert.
-    zeige({ ...ZUGANG, read_until: new Date(2026, 10, 13).toISOString() });
+    zeige({ ...ZUGANG, writable: false, read_until: new Date(2026, 10, 13).toISOString() });
     const hero = await screen.findByRole('region', { name: 'Unterlagen sichern' });
     expect(within(hero).getByText(/bis 12\. November( 2026)? herunterladen/)).toBeInTheDocument();
     expect(screen.getByText(/Sie können hier noch bis 12\.11\.2026 lesen\./)).toBeInTheDocument();
@@ -762,7 +802,7 @@ describe('Training, Begleitung, Lesefrist', () => {
         status: 'completed',
       },
     ]);
-    zeige({ ...ZUGANG, read_until: '2026-12-31T12:00:00+01:00' });
+    zeige({ ...ZUGANG, writable: false, read_until: '2026-12-31T12:00:00+01:00' });
     expect(await screen.findByText('bis 15. Oktober 2026')).toBeInTheDocument();
   });
 
