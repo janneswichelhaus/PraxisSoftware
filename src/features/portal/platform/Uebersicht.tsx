@@ -557,14 +557,14 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
       ),
     );
   }
-  // Was eine Vertretung hier darf, ist eine Auskunft über Rechte (ADR-023
-  // Punkt 13) - als Kleingedrucktes am Ende der Seite, unter beiden Spalten,
-  // nicht mehr als Absatz oben.
+  // Was eine Vertretung hier darf (ADR-023 Punkt 13), als Kleingedrucktes am Ende unter beiden
+  // Spalten. In der Lesefrist weist der Server auch Wünsche und Nachrichten der Begleitung
+  // ab (ANN-809).
   const rechte =
     zugang.access_kind === 'legal_representative'
       ? `Als rechtliche Vertretung handeln Sie in allem, was ${name} hier tun kann.`
       : begleitung
-        ? `Als Begleitung lesen Sie mit und können Terminwünsche und Nachrichten schreiben. Einwilligungen gibt nur ${name} selbst.`
+        ? `Als Begleitung lesen Sie mit${lesefrist ? '' : ' und können Terminwünsche und Nachrichten schreiben'}. Einwilligungen gibt nur ${name} selbst.`
         : null;
 
   const spalte = 'flex min-w-0 flex-col gap-10 [[data-rechner]_&]:gap-12';
@@ -676,8 +676,9 @@ function Hauptsachekarte({
       return (
         <HeroKarte
           titel="Unterlagen sichern"
-          // `read_until` ist die Mitternacht nach dem letzten Tag.
-          satz={`Rechnungen und Dokumente können Sie bis ${tagUndMonat(letzterTag(haupt.bis), jetzt)} herunterladen.`}
+          // `read_until` ist die Mitternacht nach dem letzten Tag. Rechnungen sieht eine Vertretung
+          // nur mit Vermögenssorge (ADR-023 Punkt 13), daher für sie „Die Unterlagen“.
+          satz={`${vertretung ? 'Die Unterlagen' : 'Rechnungen und Dokumente'} können Sie bis ${tagUndMonat(letzterTag(haupt.bis), jetzt)} herunterladen.`}
           aktion={{ text: 'Unterlagen ansehen', to: `${PLATTFORM_PFAD}/ich` }}
           markenmoment={markenmoment}
         />

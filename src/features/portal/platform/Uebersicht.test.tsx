@@ -709,6 +709,7 @@ describe('Training, Begleitung, Lesefrist', () => {
     ]);
     zeige({ ...ZUGANG, writable: false, read_until: '2026-12-31T12:00:00+01:00' });
     const hero = await screen.findByRole('region', { name: 'Unterlagen sichern' });
+    expect(within(hero).getByText(/^Rechnungen und Dokumente können Sie bis/)).toBeInTheDocument();
     expect(within(hero).getByRole('link', { name: 'Unterlagen ansehen' })).toHaveAttribute(
       'href',
       '/p/ich',
@@ -732,7 +733,13 @@ describe('Training, Begleitung, Lesefrist', () => {
       },
     ]);
     zeige({ ...BEGLEITUNG, writable: false, read_until: '2026-12-31T12:00:00+01:00' });
-    expect(await screen.findByRole('region', { name: 'Unterlagen sichern' })).toBeInTheDocument();
+    const hero = await screen.findByRole('region', { name: 'Unterlagen sichern' });
+    // Rechnungen sieht eine Begleitung nur mit Vermögenssorge: Die Karte verspricht sie nicht.
+    expect(
+      within(hero).getByText(
+        /^Die Unterlagen können Sie bis 31\. Dezember( 2026)? herunterladen\.$/,
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         'Die Behandlung von Max Mustermann ist beendet. Sie können hier noch bis 31.12.2026 lesen.',
@@ -740,6 +747,13 @@ describe('Training, Begleitung, Lesefrist', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/Ihr Zugang für/)).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Die Behandlung' })).toBeInTheDocument();
+    // In der Lesefrist schreibt auch die Begleitung nichts mehr.
+    expect(
+      screen.getByText(
+        'Als Begleitung lesen Sie mit. Einwilligungen gibt nur Max Mustermann selbst.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Terminwünsche und Nachrichten/)).not.toBeInTheDocument();
   });
 
   it('nennt einer Vertretung vor der Lesefrist das Ende ihres eigenen Zugangs', async () => {
