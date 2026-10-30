@@ -314,6 +314,16 @@ describe('Seite des Termins (Schritt 3c)', () => {
     expect(ladeAbo).toHaveBeenCalledWith(ENDE.access_id);
   });
 
+  it('in der Lesefrist ohne Ändern und Absagen: Der Weg ist der Anruf (ANN-807)', async () => {
+    const ENDE: Plattformzugang = { ...ZUGANG, read_until: '2027-01-16T00:00:00+01:00' };
+    zeige(TERMIN, { zugang: ENDE });
+    const fragen = await findeAbschnitt('Fragen zu diesem Termin?');
+    expect(within(fragen).getByRole('link', { name: /Praxis anrufen/ })).toHaveClass('bg-accent');
+    expect(screen.queryByRole('link', { name: 'Termin ändern' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Termin absagen' })).not.toBeInTheDocument();
+    ohneAbschnitt('Passt der Termin nicht?');
+  });
+
   it('in der Lesefrist ohne Nummer: keine Fragen, statt eines leeren Abschnitts', async () => {
     zeige(
       { ...TERMIN, starts_at: inStunden(-50), ends_at: inStunden(-49), status: 'completed' },

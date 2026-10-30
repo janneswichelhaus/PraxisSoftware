@@ -132,10 +132,11 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
           }}
         />
       ) : null}
-      {/* Die Handlung vor dem Inhalt: bei 375 × 667 ohne Rollen erreichbar, auch unter 24 Stunden. */}
+      {/* Die Handlung vor dem Inhalt, bei 375 × 667 ohne Rollen erreichbar. In der Lesefrist nimmt
+          der Server keinen Wunsch an, der Weg ist dann der Anruf (ANN-807). */}
       {kommend && termin.open_request_kind ? (
         <OffenerWunsch zugang={zugang} termin={termin} wunsch={wunsch} verbunden={verbunden} />
-      ) : kommend ? (
+      ) : lesefrist ? null : kommend ? (
         <AendernOderAbsagen termin={termin} mit={mit} verbunden={verbunden} rechner={rechner} />
       ) : abgesagt ? (
         <NeuerWunsch
@@ -150,7 +151,7 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
           <FragenZumTermin
             rufnummer={zugang.practice_phone}
             schreiben={lesefrist ? null : mit(`${PLATTFORM_PFAD}/nachrichten/neu`)}
-            anrufenAlsHauptknopf={!kommend && !abgesagt}
+            anrufenAlsHauptknopf={(!kommend && !abgesagt) || lesefrist}
           />
         </div>
       )}
