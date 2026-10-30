@@ -845,10 +845,10 @@ test.describe('„Sehr groß“: nichts unter der Reiterleiste', () => {
     }) => {
       await page.setViewportSize({ width: 375, height: 812 });
       await oeffne(page, seite, GRUSS);
-      const titel = page.locator('main section[aria-labelledby] h2');
-      await titel.scrollIntoViewIfNeeded();
-      const box = (await titel.boundingBox())!;
-      // Mitten auf den Titel, weit über dem Knopf.
+      // Ohne Rollen: Der Titel steht im ersten Bild über der Leiste, der Knopf darunter.
+      const box = (await page.locator('main section[aria-labelledby] h2').boundingBox())!;
+      const leiste = (await page.locator('nav.reiterleiste').boundingBox())!;
+      expect(box.y + box.height).toBeLessThanOrEqual(leiste.y);
       await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
       await expect(page.getByRole('heading', { level: 1, name: ziel })).toBeVisible();
     });

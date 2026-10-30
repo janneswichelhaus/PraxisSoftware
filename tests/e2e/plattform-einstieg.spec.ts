@@ -449,7 +449,10 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
       window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
     });
     await oeffne(page, 'einstieg-begleitung');
-    await tippe(fenster(page, /^Willkommen/).getByRole('button', { name: 'Weiter' }));
+    // Der lange Name steht in 22 wie unter 23rem: So bleibt „Weiter“ bei 375 × 812 im Bild (ANN-816).
+    const weiter = fenster(page, /^Willkommen/).getByRole('button', { name: 'Weiter' });
+    await expect(weiter).toBeInViewport({ ratio: 1 });
+    await tippe(weiter);
     const mitteilungen = fenster(page, 'Sollen wir Ihnen Bescheid geben?');
     await tippe(mitteilungen.getByRole('button', { name: 'Weiter' }));
     const satz = fenster(page, 'Alles bereit').getByText(/^Die Übersicht zeigt/);

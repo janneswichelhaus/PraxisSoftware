@@ -382,6 +382,10 @@ describe('GefuehrterAblauf mit „Später“ und Balken je Schritt (5.3)', () =>
     expect(screen.getByRole('heading')).not.toHaveClass('max-[23rem]:text-hero-schmal');
     rerender(<Titel titel={'Willkommen,\nPaula Mustermann-Langenscheidt'} stufe="gruss" />);
     expect(screen.getByRole('heading')).toHaveClass('max-[23rem]:text-hero-schmal');
+    // Bei „Sehr groß“ ebenso, sonst stand „Weiter“ nicht mehr im ersten Bild (ANN-816).
+    expect(screen.getByRole('heading')).toHaveClass(
+      '[[data-schrift=sehr-gross]_&]:text-hero-schmal',
+    );
     expect(screen.getByRole('heading')).not.toHaveClass('max-[23rem]:text-plattform-titel');
     // Am Bindestrich darf der Name brechen: „Mustermann-“ zählt für sich.
     rerender(<Titel titel="Zwei Fragen zu den Daten von Max Mustermann-Beispiel" stufe="seite" />);

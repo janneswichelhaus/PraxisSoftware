@@ -3,7 +3,7 @@ import { Fragment, type CSSProperties, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
 import { Aufgabenkarte } from '@/components/ui/Aufgabenkarte';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Inhaltsflaeche } from '@/components/ui/Card';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { HeroKarte } from '@/components/ui/HeroKarte';
@@ -530,7 +530,7 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
                   <ListRow
                     to={p('/befundbogen')}
                     titel="Angefangener Fragebogen"
-                    meta="Nicht gesendet"
+                    status={<Badge eigenesZeichen={STATUSZEICHEN.fehlt}>Nicht gesendet</Badge>}
                   />
                 </ListRows>
               ) : null}

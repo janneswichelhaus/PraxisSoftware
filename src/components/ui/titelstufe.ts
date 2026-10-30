@@ -11,6 +11,12 @@
  * Wort - meist ein Name wie „Langenscheidt“ -, steht er dort in 22 wie der
  * Hero-Titel, damit der Name nicht mitten im Wort bricht (DR-114, ANN-696).
  */
+
+/**
+ * Bei „Sehr groß“ steht ein solcher Titel wie unter 23rem: Sonst schob er etwa im Einstieg einer
+ * Begleitung „Weiter“ aus dem ersten Bild (ANN-816).
+ */
+const LANGES_WORT = 'max-[23rem]:text-hero-schmal [[data-schrift=sehr-gross]_&]:text-hero-schmal';
 export type Titelstufe = 'seite' | 'gruss' | 'frage';
 
 const TITELSTUFE: Record<Titelstufe, string> = {
@@ -41,7 +47,7 @@ export function titelklassen(stufe: Titelstufe, titel: string): string {
   if (stufe === 'frage') return TITELSTUFE.frage;
   const schmal =
     laengstesWort(titel) > ZEICHEN_IN_28_SCHMAL
-      ? 'max-[23rem]:text-hero-schmal'
+      ? LANGES_WORT
       : stufe === 'gruss'
         ? 'max-[23rem]:text-plattform-titel'
         : '';
