@@ -6,7 +6,7 @@ import type * as PlattformApi from './api';
 import type { Nachsorgeabo, Plattformzugang, Termin, Terminwunsch } from './api';
 import { renderWithProviders } from '@/test-utils';
 import { STAND_VERALTET } from '@/components/ui/abfrageTexte';
-import { AUSFALLHONORAR_SPAET } from '@/lib/ausfallhonorar';
+import { AUSFALLHONORAR_SPAET, AUSFALLHONORAR_VERLEGEN } from '@/lib/ausfallhonorar';
 import { RECHNER_ABFRAGE } from './geruestbreite';
 import { tagInWorten } from './termintexte';
 import { WUENSCHE_OHNE_NETZ } from './wunschtexte';
@@ -158,6 +158,18 @@ describe('Seite des Termins (Schritt 3c)', () => {
     expect(within(abschnitt).getByRole('status')).toHaveTextContent(AUSFALLHONORAR_SPAET);
     expect(abschnitt).not.toHaveTextContent('Ändern und Absagen sind Wünsche');
     expect(within(abschnitt).getAllByRole('link')).toHaveLength(2);
+    // Was eine Verlegung kostet, als eigener Satz unter den Knöpfen (ANN-805).
+    const verlegen = within(abschnitt).getByText(AUSFALLHONORAR_VERLEGEN);
+    const absagen = within(abschnitt).getByRole('link', { name: 'Termin absagen' });
+    expect(
+      absagen.compareDocumentPosition(verlegen) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('mit mehr als 24 Stunden ohne den Satz zum Verlegen', async () => {
+    zeige(TERMIN);
+    const abschnitt = await findeAbschnitt('Passt der Termin nicht?');
+    expect(within(abschnitt).queryByText(AUSFALLHONORAR_VERLEGEN)).toBeNull();
   });
 
   it('offener Wunsch: im Kopf „Änderung angefragt“, der Wunsch selbst und Zurückziehen', async () => {
@@ -179,6 +191,36 @@ describe('Seite des Termins (Schritt 3c)', () => {
     await waitFor(() =>
       expect(wunschZurueckziehen).toHaveBeenCalledWith(ZUGANG.access_id, WUNSCH.id),
     );
+  });
+
+  it('offene Absage: der Eingang mit Tag und Uhrzeit, aus dem Zeitpunkt des Wunschs (ANN-806)', async () => {
+    const eingang = new Date(2026, 9, 29, 14, 32);
+    ladeWuensche.mockResolvedValue([
+      {
+        ...WUNSCH,
+        kind: 'cancel',
+        preferred_days: [],
+        preferred_times: [],
+        note: null,
+        created_at: eingang.toISOString(),
+      },
+    ]);
+    zeige({ ...TERMIN, open_request_kind: 'cancel' });
+    const wunsch = await findeAbschnitt('Ihr Absagewunsch');
+    await waitFor(() =>
+      expect(wunsch).toHaveTextContent(
+        /Ihre Absage ist am 29\. Oktober( 2026)? um 14:32 eingegangen\./,
+      ),
+    );
+    expect(wunsch).toHaveTextContent('Bis dahin gilt der Termin.');
+  });
+
+  it('offene Änderung: ohne Satz zum Eingang', async () => {
+    ladeWuensche.mockResolvedValue([WUNSCH]);
+    zeige({ ...TERMIN, open_request_kind: 'change' });
+    const wunsch = await findeAbschnitt('Ihr Änderungswunsch');
+    await waitFor(() => expect(wunsch).toHaveTextContent('Montag oder Dienstag, vormittags'));
+    expect(wunsch).not.toHaveTextContent('eingegangen');
   });
 
   it('vergangen mit Nummer: „Praxis anrufen“ als Hauptknopf, in der Liste nur „Schreiben“', async () => {
@@ -270,6 +312,16 @@ describe('Seite des Termins (Schritt 3c)', () => {
     expect(within(fragen).queryByRole('list')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Der Praxis schreiben' })).not.toBeInTheDocument();
     expect(ladeAbo).toHaveBeenCalledWith(ENDE.access_id);
+  });
+
+  it('in der Lesefrist ohne Ändern und Absagen: Der Weg ist der Anruf (ANN-807)', async () => {
+    const ENDE: Plattformzugang = { ...ZUGANG, read_until: '2027-01-16T00:00:00+01:00' };
+    zeige(TERMIN, { zugang: ENDE });
+    const fragen = await findeAbschnitt('Fragen zu diesem Termin?');
+    expect(within(fragen).getByRole('link', { name: /Praxis anrufen/ })).toHaveClass('bg-accent');
+    expect(screen.queryByRole('link', { name: 'Termin ändern' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Termin absagen' })).not.toBeInTheDocument();
+    ohneAbschnitt('Passt der Termin nicht?');
   });
 
   it('in der Lesefrist ohne Nummer: keine Fragen, statt eines leeren Abschnitts', async () => {

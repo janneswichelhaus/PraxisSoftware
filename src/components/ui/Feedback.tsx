@@ -47,16 +47,9 @@ export function LoadingState({
 }
 
 /**
- * Leerer Zustand einer Seite oder Liste.
- *
- * `aktion` ist der nächste Schritt, wenn es einen gibt - etwa ein
- * `ButtonLink` „Zahlung erfassen" oder ein `Textlink` (UIK-16). Bis UXR-001
- * setzten Seiten ihn als eigenen Link unter den Zustand oder nannten den Ort
- * nur im Satz.
- *
- * `markenform` ist die Fassung der Plattform (Handoff 2026-10-22,
- * Abschnitt 3): das Laufrad im tiefgrünen Kreis, darunter der Titel und ein
- * Satz, was als Nächstes kommt - in einer Karte, linksbündig.
+ * Leerer Zustand einer Seite oder Liste; `aktion` ist der nächste Schritt, wenn es einen gibt.
+ * `markenform` ist die Fassung der Plattform: mittig das Laufrad im Kreis 96, Titel, ein Satz und
+ * der Weg; in der Karte nur, wo daneben Karten stehen (DESIGN.md Regel 8, ANN-803).
  */
 export function EmptyState({
   title,
@@ -71,33 +64,34 @@ export function EmptyState({
   aktion?: ReactNode;
   /** In einer weißen Karte (Design-Handoff 2026-10-01, Abschnitt 3). */
   inKarte?: boolean;
-  /** Mit der Markenform der Plattform; in einer Karte nur mit `inKarte`. */
+  /** Mit der Markenform der Plattform. */
   markenform?: boolean;
   /** Nur mit `markenform`: ein Zeichen statt des Laufrads, wenn schon etwas unterwegs ist. */
   zeichen?: ReactNode;
 }) {
   if (markenform) {
-    // Linksbündig wie die Plattform. Die Karte nur auf Wunsch: Steht der
-    // Leerzustand schon in einer Karte, wäre es ein Kasten im Kasten.
+    // Ohne Karte über die Breite des Inhalts: Auf einer sonst leeren Seite wäre sie nur ein Rahmen.
     return (
       <div
-        className={`flex flex-col items-start gap-4 ${
-          inKarte ? 'rounded-card border-line bg-surface border p-6' : ''
-        }`.trim()}
+        className={`flex flex-col items-center gap-4 py-8 text-center ${
+          inKarte ? 'rounded-card border-line bg-surface border px-4' : ''
+        }`}
       >
         <span
           aria-hidden="true"
-          className={`rounded-pill flex size-16 shrink-0 items-center justify-center ${
-            zeichen ? 'bg-surface-sunken text-ink [&_svg]:size-8' : 'bg-surface-inverse'
+          className={`rounded-pill flex size-24 shrink-0 items-center justify-center ${
+            zeichen ? 'bg-surface-sunken text-ink [&_svg]:size-10' : 'bg-surface-inverse'
           }`}
         >
-          {zeichen ?? <Laufrad kraeftig className="text-salbei size-11" />}
+          {zeichen ?? <Laufrad kraeftig className="text-salbei size-15" />}
         </span>
-        <span className="flex flex-col gap-1">
-          <span className="text-ink text-liste font-semibold">{title}</span>
-          {description ? <span className="text-ink">{description}</span> : null}
-        </span>
-        {aktion ? <div className="flex max-w-full flex-wrap gap-3">{aktion}</div> : null}
+        {/* Ausgewogen umbrochen: Kein Wortrest steht allein in der letzten Zeile („Check-|in“). */}
+        <span className="text-ink text-abschnitt font-bold text-balance">{title}</span>
+        {description ? <p className="text-ink-muted max-w-leersatz">{description}</p> : null}
+        {/* Über die ganze Breite: Ein Hauptknopf mit `w-full` bleibt am Telefon so breit. */}
+        {aktion ? (
+          <div className="mt-2 flex flex-wrap justify-center gap-3 self-stretch">{aktion}</div>
+        ) : null}
       </div>
     );
   }

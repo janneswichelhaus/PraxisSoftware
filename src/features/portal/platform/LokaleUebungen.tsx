@@ -131,7 +131,8 @@ function Auswahl({
       ) : null}
       {plaene.length === 0 ? (
         <EmptyState
-          title="Auf diesem Gerät liegt kein Plan."
+          markenform
+          title="Kein Plan auf diesem Gerät"
           description="Mit Verbindung laden Sie Ihre Übungen; danach geht es auch ohne."
         />
       ) : (

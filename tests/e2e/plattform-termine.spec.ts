@@ -441,6 +441,15 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     const server = nachbildung();
     await oeffne(page, server, 'termin-aendern&kurzfristig');
     const wann = fenster(page, 'Wann passt es Ihnen?');
+    // Schon auf Schritt 1 und zuerst vorgelesen, was eine Verlegung kostet (ANN-805); die Frage
+    // passt trotzdem ohne Rollen, bis „Egal“.
+    const verlegen = wann.getByText(
+      'Ein anderer Tag kostet ein Ausfallhonorar nach unserer Preisliste.',
+    );
+    await expect(verlegen).toBeInViewport({ ratio: 1 });
+    await expect(verlegen.locator('..')).toBeFocused();
+    await expect(wann.getByRole('button', { name: 'Egal' })).toBeInViewport({ ratio: 1 });
+    await pruefeSeite(page, wann, 'b6-aendern-kurzfristig-00-wann-passt-es');
     await wann.getByRole('button', { name: 'Dienstag' }).click();
     await wann.getByRole('button', { name: 'Donnerstag' }).click();
     await wann.getByRole('button', { name: 'Egal' }).click();

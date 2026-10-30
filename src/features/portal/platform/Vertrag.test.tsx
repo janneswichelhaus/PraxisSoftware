@@ -105,6 +105,7 @@ describe('Trainingsvertrag auf der Plattform (KND-003, KND-004)', () => {
   it('sagt, wenn kein Vertrag im Konto geschlossen wurde', async () => {
     ladeVertrag.mockResolvedValue(null);
     renderWithProviders(<Vertrag zugang={ZUGANG} />);
-    expect(await screen.findByText(/kein Vertrag, den Sie in Ihrem Konto/)).toBeInTheDocument();
+    expect(await screen.findByText('Kein Vertrag aus Ihrem Konto')).toBeInTheDocument();
+    expect(screen.getByText('Einen Vertrag aus der Praxis bekommen Sie dort.')).toBeInTheDocument();
   });
 });

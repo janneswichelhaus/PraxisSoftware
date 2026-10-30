@@ -264,6 +264,17 @@ function Liste({
   const zielVon = (t: Termin) => mit(`${PLATTFORM_PFAD}/termine/${t.id}`);
 
   const offenerWunsch = naechster ? terminZustand(naechster) : null;
+  const knopf = lesefrist ? null : (
+    <Wunschknopf
+      pfad={mit(`${PLATTFORM_PFAD}/termine/wunsch`)}
+      verbunden={verbunden}
+      zweit={nurWunsch}
+      breit={!rechner || zweispaltig}
+      satzId={ohneNetzId}
+    />
+  );
+  // Ohne Termin ist „Termin wünschen“ der Weg des Leerzustands, gleich unter seinem Satz (ANN-803).
+  const knopfImLeerzustand = !naechster && !nurWunsch && !lesefrist;
   const hauptsache = naechster ? (
     <HeroKarte
       etikett={heroEtikett(
@@ -292,16 +303,8 @@ function Liste({
       markenform
       inKarte
       title="Zurzeit ist kein Termin vereinbart."
-      description="Über „Termin wünschen“ sagen Sie der Praxis, wann es Ihnen passt."
-    />
-  );
-  const knopf = lesefrist ? null : (
-    <Wunschknopf
-      pfad={mit(`${PLATTFORM_PFAD}/termine/wunsch`)}
-      verbunden={verbunden}
-      zweit={nurWunsch}
-      breit={!rechner || zweispaltig}
-      satzId={ohneNetzId}
+      description="Vereinbart die Praxis einen Termin mit Ihnen, finden Sie ihn hier."
+      aktion={knopf}
     />
   );
   // Sind alle kommenden abgesagt, gibt es keinen „weiteren“.
@@ -406,15 +409,22 @@ function Liste({
       </div>
     );
   }
-  // Am Telefon steht der Knopf unter den kommenden Terminen, mit dem Daumen erreichbar; ist schon
-  // ein Wunsch unterwegs, unter den Wünschen.
+  // Die Handlung vor dem Inhalt: Der Knopf steht direkt unter der Hero-Karte, ohne Rollen erreichbar
+  // (ANN-804); ist schon ein Wunsch unterwegs und kein Termin da, unter den Wünschen.
   return (
     <div className={`flex flex-col ${rechner ? 'max-w-spalte gap-12' : 'gap-10'}`}>
-      {hauptsache}
+      {nurWunsch || knopfImLeerzustand || !knopf ? (
+        hauptsache
+      ) : (
+        // Karte und ihr Knopf gehören zusammen: 16 statt des Abstands zwischen Abschnitten.
+        <div className="flex flex-col gap-4">
+          {hauptsache}
+          {knopf}
+        </div>
+      )}
       {/* Vor dem Vergangenen, ohne Rollen erreichbar: Der Satz der Lesefrist verweist hierher. */}
       {lesefrist ? <PraxisErreichen zugang={zugang} mit={mit} lesefrist /> : null}
       {weitereAbschnitt}
-      {nurWunsch ? null : knopf}
       {wuenscheAbschnitt}
       {nurWunsch ? knopf : null}
       {woche}

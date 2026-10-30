@@ -35,6 +35,7 @@ const SEITEN: { seite: string; hauptknopf: RegExp | null }[] = [
   { seite: 'termin', hauptknopf: null },
   { seite: 'termin&kurzfristig', hauptknopf: null },
   { seite: 'termin-angefragt', hauptknopf: null },
+  { seite: 'termin-absage-angefragt', hauptknopf: null },
   { seite: 'termin-vergangen', hauptknopf: /^Praxis anrufen\s+\+49 7071 0000000$/ },
   { seite: 'termin-vergangen&ohne-nummer', hauptknopf: null },
   { seite: 'termin-abgesagt', hauptknopf: null },
@@ -193,6 +194,19 @@ async function angeschnitten(page: Page): Promise<string[]> {
   });
 }
 
+/**
+ * Steht das Ziel bei 375 px ganz im ersten Bild? Die Reiterleiste klebt unten und deckt ab, was
+ * unter ihr liegt (Handlung vor Inhalt, ANN-804).
+ */
+async function imErstenBild(page: Page, name: string, hoehe = 667): Promise<boolean> {
+  await page.setViewportSize({ width: 375, height: hoehe });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const ziel = await page.locator('main').getByRole('link', { name, exact: true }).boundingBox();
+  const leiste = await page.locator('nav.reiterleiste').boundingBox();
+  const unten = Math.min(hoehe, leiste && leiste.height > 0 ? leiste.y : hoehe);
+  return ziel !== null && ziel.y >= 0 && ziel.y + ziel.height <= unten;
+}
+
 async function axeVerstoesse(page: Page): Promise<string[]> {
   await page.addScriptTag({ path: AXE });
   return page.evaluate(async () => {
@@ -271,11 +285,11 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     await expect(weitere.getByRole('link')).toHaveCount(1);
     await expect(weitere.getByRole('link')).toHaveAccessibleName(/, Änderung angefragt$/);
     expect((await weitere.getByRole('link').boundingBox())?.height).toBeGreaterThanOrEqual(80);
-    // Der Knopf unter den kommenden Terminen, mit dem Daumen erreichbar.
+    // Die Handlung vor dem Inhalt: der Knopf direkt unter der Hero-Karte, vor den Weiteren (ANN-804).
     const knopf = page.getByRole('link', { name: 'Termin wünschen' });
-    expect((await knopf.boundingBox())?.y ?? 0).toBeGreaterThan(
-      (await weitere.boundingBox())?.y ?? 0,
-    );
+    const hero = page.getByRole('region', { name: /^Besuch / });
+    expect((await knopf.boundingBox())?.y ?? 0).toBeLessThan((await weitere.boundingBox())?.y ?? 0);
+    expect((await knopf.boundingBox())?.y ?? 0).toBeGreaterThan((await hero.boundingBox())?.y ?? 0);
     await page.locator('main summary', { hasText: 'Vergangene Termine' }).click();
     const vergangene = page.getByRole('list', { name: 'Vergangene Termine' });
     await expect(vergangene.getByRole('link')).toHaveCount(2);
@@ -437,6 +451,25 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     await expect(weitere.getByRole('link').last()).toHaveAccessibleName(/Training/);
   });
 
+  // Mit einem Bereich bei 375 × 667, mit Bereichsschalter bei 375 × 812. Als Begleitung (Schalter,
+  // Band und Name in drei Zeilen) steht der Knopf auch bei 812 erst nach kurzem Rollen.
+  for (const [seite, hoehe] of [
+    ['termine&ein-bereich', 667],
+    ['termine-heute&ein-bereich', 667],
+    ['termine-absage-angefragt&ein-bereich', 667],
+    ['termine-leer&ein-bereich', 667],
+    ['termine-leer', 667],
+    ['termine', 812],
+    ['termine-training', 812],
+  ] as const) {
+    test(`${seite}: „Termin wünschen“ steht bei 375 × ${hoehe} ohne Rollen unter der Hauptsache (ANN-804)`, async ({
+      page,
+    }) => {
+      await oeffne(page, seite, 375);
+      expect(await imErstenBild(page, 'Termin wünschen', hoehe)).toBe(true);
+    });
+  }
+
   test('Absage zum nächsten Termin angefragt: die Karte bleibt, der Wunsch steht darunter', async ({
     page,
   }) => {
@@ -445,6 +478,27 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     await expect(page.getByRole('list', { name: 'Ihre Wünsche' })).toContainText(
       /Absage für .*angefragt/,
     );
+  });
+
+  test('bei 188 px fließt ein Statuszeichen wie Text: „… Absage“, darunter „angefragt“ (ANN-765)', async ({
+    page,
+  }) => {
+    await oeffne(page, 'termine-absage-angefragt', 188);
+    const zeilen = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('main .rounded-pill')]
+        .filter((p) => /^\S\s*\S+ angefragt$/.test(p.textContent ?? ''))
+        .map((pille) => {
+          const zeichen = pille.querySelector('[aria-hidden="true"]')!.getBoundingClientRect();
+          const text = [...pille.childNodes].find((k) => /\w/.test(k.textContent ?? ''))!;
+          const wort = document.createRange();
+          wort.setStart(text, 0);
+          wort.setEnd(text, (text.textContent ?? '').indexOf(' '));
+          return Math.abs(wort.getBoundingClientRect().top - zeichen.top) < 2;
+        }),
+    );
+    // „… Absage angefragt“ in der Hero-Karte, „… Änderung angefragt“ unter „Weitere Termine“.
+    expect(zeilen).toHaveLength(2);
+    expect(zeilen.every(Boolean), 'Zeichen mit dem ersten Wort in einer Zeile').toBe(true);
   });
 
   test('am Rechner: Hero und Knopf rechts, die Listen links; ohne Termin eine Spalte', async ({
@@ -517,6 +571,23 @@ test.describe('Seite des Termins (Schritt 3c)', () => {
     await expect(page.getByRole('dialog', { name: 'Wann passt es Ihnen?' })).toBeVisible();
   });
 
+  for (const seite of ['termin', 'termin&kurzfristig']) {
+    test(`${seite}: Ändern und Absagen stehen bei 375 × 667 ohne Rollen vor „Wer und wo“ (ANN-804)`, async ({
+      page,
+    }) => {
+      await oeffneTermin(page, seite, 375);
+      expect(await imErstenBild(page, 'Termin ändern'), 'Termin ändern').toBe(true);
+      expect(await imErstenBild(page, 'Termin absagen'), 'Termin absagen').toBe(true);
+      const absagen = (await page.getByRole('link', { name: 'Termin absagen' }).boundingBox())!;
+      const werUndWo = (await page
+        .locator('main')
+        .getByText('Anna Beispiel')
+        .first()
+        .boundingBox())!;
+      expect(absagen.y).toBeLessThan(werUndWo.y);
+    });
+  }
+
   test('unter 24 Stunden: die Warnung über den Knöpfen, fett, mit Zeichen', async ({ page }) => {
     await oeffneTermin(page, 'termin&kurzfristig', 375);
     const warnung = page.locator('main').getByRole('status').filter({ hasText: 'Ausfallhonorar' });
@@ -524,6 +595,20 @@ test.describe('Seite des Termins (Schritt 3c)', () => {
     await expect(warnung).toHaveCSS('font-weight', '600');
     const knopf = await page.getByRole('link', { name: 'Termin ändern' }).boundingBox();
     expect((await warnung.boundingBox())?.y ?? 0).toBeLessThan(knopf?.y ?? 0);
+    // Was eine Verlegung kostet, als eigener Satz unter den Knöpfen (ANN-805).
+    const verlegen = page.getByText(/auf einen anderen Tag, berechnen wir ein Ausfallhonorar/);
+    const absagen = await page.getByRole('link', { name: 'Termin absagen' }).boundingBox();
+    expect((await verlegen.boundingBox())?.y ?? 0).toBeGreaterThan(absagen?.y ?? 0);
+  });
+
+  test('Absage angefragt: der Eingang mit Tag und Uhrzeit, vor „Wer und wo“ (ANN-806)', async ({
+    page,
+  }) => {
+    await oeffneTermin(page, 'termin-absage-angefragt', 375);
+    const eingang = page.getByText(/^Ihre Absage ist am \d+\.\s\S+ um \d{2}:\d{2} eingegangen\.$/);
+    await expect(eingang).toBeVisible();
+    const werUndWo = (await page.locator('main').getByText('Anna Beispiel').first().boundingBox())!;
+    expect((await eingang.boundingBox())!.y).toBeLessThan(werUndWo.y);
   });
 
   test('vergangen: „Praxis anrufen“ als Hauptknopf, 60 hoch, wählt die Nummer', async ({

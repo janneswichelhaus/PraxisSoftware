@@ -189,21 +189,25 @@ describe('Termine (POR-008, Schritt 3b)', () => {
     expect(zeile).toHaveAccessibleName(/, Praxis · Anna Beispiel, durchgeführt$/);
   });
 
-  it('der Hauptknopf steht am Telefon unter den kommenden Terminen (L7)', async () => {
+  it('der Hauptknopf steht am Telefon direkt unter der Hero-Karte, vor den Weiteren (ANN-804)', async () => {
     ladeTermine.mockResolvedValue([PRAXIS, HAUSBESUCH]);
     renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine?bereich=treatment');
     const weitere = await screen.findByRole('heading', { name: 'Weitere Termine' });
     const wunsch = screen.getByRole('link', { name: 'Termin wünschen' });
     expect(wunsch).toHaveAttribute('href', '/p/termine/wunsch?bereich=treatment');
-    expect(weitere.compareDocumentPosition(wunsch) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(weitere.compareDocumentPosition(wunsch) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    // Karte und Knopf in einer Gruppe: Ihr Abstand ist 16, nicht der zwischen Abschnitten.
+    expect(wunsch.parentElement!.className).toContain('gap-4');
   });
 
   it('sagt ohne kommende Termine, wie es weitergeht (Leerzustand)', async () => {
     ladeTermine.mockResolvedValue([PRAXIS_VERGANGEN]);
     renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine');
-    expect(await screen.findByText('Zurzeit ist kein Termin vereinbart.')).toBeInTheDocument();
+    const leer = await screen.findByText('Zurzeit ist kein Termin vereinbart.');
+    // Neben „Diese Woche“ und den Vergangenen in der Karte (DESIGN.md Regel 8).
+    expect(leer.parentElement!.className).toContain('rounded-card');
     expect(
-      screen.getByText('Über „Termin wünschen“ sagen Sie der Praxis, wann es Ihnen passt.'),
+      screen.getByText('Vereinbart die Praxis einen Termin mit Ihnen, finden Sie ihn hier.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Termin wünschen' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: /^Besuch / })).not.toBeInTheDocument();

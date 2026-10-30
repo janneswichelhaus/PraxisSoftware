@@ -71,7 +71,7 @@ async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
   await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
   // Der Zustand ist seit UIK-18 ein Etikett mit Zeichen: Das ✓ ist für
   // Vorlesesoftware ausgeblendet, steht aber im Text des Etiketts.
-  await expect(page.getByText('✓Festgeschrieben · Version 1', { exact: true })).toBeVisible();
+  await expect(page.getByText('✓ Festgeschrieben · Version 1', { exact: true })).toBeVisible();
 
   return terminId;
 }
@@ -90,23 +90,23 @@ test.describe('DOK-002: Finalisieren', () => {
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
     await expect(page).toHaveURL(terminImKalender(terminId));
     await aktionenOeffnen(page);
-    await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
+    await expect(page.getByText(/^!? ?Entwurf/).first()).toBeVisible();
 
     await page.getByRole('button', { name: 'Finalisieren' }).click();
     await expect(page.getByRole('group', { name: 'Dokumentation finalisieren' })).toBeVisible();
     // Ein Klick allein finalisiert nichts.
-    await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
+    await expect(page.getByText(/^!? ?Entwurf/).first()).toBeVisible();
 
     await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
 
-    await expect(page.getByText('✓Festgeschrieben · Version 1', { exact: true })).toBeVisible();
+    await expect(page.getByText('✓ Festgeschrieben · Version 1', { exact: true })).toBeVisible();
     await expect(page.getByText(/Finalisiert am .* von Anna Beispiel/)).toBeVisible();
     await expect(page.getByRole('link', { name: /^Doku/ })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Finalisieren' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Korrigieren' })).toBeVisible();
 
     await terminNeuLaden(page);
-    await expect(page.getByText('✓Festgeschrieben · Version 1', { exact: true })).toBeVisible();
+    await expect(page.getByText('✓ Festgeschrieben · Version 1', { exact: true })).toBeVisible();
   });
 
   test('schreibt den Entwurfsstand als Version 1 fest', async ({ page }) => {
@@ -186,8 +186,8 @@ test.describe('DOK-002: Nachtragen', () => {
     await expect(page.getByText('Nachtrag', { exact: true })).toBeVisible();
     // Der Ursprungseintrag bleibt unveraendert finalisiert.
     await expect(page.getByText(ENTWURF)).toBeVisible();
-    await expect(page.getByText('✓Festgeschrieben · Version 1', { exact: true })).toBeVisible();
-    await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
+    await expect(page.getByText('✓ Festgeschrieben · Version 1', { exact: true })).toBeVisible();
+    await expect(page.getByText(/^!? ?Entwurf/).first()).toBeVisible();
 
     await terminNeuLaden(page);
     await expect(page.getByText(NACHTRAG)).toBeVisible();

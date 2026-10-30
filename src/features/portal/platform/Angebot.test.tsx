@@ -211,8 +211,7 @@ describe('Trainingsangebot auf der Plattform (KND-003)', () => {
   it('sagt, wenn kein Angebot vorliegt', async () => {
     ladeTrainingsangebot.mockResolvedValue(null);
     renderWithProviders(<Angebot zugang={ZUGANG} />);
-    expect(
-      await screen.findByText('Zurzeit liegt kein Angebot der Praxis vor.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Zurzeit kein Angebot')).toBeInTheDocument();
+    expect(screen.getByText(/ein Training an, finden Sie das Angebot hier\.$/)).toBeInTheDocument();
   });
 });

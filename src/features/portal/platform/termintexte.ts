@@ -198,11 +198,12 @@ function tageMitOder(tage: readonly Wochentag[]): string {
 export function wunschInWorten(
   wunsch: Pick<Terminwunsch, 'preferred_days' | 'preferred_times'>,
 ): string | null {
+  // Nur Werktage: Ein Wunsch nur am Wochenende stand sonst als „, nachmittags“ da.
   const tage = [
     ...new Set(
       wunsch.preferred_days.map((tag) => new Date(`${tag}T12:00:00`).getDay() as Wochentag),
     ),
-  ];
+  ].filter((tag) => WOCHENTAGE.includes(tag));
   if (tage.length === 0) return null;
   const zeiten = wunsch.preferred_times.map((z) => TAGESZEIT_ADVERB[z]);
   return `${tageMitOder(tage)}, ${zeiten.length > 0 ? mitOder(zeiten) : 'zu jeder Tageszeit'}`;
@@ -249,6 +250,32 @@ export function wunschTitel(
 /** „Gesendet am 22. Oktober“ - das Jahr nur, wenn es nicht das laufende ist. */
 export function gesendetAm(wunsch: Pick<Terminwunsch, 'created_at'>, jetzt = new Date()): string {
   return `Gesendet am ${fest(tagUndMonat(wunsch.created_at, jetzt))}`;
+}
+
+/**
+ * „am 29. Oktober um 14:32“: Der Zeitpunkt des Absagewunschs ist ihr Eingang und entscheidet über
+ * das Ausfallhonorar (ADR-018 Punkt 8 Nr. 1, ANN-247), deshalb mit Uhrzeit (ANN-806).
+ */
+function eingang(wunsch: Pick<Terminwunsch, 'created_at'>, jetzt: Date): string {
+  return `am ${fest(tagUndMonat(wunsch.created_at, jetzt))} um ${uhrzeit(wunsch.created_at)}`;
+}
+
+/** Die Zeile eines Wunschs: bei einer Absage „Eingegangen am … um …“, sonst „Gesendet am …“. */
+export function wunschEingang(
+  wunsch: Pick<Terminwunsch, 'kind' | 'created_at'>,
+  jetzt = new Date(),
+): string {
+  return wunsch.kind === 'cancel'
+    ? `Eingegangen ${eingang(wunsch, jetzt)}`
+    : gesendetAm(wunsch, jetzt);
+}
+
+/** „Ihre Absage ist am 29. Oktober um 14:32 eingegangen.“ auf der Seite des Termins. */
+export function absageEingegangen(
+  wunsch: Pick<Terminwunsch, 'created_at'>,
+  jetzt = new Date(),
+): string {
+  return `Ihre Absage ist ${eingang(wunsch, jetzt)} eingegangen.`;
 }
 
 /**

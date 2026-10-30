@@ -27,7 +27,7 @@ M5, M7 und M9 sind zurückgebaut, das Barometer nur namentlich (Option A, §20.2
 M2 Check-Up, M3 Teamchat (ohne Ausbau), M4 Barometer, M6 Ernährung und M8 Üben ohne Netz.
 
 ## Design-Review der Plattform, Lauf 1
-Schritte 0 bis 3 sind gebaut (DRP-EPIC-001 bis -014), 2 und 3 gesichtet. Je Schritt ein Handoff (sein Merge gibt frei),
+Schritte 0 bis 4 sind gebaut (DRP-EPIC-001 bis -016), 2 bis 4 gesichtet. Je Schritt ein Handoff (sein Merge gibt frei),
 je Teilschritt eine PR, geprüft mit `pnpm bildstrecke --nur=plattform,anmeldung`,
 `plattform-barrierefreiheit.spec.ts` und der Ratsche in `src/designsystem.test.ts`. Befunde DR-101
 bis DR-162 und Ideen N3 bis N9: `git show 9452575:docs/design/review-2026-10/lauf-1-bericht.md`;
@@ -35,7 +35,6 @@ Reihenfolge und Abgleich mit Lauf 2 (Praxis-App): `lauf-1-umsetzung.md` im selbe
 
 | Schritt | Inhalt | Vorgabe | Stand |
 | --- | --- | --- | --- |
-| 4 Selbstauskunft und Tagebuch | DR-141 bis DR-146, DR-161; das Praxisfeld am Server ist Pfad A und eigener Auftrag | Handoff `handoff.md` in der Leinwand <https://claude.ai/artifact/VLTxAMN9x1xjasHD42hp42> | freigegeben 29.10., Fragen wie empfohlen; 4a bis 4e in einer PR (#333) |
 | 5 Nachrichten | DR-137 bis DR-139; Wortlaut des Notfallhinweises bleibt | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/05-nachrichten.md` | Handoff fehlt |
 | 6 Unterlagen und Verträge | DR-147 bis DR-149, DR-162; Vertragsabschluss als geführter Ablauf, Widerrufsbelehrung unverändert | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/06-unterlagen-vertraege.md` | Handoff fehlt |
 | 7 Ich und Datenschutz | DR-151, DR-152; Einwilligungen ohne Drängen | Briefing `git show 9452575:docs/design/review-2026-10/lauf-1-briefings/07-ich-datenschutz.md` | Handoff fehlt |
@@ -394,11 +393,12 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | Aufräumen Schritt 5, Teil C: ADRs, Prinzipien und Prozessdoku verdichtet, Gesamtgrenze im Doku-Gate, Abschluss des Blocks | fertig | 2026-10-27 | #325 | — | Auftrag Jannes 27.10.2026; Tiefenanalyse 5c Schritte 3 bis 6 |
 | B | CI-Beschleunigung: Lint in zwei Läufen je 3 GB, E2E-Einrichtung ohne fremde Schriften, Studio und zweiten Reset, vier Teile | fertig | 2026-10-28 | #326 | — | Zusatzauftrag Jannes 27.10.2026; Abkürzung für reine Doku offen (ADR-013 Punkt 2) |
 | B | DRP-EPIC-011 Plattform: Bausteine der Termine aus dem Design-Review (Schritt 3a) | gesichtet | 2026-10-28 | #327 | 2026-10-28 | Auftrag Jannes 28.10.2026; Handoff Termine 9.1, Fragen wie empfohlen; ANN-764 bis ANN-771; BEF-220 teilweise; nur Oberfläche |
-| B | DRP-EPIC-012 Plattform: Liste der Termine aus dem Design-Review (Schritt 3b) | gesichtet | 2026-10-28 | #328 | 2026-10-29 | Auftrag Jannes 28.10.2026; Handoff Termine 5.1, 5.5, 5.6, 9.2, Fragen wie empfohlen; ANN-772 bis ANN-777; BEF-220 erledigt, BEF-222 offen (Server); nur Oberfläche |
+| B | DRP-EPIC-012 Plattform: Liste der Termine aus dem Design-Review (Schritt 3b) | gesichtet | 2026-10-28 | #328 | 2026-10-29 | Auftrag Jannes 28.10.2026; Handoff Termine 5.1, 5.5, 5.6, 9.2, Fragen wie empfohlen; ANN-772 bis ANN-777; BEF-220 erledigt; nur Oberfläche |
 | B | Bildstrecke: Netzruhe nach einem Wechsel in der Anwendung, offene Anfragen je Dokument | fertig | 2026-10-28 | #329 | — | Auftrag Jannes 28.10.2026; Befund „Bildstrecke“ vom 28.10. behoben; nur Werkzeug, keine Anwendungsdatei |
 | B | DRP-EPIC-013 Plattform: Seite des Termins aus dem Design-Review (Schritt 3c) | gesichtet | 2026-10-29 | #330 | 2026-10-29 | Auftrag Jannes 28.10.2026; Handoff Termine 3, 5.2, 9.3, Frage 2 wie empfohlen; ANN-778 bis ANN-781; BEF-221 erledigt; nur Oberfläche |
 | B | DRP-EPIC-014 Plattform: Abläufe zum Termin aus dem Design-Review (Schritt 3d) | gesichtet | 2026-10-29 | #331 | 2026-10-29 | Auftrag Jannes 28.10.2026; Handoff Termine 5.3 und 5.4; ANN-782 bis ANN-785; nur Oberfläche |
-| B | DRP-EPIC-015 Plattform: Selbstauskunft und Tagebuch aus dem Design-Review (Schritt 4a bis 4e) | fertig | 2026-10-29 | #333 | — | Auftrag Jannes 29.10.2026; Handoff in der Leinwand, Fragen wie empfohlen; nur Oberfläche |
+| B | DRP-EPIC-015 Plattform: Selbstauskunft und Tagebuch aus dem Design-Review (Schritt 4a bis 4e) | gesichtet | 2026-10-29 | #333 | 2026-10-30 | Auftrag Jannes 29.10.2026; Handoff in der Leinwand, Fragen wie empfohlen; nur Oberfläche |
+| B | DRP-EPIC-016 Plattform: Aufträge nach Schritt 4 | fertig | 2026-10-30 | Branch ccr-4b4adbb9-mbg1ac | — | ANN-803 bis ANN-808; BEF-222 erledigt; Pfad A |
 | B | BEF-223 Zeitumstellung: doppelte Ortszeit gilt als die frühere | fertig | 2026-10-29 | #332 | — | Pfad A, ANN-786 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |

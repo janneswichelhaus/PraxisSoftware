@@ -316,17 +316,39 @@ describe('Leerzustand mit Markenform', () => {
     expect(screen.getByText('Die Praxis trägt Ihren ersten Termin hier ein.')).toBeInTheDocument();
     const rad = container.querySelector('[data-laufrad]')!;
     expect(rad).toHaveAttribute('aria-hidden', 'true');
+    // Wie im Entwurf: Kreis 96, mittig, Titel 22, der Satz leise in höchstens 30ch (ANN-803).
     expect(rad.parentElement!.className).toContain('bg-surface-inverse');
-    // Ohne `inKarte` keine eigene Karte - sonst Kasten im Kasten.
+    expect(rad.parentElement!.className).toContain('size-24');
     const wurzel = rad.parentElement!.parentElement!;
-    expect(wurzel.className).toContain('flex-col');
+    expect(wurzel.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['flex-col', 'items-center', 'text-center', 'py-8']),
+    );
+    // Ohne Karte ohne eigenen Rand: Der Weg ist so breit wie der Inhalt der Seite.
     expect(wurzel.className).not.toContain('rounded-card');
+    expect(wurzel.className).not.toMatch(/\bpx-/);
+    expect(screen.getByText('Noch keine Termine').className).toContain('text-abschnitt');
+    expect(screen.getByText('Noch keine Termine').className).toContain('text-balance');
+    expect(screen.getByText('Die Praxis trägt Ihren ersten Termin hier ein.').className).toContain(
+      'max-w-leersatz',
+    );
   });
 
-  it('steht mit inKarte in einer Karte', () => {
-    const { container } = zeige(<EmptyState markenform inKarte title="Noch keine Termine" />);
+  it('steht mit inKarte in der Karte, wo daneben Karten stehen (Regel 8), der Weg mittig darunter', () => {
+    const { container } = zeige(
+      <EmptyState
+        markenform
+        inKarte
+        title="Noch keine Termine"
+        aktion={<a href="/p/termine">Zu den Terminen</a>}
+      />,
+    );
     const rad = container.querySelector('[data-laufrad]')!;
-    expect(rad.parentElement!.parentElement!.className).toContain('rounded-card');
+    expect(rad.parentElement!.parentElement!.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['rounded-card', 'border', 'bg-surface', 'px-4', 'py-8']),
+    );
+    expect(
+      screen.getByRole('link', { name: 'Zu den Terminen' }).parentElement!.className,
+    ).toContain('justify-center');
   });
 
   it('setzt mit zeichen statt des Laufrads das Zeichen auf die Vertiefung (Handoff 2026-10-24, 5.1)', () => {

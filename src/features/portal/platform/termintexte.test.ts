@@ -6,7 +6,9 @@ import {
   artUndPerson,
   artzeichen,
   gedaempft,
+  absageEingegangen,
   gesendetAm,
+  wunschEingang,
   heroEtikett,
   leereTage,
   rolle,
@@ -212,6 +214,17 @@ describe('Wunsch in Worten', () => {
       ),
     ).toBe('Montag, Dienstag oder Mittwoch, vormittags, mittags oder nachmittags');
     expect(wunschInWorten(wunsch({ kind: 'cancel' }))).toBeNull();
+    // Nur Samstag und Sonntag: kein Satz, der mit einem Komma beginnt.
+    expect(
+      wunschInWorten(
+        wunsch({ preferred_days: ['2026-10-31', '2026-11-01'], preferred_times: ['afternoon'] }),
+      ),
+    ).toBeNull();
+    expect(
+      wunschInWorten(
+        wunsch({ preferred_days: ['2026-10-31', '2026-11-02'], preferred_times: ['afternoon'] }),
+      ),
+    ).toBe('Montag, nachmittags');
   });
 
   it('der Satz unter den Tagen: Tage mit „oder“ und der letzte gesendete Tag', () => {
@@ -248,6 +261,20 @@ describe('Wunsch in Worten', () => {
 
   it('sagt, wann der Wunsch gesendet wurde', () => {
     expect(gesendetAm(wunsch(), JETZT)).toBe('Gesendet am 22.\u00a0Oktober');
+  });
+
+  it('nennt bei einer Absage den Eingang mit Uhrzeit, auf der Uhr des Geräts (ANN-806)', () => {
+    // Ortszeit des Geräts, damit der Test in jeder Zeitzone dasselbe sagt.
+    const absage = wunsch({
+      kind: 'cancel',
+      created_at: new Date(2026, 9, 29, 14, 32).toISOString(),
+    });
+    expect(wunschEingang(absage, JETZT)).toBe('Eingegangen am 29.\u00a0Oktober um 14:32');
+    expect(absageEingegangen(absage, JETZT)).toBe(
+      'Ihre Absage ist am 29.\u00a0Oktober um 14:32 eingegangen.',
+    );
+    expect(wunschEingang(wunsch({ kind: 'change' }), JETZT)).toBe('Gesendet am 22.\u00a0Oktober');
+    expect(wunschEingang(wunsch(), JETZT)).toBe('Gesendet am 22.\u00a0Oktober');
   });
 });
 

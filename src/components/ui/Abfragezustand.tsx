@@ -46,6 +46,8 @@ export function Abfragezustand<T>({
     titel: string;
     beschreibung?: string;
     aktion?: ReactNode;
+    /** Die Fassung der Plattform, wo der Leerzustand der Inhalt der Seite ist (ANN-803). */
+    markenform?: boolean;
   };
   inKarte?: boolean;
   kacheln?: number;
@@ -93,7 +95,8 @@ export function Abfragezustand<T>({
       ) : null}
       {leer && leer.wenn(data) ? (
         <EmptyState
-          inKarte={inKarte}
+          inKarte={inKarte && !leer.markenform}
+          markenform={leer.markenform ?? false}
           title={leer.titel}
           description={leer.beschreibung}
           {...(leer.aktion === undefined ? {} : { aktion: leer.aktion })}

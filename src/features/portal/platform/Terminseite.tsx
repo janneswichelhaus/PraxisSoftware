@@ -11,7 +11,7 @@ import { Section } from '@/components/ui/Section';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Terminkopf } from '@/components/ui/Terminkopf';
-import { AUSFALLHONORAR_SPAET } from '@/lib/ausfallhonorar';
+import { AUSFALLHONORAR_SPAET, AUSFALLHONORAR_VERLEGEN } from '@/lib/ausfallhonorar';
 import {
   ladeTermine,
   ladeWuensche,
@@ -32,6 +32,7 @@ import {
   Zurueckziehen,
 } from './Terminbausteine';
 import {
+  absageEingegangen,
   artLang,
   artzeichen,
   tagInWorten,
@@ -43,8 +44,8 @@ import { WUENSCHE_OHNE_NETZ } from './wunschtexte';
 import { kuenftig } from './zeit';
 
 /**
- * Die Seite eines Termins, Ziel jeder Terminzeile (ANN-776). Ändern und Absagen beginnen hier und
- * öffnen den Ablauf mit `?art=` (ANN-778), in der Reihenfolge des Handoffs (ANN-781). Jeder
+ * Die Seite eines Termins, Ziel jeder Terminzeile (ANN-776); Ändern und Absagen öffnen den Ablauf
+ * mit `?art=` (ANN-778), die Handlung steht vor „Wer und wo“ (ANN-804 statt ANN-781). Jeder
  * Abschnitt steht allein in seinem Block, sonst zählte sein Abstand doppelt.
  */
 export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
@@ -131,10 +132,11 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
           }}
         />
       ) : null}
-      <WerUndWo termin={termin} vertretung={vertretung} jetzt={jetzt} />
+      {/* Die Handlung vor dem Inhalt, bei 375 × 667 ohne Rollen erreichbar. In der Lesefrist nimmt
+          der Server keinen Wunsch an, der Weg ist dann der Anruf (ANN-807). */}
       {kommend && termin.open_request_kind ? (
         <OffenerWunsch zugang={zugang} termin={termin} wunsch={wunsch} verbunden={verbunden} />
-      ) : kommend ? (
+      ) : lesefrist ? null : kommend ? (
         <AendernOderAbsagen termin={termin} mit={mit} verbunden={verbunden} rechner={rechner} />
       ) : abgesagt ? (
         <NeuerWunsch
@@ -143,12 +145,13 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
           rechner={rechner}
         />
       ) : null}
+      <WerUndWo termin={termin} vertretung={vertretung} jetzt={jetzt} />
       {lesefrist && !zugang.practice_phone ? null : (
         <div>
           <FragenZumTermin
             rufnummer={zugang.practice_phone}
             schreiben={lesefrist ? null : mit(`${PLATTFORM_PFAD}/nachrichten/neu`)}
-            anrufenAlsHauptknopf={!kommend && !abgesagt}
+            anrufenAlsHauptknopf={(!kommend && !abgesagt) || lesefrist}
           />
         </div>
       )}
@@ -171,8 +174,8 @@ function Rahmen({ liste, children }: { liste: string; children: ReactNode }) {
 
 /**
  * Kommend und änderbar: „Termin ändern“ und „Termin absagen“ gleich gewichtet, unter 24 Stunden mit
- * der Warnung zum Ausfallhonorar statt des Satzes (`late_notice`, ADR-018 Punkt 8). Ohne Netz
- * gesperrt mit dem Satz der Liste (ANN-773).
+ * der Warnung zum Ausfallhonorar statt des Satzes (`late_notice`, ADR-018 Punkt 8) und darunter dem
+ * Satz zum Verlegen (ANN-805). Ohne Netz gesperrt mit dem Satz der Liste (ANN-773).
  */
 function AendernOderAbsagen({
   termin,
@@ -252,6 +255,8 @@ function AendernOderAbsagen({
               </>
             )}
           </div>
+          {/* Unter den Knöpfen, damit beide bei 375 × 667 im ersten Bild bleiben (ANN-804). */}
+          {termin.late_notice ? <p>{AUSFALLHONORAR_VERLEGEN}</p> : null}
           {verbunden ? null : (
             <p id={satzId} className="text-ink-muted">
               {WUENSCHE_OHNE_NETZ}
@@ -290,6 +295,10 @@ function OffenerWunsch({
         <div className="flex flex-col gap-3">
           {wann ? <p className="hyphens-manual">{wann}</p> : null}
           {wunsch?.note ? <p className="text-ink-muted">„{wunsch.note}“</p> : null}
+          {/* Der Eingang entscheidet über das Ausfallhonorar: mit Tag und Uhrzeit (ANN-806). */}
+          {wunsch && termin.open_request_kind === 'cancel' ? (
+            <p>{absageEingegangen(wunsch)}</p>
+          ) : null}
           <p className="text-ink-muted">
             Die Praxis meldet sich bei Ihnen. Bis dahin gilt der Termin.
           </p>

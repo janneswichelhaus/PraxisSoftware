@@ -6,17 +6,15 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Schritt 4 Selbstauskunft und Tagebuch** liegt als PR vor (#333, mit den Antworten darauf; behebt
-das rote E2E auf `main`). Offen ist die Abkürzung für reine Doku (ADR-013 Punkt 2). Befunde aus
+**Aufträge nach Schritt 4** (Leerzustände, drei Fragen aus #331, BEF-222, Praxisfeld) liegen als PR
+vor; Schritt 4 ist gesichtet. Offen ist die Abkürzung für reine Doku (ADR-013 Punkt 2). Befunde aus
 archivierten Sitzungen: BEF-201, BEF-202.
 
 ## Danach
 
-Bildsichtung von Schritt 4, dann kleine Aufträge: Leerzustände mit Markenform wie im Entwurf (alle
-Plattformseiten); aus #331 „Handlung vor Inhalt“, der Satz zum Verlegen unter 24 Stunden, die
-Absage mit Tag und Uhrzeit des Eingangs; BEF-222 und das Praxisfeld am Server (je Pfad A). Danach
-Schritte 5 bis 7 mit Handoff, dann die Vorschläge der Aufräumrunde (`development/BEFUNDE.md`, Nr. 2,
-dann Nr. 3).
+Bildsichtung dieser PR; aus ihrem Zweitreview (Pfad A): Fragebogen in der Lesefrist sperren, die
+Lesefrist von Vertretungen vom Server. Dann Schritte 5 bis 7 mit Handoff, dann die Vorschläge der
+Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
 Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
 Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
@@ -49,5 +47,5 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-30.10.2026, Branch `ccr-0b8e7ef6-hhpe6n`: Antworten zu #333 eingebaut, Statuszeichen bei 200 %
-zeilenbreit. Lokal: `git pull`.
+30.10.2026, Branch `ccr-4b4adbb9-mbg1ac`: Aufträge nach Schritt 4. Lokal: `git pull`, Stack
+`reset` (zwei Migrationen).

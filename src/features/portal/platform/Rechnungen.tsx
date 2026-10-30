@@ -50,10 +50,17 @@ export function Rechnungen({ zugang }: { zugang: Plattformzugang }) {
         inKarte
         leer={{
           wenn: (liste) => liste.length === 0,
-          titel:
-            zugang.access_kind === 'companion'
-              ? 'Rechnungen sehen Sie hier nur, wenn die Person Ihnen das erlaubt hat.'
-              : 'Es liegt noch keine Rechnung vor.',
+          ...(zugang.access_kind === 'companion'
+            ? {
+                titel: 'Keine Rechnungen',
+                beschreibung:
+                  'Rechnungen sehen Sie hier nur, wenn die Person Ihnen das erlaubt hat.',
+              }
+            : {
+                titel: 'Noch keine Rechnung',
+                beschreibung: 'Stellt Ihnen die Praxis eine Rechnung, finden Sie sie hier.',
+              }),
+          markenform: true,
         }}
       >
         {(liste) => (

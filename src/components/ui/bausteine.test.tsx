@@ -52,7 +52,7 @@ describe('Badge', () => {
    */
   it('setzt positiv mit einem Zeichen von akzent ab', () => {
     const { unmount } = renderWithProviders(<Badge ton="positiv">Abgeschlossen</Badge>);
-    expect(screen.getByText('Abgeschlossen').parentElement?.textContent).toBe('✓Abgeschlossen');
+    expect(screen.getByText('Abgeschlossen').parentElement?.textContent).toBe('✓ Abgeschlossen');
     unmount();
 
     renderWithProviders(<Badge ton="akzent">Vorschau</Badge>);
@@ -61,11 +61,11 @@ describe('Badge', () => {
 
   it('kennzeichnet Warnung und Kritisch mit eigenen Zeichen', () => {
     const { unmount } = renderWithProviders(<Badge ton="warnung">Offen</Badge>);
-    expect(screen.getByText('Offen').parentElement?.textContent).toBe('!Offen');
+    expect(screen.getByText('Offen').parentElement?.textContent).toBe('! Offen');
     unmount();
 
     renderWithProviders(<Badge ton="kritisch">Abgesagt</Badge>);
-    expect(screen.getByText('Abgesagt').parentElement?.textContent).toBe('×Abgesagt');
+    expect(screen.getByText('Abgesagt').parentElement?.textContent).toBe('× Abgesagt');
   });
 
   it('haelt das Zeichen aus dem Vorlesetext heraus', () => {
@@ -87,14 +87,21 @@ describe('Badge', () => {
     expect(klassen).not.toContain('font-medium');
   });
 
-  it('bricht auf der Plattform notfalls nach dem Zeichen, statt breiter als die Zeile zu werden (ANN-765)', () => {
-    renderWithProviders(<Badge ton="positiv">durchgeführt</Badge>);
-    expect(screen.getByText('durchgeführt').className.split(/\s+/)).toEqual(
+  it('fließt auf der Plattform wie Text, statt breiter als die Zeile zu werden (ANN-765)', () => {
+    renderWithProviders(
+      <Badge ton="akzent" eigenesZeichen="…">
+        Absage angefragt
+      </Badge>,
+    );
+    const zeichen = screen.getByText('Absage angefragt');
+    expect(zeichen.className.split(/\s+/)).toEqual(
       expect.arrayContaining([
+        '[.plattform-schrift_&]:inline-block',
         '[.plattform-schrift_&]:max-w-full',
-        '[.plattform-schrift_&]:flex-wrap',
       ]),
     );
+    // Ein Leerzeichen zwischen Zeichen und Wort: „… Absage“ / „angefragt“ statt des Zeichens allein.
+    expect(zeichen.textContent).toBe('… Absage angefragt');
   });
 });
 

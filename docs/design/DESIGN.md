@@ -139,7 +139,7 @@ Nummern der Analyse „Designmaßstab“, Abschnitt 9:
 - **9.14 Rückmeldung:** `ui/Rueckmeldung.tsx`. **9.15 Symbole:** Raster 20, Strich 1,75–2, runde
   Enden, `currentColor`, `aria-hidden`; bleiben am Ort, bis eines zweimal gebraucht wird.
 - **9.16 Zerstörendes/Seltenes:** `Rueckfrage`, Auslöser leise am Ende. **9.17 Leerzustand:** in der
-  Karte. **9.18 Rhythmus:** Stufen 1/2/3/4/6/8. **9.19 Tablet:** Regel 10.
+  Karte; auf der Plattform mittig, ohne Karte nur allein (ANN-803). **9.18 Rhythmus:** Stufen 1/2/3/4/6/8. **9.19 Tablet:** Regel 10.
 
 ## Ratsche
 

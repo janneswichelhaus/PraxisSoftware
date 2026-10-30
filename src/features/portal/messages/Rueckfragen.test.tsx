@@ -141,8 +141,8 @@ describe('Rückfragen (KOM-002)', () => {
       <RueckfragenPage user={testUser(['office'], 'Olivia Office')} />,
       '/rueckfragen',
     );
-    expect((await screen.findByText('beantwortet')).textContent).toBe('✓beantwortet');
-    expect(screen.getByText('überfällig').textContent).toBe('!überfällig');
+    expect((await screen.findByText('beantwortet')).textContent).toBe('✓ beantwortet');
+    expect(screen.getByText('überfällig').textContent).toBe('! überfällig');
   });
 
   it('an der Akte: Thema als Titel, Einträge in Einzahl und Mehrzahl', async () => {

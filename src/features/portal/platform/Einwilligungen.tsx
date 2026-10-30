@@ -62,8 +62,10 @@ export function Einwilligungen({ zugang }: { zugang: Plattformzugang }) {
           inKarte
           leer={{
             wenn: (liste) => liste.length === 0,
-            titel:
+            titel: 'Nichts zu entscheiden',
+            beschreibung:
               'Über Einwilligungen entscheiden die Person selbst oder ihre rechtliche Vertretung.',
+            markenform: true,
           }}
         >
           {(liste) => (

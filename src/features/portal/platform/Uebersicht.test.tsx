@@ -329,9 +329,11 @@ describe('Hauptsache (ANN-698)', () => {
   it('sagt ohne Aufgabe und ohne Termin, dass gerade nichts zu tun ist', async () => {
     ladeBefundbogen.mockResolvedValue(BOGEN_FERTIG);
     zeige();
-    expect(await screen.findByText('Gerade ist nichts zu tun.')).toBeInTheDocument();
+    const leer = await screen.findByText('Gerade ist nichts zu tun.');
     expect(screen.getByText('Zurzeit ist kein Termin vereinbart.')).toBeInTheDocument();
     expect(screen.queryByRole('region')).not.toBeInTheDocument();
+    // An der Stelle der Hero-Karte, mit Karten darunter: in der Karte (DESIGN.md Regel 8).
+    expect(leer.parentElement!.className).toContain('rounded-card');
   });
 
   it('nimmt den fälligen Check-in nach dem Fragebogen, sonst steht er unter „Heute“', async () => {

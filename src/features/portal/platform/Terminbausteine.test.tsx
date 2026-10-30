@@ -112,6 +112,28 @@ describe('Wunschzeile', () => {
     expect(within(zeile).getByRole('button', { name: 'Wunsch zurückziehen' })).toBeInTheDocument();
   });
 
+  it('nennt bei einer Absage den Eingang mit Uhrzeit statt „Gesendet am“ (ANN-806)', () => {
+    renderWithProviders(
+      <Terminliste>
+        <Wunschzeile
+          wunsch={{
+            ...wunsch,
+            kind: 'cancel',
+            preferred_days: [],
+            preferred_times: [],
+            created_at: new Date(2026, 9, 22, 9, 5).toISOString(),
+          }}
+          termine={[termin('2026-11-04')]}
+          jetzt={JETZT}
+        />
+      </Terminliste>,
+    );
+    const zeile = screen.getByRole('listitem');
+    expect(zeile).toHaveTextContent('Absage für Mi., 4. November');
+    expect(zeile).toHaveTextContent('Eingegangen am 22. Oktober um 09:05');
+    expect(zeile).not.toHaveTextContent('Gesendet am');
+  });
+
   it('ohne Seite kein Zurückziehen, mit Antwort der Praxis', () => {
     renderWithProviders(
       <Terminliste>
