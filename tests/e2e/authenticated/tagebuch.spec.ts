@@ -2,12 +2,9 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { KONTEN, PATIENTEN, TESTKENNWORT, anmelden } from './helpers';
 
 /**
- * ERN-EPIC-003 (ADR-027 Punkte 10 und 11): das Ernährungstagebuch auf der
- * Plattform gegen den echten Stack, bei 375 px und einhändig.
- *
- * Budget aus der Roadmap: aus „zuletzt“ ≤ 3 Tipps, per Suche ≤ 5 Tipps +
- * Text, Wasser 1 Tipp. Gezählt wird ab der Tagesansicht. Seed: Erikas
- * Tagebuch ist eingeschaltet, heute steht ein Frühstück.
+ * Das Tagebuch (ADR-027 Punkte 10 und 11) gegen den echten Stack, bei 375 px. Budget: aus „zuletzt“
+ * ≤ 3 Tipps, per Suche ≤ 5 Tipps + Text, Wasser 1 Tipp, gezählt ab der Tagesansicht und zurück.
+ * Seed: Erikas Tagebuch ist eingeschaltet, heute steht ein Frühstück.
  */
 test.describe.configure({ mode: 'serial' });
 
@@ -60,8 +57,11 @@ test('per Suche in höchstens fünf Tipps plus Text; der Tag rechnet mit', async
   // Vorbelegt: die erste Portion mal eins - die Energie steht vor dem Eintragen.
   await expect(page.getByRole('dialog').getByText('105 kcal')).toBeVisible();
   await z.tippe(page.getByRole('dialog').getByRole('button', { name: 'Eintragen' }));
-
+  // Die Seite bleibt für das Nächste (Frage 4 zu #333); zurück zum Tag zählt mit.
   await expect(page.getByText('„Vollkornbrot“ eingetragen.')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await z.tippe(page.getByRole('link', { name: '← Tagebuch' }));
+  await expect(page.getByRole('heading', { name: 'Tagebuch', level: 1 })).toBeVisible();
   test.info().annotations.push({ type: 'Suche', description: `${z.tipps} Tipps + Text` });
   expect(z.tipps).toBeLessThanOrEqual(5);
   await expect(
@@ -139,6 +139,9 @@ test('aus „zuletzt“ in höchstens drei Tipps, mit der Menge vom letzten Mal'
   // „+“ an der Zeile trägt die Menge vom letzten Mal ein (Seed: 1 Banane).
   await z.tippe(page.getByRole('button', { name: /^Banane roh eintragen \(1 Stück/ }));
   await expect(page.getByText('„Banane roh“ eingetragen.')).toBeVisible();
+  // Zurück zum Tag zählt mit; dort steht die Banane unter „Snacks“.
+  await z.tippe(page.getByRole('link', { name: '← Tagebuch' }));
+  await expect(page.getByRole('button', { name: /^Banane roh/ }).first()).toBeVisible();
   test.info().annotations.push({ type: 'Zuletzt', description: `${z.tipps} Tipps` });
   expect(z.tipps).toBeLessThanOrEqual(3);
 });

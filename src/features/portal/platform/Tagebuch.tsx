@@ -65,8 +65,8 @@ import {
 } from './tagebuchAdresse';
 
 /**
- * Das Ernährungstagebuch (ADR-027 Punkte 10 und 11): Energie und Nährstoffe als „x von y“, Wasser
- * mit einem Tipp, die Mahlzeiten. Gerechnet hat der Server, kein Lebensmittel wird bewertet
+ * Das Ernährungstagebuch (ADR-027 Punkte 10 und 11): die Mahlzeiten, Wasser mit einem Tipp, Energie
+ * und Nährstoffe als „x von y“. Gerechnet hat der Server, kein Lebensmittel wird bewertet
  * (ADR-006 Punkt 14); die Begleitung bekommt nichts, in der Adresse steht nur der Tag.
  */
 export function Tagebuch({ zugang }: { zugang: Plattformzugang }) {
@@ -122,7 +122,7 @@ export function Tagebuch({ zugang }: { zugang: Plattformzugang }) {
   );
 }
 
-/** Am Rechner Energie und Wasser nebeneinander, Abstand 48 (Handoff 2026-10-29, Abschnitt 4). */
+/** Am Rechner links die Mahlzeiten, rechts Wasser und Zahlen, Abstand 48 (ANN-796). */
 const ZWEI_SPALTEN =
   'flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:grid [.plattform-schrift[data-rechner]_&]:grid-cols-2 [.plattform-schrift[data-rechner]_&]:items-start [.plattform-schrift[data-rechner]_&]:gap-12';
 
@@ -141,14 +141,11 @@ function Inhalt({
   daten: EigenesTagebuch;
   nachladen: ReactNode;
 }) {
-  const { state, search } = useLocation() as {
-    state: { eingetragen?: string } | null;
-    search: string;
-  };
+  const { search } = useLocation();
   const verbunden = useIstVerbunden();
   const ohneNetzId = useId();
   const [offen, setOffen] = useState<Eintrag | null>(null);
-  // Ohne Netz bleibt alles lesbar; was schreibt, ist gesperrt, und unter „Wasser“ steht warum.
+  // Ohne Netz bleibt alles lesbar; was schreibt, ist gesperrt, und über den Mahlzeiten steht warum.
   const gesperrt = daten.can_write && !verbunden;
 
   return (
@@ -161,18 +158,20 @@ function Inhalt({
           <Textlink to={ernaehrungAdresse(search)}>Unter „Ernährung“ einschalten</Textlink>
         </Statusmeldung>
       ) : null}
-      {state?.eingetragen ? <Rueckmeldung>„{state.eingetragen}“ eingetragen.</Rueckmeldung> : null}
+      {/* Das Eintragen zuerst: So steht es auch bei „Sehr groß“ im ersten Bild (ANN-796). */}
       <div className={ZWEI_SPALTEN}>
-        {/* ADR-027 Punkt 11: „Zahlen ausblenden“ ist die Einstellung der Person. */}
-        {daten.hide_numbers ? null : <EnergieUndNaehrstoffe daten={daten} />}
-        <Wasser zugang={zugang} daten={daten} gesperrt={gesperrt} ohneNetzId={ohneNetzId} />
+        <Mahlzeiten
+          daten={daten}
+          gesperrt={gesperrt}
+          ohneNetzId={ohneNetzId}
+          {...(daten.can_delete && verbunden ? { onOeffnen: setOffen } : {})}
+        />
+        <div className="flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:gap-12">
+          <Wasser zugang={zugang} daten={daten} gesperrt={gesperrt} ohneNetzId={ohneNetzId} />
+          {/* ADR-027 Punkt 11: „Zahlen ausblenden“ ist die Einstellung der Person. */}
+          {daten.hide_numbers ? null : <EnergieUndNaehrstoffe daten={daten} />}
+        </div>
       </div>
-      <Mahlzeiten
-        daten={daten}
-        gesperrt={gesperrt}
-        ohneNetzId={ohneNetzId}
-        {...(daten.can_delete && verbunden ? { onOeffnen: setOffen } : {})}
-      />
       {daten.can_write || daten.can_delete || daten.enabled ? (
         <Aufklappzeilen linieOben>
           {daten.can_write ? <Kopieren zugang={zugang} daten={daten} /> : null}
@@ -344,11 +343,6 @@ function Wasser({
         </p>
       }
     >
-      {gesperrt ? (
-        <p id={ohneNetzId} className="text-ink-muted">
-          {OHNE_NETZ}
-        </p>
-      ) : null}
       {ziel ? <ProgressBar kante wert={menge} von={ziel} /> : null}
       {daten.can_write ? (
         <div className="grid grid-cols-[minmax(0,1fr)_4rem] gap-2 max-[23rem]:grid-cols-[minmax(0,1fr)_3.5rem]">
@@ -422,6 +416,11 @@ function Mahlzeiten({
   );
   return (
     <Abschnitt titel="Mahlzeiten">
+      {gesperrt ? (
+        <p id={ohneNetzId} className="text-ink-muted">
+          {OHNE_NETZ}
+        </p>
+      ) : null}
       <div className="border-line border-t">
         {teile
           .filter((t) => t.eintraege.length > 0)
@@ -480,7 +479,7 @@ function mengeFest(eintrag: Eintrag): string {
   return mengeText(eintrag).replace(/(\d) /g, '$1\u00a0');
 }
 
-/** Die Form der Seite, solange der Tag lädt: Tagesleiste, Energie mit Balken, Wasser, Mahlzeiten. */
+/** Die Form der Seite, solange der Tag lädt: Tagesleiste, Mahlzeiten, Wasser, Energie mit Balken. */
 function Ladezustand() {
   return (
     <SkelettBereich
@@ -496,50 +495,52 @@ function Ladezustand() {
         <Skelett form="hauptknopf" className="w-12 shrink-0" />
       </span>
       <span className={ZWEI_SPALTEN}>
-        <span className="flex flex-col gap-4">
-          <span className="flex flex-col gap-2">
+        <span className="flex flex-col gap-3">
+          <Skelett form="titel" className="w-35 max-w-full" />
+          <span className="flex items-center justify-between gap-2 pt-3">
+            <Skelett form="zeile" className="w-45 max-w-2/3" />
+            <Skelett form="kreis" className="shrink-0" />
+          </span>
+          <span className="flex items-center justify-between gap-3">
+            <Skelett form="zeile" className="w-48 max-w-3/5" />
+            <Skelett form="zeile" className="w-18" />
+          </span>
+          <span className="flex flex-wrap gap-2 pt-4">
+            <Skelett form="kreis" className="min-w-36" />
+            <Skelett form="kreis" className="min-w-34" />
+            <Skelett form="kreis" className="min-w-26" />
+          </span>
+        </span>
+        <span className="flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:gap-12">
+          <span className="flex flex-col gap-3">
             <span className="flex items-center justify-between gap-2">
-              <Skelett form="zeile" className="w-21" />
-              <Skelett form="titel" className="w-38 max-w-1/2" />
+              <Skelett form="titel" className="w-23" />
+              <Skelett form="zeile" className="w-31 max-w-1/2" />
             </span>
             <Skelett form="balken" />
-          </span>
-          {['w-16', 'w-31', 'w-11'].map((breite) => (
-            <span key={breite} className="flex flex-col gap-1.5">
-              <span className="flex items-center justify-between gap-2">
-                <Skelett form="zeile" className={`${breite} max-w-2/5`} />
-                <Skelett form="zeile" className="w-24 max-w-2/5" />
-              </span>
-              <Skelett form="balken" className="max-h-2" />
+            <span className="grid grid-cols-[minmax(0,1fr)_4rem] gap-2 max-[23rem]:grid-cols-[minmax(0,1fr)_3.5rem]">
+              <Skelett form="knopf" />
+              <Skelett form="knopf" />
             </span>
-          ))}
-        </span>
-        <span className="flex flex-col gap-3">
-          <span className="flex items-center justify-between gap-2">
-            <Skelett form="titel" className="w-23" />
-            <Skelett form="zeile" className="w-31 max-w-1/2" />
           </span>
-          <Skelett form="balken" />
-          <span className="grid grid-cols-[minmax(0,1fr)_4rem] gap-2 max-[23rem]:grid-cols-[minmax(0,1fr)_3.5rem]">
-            <Skelett form="knopf" />
-            <Skelett form="knopf" />
+          <span className="flex flex-col gap-4">
+            <span className="flex flex-col gap-2">
+              <span className="flex items-center justify-between gap-2">
+                <Skelett form="zeile" className="w-21" />
+                <Skelett form="titel" className="w-38 max-w-1/2" />
+              </span>
+              <Skelett form="balken" />
+            </span>
+            {['w-16', 'w-31', 'w-11'].map((breite) => (
+              <span key={breite} className="flex flex-col gap-1.5">
+                <span className="flex items-center justify-between gap-2">
+                  <Skelett form="zeile" className={`${breite} max-w-2/5`} />
+                  <Skelett form="zeile" className="w-24 max-w-2/5" />
+                </span>
+                <Skelett form="balken" className="max-h-2" />
+              </span>
+            ))}
           </span>
-        </span>
-      </span>
-      <span className="flex flex-col gap-3">
-        <Skelett form="titel" className="w-35 max-w-full" />
-        <span className="flex items-center justify-between gap-2 pt-3">
-          <Skelett form="zeile" className="w-45 max-w-2/3" />
-          <Skelett form="kreis" className="shrink-0" />
-        </span>
-        <span className="flex items-center justify-between gap-3">
-          <Skelett form="zeile" className="w-48 max-w-3/5" />
-          <Skelett form="zeile" className="w-18" />
-        </span>
-        <span className="flex flex-wrap gap-2 pt-4">
-          <Skelett form="kreis" className="min-w-36" />
-          <Skelett form="kreis" className="min-w-34" />
-          <Skelett form="kreis" className="min-w-26" />
         </span>
       </span>
     </SkelettBereich>

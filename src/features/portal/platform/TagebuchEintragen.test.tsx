@@ -133,7 +133,7 @@ afterEach(() => {
 });
 
 describe('Eintragen ins Tagebuch (Handoff 2026-10-29, 5.7)', () => {
-  it('trägt mit „+“ die Menge vom letzten Mal ein', async () => {
+  it('trägt mit „+“ die Menge vom letzten Mal ein und bleibt für das Nächste auf der Seite', async () => {
     const nutzer = userEvent.setup();
     renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
     await nutzer.click(
@@ -148,6 +148,31 @@ describe('Eintragen ins Tagebuch (Handoff 2026-10-29, 5.7)', () => {
         expect.anything(),
       ),
     );
+    // Rückmeldung oben, mit dem Fokus; Zuletzt und Suche bleiben, zurück geht es über „← Tagebuch“.
+    const meldung = await screen.findByText('„Haferflocken“ eingetragen.');
+    expect(meldung.closest('[tabindex="-1"]') ?? meldung).toHaveFocus();
+    expect(screen.getByRole('heading', { level: 1, name: 'Mittagessen eintragen' })).toBeVisible();
+    expect(screen.getByRole('searchbox')).toBeVisible();
+    expect(screen.getByRole('link', { name: '← Tagebuch' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('/p/ernaehrung/tagebuch?'),
+    );
+    // Ein zweites Lebensmittel ist eine neue Rückmeldung, auch wenn es dasselbe ist.
+    await nutzer.click(screen.getByRole('button', { name: /^Haferflocken eintragen \(Portion/ }));
+    await waitFor(() => expect(tagebuchEintragen).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText('„Haferflocken“ eingetragen.')).toBeVisible();
+  });
+
+  it('trägt aus dem Fenster ein, schließt es und bleibt auf der Seite', async () => {
+    const nutzer = userEvent.setup();
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    await nutzer.click(await screen.findByRole('button', { name: /^Haferflocken(?! eintragen)/ }));
+    const fenster = await screen.findByRole('dialog', { name: 'Haferflocken' });
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Eintragen' }));
+    await waitFor(() => expect(tagebuchEintragen).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText('„Haferflocken“ eingetragen.')).toBeVisible();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'Mittagessen eintragen' })).toBeVisible();
   });
 
   it('sperrt ohne Netz „+“, „Eintragen“ und „Favorit“, erreichbar und mit Satz', async () => {

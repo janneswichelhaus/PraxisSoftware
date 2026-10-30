@@ -1,6 +1,6 @@
 import { useId, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -11,6 +11,7 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -55,12 +56,9 @@ import {
 import { tagName, zurueckZumTag } from './tagebuchAdresse';
 
 /**
- * Ein Lebensmittel ins Tagebuch (ERN-007, ADR-027 Punkte 9 und 10):
- * suchen, antippen, Menge wählen, eintragen. Die Menge ist eine Portion der
- * Quelle mal einer Anzahl oder g bzw. ml; die Werte rechnet der Server.
- *
- * Tag und Mahlzeit stehen in der Adresse, der Suchbegriff nie (ADR-027
- * Punkt 8). Nach dem Eintragen geht es zurück zum Tag.
+ * Ein Lebensmittel ins Tagebuch (ADR-027 Punkte 8 bis 10); die Werte rechnet der Server,
+ * der Suchbegriff steht nie in der Adresse. Nach dem Eintragen bleibt die Seite für das Nächste
+ * offen, mit Rückmeldung; „← Tagebuch“ führt zum Tag zurück (ANN-798).
  */
 export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
   const [suche] = useSearchParams();
@@ -88,6 +86,8 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
   const gescheitert =
     (tagebuch.data === undefined && tagebuch.isError) ||
     (ernaehrung.data === undefined && ernaehrung.isError);
+  // Jede Bestätigung eine neue Zeile, auch die zweite gleichlautende (`mal` als Schlüssel).
+  const [eingetragen, setEingetragen] = useState<{ name: string; mal: number } | null>(null);
 
   return (
     <>
@@ -97,6 +97,9 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
         description={tag && heute && tag !== heute ? tagName(tag, heute) : undefined}
         stufe="seite"
       />
+      {eingetragen ? (
+        <Rueckmeldung key={eingetragen.mal}>„{eingetragen.name}“ eingetragen.</Rueckmeldung>
+      ) : null}
       <div className="mt-4">
         {!geladen ? (
           gescheitert ? (
@@ -128,6 +131,7 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
             tagebuch={tagebuch.data}
             tag={tag!}
             mahlzeit={mahlzeit}
+            onEingetragen={(name) => setEingetragen((alt) => ({ name, mal: (alt?.mal ?? 0) + 1 }))}
           />
         )}
       </div>
@@ -172,12 +176,14 @@ function Suche({
   tagebuch,
   tag,
   mahlzeit,
+  onEingetragen,
 }: {
   zugang: Plattformzugang;
   ernaehrung: EigeneErnaehrung;
   tagebuch: EigenesTagebuch;
   tag: string;
   mahlzeit: Mahlzeit;
+  onEingetragen: (name: string) => void;
 }) {
   const ohneZahlen = tagebuch.hide_numbers;
   const verbunden = useIstVerbunden();
@@ -209,6 +215,7 @@ function Suche({
                   mahlzeit={mahlzeit}
                   ohneZahlen={ohneZahlen}
                   onOeffnen={oeffnen}
+                  onEingetragen={onEingetragen}
                   ohneNetz={verbunden ? undefined : ohneNetzId}
                 />
               ))}
@@ -227,6 +234,7 @@ function Suche({
                 mahlzeit={mahlzeit}
                 ohneZahlen={ohneZahlen}
                 onOeffnen={oeffnen}
+                onEingetragen={onEingetragen}
                 ohneNetz={verbunden ? undefined : ohneNetzId}
               />
             ))}
@@ -240,7 +248,7 @@ function Suche({
           ) : null}
         </div>
       )}
-      fensterInhalt={(f) => {
+      fensterInhalt={(f, schliessen) => {
         const vorher = letzte(f);
         const anfang = vorher ? letzteMenge(vorher) : undefined;
         return (
@@ -250,6 +258,10 @@ function Suche({
             tag={tag}
             mahlzeit={mahlzeit}
             ohneZahlen={ohneZahlen}
+            onEingetragen={(name) => {
+              schliessen();
+              onEingetragen(name);
+            }}
             {...(anfang ? { anfang } : {})}
             unten={
               <Favorit
@@ -276,6 +288,7 @@ function Schnellzeile({
   mahlzeit,
   ohneZahlen,
   onOeffnen,
+  onEingetragen,
   ohneNetz,
 }: {
   zugang: Plattformzugang;
@@ -284,10 +297,11 @@ function Schnellzeile({
   mahlzeit: Mahlzeit;
   ohneZahlen: boolean;
   onOeffnen: (f: Lebensmittel) => void;
+  onEingetragen: (name: string) => void;
   /** Ohne Netz die Kennung des Satzes, der sagt, warum „+“ gesperrt ist. */
   ohneNetz?: string | undefined;
 }) {
-  const eintragen = useEintragen(zugang, s.food, tag, mahlzeit);
+  const eintragen = useEintragen(zugang, s.food, tag, mahlzeit, onEingetragen);
   const anfang = letzteMenge(s);
   const geprueft = anfang ? mengePruefen(s.food, anfang.einheit, anfang.wert) : null;
   const menge = geprueft && 'menge' in geprueft ? geprueft : null;
@@ -335,20 +349,21 @@ function Schnellzeile({
   );
 }
 
-/** Eintragen und zurück zum Tag - aus dem Fenster wie aus einer Zeile. */
-function useEintragen(zugang: Plattformzugang, f: Lebensmittel, tag: string, mahlzeit: Mahlzeit) {
-  const navigate = useNavigate();
+/** Eintragen und auf der Seite bleiben - aus dem Fenster wie aus einer Zeile. */
+function useEintragen(
+  zugang: Plattformzugang,
+  f: Lebensmittel,
+  tag: string,
+  mahlzeit: Mahlzeit,
+  onEingetragen: (name: string) => void,
+) {
   const queryClient = useQueryClient();
-  const { search } = useLocation();
   return useMutation({
     mutationFn: (angabe: Mengenangabe) =>
       tagebuchEintragen(zugang.access_id, tag, mahlzeit, f, angabe),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: tagebuchSchluessel(zugang.access_id) });
-      void navigate(zurueckZumTag(search, tag), {
-        replace: true,
-        state: { eingetragen: f.name },
-      });
+      onEingetragen(f.name);
     },
   });
 }
@@ -395,11 +410,13 @@ export function MengeWaehlen({
   anfang,
   ohneZahlen = false,
   unten,
+  onEingetragen,
 }: {
   zugang: Plattformzugang;
   f: Lebensmittel;
   tag: string;
   mahlzeit: Mahlzeit;
+  onEingetragen: (name: string) => void;
   /** Vorbelegung, etwa die Menge vom letzten Mal (ERN-008). */
   anfang?: { einheit: string; wert: string };
   ohneZahlen?: boolean;
@@ -410,7 +427,7 @@ export function MengeWaehlen({
   const [einheit, setEinheit] = useState(start.einheit);
   const [wert, setWert] = useState(start.wert);
   const [fehler, setFehler] = useState<string | undefined>();
-  const eintragen = useEintragen(zugang, f, tag, mahlzeit);
+  const eintragen = useEintragen(zugang, f, tag, mahlzeit, onEingetragen);
   const verbunden = useIstVerbunden();
   const ohneNetzId = useId();
   const geprueft = mengePruefen(f, einheit, wert);

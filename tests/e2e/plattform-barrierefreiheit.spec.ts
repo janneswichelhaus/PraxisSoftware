@@ -641,18 +641,16 @@ test.describe('Ernährung und Tagebuch', () => {
     return { x: b?.x ?? 0, y: b?.y ?? 0, breite: b?.width ?? 0, hoehe: b?.height ?? 0 };
   }
 
-  test('1280 px: Energie links, Wasser rechts, 48 dazwischen; Mahlzeiten über beide', async ({
-    page,
-  }) => {
+  test('1280 px: Mahlzeiten links, rechts Wasser über Energie, 48 dazwischen', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await oeffne(page, 'tagebuch', 'Tagebuch');
     const energie = await box(page, 'Energie und Nährstoffe');
     const wasser = await box(page, 'Wasser');
     const mahlzeiten = await box(page, 'Mahlzeiten');
-    expect(Math.abs(wasser.y - energie.y)).toBeLessThanOrEqual(1);
-    expect(wasser.x - (energie.x + energie.breite)).toBeCloseTo(48, 0);
-    expect(mahlzeiten.breite).toBeCloseTo(wasser.x + wasser.breite - energie.x, 0);
-    expect(mahlzeiten.y).toBeGreaterThan(energie.y + energie.hoehe);
+    expect(Math.abs(wasser.y - mahlzeiten.y)).toBeLessThanOrEqual(1);
+    expect(wasser.x - (mahlzeiten.x + mahlzeiten.breite)).toBeCloseTo(48, 0);
+    expect(Math.abs(energie.x - wasser.x)).toBeLessThanOrEqual(1);
+    expect(energie.y).toBeGreaterThan(wasser.y + wasser.hoehe);
     expect(
       (await page.locator('main > div').first().boundingBox())?.width ?? 0,
     ).toBeLessThanOrEqual(768.5);
@@ -661,6 +659,30 @@ test.describe('Ernährung und Tagebuch', () => {
     expect(await axeVerstoesse(page), 'axe').toEqual([]);
     expect(await ueberlaeuft(page)).toBe(false);
   });
+
+  // Praxis-Review Nr. 1 zu #333: Wer von „Heute eintragen“ kommt, sieht ohne Rollen, wo er einträgt.
+  for (const groesse of [undefined, 'sehr-gross'] as const) {
+    test(`375 × 812${groesse ? ' bei „Sehr groß“' : ''}: das Eintragen steht im ersten Bild`, async ({
+      page,
+    }) => {
+      if (groesse) {
+        await page.addInitScript((wert) => {
+          window.localStorage.setItem('plattform-schriftgroesse', wert);
+        }, groesse);
+      }
+      await page.setViewportSize({ width: 375, height: 812 });
+      await oeffne(page, 'tagebuch', 'Tagebuch');
+      const ziel = (await page
+        .getByRole('link', { name: /eintragen$/ })
+        .first()
+        .boundingBox())!;
+      // Die Reiterleiste klebt unten und deckt ab, was unter ihr liegt.
+      const leiste = await page.locator('nav.reiterleiste').boundingBox();
+      const unten = Math.min(812, leiste && leiste.height > 0 ? leiste.y : 812);
+      expect(ziel.y).toBeGreaterThanOrEqual(0);
+      expect(ziel.y + ziel.height).toBeLessThanOrEqual(unten);
+    });
+  }
 
   test('1280 px: die Ernährung einspaltig, die Hero-Karte „Heute“ zuerst', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });

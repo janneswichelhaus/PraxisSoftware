@@ -247,8 +247,9 @@ describe('Tagebuch auf der Plattform (Handoff 2026-10-29, 5.7)', () => {
     const nutzer = userEvent.setup();
     Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
     const { container } = renderWithProviders(<Tagebuch zugang={ZUGANG} />, ADRESSE);
-    const wasser = await screen.findByRole('region', { name: 'Wasser' });
-    expect(within(wasser).getByText('Eintragen geht wieder mit Verbindung.')).toBeVisible();
+    // Der Satz steht über den Mahlzeiten, dem ersten, was gesperrt ist.
+    const mahlzeiten = await screen.findByRole('region', { name: 'Mahlzeiten' });
+    expect(within(mahlzeiten).getByText('Eintragen geht wieder mit Verbindung.')).toBeVisible();
     for (const name of [
       GLAS,
       'Ein Glas weniger',
