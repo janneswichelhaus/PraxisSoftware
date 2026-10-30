@@ -203,7 +203,9 @@ describe('Termine (POR-008, Schritt 3b)', () => {
   it('sagt ohne kommende Termine, wie es weitergeht (Leerzustand)', async () => {
     ladeTermine.mockResolvedValue([PRAXIS_VERGANGEN]);
     renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine');
-    expect(await screen.findByText('Zurzeit ist kein Termin vereinbart.')).toBeInTheDocument();
+    const leer = await screen.findByText('Zurzeit ist kein Termin vereinbart.');
+    // Neben „Diese Woche“ und den Vergangenen in der Karte (DESIGN.md Regel 8).
+    expect(leer.parentElement!.className).toContain('rounded-card');
     expect(
       screen.getByText('Vereinbart die Praxis einen Termin mit Ihnen, finden Sie ihn hier.'),
     ).toBeInTheDocument();
