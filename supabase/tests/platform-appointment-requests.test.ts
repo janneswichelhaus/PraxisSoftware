@@ -19,7 +19,7 @@ import {
  * Monate nach der Antwort im Löschlauf.
  */
 
-const { users, platformAccesses, patients } = SEED;
+const { users, platformAccesses, patients, trainingRelationships } = SEED;
 const WUNSCH = `select public.request_platform_appointment($1::uuid, $2::date[], $3::text[], $4) as id`;
 const LISTE = 'select * from public.platform_appointment_requests($1::uuid)';
 const ZURUECK = 'select public.withdraw_platform_appointment_request($1::uuid, $2::uuid) as ok';
@@ -145,6 +145,69 @@ describe('request_platform_appointment (POR-009)', () => {
     expect(gesperrt?.message).toContain('not allowed');
     expect(await liste(users.plattformErika, z)).toEqual([]);
     expect(await liste(users.plattformTina, z)).toEqual([]);
+  });
+
+  it('in der Lesefrist kein neuer Wunsch; Lesen und Zurueckziehen bleiben (ANN-807)', async () => {
+    const z = platformAccesses.erikaBehandlung;
+    const offen = await wuenschen(users.plattformErika, z, [tagInTagen(3)]);
+    await asPostgres(
+      `update public.patients
+          set care_concluded_on = current_date - 2, care_concluded_at = now(),
+              care_concluded_by = $2::uuid
+        where id = $1`,
+      [patients.erika, users.therapist],
+    );
+    const neu = await abgefangen(
+      asUser(users.plattformErika, WUNSCH, [z, [tagInTagen(4)], ['morning'], null]),
+    );
+    expect((neu as { code?: string } | null)?.code).toBe('42501');
+    expect(await liste(users.plattformErika, z)).toEqual([
+      expect.objectContaining({ id: offen, status: 'open' }),
+    ]);
+    const { rows } = await asUserCommitted<{ ok: boolean }>(users.plattformErika, ZURUECK, [
+      z,
+      offen,
+    ]);
+    expect(rows[0]!.ok).toBe(true);
+  });
+
+  it('in der Lesefrist auch fuer die Begleitung und im Training kein neuer Wunsch', async () => {
+    await asPostgres(
+      `update public.patients
+          set care_concluded_on = current_date - 2, care_concluded_at = now(),
+              care_concluded_by = $2::uuid
+        where id = $1`,
+      [patients.max, users.therapist],
+    );
+    const begleitung = await abgefangen(
+      asUser(users.plattformPaula, WUNSCH, [
+        platformAccesses.paulaBegleitungMax,
+        [tagInTagen(4)],
+        [],
+        null,
+      ]),
+    );
+    expect((begleitung as { code?: string } | null)?.code).toBe('42501');
+    await asPostgres(
+      `update public.training_relationships set contract_ended_on = current_date, status = 'inactive'
+        where id = $1`,
+      [trainingRelationships.erika],
+    );
+    const training = await abgefangen(
+      asUser(users.plattformErika, WUNSCH, [
+        platformAccesses.erikaTraining,
+        [tagInTagen(4)],
+        [],
+        null,
+      ]),
+    );
+    expect((training as { code?: string } | null)?.code).toBe('42501');
+    // Die Behandlung derselben Person laeuft weiter: Dort geht der Wunsch (anderer Bereich, 4.8).
+    await wuenschen(users.plattformErika, platformAccesses.erikaBehandlung, [tagInTagen(4)]);
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.platform_appointment_requests',
+    );
+    expect(rows[0]!.n).toBe(1);
   });
 
   it('trennt die Bereiche: der Wunsch im Training steht nicht in der Behandlung (4.8)', async () => {

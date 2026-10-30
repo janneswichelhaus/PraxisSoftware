@@ -216,6 +216,34 @@ describe('request_platform_appointment_change (POR-010)', () => {
     expect(gesperrt?.message).toContain('not allowed');
   });
 
+  it('in der Lesefrist weder Aenderung noch Absage als Wunsch; keine Zeile (ANN-807)', async () => {
+    await asPostgres(
+      `update public.patients
+          set care_concluded_on = current_date - 2, care_concluded_at = now(),
+              care_concluded_by = $2::uuid
+        where id = $1`,
+      [patients.erika, users.therapist],
+    );
+    for (const art of ['change', 'cancel']) {
+      const fehler = await abgefangen(
+        asUser(users.plattformErika, AENDERN, [
+          ERIKA,
+          IN_DREI_TAGEN,
+          art,
+          art === 'change' ? [tagInTagen(5)] : [],
+          art === 'change' ? ['morning'] : [],
+          null,
+        ]),
+      );
+      expect((fehler as { code?: string } | null)?.code, art).toBe('42501');
+    }
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.platform_appointment_requests where appointment_id = $1',
+      [IN_DREI_TAGEN],
+    );
+    expect(rows[0]!.n).toBe(0);
+  });
+
   it('Begleitung darf fuer die Person absagen wollen; der Aufruf steht im Protokoll', async () => {
     const { rows } = await asUserCommitted<{ id: string }>(users.plattformPaula, AENDERN, [
       platformAccesses.paulaBegleitungMax,
