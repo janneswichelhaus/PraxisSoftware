@@ -521,6 +521,7 @@ function termineDerBehandlung(): Termin[] {
         t.id === TERMIN_HAUSBESUCH ? { ...t, starts_at: inStunden(2), ends_at: inStunden(3) } : t,
       );
     case 'termine-absage-angefragt':
+    case 'termine-absage-gesendet':
     case 'termin-absage-angefragt':
       return termine.map((t) =>
         t.id === TERMIN_HAUSBESUCH ? { ...t, open_request_kind: 'cancel' as const } : t,
@@ -532,7 +533,11 @@ function termineDerBehandlung(): Termin[] {
 function wuenscheDerBehandlung(): Terminwunsch[] {
   if (['termine-leer', 'termine-lesefrist', 'termine-lesefrist-begleitung'].includes(seite))
     return [];
-  if (seite === 'termine-absage-angefragt' || seite === 'termin-absage-angefragt') {
+  if (
+    seite === 'termine-absage-angefragt' ||
+    seite === 'termine-absage-gesendet' ||
+    seite === 'termin-absage-angefragt'
+  ) {
     return [
       {
         ...wuensche[0]!,
@@ -614,7 +619,8 @@ const einwilligungenBehandlung: Einwilligung[] = [
   { purpose: 'prescriber_report', state: 'open', occurred_on: null, source: null, can_grant: true },
   {
     purpose: 'patient_photos',
-    state: 'refused',
+    // ANN-814: Mit erteilter Einwilligung zeigt der Widerruf, was mit den Fotos geschieht.
+    state: seite === 'einwilligungen-fotos' ? 'granted' : 'refused',
     occurred_on: inTagen(-30, 12).slice(0, 10),
     source: 'practice',
     can_grant: true,
@@ -1819,6 +1825,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
         ),
       };
     case 'einwilligungen':
+    case 'einwilligungen-fotos':
     case 'daten':
     case 'einstellungen':
     case 'einstieg':
@@ -1826,6 +1833,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'termine':
     case 'termine-heute':
     case 'termine-absage-angefragt':
+    case 'termine-absage-gesendet':
     case 'termine-gesendet':
     case 'termine-leer':
     case 'termine-nur-wunsch':
@@ -1891,6 +1899,9 @@ function inhalt(): { pfad: string; element: ReactNode } {
         'termine-heute': '/p/termine?bereich=treatment',
         'termine-absage-angefragt': '/p/termine?bereich=treatment',
         'termine-gesendet': '/p/termine?bereich=treatment&gesendet=1',
+        // ANN-811: nach der Absage ihr Eingang am Server, die Kennung reist mit.
+        'termine-absage-gesendet':
+          '/p/termine?bereich=treatment&absage=dddddddd-dddd-4ddd-8ddd-0000000000f4',
         'termine-leer': '/p/termine?bereich=treatment',
         'termine-nur-wunsch': '/p/termine?bereich=treatment',
         'termine-laden': '/p/termine?bereich=treatment',
@@ -1911,6 +1922,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
         dokumente: '/p/dokumente?bereich=treatment',
         befundbogen: '/p/befundbogen?bereich=treatment',
         einwilligungen: '/p/einwilligungen?bereich=treatment',
+        'einwilligungen-fotos': '/p/einwilligungen?bereich=treatment',
         daten: '/p/daten?bereich=treatment',
         einstellungen: '/p/einstellungen',
         einstieg: '/p?bereich=treatment',
