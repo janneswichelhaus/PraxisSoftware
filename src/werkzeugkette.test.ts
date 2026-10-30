@@ -110,7 +110,19 @@ describe('Aufgeteilte Jobs in der CI', () => {
     expect(sammel).toContain(SKIP_NUR_BEI_DOKU('TEILE'));
   });
 
-  it('hält „Lint, Typecheck, Tests, Build“ unter seinem Namen; Lint und Typecheck laufen immer', () => {
+  /** Ein Schritt eines Jobs: von seinem `- name:` bis zum nächsten Schritt. */
+  function schritt(jobText: string, name: string): string {
+    const start = jobText.indexOf(`- name: ${name}\n`);
+    expect(start, `Schritt ${name} fehlt`).toBeGreaterThan(-1);
+    const rest = jobText.slice(start);
+    const ende = rest.slice(1).search(/\n\s+- (name|uses):/);
+    return ende === -1 ? rest : rest.slice(0, ende + 1);
+  }
+
+  /** Nur bei erkannter reiner Doku übersprungen; scheitert die Erkennung, läuft der Schritt. */
+  const AUSSER_BEI_DOKU = "if: ${{ needs.aenderungen.outputs.nur_doku != 'true' }}";
+
+  it('hält „Lint, Typecheck, Tests, Build“ unter seinem Namen; Lint und Typecheck außer bei reiner Doku', () => {
     const sammel = job('quality');
     expect(sammel).toContain('name: Lint, Typecheck, Tests, Build');
     expect(sammel).toContain('needs: [aenderungen, statisch, unit]');
@@ -118,22 +130,42 @@ describe('Aufgeteilte Jobs in der CI', () => {
     expect(sammel).toContain('test "$STATISCH" = success\n');
     expect(sammel).toContain(SKIP_NUR_BEI_DOKU('UNIT'));
 
+    // ADR-013 Fassung 8: Der Job läuft immer, auch wenn die Erkennung scheitert.
     const statisch = job('statisch');
-    for (const befehl of ['pnpm format:check', 'pnpm lint', 'pnpm docs:check', 'pnpm typecheck']) {
-      expect(statisch).toContain(`run: ${befehl}`);
+    expect(statisch).toContain('needs: aenderungen\n');
+    expect(statisch).toContain('if: ${{ !cancelled() }}');
+    for (const [name, befehl] of [
+      ['Format', 'pnpm format:check'],
+      ['Lint (inkl. statischer Sicherheitsanalyse)', 'pnpm lint'],
+      ['Typecheck', 'pnpm typecheck'],
+    ] as const) {
+      expect(schritt(statisch, name), name).toContain(AUSSER_BEI_DOKU);
+      expect(schritt(statisch, name), name).toContain(`run: ${befehl}`);
     }
-    expect(statisch).not.toContain('needs:');
+    // Bei reiner Doku prüft das Format genau die geänderten und neuen Dateien.
+    const doku = schritt(statisch, 'Format der geaenderten Dokumentation');
+    expect(doku).toContain("if: ${{ needs.aenderungen.outputs.nur_doku == 'true' }}");
+    expect(doku).toContain('git diff -z --name-only --diff-filter=AM "$BASIS...HEAD"');
+    expect(doku).toContain('pnpm exec prettier --check --');
+    // Immer, auch bei reiner Doku: Dokumentation, Kommentare und Dateinamen.
+    for (const name of [
+      'Dokumentation (Obergrenzen, Register-Anker, Links)',
+      'Kommentarregel (hoechstens drei Zeilen, keine Tickets)',
+      'Dateinamen ohne Kollision der Schreibweise',
+    ]) {
+      expect(schritt(statisch, name), name).not.toContain('if:');
+    }
     const unit = job('unit');
     expect(unit).toContain('run: pnpm test\n');
     expect(unit).toContain('run: pnpm exec vite build');
   });
 
-  it('überspringt bei reiner Dokumentation nur Tests, Build, Datenbank und E2E (ADR-013 Fassung 5)', () => {
+  it('überspringt bei reiner Dokumentation nur Lint, Typecheck, Tests, Build, Datenbank und E2E (ADR-013 Fassung 8)', () => {
     for (const id of ['unit', 'database-teil', 'e2e', 'e2e-supabase-teil']) {
       expect(job(id), id).toContain('needs: aenderungen\n');
       expect(job(id), id).toContain(NUR_OHNE_DOKU);
     }
-    for (const id of ['statisch', 'migrationen', 'security']) {
+    for (const id of ['migrationen', 'security']) {
       expect(job(id), id).not.toContain('aenderungen');
     }
     // Nur im Pull Request; auf main läuft nach dem Merge alles.

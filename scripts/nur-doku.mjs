@@ -1,36 +1,12 @@
 /**
- * Erkennt einen Pull Request, der nur Dokumentation ändert (ADR-013 Punkt 2,
- * Fassung 5).
- *
- * Ein solcher Pull Request durchläuft die Prüfungen, die Text lesen - Format,
- * Lint, Typecheck, Dokumentation, Secret Scanning, Dependency Audit, das
- * Migrationen-Gate -, aber nicht die Tests, den Build und die
- * Datenbankprüfungen: Deren Eingaben sind unverändert, ihr Ergebnis ist das
- * von `main`. Nach dem Merge läuft auf `main` immer alles.
- *
- * Dokumentation heißt hier eng: eine Markdown-Datei unter `docs/` oder im
- * Wurzelverzeichnis, die kein Test liest. Andere Dateien unter `docs/` gehören
- * nicht dazu - so liest `src/fortschritt.test.ts`
- * `docs/development/fortschritt.json`, und `src/quellen.test.ts` liest
- * `quellen/README.md`. Liest ein neuer Test eine Markdown-Datei, wird
- * `scripts/nur-doku.test.mjs` rot, bis sie in `VON_TESTS_GELESEN` steht.
- * Eine gelöschte Datei löst immer alles aus: Ein Test könnte prüfen, dass
- * sie da ist. Neue Dateien prüft `src/dateinamen.test.ts` auf Kollisionen der
- * Schreibweise; die CI führt ihn deshalb auch bei reiner Doku aus.
- *
- * Die CI führt dieses Skript in der Fassung des Zielbranchs aus: Ein Fehler,
- * den ein Pull Request hier einbaut, kann ihn nicht selbst als Doku einstufen.
- *
- * Bewusst ohne Abhängigkeiten, wie `migrationen-check.mjs`.
- *
- * Aufruf: `node scripts/nur-doku.mjs <basis>` - im Pull Request
- * `origin/<Zielbranch>`. Schreibt `nur_doku=true` oder `nur_doku=false` für
- * `$GITHUB_OUTPUT`. Im Zweifel `false`: Dann läuft alles.
+ * Erkennt einen Pull Request nur mit Doku (ADR-013 Punkt 2): Markdown unter `docs/` oder im
+ * Wurzelverzeichnis, das kein Test liest. Die CI nimmt die Fassung des Zielbranchs, damit sich kein
+ * Pull Request selbst so einstuft; im Zweifel `false`, dann läuft alles (`docs/DEVELOPMENT.md`).
  */
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
-/** Markdown, das Tests lesen: Eine Änderung daran ist nie „nur Doku“. */
+/** Markdown, das Tests lesen: nie „nur Doku“; liest ein neuer Test eines, wird `nur-doku.test.mjs` rot. */
 export const VON_TESTS_GELESEN = [
   // src/lib/protokoll.test.ts: die Verbotsliste der Betriebslogs
   'docs/adr/ADR-011-logging-and-observability.md',
@@ -52,6 +28,8 @@ export function istDoku(pfad) {
  *   geändert oder neu
  */
 export function nurDoku(aenderungen) {
+  // Gelöscht löst alles aus: Ein Test könnte prüfen, dass die Datei da ist. Neue Dateien prüft
+  // `src/dateinamen.test.ts` auf Kollisionen der Schreibweise, die CI auch bei reiner Doku.
   return (
     aenderungen.length > 0 &&
     aenderungen.every(({ status, pfad }) => (status === 'M' || status === 'A') && istDoku(pfad))
@@ -62,6 +40,7 @@ function git(...argumente) {
   return execFileSync('git', argumente, { encoding: 'utf8' });
 }
 
+// Aufruf: `node scripts/nur-doku.mjs <basis>`; schreibt `nur_doku=true|false` für `$GITHUB_OUTPUT`.
 function main() {
   const basisRef = process.argv[2] || 'origin/main';
   // Wie im Migrationen-Gate: gegen den gemeinsamen Vorfahren, nicht gegen
@@ -79,7 +58,7 @@ function main() {
   console.error(
     ergebnis
       ? `Nur Dokumentation (${pfade.length} Datei(en) gegen ${basis.slice(0, 7)}): ` +
-          'Tests, Build und Datenbankprüfungen entfallen.'
+          'Lint, Typecheck, Tests, Build und Datenbankprüfungen entfallen.'
       : `Nicht nur Dokumentation (${pfade.length} Datei(en) gegen ${basis.slice(0, 7)}): ` +
           'alle Prüfungen laufen.',
   );

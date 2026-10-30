@@ -50,9 +50,10 @@ mit dem Arbeitsbaum, je ohne und mit den Vorgaben von Supabase. Alte Migrationen
 **CI:** `pnpm test:db` läuft in vier Teilen (`--shard=<n>/4`), die E2E-Tests hinter der Anmeldung
 auch (ANN-571); die Pflichtchecks sind nur grün, wenn alle Teile es sind
 (`src/werkzeugkette.test.ts`). **Nur Doku:** Ändert ein Pull Request nur Markdown unter `docs/` oder
-im Wurzelverzeichnis, entfallen Tests, Build, Datenbank- und E2E-Prüfungen (ADR-013 Punkt 2,
-`scripts/nur-doku.mjs` in der Fassung des Zielbranchs); Markdown aus `VON_TESTS_GELESEN` und jede
-gelöschte Datei lösen alles aus, auf `main` läuft nach dem Merge alles.
+im Wurzelverzeichnis, entfallen Lint, Typecheck, Tests, Build, Datenbank- und E2E-Prüfungen, Prettier
+prüft nur die geänderten Dateien (ADR-013 Punkt 2, `scripts/nur-doku.mjs` in der Fassung des
+Zielbranchs); Markdown aus `VON_TESTS_GELESEN` und jede gelöschte Datei lösen alles aus, auf `main`
+läuft nach dem Merge alles.
 
 `scripts/test-db.sh` sucht den Server nur unter `/usr/lib/postgresql/*/bin` (Linux, WSL). **Niemals**
 `TEST_DATABASE_URL` auf einen Supabase-Stack richten (54322, 54339): Der Testlauf löscht die Schemata
