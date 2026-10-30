@@ -75,10 +75,6 @@ export function Gewohnheiten({ zugang }: { zugang: Plattformzugang }) {
         </div>
       ) : (
         <>
-          <p className="text-ink-muted mt-3 max-w-prose">
-            Tippen Sie die Tage an, an denen Sie es gemacht haben. Ein Tag ohne Haken ist einfach
-            ein Tag ohne Haken – es gibt keine Serie, die abreißt.
-          </p>
           {data.consent_needed && !begleitung ? (
             <div className="mt-4 flex flex-col items-start gap-1">
               <Statusmeldung>
@@ -107,6 +103,11 @@ export function Gewohnheiten({ zugang }: { zugang: Plattformzugang }) {
               />
             ))}
           </ul>
+          {/* Darunter, damit die erste Leiste auch bei „Sehr groß“ über den Reitern steht (ANN-800). */}
+          <p className="text-ink-muted mt-8 max-w-prose">
+            Tippen Sie die Tage an, an denen Sie es gemacht haben. Ein Tag ohne Haken ist einfach
+            ein Tag ohne Haken – es gibt keine Serie, die abreißt.
+          </p>
         </>
       )}
     </>

@@ -660,7 +660,7 @@ test.describe('Ernährung und Tagebuch', () => {
     expect(await ueberlaeuft(page)).toBe(false);
   });
 
-  // Praxis-Review Nr. 1 zu #333: Wer von „Heute eintragen“ kommt, sieht ohne Rollen, wo er einträgt.
+  // Wer von „Heute eintragen“ kommt, sieht ohne Rollen, wo er einträgt.
   for (const groesse of [undefined, 'sehr-gross'] as const) {
     test(`375 × 812${groesse ? ' bei „Sehr groß“' : ''}: das Eintragen steht im ersten Bild`, async ({
       page,
@@ -780,6 +780,27 @@ test.describe('Ernährung und Tagebuch', () => {
     await page.getByRole('link', { name: 'Snacks eintragen' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Snacks eintragen' })).toBeVisible();
     await expect(page.getByRole('link', { name: '← Tagebuch' })).toBeVisible();
+  });
+});
+
+test.describe('Gewohnheiten', () => {
+  // Ein Tipp einen Fingerbreit zu tief wechselte sonst die Seite, statt den Tag zu vermerken.
+  test('375 × 812 bei „Sehr groß“: die Tage der ersten Gewohnheit stehen über den Reitern', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+    });
+    await page.setViewportSize({ width: 375, height: 812 });
+    await oeffne(page, 'gewohnheiten', 'Gewohnheiten');
+    const tage = page.getByRole('group', { name: 'Nach dem Zähneputzen: zwei Minuten Mobilität' });
+    const letzter = (await tage.getByRole('button').last().boundingBox())!;
+    const leiste = await page.locator('nav.reiterleiste').boundingBox();
+    const unten = Math.min(812, leiste && leiste.height > 0 ? leiste.y : 812);
+    expect(letzter.y + letzter.height).toBeLessThanOrEqual(unten);
+    // Der feste Satz steht unverändert, jetzt unter den Gewohnheiten.
+    const satz = await page.getByText(/^Tippen Sie die Tage an/).boundingBox();
+    expect(satz!.y).toBeGreaterThan(letzter.y);
   });
 });
 
