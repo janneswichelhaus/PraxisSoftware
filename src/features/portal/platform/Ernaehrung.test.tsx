@@ -128,7 +128,7 @@ function ernaehrung(
     today: HEUTE,
     can_write: true,
     can_grant: false,
-    wording_version: '2026-10',
+    wording_version: '2026-11',
     target_weight_floor_kg: 52.3,
     profile: {
       started_on: '2026-09-27',

@@ -28,7 +28,7 @@ import {
 const { users, platformAccesses } = SEED;
 const ZUGANG = platformAccesses.erikaBehandlung;
 const PROFIL = 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001';
-const FASSUNG = '2026-10';
+const FASSUNG = '2026-11';
 const WAEHLEN = 'select public.set_platform_diary_reminders($1::uuid, $2::jsonb, $3, $4)';
 const LESEN = 'select public.platform_diary_reminders($1::uuid) as d';
 const ANLEGEN = 'select public.enqueue_nutrition_diary_reminders() as n';

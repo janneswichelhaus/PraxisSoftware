@@ -32,7 +32,7 @@ const GEWICHT = 'select public.record_platform_nutrition_weight($1::uuid, $2::da
 const ZIELGEWICHT = 'select public.set_platform_nutrition_target_weight($1::uuid, $2::numeric)';
 const TAGEBUCH = 'select public.set_platform_nutrition_diary($1::uuid, $2)';
 const EINWILLIGUNG = 'select public.record_platform_nutrition_consent($1::uuid, $2, $3) as id';
-const FASSUNG = '2026-10';
+const FASSUNG = '2026-11';
 
 interface Sicht {
   today: string;

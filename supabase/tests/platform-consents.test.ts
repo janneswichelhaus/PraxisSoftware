@@ -24,7 +24,7 @@ import { tageweise } from './helpers/wiederherstellung';
 const { users, platformAccesses, patients, organizationId, trainingRelationships } = SEED;
 const ERIKA = platformAccesses.erikaBehandlung;
 const PAULA = platformAccesses.paulaBegleitungMax;
-const FASSUNG = '2026-10';
+const FASSUNG = '2026-11';
 
 const BERND = 'cafecafe-cafe-4afe-8afe-0000000000d1';
 const KONTO_BERND = '99999999-9999-4999-8999-0000000000d1';

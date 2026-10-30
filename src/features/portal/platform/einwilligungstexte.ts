@@ -17,7 +17,7 @@
  * Geprüft wird der Wortlaut mit der Datenschutzberatung (B2) vor dem
  * Scharfschalten; bis dahin ist er ein Entwurf.
  */
-export const EINWILLIGUNGSFASSUNG = '2026-10';
+export const EINWILLIGUNGSFASSUNG = '2026-11';
 
 export const PLATTFORM_ZWECKE = {
   treatment: ['email_contact', 'prescriber_report', 'patient_photos', 'message_attachments'],
@@ -55,7 +55,10 @@ export const EINWILLIGUNGSTEXTE: Record<Plattformzweck, Einwilligungstext> = {
       'Das Praxisteam darf während der Behandlung Fotos machen, zum Beispiel von einer Narbe oder ' +
       'einer Schwellung. Die Fotos dienen dem Vergleich im Verlauf. Sie werden nicht ' +
       'weitergegeben und spätestens nach zwölf Monaten gelöscht.',
-    widerruf: 'Die Praxis löscht dann sofort alle Fotos, die sie von Ihnen hat.',
+    // Nur die Arbeitshilfe fällt mit dem Widerruf, Dokumentationsfotos gehören zur Akte (ANN-814).
+    widerruf:
+      'Die Praxis löscht dann sofort alle Fotos, die als Arbeitshilfe entstanden sind; Fotos der ' +
+      'Behandlungsdokumentation bleiben in der Akte.',
   },
   // KOM-005 (ADR-017 Punkte 61 bis 67, ANN-333): angeboten, wenn die Person
   // zum ersten Mal etwas an eine Frage hängen will.

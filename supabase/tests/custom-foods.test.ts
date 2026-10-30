@@ -28,7 +28,7 @@ const PROFIL = 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001';
 const SPEICHERN = 'select public.save_practice_food($1::uuid, $2::jsonb, $3::timestamptz) as id';
 const PLATTFORM_SPEICHERN = 'select public.save_platform_food($1::uuid, $2::uuid, $3::jsonb) as id';
 const PLATTFORM_LOESCHEN = 'select public.delete_platform_food($1::uuid, $2::uuid)';
-const FASSUNG = '2026-10';
+const FASSUNG = '2026-11';
 
 const MUESLI = {
   name: 'Praxismüsli',

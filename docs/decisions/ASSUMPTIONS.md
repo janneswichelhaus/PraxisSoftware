@@ -868,6 +868,10 @@ Datenschutz · entschieden (Jannes) · 2026-10-27 · Jannes · Prüfpaket · Wie
 Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung\
 **Annahme.** Die Praxis erteilt die Auskunft auch je Trainingsverhältnis: nur owner, auf Knopfdruck, als eigene Kopie ohne interne Kennungen. Geprüft und protokolliert wird sie wie die zur Akte, ein Eintrag `patient_record.exported` je Kopie. **Grundlage.** Art. 15 DSGVO; ADR-021 (eigenes Rechtsverhältnis mit eigener Kopie); Entscheidung Jannes 2026-10-18. **Anker.** `public.export_training_record`. **Rücknahme.** Mit der Auskunft zur Akte zusammenlegen · Aufwand `mittel`.
 
+### ANN-814 — Widerruf zu Fotos: Arbeitshilfen fallen, Dokumentationsfotos bleiben in der Akte
+Datenschutz · entschieden (Jannes) · 2026-10-30 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)\
+**Annahme.** Zum Widerruf der Fotos sagt die Plattform: „Die Praxis löscht dann sofort alle Fotos, die als Arbeitshilfe entstanden sind; Fotos der Behandlungsdokumentation bleiben in der Akte.“ Fassung `2026-11`, ältere weist der Server ab (ANN-262). **Grundlage.** ADR-017 Punkte 36, 45 und 46; Art. 7 Abs. 3, Art. 17 Abs. 3 lit. b DSGVO; BEF-142; Entscheidung Jannes 2026-10-30. **Anker.** `EINWILLIGUNGSTEXTE` in `src/features/portal/platform/einwilligungstexte.ts`. **Rücknahme.** Wortlaut und Fassung an beiden Stellen · Aufwand `klein`.
+
 ## Fachregeln
 ### ANN-042 — Ausgeschöpft ist eine Verordnung, wenn ihre möglichen Termine genutzt sind
 Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: —\

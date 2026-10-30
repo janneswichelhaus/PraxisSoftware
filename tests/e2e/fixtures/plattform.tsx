@@ -1468,7 +1468,7 @@ client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
   },
   can_grant: false,
   can_write: true,
-  wording_version: '2026-10',
+  wording_version: '2026-11',
   target_weight_floor_kg: 52.3,
 } satisfies EigeneErnaehrung);
 // Schritt 1e: im Training dieselbe Beratung mit Tagebuch (ADR-027 Punkt 1:
