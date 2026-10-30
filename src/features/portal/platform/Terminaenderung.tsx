@@ -156,14 +156,15 @@ function Aenderungsablauf({
         notiz,
       }),
     onSuccess: async (wunschId) => {
-      // Erst neu laden, dann zur Liste: Dort trägt der Termin schon den Wunsch, und nach einer
-      // Absage steht ihr Eingang am Server gleich oben (ANN-811). Scheitert das Laden, lädt die
-      // Liste selbst.
+      // Erst neu laden, dann zur Liste (ANN-811): Dort trägt der Termin schon den Wunsch, und der
+      // Eingang der Absage steht gleich oben. `staleTime: 0`, sonst gälte der alte Stand als frisch;
+      // scheitert das Laden, lädt die Liste selbst.
       freigeben();
       await Promise.all([
         queryClient.fetchQuery({
           queryKey: wuenscheSchluessel(zugang.access_id),
           queryFn: () => ladeWuensche(zugang.access_id),
+          staleTime: 0,
         }),
         queryClient.invalidateQueries({ queryKey: termineSchluessel(zugang.access_id) }),
       ]).catch(() => undefined);

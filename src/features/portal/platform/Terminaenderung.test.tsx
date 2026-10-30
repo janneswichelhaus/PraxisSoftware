@@ -21,18 +21,20 @@ import { renderWithProviders } from '@/test-utils';
  */
 
 const ladeTermine = vi.fn();
+const ladeWuensche = vi.fn();
 const terminAendernWuenschen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladeTermine: (...args: unknown[]) => ladeTermine(...args) as Promise<Termin[]>,
   // Die Seite des Termins fragt die Wünsche nach dem offenen.
-  ladeWuensche: () => Promise.resolve([]),
+  ladeWuensche: (...args: unknown[]) => ladeWuensche(...args) as Promise<unknown[]>,
   terminAendernWuenschen: (...args: unknown[]) =>
     terminAendernWuenschen(...args) as Promise<string>,
 }));
 
 const { Terminaenderung } = await import('./Terminaenderung');
+const { wuenscheSchluessel } = await import('./api');
 const { WUNSCHTAGE } = await import('./terminablauf');
 const { terminKurz } = await import('./terminbeschreibung');
 const { tagInWorten, vonBis } = await import('./termintexte');
@@ -140,6 +142,7 @@ function folgt(vorher: Element, nachher: Element): boolean {
 beforeEach(() => {
   vi.clearAllMocks();
   terminAendernWuenschen.mockResolvedValue('dddddddd-dddd-4ddd-8ddd-000000000001');
+  ladeWuensche.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -203,9 +206,27 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
     );
   });
 
-  it('lädt nach dem Senden erst neu und geht dann zur Liste: der Wunsch steht dort schon (ANN-811)', async () => {
+  it('lädt nach dem Senden Wünsche und Termine neu, dann erst zur Liste (ANN-811)', async () => {
     const nutzer = userEvent.setup();
-    zeige(TERMIN, ABSAGEN);
+    ladeTermine.mockResolvedValue([TERMIN]);
+    // Wie in der App gilt Geladenes 30 Sekunden als frisch und bleibt im Speicher; die Wünsche kennt
+    // die Seite des Termins schon.
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
+    });
+    queryClient.setQueryData(wuenscheSchluessel(ZUGANG.access_id), []);
+    const router = createMemoryRouter(
+      [
+        { path: '/p/termine/:terminId', element: <Terminaenderung zugang={ZUGANG} /> },
+        { path: '*', element: <Ort /> },
+      ],
+      { initialEntries: [ABSAGEN] },
+    );
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
     await nutzer.click(await screen.findByRole('button', { name: 'Verstanden, weiter' }));
     let geladen: (termine: Termin[]) => void = () => undefined;
     ladeTermine.mockImplementationOnce(
@@ -216,13 +237,14 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
     );
     await nutzer.click(await screen.findByRole('button', { name: 'Absage senden' }));
     await waitFor(() => expect(ladeTermine).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(ladeWuensche).toHaveBeenCalledTimes(1));
     // Solange die Liste lädt, bleibt der Ablauf beim Senden stehen.
     expect(screen.getByRole('button', { name: /Wird gesendet/ })).toBeInTheDocument();
-    expect(screen.getByTestId('ort')).toHaveTextContent(ABSAGEN);
+    expect(`${router.state.location.pathname}${router.state.location.search}`).toBe(ABSAGEN);
     act(() => geladen([{ ...TERMIN, open_request_kind: 'cancel' }]));
     await waitFor(() =>
-      expect(screen.getByTestId('ort')).toHaveTextContent(
-        /^\/p\/termine\?bereich=treatment&absage=dddddddd-dddd-4ddd-8ddd-000000000001$/,
+      expect(router.state.location.search).toBe(
+        '?bereich=treatment&absage=dddddddd-dddd-4ddd-8ddd-000000000001',
       ),
     );
   });
