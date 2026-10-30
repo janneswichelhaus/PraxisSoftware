@@ -131,6 +131,9 @@ const zugaenge: Plattformzugang[] = [
   },
 ];
 
+/** `&ein-bereich`: nur die Behandlung, ohne Bereichsschalter - so wie bei den meisten Patient:innen. */
+const sichtbareZugaenge = parameter.has('ein-bereich') ? [zugaenge[0]!] : zugaenge;
+
 /** POR-005: eine aktive Begleitung und eine eingeladene Betreuung. */
 const vertretungen: Vertretung[] = [
   {
@@ -1924,7 +1927,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
         pfad: pfade[seite]!,
         element: (
           <PlattformApp
-            zugaenge={zugaenge}
+            zugaenge={sichtbareZugaenge}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />

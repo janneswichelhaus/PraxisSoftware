@@ -407,15 +407,22 @@ function Liste({
       </div>
     );
   }
-  // Am Telefon steht der Knopf unter den kommenden Terminen, mit dem Daumen erreichbar; ist schon
-  // ein Wunsch unterwegs, unter den Wünschen.
+  // Die Handlung vor dem Inhalt: Der Knopf steht direkt unter der Hero-Karte, ohne Rollen erreichbar
+  // (ANN-804); ist schon ein Wunsch unterwegs und kein Termin da, unter den Wünschen.
   return (
     <div className={`flex flex-col ${rechner ? 'max-w-spalte gap-12' : 'gap-10'}`}>
-      {hauptsache}
+      {nurWunsch || knopfImLeerzustand || !knopf ? (
+        hauptsache
+      ) : (
+        // Karte und ihr Knopf gehören zusammen: 16 statt des Abstands zwischen Abschnitten.
+        <div className="flex flex-col gap-4">
+          {hauptsache}
+          {knopf}
+        </div>
+      )}
       {/* Vor dem Vergangenen, ohne Rollen erreichbar: Der Satz der Lesefrist verweist hierher. */}
       {lesefrist ? <PraxisErreichen zugang={zugang} mit={mit} lesefrist /> : null}
       {weitereAbschnitt}
-      {nurWunsch || knopfImLeerzustand ? null : knopf}
       {wuenscheAbschnitt}
       {nurWunsch ? knopf : null}
       {woche}

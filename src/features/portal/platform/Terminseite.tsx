@@ -44,7 +44,7 @@ import { kuenftig } from './zeit';
 
 /**
  * Die Seite eines Termins, Ziel jeder Terminzeile (ANN-776). Ändern und Absagen beginnen hier und
- * öffnen den Ablauf mit `?art=` (ANN-778), in der Reihenfolge des Handoffs (ANN-781). Jeder
+ * öffnen den Ablauf mit `?art=` (ANN-778); die Handlung steht vor „Wer und wo“ (ANN-804). Jeder
  * Abschnitt steht allein in seinem Block, sonst zählte sein Abstand doppelt.
  */
 export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
@@ -131,7 +131,7 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
           }}
         />
       ) : null}
-      <WerUndWo termin={termin} vertretung={vertretung} jetzt={jetzt} />
+      {/* Die Handlung vor dem Inhalt: bei 375 × 667 ohne Rollen erreichbar, auch unter 24 Stunden. */}
       {kommend && termin.open_request_kind ? (
         <OffenerWunsch zugang={zugang} termin={termin} wunsch={wunsch} verbunden={verbunden} />
       ) : kommend ? (
@@ -143,6 +143,7 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
           rechner={rechner}
         />
       ) : null}
+      <WerUndWo termin={termin} vertretung={vertretung} jetzt={jetzt} />
       {lesefrist && !zugang.practice_phone ? null : (
         <div>
           <FragenZumTermin

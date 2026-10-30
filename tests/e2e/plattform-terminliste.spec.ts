@@ -193,6 +193,19 @@ async function angeschnitten(page: Page): Promise<string[]> {
   });
 }
 
+/**
+ * Steht das Ziel bei 375 px ganz im ersten Bild? Die Reiterleiste klebt unten und deckt ab, was
+ * unter ihr liegt (Handlung vor Inhalt, ANN-804).
+ */
+async function imErstenBild(page: Page, name: string, hoehe = 667): Promise<boolean> {
+  await page.setViewportSize({ width: 375, height: hoehe });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const ziel = await page.locator('main').getByRole('link', { name, exact: true }).boundingBox();
+  const leiste = await page.locator('nav.reiterleiste').boundingBox();
+  const unten = Math.min(hoehe, leiste && leiste.height > 0 ? leiste.y : hoehe);
+  return ziel !== null && ziel.y >= 0 && ziel.y + ziel.height <= unten;
+}
+
 async function axeVerstoesse(page: Page): Promise<string[]> {
   await page.addScriptTag({ path: AXE });
   return page.evaluate(async () => {
@@ -271,11 +284,11 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     await expect(weitere.getByRole('link')).toHaveCount(1);
     await expect(weitere.getByRole('link')).toHaveAccessibleName(/, Änderung angefragt$/);
     expect((await weitere.getByRole('link').boundingBox())?.height).toBeGreaterThanOrEqual(80);
-    // Der Knopf unter den kommenden Terminen, mit dem Daumen erreichbar.
+    // Die Handlung vor dem Inhalt: der Knopf direkt unter der Hero-Karte, vor den Weiteren (ANN-804).
     const knopf = page.getByRole('link', { name: 'Termin wünschen' });
-    expect((await knopf.boundingBox())?.y ?? 0).toBeGreaterThan(
-      (await weitere.boundingBox())?.y ?? 0,
-    );
+    const hero = page.getByRole('region', { name: /^Besuch / });
+    expect((await knopf.boundingBox())?.y ?? 0).toBeLessThan((await weitere.boundingBox())?.y ?? 0);
+    expect((await knopf.boundingBox())?.y ?? 0).toBeGreaterThan((await hero.boundingBox())?.y ?? 0);
     await page.locator('main summary', { hasText: 'Vergangene Termine' }).click();
     const vergangene = page.getByRole('list', { name: 'Vergangene Termine' });
     await expect(vergangene.getByRole('link')).toHaveCount(2);
@@ -437,6 +450,25 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     await expect(weitere.getByRole('link').last()).toHaveAccessibleName(/Training/);
   });
 
+  // Mit einem Bereich bei 375 × 667, mit Bereichsschalter bei 375 × 812. Als Begleitung (Schalter,
+  // Band und Name in drei Zeilen) steht der Knopf auch bei 812 erst nach kurzem Rollen.
+  for (const [seite, hoehe] of [
+    ['termine&ein-bereich', 667],
+    ['termine-heute&ein-bereich', 667],
+    ['termine-absage-angefragt&ein-bereich', 667],
+    ['termine-leer&ein-bereich', 667],
+    ['termine-leer', 667],
+    ['termine', 812],
+    ['termine-training', 812],
+  ] as const) {
+    test(`${seite}: „Termin wünschen“ steht bei 375 × ${hoehe} ohne Rollen unter der Hauptsache (ANN-804)`, async ({
+      page,
+    }) => {
+      await oeffne(page, seite, 375);
+      expect(await imErstenBild(page, 'Termin wünschen', hoehe)).toBe(true);
+    });
+  }
+
   test('Absage zum nächsten Termin angefragt: die Karte bleibt, der Wunsch steht darunter', async ({
     page,
   }) => {
@@ -537,6 +569,23 @@ test.describe('Seite des Termins (Schritt 3c)', () => {
     await page.getByRole('link', { name: 'Termin ändern' }).click();
     await expect(page.getByRole('dialog', { name: 'Wann passt es Ihnen?' })).toBeVisible();
   });
+
+  for (const seite of ['termin', 'termin&kurzfristig']) {
+    test(`${seite}: Ändern und Absagen stehen bei 375 × 667 ohne Rollen vor „Wer und wo“ (ANN-804)`, async ({
+      page,
+    }) => {
+      await oeffneTermin(page, seite, 375);
+      expect(await imErstenBild(page, 'Termin ändern'), 'Termin ändern').toBe(true);
+      expect(await imErstenBild(page, 'Termin absagen'), 'Termin absagen').toBe(true);
+      const absagen = (await page.getByRole('link', { name: 'Termin absagen' }).boundingBox())!;
+      const werUndWo = (await page
+        .locator('main')
+        .getByText('Anna Beispiel')
+        .first()
+        .boundingBox())!;
+      expect(absagen.y).toBeLessThan(werUndWo.y);
+    });
+  }
 
   test('unter 24 Stunden: die Warnung über den Knöpfen, fett, mit Zeichen', async ({ page }) => {
     await oeffneTermin(page, 'termin&kurzfristig', 375);
