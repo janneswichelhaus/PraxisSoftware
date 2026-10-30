@@ -85,7 +85,7 @@ describe('Stufe der Reiterleiste (ANN-679)', () => {
     const leiste = screen.getByRole('navigation', { name: 'Plattform' });
     expect(leiste).toHaveAttribute('data-stufe', '1');
 
-    // „Sehr groß“: Die Messreihe wird breiter als die Leiste.
+    // Eine breitere Schrift des Systems: Die Messreihe wird breiter als die Leiste.
     breiten = { woerter: 410, leiste: 367 };
     act(() => melden?.());
     expect(leiste).toHaveAttribute('data-stufe', '2');
@@ -106,6 +106,18 @@ describe('Stufe der Reiterleiste (ANN-679)', () => {
     breiten = { woerter: 330, leiste: 640 };
     act(() => melden?.());
     expect(leiste).toHaveAttribute('data-stufe', '1');
+  });
+
+  it('hält das Wort in Leiste und Messreihe bei 18 px, auch bei „Sehr groß“ (ANN-815)', () => {
+    renderWithProviders(<Reiterleiste bereiche={[BEHANDLUNG]} />, '/p');
+    const leiste = screen.getByRole('navigation', { name: 'Plattform' });
+    for (const ziel of within(leiste).getAllByRole('link')) {
+      expect(ziel).toHaveClass('text-[18px]', 'min-h-[68px]');
+      expect(ziel.querySelector('svg')).toHaveClass('size-[24px]');
+    }
+    for (const wort of document.querySelectorAll('ul.w-max > li')) {
+      expect(wort).toHaveClass('text-[18px]', 'font-bold');
+    }
   });
 
   it('liest die Messreihe Vorlesesoftware nicht vor', () => {
