@@ -1731,7 +1731,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-28",
           "nachweis": "#326",
-          "vermerk": "Zusatzauftrag Jannes 27.10.2026; Abkürzung für reine Doku offen (ADR-013 Punkt 2)"
+          "vermerk": "Zusatzauftrag Jannes 27.10.2026"
         },
         {
           "id": "drp-epic-011",
@@ -1798,8 +1798,17 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-30",
-          "nachweis": "Branch ccr-4b4adbb9-mbg1ac",
+          "nachweis": "#334",
           "vermerk": "ANN-803 bis ANN-808; BEF-222 erledigt; Pfad A"
+        },
+        {
+          "id": "drp-epic-017",
+          "name": "DRP-EPIC-017 Plattform: Lesefrist vom Server, Antworten zu #326, #333, #334",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-30",
+          "nachweis": "Branch ccr-5fca130a-l8m9q8",
+          "vermerk": "ANN-809 bis ANN-814; ADR-013 Fassung 8; Pfad A"
         },
         {
           "id": "bef-223",

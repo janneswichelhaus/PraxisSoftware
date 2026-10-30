@@ -57,8 +57,9 @@ test('per Suche in höchstens fünf Tipps plus Text; der Tag rechnet mit', async
   // Vorbelegt: die erste Portion mal eins - die Energie steht vor dem Eintragen.
   await expect(page.getByRole('dialog').getByText('105 kcal')).toBeVisible();
   await z.tippe(page.getByRole('dialog').getByRole('button', { name: 'Eintragen' }));
-  // Die Seite bleibt für das Nächste (Frage 4 zu #333); zurück zum Tag zählt mit.
-  await expect(page.getByText('„Vollkornbrot“ eingetragen.')).toBeVisible();
+  // Die Seite bleibt für das Nächste (Frage 4 zu #333); vorgelesen wird der Satz, zu sehen ist
+  // der Haken an der Zeile (ANN-813). Zurück zum Tag zählt mit.
+  await expect(page.getByText('„Vollkornbrot“ eingetragen.')).toHaveClass(/sr-only/);
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await z.tippe(page.getByRole('link', { name: '← Tagebuch' }));
   await expect(page.getByRole('heading', { name: 'Tagebuch', level: 1 })).toBeVisible();
@@ -137,8 +138,12 @@ test('aus „zuletzt“ in höchstens drei Tipps, mit der Menge vom letzten Mal'
   const z = zaehler();
   await z.tippe(page.getByRole('link', { name: 'Snacks eintragen' }));
   // „+“ an der Zeile trägt die Menge vom letzten Mal ein (Seed: 1 Banane).
-  await z.tippe(page.getByRole('button', { name: /^Banane roh eintragen \(1 Stück/ }));
-  await expect(page.getByText('„Banane roh“ eingetragen.')).toBeVisible();
+  const plus = page.getByRole('button', { name: /^Banane roh eintragen \(1 Stück/ });
+  await z.tippe(plus);
+  // Der Haken am „+“, der Fokus bleibt dort; vorgelesen wird der Satz (ANN-813).
+  await expect(page.getByText('„Banane roh“ eingetragen.')).toHaveClass(/sr-only/);
+  await expect(plus.locator('svg')).toBeVisible();
+  await expect(plus).toBeFocused();
   // Zurück zum Tag zählt mit; dort steht die Banane unter „Snacks“.
   await z.tippe(page.getByRole('link', { name: '← Tagebuch' }));
   await expect(page.getByRole('button', { name: /^Banane roh/ }).first()).toBeVisible();

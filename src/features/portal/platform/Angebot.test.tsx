@@ -32,6 +32,7 @@ const ZUGANG: Plattformzugang = {
   relationship_kind: 'treatment',
   status: 'active',
   readable: true,
+  writable: true,
   read_until: '2026-11-06',
   access_kind: 'self',
   represented_name: null,

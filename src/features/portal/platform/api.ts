@@ -38,6 +38,11 @@ const kontextSchema = z.object({
   relationship_kind: z.enum(['treatment', 'training']),
   status: z.enum(['active', 'locked']),
   readable: z.boolean(),
+  /**
+   * Darf dieser Zugang noch schreiben? Nicht in der Lesefrist, für jede Art des Zugangs (ANN-809);
+   * am Server dieselbe Prüfung wie jeder Schreibweg (`app.platform_access_writable`).
+   */
+  writable: z.boolean(),
   read_until: z.string().nullable(),
   /** POR-006: eigener Zugang oder Vertretung (ADR-023 Punkt 13). */
   access_kind: z.enum(['self', 'legal_representative', 'companion']),

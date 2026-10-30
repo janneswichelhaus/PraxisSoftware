@@ -110,6 +110,7 @@ const zugaenge: Plattformzugang[] = [
     relationship_kind: 'treatment',
     status: 'active',
     readable: true,
+    writable: true,
     read_until: null,
     access_kind: 'self',
     represented_name: null,
@@ -123,6 +124,7 @@ const zugaenge: Plattformzugang[] = [
     relationship_kind: 'training',
     status: 'active',
     readable: true,
+    writable: true,
     read_until: null,
     access_kind: 'self',
     represented_name: null,
@@ -508,6 +510,8 @@ function termineDerBehandlung(): Termin[] {
   switch (seite) {
     case 'uebersicht-lesefrist':
     case 'termine-lesefrist':
+    case 'uebersicht-lesefrist-begleitung':
+    case 'termine-lesefrist-begleitung':
     case 'termine-leer':
       return vergangeneTermine;
     case 'termine-nur-wunsch':
@@ -517,6 +521,7 @@ function termineDerBehandlung(): Termin[] {
         t.id === TERMIN_HAUSBESUCH ? { ...t, starts_at: inStunden(2), ends_at: inStunden(3) } : t,
       );
     case 'termine-absage-angefragt':
+    case 'termine-absage-gesendet':
     case 'termin-absage-angefragt':
       return termine.map((t) =>
         t.id === TERMIN_HAUSBESUCH ? { ...t, open_request_kind: 'cancel' as const } : t,
@@ -526,8 +531,13 @@ function termineDerBehandlung(): Termin[] {
   }
 }
 function wuenscheDerBehandlung(): Terminwunsch[] {
-  if (seite === 'termine-leer' || seite === 'termine-lesefrist') return [];
-  if (seite === 'termine-absage-angefragt' || seite === 'termin-absage-angefragt') {
+  if (['termine-leer', 'termine-lesefrist', 'termine-lesefrist-begleitung'].includes(seite))
+    return [];
+  if (
+    seite === 'termine-absage-angefragt' ||
+    seite === 'termine-absage-gesendet' ||
+    seite === 'termin-absage-angefragt'
+  ) {
     return [
       {
         ...wuensche[0]!,
@@ -609,7 +619,8 @@ const einwilligungenBehandlung: Einwilligung[] = [
   { purpose: 'prescriber_report', state: 'open', occurred_on: null, source: null, can_grant: true },
   {
     purpose: 'patient_photos',
-    state: 'refused',
+    // ANN-814: Mit erteilter Einwilligung zeigt der Widerruf, was mit den Fotos geschieht.
+    state: seite === 'einwilligungen-fotos' ? 'granted' : 'refused',
     occurred_on: inTagen(-30, 12).slice(0, 10),
     source: 'practice',
     can_grant: true,
@@ -695,11 +706,11 @@ const abo: Nachsorgeabo = {
   cancelled_via: null,
   can_cancel: true,
 };
-// Schritt 1e: In der Lesefrist läuft kein Abo mehr - mit laufendem Abo ist
-// keine Lesefrist (ANN-274, `inLesefrist`).
+// Schritt 1e: In der Lesefrist läuft kein Abo mehr - ob sie gilt, sagt der Server mit `writable`
+// (ANN-274, ANN-809).
 client.setQueryData(
   aboSchluessel(zugaenge[0]!.access_id),
-  seite === 'uebersicht-lesefrist' || seite === 'termine-lesefrist'
+  ['uebersicht-lesefrist', 'termine-lesefrist', 'fragebogen-lesefrist'].includes(seite)
     ? null
     : seite === 'abo-gekuendigt'
       ? {
@@ -821,16 +832,21 @@ client.setQueryData(
   vertragSchluessel(zugaenge[1]!.access_id),
   seite === 'vertrag' ? trainingsvertrag : null,
 );
-// Der Besuch bei Maximilian - an seiner Anschrift, nicht an Erikas.
-client.setQueryData(termineSchluessel(begleitung.access_id), [
-  {
-    ...termine[0]!,
-    visit_street: 'Lindenweg',
-    visit_house_number: '3',
-    visit_postal_code: '72070',
-    visit_city: 'Tübingen',
-  },
-]);
+// Der Besuch bei Maximilian - an seiner Anschrift, nicht an Erikas; in der Lesefrist vergangen.
+client.setQueryData(
+  termineSchluessel(begleitung.access_id),
+  seite === 'uebersicht-lesefrist-begleitung' || seite === 'termine-lesefrist-begleitung'
+    ? vergangeneTermine
+    : [
+        {
+          ...termine[0]!,
+          visit_street: 'Lindenweg',
+          visit_house_number: '3',
+          visit_postal_code: '72070',
+          visit_city: 'Tübingen',
+        },
+      ],
+);
 client.setQueryData(wuenscheSchluessel(begleitung.access_id), []);
 client.setQueryData(rechnungenSchluessel(begleitung.access_id), []);
 client.setQueryData(befundbogenSchluessel(begleitung.access_id), []);
@@ -1062,6 +1078,12 @@ if (seite === 'fragebogen-thema') {
   const bisher = BOGEN_ANTWORTEN.slice(0, Number(parameter.get('thema') ?? '3') - 1);
   client.setQueryData(befundbogenSchluessel(zugaenge[0]!.access_id), [
     bogen(Object.assign({}, ...bisher) as Record<string, unknown>),
+  ]);
+}
+// ANN-810: In der Lesefrist steht der angefangene Entwurf nur noch zum Verwerfen da.
+if (seite === 'fragebogen-lesefrist') {
+  client.setQueryData(befundbogenSchluessel(zugaenge[0]!.access_id), [
+    bogen(Object.assign({}, ...BOGEN_ANTWORTEN.slice(0, 4)) as Record<string, unknown>),
   ]);
 }
 if (seite === 'fragebogen-abschluss' || seite === 'fragebogen-ohne-netz') {
@@ -1452,7 +1474,7 @@ client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
   },
   can_grant: false,
   can_write: true,
-  wording_version: '2026-10',
+  wording_version: '2026-11',
   target_weight_floor_kg: 52.3,
 } satisfies EigeneErnaehrung);
 // Schritt 1e: im Training dieselbe Beratung mit Tagebuch (ADR-027 Punkt 1:
@@ -1803,6 +1825,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
         ),
       };
     case 'einwilligungen':
+    case 'einwilligungen-fotos':
     case 'daten':
     case 'einstellungen':
     case 'einstieg':
@@ -1810,6 +1833,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'termine':
     case 'termine-heute':
     case 'termine-absage-angefragt':
+    case 'termine-absage-gesendet':
     case 'termine-gesendet':
     case 'termine-leer':
     case 'termine-nur-wunsch':
@@ -1875,6 +1899,9 @@ function inhalt(): { pfad: string; element: ReactNode } {
         'termine-heute': '/p/termine?bereich=treatment',
         'termine-absage-angefragt': '/p/termine?bereich=treatment',
         'termine-gesendet': '/p/termine?bereich=treatment&gesendet=1',
+        // ANN-811: nach der Absage ihr Eingang am Server, die Kennung reist mit.
+        'termine-absage-gesendet':
+          '/p/termine?bereich=treatment&absage=dddddddd-dddd-4ddd-8ddd-0000000000f4',
         'termine-leer': '/p/termine?bereich=treatment',
         'termine-nur-wunsch': '/p/termine?bereich=treatment',
         'termine-laden': '/p/termine?bereich=treatment',
@@ -1895,6 +1922,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
         dokumente: '/p/dokumente?bereich=treatment',
         befundbogen: '/p/befundbogen?bereich=treatment',
         einwilligungen: '/p/einwilligungen?bereich=treatment',
+        'einwilligungen-fotos': '/p/einwilligungen?bereich=treatment',
         daten: '/p/daten?bereich=treatment',
         einstellungen: '/p/einstellungen',
         einstieg: '/p?bereich=treatment',
@@ -1955,6 +1983,17 @@ function inhalt(): { pfad: string; element: ReactNode } {
           />
         ),
       };
+    case 'fragebogen-lesefrist':
+      return {
+        pfad: '/p/befundbogen?bereich=treatment',
+        element: (
+          <PlattformApp
+            zugaenge={[{ ...zugaenge[0]!, writable: false, read_until: inTagen(20, 0) }]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
     case 'fragebogen-begleitung':
       return {
         pfad: `/p/befundbogen?zugang=${begleitung.access_id}`,
@@ -1971,7 +2010,9 @@ function inhalt(): { pfad: string; element: ReactNode } {
         pfad: '/p/ich',
         element: (
           <PlattformApp
-            zugaenge={[{ ...zugaenge[0]!, readable: false, read_until: inTagen(-2, 12) }]}
+            zugaenge={[
+              { ...zugaenge[0]!, readable: false, writable: false, read_until: inTagen(-2, 12) },
+            ]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />
@@ -1982,7 +2023,9 @@ function inhalt(): { pfad: string; element: ReactNode } {
         pfad: '/p',
         element: (
           <PlattformApp
-            zugaenge={[{ ...zugaenge[0]!, readable: false, read_until: inTagen(-2, 12) }]}
+            zugaenge={[
+              { ...zugaenge[0]!, readable: false, writable: false, read_until: inTagen(-2, 12) },
+            ]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />
@@ -2009,7 +2052,23 @@ function inhalt(): { pfad: string; element: ReactNode } {
         pfad: seite === 'termine-lesefrist' ? '/p/termine?bereich=treatment' : '/p',
         element: (
           <PlattformApp
-            zugaenge={[{ ...zugaenge[0]!, read_until: inTagen(20, 0) }]}
+            zugaenge={[{ ...zugaenge[0]!, writable: false, read_until: inTagen(20, 0) }]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    // ANN-809: Die Lesefrist kommt vom Server, auch für eine Begleitung.
+    case 'uebersicht-lesefrist-begleitung':
+    case 'termine-lesefrist-begleitung':
+      return {
+        pfad: `${seite === 'termine-lesefrist-begleitung' ? '/p/termine' : '/p'}?zugang=${begleitung.access_id}`,
+        element: (
+          <PlattformApp
+            zugaenge={[
+              { ...zugaenge[0]!, writable: false, read_until: inTagen(20, 0) },
+              { ...begleitung, writable: false, read_until: inTagen(20, 0) },
+            ]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />
@@ -2053,7 +2112,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
         pfad: '/p/checkin?bereich=treatment',
         element: (
           <PlattformApp
-            zugaenge={[{ ...zugaenge[0]!, read_until: inTagen(29, 0) }]}
+            zugaenge={[{ ...zugaenge[0]!, writable: false, read_until: inTagen(29, 0) }]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />

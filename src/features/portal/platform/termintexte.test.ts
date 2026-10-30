@@ -20,6 +20,7 @@ import {
   terminzeileName,
   wunschInWorten,
   wunschTitel,
+  heroWeg,
 } from './termintexte';
 
 /**
@@ -292,5 +293,28 @@ describe('leereTage („Diese Woche“)', () => {
   it('nennt einen belegten Tag kurz mit Wochentag (Schritt 3b)', () => {
     expect(tagDerWoche('2026-10-26')).toBe('Mo., 26.');
     expect(tagDerWoche('2026-11-01')).toBe('So., 1.');
+  });
+});
+
+describe('heroWeg (ANN-811)', () => {
+  const jetzt = new Date('2026-10-30T09:00:00+01:00');
+  const termin = {
+    status: 'confirmed' as const,
+    starts_at: '2026-11-02T09:30:00+01:00',
+    open_request_kind: null,
+  };
+
+  it('nennt Ändern und Absagen, wo die Seite des Termins sie anbietet', () => {
+    expect(heroWeg(termin, false, jetzt)).toBe('Ansehen, ändern, absagen');
+  });
+
+  it('sagt sonst nur „Termin ansehen“: offener Wunsch, schon begonnen, Lesefrist', () => {
+    expect(heroWeg({ ...termin, open_request_kind: 'cancel' }, false, jetzt)).toBe(
+      'Termin ansehen',
+    );
+    expect(heroWeg({ ...termin, starts_at: '2026-10-30T08:30:00+01:00' }, false, jetzt)).toBe(
+      'Termin ansehen',
+    );
+    expect(heroWeg(termin, true, jetzt)).toBe('Termin ansehen');
   });
 });

@@ -18,13 +18,15 @@ const ERIKA_TRAINING = platformAccesses.erikaTraining;
 interface Kontext {
   access_id: string;
   readable: boolean;
+  writable: boolean;
   read_until: string | null;
 }
 
 async function kontext(zugang: string): Promise<Kontext | undefined> {
   const { rows } = await asUser<Kontext>(
     users.plattformErika,
-    `select access_id, readable, to_char(read_until at time zone 'Europe/Berlin', 'YYYY-MM-DD') as read_until
+    `select access_id, readable, writable,
+            to_char(read_until at time zone 'Europe/Berlin', 'YYYY-MM-DD') as read_until
        from public.platform_context()`,
   );
   return rows.find((r) => r.access_id === zugang);
@@ -85,8 +87,32 @@ describe('Zugang folgt dem Nachsorge-Abo (ANG-004)', () => {
   it('mit laufendem Abo: lesbar, ohne Ende', async () => {
     await abschliessenVor(40);
     await abo(40, null);
-    expect(await kontext(ERIKA)).toMatchObject({ readable: true, read_until: null });
+    expect(await kontext(ERIKA)).toMatchObject({
+      readable: true,
+      writable: true,
+      read_until: null,
+    });
     expect(await termine()).toBeGreaterThan(0);
+  });
+
+  it('ein gekündigtes Abo läuft bis zu seinem Ende: bis dahin schreibt der Zugang (ANN-809)', async () => {
+    await abschliessenVor(100);
+    await abo(100, -5);
+    expect(await kontext(ERIKA)).toMatchObject({
+      readable: true,
+      writable: true,
+      read_until: await tag('current_date + 5 + 31'),
+    });
+  });
+
+  it('am letzten Tag des Abos liest der Zugang nur, wie am Tag des Abschlusses (ANN-809)', async () => {
+    await abschliessenVor(100);
+    await abo(100, 0);
+    expect(await kontext(ERIKA)).toMatchObject({
+      readable: true,
+      writable: false,
+      read_until: await tag('current_date + 31'),
+    });
   });
 
   it('nach dem Ende des Abos: 30 Tage lesbar, gerechnet vom letzten Abo-Tag', async () => {
@@ -94,6 +120,7 @@ describe('Zugang folgt dem Nachsorge-Abo (ANG-004)', () => {
     await abo(100, 10);
     expect(await kontext(ERIKA)).toMatchObject({
       readable: true,
+      writable: false,
       read_until: await tag('current_date - 10 + 31'),
     });
   });

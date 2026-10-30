@@ -13,6 +13,8 @@ import {
   ersterTermin,
   handlung,
   hauptsache,
+  inLesefrist,
+  lesefristSatz,
   naechsterTermin,
   terminPerson,
   terminTitel,
@@ -34,6 +36,8 @@ const BOGEN = 'anamnese';
 const ZUGANG: Aufgabenlage['zugang'] = {
   relationship_kind: 'treatment',
   access_kind: 'self',
+  readable: true,
+  writable: true,
   read_until: null,
 };
 
@@ -162,7 +166,9 @@ describe('ersteAufgabe (ANN-692)', () => {
   });
 
   it('kennt keine Aufgabe in der Lesefrist, im Training und ohne Daten', () => {
-    expect(ersteAufgabe(lage({ zugang: { ...ZUGANG, read_until: '2026-12-31' } }))).toBeNull();
+    expect(
+      ersteAufgabe(lage({ zugang: { ...ZUGANG, writable: false, read_until: '2026-12-31' } })),
+    ).toBeNull();
     expect(ersteAufgabe(lage({ zugang: { ...ZUGANG, relationship_kind: 'training' } }))).toBeNull();
     expect(
       ersteAufgabe({ ...lage(), boegen: undefined, checkins: undefined, plaene: undefined }),
@@ -170,7 +176,8 @@ describe('ersteAufgabe (ANN-692)', () => {
   });
 
   it('hält das Ende einer Vertretung nicht für die Lesefrist', () => {
-    // Sorgerecht bis zur Volljährigkeit: `read_until` steht, die Behandlung läuft.
+    // Sorgerecht bis zur Volljährigkeit: `read_until` steht, die Behandlung läuft, der Server
+    // meldet `writable` (ANN-809).
     const vertretung: Aufgabenlage['zugang'] = {
       ...ZUGANG,
       access_kind: 'legal_representative',
@@ -263,7 +270,7 @@ describe('naechsterTermin und ersterTermin', () => {
 describe('hauptsache (ANN-698)', () => {
   it('nimmt in der Lesefrist die Unterlagen, sonst die Aufgabe, sonst den Termin, sonst nichts', () => {
     const naechster = termin('2026-10-24');
-    const lesefrist = { ...ZUGANG, read_until: '2026-12-31' };
+    const lesefrist = { ...ZUGANG, writable: false, read_until: '2026-12-31' };
     expect(hauptsache({ ...lage({ zugang: lesefrist }), naechster })).toEqual({
       art: 'unterlagen',
       bis: '2026-12-31',
@@ -281,16 +288,28 @@ describe('hauptsache (ANN-698)', () => {
     expect(hauptsache({ ...ohneAufgabe, naechster: undefined })).toEqual({ art: 'nichts' });
   });
 
-  it('kennt keine Lesefrist, solange ein Abo noch läuft (ANN-274)', () => {
+  it('kennt keine Lesefrist, solange der Server schreiben lässt, etwa mit laufendem Abo (ANN-274)', () => {
     const naechster = termin('2026-10-24');
-    const lesefrist = { ...ZUGANG, read_until: '2026-12-31' };
+    // Gekündigt, aber noch nicht zu Ende: `read_until` steht schon, geschrieben wird weiter.
+    const aboEndet = { ...ZUGANG, read_until: '2026-12-31' };
     const ohneAufgabe = { boegen: [bogen('abgeschlossen')], checkins: null, plaene: plaene() };
-    expect(
-      hauptsache({ ...lage({ zugang: lesefrist, ...ohneAufgabe }), aboLaeuft: true, naechster }),
-    ).toEqual({ art: 'termin', termin: naechster });
-    expect(ersteAufgabe({ ...lage({ zugang: lesefrist }), aboLaeuft: true })).toMatchObject({
-      art: 'fragebogen',
+    expect(hauptsache({ ...lage({ zugang: aboEndet, ...ohneAufgabe }), naechster })).toEqual({
+      art: 'termin',
+      termin: naechster,
     });
+    expect(ersteAufgabe(lage({ zugang: aboEndet }))).toMatchObject({ art: 'fragebogen' });
+  });
+
+  it('kennt die Lesefrist auch an Begleitung und Vertretung, wenn der Server sie meldet (ANN-809)', () => {
+    const naechster = termin('2026-10-24');
+    for (const access_kind of ['companion', 'legal_representative'] as const) {
+      const vertretung = { ...ZUGANG, access_kind, writable: false, read_until: '2026-12-31' };
+      expect(hauptsache({ ...lage({ zugang: vertretung }), naechster })).toEqual({
+        art: 'unterlagen',
+        bis: '2026-12-31',
+      });
+      expect(ersteAufgabe(lage({ zugang: vertretung }))).toBeNull();
+    }
   });
 
   it('nimmt im Training immer die nächste Einheit, auch mit Übungen für heute', () => {
@@ -364,5 +383,50 @@ describe('Texte eines Termins als Hauptsache', () => {
       'Videotermin mit Anna Beispiel',
     );
     expect(terminPerson({ ...t, staff_name: null }, false)).toBeNull();
+  });
+});
+
+describe('Lesefrist (ANN-809)', () => {
+  const ENDE = '2026-12-01T00:00:00+01:00';
+  const eigen = {
+    relationship_kind: 'treatment' as const,
+    access_kind: 'self' as const,
+    represented_name: null,
+    read_until: ENDE,
+  };
+
+  it('nimmt sie vom Server: lesbar, aber nicht mehr schreibend', () => {
+    expect(inLesefrist({ readable: true, writable: false })).toBe(true);
+    expect(inLesefrist({ readable: true, writable: true })).toBe(false);
+    // Gesperrt oder abgelaufen ist keine Lesefrist, sondern gar kein Zugang.
+    expect(inLesefrist({ readable: false, writable: false })).toBe(false);
+  });
+
+  it('sagt der Person, was endete und bis wann sie liest', () => {
+    expect(lesefristSatz(eigen, null)).toBe(
+      'Ihre Behandlung ist beendet. Sie können hier noch bis 30.11.2026 lesen.',
+    );
+    expect(lesefristSatz({ ...eigen, relationship_kind: 'training' }, null)).toBe(
+      'Ihre Trainingszeit ist beendet. Sie können hier noch bis 30.11.2026 lesen.',
+    );
+    expect(lesefristSatz(eigen, { state: 'ended', ends_on: '2026-10-31' })).toBe(
+      'Ihr Nachsorge-Abo endete am 31.10.2026. Sie können hier noch bis 30.11.2026 lesen.',
+    );
+    expect(lesefristSatz({ ...eigen, read_until: null }, null)).toBeNull();
+  });
+
+  it('nennt einer Vertretung oder Begleitung die Person beim Namen', () => {
+    for (const access_kind of ['companion', 'legal_representative'] as const) {
+      const vertretung = { ...eigen, access_kind, represented_name: 'Max Mustermann' };
+      expect(lesefristSatz(vertretung, null)).toBe(
+        'Die Behandlung von Max Mustermann ist beendet. Sie können hier noch bis 30.11.2026 lesen.',
+      );
+      expect(lesefristSatz({ ...vertretung, relationship_kind: 'training' }, null)).toBe(
+        'Die Trainingszeit von Max Mustermann ist beendet. Sie können hier noch bis 30.11.2026 lesen.',
+      );
+      expect(lesefristSatz(vertretung, { state: 'ended', ends_on: '2026-10-31' })).toBe(
+        'Das Nachsorge-Abo von Max Mustermann endete am 31.10.2026. Sie können hier noch bis 30.11.2026 lesen.',
+      );
+    }
   });
 });

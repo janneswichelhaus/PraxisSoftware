@@ -156,6 +156,7 @@ describe('Plattform: gescheitertes Nachladen des Zugangs', () => {
         relationship_kind: 'training',
         status: 'active',
         readable: true,
+        writable: true,
         read_until: null,
         access_kind: 'self',
         represented_name: null,

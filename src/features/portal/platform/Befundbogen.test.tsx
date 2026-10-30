@@ -19,6 +19,7 @@ const ladeBefundbogen = vi.fn();
 const befundbogenSpeichern = vi.fn();
 const befundbogenAbsenden = vi.fn();
 const befundbogenVerwerfen = vi.fn();
+const ladeAbo = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -26,6 +27,7 @@ vi.mock('./api', async (importOriginal) => ({
   befundbogenSpeichern: (...args: unknown[]) => befundbogenSpeichern(...args) as Promise<string>,
   befundbogenAbsenden: (...args: unknown[]) => befundbogenAbsenden(...args) as Promise<void>,
   befundbogenVerwerfen: (...args: unknown[]) => befundbogenVerwerfen(...args) as Promise<void>,
+  ladeAbo: (...args: unknown[]) => ladeAbo(...args) as Promise<null>,
 }));
 
 const { Befundbogen } = await import('./Befundbogen');
@@ -38,6 +40,7 @@ const ZUGANG: Plattformzugang = {
   relationship_kind: 'treatment',
   status: 'active',
   readable: true,
+  writable: true,
   read_until: null,
   access_kind: 'self',
   represented_name: null,
@@ -104,6 +107,7 @@ beforeEach(() => {
   befundbogenSpeichern.mockResolvedValue(ENTWURF);
   befundbogenAbsenden.mockResolvedValue(undefined);
   befundbogenVerwerfen.mockResolvedValue(undefined);
+  ladeAbo.mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -606,5 +610,65 @@ describe('Fragebogen vor dem ersten Termin', { timeout: 20_000 }, () => {
     for (let n = 0; n < 14; n += 1) await nutzer.click(knopf('Weiter'));
     await screen.findByRole('dialog', { name: 'Ist alles richtig?' });
     expect(screen.queryByRole('button', { name: 'Antworten verwerfen' })).toBeNull();
+  });
+
+  describe('in der Lesefrist (ANN-810)', () => {
+    const ENDE: Plattformzugang = {
+      ...ZUGANG,
+      writable: false,
+      read_until: '2026-11-28T00:00:00+01:00',
+    };
+
+    it('zeigt keinen Ablauf mehr; einen eigenen Entwurf verwirft man nach Rückfrage', async () => {
+      const nutzer = userEvent.setup();
+      ladeBefundbogen.mockResolvedValue([entwurf(beantwortet())]);
+      zeige(ENDE);
+      expect(await screen.findByText('Kein Fragebogen mehr')).toBeInTheDocument();
+      expect(
+        screen.getByText('Ihre Behandlung ist beendet. Sie können hier noch bis 27.11.2026 lesen.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Bogen senden' })).toBeNull();
+      await nutzer.click(knopf('Antworten verwerfen'));
+      expect(
+        screen.getByText(
+          'Ihre gespeicherten Antworten werden gelöscht. Gesendet wurden sie nicht.',
+        ),
+      ).toBeInTheDocument();
+      await nutzer.click(knopf('Ja, verwerfen'));
+      await waitFor(() =>
+        expect(befundbogenVerwerfen).toHaveBeenCalledWith(ZUGANG.access_id, ENTWURF),
+      );
+      expect(befundbogenSpeichern).not.toHaveBeenCalled();
+      expect(befundbogenAbsenden).not.toHaveBeenCalled();
+    });
+
+    it('bietet ohne Entwurf und nach dem Senden nichts zum Verwerfen an', async () => {
+      zeige(ENDE);
+      expect(await screen.findByText('Kein Fragebogen mehr')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Antworten verwerfen' })).toBeNull();
+    });
+
+    it('nennt einer Vertretung die Person; eine Begleitung verwirft nichts', async () => {
+      ladeBefundbogen.mockResolvedValue([entwurf(beantwortet())]);
+      const vertretung = { ...ENDE, represented_name: 'Max Mustermann' };
+      const { unmount } = zeige({ ...vertretung, access_kind: 'legal_representative' });
+      expect(
+        await screen.findByText(
+          'Die Behandlung von Max Mustermann ist beendet. Sie können hier noch bis 27.11.2026 lesen.',
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Antworten verwerfen' })).toBeInTheDocument();
+      unmount();
+      zeige({ ...vertretung, access_kind: 'companion' });
+      expect(await screen.findByText('Kein Fragebogen mehr')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Antworten verwerfen' })).toBeNull();
+    });
+
+    it('fragt nach dem Abo nur, wenn die Lesefrist gilt (ANN-274)', async () => {
+      zeige();
+      await screen.findByRole('dialog', { name: 'Zu Ihrer Person' });
+      expect(ladeAbo).not.toHaveBeenCalled();
+    });
   });
 });

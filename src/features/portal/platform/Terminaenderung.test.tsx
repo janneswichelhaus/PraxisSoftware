@@ -21,18 +21,20 @@ import { renderWithProviders } from '@/test-utils';
  */
 
 const ladeTermine = vi.fn();
+const ladeWuensche = vi.fn();
 const terminAendernWuenschen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladeTermine: (...args: unknown[]) => ladeTermine(...args) as Promise<Termin[]>,
   // Die Seite des Termins fragt die Wünsche nach dem offenen.
-  ladeWuensche: () => Promise.resolve([]),
+  ladeWuensche: (...args: unknown[]) => ladeWuensche(...args) as Promise<unknown[]>,
   terminAendernWuenschen: (...args: unknown[]) =>
     terminAendernWuenschen(...args) as Promise<string>,
 }));
 
 const { Terminaenderung } = await import('./Terminaenderung');
+const { wuenscheSchluessel } = await import('./api');
 const { WUNSCHTAGE } = await import('./terminablauf');
 const { terminKurz } = await import('./terminbeschreibung');
 const { tagInWorten, vonBis } = await import('./termintexte');
@@ -44,6 +46,7 @@ const ZUGANG: Plattformzugang = {
   relationship_kind: 'treatment',
   status: 'active',
   readable: true,
+  writable: true,
   read_until: null,
   access_kind: 'self',
   represented_name: null,
@@ -139,6 +142,7 @@ function folgt(vorher: Element, nachher: Element): boolean {
 beforeEach(() => {
   vi.clearAllMocks();
   terminAendernWuenschen.mockResolvedValue('dddddddd-dddd-4ddd-8ddd-000000000001');
+  ladeWuensche.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -196,8 +200,77 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
     );
     await waitFor(() =>
       expect(screen.getByTestId('ort')).toHaveTextContent(
-        /^\/p\/termine\?bereich=treatment&gesendet=1$/,
+        // Die Kennung der Absage reist mit: Die Liste nennt deren Eingang am Server (ANN-811).
+        /^\/p\/termine\?bereich=treatment&absage=dddddddd-dddd-4ddd-8ddd-000000000001$/,
       ),
+    );
+  });
+
+  /** Wie in der App: Geladenes gilt 30 Sekunden als frisch und bleibt im Speicher. */
+  async function absageSendenWieInDerApp() {
+    ladeTermine.mockResolvedValue([TERMIN]);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
+    });
+    // Die Wünsche kennt die Seite des Termins schon.
+    queryClient.setQueryData(wuenscheSchluessel(ZUGANG.access_id), []);
+    const router = createMemoryRouter(
+      [
+        { path: '/p/termine/:terminId', element: <Terminaenderung zugang={ZUGANG} /> },
+        { path: '*', element: <Ort /> },
+      ],
+      { initialEntries: [ABSAGEN] },
+    );
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+    const nutzer = userEvent.setup();
+    await nutzer.click(await screen.findByRole('button', { name: 'Verstanden, weiter' }));
+    await nutzer.click(await screen.findByRole('button', { name: 'Absage senden' }));
+    return { queryClient, router };
+  }
+  const NACH_DER_ABSAGE = '?bereich=treatment&absage=dddddddd-dddd-4ddd-8ddd-000000000001';
+
+  it('lädt nach dem Senden erst die Wünsche, dann die Termine, dann zur Liste (ANN-811)', async () => {
+    let wuenscheDa: (wuensche: unknown[]) => void = () => undefined;
+    ladeWuensche.mockImplementationOnce(
+      () =>
+        new Promise<unknown[]>((aufloesen) => {
+          wuenscheDa = aufloesen;
+        }),
+    );
+    const { router } = await absageSendenWieInDerApp();
+    await waitFor(() => expect(ladeWuensche).toHaveBeenCalledTimes(1));
+    // Solange die Wünsche laden, bleiben die Termine, wie sie sind: Trügen sie schon den Wunsch,
+    // stünde kurz die Seite des Termins da.
+    expect(ladeTermine).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: /Wird gesendet/ })).toBeInTheDocument();
+    expect(`${router.state.location.pathname}${router.state.location.search}`).toBe(ABSAGEN);
+    let termineDa: (termine: Termin[]) => void = () => undefined;
+    ladeTermine.mockImplementationOnce(
+      () =>
+        new Promise<Termin[]>((aufloesen) => {
+          termineDa = aufloesen;
+        }),
+    );
+    act(() => wuenscheDa([]));
+    await waitFor(() => expect(ladeTermine).toHaveBeenCalledTimes(2));
+    expect(router.state.location.search).not.toBe(NACH_DER_ABSAGE);
+    act(() => termineDa([{ ...TERMIN, open_request_kind: 'cancel' }]));
+    await waitFor(() => expect(router.state.location.search).toBe(NACH_DER_ABSAGE));
+  });
+
+  it('geht auch zur Liste, wenn die Wünsche nicht laden; sie gelten dann als veraltet', async () => {
+    ladeWuensche.mockRejectedValueOnce(
+      new Error('Ihre Terminwünsche konnten nicht geladen werden.'),
+    );
+    const { queryClient, router } = await absageSendenWieInDerApp();
+    await waitFor(() => expect(router.state.location.search).toBe(NACH_DER_ABSAGE));
+    // Veraltet heißt: Die Liste lädt sie beim Öffnen selbst, auch innerhalb der 30 Sekunden.
+    expect(queryClient.getQueryState(wuenscheSchluessel(ZUGANG.access_id))?.isInvalidated).toBe(
+      true,
     );
   });
 
@@ -280,7 +353,9 @@ describe('Terminaenderung (POR-010, Schritt 3d)', () => {
     await nutzer.click(within(wann).getByRole('button', { name: 'Egal' }));
     await nutzer.click(within(wann).getByRole('button', { name: 'Weiter' }));
     const ende = screen.getByRole('dialog', { name: 'Ist alles richtig?' });
-    expect(within(ende).getByText(/wie eine kurzfristige Absage/)).toHaveClass('text-warnung');
+    // Derselbe kurze Satz wie auf Schritt 1 (ANN-811).
+    expect(within(ende).getByText(AUSFALLHONORAR_ANDERER_TAG)).toHaveClass('text-warnung');
+    expect(within(ende).queryByText(/wie eine kurzfristige Absage/)).toBeNull();
   });
 
   it('sagt auf „Wann passt es Ihnen?“, was fehlt; „Egal“ nimmt die einzelnen Tageszeiten zurück', async () => {

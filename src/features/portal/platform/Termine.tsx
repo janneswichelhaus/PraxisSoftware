@@ -46,9 +46,11 @@ import {
   Zurueckziehen,
 } from './Terminbausteine';
 import {
+  absageEingegangen,
   artUndPerson,
   artzeichen,
   heroEtikett,
+  heroWeg,
   leereTage,
   tagDerWoche,
   terminZustand,
@@ -68,6 +70,7 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
   const rechner = useRechner();
   const [suche] = useSearchParams();
   const gesendet = useEinmaligeRueckmeldung('gesendet');
+  const absage = useEinmaligeRueckmeldung('absage');
   const termine = useQuery({
     queryKey: termineSchluessel(zugang.access_id),
     queryFn: () => ladeTermine(zugang.access_id),
@@ -98,6 +101,15 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
     termine.data === undefined
       ? undefined
       : aufteilen(termine.data, wuensche.data ?? [], plaene.data, rechner && !lesefrist, jetzt);
+  // Nach einer Absage ihr Eingang am Server (ANN-806, ANN-811); bis er geladen ist, nichts.
+  const abgesagt = absage ? wuensche.data?.find((w) => w.id === absage) : undefined;
+  const rueckmeldung = abgesagt
+    ? absageEingegangen(abgesagt, jetzt)
+    : absage && !wuensche.isFetching
+      ? 'Ihre Absage ist bei der Praxis eingegangen.'
+      : gesendet === '1'
+        ? 'Ihr Wunsch ist bei der Praxis angekommen. Sie meldet sich bei Ihnen.'
+        : null;
 
   return (
     // Gemessen wird der Inhalt: Ob zwei Spalten passen, sagt `ZWEI_SPALTEN`.
@@ -110,12 +122,12 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
         </Statusmeldung>
       ) : null}
       <PageHeader title="Termine" stufe="seite" />
-      {gesendet === '1' ? (
+      {rueckmeldung ? (
         // Über zwei Spalten reicht sie über beide, sonst so breit wie die eine.
         <Rueckmeldung
           className={teile?.zweispaltig ? ZWEI_SPALTEN.breite : rechner ? 'max-w-spalte' : ''}
         >
-          Ihr Wunsch ist bei der Praxis angekommen. Sie meldet sich bei Ihnen.
+          {rueckmeldung}
         </Rueckmeldung>
       ) : null}
       {laedt ? (
@@ -287,7 +299,7 @@ function Liste({
       satz={terminZeit(naechster, vertretung, jetzt)}
       zustand={offenerWunsch ? <Statuszeichen {...offenerWunsch} /> : undefined}
       person={personDesTermins(naechster, vertretung)}
-      ziel={{ text: 'Termin ansehen', to: zielVon(naechster) }}
+      ziel={{ text: heroWeg(naechster, lesefrist, jetzt), to: zielVon(naechster) }}
     />
   ) : nurWunsch ? (
     // Der Wunsch ist gesendet: die Uhr auf der Vertiefung statt des Laufrads.

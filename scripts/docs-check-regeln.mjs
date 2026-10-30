@@ -193,7 +193,6 @@ export const OFFENE_BEFUNDE = new Set([
   'BEF-082',
   'BEF-127',
   'BEF-140',
-  'BEF-142',
   'BEF-166',
   'BEF-167',
   'BEF-177',

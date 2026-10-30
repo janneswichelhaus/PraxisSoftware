@@ -319,7 +319,9 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     });
 
     await z.tippe(ende.getByRole('button', { name: 'Absage senden' }));
-    await expect(page.getByText('Ihr Wunsch ist bei der Praxis angekommen.')).toBeVisible();
+    // Oben der Eingang der Absage am Server, mit Tag und Uhrzeit (ANN-806, ANN-811).
+    await expect(page.getByText(/Ihre Absage ist am .+ um \d\d:\d\d eingegangen\./)).toBeVisible();
+    await expect(page.getByText(/Ihr Wunsch ist bei der Praxis angekommen/)).toHaveCount(0);
     await expect(wuensche(page)).toContainText(/Absage für .*angefragt/);
     await bild(page, 'b6-absagen-04-gesendet');
     expect(server.aufrufe.request_platform_appointment_change).toEqual([
@@ -455,7 +457,10 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     await wann.getByRole('button', { name: 'Egal' }).click();
     await wann.getByRole('button', { name: 'Weiter' }).click();
     const ende = fenster(page, 'Ist alles richtig?');
-    const warnung = ende.getByText(/wie eine kurzfristige Absage/);
+    // Derselbe kurze Satz wie auf Schritt 1 (ANN-811).
+    const warnung = ende.getByText(
+      'Ein anderer Tag kostet ein Ausfallhonorar nach unserer Preisliste.',
+    );
     await expect(warnung).toBeInViewport({ ratio: 1 });
     await pruefeAbschluss(
       page,

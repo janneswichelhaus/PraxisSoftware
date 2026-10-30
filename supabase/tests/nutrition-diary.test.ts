@@ -32,7 +32,7 @@ const ZUGANG = platformAccesses.erikaBehandlung;
 const PROFIL = 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001';
 const EIGENES_BROT = 'f1f1f1f1-f1f1-4f1f-8f1f-000000000002';
 const PRAXIS_PORRIDGE = 'f1f1f1f1-f1f1-4f1f-8f1f-000000000001';
-const FASSUNG = '2026-10';
+const FASSUNG = '2026-11';
 
 const TAG = 'select public.platform_nutrition_diary($1::uuid, $2::date) as d';
 const EINTRAGEN = `select public.add_platform_diary_entry($1::uuid, $2::date, $3, $4, $5::uuid,

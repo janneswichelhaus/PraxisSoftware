@@ -6,22 +6,21 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Aufträge nach Schritt 4** (Leerzustände, drei Fragen aus #331, BEF-222, Praxisfeld) liegen als PR
-vor; Schritt 4 ist gesichtet. Offen ist die Abkürzung für reine Doku (ADR-013 Punkt 2). Befunde aus
-archivierten Sitzungen: BEF-201, BEF-202.
+**Lesefrist vom Server und die Antworten zu #326, #333, #334** liegen als PR vor. Offen: BEF-201,
+BEF-202.
 
 ## Danach
 
-Bildsichtung dieser PR; aus ihrem Zweitreview (Pfad A): Fragebogen in der Lesefrist sperren, die
-Lesefrist von Vertretungen vom Server. Dann Schritte 5 bis 7 mit Handoff, dann die Vorschläge der
-Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
+Bildsichtung von #334 und dieser PR; dann „Sehr groß“: Reiterleiste einzeilig, Fuß der Abläufe ans
+Ende, Prüfungen ohne Rollen auch so (#334 Frage 5). Schritte 5 bis 7 mit Jannes' Leinwänden aus
+Claude Design; bis dahin die Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
 Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
 Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Bei Jannes
 
-- Den alten Branch `ccr-544f8ce7-u1sqpf` löschen: Seit 3c ist dort nichts mehr zu übertragen.
+- Den alten Branch `ccr-544f8ce7-u1sqpf` löschen (seit 3c ist alles übertragen).
 - Test-Umgebung neu aufsetzen (Workflow „Test-Umgebung“, „neu aufsetzen“): Termine der alten
   Praxiswoche haben keine gültige UUID, Erikas Übersicht scheitert (`development/BEFUNDE.md`).
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
@@ -32,8 +31,6 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
 - Sichtliste am Gerät: 13 Punkte (`sichtung/README.md`, S-1 bis S-13).
 - Widersprüche zwischen ADR-Wortlaut und Code oder Prinzipien (`development/BEFUNDE.md`, „Doku“).
-- Annahmen: bestätigen nur noch, was teuer zurückzunehmen ist (Kopf von `ASSUMPTIONS.md`);
-  Datenschutz und Recht gehen ins Prüfpaket.
 - Preise: Entwurf 2027 steht (`product/preisblatt-entwurf.md`), echte Preise kurz vor dem Start;
   G13 Umsatzsteuer vor M3 (ANN-541: ohne Verordnung 19 %? Kleinunternehmer?); B8 bis M3.
 - Bilder zu den Tests für FRB-EPIC-005.
@@ -47,5 +44,4 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-30.10.2026, Branch `ccr-4b4adbb9-mbg1ac`: Aufträge nach Schritt 4. Lokal: `git pull`, Stack
-`reset` (zwei Migrationen).
+30.10.2026, Branch `ccr-5fca130a-l8m9q8`. Lokal: `git pull`, Stack `reset` (drei Migrationen).

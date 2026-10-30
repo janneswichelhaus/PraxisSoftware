@@ -30,6 +30,7 @@ const ZUGANG: Plattformzugang = {
   relationship_kind: 'treatment',
   status: 'active',
   readable: true,
+  writable: true,
   read_until: null,
   access_kind: 'self',
   represented_name: null,
@@ -84,7 +85,8 @@ describe('Einwilligungen (POR-016)', () => {
         zugangId: ZUGANG.access_id,
         zweck: 'email_contact',
         erteilen: true,
-        fassung: '2026-10',
+        // Die Fassung des Texts, den die Seite zeigt (ANN-262), seit ANN-814 die vom November.
+        fassung: '2026-11',
       }),
     );
   });
@@ -103,7 +105,13 @@ describe('Einwilligungen (POR-016)', () => {
     renderWithProviders(<Einwilligungen zugang={ZUGANG} />);
 
     await nutzer.click(await screen.findByRole('button', { name: 'Widerrufen' }));
-    expect(screen.getByText(/löscht dann sofort alle Fotos/)).toBeInTheDocument();
+    // Nur die Arbeitshilfen fallen, Dokumentationsfotos bleiben in der Akte (ANN-814).
+    expect(
+      screen.getByText(
+        /alle Fotos, die als Arbeitshilfe entstanden sind; Fotos der Behandlungsdokumentation bleiben in der Akte\./,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/alle Fotos, die sie von Ihnen hat/)).toBeNull();
     await nutzer.click(screen.getByRole('button', { name: 'Ja, widerrufen' }));
     await waitFor(() =>
       expect(einwilligungSchreiben).toHaveBeenCalledWith(

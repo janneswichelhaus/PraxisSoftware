@@ -32,52 +32,53 @@ export type Aufgabe =
     };
 
 export interface Aufgabenlage {
-  zugang: Pick<Plattformzugang, 'relationship_kind' | 'access_kind' | 'read_until'>;
+  zugang: Pick<
+    Plattformzugang,
+    'relationship_kind' | 'access_kind' | 'readable' | 'writable' | 'read_until'
+  >;
   /** Der Bogen, den die Person selbst ausfüllt (`fuerDiePlattform`), sonst keiner. */
   bogenId: string | undefined;
   boegen: readonly Bogenstand[] | undefined;
   checkins: EigeneCheckins | null | undefined;
   plaene: EigenePlaene | undefined;
-  /**
-   * Läuft ein Nachsorge-Abo noch (auch gekündigt bis zu seinem Ende)? Dann
-   * ist trotz `read_until` keine Lesefrist: Die Lesezeit zählt vom Ende des
-   * Abos (ANN-274). Der Einstieg kennt das Abo nicht und lässt es weg.
-   */
-  aboLaeuft?: boolean;
 }
 
 /**
- * Die Lesefrist hat nur der eigene Zugang; an einer Vertretung ist
- * `read_until` ihr Ende - etwa die Volljährigkeit -, auch mitten in der
- * Behandlung. Solange ein Abo läuft, ist sie noch nicht da.
+ * Ob der Zugang in der Lesefrist ist: lesbar, aber nicht mehr schreibend. Das sagt der Server für
+ * jede Art des Zugangs (ANN-809), auch ob ein Nachsorge-Abo sie noch aufschiebt (ANN-274); an
+ * einer Vertretung ist `read_until` dagegen ihr eigenes Ende, etwa die Volljährigkeit.
  */
-export function inLesefrist(
-  zugang: Pick<Plattformzugang, 'access_kind' | 'read_until'>,
-  aboLaeuft = false,
-): boolean {
-  return zugang.access_kind === 'self' && zugang.read_until !== null && !aboLaeuft;
+export function inLesefrist(zugang: Pick<Plattformzugang, 'readable' | 'writable'>): boolean {
+  return zugang.readable && !zugang.writable;
 }
 
 /**
- * Der Satz über dem Titel, wenn der eigene Zugang endet: nach einem Nachsorge-Abo dessen Ende,
- * sonst das der Behandlung bzw. Trainingszeit, und bis wann noch gelesen werden kann. `read_until`
- * ist die Mitternacht nach dem letzten Tag.
+ * Der Satz über dem Titel, wenn der Zugang endet: nach einem Nachsorge-Abo dessen Ende, sonst das
+ * der Behandlung bzw. Trainingszeit, und bis wann noch gelesen werden kann. Eine Vertretung liest
+ * ihn mit dem Namen der Person (ANN-809). `read_until` ist die Mitternacht nach dem letzten Tag.
  */
 export function lesefristSatz(
-  zugang: Pick<Plattformzugang, 'relationship_kind' | 'read_until'>,
+  zugang: Pick<
+    Plattformzugang,
+    'relationship_kind' | 'read_until' | 'access_kind' | 'represented_name'
+  >,
   abo: { state: string; ends_on: string | null } | null,
 ): string | null {
   if (!zugang.read_until) return null;
   const bis = datum(letzterTag(zugang.read_until));
+  const fuer = zugang.access_kind === 'self' ? null : (zugang.represented_name ?? 'der Person');
   if (abo && abo.state !== 'running' && abo.ends_on) {
-    return `Ihr Nachsorge-Abo ${abo.state === 'ending' ? 'endet' : 'endete'} am ${datum(abo.ends_on)}. Sie können hier noch bis ${bis} lesen.`;
+    const was = fuer ? `Das Nachsorge-Abo von ${fuer}` : 'Ihr Nachsorge-Abo';
+    return `${was} ${abo.state === 'ending' ? 'endet' : 'endete'} am ${datum(abo.ends_on)}. Sie können hier noch bis ${bis} lesen.`;
   }
-  return `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${bis} lesen.`;
+  const zeit = zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung';
+  const was = fuer ? `Die ${zeit} von ${fuer}` : `Ihre ${zeit}`;
+  return `${was} ist beendet. Sie können hier noch bis ${bis} lesen.`;
 }
 
 export function ersteAufgabe(lage: Aufgabenlage): Aufgabe | null {
   const { zugang, bogenId, boegen, checkins, plaene } = lage;
-  if (inLesefrist(zugang, lage.aboLaeuft) || zugang.relationship_kind === 'training') return null;
+  if (inLesefrist(zugang) || zugang.relationship_kind === 'training') return null;
 
   // Eine Begleitung füllt den Bogen nicht aus (ANN-248).
   if (zugang.access_kind !== 'companion' && bogenId !== undefined && boegen !== undefined) {
@@ -188,7 +189,7 @@ export type Hauptsache =
 
 export function hauptsache(lage: Aufgabenlage & { naechster: Termin | undefined }): Hauptsache {
   const { zugang } = lage;
-  if (inLesefrist(zugang, lage.aboLaeuft) && zugang.read_until !== null) {
+  if (inLesefrist(zugang) && zugang.read_until !== null) {
     return { art: 'unterlagen', bis: zugang.read_until };
   }
   const aufgabe = ersteAufgabe(lage);

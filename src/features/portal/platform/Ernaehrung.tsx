@@ -39,6 +39,7 @@ import {
   type Plattformzugang,
 } from './api';
 import { Abschnitt, Aufklappzeilen } from './Ernaehrungsteile';
+import { EINWILLIGUNGSFASSUNG } from './einwilligungstexte';
 import { PLATTFORM_PFAD } from './pfade';
 import { literZahl, literZiel, tagebuchVonDerErnaehrung } from './tagebuchAdresse';
 import { fest, tagUndMonat } from './zeit';
@@ -551,9 +552,11 @@ function Einwilligung({ zugang, daten }: { zugang: Plattformzugang; daten: Eigen
   const ohneNetzId = useId();
   const stand = daten.profile.consent;
   const erteilt = stand?.state === 'granted';
+  // Die Fassung des Texts, den die Seite zeigt, nicht die des Servers: Sonst nähme er eine Seite
+  // mit altem Text an (ANN-262).
   const schreiben = useMutation({
     mutationFn: (erteilen: boolean) =>
-      ernaehrungEinwilligen(zugang.access_id, erteilen, daten.wording_version),
+      ernaehrungEinwilligen(zugang.access_id, erteilen, EINWILLIGUNGSFASSUNG),
     onSuccess: () => neuLaden(),
   });
   const zustand = erteilt

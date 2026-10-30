@@ -35,7 +35,7 @@ const VORBEREITEN =
   'select * from public.prepare_message_attachment_upload($1::uuid, $2::uuid, $3, $4::bigint, $5, $6::integer)';
 const BESTAETIGEN = 'select public.confirm_message_attachment_upload($1::uuid, $2::uuid)';
 const EINWILLIGUNG =
-  "select public.record_platform_consent($1::uuid, 'message_attachments', $2::boolean, '2026-10') as id";
+  "select public.record_platform_consent($1::uuid, 'message_attachments', $2::boolean, '2026-11') as id";
 const LESEN = 'select public.platform_messages($1::uuid) as daten';
 const PRAXIS = 'select public.get_platform_message($1::uuid) as daten';
 const VERWEIS_PLATTFORM =
@@ -418,7 +418,7 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     // Fremd: Erikas Training sieht Tinas Vorgang nicht.
     await asUserCommitted(
       users.plattformErika,
-      "select public.record_platform_consent($1::uuid, 'message_attachments', true, '2026-10')",
+      "select public.record_platform_consent($1::uuid, 'message_attachments', true, '2026-11')",
       [platformAccesses.erikaTraining],
     );
     expect(

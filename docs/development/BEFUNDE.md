@@ -53,13 +53,6 @@ offen: Teil 3 · `Tourenliste.tsx`\
 **Rest.** „Andere Ziel-App prüfen (für die Gerätebewertung)“ fällt weg, sobald die Gerätebewertung
 abgeschlossen ist (Punkt S-3 der Sichtliste in `docs/sichtung/README.md`).
 
-### BEF-142 — Der Einwilligungstext der Plattform verspricht beim Widerruf „alle Fotos“
-2026-10-10 · Plattform, Einwilligungen · UX-008a · offen · `einwilligungstexte.ts`; ADR-017 Punkt 46\
-**Beobachtung.** „Die Praxis löscht dann sofort alle Fotos, die sie von Ihnen hat.“ stimmt nicht:
-Der Widerruf löscht Arbeitshilfen, Dokumentationsfotos bleiben in der Akte (Praxis berichtigt).
-**Frage an Jannes.** „… alle Fotos, die als Arbeitshilfe entstanden sind; Fotos der
-Behandlungsdokumentation bleiben in der Akte“? Das braucht eine neue Fassung des Textes.
-
 ### BEF-166 — Ein Rad kennt keine Löschsperre
 2026-10-15 · Radflotte, Löschlauf · FLT-EPIC-001 · offen; Bedingung vor dem Scharfschalten · ANN-551\
 **Beobachtung.** Check-Ups, Pannen und Sperren fallen nach drei Jahren; eine Löschsperre gibt es nur
@@ -220,6 +213,12 @@ den Terminstatus in derselben Transaktion, mit Test, oder ADR-018 nimmt `invoice
 ADR-010 Punkt 16 erlaubt einen Eintrag je Person, Verhältnis und Tag (`app.log_record_access`).
 **Erwartet.** Migration mit `app.log_record_access`; ein Test ruft zweimal am Tag und erwartet einen
 Eintrag.
+
+### Training — Die Annahme des Angebots prüft die Fassung der Einwilligung nicht
+2026-10-30 · Plattform, Angebot · Zweitreview DRP-EPIC-017 · offen · `accept_platform_training_offer`\
+**Beobachtung.** Sie prüft nur die Fassung der Vertragstexte; die Einwilligung trägt die des
+Servers, gleich welchen Text die Seite zeigte (ANN-262). **Erwartet.** Ein Parameter für die
+Fassung der Einwilligung, Abweisung bei Abweichung (Pfad A).
 
 ### Katalogtexte — Kommentare der Datenbank versprechen Protokolle und Kennwörter, die es nicht mehr gibt
 2026-10-27 · `COMMENT ON` · Aufräumen 5, Teil B · offen · `set_appointment_grid`,

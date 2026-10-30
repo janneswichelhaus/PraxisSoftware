@@ -48,7 +48,9 @@ import {
   seitentitel,
   type Bogenthema as Thema,
 } from './bogenthemen';
+import { lesefristSatz } from './hauptsache';
 import { BOGEN_TITEL, bogenVorlage, fuerDiePlattform } from './instrumentwahl';
+import { useLesefrist } from './lesefrist';
 import { NICHT_AKUT } from './nachrichtentexte';
 import { Notfallsatz } from './Notfallsatz';
 import { PLATTFORM_PFAD } from './pfade';
@@ -76,16 +78,12 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
   const begleitung = zugang.access_kind === 'companion';
   const boegen = (stand.data ?? []).filter((b) => b.instrument_id === instrument?.meta.id);
   const abgeschlossen = boegen.find((b) => b.status === 'abgeschlossen');
+  // In der Lesefrist nimmt der Server nichts Neues an (ANN-810); Verwerfen bleibt.
+  const { lesefrist, abo } = useLesefrist(zugang);
+  const entwurf = boegen.find((b) => b.status === 'entwurf' && b.source === 'platform');
 
-  if (stand.data !== undefined && behandlung && !begleitung && !abgeschlossen) {
-    return (
-      <Ablauf
-        zugang={zugang}
-        definition={instrument}
-        entwurf={boegen.find((b) => b.status === 'entwurf' && b.source === 'platform')}
-        zurueck={zurueckZu}
-      />
-    );
+  if (stand.data !== undefined && behandlung && !begleitung && !abgeschlossen && !lesefrist) {
+    return <Ablauf zugang={zugang} definition={instrument} entwurf={entwurf} zurueck={zurueckZu} />;
   }
 
   return (
@@ -105,6 +103,17 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
           markenform
           title="Zurzeit kein Fragebogen"
           description="Hier gibt es zurzeit nichts auszufüllen."
+        />
+      ) : lesefrist ? (
+        <EmptyState
+          markenform
+          title="Kein Fragebogen mehr"
+          description={lesefristSatz(zugang, abo.data ?? null) ?? undefined}
+          aktion={
+            entwurf && !begleitung ? (
+              <EntwurfVerwerfen zugang={zugang} entwurf={entwurf} />
+            ) : undefined
+          }
         />
       ) : begleitung ? (
         // ANN-248: Angaben zur eigenen Gesundheit macht die Person selbst; der Server weist eine
@@ -141,6 +150,31 @@ function Ladezustand() {
       <Skelett form="zeile" className="mt-4 w-1/3" />
       <Skelett form="hauptknopf" />
     </SkelettBereich>
+  );
+}
+
+/**
+ * Ein nie gesendeter Entwurf in der Lesefrist: nur noch verwerfen (ANN-810). Dabei entsteht nichts
+ * Neues, und unfertige Angaben bleiben nicht mit der Akte liegen.
+ */
+function EntwurfVerwerfen({ zugang, entwurf }: { zugang: Plattformzugang; entwurf: Bogenstand }) {
+  const queryClient = useQueryClient();
+  const verwerfen = useMutation({
+    mutationFn: () => befundbogenVerwerfen(zugang.access_id, entwurf.id),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: befundbogenSchluessel(zugang.access_id) }),
+  });
+  return (
+    <Rueckfrage
+      ausloeser="Antworten verwerfen"
+      ausloeserVariante="quiet"
+      bestaetigen="Ja, verwerfen"
+      bestaetigenLaeuft="Wird verworfen …"
+      fehler={verwerfen.error?.message}
+      onBestaetigen={() => verwerfen.mutateAsync()}
+    >
+      <p>Ihre gespeicherten Antworten werden gelöscht. Gesendet wurden sie nicht.</p>
+    </Rueckfrage>
   );
 }
 

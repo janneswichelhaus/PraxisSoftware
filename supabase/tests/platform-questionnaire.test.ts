@@ -62,6 +62,40 @@ async function speichern(
   return rows[0]!.id;
 }
 
+const VOLLMACHT_KONTO = 'ab12ab12-ab12-4b12-8b12-000000000810';
+
+/** Die Versorgung vor zwei Tagen abgeschlossen: Die Lesefrist läuft (ADR-023 Punkt 5). */
+async function abschliessen(patient: string) {
+  await asPostgres(
+    `update public.patients
+        set care_concluded_on = current_date - 2, care_concluded_at = now(),
+            care_concluded_by = $2::uuid
+      where id = $1`,
+    [patient, users.therapist],
+  );
+}
+
+/** Vera Vollmacht als rechtliche Vertretung für Max' Behandlung, mit Gesundheitssorge. */
+async function vollmachtFuerMax(): Promise<string> {
+  await asPostgres(
+    `insert into auth.users (id, aud, role, email) values
+       ($1, 'authenticated', 'authenticated', 'vera.vollmacht@patient.invalid')`,
+    [VOLLMACHT_KONTO],
+  );
+  const { rows } = await asPostgres<{ id: string }>(
+    `insert into public.platform_accesses
+       (organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
+        status, created_by, activated_at, access_kind, legal_basis, representative_name,
+        proof_documents, health_scope, finance_scope, proof_recorded_by, proof_recorded_at)
+     values ($1, 'treatment', $2, $2, $3, 'active', $4, now(), 'legal_representative',
+             'power_of_attorney', 'Vera Vollmacht',
+             array['identity_document', 'power_of_attorney'], true, false, $4, now())
+     returning id`,
+    [SEED.organizationId, patients.max, VOLLMACHT_KONTO, users.office],
+  );
+  return rows[0]!.id;
+}
+
 async function erlaubt(konto: string, zugang: string, recht: string): Promise<boolean> {
   const client = new Client({ connectionString: testDatabaseUrl() });
   await client.connect();
@@ -286,6 +320,76 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
       `select id, answers from public.patient_questionnaire_responses where source = 'platform'`,
     );
     expect(rows).toEqual([{ id, answers: ANTWORTEN }]);
+  });
+
+  it('in der Lesefrist kein Speichern und kein Senden; Lesen und Verwerfen bleiben (ANN-810)', async () => {
+    const id = await speichern(users.plattformErika, ERIKA);
+    await abschliessen(patients.erika);
+    const code = async (anfrage: Promise<unknown>) =>
+      ((await abgefangen(anfrage)) as { code?: string } | null)?.code;
+    // Festgeschrieben: Ginge ein Versuch durch, stünde er im Bestand am Ende.
+    const neueAntworten = JSON.stringify({ beruf: { text: 'Neu' } });
+    expect(
+      await code(
+        asUserCommitted(users.plattformErika, SPEICHERN, [
+          ERIKA,
+          id,
+          'anamnese_v8',
+          '1.0.0',
+          neueAntworten,
+        ]),
+      ),
+    ).toBe('42501');
+    expect(
+      await code(
+        asUserCommitted(users.plattformErika, SPEICHERN, [
+          ERIKA,
+          null,
+          'anamnese_v8',
+          '1.0.0',
+          neueAntworten,
+        ]),
+      ),
+    ).toBe('42501');
+    expect(await code(asUserCommitted(users.plattformErika, ABSENDEN, [ERIKA, id]))).toBe('42501');
+    // Lesen bleibt, der Entwurf steht unverändert und offen.
+    expect((await asUser<Zeile>(users.plattformErika, STAND, [ERIKA])).rows).toEqual([
+      expect.objectContaining({ id, status: 'entwurf', answers: ANTWORTEN }),
+    ]);
+    // Verwerfen bleibt: Dabei entsteht nichts Neues.
+    const weg = await asUserCommitted<{ ok: boolean }>(users.plattformErika, VERWERFEN, [
+      ERIKA,
+      id,
+    ]);
+    expect(weg.rows[0]!.ok).toBe(true);
+    const { rows } = await asPostgres<{ n: number }>(
+      `select count(*)::int as n from public.patient_questionnaire_responses where source = 'platform'`,
+    );
+    expect(rows[0]!.n).toBe(0);
+  });
+
+  it('in der Lesefrist auch für die rechtliche Vertretung kein Speichern und kein Senden (ANN-810)', async () => {
+    const vera = await vollmachtFuerMax();
+    const id = await speichern(VOLLMACHT_KONTO, vera);
+    await abschliessen(patients.max);
+    const speichernVera = await abgefangen(
+      asUserCommitted(VOLLMACHT_KONTO, SPEICHERN, [vera, id, 'anamnese_v8', '1.0.0', '{}']),
+    );
+    expect((speichernVera as { code?: string } | null)?.code).toBe('42501');
+    const absendenVera = await abgefangen(asUserCommitted(VOLLMACHT_KONTO, ABSENDEN, [vera, id]));
+    expect((absendenVera as { code?: string } | null)?.code).toBe('42501');
+    // Erikas Behandlung läuft weiter: Ihr Bogen geht (fremde Person, eigene Frist).
+    await speichern(users.plattformErika, ERIKA);
+    const { rows } = await asPostgres<{ patient_id: string; status: string; answers: unknown }>(
+      `select patient_id, status, answers from public.patient_questionnaire_responses
+        where source = 'platform' order by patient_id`,
+    );
+    expect(rows).toEqual(
+      [
+        { patient_id: patients.max, status: 'entwurf', answers: ANTWORTEN },
+        { patient_id: patients.erika, status: 'entwurf', answers: ANTWORTEN },
+      ].sort((a, b) => a.patient_id.localeCompare(b.patient_id)),
+    );
   });
 
   it('eingeladen, noch ohne Konto: weder lesen noch speichern', async () => {

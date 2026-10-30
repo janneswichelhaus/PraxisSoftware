@@ -22,6 +22,7 @@ import {
   termineSchluessel,
   wuenscheSchluessel,
   ladeTermine,
+  ladeWuensche,
   terminAendernWuenschen,
   type Plattformzugang,
   type Termin,
@@ -154,15 +155,24 @@ function Aenderungsablauf({
         zeiten: art === 'change' ? wunschzeiten(wann.zeiten) : [],
         notiz,
       }),
-    onSuccess: () => {
-      // Erst zur Liste, dann neu laden: Der neu geladene Termin trägt den
-      // Wunsch, und diese Seite zeigte sonst kurz „Ihr Wunsch ist bei der Praxis“.
+    onSuccess: async (wunschId) => {
+      // Erst die Wünsche, dann die Termine, dann zur Liste (ANN-811), sonst stünde kurz die Seite des
+      // Termins da. `staleTime: 0`, denn der alte Stand gälte als frisch; scheitert das Laden, gelten
+      // die Wünsche als veraltet, und die Liste lädt sie selbst.
       freigeben();
-      void navigate(`${terminliste}${terminliste.includes('?') ? '&' : '?'}gesendet=1`, {
+      const wuensche = wuenscheSchluessel(zugang.access_id);
+      await queryClient
+        .fetchQuery({
+          queryKey: wuensche,
+          queryFn: () => ladeWuensche(zugang.access_id),
+          staleTime: 0,
+        })
+        .catch(() => queryClient.invalidateQueries({ queryKey: wuensche, refetchType: 'none' }));
+      await queryClient.invalidateQueries({ queryKey: termineSchluessel(zugang.access_id) });
+      const rueckmeldung = art === 'cancel' ? `absage=${wunschId}` : 'gesendet=1';
+      void navigate(`${terminliste}${terminliste.includes('?') ? '&' : '?'}${rueckmeldung}`, {
         replace: true,
       });
-      void queryClient.invalidateQueries({ queryKey: wuenscheSchluessel(zugang.access_id) });
-      void queryClient.invalidateQueries({ queryKey: termineSchluessel(zugang.access_id) });
     },
   });
 
@@ -404,15 +414,14 @@ function Absagehinweis({ spaet }: { spaet: boolean }) {
 }
 
 /**
- * Über „Änderungswunsch senden“: was gilt, wenn die Praxis den Termin auf den
- * Wunsch hin freigibt - unter 24 Stunden als Warnung (ADR-018 Punkt 8,
- * `late_notice` vom Server).
+ * Über „Änderungswunsch senden“: was gilt, wenn die Praxis den Termin auf den Wunsch hin freigibt;
+ * unter 24 Stunden derselbe Satz wie auf Schritt 1 (ADR-018 Punkt 8, `late_notice`, ANN-811).
  */
 function Freigabehinweis({ spaet }: { spaet: boolean }) {
   return (
     <Statusmeldung ton={spaet ? 'warnung' : 'neutral'} className={spaet ? 'font-semibold' : ''}>
       {spaet
-        ? 'Ihr Termin beginnt in weniger als 24 Stunden. Gibt die Praxis ihn auf Ihren Wunsch frei, gilt das wie eine kurzfristige Absage, und wir berechnen ein Ausfallhonorar nach unserer Preisliste.'
+        ? AUSFALLHONORAR_ANDERER_TAG
         : 'Gibt die Praxis den Termin auf Ihren Wunsch frei, gilt das wie eine Absage. Ihr Wunsch geht rechtzeitig ein, es entsteht kein Ausfallhonorar.'}
     </Statusmeldung>
   );

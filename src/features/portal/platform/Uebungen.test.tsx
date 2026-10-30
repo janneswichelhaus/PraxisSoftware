@@ -43,6 +43,7 @@ const ZUGANG: Plattformzugang = {
   relationship_kind: 'treatment',
   status: 'active',
   readable: true,
+  writable: true,
   read_until: null,
   access_kind: 'self',
   represented_name: null,
@@ -352,7 +353,9 @@ describe('Vorschau der Einheit in ihren Lagen (Handoff, Abschnitt 3)', () => {
         }),
       ],
     });
-    zeige(<Uebungen zugang={{ ...ZUGANG, read_until: '2026-11-01T00:00:00+01:00' }} />);
+    zeige(
+      <Uebungen zugang={{ ...ZUGANG, writable: false, read_until: '2026-11-01T00:00:00+01:00' }} />,
+    );
     expect(
       await screen.findByText(
         'Ihre Behandlung ist beendet. Sie können hier noch bis 31.10.2026 lesen.',

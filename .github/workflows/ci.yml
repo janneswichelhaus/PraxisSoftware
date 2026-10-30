@@ -24,12 +24,13 @@ env:
   NODE_VERSION: '22'
 
 jobs:
-  # ADR-013 Punkt 2 (Fassung 5): Ein Pull Request, der nur Dokumentation
-  # aendert, laesst Tests, Build und Datenbankpruefungen aus
-  # (scripts/nur-doku.mjs). Format, Lint, Typecheck, Dokumentation, Secret
-  # Scanning, Dependency Audit und das Migrationen-Gate laufen immer, und auf
-  # main laeuft nach dem Merge alles. Die abhaengigen Jobs fragen `!= 'true'`:
-  # Scheitert dieser Job und bleibt die Ausgabe leer, laeuft ebenfalls alles.
+  # ADR-013 Punkt 2 (Fassung 8): Ein Pull Request, der nur Dokumentation
+  # aendert, laesst Lint, Typecheck, Tests, Build und Datenbankpruefungen aus
+  # (scripts/nur-doku.mjs). Format der geaenderten Dateien, Dokumentation,
+  # Secret Scanning, Dependency Audit und das Migrationen-Gate laufen immer,
+  # und auf main laeuft nach dem Merge alles. Die abhaengigen Jobs und Schritte
+  # fragen `!= 'true'`: Scheitert dieser Job, bleibt die Ausgabe leer, und es
+  # laeuft ebenfalls alles.
   aenderungen:
     name: Nur Dokumentation?
     runs-on: ubuntu-latest
@@ -73,6 +74,8 @@ jobs:
   statisch:
     name: Format, Lint, Dokumentation, Typecheck
     runs-on: ubuntu-latest
+    needs: aenderungen
+    if: ${{ !cancelled() }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -90,9 +93,21 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Format
+        if: ${{ needs.aenderungen.outputs.nur_doku != 'true' }}
         run: pnpm format:check
 
+      # Reine Doku (ADR-013 Fassung 8): nur die geaenderten Dateien; Code und
+      # Konfiguration sind die von main, Lint und Typecheck saehen nichts Neues.
+      # `bash` mit pipefail: Scheitert `git diff`, wird der Schritt rot statt leer.
+      - name: Format der geaenderten Dokumentation
+        if: ${{ needs.aenderungen.outputs.nur_doku == 'true' }}
+        shell: bash
+        env:
+          BASIS: origin/${{ github.base_ref }}
+        run: git diff -z --name-only --diff-filter=AM "$BASIS...HEAD" -- '*.md' | xargs -0 -r pnpm exec prettier --check --
+
       - name: Lint (inkl. statischer Sicherheitsanalyse)
+        if: ${{ needs.aenderungen.outputs.nur_doku != 'true' }}
         run: pnpm lint
 
       # Nur Kommentare, die der Pull Request oder Push schreibt oder aendert (docs/DEVELOPMENT.md).
@@ -105,6 +120,7 @@ jobs:
         run: pnpm docs:check
 
       - name: Typecheck
+        if: ${{ needs.aenderungen.outputs.nur_doku != 'true' }}
         run: pnpm typecheck
 
       # Auch bei reiner Doku: Eine neue Datei darf keinen Pfad nur in der

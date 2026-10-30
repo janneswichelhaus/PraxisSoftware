@@ -72,7 +72,7 @@ import { Notrufnummer } from './Notfallsatz';
 import { paketStand } from './paketbedingungen';
 import { BENACHRICHTIGUNGEN_ANKER, PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { Statuszeichen } from './Terminbausteine';
-import { terminZustand } from './termintexte';
+import { heroWeg, terminZustand } from './termintexte';
 import { umfangSatz, umfangText } from './vorschau';
 import { zahlungsstand } from './zahlungsstand';
 import {
@@ -238,17 +238,14 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
   const erster = naechster
     ? ersterTermin(alleTermine, naechster)
     : !alleTermine.some((t) => t.status !== 'cancelled');
-  // Ein gekündigtes Abo läuft bis zu seinem Ende - erst danach ist Lesefrist
-  // (ANN-274), auch wenn `read_until` schon steht.
-  const aboLaeuft = abo.data?.state === 'running' || abo.data?.state === 'ending';
-  const lesefrist = inLesefrist(zugang, aboLaeuft);
+  // Die Lesefrist sagt der Server, auch für Vertretungen und solange ein Abo läuft (ANN-809).
+  const lesefrist = inLesefrist(zugang);
   const haupt = hauptsache({
     zugang,
     bogenId: fuerDiePlattform()[0]?.meta.id,
     boegen: bogen.data,
     checkins: checkin.data,
     plaene: plaene.data,
-    aboLaeuft,
     naechster,
   });
 
@@ -505,7 +502,14 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
     if (zeitraum) {
       rechts.push(
         teil(
-          <Section titel={behandlung ? 'Ihre Behandlung' : 'Ihr Training'} rahmen>
+          <Section
+            titel={
+              behandlung
+                ? `${eigen ? 'Ihre' : 'Die'} Behandlung`
+                : `${eigen ? 'Ihr' : 'Das'} Training`
+            }
+            rahmen
+          >
             <Rueckblick {...zeitraum} />
           </Section>,
           'rueckblick',
@@ -553,14 +557,14 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
       ),
     );
   }
-  // Was eine Vertretung hier darf, ist eine Auskunft über Rechte (ADR-023
-  // Punkt 13) - als Kleingedrucktes am Ende der Seite, unter beiden Spalten,
-  // nicht mehr als Absatz oben.
+  // Was eine Vertretung hier darf (ADR-023 Punkt 13), als Kleingedrucktes am Ende unter beiden
+  // Spalten. In der Lesefrist weist der Server auch Wünsche und Nachrichten der Begleitung
+  // ab (ANN-809).
   const rechte =
     zugang.access_kind === 'legal_representative'
       ? `Als rechtliche Vertretung handeln Sie in allem, was ${name} hier tun kann.`
       : begleitung
-        ? `Als Begleitung lesen Sie mit und können Terminwünsche und Nachrichten schreiben. Einwilligungen gibt nur ${name} selbst.`
+        ? `Als Begleitung lesen Sie mit${lesefrist ? '' : ' und können Terminwünsche und Nachrichten schreiben'}. Einwilligungen gibt nur ${name} selbst.`
         : null;
 
   const spalte = 'flex min-w-0 flex-col gap-10 [[data-rechner]_&]:gap-12';
@@ -609,13 +613,14 @@ function Kopfteil({
   mitDatum: boolean;
   children: ReactNode;
 }) {
-  const eigen = zugang.access_kind === 'self';
   const name = zugang.represented_name ?? 'die Person';
+  // Eine Vertretung hat außerhalb der Lesefrist ihr eigenes Ende, etwa die Volljährigkeit.
+  const eigenesEnde = zugang.access_kind !== 'self' && !inLesefrist(zugang);
   return (
     <div className="markenmoment-gruss flex flex-col gap-6">
       {zugang.read_until ? (
         <Statusmeldung ton="warnung">
-          {!eigen
+          {eigenesEnde
             ? `Ihr Zugang für ${name} endet am ${datum(zugang.read_until)}.`
             : lesefristSatz(zugang, abo)}
         </Statusmeldung>
@@ -671,8 +676,9 @@ function Hauptsachekarte({
       return (
         <HeroKarte
           titel="Unterlagen sichern"
-          // `read_until` ist die Mitternacht nach dem letzten Tag.
-          satz={`Rechnungen und Dokumente können Sie bis ${tagUndMonat(letzterTag(haupt.bis), jetzt)} herunterladen.`}
+          // `read_until` ist die Mitternacht nach dem letzten Tag. Rechnungen sieht eine Vertretung
+          // nur mit dem Recht `billing` (`app.platform_access_allows`): für sie „Die Unterlagen“.
+          satz={`${vertretung ? 'Die Unterlagen' : 'Rechnungen und Dokumente'} können Sie bis ${tagUndMonat(letzterTag(haupt.bis), jetzt)} herunterladen.`}
           aktion={{ text: 'Unterlagen ansehen', to: `${PLATTFORM_PFAD}/ich` }}
           markenmoment={markenmoment}
         />
@@ -695,7 +701,7 @@ function Hauptsachekarte({
           person={t.staff_name && zeile ? { name: t.staff_name, zeile } : undefined}
           // Zur Seite des Termins; ihr Rückweg heißt dann „Übersicht“ (ANN-779).
           aktion={{
-            text: 'Termin ansehen',
+            text: heroWeg(t, inLesefrist(zugang), jetzt),
             to: zumTermin(t.id, mit),
           }}
           markenmoment={markenmoment}
