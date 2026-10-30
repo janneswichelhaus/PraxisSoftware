@@ -437,6 +437,33 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     );
   });
 
+  // Bei „Sehr groß“ deckte der feste Fuß die Antworten zu; jetzt folgt er ihnen (#331, ANN-816).
+  for (const ansicht of ['wunsch', 'termin-aendern&kurzfristig']) {
+    test(`${ansicht} bei „Sehr groß“: der Fuß folgt auf „Egal“ und deckt keine Antwort ab (ANN-816)`, async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+      });
+      const server = nachbildung();
+      await oeffne(page, server, ansicht);
+      const wann = fenster(page, 'Wann passt es Ihnen?');
+      await expect(wann).toBeVisible();
+      await expect(page.locator('html[data-schrift="sehr-gross"]')).toHaveCount(1);
+      if (ansicht !== 'wunsch') {
+        await expect(
+          wann.getByText('Ein anderer Tag kostet ein Ausfallhonorar nach unserer Preisliste.'),
+        ).toBeInViewport({ ratio: 1 });
+      }
+      const egal = (await wann.getByRole('button', { name: 'Egal' }).boundingBox())!;
+      const weiter = wann.getByRole('button', { name: 'Weiter' });
+      expect((await weiter.boundingBox())!.y).toBeGreaterThanOrEqual(egal.y + egal.height);
+      await weiter.scrollIntoViewIfNeeded();
+      await expect(weiter).toBeInViewport({ ratio: 1 });
+      expect(await ueberlaeuft(page)).toBe(false);
+    });
+  }
+
   test('Ändern unter 24 Stunden: die Warnung zum Freigeben steht fest über dem Knopf', async ({
     page,
   }) => {

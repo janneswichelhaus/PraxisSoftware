@@ -1419,3 +1419,4 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-812 | Gewohnheiten: nur der feste Satz | Praxisprozess · entschieden (Jannes) | `Gewohnheiten` in `src/features/portal/platform/Gewohnheiten.tsx` |
 | ANN-813 | Tagebuch: Haken am Eintrag, Satz für Vorlesesoftware, Fokus bleibt am „+“ | Technik · entschieden (Jannes) | `BESTAETIGUNG_MS` in `src/features/portal/platform/TagebuchEintragen.tsx` |
 | ANN-815 | Reiterleiste: das Wort bleibt 18 px, eine Reihe auch bei „Groß“ und „Sehr groß“; zwei nur, wenn es so nicht passt | Technik · offen | `REITERWORT` in `src/features/portal/platform/Navigation.tsx` |
+| ANN-816 | „Sehr groß“ am Telefon wie unter 23rem: Fuß der Abläufe rollt mit (unten, solange alles passt), ohne Bild, Hero innen 12 | Technik · offen | `SEHR_GROSS_ROLLT_ZUSAMMEN` in `src/components/ui/GefuehrterAblauf.tsx` |
