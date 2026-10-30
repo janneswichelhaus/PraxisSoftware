@@ -6,6 +6,7 @@ import {
   asPostgres,
   asUser,
   asUserCommitted,
+  fremdeOrganisation,
   resetDatabase,
   testDatabaseUrl,
   jwtClaims,
@@ -28,6 +29,8 @@ const SPEICHERN = `select public.save_platform_questionnaire_response(
 const ABSENDEN = 'select public.complete_platform_questionnaire_response($1::uuid, $2::uuid) as ok';
 const VERWERFEN = 'select public.discard_platform_questionnaire_response($1::uuid, $2::uuid) as ok';
 const AKTE = 'select * from public.list_patient_questionnaire_responses($1::uuid)';
+const PRAXIS_SPEICHERN = `select public.save_questionnaire_response(
+  $1::uuid, $2::uuid, 'anamnese_v8', '1.0.0', current_date, $3::jsonb) as id`;
 
 const ANTWORTEN = { beruf: { text: 'Lehrerin' }, schmerzen_aktuell: { auswahl: 'ja' } };
 
@@ -188,6 +191,67 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
       [id],
     );
     expect(rows[0]!.answers).toEqual(ANTWORTEN);
+  });
+
+  it('behaelt die Notiz der Praxis im Plattform-Entwurf und zeigt sie der Person nicht (ANN-808)', async () => {
+    const id = await speichern(users.plattformErika, ERIKA);
+    const notiz = { anmerkungen_therapeut: { text: 'Notiz der Praxis' } };
+    await asUserCommitted(users.therapist, PRAXIS_SPEICHERN, [
+      patients.erika,
+      id,
+      JSON.stringify({ ...ANTWORTEN, ...notiz }),
+    ]);
+    const stand = await asUser<Zeile>(users.plattformErika, STAND, [ERIKA]);
+    expect(stand.rows[0]!.answers).toEqual(ANTWORTEN);
+    // Die Person speichert weiter, mit Kennung und ohne: Beides gelingt, die Notiz bleibt.
+    await speichern(
+      users.plattformErika,
+      ERIKA,
+      { ...ANTWORTEN, beruf: { text: 'Rentnerin' } },
+      id,
+    );
+    await speichern(users.plattformErika, ERIKA, { ...ANTWORTEN, beruf: { text: 'Lehrerin' } });
+    const { rows } = await asPostgres<{ answers: Record<string, unknown> }>(
+      'select answers from public.patient_questionnaire_responses where id = $1',
+      [id],
+    );
+    expect(rows[0]!.answers).toEqual({ ...ANTWORTEN, ...notiz });
+    expect((await asUser<Zeile>(users.plattformErika, STAND, [ERIKA])).rows[0]!.answers).toEqual(
+      ANTWORTEN,
+    );
+  });
+
+  it('entzogen, abgelaufene Lesefrist, andere Organisation: abgewiesen, kein Bogen', async () => {
+    const speichernAls = (konto: string) =>
+      abgefangen(
+        asUser(konto, SPEICHERN, [ERIKA, null, 'anamnese_v8', '1.0.0', JSON.stringify(ANTWORTEN)]),
+      );
+    const fremd = await fremdeOrganisation();
+    expect((await speichernAls(fremd.owner))?.message).toContain('not allowed');
+    await asPostgres(
+      `update public.patients
+          set care_concluded_on = current_date - 40, care_concluded_at = now(),
+              care_concluded_by = $2::uuid
+        where id = $1`,
+      [patients.erika, users.therapist],
+    );
+    expect((await speichernAls(users.plattformErika))?.message).toContain('not allowed');
+    await asPostgres(
+      `update public.patients set care_concluded_on = null, care_concluded_at = null,
+              care_concluded_by = null where id = $1`,
+      [patients.erika],
+    );
+    await asPostgres(
+      `update public.platform_accesses
+          set status = 'revoked', revoked_at = now(), revoked_reason = 'practice'
+        where id = $1`,
+      [ERIKA],
+    );
+    expect((await speichernAls(users.plattformErika))?.message).toContain('not allowed');
+    const { rows } = await asPostgres<{ n: number }>(
+      `select count(*)::int as n from public.patient_questionnaire_responses where source = 'platform'`,
+    );
+    expect(rows[0]!.n).toBe(0);
   });
 
   it('haelt die Fassung eines Entwurfs fest - eine neue Fassung heisst neu beginnen (Zweitreview)', async () => {
