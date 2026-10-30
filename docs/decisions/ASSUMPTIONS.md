@@ -1614,3 +1614,5 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes · erledigt · Wie
 | ANN-809 | Lesefrist vom Server für jeden Zugang; Vertretung liest den Satz mit Namen | Technik · entschieden (Jannes) | `inLesefrist` in `src/features/portal/platform/hauptsache.ts` |
 | ANN-810 | Fragebogen in der Lesefrist: Speichern und Senden abgewiesen, Verwerfen bleibt | Technik · entschieden (Jannes) | `EntwurfVerwerfen` in `src/features/portal/platform/Befundbogen.tsx` |
 | ANN-811 | Termine: Schritt 2 unter 24 h wie Schritt 1, nach der Absage ihr Eingang, Hero „Ansehen, ändern, absagen“ | Praxisprozess · entschieden (Jannes) | `heroWeg` in `src/features/portal/platform/termintexte.ts` |
+| ANN-812 | Gewohnheiten: nur der feste Satz, ohne Gebrauchsanweisung davor | Praxisprozess · entschieden (Jannes) | `Gewohnheiten` in `src/features/portal/platform/Gewohnheiten.tsx` |
+| ANN-813 | Tagebuch: Bestätigung am Eintrag (Haken 3 s, Satz für Vorlesesoftware), der Fokus bleibt am „+“ | Technik · entschieden (Jannes) | `BESTAETIGUNG_MS` in `src/features/portal/platform/TagebuchEintragen.tsx` |

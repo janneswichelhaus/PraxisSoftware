@@ -46,6 +46,7 @@ export function LebensmittelSuche({
   detailAktion,
   fensterInhalt,
   ohneZahlen = false,
+  trefferStatus,
 }: {
   suchen: (begriff: string) => Promise<Lebensmittel[]>;
   /** Anfang des Abfrageschlüssels; der Begriff kommt dazu. */
@@ -63,6 +64,8 @@ export function LebensmittelSuche({
   fensterInhalt?: (f: Lebensmittel, schliessen: () => void) => ReactNode;
   /** „Zahlen ausblenden“ der Person (ADR-027 Punkt 11): Treffer ohne Energie. */
   ohneZahlen?: boolean;
+  /** Rechts am Treffer, etwa der Haken nach dem Eintragen im Tagebuch. */
+  trefferStatus?: (f: Lebensmittel) => ReactNode;
 }) {
   // Der Begriff bleibt im Arbeitsspeicher, nie in der Adresse (ADR-011,
   // ADR-027 Punkt 8: er verriete, was eine Person isst). Zurück aus einem
@@ -109,7 +112,13 @@ export function LebensmittelSuche({
           {passende.length > 0 ? (
             <Listenabschnitt titel="Eigene" anzahl={passende.length}>
               {passende.map((f) => (
-                <Trefferzeile key={f.id} f={f} onOeffnen={setOffen} ohneZahlen={ohneZahlen} />
+                <Trefferzeile
+                  key={f.id}
+                  f={f}
+                  onOeffnen={setOffen}
+                  ohneZahlen={ohneZahlen}
+                  status={trefferStatus?.(f)}
+                />
               ))}
             </Listenabschnitt>
           ) : null}
@@ -131,6 +140,7 @@ export function LebensmittelSuche({
                     f={f}
                     onOeffnen={setOffen}
                     ohneZahlen={ohneZahlen}
+                    status={trefferStatus?.(f)}
                   />
                 ))}
               </Listenabschnitt>
@@ -163,16 +173,19 @@ export function Trefferzeile({
   onOeffnen,
   to,
   ohneZahlen = false,
+  status,
 }: {
   f: Lebensmittel;
   onOeffnen?: (f: Lebensmittel) => void;
   to?: string;
   ohneZahlen?: boolean;
+  status?: ReactNode;
 }) {
   return (
     <ListRow
       titel={f.name}
       meta={trefferMeta(f, ohneZahlen)}
+      {...(status ? { status } : {})}
       {...(to ? { to } : { onClick: () => onOeffnen?.(f) })}
     />
   );

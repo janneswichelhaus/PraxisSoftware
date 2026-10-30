@@ -798,8 +798,8 @@ test.describe('Gewohnheiten', () => {
     const leiste = await page.locator('nav.reiterleiste').boundingBox();
     const unten = Math.min(812, leiste && leiste.height > 0 ? leiste.y : 812);
     expect(letzter.y + letzter.height).toBeLessThanOrEqual(unten);
-    // Der feste Satz steht unverändert, jetzt unter den Gewohnheiten.
-    const satz = await page.getByText(/^Tippen Sie die Tage an/).boundingBox();
+    // Der feste Satz steht unter den Gewohnheiten, ohne Gebrauchsanweisung davor (ANN-812).
+    const satz = await page.getByText(/^Ein Tag ohne Haken ist einfach/).boundingBox();
     expect(satz!.y).toBeGreaterThan(letzter.y);
   });
 });

@@ -134,12 +134,12 @@ afterEach(() => {
 });
 
 describe('Eintragen ins Tagebuch (Handoff 2026-10-29, 5.7)', () => {
-  it('trägt mit „+“ die Menge vom letzten Mal ein und bleibt für das Nächste auf der Seite', async () => {
+  it('trägt mit „+“ ein: der Haken am „+“, der Fokus bleibt, die Liste rückt nicht (ANN-813)', async () => {
     const nutzer = userEvent.setup();
     renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
-    await nutzer.click(
-      await screen.findByRole('button', { name: /^Haferflocken eintragen \(Portion/ }),
-    );
+    const plus = await screen.findByRole('button', { name: /^Haferflocken eintragen \(Portion/ });
+    const zeileVorher = plus.closest('li')!;
+    await nutzer.click(plus);
     await waitFor(() =>
       expect(tagebuchEintragen).toHaveBeenCalledWith(
         ZUGANG.access_id,
@@ -149,30 +149,49 @@ describe('Eintragen ins Tagebuch (Handoff 2026-10-29, 5.7)', () => {
         expect.anything(),
       ),
     );
-    // Rückmeldung oben, mit dem Fokus; Zuletzt und Suche bleiben, zurück geht es über „← Tagebuch“.
-    const meldung = await screen.findByText('„Haferflocken“ eingetragen.');
-    expect(meldung.closest('[tabindex="-1"]') ?? meldung).toHaveFocus();
+    // Vorgelesen über die Statuszeile, zu sehen als Haken am „+“; der Fokus bleibt dort.
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('„Haferflocken“ eingetragen.'),
+    );
+    expect(screen.getByRole('status')).toHaveClass('sr-only');
+    const nachher = screen.getByRole('button', { name: /^Haferflocken eintragen \(Portion/ });
+    expect(nachher).toHaveFocus();
+    expect(nachher.querySelector('svg')).not.toBeNull();
+    expect(nachher).not.toHaveTextContent('+');
+    expect(nachher.closest('li')).toBe(zeileVorher);
+    // Keine Rückmeldung oben, die die Liste schöbe; Suche und Rückweg bleiben.
+    expect(
+      screen.queryByText('„Haferflocken“ eingetragen.', { selector: ':not(.sr-only)' }),
+    ).toBeNull();
     expect(screen.getByRole('heading', { level: 1, name: 'Mittagessen eintragen' })).toBeVisible();
     expect(screen.getByRole('searchbox')).toBeVisible();
     expect(screen.getByRole('link', { name: '← Tagebuch' })).toHaveAttribute(
       'href',
       expect.stringContaining('/p/ernaehrung/tagebuch?'),
     );
-    // Ein zweites Lebensmittel ist eine neue Rückmeldung, auch wenn es dasselbe ist.
-    await nutzer.click(screen.getByRole('button', { name: /^Haferflocken eintragen \(Portion/ }));
+    // Nach einer Weile steht wieder „+“ da, und die Statuszeile ist leer für das Nächste.
+    await waitFor(() => expect(nachher).toHaveTextContent('+'), { timeout: 4000 });
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    await nutzer.click(nachher);
     await waitFor(() => expect(tagebuchEintragen).toHaveBeenCalledTimes(2));
-    expect(await screen.findByText('„Haferflocken“ eingetragen.')).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('„Haferflocken“ eingetragen.'),
+    );
   });
 
-  it('trägt aus dem Fenster ein, schließt es und bleibt auf der Seite', async () => {
+  it('trägt aus dem Fenster ein, schließt es und zeigt den Haken an der Zeile (ANN-813)', async () => {
     const nutzer = userEvent.setup();
     renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
     await nutzer.click(await screen.findByRole('button', { name: /^Haferflocken(?! eintragen)/ }));
     const fenster = await screen.findByRole('dialog', { name: 'Haferflocken' });
     await nutzer.click(within(fenster).getByRole('button', { name: 'Eintragen' }));
     await waitFor(() => expect(tagebuchEintragen).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText('„Haferflocken“ eingetragen.')).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('„Haferflocken“ eingetragen.'),
+    );
     expect(screen.queryByRole('dialog')).toBeNull();
+    const plus = screen.getByRole('button', { name: /^Haferflocken eintragen \(Portion/ });
+    expect(plus.querySelector('svg')).not.toBeNull();
     expect(screen.getByRole('heading', { level: 1, name: 'Mittagessen eintragen' })).toBeVisible();
   });
 

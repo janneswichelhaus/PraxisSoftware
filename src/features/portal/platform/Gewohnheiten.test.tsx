@@ -117,6 +117,8 @@ describe('Gewohnheiten auf der Plattform', () => {
       'false',
     );
     expect(document.body).toHaveTextContent('es gibt keine Serie, die abreißt');
+    // Ohne Gebrauchsanweisung davor: Sie widersprach ohne Schreibrecht dem Satz oben (ANN-812).
+    expect(document.body).not.toHaveTextContent('Tippen Sie die Tage an');
     expect(document.body).not.toHaveTextContent(
       /in Folge|Tage am Stück|%|geschafft|von 7|Serie von/,
     );
@@ -246,7 +248,7 @@ describe('Gewohnheiten auf der Plattform', () => {
         'Vereinbaren Sie mit Ihrer Praxis eine kleine Gewohnheit, steht sie hier zum Abhaken.',
       ),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/Tippen Sie die Tage an/)).toBeNull();
+    expect(screen.queryByText(/Ein Tag ohne Haken/)).toBeNull();
     await pruefeBarrierefreiheit(container);
     unmount();
 

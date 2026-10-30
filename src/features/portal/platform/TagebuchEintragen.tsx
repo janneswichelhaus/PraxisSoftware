@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
@@ -7,11 +7,11 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
+import { HakenSymbol } from '@/components/ui/HakenSymbol';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -55,10 +55,16 @@ import {
 } from './api';
 import { tagName, zurueckZumTag } from './tagebuchAdresse';
 
+/** Was zuletzt eingetragen wurde, für den Haken an seiner Zeile. */
+type Eingetragen = Pick<Lebensmittel, 'kind' | 'id' | 'name'> & { mal: number };
+
+/** So lange steht der Haken am Eintrag: lang genug zum Sehen, kurz genug für das Nächste. */
+const BESTAETIGUNG_MS = 3000;
+
 /**
  * Ein Lebensmittel ins Tagebuch (ADR-027 Punkte 8 bis 10); die Werte rechnet der Server,
- * der Suchbegriff steht nie in der Adresse. Nach dem Eintragen bleibt die Seite für das Nächste
- * offen, mit Rückmeldung; „← Tagebuch“ führt zum Tag zurück (ANN-798).
+ * der Suchbegriff steht nie in der Adresse. Danach bleibt die Seite offen, der Haken steht am
+ * Eintrag (ANN-813); „← Tagebuch“ führt zum Tag zurück (ANN-798).
  */
 export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
   const [suche] = useSearchParams();
@@ -86,8 +92,13 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
   const gescheitert =
     (tagebuch.data === undefined && tagebuch.isError) ||
     (ernaehrung.data === undefined && ernaehrung.isError);
-  // Jede Bestätigung eine neue Zeile, auch die zweite gleichlautende (`mal` als Schlüssel).
-  const [eingetragen, setEingetragen] = useState<{ name: string; mal: number } | null>(null);
+  // Die Bestätigung steht am Eintrag selbst, eine Weile lang; jede neue beginnt von vorn (`mal`).
+  const [eingetragen, setEingetragen] = useState<Eingetragen | null>(null);
+  useEffect(() => {
+    if (!eingetragen) return;
+    const uhr = window.setTimeout(() => setEingetragen(null), BESTAETIGUNG_MS);
+    return () => window.clearTimeout(uhr);
+  }, [eingetragen]);
 
   return (
     <>
@@ -97,13 +108,12 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
         description={tag && heute && tag !== heute ? tagName(tag, heute) : undefined}
         stufe="seite"
       />
-      {/* Kopf zu Inhalt 24, die Rückmeldung zum Inhalt 16 (DESIGN.md, Rhythmus). */}
-      {eingetragen ? (
-        <Rueckmeldung key={eingetragen.mal} className="mt-6">
-          „{eingetragen.name}“ eingetragen.
-        </Rueckmeldung>
-      ) : null}
-      <div className={eingetragen ? 'mt-4' : 'mt-6'}>
+      {/* Zu sehen ist der Haken am Eintrag, vorgelesen dieser Satz; der Fokus bleibt am „+“, und
+          nichts schiebt die Liste (ANN-813). Kopf zu Inhalt 24 (DESIGN.md, Rhythmus). */}
+      <p role="status" className="sr-only">
+        {eingetragen ? `„${eingetragen.name}“ eingetragen.` : null}
+      </p>
+      <div className="mt-6">
         {!geladen ? (
           gescheitert ? (
             <ErrorState
@@ -134,7 +144,15 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
             tagebuch={tagebuch.data}
             tag={tag!}
             mahlzeit={mahlzeit}
-            onEingetragen={(name) => setEingetragen((alt) => ({ name, mal: (alt?.mal ?? 0) + 1 }))}
+            eingetragen={eingetragen}
+            onEingetragen={(f) =>
+              setEingetragen((alt) => ({
+                kind: f.kind,
+                id: f.id,
+                name: f.name,
+                mal: (alt?.mal ?? 0) + 1,
+              }))
+            }
           />
         )}
       </div>
@@ -179,6 +197,7 @@ function Suche({
   tagebuch,
   tag,
   mahlzeit,
+  eingetragen,
   onEingetragen,
 }: {
   zugang: Plattformzugang;
@@ -186,9 +205,12 @@ function Suche({
   tagebuch: EigenesTagebuch;
   tag: string;
   mahlzeit: Mahlzeit;
-  onEingetragen: (name: string) => void;
+  eingetragen: Pick<Lebensmittel, 'kind' | 'id'> | null;
+  onEingetragen: (f: Lebensmittel) => void;
 }) {
   const ohneZahlen = tagebuch.hide_numbers;
+  const bestaetigt = (f: Lebensmittel) => eingetragen !== null && gleich(f, eingetragen);
+  const haken = (f: Lebensmittel) => (bestaetigt(f) ? <Eintragshaken /> : undefined);
   const verbunden = useIstVerbunden();
   const ohneNetzId = useId();
   const letzte = (f: Lebensmittel) =>
@@ -199,6 +221,7 @@ function Suche({
       schluessel={['platform-foods', zugang.access_id]}
       eigene={ernaehrung.profile.own_foods}
       ohneZahlen={ohneZahlen}
+      trefferStatus={haken}
       ohneBegriff={(oeffnen) => (
         // Unter 23rem rückt „+“ unter den Namen: Ein Lebensmittel bricht nur zwischen Wörtern.
         <div className="flex flex-col gap-8 max-[23rem]:[&_li]:flex-wrap max-[23rem]:[&_li>:first-child]:basis-full max-[23rem]:[&_li>:nth-child(2)]:ml-auto max-[23rem]:[&_li>:nth-child(2)]:pb-2 [&>*]:mt-0">
@@ -219,6 +242,7 @@ function Suche({
                   ohneZahlen={ohneZahlen}
                   onOeffnen={oeffnen}
                   onEingetragen={onEingetragen}
+                  bestaetigt={bestaetigt(s.food)}
                   ohneNetz={verbunden ? undefined : ohneNetzId}
                 />
               ))}
@@ -238,6 +262,7 @@ function Suche({
                 ohneZahlen={ohneZahlen}
                 onOeffnen={oeffnen}
                 onEingetragen={onEingetragen}
+                bestaetigt={bestaetigt(s.food)}
                 ohneNetz={verbunden ? undefined : ohneNetzId}
               />
             ))}
@@ -245,7 +270,13 @@ function Suche({
           {ernaehrung.profile.own_foods.length > 0 ? (
             <Listenabschnitt titel="Eigene Lebensmittel">
               {ernaehrung.profile.own_foods.map((f) => (
-                <Trefferzeile key={f.id} f={f} onOeffnen={oeffnen} ohneZahlen={ohneZahlen} />
+                <Trefferzeile
+                  key={f.id}
+                  f={f}
+                  onOeffnen={oeffnen}
+                  ohneZahlen={ohneZahlen}
+                  status={haken(f)}
+                />
               ))}
             </Listenabschnitt>
           ) : null}
@@ -261,9 +292,9 @@ function Suche({
             tag={tag}
             mahlzeit={mahlzeit}
             ohneZahlen={ohneZahlen}
-            onEingetragen={(name) => {
+            onEingetragen={() => {
               schliessen();
-              onEingetragen(name);
+              onEingetragen(f);
             }}
             {...(anfang ? { anfang } : {})}
             unten={
@@ -292,6 +323,7 @@ function Schnellzeile({
   ohneZahlen,
   onOeffnen,
   onEingetragen,
+  bestaetigt,
   ohneNetz,
 }: {
   zugang: Plattformzugang;
@@ -300,11 +332,13 @@ function Schnellzeile({
   mahlzeit: Mahlzeit;
   ohneZahlen: boolean;
   onOeffnen: (f: Lebensmittel) => void;
-  onEingetragen: (name: string) => void;
+  onEingetragen: (f: Lebensmittel) => void;
+  /** Gerade eingetragen: Statt „+“ steht eine Weile der Haken (ANN-813). */
+  bestaetigt: boolean;
   /** Ohne Netz die Kennung des Satzes, der sagt, warum „+“ gesperrt ist. */
   ohneNetz?: string | undefined;
 }) {
-  const eintragen = useEintragen(zugang, s.food, tag, mahlzeit, onEingetragen);
+  const eintragen = useEintragen(zugang, s.food, tag, mahlzeit, () => onEingetragen(s.food));
   const anfang = letzteMenge(s);
   const geprueft = anfang ? mengePruefen(s.food, anfang.einheit, anfang.wert) : null;
   const menge = geprueft && 'menge' in geprueft ? geprueft : null;
@@ -329,16 +363,20 @@ function Schnellzeile({
               <Symbolknopf
                 beschriftung={`${s.food.name} eintragen (${text})`}
                 variant="secondary"
-                disabled={eintragen.isPending}
                 className={GESPERRT}
                 {...(ohneNetz ? { 'aria-disabled': true, 'aria-describedby': ohneNetz } : {})}
+                // Ein Riegel statt `disabled`: Ein gesperrter Knopf verlöre den Fokus (ANN-813).
                 onClick={() => {
-                  if (!ohneNetz) eintragen.mutate(menge.angabe);
+                  if (!ohneNetz && !eintragen.isPending) eintragen.mutate(menge.angabe);
                 }}
               >
-                <span aria-hidden="true" className="text-xl">
-                  +
-                </span>
+                {bestaetigt ? (
+                  <HakenSymbol className="haken-gesetzt size-5" />
+                ) : (
+                  <span aria-hidden="true" className="text-xl">
+                    +
+                  </span>
+                )}
               </Symbolknopf>
             ),
           }
@@ -349,6 +387,15 @@ function Schnellzeile({
           }
         : {})}
     />
+  );
+}
+
+/** Der Haken an einem Treffer, der gerade aus dem Fenster eingetragen wurde (ANN-813). */
+function Eintragshaken() {
+  return (
+    <span className="text-accent inline-flex size-11 items-center justify-center">
+      <HakenSymbol className="haken-gesetzt size-5" />
+    </span>
   );
 }
 

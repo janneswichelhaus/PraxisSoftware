@@ -103,11 +103,10 @@ export function Gewohnheiten({ zugang }: { zugang: Plattformzugang }) {
               />
             ))}
           </ul>
-          {/* Darunter, damit die erste Leiste auch bei „Sehr groß“ über den Reitern steht (ANN-800);
-              im Abstand eines Abschnitts, sonst liest er sich als Teil der letzten Gewohnheit. */}
+          {/* Nur der feste Satz (ADR-006 Punkt 11, ANN-812), darunter: Die erste Leiste steht auch
+              bei „Sehr groß“ über den Reitern (ANN-800), im Abstand eines Abschnitts. */}
           <p className="text-ink-muted mt-10 max-w-prose [.plattform-schrift[data-rechner]_&]:mt-12">
-            Tippen Sie die Tage an, an denen Sie es gemacht haben. Ein Tag ohne Haken ist einfach
-            ein Tag ohne Haken – es gibt keine Serie, die abreißt.
+            Ein Tag ohne Haken ist einfach ein Tag ohne Haken – es gibt keine Serie, die abreißt.
           </p>
         </>
       )}
