@@ -88,13 +88,6 @@ in `begriffe.ts`, `Dialogfenster.tsx` und `Einstieg.tsx` ist das schon behoben. 
 Trennen ohne Lookbehind (erst an Leerraum, dann je Teil nach `-`) und ein Test, der Lookbehinds im
 ausgelieferten Code unter `src/` findet.
 
-### BEF-195 — Der Bereichsschalter der Plattform bricht bei „Sehr groß“ mitten im Namen
-2026-10-24 · Plattform, Gerüst · Design-Review 1e · offen (Vorschlag) · `Kopf` in `Navigation.tsx`\
-**Beobachtung.** Bei 375 px und „Sehr groß“ bricht „Für Maximilian Mustermann-Langenscheidt“ als
-„Musterman|n-“: `overflow-wrap: anywhere`, das Ziel ist halb so breit. **Erwartet.** Nur am
-Bindestrich brechen wie im Gruß (DR-114): zwei Reihen statt zwei Spalten oder der Name in eigener
-Zeile.
-
 ### BEF-201 — Plattform: „Löschen“ an einem Anhang löscht ohne Rückfrage
 2026-10-22 · Plattform, Rückfragen · Design-Review 1a (#290) · offen (Vorschlag) · `Anhaenge.tsx`,
 Vorbild `RueckfrageAnhaenge.tsx`\

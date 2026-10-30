@@ -185,14 +185,17 @@ export function Kopf({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechn
             }`.trim()}
           >
             {bereiche.map((z) => (
-              // POR-020: Bei 200 % am Telefon stehen die Bereiche untereinander,
-              // statt mitten im Wort zu trennen.
-              <li key={z.access_id} className="min-w-0 flex-1 max-[23rem]:basis-full">
+              // Bei 200 % stehen die Bereiche untereinander; bei „Sehr groß“ rücken sie erst
+              // untereinander, wenn ein Wort nicht ganz in die Hälfte passt, statt darin zu brechen.
+              <li
+                key={z.access_id}
+                className="min-w-0 flex-1 max-[23rem]:basis-full [[data-schrift=sehr-gross]_&]:min-w-min"
+              >
                 <Link
                   to={wahlAdresse(z)}
                   replace
                   aria-current={gewaehlt?.access_id === z.access_id ? 'page' : undefined}
-                  className="text-ink-muted aria-[current=page]:bg-surface aria-[current=page]:text-ink rounded-button flex min-h-11 items-center justify-center px-3 text-center text-base font-medium"
+                  className="text-ink-muted aria-[current=page]:bg-surface aria-[current=page]:text-ink rounded-button flex min-h-11 items-center justify-center px-3 text-center text-base font-medium [[data-schrift=sehr-gross]_&]:wrap-break-word"
                 >
                   {wahlName(z)}
                 </Link>

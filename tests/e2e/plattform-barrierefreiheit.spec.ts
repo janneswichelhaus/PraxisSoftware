@@ -832,6 +832,41 @@ test.describe('„Sehr groß“: nichts unter der Reiterleiste', () => {
       expect(ziel.y + ziel.height).toBeLessThanOrEqual(leiste.y);
     });
   }
+
+  test('handeln-fuer: Der Bereichsschalter bricht nicht im Namen, er rückt untereinander (BEF-195)', async ({
+    page,
+  }) => {
+    await sehrGross(page);
+    await oeffne(page, 'handeln-fuer', GRUSS);
+    await expect(page.locator('html[data-schrift="sehr-gross"]')).toHaveCount(1);
+    const bereiche = page.getByRole('navigation', { name: 'Bereich' }).getByRole('link');
+    await expect(bereiche).toHaveCount(2);
+    const [erster, zweiter] = await Promise.all((await bereiche.all()).map((b) => b.boundingBox()));
+    expect(zweiter!.y).toBeGreaterThanOrEqual(erster!.y + erster!.height);
+    // Jedes Wort, und jeder Teil eines Namens mit Bindestrich, steht in einer Zeile.
+    const gebrochen = await bereiche.evaluateAll((links) =>
+      links.flatMap((link) => {
+        const text = link.firstChild;
+        if (!text || text.nodeType !== Node.TEXT_NODE) return [];
+        const funde: string[] = [];
+        const inhalt = text.textContent ?? '';
+        let anfang = 0;
+        for (let i = 0; i <= inhalt.length; i += 1) {
+          const ende = i === inhalt.length || inhalt[i] === ' ' || inhalt[i - 1] === '-';
+          if (!ende || i === anfang) continue;
+          const teil = document.createRange();
+          teil.setStart(text, anfang);
+          teil.setEnd(text, i);
+          const zeilen = new Set([...teil.getClientRects()].map((r) => Math.round(r.top)));
+          if (zeilen.size > 1) funde.push(inhalt.slice(anfang, i));
+          anfang = inhalt[i] === ' ' ? i + 1 : i;
+        }
+        return funde;
+      }),
+    );
+    expect(gebrochen).toEqual([]);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
 });
 
 test.describe('Gewohnheiten', () => {
