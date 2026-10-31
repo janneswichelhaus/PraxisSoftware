@@ -440,7 +440,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | --- | --- | --- |
 | 7.25 | 2026-10-31 | Kreis `billing <-> patients` bleibt bewusst (Antwort zu #337). |
 
-Vermerk 7.24: `git show 06328e7:docs/development/ROADMAP.md`; 7.23: `git show
+Vermerk 7.24: `git show c8dd2aa:docs/development/ROADMAP.md`; 7.23: `git show
 6e6e37e:docs/development/ROADMAP.md`; bis 7.22 mit Zuschnitten:
 `git show 9452575:docs/development/ROADMAP.md`; vor 7.0: `git show
 eb43569:docs/development/ROADMAP-CHRONIK.md`.
