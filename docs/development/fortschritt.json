@@ -1825,7 +1825,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-31",
-          "nachweis": "Branch ccr-a7073b83-8qn5vp",
+          "nachweis": "#337",
           "vermerk": "ANN-819 bis ANN-822; ANN-809 und ANN-815 bis ANN-817 entschieden; Antworten zu #337; nur Oberfläche"
         },
         {
@@ -1834,8 +1834,17 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-31",
-          "nachweis": "Branch ccr-a7073b83-8qn5vp",
+          "nachweis": "#337",
           "vermerk": "Gegenseitige Abhängigkeiten 8 → 5, billing <-> patients bleibt (Jannes 2026-10-31); portal/platform/api.ts 2.245 → 9 Dateien unter 440 Zeilen; Pfad A ohne Auslöser aus Nr. 8, Zweitreview"
+        },
+        {
+          "id": "aufraeumen-terminformular",
+          "name": "Aufräumen: gemeinsames Terminformular und Fehlzeitformular, Aufräumrunde 2026-10-31",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-31",
+          "nachweis": "Branch ccr-71de462d-qufdxg",
+          "vermerk": "Fünf Terminformulare auf AppointmentForm, Dauerfehlzeit in NewEventPage; Programm −911 Zeilen, doppelte Zeilen 2,7 → 2,3 %, gegenseitige Abhängigkeiten 5 → 4; Standardweg ohne Migration; drei neue Vorschläge in BEFUNDE.md; Antworten zu #340: Bearbeiten behält die gespeicherte Person, einziger Standort vorgewählt"
         },
         {
           "id": "bef-223",

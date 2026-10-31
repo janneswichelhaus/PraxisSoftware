@@ -2,7 +2,6 @@
 // Seiten verdrahtet `src/routes` direkt; Art, Zustand und Wege des Termins stehen in `@/lib/termin`.
 
 export {
-  appointmentFormSchema,
   appointmentToFormValues,
   cancelAppointment,
   cancellationReasonSchema,
@@ -11,16 +10,12 @@ export {
   fetchAppointment,
   fetchAppointments,
   fetchPatientAppointments,
-  istAusserhalbArbeitszeit,
-  istVergangenheit,
   leererTermin,
-  liegtInVergangenheit,
   reopenAppointment,
   schreibfehler,
   updateAppointment,
   waehlbareAbsagegruende,
   type Appointment,
-  type AppointmentFormField,
   type AppointmentFormValues,
   type CalendarEntry,
   type CancellationReason,
@@ -32,10 +27,10 @@ export { dokumentiertOhneHaken, hakenFehlt, hakenZuruecknehmbar } from './haken'
 export { tageslageNeuLaden } from './tageslage';
 export { tagUmplanenAdresse } from './tagumplanen';
 export { fetchTerminTage, type TerminTag } from './terminTage';
-export { speicherfehlerText, terminFehlerliste, terminFeldfehler } from './terminformular';
+export { useAppointmentFormLists } from './useAppointmentFormLists';
 export { TerminErweiterungenKontext, type TerminErweiterungen } from './erweiterungen';
 
-export { AppointmentFormFields, ArbeitszeitRueckfrage } from './AppointmentFormFields';
+export { AppointmentForm, HomeVisitAddressHint } from './AppointmentForm';
 export { DaysToReschedule } from './DaysToReschedule';
 export { FolgeterminVorschlaege } from './FolgeterminVorschlaege';
 export { FreigabeNachHaken } from './FreigabeNachHaken';

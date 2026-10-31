@@ -71,7 +71,9 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 const { TrainingAppointmentPage } = await import('./TrainingAppointmentPage');
 const { NewTrainingAppointmentPage } = await import('./NewTrainingAppointmentPage');
+const { EditTrainingAppointmentPage } = await import('./EditTrainingAppointmentPage');
 const { vereinbarungText } = await import('./api');
+const { AusserhalbArbeitszeitError } = await import('@/features/calendar/appointments/api');
 
 const termin = {
   id: TERMIN,
@@ -243,6 +245,46 @@ describe('NewTrainingAppointmentPage', () => {
     });
   });
 
+  it('nennt in der Zusammenfassung die betreuende Person, nicht die behandelnde', async () => {
+    fetchAssignableTrainers.mockResolvedValue([
+      { staff_member_id: TOM, display_name: 'Tom Trainingsbetreuung' },
+      { staff_member_id: '55555555-5555-4555-8555-000000000007', display_name: 'Tara Training' },
+    ]);
+    const nutzer = userEvent.setup();
+    renderWithProviders(
+      <NewTrainingAppointmentPage user={testUser(['office'], 'Olivia')} />,
+      `/training/termine/neu?kunde=${TINA}&datum=2027-05-13&beginn=10:00`,
+    );
+    await screen.findByRole('option', { name: 'Tara Training' });
+    await nutzer.click(screen.getByRole('button', { name: 'Trainingstermin anlegen' }));
+
+    const zusammenfassung = await screen.findByRole('alert');
+    expect(
+      within(zusammenfassung).getByRole('link', { name: 'Betreuende Person ist erforderlich.' }),
+    ).toBeVisible();
+    expect(within(zusammenfassung).queryByText(/Behandelnde/)).toBeNull();
+    expect(createTrainingAppointment).not.toHaveBeenCalled();
+  });
+
+  it('fragt nach der Arbeitszeit der betreuenden Person, nicht der behandelnden', async () => {
+    createTrainingAppointment.mockRejectedValueOnce(new AusserhalbArbeitszeitError());
+    const nutzer = userEvent.setup();
+    renderWithProviders(
+      <NewTrainingAppointmentPage user={testUser(['trainer'], 'Tom')} />,
+      `/training/termine/neu?kunde=${TINA}&datum=2027-05-13&beginn=10:00&person=${TOM}`,
+    );
+    await waitFor(() => expect(screen.getByLabelText('Betreuende Person *')).toHaveValue(TOM));
+    await nutzer.click(screen.getByRole('button', { name: 'Trainingstermin anlegen' }));
+
+    const fenster = await screen.findByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
+    expect(fenster).toHaveTextContent(
+      'außerhalb der hinterlegten Arbeitszeit der betreuenden Person',
+    );
+    expect(
+      within(fenster).getByRole('button', { name: 'Trainingstermin anlegen – trotzdem' }),
+    ).toBeVisible();
+  });
+
   it('hängt den Termin an die gewählte Vereinbarung', async () => {
     const nutzer = userEvent.setup();
     renderWithProviders(
@@ -256,5 +298,22 @@ describe('NewTrainingAppointmentPage', () => {
     await nutzer.click(screen.getByRole('button', { name: 'Trainingstermin anlegen' }));
     await waitFor(() => expect(createTrainingAppointment).toHaveBeenCalled());
     expect(createTrainingAppointment.mock.calls[0]![2]).toBe(BASIS);
+  });
+});
+
+describe('EditTrainingAppointmentPage', () => {
+  it('behält eine Betreuung, die gerade nicht zugeordnet werden kann', async () => {
+    fetchAssignableTrainers.mockResolvedValue([
+      { staff_member_id: '55555555-5555-4555-8555-000000000007', display_name: 'Tara Training' },
+    ]);
+    renderWithProviders(
+      <EditTrainingAppointmentPage user={testUser(['office'], 'Olivia')} />,
+      `/training/termine/${TERMIN}/bearbeiten`,
+    );
+
+    const person = await screen.findByLabelText('Betreuende Person *');
+    await screen.findByRole('option', { name: 'Tara Training' });
+    expect(person).toHaveValue(TOM);
+    expect(within(person).getByRole('option', { name: 'Tom Trainingsbetreuung' })).toBeVisible();
   });
 });

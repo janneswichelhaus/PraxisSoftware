@@ -1100,6 +1100,50 @@ describe('NewAppointmentPage', () => {
       );
     });
 
+    it('waehlt die einzige zuordenbare Person vor, wenn die angemeldete keine Person hat', async () => {
+      fetchAssignableTherapists.mockResolvedValue([
+        { staff_member_id: STAFF_ANNA, display_name: 'Anna Beispiel' },
+      ]);
+      renderWithProviders(
+        <NewAppointmentPage user={testUser(['owner'], 'Ohne Personaldatensatz')} />,
+        `/patienten/${PATIENT_ID}/termine/neu`,
+      );
+      await formularAbwarten();
+
+      await waitFor(() =>
+        expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(STAFF_ANNA),
+      );
+    });
+
+    it('nimmt die Pflichtmeldung zurueck, sobald die einzige Person vorgewaehlt ist', async () => {
+      let liefern: (liste: StaffApi.AssignableTherapist[]) => void = () => undefined;
+      fetchAssignableTherapists.mockReturnValue(
+        new Promise<StaffApi.AssignableTherapist[]>((fertig) => {
+          liefern = fertig;
+        }),
+      );
+      const user = userEvent.setup();
+      renderWithProviders(
+        <NewAppointmentPage user={testUser(['owner'], 'Ohne Personaldatensatz')} />,
+        `/patienten/${PATIENT_ID}/termine/neu?datum=2027-05-19&beginn=09:00`,
+      );
+      // Abgeschickt, bevor die Personen da sind: Es fehlt nur die Person.
+      await user.click(await formularAbwarten());
+      expect(await screen.findAllByText('Behandelnde Person ist erforderlich.')).not.toHaveLength(
+        0,
+      );
+
+      liefern([{ staff_member_id: STAFF_ANNA, display_name: 'Anna Beispiel' }]);
+
+      await waitFor(() =>
+        expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(STAFF_ANNA),
+      );
+      await waitFor(() =>
+        expect(screen.queryByText('Behandelnde Person ist erforderlich.')).toBeNull(),
+      );
+      expect(createAppointment).not.toHaveBeenCalled();
+    });
+
     it('leert eine Person aus der Adresszeile, die gar nicht zuordenbar ist', async () => {
       const fremd = '55555555-5555-4555-8555-000000000009';
       renderWithProviders(

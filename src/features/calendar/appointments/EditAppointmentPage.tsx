@@ -1,119 +1,51 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
-import type { Formularfehler } from '@/lib/formularfehler';
-import { Button } from '@/components/ui/Button';
-import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ErrorState } from '@/components/ui/Feedback';
-import { Formularfuss } from '@/components/ui/Formularfuss';
-import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
-import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Textlink } from '@/components/ui/Textlink';
-import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { fetchPatient } from '@/features/patients';
-import {
-  fetchStaffMembers,
-  fetchAssignableTherapists,
-  fetchLocations,
-  type AssignableTherapist,
-} from '@/features/workforce';
 import type { CurrentUser } from '@/features/core';
-import {
-  AppointmentFormFields,
-  ArbeitszeitRueckfrage,
-  UebernommeneAdresse,
-} from './AppointmentFormFields';
+import { AppointmentForm } from './AppointmentForm';
+import { UebernommeneAdresse } from './AppointmentFormFields';
 import { TerritoryHint } from '@/features/calendar/territories/TerritoryHint';
 import { NachladeHinweis } from '@/components/ui/Rueckmeldung';
 import {
-  appointmentFormSchema,
   appointmentToFormValues,
-  fensterEnde,
   fetchAppointment,
-  istAusserhalbArbeitszeit,
-  istVergangenheit,
-  liegtInVergangenheit,
-  leererTermin,
   locationSummary,
   terminLaengeMinuten,
   updateAppointment,
-  type AppointmentFormField,
-  type AppointmentFormValues,
 } from './api';
 import { tageslageNeuLaden } from './tageslage';
-import { Wegauskunft } from './Wegauskunft';
-import { frageAusFormular, useWegpruefung } from './wegpruefung';
-import { speicherfehlerText, terminFehlerliste, terminFeldfehler } from './terminformular';
+import { useAppointmentFormLists } from './useAppointmentFormLists';
 import { formatLocalDate, formatLocalTimeRange, todayInTimeZone } from '@/lib/datum';
 import {
   patientName,
-  TERMINFENSTER_MINUTEN,
   type AppointmentType,
   kalenderZumTermin,
   zurueckZumTermin,
 } from '@/lib/termin';
 
-/** Die Felder, an denen sich eine Eingabe vom gespeicherten Termin unterscheiden kann. */
-const FELDER: readonly AppointmentFormField[] = [
-  'staff_member_id',
-  'appointment_type',
-  'date',
-  'start_time',
-  'end_time',
-  'location_id',
-];
-
-/** Der Satz, den die Schnittstelle liefert, wenn sie keinen Grund nennen kann. */
-const STANDARDFEHLER = 'Der Termin konnte nicht geändert werden.';
+/** Ein Ereignis ohne Patient:in hätte beim Hausbesuch keine Anschrift; der Server weist ihn ab. */
+const EREIGNIS_ARTEN = ['practice', 'video'] as const satisfies AppointmentType[];
 
 /**
- * Organisatorische Bearbeitung eines geplanten Termins (CAL-003).
- *
- * Patient und Organisation sind nicht änderbar - die Serverfunktion nimmt sie
- * gar nicht erst entgegen. Gespeichert wird gegen den Stand, auf dem die
- * Bearbeitung beruht; hat zwischenzeitlich jemand anderes gespeichert, wird
- * der Vorgang abgewiesen statt die fremde Änderung zu überschreiben.
- *
- * **An einer Fehlzeit heißt die Seite „Teilnahme ändern" (TER-01).** Sie
- * tauscht dort nur die beteiligte Person. Zeit, Art und Ort gelten für alle
- * Beteiligten (ANN-051), und der Server weist eine Änderung an dieser Stelle
- * ab; sie stehen deshalb als Auskunft da, mit dem Weg zu „Fehlzeit
- * bearbeiten", wo sie sich für alle ändern lassen.
+ * Einen geplanten Termin organisatorisch ändern, gegen den gelesenen Stand. An einer Fehlzeit
+ * heißt die Seite „Teilnahme ändern“ und tauscht nur die Person (ANN-051).
  */
 export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const navigate = useNavigate();
   const [suche] = useSearchParams();
-  // Der Termin hat einen Rückweg (Kalender, Akte, Tagesliste); die Bearbeitung
-  // reicht ihn durch, damit er über diese Station nicht verloren geht (UX-012).
+  // Der Rückweg des Termins reist durch die Bearbeitung weiter.
   const rueckweg = suche.get(RUECKWEG_PARAM);
   const queryClient = useQueryClient();
-
-  const [werte, setWerte] = useState<Record<AppointmentFormField, string>>(leererTermin);
-  const [fehler, setFehler] = useState<Partial<Record<AppointmentFormField, string>>>({});
-  /** Die Zusammenfassung der letzten Prüfung - wie in der Terminanlage (UIK-02). */
-  const [pruefung, setPruefung] = useState<{ nummer: number; fehler: Formularfehler[] }>({
-    nummer: 0,
-    fehler: [],
-  });
-  const [vorbefuellt, setVorbefuellt] = useState(false);
-  /**
-   * Länge, aus der sich das Ende ergibt (CAL-010a).
-   *
-   * Startwert ist die Länge des gespeicherten Termins, nicht das Terminfenster:
-   * §8.1 verbietet, einen Bestandstermin selbsttätig zu verlängern oder zu
-   * verkürzen. Wer die Länge ausdrücklich ändern will, tut das über den Knopf
-   * unten — dann greift die Regel.
-   */
-  const [fensterMinuten, setFensterMinuten] = useState(TERMINFENSTER_MINUTEN);
-  /** Enthält das Minutenfeld eine Zahl? Sonst gibt es kein Ende (CAL-020). */
-  const [dauerGueltig, setDauerGueltig] = useState(true);
 
   const termin = useQuery({
     queryKey: ['appointment', appointmentId],
@@ -123,46 +55,10 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   });
 
   const istEreignis = termin.data?.kind === 'internal';
+  // An einer Fehlzeit stehen Beschäftigte zur Wahl, nicht nur Behandelnde: Das Büro nimmt teil.
+  const listen = useAppointmentFormLists(istEreignis ? 'staff' : 'therapy', Boolean(termin.data));
 
-  const therapeuten = useQuery({
-    queryKey: ['assignable-therapists'],
-    queryFn: fetchAssignableTherapists,
-    enabled: Boolean(termin.data) && !istEreignis,
-    retry: false,
-  });
-
-  /**
-   * Beteiligte eines Ereignisses sind Beschäftigte, nicht notwendig
-   * Behandelnde (CAL-016).
-   *
-   * Das Büro nimmt an einer Teambesprechung teil; in
-   * `list_assignable_therapists` steht es nicht. Mit dieser Liste stünde die
-   * eingetragene Person nicht in der Auswahl, und das Formular träte mit einer
-   * leeren Auswahl an - die erste Speicherung hätte die Beteiligung
-   * stillschweigend verschoben.
-   */
-  const beteiligte = useQuery({
-    queryKey: ['staff-members'],
-    queryFn: fetchStaffMembers,
-    enabled: Boolean(termin.data) && istEreignis,
-    retry: false,
-  });
-
-  const personen: AssignableTherapist[] = istEreignis
-    ? (beteiligte.data ?? [])
-        .filter((person) => person.employment_status === 'active')
-        .map((person) => ({
-          staff_member_id: person.id,
-          display_name: `${person.given_name} ${person.family_name}`,
-        }))
-    : (therapeuten.data ?? []);
-  /** Die Liste der Personen, aus der gewählt wird - je nach Art des Eintrags. */
-  const personenAbfrage = istEreignis ? beteiligte : therapeuten;
-
-  const standorte = useQuery({ queryKey: ['locations'], queryFn: fetchLocations, retry: false });
-
-  // Die Patientenadresse wird nur gebraucht, wenn zu einem Hausbesuch
-  // gewechselt wird; erst dann entsteht ein neuer Snapshot.
+  // Die Anschrift der Akte braucht erst der Wechsel zu einem Hausbesuch.
   const patient = useQuery({
     queryKey: ['patient', termin.data?.patient_id],
     queryFn: () => fetchPatient(termin.data!.patient_id!),
@@ -170,201 +66,27 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     retry: false,
   });
 
-  useEffect(() => {
-    if (termin.data && !vorbefuellt) {
-      setWerte(appointmentToFormValues(termin.data));
-      setFensterMinuten(terminLaengeMinuten(termin.data));
-      setVorbefuellt(true);
-    }
-  }, [termin.data, vorbefuellt]);
-
-  /** Ein Tag vor dem heutigen, noch nicht abgeschickt (FIX-019). */
-  const [vorfrage, setVorfrage] = useState<AppointmentFormValues | null>(null);
   const heute = user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : '';
-  /** Der gespeicherte Stand des Termins - Maßstab für „geändert" und für die Vergangenheit. */
-  const gespeichert = termin.data ? appointmentToFormValues(termin.data) : null;
-  /** Der gespeicherte Tag des Termins - nur ein anderer Tag davor ist ein Zurücklegen. */
-  const vorbefuelltesDatum = gespeichert?.date ?? '';
 
-  // UBK-012: „Passt es?“. Ein Hausbesuch, der Hausbesuch bleibt, behält seine
-  // Anschrift (ANN-003); seine Position steht in der Route seines Tages.
-  const wegfrage = useMemo(() => {
+  // Ein Hausbesuch, der Hausbesuch bleibt, behält seine Anschrift (ANN-003); sie steht in der Route.
+  const weg = useMemo(() => {
     const t = termin.data;
-    if (!t || t.kind === 'internal' || !user.organizationTimeZone) return null;
-    const bestehend =
-      t.appointment_type === 'home_visit'
-        ? {
-            terminId: t.id,
-            datum: appointmentToFormValues(t).date,
-            person: t.staff_member_id,
-          }
-        : null;
-    return frageAusFormular(werte, {
+    if (!t || t.kind === 'internal' || !user.organizationTimeZone) return undefined;
+    return {
       patientId: t.patient_id,
       zeitzone: user.organizationTimeZone,
-      bestehend,
+      bestehend:
+        t.appointment_type === 'home_visit'
+          ? { terminId: t.id, datum: appointmentToFormValues(t).date, person: t.staff_member_id }
+          : null,
       ohneTermin: t.id,
-    });
-  }, [werte, termin.data, user.organizationTimeZone]);
-  const weg = useWegpruefung(wegfrage);
+    };
+  }, [termin.data, user.organizationTimeZone]);
 
-  /**
-   * Weicht etwas vom gespeicherten Termin ab (TER-05)?
-   *
-   * Erst nach dem Befüllen: Bis dahin steht das leere Formular da, und das ist
-   * keine Eingabe.
-   */
-  const geaendert =
-    vorbefuellt &&
-    gespeichert !== null &&
-    termin.data !== undefined &&
-    termin.data !== null &&
-    (FELDER.some((feld) => werte[feld] !== gespeichert[feld]) ||
-      fensterMinuten !== terminLaengeMinuten(termin.data) ||
-      !dauerGueltig);
-
-  // Die Bearbeitung kennt keinen Entwurf: Die Rückfrage bietet nur Verwerfen
-  // und Bleiben an (ANN-046, TER-05).
-  const { freigeben, schutz } = useTextverlustschutz({
-    ungespeichert: geaendert,
-    texte: {
-      ...EINGABETEXTE,
-      bezeichnung: istEreignis ? 'Ungespeicherte Teilnahme' : 'Ungespeicherter Termin',
-    },
-  });
-
-  const mutation = useMutation({
-    mutationFn: (eingabe: {
-      werte: AppointmentFormValues;
-      bestaetigt: boolean;
-      vergangenheit: boolean;
-    }) =>
-      updateAppointment(
-        appointmentId!,
-        termin.data!.updated_at,
-        eingabe.werte,
-        eingabe.bestaetigt,
-        eingabe.vergangenheit,
-      ),
-    onSuccess: async () => {
-      // Detailansicht und Kalender zeigen sonst weiter den alten Stand.
-      await queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] });
-      // UBK-011: auch Tour, Fahrwege und Fahrpuffer.
-      await tageslageNeuLaden(queryClient);
-      // Gespeichert ist gespeichert: Der eigene Weg danach ist kein Verlust.
-      freigeben();
-      void navigate(zurueckZumTermin(rueckweg, appointmentId!), { replace: true });
-    },
-  });
-
-  function setzen(feld: AppointmentFormField, wert: string) {
-    setWerte((bisher) =>
-      feld === 'start_time'
-        ? // Verschieben lässt die Länge unangetastet - auch bei einem
-          // Termin, der von den Regellängen abweicht (ANN-056). Ein leeres
-          // Minutenfeld ergibt kein Ende, auch nicht über einen neuen Beginn.
-          {
-            ...bisher,
-            start_time: wert,
-            end_time: dauerGueltig ? fensterEnde(wert, fensterMinuten) : '',
-          }
-        : { ...bisher, [feld]: wert },
-    );
-    if (fehler[feld]) setFehler((bisher) => ({ ...bisher, [feld]: undefined }));
-    // Eine geänderte Eingabe macht die Rückfrage gegenstandslos.
-    if (mutation.isError) mutation.reset();
-  }
-
-  /** Wechselt die Länge ausdrücklich - danach gilt die Regel aus §8.1. */
-  function laengeWechseln(minuten: number | null) {
-    if (minuten !== null) setFensterMinuten(minuten);
-    setDauerGueltig(minuten !== null);
-    setWerte((bisher) => ({ ...bisher, end_time: fensterEnde(bisher.start_time, minuten) }));
-    if (fehler.end_time) setFehler(({ end_time: _entfaellt, ...rest }) => rest);
-    if (mutation.isError) mutation.reset();
-  }
-
-  /** Wiederholt den Vorgang mit einer weiteren Bestätigung (CAL-005, FIX-019). */
-  function bestaetigen(zusatz: { bestaetigt?: boolean; vergangenheit?: boolean }) {
-    if (mutation.isPending) return;
-    const ergebnis = appointmentFormSchema.safeParse(werte);
-    if (!ergebnis.success) return;
-    mutation.mutate({
-      werte: ergebnis.data,
-      bestaetigt: zusatz.bestaetigt ?? mutation.variables?.bestaetigt ?? false,
-      vergangenheit: zusatz.vergangenheit ?? mutation.variables?.vergangenheit ?? false,
-    });
-  }
-
-  function absenden(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (mutation.isPending) return;
-
-    const ergebnis = appointmentFormSchema.safeParse(werte);
-    const gefunden: Partial<Record<AppointmentFormField, string>> = ergebnis.success
-      ? {}
-      : terminFeldfehler(ergebnis.error.issues, werte, dauerGueltig);
-    // Eine gescheiterte Pflichtliste sperrt das Absenden (ZST-07): Die
-    // gespeicherte Person stünde sonst als leere Auswahl da - und ginge mit.
-    if (personenAbfrage.isError && !gefunden.staff_member_id) {
-      gefunden.staff_member_id = 'Bitte zuerst die Liste der Personen erneut laden.';
-    }
-    if (
-      !istEreignis &&
-      werte.appointment_type === 'practice' &&
-      standorte.isError &&
-      !gefunden.location_id
-    ) {
-      gefunden.location_id = 'Bitte zuerst die Liste der Standorte erneut laden.';
-    }
-
-    if (!ergebnis.success || Object.keys(gefunden).length > 0) {
-      setFehler(gefunden);
-      setPruefung((bisher) => ({
-        nummer: bisher.nummer + 1,
-        fehler: terminFehlerliste(
-          gefunden,
-          istEreignis ? 'Beteiligte Person' : 'Behandelnde Person',
-        ),
-      }));
-      return;
-    }
-
-    setFehler({});
-    setPruefung((bisher) => ({ ...bisher, fehler: [] }));
-    // Ein Tag vor dem heutigen: erst fragen, dann schreiben (FIX-019). Der
-    // Tag des Bestandstermins selbst zählt nicht - wer nur die Person eines
-    // vergangenen Termins ändert, hat nichts zurückgelegt.
-    if (
-      heute &&
-      liegtInVergangenheit(ergebnis.data.date, heute) &&
-      ergebnis.data.date !== vorbefuelltesDatum
-    ) {
-      setVorfrage(ergebnis.data);
-      return;
-    }
-    mutation.mutate({
-      werte: ergebnis.data,
-      bestaetigt: false,
-      // Bestandstermin in der Vergangenheit, Tag unverändert: Der Server
-      // verlangt die Bestätigung trotzdem; sie gilt dem Tag, der schon war.
-      vergangenheit:
-        ergebnis.data.date === vorbefuelltesDatum &&
-        liegtInVergangenheit(ergebnis.data.date, heute),
-    });
-  }
-
-  const zumTermin = zurueckZumTermin(rueckweg, appointmentId ?? '');
-
-  // Der Rückweg steht in jedem Zustand der Seite - beim Laden, im Fehlerfall
-  // und am abgesagten Termin (TER-03, ZST-08). Er folgt dem mitgereisten Weg;
-  // ohne ihn führt er zum Termin.
+  // Der Rückweg steht in jedem Zustand der Seite; ohne mitgereisten Weg führt er zum Termin.
   const kopf = <Rueckweg standard={kalenderZumTermin(appointmentId ?? '')} />;
 
-  // Ersetzt wird das Formular nur, solange es keinen Termin gibt: Ein
-  // gescheitertes Nachladen nimmt eine angefangene Änderung nicht mehr mit
-  // (ZST-03). Ein Ladefehler ist kein „Nicht gefunden" (TER-11). Laden und
-  // Fehler über den Baustein (DESIGN.md Regel 8).
+  // Nur ohne Termin ersetzt der Zustand das Formular; ein Ladefehler ist kein „Nicht gefunden“.
   if (!termin.data) {
     return (
       <>
@@ -388,14 +110,12 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   const daten = termin.data;
   const zone = daten.organization_time_zone;
 
-  // Ein Trainingstermin wird im Trainingsbereich verschoben (TRN-004): Dieses
-  // Formular kennt nur behandelnde Personen und die Anschrift der Akte.
+  // Ein Trainingstermin wird im Trainingsbereich verschoben, mit der Betreuung zur Wahl.
   if (daten.kind === 'training') {
     return <Navigate to={`/training/termine/${daten.id}/bearbeiten`} replace />;
   }
 
-  // Ein abgesagter Termin ist terminal. Die Serverfunktion weist ihn ohnehin
-  // ab; hier wird gar nicht erst ein Formular angeboten.
+  // Ein abgesagter Termin ist terminal; der Server weist ihn ohnehin ab.
   if (daten.status === 'cancelled') {
     return (
       <>
@@ -408,12 +128,8 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     );
   }
 
-  const bleibtHausbesuch =
-    daten.appointment_type === 'home_visit' && werte.appointment_type === 'home_visit';
-  /** Titel des Fehlerfensters - an einer Fehlzeit geht es um die Teilnahme (TER-22). */
-  const fehlertitel = istEreignis
-    ? 'Die Teilnahme konnte nicht geändert werden.'
-    : 'Der Termin konnte nicht geändert werden.';
+  const gespeichert = appointmentToFormValues(daten);
+  const fensterMinuten = terminLaengeMinuten(daten);
 
   return (
     <>
@@ -421,13 +137,10 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
 
       <PageHeader
         title={istEreignis ? 'Teilnahme ändern' : 'Termin bearbeiten'}
-        // Nur der Name; der Satz zu den Sternchen erklärte das Formular, nicht
-        // den Termin (UX-005g).
         description={
           istEreignis
             ? 'Hier wird nur die beteiligte Person getauscht.'
-            : // Eine Angabe, kein Satz: ohne Punkt wie überall (T8).
-              `Für ${patientName(daten)}`
+            : `Für ${patientName(daten)}`
         }
       />
 
@@ -439,14 +152,10 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
         />
       ) : null}
 
-      {/* Was an einer Fehlzeit für alle gilt, steht hier als Auskunft - samt
-          dem Weg, wo es sich ändern lässt (TER-01, TER-15). */}
+      {/* Was an einer Fehlzeit für alle gilt, steht als Auskunft da, mit dem Weg, wo es sich ändert. */}
       {istEreignis ? (
         <div className="max-w-formular mb-8">
           <Section titel="Fehlzeit" rahmen>
-            {/* Ohne Bezeichnung keine Zeile, und keine eigene Zeile „Art":
-                „Videotermin" steht im Ort, wo es zutrifft; der Satz, dass das
-                alles für alle gilt, erklärte das System (UX-005g). */}
             <DetailList>
               {daten.title ? <DetailRow label="Bezeichnung">{daten.title}</DetailRow> : null}
               <DetailRow label="Datum">{formatLocalDate(daten.starts_at, zone)}</DetailRow>
@@ -468,87 +177,48 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
         </div>
       ) : null}
 
-      <form onSubmit={absenden} noValidate className="max-w-formular">
-        {/* Sind alle Angaben berichtigt, verschwindet der Kasten (UIK-02). */}
-        <Fehlerzusammenfassung
-          key={pruefung.nummer}
-          fehler={Object.values(fehler).some(Boolean) ? pruefung.fehler : []}
-        />
-
-        {/* Rückfrage und Fehler als Fenster über dem Formular (FIX-016). */}
-        {vorfrage ? (
-          <ArbeitszeitRueckfrage
-            arbeitszeit={false}
-            vergangenheit
-            onBestaetigen={() => {
-              const w = vorfrage;
-              setVorfrage(null);
-              mutation.mutate({ werte: w, bestaetigt: false, vergangenheit: true });
-            }}
-            onAbbrechen={() => setVorfrage(null)}
-            laeuft={false}
-            beschriftung="Änderung trotzdem speichern"
-          />
-        ) : istAusserhalbArbeitszeit(mutation.error) ? (
-          <ArbeitszeitRueckfrage
-            vergangenheit={mutation.variables?.vergangenheit ?? false}
-            onBestaetigen={() => bestaetigen({ bestaetigt: true })}
-            onAbbrechen={() => mutation.reset()}
-            laeuft={mutation.isPending}
-            beschriftung="Änderung trotzdem speichern"
-          />
-        ) : istVergangenheit(mutation.error) ? (
-          <ArbeitszeitRueckfrage
-            arbeitszeit={false}
-            vergangenheit
-            onBestaetigen={() => bestaetigen({ vergangenheit: true })}
-            onAbbrechen={() => mutation.reset()}
-            laeuft={mutation.isPending}
-            beschriftung="Änderung trotzdem speichern"
-          />
-        ) : mutation.isError ? (
-          <Hinweisfenster titel={fehlertitel} onSchliessen={() => mutation.reset()}>
-            {speicherfehlerText(mutation.error.message, STANDARDFEHLER)}
-          </Hinweisfenster>
-        ) : null}
-
-        {/* Kein Kasten „Patient:in" mehr: Der Name steht in der Seiten-
-            beschreibung, und dass ein Termin nicht übertragbar ist, zeigt das
-            fehlende Feld (TER-21, UX-005g). */}
-        <AppointmentFormFields
-          werte={werte}
-          fehler={fehler}
-          onChange={setzen}
-          therapeuten={personen}
-          personenListe={{
-            laedt: personenAbfrage.isPending,
-            fehlgeschlagen: personenAbfrage.isError,
-            erneut: () => void personenAbfrage.refetch(),
-          }}
-          personBeschriftung={istEreignis ? 'Beteiligte Person *' : undefined}
-          nurPerson={istEreignis}
-          standorte={standorte.data ?? []}
-          standortListe={{
-            laedt: standorte.isPending,
-            fehlgeschlagen: standorte.isError,
-            erneut: () => void standorte.refetch(),
-          }}
-          // Ein Ereignis ohne Patient:in hätte bei einem Hausbesuch keine
-          // Anschrift; der Server weist ihn ab (CAL-015b).
-          arten={
-            istEreignis ? (['practice', 'video'] as const satisfies AppointmentType[]) : undefined
-          }
-          rasterMinuten={user.appointmentGridMinutes ?? undefined}
-          fensterMinuten={fensterMinuten}
-          onFensterMinuten={
-            // Ein Ereignis hat keine Längenregel; seine Dauer wird hier nicht
-            // über die Auswahl geändert, sondern bleibt, wie sie ist.
-            daten.kind === 'therapy' ? laengeWechseln : undefined
-          }
-          laengeHinweis={
-            istEreignis ? `Dauer: ${fensterMinuten} Minuten, wie eingetragen.` : undefined
-          }
-          hausbesuch={
+      <AppointmentForm
+        key={daten.id}
+        listen={listen}
+        startwerte={gespeichert}
+        // Die Länge des gespeicherten Termins: Öffnen allein verlängert oder verkürzt nichts (§8.1).
+        startMinuten={fensterMinuten}
+        heute={heute}
+        rasterMinuten={user.appointmentGridMinutes}
+        gespeichertePerson={{
+          staff_member_id: daten.staff_member_id,
+          display_name: `${daten.staff_given_name} ${daten.staff_family_name}`,
+        }}
+        bestehenderTag={gespeichert.date}
+        nurPerson={istEreignis}
+        arten={istEreignis ? EREIGNIS_ARTEN : undefined}
+        dauerFest={istEreignis ? `Dauer: ${fensterMinuten} Minuten, wie eingetragen.` : undefined}
+        texte={{
+          absenden: 'Änderungen speichern',
+          laeuft: 'Wird gespeichert …',
+          trotzdem: 'Änderung trotzdem speichern',
+          fehlerTitel: istEreignis
+            ? 'Die Teilnahme konnte nicht geändert werden.'
+            : 'Der Termin konnte nicht geändert werden.',
+          standardfehler: 'Der Termin konnte nicht geändert werden.',
+          ungespeichert: istEreignis ? 'Ungespeicherte Teilnahme' : 'Ungespeicherter Termin',
+        }}
+        abbrechenZiel={zurueckZumTermin(rueckweg, daten.id)}
+        onSpeichern={async (werte, b) => {
+          await updateAppointment(daten.id, daten.updated_at, werte, b.bestaetigt, b.vergangenheit);
+          return daten.id;
+        }}
+        onGespeichert={async () => {
+          // Detailansicht, Kalender, Tour und Fahrwege zeigen sonst weiter den alten Stand.
+          await queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] });
+          await tageslageNeuLaden(queryClient);
+          void navigate(zurueckZumTermin(rueckweg, daten.id), { replace: true });
+        }}
+        weg={weg}
+        hausbesuch={({ werte }) => {
+          const bleibtHausbesuch =
+            daten.appointment_type === 'home_visit' && werte.appointment_type === 'home_visit';
+          return (
             <>
               {bleibtHausbesuch ? (
                 <UebernommeneAdresse
@@ -565,9 +235,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
                   houseNumber={patient.data?.house_number ?? null}
                   postalCode={patient.data?.postal_code ?? null}
                   city={patient.data?.city ?? null}
-                  // Der Abstecher in die Stammdaten und zurück in diese
-                  // Bearbeitung (TER-15). Die Änderung selbst reist nicht mit;
-                  // der Schutz fragt deshalb vorher nach.
+                  // Die Änderung selbst reist nicht mit; der Schutz fragt deshalb vorher nach.
                   ergaenzenZiel={
                     daten.patient_id
                       ? mitRueckweg(
@@ -578,7 +246,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
                   }
                 />
               )}
-              {/* Gebietstag der Adresse (PRX-002): warnt, sperrt nichts. */}
+              {/* Gebietstag der Adresse: warnt, sperrt nichts. */}
               <TerritoryHint
                 postalCode={
                   bleibtHausbesuch ? daten.visit_postal_code : (patient.data?.postal_code ?? null)
@@ -586,42 +254,9 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
                 slots={[{ datum: werte.date, beginn: werte.start_time }]}
               />
             </>
-          }
-        />
-
-        {/* UBK-012: An- und Weiterfahrt, nur Auskunft - mit dem Angebot, auf
-            die früheste passende Zeit zu verschieben (B2). */}
-        {user.organizationTimeZone ? (
-          <Wegauskunft
-            pruefung={weg}
-            zeitzone={user.organizationTimeZone}
-            verschieben={
-              wegfrage
-                ? {
-                    frage: wegfrage,
-                    rasterMinuten: user.appointmentGridMinutes,
-                    onBeginn: (beginn) => setzen('start_time', beginn),
-                  }
-                : undefined
-            }
-          />
-        ) : null}
-
-        {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird -
-            über den Knöpfen (TER-05). */}
-        {schutz}
-
-        {/* Am Telefon untereinander in voller Breite (DESIGN.md „Formular“). */}
-        <Formularfuss>
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Wird gespeichert …' : 'Änderungen speichern'}
-          </Button>
-          {/* Ein Seitenwechsel und damit ein Link (UIK-13). */}
-          <ButtonLink to={zumTermin} variant="quiet">
-            Abbrechen
-          </ButtonLink>
-        </Formularfuss>
-      </form>
+          );
+        }}
+      />
     </>
   );
 }

@@ -72,11 +72,11 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   useNavigate: () => navigate,
 }));
 
-const { NewEventSeriesPage } = await import('./NewEventSeriesPage');
+const { NewEventPage } = await import('./NewEventPage');
 
 function rendern(pfad = '/termine/dauerfehlzeit?datum=2027-05-12&beginn=09:00&ende=10:30') {
   return renderWithProviders(
-    <NewEventSeriesPage user={testUser(['office'], 'Olivia Office')} />,
+    <NewEventPage user={testUser(['office'], 'Olivia Office')} serie />,
     pfad,
   );
 }
@@ -85,7 +85,7 @@ async function formularAbwarten() {
   await screen.findByLabelText('Bezeichnung *');
 }
 
-describe('NewEventSeriesPage', () => {
+describe('NewEventPage als Dauerfehlzeit', () => {
   beforeEach(() => {
     fetchStaffMembers.mockReset().mockResolvedValue(personen);
     fetchLocations.mockReset().mockResolvedValue([{ id: ORT, name: 'Hauptstandort' }]);
@@ -197,7 +197,7 @@ describe('NewEventSeriesPage', () => {
 
   it('zeigt einer Rolle ohne Terminverwaltung nichts an', async () => {
     renderWithProviders(
-      <NewEventSeriesPage user={testUser(['patient'], 'Olivia Office')} />,
+      <NewEventPage user={testUser(['patient'], 'Olivia Office')} serie />,
       '/termine/dauerfehlzeit',
     );
 

@@ -49,7 +49,6 @@ import { CalendarPage } from '@/features/calendar/appointments/CalendarPage';
 import { TagUmplanenPage } from '@/features/calendar/appointments/TagUmplanenPage';
 import { NewAppointmentPage } from '@/features/calendar/appointments/NewAppointmentPage';
 import { NewEventPage } from '@/features/calendar/appointments/NewEventPage';
-import { NewEventSeriesPage } from '@/features/calendar/appointments/NewEventSeriesPage';
 import { NewAppointmentStartPage } from '@/features/calendar/appointments/NewAppointmentStartPage';
 import { DauerterminStartPage } from '@/features/calendar/appointments/DauerterminStartPage';
 import { AppointmentSeriesPage } from '@/features/calendar/appointments/AppointmentSeriesPage';
@@ -442,16 +441,18 @@ export function AuthenticatedRoutes({
                     path="/termine/dauertermin"
                     element={<DauerterminStartPage user={user} />}
                   />
-                  {/* Ein Ereignis des Praxisbetriebs - Besprechung, Teamtermin.
-                  Eigener Weg, weil er weder Patient:in noch Verordnung kennt
-                  (CAL-015b). */}
-                  <Route path="/termine/ereignis" element={<NewEventPage user={user} />} />
+                  {/* Eine Fehlzeit kennt weder Patient:in noch Verordnung. Eigener key je Weg: Beide
+                  zeigen NewEventPage, ohne ihn bliebe beim Wechsel der Zustand stehen. */}
+                  <Route
+                    path="/termine/ereignis"
+                    element={<NewEventPage key="einzeln" user={user} />}
+                  />
                   {/* Dieselbe Fehlzeit ueber mehrere Wochen. Eigener Weg neben dem
                   einzelnen Ereignis: Er fragt zusaetzlich nach Rhythmus und Anzahl und
                   legt eine Serie an. */}
                   <Route
                     path="/termine/dauerfehlzeit"
-                    element={<NewEventSeriesPage user={user} />}
+                    element={<NewEventPage key="serie" user={user} serie />}
                   />
                   <Route
                     path="/patienten/:patientId/termine/neu"
