@@ -18,7 +18,7 @@ import { useBausteinAuswahl } from '@/features/clinical/assessments/bausteinausw
 import { VORSCHLAG_OFFEN } from '@/features/clinical/assessments/dokumentationstext';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/core';
 import { BisherigeEintraege } from './BisherigeEintraege';
-import { AufGeraetSichern } from '@/features/clinical/offline-documentation/AufGeraetSichern';
+import { AufGeraetSichern } from './offline/AufGeraetSichern';
 import { DocumentationShell } from './DocumentationShell';
 import { Einfuegemeldung } from './Einfuegemeldung';
 import { useEinfuegen } from './einfuegen';

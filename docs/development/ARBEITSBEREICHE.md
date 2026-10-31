@@ -14,7 +14,7 @@ Ansicht sagt das.
 
 | Bereich | Routen | Zustand | Code (`src/features/`) |
 | --- | --- | --- | --- |
-| Übersicht (Tag) | `/`, `/offen`, `/offen/anrufe`, `/auf-dem-geraet` | echt; Entwürfe ohne Netz (ADR-024) | `today`, `open-points`, `offline-documentation` |
+| Übersicht (Tag) | `/`, `/offen`, `/offen/anrufe`, `/auf-dem-geraet` | echt; Entwürfe ohne Netz (ADR-024) | `today`, `open-points`, `documentation/offline` |
 | Patient:innen und Akte | `/patienten…`, `/verordner…` | echt | `patients`, `treatment-bases`, `files`, `assessments`, `therapy-reports`, `datenschutz` |
 | Kalender, Termine, Warteliste | `/kalender…`, `/termine/…`, `/warteliste…` | echt | `appointments`, `scheduling`, `slot-search`, `waitlist` |
 | Tour | `/touren`, `/praxis/gebiete` | echt mit synthetischen Adressen; Produktivfreigabe offen (ADR-019, `LOCATION_DATA_GATE`) | `tours`, `territories` |

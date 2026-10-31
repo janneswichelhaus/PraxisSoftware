@@ -79,12 +79,12 @@ import { TreatmentNoteHistoryPage } from '@/features/clinical/documentation/Trea
 import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
 import { AbstecherAbmeldewache } from '@/app/AbstecherAbmeldewache';
 import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
-import { PraxisAblage } from '@/features/clinical/offline-documentation/PraxisAblage';
-import { AufDemGeraetPage } from '@/features/clinical/offline-documentation/AufDemGeraetPage';
-import { EntwurfAbmeldewache } from '@/features/clinical/offline-documentation/EntwurfAbmeldewache';
-import { TagesplanRaeumen } from '@/features/clinical/offline-documentation/TagesplanRaeumen';
+import { PraxisAblage } from '@/features/clinical/documentation/offline/PraxisAblage';
+import { AufDemGeraetPage } from '@/features/clinical/documentation/offline/AufDemGeraetPage';
+import { EntwurfAbmeldewache } from '@/features/clinical/documentation/offline/EntwurfAbmeldewache';
+import { TagesplanRaeumen } from '@/features/clinical/documentation/offline/TagesplanRaeumen';
 import { AusgangAbmeldewache } from '@/features/teamchat/AusgangAbmeldewache';
-import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/clinical/offline-documentation/servicePhone';
+import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/clinical/documentation/offline/servicePhone';
 import { ProtokollPage } from '@/features/core/preview/ProtokollPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
 import { AkteErnaehrung } from '@/features/nutrition/ErnaehrungReiter';

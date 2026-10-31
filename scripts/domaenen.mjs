@@ -19,7 +19,7 @@ export const DOMAENEN = {
     'today',
     'day-plan',
   ],
-  clinical: ['documentation', 'offline-documentation', 'assessments', 'therapy-reports'],
+  clinical: ['documentation', 'assessments', 'therapy-reports'],
   nutrition: ['nutrition'],
   exercise: ['exercises', 'checkins'],
   portal: ['platform', 'platform-access', 'messages'],

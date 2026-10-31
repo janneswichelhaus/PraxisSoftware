@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { dauerfachAendern, dauerfachLesen } from '@/lib/geraeteablage';
-import { MAX_ZEICHEN, wieGespeichert } from '@/features/clinical/documentation/api';
+import { MAX_ZEICHEN, wieGespeichert } from '../api';
 import {
   EntwurfAbgewiesen,
   EntwurfNichtAngekommen,

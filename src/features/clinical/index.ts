@@ -11,8 +11,8 @@ export {
   fristLabel,
   saveDocumentationDeadline,
 } from './documentation/api';
-export { DiensttelefonAbschnitt } from './offline-documentation/DiensttelefonAbschnitt';
-export { ABLAGE_FUER_PRAXISKONTEN } from './offline-documentation/servicePhone';
+export { DiensttelefonAbschnitt } from './documentation/offline/DiensttelefonAbschnitt';
+export { ABLAGE_FUER_PRAXISKONTEN } from './documentation/offline/servicePhone';
 export {
   BerichteDerVerordnung,
   EmpfehlungAusBericht,
