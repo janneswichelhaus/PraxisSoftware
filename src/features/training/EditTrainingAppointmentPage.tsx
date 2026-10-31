@@ -90,6 +90,10 @@ export function EditTrainingAppointmentPage({ user }: { user: CurrentUser }) {
         listen={listen}
         startwerte={startwerte}
         startMinuten={minuten}
+        gespeichertePerson={{
+          staff_member_id: t.staff_member_id,
+          display_name: `${t.staff_given_name} ${t.staff_family_name}`,
+        }}
         heute={todayInTimeZone(t.organization_time_zone)}
         rasterMinuten={user.appointmentGridMinutes}
         texte={{

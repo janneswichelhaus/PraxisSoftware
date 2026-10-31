@@ -215,6 +215,52 @@ describe('EditAppointmentPage', () => {
     expect(updateAppointment.mock.calls[0]?.[2]).toMatchObject({ staff_member_id: STAFF_TIM });
   });
 
+  it('behaelt eine gerade nicht zuordenbare Person und zeigt sie in der Auswahl', async () => {
+    const fremd = '55555555-5555-4555-8555-000000000009';
+    fetchAppointment.mockResolvedValue({
+      ...termin,
+      staff_member_id: fremd,
+      staff_given_name: 'Uta',
+      staff_family_name: 'Urlaub',
+    });
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    const person = screen.getByLabelText('Behandelnde Person *');
+    expect(person).toHaveValue(fremd);
+    expect(within(person).getByRole('option', { name: 'Uta Urlaub' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+    await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+    expect(updateAppointment.mock.calls[0]?.[2]).toMatchObject({ staff_member_id: fremd });
+  });
+
+  it('waehlt beim Wechsel zur Praxis den einzigen Standort vor', async () => {
+    fetchAppointment.mockResolvedValue({
+      ...termin,
+      appointment_type: 'home_visit',
+      location_id: null,
+      location_name: null,
+      visit_street: 'Altstrasse',
+      visit_house_number: '1',
+      visit_postal_code: '72070',
+      visit_city: 'Tuebingen',
+    });
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Terminart *'), 'practice');
+
+    expect(await screen.findByLabelText('Standort *')).toHaveValue(ORT);
+    // Vorbelegt ist keine Eingabe: Ohne Wechsel der Art fragt der Schutz nicht.
+    await user.selectOptions(screen.getByLabelText('Terminart *'), 'home_visit');
+    const ereignis = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(ereignis);
+    expect(ereignis.defaultPrevented).toBe(false);
+  });
+
   it('zeigt beim Wechsel zu Hausbesuch die zu uebernehmende Adresse', async () => {
     const user = userEvent.setup();
     rendern();

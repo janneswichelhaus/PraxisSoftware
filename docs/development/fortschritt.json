@@ -1844,7 +1844,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-31",
           "nachweis": "Branch ccr-71de462d-qufdxg",
-          "vermerk": "Fünf Terminformulare auf AppointmentForm, Dauerfehlzeit in NewEventPage; Programm −925 Zeilen, doppelte Zeilen 2,7 → 2,3 %, gegenseitige Abhängigkeiten 5 → 4; Standardweg ohne Migration; drei neue Vorschläge in BEFUNDE.md"
+          "vermerk": "Fünf Terminformulare auf AppointmentForm, Dauerfehlzeit in NewEventPage; Programm −911 Zeilen, doppelte Zeilen 2,7 → 2,3 %, gegenseitige Abhängigkeiten 5 → 4; Standardweg ohne Migration; drei neue Vorschläge in BEFUNDE.md; Antworten zu #340: Bearbeiten behält die gespeicherte Person, einziger Standort vorgewählt"
         },
         {
           "id": "bef-223",

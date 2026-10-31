@@ -71,6 +71,7 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 const { TrainingAppointmentPage } = await import('./TrainingAppointmentPage');
 const { NewTrainingAppointmentPage } = await import('./NewTrainingAppointmentPage');
+const { EditTrainingAppointmentPage } = await import('./EditTrainingAppointmentPage');
 const { vereinbarungText } = await import('./api');
 const { AusserhalbArbeitszeitError } = await import('@/features/calendar/appointments/api');
 
@@ -297,5 +298,22 @@ describe('NewTrainingAppointmentPage', () => {
     await nutzer.click(screen.getByRole('button', { name: 'Trainingstermin anlegen' }));
     await waitFor(() => expect(createTrainingAppointment).toHaveBeenCalled());
     expect(createTrainingAppointment.mock.calls[0]![2]).toBe(BASIS);
+  });
+});
+
+describe('EditTrainingAppointmentPage', () => {
+  it('behält eine Betreuung, die gerade nicht zugeordnet werden kann', async () => {
+    fetchAssignableTrainers.mockResolvedValue([
+      { staff_member_id: '55555555-5555-4555-8555-000000000007', display_name: 'Tara Training' },
+    ]);
+    renderWithProviders(
+      <EditTrainingAppointmentPage user={testUser(['office'], 'Olivia')} />,
+      `/training/termine/${TERMIN}/bearbeiten`,
+    );
+
+    const person = await screen.findByLabelText('Betreuende Person *');
+    await screen.findByRole('option', { name: 'Tara Training' });
+    expect(person).toHaveValue(TOM);
+    expect(within(person).getByRole('option', { name: 'Tom Trainingsbetreuung' })).toBeVisible();
   });
 });

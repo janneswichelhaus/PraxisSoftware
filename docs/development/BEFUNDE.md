@@ -252,15 +252,6 @@ Einzelstunde.“ die Auswahl (Regel 6); die Rückfrage heißt im Training „…
 „Termin trotzdem anlegen“. **Erwartet.** Bei der nächsten Überholung des Kalenders angleichen, mit
 Bildern der Fehler- und Ladezustände bei 375 px.
 
-### Termine — Bearbeiten wählt anders vor als Anlegen, Training anders als Behandlung
-2026-10-31 · Kalender, Training · Praxis-Review zum gemeinsamen Terminformular · offen (Entscheidung
-Jannes) · `EditAppointmentPage.tsx`, `EditTrainingAppointmentPage.tsx`, `vorbelegen`\
-**Beobachtung.** Wer einen Trainingstermin verschiebt, verliert eine nicht mehr zuordenbare
-Betreuung; am Behandlungstermin bleibt die Person stehen, sie kann nur vorübergehend nicht planbar
-sein. Wechselt ein Behandlungstermin zur Praxis, ist der einzige Standort nicht vorgewählt, beim
-Anlegen schon (ein Tipp mehr). **Erwartet.** Eine Regel für beide Bearbeitungen, etwa die gespeicherte
-Person behalten und den einzigen Standort beim Wechsel vorwählen.
-
 ### Aufräumen — Drei Modulpaare hängen nur über wenige Rückwege gegenseitig voneinander ab
 2026-10-31 · Übungen, Doku, Betrieb · /aufraeumen 2026-10-31 · offen (Vorschlag) ·
 `exercise-plans`, `offline-documentation`, `workplace/organisation/pfade.ts`\

@@ -3,21 +3,21 @@
 Erzeugt von `pnpm aufraeumen --schreiben`, nicht von Hand ändern. Der nächste Lauf von
 [`/aufraeumen`](../../.claude/skills/aufraeumen/SKILL.md) vergleicht mit diesem Stand.
 
-Stand: 2026-10-31 · Commit `9d15779a`
+Stand: 2026-10-31 · Commit `eae9b6fb`
 
 | Kennzahl | Wert | Schlüssel |
 | --- | ---: | --- |
-| Zeilen gesamt | 586019 | `zeilen_gesamt` |
-| Zeilen Programm (src, Edge Functions) | 203305 | `zeilen_programm` |
-| Zeilen Tests | 276675 | `zeilen_tests` |
+| Zeilen gesamt | 586088 | `zeilen_gesamt` |
+| Zeilen Programm (src, Edge Functions) | 203319 | `zeilen_programm` |
+| Zeilen Tests | 276739 | `zeilen_tests` |
 | Zeilen Migrationen | 69075 | `zeilen_migrationen` |
-| Zeilen Doku (Markdown) | 9599 | `zeilen_doku` |
+| Zeilen Doku (Markdown) | 9590 | `zeilen_doku` |
 | Zeilen Rest (Skripte, Konfiguration, Seed) | 27365 | `zeilen_rest` |
 | Kommentaranteil Programm (%) | 19 | `kommentaranteil_programm` |
 | Kommentaranteil Migrationen (%) | 5.5 | `kommentaranteil_migrationen` |
 | Kommentare über 3 Zeilen (ohne Migrationen) | 3106 | `lange_kommentare` |
 | Module unter src/features | 54 | `module` |
-| Importe zwischen Modulen | 571 | `querimporte` |
+| Importe zwischen Modulen | 572 | `querimporte` |
 | Tiefe Importe in Module (an index.ts vorbei) | 431 | `tiefe_importe` |
 | Gegenseitige Abhängigkeiten (Modulpaare) | 4 | `gegenseitige_abhaengigkeiten` |
 | Module im größten Abhängigkeitsring | 37 | `ringgruppe` |

@@ -6,14 +6,14 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Gemeinsames Terminformular und Aufräumrunde 2026-10-31** liegen als PR vor: fünf Terminformulare
-auf `AppointmentForm`, Dauerfehlzeit in `NewEventPage`, drei neue Vorschläge in
-`development/BEFUNDE.md`. Offen: BEF-201, BEF-202.
+**Gemeinsames Terminformular und Aufräumrunde 2026-10-31** liegen als #340 vor, mit deinen Antworten
+(Bearbeiten behält die gespeicherte Person, einziger Standort vorgewählt). Offen: BEF-201, BEF-202.
 
 ## Danach
 
 Bildsichtung von #334 bis #337 (diese PR ändert kein Bild). Schritte 5 bis 7 mit Jannes' Leinwänden
-aus Claude Design; bis dahin Aufräumvorschlag „Drei Modulpaare“ (`development/BEFUNDE.md`).
+aus Claude Design; bis dahin Aufräumvorschlag „Drei Modulpaare“ (`development/BEFUNDE.md`, entschieden
+31.10.: zuerst), danach die übrigen zwei.
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
 Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
 Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.

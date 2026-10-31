@@ -185,8 +185,10 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
         startMinuten={fensterMinuten}
         heute={heute}
         rasterMinuten={user.appointmentGridMinutes}
-        // Ein gespeicherter Termin behält, was er trägt, auch eine gerade nicht zuordenbare Person.
-        vorbelegen={false}
+        gespeichertePerson={{
+          staff_member_id: daten.staff_member_id,
+          display_name: `${daten.staff_given_name} ${daten.staff_family_name}`,
+        }}
         bestehenderTag={gespeichert.date}
         nurPerson={istEreignis}
         arten={istEreignis ? EREIGNIS_ARTEN : undefined}

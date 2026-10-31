@@ -8,6 +8,7 @@ import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import type { Formularfehler } from '@/lib/formularfehler';
 import type { AppointmentType } from '@/lib/termin';
+import type { AssignableTherapist } from '@/features/workforce';
 import { AppointmentFormFields, ArbeitszeitRueckfrage } from './AppointmentFormFields';
 import {
   appointmentFormSchema,
@@ -91,7 +92,7 @@ export function AppointmentForm({
   abbrechenZiel,
   onSpeichern,
   onGespeichert,
-  vorbelegen = true,
+  gespeichertePerson,
   bestehenderTag,
   nurPerson = false,
   arten,
@@ -111,8 +112,8 @@ export function AppointmentForm({
   abbrechenZiel: string;
   onSpeichern: (werte: AppointmentFormValues, bestaetigung: Bestaetigung) => Promise<string>;
   onGespeichert: (ergebnis: string) => void | Promise<void>;
-  /** Einzigen Standort und einzige Person vorwählen, eine nicht zuordenbare Person leeren. */
-  vorbelegen?: boolean;
+  /** Ein gespeicherter Termin behält seine Person, auch eine gerade nicht zuordenbare. */
+  gespeichertePerson?: AssignableTherapist | undefined;
   /** Der gespeicherte Tag: Bleibt er, wird nicht gefragt, sondern die Vergangenheit bestätigt. */
   bestehenderTag?: string | undefined;
   /** Nur die Person ist änderbar; Zeit, Art und Ort gelten für alle Beteiligten (ANN-051). */
@@ -129,6 +130,13 @@ export function AppointmentForm({
 }) {
   const { personen, standorte } = listen;
   const personBeschriftung = ASSIGNEE_LABELS[listen.group];
+  const bestehend = gespeichertePerson !== undefined;
+  // Die gespeicherte Person steht in der Auswahl, sonst sähe das Feld leer aus und wäre es nicht.
+  const auswahl =
+    gespeichertePerson &&
+    !(personen.data ?? []).some((p) => p.staff_member_id === gespeichertePerson.staff_member_id)
+      ? [...(personen.data ?? []), gespeichertePerson]
+      : (personen.data ?? []);
   const [werte, setWerte] = useState(startwerte);
   // Was ohne Zutun im Formular steht; erst eine Abweichung davon ist eine Eingabe.
   const [vorbelegt, setVorbelegt] = useState(startwerte);
@@ -145,17 +153,17 @@ export function AppointmentForm({
   // Eine Auswahl ohne Alternative ist keine Entscheidung.
   useEffect(() => {
     const nurEiner = standorte.data?.length === 1 ? standorte.data[0] : undefined;
-    if (!vorbelegen || !nurEiner) return;
+    if (!nurEiner) return;
     const vorwaehlen = (bisher: Werte) =>
       bisher.location_id === '' ? { ...bisher, location_id: nurEiner.id } : bisher;
     setWerte(vorwaehlen);
     setVorbelegt(vorwaehlen);
-  }, [standorte.data, vorbelegen]);
+  }, [standorte.data]);
 
-  // Ein Wert ohne passende Option sähe gewählt aus, ohne es zu sein; die einzige Person ist gewählt.
+  // Neue Termine: Ein Wert ohne passende Option sähe gewählt aus; die einzige Person ist gewählt.
   useEffect(() => {
     const zuordenbar = personen.data;
-    if (!vorbelegen || !zuordenbar) return;
+    if (bestehend || !zuordenbar) return;
     const zuordnen = (bisher: Werte) => {
       if (bisher.staff_member_id !== '') {
         return zuordenbar.some((p) => p.staff_member_id === bisher.staff_member_id)
@@ -168,7 +176,7 @@ export function AppointmentForm({
     };
     setWerte(zuordnen);
     setVorbelegt(zuordnen);
-  }, [personen.data, vorbelegen]);
+  }, [personen.data, bestehend]);
 
   // Steht die Person da, auch durch die Vorwahl, gilt ihre Pflichtmeldung nicht mehr.
   useEffect(() => {
@@ -343,7 +351,7 @@ export function AppointmentForm({
         werte={werte}
         fehler={fehler}
         onChange={setzen}
-        therapeuten={personen.data ?? []}
+        therapeuten={auswahl}
         personBeschriftung={`${personBeschriftung} *`}
         personenListe={{
           laedt: personen.isPending,
