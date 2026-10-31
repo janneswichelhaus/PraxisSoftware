@@ -154,8 +154,10 @@ test.describe('Plattform', () => {
       ).toBeVisible();
       await expect(page.getByRole('navigation', { name: 'Bereich' })).toBeVisible();
       // Seit DRP-EPIC-003 heißt auch die Wortmarke im Kopf „Übersicht“ - jedes Ziel zählt.
-      for (const name of ['Behandlung', 'Training', 'Ich', 'Übersicht']) {
-        for (const ziel of await page.getByRole('link', { name, exact: true }).all()) {
+      for (const name of ['Ihre Behandlung', 'Ihr Training', 'Ich', 'Übersicht']) {
+        const ziele = await page.getByRole('link', { name, exact: true }).all();
+        expect(ziele.length, name).toBeGreaterThan(0);
+        for (const ziel of ziele) {
           expect((await ziel.boundingBox())!.height, name).toBeGreaterThanOrEqual(44);
         }
       }

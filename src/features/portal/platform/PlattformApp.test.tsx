@@ -217,6 +217,7 @@ describe('PlattformApp', () => {
   it('meldet unter "Ich" ab, auf Wunsch ueberall', async () => {
     const nutzer = userEvent.setup();
     zeige([TRAINING], '/p/ich');
+    expect(screen.getByRole('heading', { name: 'Ihr Training' })).toBeInTheDocument();
     // Die Adresse steht unter „Konto“, nicht im Kopf (BEF-193).
     const konto = screen.getByRole('heading', { name: 'Konto' }).closest('section')!;
     expect(within(konto).getByText('tina.plattform@patient.invalid')).toBeInTheDocument();
@@ -286,8 +287,8 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     const user = userEvent.setup();
     zeige([BEHANDLUNG, BEGLEITUNG]);
     const schalter = screen.getByRole('navigation', { name: 'Bereich' });
-    expect(schalter).toHaveTextContent('Behandlung');
-    expect(schalter).toHaveTextContent('Für Max Mustermann');
+    expect(within(schalter).getByRole('link', { name: 'Ihre Behandlung' })).toBeInTheDocument();
+    expect(within(schalter).getByRole('link', { name: 'Für Max Mustermann' })).toBeInTheDocument();
     // Der eigene Bereich zuerst: kein Band.
     expect(screen.queryByText(/Sie handeln für/)).toBeNull();
     await user.click(screen.getByRole('link', { name: 'Für Max Mustermann' }));
@@ -335,6 +336,8 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     expect(
       await screen.findByRole('heading', { name: 'Wer für Sie Zugang hat' }),
     ).toBeInTheDocument();
+    // Der eigene Bereich heißt unter „Ich“ wie im Schalter (ANN-822).
+    expect(screen.getByRole('heading', { name: 'Ihre Behandlung' })).toBeInTheDocument();
     expect(screen.getByText('Rechtliche Vertretung (Betreuung)')).toBeInTheDocument();
     expect(screen.getByText('Beenden kann diese Vertretung nur die Praxis.')).toBeInTheDocument();
 
