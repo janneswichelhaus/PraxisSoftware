@@ -5,7 +5,7 @@ import { isOwner, isTherapyStaff, type CurrentUser } from '@/features/core';
 import { RUECKMELDUNG_PFAD } from '@/features/workplace/feedback/inhalt';
 import { REQUEST_PATH } from '@/features/workforce';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { EINGANG, NEUER_ANTRAG } from './pfade';
+import { EINGANG, NEUER_ANTRAG } from '@/lib/eingang';
 
 interface Wahl {
   titel: string;

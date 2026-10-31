@@ -15,7 +15,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { KeinZugang } from '@/app/KeinZugang';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
-import { EINGANG } from '@/features/workplace/organisation/pfade';
+import { EINGANG } from '@/lib/eingang';
 import type { CurrentUser } from '@/features/core';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {

@@ -11,7 +11,7 @@ import { RueckmeldungenImEingang } from '@/features/workplace/feedback/Rueckmeld
 import { isTherapyStaff, type CurrentUser } from '@/features/core';
 import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { MeineAntraege } from './MeineAntraege';
-import { EINGANG, NEUER_ANTRAG } from './pfade';
+import { EINGANG, NEUER_ANTRAG } from '@/lib/eingang';
 import { todayInTimeZone } from '@/lib/datum';
 
 /**

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
-import { EINGANG } from '@/features/workplace/organisation/pfade';
+import { EINGANG } from '@/lib/eingang';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { FEEDBACK_STATUS_KEY, fetchFeedbackStatus } from './api';
 import { monatsname } from './fragen';
