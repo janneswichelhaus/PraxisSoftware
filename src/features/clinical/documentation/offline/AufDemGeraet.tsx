@@ -14,7 +14,7 @@ import { TextArea } from '@/components/ui/TextArea';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { telHref } from '@/lib/telefon';
-import { MAX_ZEICHEN } from '@/features/clinical/documentation/api';
+import { MAX_ZEICHEN } from '../api';
 import { useSperrsicherung } from '@/lib/sperrsicherung';
 import {
   bearbeitungBeginnen,

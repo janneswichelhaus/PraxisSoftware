@@ -11,12 +11,8 @@ import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import {
-  BIBLIOTHEK_SCHLUESSEL,
-  fetchBibliothek,
-  type Bibliothek,
-} from '@/features/exercise/exercises/api';
-import { KATALOG_SCHLUESSEL, ladeKatalog } from '@/features/exercise/exercises/katalogLaden';
+import { BIBLIOTHEK_SCHLUESSEL, fetchBibliothek, type Bibliothek } from '../api';
+import { KATALOG_SCHLUESSEL, ladeKatalog } from '../katalogLaden';
 import { formatDate, tagePlus } from '@/lib/datum';
 import {
   PLAENE_SCHLUESSEL,

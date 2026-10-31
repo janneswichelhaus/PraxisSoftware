@@ -144,6 +144,16 @@ genau 44 hoch. Auf `main` einer von drei vollen Läufen, auf dem Branch zwei von
 **Erwartet.** Vor dem Messen das Ende der Animationen abwarten oder mit `expect.poll` messen; die
 Grenze 44 px bleibt.
 
+### Übersicht — Ein Browsertest misst den Hauptknopf, während die Karte noch einfährt
+2026-10-31 · `tests/e2e/uebersicht.spec.ts` (Hauptknopf bei 375 × 667) · Browsertests zu den drei
+Modulpaaren (Test und Übersicht dort unverändert) · offen (Vorschlag) · `vite.config.ts`\
+**Beobachtung.** Gemessen wird gleich nach `toBeVisible()`, während `hero-erscheinen` die Karte noch
+um bis zu 12 px versetzt: 622,78 statt höchstens 610 px. Das kam nur auf einem Server aus dem
+Projektordner, den Vite während `test:db` mit jeder Schreibung unter `.tmp/` beschäftigt (kein
+`server.watch.ignored`), zweimal in 24 Läufen; aus einer Arbeitskopie daneben 18 von 18 grün.
+**Erwartet.** Vor dem Messen das Ende der Animationen abwarten wie beim Abhaken; `.tmp/` aus der
+Beobachtung von Vite nehmen. Die Grenze bleibt.
+
 ### Bildstrecke — Eine geänderte Projektdatei lädt die Seiten eines laufenden Laufs neu
 2026-10-28 · `scripts/bildstrecke.mjs` · Gegenproben zur Netzruhe · offen (Vorschlag) · `aufnehmen`\
 **Beobachtung.** Ändert sich während eines Laufs eine Datei, die Tailwind nach Klassen durchsucht
@@ -152,6 +162,16 @@ und die kein Code ist (`docs/*.md`, `*.json`), schickt sein Vite-Plugin allen of
 binnen vier Sekunden nach einer Änderung an `STATUS.md` oder `fortschritt.json`; Läufe ohne
 Änderung hatten keines. **Erwartet.** Die Bildstrecke erkennt ein Neuladen, das sie nicht selbst
 auslöst (`domcontentloaded` ohne eigenes `goto`), und nimmt das Bild neu auf.
+
+### Bildstrecke — Drei Seiten kommen zwischen zwei Läufen desselben Stands verschieden
+2026-10-31 · `scripts/bildstrecke.mjs` · Bildvergleich zu den drei Modulpaaren · offen (Vorschlag) ·
+`kontextOeffnen`, `aufnehmen`\
+**Beobachtung.** Die Übersicht kommt mal mit, mal ohne „Barometer Oktober“: Der Hinweis erscheint
+schon nach der Anmeldung und gilt dann für heute als gezeigt (ANN-603). Die Abschlussseite der Doku
+kommt mal mit etwas breiterer Schrift, und mit `--parallel=2` liegt die feste Fußleiste der Übersicht
+in der Vollseite mal 86 px höher. Ein Vergleich vorher/nachher zeigt so Unterschiede ohne Ursache.
+**Erwartet.** Den Merker der Hinweise vorab setzen wie beim Startbild, vor der Aufnahme auf
+`document.fonts.ready` und das Ende der Animationen warten.
 
 ### Test-Umgebung — Die Termine der Praxiswoche vom 6.10. haben keine gültige UUID
 2026-10-28 · Test-Umgebung, Übersicht der Plattform · Bild von Jannes, nachgestellt · offen (bei
@@ -186,6 +206,14 @@ Erweiterung von `Linkliste`, die Zeichen einmal in `src/components/ui`, das Rast
 `location/funktion.ts`) rufen den Server, die Vorschau sperrt nur die Ortsmodule. Eine Praxisabfrage
 unter `src/lib` sähe keine Prüfung. **Erwartet.** Ein Test hält fest, welche Dateien unter `src/lib`
 `getSupabase()` benutzen dürfen, oder die Prüfungen sperren genau diese; je eine Gegenprobe.
+
+### Übungen — Zwei Prüfungen gegen Befunddaten übersehen einen Import über `@/features/clinical`
+2026-10-31 · Übungspläne · Zweitreview zu den drei Modulpaaren · offen (Vorschlag) · `vorlagen.test.ts`,
+`uebungsliste.test.ts`\
+**Beobachtung.** Beide suchen im Importpfad nur nach Stichwörtern (`patients|assessments|…`, ADR-006
+Punkt 10). Ein Import über die Schnittstelle `@/features/clinical` (etwa `BerichteDerVerordnung`)
+oder `@/features/portal` enthält keines und bliebe grün; schon vor dem Umzug so. **Erwartet.** Eine
+Erlaubnisliste der Importe wie in `trennung.test.ts` statt Stichwörtern, mit Gegenprobe.
 
 ### Termine — Ein Termin wird nie `invoiced`, obwohl ADR-018 die Invariante verlangt
 2026-10-27 · Abrechnung, Termine · Aufräumen 5, Teil B (ANN-081) · offen (Vorschlag, Pfad A)\
@@ -251,17 +279,6 @@ Trainingstermin erklären „Nur mit laufendem Vertrag.“ und „Ohne Vereinbar
 Einzelstunde.“ die Auswahl (Regel 6); die Rückfrage heißt im Training „… – trotzdem“, im Kalender
 „Termin trotzdem anlegen“. **Erwartet.** Bei der nächsten Überholung des Kalenders angleichen, mit
 Bildern der Fehler- und Ladezustände bei 375 px.
-
-### Aufräumen — Drei Modulpaare hängen nur über wenige Rückwege gegenseitig voneinander ab
-2026-10-31 · Übungen, Doku, Betrieb · /aufraeumen 2026-10-31 · offen (Vorschlag) ·
-`exercise-plans`, `offline-documentation`, `workplace/organisation/pfade.ts`\
-**Beobachtung.** Von vier Kreisen bleibt `billing <-> patients` bewusst (ANN-754). `feedback` braucht
-von `organisation` nur zwei Pfade; `exercises` braucht von `exercise-plans` nur `ZuEinemPlan` und den
-Typ `Dosis` (31 Importe hin); `documentation` braucht von `offline-documentation` nur
-`AufGeraetSichern` (4 Importe hin). **Erwartet.** Die Pfade an die Wurzel von `workplace`;
-`exercise-plans` als Unterordner in `exercises`, `offline-documentation` in `documentation`.
-Gegenseitige Abhängigkeiten 4 → 1, Module 54 → 52, Querimporte etwa −38. Aufwand mittel (Umzüge,
-Pfade der Mocks), Standardweg, Risiko gering.
 
 ### Aufräumen — Die Plattform führt drei Bausteine doppelt, deren Vorbild es schon gibt
 2026-10-31 · Plattform · /aufraeumen 2026-10-31 · offen (Vorschlag) · `Terminwunsch.tsx`,

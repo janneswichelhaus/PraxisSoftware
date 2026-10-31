@@ -72,7 +72,7 @@ vi.mock('./aftercare-cancellations-api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchAboKuendigungen: leer,
 }));
-vi.mock('@/features/exercise/exercise-plans/api', async (importOriginal) => ({
+vi.mock('@/features/exercise/exercises/plans/api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchFaellige: () => Promise.resolve({ today: '2026-10-12', plans: [] }),
 }));

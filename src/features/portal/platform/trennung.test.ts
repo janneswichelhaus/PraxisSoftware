@@ -48,7 +48,7 @@ const ERLAUBT: readonly RegExp[] = [
   /^@\/features\/core\/auth\/(freigabeOhneNetz|sitzungssperre\/Sitzungssperre)$/,
   // UEB-009: das Planblatt und die Dosierung in Worten - Darstellung ohne
   // Datenzugriff (ANN-303); die Pläne kommen über die Plattformprojektion.
-  /^@\/features\/exercise\/exercise-plans\/(Planblatt|dosierung)$/,
+  /^@\/features\/exercise\/exercises\/plans\/(Planblatt|dosierung)$/,
   // Überholung 6: der Schutz ungesendeter Angaben im geführten Ablauf
   // (Rückfrage vor dem Weggehen, Zurückgeste einen Schritt zurück) - ein
   // Baustein ohne Datenzugriff, wie im Check-Up am Rad.

@@ -3,11 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useIstVerbunden } from '@/app/verbindung';
-import {
-  createTreatmentNoteAddendum,
-  fetchTreatmentDocumentation,
-} from '@/features/clinical/documentation/api';
-import { textUebergeben } from '@/features/clinical/documentation/uebernahme';
+import { createTreatmentNoteAddendum, fetchTreatmentDocumentation } from '../api';
+import { textUebergeben } from '../uebernahme';
 import type { CurrentUser } from '@/features/core';
 import { AufDemGeraet, type Serverwege } from './AufDemGeraet';
 

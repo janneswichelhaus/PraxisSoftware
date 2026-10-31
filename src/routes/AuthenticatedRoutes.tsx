@@ -79,12 +79,12 @@ import { TreatmentNoteHistoryPage } from '@/features/clinical/documentation/Trea
 import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
 import { AbstecherAbmeldewache } from '@/app/AbstecherAbmeldewache';
 import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
-import { PraxisAblage } from '@/features/clinical/offline-documentation/PraxisAblage';
-import { AufDemGeraetPage } from '@/features/clinical/offline-documentation/AufDemGeraetPage';
-import { EntwurfAbmeldewache } from '@/features/clinical/offline-documentation/EntwurfAbmeldewache';
-import { TagesplanRaeumen } from '@/features/clinical/offline-documentation/TagesplanRaeumen';
+import { PraxisAblage } from '@/features/clinical/documentation/offline/PraxisAblage';
+import { AufDemGeraetPage } from '@/features/clinical/documentation/offline/AufDemGeraetPage';
+import { EntwurfAbmeldewache } from '@/features/clinical/documentation/offline/EntwurfAbmeldewache';
+import { TagesplanRaeumen } from '@/features/clinical/documentation/offline/TagesplanRaeumen';
 import { AusgangAbmeldewache } from '@/features/teamchat/AusgangAbmeldewache';
-import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/clinical/offline-documentation/servicePhone';
+import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/clinical/documentation/offline/servicePhone';
 import { ProtokollPage } from '@/features/core/preview/ProtokollPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
 import { AkteErnaehrung } from '@/features/nutrition/ErnaehrungReiter';
@@ -118,8 +118,8 @@ import { WorkingTimePage } from '@/features/workforce/working-time/WorkingTimePa
 import { RecordTimeAccountPage } from '@/features/workforce/timeaccount/RecordTimeAccountPage';
 import { RejectTimeAccountEntryPage } from '@/features/workforce/timeaccount/RejectTimeAccountEntryPage';
 import { TimeAccountPage } from '@/features/workforce/timeaccount/TimeAccountPage';
-import { PlanPage } from '@/features/exercise/exercise-plans/PlanPage';
-import { PlanblattSeite } from '@/features/exercise/exercise-plans/PlanblattSeite';
+import { PlanPage } from '@/features/exercise/exercises/plans/PlanPage';
+import { PlanblattSeite } from '@/features/exercise/exercises/plans/PlanblattSeite';
 import { DecideReimbursementPage } from '@/features/workforce/reimbursements/DecideReimbursementPage';
 import { PayReimbursementPage } from '@/features/workforce/reimbursements/PayReimbursementPage';
 import { PayoutAccountPage } from '@/features/workforce/reimbursements/PayoutAccountPage';
@@ -156,7 +156,7 @@ import { TrainingClientsPage } from '@/features/training/TrainingClientsPage';
 import { UebungenPage } from '@/features/exercise/exercises/UebungenPage';
 import { UebungPage } from '@/features/exercise/exercises/UebungPage';
 import { DurchsichtPage } from '@/features/exercise/exercises/DurchsichtPage';
-import { VorlagenPage } from '@/features/exercise/exercise-plans/VorlagenPage';
+import { VorlagenPage } from '@/features/exercise/exercises/plans/VorlagenPage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
 import {
   canManageAppointments,

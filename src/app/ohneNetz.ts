@@ -1,7 +1,7 @@
 import type { OhneNetz } from '@/features/core/auth/sitzungssperre/Sitzungssperre';
 import { plattformOhneNetz } from '@/features/portal/platform/ohneNetz';
-import { praxisOhneNetz } from '@/features/clinical/offline-documentation/ohneNetz';
-import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/clinical/offline-documentation/servicePhone';
+import { praxisOhneNetz } from '@/features/clinical/documentation/offline/ohneNetz';
+import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/clinical/documentation/offline/servicePhone';
 
 /**
  * Was die Sitzungssperre ohne Netz für ein Konto öffnet (TRK-009, OFF-003).

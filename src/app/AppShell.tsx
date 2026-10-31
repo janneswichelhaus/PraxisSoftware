@@ -34,8 +34,8 @@ import {
 import { useSeitenwechsel } from './seitenwechsel';
 import { Profilhinweis } from './Profilhinweis';
 import { Verbindungsanzeige } from './Verbindungsanzeige';
-import { Geraetehinweis } from '@/features/clinical/offline-documentation/Geraetehinweis';
-import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/clinical/offline-documentation/servicePhone';
+import { Geraetehinweis } from '@/features/clinical/documentation/offline/Geraetehinweis';
+import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/clinical/documentation/offline/servicePhone';
 
 /**
  * Rahmen der angemeldeten Anwendung.

@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { Bibliothek, Variante } from '@/features/exercise/exercises/api';
-import { katalogeintrag } from '@/features/exercise/exercises/katalog';
-import { ausruestungVon } from '@/features/exercise/exercises/katalog/schema';
-import { ungeprueft } from '@/features/exercise/exercises/suche';
-import { OHNE_KATALOG } from '@/features/exercise/exercises/testdaten';
+import type { Bibliothek, Variante } from '../api';
+import { katalogeintrag } from '../katalog';
+import { ausruestungVon } from '../katalog/schema';
+import { ungeprueft } from '../suche';
+import { OHNE_KATALOG } from '../testdaten';
 import { standardDosis } from './hinzufuegen';
 import { alsVariante, eineListe, fehlendImKatalog, nurImKatalog } from './uebungsliste';
 
@@ -121,7 +121,7 @@ describe('alsVariante', () => {
 
   it('liest nichts aus Akte, Befund, Verordnung oder Verlauf (ADR-006 Punkt 10)', () => {
     const quelle = readFileSync(
-      join(process.cwd(), 'src/features/exercise/exercise-plans/uebungsliste.ts'),
+      join(process.cwd(), 'src/features/exercise/exercises/plans/uebungsliste.ts'),
       'utf8',
     );
     const importe = [...quelle.matchAll(/from '([^']+)'/g)].map((t) => t[1]);

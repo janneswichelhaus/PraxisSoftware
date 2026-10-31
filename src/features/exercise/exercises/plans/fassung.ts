@@ -1,4 +1,4 @@
-import { ACHSE_LABEL } from '@/features/exercise/exercises/types';
+import { ACHSE_LABEL } from '../types';
 import { formatDate } from '@/lib/datum';
 import type { Plan, Position } from './api';
 import { unterschiede } from './dosierung';

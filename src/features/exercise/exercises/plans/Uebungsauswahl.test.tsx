@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Bibliothek, Uebung, Variante } from '@/features/exercise/exercises/api';
-import { katalogeintrag } from '@/features/exercise/exercises/katalog';
-import type { Katalogeintrag } from '@/features/exercise/exercises/katalog/typen';
-import { ZEILEN_JE_SEITE } from '@/features/exercise/exercises/suche';
-import { OHNE_KATALOG } from '@/features/exercise/exercises/testdaten';
+import type { Bibliothek, Uebung, Variante } from '../api';
+import { katalogeintrag } from '../katalog';
+import type { Katalogeintrag } from '../katalog/typen';
+import { ZEILEN_JE_SEITE } from '../suche';
+import { OHNE_KATALOG } from '../testdaten';
 import { renderWithProviders } from '@/test-utils';
 import { Uebungsauswahl, type Gewaehlt } from './Uebungsauswahl';
 

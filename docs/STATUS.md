@@ -6,14 +6,15 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Gemeinsames Terminformular und Aufräumrunde 2026-10-31** liegen als #340 vor, mit deinen Antworten
-(Bearbeiten behält die gespeicherte Person, einziger Standort vorgewählt). Offen: BEF-201, BEF-202.
+**Drei Modulpaare ohne gegenseitige Abhängigkeit** liegen als #341 vor: Übungspläne in `exercises/plans`,
+Entwürfe ohne Netz in `documentation/offline`, der Weg des Eingangs in `src/lib` (an der Wurzel von
+`workplace` entstünde ein neuer Kreis). Offen: BEF-201, BEF-202.
 
 ## Danach
 
 Bildsichtung von #334 bis #337 (diese PR ändert kein Bild). Schritte 5 bis 7 mit Jannes' Leinwänden
-aus Claude Design; bis dahin Aufräumvorschlag „Drei Modulpaare“ (`development/BEFUNDE.md`, entschieden
-31.10.: zuerst), danach die übrigen zwei.
+aus Claude Design; bis dahin Aufräumvorschlag „Spanne aufziehen und Termin ziehen“
+(`development/BEFUNDE.md`), „Drei Bausteine doppelt“ nach Schritt 5.
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
 Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
 Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
@@ -45,4 +46,4 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-31.10.2026, Branch `ccr-71de462d-qufdxg`. Lokal: `git pull`, keine Migration.
+31.10.2026, Branch `ccr-aef9377d-2sgdow`. Lokal: `git pull`, keine Migration.

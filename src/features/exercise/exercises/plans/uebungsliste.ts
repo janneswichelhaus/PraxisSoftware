@@ -1,7 +1,7 @@
-import type { Bibliothek, Uebung, Variante } from '@/features/exercise/exercises/api';
-import { alsDosis } from '@/features/exercise/exercises/katalog/dosierung';
-import { ausruestungVon } from '@/features/exercise/exercises/katalog/schema';
-import type { Katalogeintrag } from '@/features/exercise/exercises/katalog/typen';
+import type { Bibliothek, Uebung, Variante } from '../api';
+import { alsDosis } from '../katalog/dosierung';
+import { ausruestungVon } from '../katalog/schema';
+import type { Katalogeintrag } from '../katalog/typen';
 
 /**
  * Eine Übungsliste statt Katalog und Bibliothek (Befund B9, O-002).

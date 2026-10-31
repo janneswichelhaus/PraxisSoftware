@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { OHNE_KATALOG } from '@/features/exercise/exercises/testdaten';
-import { OHNE_ZUSATZ } from '@/features/exercise/exercise-plans/testdaten';
+import { OHNE_ZUSATZ } from '@/features/exercise/exercises/plans/testdaten';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
@@ -11,11 +11,11 @@ import {
   planlisteSchluessel,
   type Plan,
   type Position,
-} from '@/features/exercise/exercise-plans/api';
-import { PlanAbschnitt } from '@/features/exercise/exercise-plans/PlanAbschnitt';
-import { PlanPage } from '@/features/exercise/exercise-plans/PlanPage';
-import { PlanWiedervorlage } from '@/features/exercise/exercise-plans/Wiedervorlage';
-import { VorlagenKontext } from '@/features/exercise/exercise-plans/vorlagen';
+} from '@/features/exercise/exercises/plans/api';
+import { PlanAbschnitt } from '@/features/exercise/exercises/plans/PlanAbschnitt';
+import { PlanPage } from '@/features/exercise/exercises/plans/PlanPage';
+import { PlanWiedervorlage } from '@/features/exercise/exercises/plans/Wiedervorlage';
+import { VorlagenKontext } from '@/features/exercise/exercises/plans/vorlagen';
 import { katalogeintrag } from '@/features/exercise/exercises/katalog';
 import type { Katalogvorlage } from '@/features/exercise/exercises/katalog/typen';
 import '@/index.css';

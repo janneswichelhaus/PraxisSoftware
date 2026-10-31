@@ -1843,8 +1843,17 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-31",
-          "nachweis": "Branch ccr-71de462d-qufdxg",
+          "nachweis": "#340",
           "vermerk": "Fünf Terminformulare auf AppointmentForm, Dauerfehlzeit in NewEventPage; Programm −911 Zeilen, doppelte Zeilen 2,7 → 2,3 %, gegenseitige Abhängigkeiten 5 → 4; Standardweg ohne Migration; drei neue Vorschläge in BEFUNDE.md; Antworten zu #340: Bearbeiten behält die gespeicherte Person, einziger Standort vorgewählt"
+        },
+        {
+          "id": "aufraeumen-modulpaare",
+          "name": "Aufräumen: drei Modulpaare ohne gegenseitige Abhängigkeit (Übungspläne in exercises, Entwürfe ohne Netz in documentation, Weg des Eingangs in src/lib)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-31",
+          "nachweis": "Branch ccr-aef9377d-2sgdow",
+          "vermerk": "Gegenseitige Abhängigkeiten 4 → 1 (billing <-> patients bleibt), Module 54 → 52, Querimporte 572 → 536; der Weg des Eingangs liegt in src/lib, an der Wurzel von workplace entstünde feedback <-> workplace; Pfad A ohne Auslöser aus Nr. 8, Zweitreview ohne Befund"
         },
         {
           "id": "bef-223",

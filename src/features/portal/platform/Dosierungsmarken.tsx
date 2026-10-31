@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { TascheSymbol } from '@/components/ui/TascheSymbol';
-import type { Dosis } from '@/features/exercise/exercise-plans/dosierung';
+import type { Dosis } from '@/features/exercise/exercises/plans/dosierung';
 
 /**
  * Halten, je Seite und wie oft am Tag (UEB-012, ANN-384): optionale Felder

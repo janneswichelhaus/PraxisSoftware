@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as Api from './api';
-import type * as BibliothekApi from '@/features/exercise/exercises/api';
+import type * as BibliothekApi from '../api';
 import { renderWithProviders, testUser } from '@/test-utils';
-import { OHNE_KATALOG } from '@/features/exercise/exercises/testdaten';
+import { OHNE_KATALOG } from '../testdaten';
 
 const fetchPraxisvorlagen = vi.fn();
 const savePraxisvorlage = vi.fn();
@@ -21,7 +21,7 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/exercise/exercises/api', async (importOriginal) => {
+vi.mock('../api', async (importOriginal) => {
   const actual = await importOriginal<typeof BibliothekApi>();
   return {
     ...actual,

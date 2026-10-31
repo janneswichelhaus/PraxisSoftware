@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { Bibliothek, Variante } from '@/features/exercise/exercises/api';
-import { katalogeintrag } from '@/features/exercise/exercises/katalog';
-import type { Katalogvorlage } from '@/features/exercise/exercises/katalog/typen';
-import { KATALOG_VORLAGEN } from '@/features/exercise/exercises/katalog/vorlagen';
-import { OHNE_KATALOG } from '@/features/exercise/exercises/testdaten';
+import type { Bibliothek, Variante } from '../api';
+import { katalogeintrag } from '../katalog';
+import type { Katalogvorlage } from '../katalog/typen';
+import { KATALOG_VORLAGEN } from '../katalog/vorlagen';
+import { OHNE_KATALOG } from '../testdaten';
 import { OHNE_STANDARD } from './hinzufuegen';
 import {
   alsVorlage,
@@ -125,10 +125,10 @@ describe('Vorlagenliste (ADR-006 Punkt 10)', () => {
   it('importiert in Liste und Übernahme nichts aus Akte, Befund, Verordnung oder Verlauf', () => {
     const stamm = process.cwd();
     for (const datei of [
-      'src/features/exercise/exercise-plans/vorlagen.ts',
-      'src/features/exercise/exercise-plans/Vorlagenauswahl.tsx',
-      'src/features/exercise/exercise-plans/Vorlagenvorschau.tsx',
-      'src/features/exercise/exercise-plans/Uebungsauswahl.tsx',
+      'src/features/exercise/exercises/plans/vorlagen.ts',
+      'src/features/exercise/exercises/plans/Vorlagenauswahl.tsx',
+      'src/features/exercise/exercises/plans/Vorlagenvorschau.tsx',
+      'src/features/exercise/exercises/plans/Uebungsauswahl.tsx',
       'src/features/exercise/exercises/suche.ts',
     ]) {
       const quelle = readFileSync(join(stamm, datei), 'utf8');

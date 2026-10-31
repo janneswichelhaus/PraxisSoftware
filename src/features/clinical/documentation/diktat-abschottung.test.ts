@@ -121,7 +121,8 @@ describe('ANN-520: Diktat und Aufnahme legen nichts ab', () => {
     expect(importe(mehrzeilig)).toEqual(['@/lib/geraeteablage']);
     expect(erlaubterImport('@/lib/geraeteablage')).toBe(false);
     expect(erlaubterImport('./api')).toBe(false);
-    expect(erlaubterImport('@/features/clinical/offline-documentation/entwuerfe')).toBe(false);
+    expect(erlaubterImport('@/features/clinical/documentation/offline/entwuerfe')).toBe(false);
+    expect(erlaubterImport('./offline/entwuerfe')).toBe(false);
     expect(importe("const m = await import('./api');")).toEqual(['./api']);
   });
 });

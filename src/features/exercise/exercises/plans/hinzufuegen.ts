@@ -1,5 +1,5 @@
-import type { Variante } from '@/features/exercise/exercises/api';
-import type { Katalogeintrag } from '@/features/exercise/exercises/katalog/typen';
+import type { Variante } from '../api';
+import type { Katalogeintrag } from '../katalog/typen';
 import type { KatalogUebernahme, PositionEingabe } from './api';
 import type { Dosis } from './dosierung';
 
