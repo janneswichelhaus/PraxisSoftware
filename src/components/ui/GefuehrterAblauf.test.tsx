@@ -359,6 +359,10 @@ describe('GefuehrterAblauf mit „Später“ und Balken je Schritt (5.3)', () =>
     expect(seite.className).not.toContain('sehr-gross');
     expect(seite).toHaveClass('max-[23rem]:flex-none');
     expect(inhalt).not.toContainElement(screen.getByRole('button', { name: 'Weiter' }));
+    // Über rollendem Inhalt trennt eine Linie den festen Fuß.
+    expect(screen.getByRole('button', { name: 'Weiter' }).parentElement!.parentElement).toHaveClass(
+      '[[data-schrift=sehr-gross]_&]:border-t',
+    );
   });
 
   it('beginnt unter 23rem jede neue Seite oben, obwohl die Fläche bleibt', () => {

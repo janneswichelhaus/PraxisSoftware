@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Fragment, type CSSProperties, type ReactNode } from 'react';
+import { Children, Fragment, type CSSProperties, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
 import { Aufgabenkarte } from '@/components/ui/Aufgabenkarte';
@@ -128,7 +128,7 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
   const begleitung = zugang.access_kind === 'companion';
   // Steht das Band einer Vertretung, kommt am Telefon die Hauptsache vor den Gruß (ANN-820).
   const rechner = useRechner();
-  const handlungZuerst = !eigen && !rechner;
+  const vertretungAmTelefon = !eigen && !rechner;
   const name = zugang.represented_name ?? 'die Person';
   const behandlung = zugang.relationship_kind === 'treatment';
 
@@ -262,6 +262,8 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
     plaene: plaene.data,
     naechster,
   });
+  // Ohne Hauptsache gibt es keine Handlung, die vorgehen könnte: Der Leerzustand folgt dem Gruß.
+  const handlungZuerst = vertretungAmTelefon && haupt.art !== 'nichts';
 
   const hauptsachekarte = (
     <Hauptsachekarte
@@ -314,7 +316,7 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
       </div>
     );
   }
-  if (laedt) return <Ladezustand />;
+  if (laedt) return <Ladezustand handlungZuerst={vertretungAmTelefon} />;
 
   // --- Heute bzw. Zwischen den Einheiten (ANN-700) -------------------------
   const heute: Eintrag[] = [];
@@ -625,9 +627,8 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
 }
 
 /**
- * Gruß und Datum, darüber eine Statusmeldung der Lesefrist oder des Endes
- * einer Vertretung, darunter einmalige Rückmeldungen. Mit `vorDemGruss` stehen
- * die Rückmeldungen und dann die Hauptsache über dem Gruß (ANN-820).
+ * Gruß und Datum, darüber eine Statusmeldung der Lesefrist oder des Endes einer Vertretung, darunter
+ * einmalige Rückmeldungen. Mit `vorDemGruss` stehen sie oben, dann die Hauptsache, dann der Gruß.
  */
 function Kopfteil({
   zugang,
@@ -649,23 +650,36 @@ function Kopfteil({
   const name = zugang.represented_name ?? 'die Person';
   // Eine Vertretung hat außerhalb der Lesefrist ihr eigenes Ende, etwa die Volljährigkeit.
   const eigenesEnde = zugang.access_kind !== 'self' && !inLesefrist(zugang);
+  const status = zugang.read_until ? (
+    <Statusmeldung ton="warnung">
+      {eigenesEnde
+        ? `Ihr Zugang für ${name} endet am ${datum(zugang.read_until)}.`
+        : lesefristSatz(zugang, abo)}
+    </Statusmeldung>
+  ) : null;
+  const gruss = <Gruss name={mitName ? zugang.own_name : null} jetzt={jetzt} mitDatum={mitDatum} />;
+  if (vorDemGruss) {
+    // Je ein Abschnitt im Abstand der Seite; die Karte behält allein ihre eigene Einblendung, und
+    // steht sie direkt unter dem Band, rückt sie auf den Seitenrand von 20 ab.
+    const oben = status !== null || Children.toArray(children).length > 0;
+    return (
+      <>
+        {oben ? (
+          <div className="markenmoment-gruss flex flex-col gap-6">
+            {status}
+            {children}
+          </div>
+        ) : null}
+        <div className="first:mt-2">{vorDemGruss}</div>
+        <div className="markenmoment-gruss">{gruss}</div>
+      </>
+    );
+  }
   return (
     <div className="markenmoment-gruss flex flex-col gap-6">
-      {zugang.read_until ? (
-        <Statusmeldung ton="warnung">
-          {eigenesEnde
-            ? `Ihr Zugang für ${name} endet am ${datum(zugang.read_until)}.`
-            : lesefristSatz(zugang, abo)}
-        </Statusmeldung>
-      ) : null}
-      {vorDemGruss ? (
-        <>
-          {children}
-          {vorDemGruss}
-        </>
-      ) : null}
-      <Gruss name={mitName ? zugang.own_name : null} jetzt={jetzt} mitDatum={mitDatum} />
-      {vorDemGruss ? null : children}
+      {status}
+      {gruss}
+      {children}
     </div>
   );
 }
@@ -936,18 +950,22 @@ function uebungenText(
  * das Datum, die Hero-Karte, ein Abschnitt mit Aufgabenkarte und einer mit
  * Besuchskarte. Für Vorlesesoftware „Übersicht wird geladen“.
  */
-function Ladezustand() {
+function Ladezustand({ handlungZuerst }: { handlungZuerst: boolean }) {
+  const gruss = (
+    <span className="flex flex-col gap-2">
+      <Skelett form="gruss" className="w-60 max-w-full" />
+      <Skelett form="gruss" className="w-47.5 max-w-full" />
+      <Skelett form="zeile" className="mt-2 w-50 max-w-full" />
+    </span>
+  );
+  // Dieselbe Folge wie die geladene Seite, sonst spränge die Karte beim Laden (ANN-820).
   return (
     <SkelettBereich
       beschriftung="Übersicht wird geladen"
       className="[[data-rechner]_&]:max-w-spalte flex flex-col gap-10"
     >
-      <span className="flex flex-col gap-2">
-        <Skelett form="gruss" className="w-60 max-w-full" />
-        <Skelett form="gruss" className="w-47.5 max-w-full" />
-        <Skelett form="zeile" className="mt-2 w-50 max-w-full" />
-      </span>
-      <Skelett form="hero" />
+      {handlungZuerst ? <Skelett form="hero" className="mt-2" /> : gruss}
+      {handlungZuerst ? gruss : <Skelett form="hero" />}
       <span className="flex flex-col gap-4">
         <Skelett form="titel" className="w-22.5" />
         <Skelett form="karte" />

@@ -33,6 +33,8 @@ const SEHR_GROSS_ROLLT_ZUSAMMEN = {
     '[[data-schrift=sehr-gross]_&]:shrink-0 [[data-schrift=sehr-gross]_&]:basis-auto [[data-schrift=sehr-gross]_&]:overflow-visible',
 };
 const AM_RECHNER_LINIE_UNTEN = '[.plattform-schrift[data-rechner]_&]:border-b';
+const SEHR_GROSS_LINIE_UEBER_DEM_FUSS =
+  '[[data-schrift=sehr-gross]_&]:border-line [[data-schrift=sehr-gross]_&]:border-t [[data-schrift=sehr-gross]_&]:pt-4';
 const AM_RECHNER_LINIE_OBEN =
   '[.plattform-schrift[data-rechner]_&]:border-t [.plattform-schrift[data-rechner]_&]:pt-4';
 
@@ -122,7 +124,7 @@ export function GefuehrterAblauf({
   unterDemKopf?: ReactNode;
   /** Die Linie über dem Fuß auf jeder Seite, nicht nur im Abschluss. */
   fussLinie?: boolean;
-  /** Eine Seite ohne Auswahl: Der Fuß steht auch bei „Sehr groß“ fest, der Inhalt rollt (ANN-819). */
+  /** Hinweis oder Gruß ohne Antwort: Der Fuß steht auch bei „Sehr groß“ fest, mit Linie (ANN-819). */
   fussFest?: boolean;
   /** Am Rechner eine Spalte von 48rem statt 36rem: Nur so passt eine Skala 0 bis 10 in eine Reihe. */
   breit?: boolean;
@@ -255,10 +257,12 @@ export function GefuehrterAblauf({
     </>
   );
 
-  // Der Rand liegt außen, damit Fuß und Inhalt an derselben Kante der Spalte stehen.
+  // Der Rand liegt außen, damit Fuß und Inhalt an derselben Kante der Spalte stehen. Steht er bei
+  // „Sehr groß“ fest über rollendem Inhalt, trennt ihn eine Linie davon (ANN-819).
+  const festeLinie = fussFest && !fussLinie && !abschluss ? SEHR_GROSS_LINIE_UEBER_DEM_FUSS : '';
   const fussLeiste = mitFuss ? (
     <div
-      className={`shrink-0 ${rand} ${fussLinie ? `border-line border-t pt-4 pb-5 ${AM_RECHNER_OHNE_LINIE} ${AM_RECHNER_OHNE_ABSTAND}` : abschluss ? 'border-line border-t pt-2 pb-4' : 'pt-2 pb-4'}`}
+      className={`shrink-0 ${rand} ${fussLinie ? `border-line border-t pt-4 pb-5 ${AM_RECHNER_OHNE_LINIE} ${AM_RECHNER_OHNE_ABSTAND}` : abschluss ? 'border-line border-t pt-2 pb-4' : 'pt-2 pb-4'} ${festeLinie}`.trim()}
     >
       <div
         className={`${spalte} mx-auto w-full ${fussLinie ? `border-line ${AM_RECHNER_LINIE_OBEN}` : ''}`}

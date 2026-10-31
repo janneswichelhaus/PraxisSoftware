@@ -834,6 +834,13 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(folgt(hero, gruss)).toBe(true);
   });
 
+  it('lässt einer Vertretung ohne Hauptsache den Gruß vor dem Leerzustand (ANN-820)', async () => {
+    zeige(BEGLEITUNG, `/p?zugang=${BEGLEITUNG.access_id}`);
+    const gruss = await screen.findByRole('heading', { level: 1, name: /Paula Mustermann$/ });
+    const leer = screen.getByText(/nichts zu tun/);
+    expect(gruss.compareDocumentPosition(leer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('lässt der eigenen Übersicht den Gruß vor der Hauptsache (ANN-820)', async () => {
     ladeTermine.mockResolvedValue([TERMIN]);
     zeige();

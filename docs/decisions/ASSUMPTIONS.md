@@ -1423,5 +1423,5 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-817 | Übersicht: Die ganze Hero-Karte führt weiter, der Knopf bleibt sichtbar | Technik · entschieden (Jannes) | `KNOPF_FUER_DIE_KARTE` in `src/components/ui/HeroKarte.tsx` |
 | ANN-818 | Lesefrist: Ein ungesendeter Fragebogen steht als Zeile unter „Ihre Behandlung“, zum Verwerfen | Technik · entschieden (Jannes) | `angefangen` in `src/features/portal/platform/Uebersicht.tsx` |
 | ANN-819 | „Sehr groß“: Seiten ohne Auswahl (Hinweis zum Ausfallhonorar, „Willkommen“, „Alles bereit“) behalten den festen Fuß | Technik · entschieden (Jannes) | `fussFest` in `src/components/ui/GefuehrterAblauf.tsx` |
-| ANN-820 | Übersicht einer Vertretung am Telefon: die Hauptsache nach dem Satz der Lesefrist, vor dem Gruß | Technik · entschieden (Jannes) | `handlungZuerst` in `src/features/portal/platform/Uebersicht.tsx` |
+| ANN-820 | Übersicht einer Vertretung am Telefon: Hauptsache nach dem Satz der Lesefrist, vor dem Gruß; ohne Hauptsache wie bisher | Technik · entschieden (Jannes) | `handlungZuerst` in `src/features/portal/platform/Uebersicht.tsx` |
 | ANN-821 | Lesefrist mit eigenem Entwurf: Die Seite heißt „Angefangener Fragebogen“ wie die Zeile, „Gesendet wurde er nicht.“ | Technik · entschieden (Jannes) | `Befundbogen` in `src/features/portal/platform/Befundbogen.tsx` |
