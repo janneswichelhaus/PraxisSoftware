@@ -19,7 +19,11 @@ import {
   type AppointmentFormValues,
 } from './api';
 import { speicherfehlerText, terminFehlerliste, terminFeldfehler } from './terminformular';
-import { ASSIGNEE_LABELS, type AppointmentFormLists } from './useAppointmentFormLists';
+import {
+  ASSIGNEE_IN_SENTENCE,
+  ASSIGNEE_LABELS,
+  type AppointmentFormLists,
+} from './useAppointmentFormLists';
 import { Wegauskunft } from './Wegauskunft';
 import { frageAusFormular, useWegpruefung } from './wegpruefung';
 
@@ -56,6 +60,13 @@ export interface AppointmentFormTexts {
 
 /** Wessen Anschrift „Passt es?“ prüft und welcher bestehende Termin dabei außen vor bleibt. */
 export type Wegkontext = Parameters<typeof frageAusFormular>[1] & { zeitzone: string };
+
+function withoutStaffError({
+  staff_member_id: _entfaellt,
+  ...rest
+}: Partial<Record<AppointmentFormField, string>>) {
+  return rest;
+}
 
 const FELDER: readonly AppointmentFormField[] = [
   'staff_member_id',
@@ -158,6 +169,12 @@ export function AppointmentForm({
     setWerte(zuordnen);
     setVorbelegt(zuordnen);
   }, [personen.data, vorbelegen]);
+
+  // Steht die Person da, auch durch die Vorwahl, gilt ihre Pflichtmeldung nicht mehr.
+  useEffect(() => {
+    if (werte.staff_member_id === '') return;
+    setFehler((bisher) => (bisher.staff_member_id ? withoutStaffError(bisher) : bisher));
+  }, [werte.staff_member_id]);
 
   const geaendert =
     fensterMinuten !== startMinuten ||
@@ -293,6 +310,7 @@ export function AppointmentForm({
           onAbbrechen={() => setVorfrage(null)}
           laeuft={false}
           beschriftung={trotzdem}
+          person={ASSIGNEE_IN_SENTENCE[listen.group]}
         />
       ) : istAusserhalbArbeitszeit(mutation.error) ? (
         <ArbeitszeitRueckfrage
@@ -301,6 +319,7 @@ export function AppointmentForm({
           onAbbrechen={() => mutation.reset()}
           laeuft={mutation.isPending}
           beschriftung={trotzdem}
+          person={ASSIGNEE_IN_SENTENCE[listen.group]}
         />
       ) : istVergangenheit(mutation.error) ? (
         <ArbeitszeitRueckfrage
@@ -310,6 +329,7 @@ export function AppointmentForm({
           onAbbrechen={() => mutation.reset()}
           laeuft={mutation.isPending}
           beschriftung={trotzdem}
+          person={ASSIGNEE_IN_SENTENCE[listen.group]}
         />
       ) : mutation.isError ? (
         <Hinweisfenster titel={texte.fehlerTitel} onSchliessen={() => mutation.reset()}>
@@ -378,7 +398,10 @@ export function AppointmentForm({
   );
 }
 
-/** Beim Hausbesuch ohne Akte im Formular: woher die Anschrift kommt. */
+/**
+ * Beim Hausbesuch ohne Akte im Formular: woher die Anschrift kommt. Sie selbst steht nicht da,
+ * das hieße die protokollierte Sicht der Person ein zweites Mal zu öffnen (ANN-177).
+ */
 export function HomeVisitAddressHint({ source }: { source: 'record' | 'contact' }) {
   return (
     <p className="text-ink-muted text-sm">

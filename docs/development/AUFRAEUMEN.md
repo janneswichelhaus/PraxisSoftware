@@ -3,16 +3,16 @@
 Erzeugt von `pnpm aufraeumen --schreiben`, nicht von Hand ändern. Der nächste Lauf von
 [`/aufraeumen`](../../.claude/skills/aufraeumen/SKILL.md) vergleicht mit diesem Stand.
 
-Stand: 2026-10-31 · Commit `a256dc07`
+Stand: 2026-10-31 · Commit `9d15779a`
 
 | Kennzahl | Wert | Schlüssel |
 | --- | ---: | --- |
-| Zeilen gesamt | 585906 | `zeilen_gesamt` |
-| Zeilen Programm (src, Edge Functions) | 203270 | `zeilen_programm` |
-| Zeilen Tests | 276626 | `zeilen_tests` |
+| Zeilen gesamt | 586019 | `zeilen_gesamt` |
+| Zeilen Programm (src, Edge Functions) | 203305 | `zeilen_programm` |
+| Zeilen Tests | 276675 | `zeilen_tests` |
 | Zeilen Migrationen | 69075 | `zeilen_migrationen` |
-| Zeilen Doku (Markdown) | 9579 | `zeilen_doku` |
-| Zeilen Rest (Skripte, Konfiguration, Seed) | 27356 | `zeilen_rest` |
+| Zeilen Doku (Markdown) | 9599 | `zeilen_doku` |
+| Zeilen Rest (Skripte, Konfiguration, Seed) | 27365 | `zeilen_rest` |
 | Kommentaranteil Programm (%) | 19 | `kommentaranteil_programm` |
 | Kommentaranteil Migrationen (%) | 5.5 | `kommentaranteil_migrationen` |
 | Kommentare über 3 Zeilen (ohne Migrationen) | 3106 | `lange_kommentare` |

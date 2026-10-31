@@ -242,6 +242,25 @@ ADR-008 Punkt 1 gegen `retention_classes.basis`; ADR-027 Punkt 22 gegen `PAL_STU
 gegen ADR-009 Punkt 15 und ADR-006. **Erwartet.** Je ADR eine Fassung und eine neue Version der
 Prinzipien nach Jannes' Entscheidung.
 
+### Termine — Formulare weichen in Zuständen ohne Bild von DESIGN.md ab
+2026-10-31 · Kalender, Training · Design-Review zum gemeinsamen Terminformular · offen (Vorschlag) ·
+`AppointmentForm.tsx`, `NewEventPage.tsx`, `NewTrainingAppointmentPage.tsx`\
+**Beobachtung.** Schon vor dem Umbau so: „Teilnahme ändern“ zeigt die Fehlerzusammenfassung bei einem
+Feld; Fehlzeit und Dauerfehlzeit ersetzen beim Laden die Seite ohne Rückweg und Kopf (Regel 8); am
+Trainingstermin erklären „Nur mit laufendem Vertrag.“ und „Ohne Vereinbarung ist es eine
+Einzelstunde.“ die Auswahl (Regel 6); die Rückfrage heißt im Training „… – trotzdem“, im Kalender
+„Termin trotzdem anlegen“. **Erwartet.** Bei der nächsten Überholung des Kalenders angleichen, mit
+Bildern der Fehler- und Ladezustände bei 375 px.
+
+### Termine — Bearbeiten wählt anders vor als Anlegen, Training anders als Behandlung
+2026-10-31 · Kalender, Training · Praxis-Review zum gemeinsamen Terminformular · offen (Entscheidung
+Jannes) · `EditAppointmentPage.tsx`, `EditTrainingAppointmentPage.tsx`, `vorbelegen`\
+**Beobachtung.** Wer einen Trainingstermin verschiebt, verliert eine nicht mehr zuordenbare
+Betreuung; am Behandlungstermin bleibt die Person stehen, sie kann nur vorübergehend nicht planbar
+sein. Wechselt ein Behandlungstermin zur Praxis, ist der einzige Standort nicht vorgewählt, beim
+Anlegen schon (ein Tipp mehr). **Erwartet.** Eine Regel für beide Bearbeitungen, etwa die gespeicherte
+Person behalten und den einzigen Standort beim Wechsel vorwählen.
+
 ### Aufräumen — Drei Modulpaare hängen nur über wenige Rückwege gegenseitig voneinander ab
 2026-10-31 · Übungen, Doku, Betrieb · /aufraeumen 2026-10-31 · offen (Vorschlag) ·
 `exercise-plans`, `offline-documentation`, `workplace/organisation/pfade.ts`\

@@ -18,6 +18,13 @@ export const ASSIGNEE_LABELS: Readonly<Record<AssigneeGroup, string>> = {
   staff: 'Beteiligte Person',
 };
 
+/** Dieselbe Person im Satz: „außerhalb der Arbeitszeit der betreuenden Person“. */
+export const ASSIGNEE_IN_SENTENCE: Readonly<Record<AssigneeGroup, string>> = {
+  therapy: 'der behandelnden Person',
+  training: 'der betreuenden Person',
+  staff: 'der beteiligten Person',
+};
+
 export interface AppointmentFormLists {
   group: AssigneeGroup;
   personen: UseQueryResult<AssignableTherapist[]>;

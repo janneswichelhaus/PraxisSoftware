@@ -501,6 +501,7 @@ export function ArbeitszeitRueckfrage({
   beschriftung,
   arbeitszeit = true,
   vergangenheit = false,
+  person = 'der behandelnden Person',
 }: {
   onBestaetigen: () => void;
   /** Zurück ins Formular, ohne etwas zu schreiben; setzt den Fehler zurück. */
@@ -514,6 +515,8 @@ export function ArbeitszeitRueckfrage({
    * damit nie zwei Fenster hintereinander kommen, wenn beides zutrifft.
    */
   vergangenheit?: boolean;
+  /** Wessen Arbeitszeit, im Satz: „der betreuenden Person“. */
+  person?: string;
 }) {
   const titel =
     arbeitszeit && vergangenheit
@@ -531,7 +534,7 @@ export function ArbeitszeitRueckfrage({
       {arbeitszeit ? (
         <>
           <p className={`text-ink text-sm ${vergangenheit ? 'mt-2' : ''}`}>
-            Dieser Zeitraum liegt außerhalb der hinterlegten Arbeitszeit der behandelnden Person.
+            Dieser Zeitraum liegt außerhalb der hinterlegten Arbeitszeit {person}.
           </p>
           <Kleingedrucktes className="mt-2">
             Ist für die Person an diesem Tag keine Arbeitszeit hinterlegt, gilt der Termin ebenfalls

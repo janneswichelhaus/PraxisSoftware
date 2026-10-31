@@ -441,16 +441,18 @@ export function AuthenticatedRoutes({
                     path="/termine/dauertermin"
                     element={<DauerterminStartPage user={user} />}
                   />
-                  {/* Ein Ereignis des Praxisbetriebs - Besprechung, Teamtermin.
-                  Eigener Weg, weil er weder Patient:in noch Verordnung kennt
-                  (CAL-015b). */}
-                  <Route path="/termine/ereignis" element={<NewEventPage user={user} />} />
+                  {/* Eine Fehlzeit kennt weder Patient:in noch Verordnung. Eigener key je Weg: Beide
+                  zeigen NewEventPage, ohne ihn bliebe beim Wechsel der Zustand stehen. */}
+                  <Route
+                    path="/termine/ereignis"
+                    element={<NewEventPage key="einzeln" user={user} />}
+                  />
                   {/* Dieselbe Fehlzeit ueber mehrere Wochen. Eigener Weg neben dem
                   einzelnen Ereignis: Er fragt zusaetzlich nach Rhythmus und Anzahl und
                   legt eine Serie an. */}
                   <Route
                     path="/termine/dauerfehlzeit"
-                    element={<NewEventPage user={user} serie />}
+                    element={<NewEventPage key="serie" user={user} serie />}
                   />
                   <Route
                     path="/patienten/:patientId/termine/neu"

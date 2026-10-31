@@ -72,6 +72,7 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 const { TrainingAppointmentPage } = await import('./TrainingAppointmentPage');
 const { NewTrainingAppointmentPage } = await import('./NewTrainingAppointmentPage');
 const { vereinbarungText } = await import('./api');
+const { AusserhalbArbeitszeitError } = await import('@/features/calendar/appointments/api');
 
 const termin = {
   id: TERMIN,
@@ -262,6 +263,25 @@ describe('NewTrainingAppointmentPage', () => {
     ).toBeVisible();
     expect(within(zusammenfassung).queryByText(/Behandelnde/)).toBeNull();
     expect(createTrainingAppointment).not.toHaveBeenCalled();
+  });
+
+  it('fragt nach der Arbeitszeit der betreuenden Person, nicht der behandelnden', async () => {
+    createTrainingAppointment.mockRejectedValueOnce(new AusserhalbArbeitszeitError());
+    const nutzer = userEvent.setup();
+    renderWithProviders(
+      <NewTrainingAppointmentPage user={testUser(['trainer'], 'Tom')} />,
+      `/training/termine/neu?kunde=${TINA}&datum=2027-05-13&beginn=10:00&person=${TOM}`,
+    );
+    await waitFor(() => expect(screen.getByLabelText('Betreuende Person *')).toHaveValue(TOM));
+    await nutzer.click(screen.getByRole('button', { name: 'Trainingstermin anlegen' }));
+
+    const fenster = await screen.findByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
+    expect(fenster).toHaveTextContent(
+      'außerhalb der hinterlegten Arbeitszeit der betreuenden Person',
+    );
+    expect(
+      within(fenster).getByRole('button', { name: 'Trainingstermin anlegen – trotzdem' }),
+    ).toBeVisible();
   });
 
   it('hängt den Termin an die gewählte Vereinbarung', async () => {
