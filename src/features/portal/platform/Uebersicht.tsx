@@ -53,6 +53,7 @@ import { Besuchskarte } from './Besuchskarte';
 import { nachDemCheckin } from './checkintexte';
 import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
 import { mitteilungenOffen } from './einstiegsablauf';
+import { useRechner } from './geruestbreite';
 import {
   ersterTermin,
   handlung,
@@ -125,6 +126,9 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
   const id = zugang.access_id;
   const eigen = zugang.access_kind === 'self';
   const begleitung = zugang.access_kind === 'companion';
+  // Steht das Band einer Vertretung, kommt am Telefon die Hauptsache vor den Gruß (ANN-820).
+  const rechner = useRechner();
+  const handlungZuerst = !eigen && !rechner;
   const name = zugang.represented_name ?? 'die Person';
   const behandlung = zugang.relationship_kind === 'treatment';
 
@@ -259,6 +263,19 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
     naechster,
   });
 
+  const hauptsachekarte = (
+    <Hauptsachekarte
+      key="hauptsache"
+      haupt={haupt}
+      zugang={zugang}
+      naechster={naechster}
+      erster={erster}
+      jetzt={jetzt}
+      verbunden={verbunden}
+      mit={mit}
+      markenmoment={markenmoment}
+    />
+  );
   const kopf = (
     <Kopfteil
       zugang={zugang}
@@ -267,6 +284,7 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
       mitName={gescheitert.length === 0}
       // Fehler: der Gruß ohne Namen und ohne Datum (Leinwand „Fehler“).
       mitDatum={gescheitert.length === 0}
+      vorDemGruss={handlungZuerst && gescheitert.length === 0 ? hauptsachekarte : undefined}
     >
       {nachCheckin === '1' ? (
         <Rueckmeldung>
@@ -484,19 +502,7 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
     </div>
   );
 
-  const links: ReactNode[] = [
-    <Hauptsachekarte
-      key="hauptsache"
-      haupt={haupt}
-      zugang={zugang}
-      naechster={naechster}
-      erster={erster}
-      jetzt={jetzt}
-      verbunden={verbunden}
-      mit={mit}
-      markenmoment={markenmoment}
-    />,
-  ];
+  const links: ReactNode[] = handlungZuerst ? [] : [hauptsachekarte];
   if (heute.length > 0) {
     links.push(
       teil(
@@ -607,12 +613,12 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
       ) : null}
       {rechts.length > 0 ? (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(420px,100%),1fr))] items-start gap-10 [[data-rechner]_&]:gap-12">
-          <div className={spalte}>{links}</div>
+          {links.length > 0 ? <div className={spalte}>{links}</div> : null}
           <div className={spalte}>{rechts}</div>
         </div>
-      ) : (
+      ) : links.length > 0 ? (
         <div className={`${spalte} [[data-rechner]_&]:max-w-spalte`}>{links}</div>
-      )}
+      ) : null}
       {rechte ? teil(<Kleingedrucktes>{rechte}</Kleingedrucktes>, 'rechte') : null}
     </div>
   );
@@ -620,7 +626,8 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
 
 /**
  * Gruß und Datum, darüber eine Statusmeldung der Lesefrist oder des Endes
- * einer Vertretung, darunter einmalige Rückmeldungen.
+ * einer Vertretung, darunter einmalige Rückmeldungen. Mit `vorDemGruss` stehen
+ * die Rückmeldungen und dann die Hauptsache über dem Gruß (ANN-820).
  */
 function Kopfteil({
   zugang,
@@ -628,6 +635,7 @@ function Kopfteil({
   jetzt,
   mitName,
   mitDatum,
+  vorDemGruss,
   children,
 }: {
   zugang: Plattformzugang;
@@ -635,6 +643,7 @@ function Kopfteil({
   jetzt: Date;
   mitName: boolean;
   mitDatum: boolean;
+  vorDemGruss?: ReactNode;
   children: ReactNode;
 }) {
   const name = zugang.represented_name ?? 'die Person';
@@ -649,8 +658,14 @@ function Kopfteil({
             : lesefristSatz(zugang, abo)}
         </Statusmeldung>
       ) : null}
+      {vorDemGruss ? (
+        <>
+          {children}
+          {vorDemGruss}
+        </>
+      ) : null}
       <Gruss name={mitName ? zugang.own_name : null} jetzt={jetzt} mitDatum={mitDatum} />
-      {children}
+      {vorDemGruss ? null : children}
     </div>
   );
 }

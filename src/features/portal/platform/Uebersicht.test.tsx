@@ -823,6 +823,25 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(screen.queryByText(/Terminwünsche und Nachrichten/)).not.toBeInTheDocument();
   });
 
+  it('stellt einer Vertretung am Telefon die Hauptsache vor den Gruß, nach dem Satz der Lesefrist (ANN-820)', async () => {
+    zeige({ ...BEGLEITUNG, writable: false, read_until: '2026-12-31T12:00:00+01:00' });
+    const hero = await screen.findByRole('region', { name: 'Unterlagen sichern' });
+    const gruss = screen.getByRole('heading', { level: 1, name: /Paula Mustermann$/ });
+    const satz = screen.getByText(/^Die Behandlung von Max Mustermann ist beendet\./);
+    const folgt = (a: Node, b: Node) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(folgt(satz, hero)).toBe(true);
+    expect(folgt(hero, gruss)).toBe(true);
+  });
+
+  it('lässt der eigenen Übersicht den Gruß vor der Hauptsache (ANN-820)', async () => {
+    ladeTermine.mockResolvedValue([TERMIN]);
+    zeige();
+    const gruss = await screen.findByRole('heading', { level: 1 });
+    const hero = screen.getByRole('region', { name: 'Fragebogen vor Ihrem ersten Termin' });
+    expect(gruss.compareDocumentPosition(hero) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('nennt einer Vertretung vor der Lesefrist das Ende ihres eigenen Zugangs', async () => {
     // Sorgerecht bis zur Volljährigkeit: Die Behandlung läuft, der Server lässt schreiben.
     zeige({

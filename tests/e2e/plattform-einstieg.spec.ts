@@ -394,6 +394,28 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
     expect(await ueberlaeuft(page)).toBe(false);
   });
 
+  // Seiten ohne Auswahl behalten bei „Sehr groß“ den festen Fuß (ANN-819): Der Gruß einer
+  // Begleitung mit langem Namen passt bei 667 nicht, „Weiter“ stand erst nach Rollen im Bild.
+  test('„Sehr groß“ bei 375 × 667, Begleitung: „Weiter“ steht fest im Bild, nur der Inhalt rollt (ANN-819)', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+    });
+    await oeffne(page, 'einstieg-begleitung', 375, 667);
+    const willkommen = fenster(page, /^Willkommen/);
+    await expect(willkommen).toBeVisible();
+    const weiter = willkommen.getByRole('button', { name: 'Weiter' });
+    await expect(weiter).toBeInViewport({ ratio: 1 });
+    expect(await rollt(willkommen)).toBe(true);
+    const inhalt = willkommen
+      .getByRole('heading', { level: 2 })
+      .locator('xpath=ancestor::*[@tabindex="0"][1]');
+    await inhalt.evaluate((flaeche) => flaeche.scrollTo(0, flaeche.scrollHeight));
+    await expect(weiter).toBeInViewport({ ratio: 1 });
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+
   test('1280 px: Titel in der Stufe des Rechners, der Kopf an der Kante des Inhalts', async ({
     page,
   }) => {

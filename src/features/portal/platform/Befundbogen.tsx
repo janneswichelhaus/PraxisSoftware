@@ -104,16 +104,19 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
           title="Zurzeit kein Fragebogen"
           description="Hier gibt es zurzeit nichts auszufüllen."
         />
+      ) : lesefrist && entwurf && !begleitung ? (
+        // Derselbe Name wie die Zeile der Übersicht, die hierher führt (ANN-818, ANN-821).
+        <EmptyState
+          markenform
+          title="Angefangener Fragebogen"
+          description="Gesendet wurde er nicht. Sie können die Antworten verwerfen."
+          aktion={<EntwurfVerwerfen zugang={zugang} entwurf={entwurf} />}
+        />
       ) : lesefrist ? (
         <EmptyState
           markenform
           title="Kein Fragebogen mehr"
           description={lesefristSatz(zugang, abo.data ?? null) ?? undefined}
-          aktion={
-            entwurf && !begleitung ? (
-              <EntwurfVerwerfen zugang={zugang} entwurf={entwurf} />
-            ) : undefined
-          }
         />
       ) : begleitung ? (
         // ANN-248: Angaben zur eigenen Gesundheit macht die Person selbst; der Server weist eine

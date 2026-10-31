@@ -854,6 +854,21 @@ test.describe('„Sehr groß“: nichts unter der Reiterleiste', () => {
     });
   }
 
+  // Vor dem Gruß standen Band, Satz der Lesefrist und Gruß, die Karte lag ganz unter der Leiste.
+  test('uebersicht-lesefrist-begleitung bei „Sehr groß“: Die Hauptsache steht vor dem Gruß im ersten Bild (ANN-820)', async ({
+    page,
+  }) => {
+    await sehrGross(page);
+    await oeffne(page, 'uebersicht-lesefrist-begleitung', GRUSS);
+    await expect(page.locator('html[data-schrift="sehr-gross"]')).toHaveCount(1);
+    const titel = (await page.locator('main section[aria-labelledby] h2').first().boundingBox())!;
+    const leiste = (await page.locator('nav.reiterleiste').boundingBox())!;
+    expect(titel.y + titel.height).toBeLessThanOrEqual(leiste.y);
+    const gruss = (await page.getByRole('heading', { level: 1, name: GRUSS }).boundingBox())!;
+    expect(gruss.y).toBeGreaterThan(titel.y + titel.height);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+
   test('handeln-fuer: Der Bereichsschalter bricht nicht im Namen, er rückt untereinander (BEF-195)', async ({
     page,
   }) => {

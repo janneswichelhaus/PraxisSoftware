@@ -64,6 +64,7 @@ export function GefuehrterAblauf({
   schmalesFenster = false,
   unterDemKopf,
   fussLinie = false,
+  fussFest = false,
   breit = false,
   children,
 }: {
@@ -121,6 +122,8 @@ export function GefuehrterAblauf({
   unterDemKopf?: ReactNode;
   /** Die Linie über dem Fuß auf jeder Seite, nicht nur im Abschluss. */
   fussLinie?: boolean;
+  /** Eine Seite ohne Auswahl: Der Fuß steht auch bei „Sehr groß“ fest, der Inhalt rollt (ANN-819). */
+  fussFest?: boolean;
   /** Am Rechner eine Spalte von 48rem statt 36rem: Nur so passt eine Skala 0 bis 10 in eine Reihe. */
   breit?: boolean;
   children?: ReactNode;
@@ -267,10 +270,11 @@ export function GefuehrterAblauf({
 
   // Unter 23rem rollt alles zusammen - Kopf, Inhalt und Fuß. Bei „Sehr groß“ rollen Inhalt und
   // Fuß zusammen, sonst deckte der Fuß die Antworten zu; passt alles, steht er unten (ANN-816).
+  const sehrGross = fussFest ? { seite: '', inhalt: '' } : SEHR_GROSS_ROLLT_ZUSAMMEN;
   const schmal = plattform
     ? {
-        seite: `max-[23rem]:flex-none ${SEHR_GROSS_ROLLT_ZUSAMMEN.seite}`,
-        inhalt: `max-[23rem]:flex-none max-[23rem]:overflow-visible ${SEHR_GROSS_ROLLT_ZUSAMMEN.inhalt}`,
+        seite: `max-[23rem]:flex-none ${sehrGross.seite}`.trim(),
+        inhalt: `max-[23rem]:flex-none max-[23rem]:overflow-visible ${sehrGross.inhalt}`.trim(),
       }
     : { seite: '', inhalt: '' };
   const hoch = plattform || inhaltUnten ? 'h-full' : '';

@@ -23,18 +23,18 @@ unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
 
 ## Was auf der Plattform anders gilt
 
-| DESIGN.md                   | Plattform                                                                                                                                      |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Keine Schatten              | Eine Tiefenstufe `shadow-plattform`, nur für Hero-, Aufgaben- und Besuchskarte (ANN-678). Listen bleiben Linie.                                |
-| Schriftrollen in px         | Skala in rem, Werte unter der Tabelle.                                                                                                         |
-| Etiketten in Versalien      | Keine Versalien. Die Bausteine heben `uppercase` unter `.plattform-schrift` auf (DR-154).                                                      |
-| Keine Erklärsätze           | Ein Satz Orientierung, wo sonst unklar bleibt, was passiert (leer, nach dem Senden, wer meine Angaben sieht); nie eine Gebrauchsanweisung.     |
-| Silbentrennung im Fließtext | Ab zwölf Buchstaben; nie in Namen, Anschriften, Titeln, Knöpfen, Reitern; unter 23rem auch Plan-, Übungsnamen und Wahlflächen (ANN-707).       |
-| Ziele ≥ 44 px               | Knöpfe 48 (Hauptknopf Durchführung 56), Karten ≥ 80, Stufen 56, Zeilen, Textlinks ≥ 44; Abstand ≥ 8, nicht in der Wochenleiste (ANN-708).      |
-| Rhythmus 4/8/12/16/24/32    | Dazu 40 (Telefon) und 48 (Rechner) zwischen Abschnitten; Seitenrand 20, Türseiten 24; in Zeilen und Zeichen auch 2, 6, 10 und 14 (Handoffs).   |
-| Hover 120 ms                | Druck an Knopf, Zeile und Karte: 98 % und vertiefte Fläche in 120 ms; bei „Bewegung reduzieren“ nur die Fläche (DR-117).                       |
-| Bilder `Medienbild` 4:3     | Eigene Fotos, nie KI-Bilder; 4:3 oder 16:9, Radius 16; Personen rund (`Personenbild karte`, 56); Laufrad als Markenform, nie an der Wortmarke. |
-| Liste in Karte              | Die Hauptsache als Hero-Karte (Tiefgrün, Papier-Schrift), höchstens drei Aufgabenkarten; alles Weitere als `ListRow`, ganz das Ziel.           |
+| DESIGN.md                   | Plattform                                                                                                                                 |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Keine Schatten              | Eine Tiefenstufe `shadow-plattform`, nur für Hero-, Aufgaben- und Besuchskarte (ANN-678). Listen bleiben Linie.                           |
+| Schriftrollen in px         | Skala in rem, Werte unter der Tabelle.                                                                                                    |
+| Etiketten in Versalien      | Keine Versalien. Die Bausteine heben `uppercase` unter `.plattform-schrift` auf (DR-154).                                                 |
+| Keine Erklärsätze           | Ein Satz Orientierung, wo unklar bleibt, was passiert (leer, nach dem Senden, wer meine Angaben sieht); nie eine Gebrauchsanweisung.      |
+| Silbentrennung im Fließtext | Ab zwölf Buchstaben; nie in Namen, Anschriften, Titeln, Knöpfen, Reitern; unter 23rem auch Plan-, Übungsnamen und Wahlflächen (ANN-707).  |
+| Ziele ≥ 44 px               | Knöpfe 48 (Hauptknopf Durchführung 56), Karten ≥ 80, Stufen 56, Zeilen, Textlinks ≥ 44; Abstand ≥ 8, nicht in der Wochenleiste (ANN-708). |
+| Rhythmus 4/8/12/16/24/32    | Dazu 40 (Telefon) und 48 (Rechner) zwischen Abschnitten; Seitenrand 20, Türseiten 24; in Zeilen und Zeichen auch 2, 6, 10, 14 (Handoffs). |
+| Hover 120 ms                | Druck an Knopf, Zeile und Karte: 98 % und vertiefte Fläche in 120 ms; bei „Bewegung reduzieren“ nur die Fläche (DR-117).                  |
+| Bilder `Medienbild` 4:3     | Eigene Fotos, nie KI-Bilder; 4:3/16:9, Radius 16; Personen rund (`Personenbild karte`, 56); Laufrad als Markenform, nie an der Wortmarke. |
+| Liste in Karte              | Die Hauptsache als Hero-Karte (Tiefgrün, Papier-Schrift), höchstens drei Aufgabenkarten; alles Weitere als `ListRow`, ganz das Ziel.      |
 
 **Skala:** Gruß `text-gruss` 34/800 (Rechner 40), Seitentitel `text-plattform-titel` 28/800 (32),
 Hero `text-hero` 26/800 (32, unter 23rem 22), Abschnitt `text-abschnitt` 22/700; Zeile 18/600, Text
@@ -43,7 +43,7 @@ Hero `text-hero` 26/800 (32, unter 23rem 22), Abschnitt `text-abschnitt` 22/700;
 ## Bausteine der Plattform
 
 `HeroKarte` (eine Markenfläche je Bildschirm) · `Aufgabenkarte` · `Besuchskarte` · `Notfallkarte`
-(über jedem Eingabefeld für Nachrichten) · `Skelett` mit `SkelettBereich` statt „wird geladen …“ ·
+(über jedem Nachrichtenfeld) · `Skelett` mit `SkelettBereich` statt „wird geladen …“ ·
 `EmptyState` mit `markenform` · `Button`/`ButtonLink` Variante `marke` (nur auf Tiefgrün) ·
 `Personenbild` Größe `karte` · `Laufrad` · `Verbindungszeile` · `Menueknopf` · `Schalter` (eine
 Wahl, die sofort gilt; Zustand als Wort) · `Wahlreihe` mit `sofort` (Knöpfe statt Radios: Pfeiltasten
@@ -59,15 +59,16 @@ Prüfseiten `tests/e2e/fixtures/plattform-*bausteine.html`.
 
 ## Seitentypen und Gerüst
 
-**Seitentypen:** Heute (Übersicht: Gruß, Hauptsache, Heute, Nächster Besuch, Neu für Sie; ANN-698
-bis ANN-702) · Liste · Objekt (Termin) · geführter Ablauf (Einladung, Einstieg, Wunsch, Absage,
-Check-in, Fragebogen) · Durchführung (Vollbild ohne Gerüst; Kopf mit „Später weiter“ und Balken, Fuß
-mit Stand und Hauptknopf 56; ANN-714) · Tür (Einladung, Anmeldung, Einrichten, Sperre, Zugang
-beendet) · Blatt (Planblatt, Rechnung). Der geführte Ablauf kann „Später“ statt ✕ tragen, einen
-Balken je Schritt und das Band einer Vertretung unter dem Fortschritt; mit `plattform` 20 Rand, die
-Frage ohne Rollen (ein Bild darüber schrumpft in 4:3). Unter 23rem 12 Rand und alles in einer
-Rollfläche, bei „Sehr groß“ Inhalt und Fuß (unten, solange alles passt); beide ohne Bild, ein Titel
-mit einem Wort über elf Zeichen in 22 (ANN-696, ANN-816). Mit `objekt` steht der Name im Kopf, mit
+**Seitentypen:** Heute (Übersicht: Gruß, Hauptsache, Heute, Nächster Besuch, Neu für Sie, als
+Vertretung am Telefon Hauptsache vor Gruß; ANN-698 bis ANN-702, ANN-820) · Liste · Objekt (Termin) ·
+geführter Ablauf (Einladung, Einstieg, Wunsch, Absage, Check-in, Fragebogen) · Durchführung
+(Vollbild ohne Gerüst; Kopf mit „Später weiter“ und Balken, Fuß mit Stand und Hauptknopf 56;
+ANN-714) · Tür (Einladung, Anmeldung, Einrichten, Sperre, Zugang beendet) · Blatt (Planblatt,
+Rechnung). Der geführte Ablauf kann „Später“ statt ✕ tragen, einen Balken je Schritt und das Band
+einer Vertretung unter dem Fortschritt; mit `plattform` 20 Rand, die Frage ohne Rollen (ein Bild
+darüber schrumpft in 4:3). Unter 23rem 12 Rand und alles in einer Rollfläche, bei „Sehr groß“ Inhalt
+und Fuß (unten, solange alles passt; ohne Auswahl fest, ANN-819); beide ohne Bild, ein Titel mit
+einem Wort über elf Zeichen in 22 (ANN-696, ANN-816). Mit `objekt` steht der Name im Kopf, mit
 `breit` am Rechner eine Spalte von 48rem; im Fuß nur Zustand, Notfallsatz und Hauptknopf. Der
 Check-in sendet ohne Zusammenfassung; ein Thema des Fragebogens rollt.
 
@@ -77,11 +78,10 @@ auch bei „Sehr groß“ (ANN-815) - gemessen, nicht aus der Einstellung gelese
 23rem der `Menueknopf` im Kopf (ANN-682). Bei offener Tastatur tritt sie zurück (ANN-676, ANN-681).
 Ab 1024 px Navigation im Kopf, Inhalt `max-w-inhalt`, jede Seite einspaltig in `max-w-spalte` außer
 der Übersicht (ab 900 px Inhaltsbreite zwei Spalten), den Übungen, den Terminen und dem Tagebuch
-(ANN-724, ANN-775, ANN-796); geschaltet über `data-rechner` (`useRechner`). Unter 23rem Zeichen und
-Bild der Karten über dem Text, innen 12, die Hero-Karte auch bei „Sehr groß“; auf der Übersicht ganz
-das Ziel (ANN-817). Titel in rem (ANN-683). Statt Startbild Markenmoment B beim ersten
-Erscheinen der Übersicht je Tab (ANN-680). Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit
-Daten.
+(ANN-724, ANN-775, ANN-796), Schalter `data-rechner`. Unter 23rem Zeichen und Bild der Karten über
+dem Text, innen 12, die Hero-Karte auch bei „Sehr groß“; auf der Übersicht ganz das Ziel (ANN-817).
+Titel in rem (ANN-683). Statt Startbild Markenmoment B beim ersten Erscheinen der Übersicht je Tab
+(ANN-680). Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit Daten.
 
 ## Begriffe
 

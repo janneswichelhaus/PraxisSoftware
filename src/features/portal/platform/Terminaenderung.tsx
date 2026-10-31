@@ -236,6 +236,8 @@ function Aenderungsablauf({
       onZurueck={kannZurueck(abfolge) ? zurueckGehen : undefined}
       schutz={schutz}
       abschluss={seite === 'zusammenfassung'}
+      // Der Hinweis hat keine Auswahl: „Verstanden, weiter“ bleibt bei „Sehr groß“ fest (ANN-819).
+      fussFest={seite === 'ausfallhonorar'}
       balkenJeSchritt
       plattform
       schmalesFenster
