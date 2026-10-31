@@ -242,10 +242,32 @@ ADR-008 Punkt 1 gegen `retention_classes.basis`; ADR-027 Punkt 22 gegen `PAL_STU
 gegen ADR-009 Punkt 15 und ADR-006. **Erwartet.** Je ADR eine Fassung und eine neue Version der
 Prinzipien nach Jannes' Entscheidung.
 
-### Aufräumen — Das Terminformular steht fünfmal im Code
-2026-10-27 · Kalender, Training · /aufraeumen 2026-10-27 · offen (Vorschlag) · `NewEventPage`,
-`NewEventSeriesPage`, `NewAppointmentPage`, `EditAppointmentPage`, `TrainingTerminFormular`\
-**Beobachtung.** Die vier größten Doppelungen im Programm (92, 60, 32 und 32 Zeilen) sind dasselbe
-Formular. **Erwartet.** Ein gemeinsames Terminformular mit Varianten; geschätzt −250 Zeilen,
-doppelte Zeilen 2,6 → 2,3 %. Aufwand mittel, Standardweg, Risiko Kalender-E2E; nach Schritt 3 des
-Design-Reviews.
+### Aufräumen — Drei Modulpaare hängen nur über wenige Rückwege gegenseitig voneinander ab
+2026-10-31 · Übungen, Doku, Betrieb · /aufraeumen 2026-10-31 · offen (Vorschlag) ·
+`exercise-plans`, `offline-documentation`, `workplace/organisation/pfade.ts`\
+**Beobachtung.** Von vier Kreisen bleibt `billing <-> patients` bewusst (ANN-754). `feedback` braucht
+von `organisation` nur zwei Pfade; `exercises` braucht von `exercise-plans` nur `ZuEinemPlan` und den
+Typ `Dosis` (31 Importe hin); `documentation` braucht von `offline-documentation` nur
+`AufGeraetSichern` (4 Importe hin). **Erwartet.** Die Pfade an die Wurzel von `workplace`;
+`exercise-plans` als Unterordner in `exercises`, `offline-documentation` in `documentation`.
+Gegenseitige Abhängigkeiten 4 → 1, Module 54 → 52, Querimporte etwa −38. Aufwand mittel (Umzüge,
+Pfade der Mocks), Standardweg, Risiko gering.
+
+### Aufräumen — Die Plattform führt drei Bausteine doppelt, deren Vorbild es schon gibt
+2026-10-31 · Plattform · /aufraeumen 2026-10-31 · offen (Vorschlag) · `Terminwunsch.tsx`,
+`Terminaenderung.tsx`, `Videodialog.tsx`, `Anhaenge.tsx`\
+**Beobachtung.** Nach dem Terminformular sind das die größten Doppelungen: Wunsch und Änderung eines
+Termins mit gleichen Schritten, Zurück und Fehlerzeile (42 Zeilen), der Videodialog neben dem
+Kameradialog (35), die Anhänge neben denen der Rückfrage (32, dazu BEF-201). **Erwartet.** Ein
+Schrittgerüst für Wunsch und Änderung, `Videodialog` auf dem Strom von `Kameradialog`, `Anhaenge` auf
+`RueckfrageAnhaenge` mit `Rueckfrage` beim Löschen, nach Schritt 5. Doppelte Zeilen 2,3 → 2,1 %,
+etwa −150 Zeilen. Aufwand mittel, Standardweg (Löschpfad unverändert), Risiko Plattform-E2E.
+
+### Aufräumen — Spanne aufziehen und Termin ziehen führen je einen eigenen langen Druck
+2026-10-31 · Kalender · /aufraeumen 2026-10-31 · offen (Vorschlag) · `useSpanneAufziehen.ts`,
+`useTerminZiehen.ts`\
+**Beobachtung.** Beide Gesten rechnen den Zeiger in Minuten des Rasters um und führen langen Druck,
+Ruhetoleranz, Schwelle und das Anhalten des Bildlaufs je selbst (33 Zeilen gleich, 653 zusammen).
+**Erwartet.** Ein Hook für den Zeiger im Raster, auf dem beide aufsetzen: eine Stelle für die
+Gestenregeln, etwa −80 Zeilen. Aufwand mittel, Standardweg, Risiko die Gesten in `kalender.spec.ts`
+und `calendar-interaction-workflows.spec.ts`.

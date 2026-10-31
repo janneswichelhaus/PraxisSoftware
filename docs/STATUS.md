@@ -6,14 +6,14 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Antworten zu #336 und #337, Aufräumen Nr. 2 und 3** liegen als PR vor: fester Fuß ohne Auswahl,
-Hauptsache vor dem Gruß, `patients/record`, Datenzugang der Plattform je Bereich, ADR-013 Fassung 9.
-Offen: BEF-201, BEF-202.
+**Gemeinsames Terminformular und Aufräumrunde 2026-10-31** liegen als PR vor: fünf Terminformulare
+auf `AppointmentForm`, Dauerfehlzeit in `NewEventPage`, drei neue Vorschläge in
+`development/BEFUNDE.md`. Offen: BEF-201, BEF-202.
 
 ## Danach
 
-Bildsichtung von #334 bis #336 und dieser PR. Schritte 5 bis 7 mit Jannes' Leinwänden aus Claude
-Design; bis dahin `/aufraeumen` und das gemeinsame Terminformular (`development/BEFUNDE.md`).
+Bildsichtung von #334 bis #337 (diese PR ändert kein Bild). Schritte 5 bis 7 mit Jannes' Leinwänden
+aus Claude Design; bis dahin Aufräumvorschlag „Drei Modulpaare“ (`development/BEFUNDE.md`).
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
 Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
 Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
@@ -45,4 +45,4 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-31.10.2026, Branch `ccr-a7073b83-8qn5vp`. Lokal: `git pull`, keine Migration.
+31.10.2026, Branch `ccr-71de462d-qufdxg`. Lokal: `git pull`, keine Migration.
