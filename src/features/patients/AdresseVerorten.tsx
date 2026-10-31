@@ -16,7 +16,7 @@ import {
   type Patient,
   aktualisiereHausbesuchAdressen,
   fetchVeralteteHausbesuche,
-} from './api';
+} from './record/api';
 
 /**
  * Die Adresse auf der Karte verorten (MAP-006a, ANN-016).

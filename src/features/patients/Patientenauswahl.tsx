@@ -12,7 +12,7 @@ import { Segment } from '@/components/ui/Segment';
 import { StatusMark } from '@/components/ui/StatusMark';
 import { formatEuro } from '@/lib/geld';
 import { useSuchbegriff } from '@/lib/suchbegriff';
-import { ageInYears } from './api';
+import { ageInYears } from './record/api';
 import {
   PATIENT_OVERVIEW_KEY,
   SORTIERUNGEN,

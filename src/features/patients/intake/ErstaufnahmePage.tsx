@@ -19,8 +19,8 @@ import {
 import { AnmeldebogenFoto, Datenschutz } from '@/features/privacy';
 import { PrescriptionPhoto } from '@/features/patients/files/PrescriptionPhoto';
 import { fetchIntakeChecklist } from '@/features/patients/intake/api';
-import { fetchPatient, type Patient } from '@/features/patients/api';
-import { Behandlungsliege } from '@/features/patients/Behandlungsliege';
+import { fetchPatient, type Patient } from '@/features/patients/record/api';
+import { Behandlungsliege } from '@/features/patients/record/Behandlungsliege';
 import {
   canReadPatientDirectory,
   canWriteQuestionnaire,

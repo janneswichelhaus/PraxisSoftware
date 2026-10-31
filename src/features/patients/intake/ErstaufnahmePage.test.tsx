@@ -3,7 +3,7 @@ import { screen, within } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import type * as AssessmentsApi from '@/features/clinical/assessments/api';
 import type * as IntakeApi from '@/features/patients/intake/api';
-import type * as PatientenApi from '@/features/patients/api';
+import type * as PatientenApi from '@/features/patients/record/api';
 import type * as Vermerke from '@/features/privacy/datenschutz/vermerke';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
@@ -14,7 +14,7 @@ const fetchPatient = vi.fn();
 const fetchIntakeChecklist = vi.fn();
 const fetchErhebungen = vi.fn();
 
-vi.mock('@/features/patients/api', async (importOriginal) => {
+vi.mock('@/features/patients/record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientenApi>();
   return { ...actual, fetchPatient: (id: string) => fetchPatient(id) as Promise<unknown> };
 });

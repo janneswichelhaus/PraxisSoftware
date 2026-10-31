@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import type * as SlotApi from './api';
-import type * as PatientsApi from '@/features/patients/api';
+import type * as PatientsApi from '@/features/patients/record/api';
 import type * as WaitlistApi from '@/features/calendar/waitlist/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
@@ -18,7 +18,7 @@ vi.mock('./api', async (importOriginal) => ({
   findFreeSlots: (p: SlotApi.SearchParams) => findFreeSlots(p) as Promise<SlotApi.Slot[]>,
   rateSlotTravel: () => Promise.resolve([]),
 }));
-vi.mock('@/features/patients/api', async (importOriginal) => ({
+vi.mock('@/features/patients/record/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApi>()),
   fetchPatient: () =>
     Promise.resolve(testPatient({ id: PATIENT, given_name: 'Max', family_name: 'Mustermann' })),

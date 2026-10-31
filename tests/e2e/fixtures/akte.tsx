@@ -11,7 +11,7 @@ import type {
   PatientTreatmentNotesEntry,
   TreatmentNote,
 } from '@/features/clinical/documentation/api';
-import type { Patient } from '@/features/patients/api';
+import type { Patient } from '@/features/patients/record/api';
 import type { PatientAppointment } from '@/features/calendar/appointments/api';
 import type {
   ClinicalTreatmentBasis,

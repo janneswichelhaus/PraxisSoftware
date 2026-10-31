@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as DatenschutzApi from './api';
-import type * as PatientsApi from '@/features/patients/api';
+import type * as PatientsApi from '@/features/patients/record/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testPatient } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
@@ -25,7 +25,7 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/patients/api', async (importOriginal) => {
+vi.mock('@/features/patients/record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,

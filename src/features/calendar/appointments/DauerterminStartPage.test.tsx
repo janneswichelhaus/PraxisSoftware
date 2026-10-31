@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as PatientsApi from '@/features/patients/api';
+import type * as PatientsApi from '@/features/patients/record/api';
 import type * as UebersichtApi from '@/features/patients/uebersicht';
 import type * as GrundlagenApi from '@/features/patients/treatment-bases/api';
 import type * as RouterModul from 'react-router-dom';
@@ -25,7 +25,7 @@ const fetchPatientTreatmentBases = vi.fn();
 const fetchPatientTreatmentBasesClinical = vi.fn();
 const fetchPatientTreatmentBasisSlots = vi.fn();
 
-vi.mock('@/features/patients/api', async (importOriginal) => {
+vi.mock('@/features/patients/record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,

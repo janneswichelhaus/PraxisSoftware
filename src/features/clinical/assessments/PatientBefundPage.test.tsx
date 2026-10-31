@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as Api from './api';
 import type * as Verlauf from './verlauf';
 import type * as TermineApi from '@/features/calendar/appointments/api';
-import type * as PatientenApi from '@/features/patients/api';
+import type * as PatientenApi from '@/features/patients/record/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { instrumentFuer } from './instrumente';
@@ -39,7 +39,7 @@ vi.mock('@/features/calendar/appointments/api', async (importOriginal) => {
 });
 
 const setTreatmentTableRequired = vi.fn();
-vi.mock('@/features/patients/api', async (importOriginal) => {
+vi.mock('@/features/patients/record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientenApi>();
   return {
     ...actual,

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-import type * as PatientsApi from './api';
+import type * as PatientsApi from './record/api';
 import type * as DokumentationApi from '@/features/clinical/documentation/api';
 import type * as VerordnungenApi from '@/features/patients/treatment-bases/api';
 import type * as AppointmentsApi from '@/features/calendar/appointments/api';
@@ -31,7 +31,7 @@ const fetchPatientTreatmentBasisSlots = vi.fn();
 const fetchPatientTreatmentNotesPage = vi.fn();
 const fetchIntakeChecklist = vi.fn();
 
-vi.mock('./api', async (importOriginal) => {
+vi.mock('./record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,
@@ -95,7 +95,7 @@ vi.mock('@/features/clinical/documentation/api', async (importOriginal) => {
 
 const { AkteEinstieg, AlterAktenbereich, PatientRecordLayout } =
   await import('./PatientRecordLayout');
-const { ALTE_AKTENBEREICHE } = await import('./akte');
+const { ALTE_AKTENBEREICHE } = await import('./record/akte');
 const { PatientMasterDataPage } = await import('./PatientMasterDataPage');
 const { PatientAppointmentsPage } =
   await import('@/features/calendar/appointments/PatientAppointmentsPage');

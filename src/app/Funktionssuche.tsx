@@ -10,7 +10,7 @@ import {
   SUCHE_MINDESTLAENGE,
   searchPatients,
   type PatientSearchHit,
-} from '@/features/patients/api';
+} from '@/features/patients/record/api';
 import { funktionskatalog, sucheFunktionen, type Funktion } from './funktionen';
 
 /**

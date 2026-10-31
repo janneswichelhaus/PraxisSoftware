@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { SearchCombobox, type Suchtreffer } from '@/components/ui/SearchCombobox';
-import { SUCHE_MINDESTLAENGE, searchPatients, type PatientSearchHit } from './api';
+import { SUCHE_MINDESTLAENGE, searchPatients, type PatientSearchHit } from './record/api';
 
 /**
  * Patientensuche von jeder Seite (UX-004, IDEA-PRX-020).

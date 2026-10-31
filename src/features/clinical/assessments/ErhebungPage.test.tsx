@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as Api from './api';
-import type * as PatientenApi from '@/features/patients/api';
+import type * as PatientenApi from '@/features/patients/record/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
@@ -21,7 +21,7 @@ vi.mock('./api', async (importOriginal) => {
     erhebungAbschliessen: (id: string) => erhebungAbschliessen(id) as Promise<void>,
   };
 });
-vi.mock('@/features/patients/api', async (importOriginal) => {
+vi.mock('@/features/patients/record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientenApi>();
   return { ...actual, fetchPatient: () => Promise.resolve(testPatient({ id: PATIENT_ID })) };
 });

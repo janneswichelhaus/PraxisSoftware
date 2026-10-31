@@ -10,7 +10,7 @@ import { Hervorhebungen } from '@/features/clinical/assessments/Hervorhebungen';
 import { Befund } from '@/features/clinical/assessments/PatientBefundPage';
 import { erhebungenQueryKey } from '@/features/clinical/assessments/api';
 import { ereignisseQueryKey } from '@/features/clinical/assessments/verlauf';
-import type { Patient } from '@/features/patients/api';
+import type { Patient } from '@/features/patients/record/api';
 import type { CurrentUser } from '@/features/core/session/types';
 import { instrumentFuer } from '@/features/clinical/assessments/instrumente';
 import { Ereignisliste, Messreihenbild } from '@/features/clinical/assessments/Messreihenbild';

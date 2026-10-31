@@ -12,14 +12,8 @@ import { meldeSelbstAb } from '@/features/core';
 type Sicherheitsereignis = 'sessions_ended' | 'mfa_enrolled' | 'mfa_removed';
 
 /**
- * Meldet im Nachhinein und hält den Ablauf nicht auf.
- *
- * `rpc` wirft bei einem Serverfehler nicht, sondern löst mit `{ error }` auf —
- * ein `try`/`catch` darum herum fängt nichts und täuscht eine Behandlung vor.
- * Deshalb wird `error` ausgewertet. Sichtbar bleibt der Fehlschlag im
- * Betriebslog, wie beim Aktenzugriff in `features/patients/api.ts` — über
- * `lib/protokoll.ts`, den einen Ausgang, und ohne Kontoangabe: ADR-011 lässt
- * keine personenbezogenen Daten ins Log.
+ * Meldet im Nachhinein, ohne den Ablauf aufzuhalten. `rpc` wirft bei einem Serverfehler nicht,
+ * deshalb zählt `error`; der Fehlschlag geht ohne Kontoangabe ins Betriebslog (ADR-011).
  */
 async function melde(ereignis: Sicherheitsereignis): Promise<void> {
   const { error } = await getSupabase().rpc('log_account_security_event', { p_event: ereignis });

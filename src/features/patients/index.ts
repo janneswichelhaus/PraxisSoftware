@@ -1,12 +1,12 @@
 // Die Schnittstelle der Domäne patients: Andere Domänen importieren nur, was hier einzeln steht.
 // Seiten stehen nicht darin; src/routes und src/app binden direkt ein (ANN-755).
 
-export { Behandlungsliege } from './Behandlungsliege';
+export { Behandlungsliege } from './record/Behandlungsliege';
 export { HausbesucheMitAlterAdresse } from './HausbesucheMitAlterAdresse';
 export { Patientenauswahl } from './Patientenauswahl';
 export { Patientensuche } from './Patientensuche';
-export { ANMELDEBOGEN_ANKER, usePatientRecord, VERLAUF_ANKER } from './akte';
-export { fetchPatient, fullName, type Patient } from './api';
+export { ANMELDEBOGEN_ANKER, usePatientRecord, VERLAUF_ANKER } from './record/akte';
+export { fetchPatient, fullName, type Patient } from './record/api';
 export { DokuDateien } from './files/Aktendateien';
 export { DokumentFoto } from './files/DokumentFoto';
 export { FotoHerausgabe } from './files/FotoHerausgabe';

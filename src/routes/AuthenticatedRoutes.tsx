@@ -21,7 +21,7 @@ import {
   AlterAktenbereich,
   PatientRecordLayout,
 } from '@/features/patients/PatientRecordLayout';
-import { ALTE_AKTENBEREICHE } from '@/features/patients/akte';
+import { ALTE_AKTENBEREICHE } from '@/features/patients/record/akte';
 import { PatientMasterDataPage } from '@/features/patients/PatientMasterDataPage';
 import { BetroffenenrechtePage } from '@/features/privacy/datenschutz/BetroffenenrechtePage';
 import { TrainingAuskunftPage } from '@/features/privacy/datenschutz/TrainingAuskunftPage';

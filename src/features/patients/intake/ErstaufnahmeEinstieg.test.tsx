@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import type * as IntakeApi from '@/features/patients/intake/api';
-import type * as PatientenApi from '@/features/patients/api';
+import type * as PatientenApi from '@/features/patients/record/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const fetchIntakeChecklist = vi.fn();
@@ -14,7 +14,7 @@ vi.mock('@/features/patients/intake/api', async (importOriginal) => {
 });
 
 const fetchPatient = vi.fn();
-vi.mock('@/features/patients/api', async (importOriginal) => {
+vi.mock('@/features/patients/record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientenApi>();
   return { ...actual, fetchPatient: (id: string) => fetchPatient(id) as Promise<unknown> };
 });

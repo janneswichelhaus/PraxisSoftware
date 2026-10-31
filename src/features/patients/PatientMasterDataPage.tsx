@@ -27,7 +27,7 @@ import {
   isOwner,
   type CurrentUser,
 } from '@/features/core';
-import { ANMELDEBOGEN_ANKER, EINWILLIGUNGEN_ANKER, usePatientRecord } from './akte';
+import { ANMELDEBOGEN_ANKER, EINWILLIGUNGEN_ANKER, usePatientRecord } from './record/akte';
 import { AnmeldebogenFoto, Datenschutz } from '@/features/privacy';
 import {
   empfaengerartLabels,
@@ -46,9 +46,9 @@ import {
 import { BEGRIFFE } from '@/lib/begriffe';
 import { AnmeldebogenDateien, SonstigeDateien } from '@/features/patients/files/Aktendateien';
 import { AdresseVerorten } from './AdresseVerorten';
-import { Behandlungsliege } from './Behandlungsliege';
+import { Behandlungsliege } from './record/Behandlungsliege';
 import { Mitnehmen } from './Mitnehmen';
-import { concludePatientCare, jahrPlus, reopenPatientCare, type Patient } from './api';
+import { concludePatientCare, jahrPlus, reopenPatientCare, type Patient } from './record/api';
 import { HausbesucheMitAlterAdresse } from './HausbesucheMitAlterAdresse';
 
 /**

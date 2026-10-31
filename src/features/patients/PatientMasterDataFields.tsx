@@ -3,7 +3,7 @@ import { Field } from '@/components/ui/Field';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
-import type { StammdatenFeld } from './api';
+import type { StammdatenFeld } from './record/api';
 import { stammdatenFeldId } from './stammdatenfelder';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Disclosure } from '@/components/ui/Card';

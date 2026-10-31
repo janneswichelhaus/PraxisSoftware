@@ -1289,7 +1289,7 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-615 | Ladestrom aus Touren über eine eigene Edge Function entfällt | Technik · verworfen (→ ANN-749) | `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql` |
 | ANN-617 | Gefahrene Tour als Grundlage des Ladestroms entfällt | Praxisprozess · verworfen (→ ANN-749) | `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql` |
 | ANN-618 | Lesart der Zielwertregeln: höchste Stufe, Fett 30 %, 7000 kcal je kg, Rundung | Praxisprozess · entschieden (Jannes) | `app.nutrition_calculation` |
-| ANN-620 | Ernährung als eigener Reiter an Akte und Trainingsverhältnis, nur mit der Fähigkeit | Praxisprozess · entschieden (Jannes) | `aktenBereiche` in `src/features/patients/akte.ts` |
+| ANN-620 | Ernährung als eigener Reiter an Akte und Trainingsverhältnis, nur mit der Fähigkeit | Praxisprozess · entschieden (Jannes) | `aktenBereiche` in `src/features/patients/record/akte.ts` |
 | ANN-621 | Gewicht je Tag auf der Plattform, die Beratung dort nur, solange sie läuft | Praxisprozess · entschieden (Jannes) | `public.record_platform_nutrition_weight` |
 | ANN-641 | Teamchat: Zustellung mit Gerätekennung, Blättern mit Cursor | Technik · offen | `app.team_message_key` |
 | ANN-643 | Teamchat: Antworten auch im Kanal, Ausgangsnachrichten später senden | Praxisprozess · offen | `public.post_team_message` |

@@ -22,7 +22,7 @@ import {
   useTextverlustschutz,
   type Verlustschutztexte,
 } from '@/app/Textverlustschutz';
-import { fetchPatient, fullName } from '@/features/patients/api';
+import { fetchPatient, fullName } from '@/features/patients/record/api';
 import { ordneScanZu } from '@/features/patients/files/api';
 import { GrundlagenVerlauf } from './GrundlagenVerlauf';
 import { ScanBesideForm } from './ScanBesideForm';

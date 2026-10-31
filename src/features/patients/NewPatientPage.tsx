@@ -23,7 +23,7 @@ import {
   patientMasterDataSchema,
   type PatientSearchHit,
   type StammdatenFeld,
-} from './api';
+} from './record/api';
 import { PatientMasterDataFields } from './PatientMasterDataFields';
 import {
   STAMMDATEN_BESCHRIFTUNG,

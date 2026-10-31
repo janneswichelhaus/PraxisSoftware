@@ -5,7 +5,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
 import { NewAppointmentPage } from '@/features/calendar/appointments/NewAppointmentPage';
 import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
-import type { Patient } from '@/features/patients/api';
+import type { Patient } from '@/features/patients/record/api';
 import type { WorkingHour } from '@/features/calendar/scheduling/api';
 import type { CurrentUser } from '@/features/core/session/types';
 import type { Standort } from '@/features/calendar/tours/startort';

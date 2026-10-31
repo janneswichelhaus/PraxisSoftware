@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as PatientsApi from './api';
+import type * as PatientsApi from './record/api';
 import type * as Geocode from '@/lib/location/geocode';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
@@ -18,7 +18,7 @@ vi.mock('@/lib/location/geocode', async (importOriginal) => {
   return { ...actual, geocodiere: (...args: unknown[]) => geocodiere(...args) as unknown };
 });
 
-vi.mock('./api', async (importOriginal) => {
+vi.mock('./record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
-import type * as PatientsApi from '@/features/patients/api';
+import type * as PatientsApi from '@/features/patients/record/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import type * as StaffApi from '@/features/workforce/staff/api';
@@ -31,7 +31,7 @@ const checkAppointmentSlots = vi.fn();
 const createAppointmentSeries = vi.fn();
 const navigate = vi.fn();
 
-vi.mock('@/features/patients/api', async (importOriginal) => ({
+vi.mock('@/features/patients/record/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApi>()),
   fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
 }));

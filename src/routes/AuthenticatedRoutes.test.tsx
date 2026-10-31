@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
-import type * as PatientsApiModule from '@/features/patients/api';
+import type * as PatientsApiModule from '@/features/patients/record/api';
 import type * as AppointmentsApiModule from '@/features/calendar/appointments/api';
 import type * as DokumentationApiModule from '@/features/clinical/documentation/api';
 import type * as TreatmentBasesApiModule from '@/features/patients/treatment-bases/api';
@@ -78,7 +78,7 @@ vi.mock('@/features/patients/treatment-bases/api', async (importOriginal) => ({
   fetchPatientTreatmentBases: () => Promise.resolve([]),
   fetchPatientTreatmentBasesClinical: () => Promise.resolve([]),
 }));
-vi.mock('@/features/patients/api', async (importOriginal) => ({
+vi.mock('@/features/patients/record/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApiModule>()),
   fetchPatients: () => Promise.resolve([]),
   fetchPatient: () => Promise.resolve(null),

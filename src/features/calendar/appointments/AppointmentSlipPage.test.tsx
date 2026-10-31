@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
-import type * as PatientsApi from '@/features/patients/api';
+import type * as PatientsApi from '@/features/patients/record/api';
 import type * as RouterModul from 'react-router-dom';
 import type * as AbsenderApi from '@/features/privacy/datenschutz/absender';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
@@ -62,7 +62,7 @@ const fetchPatient = vi.fn();
 const fetchAppointmentSlip = vi.fn();
 const addAppointmentNotification = vi.fn();
 
-vi.mock('@/features/patients/api', async (importOriginal) => ({
+vi.mock('@/features/patients/record/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApi>()),
   fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
 }));

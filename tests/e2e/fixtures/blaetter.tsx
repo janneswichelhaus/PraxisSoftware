@@ -6,7 +6,7 @@ import { AppointmentSlipPage } from '@/features/calendar/appointments/Appointmen
 import type { AppointmentSlipEntry } from '@/features/calendar/appointments/api';
 import { AufnahmeblaetterPage } from '@/features/privacy/datenschutz/AufnahmeblaetterPage';
 import { PRAXIS_ABSENDER_KEY, type PraxisAbsender } from '@/features/privacy/datenschutz/absender';
-import type { Patient } from '@/features/patients/api';
+import type { Patient } from '@/features/patients/record/api';
 import { VorschauProvider } from '@/features/core/preview/VorschauProvider';
 import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';

@@ -3,7 +3,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Warnzeile } from '@/components/ui/Objektkopf';
 import { openItemsText } from '@/features/patients/intake/api';
 import { useOffeneErstaufnahme } from '@/features/patients/intake/useOffeneErstaufnahme';
-import { fetchPatient } from '@/features/patients/api';
+import { fetchPatient } from '@/features/patients/record/api';
 import { canReadPatientDirectory, type CurrentUser } from '@/features/core';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { erstaufnahmeLohnt, erstaufnahmePfad } from './stand';

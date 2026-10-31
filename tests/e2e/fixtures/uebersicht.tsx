@@ -15,7 +15,7 @@ import {
   type Tagesstopp,
 } from '@/features/calendar/tours/tagesroute';
 import { Stammdaten } from '@/features/patients/PatientMasterDataPage';
-import type { Patient } from '@/features/patients/api';
+import type { Patient } from '@/features/patients/record/api';
 import { type CalendarEntry } from '@/features/calendar/appointments/api';
 import type { CurrentUser } from '@/features/core/session/types';
 import '@/index.css';

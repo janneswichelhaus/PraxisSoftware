@@ -1,5 +1,5 @@
 # Befunde an der laufenden Anwendung
-Stand 2026-10-30. **Befunde aus Sichtungen, Screenrecordings und Reviews an der laufenden
+Stand 2026-10-31. **Befunde aus Sichtungen, Screenrecordings und Reviews an der laufenden
 Anwendung**: Beobachtungen an Gebautem, keine Ideen (die gehören nach `docs/product/`). Die Liste
 ist die **Eingabe für die erste Story des nächsten Loops derselben Spur** (Roadmap-Regel R6), seit
 2026-10-12 der nächsten Überholung des Bereichs (`/bereich`), sonst gebündelt in einem Auftrag. Sie
@@ -248,13 +248,14 @@ Formular. **Erwartet.** Ein gemeinsames Terminformular mit Varianten; geschätzt
 doppelte Zeilen 2,6 → 2,3 %. Aufwand mittel, Standardweg, Risiko Kalender-E2E; nach Schritt 3 des
 Design-Reviews.
 
-### Aufräumen — Die Akte und ihre Untermodule hängen gegenseitig voneinander ab
-2026-10-27 · Patienten · /aufraeumen 2026-10-27 · offen (Vorschlag) · `patients` mit
-`treatment-bases`, `files`, `intake`, `billing`\
-**Beobachtung.** Vier der acht gegenseitigen Abhängigkeiten laufen über `patients`: Die Akte bindet
-Unterseiten ein, die Unterseiten holen Hilfen (`akte.ts`, `api.ts`) aus der Akte. **Erwartet.** Die
-geteilten Hilfen in ein Blattmodul, das nichts einbindet; gegenseitige Abhängigkeiten 8 → 4,
-kleinerer Ring. Aufwand klein bis mittel, Standardweg, Risiko gering (nur Importe).
+### Aufräumen — Die Stammdaten der Akte binden die Abrechnung ein, die Abrechnung die Akte
+2026-10-27 · Patienten · /aufraeumen 2026-10-27 · Teil erledigt am 2026-10-31 (Blattmodul
+`patients/record`, 8 → 5); offen (Vorschlag) · `PatientMasterDataPage.tsx`, `billing/anzeige.ts`\
+**Rest.** `billing <-> patients` bleibt: Die Stammdatenseite setzt Honorar, Nachsorge-Abo und
+Empfänger aus `billing` ein (Seiten setzen zusammen, ANN-754); `billing` holt Heilmittel und
+Bauarten über `@/features/patients`, das die Messung der Wurzel zurechnet. **Erwartet.** Ein Platz
+wie `TerminErweiterungen`, den die App mit den Abschnitten der Abrechnung füllt; 5 → 4. Aufwand
+mittel, Standardweg, Risiko an der Stammdatenseite; oder so lassen (Entscheidung Jannes).
 
 ### Aufräumen — `portal/platform/api.ts` hat 2.240 Zeilen
 2026-10-27 · Plattform · /aufraeumen 2026-10-27 · offen (Vorschlag) · `src/features/portal/platform/api.ts`\

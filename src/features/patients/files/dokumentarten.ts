@@ -1,4 +1,4 @@
-import { ANMELDEBOGEN_ANKER } from '@/features/patients/akte';
+import { ANMELDEBOGEN_ANKER } from '@/features/patients/record/akte';
 import { tagDerPraxis, tagUndUhrzeit } from '@/lib/dateien/kamera';
 
 /**

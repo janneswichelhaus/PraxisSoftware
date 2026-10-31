@@ -1,4 +1,4 @@
-import type { StammdatenFeld } from './api';
+import type { StammdatenFeld } from './record/api';
 
 /**
  * Feste Kennung je Feld (UX-012).

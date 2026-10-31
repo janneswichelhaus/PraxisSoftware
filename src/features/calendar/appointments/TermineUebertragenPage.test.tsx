@@ -3,7 +3,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as RouterModul from 'react-router-dom';
 import type * as AppointmentsApi from './api';
-import type * as PatientsApi from '@/features/patients/api';
+import type * as PatientsApi from '@/features/patients/record/api';
 import type * as TreatmentBasesApi from '@/features/patients/treatment-bases/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
@@ -49,7 +49,7 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/patients/api', async (importOriginal) => {
+vi.mock('@/features/patients/record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return { ...actual, fetchPatient: () => Promise.resolve(testPatient({ id: PATIENT_ID })) };
 });
