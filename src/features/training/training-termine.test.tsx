@@ -243,6 +243,27 @@ describe('NewTrainingAppointmentPage', () => {
     });
   });
 
+  it('nennt in der Zusammenfassung die betreuende Person, nicht die behandelnde', async () => {
+    fetchAssignableTrainers.mockResolvedValue([
+      { staff_member_id: TOM, display_name: 'Tom Trainingsbetreuung' },
+      { staff_member_id: '55555555-5555-4555-8555-000000000007', display_name: 'Tara Training' },
+    ]);
+    const nutzer = userEvent.setup();
+    renderWithProviders(
+      <NewTrainingAppointmentPage user={testUser(['office'], 'Olivia')} />,
+      `/training/termine/neu?kunde=${TINA}&datum=2027-05-13&beginn=10:00`,
+    );
+    await screen.findByRole('option', { name: 'Tara Training' });
+    await nutzer.click(screen.getByRole('button', { name: 'Trainingstermin anlegen' }));
+
+    const zusammenfassung = await screen.findByRole('alert');
+    expect(
+      within(zusammenfassung).getByRole('link', { name: 'Betreuende Person ist erforderlich.' }),
+    ).toBeVisible();
+    expect(within(zusammenfassung).queryByText(/Behandelnde/)).toBeNull();
+    expect(createTrainingAppointment).not.toHaveBeenCalled();
+  });
+
   it('hängt den Termin an die gewählte Vereinbarung', async () => {
     const nutzer = userEvent.setup();
     renderWithProviders(

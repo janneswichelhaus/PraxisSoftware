@@ -5,9 +5,14 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { leererTermin, tageslageNeuLaden } from '@/features/calendar';
+import {
+  AppointmentForm,
+  HomeVisitAddressHint,
+  leererTermin,
+  tageslageNeuLaden,
+  useAppointmentFormLists,
+} from '@/features/calendar';
 import type { CurrentUser } from '@/features/core';
-import { TrainingTerminFormular } from '@/features/training';
 import { beratungsterminAnlegen, ernaehrungSchluessel, fetchErnaehrung } from './api';
 import { ernaehrungsReiter, type Verhaeltnisart } from './eingabe';
 import { todayInTimeZone } from '@/lib/datum';
@@ -30,6 +35,8 @@ export function BeratungsterminSeite({ art, user }: { art: Verhaeltnisart; user:
   const queryClient = useQueryClient();
   const zurueck = ernaehrungsReiter(art, verhaeltnisId);
   const heute = user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : '';
+  // Zugeordnet wird, wer im Kalender des Bereichs geführt wird.
+  const listen = useAppointmentFormLists(art === 'treatment' ? 'therapy' : 'training');
   const [startwerte] = useState(() => ({
     ...leererTermin,
     appointment_type: 'practice',
@@ -71,21 +78,21 @@ export function BeratungsterminSeite({ art, user }: { art: Verhaeltnisart; user:
           }}
         >
           {(sicht) => (
-            <TrainingTerminFormular
+            <AppointmentForm
+              listen={listen}
               startwerte={startwerte}
               startMinuten={TERMINFENSTER_MINUTEN}
               heute={heute}
               rasterMinuten={user.appointmentGridMinutes}
-              personenkreis={art === 'treatment' ? 'therapy' : 'training'}
-              bezeichnung="Ungespeicherter Beratungstermin"
-              hausbesuchHinweis={
-                art === 'treatment'
-                  ? 'Die Anschrift kommt aus der Akte – Straße mit Hausnummer, PLZ und Ort.'
-                  : 'Die Anschrift kommt aus dem Kontakt der Trainingskund:in – Straße mit Hausnummer, PLZ und Ort.'
+              texte={{
+                absenden: 'Beratungstermin anlegen',
+                laeuft: 'Wird angelegt …',
+                fehlerTitel: 'Der Beratungstermin konnte nicht angelegt werden.',
+                ungespeichert: 'Ungespeicherter Beratungstermin',
+              }}
+              hausbesuch={
+                <HomeVisitAddressHint source={art === 'treatment' ? 'record' : 'contact'} />
               }
-              absendeText="Beratungstermin anlegen"
-              laeuftText="Wird angelegt …"
-              fehlerTitel="Der Beratungstermin konnte nicht angelegt werden."
               abbrechenZiel={zurueck}
               onSpeichern={(werte, b) =>
                 beratungsterminAnlegen(sicht!.profile!.id, werte, b.bestaetigt, b.vergangenheit)

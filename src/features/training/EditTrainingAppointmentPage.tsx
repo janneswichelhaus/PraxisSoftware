@@ -6,9 +6,15 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { canWriteTrainingClients, type CurrentUser } from '@/features/core';
-import { appointmentToFormValues, tageslageNeuLaden, updateAppointment } from '@/features/calendar';
+import {
+  AppointmentForm,
+  appointmentToFormValues,
+  HomeVisitAddressHint,
+  tageslageNeuLaden,
+  updateAppointment,
+  useAppointmentFormLists,
+} from '@/features/calendar';
 import { getTrainingAppointment } from './api';
-import { TrainingTerminFormular } from './TrainingTerminFormular';
 import { todayInTimeZone } from '@/lib/datum';
 
 /**
@@ -32,6 +38,7 @@ export function EditTrainingAppointmentPage({ user }: { user: CurrentUser }) {
     queryFn: () => getTrainingAppointment(appointmentId),
     retry: false,
   });
+  const listen = useAppointmentFormLists('training', canWriteTrainingClients(user.roles));
 
   if (!canWriteTrainingClients(user.roles)) {
     return (
@@ -78,15 +85,21 @@ export function EditTrainingAppointmentPage({ user }: { user: CurrentUser }) {
         title="Trainingstermin verschieben"
         description={`Mit ${t.client_given_name} ${t.client_family_name}.`}
       />
-      <TrainingTerminFormular
+      <AppointmentForm
+        key={t.id}
+        listen={listen}
         startwerte={startwerte}
         startMinuten={minuten}
         heute={todayInTimeZone(t.organization_time_zone)}
         rasterMinuten={user.appointmentGridMinutes}
-        absendeText="Speichern"
-        laeuftText="Wird gespeichert …"
-        fehlerTitel="Der Termin konnte nicht geändert werden."
+        texte={{
+          absenden: 'Speichern',
+          laeuft: 'Wird gespeichert …',
+          fehlerTitel: 'Der Termin konnte nicht geändert werden.',
+          ungespeichert: 'Ungespeicherter Trainingstermin',
+        }}
         abbrechenZiel={zurueck}
+        hausbesuch={<HomeVisitAddressHint source="contact" />}
         onSpeichern={async (werte, b) => {
           await updateAppointment(t.id, t.updated_at, werte, b.bestaetigt, b.vergangenheit);
           return t.id;

@@ -110,8 +110,13 @@ function rendern() {
   );
 }
 
-function formularAbwarten() {
-  return screen.findByRole('button', { name: 'Änderungen speichern' });
+async function formularAbwarten() {
+  const knopf = await screen.findByRole('button', { name: 'Änderungen speichern' });
+  // Die Personen laden, sobald die Art des Termins feststeht; bereit ist das Formular mit ihnen.
+  await waitFor(() =>
+    expect(screen.queryAllByRole('option', { name: 'Wird geladen …' })).toEqual([]),
+  );
+  return knopf;
 }
 
 describe('EditAppointmentPage', () => {

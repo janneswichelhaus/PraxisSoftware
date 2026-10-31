@@ -1100,6 +1100,21 @@ describe('NewAppointmentPage', () => {
       );
     });
 
+    it('waehlt die einzige zuordenbare Person vor, wenn die angemeldete keine Person hat', async () => {
+      fetchAssignableTherapists.mockResolvedValue([
+        { staff_member_id: STAFF_ANNA, display_name: 'Anna Beispiel' },
+      ]);
+      renderWithProviders(
+        <NewAppointmentPage user={testUser(['owner'], 'Ohne Personaldatensatz')} />,
+        `/patienten/${PATIENT_ID}/termine/neu`,
+      );
+      await formularAbwarten();
+
+      await waitFor(() =>
+        expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(STAFF_ANNA),
+      );
+    });
+
     it('leert eine Person aus der Adresszeile, die gar nicht zuordenbar ist', async () => {
       const fremd = '55555555-5555-4555-8555-000000000009';
       renderWithProviders(

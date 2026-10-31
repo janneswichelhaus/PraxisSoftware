@@ -11,14 +11,20 @@ import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { canWriteTrainingClients, type CurrentUser } from '@/features/core';
-import { fensterEnde, leererTermin, tageslageNeuLaden } from '@/features/calendar';
+import {
+  AppointmentForm,
+  fensterEnde,
+  HomeVisitAddressHint,
+  leererTermin,
+  tageslageNeuLaden,
+  useAppointmentFormLists,
+} from '@/features/calendar';
 import {
   createTrainingAppointment,
   listTrainingBases,
   listTrainingClients,
   vereinbarungText,
 } from './api';
-import { TrainingTerminFormular } from './TrainingTerminFormular';
 import { leseTerminVorbelegung, TERMINFENSTER_MINUTEN, mitAngelegtemTermin } from '@/lib/termin';
 
 const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -50,6 +56,7 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
   const [kundeFehler, setKundeFehler] = useState<string | undefined>(undefined);
   const zurueck = leseRueckweg(suche, kunde ? `/training/${kunde}` : '/kalender');
   const heute = user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : '';
+  const listen = useAppointmentFormLists('training', canWriteTrainingClients(user.roles));
 
   const [startwerte] = useState(() => ({
     ...leererTermin,
@@ -91,16 +98,21 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
           das Formular, nicht den Termin (UX-005g, Design-Rollout B3a). */}
       <PageHeader title="Trainingstermin anlegen" />
 
-      <TrainingTerminFormular
+      <AppointmentForm
+        listen={listen}
         startwerte={startwerte}
         startMinuten={TERMINFENSTER_MINUTEN}
         heute={heute}
         rasterMinuten={user.appointmentGridMinutes}
         bereit={kunde !== ''}
-        absendeText="Trainingstermin anlegen"
-        laeuftText="Wird angelegt …"
-        fehlerTitel="Der Trainingstermin konnte nicht angelegt werden."
+        texte={{
+          absenden: 'Trainingstermin anlegen',
+          laeuft: 'Wird angelegt …',
+          fehlerTitel: 'Der Trainingstermin konnte nicht angelegt werden.',
+          ungespeichert: 'Ungespeicherter Trainingstermin',
+        }}
         abbrechenZiel={zurueck}
+        hausbesuch={<HomeVisitAddressHint source="contact" />}
         onSpeichern={(werte, b) =>
           createTrainingAppointment(kunde, werte, basis || null, b.bestaetigt, b.vergangenheit)
         }
