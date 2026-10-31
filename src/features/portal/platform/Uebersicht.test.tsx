@@ -971,6 +971,18 @@ describe('Zustände', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('stellt den Hinweis „veraltet“ auch über die vorgezogene Hauptsache einer Vertretung (ANN-820)', async () => {
+    ladeTermine.mockResolvedValue([TERMIN]);
+    zeige(BEGLEITUNG, `/p?zugang=${BEGLEITUNG.access_id}`);
+    const hero = await screen.findByRole('region', { name: 'Besuch bei Max Mustermann' });
+    ladeTermine.mockRejectedValue(new Error('Netz weg'));
+    act(() => focusManager.setFocused(true));
+    const hinweis = await screen.findByText(
+      /Der angezeigte Stand konnte nicht aktualisiert werden/,
+    );
+    expect(hinweis.compareDocumentPosition(hero) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('sagt nach dem Absenden, was mit den Angaben geschieht (D5), mit den Nummern zum Antippen', async () => {
     zeige(ZUGANG, '/p?bereich=treatment&checkin=1');
     const danke = await screen.findByText(/^Danke\. Ihre Therapeut:in sieht Ihre Angaben/);

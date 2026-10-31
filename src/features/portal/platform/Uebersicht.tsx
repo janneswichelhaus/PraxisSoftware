@@ -265,6 +265,15 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
   // Ohne Hauptsache gibt es keine Handlung, die vorgehen könnte: Der Leerzustand folgt dem Gruß.
   const handlungZuerst = vertretungAmTelefon && haupt.art !== 'nichts';
 
+  const vorgezogen = handlungZuerst && gescheitert.length === 0;
+  // Scheitert ein Nachladen, steht der Hinweis über dem alten Stand, also auch über der Karte.
+  const nachladeHinweis =
+    veraltet.length > 0 ? (
+      <NachladeHinweis
+        laeuft={veraltet.some((a) => a.isFetching)}
+        onErneut={() => void Promise.all(veraltet.map((a) => a.refetch()))}
+      />
+    ) : null;
   const hauptsachekarte = (
     <Hauptsachekarte
       key="hauptsache"
@@ -286,7 +295,7 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
       mitName={gescheitert.length === 0}
       // Fehler: der Gruß ohne Namen und ohne Datum (Leinwand „Fehler“).
       mitDatum={gescheitert.length === 0}
-      vorDemGruss={handlungZuerst && gescheitert.length === 0 ? hauptsachekarte : undefined}
+      vorDemGruss={vorgezogen ? hauptsachekarte : undefined}
     >
       {nachCheckin === '1' ? (
         <Rueckmeldung>
@@ -299,6 +308,7 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
           nächsten Termin.
         </Rueckmeldung>
       ) : null}
+      {vorgezogen ? nachladeHinweis : null}
     </Kopfteil>
   );
 
@@ -607,12 +617,7 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
       className={`flex flex-col gap-10 [[data-rechner]_&]:gap-12 ${markenmoment ? 'markenmoment' : ''}`.trim()}
     >
       {kopf}
-      {veraltet.length > 0 ? (
-        <NachladeHinweis
-          laeuft={veraltet.some((a) => a.isFetching)}
-          onErneut={() => void Promise.all(veraltet.map((a) => a.refetch()))}
-        />
-      ) : null}
+      {vorgezogen ? null : nachladeHinweis}
       {rechts.length > 0 ? (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(420px,100%),1fr))] items-start gap-10 [[data-rechner]_&]:gap-12">
           {links.length > 0 ? <div className={spalte}>{links}</div> : null}

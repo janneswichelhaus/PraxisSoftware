@@ -416,6 +416,23 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
     expect(await ueberlaeuft(page)).toBe(false);
   });
 
+  // Unter 40rem Höhe fände der feste Fuß keinen Platz: Dort rollt er wieder mit (ANN-819).
+  test('„Sehr groß“ im Querformat 667 × 375: „Weiter“ ist mit dem Finger zu erreichen (ANN-819)', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+    });
+    await oeffne(page, 'einstieg-begleitung', 667, 375);
+    const willkommen = fenster(page, /^Willkommen/);
+    await expect(willkommen).toBeVisible();
+    // Gerollt wird unter dem festen Kopf, dort, wo der Daumen den Inhalt schiebt.
+    const box = (await willkommen.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height - 24);
+    await page.mouse.wheel(0, 2000);
+    await expect(willkommen.getByRole('button', { name: 'Weiter' })).toBeInViewport({ ratio: 1 });
+  });
+
   test('1280 px: Titel in der Stufe des Rechners, der Kopf an der Kante des Inhalts', async ({
     page,
   }) => {

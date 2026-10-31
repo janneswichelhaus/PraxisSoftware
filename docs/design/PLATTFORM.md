@@ -67,22 +67,22 @@ Hauptknopf 56; ANN-714) · Tür (Einladung, Anmeldung, Einrichten, Sperre, Zugan
 (Planblatt, Rechnung). Der geführte Ablauf kann „Später“ statt ✕, einen Balken je Schritt und das
 Band einer Vertretung tragen; mit `plattform` 20 Rand, die Frage ohne Rollen (ein Bild darüber
 schrumpft in 4:3). Unter 23rem 12 Rand und alles in einer Rollfläche, bei „Sehr groß“ Inhalt und Fuß
-(unten, solange alles passt; auf Hinweis, „Willkommen“, „Alles bereit“ fest mit Linie, ANN-819);
-beide ohne Bild, ein Titel mit einem Wort über elf Zeichen in 22 (ANN-696, ANN-816). Mit `objekt`
-steht der Name im Kopf, mit `breit` am Rechner eine Spalte von 48rem; im Fuß nur Zustand,
-Notfallsatz und Hauptknopf. Der Check-in sendet ohne Zusammenfassung; ein Thema des Fragebogens
-rollt.
+(unten, solange alles passt; auf Hinweis, „Willkommen“, „Alles bereit“ fest mit Linie, nicht unter
+40rem Höhe, ANN-819); beide ohne Bild, ein Titel mit einem Wort über elf Zeichen in 22 (ANN-696,
+ANN-816). Mit `objekt` steht der Name im Kopf, mit `breit` am Rechner eine Spalte von 48rem; im Fuß
+nur Zustand, Notfallsatz und Hauptknopf. Der Check-in sendet ohne Zusammenfassung; ein Thema des
+Fragebogens rollt.
 
 **Gerüst** (`src/features/portal/platform/Navigation.tsx`): Kopf 72 mit Wortmarke 28 und „Ich“ mit
 Initialen. Reiterleiste in drei Stufen (ANN-679): eine Reihe, solange die Wörter in 18 px passen,
 auch bei „Sehr groß“ (ANN-815, gemessen), sonst zwei; unter 23rem der `Menueknopf` im Kopf
 (ANN-682). Bei offener Tastatur tritt sie zurück (ANN-676, ANN-681). Ab 1024 px Navigation im Kopf,
-Inhalt `max-w-inhalt`, jede Seite einspaltig in `max-w-spalte` außer der Übersicht (ab 900 px
-Inhaltsbreite zwei Spalten), den Übungen, den Terminen und dem Tagebuch (ANN-724, ANN-775, ANN-796),
-Schalter `data-rechner`. Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12, die
-Hero-Karte auch bei „Sehr groß“; auf der Übersicht ganz das Ziel (ANN-817). Titel in rem (ANN-683).
-Statt Startbild Markenmoment B beim ersten Erscheinen der Übersicht je Tab (ANN-680).
-Verbindungszeile ohne Netz; Tab-Titel je Seite, nie mit Daten.
+Inhalt `max-w-inhalt`, jede Seite einspaltig in `max-w-spalte` außer Übersicht (ab 900 px
+Inhaltsbreite zwei Spalten), Übungen, Terminen und Tagebuch (ANN-724, ANN-775, ANN-796), Schalter
+`data-rechner`. Unter 23rem Zeichen und Bild der Karten über dem Text, innen 12, die Hero-Karte auch
+bei „Sehr groß“; auf der Übersicht ganz das Ziel (ANN-817). Titel in rem (ANN-683). Statt Startbild
+Markenmoment B beim ersten Erscheinen der Übersicht je Tab (ANN-680). Verbindungszeile ohne Netz;
+Tab-Titel je Seite, nie mit Daten.
 
 ## Begriffe
 

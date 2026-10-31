@@ -1835,7 +1835,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-31",
           "nachweis": "Branch ccr-a7073b83-8qn5vp",
-          "vermerk": "Gegenseitige Abhängigkeiten 8 → 5, Rest billing <-> patients in BEFUNDE.md; portal/platform/api.ts 2.245 → 9 Dateien unter 420 Zeilen; Pfad A ohne Auslöser aus Nr. 8, Zweitreview"
+          "vermerk": "Gegenseitige Abhängigkeiten 8 → 5, Rest billing <-> patients in BEFUNDE.md; portal/platform/api.ts 2.245 → 9 Dateien unter 440 Zeilen; Pfad A ohne Auslöser aus Nr. 8, Zweitreview"
         },
         {
           "id": "bef-223",

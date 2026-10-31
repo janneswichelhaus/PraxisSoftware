@@ -503,6 +503,30 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
     expect(await ueberlaeuft(page)).toBe(false);
   });
 
+  // Ohne Netz wächst der Fuß um Hinweis und „Praxis anrufen“; bei 375 × 553 rollt er mit (ANN-819).
+  test('Absagen unter 24 Stunden bei „Sehr groß“ ohne Netz, 375 × 553: „Verstanden, weiter“ bleibt erreichbar (ANN-819)', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+    });
+    const server = nachbildung();
+    await oeffne(page, server, 'termin-absagen&kurzfristig');
+    await page.setViewportSize({ width: 375, height: 553 });
+    const hinweis = fenster(page, 'Ausfallhonorar');
+    await expect(hinweis.getByRole('alert')).toBeVisible();
+    await page.context().setOffline(true);
+    await expect(hinweis.getByRole('link', { name: /Praxis anrufen/ })).toBeVisible();
+    await bewegungAbwarten(page);
+    const box = (await hinweis.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, 3000);
+    await expect(hinweis.getByRole('button', { name: 'Verstanden, weiter' })).toBeInViewport({
+      ratio: 1,
+    });
+    await page.context().setOffline(false);
+  });
+
   test('Ändern unter 24 Stunden: die Warnung zum Freigeben steht fest über dem Knopf', async ({
     page,
   }) => {

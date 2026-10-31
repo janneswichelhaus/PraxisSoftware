@@ -32,6 +32,12 @@ const SEHR_GROSS_ROLLT_ZUSAMMEN = {
   inhalt:
     '[[data-schrift=sehr-gross]_&]:shrink-0 [[data-schrift=sehr-gross]_&]:basis-auto [[data-schrift=sehr-gross]_&]:overflow-visible',
 };
+// Unter 40rem Höhe (Querformat, Telefon mit Leiste) fände der feste Fuß keinen Platz (ANN-819).
+const NIEDRIG_ROLLT_ZUSAMMEN = {
+  seite: '[@media(max-height:40rem)]:[[data-schrift=sehr-gross]_&]:overflow-y-auto',
+  inhalt:
+    '[@media(max-height:40rem)]:[[data-schrift=sehr-gross]_&]:shrink-0 [@media(max-height:40rem)]:[[data-schrift=sehr-gross]_&]:basis-auto [@media(max-height:40rem)]:[[data-schrift=sehr-gross]_&]:overflow-visible',
+};
 const AM_RECHNER_LINIE_UNTEN = '[.plattform-schrift[data-rechner]_&]:border-b';
 const SEHR_GROSS_LINIE_UEBER_DEM_FUSS =
   '[[data-schrift=sehr-gross]_&]:border-line [[data-schrift=sehr-gross]_&]:border-t [[data-schrift=sehr-gross]_&]:pt-4';
@@ -274,7 +280,7 @@ export function GefuehrterAblauf({
 
   // Unter 23rem rollt alles zusammen - Kopf, Inhalt und Fuß. Bei „Sehr groß“ rollen Inhalt und
   // Fuß zusammen, sonst deckte der Fuß die Antworten zu; passt alles, steht er unten (ANN-816).
-  const sehrGross = fussFest ? { seite: '', inhalt: '' } : SEHR_GROSS_ROLLT_ZUSAMMEN;
+  const sehrGross = fussFest ? NIEDRIG_ROLLT_ZUSAMMEN : SEHR_GROSS_ROLLT_ZUSAMMEN;
   const schmal = plattform
     ? {
         seite: `max-[23rem]:flex-none ${sehrGross.seite}`.trim(),

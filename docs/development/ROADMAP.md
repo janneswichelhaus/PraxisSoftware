@@ -398,7 +398,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | DRP-EPIC-017 Plattform: Lesefrist vom Server, Antworten zu #326, #333, #334 | fertig | 2026-10-30 | #335 | — | ANN-809 bis ANN-814; ADR-013 Fassung 8; Pfad A |
 | B | DRP-EPIC-018 Plattform: „Sehr groß“ ohne Verdecktes, Antworten zu #335 | fertig | 2026-10-30 | #336 | — | ANN-815 bis ANN-818; BEF-195 und BEF-226 erledigt; Register verdichtet |
 | B | DRP-EPIC-019 Plattform: Antworten zu #336 (fester Fuß ohne Auswahl, Hauptsache vor dem Gruß, Seite „Angefangener Fragebogen“) | fertig | 2026-10-31 | Branch ccr-a7073b83-8qn5vp | — | ANN-819 bis ANN-821; ANN-815 bis ANN-817 entschieden; nur Oberfläche |
-| B | Aufräumen, Vorschläge Nr. 2 und 3: Blattmodul patients/record, Datenzugang der Plattform je Bereich | fertig | 2026-10-31 | Branch ccr-a7073b83-8qn5vp | — | Gegenseitige Abhängigkeiten 8 → 5, Rest billing <-> patients in BEFUNDE.md; portal/platform/api.ts 2.245 → 9 Dateien unter 420 Zeilen; Pfad A ohne Auslöser aus Nr. 8, Zweitreview |
+| B | Aufräumen, Vorschläge Nr. 2 und 3: Blattmodul patients/record, Datenzugang der Plattform je Bereich | fertig | 2026-10-31 | Branch ccr-a7073b83-8qn5vp | — | Gegenseitige Abhängigkeiten 8 → 5, Rest billing <-> patients in BEFUNDE.md; portal/platform/api.ts 2.245 → 9 Dateien unter 440 Zeilen; Pfad A ohne Auslöser aus Nr. 8, Zweitreview |
 | B | BEF-223 Zeitumstellung: doppelte Ortszeit gilt als die frühere | fertig | 2026-10-29 | #332 | — | Pfad A, ANN-786 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |

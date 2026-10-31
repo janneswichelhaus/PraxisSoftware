@@ -354,11 +354,15 @@ describe('GefuehrterAblauf mit „Später“ und Balken je Schritt (5.3)', () =>
     const inhalt = screen.getByText('Inhalt').closest('[tabindex="0"]');
     // Nur der Inhalt rollt; unter 23rem rollt trotzdem alles zusammen (ANN-682).
     expect(inhalt).toHaveClass('flex-1', 'overflow-y-auto', 'max-[23rem]:overflow-visible');
-    expect(inhalt!.className).not.toContain('sehr-gross');
+    expect(inhalt).not.toHaveClass('[[data-schrift=sehr-gross]_&]:basis-auto');
     const seite = inhalt!.parentElement!;
-    expect(seite.className).not.toContain('sehr-gross');
+    expect(seite).not.toHaveClass('[[data-schrift=sehr-gross]_&]:overflow-y-auto');
     expect(seite).toHaveClass('max-[23rem]:flex-none');
     expect(inhalt).not.toContainElement(screen.getByRole('button', { name: 'Weiter' }));
+    // Unter 40rem Höhe fände er keinen Platz: Dort rollt er wieder mit.
+    expect(seite).toHaveClass(
+      '[@media(max-height:40rem)]:[[data-schrift=sehr-gross]_&]:overflow-y-auto',
+    );
     // Über rollendem Inhalt trennt eine Linie den festen Fuß.
     expect(screen.getByRole('button', { name: 'Weiter' }).parentElement!.parentElement).toHaveClass(
       '[[data-schrift=sehr-gross]_&]:border-t',
