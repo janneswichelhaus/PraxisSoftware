@@ -144,6 +144,16 @@ genau 44 hoch. Auf `main` einer von drei vollen Läufen, auf dem Branch zwei von
 **Erwartet.** Vor dem Messen das Ende der Animationen abwarten oder mit `expect.poll` messen; die
 Grenze 44 px bleibt.
 
+### Übersicht — Ein Browsertest misst den Hauptknopf, während die Karte noch einfährt
+2026-10-31 · `tests/e2e/uebersicht.spec.ts` (Hauptknopf bei 375 × 667) · Browsertests zu den drei
+Modulpaaren (Test und Übersicht dort unverändert) · offen (Vorschlag) · `vite.config.ts`\
+**Beobachtung.** Gemessen wird gleich nach `toBeVisible()`, während `hero-erscheinen` die Karte noch
+um bis zu 12 px versetzt: 622,78 statt höchstens 610 px. Das kam nur auf einem Server aus dem
+Projektordner, den Vite während `test:db` mit jeder Schreibung unter `.tmp/` beschäftigt (kein
+`server.watch.ignored`), zweimal in 24 Läufen; aus einer Arbeitskopie daneben 18 von 18 grün.
+**Erwartet.** Vor dem Messen das Ende der Animationen abwarten wie beim Abhaken; `.tmp/` aus der
+Beobachtung von Vite nehmen. Die Grenze bleibt.
+
 ### Bildstrecke — Eine geänderte Projektdatei lädt die Seiten eines laufenden Laufs neu
 2026-10-28 · `scripts/bildstrecke.mjs` · Gegenproben zur Netzruhe · offen (Vorschlag) · `aufnehmen`\
 **Beobachtung.** Ändert sich während eines Laufs eine Datei, die Tailwind nach Klassen durchsucht
@@ -152,6 +162,16 @@ und die kein Code ist (`docs/*.md`, `*.json`), schickt sein Vite-Plugin allen of
 binnen vier Sekunden nach einer Änderung an `STATUS.md` oder `fortschritt.json`; Läufe ohne
 Änderung hatten keines. **Erwartet.** Die Bildstrecke erkennt ein Neuladen, das sie nicht selbst
 auslöst (`domcontentloaded` ohne eigenes `goto`), und nimmt das Bild neu auf.
+
+### Bildstrecke — Drei Seiten kommen zwischen zwei Läufen desselben Stands verschieden
+2026-10-31 · `scripts/bildstrecke.mjs` · Bildvergleich zu den drei Modulpaaren · offen (Vorschlag) ·
+`kontextOeffnen`, `aufnehmen`\
+**Beobachtung.** Die Übersicht kommt mal mit, mal ohne „Barometer Oktober“: Der Hinweis erscheint
+schon nach der Anmeldung und gilt dann für heute als gezeigt (ANN-603). Die Abschlussseite der Doku
+kommt mal mit etwas breiterer Schrift, und mit `--parallel=2` liegt die feste Fußleiste der Übersicht
+in der Vollseite mal 86 px höher. Ein Vergleich vorher/nachher zeigt so Unterschiede ohne Ursache.
+**Erwartet.** Den Merker der Hinweise vorab setzen wie beim Startbild, vor der Aufnahme auf
+`document.fonts.ready` und das Ende der Animationen warten.
 
 ### Test-Umgebung — Die Termine der Praxiswoche vom 6.10. haben keine gültige UUID
 2026-10-28 · Test-Umgebung, Übersicht der Plattform · Bild von Jannes, nachgestellt · offen (bei
