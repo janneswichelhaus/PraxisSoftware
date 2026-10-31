@@ -256,10 +256,3 @@ Empfänger aus `billing` ein (Seiten setzen zusammen, ANN-754); `billing` holt H
 Bauarten über `@/features/patients`, das die Messung der Wurzel zurechnet. **Erwartet.** Ein Platz
 wie `TerminErweiterungen`, den die App mit den Abschnitten der Abrechnung füllt; 5 → 4. Aufwand
 mittel, Standardweg, Risiko an der Stammdatenseite; oder so lassen (Entscheidung Jannes).
-
-### Aufräumen — `portal/platform/api.ts` hat 2.240 Zeilen
-2026-10-27 · Plattform · /aufraeumen 2026-10-27 · offen (Vorschlag) · `src/features/portal/platform/api.ts`\
-**Beobachtung.** Die größte Programmdatei bündelt Ich, Termine, Wünsche, Befundbogen, Rechnungen,
-Dokumente und Einwilligungen; jeder Schritt des Design-Reviews ändert sie. **Erwartet.** Je Bereich
-eine Datei hinter derselben Schnittstelle, ohne Verhaltensänderung; weniger Konflikte paralleler
-Arbeit, eine Datei über 500 Zeilen weniger. Aufwand klein, Standardweg, Risiko gering.
