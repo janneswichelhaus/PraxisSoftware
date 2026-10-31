@@ -16,6 +16,11 @@ select set_config('praxis.zugang_passwort', :'passwort', false) \g /dev/null
 \set QUIET off
 
 \ir kennung.sql
+-- Erst nach der Kennung: Was die Bedienung anlegt (Notizen, Zahlungen, Urlaub), kennt der Seed
+-- nicht, und ON DELETE RESTRICT hielte sein Löschen auf. Kataloge ohne Praxisbezug bleiben.
+set client_min_messages = warning;
+truncate public.organizations cascade;
+reset client_min_messages;
 \ir ../seed.sql
 \ir testpatienten.sql
 \ir praxiswoche.sql

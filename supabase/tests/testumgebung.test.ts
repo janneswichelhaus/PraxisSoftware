@@ -17,6 +17,7 @@ const NEU_AUFSETZEN = path.resolve(HERE, '..', 'testumgebung', 'neu-aufsetzen.ps
 /** Das Entwicklungskennwort aus supabase/seed.sql - steht im Repository. */
 const ENTWICKLUNGSKENNWORT = 'LokalerTestzugang!2026';
 const KENNWORT = 'Synthetisch-Testumgebung-7';
+const ANNA = '55555555-5555-4555-8555-000000000002';
 
 /**
  * Ruft das Skript genau so auf wie der Workflow `test-umgebung.yml`: psql,
@@ -82,6 +83,10 @@ describe('Test-Umgebung neu aufsetzen (OPS-002a)', () => {
     // Nichts gelöscht, nichts angelegt.
     expect(await praxiswoche()).toHaveLength(0);
     expect((await konten(ENTWICKLUNGSKENNWORT)).every((konto) => konto.passt)).toBe(true);
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.organizations',
+    );
+    expect(rows[0]?.n).toBe(1);
   });
 
   it('eine leere Datenbank bekommt beim ersten Aufsetzen die Kennung', async () => {
@@ -221,6 +226,46 @@ describe('Test-Umgebung neu aufsetzen (OPS-002a)', () => {
     const erster = await praxiswoche();
     expect(neuAufsetzen(KENNWORT).status).toBe(0);
     expect(await praxiswoche()).toHaveLength(erster.length);
+  });
+
+  it('räumt auch auf, was die Bedienung angelegt hat - Kataloge ohne Praxisbezug bleiben', async () => {
+    await asPostgres(
+      `insert into public.treatment_notes
+         (organization_id, appointment_id, content, created_by, updated_by)
+       select organization_id, id, 'Synthetische Notiz aus der Bedienung', $2, $2
+         from public.appointments
+        where staff_member_id = $1 and status = 'completed'
+        order by starts_at desc
+        limit 1`,
+      [ANNA, SEED.users.therapist],
+    );
+    await asPostgres(
+      `insert into public.staff_leave_requests
+         (organization_id, staff_member_id, starts_on, ends_on, days, requested_by)
+       select organization_id, id, current_date + 30, current_date + 31, 2, $2
+         from public.staff_members where id = $1`,
+      [ANNA, SEED.users.therapist],
+    );
+    const anzahl = async () => {
+      const { rows } = await asPostgres<{ notizen: number; urlaub: number; kataloge: number }>(
+        `select (select count(*)::int from public.treatment_notes) as notizen,
+                (select count(*)::int from public.staff_leave_requests) as urlaub,
+                (select count(*)::int from public.food_catalog
+                  where source_version is distinct from 'Seed synthetisch')
+                + (select count(*)::int from public.retention_classes)
+                + (select count(*)::int from public.questionnaire_definitions) as kataloge`,
+      );
+      return rows[0]!;
+    };
+    const vorher = await anzahl();
+    expect(vorher.notizen).toBe(1);
+    expect(vorher.urlaub).toBe(1);
+    expect(vorher.kataloge).toBeGreaterThan(0);
+
+    const lauf = neuAufsetzen(KENNWORT);
+    expect(lauf.status, lauf.stderr).toBe(0);
+    expect(lauf.stderr).not.toContain('truncate cascades');
+    expect(await anzahl()).toEqual({ notizen: 0, urlaub: 0, kataloge: vorher.kataloge });
   });
 
   it('die Woche ist für die Therapeutin sichtbar, für ein Patientenkonto nicht', async () => {
