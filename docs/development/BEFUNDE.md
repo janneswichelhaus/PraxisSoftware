@@ -187,6 +187,14 @@ Erweiterung von `Linkliste`, die Zeichen einmal in `src/components/ui`, das Rast
 unter `src/lib` sähe keine Prüfung. **Erwartet.** Ein Test hält fest, welche Dateien unter `src/lib`
 `getSupabase()` benutzen dürfen, oder die Prüfungen sperren genau diese; je eine Gegenprobe.
 
+### Übungen — Zwei Prüfungen gegen Befunddaten übersehen einen Import über `@/features/clinical`
+2026-10-31 · Übungspläne · Zweitreview zu den drei Modulpaaren · offen (Vorschlag) · `vorlagen.test.ts`,
+`uebungsliste.test.ts`\
+**Beobachtung.** Beide suchen im Importpfad nur nach Stichwörtern (`patients|assessments|…`, ADR-006
+Punkt 10). Ein Import über die Schnittstelle `@/features/clinical` (etwa `BerichteDerVerordnung`)
+oder `@/features/portal` enthält keines und bliebe grün; schon vor dem Umzug so. **Erwartet.** Eine
+Erlaubnisliste der Importe wie in `trennung.test.ts` statt Stichwörtern, mit Gegenprobe.
+
 ### Termine — Ein Termin wird nie `invoiced`, obwohl ADR-018 die Invariante verlangt
 2026-10-27 · Abrechnung, Termine · Aufräumen 5, Teil B (ANN-081) · offen (Vorschlag, Pfad A)\
 **Beobachtung.** `public.issue_invoice` setzt nur `billable_services.status`, das Storno nichts am
@@ -251,17 +259,6 @@ Trainingstermin erklären „Nur mit laufendem Vertrag.“ und „Ohne Vereinbar
 Einzelstunde.“ die Auswahl (Regel 6); die Rückfrage heißt im Training „… – trotzdem“, im Kalender
 „Termin trotzdem anlegen“. **Erwartet.** Bei der nächsten Überholung des Kalenders angleichen, mit
 Bildern der Fehler- und Ladezustände bei 375 px.
-
-### Aufräumen — Drei Modulpaare hängen nur über wenige Rückwege gegenseitig voneinander ab
-2026-10-31 · Übungen, Doku, Betrieb · /aufraeumen 2026-10-31 · offen (Vorschlag) ·
-`exercise-plans`, `offline-documentation`, `workplace/organisation/pfade.ts`\
-**Beobachtung.** Von vier Kreisen bleibt `billing <-> patients` bewusst (ANN-754). `feedback` braucht
-von `organisation` nur zwei Pfade; `exercises` braucht von `exercise-plans` nur `ZuEinemPlan` und den
-Typ `Dosis` (31 Importe hin); `documentation` braucht von `offline-documentation` nur
-`AufGeraetSichern` (4 Importe hin). **Erwartet.** Die Pfade an die Wurzel von `workplace`;
-`exercise-plans` als Unterordner in `exercises`, `offline-documentation` in `documentation`.
-Gegenseitige Abhängigkeiten 4 → 1, Module 54 → 52, Querimporte etwa −38. Aufwand mittel (Umzüge,
-Pfade der Mocks), Standardweg, Risiko gering.
 
 ### Aufräumen — Die Plattform führt drei Bausteine doppelt, deren Vorbild es schon gibt
 2026-10-31 · Plattform · /aufraeumen 2026-10-31 · offen (Vorschlag) · `Terminwunsch.tsx`,
