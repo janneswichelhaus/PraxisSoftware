@@ -21,8 +21,9 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 ## Bei Jannes
 
 - Den alten Branch `ccr-544f8ce7-u1sqpf` löschen (seit 3c ist alles übertragen).
-- Test-Umgebung neu aufsetzen (Workflow „Test-Umgebung“, „neu aufsetzen“): Termine der alten
-  Praxiswoche haben keine gültige UUID, Erikas Übersicht scheitert (`development/BEFUNDE.md`).
+- Nach dem Merge von „Neu aufsetzen leert auch Daten aus der Bedienung“ die Test-Umgebung neu
+  aufsetzen (Workflow „Test-Umgebung“, „neu aufsetzen“); der Lauf vom 31.10. brach an Daten aus der
+  Bedienung ab. Bis dahin scheitert Erikas Übersicht an Terminen ohne gültige UUID (`development/BEFUNDE.md`).
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; E13); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
