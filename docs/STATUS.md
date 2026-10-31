@@ -1,4 +1,4 @@
-# Status · Stand 2026-10-30
+# Status · Stand 2026-10-31
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -6,13 +6,13 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**„Sehr groß“ ohne Verdecktes und die Antworten zu #335** liegen als PR vor: Reiterleiste in einer
-Reihe, Fuß der Abläufe am Ende, Register verdichtet. Offen: BEF-201, BEF-202.
+**Antworten zu #336 und Aufräumen Nr. 2 und 3** liegen als PR vor: fester Fuß ohne Auswahl, Hauptsache
+vor dem Gruß, Blattmodul `patients/record`, Datenzugang der Plattform je Bereich. Offen: BEF-201, BEF-202.
 
 ## Danach
 
-Bildsichtung von #334, #335 und dieser PR. Schritte 5 bis 7 mit Jannes' Leinwänden aus Claude
-Design; bis dahin die Aufräumrunde (`development/BEFUNDE.md`, Nr. 2, dann Nr. 3).
+Bildsichtung von #334 bis #336 und dieser PR. Schritte 5 bis 7 mit Jannes' Leinwänden aus Claude
+Design; bis dahin `/aufraeumen` und das gemeinsame Terminformular (`development/BEFUNDE.md`).
 **Parallel eine Docs-Session je Woche für G14** (fertig bis Ende 2026, `datenschutz/README.md`):
 Verarbeitungsverzeichnis mit Übersicht der Auftragsverarbeiter, Schwellwertprüfung, TOM mit
 Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
@@ -27,6 +27,7 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
   ANN-479 ansehen (Besuch).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
+- ADR-013, neue Fassung: Auslöser auch für RPC-Aufrufe in `*-api.ts` (Frage 1 der PR vom 31.10.).
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
 - Sichtliste am Gerät: 13 Punkte (`sichtung/README.md`, S-1 bis S-13).
 - Widersprüche zwischen ADR-Wortlaut und Code oder Prinzipien (`development/BEFUNDE.md`, „Doku“).
@@ -43,4 +44,4 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 
 ## Letzte Session
 
-30.10.2026, Branch `ccr-ef7a7f30-l9h6z3`. Lokal: `git pull`, keine Migration.
+31.10.2026, Branch `ccr-a7073b83-8qn5vp`. Lokal: `git pull`, keine Migration.
