@@ -6,7 +6,7 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Drei Modulpaare ohne gegenseitige Abhängigkeit** liegen als PR vor: Übungspläne in `exercises/plans`,
+**Drei Modulpaare ohne gegenseitige Abhängigkeit** liegen als #341 vor: Übungspläne in `exercises/plans`,
 Entwürfe ohne Netz in `documentation/offline`, der Weg des Eingangs in `src/lib` (an der Wurzel von
 `workplace` entstünde ein neuer Kreis). Offen: BEF-201, BEF-202.
 
