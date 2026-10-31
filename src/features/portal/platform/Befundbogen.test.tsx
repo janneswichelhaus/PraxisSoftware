@@ -652,11 +652,20 @@ describe('Fragebogen vor dem ersten Termin', { timeout: 20_000 }, () => {
     });
 
     it('bietet ohne Entwurf und nach dem Senden nichts zum Verwerfen an', async () => {
-      zeige(ENDE);
+      const { unmount } = zeige(ENDE);
       expect(await screen.findByText('Kein Fragebogen mehr')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: BOGEN_TITEL })).toBeInTheDocument();
       expect(
         screen.getByText('Ihre Behandlung ist beendet. Sie können hier noch bis 27.11.2026 lesen.'),
       ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Antworten verwerfen' })).toBeNull();
+      unmount();
+      ladeBefundbogen.mockResolvedValue([
+        { ...entwurf({}), status: 'abgeschlossen', completed_at: '2026-10-27T08:00:00.000Z' },
+      ]);
+      zeige(ENDE);
+      expect(await screen.findByText('Kein Fragebogen mehr')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: BOGEN_TITEL })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Antworten verwerfen' })).toBeNull();
     });
 

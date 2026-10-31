@@ -253,7 +253,7 @@ function Reiter({
 }) {
   const erster = planDerVorschau(plaene, heute);
   const reihe = [erster, ...plaene.filter((p) => p !== erster)];
-  // Wortlaut der Übersicht (Briefing 1), bei einer Vertretung mit Namen; der Satz am Plan entfällt.
+  // Wortlaut der Übersicht (Briefing 1), unter dem Band ohne Namen (ANN-809); der Satz am Plan entfällt.
   const lesefrist = inLesefrist(zugang) ? lesefristSatz(zugang, null) : null;
   return (
     <>
