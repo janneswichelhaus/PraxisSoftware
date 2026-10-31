@@ -8,20 +8,21 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
+import { Field } from '@/components/ui/Field';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Section } from '@/components/ui/Section';
+import { Select } from '@/components/ui/Select';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { roleLabels } from '@/components/ui/roleLabels';
-import {
-  EINGABETEXTE,
-  useTextverlustschutz,
-  type Verlustschutztexte,
-} from '@/app/Textverlustschutz';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { canManageAppointments, type CurrentUser } from '@/features/core';
 import { EreignisArbeitszeitRueckfrage, EreignisFormFields } from './EreignisFormFields';
 import { fetchStaffMembers, fetchLocations } from '@/features/workforce';
+import { formatDate, istIsoDatum, todayInTimeZone } from '@/lib/datum';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { leseRueckweg } from '@/lib/rueckweg';
+import { leseTerminVorbelegung } from '@/lib/termin';
 import {
   EREIGNIS_BESCHRIFTUNGEN,
   EREIGNIS_FEHLERFELDER,
@@ -29,46 +30,21 @@ import {
   ereignisGeaendert,
   FEHLZEIT_BEISPIELE,
   mitEingetragenerFehlzeit,
+  type EreignisFehlerfeld,
 } from './calendar';
 import {
   createAppointmentEvent,
+  createEventSeries,
   ereignisFormSchema,
   istAusserhalbArbeitszeit,
   type EreignisFormValues,
 } from './api';
-import { todayInTimeZone } from '@/lib/datum';
-import { leseTerminVorbelegung } from '@/lib/termin';
+import { SERIE_HOECHSTZAHL, rhythmen, serienTermine, type Rhythmus } from './serie';
 
-/**
- * Eine Fehlzeit des Praxisbetriebs eintragen (CAL-015b, CAL-015c).
- *
- * Besprechung, Teamtermin, alles, was Zeit im Kalender belegt und **keine
- * Behandlung** ist. `PROJECT_PRINCIPLES.md` 0.9 §8.1: weder Patient:in noch
- * Verordnung, Beginn und Ende frei im Praxisraster, keine abrechenbare
- * Leistung.
- *
- * Bewusst ein eigenes Formular neben der Terminanlage. Die beiden Vorgänge
- * fragen Verschiedenes: Der eine eine Patient:in und eine feste Länge, der
- * andere eine Bezeichnung und einen Kreis von Beteiligten. Ein gemeinsames
- * Formular mit der Hälfte ausgeblendeter Felder wäre für beide schlechter.
- *
- * **Mehrere Beteiligte, ein Vorgang:** Der Server legt je Person einen Termin
- * an — alles oder nichts. Eine Besprechung, die nur in einem Kalender steht,
- * sagt den übrigen nicht, dass ihre Zeit belegt ist.
- *
- * **Eingaben gehen nicht still verloren (KAL-20, NAV-01).** Weicht das
- * Formular von der Vorbelegung ab, fragt jeder Weg hinaus - Rückweg,
- * „Abbrechen", Tableiste, Abmelden - erst nach; Neuladen warnt der Browser.
- * Einen Entwurf gibt es nicht, also nur „Verwerfen und weitergehen" oder
- * „Hier bleiben" (ANN-046).
- */
 type Feld = keyof EreignisFormValues;
+type Fehlerfeld = EreignisFehlerfeld | 'anzahl';
 
-/**
- * Ein vorgegebener Zweck aus einem Hinweis, als Titel der Fehlzeit - etwa der
- * fällige Fahrrad-Check-Up aus dem Kalender (FLT-009, ANN-570). In der
- * Adresse steht nur der Schlüssel, nie freier Text (ADR-011).
- */
+/** Ein Zweck aus einem Hinweis wird zur Bezeichnung; in der Adresse steht nur der Schlüssel (ADR-011). */
 const ZWECKE: Readonly<Record<string, string>> = { checkup: 'Fahrrad-Check-Up' };
 
 function titelZumZweck(zweck: string | null): string {
@@ -85,35 +61,78 @@ const leer: EreignisFormValues = {
   location_id: '',
 };
 
-/** Die Sätze des Verlustschutzes für dieses Formular. */
-const FEHLZEITTEXTE: Verlustschutztexte = {
-  ...EINGABETEXTE,
-  bezeichnung: 'Ungespeicherte Fehlzeit',
-};
+/** Vorbelegte Anzahl: sechs Wochen sind die übliche Dauer einer Reihe. */
+const ANZAHL_VORGABE = '6';
 
-/** Kennung des Fehlers der Beteiligten, für `aria-describedby` (KAL-17). */
+const ANZAHL_ID = 'fehlzeit-anzahl';
 const BETEILIGTE_FEHLER_ID = `${EREIGNIS_FELD_IDS.staff_member_ids}-fehler`;
 
-export function NewEventPage({ user }: { user: CurrentUser }) {
+const FEHLERFELDER: readonly Fehlerfeld[] = [...EREIGNIS_FEHLERFELDER, 'anzahl'];
+const BESCHRIFTUNGEN: Readonly<Record<Fehlerfeld, string>> = {
+  ...EREIGNIS_BESCHRIFTUNGEN,
+  anzahl: 'Anzahl Fehlzeiten',
+};
+/** Bei einer Serie ist der Tag ihr erster; sonst behauptete das Formular einen einzelnen Termin. */
+const SERIE_BESCHRIFTUNGEN = { ...BESCHRIFTUNGEN, date: 'Erste Fehlzeit am' };
+
+/** „1 Fehlzeit“ gegen „6 Fehlzeiten“ - an einer Stelle statt in jeder Meldung. */
+function fehlzeitenWort(anzahl: number): string {
+  return anzahl === 1 ? '1 Fehlzeit' : `${anzahl} Fehlzeiten`;
+}
+
+/** Wochentag eines Kalendertags, ohne Zeitzonenrechnung. */
+function wochentag(tag: string, form: 'short' | 'long'): string {
+  return new Intl.DateTimeFormat('de-DE', { weekday: form, timeZone: 'UTC' }).format(
+    new Date(`${tag}T00:00:00Z`),
+  );
+}
+
+/** „So, 27.09.2026“: Ohne Wochentag fiele ein falscher Tag der Serie nicht auf. */
+function tagMitWochentag(tag: string): string {
+  return `${wochentag(tag, 'short')}, ${formatDate(tag)}`;
+}
+
+const WOCHENTAGE_ADVERB = [
+  'sonntags',
+  'montags',
+  'dienstags',
+  'mittwochs',
+  'donnerstags',
+  'freitags',
+  'samstags',
+] as const;
+
+/** Die Wochentage einer Serie für die Zeile über der Liste: „mittwochs“. */
+function wochentageDerSerie(tage: readonly string[]): string {
+  const namen = [
+    ...new Set(tage.map((tag) => WOCHENTAGE_ADVERB[new Date(`${tag}T00:00:00Z`).getUTCDay()]!)),
+  ];
+  return namen.length <= 1
+    ? namen.join('')
+    : `${namen.slice(0, -1).join(', ')} und ${namen.at(-1)!}`;
+}
+
+/**
+ * Eine Fehlzeit des Praxisbetriebs eintragen, mit `serie` über mehrere Wochen: keine Behandlung,
+ * keine Leistung (§8.1). Der Server legt je beteiligter Person einen Termin an, alles oder nichts.
+ */
+export function NewEventPage({ user, serie = false }: { user: CurrentUser; serie?: boolean }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [suche] = useSearchParams();
   const zurueck = leseRueckweg(suche, '/kalender');
 
-  // Zeit und Tag kommen aus der angetippten Stelle im Kalender, wenn der Weg
-  // von dort kam (UX-005). Die Länge nicht: Ein Ereignis hat keine.
+  // Tag und Zeiten aus der Stelle im Kalender; bei einer Serie ist der Tag ihr erster.
   const [vorbelegung] = useState(() => leseTerminVorbelegung(suche));
-
   const [werte, setWerte] = useState<EreignisFormValues>(() => ({
     ...leer,
-    title: titelZumZweck(suche.get('zweck')),
+    title: serie ? '' : titelZumZweck(suche.get('zweck')),
     date:
       vorbelegung.datum ??
       (user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : ''),
     start_time: vorbelegung.beginn ?? '',
     end_time: vorbelegung.ende ?? '',
-    // Die Person aus der angetippten Spalte, sonst die eigene: Wer im
-    // Kalender von Anna eine Spanne aufzieht, meint Anna (CAL-019).
+    // Wer im Kalender von Anna eine Spanne aufzieht, meint Anna; sonst die eigene Person.
     staff_member_ids: vorbelegung.person
       ? [vorbelegung.person]
       : user.staffMemberId
@@ -122,11 +141,21 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
   }));
   // Der Stand, mit dem das Formular begann - Vorbelegung ist keine Eingabe.
   const [anfang, setAnfang] = useState(werte);
-  const [fehler, setFehler] = useState<Partial<Record<Feld, string>>>({});
+  const [rhythmus, setRhythmus] = useState<Rhythmus>('woechentlich');
+  // Als Text: Ein leeres Feld ist keine 0, und 40 wird nicht still zu 30.
+  const [anzahlText, setAnzahlText] = useState(ANZAHL_VORGABE);
+  const [fehler, setFehler] = useState<Partial<Record<Feld | 'anzahl', string>>>({});
 
+  // Ohne Entwurf: Die Rückfrage bietet nur Verwerfen und Bleiben an (ANN-046).
   const { freigeben, schutz } = useTextverlustschutz({
-    ungespeichert: ereignisGeaendert(werte, anfang),
-    texte: FEHLZEITTEXTE,
+    ungespeichert:
+      ereignisGeaendert(werte, anfang) ||
+      rhythmus !== 'woechentlich' ||
+      anzahlText !== ANZAHL_VORGABE,
+    texte: {
+      ...EINGABETEXTE,
+      bezeichnung: serie ? 'Ungespeicherte Dauerfehlzeit' : 'Ungespeicherte Fehlzeit',
+    },
   });
 
   const personen = useQuery({
@@ -136,11 +165,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
   });
   const standorte = useQuery({ queryKey: ['locations'], queryFn: fetchLocations, retry: false });
 
-  // Bei genau einem verfügbaren Standort darf vorausgewählt werden - eine
-  // Auswahl ohne Alternative ist keine Entscheidung. Dieselbe Regel und
-  // dieselbe Begründung wie in `NewAppointmentPage`; hier fehlte sie, und das
-  // Formular verlangte ein Pflichtfeld, für das es nur eine Antwort gab
-  // (FIX-013). Auch das ist Vorbelegung, keine Eingabe.
+  // Eine Auswahl ohne Alternative ist keine Entscheidung; auch das ist Vorbelegung.
   useEffect(() => {
     const nurEiner = standorte.data?.length === 1 ? standorte.data[0] : undefined;
     if (nurEiner) {
@@ -151,17 +176,36 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
     }
   }, [standorte.data]);
 
+  const anzahl = Number(anzahlText);
+  const anzahlGueltig =
+    anzahlText.trim() !== '' &&
+    Number.isInteger(anzahl) &&
+    anzahl >= 1 &&
+    anzahl <= SERIE_HOECHSTZAHL;
+  const tage =
+    serie && anzahlGueltig
+      ? serienTermine(werte.date, werte.start_time, rhythmus, anzahl).map((t) => t.datum)
+      : [];
+
   const mutation = useMutation({
-    mutationFn: (eingabe: { werte: EreignisFormValues; bestaetigt: boolean }) =>
-      createAppointmentEvent(eingabe.werte, eingabe.bestaetigt),
+    mutationFn: async (eingabe: {
+      werte: EreignisFormValues;
+      tage: string[];
+      bestaetigt: boolean;
+    }) => {
+      await (serie
+        ? createEventSeries(eingabe.werte, eingabe.tage, eingabe.bestaetigt)
+        : createAppointmentEvent(eingabe.werte, eingabe.bestaetigt));
+    },
     onSuccess: async () => {
       // Kalender und Tagesplan führen den Zeitraum sonst weiter als frei.
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
       await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
-      // Eingetragen: Der eigene Weg hinaus ist kein Verlust (ANN-046). Der
-      // Kalender sagt, dass es geklappt hat (KAL-22).
+      // Eingetragen: Der eigene Weg hinaus ist kein Verlust; der Kalender meldet den Erfolg.
       freigeben();
-      void navigate(mitEingetragenerFehlzeit(zurueck, 'fehlzeit'), { replace: true });
+      void navigate(mitEingetragenerFehlzeit(zurueck, serie ? 'dauerfehlzeit' : 'fehlzeit'), {
+        replace: true,
+      });
     },
   });
 
@@ -175,19 +219,22 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
     event.preventDefault();
     if (mutation.isPending) return;
 
+    const gesammelt: Partial<Record<Feld | 'anzahl', string>> = {};
     const ergebnis = ereignisFormSchema.safeParse(werte);
     if (!ergebnis.success) {
-      const gesammelt: Partial<Record<Feld, string>> = {};
       for (const problem of ergebnis.error.issues) {
         const feld = problem.path[0] as Feld | undefined;
         if (feld && !gesammelt[feld]) gesammelt[feld] = problem.message;
       }
+    }
+    if (serie && !anzahlGueltig) gesammelt.anzahl = `Bitte 1 bis ${SERIE_HOECHSTZAHL} angeben.`;
+    if (!ergebnis.success || gesammelt.anzahl) {
       setFehler(gesammelt);
       return;
     }
 
     setFehler({});
-    mutation.mutate({ werte: ergebnis.data, bestaetigt: false });
+    mutation.mutate({ werte: ergebnis.data, tage, bestaetigt: false });
   }
 
   if (!canManageAppointments(user.roles)) {
@@ -205,8 +252,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
 
   const aktive = (personen.data ?? []).filter((p) => p.employment_status === 'active');
   const ausserhalb = mutation.isError && istAusserhalbArbeitszeit(mutation.error);
-  // Ohne die Liste einer Pflichtangabe lässt sich nicht eintragen (ZST-07):
-  // Das Formular sagt es am Feld, statt still leer zu bleiben.
+  // Ohne die Liste einer Pflichtangabe lässt sich nicht eintragen; das Feld sagt es.
   const listeFehlt =
     personen.isError || (standorte.isError && werte.appointment_type === 'practice');
 
@@ -214,19 +260,24 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
     <>
       <Rueckweg standard="/kalender" />
 
-      {/* Ohne den Satz zu Patient:in und Verordnung: Er erklärte, was eine
-          Fehlzeit nicht ist (UX-005g). */}
-      <PageHeader title="Fehlzeit eintragen" description={`${FEHLZEIT_BEISPIELE} oder anderes.`} />
+      {/* Beschreibungen enden mit Punkt, nur Namen und Daten nicht. */}
+      <PageHeader
+        title={serie ? 'Dauerfehlzeit eintragen' : 'Fehlzeit eintragen'}
+        description={
+          serie
+            ? `Über mehrere Wochen: ${FEHLZEIT_BEISPIELE}.`
+            : `${FEHLZEIT_BEISPIELE} oder anderes.`
+        }
+      />
 
       <form onSubmit={absenden} noValidate className="max-w-formular">
-        {/* Was noch fehlt - und wo (KAL-17): Auf dem Telefon steht der
-            Absendeknopf einen Bildschirm unter der Bezeichnung. */}
+        {/* Was noch fehlt - und wo: Auf dem Telefon steht der Knopf einen Bildschirm tiefer. */}
         <Fehlerzusammenfassung
           fehler={alsFormularfehler(
-            EREIGNIS_FEHLERFELDER,
-            EREIGNIS_BESCHRIFTUNGEN,
+            FEHLERFELDER,
+            serie ? SERIE_BESCHRIFTUNGEN : BESCHRIFTUNGEN,
             fehler,
-            (feld) => EREIGNIS_FELD_IDS[feld],
+            (feld) => (feld === 'anzahl' ? ANZAHL_ID : EREIGNIS_FELD_IDS[feld]),
           )}
         />
 
@@ -237,6 +288,12 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
           standorte={standorte.data ?? []}
           zeitzone={user.organizationTimeZone}
           rasterMinuten={user.appointmentGridMinutes}
+          datumBeschriftung={`${serie ? SERIE_BESCHRIFTUNGEN.date : BESCHRIFTUNGEN.date} *`}
+          datumHinweis={
+            serie && istIsoDatum(werte.date)
+              ? `Das ist ein ${wochentag(werte.date, 'long')}.`
+              : undefined
+          }
           standorteFehler={
             standorte.isError ? (
               <ErrorState
@@ -248,7 +305,6 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
           }
           beteiligte={
             <fieldset aria-describedby={fehler.staff_member_ids ? BETEILIGTE_FEHLER_ID : undefined}>
-              {/* Kein Satz zum Belegen der Kalender: Er erklärte das System (UX-005g). */}
               <legend className="text-ink text-sm font-medium">Beteiligte Personen *</legend>
               {personen.isError ? (
                 <div className="mt-3">
@@ -259,8 +315,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
                   />
                 </div>
               ) : (
-                // Ab 640 px zwei Spalten: Die Namen sind kurz, die Liste wird
-                // nur halb so lang (DESIGN.md Regel 10).
+                // Ab 640 px zwei Spalten: Die Namen sind kurz, die Liste wird halb so lang.
                 <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
                   {aktive.map((person, i) => (
                     <Checkbox
@@ -281,8 +336,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
                   ))}
                 </div>
               )}
-              {/* Der Fehler der Gruppe - mit Rolle, in Feldgröße und an der
-                  Gruppe angebunden (KAL-17). */}
+              {/* Der Fehler der Gruppe - mit Rolle, in Feldgröße und an der Gruppe angebunden. */}
               {fehler.staff_member_ids ? (
                 <p id={BETEILIGTE_FEHLER_ID} role="alert" className="text-danger mt-2 text-sm">
                   {fehler.staff_member_ids}
@@ -292,6 +346,59 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
           }
         />
 
+        {serie ? (
+          <Section titel="Wiederholung">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-end">
+              <Select
+                label="Rhythmus *"
+                value={rhythmus}
+                onChange={(e) => setRhythmus(e.target.value as Rhythmus)}
+              >
+                {(Object.keys(rhythmen) as Rhythmus[]).map((key) => (
+                  <option key={key} value={key}>
+                    {rhythmen[key].label}
+                  </option>
+                ))}
+              </Select>
+              <Field
+                label="Anzahl Fehlzeiten *"
+                feldId={ANZAHL_ID}
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={SERIE_HOECHSTZAHL}
+                value={anzahlText}
+                error={fehler.anzahl}
+                hint={`Höchstens ${SERIE_HOECHSTZAHL} je Vorgang.`}
+                onChange={(e) => {
+                  setAnzahlText(e.target.value);
+                  if (fehler.anzahl) {
+                    setFehler(({ anzahl: _entfaellt, ...rest }) => rest);
+                  }
+                }}
+              />
+            </div>
+
+            {/* Die Tage stehen vor dem Eintragen da: Die Serie gilt ganz oder gar nicht. */}
+            {tage.length > 0 ? (
+              <div className="mt-6">
+                <p className="text-ink text-sm font-medium">
+                  {fehlzeitenWort(tage.length)}
+                  {werte.start_time && werte.end_time
+                    ? `, jeweils ${wochentageDerSerie(tage)} ${werte.start_time}–${werte.end_time} Uhr`
+                    : `, ${wochentageDerSerie(tage)}`}
+                </p>
+                {/* Im Fluss statt untereinander: Dreißig Tage stehen am Telefon in zwölf Zeilen. */}
+                <ul className="text-ink-muted mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
+                  {tage.map((tag) => (
+                    <li key={tag}>{tagMitWochentag(tag)}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </Section>
+        ) : null}
+
         {ausserhalb ? (
           <EreignisArbeitszeitRueckfrage
             beschriftung="Trotzdem eintragen"
@@ -299,7 +406,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
             onBestaetigen={() => {
               const ergebnis = ereignisFormSchema.safeParse(werte);
               if (!ergebnis.success) return;
-              mutation.mutate({ werte: ergebnis.data, bestaetigt: true });
+              mutation.mutate({ werte: ergebnis.data, tage, bestaetigt: true });
             }}
             onAbbrechen={() => mutation.reset()}
           />
@@ -314,13 +421,17 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
         {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird. */}
         {schutz}
 
-        {/* Am Telefon untereinander in voller Breite (DESIGN.md „Formular“). */}
+        {/* Am Telefon untereinander in voller Breite; Abbrechen ist ein Link durch dieselbe Rückfrage. */}
         <Formularfuss>
           <Button type="submit" disabled={mutation.isPending || listeFehlt}>
-            {mutation.isPending ? 'Wird eingetragen …' : 'Fehlzeit eintragen'}
+            {mutation.isPending
+              ? 'Wird eingetragen …'
+              : !serie
+                ? 'Fehlzeit eintragen'
+                : tage.length > 0
+                  ? `${fehlzeitenWort(tage.length)} eintragen`
+                  : 'Fehlzeiten eintragen'}
           </Button>
-          {/* Ein Seitenwechsel ist ein Link (UIK-13) - und läuft damit durch
-              dieselbe Rückfrage wie jeder andere Weg hinaus. */}
           <ButtonLink to={zurueck} variant="quiet">
             Abbrechen
           </ButtonLink>

@@ -49,7 +49,6 @@ import { CalendarPage } from '@/features/calendar/appointments/CalendarPage';
 import { TagUmplanenPage } from '@/features/calendar/appointments/TagUmplanenPage';
 import { NewAppointmentPage } from '@/features/calendar/appointments/NewAppointmentPage';
 import { NewEventPage } from '@/features/calendar/appointments/NewEventPage';
-import { NewEventSeriesPage } from '@/features/calendar/appointments/NewEventSeriesPage';
 import { NewAppointmentStartPage } from '@/features/calendar/appointments/NewAppointmentStartPage';
 import { DauerterminStartPage } from '@/features/calendar/appointments/DauerterminStartPage';
 import { AppointmentSeriesPage } from '@/features/calendar/appointments/AppointmentSeriesPage';
@@ -451,7 +450,7 @@ export function AuthenticatedRoutes({
                   legt eine Serie an. */}
                   <Route
                     path="/termine/dauerfehlzeit"
-                    element={<NewEventSeriesPage user={user} />}
+                    element={<NewEventPage user={user} serie />}
                   />
                   <Route
                     path="/patienten/:patientId/termine/neu"
