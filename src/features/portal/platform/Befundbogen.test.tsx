@@ -31,7 +31,7 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Befundbogen } = await import('./Befundbogen');
-const { fuerDiePlattform } = await import('./instrumentwahl');
+const { BOGEN_TITEL, fuerDiePlattform } = await import('./instrumentwahl');
 const { bogenthemen } = await import('./bogenthemen');
 
 const ZUGANG: Plattformzugang = {
@@ -623,12 +623,18 @@ describe('Fragebogen vor dem ersten Termin', { timeout: 20_000 }, () => {
       const nutzer = userEvent.setup();
       ladeBefundbogen.mockResolvedValue([entwurf(beantwortet())]);
       zeige(ENDE);
-      // Derselbe Name wie die Zeile der Übersicht (ANN-821).
-      expect(await screen.findByText('Angefangener Fragebogen')).toBeInTheDocument();
+      // Der Titel heißt wie die Zeile der Übersicht, der Satz nennt den Grund (ANN-821).
       expect(
-        screen.getByText('Gesendet wurde er nicht. Sie können die Antworten verwerfen.'),
+        await screen.findByRole('heading', { level: 1, name: 'Angefangener Fragebogen' }),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Gesendet wurde er nicht')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Nach dem Ende der Behandlung geht das nicht mehr. Sie können die Antworten verwerfen.',
+        ),
       ).toBeInTheDocument();
       expect(screen.queryByText('Kein Fragebogen mehr')).toBeNull();
+      expect(screen.queryByText(BOGEN_TITEL)).toBeNull();
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(screen.queryByRole('button', { name: 'Bogen senden' })).toBeNull();
       await nutzer.click(knopf('Antworten verwerfen'));
@@ -654,19 +660,20 @@ describe('Fragebogen vor dem ersten Termin', { timeout: 20_000 }, () => {
       expect(screen.queryByRole('button', { name: 'Antworten verwerfen' })).toBeNull();
     });
 
-    it('nennt einer Vertretung die Person; eine Begleitung verwirft nichts', async () => {
+    it('lässt eine Vertretung verwerfen, eine Begleitung nicht; der Satz ohne Namen (ANN-809)', async () => {
       ladeBefundbogen.mockResolvedValue([entwurf(beantwortet())]);
       const vertretung = { ...ENDE, represented_name: 'Max Mustermann' };
       const { unmount } = zeige({ ...vertretung, access_kind: 'legal_representative' });
-      expect(await screen.findByText('Angefangener Fragebogen')).toBeInTheDocument();
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Angefangener Fragebogen' }),
+      ).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Antworten verwerfen' })).toBeInTheDocument();
       unmount();
       zeige({ ...vertretung, access_kind: 'companion' });
       expect(await screen.findByText('Kein Fragebogen mehr')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: BOGEN_TITEL })).toBeInTheDocument();
       expect(
-        screen.getByText(
-          'Die Behandlung von Max Mustermann ist beendet. Sie können hier noch bis 27.11.2026 lesen.',
-        ),
+        screen.getByText('Die Behandlung ist beendet. Sie können hier noch bis 27.11.2026 lesen.'),
       ).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Antworten verwerfen' })).toBeNull();
     });

@@ -1,5 +1,5 @@
 # Roadmap
-Version 7.24 · Stand 2026-10-30 · **in Kraft**
+Version 7.25 · Stand 2026-10-31 · **in Kraft**
 
 Reihenfolge der Umsetzung; sie begründet keinen Scope (der entsteht in der Spec), ist kein Auftrag
 (die nächste Aufgabe steht in [`../STATUS.md`](../STATUS.md)) und überschreibt nichts; fehlt eine
@@ -13,7 +13,9 @@ im Gate (Jannes 2026-10-26). Ohne Produktionsaufrufer
 bleiben bewusst (Jannes 2026-10-26): `list_patient_treatment_evidence` (Behandlungsnachweis, §4.4,
 ADR-004 Punkt 4; offen ist ihre Oberfläche für Streitfälle außerhalb der Praxis), die drei
 Legal-Hold-Funktionen (ADR-008), `reapply_deletion_journal`, `bootstrap_practice`, die zwei
-Importfunktionen des Lebensmittelkatalogs und `app.appointment_window_options`.
+Importfunktionen des Lebensmittelkatalogs und `app.appointment_window_options`. Der Kreis
+`billing <-> patients` bleibt: Die Stammdatenseite setzt Abschnitte der Abrechnung ein (ANN-754,
+Jannes 2026-10-31).
 
 **Teamchat, Radflotte und Barometer** bleiben fester Teil des Systems; Teamchat, Radflotte und
 Personal bekommen keine neuen Funktionen, bis Schritt 3 und 4 stehen; Einsparungen ohne Verlust im
@@ -397,8 +399,8 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | DRP-EPIC-016 Plattform: Aufträge nach Schritt 4 | fertig | 2026-10-30 | #334 | — | ANN-803 bis ANN-808; BEF-222 erledigt; Pfad A |
 | B | DRP-EPIC-017 Plattform: Lesefrist vom Server, Antworten zu #326, #333, #334 | fertig | 2026-10-30 | #335 | — | ANN-809 bis ANN-814; ADR-013 Fassung 8; Pfad A |
 | B | DRP-EPIC-018 Plattform: „Sehr groß“ ohne Verdecktes, Antworten zu #335 | fertig | 2026-10-30 | #336 | — | ANN-815 bis ANN-818; BEF-195 und BEF-226 erledigt; Register verdichtet |
-| B | DRP-EPIC-019 Plattform: Antworten zu #336 (fester Fuß ohne Auswahl, Hauptsache vor dem Gruß, Seite „Angefangener Fragebogen“) | fertig | 2026-10-31 | Branch ccr-a7073b83-8qn5vp | — | ANN-819 bis ANN-821; ANN-815 bis ANN-817 entschieden; nur Oberfläche |
-| B | Aufräumen, Vorschläge Nr. 2 und 3: Blattmodul patients/record, Datenzugang der Plattform je Bereich | fertig | 2026-10-31 | Branch ccr-a7073b83-8qn5vp | — | Gegenseitige Abhängigkeiten 8 → 5, Rest billing <-> patients in BEFUNDE.md; portal/platform/api.ts 2.245 → 9 Dateien unter 440 Zeilen; Pfad A ohne Auslöser aus Nr. 8, Zweitreview |
+| B | DRP-EPIC-019 Plattform: Antworten zu #336 (fester Fuß ohne Auswahl, Hauptsache vor dem Gruß, Seite „Angefangener Fragebogen“) | fertig | 2026-10-31 | Branch ccr-a7073b83-8qn5vp | — | ANN-819 bis ANN-822; ANN-809 und ANN-815 bis ANN-817 entschieden; Antworten zu #337; nur Oberfläche |
+| B | Aufräumen, Vorschläge Nr. 2 und 3: Blattmodul patients/record, Datenzugang der Plattform je Bereich | fertig | 2026-10-31 | Branch ccr-a7073b83-8qn5vp | — | Gegenseitige Abhängigkeiten 8 → 5, billing <-> patients bleibt (Jannes 2026-10-31); portal/platform/api.ts 2.245 → 9 Dateien unter 440 Zeilen; Pfad A ohne Auslöser aus Nr. 8, Zweitreview |
 | B | BEF-223 Zeitumstellung: doppelte Ortszeit gilt als die frühere | fertig | 2026-10-29 | #332 | — | Pfad A, ANN-786 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
@@ -436,8 +438,9 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 ## Änderungsvermerk
 | Version | Datum | Änderung |
 | --- | --- | --- |
-| 7.24 | 2026-10-30 | Aufräumen verdichtet; Schritte 5 bis 7 warten auf die Leinwände (Claude Design). |
+| 7.25 | 2026-10-31 | Kreis `billing <-> patients` bleibt bewusst (Antwort zu #337). |
 
-Vermerk 7.23: `git show 6e6e37e:docs/development/ROADMAP.md`; bis 7.22 mit Zuschnitten:
+Vermerk 7.24: `git show 06328e7:docs/development/ROADMAP.md`; 7.23: `git show
+6e6e37e:docs/development/ROADMAP.md`; bis 7.22 mit Zuschnitten:
 `git show 9452575:docs/development/ROADMAP.md`; vor 7.0: `git show
 eb43569:docs/development/ROADMAP-CHRONIK.md`.

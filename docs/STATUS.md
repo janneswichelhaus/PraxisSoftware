@@ -6,8 +6,9 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Antworten zu #336 und Aufräumen Nr. 2 und 3** liegen als PR vor: fester Fuß ohne Auswahl, Hauptsache
-vor dem Gruß, Blattmodul `patients/record`, Datenzugang der Plattform je Bereich. Offen: BEF-201, BEF-202.
+**Antworten zu #336 und #337, Aufräumen Nr. 2 und 3** liegen als PR vor: fester Fuß ohne Auswahl,
+Hauptsache vor dem Gruß, `patients/record`, Datenzugang der Plattform je Bereich, ADR-013 Fassung 9.
+Offen: BEF-201, BEF-202.
 
 ## Danach
 
@@ -27,7 +28,6 @@ Ablauf bei Datenpannen, DSFA, zuletzt die Nachweistabelle MUSS → Test.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
   ANN-479 ansehen (Besuch).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
-- ADR-013, neue Fassung: Auslöser auch für RPC-Aufrufe in `*-api.ts` (Frage 1 der PR vom 31.10.).
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
 - Sichtliste am Gerät: 13 Punkte (`sichtung/README.md`, S-1 bis S-13).
 - Widersprüche zwischen ADR-Wortlaut und Code oder Prinzipien (`development/BEFUNDE.md`, „Doku“).

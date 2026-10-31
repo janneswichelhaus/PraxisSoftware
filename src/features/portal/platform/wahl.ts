@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
-import { BEREICHSNAME, type Plattformzugang } from './api';
+import type { Plattformzugang } from './api';
 import { PLATTFORM_PFAD } from './pfade';
 
 /**
@@ -28,8 +28,13 @@ export function wahlAdresse(z: Plattformzugang): string {
     : `${PLATTFORM_PFAD}?zugang=${z.access_id}`;
 }
 
-/** Die Beschriftung im Schalter: der eigene Bereich oder „Für …". */
+/**
+ * Die Beschriftung im Schalter und unter „Ich“: „Ihre Behandlung“, „Ihr Training“ oder „Für …“.
+ * Ohne „Ihre“ las sich das Wort über „Für …“ wie deren Überschrift (ANN-822).
+ */
 export function wahlName(z: Plattformzugang): string {
-  if (z.access_kind === 'self') return BEREICHSNAME[z.relationship_kind];
+  if (z.access_kind === 'self') {
+    return z.relationship_kind === 'training' ? 'Ihr Training' : 'Ihre Behandlung';
+  }
   return `Für ${z.represented_name ?? 'eine andere Person'}`;
 }

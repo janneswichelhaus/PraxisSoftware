@@ -147,16 +147,17 @@ describe('PlattformApp', () => {
     zeige([BEHANDLUNG, TRAINING]);
     const schalter = screen.getByRole('navigation', { name: 'Bereich' });
     expect(schalter).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Behandlung' })).toHaveAttribute(
+    // „Ihre“ macht den eigenen Bereich kenntlich, neben „Für …“ einer Vertretung (ANN-822).
+    expect(screen.getByRole('link', { name: 'Ihre Behandlung' })).toHaveAttribute(
       'aria-current',
       'page',
     );
     // UEB-009: Im Training heißt auch der Reiter unten „Training" (DSN-001
     // Abschnitt 5) - der Schalter ist der im Bereich-Menü.
-    await nutzer.click(within(schalter).getByRole('link', { name: 'Training' }));
+    await nutzer.click(within(schalter).getByRole('link', { name: 'Ihr Training' }));
     expect(
       within(screen.getByRole('navigation', { name: 'Bereich' })).getByRole('link', {
-        name: 'Training',
+        name: 'Ihr Training',
       }),
     ).toHaveAttribute('aria-current', 'page');
     await waitFor(() => expect(ladeTermine).toHaveBeenCalledWith(TRAINING.access_id));

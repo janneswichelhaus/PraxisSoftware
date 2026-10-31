@@ -1413,7 +1413,7 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-806 | Absagewunsch mit Tag und Uhrzeit des Eingangs, auf der Uhr des Geräts; „angefragt“ bleibt daneben | Technik · entschieden (Jannes) | `absageEingegangen` in `src/features/portal/platform/termintexte.ts` |
 | ANN-807 | Lesefrist: Wünsche am Server abgewiesen, Absage per Anruf, Zurückziehen bleibt | Technik · offen | `request_platform_appointment` in `supabase/migrations/20261225190000_lesefrist_terminwuensche.sql` |
 | ANN-808 | Fragebogen: Das Praxisfeld schreibt und sieht die Plattform nicht; es bleibt, außer beim Verwerfen | Technik · offen | `save_platform_questionnaire_response` in `supabase/migrations/20261225200000_fragebogen_praxisfeld.sql` |
-| ANN-809 | Lesefrist vom Server für jeden Zugang, bei Vertretungen mit Namen | Technik · entschieden (Jannes) | `inLesefrist` in `src/features/portal/platform/hauptsache.ts` |
+| ANN-809 | Lesefrist vom Server für jeden Zugang; unter dem Band nennt der Satz die Person nicht | Technik · entschieden (Jannes) | `inLesefrist` in `src/features/portal/platform/hauptsache.ts` |
 | ANN-810 | Fragebogen in der Lesefrist: kein Speichern und Senden, Verwerfen bleibt | Technik · entschieden (Jannes) | `EntwurfVerwerfen` in `src/features/portal/platform/Befundbogen.tsx` |
 | ANN-811 | Termine: Schritt 2 wie Schritt 1, Eingang nach der Absage, Hero „Ansehen, ändern, absagen“ | Praxisprozess · entschieden (Jannes) | `heroWeg` in `src/features/portal/platform/termintexte.ts` |
 | ANN-812 | Gewohnheiten: nur der feste Satz | Praxisprozess · entschieden (Jannes) | `Gewohnheiten` in `src/features/portal/platform/Gewohnheiten.tsx` |
@@ -1424,4 +1424,5 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-818 | Lesefrist: Ein ungesendeter Fragebogen steht als Zeile unter „Ihre Behandlung“, zum Verwerfen | Technik · entschieden (Jannes) | `angefangen` in `src/features/portal/platform/Uebersicht.tsx` |
 | ANN-819 | „Sehr groß“: Hinweis Ausfallhonorar, „Willkommen“, „Alles bereit“ mit festem Fuß, außer unter 40rem Höhe und ohne Netz | Technik · entschieden (Jannes) | `fussFest` in `src/components/ui/GefuehrterAblauf.tsx` |
 | ANN-820 | Übersicht einer Vertretung am Telefon: Hauptsache nach dem Satz der Lesefrist, vor dem Gruß; ohne Hauptsache wie bisher | Technik · entschieden (Jannes) | `handlungZuerst` in `src/features/portal/platform/Uebersicht.tsx` |
-| ANN-821 | Lesefrist mit eigenem Entwurf: Die Seite heißt „Angefangener Fragebogen“ wie die Zeile, „Gesendet wurde er nicht.“ | Technik · entschieden (Jannes) | `Befundbogen` in `src/features/portal/platform/Befundbogen.tsx` |
+| ANN-821 | Lesefrist mit eigenem Entwurf: Seitentitel „Angefangener Fragebogen“ wie die Zeile, der Satz nennt das Ende der Behandlung | Technik · entschieden (Jannes) | `Befundbogen` in `src/features/portal/platform/Befundbogen.tsx` |
+| ANN-822 | Bereichsschalter und „Ich“: „Ihre Behandlung“, „Ihr Training“ statt des bloßen Worts, neben „Für …“ | Technik · entschieden (Jannes) | `wahlName` in `src/features/portal/platform/wahl.ts` |

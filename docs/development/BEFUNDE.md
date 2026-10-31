@@ -247,12 +247,3 @@ Prinzipien nach Jannes' Entscheidung.
 Formular. **Erwartet.** Ein gemeinsames Terminformular mit Varianten; geschätzt −250 Zeilen,
 doppelte Zeilen 2,6 → 2,3 %. Aufwand mittel, Standardweg, Risiko Kalender-E2E; nach Schritt 3 des
 Design-Reviews.
-
-### Aufräumen — Die Stammdaten der Akte binden die Abrechnung ein, die Abrechnung die Akte
-2026-10-27 · Patienten · /aufraeumen 2026-10-27 · Teil erledigt am 2026-10-31 (Blattmodul
-`patients/record`, 8 → 5); offen (Vorschlag) · `PatientMasterDataPage.tsx`, `billing/anzeige.ts`\
-**Rest.** `billing <-> patients` bleibt: Die Stammdatenseite setzt Honorar, Nachsorge-Abo und
-Empfänger aus `billing` ein (Seiten setzen zusammen, ANN-754); `billing` holt Heilmittel und
-Bauarten über `@/features/patients`, das die Messung der Wurzel zurechnet. **Erwartet.** Ein Platz
-wie `TerminErweiterungen`, den die App mit den Abschnitten der Abrechnung füllt; 5 → 4. Aufwand
-mittel, Standardweg, Risiko an der Stammdatenseite; oder so lassen (Entscheidung Jannes).

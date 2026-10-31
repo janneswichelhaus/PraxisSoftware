@@ -81,6 +81,8 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
   // In der Lesefrist nimmt der Server nichts Neues an (ANN-810); Verwerfen bleibt.
   const { lesefrist, abo } = useLesefrist(zugang);
   const entwurf = boegen.find((b) => b.status === 'entwurf' && b.source === 'platform');
+  const verwerfbar =
+    stand.data !== undefined && behandlung && lesefrist && !!entwurf && !begleitung;
 
   if (stand.data !== undefined && behandlung && !begleitung && !abgeschlossen && !lesefrist) {
     return <Ablauf zugang={zugang} definition={instrument} entwurf={entwurf} zurueck={zurueckZu} />;
@@ -89,7 +91,8 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
   return (
     <>
       <Rueckweg standard={zurueckZu} beschriftung="Übersicht" />
-      <PageHeader title={BOGEN_TITEL} />
+      {/* Der Titel heißt wie die Zeile der Übersicht, die hierher führt (ANN-818, ANN-821). */}
+      <PageHeader title={verwerfbar ? 'Angefangener Fragebogen' : BOGEN_TITEL} />
       {stand.isPending ? (
         <Ladezustand />
       ) : stand.data === undefined ? (
@@ -104,12 +107,11 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
           title="Zurzeit kein Fragebogen"
           description="Hier gibt es zurzeit nichts auszufüllen."
         />
-      ) : lesefrist && entwurf && !begleitung ? (
-        // Derselbe Name wie die Zeile der Übersicht, die hierher führt (ANN-818, ANN-821).
+      ) : verwerfbar && entwurf ? (
         <EmptyState
           markenform
-          title="Angefangener Fragebogen"
-          description="Gesendet wurde er nicht. Sie können die Antworten verwerfen."
+          title="Gesendet wurde er nicht"
+          description="Nach dem Ende der Behandlung geht das nicht mehr. Sie können die Antworten verwerfen."
           aktion={<EntwurfVerwerfen zugang={zugang} entwurf={entwurf} />}
         />
       ) : lesefrist ? (

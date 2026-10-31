@@ -54,7 +54,7 @@ in der Änderungshistorie des ADR.
 | [ADR-010](ADR-010-audit-and-privileged-access.md) | Audit-Logging und privilegierter Produktionszugriff | Angenommen, Fassung 5 (2026-10-20) |
 | [ADR-011](ADR-011-logging-and-observability.md) | Logging und Observability | Angenommen, Fassung 2 (2026-10-03) |
 | [ADR-012](ADR-012-backup-and-business-continuity.md) | Backup, Wiederherstellung und Betriebskontinuität | Angenommen, Fassung 2 (2026-10-03) |
-| [ADR-013](ADR-013-ci-cd-and-release-governance.md) | CI/CD und Release-Governance | Angenommen, Fassung 8 (2026-10-30) |
+| [ADR-013](ADR-013-ci-cd-and-release-governance.md) | CI/CD und Release-Governance | Angenommen, Fassung 9 (2026-10-31) |
 | [ADR-014](ADR-014-foundational-data-model.md) | Grundlegende Datenmodell-Entscheidungen | Angenommen, Fassung 2 (2026-09-23) |
 | [ADR-015](ADR-015-initial-technical-stack.md) | Initialer technischer Stack | Angenommen; Punkt 16 abgelöst durch ADR-024 (2026-10-11) |
 | [ADR-016](ADR-016-clinical-documentation-record.md) | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | Angenommen, Fassung 4 (2026-10-14) |

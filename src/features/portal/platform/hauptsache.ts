@@ -53,26 +53,23 @@ export function inLesefrist(zugang: Pick<Plattformzugang, 'readable' | 'writable
 }
 
 /**
- * Der Satz über dem Titel, wenn der Zugang endet: nach einem Nachsorge-Abo dessen Ende, sonst das
- * der Behandlung bzw. Trainingszeit, und bis wann noch gelesen werden kann. Eine Vertretung liest
- * ihn mit dem Namen der Person (ANN-809). `read_until` ist die Mitternacht nach dem letzten Tag.
+ * Der Satz, wenn der Zugang endet: Ende von Abo, Behandlung oder Trainingszeit und bis wann gelesen
+ * werden kann (`read_until` ist die Mitternacht danach). Eine Vertretung liest ihn ohne Namen, das
+ * Band darüber nennt die Person (ANN-809).
  */
 export function lesefristSatz(
-  zugang: Pick<
-    Plattformzugang,
-    'relationship_kind' | 'read_until' | 'access_kind' | 'represented_name'
-  >,
+  zugang: Pick<Plattformzugang, 'relationship_kind' | 'read_until' | 'access_kind'>,
   abo: { state: string; ends_on: string | null } | null,
 ): string | null {
   if (!zugang.read_until) return null;
   const bis = datum(letzterTag(zugang.read_until));
-  const fuer = zugang.access_kind === 'self' ? null : (zugang.represented_name ?? 'der Person');
+  const eigen = zugang.access_kind === 'self';
   if (abo && abo.state !== 'running' && abo.ends_on) {
-    const was = fuer ? `Das Nachsorge-Abo von ${fuer}` : 'Ihr Nachsorge-Abo';
+    const was = eigen ? 'Ihr Nachsorge-Abo' : 'Das Nachsorge-Abo';
     return `${was} ${abo.state === 'ending' ? 'endet' : 'endete'} am ${datum(abo.ends_on)}. Sie können hier noch bis ${bis} lesen.`;
   }
   const zeit = zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung';
-  const was = fuer ? `Die ${zeit} von ${fuer}` : `Ihre ${zeit}`;
+  const was = eigen ? `Ihre ${zeit}` : `Die ${zeit}`;
   return `${was} ist beendet. Sie können hier noch bis ${bis} lesen.`;
 }
 

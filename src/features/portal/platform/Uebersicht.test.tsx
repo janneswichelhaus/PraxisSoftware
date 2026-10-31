@@ -789,7 +789,7 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(screen.queryByRole('link', { name: /Angefangener Fragebogen/ })).toBeNull();
   });
 
-  it('zeigt die Lesefrist auch einer Begleitung, mit dem Namen der Person (ANN-809)', async () => {
+  it('zeigt die Lesefrist auch einer Begleitung, ohne Namen unter dem Band (ANN-809)', async () => {
     ladeTermine.mockResolvedValue([
       {
         ...TERMIN,
@@ -808,9 +808,7 @@ describe('Training, Begleitung, Lesefrist', () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        'Die Behandlung von Max Mustermann ist beendet. Sie können hier noch bis 31.12.2026 lesen.',
-      ),
+      screen.getByText('Die Behandlung ist beendet. Sie können hier noch bis 31.12.2026 lesen.'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Ihr Zugang für/)).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Die Behandlung' })).toBeInTheDocument();
@@ -827,7 +825,7 @@ describe('Training, Begleitung, Lesefrist', () => {
     zeige({ ...BEGLEITUNG, writable: false, read_until: '2026-12-31T12:00:00+01:00' });
     const hero = await screen.findByRole('region', { name: 'Unterlagen sichern' });
     const gruss = screen.getByRole('heading', { level: 1, name: /Paula Mustermann$/ });
-    const satz = screen.getByText(/^Die Behandlung von Max Mustermann ist beendet\./);
+    const satz = screen.getByText(/^Die Behandlung ist beendet\./);
     const folgt = (a: Node, b: Node) =>
       Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
     expect(folgt(satz, hero)).toBe(true);
