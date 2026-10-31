@@ -1,5 +1,5 @@
 # Befunde an der laufenden Anwendung
-Stand 2026-10-30. **Befunde aus Sichtungen, Screenrecordings und Reviews an der laufenden
+Stand 2026-10-31. **Befunde aus Sichtungen, Screenrecordings und Reviews an der laufenden
 Anwendung**: Beobachtungen an Gebautem, keine Ideen (die gehören nach `docs/product/`). Die Liste
 ist die **Eingabe für die erste Story des nächsten Loops derselben Spur** (Roadmap-Regel R6), seit
 2026-10-12 der nächsten Überholung des Bereichs (`/bereich`), sonst gebündelt in einem Auftrag. Sie
@@ -247,18 +247,3 @@ Prinzipien nach Jannes' Entscheidung.
 Formular. **Erwartet.** Ein gemeinsames Terminformular mit Varianten; geschätzt −250 Zeilen,
 doppelte Zeilen 2,6 → 2,3 %. Aufwand mittel, Standardweg, Risiko Kalender-E2E; nach Schritt 3 des
 Design-Reviews.
-
-### Aufräumen — Die Akte und ihre Untermodule hängen gegenseitig voneinander ab
-2026-10-27 · Patienten · /aufraeumen 2026-10-27 · offen (Vorschlag) · `patients` mit
-`treatment-bases`, `files`, `intake`, `billing`\
-**Beobachtung.** Vier der acht gegenseitigen Abhängigkeiten laufen über `patients`: Die Akte bindet
-Unterseiten ein, die Unterseiten holen Hilfen (`akte.ts`, `api.ts`) aus der Akte. **Erwartet.** Die
-geteilten Hilfen in ein Blattmodul, das nichts einbindet; gegenseitige Abhängigkeiten 8 → 4,
-kleinerer Ring. Aufwand klein bis mittel, Standardweg, Risiko gering (nur Importe).
-
-### Aufräumen — `portal/platform/api.ts` hat 2.240 Zeilen
-2026-10-27 · Plattform · /aufraeumen 2026-10-27 · offen (Vorschlag) · `src/features/portal/platform/api.ts`\
-**Beobachtung.** Die größte Programmdatei bündelt Ich, Termine, Wünsche, Befundbogen, Rechnungen,
-Dokumente und Einwilligungen; jeder Schritt des Design-Reviews ändert sie. **Erwartet.** Je Bereich
-eine Datei hinter derselben Schnittstelle, ohne Verhaltensänderung; weniger Konflikte paralleler
-Arbeit, eine Datei über 500 Zeilen weniger. Aufwand klein, Standardweg, Risiko gering.

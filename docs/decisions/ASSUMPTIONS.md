@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-10-30.
+Zuletzt aktualisiert: 2026-10-31.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1289,7 +1289,7 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-615 | Ladestrom aus Touren über eine eigene Edge Function entfällt | Technik · verworfen (→ ANN-749) | `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql` |
 | ANN-617 | Gefahrene Tour als Grundlage des Ladestroms entfällt | Praxisprozess · verworfen (→ ANN-749) | `supabase/migrations/20261225090000_ladestrom_wie_einkauf.sql` |
 | ANN-618 | Lesart der Zielwertregeln: höchste Stufe, Fett 30 %, 7000 kcal je kg, Rundung | Praxisprozess · entschieden (Jannes) | `app.nutrition_calculation` |
-| ANN-620 | Ernährung als eigener Reiter an Akte und Trainingsverhältnis, nur mit der Fähigkeit | Praxisprozess · entschieden (Jannes) | `aktenBereiche` in `src/features/patients/akte.ts` |
+| ANN-620 | Ernährung als eigener Reiter an Akte und Trainingsverhältnis, nur mit der Fähigkeit | Praxisprozess · entschieden (Jannes) | `aktenBereiche` in `src/features/patients/record/akte.ts` |
 | ANN-621 | Gewicht je Tag auf der Plattform, die Beratung dort nur, solange sie läuft | Praxisprozess · entschieden (Jannes) | `public.record_platform_nutrition_weight` |
 | ANN-641 | Teamchat: Zustellung mit Gerätekennung, Blättern mit Cursor | Technik · offen | `app.team_message_key` |
 | ANN-643 | Teamchat: Antworten auch im Kanal, Ausgangsnachrichten später senden | Praxisprozess · offen | `public.post_team_message` |
@@ -1413,12 +1413,16 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-806 | Absagewunsch mit Tag und Uhrzeit des Eingangs, auf der Uhr des Geräts; „angefragt“ bleibt daneben | Technik · entschieden (Jannes) | `absageEingegangen` in `src/features/portal/platform/termintexte.ts` |
 | ANN-807 | Lesefrist: Wünsche am Server abgewiesen, Absage per Anruf, Zurückziehen bleibt | Technik · offen | `request_platform_appointment` in `supabase/migrations/20261225190000_lesefrist_terminwuensche.sql` |
 | ANN-808 | Fragebogen: Das Praxisfeld schreibt und sieht die Plattform nicht; es bleibt, außer beim Verwerfen | Technik · offen | `save_platform_questionnaire_response` in `supabase/migrations/20261225200000_fragebogen_praxisfeld.sql` |
-| ANN-809 | Lesefrist vom Server für jeden Zugang, bei Vertretungen mit Namen | Technik · entschieden (Jannes) | `inLesefrist` in `src/features/portal/platform/hauptsache.ts` |
+| ANN-809 | Lesefrist vom Server für jeden Zugang; unter dem Band nennt der Satz die Person nicht | Technik · entschieden (Jannes) | `inLesefrist` in `src/features/portal/platform/hauptsache.ts` |
 | ANN-810 | Fragebogen in der Lesefrist: kein Speichern und Senden, Verwerfen bleibt | Technik · entschieden (Jannes) | `EntwurfVerwerfen` in `src/features/portal/platform/Befundbogen.tsx` |
 | ANN-811 | Termine: Schritt 2 wie Schritt 1, Eingang nach der Absage, Hero „Ansehen, ändern, absagen“ | Praxisprozess · entschieden (Jannes) | `heroWeg` in `src/features/portal/platform/termintexte.ts` |
 | ANN-812 | Gewohnheiten: nur der feste Satz | Praxisprozess · entschieden (Jannes) | `Gewohnheiten` in `src/features/portal/platform/Gewohnheiten.tsx` |
 | ANN-813 | Tagebuch: Haken am Eintrag, Satz für Vorlesesoftware, Fokus bleibt am „+“ | Technik · entschieden (Jannes) | `BESTAETIGUNG_MS` in `src/features/portal/platform/TagebuchEintragen.tsx` |
-| ANN-815 | Reiterleiste: das Wort bleibt 18 px, eine Reihe auch bei „Groß“ und „Sehr groß“; zwei nur, wenn es so nicht passt | Technik · offen | `REITERWORT` in `src/features/portal/platform/Navigation.tsx` |
-| ANN-816 | „Sehr groß“ wie unter 23rem: Fuß rollt mit, unten, solange alles passt; kein Bild, langer Titel 22, Hero am Telefon innen 12 | Technik · offen | `SEHR_GROSS_ROLLT_ZUSAMMEN` in `src/components/ui/GefuehrterAblauf.tsx` |
-| ANN-817 | Übersicht: Die ganze Hero-Karte führt weiter, der Knopf bleibt sichtbar | Technik · offen | `KNOPF_FUER_DIE_KARTE` in `src/components/ui/HeroKarte.tsx` |
+| ANN-815 | Reiterleiste: das Wort bleibt 18 px, eine Reihe auch bei „Groß“ und „Sehr groß“; zwei nur, wenn es so nicht passt | Technik · entschieden (Jannes) | `REITERWORT` in `src/features/portal/platform/Navigation.tsx` |
+| ANN-816 | „Sehr groß“ wie unter 23rem: Fuß rollt mit, unten, wenn alles passt; kein Bild, langer Titel 22, Hero innen 12 | Technik · entschieden (Jannes) | `SEHR_GROSS_ROLLT_ZUSAMMEN` in `src/components/ui/GefuehrterAblauf.tsx` |
+| ANN-817 | Übersicht: Die ganze Hero-Karte führt weiter, der Knopf bleibt sichtbar | Technik · entschieden (Jannes) | `KNOPF_FUER_DIE_KARTE` in `src/components/ui/HeroKarte.tsx` |
 | ANN-818 | Lesefrist: Ein ungesendeter Fragebogen steht als Zeile unter „Ihre Behandlung“, zum Verwerfen | Technik · entschieden (Jannes) | `angefangen` in `src/features/portal/platform/Uebersicht.tsx` |
+| ANN-819 | „Sehr groß“: Hinweis Ausfallhonorar, „Willkommen“, „Alles bereit“ mit festem Fuß, außer unter 40rem Höhe und ohne Netz | Technik · entschieden (Jannes) | `fussFest` in `src/components/ui/GefuehrterAblauf.tsx` |
+| ANN-820 | Übersicht einer Vertretung am Telefon: Hauptsache nach dem Satz der Lesefrist, vor dem Gruß; ohne Hauptsache wie bisher | Technik · entschieden (Jannes) | `handlungZuerst` in `src/features/portal/platform/Uebersicht.tsx` |
+| ANN-821 | Lesefrist mit eigenem Entwurf: Seitentitel „Angefangener Fragebogen“ wie die Zeile, der Satz nennt das Ende der Behandlung | Technik · entschieden (Jannes) | `Befundbogen` in `src/features/portal/platform/Befundbogen.tsx` |
+| ANN-822 | Bereichsschalter und „Ich“: „Ihre Behandlung“, „Ihr Training“ statt des bloßen Worts, neben „Für …“ | Technik · entschieden (Jannes) | `wahlName` in `src/features/portal/platform/wahl.ts` |

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as PatientsApi from '@/features/patients/api';
+import type * as PatientsApi from '@/features/patients/record/api';
 import type * as TreatmentBasesApi from '@/features/patients/treatment-bases/api';
 import type * as FilesApi from '@/features/patients/files/api';
 import type * as AppointmentsApi from '@/features/calendar/appointments/api';
@@ -33,7 +33,7 @@ import type * as StaffApi from '@/features/workforce/staff/api';
  */
 const fetchPatient = vi.fn<() => Promise<PatientsApi.Patient | null>>(() => Promise.resolve(null));
 
-vi.mock('@/features/patients/api', async (importOriginal) => ({
+vi.mock('@/features/patients/record/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApi>()),
   fetchPatients: () => Promise.resolve([]),
   fetchPatient: () => fetchPatient(),

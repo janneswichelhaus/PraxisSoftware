@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ALTE_AKTENBEREICHE } from '@/features/patients/akte';
+import { ALTE_AKTENBEREICHE } from '@/features/patients/record/akte';
 import { PLATTFORM_PFAD } from '@/features/portal/platform/pfade';
 import { KONTEN, PLATTFORMKONTEN } from '../testkonten.mjs';
 import { AUSGENOMMEN, BEREICHE, ROUTEN } from './routen.mjs';

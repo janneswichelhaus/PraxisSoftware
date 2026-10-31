@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as PatientsApi from './api';
+import type * as PatientsApi from './record/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 /**
@@ -18,7 +18,7 @@ const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 const fetchVeralteteHausbesuche = vi.fn();
 const aktualisiereHausbesuchAdressen = vi.fn();
 
-vi.mock('./api', async (importOriginal) => {
+vi.mock('./record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,

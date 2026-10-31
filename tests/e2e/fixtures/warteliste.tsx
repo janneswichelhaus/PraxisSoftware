@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import type { Patient } from '@/features/patients/api';
+import type { Patient } from '@/features/patients/record/api';
 import type { CurrentUser } from '@/features/core/session/types';
 import { travelItems, type Slot, type TravelRating } from '@/features/calendar/slot-search/api';
 import { SlotSearchPage } from '@/features/calendar/slot-search/SlotSearchPage';

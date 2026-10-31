@@ -1,6 +1,6 @@
 # ADR-013: CI/CD und Release-Governance
 ## Status
-Angenommen (2026-08-28), Fassung 8 (2026-10-30); schließt E7.
+Angenommen (2026-08-28), Fassung 9 (2026-10-31); schließt E7.
 
 ## Kontext
 Entschieden wird, wie §12, §3.3 und §11 ohne zweiten Reviewer automatisiert durchgesetzt werden und
@@ -36,7 +36,7 @@ Release-Kadenz; Abdeckungsziele und Testarten; Schwellen und Fristen für Befund
    §12 als besonders kritisch genannte Funktion berührt (Wortlaut dort) oder mindestens einen dieser
    technischen Auslöser: eine Migration in `supabase/migrations/`, auch eine reine Datenmigration;
    eine RLS-Policy oder eine `SECURITY DEFINER`-Funktion; einen neuen oder geänderten RPC-Aufruf in
-   `src/features/**/api.ts` (Fassung 6); Authentifizierung, Sitzungen, Rollen oder Sichtbarkeit
+   `src/features/**/*api.ts` (Fassung 9); Authentifizierung, Sitzungen, Rollen oder Sichtbarkeit
    zwischen Rollen; den Auditkatalog oder einen Audit-Lesepfad (ADR-010); den Retention Schedule,
    eine Datenklasse oder einen Löschpfad (ADR-008); Rechnungsdaten, Leistungen oder Zahlungen
    (ADR-009); einen externen Datenfluss oder einen Anbieter (ADR-002, ADR-005, ADR-019); ein neues
@@ -97,4 +97,5 @@ Release-Kadenz; Abdeckungsziele und Testarten; Schwellen und Fristen für Befund
 - Fassung 6 (2026-10-27, redaktionell): RPC-Auslöser `src/features/**/api.ts` (Domänenordner).
 - Fassung 7 (2026-10-27, redaktionell): Verweise in Punkt 9 auf `CLAUDE.md` und Skills.
 - Fassung 8 (2026-10-30, Jannes): reine Doku auch ohne Lint und Typecheck.
+- Fassung 9 (2026-10-31, Jannes): RPC-Auslöser `src/features/**/*api.ts`, auch `termine-api.ts` u. Ä.
 - Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.

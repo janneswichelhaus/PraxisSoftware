@@ -24,9 +24,9 @@ import { KlinischerHinweis } from './KlinischerHinweis';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { Dateiliste } from '@/features/patients/files/Dateiliste';
 import { OffeneVerordnungsfotos } from '@/features/patients/files/Aktendateien';
-import { usePatientRecord } from '@/features/patients/akte';
+import { usePatientRecord } from '@/features/patients/record/akte';
 import { kalenderZurVerordnung } from '@/lib/termin';
-import type { Patient } from '@/features/patients/api';
+import type { Patient } from '@/features/patients/record/api';
 import {
   BerichteDerVerordnung,
   EmpfehlungAusBericht,

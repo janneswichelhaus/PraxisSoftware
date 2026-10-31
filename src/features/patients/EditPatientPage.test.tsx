@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as PatientsApi from './api';
+import type * as PatientsApi from './record/api';
 import type * as RouterModul from 'react-router-dom';
 import { morgenOrtszeit, renderWithProviders, testPatient } from '@/test-utils';
 import type * as StaffApi from '@/features/workforce/staff/api';
@@ -32,7 +32,7 @@ vi.mock('@/features/workforce/staff/api', async (importOriginal) => ({
     fetchAssignableTherapists() as Promise<StaffApi.AssignableTherapist[]>,
 }));
 
-vi.mock('./api', async (importOriginal) => {
+vi.mock('./record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,

@@ -513,7 +513,7 @@ describe('Lesefrist (Frage 5)', () => {
     expect(screen.queryByRole('link', { name: 'Der Praxis schreiben' })).not.toBeInTheDocument();
   });
 
-  it('gilt auch für eine Begleitung, mit dem Namen der Person im Satz (ANN-809)', async () => {
+  it('gilt auch für eine Begleitung, der Satz ohne Namen unter dem Band (ANN-809)', async () => {
     ladeTermine.mockResolvedValue([PRAXIS_VERGANGEN]);
     renderWithProviders(
       <Termine
@@ -523,7 +523,7 @@ describe('Lesefrist (Frage 5)', () => {
     );
     await screen.findByRole('heading', { level: 2, name: 'Vergangene Termine' });
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Die Behandlung von Max Mustermann ist beendet. Sie können hier noch bis 15.01.2027 lesen.',
+      'Die Behandlung ist beendet. Sie können hier noch bis 15.01.2027 lesen.',
     );
     expect(screen.queryByRole('link', { name: /Termin wünschen/ })).not.toBeInTheDocument();
   });

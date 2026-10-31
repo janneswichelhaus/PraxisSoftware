@@ -32,7 +32,15 @@ const SEHR_GROSS_ROLLT_ZUSAMMEN = {
   inhalt:
     '[[data-schrift=sehr-gross]_&]:shrink-0 [[data-schrift=sehr-gross]_&]:basis-auto [[data-schrift=sehr-gross]_&]:overflow-visible',
 };
+// Unter 40rem Höhe (Querformat, Telefon mit Leiste) fände der feste Fuß keinen Platz (ANN-819).
+const NIEDRIG_ROLLT_ZUSAMMEN = {
+  seite: '[@media(max-height:40rem)]:[[data-schrift=sehr-gross]_&]:overflow-y-auto',
+  inhalt:
+    '[@media(max-height:40rem)]:[[data-schrift=sehr-gross]_&]:shrink-0 [@media(max-height:40rem)]:[[data-schrift=sehr-gross]_&]:basis-auto [@media(max-height:40rem)]:[[data-schrift=sehr-gross]_&]:overflow-visible',
+};
 const AM_RECHNER_LINIE_UNTEN = '[.plattform-schrift[data-rechner]_&]:border-b';
+const SEHR_GROSS_LINIE_UEBER_DEM_FUSS =
+  '[[data-schrift=sehr-gross]_&]:border-line [[data-schrift=sehr-gross]_&]:border-t [[data-schrift=sehr-gross]_&]:pt-4';
 const AM_RECHNER_LINIE_OBEN =
   '[.plattform-schrift[data-rechner]_&]:border-t [.plattform-schrift[data-rechner]_&]:pt-4';
 
@@ -64,6 +72,7 @@ export function GefuehrterAblauf({
   schmalesFenster = false,
   unterDemKopf,
   fussLinie = false,
+  fussFest = false,
   breit = false,
   children,
 }: {
@@ -121,6 +130,8 @@ export function GefuehrterAblauf({
   unterDemKopf?: ReactNode;
   /** Die Linie über dem Fuß auf jeder Seite, nicht nur im Abschluss. */
   fussLinie?: boolean;
+  /** Hinweis oder Gruß ohne Antwort: Der Fuß steht auch bei „Sehr groß“ fest, mit Linie (ANN-819). */
+  fussFest?: boolean;
   /** Am Rechner eine Spalte von 48rem statt 36rem: Nur so passt eine Skala 0 bis 10 in eine Reihe. */
   breit?: boolean;
   children?: ReactNode;
@@ -252,10 +263,12 @@ export function GefuehrterAblauf({
     </>
   );
 
-  // Der Rand liegt außen, damit Fuß und Inhalt an derselben Kante der Spalte stehen.
+  // Der Rand liegt außen, damit Fuß und Inhalt an derselben Kante der Spalte stehen. Steht er bei
+  // „Sehr groß“ fest über rollendem Inhalt, trennt ihn eine Linie davon (ANN-819).
+  const festeLinie = fussFest && !fussLinie && !abschluss ? SEHR_GROSS_LINIE_UEBER_DEM_FUSS : '';
   const fussLeiste = mitFuss ? (
     <div
-      className={`shrink-0 ${rand} ${fussLinie ? `border-line border-t pt-4 pb-5 ${AM_RECHNER_OHNE_LINIE} ${AM_RECHNER_OHNE_ABSTAND}` : abschluss ? 'border-line border-t pt-2 pb-4' : 'pt-2 pb-4'}`}
+      className={`shrink-0 ${rand} ${fussLinie ? `border-line border-t pt-4 pb-5 ${AM_RECHNER_OHNE_LINIE} ${AM_RECHNER_OHNE_ABSTAND}` : abschluss ? 'border-line border-t pt-2 pb-4' : 'pt-2 pb-4'} ${festeLinie}`.trim()}
     >
       <div
         className={`${spalte} mx-auto w-full ${fussLinie ? `border-line ${AM_RECHNER_LINIE_OBEN}` : ''}`}
@@ -267,10 +280,11 @@ export function GefuehrterAblauf({
 
   // Unter 23rem rollt alles zusammen - Kopf, Inhalt und Fuß. Bei „Sehr groß“ rollen Inhalt und
   // Fuß zusammen, sonst deckte der Fuß die Antworten zu; passt alles, steht er unten (ANN-816).
+  const sehrGross = fussFest ? NIEDRIG_ROLLT_ZUSAMMEN : SEHR_GROSS_ROLLT_ZUSAMMEN;
   const schmal = plattform
     ? {
-        seite: `max-[23rem]:flex-none ${SEHR_GROSS_ROLLT_ZUSAMMEN.seite}`,
-        inhalt: `max-[23rem]:flex-none max-[23rem]:overflow-visible ${SEHR_GROSS_ROLLT_ZUSAMMEN.inhalt}`,
+        seite: `max-[23rem]:flex-none ${sehrGross.seite}`.trim(),
+        inhalt: `max-[23rem]:flex-none max-[23rem]:overflow-visible ${sehrGross.inhalt}`.trim(),
       }
     : { seite: '', inhalt: '' };
   const hoch = plattform || inhaltUnten ? 'h-full' : '';

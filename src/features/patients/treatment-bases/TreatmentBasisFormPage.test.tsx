@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as TreatmentBasesApi from './api';
 import type * as RouterModul from 'react-router-dom';
 import type * as SessionContextModule from '@/features/core/auth/sessionContext';
-import type * as PatientsApi from '@/features/patients/api';
+import type * as PatientsApi from '@/features/patients/record/api';
 import type * as FilesApi from '@/features/patients/files/api';
 import { renderWithProviders, testPatient } from '@/test-utils';
 
@@ -38,7 +38,7 @@ vi.mock('@/features/patients/files/api', async (importOriginal) => {
 
 // Der Patientenkontext im Kopf des Formulars (UX-012): dieselbe Abfrage wie in
 // der Akte, damit sie aus dem Zwischenspeicher kommt.
-vi.mock('@/features/patients/api', async (importOriginal) => {
+vi.mock('@/features/patients/record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,

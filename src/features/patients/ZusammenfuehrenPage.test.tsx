@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as PatientsApi from './api';
+import type * as PatientsApi from './record/api';
 import type * as MergeApi from './zusammenfuehren';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testPatient } from '@/test-utils';
@@ -15,7 +15,7 @@ const findPossibleDuplicates = vi.fn();
 const previewPatientMerge = vi.fn();
 const mergePatients = vi.fn();
 
-vi.mock('./api', async (importOriginal) => {
+vi.mock('./record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,

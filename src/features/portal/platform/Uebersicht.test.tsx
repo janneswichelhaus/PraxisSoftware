@@ -789,7 +789,7 @@ describe('Training, Begleitung, Lesefrist', () => {
     expect(screen.queryByRole('link', { name: /Angefangener Fragebogen/ })).toBeNull();
   });
 
-  it('zeigt die Lesefrist auch einer Begleitung, mit dem Namen der Person (ANN-809)', async () => {
+  it('zeigt die Lesefrist auch einer Begleitung, ohne Namen unter dem Band (ANN-809)', async () => {
     ladeTermine.mockResolvedValue([
       {
         ...TERMIN,
@@ -808,9 +808,7 @@ describe('Training, Begleitung, Lesefrist', () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        'Die Behandlung von Max Mustermann ist beendet. Sie können hier noch bis 31.12.2026 lesen.',
-      ),
+      screen.getByText('Die Behandlung ist beendet. Sie können hier noch bis 31.12.2026 lesen.'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Ihr Zugang für/)).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Die Behandlung' })).toBeInTheDocument();
@@ -821,6 +819,32 @@ describe('Training, Begleitung, Lesefrist', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Terminwünsche und Nachrichten/)).not.toBeInTheDocument();
+  });
+
+  it('stellt einer Vertretung am Telefon die Hauptsache vor den Gruß, nach dem Satz der Lesefrist (ANN-820)', async () => {
+    zeige({ ...BEGLEITUNG, writable: false, read_until: '2026-12-31T12:00:00+01:00' });
+    const hero = await screen.findByRole('region', { name: 'Unterlagen sichern' });
+    const gruss = screen.getByRole('heading', { level: 1, name: /Paula Mustermann$/ });
+    const satz = screen.getByText(/^Die Behandlung ist beendet\./);
+    const folgt = (a: Node, b: Node) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(folgt(satz, hero)).toBe(true);
+    expect(folgt(hero, gruss)).toBe(true);
+  });
+
+  it('lässt einer Vertretung ohne Hauptsache den Gruß vor dem Leerzustand (ANN-820)', async () => {
+    zeige(BEGLEITUNG, `/p?zugang=${BEGLEITUNG.access_id}`);
+    const gruss = await screen.findByRole('heading', { level: 1, name: /Paula Mustermann$/ });
+    const leer = screen.getByText(/nichts zu tun/);
+    expect(gruss.compareDocumentPosition(leer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('lässt der eigenen Übersicht den Gruß vor der Hauptsache (ANN-820)', async () => {
+    ladeTermine.mockResolvedValue([TERMIN]);
+    zeige();
+    const gruss = await screen.findByRole('heading', { level: 1 });
+    const hero = screen.getByRole('region', { name: 'Fragebogen vor Ihrem ersten Termin' });
+    expect(gruss.compareDocumentPosition(hero) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('nennt einer Vertretung vor der Lesefrist das Ende ihres eigenen Zugangs', async () => {
@@ -943,6 +967,18 @@ describe('Zustände', () => {
     expect(
       screen.queryByText('Die Übersicht lässt sich gerade nicht laden.'),
     ).not.toBeInTheDocument();
+  });
+
+  it('stellt den Hinweis „veraltet“ auch über die vorgezogene Hauptsache einer Vertretung (ANN-820)', async () => {
+    ladeTermine.mockResolvedValue([TERMIN]);
+    zeige(BEGLEITUNG, `/p?zugang=${BEGLEITUNG.access_id}`);
+    const hero = await screen.findByRole('region', { name: 'Besuch bei Max Mustermann' });
+    ladeTermine.mockRejectedValue(new Error('Netz weg'));
+    act(() => focusManager.setFocused(true));
+    const hinweis = await screen.findByText(
+      /Der angezeigte Stand konnte nicht aktualisiert werden/,
+    );
+    expect(hinweis.compareDocumentPosition(hero) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('sagt nach dem Absenden, was mit den Angaben geschieht (D5), mit den Nummern zum Antippen', async () => {

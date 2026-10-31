@@ -23,7 +23,7 @@ import {
   type Patient,
   type PatientMasterDataValues,
   type StammdatenFeld,
-} from './api';
+} from './record/api';
 import { PatientMasterDataFields } from './PatientMasterDataFields';
 import {
   STAMMDATEN_BESCHRIFTUNG,

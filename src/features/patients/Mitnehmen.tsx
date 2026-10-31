@@ -8,7 +8,7 @@ import {
   MITNEHMEN_HOECHSTZAHL,
   setTakeAlongItems,
   type Patient,
-} from './api';
+} from './record/api';
 
 /** Eine Zeile je Eintrag; leere Zeilen zählen nicht. */
 function zeilen(text: string): string[] {

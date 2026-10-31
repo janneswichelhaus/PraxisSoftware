@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { BEGRIFFE } from '@/lib/begriffe';
-import { ANMELDEBOGEN_ANKER } from '@/features/patients/akte';
+import { ANMELDEBOGEN_ANKER } from '@/features/patients/record/akte';
 import { getSupabase } from '@/lib/supabase';
 
 /**

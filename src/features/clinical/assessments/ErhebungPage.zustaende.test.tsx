@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as Router from 'react-router-dom';
 import type * as Api from './api';
 import type * as Instrumente from './instrumente';
-import type * as PatientenApi from '@/features/patients/api';
+import type * as PatientenApi from '@/features/patients/record/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 /**
@@ -45,7 +45,7 @@ vi.mock('./api', async (importOriginal) => {
     erhebungVerwerfen: (id: string) => erhebungVerwerfen(id) as Promise<void>,
   };
 });
-vi.mock('@/features/patients/api', async (importOriginal) => {
+vi.mock('@/features/patients/record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientenApi>();
   return {
     ...actual,

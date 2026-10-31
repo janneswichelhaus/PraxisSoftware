@@ -31,8 +31,14 @@ import {
   ersterAktenbereich,
   usePatientRecord,
   type PatientRecordContext,
-} from './akte';
-import { ageInYears, fetchPatient, fullName, logPatientRecordView, type Patient } from './api';
+} from './record/akte';
+import {
+  ageInYears,
+  fetchPatient,
+  fullName,
+  logPatientRecordView,
+  type Patient,
+} from './record/api';
 
 /**
  * Rahmen der Patientenakte (AKTE-000).

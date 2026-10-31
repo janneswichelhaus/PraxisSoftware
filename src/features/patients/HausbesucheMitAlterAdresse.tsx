@@ -7,7 +7,7 @@ import {
   aktualisiereHausbesuchAdressen,
   fetchVeralteteHausbesuche,
   type VeralteterHausbesuch,
-} from './api';
+} from './record/api';
 import { formatLocalDate, formatLocalTimeRange } from '@/lib/datum';
 
 /**

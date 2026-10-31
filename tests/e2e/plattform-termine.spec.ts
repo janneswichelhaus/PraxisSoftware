@@ -128,6 +128,20 @@ async function oeffne(page: Page, server: ReturnType<typeof nachbildung>, ansich
   await page.goto(`${PRUEFSEITE}?seite=${ansicht}`);
 }
 
+/** Wartet, bis keine endliche Bewegung mehr läuft, etwa das Einfahren des Fensters. */
+async function bewegungAbwarten(page: Page) {
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        document
+          .getAnimations()
+          .filter((bewegung) => bewegung.effect?.getTiming().iterations !== Infinity)
+          .every((bewegung) => !bewegung.pending && bewegung.playState !== 'running'),
+      ),
+    )
+    .toBe(true);
+}
+
 /** Das Fenster des geführten Ablaufs; sein Name ist die Frage der Seite. */
 function fenster(page: Page, name: string) {
   return page.getByRole('dialog', { name });
@@ -455,6 +469,8 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
           wann.getByText('Ein anderer Tag kostet ein Ausfallhonorar nach unserer Preisliste.'),
         ).toBeInViewport({ ratio: 1 });
       }
+      // Erst wenn das Fenster steht: Während es einfährt, lagen die zwei Messungen verschieden hoch.
+      await bewegungAbwarten(page);
       const egal = (await wann.getByRole('button', { name: 'Egal' }).boundingBox())!;
       const weiter = wann.getByRole('button', { name: 'Weiter' });
       expect((await weiter.boundingBox())!.y).toBeGreaterThanOrEqual(egal.y + egal.height);
@@ -463,6 +479,53 @@ test.describe('Plattform: Termin ändern, absagen, wünschen (Überholung 6, G6)
       expect(await ueberlaeuft(page)).toBe(false);
     });
   }
+
+  // Der Hinweis hat keine Auswahl: Sein Knopf bleibt bei „Sehr groß“ fest, die Regel rollt (ANN-819).
+  test('Absagen unter 24 Stunden bei „Sehr groß“: „Verstanden, weiter“ steht ohne Rollen im Bild (ANN-819)', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+    });
+    const server = nachbildung();
+    await oeffne(page, server, 'termin-absagen&kurzfristig');
+    const hinweis = fenster(page, 'Ausfallhonorar');
+    await expect(hinweis.getByRole('alert')).toBeInViewport();
+    await expect(page.locator('html[data-schrift="sehr-gross"]')).toHaveCount(1);
+    const knopf = hinweis.getByRole('button', { name: 'Verstanden, weiter' });
+    await expect(knopf).toBeInViewport({ ratio: 1 });
+    // Die offene Regel ist länger als das Bild: Sie rollt über dem Knopf, nicht mit ihm.
+    expect(await scrolltNicht(page)).toBe(false);
+    const regel = hinweis.getByText(/Genau 24 Stunden vorher genügt/);
+    await regel.scrollIntoViewIfNeeded();
+    await expect(knopf).toBeInViewport({ ratio: 1 });
+    expect((await regel.boundingBox())!.y).toBeLessThan((await knopf.boundingBox())!.y);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+
+  // Ohne Netz wächst der Fuß um Hinweis und „Praxis anrufen“; bei 375 × 553 rollt er mit (ANN-819).
+  test('Absagen unter 24 Stunden bei „Sehr groß“ ohne Netz, 375 × 553: „Verstanden, weiter“ bleibt erreichbar (ANN-819)', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+    });
+    const server = nachbildung();
+    await oeffne(page, server, 'termin-absagen&kurzfristig');
+    await page.setViewportSize({ width: 375, height: 553 });
+    const hinweis = fenster(page, 'Ausfallhonorar');
+    await expect(hinweis.getByRole('alert')).toBeVisible();
+    await page.context().setOffline(true);
+    await expect(hinweis.getByRole('link', { name: /Praxis anrufen/ })).toBeVisible();
+    await bewegungAbwarten(page);
+    const box = (await hinweis.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, 3000);
+    await expect(hinweis.getByRole('button', { name: 'Verstanden, weiter' })).toBeInViewport({
+      ratio: 1,
+    });
+    await page.context().setOffline(false);
+  });
 
   test('Ändern unter 24 Stunden: die Warnung zum Freigeben steht fest über dem Knopf', async ({
     page,

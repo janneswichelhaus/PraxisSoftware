@@ -415,17 +415,17 @@ describe('Lesefrist (ANN-809)', () => {
     expect(lesefristSatz({ ...eigen, read_until: null }, null)).toBeNull();
   });
 
-  it('nennt einer Vertretung oder Begleitung die Person beim Namen', () => {
+  it('nennt einer Vertretung oder Begleitung die Person nicht, das Band darüber tut es', () => {
     for (const access_kind of ['companion', 'legal_representative'] as const) {
       const vertretung = { ...eigen, access_kind, represented_name: 'Max Mustermann' };
       expect(lesefristSatz(vertretung, null)).toBe(
-        'Die Behandlung von Max Mustermann ist beendet. Sie können hier noch bis 30.11.2026 lesen.',
+        'Die Behandlung ist beendet. Sie können hier noch bis 30.11.2026 lesen.',
       );
       expect(lesefristSatz({ ...vertretung, relationship_kind: 'training' }, null)).toBe(
-        'Die Trainingszeit von Max Mustermann ist beendet. Sie können hier noch bis 30.11.2026 lesen.',
+        'Die Trainingszeit ist beendet. Sie können hier noch bis 30.11.2026 lesen.',
       );
       expect(lesefristSatz(vertretung, { state: 'ended', ends_on: '2026-10-31' })).toBe(
-        'Das Nachsorge-Abo von Max Mustermann endete am 31.10.2026. Sie können hier noch bis 30.11.2026 lesen.',
+        'Das Nachsorge-Abo endete am 31.10.2026. Sie können hier noch bis 30.11.2026 lesen.',
       );
     }
   });

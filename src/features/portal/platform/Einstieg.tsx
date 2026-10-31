@@ -285,6 +285,8 @@ function Ablauf({
       plattform
       titelStufe={seite === 'willkommen' || seite === 'bereit' ? 'gruss' : 'seite'}
       abschluss={seite === 'bereit'}
+      // Ohne Auswahl bleibt „Weiter“ auch bei „Sehr groß“ fest unten (ANN-819).
+      fussFest={seite === 'willkommen' || seite === 'bereit'}
       vorDemTitel={
         <>
           {seite === 'willkommen' && eingerichtet && ersterBlick ? (
@@ -714,7 +716,7 @@ function Mitteilungen({ zugang, email }: { zugang: Plattformzugang; email: strin
 /**
  * Das Bild über „Willkommen“ (5.3), bis zum eigenen Foto die Markenfläche: Schmuck in 4:3 im Platz
  * neben den Sätzen, höchstens 18rem. Unter 6rem entfällt es, ebenso unter 23rem und bei „Sehr
- * groß“, wo der Fuß mitrollt (ANN-682, ANN-816).
+ * groß“, wo es die Sätze aus dem ersten Bild drängte (ANN-682, ANN-816).
  */
 function Willkommensbild() {
   return (

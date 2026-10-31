@@ -749,6 +749,28 @@ describe('Einstieg: Alles bereit (DRP-019)', () => {
     expect(ladeWuensche).not.toHaveBeenCalled();
   });
 
+  it('hält auf „Willkommen“ und „Alles bereit“ den Fuß bei „Sehr groß“ fest, auf den Fragen nicht (ANN-819)', async () => {
+    const nutzer = userEvent.setup();
+    // Die Seite des Ablaufs rollt bei „Sehr groß“ samt Fuß, außer auf Seiten ohne Auswahl.
+    const festerFuss = (knopf: string) =>
+      !screen
+        .getByRole('button', { name: knopf })
+        .closest('.flex-col.flex-1')!
+        .classList.contains('[[data-schrift=sehr-gross]_&]:overflow-y-auto');
+    zeige(MIT_NAMEN, '/p');
+    await screen.findByRole('dialog', { name: /^Willkommen/ });
+    expect(festerFuss('Weiter')).toBe(true);
+    await tippe(nutzer, 'Weiter');
+    await screen.findByRole('dialog', { name: 'Zwei Fragen zu Ihren Daten' });
+    expect(festerFuss('Weiter')).toBe(false);
+    await tippe(nutzer, 'Weiter');
+    await screen.findByRole('dialog', { name: 'Sollen wir Ihnen Bescheid geben?' });
+    expect(festerFuss('Weiter')).toBe(false);
+    await tippe(nutzer, 'Weiter');
+    await screen.findByRole('dialog', { name: 'Alles bereit' });
+    expect(festerFuss('Zur Übersicht')).toBe(true);
+  });
+
   it('führt ohne Aufgabe nur zur Übersicht', async () => {
     const nutzer = userEvent.setup();
     // Der Fragebogen ist schon ausgefüllt; kein Check-in, kein Plan.

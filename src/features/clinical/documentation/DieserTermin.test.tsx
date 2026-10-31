@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import type * as DokumentationApi from './api';
 import type * as AppointmentsApi from '@/features/calendar/appointments/api';
-import type * as PatientsApi from '@/features/patients/api';
+import type * as PatientsApi from '@/features/patients/record/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 /**

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as WaitlistApi from './api';
-import type * as PatientsApi from '@/features/patients/api';
+import type * as PatientsApi from '@/features/patients/record/api';
 import type * as BasesApi from '@/features/patients/treatment-bases/api';
 import { renderWithProviders, testPatient } from '@/test-utils';
 import type * as StaffApi from '@/features/workforce/staff/api';
@@ -19,7 +19,7 @@ vi.mock('./api', async (importOriginal) => ({
   createWaitlistEntry: (id: string, values: WaitlistApi.EntryValues) =>
     createWaitlistEntry(id, values) as Promise<string>,
 }));
-vi.mock('@/features/patients/api', async (importOriginal) => ({
+vi.mock('@/features/patients/record/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApi>()),
   fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
 }));

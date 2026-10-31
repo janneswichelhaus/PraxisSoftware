@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PlanApi from './api';
-import type * as PatientenApi from '@/features/patients/api';
+import type * as PatientenApi from '@/features/patients/record/api';
 import type * as RouterModul from 'react-router-dom';
 import type { Variante } from '@/features/exercise/exercises/api';
 import { OHNE_KATALOG } from '@/features/exercise/exercises/testdaten';
@@ -22,7 +22,7 @@ vi.mock('./api', async (importOriginal) => ({
   createVersion: (...args: unknown[]) => createVersion(...args) as Promise<string>,
   savePosition: (...args: unknown[]) => savePosition(...args) as Promise<string>,
 }));
-vi.mock('@/features/patients/api', async (importOriginal) => ({
+vi.mock('@/features/patients/record/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientenApi>()),
   searchPatients: (begriff: string) =>
     searchPatients(begriff) as Promise<PatientenApi.PatientSearchHit[]>,

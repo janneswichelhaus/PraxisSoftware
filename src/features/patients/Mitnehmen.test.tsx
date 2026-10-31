@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as PatientsApi from './api';
+import type * as PatientsApi from './record/api';
 import { renderWithProviders, testPatient } from '@/test-utils';
 
 const setTakeAlongItems = vi.fn();
-vi.mock('./api', async (importOriginal) => {
+vi.mock('./record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,

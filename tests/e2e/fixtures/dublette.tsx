@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import type { Patient, PatientSearchHit } from '@/features/patients/api';
+import type { Patient, PatientSearchHit } from '@/features/patients/record/api';
 import type { Zusammenfuehrungsplan } from '@/features/patients/zusammenfuehren';
 import { ZusammenfuehrenPage } from '@/features/patients/ZusammenfuehrenPage';
 import '@/index.css';

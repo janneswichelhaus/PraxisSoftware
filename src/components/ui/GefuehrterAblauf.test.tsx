@@ -232,11 +232,13 @@ describe('GefuehrterAblauf mit „Später“ und Balken je Schritt (5.3)', () =>
     onSchliessen,
     onZurueck,
     abschluss = false,
+    fussFest = false,
   }: {
     seite: 1 | 2 | 3;
     onSchliessen: () => void;
     onZurueck?: () => void;
     abschluss?: boolean;
+    fussFest?: boolean;
   }) {
     return (
       <GefuehrterAblauf
@@ -252,6 +254,7 @@ describe('GefuehrterAblauf mit „Später“ und Balken je Schritt (5.3)', () =>
         vorDemTitel={<p>Bild der Praxis</p>}
         plattform
         abschluss={abschluss}
+        fussFest={fussFest}
         fuss={
           <Button className="w-full" data-autofocus>
             Weiter
@@ -344,6 +347,26 @@ describe('GefuehrterAblauf mit „Später“ und Balken je Schritt (5.3)', () =>
     const seite = inhalt!.parentElement!;
     expect(seite).toHaveClass('[[data-schrift=sehr-gross]_&]:overflow-y-auto');
     expect(seite).toContainElement(screen.getByRole('button', { name: 'Weiter' }));
+  });
+
+  it('hält auf einer Seite ohne Auswahl den Fuß auch bei „Sehr groß“ fest (ANN-819)', () => {
+    render(<Einstieg seite={1} onSchliessen={vi.fn()} fussFest />);
+    const inhalt = screen.getByText('Inhalt').closest('[tabindex="0"]');
+    // Nur der Inhalt rollt; unter 23rem rollt trotzdem alles zusammen (ANN-682).
+    expect(inhalt).toHaveClass('flex-1', 'overflow-y-auto', 'max-[23rem]:overflow-visible');
+    expect(inhalt).not.toHaveClass('[[data-schrift=sehr-gross]_&]:basis-auto');
+    const seite = inhalt!.parentElement!;
+    expect(seite).not.toHaveClass('[[data-schrift=sehr-gross]_&]:overflow-y-auto');
+    expect(seite).toHaveClass('max-[23rem]:flex-none');
+    expect(inhalt).not.toContainElement(screen.getByRole('button', { name: 'Weiter' }));
+    // Unter 40rem Höhe fände er keinen Platz: Dort rollt er wieder mit.
+    expect(seite).toHaveClass(
+      '[@media(max-height:40rem)]:[[data-schrift=sehr-gross]_&]:overflow-y-auto',
+    );
+    // Über rollendem Inhalt trennt eine Linie den festen Fuß.
+    expect(screen.getByRole('button', { name: 'Weiter' }).parentElement!.parentElement).toHaveClass(
+      '[[data-schrift=sehr-gross]_&]:border-t',
+    );
   });
 
   it('beginnt unter 23rem jede neue Seite oben, obwohl die Fläche bleibt', () => {

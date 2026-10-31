@@ -1816,8 +1816,26 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-30",
-          "nachweis": "Branch ccr-ef7a7f30-l9h6z3",
+          "nachweis": "#336",
           "vermerk": "ANN-815 bis ANN-818; BEF-195 und BEF-226 erledigt; Register verdichtet"
+        },
+        {
+          "id": "drp-epic-019",
+          "name": "DRP-EPIC-019 Plattform: Antworten zu #336 (fester Fuß ohne Auswahl, Hauptsache vor dem Gruß, Seite „Angefangener Fragebogen“)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-31",
+          "nachweis": "Branch ccr-a7073b83-8qn5vp",
+          "vermerk": "ANN-819 bis ANN-822; ANN-809 und ANN-815 bis ANN-817 entschieden; Antworten zu #337; nur Oberfläche"
+        },
+        {
+          "id": "aufraeumen-vorschlaege-2-3",
+          "name": "Aufräumen, Vorschläge Nr. 2 und 3: Blattmodul patients/record, Datenzugang der Plattform je Bereich",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-31",
+          "nachweis": "Branch ccr-a7073b83-8qn5vp",
+          "vermerk": "Gegenseitige Abhängigkeiten 8 → 5, billing <-> patients bleibt (Jannes 2026-10-31); portal/platform/api.ts 2.245 → 9 Dateien unter 440 Zeilen; Pfad A ohne Auslöser aus Nr. 8, Zweitreview"
         },
         {
           "id": "bef-223",

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as PatientsApi from './api';
+import type * as PatientsApi from './record/api';
 import type * as ZugangApi from '@/features/portal/platform-access/api';
 import type * as VermerkeApi from '@/features/privacy/datenschutz/vermerke';
 import type * as FilesApi from '@/features/patients/files/api';
@@ -36,7 +36,7 @@ const reopenPatientCare = vi.fn();
 const setTreatmentTableRequired = vi.fn();
 const setPatientAddressCoordinate = vi.fn();
 
-vi.mock('./api', async (importOriginal) => {
+vi.mock('./record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,

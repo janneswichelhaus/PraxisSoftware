@@ -4,7 +4,7 @@
  */
 export const DOMAENEN = {
   core: ['session', 'auth', 'preview'],
-  patients: ['patients', 'treatment-bases', 'files', 'intake', 'training-offers'],
+  patients: ['patients', 'record', 'treatment-bases', 'files', 'intake', 'training-offers'],
   privacy: ['datenschutz', 'retention', 'audit'],
   fleet: ['fleet'],
   billing: ['billing', 'statistics'],

@@ -16,7 +16,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Tile, TileGrid } from '@/components/ui/Tile';
 import { formatDate } from '@/lib/datum';
-import { fetchPatient, findPossibleDuplicates, fullName, type Patient } from './api';
+import { fetchPatient, findPossibleDuplicates, fullName, type Patient } from './record/api';
 import { Patientensuche } from './Patientensuche';
 import {
   feldLabel,

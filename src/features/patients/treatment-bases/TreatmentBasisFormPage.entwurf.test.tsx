@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type { ReactElement } from 'react';
 import type * as TreatmentBasesApi from './api';
-import type * as PatientsApi from '@/features/patients/api';
+import type * as PatientsApi from '@/features/patients/record/api';
 import type * as SessionContextModule from '@/features/core/auth/sessionContext';
 import { testPatient } from '@/test-utils';
 
@@ -64,7 +64,7 @@ vi.mock('./api', async (importOriginal) => {
 
 // Der Name im Kopf des Formulars (UX-012) - ohne ihn sperrt das Formular das
 // Speichern (VER-B02), und ohne Mock ginge die Abfrage an einen Server.
-vi.mock('@/features/patients/api', async (importOriginal) => {
+vi.mock('@/features/patients/record/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,
