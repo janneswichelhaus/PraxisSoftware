@@ -21,7 +21,7 @@ export const DOMAENEN = {
   ],
   clinical: ['documentation', 'offline-documentation', 'assessments', 'therapy-reports'],
   nutrition: ['nutrition'],
-  exercise: ['exercises', 'exercise-plans', 'checkins'],
+  exercise: ['exercises', 'checkins'],
   portal: ['platform', 'platform-access', 'messages'],
   training: ['training'],
   workplace: ['open-points', 'organisation', 'feedback', 'practice-settings', 'account'],

@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
-import type { Katalogeintrag } from '@/features/exercise/exercises/katalog/typen';
-import { ACHSEN, KOERPERREGIONEN } from '@/features/exercise/exercises/types';
+import type { Katalogeintrag } from '../katalog/typen';
+import { ACHSEN, KOERPERREGIONEN } from '../types';
 
 /**
  * Übungspläne (UEB-EPIC-002, IDEA-TRN-011).

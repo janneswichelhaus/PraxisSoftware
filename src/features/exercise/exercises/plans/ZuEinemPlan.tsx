@@ -6,7 +6,7 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Patientensuche } from '@/features/patients';
-import type { Variante } from '@/features/exercise/exercises/api';
+import type { Variante } from '../api';
 import { PLAENE_SCHLUESSEL, planPfad, savePosition } from './api';
 import { planFuerUebung } from './zielplan';
 import { neuePosition, standardDosis } from './hinzufuegen';

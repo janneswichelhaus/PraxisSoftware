@@ -20,8 +20,8 @@ import { Wochenleiste } from '@/components/ui/Wochenleiste';
 import { useFenstertitelId } from '@/components/ui/fenstertitel';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { ZurueckSymbol } from '@/components/ui/ZurueckSymbol';
-import { Planblatt } from '@/features/exercise/exercise-plans/Planblatt';
-import { haeufigkeit } from '@/features/exercise/exercise-plans/dosierung';
+import { Planblatt } from '@/features/exercise/exercises/plans/Planblatt';
+import { haeufigkeit } from '@/features/exercise/exercises/plans/dosierung';
 import {
   plaeneSchluessel,
   termineSchluessel,

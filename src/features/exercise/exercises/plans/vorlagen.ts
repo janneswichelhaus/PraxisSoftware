@@ -1,12 +1,8 @@
 import { createContext } from 'react';
-import type { Bibliothek, Uebung, Variante } from '@/features/exercise/exercises/api';
-import { alsDosis } from '@/features/exercise/exercises/katalog/dosierung';
-import type {
-  Dosierung,
-  Katalogeintrag,
-  Katalogvorlage,
-} from '@/features/exercise/exercises/katalog/typen';
-import { KATALOG_VORLAGEN } from '@/features/exercise/exercises/katalog/vorlagen';
+import type { Bibliothek, Uebung, Variante } from '../api';
+import { alsDosis } from '../katalog/dosierung';
+import type { Dosierung, Katalogeintrag, Katalogvorlage } from '../katalog/typen';
+import { KATALOG_VORLAGEN } from '../katalog/vorlagen';
 import type { Plan, Praxisvorlage, VorlagenUebung } from './api';
 import type { Dosis } from './dosierung';
 import { standardDosis } from './hinzufuegen';

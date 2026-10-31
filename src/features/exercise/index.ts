@@ -2,6 +2,6 @@
 // Seiten stehen nicht darin; src/routes und src/app binden direkt ein (ANN-755).
 
 export { ZwischenDenTerminen } from './checkins/ZwischenDenTerminen';
-export { PlanAbschnitt } from './exercise-plans/PlanAbschnitt';
-export { PlanWiedervorlage } from './exercise-plans/Wiedervorlage';
-export { type Bereich, FAELLIG_SCHLUESSEL, fetchFaellige } from './exercise-plans/api';
+export { PlanAbschnitt } from './exercises/plans/PlanAbschnitt';
+export { PlanWiedervorlage } from './exercises/plans/Wiedervorlage';
+export { type Bereich, FAELLIG_SCHLUESSEL, fetchFaellige } from './exercises/plans/api';

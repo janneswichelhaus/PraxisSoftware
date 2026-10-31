@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { katalogeintrag } from '@/features/exercise/exercises/katalog';
-import type { Katalogeintrag } from '@/features/exercise/exercises/katalog/typen';
+import { katalogeintrag } from '../katalog';
+import type { Katalogeintrag } from '../katalog/typen';
 import type { KatalogUebernahme, PositionEingabe } from './api';
 import {
   OHNE_STANDARD,

@@ -1,4 +1,4 @@
-import type { Dosis } from '@/features/exercise/exercise-plans/dosierung';
+import type { Dosis } from '../plans/dosierung';
 import type { Dosierung } from './typen';
 
 /**

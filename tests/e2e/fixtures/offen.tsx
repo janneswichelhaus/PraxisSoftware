@@ -21,7 +21,7 @@ import {
   type PlatformRequest,
 } from '@/features/workplace/open-points/platform-requests-api';
 import { TASKS_KEY, type Task } from '@/features/workplace/open-points/tasks-api';
-import { FAELLIG_SCHLUESSEL } from '@/features/exercise/exercise-plans/api';
+import { FAELLIG_SCHLUESSEL } from '@/features/exercise/exercises/plans/api';
 import { rueckfragenKey, type Rueckfragezeile } from '@/features/portal/messages/api';
 import { ABO_KUENDIGUNGEN_KEY } from '@/features/workplace/open-points/aftercare-cancellations-api';
 import { CONSENT_WITHDRAWALS_KEY } from '@/features/workplace/open-points/consent-withdrawals-api';

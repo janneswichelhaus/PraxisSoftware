@@ -12,8 +12,8 @@ import { Feldgruppe } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
-import { ACHSE_LABEL, type Achse } from '@/features/exercise/exercises/types';
-import type { Bibliothek } from '@/features/exercise/exercises/api';
+import { ACHSE_LABEL, type Achse } from '../types';
+import type { Bibliothek } from '../api';
 import {
   PLAENE_SCHLUESSEL,
   POSITIONSACHSEN,

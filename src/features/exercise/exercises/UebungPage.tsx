@@ -18,7 +18,6 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Zweispalter } from '@/components/ui/Zweispalter';
 import { canReadExerciseLibrary, canWriteExercisePlans, type CurrentUser } from '@/features/core';
-import { ZuEinemPlan } from '@/features/exercise/exercise-plans/ZuEinemPlan';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import {
@@ -35,6 +34,7 @@ import {
 } from './api';
 import { UebungFormular, VarianteFormular } from './Formulare';
 import { variantenOrte } from './orte';
+import { ZuEinemPlan } from './plans/ZuEinemPlan';
 import { Alltagsansicht, Anleitung, Dosierkacheln } from './Variantenteile';
 import { ordnungen, ungeprueft } from './suche';
 import { KOERPERREGION_LABEL } from './types';

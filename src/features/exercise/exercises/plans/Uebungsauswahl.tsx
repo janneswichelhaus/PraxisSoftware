@@ -4,9 +4,9 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { EmptyState } from '@/components/ui/Feedback';
 import { ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import type { Bibliothek, Uebung, Variante } from '@/features/exercise/exercises/api';
-import { NeueUebungFormular } from '@/features/exercise/exercises/Formulare';
-import type { Katalogeintrag } from '@/features/exercise/exercises/katalog/typen';
+import type { Bibliothek, Uebung, Variante } from '../api';
+import { NeueUebungFormular } from '../Formulare';
+import type { Katalogeintrag } from '../katalog/typen';
 import {
   KEIN_FILTER,
   ZEILEN_JE_SEITE,
@@ -14,10 +14,10 @@ import {
   gesetzteFilter,
   ungeprueft,
   type Filter,
-} from '@/features/exercise/exercises/suche';
-import { KOERPERREGION_LABEL } from '@/features/exercise/exercises/types';
-import { useFormularschutz } from '@/features/exercise/exercises/useFormularschutz';
-import { Bibliotheksfilter } from '@/features/exercise/exercises/Bibliotheksfilter';
+} from '../suche';
+import { KOERPERREGION_LABEL } from '../types';
+import { useFormularschutz } from '../useFormularschutz';
+import { Bibliotheksfilter } from '../Bibliotheksfilter';
 import { dosierungKurz, type Dosis } from './dosierung';
 import { standardDosis } from './hinzufuegen';
 import { eineListe } from './uebungsliste';

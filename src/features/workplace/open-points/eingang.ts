@@ -287,7 +287,7 @@ export function useEingang(user: CurrentUser, today: string) {
     ...abfragen.verordnungEndet(),
     enabled: darf.verordnungEndet,
   });
-  // Dieselbe Abfrage wie „Pläne laufen aus" (exercise-plans/Wiedervorlage).
+  // Dieselbe Abfrage wie „Pläne laufen aus" (exercises/plans/Wiedervorlage).
   const plaene = useQuery({
     queryKey: FAELLIG_SCHLUESSEL,
     queryFn: fetchFaellige,

@@ -1,4 +1,4 @@
-import type { Dosis } from '@/features/exercise/exercise-plans/dosierung';
+import type { Dosis } from '@/features/exercise/exercises/plans/dosierung';
 
 /**
  * Wie lange eine Einheit etwa dauert (Handoff 2026-10-24, Abschnitt 0,

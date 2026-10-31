@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event';
 import type * as PlanApi from './api';
 import type * as PatientenApi from '@/features/patients/record/api';
 import type * as RouterModul from 'react-router-dom';
-import type { Variante } from '@/features/exercise/exercises/api';
-import { OHNE_KATALOG } from '@/features/exercise/exercises/testdaten';
+import type { Variante } from '../api';
+import { OHNE_KATALOG } from '../testdaten';
 import { renderWithProviders } from '@/test-utils';
 
 const fetchPlanliste = vi.fn();

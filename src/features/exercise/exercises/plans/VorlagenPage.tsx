@@ -14,11 +14,7 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import {
-  BIBLIOTHEK_SCHLUESSEL,
-  fetchBibliothek,
-  type Bibliothek,
-} from '@/features/exercise/exercises/api';
+import { BIBLIOTHEK_SCHLUESSEL, fetchBibliothek, type Bibliothek } from '../api';
 import { canReadExerciseLibrary, type CurrentUser } from '@/features/core';
 import { formatDate } from '@/lib/datum';
 import {

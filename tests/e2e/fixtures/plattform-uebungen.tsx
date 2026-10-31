@@ -2,8 +2,8 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { SessionContext } from '@/features/core/auth/sessionContext';
-import { planSchluessel, type Plan } from '@/features/exercise/exercise-plans/api';
-import { PlanblattSeite } from '@/features/exercise/exercise-plans/PlanblattSeite';
+import { planSchluessel, type Plan } from '@/features/exercise/exercises/plans/api';
+import { PlanblattSeite } from '@/features/exercise/exercises/plans/PlanblattSeite';
 import {
   plaeneSchluessel,
   termineSchluessel,

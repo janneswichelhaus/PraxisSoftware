@@ -1138,7 +1138,7 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-300 | Mit der Zuweisung friert der Plan ein; danach ändern sich nur Laufzeit und Ende | Praxisprozess · entschieden (Jannes) | `public.assign_exercise_plan` |
 | ANN-301 | Progression von Hand als neue Fassung: je Position höchstens ein Schritt in genau einer Achse | Praxisprozess · entschieden (Jannes) | `app.exercise_plan_step_check` |
 | ANN-302 | Laufzeit sechs Wochen voreingestellt, höchstens 26; Wiedervorlage sieben Tage vorher, bis entschieden ist | Praxisprozess · entschieden (Jannes) | `app.exercise_plan_max_days`, `app.exercise_plan_review_days` |
-| ANN-303 | Plan als PDF: Druckblatt aus dem Schnappschuss über den Browser, ohne Ablage | Technik · entschieden (Jannes) | `src/features/exercise/exercise-plans/Planblatt.tsx` |
+| ANN-303 | Plan als PDF: Druckblatt aus dem Schnappschuss über den Browser, ohne Ablage | Technik · entschieden (Jannes) | `src/features/exercise/exercises/plans/Planblatt.tsx` |
 | ANN-304 | Die Plattform zeigt zugewiesene Pläne, sonst den zuletzt beendeten | Praxisprozess · entschieden (Jannes) | `app.platform_visible_exercise_plans` |
 | ANN-305 | Durchführung: Haken über die Warteschlange des Geräts; in der Lesefrist wird nicht erfasst, je Plan und Tag eine offene Einheit | Technik · entschieden (Jannes) → ANN-357, ANN-358 | `app.assert_platform_exercise` |
 | ANN-307 | Übungstage wählt die Person; sie stehen nur in ihrer eigenen Woche | Praxisprozess · entschieden (Jannes) | `public.set_platform_exercise_days` |
@@ -1197,7 +1197,7 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-467 | Befundbogen auf der Plattform in Schritten zu höchstens acht Fragen | Praxisprozess · geändert (→ ANN-792) | `FRAGEN_JE_SCHRITT` in `src/features/portal/platform/bogenschritte.ts` |
 | ANN-468 | Plattform-Einstellungen: Benachrichtigungen je Zugang und Passkey/PIN auf Abruf | Technik · offen | `Einstellungen` in `src/features/portal/platform/Einstellungen.tsx` |
 | ANN-470 | Eine neue Übung entsteht mit ihrer ersten Variante in einem Formular | Praxisprozess · offen | `NeueUebungFormular` in `src/features/exercise/exercises/Formulare.tsx` |
-| ANN-471 | Dosierung einer Position mit Zahlschritten; Übung tauschen durch Entfernen und Hinzufügen | Praxisprozess · offen | `PositionFormular` in `src/features/exercise/exercise-plans/PositionFormular.tsx` |
+| ANN-471 | Dosierung einer Position mit Zahlschritten; Übung tauschen durch Entfernen und Hinzufügen | Praxisprozess · offen | `PositionFormular` in `src/features/exercise/exercises/plans/PositionFormular.tsx` |
 | ANN-472 | Filter der Bibliothek: ein Wert je Filter genügt, alle Filter zugleich; „nach Bedarf“ zählt mit | Praxisprozess · offen | `filtere` in `src/features/exercise/exercises/suche.ts` |
 | ANN-475 | Keine Heilmittelbestätigung nach dem Festschreiben; Haken und Doku erfassen die Leistung | Praxisprozess · verworfen (→ ANN-513) | `app.record_default_services` |
 | ANN-477 | Folgetermin aus Vorschlägen mit einem Tipp, ohne Grundlage | Praxisprozess · offen | `FolgeterminVorschlaege` in `src/features/calendar/appointments/FolgeterminVorschlaege.tsx` |
@@ -1219,7 +1219,7 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-499 | Kachelbeschriftung auf der Plattform ohne Versalien | Technik · offen | `Tile` in `src/components/ui/Tile.tsx` |
 | ANN-500 | Absage im Terminpanel, Grund als Chips | Praxisprozess · offen | `darfAbsagen` in `src/features/calendar/appointments/TerminPanel.tsx` |
 | ANN-502 | „Wie zuletzt“ übernimmt den letzten Haupteintrag | Praxisprozess · offen | `WieZuletzt` in `src/features/clinical/documentation/WieZuletzt.tsx` |
-| ANN-503 | Übung aus der Bibliothek in Entwurf, neue Fassung oder neuen Plan | Praxisprozess · offen | `planFuerUebung` in `src/features/exercise/exercise-plans/zielplan.ts` |
+| ANN-503 | Übung aus der Bibliothek in Entwurf, neue Fassung oder neuen Plan | Praxisprozess · offen | `planFuerUebung` in `src/features/exercise/exercises/plans/zielplan.ts` |
 | ANN-510 | Kein Versorgungsstatus mehr: jede Akte ist planbar | Praxisprozess · entschieden (Jannes) | Constraint `patients_status_active_only` |
 | ANN-512 | Der Haken ist ein Merkmal neben dem Zustand; Festschreiben hakt nicht ab | Praxisprozess · in ADR überführt (ADR-018 Punkt 10) | `app.mark_appointment_documented` |
 | ANN-513 | Haken und Doku erfassen die Leistung von selbst | Praxisprozess · in ADR überführt (ADR-009 Punkt 24) | `app.record_default_services` |
@@ -1243,8 +1243,8 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-534 | Eben angelegten Termin zurücknehmen: 15 Minuten, nur wer angelegt hat | Praxisprozess · entschieden (Jannes) | `public.undo_appointment_creation` |
 | ANN-535 | Folgeterminvorschläge: zu knapp fällt weg, ungeprüft bleibt | Praxisprozess · entschieden (Jannes) | `urteilAus` in `src/features/calendar/appointments/folgetermin.ts` |
 | ANN-536 | Katalogübungen übernimmt beim Hinzufügen nur owner, einzeln | Praxisprozess · entschieden (Jannes) | `v_pflegt` in `public.add_catalog_exercises_for_plan` |
-| ANN-537 | Eine Vorlage zeigt ihre Übungen als Vorschau, vorgewählt außer schon Geplantem | Praxisprozess · entschieden (Jannes) | `vorausgewaehlt` in `src/features/exercise/exercise-plans/vorlagen.ts` |
-| ANN-538 | Stand eines Plans: Fassung aus der Kette, Tag der Zuweisung, wer zugewiesen hat | Praxisprozess · entschieden (Jannes) | `standZeile` in `src/features/exercise/exercise-plans/fassung.ts` |
+| ANN-537 | Eine Vorlage zeigt ihre Übungen als Vorschau, vorgewählt außer schon Geplantem | Praxisprozess · entschieden (Jannes) | `vorausgewaehlt` in `src/features/exercise/exercises/plans/vorlagen.ts` |
+| ANN-538 | Stand eines Plans: Fassung aus der Kette, Tag der Zuweisung, wer zugewiesen hat | Praxisprozess · entschieden (Jannes) | `standZeile` in `src/features/exercise/exercises/plans/fassung.ts` |
 | ANN-539 | Übungen ohne Zeichnung; nummerierte Schritte erklären sie, bis eigene Bilder und Videos vorliegen | Praxisprozess · entschieden (Jannes) | `src/components/ui/Schrittliste.tsx` |
 | ANN-542 | Erstaufnahme geführt: eine Seite ohne eigenen Zustand, Checkliste bleibt bei zwei Punkten | Praxisprozess · offen | `erstaufnahmestand` in `src/features/patients/intake/stand.ts` |
 | ANN-543 | Neuaufnahme am Telefon: das Seltene eingeklappt, „Weiter“ springt ins nächste Feld | Praxisprozess · offen | `WEITERE` in `src/features/patients/PatientMasterDataFields.tsx` |
@@ -1355,7 +1355,7 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 | ANN-726 | Übungen: wer den Plan macht und die Einheit sieht | Technik · offen (→ ANN-712) | `src/features/portal/platform/Uebungen.tsx` |
 | ANN-727 | Übersicht: Übungskarte mit Umfang und Dauer, ohne Netz dahinter | Technik · offen | `uebungenText` in `src/features/portal/platform/Uebersicht.tsx` |
 | ANN-730 | Übungen: Die Vorschau rechnet mit der Einheit auf dem Gerät | Technik · offen | `heutigeEinheit` in `src/features/portal/platform/haken.ts` |
-| ANN-731 | Planblatt: ein Stand für beide Ausdrucke, die Vorschau eckig und unter 23rem ohne Rahmen | Technik · offen | `src/features/exercise/exercise-plans/Planblatt.tsx` |
+| ANN-731 | Planblatt: ein Stand für beide Ausdrucke, die Vorschau eckig und unter 23rem ohne Rahmen | Technik · offen | `src/features/exercise/exercises/plans/Planblatt.tsx` |
 | ANN-748 | Modulgrenzen: ein Modul mit index.ts nur darüber, gemeinsamer Kern in src/lib | Technik · offen (→ DEVELOPMENT.md) | `scripts/eslint-modulgrenzen.mjs` |
 | ANN-749 | Ladestrom wie ein Einkauf mit Beleg; ältere Anträge behalten ihren Rechenweg | Praxisprozess · entschieden (Jannes) | `src/features/workforce/reimbursements/RequestReimbursementPage.tsx` |
 | ANN-751 | Ein Register je Tabelle über dem Aufbewahrungsplan | Technik · in ADR überführt (ADR-008 Punkt 13) | `public.data_registry` |

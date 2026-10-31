@@ -4,10 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { focusManager } from '@tanstack/react-query';
 import { Route, Routes } from 'react-router-dom';
 import type * as Api from './api';
-import type * as BibliothekApi from '@/features/exercise/exercises/api';
-import { katalogeintrag } from '@/features/exercise/exercises/katalog';
-import type { Katalogeintrag, Katalogvorlage } from '@/features/exercise/exercises/katalog/typen';
-import type * as KatalogLaden from '@/features/exercise/exercises/katalogLaden';
+import type * as BibliothekApi from '../api';
+import { katalogeintrag } from '../katalog';
+import type { Katalogeintrag, Katalogvorlage } from '../katalog/typen';
+import type * as KatalogLaden from '../katalogLaden';
 import type * as ZugangApi from '@/features/portal/platform-access/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 import {
@@ -18,7 +18,7 @@ import {
   steigerungsregel,
   unterschiede,
 } from './dosierung';
-import { OHNE_KATALOG } from '@/features/exercise/exercises/testdaten';
+import { OHNE_KATALOG } from '../testdaten';
 import { OHNE_ZUSATZ } from './testdaten';
 import { VorlagenKontext } from './vorlagen';
 
@@ -71,7 +71,7 @@ vi.mock('./api', async (importOriginal) => {
 
 // Ein kleiner synthetischer Katalog statt der 196 Einträge - aus echten
 // Einträgen zusammengestellt, damit Namen und Dosierungen stimmen.
-vi.mock('@/features/exercise/exercises/katalogLaden', async (importOriginal) => {
+vi.mock('../katalogLaden', async (importOriginal) => {
   const actual = await importOriginal<typeof KatalogLaden>();
   return {
     ...actual,
@@ -89,7 +89,7 @@ vi.mock('@/features/portal/platform-access/api', async (importOriginal) => {
   };
 });
 
-vi.mock('@/features/exercise/exercises/api', async (importOriginal) => {
+vi.mock('../api', async (importOriginal) => {
   const actual = await importOriginal<typeof BibliothekApi>();
   return {
     ...actual,

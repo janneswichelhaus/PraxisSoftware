@@ -628,7 +628,7 @@ describe('Sprache der Plattform (Handoff 2026-10-22, PLATTFORM.md)', () => {
   it('hebt Versalien auch in dem auf, was die Plattform aus anderen Bereichen zeigt', () => {
     const eingebunden = vonDerPlattformEingebunden();
     expect(eingebunden).toContain('src/features/clinical/assessments/FragebogenFelder.tsx');
-    expect(eingebunden).toContain('src/features/exercise/exercise-plans/Planblatt.tsx');
+    expect(eingebunden).toContain('src/features/exercise/exercises/plans/Planblatt.tsx');
     expect(
       funde((zeile, datei) =>
         eingebunden.includes(datei) &&
