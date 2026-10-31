@@ -178,12 +178,15 @@ async function wortGanz(ort: Locator, wort: string): Promise<boolean> {
   }, wort);
 }
 
-/** Muss die Fläche der Seite rollen? */
+/** Muss eine Fläche der Seite rollen? Bei „Sehr groß“ rollt die Seite samt Fuß (ANN-816). */
 async function rollt(seite: Locator): Promise<boolean> {
-  return seite.evaluate((fenster) => {
-    const flaeche = fenster.querySelector<HTMLElement>('[tabindex="0"]');
-    return flaeche !== null && flaeche.scrollHeight > flaeche.clientHeight + 1;
-  });
+  return seite.evaluate((fenster) =>
+    [fenster, ...fenster.querySelectorAll<HTMLElement>('*')].some(
+      (flaeche) =>
+        ['auto', 'scroll'].includes(getComputedStyle(flaeche).overflowY) &&
+        flaeche.scrollHeight > flaeche.clientHeight + 1,
+    ),
+  );
 }
 
 async function axeVerstoesse(page: Page): Promise<string[]> {
@@ -353,16 +356,42 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
     );
   });
 
-  test('„Sehr groß“: „Willkommen“ passt ohne Rollen, das Bild wird kleiner', async ({ page }) => {
+  test('„Sehr groß“: „Willkommen“ ohne Bild und ohne Rollen, der Fuß unten (ANN-816)', async ({
+    page,
+  }) => {
     await page.addInitScript(() => {
       window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
     });
     await oeffne(page, 'einstieg-eingerichtet');
     const willkommen = fenster(page, /^Willkommen/);
     await pruefeSeite(page, willkommen, 'Willkommen, Sehr groß');
+    await expect(page.locator('[data-willkommensbild]')).toBeHidden();
     expect(await rollt(willkommen)).toBe(false);
-    const bild = await willkommen.locator('[data-willkommensbild] > div').boundingBox();
-    expect((bild?.width ?? 0) / (bild?.height ?? 1)).toBeCloseTo(4 / 3, 1);
+    // Passt alles, steht der Fuß unten im Daumenbereich wie ohne „Sehr groß“.
+    const weiter = await willkommen.getByRole('button', { name: 'Weiter' }).boundingBox();
+    expect((weiter?.y ?? 0) + (weiter?.height ?? 0)).toBeGreaterThan(812 - 40);
+  });
+
+  test('„Sehr groß“ bei 375 × 667: der Fuß folgt dem Inhalt und deckt nichts ab (ANN-816)', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
+    });
+    await oeffne(page, 'einstieg', 375, 667);
+    await tippe(fenster(page, /^Willkommen/).getByRole('button', { name: 'Weiter' }));
+    const daten = fenster(page, 'Zwei Fragen zu Ihren Daten');
+    await expect(daten).toBeVisible();
+    expect(await rollt(daten)).toBe(true);
+    // Die letzte Wahl liegt über dem Fuß, nicht unter ihm.
+    const letzte = await daten.getByRole('button', { name: 'Nein' }).last().boundingBox();
+    const weiter = daten.getByRole('button', { name: 'Weiter' });
+    expect((await weiter.boundingBox())?.y ?? 0).toBeGreaterThan(
+      (letzte?.y ?? 0) + (letzte?.height ?? 0),
+    );
+    await weiter.scrollIntoViewIfNeeded();
+    await expect(weiter).toBeInViewport({ ratio: 1 });
+    expect(await ueberlaeuft(page)).toBe(false);
   });
 
   test('1280 px: Titel in der Stufe des Rechners, der Kopf an der Kante des Inhalts', async ({
@@ -420,7 +449,10 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
       window.localStorage.setItem('plattform-schriftgroesse', 'sehr-gross');
     });
     await oeffne(page, 'einstieg-begleitung');
-    await tippe(fenster(page, /^Willkommen/).getByRole('button', { name: 'Weiter' }));
+    // Der lange Name steht in 22 wie unter 23rem: So bleibt „Weiter“ bei 375 × 812 im Bild (ANN-816).
+    const weiter = fenster(page, /^Willkommen/).getByRole('button', { name: 'Weiter' });
+    await expect(weiter).toBeInViewport({ ratio: 1 });
+    await tippe(weiter);
     const mitteilungen = fenster(page, 'Sollen wir Ihnen Bescheid geben?');
     await tippe(mitteilungen.getByRole('button', { name: 'Weiter' }));
     const satz = fenster(page, 'Alles bereit').getByText(/^Die Übersicht zeigt/);

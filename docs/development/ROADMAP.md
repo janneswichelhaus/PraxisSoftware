@@ -395,7 +395,8 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | DRP-EPIC-014 Plattform: Abläufe zum Termin aus dem Design-Review (Schritt 3d) | gesichtet | 2026-10-29 | #331 | 2026-10-29 | Auftrag Jannes 28.10.2026; Handoff Termine 5.3 und 5.4; ANN-782 bis ANN-785; nur Oberfläche |
 | B | DRP-EPIC-015 Plattform: Selbstauskunft und Tagebuch aus dem Design-Review (Schritt 4a bis 4e) | gesichtet | 2026-10-29 | #333 | 2026-10-30 | Auftrag Jannes 29.10.2026; Handoff in der Leinwand, Fragen wie empfohlen; nur Oberfläche |
 | B | DRP-EPIC-016 Plattform: Aufträge nach Schritt 4 | fertig | 2026-10-30 | #334 | — | ANN-803 bis ANN-808; BEF-222 erledigt; Pfad A |
-| B | DRP-EPIC-017 Plattform: Lesefrist vom Server, Antworten zu #326, #333, #334 | fertig | 2026-10-30 | Branch ccr-5fca130a-l8m9q8 | — | ANN-809 bis ANN-814; ADR-013 Fassung 8; Pfad A |
+| B | DRP-EPIC-017 Plattform: Lesefrist vom Server, Antworten zu #326, #333, #334 | fertig | 2026-10-30 | #335 | — | ANN-809 bis ANN-814; ADR-013 Fassung 8; Pfad A |
+| B | DRP-EPIC-018 Plattform: „Sehr groß“ ohne Verdecktes, Antworten zu #335 | fertig | 2026-10-30 | Branch ccr-ef7a7f30-l9h6z3 | — | ANN-815 bis ANN-818; BEF-195 und BEF-226 erledigt; Register verdichtet |
 | B | BEF-223 Zeitumstellung: doppelte Ortszeit gilt als die frühere | fertig | 2026-10-29 | #332 | — | Pfad A, ANN-786 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |

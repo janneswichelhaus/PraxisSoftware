@@ -111,7 +111,10 @@ test.describe('Plattform', () => {
       await expect(
         page.getByText('Arztbrief_Orthopaedie_Dr_Beispiel_2026-09.pdf', { exact: true }),
       ).toBeVisible();
-      await expect(page.getByRole('button', { name: /Herunterladen/ }).first()).toBeVisible();
+      // Unter Last kam der Knopf nach dem Dateinamen später als nach 5 s.
+      await expect(page.getByRole('button', { name: /Herunterladen/ }).first()).toBeVisible({
+        timeout: 15_000,
+      });
       expect(await ueberlaeuft(page)).toBe(false);
 
       // Der Fragebogen als geführter Ablauf in 14 Themen, „Bogen senden“ erst im Abschluss.

@@ -266,6 +266,10 @@ test.describe('Übungen auf der Plattform', () => {
       await expect(
         page.getByRole('heading', { level: 1, name: /^Am Treppengeländer/ }),
       ).toBeVisible();
+      // Gemessen wird erst mit der Schrift des Geräts, sonst kippt die Prüfung unter Last.
+      if (schrift !== 'normal') {
+        await expect(page.locator(`html[data-schrift="${schrift}"]`)).toHaveCount(1);
+      }
       expect(await ueberlaeuft(page)).toBe(false);
       // Unter 23rem rollen Kopf und Fuß mit (Handoff, Abschnitt 4).
       const fuss = page.getByRole('button', { name: 'Nächste Übung' });

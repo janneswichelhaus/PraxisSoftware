@@ -331,6 +331,21 @@ describe('GefuehrterAblauf mit „Später“ und Balken je Schritt (5.3)', () =>
     );
   });
 
+  it('lässt bei „Sehr groß“ Inhalt und Fuß zusammen rollen, auch ohne Linie (ANN-816)', () => {
+    render(<Einstieg seite={2} onSchliessen={vi.fn()} onZurueck={vi.fn()} />);
+    const inhalt = screen.getByText('Inhalt').closest('[tabindex="0"]');
+    // Der Inhalt wächst mit, statt zu schrumpfen; passt alles, steht der Fuß trotzdem unten.
+    expect(inhalt).toHaveClass(
+      '[[data-schrift=sehr-gross]_&]:shrink-0',
+      '[[data-schrift=sehr-gross]_&]:basis-auto',
+      '[[data-schrift=sehr-gross]_&]:overflow-visible',
+      'flex-1',
+    );
+    const seite = inhalt!.parentElement!;
+    expect(seite).toHaveClass('[[data-schrift=sehr-gross]_&]:overflow-y-auto');
+    expect(seite).toContainElement(screen.getByRole('button', { name: 'Weiter' }));
+  });
+
   it('beginnt unter 23rem jede neue Seite oben, obwohl die Fläche bleibt', () => {
     const { rerender } = render(<Einstieg seite={1} onSchliessen={vi.fn()} />);
     const rollt = screen.getByText('Inhalt').closest('[tabindex="0"]')!.parentElement!
@@ -367,6 +382,10 @@ describe('GefuehrterAblauf mit „Später“ und Balken je Schritt (5.3)', () =>
     expect(screen.getByRole('heading')).not.toHaveClass('max-[23rem]:text-hero-schmal');
     rerender(<Titel titel={'Willkommen,\nPaula Mustermann-Langenscheidt'} stufe="gruss" />);
     expect(screen.getByRole('heading')).toHaveClass('max-[23rem]:text-hero-schmal');
+    // Bei „Sehr groß“ ebenso, sonst stand „Weiter“ nicht mehr im ersten Bild (ANN-816).
+    expect(screen.getByRole('heading')).toHaveClass(
+      '[[data-schrift=sehr-gross]_&]:text-hero-schmal',
+    );
     expect(screen.getByRole('heading')).not.toHaveClass('max-[23rem]:text-plattform-titel');
     // Am Bindestrich darf der Name brechen: „Mustermann-“ zählt für sich.
     rerender(<Titel titel="Zwei Fragen zu den Daten von Max Mustermann-Beispiel" stufe="seite" />);

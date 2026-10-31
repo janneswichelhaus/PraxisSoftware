@@ -712,21 +712,16 @@ function Mitteilungen({ zugang, email }: { zugang: Plattformzugang; email: strin
 }
 
 /**
- * Das Bild über „Willkommen“ (5.3): ein eigenes Foto der Praxis in 4:3 - bis
- * es da ist, die Markenfläche mit dem Laufrad. Schmuck ohne Information, für
- * Vorlesesoftware unsichtbar; unter 23rem (200 %) entfällt es (ANN-682).
- *
- * Die Seite rollt nicht (DESIGN.md, geführter Ablauf): Das Bild nimmt den
- * Platz, der neben den Sätzen bleibt, höchstens die volle Breite und 18rem,
- * immer in 4:3. Wird es dafür kleiner als 6rem, entfällt es - etwa mit Band
- * und „Sehr groß“.
+ * Das Bild über „Willkommen“ (5.3), bis zum eigenen Foto die Markenfläche: Schmuck in 4:3 im Platz
+ * neben den Sätzen, höchstens 18rem. Unter 6rem entfällt es, ebenso unter 23rem und bei „Sehr
+ * groß“, wo der Fuß mitrollt (ANN-682, ANN-816).
  */
 function Willkommensbild() {
   return (
     <div
       aria-hidden="true"
       data-willkommensbild=""
-      className="[container-type:size] aspect-[4/3] max-h-72 min-h-0 w-full shrink max-[23rem]:hidden"
+      className="[container-type:size] aspect-[4/3] max-h-72 min-h-0 w-full shrink max-[23rem]:hidden [[data-schrift=sehr-gross]_&]:hidden"
     >
       <div className="bg-surface-inverse rounded-image relative aspect-[4/3] w-[min(100cqw,calc(100cqh*4/3))] overflow-hidden [@container_(max-height:6rem)]:hidden">
         <Laufrad className="text-accent absolute -right-[14%] -bottom-[25%] aspect-square h-[115%]" />

@@ -1807,8 +1807,17 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-30",
-          "nachweis": "Branch ccr-5fca130a-l8m9q8",
+          "nachweis": "#335",
           "vermerk": "ANN-809 bis ANN-814; ADR-013 Fassung 8; Pfad A"
+        },
+        {
+          "id": "drp-epic-018",
+          "name": "DRP-EPIC-018 Plattform: „Sehr groß“ ohne Verdecktes, Antworten zu #335",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-30",
+          "nachweis": "Branch ccr-ef7a7f30-l9h6z3",
+          "vermerk": "ANN-815 bis ANN-818; BEF-195 und BEF-226 erledigt; Register verdichtet"
         },
         {
           "id": "bef-223",

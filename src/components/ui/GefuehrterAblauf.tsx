@@ -29,7 +29,8 @@ const AM_RECHNER_OHNE_LINIE =
 const AM_RECHNER_OHNE_ABSTAND = '[.plattform-schrift[data-rechner]_&]:pt-0';
 const SEHR_GROSS_ROLLT_ZUSAMMEN = {
   seite: '[[data-schrift=sehr-gross]_&]:overflow-y-auto',
-  inhalt: '[[data-schrift=sehr-gross]_&]:flex-none [[data-schrift=sehr-gross]_&]:overflow-visible',
+  inhalt:
+    '[[data-schrift=sehr-gross]_&]:shrink-0 [[data-schrift=sehr-gross]_&]:basis-auto [[data-schrift=sehr-gross]_&]:overflow-visible',
 };
 const AM_RECHNER_LINIE_UNTEN = '[.plattform-schrift[data-rechner]_&]:border-b';
 const AM_RECHNER_LINIE_OBEN =
@@ -264,14 +265,12 @@ export function GefuehrterAblauf({
     </div>
   ) : null;
 
-  // Unter 23rem rollt alles zusammen - Kopf, Inhalt und Fuß -, nicht nur der
-  // Inhalt zwischen festem Kopf und Fuß. Mit Linie über dem Fuß (Notfallsatz) bei
-  // „Sehr groß“ auch: Inhalt und Fuß rollen zusammen, sonst deckte der Fuß die Antwort zu.
-  const sehrGross = fussLinie ? SEHR_GROSS_ROLLT_ZUSAMMEN : { seite: '', inhalt: '' };
+  // Unter 23rem rollt alles zusammen - Kopf, Inhalt und Fuß. Bei „Sehr groß“ rollen Inhalt und
+  // Fuß zusammen, sonst deckte der Fuß die Antworten zu; passt alles, steht er unten (ANN-816).
   const schmal = plattform
     ? {
-        seite: `max-[23rem]:flex-none ${sehrGross.seite}`,
-        inhalt: `max-[23rem]:flex-none max-[23rem]:overflow-visible ${sehrGross.inhalt}`,
+        seite: `max-[23rem]:flex-none ${SEHR_GROSS_ROLLT_ZUSAMMEN.seite}`,
+        inhalt: `max-[23rem]:flex-none max-[23rem]:overflow-visible ${SEHR_GROSS_ROLLT_ZUSAMMEN.inhalt}`,
       }
     : { seite: '', inhalt: '' };
   const hoch = plattform || inhaltUnten ? 'h-full' : '';

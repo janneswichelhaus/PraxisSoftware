@@ -185,14 +185,17 @@ export function Kopf({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechn
             }`.trim()}
           >
             {bereiche.map((z) => (
-              // POR-020: Bei 200 % am Telefon stehen die Bereiche untereinander,
-              // statt mitten im Wort zu trennen.
-              <li key={z.access_id} className="min-w-0 flex-1 max-[23rem]:basis-full">
+              // Bei 200 % stehen die Bereiche untereinander; bei „Sehr groß“ rücken sie erst
+              // untereinander, wenn ein Wort nicht ganz in die Hälfte passt, statt darin zu brechen.
+              <li
+                key={z.access_id}
+                className="min-w-0 flex-1 max-[23rem]:basis-full [[data-schrift=sehr-gross]_&]:min-w-min"
+              >
                 <Link
                   to={wahlAdresse(z)}
                   replace
                   aria-current={gewaehlt?.access_id === z.access_id ? 'page' : undefined}
-                  className="text-ink-muted aria-[current=page]:bg-surface aria-[current=page]:text-ink rounded-button flex min-h-11 items-center justify-center px-3 text-center text-base font-medium"
+                  className="text-ink-muted aria-[current=page]:bg-surface aria-[current=page]:text-ink rounded-button flex min-h-11 items-center justify-center px-3 text-center text-base font-medium [[data-schrift=sehr-gross]_&]:wrap-break-word"
                 >
                   {wahlName(z)}
                 </Link>
@@ -230,20 +233,9 @@ function Rechnernavigation({ ziele }: { ziele: Ziel[] }) {
 }
 
 /**
- * Stufe 3 der Navigation (Handoff Abschnitt 3, ANN-682): Unter 23rem
- * Fensterbreite - 200 % Zoom am Telefon - ist für die Leiste kein Platz. Im
- * Kopf steht dann der Zweitknopf „Menü“; er öffnet unter dem Kopf über die
- * ganze Breite die vier Ziele und, nach einer Linie, „Ich“. Esc und ein Tipp
- * daneben schließen es, der Fokus geht zurück auf „Menü“.
- *
- * Die Grenze ist eine Media Query in rem: Sie bezieht sich auf die
- * Standardschrift des Browsers und greift deshalb beim Zoom, nicht bei der
- * Schrift-Einstellung „Sehr groß“ - dort stehen zwei Reihen (Stufe 2).
- *
- * Offen ist das Menü für genau eine Adresse (`location.key`): Jeder
- * Seitenwechsel schließt es, auch Zurück und ein Tipp auf die Seite, auf der
- * man schon steht. Verlässt der Fokus es mit Tab, schließt es ebenfalls - es
- * verdeckte sonst, wo der Fokus steht (WCAG 2.4.11).
+ * Stufe 3 (ANN-682): Unter 23rem, beim Zoom und nicht bei „Sehr groß“, öffnet „Menü“ im Kopf die
+ * vier Ziele und „Ich“. Esc, ein Tipp daneben, jeder Seitenwechsel (`location.key`) und ein Fokus,
+ * der es verlässt (WCAG 2.4.11), schließen es; der Fokus geht zurück auf „Menü“.
  */
 function Menue({ ziele, ich }: { ziele: Ziel[]; ich: boolean }) {
   const { key: adresse } = useLocation();
@@ -393,16 +385,21 @@ function useReiterstufe(
   return stufe;
 }
 
+/**
+ * Das Wort der Leiste bleibt 18 px, auch bei „Groß“ und „Sehr groß“: Mit der Schrift
+ * gewachsen, stand die Leiste in zwei Reihen und deckte 160 px ab (ANN-815).
+ */
+const REITERWORT = 'text-[18px]';
+
 /** Stufe 1: Zeichen 24 über dem Wort, mindestens 68 hoch, aktiv mit Strich 3 oben. */
-const REITER_EINE_REIHE = `text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent -mt-px flex min-h-17 grow flex-col items-center justify-center gap-0.5 border-t-3 border-transparent px-0.5 pt-1.5 pb-2 font-medium whitespace-nowrap aria-[current=page]:font-bold ${DRUCK}`;
+const REITER_EINE_REIHE = `text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent -mt-px flex min-h-[68px] grow flex-col items-center justify-center gap-[2px] border-t-3 border-transparent px-[2px] pt-[6px] pb-[8px] font-medium whitespace-nowrap aria-[current=page]:font-bold ${REITERWORT} ${DRUCK}`;
 
 /**
- * Stufe 2: Zeichen 28 neben dem Wort, mindestens 56 hoch, aktiv auf
- * `accent-soft`. Zeichen, Abstand und Innenrand in px wie in der Zeichnung:
- * Nur das Wort wächst mit „Groß“ und „Sehr groß“ - so passt „Nachrichten“
- * auch bei 360 px in seine Hälfte (ANN-679).
+ * Stufe 2, wenn die Wörter auch in 18 px nicht nebeneinander passen (eine andere Schrift des
+ * Systems, eine Übersetzung): Zeichen 28 neben dem Wort, mindestens 56 hoch, aktiv auf
+ * `accent-soft`, alles in px wie in der Zeichnung (ANN-679).
  */
-const REITER_ZWEI_REIHEN = `text-ink-muted aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent rounded-button flex min-h-14 grow items-center gap-[8px] p-[6px] font-medium whitespace-nowrap aria-[current=page]:font-bold ${DRUCK}`;
+const REITER_ZWEI_REIHEN = `text-ink-muted aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent rounded-button flex min-h-[56px] grow items-center gap-[8px] p-[6px] font-medium whitespace-nowrap aria-[current=page]:font-bold ${REITERWORT} ${DRUCK}`;
 
 /**
  * Die Reiterleiste unten (DSN-001 Abschnitt 3, Handoff Abschnitt 3), am
@@ -426,7 +423,7 @@ export function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
         ref={leiste}
         className={
           stufe === 1
-            ? 'max-w-formular mx-auto flex px-1'
+            ? 'max-w-formular mx-auto flex px-[4px]'
             : 'max-w-formular mx-auto grid grid-cols-2 gap-[4px] px-[4px] pt-[6px] pb-[8px]'
         }
       >
@@ -437,7 +434,7 @@ export function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
               aria-current={z.aktuell ? 'page' : undefined}
               className={stufe === 1 ? REITER_EINE_REIHE : REITER_ZWEI_REIHEN}
             >
-              <Zeichen className={stufe === 1 ? 'size-6' : 'size-[28px] shrink-0'}>
+              <Zeichen className={stufe === 1 ? 'size-[24px]' : 'size-[28px] shrink-0'}>
                 {z.zeichen}
               </Zeichen>
               {z.wort}
@@ -449,9 +446,9 @@ export function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
           stoßen sie in einer Reihe nie aneinander (DR-112). Unsichtbar und
           ohne Höhe; Vorlesesoftware liest sie nicht. */}
       <div aria-hidden="true" className="invisible h-0 overflow-hidden">
-        <ul ref={messreihe} className="flex w-max px-1">
+        <ul ref={messreihe} className="flex w-max px-[4px]">
           {ziele.map((z) => (
-            <li key={z.wort} className="px-1 font-bold whitespace-nowrap">
+            <li key={z.wort} className={`px-[4px] font-bold whitespace-nowrap ${REITERWORT}`}>
               {z.wort}
             </li>
           ))}
