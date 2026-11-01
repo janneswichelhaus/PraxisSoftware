@@ -56,7 +56,8 @@ fachlichen Datenmodell des Bereichs, **P2** vor dem Feature, **P3** später.
 - **C6 — AI Privacy Gateway** · Gateway entschieden (ADR-005); Schutzumfang vorläufig entschieden
   2026-09-08 (Jannes): fünf Vertragszusagen statt Pseudonymisierung ([`ANFRAGEN.md`](ANFRAGEN.md)
   C6); fürs Diktat gebaut: Zweck → Felder (`zwecke.ts`), Kennzeichnung am Eintrag (ANN-825) ·
-  offen: Anbieter, Modell, Spracherkennung (E13, Bedingung ANN-826), Protokoll, Freigabenachweis.
+  offen: Anbieter, Modell, Spracherkennung (E13; Bedingung ANN-826, Jannes 2026-11-01), Protokoll,
+  Freigabenachweis.
 - **E2 — Ausfallkonzept**, zugleich Rückfallplan der Eröffnung (ADR-012 Punkte 8 und 9; G10, H4) ·
   Kern vorläufig entschieden 2026-09-08 (Jannes): Tagesliste morgens geöffnet oder gedruckt, ohne
   Export (ANN-021); Dokumentation auf Papier, Nachtrag binnen 24 Stunden mit Begründung „Ausfall“

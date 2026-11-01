@@ -655,7 +655,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-15 · Jannes · Prüfpaket · Wie
 **Annahme.** Die Aufnahme geht nur für die Anfrage an den Gateway, sonst bleibt sie im Arbeitsspeicher; Transkript und Vorschlag nur im Zustand der Schreibseite, nie in Datenbank, Ablage, Log oder Gerätespeicher. Erst „Übernehmen“ macht den Text zum Entwurf; keine neue Datenklasse, E13 im Mock-Betrieb überbrückt. **Grundlage.** PROJECT_PRINCIPLES §6.3; ADR-016 Punkt 10; ADR-006 Punkt 8; Entscheidung Jannes 2026-10-15. **Anker.** `useDiktat` in `src/features/clinical/documentation/diktat.ts`. **Rücknahme.** Aufbewahren: Tabelle mit Klasse, Löschlauf, DSFA · Aufwand `groß`.
 
 ### ANN-826 — Diktat im Betrieb: Rohaudio nur für die Anfrage, auch beim Anbieter
-Datenschutz · offen · 2026-11-01 · — · Prüfpaket · Wiedervorlage: Anbieterprüfung (C6); Datenschutzprüfung\
+Datenschutz · entschieden (Jannes) · 2026-11-01 · Jannes · Prüfpaket · Wiedervorlage: Anbieterprüfung (C6); Datenschutzprüfung\
 **Annahme.** Auch mit echtem Anbieter speichert die Anwendung keine Aufnahme; ANN-520 gilt über den Mock hinaus. Freigeschaltet wird nur ein Anbieter, der Aufnahme und Transkript nach der Antwort nicht aufbewahrt und nicht zum Training nutzt. Rohaudio braucht keine Datenklasse. **Grundlage.** §6.3; ADR-005 Punkte 8 und 9; Art. 5 Abs. 1 lit. c und e DSGVO; E13. **Anker.** `diktatAufbereiten` in `src/lib/ki/gateway.ts`. **Rücknahme.** Aufbewahren: Klasse, Löschlauf, DSFA · Aufwand `groß`.
 
 ### ANN-541 — Umsatzsteuer: Heilbehandlung frei nur mit Verordnung, sonst Regelsatz am Posten
