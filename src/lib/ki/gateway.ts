@@ -195,14 +195,8 @@ export async function diktatVerfuegbar(signal?: AbortSignal): Promise<boolean> {
 }
 
 /**
- * Ein Diktat aufbereiten: die Aufnahme an den Gateway, zurück kommen das
- * Transkript und der in die Vorlage eingeordnete Vorschlag.
- *
- * Hinaus gehen der Zweck in der Adresse und genau drei Felder: Termin,
- * Aufnahme, Dauer. Der Termin ist die Zuordnung (6.3) und die Grundlage der
- * Berechtigung am Server; er bleibt im Gateway und erreicht keinen Anbieter.
- *
- * Wirft nicht: Alles, was schiefgehen kann, endet in einer Fehlerklasse.
+ * Hinaus gehen Termin (Zuordnung und Berechtigung, bleibt im Gateway), Aufnahme und Dauer; die
+ * Aufnahme lebt nur für diese Anfrage, auch beim Anbieter (ANN-826). Wirft nicht.
  */
 export async function diktatAufbereiten({
   terminId,

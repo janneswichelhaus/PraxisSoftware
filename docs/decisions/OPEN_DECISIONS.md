@@ -55,16 +55,18 @@ fachlichen Datenmodell des Bereichs, **P2** vor dem Feature, **P3** später.
   · Bestätigung mit B1 ([`ANFRAGEN.md`](ANFRAGEN.md) B10). ANN-014.
 - **C6 — AI Privacy Gateway** · Gateway entschieden (ADR-005); Schutzumfang vorläufig entschieden
   2026-09-08 (Jannes): fünf Vertragszusagen statt Pseudonymisierung ([`ANFRAGEN.md`](ANFRAGEN.md)
-  C6) · offen: Anbieter, Modell, Spracherkennung (E13), Zweck → Felder, Protokoll, Freigabenachweis.
+  C6); fürs Diktat gebaut: Zweck → Felder (`zwecke.ts`), Freigabenachweis am Eintrag (ANN-825) ·
+  offen: Anbieter, Modell, Spracherkennung (E13, Bedingung ANN-826), Protokoll der Anbieteraufrufe.
 - **E2 — Ausfallkonzept**, zugleich Rückfallplan der Eröffnung (ADR-012 Punkte 8 und 9; G10, H4) ·
   Kern vorläufig entschieden 2026-09-08 (Jannes): Tagesliste morgens geöffnet oder gedruckt, ohne
   Export (ANN-021); Dokumentation auf Papier, Nachtrag binnen 24 Stunden mit Begründung „Ausfall“
   (ADR-016); Rechnungen ruhen, keine Nummer von Hand (§14 UStG). Abbruch bei Datenverlust,
   Falschzuordnung oder mehr als einem Tag · offen: Betriebsdokument (eine Seite) · P1 vor Go-live.
-- **E13 — Sprachdokumentation** · Anforderung entschieden (§6.3), im Mock-Betrieb überbrückt durch
-  ANN-520 · offen, blockiert nichts (P3): Anbieter (C6), Rohaudio im Betrieb (keine Datenklasse in
-  ADR-008), Fristanker bei später Übernahme (ADR-016 Punkt 7, ANN-008), Inhaltstreue und Architektur
-  des Vorschlags (ADR-016 Punkt 10), Bedienung; ADR-005 Punkt 9, ADR-006 Punkt 8.
+- **E13 — Sprachdokumentation** · Anforderung entschieden (§6.3), gebaut hinter dem Gateway mit
+  Nachbildung (KI-EPIC-001) · überbrückt: Vorschlag nur in der Seite (ANN-520), Bedienung (ANN-521),
+  Inhaltstreue durch Bauart (ANN-824), „Mit Diktat“ am Eintrag (ANN-825), Rohaudio auch im Betrieb
+  nur für die Anfrage (ANN-826), keine eigene Frist bei später Übernahme (ANN-827) · offen, blockiert
+  nichts (P3): Anbieter und Spracherkennung (C6); ADR-005 Punkt 9, ADR-006 Punkt 8.
 
 ## Externe Prüfungen
 Gehen ab Anfang 2027 hinaus, parallel zum Bauen, sobald ihre Unterlagen stehen (E-1); was danach

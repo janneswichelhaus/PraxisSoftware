@@ -206,6 +206,54 @@ describe('Merkmal „mit Diktat“: Schreibwege', () => {
   });
 });
 
+describe('Späte Übernahme (ANN-827)', () => {
+  const VOR_TAGEN = `((date_trunc('day', now() at time zone 'Europe/Berlin') - make_interval(days => $2) + interval '9 hours') at time zone 'Europe/Berlin')`;
+
+  async function terminVorTagen(tage: number): Promise<string> {
+    const t = await termin();
+    await asPostgres(
+      `update public.appointments set starts_at = ${VOR_TAGEN},
+              ends_at = ${VOR_TAGEN} + interval '45 minutes' where id = $1`,
+      [t, tage],
+    );
+    return t;
+  }
+
+  it('zählt ab dem Anlagetag, wenn der Eintrag erst mit der Übernahme entsteht', async () => {
+    const t = await terminVorTagen(10);
+    const { rows } = await asUserCommitted<{ id: string }>(users.therapist, ANLEGEN, [
+      t,
+      TEXT,
+      true,
+    ]);
+    await asPostgres('select public.finalize_overdue_treatment_notes()');
+    expect(await zeile(rows[0]!.id)).toMatchObject({ status: 'draft', dictated: true });
+  });
+
+  it('schreibt einen überfälligen Entwurf mit Diktat fest wie einen getippten', async () => {
+    const t = await terminVorTagen(11);
+    const { rows } = await asUserCommitted<{ id: string }>(users.therapist, ANLEGEN, [
+      t,
+      TEXT,
+      true,
+    ]);
+    await asPostgres(
+      `update public.treatment_notes set created_at = ${VOR_TAGEN}, updated_at = ${VOR_TAGEN}
+        where id = $1`,
+      [rows[0]!.id, 11],
+    );
+    await asPostgres('select public.finalize_overdue_treatment_notes()');
+    const { rows: nachher } = await asPostgres<{
+      status: string;
+      finalisation_kind: string;
+      dictated: boolean;
+    }>('select status, finalisation_kind, dictated from public.treatment_notes where id = $1', [
+      rows[0]!.id,
+    ]);
+    expect(nachher[0]).toEqual({ status: 'final', finalisation_kind: 'automatic', dictated: true });
+  });
+});
+
 describe('Merkmal „mit Diktat“: Lesen und Rechte', () => {
   it('liefert es am Termin und in der Akte', async () => {
     const id = await entwurf(true);

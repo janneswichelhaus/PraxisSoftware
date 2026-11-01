@@ -257,7 +257,10 @@ export function useDiktat({ terminId, aktiv }: { terminId: string; aktiv: boolea
     textAendern: (text: string) => {
       if (stand.art === 'vorschlag') setStand({ ...stand, text });
     },
-    /** Gibt den geprüften Text zur Übernahme heraus und schließt den Vorschlag. */
+    /**
+     * Gibt den geprüften Text heraus; ab da geht er den Weg jedes getippten Textes, auch für
+     * die Frist der automatischen Finalisierung (ANN-827).
+     */
     uebernehmen: (): string | null => {
       if (stand.art !== 'vorschlag' || stand.text.trim() === '') return null;
       uebernommen.current = stand;

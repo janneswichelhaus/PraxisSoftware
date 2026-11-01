@@ -654,6 +654,10 @@ Datenschutz · entschieden (Jannes) · 2026-10-14 · Jannes · Prüfpaket · Wie
 Datenschutz · entschieden (Jannes) · 2026-10-15 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung; Anbieter mit C6\
 **Annahme.** Die Aufnahme geht nur für die Anfrage an den Gateway, sonst bleibt sie im Arbeitsspeicher; Transkript und Vorschlag nur im Zustand der Schreibseite, nie in Datenbank, Ablage, Log oder Gerätespeicher. Erst „Übernehmen“ macht den Text zum Entwurf; keine neue Datenklasse, E13 im Mock-Betrieb überbrückt. **Grundlage.** PROJECT_PRINCIPLES §6.3; ADR-016 Punkt 10; ADR-006 Punkt 8; Entscheidung Jannes 2026-10-15. **Anker.** `useDiktat` in `src/features/clinical/documentation/diktat.ts`. **Rücknahme.** Aufbewahren: Tabelle mit Klasse, Löschlauf, DSFA · Aufwand `groß`.
 
+### ANN-826 — Diktat im Betrieb: Rohaudio nur für die Anfrage, auch beim Anbieter
+Datenschutz · offen · 2026-11-01 · — · Prüfpaket · Wiedervorlage: Anbieterprüfung (C6); Datenschutzprüfung\
+**Annahme.** Auch mit echtem Anbieter speichert die Anwendung keine Aufnahme; ANN-520 gilt über den Mock hinaus. Freigeschaltet wird nur ein Anbieter, der Aufnahme und Transkript nach der Antwort nicht aufbewahrt und nicht zum Training nutzt. Rohaudio braucht keine Datenklasse. **Grundlage.** §6.3; ADR-005 Punkte 8 und 9; Art. 5 Abs. 1 lit. c und e DSGVO; E13. **Anker.** `diktatAufbereiten` in `src/lib/ki/gateway.ts`. **Rücknahme.** Aufbewahren: Klasse, Löschlauf, DSFA · Aufwand `groß`.
+
 ### ANN-541 — Umsatzsteuer: Heilbehandlung frei nur mit Verordnung, sonst Regelsatz am Posten
 Recht · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Steuerberatung (B4, G13) vor dem ersten echten Rechnungslauf\
 **Annahme.** Heilbehandlung, Hausbesuch als Nebenleistung und Wärmetherapie sind frei, wenn eine Verordnung den Zweck belegt; Ausfallhonorar ist nicht steuerbar; Abo, Personal Training und Pakete tragen 19 %. Ohne Verordnung gilt der Regelsatz, der ermäßigte ist gesperrt. Unter § 19 UStG trägt die Rechnung den festen Hinweis. **Grundlage.** § 4 Nr. 14 lit. a UStG; BFH V R 13/19; § 34a UStDV; ADR-009 Punkt 15. **Anker.** `app.small_business_notice`, `service_catalog_items_reduced_rate_not_activated`. **Rücknahme.** Constraint streichen · Aufwand `klein`.
@@ -982,6 +986,10 @@ Technik · offen · 2026-11-01 · — · — · Wiedervorlage: Anbieterprüfung 
 ### ANN-825 — „Mit Diktat“ am Eintrag: gesetzt mit der Übernahme, bleibt stehen
 Technik · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 **Regel.** Wer einen Vorschlag aus der Aufnahme übernimmt, schreibt den Eintrag mit dem Merkmal `dictated`, auf jedem Weg: Entwurf, Festschreiben, Korrektur, Nachtrag, Gerät. Es bleibt, auch wenn der Text danach umgeschrieben wird; „Rückgängig“ vor dem Sichern nimmt es zurück. Kein Auditeintrag. **Grundlage.** ADR-005 Konsequenzen; ADR-010 Punkt 15; §6.3. **Anker.** `mitDiktat` in `src/features/clinical/documentation/api.ts`.
+
+### ANN-827 — Späte Übernahme eines Diktats: keine eigene Frist
+Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
+**Regel.** Die Übernahme verschiebt keine Frist: In einen Entwurf übernommen, gilt dessen Frist; entsteht der Eintrag erst mit ihr, zählt der Anlagetag (ANN-008); ist er inzwischen festgeschrieben, wird der Text Nachtrag oder Korrektur (ANN-320). Ein nicht übernommener Vorschlag liegt nirgends, die Frist erfasst ihn nie. **Grundlage.** ADR-016 Punkte 7 und 10; E13. **Anker.** `uebernehmen` in `diktat.ts`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
