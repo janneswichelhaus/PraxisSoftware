@@ -153,7 +153,7 @@ describe('StatisticsPage (STA-003)', () => {
     expect(within(ohneAnschluss).getByText('Ziel erreicht')).toBeInTheDocument();
     expect(within(ohneAnschluss).getByText(/Enden bis 26\.10\.2026/)).toBeInTheDocument();
     expect(
-      within(ohneAnschluss).getByRole('link', { name: 'Verlängerung ansprechen' }),
+      within(ohneAnschluss).getByRole('link', { name: 'Zu den Trainingskund:innen' }),
     ).toHaveAttribute('href', '/training');
 
     const abos = karte('Laufende Nachsorge-Abos');
@@ -212,7 +212,7 @@ describe('StatisticsPage (STA-003)', () => {
 
   it('fragt beim Monatswechsel den gewaehlten Monat', async () => {
     renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
-    const auswahl = await screen.findByLabelText('Monat für Umsatz und Zahlungseingang');
+    const auswahl = await screen.findByLabelText('Monat für die Monatszahlen');
     await userEvent.selectOptions(auswahl, '2026-08-01');
     expect(fetchKennzahlen).toHaveBeenLastCalledWith('2026-08-01');
     expect(fetchAngebotszahlen).toHaveBeenLastCalledWith('2026-08-01');
@@ -232,7 +232,7 @@ describe('StatisticsPage (STA-003)', () => {
 
   it('fuehrt nach einem Fehler beim Monatswechsel zurueck zum laufenden Monat', async () => {
     renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
-    const auswahl = await screen.findByLabelText('Monat für Umsatz und Zahlungseingang');
+    const auswahl = await screen.findByLabelText('Monat für die Monatszahlen');
     fetchKennzahlen.mockRejectedValueOnce(new Error('Die Statistik konnte nicht geladen werden.'));
     await userEvent.selectOptions(auswahl, '2026-08-01');
 

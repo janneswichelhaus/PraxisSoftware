@@ -184,8 +184,8 @@ const STATUS_FARBE = {
 
 // ANN-833: die Art des Termins als Fläche, zusätzlich zu Zeichen und Wort (WCAG 1.4.1).
 function kachelFlaeche(eintrag: CalendarEntry): string {
-  if (istBeratung(eintrag)) return 'bg-termin-beratung';
-  if (eintrag.kind === 'training') return 'bg-termin-training';
+  if (istBeratung(eintrag)) return 'bg-termin-beratung hover:bg-surface-sunken';
+  if (eintrag.kind === 'training') return 'bg-termin-training hover:bg-surface-sunken';
   return 'bg-surface hover:bg-surface-sunken';
 }
 
@@ -263,8 +263,8 @@ export interface GitterSpalte {
   unterTitel?: string;
   /** Hervorhebung des heutigen Tages beziehungsweise der eigenen Person. */
   hervorgehoben?: boolean;
-  /** Die Farbe der Person einer Spalte (ANN-666), als Personenbild neben dem Namen. */
-  farbe?: Personenfarbe | undefined;
+  /** Spalte einer Person: ihr Personenbild neben dem Namen (ANN-666); `null`, bis die Farbe da ist. */
+  farbe?: Personenfarbe | null | undefined;
   /**
    * Das Wort zur Hervorhebung, sichtbar im Kopf (KAL-B01, KAL-03): „heute" am
    * Tag der Woche, „ich" an der eigenen Spalte. Ein Farbton allein war kaum zu
@@ -782,14 +782,16 @@ export function CalendarGrid({
                 ) : null}
               </>
             );
-            const beschriftung = s.farbe ? (
-              <span className="flex min-w-0 items-center gap-1.5">
-                <Personenbild name={s.titel} farbe={s.farbe} groesse="klein" />
-                <span className="flex min-w-0 flex-col">{text}</span>
-              </span>
-            ) : (
-              text
-            );
+            // Das Bild steht ab dem ersten Bild da, damit die Spalten beim Nachladen nicht springen.
+            const beschriftung =
+              s.farbe !== undefined ? (
+                <span className="flex min-w-0 items-center gap-2">
+                  <Personenbild name={s.titel} farbe={s.farbe} groesse="klein" />
+                  <span className="flex min-w-0 flex-col">{text}</span>
+                </span>
+              ) : (
+                text
+              );
 
             return (
               <div

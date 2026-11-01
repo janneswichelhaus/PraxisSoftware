@@ -240,17 +240,28 @@ describe('Kennzahlen fuer Training, Abo und Pakete (PRX-041)', () => {
       await expect(asAnon(ZAHLEN, [null])).rejects.toThrow(/permission denied/i);
     });
 
-    it('endet an der Organisationsgrenze', async () => {
-      await paket(tag(-10), tag(10));
-      await abo(tag(-5));
-      expect((await zahlen()).packages_running).toBeGreaterThan(0);
+    it('endet an der Organisationsgrenze - in jeder der acht Zahlen', async () => {
+      const monat = await monatsanfang();
+      await paket(imMonat(0), tag(10));
+      const a = await abo(imMonat(0));
+      await kuendige(a, imMonat(0), tag(20));
+      await trainingstermin(8, 'documented');
+      const eigen = await zahlen(monat);
+      expect(eigen.packages_started).toBeGreaterThan(0);
+      expect(eigen.aftercare_cancelled).toBeGreaterThan(0);
+      expect(eigen.training_sessions).toBeGreaterThan(0);
+
       const fremd = await fremdeOrganisation();
-      const { rows } = await asUser<Angebotszahlen>(fremd.owner, ZAHLEN, [null]);
+      const { rows } = await asUser<Angebotszahlen>(fremd.owner, ZAHLEN, [monat]);
       expect(rows[0]).toMatchObject({
         training_clients: 0,
         packages_running: 0,
+        packages_started: 0,
         packages_ending: 0,
         aftercare_running: 0,
+        aftercare_started: 0,
+        aftercare_cancelled: 0,
+        training_sessions: 0,
       });
     });
 

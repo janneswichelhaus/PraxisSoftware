@@ -582,7 +582,7 @@ describe('Gewählter Termin im Bild (Design-Review T5)', () => {
 });
 
 describe('Farbe je Art des Termins und je Person (ANN-833, ANN-666)', () => {
-  function gitterMit(eintraege: CalendarEntry[], farbe?: 'ozean') {
+  function gitterMit(eintraege: CalendarEntry[], farbe?: 'ozean' | null) {
     return renderWithProviders(
       <CalendarGrid
         spaltenModell={[{ id: 'st-1', titel: 'Anna Beispiel', baender: [], farbe }]}
@@ -645,6 +645,13 @@ describe('Farbe je Art des Termins und je Person (ANN-833, ANN-666)', () => {
     expect(bild).toHaveAttribute('aria-hidden', 'true');
     expect(bild.parentElement).toHaveTextContent('Anna Beispiel');
     unmount();
+
+    // Bis die Farbe da ist, steht das Bild neutral - die Spalte springt nicht.
+    const zweites = gitterMit([], null);
+    expect(document.querySelector('[data-personenbild="initialen"]')).toHaveClass(
+      'bg-person-schiefer',
+    );
+    zweites.unmount();
 
     gitterMit([]);
     expect(document.querySelector('[data-personenbild]')).toBeNull();

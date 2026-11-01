@@ -882,7 +882,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       ? tagesPersonen.map((t) => ({
           id: t.staff_member_id,
           titel: t.display_name,
-          farbe: farbeVon(t.staff_member_id),
+          farbe: farbeVon(t.staff_member_id) ?? null,
           // Die eigene Spalte, nicht nur als Farbton (KAL-03, KAL-B01).
           hervorgehoben: t.staff_member_id === eigenePerson,
           zusatz: t.staff_member_id === eigenePerson ? 'ich' : undefined,

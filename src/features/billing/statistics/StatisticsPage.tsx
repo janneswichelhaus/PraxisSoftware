@@ -119,7 +119,7 @@ function Praxisstatistik() {
           <>
             <div className="mb-6 sm:w-64">
               <Select
-                label="Monat für Umsatz und Zahlungseingang"
+                label="Monat für die Monatszahlen"
                 value={monat ?? daten.month}
                 onChange={(e) => setMonat(e.target.value)}
               >

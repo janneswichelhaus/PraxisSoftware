@@ -159,7 +159,7 @@ export const ANGEBOTSKENNZAHLEN: readonly Kennzahl<Angebotszahlen>[] = [
     einheit: 'anzahl',
     richtung: 'hoechstens',
     wert: (k) => k.packages_ending,
-    handlung: { label: 'Verlängerung ansprechen', to: '/training' },
+    handlung: { label: 'Zu den Trainingskund:innen', to: '/training' },
   },
   {
     ziel: 'aftercare_subscriptions',
