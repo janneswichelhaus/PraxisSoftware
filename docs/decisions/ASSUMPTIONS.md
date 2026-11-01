@@ -971,9 +971,9 @@ Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —\
 Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 **Regel.** Werkstatt und Teamleitung stehen in der Standortvorlage mit der Rufnummer der Stelle, nie einer Person; solange ein Platzhalter steht, zeigt die Panne „noch nicht hinterlegt“ statt eines Anrufknopfs. Der Ruhetag gilt nach dem Wochentag in der Zeit der Praxis; „Letzte Behandlung am Tag?“ bleibt eine Frage. **Grundlage.** ANN-554. **Anker.** `zustaendigeRufnummer` in `src/features/fleet/standortvorlage.ts`.
 
-### ANN-823 — Skalen an der Doku: Veränderungsfrage ab Termin 2 der Grundlage, gespeichert erst mit „Übernehmen“
+### ANN-823 — Skalen an der Doku: Veränderungsfrage ab Termin 2, gespeichert erst mit „Übernehmen“
 Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
-**Regel.** Die Veränderungsfrage steht ab dem zweiten Termin der Grundlage oben und offen, sonst immer. Erst „Übernehmen“ speichert je Skala eine abgeschlossene Erhebung mit dem Tag des Termins und fügt eine Zeile ein; ein Fehlgriff davor kostet keine Korrektur. **Grundlage.** Roadmap FRB-EPIC-004, Jannes 2026-09-28; ANN-103. **Anker.** `SKALEN_AM_TERMIN` in `instrumente.ts`.
+**Regel.** Die Veränderungsfrage steht ab dem zweiten Termin der Grundlage im Streifen „+ Skalen“ oben, sonst immer; er bleibt zu. Erst „Übernehmen“ speichert je Skala eine abgeschlossene Erhebung mit dem Termintag und fügt eine Zeile ein; ein Fehlgriff davor kostet keine Korrektur. **Grundlage.** Roadmap FRB-EPIC-004, Jannes 2026-09-28; ANN-103. **Anker.** `SKALEN_AM_TERMIN` in `instrumente.ts`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |

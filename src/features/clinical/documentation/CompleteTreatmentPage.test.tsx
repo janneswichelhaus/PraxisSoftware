@@ -977,11 +977,14 @@ describe('CompleteTreatmentPage', () => {
       expect(within(streifen).queryByText(VERAENDERUNG)).toBeNull();
     });
 
-    it('stellt ab dem zweiten Termin die Veränderungsfrage offen nach oben', async () => {
+    it('stellt ab dem zweiten Termin die Veränderungsfrage nach oben, der Streifen bleibt zu', async () => {
       fetchAbrechnungslage.mockResolvedValue(anPosition(2));
+      const user = userEvent.setup();
       rendern();
       const chip = await screen.findByRole('button', { name: '+ Skalen' });
-      expect(chip).toHaveAttribute('aria-expanded', 'true');
+      // Das Feld beginnt in der oberen Hälfte, der Streifen öffnet auf Tipp (ANN-823).
+      expect(chip).toHaveAttribute('aria-expanded', 'false');
+      await user.click(chip);
       const fragen = within(screen.getByRole('group', { name: 'Skalen' }))
         .getAllByText(/^Wie /)
         .map((e) => e.textContent);
@@ -992,7 +995,8 @@ describe('CompleteTreatmentPage', () => {
       fetchAbrechnungslage.mockResolvedValue(anPosition(3));
       const user = userEvent.setup();
       rendern();
-      const streifen = await screen.findByRole('group', { name: 'Skalen' });
+      await user.click(await screen.findByRole('button', { name: '+ Skalen' }));
+      const streifen = screen.getByRole('group', { name: 'Skalen' });
       await user.click(within(streifen).getByRole('radio', { name: 'etwas besser' }));
       await user.click(within(streifen).getByRole('radio', { name: '4' }));
       expect(screen.getByRole('button', { name: '+ Skalen · 2' })).toBeInTheDocument();
@@ -1027,6 +1031,7 @@ describe('CompleteTreatmentPage', () => {
       const user = userEvent.setup();
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Mobilisation LWS.');
+      await user.click(screen.getByRole('button', { name: '+ Skalen' }));
       await user.click(screen.getByRole('radio', { name: '7' }));
       await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
       expect(
@@ -1042,7 +1047,8 @@ describe('CompleteTreatmentPage', () => {
       fetchAbrechnungslage.mockResolvedValue(anPosition(2));
       const user = userEvent.setup();
       rendern();
-      const sieben = await screen.findByRole('radio', { name: '7' });
+      await user.click(await screen.findByRole('button', { name: '+ Skalen' }));
+      const sieben = screen.getByRole('radio', { name: '7' });
       await user.click(sieben);
       await user.click(sieben);
       expect(sieben).not.toBeChecked();
@@ -1057,7 +1063,8 @@ describe('CompleteTreatmentPage', () => {
       erhebungSpeichern.mockRejectedValue(new Error('Das Datum darf nicht in der Zukunft liegen.'));
       const user = userEvent.setup();
       rendern();
-      await user.click(await screen.findByRole('radio', { name: '3' }));
+      await user.click(await screen.findByRole('button', { name: '+ Skalen' }));
+      await user.click(screen.getByRole('radio', { name: '3' }));
       await user.click(screen.getByRole('button', { name: 'Übernehmen' }));
       expect(
         await screen.findByText('Das Datum darf nicht in der Zukunft liegen.'),
@@ -1075,8 +1082,9 @@ describe('CompleteTreatmentPage', () => {
 
     it('ist mit offenen Skalen barrierefrei', async () => {
       fetchAbrechnungslage.mockResolvedValue(anPosition(2));
+      const user = userEvent.setup();
       const { container } = rendern();
-      await screen.findByRole('group', { name: 'Skalen' });
+      await user.click(await screen.findByRole('button', { name: '+ Skalen' }));
       await pruefeBarrierefreiheit(container);
     });
   });

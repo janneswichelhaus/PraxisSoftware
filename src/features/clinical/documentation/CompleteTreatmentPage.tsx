@@ -142,9 +142,8 @@ function Abschluss({
     datum: dayKey(appointment.starts_at, zone),
     skalen: mitSkalen ? skalenFuer(lage?.basis_position ?? null) : KEINE_SKALEN,
   });
-  // Ab dem zweiten Termin steht der Streifen offen, die Veränderungsfrage oben.
-  const [skalenWahl, setSkalenOffen] = useState<boolean | null>(null);
-  const skalenOffen = skalenWahl ?? (lage?.basis_position ?? 0) >= 2;
+  // Zu, bis jemand ihn öffnet: Das Feld beginnt in der oberen Hälfte (ANN-823).
+  const [skalenOffen, setSkalenOffen] = useState(false);
   const [skalenMeldung, setSkalenMeldung] = useState(false);
   // Angaben in den Bausteinen, die noch nicht gesichert sind, sind
   // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b). Gesichert werden
