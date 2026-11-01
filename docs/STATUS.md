@@ -6,7 +6,7 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**PRX-EPIC-004 begonnen**, der DATEV-Export liegt als PR vor: Buchungsstapel je Bereich und Monat,
+**PRX-EPIC-004 begonnen**, der DATEV-Export liegt als PR #344 vor: Buchungsstapel je Bereich und Monat,
 Nachträge, Belege über den Sammeldruck, Konten nach SKR-Standard bis B4 (ANN-828 bis ANN-830).
 KI-EPIC-001 ist gemergt (#343). Offen: BEF-201, BEF-202.
 
