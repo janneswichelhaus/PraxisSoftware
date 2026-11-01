@@ -385,6 +385,16 @@ describe('Kennzahlen fuer Training, Abo und Pakete (PRX-041)', () => {
       await expect(asAnon(LISTE)).rejects.toThrow(/permission denied/i);
     });
 
+    it('weist Plattformkonten ab - auch Erika sieht Tinas Paket nicht (fremde Person)', async () => {
+      await paket(tag(-60), tag(10));
+      // Ohne Praxisprofil gibt es kein Protokoll der Praxis, in das der Versuch gehoerte.
+      for (const konto of [users.plattformTina, users.plattformErika]) {
+        await expect(asUser(konto, LISTE)).rejects.toThrow(
+          /not allowed to read ending training packages/,
+        );
+      }
+    });
+
     it('endet an der Organisationsgrenze', async () => {
       await paket(tag(-60), tag(10));
       expect(await liste()).toHaveLength(1);

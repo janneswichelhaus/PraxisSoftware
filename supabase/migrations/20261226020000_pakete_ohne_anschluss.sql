@@ -182,9 +182,9 @@ begin
          -- ANN-278: Waehrend einer Behandlung beginnt kein Paket; die Zeile sagt es, statt ins Leere zu fuehren.
          coalesce(app.training_package_start_blocker(e.training_relationship_id, e.ends_on + 1) = 'care_open', false)
   from app.ending_training_packages(v_org) e
-  join public.training_relationships t on t.id = e.training_relationship_id
-  join public.persons pe on pe.id = t.person_id
-  join public.service_catalog_items c on c.id = e.catalog_item_id
+  join public.training_relationships t on t.id = e.training_relationship_id and t.organization_id = v_org
+  join public.persons pe on pe.id = t.person_id and pe.organization_id = v_org
+  join public.service_catalog_items c on c.id = e.catalog_item_id and c.organization_id = v_org
   order by e.ends_on, pe.family_name, pe.given_name, e.training_relationship_id;
 end;
 $$;
