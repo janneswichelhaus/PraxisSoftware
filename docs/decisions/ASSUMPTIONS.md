@@ -975,6 +975,10 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 **Regel.** Die Veränderungsfrage steht ab dem zweiten Termin der Grundlage im Streifen „+ Skalen“ oben, sonst immer; er bleibt zu. Erst „Übernehmen“ speichert je Skala eine abgeschlossene Erhebung mit dem Termintag und fügt eine Zeile ein; ein Fehlgriff davor kostet keine Korrektur. **Grundlage.** Roadmap FRB-EPIC-004, Jannes 2026-09-28; ANN-103. **Anker.** `SKALEN_AM_TERMIN` in `instrumente.ts`.
 
+### ANN-824 — Diktat: Der Anbieter ordnet nur Sätze zu, den Vorschlag setzt der Gateway wörtlich zusammen
+Technik · offen · 2026-11-01 · — · — · Wiedervorlage: Anbieterprüfung (C6)\
+**Regel.** Der Gateway zerlegt das Transkript in Sätze, ein Adapter liefert je Satz nur einen Abschnittstitel. Den Vorschlag setzt der Gateway aus den Sätzen im Wortlaut zusammen, der Browser zeigt ihn nur wortgleich zum Transkript. Die Spracherkennung prüft C6. **Grundlage.** §6.3; ADR-006 Punkt 8; E13. **Anker.** `setzeZusammen` in `inhaltstreue.ts`, `wortgetreu` in `src/lib/ki/gateway.ts`.
+
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
 | --- | --- | --- | --- |

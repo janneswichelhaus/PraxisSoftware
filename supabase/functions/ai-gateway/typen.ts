@@ -98,20 +98,21 @@ export interface Transkriptionsanfrage {
   readonly sprache: Sprache;
 }
 
-/** An den Adapter zur Einordnung: der Text, die Sprache und die Regeln des Zwecks. */
-export interface Strukturierungsanfrage {
-  readonly transkript: string;
+/** An den Adapter zur Einordnung: die Sätze des Transkripts, die Sprache und die Regeln des Zwecks. */
+export interface Zuordnungsanfrage {
+  /** In der Reihenfolge des Diktats, zerlegt vom Gateway (`inhaltstreue.ts`). */
+  readonly saetze: readonly string[];
   readonly sprache: Sprache;
-  /** Die Strukturierungsregeln des Zwecks als Text (`zwecke.ts`). */
+  /** Die Regeln des Zwecks als Text (`zwecke.ts`). */
   readonly regeln: string;
   /** Die Abschnitte der Vorlage, in dieser Reihenfolge. */
   readonly abschnitte: readonly string[];
 }
 
 /**
- * Ein Anbieter hinter dem Gateway. Heute gibt es nur die Nachbildung
- * (`mock.ts`); ein echter Adapter entsteht erst nach der Anbieterentscheidung
- * und der Prüfung nach ADR-002 (ADR-005 Punkte 8 und 9).
+ * Ein Anbieter hinter dem Gateway; bis zur Freischaltung eines echten nach ADR-005 Punkt 8
+ * nur die Nachbildung (`mock.ts`). Er ordnet je Satz einen Titel zu und liefert keinen
+ * Text (ANN-824).
  */
 export interface Sprachadapter {
   /** Kennung für Zweckliste und Protokolleintrag, zum Beispiel `mock`. */
@@ -121,10 +122,10 @@ export interface Sprachadapter {
     anfrage: Transkriptionsanfrage,
     signal: AbortSignal,
   ): Promise<Adapterergebnis<{ readonly transkript: string }>>;
-  strukturiere(
-    anfrage: Strukturierungsanfrage,
+  ordneZu(
+    anfrage: Zuordnungsanfrage,
     signal: AbortSignal,
-  ): Promise<Adapterergebnis<{ readonly abschnitte: readonly Abschnitt[] }>>;
+  ): Promise<Adapterergebnis<{ readonly zuordnung: readonly string[] }>>;
 }
 
 /**

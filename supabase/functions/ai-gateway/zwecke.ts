@@ -52,19 +52,18 @@ export const DIKTAT_ABSCHNITTE = [
 ] as const;
 
 /**
- * Die Strukturierungsregeln für jeden künftigen Adapter - der Wortlaut von
- * PROJECT_PRINCIPLES.md 6.3 und ADR-006 Punkt 8 als Arbeitsanweisung. Sie
- * gehen mit jeder Einordnung an den Adapter; die Nachbildung hält sie, weil
- * sie nur ganze Sätze verschiebt (`mock.ts`).
+ * Die Arbeitsanweisung für jeden künftigen Adapter, der Wortlaut von §6.3 und ADR-006 Punkt 8.
+ * Ein Adapter liefert nur Titel, den Text setzt der Gateway zusammen (ANN-824).
  */
 export const DIKTAT_REGELN = [
-  'Aufgabe: das Transkript eines Diktats einer Physiotherapeut:in den Abschnitten der Dokumentationsvorlage zuordnen. Nur einordnen, nicht interpretieren.',
+  'Aufgabe: jedem Satz aus dem Diktat einer Physiotherapeut:in genau einen Abschnitt der Dokumentationsvorlage zuordnen. Nur einordnen, nicht interpretieren.',
+  'Antwort: je Satz, in derselben Reihenfolge, genau ein Titel aus der Liste der Abschnitte - kein Text, keine Erklärung. Den Vorschlag setzt der Gateway aus den Sätzen im Wortlaut zusammen.',
   'Nichts ergänzen: keine Diagnose, keine Bewertung, keine Empfehlung, keine Schlussfolgerung und nichts, was nicht gesprochen wurde.',
-  'Nichts auslassen: jeder gesprochene Inhalt steht im Ergebnis; nicht zusammenfassen, nicht verdichten.',
+  'Nichts auslassen: jeder Satz bekommt einen Abschnitt; nicht zusammenfassen, nicht verdichten.',
   'Nicht umformulieren: Sätze bleiben im Wortlaut, sie werden nur einem Abschnitt zugeordnet.',
   'Erhalten bleiben Zahlen, Einheiten, Körperseiten, Verneinungen und geäußerte Unsicherheiten.',
-  'Die Aussage der Patient:in bleibt von der eigenen Beobachtung der Therapeut:in unterschieden.',
-  'Unverständliche Stellen werden als [unverständlich] gekennzeichnet und nie geraten.',
+  'Die Aussage der Patient:in (Angaben der Patient:in) bleibt von der eigenen Beobachtung der Therapeut:in (Befund) unterschieden.',
+  'Unverständliche Stellen stehen als [unverständlich] im Satz und werden nie geraten.',
   'Ausdrücklich diktierte Einschätzungen und Pläne der Therapeut:in bleiben erhalten; sie sind ihre Aussage, keine Ergänzung.',
   `Abschnitte: ${DIKTAT_ABSCHNITTE.join(', ')}. Was nicht vorkommt, bleibt leer und wird weggelassen.`,
 ].join('\n');

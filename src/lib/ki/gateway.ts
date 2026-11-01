@@ -114,12 +114,27 @@ const erfolgSchema = z
     abschnitte: z.array(abschnittSchema).max(DIKTAT_ABSCHNITTE.length),
     quelle: z.enum(['anbieter', 'nachbildung']),
   })
-  // Verstanden, aber nichts eingeordnet, wäre eine Auslassung (6.3) - der
-  // Gateway liefert das nicht, und hier gilt es als unbrauchbare Antwort.
-  .refine(
-    (antwort) => antwort.transkript.trim() === '' || antwort.abschnitte.length > 0,
-    'Transkript ohne Abschnitt',
+  // ANN-824: Der Vorschlag besteht aus genau den Wörtern des Transkripts; was etwas
+  // ergänzt, weglässt oder ändert, zeigt die Seite nicht - auch nicht vom eigenen Gateway.
+  .refine((antwort) => wortgetreu(antwort.transkript, antwort.abschnitte), 'nicht wortgetreu');
+
+/** Die Wörter eines Textes, Satzzeichen eingeschlossen, sortiert. */
+function woerter(text: string): string[] {
+  return text
+    .split(/\s+/u)
+    .filter((wort) => wort !== '')
+    .sort();
+}
+
+/** Stehen in den Abschnitten genau die Wörter des Transkripts, jedes so oft wie dort? */
+export function wortgetreu(transkript: string, abschnitte: readonly { text: string }[]): boolean {
+  const gesprochen = woerter(transkript);
+  const vorgeschlagen = woerter(abschnitte.map((abschnitt) => abschnitt.text).join(' '));
+  return (
+    gesprochen.length === vorgeschlagen.length &&
+    gesprochen.every((wort, stelle) => wort === vorgeschlagen[stelle])
   );
+}
 
 const statusSchema = z.object({ ok: z.literal(true), verfuegbar: z.boolean() });
 

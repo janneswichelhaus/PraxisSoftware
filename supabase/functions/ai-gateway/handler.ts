@@ -35,9 +35,9 @@
  */
 
 import type { Berechtigungspruefung } from './berechtigung.ts';
+import { saetze, setzeZusammen } from './inhaltstreue.ts';
 import type { Sitzungspruefung } from './sitzung.ts';
 import type {
-  Abschnitt,
   Adapterergebnis,
   Antwort,
   Fehlerklasse,
@@ -224,12 +224,14 @@ export function erstelleHandler({
       return antwort({ ok: true, transkript: '', abschnitte: [], quelle: adapter.quelle }, 200);
     }
 
-    // An den Adapter: der Text, die Sprache und die Regeln des Zwecks.
+    // An den Adapter: die Sätze, die Sprache und die Regeln des Zwecks; zurück nur die
+    // Zuordnung, den Text setzt der Gateway zusammen (ANN-824).
+    const liste = saetze(transkript);
     const einordnung = await mitFrist(
       (signal) =>
-        adapter.strukturiere(
+        adapter.ordneZu(
           {
-            transkript,
+            saetze: liste,
             sprache: zweck.eingabe.sprache,
             regeln: zweck.regeln,
             abschnitte: zweck.ausgabe.abschnitte,
@@ -239,11 +241,8 @@ export function erstelleHandler({
       fristen.strukturierungMs,
     );
     if (!einordnung.ok) return scheitert(einordnung.error.code, 'Einordnung fehlgeschlagen');
-    const abschnitte = inVorlage(einordnung.value.abschnitte, zweck);
+    const abschnitte = setzeZusammen(liste, einordnung.value.zuordnung, zweck.ausgabe.abschnitte);
     if (abschnitte === null) return scheitert('unavailable', 'Einordnung unbrauchbar');
-    // Verstanden, aber nirgends eingeordnet: Das wäre eine Auslassung (6.3),
-    // und die Seite sähe nur „nichts zu verstehen“. Also kein Ergebnis.
-    if (abschnitte.length === 0) return scheitert('unavailable', 'Einordnung ohne Abschnitt');
 
     return antwort({ ok: true, transkript, abschnitte, quelle: adapter.quelle }, 200);
   };
@@ -411,30 +410,6 @@ async function mitFrist<T>(
   } finally {
     clearTimeout(uhr);
   }
-}
-
-/**
- * Die Abschnitte in der Reihenfolge der Vorlage, leere weggelassen - oder
- * `null`, wenn der Adapter etwas liefert, das die Vorlage nicht kennt. Ein
- * erfundener Abschnitt wäre eine Ergänzung (6.3), ein doppelter eine
- * stille Umstellung; beides geht nicht an die Oberfläche.
- */
-function inVorlage(abschnitte: unknown, zweck: Zweck): Abschnitt[] | null {
-  // Was ein Adapter liefert, ist eine Behauptung, bis es geprüft ist.
-  if (!Array.isArray(abschnitte)) return null;
-  const vorlage = zweck.ausgabe.abschnitte;
-  const texte = new Map<string, string>();
-  for (const abschnitt of abschnitte as unknown[]) {
-    if (typeof abschnitt !== 'object' || abschnitt === null) return null;
-    const { titel, text } = abschnitt as Record<string, unknown>;
-    if (typeof titel !== 'string' || typeof text !== 'string') return null;
-    if (!vorlage.includes(titel) || texte.has(titel)) return null;
-    if (text.length > HOECHST_ZEICHEN) return null;
-    texte.set(titel, text.trim());
-  }
-  return vorlage
-    .filter((titel) => (texte.get(titel) ?? '') !== '')
-    .map((titel) => ({ titel, text: texte.get(titel)! }));
 }
 
 function fehler(code: Fehlerklasse, meldung: string, status = STATUS[code]): Response {

@@ -14,6 +14,7 @@ const {
   diktatVerfuegbar,
   unverstaendlicheStellen,
   vorschlagAlsText,
+  wortgetreu,
 } = await import('./gateway');
 
 /**
@@ -156,6 +157,30 @@ describe('diktatAufbereiten', () => {
     expect(
       await diktatAufbereiten({ terminId: TERMIN, audio: aufnahme(), dauerS: 5 }),
     ).toMatchObject({ ok: false, fehler: 'function_unavailable' });
+  });
+
+  it.each([
+    ['ein ergänztes Wort', 'Keine Schwellung, Arthrose.'],
+    ['ein ausgelassenes Wort', 'Schwellung.'],
+    ['eine geänderte Zahl', 'Keine Schwellung 2.'],
+  ])('nimmt keinen Vorschlag mit %s an (ANN-824)', async (_fall, befund) => {
+    const geaendert = {
+      ...ERFOLG,
+      abschnitte: [{ titel: 'Befund', text: befund }, ERFOLG.abschnitte[1]],
+    };
+    invoke.mockResolvedValue({ data: geaendert, error: null });
+    expect(
+      await diktatAufbereiten({ terminId: TERMIN, audio: aufnahme(), dauerS: 5 }),
+    ).toMatchObject({ ok: false, fehler: 'function_unavailable' });
+  });
+
+  it('prüft die Wortgleichheit unabhängig von Abschnitt und Zeilenumbruch', () => {
+    expect(
+      wortgetreu('Keine Schwellung.\nKnie rechts.', [{ text: 'Knie rechts. Keine Schwellung.' }]),
+    ).toBe(true);
+    expect(wortgetreu('Knie rechts.', [{ text: 'Knie links.' }])).toBe(false);
+    expect(wortgetreu('rechts rechts', [{ text: 'rechts' }])).toBe(false);
+    expect(wortgetreu('', [])).toBe(true);
   });
 
   it('nimmt eine Aufnahme ohne verständliches Wort als leeren Vorschlag an', async () => {

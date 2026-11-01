@@ -1,27 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { NACHGEBILDETES_DIKTAT, erstelleNachbildung, ordneEin, saetze } from './mock.ts';
+import { saetze, setzeZusammen } from './inhaltstreue.ts';
+import { NACHGEBILDETES_DIKTAT, erstelleNachbildung, ordneZu } from './mock.ts';
 import { DIKTAT_ABSCHNITTE } from './zwecke.ts';
 
-/**
- * Die Nachbildung (KI-EPIC-001): ein festes, synthetisches Diktat und eine
- * Einordnung, die nur ganze Sätze verschiebt. Der Kern ist die Wortgleichheit:
- * Jedes Wort des Transkripts steht genau einmal im Vorschlag - nichts ergänzt,
- * nichts ausgelassen, nichts umformuliert (PROJECT_PRINCIPLES.md 6.3).
- */
-
-/** Die Wörter eines Textes - alles zwischen Leerraum, Satzzeichen eingeschlossen. */
-function woerter(text: string): string[] {
-  return text.split(/\s+/u).filter((wort) => wort !== '');
-}
-
-/** Gleiche Wörter gleich oft, unabhängig von der Reihenfolge der Abschnitte. */
-function sortiert(liste: string[]): string[] {
-  return [...liste].sort();
-}
-
-function vorschlagstext(abschnitte: readonly { text: string }[]): string {
-  return abschnitte.map((abschnitt) => abschnitt.text).join(' ');
-}
+// Die Nachbildung: ein festes, synthetisches Diktat und eine Zuordnung ganzer Sätze nach
+// Signalwörtern. Die Wortgleichheit des Vorschlags sichert der Gateway (`inhaltstreue.test.ts`).
 
 const SIGNAL = new AbortController().signal;
 
@@ -67,7 +50,13 @@ describe('Nachbildung: das Diktat', () => {
   });
 });
 
-describe('Nachbildung: die Einordnung', () => {
+/** Der Vorschlag, wie der Gateway ihn aus der Zuordnung der Nachbildung zusammensetzt. */
+function ordneEin(text: string, vorlage: readonly string[]) {
+  const liste = saetze(text);
+  return setzeZusammen(liste, ordneZu(liste, vorlage), vorlage)!;
+}
+
+describe('Nachbildung: die Zuordnung', () => {
   it('ordnet das Diktat den vier Abschnitten zu, Aussage und Beobachtung getrennt', () => {
     expect(ordneEin(NACHGEBILDETES_DIKTAT, DIKTAT_ABSCHNITTE)).toEqual([
       {
@@ -84,43 +73,23 @@ describe('Nachbildung: die Einordnung', () => {
   });
 
   it.each(BEISPIELE.map((text) => [text.slice(0, 40), text]))(
-    'lässt jedes Wort genau einmal stehen: „%s …"',
+    'gibt je Satz genau einen Titel der Vorlage: „%s …"',
     (_kurz, text) => {
-      const abschnitte = ordneEin(text, DIKTAT_ABSCHNITTE);
-      expect(sortiert(woerter(vorschlagstext(abschnitte)))).toEqual(sortiert(woerter(text)));
+      const liste = saetze(text);
+      const zuordnung = ordneZu(liste, DIKTAT_ABSCHNITTE);
+      expect(zuordnung).toHaveLength(liste.length);
+      for (const titel of zuordnung) expect(DIKTAT_ABSCHNITTE).toContain(titel);
     },
   );
-
-  it.each(BEISPIELE.map((text) => [text.slice(0, 40), text]))(
-    'verschiebt nur ganze Sätze in ihrer Reihenfolge: „%s …"',
-    (_kurz, text) => {
-      const alle = saetze(text);
-      for (const abschnitt of ordneEin(text, DIKTAT_ABSCHNITTE)) {
-        const eigene = alle.filter((satz) => abschnitt.text.includes(satz));
-        // Der Abschnitt ist genau seine Sätze, in der Reihenfolge des Diktats.
-        expect(abschnitt.text).toBe(eigene.join(' '));
-      }
-    },
-  );
-
-  it('kennt nur Abschnitte der Vorlage und lässt leere weg', () => {
-    for (const text of BEISPIELE) {
-      const abschnitte = ordneEin(text, DIKTAT_ABSCHNITTE);
-      const titel = abschnitte.map((abschnitt) => abschnitt.titel);
-      expect(DIKTAT_ABSCHNITTE.filter((t) => titel.includes(t))).toEqual(titel);
-      expect(abschnitte.every((abschnitt) => abschnitt.text.trim() !== '')).toBe(true);
-    }
-    expect(ordneEin('', DIKTAT_ABSCHNITTE)).toEqual([]);
-  });
 
   it('folgt einer Ansage am Satzanfang und stellt berichtete Rede vor alles andere', () => {
-    expect(ordneEin('Befund: Knie warm.', DIKTAT_ABSCHNITTE)[0]!.titel).toBe('Befund');
-    expect(ordneEin('Anamnese seit Jahren Rücken.', DIKTAT_ABSCHNITTE)[0]!.titel).toBe(
+    expect(ordneZu(['Befund: Knie warm.'], DIKTAT_ABSCHNITTE)).toEqual(['Befund']);
+    expect(ordneZu(['Anamnese seit Jahren Rücken.'], DIKTAT_ABSCHNITTE)).toEqual([
       'Angaben der Patient:in',
+    ]);
+    expect(ordneZu(['Patientin sagt, die Mobilisation habe geholfen.'], DIKTAT_ABSCHNITTE)).toEqual(
+      ['Angaben der Patient:in'],
     );
-    expect(
-      ordneEin('Patientin sagt, die Mobilisation habe geholfen.', DIKTAT_ABSCHNITTE)[0]!.titel,
-    ).toBe('Angaben der Patient:in');
   });
 
   it('hängt einen Satz ohne Signal an den vorigen, am Anfang an den Befund', () => {
@@ -135,20 +104,19 @@ describe('Nachbildung: die Einordnung', () => {
 
   it('verliert keinen Satz, wenn die Vorlage einen Abschnitt nicht kennt', () => {
     const text = 'Plan: Kontrolle. Keine Schwellung.';
-    const abschnitte = ordneEin(text, ['Befund']);
-    expect(abschnitte).toEqual([{ titel: 'Befund', text: 'Plan: Kontrolle. Keine Schwellung.' }]);
+    expect(ordneEin(text, ['Befund'])).toEqual([
+      { titel: 'Befund', text: 'Plan: Kontrolle. Keine Schwellung.' },
+    ]);
   });
 
   it('ist deterministisch', async () => {
     const adapter = erstelleNachbildung();
     const anfrage = {
-      transkript: NACHGEBILDETES_DIKTAT,
+      saetze: saetze(NACHGEBILDETES_DIKTAT),
       sprache: 'de' as const,
       regeln: '',
       abschnitte: DIKTAT_ABSCHNITTE,
     };
-    expect(await adapter.strukturiere(anfrage, SIGNAL)).toEqual(
-      await adapter.strukturiere(anfrage, SIGNAL),
-    );
+    expect(await adapter.ordneZu(anfrage, SIGNAL)).toEqual(await adapter.ordneZu(anfrage, SIGNAL));
   });
 });
