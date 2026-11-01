@@ -142,6 +142,8 @@ import { CancellationPrintPage } from '@/features/billing/CancellationPrintPage'
 import { InvoiceDetailPage } from '@/features/billing/InvoiceDetailPage';
 import { InvoicePrintPage } from '@/features/billing/InvoicePrintPage';
 import { SammeldruckPage } from '@/features/billing/SammeldruckPage';
+import { SteuerberatungPage } from '@/features/billing/SteuerberatungPage';
+import { DatevAngabenPage } from '@/features/billing/DatevAngabenPage';
 import { ReminderPrintPage } from '@/features/billing/ReminderPrintPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { PracticeProfilePage } from '@/features/billing/PracticeProfilePage';
@@ -685,6 +687,14 @@ export function AuthenticatedRoutes({
                   ausgestellte Dokumente und gebuchte Zahlungen, ohne
                   Personenbezug (ABR-011, ADR-009 Punkt 19). */}
                   <Route path="/abrechnung/auswertung" element={<RevenuePage />} />
+                  <Route
+                    path="/abrechnung/steuerberatung"
+                    element={<SteuerberatungPage user={user} />}
+                  />
+                  <Route
+                    path="/abrechnung/steuerberatung/angaben"
+                    element={<DatevAngabenPage user={user} />}
+                  />
                 </>
               ) : null}
 

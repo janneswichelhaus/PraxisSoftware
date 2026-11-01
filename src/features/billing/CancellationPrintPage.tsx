@@ -98,12 +98,15 @@ function Inhalt({ rechnung }: { rechnung: UseQueryResult<Rechnungsansicht> }) {
  * existiert, hat die aufrufende Komponente bereits beantwortet — so steht es
  * auch im Typ und nicht nur in der Reihenfolge der Aufrufe.
  */
-function Stornoblatt({
+export function Stornoblatt({
   ansicht,
   storno,
+  einzeln = true,
 }: {
   ansicht: Rechnungsansicht;
   storno: NonNullable<Rechnungsansicht['cancellation']>;
+  /** Im Sammeldruck druckt ein Knopf für alle Blätter. */
+  einzeln?: boolean;
 }) {
   const dokument = ansicht.document;
   const absender = dokument.issuer;
@@ -175,17 +178,20 @@ function Stornoblatt({
         ) : null}
       </article>
 
-      <div className="nicht-drucken mx-auto mt-10 flex max-w-[210mm] flex-col gap-3">
-        <div>
-          <Button type="button" onClick={() => window.print()}>
-            Stornodokument drucken
-          </Button>
+      {einzeln ? (
+        <div className="nicht-drucken mx-auto mt-10 flex max-w-[210mm] flex-col gap-3">
+          <div>
+            <Button type="button" onClick={() => window.print()}>
+              Stornodokument drucken
+            </Button>
+          </div>
+          <Kleingedrucktes>
+            Wie bei der Rechnung entsteht die Datei im Druckdialog auf diesem Gerät; die Anwendung
+            legt sie nicht ab. Aufbewahrt wird das Storno in der Anwendung, mit Nummer, Tag und
+            Grund.
+          </Kleingedrucktes>
         </div>
-        <Kleingedrucktes>
-          Wie bei der Rechnung entsteht die Datei im Druckdialog auf diesem Gerät; die Anwendung
-          legt sie nicht ab. Aufbewahrt wird das Storno in der Anwendung, mit Nummer, Tag und Grund.
-        </Kleingedrucktes>
-      </div>
+      ) : null}
     </>
   );
 }

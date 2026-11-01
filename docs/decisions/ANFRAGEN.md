@@ -72,11 +72,13 @@ zu den Fragen 1 bis 4** sind vier Festlegungen, vorläufig entschieden am 2026-0
 4. **Belegfristen und Belegarten** (B3). Vorlage: die gesetzlichen (§147 AO, §257 HGB) als eigene
    Datenklasse, getrennt von der Akte, zwei Uhren statt einer; Rücknahme `klein`. Frage: für
    Rechnungen, Storno- und Korrekturdokumente, Zahlungs- und Erstattungsbelege?
-5. **Export für die Steuerberatung.** Geplant ist ein Export im DATEV-Format: Buchungsstapel mit
-   Rechnungen, Zahlungen, Stornos und Erstattungen, dazu die Rechnungen als Belege, so wie sie
-   ausgestellt sind (mit Diagnose, ANN-229). Fragen: Arbeitet die Kanzlei mit DATEV, mit SKR03 oder
-   SKR04? Reicht eine Datei im Monat, oder soll der Belegtransfer direkt nach DATEV Unternehmen
-   online gehen?
+5. **Export für die Steuerberatung.** Gebaut ist ein Export im DATEV-Format: je Bereich und Monat
+   ein Buchungsstapel mit Rechnungen, Zahlungen, Stornos und Erstattungen über einen Sammeldebitor
+   ohne Namen, Nachträge für später Erfasstes, dazu die Rechnungen als Belege, so wie sie
+   ausgestellt sind (mit Diagnose, ANN-229; Konten ANN-828). Fragen: Arbeitet die Kanzlei mit DATEV,
+   mit SKR03 oder SKR04 und diesen Konten? Genügt der Sammeldebitor? Reicht eine Datei im Monat,
+   oder soll der Belegtransfer direkt nach DATEV Unternehmen online gehen? Bitte: ein Testimport
+   eines Monats mit synthetischen Daten.
 6. **Personal Training und Pakete** (B9, B11): Ein Paket gilt für einen festen Zeitraum, ist nicht
    pausierbar und enthält die Plattform (ADR-009 Punkt 21). Entsteht die Steuer bei Vereinnahmung
    (§13 Abs. 1 Nr. 1 lit. a Satz 4 UStG)? Was verlangt die GoBD für das Guthaben? Wie ist ein Paket

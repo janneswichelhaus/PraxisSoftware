@@ -899,6 +899,20 @@ export const ROUTEN = Object.freeze([
     konten: ['owner'],
   },
   {
+    muster: '/abrechnung/steuerberatung',
+    pfad: '/abrechnung/steuerberatung',
+    bereich: 'Abrechnung',
+    etikett: 'Steuerberatung (DATEV-Export)',
+    konten: ['owner', 'office'],
+  },
+  {
+    muster: '/abrechnung/steuerberatung/angaben',
+    pfad: '/abrechnung/steuerberatung/angaben',
+    bereich: 'Abrechnung',
+    etikett: 'DATEV-Angaben',
+    konten: ['owner'],
+  },
+  {
     muster: '/statistiken',
     pfad: '/statistiken',
     bereich: 'Abrechnung',

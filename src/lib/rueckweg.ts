@@ -133,6 +133,7 @@ export function rueckwegBeschriftung(pfad: string): string {
   if (ohneSuche === '/abrechnung') return 'Zurück zu den Rechnungen';
   if (ohneSuche === '/abrechnung/zahlungen') return 'Zurück zu den Zahlungen';
   if (ohneSuche === '/abrechnung/leistungen') return 'Zurück zu den Leistungen';
+  if (ohneSuche === '/abrechnung/steuerberatung') return 'Zurück zur Steuerberatung';
   if (ohneSuche === '/team') return 'Zurück zum Teamchat';
   if (ohneSuche === '/team/threads') return 'Zurück zu den Threads';
   if (ohneSuche === '/team/suche') return 'Zurück zur Suche';

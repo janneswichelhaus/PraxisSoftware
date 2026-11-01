@@ -40,7 +40,10 @@ in der Datenbank hinterlegt (`README.md`, „Fristen aus der Datenbank“).
 - **Betroffene:** Patientinnen und Patienten, Rechnungsempfänger, Kundinnen und Kunden im Training.
 - **Daten:** Rechnungen mit Leistungen und Diagnose der Verordnung, Zahlungen, Stornos.
 - **Rechtsgrundlage:** Art. 6 Abs. 1 lit. b und c DSGVO; § 147 AO, § 14 UStG.
-- **Empfänger:** Steuerberatung (Export im DATEV-Format), Finanzamt bei einer Prüfung.
+- **Empfänger:** Steuerberatung (Buchungsstapel im DATEV-Format ohne Namen und Diagnosen, die
+  Rechnungen als Belege, ANN-829), Finanzamt bei einer Prüfung. Die Patienteninformation nennt
+  die Steuerberatung noch nicht (Art. 13 Abs. 1 lit. e DSGVO); sie kommt mit G14 in die
+  Datenschutzinformationen (Jannes 2026-11-01).
 - **Frist:** 8 Jahre ab Ende des Kalenderjahres (§ 147 Abs. 3 AO).
 
 ## 4. Patientenplattform

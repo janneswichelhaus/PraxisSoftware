@@ -25,6 +25,8 @@ delete from public.audit_log;
 -- Organisation; Stellen fallen mit Check-Up und Panne, alles mit dem Rad.
 delete from public.fleet_bikes;
 delete from public.fleet_depots;
+delete from public.datev_exports;
+delete from public.datev_settings;
 delete from public.invoice_items;
 delete from public.invoices;
 delete from public.invoice_recipients;
@@ -385,6 +387,11 @@ insert into public.practice_billing_profiles (
   'Testbank Tuebingen', 'Test Praxis Tuebingen',
   'DE02120300000000202051', 'TESTDEFFXXX', 'RG', 14
 );
+
+-- Synthetische DATEV-Angaben: Beraternummer und Mandanten sind erfunden (ANN-828).
+insert into public.datev_settings (
+  organization_id, consultant_number, client_number_therapy, client_number_training, chart_of_accounts
+) values ('22222222-2222-4222-8222-000000000001', 1001, 1, 2, 'SKR03');
 
 
 -- -----------------------------------------------------------------------------

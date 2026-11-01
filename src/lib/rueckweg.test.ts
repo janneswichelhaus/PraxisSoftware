@@ -164,6 +164,7 @@ describe('rueckwegBeschriftung', () => {
     ['/abrechnung', 'Zurück zu den Rechnungen'],
     ['/abrechnung/zahlungen', 'Zurück zu den Zahlungen'],
     ['/abrechnung/leistungen', 'Zurück zu den Leistungen'],
+    ['/abrechnung/steuerberatung', 'Zurück zur Steuerberatung'],
     ['/betrieb/arbeitszeit', 'Zurück zur Arbeitszeit'],
     // TEAM-001: der Teamchat und ein Gespräch darin.
     ['/team', 'Zurück zum Teamchat'],
