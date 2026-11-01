@@ -20,6 +20,7 @@ import {
   fetchDocumentationDeadline,
   fetchTreatmentDocumentation,
   finalizeTreatmentNote,
+  MIT_DIKTAT,
   type TreatmentNote,
 } from './api';
 import { fristDatum, herkunft, zeitpunkt } from './format';
@@ -116,6 +117,7 @@ function Eintrag({
             wurde, entscheidet später über eine Rechnung ohne erbrachte
             Leistung (ADR-018 Fassung 3 Punkt 9). */}
         {note.visit_without_treatment ? <Badge>Ohne Behandlung</Badge> : null}
+        {note.dictated ? <Badge>{MIT_DIKTAT}</Badge> : null}
         {final && note.version_count > 1 ? (
           <span className="text-ink-muted text-xs">
             {note.version_count} Versionen, zuletzt korrigiert am {zeitpunkt(note.updated_at, zone)}

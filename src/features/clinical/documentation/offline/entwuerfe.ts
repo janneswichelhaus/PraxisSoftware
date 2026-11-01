@@ -55,6 +55,8 @@ const entwurfSchema = z.object({
   grund: z.string().nullable(),
   /** Bei `konflikt`: die Dokumentation, die am Termin schon steht. */
   vorhanden: z.object({ id: z.string(), status: z.enum(['draft', 'final']) }).nullable(),
+  /** Ein übernommener Diktatvorschlag steht im Text (ANN-825); bleibt gesetzt. */
+  diktiert: z.boolean().optional(),
 });
 export type Entwurf = z.infer<typeof entwurfSchema>;
 
@@ -121,6 +123,8 @@ export async function entwurfSchreiben(
    * kennt (Zweitreview S1).
    */
   immerNeu = false,
+  /** Steht ein übernommener Diktatvorschlag im Text (ANN-825)? */
+  diktiert = false,
 ): Promise<Entwurf | undefined> {
   if (text.length > MAX_ZEICHEN) throw new Error('zu lang');
   let neueId: string | null = null;
@@ -138,6 +142,7 @@ export async function entwurfSchreiben(
     if (da) {
       da.text = text;
       da.geschriebenAm = jetzt.toISOString();
+      if (diktiert) da.diktiert = true;
     } else {
       neueId = crypto.randomUUID();
       f.entwuerfe.push({
@@ -150,6 +155,7 @@ export async function entwurfSchreiben(
         zustand: 'wartet',
         grund: null,
         vorhanden: null,
+        ...(diktiert ? { diktiert: true } : {}),
       });
     }
     return f;

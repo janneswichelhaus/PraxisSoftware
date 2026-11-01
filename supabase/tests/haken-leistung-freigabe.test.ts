@@ -536,6 +536,12 @@ describe('In die Abrechnung stellen und Sperre (B7, ANN-514, ANN-515)', () => {
         [a],
       ),
     ).rejects.toThrow(/treatment basis is in billing/);
+    // Auch das Merkmal „mit Diktat“ gehört zum Eintrag (ANN-825).
+    await expect(
+      asPostgres('update public.treatment_notes set dictated = true where appointment_id = $1', [
+        a,
+      ]),
+    ).rejects.toThrow(/treatment basis is in billing/);
     await expect(
       asPostgres(
         `insert into public.treatment_note_versions (organization_id, note_id, version_no, content, author_id)

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
+import { mitDiktat } from '../api';
 
 /**
  * Der Weg eines Offline-Entwurfs zum Server (OFF-002, ADR-024 Punkte 7 und 8).
@@ -61,12 +62,14 @@ export async function entwurfUebertragen(entwurf: {
   terminId: string;
   text: string;
   geschriebenAm: string;
+  diktiert?: boolean | undefined;
 }): Promise<EntwurfAntwort> {
   const { data, error } = (await getSupabase().rpc('sync_offline_treatment_note', {
     p_offline_id: entwurf.id,
     p_appointment_id: entwurf.terminId,
     p_content: entwurf.text,
     p_written_at: entwurf.geschriebenAm,
+    ...mitDiktat(entwurf.diktiert === true),
   })) as { data: unknown; error: { code?: string; message?: string } | null };
   const code = error?.code;
   const meldung = error?.message ?? '';

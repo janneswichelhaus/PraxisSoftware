@@ -10,6 +10,7 @@ const {
   MAX_BEGRUENDUNG,
   MAX_ZEICHEN,
   begruendungFehler,
+  completeTreatment,
   createTreatmentNote,
   createTreatmentNoteAddendum,
   fetchTreatmentDocumentation,
@@ -352,5 +353,50 @@ describe('createTreatmentNoteAddendum', () => {
     await expect(createTreatmentNoteAddendum(DOKU_ID, 'x')).rejects.toThrow(
       'Der Nachtrag konnte nicht angelegt werden.',
     );
+  });
+});
+
+describe('Merkmal „mit Diktat“ (ANN-825)', () => {
+  beforeEach(() => {
+    rpc.mockReset();
+    rpc.mockResolvedValue({ data: DOKU_ID, error: null });
+  });
+
+  it('geht nur hinaus, wenn ein Vorschlag übernommen ist', async () => {
+    await createTreatmentNote(TERMIN_ID, 'Getippt.');
+    await createTreatmentNote(TERMIN_ID, 'Diktiert.', true);
+    expect(rpc).toHaveBeenNthCalledWith(1, 'create_treatment_note', {
+      p_appointment_id: TERMIN_ID,
+      p_content: 'Getippt.',
+    });
+    expect(rpc).toHaveBeenNthCalledWith(2, 'create_treatment_note', {
+      p_appointment_id: TERMIN_ID,
+      p_content: 'Diktiert.',
+      p_dictated: true,
+    });
+  });
+
+  it('reist mit jedem Schreibweg am Text', async () => {
+    await updateTreatmentNote(DOKU_ID, STAND, 'Text.', true);
+    await completeTreatment(TERMIN_ID, 'Text.', STAND, null, false, true);
+    await reviseTreatmentNote(DOKU_ID, STAND, 'Text.', 'Synthetisch: ergänzt', true);
+    await createTreatmentNoteAddendum(DOKU_ID, 'Text.', true);
+    const namen = rpc.mock.calls.map(([name]) => name as string);
+    expect(namen).toEqual([
+      'update_treatment_note',
+      'complete_treatment',
+      'revise_treatment_note',
+      'create_treatment_note_addendum',
+    ]);
+    for (const [, argumente] of rpc.mock.calls) {
+      expect((argumente as Record<string, unknown>).p_dictated).toBe(true);
+    }
+  });
+
+  it('liest das Merkmal mit dem Eintrag und kommt mit einem Stand ohne die Spalte aus', async () => {
+    rpc.mockResolvedValue({ data: [{ ...zeile, dictated: true }, nachtragZeile], error: null });
+    const doku = await fetchTreatmentDocumentation(TERMIN_ID);
+    expect(doku.primary?.dictated).toBe(true);
+    expect(doku.addenda[0]?.dictated).toBeUndefined();
   });
 });

@@ -979,6 +979,10 @@ Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 Technik · offen · 2026-11-01 · — · — · Wiedervorlage: Anbieterprüfung (C6)\
 **Regel.** Der Gateway zerlegt das Transkript in Sätze, ein Adapter liefert je Satz nur einen Abschnittstitel. Den Vorschlag setzt der Gateway aus den Sätzen im Wortlaut zusammen, der Browser zeigt ihn nur wortgleich zum Transkript. Die Spracherkennung prüft C6. **Grundlage.** §6.3; ADR-006 Punkt 8; E13. **Anker.** `setzeZusammen` in `inhaltstreue.ts`, `wortgetreu` in `src/lib/ki/gateway.ts`.
 
+### ANN-825 — „Mit Diktat“ am Eintrag: gesetzt mit der Übernahme, bleibt stehen
+Technik · offen · 2026-11-01 · — · — · Wiedervorlage: —\
+**Regel.** Wer einen Vorschlag aus der Aufnahme übernimmt, schreibt den Eintrag mit dem Merkmal `dictated`, auf jedem Weg: Entwurf, Festschreiben, Korrektur, Nachtrag, Gerät. Es bleibt, auch wenn der Text danach umgeschrieben wird; „Rückgängig“ vor dem Sichern nimmt es zurück. Kein Auditeintrag. **Grundlage.** ADR-005 Konsequenzen; ADR-010 Punkt 15; §6.3. **Anker.** `mitDiktat` in `src/features/clinical/documentation/api.ts`.
+
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
 | --- | --- | --- | --- |

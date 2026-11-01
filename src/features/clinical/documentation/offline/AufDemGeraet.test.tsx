@@ -143,11 +143,11 @@ describe('AufDemGeraet', () => {
     await user.click(within(karte).getByRole('button', { name: 'Fassung der Praxis zeigen' }));
     expect(await within(karte).findByText('Synthetisch: Fassung der Praxis.')).toBeInTheDocument();
     await user.click(within(karte).getByRole('button', { name: 'In Korrektur übernehmen' }));
-    expect(inKorrektur).toHaveBeenCalledWith('t1', 'n1', 'Synthetisch: offline.');
+    expect(inKorrektur).toHaveBeenCalledWith('t1', 'n1', 'Synthetisch: offline.', false);
     // Die Korrektur nimmt ihn nicht vom Gerät - erst ausdrücklich oder per Nachtrag.
     expect(await entwuerfeLesen(ANNA)).toHaveLength(1);
     await user.click(within(karte).getByRole('button', { name: 'Als Nachtrag übernehmen' }));
-    expect(alsNachtrag).toHaveBeenCalledWith('t1', 'n1', 'Synthetisch: offline.');
+    expect(alsNachtrag).toHaveBeenCalledWith('t1', 'n1', 'Synthetisch: offline.', false);
     await waitFor(async () => expect(await entwuerfeLesen(ANNA)).toHaveLength(0));
   });
 

@@ -70,8 +70,7 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchTreatmentDocumentation: (id: string) =>
       fetchTreatmentDocumentation(id) as Promise<DokumentationApi.TreatmentDocumentation>,
-    reviseTreatmentNote: (id: string, stand: string, inhalt: string, grund: string) =>
-      reviseTreatmentNote(id, stand, inhalt, grund) as Promise<void>,
+    reviseTreatmentNote: (...args: unknown[]) => reviseTreatmentNote(...args) as Promise<void>,
   };
 });
 
@@ -124,6 +123,7 @@ describe('TreatmentNoteRevisionPage', () => {
         STAND,
         `${INHALT} Korrigiert.`,
         'Zahlendreher.',
+        false,
       );
     });
     // Der Termin erfährt, welche Version entstanden ist (DOK-15).
@@ -142,6 +142,25 @@ describe('TreatmentNoteRevisionPage', () => {
     expect(screen.getByText(/Ihr Text aus dem Entwurf steht im Feld/)).toBeInTheDocument();
     // Abgeholt: Ein späteres Öffnen beginnt wieder mit dem Wortlaut der Akte.
     expect(uebergebenerText(DOKU_ID)).toBeUndefined();
+  });
+
+  it('schreibt einen übergebenen Text mit Diktat „mit Diktat“ fest (ANN-825)', async () => {
+    const user = userEvent.setup();
+    textUebergeben(DOKU_ID, 'Synthetisch: Text aus der Aufnahme.', true);
+    rendern();
+
+    await waitFor(() => expect(feld()).toHaveValue('Synthetisch: Text aus der Aufnahme.'));
+    await user.type(grundfeld(), 'Ergänzt.');
+    await user.click(screen.getByRole('button', { name: 'Korrektur festschreiben' }));
+    await waitFor(() =>
+      expect(reviseTreatmentNote).toHaveBeenCalledWith(
+        DOKU_ID,
+        expect.any(String),
+        'Synthetisch: Text aus der Aufnahme.',
+        'Ergänzt.',
+        true,
+      ),
+    );
   });
 
   it('behält den mitgereisten Rückweg für den Pfeil im Kopf, Nachtrag und den Weg danach (DOK-01)', async () => {

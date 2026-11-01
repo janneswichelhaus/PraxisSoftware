@@ -339,6 +339,7 @@ describe('CompleteTreatmentPage', () => {
       null,
       // Ohne den Weg aus dem geführten Ablauf kein Pflichtvermerk (CAL-018).
       false,
+      false,
     );
     // Kein zweiter Schreibweg daneben.
     expect(createTreatmentNote).not.toHaveBeenCalled();
@@ -583,6 +584,7 @@ describe('CompleteTreatmentPage', () => {
         termin.updated_at,
         entwurf.updated_at,
         false,
+        false,
       ),
     );
   });
@@ -649,7 +651,7 @@ describe('CompleteTreatmentPage', () => {
     await user.click(screen.getByRole('button', { name: 'Speichern und weiter' }));
 
     await waitFor(() =>
-      expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Ungespeichert'),
+      expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Ungespeichert', false),
     );
     expect(completeTreatment).not.toHaveBeenCalled();
   });
@@ -798,6 +800,7 @@ describe('CompleteTreatmentPage', () => {
           'MT LWS, Gangschule 10 min, Heimprogramm wiederholt. Heute Treppe.',
           termin.updated_at,
           null,
+          false,
           false,
         ),
       );
@@ -1124,6 +1127,7 @@ describe('CompleteTreatmentPage', () => {
           termin.updated_at,
           null,
           true,
+          false,
         ),
       );
     });
@@ -1141,6 +1145,7 @@ describe('CompleteTreatmentPage', () => {
           termin.updated_at,
           null,
           true,
+          false,
         ),
       );
       expect(screen.queryByText(/darf nicht leer sein/)).not.toBeInTheDocument();
@@ -1180,6 +1185,7 @@ describe('CompleteTreatmentPage', () => {
           'Behandelt.',
           termin.updated_at,
           null,
+          false,
           false,
         ),
       );
@@ -1222,6 +1228,7 @@ describe('CompleteTreatmentPage', () => {
           termin.updated_at,
           null,
           false,
+          false,
         ),
       );
     });
@@ -1248,7 +1255,9 @@ describe('CompleteTreatmentPage', () => {
       await lachmannPositiv(user);
       await user.click(screen.getByRole('button', { name: 'Entwurf' }));
 
-      await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Befund:'));
+      await waitFor(() =>
+        expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Befund:', false),
+      );
       expect(befundangabenSichern).toHaveBeenCalledWith(
         TERMIN_ID,
         expect.objectContaining({ seitenwahl: { knie: 'rechts' } }),
@@ -1272,7 +1281,9 @@ describe('CompleteTreatmentPage', () => {
         await user.type(screen.getByLabelText('Eintrag zur Behandlung'), 'Befund:');
         await act(() => vi.advanceTimersByTimeAsync(3100));
 
-        await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Befund:'));
+        await waitFor(() =>
+          expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Befund:', false),
+        );
         expect(completeTreatment).not.toHaveBeenCalled();
       } finally {
         vi.useRealTimers();
@@ -1315,6 +1326,7 @@ describe('CompleteTreatmentPage', () => {
           'Befund:',
           termin.updated_at,
           null,
+          false,
           false,
         ),
       );
@@ -1365,7 +1377,7 @@ describe('CompleteTreatmentPage', () => {
       await act(() => vi.advanceTimersByTimeAsync(3100));
 
       await waitFor(() =>
-        expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Synthetisch.'),
+        expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Synthetisch.', false),
       );
       expect(completeTreatment).not.toHaveBeenCalled();
       expect(navigate).not.toHaveBeenCalled();
@@ -1538,9 +1550,11 @@ describe('CompleteTreatmentPage', () => {
 
           await act(() => vi.advanceTimersByTimeAsync(3100));
           await waitFor(() =>
+            // Gesichert wie getippt, aber mit dem Merkmal „mit Diktat“ (ANN-825).
             expect(createTreatmentNote).toHaveBeenCalledWith(
               TERMIN_ID,
               'Befund\nKeine Schwellung, Beugung 110 Grad.',
+              true,
             ),
           );
           expect(completeTreatment).not.toHaveBeenCalled();
@@ -1604,6 +1618,50 @@ describe('CompleteTreatmentPage', () => {
       await user.click(screen.getByRole('button', { name: 'Rückgängig' }));
       expect(feld).toHaveValue('Heute geübt.');
       expect(screen.getByLabelText('Text des Vorschlags')).toHaveValue(VORSCHLAGSTEXT);
+    });
+
+    it('schreibt nach der Übernahme „mit Diktat“ fest (ANN-825)', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+      await diktieren(user);
+      await user.click(screen.getByRole('button', { name: 'In die Doku übernehmen' }));
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+
+      await waitFor(() =>
+        expect(completeTreatment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          `Heute geübt.\n\n${VORSCHLAGSTEXT}`,
+          termin.updated_at,
+          null,
+          false,
+          true,
+        ),
+      );
+    });
+
+    it('schreibt nach „Rückgängig“ und Verwerfen ohne „mit Diktat“ fest', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+      await diktieren(user);
+      await user.click(screen.getByRole('button', { name: 'In die Doku übernehmen' }));
+      await user.click(screen.getByRole('button', { name: 'Rückgängig' }));
+      await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
+      const frage = screen.getByRole('group', { name: 'Vorschlag aus der Aufnahme verwerfen' });
+      await user.click(within(frage).getByRole('button', { name: 'Ja, verwerfen' }));
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+
+      await waitFor(() =>
+        expect(completeTreatment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          'Heute geübt.',
+          termin.updated_at,
+          null,
+          false,
+          false,
+        ),
+      );
     });
 
     it('verwirft den Vorschlag erst nach Rückfrage', async () => {

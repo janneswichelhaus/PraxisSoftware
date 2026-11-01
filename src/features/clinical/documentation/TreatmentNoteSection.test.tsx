@@ -175,6 +175,17 @@ describe('TreatmentNoteSection', () => {
 
     expect(await screen.findByText(INHALT)).toBeInTheDocument();
     expect(screen.queryByText('Ohne Behandlung')).not.toBeInTheDocument();
+    expect(screen.queryByText('Mit Diktat')).not.toBeInTheDocument();
+  });
+
+  it('zeigt „Mit Diktat“, wenn ein Vorschlag übernommen wurde (ANN-825)', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({
+      primary: { ...doku, dictated: true },
+      addenda: [],
+    });
+    rendern();
+
+    expect(await screen.findByText('Mit Diktat')).toBeInTheDocument();
   });
 
   it('bietet therapeutischen Rollen das Bearbeiten an - als „Doku", wo oben keine Leiste steht', async () => {

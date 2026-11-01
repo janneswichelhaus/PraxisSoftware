@@ -17,12 +17,15 @@ export function AufGeraetSichern({
   terminId,
   kopf,
   text,
+  diktiert = false,
   onGesichert,
 }: {
   besitzer: string;
   terminId: string;
   kopf: Entwurfskopf;
   text: string;
+  /** Steht ein übernommener Diktatvorschlag im Text (ANN-825)? */
+  diktiert?: boolean;
   /** Danach gibt die Seite ihren Schutz frei und führt zu „Auf dem Gerät“. */
   onGesichert: () => void;
 }) {
@@ -54,6 +57,7 @@ export function AufGeraetSichern({
               text,
               new Date(),
               da !== undefined && da.text !== text,
+              diktiert,
             );
           })().then(onGesichert, () => setFehler(true));
         }}

@@ -51,9 +51,9 @@ export interface Serverwege {
   /** Adresse der Dokumentation eines Termins. */
   zurDokumentation: (terminId: string) => string;
   /** Den Text als Nachtrag-Entwurf an die finalisierte Dokumentation (ANN-320). */
-  alsNachtrag: (terminId: string, noteId: string, text: string) => Promise<void>;
+  alsNachtrag: (terminId: string, noteId: string, text: string, diktiert: boolean) => Promise<void>;
   /** Den Text in die Korrektur der finalisierten Dokumentation (ANN-320). */
-  inKorrektur: (terminId: string, noteId: string, text: string) => void;
+  inKorrektur: (terminId: string, noteId: string, text: string, diktiert: boolean) => void;
   /**
    * Die Fassung, die am Termin schon steht - beide Fassungen zeigen (ADR-024
    * Punkt 7). Nur auf Tipp: Lesen ist „Akte geöffnet“ (ADR-010).
@@ -312,7 +312,7 @@ function Entwurfskarte({
     setLaeuft(true);
     setFehler(null);
     try {
-      await serverwege.alsNachtrag(e.terminId, noteId, e.text);
+      await serverwege.alsNachtrag(e.terminId, noteId, e.text, e.diktiert === true);
       await entwurfVerwerfen(besitzer, e.id);
     } catch (grund) {
       setFehler(grund instanceof Error ? grund.message : 'Nicht übernommen.');
@@ -408,7 +408,9 @@ function Entwurfskarte({
                 </Button>
                 <Button
                   variant="secondary"
-                  onClick={() => serverwege.inKorrektur(e.terminId, e.vorhanden!.id, e.text)}
+                  onClick={() =>
+                    serverwege.inKorrektur(e.terminId, e.vorhanden!.id, e.text, e.diktiert === true)
+                  }
                 >
                   In Korrektur übernehmen
                 </Button>
