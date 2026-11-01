@@ -53,7 +53,7 @@ describe('Kennzahlen (STA-003, ANN-155)', () => {
   it('fuehrt drei Zahlen zu Training, Abo und Paketen mit Richtung und Handlung (ANN-832)', () => {
     expect(ANGEBOTSKENNZAHLEN.map((k) => [k.ziel, k.richtung, k.handlung.to])).toEqual([
       ['training_packages', 'mindestens', '/training'],
-      ['packages_ending', 'hoechstens', '/training'],
+      ['packages_ending', 'hoechstens', '/offen'],
       ['aftercare_subscriptions', 'mindestens', '/abrechnung/leistungen'],
     ]);
     const a = beispielAngebotszahlen();

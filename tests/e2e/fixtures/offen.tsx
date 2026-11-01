@@ -25,6 +25,10 @@ import { FAELLIG_SCHLUESSEL } from '@/features/exercise/exercises/plans/api';
 import { rueckfragenKey, type Rueckfragezeile } from '@/features/portal/messages/api';
 import { ABO_KUENDIGUNGEN_KEY } from '@/features/workplace/open-points/aftercare-cancellations-api';
 import { CONSENT_WITHDRAWALS_KEY } from '@/features/workplace/open-points/consent-withdrawals-api';
+import {
+  ENDING_TRAINING_PACKAGES_KEY,
+  type EndingTrainingPackage,
+} from '@/features/workplace/open-points/ending-training-packages-api';
 import { flotteSchluessel } from '@/features/fleet/api';
 import { testFlotte } from '@/features/fleet/testdaten';
 import type { CurrentUser } from '@/features/core/session/types';
@@ -232,6 +236,17 @@ const endend: EndingPrescription[] = [
   },
 ];
 
+// ANN-834: ein Trainingspaket, das in zwölf Tagen ohne Folgepaket endet.
+const paketEndet: EndingTrainingPackage[] = [
+  {
+    training_relationship_id: 'eeeeeeee-eeee-4eee-8eee-000000000001',
+    given_name: 'Tina',
+    family_name: 'Trainingskundin',
+    package_months: 3,
+    ends_on: tagPlus(12),
+  },
+];
+
 // B1 (Zweitreview A): eine Akte ohne jede Behandlung - ohne Fristanker.
 const ohneBehandlung: CareWithoutConclusion[] = [
   {
@@ -288,6 +303,7 @@ client.setQueryData(OPEN_SCANS_KEY, scans);
 client.setQueryData(OPEN_INTAKES_KEY, erstaufnahmen);
 client.setQueryData([...CALL_LIST_KEY, MORGEN], anrufe);
 client.setQueryData(ENDING_KEY, endend);
+client.setQueryData(ENDING_TRAINING_PACKAGES_KEY, paketEndet);
 client.setQueryData(PATIENT_OVERVIEW_KEY, uebersicht);
 client.setQueryData(IDLE_KEY, ohneBehandlung);
 client.setQueryData(['staff-members'], mitarbeitende);
@@ -586,6 +602,7 @@ if (ansicht === 'leer') {
     OPEN_INTAKES_KEY,
     [...CALL_LIST_KEY, MORGEN],
     ENDING_KEY,
+    ENDING_TRAINING_PACKAGES_KEY,
     PATIENT_OVERVIEW_KEY,
     IDLE_KEY,
     WAITLIST_REVIEW_KEY,

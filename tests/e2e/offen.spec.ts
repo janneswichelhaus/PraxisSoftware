@@ -46,6 +46,7 @@ test.describe('Offene Punkte', () => {
       'Verordnungen zu erfassen (1)',
       'Erstaufnahme offen (2)',
       'Verordnung endet (1)',
+      'Trainingspaket endet (1)',
       'Warteliste prüfen (1)',
       'Verordnung offen (1)',
       'Akte ohne Behandlung (1)',

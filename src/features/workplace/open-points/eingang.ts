@@ -39,6 +39,10 @@ import {
 import { ABO_KUENDIGUNGEN_KEY, fetchAboKuendigungen } from './aftercare-cancellations-api';
 import { CALL_LIST_KEY, fetchCallList, stillToCall } from './call-list-api';
 import { CONSENT_WITHDRAWALS_KEY, fetchConsentWithdrawals } from './consent-withdrawals-api';
+import {
+  ENDING_TRAINING_PACKAGES_KEY,
+  fetchEndingTrainingPackages,
+} from './ending-training-packages-api';
 import { PLATFORM_REQUESTS_KEY, fetchPlatformRequests } from './platform-requests-api';
 import {
   ENDING_KEY,
@@ -172,6 +176,13 @@ export const abfragen = {
       queryFn: fetchEndingPrescriptions,
       retry: false,
     }),
+  // ANN-834: Trainingspakete ohne Anschluss, dieselbe Regel wie die Kennzahl der Statistik.
+  paketEndet: () =>
+    queryOptions({
+      queryKey: ENDING_TRAINING_PACKAGES_KEY,
+      queryFn: fetchEndingTrainingPackages,
+      retry: false,
+    }),
   warteliste: () =>
     queryOptions({
       queryKey: WAITLIST_REVIEW_KEY,
@@ -228,6 +239,8 @@ export function eingangsrechte(user: CurrentUser) {
     scans: canWriteTreatmentBases(rollen),
     erstaufnahmen: canReadPatientDirectory(rollen),
     verordnungEndet: canReadTreatmentBases(rollen),
+    // Wer Pakete führt (owner, office; ANN-071).
+    paketEndet: canManageInvoicing(rollen),
     plaene: planBereiche.length > 0,
     warteliste: canManageAppointments(rollen),
     verordnungOffen: canReadTreatmentBases(rollen),
@@ -287,6 +300,7 @@ export function useEingang(user: CurrentUser, today: string) {
     ...abfragen.verordnungEndet(),
     enabled: darf.verordnungEndet,
   });
+  const paketEndet = useQuery({ ...abfragen.paketEndet(), enabled: darf.paketEndet });
   // Dieselbe Abfrage wie „Pläne laufen aus" (exercises/plans/Wiedervorlage).
   const plaene = useQuery({
     queryKey: FAELLIG_SCHLUESSEL,
@@ -342,6 +356,7 @@ export function useEingang(user: CurrentUser, today: string) {
     { aktiv: darf.scans, ...scans, anzahl: scans.data?.length ?? 0 },
     { aktiv: darf.erstaufnahmen, ...erstaufnahmen, anzahl: erstaufnahmen.data?.length ?? 0 },
     { aktiv: darf.verordnungEndet, ...verordnungEndet, anzahl: verordnungEndet.data?.length ?? 0 },
+    { aktiv: darf.paketEndet, ...paketEndet, anzahl: paketEndet.data?.length ?? 0 },
     {
       aktiv: darf.plaene,
       ...plaene,

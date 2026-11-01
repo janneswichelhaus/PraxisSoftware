@@ -6,6 +6,6 @@ export { Nachsorgeabo } from './Nachsorgeabo';
 export { RechnungenDerAkte } from './RechnungenDerAkte';
 export { Trainingspaket } from './Trainingspaket';
 export { ibanInGruppen } from './anzeige';
-export { empfaengerartLabels, fetchEmpfaenger, fetchHonorar } from './api';
+export { empfaengerartLabels, fetchEmpfaenger, fetchHonorar, monateText } from './api';
 export { nachsorgeSchluessel } from './nachsorge-api';
 export { ladePosNummern } from './posNummern';

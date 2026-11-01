@@ -9,7 +9,7 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { formatDate } from '@/lib/datum';
+import { formatDate, tagePlus } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { monateText } from './api';
 import {
@@ -130,10 +130,16 @@ function Entfernen({ paket, verhaeltnisId }: { paket: Paket; verhaeltnisId: stri
   );
 }
 
+/** Pakete überschneiden sich nie: Ein Folgepaket beginnt am Tag nach dem letzten Ende (ANN-834). */
+function vorschlagBeginn(sicht: Paketsicht): string {
+  const ende = sicht.packages.reduce<string>((max, p) => (p.ends_on > max ? p.ends_on : max), '');
+  return ende >= sicht.today ? tagePlus(ende, 1) : sicht.today;
+}
+
 function Anlegen({ verhaeltnisId, sicht }: { verhaeltnisId: string; sicht: Paketsicht }) {
   const queryClient = useQueryClient();
   const [offen, setOffen] = useState(false);
-  const [beginn, setBeginn] = useState(sicht.today);
+  const [beginn, setBeginn] = useState(() => vorschlagBeginn(sicht));
   const [position, setPosition] = useState('');
   const [geprueft, setGeprueft] = useState(false);
   const [gespeichert, setGespeichert] = useState(false);
@@ -180,7 +186,7 @@ function Anlegen({ verhaeltnisId, sicht }: { verhaeltnisId: string; sicht: Paket
             groesse="kompakt"
             onClick={() => {
               setGespeichert(false);
-              setBeginn(sicht.today);
+              setBeginn(vorschlagBeginn(sicht));
               setPosition('');
               setOffen(true);
             }}

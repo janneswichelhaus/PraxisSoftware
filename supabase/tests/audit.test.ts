@@ -297,6 +297,8 @@ describe('Audit-Lesepfad', () => {
       // UEB-007: auslaufende Pläne (schreibende Rollen je Bereich, ANN-302).
       'list_due_exercise_plans',
       'list_ending_prescriptions',
+      // Trainingspakete ohne Anschluss (ANN-834): owner und office, wie die Pakete.
+      'list_ending_training_packages',
       'list_event_participants',
       'list_event_series',
       // UEB-004: die Pläne einer Akte oder eines Trainingsverhältnisses.

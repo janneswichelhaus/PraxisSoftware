@@ -10,6 +10,7 @@ import { AftercareCancellations } from './AftercareCancellations';
 import { TrainingWithdrawals } from './TrainingWithdrawals';
 import { CallsSummary } from './CallsSummary';
 import { ConsentWithdrawals } from './ConsentWithdrawals';
+import { EndingTrainingPackages } from './EndingTrainingPackages';
 import { AktenOhneBehandlung, EndingPrescriptions, OffeneVerordnungen } from './Reminders';
 import { OpenIntakes } from './OpenIntakes';
 import { PrescriptionsToCapture } from './PrescriptionsToCapture';
@@ -124,6 +125,7 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
         {darf.scans ? <PrescriptionsToCapture timeZone={timeZone} /> : null}
         {darf.erstaufnahmen ? <OpenIntakes /> : null}
         {darf.verordnungEndet ? <EndingPrescriptions timeZone={timeZone} /> : null}
+        {darf.paketEndet ? <EndingTrainingPackages /> : null}
         {darf.plaene ? (
           <PlanWiedervorlage bereiche={darf.planBereiche} rueckweg="/offen" nurWennVorhanden />
         ) : null}

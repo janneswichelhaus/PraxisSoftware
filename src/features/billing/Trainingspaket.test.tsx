@@ -102,6 +102,32 @@ describe('Trainingspaket am Trainingsverhältnis (ANG-006)', () => {
     expect(await screen.findByText(/Paket angelegt/)).toBeInTheDocument();
   });
 
+  it('schlägt für ein Folgepaket den Tag nach dem letzten Ende vor (ANN-834)', async () => {
+    fetchPakete.mockResolvedValue(
+      sicht({
+        packages: [
+          LAUFEND,
+          { ...LAUFEND, id: 'k0', starts_on: '2026-07-01', ends_on: '2026-09-30', state: 'ended' },
+        ],
+      }),
+    );
+    fetchPaketpositionen.mockResolvedValue(POSITIONEN);
+    renderWithProviders(<Trainingspaket verhaeltnisId="t1" />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Paket anlegen' }));
+    expect(screen.getByLabelText('Beginn')).toHaveValue('2027-01-01');
+    expect(fetchPaketpositionen).toHaveBeenCalledWith('2027-01-01');
+  });
+
+  it('schlägt heute vor, wenn jedes Paket schon geendet hat', async () => {
+    fetchPakete.mockResolvedValue(
+      sicht({ packages: [{ ...LAUFEND, ends_on: '2026-10-06', state: 'ended' }] }),
+    );
+    fetchPaketpositionen.mockResolvedValue(POSITIONEN);
+    renderWithProviders(<Trainingspaket verhaeltnisId="t1" />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Paket anlegen' }));
+    expect(screen.getByLabelText('Beginn')).toHaveValue('2026-10-07');
+  });
+
   it('sagt während einer laufenden Behandlung, warum es kein Paket gibt (ANN-278)', async () => {
     fetchPakete.mockResolvedValue(sicht({ start_blocker: 'care_open' }));
     renderWithProviders(<Trainingspaket verhaeltnisId="t1" />);

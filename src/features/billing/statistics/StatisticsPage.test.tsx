@@ -152,9 +152,10 @@ describe('StatisticsPage (STA-003)', () => {
     const ohneAnschluss = karte('Pakete ohne Anschluss');
     expect(within(ohneAnschluss).getByText('Ziel erreicht')).toBeInTheDocument();
     expect(within(ohneAnschluss).getByText(/Enden bis 26\.10\.2026/)).toBeInTheDocument();
+    // ANN-834: dieselben Pakete stehen als Liste in Offene Punkte.
     expect(
-      within(ohneAnschluss).getByRole('link', { name: 'Zu den Trainingskund:innen' }),
-    ).toHaveAttribute('href', '/training');
+      within(ohneAnschluss).getByRole('link', { name: 'Folgepakete anbieten' }),
+    ).toHaveAttribute('href', '/offen');
 
     const abos = karte('Laufende Nachsorge-Abos');
     expect(within(abos).getByText(/1 neues Abo, 1 Kündigung eingegangen/)).toBeInTheDocument();
