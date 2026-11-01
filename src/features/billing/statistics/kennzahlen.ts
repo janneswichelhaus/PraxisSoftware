@@ -47,22 +47,45 @@ export interface Kennzahlen {
   absence_fee_previous_cents: number;
 }
 
+/** Training, Nachsorge-Abo und Pakete, fertig aus `get_offer_statistics` (ANN-831). */
+export interface Angebotszahlen {
+  time_zone: string;
+  today: string;
+  month: string;
+  training_clients: number;
+  packages_running: number;
+  packages_started: number;
+  packages_ending: number;
+  packages_ending_until: string;
+  aftercare_running: number;
+  aftercare_started: number;
+  aftercare_cancelled: number;
+  training_sessions: number;
+}
+
 /** Die Kennung eines Zielwerts — zugleich der Name im Server (`set_practice_target`). */
 export type Zielkennung =
-  'revenue_cents' | 'open_items_cents' | 'utilization_percent' | 'ending_bases' | 'absences';
+  | 'revenue_cents'
+  | 'open_items_cents'
+  | 'utilization_percent'
+  | 'ending_bases'
+  | 'absences'
+  | 'training_packages'
+  | 'aftercare_subscriptions'
+  | 'packages_ending';
 
 export type Ziele = Record<Zielkennung, number | null>;
 
 export type Richtung = 'mindestens' | 'hoechstens';
 export type Einheit = 'cent' | 'prozent' | 'anzahl';
 
-export interface Kennzahl {
+export interface Kennzahl<T = Kennzahlen> {
   ziel: Zielkennung;
   titel: string;
   einheit: Einheit;
   richtung: Richtung;
   /** Der Wert, an dem das Ziel gemessen wird; `null`, wo es keinen gibt. */
-  wert: (k: Kennzahlen) => number | null;
+  wert: (k: T) => number | null;
   handlung: { label: string; to: string };
 }
 
@@ -117,6 +140,34 @@ export const KENNZAHLEN: readonly Kennzahl[] = [
     richtung: 'hoechstens',
     wert: ausfaelle,
     handlung: { label: 'Anrufliste für morgen', to: '/offen/anrufe' },
+  },
+];
+
+// ANN-832: Richtung und Handlung der drei Zahlen zu Training, Abo und Paketen.
+export const ANGEBOTSKENNZAHLEN: readonly Kennzahl<Angebotszahlen>[] = [
+  {
+    ziel: 'training_packages',
+    titel: 'Laufende Trainingspakete',
+    einheit: 'anzahl',
+    richtung: 'mindestens',
+    wert: (k) => k.packages_running,
+    handlung: { label: 'Zu den Trainingskund:innen', to: '/training' },
+  },
+  {
+    ziel: 'packages_ending',
+    titel: 'Pakete ohne Anschluss',
+    einheit: 'anzahl',
+    richtung: 'hoechstens',
+    wert: (k) => k.packages_ending,
+    handlung: { label: 'Verlängerung ansprechen', to: '/training' },
+  },
+  {
+    ziel: 'aftercare_subscriptions',
+    titel: 'Laufende Nachsorge-Abos',
+    einheit: 'anzahl',
+    richtung: 'mindestens',
+    wert: (k) => k.aftercare_running,
+    handlung: { label: 'Fällige Abo-Monate erfassen', to: '/abrechnung/leistungen' },
   },
 ];
 
@@ -195,7 +246,7 @@ export function zielAlsEingabe(wert: number | null, einheit: Einheit): string {
  * Tabellenkalkulation erwartet; Beträge in Euro mit zwei Stellen, ohne
  * Tausenderpunkt, damit sie als Zahl ankommen.
  */
-export function alsCsv(k: Kennzahlen, ziele: Ziele): string {
+export function alsCsv(k: Kennzahlen, ziele: Ziele, a?: Angebotszahlen): string {
   const euro = (cent: number) => (cent / 100).toFixed(2).replace('.', ',');
   const ziel = (kennung: Zielkennung, einheit: Einheit) => {
     const wert = ziele[kennung];
@@ -316,7 +367,50 @@ export function alsCsv(k: Kennzahlen, ziele: Ziele): string {
       'EUR',
     ],
   ];
+  if (a) zeilen.push(...angebotsZeilen(a, ziel));
   return zeilen.map((zeile) => zeile.map(csvFeld).join(';')).join('\r\n') + '\r\n';
+}
+
+function angebotsZeilen(
+  a: Angebotszahlen,
+  ziel: (kennung: Zielkennung, einheit: Einheit) => string,
+): string[][] {
+  const stand = `Stand ${tagText(a.today)}`;
+  const monat = monatsname(a.month);
+  return [
+    ['Aktive Trainingskund:innen', stand, String(a.training_clients), '', '', '', 'Anzahl'],
+    [
+      'Laufende Trainingspakete',
+      stand,
+      String(a.packages_running),
+      '',
+      '',
+      ziel('training_packages', 'anzahl'),
+      'Anzahl',
+    ],
+    ['Neue Trainingspakete', monat, String(a.packages_started), '', '', '', 'Anzahl'],
+    [
+      'Trainingspakete ohne Anschluss',
+      `${tagText(a.today)} bis ${tagText(a.packages_ending_until)}`,
+      String(a.packages_ending),
+      '',
+      '',
+      ziel('packages_ending', 'anzahl'),
+      'Anzahl',
+    ],
+    ['Trainingstermine', monat, String(a.training_sessions), '', '', '', 'Anzahl'],
+    [
+      'Laufende Nachsorge-Abos',
+      stand,
+      String(a.aftercare_running),
+      '',
+      '',
+      ziel('aftercare_subscriptions', 'anzahl'),
+      'Anzahl',
+    ],
+    ['Neue Nachsorge-Abos', monat, String(a.aftercare_started), '', '', '', 'Anzahl'],
+    ['Kündigungen Nachsorge-Abo', monat, String(a.aftercare_cancelled), '', '', '', 'Anzahl'],
+  ];
 }
 
 function csvFeld(wert: string): string {

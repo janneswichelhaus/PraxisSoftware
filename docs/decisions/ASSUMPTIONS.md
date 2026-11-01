@@ -1003,6 +1003,14 @@ Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 **Regel.** Ein Lauf je Bereich und Monat nimmt jedes Dokument mit Belegtag im Monat, das noch kein Lauf trug; Späteres oder Rückdatiertes folgt als „Nachtrag n“. Ein Zahlungsstorno bucht im Monat des Stornos, nur nach exportierter Zahlung, sonst entfallen beide. Jeder Abruf liefert dieselbe Datei. **Grundlage.** GoBD; ADR-009 Punkte 9 und 12. **Anker.** `public.create_datev_export`.
 
+### ANN-831 — Angebotskennzahlen: Stand heute, Monat, vier Wochen ohne Anschluss
+Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
+**Regel.** Laufend heißt am heutigen Tag gültig; ein vor dem Beginn gekündigtes Abo lief nie. Neu zählt nach dem Beginn, Kündigungen nach dem Eingang, Trainingstermine stattgefunden ohne Beratung, je im gewählten Monat. Ohne Anschluss: endet in vier Wochen ab heute, kein späteres Paket, Verhältnis aktiv. **Grundlage.** §20; ANN-155; ADR-021 Punkt 6. **Anker.** `public.get_offer_statistics`.
+
+### ANN-832 — Angebotskennzahlen: Richtung und Handlung
+Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
+**Regel.** Laufende Pakete und Abos als Mindestwert, Pakete ohne Anschluss als Höchstwert. Handlungen: zu den Trainingskund:innen, Verlängerung ansprechen (dieselbe Liste, bis es eine eigene gibt), fällige Abo-Monate erfassen. **Grundlage.** ANN-155; `IDEA-PRX-025`. **Anker.** `ANGEBOTSKENNZAHLEN` in `src/features/billing/statistics/kennzahlen.ts`.
+
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
 | --- | --- | --- | --- |

@@ -252,6 +252,8 @@ describe('Audit-Lesepfad', () => {
       // ERN-001: das Ernährungsprofil (nur die Fähigkeit „Ernährungsberatung“,
       // ADR-027 Punkt 4) - den Reiter sieht keine andere Rolle.
       'get_nutrition_profile',
+      // Kennzahlen fuer Training, Abo und Pakete (ANN-831) - wie die Statistik.
+      'get_offer_statistics',
       // ANG-001: die Nachsorge-Abos der Akte (owner, office).
       'get_patient_aftercare',
       'get_patient_session_fee',
@@ -381,7 +383,6 @@ describe('Audit-Lesepfad', () => {
       'find_possible_duplicates',
       'get_intake_checklist',
       'get_practice_statistics',
-      'get_practice_targets',
       'list_call_list',
       'list_ending_prescriptions',
       'list_open_intakes',

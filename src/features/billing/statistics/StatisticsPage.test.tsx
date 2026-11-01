@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { KENNZAHLEN, type Kennzahlen, type Ziele } from './kennzahlen';
 import {
+  beispielAngebotszahlen,
   beispielJePerson,
   beispielKennzahlen,
   beispielLeistungen,
@@ -12,6 +13,7 @@ import {
 import type * as StatistikApi from './api';
 
 const fetchKennzahlen = vi.fn();
+const fetchAngebotszahlen = vi.fn();
 const fetchZiele = vi.fn();
 const setzeZiel = vi.fn();
 const fetchUmsatzMonate = vi.fn();
@@ -24,6 +26,7 @@ vi.mock('./api', async (importOriginal) => {
   return {
     ...actual,
     fetchKennzahlen: (...args: unknown[]) => fetchKennzahlen(...args) as Promise<Kennzahlen>,
+    fetchAngebotszahlen: (...args: unknown[]) => fetchAngebotszahlen(...args) as Promise<unknown>,
     fetchZiele: () => fetchZiele() as Promise<Ziele>,
     setzeZiel: (...args: unknown[]) => setzeZiel(...args) as Promise<void>,
     fetchUmsatzMonate: (...args: unknown[]) => fetchUmsatzMonate(...args) as Promise<unknown>,
@@ -44,6 +47,9 @@ const keineZiele: Ziele = {
   utilization_percent: null,
   ending_bases: null,
   absences: null,
+  training_packages: null,
+  aftercare_subscriptions: null,
+  packages_ending: null,
 };
 
 function karte(titel: string): HTMLElement {
@@ -53,6 +59,7 @@ function karte(titel: string): HTMLElement {
 describe('StatisticsPage (STA-003)', () => {
   beforeEach(() => {
     fetchKennzahlen.mockReset().mockResolvedValue(beispielKennzahlen());
+    fetchAngebotszahlen.mockReset().mockResolvedValue(beispielAngebotszahlen());
     fetchZiele.mockReset().mockResolvedValue(keineZiele);
     setzeZiel.mockReset().mockResolvedValue(undefined);
     sichereAlsDatei.mockReset();
@@ -121,6 +128,53 @@ describe('StatisticsPage (STA-003)', () => {
     ).toBeInTheDocument();
   });
 
+  it('zeigt Training, Abo und Pakete als eigene Karte mit Ziel und Handlung (PRX-041)', async () => {
+    fetchZiele.mockResolvedValue({ ...keineZiele, training_packages: 20, packages_ending: 2 });
+    renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
+
+    const pakete = await screen.findByRole('region', {
+      name: (name) => name === 'Laufende Trainingspakete',
+    });
+    const liste = pakete.closest('dl')!;
+    expect(Array.from(liste.querySelectorAll('dt'), (dt) => dt.textContent)).toEqual([
+      'Laufende Trainingspakete',
+      'Pakete ohne Anschluss',
+      'Laufende Nachsorge-Abos',
+    ]);
+    expect(liste.parentElement).toHaveClass('rounded-card');
+    expect(liste).not.toBe(karte('Umsatz').closest('dl'));
+
+    expect(within(pakete).getByText('14')).toHaveClass('text-2xl');
+    expect(await within(pakete).findByText('Ziel verfehlt')).toBeInTheDocument();
+    expect(within(pakete).getByText(/18 aktive Trainingskund:innen/)).toBeInTheDocument();
+    expect(within(pakete).getByText(/3 neue Pakete, 96 Trainingstermine/)).toBeInTheDocument();
+
+    const ohneAnschluss = karte('Pakete ohne Anschluss');
+    expect(within(ohneAnschluss).getByText('Ziel erreicht')).toBeInTheDocument();
+    expect(within(ohneAnschluss).getByText(/Enden bis 26\.10\.2026/)).toBeInTheDocument();
+    expect(
+      within(ohneAnschluss).getByRole('link', { name: 'Verlängerung ansprechen' }),
+    ).toHaveAttribute('href', '/training');
+
+    const abos = karte('Laufende Nachsorge-Abos');
+    expect(within(abos).getByText(/1 neues Abo, 1 Kündigung eingegangen/)).toBeInTheDocument();
+    expect(within(abos).getByRole('link', { name: 'Fällige Abo-Monate erfassen' })).toHaveAttribute(
+      'href',
+      '/abrechnung/leistungen',
+    );
+  });
+
+  it('laesst die fuenf Kennzahlen stehen, wenn die Zahlen zu Training und Abo fehlen', async () => {
+    fetchAngebotszahlen.mockRejectedValue(
+      new Error('Die Zahlen zu Training und Abo konnten nicht geladen werden.'),
+    );
+    renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
+    expect(
+      await screen.findByText('Die Zahlen zu Training und Abo konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(karte('Umsatz')).toBeInTheDocument();
+  });
+
   it('haelt Umsatz und Zahlungseingang in getrennten Zahlen', async () => {
     renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
     const umsatz = await screen.findByRole('region', { name: (name) => name === 'Umsatz' });
@@ -161,6 +215,7 @@ describe('StatisticsPage (STA-003)', () => {
     const auswahl = await screen.findByLabelText('Monat für Umsatz und Zahlungseingang');
     await userEvent.selectOptions(auswahl, '2026-08-01');
     expect(fetchKennzahlen).toHaveBeenLastCalledWith('2026-08-01');
+    expect(fetchAngebotszahlen).toHaveBeenLastCalledWith('2026-08-01');
   });
 
   it('speichert die Zahlen als CSV ohne Personen', async () => {
@@ -172,6 +227,7 @@ describe('StatisticsPage (STA-003)', () => {
     expect(name).toBe('statistik-2026-09-stand-2026-09-29.csv');
     expect(typ).toMatch(/^text\/csv/);
     expect(inhalt).toContain('Umsatz (Rechnungsstellung, brutto)');
+    expect(inhalt).toContain('Laufende Trainingspakete;Stand 29.09.2026;14');
   });
 
   it('fuehrt nach einem Fehler beim Monatswechsel zurueck zum laufenden Monat', async () => {
