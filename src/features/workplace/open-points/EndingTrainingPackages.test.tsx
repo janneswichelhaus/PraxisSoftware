@@ -80,6 +80,13 @@ describe('Trainingspakete ohne Anschluss in Offene Punkte (ANN-834)', () => {
     expect(within(tina!).queryByText('Noch in Behandlung')).toBeNull();
   });
 
+  it('liegt unter dem Präfix, das „Paket anlegen“ erneuert', async () => {
+    // Trainingspaket.tsx (Abrechnung) darf diesen Schlüssel nicht importieren und erneuert
+    // deshalb alles unter `open-points`.
+    const { ENDING_TRAINING_PACKAGES_KEY } = await import('./ending-training-packages-api');
+    expect(ENDING_TRAINING_PACKAGES_KEY[0]).toBe('open-points');
+  });
+
   it('zeigt ohne endendes Paket nichts', async () => {
     fetchEndingTrainingPackages.mockResolvedValue([]);
     const { container } = renderWithProviders(<EndingTrainingPackages />);
