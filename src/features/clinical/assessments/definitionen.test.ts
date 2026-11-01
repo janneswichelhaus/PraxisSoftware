@@ -148,7 +148,7 @@ describe('Frühere Fassungen im Archiv (ABN-014, BEF-101)', () => {
   };
   const fassung = (version: string, vergleichbar?: string[]) => ({
     ...nrs,
-    meta: { ...nrs.meta, version, ...(vergleichbar ? { vergleichbar_mit: vergleichbar } : {}) },
+    meta: { ...nrs.meta, version, vergleichbar_mit: vergleichbar },
   });
 
   it('hält frühere Fassungen neben der aktuellen', () => {

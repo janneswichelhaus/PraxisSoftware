@@ -87,19 +87,19 @@ describe('Befund der Akte', () => {
   it('sagt einer Leserolle, wer erhebt (BEF-064)', async () => {
     seite([], ['office']);
     // Leerzustand in der Karte: der Zustand als Titel, wer erhebt darunter.
-    expect(await screen.findByText('Noch nicht erhoben.')).toBeInTheDocument();
-    expect(screen.getByText('Erhoben wird von den behandelnden Rollen.')).toBeInTheDocument();
+    expect((await screen.findAllByText('Noch nicht erhoben.'))[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Erhoben wird von den behandelnden Rollen.')).toHaveLength(3);
   });
 
   it('bietet das Erheben an, solange nichts erhoben ist', async () => {
     seite([]);
-    expect(await screen.findByText('Noch nicht erhoben.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Bogen erheben' })).toHaveAttribute(
+    expect((await screen.findAllByText('Noch nicht erhoben.'))[0]).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Bogen erheben' })[0]).toHaveAttribute(
       'href',
       `/patienten/${PATIENT_ID}/befund/erheben?instrument=anamnese_v8`,
     );
     // Zweitrangig: Der Hauptknopf der Akte ist „Termin anlegen“ im Kopf (A4).
-    expect(screen.getByRole('link', { name: 'Bogen erheben' })).not.toHaveClass('bg-accent');
+    expect(screen.getAllByRole('link', { name: 'Bogen erheben' })[0]).not.toHaveClass('bg-accent');
   });
 
   it('führt zu einem offenen Entwurf statt zu einem zweiten Bogen', async () => {
@@ -170,7 +170,7 @@ describe('Befund der Akte', () => {
     await user.click(screen.getByRole('button', { name: 'Ja, Entwurf verwerfen' }));
     expect(erhebungVerwerfen).toHaveBeenCalledWith('d1');
     // Der Entwurf ist fort, und der Weg zu einem neuen Bogen ist frei.
-    expect(await screen.findByRole('link', { name: 'Bogen erheben' })).toBeInTheDocument();
+    expect((await screen.findAllByRole('link', { name: 'Bogen erheben' }))[0]).toBeInTheDocument();
   });
 
   it('bietet einen abgeschlossenen Bogen nicht zum Verwerfen an', async () => {
@@ -222,7 +222,7 @@ describe('Befund der Akte', () => {
 
     it('erklärt die Behandlungsliege nicht in einem Dauersatz', async () => {
       seite([]);
-      await screen.findByText('Noch nicht erhoben.');
+      await screen.findAllByText('Noch nicht erhoben.');
       expect(screen.getByText('Behandlungsliege')).toBeInTheDocument();
       expect(screen.queryByText(/Wird die Liege beim Hausbesuch gebraucht/)).toBeNull();
     });

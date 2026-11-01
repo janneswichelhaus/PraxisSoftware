@@ -236,7 +236,7 @@ describe('Erhebung', () => {
   });
 
   it('bietet ein inaktives Instrument nicht an, auch nicht über die Adresse', async () => {
-    seite('instrument=nrs_schmerz');
+    seite('instrument=psfs');
     expect(
       await screen.findByText('Diesen Fragebogen gibt es nicht oder er ist nicht freigegeben.'),
     ).toBeInTheDocument();

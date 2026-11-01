@@ -1,7 +1,7 @@
 {
   "meta": {
     "id": "globale_veraenderung",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "name_de": "Globale Veränderungsfrage",
     "name_en": "Global Rating of Change",
     "region": "uebergreifend",
@@ -11,14 +11,16 @@
     "prioritaet": "a",
     "quelle": {
       "literatur": "Kamper SJ, Maher CG, Mackay G. Global rating of change scales: a review of strengths and weaknesses and considerations for design. Journal of Manual & Manipulative Therapy 2009;17(3):163–170",
-      "validierung": "Wortlaut vorläufig — keine Vorlage in quellen/ (ANN-099)"
+      "praxisvorgabe": "Wortlaut als Vorgabe der Praxis freigegeben von Jannes am 2026-09-28/29 (ANN-099)",
+      "validierung": "Praxisvorgabe, keine validierte deutsche Fassung"
     },
     "lizenzstatus": {
       "status": "freigegeben",
       "begruendung": "Frei verwendbar, keine Lizenz (IDEA-OUT-001, IDEA-OUT-004).",
       "stand": "2026-09-25"
     },
-    "aktiv": false
+    "aktiv": true,
+    "vergleichbar_mit": ["0.1.0"]
   },
   "items": [
     {

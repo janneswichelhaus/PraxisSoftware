@@ -1,9 +1,16 @@
-import { erhebbareInstrumente } from '@/features/clinical/assessments/instrumente';
+import {
+  erhebbareInstrumente,
+  SKALEN_AM_TERMIN,
+} from '@/features/clinical/assessments/instrumente';
 import type { ScoreDefinition } from '@/features/clinical/assessments/schema';
 
-/** Die Bögen, die die Person selbst ausfüllt (ANN-248) - heute der Anamnesebogen. */
+const AM_TERMIN: ReadonlySet<string> = new Set(SKALEN_AM_TERMIN);
+
+/** Die Bögen, die die Person vorab selbst ausfüllt (ANN-248); die Skalen kommen am Termin (ANN-823). */
 export function fuerDiePlattform(scores?: readonly ScoreDefinition[]): ScoreDefinition[] {
-  return erhebbareInstrumente(scores).filter((s) => s.meta.ausgefuellt_von === 'patient');
+  return erhebbareInstrumente(scores).filter(
+    (s) => s.meta.ausgefuellt_von === 'patient' && !AM_TERMIN.has(s.meta.id),
+  );
 }
 
 /**

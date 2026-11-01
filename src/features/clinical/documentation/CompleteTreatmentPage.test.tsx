@@ -106,6 +106,13 @@ vi.mock('@/features/calendar/appointments/abrechnungslage-api', async (importOri
     fetchAbrechnungslage(id) as Promise<LageApi.Abrechnungslage | null>,
 }));
 
+const erhebungSpeichern = vi.fn();
+const erhebungAbschliessen = vi.fn();
+vi.mock('@/features/clinical/assessments/api', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  erhebungSpeichern: (...a: unknown[]) => erhebungSpeichern(...a) as Promise<string>,
+  erhebungAbschliessen: (...a: unknown[]) => erhebungAbschliessen(...a) as Promise<void>,
+}));
 vi.mock('./textbausteine', async (importOriginal) => {
   const actual = await importOriginal<typeof Bausteine>();
   return {
@@ -924,13 +931,164 @@ describe('CompleteTreatmentPage', () => {
 
       expect(await screen.findByLabelText('Eintrag zur Behandlung')).toBeInTheDocument();
       expect(screen.queryByRole('group', { name: 'Textbausteine' })).toBeNull();
-      // Ohne Bausteine endet die Zeile mit „+ Befund“, nicht mit einem Trenner.
-      const befund = screen.getByRole('button', { name: /^\+ Befund/ });
+      // Ohne Bausteine endet die Zeile mit „+ Skalen“, nicht mit einem Trenner.
+      const skalen = await screen.findByRole('button', { name: /^\+ Skalen/ });
       await waitFor(() => expect(screen.queryByTestId('bausteine-platzhalter')).toBeNull());
-      expect(befund.nextElementSibling).toHaveClass('last:hidden');
-      expect(befund.nextElementSibling?.nextElementSibling).toBeNull();
+      expect(skalen.nextElementSibling).toHaveClass('last:hidden');
+      expect(skalen.nextElementSibling?.nextElementSibling).toBeNull();
     });
   });
+  /**
+   * NRS und Veränderungsfrage antippen (ANN-823): die Veränderungsfrage ab Termin 2 oben und
+   * offen, gespeichert erst mit „Übernehmen“ als abgeschlossene Erhebung.
+   */
+  describe('FRB-EPIC-004: Skalen an der Doku', () => {
+    const anPosition = (basis_position: number) => ({
+      appointment_id: TERMIN_ID,
+      treatment_basis_id: null,
+      treatment_basis_kind: null,
+      treatment_basis_issued_on: null,
+      basis_position,
+      basis_appointment_count: 6,
+      billing_visible: false,
+      recipient_kind: null,
+    });
+    const VERAENDERUNG = 'Wie hat sich Ihr Zustand seit Beginn der Behandlung verändert?';
+    const SCHMERZ = 'Wie stark sind Ihre Schmerzen im Moment?';
+
+    beforeEach(() => {
+      erhebungSpeichern.mockReset();
+      erhebungSpeichern.mockImplementation(({ instrumentId }: { instrumentId: string }) =>
+        Promise.resolve(`erhebung-${instrumentId}`),
+      );
+      erhebungAbschliessen.mockReset();
+      erhebungAbschliessen.mockResolvedValue(undefined);
+    });
+
+    it('zeigt am ersten Termin nur die NRS, zugeklappt', async () => {
+      fetchAbrechnungslage.mockResolvedValue(anPosition(1));
+      const user = userEvent.setup();
+      rendern();
+      const chip = await screen.findByRole('button', { name: '+ Skalen' });
+      expect(chip).toHaveAttribute('aria-expanded', 'false');
+      await user.click(chip);
+      const streifen = screen.getByRole('group', { name: 'Skalen' });
+      expect(within(streifen).getByText(SCHMERZ)).toBeVisible();
+      expect(within(streifen).queryByText(VERAENDERUNG)).toBeNull();
+    });
+
+    it('stellt ab dem zweiten Termin die Veränderungsfrage nach oben, der Streifen bleibt zu', async () => {
+      fetchAbrechnungslage.mockResolvedValue(anPosition(2));
+      const user = userEvent.setup();
+      rendern();
+      const chip = await screen.findByRole('button', { name: '+ Skalen' });
+      // Das Feld beginnt in der oberen Hälfte, der Streifen öffnet auf Tipp (ANN-823).
+      expect(chip).toHaveAttribute('aria-expanded', 'false');
+      await user.click(chip);
+      const fragen = within(screen.getByRole('group', { name: 'Skalen' }))
+        .getAllByText(/^Wie /)
+        .map((e) => e.textContent);
+      expect(fragen).toEqual([VERAENDERUNG, SCHMERZ]);
+    });
+
+    it('speichert mit „Übernehmen“ je Skala eine abgeschlossene Erhebung und fügt die Zeilen ein', async () => {
+      fetchAbrechnungslage.mockResolvedValue(anPosition(3));
+      const user = userEvent.setup();
+      rendern();
+      await user.click(await screen.findByRole('button', { name: '+ Skalen' }));
+      const streifen = screen.getByRole('group', { name: 'Skalen' });
+      await user.click(within(streifen).getByRole('radio', { name: 'etwas besser' }));
+      await user.click(within(streifen).getByRole('radio', { name: '4' }));
+      expect(screen.getByRole('button', { name: '+ Skalen · 2' })).toBeInTheDocument();
+      await user.click(within(streifen).getByRole('button', { name: 'Übernehmen' }));
+
+      await waitFor(() => expect(erhebungAbschliessen).toHaveBeenCalledTimes(2));
+      expect(erhebungSpeichern).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientId: termin.patient_id,
+          instrumentId: 'globale_veraenderung',
+          version: '1.0.0',
+          datum: '2027-05-12',
+          antworten: { veraenderung: { auswahl: '1' } },
+          erhebungId: null,
+          korrigiert: null,
+        }),
+      );
+      expect(erhebungSpeichern).toHaveBeenCalledWith(
+        expect.objectContaining({
+          instrumentId: 'nrs_schmerz',
+          antworten: { schmerz_aktuell: { wert: 4 } },
+        }),
+      );
+      expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue(
+        'Veränderung seit Beginn: etwas besser\nNRS 4/10',
+      );
+      expect(screen.getByRole('button', { name: '+ Skalen' })).toBeInTheDocument();
+    });
+
+    it('schreibt nicht fest, solange gewählte Skalen nicht im Eintrag stehen', async () => {
+      fetchAbrechnungslage.mockResolvedValue(anPosition(2));
+      const user = userEvent.setup();
+      rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Mobilisation LWS.');
+      await user.click(screen.getByRole('button', { name: '+ Skalen' }));
+      await user.click(screen.getByRole('radio', { name: '7' }));
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      expect(
+        await screen.findByText(
+          'Die Skalen stehen noch nicht im Eintrag. Erst übernehmen oder verwerfen.',
+        ),
+      ).toBeInTheDocument();
+      expect(completeTreatment).not.toHaveBeenCalled();
+      expect(erhebungSpeichern).not.toHaveBeenCalled();
+    });
+
+    it('nimmt eine Stufe mit einem zweiten Tipp zurück und verwirft ohne zu speichern', async () => {
+      fetchAbrechnungslage.mockResolvedValue(anPosition(2));
+      const user = userEvent.setup();
+      rendern();
+      await user.click(await screen.findByRole('button', { name: '+ Skalen' }));
+      const sieben = screen.getByRole('radio', { name: '7' });
+      await user.click(sieben);
+      await user.click(sieben);
+      expect(sieben).not.toBeChecked();
+      await user.click(screen.getByRole('radio', { name: 'viel besser' }));
+      await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
+      expect(screen.getByRole('radio', { name: 'viel besser' })).not.toBeChecked();
+      expect(erhebungSpeichern).not.toHaveBeenCalled();
+    });
+
+    it('meldet einen Fehler beim Speichern und fügt nichts ein', async () => {
+      fetchAbrechnungslage.mockResolvedValue(anPosition(2));
+      erhebungSpeichern.mockRejectedValue(new Error('Das Datum darf nicht in der Zukunft liegen.'));
+      const user = userEvent.setup();
+      rendern();
+      await user.click(await screen.findByRole('button', { name: '+ Skalen' }));
+      await user.click(screen.getByRole('radio', { name: '3' }));
+      await user.click(screen.getByRole('button', { name: 'Übernehmen' }));
+      expect(
+        await screen.findByText('Das Datum darf nicht in der Zukunft liegen.'),
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('');
+    });
+
+    it('bietet am Vermerk ohne Behandlung keine Skalen an', async () => {
+      fetchAbrechnungslage.mockResolvedValue(anPosition(2));
+      rendern(['therapist'], '?ohne-behandlung=1');
+      await screen.findByLabelText('Eintrag zur Behandlung');
+      expect(screen.queryByRole('button', { name: /Skalen/ })).toBeNull();
+      expect(screen.queryByRole('group', { name: 'Skalen' })).toBeNull();
+    });
+
+    it('ist mit offenen Skalen barrierefrei', async () => {
+      fetchAbrechnungslage.mockResolvedValue(anPosition(2));
+      const user = userEvent.setup();
+      const { container } = rendern();
+      await user.click(await screen.findByRole('button', { name: '+ Skalen' }));
+      await pruefeBarrierefreiheit(container);
+    });
+  });
+
   /**
    * Hausbesuch-Szenario 1 (CAL-018, ADR-018 Fassung 3 Punkt 9).
    *

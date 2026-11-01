@@ -1,10 +1,9 @@
 Definitionsdateien der Scores, eine je Instrument (Phasen P4 und P5).
 
-Seit FRB-EPIC-001 liegen hier die drei freien Instrumente NRS, PSFS und die
-globale Veränderungsfrage — in Version `0.x` und **inaktiv**, weil für sie noch
-kein Bogen in `quellen/scores/pdf/` liegt und ihr Wortlaut deshalb vorläufig ist
-(ANN-099). Mit der Vorlage wird der Wortlaut gegen sie gehalten, `quelle.datei`
-gesetzt, die Version auf `1.0.0` gehoben und `aktiv` auf `true` gestellt.
+NRS und globale Veränderungsfrage sind seit FRB-EPIC-004 aktiv (`1.0.0`): Ihr
+Wortlaut ist eine Vorgabe der Praxis (`quelle.praxisvorgabe`, ANN-099), keine
+Vorlage aus `quellen/`. Der PSFS ist gestrichen und bleibt inaktiv liegen, weil
+seine Fassung `0.1.0` schon auf dem Server steht.
 
 **Neue Fassung (ABN-014, ANN-084, ANN-219).** Eine Fassung, die einmal auf dem
 Server liegt, ändert sich nie. Wer eine Datei ändert, hebt die Version, legt

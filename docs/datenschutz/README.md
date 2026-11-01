@@ -16,7 +16,7 @@ Eintrag aus Schritt 10 ist geprüft (M3).
 2. **Schwellwertprüfung und DSFA** (ADR-007 Punkte 1 bis 3): offen, Entwurf von Claude, künftig
    `docs/datenschutz/dsfa.md`; die Wiedervorlage zum Kartendienst steht in
    [`kartendienst.md`](kartendienst.md).
-3. **Verzeichnis der Verarbeitungstätigkeiten (VVT):** offen, künftig `docs/datenschutz/vvt.md`.
+3. **Verzeichnis der Verarbeitungstätigkeiten (VVT):** Entwurf in [`vvt.md`](vvt.md).
    Grundlage: Personenbezug je Tabelle in `public.data_registry`, Datenklasse in
    `public.retention_assignments`; Muster eines Eintrags in `kartendienst.md`.
 4. **Technische und organisatorische Maßnahmen (TOM)** mit Endgeräte-Richtlinie: offen, künftig

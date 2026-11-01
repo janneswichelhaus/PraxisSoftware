@@ -19,8 +19,8 @@ test.describe('Instrumente', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: 'Instrumente' })).toBeVisible();
     await expect(page.getByRole('listitem')).toHaveCount(4);
-    // Die drei freien bleiben ohne Vorlage inaktiv (ANN-099); der Anamnesebogen ist aktiv.
-    await expect(page.getByRole('listitem').filter({ hasText: 'Inaktiv' })).toHaveCount(3);
+    // Nur der gestrichene PSFS ist inaktiv; NRS und Veränderungsfrage sind Praxisvorgabe (ANN-099).
+    await expect(page.getByRole('listitem').filter({ hasText: 'Inaktiv' })).toHaveCount(1);
     await expect(
       page.getByRole('link', { name: /Anamnesebogen Version 8 \(DIGOTOR\)/ }),
     ).toBeVisible();
