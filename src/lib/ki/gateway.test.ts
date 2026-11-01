@@ -156,7 +156,7 @@ describe('diktatAufbereiten', () => {
     invoke.mockResolvedValue({ data: { ...ERFOLG, abschnitte: [] }, error: null });
     expect(
       await diktatAufbereiten({ terminId: TERMIN, audio: aufnahme(), dauerS: 5 }),
-    ).toMatchObject({ ok: false, fehler: 'function_unavailable' });
+    ).toMatchObject({ ok: false, fehler: 'nicht_satzgetreu', erneutMoeglich: false });
   });
 
   it.each([
@@ -171,7 +171,7 @@ describe('diktatAufbereiten', () => {
     invoke.mockResolvedValue({ data: geaendert, error: null });
     expect(
       await diktatAufbereiten({ terminId: TERMIN, audio: aufnahme(), dauerS: 5 }),
-    ).toMatchObject({ ok: false, fehler: 'function_unavailable' });
+    ).toMatchObject({ ok: false, fehler: 'nicht_satzgetreu', erneutMoeglich: false });
   });
 
   it('prüft die Sätze unabhängig von Abschnitt und Zeilenumbruch', () => {

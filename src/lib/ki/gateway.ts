@@ -64,10 +64,11 @@ export const GATEWAY_FEHLERKLASSEN = [
 ] as const;
 
 /**
- * Dazu eine Klasse, die nur der Browser vergibt: Die Function hat gar nicht
- * geantwortet (wie `function_unavailable` beim Kartendienst, BEF-027).
+ * Dazu zwei Klassen, die nur der Browser vergibt: Die Function hat nicht geantwortet, oder ihr
+ * Vorschlag weicht von den Sätzen des Transkripts ab (ANN-824) - das wiederholt sich beim Senden.
  */
-export type Kifehler = (typeof GATEWAY_FEHLERKLASSEN)[number] | 'function_unavailable';
+export type Kifehler =
+  (typeof GATEWAY_FEHLERKLASSEN)[number] | 'function_unavailable' | 'nicht_satzgetreu';
 
 /** Die Sätze der Oberfläche je Fehlerklasse - ohne technische Einzelheiten (13). */
 export const KI_FEHLERTEXTE: Readonly<Record<Kifehler, string>> = {
@@ -82,6 +83,8 @@ export const KI_FEHLERTEXTE: Readonly<Record<Kifehler, string>> = {
   unavailable: 'Die Aufbereitung ist gerade nicht erreichbar.',
   timeout: 'Die Aufbereitung hat zu lange gedauert.',
   function_unavailable: 'Die Spracheingabe ist gerade nicht erreichbar.',
+  nicht_satzgetreu:
+    'Der Vorschlag passte nicht wörtlich zur Aufnahme und wird nicht gezeigt. Bitte noch einmal sprechen – oder tippen.',
 };
 
 /**
@@ -107,16 +110,12 @@ const abschnittSchema = z.object({
   text: z.string().max(50_000),
 });
 
-const erfolgSchema = z
-  .object({
-    ok: z.literal(true),
-    transkript: z.string().max(50_000),
-    abschnitte: z.array(abschnittSchema).max(DIKTAT_ABSCHNITTE.length),
-    quelle: z.enum(['anbieter', 'nachbildung']),
-  })
-  // ANN-824: Der Vorschlag besteht aus genau den Sätzen des Transkripts; was etwas
-  // ergänzt, weglässt oder ändert, zeigt die Seite nicht - auch nicht vom eigenen Gateway.
-  .refine((antwort) => satzgetreu(antwort.transkript, antwort.abschnitte), 'nicht satzgetreu');
+const erfolgSchema = z.object({
+  ok: z.literal(true),
+  transkript: z.string().max(50_000),
+  abschnitte: z.array(abschnittSchema).max(DIKTAT_ABSCHNITTE.length),
+  quelle: z.enum(['anbieter', 'nachbildung']),
+});
 
 // Dieselbe Satzregel wie `saetze` im Gateway (`inhaltstreue.ts`); `vertrag.test.ts` hält beide gleich.
 const KEIN_SATZENDE = /(?:^|\s)(?:\d+|\p{L}|ca|bzw|ggf|evtl|vgl|inkl|usw|Dr|Nr)\.$/iu;
@@ -283,6 +282,9 @@ function deute(wert: unknown, status: number): Diktatergebnis {
   const erfolg = erfolgSchema.safeParse(wert);
   if (erfolg.success) {
     const { transkript, abschnitte, quelle } = erfolg.data;
+    // ANN-824: Was ergänzt, weglässt oder ändert, zeigt die Seite nicht - auch nicht vom
+    // eigenen Gateway.
+    if (!satzgetreu(transkript, abschnitte)) return gescheitert('nicht_satzgetreu');
     return { ok: true, vorschlag: { transkript, abschnitte, quelle } };
   }
   const abgelehnt = fehlerSchema.safeParse(wert);

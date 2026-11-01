@@ -1691,6 +1691,26 @@ describe('CompleteTreatmentPage', () => {
       expect(createTreatmentNote).not.toHaveBeenCalled();
     });
 
+    it('zeigt einen nicht satzgetreuen Vorschlag nicht und hält nichts an (ANN-824)', async () => {
+      diktatAufbereiten.mockResolvedValue({
+        ok: false,
+        fehler: 'nicht_satzgetreu',
+        meldung: KI_FEHLERTEXTE.nicht_satzgetreu,
+        erneutMoeglich: false,
+      });
+      const user = userEvent.setup();
+      rendern();
+      await user.click(await screen.findByRole('button', { name: 'Sprechen' }));
+      await user.click(await screen.findByRole('button', { name: 'Fertig' }));
+
+      expect(await screen.findByText(KI_FEHLERTEXTE.nicht_satzgetreu)).toBeInTheDocument();
+      expect(screen.queryByLabelText('Text des Vorschlags')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Erneut senden' })).toBeNull();
+      await user.type(screen.getByLabelText('Eintrag zur Behandlung'), 'Getippt.');
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
+    });
+
     it('sagt bei einer Abweisung, was los ist - Tippen bleibt', async () => {
       diktatAufbereiten.mockResolvedValue({
         ok: false,
