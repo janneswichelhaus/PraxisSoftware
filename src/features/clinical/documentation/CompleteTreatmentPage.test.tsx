@@ -1017,7 +1017,7 @@ describe('CompleteTreatmentPage', () => {
         }),
       );
       expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue(
-        'Globale Veränderungsfrage: etwas besser\nNumerische Rating-Skala Schmerz (NRS): 4 von 10',
+        'Veränderung seit Beginn: etwas besser\nNRS 4/10',
       );
       expect(screen.getByRole('button', { name: '+ Skalen' })).toBeInTheDocument();
     });

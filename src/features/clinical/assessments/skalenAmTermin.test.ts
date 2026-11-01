@@ -44,11 +44,9 @@ describe('Skalen an der Doku (FRB-EPIC-004, ANN-823)', () => {
       min: 'sehr viel schlechter',
       max: 'sehr viel besser',
     });
-    expect(skalenzeile(nrs, stufenVon(nrs.items[0]!)[7]!)).toBe(
-      'Numerische Rating-Skala Schmerz (NRS): 7 von 10',
-    );
+    expect(skalenzeile(nrs, stufenVon(nrs.items[0]!)[7]!)).toBe('NRS 7/10');
     expect(skalenzeile(veraenderung, stufenVon(veraenderung.items[0]!)[1]!)).toBe(
-      'Globale Veränderungsfrage: viel schlechter',
+      'Veränderung seit Beginn: viel schlechter',
     );
   });
 });

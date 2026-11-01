@@ -2,15 +2,10 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { erhebungAbschliessen, erhebungSpeichern } from './api';
 import type { Antwort } from './antworten';
 import { bibliothek } from './bibliothek';
-import { instrumentFuer } from './instrumente';
+import { instrumentFuer, SKALEN_AM_TERMIN } from './instrumente';
 import { optionKennung, type ScoreDefinition, type ScoreItem } from './schema';
 
-/**
- * ANN-823: Die Skalen an der Verlaufsdoku, in dieser Reihenfolge. Die
- * Veränderungsfrage fragt nach der Zeit „seit Beginn“ und steht deshalb erst
- * ab dem zweiten Termin der Grundlage.
- */
-export const SKALEN_AM_TERMIN = ['globale_veraenderung', 'nrs_schmerz'] as const;
+// Die Veränderungsfrage fragt nach der Zeit „seit Beginn“ (ANN-823).
 const AB_ZWEITEM_TERMIN: ReadonlySet<string> = new Set(['globale_veraenderung']);
 
 /**
@@ -80,12 +75,19 @@ export function ankerVon(item: ScoreItem): { min: string; max: string } | null {
     : null;
 }
 
-/** Eine Zeile für den Vorschlag: „Globale Veränderungsfrage: etwas besser“. */
+/** Kurz im Eintrag, wie man es mitschreibt (Jannes 2026-11-01). */
+const KURZ: Readonly<Record<string, string>> = {
+  nrs_schmerz: 'NRS',
+  globale_veraenderung: 'Veränderung seit Beginn',
+};
+
+/** Eine Zeile für den Vorschlag: „NRS 4/10“, „Veränderung seit Beginn: etwas besser“. */
 export function skalenzeile(definition: ScoreDefinition, stufe: Stufe): string {
   const item = definition.items[0];
-  const wert =
-    item?.typ === 'skala' ? `${stufe.text} von ${item.skala?.max ?? 10}` : stufe.bedeutung;
-  return `${definition.meta.name_de}: ${wert}`;
+  const name = KURZ[definition.meta.id] ?? definition.meta.name_de;
+  return item?.typ === 'skala'
+    ? `${name} ${stufe.text}/${item.skala?.max ?? 10}`
+    : `${name}: ${stufe.bedeutung}`;
 }
 
 /** Gewählt, aber noch nicht in der Doku: Kennung der Stufe je Instrument. */

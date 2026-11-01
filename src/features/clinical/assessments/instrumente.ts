@@ -1,6 +1,9 @@
 import { bibliothek } from './bibliothek';
 import type { ScoreDefinition } from './schema';
 
+/** Die Skalen an der Verlaufsdoku, in dieser Reihenfolge; vorab auf der Plattform nicht (ANN-823). */
+export const SKALEN_AM_TERMIN = ['globale_veraenderung', 'nrs_schmerz'] as const;
+
 /** Die Definition zu einer gespeicherten Kennung, auch wenn sie inaktiv ist. */
 export function instrumentFuer(
   instrumentId: string,
