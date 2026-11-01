@@ -13,11 +13,11 @@ KI-EPIC-001 ist gemergt (#343). Offen: BEF-201, BEF-202.
 ## Danach
 
 Bildsichtung von #334 bis #337. Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
-PRX-EPIC-004 weiter (direkte Übertragung an DATEV hinter Adapter, Kennzahlen, Farbcodierung,
-Kalender-Abo, Planungskarte, Kartenzahlung), ERN-EPIC-004 bis -006, ORG-EPIC-001, Schritte 5 bis 7
+PRX-EPIC-004 weiter, zuerst Kennzahlen und Farbcodierung, dann Kalender-Abo, Planungskarte,
+Kartenzahlung, die Übertragung an DATEV erst nach B4 (Jannes 2026-11-01), ERN-EPIC-004 bis -006, ORG-EPIC-001, Schritte 5 bis 7
 mit Jannes' Leinwänden, UI-003; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
-zuletzt die Nachweistabelle.
+zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
 
 ## Bei Jannes
 

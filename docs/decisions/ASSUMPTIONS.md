@@ -878,12 +878,12 @@ Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes · Prüfpaket · Wie
 Datenschutz · entschieden (Jannes) · 2026-10-30 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)\
 **Annahme.** Widerruf: „Die Praxis löscht dann sofort alle Fotos, die als Arbeitshilfe entstanden sind; Fotos der Behandlungsdokumentation bleiben in der Akte.“ Fassung `2026-11` (ANN-262). **Grundlage.** ADR-017 Punkte 36 und 46; Art. 7 Abs. 3, Art. 17 Abs. 3 lit. b DSGVO; Jannes 2026-10-30. **Anker.** `EINWILLIGUNGSTEXTE` in `src/features/portal/platform/einwilligungstexte.ts`. **Rücknahme.** Wortlaut und Fassung an beiden Stellen · Aufwand `klein`.
 
-### ANN-828 — DATEV-Stapel: Standardkonten des Kontenrahmens, Sammeldebitor, die Kanzlei schreibt fest
-Recht · offen · 2026-11-01 · — · Prüfpaket · Wiedervorlage: Steuerberatung (B4 Frage 5)\
-**Annahme.** Der Stapel (EXTF 700, Version 13) bucht je Steuergruppe brutto Sammeldebitor 10000 an das Erlöskonto des SKR (frei 8100/4100, 19 % 8400/4400, nicht steuerbar 8200/4200), Zahlungen Bank, Kasse („anderer Weg“) oder Geldtransit an den Debitor, Stornos umgekehrt; Belegfeld 1 ist die Rechnungsnummer, Sachkontenlänge 4, Wirtschaftsjahr ab Januar, Festschreibung 0, ein Mandant je Bereich. **Grundlage.** ADR-009 Punkte 15 bis 19; Roadmap PRX-EPIC-004. **Anker.** `KONTENRAHMEN` in `src/features/billing/datev.ts`. **Rücknahme.** Andere Konten: diese Tabelle · Aufwand `klein`.
+### ANN-828 — DATEV-Stapel: Standardkonten des SKR, Sammeldebitor, die Kanzlei schreibt fest
+Recht · entschieden (Jannes) · 2026-11-01 · Jannes · Prüfpaket · Wiedervorlage: Steuerberatung (B4 Frage 5)\
+**Annahme.** Der Stapel (EXTF 700/13) bucht je Steuergruppe brutto Sammeldebitor 10000 an das Erlöskonto des SKR (frei 8100/4100, 19 % 8400/4400, nicht steuerbar 8200/4200), Zahlungen Bank, Kasse („anderer Weg“) oder Geldtransit an den Debitor, Stornos umgekehrt; Belegfeld 1 ist die Rechnungsnummer, Sachkontenlänge 4, Wirtschaftsjahr ab Januar, Festschreibung 0, ein Mandant je Bereich. **Grundlage.** ADR-009 Punkte 15–19; Roadmap PRX-EPIC-004. **Anker.** `KONTENRAHMEN` in `src/features/billing/datev.ts`. **Rücknahme.** Andere Konten: diese Tabelle · Aufwand `klein`.
 
 ### ANN-829 — DATEV-Export ohne Namen und Diagnosen, Belege weiter über den Druck
-Datenschutz · offen · 2026-11-01 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Steuerberatung (B4 Frage 5)\
+Datenschutz · entschieden (Jannes) · 2026-11-01 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2), Steuerberatung (B4)\
 **Annahme.** Der Stapel trägt nur Rechnungsnummer, Tag, Betrag und Konten; der Sammeldebitor hält Namen aus der Buchhaltung der Kanzlei. Belege mit Name und Diagnose (ANN-229) entstehen wie bisher im Browserdruck, die Anwendung legt keine Datei ab und sendet nichts. Ein Exportlauf hält keine Person fest (§20), kein Auditeintrag (ADR-010 Punkt 15). **Grundlage.** Art. 5 Abs. 1 lit. c, Art. 6 Abs. 1 lit. c DSGVO; § 147 AO; VVT Abschnitt 3. **Anker.** `app.datev_bookings`. **Rücknahme.** Personenkonten mit Namen: Debitorenstamm, DSFA-Nachtrag · Aufwand `mittel`.
 
 ## Fachregeln
