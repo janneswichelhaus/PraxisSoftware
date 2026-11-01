@@ -156,7 +156,8 @@ create function public.list_ending_training_packages()
     given_name               text,
     family_name              text,
     package_months           smallint,
-    ends_on                  date
+    ends_on                  date,
+    care_open                boolean
   )
   language plpgsql volatile security definer
   set search_path = ''
@@ -177,7 +178,9 @@ begin
   end if;
 
   return query
-  select e.training_relationship_id, pe.given_name, pe.family_name, c.package_months, e.ends_on
+  select e.training_relationship_id, pe.given_name, pe.family_name, c.package_months, e.ends_on,
+         -- ANN-278: Waehrend einer Behandlung beginnt kein Paket; die Zeile sagt es, statt ins Leere zu fuehren.
+         coalesce(app.training_package_start_blocker(e.training_relationship_id, e.ends_on + 1) = 'care_open', false)
   from app.ending_training_packages(v_org) e
   join public.training_relationships t on t.id = e.training_relationship_id
   join public.persons pe on pe.id = t.person_id
@@ -187,7 +190,7 @@ end;
 $$;
 
 comment on function public.list_ending_training_packages() is
-  'PRX-043 (ANN-834): Trainingspakete ohne Anschluss fuer Offene Punkte - Name, Laufzeit und letzter Tag, nach dem Ende sortiert; dieselbe Regel wie die Kennzahl der Statistik (app.ending_training_packages). Kein Kontakt, keine Kennung des Pakets. owner und office (app.can_manage_training_packages); ein abgewiesener Aufruf liefert keine Zeile und wird als training_packages.read protokolliert.';
+  'PRX-043 (ANN-834): Trainingspakete ohne Anschluss fuer Offene Punkte - Name, Laufzeit, letzter Tag und ob die Person noch in Behandlung ist (dann beginnt kein Folgepaket, ANN-278), nach dem Ende sortiert; dieselbe Regel wie die Kennzahl der Statistik (app.ending_training_packages). Kein Kontakt, keine Kennung des Pakets. owner und office (app.can_manage_training_packages); ein abgewiesener Aufruf liefert keine Zeile und wird als training_packages.read protokolliert.';
 
 revoke all on function public.list_ending_training_packages() from public, anon;
 grant execute on function public.list_ending_training_packages() to authenticated;

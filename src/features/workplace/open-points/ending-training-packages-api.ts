@@ -14,6 +14,8 @@ const paketSchema = z.object({
   family_name: z.string().nullable(),
   package_months: z.number(),
   ends_on: z.string(),
+  /** Noch in Behandlung: Ein Folgepaket beginnt erst nach deren Abschluss (ANN-278). */
+  care_open: z.boolean(),
 });
 
 export type EndingTrainingPackage = z.infer<typeof paketSchema>;

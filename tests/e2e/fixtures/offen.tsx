@@ -244,6 +244,7 @@ const paketEndet: EndingTrainingPackage[] = [
     family_name: 'Trainingskundin',
     package_months: 3,
     ends_on: tagPlus(12),
+    care_open: false,
   },
 ];
 

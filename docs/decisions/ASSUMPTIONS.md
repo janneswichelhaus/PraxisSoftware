@@ -1013,7 +1013,7 @@ Technik · offen · 2026-11-01 · — · — · Wiedervorlage: Töne bei der Sic
 
 ### ANN-834 — Pakete ohne Anschluss: Liste in Offene Punkte
 Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
-**Regel.** Was die Kennzahl „Pakete ohne Anschluss“ zählt, steht für owner und Büro als „Trainingspaket endet“ in Offene Punkte: Name, Laufzeit, letzter Tag, das nächste Ende zuerst; die Zeile führt zu den Verträgen. Eine Regel für Zahl und Liste, Lesen ohne Protokoll. Ein neues Paket beginnt im Vorschlag nach dem letzten Ende. **Grundlage.** ANN-071; ANN-831; ADR-010 Punkt 16. **Anker.** `public.list_ending_training_packages`.
+**Regel.** Was „Pakete ohne Anschluss“ zählt, steht für owner und Büro als „Trainingspaket endet“ in Offene Punkte: Name, Laufzeit, letzter Tag, nächstes Ende zuerst, bei laufender Behandlung „Noch in Behandlung“ (ANN-278). Kennzahl und Zeile springen zu Gruppe und Paket; Lesen ohne Protokoll. Ein neues Paket beginnt im Vorschlag nach dem Ende. **Grundlage.** ANN-071; ANN-831; ADR-010 Punkt 16. **Anker.** `public.list_ending_training_packages`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |

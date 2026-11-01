@@ -58,13 +58,14 @@ interface PaketOhneAnschluss {
   family_name: string | null;
   package_months: number;
   ends_on: string;
+  care_open: boolean;
 }
 
 async function liste(konto: string = users.ownerTherapist): Promise<PaketOhneAnschluss[]> {
   const { rows } = await asUser<PaketOhneAnschluss>(
     konto,
     `select training_relationship_id, given_name, family_name, package_months,
-            to_char(ends_on, 'YYYY-MM-DD') as ends_on
+            to_char(ends_on, 'YYYY-MM-DD') as ends_on, care_open
        from public.list_ending_training_packages()`,
   );
   return rows;
@@ -330,7 +331,7 @@ describe('Kennzahlen fuer Training, Abo und Pakete (PRX-041)', () => {
       expect(await liste()).toEqual([]);
     });
 
-    it('nennt nur Name, Laufzeit und letzten Tag, das naechste Ende zuerst', async () => {
+    it('nennt nur Name, Laufzeit, letzten Tag und die laufende Behandlung, das naechste Ende zuerst', async () => {
       await paket(tag(-60), tag(20));
       await paket(tag(-60), tag(3), trainingRelationships.erika);
       const zeilen = await liste(users.office);
@@ -340,16 +341,30 @@ describe('Kennzahlen fuer Training, Abo und Pakete (PRX-041)', () => {
       ]);
       expect(zeilen[0]).toMatchObject({ package_months: 3, ends_on: await datum(tag(3)) });
       expect(zeilen[0]!.family_name).toBeTruthy();
+      // Erika ist noch in Behandlung: Ein Folgepaket beginnt erst danach (ANN-278).
+      expect(zeilen.map((z) => z.care_open)).toEqual([true, false]);
 
       // Kein Kontakt, keine Kennung des Pakets, kein Preis (ANN-834).
       const { rows } = await asUser<Record<string, unknown>>(users.office, LISTE);
       expect(Object.keys(rows[0]!).sort()).toEqual([
+        'care_open',
         'ends_on',
         'family_name',
         'given_name',
         'package_months',
         'training_relationship_id',
       ]);
+    });
+
+    it('kennzeichnet die Behandlung nicht mehr, sobald sie abgeschlossen ist', async () => {
+      await paket(tag(-60), tag(3), trainingRelationships.erika);
+      await asPostgres(
+        `update public.patients
+            set care_concluded_on = ${tag(-1)}, care_concluded_at = now(), care_concluded_by = $2
+          where person_id = (select person_id from public.training_relationships where id = $1)`,
+        [trainingRelationships.erika, users.ownerTherapist],
+      );
+      expect((await liste()).map((z) => z.care_open)).toEqual([false]);
     });
 
     it('zeigt die Liste owner und office und weist alle anderen protokolliert ab', async () => {

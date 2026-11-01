@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -23,6 +24,10 @@ import {
   type Trainingspaket as Paket,
 } from './trainingspaket-api';
 import { Eintraege, Eintrag } from './Eintraege';
+import { ANGEBOTSZAHLEN_KEY } from './statistics/api';
+
+/** Sprungziel des Abschnitts: Die Liste in Offene Punkte führt hierher (ANN-834). */
+export const TRAININGSPAKET_ANKER = 'trainingspaket';
 
 /**
  * Das Trainingspaket am Trainingsverhältnis (ANG-EPIC-002, PROJECT_PRINCIPLES.md
@@ -40,6 +45,13 @@ export function Trainingspaket({ verhaeltnisId }: { verhaeltnisId: string }) {
     queryFn: () => fetchPakete(verhaeltnisId),
     retry: false,
   });
+  // Der Router rollt nicht von selbst zum Anker, und der Abschnitt steht erst nach dem Laden da.
+  const { hash } = useLocation();
+  const geladen = Boolean(sicht.data);
+  useEffect(() => {
+    if (!geladen || hash !== `#${TRAININGSPAKET_ANKER}`) return;
+    document.getElementById(TRAININGSPAKET_ANKER)?.scrollIntoView?.({ block: 'start' });
+  }, [geladen, hash]);
 
   if (sicht.isPending) return null;
   if (sicht.isError) {
@@ -54,23 +66,30 @@ export function Trainingspaket({ verhaeltnisId }: { verhaeltnisId: string }) {
   if (!sicht.data) return null;
 
   return (
-    <Section titel="Trainingspaket" rahmen>
-      {sicht.data.packages.length === 0 ? (
-        <p className="text-ink-muted text-sm">Kein Paket.</p>
-      ) : (
-        <Eintraege beschriftung="Trainingspakete" rahmen={false}>
-          {sicht.data.packages.map((paket) => (
-            <PaketZeile key={paket.id} paket={paket} verhaeltnisId={verhaeltnisId} />
-          ))}
-        </Eintraege>
-      )}
-      <Anlegen verhaeltnisId={verhaeltnisId} sicht={sicht.data} />
-    </Section>
+    // Abstand wie bei `Section`, dazu Luft unter der klebenden Kopfzeile beim Sprung.
+    <div id={TRAININGSPAKET_ANKER} className="mt-8 scroll-mt-20 first:mt-0">
+      <Section titel="Trainingspaket" rahmen>
+        {sicht.data.packages.length === 0 ? (
+          <p className="text-ink-muted text-sm">Kein Paket.</p>
+        ) : (
+          <Eintraege beschriftung="Trainingspakete" rahmen={false}>
+            {sicht.data.packages.map((paket) => (
+              <PaketZeile key={paket.id} paket={paket} verhaeltnisId={verhaeltnisId} />
+            ))}
+          </Eintraege>
+        )}
+        <Anlegen verhaeltnisId={verhaeltnisId} sicht={sicht.data} />
+      </Section>
+    </div>
   );
 }
 
-// Offene Punkte führt die Pakete ohne Anschluss (ANN-834): Anlegen und Entfernen ändern diese Liste.
-const OFFENE_PUNKTE = ['open-points'] as const;
+// Offene Punkte und die Kennzahl führen die Pakete ohne Anschluss (ANN-834): Anlegen und
+// Entfernen ändern beide.
+function erneuereUebersichten(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: ['open-points'] });
+  void queryClient.invalidateQueries({ queryKey: ANGEBOTSZAHLEN_KEY });
+}
 
 const STAND: Record<Paket['state'], string> = {
   planned: 'Beginnt bald',
@@ -114,7 +133,7 @@ function Entfernen({ paket, verhaeltnisId }: { paket: Paket; verhaeltnisId: stri
   const entfernen = useMutation({
     mutationFn: () => deletePaket(paket.id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: OFFENE_PUNKTE });
+      erneuereUebersichten(queryClient);
       return queryClient.invalidateQueries({ queryKey: paketSchluessel(verhaeltnisId) });
     },
   });
@@ -164,7 +183,7 @@ function Anlegen({ verhaeltnisId, sicht }: { verhaeltnisId: string; sicht: Paket
       setOffen(false);
       setGeprueft(false);
       setGespeichert(true);
-      void queryClient.invalidateQueries({ queryKey: OFFENE_PUNKTE });
+      erneuereUebersichten(queryClient);
       await queryClient.invalidateQueries({ queryKey: paketSchluessel(verhaeltnisId) });
     },
   });

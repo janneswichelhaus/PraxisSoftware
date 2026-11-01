@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import type * as Api from './ending-training-packages-api';
 import { renderWithProviders } from '@/test-utils';
 
@@ -16,7 +16,7 @@ const TINA = 'eeeeeeee-eeee-4eee-8eee-000000000001';
 const ERIKA = 'eeeeeeee-eeee-4eee-8eee-000000000002';
 
 describe('Trainingspakete ohne Anschluss in Offene Punkte (ANN-834)', () => {
-  it('nennt Person, Laufzeit und Ende und führt zu den Verträgen mit Rückweg', async () => {
+  it('nennt Person, Laufzeit und Ende und führt zum Paket, zurück zur Gruppe', async () => {
     fetchEndingTrainingPackages.mockResolvedValue([
       {
         training_relationship_id: ERIKA,
@@ -24,6 +24,7 @@ describe('Trainingspakete ohne Anschluss in Offene Punkte (ANN-834)', () => {
         family_name: 'Beispiel',
         package_months: 6,
         ends_on: '2026-11-04',
+        care_open: true,
       },
       {
         training_relationship_id: TINA,
@@ -31,9 +32,10 @@ describe('Trainingspakete ohne Anschluss in Offene Punkte (ANN-834)', () => {
         family_name: 'Trainingskundin',
         package_months: 1,
         ends_on: '2026-11-20',
+        care_open: false,
       },
     ]);
-    renderWithProviders(<EndingTrainingPackages />);
+    const { container } = renderWithProviders(<EndingTrainingPackages />);
 
     expect(
       await screen.findByRole('heading', { name: 'Trainingspaket endet (2)' }),
@@ -43,12 +45,39 @@ describe('Trainingspakete ohne Anschluss in Offene Punkte (ANN-834)', () => {
       expect.stringMatching(/^Beispiel, Erika/),
       expect.stringMatching(/^Trainingskundin, Tina/),
     ]);
-    expect(links[0]).toHaveAttribute(
+    expect(links[1]).toHaveAttribute(
       'href',
-      `/training/${ERIKA}?bereich=vertraege&zurueck=%2Foffen`,
+      `/training/${TINA}?bereich=vertraege&zurueck=%2Foffen%23trainingspaket-endet#trainingspaket`,
     );
     expect(screen.getByText('Paket über 6 Monate · endet am 04.11.2026')).toBeInTheDocument();
     expect(screen.getByText('Paket über 1 Monat · endet am 20.11.2026')).toBeInTheDocument();
+    // Sprungziel für die Kennzahl und den Rückweg.
+    expect(container.querySelector('#trainingspaket-endet')).not.toBeNull();
+  });
+
+  it('sagt, wo erst nach der Behandlung ein Paket beginnen kann (ANN-278)', async () => {
+    fetchEndingTrainingPackages.mockResolvedValue([
+      {
+        training_relationship_id: ERIKA,
+        given_name: 'Erika',
+        family_name: 'Beispiel',
+        package_months: 6,
+        ends_on: '2026-11-04',
+        care_open: true,
+      },
+      {
+        training_relationship_id: TINA,
+        given_name: 'Tina',
+        family_name: 'Trainingskundin',
+        package_months: 1,
+        ends_on: '2026-11-20',
+        care_open: false,
+      },
+    ]);
+    renderWithProviders(<EndingTrainingPackages />);
+    const [erika, tina] = await screen.findAllByRole('link');
+    expect(within(erika!).getByText('Noch in Behandlung')).toBeInTheDocument();
+    expect(within(tina!).queryByText('Noch in Behandlung')).toBeNull();
   });
 
   it('zeigt ohne endendes Paket nichts', async () => {

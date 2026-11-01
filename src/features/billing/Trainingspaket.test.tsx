@@ -146,6 +146,23 @@ describe('Trainingspaket am Trainingsverhältnis (ANG-006)', () => {
     expect(offenePunkte).toHaveBeenCalledTimes(2);
   });
 
+  it('rollt mit dem Sprungziel aus Offene Punkte zum Abschnitt, sobald er steht (ANN-834)', async () => {
+    const rollen = vi.fn();
+    Element.prototype.scrollIntoView = rollen;
+    fetchPakete.mockResolvedValue(sicht({ packages: [LAUFEND] }));
+    try {
+      renderWithProviders(
+        <Trainingspaket verhaeltnisId="t1" />,
+        '/?bereich=vertraege#trainingspaket',
+      );
+      expect(await screen.findByText('Trainingspaket 3 Monate')).toBeInTheDocument();
+      await vi.waitFor(() => expect(rollen).toHaveBeenCalledWith({ block: 'start' }));
+      expect((rollen.mock.contexts[0] as HTMLElement).id).toBe('trainingspaket');
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
   it('schlägt heute vor, wenn jedes Paket schon geendet hat', async () => {
     fetchPakete.mockResolvedValue(
       sicht({ packages: [{ ...LAUFEND, ends_on: '2026-10-06', state: 'ended' }] }),

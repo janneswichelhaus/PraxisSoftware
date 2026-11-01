@@ -414,12 +414,39 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
         family_name: 'Trainingskundin',
         package_months: 3,
         ends_on: '2026-10-20',
+        care_open: false,
       },
     ]);
     renderWithProviders(<OpenPointsPage user={testUser(['office'])} />, '/offen');
     await screen.findByRole('heading', { name: 'Trainingspaket endet (1)' });
     expect(gruppen()).toEqual(['Verordnungen zu erfassen (1)', 'Trainingspaket endet (1)']);
     expect(screen.queryByText('Nichts offen')).toBeNull();
+  });
+
+  it('rollt mit dem Sprungziel der Kennzahl zur Gruppe, sobald alles geladen ist (ANN-834)', async () => {
+    const rollen = vi.fn();
+    Element.prototype.scrollIntoView = rollen;
+    fetchEndingTrainingPackages.mockResolvedValue([
+      {
+        training_relationship_id: 'eeeeeeee-eeee-4eee-8eee-000000000001',
+        given_name: 'Tina',
+        family_name: 'Trainingskundin',
+        package_months: 3,
+        ends_on: '2026-10-20',
+        care_open: false,
+      },
+    ]);
+    try {
+      renderWithProviders(
+        <OpenPointsPage user={testUser(['office'])} />,
+        '/offen#trainingspaket-endet',
+      );
+      await screen.findByRole('heading', { name: 'Trainingspaket endet (1)' });
+      await waitFor(() => expect(rollen).toHaveBeenCalledWith({ block: 'start' }));
+      expect((rollen.mock.contexts[0] as HTMLElement).id).toBe('trainingspaket-endet');
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
   });
 
   it('sagt es, wenn die Trainingspakete nicht laden, statt still zu fehlen (ANN-834)', async () => {
