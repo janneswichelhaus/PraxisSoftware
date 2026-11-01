@@ -18,7 +18,7 @@ import {
 import { Schreibfeld, Schreibflaeche, ZustandMitRueckweg } from './Schreibflaeche';
 import { kopfzeileFuer } from './format';
 import { NochEinEntwurf } from './Zustaende';
-import { uebergabeErledigt, uebergebenerText } from './uebernahme';
+import { uebergabeDiktiert, uebergabeErledigt, uebergebenerText } from './uebernahme';
 import {
   MAX_BEGRUENDUNG,
   begruendungFehler,
@@ -80,6 +80,8 @@ function Formular({
   // festgeschrieben ist.
   const [uebernommen] = useState(() => uebergebenerText(note.id));
   const [inhalt, setInhalt] = useState(uebernommen ?? note.content);
+  // Mit dem Text reist „mit Diktat“ (ANN-825); gelesen vor dem Abholen.
+  const [diktiert] = useState(() => uebergabeDiktiert(note.id));
   useEffect(() => uebergabeErledigt(note.id), [note.id]);
   const [begruendung, setBegruendung] = useState('');
   const [inhaltsfehler, setInhaltsfehler] = useState<string | undefined>(undefined);
@@ -113,7 +115,7 @@ function Formular({
    */
   async function korrekturSchreiben(): Promise<boolean> {
     try {
-      await reviseTreatmentNote(note.id, note.updated_at, inhalt, begruendung);
+      await reviseTreatmentNote(note.id, note.updated_at, inhalt, begruendung, diktiert);
     } catch (error) {
       // Den Stand nachladen statt zum Neuladen aufzufordern (BEF-056): Das
       // nächste Festschreiben beruht dann auf der jüngsten Version.

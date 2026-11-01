@@ -19,8 +19,8 @@ export function AufDemGeraetPage({ user }: { user: CurrentUser }) {
   const serverwege = useMemo<Serverwege>(
     () => ({
       zurDokumentation: (terminId) => `/termine/${terminId}/dokumentation`,
-      alsNachtrag: async (terminId, noteId, text) => {
-        const neu = await createTreatmentNoteAddendum(noteId, text);
+      alsNachtrag: async (terminId, noteId, text, diktiert) => {
+        const neu = await createTreatmentNoteAddendum(noteId, text, diktiert);
         await queryClient.invalidateQueries({ queryKey: ['treatment-note', terminId] });
         void navigate(`/termine/${terminId}/dokumentation/${neu}/bearbeiten`, {
           state: { meldung: 'Ihr Text ist als Nachtrag-Entwurf gesichert.' },
@@ -28,8 +28,8 @@ export function AufDemGeraetPage({ user }: { user: CurrentUser }) {
       },
       fassungLesen: async (terminId) =>
         (await fetchTreatmentDocumentation(terminId)).primary?.content ?? null,
-      inKorrektur: (terminId, noteId, text) => {
-        textUebergeben(noteId, text);
+      inKorrektur: (terminId, noteId, text, diktiert) => {
+        textUebergeben(noteId, text, diktiert);
         void navigate(`/termine/${terminId}/dokumentation/${noteId}/korrektur`);
       },
     }),

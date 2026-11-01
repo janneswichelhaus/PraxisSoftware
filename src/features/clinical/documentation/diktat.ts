@@ -73,6 +73,8 @@ export function useDiktat({ terminId, aktiv }: { terminId: string; aktiv: boolea
   const [stand, setStand] = useState<Diktatstand>({ art: 'bereit' });
   const [meldung, setMeldung] = useState<string | undefined>(undefined);
   const [hinweis, setHinweis] = useState(false);
+  // Übernommene, nicht zurückgenommene Vorschläge: Daran hängt „mit Diktat“ (ANN-825).
+  const [uebernahmen, setUebernahmen] = useState(0);
   // Die Aufnahme für einen zweiten Versuch - nur im Arbeitsspeicher, nur bis
   // zur Antwort oder zum Verwerfen (ANN-520).
   const zuSenden = useRef<Aufnahme | null>(null);
@@ -217,6 +219,8 @@ export function useDiktat({ terminId, aktiv }: { terminId: string; aktiv: boolea
     offen,
     /** Vorschlag oder ungesendete Aufnahme halten Festschreiben und Entwurf an. */
     wartet: stand.art === 'vorschlag' || stand.art === 'gescheitert',
+    /** Steht ein übernommener Vorschlag im Feld? Dann schreibt jeder Weg „mit Diktat“. */
+    diktiert: uebernahmen > 0,
 
     sprechen: () => {
       if (!ruhig) return;
@@ -253,10 +257,14 @@ export function useDiktat({ terminId, aktiv }: { terminId: string; aktiv: boolea
     textAendern: (text: string) => {
       if (stand.art === 'vorschlag') setStand({ ...stand, text });
     },
-    /** Gibt den geprüften Text zur Übernahme heraus und schließt den Vorschlag. */
+    /**
+     * Gibt den geprüften Text heraus; ab da geht er den Weg jedes getippten Textes, auch für
+     * die Frist der automatischen Finalisierung (ANN-827).
+     */
     uebernehmen: (): string | null => {
       if (stand.art !== 'vorschlag' || stand.text.trim() === '') return null;
       uebernommen.current = stand;
+      setUebernahmen((anzahl) => anzahl + 1);
       setHinweis(false);
       setStand({ art: 'bereit' });
       return stand.text.trim();
@@ -265,6 +273,7 @@ export function useDiktat({ terminId, aktiv }: { terminId: string; aktiv: boolea
     zurueckholen: () => {
       if (!uebernommen.current) return;
       setStand(uebernommen.current);
+      setUebernahmen((anzahl) => Math.max(0, anzahl - 1));
       uebernommen.current = null;
     },
     /** Festschreiben oder Entwurf wurde getippt, während etwas offen ist. */

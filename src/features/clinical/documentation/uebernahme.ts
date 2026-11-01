@@ -27,10 +27,14 @@ import {
  * ersten Zeichnen ab.
  */
 const uebergaben = new Map<string, string>();
+// Übergaben mit übernommenem Diktatvorschlag im Text (ANN-825).
+const diktierte = new Set<string>();
 
 /** Legt den Text für die Korrektur des Eintrags `noteId` bereit. */
-export function textUebergeben(noteId: string, text: string): void {
+export function textUebergeben(noteId: string, text: string, diktiert = false): void {
   uebergaben.set(noteId, text);
+  if (diktiert) diktierte.add(noteId);
+  else diktierte.delete(noteId);
 }
 
 /**
@@ -44,13 +48,20 @@ export function uebergebenerText(noteId: string): string | undefined {
   return uebergaben.get(noteId);
 }
 
+/** Steht im bereitgelegten Text ein übernommener Diktatvorschlag? */
+export function uebergabeDiktiert(noteId: string): boolean {
+  return uebergaben.has(noteId) && diktierte.has(noteId);
+}
+
 export function uebergabeErledigt(noteId: string): void {
   uebergaben.delete(noteId);
+  diktierte.delete(noteId);
 }
 
 /** Beim Sitzungsende: nichts bleibt im Arbeitsspeicher liegen. */
 export function uebergabenLeeren(): void {
   uebergaben.clear();
+  diktierte.clear();
 }
 beimAbmeldenLeeren(uebergabenLeeren);
 
@@ -97,6 +108,7 @@ export function useTextUebernahme({
   note,
   eingehend,
   wertRef,
+  diktiertRef,
   setFehler,
   schutz,
 }: {
@@ -105,6 +117,8 @@ export function useTextUebernahme({
   eingehend: string;
   /** Der Text, wie er in diesem Augenblick im Feld steht. */
   wertRef: RefObject<string>;
+  /** Steht darin ein übernommener Diktatvorschlag (ANN-825)? */
+  diktiertRef?: RefObject<boolean>;
   setFehler: (meldung: string | undefined) => void;
   schutz: Pick<Textverlustschutz, 'schreiben' | 'freigeben'>;
 }): { alsNachtrag: () => void; inKorrektur: () => void } {
@@ -119,7 +133,11 @@ export function useTextUebernahme({
     let neu = '';
     void schutz.schreiben({
       ausfuehren: async () => {
-        neu = await createTreatmentNoteAddendum(note.id, wertRef.current);
+        neu = await createTreatmentNoteAddendum(
+          note.id,
+          wertRef.current,
+          diktiertRef?.current ?? false,
+        );
         await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointmentId] });
         return true;
       },
@@ -136,7 +154,7 @@ export function useTextUebernahme({
 
   function inKorrektur() {
     if (!note) return;
-    textUebergeben(note.id, wertRef.current);
+    textUebergeben(note.id, wertRef.current, diktiertRef?.current ?? false);
     schutz.freigeben();
     void navigate(
       mitRueckweg(`/termine/${appointmentId}/dokumentation/${note.id}/korrektur`, eingehend),

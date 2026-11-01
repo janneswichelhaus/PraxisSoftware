@@ -109,11 +109,11 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-ORG-004 | Kalender führt Termine und Trainingstage zusammen | bestätigt |
 | IDEA-ORG-005 | Sitzungsvorbereitung für die Praxis | bestätigt |
 | IDEA-ORG-006 | Planlaufzeit und Wiedervorlage | bestätigt |
-| IDEA-KI-001 | Der Rahmen zuerst, dann Features | bestätigt |
+| IDEA-KI-001 | Der Rahmen zuerst, dann Features | überführt → ADR-005 / KI-EPIC-001 |
 | IDEA-KI-002 | Zulässige Anwendungsfälle | bestätigt |
 | IDEA-KI-003 | Quellenbindung als Bauprinzip | bestätigt |
 | IDEA-KI-004 | Ausdrücklich ausgeschlossen | bestätigt · Abgrenzung |
-| IDEA-KI-005 | Nutzung sichtbar machen | bestätigt |
+| IDEA-KI-005 | Nutzung sichtbar machen | überführt → KI-EPIC-001 (ANN-825) / C6 (Protokoll) |
 | IDEA-KI-006 | Was in der Referenzsoftware „KI-Analyse" heißt | bestätigt · Einordnung |
 | IDEA-KI-007 | Sprachdokumentation: Diktat, Transkription, geprüfter Entwurf | überführt → `PROJECT_PRINCIPLES.md` §6.3 |
 | IDEA-QSN-001 | Ein Zeitstrahl über alle Bereiche | bestätigt |

@@ -32,6 +32,15 @@ describe('entwurfUebertragen', () => {
     });
   });
 
+  it('sendet „mit Diktat“ nur, wenn der Entwurf es trägt (ANN-825)', async () => {
+    rpc.mockResolvedValue({ data: { status: 'created', note_id: 'n' }, error: null });
+    await entwurfUebertragen({ ...ENTWURF, diktiert: true });
+    expect(rpc).toHaveBeenCalledWith(
+      'sync_offline_treatment_note',
+      expect.objectContaining({ p_dictated: true }),
+    );
+  });
+
   it.each([
     [
       { code: '42501', message: 'not allowed to write treatment documentation' },

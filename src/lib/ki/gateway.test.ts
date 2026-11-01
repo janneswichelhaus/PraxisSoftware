@@ -13,6 +13,7 @@ const {
   diktatAufbereiten,
   diktatVerfuegbar,
   unverstaendlicheStellen,
+  satzgetreu,
   vorschlagAlsText,
 } = await import('./gateway');
 
@@ -155,7 +156,41 @@ describe('diktatAufbereiten', () => {
     invoke.mockResolvedValue({ data: { ...ERFOLG, abschnitte: [] }, error: null });
     expect(
       await diktatAufbereiten({ terminId: TERMIN, audio: aufnahme(), dauerS: 5 }),
-    ).toMatchObject({ ok: false, fehler: 'function_unavailable' });
+    ).toMatchObject({ ok: false, fehler: 'nicht_satzgetreu', erneutMoeglich: false });
+  });
+
+  it.each([
+    ['ein ergänztes Wort', 'Keine Schwellung, Arthrose.'],
+    ['ein ausgelassenes Wort', 'Schwellung.'],
+    ['eine geänderte Zahl', 'Keine Schwellung 2.'],
+  ])('nimmt keinen Vorschlag mit %s an (ANN-824)', async (_fall, befund) => {
+    const geaendert = {
+      ...ERFOLG,
+      abschnitte: [{ titel: 'Befund', text: befund }, ERFOLG.abschnitte[1]],
+    };
+    invoke.mockResolvedValue({ data: geaendert, error: null });
+    expect(
+      await diktatAufbereiten({ terminId: TERMIN, audio: aufnahme(), dauerS: 5 }),
+    ).toMatchObject({ ok: false, fehler: 'nicht_satzgetreu', erneutMoeglich: false });
+  });
+
+  it('prüft die Sätze unabhängig von Abschnitt und Zeilenumbruch', () => {
+    const transkript = 'Keine Schwellung.\nBeugung rechts 110 Grad, links 135 Grad.';
+    expect(
+      satzgetreu(transkript, [
+        { text: 'Beugung rechts 110 Grad, links 135 Grad.' },
+        { text: 'Keine Schwellung.' },
+      ]),
+    ).toBe(true);
+    // Vertauschte Zahlen sind dieselben Wörter, aber ein anderer Satz.
+    expect(
+      satzgetreu(transkript, [
+        { text: 'Keine Schwellung. Beugung rechts 135 Grad, links 110 Grad.' },
+      ]),
+    ).toBe(false);
+    expect(satzgetreu('Knie rechts.', [{ text: 'Knie links.' }])).toBe(false);
+    expect(satzgetreu('Rechts. Rechts.', [{ text: 'Rechts.' }])).toBe(false);
+    expect(satzgetreu('', [])).toBe(true);
   });
 
   it('nimmt eine Aufnahme ohne verständliches Wort als leeren Vorschlag an', async () => {

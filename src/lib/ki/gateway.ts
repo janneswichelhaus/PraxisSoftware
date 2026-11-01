@@ -64,10 +64,11 @@ export const GATEWAY_FEHLERKLASSEN = [
 ] as const;
 
 /**
- * Dazu eine Klasse, die nur der Browser vergibt: Die Function hat gar nicht
- * geantwortet (wie `function_unavailable` beim Kartendienst, BEF-027).
+ * Dazu zwei Klassen, die nur der Browser vergibt: Die Function hat nicht geantwortet, oder ihr
+ * Vorschlag weicht von den Sätzen des Transkripts ab (ANN-824) - das wiederholt sich beim Senden.
  */
-export type Kifehler = (typeof GATEWAY_FEHLERKLASSEN)[number] | 'function_unavailable';
+export type Kifehler =
+  (typeof GATEWAY_FEHLERKLASSEN)[number] | 'function_unavailable' | 'nicht_satzgetreu';
 
 /** Die Sätze der Oberfläche je Fehlerklasse - ohne technische Einzelheiten (13). */
 export const KI_FEHLERTEXTE: Readonly<Record<Kifehler, string>> = {
@@ -82,6 +83,8 @@ export const KI_FEHLERTEXTE: Readonly<Record<Kifehler, string>> = {
   unavailable: 'Die Aufbereitung ist gerade nicht erreichbar.',
   timeout: 'Die Aufbereitung hat zu lange gedauert.',
   function_unavailable: 'Die Spracheingabe ist gerade nicht erreichbar.',
+  nicht_satzgetreu:
+    'Der Vorschlag passte nicht wörtlich zur Aufnahme und wird nicht gezeigt. Bitte noch einmal sprechen – oder tippen.',
 };
 
 /**
@@ -107,19 +110,39 @@ const abschnittSchema = z.object({
   text: z.string().max(50_000),
 });
 
-const erfolgSchema = z
-  .object({
-    ok: z.literal(true),
-    transkript: z.string().max(50_000),
-    abschnitte: z.array(abschnittSchema).max(DIKTAT_ABSCHNITTE.length),
-    quelle: z.enum(['anbieter', 'nachbildung']),
-  })
-  // Verstanden, aber nichts eingeordnet, wäre eine Auslassung (6.3) - der
-  // Gateway liefert das nicht, und hier gilt es als unbrauchbare Antwort.
-  .refine(
-    (antwort) => antwort.transkript.trim() === '' || antwort.abschnitte.length > 0,
-    'Transkript ohne Abschnitt',
+const erfolgSchema = z.object({
+  ok: z.literal(true),
+  transkript: z.string().max(50_000),
+  abschnitte: z.array(abschnittSchema).max(DIKTAT_ABSCHNITTE.length),
+  quelle: z.enum(['anbieter', 'nachbildung']),
+});
+
+// Dieselbe Satzregel wie `saetze` im Gateway (`inhaltstreue.ts`); `vertrag.test.ts` hält beide gleich.
+const KEIN_SATZENDE = /(?:^|\s)(?:\d+|\p{L}|ca|bzw|ggf|evtl|vgl|inkl|usw|Dr|Nr)\.$/iu;
+
+/** Die Sätze eines Textes nach der Regel des Gateways. */
+export function saetze(text: string): string[] {
+  const liste: string[] = [];
+  for (const teil of text.split(/(?<=[.!?…])\s+/u)) {
+    const satz = teil.trim();
+    if (satz === '') continue;
+    const vorig = liste.at(-1);
+    if (vorig !== undefined && KEIN_SATZENDE.test(vorig))
+      liste[liste.length - 1] = `${vorig} ${satz}`;
+    else liste.push(satz);
+  }
+  return liste;
+}
+
+/** Stehen in den Abschnitten genau die Sätze des Transkripts, jeder so oft wie dort? */
+export function satzgetreu(transkript: string, abschnitte: readonly { text: string }[]): boolean {
+  const gesprochen = saetze(transkript).sort();
+  const vorgeschlagen = abschnitte.flatMap((abschnitt) => saetze(abschnitt.text)).sort();
+  return (
+    gesprochen.length === vorgeschlagen.length &&
+    gesprochen.every((satz, stelle) => satz === vorgeschlagen[stelle])
   );
+}
 
 const statusSchema = z.object({ ok: z.literal(true), verfuegbar: z.boolean() });
 
@@ -180,14 +203,8 @@ export async function diktatVerfuegbar(signal?: AbortSignal): Promise<boolean> {
 }
 
 /**
- * Ein Diktat aufbereiten: die Aufnahme an den Gateway, zurück kommen das
- * Transkript und der in die Vorlage eingeordnete Vorschlag.
- *
- * Hinaus gehen der Zweck in der Adresse und genau drei Felder: Termin,
- * Aufnahme, Dauer. Der Termin ist die Zuordnung (6.3) und die Grundlage der
- * Berechtigung am Server; er bleibt im Gateway und erreicht keinen Anbieter.
- *
- * Wirft nicht: Alles, was schiefgehen kann, endet in einer Fehlerklasse.
+ * Hinaus gehen Termin (Zuordnung und Berechtigung, bleibt im Gateway), Aufnahme und Dauer; die
+ * Aufnahme lebt nur für diese Anfrage, auch beim Anbieter (ANN-826). Wirft nicht.
  */
 export async function diktatAufbereiten({
   terminId,
@@ -265,6 +282,9 @@ function deute(wert: unknown, status: number): Diktatergebnis {
   const erfolg = erfolgSchema.safeParse(wert);
   if (erfolg.success) {
     const { transkript, abschnitte, quelle } = erfolg.data;
+    // ANN-824: Was ergänzt, weglässt oder ändert, zeigt die Seite nicht - auch nicht vom
+    // eigenen Gateway.
+    if (!satzgetreu(transkript, abschnitte)) return gescheitert('nicht_satzgetreu');
     return { ok: true, vorschlag: { transkript, abschnitte, quelle } };
   }
   const abgelehnt = fehlerSchema.safeParse(wert);

@@ -158,6 +158,8 @@ function Abschluss({
   // wird nichts behandelt, also auch nichts diktiert.
   const diktat = useDiktat({ terminId: appointment.id, aktiv: !ohneBehandlung });
   const verbunden = useIstVerbunden();
+  const diktiertRef = useRef(diktat.diktiert);
+  diktiertRef.current = diktat.diktiert;
 
   // Der Text, wie er in diesem Augenblick im Feld steht - nicht der von
   // vorhin. Ein Schreibvorgang dauert (FIX-014).
@@ -189,9 +191,9 @@ function Abschluss({
       }
       try {
         if (note) {
-          await updateTreatmentNote(note.id, note.updated_at, zuSichern);
+          await updateTreatmentNote(note.id, note.updated_at, zuSichern, diktiertRef.current);
         } else {
-          await createTreatmentNote(appointment.id, zuSichern);
+          await createTreatmentNote(appointment.id, zuSichern, diktiertRef.current);
         }
       } catch (error) {
         // Den Stand nachladen statt zum Neuladen aufzufordern (BEF-056): Ist
@@ -246,6 +248,7 @@ function Abschluss({
     note,
     eingehend,
     wertRef,
+    diktiertRef,
     setFehler,
     schutz: { schreiben, freigeben },
   });
@@ -276,6 +279,7 @@ function Abschluss({
         appointment.updated_at,
         note?.updated_at ?? null,
         ohneBehandlung,
+        diktiertRef.current,
       );
     } catch (error) {
       // Termin und Eintrag nachladen statt zum Neuladen aufzufordern
@@ -535,6 +539,7 @@ function Abschluss({
                 terminart: appointment.appointment_type,
               }}
               text={wert}
+              diktiert={diktat.diktiert}
               onGesichert={() => {
                 freigeben();
                 void navigate('/auf-dem-geraet');

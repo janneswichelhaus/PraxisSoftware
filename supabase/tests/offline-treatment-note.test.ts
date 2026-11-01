@@ -366,8 +366,8 @@ describe('OFF-002: Offline-Entwurf übertragen', () => {
 
   it('ist für anon nicht ausführbar', async () => {
     const { rows } = await asPostgres<{ anon: boolean; auth: boolean }>(
-      `select has_function_privilege('anon', 'public.sync_offline_treatment_note(uuid, uuid, text, timestamptz)', 'execute') as anon,
-              has_function_privilege('authenticated', 'public.sync_offline_treatment_note(uuid, uuid, text, timestamptz)', 'execute') as auth`,
+      `select has_function_privilege('anon', 'public.sync_offline_treatment_note(uuid, uuid, text, timestamptz, boolean)', 'execute') as anon,
+              has_function_privilege('authenticated', 'public.sync_offline_treatment_note(uuid, uuid, text, timestamptz, boolean)', 'execute') as auth`,
     );
     expect(rows[0]).toEqual({ anon: false, auth: true });
   });

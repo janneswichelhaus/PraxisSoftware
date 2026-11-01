@@ -66,6 +66,14 @@ describe('Entwürfe auf dem Gerät (OFF-002)', () => {
     expect(await entwuerfeLesen('konto-ben')).toEqual([]);
   });
 
+  it('trägt „mit Diktat“ und behält es beim Weiterschreiben (ANN-825)', async () => {
+    const ohne = await entwurfSchreiben(ANNA, 't2', KOPF, 'Synthetisch: getippt.');
+    expect(ohne?.diktiert).toBeUndefined();
+    await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: diktiert.', new Date(), false, true);
+    const weiter = await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: diktiert, getippt.');
+    expect(weiter?.diktiert).toBe(true);
+  });
+
   it('ein geleertes Feld lässt den Entwurf fallen, Verwerfen ebenso', async () => {
     await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch.');
     await entwurfSchreiben(ANNA, 't1', KOPF, '  \n');

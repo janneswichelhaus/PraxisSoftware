@@ -281,6 +281,18 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
     expect(within(fenster).getByText('Ohne Behandlung')).toBeInTheDocument();
   });
 
+  it('zeigt „Mit Diktat“ auch in der Akte (ANN-825)', async () => {
+    fetchPatientTreatmentNotesPage.mockResolvedValue([
+      akteTermin(1, [eintrag({ dictated: true })], { appointment_status: 'documented' }),
+    ]);
+    renderWithProviders(
+      <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
+    );
+
+    const fenster = await fensterOeffnen('12.05.2027');
+    expect(within(fenster).getByText('Mit Diktat')).toBeInTheDocument();
+  });
+
   it('verlinkt den Aenderungsverlauf nur fuer Eintraege mit Versionen', async () => {
     renderWithProviders(
       <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,

@@ -5,13 +5,12 @@ import { NACHGEBILDETES_DIKTAT, erstelleNachbildung } from './mock.ts';
 import type { Sitzungsergebnis } from './sitzung.ts';
 import {
   FEHLERKLASSEN,
-  type Abschnitt,
   type Adapterergebnis,
   type Antwort,
   type Protokolleintrag,
   type Sprachadapter,
-  type Strukturierungsanfrage,
   type Transkriptionsanfrage,
+  type Zuordnungsanfrage,
 } from './typen.ts';
 import { DIKTAT_ABSCHNITTE, DIKTAT_REGELN, HOECHST_BYTES } from './zwecke.ts';
 
@@ -174,13 +173,13 @@ function spion({
   transkript?: string;
   transkription?: () => Promise<Adapterergebnis<{ readonly transkript: string }>>;
   einordnung?: (
-    anfrage: Strukturierungsanfrage,
-  ) => Promise<Adapterergebnis<{ readonly abschnitte: readonly Abschnitt[] }>>;
+    anfrage: Zuordnungsanfrage,
+  ) => Promise<Adapterergebnis<{ readonly zuordnung: readonly unknown[] }>>;
   id?: string;
 } = {}) {
   const echt = erstelleNachbildung();
   const transkribiert: Transkriptionsanfrage[] = [];
-  const strukturiert: Strukturierungsanfrage[] = [];
+  const strukturiert: Zuordnungsanfrage[] = [];
   const signale: AbortSignal[] = [];
   const adapter: Sprachadapter = {
     id,
@@ -190,10 +189,13 @@ function spion({
       signale.push(signal);
       return transkription ? transkription() : Promise.resolve({ ok: true, value: { transkript } });
     },
-    strukturiere: (anfrage, signal) => {
+    ordneZu: (anfrage, signal) => {
       strukturiert.push(anfrage);
       signale.push(signal);
-      return einordnung ? einordnung(anfrage) : echt.strukturiere(anfrage, signal);
+      // Eine falsche Antwort ist hier gewollt: Der Gateway muss sie abweisen.
+      return einordnung
+        ? (einordnung(anfrage) as Promise<Adapterergebnis<{ readonly zuordnung: string[] }>>)
+        : echt.ordneZu(anfrage, signal);
     },
   };
   return { adapter, transkribiert, strukturiert, signale };
@@ -534,9 +536,10 @@ describe('ai-gateway: Anbieter', () => {
     expect(Object.keys(strukturiert[0]!).sort()).toEqual([
       'abschnitte',
       'regeln',
+      'saetze',
       'sprache',
-      'transkript',
     ]);
+    expect(strukturiert[0]!.saetze.join(' ')).toBe(NACHGEBILDETES_DIKTAT);
     expect(strukturiert[0]!.regeln).toBe(DIKTAT_REGELN);
     expect(strukturiert[0]!.abschnitte).toEqual(DIKTAT_ABSCHNITTE);
 
@@ -610,19 +613,14 @@ describe('ai-gateway: Anbieter', () => {
   });
 
   it.each([
-    ['keinem Abschnitt', []],
-    ['nur leeren Abschnitten', [{ titel: 'Befund', text: '   ' }]],
-    ['einen erfundenen Abschnitt', [{ titel: 'Diagnose', text: 'Gonarthrose rechts.' }]],
-    [
-      'einen Abschnitt doppelt',
-      [
-        { titel: 'Befund', text: 'Keine Schwellung.' },
-        { titel: 'Befund', text: 'Beugung rechts 110 Grad.' },
-      ],
-    ],
-  ])('gibt eine Einordnung mit %s nicht weiter', async (_f, abschnitte) => {
+    ['keiner Zuordnung', []],
+    ['einem Satz zu wenig', ['Befund', 'Befund', 'Befund', 'Befund']],
+    ['einem Satz zu viel', ['Befund', 'Befund', 'Befund', 'Befund', 'Befund', 'Plan']],
+    ['einem erfundenen Abschnitt', ['Diagnose', 'Befund', 'Befund', 'Behandlung', 'Plan']],
+    ['eigenem Text statt Titel', ['Gonarthrose rechts.', 'Befund', 'Befund', 'Behandlung', 'Plan']],
+  ])('gibt eine Einordnung mit %s nicht weiter', async (_f, zuordnung) => {
     const { adapter } = spion({
-      einordnung: () => Promise.resolve({ ok: true, value: { abschnitte } }),
+      einordnung: () => Promise.resolve({ ok: true, value: { zuordnung } }),
     });
     const { handler, protokoll } = gateway({ adapter });
     const antwort = await handler(anfrage());
@@ -631,25 +629,25 @@ describe('ai-gateway: Anbieter', () => {
     expect(protokoll.map((eintrag) => eintrag.code)).toEqual(['unavailable']);
   });
 
-  it('ordnet die Abschnitte nach der Vorlage und lässt leere weg', async () => {
+  it('setzt den Vorschlag selbst aus den Sätzen zusammen, nach der Vorlage geordnet', async () => {
     const { adapter } = spion({
       einordnung: () =>
         Promise.resolve({
           ok: true,
-          value: {
-            abschnitte: [
-              { titel: 'Plan', text: 'Eigenübungen weiter.' },
-              { titel: 'Behandlung', text: '  ' },
-              { titel: 'Befund', text: 'Keine Schwellung.' },
-            ],
-          },
+          value: { zuordnung: ['Plan', 'Befund', 'Befund', 'Plan', 'Plan'] },
         }),
     });
     const { handler } = gateway({ adapter });
     const koerper = await gelesen(await handler(anfrage()));
     expect(koerper.ok && koerper.abschnitte).toEqual([
-      { titel: 'Befund', text: 'Keine Schwellung.' },
-      { titel: 'Plan', text: 'Eigenübungen weiter.' },
+      { titel: 'Befund', text: 'Keine Schwellung. Beugung rechts 110 Grad, links 135 Grad.' },
+      {
+        titel: 'Plan',
+        text:
+          'Patientin berichtet, das rechte Knie sei seit dem letzten Termin besser, Schmerz drei von zehn. ' +
+          'Mobilisation Knie rechts und Kräftigung Quadrizeps. ' +
+          'Eigenübungen weiter, vielleicht nächstes Mal Treppe [unverständlich].',
+      },
     ]);
   });
 });

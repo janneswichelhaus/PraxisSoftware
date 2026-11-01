@@ -18,6 +18,7 @@ import {
   fetchDocumentationDeadline,
   fetchPatientTreatmentNotesPage,
   fetchTreatmentDocumentation,
+  MIT_DIKTAT,
   naechsteAkteSeite,
   type AkteCursor,
   type PatientTreatmentNotesEntry,
@@ -308,6 +309,7 @@ function AkteEintrag({
             Akte wie am Termin: Ob behandelt wurde, entscheidet später über
             eine Rechnung ohne erbrachte Leistung (ADR-018 Fassung 3 Punkt 9). */}
         {note.visit_without_treatment ? <Badge>Ohne Behandlung</Badge> : null}
+        {note.dictated ? <Badge>{MIT_DIKTAT}</Badge> : null}
       </div>
 
       {/* BEF-078: Der Eintrag ist abgesetzt - vorher lief er im gleichen

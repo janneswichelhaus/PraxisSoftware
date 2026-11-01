@@ -26,6 +26,9 @@ export const treatmentNoteStatusLabels: Record<TreatmentNoteStatus, string> = {
   final: 'Finalisiert',
 };
 
+/** Das Merkmal am Eintrag, wenn ein Diktatvorschlag übernommen wurde (ANN-825). */
+export const MIT_DIKTAT = 'Mit Diktat';
+
 const treatmentNoteSchema = z.object({
   id: z.string(),
   appointment_id: z.string(),
@@ -63,6 +66,8 @@ const treatmentNoteSchema = z.object({
    * ein älterer Stand ohne die Spalte weiter gelesen wird.
    */
   reported_written_at: z.string().nullable().optional(),
+  /** Ein Diktatvorschlag wurde übernommen (ANN-825); fehlt bei einem älteren Stand. */
+  dictated: z.boolean().optional(),
 });
 
 export type TreatmentNote = z.infer<typeof treatmentNoteSchema>;
@@ -241,11 +246,24 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
   return new Error(standard);
 }
 
+/**
+ * Das Merkmal „mit Diktat“ geht nur hinaus, wenn ein Vorschlag übernommen ist (ANN-825); der
+ * Server nimmt es nie zurück.
+ */
+export function mitDiktat(diktiert: boolean): { p_dictated?: true } {
+  return diktiert ? { p_dictated: true } : {};
+}
+
 /** Legt die Dokumentation eines Termins als Entwurf an und gibt ihre ID zurück. */
-export async function createTreatmentNote(appointmentId: string, content: string): Promise<string> {
+export async function createTreatmentNote(
+  appointmentId: string,
+  content: string,
+  diktiert = false,
+): Promise<string> {
   const { data, error } = (await getSupabase().rpc('create_treatment_note', {
     p_appointment_id: appointmentId,
     p_content: content,
+    ...mitDiktat(diktiert),
   })) as { data: unknown; error: { message?: string } | null };
 
   if (error) {
@@ -273,11 +291,13 @@ export async function updateTreatmentNote(
   noteId: string,
   expectedUpdatedAt: string,
   content: string,
+  diktiert = false,
 ): Promise<void> {
   const { error } = (await getSupabase().rpc('update_treatment_note', {
     p_note_id: noteId,
     p_expected_updated_at: expectedUpdatedAt,
     p_content: content,
+    ...mitDiktat(diktiert),
   })) as { error: { message?: string } | null };
 
   if (error) {
@@ -328,6 +348,7 @@ export async function completeTreatment(
   expectedAppointmentUpdatedAt: string,
   expectedNoteUpdatedAt: string | null,
   visitWithoutTreatment = false,
+  diktiert = false,
 ): Promise<void> {
   const { error } = (await getSupabase().rpc('complete_treatment', {
     p_appointment_id: appointmentId,
@@ -335,6 +356,7 @@ export async function completeTreatment(
     p_expected_appointment_updated_at: expectedAppointmentUpdatedAt,
     p_expected_note_updated_at: expectedNoteUpdatedAt,
     p_visit_without_treatment: visitWithoutTreatment,
+    ...mitDiktat(diktiert),
   })) as { error: { message?: string } | null };
 
   if (error) {
@@ -359,12 +381,14 @@ export async function reviseTreatmentNote(
   expectedUpdatedAt: string,
   content: string,
   reason: string,
+  diktiert = false,
 ): Promise<void> {
   const { error } = (await getSupabase().rpc('revise_treatment_note', {
     p_note_id: noteId,
     p_expected_updated_at: expectedUpdatedAt,
     p_content: content,
     p_reason: reason,
+    ...mitDiktat(diktiert),
   })) as { error: { message?: string } | null };
 
   if (error) {
@@ -381,10 +405,12 @@ export async function reviseTreatmentNote(
 export async function createTreatmentNoteAddendum(
   parentNoteId: string,
   content: string,
+  diktiert = false,
 ): Promise<string> {
   const { data, error } = (await getSupabase().rpc('create_treatment_note_addendum', {
     p_parent_note_id: parentNoteId,
     p_content: content,
+    ...mitDiktat(diktiert),
   })) as { data: unknown; error: { message?: string } | null };
 
   if (error) {
