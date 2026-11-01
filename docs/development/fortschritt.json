@@ -1392,7 +1392,9 @@
           "id": "prx-epic-004",
           "name": "PRX-EPIC-004 Komfort und Export",
           "gewicht": 1,
-          "status": "offen"
+          "status": "in_arbeit",
+          "nachweis": "Branch claude/trusting-babbage-sxn89v",
+          "vermerk": "DATEV-Export gebaut: Buchungsstapel je Bereich und Monat, Nachträge, Belege über den Sammeldruck (ANN-828 bis ANN-830); offen: direkte Übertragung hinter Adapter, Kennzahlen, Farbcodierung, Kalender-Abo, Planungskarte, Kartenzahlung"
         },
         {
           "id": "ui-003",

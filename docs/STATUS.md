@@ -6,17 +6,18 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**KI-EPIC-001 fertig** liegt als PR vor: Inhaltstreue des Diktats durch Bauart im Gateway (ANN-824),
-„Mit Diktat“ am Eintrag auf jedem Schreibweg (ANN-825), E13 überbrückt (ANN-826, ANN-827); offen
-bleibt nur der Anbieter (C6, Block 11). FRB-EPIC-004 ist gemergt (#342). Offen: BEF-201, BEF-202.
+**PRX-EPIC-004 begonnen**, der DATEV-Export liegt als PR vor: Buchungsstapel je Bereich und Monat,
+Nachträge, Belege über den Sammeldruck, Konten nach SKR-Standard bis B4 (ANN-828 bis ANN-830).
+KI-EPIC-001 ist gemergt (#343). Offen: BEF-201, BEF-202.
 
 ## Danach
 
 Bildsichtung von #334 bis #337. Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
-PRX-EPIC-004 mit DATEV-Export, ERN-EPIC-004 bis -006, ORG-EPIC-001, Schritte 5 bis 7 mit Jannes'
-Leinwänden, UI-003; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14 parallel**:
-nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA, zuletzt die
-Nachweistabelle.
+PRX-EPIC-004 weiter (direkte Übertragung an DATEV hinter Adapter, Kennzahlen, Farbcodierung,
+Kalender-Abo, Planungskarte, Kartenzahlung), ERN-EPIC-004 bis -006, ORG-EPIC-001, Schritte 5 bis 7
+mit Jannes' Leinwänden, UI-003; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14
+parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
+zuletzt die Nachweistabelle.
 
 ## Bei Jannes
 
@@ -45,5 +46,5 @@ Nachweistabelle.
 
 ## Letzte Session
 
-01.11.2026, Branch `claude/kind-mayer-smn76m`. Lokal: `git pull`, neue Migration
-(`20261225233000_mit_diktat.sql`).
+01.11.2026, Branch `claude/trusting-babbage-sxn89v`. Lokal: `git pull`, neue Migration
+(`datev_export`).
