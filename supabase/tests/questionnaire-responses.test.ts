@@ -126,17 +126,19 @@ describe('Erhebung eines Fragebogens', () => {
       expect(f?.message).toBeDefined();
     }
     expect(
-      await fehler(users.office, SPEICHERN, [
-        patients.max,
-        null,
-        'nrs_schmerz',
-        '1.0.0',
-        HEUTE,
-        JSON.stringify({ schmerz_aktuell: { wert: 4 } }),
-        null,
-        null,
-      ]),
-    ).toMatchObject({ message: expect.stringMatching(/not allowed/) });
+      (
+        await fehler(users.office, SPEICHERN, [
+          patients.max,
+          null,
+          'nrs_schmerz',
+          '1.0.0',
+          HEUTE,
+          JSON.stringify({ schmerz_aktuell: { wert: 4 } }),
+          null,
+          null,
+        ])
+      )?.message,
+    ).toMatch(/not allowed/);
   });
 
   it('legt einen Entwurf an und liefert ihn mit Namen statt Kennungen', async () => {

@@ -16,6 +16,8 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BausteinFeld } from '@/features/clinical/assessments/BausteinFeld';
 import { useBausteinAuswahl } from '@/features/clinical/assessments/bausteinauswahl';
 import { VORSCHLAG_OFFEN } from '@/features/clinical/assessments/dokumentationstext';
+import { SkalenStreifen } from '@/features/clinical/assessments/SkalenStreifen';
+import { skalenFuer, useSkalenAmTermin } from '@/features/clinical/assessments/skalenAmTermin';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/core';
 import { BisherigeEintraege } from './BisherigeEintraege';
 import { AufGeraetSichern } from './offline/AufGeraetSichern';
@@ -44,7 +46,7 @@ import {
   updateTreatmentNote,
   type TreatmentNote,
 } from './api';
-import { formatLocalTimeRange } from '@/lib/datum';
+import { dayKey, formatLocalTimeRange } from '@/lib/datum';
 import { patientName } from '@/lib/termin';
 
 /**
@@ -64,6 +66,9 @@ import { patientName } from '@/lib/termin';
  * die erst nach dem Klick erscheint. Wer nur speichern will, hat daneben den
  * Weg „Nur als Entwurf speichern".
  */
+
+const KEINE_SKALEN: readonly never[] = [];
+const SKALEN_OFFEN = 'Die Skalen stehen noch nicht im Eintrag. Erst übernehmen oder verwerfen.';
 
 function Abschluss({
   besitzer,
@@ -109,7 +114,7 @@ function Abschluss({
   const [zuletztHinweis, setZuletztHinweis] = useState<string | null>(null);
 
   // „Termin 2 von 6" im Kopf - derselbe Lesepfad wie die Übersicht (PRX-008).
-  const { data: lage } = useQuery({
+  const { data: lage, isPending: lageLaedt } = useQuery({
     queryKey: ['appointment', appointment.id, 'abrechnungslage'],
     queryFn: () => fetchAbrechnungslage(appointment.id),
     enabled: appointment.kind === 'therapy',
@@ -129,6 +134,18 @@ function Abschluss({
 
   const wert = entwurf ?? gespeichert;
   const bausteine = useBausteinAuswahl();
+  // NRS und Veränderungsfrage (ANN-823) erst, wenn die Lage feststeht - sonst
+  // spränge die Veränderungsfrage am ersten Termin kurz auf und wieder weg.
+  const mitSkalen = !ohneBehandlung && appointment.kind === 'therapy' && !lageLaedt;
+  const skalen = useSkalenAmTermin({
+    patientId: appointment.patient_id,
+    datum: dayKey(appointment.starts_at, zone),
+    skalen: mitSkalen ? skalenFuer(lage?.basis_position ?? null) : KEINE_SKALEN,
+  });
+  // Ab dem zweiten Termin steht der Streifen offen, die Veränderungsfrage oben.
+  const [skalenWahl, setSkalenOffen] = useState<boolean | null>(null);
+  const skalenOffen = skalenWahl ?? (lage?.basis_position ?? 0) >= 2;
+  const [skalenMeldung, setSkalenMeldung] = useState(false);
   // Angaben in den Bausteinen, die noch nicht gesichert sind, sind
   // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b). Gesichert werden
   // sie getrennt vom Entwurf, nie in seinen Text (ABN-015, ANN-120).
@@ -195,6 +212,9 @@ function Abschluss({
   useEffect(() => {
     if (!bausteine.text) setVorschlagOffen(false);
   }, [bausteine.text]);
+  useEffect(() => {
+    if (!skalen.text) setSkalenMeldung(false);
+  }, [skalen.text]);
 
   const wechsel = inzwischen && !selbstAbgeschlossen.current ? inzwischen : undefined;
 
@@ -203,7 +223,9 @@ function Abschluss({
     speichern: entwurfSichern,
     // Aufnahme und Vorschlag lassen sich nicht speichern (ADR-016 Punkt 10):
     // Der Schutz fragt auch für sie, sichert sie aber nie.
-    nichtSicherbar: ohneBehandlung ? undefined : diktat.offen,
+    nichtSicherbar: ohneBehandlung
+      ? undefined
+      : (diktat.offen ?? (skalen.text ? SKALEN_OFFEN : undefined)),
     kompakt: true,
     // Von selbst gesichert wird nur der Text einer Behandlung (BEF-056,
     // ANN-319). Am Vermerk „Tür geöffnet, nicht behandelt“ nicht: Ein so
@@ -297,6 +319,11 @@ function Abschluss({
       setBefundOffen(true);
       return false;
     }
+    if (skalen.text) {
+      setSkalenMeldung(true);
+      setSkalenOffen(true);
+      return false;
+    }
     // Am Vermerk darf das Feld leer bleiben; dann steht der Vermerk im
     // Eintrag (ANN-565).
     const meldung = inhaltFehler(ohneBehandlung ? inhaltMitVermerk(wert) : wert);
@@ -310,6 +337,7 @@ function Abschluss({
   const kopfzeile = kopfzeileFuer(appointment, lage, ohneBehandlung);
   const hierher = mitRueckweg(`/termine/${appointment.id}/abschluss`, zurueck);
   const anzahlBefund = Object.keys(bausteine.auswahl).length;
+  const anzahlSkalen = Object.keys(skalen.wahl).length;
 
   // ANN-521: Solange das Feld leer ist und nichts offen ist, ist „Sprechen“
   // der Hauptknopf der Seite (der bevorzugte Weg, BEF-153), „Festschreiben“
@@ -325,8 +353,10 @@ function Abschluss({
     diktat.ruhig &&
     diktat.meldung === undefined &&
     wert.trim() === '' &&
-    !bausteine.text;
-  const festschreibenHaupt = !sprechenHaupt && diktat.ruhig;
+    !bausteine.text &&
+    !skalen.text;
+  // Ein offener Vorschlag trägt mit „Übernehmen“ den Hauptknopf (DESIGN.md Regel 4).
+  const festschreibenHaupt = !sprechenHaupt && diktat.ruhig && !bausteine.text && !skalen.text;
 
   return (
     // Eine Fläche statt Karten (Design-Handoff 2026-10-01, Abschnitt 6a): Die
@@ -384,6 +414,22 @@ function Abschluss({
               + Befund{anzahlBefund > 0 ? ` · ${anzahlBefund}` : ''}
             </Button>
             <span aria-hidden="true" className="bg-line h-6 w-px shrink-0 last:hidden" />
+            {skalen.skalen.length > 0 ? (
+              <>
+                <Button
+                  type="button"
+                  variant={skalenOffen ? 'primary' : 'secondary'}
+                  groesse="kompakt"
+                  className="shrink-0 whitespace-nowrap"
+                  aria-expanded={skalenOffen}
+                  aria-controls="skalen-streifen"
+                  onClick={() => setSkalenOffen(!skalenOffen)}
+                >
+                  + Skalen{anzahlSkalen > 0 ? ` · ${anzahlSkalen}` : ''}
+                </Button>
+                <span aria-hidden="true" className="bg-line h-6 w-px shrink-0 last:hidden" />
+              </>
+            ) : null}
           </>
         )}
         <TextbausteinLeiste
@@ -398,6 +444,17 @@ function Abschluss({
         <p role="status" className="border-line text-ink-muted shrink-0 border-b px-4 py-2 text-sm">
           {zuletztHinweis}
         </p>
+      ) : null}
+
+      {skalen.skalen.length > 0 ? (
+        <SkalenStreifen
+          offen={skalenOffen}
+          skalen={skalen}
+          gesperrt={laeuft}
+          verbunden={verbunden}
+          meldung={skalenMeldung && skalen.text ? SKALEN_OFFEN : undefined}
+          onUebernehmen={(text) => einfuegen('Skalen', wert, text)}
+        />
       ) : null}
 
       {ohneBehandlung ? null : (

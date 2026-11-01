@@ -75,7 +75,7 @@ describe('Instrumente', () => {
       expect(
         screen.getByRole('heading', { level: 1, name: score.meta.name_de }),
       ).toBeInTheDocument();
-      expect(screen.getByText(new RegExp(`^${score.meta.version}`))).toBeInTheDocument();
+      expect(screen.getByText(score.meta.version, { exact: false })).toBeInTheDocument();
       expect(screen.getByText(/frei verwendbar, Stand \d{2}\.\d{2}\.\d{4}/)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /Zurück zu den Instrumenten/ })).toHaveAttribute(
         'href',

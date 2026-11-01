@@ -549,14 +549,8 @@ export const scoreMetaSchema = z.object({
   sprache: z.string().min(2),
   prioritaet: z.enum(['a', 'b']),
   /**
-   * Woher der Wortlaut kommt.
-   *
-   * `datei` ist die Vorlage im Repository, gegen die sich jeder Itemtext halten
-   * lässt. Fehlt sie, ist der Wortlaut **vorläufig**: übertragen aus der unter
-   * `literatur` genannten Veröffentlichung, aber gegen kein Dokument hier
-   * prüfbar — und ein solches Instrument wird nicht aktiviert (Prüfung unten,
-   * **ANN-099**). Ausnahme ist `praxisvorgabe`: ein Wortlaut, den die Praxis
-   * selbst festgelegt und freigegeben hat (NRS, Veränderungsfrage).
+   * Woher der Wortlaut kommt: Vorlage im Repository (`datei`) oder von der Praxis freigegeben
+   * (`praxisvorgabe`); sonst ist er vorläufig und das Instrument bleibt inaktiv (ANN-099).
    */
   quelle: z
     .object({
