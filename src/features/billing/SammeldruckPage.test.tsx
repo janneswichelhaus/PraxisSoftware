@@ -59,6 +59,36 @@ describe('Sammeldruck nach dem Lauf (K13)', () => {
     expect(fetchRechnung).toHaveBeenCalledWith(A);
   });
 
+  it('hängt die Stornodokumente der Belege an, je auf ein eigenes Blatt', async () => {
+    fetchRechnung.mockImplementation((id: string) => {
+      const ansicht = ausgestellt(id, id === A ? 'RG-2026-0001' : 'RG-2026-0002');
+      return Promise.resolve(
+        id === B
+          ? {
+              ...ansicht,
+              cancellation: {
+                cancellation_number: 'RG-2026-0003',
+                reason: 'Testgrund',
+                cancelled_on: '2026-10-05',
+              },
+            }
+          : ansicht,
+      );
+    });
+    renderWithProviders(
+      <SammeldruckPage />,
+      `/abrechnung/druck?rechnungen=${A},${B}&stornos=${B},${A}`,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Stornierung der Rechnung RG-2026-0002' }),
+    ).toBeInTheDocument();
+    // Die nicht stornierte Rechnung A bekommt kein Stornoblatt.
+    expect(screen.getAllByRole('heading', { name: /^Stornierung/ })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Alle 4 drucken' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Stornodokument drucken' })).toBeNull();
+  });
+
   it('sagt ohne Kennung, wann gedruckt wird', async () => {
     renderWithProviders(<SammeldruckPage />, '/abrechnung/druck');
     expect(await screen.findByText('Keine Rechnung zum Drucken.')).toBeInTheDocument();

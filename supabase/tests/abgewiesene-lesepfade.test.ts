@@ -232,6 +232,28 @@ const FAELLE: Fall[] = [
     [],
     'invoicing.read',
   ],
+  // Export für die Steuerberatung (ANN-830): dieselbe Grenze wie die Auswertung.
+  [
+    'list_datev_pending',
+    users.therapist,
+    'select * from public.list_datev_pending($1::text, $2::date)',
+    ['therapy', '2026-09-01'],
+    'invoicing.read',
+  ],
+  [
+    'list_datev_exports',
+    users.trainer,
+    'select * from public.list_datev_exports($1::text, $2::date)',
+    ['training', '2026-09-01'],
+    'invoicing.read',
+  ],
+  [
+    'get_datev_export',
+    users.teamLead,
+    'select r from public.get_datev_export($1::uuid) as r where r is not null',
+    [IRGENDEINE],
+    'invoicing.read',
+  ],
   [
     'list_billable_services',
     users.teamLead,
