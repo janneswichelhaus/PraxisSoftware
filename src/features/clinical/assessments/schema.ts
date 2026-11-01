@@ -555,8 +555,8 @@ export const scoreMetaSchema = z.object({
    * lässt. Fehlt sie, ist der Wortlaut **vorläufig**: übertragen aus der unter
    * `literatur` genannten Veröffentlichung, aber gegen kein Dokument hier
    * prüfbar — und ein solches Instrument wird nicht aktiviert (Prüfung unten,
-   * **ANN-099**). Das betrifft seit FRB-EPIC-001 NRS, PSFS und die globale
-   * Veränderungsfrage, für die kein Bogen in `quellen/` liegt.
+   * **ANN-099**). Ausnahme ist `praxisvorgabe`: ein Wortlaut, den die Praxis
+   * selbst festgelegt und freigegeben hat (NRS, Veränderungsfrage).
    */
   quelle: z
     .object({
@@ -564,6 +564,8 @@ export const scoreMetaSchema = z.object({
       datei: z.string().min(1).optional(),
       /** Veröffentlichung des Instruments, wenn keine Vorlage im Repository liegt. */
       literatur: z.string().min(1).optional(),
+      /** Wer den Wortlaut als Vorgabe der Praxis freigegeben hat, mit Datum (ANN-099). */
+      praxisvorgabe: z.string().min(1).optional(),
       validierung: z.string().min(1),
     })
     .refine(
@@ -786,15 +788,18 @@ export const scoreDefinitionSchema = z
       }
     }
 
-    if (score.meta.aktiv && score.meta.quelle.datei === undefined) {
-      // ANN-099: Ein Wortlaut, der gegen keine Vorlage im Repository zu halten
-      // ist, erreicht keine Patientin. Aktiviert wird mit dem Bogen in
-      // quellen/scores/pdf/ und einem Versionssprung der Definition.
+    if (
+      score.meta.aktiv &&
+      score.meta.quelle.datei === undefined &&
+      score.meta.quelle.praxisvorgabe === undefined
+    ) {
+      // ANN-099: Ein Wortlaut ohne Vorlage im Repository und ohne Freigabe als
+      // Praxisvorgabe erreicht keine Patientin.
       ctx.addIssue({
         code: 'custom',
         path: ['meta', 'aktiv'],
         message:
-          'Ein Instrument ohne Vorlage im Repository (quelle.datei) darf nicht aktiv sein — sein Wortlaut ist vorläufig.',
+          'Ein Instrument ohne Vorlage im Repository (quelle.datei) oder Freigabe als Praxisvorgabe darf nicht aktiv sein — sein Wortlaut ist vorläufig.',
       });
     }
 

@@ -81,6 +81,64 @@ describe('Erhebung eines Fragebogens', () => {
     await resetDatabase();
   });
 
+  it('nimmt NRS und Veraenderungsfrage als Praxisvorgabe an und prueft ihre Werte (FRB-EPIC-004)', async () => {
+    for (const [instrument, antworten] of [
+      ['nrs_schmerz', { schmerz_aktuell: { wert: 4 } }],
+      ['globale_veraenderung', { veraenderung: { auswahl: '-1' } }],
+    ] as const) {
+      const { rows } = await asUserCommitted<{ id: string }>(users.therapist, SPEICHERN, [
+        patients.max,
+        null,
+        instrument,
+        '1.0.0',
+        HEUTE,
+        JSON.stringify(antworten),
+        null,
+        null,
+      ]);
+      await asUserCommitted(users.therapist, ABSCHLIESSEN, [rows[0]!.id]);
+    }
+    const { rows } = await asUser<{ instrument_id: string; status: string }>(
+      users.therapist,
+      LESEN,
+      [patients.max],
+    );
+    expect(
+      rows
+        .filter((r) => r.status === 'abgeschlossen')
+        .map((r) => r.instrument_id)
+        .sort(),
+    ).toEqual(['globale_veraenderung', 'nrs_schmerz']);
+    for (const [instrument, antworten] of [
+      ['nrs_schmerz', { schmerz_aktuell: { wert: 11 } }],
+      ['globale_veraenderung', { veraenderung: { auswahl: '4' } }],
+    ] as const) {
+      const f = await fehler(users.therapist, SPEICHERN, [
+        patients.max,
+        null,
+        instrument,
+        '1.0.0',
+        HEUTE,
+        JSON.stringify(antworten),
+        null,
+        null,
+      ]);
+      expect(f?.message).toBeDefined();
+    }
+    expect(
+      await fehler(users.office, SPEICHERN, [
+        patients.max,
+        null,
+        'nrs_schmerz',
+        '1.0.0',
+        HEUTE,
+        JSON.stringify({ schmerz_aktuell: { wert: 4 } }),
+        null,
+        null,
+      ]),
+    ).toMatchObject({ message: expect.stringMatching(/not allowed/) });
+  });
+
   it('legt einen Entwurf an und liefert ihn mit Namen statt Kennungen', async () => {
     const id = await erheben();
     const { rows } = await asUser(users.therapist, LESEN, [patients.max]);
@@ -240,7 +298,8 @@ describe('Erhebung eines Fragebogens', () => {
     // Eine Fassung, die es nicht gibt, weist schon die Pruefung gegen die
     // Definition ab (ABN-014); eine vorhandene andere Kennung die Identitaet.
     for (const [instrument, version, korrigiert, grund, meldung] of [
-      ['nrs_schmerz', '1.0.0', null, null, /unknown questionnaire definition/],
+      ['nrs_schmerz', '9.0.0', null, null, /unknown questionnaire definition/],
+      ['nrs_schmerz', '1.0.0', null, null, /identity is fixed/],
       ['anamnese_v8', '1.0.1', null, null, /unknown questionnaire definition/],
       ['nrs_schmerz', '0.1.0', null, null, /identity is fixed/],
       ['anamnese_v8', '1.0.0', id, 'Grund', /identity is fixed/],

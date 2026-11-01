@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "id": "nrs_schmerz",
+    "version": "0.1.0",
+    "name_de": "Numerische Rating-Skala Schmerz (NRS)",
+    "name_en": "Numeric Pain Rating Scale",
+    "region": "uebergreifend",
+    "konstrukt": "Schmerzintensität",
+    "ausgefuellt_von": "patient",
+    "sprache": "de",
+    "prioritaet": "a",
+    "quelle": {
+      "literatur": "Hawker GA, Mian S, Kendzerska T, French M. Measures of adult pain. Arthritis Care & Research 2011;63(S11):S240–S252",
+      "validierung": "Wortlaut vorläufig — keine Vorlage in quellen/ (ANN-099)"
+    },
+    "lizenzstatus": {
+      "status": "freigegeben",
+      "begruendung": "Frei verwendbar, keine Lizenz (IDEA-OUT-001, „Pragmatischer Einstieg\").",
+      "stand": "2026-09-25"
+    },
+    "aktiv": false
+  },
+  "items": [
+    {
+      "id": "schmerz_aktuell",
+      "nummer": 1,
+      "text": "Wie stark sind Ihre Schmerzen im Moment?",
+      "typ": "skala",
+      "skala": { "min": 0, "max": 10 },
+      "anker": { "min": "keine Schmerzen", "max": "stärkste vorstellbare Schmerzen" }
+    }
+  ],
+  "scoring": {
+    "regel_wortlaut": "Der angekreuzte Wert ist der Wert.",
+    "gesamt": {
+      "formel": { "art": "einzelwert", "item": "schmerz_aktuell" },
+      "wertebereich": { "min": 0, "max": 10 }
+    },
+    "subskalen": [],
+    "richtung": "hoch_ist_schlechter",
+    "missing_value_regel": "Ohne Antwort kein Wert."
+  },
+  "interpretation": { "cutoffs": null, "mcid": null, "mdc": null },
+  "referenzfaelle": [
+    { "bezeichnung": "Wert 7", "antworten": { "schmerz_aktuell": 7 }, "erwartet": { "gesamt": 7 } },
+    { "bezeichnung": "ohne Antwort", "antworten": {}, "erwartet": { "gesamt": null } }
+  ]
+}

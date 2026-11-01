@@ -398,6 +398,22 @@ describe('Score-Definition', () => {
     expect(ergebnis.error?.issues[0]?.message).toContain('Wortlaut ist vorläufig');
   });
 
+  it('nimmt ein aktives Instrument mit freigegebener Praxisvorgabe an (ANN-099)', () => {
+    const ergebnis = scoreDefinitionSchema.safeParse(
+      score({
+        meta: meta({
+          aktiv: true,
+          quelle: {
+            literatur: 'Hawker et al. 2011',
+            praxisvorgabe: 'Freigegeben von Jannes am 2026-09-28',
+            validierung: 'Praxisvorgabe',
+          },
+        }),
+      }),
+    );
+    expect(ergebnis.success).toBe(true);
+  });
+
   it('nimmt ein nicht aktives Instrument mit Literatur statt Vorlage an', () => {
     const ergebnis = scoreDefinitionSchema.safeParse(
       score({

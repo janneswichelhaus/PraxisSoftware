@@ -63,8 +63,9 @@ function fragenText(items: readonly ScoreItem[]): string {
  * Repository, nicht für die Praxis (BEF-15).
  */
 function quelle(score: ScoreDefinition): string {
-  const { datei, literatur, validierung } = score.meta.quelle;
+  const { datei, literatur, praxisvorgabe, validierung } = score.meta.quelle;
   if (datei !== undefined) return validierung;
+  if (praxisvorgabe !== undefined) return [praxisvorgabe, literatur].filter(Boolean).join('. ');
   return literatur ?? '—';
 }
 
