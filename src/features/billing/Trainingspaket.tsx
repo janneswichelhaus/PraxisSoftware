@@ -69,6 +69,9 @@ export function Trainingspaket({ verhaeltnisId }: { verhaeltnisId: string }) {
   );
 }
 
+// Offene Punkte führt die Pakete ohne Anschluss (ANN-834): Anlegen und Entfernen ändern diese Liste.
+const OFFENE_PUNKTE = ['open-points'] as const;
+
 const STAND: Record<Paket['state'], string> = {
   planned: 'Beginnt bald',
   running: 'Läuft',
@@ -110,7 +113,10 @@ function Entfernen({ paket, verhaeltnisId }: { paket: Paket; verhaeltnisId: stri
   const queryClient = useQueryClient();
   const entfernen = useMutation({
     mutationFn: () => deletePaket(paket.id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: paketSchluessel(verhaeltnisId) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: OFFENE_PUNKTE });
+      return queryClient.invalidateQueries({ queryKey: paketSchluessel(verhaeltnisId) });
+    },
   });
   return (
     <Rueckfrage
@@ -158,6 +164,7 @@ function Anlegen({ verhaeltnisId, sicht }: { verhaeltnisId: string; sicht: Paket
       setOffen(false);
       setGeprueft(false);
       setGespeichert(true);
+      void queryClient.invalidateQueries({ queryKey: OFFENE_PUNKTE });
       await queryClient.invalidateQueries({ queryKey: paketSchluessel(verhaeltnisId) });
     },
   });

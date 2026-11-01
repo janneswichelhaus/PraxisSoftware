@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useQuery } from '@tanstack/react-query';
 import type * as PaketApi from './trainingspaket-api';
 import { renderWithProviders } from '@/test-utils';
 
@@ -59,6 +60,14 @@ const POSITIONEN: PaketApi.Paketposition[] = [
   },
 ];
 
+const offenePunkte = vi.fn(() => Promise.resolve([]));
+
+/** Liest wie Offene Punkte unter `open-points`; ohne Erneuerung fragt sie nie ein zweites Mal. */
+function OffenePunkteSonde() {
+  useQuery({ queryKey: ['open-points', 'sonde'], queryFn: offenePunkte, staleTime: Infinity });
+  return null;
+}
+
 function sicht(teil: Partial<PaketApi.Paketsicht> = {}): PaketApi.Paketsicht {
   return { today: '2026-10-07', start_blocker: null, packages: [], ...teil };
 }
@@ -116,6 +125,25 @@ describe('Trainingspaket am Trainingsverhältnis (ANG-006)', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Paket anlegen' }));
     expect(screen.getByLabelText('Beginn')).toHaveValue('2027-01-01');
     expect(fetchPaketpositionen).toHaveBeenCalledWith('2027-01-01');
+  });
+
+  it('erneuert Offene Punkte nach dem Anlegen, damit die Zeile ohne Anschluss geht (ANN-834)', async () => {
+    fetchPakete.mockResolvedValue(sicht({ packages: [LAUFEND] }));
+    fetchPaketpositionen.mockResolvedValue(POSITIONEN);
+    createPaket.mockResolvedValue(undefined);
+    offenePunkte.mockClear();
+    renderWithProviders(
+      <>
+        <OffenePunkteSonde />
+        <Trainingspaket verhaeltnisId="t1" />
+      </>,
+    );
+    await userEvent.click(await screen.findByRole('button', { name: 'Paket anlegen' }));
+    await userEvent.selectOptions(await screen.findByLabelText('Paket'), 'c3');
+    expect(offenePunkte).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getAllByRole('button', { name: 'Paket anlegen' }).at(-1)!);
+    expect(await screen.findByText(/Paket angelegt/)).toBeInTheDocument();
+    expect(offenePunkte).toHaveBeenCalledTimes(2);
   });
 
   it('schlägt heute vor, wenn jedes Paket schon geendet hat', async () => {

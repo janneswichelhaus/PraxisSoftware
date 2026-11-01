@@ -6,9 +6,9 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**PRX-EPIC-004 weiter**: DATEV-Export gemergt (#344). Kennzahlen für Training, Abo und Pakete sowie
-Farbe je Art des Termins und je Person im Kalender liegen als PR auf `ccr-da924a3b-dyrdc6` vor
-(ANN-831 bis ANN-833, Zweitreview ohne roten Punkt). Offen: BEF-201, BEF-202.
+**PRX-EPIC-004 weiter**: #344 und #345 gemergt. Die Pakete ohne Anschluss als Liste in Offene
+Punkte (PRX-043, ANN-834) und die Antworten zu #345 liegen als PR auf `ccr-dd9474e2-s96juy` vor.
+Offen: BEF-201, BEF-202.
 
 ## Danach
 
@@ -31,7 +31,7 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
   ANN-479 ansehen (Besuch).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
-- Sichtliste am Gerät: 13 Punkte (`sichtung/README.md`, S-1 bis S-13).
+- Sichtliste am Gerät: 14 Punkte (`sichtung/README.md`, S-1 bis S-14).
 - Widersprüche zwischen ADR-Wortlaut und Code oder Prinzipien (`development/BEFUNDE.md`, „Doku“).
 - Preise: Entwurf 2027 steht (`product/preisblatt-entwurf.md`), echte Preise kurz vor dem Start;
   G13 Umsatzsteuer vor M3 (ANN-541: ohne Verordnung 19 %? Kleinunternehmer?); B8 bis M3.
@@ -46,5 +46,5 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-01.11.2026, Branch `ccr-da924a3b-dyrdc6`. Lokal: `git pull`, neue Migration
-(`angebotskennzahlen`).
+01.11.2026, Branch `ccr-dd9474e2-s96juy`. Lokal: `git pull`, neue Migration
+(`pakete_ohne_anschluss`).
