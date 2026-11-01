@@ -26,6 +26,7 @@ import { BEGRIFFE } from '@/lib/begriffe';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchWorkingHourExceptions, fetchWorkingHours } from '@/features/calendar/scheduling/api';
 import { PLATFORM_REQUESTS_KEY, fetchPlatformRequests } from '@/features/workplace';
+import { useTeamfarben } from '@/features/teamchat';
 import {
   fetchAppointment,
   fetchAppointments,
@@ -244,6 +245,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   const [suche, setSuche] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const farbeVon = useTeamfarben();
   const zone = user.organizationTimeZone;
   const darfAendern = canManageAppointments(user.roles);
 
@@ -880,6 +882,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       ? tagesPersonen.map((t) => ({
           id: t.staff_member_id,
           titel: t.display_name,
+          farbe: farbeVon(t.staff_member_id) ?? null,
           // Die eigene Spalte, nicht nur als Farbton (KAL-03, KAL-B01).
           hervorgehoben: t.staff_member_id === eigenePerson,
           zusatz: t.staff_member_id === eigenePerson ? 'ich' : undefined,

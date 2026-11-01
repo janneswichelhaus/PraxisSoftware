@@ -1,6 +1,25 @@
 import type { Leistungsumsatz, Personenumsatz, Umsatzmonat } from './api';
 import { letzteMonate } from './diagramme';
-import type { Kennzahlen } from './kennzahlen';
+import type { Angebotszahlen, Kennzahlen } from './kennzahlen';
+
+/** Synthetische Zahlen zu Training, Abo und Paketen. */
+export function beispielAngebotszahlen(rest: Partial<Angebotszahlen> = {}): Angebotszahlen {
+  return {
+    time_zone: 'Europe/Berlin',
+    today: '2026-09-29',
+    month: '2026-09-01',
+    training_clients: 18,
+    packages_running: 14,
+    packages_started: 3,
+    packages_ending: 2,
+    packages_ending_until: '2026-10-26',
+    aftercare_running: 7,
+    aftercare_started: 1,
+    aftercare_cancelled: 1,
+    training_sessions: 96,
+    ...rest,
+  };
+}
 
 /** Synthetische Kennzahlen fuer Komponententests (STA-003). */
 export function beispielKennzahlen(rest: Partial<Kennzahlen> = {}): Kennzahlen {

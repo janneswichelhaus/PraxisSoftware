@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ANGEBOTSKENNZAHLEN,
   KENNZAHLEN,
   alsCsv,
   auslastungProzent,
@@ -11,7 +12,7 @@ import {
   zielstand,
   type Ziele,
 } from './kennzahlen';
-import { beispielKennzahlen } from './testdaten';
+import { beispielAngebotszahlen, beispielKennzahlen } from './testdaten';
 
 const keineZiele: Ziele = {
   revenue_cents: null,
@@ -19,6 +20,9 @@ const keineZiele: Ziele = {
   utilization_percent: null,
   ending_bases: null,
   absences: null,
+  training_packages: null,
+  aftercare_subscriptions: null,
+  packages_ending: null,
 };
 
 describe('Kennzahlen (STA-003, ANN-155)', () => {
@@ -44,6 +48,16 @@ describe('Kennzahlen (STA-003, ANN-155)', () => {
       ending_bases: 'hoechstens',
       absences: 'hoechstens',
     });
+  });
+
+  it('fuehrt drei Zahlen zu Training, Abo und Paketen mit Richtung und Handlung (ANN-832)', () => {
+    expect(ANGEBOTSKENNZAHLEN.map((k) => [k.ziel, k.richtung, k.handlung.to])).toEqual([
+      ['training_packages', 'mindestens', '/training'],
+      ['packages_ending', 'hoechstens', '/training'],
+      ['aftercare_subscriptions', 'mindestens', '/abrechnung/leistungen'],
+    ]);
+    const a = beispielAngebotszahlen();
+    expect(ANGEBOTSKENNZAHLEN.map((k) => k.wert(a))).toEqual([14, 2, 7]);
   });
 
   it('bewertet das Ziel nur, wenn Wert und Ziel da sind', () => {
@@ -101,6 +115,24 @@ describe('CSV (STA-003)', () => {
     expect(zeilen).toContain('Auslastung;29.09.2026 bis 12.10.2026;75;;;;Prozent');
     expect(zeilen).toContain('Ausfälle;02.09.2026 bis 29.09.2026;4;2;vier Wochen davor;;Anzahl');
     expect(csv).not.toMatch(/patient|Patientin|Rechnungsnummer/i);
+  });
+
+  it('haengt die Zahlen zu Training, Abo und Paketen an, wenn sie geladen sind', () => {
+    const ohne = alsCsv(beispielKennzahlen(), keineZiele);
+    expect(ohne).not.toMatch(/Trainingspakete|Nachsorge/);
+    const csv = alsCsv(
+      beispielKennzahlen(),
+      { ...keineZiele, training_packages: 20, packages_ending: 1 },
+      beispielAngebotszahlen(),
+    );
+    const zeilen = csv.trimEnd().split('\r\n');
+    expect(zeilen).toContain('Laufende Trainingspakete;Stand 29.09.2026;14;;;20;Anzahl');
+    expect(zeilen).toContain(
+      'Trainingspakete ohne Anschluss;29.09.2026 bis 26.10.2026;2;;;1;Anzahl',
+    );
+    expect(zeilen).toContain('Laufende Nachsorge-Abos;Stand 29.09.2026;7;;;;Anzahl');
+    expect(zeilen).toContain('Kündigungen Nachsorge-Abo;September 2026;1;;;;Anzahl');
+    expect(zeilen).toContain('Trainingstermine;September 2026;96;;;;Anzahl');
   });
 
   it('benennt die Datei nach Monat und Stichtag, ohne Namen', () => {

@@ -17,11 +17,13 @@ import { formatEuro } from '@/lib/geld';
 import { sichereAlsDatei } from '@/features/privacy';
 import { isOwner, type CurrentUser } from '@/features/core';
 import {
+  ANGEBOTSZAHLEN_KEY,
   JE_PERSON_KEY,
   KENNZAHLEN_KEY,
   LEISTUNGEN_KEY,
   MONATE_KEY,
   ZIELE_KEY,
+  fetchAngebotszahlen,
   fetchKennzahlen,
   fetchTopLeistungen,
   fetchUmsatzJePerson,
@@ -32,6 +34,7 @@ import {
 import { euroKurz, letzteMonate, personenReihen, umsatzReihen } from './diagramme';
 import { Balkenliste, Messbalken, Saeulendiagramm } from './grafiken';
 import {
+  ANGEBOTSKENNZAHLEN,
   KENNZAHLEN,
   alsCsv,
   auslastungProzent,
@@ -44,6 +47,7 @@ import {
   zielAlsEingabe,
   zielAusEingabe,
   zielstand,
+  type Angebotszahlen,
   type Kennzahl,
   type Kennzahlen,
   type Ziele,
@@ -51,15 +55,8 @@ import {
 import { todayInTimeZone } from '@/lib/datum';
 
 /**
- * Statistiken (STA-EPIC-001): fünf Zahlen, nach denen die Praxis gesteuert
- * wird, jede mit Ziel und der einen Handlung, die sie auslöst — dazu der
- * Verlauf als Grafiken (STA-007).
- *
- * `owner` sieht alles; eine Person mit Umsatzbeteiligung sieht nur ihren
- * eigenen Umsatz (STA-006, ANN-156). Verbindlich entscheidet der Server, wer
- * welche Zeile bekommt — die Weiche hier ist nur Darstellung. Keine Patientin,
- * keine Rechnung erscheint je; Umsatz je Person ist die einzige Zahl mit
- * Personenbezug, und jeder Aufruf steht im Protokoll.
+ * `owner` sieht alles, eine Person mit Umsatzbeteiligung nur den eigenen Umsatz (ANN-156). Wer
+ * welche Zeile bekommt, entscheidet der Server; die Weiche hier ist nur Darstellung.
  */
 export function StatisticsPage({ user }: { user: CurrentUser }) {
   return isOwner(user.roles) ? (
@@ -82,6 +79,12 @@ function Praxisstatistik() {
     retry: false,
   });
   const ziele = useQuery({ queryKey: ZIELE_KEY, queryFn: fetchZiele, retry: false });
+  const angebote = useQuery({
+    queryKey: [...ANGEBOTSZAHLEN_KEY, monat],
+    queryFn: () => fetchAngebotszahlen(monat),
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
 
   const k = kennzahlen.data;
 
@@ -89,10 +92,14 @@ function Praxisstatistik() {
     <>
       <PageHeader
         title="Statistiken"
-        description="Fünf Zahlen mit Ziel und nächstem Schritt."
+        description="Zahlen mit Ziel und nächstem Schritt."
         actions={
           k && ziele.data ? (
-            <Button variant="secondary" onClick={() => sichereCsv(k, ziele.data)} type="button">
+            <Button
+              variant="secondary"
+              onClick={() => sichereCsv(k, ziele.data, angebote.data)}
+              type="button"
+            >
               Als CSV speichern
             </Button>
           ) : null
@@ -112,7 +119,7 @@ function Praxisstatistik() {
           <>
             <div className="mb-6 sm:w-64">
               <Select
-                label="Monat für Umsatz und Zahlungseingang"
+                label="Monat für die Monatszahlen"
                 value={monat ?? daten.month}
                 onChange={(e) => setMonat(e.target.value)}
               >
@@ -135,6 +142,24 @@ function Praxisstatistik() {
             ) : null}
 
             <Kennzahlliste k={daten} ziele={ziele.data} zieleGeladen={ziele.isSuccess} />
+
+            <Section titel="Training, Abo und Pakete" rahmen>
+              <Abfragezustand
+                abfrage={angebote}
+                laden="Wird geladen …"
+                fehler="Die Zahlen zu Training und Abo konnten nicht geladen werden."
+              >
+                {(a) => (
+                  <Kennzahlzeilen
+                    liste={ANGEBOTSKENNZAHLEN}
+                    k={a}
+                    ziele={ziele.data}
+                    zieleGeladen={ziele.isSuccess}
+                    einzelheiten={(kennzahl) => <Angebotseinzelheiten kennzahl={kennzahl} a={a} />}
+                  />
+                )}
+              </Abfragezustand>
+            </Section>
 
             <Verlauf monat={monat} heute={daten.today} />
 
@@ -161,9 +186,9 @@ function Praxisstatistik() {
   );
 }
 
-function sichereCsv(k: Kennzahlen, ziele: Ziele) {
+function sichereCsv(k: Kennzahlen, ziele: Ziele, a: Angebotszahlen | undefined) {
   // Ein BOM vorne, damit eine Tabellenkalkulation die Umlaute als UTF-8 liest.
-  sichereAlsDatei(csvDateiname(k), `\uFEFF${alsCsv(k, ziele)}`, 'text/csv;charset=utf-8');
+  sichereAlsDatei(csvDateiname(k), `\uFEFF${alsCsv(k, ziele, a)}`, 'text/csv;charset=utf-8');
 }
 
 /**
@@ -185,31 +210,56 @@ function Kennzahlliste({
 }) {
   return (
     <Section titel="Kennzahlen" rahmen>
-      <DetailList>
-        {KENNZAHLEN.map((kennzahl) => {
-          const ziel = ziele?.[kennzahl.ziel] ?? null;
-          return (
-            <DetailRow key={kennzahl.ziel} label={kennzahl.titel}>
-              <Kennzahlangabe kennzahl={kennzahl} k={k} ziel={ziel} zieleGeladen={zieleGeladen}>
-                <Einzelheiten kennzahl={kennzahl} k={k} ziel={ziel} />
-              </Kennzahlangabe>
-            </DetailRow>
-          );
-        })}
-      </DetailList>
+      <Kennzahlzeilen
+        liste={KENNZAHLEN}
+        k={k}
+        ziele={ziele}
+        zieleGeladen={zieleGeladen}
+        einzelheiten={(kennzahl, ziel) => <Einzelheiten kennzahl={kennzahl} k={k} ziel={ziel} />}
+      />
     </Section>
   );
 }
 
-function Kennzahlangabe({
+/** Die Zeilen einer Kennzahlkarte: je Kennzahl Wert, Zielstand, Einzelheiten, Ziel, Handlung. */
+function Kennzahlzeilen<T>({
+  liste,
+  k,
+  ziele,
+  zieleGeladen,
+  einzelheiten,
+}: {
+  liste: readonly Kennzahl<T>[];
+  k: T;
+  ziele: Ziele | undefined;
+  zieleGeladen: boolean;
+  einzelheiten: (kennzahl: Kennzahl<T>, ziel: number | null) => ReactNode;
+}) {
+  return (
+    <DetailList>
+      {liste.map((kennzahl) => {
+        const ziel = ziele?.[kennzahl.ziel] ?? null;
+        return (
+          <DetailRow key={kennzahl.ziel} label={kennzahl.titel}>
+            <Kennzahlangabe kennzahl={kennzahl} k={k} ziel={ziel} zieleGeladen={zieleGeladen}>
+              {einzelheiten(kennzahl, ziel)}
+            </Kennzahlangabe>
+          </DetailRow>
+        );
+      })}
+    </DetailList>
+  );
+}
+
+function Kennzahlangabe<T>({
   kennzahl,
   k,
   ziel,
   zieleGeladen,
   children,
 }: {
-  kennzahl: Kennzahl;
-  k: Kennzahlen;
+  kennzahl: Kennzahl<T>;
+  k: T;
   ziel: number | null;
   zieleGeladen: boolean;
   children: ReactNode;
@@ -368,6 +418,45 @@ function Einzelheiten({
           </Aufschluesselung>
         </>
       );
+    default:
+      return null;
+  }
+}
+
+/** Was hinter den Zahlen zu Training, Abo und Paketen steht (ANN-831). */
+function Angebotseinzelheiten({
+  kennzahl,
+  a,
+}: {
+  kennzahl: Kennzahl<Angebotszahlen>;
+  a: Angebotszahlen;
+}) {
+  const anzahl = (n: number, eins: string, viele: string) => `${n} ${n === 1 ? eins : viele}`;
+  switch (kennzahl.ziel) {
+    case 'training_packages':
+      return (
+        <>
+          <p>
+            Stand {tagText(a.today)} ·{' '}
+            {anzahl(a.training_clients, 'aktive Trainingskund:in', 'aktive Trainingskund:innen')}
+          </p>
+          <p>
+            {monatsname(a.month)}: {anzahl(a.packages_started, 'neues Paket', 'neue Pakete')},{' '}
+            {anzahl(a.training_sessions, 'Trainingstermin', 'Trainingstermine')}
+          </p>
+        </>
+      );
+    case 'packages_ending':
+      return <p>Enden bis {tagText(a.packages_ending_until)}, ohne gebuchtes Folgepaket</p>;
+    case 'aftercare_subscriptions':
+      return (
+        <p>
+          {monatsname(a.month)}: {anzahl(a.aftercare_started, 'neues Abo', 'neue Abos')},{' '}
+          {anzahl(a.aftercare_cancelled, 'Kündigung', 'Kündigungen')} eingegangen
+        </p>
+      );
+    default:
+      return null;
   }
 }
 
@@ -384,7 +473,13 @@ function Aufschluesselung({ children }: { children: ReactNode }) {
   );
 }
 
-function Zielzeile({ kennzahl, ziel }: { kennzahl: Kennzahl; ziel: number | null }) {
+function Zielzeile({
+  kennzahl,
+  ziel,
+}: {
+  kennzahl: Pick<Kennzahl<unknown>, 'ziel' | 'titel' | 'einheit' | 'richtung'>;
+  ziel: number | null;
+}) {
   const queryClient = useQueryClient();
   const [eingabe, setEingabe] = useState(zielAlsEingabe(ziel, kennzahl.einheit));
   const [fehler, setFehler] = useState<string | undefined>();

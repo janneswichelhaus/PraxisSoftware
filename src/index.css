@@ -189,6 +189,12 @@
   --color-person-schiefer: oklch(40% 0.015 250);
   --color-person-nacht: oklch(33% 0.07 275);
 
+  /* --- Art des Termins im Kalender (ANN-833) ------------------------------------
+     Fläche der Kachel für Training und Beratung, neben Zeichen und Wort. Blau und
+     Violett, fern von Grün, Gelb und Rot der Statusflächen (`kontrast.test.ts`). */
+  --color-termin-training: oklch(94% 0.03 250);
+  --color-termin-beratung: oklch(94% 0.035 305);
+
   /* --- Übungsbild (ANN-381) -------------------------------------------------
      Die Linienfigur der Übungsbibliothek: die nahe Körperseite in der
      Hauptfarbe (`accent`), die ferne in Figur fern, Hilfsmittel in

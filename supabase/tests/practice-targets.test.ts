@@ -27,6 +27,9 @@ interface Ziele {
   utilization_percent: number | null;
   ending_bases: number | null;
   absences: number | null;
+  training_packages: number | null;
+  aftercare_subscriptions: number | null;
+  packages_ending: number | null;
 }
 
 async function ziele(konto: string = users.ownerTherapist): Promise<Ziele> {
@@ -75,6 +78,9 @@ describe('Zielwerte der Praxisfuehrung (STA-002)', () => {
       utilization_percent: null,
       ending_bases: null,
       absences: null,
+      training_packages: null,
+      aftercare_subscriptions: null,
+      packages_ending: null,
     });
   });
 
@@ -85,6 +91,9 @@ describe('Zielwerte der Praxisfuehrung (STA-002)', () => {
     await setze('utilization_percent', 85);
     await setze('ending_bases', 2);
     await setze('absences', 4);
+    await setze('training_packages', 20);
+    await setze('aftercare_subscriptions', 12);
+    await setze('packages_ending', 1);
     await setze('revenue_cents', 1_500_000);
 
     expect(await ziele()).toMatchObject({
@@ -93,6 +102,9 @@ describe('Zielwerte der Praxisfuehrung (STA-002)', () => {
       utilization_percent: 85,
       ending_bases: 2,
       absences: 4,
+      training_packages: 20,
+      aftercare_subscriptions: 12,
+      packages_ending: 1,
     });
 
     const zeilen = await stand();
@@ -148,6 +160,8 @@ describe('Zielwerte der Praxisfuehrung (STA-002)', () => {
     await expect(setze('gewinn', 1)).rejects.toThrow(/unknown practice target/);
     await expect(setze('utilization_percent', 101)).rejects.toThrow(/out of range/);
     await expect(setze('absences', -1)).rejects.toThrow(/out of range/);
+    await expect(setze('training_packages', 10_001)).rejects.toThrow(/out of range/);
+    await expect(setze('packages_ending', -1)).rejects.toThrow(/out of range/);
   });
 
   it('laesst allein owner lesen und schreiben', async () => {

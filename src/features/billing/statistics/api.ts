@@ -1,14 +1,11 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
-import type { Kennzahlen, Zielkennung, Ziele } from './kennzahlen';
+import type { Angebotszahlen, Kennzahlen, Zielkennung, Ziele } from './kennzahlen';
 
 /**
- * Kennzahlen und Zielwerte der Praxisführung (STA-001, STA-002).
- *
- * Beide Aufrufe liefert der Server allein `owner`; eine andere Rolle bekommt
- * keine Zeile. Die Seite wird ihr gar nicht erst angeboten — die Grenze
- * sitzt trotzdem im Server (ADR-004).
+ * Kennzahlen und Zielwerte der Praxisführung liefert der Server allein `owner`; eine andere Rolle
+ * bekommt keine Zeile, auch wenn die Seite ihr gar nicht erst angeboten wird (ADR-004).
  */
 
 // `bigint` kommt aus PostgREST als Zahl oder Zeichenkette.
@@ -57,10 +54,29 @@ const zieleSchema = z.object({
   utilization_percent: zahl.nullable(),
   ending_bases: zahl.nullable(),
   absences: zahl.nullable(),
+  training_packages: zahl.nullable(),
+  aftercare_subscriptions: zahl.nullable(),
+  packages_ending: zahl.nullable(),
 });
+
+const angebotszahlenSchema = z.object({
+  time_zone: z.string(),
+  today: z.string(),
+  month: z.string(),
+  training_clients: zahl,
+  packages_running: zahl,
+  packages_started: zahl,
+  packages_ending: zahl,
+  packages_ending_until: z.string(),
+  aftercare_running: zahl,
+  aftercare_started: zahl,
+  aftercare_cancelled: zahl,
+  training_sessions: zahl,
+}) satisfies z.ZodType<Angebotszahlen>;
 
 export const KENNZAHLEN_KEY = ['statistics', 'kennzahlen'] as const;
 export const ZIELE_KEY = ['statistics', 'ziele'] as const;
+export const ANGEBOTSZAHLEN_KEY = ['statistics', 'angebote'] as const;
 
 /** Die Kennzahlen für einen Monat; `null` heißt der laufende Monat in der Zeitzone der Praxis. */
 export async function fetchKennzahlen(monat: string | null): Promise<Kennzahlen> {
@@ -70,6 +86,18 @@ export async function fetchKennzahlen(monat: string | null): Promise<Kennzahlen>
   })) as { data: unknown; error: unknown };
   if (error) throw new Error(satz);
   const zeilen = antwort(z.array(kennzahlenSchema), data ?? [], satz);
+  if (zeilen.length !== 1) throw new Error(satz);
+  return zeilen[0]!;
+}
+
+/** Training, Nachsorge-Abo und Pakete (ANN-831); `null` heißt der laufende Monat. */
+export async function fetchAngebotszahlen(monat: string | null): Promise<Angebotszahlen> {
+  const satz = 'Die Zahlen zu Training und Abo konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('get_offer_statistics', {
+    p_month: monat,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  const zeilen = antwort(z.array(angebotszahlenSchema), data ?? [], satz);
   if (zeilen.length !== 1) throw new Error(satz);
   return zeilen[0]!;
 }

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import type { Personenfarbe } from '@/components/ui/personenfarben';
 import {
   AVATARE_KEY,
   ZAEHLER_MS,
@@ -24,6 +25,20 @@ export function useAvatare() {
     staleTime: ZAEHLER_MS,
     refetchInterval: ZAEHLER_MS,
   });
+}
+
+/**
+ * Die Farbe je Person für Ansichten außerhalb des Chats, etwa den Kalender: dieselbe Liste, aber
+ * ohne Nachladen im Takt der Zähler. Ohne Teamchat-Recht oder bis sie da ist keine Farbe.
+ */
+export function useTeamfarben(): (staffMemberId: string) => Personenfarbe | undefined {
+  const avatare = useQuery({
+    queryKey: AVATARE_KEY,
+    queryFn: fetchAvatare,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  return (staffMemberId) => avatarVon(avatare.data, staffMemberId)?.color;
 }
 
 /** Die eigene Zeile, wie der Server sie markiert. */

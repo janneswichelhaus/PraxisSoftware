@@ -190,3 +190,4 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-PRX-056 | Reihenfolgevorschlag für den Tag | notiert · entscheidung nötig |
 | IDEA-PRX-057 | Schäden am Lastenrad im 3D-Modell markieren | bestätigt · ausgearbeitet |
 | IDEA-PRX-058 | Aus dem Check-Up gleich Panne melden oder das Rad sperren lassen | vorschlag |
+| IDEA-PRX-059 | Liste der Trainingspakete, die ohne Folgepaket enden, als Ziel der Statistik | vorschlag |

@@ -2,3 +2,4 @@
 // Seiten stehen nicht darin; src/routes und src/app binden direkt ein (ANN-755).
 
 export { ProfilAbschnitt } from './ProfilAbschnitt';
+export { useTeamfarben } from './teambilder';

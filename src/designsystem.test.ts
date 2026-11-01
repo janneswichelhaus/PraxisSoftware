@@ -443,6 +443,22 @@ describe('Farben des Übungsbilds (ANN-381)', () => {
   });
 });
 
+describe('Flächen je Art des Termins (ANN-833)', () => {
+  // Helle Flächen hinter dem Text der Kachel: als Text oder Rahmen unsichtbar.
+  it('verwendet termin-* nur als Fläche', () => {
+    expect(css).toMatch(/--color-termin-training:\s*oklch\(/);
+    expect(css).toMatch(/--color-termin-beratung:\s*oklch\(/);
+    const FREMD = /(?<![\w-])(?!bg-)[a-z][a-z-]*-termin-(?:training|beratung)\b/g;
+    const finden = (zeile: string) => Array.from(zeile.matchAll(FREMD), (f) => f[0]);
+    expect(funde(finden)).toEqual([]);
+    // Gegenprobe
+    expect(finden('className="text-termin-training"')).toEqual(['text-termin-training']);
+    expect(finden("rand: 'border-termin-beratung'")).toEqual(['border-termin-beratung']);
+    expect(finden("return 'bg-termin-training';")).toEqual([]);
+    expect(finden('  --color-termin-training: oklch(94% 0.03 250);')).toEqual([]);
+  });
+});
+
 describe('Farben der Personen im Teamchat (TEAM-006, ANN-666)', () => {
   /**
    * Die Farbe einer Person ist Fläche hinter den Initialen oder Umriss um das

@@ -6,14 +6,14 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**PRX-EPIC-004 begonnen**, der DATEV-Export liegt als PR #344 vor: Buchungsstapel je Bereich und Monat,
-Nachträge, Belege über den Sammeldruck, Konten nach SKR-Standard bis B4 (ANN-828 bis ANN-830).
-KI-EPIC-001 ist gemergt (#343). Offen: BEF-201, BEF-202.
+**PRX-EPIC-004 weiter**: DATEV-Export gemergt (#344). Kennzahlen für Training, Abo und Pakete sowie
+Farbe je Art des Termins und je Person im Kalender liegen als PR auf `ccr-da924a3b-dyrdc6` vor
+(ANN-831 bis ANN-833, Zweitreview ohne roten Punkt). Offen: BEF-201, BEF-202.
 
 ## Danach
 
 Bildsichtung von #334 bis #337. Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
-PRX-EPIC-004 weiter, zuerst Kennzahlen und Farbcodierung, dann Kalender-Abo, Planungskarte,
+PRX-EPIC-004 weiter mit Kalender-Abo, Planungskarte,
 Kartenzahlung, die Übertragung an DATEV erst nach B4 (Jannes 2026-11-01), ERN-EPIC-004 bis -006, ORG-EPIC-001, Schritte 5 bis 7
 mit Jannes' Leinwänden, UI-003; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
@@ -46,5 +46,5 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-01.11.2026, Branch `claude/trusting-babbage-sxn89v`. Lokal: `git pull`, neue Migration
-(`datev_export`).
+01.11.2026, Branch `ccr-da924a3b-dyrdc6`. Lokal: `git pull`, neue Migration
+(`angebotskennzahlen`).

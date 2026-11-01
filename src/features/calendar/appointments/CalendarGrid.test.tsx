@@ -580,3 +580,80 @@ describe('Gewählter Termin im Bild (Design-Review T5)', () => {
     expect(kasten.scrollLeft).toBe(160);
   });
 });
+
+describe('Farbe je Art des Termins und je Person (ANN-833, ANN-666)', () => {
+  function gitterMit(eintraege: CalendarEntry[], farbe?: 'ozean' | null) {
+    return renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[{ id: 'st-1', titel: 'Anna Beispiel', baender: [], farbe }]}
+        eintraege={eintraege.map((eintrag, i) => ({
+          eintrag,
+          spalteId: 'st-1',
+          beginnMinute: 480 + i * 60,
+          endeMinute: 530 + i * 60,
+          ziehbar: false,
+        }))}
+        fenster={{ vonMinute: 480, bisMinute: 900 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onAuswahl={() => {}}
+        kontext="2027-05-12"
+        ziehbarErlaubt={false}
+        beschriftung="Tagesansicht nach behandelnder Person"
+      />,
+    );
+  }
+  const kachel = (id: string) => document.querySelector<HTMLElement>(`[data-termin="${id}"]`)!;
+
+  it('legt Training und Beratung auf eigene Flächen, neben Zeichen und Wort; Behandlung bleibt weiß', () => {
+    gitterMit([
+      termin({ id: 'beh' }),
+      termin({
+        id: 'trn',
+        kind: 'training',
+        patient_id: null,
+        training_given_name: 'Tina',
+        training_family_name: 'Training',
+      }),
+      termin({ id: 'ber', occasion: 'nutrition_counselling' }),
+    ]);
+    expect(kachel('beh')).toHaveClass('bg-surface');
+    expect(kachel('trn')).toHaveClass('bg-termin-training');
+    expect(within(kachel('trn')).getByText('Training:')).toHaveClass('sr-only');
+    expect(kachel('ber')).toHaveClass('bg-termin-beratung');
+    expect(within(kachel('ber')).getByText('Ernährungsberatung:')).toHaveClass('sr-only');
+  });
+
+  it('laesst den Zustand vorgehen: ein abgesagtes Training steht auf dem Seitengrund', () => {
+    gitterMit([
+      termin({
+        id: 'trn',
+        kind: 'training',
+        patient_id: null,
+        status: 'cancelled',
+      }),
+    ]);
+    expect(kachel('trn')).toHaveClass('bg-canvas');
+    expect(kachel('trn')).not.toHaveClass('bg-termin-training');
+  });
+
+  it('zeigt die Farbe der Person als Bild neben dem Namen im Spaltenkopf, nie allein', () => {
+    const { unmount } = gitterMit([], 'ozean');
+    const bild = document.querySelector('[data-personenbild="initialen"]')!;
+    expect(bild).toHaveClass('bg-person-ozean');
+    expect(bild).toHaveAttribute('aria-hidden', 'true');
+    expect(bild.parentElement).toHaveTextContent('Anna Beispiel');
+    unmount();
+
+    // Bis die Farbe da ist, steht das Bild neutral - die Spalte springt nicht.
+    const zweites = gitterMit([], null);
+    expect(document.querySelector('[data-personenbild="initialen"]')).toHaveClass(
+      'bg-person-schiefer',
+    );
+    zweites.unmount();
+
+    gitterMit([]);
+    expect(document.querySelector('[data-personenbild]')).toBeNull();
+  });
+});
