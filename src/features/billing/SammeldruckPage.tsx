@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { fetchRechnung } from './api';
+import { fetchRechnung, type Rechnungsansicht } from './api';
 import { Druckfuss, Rechnungsblatt } from './InvoicePrintPage';
 import { Stornoblatt } from './CancellationPrintPage';
 
@@ -50,6 +50,18 @@ export function SammeldruckPage() {
   });
   const blaetter = auftrag.map(({ id }) => abfragen[geladen.indexOf(id)]!);
 
+  // Ein Storno-Blatt gibt es nur zu einer stornierten Rechnung; gezählt wird, was gedruckt wird.
+  type Blatt = {
+    ansicht: Rechnungsansicht;
+    storno: NonNullable<Rechnungsansicht['cancellation']> | null;
+  };
+  const gedruckt = auftrag.flatMap(({ storno }, index): Blatt[] => {
+    const ansicht = blaetter[index]?.data;
+    if (!ansicht) return [];
+    if (!storno) return [{ ansicht, storno: null }];
+    return ansicht.cancellation ? [{ ansicht, storno: ansicht.cancellation }] : [];
+  });
+
   const laedt = blaetter.some((b) => b.isPending);
   const fehler = blaetter.find((b) => b.isError);
 
@@ -79,31 +91,26 @@ export function SammeldruckPage() {
           <Druckfuss
             oben
             beschriftung={
-              ids.length > 1
-                ? `Alle ${ids.length} drucken`
-                : auftrag[0]?.storno
+              gedruckt.length > 1
+                ? `Alle ${gedruckt.length} drucken`
+                : gedruckt[0]?.storno
                   ? 'Stornodokument drucken'
                   : 'Rechnung drucken'
             }
           />
-          {blaetter.map((blatt, index) => {
-            const ansicht = blatt.data;
-            const storno = auftrag[index]?.storno ? ansicht?.cancellation : null;
-            if (!ansicht || (auftrag[index]?.storno && !storno)) return null;
-            return (
-              // Ab dem zweiten Blatt eine neue Seite; am Bildschirm ein Abstand.
-              <div
-                key={`${ansicht.id}-${storno ? 'storno' : 'rechnung'}`}
-                className={index > 0 ? 'mt-8 print:mt-0 print:break-before-page' : ''}
-              >
-                {storno ? (
-                  <Stornoblatt ansicht={ansicht} storno={storno} einzeln={false} />
-                ) : (
-                  <Rechnungsblatt ansicht={ansicht} einzeln={false} />
-                )}
-              </div>
-            );
-          })}
+          {gedruckt.map(({ ansicht, storno }, index) => (
+            // Ab dem zweiten Blatt eine neue Seite; am Bildschirm ein Abstand.
+            <div
+              key={`${ansicht.id}-${storno ? 'storno' : 'rechnung'}`}
+              className={index > 0 ? 'mt-8 print:mt-0 print:break-before-page' : ''}
+            >
+              {storno ? (
+                <Stornoblatt ansicht={ansicht} storno={storno} einzeln={false} />
+              ) : (
+                <Rechnungsblatt ansicht={ansicht} einzeln={false} />
+              )}
+            </div>
+          ))}
         </>
       )}
     </>

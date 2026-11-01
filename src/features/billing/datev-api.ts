@@ -70,6 +70,27 @@ export async function fetchDatevOffen(
   return antwort(z.array(buchungSchema), data ?? [], 'Die Buchungen konnten nicht geladen werden.');
 }
 
+const offenerMonatSchema = z.object({
+  period_month: z.string(),
+  document_count: z.number(),
+});
+
+export type DatevOffenerMonat = z.infer<typeof offenerMonatSchema>;
+
+/** Monate mit Offenem, auch Rückdatiertes in schon exportierten Monaten (ANN-830). */
+export async function fetchDatevOffeneMonate(bereich: DatevBereich): Promise<DatevOffenerMonat[]> {
+  const { data, error } = (await getSupabase().rpc('list_datev_open_months', {
+    p_service_area: bereich,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die offenen Monate konnten nicht geladen werden.');
+  return antwort(
+    z.array(offenerMonatSchema),
+    data ?? [],
+    'Die offenen Monate konnten nicht geladen werden.',
+  );
+}
+
 const laufzeileSchema = z.object({
   id: z.string(),
   sequence: z.number(),

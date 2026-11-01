@@ -153,7 +153,10 @@ describe('Buchungsstapel', () => {
   it('nennt Stapel und Datei nach Bereich, Monat und Lauf', () => {
     const training = { service_area: 'training', period_month: '2026-02-01', sequence: 1 } as const;
     expect(stapelname(training)).toBe('Training 2026-02');
-    expect(dateiname(training)).toBe('EXTF_Buchungsstapel_Training_2026-02_1.csv');
+    expect(dateiname(training)).toBe('EXTF_Buchungsstapel_Training_2026-02.csv');
+    expect(dateiname({ ...training, sequence: 3 })).toBe(
+      'EXTF_Buchungsstapel_Training_2026-02_Nachtrag-2.csv',
+    );
     expect(kopfzeile(lauf({ period_month: '2028-02-01' }))).toContain('20280201;20280229');
   });
 

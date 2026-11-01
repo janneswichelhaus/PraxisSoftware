@@ -84,7 +84,7 @@ insert into public.data_registry (
    null, 'not_applicable', null),
   ('datev_export_documents', 'pseudonymous', 'excluded', '{}', '{}', null, 'via_parent', 'id',
    null, null, false, null, 'not_applicable',
-   'Nur Kennungen, welches Dokument an die Steuerberatung ging; die Auskunft nennt die Steuerberatung als Empfaengerin, die Dokumente stehen dort selbst. Faellt mit dem Dokument (cascade), ein Restore zieht es mit.');
+   'Nur Kennungen, welches Dokument an die Steuerberatung ging; die Dokumente selbst stehen in der Auskunft. Ob Patienteninformation und Auskunft die Steuerberatung als Empfaengerin nennen, klaert B2 (ANN-829). Faellt mit dem Dokument (cascade), ein Restore zieht es mit.');
 
 insert into public.retention_assignments (table_name, class_key, deletion_mode, scope_note, sort_order)
 values
@@ -95,52 +95,62 @@ values
   ('datev_export_documents', 'abrechnungsdaten', 'ueber_elterndatensatz',
    'Dokumente eines Exportlaufs. Fallen mit Rechnung, Storno oder Zahlung (cascade), also mit deren Frist.', 27);
 
--- Was ein Monat eines Bereichs noch nicht exportiert hat. Ein Zahlungsstorno folgt nur einer
--- exportierten Zahlung; eine vorher stornierte Zahlung geht gar nicht hinaus (ANN-830).
+-- Was ein Bereich noch nicht exportiert hat, ohne Monat aus allen Monaten. Ein Zahlungsstorno folgt
+-- nur einer exportierten Zahlung; eine vorher stornierte Zahlung geht gar nicht hinaus (ANN-830).
 create function app.datev_pending_documents(p_org uuid, p_area text, p_month date)
-returns table (invoice_id uuid, cancellation_id uuid, payment_id uuid, payment_void boolean)
+returns table (
+  invoice_id      uuid,
+  cancellation_id uuid,
+  payment_id      uuid,
+  payment_void    boolean,
+  document_date   date
+)
 language sql stable
 set search_path = ''
 as $$
   with zeitraum as (
-    select p_month as von, (p_month + interval '1 month')::date as bis, o.time_zone as zeitzone
+    select coalesce(p_month, date '2020-01-01') as von,
+           coalesce((p_month + interval '1 month')::date, date '2201-01-01') as bis,
+           o.time_zone as zeitzone
       from public.organizations o where o.id = p_org
+  ),
+  dokument as (
+    select i.id as invoice_id, null::uuid as cancellation_id, null::uuid as payment_id,
+           false as payment_void, i.issued_on as document_date
+      from public.invoices i
+     where i.organization_id = p_org and i.status = 'issued' and i.service_area = p_area
+       and not exists (select 1 from public.datev_export_documents d where d.invoice_id = i.id)
+    union all
+    select null, c.id, null, false, c.cancelled_on
+      from public.invoice_cancellations c
+      join public.invoices i on i.id = c.invoice_id
+     where c.organization_id = p_org and i.service_area = p_area
+       and not exists (select 1 from public.datev_export_documents d where d.cancellation_id = c.id)
+    union all
+    select null, null, p.id, false, p.paid_on
+      from public.payments p
+      join public.invoices i on i.id = p.invoice_id
+     where p.organization_id = p_org and i.service_area = p_area and p.voided_at is null
+       and not exists (select 1 from public.datev_export_documents d
+                        where d.payment_id = p.id and not d.payment_void)
+    union all
+    select null, null, p.id, true, (p.voided_at at time zone o.time_zone)::date
+      from public.payments p
+      join public.invoices i on i.id = p.invoice_id
+      join public.organizations o on o.id = p.organization_id
+     where p.organization_id = p_org and i.service_area = p_area and p.voided_at is not null
+       and exists (select 1 from public.datev_export_documents d
+                    where d.payment_id = p.id and not d.payment_void)
+       and not exists (select 1 from public.datev_export_documents d
+                        where d.payment_id = p.id and d.payment_void)
   )
-  select i.id, null::uuid, null::uuid, false
-    from public.invoices i, zeitraum z
-   where i.organization_id = p_org and i.status = 'issued' and i.service_area = p_area
-     and i.issued_on >= z.von and i.issued_on < z.bis
-     and not exists (select 1 from public.datev_export_documents d where d.invoice_id = i.id)
-  union all
-  select null, c.id, null, false
-    from public.invoice_cancellations c
-    join public.invoices i on i.id = c.invoice_id, zeitraum z
-   where c.organization_id = p_org and i.service_area = p_area
-     and c.cancelled_on >= z.von and c.cancelled_on < z.bis
-     and not exists (select 1 from public.datev_export_documents d where d.cancellation_id = c.id)
-  union all
-  select null, null, p.id, false
-    from public.payments p
-    join public.invoices i on i.id = p.invoice_id, zeitraum z
-   where p.organization_id = p_org and i.service_area = p_area and p.voided_at is null
-     and p.paid_on >= z.von and p.paid_on < z.bis
-     and not exists (select 1 from public.datev_export_documents d
-                      where d.payment_id = p.id and not d.payment_void)
-  union all
-  select null, null, p.id, true
-    from public.payments p
-    join public.invoices i on i.id = p.invoice_id, zeitraum z
-   where p.organization_id = p_org and i.service_area = p_area and p.voided_at is not null
-     and (p.voided_at at time zone z.zeitzone)::date >= z.von
-     and (p.voided_at at time zone z.zeitzone)::date < z.bis
-     and exists (select 1 from public.datev_export_documents d
-                  where d.payment_id = p.id and not d.payment_void)
-     and not exists (select 1 from public.datev_export_documents d
-                      where d.payment_id = p.id and d.payment_void)
+  select d.invoice_id, d.cancellation_id, d.payment_id, d.payment_void, d.document_date
+    from dokument d, zeitraum z
+   where d.document_date >= z.von and d.document_date < z.bis
 $$;
 
 comment on function app.datev_pending_documents(uuid, text, date) is
-  'Dokumente eines Monats und Bereichs, die noch kein Exportlauf getragen hat (ANN-830): ausgestellte Rechnungen, Stornodokumente, nicht stornierte Zahlungen und Stornos exportierter Zahlungen. Ohne Rollenpruefung; nur aus Funktionen mit eigener Pruefung.';
+  'Dokumente eines Bereichs, die noch kein Exportlauf getragen hat (ANN-830), mit Monat nur dessen: ausgestellte Rechnungen, Stornodokumente, nicht stornierte Zahlungen und Stornos exportierter Zahlungen, je mit Belegtag. Ohne Rollenpruefung; nur aus Funktionen mit eigener Pruefung.';
 
 -- Je Dokument die Buchungszeilen: Rechnung und Storno je Steuergruppe aus dem Snapshot, Zahlung
 -- und Zahlungsstorno je Betrag. Ohne Namen, Anschrift und Diagnose (ANN-829).
@@ -344,6 +354,7 @@ declare
   v_mandant  integer;
   v_folge    smallint;
   v_id       uuid;
+  v_anzahl   integer;
 begin
   if auth.uid() is null then
     raise exception 'not authenticated' using errcode = '42501';
@@ -377,15 +388,6 @@ begin
     raise exception 'datev client number missing' using errcode = 'P0002';
   end if;
 
-  if not exists (select 1 from app.datev_pending_documents(v_org, p_service_area, p_month)) then
-    raise exception 'nothing new to export' using errcode = 'P0002';
-  end if;
-
-  if exists (select 1 from app.datev_bookings(v_org, p_service_area, p_month, null) b
-              where b.currency <> 'EUR') then
-    raise exception 'only euro amounts can be exported' using errcode = '22023';
-  end if;
-
   select coalesce(max(e.sequence), 0) + 1 into v_folge
     from public.datev_exports e
    where e.organization_id = v_org and e.service_area = p_service_area
@@ -405,12 +407,51 @@ begin
   select v_id, v_org, d.invoice_id, d.cancellation_id, d.payment_id, d.payment_void
     from app.datev_pending_documents(v_org, p_service_area, p_month) d;
 
+  -- Geprüft wird genau, was der Lauf trägt; eine Ausnahme nimmt Lauf und Nummer zurück.
+  get diagnostics v_anzahl = row_count;
+  if v_anzahl = 0 then
+    raise exception 'nothing new to export' using errcode = 'P0002';
+  end if;
+
+  if exists (select 1 from app.datev_bookings(v_org, p_service_area, p_month, v_id) b
+              where b.currency <> 'EUR') then
+    raise exception 'only euro amounts can be exported' using errcode = '22023';
+  end if;
+
   return v_id;
 end;
 $$;
 
 comment on function public.create_datev_export(text, date) is
   'Legt einen Exportlauf an (ANN-830): nimmt alle noch nicht exportierten Dokumente des Monats und Bereichs und haelt die DATEV-Angaben des Tages fest. Der erste Lauf eines Monats hat die Nummer 1, jeder weitere ist ein Nachtrag. owner und office; ohne Einstellungen, Mandantennummer oder Neues abgewiesen. Kein Auditeintrag (ADR-010 Punkt 15), keine Person am Lauf.';
+
+create function public.list_datev_open_months(p_service_area text)
+returns table (period_month date, document_count integer)
+language plpgsql security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+
+  if not app.can_read_invoicing() then
+    perform app.record_denied_read(auth.uid(), 'invoicing.read', 'not allowed to read bookings');
+    return;
+  end if;
+
+  perform app.assert_datev_period(p_service_area, date '2020-01-01');
+
+  return query
+  select date_trunc('month', d.document_date)::date, count(*)::integer
+    from app.datev_pending_documents(app.current_organization_id(), p_service_area, null) d
+   group by 1
+   order by 1;
+end;
+$$;
+
+comment on function public.list_datev_open_months(text) is
+  'Monate eines Bereichs mit Dokumenten, die noch kein Exportlauf getragen hat (ANN-830), mit ihrer Zahl: So faellt Rueckdatiertes in einem schon exportierten Monat auf. owner und office; sonst null Zeilen und access.denied.';
 
 create function public.list_datev_exports(p_service_area text, p_month date)
 returns table (
@@ -514,10 +555,12 @@ comment on function public.get_datev_export(uuid) is
 revoke all on function public.save_datev_settings(integer, integer, integer, text) from public, anon;
 revoke all on function public.list_datev_pending(text, date) from public, anon;
 revoke all on function public.create_datev_export(text, date) from public, anon;
+revoke all on function public.list_datev_open_months(text) from public, anon;
 revoke all on function public.list_datev_exports(text, date) from public, anon;
 revoke all on function public.get_datev_export(uuid) from public, anon;
 grant execute on function public.save_datev_settings(integer, integer, integer, text) to authenticated;
 grant execute on function public.list_datev_pending(text, date) to authenticated;
 grant execute on function public.create_datev_export(text, date) to authenticated;
+grant execute on function public.list_datev_open_months(text) to authenticated;
 grant execute on function public.list_datev_exports(text, date) to authenticated;
 grant execute on function public.get_datev_export(uuid) to authenticated;

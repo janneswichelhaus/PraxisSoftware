@@ -285,14 +285,20 @@ function letzterTag(monatsErster: string): string {
 
 const BEREICH: Record<DatevBereich, string> = { therapy: 'Behandlung', training: 'Training' };
 
+/** „Erster Export“ oder „Nachtrag n“: so in der Liste, im Stapel und im Dateinamen. */
+export function laufname(sequence: number): string {
+  return sequence > 1 ? `Nachtrag ${sequence - 1}` : 'Erster Export';
+}
+
 /** Stapelbezeichnung, höchstens 30 Zeichen: Bereich, Monat, ab dem zweiten Lauf „Nachtrag n“. */
 export function stapelname(lauf: Pick<DatevLauf, 'service_area' | 'period_month' | 'sequence'>) {
-  const nachtrag = lauf.sequence > 1 ? ` Nachtrag ${lauf.sequence - 1}` : '';
+  const nachtrag = lauf.sequence > 1 ? ` ${laufname(lauf.sequence)}` : '';
   return `${BEREICH[lauf.service_area]} ${lauf.period_month.slice(0, 7)}${nachtrag}`.slice(0, 30);
 }
 
 export function dateiname(lauf: Pick<DatevLauf, 'service_area' | 'period_month' | 'sequence'>) {
-  return `EXTF_Buchungsstapel_${BEREICH[lauf.service_area]}_${lauf.period_month.slice(0, 7)}_${lauf.sequence}.csv`;
+  const nachtrag = lauf.sequence > 1 ? `_Nachtrag-${lauf.sequence - 1}` : '';
+  return `EXTF_Buchungsstapel_${BEREICH[lauf.service_area]}_${lauf.period_month.slice(0, 7)}${nachtrag}.csv`;
 }
 
 /**
@@ -435,10 +441,10 @@ export function zusammenfassung(buchungen: readonly DatevBuchung[]): string {
 }
 
 /** Der Sammeldruck je höchstens hundert Blätter: Rechnungen, dann Stornodokumente. */
-export function belegdrucke(lauf: {
-  invoice_ids: readonly string[];
-  cancelled_invoice_ids: readonly string[];
-}) {
+export function belegdrucke(
+  lauf: { invoice_ids: readonly string[]; cancelled_invoice_ids: readonly string[] },
+  rueckweg = '/abrechnung/steuerberatung',
+) {
   const blaetter = [
     ...lauf.invoice_ids.map((id) => ({ art: 'rechnungen' as const, id })),
     ...lauf.cancelled_invoice_ids.map((id) => ({ art: 'stornos' as const, id })),
@@ -451,7 +457,7 @@ export function belegdrucke(lauf: {
       const ids = teil.filter((b) => b.art === art).map((b) => b.id);
       if (ids.length > 0) suche.set(art, ids.join(','));
     }
-    suche.set(RUECKWEG_PARAM, '/abrechnung/steuerberatung');
+    suche.set(RUECKWEG_PARAM, rueckweg);
     drucke.push({ von: start + 1, bis: start + teil.length, to: `/abrechnung/druck?${suche}` });
   }
   return drucke;

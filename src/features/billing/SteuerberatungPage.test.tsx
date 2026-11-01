@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as DatevApi from './datev-api';
 import type { DatevBuchung, DatevLauf } from './datev';
@@ -10,6 +10,7 @@ const fetchDatevOffen = vi.fn();
 const fetchDatevLaeufe = vi.fn();
 const erstelleDatevLauf = vi.fn();
 const fetchDatevLauf = vi.fn();
+const fetchDatevOffeneMonate = vi.fn();
 
 vi.mock('./datev-api', async (importOriginal) => {
   const actual = await importOriginal<typeof DatevApi>();
@@ -20,6 +21,7 @@ vi.mock('./datev-api', async (importOriginal) => {
     fetchDatevLaeufe: (...a: unknown[]) => fetchDatevLaeufe(...a) as Promise<unknown>,
     erstelleDatevLauf: (...a: unknown[]) => erstelleDatevLauf(...a) as Promise<string>,
     fetchDatevLauf: (...a: unknown[]) => fetchDatevLauf(...a) as Promise<DatevLauf>,
+    fetchDatevOffeneMonate: (...a: unknown[]) => fetchDatevOffeneMonate(...a) as Promise<unknown>,
   };
 });
 
@@ -50,17 +52,31 @@ function buchung(teil: Partial<DatevBuchung> = {}): DatevBuchung {
   };
 }
 
-function seite(rollen: Parameters<typeof testUser>[0] = ['office']) {
+function seite(rollen: Parameters<typeof testUser>[0] = ['office'], pfad = '') {
   return renderWithProviders(
     <SteuerberatungPage user={testUser(rollen)} />,
-    '/abrechnung/steuerberatung',
+    `/abrechnung/steuerberatung${pfad}`,
   );
 }
+
+const LAUF: DatevLauf = {
+  id: 'lauf-1',
+  service_area: 'therapy',
+  period_month: '2026-10-01',
+  sequence: 1,
+  consultant_number: 1001,
+  client_number: 1,
+  chart_of_accounts: 'SKR03',
+  created_stamp: '20261101110000000',
+  bookings: [],
+};
 
 describe('SteuerberatungPage', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-01T10:00:00Z') });
     for (const f of [fetchDatevEinstellungen, fetchDatevOffen, fetchDatevLaeufe]) f.mockReset();
+    fetchDatevOffeneMonate.mockReset();
+    fetchDatevOffeneMonate.mockResolvedValue([]);
     erstelleDatevLauf.mockReset();
     fetchDatevLauf.mockReset();
     fetchDatevEinstellungen.mockResolvedValue(EINSTELLUNGEN);
@@ -82,7 +98,8 @@ describe('SteuerberatungPage', () => {
 
     expect(await screen.findByText('1 Rechnung · 1 Zahlung')).toBeInTheDocument();
     expect(fetchDatevOffen).toHaveBeenCalledWith('therapy', '2026-10-01');
-    expect(screen.getByRole('button', { name: 'Buchungsstapel erstellen' })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: 'Buchungsstapel erstellen' })).toBeEnabled();
+    expect(screen.getByText('Berater 1001 · Mandant 1 · SKR03')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Behandlung' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -92,17 +109,7 @@ describe('SteuerberatungPage', () => {
   it('erstellt den Stapel, lädt die Datei und meldet ihren Namen', async () => {
     fetchDatevOffen.mockResolvedValue([buchung()]);
     erstelleDatevLauf.mockResolvedValue('lauf-1');
-    fetchDatevLauf.mockResolvedValue({
-      id: 'lauf-1',
-      service_area: 'therapy',
-      period_month: '2026-10-01',
-      sequence: 1,
-      consultant_number: 1001,
-      client_number: 1,
-      chart_of_accounts: 'SKR03',
-      created_stamp: '20261101110000000',
-      bookings: [buchung()],
-    } satisfies DatevLauf);
+    fetchDatevLauf.mockResolvedValue({ ...LAUF, bookings: [buchung()] });
     const erzeugt = vi.fn(() => 'blob:datei');
     const freigegeben = vi.fn();
     vi.stubGlobal('URL', { ...URL, createObjectURL: erzeugt, revokeObjectURL: freigegeben });
@@ -112,7 +119,7 @@ describe('SteuerberatungPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Buchungsstapel erstellen' }));
 
     expect(
-      await screen.findByText('Heruntergeladen: EXTF_Buchungsstapel_Behandlung_2026-10_1.csv'),
+      await screen.findByText('Heruntergeladen: EXTF_Buchungsstapel_Behandlung_2026-10.csv'),
     ).toBeInTheDocument();
     expect(erstelleDatevLauf).toHaveBeenCalledWith('therapy', '2026-10-01');
     expect(klick).toHaveBeenCalledTimes(1);
@@ -142,7 +149,7 @@ describe('SteuerberatungPage', () => {
     expect(within(exporte).getByText(/01\.11\.2026, 10:15 Uhr · 3 Dokumente/)).toBeInTheDocument();
     expect(within(exporte).getByRole('link', { name: 'Belege drucken' })).toHaveAttribute(
       'href',
-      '/abrechnung/druck?rechnungen=a&zurueck=%2Fabrechnung%2Fsteuerberatung',
+      '/abrechnung/druck?rechnungen=a&zurueck=%2Fabrechnung%2Fsteuerberatung%3Fbereich%3Dtherapy%26monat%3D2026-10-01',
     );
   });
 
@@ -151,7 +158,11 @@ describe('SteuerberatungPage', () => {
     seite(['office']);
     await userEvent.click(await screen.findByRole('button', { name: 'Training' }));
 
-    expect(await screen.findByText('Für diesen Bereich fehlt die Mandantennummer.')).toBeVisible();
+    expect(
+      await screen.findByText(
+        'Für diesen Bereich fehlt die Mandantennummer. Eintragen kann sie die Praxisinhaber:in.',
+      ),
+    ).toBeVisible();
     expect(screen.queryByRole('button', { name: /erstellen/ })).not.toBeInTheDocument();
   });
 
@@ -160,6 +171,7 @@ describe('SteuerberatungPage', () => {
     seite(['owner']);
 
     expect(await screen.findByText('Es sind noch keine DATEV-Angaben erfasst.')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'DATEV-Angaben eintragen' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Eintragen' })).toHaveAttribute(
       'href',
       '/abrechnung/steuerberatung/angaben',
@@ -186,6 +198,73 @@ describe('SteuerberatungPage', () => {
   });
 });
 
+describe('SteuerberatungPage nach den Reviews', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-01T10:00:00Z') });
+    for (const f of [fetchDatevEinstellungen, fetchDatevOffen, fetchDatevLaeufe]) f.mockReset();
+    fetchDatevOffeneMonate.mockReset();
+    erstelleDatevLauf.mockReset();
+    fetchDatevLauf.mockReset();
+    fetchDatevEinstellungen.mockResolvedValue(EINSTELLUNGEN);
+    fetchDatevOffen.mockResolvedValue([buchung()]);
+    fetchDatevLaeufe.mockResolvedValue([]);
+    fetchDatevOffeneMonate.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('liest Bereich und Monat aus der Adresse', async () => {
+    seite(['office'], '?bereich=training&monat=2026-08-01');
+    await waitFor(() => expect(fetchDatevOffen).toHaveBeenCalledWith('training', '2026-08-01'));
+    expect(screen.getByLabelText('Monat')).toHaveValue('2026-08-01');
+  });
+
+  it('zeigt Rückdatiertes in früheren Monaten und springt mit einem Tipp dorthin', async () => {
+    fetchDatevOffeneMonate.mockResolvedValue([
+      { period_month: '2026-09-01', document_count: 1 },
+      { period_month: '2026-10-01', document_count: 2 },
+      { period_month: '2026-11-01', document_count: 1 },
+    ]);
+    seite();
+
+    const chip = await screen.findByRole('button', { name: 'September 2026 (1)' });
+    // Der gewählte Monat und der laufende stehen nicht als Hinweis da.
+    expect(screen.queryByRole('button', { name: /Oktober 2026/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /November 2026/ })).toBeNull();
+    await userEvent.click(chip);
+    expect(fetchDatevOffen).toHaveBeenLastCalledWith('therapy', '2026-09-01');
+  });
+
+  it('lässt einen offenen Monat vor den letzten 24 wählen', async () => {
+    fetchDatevOffeneMonate.mockResolvedValue([{ period_month: '2024-03-01', document_count: 2 }]);
+    seite();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'März 2024 (2)' }));
+    await waitFor(() => expect(fetchDatevOffen).toHaveBeenLastCalledWith('therapy', '2024-03-01'));
+    expect(screen.getByLabelText('Monat')).toHaveValue('2024-03-01');
+  });
+
+  it('sagt nach angelegtem Lauf ohne Datei, wo die Datei liegt', async () => {
+    erstelleDatevLauf.mockResolvedValue('lauf-1');
+    fetchDatevLauf.mockRejectedValue(new Error('Der Export konnte nicht geladen werden.'));
+    seite();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Buchungsstapel erstellen' }));
+    expect(
+      await screen.findByText('Der Export ist angelegt. Die Datei liegt unten unter „Datei“.'),
+    ).toBeInTheDocument();
+  });
+
+  it('bietet den Export erst an, wenn feststeht, ob er ein Nachtrag wäre', async () => {
+    fetchDatevLaeufe.mockReturnValue(new Promise(() => {}));
+    seite();
+    expect(await screen.findByText('1 Rechnung')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /erstellen/ })).toBeNull();
+  });
+});
+
 describe('Hilfen der Seite', () => {
   it('zählt Rechnungen je Nummer und Zahlungen je Zeile', () => {
     expect(
@@ -202,12 +281,13 @@ describe('Hilfen der Seite', () => {
 
   it('teilt die Belege in Druckaufträge zu höchstens hundert Blättern', () => {
     const ids = Array.from({ length: 150 }, (_, i) => `r${i}`);
-    const drucke = belegdrucke({ invoice_ids: ids, cancelled_invoice_ids: ['s1'] });
+    const drucke = belegdrucke({ invoice_ids: ids, cancelled_invoice_ids: ['s1'] }, '/zurueck');
     expect(drucke.map((d) => [d.von, d.bis])).toEqual([
       [1, 100],
       [101, 151],
     ]);
     expect(drucke[1]!.to).toContain('stornos=s1');
+    expect(drucke[0]!.to).toContain('zurueck=%2Fzurueck');
     expect(belegdrucke({ invoice_ids: [], cancelled_invoice_ids: [] })).toEqual([]);
   });
 });

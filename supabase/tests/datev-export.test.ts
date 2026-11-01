@@ -8,6 +8,7 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { gleichzeitig } from './helpers/gleichzeitig';
 
 // Export für die Steuerberatung im DATEV-Format (ANN-828 bis ANN-830): Einstellungen nur owner,
 // Buchungen ohne Namen, jedes Dokument genau einmal, Späteres als Nachtrag, Löschung mit dem
@@ -21,6 +22,8 @@ const OFFEN =
 const ERSTELLEN = 'select public.create_datev_export($1::text, $2::date) as id';
 const LAEUFE = 'select * from public.list_datev_exports($1::text, $2::date)';
 const LAUF = 'select public.get_datev_export($1::uuid) as lauf';
+const OFFENE_MONATE =
+  'select period_month::text as monat, document_count from public.list_datev_open_months($1::text)';
 
 const SEPTEMBER = '2026-09-01';
 
@@ -144,7 +147,13 @@ describe('DATEV-Export', () => {
       );
       expect(office.rows).toEqual([{ consultant_number: 29098, chart_of_accounts: 'SKR04' }]);
 
-      for (const konto of [users.therapist, users.teamLead, users.trainer, users.plattformErika]) {
+      for (const konto of [
+        users.therapist,
+        users.teamLead,
+        users.trainer,
+        users.patientMax,
+        users.plattformErika,
+      ]) {
         const { rows } = await asUser(konto, 'select * from public.datev_settings');
         expect(rows).toEqual([]);
       }
@@ -241,6 +250,9 @@ describe('DATEV-Export', () => {
 
       const zeilen = await offen(users.office, 'therapy', SEPTEMBER);
       expect(zeilen.map((x) => x.kind)).toEqual(['invoice']);
+      // Auch im Monat des Stornos erscheint nichts: Die Zahlung ging nie hinaus.
+      const { rows } = await asUser<{ monat: string }>(users.office, OFFENE_MONATE, ['therapy']);
+      expect(rows.map((r) => r.monat)).toEqual([SEPTEMBER]);
     });
   });
 
@@ -323,6 +335,38 @@ describe('DATEV-Export', () => {
       expect(rows[0]).toMatchObject({ invoice_ids: [a, b], cancelled_invoice_ids: [b] });
     });
 
+    it('nennt die Monate, in denen noch etwas offen ist, auch rückdatiert', async () => {
+      const r = await rechnung('RG-2026-0118', '2026-09-03', [BEFREIT]);
+      await rechnung('RG-2026-0119', '2026-10-02', [BEFREIT]);
+      await exportieren(users.office, 'therapy', SEPTEMBER);
+      await zahlung(r, 14000, '2026-09-29');
+
+      const { rows } = await asUser<{ monat: string; document_count: number }>(
+        users.office,
+        OFFENE_MONATE,
+        ['therapy'],
+      );
+      expect(rows).toEqual([
+        { monat: SEPTEMBER, document_count: 1 },
+        { monat: '2026-10-01', document_count: 1 },
+      ]);
+      expect((await asUser(users.office, OFFENE_MONATE, ['training'])).rows).toEqual([]);
+    });
+
+    it('lässt zwei gleichzeitige Exporte nacheinander laufen, jedes Dokument einmal', async () => {
+      await rechnung('RG-2026-0120', '2026-09-03', [BEFREIT]);
+      const fehler = await gleichzeitig(
+        { konto: users.office, sql: ERSTELLEN, params: ['therapy', SEPTEMBER] },
+        { konto: users.ownerTherapist, sql: ERSTELLEN, params: ['therapy', SEPTEMBER] },
+      );
+      expect(fehler?.message).toMatch(/nothing new to export/);
+      const { rows } = await asPostgres<{ laeufe: string; dokumente: string }>(
+        `select (select count(*) from public.datev_exports) as laeufe,
+                (select count(*) from public.datev_export_documents) as dokumente`,
+      );
+      expect(rows[0]).toEqual({ laeufe: '1', dokumente: '1' });
+    });
+
     it('verlangt Einstellungen und die Mandantennummer des Bereichs', async () => {
       await rechnung(
         'TR-2026-0002',
@@ -384,7 +428,28 @@ describe('DATEV-Export', () => {
 
       expect((await asUser(fremd.owner, OFFEN, ['therapy', SEPTEMBER])).rows).toEqual([]);
       expect((await asUser(fremd.owner, LAEUFE, ['therapy', SEPTEMBER])).rows).toEqual([]);
+      expect((await asUser(fremd.owner, OFFENE_MONATE, ['therapy'])).rows).toEqual([]);
       await expect(asUser(fremd.owner, LAUF, [id])).rejects.toThrow(/export not found/);
+    });
+
+    it('lässt eine andere Praxis nur ihre eigenen Angaben und Dokumente anfassen', async () => {
+      await rechnung('RG-2026-0121', '2026-09-03', [BEFREIT]);
+      const fremd = await fremdeOrganisation();
+      await asUserCommitted(fremd.owner, SPEICHERN, [4711, 9, null, 'SKR04']);
+
+      const { rows } = await asPostgres<{ organization_id: string; consultant_number: number }>(
+        'select organization_id, consultant_number from public.datev_settings order by 2',
+      );
+      expect(rows).toEqual([
+        { organization_id: organizationId, consultant_number: 1001 },
+        { organization_id: fremd.organizationId, consultant_number: 4711 },
+      ]);
+      await expect(asUser(fremd.owner, ERSTELLEN, ['therapy', SEPTEMBER])).rejects.toThrow(
+        /nothing new to export/,
+      );
+      expect((await offen(users.office, 'therapy', SEPTEMBER)).map((z) => z.kind)).toEqual([
+        'invoice',
+      ]);
     });
 
     it('gibt keiner Anwendungsrolle Tabellenrechte an Läufen und Dokumenten', async () => {

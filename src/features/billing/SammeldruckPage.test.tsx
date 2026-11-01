@@ -77,7 +77,7 @@ describe('Sammeldruck nach dem Lauf (K13)', () => {
     });
     renderWithProviders(
       <SammeldruckPage />,
-      `/abrechnung/druck?rechnungen=${A},${B}&stornos=${B},${A}`,
+      `/abrechnung/druck?rechnungen=${A},${B}&stornos=${A},${B}`,
     );
 
     expect(
@@ -85,8 +85,12 @@ describe('Sammeldruck nach dem Lauf (K13)', () => {
     ).toBeInTheDocument();
     // Die nicht stornierte Rechnung A bekommt kein Stornoblatt.
     expect(screen.getAllByRole('heading', { name: /^Stornierung/ })).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'Alle 4 drucken' })).toBeInTheDocument();
+    // Gezählt wird, was gedruckt wird: zwei Rechnungen und ein Stornoblatt.
+    expect(screen.getByRole('button', { name: 'Alle 3 drucken' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Stornodokument drucken' })).toBeNull();
+    // Das übersprungene Stornoblatt zu A lässt keine leere Seite zurück.
+    const storno = screen.getByRole('heading', { name: 'Stornierung der Rechnung RG-2026-0002' });
+    expect(storno.closest('.print\\:break-before-page')).not.toBeNull();
   });
 
   it('sagt ohne Kennung, wann gedruckt wird', async () => {

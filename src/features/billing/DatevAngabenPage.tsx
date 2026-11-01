@@ -13,6 +13,7 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { alsFormularfehler, type Formularfehler } from '@/lib/formularfehler';
 import { canManageBillingProfile, type CurrentUser } from '@/features/core';
+import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import {
   fetchDatevEinstellungen,
   speichereDatevEinstellungen,
@@ -61,7 +62,7 @@ export function DatevAngabenPage({ user }: { user: CurrentUser }) {
           {(werte) => <Formular vorhanden={werte} />}
         </Abfragezustand>
       ) : (
-        <Statusmeldung ton="warnung">Ändern kann sie die Praxisinhaber:in.</Statusmeldung>
+        <Statusmeldung>Ändern kann sie die Praxisinhaber:in.</Statusmeldung>
       )}
     </>
   );
@@ -70,19 +71,26 @@ export function DatevAngabenPage({ user }: { user: CurrentUser }) {
 function Formular({ vorhanden }: { vorhanden: DatevEinstellungen | null }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [eingabe, setEingabe] = useState<Eingabe>({
+  const [anfang] = useState<Eingabe>(() => ({
     berater: vorhanden ? String(vorhanden.consultant_number) : '',
     therapie: vorhanden?.client_number_therapy ? String(vorhanden.client_number_therapy) : '',
     training: vorhanden?.client_number_training ? String(vorhanden.client_number_training) : '',
     // Keine Vorbelegung: Den Kontenrahmen kennt nur die Steuerberatung (ANN-828).
     rahmen: vorhanden?.chart_of_accounts ?? '',
-  });
+  }));
+  const [eingabe, setEingabe] = useState<Eingabe>(anfang);
   const [fehler, setFehler] = useState<Partial<Record<Feld, string>>>({});
   const [zusammenfassung, setZusammenfassung] = useState<Formularfehler[]>([]);
+
+  const { freigeben, schutz } = useTextverlustschutz({
+    ungespeichert: JSON.stringify(eingabe) !== JSON.stringify(anfang),
+    texte: { ...EINGABETEXTE, bezeichnung: 'Ungespeicherte DATEV-Angaben' },
+  });
 
   const speichern = useMutation({
     mutationFn: (werte: DatevEinstellungen) => speichereDatevEinstellungen(werte),
     onSuccess: async () => {
+      freigeben();
       await queryClient.invalidateQueries({ queryKey: ['datev-einstellungen'] });
       void navigate(ZURUECK);
     },
@@ -158,6 +166,8 @@ function Formular({ vorhanden }: { vorhanden: DatevEinstellungen | null }) {
           {speichern.error.message} Die Eingaben stehen noch im Formular.
         </Statusmeldung>
       ) : null}
+
+      {schutz}
 
       <Formularfuss>
         <Button type="submit" disabled={speichern.isPending}>

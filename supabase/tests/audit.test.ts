@@ -241,6 +241,8 @@ describe('Audit-Lesepfad', () => {
       'get_billable_service_draft',
       // TRK-002: Check-ins eines Verhältnisses (Rollen der Pläne, ANN-351).
       'get_checkins',
+      // Export für die Steuerberatung (ANN-830): owner und office.
+      'get_datev_export',
       // UEB-004: ein Übungsplan (Rollen je Bereich, ANN-298).
       'get_exercise_plan',
       'get_intake_checklist',
@@ -282,6 +284,9 @@ describe('Audit-Lesepfad', () => {
       'list_billable_services',
       'list_call_list',
       'list_care_without_conclusion',
+      'list_datev_exports',
+      'list_datev_open_months',
+      'list_datev_pending',
       'list_day_plan',
       'list_day_route',
       'list_deletion_runs',

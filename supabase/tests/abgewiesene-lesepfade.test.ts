@@ -248,6 +248,13 @@ const FAELLE: Fall[] = [
     'invoicing.read',
   ],
   [
+    'list_datev_open_months',
+    users.therapist,
+    'select * from public.list_datev_open_months($1::text)',
+    ['therapy'],
+    'invoicing.read',
+  ],
+  [
     'get_datev_export',
     users.teamLead,
     'select r from public.get_datev_export($1::uuid) as r where r is not null',
