@@ -355,3 +355,39 @@ describe('Farben der Personen im Teamchat (TEAM-006, ANN-666)', () => {
     }
   });
 });
+
+describe('Flächen je Art des Termins im Kalender (ANN-833)', () => {
+  const oklab = ({ L, C, H }: { L: number; C: number; H: number }) => {
+    const h = (H * Math.PI) / 180;
+    return [L, C * Math.cos(h), C * Math.sin(h)] as const;
+  };
+  const abstand = (a: string, b: string) => {
+    const [l1, a1, b1] = oklab(tokens[a]!);
+    const [l2, a2, b2] = oklab(tokens[b]!);
+    return Math.hypot(l1 - l2, a1 - a2, b1 - b2);
+  };
+  const FLAECHEN = ['termin-training', 'termin-beratung'] as const;
+
+  it.each(FLAECHEN.map((f) => [f]))('traegt jeden Text der Kachel auf %s mit 4,5:1', (flaeche) => {
+    expect(tokens[flaeche], `--color-${flaeche}`).toBeDefined();
+    for (const text of ['ink', 'ink-muted', 'warnung', 'danger', 'positiv', 'accent']) {
+      expect(kontrastverhaeltnis(tokens[text]!, tokens[flaeche]!), text).toBeGreaterThanOrEqual(
+        4.5,
+      );
+    }
+    expect(gamutAbweichung(tokens[flaeche]!)).toBeLessThan(0.002);
+  });
+
+  it('hebt beide vom Weiß der Behandlung und von den Statusflächen ab', () => {
+    for (const flaeche of FLAECHEN) {
+      expect(abstand(flaeche, 'surface'), flaeche).toBeGreaterThanOrEqual(0.06);
+      for (const status of ['accent-soft', 'warnung-soft', 'danger-soft', 'surface-sunken']) {
+        // Mehr als der Schritt von der Fläche zur Vertiefung (0,03).
+        expect(abstand(flaeche, status), `${flaeche} gegen ${status}`).toBeGreaterThanOrEqual(
+          0.035,
+        );
+      }
+    }
+    expect(abstand('termin-training', 'termin-beratung')).toBeGreaterThanOrEqual(0.028);
+  });
+});

@@ -46,6 +46,8 @@ import {
   terminPfad,
 } from '@/lib/termin';
 import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
+import { Personenbild } from '@/components/ui/Personenbild';
+import type { Personenfarbe } from '@/components/ui/personenfarben';
 import type { Zeitband } from '@/lib/zeitband';
 
 /**
@@ -180,6 +182,13 @@ const STATUS_FARBE = {
   kritisch: 'text-danger',
 } as const;
 
+// ANN-833: die Art des Termins als Fläche, zusätzlich zu Zeichen und Wort (WCAG 1.4.1).
+function kachelFlaeche(eintrag: CalendarEntry): string {
+  if (istBeratung(eintrag)) return 'bg-termin-beratung';
+  if (eintrag.kind === 'training') return 'bg-termin-training';
+  return 'bg-surface hover:bg-surface-sunken';
+}
+
 /**
  * Die Linie links an der Kachel sagt den Zustand (Design-Handoff 2026-10-01,
  * Abschnitt 3, letzte Zeile): bestätigt in der Hauptfarbe, erledigt
@@ -254,6 +263,8 @@ export interface GitterSpalte {
   unterTitel?: string;
   /** Hervorhebung des heutigen Tages beziehungsweise der eigenen Person. */
   hervorgehoben?: boolean;
+  /** Die Farbe der Person einer Spalte (ANN-666), als Personenbild neben dem Namen. */
+  farbe?: Personenfarbe | undefined;
   /**
    * Das Wort zur Hervorhebung, sichtbar im Kopf (KAL-B01, KAL-03): „heute" am
    * Tag der Woche, „ich" an der eigenen Spalte. Ein Farbton allein war kaum zu
@@ -745,7 +756,7 @@ export function CalendarGrid({
             {ecke}
           </div>
           {spaltenModell.map((s) => {
-            const beschriftung = (
+            const text = (
               <>
                 <span
                   className={[
@@ -770,6 +781,14 @@ export function CalendarGrid({
                   </span>
                 ) : null}
               </>
+            );
+            const beschriftung = s.farbe ? (
+              <span className="flex min-w-0 items-center gap-1.5">
+                <Personenbild name={s.titel} farbe={s.farbe} groesse="klein" />
+                <span className="flex min-w-0 flex-col">{text}</span>
+              </span>
+            ) : (
+              text
             );
 
             return (
@@ -1468,7 +1487,7 @@ function Kachel({
       ? 'bg-canvas border-dashed'
       : aufGrund
         ? 'bg-canvas'
-        : 'bg-surface hover:bg-surface-sunken',
+        : kachelFlaeche(eintrag),
     // Sichtbare Rueckmeldung auf den langen Druck: sonst sieht Warten aus
     // wie nichts.
     wartet ? 'scale-102' : '',

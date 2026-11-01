@@ -1011,6 +1011,10 @@ Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 **Regel.** Laufende Pakete und Abos als Mindestwert, Pakete ohne Anschluss als Höchstwert. Handlungen: zu den Trainingskund:innen, Verlängerung ansprechen (dieselbe Liste, bis es eine eigene gibt), fällige Abo-Monate erfassen. **Grundlage.** ANN-155; `IDEA-PRX-025`. **Anker.** `ANGEBOTSKENNZAHLEN` in `src/features/billing/statistics/kennzahlen.ts`.
 
+### ANN-833 — Kalender: Farbe je Art des Termins und je Person
+Technik · offen · 2026-11-01 · — · — · Wiedervorlage: —\
+**Regel.** Die Kachel trägt die Art als Fläche: Training blau, Ernährungsberatung violett, Behandlung weiß; der Zustand geht vor (abgesagt, Fehlzeit auf dem Grund). Hausbesuch, Praxis und Video bleiben Wort. Die Spalte einer Person trägt deren Teamchat-Farbe als Bild neben dem Namen (ANN-666). Farbe nie allein (WCAG 1.4.1). **Grundlage.** `IDEA-PRX-021`; DESIGN.md Grundsatz 2. **Anker.** `kachelFlaeche` in `CalendarGrid.tsx`.
+
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
 | --- | --- | --- | --- |
