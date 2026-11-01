@@ -420,7 +420,9 @@
           "id": "frb-epic-004",
           "name": "FRB-EPIC-004 Skalen in der Verlaufsdoku",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-11-01",
+          "nachweis": "Branch claude/gallant-meitner-vs1dp4"
         },
         {
           "id": "frb-epic-005",

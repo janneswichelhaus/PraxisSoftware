@@ -973,7 +973,7 @@ Praxisprozess · offen · 2026-10-21 · — · — · Wiedervorlage: —\
 
 ### ANN-823 — Skalen an der Doku: Veränderungsfrage ab Termin 2 der Grundlage, gespeichert erst mit „Übernehmen“
 Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
-**Regel.** Die Schreibseite bietet NRS und Veränderungsfrage zum Antippen; die Veränderungsfrage steht ab dem zweiten Termin der Grundlage oben und offen, ohne bekannte Position immer. Erst „Übernehmen“ speichert je Skala eine abgeschlossene Erhebung mit dem Tag des Termins und fügt eine Zeile ein; ein Fehlgriff davor braucht keine Korrektur. **Grundlage.** Roadmap FRB-EPIC-004, Jannes 2026-09-28; ANN-103. **Anker.** `SKALEN_AM_TERMIN` in `skalenAmTermin.ts`.
+**Regel.** Die Veränderungsfrage steht ab dem zweiten Termin der Grundlage oben und offen, sonst immer. Erst „Übernehmen“ speichert je Skala eine abgeschlossene Erhebung mit dem Tag des Termins und fügt eine Zeile ein; ein Fehlgriff davor kostet keine Korrektur. **Grundlage.** Roadmap FRB-EPIC-004, Jannes 2026-09-28; ANN-103. **Anker.** `SKALEN_AM_TERMIN` in `skalenAmTermin.ts`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
