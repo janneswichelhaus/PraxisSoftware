@@ -6,13 +6,13 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**FRB-EPIC-004 Skalen antippen** liegt als PR vor: NRS und Veränderungsfrage aktiv (Praxisvorgabe,
-ANN-099), an der Schreibseite unter „+ Skalen“, gespeichert als Erhebung (ANN-823). Dazu DATEV in
-PRX-EPIC-004 und der VVT-Entwurf (G14). Offen: BEF-201, BEF-202.
+**KI-EPIC-001 fertig** liegt als PR vor: Inhaltstreue des Diktats durch Bauart im Gateway (ANN-824),
+„Mit Diktat“ am Eintrag auf jedem Schreibweg (ANN-825), E13 überbrückt (ANN-826, ANN-827); offen
+bleibt nur der Anbieter (C6, Block 11). FRB-EPIC-004 ist gemergt (#342). Offen: BEF-201, BEF-202.
 
 ## Danach
 
-Bildsichtung von #334 bis #337. Nach Jannes 2026-11-01 der volle Umfang bis M2, im November: KI-EPIC-001 fertigstellen,
+Bildsichtung von #334 bis #337. Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
 PRX-EPIC-004 mit DATEV-Export, ERN-EPIC-004 bis -006, ORG-EPIC-001, Schritte 5 bis 7 mit Jannes'
 Leinwänden, UI-003; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14 parallel**:
 nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA, zuletzt die
@@ -45,5 +45,5 @@ Nachweistabelle.
 
 ## Letzte Session
 
-01.11.2026, Branch `claude/gallant-meitner-vs1dp4`. Lokal: `git pull`, neue Migration
-(`questionnaire_definitions`).
+01.11.2026, Branch `claude/kind-mayer-smn76m`. Lokal: `git pull`, neue Migration
+(`20261225233000_mit_diktat.sql`).

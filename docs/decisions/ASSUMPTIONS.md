@@ -981,7 +981,7 @@ Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 
 ### ANN-824 — Diktat: Der Anbieter ordnet nur Sätze zu, den Vorschlag setzt der Gateway wörtlich zusammen
 Technik · offen · 2026-11-01 · — · — · Wiedervorlage: Anbieterprüfung (C6)\
-**Regel.** Der Gateway zerlegt das Transkript in Sätze, ein Adapter liefert je Satz nur einen Abschnittstitel. Den Vorschlag setzt der Gateway aus den Sätzen im Wortlaut zusammen, der Browser zeigt ihn nur wortgleich zum Transkript. Die Spracherkennung prüft C6. **Grundlage.** §6.3; ADR-006 Punkt 8; E13. **Anker.** `setzeZusammen` in `inhaltstreue.ts`, `wortgetreu` in `src/lib/ki/gateway.ts`.
+**Regel.** Der Gateway zerlegt das Transkript in Sätze (nicht nach „2.“, „z. B.“), ein Adapter liefert je Satz nur einen Titel. Der Gateway setzt den Vorschlag aus den Sätzen im Wortlaut zusammen, der Browser zeigt nur satzgleiche. Spracherkennung: C6. **Grundlage.** §6.3; ADR-006 Punkt 8; E13. **Anker.** `setzeZusammen` in `inhaltstreue.ts`, `satzgetreu` in `src/lib/ki/gateway.ts`.
 
 ### ANN-825 — „Mit Diktat“ am Eintrag: gesetzt mit der Übernahme, bleibt stehen
 Technik · offen · 2026-11-01 · — · — · Wiedervorlage: —\

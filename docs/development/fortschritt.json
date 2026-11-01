@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-30",
+  "stand": "2026-11-01",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -1371,7 +1371,10 @@
           "id": "ki-epic-001",
           "name": "KI-EPIC-001 Gateway und Sprachdokumentation",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-11-01",
+          "nachweis": "#243, Branch claude/kind-mayer-smn76m",
+          "vermerk": "Inhaltstreue durch Bauart, „Mit Diktat“ am Eintrag, E13 überbrückt (ANN-824 bis ANN-827); Anbieter (C6) in Block 11"
         },
         {
           "id": "ki-epic-002",

@@ -4,12 +4,22 @@
 
 import type { Abschnitt } from './typen.ts';
 
-/** Satzweise - getrennt wird nur an Leerraum nach `.`, `!`, `?` oder `…`. */
+// Ein Punkt nach Zahl, Einzelbuchstabe oder gängiger Abkürzung beendet keinen Satz („2.“,
+// „z. B.“); lieber ein Satz zu lang als eine Aussage auf zwei Abschnitte verteilt.
+const KEIN_SATZENDE = /(?:^|\s)(?:\d+|\p{L}|ca|bzw|ggf|evtl|vgl|inkl|usw|Dr|Nr)\.$/iu;
+
+/** Satzweise - getrennt wird an Leerraum nach `.`, `!`, `?` oder `…`, außer nach `KEIN_SATZENDE`. */
 export function saetze(text: string): string[] {
-  return text
-    .split(/(?<=[.!?…])\s+/u)
-    .map((satz) => satz.trim())
-    .filter((satz) => satz !== '');
+  const liste: string[] = [];
+  for (const teil of text.split(/(?<=[.!?…])\s+/u)) {
+    const satz = teil.trim();
+    if (satz === '') continue;
+    const vorig = liste.at(-1);
+    if (vorig !== undefined && KEIN_SATZENDE.test(vorig))
+      liste[liste.length - 1] = `${vorig} ${satz}`;
+    else liste.push(satz);
+  }
+  return liste;
 }
 
 /**

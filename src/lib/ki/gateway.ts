@@ -114,25 +114,34 @@ const erfolgSchema = z
     abschnitte: z.array(abschnittSchema).max(DIKTAT_ABSCHNITTE.length),
     quelle: z.enum(['anbieter', 'nachbildung']),
   })
-  // ANN-824: Der Vorschlag besteht aus genau den Wörtern des Transkripts; was etwas
+  // ANN-824: Der Vorschlag besteht aus genau den Sätzen des Transkripts; was etwas
   // ergänzt, weglässt oder ändert, zeigt die Seite nicht - auch nicht vom eigenen Gateway.
-  .refine((antwort) => wortgetreu(antwort.transkript, antwort.abschnitte), 'nicht wortgetreu');
+  .refine((antwort) => satzgetreu(antwort.transkript, antwort.abschnitte), 'nicht satzgetreu');
 
-/** Die Wörter eines Textes, Satzzeichen eingeschlossen, sortiert. */
-function woerter(text: string): string[] {
-  return text
-    .split(/\s+/u)
-    .filter((wort) => wort !== '')
-    .sort();
+// Dieselbe Satzregel wie `saetze` im Gateway (`inhaltstreue.ts`); `vertrag.test.ts` hält beide gleich.
+const KEIN_SATZENDE = /(?:^|\s)(?:\d+|\p{L}|ca|bzw|ggf|evtl|vgl|inkl|usw|Dr|Nr)\.$/iu;
+
+/** Die Sätze eines Textes nach der Regel des Gateways. */
+export function saetze(text: string): string[] {
+  const liste: string[] = [];
+  for (const teil of text.split(/(?<=[.!?…])\s+/u)) {
+    const satz = teil.trim();
+    if (satz === '') continue;
+    const vorig = liste.at(-1);
+    if (vorig !== undefined && KEIN_SATZENDE.test(vorig))
+      liste[liste.length - 1] = `${vorig} ${satz}`;
+    else liste.push(satz);
+  }
+  return liste;
 }
 
-/** Stehen in den Abschnitten genau die Wörter des Transkripts, jedes so oft wie dort? */
-export function wortgetreu(transkript: string, abschnitte: readonly { text: string }[]): boolean {
-  const gesprochen = woerter(transkript);
-  const vorgeschlagen = woerter(abschnitte.map((abschnitt) => abschnitt.text).join(' '));
+/** Stehen in den Abschnitten genau die Sätze des Transkripts, jeder so oft wie dort? */
+export function satzgetreu(transkript: string, abschnitte: readonly { text: string }[]): boolean {
+  const gesprochen = saetze(transkript).sort();
+  const vorgeschlagen = abschnitte.flatMap((abschnitt) => saetze(abschnitt.text)).sort();
   return (
     gesprochen.length === vorgeschlagen.length &&
-    gesprochen.every((wort, stelle) => wort === vorgeschlagen[stelle])
+    gesprochen.every((satz, stelle) => satz === vorgeschlagen[stelle])
   );
 }
 

@@ -13,8 +13,8 @@ const {
   diktatAufbereiten,
   diktatVerfuegbar,
   unverstaendlicheStellen,
+  satzgetreu,
   vorschlagAlsText,
-  wortgetreu,
 } = await import('./gateway');
 
 /**
@@ -174,13 +174,23 @@ describe('diktatAufbereiten', () => {
     ).toMatchObject({ ok: false, fehler: 'function_unavailable' });
   });
 
-  it('prüft die Wortgleichheit unabhängig von Abschnitt und Zeilenumbruch', () => {
+  it('prüft die Sätze unabhängig von Abschnitt und Zeilenumbruch', () => {
+    const transkript = 'Keine Schwellung.\nBeugung rechts 110 Grad, links 135 Grad.';
     expect(
-      wortgetreu('Keine Schwellung.\nKnie rechts.', [{ text: 'Knie rechts. Keine Schwellung.' }]),
+      satzgetreu(transkript, [
+        { text: 'Beugung rechts 110 Grad, links 135 Grad.' },
+        { text: 'Keine Schwellung.' },
+      ]),
     ).toBe(true);
-    expect(wortgetreu('Knie rechts.', [{ text: 'Knie links.' }])).toBe(false);
-    expect(wortgetreu('rechts rechts', [{ text: 'rechts' }])).toBe(false);
-    expect(wortgetreu('', [])).toBe(true);
+    // Vertauschte Zahlen sind dieselben Wörter, aber ein anderer Satz.
+    expect(
+      satzgetreu(transkript, [
+        { text: 'Keine Schwellung. Beugung rechts 135 Grad, links 110 Grad.' },
+      ]),
+    ).toBe(false);
+    expect(satzgetreu('Knie rechts.', [{ text: 'Knie links.' }])).toBe(false);
+    expect(satzgetreu('Rechts. Rechts.', [{ text: 'Rechts.' }])).toBe(false);
+    expect(satzgetreu('', [])).toBe(true);
   });
 
   it('nimmt eine Aufnahme ohne verständliches Wort als leeren Vorschlag an', async () => {

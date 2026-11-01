@@ -44,6 +44,13 @@ const FAELLE: readonly Fall[] = [
     erwartet: ['Befund', 'Befund', 'Behandlung', 'Plan'],
   },
   {
+    name: 'Ordnungszahl und Abkürzung trennen keinen Satz',
+    transkript:
+      'Patientin sagt, seit der 2. Behandlung kein Schmerz mehr. Beugung ca. 120 Grad, z. B. im Sitzen.',
+    erhalten: ['seit der 2. Behandlung kein Schmerz mehr', 'ca. 120 Grad, z. B. im Sitzen'],
+    erwartet: ['Angaben der Patient:in', 'Befund'],
+  },
+  {
     name: 'Ohne Satzzeichen',
     transkript: 'Schulter rechts Abduktion 90 Grad schmerzfrei',
     erhalten: ['Abduktion 90 Grad'],
@@ -127,6 +134,11 @@ describe('Inhaltstreue: was ein Adapter liefern kann', () => {
       'Treppe?',
       'Nein…',
       'gut',
+    ]);
+    expect(saetze('Seit der 2. Behandlung besser. Z. B. Brücke. Keine Schwellung.')).toEqual([
+      'Seit der 2. Behandlung besser.',
+      'Z. B. Brücke.',
+      'Keine Schwellung.',
     ]);
     expect(saetze('   ')).toEqual([]);
   });

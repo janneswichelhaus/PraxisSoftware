@@ -906,5 +906,11 @@ begin
     raise exception 'export_patient_record: Stelle für das Merkmal nicht gefunden';
   end if;
   execute v_neu;
+  -- Wer die Funktion später aus der Basis neu anlegt, findet den Hinweis am Kommentar.
+  execute format(
+    'comment on function public.export_patient_record(uuid) is %L',
+    coalesce(obj_description('public.export_patient_record(uuid)'::regprocedure, 'pg_proc'), '')
+      || ' Die Eintraege der Behandlungsdokumentation tragen das Merkmal dictated (ANN-825, ergaenzt in 20261225233000_mit_diktat.sql).'
+  );
 end;
 $$;

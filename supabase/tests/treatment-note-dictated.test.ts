@@ -5,7 +5,6 @@ import {
   asPostgres,
   asUser,
   asUserCommitted,
-  fremdeOrganisation,
   resetDatabaseOhneTermine,
   tagInTagen,
 } from './helpers/db';
@@ -92,7 +91,6 @@ async function fehlercode(p: Promise<unknown>): Promise<string> {
 
 beforeAll(async () => {
   await resetDatabaseOhneTermine();
-  await fremdeOrganisation();
 });
 
 describe('Merkmal „mit Diktat“: Schreibwege', () => {
@@ -284,6 +282,10 @@ describe('Merkmal „mit Diktat“: Lesen und Rechte', () => {
     const eintraege = rows[0]!.daten.tabellen.treatment_notes;
     expect(eintraege.find((n) => n['id'] === id)?.['dictated']).toBe(true);
     expect(eintraege.every((n) => typeof n['dictated'] === 'boolean')).toBe(true);
+    const { rows: kommentar } = await asPostgres<{ text: string }>(
+      `select obj_description('public.export_patient_record(uuid)'::regprocedure, 'pg_proc') as text`,
+    );
+    expect(kommentar[0]!.text).toContain('Merkmal dictated');
   });
 
   it('lässt es von keiner Rolle ohne Schreibrecht und keinem Plattformkonto setzen', async () => {
@@ -297,14 +299,69 @@ describe('Merkmal „mit Diktat“: Lesen und Rechte', () => {
     expect((await zeile(id)).dictated).toBe(false);
   });
 
-  it('setzt es an keinem Eintrag einer anderen Organisation', async () => {
-    const fremd = await fremdeOrganisation();
-    const id = await entwurf(false);
-    const vorher = await stand('treatment_notes', id);
-    expect(await fehlercode(asUser(fremd.owner, AENDERN, [id, vorher, TEXT, true]))).not.toBe(
-      'kein Fehler',
+  it('setzt es an keinem Eintrag und keinem Termin einer anderen Organisation', async () => {
+    const org = '22222222-2222-4222-8222-0000000000e7';
+    const thea = '11111111-1111-4111-8111-0000000000e7';
+    const person = '44444444-4444-4444-8444-0000000000e7';
+    const patientPerson = '44444444-4444-4444-8444-0000000000e8';
+    const staff = '55555555-5555-4555-8555-0000000000e7';
+    const patient = '66666666-6666-4666-8666-0000000000e7';
+    await asPostgres(`
+      insert into auth.users (id, email, aud, role)
+        values ('${thea}', 'thea.diktat@praxis.invalid', 'authenticated', 'authenticated');
+      insert into public.organizations (id, name, time_zone)
+        values ('${org}', 'Test Praxis Diktat', 'Europe/Berlin');
+      insert into public.persons (id, organization_id, given_name, family_name) values
+        ('${person}', '${org}', 'Thea', 'Fremd'), ('${patientPerson}', '${org}', 'Fritz', 'Fremd');
+      insert into public.staff_members (id, organization_id, person_id)
+        values ('${staff}', '${org}', '${person}');
+      insert into public.patients (id, organization_id, person_id, status)
+        values ('${patient}', '${org}', '${patientPerson}', 'active');
+      insert into public.user_profiles (id, organization_id, person_id, display_name)
+        values ('${thea}', '${org}', '${person}', 'Thea Fremd');
+      insert into public.user_roles (user_id, organization_id, role_key)
+        values ('${thea}', '${org}', 'therapist');
+    `);
+    const { rows: t } = await asUserCommitted<{ id: string }>(thea, TERMIN_ANLEGEN, [
+      patient,
+      staff,
+      'video',
+      tagInTagen(400),
+      '09:00',
+      '10:00',
+      null,
+    ]);
+    const fremderTermin = t[0]!.id;
+    const { rows: n } = await asUserCommitted<{ id: string }>(thea, ANLEGEN, [
+      fremderTermin,
+      'Synthetisch: fremde Praxis.',
+      false,
+    ]);
+    const fremd = n[0]!.id;
+    await asUserCommitted(thea, FINALISIEREN, [fremd, await stand('treatment_notes', fremd)]);
+    const stand_ = await stand('treatment_notes', fremd);
+
+    const versuche = [
+      () => asUser(users.therapist, ANLEGEN, [fremderTermin, TEXT, true]),
+      () => asUser(users.therapist, AENDERN, [fremd, stand_, TEXT, true]),
+      () => asUser(users.therapist, KORRIGIEREN, [fremd, stand_, TEXT, 'Synthetisch: fremd', true]),
+      () => asUser(users.therapist, NACHTRAG, [fremd, TEXT, true]),
+      () =>
+        asUser(users.therapist, SYNC, [
+          randomUUID(),
+          fremderTermin,
+          TEXT,
+          '2026-10-12T08:15:00Z',
+          true,
+        ]),
+    ];
+    for (const versuch of versuche) expect(await fehlercode(versuch())).toBe('P0002');
+    expect((await zeile(fremd)).dictated).toBe(false);
+    const { rows: anzahl } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.treatment_notes where appointment_id = $1',
+      [fremderTermin],
     );
-    expect((await zeile(id)).dictated).toBe(false);
+    expect(anzahl[0]!.n).toBe(1);
   });
 
   it('ist ohne Anmeldung nicht aufrufbar', async () => {
