@@ -3,7 +3,7 @@
 
 create function app.ending_training_packages_until(p_organization_id uuid)
   returns date
-  language sql stable security definer
+  language sql stable
   set search_path = ''
 as $$
   -- ANN-831: vier Wochen einschliesslich heute, genug Vorlauf fuer ein Gespraech am Termin.
@@ -11,7 +11,7 @@ as $$
 $$;
 
 comment on function app.ending_training_packages_until(p_organization_id uuid) is
-  'Letzter Tag des Fensters fuer Trainingspakete ohne Anschluss: heute in der Zeitzone der Praxis plus 27 Tage, vier Wochen einschliesslich heute (ANN-831). Ohne Rollenpruefung: nur aus Funktionen mit eigener Pruefung aufrufen.';
+  'Letzter Tag des Fensters fuer Trainingspakete ohne Anschluss: heute in der Zeitzone der Praxis plus 27 Tage, vier Wochen einschliesslich heute (ANN-831). Ohne Rollenpruefung und ohne SECURITY DEFINER: laeuft nur mit den Rechten einer aufrufenden Funktion, die selbst prueft.';
 
 revoke all on function app.ending_training_packages_until(uuid) from public, anon, authenticated;
 
@@ -22,7 +22,7 @@ create function app.ending_training_packages(p_organization_id uuid)
     catalog_item_id          uuid,
     ends_on                  date
   )
-  language sql stable security definer
+  language sql stable
   set search_path = ''
 as $$
   with fenster as (
@@ -45,7 +45,7 @@ as $$
 $$;
 
 comment on function app.ending_training_packages(p_organization_id uuid) is
-  'Trainingspakete ohne Anschluss: enden zwischen heute und app.ending_training_packages_until, ohne spaeter beginnendes Paket im selben Verhaeltnis, Verhaeltnis aktiv (ANN-831). Einzige Stelle der Regel; get_offer_statistics und list_ending_training_packages lesen daraus. Ohne Rollenpruefung: nur aus Funktionen mit eigener Pruefung aufrufen.';
+  'Trainingspakete ohne Anschluss: enden zwischen heute und app.ending_training_packages_until, ohne spaeter beginnendes Paket im selben Verhaeltnis, Verhaeltnis aktiv (ANN-831). Einzige Stelle der Regel; get_offer_statistics und list_ending_training_packages lesen daraus. Ohne Rollenpruefung und ohne SECURITY DEFINER: laeuft nur mit den Rechten einer aufrufenden Funktion, die selbst prueft.';
 
 revoke all on function app.ending_training_packages(uuid) from public, anon, authenticated;
 
