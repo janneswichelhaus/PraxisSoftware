@@ -89,10 +89,9 @@ describe('Kartenterminal im Browser (ANN-837)', () => {
 
   it('sagt bei unklarem Ausgang, am Terminal nachzusehen', async () => {
     invoke.mockResolvedValue({ data: null, error: new Error('weg') });
-    expect(await kassiereMitKarte(RECHNUNG, 100)).toMatchObject({
-      ok: false,
-      satz: expect.stringMatching(/am Terminal nachsehen/) as unknown as string,
-    });
+    const unklar = await kassiereMitKarte(RECHNUNG, 100);
+    expect(unklar.ok).toBe(false);
+    expect(unklar.ok ? '' : unklar.satz).toMatch(/am Terminal nachsehen/);
     invoke.mockRejectedValue(new Error('Netz'));
     expect(await kassiereMitKarte(RECHNUNG, 100)).toEqual({
       ok: false,

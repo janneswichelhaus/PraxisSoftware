@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import type * as LageApi from './abrechnungslage-api';
+import type * as Billing from '@/features/billing';
 import { renderWithProviders, testAppointment } from '@/test-utils';
 import { TileGrid } from '@/components/ui/Tile';
 
@@ -35,7 +36,7 @@ let terminal: { data?: { verfuegbar: boolean; nachbildung: boolean } } = {
   data: { verfuegbar: false, nachbildung: false },
 };
 vi.mock('@/features/billing', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/features/billing')>()),
+  ...(await importOriginal<typeof Billing>()),
   useKartenterminal: () => terminal,
 }));
 

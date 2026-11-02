@@ -27,7 +27,7 @@ describe('Prüfen und Buchen über die Datenbank', () => {
       Authorization: 'Bearer t',
       'Content-Type': 'application/json',
     });
-    expect(JSON.parse(String(optionen.body))).toEqual({
+    expect(JSON.parse(optionen.body as string)).toEqual({
       p_invoice_id: RECHNUNG,
       p_amount_cents: 14000,
     });
@@ -71,7 +71,7 @@ describe('Prüfen und Buchen über die Datenbank', () => {
     });
     const [adresse, optionen] = abrufen.mock.calls[0] as unknown as [string, RequestInit];
     expect(adresse).toBe('http://instanz.test/rest/v1/rpc/record_card_payment');
-    expect(JSON.parse(String(optionen.body))).toEqual({
+    expect(JSON.parse(optionen.body as string)).toEqual({
       p_invoice_id: RECHNUNG,
       p_amount_cents: 14000,
       p_terminal_transaction: 'mock-1',

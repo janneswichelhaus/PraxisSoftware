@@ -28,7 +28,8 @@ vi.mock('./kartenterminal-api', async (importOriginal) => ({
     kassiereMitKarte(id, cent) as Promise<TerminalApi.Kassierergebnis>,
 }));
 
-const { KartenzahlungPage, offeneRechnungen } = await import('./KartenzahlungPage');
+const { KartenzahlungPage } = await import('./KartenzahlungPage');
+const { offeneRechnungen } = await import('./offeneRechnungen');
 
 function rechnung(teil: Partial<BillingApi.RechnungDerAkte> = {}): BillingApi.RechnungDerAkte {
   return {

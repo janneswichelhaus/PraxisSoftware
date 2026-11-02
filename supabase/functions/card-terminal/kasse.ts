@@ -16,13 +16,17 @@ export type Buchung =
   { readonly ok: true; readonly zahlung: string } | ({ readonly ok: false } & Kassenfehler);
 
 export interface Kasse {
-  pruefe(authorization: string, rechnung: string, betragCent: number): Promise<Vorpruefung>;
-  buche(
+  readonly pruefe: (
+    authorization: string,
+    rechnung: string,
+    betragCent: number,
+  ) => Promise<Vorpruefung>;
+  readonly buche: (
     authorization: string,
     rechnung: string,
     betragCent: number,
     transaktion: string,
-  ): Promise<Buchung>;
+  ) => Promise<Buchung>;
 }
 
 interface Optionen {
@@ -82,10 +86,9 @@ export function erstelleKasse({
     if (antwort.status === 401) return { ok: false, grund: 'abgelehnt' };
     if (antwort.status === 403) return { ok: false, grund: 'verweigert' };
     if (antwort.status === 409) return { ok: false, grund: 'schon_gebucht' };
-    const meldung =
-      typeof wert === 'object' && wert !== null
-        ? String((wert as { message?: unknown }).message ?? '')
-        : '';
+    const roh =
+      typeof wert === 'object' && wert !== null ? (wert as { message?: unknown }).message : null;
+    const meldung = typeof roh === 'string' ? roh : '';
     const treffer = ZAHLBARKEIT.find(([muster]) => muster.test(meldung));
     if (antwort.status === 400 && treffer)
       return { ok: false, grund: 'nicht_zahlbar', detail: treffer[1] };
@@ -93,7 +96,7 @@ export function erstelleKasse({
   }
 
   return {
-    async pruefe(authorization, rechnung, betragCent) {
+    pruefe: async (authorization, rechnung, betragCent) => {
       const r = await rufe(authorization, 'card_payment_preflight', {
         p_invoice_id: rechnung,
         p_amount_cents: betragCent,
@@ -103,7 +106,7 @@ export function erstelleKasse({
         ? { ok: true, waehrung: r.wert }
         : { ok: false, grund: 'nicht_pruefbar' };
     },
-    async buche(authorization, rechnung, betragCent, transaktion) {
+    buche: async (authorization, rechnung, betragCent, transaktion) => {
       const r = await rufe(authorization, 'record_card_payment', {
         p_invoice_id: rechnung,
         p_amount_cents: betragCent,

@@ -20,15 +20,9 @@ import { centZuEingabe, formatEuro, parseEuroZuCent } from '@/lib/geld';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { fetchRechnungenDerAkte, type RechnungDerAkte } from './api';
 import { kassiereMitKarte, useKartenterminal, type Kassierergebnis } from './kartenterminal-api';
+import { offeneRechnungen } from './offeneRechnungen';
 
 const STANDARD = '/abrechnung';
-
-/** Was sich jetzt mit Karte bezahlen lässt: ausgestellt, nicht storniert, mit offenem Betrag. */
-export function offeneRechnungen(rechnungen: readonly RechnungDerAkte[]): RechnungDerAkte[] {
-  return rechnungen
-    .filter((r) => r.status === 'issued' && !r.cancelled && r.outstanding_cents > 0)
-    .sort((a, b) => (a.issued_on ?? '').localeCompare(b.issued_on ?? ''));
-}
 
 /**
  * Kassieren am Hausbesuch (ANN-837), Seitentyp „Formular“: die offenen Rechnungen der Person, der Betrag
