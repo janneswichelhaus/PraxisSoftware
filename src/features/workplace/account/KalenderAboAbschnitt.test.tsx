@@ -31,6 +31,7 @@ const { KalenderAboAbschnitt } = await import('./KalenderAboAbschnitt');
 
 const ADRESSE = 'Zz09_-'.padEnd(43, 'q');
 const HTTPS = `https://instanz.test/functions/v1/calendar-feed/${ADRESSE}.ics`;
+const VERBINDUNG = /Bitte die Verbindung prüfen und erneut versuchen\./;
 
 describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
   beforeEach(() => {
@@ -41,53 +42,99 @@ describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
     fetchAboDienst.mockResolvedValue(true);
   });
 
-  it('erzeugt die Adresse und zeigt sie genau einmal, zum Kopieren und Öffnen', async () => {
+  it('erstellt den Link und zeigt ihn genau einmal, zum Kopieren und Öffnen', async () => {
     const nutzer = userEvent.setup();
     fetchEigenesAbo.mockResolvedValueOnce(null).mockResolvedValue({ seit: '2026-11-02T17:00:00Z' });
     erzeugeAbo.mockResolvedValue(ADRESSE);
     const schreiben = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
     renderWithProviders(<KalenderAboAbschnitt />);
 
-    expect(await screen.findByText(/nur Uhrzeit und Art\./)).toBeInTheDocument();
-    await nutzer.click(screen.getByRole('button', { name: 'Abo-Adresse erzeugen' }));
+    expect(screen.getByText('Eigene Termine im Kalender des Telefons.')).toBeInTheDocument();
+    await nutzer.click(await screen.findByRole('button', { name: 'Abo-Link erstellen' }));
 
-    expect(await screen.findByLabelText('Abo-Adresse')).toHaveValue(HTTPS);
-    expect(screen.getByText(/Die Adresse steht nur jetzt hier\./)).toBeInTheDocument();
+    expect(await screen.findByLabelText('Abo-Link')).toHaveValue(HTTPS);
+    expect(screen.getByText(/Der Link steht nur jetzt hier\./)).toBeInTheDocument();
+    expect(screen.queryByText(/Das alte Abo/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Im Kalender öffnen' })).toHaveAttribute(
       'href',
       HTTPS.replace('https://', 'webcal://'),
     );
-    // Gleich nach dem Erzeugen wäre „Neue Adresse erzeugen“ doppelt.
-    expect(screen.queryByRole('button', { name: 'Neue Adresse erzeugen' })).toBeNull();
-    await nutzer.click(screen.getByRole('button', { name: 'Adresse kopieren' }));
+    // Gleich nach dem Erstellen wäre „Neuen Link erstellen“ doppelt.
+    expect(screen.queryByRole('button', { name: 'Neuen Link erstellen' })).toBeNull();
+    await nutzer.click(screen.getByRole('button', { name: 'Link kopieren' }));
     expect(schreiben).toHaveBeenCalledWith(HTTPS);
     expect(await screen.findByText('Kopiert.')).toBeInTheDocument();
     expect(erzeugeAbo).toHaveBeenCalledTimes(1);
   });
 
-  it('zeigt bei bestehendem Abo nur das Datum, nie die Adresse', async () => {
+  it('zeigt bei bestehendem Abo nur das Datum, nie den Link', async () => {
     fetchEigenesAbo.mockResolvedValue({ seit: '2026-11-02T17:00:00Z' });
     renderWithProviders(<KalenderAboAbschnitt />);
-    expect(await screen.findByText(/Abo aktiv seit 02\.11\.2026\./)).toBeInTheDocument();
-    expect(screen.queryByLabelText('Abo-Adresse')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Abo-Adresse erzeugen' })).toBeNull();
+    expect(await screen.findByText('Link erstellt am 02.11.2026.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Abo-Link')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Abo-Link erstellen' })).toBeNull();
   });
 
-  it('erzeugt eine neue Adresse erst nach der Rückfrage', async () => {
+  it('erstellt einen neuen Link erst nach der Rückfrage und sagt, was mit dem alten Abo ist', async () => {
     const nutzer = userEvent.setup();
     fetchEigenesAbo.mockResolvedValue({ seit: '2026-11-02T17:00:00Z' });
     erzeugeAbo.mockResolvedValue(ADRESSE);
     renderWithProviders(<KalenderAboAbschnitt />);
 
-    await nutzer.click(await screen.findByRole('button', { name: 'Neue Adresse erzeugen' }));
-    const frage = screen.getByRole('group', { name: 'Neue Adresse erzeugen' });
-    expect(within(frage).getByText(/Die bisherige Adresse gilt danach nicht mehr\./)).toBeVisible();
+    await nutzer.click(await screen.findByRole('button', { name: 'Neuen Link erstellen' }));
+    const frage = screen.getByRole('group', { name: 'Neuen Link erstellen' });
+    expect(within(frage).getByText(/Der bisherige Link gilt danach nicht mehr/)).toBeVisible();
     expect(erzeugeAbo).not.toHaveBeenCalled();
-    await nutzer.click(within(frage).getByRole('button', { name: 'Neue Adresse erzeugen' }));
-    expect(await screen.findByLabelText('Abo-Adresse')).toHaveValue(HTTPS);
+    await nutzer.click(within(frage).getByRole('button', { name: 'Neuen Link erstellen' }));
+    expect(await screen.findByLabelText('Abo-Link')).toHaveValue(HTTPS);
+    expect(
+      screen.getByText(/Das alte Abo im Kalender des Telefons bleibt leer stehen/),
+    ).toBeVisible();
   });
 
-  it('beendet das Abo nach der Rückfrage und bietet dann wieder das Erzeugen an', async () => {
+  it('sagt, wenn der neue Link am Server gilt, die Antwort aber nicht ankam', async () => {
+    const nutzer = userEvent.setup();
+    fetchEigenesAbo
+      .mockResolvedValueOnce({ seit: '2026-11-02T17:00:00Z' })
+      .mockResolvedValue({ seit: '2026-11-03T08:00:00Z' });
+    erzeugeAbo.mockRejectedValue(new Error('Netz weg'));
+    renderWithProviders(<KalenderAboAbschnitt />);
+
+    await nutzer.click(await screen.findByRole('button', { name: 'Neuen Link erstellen' }));
+    const frage = screen.getByRole('group', { name: 'Neuen Link erstellen' });
+    await nutzer.click(within(frage).getByRole('button', { name: 'Neuen Link erstellen' }));
+    expect(
+      await within(frage).findByText(/Der neue Link kam nicht an, der bisherige gilt schon nicht/),
+    ).toBeVisible();
+  });
+
+  it('sagt beim ersten Erstellen, wenn der Link angelegt ist, aber nicht ankam', async () => {
+    const nutzer = userEvent.setup();
+    fetchEigenesAbo.mockResolvedValueOnce(null).mockResolvedValue({ seit: '2026-11-02T17:00:00Z' });
+    erzeugeAbo.mockRejectedValue(new Error('Netz weg'));
+    renderWithProviders(<KalenderAboAbschnitt />);
+
+    await nutzer.click(await screen.findByRole('button', { name: 'Abo-Link erstellen' }));
+    expect(
+      await screen.findByText('Der Link kam nicht an. Bitte einen neuen erstellen.'),
+    ).toBeVisible();
+    expect(screen.getByText('Link erstellt am 02.11.2026.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Neuen Link erstellen' })).toBeEnabled();
+  });
+
+  it('meldet ein gescheitertes Erstellen ohne Änderung am Server und lässt es erneut versuchen', async () => {
+    const nutzer = userEvent.setup();
+    fetchEigenesAbo.mockResolvedValue(null);
+    erzeugeAbo.mockRejectedValue(new Error('x'));
+    renderWithProviders(<KalenderAboAbschnitt />);
+    await nutzer.click(await screen.findByRole('button', { name: 'Abo-Link erstellen' }));
+    expect(await screen.findByText(/Der Link konnte nicht erstellt werden\./)).toHaveTextContent(
+      VERBINDUNG,
+    );
+    expect(screen.getByRole('button', { name: 'Abo-Link erstellen' })).toBeEnabled();
+  });
+
+  it('beendet das Abo nach der Rückfrage und bietet dann wieder das Erstellen an', async () => {
     const nutzer = userEvent.setup();
     fetchEigenesAbo.mockResolvedValueOnce({ seit: '2026-11-02T17:00:00Z' }).mockResolvedValue(null);
     beendeAbo.mockResolvedValue(undefined);
@@ -95,9 +142,27 @@ describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
 
     await nutzer.click(await screen.findByRole('button', { name: 'Abo beenden' }));
     const frage = screen.getByRole('group', { name: 'Abo beenden' });
+    expect(within(frage).getByText(/bleibt leer stehen und lässt sich dort löschen/)).toBeVisible();
     await nutzer.click(within(frage).getByRole('button', { name: 'Abo beenden' }));
     await waitFor(() => expect(beendeAbo).toHaveBeenCalledTimes(1));
-    expect(await screen.findByRole('button', { name: 'Abo-Adresse erzeugen' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Abo-Link erstellen' })).toBeInTheDocument();
+  });
+
+  it('meldet ein gescheitertes Beenden in der Rückfrage; Abbrechen räumt die Meldung ab', async () => {
+    const nutzer = userEvent.setup();
+    fetchEigenesAbo.mockResolvedValue({ seit: '2026-11-02T17:00:00Z' });
+    beendeAbo.mockRejectedValue(new Error('x'));
+    renderWithProviders(<KalenderAboAbschnitt />);
+
+    await nutzer.click(await screen.findByRole('button', { name: 'Abo beenden' }));
+    const frage = screen.getByRole('group', { name: 'Abo beenden' });
+    await nutzer.click(within(frage).getByRole('button', { name: 'Abo beenden' }));
+    expect(
+      await within(frage).findByText(/Das Abo konnte nicht beendet werden\./),
+    ).toHaveTextContent(VERBINDUNG);
+    await nutzer.click(within(frage).getByRole('button', { name: 'Abbrechen' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Abo beenden' }));
+    expect(screen.queryByText(/Das Abo konnte nicht beendet werden\./)).toBeNull();
   });
 
   it('sagt, wenn das Abo hier nicht eingerichtet ist oder nicht gefragt werden konnte', async () => {
@@ -115,17 +180,5 @@ describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
       await screen.findByText('Das Kalender-Abo konnte nicht gefragt werden.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
-  });
-
-  it('meldet ein gescheitertes Erzeugen und lässt es erneut versuchen', async () => {
-    const nutzer = userEvent.setup();
-    fetchEigenesAbo.mockResolvedValue(null);
-    erzeugeAbo.mockRejectedValue(new Error('x'));
-    renderWithProviders(<KalenderAboAbschnitt />);
-    await nutzer.click(await screen.findByRole('button', { name: 'Abo-Adresse erzeugen' }));
-    expect(
-      await screen.findByText(/Die Abo-Adresse konnte nicht erzeugt werden\./),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Abo-Adresse erzeugen' })).toBeEnabled();
   });
 });

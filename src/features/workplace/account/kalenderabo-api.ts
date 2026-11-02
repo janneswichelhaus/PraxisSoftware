@@ -60,7 +60,7 @@ export async function erzeugeAbo(): Promise<string> {
     error: unknown;
   };
   if (error || typeof data !== 'string' || !ADRESSE.test(data)) {
-    throw new Error('Die Abo-Adresse konnte nicht erzeugt werden.');
+    throw new Error('Der Abo-Link konnte nicht erstellt werden.');
   }
   return data;
 }

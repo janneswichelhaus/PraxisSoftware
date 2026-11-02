@@ -63,7 +63,7 @@ describe('Kalender-Abo im Browser (ANN-838)', () => {
       { data: null, error: { message: 'not allowed to subscribe a calendar' } },
     ]) {
       rpc.mockResolvedValue(antwort);
-      await expect(erzeugeAbo()).rejects.toThrow('Die Abo-Adresse konnte nicht erzeugt werden.');
+      await expect(erzeugeAbo()).rejects.toThrow('Der Abo-Link konnte nicht erstellt werden.');
     }
   });
 

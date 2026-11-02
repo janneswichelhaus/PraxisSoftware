@@ -355,7 +355,7 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
             ? ' Bild und Farbe im Teamchat sind freiwillig und nur für das Team sichtbar; das Foto wird mit dem Ausscheiden aus der Praxis gelöscht.'
             : null}
           {mitAbo
-            ? ' Das Kalender-Abo gibt nur Uhrzeit und Art Ihrer eigenen Termine an Ihren Kalenderdienst; hier liegt nur die Prüfsumme der Adresse, und das Abo wird nicht protokolliert.'
+            ? ' Das Kalender-Abo gibt nur Uhrzeit und Art Ihrer eigenen Termine an Ihren Kalenderdienst; der Link selbst wird nicht gespeichert, und das Abo wird nicht protokolliert.'
             : null}
         </Kleingedrucktes>
       </div>
