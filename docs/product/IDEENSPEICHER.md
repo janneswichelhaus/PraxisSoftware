@@ -132,7 +132,7 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-ANG-002 | Rabatt für eine Google-Bewertung: so nicht | verworfen (B11) |
 | IDEA-ANG-003 | Rückfall in die Heilbehandlung während eines Pakets | bestätigt |
 | IDEA-ANG-004 | Preise sichtbar, bevor jemand fragt | bestätigt |
-| IDEA-ANG-005 | Vermerk an „Trainingspaket endet“ (angesprochen, kein Folgepaket) lässt die Zeile ruhen; Anruf von der Seite der Person | vorschlag |
+| IDEA-ANG-005 | Vermerk an „Trainingspaket endet“ (angesprochen, kein Folgepaket) lässt die Zeile ruhen; Anruf von der Seite der Person | zurückgestellt (ANN-834) |
 | IDEA-ANG-006 | Die Trainingsbetreuung sieht am Termin, dass das Paket bald endet, ohne Preis | vorschlag |
 | IDEA-PRX-001 | Zugangshinweis je Patient:in | überführt → PAT-005 |
 | IDEA-PRX-002 | Fahrpuffer als Praxisregel, ohne Kartendienst | überführt → `PROJECT_PRINCIPLES.md` §8.1 |

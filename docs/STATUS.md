@@ -1,4 +1,4 @@
-# Status · Stand 2026-11-01
+# Status · Stand 2026-11-02
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -6,9 +6,9 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**PRX-EPIC-004 weiter**: #344 und #345 gemergt. Die Pakete ohne Anschluss als Liste in Offene
-Punkte (PRX-043, ANN-834) und die Antworten zu #345 liegen als PR auf `ccr-dd9474e2-s96juy` vor.
-Offen: BEF-201, BEF-202.
+**PRX-EPIC-004 weiter**: #344 und #345 gemergt. #346 auf `ccr-dd9474e2-s96juy`: Pakete ohne
+Anschluss in Offene Punkte (PRX-043, ANN-834 entschieden), Paketformular nach DESIGN.md (PRX-044),
+die Antworten zu #345 und #346. Offen: BEF-201, BEF-202.
 
 ## Danach
 
@@ -46,5 +46,5 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-01.11.2026, Branch `ccr-dd9474e2-s96juy`. Lokal: `git pull`, neue Migration
+02.11.2026, Branch `ccr-dd9474e2-s96juy`. Lokal: `git pull`, neue Migration
 (`pakete_ohne_anschluss`).
