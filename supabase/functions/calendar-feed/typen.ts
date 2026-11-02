@@ -1,7 +1,7 @@
 // Was die Function vom Abo kennt (ANN-838): die Zeitzone der Praxis und je Termin Kennung, Zeit
 // und Art, nichts sonst.
 
-export type Art = 'home_visit' | 'practice' | 'video' | 'internal';
+export type Art = 'home_visit' | 'practice' | 'video';
 
 export interface Eintrag {
   /** SHA-256 aus Termin und Abo, ohne Rückschluss auf den Termin. */

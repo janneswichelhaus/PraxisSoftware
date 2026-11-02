@@ -25,7 +25,7 @@ const EINTRAEGE: Eintrag[] = [
     uid: UID_C,
     beginn: new Date('2026-11-03T12:00:00Z'),
     ende: new Date('2026-11-03T13:00:00Z'),
-    art: 'internal',
+    art: 'practice',
   },
 ];
 const KALENDER: Kalender = { zeitzone: 'Europe/Berlin', eintraege: EINTRAEGE };
@@ -55,8 +55,10 @@ describe('Kalenderdatei nach RFC 5545 (ANN-838)', () => {
     );
     expect(text).toContain('DTSTART:20261103T103000Z');
     expect(text).toContain('SUMMARY:Video');
-    // Eine Fehlzeit heißt so, nie nach ihrem Titel.
-    expect(text).toContain('SUMMARY:Fehlzeit');
+    expect(text).toContain('SUMMARY:Praxis');
+    // Nur die drei Arten aus §3.4 der Prinzipien, nie ein Titel.
+    const titel = [...text.matchAll(/^SUMMARY:(.*)$/gm)].map((t) => t[1]);
+    expect(new Set(titel)).toEqual(new Set(['Hausbesuch', 'Video', 'Praxis']));
     const felder = text.split('\r\n').map((zeile) => zeile.split(/[:;]/)[0]);
     for (const feld of ['LOCATION', 'ATTENDEE', 'ORGANIZER', 'URL', 'GEO', 'ATTACH', 'CONTACT']) {
       expect(felder).not.toContain(feld);

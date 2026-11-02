@@ -381,6 +381,26 @@ describe('Kalender-Abo (PRX-048)', () => {
         [ROLLE],
       );
       expect(rolle.rows[0]!.ist).toBe(false);
+      // So wechselt PostgREST: authenticator darf in die Rolle, die Rolle hat eine kurze Frist.
+      const wechsel = await asPostgres<{ darf: boolean; frist: string[] | null }>(
+        `select pg_has_role('authenticator', $1, 'member') as darf,
+                (select rolconfig from pg_roles where rolname = $1) as frist`,
+        [ROLLE],
+      );
+      expect(wechsel.rows[0]!.darf).toBe(true);
+      expect(wechsel.rows[0]!.frist).toContain('statement_timeout=3s');
+      const client = new Client({ connectionString: testDatabaseUrl() });
+      await client.connect();
+      try {
+        await client.query('begin');
+        await client.query('set local role authenticator');
+        await client.query(`set local role ${ROLLE}`);
+        const { rows } = await client.query<{ abo: unknown }>(ABO, ['a'.repeat(43)]);
+        expect(rows[0]!.abo).toBeNull();
+      } finally {
+        await client.query('rollback').catch(() => undefined);
+        await client.end();
+      }
     });
 
     it('enthält nur eigene, nicht abgesagte Termine von 7 Tagen zurück bis 90 voraus', async () => {
@@ -428,12 +448,12 @@ describe('Kalender-Abo (PRX-048)', () => {
       for (const eintrag of kalender.termine) {
         expect(Object.keys(eintrag).sort()).toEqual(['art', 'beginn', 'ende', 'uid']);
         expect(eintrag.uid).toMatch(/^[0-9a-f]{64}$/);
-        expect(['home_visit', 'practice', 'video', 'internal']).toContain(eintrag.art);
+        expect(['home_visit', 'practice', 'video']).toContain(eintrag.art);
       }
       const kennung = (id: string) => pruefsumme(`${id}:${pruefsumme(adresse)}`);
       expect(kalender.termine.find((e) => e.uid === kennung(hausbesuch))?.art).toBe('home_visit');
-      // Eine Fehlzeit heißt so, nie nach ihrem Titel.
-      expect(kalender.termine.find((e) => e.uid === kennung(fehlzeit))?.art).toBe('internal');
+      // Eine Fehlzeit steht mit ihrer Art nach §3.4 (hier Video), nie mit ihrem Titel.
+      expect(kalender.termine.find((e) => e.uid === kennung(fehlzeit))?.art).toBe('video');
       const text = JSON.stringify(kalender);
       for (const verboten of [
         hausbesuch,

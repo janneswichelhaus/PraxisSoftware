@@ -4,7 +4,7 @@ import type { Abruf, Art, Eintrag, Quelle } from './typen.ts';
 // das Token der Function trägt eine Rolle, die genau diese eine Funktion darf (ANN-839).
 
 const TIMEOUT_MS = 5_000;
-const ARTEN: readonly string[] = ['home_visit', 'practice', 'video', 'internal'];
+const ARTEN: readonly string[] = ['home_visit', 'practice', 'video'];
 const UID = /^[0-9a-f]{64}$/;
 
 interface Optionen {

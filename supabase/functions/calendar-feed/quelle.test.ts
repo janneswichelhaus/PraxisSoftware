@@ -54,7 +54,7 @@ describe('Das Abo aus der Datenbank (ANN-839)', () => {
     expect(JSON.parse(optionen.body as string)).toEqual({ p_token: ADRESSE });
   });
 
-  it('kennt „unbekannt“ als null, ein leeres Abo als leere Liste und die Fehlzeit', async () => {
+  it('kennt „unbekannt“ als null und ein leeres Abo als leere Liste', async () => {
     const leer = vi.fn(() => Promise.resolve(antwort(200, null)));
     expect(await quelle(leer as unknown as typeof fetch).lies(ADRESSE)).toEqual({
       ok: true,
@@ -65,11 +65,6 @@ describe('Das Abo aus der Datenbank (ANN-839)', () => {
       ok: true,
       kalender: { zeitzone: ZONE, eintraege: [] },
     });
-    const intern = vi.fn(() =>
-      Promise.resolve(antwort(200, { zeitzone: ZONE, termine: [{ ...EINTRAG, art: 'internal' }] })),
-    );
-    const abruf = await quelle(intern).lies(ADRESSE);
-    expect(abruf.ok && abruf.kalender?.eintraege[0]?.art).toBe('internal');
   });
 
   it('liefert nie eine halbe Datei: Ausfall, Fehler oder ein unlesbarer Teil heißen „nicht lesbar“', async () => {
@@ -87,6 +82,7 @@ describe('Das Abo aus der Datenbank (ANN-839)', () => {
           antwort(200, { ...gut, termine: [EINTRAG, { ...EINTRAG, art: 'patient' }] }),
         ),
       () => Promise.resolve(antwort(200, { ...gut, termine: [{ ...EINTRAG, uid: 'zu-kurz' }] })),
+      () => Promise.resolve(antwort(200, { ...gut, termine: [{ ...EINTRAG, art: 'internal' }] })),
       () =>
         Promise.resolve(antwort(200, { ...gut, termine: [{ ...EINTRAG, ende: EINTRAG.beginn }] })),
       () => Promise.resolve(antwort(200, { ...gut, termine: [{ ...EINTRAG, beginn: 'gestern' }] })),

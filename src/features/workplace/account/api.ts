@@ -72,9 +72,9 @@ export const KENNWORT_MINDESTLAENGE = 12;
  * beides — und die Oberfläche sagt das an der Stelle der Entscheidung.
  */
 export async function beendeAlleSitzungen(): Promise<void> {
-  // Das Kalender-Abo endet mit, sonst behielte ein verlorenes Gerät seinen Kalender (ANN-838).
-  // Scheitert das, wird nicht abgemeldet; die Rückfrage meldet den Fehler.
-  await beendeAbo();
+  // Das Kalender-Abo endet mit (ANN-838). Scheitert das, hält es die Abmeldung nicht auf (ANN-044);
+  // der Fehlschlag steht im Betriebslog, und die Sperre des Zugangs beendet das Abo sicher.
+  await beendeAbo().catch(() => protokolliereFehler({ ereignis: 'kalenderabo.nicht_beendet' }));
   // Vor dem Vorgang, weil danach kein `auth.uid()` mehr existiert - siehe
   // Dateikopf und ANN-044. Scheitert der Vermerk, wird trotzdem abgemeldet.
   await meldeVersuch('sessions_ended');

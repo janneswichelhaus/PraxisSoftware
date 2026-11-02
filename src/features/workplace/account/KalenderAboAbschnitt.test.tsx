@@ -215,7 +215,9 @@ describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
     await nutzer.click(await screen.findByRole('button', { name: 'Abo-Link erstellen' }));
     await nutzer.click(await screen.findByRole('button', { name: 'Mit Passkey bestätigen' }));
     expect(
-      await screen.findByText('Der Passkey gehört zu einem anderen Zugang. Es gibt keinen Link.'),
+      await screen.findByText(
+        'Der Passkey gehört zu einem anderen Zugang. Es gibt keinen Link; angemeldet ist jetzt der andere Zugang.',
+      ),
     ).toBeVisible();
     expect(erzeugeAbo).toHaveBeenCalledTimes(1);
     expect(screen.queryByLabelText('Abo-Link')).toBeNull();

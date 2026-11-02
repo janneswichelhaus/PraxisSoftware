@@ -99,7 +99,9 @@ function Abo() {
       const nachher = (await getSupabase().auth.getSession()).data.session?.user.id;
       // Ein Passkey eines anderen Kontos ist ein Kontowechsel, keine Bestätigung (ADR-025 Punkt 7).
       if (!vorher || nachher !== vorher) {
-        throw new PasskeyFehler('Der Passkey gehört zu einem anderen Zugang. Es gibt keinen Link.');
+        throw new PasskeyFehler(
+          'Der Passkey gehört zu einem anderen Zugang. Es gibt keinen Link; angemeldet ist jetzt der andere Zugang.',
+        );
       }
     } catch (grund) {
       setPasskey({

@@ -130,7 +130,7 @@ begin
                  'uid', encode(extensions.digest(convert_to(a.id::text || ':' || v_hash, 'UTF8'), 'sha256'), 'hex'),
                  'beginn', a.starts_at,
                  'ende', a.ends_at,
-                 'art', case when a.kind = 'internal' then 'internal' else a.appointment_type end)
+                 'art', a.appointment_type)
                order by a.starts_at, a.id)
         from public.appointments a
        where a.organization_id = v_org
@@ -192,6 +192,8 @@ end
 $$;
 grant calendar_feed_reader to authenticator;
 grant usage on schema public to calendar_feed_reader;
+-- Ohne Anmeldung erreichbar: dieselbe kurze Frist wie anon statt der von authenticator.
+alter role calendar_feed_reader set statement_timeout = '3s';
 
 revoke all on function public.create_own_calendar_feed() from public, anon;
 revoke all on function public.get_own_calendar_feed() from public, anon;
@@ -210,7 +212,7 @@ comment on function public.get_own_calendar_feed() is
 comment on function public.end_own_calendar_feed() is
   'Kalender-Abo (PRX-049): beendet das eigene Abo; die Adresse gilt sofort nicht mehr. Geht immer, auch gesperrt, weil es nur wegnimmt; auch "Alle Sitzungen beenden" ruft es.';
 comment on function public.calendar_feed(text) is
-  'Kalender-Abo (PRX-048, ANN-838, ANN-839): nur fuer die Rolle calendar_feed_reader der Function calendar-feed. Zeitzone der Praxis und eigene Termine ohne abgesagte, 7 Tage zurueck bis 90 voraus; je Termin uid (SHA-256 aus Termin und Abo, ohne Rueckschluss), beginn, ende, art (home_visit, practice, video oder internal fuer Fehlzeiten). null bei unbekannter Adresse, gesperrtem Konto oder ohne aktiven Mitarbeiterdatensatz.';
+  'Kalender-Abo (PRX-048, ANN-838, ANN-839): nur fuer die Rolle calendar_feed_reader der Function calendar-feed. Zeitzone der Praxis und eigene Termine ohne abgesagte, 7 Tage zurueck bis 90 voraus; je Termin uid (SHA-256 aus Termin und Abo, ohne Rueckschluss), beginn, ende, art (home_visit, practice oder video, auch fuer Fehlzeiten, nie deren Titel). null bei unbekannter Adresse, gesperrtem Konto oder ohne aktiven Mitarbeiterdatensatz.';
 comment on function app.calendar_feed_end_on_lock() is
   'Kalender-Abo (ANN-838): Sperren des Zugangs loescht das Abo; nach dem Entsperren braucht es eine neue Adresse.';
 comment on function app.calendar_feed_end_on_leave() is

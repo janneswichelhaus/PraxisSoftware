@@ -7,7 +7,6 @@ export const ART_TEXT: Readonly<Record<Art, string>> = {
   home_visit: 'Hausbesuch',
   practice: 'Praxis',
   video: 'Video',
-  internal: 'Fehlzeit',
 };
 
 const KODIERER = new TextEncoder();

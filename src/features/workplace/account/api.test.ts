@@ -55,17 +55,23 @@ describe('beendeAlleSitzungen', () => {
     expect(ablauf).toEqual(['rpc:end_own_calendar_feed', 'rpc:sessions_ended', 'signOut']);
   });
 
-  it('beendet zuerst das Kalender-Abo; scheitert das, wird nicht abgemeldet (ANN-838)', async () => {
-    rpc.mockImplementation((name: string) => {
-      ablauf.push(`rpc:${name}`);
+  it('beendet zuerst das Kalender-Abo; scheitert das, wird trotzdem abgemeldet (ANN-044)', async () => {
+    rpc.mockImplementation((name: string, args?: { p_event: string }) => {
+      ablauf.push(`rpc:${args?.p_event ?? name}`);
       return Promise.resolve({
         error: name === 'end_own_calendar_feed' ? { message: 'network' } : null,
       });
     });
+    const konsole = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    await expect(beendeAlleSitzungen()).rejects.toThrow('Das Abo konnte nicht beendet werden.');
-    expect(ablauf).toEqual(['rpc:end_own_calendar_feed']);
-    expect(signOut).not.toHaveBeenCalled();
+    await expect(beendeAlleSitzungen()).resolves.toBeUndefined();
+    expect(ablauf).toEqual(['rpc:end_own_calendar_feed', 'rpc:sessions_ended', 'signOut']);
+    expect(signOut).toHaveBeenCalledWith({ scope: 'global' });
+    // Still bleibt der Fehlschlag nicht: er steht im Betriebslog, ohne Inhalt der Antwort.
+    expect(konsole).toHaveBeenCalledOnce();
+    expect(String(konsole.mock.calls[0]?.[0])).toContain('kalenderabo.nicht_beendet');
+    expect(String(konsole.mock.calls[0]?.[0])).not.toContain('network');
+    konsole.mockRestore();
   });
 
   it('meldet den Vorgang global, nicht nur für dieses Gerät', async () => {

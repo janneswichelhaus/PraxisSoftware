@@ -87,8 +87,8 @@ nur für einen Lauf mit synthetischen Daten auf `true`, danach zurück. Werte nu
   `supabase status`), `APP_URL=http://<Rechner-IP>:5173`, `MAIL_PROVIDER=mock` und
   `MAIL_MOCK_URL` (Inbucket aus `supabase status`), dann
   `supabase functions serve platform-access --no-verify-jwt --env-file supabase/functions/.env.local`.
-- **Kalender-Abo:** `CALENDAR_FEED_ROLE_KEY` (JWT mit `role: calendar_feed_reader`); der
-  Cloud-Stack setzt es selbst.
+- **Kalender-Abo:** `CALENDAR_FEED_ROLE_KEY` (JWT mit `role: calendar_feed_reader`); ohne
+  `.env.local` setzt es der Cloud-Stack.
 
 ## Supabase-Stack ohne Docker
 
