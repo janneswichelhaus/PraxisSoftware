@@ -1,12 +1,7 @@
 /**
- * Push auf diesem Gerät (KOM-011, ADR-024 Punkte 15, 17, 18).
- *
- * Erlaubt wird nur nach der ausdrücklichen Abfrage des Browsers, je Gerät.
- * Der Browser wählt den Push-Dienst seines Herstellers, nicht die Praxis
- * (Punkt 18). Ohne öffentlichen VAPID-Schlüssel, ohne Service Worker (etwa
- * in `pnpm dev`) oder ohne Push im Browser bietet die Anwendung Push nicht an
- * - unter iOS gibt es Push nur für eine Anwendung auf dem Startbildschirm mit
- * `display: standalone`, und die Anwendung nutzt `minimal-ui` (ANN-110).
+ * Push je Gerät nur nach der Abfrage des Browsers, über den Dienst seines Herstellers (ADR-024 Punkte
+ * 15, 17, 18). Ohne VAPID-Schlüssel, Service Worker (etwa in `pnpm dev`) oder Push im Browser kein
+ * Angebot; unter iOS nur auf dem Startbildschirm mit `display: standalone`, wie das Manifest (ANN-110).
  */
 
 export type PushStand =

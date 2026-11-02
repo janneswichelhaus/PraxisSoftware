@@ -1093,7 +1093,7 @@ Technik · offen · 2026-11-01 · — · — · Wiedervorlage: Töne bei der Sic
 | ANN-107 | Das Körperschema ist Jannes' Zeichnung; ein Kreis an der Stelle, gespeichert Stelle und nächster Bereich | Praxisprozess · entschieden (Jannes) | `src/features/clinical/assessments/koerperschema.ts` |
 | ANN-108 | Anlegen-Menü als Leiste unter dem Raster; ein zweiter Tipp hebt auf oder zieht die Spanne auf | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/useSpanneAufziehen.ts` |
 | ANN-109 | Über dem Kalender Monat, Person mit Woche und „Jetzt“; alles Übrige hinter der Ecke des Rasters | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/CalendarPage.tsx` |
-| ANN-110 | Das Web-Manifest nennt das Master als maskierbares Symbol und öffnet mit `minimal-ui` | Technik · entschieden (Jannes) | `public/manifest.webmanifest` |
+| ANN-110 | Das Web-Manifest nennt das Master als maskierbares Symbol und öffnet ohne Browserleiste (`standalone`, 2026-11-02) | Technik · entschieden (Jannes) | `public/manifest.webmanifest` |
 | ANN-111 | Begriffe stehen in einer Datei, abgelöste Wörter sperrt ein Test; im Kalender „Fehlzeit“, im Team „Mitarbeiter:in“ | Praxisprozess · entschieden (Jannes) | `ABGELOESTE_BEGRIFFE` in `src/lib/begriffe.ts` |
 | ANN-112 | Ein Bereich öffnet auf seinem ersten echten Punkt; Vorschauen stehen eingeklappt dahinter | Praxisprozess · entschieden (Jannes) | `src/components/ui/SubNav.tsx` |
 | ANN-113 | Die Tour ist eine Ansicht des Kalenders, ein Tipp im Kopf; der Kalender hat keine Unterzeile | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/CalendarPage.tsx` |

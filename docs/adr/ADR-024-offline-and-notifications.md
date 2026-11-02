@@ -1,6 +1,6 @@
 # ADR-024: Offline-Erfassung und Benachrichtigungen — schmaler Service Worker, Dokumentation und Durchführung ohne Netz, Mitteilungen ohne Inhalt
 ## Status
-Angenommen (Jannes, 2026-10-11), Fassung 3 (2026-10-27); löst ADR-015 Punkt 16 ab, ergänzt ADR-025
+Angenommen (Jannes, 2026-10-11), Fassung 4 (2026-11-02); löst ADR-015 Punkt 16 ab, ergänzt ADR-025
 um Punkt 16 (dort Fassung 4).
 
 ## Kontext
@@ -143,7 +143,8 @@ Benachrichtigungen.
 ## Konsequenzen
 - ANN-305 fällt mit TRK-EPIC-003: Ohne Verbindung wartet der Haken. Für Praxiskonten gilt dasselbe
   am Termin mit OFF-EPIC-001; ANN-319, ANN-320 (ohne Einrichtung) und ANN-015 bleiben.
-- Web-Push unter iOS nur mit `display: standalone` (ab iOS 16.4), nicht mit `minimal-ui` (ANN-110).
+- Web-Push unter iOS nur mit `display: standalone` (ab iOS 16.4); so öffnet die installierte
+  Anwendung seit Fassung 4 (ANN-110).
 - Keine Fernlöschung: „Alle Sitzungen beenden“ nimmt die Sitzung, nicht die Ablage; Ungesendetes
   geht mit dem Gerät verloren, daher überträgt die Anwendung bei jeder Verbindung sofort.
 
@@ -161,4 +162,6 @@ verankert:
 - Fassung 1 (2026-10-11, Jannes): W1 (c) statt (a) mit Passkey-Freigabe, W2 bis W5 wie empfohlen.
 - Fassung 2 (2026-10-17, Jannes): Punkt 12 nimmt Rückmeldungen nach §20.2 aus (Prinzipien 0.27).
 - Fassung 3 (2026-10-27): Punkt 15 nennt die Tagebucherinnerung aus ADR-027 Punkt 12 (war ANN-662).
+- Fassung 4 (2026-11-02, redaktionell): Konsequenz zu Web-Push unter iOS nach dem Wechsel des
+  Manifests auf `standalone` (Jannes, ANN-110).
 - Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.
