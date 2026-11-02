@@ -6,15 +6,15 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**PRX-EPIC-004 weiter**: #347 auf `claude/weiter-77kj64`: Planungskarte auf „Gebietstage“ (PRX-045,
-ANN-835), Zahlungsweg Karte mit DATEV über Geldtransit (PRX-046, ANN-836), Kassieren am Hausbesuch
-hinter Adapter mit Nachbildung (PRX-047, ANN-837). Kalender-Abo wartet auf Frage 1 (§3.4).
+**Vollbild und Antworten zu #347**: #348 auf `claude/weiter-77kj64`: Die installierte App öffnet ohne
+Browserleiste (`standalone` statt `minimal-ui`, ANN-110, ADR-024 Fassung 4). Prinzipien 0.32 erlauben
+das Kalender-Abo (§3.4); ANN-835 bis ANN-837 entschieden.
 
 ## Danach
 
 Bildsichtung von #334 bis #337. Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
-Kalender-Abo nach Frage 1 zu #347, die Übertragung an DATEV erst nach B4 (Jannes
-2026-11-01), ERN-EPIC-004 bis -006, ORG-EPIC-001, Schritte 5 bis 7
+Kalender-Abo nach Prinzipien 0.32 (eigener Auftrag, Pfad A), die Übertragung an DATEV erst nach B4
+(Jannes 2026-11-01), ERN-EPIC-004 bis -006, ORG-EPIC-001, Schritte 5 bis 7
 mit Jannes' Leinwänden, UI-003; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
 zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
@@ -46,5 +46,5 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-02.11.2026, Branch `claude/weiter-77kj64`. Lokal: `git pull`, drei neue Migrationen
-(`planungskarte`, `zahlungsweg_karte`, `kartenterminal`, dazu `auskunft_terminalkennung`).
+02.11.2026, Branch `claude/weiter-77kj64` neu ab `main`. Lokal: `git pull`, keine Migration. Die
+installierte App übernimmt `standalone` nach dem Ausliefern der Test-Umgebung von selbst.
