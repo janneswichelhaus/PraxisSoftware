@@ -193,3 +193,5 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-PRX-057 | Schäden am Lastenrad im 3D-Modell markieren | bestätigt · ausgearbeitet |
 | IDEA-PRX-058 | Aus dem Check-Up gleich Panne melden oder das Rad sperren lassen | vorschlag |
 | IDEA-PRX-059 | Liste der Trainingspakete, die ohne Folgepaket enden, als Ziel der Statistik | überführt → PRX-043 |
+| IDEA-PRX-060 | Planungskarte: je Postleitzahl die Tage des Gebiets und wie viele Anschriften nicht auf der Karte stehen | vorschlag |
+| IDEA-PRX-061 | „Mit Karte zahlen“ nur für Rechnungen, die die Person oder ihre Vertretung selbst zahlt, nicht Versicherung oder Beihilfestelle | vorschlag · entscheidung nötig |
