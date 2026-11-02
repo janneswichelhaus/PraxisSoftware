@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AccountApi from './api';
+import type * as AboApi from './kalenderabo-api';
 import type * as PasskeyModul from '@/features/core/auth/passkey';
 import type * as PinModul from '@/features/core/auth/appPin';
 import type * as TeamchatApi from '@/features/teamchat/api';
@@ -104,6 +105,19 @@ function teamchatBereit() {
   oeffneFoto.mockReset().mockResolvedValue(FOTO);
   rechneProfilbild.mockReset().mockResolvedValue(QUADRAT);
 }
+
+// Das Kalender-Abo fragt seine Function; hier nicht eingerichtet, seine Abläufe prüft
+// `KalenderAboAbschnitt.test.tsx` (ANN-838).
+const aboDienst = vi.fn(() => Promise.resolve(false));
+vi.mock('./kalenderabo-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof AboApi>();
+  const { useQuery } = await import('@tanstack/react-query');
+  return {
+    ...actual,
+    useAboDienst: () =>
+      useQuery({ queryKey: ['kalender-abo', 'dienst'], queryFn: () => aboDienst(), retry: false }),
+  };
+});
 
 const { MeinKontoPage } = await import('./MeinKontoPage');
 
@@ -385,6 +399,21 @@ describe('MeinKontoPage', () => {
     expect(
       await screen.findByText(/Verwaltungsrechte, aber noch kein zweiter Faktor/),
     ).toBeInTheDocument();
+  });
+
+  it('zeigt das Kalender-Abo nur mit eigenem Mitarbeiterdatensatz (ANN-838)', async () => {
+    const { unmount } = renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    expect(await screen.findByRole('heading', { name: 'Kalender-Abo' })).toBeInTheDocument();
+    expect(
+      await screen.findByText('Das Kalender-Abo ist hier noch nicht eingerichtet.'),
+    ).toBeInTheDocument();
+    unmount();
+    renderWithProviders(
+      <MeinKontoPage user={{ ...testUser(['therapist']), staffMemberId: null }} />,
+    );
+    await screen.findByRole('heading', { name: 'Mein Konto' });
+    expect(screen.queryByRole('heading', { name: 'Kalender-Abo' })).toBeNull();
+    expect(screen.queryByText(/Kalender-Abo gibt nur Uhrzeit/)).toBeNull();
   });
 
   it('bietet keine Rollen- oder Sperrverwaltung an', async () => {

@@ -27,6 +27,7 @@ import {
 } from './api';
 import { ProfilAbschnitt } from '@/features/teamchat';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { KalenderAboAbschnitt } from './KalenderAboAbschnitt';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 
 /** Der nächste Schritt nach einem gescheiterten Vorgang (NAV-13, WRT-01). */
@@ -314,6 +315,8 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
     Boolean(besitzer) &&
     Boolean(user.staffMemberId) &&
     canWriteTreatmentNote(user.roles);
+  // Das Abo gibt es nur zu eigenen Terminen, also mit eigenem Mitarbeiterdatensatz (ANN-838).
+  const mitAbo = Boolean(user.staffMemberId);
   return (
     <>
       {/* Die Rollen als Zeile unter dem Titel statt eines eigenen Abschnitts
@@ -338,6 +341,7 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
         <PinAbschnitt />
         <ZweiterFaktor user={user} />
         {ohneEmpfang && besitzer ? <DiensttelefonAbschnitt besitzer={besitzer} /> : null}
+        {mitAbo ? <KalenderAboAbschnitt /> : null}
         <Sitzungen />
 
         <Kleingedrucktes className="mt-10">
@@ -349,6 +353,9 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
           Protokoll des Anmeldedienstes, die PIN gar nicht.
           {imTeamchat
             ? ' Bild und Farbe im Teamchat sind freiwillig und nur für das Team sichtbar; das Foto wird mit dem Ausscheiden aus der Praxis gelöscht.'
+            : null}
+          {mitAbo
+            ? ' Das Kalender-Abo gibt nur Uhrzeit und Art Ihrer eigenen Termine an Ihren Kalenderdienst; hier liegt nur die Prüfsumme der Adresse, und das Abo wird nicht protokolliert.'
             : null}
         </Kleingedrucktes>
       </div>
