@@ -157,7 +157,7 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-PRX-021 | Farbcodierung je Terminart und Person | vorschlag |
 | IDEA-PRX-022 | Kartenzahlung beim Hausbesuch | überführt → PRX-046, PRX-047 (ANN-836, ANN-837) |
 | IDEA-PRX-023 | Verordnung per Kamera erfassen | überführt → PRX-011 |
-| IDEA-PRX-024 | Kalender-Abo für den eigenen Kalender | vorschlag · Bedenken · entscheidung nötig |
+| IDEA-PRX-024 | Kalender-Abo für den eigenen Kalender | bestätigt |
 | IDEA-PRX-025 | Kennzahlen für die Praxisführung | bestätigt (Roadmap: STA-EPIC-001) |
 | IDEA-PRX-026 | Export für die Steuerberatung | bestätigt |
 | IDEA-PRX-027 | Körperschema im Befund | vorschlag |
@@ -195,3 +195,4 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-PRX-059 | Liste der Trainingspakete, die ohne Folgepaket enden, als Ziel der Statistik | überführt → PRX-043 |
 | IDEA-PRX-060 | Planungskarte: je Postleitzahl die Tage des Gebiets und wie viele Anschriften nicht auf der Karte stehen | vorschlag |
 | IDEA-PRX-061 | „Mit Karte zahlen“ nur für Rechnungen, die die Person oder ihre Vertretung selbst zahlt, nicht Versicherung oder Beihilfestelle | vorschlag · entscheidung nötig |
+| IDEA-PRX-062 | Kartenzahlung am Hausbesuch auch durch angestellte Therapeut:innen | zurückgestellt (ANN-837) |

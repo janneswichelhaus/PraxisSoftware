@@ -887,15 +887,15 @@ Datenschutz · entschieden (Jannes) · 2026-11-01 · Jannes · Prüfpaket · Wie
 **Annahme.** Der Stapel trägt nur Rechnungsnummer, Tag, Betrag und Konten; der Sammeldebitor hält Namen aus der Buchhaltung der Kanzlei. Belege mit Name und Diagnose (ANN-229) entstehen wie bisher im Browserdruck, die Anwendung legt keine Datei ab und sendet nichts. Ein Exportlauf hält keine Person fest (§20), kein Auditeintrag (ADR-010 Punkt 15). **Grundlage.** Art. 5 Abs. 1 lit. c, Art. 6 Abs. 1 lit. c DSGVO; § 147 AO; VVT Abschnitt 3. **Anker.** `app.datev_bookings`. **Rücknahme.** Personenkonten mit Namen: Debitorenstamm, DSFA-Nachtrag · Aufwand `mittel`.
 
 ### ANN-835 — Planungskarte: Punkte ohne Namen, auf 100 m gerundet, für die, die Gebiete pflegen
-Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA-Wiedervorlage Kartendienst)\
+Datenschutz · entschieden (Jannes) · 2026-11-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA-Wiedervorlage Kartendienst)\
 **Annahme.** „Gebietstage“ zeigt owner, Teamleitung und Büro die Anschriften laufender Behandlungen je Postleitzahl und als Punkte mit Zahl ohne Namen, am Server auf drei Nachkommastellen gerundet. Die Karte nutzt nur den Kachelweg, die Punkte zeichnet die Anwendung. Lesen ohne Protokoll. **Grundlage.** Art. 5 Abs. 1 lit. b und c DSGVO; ADR-019 Punkte 2, 6, 14, 35; ADR-010 Punkte 15, 16. **Anker.** `public.list_active_address_points`. **Rücknahme.** Nur owner oder gröber runden: diese Funktion · Aufwand `klein`.
 
 ### ANN-836 — Zahlungsweg Karte: von Hand buchbar, im DATEV-Stapel über Geldtransit
-Recht · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Steuerberatung (B4 Frage 5)\
-**Annahme.** owner und Büro buchen eine Kartenzahlung als eigenen Weg „Karte“, auch als Rückzahlung. Der Stapel bucht sie wie die Verrechnung über Geldtransit (SKR03 1360, SKR04 1460) an den Sammeldebitor, Buchungstext „Zahlung Karte“ oder „Erstattung Karte“; die Auszahlung des Zahlungsdienstes samt Gebühr bucht die Kanzlei aus dem Kontoauszug. Kein Bargeld, keine Kasse. **Grundlage.** ADR-009 Punkt 12; ANN-828; GoBD. **Anker.** `geldkonto` in `src/features/billing/datev.ts`. **Rücknahme.** Eigenes Konto je Zahlungsdienst: diese Funktion und `KONTENRAHMEN` · Aufwand `klein`.
+Recht · entschieden (Jannes) · 2026-11-02 · Jannes · Prüfpaket · Wiedervorlage: Steuerberatung (B4 Frage 5)\
+**Annahme.** owner und Büro buchen eine Kartenzahlung als eigenen Weg „Karte“, auch als Rückzahlung. Der Stapel bucht sie wie die Verrechnung über Geldtransit (SKR03 1360, SKR04 1460) an den Sammeldebitor, Buchungstext „Zahlung Karte“ oder „Erstattung Karte“; die Auszahlung samt Gebühr bucht die Kanzlei aus dem Kontoauszug. Kein Bargeld, keine Kasse. **Grundlage.** ADR-009 Punkt 12; ANN-828; GoBD. **Anker.** `geldkonto` in `src/features/billing/datev.ts`. **Rücknahme.** Eigenes Konto je Zahlungsdienst: diese Funktion und `KONTENRAHMEN` · Aufwand `klein`.
 
-### ANN-837 — Kartenzahlung am Hausbesuch: Terminal hinter Adapter, nur Betrag und Referenz hinaus
-Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Anbieterprüfung Zahlungsdienst (Block 11), DSFA (B2)\
+### ANN-837 — Kartenzahlung am Hausbesuch: nur Betrag und Referenz hinaus
+Datenschutz · entschieden (Jannes) · 2026-11-02 · Jannes · Prüfpaket · Wiedervorlage: Anbieterprüfung Zahlungsdienst (Block 11), DSFA (B2)\
 **Annahme.** owner und Büro kassieren am Terminal höchstens den offenen Betrag. Die Function `card-terminal` prüft vorab und bucht danach mit dem Token der Person; zum Zahlungsdienst gehen nur Betrag, Währung und eine zufällige Referenz. Bis zur Anbieterprüfung nur die Nachbildung, nie in der Produktion. Ein echter Dienst prüft die Kennung, auch beim Nachbuchen, und bricht nach der Frist ab. **Grundlage.** §3.5; ADR-002 Punkt 3; ADR-009 Punkt 12. **Anker.** `public.record_card_payment`. **Rücknahme.** Function und Knopf entfernen · Aufwand `klein`.
 
 ## Fachregeln
