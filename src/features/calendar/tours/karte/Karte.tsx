@@ -272,7 +272,12 @@ function Kartenflaeche({
     if (rechteck !== null) {
       // `duration: 0` statt einer Animation: Beim Öffnen soll das Bild stehen,
       // nicht erst hinfliegen.
-      karte.fitBounds(rechteck, { padding: 48, maxZoom: 15, duration: 0 });
+      // Rechts mehr Rand: Dort stehen die Zoomknöpfe, ein Marker am Rand verschwand darunter.
+      karte.fitBounds(rechteck, {
+        padding: { top: 48, right: 88, bottom: 48, left: 48 },
+        maxZoom: 15,
+        duration: 0,
+      });
     }
 
     return () => {
