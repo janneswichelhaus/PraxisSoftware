@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
@@ -98,6 +98,9 @@ function erneuereUebersichten(queryClient: ReturnType<typeof useQueryClient>) {
  * eine Fehlanlage zu entfernen, unter der Zeile.
  */
 function PaketZeile({ paket, verhaeltnisId }: { paket: Paket; verhaeltnisId: string }) {
+  // Laufend und abgerechnet ist der Regelfall ohne Abzeichen (DESIGN.md Regel 5); ein geplantes
+  // Paket wird erst ab seinem Beginn abgerechnet. Unter der Zeile, weil die Namen lang sind.
+  const abrechnungOffen = paket.state !== 'planned' && !paket.invoiced;
   return (
     <Eintrag
       titel={paket.label}
@@ -106,15 +109,15 @@ function PaketZeile({ paket, verhaeltnisId }: { paket: Paket; verhaeltnisId: str
       )} · ${formatEuro(paket.price_cents, paket.currency)}${
         paket.created_by_name ? ` · angelegt von ${paket.created_by_name}` : ''
       }`}
-      // Ein laufendes Paket ist der Regelfall und trägt kein Abzeichen (DESIGN.md Regel 5).
       status={paket.state === 'planned' ? <Badge>Beginnt bald</Badge> : undefined}
+      gedaempft={paket.state === 'ended'}
     >
-      <p className="text-ink-muted text-sm">
-        {paket.invoiced ? 'Abgerechnet' : 'Noch nicht abgerechnet'}
-      </p>
       {/* Eine Fehlanlage geht nur, solange nichts abgerechnet ist (ANG-006). */}
       {paket.invoiced ? null : (
-        <div className="mt-1">
+        <div className="flex flex-wrap items-center gap-2">
+          {abrechnungOffen ? (
+            <Badge eigenesZeichen={STATUSZEICHEN.fehlt}>Noch nicht abgerechnet</Badge>
+          ) : null}
           <Entfernen paket={paket} verhaeltnisId={verhaeltnisId} />
         </div>
       )}
@@ -280,7 +283,7 @@ function Anlegen({ verhaeltnisId, sicht }: { verhaeltnisId: string; sicht: Paket
           <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
         ) : null}
       </div>
-      <Formularfuss zusatz="Das Paket läuft über die ganze Laufzeit, auch wenn eine Behandlung dazukommt; es lässt sich nicht pausieren und nicht kündigen. Es wird einmal zu Beginn berechnet.">
+      <Formularfuss zusatz="Das Paket gilt ohne Pause und ohne Kündigung für die ganze Laufzeit, auch neben einer Behandlung, und wird einmal zu Beginn berechnet.">
         <Button type="submit" disabled={speichern.isPending}>
           {speichern.isPending ? 'Wird angelegt …' : 'Paket anlegen'}
         </Button>
