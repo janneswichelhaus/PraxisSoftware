@@ -3,10 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Disclosure } from '@/components/ui/Card';
 import { LoadingState } from '@/components/ui/Feedback';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { StatusMark } from '@/components/ui/StatusMark';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { addressCountText, postalCodeLines, unlocatedAddresses } from './addressPoints';
 import { fetchActiveAddressPoints, type Territory } from './api';
 
@@ -67,11 +67,11 @@ export function ActiveAddresses({ territories }: { territories: readonly Territo
                 ))}
               </ListRows>
               {ohnePunkt > 0 ? (
-                <p className="text-ink-muted mt-2 text-sm">
+                <Statusmeldung className="mt-2">
                   {ohnePunkt === 1
                     ? 'Eine Anschrift steht nicht auf der Karte: Sie ist nicht genau verortet.'
                     : `${ohnePunkt} Anschriften stehen nicht auf der Karte: Sie sind nicht genau verortet.`}
-                </p>
+                </Statusmeldung>
               ) : null}
               <div className="mt-4">
                 <Disclosure
@@ -91,10 +91,6 @@ export function ActiveAddresses({ territories }: { territories: readonly Territo
           );
         }}
       </Abfragezustand>
-      <Kleingedrucktes className="mt-6">
-        Punkte ohne Namen, auf etwa 100 m gerundet. Zum Kartendienst gehen nur Kartenausschnitte,
-        keine Anschrift.
-      </Kleingedrucktes>
     </Section>
   );
 }

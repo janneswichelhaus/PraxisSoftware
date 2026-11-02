@@ -297,19 +297,29 @@ export function TerritoriesPage({ user }: { user: CurrentUser }) {
         </Abfragezustand>
       </div>
 
-      {/* Was die Regel bewirkt - und was nicht. Ohne Gebiete sagt es der
-          Leerzustand. */}
-      {abfrage.data && abfrage.data.length > 0 ? (
-        <Kleingedrucktes className="mt-8">
-          Gebietstage warnen beim Hausbesuch; sie verbieten nichts.
-        </Kleingedrucktes>
+      {/* Nur wer Gebiete pflegt, sieht, wo die laufenden Behandlungen liegen; erst mit den Gebieten,
+          sonst stünde jede Postleitzahl als „ohne Gebiet“ da. Der Server prüft selbst. */}
+      {mayEdit && abfrage.data ? (
+        <div className="mt-8">
+          <ActiveAddresses territories={abfrage.data} />
+        </div>
       ) : null}
 
-      {/* Nur wer Gebiete pflegt, sieht, wo die laufenden Behandlungen liegen; der Server prüft selbst. */}
-      {mayEdit ? (
-        <div className="mt-8">
-          <ActiveAddresses territories={abfrage.data ?? []} />
-        </div>
+      {/* Rechtssätze am Seitenende: was die Regel bewirkt (ohne Gebiete sagt es der Leerzustand) und
+          was die Anschriften verlässt. */}
+      {abfrage.data && (abfrage.data.length > 0 || mayEdit) ? (
+        <Kleingedrucktes className="mt-8">
+          {[
+            abfrage.data.length > 0
+              ? 'Gebietstage warnen beim Hausbesuch; sie verbieten nichts.'
+              : '',
+            mayEdit
+              ? 'Anschriften als Punkte ohne Namen, auf etwa 100 m gerundet; zum Kartendienst gehen nur Kartenausschnitte.'
+              : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        </Kleingedrucktes>
       ) : null}
     </>
   );

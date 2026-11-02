@@ -34,6 +34,7 @@ test.describe('Abrechnung (Design-Rollout B6)', () => {
       await expect(page.getByRole('heading', { name: 'Mit Karte zahlen', level: 1 })).toBeVisible();
       await expect(page.getByText('RG-2026-0012')).toBeVisible();
       await expect(page.getByLabel('Betrag')).toHaveValue('140,00');
+      await expect(page.getByText('Nachbildung ohne Terminal: Es fließt kein Geld.')).toBeVisible();
       await mindestens44(page, 'button', 'Am Terminal zahlen');
       await mindestens44(page, 'link', 'Abbrechen');
       expect(await ueberlaeuft(page)).toBe(false);
@@ -42,7 +43,8 @@ test.describe('Abrechnung (Design-Rollout B6)', () => {
       await page.goto(`${PRUEFSEITE}?seite=kartenzahlung-zwei`);
       const zahlen = page.getByRole('button', { name: 'Am Terminal zahlen' });
       await expect(zahlen).toBeDisabled();
-      await page.getByText(/^RG-2026-0015 · 90,00\s€ offen$/).click();
+      await expect(page.getByText('Welche Rechnung?')).toBeVisible();
+      await page.getByText(/^RG-2026-0015 · vom 01\.11\.2026 · 90,00\s€ offen$/).click();
       await expect(page.getByLabel('Betrag')).toHaveValue('90,00');
       await expect(zahlen).toBeEnabled();
       expect(await ueberlaeuft(page)).toBe(false);

@@ -155,9 +155,9 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-PRX-019 | Aufgaben und Wiedervorlagen mit Patientenbezug | überführt → PRX-012 |
 | IDEA-PRX-020 | Globale Suche und Schnellanlegen | überführt → UX-004 |
 | IDEA-PRX-021 | Farbcodierung je Terminart und Person | vorschlag |
-| IDEA-PRX-022 | Kartenzahlung beim Hausbesuch | notiert · entscheidung nötig |
+| IDEA-PRX-022 | Kartenzahlung beim Hausbesuch | überführt → PRX-046, PRX-047 (ANN-836, ANN-837) |
 | IDEA-PRX-023 | Verordnung per Kamera erfassen | überführt → PRX-011 |
-| IDEA-PRX-024 | Kalender-Abo für den eigenen Kalender | vorschlag · Bedenken |
+| IDEA-PRX-024 | Kalender-Abo für den eigenen Kalender | vorschlag · Bedenken · entscheidung nötig |
 | IDEA-PRX-025 | Kennzahlen für die Praxisführung | bestätigt (Roadmap: STA-EPIC-001) |
 | IDEA-PRX-026 | Export für die Steuerberatung | bestätigt |
 | IDEA-PRX-027 | Körperschema im Befund | vorschlag |
@@ -167,7 +167,7 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-PRX-031 | Gebietstage für die Terminvergabe | überführt → PRX-EPIC-001 (gebaut 2026-09-28) |
 | IDEA-PRX-032 | Fahrzeit je Weg aus dem Kartendienst | überführt → MAP-003 / MAP-004 / MAP-006 |
 | IDEA-PRX-044 | Führung auf dem Rad innerhalb der Software | überführt → ADR-019 Fassung 3, Abschnitt F / §20.1 / MAP-007 |
-| IDEA-PRX-033 | Planungskarte der aktiven Adressen | vorschlag · Bedenken |
+| IDEA-PRX-033 | Planungskarte der aktiven Adressen | überführt → PRX-045 (ANN-835) |
 | IDEA-PRX-034 | Entwurf „Own Motion · Praxis": der Tagesplan als Startseite | notiert |
 | IDEA-PRX-035 | „Mitnehmen": Materialliste aus den letzten Befunden | überführt → PRX-EPIC-002 (gebaut 2026-09-28) |
 | IDEA-PRX-036 | Indikation in der Tagesliste | verworfen |

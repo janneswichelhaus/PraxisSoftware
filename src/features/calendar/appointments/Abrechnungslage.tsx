@@ -11,7 +11,15 @@ import { positionText, type Abrechnungslage } from './abrechnungslage-api';
 import { useAbrechnungslage } from './useAbrechnungslage';
 import type { Appointment } from './api';
 
-function OffeneRechnungen({ lage, karte }: { lage: Abrechnungslage; karte: string | null }) {
+function OffeneRechnungen({
+  lage,
+  karte,
+  zurueck,
+}: {
+  lage: Abrechnungslage;
+  karte: string | null;
+  zurueck: string | undefined;
+}) {
   const anzahl = lage.open_invoice_count ?? 0;
   if (anzahl === 0) return <>keine</>;
   return (
@@ -22,12 +30,12 @@ function OffeneRechnungen({ lage, karte }: { lage: Abrechnungslage; karte: strin
           {formatEuro(lage.open_outstanding_cents ?? 0)} offen
           {lage.open_overdue ? ' – davon überfällig' : ''}
         </span>
-        <Textlink alleinstehend className="text-sm" to="/abrechnung">
+        <Textlink alleinstehend className="text-sm" to={mitRueckweg('/abrechnung', zurueck)}>
           Zu den offenen Posten
         </Textlink>
       </span>
       {karte ? (
-        <ButtonLink to={karte} variant="secondary" groesse="kompakt" className="mt-2">
+        <ButtonLink to={karte} variant="secondary" groesse="kompakt" className="mt-4">
           Mit Karte zahlen
         </ButtonLink>
       ) : null}
@@ -156,7 +164,7 @@ export function AbrechnungAbschnitt({
         <div className="py-2.5 last:pb-0">
           <dt className="text-ink-muted text-sm">Offene Rechnungen</dt>
           <dd className="text-ink text-liste min-w-0 wrap-anywhere">
-            <OffeneRechnungen lage={data} karte={karte} />
+            <OffeneRechnungen lage={data} karte={karte} zurueck={zurueck} />
           </dd>
         </div>
       </dl>

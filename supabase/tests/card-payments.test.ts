@@ -267,6 +267,32 @@ describe('Kartenzahlung beim Hausbesuch (PRX-047)', () => {
   });
 
   describe('Die Kennung am Datensatz', () => {
+    it('steht in der Auskunft nach Art. 15, in der Akte wie im Training', async () => {
+      const { id, betrag } = await ausgestellteRechnung();
+      await asUserCommitted(users.office, BUCHEN, [id, betrag, 'tx-a15']);
+      const { rows } = await asUser<{
+        daten: { tabellen: { payments: Record<string, unknown>[] } };
+      }>(users.ownerTherapist, 'select public.export_patient_record($1::uuid) as daten', [
+        patients.erika,
+      ]);
+      expect(rows[0]!.daten.tabellen.payments).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            invoice_id: id,
+            method: 'card',
+            terminal_transaction: 'tx-a15',
+          }),
+        ]),
+      );
+      const { rows: stellen } = await asPostgres<{ akte: boolean; training: boolean }>(
+        `select position('terminal_transaction' in
+                  pg_get_functiondef('public.export_patient_record(uuid)'::regprocedure)) > 0 as akte,
+                position('terminal_transaction' in
+                  pg_get_functiondef('public.export_training_record(uuid)'::regprocedure)) > 0 as training`,
+      );
+      expect(stellen[0]).toEqual({ akte: true, training: true });
+    });
+
     it('steht nur an einer Karte und lässt sich nicht nachträglich ändern', async () => {
       const { id, betrag } = await ausgestellteRechnung();
       await expect(

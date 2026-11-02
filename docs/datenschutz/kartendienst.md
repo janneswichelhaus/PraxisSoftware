@@ -36,7 +36,10 @@ Wiedervorlage betrachtet vier Wege getrennt:
    also, wo gearbeitet wird. Neu ist nur, dass die Tour **echte** Stopps zeigt — die Kachelanfrage
    selbst trägt weiterhin keinen Stopp. Der Anbieter sieht dabei die IP-Adresse des Geräts, den
    Zeitpunkt und den Referrer; deshalb gehört dieser Weg zum Gate (ADR-019 Fassung 5, Punkt 34,
-   Gate-Liste Punkt 10), und die Karte lädt Kacheln nur bei offenem Schalter (Punkt 35).
+   Gate-Liste Punkt 10), und die Karte lädt Kacheln nur bei offenem Schalter (Punkt 35). Seit
+   PRX-045 auch die Planungskarte auf „Gebietstage“: dieselben Kacheln, die Punkte sind Overlays
+   aus gespeicherten, am Server gerundeten Koordinaten ohne Namen (ANN-835); neu ist der
+   Ausschnitt über das ganze Gebiet, nicht die Art der Anfrage.
 2. **Geocoding vom Server (neu).** Die Anschrift geht **einmal je Änderung** an den Anbieter, auf
    ausdrückliche Handlung („Adresse verorten", ANN-095), nie beim Öffnen einer Karte. Die
    Anschrift steht dabei in der Anfrageadresse beim Anbieter (Endpunkt nur mit `GET`); in eigenen

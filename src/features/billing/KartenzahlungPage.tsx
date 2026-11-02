@@ -4,10 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { EmptyState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
@@ -19,14 +17,44 @@ import { formatDate } from '@/lib/datum';
 import { centZuEingabe, formatEuro, parseEuroZuCent } from '@/lib/geld';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { fetchRechnungenDerAkte, type RechnungDerAkte } from './api';
-import { kassiereMitKarte, useKartenterminal, type Kassierergebnis } from './kartenterminal-api';
+import {
+  bucheKartenzahlungNach,
+  kassiereMitKarte,
+  useKartenterminal,
+  type Kassierergebnis,
+} from './kartenterminal-api';
 import { offeneRechnungen } from './offeneRechnungen';
 
 const STANDARD = '/abrechnung';
 
+interface Bezahlt {
+  cent: number;
+  waehrung: string;
+  nachbildung: boolean;
+}
+
+type Ausgang =
+  | (Kassierergebnis & { ok: false })
+  | { ok: false; art: 'nachbuchen_gescheitert'; satz: string; transaktion: string };
+
+function Nachbildung({ vergangen = false }: { vergangen?: boolean }) {
+  return (
+    <Statusmeldung ton="warnung">
+      {vergangen
+        ? 'Nachbildung ohne Terminal: Es floss kein Geld.'
+        : 'Nachbildung ohne Terminal: Es fließt kein Geld.'}
+    </Statusmeldung>
+  );
+}
+
+function rechnungText(r: RechnungDerAkte): string {
+  const datum = r.issued_on ? ` · vom ${formatDate(r.issued_on)}` : '';
+  return `${r.invoice_number ?? 'Rechnung'}${datum} · ${formatEuro(r.outstanding_cents, r.currency ?? 'EUR')} offen`;
+}
+
 /**
  * Kassieren am Hausbesuch (ANN-837), Seitentyp „Formular“: die offenen Rechnungen der Person, der Betrag
- * vorbelegt, ein Hauptknopf. Das Terminal fragt die Function; gebucht ist erst, was sie bestätigt.
+ * vorbelegt, ein Hauptknopf. Gebucht ist erst, was die Function bestätigt; die Bestätigung steht über der Liste.
  */
 export function KartenzahlungPage() {
   const { patientId = '' } = useParams();
@@ -39,61 +67,66 @@ export function KartenzahlungPage() {
     retry: false,
     enabled: terminal.data?.verfuegbar === true,
   });
-  // Über der Liste: Nach dem Buchen lädt sie neu, die Rechnung ist nicht mehr offen.
+  // Über der Liste: Nach dem Buchen lädt sie neu, und die Rechnung ist nicht mehr offen.
   const [bezahlt, setBezahlt] = useState<Bezahlt | null>(null);
+  const weitere = offeneRechnungen(rechnungen.data ?? []).length;
 
   return (
-    <>
+    <div className="max-w-formular">
       <Rueckweg standard={STANDARD} />
       <PageHeader title="Mit Karte zahlen" />
       {bezahlt ? (
-        <div className="max-w-formular">
+        <div className="flex flex-col gap-3">
           <Rueckmeldung>
             {formatEuro(bezahlt.cent, bezahlt.waehrung)} mit Karte bezahlt und gebucht.
           </Rueckmeldung>
-          {bezahlt.nachbildung ? (
-            <p className="text-ink-muted mt-3 text-sm">
-              Nachbildung ohne Terminal: Es floss kein Geld.
-            </p>
-          ) : null}
+          {bezahlt.nachbildung ? <Nachbildung vergangen /> : null}
           <Formularfuss>
             <ButtonLink to={zurueck}>Fertig</ButtonLink>
+            {weitere > 0 ? (
+              <Button type="button" variant="secondary" onClick={() => setBezahlt(null)}>
+                Nächste Rechnung kassieren
+              </Button>
+            ) : null}
           </Formularfuss>
         </div>
-      ) : terminal.isPending ? (
-        <LoadingState label="Das Terminal wird gefragt …" />
-      ) : terminal.data?.verfuegbar !== true ? (
-        <EmptyState inKarte title="Die Kartenzahlung ist hier nicht eingerichtet." />
       ) : (
         <Abfragezustand
-          abfrage={rechnungen}
-          laden="Die Rechnungen werden geladen …"
-          fehler="Die Rechnungen konnten nicht geladen werden."
+          abfrage={terminal}
+          laden="Das Terminal wird gefragt …"
+          fehler="Das Terminal konnte nicht gefragt werden."
           inKarte
           leer={{
-            wenn: (liste) => offeneRechnungen(liste).length === 0,
-            titel: 'Keine offene Rechnung',
+            wenn: (t) => !t.verfuegbar,
+            titel: 'Die Kartenzahlung ist hier nicht eingerichtet.',
           }}
         >
-          {(liste) => (
-            <Kassieren
-              rechnungen={offeneRechnungen(liste)}
-              patientId={patientId}
-              zurueck={zurueck}
-              nachbildung={terminal.data?.nachbildung === true}
-              onBezahlt={setBezahlt}
-            />
+          {(t) => (
+            <Abfragezustand
+              abfrage={rechnungen}
+              laden="Die Rechnungen werden geladen …"
+              fehler="Die Rechnungen konnten nicht geladen werden."
+              inKarte
+              leer={{
+                wenn: (liste) => offeneRechnungen(liste).length === 0,
+                titel: 'Keine offene Rechnung',
+              }}
+            >
+              {(liste) => (
+                <Kassieren
+                  rechnungen={offeneRechnungen(liste)}
+                  patientId={patientId}
+                  zurueck={zurueck}
+                  nachbildung={t.nachbildung}
+                  onBezahlt={setBezahlt}
+                />
+              )}
+            </Abfragezustand>
           )}
         </Abfragezustand>
       )}
-    </>
+    </div>
   );
-}
-
-interface Bezahlt {
-  cent: number;
-  waehrung: string;
-  nachbildung: boolean;
 }
 
 function Kassieren({
@@ -116,18 +149,45 @@ function Kassieren({
   const rechnung = rechnungen.find((r) => r.id === gewaehlt) ?? null;
   const [betrag, setBetrag] = useState(rechnung ? centZuEingabe(rechnung.outstanding_cents) : '');
   const [feldfehler, setFeldfehler] = useState<string | undefined>();
-  const [ergebnis, setErgebnis] = useState<{ antwort: Kassierergebnis } | null>(null);
+  const [ausgang, setAusgang] = useState<Ausgang | null>(null);
+  const waehrung = rechnung?.currency ?? 'EUR';
+
+  async function neuLaden() {
+    await queryClient.invalidateQueries({ queryKey: ['patient-invoices', patientId] });
+    await queryClient.invalidateQueries({ queryKey: ['appointment'] });
+    await queryClient.invalidateQueries({ queryKey: ['offene-posten'] });
+    await queryClient.invalidateQueries({ queryKey: ['zahlungen'] });
+  }
 
   const kassieren = useMutation({
     mutationFn: ({ id, cent }: { id: string; cent: number }) => kassiereMitKarte(id, cent),
     onSuccess: async (antwort, { cent }) => {
-      setErgebnis({ antwort });
-      if (!antwort.ok) return;
-      onBezahlt({ cent, waehrung: rechnung?.currency ?? 'EUR', nachbildung: antwort.nachbildung });
-      await queryClient.invalidateQueries({ queryKey: ['patient-invoices', patientId] });
-      await queryClient.invalidateQueries({ queryKey: ['appointment'] });
-      await queryClient.invalidateQueries({ queryKey: ['offene-posten'] });
-      await queryClient.invalidateQueries({ queryKey: ['zahlungen'] });
+      if (antwort.ok) {
+        onBezahlt({ cent, waehrung, nachbildung: antwort.nachbildung });
+        await neuLaden();
+        return;
+      }
+      setAusgang(antwort);
+      // Unklar: Vielleicht ist doch gebucht; die Liste sagt es nach dem Neuladen.
+      if (antwort.art === 'unklar') await neuLaden();
+    },
+  });
+
+  const nachbuchen = useMutation({
+    mutationFn: ({ id, cent, transaktion }: { id: string; cent: number; transaktion: string }) =>
+      bucheKartenzahlungNach(id, cent, transaktion),
+    onSuccess: async (gebucht, { cent, transaktion }) => {
+      if (gebucht) {
+        onBezahlt({ cent, waehrung, nachbildung });
+        await neuLaden();
+        return;
+      }
+      setAusgang({
+        ok: false,
+        art: 'nachbuchen_gescheitert',
+        satz: 'Die Buchung ging wieder nicht. Bitte im Büro mit dieser Kennung von Hand als Karte buchen.',
+        transaktion,
+      });
     },
   });
 
@@ -136,49 +196,63 @@ function Kassieren({
     const neu = rechnungen.find((r) => r.id === id);
     setBetrag(neu ? centZuEingabe(neu.outstanding_cents) : '');
     setFeldfehler(undefined);
-    setErgebnis(null);
+    setAusgang(null);
   }
+
+  // Wer abgebucht hat, bucht nur noch nach; ein zweites Kassieren belastete die Karte doppelt.
+  const abgebucht =
+    ausgang?.art === 'nicht_gebucht' || ausgang?.art === 'nachbuchen_gescheitert' ? ausgang : null;
+  const beschaeftigt = kassieren.isPending || nachbuchen.isPending;
 
   function absenden(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (kassieren.isPending || rechnung === null) return;
+    if (beschaeftigt || rechnung === null) return;
     const cent = parseEuroZuCent(betrag);
+    if (abgebucht) {
+      if (cent !== null && abgebucht.transaktion) {
+        nachbuchen.mutate({ id: rechnung.id, cent, transaktion: abgebucht.transaktion });
+      }
+      return;
+    }
     if (cent === null || cent <= 0) {
       setFeldfehler('Bitte einen Betrag über null angeben, etwa 140,00.');
       return;
     }
     if (cent > rechnung.outstanding_cents) {
-      setFeldfehler(
-        `Höchstens ${formatEuro(rechnung.outstanding_cents, rechnung.currency ?? 'EUR')}.`,
-      );
+      setFeldfehler(`Höchstens ${formatEuro(rechnung.outstanding_cents, waehrung)}.`);
       return;
     }
     setFeldfehler(undefined);
-    setErgebnis(null);
+    setAusgang(null);
     kassieren.mutate({ id: rechnung.id, cent });
   }
 
-  const fehlschlag = ergebnis && !ergebnis.antwort.ok ? ergebnis.antwort : null;
+  const knopf = kassieren.isPending
+    ? 'Wird am Terminal bezahlt …'
+    : nachbuchen.isPending
+      ? 'Wird gebucht …'
+      : abgebucht
+        ? 'Buchung wiederholen'
+        : ausgang?.art === 'unklar'
+          ? 'Nicht bezahlt, erneut zahlen'
+          : 'Am Terminal zahlen';
 
   return (
-    <form onSubmit={absenden} noValidate className="max-w-formular">
+    <form onSubmit={absenden} noValidate className="flex flex-col gap-4">
+      {nachbildung ? <Nachbildung /> : null}
       <Section titel="Rechnung">
         {rechnungen.length === 1 && rechnung ? (
           <ListRows beschriftung="Offene Rechnung">
             <ListRow
               titel={rechnung.invoice_number ?? 'Rechnung'}
               meta={rechnung.issued_on ? `vom ${formatDate(rechnung.issued_on)}` : undefined}
-              betrag={`${formatEuro(rechnung.outstanding_cents, rechnung.currency ?? 'EUR')} offen`}
+              betrag={`${formatEuro(rechnung.outstanding_cents, waehrung)} offen`}
             />
           </ListRows>
         ) : (
           <Wahlreihe
             legende="Welche Rechnung?"
-            legendeSichtbar={false}
-            wahlen={rechnungen.map((r) => ({
-              wert: r.id,
-              text: `${r.invoice_number ?? 'Rechnung'} · ${formatEuro(r.outstanding_cents, r.currency ?? 'EUR')} offen`,
-            }))}
+            wahlen={rechnungen.map((r) => ({ wert: r.id, text: rechnungText(r) }))}
             gewaehlt={gewaehlt}
             onWaehlen={waehle}
           />
@@ -189,38 +263,31 @@ function Kassieren({
             inputMode="decimal"
             autoComplete="off"
             value={betrag}
-            disabled={rechnung === null}
+            disabled={rechnung === null || abgebucht !== null}
             onChange={(e) => setBetrag(e.target.value)}
             error={feldfehler}
           />
         </div>
       </Section>
 
-      {fehlschlag ? (
-        <Statusmeldung ton="fehler" className="mt-4">
-          {fehlschlag.satz}
-          {fehlschlag.transaktion ? ` Kennung am Terminal: ${fehlschlag.transaktion}.` : ''}
+      {ausgang ? (
+        <Statusmeldung ton={ausgang.art === 'unklar' ? 'warnung' : 'fehler'}>
+          {ausgang.satz}
+          {ausgang.transaktion ? ` Kennung am Terminal: ${ausgang.transaktion}.` : ''}
         </Statusmeldung>
       ) : null}
       {kassieren.isPending ? (
-        <p role="status" className="text-ink mt-4 text-sm">
-          Karte ans Terminal halten lassen …
-        </p>
+        <Statusmeldung>Karte ans Terminal halten lassen …</Statusmeldung>
       ) : null}
 
       <Formularfuss>
-        <Button type="submit" disabled={kassieren.isPending || rechnung === null}>
-          {kassieren.isPending ? 'Wird am Terminal bezahlt …' : 'Am Terminal zahlen'}
+        <Button type="submit" disabled={beschaeftigt || rechnung === null}>
+          {knopf}
         </Button>
         <ButtonLink to={zurueck} variant="quiet">
           Abbrechen
         </ButtonLink>
       </Formularfuss>
-      {nachbildung ? (
-        <Kleingedrucktes className="mt-6">
-          Nachbildung ohne Terminal: Es fließt kein Geld. Ein Betrag auf 13 Cent wird abgelehnt.
-        </Kleingedrucktes>
-      ) : null}
     </form>
   );
 }

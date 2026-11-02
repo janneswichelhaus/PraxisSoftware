@@ -112,6 +112,11 @@ describe('Verordnungszähler und Abrechnungslage (PRX-008)', () => {
       'href',
       `/abrechnung/kartenzahlung/${PERSON}?zurueck=${encodeURIComponent(zurueck)}`,
     );
+    // Auch die offenen Posten führen zum Termin zurück; ein Fehltipp kostet so keinen Umweg.
+    expect(screen.getByRole('link', { name: 'Zu den offenen Posten' })).toHaveAttribute(
+      'href',
+      `/abrechnung?zurueck=${encodeURIComponent(zurueck)}`,
+    );
     unmount();
 
     // Ohne Person oder ohne Terminal kein Knopf, der ins Leere führt.

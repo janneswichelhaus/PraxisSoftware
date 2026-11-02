@@ -144,6 +144,26 @@ describe('TerritoriesPage (PRX-002)', () => {
       expect(fetchActiveAddressPoints).not.toHaveBeenCalled();
     });
 
+    it('wartet auf die Gebiete, damit keine Postleitzahl falsch „ohne Gebiet“ heißt', async () => {
+      fetchTerritories.mockReturnValue(new Promise(() => undefined));
+      fetchActiveAddressPoints.mockResolvedValue(PUNKTE);
+      renderWithProviders(<TerritoriesPage user={testUser(['office'])} />);
+      expect(await screen.findByText('Gebiete werden geladen …')).toBeInTheDocument();
+      expect(screen.queryByText('ohne Gebiet')).toBeNull();
+      expect(fetchActiveAddressPoints).not.toHaveBeenCalled();
+    });
+
+    it('nennt die Rechtssätze einmal am Seitenende', async () => {
+      fetchTerritories.mockResolvedValue([NORD]);
+      fetchActiveAddressPoints.mockResolvedValue(PUNKTE);
+      renderWithProviders(<TerritoriesPage user={testUser(['office'])} />);
+      const satz = await screen.findByText(
+        /Gebietstage warnen beim Hausbesuch; sie verbieten nichts\. Anschriften als Punkte ohne Namen/,
+      );
+      const liste = await screen.findByRole('list', { name: 'Anschriften nach Postleitzahl' });
+      expect(liste.compareDocumentPosition(satz) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
     it('sagt, wenn nichts da ist oder nichts lädt', async () => {
       fetchTerritories.mockResolvedValue([]);
       const { unmount } = renderWithProviders(<TerritoriesPage user={testUser(['office'])} />);

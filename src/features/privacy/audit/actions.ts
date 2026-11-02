@@ -147,6 +147,8 @@ export const auditActionLabels: Record<AuditAction, string> = {
 export const auditOperationLabels: Record<string, string> = {
   // ANG-001: Nachsorge-Abo der Akte und fällige Abo-Monate (owner, office).
   'aftercare.read': 'Nachsorge-Abo gelesen',
+  // Planungskarte auf „Gebietstage“ (ANN-835, keine neue Aktion, ADR-010).
+  'address_points.read': 'Anschriften der Planungskarte gelesen',
   'appointment.created': 'Termin angelegt',
   'appointment_brief.viewed': 'Kurzblick am Termin geöffnet',
   'appointments.read': 'Termine gelesen',
