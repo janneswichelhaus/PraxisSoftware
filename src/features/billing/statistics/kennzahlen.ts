@@ -159,7 +159,8 @@ export const ANGEBOTSKENNZAHLEN: readonly Kennzahl<Angebotszahlen>[] = [
     einheit: 'anzahl',
     richtung: 'hoechstens',
     wert: (k) => k.packages_ending,
-    handlung: { label: 'Zu den Trainingskund:innen', to: '/training' },
+    // ANN-834: dieselben Pakete stehen als Gruppe in Offene Punkte; „anbieten“ hieße Angebot ins Konto.
+    handlung: { label: 'Zu den endenden Paketen', to: '/offen#trainingspaket-endet' },
   },
   {
     ziel: 'aftercare_subscriptions',

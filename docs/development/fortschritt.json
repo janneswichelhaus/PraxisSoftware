@@ -1393,8 +1393,8 @@
           "name": "PRX-EPIC-004 Komfort und Export",
           "gewicht": 1,
           "status": "in_arbeit",
-          "nachweis": "#344; Branch ccr-da924a3b-dyrdc6 (PRX-041, PRX-042)",
-          "vermerk": "DATEV-Export gebaut (ANN-828 bis ANN-830); Kennzahlen für Training, Abo und Pakete (ANN-831, ANN-832) und Farbe je Art des Termins und Person im Kalender (ANN-833); offen: direkte Übertragung hinter Adapter, Kalender-Abo, Planungskarte, Kartenzahlung"
+          "nachweis": "#344, #345; #346 auf Branch ccr-dd9474e2-s96juy (PRX-043, PRX-044)",
+          "vermerk": "DATEV-Export gebaut (ANN-828 bis ANN-830); Kennzahlen für Training, Abo und Pakete (ANN-831, ANN-832), die Pakete ohne Anschluss als Liste in Offene Punkte (ANN-834) mit Paketformular nach DESIGN.md, Farbe je Art des Termins und Person im Kalender (ANN-833); offen: direkte Übertragung hinter Adapter, Kalender-Abo, Planungskarte, Kartenzahlung"
         },
         {
           "id": "ui-003",

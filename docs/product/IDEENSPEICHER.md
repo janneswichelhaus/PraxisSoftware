@@ -132,6 +132,8 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-ANG-002 | Rabatt für eine Google-Bewertung: so nicht | verworfen (B11) |
 | IDEA-ANG-003 | Rückfall in die Heilbehandlung während eines Pakets | bestätigt |
 | IDEA-ANG-004 | Preise sichtbar, bevor jemand fragt | bestätigt |
+| IDEA-ANG-005 | Vermerk an „Trainingspaket endet“ (angesprochen, kein Folgepaket) lässt die Zeile ruhen; Anruf von der Seite der Person | zurückgestellt (ANN-834) |
+| IDEA-ANG-006 | Die Trainingsbetreuung sieht am Termin, dass das Paket bald endet, ohne Preis | vorschlag |
 | IDEA-PRX-001 | Zugangshinweis je Patient:in | überführt → PAT-005 |
 | IDEA-PRX-002 | Fahrpuffer als Praxisregel, ohne Kartendienst | überführt → `PROJECT_PRINCIPLES.md` §8.1 |
 | IDEA-PRX-003 | Warteliste mit Zeitfenstern und Nachrücken | überführt → PRX-EPIC-001 (gebaut 2026-09-28) |
@@ -190,4 +192,4 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-PRX-056 | Reihenfolgevorschlag für den Tag | notiert · entscheidung nötig |
 | IDEA-PRX-057 | Schäden am Lastenrad im 3D-Modell markieren | bestätigt · ausgearbeitet |
 | IDEA-PRX-058 | Aus dem Check-Up gleich Panne melden oder das Rad sperren lassen | vorschlag |
-| IDEA-PRX-059 | Liste der Trainingspakete, die ohne Folgepaket enden, als Ziel der Statistik | vorschlag |
+| IDEA-PRX-059 | Liste der Trainingspakete, die ohne Folgepaket enden, als Ziel der Statistik | überführt → PRX-043 |

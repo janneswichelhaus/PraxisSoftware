@@ -10,8 +10,8 @@ import {
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
- * Je Zahl die Faelle der einen Quelle `get_offer_statistics` (ANN-831): was zaehlt, was nicht,
- * wo die Zeitraeume enden. Gezaehlt wird gegen den Ausgangsstand, damit der Seed nichts traegt.
+ * Je Zahl die Faelle der einen Quelle `get_offer_statistics` (ANN-831), dazu die Liste der Pakete
+ * ohne Anschluss aus derselben Regel (ANN-834). Gezaehlt wird gegen den Ausgangsstand.
  */
 const { users, organizationId, patients, trainingRelationships } = SEED;
 
@@ -21,6 +21,7 @@ const TP3 = 'cccccccc-cccc-4ccc-8ccc-000000000014';
 const TZ = 'Europe/Berlin';
 
 const ZAHLEN = 'select * from public.get_offer_statistics($1::date)';
+const LISTE = 'select * from public.list_ending_training_packages()';
 
 interface Angebotszahlen {
   time_zone: string;
@@ -49,6 +50,32 @@ async function zahlen(monat: string | null = null): Promise<Angebotszahlen> {
   );
   expect(rows).toHaveLength(1);
   return rows[0]!;
+}
+
+interface PaketOhneAnschluss {
+  training_relationship_id: string;
+  given_name: string | null;
+  family_name: string | null;
+  package_months: number;
+  ends_on: string;
+  care_open: boolean;
+}
+
+async function liste(konto: string = users.ownerTherapist): Promise<PaketOhneAnschluss[]> {
+  const { rows } = await asUser<PaketOhneAnschluss>(
+    konto,
+    `select training_relationship_id, given_name, family_name, package_months,
+            to_char(ends_on, 'YYYY-MM-DD') as ends_on, care_open
+       from public.list_ending_training_packages()`,
+  );
+  return rows;
+}
+
+async function datum(ausdruck: string): Promise<string> {
+  const { rows } = await asPostgres<{ t: string }>(
+    `select to_char(${ausdruck}, 'YYYY-MM-DD') as t`,
+  );
+  return rows[0]!.t;
 }
 
 /** Tage ab heute in der Zeitzone der Praxis, als SQL-Ausdruck. */
@@ -269,6 +296,121 @@ describe('Kennzahlen fuer Training, Abo und Pakete (PRX-041)', () => {
       await expect(asUser(users.ownerTherapist, ZAHLEN, ['1999-01-01'])).rejects.toThrow(
         /month out of range/,
       );
+    });
+  });
+
+  describe('Liste der Pakete ohne Anschluss (PRX-043)', () => {
+    it('listet genau, was die Kennzahl zaehlt - Tag 27 ja, Tag 28 nicht, mit Folgepaket nicht', async () => {
+      expect(await liste()).toEqual([]);
+      const vorher = await zahlen();
+      await paket(tag(-60), tag(27));
+      await paket(tag(-60), tag(28), trainingRelationships.erika);
+
+      const zeilen = await liste();
+      expect(zeilen.map((z) => z.training_relationship_id)).toEqual([trainingRelationships.tina]);
+      expect(zeilen[0]!.ends_on).toBe(await datum(tag(27)));
+      expect((await zahlen()).packages_ending - vorher.packages_ending).toBe(zeilen.length);
+
+      // Das Folgepaket ist gebucht: Die Zeile geht, die Zahl mit ihr.
+      await paket(tag(28), tag(118));
+      expect(await liste()).toEqual([]);
+      expect((await zahlen()).packages_ending).toBe(vorher.packages_ending);
+    });
+
+    it('laesst ein abgelaufenes Paket und ein beendetes Verhaeltnis weg', async () => {
+      await paket(tag(-90), tag(-1));
+      await paket(tag(-60), tag(5), trainingRelationships.erika);
+      expect((await liste()).map((z) => z.training_relationship_id)).toEqual([
+        trainingRelationships.erika,
+      ]);
+
+      await asPostgres(
+        `update public.training_relationships set status = 'inactive' where id = $1`,
+        [trainingRelationships.erika],
+      );
+      expect(await liste()).toEqual([]);
+    });
+
+    it('nennt nur Name, Laufzeit, letzten Tag und die laufende Behandlung, das naechste Ende zuerst', async () => {
+      await paket(tag(-60), tag(20));
+      await paket(tag(-60), tag(3), trainingRelationships.erika);
+      const zeilen = await liste(users.office);
+      expect(zeilen.map((z) => z.training_relationship_id)).toEqual([
+        trainingRelationships.erika,
+        trainingRelationships.tina,
+      ]);
+      expect(zeilen[0]).toMatchObject({ package_months: 3, ends_on: await datum(tag(3)) });
+      expect(zeilen[0]!.family_name).toBeTruthy();
+      // Erika ist noch in Behandlung: Ein Folgepaket beginnt erst danach (ANN-278).
+      expect(zeilen.map((z) => z.care_open)).toEqual([true, false]);
+
+      // Kein Kontakt, keine Kennung des Pakets, kein Preis (ANN-834).
+      const { rows } = await asUser<Record<string, unknown>>(users.office, LISTE);
+      expect(Object.keys(rows[0]!).sort()).toEqual([
+        'care_open',
+        'ends_on',
+        'family_name',
+        'given_name',
+        'package_months',
+        'training_relationship_id',
+      ]);
+    });
+
+    it('kennzeichnet die Behandlung nicht mehr, sobald sie abgeschlossen ist', async () => {
+      await paket(tag(-60), tag(3), trainingRelationships.erika);
+      await asPostgres(
+        `update public.patients
+            set care_concluded_on = ${tag(-1)}, care_concluded_at = now(), care_concluded_by = $2
+          where person_id = (select person_id from public.training_relationships where id = $1)`,
+        [trainingRelationships.erika, users.ownerTherapist],
+      );
+      expect((await liste()).map((z) => z.care_open)).toEqual([false]);
+    });
+
+    it('zeigt die Liste owner und office und weist alle anderen protokolliert ab', async () => {
+      await paket(tag(-60), tag(10));
+      expect(await liste(users.ownerTherapist)).toHaveLength(1);
+      expect(await liste(users.office)).toHaveLength(1);
+      // Trainingsbetreuung und Therapie lesen keine Pakete (ANN-071), Patientenkonten nie.
+      for (const konto of [
+        users.therapist,
+        users.teamLead,
+        users.trainer,
+        users.patientMax,
+        users.patientErika,
+      ]) {
+        await erwarteAbgewiesenenLeseversuch(konto, LISTE, [], 'training_packages.read');
+      }
+      await expect(asUser(null, LISTE)).rejects.toThrow(/not authenticated/);
+      await expect(asAnon(LISTE)).rejects.toThrow(/permission denied/i);
+    });
+
+    it('weist Plattformkonten ab - auch Erika sieht Tinas Paket nicht (fremde Person)', async () => {
+      await paket(tag(-60), tag(10));
+      // Ohne Praxisprofil gibt es kein Protokoll der Praxis, in das der Versuch gehoerte.
+      for (const konto of [users.plattformTina, users.plattformErika]) {
+        await expect(asUser(konto, LISTE)).rejects.toThrow(
+          /not allowed to read ending training packages/,
+        );
+      }
+    });
+
+    it('endet an der Organisationsgrenze', async () => {
+      await paket(tag(-60), tag(10));
+      expect(await liste()).toHaveLength(1);
+      const fremd = await fremdeOrganisation();
+      const { rows } = await asUser(fremd.owner, LISTE);
+      expect(rows).toEqual([]);
+    });
+
+    it('laesst die Regel fuer keine Anwendungsrolle direkt aufrufen', async () => {
+      for (const sql of [
+        `select * from app.ending_training_packages('${organizationId}')`,
+        `select app.ending_training_packages_until('${organizationId}')`,
+      ]) {
+        await expect(asUser(users.ownerTherapist, sql)).rejects.toThrow(/permission denied/i);
+        await expect(asAnon(sql)).rejects.toThrow(/permission denied/i);
+      }
     });
   });
 });

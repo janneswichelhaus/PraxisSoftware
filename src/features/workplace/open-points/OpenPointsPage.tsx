@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -10,6 +10,7 @@ import { AftercareCancellations } from './AftercareCancellations';
 import { TrainingWithdrawals } from './TrainingWithdrawals';
 import { CallsSummary } from './CallsSummary';
 import { ConsentWithdrawals } from './ConsentWithdrawals';
+import { EndingTrainingPackages, PAKET_ENDET_ANKER } from './EndingTrainingPackages';
 import { AktenOhneBehandlung, EndingPrescriptions, OffeneVerordnungen } from './Reminders';
 import { OpenIntakes } from './OpenIntakes';
 import { PrescriptionsToCapture } from './PrescriptionsToCapture';
@@ -66,6 +67,13 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
   const melde = (text: string) => setMeldung((bisher) => ({ text, nr: (bisher?.nr ?? 0) + 1 }));
 
   const { darf, laedt, nichtsOffen, anrufeOffen } = useEingang(user, today);
+
+  // Der Router rollt nicht von selbst zum Anker; die Gruppen stehen erst nach dem Laden da (ANN-834).
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (laedt || hash !== `#${PAKET_ENDET_ANKER}`) return;
+    document.getElementById(PAKET_ENDET_ANKER)?.scrollIntoView?.({ block: 'start' });
+  }, [laedt, hash]);
 
   return (
     <>
@@ -124,6 +132,7 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
         {darf.scans ? <PrescriptionsToCapture timeZone={timeZone} /> : null}
         {darf.erstaufnahmen ? <OpenIntakes /> : null}
         {darf.verordnungEndet ? <EndingPrescriptions timeZone={timeZone} /> : null}
+        {darf.paketEndet ? <EndingTrainingPackages /> : null}
         {darf.plaene ? (
           <PlanWiedervorlage bereiche={darf.planBereiche} rueckweg="/offen" nurWennVorhanden />
         ) : null}

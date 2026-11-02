@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-01.
+Zuletzt aktualisiert: 2026-11-02.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1007,13 +1007,9 @@ Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 **Regel.** Laufend heißt am heutigen Tag gültig; ein vor dem Beginn gekündigtes Abo lief nie. Neu zählt nach dem Beginn, Kündigungen nach dem Eingang, Trainingstermine stattgefunden ohne Beratung, je im gewählten Monat. Ohne Anschluss: endet in vier Wochen ab heute, kein späteres Paket, Verhältnis aktiv. **Grundlage.** §20; ANN-154; ANN-155; ADR-021 Punkt 6. **Anker.** `public.get_offer_statistics`.
 
-### ANN-832 — Angebotskennzahlen: Richtung und Handlung
-Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
-**Regel.** Laufende Pakete und Abos als Mindestwert, Pakete ohne Anschluss als Höchstwert. Handlungen: zweimal zu den Trainingskund:innen, bis es eine Liste nach Paketende gibt; fällige Abo-Monate erfassen. **Grundlage.** ANN-155; `IDEA-PRX-025`. **Anker.** `ANGEBOTSKENNZAHLEN` in `src/features/billing/statistics/kennzahlen.ts`.
-
 ### ANN-833 — Kalender: Farbe je Art des Termins und je Person
-Technik · offen · 2026-11-01 · — · — · Wiedervorlage: —\
-**Regel.** Die Kachel trägt die Art als Fläche: Training blau, Ernährungsberatung violett, Behandlung weiß; der Zustand geht vor (abgesagt, Fehlzeit auf dem Grund). Hausbesuch, Praxis und Video bleiben Wort. Die Spalte einer Person trägt deren Teamchat-Farbe als Bild neben dem Namen (ANN-666). Farbe nie allein (WCAG 1.4.1). **Grundlage.** `IDEA-PRX-021`; DESIGN.md Grundsatz 2. **Anker.** `kachelFlaeche` in `CalendarGrid.tsx`.
+Technik · offen · 2026-11-01 · — · — · Wiedervorlage: Töne bei der Sichtung (S-14)\
+**Regel.** Die Kachel trägt die Art als Fläche: Training blau, Beratung violett, Behandlung weiß; der Zustand geht vor. Hausbesuch, Praxis und Video bleiben Wort. Die Spalte einer Person trägt deren Teamchat-Farbe als Bild neben dem Namen, auch bei 375 px (Jannes 2026-11-01). Farbe nie allein (WCAG 1.4.1). **Grundlage.** `IDEA-PRX-021`; ANN-666; DESIGN.md Grundsatz 2. **Anker.** `kachelFlaeche` in `CalendarGrid.tsx`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
@@ -1470,3 +1466,5 @@ Technik · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 | ANN-820 | Übersicht einer Vertretung am Telefon: Hauptsache nach dem Satz der Lesefrist, vor dem Gruß; ohne Hauptsache wie bisher | Technik · entschieden (Jannes) | `handlungZuerst` in `src/features/portal/platform/Uebersicht.tsx` |
 | ANN-821 | Lesefrist mit eigenem Entwurf: Seitentitel „Angefangener Fragebogen“ wie die Zeile, der Satz nennt das Ende der Behandlung | Technik · entschieden (Jannes) | `Befundbogen` in `src/features/portal/platform/Befundbogen.tsx` |
 | ANN-822 | Bereichsschalter und „Ich“: „Ihre Behandlung“, „Ihr Training“ statt des bloßen Worts, neben „Für …“ | Technik · entschieden (Jannes) | `wahlName` in `src/features/portal/platform/wahl.ts` |
+| ANN-832 | Angebotskennzahlen: Pakete und Abos mindestens, ohne Anschluss höchstens; Folgepakete in Offene Punkte | Praxisprozess · entschieden (Jannes) | `ANGEBOTSKENNZAHLEN` in `src/features/billing/statistics/kennzahlen.ts` |
+| ANN-834 | Pakete ohne Anschluss als Gruppe in Offene Punkte, „Noch in Behandlung“ an der Zeile, Sprung zu Gruppe und Paket | Praxisprozess · entschieden (Jannes) | `public.list_ending_training_packages` |

@@ -32,7 +32,7 @@ test.describe('Trainingspaket', () => {
 
       await page.goto(`${PRUEFSEITE}?seite=verhaeltnis`);
       await expect(page.getByText('01.10.2026 bis 31.03.2027', { exact: false })).toBeVisible();
-      await expect(page.getByText('Steht auf einer Rechnung.')).toBeVisible();
+      await expect(page.getByText('Noch nicht abgerechnet')).toBeVisible();
       await mindestens44(page, 'Paket anlegen');
       expect(await ueberlaeuft(page)).toBe(false);
 

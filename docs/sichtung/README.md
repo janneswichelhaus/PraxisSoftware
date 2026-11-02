@@ -31,7 +31,7 @@ Nur was eine Hand am Gerät braucht (Kamera, Passkey, Flugmodus, Sonne, Halterun
 Kartendienst), auf der Test-Umgebung (`https://prtest.uber.space`) oder lokal im WLAN
 ([`../DEVELOPMENT.md`](../DEVELOPMENT.md)). Höchstens 20 Punkte, je PR höchstens fünf neue; was
 Bild oder Test belegt, kommt nicht dazu. Gesichtet fällt ein Punkt weg (Ergebnis in die PR);
-Nummern werden nicht neu vergeben, die nächste ist S-14.
+Nummern werden nicht neu vergeben, die nächste ist S-15.
 
 - **S-1 Echter Kartendienst** (PTV lokal oder nach `docs/betrieb/test-umgebung.md` Abschnitt 5,
   Schlüssel nie im Repository): Route auf Straßen im Lastenradprofil, Fahrzeiten und Rundung,
@@ -53,6 +53,9 @@ Nummern werden nicht neu vergeben, die nächste ist S-14.
 - **S-12 Diensttelefon ohne Empfang:** einschalten, Flugmodus, Entwurf, Übertragung genau einmal,
   Konflikt mit vorhandenem Entwurf, Abmelden mit Ungesendetem.
 - **S-13 Sonne:** weißer Grund, Kartenlinie, Wegspur und Schraffur draußen lesbar (L4, L5).
+- **S-14 Farben im Kalender** (ANN-833): Ozean als Personenfarbe neben dem Trainingsblau,
+  Veilchen und Pflaume neben dem Beratungsviolett; tragen die hellen Flächen draußen? Bis dahin
+  tragen ◆/◇ und das vorgelesene Wort die Bedeutung, ein sichtbares Kurzwort käme mit UI-003.
 
 Die Klickschritte bis 2026-10-27 (14 Dateien) zeigt `git show 9452575:docs/sichtung/<datei>`, ihre
 Triage die PR zu Aufräumen 5, Teil C. Befunde gehen nach

@@ -50,6 +50,26 @@ interface Abo {
 }
 
 /**
+ * Ende des ersten Abo-Monats, unabhängig vom Code nachgerechnet (ANN-270): der Tag vor demselben
+ * Tag im Folgemonat; fehlt dieser, dessen letzter Tag (§ 188 Abs. 3 BGB).
+ */
+function ersterMonatEndet(beginn: string): string {
+  const [jahr, monat, tagImMonat] = beginn.split('-').map(Number) as [number, number, number];
+  const letzterImFolgemonat = new Date(Date.UTC(jahr, monat + 1, 0)).getUTCDate();
+  const ende =
+    tagImMonat > letzterImFolgemonat
+      ? Date.UTC(jahr, monat, letzterImFolgemonat)
+      : Date.UTC(jahr, monat, tagImMonat - 1);
+  return new Date(ende).toISOString().slice(0, 10);
+}
+
+function tagDanach(isoTag: string): string {
+  const tag = new Date(`${isoTag}T00:00:00Z`);
+  tag.setUTCDate(tag.getUTCDate() + 1);
+  return tag.toISOString().slice(0, 10);
+}
+
+/**
  * Ein Kalendertag als `YYYY-MM-DD`. `current_date` im Ausdruck ist der Tag der
  * Praxis (Europe/Berlin), nicht der UTC-Tag der Sitzung - sonst ist der Test
  * kurz nach Mitternacht rot (BEF-130).
@@ -114,7 +134,7 @@ describe('Nachsorge-Abo kündigen (ANG-003)', () => {
       const beginn = await tag('current_date - 2');
       const id = await aboFuer(patients.erika, beginn);
       const { rows } = await asUserCommitted<{ ende: Date }>(users.office, PRAXIS, [id]);
-      const erwartet = await tag(`(date '${beginn}' + interval '1 month')::date - 1`);
+      const erwartet = ersterMonatEndet(beginn);
       const { rows: zeile } = await asPostgres<Record<string, unknown>>(
         `select to_char(ends_on, 'YYYY-MM-DD') as ends_on, cancelled_via, cancelled_by,
                 cancelled_platform_access_id, to_char(cancelled_on, 'YYYY-MM-DD') as cancelled_on
@@ -166,9 +186,9 @@ describe('Nachsorge-Abo kündigen (ANG-003)', () => {
         starts_on: beginn,
         ends_on: null,
         state: 'running',
-        next_month_start: await tag(`date '${beginn}' + interval '1 month'`),
+        next_month_start: tagDanach(ersterMonatEndet(beginn)),
         next_month_price_cents: 3900,
-        cancel_effective_on: await tag(`(date '${beginn}' + interval '1 month')::date - 1`),
+        cancel_effective_on: ersterMonatEndet(beginn),
         can_cancel: true,
       });
     });

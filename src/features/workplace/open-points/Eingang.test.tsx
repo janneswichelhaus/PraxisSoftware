@@ -4,6 +4,7 @@ import type { OffenerScan } from '@/features/patients/files/api';
 import type { Rueckfragezeile } from '@/features/portal/messages/api';
 import type { Patienteneintrag } from '@/features/patients/uebersicht';
 import type { CareWithoutConclusion } from './reminders-api';
+import type { EndingTrainingPackage } from './ending-training-packages-api';
 import type { Urlaubsstand } from '@/features/workforce/vacation/api';
 import type { WorkingTime } from '@/features/workforce/working-time/api';
 import type { Overview } from '@/features/workforce/reimbursements/api';
@@ -26,6 +27,7 @@ const fetchOpenIntakes = vi.fn<() => Promise<unknown[]>>();
 const fetchPatientOverview = vi.fn<() => Promise<Patienteneintrag[]>>();
 const fetchConsentWithdrawals = vi.fn<() => Promise<unknown[]>>();
 const fetchCareWithoutConclusion = vi.fn<() => Promise<CareWithoutConclusion[]>>();
+const fetchEndingTrainingPackages = vi.fn<() => Promise<EndingTrainingPackage[]>>();
 
 vi.mock('@/features/portal/messages/api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -71,6 +73,10 @@ vi.mock('./training-withdrawals-api', async (importOriginal) => ({
 vi.mock('./aftercare-cancellations-api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchAboKuendigungen: leer,
+}));
+vi.mock('./ending-training-packages-api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchEndingTrainingPackages: () => fetchEndingTrainingPackages(),
 }));
 vi.mock('@/features/exercise/exercises/plans/api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -165,6 +171,7 @@ beforeEach(() => {
   fetchPatientOverview.mockResolvedValue([]);
   fetchConsentWithdrawals.mockResolvedValue([]);
   fetchCareWithoutConclusion.mockResolvedValue([]);
+  fetchEndingTrainingPackages.mockResolvedValue([]);
   fetchUrlaub.mockResolvedValue(URLAUB_LEER);
   fetchWorkingTime.mockResolvedValue(ARBEITSZEIT_LEER);
   fetchReimbursements.mockResolvedValue(testOverview({ can_decide: true, can_read_all: true }));
@@ -389,11 +396,86 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
     expect(fetchReimbursements).not.toHaveBeenCalled();
   });
 
+  it('stellt die Trainingspakete ohne Anschluss nach die Verordnungen zu erfassen (ANN-834)', async () => {
+    fetchOffeneScans.mockResolvedValue([
+      {
+        file_id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001',
+        patient_id: ERIKA,
+        patient_given_name: 'Erika',
+        patient_family_name: 'Beispiel',
+        uploaded_at: '2026-10-10T08:00:00.000Z',
+        uploaded_by_name: null,
+      },
+    ]);
+    fetchEndingTrainingPackages.mockResolvedValue([
+      {
+        training_relationship_id: 'eeeeeeee-eeee-4eee-8eee-000000000001',
+        given_name: 'Tina',
+        family_name: 'Trainingskundin',
+        package_months: 3,
+        ends_on: '2026-10-20',
+        care_open: false,
+      },
+    ]);
+    renderWithProviders(<OpenPointsPage user={testUser(['office'])} />, '/offen');
+    await screen.findByRole('heading', { name: 'Trainingspaket endet (1)' });
+    expect(gruppen()).toEqual(['Verordnungen zu erfassen (1)', 'Trainingspaket endet (1)']);
+    expect(screen.queryByText('Nichts offen')).toBeNull();
+  });
+
+  it('rollt mit dem Sprungziel der Kennzahl zur Gruppe, sobald alles geladen ist (ANN-834)', async () => {
+    const rollen = vi.fn();
+    Element.prototype.scrollIntoView = rollen;
+    fetchEndingTrainingPackages.mockResolvedValue([
+      {
+        training_relationship_id: 'eeeeeeee-eeee-4eee-8eee-000000000001',
+        given_name: 'Tina',
+        family_name: 'Trainingskundin',
+        package_months: 3,
+        ends_on: '2026-10-20',
+        care_open: false,
+      },
+    ]);
+    try {
+      renderWithProviders(
+        <OpenPointsPage user={testUser(['office'])} />,
+        '/offen#trainingspaket-endet',
+      );
+      await screen.findByRole('heading', { name: 'Trainingspaket endet (1)' });
+      await waitFor(() => expect(rollen).toHaveBeenCalledWith({ block: 'start' }));
+      expect((rollen.mock.contexts[0] as HTMLElement).id).toBe('trainingspaket-endet');
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
+  it('sagt es, wenn die Trainingspakete nicht laden, statt still zu fehlen (ANN-834)', async () => {
+    fetchEndingTrainingPackages.mockRejectedValue(new Error('Netz'));
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+    expect(
+      await screen.findByText('Die endenden Trainingspakete konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Nichts offen')).toBeNull();
+  });
+
+  it('fragt die Trainingspakete nur für die ab, die Pakete führen (ANN-071)', async () => {
+    for (const rollen of [['therapist'], ['team_lead'], ['trainer']] as const) {
+      const { unmount } = renderWithProviders(
+        <OpenPointsPage user={testUser([...rollen])} />,
+        '/offen',
+      );
+      await screen.findByText('Nichts offen');
+      unmount();
+    }
+    expect(fetchEndingTrainingPackages).not.toHaveBeenCalled();
+  });
+
   it('lädt jede Liste nur einmal, obwohl Seite und Gruppe sie lesen', async () => {
     renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
     await screen.findByText('Nichts offen');
     expect(fetchOffeneScans).toHaveBeenCalledTimes(1);
     expect(fetchRueckfragen).toHaveBeenCalledTimes(1);
     expect(fetchOpenIntakes).toHaveBeenCalledTimes(1);
+    expect(fetchEndingTrainingPackages).toHaveBeenCalledTimes(1);
   });
 });

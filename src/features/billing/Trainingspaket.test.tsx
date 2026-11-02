@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useQuery } from '@tanstack/react-query';
 import type * as PaketApi from './trainingspaket-api';
 import { renderWithProviders } from '@/test-utils';
 
@@ -59,6 +60,14 @@ const POSITIONEN: PaketApi.Paketposition[] = [
   },
 ];
 
+const offenePunkte = vi.fn(() => Promise.resolve([]));
+
+/** Liest wie Offene Punkte unter `open-points`; ohne Erneuerung fragt sie nie ein zweites Mal. */
+function OffenePunkteSonde() {
+  useQuery({ queryKey: ['open-points', 'sonde'], queryFn: offenePunkte, staleTime: Infinity });
+  return null;
+}
+
 function sicht(teil: Partial<PaketApi.Paketsicht> = {}): PaketApi.Paketsicht {
   return { today: '2026-10-07', start_blocker: null, packages: [], ...teil };
 }
@@ -71,15 +80,47 @@ describe('Trainingspaket am Trainingsverhältnis (ANG-006)', () => {
     deletePaket.mockReset();
   });
 
-  it('zeigt ein laufendes Paket mit Zeitraum, Laufzeit und Preis', async () => {
+  it('zeigt ein laufendes Paket mit Zeitraum, Laufzeit und Preis; offen ist die Abrechnung', async () => {
     fetchPakete.mockResolvedValue(sicht({ packages: [LAUFEND] }));
     renderWithProviders(<Trainingspaket verhaeltnisId="t1" />);
     expect(await screen.findByText('Trainingspaket 3 Monate')).toBeInTheDocument();
-    expect(screen.getByText('Läuft')).toBeInTheDocument();
     expect(
       screen.getByText(/01\.10\.2026 bis 31\.12\.2026 · 3 Monate · 390,00/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Noch nicht abgerechnet/)).toBeInTheDocument();
+    // Zeichen und Wort für die offene Abrechnung; „Läuft“ ist der Regelfall (DESIGN.md Regel 5).
+    expect(screen.getByText('Noch nicht abgerechnet')).toBeInTheDocument();
+    expect(screen.getByText('–')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByText('Läuft')).toBeNull();
+  });
+
+  it('lässt den Regelfall ohne Abzeichen; ein geplantes Paket heißt „Beginnt bald“', async () => {
+    fetchPakete.mockResolvedValue(
+      sicht({
+        packages: [
+          {
+            ...LAUFEND,
+            id: 'k3',
+            starts_on: '2027-01-01',
+            ends_on: '2027-03-31',
+            state: 'planned',
+          },
+          { ...LAUFEND, id: 'k2', invoiced: true },
+          {
+            ...LAUFEND,
+            id: 'k0',
+            starts_on: '2026-07-01',
+            ends_on: '2026-09-30',
+            state: 'ended',
+            invoiced: true,
+          },
+        ],
+      }),
+    );
+    renderWithProviders(<Trainingspaket verhaeltnisId="t1" />);
+    expect(await screen.findByText('Beginnt bald')).toBeInTheDocument();
+    // Geplant wird erst ab dem Beginn abgerechnet; laufend und abgerechnet trägt nichts.
+    expect(screen.queryByText('Noch nicht abgerechnet')).toBeNull();
+    expect(screen.queryByText(/abgerechnet|Rechnung/i)).toBeNull();
   });
 
   it('legt ein Paket aus der Preisliste des Beginns an', async () => {
@@ -100,6 +141,68 @@ describe('Trainingspaket am Trainingsverhältnis (ANG-006)', () => {
     expect(fetchPaketpositionen).toHaveBeenCalledWith('2026-10-07');
     expect(createPaket).toHaveBeenCalledWith('t1', 'c6', '2026-10-07');
     expect(await screen.findByText(/Paket angelegt/)).toBeInTheDocument();
+  });
+
+  it('schlägt für ein Folgepaket den Tag nach dem letzten Ende vor (ANN-834)', async () => {
+    fetchPakete.mockResolvedValue(
+      sicht({
+        packages: [
+          LAUFEND,
+          { ...LAUFEND, id: 'k0', starts_on: '2026-07-01', ends_on: '2026-09-30', state: 'ended' },
+        ],
+      }),
+    );
+    fetchPaketpositionen.mockResolvedValue(POSITIONEN);
+    renderWithProviders(<Trainingspaket verhaeltnisId="t1" />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Paket anlegen' }));
+    expect(screen.getByLabelText('Beginn')).toHaveValue('2027-01-01');
+    expect(fetchPaketpositionen).toHaveBeenCalledWith('2027-01-01');
+  });
+
+  it('erneuert Offene Punkte nach dem Anlegen, damit die Zeile ohne Anschluss geht (ANN-834)', async () => {
+    fetchPakete.mockResolvedValue(sicht({ packages: [LAUFEND] }));
+    fetchPaketpositionen.mockResolvedValue(POSITIONEN);
+    createPaket.mockResolvedValue(undefined);
+    offenePunkte.mockClear();
+    renderWithProviders(
+      <>
+        <OffenePunkteSonde />
+        <Trainingspaket verhaeltnisId="t1" />
+      </>,
+    );
+    await userEvent.click(await screen.findByRole('button', { name: 'Paket anlegen' }));
+    await userEvent.selectOptions(await screen.findByLabelText('Paket'), 'c3');
+    expect(offenePunkte).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getAllByRole('button', { name: 'Paket anlegen' }).at(-1)!);
+    expect(await screen.findByText(/Paket angelegt/)).toBeInTheDocument();
+    expect(offenePunkte).toHaveBeenCalledTimes(2);
+  });
+
+  it('rollt mit dem Sprungziel aus Offene Punkte zum Abschnitt, sobald er steht (ANN-834)', async () => {
+    const rollen = vi.fn();
+    Element.prototype.scrollIntoView = rollen;
+    fetchPakete.mockResolvedValue(sicht({ packages: [LAUFEND] }));
+    try {
+      renderWithProviders(
+        <Trainingspaket verhaeltnisId="t1" />,
+        '/?bereich=vertraege#trainingspaket',
+      );
+      expect(await screen.findByText('Trainingspaket 3 Monate')).toBeInTheDocument();
+      await vi.waitFor(() => expect(rollen).toHaveBeenCalledWith({ block: 'start' }));
+      expect((rollen.mock.contexts[0] as HTMLElement).id).toBe('trainingspaket');
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
+  it('schlägt heute vor, wenn jedes Paket schon geendet hat', async () => {
+    fetchPakete.mockResolvedValue(
+      sicht({ packages: [{ ...LAUFEND, ends_on: '2026-10-06', state: 'ended' }] }),
+    );
+    fetchPaketpositionen.mockResolvedValue(POSITIONEN);
+    renderWithProviders(<Trainingspaket verhaeltnisId="t1" />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Paket anlegen' }));
+    expect(screen.getByLabelText('Beginn')).toHaveValue('2026-10-07');
   });
 
   it('sagt während einer laufenden Behandlung, warum es kein Paket gibt (ANN-278)', async () => {
