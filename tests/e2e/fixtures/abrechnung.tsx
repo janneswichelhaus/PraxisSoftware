@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type {
+  RechnungDerAkte,
   Einnahmenzeile,
   Erinnerung,
   Erinnerungsdokument,
@@ -18,6 +19,7 @@ import { CancellationPrintPage } from '@/features/billing/CancellationPrintPage'
 import { CatalogPage } from '@/features/billing/CatalogPage';
 import { InvoiceDetailPage } from '@/features/billing/InvoiceDetailPage';
 import { InvoicePrintPage } from '@/features/billing/InvoicePrintPage';
+import { KartenzahlungPage } from '@/features/billing/KartenzahlungPage';
 import { PaymentsPage } from '@/features/billing/PaymentsPage';
 import { PracticeProfilePage } from '@/features/billing/PracticeProfilePage';
 import { ReminderPrintPage } from '@/features/billing/ReminderPrintPage';
@@ -453,6 +455,43 @@ client.setQueryData(
   ],
 );
 
+// `?seite=kartenzahlung` und `kartenzahlung-zwei`: Kassieren am Hausbesuch (ANN-837).
+const PERSON = '66666666-6666-4666-8666-000000000002';
+const offeneRechnung = (teil: Partial<RechnungDerAkte>): RechnungDerAkte => ({
+  id: OFFEN,
+  status: 'issued',
+  invoice_number: 'RG-2026-0012',
+  period_month: '2026-10-01',
+  issued_on: '2026-10-31',
+  due_on: '2026-11-14',
+  total_cents: 14000,
+  paid_cents: 0,
+  outstanding_cents: 14000,
+  currency: 'EUR',
+  payment_state: 'unpaid',
+  overdue: false,
+  cancelled: false,
+  reminder_due: false,
+  last_reminder_on: null,
+  treatment_basis_id: null,
+  ...teil,
+});
+client.setQueryData(['kartenterminal'], { verfuegbar: true, nachbildung: true });
+client.setQueryData(
+  ['patient-invoices', PERSON],
+  seite === 'kartenzahlung-zwei'
+    ? [
+        offeneRechnung({}),
+        offeneRechnung({
+          id: KORREKTUR,
+          invoice_number: 'RG-2026-0015',
+          issued_on: '2026-11-01',
+          outstanding_cents: 9000,
+        }),
+      ]
+    : [offeneRechnung({})],
+);
+
 const user: CurrentUser = {
   profile: {
     id: '11111111-1111-4111-8111-000000000001',
@@ -482,6 +521,8 @@ const START: Record<string, string> = {
   blatt: `/abrechnung/rechnungen/${OFFEN}/druck`,
   storno: `/abrechnung/rechnungen/${STORNIERT}/storno`,
   erinnerung: `/abrechnung/erinnerungen/${ERINNERUNG}`,
+  kartenzahlung: `/abrechnung/kartenzahlung/${PERSON}?zurueck=%2Fkalender`,
+  'kartenzahlung-zwei': `/abrechnung/kartenzahlung/${PERSON}?zurueck=%2Fkalender`,
 };
 
 const router = createMemoryRouter(
@@ -501,6 +542,7 @@ const router = createMemoryRouter(
     { path: '/abrechnung/katalog', element: rahmen(<CatalogPage user={user} />) },
     { path: '/abrechnung/stammdaten', element: rahmen(<PracticeProfilePage user={user} />) },
     { path: '/abrechnung/auswertung', element: rahmen(<RevenuePage />) },
+    { path: '/abrechnung/kartenzahlung/:patientId', element: rahmen(<KartenzahlungPage />) },
     { path: '*', element: rahmen(<p>Ende der Prüfseite.</p>) },
   ],
   { initialEntries: [START[seite] ?? START.rechnung!] },

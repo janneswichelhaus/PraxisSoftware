@@ -82,7 +82,10 @@ describe('Mit Karte zahlen (ANN-837)', () => {
 
   it('kassiert die eine offene Rechnung mit dem offenen Betrag in zwei Tipps', async () => {
     const nutzer = userEvent.setup();
-    fetchRechnungenDerAkte.mockResolvedValue([rechnung()]);
+    // Nach dem Buchen lädt die Liste neu und hat nichts Offenes mehr; die Bestätigung bleibt.
+    fetchRechnungenDerAkte
+      .mockResolvedValueOnce([rechnung()])
+      .mockResolvedValue([rechnung({ paid_cents: 14000, outstanding_cents: 0 })]);
     kassiereMitKarte.mockResolvedValue({ ok: true, transaktion: 'mock-1', nachbildung: true });
     oeffnen();
 
@@ -95,6 +98,9 @@ describe('Mit Karte zahlen (ANN-837)', () => {
     expect(await screen.findByText('140,00 € mit Karte bezahlt und gebucht.')).toBeInTheDocument();
     expect(screen.getByText('Nachbildung ohne Terminal: Es floss kein Geld.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Fertig' })).toHaveAttribute('href', ZURUECK);
+    await waitFor(() => expect(fetchRechnungenDerAkte).toHaveBeenCalledTimes(2));
+    expect(screen.getByText('140,00 € mit Karte bezahlt und gebucht.')).toBeInTheDocument();
+    expect(screen.queryByText('Keine offene Rechnung')).toBeNull();
     expect(fetchRechnungenDerAkte).toHaveBeenCalledWith(PERSON);
   });
 

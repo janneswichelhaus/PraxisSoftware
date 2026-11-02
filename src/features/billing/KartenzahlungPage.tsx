@@ -12,7 +12,7 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { Feldgruppe, Section } from '@/components/ui/Section';
+import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
 import { formatDate } from '@/lib/datum';
@@ -36,6 +36,8 @@ export function offeneRechnungen(rechnungen: readonly RechnungDerAkte[]): Rechnu
  */
 export function KartenzahlungPage() {
   const { patientId = '' } = useParams();
+  const [suche] = useSearchParams();
+  const zurueck = leseRueckweg(suche, STANDARD);
   const terminal = useKartenterminal(true);
   const rechnungen = useQuery({
     queryKey: ['patient-invoices', patientId],
@@ -43,12 +45,28 @@ export function KartenzahlungPage() {
     retry: false,
     enabled: terminal.data?.verfuegbar === true,
   });
+  // Über der Liste: Nach dem Buchen lädt sie neu, die Rechnung ist nicht mehr offen.
+  const [bezahlt, setBezahlt] = useState<Bezahlt | null>(null);
 
   return (
     <>
       <Rueckweg standard={STANDARD} />
       <PageHeader title="Mit Karte zahlen" />
-      {terminal.isPending ? (
+      {bezahlt ? (
+        <div className="max-w-formular">
+          <Rueckmeldung>
+            {formatEuro(bezahlt.cent, bezahlt.waehrung)} mit Karte bezahlt und gebucht.
+          </Rueckmeldung>
+          {bezahlt.nachbildung ? (
+            <p className="text-ink-muted mt-3 text-sm">
+              Nachbildung ohne Terminal: Es floss kein Geld.
+            </p>
+          ) : null}
+          <Formularfuss>
+            <ButtonLink to={zurueck}>Fertig</ButtonLink>
+          </Formularfuss>
+        </div>
+      ) : terminal.isPending ? (
         <LoadingState label="Das Terminal wird gefragt …" />
       ) : terminal.data?.verfuegbar !== true ? (
         <EmptyState inKarte title="Die Kartenzahlung ist hier nicht eingerichtet." />
@@ -67,7 +85,9 @@ export function KartenzahlungPage() {
             <Kassieren
               rechnungen={offeneRechnungen(liste)}
               patientId={patientId}
+              zurueck={zurueck}
               nachbildung={terminal.data?.nachbildung === true}
+              onBezahlt={setBezahlt}
             />
           )}
         </Abfragezustand>
@@ -76,55 +96,46 @@ export function KartenzahlungPage() {
   );
 }
 
+interface Bezahlt {
+  cent: number;
+  waehrung: string;
+  nachbildung: boolean;
+}
+
 function Kassieren({
   rechnungen,
   patientId,
+  zurueck,
   nachbildung,
+  onBezahlt,
 }: {
   rechnungen: readonly RechnungDerAkte[];
   patientId: string;
+  zurueck: string;
   nachbildung: boolean;
+  onBezahlt: (bezahlt: Bezahlt) => void;
 }) {
   const queryClient = useQueryClient();
-  const [suche] = useSearchParams();
-  const zurueck = leseRueckweg(suche, STANDARD);
   const [gewaehlt, setGewaehlt] = useState<string | null>(
     rechnungen.length === 1 ? rechnungen[0]!.id : null,
   );
   const rechnung = rechnungen.find((r) => r.id === gewaehlt) ?? null;
   const [betrag, setBetrag] = useState(rechnung ? centZuEingabe(rechnung.outstanding_cents) : '');
   const [feldfehler, setFeldfehler] = useState<string | undefined>();
-  const [ergebnis, setErgebnis] = useState<{ cent: number; antwort: Kassierergebnis } | null>(null);
+  const [ergebnis, setErgebnis] = useState<{ antwort: Kassierergebnis } | null>(null);
 
   const kassieren = useMutation({
     mutationFn: ({ id, cent }: { id: string; cent: number }) => kassiereMitKarte(id, cent),
     onSuccess: async (antwort, { cent }) => {
-      setErgebnis({ cent, antwort });
+      setErgebnis({ antwort });
       if (!antwort.ok) return;
+      onBezahlt({ cent, waehrung: rechnung?.currency ?? 'EUR', nachbildung: antwort.nachbildung });
       await queryClient.invalidateQueries({ queryKey: ['patient-invoices', patientId] });
       await queryClient.invalidateQueries({ queryKey: ['appointment'] });
       await queryClient.invalidateQueries({ queryKey: ['offene-posten'] });
       await queryClient.invalidateQueries({ queryKey: ['zahlungen'] });
     },
   });
-
-  if (ergebnis?.antwort.ok) {
-    return (
-      <div className="max-w-formular">
-        <Rueckmeldung>
-          {formatEuro(ergebnis.cent, rechnung?.currency ?? 'EUR')} mit Karte bezahlt und gebucht.
-        </Rueckmeldung>
-        {ergebnis.antwort.nachbildung ? (
-          <p className="text-ink-muted mt-3 text-sm">
-            Nachbildung ohne Terminal: Es floss kein Geld.
-          </p>
-        ) : null}
-        <Formularfuss>
-          <ButtonLink to={zurueck}>Fertig</ButtonLink>
-        </Formularfuss>
-      </div>
-    );
-  }
 
   function waehle(id: string) {
     setGewaehlt(id);
@@ -178,7 +189,7 @@ function Kassieren({
             onWaehlen={waehle}
           />
         )}
-        <Feldgruppe>
+        <div className="mt-4">
           <Field
             label="Betrag"
             inputMode="decimal"
@@ -188,7 +199,7 @@ function Kassieren({
             onChange={(e) => setBetrag(e.target.value)}
             error={feldfehler}
           />
-        </Feldgruppe>
+        </div>
       </Section>
 
       {fehlschlag ? (

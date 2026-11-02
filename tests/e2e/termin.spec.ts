@@ -64,6 +64,23 @@ test.describe('Termin: Kurzblick, Zähler und Heilmittel', () => {
     await expect(page.getByText(/1 Rechnung, 90,00\s€ offen – davon überfällig/)).toBeVisible();
   });
 
+  // ANN-837: Mit eingerichtetem Terminal führt ein Knopf von 44 px zum Kassieren; die Behandelnde
+  // sieht ihn nie, sie sieht keine Rechnung.
+  test('das Büro kommt bei 375 px mit einem Tipp zum Kassieren mit Karte', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`${PRUEFSEITE}?ansicht=buero`);
+    const knopf = page.getByRole('link', { name: 'Mit Karte zahlen' });
+    await expect(knopf).toHaveAttribute(
+      'href',
+      /^\/abrechnung\/kartenzahlung\/[0-9a-f-]{36}\?zurueck=/,
+    );
+    expect((await knopf.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+
+    await page.goto(`${PRUEFSEITE}?ansicht=behandelnd`);
+    await expect(page.getByText('Termin 8 von 10')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Mit Karte zahlen' })).toHaveCount(0);
+  });
+
   for (const breite of [375, 1280]) {
     test(`ist die Verordnung vollständig, schlägt der Termin die Abrechnung vor (${breite} px)`, async ({
       page,

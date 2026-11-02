@@ -257,6 +257,8 @@ client.setQueryData(
 );
 client.setQueryData(['appointment-brief', TERMIN], kurzblick);
 client.setQueryData(['appointment', TERMIN, 'abrechnungslage'], lage);
+// Mit ?ansicht=buero ist ein Terminal eingerichtet (Nachbildung): „Mit Karte zahlen“ (ANN-837).
+client.setQueryData(['kartenterminal'], { verfuegbar: buero, nachbildung: buero });
 client.setQueryData(['appointment', TERMIN, 'leistungen'], leistungen);
 client.setQueryData(
   ['appointment', TERMIN, 'leistungsvorschlag'],

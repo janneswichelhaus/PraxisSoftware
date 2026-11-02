@@ -26,6 +26,28 @@ async function mindestens44(page: Page, rolle: 'button' | 'link', name: string |
 
 test.describe('Abrechnung (Design-Rollout B6)', () => {
   for (const breite of [375, 1280]) {
+    test(`Mit Karte zahlen ist ein Formular ohne Überlauf, bei ${breite} px (ANN-837)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto(`${PRUEFSEITE}?seite=kartenzahlung`);
+      await expect(page.getByRole('heading', { name: 'Mit Karte zahlen', level: 1 })).toBeVisible();
+      await expect(page.getByText('RG-2026-0012')).toBeVisible();
+      await expect(page.getByLabel('Betrag')).toHaveValue('140,00');
+      await mindestens44(page, 'button', 'Am Terminal zahlen');
+      await mindestens44(page, 'link', 'Abbrechen');
+      expect(await ueberlaeuft(page)).toBe(false);
+
+      // Zwei offene Rechnungen: erst wählen, dann zahlen.
+      await page.goto(`${PRUEFSEITE}?seite=kartenzahlung-zwei`);
+      const zahlen = page.getByRole('button', { name: 'Am Terminal zahlen' });
+      await expect(zahlen).toBeDisabled();
+      await page.getByText(/^RG-2026-0015 · 90,00\s€ offen$/).click();
+      await expect(page.getByLabel('Betrag')).toHaveValue('90,00');
+      await expect(zahlen).toBeEnabled();
+      expect(await ueberlaeuft(page)).toBe(false);
+    });
+
     test(`Rechnung mit Reitern läuft bei ${breite} px nicht über`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 900 });
 
