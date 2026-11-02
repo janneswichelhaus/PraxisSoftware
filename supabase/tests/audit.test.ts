@@ -280,6 +280,8 @@ describe('Audit-Lesepfad', () => {
       'get_treatment_note_versions',
       // UBK-012: Koordinate der Patientenadresse fuer „Passt es?“ (ANN-238).
       'get_visit_position',
+      // Planungskarte auf „Gebietstage“ (ANN-835): owner, Teamleitung und Büro.
+      'list_active_address_points',
       'list_appointments',
       'list_assignable_trainers',
       'list_audit_events',

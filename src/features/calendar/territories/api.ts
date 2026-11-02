@@ -80,6 +80,26 @@ export async function fetchTerritories(): Promise<Territory[]> {
   return antwort(z.array(territorySchema), data ?? [], LOAD_ERROR);
 }
 
+const activeAddressPointSchema = z.object({
+  postal_code: z.string(),
+  lat: z.number().nullable(),
+  lon: z.number().nullable(),
+  addresses: z.number().int().positive(),
+});
+export type ActiveAddressPoint = z.infer<typeof activeAddressPointSchema>;
+
+const POINTS_ERROR = 'Die Anschriften konnten nicht geladen werden.';
+
+/** Laufende Behandlungen je Postleitzahl und gerundetem Punkt, ohne Namen (ANN-835). */
+export async function fetchActiveAddressPoints(): Promise<ActiveAddressPoint[]> {
+  const { data, error } = (await getSupabase().rpc('list_active_address_points')) as {
+    data: unknown;
+    error: unknown;
+  };
+  if (error) throw new Error(POINTS_ERROR);
+  return antwort(z.array(activeAddressPointSchema), data ?? [], POINTS_ERROR);
+}
+
 /** Eine Postleitzahl gehört schon einem anderen Gebiet. */
 export class PostalCodeTakenError extends Error {
   readonly postalCode: string;

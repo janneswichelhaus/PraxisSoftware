@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { Karte } from '@/features/calendar/tours/karte/Karte';
 import { Fahrtabschnitt, Routenzusammenfassung } from '@/features/calendar/tours/Fahrten';
 import { Tourenliste } from '@/features/calendar/tours/Tourenliste';
+import { addressMarkers } from '@/features/calendar/territories/addressPoints';
 import { kartenmarker, type Stopp } from '@/features/calendar/tours/tagesroute';
 import type { Coordinate, MapDisplayConfig } from '@/lib/location/contract';
 import '@/index.css';
@@ -69,6 +70,17 @@ const STOPPS: Stopp[] = PUNKTE.map((position, index) => ({
 }));
 
 const MARKER = kartenmarker(null, STOPPS);
+
+// Mit `?planung=1` die Planungskarte auf „Gebietstage“ (ANN-835): je gerundetem Punkt die Zahl der
+// Anschriften, zwei Postleitzahlen auf demselben Punkt fallen zusammen, gleiche Zahlen stehen mehrfach.
+const PLANUNG = addressMarkers([
+  { postal_code: '72070', lat: 48.522, lon: 9.058, addresses: 2 },
+  { postal_code: '72072', lat: 48.522, lon: 9.058, addresses: 1 },
+  { postal_code: '72070', lat: 48.531, lon: 9.049, addresses: 1 },
+  { postal_code: '72072', lat: 48.516, lon: 9.035, addresses: 1 },
+  { postal_code: '72074', lat: 48.539, lon: 9.067, addresses: 2 },
+  { postal_code: '72076', lat: null, lon: null, addresses: 4 },
+]);
 
 /**
  * Ein gültiger MapLibre-Style ohne eine einzige Netzanfrage.
@@ -150,14 +162,23 @@ if (!wurzel) throw new Error('Wurzelelement der Prüfseite fehlt.');
 
 createRoot(wurzel).render(
   <MemoryRouter>
-    <Karte
-      // Pruefseite ohne Function: der Schalter gilt als offen (ADR-019 Punkt 35).
-      freigabe="offen"
-      config={config}
-      stopps={MARKER}
-      beschriftung={`Karte mit ${MARKER.length} Teststopps in Tübingen`}
-      route={route}
-    />
+    {parameter.has('planung') ? (
+      <Karte
+        freigabe="offen"
+        config={config}
+        stopps={PLANUNG}
+        beschriftung={`Karte mit ${PLANUNG.length} Punkten laufender Behandlungen`}
+      />
+    ) : (
+      <Karte
+        // Pruefseite ohne Function: der Schalter gilt als offen (ADR-019 Punkt 35).
+        freigabe="offen"
+        config={config}
+        stopps={MARKER}
+        beschriftung={`Karte mit ${MARKER.length} Teststopps in Tübingen`}
+        route={route}
+      />
+    )}
     {/*
       Mit `?handoff=1` steht die Tourenliste mit dem Navigations-Handoff
       darunter (MAP-005b, seit MAP-006 die echte Liste der Tourenseite).

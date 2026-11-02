@@ -134,6 +134,23 @@ test.describe('Karte der Tagesroute', () => {
     }
   });
 
+  test('zeigt die Planungskarte bei 375 px mit Zahlen statt Namen (ANN-835)', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto(`${PRUEFSEITE}?planung=1`);
+
+    const karte = page.getByRole('region', { name: /4 Punkten laufender Behandlungen/ });
+    await expect(page.locator('canvas.maplibregl-canvas')).toBeVisible();
+    // Zwei Postleitzahlen auf demselben Punkt zählen zusammen; ohne Punkt steht nichts auf der Karte.
+    const marker = karte.locator('.maplibregl-marker');
+    await expect(marker).toHaveCount(4);
+    await expect(marker).toHaveText(['3', '1', '1', '2']);
+
+    const ueberlauf = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(ueberlauf).toBe(false);
+  });
+
   test('ist mit der Tastatur erreichbar und zoombar', async ({ page }) => {
     await page.goto(PRUEFSEITE);
     await expect(page.locator('canvas.maplibregl-canvas')).toBeVisible();

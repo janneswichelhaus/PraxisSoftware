@@ -13,6 +13,7 @@ import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { canManageWorkingHours, type CurrentUser } from '@/features/core';
+import { ActiveAddresses } from './ActiveAddresses';
 import {
   dayPartsText,
   fetchTerritories,
@@ -302,6 +303,13 @@ export function TerritoriesPage({ user }: { user: CurrentUser }) {
         <Kleingedrucktes className="mt-8">
           Gebietstage warnen beim Hausbesuch; sie verbieten nichts.
         </Kleingedrucktes>
+      ) : null}
+
+      {/* Nur wer Gebiete pflegt, sieht, wo die laufenden Behandlungen liegen; der Server prüft selbst. */}
+      {mayEdit ? (
+        <div className="mt-8">
+          <ActiveAddresses territories={abfrage.data ?? []} />
+        </div>
       ) : null}
     </>
   );

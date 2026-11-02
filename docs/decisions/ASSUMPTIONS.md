@@ -886,6 +886,10 @@ Recht · entschieden (Jannes) · 2026-11-01 · Jannes · Prüfpaket · Wiedervor
 Datenschutz · entschieden (Jannes) · 2026-11-01 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2), Steuerberatung (B4)\
 **Annahme.** Der Stapel trägt nur Rechnungsnummer, Tag, Betrag und Konten; der Sammeldebitor hält Namen aus der Buchhaltung der Kanzlei. Belege mit Name und Diagnose (ANN-229) entstehen wie bisher im Browserdruck, die Anwendung legt keine Datei ab und sendet nichts. Ein Exportlauf hält keine Person fest (§20), kein Auditeintrag (ADR-010 Punkt 15). **Grundlage.** Art. 5 Abs. 1 lit. c, Art. 6 Abs. 1 lit. c DSGVO; § 147 AO; VVT Abschnitt 3. **Anker.** `app.datev_bookings`. **Rücknahme.** Personenkonten mit Namen: Debitorenstamm, DSFA-Nachtrag · Aufwand `mittel`.
 
+### ANN-835 — Planungskarte: Punkte ohne Namen, auf 100 m gerundet, für die, die Gebiete pflegen
+Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA-Wiedervorlage Kartendienst)\
+**Annahme.** „Gebietstage“ zeigt owner, Teamleitung und Büro die Anschriften laufender Behandlungen je Postleitzahl und als Punkte mit Zahl ohne Namen, am Server auf drei Nachkommastellen gerundet. Die Karte nutzt nur den Kachelweg, die Punkte zeichnet die Anwendung. Lesen ohne Protokoll. **Grundlage.** Art. 5 Abs. 1 lit. b und c DSGVO; ADR-019 Punkte 2, 6, 14, 35; ADR-010 Punkte 15, 16. **Anker.** `public.list_active_address_points`. **Rücknahme.** Nur owner oder gröber runden: diese Funktion · Aufwand `klein`.
+
 ## Fachregeln
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus
 Technik · offen · 2026-10-10 · — · — · Wiedervorlage: —\

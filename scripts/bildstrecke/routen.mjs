@@ -458,7 +458,7 @@ export const ROUTEN = Object.freeze([
     pfad: '/praxis/gebiete',
     bereich: 'Tour und Planung',
     etikett: 'Gebietstage',
-    konten: ['owner'],
+    konten: ['owner', 'office', 'therapist'],
   },
 
   // --- Doku und Befund -----------------------------------------------------
