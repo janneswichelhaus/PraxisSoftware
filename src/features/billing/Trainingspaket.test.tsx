@@ -80,15 +80,37 @@ describe('Trainingspaket am Trainingsverhältnis (ANG-006)', () => {
     deletePaket.mockReset();
   });
 
-  it('zeigt ein laufendes Paket mit Zeitraum, Laufzeit und Preis', async () => {
+  it('zeigt ein laufendes Paket mit Zeitraum, Laufzeit und Preis, ohne Abzeichen', async () => {
     fetchPakete.mockResolvedValue(sicht({ packages: [LAUFEND] }));
     renderWithProviders(<Trainingspaket verhaeltnisId="t1" />);
     expect(await screen.findByText('Trainingspaket 3 Monate')).toBeInTheDocument();
-    expect(screen.getByText('Läuft')).toBeInTheDocument();
     expect(
       screen.getByText(/01\.10\.2026 bis 31\.12\.2026 · 3 Monate · 390,00/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Noch nicht abgerechnet/)).toBeInTheDocument();
+    expect(screen.getByText('Noch nicht abgerechnet')).toBeInTheDocument();
+    // Der Regelfall trägt kein Abzeichen (DESIGN.md Regel 5).
+    expect(screen.queryByText('Läuft')).toBeNull();
+  });
+
+  it('nennt ein geplantes Paket mit Abzeichen und ein abgerechnetes mit einem Wort', async () => {
+    fetchPakete.mockResolvedValue(
+      sicht({
+        packages: [
+          {
+            ...LAUFEND,
+            id: 'k3',
+            starts_on: '2027-01-01',
+            ends_on: '2027-03-31',
+            state: 'planned',
+          },
+          { ...LAUFEND, id: 'k2', invoiced: true },
+        ],
+      }),
+    );
+    renderWithProviders(<Trainingspaket verhaeltnisId="t1" />);
+    expect(await screen.findByText('Beginnt bald')).toBeInTheDocument();
+    expect(screen.getByText('Abgerechnet')).toBeInTheDocument();
+    expect(screen.queryByText(/die Rechnung entsteht/)).toBeNull();
   });
 
   it('legt ein Paket aus der Preisliste des Beginns an', async () => {

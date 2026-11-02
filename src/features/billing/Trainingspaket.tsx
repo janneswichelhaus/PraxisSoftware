@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
@@ -91,12 +92,6 @@ function erneuereUebersichten(queryClient: ReturnType<typeof useQueryClient>) {
   void queryClient.invalidateQueries({ queryKey: ANGEBOTSZAHLEN_KEY });
 }
 
-const STAND: Record<Paket['state'], string> = {
-  planned: 'Beginnt bald',
-  running: 'Läuft',
-  ended: 'Beendet',
-};
-
 /**
  * Ein Paket als Zeile der Liste (Design-Rollout B6): Bezeichnung und Stand,
  * Zeitraum, Laufzeit und Preis darunter; ob es abgerechnet ist und der Weg,
@@ -111,12 +106,11 @@ function PaketZeile({ paket, verhaeltnisId }: { paket: Paket; verhaeltnisId: str
       )} · ${formatEuro(paket.price_cents, paket.currency)}${
         paket.created_by_name ? ` · angelegt von ${paket.created_by_name}` : ''
       }`}
-      status={paket.state === 'ended' ? undefined : <Badge>{STAND[paket.state]}</Badge>}
+      // Ein laufendes Paket ist der Regelfall und trägt kein Abzeichen (DESIGN.md Regel 5).
+      status={paket.state === 'planned' ? <Badge>Beginnt bald</Badge> : undefined}
     >
       <p className="text-ink-muted text-sm">
-        {paket.invoiced
-          ? 'Steht auf einer Rechnung.'
-          : 'Noch nicht abgerechnet – die Rechnung entsteht unter Abrechnung → Rechnungen.'}
+        {paket.invoiced ? 'Abgerechnet' : 'Noch nicht abgerechnet'}
       </p>
       {/* Eine Fehlanlage geht nur, solange nichts abgerechnet ist (ANG-006). */}
       {paket.invoiced ? null : (
@@ -232,7 +226,7 @@ function Anlegen({ verhaeltnisId, sicht }: { verhaeltnisId: string; sicht: Paket
 
   return (
     <form
-      className="mt-3 flex flex-col gap-4"
+      className="mt-3"
       aria-label="Trainingspaket anlegen"
       noValidate
       onSubmit={(event) => {
@@ -242,53 +236,51 @@ function Anlegen({ verhaeltnisId, sicht }: { verhaeltnisId: string; sicht: Paket
         speichern.mutate();
       }}
     >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-        <div className="sm:w-44">
-          <Field
-            label="Beginn"
-            type="date"
-            value={beginn}
-            error={fehlerBeginn}
-            onChange={(event) => {
-              setBeginn(event.target.value);
-              setPosition('');
-            }}
-          />
-        </div>
-        <div className="min-w-0 sm:grow">
-          <Select
-            label="Paket"
-            value={position}
-            error={fehlerPaket}
-            disabled={positionen.isPending}
-            onChange={(event) => setPosition(event.target.value)}
-          >
-            <option value="">
-              {positionen.isPending
-                ? 'Wird geladen …'
-                : liste.length === 0
-                  ? 'Die Preisliste nennt kein Paket'
-                  : 'Bitte wählen'}
-            </option>
-            {liste.map((p) => (
-              <option key={p.catalog_item_id} value={p.catalog_item_id}>
-                {p.label} – {formatEuro(p.unit_price_cents, p.currency)}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div className="sm:w-44">
+            <Field
+              label="Beginn"
+              type="date"
+              value={beginn}
+              error={fehlerBeginn}
+              onChange={(event) => {
+                setBeginn(event.target.value);
+                setPosition('');
+              }}
+            />
+          </div>
+          <div className="min-w-0 sm:grow">
+            <Select
+              label="Paket"
+              value={position}
+              error={fehlerPaket}
+              disabled={positionen.isPending}
+              onChange={(event) => setPosition(event.target.value)}
+            >
+              <option value="">
+                {positionen.isPending
+                  ? 'Wird geladen …'
+                  : liste.length === 0
+                    ? 'Die Preisliste nennt kein Paket'
+                    : 'Bitte wählen'}
               </option>
-            ))}
-          </Select>
+              {liste.map((p) => (
+                <option key={p.catalog_item_id} value={p.catalog_item_id}>
+                  {p.label} – {formatEuro(p.unit_price_cents, p.currency)}
+                </option>
+              ))}
+            </Select>
+          </div>
         </div>
+        {positionen.isError ? (
+          <Statusmeldung ton="fehler">{positionen.error.message}</Statusmeldung>
+        ) : null}
+        {speichern.isError ? (
+          <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
+        ) : null}
       </div>
-      {positionen.isError ? (
-        <Statusmeldung ton="fehler">{positionen.error.message}</Statusmeldung>
-      ) : null}
-      <p className="text-ink-muted max-w-prose text-sm">
-        Das Paket läuft über die ganze Laufzeit, auch wenn eine Behandlung dazukommt; es lässt sich
-        nicht pausieren und nicht kündigen. Es wird einmal zu Beginn berechnet.
-      </p>
-      {speichern.isError ? (
-        <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
-      ) : null}
-      <div className="flex flex-wrap gap-3">
+      <Formularfuss zusatz="Das Paket läuft über die ganze Laufzeit, auch wenn eine Behandlung dazukommt; es lässt sich nicht pausieren und nicht kündigen. Es wird einmal zu Beginn berechnet.">
         <Button type="submit" disabled={speichern.isPending}>
           {speichern.isPending ? 'Wird angelegt …' : 'Paket anlegen'}
         </Button>
@@ -303,7 +295,7 @@ function Anlegen({ verhaeltnisId, sicht }: { verhaeltnisId: string; sicht: Paket
         >
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
     </form>
   );
 }
