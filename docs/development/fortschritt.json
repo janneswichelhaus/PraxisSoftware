@@ -1393,7 +1393,7 @@
           "name": "PRX-EPIC-004 Komfort und Export",
           "gewicht": 1,
           "status": "in_arbeit",
-          "nachweis": "#344 bis #347; Kalender-Abo auf Branch claude/weiter-77kj64 (PRX-048, PRX-049)",
+          "nachweis": "#344 bis #347; #349 auf Branch claude/weiter-77kj64 (PRX-048, PRX-049)",
           "vermerk": "DATEV-Export (ANN-828 bis ANN-830), Kennzahlen (ANN-831, ANN-832, ANN-834), Farbe (ANN-833), Planungskarte (ANN-835), Kartenzahlung (ANN-836, ANN-837), Kalender-Abo (ANN-838, ANN-839); offen: Übertragung an DATEV nach B4"
         },
         {

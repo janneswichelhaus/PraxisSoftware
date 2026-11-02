@@ -58,16 +58,13 @@ export function erstelleHandler({ quelle, jetzt = () => new Date() }: Optionen) 
     const abruf = await quelle.lies(adresse);
     if (!abruf.ok) return ohneInhalt(502);
     if (abruf.eintraege === null) return ohneInhalt(404);
-    return new Response(
-      anfrage.method === 'HEAD' ? null : baueKalender(abruf.eintraege, jetzt()),
-      {
-        status: 200,
-        headers: {
-          ...SICHER,
-          'Content-Type': 'text/calendar; charset=utf-8',
-          'Content-Disposition': 'inline; filename="own-motion.ics"',
-        },
+    return new Response(anfrage.method === 'HEAD' ? null : baueKalender(abruf.eintraege, jetzt()), {
+      status: 200,
+      headers: {
+        ...SICHER,
+        'Content-Type': 'text/calendar; charset=utf-8',
+        'Content-Disposition': 'inline; filename="own-motion.ics"',
       },
-    );
+    });
   };
 }

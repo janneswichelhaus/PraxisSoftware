@@ -10,7 +10,10 @@ const VERZEICHNIS = join(import.meta.dirname, '.');
 const VERBOTEN: { muster: RegExp; grund: string }[] = [
   { muster: /@supabase\/supabase-js|createClient/, grund: 'Datenbankclient' },
   { muster: /\bconsole\s*\./, grund: 'Betriebslog' },
-  { muster: /\/rest\/v1\/(?!rpc\/calendar_feed\b)|\/auth\/v1|\/storage\/v1/, grund: 'andere Pfade' },
+  {
+    muster: /\/rest\/v1\/(?!rpc\/calendar_feed\b)|\/auth\/v1|\/storage\/v1/,
+    grund: 'andere Pfade',
+  },
   { muster: /SUPABASE_SERVICE_ROLE_KEY|SUPABASE_DB_URL/, grund: 'Vorgaben der Laufzeit' },
   { muster: /Deno\.writeTextFile|Deno\.writeFile|Deno\.openKv/, grund: 'Persistenz' },
   { muster: /localStorage|sessionStorage|caches\./, grund: 'Persistenz' },

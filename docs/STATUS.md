@@ -6,7 +6,7 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Kalender-Abo** auf `claude/weiter-77kj64`: eigene Termine als Abo, nur Uhrzeit und Art, Adresse
+**Kalender-Abo**: #349 auf `claude/weiter-77kj64`: eigene Termine als Abo, nur Uhrzeit und Art, Adresse
 nur als SHA-256 (PRX-048, PRX-049, ANN-838); Function ohne Anmeldung mit eigenem Schlüssel
 (ANN-839, Frage zu ADR-004). Scharf erst mit OPS-001.
 

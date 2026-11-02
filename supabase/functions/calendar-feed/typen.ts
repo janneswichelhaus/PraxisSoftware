@@ -12,8 +12,7 @@ export interface Eintrag {
 
 /** `eintraege: null` heißt: Adresse unbekannt oder das Konto gilt nicht mehr. */
 export type Abruf =
-  | { readonly ok: true; readonly eintraege: readonly Eintrag[] | null }
-  | { readonly ok: false };
+  { readonly ok: true; readonly eintraege: readonly Eintrag[] | null } | { readonly ok: false };
 
 export interface Quelle {
   readonly lies: (adresse: string) => Promise<Abruf>;
