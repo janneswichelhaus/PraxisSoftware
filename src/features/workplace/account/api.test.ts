@@ -34,8 +34,8 @@ beforeEach(() => {
   signOut.mockReset();
   updateUser.mockReset();
 
-  rpc.mockImplementation((_name: string, args: { p_event: string }) => {
-    ablauf.push(`rpc:${args.p_event}`);
+  rpc.mockImplementation((name: string, args?: { p_event: string }) => {
+    ablauf.push(`rpc:${args?.p_event ?? name}`);
     return Promise.resolve({ error: null });
   });
   signOut.mockImplementation(() => {
@@ -52,7 +52,20 @@ describe('beendeAlleSitzungen', () => {
   it('vermerkt vor dem Abmelden — danach gäbe es kein Konto mehr, dem der Vorgang zuzuordnen wäre', async () => {
     await beendeAlleSitzungen();
 
-    expect(ablauf).toEqual(['rpc:sessions_ended', 'signOut']);
+    expect(ablauf).toEqual(['rpc:end_own_calendar_feed', 'rpc:sessions_ended', 'signOut']);
+  });
+
+  it('beendet zuerst das Kalender-Abo; scheitert das, wird nicht abgemeldet (ANN-838)', async () => {
+    rpc.mockImplementation((name: string) => {
+      ablauf.push(`rpc:${name}`);
+      return Promise.resolve({
+        error: name === 'end_own_calendar_feed' ? { message: 'network' } : null,
+      });
+    });
+
+    await expect(beendeAlleSitzungen()).rejects.toThrow('Das Abo konnte nicht beendet werden.');
+    expect(ablauf).toEqual(['rpc:end_own_calendar_feed']);
+    expect(signOut).not.toHaveBeenCalled();
   });
 
   it('meldet den Vorgang global, nicht nur für dieses Gerät', async () => {
@@ -62,7 +75,11 @@ describe('beendeAlleSitzungen', () => {
   });
 
   it('beendet die Sitzungen auch, wenn der Vermerk scheitert (ANN-044, Fassung 2)', async () => {
-    rpc.mockResolvedValue({ error: { message: 'audit down' } });
+    rpc.mockImplementation((name: string) =>
+      Promise.resolve({
+        error: name === 'end_own_calendar_feed' ? null : { message: 'audit down' },
+      }),
+    );
     const konsole = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await expect(beendeAlleSitzungen()).resolves.toBeUndefined();

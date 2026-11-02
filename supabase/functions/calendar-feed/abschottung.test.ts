@@ -2,8 +2,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// Was die Function des Kalender-Abos nicht darf (ANN-839, ADR-011): Sie ruft mit ihrem eigenen
-// Schlüssel genau `calendar_feed`, schreibt nichts in die Konsole und speichert nichts.
+// Was die Function des Kalender-Abos nicht darf (ANN-839, ADR-011): Sie ruft mit dem Token ihrer
+// Rolle genau `calendar_feed`, schreibt nichts in die Konsole und speichert nichts.
 
 const VERZEICHNIS = join(import.meta.dirname, '.');
 
@@ -51,6 +51,22 @@ describe('Abschottung des Kalender-Abos', () => {
       return [...quelltext.matchAll(/https?:\/\/([^/'"`\s$]+)/g)].map((treffer) => treffer[1]!);
     });
     expect(fremde).toEqual([]);
+  });
+
+  it('liest nur Adresse, öffentlichen Schlüssel und das Token der Rolle aus der Umgebung', () => {
+    const quelltexte = dateien.map((pfad) =>
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfade aus dem eigenen Verzeichnis.
+      ohneKommentare(readFileSync(pfad, 'utf8')),
+    );
+    const namen = quelltexte.flatMap((quelltext) =>
+      [...quelltext.matchAll(/Deno\.env\.get\('([A-Z_]+)'\)/g)].map((treffer) => treffer[1]!),
+    );
+    expect([...new Set(namen)].sort()).toEqual([
+      'CALENDAR_FEED_ROLE_KEY',
+      'SUPABASE_ANON_KEY',
+      'SUPABASE_URL',
+    ]);
+    expect(quelltexte.some((quelltext) => /Deno\.env\.toObject/.test(quelltext))).toBe(false);
   });
 
   it('würde einen fremden Datenbankpfad tatsächlich finden', () => {

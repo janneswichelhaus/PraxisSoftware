@@ -53,12 +53,25 @@ export async function fetchEigenesAbo(): Promise<EigenesAbo | null> {
   return erste ? { seit: erste.created_at } : null;
 }
 
+/** Die Anmeldung liegt zu lange zurück: erst mit dem Passkey bestätigen (ANN-325, ANN-838). */
+export class AboErneutAnmelden extends Error {
+  constructor() {
+    super(
+      'Zum Erstellen des Links bitte zuerst mit dem Passkey bestätigen. Danach bleiben zehn Minuten.',
+    );
+    this.name = 'AboErneutAnmelden';
+  }
+}
+
 /** Erzeugt oder ersetzt die Adresse; nur hier kommt sie im Klartext vor. */
 export async function erzeugeAbo(): Promise<string> {
   const { data, error } = (await getSupabase().rpc('create_own_calendar_feed')) as {
     data: unknown;
-    error: unknown;
+    error: { message?: unknown } | null;
   };
+  if (typeof error?.message === 'string' && error.message.includes('reauthentication required')) {
+    throw new AboErneutAnmelden();
+  }
   if (error || typeof data !== 'string' || !ADRESSE.test(data)) {
     throw new Error('Der Abo-Link konnte nicht erstellt werden.');
   }

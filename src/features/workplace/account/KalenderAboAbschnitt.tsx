@@ -9,8 +9,11 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
+import { PasskeyFehler, anmeldenMitPasskey } from '@/features/core';
 import { dayKey, formatDate } from '@/lib/datum';
+import { getSupabase } from '@/lib/supabase';
 import {
+  AboErneutAnmelden,
   aboAdressen,
   beendeAbo,
   erzeugeAbo,
@@ -50,6 +53,10 @@ function Abo() {
   // Nur im Speicher dieser Seite: Nach dem Verlassen ist der Link fort, auch hier.
   const [neu, setNeu] = useState<{ link: string; ersetzt: boolean } | null>(null);
   const [verloren, setVerloren] = useState<'erstellt' | 'ersetzt' | null>(null);
+  const [passkey, setPasskey] = useState<{ laeuft: boolean; fehler: string | null }>({
+    laeuft: false,
+    fehler: null,
+  });
 
   async function neuLaden() {
     await queryClient.invalidateQueries({ queryKey: ABO });
@@ -66,7 +73,8 @@ function Abo() {
       await neuLaden();
     },
     // Kam nur die Antwort nicht an, gilt der neue Link am Server schon; der bisherige nicht mehr.
-    onError: async (_fehler, ersetzen, vorher) => {
+    onError: async (fehler, ersetzen, vorher) => {
+      if (fehler instanceof AboErneutAnmelden) return;
       const { data } = await abo.refetch();
       if (data !== undefined && (data?.seit ?? null) !== (vorher ?? null)) {
         setVerloren(ersetzen ? 'ersetzt' : 'erstellt');
@@ -82,11 +90,42 @@ function Abo() {
     },
   });
 
-  const fehlerErstellen = erstellen.isError
-    ? verloren === 'ersetzt'
-      ? 'Der neue Link kam nicht an, der bisherige gilt schon nicht mehr. Bitte noch einmal erstellen.'
-      : `Der Link konnte nicht erstellt werden. ${VERBINDUNG_PRUEFEN}`
-    : undefined;
+  /** Wie beim Festlegen der PIN: erst mit dem Passkey bestätigen, dann ohne neues Tippen erstellen. */
+  async function mitPasskeyErstellen(ersetzen: boolean): Promise<void> {
+    setPasskey({ laeuft: true, fehler: null });
+    try {
+      const vorher = (await getSupabase().auth.getSession()).data.session?.user.id;
+      await anmeldenMitPasskey();
+      const nachher = (await getSupabase().auth.getSession()).data.session?.user.id;
+      // Ein Passkey eines anderen Kontos ist ein Kontowechsel, keine Bestätigung (ADR-025 Punkt 7).
+      if (!vorher || nachher !== vorher) {
+        throw new PasskeyFehler('Der Passkey gehört zu einem anderen Zugang. Es gibt keinen Link.');
+      }
+    } catch (grund) {
+      setPasskey({
+        laeuft: false,
+        fehler:
+          grund instanceof PasskeyFehler
+            ? grund.message
+            : `Die Bestätigung hat nicht geklappt. ${VERBINDUNG_PRUEFEN}`,
+      });
+      throw grund;
+    }
+    setPasskey({ laeuft: false, fehler: null });
+    await erstellen.mutateAsync(ersetzen);
+  }
+
+  const erneutAnmelden = erstellen.error instanceof AboErneutAnmelden;
+  const fehlerErstellen =
+    passkey.fehler ??
+    (erstellen.error instanceof AboErneutAnmelden
+      ? erstellen.error.message
+      : erstellen.isError
+        ? verloren === 'ersetzt'
+          ? 'Der neue Link kam nicht an, der bisherige gilt schon nicht mehr. Bitte noch einmal erstellen.'
+          : `Der Link konnte nicht erstellt werden. ${VERBINDUNG_PRUEFEN}`
+        : undefined);
+  const ersetzenMitPasskey = erneutAnmelden && erstellen.variables === true;
 
   return (
     <Abfragezustand
@@ -103,7 +142,23 @@ function Abo() {
               Der Link kam nicht an. Bitte einen neuen erstellen.
             </Statusmeldung>
           ) : null}
-          {stand === null && !neu ? (
+          {stand === null && !neu && erneutAnmelden ? (
+            <div className="flex flex-col items-start gap-3">
+              <Statusmeldung ton="warnung">{new AboErneutAnmelden().message}</Statusmeldung>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={passkey.laeuft || erstellen.isPending}
+                onClick={() => void mitPasskeyErstellen(false).catch(() => undefined)}
+              >
+                {passkey.laeuft || erstellen.isPending
+                  ? 'Wird geprüft …'
+                  : 'Mit Passkey bestätigen'}
+              </Button>
+              {passkey.fehler ? <Statusmeldung ton="fehler">{passkey.fehler}</Statusmeldung> : null}
+            </div>
+          ) : null}
+          {stand === null && !neu && !erneutAnmelden ? (
             <div>
               <Button
                 type="button"
@@ -125,12 +180,19 @@ function Abo() {
               {neu ? null : (
                 <Rueckfrage
                   ausloeser="Neuen Link erstellen"
-                  bestaetigen="Neuen Link erstellen"
-                  bestaetigenLaeuft="Wird erstellt …"
+                  bestaetigen={
+                    ersetzenMitPasskey ? 'Mit Passkey bestätigen' : 'Neuen Link erstellen'
+                  }
+                  bestaetigenLaeuft={ersetzenMitPasskey ? 'Wird geprüft …' : 'Wird erstellt …'}
                   unterDerReihe
                   fehler={erstellen.variables === true ? fehlerErstellen : undefined}
-                  onBestaetigen={() => erstellen.mutateAsync(true)}
-                  onAbbrechen={() => erstellen.reset()}
+                  onBestaetigen={() =>
+                    ersetzenMitPasskey ? mitPasskeyErstellen(true) : erstellen.mutateAsync(true)
+                  }
+                  onAbbrechen={() => {
+                    erstellen.reset();
+                    setPasskey({ laeuft: false, fehler: null });
+                  }}
                 >
                   Der bisherige Link gilt danach nicht mehr; das alte Abo im Kalender des Telefons
                   bleibt leer stehen.

@@ -23,7 +23,7 @@
 import { randomBytes } from 'node:crypto';
 import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { apiKeys } from './jwt.mjs';
+import { apiKeys, calendarFeedKey } from './jwt.mjs';
 
 /** Die Zeilen, die dieses Skript in der Umgebungsdatei verantwortet. */
 export const MANAGED_KEYS = [
@@ -102,9 +102,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     ensureSecrets(args[0]);
   } else if (command === 'env-local' && args.length === 3) {
     writeEnvLocal(args[0], args[1], args[2]);
+  } else if (command === 'calendar-feed-key' && args.length === 1) {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfad kommt aus cloud-stack.sh
+    const secret = parseEnv(readFileSync(args[0], 'utf8')).get('STACK_JWT_SECRET');
+    if (!secret) throw new Error(`STACK_JWT_SECRET fehlt in ${args[0]}`);
+    process.stdout.write(calendarFeedKey(secret));
   } else {
     console.error(
-      'Aufruf: env.mjs secrets <secrets-datei> | env-local <secrets-datei> <env-datei> <api-url>',
+      'Aufruf: env.mjs secrets <secrets-datei> | env-local <secrets-datei> <env-datei> <api-url>' +
+        ' | calendar-feed-key <secrets-datei>',
     );
     process.exit(2);
   }

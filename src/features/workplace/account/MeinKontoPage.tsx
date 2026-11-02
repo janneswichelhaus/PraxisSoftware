@@ -256,7 +256,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
  * und nicht in eine Fußnote — sonst hält jemand ein gestohlenes Gerät für
  * ausgesperrt, das es noch nicht ist.
  */
-function Sitzungen() {
+function Sitzungen({ mitAbo }: { mitAbo: boolean }) {
   const mutation = useMutation({ mutationFn: beendeAlleSitzungen });
 
   return (
@@ -276,8 +276,8 @@ function Sitzungen() {
       >
         <p>
           Alle angemeldeten Geräte werden abgemeldet, dieses eingeschlossen. Sie melden sich danach
-          neu an. Passkeys und PIN bleiben dabei bestehen – einen Passkey, der nicht mehr in Ihrer
-          Hand ist, oben entfernen.
+          neu an.{mitAbo ? ' Ein Kalender-Abo endet mit.' : ''} Passkeys und PIN bleiben dabei
+          bestehen – einen Passkey, der nicht mehr in Ihrer Hand ist, oben entfernen.
         </p>
         <p className="mt-3">
           Ein bereits geöffnetes Gerät kann noch bis zu einer Stunde weiterlesen, bevor es sich neu
@@ -342,7 +342,7 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
         <ZweiterFaktor user={user} />
         {ohneEmpfang && besitzer ? <DiensttelefonAbschnitt besitzer={besitzer} /> : null}
         {mitAbo ? <KalenderAboAbschnitt /> : null}
-        <Sitzungen />
+        <Sitzungen mitAbo={mitAbo} />
 
         <Kleingedrucktes className="mt-10">
           {/* Wer Stammdaten und Rollen pflegt (WRT-12, ORG-27) - seit Welle B

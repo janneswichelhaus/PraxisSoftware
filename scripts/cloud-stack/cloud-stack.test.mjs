@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { MANAGED_KEYS, mergeEnvLocal, parseEnv } from './env.mjs';
 import { readConfigToml } from './gateway.mjs';
-import { apiKeys, signJwt, verifyJwt } from './jwt.mjs';
+import { apiKeys, calendarFeedKey, signJwt, verifyJwt } from './jwt.mjs';
 
 /**
  * Die reinen Teile des Cloud-Stacks (scripts/cloud-stack.sh): Tokens, die
@@ -40,6 +40,14 @@ describe('jwt.mjs', () => {
     const { anon, serviceRole } = apiKeys(SECRET, 1_900_000_000);
     expect(verifyJwt(anon, SECRET, 1_900_000_001)).toMatchObject({ role: 'anon' });
     expect(verifyJwt(serviceRole, SECRET, 1_900_000_001)).toMatchObject({ role: 'service_role' });
+  });
+
+  it('leitet das Token der Abo-Rolle ab, nie eines mit mehr Rechten (ANN-839)', () => {
+    const token = calendarFeedKey(SECRET, 1_900_000_000);
+    expect(verifyJwt(token, SECRET, 1_900_000_001)).toMatchObject({
+      role: 'calendar_feed_reader',
+    });
+    expect(verifyJwt(token, SECRET, 1_900_000_001)).not.toHaveProperty('sub');
   });
 });
 

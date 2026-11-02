@@ -11,6 +11,8 @@ const EINTRAG = {
   art: 'home_visit' as const,
 };
 
+const KALENDER = { zeitzone: 'Europe/Berlin', eintraege: [EINTRAG] };
+
 function mitQuelle(abruf: Abruf) {
   const lies = vi.fn((_adresse: string) => Promise.resolve(abruf));
   const quelle: Quelle = { lies };
@@ -23,7 +25,7 @@ function anfrage(pfad: string, method = 'GET'): Request {
 
 describe('Die Function des Kalender-Abos (ANN-838)', () => {
   it('sagt der Anwendung, ob das Abo eingerichtet ist - mit CORS nur hier', async () => {
-    const { handler } = mitQuelle({ ok: true, eintraege: [] });
+    const { handler } = mitQuelle({ ok: true, kalender: { ...KALENDER, eintraege: [] } });
     const ja = await handler(anfrage('/calendar-feed'));
     expect(await ja.json()).toEqual({ ok: true, value: { verfuegbar: true } });
     expect(ja.headers.get('Access-Control-Allow-Origin')).toBe('*');
@@ -44,7 +46,7 @@ describe('Die Function des Kalender-Abos (ANN-838)', () => {
       `/calendar-feed/${ADRESSE}.ics`,
       `/functions/v1/calendar-feed/${ADRESSE}.ics`,
     ]) {
-      const { handler, lies } = mitQuelle({ ok: true, eintraege: [EINTRAG] });
+      const { handler, lies } = mitQuelle({ ok: true, kalender: KALENDER });
       const antwort = await handler(anfrage(pfad));
       expect(antwort.status).toBe(200);
       expect(antwort.headers.get('Content-Type')).toBe('text/calendar; charset=utf-8');
@@ -59,7 +61,7 @@ describe('Die Function des Kalender-Abos (ANN-838)', () => {
   });
 
   it('antwortet auf HEAD ohne Inhalt', async () => {
-    const { handler } = mitQuelle({ ok: true, eintraege: [EINTRAG] });
+    const { handler } = mitQuelle({ ok: true, kalender: KALENDER });
     const antwort = await handler(anfrage(`/calendar-feed/${ADRESSE}`, 'HEAD'));
     expect(antwort.status).toBe(200);
     expect(await antwort.text()).toBe('');
@@ -73,7 +75,7 @@ describe('Die Function des Kalender-Abos (ANN-838)', () => {
       `/calendar-feed/${ADRESSE}/mehr`,
       `/calendar-feed/${ADRESSE}.ical`,
     ]) {
-      const { handler, lies } = mitQuelle({ ok: true, eintraege: [EINTRAG] });
+      const { handler, lies } = mitQuelle({ ok: true, kalender: KALENDER });
       const antwort = await handler(anfrage(pfad));
       expect(antwort.status).toBe(404);
       expect(await antwort.text()).toBe('');
@@ -81,10 +83,18 @@ describe('Die Function des Kalender-Abos (ANN-838)', () => {
     }
   });
 
-  it('unterscheidet unbekannt, nicht eingerichtet und Ausfall - ohne Inhalt', async () => {
-    const unbekannt = mitQuelle({ ok: true, eintraege: null });
-    expect((await unbekannt.handler(anfrage(`/calendar-feed/${ADRESSE}`))).status).toBe(404);
+  it('gibt einer unbekannten oder beendeten Adresse eine leere Datei', async () => {
+    const unbekannt = mitQuelle({ ok: true, kalender: null });
+    const antwort = await unbekannt.handler(anfrage(`/calendar-feed/${ADRESSE}.ics`));
+    expect(antwort.status).toBe(200);
+    expect(antwort.headers.get('Content-Type')).toBe('text/calendar; charset=utf-8');
+    expect(antwort.headers.get('Cache-Control')).toBe('no-store');
+    const text = await antwort.text();
+    expect(text).toContain('BEGIN:VCALENDAR');
+    expect(text).not.toContain('BEGIN:VEVENT');
+  });
 
+  it('unterscheidet nicht eingerichtet und Ausfall - ohne Inhalt', async () => {
     const ausfall = mitQuelle({ ok: false });
     const antwort = await ausfall.handler(anfrage(`/calendar-feed/${ADRESSE}`));
     expect(antwort.status).toBe(502);
@@ -96,7 +106,7 @@ describe('Die Function des Kalender-Abos (ANN-838)', () => {
 
   it('nimmt nur GET und HEAD an', async () => {
     for (const methode of ['POST', 'PUT', 'DELETE', 'PATCH']) {
-      const { handler, lies } = mitQuelle({ ok: true, eintraege: [] });
+      const { handler, lies } = mitQuelle({ ok: true, kalender: { ...KALENDER, eintraege: [] } });
       const antwort = await handler(anfrage(`/calendar-feed/${ADRESSE}`, methode));
       expect(antwort.status).toBe(405);
       expect(antwort.headers.get('Allow')).toBe('GET, HEAD');

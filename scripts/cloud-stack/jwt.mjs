@@ -59,3 +59,15 @@ export function apiKeys(secret, now = Math.floor(Date.now() / 1000)) {
     ),
   };
 }
+
+/**
+ * Das Token der Rolle, mit der die Function des Kalender-Abos fragt (ANN-839): Die Rolle darf nur
+ * `calendar_feed`. Wird bei jedem Start neu abgeleitet, damit auch eine aeltere Secret-Datei passt.
+ */
+export function calendarFeedKey(secret, now = Math.floor(Date.now() / 1000)) {
+  const exp = now + 10 * 365 * 24 * 3600;
+  return signJwt(
+    { iss: 'supabase-cloud-stack', role: 'calendar_feed_reader', iat: now, exp },
+    secret,
+  );
+}

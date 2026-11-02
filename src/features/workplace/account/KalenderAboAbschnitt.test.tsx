@@ -3,7 +3,18 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useQuery } from '@tanstack/react-query';
 import type * as AboApi from './kalenderabo-api';
+import type * as Core from '@/features/core';
 import { renderWithProviders } from '@/test-utils';
+
+const anmelden = vi.fn<() => Promise<void>>();
+let kontoNachher = 'konto-a';
+const getSession = vi.fn(() => Promise.resolve({ data: { session: { user: { id: 'konto-a' } } } }));
+
+vi.mock('@/features/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof Core>()),
+  anmeldenMitPasskey: () => anmelden(),
+}));
+vi.mock('@/lib/supabase', () => ({ getSupabase: () => ({ auth: { getSession } }) }));
 
 const fetchAboDienst = vi.fn<() => Promise<boolean>>();
 const fetchEigenesAbo = vi.fn<() => Promise<AboApi.EigenesAbo | null>>();
@@ -28,6 +39,7 @@ vi.mock('./kalenderabo-api', async (importOriginal) => {
 });
 
 const { KalenderAboAbschnitt } = await import('./KalenderAboAbschnitt');
+const { AboErneutAnmelden } = await import('./kalenderabo-api');
 
 const ADRESSE = 'Zz09_-'.padEnd(43, 'q');
 const HTTPS = `https://instanz.test/functions/v1/calendar-feed/${ADRESSE}.ics`;
@@ -39,7 +51,16 @@ describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
     fetchEigenesAbo.mockReset();
     erzeugeAbo.mockReset();
     beendeAbo.mockReset();
+    anmelden.mockReset();
+    getSession.mockReset();
     fetchAboDienst.mockResolvedValue(true);
+    kontoNachher = 'konto-a';
+    let aufrufe = 0;
+    getSession.mockImplementation(() => {
+      aufrufe += 1;
+      const id = aufrufe === 1 ? 'konto-a' : kontoNachher;
+      return Promise.resolve({ data: { session: { user: { id } } } });
+    });
   });
 
   it('erstellt den Link und zeigt ihn genau einmal, zum Kopieren und Öffnen', async () => {
@@ -163,6 +184,59 @@ describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
     await nutzer.click(within(frage).getByRole('button', { name: 'Abbrechen' }));
     await nutzer.click(screen.getByRole('button', { name: 'Abo beenden' }));
     expect(screen.queryByText(/Das Abo konnte nicht beendet werden\./)).toBeNull();
+  });
+
+  it('verlangt nach langer Anmeldung erst den Passkey und erstellt dann ohne neues Tippen', async () => {
+    const nutzer = userEvent.setup();
+    fetchEigenesAbo.mockResolvedValueOnce(null).mockResolvedValue({ seit: '2026-11-02T17:00:00Z' });
+    erzeugeAbo.mockRejectedValueOnce(new AboErneutAnmelden()).mockResolvedValue(ADRESSE);
+    anmelden.mockResolvedValue(undefined);
+    renderWithProviders(<KalenderAboAbschnitt />);
+
+    await nutzer.click(await screen.findByRole('button', { name: 'Abo-Link erstellen' }));
+    expect(
+      await screen.findByText(/Zum Erstellen des Links bitte zuerst mit dem Passkey bestätigen\./),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Abo-Link erstellen' })).toBeNull();
+    await nutzer.click(screen.getByRole('button', { name: 'Mit Passkey bestätigen' }));
+    expect(await screen.findByLabelText('Abo-Link')).toHaveValue(HTTPS);
+    expect(anmelden).toHaveBeenCalledTimes(1);
+    expect(erzeugeAbo).toHaveBeenCalledTimes(2);
+  });
+
+  it('erstellt nichts, wenn der Passkey zu einem anderen Zugang gehört', async () => {
+    const nutzer = userEvent.setup();
+    fetchEigenesAbo.mockResolvedValue(null);
+    erzeugeAbo.mockRejectedValueOnce(new AboErneutAnmelden()).mockResolvedValue(ADRESSE);
+    anmelden.mockResolvedValue(undefined);
+    kontoNachher = 'konto-b';
+    renderWithProviders(<KalenderAboAbschnitt />);
+
+    await nutzer.click(await screen.findByRole('button', { name: 'Abo-Link erstellen' }));
+    await nutzer.click(await screen.findByRole('button', { name: 'Mit Passkey bestätigen' }));
+    expect(
+      await screen.findByText('Der Passkey gehört zu einem anderen Zugang. Es gibt keinen Link.'),
+    ).toBeVisible();
+    expect(erzeugeAbo).toHaveBeenCalledTimes(1);
+    expect(screen.queryByLabelText('Abo-Link')).toBeNull();
+  });
+
+  it('fragt auch beim neuen Link erst nach dem Passkey, in der Rückfrage', async () => {
+    const nutzer = userEvent.setup();
+    fetchEigenesAbo.mockResolvedValue({ seit: '2026-11-02T17:00:00Z' });
+    erzeugeAbo.mockRejectedValueOnce(new AboErneutAnmelden()).mockResolvedValue(ADRESSE);
+    anmelden.mockResolvedValue(undefined);
+    renderWithProviders(<KalenderAboAbschnitt />);
+
+    await nutzer.click(await screen.findByRole('button', { name: 'Neuen Link erstellen' }));
+    const frage = screen.getByRole('group', { name: 'Neuen Link erstellen' });
+    await nutzer.click(within(frage).getByRole('button', { name: 'Neuen Link erstellen' }));
+    expect(await within(frage).findByText(/bitte zuerst mit dem Passkey bestätigen/)).toBeVisible();
+    await nutzer.click(within(frage).getByRole('button', { name: 'Mit Passkey bestätigen' }));
+    expect(await screen.findByLabelText('Abo-Link')).toHaveValue(HTTPS);
+    expect(
+      screen.getByText(/Das alte Abo im Kalender des Telefons bleibt leer stehen/),
+    ).toBeVisible();
   });
 
   it('sagt, wenn das Abo hier nicht eingerichtet ist oder nicht gefragt werden konnte', async () => {

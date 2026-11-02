@@ -1,6 +1,7 @@
 import { getSupabase } from '@/lib/supabase';
 import { protokolliereFehler } from '@/lib/protokoll';
 import { meldeSelbstAb } from '@/features/core';
+import { beendeAbo } from './kalenderabo-api';
 
 /**
  * Das eigene Konto: erst der Vorgang beim Anmeldedienst (§3.4), dann der Vermerk, dass er
@@ -71,6 +72,9 @@ export const KENNWORT_MINDESTLAENGE = 12;
  * beides — und die Oberfläche sagt das an der Stelle der Entscheidung.
  */
 export async function beendeAlleSitzungen(): Promise<void> {
+  // Das Kalender-Abo endet mit, sonst behielte ein verlorenes Gerät seinen Kalender (ANN-838).
+  // Scheitert das, wird nicht abgemeldet; die Rückfrage meldet den Fehler.
+  await beendeAbo();
   // Vor dem Vorgang, weil danach kein `auth.uid()` mehr existiert - siehe
   // Dateikopf und ANN-044. Scheitert der Vermerk, wird trotzdem abgemeldet.
   await meldeVersuch('sessions_ended');

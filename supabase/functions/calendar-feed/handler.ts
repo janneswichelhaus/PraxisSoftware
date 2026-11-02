@@ -57,8 +57,9 @@ export function erstelleHandler({ quelle, jetzt = () => new Date() }: Optionen) 
 
     const abruf = await quelle.lies(adresse);
     if (!abruf.ok) return ohneInhalt(502);
-    if (abruf.eintraege === null) return ohneInhalt(404);
-    return new Response(anfrage.method === 'HEAD' ? null : baueKalender(abruf.eintraege, jetzt()), {
+    // Eine beendete oder ersetzte Adresse bekommt eine leere Datei statt 404: Das alte Abo im
+    // Telefon leert sich beim nächsten Abruf, statt mit alten Terminen stehen zu bleiben.
+    return new Response(anfrage.method === 'HEAD' ? null : baueKalender(abruf.kalender, jetzt()), {
       status: 200,
       headers: {
         ...SICHER,

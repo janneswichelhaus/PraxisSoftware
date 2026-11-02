@@ -7,14 +7,14 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 ## Jetzt
 
 **Kalender-Abo**: #349 auf `claude/weiter-77kj64`: eigene Termine als Abo, nur Uhrzeit und Art, Adresse
-nur als SHA-256 (PRX-048, PRX-049, ANN-838); Function ohne Anmeldung mit eigenem Schlüssel
-(ANN-839, Frage zu ADR-004). Scharf erst mit OPS-001.
+nur als SHA-256 (PRX-048, PRX-049, ANN-838); die Function fragt mit einer Rolle, die nur das Abo
+liest (ANN-839). Scharf erst mit OPS-001.
 
 ## Danach
 
 Bildsichtung von #334 bis #337. Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
-die Übertragung an DATEV erst nach B4 (Jannes 2026-11-01), ERN-EPIC-004 bis -006, ORG-EPIC-001, Schritte 5 bis 7
-mit Jannes' Leinwänden, UI-003; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14
+ERN-EPIC-004 bis -006, ORG-EPIC-001, Schritte 5 bis 7 mit Jannes' Leinwänden, UI-003; die
+Übertragung an DATEV erst nach B4; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
 zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
 

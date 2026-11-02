@@ -1,15 +1,18 @@
 import type { Abruf, Art, Eintrag, Quelle } from './typen.ts';
 
 // Wessen Termine eine Adresse öffnet, entscheidet allein die Datenbank (`calendar_feed`, ANN-838);
-// der eigene Schlüssel der Function ruft genau diese eine Funktion (ANN-839).
+// das Token der Function trägt eine Rolle, die genau diese eine Funktion darf (ANN-839).
 
 const TIMEOUT_MS = 5_000;
-const ARTEN: readonly string[] = ['home_visit', 'practice', 'video'];
+const ARTEN: readonly string[] = ['home_visit', 'practice', 'video', 'internal'];
 const UID = /^[0-9a-f]{64}$/;
 
 interface Optionen {
   readonly supabaseUrl: string;
-  readonly adminKey: string;
+  /** Der öffentliche Schlüssel für das Gateway, derselbe wie in der Anwendung. */
+  readonly apiKey: string;
+  /** JWT der Rolle `calendar_feed_reader`, nie ein Admin-Schlüssel (ADR-004). */
+  readonly rollenToken: string;
   /** Für Tests; sonst der `fetch` der Laufzeit. */
   readonly abrufen?: typeof fetch;
   readonly timeoutMs?: number;
@@ -27,14 +30,24 @@ function alsEintrag(roh: unknown): Eintrag | null {
   return { uid, beginn: von, ende: bis, art: art as Art };
 }
 
+function istZone(zone: unknown): zone is string {
+  if (typeof zone !== 'string' || zone.trim() === '') return false;
+  try {
+    new Intl.DateTimeFormat('de-DE', { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function erstelleQuelle({
   supabaseUrl,
-  adminKey,
+  apiKey,
+  rollenToken,
   abrufen = fetch,
   timeoutMs = TIMEOUT_MS,
 }: Optionen): Quelle {
   const basis = supabaseUrl.trim().replace(/\/+$/, '');
-  const schluessel = adminKey.trim();
 
   async function lies(adresse: string): Promise<Abruf> {
     let antwort: Response;
@@ -42,8 +55,8 @@ export function erstelleQuelle({
       antwort = await abrufen(`${basis}/rest/v1/rpc/calendar_feed`, {
         method: 'POST',
         headers: {
-          apikey: schluessel,
-          Authorization: `Bearer ${schluessel}`,
+          apikey: apiKey.trim(),
+          Authorization: `Bearer ${rollenToken.trim()}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ p_token: adresse }),
@@ -59,12 +72,14 @@ export function erstelleQuelle({
     } catch {
       return { ok: false };
     }
-    if (koerper === null) return { ok: true, eintraege: null };
-    if (!Array.isArray(koerper)) return { ok: false };
-    const eintraege = koerper.map(alsEintrag);
+    if (koerper === null) return { ok: true, kalender: null };
+    if (typeof koerper !== 'object' || Array.isArray(koerper)) return { ok: false };
+    const { zeitzone, termine } = koerper as Record<string, unknown>;
+    if (!istZone(zeitzone) || !Array.isArray(termine)) return { ok: false };
+    const eintraege = termine.map(alsEintrag);
     // Ein einziger unlesbarer Termin verwirft die Datei, statt eine halbe auszuliefern.
     if (eintraege.some((eintrag) => eintrag === null)) return { ok: false };
-    return { ok: true, eintraege: eintraege as Eintrag[] };
+    return { ok: true, kalender: { zeitzone, eintraege: eintraege as Eintrag[] } };
   }
 
   return { lies };

@@ -3,6 +3,7 @@
 
 export { meldeSelbstAb } from './auth/eigeneAbmeldung';
 export { PasskeyAbschnitt, PinAbschnitt } from './auth/einrichtung/AnmeldungVerwalten';
+export { PasskeyFehler, anmeldenMitPasskey } from './auth/passkey';
 export { useFokusNachWechsel } from './auth/fokus';
 export { schluesselAblegen } from './auth/freigabeOhneNetz';
 export { ZUGANG_PFAD } from './auth/linkEinloesen';

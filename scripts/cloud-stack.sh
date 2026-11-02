@@ -377,12 +377,12 @@ start_functions() {
       extra_env+=("$line")
     done <"$ROOT/supabase/functions/.env.local"
   else
-    # Ohne eigene Datei: der Kartendienst als Nachbildung, freigegeben nur fuer
-    # synthetische Daten (ADR-019 Punkte 15 und 36), das AI Gateway mit seiner
-    # Nachbildung (KI-EPIC-001, ADR-005 Punkt 5) und das Kartenterminal mit
-    # seiner (ANN-837). Zugangsdienst, Pruefung und Benachrichtigungen bleiben
-    # ohne ihre Schluessel "nicht eingerichtet".
-    extra_env=(LOCATION_PROVIDER=mock LOCATION_DATA_GATE=synthetic AI_PROVIDER=mock CARD_TERMINAL_PROVIDER=mock APP_ENVIRONMENT=development)
+    # Ohne eigene Datei: Nachbildungen fuer Kartendienst (nur synthetisch, ADR-019 Punkte 15, 36),
+    # AI Gateway (ADR-005 Punkt 5) und Kartenterminal (ANN-837), das Kalender-Abo mit dem Token
+    # seiner Rolle (ANN-839); alles andere bleibt ohne Schluessel "nicht eingerichtet".
+    local abo_token
+    abo_token="$(node "$HERE/env.mjs" calendar-feed-key "$STATE/secrets.env")"
+    extra_env=(LOCATION_PROVIDER=mock LOCATION_DATA_GATE=synthetic AI_PROVIDER=mock CARD_TERMINAL_PROVIDER=mock APP_ENVIRONMENT=development "CALENDAR_FEED_ROLE_KEY=$abo_token")
   fi
   if pid_of functions >/dev/null; then
     info "Edge Functions laufen bereits"

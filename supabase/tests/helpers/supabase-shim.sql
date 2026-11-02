@@ -16,6 +16,10 @@ begin
   if not exists (select 1 from pg_roles where rolname = 'service_role') then
     create role service_role nologin noinherit bypassrls;
   end if;
+  -- Die Rolle von PostgREST; eigene Rollen wie calendar_feed_reader werden ihr vergeben.
+  if not exists (select 1 from pg_roles where rolname = 'authenticator') then
+    create role authenticator nologin noinherit;
+  end if;
 end
 $$;
 
