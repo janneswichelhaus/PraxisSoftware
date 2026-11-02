@@ -65,7 +65,7 @@ in der Änderungshistorie des ADR.
 | [ADR-021](ADR-021-service-areas-and-legal-relationships.md) | Leistungsbereiche und Rechtsverhältnisse: Behandlung und Training getrennt | Angenommen, Fassung 4 (2026-10-18) |
 | [ADR-022](ADR-022-appointment-context-and-training-basis.md) | Terminkontext und Trainingsgrundlage: ein Kalender, ein Kontext je Termin | Angenommen (2026-09-20) |
 | [ADR-023](ADR-023-platform-access.md) | Plattformzugang: Konto je Person, Zugang je Verhältnis, Vertretung als eigene Beziehung | Angenommen, Fassung 8 (2026-10-27) |
-| [ADR-024](ADR-024-offline-and-notifications.md) | Offline-Erfassung und Benachrichtigungen: schmaler Service Worker, Dokumentation und Durchführung ohne Netz, Mitteilungen ohne Inhalt | Angenommen, Fassung 3 (2026-10-27) |
+| [ADR-024](ADR-024-offline-and-notifications.md) | Offline-Erfassung und Benachrichtigungen: schmaler Service Worker, Dokumentation und Durchführung ohne Netz, Mitteilungen ohne Inhalt | Angenommen, Fassung 4 (2026-11-02) |
 | [ADR-025](ADR-025-session-lock.md) | Sitzungssperre: erneute Freigabe nach 60 Minuten und nach Inaktivität, serverseitig durchgesetzt | Angenommen, Fassung 4 (2026-10-11) |
 | [ADR-026](ADR-026-malware-scanning.md) | Virenprüfung der Anhänge von außen: Prüfdienst in Deutschland, Prüfung vor `ready`, Ausfall heißt kein `ready` | Abgelehnt (2026-10-15) |
 | [ADR-027](ADR-027-nutrition-counselling.md) | Ernährungsberatung als Zusatz zu Behandlung und Training, mit klassischem Ernährungstagebuch | Angenommen (2026-10-18) |

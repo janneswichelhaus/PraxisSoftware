@@ -112,13 +112,12 @@ describe('Web-Manifest', () => {
   });
 
   /**
-   * `browser` hieß für Chrome „nicht installierbar" (BEF-041). `minimal-ui`
-   * installiert ohne Service Worker und behält Zurück und Neu laden;
-   * `standalone` verlangte eigene Zurück-Wege in der Oberfläche (ANN-110).
+   * Installiert ohne Browserleiste (ANN-110): `minimal-ui` zeigte oben Titel und Adresse, `browser`
+   * ließe Chrome gar nicht installieren. Zurück führen die Rückwege der Seiten und die Zurück-Geste.
    */
-  it('traegt den Markennamen und laesst Chrome installieren, mit Zurueck-Leiste', () => {
+  it('traegt den Markennamen und oeffnet installiert ohne Browserleiste', () => {
     expect(manifest.name).toBe('Own Motion');
-    expect(manifest.display).toBe('minimal-ui');
+    expect(manifest.display).toBe('standalone');
     // Chrome verlangt fürs Installieren ein Symbol „any" ab 144 px.
     const beliebig = manifest.icons.filter((i) => i.purpose === 'any');
     expect(beliebig.some((i) => Number(i.sizes.split('x')[0]) >= 144)).toBe(true);

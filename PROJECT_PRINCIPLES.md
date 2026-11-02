@@ -2,9 +2,9 @@
 ## Dokumentinformation
 | | |
 |---|---|
-| **Dokumentversion** | **0.31** |
-| **Änderungsdatum** | **2026-10-27** |
-| Vorversion | 0.30 (2026-10-27); 0.29 (2026-10-26); 0.28 (2026-10-18); 0.27 (2026-10-17); 0.26 (2026-10-11); 0.25 (2026-10-10); 0.24 (2026-10-10); 0.23 (2026-10-09); 0.22 (2026-10-09); 0.21 (2026-10-03); 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| **Dokumentversion** | **0.32** |
+| **Änderungsdatum** | **2026-11-02** |
+| Vorversion | 0.31 (2026-10-27); 0.30 (2026-10-27); 0.29 (2026-10-26); 0.28 (2026-10-18); 0.27 (2026-10-17); 0.26 (2026-10-11); 0.25 (2026-10-10); 0.24 (2026-10-10); 0.23 (2026-10-09); 0.22 (2026-10-09); 0.21 (2026-10-03); 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | `docs/adr/` — welche gelten, Fassungen und Status stehen in `docs/adr/README.md` (§21), nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -113,14 +113,18 @@ oder in GitHub committed werden; sie liegen nur im Environment-/Secret-Managemen
 ### 3.4 Keine selbst entwickelte Sicherheitsinfrastruktur
 Kryptografie, Passwort-Hashing, Session-Security, grundlegende Authentifizierung, Datenbank- und
 Backup-Engine DÜRFEN NICHT selbst implementiert werden; dafür MÜSSEN etablierte, professionell
-betriebene Komponenten dienen. Anmeldung, Sitzungen und Passkeys bleiben beim Anmeldedienst. Zwei
+betriebene Komponenten dienen. Anmeldung, Sitzungen und Passkeys bleiben beim Anmeldedienst. Drei
 Ausnahmen, jede weitere braucht eine neue Version dieses Dokuments: die **App-PIN** (Version 0.25),
 die nur eine gesperrte Sitzung auf demselben Gerät freigibt, nie anmeldet und nur in der Datenbank
-mit `pgcrypto` geprüft wird (ADR-025 Punkt 11), und die **Freigabe ohne Netz per Passkey**
+mit `pgcrypto` geprüft wird (ADR-025 Punkt 11), die **Freigabe ohne Netz per Passkey**
 (Version 0.26), die nur Daten auf dem Gerät öffnet, nie eine Sitzung beim Server (ADR-025 Punkt 16,
-ADR-024 Punkt 9); die App-PIN gibt ohne Netz nie frei. Selbst gebaut sind dabei allein
-Fehlversuchszähler und Freigabevermerk der App-PIN und, bei der Freigabe ohne Netz, die
-Entscheidung, die lokale Ansicht zu öffnen.
+ADR-024 Punkt 9), und die **Abo-Adresse des eigenen Kalenders** (Version 0.32): Über eine geheime
+Adresse liest ein Kalenderprogramm ohne Anmeldung nur die eigenen Termine mit Uhrzeit und Art
+(Hausbesuch, Praxis, Video), ohne Namen, Adresse und Leistungsbereich. Sie meldet nie an, liegt nur
+als SHA-256 vor, lässt sich jederzeit neu erzeugen oder beenden und läuft über eine Edge Function,
+scharf erst mit OPS-001. Die App-PIN gibt ohne Netz nie frei. Selbst gebaut sind dabei allein
+Fehlversuchszähler und Freigabevermerk der App-PIN, bei der Freigabe ohne Netz die Entscheidung,
+die lokale Ansicht zu öffnen, und beim Abo der Abgleich der Adresse mit ihrem Hash.
 
 ### 3.5 Hosting, Datenstandort und Dienstleister
 Gesundheitsbezogene Produktionsdaten MÜSSEN grundsätzlich in EU/EWR-Infrastruktur gespeichert und

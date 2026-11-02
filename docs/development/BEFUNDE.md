@@ -263,7 +263,7 @@ nachziehen, Abgelegtes als `git show <commit>:<pfad>` nennen oder streichen.
 **Beobachtung.** Beim Verdichten blieb der Wortlaut, auch wo er schon vorher nicht stimmte: ADR-017
 Punkt 25 (Monatsbericht, ADR-010 Punkt 6 entfallen); ADR-024 Punkt 15 (je Art) gegen
 `app.notification_rule` (je Weg); ADR-025 Punkt 4 ohne Ausnahme für ADR-024 Punkt 6; ADR-023 Punkt 1
-(einzige Ausnahme, §3.4 kennt zwei), 5 (`user_profiles`), 13 (Vertretung gegen `finance_scope`);
+(einzige Ausnahme, §3.4 kennt drei), 5 (`user_profiles`), 13 (Vertretung gegen `finance_scope`);
 ADR-025 Punkt 8 (Konstante je Kontoart); ADR-004 (Konsequenzen, keine allmächtige Kennung) gegen
 `service_role` in drei Functions; ADR-020 Punkt 5 und 8; ADR-018 Punkt 1 (`requested`, `tentative`);
 ADR-008 Punkt 1 gegen `retention_classes.basis`; ADR-027 Punkt 22 gegen `PAL_STUFEN`; §1.2 und §7.1
