@@ -109,6 +109,11 @@ describe('Kartenterminal im Browser (ANN-837)', () => {
         ),
       () => invoke.mockResolvedValue({ data: { ok: true, value: {} }, error: null }),
       () => invoke.mockRejectedValue(new Error('Netz')),
+      // Abgebucht ohne Kennung: nachbuchen geht nicht, neu kassieren darf es nicht heißen.
+      () =>
+        invoke.mockResolvedValue(
+          fehlerAntwort({ ok: false, error: { code: 'not_booked', message: 'x' } }),
+        ),
     ]) {
       fall();
       const unklar = await kassiereMitKarte(RECHNUNG, 100);

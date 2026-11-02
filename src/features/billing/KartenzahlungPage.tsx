@@ -37,6 +37,13 @@ type Ausgang =
   | (Kassierergebnis & { ok: false })
   | { ok: false; art: 'nachbuchen_gescheitert'; satz: string; transaktion: string };
 
+/** Am Terminal belastet, aber nicht gebucht: Rechnung und Betrag genau dieses Versuchs. */
+interface Belastet {
+  rechnung: RechnungDerAkte;
+  cent: number;
+  transaktion: string;
+}
+
 function Nachbildung({ vergangen = false }: { vergangen?: boolean }) {
   return (
     <Statusmeldung ton="warnung">
@@ -150,7 +157,8 @@ function Kassieren({
   const [betrag, setBetrag] = useState(rechnung ? centZuEingabe(rechnung.outstanding_cents) : '');
   const [feldfehler, setFeldfehler] = useState<string | undefined>();
   const [ausgang, setAusgang] = useState<Ausgang | null>(null);
-  const waehrung = rechnung?.currency ?? 'EUR';
+  // Wer abgebucht hat, bucht nur noch nach; ein zweites Kassieren belastete die Karte doppelt.
+  const [belastet, setBelastet] = useState<Belastet | null>(null);
 
   async function neuLaden() {
     await queryClient.invalidateQueries({ queryKey: ['patient-invoices', patientId] });
@@ -160,25 +168,33 @@ function Kassieren({
   }
 
   const kassieren = useMutation({
-    mutationFn: ({ id, cent }: { id: string; cent: number }) => kassiereMitKarte(id, cent),
-    onSuccess: async (antwort, { cent }) => {
+    mutationFn: ({ ziel, cent }: { ziel: RechnungDerAkte; cent: number }) =>
+      kassiereMitKarte(ziel.id, cent),
+    onSuccess: async (antwort, { ziel, cent }) => {
       if (antwort.ok) {
-        onBezahlt({ cent, waehrung, nachbildung: antwort.nachbildung });
+        onBezahlt({ cent, waehrung: ziel.currency ?? 'EUR', nachbildung: antwort.nachbildung });
         await neuLaden();
         return;
       }
       setAusgang(antwort);
+      if (antwort.art === 'nicht_gebucht' && antwort.transaktion) {
+        setBelastet({ rechnung: ziel, cent, transaktion: antwort.transaktion });
+      }
       // Unklar: Vielleicht ist doch gebucht; die Liste sagt es nach dem Neuladen.
       if (antwort.art === 'unklar') await neuLaden();
     },
   });
 
   const nachbuchen = useMutation({
-    mutationFn: ({ id, cent, transaktion }: { id: string; cent: number; transaktion: string }) =>
-      bucheKartenzahlungNach(id, cent, transaktion),
-    onSuccess: async (gebucht, { cent, transaktion }) => {
+    mutationFn: (versuch: Belastet) =>
+      bucheKartenzahlungNach(versuch.rechnung.id, versuch.cent, versuch.transaktion),
+    onSuccess: async (gebucht, versuch) => {
       if (gebucht) {
-        onBezahlt({ cent, waehrung, nachbildung });
+        onBezahlt({
+          cent: versuch.cent,
+          waehrung: versuch.rechnung.currency ?? 'EUR',
+          nachbildung,
+        });
         await neuLaden();
         return;
       }
@@ -186,12 +202,18 @@ function Kassieren({
         ok: false,
         art: 'nachbuchen_gescheitert',
         satz: 'Die Buchung ging wieder nicht. Bitte im Büro mit dieser Kennung von Hand als Karte buchen.',
-        transaktion,
+        transaktion: versuch.transaktion,
       });
     },
   });
 
+  const beschaeftigt = kassieren.isPending || nachbuchen.isPending;
+  // Am Terminal und danach stehen Rechnung und Betrag fest: Gebucht wird, was belastet wurde.
+  const gesperrt = beschaeftigt || belastet !== null;
+  const angezeigt = belastet?.rechnung ?? rechnung;
+
   function waehle(id: string) {
+    if (gesperrt) return;
     setGewaehlt(id);
     const neu = rechnungen.find((r) => r.id === id);
     setBetrag(neu ? centZuEingabe(neu.outstanding_cents) : '');
@@ -199,39 +221,35 @@ function Kassieren({
     setAusgang(null);
   }
 
-  // Wer abgebucht hat, bucht nur noch nach; ein zweites Kassieren belastete die Karte doppelt.
-  const abgebucht =
-    ausgang?.art === 'nicht_gebucht' || ausgang?.art === 'nachbuchen_gescheitert' ? ausgang : null;
-  const beschaeftigt = kassieren.isPending || nachbuchen.isPending;
-
   function absenden(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (beschaeftigt || rechnung === null) return;
-    const cent = parseEuroZuCent(betrag);
-    if (abgebucht) {
-      if (cent !== null && abgebucht.transaktion) {
-        nachbuchen.mutate({ id: rechnung.id, cent, transaktion: abgebucht.transaktion });
-      }
+    if (beschaeftigt) return;
+    if (belastet) {
+      nachbuchen.mutate(belastet);
       return;
     }
+    if (rechnung === null) return;
+    const cent = parseEuroZuCent(betrag);
     if (cent === null || cent <= 0) {
       setFeldfehler('Bitte einen Betrag über null angeben, etwa 140,00.');
       return;
     }
     if (cent > rechnung.outstanding_cents) {
-      setFeldfehler(`Höchstens ${formatEuro(rechnung.outstanding_cents, waehrung)}.`);
+      setFeldfehler(
+        `Höchstens ${formatEuro(rechnung.outstanding_cents, rechnung.currency ?? 'EUR')}.`,
+      );
       return;
     }
     setFeldfehler(undefined);
     setAusgang(null);
-    kassieren.mutate({ id: rechnung.id, cent });
+    kassieren.mutate({ ziel: rechnung, cent });
   }
 
   const knopf = kassieren.isPending
     ? 'Wird am Terminal bezahlt …'
     : nachbuchen.isPending
       ? 'Wird gebucht …'
-      : abgebucht
+      : belastet
         ? 'Buchung wiederholen'
         : ausgang?.art === 'unklar'
           ? 'Nicht bezahlt, erneut zahlen'
@@ -241,12 +259,12 @@ function Kassieren({
     <form onSubmit={absenden} noValidate className="flex flex-col gap-4">
       {nachbildung ? <Nachbildung /> : null}
       <Section titel="Rechnung">
-        {rechnungen.length === 1 && rechnung ? (
+        {angezeigt && (rechnungen.length === 1 || gesperrt) ? (
           <ListRows beschriftung="Offene Rechnung">
             <ListRow
-              titel={rechnung.invoice_number ?? 'Rechnung'}
-              meta={rechnung.issued_on ? `vom ${formatDate(rechnung.issued_on)}` : undefined}
-              betrag={`${formatEuro(rechnung.outstanding_cents, waehrung)} offen`}
+              titel={angezeigt.invoice_number ?? 'Rechnung'}
+              meta={angezeigt.issued_on ? `vom ${formatDate(angezeigt.issued_on)}` : undefined}
+              betrag={`${formatEuro(angezeigt.outstanding_cents, angezeigt.currency ?? 'EUR')} offen`}
             />
           </ListRows>
         ) : (
@@ -262,8 +280,8 @@ function Kassieren({
             label="Betrag"
             inputMode="decimal"
             autoComplete="off"
-            value={betrag}
-            disabled={rechnung === null || abgebucht !== null}
+            value={belastet ? centZuEingabe(belastet.cent) : betrag}
+            disabled={angezeigt === null || gesperrt}
             onChange={(e) => setBetrag(e.target.value)}
             error={feldfehler}
           />
@@ -281,7 +299,7 @@ function Kassieren({
       ) : null}
 
       <Formularfuss>
-        <Button type="submit" disabled={beschaeftigt || rechnung === null}>
+        <Button type="submit" disabled={beschaeftigt || angezeigt === null}>
           {knopf}
         </Button>
         <ButtonLink to={zurueck} variant="quiet">

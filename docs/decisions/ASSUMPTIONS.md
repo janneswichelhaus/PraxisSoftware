@@ -896,7 +896,7 @@ Recht · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Steuerberatu
 
 ### ANN-837 — Kartenzahlung am Hausbesuch: Terminal hinter Adapter, nur Betrag und Referenz hinaus
 Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Anbieterprüfung Zahlungsdienst (Block 11), DSFA (B2)\
-**Annahme.** owner und Büro kassieren am Terminal höchstens den offenen Betrag. Die Function `card-terminal` prüft vorab und bucht danach mit dem Token der Person; zum Zahlungsdienst gehen nur Betrag, Währung und eine zufällige Referenz. Bis ein Dienst geprüft ist, nur die Nachbildung, nie in der Produktion. Die Kennung belegt keine Annahme; vor einem echten Dienst prüft sie die Function. **Grundlage.** §3.5; ADR-002 Punkt 3; ADR-009 Punkt 12. **Anker.** `public.record_card_payment`. **Rücknahme.** Function und Knopf entfernen · Aufwand `klein`.
+**Annahme.** owner und Büro kassieren am Terminal höchstens den offenen Betrag. Die Function `card-terminal` prüft vorab und bucht danach mit dem Token der Person; zum Zahlungsdienst gehen nur Betrag, Währung und eine zufällige Referenz. Bis zur Anbieterprüfung nur die Nachbildung, nie in der Produktion. Ein echter Dienst prüft die Kennung, auch beim Nachbuchen, und bricht nach der Frist ab. **Grundlage.** §3.5; ADR-002 Punkt 3; ADR-009 Punkt 12. **Anker.** `public.record_card_payment`. **Rücknahme.** Function und Knopf entfernen · Aufwand `klein`.
 
 ## Fachregeln
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus

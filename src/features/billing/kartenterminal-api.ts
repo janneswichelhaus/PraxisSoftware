@@ -148,8 +148,11 @@ export async function kassiereMitKarte(
   if (!fehler.success) return { ok: false, art: UNKLAR, satz: SAETZE.timeout };
   const { code, detail, transaktion } = fehler.data.error;
   const satz = code === 'not_payable' && detail ? ZAHLBARKEIT[detail] : SAETZE[code];
-  if (code === 'not_booked' && transaktion) {
-    return { ok: false, art: 'nicht_gebucht', satz, transaktion };
+  if (code === 'not_booked') {
+    // Ohne Kennung lässt sich nicht nachbuchen, und „nichts gebucht“ erlaubte ein zweites Kassieren.
+    return transaktion
+      ? { ok: false, art: 'nicht_gebucht', satz, transaktion }
+      : { ok: false, art: UNKLAR, satz: SAETZE.timeout };
   }
   return { ok: false, art: code === 'timeout' ? UNKLAR : 'nichts_gebucht', satz };
 }
