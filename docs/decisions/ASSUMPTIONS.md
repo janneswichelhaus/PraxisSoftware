@@ -894,6 +894,10 @@ Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Datens
 Recht · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Steuerberatung (B4 Frage 5)\
 **Annahme.** owner und Büro buchen eine Kartenzahlung als eigenen Weg „Karte“, auch als Rückzahlung. Der Stapel bucht sie wie die Verrechnung über Geldtransit (SKR03 1360, SKR04 1460) an den Sammeldebitor, Buchungstext „Zahlung Karte“ oder „Erstattung Karte“; die Auszahlung des Zahlungsdienstes samt Gebühr bucht die Kanzlei aus dem Kontoauszug. Kein Bargeld, keine Kasse. **Grundlage.** ADR-009 Punkt 12; ANN-828; GoBD. **Anker.** `geldkonto` in `src/features/billing/datev.ts`. **Rücknahme.** Eigenes Konto je Zahlungsdienst: diese Funktion und `KONTENRAHMEN` · Aufwand `klein`.
 
+### ANN-837 — Kartenzahlung am Hausbesuch: Terminal hinter Adapter, nur Betrag und Referenz hinaus
+Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Anbieterprüfung Zahlungsdienst (Block 11), DSFA (B2)\
+**Annahme.** owner und Büro kassieren eine offene Rechnung am Terminal, höchstens den offenen Betrag. Die Function `card-terminal` prüft vorab und bucht danach mit dem Token der Person; zum Zahlungsdienst gehen nur Betrag, Währung und eine zufällige Referenz. Bis ein Dienst geprüft ist, nur die Nachbildung, nie in der Produktion. Kein Log. **Grundlage.** §3.5; ADR-002 Punkt 3; ADR-009 Punkt 12; ADR-010 Punkt 15. **Anker.** `public.record_card_payment`. **Rücknahme.** Ohne Kartenzahlung: Function und Knopf entfernen · Aufwand `klein`.
+
 ## Fachregeln
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus
 Technik · offen · 2026-10-10 · — · — · Wiedervorlage: —\

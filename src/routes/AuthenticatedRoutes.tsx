@@ -144,6 +144,7 @@ import { InvoicePrintPage } from '@/features/billing/InvoicePrintPage';
 import { SammeldruckPage } from '@/features/billing/SammeldruckPage';
 import { SteuerberatungPage } from '@/features/billing/SteuerberatungPage';
 import { DatevAngabenPage } from '@/features/billing/DatevAngabenPage';
+import { KartenzahlungPage } from '@/features/billing/KartenzahlungPage';
 import { ReminderPrintPage } from '@/features/billing/ReminderPrintPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { PracticeProfilePage } from '@/features/billing/PracticeProfilePage';
@@ -683,6 +684,11 @@ export function AuthenticatedRoutes({
                     element={<PracticeProfilePage user={user} />}
                   />
                   <Route path="/abrechnung/zahlungen" element={<PaymentsPage user={user} />} />
+                  {/* Kassieren am Hausbesuch (ANN-837); die Adresse trägt nur die Kennung. */}
+                  <Route
+                    path="/abrechnung/kartenzahlung/:patientId"
+                    element={<KartenzahlungPage />}
+                  />
                   {/* Einnahmen je Leistungsart - eine lesende Seite ueber
                   ausgestellte Dokumente und gebuchte Zahlungen, ohne
                   Personenbezug (ABR-011, ADR-009 Punkt 19). */}

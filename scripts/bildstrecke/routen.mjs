@@ -892,6 +892,14 @@ export const ROUTEN = Object.freeze([
     konten: ['owner'],
   },
   {
+    muster: '/abrechnung/kartenzahlung/:patientId',
+    pfad: `/abrechnung/kartenzahlung/${IDS.erika}`,
+    bereich: 'Abrechnung',
+    etikett: 'Mit Karte zahlen (Hausbesuch)',
+    konten: ['owner', 'office'],
+    ohneDaten: 'Der Seed hat keine Rechnung; das Bild zeigt „Keine offene Rechnung“.',
+  },
+  {
     muster: '/abrechnung/auswertung',
     pfad: '/abrechnung/auswertung',
     bereich: 'Abrechnung',

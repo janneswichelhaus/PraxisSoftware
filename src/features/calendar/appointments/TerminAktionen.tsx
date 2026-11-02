@@ -1249,7 +1249,11 @@ function TerminAktionen({
       {/* BEF-081: Empfänger und offene Rechnungen - nur für owner und office. */}
       {mitAbrechnung ? (
         <div className="mt-6">
-          <AbrechnungAbschnitt appointmentId={appointment.id} />
+          <AbrechnungAbschnitt
+            appointmentId={appointment.id}
+            patientId={appointment.patient_id}
+            zurueck={eingehend}
+          />
         </div>
       ) : null}
 

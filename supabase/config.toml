@@ -197,5 +197,13 @@ verify_jwt = true
 [functions.ai-gateway]
 verify_jwt = true
 
+# Die Kartenzahlung am Hausbesuch (PRX-047, ANN-837). `verify_jwt` ist der Riegel der Plattform; die
+# Function prueft die Sitzung selbst und fragt die Datenbank mit dem Token der Person, ob kassiert
+# werden darf (card_payment_preflight), und bucht danach (record_card_payment). Bis ein Zahlungsdienst
+# geprueft ist, gibt es nur die Nachbildung (CARD_TERMINAL_PROVIDER=mock), und die nicht in der
+# Produktion (APP_ENVIRONMENT). Scharf erst nach OPS-001 (ADR-015 Punkt 20).
+[functions.card-terminal]
+verify_jwt = true
+
 [analytics]
 enabled = false

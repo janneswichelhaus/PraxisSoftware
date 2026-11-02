@@ -31,6 +31,14 @@ vi.mock('./abrechnungslage-api', async (importOriginal) => {
   };
 });
 
+let terminal: { data?: { verfuegbar: boolean; nachbildung: boolean } } = {
+  data: { verfuegbar: false, nachbildung: false },
+};
+vi.mock('@/features/billing', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/billing')>()),
+  useKartenterminal: () => terminal,
+}));
+
 const { AbrechnungAbschnitt, TreatmentBasisTile } = await import('./Abrechnungslage');
 
 function rendern(gedeckt: boolean | null = true) {
@@ -90,6 +98,30 @@ describe('Verordnungszähler und Abrechnungslage (PRX-008)', () => {
       'href',
       '/abrechnung',
     );
+  });
+
+  it('bietet „Mit Karte zahlen“ nur mit offener Rechnung, Person und eingerichtetem Terminal (ANN-837)', async () => {
+    const PERSON = '66666666-6666-4666-8666-000000000002';
+    const zurueck = `/kalender?termin=${TERMIN_ID}`;
+    terminal = { data: { verfuegbar: true, nachbildung: true } };
+    const { unmount } = renderWithProviders(
+      <AbrechnungAbschnitt appointmentId={TERMIN_ID} patientId={PERSON} zurueck={zurueck} />,
+    );
+    expect(await screen.findByRole('link', { name: 'Mit Karte zahlen' })).toHaveAttribute(
+      'href',
+      `/abrechnung/kartenzahlung/${PERSON}?zurueck=${encodeURIComponent(zurueck)}`,
+    );
+    unmount();
+
+    // Ohne Person oder ohne Terminal kein Knopf, der ins Leere führt.
+    const ohnePerson = abschnittRendern();
+    expect(await screen.findByText('Beihilfestelle')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Mit Karte zahlen' })).toBeNull();
+    ohnePerson.unmount();
+    terminal = { data: { verfuegbar: false, nachbildung: false } };
+    renderWithProviders(<AbrechnungAbschnitt appointmentId={TERMIN_ID} patientId={PERSON} />);
+    expect(await screen.findByText('Beihilfestelle')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Mit Karte zahlen' })).toBeNull();
   });
 
   it('sagt „keine", wenn nichts offen ist, und nennt die Person selbst als Empfänger', async () => {
