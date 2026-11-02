@@ -1,29 +1,45 @@
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Section } from '@/components/ui/Section';
 import { Textlink } from '@/components/ui/Textlink';
 import { Tile } from '@/components/ui/Tile';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { empfaengerartLabels } from '@/features/billing';
+import { empfaengerartLabels, useKartenterminal } from '@/features/billing';
 import { grundlageBezeichnung, Deckungszeichen } from '@/features/patients';
 import { positionText, type Abrechnungslage } from './abrechnungslage-api';
 import { useAbrechnungslage } from './useAbrechnungslage';
 import type { Appointment } from './api';
 
-function OffeneRechnungen({ lage }: { lage: Abrechnungslage }) {
+function OffeneRechnungen({
+  lage,
+  karte,
+  zurueck,
+}: {
+  lage: Abrechnungslage;
+  karte: string | null;
+  zurueck: string | undefined;
+}) {
   const anzahl = lage.open_invoice_count ?? 0;
   if (anzahl === 0) return <>keine</>;
   return (
-    <span className="flex flex-wrap items-center gap-x-2">
-      <span>
-        {anzahl === 1 ? '1 Rechnung' : `${anzahl} Rechnungen`},{' '}
-        {formatEuro(lage.open_outstanding_cents ?? 0)} offen
-        {lage.open_overdue ? ' – davon überfällig' : ''}
+    <>
+      <span className="flex flex-wrap items-center gap-x-2">
+        <span>
+          {anzahl === 1 ? '1 Rechnung' : `${anzahl} Rechnungen`},{' '}
+          {formatEuro(lage.open_outstanding_cents ?? 0)} offen
+          {lage.open_overdue ? ' – davon überfällig' : ''}
+        </span>
+        <Textlink alleinstehend className="text-sm" to={mitRueckweg('/abrechnung', zurueck)}>
+          Zu den offenen Posten
+        </Textlink>
       </span>
-      <Textlink alleinstehend className="text-sm" to="/abrechnung">
-        Zu den offenen Posten
-      </Textlink>
-    </span>
+      {karte ? (
+        <ButtonLink to={karte} variant="secondary" groesse="kompakt" className="mt-4">
+          Mit Karte zahlen
+        </ButtonLink>
+      ) : null}
+    </>
   );
 }
 
@@ -111,9 +127,24 @@ export function TreatmentBasisTile({
  * entscheidet weiter der Server (`billing_visible`); die Oberfläche blendet
  * nichts aus, was sie bekommen hat (ADR-004).
  */
-export function AbrechnungAbschnitt({ appointmentId }: { appointmentId: string }) {
+export function AbrechnungAbschnitt({
+  appointmentId,
+  patientId,
+  zurueck,
+}: {
+  appointmentId: string;
+  /** Für „Mit Karte zahlen“ (ANN-837); ohne Person kein Kassieren. */
+  patientId?: string | null;
+  /** Wohin „Fertig“ und „Abbrechen“ auf der Seite der Kartenzahlung führen. */
+  zurueck?: string;
+}) {
   const { data } = useAbrechnungslage(appointmentId);
+  const terminal = useKartenterminal(data?.billing_visible === true && Boolean(patientId));
   if (!data?.billing_visible) return null;
+  const karte =
+    patientId && terminal.data?.verfuegbar === true && (data.open_invoice_count ?? 0) > 0
+      ? mitRueckweg(`/abrechnung/kartenzahlung/${patientId}`, zurueck)
+      : null;
 
   // Beschriftung über dem Wert statt daneben: Der Abschnitt steht ab 900 px
   // Inhaltsbreite in der schmalen Kontextspalte (Design-Handoff 2026-10-01,
@@ -133,7 +164,7 @@ export function AbrechnungAbschnitt({ appointmentId }: { appointmentId: string }
         <div className="py-2.5 last:pb-0">
           <dt className="text-ink-muted text-sm">Offene Rechnungen</dt>
           <dd className="text-ink text-liste min-w-0 wrap-anywhere">
-            <OffeneRechnungen lage={data} />
+            <OffeneRechnungen lage={data} karte={karte} zurueck={zurueck} />
           </dd>
         </div>
       </dl>

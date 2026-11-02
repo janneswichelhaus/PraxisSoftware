@@ -67,11 +67,21 @@ interface KarteProps {
    * und sagt die Seite.
    */
   readonly route?: readonly Coordinate[] | undefined;
+  /** Was ohne Karte trotzdem geht; ohne Angabe der Satz der Tour. */
+  readonly trotzdem?: string;
 }
 
-export function Karte({ config, stopps, beschriftung, route, freigabe = 'zu' }: KarteProps) {
-  if (config === null) return <OhneKartenmaterial />;
-  if (freigabe !== 'offen') return <OhneFreigabe pruefen={freigabe === 'pruefen'} />;
+export function Karte({
+  config,
+  stopps,
+  beschriftung,
+  route,
+  freigabe = 'zu',
+  trotzdem = 'Liste und Navigation funktionieren trotzdem.',
+}: KarteProps) {
+  if (config === null) return <OhneKartenmaterial trotzdem={trotzdem} />;
+  if (freigabe !== 'offen')
+    return <OhneFreigabe pruefen={freigabe === 'pruefen'} trotzdem={trotzdem} />;
   return (
     <Kartenflaeche
       config={config}
@@ -91,15 +101,13 @@ export function Karte({ config, stopps, beschriftung, route, freigabe = 'zu' }: 
  * standen hier Umgebungsvariable und `.env.local` (TER-07) - das gehört in
  * die Entwicklerdokumentation, nicht vor die Therapeutin.
  */
-function OhneKartenmaterial() {
+function OhneKartenmaterial({ trotzdem }: { trotzdem: string }) {
   return (
     <div className="rounded-card border-line bg-surface-sunken border border-dashed px-4 py-8 text-center">
       <p className="text-ink text-liste font-medium">
         Die Karte ist in dieser Umgebung nicht eingerichtet.
       </p>
-      <p className="text-ink-muted mx-auto mt-1.5 max-w-prose text-sm">
-        Liste und Navigation funktionieren trotzdem.
-      </p>
+      <p className="text-ink-muted mx-auto mt-1.5 max-w-prose text-sm">{trotzdem}</p>
     </div>
   );
 }
@@ -108,16 +116,14 @@ function OhneKartenmaterial() {
  * Der Hinweis, solange der Schalter der Function zu ist (ADR-019 Punkt 35):
  * keine Kachelanfrage, die Tour steht als Liste mit Nummern daneben.
  */
-function OhneFreigabe({ pruefen }: { pruefen: boolean }) {
+function OhneFreigabe({ pruefen, trotzdem }: { pruefen: boolean; trotzdem: string }) {
   return (
     <div className="rounded-card border-line bg-surface-sunken border border-dashed px-4 py-8 text-center">
       <p className="text-ink text-liste font-medium">
         {pruefen ? 'Karte wird vorbereitet …' : 'Karte nicht freigegeben'}
       </p>
       {pruefen ? null : (
-        <p className="text-ink-muted mx-auto mt-1.5 max-w-prose text-sm">
-          Liste und Navigation funktionieren trotzdem.
-        </p>
+        <p className="text-ink-muted mx-auto mt-1.5 max-w-prose text-sm">{trotzdem}</p>
       )}
     </div>
   );
@@ -128,7 +134,7 @@ function Kartenflaeche({
   stopps,
   beschriftung,
   route,
-}: KarteProps & { config: MapDisplayConfig; route: readonly Coordinate[] }) {
+}: Omit<KarteProps, 'trotzdem'> & { config: MapDisplayConfig; route: readonly Coordinate[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [karte, setKarte] = useState<MapLibreMap | null>(null);
 
@@ -266,7 +272,12 @@ function Kartenflaeche({
     if (rechteck !== null) {
       // `duration: 0` statt einer Animation: Beim Öffnen soll das Bild stehen,
       // nicht erst hinfliegen.
-      karte.fitBounds(rechteck, { padding: 48, maxZoom: 15, duration: 0 });
+      // Rechts mehr Rand: Dort stehen die Zoomknöpfe, ein Marker am Rand verschwand darunter.
+      karte.fitBounds(rechteck, {
+        padding: { top: 48, right: 88, bottom: 48, left: 48 },
+        maxZoom: 15,
+        duration: 0,
+      });
     }
 
     return () => {
@@ -345,7 +356,7 @@ function Kartenflaeche({
         aria-label={beschriftung}
         className="h-[60vh] max-h-[560px] min-h-[320px] w-full"
       />
-      {marker.map(({ stopp, knoten }) =>
+      {marker.map(({ stopp, knoten }, index) =>
         createPortal(
           // Der helle Rand hebt den Marker von der Karte ab - eine Linie,
           // kein Schatten und kein `ring-*` (das Tailwind als `box-shadow`
@@ -356,7 +367,8 @@ function Kartenflaeche({
             {stopp.label}
           </span>,
           knoten,
-          stopp.label,
+          // Die Stelle, nicht die Beschriftung: Zahlen der Planungskarte wiederholen sich.
+          String(index),
         ),
       )}
     </div>

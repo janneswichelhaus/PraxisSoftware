@@ -378,10 +378,11 @@ start_functions() {
     done <"$ROOT/supabase/functions/.env.local"
   else
     # Ohne eigene Datei: der Kartendienst als Nachbildung, freigegeben nur fuer
-    # synthetische Daten (ADR-019 Punkte 15 und 36), und das AI Gateway mit
-    # seiner Nachbildung (KI-EPIC-001, ADR-005 Punkt 5). Zugangsdienst, Pruefung
-    # und Benachrichtigungen bleiben ohne ihre Schluessel "nicht eingerichtet".
-    extra_env=(LOCATION_PROVIDER=mock LOCATION_DATA_GATE=synthetic AI_PROVIDER=mock APP_ENVIRONMENT=development)
+    # synthetische Daten (ADR-019 Punkte 15 und 36), das AI Gateway mit seiner
+    # Nachbildung (KI-EPIC-001, ADR-005 Punkt 5) und das Kartenterminal mit
+    # seiner (ANN-837). Zugangsdienst, Pruefung und Benachrichtigungen bleiben
+    # ohne ihre Schluessel "nicht eingerichtet".
+    extra_env=(LOCATION_PROVIDER=mock LOCATION_DATA_GATE=synthetic AI_PROVIDER=mock CARD_TERMINAL_PROVIDER=mock APP_ENVIRONMENT=development)
   fi
   if pid_of functions >/dev/null; then
     info "Edge Functions laufen bereits"

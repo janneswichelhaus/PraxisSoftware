@@ -82,6 +82,8 @@ describe('gateway.mjs: supabase/config.toml', () => {
     expect(konfiguration.verifyJwtByFunction.get('platform-access')).toBe(false);
     // KI-EPIC-001: Das AI Gateway nimmt nur angemeldete Aufrufe an.
     expect(konfiguration.verifyJwtByFunction.get('ai-gateway')).toBe(true);
+    // Die Kartenzahlung nimmt nur angemeldete Aufrufe an (ANN-837).
+    expect(konfiguration.verifyJwtByFunction.get('card-terminal')).toBe(true);
   });
 
   it('liest die Groessengrenze der Storage-API', () => {

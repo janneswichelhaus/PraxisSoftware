@@ -1009,6 +1009,7 @@ export async function erstelleErinnerung(invoiceId: string): Promise<string> {
 /** Die Wege, die sich buchen lassen. */
 export const zahlungswegLabels: Record<string, string> = {
   bank_transfer: 'Überweisung',
+  card: 'Karte',
   other: 'Anderer Weg',
 };
 

@@ -26,7 +26,8 @@ in der Datenbank hinterlegt (`README.md`, „Fristen aus der Datenbank“).
 
 ## 2. Terminplanung und Hausbesuche
 
-- **Zweck:** Termine vergeben, Touren planen, Fahrzeiten prüfen, zum Hausbesuch navigieren.
+- **Zweck:** Termine vergeben, Touren planen, Fahrzeiten prüfen, zum Hausbesuch navigieren,
+  Gebiete für Hausbesuche planen (Anschriften als Punkte ohne Namen, auf etwa 100 m gerundet).
 - **Betroffene:** Patientinnen und Patienten, Mitarbeitende (wessen Tour).
 - **Daten:** Termine, Anschrift des Hausbesuchs, daraus berechnete Kartenposition.
 - **Rechtsgrundlage:** Art. 6 Abs. 1 lit. b DSGVO (Behandlungsvertrag).
@@ -41,7 +42,9 @@ in der Datenbank hinterlegt (`README.md`, „Fristen aus der Datenbank“).
 - **Daten:** Rechnungen mit Leistungen und Diagnose der Verordnung, Zahlungen, Stornos.
 - **Rechtsgrundlage:** Art. 6 Abs. 1 lit. b und c DSGVO; § 147 AO, § 14 UStG.
 - **Empfänger:** Steuerberatung (Buchungsstapel im DATEV-Format ohne Namen und Diagnosen, die
-  Rechnungen als Belege, ANN-829), Finanzamt bei einer Prüfung. Die Patienteninformation nennt
+  Rechnungen als Belege, ANN-829), Finanzamt bei einer Prüfung. Bei Kartenzahlung am Hausbesuch
+  der Zahlungsdienst des Terminals, erst nach Prüfung und Vertrag; er bekommt Betrag und eine
+  zufällige Referenz, keinen Namen und keine Rechnung (ANN-837). Bis dahin läuft nichts nach außen. Die Patienteninformation nennt
   die Steuerberatung noch nicht (Art. 13 Abs. 1 lit. e DSGVO); sie kommt mit G14 in die
   Datenschutzinformationen (Jannes 2026-11-01).
 - **Frist:** 8 Jahre ab Ende des Kalenderjahres (§ 147 Abs. 3 AO).
@@ -100,5 +103,5 @@ in der Datenbank hinterlegt (`README.md`, „Fristen aus der Datenbank“).
 ## Offen
 
 - Anschrift und Kontakt der Praxis eintragen.
-- Anbieter für Mailversand und Spracheingabe, sobald geprüft.
+- Anbieter für Mailversand, Spracheingabe und Kartenzahlung, sobald geprüft.
 - Ob eine datenschutzbeauftragte Person benannt werden muss (siehe oben).

@@ -458,7 +458,7 @@ export const ROUTEN = Object.freeze([
     pfad: '/praxis/gebiete',
     bereich: 'Tour und Planung',
     etikett: 'Gebietstage',
-    konten: ['owner'],
+    konten: ['owner', 'office', 'therapist'],
   },
 
   // --- Doku und Befund -----------------------------------------------------
@@ -890,6 +890,14 @@ export const ROUTEN = Object.freeze([
     bereich: 'Abrechnung',
     etikett: 'Zahlungen',
     konten: ['owner'],
+  },
+  {
+    muster: '/abrechnung/kartenzahlung/:patientId',
+    pfad: `/abrechnung/kartenzahlung/${IDS.erika}`,
+    bereich: 'Abrechnung',
+    etikett: 'Mit Karte zahlen (Hausbesuch)',
+    konten: ['owner', 'office'],
+    ohneDaten: 'Der Seed hat keine Rechnung; das Bild zeigt „Keine offene Rechnung“.',
   },
   {
     muster: '/abrechnung/auswertung',
