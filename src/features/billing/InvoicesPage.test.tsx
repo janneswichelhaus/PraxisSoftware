@@ -423,6 +423,21 @@ describe('InvoicesPage', () => {
       );
     });
 
+    it('bucht eine Zahlung mit Karte von Hand (ANN-836)', async () => {
+      const nutzer = userEvent.setup();
+      fetchOffenePosten.mockResolvedValue([posten({ outstanding_cents: 4500 })]);
+
+      renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Zahlung buchen' }));
+      await nutzer.selectOptions(screen.getByLabelText('Zahlungsweg'), 'Karte');
+      await nutzer.click(screen.getByRole('button', { name: 'Zahlung buchen' }));
+
+      expect(bucheZahlung).toHaveBeenCalledWith(
+        expect.objectContaining({ invoiceId: 'r1', betragCent: 4500, weg: 'card' }),
+      );
+    });
+
     it('nimmt eine Teilzahlung im selben Formular entgegen', async () => {
       const nutzer = userEvent.setup();
       fetchOffenePosten.mockResolvedValue([posten({ outstanding_cents: 4500 })]);

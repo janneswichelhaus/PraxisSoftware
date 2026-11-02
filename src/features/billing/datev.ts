@@ -20,7 +20,7 @@ export interface DatevBuchung {
   small_business: boolean;
   amount_cents: number;
   direction: 'incoming' | 'refund' | null;
-  method: 'bank_transfer' | 'other' | 'offset' | null;
+  method: 'bank_transfer' | 'other' | 'offset' | 'card' | null;
   currency: string;
 }
 
@@ -113,14 +113,16 @@ function erloeskonto(konten: Konten, b: DatevBuchung): number {
 }
 
 function geldkonto(konten: Konten, b: DatevBuchung): number {
-  if (b.method === 'offset') return konten.geldtransit;
+  // ANN-836: Die Karte kommt erst mit der Auszahlung des Zahlungsdienstes auf die Bank.
+  if (b.method === 'offset' || b.method === 'card') return konten.geldtransit;
   if (b.method === 'other') return konten.kasse;
   return konten.bank;
 }
 
 function zahlungswort(b: DatevBuchung): string {
   if (b.method === 'offset') return 'Verrechnung';
-  return b.direction === 'refund' ? 'Erstattung' : 'Zahlung';
+  const wort = b.direction === 'refund' ? 'Erstattung' : 'Zahlung';
+  return b.method === 'card' ? `${wort} Karte` : wort;
 }
 
 /** Belegfeld 1 trägt die Rechnungsnummer, damit offene Posten sich ausgleichen (ANN-828). */

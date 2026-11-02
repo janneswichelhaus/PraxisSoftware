@@ -98,6 +98,20 @@ describe('Buchungszeile (ANN-828)', () => {
     });
   });
 
+  it('bucht die Karte über Geldtransit, bis der Zahlungsdienst auszahlt (ANN-836)', () => {
+    expect(buchungszeile(zahlung({ method: 'card' }), 'SKR03')).toMatchObject({
+      sollHaben: 'S',
+      konto: 1360,
+      gegenkonto: 10000,
+      buchungstext: 'Zahlung Karte RG-2026-0101',
+    });
+    expect(buchungszeile(zahlung({ method: 'card', direction: 'refund' }), 'SKR04')).toMatchObject({
+      sollHaben: 'H',
+      konto: 1460,
+      buchungstext: 'Erstattung Karte RG-2026-0101',
+    });
+  });
+
   it('kehrt beim Zahlungsstorno die Richtung der Zahlung um', () => {
     expect(buchungszeile(zahlung({ kind: 'payment_void' }), 'SKR03')).toMatchObject({
       sollHaben: 'H',

@@ -325,6 +325,24 @@ describe('Zahlung', () => {
       await expect(buche(id, 100, { weg: 'cash' })).rejects.toThrow(/unknown payment method/);
     });
 
+    it('bucht eine Kartenzahlung von Hand, auch zurück; die Verrechnung bleibt eigen (ANN-836)', async () => {
+      const { id, betrag } = await ausgestellteRechnung();
+      await buche(id, betrag, { weg: 'card' });
+      await buche(id, 500, { weg: 'card', richtung: 'refund' });
+
+      const { rows } = await asUser<{ method: string; direction: string }>(
+        users.office,
+        'select method, direction from public.list_invoice_payments($1::uuid) order by direction',
+        [id],
+      );
+      expect(rows).toEqual([
+        { method: 'card', direction: 'incoming' },
+        { method: 'card', direction: 'refund' },
+      ]);
+      expect((await rechnungszeile(id)).paid_cents).toBe(betrag - 500);
+      await expect(buche(id, 100, { weg: 'offset' })).rejects.toThrow(/unknown payment method/);
+    });
+
     it('weist ein Datum in der Zukunft ab', async () => {
       const { id } = await ausgestellteRechnung();
       const { rows } = await asPostgres<{ tag: string }>(

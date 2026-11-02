@@ -52,7 +52,7 @@ const buchungSchema = z.object({
   // `bigint` aus der Datenbank: je nach Größe Zahl oder Zeichenkette.
   amount_cents: z.coerce.number(),
   direction: z.enum(['incoming', 'refund']).nullable(),
-  method: z.enum(['bank_transfer', 'other', 'offset']).nullable(),
+  method: z.enum(['bank_transfer', 'other', 'offset', 'card']).nullable(),
   currency: z.string(),
 }) satisfies z.ZodType<DatevBuchung, unknown>;
 

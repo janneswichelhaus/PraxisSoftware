@@ -890,6 +890,10 @@ Datenschutz · entschieden (Jannes) · 2026-11-01 · Jannes · Prüfpaket · Wie
 Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA-Wiedervorlage Kartendienst)\
 **Annahme.** „Gebietstage“ zeigt owner, Teamleitung und Büro die Anschriften laufender Behandlungen je Postleitzahl und als Punkte mit Zahl ohne Namen, am Server auf drei Nachkommastellen gerundet. Die Karte nutzt nur den Kachelweg, die Punkte zeichnet die Anwendung. Lesen ohne Protokoll. **Grundlage.** Art. 5 Abs. 1 lit. b und c DSGVO; ADR-019 Punkte 2, 6, 14, 35; ADR-010 Punkte 15, 16. **Anker.** `public.list_active_address_points`. **Rücknahme.** Nur owner oder gröber runden: diese Funktion · Aufwand `klein`.
 
+### ANN-836 — Zahlungsweg Karte: von Hand buchbar, im DATEV-Stapel über Geldtransit
+Recht · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Steuerberatung (B4 Frage 5)\
+**Annahme.** owner und Büro buchen eine Kartenzahlung als eigenen Weg „Karte“, auch als Rückzahlung. Der Stapel bucht sie wie die Verrechnung über Geldtransit (SKR03 1360, SKR04 1460) an den Sammeldebitor, Buchungstext „Zahlung Karte“ oder „Erstattung Karte“; die Auszahlung des Zahlungsdienstes samt Gebühr bucht die Kanzlei aus dem Kontoauszug. Kein Bargeld, keine Kasse. **Grundlage.** ADR-009 Punkt 12; ANN-828; GoBD. **Anker.** `geldkonto` in `src/features/billing/datev.ts`. **Rücknahme.** Eigenes Konto je Zahlungsdienst: diese Funktion und `KONTENRAHMEN` · Aufwand `klein`.
+
 ## Fachregeln
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus
 Technik · offen · 2026-10-10 · — · — · Wiedervorlage: —\

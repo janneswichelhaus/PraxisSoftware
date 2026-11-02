@@ -212,6 +212,17 @@ describe('DATEV-Export', () => {
       expect(JSON.stringify(zeilen)).not.toMatch(/Erika|Beispiel/);
     });
 
+    it('führt eine Kartenzahlung mit ihrem Weg (ANN-836)', async () => {
+      const r = await rechnung('RG-2026-0106', '2026-09-06', [BEFREIT]);
+      await zahlung(r, 14000, '2026-09-07', 'card');
+
+      const zeilen = await offen(users.office, 'therapy', SEPTEMBER);
+      expect(zeilen.find((z) => z.kind === 'payment')).toMatchObject({
+        method: 'card',
+        direction: 'incoming',
+      });
+    });
+
     it('trennt die Bereiche und lässt andere Monate weg', async () => {
       await rechnung('RG-2026-0102', '2026-09-04', [BEFREIT]);
       await rechnung('RG-2026-0103', '2026-08-31', [BEFREIT]);
