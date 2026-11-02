@@ -898,6 +898,14 @@ Recht · entschieden (Jannes) · 2026-11-02 · Jannes · Prüfpaket · Wiedervor
 Datenschutz · entschieden (Jannes) · 2026-11-02 · Jannes · Prüfpaket · Wiedervorlage: Anbieterprüfung Zahlungsdienst (Block 11), DSFA (B2)\
 **Annahme.** owner und Büro kassieren am Terminal höchstens den offenen Betrag. Die Function `card-terminal` prüft vorab und bucht danach mit dem Token der Person; zum Zahlungsdienst gehen nur Betrag, Währung und eine zufällige Referenz. Bis zur Anbieterprüfung nur die Nachbildung, nie in der Produktion. Ein echter Dienst prüft die Kennung, auch beim Nachbuchen, und bricht nach der Frist ab. **Grundlage.** §3.5; ADR-002 Punkt 3; ADR-009 Punkt 12. **Anker.** `public.record_card_payment`. **Rücknahme.** Function und Knopf entfernen · Aufwand `klein`.
 
+### ANN-838 — Kalender-Abo: nur Zeit und Art der eigenen Termine, 7 Tage zurück bis 90 voraus
+Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
+**Annahme.** Wer einen eigenen, aktiven Mitarbeiterdatensatz hat, erzeugt eine Adresse aus 32 Zufallsbytes, gespeichert nur als SHA-256. Die Datei nennt je eigenem, nicht abgesagtem Termin Beginn, Ende und Art mit einer Kennung ohne Rückschluss, nie Name, Adresse oder Leistungsbereich. Kein Auditeintrag, Nachweis ist die Zeile. Restrisiko: Der Kalenderdienst kann einen Hausbesuch mit dem Standort verknüpfen. **Grundlage.** Prinzipien 0.32 §3.4; Art. 5 Abs. 1 lit. c DSGVO; ADR-010 Punkt 15. **Anker.** `public.calendar_feed`. **Rücknahme.** Fenster oder Felder dort · Aufwand `klein`.
+
+### ANN-839 — Kalender-Abo: Function ohne Anmeldung, mit eigenem Schlüssel nur für `calendar_feed`
+Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Jannes (ADR-004), OPS-001\
+**Annahme.** Kalenderprogramme melden sich nicht an. Die Function `calendar-feed` ruft wie der Zugangsdienst (ADR-023 Punkt 9) mit eigenem Secret genau `calendar_feed`; `anon` bekommt kein Recht. Die Adresse steht im Pfad: Die Function loggt nichts, die Logs der Edge Runtime prüft OPS-001. **Grundlage.** Prinzipien 0.32 §3.4; Art. 32 DSGVO; ADR-015 Punkt 20; ADR-011 Punkt 2. **Anker.** `supabase/functions/calendar-feed/index.ts`. **Rücknahme.** Eigene Datenbankrolle statt Schlüssel · Aufwand `mittel`.
+
 ## Fachregeln
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus
 Technik · offen · 2026-10-10 · — · — · Wiedervorlage: —\

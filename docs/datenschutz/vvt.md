@@ -27,12 +27,14 @@ in der Datenbank hinterlegt (`README.md`, „Fristen aus der Datenbank“).
 ## 2. Terminplanung und Hausbesuche
 
 - **Zweck:** Termine vergeben, Touren planen, Fahrzeiten prüfen, zum Hausbesuch navigieren,
-  Gebiete für Hausbesuche planen (Anschriften als Punkte ohne Namen, auf etwa 100 m gerundet).
+  Gebiete für Hausbesuche planen (Anschriften als Punkte ohne Namen, auf etwa 100 m gerundet),
+  eigene Termine im privaten Kalender abonnieren (nur Uhrzeit und Art, ANN-838).
 - **Betroffene:** Patientinnen und Patienten, Mitarbeitende (wessen Tour).
 - **Daten:** Termine, Anschrift des Hausbesuchs, daraus berechnete Kartenposition.
 - **Rechtsgrundlage:** Art. 6 Abs. 1 lit. b DSGVO (Behandlungsvertrag).
 - **Empfänger:** Kartendienst PTV als Auftragsverarbeiter; er bekommt nur Anschrift oder
-  Koordinaten, nie Namen oder Uhrzeiten (Einzelheiten in `kartendienst.md`).
+  Koordinaten, nie Namen oder Uhrzeiten (Einzelheiten in `kartendienst.md`). Beim Abo der selbst
+  gewählte Kalenderdienst der Person (noch aus).
 - **Frist:** wie die Akte; Termine ohne Behandlungsbezug 3 Jahre.
 
 ## 3. Abrechnung und Zahlungen

@@ -84,6 +84,8 @@ describe('gateway.mjs: supabase/config.toml', () => {
     expect(konfiguration.verifyJwtByFunction.get('ai-gateway')).toBe(true);
     // Die Kartenzahlung nimmt nur angemeldete Aufrufe an (ANN-837).
     expect(konfiguration.verifyJwtByFunction.get('card-terminal')).toBe(true);
+    // Kalenderprogramme melden sich nicht an; die Adresse prüft die Datenbank (ANN-839).
+    expect(konfiguration.verifyJwtByFunction.get('calendar-feed')).toBe(false);
   });
 
   it('liest die Groessengrenze der Storage-API', () => {
