@@ -381,7 +381,8 @@ describe('Kalender-Abo (PRX-048)', () => {
         [ROLLE],
       );
       expect(rolle.rows[0]!.ist).toBe(false);
-      // So wechselt PostgREST: authenticator darf in die Rolle, die Rolle hat eine kurze Frist.
+      // So wechselt PostgREST: authenticator darf in die Rolle; die kurze Frist steht an der Rolle
+      // und wirkt über PostgREST, nicht bei einem SET ROLE in psql.
       const wechsel = await asPostgres<{ darf: boolean; frist: string[] | null }>(
         `select pg_has_role('authenticator', $1, 'member') as darf,
                 (select rolconfig from pg_roles where rolname = $1) as frist`,
@@ -393,7 +394,8 @@ describe('Kalender-Abo (PRX-048)', () => {
       await client.connect();
       try {
         await client.query('begin');
-        await client.query('set local role authenticator');
+        // Als authenticator selbst, nicht als Superuser: Dann prüft SET ROLE wirklich die Vergabe.
+        await client.query('set local session authorization authenticator');
         await client.query(`set local role ${ROLLE}`);
         const { rows } = await client.query<{ abo: unknown }>(ABO, ['a'.repeat(43)]);
         expect(rows[0]!.abo).toBeNull();

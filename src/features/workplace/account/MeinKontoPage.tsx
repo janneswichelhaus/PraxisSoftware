@@ -282,7 +282,8 @@ function Sitzungen({ mitAbo }: { mitAbo: boolean }) {
         <p className="mt-3">
           Ein bereits geöffnetes Gerät kann noch bis zu einer Stunde weiterlesen, bevor es sich neu
           anmelden muss. Ist ein Gerät abhandengekommen und eilt es, lassen Sie den Zugang
-          zusätzlich von der Praxisinhaber:in sperren – das wirkt sofort.
+          zusätzlich von der Praxisinhaber:in sperren – das wirkt sofort
+          {mitAbo ? ' und beendet ein Kalender-Abo sicher' : ''}.
         </p>
       </Rueckfrage>
     </Section>

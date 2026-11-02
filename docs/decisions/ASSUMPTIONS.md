@@ -900,7 +900,7 @@ Datenschutz · entschieden (Jannes) · 2026-11-02 · Jannes · Prüfpaket · Wie
 
 ### ANN-838 — Kalender-Abo: Zeit und Art eigener Termine, 7 Tage zurück bis 90 voraus
 Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
-**Annahme.** Konten mit eigenem, aktivem Mitarbeiterdatensatz erzeugen frisch angemeldet eine Adresse aus 32 Zufallsbytes, gespeichert nur als SHA-256. Die Datei nennt je eigenem, nicht abgesagtem Termin nur Zeit, Art und eine Kennung ohne Rückschluss. Sperre, Ausscheiden und „Alle Sitzungen beenden“ beenden das Abo; kein Auditeintrag. Restrisiko: Der Kalenderdienst kann Hausbesuche mit Standorten verknüpfen. **Grundlage.** Prinzipien 0.32 §3.4; Art. 5 Abs. 1 lit. c DSGVO; ADR-010 Punkt 15. **Anker.** `public.calendar_feed`. **Rücknahme.** Fenster oder Felder dort · Aufwand `klein`.
+**Annahme.** Konten mit aktivem Mitarbeiterdatensatz erzeugen frisch angemeldet eine Adresse aus 32 Zufallsbytes, nur als SHA-256 gespeichert. Die Datei nennt je eigenem, nicht abgesagtem Termin nur Zeit, Art und eine Kennung ohne Rückschluss. Sperre und Ausscheiden beenden das Abo, „Alle Sitzungen beenden“ versucht es; kein Auditeintrag. Restrisiko: Der Kalenderdienst kann Hausbesuche mit Standorten verknüpfen. **Grundlage.** Prinzipien 0.32 §3.4; Art. 5 Abs. 1 lit. c DSGVO; ADR-010 Punkt 15. **Anker.** `public.calendar_feed`. **Rücknahme.** Fenster oder Felder dort · Aufwand `klein`.
 
 ### ANN-839 — Kalender-Abo: Function ohne Anmeldung, mit einer Rolle nur für `calendar_feed`
 Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: OPS-001\
