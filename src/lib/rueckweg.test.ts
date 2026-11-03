@@ -178,6 +178,8 @@ describe('rueckwegBeschriftung', () => {
     // DR-144: von „Ich“ der Plattform zurück dorthin, wie der Kopf ihn nennt.
     ['/p/ich', 'Ich'],
     ['/p/checkin?bereich=treatment', 'Check-in'],
+    ['/p/ernaehrung/tagebuch?bereich=treatment', 'Tagebuch'],
+    ['/p/ernaehrung/tagebuch/eintragen?mahlzeit=lunch', 'Tagebuch'],
     // Von der Übersicht zur Seite eines Termins und zurück (ANN-779).
     ['/p?bereich=treatment', 'Übersicht'],
   ])('beschriftet %s mit %s (UXR-002)', (pfad, erwartet) => {

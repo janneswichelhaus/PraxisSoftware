@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Field } from '@/components/ui/Field';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { barcodeleser, type Barcodeleser } from '@/lib/barcode/erkennung';
 import { getippteGtin, gtinGueltig } from '@/lib/barcode/gtin';
@@ -156,7 +157,7 @@ export function Barcodedialog({
           {/* Der Rahmen zeigt, wohin der Barcode gehört; gelesen wird das Band in der Mitte. */}
           <div
             aria-hidden="true"
-            className="border-surface rounded-field absolute inset-x-[10%] top-1/3 bottom-1/3 border-2"
+            className="border-surface outline-ink/60 rounded-field absolute inset-x-[10%] top-1/3 bottom-1/3 border-2 outline-1"
           />
         </div>
       </div>
@@ -174,7 +175,7 @@ export function Barcodedialog({
           onSchliessen={schliessen}
         />
       ) : (
-        <div className="bg-surface sticky bottom-0 -mx-6 mt-4 -mb-6 flex flex-wrap gap-2 px-6 pt-3 pb-6">
+        <div className="bg-surface sticky bottom-0 -mx-6 mt-4 -mb-6 flex flex-col gap-2 px-6 pt-3 pb-6 sm:flex-row sm:flex-wrap">
           {zustand.art === 'fehler' && zustand.erneut ? (
             <Button type="button" variant="secondary" onClick={() => void starten()}>
               Erneut versuchen
@@ -190,7 +191,7 @@ export function Barcodedialog({
           >
             Nummer eintippen
           </Button>
-          <Button type="button" variant="secondary" onClick={schliessen}>
+          <Button type="button" variant="quiet" onClick={schliessen}>
             Abbrechen
           </Button>
         </div>
@@ -243,12 +244,12 @@ function Eintippen({
         autoFocus
         onChange={(event) => setWert(event.target.value)}
       />
-      <div className="flex flex-wrap gap-2">
+      <Formularfuss dicht>
         <Button type="submit">Nachschlagen</Button>
-        <Button type="button" variant="secondary" onClick={onSchliessen}>
+        <Button type="button" variant="quiet" onClick={onSchliessen}>
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
     </form>
   );
 }
