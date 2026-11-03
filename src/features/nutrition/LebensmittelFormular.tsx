@@ -107,7 +107,7 @@ export function LebensmittelFormular({
             {feld('brand')}
             {barcode === undefined ? null : (
               <Checkbox
-                label="Barcode behalten"
+                label="Beim nächsten Scan wiedererkennen"
                 hint={barcode}
                 checked={behalten}
                 onChange={(event) => setBehalten(event.target.checked)}

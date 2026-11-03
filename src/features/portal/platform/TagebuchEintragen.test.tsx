@@ -29,7 +29,8 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { TagebuchEintragen } = await import('./TagebuchEintragen');
-const { barcodeUebernehmen } = await import('./barcodeUebergabe');
+const { barcodeUebernehmen, nachDemAnlegenNachschlagen, sucheNachScanMerken } =
+  await import('./barcodeUebergabe');
 
 /** Zeigt, wohin die Seite geführt hat. */
 function Ort() {
@@ -388,5 +389,38 @@ describe('Eintragen per Barcode (ANN-841)', () => {
     );
     expect(barcodeUebernehmen()).toBe('2009990000029');
     expect(barcodeUebernehmen()).toBeNull();
+  });
+
+  it('zurück aus „Eigenes anlegen“: die Menge öffnet sich gleich, ohne zweiten Scan', async () => {
+    const basis = ernaehrung();
+    ladeErnaehrung.mockResolvedValue(
+      ernaehrung({ profile: { ...basis.profile, own_foods: [DINKELBROT] } }),
+    );
+    nachDemAnlegenNachschlagen('2009990000012');
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    const fenster = await screen.findByRole('dialog', { name: 'Omas Dinkelbrot' });
+    expect(barcodeNachschlagen).not.toHaveBeenCalled();
+    // Nur einmal: Der nächste Scan beginnt wieder mit Kamera oder Nummer.
+    const nutzer = userEvent.setup();
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Abbrechen' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Barcode scannen' }));
+    expect(await screen.findByLabelText('Nummer unter dem Barcode')).toBeVisible();
+  });
+
+  it('„Suchen“ aus dem Tag: Die Seite der Mahlzeit beginnt im Suchfeld', async () => {
+    sucheNachScanMerken();
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    await waitFor(() => expect(screen.getByRole('searchbox')).toHaveFocus());
+  });
+
+  it('„Abbrechen“ im Fenster der Menge trägt nichts ein', async () => {
+    const nutzer = userEvent.setup();
+    barcodeNachschlagen.mockResolvedValue([{ ...HAFERFLOCKEN, source: 'off', name: 'Keks' }]);
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    await nummer(nutzer, '2000000000008');
+    const fenster = await screen.findByRole('dialog', { name: 'Keks' });
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Abbrechen' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(tagebuchEintragen).not.toHaveBeenCalled();
   });
 });

@@ -127,7 +127,7 @@ test('per Scan in höchstens drei Tipps; die Mahlzeit steht im Fenster', async (
   await eintragLoeschen(page, eintrag);
 });
 
-test('unbekannt: eigenes Lebensmittel mit dem Barcode, der nächste Scan findet es', async ({
+test('unbekannt: eigenes Lebensmittel mit dem Barcode, gleich eingetragen; der nächste Scan findet es', async ({
   page,
 }) => {
   const ziffern = `200${String(Date.now()).slice(-9)}`;
@@ -141,21 +141,26 @@ test('unbekannt: eigenes Lebensmittel mit dem Barcode, der nächste Scan findet 
   await fenster.getByRole('button', { name: 'Eigenes anlegen' }).click();
   await expect(page.getByRole('heading', { name: 'Eigenes Lebensmittel', level: 1 })).toBeVisible();
   expect(page.url()).not.toContain(code);
-  await expect(page.getByLabel('Barcode behalten')).toBeChecked();
+  await expect(page.getByLabel('Beim nächsten Scan wiedererkennen')).toBeChecked();
   await page.getByLabel('Name').fill(name);
   await page.getByLabel('Energie (kcal)').fill('240');
   await page.getByLabel('Eiweiß (g)').fill('9');
   await page.getByLabel('Fett (g)').fill('2');
   await page.getByLabel('Kohlenhydrate (g)').fill('44');
   await page.getByRole('button', { name: 'Anlegen' }).click();
-  // Zurück im Tagebuch; der nächste Scan findet das eigene Lebensmittel.
+  // Zurück im Tagebuch öffnet sich gleich die Menge des neuen Lebensmittels, ohne zweiten Scan.
   await expect(page.getByRole('heading', { name: 'Tagebuch', level: 1 })).toBeVisible();
-  await eintippen(page, code);
   const menge = page.getByRole('dialog', { name });
   await expect(menge).toBeVisible();
   await menge.getByRole('button', { name: 'Eintragen' }).click();
   const eintrag = page.getByRole('button', { name });
   await expect(eintrag.first()).toBeVisible();
+  // Auch der nächste Scan findet es; „Abbrechen“ trägt nichts ein.
+  await eintippen(page, code);
+  await expect(menge).toBeVisible();
+  await menge.getByRole('button', { name: 'Abbrechen' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(eintrag).toHaveCount(1);
 
   await eintragLoeschen(page, eintrag);
   await page.goto('/p/ernaehrung/lebensmittel?bereich=treatment');

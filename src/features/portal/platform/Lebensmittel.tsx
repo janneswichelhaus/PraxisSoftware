@@ -30,7 +30,7 @@ import {
   type Plattformzugang,
 } from './api';
 import { PLATTFORM_PFAD } from './pfade';
-import { barcodeUebernehmen } from './barcodeUebergabe';
+import { barcodeUebernehmen, nachDemAnlegenNachschlagen } from './barcodeUebergabe';
 import { leseRueckweg } from '@/lib/rueckweg';
 
 /**
@@ -114,7 +114,11 @@ function EigeneListe({ daten, search }: { daten: EigeneErnaehrung; search: strin
   );
 }
 
-function useSpeichern(zugang: Plattformzugang, id: string | null) {
+function useSpeichern(
+  zugang: Plattformzugang,
+  id: string | null,
+  nachher?: (angaben: LebensmittelAngaben) => void,
+) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -122,8 +126,9 @@ function useSpeichern(zugang: Plattformzugang, id: string | null) {
   return useMutation({
     mutationFn: ({ angaben }: { angaben: LebensmittelAngaben; freigeben: () => void }) =>
       eigenesLebensmittelSpeichern(zugang.access_id, id, angaben),
-    onSuccess: async (_leer, { freigeben }) => {
+    onSuccess: async (_leer, { angaben, freigeben }) => {
       freigeben();
+      nachher?.(angaben);
       await queryClient.invalidateQueries({ queryKey: ernaehrungSchluessel(zugang.access_id) });
       // Vom Scan aus führt der Rückweg zurück ins Tagebuch, sonst zur Liste.
       void navigate(leseRueckweg(suche, `${PFAD}${search}`), { replace: true });
@@ -136,9 +141,12 @@ export function EigenesLebensmittelNeu({ zugang }: { zugang: Plattformzugang }) 
   const navigate = useNavigate();
   const { search } = useLocation();
   const [suche] = useSearchParams();
-  const speichern = useSpeichern(zugang, null);
-  // Aus dem Scan: der Barcode im Arbeitsspeicher, einmal genommen (ANN-841).
+  // Aus dem Scan: der Barcode im Arbeitsspeicher, einmal genommen (ANN-841); behalten, öffnet das
+  // Tagebuch danach gleich die Menge dieses Lebensmittels.
   const [barcode] = useState(barcodeUebernehmen);
+  const speichern = useSpeichern(zugang, null, (angaben) => {
+    if (typeof angaben.barcode === 'string') nachDemAnlegenNachschlagen(angaben.barcode);
+  });
   const zurueck = leseRueckweg(suche, `${PFAD}${search}`);
   return (
     <>

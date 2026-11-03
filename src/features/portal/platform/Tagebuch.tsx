@@ -34,6 +34,7 @@ import { leseZahl } from '@/features/nutrition/eingabe';
 import { feldtext, QUELLENNAME, type Lebensmittel } from '@/features/nutrition/lebensmittel';
 import {
   kcal,
+  letzteMenge,
   MAHLZEIT_NAMEN,
   MAHLZEITEN,
   mahlzeitZurUhrzeit,
@@ -55,6 +56,7 @@ import {
   type Plattformzugang,
 } from './api';
 import { Abschnitt, Aufklappzeilen } from './Ernaehrungsteile';
+import { nachDemAnlegenNehmen, sucheNachScanMerken } from './barcodeUebergabe';
 import { bereichParameter } from './pfade';
 import { MengeWaehlen } from './TagebuchEintragen';
 import { TagebuchErinnerungen } from './TagebuchErinnerungen';
@@ -65,6 +67,7 @@ import {
   literZahl,
   literZiel,
   tagebuchAdresse,
+  tagName,
   tagZeilen,
 } from './tagebuchAdresse';
 
@@ -412,7 +415,7 @@ function Mahlzeiten({
   gesperrt: boolean;
   ohneNetzId: string;
   onOeffnen?: (eintrag: Eintrag) => void;
-  /** „Barcode scannen“ unter den Mahlzeiten, nur mit Schreibrecht. */
+  /** „Barcode scannen“ über den Mahlzeiten wie „1 Glas“ beim Wasser, nur mit Schreibrecht. */
   scannen?: ReactNode;
 }) {
   const { search } = useLocation();
@@ -439,6 +442,7 @@ function Mahlzeiten({
           {OHNE_NETZ}
         </p>
       ) : null}
+      {scannen}
       <div className="border-line border-t">
         {teile
           .filter((t) => t.eintraege.length > 0)
@@ -488,7 +492,6 @@ function Mahlzeiten({
           </div>
         ) : null}
       </div>
-      {scannen}
     </Abschnitt>
   );
 }
@@ -508,18 +511,31 @@ function TagScan({
 }) {
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
-  const [scannen, setScannen] = useState(false);
+  // Zurück aus „Eigenes anlegen“: der Barcode wird gleich nachgeschlagen, die Menge öffnet sich.
+  const [nachAnlegen, setNachAnlegen] = useState(nachDemAnlegenNehmen);
+  const [scannen, setScannen] = useState(nachAnlegen !== null);
+  const scanEnde = () => {
+    setNachAnlegen(null);
+    setScannen(false);
+  };
   const [gefunden, setGefunden] = useState<Lebensmittel | null>(null);
   const [eingetragen, setEingetragen] = useState<string | null>(null);
-  const [vorwahl, setVorwahl] = useState<Mahlzeit>('snack');
+  const [vorwahl, setVorwahl] = useState<Mahlzeit>(() => mahlzeitZurUhrzeit(new Date()));
   const bereich = bereichParameter(new URLSearchParams(search));
   const tag = daten.day.day;
+  const vorher = gefunden
+    ? [...daten.recent, ...daten.favorites].find(
+        (s) => s.food.kind === gefunden.kind && s.food.id === gefunden.id,
+      )
+    : undefined;
+  const anfang = vorher ? letzteMenge(vorher) : undefined;
   return (
     <>
       <ScanKnopf
         onScannen={() => {
           setVorwahl(mahlzeitZurUhrzeit(new Date()));
           setEingetragen(null);
+          setNachAnlegen(null);
           setScannen(true);
         }}
         ohneNetzId={ohneNetzId}
@@ -532,18 +548,29 @@ function TagScan({
           zugang={zugang}
           search={bereich ? `?${bereich}` : ''}
           rueckweg={`${pathname}${search}`}
+          code={nachAnlegen ?? undefined}
+          ohneZahlen={daten.hide_numbers}
           onGefunden={(f) => {
-            setScannen(false);
+            scanEnde();
             setGefunden(f);
           }}
-          onSuchen={() => void navigate(eintragenAdresse(tag, vorwahl, search, daten.today))}
-          onSchliessen={() => setScannen(false)}
+          onSuchen={() => {
+            sucheNachScanMerken();
+            void navigate(eintragenAdresse(tag, vorwahl, search, daten.today));
+          }}
+          onSchliessen={scanEnde}
         />
       ) : null}
       {gefunden ? (
         <Dialogfenster
           titel={gefunden.name}
-          beschreibung={[gefunden.brand, QUELLENNAME[gefunden.source]].filter(Boolean).join(' · ')}
+          beschreibung={[
+            gefunden.brand,
+            QUELLENNAME[gefunden.source],
+            tag === daten.today ? null : tagName(tag, daten.today),
+          ]
+            .filter(Boolean)
+            .join(' · ')}
           onSchliessen={() => setGefunden(null)}
         >
           <MengeWaehlen
@@ -553,10 +580,12 @@ function TagScan({
             mahlzeit={vorwahl}
             mahlzeitWaehlbar
             ohneZahlen={daten.hide_numbers}
+            {...(anfang ? { anfang } : {})}
             onEingetragen={(name) => {
               setGefunden(null);
               setEingetragen(name);
             }}
+            onAbbrechen={() => setGefunden(null)}
           />
         </Dialogfenster>
       ) : null}

@@ -47,6 +47,8 @@ export function Barcodedialog({
   );
   const fertig = useRef(onNummer);
   fertig.current = onNummer;
+  const oeffnen = useRef(leser);
+  oeffnen.current = leser;
 
   const kameraAus = useCallback(() => {
     durchlauf.current += 1;
@@ -118,7 +120,7 @@ export function Barcodedialog({
       }
       if (aktiv) uhr = window.setTimeout(() => void runde(), TAKT);
     };
-    void leser().then((l) => {
+    void oeffnen.current().then((l) => {
       geoeffnet = l;
       if (aktiv) void runde();
       else l.beenden();
@@ -128,7 +130,7 @@ export function Barcodedialog({
       window.clearTimeout(uhr);
       geoeffnet?.beenden();
     };
-  }, [zustand.art, leser, kameraAus]);
+  }, [zustand.art, kameraAus]);
 
   function schliessen() {
     kameraAus();
@@ -176,11 +178,6 @@ export function Barcodedialog({
         />
       ) : (
         <div className="bg-surface sticky bottom-0 -mx-6 mt-4 -mb-6 flex flex-col gap-2 px-6 pt-3 pb-6 sm:flex-row sm:flex-wrap">
-          {zustand.art === 'fehler' && zustand.erneut ? (
-            <Button type="button" variant="secondary" onClick={() => void starten()}>
-              Erneut versuchen
-            </Button>
-          ) : null}
           <Button
             type="button"
             variant="secondary"
@@ -191,6 +188,11 @@ export function Barcodedialog({
           >
             Nummer eintippen
           </Button>
+          {zustand.art === 'fehler' && zustand.erneut ? (
+            <Button type="button" variant="secondary" onClick={() => void starten()}>
+              Erneut versuchen
+            </Button>
+          ) : null}
           <Button type="button" variant="quiet" onClick={schliessen}>
             Abbrechen
           </Button>

@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
@@ -54,6 +54,7 @@ import {
   type EigenesTagebuch,
   type Plattformzugang,
 } from './api';
+import { nachDemAnlegenNehmen, sucheNachScanNehmen } from './barcodeUebergabe';
 import { bereichParameter } from './pfade';
 import { BarcodeScan, ScanKnopf } from './TagebuchScan';
 import { tagName, zurueckZumTag } from './tagebuchAdresse';
@@ -220,29 +221,41 @@ function Suche({
     [...tagebuch.recent, ...tagebuch.favorites].find((s) => gleich(s.food, f));
   const { pathname, search } = useLocation();
   const bereich = bereichParameter(new URLSearchParams(search));
-  const [scannen, setScannen] = useState(false);
+  // Zurück aus „Eigenes anlegen“: der Barcode wird gleich nachgeschlagen, die Menge öffnet sich.
+  const [nachAnlegen, setNachAnlegen] = useState(nachDemAnlegenNehmen);
+  const [sucheZuerst] = useState(sucheNachScanNehmen);
+  const [scannen, setScannen] = useState(nachAnlegen !== null);
+  const scanEnde = () => {
+    setNachAnlegen(null);
+    setScannen(false);
+  };
   return (
     <LebensmittelSuche
       unterDerSuche={({ oeffnen, suchen }) => (
         <>
+          {sucheZuerst ? <BeimStart tun={suchen} /> : null}
           <ScanKnopf
-            onScannen={() => setScannen(true)}
-            ohneNetzId={verbunden ? undefined : ohneNetzId}
+            onScannen={() => {
+              setNachAnlegen(null);
+              setScannen(true);
+            }}
           />
           {scannen ? (
             <BarcodeScan
               zugang={zugang}
               search={bereich ? `?${bereich}` : ''}
               rueckweg={`${pathname}${search}`}
+              code={nachAnlegen ?? undefined}
+              ohneZahlen={ohneZahlen}
               onGefunden={(f) => {
-                setScannen(false);
+                scanEnde();
                 oeffnen(f);
               }}
               onSuchen={() => {
-                setScannen(false);
+                scanEnde();
                 suchen();
               }}
-              onSchliessen={() => setScannen(false)}
+              onSchliessen={scanEnde}
             />
           ) : null}
         </>
@@ -326,6 +339,7 @@ function Suche({
               schliessen();
               onEingetragen(f);
             }}
+            onAbbrechen={schliessen}
             {...(anfang ? { anfang } : {})}
             unten={
               <Favorit
@@ -426,6 +440,17 @@ function Schnellzeile({
   );
 }
 
+/** Einmal beim Erscheinen, etwa der Fokus ins Suchfeld nach „Suchen“ aus dem Scan. */
+function BeimStart({ tun }: { tun: () => void }) {
+  const getan = useRef(false);
+  useEffect(() => {
+    if (getan.current) return;
+    getan.current = true;
+    tun();
+  }, [tun]);
+  return null;
+}
+
 /** Der Haken an einem Treffer, der gerade aus dem Fenster eingetragen wurde (ANN-813). */
 function Eintragshaken() {
   return (
@@ -498,6 +523,7 @@ export function MengeWaehlen({
   unten,
   onEingetragen,
   mahlzeitWaehlbar = false,
+  onAbbrechen,
 }: {
   zugang: Plattformzugang;
   f: Lebensmittel;
@@ -506,6 +532,8 @@ export function MengeWaehlen({
   mahlzeit: Mahlzeit;
   mahlzeitWaehlbar?: boolean;
   onEingetragen: (name: string) => void;
+  /** Leise unter „Eintragen“: am Telefon der Weg hinaus ohne Escape-Taste. */
+  onAbbrechen?: () => void;
   /** Vorbelegung, etwa die Menge vom letzten Mal (ERN-008). */
   anfang?: { einheit: string; wert: string };
   ohneZahlen?: boolean;
@@ -594,6 +622,11 @@ export function MengeWaehlen({
         >
           {eintragen.isPending ? 'Wird eingetragen …' : 'Eintragen'}
         </Button>
+        {onAbbrechen ? (
+          <Button type="button" variant="quiet" onClick={onAbbrechen}>
+            Abbrechen
+          </Button>
+        ) : null}
       </Formularfuss>
       {unten}
     </form>

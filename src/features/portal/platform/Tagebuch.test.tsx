@@ -428,10 +428,30 @@ describe('Scan aus dem Tag (ANN-842)', () => {
   });
 
   it('ohne Schreibrecht kein „Barcode scannen“', async () => {
-    ladeTagebuch.mockResolvedValue({ ...(await ladeTagebuch()), can_write: false });
+    ladeTagebuch.mockResolvedValue(tagebuch({ can_write: false }));
     renderWithProviders(<Tagebuch zugang={ZUGANG} />, '/p/ernaehrung/tagebuch?bereich=treatment');
     await screen.findByRole('heading', { level: 1, name: 'Tagebuch' });
     await screen.findByText(/Noch nichts eingetragen/);
     expect(screen.queryByRole('button', { name: 'Barcode scannen' })).toBeNull();
+  });
+
+  it('die Menge vom letzten Mal vorbelegt; „Abbrechen“ trägt nichts ein', async () => {
+    const nutzer = userEvent.setup();
+    ladeTagebuch.mockResolvedValue(
+      tagebuch({
+        recent: [{ food: KEKS, amount: 50, portion_label: '1 Portion', portion_count: 2 }],
+      }),
+    );
+    barcodeNachschlagen.mockResolvedValue([KEKS]);
+    tagebuchEintragen.mockResolvedValue(undefined);
+    renderWithProviders(<Tagebuch zugang={ZUGANG} />, '/p/ernaehrung/tagebuch?bereich=treatment');
+    await nutzer.click(await screen.findByRole('button', { name: 'Barcode scannen' }));
+    await nutzer.type(screen.getByLabelText('Nummer unter dem Barcode'), '2000000000008');
+    await nutzer.click(screen.getByRole('button', { name: 'Nachschlagen' }));
+    const fenster = await screen.findByRole('dialog', { name: 'Schokokeks klassisch' });
+    expect(within(fenster).getByLabelText(/Anzahl/)).toHaveValue('2');
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Abbrechen' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(tagebuchEintragen).not.toHaveBeenCalled();
   });
 });

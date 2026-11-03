@@ -35,7 +35,7 @@ describe('Lebensmittelformular mit Barcode', () => {
     const nutzer = userEvent.setup();
     const onSpeichern = vi.fn();
     formular(onSpeichern, '2009990000012');
-    expect(screen.getByLabelText('Barcode behalten')).toBeChecked();
+    expect(screen.getByLabelText('Beim nächsten Scan wiedererkennen')).toBeChecked();
     expect(screen.getByText('2009990000012')).toBeVisible();
     await ausfuellen(nutzer);
     await nutzer.click(screen.getByRole('button', { name: 'Anlegen' }));
@@ -46,7 +46,7 @@ describe('Lebensmittelformular mit Barcode', () => {
     const nutzer = userEvent.setup();
     const onSpeichern = vi.fn();
     formular(onSpeichern, '2009990000012');
-    await nutzer.click(screen.getByLabelText('Barcode behalten'));
+    await nutzer.click(screen.getByLabelText('Beim nächsten Scan wiedererkennen'));
     await ausfuellen(nutzer);
     await nutzer.click(screen.getByRole('button', { name: 'Anlegen' }));
     expect(onSpeichern.mock.calls[0]![0]).toMatchObject({ barcode: null });

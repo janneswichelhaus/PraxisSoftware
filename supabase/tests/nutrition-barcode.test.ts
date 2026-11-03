@@ -1,5 +1,14 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  FREMDE_ORGANISATION,
+  SEED,
+  asAnon,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabase,
+} from './helpers/db';
 
 // Barcode (ADR-027 Punkte 8 und 10, ANN-841): nachschlagen nur im eigenen Auszug und nur mit
 // laufender Beratung; das eigene Lebensmittel behält ihn mit gültiger Prüfziffer, einmal je
@@ -68,6 +77,7 @@ async function eigene() {
 describe('Barcode nachschlagen (ERN-013)', () => {
   beforeAll(async () => {
     await resetDatabase();
+    await fremdeOrganisation();
     await asPostgres(
       `insert into public.food_catalog (source, source_code, name, brand, base_unit, energy_kcal,
          protein_g, fat_g, carbohydrate_g, portions, source_version)
@@ -108,7 +118,7 @@ describe('Barcode nachschlagen (ERN-013)', () => {
     }
   });
 
-  it('Begleitung, fremde Person, Zugang ohne Beratung, Praxiskonten: nichts', async () => {
+  it('Begleitung, fremde Person, fremde Praxis, Zugang ohne Beratung, Praxiskonten: nichts', async () => {
     expect(
       await fehler(
         nachschlagen(SCHOKOKEKS, users.plattformPaula, platformAccesses.paulaBegleitungMax),
@@ -125,6 +135,7 @@ describe('Barcode nachschlagen (ERN-013)', () => {
       users.teamLead,
       users.trainer,
       users.patientErika,
+      FREMDE_ORGANISATION.owner,
     ]) {
       expect(await fehler(nachschlagen(SCHOKOKEKS, konto)), konto).toBe('42501');
     }

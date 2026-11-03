@@ -908,8 +908,7 @@ Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: OPS-00
 
 ### ANN-841 — Barcode: nachschlagen im Auszug, behalten am eigenen Lebensmittel
 Datenschutz · offen · 2026-11-03 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
-**Annahme.** Das Gerät liest den Barcode im Arbeitsspeicher; der Server schlägt nur die Nummer im Open-Food-Facts-Auszug nach, ohne Speichern und Protokoll, eigene Lebensmittel vergleicht das Gerät. Ein eigenes Lebensmittel zu einem unbekannten Barcode behält ihn, außer die Person wählt ab, einmal je Profil; er fällt mit der Zeile, steht in Auskunft und Export. **Grundlage.** ADR-027 Punkte 6, 8, 10; ADR-010 Punkte 15, 16. **Anker.** `public.find_platform_food_by_barcode`. **Rücknahme.** Nicht behalten: Spalte `barcode` entfernen · Aufwand `klein`.
-
+**Annahme.** Das Gerät liest den Barcode im Arbeitsspeicher; der Server schlägt nur die Nummer im Auszug nach, ohne Speichern und Protokoll; eigene vergleicht das Gerät. Ein eigenes Lebensmittel zu einem unbekannten Barcode behält ihn zum Wiedererkennen, vorgewählt, weil das der Zweck ist, abwählbar; einmal je Profil, die Beratung liest mit, fällt mit der Zeile. **Grundlage.** ADR-027 Punkte 4, 6, 8, 10; ADR-010 Punkte 15, 16. **Anker.** `public.find_platform_food_by_barcode`. **Rücknahme.** Spalte `barcode` entfernen · Aufwand `klein`.
 ## Fachregeln
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus
 Technik · offen · 2026-10-10 · — · — · Wiedervorlage: —\
