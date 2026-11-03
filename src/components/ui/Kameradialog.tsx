@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { useSperrsicherung } from '@/lib/sperrsicherung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { kameraVerfuegbar } from '@/lib/dateien/kamera';
+import { kamerafehler, kameraVerfuegbar } from '@/lib/dateien/kamera';
 
 /**
  * Der Kameradialog der Anwendung (DOK-006, ADR-017 Punkt 33).
@@ -44,31 +44,6 @@ type Zustand =
   /** `erneut`: Hat ein zweiter Versuch Aussicht? Ohne Kamera nicht (DAT-25). */
   | { art: 'fehler'; meldung: string; erneut: boolean }
   | { art: 'vorschau'; bild: Blob; adresse: string };
-
-function kamerafehler(ursache: unknown): { meldung: string; erneut: boolean } {
-  const name = ursache instanceof Error ? ursache.name : '';
-  if (name === 'NotAllowedError' || name === 'SecurityError') {
-    return {
-      meldung:
-        'Die Kamera wurde nicht freigegeben. Bitte in den Einstellungen des Browsers für diese Seite erlauben und erneut öffnen.',
-      erneut: true,
-    };
-  }
-  if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-    return { meldung: 'Auf diesem Gerät wurde keine Kamera gefunden.', erneut: false };
-  }
-  if (name === 'NotReadableError') {
-    return {
-      meldung:
-        'Die Kamera wird gerade von einer anderen App benutzt. Bitte dort schließen und erneut versuchen.',
-      erneut: true,
-    };
-  }
-  return {
-    meldung: 'Die Kamera konnte nicht gestartet werden. Bitte erneut versuchen.',
-    erneut: true,
-  };
-}
 
 function stoppe(strom: MediaStream | null) {
   strom?.getTracks().forEach((spur) => spur.stop());
