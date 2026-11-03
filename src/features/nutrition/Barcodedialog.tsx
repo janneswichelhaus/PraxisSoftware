@@ -177,7 +177,14 @@ export function Barcodedialog({
           onSchliessen={schliessen}
         />
       ) : (
-        <div className="bg-surface sticky bottom-0 -mx-6 mt-4 -mb-6 flex flex-col gap-2 px-6 pt-3 pb-6 sm:flex-row sm:flex-wrap">
+        <div
+          className={
+            // Kleben nur über dem hohen Kamerabild; sonst verdeckte der Fuß die Meldung darüber.
+            kamera
+              ? 'bg-surface sticky bottom-0 -mx-6 mt-4 -mb-6 flex flex-col gap-2 px-6 pt-3 pb-6 sm:flex-row sm:flex-wrap'
+              : 'mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap'
+          }
+        >
           <Button
             type="button"
             variant="secondary"
