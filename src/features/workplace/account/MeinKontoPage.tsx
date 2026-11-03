@@ -27,6 +27,7 @@ import {
 } from './api';
 import { ProfilAbschnitt } from '@/features/teamchat';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { KalenderAboAbschnitt } from './KalenderAboAbschnitt';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 
 /** Der nächste Schritt nach einem gescheiterten Vorgang (NAV-13, WRT-01). */
@@ -255,7 +256,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
  * und nicht in eine Fußnote — sonst hält jemand ein gestohlenes Gerät für
  * ausgesperrt, das es noch nicht ist.
  */
-function Sitzungen() {
+function Sitzungen({ mitAbo }: { mitAbo: boolean }) {
   const mutation = useMutation({ mutationFn: beendeAlleSitzungen });
 
   return (
@@ -275,13 +276,14 @@ function Sitzungen() {
       >
         <p>
           Alle angemeldeten Geräte werden abgemeldet, dieses eingeschlossen. Sie melden sich danach
-          neu an. Passkeys und PIN bleiben dabei bestehen – einen Passkey, der nicht mehr in Ihrer
-          Hand ist, oben entfernen.
+          neu an.{mitAbo ? ' Ein Kalender-Abo endet mit.' : ''} Passkeys und PIN bleiben dabei
+          bestehen – einen Passkey, der nicht mehr in Ihrer Hand ist, oben entfernen.
         </p>
         <p className="mt-3">
           Ein bereits geöffnetes Gerät kann noch bis zu einer Stunde weiterlesen, bevor es sich neu
           anmelden muss. Ist ein Gerät abhandengekommen und eilt es, lassen Sie den Zugang
-          zusätzlich von der Praxisinhaber:in sperren – das wirkt sofort.
+          zusätzlich von der Praxisinhaber:in sperren – das wirkt sofort
+          {mitAbo ? ' und beendet ein Kalender-Abo sicher' : ''}.
         </p>
       </Rueckfrage>
     </Section>
@@ -314,6 +316,8 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
     Boolean(besitzer) &&
     Boolean(user.staffMemberId) &&
     canWriteTreatmentNote(user.roles);
+  // Das Abo gibt es nur zu eigenen Terminen, also mit eigenem Mitarbeiterdatensatz (ANN-838).
+  const mitAbo = Boolean(user.staffMemberId);
   return (
     <>
       {/* Die Rollen als Zeile unter dem Titel statt eines eigenen Abschnitts
@@ -338,7 +342,8 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
         <PinAbschnitt />
         <ZweiterFaktor user={user} />
         {ohneEmpfang && besitzer ? <DiensttelefonAbschnitt besitzer={besitzer} /> : null}
-        <Sitzungen />
+        {mitAbo ? <KalenderAboAbschnitt /> : null}
+        <Sitzungen mitAbo={mitAbo} />
 
         <Kleingedrucktes className="mt-10">
           {/* Wer Stammdaten und Rollen pflegt (WRT-12, ORG-27) - seit Welle B
@@ -349,6 +354,9 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
           Protokoll des Anmeldedienstes, die PIN gar nicht.
           {imTeamchat
             ? ' Bild und Farbe im Teamchat sind freiwillig und nur für das Team sichtbar; das Foto wird mit dem Ausscheiden aus der Praxis gelöscht.'
+            : null}
+          {mitAbo
+            ? ' Das Kalender-Abo gibt nur Uhrzeit und Art Ihrer eigenen Termine an Ihren Kalenderdienst; der Link selbst wird nicht gespeichert, und das Abo wird nicht protokolliert.'
             : null}
         </Kleingedrucktes>
       </div>

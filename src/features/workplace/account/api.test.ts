@@ -34,8 +34,8 @@ beforeEach(() => {
   signOut.mockReset();
   updateUser.mockReset();
 
-  rpc.mockImplementation((_name: string, args: { p_event: string }) => {
-    ablauf.push(`rpc:${args.p_event}`);
+  rpc.mockImplementation((name: string, args?: { p_event: string }) => {
+    ablauf.push(`rpc:${args?.p_event ?? name}`);
     return Promise.resolve({ error: null });
   });
   signOut.mockImplementation(() => {
@@ -52,7 +52,26 @@ describe('beendeAlleSitzungen', () => {
   it('vermerkt vor dem Abmelden — danach gäbe es kein Konto mehr, dem der Vorgang zuzuordnen wäre', async () => {
     await beendeAlleSitzungen();
 
-    expect(ablauf).toEqual(['rpc:sessions_ended', 'signOut']);
+    expect(ablauf).toEqual(['rpc:end_own_calendar_feed', 'rpc:sessions_ended', 'signOut']);
+  });
+
+  it('beendet zuerst das Kalender-Abo; scheitert das, wird trotzdem abgemeldet (ANN-044)', async () => {
+    rpc.mockImplementation((name: string, args?: { p_event: string }) => {
+      ablauf.push(`rpc:${args?.p_event ?? name}`);
+      return Promise.resolve({
+        error: name === 'end_own_calendar_feed' ? { message: 'network' } : null,
+      });
+    });
+    const konsole = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(beendeAlleSitzungen()).resolves.toBeUndefined();
+    expect(ablauf).toEqual(['rpc:end_own_calendar_feed', 'rpc:sessions_ended', 'signOut']);
+    expect(signOut).toHaveBeenCalledWith({ scope: 'global' });
+    // Still bleibt der Fehlschlag nicht: er steht im Betriebslog, ohne Inhalt der Antwort.
+    expect(konsole).toHaveBeenCalledOnce();
+    expect(String(konsole.mock.calls[0]?.[0])).toContain('kalenderabo.nicht_beendet');
+    expect(String(konsole.mock.calls[0]?.[0])).not.toContain('network');
+    konsole.mockRestore();
   });
 
   it('meldet den Vorgang global, nicht nur für dieses Gerät', async () => {
@@ -62,7 +81,11 @@ describe('beendeAlleSitzungen', () => {
   });
 
   it('beendet die Sitzungen auch, wenn der Vermerk scheitert (ANN-044, Fassung 2)', async () => {
-    rpc.mockResolvedValue({ error: { message: 'audit down' } });
+    rpc.mockImplementation((name: string) =>
+      Promise.resolve({
+        error: name === 'end_own_calendar_feed' ? null : { message: 'audit down' },
+      }),
+    );
     const konsole = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await expect(beendeAlleSitzungen()).resolves.toBeUndefined();

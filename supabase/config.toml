@@ -205,5 +205,11 @@ verify_jwt = true
 [functions.card-terminal]
 verify_jwt = true
 
+# Kalender-Abo (ANN-838, ANN-839): ohne `verify_jwt`, weil Kalenderprogramme sich nicht anmelden;
+# die Datenbank prueft die geheime Adresse. Die Function fragt mit dem Token der Rolle
+# calendar_feed_reader (Secret CALENDAR_FEED_ROLE_KEY), scharf erst nach OPS-001 (ADR-015 Punkt 20).
+[functions.calendar-feed]
+verify_jwt = false
+
 [analytics]
 enabled = false
