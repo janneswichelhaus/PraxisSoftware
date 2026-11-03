@@ -6,8 +6,8 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Barcode im Tagebuch** (ERN-EPIC-004): PR auf `ccr-60b04b7d-dqd3o9`, eigener EAN-Leser, Auszug
-am eigenen Server (ANN-841, ANN-842); Merge nach dem Zweitreview.
+**Barcode im Tagebuch** (ERN-EPIC-004): #350 auf `ccr-60b04b7d-dqd3o9`, eigener EAN-Leser, Auszug
+am eigenen Server (ANN-841, ANN-842); Zweitreview grün, Merge bei Jannes.
 
 ## Danach
 
