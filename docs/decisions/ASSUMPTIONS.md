@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-02.
+Zuletzt aktualisiert: 2026-11-03.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -905,6 +905,10 @@ Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Datens
 ### ANN-839 — Kalender-Abo: Function ohne Anmeldung, mit einer Rolle nur für `calendar_feed`
 Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: OPS-001\
 **Annahme.** Kalenderprogramme melden sich nicht an. Die Function `calendar-feed` fragt mit dem Token der Rolle `calendar_feed_reader`, die nur `calendar_feed` darf, nie mit Admin-Schlüssel (ADR-004); OPS-001 signiert es. Die Adresse steht im Pfad: Die Function loggt nichts, die Logs der Edge Runtime prüft OPS-001. **Grundlage.** Prinzipien 0.32 §3.4; Art. 32 DSGVO; ADR-004; ADR-011 Punkt 2. **Anker.** `supabase/functions/calendar-feed/index.ts`. **Rücknahme.** Function abschalten · Aufwand `klein`.
+
+### ANN-841 — Barcode: nachschlagen im eigenen Auszug, behalten am eigenen Lebensmittel
+Datenschutz · offen · 2026-11-03 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
+**Annahme.** Das Gerät liest den Barcode im Arbeitsspeicher aus dem Kamerabild; der Server schlägt nur die Nummer im Open-Food-Facts-Auszug nach, ohne Speichern und Protokoll, eigene Lebensmittel vergleicht das Gerät. Ein eigenes Lebensmittel zu einem unbekannten Barcode behält ihn, außer die Person wählt ab, einmal je Profil; er fällt mit der Zeile, steht in Auskunft und Export. **Grundlage.** ADR-027 Punkte 6, 8, 10; ADR-010 Punkte 15, 16. **Anker.** `public.find_platform_food_by_barcode`. **Rücknahme.** Nicht behalten: Spalte `barcode` entfernen · Aufwand `klein`.
 
 ## Fachregeln
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus

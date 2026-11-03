@@ -138,6 +138,7 @@ export {
   nachrichtStellen,
 } from './nachrichten-api';
 export {
+  barcodeNachschlagen,
   type EigeneErnaehrung,
   eigenesLebensmittelLoeschen,
   eigenesLebensmittelSpeichern,
