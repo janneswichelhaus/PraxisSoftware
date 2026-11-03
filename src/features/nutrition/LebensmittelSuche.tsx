@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Disclosure } from '@/components/ui/Card';
@@ -47,6 +47,7 @@ export function LebensmittelSuche({
   fensterInhalt,
   ohneZahlen = false,
   trefferStatus,
+  unterDerSuche,
 }: {
   suchen: (begriff: string) => Promise<Lebensmittel[]>;
   /** Anfang des Abfrageschlüssels; der Begriff kommt dazu. */
@@ -66,7 +67,10 @@ export function LebensmittelSuche({
   ohneZahlen?: boolean;
   /** Rechts am Treffer, etwa der Haken nach dem Eintragen im Tagebuch. */
   trefferStatus?: (f: Lebensmittel) => ReactNode;
+  /** Unter dem Suchfeld, etwa „Barcode scannen“: öffnet ein Lebensmittel oder setzt den Fokus ins Feld. */
+  unterDerSuche?: (wege: { oeffnen: (f: Lebensmittel) => void; suchen: () => void }) => ReactNode;
 }) {
+  const suchbereich = useRef<HTMLDivElement>(null);
   // Der Begriff bleibt im Arbeitsspeicher, nie in der Adresse (ADR-011,
   // ADR-027 Punkt 8: er verriete, was eine Person isst). Zurück aus einem
   // Lebensmittel findet die Treffer wieder; Neuladen beginnt leer.
@@ -89,18 +93,30 @@ export function LebensmittelSuche({
 
   return (
     <>
-      <Filterleiste
-        beschriftung="Lebensmittelsuche"
-        suche={
-          <SearchField
-            label="Lebensmittel suchen"
-            placeholder="etwa Haferflocken"
-            maxLength={100}
-            value={eingabe}
-            onChange={setEingabe}
-          />
-        }
-      />
+      <div ref={suchbereich}>
+        <Filterleiste
+          beschriftung="Lebensmittelsuche"
+          suche={
+            <SearchField
+              label="Lebensmittel suchen"
+              placeholder="etwa Haferflocken"
+              maxLength={100}
+              value={eingabe}
+              onChange={setEingabe}
+            />
+          }
+        />
+      </div>
+      {unterDerSuche ? (
+        <div className="mb-8">
+          {unterDerSuche({
+            oeffnen: setOffen,
+            // Erst nach dem Schließen eines Fensters: Es gibt den Fokus sonst seinem Auslöser zurück.
+            suchen: () =>
+              window.setTimeout(() => suchbereich.current?.querySelector('input')?.focus(), 0),
+          })}
+        </div>
+      ) : null}
       {!aktiv ? (
         typeof ohneBegriff === 'function' ? (
           ohneBegriff(setOffen)

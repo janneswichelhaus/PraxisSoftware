@@ -62,6 +62,8 @@ const ERLAUBT: readonly RegExp[] = [
   /^@\/features\/nutrition\/(LebensmittelSuche|LebensmittelFormular|lebensmittel)$/,
   // ERN-EPIC-003: Form und Texte des Tagebuchs - ohne Datenzugriff.
   /^@\/features\/nutrition\/tagebuch$/,
+  // Der Barcodedialog liest nur die Kamera, ohne Datenzugriff; nachgeschlagen wird über `api.ts`.
+  /^@\/features\/nutrition\/Barcodedialog$/,
 ];
 
 function quelldateien(): string[] {
@@ -140,6 +142,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:discard_message_attachment_upload',
       'rpc:discard_platform_questionnaire_response',
       'rpc:end_platform_companion',
+      'rpc:find_platform_food_by_barcode',
       // UEB-010: eine Einheit am eigenen Plan.
       // POR-019: der eigene Einstieg.
       'rpc:finish_platform_onboarding',

@@ -27,6 +27,15 @@ export function Minuszeichen({ className = 'size-5.5' }: { className?: string })
   );
 }
 
+/** Ein Barcode im Sucher: Ecken und Striche, für „Barcode scannen“. */
+export function Barcodezeichen({ className = 'size-5.5' }: { className?: string }) {
+  return (
+    <svg {...STRICH} strokeWidth={2} className={`shrink-0 ${className}`}>
+      <path d="M3 8V4h4M17 4h4v4M21 16v4h-4M7 20H3v-4M7.5 8v8M10.5 8v8M13.5 8v8M16.5 8v8" />
+    </svg>
+  );
+}
+
 export function Pfeilzeichen({
   richtung,
   className = 'size-5.5',

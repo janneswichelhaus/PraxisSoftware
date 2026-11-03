@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Disclosure } from '@/components/ui/Card';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Field } from '@/components/ui/Field';
@@ -36,6 +37,7 @@ export function LebensmittelFormular({
   onAbbrechen,
   unten,
   beschriftung,
+  barcode,
 }: {
   anfang: LebensmittelWerte;
   speichernText: string;
@@ -46,10 +48,13 @@ export function LebensmittelFormular({
   /** Zerstörendes leise am Ende (DESIGN.md Regel 10). */
   unten?: ReactNode;
   beschriftung: string;
+  /** Ein Barcode zum Behalten, etwa aus dem Scan (ANN-841); abgewählt geht `null` an den Server. */
+  barcode?: string | undefined;
 }) {
   const [werte, setWerte] = useState<LebensmittelWerte>(anfang);
+  const [behalten, setBehalten] = useState(true);
   const [fehler, setFehler] = useState<Partial<Record<LebensmittelFeld, string>>>({});
-  const geaendert = JSON.stringify(werte) !== JSON.stringify(anfang);
+  const geaendert = JSON.stringify(werte) !== JSON.stringify(anfang) || !behalten;
   const { freigeben, schutz } = useTextverlustschutz({
     ungespeichert: geaendert,
     texte: EINGABETEXTE,
@@ -78,7 +83,12 @@ export function LebensmittelFormular({
       return;
     }
     setFehler({});
-    onSpeichern(ergebnis.angaben, freigeben);
+    onSpeichern(
+      barcode === undefined
+        ? ergebnis.angaben
+        : { ...ergebnis.angaben, barcode: behalten ? barcode : null },
+      freigeben,
+    );
   }
 
   const je = `je ${bezug(werte.base_unit)}`;
@@ -95,6 +105,14 @@ export function LebensmittelFormular({
           <Feldgruppe>
             {feld('name')}
             {feld('brand')}
+            {barcode === undefined ? null : (
+              <Checkbox
+                label="Barcode behalten"
+                hint={barcode}
+                checked={behalten}
+                onChange={(event) => setBehalten(event.target.checked)}
+              />
+            )}
           </Feldgruppe>
         </Section>
         <Section titel={`Nährwerte ${je}`}>

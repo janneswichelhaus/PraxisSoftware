@@ -3,6 +3,7 @@ import {
   energieDerMenge,
   FREIE_MENGE,
   grammVon,
+  mahlzeitZurUhrzeit,
   mengePruefen,
   mengeText,
   vorbelegung,
@@ -65,5 +66,21 @@ describe('Tagebuch (ERN-007)', () => {
     expect(mengePruefen(HAFER, '1 Eimer', '1')).toHaveProperty('fehler');
     expect(mengePruefen(HAFER, FREIE_MENGE, '6000')).toHaveProperty('fehler');
     expect(energieDerMenge(HAFER, 50)).toBe(185);
+  });
+});
+
+describe('Mahlzeit zur Uhrzeit (ANN-842)', () => {
+  it('Frühstück ab 5, Mittag ab 11, Snacks ab 15, Abend ab 17, nachts Snacks', () => {
+    const um = (stunde: number, minute = 0) =>
+      mahlzeitZurUhrzeit(new Date(2026, 10, 3, stunde, minute));
+    expect(um(4, 59)).toBe('snack');
+    expect(um(5)).toBe('breakfast');
+    expect(um(10, 59)).toBe('breakfast');
+    expect(um(11)).toBe('lunch');
+    expect(um(14, 59)).toBe('lunch');
+    expect(um(15)).toBe('snack');
+    expect(um(17)).toBe('dinner');
+    expect(um(21, 59)).toBe('dinner');
+    expect(um(22)).toBe('snack');
   });
 });
