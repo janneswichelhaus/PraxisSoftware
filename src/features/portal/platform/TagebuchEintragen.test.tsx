@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useLocation } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import type * as PlattformApi from './api';
@@ -15,6 +16,7 @@ const ladeErnaehrung = vi.fn();
 const ladeTagebuch = vi.fn();
 const tagebuchEintragen = vi.fn();
 const favoritSetzen = vi.fn();
+const barcodeNachschlagen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -23,9 +25,18 @@ vi.mock('./api', async (importOriginal) => ({
   lebensmittelQuellen: () => Promise.resolve([]),
   tagebuchEintragen: (...a: unknown[]) => tagebuchEintragen(...a) as Promise<void>,
   favoritSetzen: (...a: unknown[]) => favoritSetzen(...a) as Promise<void>,
+  barcodeNachschlagen: (...a: unknown[]) => barcodeNachschlagen(...a) as Promise<unknown>,
 }));
 
 const { TagebuchEintragen } = await import('./TagebuchEintragen');
+const { barcodeUebernehmen, nachDemAnlegenNachschlagen, sucheNachScanMerken } =
+  await import('./barcodeUebergabe');
+
+/** Zeigt, wohin die Seite geführt hat. */
+function Ort() {
+  const { pathname, search } = useLocation();
+  return <output aria-label="Ort">{`${pathname}${search}`}</output>;
+}
 
 const ZUGANG: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000002',
@@ -127,6 +138,7 @@ beforeEach(() => {
   ladeTagebuch.mockResolvedValue(tagebuch());
   tagebuchEintragen.mockResolvedValue(undefined);
   favoritSetzen.mockResolvedValue(undefined);
+  barcodeNachschlagen.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -285,5 +297,130 @@ describe('Eintragen ins Tagebuch (Handoff 2026-10-29, 5.7)', () => {
     renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
     expect(await screen.findByText('Zurzeit läuft keine Ernährungsberatung.')).toBeVisible();
     expect(screen.queryByRole('link', { name: 'Zum Tagebuch' })).toBeNull();
+  });
+});
+
+describe('Eintragen per Barcode (ANN-841)', () => {
+  const DINKELBROT: EigeneErnaehrung['profile']['own_foods'][number] = {
+    ...HAFERFLOCKEN,
+    kind: 'person',
+    id: 'f1f1f1f1-f1f1-4f1f-8f1f-000000000002',
+    source: 'person',
+    name: 'Omas Dinkelbrot',
+    barcode: '2009990000012',
+  };
+
+  async function nummer(nutzer: ReturnType<typeof userEvent.setup>, code: string) {
+    await nutzer.click(await screen.findByRole('button', { name: 'Barcode scannen' }));
+    await nutzer.type(screen.getByLabelText('Nummer unter dem Barcode'), code);
+    await nutzer.click(screen.getByRole('button', { name: 'Nachschlagen' }));
+  }
+
+  it('das eigene Lebensmittel mit diesem Barcode öffnet die Menge, ohne den Server zu fragen', async () => {
+    const nutzer = userEvent.setup();
+    const basis = ernaehrung();
+    ladeErnaehrung.mockResolvedValue(
+      ernaehrung({ profile: { ...basis.profile, own_foods: [DINKELBROT] } }),
+    );
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    await nummer(nutzer, '02009990000012');
+    const fenster = await screen.findByRole('dialog', { name: 'Omas Dinkelbrot' });
+    expect(barcodeNachschlagen).not.toHaveBeenCalled();
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Eintragen' }));
+    await waitFor(() =>
+      expect(tagebuchEintragen).toHaveBeenCalledWith(
+        ZUGANG.access_id,
+        HEUTE,
+        'lunch',
+        expect.objectContaining({ name: 'Omas Dinkelbrot' }),
+        expect.anything(),
+      ),
+    );
+  });
+
+  it('ein Produkt des Auszugs: die Menge zur Mahlzeit der Seite, ohne Wahl der Mahlzeit', async () => {
+    const nutzer = userEvent.setup();
+    barcodeNachschlagen.mockResolvedValue([
+      {
+        ...HAFERFLOCKEN,
+        id: 'f00df00d-f00d-4f00-8f00-000000000099',
+        source: 'off',
+        name: 'Schokokeks klassisch',
+        brand: 'Nordkorn',
+      },
+    ]);
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    await nummer(nutzer, '2000000000008');
+    const fenster = await screen.findByRole('dialog', { name: 'Schokokeks klassisch' });
+    expect(barcodeNachschlagen).toHaveBeenCalledWith(ZUGANG.access_id, '2000000000008');
+    expect(within(fenster).queryByRole('group', { name: 'Mahlzeit' })).toBeNull();
+  });
+
+  it('unbekannt: „Suchen“ setzt den Fokus ins Suchfeld', async () => {
+    const nutzer = userEvent.setup();
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    await nummer(nutzer, '2009990000029');
+    const fenster = await screen.findByRole('dialog', { name: 'Nicht im Verzeichnis' });
+    expect(fenster).toHaveTextContent('Barcode 2009990000029');
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Suchen' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByRole('searchbox')).toHaveFocus();
+  });
+
+  it('unbekannt: „Eigenes anlegen“ nimmt den Barcode im Arbeitsspeicher mit, nie in der Adresse', async () => {
+    const nutzer = userEvent.setup();
+    renderWithProviders(
+      <>
+        <TagebuchEintragen zugang={ZUGANG} />
+        <Ort />
+      </>,
+      ADRESSE,
+    );
+    await nummer(nutzer, '2009990000029');
+    const fenster = await screen.findByRole('dialog', { name: 'Nicht im Verzeichnis' });
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Eigenes anlegen' }));
+    const ort = screen.getByRole('status', { name: 'Ort' });
+    await waitFor(() =>
+      expect(ort).toHaveTextContent('/p/ernaehrung/lebensmittel/neu?bereich=treatment'),
+    );
+    expect(ort.textContent).not.toContain('2009990000029');
+    expect(decodeURIComponent(ort.textContent ?? '')).toContain(
+      'zurueck=/p/ernaehrung/tagebuch/eintragen',
+    );
+    expect(barcodeUebernehmen()).toBe('2009990000029');
+    expect(barcodeUebernehmen()).toBeNull();
+  });
+
+  it('zurück aus „Eigenes anlegen“: die Menge öffnet sich gleich, ohne zweiten Scan', async () => {
+    const basis = ernaehrung();
+    ladeErnaehrung.mockResolvedValue(
+      ernaehrung({ profile: { ...basis.profile, own_foods: [DINKELBROT] } }),
+    );
+    nachDemAnlegenNachschlagen('2009990000012');
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    const fenster = await screen.findByRole('dialog', { name: 'Omas Dinkelbrot' });
+    expect(barcodeNachschlagen).not.toHaveBeenCalled();
+    // Nur einmal: Der nächste Scan beginnt wieder mit Kamera oder Nummer.
+    const nutzer = userEvent.setup();
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Abbrechen' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Barcode scannen' }));
+    expect(await screen.findByLabelText('Nummer unter dem Barcode')).toBeVisible();
+  });
+
+  it('„Suchen“ aus dem Tag: Die Seite der Mahlzeit beginnt im Suchfeld', async () => {
+    sucheNachScanMerken();
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    await waitFor(() => expect(screen.getByRole('searchbox')).toHaveFocus());
+  });
+
+  it('„Abbrechen“ im Fenster der Menge trägt nichts ein', async () => {
+    const nutzer = userEvent.setup();
+    barcodeNachschlagen.mockResolvedValue([{ ...HAFERFLOCKEN, source: 'off', name: 'Keks' }]);
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    await nummer(nutzer, '2000000000008');
+    const fenster = await screen.findByRole('dialog', { name: 'Keks' });
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Abbrechen' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(tagebuchEintragen).not.toHaveBeenCalled();
   });
 });

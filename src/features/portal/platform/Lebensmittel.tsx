@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
@@ -29,6 +30,8 @@ import {
   type Plattformzugang,
 } from './api';
 import { PLATTFORM_PFAD } from './pfade';
+import { barcodeUebernehmen, nachDemAnlegenNachschlagen } from './barcodeUebergabe';
+import { leseRueckweg } from '@/lib/rueckweg';
 
 /**
  * Lebensmittel auf der Plattform (ERN-EPIC-002, ADR-027 Punkte 8 und 9):
@@ -111,17 +114,24 @@ function EigeneListe({ daten, search }: { daten: EigeneErnaehrung; search: strin
   );
 }
 
-function useSpeichern(zugang: Plattformzugang, id: string | null) {
+function useSpeichern(
+  zugang: Plattformzugang,
+  id: string | null,
+  nachher?: (angaben: LebensmittelAngaben) => void,
+) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { search } = useLocation();
+  const [suche] = useSearchParams();
   return useMutation({
     mutationFn: ({ angaben }: { angaben: LebensmittelAngaben; freigeben: () => void }) =>
       eigenesLebensmittelSpeichern(zugang.access_id, id, angaben),
-    onSuccess: async (_leer, { freigeben }) => {
+    onSuccess: async (_leer, { angaben, freigeben }) => {
       freigeben();
+      nachher?.(angaben);
       await queryClient.invalidateQueries({ queryKey: ernaehrungSchluessel(zugang.access_id) });
-      void navigate(`${PFAD}${search}`, { replace: true });
+      // Vom Scan aus führt der Rückweg zurück ins Tagebuch, sonst zur Liste.
+      void navigate(leseRueckweg(suche, `${PFAD}${search}`), { replace: true });
     },
   });
 }
@@ -130,7 +140,14 @@ function useSpeichern(zugang: Plattformzugang, id: string | null) {
 export function EigenesLebensmittelNeu({ zugang }: { zugang: Plattformzugang }) {
   const navigate = useNavigate();
   const { search } = useLocation();
-  const speichern = useSpeichern(zugang, null);
+  const [suche] = useSearchParams();
+  // Aus dem Scan: der Barcode im Arbeitsspeicher, einmal genommen (ANN-841); behalten, öffnet das
+  // Tagebuch danach gleich die Menge dieses Lebensmittels.
+  const [barcode] = useState(barcodeUebernehmen);
+  const speichern = useSpeichern(zugang, null, (angaben) => {
+    if (typeof angaben.barcode === 'string') nachDemAnlegenNachschlagen(angaben.barcode);
+  });
+  const zurueck = leseRueckweg(suche, `${PFAD}${search}`);
   return (
     <>
       <Rueckweg standard={`${PFAD}${search}`} beschriftung="Zu den Lebensmitteln" />
@@ -142,7 +159,8 @@ export function EigenesLebensmittelNeu({ zugang }: { zugang: Plattformzugang }) 
         laeuft={speichern.isPending}
         fehlermeldung={speichern.error?.message}
         onSpeichern={(angaben, freigeben) => speichern.mutate({ angaben, freigeben })}
-        onAbbrechen={() => void navigate(`${PFAD}${search}`)}
+        onAbbrechen={() => void navigate(zurueck)}
+        barcode={barcode ?? undefined}
       />
     </>
   );
@@ -224,6 +242,7 @@ function Aendern({
       onSpeichern={(angaben, freigeben) => speichern.mutate({ angaben, freigeben })}
       onAbbrechen={() => void navigate(`${PFAD}${search}`)}
       unten={loeschenKnopf}
+      barcode={f.barcode ?? undefined}
     />
   );
 }

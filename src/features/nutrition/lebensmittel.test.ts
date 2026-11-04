@@ -140,6 +140,8 @@ describe('Lebensmittel: Eingabe prüfen (ADR-027 Punkt 9)', () => {
     expect(lebensmittelfehler('food changed meanwhile')).toMatch(/inzwischen geändert/);
     expect(lebensmittelfehler('too many own foods')).toMatch(/500/);
     expect(lebensmittelfehler('nutrition consent missing')).toMatch(/darf das gerade nicht/);
+    expect(lebensmittelfehler('barcode already used')).toMatch(/schon ein eigenes/);
+    expect(lebensmittelfehler('invalid barcode')).toMatch(/Nummer des Barcodes/);
     expect(lebensmittelfehler(undefined)).toMatch(/Verbindung/);
   });
 });

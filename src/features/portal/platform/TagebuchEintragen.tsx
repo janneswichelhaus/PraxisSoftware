@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
@@ -32,6 +32,7 @@ import {
   kcal,
   letzteMenge,
   MAHLZEIT_NAMEN,
+  MAHLZEITEN,
   mengePruefen,
   mengeText,
   vorbelegung,
@@ -53,6 +54,9 @@ import {
   type EigenesTagebuch,
   type Plattformzugang,
 } from './api';
+import { nachDemAnlegenNehmen, sucheNachScanNehmen } from './barcodeUebergabe';
+import { bereichParameter } from './pfade';
+import { BarcodeScan, ScanKnopf } from './TagebuchScan';
 import { tagName, zurueckZumTag } from './tagebuchAdresse';
 
 /** Was zuletzt eingetragen wurde, für den Haken an seiner Zeile. */
@@ -215,8 +219,47 @@ function Suche({
   const ohneNetzId = useId();
   const letzte = (f: Lebensmittel) =>
     [...tagebuch.recent, ...tagebuch.favorites].find((s) => gleich(s.food, f));
+  const { pathname, search } = useLocation();
+  const bereich = bereichParameter(new URLSearchParams(search));
+  // Zurück aus „Eigenes anlegen“: der Barcode wird gleich nachgeschlagen, die Menge öffnet sich.
+  const [nachAnlegen, setNachAnlegen] = useState(nachDemAnlegenNehmen);
+  const [sucheZuerst] = useState(sucheNachScanNehmen);
+  const [scannen, setScannen] = useState(nachAnlegen !== null);
+  const scanEnde = () => {
+    setNachAnlegen(null);
+    setScannen(false);
+  };
   return (
     <LebensmittelSuche
+      unterDerSuche={({ oeffnen, suchen }) => (
+        <>
+          {sucheZuerst ? <BeimStart tun={suchen} /> : null}
+          <ScanKnopf
+            onScannen={() => {
+              setNachAnlegen(null);
+              setScannen(true);
+            }}
+          />
+          {scannen ? (
+            <BarcodeScan
+              zugang={zugang}
+              search={bereich ? `?${bereich}` : ''}
+              rueckweg={`${pathname}${search}`}
+              code={nachAnlegen ?? undefined}
+              ohneZahlen={ohneZahlen}
+              onGefunden={(f) => {
+                scanEnde();
+                oeffnen(f);
+              }}
+              onSuchen={() => {
+                scanEnde();
+                suchen();
+              }}
+              onSchliessen={scanEnde}
+            />
+          ) : null}
+        </>
+      )}
       suchen={(begriff) => lebensmittelSuchen(zugang.access_id, begriff)}
       schluessel={['platform-foods', zugang.access_id]}
       eigene={ernaehrung.profile.own_foods}
@@ -296,6 +339,7 @@ function Suche({
               schliessen();
               onEingetragen(f);
             }}
+            onAbbrechen={schliessen}
             {...(anfang ? { anfang } : {})}
             unten={
               <Favorit
@@ -396,6 +440,17 @@ function Schnellzeile({
   );
 }
 
+/** Einmal beim Erscheinen, etwa der Fokus ins Suchfeld nach „Suchen“ aus dem Scan. */
+function BeimStart({ tun }: { tun: () => void }) {
+  const getan = useRef(false);
+  useEffect(() => {
+    if (getan.current) return;
+    getan.current = true;
+    tun();
+  }, [tun]);
+  return null;
+}
+
 /** Der Haken an einem Treffer, der gerade aus dem Fenster eingetragen wurde (ANN-813). */
 function Eintragshaken() {
   return (
@@ -467,12 +522,18 @@ export function MengeWaehlen({
   ohneZahlen = false,
   unten,
   onEingetragen,
+  mahlzeitWaehlbar = false,
+  onAbbrechen,
 }: {
   zugang: Plattformzugang;
   f: Lebensmittel;
   tag: string;
+  /** Die Mahlzeit, oder mit `mahlzeitWaehlbar` die vorgewählte (Scan aus dem Tag, ANN-842). */
   mahlzeit: Mahlzeit;
+  mahlzeitWaehlbar?: boolean;
   onEingetragen: (name: string) => void;
+  /** Leise unter „Eintragen“: am Telefon der Weg hinaus ohne Escape-Taste. */
+  onAbbrechen?: () => void;
   /** Vorbelegung, etwa die Menge vom letzten Mal (ERN-008). */
   anfang?: { einheit: string; wert: string };
   ohneZahlen?: boolean;
@@ -483,7 +544,8 @@ export function MengeWaehlen({
   const [einheit, setEinheit] = useState(start.einheit);
   const [wert, setWert] = useState(start.wert);
   const [fehler, setFehler] = useState<string | undefined>();
-  const eintragen = useEintragen(zugang, f, tag, mahlzeit, onEingetragen);
+  const [gewaehlt, setGewaehlt] = useState<Mahlzeit>(mahlzeit);
+  const eintragen = useEintragen(zugang, f, tag, gewaehlt, onEingetragen);
   const verbunden = useIstVerbunden();
   const ohneNetzId = useId();
   const geprueft = mengePruefen(f, einheit, wert);
@@ -535,6 +597,14 @@ export function MengeWaehlen({
           {kcal(energieDerMenge(f, geprueft.menge))}
         </p>
       ) : null}
+      {mahlzeitWaehlbar ? (
+        <Wahlreihe
+          legende="Mahlzeit"
+          wahlen={MAHLZEITEN.map((m) => ({ wert: m, text: MAHLZEIT_NAMEN[m] }))}
+          gewaehlt={gewaehlt}
+          onWaehlen={setGewaehlt}
+        />
+      ) : null}
       {eintragen.isError ? (
         <Statusmeldung ton="fehler">{eintragen.error.message}</Statusmeldung>
       ) : null}
@@ -552,6 +622,11 @@ export function MengeWaehlen({
         >
           {eintragen.isPending ? 'Wird eingetragen …' : 'Eintragen'}
         </Button>
+        {onAbbrechen ? (
+          <Button type="button" variant="quiet" onClick={onAbbrechen}>
+            Abbrechen
+          </Button>
+        ) : null}
       </Formularfuss>
       {unten}
     </form>

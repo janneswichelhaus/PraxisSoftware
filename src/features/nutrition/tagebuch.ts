@@ -23,6 +23,15 @@ export const MAHLZEIT_NAMEN: Record<Mahlzeit, string> = {
   snack: 'Snacks',
 };
 
+/** Die Mahlzeit, die ein Scan aus dem Tag vorwählt, nach der Uhrzeit des Geräts (ANN-842). */
+export function mahlzeitZurUhrzeit(jetzt: Date): Mahlzeit {
+  const stunde = jetzt.getHours();
+  if (stunde >= 5 && stunde < 11) return 'breakfast';
+  if (stunde >= 11 && stunde < 15) return 'lunch';
+  if (stunde >= 17 && stunde < 22) return 'dinner';
+  return 'snack';
+}
+
 export function istMahlzeit(wert: unknown): wert is Mahlzeit {
   return typeof wert === 'string' && (MAHLZEITEN as readonly string[]).includes(wert);
 }

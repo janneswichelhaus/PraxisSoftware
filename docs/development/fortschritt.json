@@ -1018,7 +1018,9 @@
           "id": "ern-epic-004",
           "name": "ERN-EPIC-004 Ernährung: Barcode",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-11-03",
+          "nachweis": "ERN-013 bis -015, Zweitreview"
         },
         {
           "id": "ern-epic-005",

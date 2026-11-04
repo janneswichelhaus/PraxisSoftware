@@ -176,6 +176,17 @@ export async function lebensmittelSuchen(
   return antwort(z.array(lebensmittelSchema), data, satz);
 }
 
+/** Produkte des Auszugs zu einem Barcode (`find_platform_food_by_barcode`); nichts wird gespeichert. */
+export async function barcodeNachschlagen(zugangId: string, code: string): Promise<Lebensmittel[]> {
+  const satz = 'Das Nachschlagen hat nicht geklappt.';
+  const { data, error } = (await getSupabase().rpc('find_platform_food_by_barcode', {
+    p_access_id: zugangId,
+    p_code: code,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(z.array(lebensmittelSchema), data, satz);
+}
+
 /** Die Quellenangabe der Lebensmitteldaten. */
 export async function lebensmittelQuellen(): Promise<Quelle[]> {
   const satz = 'Die Quellen konnten nicht geladen werden.';

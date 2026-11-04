@@ -35,6 +35,8 @@ export const lebensmittelSchema = z.object({
   base_unit: z.enum(['g', 'ml']),
   per_100: je100Schema,
   portions: z.array(portionSchema),
+  // Nur am eigenen Lebensmittel der Person, wenn sie ihn behalten hat (ANN-841).
+  barcode: z.string().nullable().optional(),
   updated_at: z.string().optional(),
 });
 
@@ -179,6 +181,8 @@ export interface LebensmittelAngaben {
   saturated_fat_g: number | null;
   salt_g: number | null;
   portions: Portion[];
+  /** Nur auf der Plattform: fehlt er, bleibt der gespeicherte; `null` nimmt ihn weg. */
+  barcode?: string | null;
 }
 
 export function leereLebensmittelWerte(): LebensmittelWerte {
@@ -298,6 +302,9 @@ export function lebensmittelPruefen(
 /** Verständliche Sätze statt der Meldung des Servers (§13). */
 export function lebensmittelfehler(meldung: string | undefined): string {
   const m = meldung ?? '';
+  if (m.includes('barcode already used'))
+    return 'Zu diesem Barcode gibt es schon ein eigenes Lebensmittel.';
+  if (m.includes('invalid barcode')) return 'Die Nummer des Barcodes stimmt nicht.';
   if (m.includes('changed meanwhile'))
     return 'Das Lebensmittel wurde inzwischen geändert. Bitte neu laden.';
   if (m.includes('not found')) return 'Das Lebensmittel gibt es nicht mehr.';

@@ -19,6 +19,8 @@ const zahlenAusblenden = vi.fn();
 const tagebuchKopieren = vi.fn();
 const ladeErinnerungen = vi.fn();
 const erinnerungenSpeichern = vi.fn();
+const barcodeNachschlagen = vi.fn();
+const tagebuchEintragen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -28,6 +30,9 @@ vi.mock('./api', async (importOriginal) => ({
   tagebuchKopieren: (...a: unknown[]) => tagebuchKopieren(...a) as Promise<number>,
   ladeErinnerungen: (...a: unknown[]) => ladeErinnerungen(...a) as Promise<unknown>,
   erinnerungenSpeichern: (...a: unknown[]) => erinnerungenSpeichern(...a) as Promise<void>,
+  barcodeNachschlagen: (...a: unknown[]) => barcodeNachschlagen(...a) as Promise<unknown>,
+  tagebuchEintragen: (...a: unknown[]) => tagebuchEintragen(...a) as Promise<void>,
+  ladeErnaehrung: () => Promise.resolve(null),
 }));
 
 const { Tagebuch } = await import('./Tagebuch');
@@ -365,5 +370,88 @@ describe('Tagebuch auf der Plattform (Handoff 2026-10-29, 5.7)', () => {
         'Vereinbaren Sie eine Ernährungsberatung mit Ihrer Praxis, finden Sie sie hier.',
       ),
     ).toBeVisible();
+  });
+});
+
+describe('Scan aus dem Tag (ANN-842)', () => {
+  const KEKS = {
+    kind: 'catalog' as const,
+    id: 'f00df00d-f00d-4f00-8f00-000000000099',
+    source: 'off' as const,
+    name: 'Schokokeks klassisch',
+    brand: 'Nordkorn',
+    base_unit: 'g' as const,
+    per_100: {
+      energy_kcal: 490,
+      protein_g: 6,
+      fat_g: 22,
+      carbohydrate_g: 66,
+      sugar_g: 32,
+      fibre_g: null,
+      saturated_fat_g: null,
+      salt_g: 0.6,
+    },
+    portions: [{ label: '1 Portion', amount: 25 }],
+  };
+
+  it('Menge mit der Mahlzeit zur Uhrzeit vorgewählt, änderbar; eingetragen bleibt der Tag', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 29, 12, 30));
+    try {
+      const nutzer = userEvent.setup();
+      barcodeNachschlagen.mockResolvedValue([KEKS]);
+      tagebuchEintragen.mockResolvedValue(undefined);
+      renderWithProviders(<Tagebuch zugang={ZUGANG} />, '/p/ernaehrung/tagebuch?bereich=treatment');
+      await nutzer.click(await screen.findByRole('button', { name: 'Barcode scannen' }));
+      await nutzer.type(screen.getByLabelText('Nummer unter dem Barcode'), '2000000000008');
+      await nutzer.click(screen.getByRole('button', { name: 'Nachschlagen' }));
+      const fenster = await screen.findByRole('dialog', { name: 'Schokokeks klassisch' });
+      const mahlzeit = within(fenster).getByRole('group', { name: 'Mahlzeit' });
+      expect(within(mahlzeit).getByRole('radio', { name: 'Mittagessen' })).toBeChecked();
+      await nutzer.click(within(mahlzeit).getByRole('radio', { name: 'Snacks' }));
+      await nutzer.click(within(fenster).getByRole('button', { name: 'Eintragen' }));
+      await waitFor(() =>
+        expect(tagebuchEintragen).toHaveBeenCalledWith(
+          ZUGANG.access_id,
+          expect.any(String),
+          'snack',
+          expect.objectContaining({ name: 'Schokokeks klassisch' }),
+          expect.anything(),
+        ),
+      );
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(screen.getByText('„Schokokeks klassisch“ eingetragen.')).toHaveClass('sr-only');
+      expect(screen.getByRole('heading', { level: 1, name: 'Tagebuch' })).toBeVisible();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('ohne Schreibrecht kein „Barcode scannen“', async () => {
+    ladeTagebuch.mockResolvedValue(tagebuch({ can_write: false }));
+    renderWithProviders(<Tagebuch zugang={ZUGANG} />, '/p/ernaehrung/tagebuch?bereich=treatment');
+    await screen.findByRole('heading', { level: 1, name: 'Tagebuch' });
+    await screen.findByText(/Noch nichts eingetragen/);
+    expect(screen.queryByRole('button', { name: 'Barcode scannen' })).toBeNull();
+  });
+
+  it('die Menge vom letzten Mal vorbelegt; „Abbrechen“ trägt nichts ein', async () => {
+    const nutzer = userEvent.setup();
+    ladeTagebuch.mockResolvedValue(
+      tagebuch({
+        recent: [{ food: KEKS, amount: 50, portion_label: '1 Portion', portion_count: 2 }],
+      }),
+    );
+    barcodeNachschlagen.mockResolvedValue([KEKS]);
+    tagebuchEintragen.mockResolvedValue(undefined);
+    renderWithProviders(<Tagebuch zugang={ZUGANG} />, '/p/ernaehrung/tagebuch?bereich=treatment');
+    await nutzer.click(await screen.findByRole('button', { name: 'Barcode scannen' }));
+    await nutzer.type(screen.getByLabelText('Nummer unter dem Barcode'), '2000000000008');
+    await nutzer.click(screen.getByRole('button', { name: 'Nachschlagen' }));
+    const fenster = await screen.findByRole('dialog', { name: 'Schokokeks klassisch' });
+    expect(within(fenster).getByLabelText(/Anzahl/)).toHaveValue('2');
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Abbrechen' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(tagebuchEintragen).not.toHaveBeenCalled();
   });
 });

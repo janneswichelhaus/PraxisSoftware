@@ -1,4 +1,4 @@
-# Status · Stand 2026-11-02
+# Status · Stand 2026-11-03
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -6,14 +6,13 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Kalender-Abo**: #349 auf `claude/weiter-77kj64`: eigene Termine als Abo, nur Uhrzeit und Art, Adresse
-nur als SHA-256 (PRX-048, PRX-049, ANN-838); die Function fragt mit einer Rolle, die nur das Abo
-liest (ANN-839). Scharf erst mit OPS-001.
+**Barcode im Tagebuch** (ERN-EPIC-004): #350 auf `ccr-60b04b7d-dqd3o9`, eigener EAN-Leser, Auszug
+am eigenen Server (ANN-841, ANN-842); Zweitreview grün, Merge bei Jannes.
 
 ## Danach
 
 Bildsichtung von #334 bis #337. Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
-ERN-EPIC-004 bis -006, ORG-EPIC-001, Schritte 5 bis 7 mit Jannes' Leinwänden, UI-003; die
+ERN-EPIC-005 und -006, ORG-EPIC-001, Schritte 5 bis 7 mit Jannes' Leinwänden, UI-003; die
 Übertragung an DATEV erst nach B4; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
 zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
@@ -45,4 +44,4 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-02.11.2026, Branch `claude/weiter-77kj64` neu ab `main`. Lokal: `git pull`, Migration `kalender_abo`.
+03.11.2026, Branch `ccr-60b04b7d-dqd3o9` ab `main`. Lokal: `git pull`, Migration `barcode`.

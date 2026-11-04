@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-02.
+Zuletzt aktualisiert: 2026-11-03.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -906,6 +906,9 @@ Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: Datens
 Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: OPS-001\
 **Annahme.** Kalenderprogramme melden sich nicht an. Die Function `calendar-feed` fragt mit dem Token der Rolle `calendar_feed_reader`, die nur `calendar_feed` darf, nie mit Admin-Schlüssel (ADR-004); OPS-001 signiert es. Die Adresse steht im Pfad: Die Function loggt nichts, die Logs der Edge Runtime prüft OPS-001. **Grundlage.** Prinzipien 0.32 §3.4; Art. 32 DSGVO; ADR-004; ADR-011 Punkt 2. **Anker.** `supabase/functions/calendar-feed/index.ts`. **Rücknahme.** Function abschalten · Aufwand `klein`.
 
+### ANN-841 — Barcode: nachschlagen im Auszug, behalten am eigenen Lebensmittel
+Datenschutz · offen · 2026-11-03 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
+**Annahme.** Das Gerät liest den Barcode im Arbeitsspeicher; der Server schlägt nur die Nummer im Auszug nach, ohne Speichern und Protokoll; eigene vergleicht das Gerät. Ein eigenes Lebensmittel zu einem unbekannten Barcode behält ihn zum Wiedererkennen, vorgewählt, weil das der Zweck ist, abwählbar; einmal je Profil, die Beratung liest mit, fällt mit der Zeile. **Grundlage.** ADR-027 Punkte 4, 6, 8, 10; ADR-010 Punkte 15, 16. **Anker.** `public.find_platform_food_by_barcode`. **Rücknahme.** Spalte `barcode` entfernen · Aufwand `klein`.
 ## Fachregeln
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus
 Technik · offen · 2026-10-10 · — · — · Wiedervorlage: —\
@@ -1030,6 +1033,10 @@ Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 ### ANN-833 — Kalender: Farbe je Art des Termins und je Person
 Technik · offen · 2026-11-01 · — · — · Wiedervorlage: Töne bei der Sichtung (S-14)\
 **Regel.** Die Kachel trägt die Art als Fläche: Training blau, Beratung violett, Behandlung weiß; der Zustand geht vor. Hausbesuch, Praxis und Video bleiben Wort. Die Spalte einer Person trägt deren Teamchat-Farbe als Bild neben dem Namen, auch bei 375 px (Jannes 2026-11-01). Farbe nie allein (WCAG 1.4.1). **Grundlage.** `IDEA-PRX-021`; ANN-666; DESIGN.md Grundsatz 2. **Anker.** `kachelFlaeche` in `CalendarGrid.tsx`.
+
+### ANN-842 — Scan aus dem Tag: Mahlzeit nach der Uhrzeit vorgewählt
+Praxisprozess · offen · 2026-11-03 · — · — · Wiedervorlage: —\
+**Regel.** Der Scan aus dem Tag wählt nach der Uhrzeit des Geräts vor: ab 5 Uhr Frühstück, ab 11 Mittagessen, ab 15 Snacks, ab 17 Abendessen, ab 22 Snacks; im Fenster änderbar. **Grundlage.** ADR-027 Punkt 10. **Anker.** `mahlzeitZurUhrzeit` in `src/features/nutrition/tagebuch.ts`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |

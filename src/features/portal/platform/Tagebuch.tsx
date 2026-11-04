@@ -31,11 +31,13 @@ import { Wahlreihe } from '@/components/ui/Wahlreihe';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { leseZahl } from '@/features/nutrition/eingabe';
-import { feldtext } from '@/features/nutrition/lebensmittel';
+import { feldtext, QUELLENNAME, type Lebensmittel } from '@/features/nutrition/lebensmittel';
 import {
   kcal,
+  letzteMenge,
   MAHLZEIT_NAMEN,
   MAHLZEITEN,
+  mahlzeitZurUhrzeit,
   mengeText,
   type Eintrag,
   type Mahlzeit,
@@ -54,13 +56,18 @@ import {
   type Plattformzugang,
 } from './api';
 import { Abschnitt, Aufklappzeilen } from './Ernaehrungsteile';
+import { nachDemAnlegenNehmen, sucheNachScanMerken } from './barcodeUebergabe';
+import { bereichParameter } from './pfade';
+import { MengeWaehlen } from './TagebuchEintragen';
 import { TagebuchErinnerungen } from './TagebuchErinnerungen';
+import { BarcodeScan, ScanKnopf } from './TagebuchScan';
 import {
   eintragenAdresse,
   ernaehrungAdresse,
   literZahl,
   literZiel,
   tagebuchAdresse,
+  tagName,
   tagZeilen,
 } from './tagebuchAdresse';
 
@@ -165,6 +172,17 @@ function Inhalt({
           gesperrt={gesperrt}
           ohneNetzId={ohneNetzId}
           {...(daten.can_delete && verbunden ? { onOeffnen: setOffen } : {})}
+          {...(daten.can_write
+            ? {
+                scannen: (
+                  <TagScan
+                    zugang={zugang}
+                    daten={daten}
+                    ohneNetzId={gesperrt ? ohneNetzId : undefined}
+                  />
+                ),
+              }
+            : {})}
         />
         <div className="flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:gap-12">
           <Wasser zugang={zugang} daten={daten} gesperrt={gesperrt} ohneNetzId={ohneNetzId} />
@@ -391,11 +409,14 @@ function Mahlzeiten({
   gesperrt,
   ohneNetzId,
   onOeffnen,
+  scannen,
 }: {
   daten: EigenesTagebuch;
   gesperrt: boolean;
   ohneNetzId: string;
   onOeffnen?: (eintrag: Eintrag) => void;
+  /** „Barcode scannen“ über den Mahlzeiten wie „1 Glas“ beim Wasser, nur mit Schreibrecht. */
+  scannen?: ReactNode;
 }) {
   const { search } = useLocation();
   const leerId = useId();
@@ -421,6 +442,7 @@ function Mahlzeiten({
           {OHNE_NETZ}
         </p>
       ) : null}
+      {scannen}
       <div className="border-line border-t">
         {teile
           .filter((t) => t.eintraege.length > 0)
@@ -471,6 +493,103 @@ function Mahlzeiten({
         ) : null}
       </div>
     </Abschnitt>
+  );
+}
+
+/**
+ * Ein Produkt per Barcode in diesen Tag: Scan, Menge mit vorgewählter Mahlzeit, eingetragen; die
+ * Seite bleibt, vorgelesen wird der Satz (ANN-813, ANN-842).
+ */
+function TagScan({
+  zugang,
+  daten,
+  ohneNetzId,
+}: {
+  zugang: Plattformzugang;
+  daten: EigenesTagebuch;
+  ohneNetzId?: string | undefined;
+}) {
+  const { pathname, search } = useLocation();
+  const navigate = useNavigate();
+  // Zurück aus „Eigenes anlegen“: der Barcode wird gleich nachgeschlagen, die Menge öffnet sich.
+  const [nachAnlegen, setNachAnlegen] = useState(nachDemAnlegenNehmen);
+  const [scannen, setScannen] = useState(nachAnlegen !== null);
+  const scanEnde = () => {
+    setNachAnlegen(null);
+    setScannen(false);
+  };
+  const [gefunden, setGefunden] = useState<Lebensmittel | null>(null);
+  const [eingetragen, setEingetragen] = useState<string | null>(null);
+  const [vorwahl, setVorwahl] = useState<Mahlzeit>(() => mahlzeitZurUhrzeit(new Date()));
+  const bereich = bereichParameter(new URLSearchParams(search));
+  const tag = daten.day.day;
+  const vorher = gefunden
+    ? [...daten.recent, ...daten.favorites].find(
+        (s) => s.food.kind === gefunden.kind && s.food.id === gefunden.id,
+      )
+    : undefined;
+  const anfang = vorher ? letzteMenge(vorher) : undefined;
+  return (
+    <>
+      <ScanKnopf
+        onScannen={() => {
+          setVorwahl(mahlzeitZurUhrzeit(new Date()));
+          setEingetragen(null);
+          setNachAnlegen(null);
+          setScannen(true);
+        }}
+        ohneNetzId={ohneNetzId}
+      />
+      <p role="status" className="sr-only">
+        {eingetragen ? `„${eingetragen}“ eingetragen.` : null}
+      </p>
+      {scannen ? (
+        <BarcodeScan
+          zugang={zugang}
+          search={bereich ? `?${bereich}` : ''}
+          rueckweg={`${pathname}${search}`}
+          code={nachAnlegen ?? undefined}
+          ohneZahlen={daten.hide_numbers}
+          onGefunden={(f) => {
+            scanEnde();
+            setGefunden(f);
+          }}
+          onSuchen={() => {
+            sucheNachScanMerken();
+            void navigate(eintragenAdresse(tag, vorwahl, search, daten.today));
+          }}
+          onSchliessen={scanEnde}
+        />
+      ) : null}
+      {gefunden ? (
+        <Dialogfenster
+          titel={gefunden.name}
+          beschreibung={[
+            gefunden.brand,
+            QUELLENNAME[gefunden.source],
+            tag === daten.today ? null : tagName(tag, daten.today),
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+          onSchliessen={() => setGefunden(null)}
+        >
+          <MengeWaehlen
+            zugang={zugang}
+            f={gefunden}
+            tag={tag}
+            mahlzeit={vorwahl}
+            mahlzeitWaehlbar
+            ohneZahlen={daten.hide_numbers}
+            {...(anfang ? { anfang } : {})}
+            onEingetragen={(name) => {
+              setGefunden(null);
+              setEingetragen(name);
+            }}
+            onAbbrechen={() => setGefunden(null)}
+          />
+        </Dialogfenster>
+      ) : null}
+    </>
   );
 }
 

@@ -14,6 +14,32 @@ export function kameraVerfuegbar(): boolean {
   );
 }
 
+/** Ein Satz zum Fehler beim Start der Kamera und ob ein zweiter Versuch Aussicht hat. */
+export function kamerafehler(ursache: unknown): { meldung: string; erneut: boolean } {
+  const name = ursache instanceof Error ? ursache.name : '';
+  if (name === 'NotAllowedError' || name === 'SecurityError') {
+    return {
+      meldung:
+        'Die Kamera wurde nicht freigegeben. Bitte in den Einstellungen des Browsers für diese Seite erlauben und erneut öffnen.',
+      erneut: true,
+    };
+  }
+  if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+    return { meldung: 'Auf diesem Gerät wurde keine Kamera gefunden.', erneut: false };
+  }
+  if (name === 'NotReadableError') {
+    return {
+      meldung:
+        'Die Kamera wird gerade von einer anderen App benutzt. Bitte dort schließen und erneut versuchen.',
+      erneut: true,
+    };
+  }
+  return {
+    meldung: 'Die Kamera konnte nicht gestartet werden. Bitte erneut versuchen.',
+    erneut: true,
+  };
+}
+
 /**
  * Was die Seite über die Kamera weiß (DAT-25):
  *
