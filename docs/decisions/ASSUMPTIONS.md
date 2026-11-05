@@ -1276,7 +1276,7 @@ Praxisprozess · offen · 2026-11-03 · — · — · Wiedervorlage: —\
 | ANN-483 | „Rückgängig“ nach dem Haken geht jederzeit, auch am dokumentierten Termin | Praxisprozess · verworfen (→ ANN-512) | `HakenRueckgaengig` in `src/features/calendar/today/Besuchsknoepfe.tsx` |
 | ANN-484 | Am Telefon weicht die Fahrzeit im Kicker, wenn die Kachel „Abfahrt“ sie nennt | Technik · offen | `wegTitel` in `src/features/calendar/today/MyDayPage.tsx` |
 | ANN-485 | Zeichen für Zustände ohne eigenen Ton | Technik · offen | `STATUSZEICHEN` in `src/components/ui/Badge.tsx` |
-| ANN-486 | Die Kachelleiste der Behandlungsgrundlagen bleibt bis zur Sichtung, als Weg zu „Daten übertragen“ | Praxisprozess · offen | `src/features/patients/treatment-bases/GrundlagenKacheln.tsx` |
+| ANN-486 | Die Kachelleiste der Behandlungsgrundlagen bleibt als Weg zu „Daten übertragen“ (gesichtet 2026-11-05) | Praxisprozess · offen | `src/features/patients/treatment-bases/GrundlagenKacheln.tsx` |
 | ANN-487 | „Kein Alarm je Check-in“ bleibt als Kleingedrucktes (Grenze aus ADR-006 Punkt 11) | Technik · offen | `src/features/exercise/checkins/ZwischenDenTerminen.tsx` |
 | ANN-489 | Eine Zeitspanne (von/bis) steht am Telefon untereinander, ab 640 px in einer Zeile | Technik · offen | `BlockFelder` in `src/features/calendar/scheduling/ArbeitszeitJePerson.tsx` |
 | ANN-493 | Unternavigation: eine einzelne Vorschau steht offen, erst ab zwei eingeklappt | Technik · offen | `einklappbar` in `src/components/ui/SubNav.tsx` |
