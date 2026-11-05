@@ -591,7 +591,7 @@ Datenschutz · offen · 2026-10-11 · — · Prüfpaket · Wiedervorlage: Datens
 **Annahme.** Steht auf der Akte ein Legal Hold, löschen weder Frist noch Widerruf noch Person oder Praxis einen Anhang: Er wird gesperrt (`locked_at`), ist nicht mehr sichtbar und fällt im ersten Lauf nach dem Hold; die Kopie an die Person bleibt möglich (ANN-672). Im Training gibt es keinen Hold. **Grundlage.** ADR-017 Punkte 61 und 65; Art. 17 Abs. 3 lit. e und Art. 18 DSGVO. **Anker.** `app.remove_message_attachments`. **Rücknahme.** Hold ohne Wirkung auf Anhänge: Bedingung `gehalten` streichen · Aufwand `klein`.
 
 ### ANN-336 — Video: nur Bild, 30 Sekunden, begrenzte Bitrate, Containerangaben auf dem Gerät geleert
-Datenschutz · offen · 2026-10-11 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Sichtung am iPhone\
+Datenschutz · offen · 2026-10-11 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)\
 **Annahme.** Der Aufnahmedialog nimmt nur Bild auf, höchstens 30 Sekunden und 2 Mbit/s. Vor dem Upload überschreibt das Gerät Programm-, Zeit- und Titelangaben im WebM- bzw. MP4-Container mit gleich langen Leerfeldern, ohne Neukodieren; der Server prüft Signatur, Prüfsumme, Tonspur und diese Angaben, nicht die Dauer. **Grundlage.** ADR-017 Punkte 62 bis 64. **Anker.** `src/features/portal/platform/videometadaten.ts`, `VIDEO_BITRATE`. **Rücknahme.** Dauer auch am Server prüfen · Aufwand `mittel`.
 
 ### ANN-342 — Die Auskunft aus der Akte nennt die Zugänge zur Plattform, auch den Zweifel an der Einwilligungsfähigkeit
@@ -1031,7 +1031,7 @@ Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 **Regel.** Laufend heißt am heutigen Tag gültig; ein vor dem Beginn gekündigtes Abo lief nie. Neu zählt nach dem Beginn, Kündigungen nach dem Eingang, Trainingstermine stattgefunden ohne Beratung, je im gewählten Monat. Ohne Anschluss: endet in vier Wochen ab heute, kein späteres Paket, Verhältnis aktiv. **Grundlage.** §20; ANN-154; ANN-155; ADR-021 Punkt 6. **Anker.** `public.get_offer_statistics`.
 
 ### ANN-833 — Kalender: Farbe je Art des Termins und je Person
-Technik · offen · 2026-11-01 · — · — · Wiedervorlage: Töne bei der Sichtung (S-14)\
+Technik · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 **Regel.** Die Kachel trägt die Art als Fläche: Training blau, Beratung violett, Behandlung weiß; der Zustand geht vor. Hausbesuch, Praxis und Video bleiben Wort. Die Spalte einer Person trägt deren Teamchat-Farbe als Bild neben dem Namen, auch bei 375 px (Jannes 2026-11-01). Farbe nie allein (WCAG 1.4.1). **Grundlage.** `IDEA-PRX-021`; ANN-666; DESIGN.md Grundsatz 2. **Anker.** `kachelFlaeche` in `CalendarGrid.tsx`.
 
 ### ANN-842 — Scan aus dem Tag: Mahlzeit nach der Uhrzeit vorgewählt

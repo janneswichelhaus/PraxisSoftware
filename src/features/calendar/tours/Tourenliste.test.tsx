@@ -177,31 +177,11 @@ describe('Tourenliste nach dem UX-Review (UXR-003)', () => {
     );
   });
 
-  it('zeigt die Ziel-App hinter einem Aufklapper mit Zeichen und Tastaturfokus (UIK-07, UIK-06)', async () => {
+  it('bietet keine Auswahl der Ziel-App mehr an (BEF-140)', () => {
     renderWithProviders(
       <Tourenliste stopps={STOPPS} zeitzone="Europe/Berlin" startGewaehlt={false} />,
     );
-
-    const kopf = screen.getByText('Andere Ziel-App prüfen (für die Gerätebewertung)');
-    expect(kopf.querySelector('[data-aufklappzeichen]')).not.toBeNull();
-    expect(kopf).toHaveClass('min-h-11');
-
-    // Das Feld liegt unsichtbar in der Beschriftung; den Fokus zeigt sie.
-    const chip = screen.getByText('Apple Maps').closest('label')!;
-    expect(chip).toHaveClass(
-      'has-[:focus-visible]:outline-2',
-      'has-[:focus-visible]:outline-accent',
-      'has-[:focus-visible]:outline-offset-2',
-    );
-    expect(
-      screen.getByText(
-        'Keine Einstellung: Die Wahl gilt, solange diese Seite offen ist, und wird nicht gespeichert.',
-      ),
-    ).toBeInTheDocument();
-
-    await userEvent.click(screen.getByText('Systemnavigation'));
-    expect(screen.getByText(/kein Zwischenziel/)).toHaveTextContent(
-      'Für den ganzen Tag gibt es deshalb keinen Knopf – Stopp für Stopp geht es unten.',
-    );
+    expect(screen.queryByText(/Ziel-App/)).toBeNull();
+    expect(screen.queryByRole('radio')).toBeNull();
   });
 });

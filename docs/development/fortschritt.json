@@ -1,5 +1,5 @@
 {
-  "stand": "2026-11-01",
+  "stand": "2026-11-05",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -124,9 +124,10 @@
           "id": "dat-epic-001",
           "name": "DAT-EPIC-001 Dateiablage (G4)",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-13",
-          "nachweis": "`84bec9b` … `fd10a37`"
+          "nachweis": "`84bec9b` … `fd10a37`",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "rol-epic-001",
@@ -249,17 +250,19 @@
           "id": "pat-006",
           "name": "PAT-006 Datenschutzinformation und Einwilligungen (G8)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-22",
-          "nachweis": "`4764d90`, `8569f3d`, `1706cb1`"
+          "nachweis": "`4764d90`, `8569f3d`, `1706cb1`",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "abr-epic-004",
           "name": "ABR-EPIC-004 Befreiungsgrund (BEF-019) und § 14c-Riegel (Etappe L)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-20",
-          "nachweis": "`dfe96a8`, `d8f3ea4`"
+          "nachweis": "`dfe96a8`, `d8f3ea4`",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "lei-epic-001",
@@ -283,17 +286,19 @@
           "id": "abr-epic-005",
           "name": "ABR-EPIC-005 Leistungsbereich je Rechnung, getrennte Nummernkreise (Etappe L)",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-21",
-          "nachweis": "`0fcac3e` … `6d6261f`"
+          "nachweis": "`0fcac3e` … `6d6261f`",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "abr-epic-006",
           "name": "ABR-EPIC-006 Auswertung „Einnahmen je Leistungsart\" (Etappe L)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-21",
-          "nachweis": "`0fcac3e` … `6d6261f`"
+          "nachweis": "`0fcac3e` … `6d6261f`",
+          "gesichtet_am": "2026-11-05"
         }
       ]
     },
@@ -327,102 +332,114 @@
           "id": "map-002",
           "name": "MAP-002 In-App-Kartenprototyp",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-21",
-          "nachweis": "`c85c56e` … `ea2d9aa`"
+          "nachweis": "`c85c56e` … `ea2d9aa`",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "map-003",
           "name": "MAP-003 Fahrradroute als Linie",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-21",
-          "nachweis": "`cbc6c07`, `71756aa`, `d66ea31`"
+          "nachweis": "`cbc6c07`, `71756aa`, `d66ea31`",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "map-004",
           "name": "MAP-004 Fahrzeiten und Erreichbarkeit",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-22",
-          "nachweis": "`ce5dbe4` … `0e27b4f`"
+          "nachweis": "`ce5dbe4` … `0e27b4f`",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "map-005",
           "name": "MAP-005 Navigations-Handoff mit Koordinaten",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-22",
           "nachweis": "`cf03057`, `ef74eec`",
-          "vermerk": "Teil A gesichtet 2026-09-22, Teil B am Telefon offen"
+          "vermerk": "Teil A gesichtet 2026-09-22, Teil B am Telefon offen",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "map-006",
           "name": "MAP-006 Tagesroute mit Fahrpuffer (Block 2)",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-25",
           "nachweis": "`6cb52b2` … `a0cc774`",
-          "vermerk": "mit synthetischen Adressen; Scharfschalten am Gate aus ADR-019 Punkt 9 (LOCATION_DATA_GATE)"
+          "vermerk": "mit synthetischen Adressen; Scharfschalten am Gate aus ADR-019 Punkt 9 (LOCATION_DATA_GATE)",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "frb-epic-000",
           "name": "FRB-EPIC-000 Schema und Validator der Instrumente",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-21",
-          "nachweis": "`0e988d5`, `53fd542`, `dc9c963`, `6dbe377`"
+          "nachweis": "`0e988d5`, `53fd542`, `dc9c963`, `6dbe377`",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "frb-epic-001",
           "name": "FRB-EPIC-001 Instrumentenbibliothek",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-25",
-          "nachweis": "`7056777`, `8aa5d7d`, `f7bb47b`"
+          "nachweis": "`7056777`, `8aa5d7d`, `f7bb47b`",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "frb-epic-002",
           "name": "FRB-EPIC-002 Anamnese und Verlauf",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-26",
-          "nachweis": "`44b6dcb`, `2d23d91`, `95532e9`, `bf800be`, `68f9b50`"
+          "nachweis": "`44b6dcb`, `2d23d91`, `95532e9`, `bf800be`, `68f9b50`",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "frb-epic-003",
           "name": "FRB-EPIC-003 Befund mit Bausteinen",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-26",
           "nachweis": "`0483a60`, `b80cd6a`, `b621339` (FRB-003a bis c, Zweitreview)",
-          "vermerk": "Sichtung: Befund Schritte 6 und 7"
+          "vermerk": "Sichtung: Befund Schritte 6 und 7",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "dok-005",
           "name": "DOK-005 Therapiebericht",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-26",
           "nachweis": "`f7d5b6b`, `5041f31`, `a7b0890` (DOK-005a und b, Zweitreview)",
-          "vermerk": "Sichtung: Befund Schritte 8 und 9"
+          "vermerk": "Sichtung: Befund Schritte 8 und 9",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "dok-006",
           "name": "DOK-006 Fotos in der Akte",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-26",
           "nachweis": "`0319ee9` … `88686ea` (ADR-017 Fassung 2), `141aaee` … `5d11f19` (DOK-006a bis d, Zweitreview)",
-          "vermerk": "Sichtung: Befund Schritte 10 bis 12"
+          "vermerk": "Sichtung: Befund Schritte 10 bis 12",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "frb-epic-004",
           "name": "FRB-EPIC-004 Skalen in der Verlaufsdoku",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-11-01",
-          "nachweis": "Branch claude/gallant-meitner-vs1dp4"
+          "nachweis": "Branch claude/gallant-meitner-vs1dp4",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "frb-epic-005",
@@ -454,118 +471,131 @@
           "id": "ux-epic-004",
           "name": "UX-EPIC-004 Ruhiger und übersichtlicher (BEF-071 bis BEF-081)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-29",
           "nachweis": "UX-004a bis UX-004e",
-          "vermerk": "Sichtung: Praxisverwaltung Schritte 7 bis 9"
+          "vermerk": "Sichtung: Praxisverwaltung Schritte 7 bis 9",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ux-epic-005",
           "name": "UX-EPIC-005 Entrümpeln: Terminseite, Hausbesuch-Ablauf, Arbeitszeit im Kalender, alle Bereiche (BEF-084 bis BEF-091)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-30",
           "nachweis": "UX-005a bis UX-005i, Branch `claude/sleepy-fermi-9ykp3k`",
-          "vermerk": "Sichtung: Praxisverwaltung Schritt 9"
+          "vermerk": "Sichtung: Praxisverwaltung Schritt 9",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ux-epic-006",
           "name": "UX-EPIC-006 Ein Funkloch kostet keinen Text und sagt, was los ist (BEF-046, BEF-047 Teil 2, BEF-070)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-10",
           "nachweis": "UX-006a bis UX-006c, Branch `claude/clever-clarke-m3slaf`, Zweitreview",
-          "vermerk": "Sichtung: Rahmen Schritte 13 bis 15"
+          "vermerk": "Sichtung: Rahmen Schritte 13 bis 15",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ux-epic-007",
           "name": "UX-EPIC-007 Dokumentation und Akte: nichts geht verloren, der nächste Schritt ist sichtbar (BEF-055, BEF-056, BEF-058, BEF-059, BEF-060)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-10",
           "nachweis": "UX-007a bis UX-007e, Branch `ccr-fdcd8c84-grfo2u`, Zweitreview",
-          "vermerk": "Sichtung: UX-Review Schritte 1 bis 3"
+          "vermerk": "Sichtung: UX-Review Schritte 1 bis 3",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ux-epic-008",
           "name": "UX-EPIC-008 Unumkehrbares fragt nach, Korrekturen finden ihren Weg (BEF-062, BEF-063, BEF-064)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-10",
           "nachweis": "UX-008a bis UX-008d, Branch `claude/lucid-fermi-t262t6`, Zweitreview",
-          "vermerk": "Sichtung: UX-Review Schritte 4 bis 6"
+          "vermerk": "Sichtung: UX-Review Schritte 4 bis 6",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ux-epic-009",
           "name": "UX-EPIC-009 Papier, Nachweise und Wörter sprechen Praxissprache (BEF-052, BEF-065, BEF-067)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-10",
           "nachweis": "UX-009a bis UX-009c, Branch `claude/beautiful-ramanujan-3q4yk0`, Zweitreview",
-          "vermerk": "Sichtung: UX-Review Schritte 7 bis 9"
+          "vermerk": "Sichtung: UX-Review Schritte 7 bis 9",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "prx-epic-003",
           "name": "PRX-EPIC-003 Nichts fällt durch",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-29",
           "nachweis": "PRX-010 bis PRX-016",
-          "vermerk": "Sichtung: Praxisverwaltung Schritte 10 bis 12"
+          "vermerk": "Sichtung: Praxisverwaltung Schritte 10 bis 12",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "prx-epic-003b",
           "name": "PRX-EPIC-003b Dubletten zusammenführen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-29",
           "nachweis": "PRX-017, PRX-018",
-          "vermerk": "Sichtung: Praxisverwaltung Schritt 13"
+          "vermerk": "Sichtung: Praxisverwaltung Schritt 13",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "sta-epic-001",
           "name": "STA-EPIC-001 Statistiken: fünf Kennzahlen zur Praxissteuerung",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-29",
           "nachweis": "STA-001 bis STA-007",
-          "vermerk": "Sichtung: Praxisverwaltung Schritte 14 und 15"
+          "vermerk": "Sichtung: Praxisverwaltung Schritte 14 und 15",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "trn-epic-001",
           "name": "TRN-EPIC-001 Trainingskund:in anlegen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-30",
           "nachweis": "TRN-001 bis TRN-003",
-          "vermerk": "Sichtung: Training Schritte 1 bis 3"
+          "vermerk": "Sichtung: Training Schritte 1 bis 3",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "trn-epic-002",
           "name": "TRN-EPIC-002 Trainingstermine",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-30",
           "nachweis": "TRN-004 bis TRN-006",
-          "vermerk": "Sichtung: Training Schritte 4 bis 6"
+          "vermerk": "Sichtung: Training Schritte 4 bis 6",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "trn-epic-003",
           "name": "TRN-EPIC-003 Trainingsrechnung",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-30",
           "nachweis": "TRN-007, TRN-008, Zweitreview",
-          "vermerk": "Sichtung: Training Schritte 7 bis 9"
+          "vermerk": "Sichtung: Training Schritte 7 bis 9",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "trn-epic-004",
           "name": "TRN-EPIC-004 Trainingsprotokoll",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-30",
           "nachweis": "TRN-009, TRN-010, Zweitreview",
-          "vermerk": "Sichtung: Training Schritte 10 bis 12"
+          "vermerk": "Sichtung: Training Schritte 10 bis 12",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "dsn-001",
@@ -580,64 +610,71 @@
           "id": "por-epic-001",
           "name": "POR-EPIC-001 Plattformzugang",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-30",
           "nachweis": "POR-001 bis POR-004, Zweitreview",
-          "vermerk": "Sichtung: Plattform Schritte 1 und 2"
+          "vermerk": "Sichtung: Plattform Schritte 1 und 2",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "por-epic-001b",
           "name": "POR-EPIC-001b Vertretung",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-02",
           "nachweis": "POR-005 bis POR-007, Zweitreview",
-          "vermerk": "Sichtung: Plattform Schritte 3 und 4"
+          "vermerk": "Sichtung: Plattform Schritte 3 und 4",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "abn-epic-001",
           "name": "ABN-EPIC-001 Abnahme der Annahmen, Blöcke 2, 3, 4 und 9",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-02",
           "nachweis": "ABN-001 bis ABN-012, Zweitreview",
-          "vermerk": "Sichtung: Plattform Schritte 5 bis 7"
+          "vermerk": "Sichtung: Plattform Schritte 5 bis 7",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "abn-epic-001b",
           "name": "ABN-EPIC-001b Abnahme der Annahmen, Blöcke 5 bis 8",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-02",
           "nachweis": "ABN-013 bis ABN-022, Zweitreview",
-          "vermerk": "ohne BEF-105, -106, -109 (ABN-EPIC-001c); Sichtung: Befund und Training je Schritte 13 bis 15"
+          "vermerk": "ohne BEF-105, -106, -109 (ABN-EPIC-001c); Sichtung: Befund und Training je Schritte 13 bis 15",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "abn-epic-001c",
           "name": "ABN-EPIC-001c Dateien, Dokumentationsfotos, Kartendienst (BEF-105, -106, -109)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-02",
           "nachweis": "ABN-023 bis ABN-028, Zweitreview; vorher ADR-017 Fassung 3, ADR-019 Fassung 5 (PR #170)",
-          "vermerk": "Edge Function patient-file-verify gebaut, scharf mit OPS-001; PDF in der App offen (ANN-223); Sichtung: Befund Schritte 10 bis 12, Kartendienst Schritt 9"
+          "vermerk": "Edge Function patient-file-verify gebaut, scharf mit OPS-001; PDF in der App offen (ANN-223); Sichtung: Befund Schritte 10 bis 12, Kartendienst Schritt 9",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "abn-epic-002",
           "name": "ABN-EPIC-002 Abnahme vom 09.10.2026 (BEF-133 bis BEF-137)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-09",
           "nachweis": "ABN-029 bis ABN-034, Zweitreview; Prinzipien 0.22, ADR-021 Fassung 3, ADR-017 Fassung 4",
-          "vermerk": "BEF-138 als eigener Pull Request (bef-138); Sichtung: Befund Schritte 10 bis 12"
+          "vermerk": "BEF-138 als eigener Pull Request (bef-138); Sichtung: Befund Schritte 10 bis 12",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-138",
           "name": "BEF-138 Abruf freigegebener Dokumente über die Plattform ohne Protokoll",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-10",
           "nachweis": "ADR-010 Fassung 4 (Punkt 22)",
-          "vermerk": "Merge erst mit Label freigabe-audit (Jannes); Sichtung: Plattform Schritt 12"
+          "vermerk": "Merge erst mit Label freigabe-audit (Jannes); Sichtung: Plattform Schritt 12",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-139",
@@ -652,10 +689,11 @@
           "id": "bef-140",
           "name": "BEF-140 Zwei Löschkandidaten aus dem Leitfaden (Übersicht, Telefon geschäftlich)",
           "gewicht": 1,
-          "status": "fertig",
-          "fertig_am": "2026-10-11",
+          "status": "gesichtet",
+          "fertig_am": "2026-11-05",
           "nachweis": "ANN-340",
-          "vermerk": "nur Oberfläche; „Andere Ziel-App prüfen“ folgt nach der Sichtung Kartendienst"
+          "vermerk": "Teil 3 nach der Gerätesichtung: Ziel-App-Auswahl der Tourliste entfernt",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-141",
@@ -670,10 +708,11 @@
           "id": "bef-129",
           "name": "BEF-129 Widerruf des Trainingsvertrags bleibt in Offene Punkte, bis das Paket entfernt ist",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-11",
           "nachweis": "ANN-341",
-          "vermerk": "Bedingung statt 14 Tage; Monatsentwurf unverändert"
+          "vermerk": "Bedingung statt 14 Tage; Monatsentwurf unverändert",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-128",
@@ -688,10 +727,11 @@
           "id": "bef-124",
           "name": "BEF-124 Verordnung mit Verlauf, Löschen nur ohne Termine",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-16",
           "nachweis": "ANN-562; Migration 20261121100000, treatment-basis-history.test.ts, retention-run.test.ts; Zweitreview",
-          "vermerk": "Verlauf eingeklappt auf der Bearbeiten-Seite der Grundlage"
+          "vermerk": "Verlauf eingeklappt auf der Bearbeiten-Seite der Grundlage",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-131",
@@ -706,19 +746,21 @@
           "id": "bef-132",
           "name": "BEF-132 Plattformzugang an der Dublette sperrt das Zusammenführen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-11",
           "nachweis": "Migration 20261031100000",
-          "vermerk": "ein Satz und zwei Zähler in der Vorschau, Prüfseite dublette.html?sperre=plattform; Sichtungsdatei Praxisverwaltung voll, kein neuer Schritt"
+          "vermerk": "ein Satz und zwei Zähler in der Vorschau, Prüfseite dublette.html?sperre=plattform; Sichtungsdatei Praxisverwaltung voll, kein neuer Schritt",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-143",
           "name": "BEF-143 Stornierte Rechnung nennt ihre Positionen aus dem Snapshot",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-11",
           "nachweis": "Migration 20261101100000",
-          "vermerk": "Korrektur nur angeboten, wenn sie eine Zeile hätte (correction_pending); Prüfseite terminhonorar.html?seite=storniert; Sichtung UX-Review Schritt 11"
+          "vermerk": "Korrektur nur angeboten, wenn sie eine Zeile hätte (correction_pending); Prüfseite terminhonorar.html?seite=storniert; Sichtung UX-Review Schritt 11",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-144",
@@ -742,285 +784,317 @@
           "id": "log-epic-001",
           "name": "LOG-EPIC-001 Protokollierung auf das Mindestmaß",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-03",
           "nachweis": "PRs #177 bis #180 (gestapelt), ADR-010 Fassung 3, PROJECT_PRINCIPLES 0.21",
-          "vermerk": "ohne Oberfläche außer Hinweistexten; nach grüner CI mergen (E-6); offen bei Jannes: pg_cron-Nachweis, Backupfrist, AV-Verträge, Plattformlogs"
+          "vermerk": "ohne Oberfläche außer Hinweistexten; nach grüner CI mergen (E-6); offen bei Jannes: pg_cron-Nachweis, Backupfrist, AV-Verträge, Plattformlogs",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "abr-epic-007",
           "name": "ABR-EPIC-007 Terminhonorar",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-05",
           "nachweis": "ABR-030 bis ABR-032, ADR-009 Fassung 5 (B17 entschieden), Zweitreview",
-          "vermerk": "ohne BEF-114 (Paketpreise Training, wartet auf Preis, Umfang, Zahlungsweise); Sichtung: Plattform Schritte 8 und 9"
+          "vermerk": "ohne BEF-114 (Paketpreise Training, wartet auf Preis, Umfang, Zahlungsweise); Sichtung: Plattform Schritte 8 und 9",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ubk-epic-001",
           "name": "UBK-EPIC-001 Übersicht nach der Uhr, Tageswechsel, Tageskarte, Fahrwege im Kalender (BEF-051)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-05",
           "nachweis": "UBK-001 bis UBK-005, Branch `claude/feature-loop-ubersicht-kalender-hy71mv`",
-          "vermerk": "Auftrag Jannes, eingeschoben; Sichtung: UI-Redesign Schritte 3, 13 und 14"
+          "vermerk": "Auftrag Jannes, eingeschoben; Sichtung: UI-Redesign Schritte 3, 13 und 14",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ubk-epic-002",
           "name": "UBK-EPIC-002 Fahrzeiten im Alltag: Fahrzeitfaktor, Passt es?, Lückenfinder, Garage und Rückweg, Fahrweg antippbar, Ort auf der Kachel",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-06",
           "nachweis": "UBK-010 bis UBK-017, Branch `claude/friendly-wright-4r8083`, vier Migrationen, Zweitreview",
-          "vermerk": "Auftrag Jannes, eingeschoben; Sichtung: Kartendienst Schritte 8, 9 und 13, UI-Redesign Schritte 14 und 15"
+          "vermerk": "Auftrag Jannes, eingeschoben; Sichtung: Kartendienst Schritte 8, 9 und 13, UI-Redesign Schritte 14 und 15",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "rah-epic-001",
           "name": "RAH-EPIC-001 Design-Runde 1 Rahmen: Seitenleiste und Symbolspalte, Kopfzeile, Tableiste nach Reife, Sicherheit und Aufbewahrung, Praxiseinstellungen, Rückweg in der Akte, Tab-Titel, Startbild",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-06",
           "nachweis": "Branch `claude/epic-cori-rmq1ty`",
-          "vermerk": "Auftrag Jannes (Design-Runde 1, 05.10.2026), eingeschoben; Sichtung: Rahmen Schritte 1 bis 3"
+          "vermerk": "Auftrag Jannes (Design-Runde 1, 05.10.2026), eingeschoben; Sichtung: Rahmen Schritte 1 bis 3",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "slk-epic-001",
           "name": "SLK-EPIC-001 Schlank und klar, erste Runde: Telefax der Patient:innen gelöscht, Doku an jeder Zeile der Übersicht, Stammdaten in einem Block, Grundton B",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-06",
           "nachweis": "Branch `claude/confident-wozniak-vj9h7h`",
-          "vermerk": "Auftrag Jannes (06.10.2026), eingeschoben; Sichtung: Rahmen Schritte 4 bis 6"
+          "vermerk": "Auftrag Jannes (06.10.2026), eingeschoben; Sichtung: Rahmen Schritte 4 bis 6",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "skn-epic-001",
           "name": "SKN-EPIC-001 Design-Runde 2 Schrift und Knöpfe: Leiste 12 px, Kleingedrucktes 14 px, gesperrter Knopf gestrichelt, dichte Angaben auf 12 px, Zeitstrahl-Symbol",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-06",
           "nachweis": "SKN-001 bis SKN-007 (SKN-008 wartet auf die Zwei-Faktor-Frage)",
-          "vermerk": "Auftrag Jannes (Design-Runde 2, Freigabe 06.10.2026); Sichtung: Rahmen Schritt 7"
+          "vermerk": "Auftrag Jannes (Design-Runde 2, Freigabe 06.10.2026); Sichtung: Rahmen Schritt 7",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "abr-epic-008",
           "name": "ABR-EPIC-008 Design-Runde Abrechnung: Rechnungsliste mit Suche, Filter, Monat und Weitere laden, Gesamtzahl, Spalten ab 1024 px",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-06",
           "nachweis": "ABR-033/034",
-          "vermerk": "BEF-061 Option 1 und 3 (Entscheidung Jannes 2026-10-05), ANN-259; Sichtung: Rahmen Schritt 12"
+          "vermerk": "BEF-061 Option 1 und 3 (Entscheidung Jannes 2026-10-05), ANN-259; Sichtung: Rahmen Schritt 12",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "dok-epic-001",
           "name": "DOK-EPIC-001 Design-Runde Dokumentation: Skala zweireihig mit gewähltem Wert, Bausteinfeld ohne Kasten im Kasten, Bausteinleiste einreihig, Ursprung im Nachtrag zugeklappt",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-06",
           "nachweis": "DOK-001 bis DOK-004",
-          "vermerk": "BEF-057 Option 2 (Entscheidung Jannes 2026-10-05) mit der Skala aus Option 3 (ANN-258); Sichtung: Rahmen Schritt 11"
+          "vermerk": "BEF-057 Option 2 (Entscheidung Jannes 2026-10-05) mit der Skala aus Option 3 (ANN-258); Sichtung: Rahmen Schritt 11",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "kut-epic-001",
           "name": "KUT-EPIC-001 Design-Runde 3 Kalender und Tour: Woche 7.5rem, Tour im Kopf, Anlegen-Leiste dichter mit Bildlauf, Tour am Handy Liste vor Karte, zwei Spalten am Rechner, Karte mit zwei Fingern",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-06",
           "nachweis": "KUT-001 bis KUT-006",
-          "vermerk": "Auftrag Jannes (Design-Runde 3 alles A, Freigabe 06.10.2026); BEF-053, BEF-054 erledigt; Sichtung: Rahmen Schritte 8 bis 10"
+          "vermerk": "Auftrag Jannes (Design-Runde 3 alles A, Freigabe 06.10.2026); BEF-053, BEF-054 erledigt; Sichtung: Rahmen Schritte 8 bis 10",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "por-epic-002",
           "name": "POR-EPIC-002 Eigene Termine, Rechnungen, Dokumente",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-06",
           "nachweis": "POR-008 bis POR-015, Zweitreview",
-          "vermerk": "Sichtung: Plattform Schritte 10 bis 12"
+          "vermerk": "Sichtung: Plattform Schritte 10 bis 12",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "por-epic-003",
           "name": "POR-EPIC-003 Einwilligungen, Export, Einstellungen",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-07",
           "nachweis": "POR-016 bis POR-020, Zweitreview",
-          "vermerk": "Sichtung: Plattform Schritte 13 bis 15"
+          "vermerk": "Sichtung: Plattform Schritte 13 bis 15",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ang-epic-001",
           "name": "ANG-EPIC-001 Nachsorge-Abo als Monatsrechnung",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-07",
           "nachweis": "ANG-001 bis ANG-004, Zweitreview",
-          "vermerk": "Sichtung: Angebote Schritte 1 bis 3"
+          "vermerk": "Sichtung: Angebote Schritte 1 bis 3",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ang-epic-002",
           "name": "ANG-EPIC-002 Trainingspaket nach Zeitraum",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-07",
           "nachweis": "ANG-005 bis ANG-008, BEF-114, Zweitreview",
-          "vermerk": "Sichtung: Angebote Schritte 4 bis 6"
+          "vermerk": "Sichtung: Angebote Schritte 4 bis 6",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "knd-epic-001",
           "name": "KND-EPIC-001 Betreuung nach der Behandlung",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-07",
           "nachweis": "KND-001 bis KND-005, Zweitreview",
-          "vermerk": "Sichtung: Angebote Schritte 7 bis 9"
+          "vermerk": "Sichtung: Angebote Schritte 7 bis 9",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ueb-epic-001",
           "name": "UEB-EPIC-001 Übungsbibliothek",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-07",
           "nachweis": "UEB-001 bis UEB-003, Zweitreview",
-          "vermerk": "Sichtung: Pläne Schritte 1 bis 3"
+          "vermerk": "Sichtung: Pläne Schritte 1 bis 3",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ueb-epic-002",
           "name": "UEB-EPIC-002 Plan und Schnappschuss",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-07",
           "nachweis": "UEB-004 bis UEB-007, Zweitreview",
-          "vermerk": "Sichtung: Pläne Schritte 4 bis 6"
+          "vermerk": "Sichtung: Pläne Schritte 4 bis 6",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ueb-epic-003",
           "name": "UEB-EPIC-003 Plan als PDF und im Portal",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-08",
           "nachweis": "UEB-008 bis UEB-011, Zweitreview",
-          "vermerk": "Sichtung: Pläne Schritte 7 bis 9"
+          "vermerk": "Sichtung: Pläne Schritte 7 bis 9",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "kom-epic-001",
           "name": "KOM-EPIC-001 Strukturierte Rückfrage",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-09",
           "nachweis": "KOM-001 bis KOM-004, Zweitreview",
-          "vermerk": "Sichtung: Pläne Schritte 10 bis 12"
+          "vermerk": "Sichtung: Pläne Schritte 10 bis 12",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "kom-epic-002",
           "name": "KOM-EPIC-002 Foto und Video",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-11",
           "nachweis": "KOM-005 bis KOM-008, Zweitreview",
-          "vermerk": "Sichtung: Pläne Schritte 13 bis 15"
+          "vermerk": "Sichtung: Pläne Schritte 13 bis 15",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "kom-epic-003",
           "name": "KOM-EPIC-003 Benachrichtigungen und Terminerinnerung",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-12",
           "nachweis": "KOM-009 bis KOM-011, Zweitreview",
-          "vermerk": "Sichtung: Pläne Schritte 14 und 15"
+          "vermerk": "Sichtung: Pläne Schritte 14 und 15",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "trk-epic-001",
           "name": "TRK-EPIC-001 Einheiten und Check-ins",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-12",
           "nachweis": "TRK-001 bis TRK-003, Zweitreview",
-          "vermerk": "Sichtung: Verlauf Schritte 1 bis 3"
+          "vermerk": "Sichtung: Verlauf Schritte 1 bis 3",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "trk-epic-002",
           "name": "TRK-EPIC-002 Schmerz, Sicherheit, Kontext",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-12",
           "nachweis": "TRK-004 bis TRK-006, Zweitreview",
-          "vermerk": "Sichtung: Verlauf Schritte 1 bis 3"
+          "vermerk": "Sichtung: Verlauf Schritte 1 bis 3",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "trk-epic-003",
           "name": "TRK-EPIC-003 Offline-Erfassung",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-12",
           "nachweis": "TRK-007 bis TRK-009, Zweitreview",
-          "vermerk": "Sichtung: Verlauf Schritte 4 bis 6"
+          "vermerk": "Sichtung: Verlauf Schritte 4 bis 6",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "off-epic-001",
           "name": "OFF-EPIC-001 Dokumentation ohne Empfang",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-12",
           "nachweis": "OFF-001 bis OFF-003, Zweitreview",
-          "vermerk": "Sichtung: Verlauf Schritte 7 bis 9"
+          "vermerk": "Sichtung: Verlauf Schritte 7 bis 9",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "out-epic-001",
           "name": "OUT-EPIC-001 Fortschritt ohne Bewertung",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-12",
           "nachweis": "OUT-001 bis OUT-004, Zweitreview",
-          "vermerk": "Sichtung: Verlauf Schritte 10 bis 12"
+          "vermerk": "Sichtung: Verlauf Schritte 10 bis 12",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "alt-epic-001",
           "name": "ALT-EPIC-001 Aktivitäten und Gewohnheiten",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-12",
           "nachweis": "ALT-001 bis ALT-003, Zweitreview",
-          "vermerk": "Sichtung: Verlauf Schritte 13 bis 15"
+          "vermerk": "Sichtung: Verlauf Schritte 13 bis 15",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ern-epic-001",
           "name": "ERN-EPIC-001 Ernährung: Profil und Bedarf",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-18",
-          "nachweis": "ERN-001 bis ERN-003, Zweitreview"
+          "nachweis": "ERN-001 bis ERN-003, Zweitreview",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ern-epic-002",
           "name": "ERN-EPIC-002 Ernährung: Lebensmitteldaten",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-19",
-          "nachweis": "ERN-004 bis ERN-006, Zweitreview"
+          "nachweis": "ERN-004 bis ERN-006, Zweitreview",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ern-epic-003",
           "name": "ERN-EPIC-003 Ernährung: Tagebuch",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-19",
-          "nachweis": "ERN-007 bis ERN-010, Budgets in tagebuch.spec.ts, Zweitreview"
+          "nachweis": "ERN-007 bis ERN-010, Budgets in tagebuch.spec.ts, Zweitreview",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ern-beratung-abrechnen",
           "name": "Ernährung: Beratung abrechnen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-19",
           "nachweis": "ERN-011 und ERN-012",
-          "vermerk": "ANN-622 (Abnahme Jannes), ANN-664, ANN-665; Sichtung per Bildstrecke im PR"
+          "vermerk": "ANN-622 (Abnahme Jannes), ANN-664, ANN-665; Sichtung per Bildstrecke im PR",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ern-epic-004",
           "name": "ERN-EPIC-004 Ernährung: Barcode",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-11-03",
-          "nachweis": "ERN-013 bis -015, Zweitreview"
+          "nachweis": "ERN-013 bis -015, Zweitreview",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ern-epic-005",
@@ -1044,339 +1118,377 @@
           "id": "flt-epic-001",
           "name": "FLT-EPIC-001 Radflotte",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-15",
           "nachweis": "Branch ccr-658a5e25-l0njkl",
-          "vermerk": "Auftrag Jannes (15.10.2026), ersetzt die Vorschau; ANN-550 bis ANN-558; Rad im Kalender und weitere Bauarten offen; Sichtung per Bildstrecke im PR. Nachtrag 16.10.: FLT-007 bis FLT-009 (Werbeflächen, Seitenfotos, Meldungen für den Arbeitgeber, Check-Up-Rhythmus; Migration 20261122100000, ANN-568 bis ANN-570)"
+          "vermerk": "Auftrag Jannes (15.10.2026), ersetzt die Vorschau; ANN-550 bis ANN-558; Rad im Kalender und weitere Bauarten offen; Sichtung per Bildstrecke im PR. Nachtrag 16.10.: FLT-007 bis FLT-009 (Werbeflächen, Seitenfotos, Meldungen für den Arbeitgeber, Check-Up-Rhythmus; Migration 20261122100000, ANN-568 bis ANN-570)",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "team-001",
           "name": "TEAM-001 Teamkommunikation: Kanäle, Direktnachrichten, Threads, Erwähnungen, Suche, eigener Lesestand, rollierende Löschung",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-17",
           "nachweis": "Branch claude/modest-turing-i5qgn9",
-          "vermerk": "Überholung 11 (Auftrag Jannes 17.10.2026), ersetzt die Vorschau; ADR-008 Fassung 5 Punkt 12; ANN-609 bis ANN-614; Aufbau wie Slack (Für dich, Threads); keine Startkanäle (Jannes), Nachrichten der Radflotte in der Radflotte; Anhänge (ADR-017 Punkt 30), Push (ADR-024) und Vorgangsbezug offen"
+          "vermerk": "Überholung 11 (Auftrag Jannes 17.10.2026), ersetzt die Vorschau; ADR-008 Fassung 5 Punkt 12; ANN-609 bis ANN-614; Aufbau wie Slack (Für dich, Threads); keine Startkanäle (Jannes), Nachrichten der Radflotte in der Radflotte; Anhänge (ADR-017 Punkt 30), Push (ADR-024) und Vorgangsbezug offen",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "team-002",
           "name": "TEAM-002 Teamchat wie Slack: Chatfläche mit Gesprächen, Gespräch und Thread nebeneinander, private Kanäle, Gruppen, Reaktionen, Anheften, Für später, Planen, Suche mit Filtern, Lesestand je Thread, Zustellung ohne Doppel",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-18",
           "nachweis": "Branch claude/epic-cerf-vq8hz1",
-          "vermerk": "Überholung Teamchat (Auftrag Jannes 18.10.2026); ANN-640 bis ANN-651; Funktionsmatrix und Etappen: git show 9452575:docs/product/ideen/referenz-slack.md; Dateien (ADR-017), Push und Mail (ADR-024 Punkt 12), Huddles, KI, Canvas und Workflows offen als Entscheidung"
+          "vermerk": "Überholung Teamchat (Auftrag Jannes 18.10.2026); ANN-640 bis ANN-651; Funktionsmatrix und Etappen: git show 9452575:docs/product/ideen/referenz-slack.md; Dateien (ADR-017), Push und Mail (ADR-024 Punkt 12), Huddles, KI, Canvas und Workflows offen als Entscheidung",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "team-003",
           "name": "TEAM-003 Anhänge im Teamchat: Fotos und PDF bis fünf je Nachricht, Anzeigen im Fenster ohne Herunterladen, Dateien je Gespräch, gelöscht mit der Nachricht",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-18",
           "nachweis": "#273",
-          "vermerk": "Etappe E4 (Frage 1 aus PR #272, Jannes 18.10.2026: wie empfohlen, ohne Virenprüfung); ADR-017 Fassung 8 Abschnitt M vorgeschlagen (Bestätigungsfragen 30 bis 32); ANN-652, ANN-653; scharf erst nach OPS-001 und OPS-003 (Punkt 81); Clips bleiben aus (Punkt 71)"
+          "vermerk": "Etappe E4 (Frage 1 aus PR #272, Jannes 18.10.2026: wie empfohlen, ohne Virenprüfung); ADR-017 Fassung 8 Abschnitt M vorgeschlagen (Bestätigungsfragen 30 bis 32); ANN-652, ANN-653; scharf erst nach OPS-001 und OPS-003 (Punkt 81); Clips bleiben aus (Punkt 71)",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "team-004",
           "name": "TEAM-004 Sprachnachrichten im Teamchat: aufnehmen in der App (höchstens zwei Minuten, sichtbar), nur Ton ohne Angaben, abspielen ohne Herunterladen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-18",
           "nachweis": "#273",
-          "vermerk": "Antwort auf Frage 4 der PR #273 (Jannes 18.10.2026: Sprachnachrichten ermöglichen); ADR-017 Fassung 9 Abschnitt N vorgeschlagen (Bestätigungsfragen 33, 34), Mikrofon der eigenen Herkunft freigegeben; ANN-655; keine Transkription, kein Video; scharf erst nach OPS-001 und OPS-003 (Punkt 87)"
+          "vermerk": "Antwort auf Frage 4 der PR #273 (Jannes 18.10.2026: Sprachnachrichten ermöglichen); ADR-017 Fassung 9 Abschnitt N vorgeschlagen (Bestätigungsfragen 33, 34), Mikrofon der eigenen Herkunft freigegeben; ANN-655; keine Transkription, kein Video; scharf erst nach OPS-001 und OPS-003 (Punkt 87)",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "team-005",
           "name": "TEAM-005 Senden, während Anhänge hochladen: Nachricht wartet sichtbar im Ausgang und geht von selbst, Bearbeiten holt Text und Anhänge zurück",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-18",
           "nachweis": "#273",
-          "vermerk": "Antwort auf Frage 5 der PR #273 (wie empfohlen); ADR-017 Punkt 74 Vermerk (Fassung 9); ANN-654; alles nur im Arbeitsspeicher (Punkt 33)"
+          "vermerk": "Antwort auf Frage 5 der PR #273 (wie empfohlen); ADR-017 Punkt 74 Vermerk (Fassung 9); ANN-654; alles nur im Arbeitsspeicher (Punkt 33)",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "team-006",
           "name": "TEAM-006 Farbe je Person im Teamchat: acht Farben, vergeben mit dem Mitarbeiterdatensatz, selbst gewählt in Mein Konto, Initialen auf der Farbe vor jeder Nachricht und in jeder Liste",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-19",
           "nachweis": "Branch ccr-37917f35-emdjjp",
-          "vermerk": "Auftrag Jannes 19.10.2026 (Chat noch nicht zufrieden: Farbe je Mitarbeiter:in); ANN-666; Baustein Personenbild; keine Farbe im Rot, Orange oder Gelb der Statusfarben"
+          "vermerk": "Auftrag Jannes 19.10.2026 (Chat noch nicht zufrieden: Farbe je Mitarbeiter:in); ANN-666; Baustein Personenbild; keine Farbe im Rot, Orange oder Gelb der Statusfarben",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "team-007",
           "name": "TEAM-007 Profilbild im Teamchat: nur für sich selbst, auf dem Gerät zu 256 × 256 gerechnet, am Inhalt geprüft, in der Datenbank, fällt mit Entfernen, Ersetzen und Ausscheiden",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-19",
           "nachweis": "Branch ccr-37917f35-emdjjp",
-          "vermerk": "Auftrag Jannes 19.10.2026; ADR-017 Fassung 10 Abschnitt O angenommen (Umkehr von Punkt 1, Fragen 35 bis 37 wie empfohlen); ANN-667 im Prüfpaket; Vorschläge für mehr Übersicht: git show 9452575:docs/product/ideen/referenz-slack.md"
+          "vermerk": "Auftrag Jannes 19.10.2026; ADR-017 Fassung 10 Abschnitt O angenommen (Umkehr von Punkt 1, Fragen 35 bis 37 wie empfohlen); ANN-667 im Prüfpaket; Vorschläge für mehr Übersicht: git show 9452575:docs/product/ideen/referenz-slack.md",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "team-008",
           "name": "TEAM-008 Bilder auch in den Listen des Teamchats: Für dich, Threads, Suche, Für später und Angeheftetes zeigen Bild oder Farbe der Person, die schrieb",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-19",
           "nachweis": "Branch ccr-37917f35-emdjjp",
-          "vermerk": "Antwort auf Frage 5 der PR zu TEAM-006 und TEAM-007 (wie empfohlen); Threads nennen jetzt auch den Namen neben dem Bild (DESIGN.md Regel 5)"
+          "vermerk": "Antwort auf Frage 5 der PR zu TEAM-006 und TEAM-007 (wie empfohlen); Threads nennen jetzt auch den Namen neben dem Bild (DESIGN.md Regel 5)",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "team-009",
           "name": "TEAM-009 Personenkarte im Teamchat: Tipp auf ein Bild zeigt Bild, Name, Praxisrollen und Direktnachricht - keine Anwesenheit, kein Status, keine Kontaktdaten",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-19",
           "nachweis": "Branch ccr-37917f35-emdjjp",
-          "vermerk": "Antwort auf Frage 5 der PR zu TEAM-006 und TEAM-007 (wie empfohlen); ANN-668"
+          "vermerk": "Antwort auf Frage 5 der PR zu TEAM-006 und TEAM-007 (wie empfohlen); ANN-668",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-183",
           "name": "BEF-183 Reiterleiste: „›“ als 44-px-Knopf neben der Liste holt den ersten ganz verdeckten Reiter nach vorn",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-19",
           "nachweis": "Branch ccr-37917f35-emdjjp",
-          "vermerk": "Entscheidung Jannes 2026-10-18; nur rechts ein Knopf, damit „Behandlungsgrundlagen“ bei 375 px ganz hineinpasst"
+          "vermerk": "Entscheidung Jannes 2026-10-18; nur rechts ein Knopf, damit „Behandlungsgrundlagen“ bei 375 px ganz hineinpasst",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-150",
           "name": "BEF-150 Ränder der Entwürfe auf dem Diensttelefon: erneut senden, unlesbare mitzählen, Rückfrage vor dem Verwerfen, Tagesplan bei Rollenwegfall räumen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-19",
           "nachweis": "Branch ccr-37917f35-emdjjp",
-          "vermerk": "/weiter aus STATUS „Danach“; Entwürfe fallen nie still (§13)"
+          "vermerk": "/weiter aus STATUS „Danach“; Entwürfe fallen nie still (§13)",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-147",
           "name": "BEF-147 Benachrichtigungen im eigenen Datenexport: Wahl, Geräte ohne Schlüssel, Tagebuch-Erinnerungen, Zustellaufträge",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-19",
           "nachweis": "Branch ccr-37917f35-emdjjp",
-          "vermerk": "Die Praxis sieht die Wahl weiter nicht (ANN-344)"
+          "vermerk": "Die Praxis sieht die Wahl weiter nicht (ANN-344)",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-148",
           "name": "BEF-148 Zustellaufträge meldet nur, wer den Anspruch hält; Löschlauf räumt Push-Registrierungen beendeter Zugänge",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-19",
           "nachweis": "Branch ccr-37917f35-emdjjp",
-          "vermerk": "Vor dem Scharfschalten des Versands (OPS-001)"
+          "vermerk": "Vor dem Scharfschalten des Versands (OPS-001)",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-146",
           "name": "BEF-146 Vollständigkeitstest der Auskunft sieht auch den Plattformzugang; Anhänge an Rückfragen in der Auskunft",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-19",
           "nachweis": "Branch ccr-37917f35-emdjjp",
-          "vermerk": "Vier Tabellen bewusst außerhalb der Auskunft der Praxis (ANN-344), im eigenen Export"
+          "vermerk": "Vier Tabellen bewusst außerhalb der Auskunft der Praxis (ANN-344), im eigenen Export",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-182",
           "name": "BEF-182 Auskunft nach Art. 15 je Trainingsverhältnis: export_training_record und Seite in den Stammdaten",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-20",
           "nachweis": "Branch ccr-37917f35-emdjjp",
-          "vermerk": "Nur owner; dieselbe Auditaktion wie an der Akte, Gegenstand das Verhältnis"
+          "vermerk": "Nur owner; dieselbe Auditaktion wie an der Akte, Gegenstand das Verhältnis",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-189",
           "name": "BEF-189 Benachrichtigungsdaten fallen mit dem Ende der Lesezeit; Begleitung exportiert ihre eigene Wahl",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-20",
           "nachweis": "Branch ccr-37917f35-emdjjp",
-          "vermerk": "ADR-023 Fassung 6, ANN-669 entschieden"
+          "vermerk": "ADR-023 Fassung 6, ANN-669 entschieden",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-188",
           "name": "BEF-188 Fotos und Videos an Rückfragen an die Person herausgeben, auch gesperrte",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-20",
           "nachweis": "Branch claude/cool-allen-m2aaci",
-          "vermerk": "ADR-017 Fassung 12, ADR-010 Fassung 5, ANN-672; Merge erst mit Label freigabe-audit"
+          "vermerk": "ADR-017 Fassung 12, ADR-010 Fassung 5, ANN-672; Merge erst mit Label freigabe-audit",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-190",
           "name": "BEF-190 Profilbild: Ausschnitt beim Auswählen verschieben und vergrößern",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-20",
           "nachweis": "Branch ccr-37917f35-emdjjp",
-          "vermerk": "ADR-017 Fassung 11, ANN-670"
+          "vermerk": "ADR-017 Fassung 11, ANN-670",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-192",
           "name": "BEF-192 Tag umplanen: Anruf als Hauptknopf, „Anrufen“ im Abschluss wählt direkt",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-20",
-          "nachweis": "Branch ccr-9f54aa20-cgnb8q"
+          "nachweis": "Branch ccr-9f54aa20-cgnb8q",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-193",
           "name": "BEF-193 Plattform „Ich“: Kopf in einer Zeile, Adresse unter „Konto“",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-20",
-          "nachweis": "Branch ccr-9f54aa20-cgnb8q, src/features/portal/platform/PlattformApp.test.tsx, Bildstrecke vorher/nachher"
+          "nachweis": "Branch ccr-9f54aa20-cgnb8q, src/features/portal/platform/PlattformApp.test.tsx, Bildstrecke vorher/nachher",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-176",
           "name": "BEF-176 Panne und Einstiege am Lastenrad: Anrufknöpfe statt Platzhalter, Ruhetag aus dem Datum, Depotfrage geteilt, Panne an der Karte des nächsten Wegs, G1 Anruf als Hauptknopf",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-21",
           "nachweis": "Branch ccr-4626bc96-m83ovf",
-          "vermerk": "ANN-673"
+          "vermerk": "ANN-673",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-178",
           "name": "BEF-178 Löschsperre für Beschäftigtendaten: owner sperrt eine Person, Urlaub, Arbeitszeit, Zeitkonto und Erstattungen fallen nicht, solange sie läuft",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-21",
           "nachweis": "Branch ccr-24200d06-dhr3ze",
-          "vermerk": "ANN-674; ohne Auditeintrag, Katalog unverändert"
+          "vermerk": "ANN-674; ohne Auditeintrag, Katalog unverändert",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-179-180",
           "name": "BEF-179 und BEF-180 Zeitkonto: Zurückweisung unter „noch offen“ in der Übersicht, Freizeitausgleich am Tag selbst zurücknehmen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-21",
           "nachweis": "Branch ccr-fc77ad4b-t5zz1m",
-          "vermerk": "ANN-594 geändert, ANN-675; ohne Auditeintrag und ohne Benachrichtigung"
+          "vermerk": "ANN-594 geändert, ANN-675; ohne Auditeintrag und ohne Benachrichtigung",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-170",
           "name": "BEF-170 Akte: einzeln gelöschte Dateien ins Löschjournal, damit eine Wiederherstellung sie nicht zurückbringt",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-24",
           "nachweis": "Branch ccr-c5a4a21f-ys0el3",
-          "vermerk": "Pfad A (Löschpfad); auch das Verwerfen nach der Prüfung am Inhalt; ohne Auditeintrag"
+          "vermerk": "Pfad A (Löschpfad); auch das Verwerfen nach der Prüfung am Inhalt; ohne Auditeintrag",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-219",
           "name": "BEF-219 Arbeitszeit: Die Zusammenfassung „Änderung beantragen?“ rollt auch mit vielen Terminen außerhalb nicht; der Test legt sie selbst an",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-25",
           "nachweis": "Branch ccr-544f8ce7-u1sqpf",
-          "vermerk": "nur Oberfläche und Test; ohne Migration, ohne Auditeintrag"
+          "vermerk": "nur Oberfläche und Test; ohne Migration, ohne Auditeintrag",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-191",
           "name": "BEF-191 Teamchat: neues Profilbild an Nachrichten, die schon dastehen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-20",
-          "nachweis": "Branch ccr-37917f35-emdjjp, src/features/teamchat/teambilder.test.tsx, tests/e2e/authenticated/profilbild.spec.ts"
+          "nachweis": "Branch ccr-37917f35-emdjjp, src/features/teamchat/teambilder.test.tsx, tests/e2e/authenticated/profilbild.spec.ts",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-175",
           "name": "BEF-175 Geführter Ablauf: Fokus ohne Rollen, Rollfläche, Sperre in allen Fensterzielen, Zurückgeste",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-20",
           "nachweis": "Branch ccr-c66528c5-m3o7aq",
-          "vermerk": "Politurrunde, ANN-671"
+          "vermerk": "Politurrunde, ANN-671",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "politur-ernaehrung",
           "name": "Politurrunde Ernährungsberatung: Akte, Formulare, Tagebuch und Lebensmittel nach DESIGN.md",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-20",
-          "nachweis": "Branch ccr-c66528c5-m3o7aq"
+          "nachweis": "Branch ccr-c66528c5-m3o7aq",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "url-001",
           "name": "URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-17",
           "nachweis": "Branch ccr-350340fc-pnh5ti-urlaub",
-          "vermerk": "Bereichsüberholung 7 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; gemeinsame Antragsmechanik für 8 bis 10; ANN-576 bis ANN-580; Sichtung per Bildstrecke im PR"
+          "vermerk": "Bereichsüberholung 7 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; gemeinsame Antragsmechanik für 8 bis 10; ANN-576 bis ANN-580; Sichtung per Bildstrecke im PR",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "az-001",
           "name": "AZ-001 Arbeitszeitänderung: Antrag einmalig oder dauerhaft geführt (G8), Entscheiden (G8b), Wochenplan in Fassungen ab einem Datum, Prüfungen nach ArbZG am Server",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-17",
           "nachweis": "Branch ccr-350340fc-pnh5ti-arbeitszeit",
-          "vermerk": "Bereichsüberholung 8 der Roadmap (Auftrag Jannes 16.10.2026); ANN-588 bis ANN-592; bewegliche Mittagspause als eigener Loop danach; Sichtung per Bildstrecke im PR"
+          "vermerk": "Bereichsüberholung 8 der Roadmap (Auftrag Jannes 16.10.2026); ANN-588 bis ANN-592; bewegliche Mittagspause als eigener Loop danach; Sichtung per Bildstrecke im PR",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "zk-001",
           "name": "ZK-001 Zeitkonto: Mehrarbeit und Freizeitausgleich mit Beginn und Ende geführt eintragen (G9), Zurückweisen mit Grund (G9b), Konten je Person für owner und Büro, Freizeitausgleich als Abweichung in den Arbeitszeiten",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-17",
           "nachweis": "Branch ccr-350340fc-pnh5ti-zeitkonto",
-          "vermerk": "Bereichsüberholung 9 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-593 bis ANN-597; Fristen mit Übertrag; Löschsperre für Beschäftigtendaten seit BEF-178 (ANN-674); Sichtung per Bildstrecke im PR"
+          "vermerk": "Bereichsüberholung 9 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-593 bis ANN-597; Fristen mit Übertrag; Löschsperre für Beschäftigtendaten seit BEF-178 (ANN-674); Sichtung per Bildstrecke im PR",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ers-001",
           "name": "ERS-001 Erstattungen: Ladestrom je Monat und Einkauf mit Belegen geführt beantragen (G10), Genehmigen oder Ablehnen mit Grund und Auszahlen getrennt (G10b), IBAN maskiert, voll nur in der Auszahlung für owner",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-17",
           "nachweis": "Branch ccr-350340fc-pnh5ti-erstattungen",
-          "vermerk": "Bereichsüberholung 10 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-598 bis ANN-602; Belege im Bucket erstattungsbelege mit nachgelagerter Prüfung; Löschsperre für Beschäftigtendaten seit BEF-178 (ANN-674); Sichtung per Bildstrecke im PR"
+          "vermerk": "Bereichsüberholung 10 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-598 bis ANN-602; Belege im Bucket erstattungsbelege mit nachgelagerter Prüfung; Löschsperre für Beschäftigtendaten seit BEF-178 (ANN-674); Sichtung per Bildstrecke im PR",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "org-001",
           "name": "ORG-001 bis ORG-007 Überholung Organisation: fünf Reiter mit Ansichten, Tableiste je Rolle, eine Arbeitszeit für alle, Einstellungen als eigene Seite, Eingang mit Neuer Antrag, Barometer und Rückmeldung an die Praxisleitung (§20.2), Hinweise zwischendurch, Zeitkonto mit Dauerregler und Minusstunden",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-17",
           "nachweis": "Branch claude/modest-turing-i5qgn9",
-          "vermerk": "Auftrag Jannes 17.10.2026; Prinzipien 0.27 §20.2, ADR-024 Fassung 2, ADR-008 Fassung 4, ADR-019 Fassung 6; ANN-603, ANN-604, ANN-606 bis ANN-608"
+          "vermerk": "Auftrag Jannes 17.10.2026; Prinzipien 0.27 §20.2, ADR-024 Fassung 2, ADR-008 Fassung 4, ADR-019 Fassung 6; ANN-603, ANN-604, ANN-606 bis ANN-608",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "org-008",
           "name": "ORG-008 Ladestrom automatisch: geplante Arbeitsstunden × km je Stunde × Wh/km × ct/kWh, Werte als Einstellung der Praxis für owner, Vorschlag je offenem Monat im Eingang",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-17",
           "nachweis": "Branch claude/modest-turing-i5qgn9",
-          "vermerk": "Auftrag Jannes 17.10.2026; ANN-605 löst ANN-599 ab, gestellte Anträge behalten ihre Werte; Kilometer aus Touren nach ADR-019 Fassung 6 als BEF-181"
+          "vermerk": "Auftrag Jannes 17.10.2026; ANN-605 löst ANN-599 ab, gestellte Anträge behalten ihre Werte; Kilometer aus Touren nach ADR-019 Fassung 6 als BEF-181",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-181",
           "name": "BEF-181 Ladestrom aus den Kilometern der geplanten Touren: Edge Function rechnet beim Beantragen die Routen je Tag, nur die Monatssumme am Antrag, Büro ohne Kilometer und Betrag",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-17",
           "nachweis": "Branch ccr-0d8db4ad-3ufjj1",
-          "vermerk": "ADR-019 Fassung 6; ANN-615 bis ANN-617; ohne Gate (Punkt 9) bleibt der Wert je Stunde"
+          "vermerk": "ADR-019 Fassung 6; ANN-615 bis ANN-617; ohne Gate (Punkt 9) bleibt der Wert je Stunde",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "wochenplan-in-einem-zug",
           "name": "Wochenplan in einem Zug: geänderte Tage unter ihrer Zeile öffnen, mit einem Knopf speichern, alle oder keiner",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-17",
           "nachweis": "Branch ccr-0d8db4ad-3ufjj1",
-          "vermerk": "Praxis-Review der Überholung Organisation (PR #267, Frage 2)"
+          "vermerk": "Praxis-Review der Überholung Organisation (PR #267, Frage 2)",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ki-epic-001",
           "name": "KI-EPIC-001 Gateway und Sprachdokumentation",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-11-01",
           "nachweis": "#243, Branch claude/kind-mayer-smn76m",
-          "vermerk": "Inhaltstreue durch Bauart, „Mit Diktat“ am Eintrag, E13 überbrückt (ANN-824 bis ANN-827); Anbieter (C6) in Block 11"
+          "vermerk": "Inhaltstreue durch Bauart, „Mit Diktat“ am Eintrag, E13 überbrückt (ANN-824 bis ANN-827); Anbieter (C6) in Block 11",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ki-epic-002",
@@ -1408,73 +1520,81 @@
           "id": "des-epic-001",
           "name": "DES-EPIC-001 Design der ganzen App nach DESIGN.md: Bausteine, Ratsche, Bereiche B1 bis B8, Runde 2 nach Design- und Praxis-Review",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-13",
           "nachweis": "PR #239, docs/design/DESIGN.md, src/designsystem.test.ts, Bildstrecke vorher/nachher",
-          "vermerk": "Auftrag Jannes (12.10.2026); Sichtung per Bildstrecke im PR"
+          "vermerk": "Auftrag Jannes (12.10.2026); Sichtung per Bildstrecke im PR",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "rest-epic-001",
           "name": "Restbefunde der Praxis-Prüfung: Vor der Tür (K3), Wie zuletzt (K6), Absage in vier Tipps (K9), Übung aus der Bibliothek in den Plan",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-14",
           "nachweis": "Branch ccr-d79ef3d1-5rclb1, tests/e2e/besuch.spec.ts, tests/e2e/authenticated/kernablaeufe.spec.ts",
-          "vermerk": "Bereichsüberholung 2 der Roadmap; Sichtung per Bildstrecke im PR"
+          "vermerk": "Bereichsüberholung 2 der Roadmap; Sichtung per Bildstrecke im PR",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "erst-epic-001",
           "name": "Erstaufnahme geführt: eine Seite vom Terminpanel bis zur Doku (K10), Neuaufnahme am Telefon in drei Tipps (K11)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-15",
           "nachweis": "Branch ccr-248b0353-fbdcs9, tests/e2e/authenticated/kernablaeufe.spec.ts (K10 10 Tipps, K11 3 Tipps)",
-          "vermerk": "Bereichsüberholung 3 der Roadmap; ANN-542, ANN-543; Sichtung per Bildstrecke im PR"
+          "vermerk": "Bereichsüberholung 3 der Roadmap; ANN-542, ANN-543; Sichtung per Bildstrecke im PR",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "abr-epic-040",
           "name": "Monatsabrechnung in einem Lauf (K13), Zahlungseingang gesammelt (K14), Sammeldruck, §-19-Hinweis im Schnappschuss (BEF-165)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-15",
           "nachweis": "Branch ccr-92feaef7-zkxssj",
-          "vermerk": "Bereichsüberholung 4 der Roadmap; ANN-544; Sichtung per Bildstrecke im PR"
+          "vermerk": "Bereichsüberholung 4 der Roadmap; ANN-544; Sichtung per Bildstrecke im PR",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ueb-014-015",
           "name": "Übungen, zweite Runde: Vorlagen der Praxis (Als Vorlage speichern, Aus Vorlage, Seite Vorlagen), Durchsicht des Katalogs am Stück",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-16",
           "nachweis": "Branch claude/sweet-gauss-z8te7o",
-          "vermerk": "Bereichsüberholung 5 der Roadmap; ANN-560, ANN-561; eigene Bilder und Videos offen (ANN-539); Sichtung per Bildstrecke im PR"
+          "vermerk": "Bereichsüberholung 5 der Roadmap; ANN-560, ANN-561; eigene Bilder und Videos offen (ANN-539); Sichtung per Bildstrecke im PR",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "gef-epic-001",
           "name": "Geführte Abläufe: Baustein GefuehrterAblauf, Niemand öffnet (G1), Tag umplanen (G2), Panne (G3), Schlüssel übergeben (G4), Mitarbeiter:in einrichten (G5), Plattform-Termin (G6)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-16",
           "nachweis": "Branch ccr-350340fc-pnh5ti",
-          "vermerk": "Bereichsüberholung 6 der Roadmap (Auftrag Jannes 16.10.2026); ANN-572 bis ANN-575, ANN-581 bis ANN-587; Sichtung per Bildstrecke im PR"
+          "vermerk": "Bereichsüberholung 6 der Roadmap (Auftrag Jannes 16.10.2026); ANN-572 bis ANN-575, ANN-581 bis ANN-587; Sichtung per Bildstrecke im PR",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ueb-012",
           "name": "UEB-012 Mitgelieferter Übungskatalog: 196 Übungen, 193 gezeichnete Figuren, 15 Vorlagen, Übernahme durch owner",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-13",
           "nachweis": "PR #239, Migration 20261111100000_ueb_012_exercise_catalog.sql, supabase/tests/exercise-catalog.test.ts, Zweitreview",
-          "vermerk": "Auftrag Jannes (12.10.2026); Inhalte KI-erstellt, „ungeprüft“ bis zur Durchsicht (ANN-386)"
+          "vermerk": "Auftrag Jannes (12.10.2026); Inhalte KI-erstellt, „ungeprüft“ bis zur Durchsicht (ANN-386)",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bes-epic-001",
           "name": "BES-EPIC-001 Besuch in einem Zug: Danach auf der Schreibseite, Folgetermin mit einem Tipp, Später da?, Niemand öffnet?, Heute noch offen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-13",
           "nachweis": "PR #239, tests/e2e/besuch.spec.ts (höchstens 6 Tipps)",
-          "vermerk": "Auftrag Jannes (12.10.2026), Kernablauf K5"
+          "vermerk": "Auftrag Jannes (12.10.2026), Kernablauf K5",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "durchsicht-2026-10-14",
@@ -1490,64 +1610,71 @@
           "id": "drp-epic-001",
           "name": "DRP-EPIC-001 Plattform: Politur aus dem Design-Review (Schritt 0)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-22",
           "nachweis": "DRP-001 bis DRP-003, Branch `claude/plattform-schritt-0`",
-          "vermerk": "Auftrag Jannes 22.10.2026; DR-102 bis DR-160 ohne Entwurf; ANN-676, ANN-677"
+          "vermerk": "Auftrag Jannes 22.10.2026; DR-102 bis DR-160 ohne Entwurf; ANN-676, ANN-677",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-epic-002",
           "name": "DRP-EPIC-002 Plattform: eigene Sprache aus dem Design-Review (Schritt 1a)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-22",
           "nachweis": "DRP-004 bis DRP-006, Branch `claude/plattform-1a-sprache`, tests/e2e/plattform-bausteine.spec.ts",
-          "vermerk": "Auftrag Jannes 22.10.2026; Handoff 2026-10-22; ANN-678"
+          "vermerk": "Auftrag Jannes 22.10.2026; Handoff 2026-10-22; ANN-678",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-epic-003",
           "name": "DRP-EPIC-003 Plattform: Gerüst aus dem Design-Review (Schritt 1b)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-23",
           "nachweis": "DRP-007 bis DRP-009, Branch `claude/plattform-1b-geruest`, tests/e2e/plattform-barrierefreiheit.spec.ts",
-          "vermerk": "Auftrag Jannes 22.10.2026; Handoff 2026-10-22; ANN-679 bis ANN-683"
+          "vermerk": "Auftrag Jannes 22.10.2026; Handoff 2026-10-22; ANN-679 bis ANN-683",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-epic-004",
           "name": "DRP-EPIC-004 Plattform: Türen aus dem Design-Review (Schritt 1c)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-23",
           "nachweis": "DRP-010 bis DRP-014, Branch `claude/stoic-archimedes-520zje`, tests/e2e/tueren.spec.ts",
-          "vermerk": "Auftrag Jannes 23.10.2026; Handoff 2026-10-22, 5.2; ANN-684 bis ANN-689"
+          "vermerk": "Auftrag Jannes 23.10.2026; Handoff 2026-10-22, 5.2; ANN-684 bis ANN-689",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-daten",
           "name": "DRP-DATEN Plattform: eigener Name und Rufnummer der Praxis in der Projektion (Handoff 2026-10-22, Abschnitt 9: N1, N2)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-22",
           "nachweis": "Branch `claude/plattform-daten-n1-n2`",
-          "vermerk": "Auftrag Jannes 22.10.2026; Datenschritt nach Pfad A; ANN-690, ANN-691"
+          "vermerk": "Auftrag Jannes 22.10.2026; Datenschritt nach Pfad A; ANN-690, ANN-691",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-epic-005",
           "name": "DRP-EPIC-005 Plattform: Einstieg aus dem Design-Review (Schritt 1d)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-24",
           "nachweis": "Branch `claude/lucid-keller-zholly`",
-          "vermerk": "Auftrag Jannes 22.10.2026; Handoff 2026-10-22, 5.3, parallel zu 1c; ANN-692 bis ANN-696"
+          "vermerk": "Auftrag Jannes 22.10.2026; Handoff 2026-10-22, 5.3, parallel zu 1c; ANN-692 bis ANN-696",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-epic-006",
           "name": "DRP-EPIC-006 Plattform: Übersicht aus dem Design-Review (Schritt 1e)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-24",
           "nachweis": "Branch `ccr-c5a4a21f-ys0el3`",
-          "vermerk": "Auftrag Jannes 24.10.2026; Handoff 2026-10-22, 5.1; ANN-697 bis ANN-702, Fragen aus #297 wie empfohlen; Schritt 1 abgenommen 24.10."
+          "vermerk": "Auftrag Jannes 24.10.2026; Handoff 2026-10-22, 5.1; ANN-697 bis ANN-702, Fragen aus #297 wie empfohlen; Schritt 1 abgenommen 24.10.",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-epic-007",
@@ -1583,10 +1710,11 @@
           "id": "bef-215-218",
           "name": "BEF-215 und BEF-218 Übungen: ein Inhalt für Fenster und Durchführung, die Vorschau kennt die Einheit auf dem Gerät",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-25",
           "nachweis": "Branch ccr-544f8ce7-u1sqpf",
-          "vermerk": "Folge von DRP-EPIC-009 vor dem Planblatt 2d; ANN-730 ersetzt ANN-720, ANN-466 verworfen; nur Oberfläche, ohne Migration, ohne Auditeintrag"
+          "vermerk": "Folge von DRP-EPIC-009 vor dem Planblatt 2d; ANN-730 ersetzt ANN-720, ANN-466 verworfen; nur Oberfläche, ohne Migration, ohne Auditeintrag",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-epic-010",
@@ -1602,145 +1730,161 @@
           "id": "aufraeumen-1",
           "name": "Aufräumen Schritt 1: Kommentarregel mit Prüfung, die extremsten Kopfkommentare gekürzt, /aufraeumen, CLAUDE.md verdichtet",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-25",
           "nachweis": "Branch ccr-51128c80-r6lmjn",
-          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; CLAUDE.md auf unter 7 KB verdichtet; ohne Migration, ohne Oberfläche"
+          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; CLAUDE.md auf unter 7 KB verdichtet; ohne Migration, ohne Oberfläche",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-2",
           "name": "Aufräumen Schritt 2: Migrationen zu einer Basis zusammenfassen, Schema per Diff identisch, Übersicht der DB-Funktionen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-25",
           "nachweis": "Branch ccr-51128c80-r6lmjn",
-          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; 341 Migrationen zu einer Basis; Test-Umgebung per Handstart basis_uebernehmen umgestellt (#209); Nachzug: neun Funktionen ohne Aufrufer entfernt, Rechte der API-Rollen und Vorgaben im Shim (Migrationen 20261225010000, 20261225020000, supabase/tests/rechte-api-rollen.test.ts)"
+          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; 341 Migrationen zu einer Basis; Test-Umgebung per Handstart basis_uebernehmen umgestellt (#209); Nachzug: neun Funktionen ohne Aufrufer entfernt, Rechte der API-Rollen und Vorgaben im Shim (Migrationen 20261225010000, 20261225020000, supabase/tests/rechte-api-rollen.test.ts)",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-3",
           "name": "Aufräumen Schritt 3: Modulschnittstellen mit schmaler index.ts, ESLint gegen tiefe Importe, zuerst Termine",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-26",
           "nachweis": "#312",
-          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; ANN-748; Termine ohne gegenseitige Abhängigkeit, 17 statt 32 Paare; BEF-024 erledigt; Teil 1, Rest (Jannes 26.10.2026): Zeit- und Kalenderhilfen aller Module in src/lib/datum.ts, 16 statt 17 Paare"
+          "vermerk": "Auftrag Jannes (25.10.2026), ROADMAP 7.16; Pfad A; ANN-748; Termine ohne gegenseitige Abhängigkeit, 17 statt 32 Paare; BEF-024 erledigt; Teil 1, Rest (Jannes 26.10.2026): Zeit- und Kalenderhilfen aller Module in src/lib/datum.ts, 16 statt 17 Paare",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-fehler-4-6",
           "name": "Aufräumen, Fehler 4 und 6 der Tiefenanalyse: Trainings-Nachtrag bei 403 nicht mehr „gespeichert“, kein Suchbegriff in Adresse und Rückweg; Tag umplanen ohne Wettlauf mit der Adresse",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-26",
           "nachweis": "Branch claude/pr-313-decisions-2mdcwc",
-          "vermerk": "Entscheidungen Jannes 26.10.2026 zu #313, ROADMAP 7.18; Pfad A ohne Auslöser aus Nr. 8; ohne Migration; Fehler 6 auch in der Radflotte; gemerkte Suchbegriffe fallen mit dem Kontowechsel; neuer Befund: Rückweg der Anrufliste über 512 Zeichen"
+          "vermerk": "Entscheidungen Jannes 26.10.2026 zu #313, ROADMAP 7.18; Pfad A ohne Auslöser aus Nr. 8; ohne Migration; Fehler 6 auch in der Radflotte; gemerkte Suchbegriffe fallen mit dem Kontowechsel; neuer Befund: Rückweg der Anrufliste über 512 Zeichen",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-fehler-5-7",
           "name": "Aufräumen, Fehler 5 und 7 der Tiefenanalyse: Upload-Recht der Akte wie die übrigen Dateiarten, Bestätigen und Verwerfen von Radflotte, Rückfrage und Akte ohne Wettlauf, app.mdr_released entfernt",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-26",
           "nachweis": "Branch claude/pr-313-decisions-2mdcwc",
-          "vermerk": "Entscheidungen Jannes 26.10.2026, ROADMAP 7.19; Pfad A mit Zweitreview (SECURITY DEFINER, Funktion hinter der Storage-Policy); list_patient_treatment_evidence bleibt wegen PROJECT_PRINCIPLES.md §4.4 (MUSS), Rückfrage"
+          "vermerk": "Entscheidungen Jannes 26.10.2026, ROADMAP 7.19; Pfad A mit Zweitreview (SECURITY DEFINER, Funktion hinter der Storage-Policy); list_patient_treatment_evidence bleibt wegen PROJECT_PRINCIPLES.md §4.4 (MUSS), Rückfrage",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-4a",
           "name": "Aufräumen Schritt 4a: Teillöschung unter Belegfrist löscht die 17 Trainingstabellen nach drei Jahren",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-26",
           "nachweis": "#316",
-          "vermerk": "Entscheidung Jannes 26.10.2026, ROADMAP 7.20; Pfad A; ADR-021 Punkt 4, ANN-183"
+          "vermerk": "Entscheidung Jannes 26.10.2026, ROADMAP 7.20; Pfad A; ADR-021 Punkt 4, ANN-183",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-nachzug-316",
           "name": "Aufräumen, Nachzug aus #316: Rückweg der Anrufliste kurz, Zustand im Tab; 3D-Rad-Rest im geführten Ablauf entfernt; Upload der Akte nur durch die vorbereitende Person bestätigen und verwerfen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-26",
           "nachweis": "Branch claude/step-4-central-register-ur5k1y",
-          "vermerk": "Entscheidungen Jannes 26.10.2026, ROADMAP 7.21; ANN-574 Fassung 2; Pfad A mit Zweitreview (SECURITY DEFINER); drei Befunde aus BEFUNDE.md erledigt"
+          "vermerk": "Entscheidungen Jannes 26.10.2026, ROADMAP 7.21; ANN-574 Fassung 2; Pfad A mit Zweitreview (SECURITY DEFINER); drei Befunde aus BEFUNDE.md erledigt",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-4",
           "name": "Aufräumen Schritt 4: Register für Auskunft, Aufbewahrung, Löschjournal und Zusammenführung mit Vollständigkeitstest",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-26",
           "nachweis": "#318",
-          "vermerk": "Auftrag Jannes 26.10.2026, ROADMAP 7.21; Fehler 2 und 3 der Tiefenanalyse; Pfad A; ANN-751, ANN-752, ANN-150 Fassung 3, ANN-652 Fassung 2; BEF-198 erledigt"
+          "vermerk": "Auftrag Jannes 26.10.2026, ROADMAP 7.21; Fehler 2 und 3 der Tiefenanalyse; Pfad A; ANN-751, ANN-752, ANN-150 Fassung 3, ANN-652 Fassung 2; BEF-198 erledigt",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-nachzug-318",
           "name": "Aufräumen, Nachzug aus #318: Zugänge beim Zusammenführen, Löschungen von Hand tageweise",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-27",
           "nachweis": "#319",
-          "vermerk": "Entscheidungen Jannes 27.10.2026, ROADMAP 7.22; Pfad A; ANN-753, ANN-752 Fassung 2; Befund „sekundengenau“ aus BEFUNDE.md erledigt"
+          "vermerk": "Entscheidungen Jannes 27.10.2026, ROADMAP 7.22; Pfad A; ANN-753, ANN-752 Fassung 2; Befund „sekundengenau“ aus BEFUNDE.md erledigt",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-3b-1",
           "name": "Aufräumen Schritt 3b, Teil 1: geteilte Hilfen nach src/lib und src/components, die 14 Rückimporte umgedreht, Regel nach-unten",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-27",
           "nachweis": "#320",
-          "vermerk": "Auftrag Jannes 27.10.2026, ROADMAP 7.22; Pfad A (Sitzungen); ANN-754"
+          "vermerk": "Auftrag Jannes 27.10.2026, ROADMAP 7.22; Pfad A (Sitzungen); ANN-754",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-3b",
           "name": "Aufräumen Schritt 3b, Teil 2: Module in 14 Domänenordnern, je Domäne eine schmale index.ts, Regel gegen tiefe Importe",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-27",
           "nachweis": "#321",
-          "vermerk": "Auftrag Jannes 27.10.2026, ROADMAP 7.22; Pfad A; ANN-755; ADR-013 Fassung 6"
+          "vermerk": "Auftrag Jannes 27.10.2026, ROADMAP 7.22; Pfad A; ANN-755; ADR-013 Fassung 6",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-3b-nachzug",
           "name": "Aufräumen, Nachzug zu #321: Startbild nach der Anmeldung (ANN-243), pnpm lint mit 6 GB Heap, Seiten holen fremde Domänen über deren index.ts",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-27",
           "nachweis": "#322",
-          "vermerk": "Entscheidungen Jannes 27.10.2026 zu #321; Pfad A (Sitzungen); ANN-755 Fassung 2"
+          "vermerk": "Entscheidungen Jannes 27.10.2026 zu #321; Pfad A (Sitzungen); ANN-755 Fassung 2",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-5a",
           "name": "Aufräumen Schritt 5, Teil A: Archiv, Chroniken und erledigte Handoffs nach Git, neun Entscheidungen gesichert, Befunde nur noch offen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-27",
           "nachweis": "#323",
-          "vermerk": "Auftrag Jannes 27.10.2026, ROADMAP 7.22; Freigabe Git als Archiv vom 26.10."
+          "vermerk": "Auftrag Jannes 27.10.2026, ROADMAP 7.22; Freigabe Git als Archiv vom 26.10.",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-5b",
           "name": "Aufräumen Schritt 5, Teil B: Annahmenregister verdichtet, Prüfpaket mit 208 Einträgen, Regel F im Doku-Gate",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-27",
           "nachweis": "#324",
-          "vermerk": "Auftrag Jannes 27.10.2026, ROADMAP 7.22; Tiefenanalyse Punkte 3 und 4"
+          "vermerk": "Auftrag Jannes 27.10.2026, ROADMAP 7.22; Tiefenanalyse Punkte 3 und 4",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-5c",
           "name": "Aufräumen Schritt 5, Teil C: ADRs, Prinzipien und Prozessdoku verdichtet, Gesamtgrenze im Doku-Gate, Abschluss des Blocks",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-27",
           "nachweis": "#325",
-          "vermerk": "Auftrag Jannes 27.10.2026; Tiefenanalyse 5c Schritte 3 bis 6"
+          "vermerk": "Auftrag Jannes 27.10.2026; Tiefenanalyse 5c Schritte 3 bis 6",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "ci-beschleunigung",
           "name": "CI-Beschleunigung: Lint in zwei Läufen je 3 GB, E2E-Einrichtung ohne fremde Schriften, Studio und zweiten Reset, vier Teile",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-28",
           "nachweis": "#326",
-          "vermerk": "Zusatzauftrag Jannes 27.10.2026"
+          "vermerk": "Zusatzauftrag Jannes 27.10.2026",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-epic-011",
@@ -1766,10 +1910,11 @@
           "id": "bildstrecke-netzruhe",
           "name": "Bildstrecke: Netzruhe nach einem Wechsel in der Anwendung, offene Anfragen je Dokument",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-28",
           "nachweis": "#329",
-          "vermerk": "Auftrag Jannes 28.10.2026; Befund „Bildstrecke“ vom 28.10. behoben; nur Werkzeug, keine Anwendungsdatei"
+          "vermerk": "Auftrag Jannes 28.10.2026; Befund „Bildstrecke“ vom 28.10. behoben; nur Werkzeug, keine Anwendungsdatei",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-epic-013",
@@ -1805,73 +1950,81 @@
           "id": "drp-epic-016",
           "name": "DRP-EPIC-016 Plattform: Aufträge nach Schritt 4",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-30",
           "nachweis": "#334",
-          "vermerk": "ANN-803 bis ANN-808; BEF-222 erledigt; Pfad A"
+          "vermerk": "ANN-803 bis ANN-808; BEF-222 erledigt; Pfad A",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-epic-017",
           "name": "DRP-EPIC-017 Plattform: Lesefrist vom Server, Antworten zu #326, #333, #334",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-30",
           "nachweis": "#335",
-          "vermerk": "ANN-809 bis ANN-814; ADR-013 Fassung 8; Pfad A"
+          "vermerk": "ANN-809 bis ANN-814; ADR-013 Fassung 8; Pfad A",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-epic-018",
           "name": "DRP-EPIC-018 Plattform: „Sehr groß“ ohne Verdecktes, Antworten zu #335",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-30",
           "nachweis": "#336",
-          "vermerk": "ANN-815 bis ANN-818; BEF-195 und BEF-226 erledigt; Register verdichtet"
+          "vermerk": "ANN-815 bis ANN-818; BEF-195 und BEF-226 erledigt; Register verdichtet",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "drp-epic-019",
           "name": "DRP-EPIC-019 Plattform: Antworten zu #336 (fester Fuß ohne Auswahl, Hauptsache vor dem Gruß, Seite „Angefangener Fragebogen“)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-31",
           "nachweis": "#337",
-          "vermerk": "ANN-819 bis ANN-822; ANN-809 und ANN-815 bis ANN-817 entschieden; Antworten zu #337; nur Oberfläche"
+          "vermerk": "ANN-819 bis ANN-822; ANN-809 und ANN-815 bis ANN-817 entschieden; Antworten zu #337; nur Oberfläche",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-vorschlaege-2-3",
           "name": "Aufräumen, Vorschläge Nr. 2 und 3: Blattmodul patients/record, Datenzugang der Plattform je Bereich",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-31",
           "nachweis": "#337",
-          "vermerk": "Gegenseitige Abhängigkeiten 8 → 5, billing <-> patients bleibt (Jannes 2026-10-31); portal/platform/api.ts 2.245 → 9 Dateien unter 440 Zeilen; Pfad A ohne Auslöser aus Nr. 8, Zweitreview"
+          "vermerk": "Gegenseitige Abhängigkeiten 8 → 5, billing <-> patients bleibt (Jannes 2026-10-31); portal/platform/api.ts 2.245 → 9 Dateien unter 440 Zeilen; Pfad A ohne Auslöser aus Nr. 8, Zweitreview",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-terminformular",
           "name": "Aufräumen: gemeinsames Terminformular und Fehlzeitformular, Aufräumrunde 2026-10-31",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-31",
           "nachweis": "#340",
-          "vermerk": "Fünf Terminformulare auf AppointmentForm, Dauerfehlzeit in NewEventPage; Programm −911 Zeilen, doppelte Zeilen 2,7 → 2,3 %, gegenseitige Abhängigkeiten 5 → 4; Standardweg ohne Migration; drei neue Vorschläge in BEFUNDE.md; Antworten zu #340: Bearbeiten behält die gespeicherte Person, einziger Standort vorgewählt"
+          "vermerk": "Fünf Terminformulare auf AppointmentForm, Dauerfehlzeit in NewEventPage; Programm −911 Zeilen, doppelte Zeilen 2,7 → 2,3 %, gegenseitige Abhängigkeiten 5 → 4; Standardweg ohne Migration; drei neue Vorschläge in BEFUNDE.md; Antworten zu #340: Bearbeiten behält die gespeicherte Person, einziger Standort vorgewählt",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "aufraeumen-modulpaare",
           "name": "Aufräumen: drei Modulpaare ohne gegenseitige Abhängigkeit (Übungspläne in exercises, Entwürfe ohne Netz in documentation, Weg des Eingangs in src/lib)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-31",
           "nachweis": "Branch ccr-aef9377d-2sgdow",
-          "vermerk": "Gegenseitige Abhängigkeiten 4 → 1 (billing <-> patients bleibt), Module 54 → 52, Querimporte 572 → 536; der Weg des Eingangs liegt in src/lib, an der Wurzel von workplace entstünde feedback <-> workplace; Pfad A ohne Auslöser aus Nr. 8, Zweitreview ohne Befund"
+          "vermerk": "Gegenseitige Abhängigkeiten 4 → 1 (billing <-> patients bleibt), Module 54 → 52, Querimporte 572 → 536; der Weg des Eingangs liegt in src/lib, an der Wurzel von workplace entstünde feedback <-> workplace; Pfad A ohne Auslöser aus Nr. 8, Zweitreview ohne Befund",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "bef-223",
           "name": "BEF-223 Zeitumstellung: doppelte Ortszeit gilt als die frühere",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-29",
           "nachweis": "#332",
-          "vermerk": "Pfad A, ANN-786"
+          "vermerk": "Pfad A, ANN-786",
+          "gesichtet_am": "2026-11-05"
         }
       ]
     },
@@ -1918,10 +2071,11 @@
           "id": "g5a-ops-002a",
           "name": "OPS-002a Test-Umgebung, vorgezogen (Block 1a)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-25",
           "nachweis": "`656dff9`, `01b0b92`",
-          "vermerk": "erster Lauf gegen Uberspace nach dem Merge"
+          "vermerk": "erster Lauf gegen Uberspace nach dem Merge",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "g6-ops-004",
@@ -1942,17 +2096,19 @@
           "id": "g6a",
           "name": "G6a Abgewiesene Lesezugriffe auf klinische Dokumente",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-23",
-          "nachweis": "PR #104"
+          "nachweis": "PR #104",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "g6b",
           "name": "G6b Abgewiesene Lesezugriffe, Rest",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-23",
-          "nachweis": "PR #105"
+          "nachweis": "PR #105",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "g6c",
@@ -1967,9 +2123,10 @@
           "id": "g9-ops-006",
           "name": "G9 OPS-006 Betroffenenrechte (minimal)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-22",
-          "nachweis": "`aa321d0`, `2e3ebc7`"
+          "nachweis": "`aa321d0`, `2e3ebc7`",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "g10-e2-prozess",
@@ -2020,27 +2177,30 @@
           "id": "g19",
           "name": "G19 Dokumentationsgate erweitern",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-22",
-          "nachweis": "`7b95c22`, PR #102"
+          "nachweis": "`7b95c22`, PR #102",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "g20",
           "name": "G20 SEC-EPIC-001 Sitzungssperre (ADR-025)",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-06",
           "nachweis": "SEC-001 bis SEC-003",
-          "vermerk": "Auftrag Jannes (06.10.2026: nach 30/60 min automatisch sperren); W1 (a), W2 (a); W3 entschieden mit ADR-025 Fassung 2 (2026-10-10), Passkey und App-PIN in G22; Sichtung: Betriebsreife Schritt 15"
+          "vermerk": "Auftrag Jannes (06.10.2026: nach 30/60 min automatisch sperren); W1 (a), W2 (a); W3 entschieden mit ADR-025 Fassung 2 (2026-10-10), Passkey und App-PIN in G22; Sichtung: Betriebsreife Schritt 15",
+          "gesichtet_am": "2026-11-05"
         },
         {
           "id": "g22",
           "name": "G22 SEC-EPIC-002 Anmeldung ohne Kennwort (ADR-025 Fassung 2)",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-10",
           "nachweis": "SEC-004 bis SEC-009",
-          "vermerk": "Passkey und App-PIN, kein Kennwort (ADR-025 Fassung 2); scharf auf der Test-Umgebung, sobald Jannes Passkeys im Dashboard von praxis-test einschaltet; Sichtung: Betriebsreife Schritte 12, 15; Plattform Schritt 1"
+          "vermerk": "Passkey und App-PIN, kein Kennwort (ADR-025 Fassung 2); scharf auf der Test-Umgebung, sobald Jannes Passkeys im Dashboard von praxis-test einschaltet; Sichtung: Betriebsreife Schritte 12, 15; Plattform Schritt 1",
+          "gesichtet_am": "2026-11-05"
         }
       ]
     },
