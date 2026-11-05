@@ -15,20 +15,8 @@ import { formatLocalTimeRange } from '@/lib/datum';
 import { terminBezeichnung, terminPfad } from '@/lib/termin';
 
 /**
- * Die Tourenliste mit Navigations-Handoff (MAP-006b und MAP-006d).
- *
- * **Hier — nicht auf der Karte — stehen Name und Anschrift** (ANN-096). Die
- * Nummer verbindet beides; die Liste ist zugleich das Papier des Tages, der
- * Browserdruck lässt nur die Knöpfe weg.
- *
- * **Handoff mit Koordinate** (ANN-018): Hat die Adresse eine Position, geht
- * nur sie an die Navigations-App, sonst die Anschrift ohne Namen. Die URL
- * entsteht erst im Tap-Handler; ein `<a href>` gibt es nicht (ADR-019
- * Punkt 20). Ein Knopf am Stopp, der ganze Tag darüber. Ziel-App ist
- * Google Maps wie am Termin; die Gerätesichtung hat das bestätigt (BEF-140).
- *
- * Der Name eines Stopps führt in den Termin, und der Weg zurück kommt in
- * diese Tour - mit Tag und Person, nicht an ihren Anfang (TER-03).
+ * Name und Anschrift stehen hier, nicht auf der Karte (ANN-096); an die Navigations-App geht nur
+ * das Ziel, die URL entsteht erst beim Tippen (ANN-018, ADR-019 Punkt 20).
  */
 
 const app: NavigationApp = 'google_maps';

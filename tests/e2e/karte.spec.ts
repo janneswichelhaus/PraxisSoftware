@@ -294,7 +294,7 @@ test.describe('Karte der Tagesroute', () => {
     expect(erster).toContain('target=_blank');
     expect(erster).toContain('rel=noopener noreferrer');
 
-    // Eine Auswahl der Ziel-App gibt es nicht mehr (BEF-140).
+    // Eine Auswahl der Ziel-App gibt es nicht mehr: Übergabe an Google Maps.
     await expect(page.getByRole('radio')).toHaveCount(0);
   });
 

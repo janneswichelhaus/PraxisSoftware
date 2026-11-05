@@ -3,7 +3,7 @@ import type { NavigationApp, NavigationTarget, PostalAddress } from './contract'
 /**
  * Übergabe an eine externe Navigations-App (ADR-019 Punkt 20 bis 23, ANN-018): nur Ziel und
  * Fahrradmodus, erst im Klickhandler, nie gespeichert, kein eingebetteter Rahmen. Die Oberfläche
- * übergibt an Google Maps; die Gerätesichtung vom 2026-11-05 ergab keinen Befund (BEF-140).
+ * übergibt an Google Maps; die Gerätesichtung vom 2026-11-05 ergab keinen Befund.
  */
 
 /**

@@ -20,9 +20,11 @@ import {
  * Übergeben wird nur das Ziel und der Fahrradmodus (ANN-018). Der
  * Zugangshinweis bleibt in der Anwendung.
  *
- * **Ziel-App ist Google Maps**, obwohl `buildNavigationUrl` alle drei aus
- * ADR-019 Punkt 22 kennt: Die Gerätesichtung vom 2026-11-05 ergab keinen
- * Befund, eine Auswahl wäre eine vorgebaute Präferenz (BEF-140).
+ * **Ziel-App ist hier Google Maps**, obwohl `buildNavigationUrl` seit MAP-005
+ * alle drei aus ADR-019 Punkt 22 kennt. Eine Auswahl gehört erst in die
+ * Tagesliste, wenn die Gerätebewertung (MAP-005c) gezeigt hat, welche App auf
+ * den Geräten der Praxis zuverlässig im Fahrradmodus öffnet - bis dahin wäre
+ * sie eine vorgebaute Präferenz (ADR-019, „Bewusst nicht Bestandteil").
  */
 
 const knopf = kartenAktionKlassen();
