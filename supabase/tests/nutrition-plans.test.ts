@@ -517,7 +517,7 @@ describe('Pläne der Beratung (ERN-019)', () => {
       null,
     ]);
     await asUserCommitted(users.ownerTherapist, ZUWEISEN, [PROFIL, JSON.stringify(plan), HEUTE]);
-    // Eintragen bleibt gesperrt wie bei jedem Abgelegten (ERN-007); der Vorschlag lässt es weg.
+    // Eintragen bleibt gesperrt wie bei jedem Abgelegten; der Vorschlag lässt es weg.
     expect(await fehler(eintragen())).toBe('P0002');
     const heute = await vorschlag();
     expect(heute!.title).toBe('Mit Porridge');
