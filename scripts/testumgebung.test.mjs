@@ -127,6 +127,14 @@ describe('htaccess', () => {
     expect(datei).toContain('Options -Indexes');
   });
 
+  it('holt Einstiegsseite und Manifest nie ungeprüft aus dem Zwischenspeicher (ANN-110)', () => {
+    const datei = htaccess({ supabaseUrl: SUPABASE_URL, tuerDatei: null });
+    expect(datei).toMatch(/<Files "index.html">\n {2}Header always set Cache-Control "no-cache"/);
+    expect(datei).toMatch(
+      /<Files "manifest.webmanifest">\n {2}Header always set Cache-Control "no-cache"/,
+    );
+  });
+
   it('gibt Kamera und Mikrofon nur der eigenen Herkunft frei und sonst nichts (ADR-017 Punkt 33)', () => {
     const datei = htaccess({ supabaseUrl: SUPABASE_URL, tuerDatei: null });
     // Der ganze Wert, nicht nur ein Teil: Eine weitere Freigabe - Zahlung,

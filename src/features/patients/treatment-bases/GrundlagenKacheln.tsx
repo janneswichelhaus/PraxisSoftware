@@ -71,11 +71,9 @@ export function GrundlagenKacheln({
 
   const fotos = dateien.filter(offenesFoto);
   const anzahl = aktuell.length + abgeschlossen.length;
-  // ANN-486: Die Leiste bleibt bis zur Sichtung - sie ist der einzige Weg zu
-  // „Daten übertragen“. Liegen links oder rechts Kacheln außer Sicht, sagt
-  // das ein Verlauf mit „‹“/„›“ am Rand wie bei den Reitern (Nachprüfung A9:
-  // bei 375 px stand die dritte Kachel angeschnitten ohne Hinweis da). Die
-  // Leiste rollt auch am Rechner, sobald mehr Kacheln da sind, als passen.
+  // ANN-486: Die Leiste ist der einzige Weg zu „Daten übertragen“. Kacheln außer Sicht zeigt
+  // ein Verlauf mit „‹“/„›“ am Rand wie bei den Reitern, sonst stünde bei 375 px die dritte
+  // angeschnitten ohne Hinweis da; sie rollt auch am Rechner.
   const leiste = useRef<HTMLUListElement>(null);
   const rand = useRandVerlauf(leiste, fotos.length + anzahl);
   if (fotos.length === 0 && anzahl === 0) return null;

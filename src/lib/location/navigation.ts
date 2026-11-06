@@ -2,14 +2,14 @@ import type { NavigationApp, NavigationTarget, PostalAddress } from './contract'
 
 /**
  * Übergabe an eine externe Navigations-App (ADR-019 Punkt 20 bis 23, ANN-018): nur Ziel und
- * Fahrradmodus, erst im Klickhandler, nie gespeichert, kein eingebetteter Rahmen. Eine bevorzugte
- * App gibt es erst, wenn die Gerätesichtung (`docs/sichtung/README.md`, S-3) sie begründet.
+ * Fahrradmodus, erst im Klickhandler, nie gespeichert, kein eingebetteter Rahmen. Die Oberfläche
+ * übergibt an Google Maps; die Gerätesichtung vom 2026-11-05 ergab keinen Befund.
  */
 
 /**
  * Google Maps trägt neun Zwischenziele, im mobilen Browser drei (providerpruefung-kartendienst.md,
  * Teil 3). Erzwungen wird die kleinere Zahl: Wo ein Tippen landet, entscheidet das Gerät, und
- * Stopps fehlen sonst still. Mehr erst nach der Gerätesichtung (`docs/sichtung/README.md`, S-3).
+ * Stopps fehlen sonst still; die Gerätesichtung vom 2026-11-05 hat das ohne Befund bestätigt.
  */
 export const MAX_ZWISCHENZIELE_DOKUMENTIERT = 9;
 

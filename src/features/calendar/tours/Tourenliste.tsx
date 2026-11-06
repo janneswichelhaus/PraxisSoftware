@@ -1,8 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Aufklappzeichen } from '@/components/ui/Card';
 import { Textlink } from '@/components/ui/Textlink';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import type { NavigationApp, NavigationTarget } from '@/lib/location/contract';
 import {
@@ -17,28 +15,11 @@ import { formatLocalTimeRange } from '@/lib/datum';
 import { terminBezeichnung, terminPfad } from '@/lib/termin';
 
 /**
- * Die Tourenliste mit Navigations-Handoff (MAP-006b und MAP-006d).
- *
- * **Hier — nicht auf der Karte — stehen Name und Anschrift** (ANN-096). Die
- * Nummer verbindet beides; die Liste ist zugleich das Papier des Tages, der
- * Browserdruck lässt nur die Knöpfe weg.
- *
- * **Handoff mit Koordinate** (ANN-018): Hat die Adresse eine Position, geht
- * nur sie an die Navigations-App, sonst die Anschrift ohne Namen. Die URL
- * entsteht erst im Tap-Handler; ein `<a href>` gibt es nicht (ADR-019
- * Punkt 20). Ein Knopf am Stopp, der ganze Tag darüber, die Ziel-App
- * weggeklappt — sie gehört der Gerätebewertung, nicht dem Arbeitsschritt
- * (BEF-032), und wird nirgends gespeichert.
- *
- * Der Name eines Stopps führt in den Termin, und der Weg zurück kommt in
- * diese Tour - mit Tag und Person, nicht an ihren Anfang (TER-03).
+ * Name und Anschrift stehen hier, nicht auf der Karte (ANN-096); an die Navigations-App geht nur
+ * das Ziel, die URL entsteht erst beim Tippen (ANN-018, ADR-019 Punkt 20).
  */
 
-const ZIEL_APPS: readonly { readonly wert: NavigationApp; readonly label: string }[] = [
-  { wert: 'google_maps', label: 'Google Maps' },
-  { wert: 'apple_maps', label: 'Apple Maps' },
-  { wert: 'system', label: 'Systemnavigation' },
-];
+const app: NavigationApp = 'google_maps';
 
 const stoppKnopf = kartenAktionKlassen();
 // Am Handy über die ganze Breite (Runde 3, Handoff Kalender und Tour).
@@ -98,7 +79,6 @@ export function Tourenliste({
    */
   readonly rueckweg?: string | undefined;
 }) {
-  const [app, setApp] = useState<NavigationApp>('google_maps');
   const ort = useLocation();
   const hier = rueckweg ?? `${ort.pathname}${ort.search}`;
 
@@ -109,12 +89,7 @@ export function Tourenliste({
 
   return (
     <div>
-      {app === 'system' ? (
-        <p className="text-ink-muted mb-3 text-sm print:hidden">
-          Die Systemnavigation kennt kein Zwischenziel. Für den ganzen Tag gibt es deshalb keinen
-          Knopf – Stopp für Stopp geht es unten.
-        </p>
-      ) : abschnitte > 0 ? (
+      {abschnitte > 0 ? (
         <div className="mb-3 flex flex-wrap gap-2 print:hidden">
           {Array.from({ length: abschnitte }, (_, index) => (
             <button
@@ -198,47 +173,6 @@ export function Tourenliste({
           </li>
         ) : null}
       </ol>
-
-      <details className="group mt-4 print:hidden">
-        {/* 44 px hoch und mit Aufklappzeichen wie jeder Aufklapper (UIK-07,
-            TER-17). */}
-        <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
-          <Aufklappzeichen />
-          Andere Ziel-App prüfen (für die Gerätebewertung)
-        </summary>
-        <div
-          role="radiogroup"
-          aria-label="Ziel-App für die Gerätebewertung"
-          className="mt-3 flex flex-wrap gap-2"
-        >
-          {ZIEL_APPS.map((option) => (
-            // Das Auswahlfeld liegt unsichtbar in der Beschriftung. Den Fokus
-            // zeigt deshalb die Beschriftung (UIK-06, VOR-02): Sonst lag der
-            // Fokusring auf einem Feld von 1 × 1 px.
-            <label
-              key={option.wert}
-              className={`rounded-button text-liste has-[:focus-visible]:outline-accent inline-flex min-h-11 cursor-pointer items-center border px-4 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
-                app === option.wert
-                  ? 'border-accent bg-accent-soft text-accent font-medium'
-                  : 'border-line-strong bg-surface text-ink-muted'
-              }`}
-            >
-              <input
-                type="radio"
-                name="ziel-app"
-                className="sr-only"
-                checked={app === option.wert}
-                onChange={() => setApp(option.wert)}
-              />
-              {option.label}
-            </label>
-          ))}
-        </div>
-        <p className="text-ink-muted mt-2 text-sm">
-          Keine Einstellung: Die Wahl gilt, solange diese Seite offen ist, und wird nicht
-          gespeichert.
-        </p>
-      </details>
     </div>
   );
 }

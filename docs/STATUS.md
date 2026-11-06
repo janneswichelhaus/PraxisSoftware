@@ -10,7 +10,7 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Danach
 
-Bildsichtung von #334 bis #337. Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
+Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
 ERN-EPIC-006, ORG-EPIC-001, Schritte 5 bis 7 mit Jannes' Leinwänden, UI-003; die
 Übertragung an DATEV erst nach B4; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
@@ -28,7 +28,6 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
   ANN-479 ansehen (Besuch).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
-- Sichtliste am Gerät: 14 Punkte (`sichtung/README.md`, S-1 bis S-14).
 - Widersprüche zwischen ADR-Wortlaut und Code oder Prinzipien (`development/BEFUNDE.md`, „Doku“).
 - Preise: Entwurf 2027 steht (`product/preisblatt-entwurf.md`), echte Preise kurz vor dem Start;
   G13 Umsatzsteuer vor M3 (ANN-541: ohne Verordnung 19 %? Kleinunternehmer?); B8 bis M3.

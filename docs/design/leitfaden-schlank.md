@@ -70,4 +70,4 @@ in `src/designsystem.test.ts` hält den erreichten Stand je Verzeichnis (ANN-400
 
 Die Löschkandidaten vom 2026-10-10 fallen alle weg (Jannes, BEF-140): der Aufklapper
 „Organisatorisches und Kommunikation“, „Telefon (geschäftlich)“ außer an einer Akte mit Nummer
-(ANN-340; `phone_work` bleibt), „Andere Ziel-App prüfen“ nach S-3.
+(ANN-340; `phone_work` bleibt), „Andere Ziel-App prüfen“ nach der Gerätesichtung (2026-11-05).

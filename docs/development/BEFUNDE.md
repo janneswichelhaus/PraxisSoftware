@@ -47,12 +47,6 @@ Funktionen beides, der Fehler kommt mit einem neuen Schreibweg. **Erwartet.** Mi
 dichten Form von `locations_garage_coordinate_check`, vorher Bestand prüfen; je Tabelle ein Test wie
 `garage.test.ts`. Klein, Pfad A.
 
-### BEF-140 — „Andere Ziel-App prüfen“ unter der Tourliste fällt weg
-2026-10-10 · Tour · Jannes, Löschkandidaten im Leitfaden · Teile 1 und 2 erledigt am 2026-10-11;
-offen: Teil 3 · `Tourenliste.tsx`\
-**Rest.** „Andere Ziel-App prüfen (für die Gerätebewertung)“ fällt weg, sobald die Gerätebewertung
-abgeschlossen ist (Punkt S-3 der Sichtliste in `docs/sichtung/README.md`).
-
 ### BEF-166 — Ein Rad kennt keine Löschsperre
 2026-10-15 · Radflotte, Löschlauf · FLT-EPIC-001 · offen; Bedingung vor dem Scharfschalten · ANN-551\
 **Beobachtung.** Check-Ups, Pannen und Sperren fallen nach drei Jahren; eine Löschsperre gibt es nur

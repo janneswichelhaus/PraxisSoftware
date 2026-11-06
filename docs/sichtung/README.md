@@ -33,29 +33,7 @@ Kartendienst), auf der Test-Umgebung (`https://prtest.uber.space`) oder lokal im
 Bild oder Test belegt, kommt nicht dazu. Gesichtet fällt ein Punkt weg (Ergebnis in die PR);
 Nummern werden nicht neu vergeben, die nächste ist S-15.
 
-- **S-1 Echter Kartendienst** (PTV lokal oder nach `docs/betrieb/test-umgebung.md` Abschnitt 5,
-  Schlüssel nie im Repository): Route auf Straßen im Lastenradprofil, Fahrzeiten und Rundung,
-  Geocoding auf die Hausnummer, Lückenfinder.
-- **S-2 Fahrzeitfaktor 1,5** auf den eigenen Wegen (ANN-237): stimmen Tour, Übersicht, Kalender?
-- **S-3 Navigation am Telefon:** Google Maps, Systemnavigation und Apple Maps im Radmodus mit
-  Koordinatenziel; „Ganzer Tag“ (`MAX_ZWISCHENZIELE`); Karte mit einem Finger. Danach BEF-140.
-- **S-4 Passkey und PIN** am eigenen Gerät, Anmeldung am Rechner über das Telefon; Plattform:
-  Einladungscode scannen, Passkey und PIN einrichten.
-- **S-5 Sitzungssperre** nach 30 Minuten: Passkey entsperrt, der Entwurf steht; ohne Netz die PIN.
-- **S-6 Kamera:** Doku- und Verordnungsfoto; Licht aus, nichts in der Mediathek, Rezept lesbar.
-- **S-7 PDF im Rahmen am iPhone:** alle Seiten sichtbar.
-- **S-8 Größte Systemschrift** mit „Sehr groß“ auf der Plattform: nichts läuft seitlich über.
-- **S-9 Plattform im Flugmodus:** Haken bleiben auf dem Gerät, Neustart mit Passkey, Übertragung
-  genau einmal, nach einem Kontowechsel nichts Fremdes.
-- **S-10 Video in Safari am iPhone** an einer Rückfrage (MP4; Wiedervorlage ANN-336).
-- **S-11 Web-Push am Android-Telefon** (gebauter Stand): erlauben, ankommen ohne Inhalt, nach dem
-  Abmelden ausgetragen; Start ohne Netz mit eigener Seite.
-- **S-12 Diensttelefon ohne Empfang:** einschalten, Flugmodus, Entwurf, Übertragung genau einmal,
-  Konflikt mit vorhandenem Entwurf, Abmelden mit Ungesendetem.
-- **S-13 Sonne:** weißer Grund, Kartenlinie, Wegspur und Schraffur draußen lesbar (L4, L5).
-- **S-14 Farben im Kalender** (ANN-833): Ozean als Personenfarbe neben dem Trainingsblau,
-  Veilchen und Pflaume neben dem Beratungsviolett; tragen die hellen Flächen draußen? Bis dahin
-  tragen ◆/◇ und das vorgelesene Wort die Bedeutung, ein sichtbares Kurzwort käme mit UI-003.
+Offen ist kein Punkt: S-1 bis S-14 hat Jannes am 2026-11-05 ohne Befund gesichtet.
 
 Die Klickschritte bis 2026-10-27 (14 Dateien) zeigt `git show 9452575:docs/sichtung/<datei>`, ihre
 Triage die PR zu Aufräumen 5, Teil C. Befunde gehen nach

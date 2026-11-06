@@ -591,7 +591,7 @@ Datenschutz · offen · 2026-10-11 · — · Prüfpaket · Wiedervorlage: Datens
 **Annahme.** Steht auf der Akte ein Legal Hold, löschen weder Frist noch Widerruf noch Person oder Praxis einen Anhang: Er wird gesperrt (`locked_at`), ist nicht mehr sichtbar und fällt im ersten Lauf nach dem Hold; die Kopie an die Person bleibt möglich (ANN-672). Im Training gibt es keinen Hold. **Grundlage.** ADR-017 Punkte 61 und 65; Art. 17 Abs. 3 lit. e und Art. 18 DSGVO. **Anker.** `app.remove_message_attachments`. **Rücknahme.** Hold ohne Wirkung auf Anhänge: Bedingung `gehalten` streichen · Aufwand `klein`.
 
 ### ANN-336 — Video: nur Bild, 30 Sekunden, begrenzte Bitrate, Containerangaben auf dem Gerät geleert
-Datenschutz · offen · 2026-10-11 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Sichtung am iPhone\
+Datenschutz · offen · 2026-10-11 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)\
 **Annahme.** Der Aufnahmedialog nimmt nur Bild auf, höchstens 30 Sekunden und 2 Mbit/s. Vor dem Upload überschreibt das Gerät Programm-, Zeit- und Titelangaben im WebM- bzw. MP4-Container mit gleich langen Leerfeldern, ohne Neukodieren; der Server prüft Signatur, Prüfsumme, Tonspur und diese Angaben, nicht die Dauer. **Grundlage.** ADR-017 Punkte 62 bis 64. **Anker.** `src/features/portal/platform/videometadaten.ts`, `VIDEO_BITRATE`. **Rücknahme.** Dauer auch am Server prüfen · Aufwand `mittel`.
 
 ### ANN-342 — Die Auskunft aus der Akte nennt die Zugänge zur Plattform, auch den Zweifel an der Einwilligungsfähigkeit
@@ -1031,7 +1031,7 @@ Praxisprozess · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 **Regel.** Laufend heißt am heutigen Tag gültig; ein vor dem Beginn gekündigtes Abo lief nie. Neu zählt nach dem Beginn, Kündigungen nach dem Eingang, Trainingstermine stattgefunden ohne Beratung, je im gewählten Monat. Ohne Anschluss: endet in vier Wochen ab heute, kein späteres Paket, Verhältnis aktiv. **Grundlage.** §20; ANN-154; ANN-155; ADR-021 Punkt 6. **Anker.** `public.get_offer_statistics`.
 
 ### ANN-833 — Kalender: Farbe je Art des Termins und je Person
-Technik · offen · 2026-11-01 · — · — · Wiedervorlage: Töne bei der Sichtung (S-14)\
+Technik · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 **Regel.** Die Kachel trägt die Art als Fläche: Training blau, Beratung violett, Behandlung weiß; der Zustand geht vor. Hausbesuch, Praxis und Video bleiben Wort. Die Spalte einer Person trägt deren Teamchat-Farbe als Bild neben dem Namen, auch bei 375 px (Jannes 2026-11-01). Farbe nie allein (WCAG 1.4.1). **Grundlage.** `IDEA-PRX-021`; ANN-666; DESIGN.md Grundsatz 2. **Anker.** `kachelFlaeche` in `CalendarGrid.tsx`.
 
 ### ANN-842 — Scan aus dem Tag: Mahlzeit nach der Uhrzeit vorgewählt
@@ -1116,7 +1116,7 @@ Praxisprozess · offen · 2026-11-06 · — · — · Wiedervorlage: —\
 | ANN-107 | Das Körperschema ist Jannes' Zeichnung; ein Kreis an der Stelle, gespeichert Stelle und nächster Bereich | Praxisprozess · entschieden (Jannes) | `src/features/clinical/assessments/koerperschema.ts` |
 | ANN-108 | Anlegen-Menü als Leiste unter dem Raster; ein zweiter Tipp hebt auf oder zieht die Spanne auf | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/useSpanneAufziehen.ts` |
 | ANN-109 | Über dem Kalender Monat, Person mit Woche und „Jetzt“; alles Übrige hinter der Ecke des Rasters | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/CalendarPage.tsx` |
-| ANN-110 | Das Web-Manifest nennt das Master als maskierbares Symbol und öffnet ohne Browserleiste (`standalone`, 2026-11-02) | Technik · entschieden (Jannes) | `public/manifest.webmanifest` |
+| ANN-110 | Das Web-Manifest nennt das Master als maskierbares Symbol und öffnet ohne Browserleiste (`standalone`, 2026-11-02); nie aus einem Speicher (2026-11-06) | Technik · entschieden (Jannes) | `public/manifest.webmanifest` |
 | ANN-111 | Begriffe stehen in einer Datei, abgelöste Wörter sperrt ein Test; im Kalender „Fehlzeit“, im Team „Mitarbeiter:in“ | Praxisprozess · entschieden (Jannes) | `ABGELOESTE_BEGRIFFE` in `src/lib/begriffe.ts` |
 | ANN-112 | Ein Bereich öffnet auf seinem ersten echten Punkt; Vorschauen stehen eingeklappt dahinter | Praxisprozess · entschieden (Jannes) | `src/components/ui/SubNav.tsx` |
 | ANN-113 | Die Tour ist eine Ansicht des Kalenders, ein Tipp im Kopf; der Kalender hat keine Unterzeile | Praxisprozess · entschieden (Jannes) | `src/features/calendar/appointments/CalendarPage.tsx` |
@@ -1284,7 +1284,7 @@ Praxisprozess · offen · 2026-11-06 · — · — · Wiedervorlage: —\
 | ANN-483 | „Rückgängig“ nach dem Haken geht jederzeit, auch am dokumentierten Termin | Praxisprozess · verworfen (→ ANN-512) | `HakenRueckgaengig` in `src/features/calendar/today/Besuchsknoepfe.tsx` |
 | ANN-484 | Am Telefon weicht die Fahrzeit im Kicker, wenn die Kachel „Abfahrt“ sie nennt | Technik · offen | `wegTitel` in `src/features/calendar/today/MyDayPage.tsx` |
 | ANN-485 | Zeichen für Zustände ohne eigenen Ton | Technik · offen | `STATUSZEICHEN` in `src/components/ui/Badge.tsx` |
-| ANN-486 | Die Kachelleiste der Behandlungsgrundlagen bleibt bis zur Sichtung, als Weg zu „Daten übertragen“ | Praxisprozess · offen | `src/features/patients/treatment-bases/GrundlagenKacheln.tsx` |
+| ANN-486 | Die Kachelleiste der Behandlungsgrundlagen bleibt als Weg zu „Daten übertragen“ (gesichtet 2026-11-05) | Praxisprozess · offen | `src/features/patients/treatment-bases/GrundlagenKacheln.tsx` |
 | ANN-487 | „Kein Alarm je Check-in“ bleibt als Kleingedrucktes (Grenze aus ADR-006 Punkt 11) | Technik · offen | `src/features/exercise/checkins/ZwischenDenTerminen.tsx` |
 | ANN-489 | Eine Zeitspanne (von/bis) steht am Telefon untereinander, ab 640 px in einer Zeile | Technik · offen | `BlockFelder` in `src/features/calendar/scheduling/ArbeitszeitJePerson.tsx` |
 | ANN-493 | Unternavigation: eine einzelne Vorschau steht offen, erst ab zwei eingeklappt | Technik · offen | `einklappbar` in `src/components/ui/SubNav.tsx` |

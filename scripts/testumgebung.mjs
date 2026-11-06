@@ -303,6 +303,10 @@ export function htaccess({ supabaseUrl, tuerDatei, kartendienst = false }) {
     '<Files "index.html">',
     '  Header always set Cache-Control "no-cache"',
     '</Files>',
+    '# Das Manifest ebenso: Chrome gleicht die installierte App damit ab (ANN-110).',
+    '<Files "manifest.webmanifest">',
+    '  Header always set Cache-Control "no-cache"',
+    '</Files>',
   ];
 
   if (tuerDatei) {
