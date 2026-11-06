@@ -104,13 +104,30 @@ describe('Mitgelieferte Rezepte (ADR-027 Punkt 14)', () => {
             ? [essen('Banane roh')]
             : [],
       );
-    const { werte, fehlt } = await startrezeptAufloesen(start, suchen);
+    const { werte, fehlt, ungenau } = await startrezeptAufloesen(start, suchen);
     expect(werte.zutaten.map((z) => [z.lebensmittel.name, z.angabe, z.menge])).toEqual([
       ['Haferflocken', { art: 'portion', label: '1 Portion', anzahl: 1 }, 50],
       // Die gefundene Banane kennt die Portion nicht: dann die Menge.
       ['Banane roh', { art: 'menge', menge: 120 }, 120],
     ]);
     expect(fehlt).toEqual(['Drachenfrucht']);
+    expect(ungenau).toEqual([]);
     expect(werte).toMatchObject({ name: 'Probe', portionen: '1', zubereitung: 'Mischen.' });
+  });
+
+  it('nennt Zutaten, die nur ungefähr gefunden wurden', async () => {
+    const start = {
+      schluessel: 'probe',
+      name: 'Probe',
+      portionen: 1,
+      zubereitung: 'Mischen.',
+      zutaten: [{ suche: 'Haferflocken', menge: 50 }],
+    };
+    const { werte, fehlt, ungenau } = await startrezeptAufloesen(start, () =>
+      Promise.resolve([essen('Haferflockenkekse')]),
+    );
+    expect(werte.zutaten.map((z) => z.lebensmittel.name)).toEqual(['Haferflockenkekse']);
+    expect(fehlt).toEqual([]);
+    expect(ungenau).toEqual(['Haferflocken']);
   });
 });

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
@@ -17,6 +17,7 @@ import { lebensmittelSuchen } from './lebensmittelApi';
 import { PlanFormular } from './PlanFormular';
 import {
   entwurfAus,
+  geltenderPlan,
   leererPlan,
   offenerPlan,
   planTag,
@@ -33,7 +34,7 @@ import {
   planZuweisen,
 } from './plaeneApi';
 import type { Rezept } from './rezepte';
-import { praxisRezepte, REZEPTE_SCHLUESSEL } from './rezepteApi';
+import { praxisRezepte, REZEPTE_SCHLUESSEL, useMitgeliefert } from './rezepteApi';
 
 /**
  * Der Plan an einer Beratung (ADR-027 Punkt 14, ANN-845): aus einer Vorlage oder leer zuweisen,
@@ -59,10 +60,11 @@ export function PlanAbschnitt({
   schreibbar: boolean;
 }) {
   const offen = offenerPlan(profil.plans);
-  const tag = offen ? planTag(offen, heute) : null;
+  const laufend = geltenderPlan(profil.plans, heute);
   return (
     <Section
       titel="Plan"
+      rahmen
       aktion={
         schreibbar ? (
           <ButtonLink to={planPfad(art, verhaeltnisId)} variant="secondary" groesse="kompakt">
@@ -71,20 +73,34 @@ export function PlanAbschnitt({
         ) : null
       }
     >
-      {offen ? (
-        <p>
-          <span className="font-semibold">{offen.title}</span>
-          <span className="text-ink-muted block">
-            {[
-              tageText(offen.day_count),
-              tag === null ? `ab ${formatDate(offen.starts_on)}` : `heute Tag ${tag}`,
-            ].join(' · ')}
-          </span>
-        </p>
+      {laufend ? (
+        <div className="flex flex-col gap-3">
+          <Planzeile plan={laufend} heute={heute} />
+          {offen && offen.id !== laufend.id ? <Planzeile plan={offen} heute={heute} /> : null}
+        </div>
       ) : (
         <p className="text-ink-muted">Kein Plan zugewiesen.</p>
       )}
     </Section>
+  );
+}
+
+/** „Woche 1“, darunter „7 Tage · heute Tag 3“, „bis 09.11.2026“ oder „ab 10.11.2026“. */
+function Planzeile({ plan, heute }: { plan: Plan; heute: string }) {
+  const tag = planTag(plan, heute);
+  return (
+    <p>
+      <span className="font-semibold">{plan.title}</span>
+      <span className="text-ink-muted block">
+        {[
+          tageText(plan.day_count),
+          tag === null ? `ab ${formatDate(plan.starts_on)}` : `heute Tag ${tag}`,
+          tag !== null && plan.ended_on ? `bis ${formatDate(plan.ended_on)}` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      </span>
+    </p>
   );
 }
 
@@ -105,9 +121,28 @@ export function PlanSeite({ art }: { art: Verhaeltnisart }) {
     refetchOnWindowFocus: false,
   });
   const rezepte = useQuery({ queryKey: REZEPTE_SCHLUESSEL, queryFn: praxisRezepte });
+  const [suche] = useSearchParams();
+  // `?neu=1`: einen neuen Plan zuweisen, auch wenn einer läuft; er beginnt danach (ANN-845).
+  const neu = suche.get('neu') === '1';
+  const profil = sicht.data?.profile;
+  const offen = profil && profil.ended_on === null ? offenerPlan(profil.plans) : undefined;
+  // Ein neuer Plan nur mit Einwilligung, wie im Reiter; beenden geht auch ohne.
+  const erteilt = profil?.consent?.state === 'granted';
+  const titel =
+    !profil || profil.ended_on !== null ? 'Plan' : offen && !neu ? 'Plan ändern' : 'Plan zuweisen';
   return (
     <>
       <Rueckweg standard={reiter} beschriftung="Zur Ernährung" className="mb-3" />
+      <PageHeader
+        title={titel}
+        actions={
+          offen && !neu && erteilt ? (
+            <ButtonLink to={`${planPfad(art, verhaeltnisId)}?neu=1`} variant="secondary">
+              Neuer Plan
+            </ButtonLink>
+          ) : undefined
+        }
+      />
       <Abfragezustand
         abfrage={sicht}
         laden="Die Beratung wird geladen …"
@@ -132,6 +167,7 @@ export function PlanSeite({ art }: { art: Verhaeltnisart }) {
                 profil={s!.profile!}
                 heute={s!.today}
                 rezepte={zurWahl}
+                neu={neu}
               />
             )}
           </Abfragezustand>
@@ -147,36 +183,33 @@ function Inhalt({
   profil,
   heute,
   rezepte,
+  neu,
 }: {
   art: Verhaeltnisart;
   verhaeltnisId: string;
   profil: Ernaehrungsprofil;
   heute: string;
   rezepte: Rezept[];
+  neu: boolean;
 }) {
   const offen = offenerPlan(profil.plans);
-  return offen ? (
-    <>
-      <PageHeader title="Plan ändern" />
-      <Aendern
-        art={art}
-        verhaeltnisId={verhaeltnisId}
-        profil={profil}
-        plan={offen}
-        rezepte={rezepte}
-      />
-    </>
+  return offen && !neu ? (
+    <Aendern
+      art={art}
+      verhaeltnisId={verhaeltnisId}
+      profil={profil}
+      plan={offen}
+      rezepte={rezepte}
+    />
   ) : (
-    <>
-      <PageHeader title="Plan zuweisen" />
-      <Zuweisen
-        art={art}
-        verhaeltnisId={verhaeltnisId}
-        profil={profil}
-        heute={heute}
-        rezepte={rezepte}
-      />
-    </>
+    <Zuweisen
+      art={art}
+      verhaeltnisId={verhaeltnisId}
+      profil={profil}
+      heute={heute}
+      rezepte={rezepte}
+      laufend={offen}
+    />
   );
 }
 
@@ -195,16 +228,20 @@ function Zuweisen({
   profil,
   heute,
   rezepte,
+  laufend,
 }: {
   art: Verhaeltnisart;
   verhaeltnisId: string;
   profil: Ernaehrungsprofil;
   heute: string;
   rezepte: Rezept[];
+  /** Der Plan, der bis zum Tag vor dem Beginn weiterläuft. */
+  laufend?: Plan | undefined;
 }) {
   const navigate = useNavigate();
   const zurueck = useZurueck(art, verhaeltnisId);
   const [start, setStart] = useState<Planentwurf | null>(null);
+  const mitgeliefert = useMitgeliefert();
   const [beginn, setBeginn] = useState(heute);
   const vorlagen = useQuery({ queryKey: PLANVORLAGEN_SCHLUESSEL, queryFn: planvorlagen });
   const zuweisen = useMutation({
@@ -243,7 +280,6 @@ function Zuweisen({
             <Listenabschnitt titel="Neu">
               <ListRow
                 titel="Leer beginnen"
-                meta="Ein Tagesvorschlag, weitere Tage nach Bedarf"
                 onClick={() => setStart(leererPlan('Tagesvorschlag'))}
               />
             </Listenabschnitt>
@@ -254,6 +290,7 @@ function Zuweisen({
   }
   return (
     <PlanFormular
+      mitgeliefert={mitgeliefert}
       beschriftung="Plan zuweisen"
       anfang={start}
       speichernText="Zuweisen"
@@ -271,6 +308,7 @@ function Zuweisen({
           type="date"
           min={heute}
           value={beginn}
+          hint={laufend ? `„${laufend.title}“ endet am Tag davor.` : undefined}
           onChange={(event) => setBeginn(event.target.value)}
         />
       }
@@ -293,6 +331,7 @@ function Aendern({
 }) {
   const navigate = useNavigate();
   const zurueck = useZurueck(art, verhaeltnisId);
+  const mitgeliefert = useMitgeliefert();
   const speichern = useMutation({
     mutationFn: ({ angaben }: { angaben: PlanAngaben; freigeben: () => void }) =>
       planAendern(plan.id, angaben, plan.updated_at),
@@ -304,6 +343,7 @@ function Aendern({
   const beenden = useMutation({ mutationFn: () => planBeenden(plan.id), onSuccess: zurueck });
   return (
     <PlanFormular
+      mitgeliefert={mitgeliefert}
       beschriftung="Plan ändern"
       anfang={entwurfAus(plan)}
       speichernText="Speichern"

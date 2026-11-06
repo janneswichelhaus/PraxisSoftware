@@ -533,6 +533,21 @@ describe('Vorschlag aus dem Plan (ANN-845)', () => {
     );
   });
 
+  it('die Zeile öffnet die Menge wie beim Eintragen', async () => {
+    const nutzer = userEvent.setup();
+    tagebuchEintragen.mockResolvedValue(undefined);
+    mitVorschlag();
+    renderWithProviders(<Tagebuch zugang={ZUGANG} />, ADRESSE);
+    const vorschlag = await screen.findByRole('list', { name: 'Vorschlag Frühstück' });
+    // Die Zeile selbst, nicht ihr „+“.
+    await nutzer.click(within(vorschlag).getAllByRole('button')[0]!);
+    const fenster = screen.getByRole('dialog', { name: 'Haferbrei mit Beeren' });
+    expect(within(fenster).getByText('Frühstück')).toBeVisible();
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Eintragen' }));
+    await waitFor(() => expect(tagebuchEintragen).toHaveBeenCalled());
+    expect(tagebuchEintragen.mock.calls[0]![2]).toBe('breakfast');
+  });
+
   it('ohne Schreibrecht und ohne Vorschlag steht der Abschnitt nicht da', async () => {
     mitVorschlag({ can_write: false });
     const { unmount } = renderWithProviders(<Tagebuch zugang={ZUGANG} />, ADRESSE);

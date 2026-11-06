@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/Feedback';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -215,7 +216,7 @@ export function MitgeliefertesRezept() {
       {start ? (
         <Uebernehmen start={start} />
       ) : (
-        <Statusmeldung>Dieses Rezept wird nicht mehr mitgeliefert.</Statusmeldung>
+        <EmptyState inKarte title="Dieses Rezept wird nicht mehr mitgeliefert." />
       )}
     </>
   );

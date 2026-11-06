@@ -4,6 +4,7 @@ import {
   entwurfAus,
   leererPlan,
   leererTag,
+  geltenderPlan,
   offenerPlan,
   planfehler,
   planPruefen,
@@ -150,6 +151,13 @@ describe('Pläne (ADR-027 Punkt 14)', () => {
     const vorbei = { starts_on: '2026-10-01', ended_on: '2026-10-31' } as Plan;
     expect(offenerPlan([vorbei, offen])).toBe(offen);
     expect(offenerPlan([vorbei])).toBeUndefined();
+    // Beginnt ein neuer erst später, gilt bis dahin der alte (ANN-845).
+    const alt = { starts_on: '2026-11-01', ended_on: '2026-11-09' } as Plan;
+    const neu = { starts_on: '2026-11-10', ended_on: null } as Plan;
+    expect(geltenderPlan([neu, alt], '2026-11-06')).toBe(alt);
+    expect(geltenderPlan([neu, alt], '2026-11-10')).toBe(neu);
+    expect(geltenderPlan([neu], '2026-11-06')).toBe(neu);
+    expect(geltenderPlan([vorbei], '2026-11-06')).toBeUndefined();
     const p = {
       kind: 'recipe' as const,
       amount: 600,

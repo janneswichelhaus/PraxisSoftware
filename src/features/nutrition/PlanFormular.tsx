@@ -1,13 +1,14 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Feldgruppe, Section } from '@/components/ui/Section';
-import { Segment } from '@/components/ui/Segment';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
@@ -29,8 +30,16 @@ import {
   type PlanFeld,
   type Planentwurf,
 } from './plaene';
-import { rezeptAlsLebensmittel, rezeptMeta, zutatAnfang, zutatMenge, type Rezept } from './rezepte';
+import {
+  portionenText,
+  rezeptAlsLebensmittel,
+  rezeptMeta,
+  zutatAnfang,
+  zutatMenge,
+  type Rezept,
+} from './rezepte';
 import { ZutatMenge } from './RezeptFormular';
+import type { Startrezept } from './startrezepte';
 import { kcal, MAHLZEIT_NAMEN, MAHLZEITEN, type Mahlzeit } from './tagebuch';
 
 const feldId = (feld: PlanFeld) => `plan-${feld}`;
@@ -53,6 +62,7 @@ export function PlanFormular({
   suchen,
   schluessel,
   ziel,
+  mitgeliefert,
 }: {
   anfang: Planentwurf;
   speichernText: string;
@@ -71,25 +81,55 @@ export function PlanFormular({
   schluessel: readonly unknown[];
   /** Das Energieziel der Person zur Orientierung, wenn der Plan an einer Beratung hängt. */
   ziel?: number | undefined;
+  /** Mitgelieferte Rezepte: Gewählt, werden sie übernommen und stehen dann bei der Praxis. */
+  mitgeliefert?: {
+    liste: readonly Startrezept[];
+    uebernehmen: (start: Startrezept) => Promise<Rezept>;
+  };
 }) {
   const [entwurf, setEntwurf] = useState<Planentwurf>(anfang);
   const [tag, setTag] = useState(0);
   const [fehler, setFehler] = useState<Partial<Record<PlanFeld, string>>>({});
   const [waehlen, setWaehlen] = useState<Mahlzeit | null>(null);
   const [offen, setOffen] = useState<{ mahlzeit: Mahlzeit; index: number } | null>(null);
+  const [uebernimmt, setUebernimmt] = useState<string | null>(null);
+  const [uebernahmeFehler, setUebernahmeFehler] = useState<string | undefined>();
   const geaendert = JSON.stringify(entwurf) !== JSON.stringify(anfang);
   const { freigeben, schutz } = useTextverlustschutz({
     ungespeichert: geaendert,
     texte: EINGABETEXTE,
+    // Die Zurückgeste in der Auswahl führt zurück in den Plan, nicht aus ihm hinaus.
+    schrittZurueck: waehlen ? () => setWaehlen(null) : undefined,
   });
   const aktuell = entwurf.tage[tag] ?? leererTag();
   const zurWahl = rezepte.map(rezeptAlsLebensmittel);
+  const startrezepte = (mitgeliefert?.liste ?? []).filter(
+    (st) => !rezepte.some((r) => r.starter_key === st.schluessel),
+  );
+
+  async function startrezeptWaehlen(start: Startrezept, oeffnen: (f: Lebensmittel) => void) {
+    if (!mitgeliefert || uebernimmt) return;
+    setUebernimmt(start.schluessel);
+    setUebernahmeFehler(undefined);
+    try {
+      oeffnen(rezeptAlsLebensmittel(await mitgeliefert.uebernehmen(start)));
+    } catch (e) {
+      setUebernahmeFehler(e instanceof Error ? e.message : 'Das Rezept wurde nicht übernommen.');
+    } finally {
+      setUebernimmt(null);
+    }
+  }
 
   function tagSetzen(mahlzeit: Mahlzeit, positionen: Entwurfsposition[]) {
     setEntwurf((e) => ({
       ...e,
       tage: e.tage.map((t, i) => (i === tag ? { ...t, [mahlzeit]: positionen } : t)),
     }));
+  }
+
+  function tagEntfernen() {
+    setEntwurf((e) => ({ ...e, tage: e.tage.filter((_, i) => i !== tag) }));
+    setTag(Math.max(0, tag - 1));
   }
 
   function absenden(event: FormEvent) {
@@ -124,20 +164,49 @@ export function PlanFormular({
             schluessel={schluessel}
             eigene={zurWahl}
             ohneBegriff={(oeffnen) => (
-              <Listenabschnitt
-                titel="Rezepte der Praxis"
-                anzahl={rezepte.length}
-                leer={{ titel: 'Noch keine Rezepte. Lebensmittel suchen, etwa „Apfel“.' }}
-              >
-                {rezepte.map((r, i) => (
-                  <ListRow
-                    key={r.id}
-                    titel={r.name}
-                    meta={rezeptMeta(r)}
-                    onClick={() => oeffnen(zurWahl[i]!)}
-                  />
-                ))}
-              </Listenabschnitt>
+              <div className="flex flex-col gap-6 [&>*]:mt-0">
+                <Listenabschnitt
+                  titel="Rezepte der Praxis"
+                  anzahl={rezepte.length}
+                  leer={{ titel: 'Noch keine Rezepte der Praxis.' }}
+                >
+                  {rezepte.map((r, i) => (
+                    <ListRow
+                      key={r.id}
+                      titel={r.name}
+                      meta={rezeptMeta(r)}
+                      onClick={() => oeffnen(zurWahl[i]!)}
+                    />
+                  ))}
+                </Listenabschnitt>
+                {startrezepte.length > 0 ? (
+                  <Disclosure
+                    summary="Mitgelieferte Rezepte"
+                    anzahl={startrezepte.length}
+                    kopf="label"
+                  >
+                    {uebernahmeFehler ? (
+                      <Statusmeldung ton="fehler" className="mb-3">
+                        {uebernahmeFehler}
+                      </Statusmeldung>
+                    ) : null}
+                    <ListRows beschriftung="Mitgelieferte Rezepte">
+                      {startrezepte.map((st) => (
+                        <ListRow
+                          key={st.schluessel}
+                          titel={st.name}
+                          meta={
+                            uebernimmt === st.schluessel
+                              ? 'Wird übernommen …'
+                              : portionenText(st.portionen)
+                          }
+                          onClick={() => void startrezeptWaehlen(st, oeffnen)}
+                        />
+                      ))}
+                    </ListRows>
+                  </Disclosure>
+                ) : null}
+              </div>
             )}
             fensterInhalt={(f, schliessen) => (
               <ZutatMenge
@@ -172,7 +241,6 @@ export function PlanFormular({
             <Field
               feldId={feldId('titel')}
               label={PLAN_BESCHRIFTUNG.titel}
-              hint="etwa „Tagesvorschlag“ oder „Woche 1“"
               autoComplete="off"
               value={entwurf.titel}
               error={fehler.titel}
@@ -184,12 +252,7 @@ export function PlanFormular({
         <Section titel={PLAN_BESCHRIFTUNG.tage}>
           <div id={feldId('tage')} className="flex flex-col gap-3">
             {entwurf.tage.length > 1 ? (
-              <Segment
-                beschriftung="Tag wählen"
-                wahlen={entwurf.tage.map((_, i) => ({ wert: String(i), text: `Tag ${i + 1}` }))}
-                gewaehlt={String(tag)}
-                onWaehlen={(wert: string) => setTag(Number(wert))}
-              />
+              <Tagwahl tag={tag} anzahl={entwurf.tage.length} onTag={setTag} />
             ) : null}
             <p className="text-ink-muted tabular-nums" aria-live="polite">
               {`Tag ${tag + 1} · ${kcal(energie)}`}
@@ -201,7 +264,6 @@ export function PlanFormular({
                   <Button
                     type="button"
                     variant="secondary"
-                    groesse="kompakt"
                     onClick={() => {
                       setEntwurf((e) => ({ ...e, tage: [...e.tage, leererTag()] }));
                       setTag(entwurf.tage.length);
@@ -212,7 +274,6 @@ export function PlanFormular({
                   <Button
                     type="button"
                     variant="quiet"
-                    groesse="kompakt"
                     onClick={() => {
                       setEntwurf((e) => ({ ...e, tage: [...e.tage, structuredClone(aktuell)] }));
                       setTag(entwurf.tage.length);
@@ -222,19 +283,22 @@ export function PlanFormular({
                   </Button>
                 </>
               ) : null}
-              {entwurf.tage.length > 1 ? (
-                <Button
-                  type="button"
-                  variant="quiet"
-                  groesse="kompakt"
-                  onClick={() => {
-                    setEntwurf((e) => ({ ...e, tage: e.tage.filter((_, i) => i !== tag) }));
-                    setTag(Math.max(0, tag - 1));
-                  }}
+              {entwurf.tage.length <= 1 ? null : MAHLZEITEN.some((m) => aktuell[m].length > 0) ? (
+                // Ein Tag mit Mahlzeiten geht nur nach einer Rückfrage; ein leerer sofort.
+                <Rueckfrage
+                  ausloeser="Tag entfernen"
+                  ausloeserVariante="quiet"
+                  unterDerReihe
+                  bestaetigen="Tag entfernen"
+                  onBestaetigen={tagEntfernen}
                 >
+                  <p>{`Tag ${tag + 1} mit seinen Mahlzeiten wird aus dem Plan genommen.`}</p>
+                </Rueckfrage>
+              ) : (
+                <Button type="button" variant="quiet" onClick={tagEntfernen}>
                   Tag entfernen
                 </Button>
-              ) : null}
+              )}
             </div>
             {fehler.tage ? <p className="feldfehler text-danger text-sm">{fehler.tage}</p> : null}
           </div>
@@ -324,5 +388,45 @@ export function PlanFormular({
         </Dialogfenster>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Die Tage blättern wie die Monate im Monatsblatt: sieben „Tag n“ nebeneinander passten bei 375 px
+ * nicht in ein Segment (DESIGN.md: zwei bis vier Ansichten).
+ */
+function Tagwahl({
+  tag,
+  anzahl,
+  onTag,
+}: {
+  tag: number;
+  anzahl: number;
+  onTag: (tag: number) => void;
+}) {
+  return (
+    <div role="group" aria-label="Tag wählen" className="flex items-center justify-between gap-2">
+      <Symbolknopf
+        beschriftung="Vorheriger Tag"
+        variant="secondary"
+        disabled={tag <= 0}
+        onClick={() => onTag(tag - 1)}
+      >
+        <span aria-hidden="true" className="text-lg">
+          ‹
+        </span>
+      </Symbolknopf>
+      <p className="font-semibold tabular-nums">{`Tag ${tag + 1} von ${anzahl}`}</p>
+      <Symbolknopf
+        beschriftung="Nächster Tag"
+        variant="secondary"
+        disabled={tag >= anzahl - 1}
+        onClick={() => onTag(tag + 1)}
+      >
+        <span aria-hidden="true" className="text-lg">
+          ›
+        </span>
+      </Symbolknopf>
+    </div>
   );
 }

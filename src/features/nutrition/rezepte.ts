@@ -270,20 +270,20 @@ export function rezeptfehler(meldung: string | undefined): string {
 export async function startrezeptAufloesen(
   start: Startrezept,
   suchen: (begriff: string) => Promise<Lebensmittel[]>,
-): Promise<{ werte: RezeptWerte; fehlt: string[] }> {
+): Promise<{ werte: RezeptWerte; fehlt: string[]; ungenau: string[] }> {
   const treffer = await Promise.all(start.zutaten.map((z) => suchen(z.suche)));
   const fehlt: string[] = [];
+  const ungenau: string[] = [];
   const zutaten: Zutat[] = [];
   start.zutaten.forEach((z, i) => {
     const liste = treffer[i] ?? [];
-    const f =
-      liste.find((t) => suchschluessel(t.name) === suchschluessel(z.suche)) ??
-      liste.find((t) => t.source === 'bls') ??
-      liste[0];
+    const genau = liste.find((t) => suchschluessel(t.name) === suchschluessel(z.suche));
+    const f = genau ?? liste.find((t) => t.source === 'bls') ?? liste[0];
     if (!f) {
       fehlt.push(z.suche);
       return;
     }
+    if (!genau) ungenau.push(z.suche);
     const portion = z.portion ? f.portions.find((x) => x.label === z.portion!.label) : undefined;
     zutaten.push(
       portion && z.portion
@@ -303,6 +303,7 @@ export async function startrezeptAufloesen(
       zutaten,
     },
     fehlt,
+    ungenau,
   };
 }
 

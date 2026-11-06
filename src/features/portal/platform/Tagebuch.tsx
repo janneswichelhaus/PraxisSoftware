@@ -44,7 +44,7 @@ import {
   type Mahlzeit,
 } from '@/features/nutrition/tagebuch';
 import { zahl } from '@/features/nutrition/texte';
-import { vorschlagsWahl } from '@/features/nutrition/plaene';
+import { vorschlagsWahl, type Planposition } from '@/features/nutrition/plaene';
 import { tagePlus } from '@/lib/datum';
 import {
   tagebuchSchluessel,
@@ -220,7 +220,7 @@ function Inhalt({
 
 /**
  * Der Vorschlag des Plans für diesen Tag (ANN-845): je Mahlzeit „+“ für die vorgeschlagene Menge,
- * ein Tipp; der Haken steht eine Weile am Eintrag wie beim Eintragen (ANN-813). Keine Wertung.
+ * ein Tipp; die Zeile öffnet die Menge wie beim Eintragen. Der Haken steht eine Weile (ANN-813).
  */
 function AusDemPlan({
   zugang,
@@ -232,12 +232,18 @@ function AusDemPlan({
   ohneNetzId?: string | undefined;
 }) {
   const [eingetragen, setEingetragen] = useState<{ schluessel: string; name: string } | null>(null);
+  const [offen, setOffen] = useState<{
+    p: Planposition;
+    mahlzeit: Mahlzeit;
+    schluessel: string;
+  } | null>(null);
   useEffect(() => {
     if (!eingetragen) return;
     const uhr = window.setTimeout(() => setEingetragen(null), 3000);
     return () => window.clearTimeout(uhr);
   }, [eingetragen]);
   const vorschlag = daten.suggestions;
+  const anfang = offen ? letzteMenge(vorschlagsWahl(offen.p)) : undefined;
   const mahlzeiten = vorschlag?.meals.filter((m) => m.items.length > 0) ?? [];
   if (!vorschlag || !daten.can_write || mahlzeiten.length === 0) return null;
   return (
@@ -266,6 +272,7 @@ function AusDemPlan({
                   tag={daten.day.day}
                   mahlzeit={m.meal}
                   ohneZahlen={daten.hide_numbers}
+                  onOeffnen={() => setOffen({ p, mahlzeit: m.meal, schluessel })}
                   onEingetragen={() => setEingetragen({ schluessel, name: p.name })}
                   bestaetigt={eingetragen?.schluessel === schluessel}
                   ohneNetz={ohneNetzId}
@@ -275,6 +282,27 @@ function AusDemPlan({
           </ListRows>
         </div>
       ))}
+      {offen ? (
+        <Dialogfenster
+          titel={offen.p.name}
+          beschreibung={MAHLZEIT_NAMEN[offen.mahlzeit]}
+          onSchliessen={() => setOffen(null)}
+        >
+          <MengeWaehlen
+            zugang={zugang}
+            f={offen.p.food}
+            tag={daten.day.day}
+            mahlzeit={offen.mahlzeit}
+            ohneZahlen={daten.hide_numbers}
+            {...(anfang ? { anfang } : {})}
+            onEingetragen={(name) => {
+              setEingetragen({ schluessel: offen.schluessel, name });
+              setOffen(null);
+            }}
+            onAbbrechen={() => setOffen(null)}
+          />
+        </Dialogfenster>
+      ) : null}
     </Abschnitt>
   );
 }

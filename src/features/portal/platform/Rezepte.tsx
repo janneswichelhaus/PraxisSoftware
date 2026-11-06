@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
@@ -24,6 +23,7 @@ import {
   type EigeneErnaehrung,
   type Plattformzugang,
 } from './api';
+import { Unterseitenzustand } from './Ernaehrungsteile';
 import { PLATTFORM_PFAD } from './pfade';
 
 /**
@@ -42,7 +42,6 @@ function useErnaehrung(zugang: Plattformzugang) {
 const OHNE_BERATUNG = {
   titel: 'Zurzeit keine Ernährungsberatung',
   beschreibung: 'Vereinbaren Sie eine Ernährungsberatung mit Ihrer Praxis, finden Sie sie hier.',
-  markenform: true,
 } as const;
 
 export function Rezepte({ zugang }: { zugang: Plattformzugang }) {
@@ -53,11 +52,10 @@ export function Rezepte({ zugang }: { zugang: Plattformzugang }) {
     <>
       <Rueckweg standard={`${PLATTFORM_PFAD}/ernaehrung${search}`} beschriftung="Zur Ernährung" />
       <PageHeader title="Rezepte" />
-      <Abfragezustand
+      <Unterseitenzustand
         abfrage={abfrage}
-        laden="Wird geladen …"
+        beschriftung="Ihre Rezepte werden geladen"
         fehler="Ihre Rezepte konnten nicht geladen werden."
-        inKarte
         leer={{ wenn: (daten) => !daten, ...OHNE_BERATUNG }}
       >
         {(daten) => (
@@ -76,7 +74,7 @@ export function Rezepte({ zugang }: { zugang: Plattformzugang }) {
             ))}
           </Listenabschnitt>
         )}
-      </Abfragezustand>
+      </Unterseitenzustand>
       {/* Unter der Liste in voller Größe wie „Eigenes anlegen“ bei den Lebensmitteln. */}
       {darfAnlegen ? (
         <div className="mt-6">
@@ -126,11 +124,10 @@ export function EigenesRezeptNeu({ zugang }: { zugang: Plattformzugang }) {
     <>
       <Rueckweg standard={`${REZEPTE_PFAD}${search}`} beschriftung="Zu den Rezepten" />
       <PageHeader title="Eigenes Rezept" />
-      <Abfragezustand
+      <Unterseitenzustand
         abfrage={abfrage}
-        laden="Wird geladen …"
+        beschriftung="Das Rezept wird vorbereitet"
         fehler="Ihre Ernährung konnte nicht geladen werden."
-        inKarte
         leer={{ wenn: (daten) => !daten, ...OHNE_BERATUNG }}
       >
         {(daten) => (
@@ -142,10 +139,11 @@ export function EigenesRezeptNeu({ zugang }: { zugang: Plattformzugang }) {
             fehlermeldung={speichern.error?.message}
             onSpeichern={(angaben, freigeben) => speichern.mutate({ angaben, freigeben })}
             onAbbrechen={() => void navigate(`${REZEPTE_PFAD}${search}`)}
+            plattform
             {...formularWege(zugang, daten!)}
           />
         )}
-      </Abfragezustand>
+      </Unterseitenzustand>
     </>
   );
 }
@@ -159,15 +157,13 @@ export function EigenesRezeptAendern({ zugang }: { zugang: Plattformzugang }) {
     <>
       <Rueckweg standard={`${REZEPTE_PFAD}${search}`} beschriftung="Zu den Rezepten" />
       <PageHeader title="Eigenes Rezept" />
-      <Abfragezustand
+      <Unterseitenzustand
         abfrage={abfrage}
-        laden="Wird geladen …"
+        beschriftung="Das Rezept wird geladen"
         fehler="Das Rezept konnte nicht geladen werden."
-        inKarte
         leer={{
           wenn: (daten) => !daten?.profile.own_recipes.some((r) => r.id === recipeId),
           titel: 'Dieses Rezept gibt es nicht mehr.',
-          markenform: true,
         }}
       >
         {(daten) => (
@@ -177,7 +173,7 @@ export function EigenesRezeptAendern({ zugang }: { zugang: Plattformzugang }) {
             r={daten!.profile.own_recipes.find((r) => r.id === recipeId)!}
           />
         )}
-      </Abfragezustand>
+      </Unterseitenzustand>
     </>
   );
 }
@@ -215,7 +211,7 @@ function Aendern({
       <p>Einträge im Tagebuch bleiben stehen.</p>
     </Rueckfrage>
   );
-  if (!daten.can_write) return loeschenKnopf;
+  if (!daten.can_write) return <div className="max-w-formular mt-6">{loeschenKnopf}</div>;
   return (
     <RezeptFormular
       beschriftung="Eigenes Rezept ändern"
@@ -226,6 +222,7 @@ function Aendern({
       onSpeichern={(angaben, freigeben) => speichern.mutate({ angaben, freigeben })}
       onAbbrechen={() => void navigate(`${REZEPTE_PFAD}${search}`)}
       unten={loeschenKnopf}
+      plattform
       {...formularWege(zugang, daten)}
     />
   );

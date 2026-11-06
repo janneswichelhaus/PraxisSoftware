@@ -5,6 +5,7 @@ import { renderWithProviders } from '@/test-utils';
 import { leererPlan } from './plaene';
 import { PlanFormular } from './PlanFormular';
 import type { Rezept } from './rezepte';
+import type { Startrezept } from './startrezepte';
 
 const BREI: Rezept = {
   kind: 'recipe',
@@ -32,7 +33,18 @@ const BREI: Rezept = {
   updated_at: '2026-11-06T10:00:00Z',
 };
 
-function formular(onSpeichern = vi.fn()) {
+const LINSEN: Startrezept = {
+  schluessel: 'linsensalat-paprika',
+  name: 'Linsensalat mit Paprika',
+  portionen: 2,
+  zutaten: [{ suche: 'Linsen gekocht', menge: 300 }],
+  zubereitung: 'Mischen.',
+};
+
+function formular(
+  onSpeichern = vi.fn(),
+  mitgeliefert?: { liste: Startrezept[]; uebernehmen: (s: Startrezept) => Promise<Rezept> },
+) {
   renderWithProviders(
     <PlanFormular
       beschriftung="Plan zuweisen"
@@ -45,6 +57,7 @@ function formular(onSpeichern = vi.fn()) {
       suchen={() => Promise.resolve([])}
       schluessel={['test', 'plan']}
       ziel={1700}
+      {...(mitgeliefert ? { mitgeliefert } : {})}
     />,
   );
   return onSpeichern;
@@ -68,7 +81,8 @@ describe('Planformular (ADR-027 Punkt 14)', () => {
     expect(screen.getByText(/Tag 1 · 311\skcal/)).toBeVisible();
 
     await nutzer.click(screen.getByRole('button', { name: 'Tag kopieren' }));
-    expect(screen.getByRole('button', { name: 'Tag 2', pressed: true })).toBeVisible();
+    expect(screen.getByText('Tag 2 von 2')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Nächster Tag' })).toBeDisabled();
     expect(
       within(screen.getByRole('list', { name: 'Frühstück' })).getByText('Haferbrei mit Beeren'),
     ).toBeVisible();
@@ -102,10 +116,106 @@ describe('Planformular (ADR-027 Punkt 14)', () => {
       within(screen.getByRole('dialog')).getByRole('button', { name: 'Hinzufügen' }),
     );
     await nutzer.click(screen.getByRole('button', { name: 'Tag hinzufügen' }));
+    // Ein leerer Tag geht ohne Rückfrage.
     await nutzer.click(screen.getByRole('button', { name: 'Tag entfernen' }));
+    expect(screen.queryByText(/von 2$/)).toBeNull();
     await nutzer.click(screen.getByRole('button', { name: 'Haferbrei mit Beeren entfernen' }));
     expect(screen.queryByRole('list', { name: 'Snacks' })).toBeNull();
     await nutzer.click(screen.getByRole('button', { name: 'Zuweisen' }));
     expect(onSpeichern).not.toHaveBeenCalled();
+  });
+
+  it('blättert durch sieben Tage; ein Tag mit Mahlzeiten geht nur nach einer Rückfrage', async () => {
+    const nutzer = userEvent.setup();
+    formular();
+    await nutzer.click(screen.getByRole('button', { name: 'Frühstück hinzufügen' }));
+    await nutzer.click(screen.getByRole('button', { name: /^Haferbrei mit Beeren/ }));
+    await nutzer.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Hinzufügen' }),
+    );
+    for (let i = 0; i < 6; i += 1) {
+      await nutzer.click(screen.getByRole('button', { name: 'Tag kopieren' }));
+    }
+    expect(screen.getByText('Tag 7 von 7')).toBeVisible();
+    // Mehr als sieben Tage gibt es nicht.
+    expect(screen.queryByRole('button', { name: 'Tag kopieren' })).toBeNull();
+    await nutzer.click(screen.getByRole('button', { name: 'Vorheriger Tag' }));
+    expect(screen.getByText('Tag 6 von 7')).toBeVisible();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Tag entfernen' }));
+    expect(
+      screen.getByText('Tag 6 mit seinen Mahlzeiten wird aus dem Plan genommen.'),
+    ).toBeVisible();
+    await nutzer.click(screen.getAllByRole('button', { name: 'Tag entfernen' }).at(-1)!);
+    expect(screen.getByText('Tag 5 von 6')).toBeVisible();
+  });
+
+  it('ein mitgeliefertes Rezept wird beim Wählen übernommen und steht dann im Plan', async () => {
+    const nutzer = userEvent.setup();
+    const uebernommen: Rezept = {
+      ...BREI,
+      id: 'neu-linsen',
+      name: LINSEN.name,
+      starter_key: LINSEN.schluessel,
+    };
+    const uebernehmen = vi.fn().mockResolvedValue(uebernommen);
+    const onSpeichern = formular(vi.fn(), { liste: [LINSEN], uebernehmen });
+    await nutzer.click(screen.getByRole('button', { name: 'Mittagessen hinzufügen' }));
+    await nutzer.click(screen.getByText('Mitgelieferte Rezepte'));
+    await nutzer.click(screen.getByRole('button', { name: /^Linsensalat mit Paprika/ }));
+    expect(uebernehmen).toHaveBeenCalledWith(LINSEN);
+    const fenster = await screen.findByRole('dialog', { name: 'Linsensalat mit Paprika' });
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Hinzufügen' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Zuweisen' }));
+    expect(onSpeichern.mock.calls[0]![0]).toEqual({
+      title: 'Tagesvorschlag',
+      days: [{ lunch: [{ kind: 'recipe', id: 'neu-linsen', portion_count: 1 }] }],
+    });
+  });
+
+  it('lässt sich ein mitgeliefertes Rezept nicht übernehmen, sagt es warum und bleibt in der Auswahl', async () => {
+    const nutzer = userEvent.setup();
+    const uebernehmen = vi
+      .fn()
+      .mockRejectedValue(
+        new Error('„Linsensalat mit Paprika“ bitte unter Rezepte prüfen und übernehmen.'),
+      );
+    formular(vi.fn(), { liste: [LINSEN], uebernehmen });
+    await nutzer.click(screen.getByRole('button', { name: 'Mittagessen hinzufügen' }));
+    await nutzer.click(screen.getByText('Mitgelieferte Rezepte'));
+    await nutzer.click(screen.getByRole('button', { name: /^Linsensalat mit Paprika/ }));
+    expect(
+      await screen.findByText(
+        '„Linsensalat mit Paprika“ bitte unter Rezepte prüfen und übernehmen.',
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Mittagessen · Tag 1' })).toBeVisible();
+  });
+
+  it('ein schon übernommenes mitgeliefertes Rezept steht nur bei der Praxis', async () => {
+    const nutzer = userEvent.setup();
+    renderWithProviders(
+      <PlanFormular
+        beschriftung="Plan zuweisen"
+        anfang={leererPlan('Tagesvorschlag')}
+        speichernText="Zuweisen"
+        laeuft={false}
+        onSpeichern={vi.fn()}
+        onAbbrechen={vi.fn()}
+        rezepte={[{ ...BREI, starter_key: 'haferbrei-beeren' }]}
+        suchen={() => Promise.resolve([])}
+        schluessel={['test', 'plan']}
+        mitgeliefert={{
+          liste: [{ ...LINSEN, schluessel: 'haferbrei-beeren', name: BREI.name }, LINSEN],
+          uebernehmen: vi.fn(),
+        }}
+      />,
+    );
+    await nutzer.click(screen.getByRole('button', { name: 'Frühstück hinzufügen' }));
+    await nutzer.click(screen.getByText('Mitgelieferte Rezepte'));
+    const liste = screen.getByRole('list', { name: 'Mitgelieferte Rezepte' });
+    expect(within(liste).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(liste).getByText('Linsensalat mit Paprika')).toBeVisible();
   });
 });

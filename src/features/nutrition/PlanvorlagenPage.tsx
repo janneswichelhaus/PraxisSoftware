@@ -16,7 +16,7 @@ import {
   planvorlageSpeichern,
   PLANVORLAGEN_SCHLUESSEL,
 } from './plaeneApi';
-import { praxisRezepte, REZEPTE_SCHLUESSEL } from './rezepteApi';
+import { praxisRezepte, REZEPTE_SCHLUESSEL, useMitgeliefert } from './rezepteApi';
 
 /**
  * Planvorlagen der Praxis in der Bibliothek (ADR-027 Punkt 14), allein mit der Fähigkeit
@@ -90,6 +90,7 @@ export function PlanvorlageNeu() {
   const navigate = useNavigate();
   const speichern = useSpeichern(null, null);
   const rezepte = useRezepteZurWahl();
+  const mitgeliefert = useMitgeliefert();
   return (
     <>
       <Rueckweg standard={PLANVORLAGEN_PFAD} beschriftung="Zu den Plänen" className="mb-3" />
@@ -102,6 +103,7 @@ export function PlanvorlageNeu() {
       >
         {(liste) => (
           <PlanFormular
+            mitgeliefert={mitgeliefert}
             beschriftung="Vorlage anlegen"
             anfang={leererPlan()}
             speichernText="Anlegen"
@@ -165,6 +167,7 @@ function Bearbeiten({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const speichern = useSpeichern(vorlage.id, vorlage.updated_at);
+  const mitgeliefert = useMitgeliefert();
   const ablegen = useMutation({
     mutationFn: () => planvorlageAblegen(vorlage.id),
     onSuccess: async () => {
@@ -174,6 +177,7 @@ function Bearbeiten({
   });
   return (
     <PlanFormular
+      mitgeliefert={mitgeliefert}
       beschriftung="Vorlage ändern"
       anfang={entwurfAus(vorlage)}
       speichernText="Speichern"

@@ -18,10 +18,10 @@ import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { GESPERRT, KAESTCHEN_GESPERRT, Pfeilzeichen } from '@/components/ui/Tagebuchbausteine';
+import { GESPERRT, KAESTCHEN_GESPERRT } from '@/components/ui/Tagebuchbausteine';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { leseZahl } from '@/features/nutrition/eingabe';
-import { offenerPlan, planTag, type Plan as Ernaehrungsplan } from '@/features/nutrition/plaene';
+import { geltenderPlan, planTag, type Plan as Ernaehrungsplan } from '@/features/nutrition/plaene';
 import { Rechenweg } from '@/features/nutrition/Rechenweg';
 import { kcal } from '@/features/nutrition/tagebuch';
 import { ERNAEHRUNG_EINWILLIGUNG, FEHLT_TEXTE, kg, zahl } from '@/features/nutrition/texte';
@@ -39,7 +39,7 @@ import {
   type EigenesTagebuch,
   type Plattformzugang,
 } from './api';
-import { Abschnitt, Aufklappzeilen } from './Ernaehrungsteile';
+import { Abschnitt, Aufklappzeilen, Weiterpfeil } from './Ernaehrungsteile';
 import { EINWILLIGUNGSFASSUNG } from './einwilligungstexte';
 import { PLATTFORM_PFAD } from './pfade';
 import { literZahl, literZiel, tagebuchVonDerErnaehrung } from './tagebuchAdresse';
@@ -120,7 +120,7 @@ function Inhalt({
   // Die Hauptsache nur, wo eingetragen werden kann; sonst steht der Zustand unter „Mehr“.
   const mitHeute = daten.can_write && p.diary_enabled && p.ended_on === null;
   const eigene = p.own_foods.length;
-  const plan = offenerPlan(p.plans);
+  const plan = geltenderPlan(p.plans, daten.today);
   const rezepte = p.own_recipes.length;
   return (
     <div className="mt-10 flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:mt-12 [.plattform-schrift[data-rechner]_&]:gap-12">
@@ -139,7 +139,7 @@ function Inhalt({
               to={`${PLATTFORM_PFAD}/ernaehrung/plan${search}`}
               titel={plan.title}
               meta={planMeta(plan, daten.today)}
-              status={WEITER}
+              status={<Weiterpfeil />}
             />
           </ListRows>
         </Abschnitt>
@@ -152,7 +152,11 @@ function Inhalt({
         <Aufklappzeilen linieOben>
           <ListRows rahmen={false} className={`border-line border-b ${ZEILEN}`}>
             {p.diary_enabled && !mitHeute ? (
-              <ListRow to={tagebuchVonDerErnaehrung(search)} titel="Tagebuch" status={WEITER} />
+              <ListRow
+                to={tagebuchVonDerErnaehrung(search)}
+                titel="Tagebuch"
+                status={<Weiterpfeil />}
+              />
             ) : null}
             <ListRow
               to={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel${search}`}
@@ -162,7 +166,7 @@ function Inhalt({
                   ? `Nachschlagen · ${eigene} ${eigene === 1 ? 'eigenes' : 'eigene'}`
                   : 'Nachschlagen und eigene anlegen'
               }
-              status={WEITER}
+              status={<Weiterpfeil />}
             />
             <ListRow
               to={`${PLATTFORM_PFAD}/ernaehrung/rezepte${search}`}
@@ -172,7 +176,7 @@ function Inhalt({
                   ? `${rezepte} ${rezepte === 1 ? 'eigenes' : 'eigene'}`
                   : 'Eigene aus Zutaten anlegen'
               }
-              status={WEITER}
+              status={<Weiterpfeil />}
             />
           </ListRows>
           <Zielgewicht zugang={zugang} daten={daten} />
@@ -440,11 +444,6 @@ function Zielzeile({
     </div>
   );
 }
-
-/** Der Pfeil einer Zeile unter „Mehr“ sagt „weiter“; unter 23rem stünde er allein in einer Zeile. */
-const WEITER = (
-  <Pfeilzeichen richtung="rechts" className="text-ink-muted size-5.5 max-[23rem]:hidden" />
-);
 
 /** Unter 23rem hat die Seite 12 Rand: Das Ziel einer Zeile reicht nur so weit hinaus. */
 const ZEILEN =

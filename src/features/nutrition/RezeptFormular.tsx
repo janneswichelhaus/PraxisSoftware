@@ -11,6 +11,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { TextArea } from '@/components/ui/TextArea';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { LebensmittelSuche } from './LebensmittelSuche';
@@ -59,6 +60,7 @@ export function RezeptFormular({
   schluessel,
   eigene,
   zusatz,
+  plattform = false,
 }: {
   anfang: RezeptWerte;
   speichernText: string;
@@ -75,6 +77,8 @@ export function RezeptFormular({
   eigene?: readonly Lebensmittel[];
   /** Geht mit den Angaben an den Server, etwa der Schlüssel eines mitgelieferten Rezepts. */
   zusatz?: Pick<RezeptAngaben, 'starter_key'>;
+  /** Auf der Plattform sind auch die Knöpfe im Kopf 48 hoch (PLATTFORM.md). */
+  plattform?: boolean;
 }) {
   const [werte, setWerte] = useState<RezeptWerte>(anfang);
   const [fehler, setFehler] = useState<Partial<Record<RezeptFeld, string>>>({});
@@ -84,7 +88,10 @@ export function RezeptFormular({
   const { freigeben, schutz } = useTextverlustschutz({
     ungespeichert: geaendert,
     texte: EINGABETEXTE,
+    // Die Zurückgeste in der Suche führt zurück ins Rezept, nicht aus ihm hinaus.
+    schrittZurueck: waehlen ? () => setWaehlen(false) : undefined,
   });
+  const kopfknopf = plattform ? 'normal' : 'kompakt';
   const vorschau = vorschauJePortion(werte.zutaten, werte.portionen);
 
   function absenden(event: FormEvent) {
@@ -111,7 +118,7 @@ export function RezeptFormular({
             <Button
               type="button"
               variant="quiet"
-              groesse="kompakt"
+              groesse={kopfknopf}
               onClick={() => setWaehlen(false)}
             >
               Zurück zum Rezept
@@ -181,7 +188,7 @@ export function RezeptFormular({
                 id={feldId('zutaten')}
                 type="button"
                 variant="secondary"
-                groesse="kompakt"
+                groesse={kopfknopf}
                 onClick={() => setWaehlen(true)}
               >
                 Hinzufügen
@@ -270,18 +277,32 @@ export function RezeptFormular({
 export function JePortionAbschnitt({
   werte,
   titel = 'Je Portion',
+  imFenster = false,
 }: {
   werte: JePortion;
   titel?: string;
+  /** Im Fenster ohne eigene Karte, als Zwischentitel neben „Zutaten“ (DESIGN.md Regel 2). */
+  imFenster?: boolean;
 }) {
+  const zeilen = (
+    <DetailList>
+      <DetailRow label="Energie">{kcal(werte.energy_kcal)}</DetailRow>
+      <DetailRow label="Eiweiß">{`${zahl(werte.protein_g, 1)} g`}</DetailRow>
+      <DetailRow label="Kohlenhydrate">{`${zahl(werte.carbohydrate_g, 1)} g`}</DetailRow>
+      <DetailRow label="Fett">{`${zahl(werte.fat_g, 1)} g`}</DetailRow>
+    </DetailList>
+  );
+  if (imFenster) {
+    return (
+      <div className="flex flex-col gap-1">
+        <Zwischentitel ebene={3}>{titel}</Zwischentitel>
+        {zeilen}
+      </div>
+    );
+  }
   return (
     <Section titel={titel} rahmen>
-      <DetailList>
-        <DetailRow label="Energie">{kcal(werte.energy_kcal)}</DetailRow>
-        <DetailRow label="Eiweiß">{`${zahl(werte.protein_g, 1)} g`}</DetailRow>
-        <DetailRow label="Kohlenhydrate">{`${zahl(werte.carbohydrate_g, 1)} g`}</DetailRow>
-        <DetailRow label="Fett">{`${zahl(werte.fat_g, 1)} g`}</DetailRow>
-      </DetailList>
+      {zeilen}
     </Section>
   );
 }

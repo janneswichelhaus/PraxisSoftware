@@ -180,6 +180,18 @@ export function offenerPlan(plaene: readonly Plan[]): Plan | undefined {
   return plaene.find((p) => p.starts_on !== null && p.ended_on === null);
 }
 
+/**
+ * Der Plan, der heute gilt; sonst der nächste. Beginnt ein neuer erst später, läuft der alte bis
+ * zum Tag davor (ANN-845).
+ */
+export function geltenderPlan(plaene: readonly Plan[], heute: string): Plan | undefined {
+  const heuteGueltig = plaene
+    .filter((p) => p.starts_on !== null && p.starts_on <= heute)
+    .filter((p) => p.ended_on === null || p.ended_on >= heute)
+    .sort((a, b) => (a.starts_on! < b.starts_on! ? 1 : -1));
+  return heuteGueltig[0] ?? offenerPlan(plaene);
+}
+
 /** „1 Portion · 222 kcal“, „1 Stück (mittel) · 81 kcal“, „250 g“; ohne Zahlen ohne Energie. */
 export function positionMeta(
   p: Pick<Planposition, 'kind' | 'amount' | 'portion_label' | 'portion_count' | 'energy_kcal'> & {

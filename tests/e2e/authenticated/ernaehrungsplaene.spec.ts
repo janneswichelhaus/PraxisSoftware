@@ -94,6 +94,28 @@ test('Tagesvorschlag aus zwei Rezepten und einem Lebensmittel in höchstens 15 T
   expect(z.tipps).toBeLessThanOrEqual(15);
 });
 
+test('Plan wechseln, während einer läuft, in höchstens fünf Tipps', async ({ page }) => {
+  // Läuft nach dem Tagesvorschlag: Der neue Plan beendet den laufenden am Tag davor (ANN-845).
+  test.setTimeout(90_000);
+  await page.setViewportSize(TELEFON);
+  await anmelden(page, KONTEN.owner);
+  await page.goto(ERNAEHRUNG);
+  const plan = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'Plan', exact: true }) });
+
+  const z = zaehler();
+  await z.tippe(plan.getByRole('link', { name: 'Ändern' }));
+  await z.tippe(page.getByRole('link', { name: 'Neuer Plan' }));
+  await z.tippe(page.getByRole('button', { name: /^Tagesvorschlag zum Ausprobieren/ }));
+  await z.tippe(page.getByRole('button', { name: 'Zuweisen' }));
+
+  await expect(page).toHaveURL((url) => url.pathname === ERNAEHRUNG);
+  await expect(plan.getByText('Tagesvorschlag zum Ausprobieren')).toBeVisible();
+  test.info().annotations.push({ type: 'ERN-EPIC-005', description: `Wechsel: ${z.tipps} Tipps` });
+  expect(z.tipps).toBeLessThanOrEqual(5);
+});
+
 async function plattformAnmelden(page: Page, email: string) {
   // Das Startbild läuft einmal je Tab (ANN-243); hier gilt es als gezeigt.
   await page.addInitScript(() => window.sessionStorage.setItem('startbild-gezeigt', '1'));

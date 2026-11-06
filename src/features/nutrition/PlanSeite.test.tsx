@@ -8,7 +8,8 @@ import type { Ernaehrungssicht } from './api';
 import type * as PlaeneApi from './plaeneApi';
 import type { Plan } from './plaene';
 import type * as RezepteApi from './rezepteApi';
-import { PlanSeite } from './PlanSeite';
+import { renderWithProviders } from '@/test-utils';
+import { PlanAbschnitt, PlanSeite } from './PlanSeite';
 
 const fetchErnaehrung = vi.fn<() => Promise<Ernaehrungssicht | null>>();
 vi.mock('./api', async (importOriginal) => ({
@@ -98,6 +99,7 @@ function sicht(plaene: Plan[]): Ernaehrungssicht {
       id: 'profil-1',
       ended_on: null,
       targets: { status: 'missing', missing: ['weight'] },
+      consent: { state: 'granted', occurred_on: HEUTE, source: 'practice' },
       plans: plaene,
     },
   } as unknown as Ernaehrungssicht;
@@ -179,5 +181,60 @@ describe('Plan an der Beratung (ANN-845)', () => {
     await nutzer.click(screen.getByRole('button', { name: 'Plan beenden' }));
     await nutzer.click(screen.getAllByRole('button', { name: 'Plan beenden' }).at(-1)!);
     expect(planBeenden).toHaveBeenCalledWith('plan-1');
+  });
+
+  it('ohne Einwilligung kein neuer Plan; beenden bleibt', async () => {
+    const ohne = sicht([plan({ id: 'plan-1', title: 'Offen', starts_on: HEUTE })]);
+    fetchErnaehrung.mockResolvedValue({
+      ...ohne,
+      profile: { ...ohne.profile!, consent: { state: 'withdrawn', occurred_on: HEUTE } },
+    } as unknown as Ernaehrungssicht);
+    zeige();
+    expect(await screen.findByDisplayValue('Offen')).toBeVisible();
+    expect(screen.queryByRole('link', { name: 'Neuer Plan' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Plan beenden' })).toBeVisible();
+  });
+
+  it('weist bei laufendem Plan einen neuen zu; der laufende endet am Tag davor', async () => {
+    const nutzer = userEvent.setup();
+    fetchErnaehrung.mockResolvedValue(
+      sicht([plan({ id: 'plan-1', title: 'Offen', starts_on: HEUTE })]),
+    );
+    zeige();
+    expect(await screen.findByRole('heading', { name: 'Plan ändern', level: 1 })).toBeVisible();
+    await nutzer.click(screen.getByRole('link', { name: 'Neuer Plan' }));
+    expect(await screen.findByRole('heading', { name: 'Plan zuweisen', level: 1 })).toBeVisible();
+    await nutzer.click(await screen.findByRole('button', { name: /^Woche mit Obst/ }));
+    expect(screen.getByText('„Offen“ endet am Tag davor.')).toBeVisible();
+    await nutzer.click(screen.getByRole('button', { name: 'Zuweisen' }));
+    expect(planZuweisen.mock.calls[0]![0]).toBe('profil-1');
+    expect(planZuweisen.mock.calls[0]![2]).toBe(HEUTE);
+  });
+
+  it('die Überschrift steht schon beim Laden', () => {
+    fetchErnaehrung.mockReturnValue(new Promise(() => {}));
+    zeige();
+    expect(screen.getByRole('heading', { name: 'Plan', level: 1 })).toBeVisible();
+  });
+
+  it('im Reiter: der laufende Plan bis zum Vortag und der nächste ab seinem Beginn', () => {
+    const profil = sicht([
+      plan({ id: 'neu', title: 'Woche 2', starts_on: '2026-11-10' }),
+      plan({ id: 'alt', title: 'Woche 1', starts_on: '2026-11-02', ended_on: '2026-11-09' }),
+    ]).profile!;
+    renderWithProviders(
+      <PlanAbschnitt
+        profil={profil}
+        heute={HEUTE}
+        art="treatment"
+        verhaeltnisId={PATIENT}
+        schreibbar
+      />,
+    );
+    expect(screen.getByText('Woche 1')).toBeVisible();
+    expect(screen.getByText('1 Tag · heute Tag 1 · bis 09.11.2026')).toBeVisible();
+    expect(screen.getByText('Woche 2')).toBeVisible();
+    expect(screen.getByText('1 Tag · ab 10.11.2026')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Ändern' })).toBeVisible();
   });
 });

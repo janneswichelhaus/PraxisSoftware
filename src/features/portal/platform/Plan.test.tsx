@@ -132,7 +132,9 @@ describe('Plan auf der Plattform (ADR-027 Punkt 14)', () => {
     const fenster = screen.getByRole('dialog', { name: 'Haferbrei mit Beeren' });
     expect(within(fenster).getByText('Haferflocken')).toBeVisible();
     expect(within(fenster).getByText('Haferflocken in der Milch aufkochen.')).toBeVisible();
-    expect(within(fenster).getByRole('heading', { name: 'Je Portion' })).toBeVisible();
+    expect(within(fenster).getByRole('heading', { name: 'Je Portion', level: 3 })).toBeVisible();
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Schließen' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('am leeren Tag ein Satz; ohne Zahlen keine Energie', async () => {
@@ -140,8 +142,27 @@ describe('Plan auf der Plattform (ADR-027 Punkt 14)', () => {
     ladeTagebuch.mockResolvedValue({ hide_numbers: true });
     renderWithProviders(<Plan zugang={ZUGANG} />, '/p/ernaehrung/plan');
     expect(await screen.findByText(/^1 Portion$/)).toBeVisible();
-    await nutzer.click(screen.getByRole('button', { name: 'Tag 2' }));
+    expect(screen.getByText('Tag 1 von 2 · heute')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Vorheriger Tag' })).toBeDisabled();
+    await nutzer.click(screen.getByRole('button', { name: 'Nächster Tag' }));
+    expect(screen.getByText('Tag 2 von 2')).toBeVisible();
     expect(screen.getByText('An diesem Tag steht nichts im Plan.')).toBeVisible();
+  });
+
+  it('beginnt ein neuer Plan erst später, zeigt es den, der heute gilt', async () => {
+    ladeErnaehrung.mockResolvedValue({
+      today: '2026-11-06',
+      profile: {
+        plans: [
+          { ...PLAN, id: 'neu', title: 'Woche 2', starts_on: '2026-11-10' },
+          { ...PLAN, ended_on: '2026-11-09' },
+        ],
+        own_foods: [],
+        own_recipes: [],
+      },
+    });
+    renderWithProviders(<Plan zugang={ZUGANG} />, '/p/ernaehrung/plan');
+    expect(await screen.findByRole('heading', { name: 'Woche 1', level: 1 })).toBeVisible();
   });
 
   it('ohne offenen Plan ein Leerzustand', async () => {
@@ -151,5 +172,7 @@ describe('Plan auf der Plattform (ADR-027 Punkt 14)', () => {
     });
     renderWithProviders(<Plan zugang={ZUGANG} />, '/p/ernaehrung/plan');
     expect(await screen.findByText('Zurzeit kein Plan')).toBeVisible();
+    // Die Seite hat auch leer ihre Überschrift.
+    expect(screen.getByRole('heading', { name: 'Ihr Plan', level: 1 })).toBeVisible();
   });
 });
