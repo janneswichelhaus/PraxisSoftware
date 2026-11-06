@@ -1046,6 +1046,10 @@ Technik · offen · 2026-11-06 · — · — · Wiedervorlage: —\
 Technik · offen · 2026-11-06 · — · — · Wiedervorlage: Sichtung der Startrezepte (Jannes)\
 **Regel.** 31 Rezepte sind Inhalt im Build (wie ANN-382), je Zutat Suchbegriff und Menge. Beim Übernehmen nimmt das Formular den gleichnamigen Treffer, sonst den ersten aus dem BLS; die Beratung prüft, je Praxis einmal (`starter_key`). **Grundlage.** ADR-027 Punkte 9, 14. **Anker.** `startrezeptAufloesen` in `src/features/nutrition/rezepte.ts`.
 
+### ANN-845 — Ernährungsplan: Tage im Wechsel ab Beginn, Rezepte der Praxis nur über ihn
+Praxisprozess · offen · 2026-11-06 · — · — · Wiedervorlage: Sichtung (Jannes)\
+**Regel.** Ein Plan hat ein bis sieben Tage und wiederholt sich ab seinem Beginn; ein Tag ist ein Tagesvorschlag. Je Beratung ist einer offen, ein neuer beendet ihn am Vortag, Beenden gilt ab heute. Ein Rezept der Praxis erreicht die Person nur über einen Plan, der heute oder später gilt. **Grundlage.** ADR-027 Punkt 14. **Anker.** `app.nutrition_plan_day_json`.
+
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
 | --- | --- | --- | --- |

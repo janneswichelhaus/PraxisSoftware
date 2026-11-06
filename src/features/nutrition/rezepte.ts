@@ -234,12 +234,13 @@ export function rezeptMeta(
     .join(' · ');
 }
 
-/** „100 g“, „1 Stück (mittel) · 120 g“, „2 × 1 Esslöffel · 20 g“. */
+/** „100 g“, „1 Stück (mittel) · 120 g“, „2 × 1 Esslöffel · 20 g“; ein Rezept nur in Portionen. */
 export function zutatMenge(z: Zutat): string {
   const menge = `${zahl(z.menge, z.menge % 1 === 0 ? 0 : 1)} ${z.lebensmittel.base_unit}`;
   if (z.angabe.art === 'menge') return menge;
   const anzahl =
     z.angabe.anzahl === 1 ? '' : `${zahl(z.angabe.anzahl, z.angabe.anzahl % 1 === 0 ? 0 : 2)} × `;
+  if (z.lebensmittel.kind === 'recipe') return `${anzahl}${z.angabe.label}`;
   return `${anzahl}${z.angabe.label} · ${menge}`;
 }
 

@@ -100,8 +100,9 @@ describe('Ernährung auf der Plattform: Lesen und Grenzen (ERN-002)', () => {
         'height_cm',
         // ERN-005: die eigenen Lebensmittel der Person.
         'own_foods',
-        // Ihre eigenen Rezepte (ADR-027 Punkt 9).
+        // Ihre eigenen Rezepte (ADR-027 Punkt 9) und die ihr zugewiesenen Pläne (Punkt 14).
         'own_recipes',
+        'plans',
         'started_on',
         'target_weight_kg',
         'target_weight_source',

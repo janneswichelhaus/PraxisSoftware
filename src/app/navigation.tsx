@@ -335,6 +335,11 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
             label: 'Rezepte',
             stichworte: ['Rezept', 'Zutaten', 'Ernährung', 'Kochen'],
           },
+          {
+            to: '/praxis/ernaehrungsplaene',
+            label: 'Ernährungspläne',
+            stichworte: ['Plan', 'Tagesvorschlag', 'Wochenplan', 'Ernährung'],
+          },
         ]
       : []),
   ];

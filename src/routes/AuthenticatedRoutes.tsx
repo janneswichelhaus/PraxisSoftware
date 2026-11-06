@@ -94,6 +94,12 @@ import {
   PraxisLebensmittelBearbeiten,
   PraxisLebensmittelNeu,
 } from '@/features/nutrition/LebensmittelPage';
+import { PlanSeite } from '@/features/nutrition/PlanSeite';
+import {
+  PlanvorlageBearbeiten,
+  PlanvorlageNeu,
+  PlanvorlagenPage,
+} from '@/features/nutrition/PlanvorlagenPage';
 import {
   MitgeliefertesRezept,
   PraxisRezeptBearbeiten,
@@ -336,6 +342,10 @@ export function AuthenticatedRoutes({
                         path="/patienten/:patientId/ernaehrung/termin"
                         element={<BeratungsterminSeite art="treatment" user={user} />}
                       />
+                      <Route
+                        path="/patienten/:patientId/ernaehrung/plan"
+                        element={<PlanSeite art="treatment" />}
+                      />
                     </>
                   ) : null}
                   {/* Lebensmittel und Rezepte in der Bibliothek - nachschlagen und die der
@@ -357,6 +367,12 @@ export function AuthenticatedRoutes({
                       <Route
                         path="/praxis/rezepte/:recipeId"
                         element={<PraxisRezeptBearbeiten />}
+                      />
+                      <Route path="/praxis/ernaehrungsplaene" element={<PlanvorlagenPage />} />
+                      <Route path="/praxis/ernaehrungsplaene/neu" element={<PlanvorlageNeu />} />
+                      <Route
+                        path="/praxis/ernaehrungsplaene/:planId"
+                        element={<PlanvorlageBearbeiten />}
                       />
                     </>
                   ) : null}
@@ -892,6 +908,10 @@ export function AuthenticatedRoutes({
                       <Route
                         path="/training/:relationshipId/ernaehrung/termin"
                         element={<BeratungsterminSeite art="training" user={user} />}
+                      />
+                      <Route
+                        path="/training/:relationshipId/ernaehrung/plan"
+                        element={<PlanSeite art="training" />}
                       />
                     </>
                   ) : null}

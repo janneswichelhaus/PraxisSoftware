@@ -305,9 +305,11 @@ export function ZutatMenge({
   const [wert, setWert] = useState(start.wert);
   const [fehler, setFehler] = useState<string | undefined>();
   const geprueft = mengePruefen(f, einheit, wert);
+  // Ein Rezept nur in Portionen: seine Menge mischt Gramm und Milliliter (ANN-843).
+  const rezept = f.kind === 'recipe';
   const wahlen = [
     ...f.portions.map((p) => ({ wert: p.label, text: p.label })),
-    { wert: FREIE_MENGE, text: f.base_unit === 'ml' ? 'Milliliter' : 'Gramm' },
+    ...(rezept ? [] : [{ wert: FREIE_MENGE, text: f.base_unit === 'ml' ? 'Milliliter' : 'Gramm' }]),
   ];
   return (
     <form
@@ -336,7 +338,7 @@ export function ZutatMenge({
       <Field
         label={einheit === FREIE_MENGE ? `Menge (${f.base_unit})` : 'Anzahl'}
         hint={
-          einheit !== FREIE_MENGE && 'menge' in geprueft
+          !rezept && einheit !== FREIE_MENGE && 'menge' in geprueft
             ? `${zahl(geprueft.menge, geprueft.menge % 1 === 0 ? 0 : 1)} ${f.base_unit}`
             : undefined
         }
