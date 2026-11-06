@@ -7,7 +7,7 @@ import { NACHZIEHEN, journal, sichern, stehen, zurueckspielen } from './helpers/
  * Einwilligung an der laufenden Beratung des Zugangs, im Tagebuch nur in Portionen mit Stand.
  */
 
-const { users, patients, platformAccesses } = SEED;
+const { users, patients, platformAccesses, trainingRelationships } = SEED;
 const ZUGANG = platformAccesses.erikaBehandlung;
 const PROFIL = 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001';
 const EIGENES_BROT = 'f1f1f1f1-f1f1-4f1f-8f1f-000000000002';
@@ -251,6 +251,60 @@ describe('Eigene Rezepte der Person (ERN-018)', () => {
             }),
           ),
         ]),
+      ),
+    ).toBe('P0002');
+  });
+
+  it('eine andere Person erreicht Erikas Rezept nicht: weder eintragen noch ändern noch löschen', async () => {
+    const id = (await eigene())[0]!.id;
+    const tag = await heute();
+    const tina = platformAccesses.tinaTraining;
+    await asUserCommitted(
+      users.ownerTherapist,
+      `select public.create_nutrition_profile('training', $1::uuid, $2::date, 170::smallint,
+         65::numeric, 'female', 1.6::numeric, 'maintain', null::numeric, null::numeric, null)`,
+      [trainingRelationships.tina, tag],
+    );
+    await asUserCommitted(
+      users.plattformTina,
+      'select public.set_platform_nutrition_diary($1::uuid, true)',
+      [tina],
+    );
+    expect(
+      await fehler(
+        asUser(users.plattformTina, EINTRAGEN, [
+          tina,
+          tag,
+          'lunch',
+          'recipe',
+          id,
+          null,
+          '1 Portion',
+          1,
+        ]),
+      ),
+    ).toBe('P0002');
+    expect(
+      await fehler(asUser(users.plattformTina, SPEICHERN, [tina, id, JSON.stringify(stulle())])),
+    ).toBe('P0002');
+    expect(await fehler(asUser(users.plattformTina, LOESCHEN, [tina, id]))).toBe('P0002');
+    expect(
+      await fehler(
+        asUser(users.plattformPaula, LOESCHEN, [platformAccesses.paulaBegleitungMax, id]),
+      ),
+    ).toBe('42501');
+    expect((await eigene()).map((r) => r.id)).toContain(id);
+  });
+
+  it('ein Rezept ist kein Favorit', async () => {
+    const id = (await eigene())[0]!.id;
+    expect(
+      await fehler(
+        asUser(
+          users.plattformErika,
+          'select public.set_platform_diary_favorite($1::uuid, $2, $3::uuid, true)',
+          [ZUGANG, 'recipe', id],
+        ),
       ),
     ).toBe('P0002');
   });

@@ -14,7 +14,7 @@ import {
  * laufenden Beratung mit Einwilligung, Vorschlag im Tagebuch im Wechsel der Tage ab dem Beginn.
  */
 
-const { users, patients, platformAccesses } = SEED;
+const { users, patients, platformAccesses, trainingRelationships } = SEED;
 const PROFIL = 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001';
 const ZUGANG = platformAccesses.erikaBehandlung;
 const FASSUNG = '2026-11';
@@ -83,6 +83,29 @@ async function plaene(): Promise<Plan[]> {
     [patients.erika],
   );
   return rows[0]!.d.profile.plans;
+}
+
+/** Tinas Training mit laufender Beratung (die Einwilligung nimmt das Anlegen auf) und Tagebuch. */
+async function tinaMitBeratung(): Promise<void> {
+  await asUserCommitted(
+    users.ownerTherapist,
+    `select public.create_nutrition_profile('training', $1::uuid, $2::date, 170::smallint,
+       65::numeric, 'female', 1.6::numeric, 'maintain', null::numeric, null::numeric, null)`,
+    [trainingRelationships.tina, HEUTE],
+  );
+  await asUserCommitted(
+    users.plattformTina,
+    'select public.set_platform_nutrition_diary($1::uuid, true)',
+    [platformAccesses.tinaTraining],
+  );
+}
+
+async function tagPlus(tage: number): Promise<string> {
+  const { rows } = await asPostgres<{ d: string }>('select ($1::date + $2::int)::text as d', [
+    HEUTE,
+    tage,
+  ]);
+  return rows[0]!.d;
 }
 
 async function vorschlag(tag: string | null = null) {
@@ -381,6 +404,51 @@ describe('Pläne der Beratung (ERN-019)', () => {
     ).toBe('40001');
   });
 
+  it('ein Rezept aus Erikas Plan erreicht keine andere Person; ein vor dem Beginn abgelöster Plan gibt keines frei', async () => {
+    await tinaMitBeratung();
+    await asUserCommitted(users.ownerTherapist, ZUWEISEN, [PROFIL, JSON.stringify(woche()), HEUTE]);
+    const eintragen = (konto: string, zugang: string, rezept: string) =>
+      asUser(konto, EINTRAGEN, [zugang, HEUTE, 'lunch', 'recipe', rezept, null, '1 Portion', 1]);
+    await eintragen(users.plattformErika, ZUGANG, REZEPT);
+    expect(
+      await fehler(eintragen(users.plattformTina, platformAccesses.tinaTraining, REZEPT)),
+    ).toBe('P0002');
+
+    // ANN-845: A beginnt in 30 Tagen, B ab morgen löst ihn vor seinem Beginn ab.
+    const { rows } = await asUserCommitted<{ id: string }>(
+      users.ownerTherapist,
+      'select public.save_practice_recipe(null, $1::jsonb, null) as id',
+      [
+        JSON.stringify({
+          name: 'Nur in A',
+          servings: 1,
+          ingredients: [{ food_kind: 'catalog', food_id: APFEL, amount: 150 }],
+        }),
+      ],
+    );
+    const nurInA = rows[0]!.id;
+    const a = { title: 'A', days: [{ lunch: [{ kind: 'recipe', id: nurInA, portion_count: 1 }] }] };
+    await asUserCommitted(users.ownerTherapist, ZUWEISEN, [
+      PROFIL,
+      JSON.stringify(a),
+      await tagPlus(30),
+    ]);
+    await eintragen(users.plattformErika, ZUGANG, nurInA);
+    const morgen = await tagPlus(1);
+    await asUserCommitted(users.ownerTherapist, ZUWEISEN, [
+      PROFIL,
+      JSON.stringify(woche({ title: 'B' })),
+      morgen,
+    ]);
+    expect(await fehler(eintragen(users.plattformErika, ZUGANG, nurInA))).toBe('P0002');
+    // Keine Überschneidung: Ab dem Beginn von B gilt kein anderer Plan mehr, A gilt nie.
+    for (const plan of (await plaene()).filter((p) => p.title !== 'B')) {
+      const ende = plan.ended_on ?? '9999-12-31';
+      expect(ende < morgen || ende < plan.starts_on!, plan.title).toBe(true);
+    }
+    expect((await plaene()).find((p) => p.title === 'A')!.ended_on).toBe(await tagPlus(29));
+  });
+
   it('Büro, Therapie, Teamleitung, Trainingsbetreuung, Plattform: nichts', async () => {
     const plan = (await plaene())[0]!;
     const vorlage = (await vorlagen())[0]!;
@@ -443,6 +511,15 @@ describe('Pläne der Beratung (ERN-019)', () => {
       ),
     ).toBe('P0002');
     expect(await fehler(asUser(FREMDE_ORGANISATION.owner, BEENDEN, [plan.id]))).toBe('P0002');
+    expect(
+      await fehler(
+        asUser(
+          FREMDE_ORGANISATION.owner,
+          'select public.archive_nutrition_plan_template($1::uuid)',
+          [vorlage.id],
+        ),
+      ),
+    ).toBe('P0002');
     expect(
       await fehler(
         asUser(FREMDE_ORGANISATION.owner, VORLAGE_SPEICHERN, [

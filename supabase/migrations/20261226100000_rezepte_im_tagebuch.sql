@@ -50,6 +50,59 @@ $$;
 comment on function app.nutrition_diary_food(public.nutrition_profiles, text, uuid) is
   'ERN-007/ERN-018: ein Lebensmittel, wie es die Person an ihrem Profil findet - Katalog (nicht zurückgezogen), Praxis (nicht abgelegt), eigene Lebensmittel und eigene Rezepte. Ohne Rechteprüfung.';
 
+-- Ein Rezept ist kein Favorit: Es kommt nur als Portion mit Stand ins Tagebuch. Sonst wie bisher.
+create or replace function public.set_platform_diary_favorite(
+  p_access_id uuid, p_food_kind text, p_food_id uuid, p_favorite boolean
+) returns void
+  language plpgsql security definer
+  set search_path = ''
+as $$
+declare
+  v_profil public.nutrition_profiles%rowtype;
+  v_zugang public.platform_accesses%rowtype;
+begin
+  -- Markieren wie Eintragen; abnehmen geht immer (wie löschen).
+  v_profil := app.platform_diary_for_writing(p_access_id, null, coalesce(p_favorite, false));
+  select * into v_zugang from public.platform_accesses a where a.id = p_access_id;
+  if p_favorite is null or p_food_kind is null or p_food_id is null then
+    raise exception 'food and choice are required' using errcode = '22023';
+  end if;
+
+  if not p_favorite then
+    delete from public.nutrition_diary_favorites f
+    where f.profile_id = v_profil.id and f.food_kind = p_food_kind
+      and coalesce(f.catalog_food_id, f.custom_food_id) = p_food_id;
+  else
+    if p_food_kind not in ('catalog', 'practice', 'person')
+       or app.nutrition_diary_food(v_profil, p_food_kind, p_food_id) is null then
+      raise exception 'food not found' using errcode = 'P0002';
+    end if;
+    if (select count(*) from public.nutrition_diary_favorites f where f.profile_id = v_profil.id)
+       >= 200 then
+      raise exception 'too many favorites' using errcode = '54000';
+    end if;
+    insert into public.nutrition_diary_favorites (
+      organization_id, profile_id, food_kind, catalog_food_id, custom_food_id,
+      platform_access_id, platform_access_kind, created_by
+    )
+    values (
+      v_profil.organization_id, v_profil.id, p_food_kind,
+      case when p_food_kind = 'catalog' then p_food_id end,
+      case when p_food_kind <> 'catalog' then p_food_id end,
+      v_zugang.id, v_zugang.access_kind, auth.uid()
+    )
+    on conflict do nothing;
+  end if;
+
+  perform app.log_platform_representation(
+    v_zugang.id, 'platform_representation.read', jsonb_build_object('view', 'nutrition_diary')
+  );
+end;
+$$;
+
+comment on function public.set_platform_diary_favorite(uuid, text, uuid, boolean) is
+  'ERN-008/ERN-018: ein Lebensmittel als Favorit markieren (mit Einwilligung, eingeschaltetem Tagebuch) oder abnehmen (immer); höchstens 200. Rezepte sind keine Favoriten (P0002). Die Person oder ihre rechtliche Vertretung, nicht in der Lesefrist, nie die Begleitung.';
+
 create or replace function public.add_platform_diary_entry(
   p_access_id uuid, p_eaten_on date, p_meal text, p_food_kind text, p_food_id uuid,
   p_amount numeric default null, p_portion_label text default null, p_portion_count numeric default null

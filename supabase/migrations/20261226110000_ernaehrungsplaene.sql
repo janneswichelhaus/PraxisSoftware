@@ -274,7 +274,7 @@ begin
         v_kind := v_item ->> 'kind';
         v_id := (v_item ->> 'id')::uuid;
         if v_kind = 'recipe' then
-          -- Ein Rezept der Praxis, auch ein abgelegtes, das im Plan schon stand.
+          -- Auch ein abgelegtes: Pläne und Vorlagen mit ihm bleiben nutzbar; zur Wahl steht es nicht.
           if not exists (select 1 from public.nutrition_recipes r
                          where r.id = v_id and r.organization_id = p_org
                            and r.owner_kind = 'practice') then
@@ -314,7 +314,7 @@ $$;
 revoke all on function app.nutrition_plan_input(jsonb, uuid) from public, anon, authenticated, service_role;
 
 comment on function app.nutrition_plan_input(jsonb, uuid) is
-  'ERN-019 (ADR-027 Punkt 14): prüft einen Plan - Titel, ein bis sieben Tage, je Mahlzeit bis zwölf Positionen; Rezepte der Praxis in Portionen, Lebensmittel aus Katalog und Praxis mit Menge oder Portion wie im Tagebuch. Liefert Titel, Zahl der Tage und die Positionen. Ohne Rechteprüfung.';
+  'ERN-019 (ADR-027 Punkt 14): prüft einen Plan - Titel, ein bis sieben Tage, je Mahlzeit bis zwölf Positionen; Rezepte der Praxis in Portionen, auch abgelegte (Pläne und Vorlagen mit ihnen bleiben nutzbar), Lebensmittel aus Katalog und Praxis mit Menge oder Portion wie im Tagebuch. Liefert Titel, Zahl der Tage und die Positionen. Ohne Rechteprüfung.';
 
 -- Die Positionen eines Plans ersetzen.
 create function app.nutrition_plan_store(p_plan_id uuid, p_org uuid, p_items jsonb) returns void
@@ -452,11 +452,11 @@ begin
   end if;
   v_p := app.nutrition_plan_input(p_plan, v_profil.organization_id);
 
-  -- Der offene Plan endet am Tag vor dem neuen.
+  -- Jeder Plan, der am Beginn des neuen noch gälte, endet am Tag davor: Pläne überschneiden sich nie.
   update public.nutrition_plans p
      set ended_on = greatest(p_starts_on - 1, p.starts_on - 1), updated_at = now(),
          updated_by = auth.uid()
-   where p.profile_id = v_profil.id and p.ended_on is null;
+   where p.profile_id = v_profil.id and (p.ended_on is null or p.ended_on >= p_starts_on);
 
   insert into public.nutrition_plans (
     organization_id, profile_id, title, day_count, starts_on, created_by, updated_by
@@ -475,7 +475,30 @@ revoke all on function public.assign_nutrition_plan(uuid, jsonb, date) from publ
 grant execute on function public.assign_nutrition_plan(uuid, jsonb, date) to authenticated;
 
 comment on function public.assign_nutrition_plan(uuid, jsonb, date) is
-  'ERN-019 (ADR-027 Punkt 14, ANN-845): einen Plan oder Tagesvorschlag an einer laufenden Beratung zuweisen - als Kopie einer Vorlage oder neu, ab heute oder einem Tag der nächsten 90; der offene Plan endet am Tag davor. Allein app.can_counsel_nutrition, nur mit Einwilligung; die Auswahl trifft die Beratung, nie eine Diagnose.';
+  'ERN-019 (ADR-027 Punkt 14, ANN-845): einen Plan oder Tagesvorschlag an einer laufenden Beratung zuweisen - als Kopie einer Vorlage oder neu, ab heute oder einem Tag der nächsten 90; jeder Plan, der dann noch gälte, endet am Tag davor. Allein app.can_counsel_nutrition, nur mit Einwilligung; die Auswahl trifft die Beratung, nie eine Diagnose.';
+
+-- Das Profil eines zugewiesenen Plans der eigenen Organisation; ohne ihn P0002.
+create function app.nutrition_plan_profile(p_plan_id uuid) returns uuid
+  language plpgsql stable security definer
+  set search_path = ''
+as $$
+declare
+  v_profil uuid;
+begin
+  select p.profile_id into v_profil from public.nutrition_plans p
+  where p.id = p_plan_id and p.organization_id = app.current_organization_id()
+    and p.profile_id is not null;
+  if v_profil is null then
+    raise exception 'plan not found' using errcode = 'P0002';
+  end if;
+  return v_profil;
+end;
+$$;
+
+revoke all on function app.nutrition_plan_profile(uuid) from public, anon, authenticated, service_role;
+
+comment on function app.nutrition_plan_profile(uuid) is
+  'ERN-019: das Profil eines zugewiesenen Plans der eigenen Organisation, damit Ändern und Beenden wie das Zuweisen erst das Profil und dann den Plan sperren; ohne ihn P0002. Ohne Rechteprüfung.';
 
 create function public.update_nutrition_plan(p_plan_id uuid, p_plan jsonb, p_expected timestamptz default null)
   returns uuid
@@ -490,14 +513,11 @@ begin
   if auth.uid() is null or not app.can_counsel_nutrition() then
     raise exception 'not allowed' using errcode = '42501';
   end if;
+  -- Erst das Profil sperren, dann den Plan, wie beim Zuweisen: sonst warten beide aufeinander.
+  v_profil := app.nutrition_profile_for_writing(app.nutrition_plan_profile(p_plan_id), true);
   select * into v_plan from public.nutrition_plans p
-  where p.id = p_plan_id and p.organization_id = app.current_organization_id()
-    and p.profile_id is not null
+  where p.id = p_plan_id and p.profile_id = v_profil.id
   for update;
-  if v_plan.id is null then
-    raise exception 'plan not found' using errcode = 'P0002';
-  end if;
-  v_profil := app.nutrition_profile_for_writing(v_plan.profile_id, true);
   if v_plan.ended_on is not null then
     raise exception 'plan has ended' using errcode = '22023';
   end if;
@@ -531,15 +551,14 @@ begin
   if auth.uid() is null or not app.can_counsel_nutrition() then
     raise exception 'not allowed' using errcode = '42501';
   end if;
+  -- Beenden geht auch nach einem Widerruf: Es hält die Verarbeitung an. Profil vor Plan sperren.
+  v_profil := app.nutrition_profile_for_writing(app.nutrition_plan_profile(p_plan_id), false);
   select * into v_plan from public.nutrition_plans p
-  where p.id = p_plan_id and p.organization_id = app.current_organization_id()
-    and p.profile_id is not null and p.ended_on is null
+  where p.id = p_plan_id and p.profile_id = v_profil.id and p.ended_on is null
   for update;
   if v_plan.id is null then
     raise exception 'plan not found' using errcode = 'P0002';
   end if;
-  -- Beenden geht auch nach einem Widerruf: Es hält die Verarbeitung an.
-  v_profil := app.nutrition_profile_for_writing(v_plan.profile_id, false);
   update public.nutrition_plans p
      set ended_on = greatest(app.training_today(v_profil.organization_id) - 1, p.starts_on - 1),
          updated_at = now(), updated_by = auth.uid()
@@ -597,7 +616,8 @@ as $$
                   join public.nutrition_plans p on p.id = i.plan_id
                   where i.recipe_id = r.id and p.profile_id = p_profile.id
                     and (p.ended_on is null
-                         or p.ended_on >= app.training_today(p_profile.organization_id)))))))
+                         or p.ended_on >= greatest(app.training_today(p_profile.organization_id),
+                                                   p.starts_on)))))))
 $$;
 
 comment on function app.nutrition_diary_food(public.nutrition_profiles, text, uuid) is
