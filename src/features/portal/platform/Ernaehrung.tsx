@@ -118,6 +118,7 @@ function Inhalt({
   // Die Hauptsache nur, wo eingetragen werden kann; sonst steht der Zustand unter „Mehr“.
   const mitHeute = daten.can_write && p.diary_enabled && p.ended_on === null;
   const eigene = p.own_foods.length;
+  const rezepte = p.own_recipes.length;
   return (
     <div className="mt-10 flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:mt-12 [.plattform-schrift[data-rechner]_&]:gap-12">
       {nachladen}
@@ -145,6 +146,16 @@ function Inhalt({
                 eigene > 0
                   ? `Nachschlagen · ${eigene} ${eigene === 1 ? 'eigenes' : 'eigene'}`
                   : 'Nachschlagen und eigene anlegen'
+              }
+              status={WEITER}
+            />
+            <ListRow
+              to={`${PLATTFORM_PFAD}/ernaehrung/rezepte${search}`}
+              titel="Rezepte"
+              meta={
+                rezepte > 0
+                  ? `${rezepte} ${rezepte === 1 ? 'eigenes' : 'eigene'}`
+                  : 'Eigene aus Zutaten anlegen'
               }
               status={WEITER}
             />

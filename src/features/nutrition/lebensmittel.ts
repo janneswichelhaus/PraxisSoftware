@@ -27,9 +27,10 @@ export const je100Schema = z.object({
 export const portionSchema = z.object({ label: z.string(), amount: z.number() });
 
 export const lebensmittelSchema = z.object({
-  kind: z.enum(['catalog', 'practice', 'person']).default('person'),
+  // Ein Rezept steht im Tagebuch wie ein Lebensmittel, nur in Portionen (ANN-843).
+  kind: z.enum(['catalog', 'practice', 'person', 'recipe']).default('person'),
   id: z.string(),
-  source: z.enum(['bls', 'off', 'practice', 'person']).default('person'),
+  source: z.enum(['bls', 'off', 'practice', 'person', 'recipe']).default('person'),
   name: z.string(),
   brand: z.string().nullable(),
   base_unit: z.enum(['g', 'ml']),
@@ -62,6 +63,7 @@ export const QUELLENNAME: Record<Lebensmittel['source'], string> = {
   off: 'Open Food Facts',
   practice: 'Praxis',
   person: 'Eigenes',
+  recipe: 'Rezept',
 };
 
 /** Ab so vielen Zeichen fragt die Suche den Server (wie `app.food_search`). */
@@ -107,9 +109,11 @@ export function energieJe100(f: Lebensmittel): string {
 
 /** Nebenzeile einer Trefferzeile: Marke, Energie, Herkunft; ohne Zahlen ohne Energie. */
 export function trefferMeta(f: Lebensmittel, ohneZahlen = false): string {
-  return [f.brand, ohneZahlen ? null : energieJe100(f), QUELLENNAME[f.source]]
-    .filter(Boolean)
-    .join(' · ');
+  const portion = f.kind === 'recipe' ? f.portions[0] : undefined;
+  const energie = portion
+    ? `${zahl(energieFuer(f, portion.amount))} kcal je Portion`
+    : energieJe100(f);
+  return [f.brand, ohneZahlen ? null : energie, QUELLENNAME[f.source]].filter(Boolean).join(' · ');
 }
 
 /** Gramm mit einer Stelle, Salz mit zwei; leer heißt unbekannt. */

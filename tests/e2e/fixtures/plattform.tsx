@@ -1352,6 +1352,7 @@ client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
   profile: {
     goal: 'lose',
     own_foods: [],
+    own_recipes: [],
     consent: {
       state: 'granted',
       source: 'practice',

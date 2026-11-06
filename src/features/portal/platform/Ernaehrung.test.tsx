@@ -155,6 +155,7 @@ function ernaehrung(
       ],
       targets: ZIELWERTE,
       own_foods: [],
+      own_recipes: [],
       ...profil,
     },
     ...teil,

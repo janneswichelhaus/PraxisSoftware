@@ -304,3 +304,17 @@ export async function startrezeptAufloesen(
     fehlt,
   };
 }
+
+/** Ein Rezept, wie Suche und Tagebuch ein Lebensmittel kennen: Werte je 100 g, nur die Portion. */
+export function rezeptAlsLebensmittel(r: Rezept): Lebensmittel {
+  return {
+    kind: 'recipe',
+    id: r.id,
+    source: 'recipe',
+    name: r.name,
+    brand: null,
+    base_unit: 'g',
+    per_100: r.per_100,
+    portions: r.portions,
+  };
+}

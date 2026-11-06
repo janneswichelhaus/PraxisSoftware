@@ -64,6 +64,8 @@ const ERLAUBT: readonly RegExp[] = [
   /^@\/features\/nutrition\/tagebuch$/,
   // Der Barcodedialog liest nur die Kamera, ohne Datenzugriff; nachgeschlagen wird über `api.ts`.
   /^@\/features\/nutrition\/Barcodedialog$/,
+  // Form, Prüfung und Formular der Rezepte, ohne Datenzugriff; gespeichert wird über `api.ts`.
+  /^@\/features\/nutrition\/(rezepte|RezeptFormular)$/,
 ];
 
 function quelldateien(): string[] {
@@ -139,6 +141,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // eigenen Katalog, die Quellenangabe (Inhalt ohne Personenbezug).
       'rpc:delete_platform_food',
       'rpc:delete_platform_message_attachment',
+      'rpc:delete_platform_recipe',
       'rpc:discard_message_attachment_upload',
       'rpc:discard_platform_questionnaire_response',
       'rpc:end_platform_companion',
@@ -202,6 +205,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:request_platform_appointment_change',
       'rpc:save_platform_food',
       'rpc:save_platform_questionnaire_response',
+      'rpc:save_platform_recipe',
       'rpc:search_platform_foods',
       'rpc:set_platform_diary_favorite',
       'rpc:set_platform_diary_hide_numbers',
