@@ -95,6 +95,7 @@ import {
   PraxisLebensmittelNeu,
 } from '@/features/nutrition/LebensmittelPage';
 import {
+  MitgeliefertesRezept,
   PraxisRezeptBearbeiten,
   PraxisRezeptNeu,
   RezeptePage,
@@ -349,6 +350,10 @@ export function AuthenticatedRoutes({
                       />
                       <Route path="/praxis/rezepte" element={<RezeptePage />} />
                       <Route path="/praxis/rezepte/neu" element={<PraxisRezeptNeu />} />
+                      <Route
+                        path="/praxis/rezepte/mitgeliefert/:starterKey"
+                        element={<MitgeliefertesRezept />}
+                      />
                       <Route
                         path="/praxis/rezepte/:recipeId"
                         element={<PraxisRezeptBearbeiten />}

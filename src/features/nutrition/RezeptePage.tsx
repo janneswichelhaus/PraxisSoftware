@@ -2,17 +2,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Disclosure } from '@/components/ui/Card';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
-import { ListRow } from '@/components/ui/ListRow';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { lebensmittelSuchen } from './lebensmittelApi';
 import { RezeptFormular } from './RezeptFormular';
 import {
   leereRezeptWerte,
+  portionenText,
   rezeptMeta,
   rezeptWerteAus,
+  startrezeptAufloesen,
   type Rezept,
   type RezeptAngaben,
 } from './rezepte';
@@ -22,6 +26,7 @@ import {
   praxisRezeptSpeichern,
   REZEPTE_SCHLUESSEL,
 } from './rezepteApi';
+import { STARTREZEPTE, type Startrezept } from './startrezepte';
 
 /**
  * Rezepte der Praxis in der Bibliothek, allein mit der Fähigkeit „Ernährungsberatung“ (ADR-027
@@ -44,27 +49,30 @@ export function RezeptePage() {
         inKarte
       >
         {(liste) => (
-          <Listenabschnitt
-            titel="Rezepte der Praxis"
-            anzahl={liste.length}
-            leer={{
-              titel: 'Noch keine Rezepte.',
-              aktion: (
-                <ButtonLink to={`${REZEPTE_PFAD}/neu`} variant="secondary">
-                  Anlegen
-                </ButtonLink>
-              ),
-            }}
-          >
-            {liste.map((r) => (
-              <ListRow
-                key={r.id}
-                titel={r.name}
-                meta={rezeptMeta(r)}
-                to={`${REZEPTE_PFAD}/${r.id}`}
-              />
-            ))}
-          </Listenabschnitt>
+          <>
+            <Listenabschnitt
+              titel="Rezepte der Praxis"
+              anzahl={liste.length}
+              leer={{
+                titel: 'Noch keine Rezepte.',
+                aktion: (
+                  <ButtonLink to={`${REZEPTE_PFAD}/neu`} variant="secondary">
+                    Anlegen
+                  </ButtonLink>
+                ),
+              }}
+            >
+              {liste.map((r) => (
+                <ListRow
+                  key={r.id}
+                  titel={r.name}
+                  meta={rezeptMeta(r)}
+                  to={`${REZEPTE_PFAD}/${r.id}`}
+                />
+              ))}
+            </Listenabschnitt>
+            <Mitgeliefert uebernommen={new Set(liste.map((r) => r.starter_key))} />
+          </>
         )}
       </Abfragezustand>
     </>
@@ -167,5 +175,88 @@ function Bearbeiten({ r }: { r: Rezept }) {
         </Rueckfrage>
       }
     />
+  );
+}
+
+/** Die mitgelieferten Rezepte, die die Praxis noch nicht übernommen hat (ANN-844). */
+function Mitgeliefert({ uebernommen }: { uebernommen: ReadonlySet<string | null> }) {
+  const offen = STARTREZEPTE.filter((r) => !uebernommen.has(r.schluessel));
+  if (offen.length === 0) return null;
+  return (
+    <div className="mt-8">
+      <Disclosure summary="Mitgelieferte Rezepte" anzahl={offen.length} kopf="label">
+        <ListRows beschriftung="Mitgelieferte Rezepte">
+          {offen.map((r) => (
+            <ListRow
+              key={r.schluessel}
+              titel={r.name}
+              meta={`${portionenText(r.portionen)} · ${zutatenText(r.zutaten.length)}`}
+              to={`${REZEPTE_PFAD}/mitgeliefert/${r.schluessel}`}
+            />
+          ))}
+        </ListRows>
+      </Disclosure>
+    </div>
+  );
+}
+
+function zutatenText(n: number): string {
+  return n === 1 ? '1 Zutat' : `${n} Zutaten`;
+}
+
+/** `/praxis/rezepte/mitgeliefert/:starterKey`: prüfen und übernehmen, die Werte aus dem Katalog. */
+export function MitgeliefertesRezept() {
+  const { starterKey } = useParams<{ starterKey: string }>();
+  const start = STARTREZEPTE.find((r) => r.schluessel === starterKey);
+  return (
+    <>
+      <Rueckweg standard={REZEPTE_PFAD} beschriftung="Zu den Rezepten" className="mb-3" />
+      <PageHeader title="Rezept übernehmen" />
+      {start ? (
+        <Uebernehmen start={start} />
+      ) : (
+        <Statusmeldung>Dieses Rezept wird nicht mehr mitgeliefert.</Statusmeldung>
+      )}
+    </>
+  );
+}
+
+function Uebernehmen({ start }: { start: Startrezept }) {
+  const navigate = useNavigate();
+  const speichern = useSpeichern(null, null);
+  const aufgeloest = useQuery({
+    queryKey: [...REZEPTE_SCHLUESSEL, 'mitgeliefert', start.schluessel],
+    queryFn: () => startrezeptAufloesen(start, lebensmittelSuchen),
+    staleTime: Infinity,
+  });
+  return (
+    <Abfragezustand
+      abfrage={aufgeloest}
+      laden="Die Zutaten werden gesucht …"
+      fehler="Die Zutaten konnten nicht gesucht werden."
+      inKarte
+    >
+      {({ werte, fehlt }) => (
+        <>
+          {fehlt.length > 0 ? (
+            <Statusmeldung ton="warnung" className="max-w-formular mb-6">
+              Nicht im Katalog gefunden: {fehlt.join(', ')}. Bitte selbst hinzufügen oder weglassen.
+            </Statusmeldung>
+          ) : null}
+          <RezeptFormular
+            beschriftung="Rezept übernehmen"
+            anfang={werte}
+            speichernText="Übernehmen"
+            laeuft={speichern.isPending}
+            fehlermeldung={speichern.error?.message}
+            onSpeichern={(angaben, freigeben) => speichern.mutate({ angaben, freigeben })}
+            onAbbrechen={() => void navigate(REZEPTE_PFAD)}
+            suchen={lebensmittelSuchen}
+            schluessel={['lebensmittel', 'rezept']}
+            zusatz={{ starter_key: start.schluessel }}
+          />
+        </>
+      )}
+    </Abfragezustand>
   );
 }

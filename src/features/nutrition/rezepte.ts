@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { leseZahl } from './eingabe';
-import { je100Schema, portionSchema, type Lebensmittel } from './lebensmittel';
+import { je100Schema, portionSchema, suchschluessel, type Lebensmittel } from './lebensmittel';
+import type { Startrezept } from './startrezepte';
 import { FREIE_MENGE, kcal, type Mengenangabe } from './tagebuch';
 import { zahl } from './texte';
 
@@ -259,4 +260,47 @@ export function rezeptfehler(meldung: string | undefined): string {
   if (m.includes('consent') || m.includes('not allowed'))
     return 'Dafür fehlt gerade das Recht. Bitte die Seite neu laden.';
   return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
+}
+
+/**
+ * Ein mitgeliefertes Rezept als Formular (ANN-844): je Zutat der gleichnamige Treffer der Suche,
+ * sonst der erste aus dem BLS, sonst der erste. Kennt er die Portion nicht, gilt die Menge.
+ */
+export async function startrezeptAufloesen(
+  start: Startrezept,
+  suchen: (begriff: string) => Promise<Lebensmittel[]>,
+): Promise<{ werte: RezeptWerte; fehlt: string[] }> {
+  const treffer = await Promise.all(start.zutaten.map((z) => suchen(z.suche)));
+  const fehlt: string[] = [];
+  const zutaten: Zutat[] = [];
+  start.zutaten.forEach((z, i) => {
+    const liste = treffer[i] ?? [];
+    const f =
+      liste.find((t) => suchschluessel(t.name) === suchschluessel(z.suche)) ??
+      liste.find((t) => t.source === 'bls') ??
+      liste[0];
+    if (!f) {
+      fehlt.push(z.suche);
+      return;
+    }
+    const portion = z.portion ? f.portions.find((x) => x.label === z.portion!.label) : undefined;
+    zutaten.push(
+      portion && z.portion
+        ? {
+            lebensmittel: f,
+            angabe: { art: 'portion', label: portion.label, anzahl: z.portion.anzahl },
+            menge: Math.round(portion.amount * z.portion.anzahl * 10) / 10,
+          }
+        : { lebensmittel: f, angabe: { art: 'menge', menge: z.menge }, menge: z.menge },
+    );
+  });
+  return {
+    werte: {
+      name: start.name,
+      portionen: String(start.portionen),
+      zubereitung: start.zubereitung,
+      zutaten,
+    },
+    fehlt,
+  };
 }

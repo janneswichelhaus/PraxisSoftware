@@ -1042,6 +1042,10 @@ Praxisprozess · offen · 2026-11-03 · — · — · Wiedervorlage: —\
 Technik · offen · 2026-11-06 · — · — · Wiedervorlage: —\
 **Regel.** Eine Zutat trägt Name und Werte ihres Lebensmittels beim Speichern (wie ANN-660); die Anwendung schickt nur Lebensmittel und Menge. Je Portion und je 100 g rechnet der Server aus der Summe; Milliliter zählen wie Gramm, eine Portion ist die Gesamtmenge durch die Portionen, höchstens 5000 g. Fehlt ein Wert an einer Zutat, bleibt er am Rezept leer. **Grundlage.** ADR-027 Punkt 9. **Anker.** `app.nutrition_recipe_json`.
 
+### ANN-844 — Mitgelieferte Rezepte: Suchbegriff und Menge, Werte aus dem Katalog
+Technik · offen · 2026-11-06 · — · — · Wiedervorlage: Sichtung der Startrezepte (Jannes)\
+**Regel.** 31 Rezepte sind Inhalt im Build (wie ANN-382), je Zutat Suchbegriff und Menge. Beim Übernehmen nimmt das Formular den gleichnamigen Treffer, sonst den ersten aus dem BLS; die Beratung prüft, je Praxis einmal (`starter_key`). **Grundlage.** ADR-027 Punkte 9, 14. **Anker.** `startrezeptAufloesen` in `src/features/nutrition/rezepte.ts`.
+
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
 | --- | --- | --- | --- |
