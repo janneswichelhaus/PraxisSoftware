@@ -1044,7 +1044,7 @@ Technik · offen · 2026-11-06 · — · — · Wiedervorlage: —\
 
 ### ANN-845 — Plan: Tage im Wechsel ab Beginn
 Praxisprozess · offen · 2026-11-06 · — · — · Wiedervorlage: —\
-**Regel.** 1 bis 7 Tage im Wechsel ab Beginn, je Beratung einer offen, ein neuer beendet ihn am Vortag, Beenden jeden noch geltenden; Rezepte der Praxis nur über einen geltenden oder künftigen Plan, Abgelegtes bleibt im Plan, nie im Tagebuch. **Grundlage.** ADR-027 Punkt 14. **Anker.** `app.nutrition_plan_day_json`.
+**Regel.** 1 bis 7 Tage im Wechsel ab Beginn, je Beratung einer offen, ein neuer beendet ihn am Vortag, Beenden jeden noch geltenden; Rezepte der Praxis, auch abgelegte, nur über einen geltenden oder künftigen Plan; abgelegte Lebensmittel bleiben im Plan, nie im Tagebuch. **Grundlage.** ADR-027 Punkt 14. **Anker.** `app.nutrition_plan_day_json`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |

@@ -50,8 +50,10 @@ async function fehler(versuch: Promise<unknown>): Promise<string> {
   return 'kein Fehler';
 }
 
+const PORRIDGE = 'f1f1f1f1-f1f1-4f1f-8f1f-000000000001';
 let REZEPT = '';
 let APFEL = '';
+let BANANE = '';
 let NUDELN = '';
 let HEUTE = '';
 
@@ -137,6 +139,7 @@ describe('Pläne der Beratung (ERN-019)', () => {
       ).rows[0]!.id;
     APFEL = await katalog('Apfel roh');
     NUDELN = await katalog('Vollkornnudeln gekocht');
+    BANANE = await katalog('Banane roh');
     const hafer = await katalog('Haferflocken');
     const { rows } = await asUserCommitted<{ id: string }>(
       users.ownerTherapist,
@@ -356,6 +359,9 @@ describe('Pläne der Beratung (ERN-019)', () => {
     const offen = (await plaene()).find((p) => p.ended_on === null)!;
     await asUserCommitted(users.ownerTherapist, BEENDEN, [offen.id]);
     expect(await vorschlag()).toBeNull();
+    // Gestern galt er noch; sein Rezept lässt sich nicht mehr eintragen und fehlt im Vorschlag.
+    const gestern = await vorschlag(await tagPlus(-1));
+    expect(gestern!.meals.flatMap((m) => m.items).map((p) => p.kind)).toEqual(['catalog']);
     expect(
       await fehler(
         asUser(users.plattformErika, EINTRAGEN, [
@@ -479,14 +485,14 @@ describe('Pläne der Beratung (ERN-019)', () => {
     }
   });
 
-  it('ein abgelegtes Lebensmittel bleibt in Vorlage und Plan; ins Tagebuch kommt es nicht, auch nicht als Vorschlag', async () => {
-    const PORRIDGE = 'f1f1f1f1-f1f1-4f1f-8f1f-000000000001';
+  it('Abgelegtes und Zurückgezogenes bleibt in Vorlage und Plan; ins Tagebuch kommt es nicht, auch nicht als Vorschlag', async () => {
     const plan = {
       title: 'Mit Porridge',
       days: [
         {
           breakfast: [
             { kind: 'practice', id: PORRIDGE, portion_label: '1 Schale', portion_count: 1 },
+            { kind: 'catalog', id: BANANE, amount: 120 },
           ],
         },
       ],
@@ -499,51 +505,81 @@ describe('Pläne der Beratung (ERN-019)', () => {
     await asUserCommitted(users.ownerTherapist, 'select public.archive_practice_food($1::uuid)', [
       PORRIDGE,
     ]);
-    const eintragen = () =>
-      asUser(users.plattformErika, EINTRAGEN, [
-        ZUGANG,
-        HEUTE,
-        'breakfast',
-        'practice',
-        PORRIDGE,
+    await asPostgres('update public.food_catalog set retired_at = now() where id = $1', [BANANE]);
+    try {
+      const eintragen = (art: string, id: string, menge: number | null, portion: string | null) =>
+        asUser(users.plattformErika, EINTRAGEN, [
+          ZUGANG,
+          HEUTE,
+          'breakfast',
+          art,
+          id,
+          menge,
+          portion,
+          portion ? 1 : null,
+        ]);
+      await asUserCommitted(users.ownerTherapist, VORLAGE_SPEICHERN, [
+        rows[0]!.id,
+        JSON.stringify(plan),
         null,
-        '1 Schale',
-        1,
       ]);
-    expect(await fehler(eintragen())).toBe('P0002');
-    await asUserCommitted(users.ownerTherapist, VORLAGE_SPEICHERN, [
-      rows[0]!.id,
-      JSON.stringify(plan),
-      null,
-    ]);
-    await asUserCommitted(users.ownerTherapist, ZUWEISEN, [PROFIL, JSON.stringify(plan), HEUTE]);
-    // Eintragen bleibt gesperrt wie bei jedem Abgelegten; der Vorschlag lässt es weg.
-    expect(await fehler(eintragen())).toBe('P0002');
-    const heute = await vorschlag();
-    expect(heute!.title).toBe('Mit Porridge');
-    expect(heute!.meals.flatMap((m) => m.items)).toEqual([]);
-    // Im Plan steht es weiter, auf der Plattform mit denselben Schlüsseln wie ein Lebensmittel des
-    // Katalogs, ohne Barcode.
-    const { rows: sicht } = await asUser<{
-      d: {
-        profile: { plans: { title: string; days: { meals: { items: { food: object }[] }[] }[] }[] };
-      };
-    }>(users.plattformErika, 'select public.platform_nutrition($1::uuid) as d', [ZUGANG]);
-    const porridge = sicht[0]!.d.profile.plans.find((x) => x.title === 'Mit Porridge')!;
-    const essen = porridge.days[0]!.meals.flatMap((m) => m.items)[0]!.food;
-    expect(Object.keys(essen).sort()).toEqual(
-      [
-        'base_unit',
-        'brand',
-        'id',
-        'kind',
-        'name',
-        'per_100',
-        'portions',
-        'source',
-        'source_code',
-      ].sort(),
+      await asUserCommitted(users.ownerTherapist, ZUWEISEN, [PROFIL, JSON.stringify(plan), HEUTE]);
+      // Eintragen bleibt gesperrt wie bei jedem Abgelegten; der Vorschlag lässt beides weg.
+      expect(await fehler(eintragen('practice', PORRIDGE, null, '1 Schale'))).toBe('P0002');
+      expect(await fehler(eintragen('catalog', BANANE, 120, null))).toBe('P0002');
+      const heute = await vorschlag();
+      expect(heute!.title).toBe('Mit Porridge');
+      expect(heute!.meals.flatMap((m) => m.items)).toEqual([]);
+      // Im Plan steht beides weiter, auf der Plattform mit denselben Schlüsseln, ohne Barcode.
+      const { rows: sicht } = await asUser<{
+        d: {
+          profile: {
+            plans: { title: string; days: { meals: { items: { food: object }[] }[] }[] }[];
+          };
+        };
+      }>(users.plattformErika, 'select public.platform_nutrition($1::uuid) as d', [ZUGANG]);
+      const porridge = sicht[0]!.d.profile.plans.find((x) => x.title === 'Mit Porridge')!;
+      const lebensmittel = porridge.days[0]!.meals.flatMap((m) => m.items).map((i) => i.food);
+      expect(lebensmittel).toHaveLength(2);
+      for (const essen of lebensmittel) {
+        expect(Object.keys(essen).sort()).toEqual(
+          [
+            'base_unit',
+            'brand',
+            'id',
+            'kind',
+            'name',
+            'per_100',
+            'portions',
+            'source',
+            'source_code',
+          ].sort(),
+        );
+      }
+    } finally {
+      await asPostgres('update public.food_catalog set retired_at = null where id = $1', [BANANE]);
+    }
+  });
+
+  it('Zuweisen und Beenden lassen beendete Pläne unberührt', async () => {
+    const { rows } = await asPostgres<{ id: string; updated_at: string }>(
+      `insert into public.nutrition_plans (organization_id, profile_id, title, day_count, starts_on,
+         ended_on, created_by, updated_by)
+       values ($1, $2, 'Alt', 1, $3::date - 10, $3::date - 5, $4, $4)
+       returning id, updated_at::text`,
+      [SEED.organizationId, PROFIL, HEUTE, users.ownerTherapist],
     );
+    const { rows: neu } = await asUserCommitted<{ id: string }>(users.ownerTherapist, ZUWEISEN, [
+      PROFIL,
+      JSON.stringify(woche({ title: 'Neu' })),
+      HEUTE,
+    ]);
+    await asUserCommitted(users.ownerTherapist, BEENDEN, [neu[0]!.id]);
+    const { rows: danach } = await asPostgres<{ ended_on: string; updated_at: string }>(
+      'select ended_on::text, updated_at::text from public.nutrition_plans where id = $1',
+      [rows[0]!.id],
+    );
+    expect(danach[0]).toEqual({ ended_on: await tagPlus(-5), updated_at: rows[0]!.updated_at });
   });
 
   it('Büro, Therapie, Teamleitung, Trainingsbetreuung, Plattform: nichts', async () => {
@@ -626,6 +662,19 @@ describe('Pläne der Beratung (ERN-019)', () => {
         ]),
       ),
     ).toBe('P0002');
+    // Ein Lebensmittel einer anderen Praxis nimmt kein Plan, auch kein abgelegtes.
+    expect(
+      await fehler(
+        asUser(FREMDE_ORGANISATION.owner, VORLAGE_SPEICHERN, [
+          null,
+          JSON.stringify({
+            title: 'Fremd',
+            days: [{ lunch: [{ kind: 'practice', id: PORRIDGE, amount: 100 }] }],
+          }),
+          null,
+        ]),
+      ),
+    ).toBe('P0002');
     // Ein Rezept einer anderen Praxis nimmt kein Plan.
     expect(
       await fehler(
@@ -642,7 +691,12 @@ describe('Pläne der Beratung (ERN-019)', () => {
   });
 
   it('nach dem Widerruf: kein Zuweisen, aber beenden; Auskunft und Export tragen die Pläne', async () => {
-    // Ein Nachfolger in zehn Tagen: Beenden nimmt ab heute auch den laufenden Plan.
+    // Ein laufender Plan und sein Nachfolger in zehn Tagen: Beenden nimmt ab heute beide.
+    await asUserCommitted(users.ownerTherapist, ZUWEISEN, [
+      PROFIL,
+      JSON.stringify(woche({ title: 'Läuft' })),
+      HEUTE,
+    ]);
     await asUserCommitted(users.ownerTherapist, ZUWEISEN, [
       PROFIL,
       JSON.stringify(woche({ title: 'Danach' })),

@@ -174,10 +174,13 @@ as $$
              select jsonb_agg(app.nutrition_plan_item_json(i) order by i.position)
              from public.nutrition_plan_items i
              where i.plan_id = p_plan_id and i.day_number = p_day and i.meal = m.meal
-               -- Abgelegtes und Zurückgezogenes bleibt im Plan, kommt aber nie ins Tagebuch.
-               and (not p_eintragbar or i.item_kind = 'recipe'
-                    or app.nutrition_practice_food(i.organization_id, i.item_kind,
-                                                   coalesce(i.catalog_food_id, i.custom_food_id)) is not null)
+               -- Der Vorschlag trägt nur, was das Tagebuch annimmt: dieselbe Prüfung wie beim Eintragen.
+               and (not p_eintragbar
+                    or app.nutrition_diary_food(
+                         (select pr from public.nutrition_profiles pr
+                          join public.nutrition_plans pl on pl.profile_id = pr.id
+                          where pl.id = p_plan_id),
+                         i.item_kind, coalesce(i.recipe_id, i.catalog_food_id, i.custom_food_id)) is not null)
            ), '[]'::jsonb))
          order by m.nr)
   from unnest(array['breakfast', 'lunch', 'dinner', 'snack']) with ordinality m(meal, nr)
