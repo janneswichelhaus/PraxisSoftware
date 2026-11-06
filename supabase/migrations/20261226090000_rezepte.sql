@@ -120,7 +120,7 @@ insert into public.data_registry (
 insert into public.retention_assignments (table_name, class_key, deletion_mode, scope_note, sort_order)
 values
   ('nutrition_recipes', 'ernaehrungsberatung', 'ueber_elterndatensatz',
-   'Eigene Rezepte der Person (ERN-019, owner_kind person): fallen mit ihrem Ernährungsprofil (ADR-027 Punkt 6).', 264),
+   'Eigene Rezepte der Person (ERN-018, owner_kind person): fallen mit ihrem Ernährungsprofil (ADR-027 Punkt 6).', 264),
   ('nutrition_recipes', 'betriebsdaten', 'keine',
    'Rezepte der Praxis (ERN-016, owner_kind practice): Inhalt ohne Personenbezug, abgelegt statt gelöscht.', 265);
 
