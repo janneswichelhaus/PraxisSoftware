@@ -8,6 +8,7 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Segment } from '@/components/ui/Segment';
+import { Pfeilzeichen } from '@/components/ui/Tagebuchbausteine';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import {
   offenerPlan,
@@ -124,7 +125,7 @@ function Inhalt({
                       key={`${p.kind}-${p.id}-${i}`}
                       titel={p.name}
                       meta={positionMeta(p, ohneZahlen)}
-                      {...(r ? { onClick: () => setRezept(r) } : {})}
+                      {...(r ? { onClick: () => setRezept(r), status: WEITER } : {})}
                     />
                   );
                 })}
@@ -145,6 +146,11 @@ function Inhalt({
     </>
   );
 }
+
+/** Ein Rezept öffnet seine Zutaten und Zubereitung; der Pfeil sagt es (wie unter „Mehr“). */
+const WEITER = (
+  <Pfeilzeichen richtung="rechts" className="text-ink-muted size-5.5 max-[23rem]:hidden" />
+);
 
 /** Ein Rezept zum Nachkochen: je Portion, Zutaten für alle Portionen, Zubereitung. */
 function Rezeptdetail({ rezept, ohneZahlen }: { rezept: Rezept; ohneZahlen: boolean }) {

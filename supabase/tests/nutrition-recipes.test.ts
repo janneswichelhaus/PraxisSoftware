@@ -85,6 +85,8 @@ describe('Rezepte der Praxis (ERN-016)', () => {
   beforeAll(async () => {
     await resetDatabase();
     await fremdeOrganisation();
+    // Ohne die Rezepte und Pläne des Seeds: die Fälle zählen ihre eigenen.
+    await asPostgres('delete from public.nutrition_plans; delete from public.nutrition_recipes;');
     HAFER = await katalog('Haferflocken');
     MILCH = await katalog('Milch 1,5 % Fett');
     BANANE = await katalog('Banane roh');

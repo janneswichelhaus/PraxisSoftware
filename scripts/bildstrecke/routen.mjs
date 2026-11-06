@@ -58,6 +58,10 @@ export const IDS = Object.freeze({
   /** Ein Lebensmittel der Praxis und eines von Erika (ERN-005). */
   lebensmittelPraxis: 'f1f1f1f1-f1f1-4f1f-8f1f-000000000001',
   lebensmittelErika: 'f1f1f1f1-f1f1-4f1f-8f1f-000000000002',
+  /** Ein Rezept der Praxis, Erikas eigenes und die Planvorlage der Praxis. */
+  rezeptPraxis: 'f3f3f3f3-f3f3-4f3f-8f3f-000000000001',
+  rezeptErika: 'f3f3f3f3-f3f3-4f3f-8f3f-000000000003',
+  planvorlage: 'f4f4f4f4-f4f4-4f4f-8f4f-000000000001',
   /**
    * Eine wohlgeformte Kennung ohne Zeile - für Seiten, zu denen der Seed
    * nichts hat. Bewusst kein Null-UUID: Die Seiten prüfen das Format.
@@ -217,6 +221,14 @@ export const ROUTEN = Object.freeze([
     pfad: `${akte(erika)}/ernaehrung/termin`,
     bereich: 'Akte',
     etikett: 'Beratungstermin anlegen',
+    konten: ['owner'],
+  },
+  // Erikas offener Plan (Seed): ändern oder beenden.
+  {
+    muster: '/patienten/:patientId/ernaehrung/plan',
+    pfad: `${akte(erika)}/ernaehrung/plan`,
+    bereich: 'Akte',
+    etikett: 'Plan ändern',
     konten: ['owner'],
   },
   {
@@ -568,6 +580,56 @@ export const ROUTEN = Object.freeze([
     etikett: 'Lebensmittel ändern',
     konten: ['owner'],
   },
+  // Rezepte und Planvorlagen der Praxis, nur die Beratung (ADR-027 Punkt 14).
+  {
+    muster: '/praxis/rezepte',
+    pfad: '/praxis/rezepte',
+    bereich: 'Organisation',
+    etikett: 'Rezepte',
+    konten: ['owner'],
+  },
+  {
+    muster: '/praxis/rezepte/neu',
+    pfad: '/praxis/rezepte/neu',
+    bereich: 'Organisation',
+    etikett: 'Rezept anlegen',
+    konten: ['owner'],
+  },
+  {
+    muster: '/praxis/rezepte/mitgeliefert/:starterKey',
+    pfad: '/praxis/rezepte/mitgeliefert/apfel-walnuesse',
+    bereich: 'Organisation',
+    etikett: 'Mitgeliefertes Rezept übernehmen',
+    konten: ['owner'],
+  },
+  {
+    muster: '/praxis/rezepte/:recipeId',
+    pfad: `/praxis/rezepte/${IDS.rezeptPraxis}`,
+    bereich: 'Organisation',
+    etikett: 'Rezept ändern',
+    konten: ['owner'],
+  },
+  {
+    muster: '/praxis/ernaehrungsplaene',
+    pfad: '/praxis/ernaehrungsplaene',
+    bereich: 'Organisation',
+    etikett: 'Ernährungspläne',
+    konten: ['owner'],
+  },
+  {
+    muster: '/praxis/ernaehrungsplaene/neu',
+    pfad: '/praxis/ernaehrungsplaene/neu',
+    bereich: 'Organisation',
+    etikett: 'Planvorlage anlegen',
+    konten: ['owner'],
+  },
+  {
+    muster: '/praxis/ernaehrungsplaene/:planId',
+    pfad: `/praxis/ernaehrungsplaene/${IDS.planvorlage}`,
+    bereich: 'Organisation',
+    etikett: 'Planvorlage ändern',
+    konten: ['owner'],
+  },
   {
     muster: '/auf-dem-geraet',
     pfad: '/auf-dem-geraet',
@@ -662,6 +724,15 @@ export const ROUTEN = Object.freeze([
     bereich: 'Übungen und Training',
     etikett: 'Beratungstermin anlegen (Training, ohne Beratung)',
     konten: ['owner'],
+  },
+  // Tina hat keine Beratung: der Zustand ohne laufende Beratung.
+  {
+    muster: '/training/:relationshipId/ernaehrung/plan',
+    pfad: `/training/${IDS.trainingTina}/ernaehrung/plan`,
+    bereich: 'Übungen und Training',
+    etikett: 'Plan (Training)',
+    konten: ['owner'],
+    ohneDaten: 'Tina hat keine laufende Ernährungsberatung; die Seite zeigt den Leerzustand.',
   },
   {
     muster: '/training/:relationshipId/ernaehrung/bearbeiten',
@@ -1360,6 +1431,35 @@ export const ROUTEN = Object.freeze([
     pfad: `/p/ernaehrung/lebensmittel/${IDS.lebensmittelErika}?bereich=treatment`,
     bereich: 'Plattform',
     etikett: 'Plattform – Eigenes Lebensmittel ändern',
+    konten: ['plattform'],
+  },
+  // Erikas Rezepte und ihr Plan (Seed: zwei Tage seit gestern, heute Tag 2).
+  {
+    muster: '/p/ernaehrung/rezepte',
+    pfad: '/p/ernaehrung/rezepte?bereich=treatment',
+    bereich: 'Plattform',
+    etikett: 'Plattform – Rezepte',
+    konten: ['plattform'],
+  },
+  {
+    muster: '/p/ernaehrung/rezepte/neu',
+    pfad: '/p/ernaehrung/rezepte/neu?bereich=treatment',
+    bereich: 'Plattform',
+    etikett: 'Plattform – Eigenes Rezept anlegen',
+    konten: ['plattform'],
+  },
+  {
+    muster: '/p/ernaehrung/rezepte/:recipeId',
+    pfad: `/p/ernaehrung/rezepte/${IDS.rezeptErika}?bereich=treatment`,
+    bereich: 'Plattform',
+    etikett: 'Plattform – Eigenes Rezept ändern',
+    konten: ['plattform'],
+  },
+  {
+    muster: '/p/ernaehrung/plan',
+    pfad: '/p/ernaehrung/plan?bereich=treatment',
+    bereich: 'Plattform',
+    etikett: 'Plattform – Plan',
     konten: ['plattform'],
   },
   {

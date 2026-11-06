@@ -69,6 +69,8 @@ async function heute(): Promise<string> {
 describe('Eigene Rezepte der Person (ERN-018)', () => {
   beforeAll(async () => {
     await resetDatabase();
+    // Ohne die Rezepte und Pläne des Seeds: die Fälle zählen ihre eigenen.
+    await asPostgres('delete from public.nutrition_plans; delete from public.nutrition_recipes;');
     const { rows } = await asPostgres<{ id: string }>(
       `select id from public.food_catalog where name = 'Haferflocken' and source = 'bls'`,
     );

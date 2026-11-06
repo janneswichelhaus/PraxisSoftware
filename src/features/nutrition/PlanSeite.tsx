@@ -108,7 +108,6 @@ export function PlanSeite({ art }: { art: Verhaeltnisart }) {
   return (
     <>
       <Rueckweg standard={reiter} beschriftung="Zur Ernährung" className="mb-3" />
-      <PageHeader title="Plan" />
       <Abfragezustand
         abfrage={sicht}
         laden="Die Beratung wird geladen …"
@@ -157,21 +156,27 @@ function Inhalt({
 }) {
   const offen = offenerPlan(profil.plans);
   return offen ? (
-    <Aendern
-      art={art}
-      verhaeltnisId={verhaeltnisId}
-      profil={profil}
-      plan={offen}
-      rezepte={rezepte}
-    />
+    <>
+      <PageHeader title="Plan ändern" />
+      <Aendern
+        art={art}
+        verhaeltnisId={verhaeltnisId}
+        profil={profil}
+        plan={offen}
+        rezepte={rezepte}
+      />
+    </>
   ) : (
-    <Zuweisen
-      art={art}
-      verhaeltnisId={verhaeltnisId}
-      profil={profil}
-      heute={heute}
-      rezepte={rezepte}
-    />
+    <>
+      <PageHeader title="Plan zuweisen" />
+      <Zuweisen
+        art={art}
+        verhaeltnisId={verhaeltnisId}
+        profil={profil}
+        heute={heute}
+        rezepte={rezepte}
+      />
+    </>
   );
 }
 

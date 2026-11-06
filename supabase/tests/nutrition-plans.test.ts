@@ -103,6 +103,8 @@ describe('Pläne der Beratung (ERN-019)', () => {
   beforeAll(async () => {
     await resetDatabase();
     await fremdeOrganisation();
+    // Ohne die Rezepte und Pläne des Seeds: die Fälle zählen ihre eigenen.
+    await asPostgres('delete from public.nutrition_plans; delete from public.nutrition_recipes;');
     const katalog = async (name: string) =>
       (
         await asPostgres<{ id: string }>(
