@@ -102,6 +102,7 @@ function tagebuch(teil: Partial<EigenesTagebuch> = {}, tag: Partial<EigenesTageb
     can_delete: true,
     glass_ml: 250,
     hide_numbers: false,
+    suggestions: null,
     recent: [],
     favorites: [],
     targets: { energy_kcal: 1466, protein_g: 59, fat_g: 49, carbohydrate_g: 197, water_ml: 2570 },
@@ -453,5 +454,94 @@ describe('Scan aus dem Tag (ANN-842)', () => {
     await nutzer.click(within(fenster).getByRole('button', { name: 'Abbrechen' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(tagebuchEintragen).not.toHaveBeenCalled();
+  });
+});
+
+describe('Vorschlag aus dem Plan (ANN-845)', () => {
+  const BREI = {
+    kind: 'recipe' as const,
+    id: 'rezept-1',
+    source: 'recipe' as const,
+    name: 'Haferbrei mit Beeren',
+    brand: null,
+    base_unit: 'g' as const,
+    per_100: {
+      energy_kcal: 103.7,
+      protein_g: 4,
+      fat_g: 2,
+      carbohydrate_g: 16.3,
+      sugar_g: null,
+      fibre_g: null,
+      saturated_fat_g: null,
+      salt_g: null,
+    },
+    portions: [{ label: '1 Portion', amount: 300 }],
+  };
+
+  function mitVorschlag(teil: Partial<EigenesTagebuch> = {}) {
+    ladeTagebuch.mockResolvedValue(
+      tagebuch({
+        suggestions: {
+          plan_id: 'plan-1',
+          title: 'Woche 1',
+          day: 2,
+          day_count: 7,
+          meals: [
+            {
+              meal: 'breakfast',
+              items: [
+                {
+                  kind: 'recipe',
+                  id: 'rezept-1',
+                  name: 'Haferbrei mit Beeren',
+                  amount: 300,
+                  portion_label: '1 Portion',
+                  portion_count: 1,
+                  energy_kcal: 311,
+                  food: BREI,
+                },
+              ],
+            },
+            { meal: 'lunch', items: [] },
+            { meal: 'dinner', items: [] },
+            { meal: 'snack', items: [] },
+          ],
+        },
+        ...teil,
+      }),
+    );
+  }
+
+  it('trägt das Rezept des Plans mit einem Tipp ein', async () => {
+    const nutzer = userEvent.setup();
+    tagebuchEintragen.mockResolvedValue(undefined);
+    mitVorschlag();
+    renderWithProviders(<Tagebuch zugang={ZUGANG} />, ADRESSE);
+    expect(await screen.findByRole('heading', { name: 'Aus Ihrem Plan' })).toBeVisible();
+    expect(screen.getByText('Tag 2 von 7')).toBeVisible();
+    await nutzer.click(
+      screen.getByRole('button', { name: 'Haferbrei mit Beeren eintragen (1 Portion)' }),
+    );
+    await waitFor(() =>
+      expect(tagebuchEintragen).toHaveBeenCalledWith(
+        ZUGANG.access_id,
+        HEUTE,
+        'breakfast',
+        expect.objectContaining({ kind: 'recipe', id: 'rezept-1' }),
+        { art: 'portion', label: '1 Portion', anzahl: 1 },
+      ),
+    );
+  });
+
+  it('ohne Schreibrecht und ohne Vorschlag steht der Abschnitt nicht da', async () => {
+    mitVorschlag({ can_write: false });
+    const { unmount } = renderWithProviders(<Tagebuch zugang={ZUGANG} />, ADRESSE);
+    expect(await screen.findByRole('heading', { name: 'Tagebuch', level: 1 })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Aus Ihrem Plan' })).toBeNull();
+    unmount();
+    ladeTagebuch.mockResolvedValue(tagebuch());
+    renderWithProviders(<Tagebuch zugang={ZUGANG} />, ADRESSE);
+    expect(await screen.findByRole('heading', { name: 'Tagebuch', level: 1 })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Aus Ihrem Plan' })).toBeNull();
   });
 });

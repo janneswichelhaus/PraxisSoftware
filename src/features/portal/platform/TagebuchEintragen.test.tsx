@@ -86,6 +86,7 @@ function tagebuch(teil: Partial<EigenesTagebuch> = {}): EigenesTagebuch {
     can_delete: true,
     glass_ml: 250,
     hide_numbers: false,
+    suggestions: null,
     recent: [{ food: HAFERFLOCKEN, amount: 50, portion_label: 'Portion', portion_count: 1 }],
     favorites: [],
     targets: null,
@@ -128,6 +129,7 @@ function ernaehrung(teil: Partial<EigeneErnaehrung> = {}): EigeneErnaehrung {
       targets: { status: 'missing', missing: ['weight'] },
       own_foods: [],
       own_recipes: [],
+      plans: [],
     },
     ...teil,
   };

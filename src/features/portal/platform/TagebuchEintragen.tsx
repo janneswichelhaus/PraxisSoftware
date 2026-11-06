@@ -25,6 +25,7 @@ import {
   Trefferzeile,
 } from '@/features/nutrition/LebensmittelSuche';
 import type { Lebensmittel } from '@/features/nutrition/lebensmittel';
+import { vorschlagsWahl } from '@/features/nutrition/plaene';
 import { rezeptAlsLebensmittel } from '@/features/nutrition/rezepte';
 import {
   energieDerMenge,
@@ -215,6 +216,8 @@ function Suche({
 }) {
   const ohneZahlen = tagebuch.hide_numbers;
   const rezepte = ernaehrung.profile.own_recipes.map(rezeptAlsLebensmittel);
+  // Der Vorschlag des Plans für diese Mahlzeit, mit einem Tipp eingetragen (ANN-845).
+  const ausDemPlan = tagebuch.suggestions?.meals.find((m) => m.meal === mahlzeit)?.items ?? [];
   const bestaetigt = (f: Lebensmittel) => eingetragen !== null && gleich(f, eingetragen);
   const haken = (f: Lebensmittel) => (bestaetigt(f) ? <Eintragshaken /> : undefined);
   const verbunden = useIstVerbunden();
@@ -275,6 +278,24 @@ function Suche({
               Eintragen geht wieder mit Verbindung.
             </p>
           )}
+          {ausDemPlan.length > 0 ? (
+            <Listenabschnitt titel="Aus Ihrem Plan">
+              {ausDemPlan.map((p, i) => (
+                <Schnellzeile
+                  key={`plan-${p.kind}-${p.id}-${i}`}
+                  zugang={zugang}
+                  s={vorschlagsWahl(p)}
+                  tag={tag}
+                  mahlzeit={mahlzeit}
+                  ohneZahlen={ohneZahlen}
+                  onOeffnen={oeffnen}
+                  onEingetragen={onEingetragen}
+                  bestaetigt={bestaetigt(p.food)}
+                  ohneNetz={verbunden ? undefined : ohneNetzId}
+                />
+              ))}
+            </Listenabschnitt>
+          ) : null}
           {tagebuch.favorites.length > 0 ? (
             <Listenabschnitt titel="Favoriten">
               {tagebuch.favorites.map((s) => (
@@ -382,7 +403,7 @@ function Suche({
  * Eine Zeile aus zuletzt oder den Favoriten: der Tipp auf die Zeile öffnet
  * die Menge, „+“ trägt die Menge vom letzten Mal sofort ein.
  */
-function Schnellzeile({
+export function Schnellzeile({
   zugang,
   s,
   tag,
@@ -398,7 +419,8 @@ function Schnellzeile({
   tag: string;
   mahlzeit: Mahlzeit;
   ohneZahlen: boolean;
-  onOeffnen: (f: Lebensmittel) => void;
+  /** Ohne Angabe ist die Zeile kein Ziel; „+“ trägt trotzdem ein. */
+  onOeffnen?: (f: Lebensmittel) => void;
   onEingetragen: (f: Lebensmittel) => void;
   /** Gerade eingetragen: Statt „+“ steht eine Weile der Haken (ANN-813). */
   bestaetigt: boolean;
@@ -424,7 +446,7 @@ function Schnellzeile({
       meta={[text, menge && !ohneZahlen ? kcal(energieDerMenge(s.food, menge.menge)) : null]
         .filter(Boolean)
         .join(' · ')}
-      onClick={() => onOeffnen(s.food)}
+      {...(onOeffnen ? { onClick: () => onOeffnen(s.food) } : {})}
       {...(menge
         ? {
             aktion: (

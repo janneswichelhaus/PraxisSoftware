@@ -21,6 +21,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { GESPERRT, KAESTCHEN_GESPERRT, Pfeilzeichen } from '@/components/ui/Tagebuchbausteine';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { leseZahl } from '@/features/nutrition/eingabe';
+import { offenerPlan, planTag, type Plan as Ernaehrungsplan } from '@/features/nutrition/plaene';
 import { Rechenweg } from '@/features/nutrition/Rechenweg';
 import { kcal } from '@/features/nutrition/tagebuch';
 import { ERNAEHRUNG_EINWILLIGUNG, FEHLT_TEXTE, kg, zahl } from '@/features/nutrition/texte';
@@ -43,6 +44,7 @@ import { EINWILLIGUNGSFASSUNG } from './einwilligungstexte';
 import { PLATTFORM_PFAD } from './pfade';
 import { literZahl, literZiel, tagebuchVonDerErnaehrung } from './tagebuchAdresse';
 import { fest, tagUndMonat } from './zeit';
+import { formatDate } from '@/lib/datum';
 
 /**
  * Ernährung auf der Plattform (ADR-027): das Tagebuch von heute als Hauptsache, Gewicht, Zielwerte
@@ -118,6 +120,7 @@ function Inhalt({
   // Die Hauptsache nur, wo eingetragen werden kann; sonst steht der Zustand unter „Mehr“.
   const mitHeute = daten.can_write && p.diary_enabled && p.ended_on === null;
   const eigene = p.own_foods.length;
+  const plan = offenerPlan(p.plans);
   const rezepte = p.own_recipes.length;
   return (
     <div className="mt-10 flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:mt-12 [.plattform-schrift[data-rechner]_&]:gap-12">
@@ -129,6 +132,18 @@ function Inhalt({
         </Statusmeldung>
       ) : null}
       {mitHeute ? <Heute zugang={zugang} ziel={tagebuchVonDerErnaehrung(search)} /> : null}
+      {plan ? (
+        <Abschnitt titel="Ihr Plan">
+          <ListRows rahmen={false} className={`border-line border-y ${ZEILEN}`}>
+            <ListRow
+              to={`${PLATTFORM_PFAD}/ernaehrung/plan${search}`}
+              titel={plan.title}
+              meta={planMeta(plan, daten.today)}
+              status={WEITER}
+            />
+          </ListRows>
+        </Abschnitt>
+      ) : null}
       <Gewicht zugang={zugang} daten={daten} />
       <Abschnitt titel="Ihre Zielwerte">
         <Zielwerte zielwerte={p.targets} />
@@ -670,4 +685,13 @@ function Ladezustand() {
       </span>
     </SkelettBereich>
   );
+}
+
+/** „Heute Tag 2 von 7“, „Ab 10.11.2026“ oder „Ein Vorschlag für jeden Tag“. */
+function planMeta(plan: Ernaehrungsplan, heute: string): string {
+  const tag = planTag(plan, heute);
+  if (tag === null) return `Ab ${formatDate(plan.starts_on)}`;
+  return plan.day_count > 1
+    ? `Heute Tag ${tag} von ${plan.day_count}`
+    : 'Ein Vorschlag für jeden Tag';
 }

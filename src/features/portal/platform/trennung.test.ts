@@ -64,8 +64,8 @@ const ERLAUBT: readonly RegExp[] = [
   /^@\/features\/nutrition\/tagebuch$/,
   // Der Barcodedialog liest nur die Kamera, ohne Datenzugriff; nachgeschlagen wird über `api.ts`.
   /^@\/features\/nutrition\/Barcodedialog$/,
-  // Form, Prüfung und Formular der Rezepte, ohne Datenzugriff; gespeichert wird über `api.ts`.
-  /^@\/features\/nutrition\/(rezepte|RezeptFormular)$/,
+  // Form, Prüfung und Formular der Rezepte und Pläne, ohne Datenzugriff; geladen wird über `api.ts`.
+  /^@\/features\/nutrition\/(rezepte|RezeptFormular|plaene)$/,
 ];
 
 function quelldateien(): string[] {

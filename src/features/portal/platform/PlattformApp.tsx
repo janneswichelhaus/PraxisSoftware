@@ -47,6 +47,7 @@ import { Gewohnheiten } from './Gewohnheiten';
 import { Ernaehrung } from './Ernaehrung';
 import { EigenesLebensmittelAendern, EigenesLebensmittelNeu, Lebensmittel } from './Lebensmittel';
 import { EigenesRezeptAendern, EigenesRezeptNeu, Rezepte } from './Rezepte';
+import { Plan } from './Plan';
 import { Tagebuch } from './Tagebuch';
 import { TagebuchEintragen } from './TagebuchEintragen';
 import { zahl as zahlDeutsch } from '@/features/nutrition/texte';
@@ -383,6 +384,17 @@ function Geruest({
                   bereiche={lesbar}
                   zugaenge={zugaenge}
                   seite={(z) => <EigenesLebensmittelAendern zugang={z} />}
+                />
+              }
+            />
+            {/* Der Plan der Beratung (ADR-027 Punkt 14). */}
+            <Route
+              path={`${PLATTFORM_PFAD}/ernaehrung/plan`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Plan zugang={z} />}
                 />
               }
             />

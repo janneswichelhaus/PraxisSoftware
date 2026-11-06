@@ -19,6 +19,7 @@ import {
 } from '@/features/nutrition/tagebuch';
 import { GESCHLECHTER, ZIELE, zielwerteSchema } from '@/features/nutrition/zielwerte';
 import { rezeptfehler, rezeptSchema, type RezeptAngaben } from '@/features/nutrition/rezepte';
+import { planSchema, vorschlagSchema } from '@/features/nutrition/plaene';
 
 // -----------------------------------------------------------------------------
 // Ernährung (ADR-027) - die eigene laufende Beratung, Gewicht,
@@ -62,6 +63,8 @@ const eigeneErnaehrungSchema = z.object({
     // Die eigenen Lebensmittel und Rezepte der Person.
     own_foods: z.array(lebensmittelSchema),
     own_recipes: z.array(rezeptSchema),
+    // Die Pläne der Beratung, der offene zuerst (ADR-027 Punkt 14).
+    plans: z.array(planSchema),
   }),
 });
 
@@ -265,6 +268,8 @@ const tagebuchSchema = z.object({
   favorites: z.array(schnellwahlSchema),
   targets: zieleSchema,
   day: tagSchema,
+  // Der Vorschlag des Plans für diesen Tag, wenn einer gilt (ANN-845).
+  suggestions: vorschlagSchema.nullable(),
 });
 
 export type EigenesTagebuch = z.infer<typeof tagebuchSchema>;

@@ -1,7 +1,14 @@
 import { z } from 'zod';
 import { lebensmittelSchema } from './lebensmittel';
 import { rezeptSchema, type ZutatLebensmittel } from './rezepte';
-import { energieDerMenge, kcal, MAHLZEITEN, type Mahlzeit, type Mengenangabe } from './tagebuch';
+import {
+  energieDerMenge,
+  kcal,
+  MAHLZEITEN,
+  type Mahlzeit,
+  type Mengenangabe,
+  type Schnellwahl,
+} from './tagebuch';
 import { zahl } from './texte';
 
 /**
@@ -209,4 +216,14 @@ export function planfehler(meldung: string | undefined): string {
   if (m.includes('has ended')) return 'Die Beratung ist beendet.';
   if (m.includes('not allowed')) return 'Dafür fehlt gerade das Recht. Bitte die Seite neu laden.';
   return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
+}
+
+/** Eine Position aus dem Plan als Zeile mit „+“: die Menge, wie die Beratung sie vorschlägt. */
+export function vorschlagsWahl(p: Planposition): Schnellwahl {
+  return {
+    food: p.food,
+    amount: p.amount,
+    portion_label: p.portion_label,
+    portion_count: p.portion_count,
+  };
 }
