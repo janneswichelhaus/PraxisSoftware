@@ -162,7 +162,9 @@ $$;
 revoke all on function app.nutrition_plan_item_json(public.nutrition_plan_items) from public, anon, authenticated, service_role;
 
 -- Die Mahlzeiten eines Tags im Plan, jede mit ihren Positionen.
-create function app.nutrition_plan_meals_json(p_plan_id uuid, p_day smallint) returns jsonb
+create function app.nutrition_plan_meals_json(
+  p_plan_id uuid, p_day smallint, p_eintragbar boolean default false
+) returns jsonb
   language sql stable security definer
   set search_path = ''
 as $$
@@ -172,12 +174,16 @@ as $$
              select jsonb_agg(app.nutrition_plan_item_json(i) order by i.position)
              from public.nutrition_plan_items i
              where i.plan_id = p_plan_id and i.day_number = p_day and i.meal = m.meal
+               -- Abgelegtes und Zurückgezogenes bleibt im Plan, kommt aber nie ins Tagebuch.
+               and (not p_eintragbar or i.item_kind = 'recipe'
+                    or app.nutrition_practice_food(i.organization_id, i.item_kind,
+                                                   coalesce(i.catalog_food_id, i.custom_food_id)) is not null)
            ), '[]'::jsonb))
          order by m.nr)
   from unnest(array['breakfast', 'lunch', 'dinner', 'snack']) with ordinality m(meal, nr)
 $$;
 
-revoke all on function app.nutrition_plan_meals_json(uuid, smallint) from public, anon, authenticated, service_role;
+revoke all on function app.nutrition_plan_meals_json(uuid, smallint, boolean) from public, anon, authenticated, service_role;
 
 create function app.nutrition_plan_json(p_plan public.nutrition_plans) returns jsonb
   language sql stable security definer
@@ -585,7 +591,7 @@ as $$
   select jsonb_build_object(
     'plan_id', p.id, 'title', p.title, 'day_count', p.day_count,
     'day', ((p_day - p.starts_on) % p.day_count) + 1,
-    'meals', app.nutrition_plan_meals_json(p.id, (((p_day - p.starts_on) % p.day_count) + 1)::smallint))
+    'meals', app.nutrition_plan_meals_json(p.id, (((p_day - p.starts_on) % p.day_count) + 1)::smallint, true))
   from public.nutrition_plans p
   where p.profile_id = p_profile_id and p.starts_on <= p_day
     and (p.ended_on is null or p.ended_on >= p_day)
@@ -596,9 +602,9 @@ $$;
 revoke all on function app.nutrition_plan_day_json(uuid, date) from public, anon, authenticated, service_role;
 
 comment on function app.nutrition_plan_day_json(uuid, date) is
-  'ERN-020 (ANN-845): der Vorschlag eines Plans für einen Tag - der zuletzt begonnene Plan, der an diesem Tag gilt, sein Tag im Wechsel ab dem Beginn, je Mahlzeit die Positionen. Ohne Rechteprüfung.';
+  'ERN-020 (ANN-845): der Vorschlag eines Plans für einen Tag - der zuletzt begonnene Plan, der an diesem Tag gilt, sein Tag im Wechsel ab dem Beginn, je Mahlzeit die Positionen, die sich eintragen lassen. Ohne Rechteprüfung.';
 
--- Wie zuvor; dazu Rezepte der Praxis und Abgelegtes aus einem Plan, der heute oder später gilt (Punkt 14).
+-- Wie zuvor; dazu die Rezepte der Praxis aus einem Plan, der heute oder später gilt (ADR-027 Punkt 14).
 create or replace function app.nutrition_diary_food(p_profile public.nutrition_profiles, p_kind text, p_id uuid)
   returns jsonb
   language sql stable security definer
@@ -610,15 +616,6 @@ as $$
      from public.custom_foods c
      where p_kind = 'person' and c.owner_kind = 'person' and c.id = p_id
        and c.organization_id = p_profile.organization_id and c.profile_id = p_profile.id),
-    (select app.nutrition_plan_food(p_profile.organization_id, p_kind, p_id)
-     where p_kind in ('catalog', 'practice') and exists (
-       select 1
-       from public.nutrition_plan_items i
-       join public.nutrition_plans p on p.id = i.plan_id
-       where p.profile_id = p_profile.id and i.item_kind = p_kind
-         and p_id = case p_kind when 'catalog' then i.catalog_food_id else i.custom_food_id end
-         and (p.ended_on is null
-              or p.ended_on >= greatest(app.training_today(p_profile.organization_id), p.starts_on)))),
     (select app.nutrition_recipe_food(r)
      from public.nutrition_recipes r
      where p_kind = 'recipe' and r.id = p_id and r.organization_id = p_profile.organization_id
@@ -634,7 +631,7 @@ as $$
 $$;
 
 comment on function app.nutrition_diary_food(public.nutrition_profiles, text, uuid) is
-  'ERN-007/ERN-018/ERN-020: ein Lebensmittel, wie es die Person an ihrem Profil findet - Katalog (nicht zurückgezogen), Praxis (nicht abgelegt), eigene Lebensmittel und Rezepte, Rezepte der Praxis sowie Abgelegtes und Zurückgezogenes nur aus einem ihr zugewiesenen Plan, der heute oder später gilt (ANN-845). Ohne Rechteprüfung.';
+  'ERN-007/ERN-018/ERN-020: ein Lebensmittel, wie es die Person an ihrem Profil findet - Katalog (nicht zurückgezogen), Praxis (nicht abgelegt), eigene Lebensmittel und Rezepte, Rezepte der Praxis nur aus einem ihr zugewiesenen Plan, der heute oder später gilt (ANN-845). Ohne Rechteprüfung.';
 
 -- Profil, Plattform, Auskunft und Export tragen die Pläne mit.
 create or replace function app.nutrition_profile_base_json(p_profile_id uuid) returns jsonb

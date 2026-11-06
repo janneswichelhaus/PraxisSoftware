@@ -479,7 +479,7 @@ describe('Pläne der Beratung (ERN-019)', () => {
     }
   });
 
-  it('ein abgelegtes Lebensmittel bleibt in Vorlage und Plan nutzbar; eintragen nur aus dem Plan', async () => {
+  it('ein abgelegtes Lebensmittel bleibt in Vorlage und Plan; ins Tagebuch kommt es nicht, auch nicht als Vorschlag', async () => {
     const PORRIDGE = 'f1f1f1f1-f1f1-4f1f-8f1f-000000000001';
     const plan = {
       title: 'Mit Porridge',
@@ -517,8 +517,13 @@ describe('Pläne der Beratung (ERN-019)', () => {
       null,
     ]);
     await asUserCommitted(users.ownerTherapist, ZUWEISEN, [PROFIL, JSON.stringify(plan), HEUTE]);
-    await eintragen();
-    // Auf der Plattform dieselben Schlüssel wie ein Lebensmittel des Katalogs, ohne Barcode.
+    // Eintragen bleibt gesperrt wie bei jedem Abgelegten (ERN-007); der Vorschlag lässt es weg.
+    expect(await fehler(eintragen())).toBe('P0002');
+    const heute = await vorschlag();
+    expect(heute!.title).toBe('Mit Porridge');
+    expect(heute!.meals.flatMap((m) => m.items)).toEqual([]);
+    // Im Plan steht es weiter, auf der Plattform mit denselben Schlüsseln wie ein Lebensmittel des
+    // Katalogs, ohne Barcode.
     const { rows: sicht } = await asUser<{
       d: {
         profile: { plans: { title: string; days: { meals: { items: { food: object }[] }[] }[] }[] };
@@ -676,6 +681,10 @@ describe('Pläne der Beratung (ERN-019)', () => {
   });
 
   it('fällt mit dem Profil; die Vorlagen der Praxis bleiben', async () => {
+    const { rows: davor } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.nutrition_plans where profile_id is null',
+    );
+    const vorher = davor[0]!.n;
     await asPostgres('delete from public.nutrition_profiles where id = $1', [PROFIL]);
     const { rows } = await asPostgres<{ zugewiesen: number; vorlagen: number; positionen: number }>(
       `select count(*) filter (where profile_id is not null)::int as zugewiesen,
@@ -684,6 +693,7 @@ describe('Pläne der Beratung (ERN-019)', () => {
                  join public.nutrition_plans p on p.id = i.plan_id where p.profile_id is not null) as positionen
          from public.nutrition_plans`,
     );
-    expect(rows[0]).toEqual({ zugewiesen: 0, vorlagen: 1, positionen: 0 });
+    expect(rows[0]).toEqual({ zugewiesen: 0, vorlagen: vorher, positionen: 0 });
+    expect(vorher).toBeGreaterThan(0);
   });
 });
