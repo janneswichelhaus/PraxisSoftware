@@ -14,6 +14,8 @@
 
 export const GERUEST_PRAEFIX = 'geruest-';
 export const EINSTIEG = '/index.html';
+/** Nie aus dem Speicher: Chrome gleicht daran die installierte App ab (ANN-110). */
+export const MANIFEST = '/manifest.webmanifest';
 
 export interface Anfrage {
   readonly url: string;
@@ -58,6 +60,9 @@ export function geruestliste(
 ): string[] {
   const pfade = [...buildDateien, ...oeffentlich]
     .map((name) => `/${name.replace(/\\/g, '/').replace(/^\/+/, '')}`)
-    .filter((pfad) => pfad !== `/${sw}` && !/\.(map|txt)$/.test(pfad) && !/\/\./.test(pfad));
+    .filter(
+      (pfad) =>
+        pfad !== `/${sw}` && pfad !== MANIFEST && !/\.(map|txt)$/.test(pfad) && !/\/\./.test(pfad),
+    );
   return [...new Set(pfade)].sort();
 }

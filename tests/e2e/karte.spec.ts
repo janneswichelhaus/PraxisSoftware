@@ -294,24 +294,8 @@ test.describe('Karte der Tagesroute', () => {
     expect(erster).toContain('target=_blank');
     expect(erster).toContain('rel=noopener noreferrer');
 
-    // Die Ziel-App liegt weggeklappt - sie gehoert der Geraetebewertung, nicht
-    // dem Arbeitsschritt (BEF-032).
-    const auswahl = page.getByRole('radio', { name: 'Systemnavigation' });
-    await expect(auswahl).toBeHidden();
-    await page.getByText('Andere Ziel-App prüfen (für die Gerätebewertung)').click();
-    // Geklickt wird die Beschriftung, nicht das Feld: Das Eingabefeld liegt
-    // `sr-only` darunter, und bedient wird die Flaeche, die man sieht.
-    await page.getByText('Systemnavigation', { exact: true }).click();
-    await expect(auswahl).toBeChecked();
-
-    // Ein `geo:`-Verweis bekommt **keinen** eigenen Tab: Der bliebe leer
-    // stehen, wo kein Programm das Schema uebernimmt (BEF-030).
-    await stopp3.click();
-    expect((await ziele())[1]).toBe('geo:48.5164,9.0349 target= rel=noopener noreferrer');
-
-    // Und statt acht gleich aussehender Abschnitte steht dort der Grund.
-    await expect(page.getByRole('button', { name: /Ganzer Tag/ })).toHaveCount(0);
-    await expect(page.getByText(/kein Zwischenziel/)).toBeVisible();
+    // Eine Auswahl der Ziel-App gibt es nicht mehr: Übergabe an Google Maps.
+    await expect(page.getByRole('radio')).toHaveCount(0);
   });
 
   test('fragt waehrend des ganzen Laufs keinen fremden Host', async ({ page }) => {

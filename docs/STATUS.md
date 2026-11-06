@@ -1,4 +1,4 @@
-# Status · Stand 2026-11-03
+# Status · Stand 2026-11-05
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -6,12 +6,12 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Barcode im Tagebuch** (ERN-EPIC-004): #350 auf `ccr-60b04b7d-dqd3o9`, eigener EAN-Leser, Auszug
-am eigenen Server (ANN-841, ANN-842); Zweitreview grün, Merge bei Jannes.
+**Sichtung eingetragen** (2026-11-05, ohne Befund): alle fertigen Posten gesichtet, Sichtliste
+S-1 bis S-14 leer, BEF-140 Teil 3 (Tourliste ohne Ziel-App-Auswahl); Merge bei Jannes.
 
 ## Danach
 
-Bildsichtung von #334 bis #337. Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
+Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
 ERN-EPIC-005 und -006, ORG-EPIC-001, Schritte 5 bis 7 mit Jannes' Leinwänden, UI-003; die
 Übertragung an DATEV erst nach B4; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
@@ -29,7 +29,6 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
   ANN-479 ansehen (Besuch).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
-- Sichtliste am Gerät: 14 Punkte (`sichtung/README.md`, S-1 bis S-14).
 - Widersprüche zwischen ADR-Wortlaut und Code oder Prinzipien (`development/BEFUNDE.md`, „Doku“).
 - Preise: Entwurf 2027 steht (`product/preisblatt-entwurf.md`), echte Preise kurz vor dem Start;
   G13 Umsatzsteuer vor M3 (ANN-541: ohne Verordnung 19 %? Kleinunternehmer?); B8 bis M3.
@@ -44,4 +43,4 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-03.11.2026, Branch `ccr-60b04b7d-dqd3o9` ab `main`. Lokal: `git pull`, Migration `barcode`.
+05.11.2026, Branch `claude/modest-allen-7u1qn9` ab `main`. Lokal: `git pull`.

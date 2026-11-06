@@ -44,8 +44,6 @@ export const GRENZEN: Record<
   details: {
     'features/calendar/appointments': 3,
 
-    'features/calendar/tours': 1,
-
     'features/clinical/assessments': 2,
 
     'features/patients/files': 1,
