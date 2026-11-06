@@ -449,6 +449,98 @@ describe('Pläne der Beratung (ERN-019)', () => {
     expect((await plaene()).find((p) => p.title === 'A')!.ended_on).toBe(await tagPlus(29));
   });
 
+  it('ein eigenes Rezept einer Person kommt in keinen Plan, weder ihren noch einen fremden', async () => {
+    const { rows } = await asUserCommitted<{ id: string }>(
+      users.plattformErika,
+      'select public.save_platform_recipe($1::uuid, null, $2::jsonb) as id',
+      [
+        ZUGANG,
+        JSON.stringify({
+          name: 'Erikas Brei',
+          servings: 1,
+          ingredients: [{ food_kind: 'catalog', food_id: APFEL, amount: 100 }],
+        }),
+      ],
+    );
+    const mitErikasRezept = JSON.stringify({
+      title: 'Mit Erikas Rezept',
+      days: [{ breakfast: [{ kind: 'recipe', id: rows[0]!.id, portion_count: 1 }] }],
+    });
+    const { rows: tina } = await asPostgres<{ id: string }>(
+      'select id from public.nutrition_profiles where training_relationship_id = $1',
+      [trainingRelationships.tina],
+    );
+    for (const [sql, werte] of [
+      [VORLAGE_SPEICHERN, [null, mitErikasRezept, null]],
+      [ZUWEISEN, [tina[0]!.id, mitErikasRezept, HEUTE]],
+      [ZUWEISEN, [PROFIL, mitErikasRezept, HEUTE]],
+    ] as const) {
+      expect(await fehler(asUser(users.ownerTherapist, sql, [...werte]))).toBe('P0002');
+    }
+  });
+
+  it('ein abgelegtes Lebensmittel bleibt in Vorlage und Plan nutzbar; eintragen nur aus dem Plan', async () => {
+    const PORRIDGE = 'f1f1f1f1-f1f1-4f1f-8f1f-000000000001';
+    const plan = {
+      title: 'Mit Porridge',
+      days: [
+        {
+          breakfast: [
+            { kind: 'practice', id: PORRIDGE, portion_label: '1 Schale', portion_count: 1 },
+          ],
+        },
+      ],
+    };
+    const { rows } = await asUserCommitted<{ id: string }>(
+      users.ownerTherapist,
+      VORLAGE_SPEICHERN,
+      [null, JSON.stringify(plan), null],
+    );
+    await asUserCommitted(users.ownerTherapist, 'select public.archive_practice_food($1::uuid)', [
+      PORRIDGE,
+    ]);
+    const eintragen = () =>
+      asUser(users.plattformErika, EINTRAGEN, [
+        ZUGANG,
+        HEUTE,
+        'breakfast',
+        'practice',
+        PORRIDGE,
+        null,
+        '1 Schale',
+        1,
+      ]);
+    expect(await fehler(eintragen())).toBe('P0002');
+    await asUserCommitted(users.ownerTherapist, VORLAGE_SPEICHERN, [
+      rows[0]!.id,
+      JSON.stringify(plan),
+      null,
+    ]);
+    await asUserCommitted(users.ownerTherapist, ZUWEISEN, [PROFIL, JSON.stringify(plan), HEUTE]);
+    await eintragen();
+    // Auf der Plattform dieselben Schlüssel wie ein Lebensmittel des Katalogs, ohne Barcode.
+    const { rows: sicht } = await asUser<{
+      d: {
+        profile: { plans: { title: string; days: { meals: { items: { food: object }[] }[] }[] }[] };
+      };
+    }>(users.plattformErika, 'select public.platform_nutrition($1::uuid) as d', [ZUGANG]);
+    const porridge = sicht[0]!.d.profile.plans.find((x) => x.title === 'Mit Porridge')!;
+    const essen = porridge.days[0]!.meals.flatMap((m) => m.items)[0]!.food;
+    expect(Object.keys(essen).sort()).toEqual(
+      [
+        'base_unit',
+        'brand',
+        'id',
+        'kind',
+        'name',
+        'per_100',
+        'portions',
+        'source',
+        'source_code',
+      ].sort(),
+    );
+  });
+
   it('Büro, Therapie, Teamleitung, Trainingsbetreuung, Plattform: nichts', async () => {
     const plan = (await plaene())[0]!;
     const vorlage = (await vorlagen())[0]!;
@@ -545,6 +637,12 @@ describe('Pläne der Beratung (ERN-019)', () => {
   });
 
   it('nach dem Widerruf: kein Zuweisen, aber beenden; Auskunft und Export tragen die Pläne', async () => {
+    // Ein Nachfolger in zehn Tagen: Beenden nimmt ab heute auch den laufenden Plan.
+    await asUserCommitted(users.ownerTherapist, ZUWEISEN, [
+      PROFIL,
+      JSON.stringify(woche({ title: 'Danach' })),
+      await tagPlus(10),
+    ]);
     await asUserCommitted(
       users.plattformErika,
       'select public.record_platform_nutrition_consent($1::uuid, false, $2)',
@@ -556,7 +654,12 @@ describe('Pläne der Beratung (ERN-019)', () => {
       ),
     ).toBe('42501');
     const offen = (await plaene()).find((p) => p.ended_on === null)!;
+    expect(offen.title).toBe('Danach');
     await asUserCommitted(users.ownerTherapist, BEENDEN, [offen.id]);
+    for (const plan of await plaene()) {
+      const ende = plan.ended_on ?? '9999-12-31';
+      expect(ende < HEUTE || ende < plan.starts_on!, plan.title).toBe(true);
+    }
 
     const { rows: auskunft } = await asUser<{
       d: { tabellen: { nutrition_profiles: { plans: Plan[] }[] } };

@@ -119,7 +119,7 @@ as $$
   from public.food_catalog b
   where p_kind = 'catalog' and b.id = p_id
   union all
-  select app.custom_food_json(c) - 'updated_at'
+  select app.custom_food_json(c) - 'updated_at' - 'barcode'
   from public.custom_foods c
   where p_kind = 'practice' and c.owner_kind = 'practice' and c.id = p_id and c.organization_id = p_org
   union all
@@ -197,7 +197,8 @@ as $$
     'recipes', coalesce((
       select jsonb_agg(app.nutrition_recipe_json(r) order by r.name_key, r.id)
       from public.nutrition_recipes r
-      where r.id in (select i.recipe_id from public.nutrition_plan_items i where i.plan_id = p_plan.id)
+      where r.organization_id = p_plan.organization_id and r.owner_kind = 'practice'
+        and r.id in (select i.recipe_id from public.nutrition_plan_items i where i.plan_id = p_plan.id)
     ), '[]'::jsonb))
 $$;
 
@@ -292,7 +293,8 @@ begin
             'amount', null, 'portion_label', '1 Portion',
             'portion_count', round((v_item ->> 'portion_count')::numeric, 2)));
         else
-          v_essen := app.nutrition_practice_food(p_org, v_kind, v_id);
+          -- Auch abgelegt oder zurückgezogen, wie bei Rezepten; zur Wahl steht es nicht mehr.
+          v_essen := app.nutrition_plan_food(p_org, v_kind, v_id);
           if v_essen is null then
             raise exception 'food not found' using errcode = 'P0002';
           end if;
@@ -314,7 +316,7 @@ $$;
 revoke all on function app.nutrition_plan_input(jsonb, uuid) from public, anon, authenticated, service_role;
 
 comment on function app.nutrition_plan_input(jsonb, uuid) is
-  'ERN-019 (ADR-027 Punkt 14): prüft einen Plan - Titel, ein bis sieben Tage, je Mahlzeit bis zwölf Positionen; Rezepte der Praxis in Portionen, auch abgelegte (Pläne und Vorlagen mit ihnen bleiben nutzbar), Lebensmittel aus Katalog und Praxis mit Menge oder Portion wie im Tagebuch. Liefert Titel, Zahl der Tage und die Positionen. Ohne Rechteprüfung.';
+  'ERN-019 (ADR-027 Punkt 14): prüft einen Plan - Titel, ein bis sieben Tage, je Mahlzeit bis zwölf Positionen; Rezepte der Praxis in Portionen, Lebensmittel aus Katalog und Praxis mit Menge oder Portion wie im Tagebuch; auch Abgelegtes und Zurückgezogenes, damit Pläne und Vorlagen damit nutzbar bleiben. Liefert Titel, Zahl der Tage und die Positionen. Ohne Rechteprüfung.';
 
 -- Die Positionen eines Plans ersetzen.
 create function app.nutrition_plan_store(p_plan_id uuid, p_org uuid, p_items jsonb) returns void
@@ -456,7 +458,8 @@ begin
   update public.nutrition_plans p
      set ended_on = greatest(p_starts_on - 1, p.starts_on - 1), updated_at = now(),
          updated_by = auth.uid()
-   where p.profile_id = v_profil.id and (p.ended_on is null or p.ended_on >= p_starts_on);
+   where p.profile_id = v_profil.id
+     and (p.ended_on is null or p.ended_on >= greatest(p_starts_on, p.starts_on));
 
   insert into public.nutrition_plans (
     organization_id, profile_id, title, day_count, starts_on, created_by, updated_by
@@ -545,24 +548,25 @@ create function public.end_nutrition_plan(p_plan_id uuid) returns void
   set search_path = ''
 as $$
 declare
-  v_plan   public.nutrition_plans%rowtype;
   v_profil public.nutrition_profiles%rowtype;
+  v_heute  date;
 begin
   if auth.uid() is null or not app.can_counsel_nutrition() then
     raise exception 'not allowed' using errcode = '42501';
   end if;
   -- Beenden geht auch nach einem Widerruf: Es hält die Verarbeitung an. Profil vor Plan sperren.
   v_profil := app.nutrition_profile_for_writing(app.nutrition_plan_profile(p_plan_id), false);
-  select * into v_plan from public.nutrition_plans p
-  where p.id = p_plan_id and p.profile_id = v_profil.id and p.ended_on is null
-  for update;
-  if v_plan.id is null then
+  v_heute := app.training_today(v_profil.organization_id);
+  if not exists (select 1 from public.nutrition_plans p
+                 where p.id = p_plan_id and p.profile_id = v_profil.id
+                   and (p.ended_on is null or p.ended_on >= greatest(v_heute, p.starts_on))) then
     raise exception 'plan not found' using errcode = 'P0002';
   end if;
+  -- Ab heute kein Vorschlag: Auch ein laufender Plan, dem schon ein späterer folgt, endet gestern.
   update public.nutrition_plans p
-     set ended_on = greatest(app.training_today(v_profil.organization_id) - 1, p.starts_on - 1),
-         updated_at = now(), updated_by = auth.uid()
-   where p.id = v_plan.id;
+     set ended_on = greatest(v_heute - 1, p.starts_on - 1), updated_at = now(), updated_by = auth.uid()
+   where p.profile_id = v_profil.id
+     and (p.ended_on is null or p.ended_on >= greatest(v_heute, p.starts_on));
 end;
 $$;
 
@@ -570,7 +574,7 @@ revoke all on function public.end_nutrition_plan(uuid) from public, anon;
 grant execute on function public.end_nutrition_plan(uuid) to authenticated;
 
 comment on function public.end_nutrition_plan(uuid) is
-  'ERN-019: den offenen Plan einer laufenden Beratung beenden - ab heute steht kein Vorschlag mehr im Tagebuch; der Plan bleibt mit dem Profil. Allein app.can_counsel_nutrition, auch nach einem Widerruf.';
+  'ERN-019: den Plan einer laufenden Beratung beenden - ab heute steht kein Vorschlag mehr im Tagebuch, auch nicht aus einem laufenden Plan, dem ein späterer folgt; die Pläne bleiben mit dem Profil. Allein app.can_counsel_nutrition, auch nach einem Widerruf.';
 
 -- Der Plan eines Tags fürs Tagebuch: der zuletzt begonnene, der an diesem Tag gilt, und sein Tag im
 -- Wechsel ab dem Beginn.
@@ -594,7 +598,7 @@ revoke all on function app.nutrition_plan_day_json(uuid, date) from public, anon
 comment on function app.nutrition_plan_day_json(uuid, date) is
   'ERN-020 (ANN-845): der Vorschlag eines Plans für einen Tag - der zuletzt begonnene Plan, der an diesem Tag gilt, sein Tag im Wechsel ab dem Beginn, je Mahlzeit die Positionen. Ohne Rechteprüfung.';
 
--- Wie zuvor; dazu die Rezepte der Praxis aus einem Plan, der heute oder später gilt (ADR-027 Punkt 14).
+-- Wie zuvor; dazu Rezepte der Praxis und Abgelegtes aus einem Plan, der heute oder später gilt (Punkt 14).
 create or replace function app.nutrition_diary_food(p_profile public.nutrition_profiles, p_kind text, p_id uuid)
   returns jsonb
   language sql stable security definer
@@ -606,6 +610,15 @@ as $$
      from public.custom_foods c
      where p_kind = 'person' and c.owner_kind = 'person' and c.id = p_id
        and c.organization_id = p_profile.organization_id and c.profile_id = p_profile.id),
+    (select app.nutrition_plan_food(p_profile.organization_id, p_kind, p_id)
+     where p_kind in ('catalog', 'practice') and exists (
+       select 1
+       from public.nutrition_plan_items i
+       join public.nutrition_plans p on p.id = i.plan_id
+       where p.profile_id = p_profile.id and i.item_kind = p_kind
+         and p_id = case p_kind when 'catalog' then i.catalog_food_id else i.custom_food_id end
+         and (p.ended_on is null
+              or p.ended_on >= greatest(app.training_today(p_profile.organization_id), p.starts_on)))),
     (select app.nutrition_recipe_food(r)
      from public.nutrition_recipes r
      where p_kind = 'recipe' and r.id = p_id and r.organization_id = p_profile.organization_id
@@ -621,7 +634,7 @@ as $$
 $$;
 
 comment on function app.nutrition_diary_food(public.nutrition_profiles, text, uuid) is
-  'ERN-007/ERN-018/ERN-020: ein Lebensmittel, wie es die Person an ihrem Profil findet - Katalog (nicht zurückgezogen), Praxis (nicht abgelegt), eigene Lebensmittel und Rezepte, Rezepte der Praxis nur aus einem ihr zugewiesenen Plan, der heute oder später gilt (ANN-845). Ohne Rechteprüfung.';
+  'ERN-007/ERN-018/ERN-020: ein Lebensmittel, wie es die Person an ihrem Profil findet - Katalog (nicht zurückgezogen), Praxis (nicht abgelegt), eigene Lebensmittel und Rezepte, Rezepte der Praxis sowie Abgelegtes und Zurückgezogenes nur aus einem ihr zugewiesenen Plan, der heute oder später gilt (ANN-845). Ohne Rechteprüfung.';
 
 -- Profil, Plattform, Auskunft und Export tragen die Pläne mit.
 create or replace function app.nutrition_profile_base_json(p_profile_id uuid) returns jsonb
