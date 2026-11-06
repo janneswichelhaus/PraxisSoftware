@@ -63,6 +63,12 @@ describe('Gerüst (Punkt 1)', () => {
       ),
     ).toEqual(['/assets/index-abc.js', '/index.html', '/marke/logo.svg', '/marke/zwei.png']);
   });
+
+  it('legt das Manifest nie ab - sonst sieht die installierte App die alte Anzeige (ANN-110)', () => {
+    expect(
+      geruestliste(['index.html'], ['manifest.webmanifest', 'marke/logo.svg'], 'sw.js'),
+    ).toEqual(['/index.html', '/marke/logo.svg']);
+  });
 });
 
 describe('Mitteilung aus Push (Punkt 14)', () => {
