@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-03.
+Zuletzt aktualisiert: 2026-11-06.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1037,6 +1037,10 @@ Technik · offen · 2026-11-01 · — · — · Wiedervorlage: Töne bei der Sic
 ### ANN-842 — Scan aus dem Tag: Mahlzeit nach der Uhrzeit vorgewählt
 Praxisprozess · offen · 2026-11-03 · — · — · Wiedervorlage: —\
 **Regel.** Der Scan aus dem Tag wählt nach der Uhrzeit des Geräts vor: ab 5 Uhr Frühstück, ab 11 Mittagessen, ab 15 Snacks, ab 17 Abendessen, ab 22 Snacks; im Fenster änderbar. **Grundlage.** ADR-027 Punkt 10. **Anker.** `mahlzeitZurUhrzeit` in `src/features/nutrition/tagebuch.ts`.
+
+### ANN-843 — Rezept: Zutaten mit Stand, Milliliter wie Gramm, Portion als Anteil
+Technik · offen · 2026-11-06 · — · — · Wiedervorlage: —\
+**Regel.** Eine Zutat trägt Name und Werte ihres Lebensmittels beim Speichern (wie ANN-660); die Anwendung schickt nur Lebensmittel und Menge. Je Portion und je 100 g rechnet der Server aus der Summe; Milliliter zählen wie Gramm, eine Portion ist die Gesamtmenge durch die Portionen, höchstens 5000 g. Fehlt ein Wert an einer Zutat, bleibt er am Rezept leer. **Grundlage.** ADR-027 Punkt 9. **Anker.** `app.nutrition_recipe_json`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |

@@ -95,6 +95,11 @@ import {
   PraxisLebensmittelNeu,
 } from '@/features/nutrition/LebensmittelPage';
 import {
+  PraxisRezeptBearbeiten,
+  PraxisRezeptNeu,
+  RezeptePage,
+} from '@/features/nutrition/RezeptePage';
+import {
   ProfilAendernSeite,
   ProfilAnlegenSeite,
   ZielwerteSeite,
@@ -332,8 +337,8 @@ export function AuthenticatedRoutes({
                       />
                     </>
                   ) : null}
-                  {/* Lebensmittel in der Bibliothek - nachschlagen und die der Praxis
-                  pflegen; allein die Fähigkeit (ADR-027 Punkt 4). */}
+                  {/* Lebensmittel und Rezepte in der Bibliothek - nachschlagen und die der
+                  Praxis pflegen; allein die Fähigkeit (ADR-027 Punkt 4). */}
                   {showNutrition ? (
                     <>
                       <Route path="/praxis/lebensmittel" element={<LebensmittelPage />} />
@@ -341,6 +346,12 @@ export function AuthenticatedRoutes({
                       <Route
                         path="/praxis/lebensmittel/:foodId"
                         element={<PraxisLebensmittelBearbeiten />}
+                      />
+                      <Route path="/praxis/rezepte" element={<RezeptePage />} />
+                      <Route path="/praxis/rezepte/neu" element={<PraxisRezeptNeu />} />
+                      <Route
+                        path="/praxis/rezepte/:recipeId"
+                        element={<PraxisRezeptBearbeiten />}
                       />
                     </>
                   ) : null}

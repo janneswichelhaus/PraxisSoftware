@@ -321,14 +321,19 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
     ...(canWriteTreatmentNote(roles)
       ? [{ to: '/praxis/textbausteine', label: 'Textbausteine' }]
       : []),
-    // ERN-EPIC-002: Lebensmittel nachschlagen und die der Praxis pflegen -
-    // allein die Fähigkeit „Ernährungsberatung“ (ADR-027 Punkt 4).
+    // Lebensmittel nachschlagen, die der Praxis und ihre Rezepte pflegen - allein die
+    // Fähigkeit „Ernährungsberatung“ (ADR-027 Punkt 4).
     ...(canCounselNutrition(roles)
       ? [
           {
             to: '/praxis/lebensmittel',
             label: 'Lebensmittel',
             stichworte: ['Nährwerte', 'Kalorien', 'Ernährung', 'BLS'],
+          },
+          {
+            to: '/praxis/rezepte',
+            label: 'Rezepte',
+            stichworte: ['Rezept', 'Zutaten', 'Ernährung', 'Kochen'],
           },
         ]
       : []),

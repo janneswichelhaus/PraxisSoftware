@@ -13,7 +13,7 @@ import { zahl } from './texte';
  * `features/platform/api.ts` (ADR-023 Punkt 26).
  */
 
-const je100Schema = z.object({
+export const je100Schema = z.object({
   energy_kcal: z.number(),
   protein_g: z.number(),
   fat_g: z.number(),
