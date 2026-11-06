@@ -178,7 +178,7 @@ function Bearbeiten({ r }: { r: Rezept }) {
   );
 }
 
-/** Die mitgelieferten Rezepte, die die Praxis noch nicht übernommen hat (ANN-844). */
+/** Die mitgelieferten Rezepte, die die Praxis noch nicht übernommen hat. */
 function Mitgeliefert({ uebernommen }: { uebernommen: ReadonlySet<string | null> }) {
   const offen = STARTREZEPTE.filter((r) => !uebernommen.has(r.schluessel));
   if (offen.length === 0) return null;

@@ -80,8 +80,8 @@ Jannes 2026-09-22 und 2026-09-23; ein Loop, der abweicht, sagt, gegen welchen.
 ## Die Kette bis zur Eröffnung
 Die Blöcke 0 bis 8 (Erledigt, Rückstand und Umbau, 1a Handy und UX-Fundament, Kern fertig,
 Training, Plattformzugang, Angebote, Pläne und Rückfragen, Verlauf und Alltag, Praxisbetrieb) sind
-gebaut bis auf FRB-EPIC-005 (Block 2) und ERN-EPIC-005 → -006 → ORG-EPIC-001 (Block 7; die
-ERN-Epics ersetzen ALT-EPIC-002). Offen bei Jannes aus diesen Blöcken: Sichtungen (Rückstand,
+gebaut bis auf FRB-EPIC-005 (Block 2) und ERN-EPIC-006 → ORG-EPIC-001 (Block 7, statt
+ALT-EPIC-002). Offen bei Jannes aus diesen Blöcken: Sichtungen (Rückstand,
 Handy, Training, Verlauf), D2/D3 aus dem FRB-Plan, Bilder zu den Tests, Abo- und Paketpreise (bis
 dahin synthetisch), die Tübinger Standortvorlage (Depot, Werkstatt). Danach in fester Reihenfolge:
 
@@ -138,17 +138,16 @@ die Überholungen 1 bis 11 sind gebaut).
 
 ## Offene Loops bis M2
 Zuschnitt, keine Spec. Ernährung (ADR-027): je Epic Pfad A, fertig mit dem Budget am Seed gemessen
-(375 px, Playwright); die gebauten Epics prüfen `ernaehrung.spec.ts` und `tagebuch.spec.ts`.
+(375 px, Playwright); geprüft in `ernaehrung*.spec.ts` und `tagebuch*.spec.ts`.
 
 | Block | Loop | Ergebnis und Zuschnitt | Vorgabe |
 | --- | --- | --- | --- |
 | 2 | **FRB-EPIC-005** | Ein Bild ruft den Test in Erinnerung: optionales Bild je Test in der Definition, beim Abhaken gezeigt, ohne Bewertung (ADR-006); startet, sobald Bilder vorliegen (eigene Zeichnung, Lizenz nach B8 oder Foto nach §20) | `IDEA-OUT-009` |
-| 7 | **ERN-EPIC-005** | Pläne und Rezepte: Rezepte aus Zutaten, Tagesvorschläge und Pläne von der Beratung, Startinhalte (≈ 30 Rezepte); fertig mit Plan in ≤ 10 Minuten zugewiesen, Rezept mit einem Tipp ins Tagebuch | ADR-027 |
 | 7 | **ERN-EPIC-006** | Verlauf für die Beratung: Wochenmittel neben Zielwerten, Gewicht, neben Check-ins und Training im Verlauf; fertig mit Sitzung aus einer Ansicht vorbereitet | ADR-027 |
 | 7 | **ORG-EPIC-001** | Eine Person auf einen Blick, die Sitzung ist vorbereitet: Zeitstrahl über alle Bereiche, Sitzungsvorbereitung für die Praxis, Übersicht je Person | `IDEA-QSN-001`, `IDEA-ORG-001`, `-005` |
 | 9 | **KI-EPIC-002** | Sprache umformen, ohne Inhalt hinzuzufügen: Freitext strukturieren, Patientensprache, Antwortentwürfe, Zusammenfassung ohne Bewertung, **Felder der Verordnung aus dem Foto vorschlagen**, jeweils mit Quellenbindung und menschlicher Freigabe | `IDEA-KI-002`, `-003`, `-004` |
 | 9 | **MAP-007** | Führung auf dem Gerät, ohne dass die Praxis die Position erfährt (ADR-019 Abschnitt F, §20.1: Position nur auf dem Gerät, Start nur auf Aktion, Übermittlung nur zur Neuberechnung, keine Auswertung). Zuerst **E-24** (liefern die Radprofile Manöver? ein Aufruf; ohne Ja entfällt das Epic), B2 in erweiterter Fassung und das Aufrufkontingent; Stories MAP-007a bis -f, keine rein visuelle Führung (ADR-019 Punkt 31), synthetische Adressen | `IDEA-PRX-044`; Vorgabe `git show 9452575:docs/development/MAP-LOOPS.md` |
-| 9 | **PRX-EPIC-004** | Komfort für die Praxisführung: Kennzahlen für Training, Abo und Pakete (auf STA-EPIC-001), Export für die Steuerberatung im DATEV-Format (Buchungsstapel und Rechnungen als Belege; Kontenrahmen als Annahme bis B4), die direkte Übertragung an DATEV hinter einem Adapter, eingeschaltet erst nach Anbieterprüfung (Jannes 2026-11-01), Farbcodierung je Terminart und Person, Kalender-Abo (Bedenken: ohne Namen), Planungskarte der aktiven Adressen (Bedenken), Kartenzahlung beim Hausbesuch hinter Adapter (Grundsatz 5) | `IDEA-PRX-026`, `-021`, `-024`, `-033`, `-022` |
+| 9 | **PRX-EPIC-004** | Rest: Übertragung an DATEV hinter Adapter, nach Anbieterprüfung und B4 | `IDEA-PRX-026`, `-021`, `-024`, `-033`, `-022` |
 | 9 | **UI-003** | Feinschliff und Barrierefreiheit über alle Seiten (G17): Feindesign, PWA-Manifest, was die Bereichsüberholungen übrig lassen; K5 mit Diktat am Stück messen und auf ≤ 6 Tipps kürzen, die ausdrückliche Übernahme (§6.3) bleibt (heute zusammengesetzt 7, Praxis-Review #343, Jannes 2026-11-01) | — |
 
 ## Blöcke 10 bis 14: vom Freeze bis zur Eröffnung
@@ -315,6 +314,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | ERN-EPIC-003 Ernährung: Tagebuch | fertig | 2026-10-19 | ERN-007 bis ERN-010, Budgets in tagebuch.spec.ts, Zweitreview | — | — |
 | B | Ernährung: Beratung abrechnen | fertig | 2026-10-19 | ERN-011 und ERN-012 | — | ANN-622 (Abnahme Jannes), ANN-664, ANN-665; Sichtung per Bildstrecke im PR |
 | B | ERN-EPIC-004 Ernährung: Barcode | fertig | 2026-11-03 | ERN-013 bis -015, Zweitreview | — | — |
+| B | ERN-EPIC-005 Ernährung: Pläne und Rezepte | fertig | 2026-11-06 | ERN-016 bis -020, Zweitreview | — | — |
 | B | FLT-EPIC-001 Radflotte | fertig | 2026-10-15 | Branch ccr-658a5e25-l0njkl | — | Auftrag Jannes (15.10.2026), ersetzt die Vorschau; ANN-550 bis ANN-558; Rad im Kalender und weitere Bauarten offen; Sichtung per Bildstrecke im PR. Nachtrag 16.10.: FLT-007 bis FLT-009 (Werbeflächen, Seitenfotos, Meldungen für den Arbeitgeber, Check-Up-Rhythmus; Migration 20261122100000, ANN-568 bis ANN-570) |
 | B | TEAM-001 Teamkommunikation: Kanäle, Direktnachrichten, Threads, Erwähnungen, Suche, eigener Lesestand, rollierende Löschung | fertig | 2026-10-17 | Branch claude/modest-turing-i5qgn9 | — | Überholung 11 (Auftrag Jannes 17.10.2026), ersetzt die Vorschau; ADR-008 Fassung 5 Punkt 12; ANN-609 bis ANN-614; Aufbau wie Slack (Für dich, Threads); keine Startkanäle (Jannes), Nachrichten der Radflotte in der Radflotte; Anhänge (ADR-017 Punkt 30), Push (ADR-024) und Vorgangsbezug offen |
 | B | TEAM-002 Teamchat wie Slack: Chatfläche mit Gesprächen, Gespräch und Thread nebeneinander, private Kanäle, Gruppen, Reaktionen, Anheften, Für später, Planen, Suche mit Filtern, Lesestand je Thread, Zustellung ohne Doppel | fertig | 2026-10-18 | Branch claude/epic-cerf-vq8hz1 | — | Überholung Teamchat (Auftrag Jannes 18.10.2026); ANN-640 bis ANN-651; Funktionsmatrix und Etappen: git show 9452575:docs/product/ideen/referenz-slack.md; Dateien (ADR-017), Push und Mail (ADR-024 Punkt 12), Huddles, KI, Canvas und Workflows offen als Entscheidung |

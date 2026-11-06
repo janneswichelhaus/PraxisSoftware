@@ -241,6 +241,10 @@ describe('Schema-Invarianten', () => {
       'nutrition_water_days',
       'nutrition_diary_favorites',
       'nutrition_diary_reminders',
+      // Rezepte und Pläne der Beratung (ADR-027 Punkte 9 und 14).
+      'nutrition_recipes',
+      'nutrition_plans',
+      'nutrition_plan_items',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

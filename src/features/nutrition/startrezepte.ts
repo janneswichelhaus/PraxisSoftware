@@ -1,5 +1,5 @@
 /**
- * Mitgelieferte Rezepte (ADR-027 Punkt 14, ANN-844): Inhalt im Lieferumfang, kein Datenmodell. Eine
+ * Mitgelieferte Rezepte (ADR-027 Punkt 14): Inhalt im Lieferumfang, kein Datenmodell. Eine
  * Zutat nennt Suchbegriff und Menge; die Werte kommen beim Übernehmen aus dem Katalog der Praxis.
  */
 export interface Startzutat {

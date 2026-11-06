@@ -104,7 +104,7 @@ create index nutrition_recipes_practice on public.nutrition_recipes (organizatio
 comment on table public.nutrition_recipes is
   'ERN-016 (ADR-027 Punkte 9 und 14, ANN-843): Rezepte aus Zutaten - der Praxis (Inhalt, von der Beratung gepflegt, abgelegt statt gelöscht) oder einer Person an ihrem Ernährungsprofil (von ihr oder ihrer rechtlichen Vertretung, nur mit Einwilligung). Die Zutaten tragen den Stand ihres Lebensmittels beim Speichern; die Nährwerte rechnet allein der Server (app.nutrition_recipe_json). Datenklassen: Betriebsdaten bzw. Ernährungsberatung (fällt mit dem Profil). Kein Tabellenrecht und keine Policy: erreichbar nur über die Funktionen (ADR-004).';
 comment on column public.nutrition_recipes.starter_key is
-  'ERN-017 (ANN-844): Schlüssel des mitgelieferten Rezepts, aus dem die Praxis dieses übernommen hat - je Praxis einmal, solange es nicht abgelegt ist.';
+  'ERN-017 (ADR-027 Punkt 14): Schlüssel des mitgelieferten Rezepts, aus dem die Praxis dieses übernommen hat - je Praxis einmal, solange es nicht abgelegt ist.';
 
 alter table public.nutrition_recipes enable row level security;
 revoke all on table public.nutrition_recipes from public, anon, authenticated, service_role;

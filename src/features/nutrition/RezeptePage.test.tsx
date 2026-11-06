@@ -96,7 +96,7 @@ beforeEach(() => {
   lebensmittelSuchen.mockReset();
 });
 
-describe('Rezepte der Praxis mit den mitgelieferten (ANN-844)', () => {
+describe('Rezepte der Praxis mit den mitgelieferten (ADR-027 Punkt 14)', () => {
   it('listet die Rezepte der Praxis und darunter nur die noch nicht übernommenen mitgelieferten', async () => {
     zeige('/praxis/rezepte');
     expect(await screen.findByRole('heading', { name: /Rezepte der Praxis/ })).toBeVisible();

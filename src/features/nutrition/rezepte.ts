@@ -102,7 +102,7 @@ export interface RezeptAngaben {
   servings: number;
   instructions: string | null;
   ingredients: ZutatAngabe[];
-  /** Nur beim Übernehmen eines mitgelieferten Rezepts (ANN-844). */
+  /** Nur beim Übernehmen eines mitgelieferten Rezepts. */
   starter_key?: string;
 }
 
@@ -264,7 +264,7 @@ export function rezeptfehler(meldung: string | undefined): string {
 }
 
 /**
- * Ein mitgeliefertes Rezept als Formular (ANN-844): je Zutat der gleichnamige Treffer der Suche,
+ * Ein mitgeliefertes Rezept als Formular: je Zutat der gleichnamige Treffer der Suche, die Beratung prüft;
  * sonst der erste aus dem BLS, sonst der erste. Kennt er die Portion nicht, gilt die Menge.
  */
 export async function startrezeptAufloesen(

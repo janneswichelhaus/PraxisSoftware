@@ -6,7 +6,7 @@ import { startrezeptAufloesen } from './rezepte';
 import { STARTREZEPTE } from './startrezepte';
 
 // Die synthetischen Lebensmittel des Seeds: Name und Portionen. Jede Zutat der mitgelieferten
-// Rezepte heißt genau wie eines davon, damit das Übernehmen auf den Testdaten aufgeht (ANN-844).
+// Rezepte heißt genau wie eines davon, damit das Übernehmen auf den Testdaten aufgeht.
 const SEED = readFileSync(join(process.cwd(), 'supabase/seed.sql'), 'utf8');
 const KATALOG = new Map<string, { label: string; amount: number }[]>(
   [...SEED.matchAll(/^\s*\('([^']+)', '(?:g|ml)', [^']*'(\[[^']*\])'\),?$/gm)].map((t) => [
