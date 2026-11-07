@@ -82,13 +82,6 @@ in `begriffe.ts`, `Dialogfenster.tsx` und `Einstieg.tsx` ist das schon behoben. 
 Trennen ohne Lookbehind (erst an Leerraum, dann je Teil nach `-`) und ein Test, der Lookbehinds im
 ausgelieferten Code unter `src/` findet.
 
-### BEF-201 — Plattform: „Löschen“ an einem Anhang löscht ohne Rückfrage
-2026-10-22 · Plattform, Rückfragen · Design-Review 1a (#290) · offen (Vorschlag) · `Anhaenge.tsx`,
-Vorbild `RueckfrageAnhaenge.tsx`\
-**Beobachtung.** „Löschen“ steht gleichrangig neben „Ansehen“ und löscht sofort; DESIGN.md verlangt
-Zerstörendes leise am Ende mit `Rueckfrage`. **Erwartet.** So umbauen, Wortlaut nach PLATTFORM.md,
-Löschpfad unverändert; Komponententest für Abbrechen und Bestätigen, `nachrichten.spec.ts` grün.
-
 ### BEF-202 — E2E hinter der Anmeldung: Eine Wiederholung in der CI kann Termine des ersten Versuchs treffen
 2026-10-22 · `tests/e2e/authenticated/` · CI-Lauf 39842106004 · offen (Vorschlag) · `tagImFenster`\
 **Beobachtung.** Eine wiederholte serielle Gruppe läuft mit neuem `LAUF = Date.now()` (24
