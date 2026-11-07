@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
@@ -441,14 +442,24 @@ function Terminkacheln({
 export function PatientAppointmentsPage() {
   const { patient, user } = usePatientRecord();
   return (
-    <>
-      <AufEinenBlick patientId={patient.id} thema={themaName} />
-      <Terminbereich patient={patient} user={user} />
-    </>
+    <Terminbereich
+      patient={patient}
+      user={user}
+      nachKacheln={<AufEinenBlick patientId={patient.id} thema={themaName} />}
+    />
   );
 }
 
-export function Terminbereich({ patient, user }: { patient: Patient; user: CurrentUser }) {
+export function Terminbereich({
+  patient,
+  user,
+  nachKacheln,
+}: {
+  patient: Patient;
+  user: CurrentUser;
+  /** Nach den Kacheln, vor den Listen (DESIGN.md, Objektseite): was für die Person ansteht. */
+  nachKacheln?: ReactNode;
+}) {
   const [suche, setSuche] = useSearchParams();
   // Was ein Vorgang beim Hierherkommen mitgibt - „3 Termine angelegt." nach
   // der Serie (TER-04). Ungeprüft, bis `leseMeldung` es liest.
@@ -548,6 +559,7 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
       ) : null}
 
       <Terminkacheln patient={patient} user={user} naechster={ersterTermin} />
+      {nachKacheln}
 
       <Section
         titel="Kommende Termine"

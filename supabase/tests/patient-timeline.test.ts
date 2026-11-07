@@ -20,6 +20,8 @@ const LOCATION = '33333333-3333-4333-8333-000000000001';
 const KG = 'cccccccc-cccc-4ccc-8ccc-000000000001';
 /** Erikas eigener Plattformzugang (supabase/seed.sql). */
 const ZUGANG_ERIKA = 'cafecafe-cafe-4afe-8afe-000000000002';
+/** Erikas Zugang zu ihrem Trainingsverhältnis (supabase/seed.sql). */
+const ZUGANG_ERIKA_TRAINING = 'cafecafe-cafe-4afe-8afe-000000000003';
 
 const ZEITSTRAHL = 'select public.get_patient_timeline($1::uuid) as z';
 const FENSTER = 'select public.get_patient_timeline($1::uuid, $2::date, $3::int) as z';
@@ -264,6 +266,41 @@ describe('Zeitstrahl einer Person (ORG-001)', () => {
       [patients.max],
       'patient_timeline.read',
     );
+  });
+
+  it('anderer Leistungsbereich: Training derselben Person fehlt in Zeitstrahl und Vorbereitung', async () => {
+    const training = SEED.trainingRelationships.erika;
+    await asPostgres(
+      `insert into public.checkins
+         (organization_id, relationship_kind, relationship_id, training_relationship_id,
+          answered_on, recorded_at, platform_access_id, platform_access_kind, recorded_by)
+       values ($1, 'training', $2, $2, current_date - 1, now() - interval '1 day', $3, 'self', $4)`,
+      [organizationId, training, ZUGANG_ERIKA_TRAINING, users.plattformErika],
+    );
+    await asPostgres(
+      `insert into public.checkin_schedules
+         (organization_id, relationship_kind, relationship_id, training_relationship_id,
+          interval_days, parameter_keys, starts_on, created_by, updated_by)
+       values ($1, 'training', $2, $2, 7, array['pain_rest'], current_date - 10, $3, $3)`,
+      [organizationId, training, users.trainer],
+    );
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.platform_messages
+         (organization_id, relationship_kind, relationship_id, training_relationship_id, topic,
+          status, due_on, created_by_access_id, created_by)
+       values ($1, 'training', $2, $2, 'other', 'open', current_date + 2, $3, $4)
+       returning id`,
+      [organizationId, training, ZUGANG_ERIKA_TRAINING, users.plattformErika],
+    );
+    const trainingsfrage = rows[0]!.id;
+
+    const z = await zeitstrahl(users.ownerTherapist);
+    expect(arten(z)).not.toContain('checkin');
+    expect(z!.entries.map((e) => e.ref)).not.toContain(trainingsfrage);
+    const v = await vorbereitung(users.ownerTherapist);
+    expect(v!.checkin_due_on).toBeNull();
+    expect(v!.open_messages!.map((m) => m.id)).not.toContain(trainingsfrage);
+    expect(v!.plans_review!.map((p) => p.title)).not.toContain('Kraft Grundlagen');
   });
 
   it('fremde Person: ein Plattformkonto sieht keinen Zeitstrahl, auch nicht den eigenen', async () => {

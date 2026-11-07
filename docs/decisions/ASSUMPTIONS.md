@@ -912,7 +912,7 @@ Datenschutz · offen · 2026-11-03 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-847 — Zeitstrahl: anordnen, nicht zeigen
 Datenschutz · offen · 2026-11-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
-**Annahme.** Je Eintrag Tag, Art, Stand, Bezug; nie Wortlaut von Doku, Bogen oder Nachricht, keine Diagnose, kein Betrag. Jede Gruppe nach der Rolle ihrer eigenen Sicht, Rechnungen nur owner und office; Lesen ist Öffnen der Akte. **Grundlage.** ADR-004 Punkte 3, 6; ADR-010 Punkt 16. **Anker.** `public.get_patient_timeline`. **Rücknahme.** Funktion entfernen · Aufwand `klein`.
+**Annahme.** Je Eintrag Tag, Art, Stand, Bezug; nie Wortlaut von Doku, Bogen oder Nachricht (Ereignisse mit Vermerk wie im Befund), keine Diagnose, kein Betrag. Jede Gruppe nach der Rolle ihrer eigenen Sicht, Rechnungen nur owner und office; Lesen ist Öffnen der Akte. **Grundlage.** ADR-004 Punkte 3, 6; ADR-010 Punkt 16. **Anker.** `public.get_patient_timeline`. **Rücknahme.** Funktion entfernen · Aufwand `klein`.
 
 ## Fachregeln
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus

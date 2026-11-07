@@ -17,6 +17,9 @@ vi.mock('@/features/exercise', async (importOriginal) => ({
   ...(await importOriginal<typeof Uebungen>()),
   fetchCheckins: () => fetchCheckins() as unknown,
 }));
+vi.mock('@/features/calendar', () => ({
+  LetzterEintragVorDerTuer: () => <p>Synthetisch: Treppe geübt.</p>,
+}));
 vi.mock('../record/api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchPatient: () =>
@@ -114,9 +117,11 @@ describe('Sitzung vorbereiten (ORG-003)', () => {
     expect(screen.getByRole('link', { name: /Rückfrage beantworten: Beschwerden/ })).toBeVisible();
     // Nur der Check-in nach der Behandlung am 03.11. zählt.
     expect(
-      await screen.findByText('1 Check-in und 0 Einheiten seit der letzten Behandlung'),
+      await screen.findByText('1 Check-in und 0 Übungseinheiten seit der letzten Behandlung'),
     ).toBeVisible();
     expect(screen.getByText('Treppe ohne Geländer.')).toBeVisible();
+    expect(screen.getByText('Synthetisch: Treppe geübt.')).toBeVisible();
+    expect(screen.getByText('10.11.2026')).toBeVisible();
     expect(screen.getByText('Folgeverordnung vom 08.09.2026')).toBeVisible();
   });
 

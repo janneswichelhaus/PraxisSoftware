@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Textlink } from '@/components/ui/Textlink';
+import { Tile, TileGrid } from '@/components/ui/Tile';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import {
   checkinsKey,
@@ -16,6 +17,7 @@ import {
   verlaufsmarkierungen,
   type CheckinDaten,
 } from '@/features/exercise';
+import { LetzterEintragVorDerTuer } from '@/features/calendar';
 import { themaName } from '@/features/portal';
 import { dayKey, formatDate, formatLocalTime } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -74,21 +76,27 @@ export function VorbereitenSeite() {
   );
 }
 
-function kopfzeile(v: Vorbereitung, name: string | null): string {
+/** Höchstens vier Kacheln (DESIGN.md): wann zuletzt, wann als Nächstes. */
+function Zeitpunkte({ v }: { v: Vorbereitung }) {
   const zone = v.time_zone;
-  const naechster = v.next_appointment
-    ? `nächster Termin ${formatDate(dayKey(v.next_appointment.starts_at, zone))}, ${formatLocalTime(
-        v.next_appointment.starts_at,
-        zone,
-      )}`
-    : null;
-  return [
-    name,
-    v.last_session_on ? `seit der Behandlung am ${formatDate(v.last_session_on)}` : null,
-    naechster,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const n = v.next_appointment;
+  return (
+    <TileGrid spalte="kachel">
+      <Tile label="Letzte Behandlung">
+        {v.last_session_on ? formatDate(v.last_session_on) : 'Noch keine'}
+      </Tile>
+      <Tile label="Nächster Termin" ton="akzent">
+        {n ? (
+          <>
+            {formatDate(dayKey(n.starts_at, zone))}
+            <span className="block tabular-nums">{formatLocalTime(n.starts_at, zone)} Uhr</span>
+          </>
+        ) : (
+          'Keiner geplant'
+        )}
+      </Tile>
+    </TileGrid>
+  );
 }
 
 function Inhalt({
@@ -103,8 +111,15 @@ function Inhalt({
   const hier = `/patienten/${patientId}/vorbereiten`;
   return (
     <>
-      <PageHeader title="Sitzung vorbereiten" description={kopfzeile(v, name)} />
+      <PageHeader title="Sitzung vorbereiten" description={name ?? undefined} />
+      <Zeitpunkte v={v} />
       <ZuTun liste={aufgaben(v, patientId, themaName)} hier={hier} />
+      {v.next_appointment ? (
+        // Der letzte Eintrag vor dem nächsten Termin im Wortlaut, derselbe Lesepfad wie vor der Tür.
+        <Section titel="Letzter Eintrag" rahmen>
+          <LetzterEintragVorDerTuer appointmentId={v.next_appointment.id} />
+        </Section>
+      ) : null}
       <SeitDemLetztenMal patientId={patientId} v={v} />
       {v.goals !== null ? (
         <Listenabschnitt titel="Ziele" leer={{ titel: 'Kein Therapieziel festgehalten' }}>
@@ -161,7 +176,7 @@ function Angaben({ daten, v }: { daten: CheckinDaten; v: Vorbereitung }) {
     <div className="flex flex-col gap-4">
       <p className="text-liste text-ink">
         {anzahl(checkins.length, 'Check-in', 'Check-ins')} und{' '}
-        {anzahl(einheiten.length, 'Einheit', 'Einheiten')}{' '}
+        {anzahl(einheiten.length, 'Übungseinheit', 'Übungseinheiten')}{' '}
         {seit ? 'seit der letzten Behandlung' : 'bisher'}
       </p>
       {markierungen.length > 0 ? (
@@ -188,7 +203,7 @@ function Angaben({ daten, v }: { daten: CheckinDaten; v: Vorbereitung }) {
       ) : null}
       {einheiten.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <Zwischentitel ebene={3}>Nach den Einheiten</Zwischentitel>
+          <Zwischentitel ebene={3}>Nach den Übungseinheiten</Zwischentitel>
           <Verlaufsbilder
             erfassungen={einheiten.map((e) => ({ datum: e.performed_on, werte: e.values }))}
             markierungen={markierungen}

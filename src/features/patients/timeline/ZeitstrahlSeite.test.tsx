@@ -105,7 +105,9 @@ describe('Zeitstrahl (ORG-002)', () => {
     zeige();
     expect(await screen.findByRole('heading', { level: 1, name: 'Zeitstrahl' })).toBeVisible();
     expect(await screen.findByText('Erika Beispiel')).toBeVisible();
-    expect(screen.getByRole('heading', { name: 'November 2026 (2)' })).toBeVisible();
+    // Der Termin am 10.11. liegt nach heute: eingeklappt unter „Kommend“.
+    expect(screen.getByText('Kommend')).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'November 2026 (1)' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Oktober 2026 (1)' })).toBeVisible();
     expect(screen.getByRole('link', { name: /Rückfrage: Beschwerden/ })).toHaveAttribute(
       'href',

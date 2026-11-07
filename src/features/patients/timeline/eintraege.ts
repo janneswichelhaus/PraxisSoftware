@@ -5,11 +5,29 @@ import type { Vorbereitung, Zeitstrahleintrag } from './api';
 // Was eine Zeile des Zeitstrahls sagt und wohin sie führt. Der Regelfall trägt kein Abzeichen;
 // ein Abzeichen ist ein Stand, nie eine Bewertung (ADR-006 Punkt 11).
 
+/** Das Zeichen zum Wort eines Abzeichens (DESIGN.md Regel 5, ANN-485). */
+export type Zeichen = 'fehlt' | 'wartet' | 'abgelehnt' | 'antwort';
+
 export interface Zeile {
   titel: string;
   meta: string | null;
-  abzeichen: string | null;
+  abzeichen: { wort: string; zeichen: Zeichen } | null;
   ziel: string | null;
+}
+
+const ZEICHEN_JE_WORT: Record<string, Zeichen> = {
+  'Doku fehlt': 'fehlt',
+  'Doku im Entwurf': 'wartet',
+  Entwurf: 'wartet',
+  Offen: 'wartet',
+  Abgesagt: 'abgelehnt',
+  Ausfall: 'abgelehnt',
+  Storniert: 'abgelehnt',
+  Korrektur: 'antwort',
+};
+
+function mitZeichen(wort: string | null | undefined): Zeile['abzeichen'] {
+  return wort ? { wort, zeichen: ZEICHEN_JE_WORT[wort] ?? 'wartet' } : null;
 }
 
 export interface Namen {
@@ -64,7 +82,7 @@ export function zeile(
       return {
         titel: TERMINART[e.label ?? ''] ?? 'Termin',
         meta: uhrzeit,
-        abzeichen: (e.state && TERMINSTAND[e.state]) ?? doku,
+        abzeichen: mitZeichen((e.state && TERMINSTAND[e.state]) ?? doku),
         ziel: e.detail !== null && e.ref ? `${akte}/doku?termin=${e.ref}` : null,
       };
     }
@@ -72,14 +90,14 @@ export function zeile(
       return {
         titel: 'Nachtrag zur Doku',
         meta: uhrzeit,
-        abzeichen: e.state === 'draft' ? 'Entwurf' : null,
+        abzeichen: mitZeichen(e.state === 'draft' ? 'Entwurf' : null),
         ziel: e.ref ? `${akte}/doku?termin=${e.ref}` : null,
       };
     case 'questionnaire':
       return {
         titel: namen.instrument(e.label ?? ''),
         meta: e.state === 'platform' ? 'Von der Person über die Plattform' : null,
-        abzeichen: e.detail === 'correction' ? 'Korrektur' : null,
+        abzeichen: mitZeichen(e.detail === 'correction' ? 'Korrektur' : null),
         ziel: `${akte}/doku/befund`,
       };
     case 'course_event':
@@ -93,7 +111,7 @@ export function zeile(
       return {
         titel: 'Therapiebericht',
         meta: null,
-        abzeichen: e.detail === 'correction' ? 'Korrektur' : null,
+        abzeichen: mitZeichen(e.detail === 'correction' ? 'Korrektur' : null),
         ziel: `${akte}/verordnungen`,
       };
     case 'plan_assigned':
@@ -102,7 +120,7 @@ export function zeile(
       return { titel: PLANWECHSEL[e.kind]!, meta: e.label, abzeichen: null, ziel: null };
     case 'session':
       return {
-        titel: 'Einheit',
+        titel: 'Übungseinheit',
         meta: [e.label, vertretung(e.state)].filter(Boolean).join(' · ') || null,
         abzeichen: null,
         ziel: null,
@@ -113,7 +131,7 @@ export function zeile(
       return {
         titel: `Rückfrage: ${namen.thema(e.label ?? '')}`,
         meta: uhrzeit,
-        abzeichen: e.state === 'open' ? 'Offen' : null,
+        abzeichen: mitZeichen(e.state === 'open' ? 'Offen' : null),
         ziel: e.ref ? `/rueckfragen/${e.ref}` : null,
       };
     case 'message_closed':
@@ -134,7 +152,7 @@ export function zeile(
       return {
         titel: `Rechnung ${e.label ?? ''}`.trim(),
         meta: null,
-        abzeichen: e.state === 'cancelled' ? 'Storniert' : null,
+        abzeichen: mitZeichen(e.state === 'cancelled' ? 'Storniert' : null),
         ziel: e.ref ? `/abrechnung/rechnungen/${e.ref}` : null,
       };
     default:

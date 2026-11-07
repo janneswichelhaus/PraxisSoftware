@@ -117,7 +117,8 @@ begin
     union all
     select c.answered_on, c.recorded_at, 'checkin', c.platform_access_kind, null, null, null
     from public.checkins c
-    where v_plaene and c.relationship_kind = 'treatment' and c.relationship_id = p_patient_id
+    where v_plaene and c.organization_id = v_org and c.relationship_kind = 'treatment'
+      and c.relationship_id = p_patient_id
     union all
     -- Rückfragen: Thema und Zustand, nie der Wortlaut.
     select (m.created_at at time zone v_zone)::date, m.created_at, 'message', m.status, m.topic,
@@ -171,7 +172,7 @@ revoke all on function public.get_patient_timeline(uuid, date, integer) from pub
 grant execute on function public.get_patient_timeline(uuid, date, integer) to authenticated;
 
 comment on function public.get_patient_timeline(uuid, date, integer) is
-  'ORG-001 (IDEA-QSN-001, ANN-847): der Zeitstrahl einer Person - Termine mit Stand der Doku, Nachträge, Erhebungen, Ereignisse, Berichte, Planwechsel, Einheiten, Check-ins, Rückfragen, Grundlagen und Rechnungen - je Gruppe nach der Rolle ihrer eigenen Sicht (can_read_appointments, can_read_treatment_note, can_read_exercise_plans, may_read_platform_messages, can_read_treatment_bases, can_read_invoicing). Ohne Wortlaut der Doku, ohne Antworten, Nachrichten und Beträge. Protokolliert als Öffnen der Akte (view timeline). Ohne can_read_patient_directory null und eine Abweisung.';
+  'ORG-001 (IDEA-QSN-001, ANN-847): der Zeitstrahl einer Person - Termine mit Stand der Doku, Nachträge, Erhebungen, Ereignisse, Berichte, Planwechsel, Einheiten, Check-ins, Rückfragen, Grundlagen und Rechnungen - je Gruppe nach der Rolle ihrer eigenen Sicht (can_read_appointments, can_read_treatment_note, can_read_exercise_plans, may_read_platform_messages, can_read_treatment_bases, can_read_invoicing). Ohne Wortlaut der Doku, ohne Antworten, Nachrichten und Beträge; Ereignisse mit ihrem Vermerk wie im Befund. Protokolliert als Öffnen der Akte (view timeline). Ohne can_read_patient_directory null und eine Abweisung.';
 
 -- Die Sitzungsvorbereitung (ANN-848): nur Fälligkeiten und Fristen, nie eine Aufforderung aus
 -- Gesundheitsangaben (ADR-006 Punkt 11); die Angaben zwischen den Terminen liest die Seite aus
@@ -232,7 +233,8 @@ begin
 
   if app.can_read_exercise_plans('therapy') then
     select * into v_takt from public.checkin_schedules s
-    where s.relationship_kind = 'treatment' and s.relationship_id = p_patient_id;
+    where s.organization_id = v_org and s.relationship_kind = 'treatment'
+      and s.relationship_id = p_patient_id;
   end if;
 
   return jsonb_build_object(

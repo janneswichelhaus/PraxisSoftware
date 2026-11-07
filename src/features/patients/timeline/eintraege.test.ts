@@ -35,11 +35,11 @@ describe('Zeile im Zeitstrahl (ORG-002)', () => {
   });
 
   it('Termin: Stand der Doku nur nach dem Abhaken, Absage vor der Doku', () => {
-    expect(z({ state: 'completed', detail: 'draft' }).abzeichen).toBe('Doku im Entwurf');
-    expect(z({ state: 'completed', detail: 'none' }).abzeichen).toBe('Doku fehlt');
+    expect(z({ state: 'completed', detail: 'draft' }).abzeichen?.wort).toBe('Doku im Entwurf');
+    expect(z({ state: 'completed', detail: 'none' }).abzeichen?.wort).toBe('Doku fehlt');
     expect(z({ state: 'confirmed', detail: 'none' }).abzeichen).toBeNull();
-    expect(z({ state: 'cancelled', detail: 'none' }).abzeichen).toBe('Abgesagt');
-    expect(z({ state: 'no_show', detail: 'none' }).abzeichen).toBe('Ausfall');
+    expect(z({ state: 'cancelled', detail: 'none' }).abzeichen?.wort).toBe('Abgesagt');
+    expect(z({ state: 'no_show', detail: 'none' }).abzeichen?.wort).toBe('Ausfall');
   });
 
   it('Termin ohne Recht auf die Doku: kein Weg dorthin, kein Doku-Stand', () => {
@@ -50,7 +50,7 @@ describe('Zeile im Zeitstrahl (ORG-002)', () => {
     expect(z({ kind: 'message', state: 'open', label: 'complaint', ref: 'm1' })).toEqual({
       titel: 'Rückfrage: Beschwerden',
       meta: '10:00',
-      abzeichen: 'Offen',
+      abzeichen: { wort: 'Offen', zeichen: 'wartet' },
       ziel: '/rueckfragen/m1',
     });
   });
@@ -67,7 +67,7 @@ describe('Zeile im Zeitstrahl (ORG-002)', () => {
     expect(z({ kind: 'invoice', label: 'R-2026-0007', state: 'cancelled', ref: 'r1' })).toEqual({
       titel: 'Rechnung R-2026-0007',
       meta: null,
-      abzeichen: 'Storniert',
+      abzeichen: { wort: 'Storniert', zeichen: 'abgelehnt' },
       ziel: '/abrechnung/rechnungen/r1',
     });
     expect(z({ kind: 'plan_ended', label: 'Heimprogramm Knie' })).toMatchObject({

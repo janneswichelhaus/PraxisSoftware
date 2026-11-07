@@ -331,15 +331,15 @@ export function Tageskarte({
                   Angabe (ADR-006, ungekürzt). */}
               <dt className="text-ink-muted col-span-2 mt-1 font-semibold">Letzter Eintrag</dt>
               <dd className="col-span-2 min-w-0">
-                <LetzterEintragVorDerTuer appointmentId={termin.id} />
-                <Kleingedrucktes className="mt-1">Lesen wird protokolliert.</Kleingedrucktes>
-                {/* Seit dem letzten Mal und was ansteht, in der Fahrtzeit (ANN-848). */}
+                {/* Vorbereiten in der Fahrtzeit, über dem Wortlaut (ANN-848). */}
                 <Textlink
                   to={mitRueckweg(`/patienten/${termin.patient_id}/vorbereiten`, '/')}
                   alleinstehend
                 >
                   Sitzung vorbereiten
                 </Textlink>
+                <LetzterEintragVorDerTuer appointmentId={termin.id} />
+                <Kleingedrucktes className="mt-1">Lesen wird protokolliert.</Kleingedrucktes>
               </dd>
             </>
           ) : null}
