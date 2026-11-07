@@ -917,7 +917,7 @@ Datenschutz · offen · 2026-11-07 · — · Prüfpaket · Wiedervorlage: Datens
 ## Fachregeln
 ### ANN-840 — Diktat am leeren Feld: übernehmen und festschreiben in einem Tipp
 Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: Sichtung K5\
-**Regel.** Steht im Feld noch nichts und ist nichts anderes offen, bietet der geprüfte Vorschlag „Übernehmen und festschreiben“ als Hauptknopf, „Nur übernehmen“ daneben; festgeschrieben wird genau der Text des Vorschlags, mit „Mit Diktat“. Steht schon Text da oder eine unverständliche Stelle im Vorschlag, bleibt es bei „In die Doku übernehmen“. Die Übernahme bleibt ein eigener, benannter Tipp (§6.3); K5 mit Diktat sinkt von 7 auf 6 Tipps. **Grundlage.** §6.3; ADR-016 Punkte 4, 10. **Anker.** `festschreibenMitDiktat` in `CompleteTreatmentPage.tsx`.
+**Regel.** Leeres Feld, nichts offen, keine unverständliche Stelle: Der Vorschlag bietet „Übernehmen und festschreiben“ als Hauptknopf, „Nur übernehmen“ leise daneben; festgeschrieben wird genau sein Text, mit „Mit Diktat“. Sonst „In die Doku übernehmen“. K5 mit Diktat: 6 statt 7 Tipps. **Grundlage.** §6.3; ADR-016 Punkte 4, 10. **Anker.** `festschreibenMitDiktat`.
 
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus
 Technik · offen · 2026-10-10 · — · — · Wiedervorlage: —\

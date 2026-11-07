@@ -6,11 +6,13 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Person auf einen Blick** (ORG-EPIC-001: Zeitstrahl, Sitzung vorbereiten, Zu tun) auf `ccr-548a19ca-4aajce`; Merge bei Jannes.
+**UI-003 Teil 1** auf `ccr-a8c9183a-j2hucd`: K5 mit Diktat in 6 Tipps (ANN-840), BEF-201, BEF-194;
+Merge bei Jannes. Schritte 5 bis 7 warten auf die Leinwände (keine im Repo).
 
 ## Danach
 
-Bis M2 im November (Jannes 2026-11-01): Schritte 5 bis 7 mit Jannes' Leinwänden, UI-003;
+Bis M2 im November (Jannes 2026-11-01): UI-003 Teil 2 (Barrierefreiheit über alle Seiten,
+Feindesign), Schritte 5 bis 7 mit Jannes' Leinwänden;
 DATEV erst nach B4; zuletzt der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
 zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
@@ -40,4 +42,4 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-07.11.2026, Branch `ccr-548a19ca-4aajce` ab `main`. Lokal: `git pull`, Migrationen.
+07.11.2026, Branch `ccr-a8c9183a-j2hucd` ab `main` (UI-003 Teil 1). Lokal: `git pull`, keine Migration.

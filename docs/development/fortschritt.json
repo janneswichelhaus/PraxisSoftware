@@ -1520,7 +1520,9 @@
           "id": "ui-003",
           "name": "UI-003 Politur und Barrierefreiheit (G17)",
           "gewicht": 1,
-          "status": "offen"
+          "status": "in_arbeit",
+          "nachweis": "Teil 1 auf Branch ccr-a8c9183a-j2hucd (UI-003a bis c)",
+          "vermerk": "K5 mit Diktat 6 statt 7 Tipps (ANN-840, besuch.spec.ts), BEF-201, BEF-194; offen: Barrierefreiheit über alle Seiten, Feindesign, Reste der Überholungen"
         },
         {
           "id": "des-epic-001",
