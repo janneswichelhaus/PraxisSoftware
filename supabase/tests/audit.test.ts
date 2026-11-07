@@ -247,6 +247,8 @@ describe('Audit-Lesepfad', () => {
       'get_exercise_plan',
       'get_intake_checklist',
       'get_invoice',
+      // ANN-846: der Verlauf für die Beratung - wie get_nutrition_profile.
+      'get_nutrition_course',
       // ERN-010: das Tagebuch für die Beratung - wie get_nutrition_profile.
       'get_nutrition_diary',
       // ERN-001: das Ernährungsprofil (nur die Fähigkeit „Ernährungsberatung“,
