@@ -80,8 +80,7 @@ Jannes 2026-09-22 und 2026-09-23; ein Loop, der abweicht, sagt, gegen welchen.
 ## Die Kette bis zur Eröffnung
 Die Blöcke 0 bis 8 (Erledigt, Rückstand und Umbau, 1a Handy und UX-Fundament, Kern fertig,
 Training, Plattformzugang, Angebote, Pläne und Rückfragen, Verlauf und Alltag, Praxisbetrieb) sind
-gebaut bis auf FRB-EPIC-005 (Block 2) und ERN-EPIC-006 → ORG-EPIC-001 (Block 7, statt
-ALT-EPIC-002). Offen bei Jannes aus diesen Blöcken: Sichtungen (Rückstand,
+gebaut bis auf FRB-EPIC-005 (Block 2). Offen bei Jannes aus diesen Blöcken: Sichtungen (Rückstand,
 Handy, Training, Verlauf), D2/D3 aus dem FRB-Plan, Bilder zu den Tests, Abo- und Paketpreise (bis
 dahin synthetisch), die Tübinger Standortvorlage (Depot, Werkstatt). Danach in fester Reihenfolge:
 
@@ -137,14 +136,11 @@ die Überholungen 1 bis 11 sind gebaut).
 | R11 | PTV Developer scheitert am Vertrags-/§203-Gate | mittel | mittel | ein Gate-Punkt aus Teil 5 negativ | Adapter hinter `contract.ts`; zweite Wahl MapTiler und HERE mit eigener Prüfung |
 
 ## Offene Loops bis M2
-Zuschnitt, keine Spec. Ernährung (ADR-027): je Epic Pfad A, fertig mit dem Budget am Seed gemessen
-(375 px, Playwright); geprüft in `ernaehrung*.spec.ts` und `tagebuch*.spec.ts`.
+Zuschnitt, keine Spec.
 
 | Block | Loop | Ergebnis und Zuschnitt | Vorgabe |
 | --- | --- | --- | --- |
 | 2 | **FRB-EPIC-005** | Ein Bild ruft den Test in Erinnerung: optionales Bild je Test in der Definition, beim Abhaken gezeigt, ohne Bewertung (ADR-006); startet, sobald Bilder vorliegen (eigene Zeichnung, Lizenz nach B8 oder Foto nach §20) | `IDEA-OUT-009` |
-| 7 | **ERN-EPIC-006** | Verlauf für die Beratung: Wochenmittel neben Zielwerten, Gewicht, neben Check-ins und Training im Verlauf; fertig mit Sitzung aus einer Ansicht vorbereitet | ADR-027 |
-| 7 | **ORG-EPIC-001** | Eine Person auf einen Blick, die Sitzung ist vorbereitet: Zeitstrahl über alle Bereiche, Sitzungsvorbereitung für die Praxis, Übersicht je Person | `IDEA-QSN-001`, `IDEA-ORG-001`, `-005` |
 | 9 | **KI-EPIC-002** | Sprache umformen, ohne Inhalt hinzuzufügen: Freitext strukturieren, Patientensprache, Antwortentwürfe, Zusammenfassung ohne Bewertung, **Felder der Verordnung aus dem Foto vorschlagen**, jeweils mit Quellenbindung und menschlicher Freigabe | `IDEA-KI-002`, `-003`, `-004` |
 | 9 | **MAP-007** | Führung auf dem Gerät, ohne dass die Praxis die Position erfährt (ADR-019 Abschnitt F, §20.1: Position nur auf dem Gerät, Start nur auf Aktion, Übermittlung nur zur Neuberechnung, keine Auswertung). Zuerst **E-24** (liefern die Radprofile Manöver? ein Aufruf; ohne Ja entfällt das Epic), B2 in erweiterter Fassung und das Aufrufkontingent; Stories MAP-007a bis -f, keine rein visuelle Führung (ADR-019 Punkt 31), synthetische Adressen | `IDEA-PRX-044`; Vorgabe `git show 9452575:docs/development/MAP-LOOPS.md` |
 | 9 | **PRX-EPIC-004** | Rest: Übertragung an DATEV hinter Adapter, nach Anbieterprüfung und B4 | `IDEA-PRX-026`, `-021`, `-024`, `-033`, `-022` |

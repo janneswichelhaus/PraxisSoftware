@@ -909,6 +909,11 @@ Datenschutz · offen · 2026-11-02 · — · Prüfpaket · Wiedervorlage: OPS-00
 ### ANN-841 — Barcode: nachschlagen im Auszug, behalten am eigenen Lebensmittel
 Datenschutz · offen · 2026-11-03 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
 **Annahme.** Das Gerät liest den Barcode im Arbeitsspeicher; der Server schlägt nur die Nummer im Auszug nach, ohne Speichern und Protokoll; eigene vergleicht das Gerät. Ein eigenes Lebensmittel zu einem unbekannten Barcode behält ihn zum Wiedererkennen, vorgewählt, weil das der Zweck ist, abwählbar; einmal je Profil, die Beratung liest mit, fällt mit der Zeile. **Grundlage.** ADR-027 Punkte 4, 6, 8, 10; ADR-010 Punkte 15, 16. **Anker.** `public.find_platform_food_by_barcode`. **Rücknahme.** Spalte `barcode` entfernen · Aufwand `klein`.
+
+### ANN-847 — Zeitstrahl: anordnen, nicht zeigen
+Datenschutz · offen · 2026-11-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
+**Annahme.** Je Eintrag Tag, Art, Stand, Bezug; nie Wortlaut von Doku, Bogen oder Nachricht, keine Diagnose, kein Betrag. Jede Gruppe nach der Rolle ihrer eigenen Sicht, Rechnungen nur owner und office; Lesen ist Öffnen der Akte. **Grundlage.** ADR-004 Punkte 3, 6; ADR-010 Punkt 16. **Anker.** `public.get_patient_timeline`. **Rücknahme.** Funktion entfernen · Aufwand `klein`.
+
 ## Fachregeln
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus
 Technik · offen · 2026-10-10 · — · — · Wiedervorlage: —\
@@ -1049,6 +1054,10 @@ Praxisprozess · offen · 2026-11-06 · — · — · Wiedervorlage: —\
 ### ANN-846 — Verlauf der Beratung: Mittel über Tage mit Eintrag
 Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
 **Regel.** Mittel je Tag über die Tage mit Eintrag, Wasser über die Tage mit Wasser; ein leerer Tag zählt nicht als 0. Wochen ab Montag, höchstens zwölf, neben den Zielwerten von heute. Sitzung = abgehakter Beratungstermin; der Zeitraum beginnt am Tag nach der letzten vor heute, sonst mit der Beratung. **Grundlage.** ADR-027 Punkte 11, 13. **Anker.** `app.nutrition_course_span`.
+
+### ANN-848 — Sitzungsvorbereitung: seit der letzten Behandlung, nur Fälligkeiten
+Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
+**Regel.** Seit dem Tag nach der letzten abgehakten Behandlung vor heute. Zu tun nur Fristen: offene Rückfrage, fälliger Check-in, Plan mit Wiedervorlage, Termin ohne festgeschriebene Doku; nie aus Werten. Ziele: Therapieziel der zwei jüngsten Grundlagen. **Grundlage.** ADR-006 Punkte 3, 11. **Anker.** `public.get_session_preparation`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
