@@ -67,3 +67,8 @@ export function planPfad(art: Verhaeltnisart, verhaeltnisId: string): string {
 export function beratungsterminPfad(art: Verhaeltnisart, verhaeltnisId: string): string {
   return `${ernaehrungsFormulare(art, verhaeltnisId)}/termin`;
 }
+
+/** Der Weg zur Sitzungsvorbereitung - `…/ernaehrung/vorbereiten`. */
+export function vorbereitenPfad(art: Verhaeltnisart, verhaeltnisId: string): string {
+  return `${ernaehrungsFormulare(art, verhaeltnisId)}/vorbereiten`;
+}

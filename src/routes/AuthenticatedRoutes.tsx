@@ -89,6 +89,7 @@ import { ProtokollPage } from '@/features/core/preview/ProtokollPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
 import { AkteErnaehrung } from '@/features/nutrition/ErnaehrungReiter';
 import { BeratungsterminSeite } from '@/features/nutrition/BeratungsterminSeite';
+import { VorbereitungSeite } from '@/features/nutrition/VorbereitungSeite';
 import {
   LebensmittelPage,
   PraxisLebensmittelBearbeiten,
@@ -345,6 +346,10 @@ export function AuthenticatedRoutes({
                       <Route
                         path="/patienten/:patientId/ernaehrung/plan"
                         element={<PlanSeite art="treatment" />}
+                      />
+                      <Route
+                        path="/patienten/:patientId/ernaehrung/vorbereiten"
+                        element={<VorbereitungSeite art="treatment" />}
                       />
                     </>
                   ) : null}
@@ -912,6 +917,10 @@ export function AuthenticatedRoutes({
                       <Route
                         path="/training/:relationshipId/ernaehrung/plan"
                         element={<PlanSeite art="training" />}
+                      />
+                      <Route
+                        path="/training/:relationshipId/ernaehrung/vorbereiten"
+                        element={<VorbereitungSeite art="training" />}
                       />
                     </>
                   ) : null}

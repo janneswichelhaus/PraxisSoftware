@@ -231,6 +231,14 @@ export const ROUTEN = Object.freeze([
     etikett: 'Plan ändern',
     konten: ['owner'],
   },
+  // Wochenmittel, Gewicht, Check-ins und Training in einer Ansicht (ANN-846).
+  {
+    muster: '/patienten/:patientId/ernaehrung/vorbereiten',
+    pfad: `${akte(erika)}/ernaehrung/vorbereiten`,
+    bereich: 'Akte',
+    etikett: 'Sitzung vorbereiten',
+    konten: ['owner'],
+  },
   {
     muster: '/patienten/:patientId/verlauf',
     pfad: `${akte(erika)}/verlauf`,
@@ -733,6 +741,14 @@ export const ROUTEN = Object.freeze([
     etikett: 'Plan (Training)',
     konten: ['owner'],
     ohneDaten: 'Tina hat keine laufende Ernährungsberatung; die Seite zeigt den Leerzustand.',
+  },
+  {
+    muster: '/training/:relationshipId/ernaehrung/vorbereiten',
+    pfad: `/training/${IDS.trainingTina}/ernaehrung/vorbereiten`,
+    bereich: 'Übungen und Training',
+    etikett: 'Sitzung vorbereiten (Training)',
+    konten: ['owner'],
+    ohneDaten: 'Tina hat keine Ernährungsberatung; die Seite zeigt den Leerzustand.',
   },
   {
     muster: '/training/:relationshipId/ernaehrung/bearbeiten',
