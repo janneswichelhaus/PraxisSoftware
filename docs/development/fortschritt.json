@@ -1116,7 +1116,9 @@
           "id": "org-epic-001",
           "name": "ORG-EPIC-001 Zeitstrahl und Sitzungsvorbereitung",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-11-07",
+          "nachweis": "ORG-001 bis -003, Zweitreview"
         },
         {
           "id": "flt-epic-001",

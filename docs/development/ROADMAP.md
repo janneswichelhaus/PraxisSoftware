@@ -80,8 +80,7 @@ Jannes 2026-09-22 und 2026-09-23; ein Loop, der abweicht, sagt, gegen welchen.
 ## Die Kette bis zur Eröffnung
 Die Blöcke 0 bis 8 (Erledigt, Rückstand und Umbau, 1a Handy und UX-Fundament, Kern fertig,
 Training, Plattformzugang, Angebote, Pläne und Rückfragen, Verlauf und Alltag, Praxisbetrieb) sind
-gebaut bis auf FRB-EPIC-005 (Block 2) und ERN-EPIC-006 → ORG-EPIC-001 (Block 7, statt
-ALT-EPIC-002). Offen bei Jannes aus diesen Blöcken: Sichtungen (Rückstand,
+gebaut bis auf FRB-EPIC-005 (Block 2). Offen bei Jannes aus diesen Blöcken: Sichtungen (Rückstand,
 Handy, Training, Verlauf), D2/D3 aus dem FRB-Plan, Bilder zu den Tests, Abo- und Paketpreise (bis
 dahin synthetisch), die Tübinger Standortvorlage (Depot, Werkstatt). Danach in fester Reihenfolge:
 
@@ -137,14 +136,11 @@ die Überholungen 1 bis 11 sind gebaut).
 | R11 | PTV Developer scheitert am Vertrags-/§203-Gate | mittel | mittel | ein Gate-Punkt aus Teil 5 negativ | Adapter hinter `contract.ts`; zweite Wahl MapTiler und HERE mit eigener Prüfung |
 
 ## Offene Loops bis M2
-Zuschnitt, keine Spec. Ernährung (ADR-027): je Epic Pfad A, fertig mit dem Budget am Seed gemessen
-(375 px, Playwright); geprüft in `ernaehrung*.spec.ts` und `tagebuch*.spec.ts`.
+Zuschnitt, keine Spec.
 
 | Block | Loop | Ergebnis und Zuschnitt | Vorgabe |
 | --- | --- | --- | --- |
 | 2 | **FRB-EPIC-005** | Ein Bild ruft den Test in Erinnerung: optionales Bild je Test in der Definition, beim Abhaken gezeigt, ohne Bewertung (ADR-006); startet, sobald Bilder vorliegen (eigene Zeichnung, Lizenz nach B8 oder Foto nach §20) | `IDEA-OUT-009` |
-| 7 | **ERN-EPIC-006** | Verlauf für die Beratung: Wochenmittel neben Zielwerten, Gewicht, neben Check-ins und Training im Verlauf; fertig mit Sitzung aus einer Ansicht vorbereitet | ADR-027 |
-| 7 | **ORG-EPIC-001** | Eine Person auf einen Blick, die Sitzung ist vorbereitet: Zeitstrahl über alle Bereiche, Sitzungsvorbereitung für die Praxis, Übersicht je Person | `IDEA-QSN-001`, `IDEA-ORG-001`, `-005` |
 | 9 | **KI-EPIC-002** | Sprache umformen, ohne Inhalt hinzuzufügen: Freitext strukturieren, Patientensprache, Antwortentwürfe, Zusammenfassung ohne Bewertung, **Felder der Verordnung aus dem Foto vorschlagen**, jeweils mit Quellenbindung und menschlicher Freigabe | `IDEA-KI-002`, `-003`, `-004` |
 | 9 | **MAP-007** | Führung auf dem Gerät, ohne dass die Praxis die Position erfährt (ADR-019 Abschnitt F, §20.1: Position nur auf dem Gerät, Start nur auf Aktion, Übermittlung nur zur Neuberechnung, keine Auswertung). Zuerst **E-24** (liefern die Radprofile Manöver? ein Aufruf; ohne Ja entfällt das Epic), B2 in erweiterter Fassung und das Aufrufkontingent; Stories MAP-007a bis -f, keine rein visuelle Führung (ADR-019 Punkt 31), synthetische Adressen | `IDEA-PRX-044`; Vorgabe `git show 9452575:docs/development/MAP-LOOPS.md` |
 | 9 | **PRX-EPIC-004** | Rest: Übertragung an DATEV hinter Adapter, nach Anbieterprüfung und B4 | `IDEA-PRX-026`, `-021`, `-024`, `-033`, `-022` |
@@ -316,6 +312,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | ERN-EPIC-004 Ernährung: Barcode | gesichtet | 2026-11-03 | ERN-013 bis -015, Zweitreview | 2026-11-05 | — |
 | B | ERN-EPIC-005 Ernährung: Pläne und Rezepte | fertig | 2026-11-06 | ERN-016 bis -020, Zweitreview | — | — |
 | B | ERN-EPIC-006 Ernährung: Verlauf für die Beratung | fertig | 2026-11-07 | ERN-021 bis -023, Zweitreview | — | — |
+| B | ORG-EPIC-001 Zeitstrahl und Sitzungsvorbereitung | fertig | 2026-11-07 | ORG-001 bis -003, Zweitreview | — | — |
 | B | FLT-EPIC-001 Radflotte | gesichtet | 2026-10-15 | Branch ccr-658a5e25-l0njkl | 2026-11-05 | Auftrag Jannes (15.10.2026), ersetzt die Vorschau; ANN-550 bis ANN-558; Rad im Kalender und weitere Bauarten offen; Sichtung per Bildstrecke im PR. Nachtrag 16.10.: FLT-007 bis FLT-009 (Werbeflächen, Seitenfotos, Meldungen für den Arbeitgeber, Check-Up-Rhythmus; Migration 20261122100000, ANN-568 bis ANN-570) |
 | B | TEAM-001 Teamkommunikation: Kanäle, Direktnachrichten, Threads, Erwähnungen, Suche, eigener Lesestand, rollierende Löschung | gesichtet | 2026-10-17 | Branch claude/modest-turing-i5qgn9 | 2026-11-05 | Überholung 11 (Auftrag Jannes 17.10.2026), ersetzt die Vorschau; ADR-008 Fassung 5 Punkt 12; ANN-609 bis ANN-614; Aufbau wie Slack (Für dich, Threads); keine Startkanäle (Jannes), Nachrichten der Radflotte in der Radflotte; Anhänge (ADR-017 Punkt 30), Push (ADR-024) und Vorgangsbezug offen |
 | B | TEAM-002 Teamchat wie Slack: Chatfläche mit Gesprächen, Gespräch und Thread nebeneinander, private Kanäle, Gruppen, Reaktionen, Anheften, Für später, Planen, Suche mit Filtern, Lesestand je Thread, Zustellung ohne Doppel | gesichtet | 2026-10-18 | Branch claude/epic-cerf-vq8hz1 | 2026-11-05 | Überholung Teamchat (Auftrag Jannes 18.10.2026); ANN-640 bis ANN-651; Funktionsmatrix und Etappen: git show 9452575:docs/product/ideen/referenz-slack.md; Dateien (ADR-017), Push und Mail (ADR-024 Punkt 12), Huddles, KI, Canvas und Workflows offen als Entscheidung |

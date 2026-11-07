@@ -3,7 +3,7 @@
 
 export { erhebungenQueryKey, fetchErhebungen } from './assessments/api';
 export { erhebenPfad } from './assessments/darstellung';
-export { erhebbareInstrumente } from './assessments/instrumente';
+export { erhebbareInstrumente, instrumentName } from './assessments/instrumente';
 export {
   fetchDocumentationDeadline,
   FRIST_VOREINSTELLUNG,

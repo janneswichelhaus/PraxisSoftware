@@ -55,4 +55,5 @@ export {
 } from './treatment-bases/grundlagen';
 export { HEILMITTEL } from './treatment-bases/heilmittel';
 export { useAktuelleGrundlage } from './treatment-bases/useAktuelleGrundlage';
+export { AufEinenBlick } from './timeline/AufEinenBlick';
 export { fetchPatientOverview, PATIENT_OVERVIEW_KEY } from './uebersicht';
