@@ -22,6 +22,7 @@ export {
   HomeVisitAddressHint,
   leererTermin,
   LeistungAmTermin,
+  LetzterEintragVorDerTuer,
   positionText,
   reopenAppointment,
   schreibfehler,

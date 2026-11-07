@@ -1,0 +1,140 @@
+import { describe, expect, it } from 'vitest';
+import type { Vorbereitung, Zeitstrahleintrag } from './api';
+import { aufgaben, nachMonat, zeile, type Namen } from './eintraege';
+
+const P = 'p1';
+const NAMEN: Namen = {
+  instrument: (k) => (k === 'nrs_schmerz' ? 'Schmerzskala (NRS)' : k),
+  thema: (t) => (t === 'complaint' ? 'Beschwerden' : 'Sonstiges'),
+  bauart: (b) => (b === 'follow_up' ? 'Folgeverordnung' : 'Grundlage'),
+};
+
+function e(teil: Partial<Zeitstrahleintrag>): Zeitstrahleintrag {
+  return {
+    on: '2026-11-03',
+    at: '2026-11-03T09:00:00Z',
+    kind: 'appointment',
+    state: 'documented',
+    label: 'home_visit',
+    detail: 'final',
+    ref: 't1',
+    ...teil,
+  };
+}
+
+const z = (teil: Partial<Zeitstrahleintrag>) => zeile(e(teil), P, 'Europe/Berlin', NAMEN);
+
+describe('Zeile im Zeitstrahl (ORG-002)', () => {
+  it('Termin: Art, Uhrzeit, Weg in die Doku; festgeschrieben ohne Abzeichen', () => {
+    expect(z({})).toEqual({
+      titel: 'Hausbesuch',
+      meta: '10:00',
+      abzeichen: null,
+      ziel: '/patienten/p1/doku?termin=t1',
+    });
+  });
+
+  it('Termin: Stand der Doku nur nach dem Abhaken, Absage vor der Doku', () => {
+    expect(z({ state: 'completed', detail: 'draft' }).abzeichen?.wort).toBe('Doku im Entwurf');
+    expect(z({ state: 'completed', detail: 'none' }).abzeichen?.wort).toBe('Doku fehlt');
+    expect(z({ state: 'confirmed', detail: 'none' }).abzeichen).toBeNull();
+    expect(z({ state: 'cancelled', detail: 'none' }).abzeichen?.wort).toBe('Abgesagt');
+    expect(z({ state: 'no_show', detail: 'none' }).abzeichen?.wort).toBe('Ausfall');
+  });
+
+  it('Termin ohne Recht auf die Doku: kein Weg dorthin, kein Doku-Stand', () => {
+    expect(z({ state: 'completed', detail: null })).toMatchObject({ abzeichen: null, ziel: null });
+  });
+
+  it('Rückfrage: Thema, offen als Stand, nie der Wortlaut', () => {
+    expect(z({ kind: 'message', state: 'open', label: 'complaint', ref: 'm1' })).toEqual({
+      titel: 'Rückfrage: Beschwerden',
+      meta: '10:00',
+      abzeichen: { wort: 'Offen', zeichen: 'wartet' },
+      ziel: '/rueckfragen/m1',
+    });
+  });
+
+  it('Erhebung, Ereignis, Grundlage, Rechnung, Planwechsel, Einheit', () => {
+    expect(
+      z({ kind: 'questionnaire', label: 'nrs_schmerz', state: 'platform', detail: null }),
+    ).toMatchObject({ titel: 'Schmerzskala (NRS)', meta: 'Von der Person über die Plattform' });
+    expect(z({ kind: 'course_event', label: 'operation', detail: 'Knie-TEP' })).toMatchObject({
+      titel: 'Operation',
+      meta: 'Knie-TEP',
+    });
+    expect(z({ kind: 'treatment_basis', label: 'follow_up' }).titel).toBe('Folgeverordnung');
+    expect(z({ kind: 'invoice', label: 'R-2026-0007', state: 'cancelled', ref: 'r1' })).toEqual({
+      titel: 'Rechnung R-2026-0007',
+      meta: null,
+      abzeichen: { wort: 'Storniert', zeichen: 'abgelehnt' },
+      ziel: '/abrechnung/rechnungen/r1',
+    });
+    expect(z({ kind: 'plan_ended', label: 'Heimprogramm Knie' })).toMatchObject({
+      titel: 'Übungsplan beendet',
+      meta: 'Heimprogramm Knie',
+    });
+    expect(
+      z({ kind: 'session', label: 'Heimprogramm Knie', state: 'legal_representative' }).meta,
+    ).toBe('Heimprogramm Knie · Von der Vertretung');
+  });
+
+  it('gruppiert nach Monat in der Reihenfolge des Servers', () => {
+    const monate = nachMonat([
+      e({ on: '2026-11-03' }),
+      e({ on: '2026-11-01' }),
+      e({ on: '2026-10-30' }),
+    ]);
+    expect(monate.map((m) => [m.monat, m.eintraege.length])).toEqual([
+      ['2026-11-01', 2],
+      ['2026-10-01', 1],
+    ]);
+  });
+});
+
+describe('Zu tun (ORG-003)', () => {
+  const basis: Vorbereitung = {
+    today: '2026-11-07',
+    time_zone: 'Europe/Berlin',
+    last_session_on: '2026-11-03',
+    next_appointment: null,
+    open_messages: [{ id: 'm1', topic: 'complaint', due_on: '2026-11-04', overdue: true }],
+    checkin_due_on: '2026-11-01',
+    plans_review: [{ id: 'pl', title: 'Heimprogramm Knie', runs_until: '2026-11-12' }],
+    documentation_open: [{ id: 't1', starts_at: '2026-11-05T09:00:00Z', note_status: 'draft' }],
+    goals: [],
+  };
+  const thema = (t: string) => (t === 'complaint' ? 'Beschwerden' : t);
+
+  it('nennt Fristen und Fälligkeiten, mit Weg zur Stelle, an der sie erledigt werden', () => {
+    expect(aufgaben(basis, P, thema)).toEqual([
+      {
+        schluessel: 'm-m1',
+        titel: 'Rückfrage beantworten: Beschwerden',
+        meta: 'Antwort bis 04.11.2026',
+        abzeichen: 'Frist vorbei',
+        ziel: '/rueckfragen/m1',
+      },
+      expect.objectContaining({ titel: 'Doku festschreiben', ziel: '/termine/t1/abschluss' }),
+      expect.objectContaining({
+        titel: 'Übungsplan endet bald',
+        ziel: '/patienten/p1/doku#uebungsplaene',
+      }),
+      expect.objectContaining({ titel: 'Check-in fällig', meta: 'Seit 01.11.2026' }),
+    ]);
+  });
+
+  it('fasst ab drei Terminen ohne Doku zusammen; ohne Recht entfällt die Gruppe', () => {
+    const viele = {
+      ...basis,
+      documentation_open: ['01', '02', '03'].map((t) => ({
+        id: t,
+        starts_at: `2026-11-${t}T09:00:00Z`,
+        note_status: 'none',
+      })),
+    };
+    expect(aufgaben(viele, P, thema).map((a) => a.titel)).toContain('Doku an 3 Terminen offen');
+    const ohne = { ...basis, open_messages: null, documentation_open: null, plans_review: null };
+    expect(aufgaben({ ...ohne, checkin_due_on: null }, P, thema)).toEqual([]);
+  });
+});

@@ -103,11 +103,11 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-ALT-005 | Ernährung nur als Protokoll und Zielwert | bestätigt |
 | IDEA-ALT-006 | Kalorienzählen ist nicht für alle harmlos | bestätigt · Abgrenzung |
 | IDEA-ALT-007 | Kein Vergleich zwischen Patient:innen | bestätigt · Abgrenzung |
-| IDEA-ORG-001 | Übersicht zeigt, was zu tun ist, nicht wie es läuft | bestätigt |
+| IDEA-ORG-001 | Übersicht zeigt, was zu tun ist, nicht wie es läuft | überführt → ORG-EPIC-001 |
 | IDEA-ORG-002 | Behandlungstermin und Trainingseinheit sind zwei Dinge | bestätigt |
 | IDEA-ORG-003 | Durchführungsansicht für die Einheit | bestätigt |
 | IDEA-ORG-004 | Kalender führt Termine und Trainingstage zusammen | bestätigt |
-| IDEA-ORG-005 | Sitzungsvorbereitung für die Praxis | bestätigt |
+| IDEA-ORG-005 | Sitzungsvorbereitung für die Praxis | überführt → ORG-EPIC-001 |
 | IDEA-ORG-006 | Planlaufzeit und Wiedervorlage | bestätigt |
 | IDEA-KI-001 | Der Rahmen zuerst, dann Features | überführt → ADR-005 / KI-EPIC-001 |
 | IDEA-KI-002 | Zulässige Anwendungsfälle | bestätigt |
@@ -116,7 +116,7 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-KI-005 | Nutzung sichtbar machen | überführt → KI-EPIC-001 (ANN-825) / C6 (Protokoll) |
 | IDEA-KI-006 | Was in der Referenzsoftware „KI-Analyse" heißt | bestätigt · Einordnung |
 | IDEA-KI-007 | Sprachdokumentation: Diktat, Transkription, geprüfter Entwurf | überführt → `PROJECT_PRINCIPLES.md` §6.3 |
-| IDEA-QSN-001 | Ein Zeitstrahl über alle Bereiche | bestätigt |
+| IDEA-QSN-001 | Ein Zeitstrahl über alle Bereiche | überführt → ORG-EPIC-001 |
 | IDEA-QSN-002 | Zwei Sprachebenen im Datenmodell | bestätigt |
 | IDEA-QSN-003 | Datenexport als Funktion, nicht als Anfrage | bestätigt |
 | IDEA-QSN-004 | Regelwerke gegen synthetische Verläufe testen | bestätigt |

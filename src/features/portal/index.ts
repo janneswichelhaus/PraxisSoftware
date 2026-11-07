@@ -13,4 +13,5 @@ export { BenachrichtigungsSchalter } from './platform-access/BenachrichtigungsSc
 export { PlattformAbschnitt, PlattformzugangBeenden } from './platform-access/PlattformAbschnitt';
 export { type Plattformzugang } from './platform-access/api';
 export { anzeigezustand, usePlattformzugang, zugangBeendbar } from './platform-access/zustand';
+export { themaName } from './platform/nachrichtentexte';
 export { bereinigeTon, tontyp } from './platform/videometadaten';

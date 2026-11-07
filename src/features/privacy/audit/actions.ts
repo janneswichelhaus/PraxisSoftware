@@ -176,6 +176,9 @@ export const auditOperationLabels: Record<string, string> = {
   'patient_directory.read': 'Patientenverzeichnis durchsucht',
   'patient_files.read': 'Dateien der Akte gelesen',
   'patient_record.viewed': 'Patientenakte geöffnet',
+  // Abweisungen von Zeitstrahl und Sitzungsvorbereitung (keine neue Aktion, ANN-847).
+  'patient_timeline.read': 'Zeitstrahl gelesen',
+  'session_preparation.read': 'Sitzungsvorbereitung gelesen',
   'platform_access.companion_declined':
     'Begleitung nicht eingerichtet (Zweifel an der Einwilligung)',
   'platform_access.invitation_sent': 'Einladung zur Plattform per Mail versandt',

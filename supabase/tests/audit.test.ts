@@ -259,12 +259,16 @@ describe('Audit-Lesepfad', () => {
       // ANG-001: die Nachsorge-Abos der Akte (owner, office).
       'get_patient_aftercare',
       'get_patient_session_fee',
+      // Der Zeitstrahl einer Person (alle vier Praxisrollen, ANN-847).
+      'get_patient_timeline',
       'get_payment_reminder',
       'get_platform_access',
       // UX-009a: Absender fuer Blaetter an Patient:innen (ANN-323).
       'get_practice_sender',
       'get_practice_statistics',
       'get_practice_targets',
+      // Die Sitzungsvorbereitung (wie get_patient_timeline, ANN-848).
+      'get_session_preparation',
       'get_therapy_report',
       'get_training_appointment',
       // OUT-002: die Assessments eines Trainingsverhaeltnisses.
