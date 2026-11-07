@@ -22,6 +22,11 @@ export const THEMA_NAME: Record<Thema, string> = {
   other: 'Sonstiges',
 };
 
+/** Das Thema einer Rückfrage als Wort; ein unbekanntes als „Sonstiges“. */
+export function themaName(thema: string): string {
+  return THEMA_NAME[thema as Thema] ?? THEMA_NAME.other;
+}
+
 /** Die Zusage. Werktage sind Montag bis Freitag (ANN-309). */
 export function zusage(werktage: number): string {
   return werktage === 1

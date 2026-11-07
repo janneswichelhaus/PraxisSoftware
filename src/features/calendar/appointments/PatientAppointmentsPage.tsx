@@ -10,6 +10,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Tile, TileGrid } from '@/components/ui/Tile';
 import {
   useAktuelleGrundlage,
+  AufEinenBlick,
   usePatientRecord,
   type Patient,
   bauartLabels,
@@ -438,7 +439,12 @@ function Terminkacheln({
 
 export function PatientAppointmentsPage() {
   const { patient, user } = usePatientRecord();
-  return <Terminbereich patient={patient} user={user} />;
+  return (
+    <>
+      <AufEinenBlick patientId={patient.id} />
+      <Terminbereich patient={patient} user={user} />
+    </>
+  );
 }
 
 export function Terminbereich({ patient, user }: { patient: Patient; user: CurrentUser }) {

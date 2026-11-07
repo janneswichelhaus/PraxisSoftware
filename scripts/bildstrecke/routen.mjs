@@ -231,6 +231,14 @@ export const ROUTEN = Object.freeze([
     etikett: 'Plan ändern',
     konten: ['owner'],
   },
+  // Zeitstrahl über alle Bereiche (ANN-847), je Rolle eigener Inhalt.
+  {
+    muster: '/patienten/:patientId/zeitstrahl',
+    pfad: `${akte(erika)}/zeitstrahl`,
+    bereich: 'Akte',
+    etikett: 'Zeitstrahl',
+    konten: ['therapist', 'office'],
+  },
   // Wochenmittel, Gewicht, Check-ins und Training in einer Ansicht (ANN-846).
   {
     muster: '/patienten/:patientId/ernaehrung/vorbereiten',

@@ -12,6 +12,11 @@ export function instrumentFuer(
   return scores.find((score) => score.meta.id === instrumentId);
 }
 
+/** Der Name eines Instruments, auch eines inaktiven; ohne Definition die Kennung. */
+export function instrumentName(instrumentId: string): string {
+  return instrumentFuer(instrumentId)?.meta.name_de ?? instrumentId;
+}
+
 /**
  * Was sich erheben lässt: nur aktive Instrumente (ANN-086, ANN-099). Ein
  * inaktives erreicht keine Patientin — auch nicht über eine direkte Adresse,
