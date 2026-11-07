@@ -6,13 +6,12 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**UI-003 Teil 1** auf `ccr-a8c9183a-j2hucd`: K5 mit Diktat in 6 Tipps (ANN-840), BEF-201, BEF-194;
-Merge bei Jannes. Schritte 5 bis 7 warten auf die Leinwände (keine im Repo).
+**UI-003 Teil 2a** auf `ccr-a2d47869-gl2q3u`: axe und Ziele ab 44 px je Praxisseite in Bildstrecke
+und CI, 596 Bilder ohne Befund (ANN-849); Merge bei Jannes.
 
 ## Danach
 
-Bis M2 im November (Jannes 2026-11-01): UI-003 Teil 2 (Barrierefreiheit über alle Seiten,
-Feindesign), Schritte 5 bis 7 mit Jannes' Leinwänden;
+Bis M2 im November (Jannes 2026-11-01): UI-003 Teil 2b (Feindesign, Zustände ohne eigene Route), Schritte 5 bis 7 mit Jannes' Leinwänden;
 DATEV erst nach B4; zuletzt der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
 zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
@@ -42,4 +41,4 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-07.11.2026, Branch `ccr-a8c9183a-j2hucd` ab `main` (UI-003 Teil 1). Lokal: `git pull`, keine Migration.
+07.11.2026, Branch `ccr-a2d47869-gl2q3u` ab `main` (UI-003 Teil 2a). Lokal: `git pull`, keine Migration.
