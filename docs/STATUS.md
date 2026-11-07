@@ -6,22 +6,20 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Verlauf für die Beratung** (ERN-EPIC-006, Sitzung vorbereiten) auf `ccr-b6bc760e-oc6u8b`; Merge bei Jannes.
+**Person auf einen Blick** (ORG-EPIC-001: Zeitstrahl, Sitzung vorbereiten, Zu tun) auf `ccr-548a19ca-4aajce`; Merge bei Jannes.
 
 ## Danach
 
-Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
-ORG-EPIC-001, Schritte 5 bis 7 mit Jannes' Leinwänden, UI-003; die
-Übertragung an DATEV erst nach B4; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14
+Bis M2 im November (Jannes 2026-11-01): Schritte 5 bis 7 mit Jannes' Leinwänden, UI-003;
+DATEV erst nach B4; zuletzt der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
 zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
 
 ## Bei Jannes
 
 - Den alten Branch `ccr-544f8ce7-u1sqpf` löschen (seit 3c ist alles übertragen).
-- Nach dem Merge von „Neu aufsetzen leert auch Daten aus der Bedienung“ die Test-Umgebung neu
-  aufsetzen (Workflow „Test-Umgebung“, „neu aufsetzen“); der Lauf vom 31.10. brach an Daten aus der
-  Bedienung ab. Bis dahin scheitert Erikas Übersicht an Terminen ohne gültige UUID (`development/BEFUNDE.md`).
+- Test-Umgebung neu aufsetzen (Workflow „Test-Umgebung“, #339 ist gemergt); bis dahin scheitert
+  Erikas Übersicht an Terminen ohne gültige UUID (`development/BEFUNDE.md`).
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; E13); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
@@ -42,4 +40,4 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-07.11.2026, Branch `ccr-b6bc760e-oc6u8b` ab `main`. Lokal: `git pull`, Migrationen.
+07.11.2026, Branch `ccr-548a19ca-4aajce` ab `main`. Lokal: `git pull`, Migrationen.

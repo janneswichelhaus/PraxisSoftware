@@ -912,7 +912,7 @@ Datenschutz · offen · 2026-11-03 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-847 — Zeitstrahl: anordnen, nicht zeigen
 Datenschutz · offen · 2026-11-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
-**Annahme.** Je Eintrag Tag, Art, Stand, Bezug; nie Wortlaut von Doku, Bogen oder Nachricht (Ereignisse mit Vermerk wie im Befund), keine Diagnose, kein Betrag. Jede Gruppe nach der Rolle ihrer eigenen Sicht, Rechnungen nur owner und office; Lesen ist Öffnen der Akte. **Grundlage.** ADR-004 Punkte 3, 6; ADR-010 Punkt 16. **Anker.** `public.get_patient_timeline`. **Rücknahme.** Funktion entfernen · Aufwand `klein`.
+**Annahme.** Je Eintrag Tag, Art, Stand, Bezug; kein Wortlaut von Doku, Bogen, Nachricht, keine Diagnose, kein Betrag. Je Gruppe die Rolle ihrer Sicht. **Grundlage.** ADR-004 Punkte 3, 6; ADR-010 Punkt 16. **Anker.** `public.get_patient_timeline`. **Rücknahme.** Funktion entfernen · Aufwand `klein`.
 
 ## Fachregeln
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus
@@ -1054,10 +1054,6 @@ Praxisprozess · offen · 2026-11-06 · — · — · Wiedervorlage: —\
 ### ANN-846 — Verlauf der Beratung: Mittel über Tage mit Eintrag
 Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
 **Regel.** Mittel je Tag über die Tage mit Eintrag, Wasser über die Tage mit Wasser; ein leerer Tag zählt nicht als 0. Wochen ab Montag, höchstens zwölf, neben den Zielwerten von heute. Sitzung = abgehakter Beratungstermin; der Zeitraum beginnt am Tag nach der letzten vor heute, sonst mit der Beratung. **Grundlage.** ADR-027 Punkte 11, 13. **Anker.** `app.nutrition_course_span`.
-
-### ANN-848 — Sitzungsvorbereitung: seit der letzten Behandlung, nur Fälligkeiten
-Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
-**Regel.** Seit dem Tag nach der letzten abgehakten Behandlung vor heute. Zu tun nur Fristen: offene Rückfrage, fälliger Check-in, Plan mit Wiedervorlage, Termin ohne festgeschriebene Doku; nie aus Werten. Ziele: Therapieziel der zwei jüngsten Grundlagen. **Grundlage.** ADR-006 Punkte 3, 11. **Anker.** `public.get_session_preparation`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
@@ -1516,3 +1512,4 @@ Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
 | ANN-822 | Bereichsschalter und „Ich“: „Ihre Behandlung“, „Ihr Training“ statt des bloßen Worts, neben „Für …“ | Technik · entschieden (Jannes) | `wahlName` in `src/features/portal/platform/wahl.ts` |
 | ANN-832 | Angebotskennzahlen: Pakete und Abos mindestens, ohne Anschluss höchstens; Folgepakete in Offene Punkte | Praxisprozess · entschieden (Jannes) | `ANGEBOTSKENNZAHLEN` in `src/features/billing/statistics/kennzahlen.ts` |
 | ANN-834 | Pakete ohne Anschluss als Gruppe in Offene Punkte, „Noch in Behandlung“ an der Zeile, Sprung zu Gruppe und Paket | Praxisprozess · entschieden (Jannes) | `public.list_ending_training_packages` |
+| ANN-848 | Sitzungsvorbereitung: seit der letzten Behandlung, zu tun nur Fristen | Praxisprozess · offen | `public.get_session_preparation` |
