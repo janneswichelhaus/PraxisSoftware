@@ -24,8 +24,11 @@ export function beschriftung(item: ScoreItem): string {
 export function laengstesWort(optionen: readonly { label: string }[]): number {
   let laengstes = 0;
   for (const option of optionen) {
-    for (const wort of option.label.split(/\s+|(?<=-)(?=\p{L})/u)) {
-      laengstes = Math.max(laengstes, wort.length);
+    // Ohne Lookbehind: Safari vor iOS 16.4 lädt das Modul sonst nicht.
+    for (const teil of option.label.split(/\s+/u)) {
+      for (const wort of teil.replace(/-(?=\p{L})/gu, '-\n').split('\n')) {
+        laengstes = Math.max(laengstes, wort.length);
+      }
     }
   }
   return laengstes;

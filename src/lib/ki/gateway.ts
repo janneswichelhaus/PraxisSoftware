@@ -120,10 +120,26 @@ const erfolgSchema = z.object({
 // Dieselbe Satzregel wie `saetze` im Gateway (`inhaltstreue.ts`); `vertrag.test.ts` hält beide gleich.
 const KEIN_SATZENDE = /(?:^|\s)(?:\d+|\p{L}|ca|bzw|ggf|evtl|vgl|inkl|usw|Dr|Nr)\.$/iu;
 
+/**
+ * Trennt nach Satzzeichen und Leerraum wie der Gateway, ohne Lookbehind: Safari vor
+ * iOS 16.4 kennt ihn nicht, das Modul lüde dort gar nicht (`src/safari.test.ts`).
+ */
+function nachSatzzeichen(text: string): string[] {
+  const teile: string[] = [];
+  let anfang = 0;
+  for (const treffer of text.matchAll(/[.!?…](\s+)/gu)) {
+    const ende = treffer.index + treffer[0].length - treffer[1]!.length;
+    teile.push(text.slice(anfang, ende));
+    anfang = ende + treffer[1]!.length;
+  }
+  teile.push(text.slice(anfang));
+  return teile;
+}
+
 /** Die Sätze eines Textes nach der Regel des Gateways. */
 export function saetze(text: string): string[] {
   const liste: string[] = [];
-  for (const teil of text.split(/(?<=[.!?…])\s+/u)) {
+  for (const teil of nachSatzzeichen(text)) {
     const satz = teil.trim();
     if (satz === '') continue;
     const vorig = liste.at(-1);
