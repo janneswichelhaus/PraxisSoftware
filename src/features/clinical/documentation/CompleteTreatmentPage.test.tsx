@@ -1595,17 +1595,22 @@ describe('CompleteTreatmentPage', () => {
       ).toBeInTheDocument();
       // Das Feld bleibt leer, bis jemand übernimmt.
       expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('');
-      // Am leeren Feld trägt „Übernehmen und festschreiben“ den Hauptknopf (ANN-840).
+      // Mit unverständlicher Stelle geht der Vorschlag erst ins Feld (ANN-840).
+      expect(screen.queryByRole('button', { name: 'Übernehmen und festschreiben' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'In die Doku übernehmen' })).toHaveClass(
+        'bg-accent',
+      );
+      expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
+
+      // Korrigiert man die Stelle, zählt die Zeile mit - und am leeren Feld trägt
+      // „Übernehmen und festschreiben“ den Hauptknopf.
+      await user.clear(vorschlag);
+      await user.type(vorschlag, 'Plan{Enter}Treppe üben.');
+      expect(screen.queryByText(/Stelle unverständlich/)).toBeNull();
       expect(screen.getByRole('button', { name: 'Übernehmen und festschreiben' })).toHaveClass(
         'bg-accent',
       );
       expect(screen.getByRole('button', { name: 'Nur übernehmen' })).not.toHaveClass('bg-accent');
-      expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
-
-      // Korrigiert man die Stelle, zählt die Zeile mit.
-      await user.clear(vorschlag);
-      await user.type(vorschlag, 'Plan{Enter}Treppe üben.');
-      expect(screen.queryByText(/Stelle unverständlich/)).toBeNull();
     });
 
     it('schreibt am leeren Feld den geprüften Vorschlag mit einem Tipp fest (ANN-840)', async () => {
@@ -1648,12 +1653,14 @@ describe('CompleteTreatmentPage', () => {
       completeTreatment.mockRejectedValueOnce(new Error('Keine Verbindung.'));
       const user = userEvent.setup();
       rendern();
-      await diktieren(user);
+      const vorschlag = await diktieren(user);
+      await user.clear(vorschlag);
+      await user.type(vorschlag, 'Plan{Enter}Treppe üben.');
       await user.click(screen.getByRole('button', { name: 'Übernehmen und festschreiben' }));
 
       await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
       expect(await screen.findByRole('alert')).toHaveTextContent('Keine Verbindung.');
-      expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue(VORSCHLAGSTEXT);
+      expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('Plan\nTreppe üben.');
       expect(screen.queryByLabelText('Text des Vorschlags')).toBeNull();
       expect(screen.getByRole('button', { name: 'Festschreiben' })).toBeEnabled();
     });

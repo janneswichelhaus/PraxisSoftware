@@ -185,9 +185,9 @@ test('spricht am Telefon: Sprechen im Daumenbereich, Aufnahme, Vorschlag, Übern
   expect(anfrage).not.toContain('Mustermann');
   await ohneUeberlauf(page);
 
-  // Am leeren Feld steht „Übernehmen und festschreiben“ vorn, im Bild (ANN-840).
-  await expect(page.getByRole('button', { name: 'Übernehmen und festschreiben' })).toBeVisible();
-  await page.getByRole('button', { name: 'Nur übernehmen' }).click();
+  // Mit unverständlicher Stelle geht der Vorschlag erst ins Feld (ANN-840).
+  await expect(page.getByRole('button', { name: 'Übernehmen und festschreiben' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'In die Doku übernehmen' }).click();
   await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(/^Angaben der Patient:in\n/);
   await expect(page.getByRole('button', { name: 'Festschreiben' })).toBeInViewport();
   await ohneUeberlauf(page);

@@ -176,6 +176,7 @@ export function AnhaengeAbschnitt({
                   bezeichnung={`${beschreibung(a)} löschen`}
                   bestaetigen="Ja, löschen"
                   bestaetigenLaeuft="Wird gelöscht …"
+                  fehler={loeschen.isError ? loeschen.error.message : undefined}
                   onBestaetigen={() => loeschen.mutateAsync(a.id)}
                 >
                   <p>Die Aufnahme wird gelöscht. Das lässt sich nicht rückgängig machen.</p>

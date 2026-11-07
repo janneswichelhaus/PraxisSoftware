@@ -182,6 +182,7 @@ export function VorschlagAusAufnahme({
 
   if (stand.art !== 'vorschlag') return null;
   const stellen = unverstaendlicheStellen(stand.text);
+  const festschreibbar = onFestschreiben !== undefined && stellen === 0;
 
   return (
     <div
@@ -218,7 +219,8 @@ export function VorschlagAusAufnahme({
             </p>
           </Disclosure>
           <div className="flex flex-wrap gap-3">
-            {onFestschreiben ? (
+            {/* Mit unverständlicher Stelle erst ins Feld: nie ungeprüft in Version 1 (ANN-840). */}
+            {festschreibbar ? (
               <Button
                 type="button"
                 disabled={gesperrt || stand.text.trim() === ''}
@@ -230,14 +232,14 @@ export function VorschlagAusAufnahme({
             ) : null}
             <Button
               type="button"
-              variant={onFestschreiben ? 'secondary' : 'primary'}
+              variant={festschreibbar ? 'quiet' : 'primary'}
               disabled={gesperrt || stand.text.trim() === ''}
               onClick={() => {
                 const text = diktat.uebernehmen();
                 if (text) onUebernehmen(text);
               }}
             >
-              {onFestschreiben ? 'Nur übernehmen' : 'In die Doku übernehmen'}
+              {festschreibbar ? 'Nur übernehmen' : 'In die Doku übernehmen'}
             </Button>
             <Rueckfrage
               ausloeser="Verwerfen"
@@ -251,8 +253,7 @@ export function VorschlagAusAufnahme({
           </div>
           <Kleingedrucktes>
             Die Aufnahme wird nur für diesen Vorschlag verarbeitet und nicht gespeichert. Erst
-            „Übernehmen“ macht daraus Ihren Text
-            {onFestschreiben ? '; „Übernehmen und festschreiben“ schreibt ihn gleich fest.' : '.'}
+            „Übernehmen“ macht daraus Ihren Text.
           </Kleingedrucktes>
         </div>
       </Section>
