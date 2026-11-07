@@ -17,7 +17,7 @@ import {
   type CheckinDaten,
 } from '@/features/exercise';
 import { themaName } from '@/features/portal';
-import { formatDate, formatLocalDate, formatLocalTime } from '@/lib/datum';
+import { dayKey, formatDate, formatLocalTime } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchPatient, fullName } from '../record/api';
 import { bauartLabels } from '../treatment-bases/api';
@@ -77,7 +77,7 @@ export function VorbereitenSeite() {
 function kopfzeile(v: Vorbereitung, name: string | null): string {
   const zone = v.time_zone;
   const naechster = v.next_appointment
-    ? `nächster Termin ${formatLocalDate(v.next_appointment.starts_at, zone)}, ${formatLocalTime(
+    ? `nächster Termin ${formatDate(dayKey(v.next_appointment.starts_at, zone))}, ${formatLocalTime(
         v.next_appointment.starts_at,
         zone,
       )}`
