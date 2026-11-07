@@ -1108,7 +1108,9 @@
           "id": "ern-epic-006",
           "name": "ERN-EPIC-006 Ernährung: Verlauf für die Beratung",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-11-07",
+          "nachweis": "ERN-021 bis -023, Zweitreview"
         },
         {
           "id": "org-epic-001",

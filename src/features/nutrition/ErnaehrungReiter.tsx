@@ -30,7 +30,7 @@ import {
   type Ernaehrungssicht,
   type Verhaeltnisart,
 } from './api';
-import { beratungsterminPfad, ernaehrungsFormulare, leseZahl } from './eingabe';
+import { beratungsterminPfad, ernaehrungsFormulare, leseZahl, vorbereitenPfad } from './eingabe';
 import { PlanAbschnitt } from './PlanSeite';
 import { Zielwertliste } from './Rechenweg';
 import { TagebuchDerBeratung } from './TagebuchDerBeratung';
@@ -171,6 +171,15 @@ function Profilansicht({
           eintragen; was mit den Angaben geschieht, mit der Person klären.
         </Statusmeldung>
       ) : null}
+
+      {/* ANN-846: Wochenmittel, Gewicht, Check-ins und Training in einer Ansicht. */}
+      <ButtonLink
+        to={vorbereitenPfad(art, verhaeltnisId)}
+        variant="secondary"
+        className="self-start"
+      >
+        Sitzung vorbereiten
+      </ButtonLink>
 
       {/* ERN-012 (ANN-622): die Sitzung als Termin mit dem Anlass; mit dem
           Haken entsteht die Position, die Rechnung ist die des Bereichs. */}

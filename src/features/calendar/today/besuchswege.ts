@@ -42,6 +42,21 @@ export function dokuZiel(
 }
 
 /**
+ * Am Beratungstermin führt „Vorbereiten“ zur Sitzungsvorbereitung des Verhältnisses -
+ * nur für die Fähigkeit „Ernährungsberatung“; verbindlich prüft der Server (ADR-027 Punkt 4).
+ */
+export function vorbereitenZiel(termin: DayPlanEntry, darfBeraten: boolean): string | null {
+  if (!darfBeraten || termin.occasion !== 'nutrition_counselling') return null;
+  if (termin.status === 'cancelled' || termin.status === 'no_show') return null;
+  const pfad = termin.patient_id
+    ? `/patienten/${termin.patient_id}/ernaehrung/vorbereiten`
+    : termin.training_relationship_id
+      ? `/training/${termin.training_relationship_id}/ernaehrung/vorbereiten`
+      : null;
+  return pfad ? mitRueckweg(pfad, '/') : null;
+}
+
+/**
  * Darf an diesem Termin „Ausfall“ stehen (B12)?
  *
  * ANN-533: an einem Behandlungstermin, sobald er begonnen hat, solange er

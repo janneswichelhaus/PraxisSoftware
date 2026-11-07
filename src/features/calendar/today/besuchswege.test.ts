@@ -7,6 +7,7 @@ import {
   smsNummer,
   verspaetungsText,
   VERSPAETUNG_MINUTEN,
+  vorbereitenZiel,
 } from './besuchswege';
 import type { DayPlanEntry } from '@/features/calendar/day-plan/api';
 
@@ -129,5 +130,28 @@ describe('„Ausfall“ an der Zeile (B12, ANN-533)', () => {
     expect(ausfallMoeglich(termin({ kind: 'training', patient_id: null }), BEGINN)).toBe(false);
     expect(ausfallMoeglich(termin({ kind: 'internal', patient_id: null }), BEGINN)).toBe(false);
     expect(ausfallMoeglich(termin({ patient_id: null }), BEGINN)).toBe(false);
+  });
+});
+
+describe('Vorbereiten am Beratungstermin (ERN-023)', () => {
+  const beratung = { occasion: 'nutrition_counselling' as const };
+
+  it('an der Akte und am Trainingsverhältnis, nur mit der Fähigkeit', () => {
+    expect(vorbereitenZiel(termin(beratung), true)).toMatch(
+      /^\/patienten\/p1\/ernaehrung\/vorbereiten\?/,
+    );
+    expect(
+      vorbereitenZiel(
+        termin({ ...beratung, kind: 'training', patient_id: null, training_relationship_id: 'v1' }),
+        true,
+      ),
+    ).toMatch(/^\/training\/v1\/ernaehrung\/vorbereiten\?/);
+    expect(vorbereitenZiel(termin(beratung), false)).toBeNull();
+  });
+
+  it('nicht an gewöhnlichen, abgesagten oder nicht angetroffenen Terminen', () => {
+    expect(vorbereitenZiel(termin(), true)).toBeNull();
+    expect(vorbereitenZiel(termin({ ...beratung, status: 'cancelled' }), true)).toBeNull();
+    expect(vorbereitenZiel(termin({ ...beratung, status: 'no_show' }), true)).toBeNull();
   });
 });

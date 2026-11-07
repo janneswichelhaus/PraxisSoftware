@@ -32,6 +32,7 @@ import {
   canReadPatientDirectory,
   canWriteTrainingClients,
   isTherapyStaff,
+  canCounselNutrition,
   canReadTreatmentNote,
   canWriteTreatmentNote,
   isStaff,
@@ -40,7 +41,7 @@ import {
 import { nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS } from './api';
 import { Tageskarte } from './Tagesliste';
 import { AnrufKnopf, AusfallKnopf, HakenRueckgaengig, SpaeterDa } from './Besuchsknoepfe';
-import { ausfallMoeglich, dokuZiel } from './besuchswege';
+import { ausfallMoeglich, dokuZiel, vorbereitenZiel } from './besuchswege';
 import { Nachzuholen, NochOffen } from './NochOffen';
 import { TagesplanDruck } from './TagesplanDruck';
 import { CheckupErinnerung } from '@/features/fleet';
@@ -341,6 +342,7 @@ function MeinTag({
   darfDokumentieren,
   darfDokuLesen,
   darfTermine,
+  darfBeraten,
   mitBehandlung,
   zeitzone,
   jetzt,
@@ -357,6 +359,8 @@ function MeinTag({
   darfDokumentieren: boolean;
   darfDokuLesen: boolean;
   darfTermine: boolean;
+  /** Fähigkeit „Ernährungsberatung“: „Vorbereiten“ am Beratungstermin (ANN-846). */
+  darfBeraten: boolean;
   /** Sieht die Rolle Akten? Sonst fragt die Liste nicht nach Erstaufnahmen (TRN-006). */
   mitBehandlung: boolean;
   zeitzone: string;
@@ -485,6 +489,7 @@ function MeinTag({
    */
   function zeilenAktionen(termin: DayPlanEntry): ReactNode {
     const doku = dokuFuer(termin);
+    const vorbereiten = vorbereitenZiel(termin, darfBeraten);
     // B4: Ist die Doku festgeschrieben, steht der Haken gleich da - auch
     // bevor die Zeit des Besuchs um ist (Kernablauf K5).
     const hakenDa =
@@ -495,9 +500,17 @@ function MeinTag({
     ) : termin.kind === 'internal' ? null : (
       <AnrufKnopf termin={termin} />
     );
-    if (!doku && !zweites) return null;
+    if (!doku && !vorbereiten && !zweites) return null;
     return (
       <>
+        {vorbereiten ? (
+          <ButtonLink to={vorbereiten} variant="secondary" groesse="kompakt" className="shrink-0">
+            Vorbereiten{' '}
+            <span className="sr-only">
+              zum Termin um {formatLocalTime(termin.starts_at, zeitzone)} Uhr
+            </span>
+          </ButtonLink>
+        ) : null}
         {doku ? (
           <ButtonLink to={doku} variant="secondary" groesse="kompakt" className="shrink-0">
             Doku{' '}
@@ -1284,6 +1297,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
               darfDokumentieren={darfDokumentieren}
               darfDokuLesen={canReadTreatmentNote(user.roles)}
               darfTermine={darfTermine}
+              darfBeraten={canCounselNutrition(user.roles)}
               mitBehandlung={isTherapyStaff(user.roles)}
               zeitzone={zeitzone}
               jetzt={jetzt}
