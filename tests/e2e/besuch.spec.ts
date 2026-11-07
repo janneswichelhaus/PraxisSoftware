@@ -28,6 +28,8 @@ import {
  * Vorgang über den bestehenden Weg genau einmal lief (`complete_treatment`,
  * `complete_appointment`, `create_appointment`).
  */
+import { diktatAnbieten } from './mikrofon';
+
 const PRUEFSEITE = '/tests/e2e/fixtures/besuch.html';
 const ZONE = 'Europe/Berlin';
 const BESUCH_1 = 'cccccccc-cccc-4ccc-8ccc-000000000001';
@@ -599,6 +601,62 @@ test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigati
     p_start_time: '09:00',
     p_end_time: '10:00',
     p_appointment_type: 'home_visit',
+  });
+});
+
+test('K5 mit Diktat am Stück: höchstens 6 Tipps bis „Fertig“, die Übernahme bleibt ausdrücklich (ANN-840)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.clock.setFixedTime(um('09:20'));
+  const server = nachbildung();
+  await page.route('**/rest/v1/**', (route) => server.beantworte(route));
+  await page.route('**/functions/v1/**', (route) => route.fulfill({ status: 503, body: '' }));
+  // Später eingehängt, also vor der Abweisung oben: nur der Gateway antwortet.
+  await diktatAnbieten(page);
+
+  let tipps = 0;
+  async function tippe(ziel: Locator) {
+    tipps += 1;
+    await ziel.click();
+  }
+
+  await page.goto(PRUEFSEITE);
+  const karte = page.getByRole('article');
+  await tippe(karte.getByRole('link', { name: 'Doku zu diesem Termin' }));
+
+  // Ausdrücklich gestartet und beendet (§6.3).
+  await tippe(page.getByRole('button', { name: 'Sprechen' }));
+  await tippe(page.getByRole('button', { name: 'Fertig' }));
+  await expect(
+    page.getByRole('heading', { name: 'Vorschlag aus der Aufnahme – bitte prüfen' }),
+  ).toBeVisible();
+  expect(server.aufrufe.complete_treatment).toBeUndefined();
+
+  // Prüfen und korrigieren ohne Tipp-Zählung (Text), dann ausdrücklich übernehmen
+  // und festschreiben in einem Tipp.
+  await page.getByLabel('Text des Vorschlags').fill('Plan\nTreppe üben.');
+  const beide = page.getByRole('button', { name: 'Übernehmen und festschreiben' });
+  await expect(beide).toBeInViewport();
+  await tippe(beide);
+  await expect(
+    page.getByText('Eintrag als Version 1 festgeschrieben.', { exact: false }),
+  ).toBeVisible();
+
+  await tippe(page.getByRole('button', { name: /^Folgetermin anlegen: .*gleiche Zeit/ }));
+  await expect(page.getByText(/Folgetermin angelegt: /)).toBeVisible();
+  await tippe(page.getByRole('button', { name: 'Fertig' }));
+  await expect(page.getByRole('article')).toBeVisible();
+
+  const wege = await page.evaluate(() => (window as unknown as { __wege: string[] }).__wege);
+  test.info().annotations.push({ type: 'K5 mit Diktat', description: `${tipps} Tipps (vorher 7)` });
+  expect(tipps).toBeLessThanOrEqual(6);
+  expect(wege.length - 1).toBeLessThanOrEqual(2);
+  // Festgeschrieben wurde genau der geprüfte Text, mit dem Merkmal (ANN-825).
+  expect(server.aufrufe.complete_treatment).toHaveLength(1);
+  expect(server.aufrufe.complete_treatment?.[0]).toMatchObject({
+    p_content: 'Plan\nTreppe üben.',
+    p_dictated: true,
   });
 });
 

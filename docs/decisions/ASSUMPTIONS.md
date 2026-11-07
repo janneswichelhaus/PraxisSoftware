@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-06.
+Zuletzt aktualisiert: 2026-11-07.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -915,6 +915,10 @@ Datenschutz · offen · 2026-11-07 · — · Prüfpaket · Wiedervorlage: Datens
 **Annahme.** Je Eintrag Tag, Art, Stand, Bezug; kein Wortlaut von Doku, Bogen, Nachricht, keine Diagnose, kein Betrag. Je Gruppe die Rolle ihrer Sicht. **Grundlage.** ADR-004 Punkte 3, 6; ADR-010 Punkt 16. **Anker.** `public.get_patient_timeline`. **Rücknahme.** Funktion entfernen · Aufwand `klein`.
 
 ## Fachregeln
+### ANN-840 — Diktat am leeren Feld: übernehmen und festschreiben in einem Tipp
+Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: Sichtung K5\
+**Regel.** Leeres Feld, nichts offen, keine unverständliche Stelle: Der Vorschlag bietet „Übernehmen und festschreiben“ als Hauptknopf, „Nur übernehmen“ leise daneben; festgeschrieben wird genau sein Text, mit „Mit Diktat“. Sonst „In die Doku übernehmen“. K5 mit Diktat: 6 statt 7 Tipps. **Grundlage.** §6.3; ADR-016 Punkte 4, 10. **Anker.** `festschreibenMitDiktat`.
+
 ### ANN-319 — Entwürfe sichern sich nach drei Sekunden Pause selbst; nach einem Fehlschlag setzt das aus
 Technik · offen · 2026-10-10 · — · — · Wiedervorlage: —\
 **Regel.** Steht ungespeicherter Text drei Sekunden still, sichert die Seite einen Entwurf (nie Finalisierung), an Termin, Nachtrag, Therapiebericht und Erhebung, nicht an Korrektur, Vermerk „Tür geöffnet, nicht behandelt“ oder ohne Netz. Ein abgebrochener Nachtrag bleibt und wird mit der Frist Version 1. **Grundlage.** ADR-016 Punkte 3 und 7. **Anker.** `SELBST_SICHERN_PAUSE_MS` in `Textverlustschutz.tsx`.

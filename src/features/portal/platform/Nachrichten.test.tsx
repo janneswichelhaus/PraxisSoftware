@@ -451,14 +451,25 @@ describe('Foto und Video an der Nachricht (KOM-007, ADR-017 Abschnitt L)', () =>
     expect(ladeAnhang).not.toHaveBeenCalled();
   });
 
-  it('Ansehen lädt erst auf Tippen, Löschen löscht', async () => {
+  it('Ansehen lädt erst auf Tippen, Löschen löscht erst nach der Rückfrage', async () => {
     const nutzer = userEvent.setup();
     zeige({});
     await nutzer.click(await screen.findByRole('button', { name: 'Ansehen' }));
     expect(await screen.findByLabelText(/Video vom/)).toBeInTheDocument();
     expect(ladeAnhang).toHaveBeenCalledWith(ZUGANG.access_id, VIDEO.id);
     await nutzer.click(screen.getByRole('button', { name: 'Löschen' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, löschen' }));
     await waitFor(() => expect(anhangLoeschen).toHaveBeenCalledWith(ZUGANG.access_id, VIDEO.id));
+  });
+
+  it('Abbrechen an der Rückfrage löscht nichts (DESIGN.md)', async () => {
+    const nutzer = userEvent.setup();
+    zeige({});
+    await nutzer.click(await screen.findByRole('button', { name: 'Löschen' }));
+    expect(screen.getByText(/lässt sich nicht rückgängig machen/)).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    expect(anhangLoeschen).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Löschen' })).toBeInTheDocument();
   });
 
   it('die Zeitmarke der Praxis öffnet das Video an der Stelle (Punkt 68)', async () => {

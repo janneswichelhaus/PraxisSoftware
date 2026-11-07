@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { ListRows } from '@/components/ui/ListRow';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { Kameradialog } from '@/components/ui/Kameradialog';
@@ -168,14 +169,18 @@ export function AnhaengeAbschnitt({
                 >
                   {ansicht?.anhangId === a.id ? 'Schließen' : 'Ansehen'}
                 </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={loeschen.isPending}
-                  onClick={() => loeschen.mutate(a.id)}
+                {/* Zerstörendes leise am Ende und nur nach Rückfrage (DESIGN.md). */}
+                <Rueckfrage
+                  ausloeser="Löschen"
+                  ausloeserVariante="quiet"
+                  bezeichnung={`${beschreibung(a)} löschen`}
+                  bestaetigen="Ja, löschen"
+                  bestaetigenLaeuft="Wird gelöscht …"
+                  fehler={loeschen.isError ? loeschen.error.message : undefined}
+                  onBestaetigen={() => loeschen.mutateAsync(a.id)}
                 >
-                  Löschen
-                </Button>
+                  <p>Die Aufnahme wird gelöscht. Das lässt sich nicht rückgängig machen.</p>
+                </Rueckfrage>
               </div>
               {ansicht?.anhangId === a.id ? (
                 <Aufnahmeansicht
