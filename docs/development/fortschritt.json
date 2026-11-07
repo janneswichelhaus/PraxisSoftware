@@ -1,5 +1,5 @@
 {
-  "stand": "2026-11-05",
+  "stand": "2026-11-06",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -1100,7 +1100,9 @@
           "id": "ern-epic-005",
           "name": "ERN-EPIC-005 Ernährung: Pläne und Rezepte",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-11-06",
+          "nachweis": "ERN-016 bis -020, Zweitreview"
         },
         {
           "id": "ern-epic-006",

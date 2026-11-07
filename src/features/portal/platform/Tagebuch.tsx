@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
@@ -9,6 +9,7 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
+import { ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
@@ -43,6 +44,7 @@ import {
   type Mahlzeit,
 } from '@/features/nutrition/tagebuch';
 import { zahl } from '@/features/nutrition/texte';
+import { vorschlagsWahl, type Planposition } from '@/features/nutrition/plaene';
 import { tagePlus } from '@/lib/datum';
 import {
   tagebuchSchluessel,
@@ -58,7 +60,7 @@ import {
 import { Abschnitt, Aufklappzeilen } from './Ernaehrungsteile';
 import { nachDemAnlegenNehmen, sucheNachScanMerken } from './barcodeUebergabe';
 import { bereichParameter } from './pfade';
-import { MengeWaehlen } from './TagebuchEintragen';
+import { MengeWaehlen, Schnellzeile } from './TagebuchEintragen';
 import { TagebuchErinnerungen } from './TagebuchErinnerungen';
 import { BarcodeScan, ScanKnopf } from './TagebuchScan';
 import {
@@ -167,23 +169,30 @@ function Inhalt({
       ) : null}
       {/* Das Eintragen zuerst: So steht es auch bei „Sehr groß“ im ersten Bild (ANN-796). */}
       <div className={ZWEI_SPALTEN}>
-        <Mahlzeiten
-          daten={daten}
-          gesperrt={gesperrt}
-          ohneNetzId={ohneNetzId}
-          {...(daten.can_delete && verbunden ? { onOeffnen: setOffen } : {})}
-          {...(daten.can_write
-            ? {
-                scannen: (
-                  <TagScan
-                    zugang={zugang}
-                    daten={daten}
-                    ohneNetzId={gesperrt ? ohneNetzId : undefined}
-                  />
-                ),
-              }
-            : {})}
-        />
+        <div className="flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:gap-12">
+          <Mahlzeiten
+            daten={daten}
+            gesperrt={gesperrt}
+            ohneNetzId={ohneNetzId}
+            {...(daten.can_delete && verbunden ? { onOeffnen: setOffen } : {})}
+            {...(daten.can_write
+              ? {
+                  scannen: (
+                    <TagScan
+                      zugang={zugang}
+                      daten={daten}
+                      ohneNetzId={gesperrt ? ohneNetzId : undefined}
+                    />
+                  ),
+                }
+              : {})}
+          />
+          <AusDemPlan
+            zugang={zugang}
+            daten={daten}
+            ohneNetzId={gesperrt ? ohneNetzId : undefined}
+          />
+        </div>
         <div className="flex flex-col gap-10 [.plattform-schrift[data-rechner]_&]:gap-12">
           <Wasser zugang={zugang} daten={daten} gesperrt={gesperrt} ohneNetzId={ohneNetzId} />
           {/* ADR-027 Punkt 11: „Zahlen ausblenden“ ist die Einstellung der Person. */}
@@ -206,6 +215,95 @@ function Inhalt({
         />
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Der Vorschlag des Plans für diesen Tag (ANN-845): je Mahlzeit „+“ für die vorgeschlagene Menge,
+ * ein Tipp; die Zeile öffnet die Menge wie beim Eintragen. Der Haken steht eine Weile (ANN-813).
+ */
+function AusDemPlan({
+  zugang,
+  daten,
+  ohneNetzId,
+}: {
+  zugang: Plattformzugang;
+  daten: EigenesTagebuch;
+  ohneNetzId?: string | undefined;
+}) {
+  const [eingetragen, setEingetragen] = useState<{ schluessel: string; name: string } | null>(null);
+  const [offen, setOffen] = useState<{
+    p: Planposition;
+    mahlzeit: Mahlzeit;
+    schluessel: string;
+  } | null>(null);
+  useEffect(() => {
+    if (!eingetragen) return;
+    const uhr = window.setTimeout(() => setEingetragen(null), 3000);
+    return () => window.clearTimeout(uhr);
+  }, [eingetragen]);
+  const vorschlag = daten.suggestions;
+  const anfang = offen ? letzteMenge(vorschlagsWahl(offen.p)) : undefined;
+  const mahlzeiten = vorschlag?.meals.filter((m) => m.items.length > 0) ?? [];
+  if (!vorschlag || !daten.can_write || mahlzeiten.length === 0) return null;
+  return (
+    <Abschnitt
+      titel="Aus Ihrem Plan"
+      rechts={
+        vorschlag.day_count > 1 ? (
+          <span className="text-ink-muted">{`Tag ${vorschlag.day} von ${vorschlag.day_count}`}</span>
+        ) : undefined
+      }
+    >
+      <p role="status" className="sr-only">
+        {eingetragen ? `„${eingetragen.name}“ eingetragen.` : null}
+      </p>
+      {mahlzeiten.map((m) => (
+        <div key={m.meal} className="flex flex-col gap-1">
+          <Zwischentitel ebene={3}>{MAHLZEIT_NAMEN[m.meal]}</Zwischentitel>
+          <ListRows rahmen={false} beschriftung={`Vorschlag ${MAHLZEIT_NAMEN[m.meal]}`}>
+            {m.items.map((p, i) => {
+              const schluessel = `${m.meal}-${i}`;
+              return (
+                <Schnellzeile
+                  key={schluessel}
+                  zugang={zugang}
+                  s={vorschlagsWahl(p)}
+                  tag={daten.day.day}
+                  mahlzeit={m.meal}
+                  ohneZahlen={daten.hide_numbers}
+                  onOeffnen={() => setOffen({ p, mahlzeit: m.meal, schluessel })}
+                  onEingetragen={() => setEingetragen({ schluessel, name: p.name })}
+                  bestaetigt={eingetragen?.schluessel === schluessel}
+                  ohneNetz={ohneNetzId}
+                />
+              );
+            })}
+          </ListRows>
+        </div>
+      ))}
+      {offen ? (
+        <Dialogfenster
+          titel={offen.p.name}
+          beschreibung={MAHLZEIT_NAMEN[offen.mahlzeit]}
+          onSchliessen={() => setOffen(null)}
+        >
+          <MengeWaehlen
+            zugang={zugang}
+            f={offen.p.food}
+            tag={daten.day.day}
+            mahlzeit={offen.mahlzeit}
+            ohneZahlen={daten.hide_numbers}
+            {...(anfang ? { anfang } : {})}
+            onEingetragen={(name) => {
+              setEingetragen({ schluessel: offen.schluessel, name });
+              setOffen(null);
+            }}
+            onAbbrechen={() => setOffen(null)}
+          />
+        </Dialogfenster>
+      ) : null}
+    </Abschnitt>
   );
 }
 

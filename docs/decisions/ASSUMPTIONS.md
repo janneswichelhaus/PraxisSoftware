@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-03.
+Zuletzt aktualisiert: 2026-11-06.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1037,6 +1037,14 @@ Technik · offen · 2026-11-01 · — · — · Wiedervorlage: —\
 ### ANN-842 — Scan aus dem Tag: Mahlzeit nach der Uhrzeit vorgewählt
 Praxisprozess · offen · 2026-11-03 · — · — · Wiedervorlage: —\
 **Regel.** Der Scan aus dem Tag wählt nach der Uhrzeit des Geräts vor: ab 5 Uhr Frühstück, ab 11 Mittagessen, ab 15 Snacks, ab 17 Abendessen, ab 22 Snacks; im Fenster änderbar. **Grundlage.** ADR-027 Punkt 10. **Anker.** `mahlzeitZurUhrzeit` in `src/features/nutrition/tagebuch.ts`.
+
+### ANN-843 — Rezept: Zutaten mit Stand, ml wie g
+Technik · offen · 2026-11-06 · — · — · Wiedervorlage: —\
+**Regel.** Zutaten tragen den Stand ihres Lebensmittels (wie ANN-660), ml zählen wie g; Portion = Gesamtmenge durch Portionen, im Tagebuch nur so. **Grundlage.** ADR-027 Punkt 9. **Anker.** `app.nutrition_recipe_json`.
+
+### ANN-845 — Plan: Tage im Wechsel ab Beginn
+Praxisprozess · offen · 2026-11-06 · — · — · Wiedervorlage: —\
+**Regel.** 1 bis 7 Tage im Wechsel ab Beginn, je Beratung einer offen, ein neuer beendet ihn am Vortag, Beenden jeden noch geltenden; Rezepte der Praxis, auch abgelegte, nur über einen geltenden oder künftigen Plan; abgelegte Lebensmittel bleiben im Plan, nie im Tagebuch. **Grundlage.** ADR-027 Punkt 14. **Anker.** `app.nutrition_plan_day_json`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |

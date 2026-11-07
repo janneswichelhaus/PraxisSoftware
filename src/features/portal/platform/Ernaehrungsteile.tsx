@@ -1,4 +1,8 @@
 import { useId, type ReactNode } from 'react';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
+import { EmptyState, ErrorState } from '@/components/ui/Feedback';
+import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
+import { Pfeilzeichen } from '@/components/ui/Tagebuchbausteine';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 
 /** Ein Abschnitt der Seiten „Ernährung“ und „Tagebuch“: Titel 22/700, rechts daneben auf Wunsch ein Stand. */
@@ -49,4 +53,58 @@ export function Aufklappzeilen({
       {children}
     </div>
   );
+}
+
+/** Der Pfeil einer Zeile, die weiterführt; unter 23rem stünde er allein in einer Zeile. */
+export function Weiterpfeil() {
+  return <Pfeilzeichen richtung="rechts" className="text-ink-muted size-5.5 max-[23rem]:hidden" />;
+}
+
+/**
+ * Laden, Fehler und Leer einer Unterseite der Ernährung, etwa Plan oder Rezepte: Skelett statt
+ * Satz (PLATTFORM.md); scheitert nur das Nachladen, bleibt der Inhalt.
+ */
+export function Unterseitenzustand<T>({
+  abfrage,
+  beschriftung,
+  fehler,
+  leer,
+  children,
+}: {
+  abfrage: { data: T | undefined; isError: boolean; refetch: () => unknown };
+  /** Was lädt, für Vorlesesoftware, etwa „Ihr Plan wird geladen“. */
+  beschriftung: string;
+  fehler: string;
+  leer: { wenn: (daten: T) => boolean; titel: string; beschreibung?: string };
+  children: (daten: T) => ReactNode;
+}) {
+  if (abfrage.data === undefined) {
+    return abfrage.isError ? (
+      <div className="mt-8">
+        <ErrorState
+          title={fehler}
+          description={VERBINDUNG_PRUEFEN}
+          onErneut={() => abfrage.refetch()}
+        />
+      </div>
+    ) : (
+      <SkelettBereich beschriftung={beschriftung} className="mt-8 flex flex-col gap-3">
+        <Skelett form="titel" className="w-36 max-w-full" />
+        {['w-44', 'w-36', 'w-40'].map((breite) => (
+          <span key={breite} className="flex items-center justify-between gap-3 py-4">
+            <Skelett form="zeile" className={`${breite} max-w-3/5`} />
+            <Skelett form="zeile" className="w-16" />
+          </span>
+        ))}
+      </SkelettBereich>
+    );
+  }
+  if (leer.wenn(abfrage.data)) {
+    return (
+      <div className="mt-8">
+        <EmptyState markenform title={leer.titel} description={leer.beschreibung} />
+      </div>
+    );
+  }
+  return <>{children(abfrage.data)}</>;
 }

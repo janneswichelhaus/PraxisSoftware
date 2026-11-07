@@ -49,7 +49,7 @@ export const eintragSchema = z.object({
   id: z.string(),
   eaten_on: z.string(),
   meal: z.enum(MAHLZEITEN),
-  food_kind: z.enum(['catalog', 'practice', 'person']),
+  food_kind: z.enum(['catalog', 'practice', 'person', 'recipe']),
   food_id: z.string().nullable(),
   name: z.string(),
   brand: z.string().nullable(),
@@ -124,14 +124,17 @@ export function grammVon(wert: number, ziel: number): string {
   return `${zahl(wert, wert % 1 === 0 ? 0 : 1)} von ${zahl(ziel)} g`;
 }
 
-/** „1 Portion · 50 g“, „2 × 1 Scheibe · 90 g“, „120 g“. */
+/** „1 Portion · 50 g“, „2 × 1 Scheibe · 90 g“, „120 g“; ein Rezept nur „2 × 1 Portion“ (ANN-843). */
 export function mengeText(
-  e: Pick<Eintrag, 'amount' | 'base_unit' | 'portion_label' | 'portion_count'>,
+  e: Pick<Eintrag, 'amount' | 'base_unit' | 'portion_label' | 'portion_count'> & {
+    food_kind?: Eintrag['food_kind'];
+  },
 ): string {
   const menge = `${zahl(e.amount, e.amount % 1 === 0 ? 0 : 1)} ${e.base_unit}`;
   if (e.portion_label === null || e.portion_count === null) return menge;
   const anzahl =
     e.portion_count === 1 ? '' : `${zahl(e.portion_count, e.portion_count % 1 === 0 ? 0 : 2)} × `;
+  if (e.food_kind === 'recipe') return `${anzahl}${e.portion_label}`;
   return `${anzahl}${e.portion_label} · ${menge}`;
 }
 

@@ -24,6 +24,7 @@ import { tagSchema, zieleSchema } from './tagebuch';
  * Öffnen von Akte bzw. Trainingsverhältnis im Protokoll.
  */
 
+import { planSchema } from './plaene';
 export type { Verhaeltnisart } from './eingabe';
 import type { Verhaeltnisart } from './eingabe';
 
@@ -55,6 +56,8 @@ const profilSchema = z.object({
   consent: einwilligungSchema.nullable(),
   weights: z.array(gewichtSchema),
   targets: zielwerteSchema,
+  // Die Pläne an dieser Beratung, der offene zuerst (ADR-027 Punkt 14).
+  plans: z.array(planSchema).default([]),
 });
 
 export type Ernaehrungsprofil = z.infer<typeof profilSchema>;

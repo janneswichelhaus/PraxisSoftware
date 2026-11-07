@@ -31,6 +31,7 @@ import {
   type Verhaeltnisart,
 } from './api';
 import { beratungsterminPfad, ernaehrungsFormulare, leseZahl } from './eingabe';
+import { PlanAbschnitt } from './PlanSeite';
 import { Zielwertliste } from './Rechenweg';
 import { TagebuchDerBeratung } from './TagebuchDerBeratung';
 import {
@@ -222,6 +223,17 @@ function Profilansicht({
       >
         <Zielwertliste zielwerte={z} />
       </Section>
+
+      {/* Pläne und Tagesvorschläge der Beratung (ADR-027 Punkt 14). */}
+      {laeuft ? (
+        <PlanAbschnitt
+          profil={profil}
+          heute={sicht.today}
+          art={art}
+          verhaeltnisId={verhaeltnisId}
+          schreibbar={schreibbar}
+        />
+      ) : null}
 
       <Section
         titel="Profil"

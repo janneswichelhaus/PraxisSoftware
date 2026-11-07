@@ -18,6 +18,8 @@ import {
   type Mengenangabe,
 } from '@/features/nutrition/tagebuch';
 import { GESCHLECHTER, ZIELE, zielwerteSchema } from '@/features/nutrition/zielwerte';
+import { rezeptfehler, rezeptSchema, type RezeptAngaben } from '@/features/nutrition/rezepte';
+import { planSchema, vorschlagSchema } from '@/features/nutrition/plaene';
 
 // -----------------------------------------------------------------------------
 // Ernährung (ADR-027) - die eigene laufende Beratung, Gewicht,
@@ -58,8 +60,11 @@ const eigeneErnaehrungSchema = z.object({
       }),
     ),
     targets: zielwerteSchema,
-    // Die eigenen Lebensmittel der Person.
+    // Die eigenen Lebensmittel und Rezepte der Person.
     own_foods: z.array(lebensmittelSchema),
+    own_recipes: z.array(rezeptSchema),
+    // Die Pläne der Beratung, der offene zuerst (ADR-027 Punkt 14).
+    plans: z.array(planSchema),
   }),
 });
 
@@ -221,6 +226,29 @@ export async function eigenesLebensmittelLoeschen(zugangId: string, id: string):
   if (error) throw new Error(lebensmittelfehler(error.message));
 }
 
+/** Ein eigenes Rezept anlegen (`id` null) oder ändern; die Werte rechnet der Server. */
+export async function eigenesRezeptSpeichern(
+  zugangId: string,
+  id: string | null,
+  angaben: RezeptAngaben,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('save_platform_recipe', {
+    p_access_id: zugangId,
+    p_id: id,
+    p_recipe: angaben,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error(rezeptfehler(error.message));
+}
+
+/** Ein eigenes Rezept löschen; Einträge im Tagebuch behalten ihren Stand. */
+export async function eigenesRezeptLoeschen(zugangId: string, id: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('delete_platform_recipe', {
+    p_access_id: zugangId,
+    p_id: id,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error(rezeptfehler(error.message));
+}
+
 // -----------------------------------------------------------------------------
 // Das Ernährungstagebuch (ADR-027 Punkte 10 und 11). Eintragen nur mit Einwilligung und
 // eingeschaltetem Tagebuch, nie die Begleitung; gerechnet hat der Server aus Lebensmittel und
@@ -240,6 +268,8 @@ const tagebuchSchema = z.object({
   favorites: z.array(schnellwahlSchema),
   targets: zieleSchema,
   day: tagSchema,
+  // Der Vorschlag des Plans für diesen Tag, wenn einer gilt (ANN-845).
+  suggestions: vorschlagSchema.nullable(),
 });
 
 export type EigenesTagebuch = z.infer<typeof tagebuchSchema>;
@@ -293,7 +323,7 @@ export async function tagebuchEintragen(
   zugangId: string,
   tag: string,
   mahlzeit: Mahlzeit,
-  lebensmittel: { kind: 'catalog' | 'practice' | 'person'; id: string },
+  lebensmittel: { kind: Lebensmittel['kind']; id: string },
   angabe: Mengenangabe,
 ): Promise<void> {
   tagebuchergebnis(
@@ -352,7 +382,7 @@ export async function wasserZaehlen(zugangId: string, tag: string, ml: number): 
 /** Ein Lebensmittel als Favorit markieren oder abnehmen. */
 export async function favoritSetzen(
   zugangId: string,
-  lebensmittel: { kind: 'catalog' | 'practice' | 'person'; id: string },
+  lebensmittel: { kind: Lebensmittel['kind']; id: string },
   favorit: boolean,
 ): Promise<void> {
   tagebuchergebnis(

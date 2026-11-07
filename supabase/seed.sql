@@ -34,6 +34,9 @@ delete from public.invoice_number_series;
 delete from public.practice_billing_profiles;
 delete from public.billable_services;
 delete from public.treatment_text_snippets;
+-- Pläne und Rezepte vor den Lebensmitteln, auf die sie zeigen.
+delete from public.nutrition_plans;
+delete from public.nutrition_recipes;
 -- ERN-004/005: eigene Lebensmittel und der synthetische Katalog des Seeds.
 delete from public.custom_foods;
 delete from public.food_catalog where source_version = 'Seed synthetisch';
@@ -1515,5 +1518,88 @@ insert into public.nutrition_water_days
   ('22222222-2222-4222-8222-000000000001', 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001',
    app.training_today('22222222-2222-4222-8222-000000000001'), 500,
    'cafecafe-cafe-4afe-8afe-000000000002', 'self', '11111111-1111-4111-8111-000000000009');
+
+-- Rezepte und Pläne (ADR-027 Punkte 9, 14), synthetisch: zwei der Praxis, eines von Erika, eine
+-- Vorlage und Erikas Plan mit zwei Tagen seit gestern (heute Tag 2). Die Zutaten tragen ihren Stand
+-- aus den Zeilen oben wie beim Speichern (ANN-843).
+insert into public.nutrition_recipes
+  (id, organization_id, owner_kind, profile_id, name, servings, instructions, ingredients,
+   starter_key, platform_access_id, platform_access_kind, created_by, updated_by)
+select r.id, '22222222-2222-4222-8222-000000000001', r.owner_kind, r.profil, r.name, r.portionen,
+       r.zubereitung,
+       (select jsonb_agg(jsonb_build_object(
+                 'food_kind', coalesce(z.art, 'catalog'), 'food_id', coalesce(c.id, u.id),
+                 'name', coalesce(c.name, u.name), 'brand', coalesce(c.brand, u.brand),
+                 'base_unit', coalesce(c.base_unit, u.base_unit),
+                 'per_100', jsonb_build_object(
+                   'energy_kcal', coalesce(c.energy_kcal, u.energy_kcal),
+                   'protein_g', coalesce(c.protein_g, u.protein_g),
+                   'fat_g', coalesce(c.fat_g, u.fat_g),
+                   'carbohydrate_g', coalesce(c.carbohydrate_g, u.carbohydrate_g),
+                   'sugar_g', coalesce(c.sugar_g, u.sugar_g),
+                   'fibre_g', coalesce(c.fibre_g, u.fibre_g),
+                   'saturated_fat_g', coalesce(c.saturated_fat_g, u.saturated_fat_g),
+                   'salt_g', coalesce(c.salt_g, u.salt_g)),
+                 'amount', z.menge, 'portion_label', z.portion, 'portion_count', z.anzahl)
+               order by z.nr)
+        from jsonb_to_recordset(r.zutaten) as z(nr int, art text, name text, menge numeric,
+                                                portion text, anzahl numeric)
+        left join public.food_catalog c
+          on z.art is null and c.name = z.name and c.source = 'bls'
+         and c.source_version = 'Seed synthetisch'
+        left join public.custom_foods u on z.art = 'person' and u.name = z.name),
+       r.schluessel, r.zugang, r.zugangsart, r.von, r.von
+from (values
+  ('f3f3f3f3-f3f3-4f3f-8f3f-000000000001'::uuid, 'practice', null::uuid, 'Haferbrei mit Beeren', 2,
+   'Haferflocken mit der Milch aufkochen und bei kleiner Hitze drei Minuten quellen lassen. In zwei Schalen füllen, Beeren und Honig darüber geben.',
+   '[{"nr": 1, "name": "Haferflocken", "menge": 80},
+     {"nr": 2, "name": "Milch 1,5 % Fett", "menge": 400, "portion": "1 Glas", "anzahl": 2},
+     {"nr": 3, "name": "Heidelbeeren roh", "menge": 120, "portion": "1 Handvoll", "anzahl": 2},
+     {"nr": 4, "name": "Honig", "menge": 8, "portion": "1 Teelöffel", "anzahl": 1}]'::jsonb,
+   'haferbrei-beeren', null::uuid, null, '11111111-1111-4111-8111-000000000001'::uuid),
+  ('f3f3f3f3-f3f3-4f3f-8f3f-000000000002', 'practice', null, 'Linsensalat mit Paprika', 2,
+   'Paprika und Zwiebel fein würfeln. Öl mit Senf, etwas Essig, Salz und Pfeffer verrühren und mit Linsen und Gemüse mischen.',
+   '[{"nr": 1, "name": "Linsen gekocht", "menge": 300, "portion": "1 Portion", "anzahl": 2},
+     {"nr": 2, "name": "Paprika rot roh", "menge": 150, "portion": "1 Stück", "anzahl": 1},
+     {"nr": 3, "name": "Zwiebel roh", "menge": 35},
+     {"nr": 4, "name": "Olivenöl", "menge": 20, "portion": "1 Esslöffel", "anzahl": 2},
+     {"nr": 5, "name": "Senf mittelscharf", "menge": 5, "portion": "1 Teelöffel", "anzahl": 1}]',
+   'linsensalat-paprika', null, null, '11111111-1111-4111-8111-000000000001'),
+  ('f3f3f3f3-f3f3-4f3f-8f3f-000000000003', 'person', 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001',
+   'Dinkelstulle mit Quark', 1, null,
+   '[{"nr": 1, "art": "person", "name": "Omas Dinkelbrot", "menge": 90, "portion": "1 Scheibe", "anzahl": 2},
+     {"nr": 2, "name": "Magerquark", "menge": 60, "portion": "1 Esslöffel", "anzahl": 2}]',
+   null, 'cafecafe-cafe-4afe-8afe-000000000002', 'self', '11111111-1111-4111-8111-000000000009')
+) as r(id, owner_kind, profil, name, portionen, zubereitung, zutaten, schluessel, zugang,
+       zugangsart, von);
+
+insert into public.nutrition_plans
+  (id, organization_id, profile_id, title, day_count, starts_on, created_by, updated_by) values
+  ('f4f4f4f4-f4f4-4f4f-8f4f-000000000001', '22222222-2222-4222-8222-000000000001', null,
+   'Tagesvorschlag zum Ausprobieren', 1, null, '11111111-1111-4111-8111-000000000001',
+   '11111111-1111-4111-8111-000000000001'),
+  ('f4f4f4f4-f4f4-4f4f-8f4f-000000000002', '22222222-2222-4222-8222-000000000001',
+   'f0f0f0f0-f0f0-4f0f-8f0f-000000000001', 'Zwei Tage zum Ausprobieren', 2,
+   app.training_today('22222222-2222-4222-8222-000000000001') - 1,
+   '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001');
+
+insert into public.nutrition_plan_items
+  (organization_id, plan_id, day_number, meal, position, item_kind, recipe_id, catalog_food_id,
+   portion_label, portion_count)
+select '22222222-2222-4222-8222-000000000001', p.plan, p.tag, p.mahlzeit, p.pos,
+       case when p.rezept is null then 'catalog' else 'recipe' end, p.rezept, c.id,
+       p.portion, 1
+from (values
+  ('f4f4f4f4-f4f4-4f4f-8f4f-000000000001'::uuid, 1, 'breakfast', 1, 'f3f3f3f3-f3f3-4f3f-8f3f-000000000001'::uuid, null, '1 Portion'),
+  ('f4f4f4f4-f4f4-4f4f-8f4f-000000000001', 1, 'lunch', 1, 'f3f3f3f3-f3f3-4f3f-8f3f-000000000002', null, '1 Portion'),
+  ('f4f4f4f4-f4f4-4f4f-8f4f-000000000001', 1, 'snack', 1, null, 'Apfel roh', '1 Stück (mittel)'),
+  ('f4f4f4f4-f4f4-4f4f-8f4f-000000000002', 1, 'breakfast', 1, 'f3f3f3f3-f3f3-4f3f-8f3f-000000000001', null, '1 Portion'),
+  ('f4f4f4f4-f4f4-4f4f-8f4f-000000000002', 1, 'snack', 1, null, 'Banane roh', '1 Stück (mittel)'),
+  ('f4f4f4f4-f4f4-4f4f-8f4f-000000000002', 2, 'breakfast', 1, 'f3f3f3f3-f3f3-4f3f-8f3f-000000000001', null, '1 Portion'),
+  ('f4f4f4f4-f4f4-4f4f-8f4f-000000000002', 2, 'lunch', 1, 'f3f3f3f3-f3f3-4f3f-8f3f-000000000002', null, '1 Portion'),
+  ('f4f4f4f4-f4f4-4f4f-8f4f-000000000002', 2, 'snack', 1, null, 'Apfel roh', '1 Stück (mittel)')
+) as p(plan, tag, mahlzeit, pos, rezept, lebensmittel, portion)
+left join public.food_catalog c
+  on c.name = p.lebensmittel and c.source = 'bls' and c.source_version = 'Seed synthetisch';
 
 select pg_catalog.set_config('app.journal_paused', '', false);

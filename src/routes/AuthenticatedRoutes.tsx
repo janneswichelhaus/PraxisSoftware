@@ -94,6 +94,18 @@ import {
   PraxisLebensmittelBearbeiten,
   PraxisLebensmittelNeu,
 } from '@/features/nutrition/LebensmittelPage';
+import { PlanSeite } from '@/features/nutrition/PlanSeite';
+import {
+  PlanvorlageBearbeiten,
+  PlanvorlageNeu,
+  PlanvorlagenPage,
+} from '@/features/nutrition/PlanvorlagenPage';
+import {
+  MitgeliefertesRezept,
+  PraxisRezeptBearbeiten,
+  PraxisRezeptNeu,
+  RezeptePage,
+} from '@/features/nutrition/RezeptePage';
 import {
   ProfilAendernSeite,
   ProfilAnlegenSeite,
@@ -330,10 +342,14 @@ export function AuthenticatedRoutes({
                         path="/patienten/:patientId/ernaehrung/termin"
                         element={<BeratungsterminSeite art="treatment" user={user} />}
                       />
+                      <Route
+                        path="/patienten/:patientId/ernaehrung/plan"
+                        element={<PlanSeite art="treatment" />}
+                      />
                     </>
                   ) : null}
-                  {/* Lebensmittel in der Bibliothek - nachschlagen und die der Praxis
-                  pflegen; allein die Fähigkeit (ADR-027 Punkt 4). */}
+                  {/* Lebensmittel und Rezepte in der Bibliothek - nachschlagen und die der
+                  Praxis pflegen; allein die Fähigkeit (ADR-027 Punkt 4). */}
                   {showNutrition ? (
                     <>
                       <Route path="/praxis/lebensmittel" element={<LebensmittelPage />} />
@@ -341,6 +357,22 @@ export function AuthenticatedRoutes({
                       <Route
                         path="/praxis/lebensmittel/:foodId"
                         element={<PraxisLebensmittelBearbeiten />}
+                      />
+                      <Route path="/praxis/rezepte" element={<RezeptePage />} />
+                      <Route path="/praxis/rezepte/neu" element={<PraxisRezeptNeu />} />
+                      <Route
+                        path="/praxis/rezepte/mitgeliefert/:starterKey"
+                        element={<MitgeliefertesRezept />}
+                      />
+                      <Route
+                        path="/praxis/rezepte/:recipeId"
+                        element={<PraxisRezeptBearbeiten />}
+                      />
+                      <Route path="/praxis/ernaehrungsplaene" element={<PlanvorlagenPage />} />
+                      <Route path="/praxis/ernaehrungsplaene/neu" element={<PlanvorlageNeu />} />
+                      <Route
+                        path="/praxis/ernaehrungsplaene/:planId"
+                        element={<PlanvorlageBearbeiten />}
                       />
                     </>
                   ) : null}
@@ -876,6 +908,10 @@ export function AuthenticatedRoutes({
                       <Route
                         path="/training/:relationshipId/ernaehrung/termin"
                         element={<BeratungsterminSeite art="training" user={user} />}
+                      />
+                      <Route
+                        path="/training/:relationshipId/ernaehrung/plan"
+                        element={<PlanSeite art="training" />}
                       />
                     </>
                   ) : null}

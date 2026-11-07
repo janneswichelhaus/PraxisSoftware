@@ -1352,6 +1352,8 @@ client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
   profile: {
     goal: 'lose',
     own_foods: [],
+    own_recipes: [],
+    plans: [],
     consent: {
       state: 'granted',
       source: 'practice',
@@ -1529,6 +1531,7 @@ const tagebuchHeute: EigenesTagebuch = {
   can_delete: true,
   glass_ml: 250,
   hide_numbers: false,
+  suggestions: null,
   recent: [{ food: haferflocken, amount: 50, portion_label: 'Portion', portion_count: 1 }],
   favorites: [],
   targets: { energy_kcal: 1466, protein_g: 59, fat_g: 49, carbohydrate_g: 197, water_ml: 2570 },

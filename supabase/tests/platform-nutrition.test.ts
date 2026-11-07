@@ -100,6 +100,9 @@ describe('Ernährung auf der Plattform: Lesen und Grenzen (ERN-002)', () => {
         'height_cm',
         // ERN-005: die eigenen Lebensmittel der Person.
         'own_foods',
+        // Ihre eigenen Rezepte (ADR-027 Punkt 9) und die ihr zugewiesenen Pläne (Punkt 14).
+        'own_recipes',
+        'plans',
         'started_on',
         'target_weight_kg',
         'target_weight_source',
@@ -115,6 +118,85 @@ describe('Ernährung auf der Plattform: Lesen und Grenzen (ERN-002)', () => {
     });
     expect(sicht!.profile.weights).toHaveLength(3);
     expect(sicht!.profile.targets.status).toBe('ok');
+  });
+
+  it('trägt die Pläne mit fester Schlüsselliste bis in Positionen und Rezepte (ADR-027 Punkt 14)', async () => {
+    type Planansicht = {
+      days: { meals: { items: { kind: string; food: object }[] }[] }[];
+      recipes: { ingredients: object[] }[];
+    };
+    const sicht = await lesen(erika.konto, erika.zugang);
+    const plan = (sicht!.profile.plans as Planansicht[])[0]!;
+    const schluessel = (o: object) => Object.keys(o).sort();
+    expect(schluessel(plan)).toEqual(
+      ['day_count', 'days', 'ended_on', 'id', 'recipes', 'starts_on', 'title', 'updated_at'].sort(),
+    );
+    expect(schluessel(plan.days[0]!)).toEqual(['day', 'meals']);
+    expect(schluessel(plan.days[0]!.meals[0]!)).toEqual(['items', 'meal']);
+    const positionen = plan.days.flatMap((d) => d.meals.flatMap((m) => m.items));
+    for (const position of positionen) {
+      expect(schluessel(position)).toEqual(
+        [
+          'amount',
+          'energy_kcal',
+          'food',
+          'id',
+          'kind',
+          'name',
+          'portion_count',
+          'portion_label',
+        ].sort(),
+      );
+    }
+    // Rezept und Katalog als Lebensmittel: dieselben Schlüssel, nichts von der Praxis.
+    const lebensmittel = [
+      'base_unit',
+      'brand',
+      'id',
+      'kind',
+      'name',
+      'per_100',
+      'portions',
+      'source',
+      'source_code',
+    ];
+    for (const art of ['recipe', 'catalog']) {
+      const position = positionen.find((p) => p.kind === art)!;
+      expect(schluessel(position.food), art).toEqual(lebensmittel.sort());
+    }
+    const rezept = plan.recipes[0]!;
+    expect(schluessel(rezept)).toEqual(
+      [
+        'base_unit',
+        'id',
+        'ingredients',
+        'instructions',
+        'kind',
+        'name',
+        'owner',
+        'per_100',
+        'per_portion',
+        'portions',
+        'servings',
+        'starter_key',
+        'total_amount',
+        'updated_at',
+      ].sort(),
+    );
+    expect(schluessel(rezept.ingredients[0]!)).toEqual(
+      [
+        'amount',
+        'base_unit',
+        'brand',
+        'energy_kcal',
+        'food_id',
+        'food_kind',
+        'name',
+        'per_100',
+        'portion_count',
+        'portion_label',
+      ].sort(),
+    );
   });
 
   it('anderer Leistungsbereich, fremde Person, Praxiskonto, fremde Organisation: nichts', async () => {

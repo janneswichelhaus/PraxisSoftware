@@ -1,4 +1,4 @@
-# Status · Stand 2026-11-05
+# Status · Stand 2026-11-06
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -6,13 +6,12 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Sichtung eingetragen** (2026-11-05, ohne Befund): alle fertigen Posten gesichtet, Sichtliste
-S-1 bis S-14 leer, BEF-140 Teil 3 (Tourliste ohne Ziel-App-Auswahl); Merge bei Jannes.
+**Pläne und Rezepte** (ERN-EPIC-005) auf `claude/weiter-lqgil9`; Merge bei Jannes.
 
 ## Danach
 
 Nach Jannes 2026-11-01 der volle Umfang bis M2, im November:
-ERN-EPIC-005 und -006, ORG-EPIC-001, Schritte 5 bis 7 mit Jannes' Leinwänden, UI-003; die
+ERN-EPIC-006, ORG-EPIC-001, Schritte 5 bis 7 mit Jannes' Leinwänden, UI-003; die
 Übertragung an DATEV erst nach B4; als letzte PR der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
 zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
@@ -43,4 +42,4 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-05.11.2026, Branch `claude/modest-allen-7u1qn9` ab `main`. Lokal: `git pull`.
+06.11.2026, Branch `claude/weiter-lqgil9` ab `main`. Lokal: `git pull`, Migrationen.

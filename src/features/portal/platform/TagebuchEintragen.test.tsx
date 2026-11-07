@@ -86,6 +86,7 @@ function tagebuch(teil: Partial<EigenesTagebuch> = {}): EigenesTagebuch {
     can_delete: true,
     glass_ml: 250,
     hide_numbers: false,
+    suggestions: null,
     recent: [{ food: HAFERFLOCKEN, amount: 50, portion_label: 'Portion', portion_count: 1 }],
     favorites: [],
     targets: null,
@@ -127,6 +128,8 @@ function ernaehrung(teil: Partial<EigeneErnaehrung> = {}): EigeneErnaehrung {
       weights: [],
       targets: { status: 'missing', missing: ['weight'] },
       own_foods: [],
+      own_recipes: [],
+      plans: [],
     },
     ...teil,
   };
@@ -422,5 +425,80 @@ describe('Eintragen per Barcode (ANN-841)', () => {
     await nutzer.click(within(fenster).getByRole('button', { name: 'Abbrechen' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(tagebuchEintragen).not.toHaveBeenCalled();
+  });
+});
+
+describe('Eigene Rezepte im Tagebuch (ANN-843)', () => {
+  const STULLE: EigeneErnaehrung['profile']['own_recipes'][number] = {
+    kind: 'recipe',
+    id: 'rezept-1',
+    owner: 'person',
+    name: 'Stulle mit Hafer',
+    servings: 1,
+    instructions: null,
+    base_unit: 'g',
+    ingredients: [],
+    total_amount: 120,
+    per_portion: { energy_kcal: 327, protein_g: 13, fat_g: 4, carbohydrate_g: 57 },
+    per_100: {
+      energy_kcal: 272.5,
+      protein_g: 10.8,
+      fat_g: 3.3,
+      carbohydrate_g: 47.7,
+      sugar_g: null,
+      fibre_g: null,
+      saturated_fat_g: null,
+      salt_g: null,
+    },
+    portions: [{ label: '1 Portion', amount: 120 }],
+    starter_key: null,
+    updated_at: '2026-11-06T10:00:00Z',
+  };
+
+  function mitRezept() {
+    const basis = ernaehrung();
+    ladeErnaehrung.mockResolvedValue(
+      ernaehrung({ profile: { ...basis.profile, own_recipes: [STULLE] } }),
+    );
+  }
+
+  it('trägt eine Portion mit einem Tipp ein', async () => {
+    const nutzer = userEvent.setup();
+    mitRezept();
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    const knopf = await screen.findByRole('button', {
+      name: 'Stulle mit Hafer eintragen (1 Portion)',
+    });
+    expect(screen.getByText(/^1 Portion · 327\skcal$/)).toBeVisible();
+    await nutzer.click(knopf);
+    await waitFor(() =>
+      expect(tagebuchEintragen).toHaveBeenCalledWith(
+        ZUGANG.access_id,
+        HEUTE,
+        'lunch',
+        expect.objectContaining({ kind: 'recipe', id: 'rezept-1' }),
+        { art: 'portion', label: '1 Portion', anzahl: 1 },
+      ),
+    );
+  });
+
+  it('im Fenster nur Portionen, ohne Gramm und ohne Favorit', async () => {
+    const nutzer = userEvent.setup();
+    mitRezept();
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    // Die Zeile selbst öffnet das Fenster, „+“ daneben trägt sofort ein.
+    await nutzer.click(await screen.findByRole('button', { name: /^Stulle mit Hafer1 Portion/ }));
+    const fenster = screen.getByRole('dialog', { name: 'Stulle mit Hafer' });
+    expect(within(fenster).queryByText('Gramm')).toBeNull();
+    expect(within(fenster).queryByLabelText('Favorit')).toBeNull();
+    expect(within(fenster).getByLabelText('Anzahl')).toHaveValue('1');
+  });
+
+  it('findet das eigene Rezept in der Suche', async () => {
+    const nutzer = userEvent.setup();
+    mitRezept();
+    renderWithProviders(<TagebuchEintragen zugang={ZUGANG} />, ADRESSE);
+    await nutzer.type(await screen.findByLabelText('Lebensmittel suchen'), 'Stulle');
+    expect(await screen.findByText(/327\skcal je Portion · Rezept/)).toBeVisible();
   });
 });

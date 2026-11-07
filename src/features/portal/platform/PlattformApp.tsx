@@ -46,6 +46,8 @@ import { AlleAntworten, AngabeSeite, MeineAngaben } from './MeineAngaben';
 import { Gewohnheiten } from './Gewohnheiten';
 import { Ernaehrung } from './Ernaehrung';
 import { EigenesLebensmittelAendern, EigenesLebensmittelNeu, Lebensmittel } from './Lebensmittel';
+import { EigenesRezeptAendern, EigenesRezeptNeu, Rezepte } from './Rezepte';
+import { Plan } from './Plan';
 import { Tagebuch } from './Tagebuch';
 import { TagebuchEintragen } from './TagebuchEintragen';
 import { zahl as zahlDeutsch } from '@/features/nutrition/texte';
@@ -382,6 +384,48 @@ function Geruest({
                   bereiche={lesbar}
                   zugaenge={zugaenge}
                   seite={(z) => <EigenesLebensmittelAendern zugang={z} />}
+                />
+              }
+            />
+            {/* Der Plan der Beratung (ADR-027 Punkt 14). */}
+            <Route
+              path={`${PLATTFORM_PFAD}/ernaehrung/plan`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Plan zugang={z} />}
+                />
+              }
+            />
+            {/* Eigene Rezepte aus Zutaten (ADR-027 Punkt 9). */}
+            <Route
+              path={`${PLATTFORM_PFAD}/ernaehrung/rezepte`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Rezepte zugang={z} />}
+                />
+              }
+            />
+            <Route
+              path={`${PLATTFORM_PFAD}/ernaehrung/rezepte/neu`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <EigenesRezeptNeu zugang={z} />}
+                />
+              }
+            />
+            <Route
+              path={`${PLATTFORM_PFAD}/ernaehrung/rezepte/:recipeId`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <EigenesRezeptAendern zugang={z} />}
                 />
               }
             />

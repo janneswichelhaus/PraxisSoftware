@@ -142,6 +142,8 @@ export {
   type EigeneErnaehrung,
   eigenesLebensmittelLoeschen,
   eigenesLebensmittelSpeichern,
+  eigenesRezeptLoeschen,
+  eigenesRezeptSpeichern,
   type EigenesTagebuch,
   erinnerungenSchluessel,
   erinnerungenSpeichern,

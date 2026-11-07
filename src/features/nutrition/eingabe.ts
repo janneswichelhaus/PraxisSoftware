@@ -58,6 +58,11 @@ export function ernaehrungsFormulare(art: Verhaeltnisart, verhaeltnisId: string)
     : `/training/${verhaeltnisId}/ernaehrung`;
 }
 
+/** Der Weg zum Plan einer Beratung - `…/ernaehrung/plan` (ADR-027 Punkt 14). */
+export function planPfad(art: Verhaeltnisart, verhaeltnisId: string): string {
+  return `${ernaehrungsFormulare(art, verhaeltnisId)}/plan`;
+}
+
 /** ERN-012: der Weg zum Beratungstermin - `…/ernaehrung/termin`. */
 export function beratungsterminPfad(art: Verhaeltnisart, verhaeltnisId: string): string {
   return `${ernaehrungsFormulare(art, verhaeltnisId)}/termin`;

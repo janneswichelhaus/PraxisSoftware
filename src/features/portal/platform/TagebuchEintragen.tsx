@@ -25,6 +25,8 @@ import {
   Trefferzeile,
 } from '@/features/nutrition/LebensmittelSuche';
 import type { Lebensmittel } from '@/features/nutrition/lebensmittel';
+import { vorschlagsWahl } from '@/features/nutrition/plaene';
+import { rezeptAlsLebensmittel } from '@/features/nutrition/rezepte';
 import {
   energieDerMenge,
   FREIE_MENGE,
@@ -213,6 +215,9 @@ function Suche({
   onEingetragen: (f: Lebensmittel) => void;
 }) {
   const ohneZahlen = tagebuch.hide_numbers;
+  const rezepte = ernaehrung.profile.own_recipes.map(rezeptAlsLebensmittel);
+  // Der Vorschlag des Plans für diese Mahlzeit, mit einem Tipp eingetragen (ANN-845).
+  const ausDemPlan = tagebuch.suggestions?.meals.find((m) => m.meal === mahlzeit)?.items ?? [];
   const bestaetigt = (f: Lebensmittel) => eingetragen !== null && gleich(f, eingetragen);
   const haken = (f: Lebensmittel) => (bestaetigt(f) ? <Eintragshaken /> : undefined);
   const verbunden = useIstVerbunden();
@@ -262,7 +267,7 @@ function Suche({
       )}
       suchen={(begriff) => lebensmittelSuchen(zugang.access_id, begriff)}
       schluessel={['platform-foods', zugang.access_id]}
-      eigene={ernaehrung.profile.own_foods}
+      eigene={[...ernaehrung.profile.own_foods, ...rezepte]}
       ohneZahlen={ohneZahlen}
       trefferStatus={haken}
       ohneBegriff={(oeffnen) => (
@@ -273,6 +278,24 @@ function Suche({
               Eintragen geht wieder mit Verbindung.
             </p>
           )}
+          {ausDemPlan.length > 0 ? (
+            <Listenabschnitt titel="Aus Ihrem Plan">
+              {ausDemPlan.map((p, i) => (
+                <Schnellzeile
+                  key={`plan-${p.kind}-${p.id}-${i}`}
+                  zugang={zugang}
+                  s={vorschlagsWahl(p)}
+                  tag={tag}
+                  mahlzeit={mahlzeit}
+                  ohneZahlen={ohneZahlen}
+                  onOeffnen={oeffnen}
+                  onEingetragen={onEingetragen}
+                  bestaetigt={bestaetigt(p.food)}
+                  ohneNetz={verbunden ? undefined : ohneNetzId}
+                />
+              ))}
+            </Listenabschnitt>
+          ) : null}
           {tagebuch.favorites.length > 0 ? (
             <Listenabschnitt titel="Favoriten">
               {tagebuch.favorites.map((s) => (
@@ -310,6 +333,24 @@ function Suche({
               />
             ))}
           </Listenabschnitt>
+          {rezepte.length > 0 ? (
+            <Listenabschnitt titel="Eigene Rezepte">
+              {rezepte.map((f) => (
+                <Schnellzeile
+                  key={`rezept-${f.id}`}
+                  zugang={zugang}
+                  s={alsSchnellwahl(f)}
+                  tag={tag}
+                  mahlzeit={mahlzeit}
+                  ohneZahlen={ohneZahlen}
+                  onOeffnen={oeffnen}
+                  onEingetragen={onEingetragen}
+                  bestaetigt={bestaetigt(f)}
+                  ohneNetz={verbunden ? undefined : ohneNetzId}
+                />
+              ))}
+            </Listenabschnitt>
+          ) : null}
           {ernaehrung.profile.own_foods.length > 0 ? (
             <Listenabschnitt titel="Eigene Lebensmittel">
               {ernaehrung.profile.own_foods.map((f) => (
@@ -341,12 +382,15 @@ function Suche({
             }}
             onAbbrechen={schliessen}
             {...(anfang ? { anfang } : {})}
+            // Ein Rezept merkt sich das Tagebuch nicht, also auch nicht als Favorit (ANN-843).
             unten={
-              <Favorit
-                zugang={zugang}
-                f={f}
-                an={tagebuch.favorites.some((s) => gleich(s.food, f))}
-              />
+              f.kind === 'recipe' ? undefined : (
+                <Favorit
+                  zugang={zugang}
+                  f={f}
+                  an={tagebuch.favorites.some((s) => gleich(s.food, f))}
+                />
+              )
             }
           />
         );
@@ -359,7 +403,7 @@ function Suche({
  * Eine Zeile aus zuletzt oder den Favoriten: der Tipp auf die Zeile öffnet
  * die Menge, „+“ trägt die Menge vom letzten Mal sofort ein.
  */
-function Schnellzeile({
+export function Schnellzeile({
   zugang,
   s,
   tag,
@@ -375,7 +419,8 @@ function Schnellzeile({
   tag: string;
   mahlzeit: Mahlzeit;
   ohneZahlen: boolean;
-  onOeffnen: (f: Lebensmittel) => void;
+  /** Ohne Angabe ist die Zeile kein Ziel; „+“ trägt trotzdem ein. */
+  onOeffnen?: (f: Lebensmittel) => void;
   onEingetragen: (f: Lebensmittel) => void;
   /** Gerade eingetragen: Statt „+“ steht eine Weile der Haken (ANN-813). */
   bestaetigt: boolean;
@@ -388,6 +433,7 @@ function Schnellzeile({
   const menge = geprueft && 'menge' in geprueft ? geprueft : null;
   const text = menge
     ? mengeText({
+        food_kind: s.food.kind,
         amount: menge.menge,
         base_unit: s.food.base_unit,
         portion_label: menge.angabe.art === 'portion' ? menge.angabe.label : null,
@@ -400,7 +446,7 @@ function Schnellzeile({
       meta={[text, menge && !ohneZahlen ? kcal(energieDerMenge(s.food, menge.menge)) : null]
         .filter(Boolean)
         .join(' · ')}
-      onClick={() => onOeffnen(s.food)}
+      {...(onOeffnen ? { onClick: () => onOeffnen(s.food) } : {})}
       {...(menge
         ? {
             aktion: (
@@ -549,9 +595,11 @@ export function MengeWaehlen({
   const verbunden = useIstVerbunden();
   const ohneNetzId = useId();
   const geprueft = mengePruefen(f, einheit, wert);
+  const rezept = f.kind === 'recipe';
+  // Ein Rezept nur in Portionen: seine Menge mischt Gramm und Milliliter (ANN-843).
   const wahlen = [
     ...f.portions.map((p) => ({ wert: p.label, text: p.label })),
-    { wert: FREIE_MENGE, text: f.base_unit === 'ml' ? 'Milliliter' : 'Gramm' },
+    ...(rezept ? [] : [{ wert: FREIE_MENGE, text: f.base_unit === 'ml' ? 'Milliliter' : 'Gramm' }]),
   ];
   return (
     <form
@@ -582,7 +630,7 @@ export function MengeWaehlen({
       <Field
         label={einheit === FREIE_MENGE ? `Menge (${f.base_unit})` : 'Anzahl'}
         hint={
-          einheit !== FREIE_MENGE && 'menge' in geprueft
+          !rezept && einheit !== FREIE_MENGE && 'menge' in geprueft
             ? `${zahl(geprueft.menge, geprueft.menge % 1 === 0 ? 0 : 1)} ${f.base_unit}`
             : undefined
         }
@@ -631,4 +679,15 @@ export function MengeWaehlen({
       {unten}
     </form>
   );
+}
+
+/** Ein Rezept als Zeile mit „+“: eine Portion mit einem Tipp. */
+function alsSchnellwahl(f: Lebensmittel): Schnellwahl {
+  const portion = f.portions[0];
+  return {
+    food: f,
+    amount: portion?.amount ?? null,
+    portion_label: portion?.label ?? null,
+    portion_count: portion ? 1 : null,
+  };
 }
