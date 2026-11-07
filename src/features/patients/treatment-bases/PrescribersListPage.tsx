@@ -39,6 +39,7 @@ const SPALTEN: readonly Datenspalte<Prescriber>[] = [
     // Merkmal.
     inhalt: (prescriber) => (
       <Textlink
+        alleinstehend
         to={`/verordner/${prescriber.id}/bearbeiten`}
         className="text-liste font-semibold break-words"
       >

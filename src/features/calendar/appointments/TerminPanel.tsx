@@ -160,7 +160,7 @@ export function TerminPanel({
             {behandlung ? (
               <Link
                 to={mitRueckweg(`/patienten/${eintrag.patient_id}`, rueckweg)}
-                className="text-accent underline decoration-2 underline-offset-4 hover:no-underline"
+                className="text-accent inline-flex min-h-11 items-center underline decoration-2 underline-offset-4 hover:no-underline"
               >
                 {terminBezeichnung(eintrag)}
               </Link>

@@ -129,7 +129,8 @@ PostgreSQL 16 auf **54339** (`.tmp/stack-pgdata`), GoTrue, PostgREST und Edge Fu
 Stack mit `reset --reich` und `pnpm dev`; Adresse über `E2E_BASE_URL`. Ergebnis in
 `.tmp/bildstrecke/<Zeit>/` (`--ziel=`): PNGs, `index.html` (Kontaktbogen nach Bereich, Befunde rot)
 und `ergebnis.json`. Geprüft: Querscrollen, Konsolenfehler, Anfragen mit 4xx/5xx, Zielseite
-erreicht, Fehler- oder Ladezustand, leere Seite. Schreibende Anfragen hält ein Lesewächter an und
+erreicht, Fehler- oder Ladezustand, leere Seite, axe, bei 375 px Ziele unter 44 px (aus mit
+`--ohne-barrierefreiheit`; in der CI je Praxisseite `authenticated/barrierefreiheit.spec.ts`). Schreibende Anfragen hält ein Lesewächter an und
 meldet sie; die Bildstrecke verändert keine Daten. Teilmengen: `--nur=abrechnung,/training`,
 `--konten=therapist`, `--breiten=375`; `--vergleich=<vorher>` schreibt `vergleich.html`
 (`--nur-bogen` erzeugt nur die Bögen neu). Eine neue Route ohne Eintrag in `routen.mjs` macht

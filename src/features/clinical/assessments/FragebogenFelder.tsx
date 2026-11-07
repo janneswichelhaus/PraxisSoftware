@@ -320,7 +320,10 @@ function Auswahl({
               onChange={() => umschalten(kennung, option.exklusiv === true)}
             />
           ) : (
-            <label key={kennung} className="flex min-h-11 cursor-pointer items-center gap-3">
+            <label
+              key={kennung}
+              className="flex min-h-11 min-w-11 cursor-pointer items-center gap-3"
+            >
               <input
                 type="radio"
                 name={name}

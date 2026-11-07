@@ -496,11 +496,11 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       expect(wege).toHaveLength(2);
       const [zeile, pfeil] = wege as [HTMLElement, HTMLElement];
       // Die Zeile ueber der Karte nur ab 640 px; der Pfeil nur darunter, als
-      // 40-px-Ziel in der Hauptfarbe, Chevron mit Strich 2, Name und Tooltip
+      // 44-px-Ziel in der Hauptfarbe, Chevron mit Strich 2, Name und Tooltip
       // mit demselben Wortlaut.
       expect(zeile.className.split(/\s+/)).toContain('max-sm:hidden');
       expect(pfeil.className.split(/\s+/)).toEqual(
-        expect.arrayContaining(['size-10', 'sm:hidden', 'text-accent', 'rounded-button']),
+        expect.arrayContaining(['size-11', 'sm:hidden', 'text-accent', 'rounded-button']),
       );
       expect(pfeil).toHaveAttribute('title', 'Zurück zu den Patient:innen');
       expect(pfeil).toHaveAttribute('href', '/patienten');

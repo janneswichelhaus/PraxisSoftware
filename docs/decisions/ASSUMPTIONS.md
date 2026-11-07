@@ -1517,3 +1517,4 @@ Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
 | ANN-832 | Angebotskennzahlen: Pakete und Abos mindestens, ohne Anschluss höchstens; Folgepakete in Offene Punkte | Praxisprozess · entschieden (Jannes) | `ANGEBOTSKENNZAHLEN` in `src/features/billing/statistics/kennzahlen.ts` |
 | ANN-834 | Pakete ohne Anschluss als Gruppe in Offene Punkte, „Noch in Behandlung“ an der Zeile, Sprung zu Gruppe und Paket | Praxisprozess · entschieden (Jannes) | `public.list_ending_training_packages` |
 | ANN-848 | Sitzungsvorbereitung: seit der letzten Behandlung, zu tun nur Fristen | Praxisprozess · offen | `public.get_session_preparation` |
+| ANN-849 | Ziele ab 44 px außer Kacheln im Zeitraster (Höhe = Dauer) und den Wochenpfeilen (32 px, damit die Tage 44 haben) | Technik · offen | `kleineZiele` in `scripts/bildstrecke/barrierefreiheit.mjs` |

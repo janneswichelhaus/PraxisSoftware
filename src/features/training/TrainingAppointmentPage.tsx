@@ -133,7 +133,10 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
       <PageHeader
         kicker={beratung ? 'Ernährungsberatung' : 'Trainingstermin'}
         title={
-          <Textlink to={mitRueckweg(`/training/${termin.training_relationship_id}`, hier)}>
+          <Textlink
+            alleinstehend
+            to={mitRueckweg(`/training/${termin.training_relationship_id}`, hier)}
+          >
             {name}
           </Textlink>
         }

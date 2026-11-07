@@ -39,7 +39,7 @@ export function NamentlicheRueckmeldungen({
             anzahl={eintraege.length}
             aktion={
               art ? undefined : (
-                <Textlink to={RUECKMELDUNG_PFAD} className="text-sm font-semibold">
+                <Textlink to={RUECKMELDUNG_PFAD} alleinstehend className="text-sm font-semibold">
                   Ohne Namen
                 </Textlink>
               )

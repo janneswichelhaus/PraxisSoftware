@@ -208,6 +208,7 @@ export function Saeulendiagramm({
                   width={band}
                   height={flaeche}
                   fill="transparent"
+                  role="img"
                   tabIndex={0}
                   aria-describedby={aktiv === i ? tooltipId : undefined}
                   aria-label={`${kategorie.label}: ${reihen

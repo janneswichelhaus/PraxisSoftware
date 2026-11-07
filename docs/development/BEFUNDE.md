@@ -165,12 +165,6 @@ Nachgestellt mit dem Seed vom 6.10. und allen Migrationen; mit gültigen Kennung
 vom 31.10. (Lauf #239) brach am Seed ab, weil eine Behandlungsnotiz aus der Bedienung ihren Termin
 festhielt; `neu-aufsetzen.psql` leert seither vorher alle Praxisdaten, danach erneut starten.
 
-### Kalender — Für `trainer` antwortet `list_fleet` mit 403
-2026-10-28 · `/kalender`, `trainer` · Gesamtlauf der Bildstrecke · offen (Vorschlag) · `list_fleet`\
-**Beobachtung.** Bei 375 und 1280 meldet die Bildstrecke `403 /rest/v1/rpc/list_fleet`: Eine Abfrage
-auf der Seite lädt die Radflotte, die Datenbank weist `trainer` ab. **Erwartet.** Die Seite fragt
-für `trainer` nur, was die Rolle lesen darf; kein 403 im Gesamtlauf.
-
 ### Termine — Zeichen und Zeilen der Bausteine gibt es schon an anderer Stelle
 2026-10-28 · Plattform, Termine · Design-Review zu 3a · offen (Vorschlag, nach 3d) ·
 `Terminsymbole.tsx`, `Terminliste.tsx`, `Fragezeile`\

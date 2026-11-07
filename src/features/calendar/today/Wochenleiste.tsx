@@ -37,18 +37,23 @@ export function Wochenleiste({
 }) {
   const tage = fensterTage(tag, heute);
   const anfang = tage[0]!;
+  // Am Telefon reicht die Leiste bis an den Rand: So sind die Tage 44 px breit,
+  // die selteneren Pfeile 32 (ANN-849).
   const pfeil =
-    'text-ink-muted hover:text-accent flex min-h-12 w-7 shrink-0 items-center justify-center text-xl sm:min-h-16';
+    'text-ink-muted hover:text-accent flex min-h-12 w-8 shrink-0 items-center justify-center text-xl sm:min-h-16 sm:w-7';
 
   return (
     // Am Telefon rückt die Leiste an das Datum im Kopf heran (Design-Review
     // R2, U3): Kopf und Leiste nennen zusammen den Tag, und der Hauptknopf
     // des nächsten Besuchs bleibt bei 375 × 667 über der Tableiste (ANN-484).
-    <nav aria-label="Tag wählen" className="mb-2 flex items-stretch gap-1 max-sm:-mt-3 sm:mb-5">
+    <nav
+      aria-label="Tag wählen"
+      className="mb-2 flex items-stretch max-sm:-mx-4 max-sm:-mt-3 sm:mb-5 sm:gap-1"
+    >
       <Link to={tagesPfad(tagePlus(anfang, -7), heute)} className={pfeil} aria-label="Vorige Woche">
         <span aria-hidden="true">‹</span>
       </Link>
-      <ol className="grid min-w-0 flex-1 grid-cols-7 gap-1">
+      <ol className="grid min-w-0 flex-1 grid-cols-7 sm:gap-1">
         {tage.map((t) => {
           const gewaehlt = t === tag;
           const zahl = anzahl(t);
