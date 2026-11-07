@@ -1046,6 +1046,10 @@ Technik · offen · 2026-11-06 · — · — · Wiedervorlage: —\
 Praxisprozess · offen · 2026-11-06 · — · — · Wiedervorlage: —\
 **Regel.** 1 bis 7 Tage im Wechsel ab Beginn, je Beratung einer offen, ein neuer beendet ihn am Vortag, Beenden jeden noch geltenden; Rezepte der Praxis, auch abgelegte, nur über einen geltenden oder künftigen Plan; abgelegte Lebensmittel bleiben im Plan, nie im Tagebuch. **Grundlage.** ADR-027 Punkt 14. **Anker.** `app.nutrition_plan_day_json`.
 
+### ANN-846 — Verlauf der Beratung: Mittel über Tage mit Eintrag
+Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
+**Regel.** Mittel je Tag über die Tage mit Eintrag, Wasser über die Tage mit Wasser; ein leerer Tag zählt nicht als 0. Wochen ab Montag, höchstens zwölf, neben den Zielwerten von heute. Sitzung = abgehakter Beratungstermin; der Zeitraum beginnt am Tag nach der letzten vor heute, sonst mit der Beratung. **Grundlage.** ADR-027 Punkte 11, 13. **Anker.** `app.nutrition_course_span`.
+
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
 | --- | --- | --- | --- |

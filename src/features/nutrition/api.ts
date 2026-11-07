@@ -25,6 +25,7 @@ import { tagSchema, zieleSchema } from './tagebuch';
  */
 
 import { planSchema } from './plaene';
+import { verlaufSchema, type Ernaehrungsverlauf } from './verlauf';
 export type { Verhaeltnisart } from './eingabe';
 import type { Verhaeltnisart } from './eingabe';
 
@@ -258,6 +259,20 @@ export async function fetchTagebuch(
   })) as { data: unknown; error: unknown };
   if (error) throw new Error(satz);
   return antwort(tagebuchDerBeratungSchema.nullable(), data ?? null, satz);
+}
+
+export function verlaufSchluessel(profilId: string) {
+  return ['ernaehrung', 'verlauf', profilId] as const;
+}
+
+/** Wochenmittel, Gewicht, Beratungen und Planwechsel einer Beratung (ANN-846). */
+export async function fetchVerlauf(profilId: string): Promise<Ernaehrungsverlauf | null> {
+  const satz = 'Der Verlauf konnte nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('get_nutrition_course', {
+    p_profile_id: profilId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(verlaufSchema.nullable(), data ?? null, satz);
 }
 
 // -----------------------------------------------------------------------------

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
-import { Punktbild } from '@/components/ui/Punktbild';
+import { Punktbild, type Bildmarkierung } from '@/components/ui/Punktbild';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -50,14 +50,21 @@ export function Verlaufsbilder({
   erfassungen,
   markierungen,
   termine,
+  zeitraumDaten = [],
 }: {
   erfassungen: readonly { datum: string; werte: Record<string, number> }[];
-  markierungen: readonly Verlaufsmarkierung[];
+  markierungen: readonly Bildmarkierung[];
   termine: readonly string[];
+  /** Tage, die die Achse mindestens fasst, etwa der Zeitraum einer Ernährungsberatung. */
+  zeitraumDaten?: readonly string[];
 }) {
   const reihen = bildreihen(erfassungen);
   if (reihen.length === 0) return null;
-  const achse = [...erfassungen.map((e) => e.datum), ...markierungen.map((m) => m.datum)];
+  const achse = [
+    ...erfassungen.map((e) => e.datum),
+    ...markierungen.map((m) => m.datum),
+    ...zeitraumDaten,
+  ];
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {reihen.map((reihe) => (
