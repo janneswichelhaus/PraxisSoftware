@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Zeitstrahleintrag } from './api';
-import { nachMonat, zeile, type Namen } from './eintraege';
+import type { Vorbereitung, Zeitstrahleintrag } from './api';
+import { aufgaben, nachMonat, zeile, type Namen } from './eintraege';
 
 const P = 'p1';
 const NAMEN: Namen = {
@@ -89,5 +89,52 @@ describe('Zeile im Zeitstrahl (ORG-002)', () => {
       ['2026-11-01', 2],
       ['2026-10-01', 1],
     ]);
+  });
+});
+
+describe('Zu tun (ORG-003)', () => {
+  const basis: Vorbereitung = {
+    today: '2026-11-07',
+    time_zone: 'Europe/Berlin',
+    last_session_on: '2026-11-03',
+    next_appointment: null,
+    open_messages: [{ id: 'm1', topic: 'complaint', due_on: '2026-11-04', overdue: true }],
+    checkin_due_on: '2026-11-01',
+    plans_review: [{ id: 'pl', title: 'Heimprogramm Knie', runs_until: '2026-11-12' }],
+    documentation_open: [{ id: 't1', starts_at: '2026-11-05T09:00:00Z', note_status: 'draft' }],
+    goals: [],
+  };
+  const thema = (t: string) => (t === 'complaint' ? 'Beschwerden' : t);
+
+  it('nennt Fristen und Fälligkeiten, mit Weg zur Stelle, an der sie erledigt werden', () => {
+    expect(aufgaben(basis, P, thema)).toEqual([
+      {
+        schluessel: 'm-m1',
+        titel: 'Rückfrage beantworten: Beschwerden',
+        meta: 'Antwort bis 04.11.2026',
+        abzeichen: 'Frist vorbei',
+        ziel: '/rueckfragen/m1',
+      },
+      expect.objectContaining({ titel: 'Doku festschreiben', ziel: '/termine/t1/abschluss' }),
+      expect.objectContaining({
+        titel: 'Übungsplan endet bald',
+        ziel: '/patienten/p1/doku#uebungsplaene',
+      }),
+      expect.objectContaining({ titel: 'Check-in fällig', meta: 'Seit 01.11.2026' }),
+    ]);
+  });
+
+  it('fasst ab drei Terminen ohne Doku zusammen; ohne Recht entfällt die Gruppe', () => {
+    const viele = {
+      ...basis,
+      documentation_open: ['01', '02', '03'].map((t) => ({
+        id: t,
+        starts_at: `2026-11-${t}T09:00:00Z`,
+        note_status: 'none',
+      })),
+    };
+    expect(aufgaben(viele, P, thema).map((a) => a.titel)).toContain('Doku an 3 Terminen offen');
+    const ohne = { ...basis, open_messages: null, documentation_open: null, plans_review: null };
+    expect(aufgaben({ ...ohne, checkin_due_on: null }, P, thema)).toEqual([]);
   });
 });

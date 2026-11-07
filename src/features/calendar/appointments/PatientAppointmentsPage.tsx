@@ -27,6 +27,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { WaitlistNotice } from '@/features/calendar/waitlist/WaitlistNotice';
+import { themaName } from '@/features/portal';
 import {
   formatDate as formatIsoDate,
   dayKey,
@@ -441,7 +442,7 @@ export function PatientAppointmentsPage() {
   const { patient, user } = usePatientRecord();
   return (
     <>
-      <AufEinenBlick patientId={patient.id} />
+      <AufEinenBlick patientId={patient.id} thema={themaName} />
       <Terminbereich patient={patient} user={user} />
     </>
   );

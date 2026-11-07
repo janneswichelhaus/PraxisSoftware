@@ -50,3 +50,55 @@ export async function fetchZeitstrahl(
   if (data === null) return null;
   return antwort(zeitstrahlSchema, data, satz);
 }
+
+const vorbereitungSchema = z.object({
+  today: z.string(),
+  time_zone: z.string(),
+  last_session_on: z.string().nullable(),
+  next_appointment: z
+    .object({
+      id: z.string(),
+      starts_at: z.string(),
+      ends_at: z.string(),
+      appointment_type: z.string(),
+    })
+    .nullable(),
+  open_messages: z
+    .array(
+      z.object({ id: z.string(), topic: z.string(), due_on: z.string(), overdue: z.boolean() }),
+    )
+    .nullable(),
+  checkin_due_on: z.string().nullable(),
+  plans_review: z
+    .array(z.object({ id: z.string(), title: z.string(), runs_until: z.string() }))
+    .nullable(),
+  documentation_open: z
+    .array(z.object({ id: z.string(), starts_at: z.string(), note_status: z.string() }))
+    .nullable(),
+  goals: z
+    .array(
+      z.object({
+        treatment_basis_id: z.string(),
+        issued_on: z.string(),
+        kind: z.string(),
+        text: z.string(),
+      }),
+    )
+    .nullable(),
+});
+
+export type Vorbereitung = z.infer<typeof vorbereitungSchema>;
+
+export function vorbereitungKey(patientId: string) {
+  return ['session-preparation', patientId] as const;
+}
+
+export async function fetchVorbereitung(patientId: string): Promise<Vorbereitung | null> {
+  const satz = 'Die Sitzungsvorbereitung konnte nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('get_session_preparation', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  if (data === null) return null;
+  return antwort(vorbereitungSchema, data, satz);
+}

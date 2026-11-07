@@ -333,6 +333,13 @@ export function Tageskarte({
               <dd className="col-span-2 min-w-0">
                 <LetzterEintragVorDerTuer appointmentId={termin.id} />
                 <Kleingedrucktes className="mt-1">Lesen wird protokolliert.</Kleingedrucktes>
+                {/* Seit dem letzten Mal und was ansteht, in der Fahrtzeit (ANN-848). */}
+                <Textlink
+                  to={mitRueckweg(`/patienten/${termin.patient_id}/vorbereiten`, '/')}
+                  alleinstehend
+                >
+                  Sitzung vorbereiten
+                </Textlink>
               </dd>
             </>
           ) : null}

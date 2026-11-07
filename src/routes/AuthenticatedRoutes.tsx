@@ -16,6 +16,7 @@ import { CallListPage } from '@/features/workplace/open-points/CallListPage';
 import { PatientsListPage } from '@/features/patients/PatientsListPage';
 import { NewPatientPage } from '@/features/patients/NewPatientPage';
 import { EditPatientPage } from '@/features/patients/EditPatientPage';
+import { VorbereitenSeite } from '@/features/patients/timeline/VorbereitenSeite';
 import { ZeitstrahlSeite } from '@/features/patients/timeline/ZeitstrahlSeite';
 import {
   AkteEinstieg,
@@ -327,6 +328,7 @@ export function AuthenticatedRoutes({
                   <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
                   {/* Der Zeitstrahl neben dem Rahmen; jede Gruppe prüft der Server (ANN-847). */}
                   <Route path="/patienten/:patientId/zeitstrahl" element={<ZeitstrahlSeite />} />
+                  <Route path="/patienten/:patientId/vorbereiten" element={<VorbereitenSeite />} />
                   {/* Die Formulare der Ernährungsberatung neben dem Rahmen. */}
                   {showNutrition ? (
                     <>

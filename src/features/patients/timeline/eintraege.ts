@@ -1,6 +1,6 @@
 import { ereignisartTexte, type Ereignisart } from '@/lib/verlaufsereignisse';
-import { formatLocalTime, monatsBeginn } from '@/lib/datum';
-import type { Zeitstrahleintrag } from './api';
+import { formatDate, formatLocalDate, formatLocalTime, monatsBeginn } from '@/lib/datum';
+import type { Vorbereitung, Zeitstrahleintrag } from './api';
 
 // Was eine Zeile des Zeitstrahls sagt und wohin sie führt. Der Regelfall trägt kein Abzeichen;
 // ein Abzeichen ist ein Stand, nie eine Bewertung (ADR-006 Punkt 11).
@@ -157,4 +157,76 @@ export function nachMonat(eintraege: readonly Zeitstrahleintrag[]): Monat[] {
     else monate.push({ monat, eintraege: [e] });
   }
   return monate;
+}
+
+/** Ab so vielen Terminen ohne festgeschriebene Doku steht eine Sammelzeile. */
+export const DOKU_ZUSAMMENFASSEN = 3;
+
+export interface Aufgabe {
+  schluessel: string;
+  titel: string;
+  meta: string | null;
+  abzeichen: string | null;
+  ziel: string;
+}
+
+/**
+ * Was organisatorisch ansteht, älteste Frist zuerst je Art (ANN-848). Nur Fristen und Fälligkeiten
+ * aus dem Datenmodell; kein Eintrag entsteht aus einem Wert, den die Person angegeben hat.
+ */
+export function aufgaben(
+  v: Vorbereitung,
+  patientId: string,
+  thema: (thema: string) => string,
+): Aufgabe[] {
+  const akte = `/patienten/${patientId}`;
+  const liste: Aufgabe[] = [];
+  for (const m of v.open_messages ?? []) {
+    liste.push({
+      schluessel: `m-${m.id}`,
+      titel: `Rückfrage beantworten: ${thema(m.topic)}`,
+      meta: `Antwort bis ${formatDate(m.due_on)}`,
+      abzeichen: m.overdue ? 'Frist vorbei' : null,
+      ziel: `/rueckfragen/${m.id}`,
+    });
+  }
+  const doku = v.documentation_open ?? [];
+  // Ab drei Terminen eine Zeile: Die Liste soll in einer Minute erfassbar bleiben.
+  if (doku.length >= DOKU_ZUSAMMENFASSEN) {
+    liste.push({
+      schluessel: 'doku',
+      titel: `Doku an ${doku.length} Terminen offen`,
+      meta: `Ältester am ${formatLocalDate(doku[0]!.starts_at, v.time_zone)}`,
+      abzeichen: null,
+      ziel: `${akte}/doku`,
+    });
+  }
+  for (const d of doku.length >= DOKU_ZUSAMMENFASSEN ? [] : doku) {
+    liste.push({
+      schluessel: `d-${d.id}`,
+      titel: d.note_status === 'draft' ? 'Doku festschreiben' : 'Doku schreiben',
+      meta: `Termin am ${formatLocalDate(d.starts_at, v.time_zone)}`,
+      abzeichen: null,
+      ziel: `/termine/${d.id}/abschluss`,
+    });
+  }
+  for (const p of v.plans_review ?? []) {
+    liste.push({
+      schluessel: `p-${p.id}`,
+      titel: `Übungsplan ${p.runs_until < v.today ? 'abgelaufen' : 'endet bald'}`,
+      meta: `${p.title} · bis ${formatDate(p.runs_until)}`,
+      abzeichen: null,
+      ziel: `${akte}/doku#uebungsplaene`,
+    });
+  }
+  if (v.checkin_due_on) {
+    liste.push({
+      schluessel: 'checkin',
+      titel: 'Check-in fällig',
+      meta: `Seit ${formatDate(v.checkin_due_on)}`,
+      abzeichen: null,
+      ziel: `${akte}/doku#uebungsplaene`,
+    });
+  }
+  return liste;
 }

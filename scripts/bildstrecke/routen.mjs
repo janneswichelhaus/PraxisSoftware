@@ -239,6 +239,14 @@ export const ROUTEN = Object.freeze([
     etikett: 'Zeitstrahl',
     konten: ['therapist', 'office'],
   },
+  // Sitzung vorbereiten: Zu tun, seit dem letzten Mal, Ziele (ANN-848).
+  {
+    muster: '/patienten/:patientId/vorbereiten',
+    pfad: `${akte(erika)}/vorbereiten`,
+    bereich: 'Akte',
+    etikett: 'Sitzung vorbereiten (Behandlung)',
+    konten: ['therapist', 'office'],
+  },
   // Wochenmittel, Gewicht, Check-ins und Training in einer Ansicht (ANN-846).
   {
     muster: '/patienten/:patientId/ernaehrung/vorbereiten',
