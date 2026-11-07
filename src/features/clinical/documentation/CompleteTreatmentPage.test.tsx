@@ -1539,7 +1539,7 @@ describe('CompleteTreatmentPage', () => {
 
           await user.clear(vorschlag);
           await user.type(vorschlag, 'Befund{Enter}Keine Schwellung, Beugung 110 Grad.');
-          await user.click(screen.getByRole('button', { name: 'In die Doku übernehmen' }));
+          await user.click(screen.getByRole('button', { name: 'Nur übernehmen' }));
 
           const feld = screen.getByLabelText('Eintrag zur Behandlung');
           expect(feld).toHaveValue('Befund\nKeine Schwellung, Beugung 110 Grad.');
@@ -1595,15 +1595,67 @@ describe('CompleteTreatmentPage', () => {
       ).toBeInTheDocument();
       // Das Feld bleibt leer, bis jemand übernimmt.
       expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('');
-      expect(screen.getByRole('button', { name: 'In die Doku übernehmen' })).toHaveClass(
+      // Am leeren Feld trägt „Übernehmen und festschreiben“ den Hauptknopf (ANN-840).
+      expect(screen.getByRole('button', { name: 'Übernehmen und festschreiben' })).toHaveClass(
         'bg-accent',
       );
+      expect(screen.getByRole('button', { name: 'Nur übernehmen' })).not.toHaveClass('bg-accent');
       expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
 
       // Korrigiert man die Stelle, zählt die Zeile mit.
       await user.clear(vorschlag);
       await user.type(vorschlag, 'Plan{Enter}Treppe üben.');
       expect(screen.queryByText(/Stelle unverständlich/)).toBeNull();
+    });
+
+    it('schreibt am leeren Feld den geprüften Vorschlag mit einem Tipp fest (ANN-840)', async () => {
+      const user = userEvent.setup();
+      rendern();
+      const vorschlag = await diktieren(user);
+      await user.clear(vorschlag);
+      await user.type(vorschlag, 'Plan{Enter}Treppe üben.');
+      const beide = screen.getByRole('button', { name: 'Übernehmen und festschreiben' });
+      // Die Folge hört man mit wie am Festschreiben selbst.
+      expect(beide).toHaveAccessibleDescription(/Schreibt den Eintrag als Version 1 fest/);
+      await user.click(beide);
+
+      await waitFor(() =>
+        expect(completeTreatment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          'Plan\nTreppe üben.',
+          termin.updated_at,
+          null,
+          false,
+          true,
+        ),
+      );
+      expect(completeTreatment).toHaveBeenCalledTimes(1);
+      expect(createTreatmentNote).not.toHaveBeenCalled();
+    });
+
+    it('bietet „Übernehmen und festschreiben“ nicht an, wenn schon Text im Feld steht', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+      await diktieren(user);
+      expect(screen.queryByRole('button', { name: 'Übernehmen und festschreiben' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'In die Doku übernehmen' })).toHaveClass(
+        'bg-accent',
+      );
+    });
+
+    it('lässt den Text nach gescheitertem Festschreiben im Feld stehen (ANN-840)', async () => {
+      completeTreatment.mockRejectedValueOnce(new Error('Keine Verbindung.'));
+      const user = userEvent.setup();
+      rendern();
+      await diktieren(user);
+      await user.click(screen.getByRole('button', { name: 'Übernehmen und festschreiben' }));
+
+      await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
+      expect(await screen.findByRole('alert')).toHaveTextContent('Keine Verbindung.');
+      expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue(VORSCHLAGSTEXT);
+      expect(screen.queryByLabelText('Text des Vorschlags')).toBeNull();
+      expect(screen.getByRole('button', { name: 'Festschreiben' })).toBeEnabled();
     });
 
     it('hängt den Vorschlag ans Ende und holt ihn mit „Rückgängig“ zurück', async () => {

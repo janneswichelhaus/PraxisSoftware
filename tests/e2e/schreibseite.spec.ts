@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { DIKTAT, mikrofonNachbilden } from './mikrofon';
 
 /**
  * Die eine Schreibseite in einem echten Browser (Design-Handoff 2026-10-01,
@@ -133,56 +134,6 @@ test('zeigt den Änderungsverlauf in der Hülle, jede Version für sich (375 px)
  * und Recorder sind nachgebildet, der Gateway antwortet über die Route wie die
  * Nachbildung. Gesprochen wird mit keinem Server.
  */
-function mikrofonNachbilden() {
-  class Recorder extends EventTarget {
-    static isTypeSupported(typ: string) {
-      return typ.startsWith('audio/webm');
-    }
-    state: 'inactive' | 'recording' = 'inactive';
-    mimeType: string;
-    constructor(_strom: unknown, optionen: { mimeType?: string } = {}) {
-      super();
-      this.mimeType = optionen.mimeType ?? 'audio/webm';
-    }
-    start() {
-      this.state = 'recording';
-    }
-    stop() {
-      if (this.state === 'inactive') return;
-      this.state = 'inactive';
-      const daten = Object.assign(new Event('dataavailable'), {
-        data: new Blob([new Uint8Array(64)], { type: this.mimeType }),
-      });
-      this.dispatchEvent(daten);
-      this.dispatchEvent(new Event('stop'));
-    }
-  }
-  const spur = { kind: 'audio', stop() {}, addEventListener() {} };
-  Object.defineProperty(window, 'MediaRecorder', { configurable: true, value: Recorder });
-  Object.defineProperty(navigator, 'mediaDevices', {
-    configurable: true,
-    value: {
-      getUserMedia: () =>
-        Promise.resolve({ getTracks: () => [spur], getAudioTracks: () => [spur] }),
-    },
-  });
-}
-
-const DIKTAT = {
-  ok: true,
-  transkript:
-    'Patientin berichtet, das rechte Knie sei besser, Schmerz drei von zehn. Keine Schwellung. Eigenübungen weiter, vielleicht Treppe [unverständlich].',
-  abschnitte: [
-    {
-      titel: 'Angaben der Patient:in',
-      text: 'Patientin berichtet, das rechte Knie sei besser, Schmerz drei von zehn.',
-    },
-    { titel: 'Befund', text: 'Keine Schwellung.' },
-    { titel: 'Plan', text: 'Eigenübungen weiter, vielleicht Treppe [unverständlich].' },
-  ],
-  quelle: 'nachbildung',
-};
-
 test('spricht am Telefon: Sprechen im Daumenbereich, Aufnahme, Vorschlag, Übernahme (375 px)', async ({
   page,
 }) => {
@@ -234,7 +185,9 @@ test('spricht am Telefon: Sprechen im Daumenbereich, Aufnahme, Vorschlag, Übern
   expect(anfrage).not.toContain('Mustermann');
   await ohneUeberlauf(page);
 
-  await page.getByRole('button', { name: 'In die Doku übernehmen' }).click();
+  // Am leeren Feld steht „Übernehmen und festschreiben“ vorn, im Bild (ANN-840).
+  await expect(page.getByRole('button', { name: 'Übernehmen und festschreiben' })).toBeVisible();
+  await page.getByRole('button', { name: 'Nur übernehmen' }).click();
   await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(/^Angaben der Patient:in\n/);
   await expect(page.getByRole('button', { name: 'Festschreiben' })).toBeInViewport();
   await ohneUeberlauf(page);

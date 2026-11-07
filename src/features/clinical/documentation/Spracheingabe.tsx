@@ -155,11 +155,20 @@ export function VorschlagAusAufnahme({
   diktat,
   gesperrt,
   onUebernehmen,
+  onFestschreiben,
+  folgeId,
 }: {
   diktat: Diktat;
   /** Solange die Seite schreibt, ist das Feld festgehalten. */
   gesperrt: boolean;
   onUebernehmen: (text: string) => void;
+  /**
+   * Übernehmen und festschreiben in einem Tipp (ANN-840); nur, wo die Seite
+   * dann genau diesen Text festschreibt. Sonst nur „In die Doku übernehmen“.
+   */
+  onFestschreiben?: (() => void) | undefined;
+  /** Die Folge des Festschreibens für Vorlesesoftware. */
+  folgeId?: string;
 }) {
   const { stand } = diktat;
   const abschnitt = useRef<HTMLDivElement>(null);
@@ -209,15 +218,26 @@ export function VorschlagAusAufnahme({
             </p>
           </Disclosure>
           <div className="flex flex-wrap gap-3">
+            {onFestschreiben ? (
+              <Button
+                type="button"
+                disabled={gesperrt || stand.text.trim() === ''}
+                aria-describedby={folgeId}
+                onClick={onFestschreiben}
+              >
+                Übernehmen und festschreiben
+              </Button>
+            ) : null}
             <Button
               type="button"
+              variant={onFestschreiben ? 'secondary' : 'primary'}
               disabled={gesperrt || stand.text.trim() === ''}
               onClick={() => {
                 const text = diktat.uebernehmen();
                 if (text) onUebernehmen(text);
               }}
             >
-              In die Doku übernehmen
+              {onFestschreiben ? 'Nur übernehmen' : 'In die Doku übernehmen'}
             </Button>
             <Rueckfrage
               ausloeser="Verwerfen"
@@ -231,7 +251,8 @@ export function VorschlagAusAufnahme({
           </div>
           <Kleingedrucktes>
             Die Aufnahme wird nur für diesen Vorschlag verarbeitet und nicht gespeichert. Erst
-            „Übernehmen“ macht daraus Ihren Entwurf.
+            „Übernehmen“ macht daraus Ihren Text
+            {onFestschreiben ? '; „Übernehmen und festschreiben“ schreibt ihn gleich fest.' : '.'}
           </Kleingedrucktes>
         </div>
       </Section>

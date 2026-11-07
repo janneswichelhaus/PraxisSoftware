@@ -34,6 +34,7 @@ import { WieZuletzt } from './WieZuletzt';
 import { useTextUebernahme } from './uebernahme';
 import { DIKTAT_TITEL, useDiktat } from './diktat';
 import { Sprechleiste, VorschlagAusAufnahme } from './Spracheingabe';
+import { bausteinEinfuegen } from './textbausteine';
 import { useIstVerbunden } from '@/app/verbindung';
 import {
   completeTreatment,
@@ -334,6 +335,42 @@ function Abschluss({
     return meldung === undefined;
   }
 
+  function festschreiben() {
+    setSchreibtAbschluss(true);
+    void schreiben({
+      ausfuehren: abschlussSchreiben,
+      fehlertitel: 'Nicht festgeschrieben',
+      danach: () => {
+        freigeben();
+        // Festschreiben hakt nicht ab - abgehakt wird in der Übersicht oder
+        // im Kalender.
+        onFestgeschrieben(
+          ohneBehandlung
+            ? 'Mit Vermerk festgeschrieben.'
+            : 'Eintrag als Version 1 festgeschrieben.',
+        );
+      },
+    }).finally(() => setSchreibtAbschluss(false));
+  }
+
+  /**
+   * Übernehmen und festschreiben in einem ausdrücklichen Tipp (ANN-840), nur am leeren
+   * Feld: Festgeschrieben wird genau der geprüfte Vorschlag. Die Refs tragen den neuen Stand.
+   */
+  function uebernehmenUndFestschreiben() {
+    const vorher = wertRef.current;
+    const text = diktat.uebernehmen();
+    if (!text) return;
+    einfuegen(DIKTAT_TITEL, vorher, text);
+    const nachher = bausteinEinfuegen(vorher, text);
+    wertRef.current = nachher;
+    diktiertRef.current = true;
+    const meldung = inhaltFehler(nachher);
+    setFehler(meldung);
+    if (meldung) return;
+    festschreiben();
+  }
+
   // Der Pfeil führt dorthin, woher die Seite kam - sonst zum Termin. Er läuft
   // wie jeder Weg hinaus durch den Textverlustschutz.
   const zurueck = leseRueckweg(suche, zumTermin);
@@ -358,6 +395,14 @@ function Abschluss({
     wert.trim() === '' &&
     !bausteine.text &&
     !skalen.text;
+  // Am leeren Feld ohne Offenes schreibt der Vorschlag gleich fest (ANN-840).
+  const festschreibenMitDiktat =
+    !ohneBehandlung &&
+    !wechsel &&
+    wert.trim() === '' &&
+    !bausteine.text &&
+    !skalen.text &&
+    !befund.ungesichert;
   // Ein offener Vorschlag trägt mit „Übernehmen“ den Hauptknopf (DESIGN.md Regel 4).
   const festschreibenHaupt = !sprechenHaupt && diktat.ruhig && !bausteine.text && !skalen.text;
 
@@ -477,21 +522,7 @@ function Abschluss({
           onSubmit={(event) => {
             event.preventDefault();
             if (!geprueft()) return;
-            setSchreibtAbschluss(true);
-            void schreiben({
-              ausfuehren: abschlussSchreiben,
-              fehlertitel: 'Nicht festgeschrieben',
-              danach: () => {
-                freigeben();
-                // B4 (BEF-154): Festschreiben hakt nicht ab - abgehakt wird
-                // in der Übersicht oder im Kalender.
-                onFestgeschrieben(
-                  ohneBehandlung
-                    ? 'Mit Vermerk festgeschrieben.'
-                    : 'Eintrag als Version 1 festgeschrieben.',
-                );
-              },
-            }).finally(() => setSchreibtAbschluss(false));
+            festschreiben();
           }}
         >
           {/* Der Pflichtvermerk aus Hausbesuch-Szenario 1 (CAL-018, ADR-018
@@ -565,6 +596,8 @@ function Abschluss({
             diktat={diktat}
             gesperrt={laeuft}
             onUebernehmen={(text) => einfuegen(DIKTAT_TITEL, wert, text)}
+            onFestschreiben={festschreibenMitDiktat ? uebernehmenUndFestschreiben : undefined}
+            folgeId={folgeId}
           />
 
           <label htmlFor={feldId} className="sr-only">
