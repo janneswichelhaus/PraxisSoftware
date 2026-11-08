@@ -52,10 +52,6 @@ test.describe('Übergang ins Training', () => {
       await page.getByRole('button', { name: 'Angebot prüfen und buchen' }).click();
       const weiter = page.getByRole('dialog').getByRole('button', { name: 'Weiter' });
       await weiter.click();
-      await expect(
-        page.getByRole('dialog', { name: 'Angaben zur Gesundheit im Training' }),
-      ).toBeVisible();
-      await weiter.click();
       await expect(page.getByRole('dialog', { name: 'Widerrufsbelehrung' })).toBeVisible();
       await weiter.click();
       await expect(page.getByText(/innerhalb der Widerrufsfrist. Bitte bestätigen/)).toBeVisible();
