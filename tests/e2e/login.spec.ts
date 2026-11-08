@@ -28,7 +28,8 @@ test.describe('Anmeldung', () => {
   }) => {
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Mit Passkey anmelden' })).toBeVisible();
-    await expect(page.getByText(/Wenden Sie sich an die Praxis/)).toBeVisible();
+    // Jannes 2026-11-08: kein erklärender Text auf der Anmeldeseite.
+    await expect(page.getByText(/Passkey verloren|Displaysperre/)).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Kennwort vergessen?' })).toHaveCount(0);
   });
 
