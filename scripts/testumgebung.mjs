@@ -317,11 +317,19 @@ export function htaccess({ supabaseUrl, tuerDatei, kartendienst = false }) {
       'AuthName "Praxis Test-Umgebung"',
       `AuthUserFile "${tuerDatei}"`,
       'Require valid-user',
+      '# Manifest und App-Symbol ohne Tür: Der Dienst, der die installierte App baut, fragt ohne',
+      '# Kennwort; sonst bleibt nur eine Verknüpfung mit Browserleiste (ANN-101).',
+      `<FilesMatch "^(${OHNE_TUER.map((d) => d.replaceAll('.', '\\.')).join('|')})$">`,
+      '  Require all granted',
+      '</FilesMatch>',
     );
   }
 
   return `${zeilen.join('\n')}\n`;
 }
+
+/** Dateien vor der zweiten Tür: nur Name und Marke, keine Daten. */
+export const OHNE_TUER = ['manifest.webmanifest', 'own-motion-app-1024.png'];
 
 /** Keine Suchmaschine soll die Test-Umgebung aufnehmen. */
 export function robotsTxt() {
@@ -364,6 +372,11 @@ export async function pruefeAuslieferung({ adresse, tuerKennwort, abrufen = fetc
     const ohne = await abrufen(new URL('/', adresse), { redirect: 'manual' });
     if (ohne.status !== 401)
       fehler.push(`Zweite Tür: ohne Kennwort Status ${ohne.status} statt 401.`);
+    const manifest = await abrufen(new URL('/manifest.webmanifest', adresse), {
+      redirect: 'manual',
+    });
+    if (manifest.status !== 200)
+      fehler.push(`Manifest: ohne Kennwort Status ${manifest.status} statt 200.`);
   }
 
   // Über HTTP ginge das Kennwort der Tür im Klartext: HTTP muss auf HTTPS

@@ -1121,7 +1121,7 @@ Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
 | ANN-098 | Fehlt ein gewerteter Wert, rechnet der Kern für die Skala keinen und nennt die fehlenden Items | Praxisprozess · entschieden (Jannes) | `src/features/clinical/assessments/rechnen.ts` |
 | ANN-099 | Ohne Vorlage inaktiv; PSFS entfällt, NRS und Veränderungsfrage werden Praxisvorgabe | Technik · entschieden (Jannes) | `scoreDefinitionSchema` |
 | ANN-100 | Test-Umgebung: Migrationen nach grüner CI, Neuaufsetzen mit Seed nur von Hand, Zugang aus einem Secret | Technik · entschieden (Jannes) | `supabase/testumgebung/neu-aufsetzen.psql` |
-| ANN-101 | Test-Umgebung: Kopfzeilen und CSP über eine erzeugte `.htaccess`, zweite Tür per Basic-Auth nur optional | Technik · entschieden (Jannes) | `scripts/testumgebung.mjs` |
+| ANN-101 | Test-Umgebung: Kopfzeilen und CSP per `.htaccess`, zweite Tür optional, Manifest und App-Symbol offen | Technik · entschieden (Jannes) | `scripts/testumgebung.mjs` |
 | ANN-102 | Anamnesebogen V8 ohne Punktwerte; eine Erhebung speichert die Kennung der Option | Technik · entschieden (Jannes) | `optionKennung` in `src/features/clinical/assessments/schema.ts` |
 | ANN-103 | Ein Fragebogen ist Entwurf oder abgeschlossen; korrigiert wird als neue Erhebung | Praxisprozess · entschieden (Jannes) | `app.guard_questionnaire_response` |
 | ANN-105 | Antworten prüft auch der Server gegen die Definition ihrer Fassung, nicht nur ihre Form | Technik · verworfen (→ ANN-219) | `app.assert_questionnaire_answers` |
