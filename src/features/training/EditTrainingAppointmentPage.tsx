@@ -98,6 +98,7 @@ export function EditTrainingAppointmentPage({ user }: { user: CurrentUser }) {
         rasterMinuten={user.appointmentGridMinutes}
         texte={{
           absenden: 'Speichern',
+          trotzdem: 'Änderung trotzdem speichern',
           laeuft: 'Wird gespeichert …',
           fehlerTitel: 'Der Termin konnte nicht geändert werden.',
           ungespeichert: 'Ungespeicherter Trainingstermin',

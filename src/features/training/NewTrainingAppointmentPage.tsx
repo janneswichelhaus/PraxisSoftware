@@ -107,6 +107,7 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
         bereit={kunde !== ''}
         texte={{
           absenden: 'Trainingstermin anlegen',
+          trotzdem: 'Trainingstermin trotzdem anlegen',
           laeuft: 'Wird angelegt …',
           fehlerTitel: 'Der Trainingstermin konnte nicht angelegt werden.',
           ungespeichert: 'Ungespeicherter Trainingstermin',
@@ -143,7 +144,6 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
                   feldId="trainingstermin-kunde"
                   value={kunde}
                   error={kundeFehler}
-                  hint="Nur mit laufendem Vertrag."
                   onChange={(e) => {
                     setKunde(e.target.value);
                     setBasis('');
@@ -165,7 +165,6 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
                   label="Vereinbarung"
                   feldId="trainingstermin-vereinbarung"
                   value={basis}
-                  hint="Ohne Vereinbarung ist es eine Einzelstunde."
                   onChange={(e) => setBasis(e.target.value)}
                 >
                   <option value="">Einzelstunde ohne Vereinbarung</option>

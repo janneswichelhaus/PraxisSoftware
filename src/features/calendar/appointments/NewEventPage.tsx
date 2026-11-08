@@ -246,10 +246,6 @@ export function NewEventPage({ user, serie = false }: { user: CurrentUser; serie
     );
   }
 
-  if (personen.isPending || standorte.isPending) {
-    return <LoadingState label="Formular wird vorbereitet …" />;
-  }
-
   const aktive = (personen.data ?? []).filter((p) => p.employment_status === 'active');
   const ausserhalb = mutation.isError && istAusserhalbArbeitszeit(mutation.error);
   // Ohne die Liste einer Pflichtangabe lässt sich nicht eintragen; das Feld sagt es.
@@ -270,173 +266,180 @@ export function NewEventPage({ user, serie = false }: { user: CurrentUser; serie
         }
       />
 
-      <form onSubmit={absenden} noValidate className="max-w-formular">
-        {/* Was noch fehlt - und wo: Auf dem Telefon steht der Knopf einen Bildschirm tiefer. */}
-        <Fehlerzusammenfassung
-          fehler={alsFormularfehler(
-            FEHLERFELDER,
-            serie ? SERIE_BESCHRIFTUNGEN : BESCHRIFTUNGEN,
-            fehler,
-            (feld) => (feld === 'anzahl' ? ANZAHL_ID : EREIGNIS_FELD_IDS[feld]),
-          )}
-        />
-
-        <EreignisFormFields
-          werte={werte}
-          fehler={fehler}
-          onChange={setzen}
-          standorte={standorte.data ?? []}
-          zeitzone={user.organizationTimeZone}
-          rasterMinuten={user.appointmentGridMinutes}
-          datumBeschriftung={`${serie ? SERIE_BESCHRIFTUNGEN.date : BESCHRIFTUNGEN.date} *`}
-          datumHinweis={
-            serie && istIsoDatum(werte.date)
-              ? `Das ist ein ${wochentag(werte.date, 'long')}.`
-              : undefined
-          }
-          standorteFehler={
-            standorte.isError ? (
-              <ErrorState
-                title="Die Standorte konnten nicht geladen werden."
-                description={VERBINDUNG_PRUEFEN}
-                onErneut={() => standorte.refetch()}
-              />
-            ) : null
-          }
-          beteiligte={
-            <fieldset aria-describedby={fehler.staff_member_ids ? BETEILIGTE_FEHLER_ID : undefined}>
-              <legend className="text-ink text-sm font-medium">Beteiligte Personen *</legend>
-              {personen.isError ? (
-                <div className="mt-3">
-                  <ErrorState
-                    title="Die Personen konnten nicht geladen werden."
-                    description={VERBINDUNG_PRUEFEN}
-                    onErneut={() => personen.refetch()}
-                  />
-                </div>
-              ) : (
-                // Ab 640 px zwei Spalten: Die Namen sind kurz, die Liste wird halb so lang.
-                <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
-                  {aktive.map((person, i) => (
-                    <Checkbox
-                      key={person.id}
-                      // Das erste Kästchen ist das Sprungziel der Zusammenfassung.
-                      feldId={i === 0 ? EREIGNIS_FELD_IDS.staff_member_ids : undefined}
-                      label={`${person.given_name} ${person.family_name}`}
-                      checked={werte.staff_member_ids.includes(person.id)}
-                      onChange={(e) =>
-                        setzen(
-                          'staff_member_ids',
-                          e.target.checked
-                            ? [...werte.staff_member_ids, person.id]
-                            : werte.staff_member_ids.filter((id) => id !== person.id),
-                        )
-                      }
-                    />
-                  ))}
-                </div>
-              )}
-              {/* Der Fehler der Gruppe - mit Rolle, in Feldgröße und an der Gruppe angebunden. */}
-              {fehler.staff_member_ids ? (
-                <p id={BETEILIGTE_FEHLER_ID} role="alert" className="text-danger mt-2 text-sm">
-                  {fehler.staff_member_ids}
-                </p>
-              ) : null}
-            </fieldset>
-          }
-        />
-
-        {serie ? (
-          <Section titel="Wiederholung">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-end">
-              <Select
-                label="Rhythmus *"
-                value={rhythmus}
-                onChange={(e) => setRhythmus(e.target.value as Rhythmus)}
-              >
-                {(Object.keys(rhythmen) as Rhythmus[]).map((key) => (
-                  <option key={key} value={key}>
-                    {rhythmen[key].label}
-                  </option>
-                ))}
-              </Select>
-              <Field
-                label="Anzahl Fehlzeiten *"
-                feldId={ANZAHL_ID}
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={SERIE_HOECHSTZAHL}
-                value={anzahlText}
-                error={fehler.anzahl}
-                hint={`Höchstens ${SERIE_HOECHSTZAHL} je Vorgang.`}
-                onChange={(e) => {
-                  setAnzahlText(e.target.value);
-                  if (fehler.anzahl) {
-                    setFehler(({ anzahl: _entfaellt, ...rest }) => rest);
-                  }
-                }}
-              />
-            </div>
-
-            {/* Die Tage stehen vor dem Eintragen da: Die Serie gilt ganz oder gar nicht. */}
-            {tage.length > 0 ? (
-              <div className="mt-6">
-                <p className="text-ink text-sm font-medium">
-                  {fehlzeitenWort(tage.length)}
-                  {werte.start_time && werte.end_time
-                    ? `, jeweils ${wochentageDerSerie(tage)} ${werte.start_time}–${werte.end_time} Uhr`
-                    : `, ${wochentageDerSerie(tage)}`}
-                </p>
-                {/* Im Fluss statt untereinander: Dreißig Tage stehen am Telefon in zwölf Zeilen. */}
-                <ul className="text-ink-muted mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
-                  {tage.map((tag) => (
-                    <li key={tag}>{tagMitWochentag(tag)}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </Section>
-        ) : null}
-
-        {ausserhalb ? (
-          <EreignisArbeitszeitRueckfrage
-            beschriftung="Trotzdem eintragen"
-            laeuft={mutation.isPending}
-            onBestaetigen={() => {
-              const ergebnis = ereignisFormSchema.safeParse(werte);
-              if (!ergebnis.success) return;
-              mutation.mutate({ werte: ergebnis.data, tage, bestaetigt: true });
-            }}
-            onAbbrechen={() => mutation.reset()}
+      {/* Beim Laden stehen Rückweg und Kopf schon da (DESIGN.md Regel 8), nur das Formular fehlt. */}
+      {personen.isPending || standorte.isPending ? (
+        <LoadingState label="Formular wird vorbereitet …" />
+      ) : (
+        <form onSubmit={absenden} noValidate className="max-w-formular">
+          {/* Was noch fehlt - und wo: Auf dem Telefon steht der Knopf einen Bildschirm tiefer. */}
+          <Fehlerzusammenfassung
+            fehler={alsFormularfehler(
+              FEHLERFELDER,
+              serie ? SERIE_BESCHRIFTUNGEN : BESCHRIFTUNGEN,
+              fehler,
+              (feld) => (feld === 'anzahl' ? ANZAHL_ID : EREIGNIS_FELD_IDS[feld]),
+            )}
           />
-        ) : null}
 
-        {mutation.isError && !ausserhalb ? (
-          <Statusmeldung ton="fehler" className="mt-6">
-            {mutation.error.message}
-          </Statusmeldung>
-        ) : null}
+          <EreignisFormFields
+            werte={werte}
+            fehler={fehler}
+            onChange={setzen}
+            standorte={standorte.data ?? []}
+            zeitzone={user.organizationTimeZone}
+            rasterMinuten={user.appointmentGridMinutes}
+            datumBeschriftung={`${serie ? SERIE_BESCHRIFTUNGEN.date : BESCHRIFTUNGEN.date} *`}
+            datumHinweis={
+              serie && istIsoDatum(werte.date)
+                ? `Das ist ein ${wochentag(werte.date, 'long')}.`
+                : undefined
+            }
+            standorteFehler={
+              standorte.isError ? (
+                <ErrorState
+                  title="Die Standorte konnten nicht geladen werden."
+                  description={VERBINDUNG_PRUEFEN}
+                  onErneut={() => standorte.refetch()}
+                />
+              ) : null
+            }
+            beteiligte={
+              <fieldset
+                aria-describedby={fehler.staff_member_ids ? BETEILIGTE_FEHLER_ID : undefined}
+              >
+                <legend className="text-ink text-sm font-medium">Beteiligte Personen *</legend>
+                {personen.isError ? (
+                  <div className="mt-3">
+                    <ErrorState
+                      title="Die Personen konnten nicht geladen werden."
+                      description={VERBINDUNG_PRUEFEN}
+                      onErneut={() => personen.refetch()}
+                    />
+                  </div>
+                ) : (
+                  // Ab 640 px zwei Spalten: Die Namen sind kurz, die Liste wird halb so lang.
+                  <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
+                    {aktive.map((person, i) => (
+                      <Checkbox
+                        key={person.id}
+                        // Das erste Kästchen ist das Sprungziel der Zusammenfassung.
+                        feldId={i === 0 ? EREIGNIS_FELD_IDS.staff_member_ids : undefined}
+                        label={`${person.given_name} ${person.family_name}`}
+                        checked={werte.staff_member_ids.includes(person.id)}
+                        onChange={(e) =>
+                          setzen(
+                            'staff_member_ids',
+                            e.target.checked
+                              ? [...werte.staff_member_ids, person.id]
+                              : werte.staff_member_ids.filter((id) => id !== person.id),
+                          )
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
+                {/* Der Fehler der Gruppe - mit Rolle, in Feldgröße und an der Gruppe angebunden. */}
+                {fehler.staff_member_ids ? (
+                  <p id={BETEILIGTE_FEHLER_ID} role="alert" className="text-danger mt-2 text-sm">
+                    {fehler.staff_member_ids}
+                  </p>
+                ) : null}
+              </fieldset>
+            }
+          />
 
-        {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird. */}
-        {schutz}
+          {serie ? (
+            <Section titel="Wiederholung">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-end">
+                <Select
+                  label="Rhythmus *"
+                  value={rhythmus}
+                  onChange={(e) => setRhythmus(e.target.value as Rhythmus)}
+                >
+                  {(Object.keys(rhythmen) as Rhythmus[]).map((key) => (
+                    <option key={key} value={key}>
+                      {rhythmen[key].label}
+                    </option>
+                  ))}
+                </Select>
+                <Field
+                  label="Anzahl Fehlzeiten *"
+                  feldId={ANZAHL_ID}
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={SERIE_HOECHSTZAHL}
+                  value={anzahlText}
+                  error={fehler.anzahl}
+                  hint={`Höchstens ${SERIE_HOECHSTZAHL} je Vorgang.`}
+                  onChange={(e) => {
+                    setAnzahlText(e.target.value);
+                    if (fehler.anzahl) {
+                      setFehler(({ anzahl: _entfaellt, ...rest }) => rest);
+                    }
+                  }}
+                />
+              </div>
 
-        {/* Am Telefon untereinander in voller Breite; Abbrechen ist ein Link durch dieselbe Rückfrage. */}
-        <Formularfuss>
-          <Button type="submit" disabled={mutation.isPending || listeFehlt}>
-            {mutation.isPending
-              ? 'Wird eingetragen …'
-              : !serie
-                ? 'Fehlzeit eintragen'
-                : tage.length > 0
-                  ? `${fehlzeitenWort(tage.length)} eintragen`
-                  : 'Fehlzeiten eintragen'}
-          </Button>
-          <ButtonLink to={zurueck} variant="quiet">
-            Abbrechen
-          </ButtonLink>
-        </Formularfuss>
-      </form>
+              {/* Die Tage stehen vor dem Eintragen da: Die Serie gilt ganz oder gar nicht. */}
+              {tage.length > 0 ? (
+                <div className="mt-6">
+                  <p className="text-ink text-sm font-medium">
+                    {fehlzeitenWort(tage.length)}
+                    {werte.start_time && werte.end_time
+                      ? `, jeweils ${wochentageDerSerie(tage)} ${werte.start_time}–${werte.end_time} Uhr`
+                      : `, ${wochentageDerSerie(tage)}`}
+                  </p>
+                  {/* Im Fluss statt untereinander: Dreißig Tage stehen am Telefon in zwölf Zeilen. */}
+                  <ul className="text-ink-muted mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
+                    {tage.map((tag) => (
+                      <li key={tag}>{tagMitWochentag(tag)}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </Section>
+          ) : null}
+
+          {ausserhalb ? (
+            <EreignisArbeitszeitRueckfrage
+              beschriftung="Trotzdem eintragen"
+              laeuft={mutation.isPending}
+              onBestaetigen={() => {
+                const ergebnis = ereignisFormSchema.safeParse(werte);
+                if (!ergebnis.success) return;
+                mutation.mutate({ werte: ergebnis.data, tage, bestaetigt: true });
+              }}
+              onAbbrechen={() => mutation.reset()}
+            />
+          ) : null}
+
+          {mutation.isError && !ausserhalb ? (
+            <Statusmeldung ton="fehler" className="mt-6">
+              {mutation.error.message}
+            </Statusmeldung>
+          ) : null}
+
+          {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird. */}
+          {schutz}
+
+          {/* Am Telefon untereinander in voller Breite; Abbrechen ist ein Link durch dieselbe Rückfrage. */}
+          <Formularfuss>
+            <Button type="submit" disabled={mutation.isPending || listeFehlt}>
+              {mutation.isPending
+                ? 'Wird eingetragen …'
+                : !serie
+                  ? 'Fehlzeit eintragen'
+                  : tage.length > 0
+                    ? `${fehlzeitenWort(tage.length)} eintragen`
+                    : 'Fehlzeiten eintragen'}
+            </Button>
+            <ButtonLink to={zurueck} variant="quiet">
+              Abbrechen
+            </ButtonLink>
+          </Formularfuss>
+        </form>
+      )}
     </>
   );
 }

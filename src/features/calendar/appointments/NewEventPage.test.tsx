@@ -137,6 +137,16 @@ describe('NewEventPage', () => {
     expect(screen.queryByLabelText('Dauer')).not.toBeInTheDocument();
   });
 
+  it('zeigt beim Laden Rückweg und Kopf, nur das Formular fehlt noch (Regel 8)', async () => {
+    fetchStaffMembers.mockReturnValue(new Promise(() => undefined));
+    rendern();
+    expect(await screen.findByText('Formular wird vorbereitet …')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Fehlzeit eintragen' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText('Bezeichnung *')).not.toBeInTheDocument();
+  });
+
   it('bietet nur aktive Beschaeftigte an - und nicht nur therapeutische Rollen', async () => {
     rendern();
     await formularAbwarten();

@@ -674,7 +674,11 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
               }
             />
           ))}
-          {outsideDays ? appointmentsRow(outsideDays) : null}
+          {outsideDays ? (
+            appointmentsRow(outsideDays)
+          ) : complete ? (
+            <PreviewStateRow preview={preview} />
+          ) : null}
           <ListRow
             titel={self ? 'Sie tragen die Änderung selbst ein' : 'Entscheidet'}
             meta={
@@ -686,23 +690,6 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
             }
           />
         </ListRows>
-        {/* Nur Laden und Fehler der Vorschau brauchen hier Abstand; sonst folgt
-            „Grund angeben“ der Liste wie eine weitere Zeile (BEF-219). */}
-        <div className="my-4 empty:hidden">
-          {complete ? (
-            <Abfragezustand
-              abfrage={preview}
-              laden="Termine werden geprüft …"
-              fehler={PREVIEW_ERROR}
-              endgueltig={{
-                wenn: (error) => error instanceof Error && error.message !== PREVIEW_ERROR,
-                titel: preview.error instanceof Error ? preview.error.message : PREVIEW_ERROR,
-              }}
-            >
-              {() => null}
-            </Abfragezustand>
-          ) : null}
-        </div>
         <Disclosure summary="Grund angeben" offen={message !== ''}>
           <TextArea
             label="Grund – für die Praxisleitung, freiwillig"
@@ -715,4 +702,38 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
       </div>
     </GefuehrterAblauf>
   );
+}
+
+/**
+ * Laden und Fehler der Terminprüfung als Zeile an der Stelle der Termine: Der Abschluss
+ * rollt dabei nicht, und ein Fehler ist nie „keine Termine außerhalb“ (Regel 8).
+ */
+function PreviewStateRow({
+  preview,
+}: {
+  preview: { isPending: boolean; isError: boolean; error: unknown; refetch: () => unknown };
+}) {
+  if (preview.isError) {
+    const message = preview.error instanceof Error ? preview.error.message : PREVIEW_ERROR;
+    const final = message !== PREVIEW_ERROR;
+    return (
+      <ListRow
+        titel={
+          <span role="alert" className="text-danger">
+            {final ? message : PREVIEW_ERROR}
+          </span>
+        }
+        aktion={
+          final ? undefined : (
+            <Button variant="secondary" groesse="kompakt" onClick={() => void preview.refetch()}>
+              Erneut versuchen
+            </Button>
+          )
+        }
+      />
+    );
+  }
+  if (preview.isPending)
+    return <ListRow titel={<span role="status">Termine werden geprüft …</span>} />;
+  return null;
 }

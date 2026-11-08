@@ -281,7 +281,7 @@ describe('NewTrainingAppointmentPage', () => {
       'außerhalb der hinterlegten Arbeitszeit der betreuenden Person',
     );
     expect(
-      within(fenster).getByRole('button', { name: 'Trainingstermin anlegen – trotzdem' }),
+      within(fenster).getByRole('button', { name: 'Trainingstermin trotzdem anlegen' }),
     ).toBeVisible();
   });
 
