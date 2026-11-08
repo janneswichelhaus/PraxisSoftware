@@ -1,4 +1,4 @@
-# Status · Stand 2026-11-07
+# Status · Stand 2026-11-08
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -6,12 +6,12 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**UI-003 Teil 2a** auf `ccr-a2d47869-gl2q3u`: axe und Ziele ab 44 px je Praxisseite in Bildstrecke
-und CI, 596 Bilder ohne Befund (ANN-849); Merge bei Jannes.
+**UI-003 Teil 2b** auf `claude/weiter-rmy2y0`: Laden, Fehler und sechs Fenster ohne Adresse je
+Praxisseite mit axe und Zielen ab 44 px in der CI, BEF-224 und Terminformulare; Merge bei Jannes.
 
 ## Danach
 
-Bis M2 im November (Jannes 2026-11-01): UI-003 Teil 2b (Feindesign, Zustände ohne eigene Route), Schritte 5 bis 7 mit Jannes' Leinwänden;
+Bis M2 im November (Jannes 2026-11-01): Schritte 5 bis 7 der Plattform mit Jannes' Leinwänden (Feindesign);
 DATEV erst nach B4; zuletzt der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
 zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
@@ -41,4 +41,4 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-07.11.2026, Branch `ccr-a2d47869-gl2q3u` ab `main` (UI-003 Teil 2a). Lokal: `git pull`, keine Migration.
+08.11.2026, Branch `claude/weiter-rmy2y0` ab `main` (UI-003 Teil 2b). Lokal: `git pull`, keine Migration.

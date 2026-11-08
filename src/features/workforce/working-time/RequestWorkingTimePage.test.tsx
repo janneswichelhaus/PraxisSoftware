@@ -354,7 +354,9 @@ describe('RequestWorkingTimePage', () => {
     await user.click(within(zeiten).getByRole('button', { name: 'Weiter' }));
 
     const abschluss = await screen.findByRole('dialog', { name: 'Änderung beantragen?' });
-    expect(await within(abschluss).findByText(PREVIEW_ERROR)).toBeInTheDocument();
+    // Der Fehler steht als Zeile in der Liste, wo sonst die Termine stehen: Der Abschluss rollt nicht.
+    expect(await within(abschluss).findByRole('alert')).toHaveTextContent(PREVIEW_ERROR);
+    expect(within(abschluss).getByRole('alert').closest('li')).not.toBeNull();
     expect(within(abschluss).queryByText(/Keine Termine/)).toBeNull();
     expect(within(abschluss).getByRole('button', { name: 'Änderung beantragen' })).toBeDisabled();
     await user.click(within(abschluss).getByRole('button', { name: 'Erneut versuchen' }));

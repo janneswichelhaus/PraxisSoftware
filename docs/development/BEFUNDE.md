@@ -96,13 +96,6 @@ N); Streuung und Reserve bleiben.
 „heranzie|hen“ (unter der Trenngrenze von ANN-707), „Durchgän|ge“. **Erwartet.** Entscheiden, ob das
 ein Prüfpunkt ist; wenn ja, Trenngrenze senken oder Titel und Marken kleiner.
 
-### BEF-224 — Arbeitszeit: Während die Vorschau lädt oder scheitert, rollt der Abschluss
-2026-10-25 · Arbeitszeit ändern · Design-Review zu BEF-219 · offen (Vorschlag) ·
-`RequestWorkingTimePage.tsx`\
-**Beobachtung.** Bei 375 × 667 rollt die Seite beim Laden („Termine werden geprüft …“, 100 px) um
-21 px, beim Fehler um 68 px; „Grund angeben“ liegt dann unter dem Fuß. **Erwartet.** Laden in der
-Größe der Terminzeile, Fehler mit „Erneut versuchen“ ohne Rollen; Bilder beider Zustände bei 375 px.
-
 ### BEF-225 — Übungspläne: Ein Ablauftest misst die Höhe eines Links, während die Rückmeldung neu gezeichnet wird
 2026-10-25 · `tests/e2e/plaene.spec.ts` · Browsertests unter Last · offen (Vorschlag) · `hoehe()`\
 **Beobachtung.** Für „Als PDF oder drucken“ kamen 0 statt mindestens 44 px: `boundingBox()` liefert
@@ -243,16 +236,6 @@ ADR-025 Punkt 8 (Konstante je Kontoart); ADR-004 (Konsequenzen, keine allmächti
 ADR-008 Punkt 1 gegen `retention_classes.basis`; ADR-027 Punkt 22 gegen `PAL_STUFEN`; §1.2 und §7.1
 gegen ADR-009 Punkt 15 und ADR-006. **Erwartet.** Je ADR eine Fassung und eine neue Version der
 Prinzipien nach Jannes' Entscheidung.
-
-### Termine — Formulare weichen in Zuständen ohne Bild von DESIGN.md ab
-2026-10-31 · Kalender, Training · Design-Review zum gemeinsamen Terminformular · offen (Vorschlag) ·
-`AppointmentForm.tsx`, `NewEventPage.tsx`, `NewTrainingAppointmentPage.tsx`\
-**Beobachtung.** Schon vor dem Umbau so: „Teilnahme ändern“ zeigt die Fehlerzusammenfassung bei einem
-Feld; Fehlzeit und Dauerfehlzeit ersetzen beim Laden die Seite ohne Rückweg und Kopf (Regel 8); am
-Trainingstermin erklären „Nur mit laufendem Vertrag.“ und „Ohne Vereinbarung ist es eine
-Einzelstunde.“ die Auswahl (Regel 6); die Rückfrage heißt im Training „… – trotzdem“, im Kalender
-„Termin trotzdem anlegen“. **Erwartet.** Bei der nächsten Überholung des Kalenders angleichen, mit
-Bildern der Fehler- und Ladezustände bei 375 px.
 
 ### Aufräumen — Die Plattform führt drei Bausteine doppelt, deren Vorbild es schon gibt
 2026-10-31 · Plattform · /aufraeumen 2026-10-31 · offen (Vorschlag) · `Terminwunsch.tsx`,

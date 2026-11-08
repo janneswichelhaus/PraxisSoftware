@@ -86,6 +86,7 @@ export function BeratungsterminSeite({ art, user }: { art: Verhaeltnisart; user:
               rasterMinuten={user.appointmentGridMinutes}
               texte={{
                 absenden: 'Beratungstermin anlegen',
+                trotzdem: 'Beratungstermin trotzdem anlegen',
                 laeuft: 'Wird angelegt …',
                 fehlerTitel: 'Der Beratungstermin konnte nicht angelegt werden.',
                 ungespeichert: 'Ungespeicherter Beratungstermin',

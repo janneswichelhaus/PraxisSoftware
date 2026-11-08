@@ -50,8 +50,8 @@ export interface AppointmentFormState {
 export interface AppointmentFormTexts {
   absenden: string;
   laeuft: string;
-  /** Knopf der Rückfragen; ohne Angabe „<absenden> – trotzdem“. */
-  trotzdem?: string;
+  /** Knopf der Rückfragen, etwa „Termin trotzdem anlegen“ - auf allen Terminseiten gleich gebaut. */
+  trotzdem: string;
   fehlerTitel: string;
   /** Der Satz, den die Schnittstelle ohne Grund liefert; ohne Angabe der Titel. */
   standardfehler?: string;
@@ -295,15 +295,17 @@ export function AppointmentForm({
   }
 
   const stand: AppointmentFormState = { werte, fensterMinuten, dauerGueltig, freigeben };
-  const trotzdem = texte.trotzdem ?? `${texte.absenden} – trotzdem`;
+  const { trotzdem } = texte;
 
   return (
     <form onSubmit={absenden} noValidate className="max-w-formular">
-      {/* Sind alle Angaben berichtigt, verschwindet der Kasten. */}
-      <Fehlerzusammenfassung
-        key={pruefung.nummer}
-        fehler={Object.values(fehler).some(Boolean) ? pruefung.fehler : []}
-      />
+      {/* Sind alle Angaben berichtigt, verschwindet der Kasten; bei nur einem Feld genügt dessen Fehler. */}
+      {nurPerson ? null : (
+        <Fehlerzusammenfassung
+          key={pruefung.nummer}
+          fehler={Object.values(fehler).some(Boolean) ? pruefung.fehler : []}
+        />
+      )}
 
       {/* Rückfrage und Fehler als Fenster: Wer am Seitenende abschickt, sieht sie sofort. */}
       {vorfrage ? (

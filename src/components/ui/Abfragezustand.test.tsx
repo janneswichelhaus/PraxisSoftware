@@ -3,6 +3,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test-utils';
 import { Abfragezustand, type Abfrage } from './Abfragezustand';
+import { ListRows } from './ListRow';
 import { STAND_VERALTET, VERBINDUNG_PRUEFEN } from './abfrageTexte';
 
 function abfrage<T>(teil: Partial<Abfrage<T>>): Abfrage<T> {
@@ -149,5 +150,28 @@ describe('Abfragezustand mit eigener Hülle', () => {
     expect(screen.getByRole('region', { name: 'Inhalt' })).toHaveTextContent('Erika Beispiel');
     expect(screen.queryByTestId('rahmen')).toBeNull();
     expect(screen.queryByRole('link', { name: 'Zur Übersicht' })).toBeNull();
+  });
+
+  it('zeigt Laden und Fehler als Zeile einer Liste, mit Satz und „Erneut versuchen“', async () => {
+    const zeile = (zustand: Abfrage<string>) => (
+      <ListRows beschriftung="Änderung">
+        <Abfragezustand
+          abfrage={zustand}
+          alsZeile
+          laden="Termine werden geprüft …"
+          fehler="Nicht geprüft."
+        >
+          {() => null}
+        </Abfragezustand>
+      </ListRows>
+    );
+    const { rerender } = renderWithProviders(zeile(abfrage({ isPending: true })));
+    expect(screen.getByRole('status').closest('li')).toHaveTextContent('Termine werden geprüft …');
+
+    const refetch = vi.fn();
+    rerender(zeile(abfrage({ isError: true, refetch })));
+    expect(screen.getByRole('alert').closest('li')).toHaveTextContent(VERBINDUNG_PRUEFEN);
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(refetch).toHaveBeenCalledOnce();
   });
 });

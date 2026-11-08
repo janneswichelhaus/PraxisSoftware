@@ -1369,12 +1369,20 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               aria-label="Behandelnde Person"
               value={(p.ansicht === 'woche' ? wochenPerson : p.person) ?? ''}
               onChange={(e) => setze({ person: e.target.value || null })}
+              disabled={p.ansicht !== 'tag' && alleTherapeuten.length === 0}
               // 44 px hoch und 16 px Schrift (KAL-08): Darunter zoomt iOS beim
               // Antippen hinein, und mit Handschuhen traf man 22 px schlecht.
               className="text-ink hover:bg-surface-sunken rounded-button min-h-11 max-w-full min-w-0 cursor-pointer truncate bg-transparent px-1 text-center text-base font-semibold"
             >
               {/* In der Woche steht immer genau eine Person im Gitter. */}
-              {p.ansicht === 'tag' ? <option value="">Alle Personen</option> : null}
+              {p.ansicht === 'tag' ? (
+                <option value="">Alle Personen</option>
+              ) : alleTherapeuten.length === 0 ? (
+                // Ohne Liste (Laden, Funkloch) bleibt der Name lesbar breit statt eines leeren Pfeils.
+                <option value={wochenPerson ?? ''}>
+                  {therapeuten.isError ? 'Nicht geladen' : 'Wird geladen …'}
+                </option>
+              ) : null}
               {alleTherapeuten.map((t) => (
                 <option key={t.staff_member_id} value={t.staff_member_id}>
                   {t.display_name}

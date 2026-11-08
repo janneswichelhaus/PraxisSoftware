@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
+import { Button } from './Button';
 import { EmptyState, ErrorState, LoadingState } from './Feedback';
+import { ListRow } from './ListRow';
 import { NachladeHinweis } from './Rueckmeldung';
 import { VERBINDUNG_PRUEFEN } from './abfrageTexte';
 
@@ -29,6 +31,7 @@ export function Abfragezustand<T>({
   kacheln = 0,
   ausweg,
   rahmen = ohneRahmen,
+  alsZeile = false,
   children,
 }: {
   abfrage: Abfrage<T>;
@@ -55,9 +58,45 @@ export function Abfragezustand<T>({
   ausweg?: ReactNode;
   /** Die Hülle um Laden und Fehler - nicht um den Inhalt. */
   rahmen?: (zustand: ReactNode) => ReactNode;
+  /** Laden und Fehler als Zeile einer `ListRows`, wo der Inhalt eine Zeile wäre: Nichts springt. */
+  alsZeile?: boolean;
   children: (daten: T) => ReactNode;
 }) {
   const { data, error, isPending, isError, isFetching } = abfrage;
+  if (alsZeile && data === undefined) {
+    if (isError) {
+      const titel = endgueltig?.wenn(error) ? endgueltig.titel : null;
+      const final = titel !== null;
+      return (
+        <ListRow
+          titel={
+            <span role="alert" className="text-danger">
+              {titel ?? fehler}
+            </span>
+          }
+          meta={final ? undefined : VERBINDUNG_PRUEFEN}
+          aktion={
+            final ? undefined : (
+              <Button variant="secondary" groesse="kompakt" onClick={() => void abfrage.refetch()}>
+                Erneut versuchen
+              </Button>
+            )
+          }
+        />
+      );
+    }
+    if (isPending) {
+      return (
+        <ListRow
+          titel={
+            <span role="status" className="text-ink-muted font-normal">
+              {laden}
+            </span>
+          }
+        />
+      );
+    }
+  }
   const alsFehler = (meldung: ReactNode) =>
     rahmen(
       ausweg === undefined ? (
