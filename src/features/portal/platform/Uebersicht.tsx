@@ -484,10 +484,8 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
     (r) => !r.cancelled && r.outstanding_cents > 0,
   );
   if (offeneRechnung) {
-    // Keine Dringlichkeit aus Geld: Vor der Fälligkeit ohne Warnzeichen
-    // (ANN-701); überfällig sagt es die Rechnungsliste ebenso.
+    // Keine Dringlichkeit aus Geld: Vor der Fälligkeit ohne Warnzeichen (ANN-701, ANN-854).
     const stand = zahlungsstand(offeneRechnung);
-    const ton = offeneRechnung.overdue ? stand.ton : 'neutral';
     neu.push(
       <ListRow
         key="rechnung"
@@ -495,7 +493,11 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
         titel={`Rechnung ${offeneRechnung.invoice_number}`}
         meta={`Fällig am ${formatDate(offeneRechnung.due_on)}`}
         betrag={formatEuro(offeneRechnung.outstanding_cents, offeneRechnung.currency)}
-        status={<Badge ton={ton}>{stand.wort}</Badge>}
+        status={
+          <Badge ton={stand.ton} eigenesZeichen={stand.zeichen}>
+            {stand.wort}
+          </Badge>
+        }
       />,
     );
   }

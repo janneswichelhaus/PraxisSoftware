@@ -120,10 +120,10 @@ function Dokumentzeile({ zugang, dokument: d }: { zugang: Plattformzugang; dokum
     <li className="border-line border-t py-3 first:border-t-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 wrap-anywhere">
-          <p className="text-ink text-base font-medium">{d.display_name}</p>
+          <p className="text-ink text-base font-semibold">{d.display_name}</p>
           <p className="text-ink-muted mt-0.5 text-sm">
-            {ART[d.document_type] ?? 'Dokument'} · {groesse(d.byte_size)} · freigegeben am{' '}
-            {datum(d.released_at)}
+            {ART[d.document_type] ?? 'Dokument'} · freigegeben am {datum(d.released_at)} ·{' '}
+            {groesse(d.byte_size)}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

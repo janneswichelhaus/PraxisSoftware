@@ -99,7 +99,9 @@ test.describe('Plattform', () => {
       expect(await ueberlaeuft(page)).toBe(false);
 
       await page.goto(`${PRUEFSEITE}?seite=rechnungen`);
-      await expect(page.getByRole('link', { name: /Rechnung RG-2026-0007.*offen$/ })).toBeVisible();
+      await expect(
+        page.getByRole('link', { name: /^Rechnung vom .*RG-2026-0007.*420,00 €.*offen$/ }),
+      ).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
 
       await page.goto(`${PRUEFSEITE}?seite=rechnung`);

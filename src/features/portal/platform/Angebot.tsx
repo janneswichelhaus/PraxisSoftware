@@ -5,12 +5,14 @@ import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Formularfuss } from '@/components/ui/Formularfuss';
+import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
+import { schrittText } from '@/components/ui/abfolge';
 import { formatEuro } from '@/lib/geld';
 import {
   KONTEXT_SCHLUESSEL,
@@ -89,6 +91,13 @@ export function Angebot({ zugang }: { zugang: Plattformzugang }) {
   );
 }
 
+type Abschlussseite = 'freigaben' | 'einwilligung' | 'widerruf' | 'pruefen';
+
+/**
+ * Die Seite des Angebots: Paket und Preis, was enthalten ist, und der Weg in
+ * den geführten Abschluss (ANN-857). Wer nicht buchen kann, liest hier trotzdem
+ * alles, die Widerrufsbelehrung im Aufklapper.
+ */
 function Formular({
   zugang,
   angebot,
@@ -98,37 +107,14 @@ function Formular({
   angebot: Trainingsangebot;
   onGebucht: (bestaetigung: Buchungsbestaetigung) => void;
 }) {
-  const queryClient = useQueryClient();
-  const [freigaben, setFreigaben] = useState<number[]>([]);
-  const [kontakt, setKontakt] = useState(false);
-  const [einwilligung, setEinwilligung] = useState(false);
-  const [frueh, setFrueh] = useState(false);
-  const [geprueft, setGeprueft] = useState(false);
-  const buchen = useMutation({
-    mutationFn: () =>
-      angebotAnnehmen(zugang.access_id, {
-        angebotId: angebot.id,
-        freigaben,
-        kontakt,
-        einwilligung,
-        fruehBeginnen: frueh,
-        fassung: VERTRAGSFASSUNG,
-      }),
-    onSuccess: async (bestaetigung) => {
-      onGebucht(bestaetigung);
-      window.scrollTo?.({ top: 0 });
-      // Der neue Bereich „Training" erscheint im Schalter (ADR-023 Punkt 4).
-      await queryClient.invalidateQueries({ queryKey: KONTEXT_SCHLUESSEL });
-      await queryClient.invalidateQueries({
-        queryKey: trainingsangebotSchluessel(zugang.access_id),
-      });
-    },
+  const [offen, setOffen] = useState(false);
+  const [wahl, setWahl] = useState<Wahl>({
+    freigaben: [],
+    kontakt: false,
+    einwilligung: false,
+    frueh: false,
   });
-
   const annehmbar = angebot.can_accept;
-  const einwilligungFehlt = geprueft && freigaben.length > 0 && !einwilligung;
-  const fruehFehlt = geprueft && angebot.early_start && !frueh;
-  const text = EINWILLIGUNGSTEXTE.training_health_data;
 
   return (
     <>
@@ -149,44 +135,251 @@ function Formular({
         </Statusmeldung>
       ) : null}
 
-      <Section titel="Ihr Paket" rahmen>
-        <p className="text-ink text-liste font-medium">{angebot.label}</p>
-        <p className="text-ink mt-1 text-base">
-          {datum(angebot.starts_on)} bis {datum(angebot.ends_on)}
-        </p>
-        <p className="text-ink mt-1 text-base">
-          <strong>{formatEuro(angebot.price_cents, angebot.currency)}</strong>{' '}
-          <span className="text-ink-muted text-sm">
-            {steuerHinweis(angebot.vat_included, angebot.tax_rate_permille)}, einmal zu Beginn
-          </span>
-        </p>
-        <ul className="text-ink mt-3 flex list-disc flex-col gap-1 pl-5 text-base leading-relaxed">
+      <Section titel="Ihr Paket">
+        <Paketkopf angebot={angebot} />
+      </Section>
+
+      <Section titel="Im Preis enthalten">
+        <ul className="text-ink flex list-disc flex-col gap-2 pl-5 text-base leading-relaxed">
           {PAKETINHALT.map((satz) => (
             <li key={satz}>{satz}</li>
           ))}
         </ul>
       </Section>
 
-      {angebot.handover_items.length > 0 || angebot.contact ? (
-        <Section
-          titel="Aus Ihrer Behandlung"
-          rahmen
-          hinweis="Kreuzen Sie an, was Ihre Trainer:in wissen darf. Nur das wird ins Training kopiert; alles andere bleibt in Ihrer Behandlungsakte."
-        >
-          <div className="flex flex-col gap-3">
-            {angebot.handover_items.map((angabe, index) => (
+      {annehmbar ? (
+        <div className="mt-10 [[data-rechner]_&]:mt-12">
+          <Button className="w-full sm:w-auto" onClick={() => setOffen(true)}>
+            Angebot prüfen und buchen
+          </Button>
+          <p className="text-ink-muted mt-3 text-base">
+            {angebot.handover_items.length > 0 || angebot.contact
+              ? 'In vier Schritten: was ins Training darf, Ihre Einwilligung, die Widerrufsbelehrung und eine Übersicht vor dem Buchen.'
+              : 'In drei Schritten: Ihre Einwilligung, die Widerrufsbelehrung und eine Übersicht vor dem Buchen.'}
+          </p>
+        </div>
+      ) : (
+        <div className="mt-8">
+          <Disclosure summary="Widerrufsbelehrung lesen">
+            <Belehrung angebot={angebot} />
+          </Disclosure>
+        </div>
+      )}
+
+      {offen && annehmbar ? (
+        <Abschluss
+          zugang={zugang}
+          angebot={angebot}
+          wahl={wahl}
+          setWahl={setWahl}
+          onSchliessen={() => setOffen(false)}
+          onGebucht={(bestaetigung) => {
+            setOffen(false);
+            onGebucht(bestaetigung);
+          }}
+        />
+      ) : null}
+    </>
+  );
+}
+
+interface Wahl {
+  freigaben: number[];
+  kontakt: boolean;
+  einwilligung: boolean;
+  frueh: boolean;
+}
+
+function Paketkopf({ angebot }: { angebot: Trainingsangebot }) {
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <p className="text-ink text-liste font-semibold">{angebot.label}</p>
+      <p className="text-ink text-gruss [[data-rechner]_&]:text-gruss-rechner tabular-nums">
+        {formatEuro(angebot.price_cents, angebot.currency)}
+      </p>
+      <p className="text-ink-muted text-sm">
+        {steuerHinweis(angebot.vat_included, angebot.tax_rate_permille)}, einmal zu Beginn
+      </p>
+      <p className="text-ink text-base">
+        {datum(angebot.starts_on)} bis {datum(angebot.ends_on)}
+      </p>
+    </div>
+  );
+}
+
+function Belehrung({ angebot }: { angebot: Trainingsangebot }) {
+  return (
+    <>
+      {widerrufsbelehrung(angebot.practice).map((abschnitt) => (
+        <div key={abschnitt.titel} className="mt-4 first:mt-0">
+          <p className="text-ink text-base font-semibold">{abschnitt.titel}</p>
+          {abschnitt.absaetze.map((absatz) => (
+            <p key={absatz} className="text-ink mt-2 text-base leading-relaxed">
+              {absatz}
+            </p>
+          ))}
+        </div>
+      ))}
+      <div className="mt-4">
+        <Disclosure summary="Muster-Widerrufsformular">
+          {musterformular(angebot.practice).map((zeile) => (
+            <p key={zeile} className="text-ink mt-1 text-base leading-relaxed">
+              {zeile}
+            </p>
+          ))}
+        </Disclosure>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Der Abschluss als geführter Ablauf (ANN-857): eine Frage je Seite,
+ * zuletzt die Übersicht mit Betrag direkt über „Zahlungspflichtig buchen“
+ * (§ 312j Abs. 2 und 3 BGB). Die Wahl bleibt beim Schließen erhalten.
+ */
+function Abschluss({
+  zugang,
+  angebot,
+  wahl,
+  setWahl,
+  onSchliessen,
+  onGebucht,
+}: {
+  zugang: Plattformzugang;
+  angebot: Trainingsangebot;
+  wahl: Wahl;
+  setWahl: (wahl: Wahl) => void;
+  onSchliessen: () => void;
+  onGebucht: (bestaetigung: Buchungsbestaetigung) => void;
+}) {
+  const queryClient = useQueryClient();
+  const mitFreigaben = angebot.handover_items.length > 0 || angebot.contact !== null;
+  const folge: Abschlussseite[] = [
+    ...(mitFreigaben ? (['freigaben'] as const) : []),
+    'einwilligung',
+    'widerruf',
+    'pruefen',
+  ];
+  const [index, setIndex] = useState(0);
+  const [geprueft, setGeprueft] = useState(false);
+  const seite = folge[index]!;
+  const buchen = useMutation({
+    mutationFn: () =>
+      angebotAnnehmen(zugang.access_id, {
+        angebotId: angebot.id,
+        freigaben: wahl.freigaben,
+        kontakt: wahl.kontakt,
+        einwilligung: wahl.einwilligung,
+        fruehBeginnen: wahl.frueh,
+        fassung: VERTRAGSFASSUNG,
+      }),
+    onSuccess: async (bestaetigung) => {
+      onGebucht(bestaetigung);
+      window.scrollTo?.({ top: 0 });
+      // Der neue Bereich „Training" erscheint im Schalter (ADR-023 Punkt 4).
+      await queryClient.invalidateQueries({ queryKey: KONTEXT_SCHLUESSEL });
+      await queryClient.invalidateQueries({
+        queryKey: trainingsangebotSchluessel(zugang.access_id),
+      });
+    },
+  });
+
+  const einwilligungFehlt = wahl.freigaben.length > 0 && !wahl.einwilligung;
+  const fruehFehlt = angebot.early_start && !wahl.frueh;
+  const text = EINWILLIGUNGSTEXTE.training_health_data;
+  const uebernommen = [
+    ...angebot.handover_items
+      .filter((_, i) => wahl.freigaben.includes(i + 1))
+      .map((angabe) => angabe.title),
+    ...(wahl.kontakt ? ['Kontaktdaten'] : []),
+  ];
+
+  function weiterGehen() {
+    if ((seite === 'einwilligung' && einwilligungFehlt) || (seite === 'widerruf' && fruehFehlt)) {
+      setGeprueft(true);
+      return;
+    }
+    setGeprueft(false);
+    setIndex(index + 1);
+  }
+
+  const titel =
+    seite === 'freigaben'
+      ? 'Was darf Ihre Trainer:in wissen?'
+      : seite === 'einwilligung'
+        ? text.titel
+        : seite === 'widerruf'
+          ? 'Widerrufsbelehrung'
+          : 'Ist alles richtig?';
+
+  return (
+    <GefuehrterAblauf
+      titel={titel}
+      objekt="Training buchen"
+      schliessen="Schließen"
+      onSchliessen={onSchliessen}
+      seite={seite}
+      stand={{ text: schrittText(index + 1, folge.length), wert: index + 1, von: folge.length }}
+      onZurueck={
+        index > 0
+          ? () => {
+              setGeprueft(false);
+              buchen.reset();
+              setIndex(index - 1);
+            }
+          : undefined
+      }
+      abschluss={seite === 'pruefen'}
+      balkenJeSchritt
+      plattform
+      schmalesFenster
+      fuss={
+        seite === 'pruefen' ? (
+          <Formularfuss
+            dicht
+            zusatz={
+              <>
+                {AKTE_ERFAEHRT}
+                {buchen.isError ? (
+                  <Statusmeldung ton="fehler" className="mt-3">
+                    {buchen.error.message}
+                  </Statusmeldung>
+                ) : null}
+              </>
+            }
+          >
+            <Button className="w-full" disabled={buchen.isPending} onClick={() => buchen.mutate()}>
+              {buchen.isPending ? 'Wird gebucht …' : BUCHEN}
+            </Button>
+          </Formularfuss>
+        ) : (
+          <Button className="w-full" onClick={weiterGehen}>
+            Weiter
+          </Button>
+        )
+      }
+    >
+      {seite === 'freigaben' ? (
+        <>
+          <p className="text-ink text-base leading-relaxed">
+            Kreuzen Sie an, was Ihre Trainer:in wissen darf. Nur das wird ins Training kopiert;
+            alles andere bleibt in Ihrer Behandlungsakte.
+          </p>
+          <div className="mt-4 flex flex-col gap-3">
+            {angebot.handover_items.map((angabe, i) => (
               <Checkbox
                 key={angabe.title}
                 label={<span className="font-medium">{angabe.title}</span>}
                 hint={angabe.body}
-                checked={freigaben.includes(index + 1)}
-                disabled={!annehmbar}
+                checked={wahl.freigaben.includes(i + 1)}
                 onChange={(event) =>
-                  setFreigaben(
-                    event.target.checked
-                      ? [...freigaben, index + 1].sort((a, b) => a - b)
-                      : freigaben.filter((n) => n !== index + 1),
-                  )
+                  setWahl({
+                    ...wahl,
+                    freigaben: event.target.checked
+                      ? [...wahl.freigaben, i + 1].sort((x, y) => x - y)
+                      : wahl.freigaben.filter((n) => n !== i + 1),
+                  })
                 }
               />
             ))}
@@ -194,97 +387,79 @@ function Formular({
               <Checkbox
                 label={<span className="font-medium">Kontaktdaten</span>}
                 hint={kontaktZeile(angebot.contact)}
-                checked={kontakt}
-                disabled={!annehmbar}
-                onChange={(event) => setKontakt(event.target.checked)}
+                checked={wahl.kontakt}
+                onChange={(event) => setWahl({ ...wahl, kontakt: event.target.checked })}
               />
             ) : null}
           </div>
-        </Section>
-      ) : null}
-
-      <Section titel={text.titel} rahmen>
-        <p className="text-ink text-base leading-relaxed">{text.text}</p>
-        <p className="text-ink-muted mt-2 text-sm leading-relaxed">
-          {FREIWILLIG} {OHNE_NACHTEIL.training}
-        </p>
-        <div className="mt-3">
-          <Checkbox
-            label="Ich willige ein."
-            checked={einwilligung}
-            disabled={!annehmbar}
-            error={
-              einwilligungFehlt
-                ? 'Angaben aus Ihrer Behandlung gehen nur mit dieser Einwilligung ins Training. Bitte einwilligen oder die Häkchen oben entfernen.'
-                : undefined
-            }
-            onChange={(event) => setEinwilligung(event.target.checked)}
-          />
-        </div>
-      </Section>
-
-      <Section titel="Widerrufsbelehrung" rahmen>
-        {widerrufsbelehrung(angebot.practice).map((abschnitt) => (
-          <div key={abschnitt.titel} className="mt-3 first:mt-0">
-            <p className="text-ink text-base font-medium">{abschnitt.titel}</p>
-            {abschnitt.absaetze.map((absatz) => (
-              <p key={absatz} className="text-ink mt-1 text-sm leading-relaxed">
-                {absatz}
-              </p>
-            ))}
-          </div>
-        ))}
-        <Disclosure summary="Muster-Widerrufsformular">
-          {musterformular(angebot.practice).map((zeile) => (
-            <p key={zeile} className="text-ink mt-1 text-sm leading-relaxed">
-              {zeile}
-            </p>
-          ))}
-        </Disclosure>
-        {angebot.early_start ? (
+        </>
+      ) : seite === 'einwilligung' ? (
+        <>
+          <p className="text-ink text-base leading-relaxed">{text.text}</p>
+          <p className="text-ink-muted mt-2 text-base leading-relaxed">
+            {FREIWILLIG} {OHNE_NACHTEIL.training}
+          </p>
           <div className="mt-4">
             <Checkbox
-              label={FRUEHER_BEGINN}
-              checked={frueh}
-              disabled={!annehmbar}
+              label="Ich willige ein."
+              checked={wahl.einwilligung}
               error={
-                fruehFehlt
-                  ? `Ihr Training beginnt am ${datum(angebot.starts_on)}, also innerhalb der Widerrufsfrist. Bitte bestätigen – oder die Praxis um einen späteren Beginn bitten.`
+                geprueft && einwilligungFehlt
+                  ? 'Angaben aus Ihrer Behandlung gehen nur mit dieser Einwilligung ins Training. Bitte einwilligen oder die Häkchen oben entfernen.'
                   : undefined
               }
-              onChange={(event) => setFrueh(event.target.checked)}
+              onChange={(event) => setWahl({ ...wahl, einwilligung: event.target.checked })}
             />
           </div>
-        ) : null}
-      </Section>
-
-      {annehmbar ? (
-        <Formularfuss
-          zusatz={
-            <>
-              {AKTE_ERFAEHRT}
-              {buchen.isError ? (
-                <Statusmeldung ton="fehler" className="mt-3">
-                  {buchen.error.message}
-                </Statusmeldung>
-              ) : null}
-            </>
-          }
-        >
-          <Button
-            disabled={buchen.isPending}
-            onClick={() => {
-              setGeprueft(true);
-              if ((freigaben.length > 0 && !einwilligung) || (angebot.early_start && !frueh))
-                return;
-              buchen.mutate();
-            }}
-          >
-            {buchen.isPending ? 'Wird gebucht …' : BUCHEN}
-          </Button>
-        </Formularfuss>
-      ) : null}
-    </>
+        </>
+      ) : seite === 'widerruf' ? (
+        <>
+          <Belehrung angebot={angebot} />
+          {angebot.early_start ? (
+            <div className="mt-6">
+              <Checkbox
+                label={FRUEHER_BEGINN}
+                checked={wahl.frueh}
+                error={
+                  geprueft && fruehFehlt
+                    ? `Ihr Training beginnt am ${datum(angebot.starts_on)}, also innerhalb der Widerrufsfrist. Bitte bestätigen – oder die Praxis um einen späteren Beginn bitten.`
+                    : undefined
+                }
+                onChange={(event) => setWahl({ ...wahl, frueh: event.target.checked })}
+              />
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <Paketkopf angebot={angebot} />
+          <ul className="text-ink mt-4 flex list-disc flex-col gap-2 pl-5 text-base leading-relaxed">
+            {PAKETINHALT.map((satz) => (
+              <li key={satz}>{satz}</li>
+            ))}
+          </ul>
+          <dl className="border-line mt-4 flex flex-col gap-3 border-t pt-4 text-base">
+            <div>
+              <dt className="text-ink-muted">Ins Training übernommen</dt>
+              <dd className="text-ink">
+                {uebernommen.length > 0 ? uebernommen.join(', ') : 'nichts aus Ihrer Behandlung'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-ink-muted">Einwilligung zu Gesundheitsangaben</dt>
+              <dd className="text-ink">{wahl.einwilligung ? 'erteilt' : 'nicht erteilt'}</dd>
+            </div>
+            <div>
+              <dt className="text-ink-muted">Widerruf</dt>
+              <dd className="text-ink">
+                {angebot.withdrawal_days} Tage ab dem Buchen
+                {wahl.frueh ? '; Beginn vor Ende der Frist verlangt' : ''}
+              </dd>
+            </div>
+          </dl>
+        </>
+      )}
+    </GefuehrterAblauf>
   );
 }
 

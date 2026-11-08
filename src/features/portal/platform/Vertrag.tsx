@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
@@ -72,37 +74,58 @@ export function Vertrag({ zugang }: { zugang: Plattformzugang }) {
 }
 
 function Inhalt({ vertrag: v }: { vertrag: Trainingsvertrag }) {
+  const widerrufbar = v.can_withdraw && !v.withdrawn_at;
   return (
-    <Section titel="Ihre Buchung" rahmen>
-      <p className="text-ink text-liste font-medium">{v.label}</p>
-      <p className="text-ink mt-1 text-base">
-        {datum(v.starts_on)} bis {datum(v.ends_on)}
-      </p>
-      <p className="text-ink mt-1 text-base">
-        {formatEuro(v.price_cents, v.currency)}{' '}
-        <span className="text-ink-muted text-sm">
+    <>
+      {/* Paket, Preis und Zustand oben ; das Kleingedruckte der Buchung darunter. */}
+      <section aria-label="Ihre Buchung" className="flex flex-col items-start gap-2">
+        {v.withdrawn_at ? (
+          <Badge ton="neutral" eigenesZeichen={STATUSZEICHEN.abgelehnt}>
+            widerrufen
+          </Badge>
+        ) : (
+          <Badge ton="positiv">gebucht</Badge>
+        )}
+        <p className="text-ink text-liste font-semibold">{v.label}</p>
+        <p className="text-ink text-gruss [[data-rechner]_&]:text-gruss-rechner tabular-nums">
+          {formatEuro(v.price_cents, v.currency)}
+        </p>
+        <p className="text-ink-muted text-sm">
           {steuerHinweis(v.vat_included, v.tax_rate_permille)}, einmal zu Beginn
-        </span>
+        </p>
+        <p className="text-ink text-base">
+          {datum(v.starts_on)} bis {datum(v.ends_on)}
+        </p>
+        {widerrufbar ? (
+          <p className="text-ink text-base">Widerruf möglich bis {datum(v.withdrawal_ends_on)}</p>
+        ) : null}
+      </section>
+      <Section titel="Ihre Buchung im Einzelnen">
+        <p className="text-ink text-base leading-relaxed">
+          Gebucht am {datum(v.concluded_at)} um {uhrzeit(v.concluded_at)} Uhr auf das Angebot vom{' '}
+          {datum(v.offered_on)}. Widerrufsbelehrung und Bedingungen in der Fassung{' '}
+          {v.wording_version}.
+          {v.early_start_requested
+            ? ' Sie haben verlangt, dass das Training vor dem Ende der Widerrufsfrist beginnt.'
+            : ''}
+        </p>
+        <p className="text-ink-muted mt-2 text-base leading-relaxed">
+          {v.released_titles.length > 0 || v.contact_released
+            ? `Aus Ihrer Behandlung übernommen: ${[...v.released_titles, ...(v.contact_released ? ['Kontaktdaten'] : [])].join(', ')}.`
+            : 'Aus Ihrer Behandlung wurde nichts übernommen.'}
+        </p>
+        <div className="mt-4 print:hidden">
+          <Button variant="secondary" onClick={() => window.print()}>
+            Bestätigung drucken
+          </Button>
+        </div>
+      </Section>
+      <p className="mt-6 print:hidden">
+        <Textlink alleinstehend to={`${PLATTFORM_PFAD}/paket?bereich=training`}>
+          Pakete und Preise ansehen
+        </Textlink>
       </p>
-      <p className="text-ink-muted mt-2 text-base leading-relaxed">
-        Gebucht am {datum(v.concluded_at)} um {uhrzeit(v.concluded_at)} Uhr auf das Angebot vom{' '}
-        {datum(v.offered_on)}. Widerrufsbelehrung und Bedingungen in der Fassung {v.wording_version}
-        .
-        {v.early_start_requested
-          ? ' Sie haben verlangt, dass das Training vor dem Ende der Widerrufsfrist beginnt.'
-          : ''}
-      </p>
-      <p className="text-ink-muted mt-2 text-base leading-relaxed">
-        {v.released_titles.length > 0 || v.contact_released
-          ? `Aus Ihrer Behandlung übernommen: ${[...v.released_titles, ...(v.contact_released ? ['Kontaktdaten'] : [])].join(', ')}.`
-          : 'Aus Ihrer Behandlung wurde nichts übernommen.'}
-      </p>
-      <div className="mt-4 print:hidden">
-        <Button variant="secondary" onClick={() => window.print()}>
-          Bestätigung drucken
-        </Button>
-      </div>
-    </Section>
+    </>
   );
 }
 
@@ -143,7 +166,7 @@ function Widerruf({ zugang, vertrag: v }: { zugang: Plattformzugang; vertrag: Tr
 
   if (v.withdrawn_at) {
     return (
-      <Section titel="Widerruf" rahmen>
+      <Section titel="Widerruf">
         <p className="text-ink text-base leading-relaxed">
           Sie haben diesen Vertrag am {datum(v.withdrawn_at)} um {uhrzeit(v.withdrawn_at)} Uhr
           widerrufen. Die Praxis meldet sich wegen der Rückzahlung bei Ihnen.
@@ -190,7 +213,7 @@ function Widerruf({ zugang, vertrag: v }: { zugang: Plattformzugang; vertrag: Tr
   }
 
   return (
-    <Section titel="Widerruf" rahmen>
+    <Section titel="Widerruf">
       <p className="text-ink text-base leading-relaxed">
         Sie können diesen Vertrag bis zum <strong>{datum(v.withdrawal_ends_on)}</strong> ohne Angabe
         von Gründen widerrufen.

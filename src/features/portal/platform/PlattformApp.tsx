@@ -152,11 +152,14 @@ function Geruest({
   const gespraech =
     matchPath(`${PLATTFORM_PFAD}/nachrichten/:nachrichtId`, pathname) !== null &&
     pathname !== `${PLATTFORM_PFAD}/nachrichten/neu`;
+  // Eine Rechnung am Rechner als Blatt rechts neben der Liste (ANN-855).
+  const rechnungsblatt = matchPath(`${PLATTFORM_PFAD}/rechnungen/:rechnungId`, pathname) !== null;
   const breit =
     ([PLATTFORM_PFAD, `${PLATTFORM_PFAD}/uebungen`, `${PLATTFORM_PFAD}/termine`].includes(
       pathname,
     ) ||
-      gespraech) &&
+      gespraech ||
+      rechnungsblatt) &&
     lesbar.length > 0;
   // Die Durchführung steht im Vollbild (Handoff 2026-10-24, Abschnitt 4):
   // ohne Kopf, Verbindungszeile und Reiterleiste des Gerüsts - ihr eigener

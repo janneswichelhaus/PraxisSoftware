@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import type * as PlattformApi from './api';
 import type { Plattformzugang, Rechnungsblatt, Rechnungszeile } from './api';
 import { renderWithProviders } from '@/test-utils';
@@ -19,7 +19,7 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Rechnungen, Rechnung } = await import('./Rechnungen');
-const { zahlungsstand, positionen } = await import('./zahlungsstand');
+const { zahlungsstand, positionen, ueberfaellig } = await import('./zahlungsstand');
 
 const ZUGANG: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000002',
@@ -171,7 +171,9 @@ describe('Rechnungen (POR-013)', () => {
       },
     ]);
     renderWithProviders(<Rechnungen zugang={ZUGANG} />, '/p/rechnungen?bereich=treatment');
-    expect(await screen.findByText(/Rechnung RG-2026-0001 · 140,00 €/)).toBeInTheDocument();
+    expect(await screen.findByText('Nr. RG-2026-0001')).toBeInTheDocument();
+    // Der Betrag rechts, darunter der Zustand.
+    expect(screen.getAllByText('140,00 €')).toHaveLength(2);
     expect(screen.getByText('überfällig')).toBeInTheDocument();
     expect(screen.getByText(/an Beihilfestelle Tuebingen/)).toBeInTheDocument();
     expect(screen.getByText(/noch offen 100,00 €/)).toBeInTheDocument();
@@ -206,14 +208,21 @@ describe('Rechnungen (POR-013)', () => {
       await screen.findByRole('heading', { name: 'Rechnung RG-2026-0001' }),
     ).toBeInTheDocument();
     expect(ladeRechnung).toHaveBeenCalledWith(ZUGANG.access_id, ZEILE.id);
-    expect(screen.getByText(/Offen sind 100,00 €, fällig am 09\.10\.2026/)).toBeInTheDocument();
+    // Oben der offene Betrag groß, mit Fälligkeit und Zustand.
+    expect(
+      within(screen.getByRole('region', { name: 'Betrag' })).getByText('100,00 €'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Noch offen von 240,00 €, fällig am 09\.10\.2026/)).toBeInTheDocument();
+    expect(screen.getByText('überfällig')).toBeInTheDocument();
     // Zwei Krankengymnastiken werden eine Position mit zwei Tagen.
     // Positionen als Datenliste: je Position eine Zeile (DESIGN.md, Regel 3).
     const zeile = screen.getByText('Krankengymnastik').closest('li')!;
     expect(zeile).toHaveTextContent('Tage: 02.09.2026, 23.09.2026');
     expect(zeile).toHaveTextContent('2 × 100,00 €');
     expect(screen.getByText('240,00 €')).toBeInTheDocument();
-    expect(screen.getByText(/IBAN DE02 1203 0000 0000 2020 51/)).toBeInTheDocument();
+    expect(screen.getByText('DE02 1203 0000 0000 2020 51')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Kopieren: IBAN' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Kopieren: Verwendungszweck' })).toBeInTheDocument();
     expect(screen.getByText(/Umsatzsteuerfrei nach § 4 Nr. 14 UStG/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Drucken/ })).toBeInTheDocument();
     // Geburtsdatum und Behandlungsgrundlage wie auf dem Druck der Praxis (Zweitreview).
@@ -230,7 +239,7 @@ describe('Rechnungen (POR-013)', () => {
       <Rechnung zugang={ZUGANG} />,
       '/p/rechnungen/ffffffff-ffff-4fff-8fff-000000000009',
     );
-    expect(await screen.findByText('Diese Rechnung wurde nicht gefunden.')).toBeInTheDocument();
+    expect(await screen.findByText('Diese Rechnung gibt es hier nicht.')).toBeInTheDocument();
     // Auch ohne Blatt hat die Seite einen Titel (DR-158, axe `page-has-heading-one`).
     expect(screen.getByRole('heading', { level: 1, name: 'Rechnung' })).toBeInTheDocument();
   });
@@ -248,12 +257,29 @@ describe('Rechnungen (POR-013)', () => {
   it('formt Zahlungsstand und Positionen', () => {
     expect(zahlungsstand({ payment_state: 'unpaid', overdue: false, cancelled: false })).toEqual({
       wort: 'offen',
+      ton: 'neutral',
+    });
+    expect(zahlungsstand({ payment_state: 'unpaid', overdue: true, cancelled: false })).toEqual({
+      wort: 'überfällig',
       ton: 'warnung',
     });
     expect(zahlungsstand({ payment_state: 'unpaid', overdue: true, cancelled: true })).toEqual({
       wort: 'storniert',
       ton: 'neutral',
+      zeichen: '×',
     });
+    expect(
+      ueberfaellig(
+        { due_on: '2026-10-09', outstanding_cents: 100, cancelled: false },
+        '2026-10-10',
+      ),
+    ).toBe(true);
+    expect(
+      ueberfaellig(
+        { due_on: '2026-10-09', outstanding_cents: 100, cancelled: false },
+        '2026-10-09',
+      ),
+    ).toBe(false);
     expect(positionen(BLATT.document.items).map((g) => [g.code, g.menge, g.summe_cents])).toEqual([
       ['KG', 2, 20000],
       ['HB', 1, 4000],

@@ -118,7 +118,7 @@ describe('Nachsorge-Abo auf der Plattform (ANG-003)', () => {
     renderWithProviders(<Abo zugang={ZUGANG} />);
     expect(await screen.findByText('Gekündigt. Ihr Abo endet am 04.11.2026.')).toBeInTheDocument();
     expect(screen.getByText(/eingetragen von der Praxis/)).toBeInTheDocument();
-    expect(screen.getByText('Danach können Sie hier noch 30 Tage lesen.')).toBeInTheDocument();
+    expect(screen.getByText(/noch 30 Tage lesen/)).toBeInTheDocument();
   });
 
   it('sagt ohne Abo mit Markenform, dass es keins gibt und wie es dazu kommt', async () => {

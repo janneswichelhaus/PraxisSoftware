@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { ListRows } from '@/components/ui/ListRow';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
@@ -72,45 +73,55 @@ export function Paket({ zugang }: { zugang: Plattformzugang }) {
 function MeinePakete({ pakete }: { pakete: MeinPaket[] }) {
   const aktuell = pakete.filter((k) => k.state !== 'ended');
   const frueher = pakete.filter((k) => k.state === 'ended');
-  // Ohne jedes Paket der Leerzustand des Systems, mittig in der Karte wie
-  // „Pakete und Preise“ darunter (DESIGN.md 9.17).
   if (aktuell.length === 0 && frueher.length === 0) {
     return (
       <Section titel="Ihr Paket">
-        <EmptyState inKarte title="Sie haben zurzeit kein Paket." />
+        <p className="text-ink-muted text-base">Sie haben zurzeit kein Paket.</p>
       </Section>
     );
   }
   return (
-    <Section titel="Ihr Paket" rahmen>
+    <>
+      {/* Das eigene Paket oben wie eine Mitgliedschaft: Zustand, Preis, Zeitraum. */}
       {aktuell.length === 0 ? (
-        <p className="text-ink text-base">Sie haben zurzeit kein Paket.</p>
+        <Section titel="Ihr Paket">
+          <p className="text-ink-muted text-base">Sie haben zurzeit kein Paket.</p>
+        </Section>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {aktuell.map((k) => (
-            <li key={k.starts_on}>
-              <p className="text-ink text-base font-medium">{k.label}</p>
-              <p className="text-ink text-base">{paketStand(k)}</p>
-              <p className="text-ink-muted text-base">
-                {formatEuro(k.price_cents, k.currency)}, einmal zu Beginn berechnet.
-              </p>
-            </li>
-          ))}
-        </ul>
+        aktuell.map((k) => (
+          <section
+            key={k.starts_on}
+            aria-label="Ihr Paket"
+            className="mb-10 flex flex-col items-start gap-2 last:mb-0"
+          >
+            {k.state === 'running' ? (
+              <Badge ton="positiv">läuft</Badge>
+            ) : (
+              <Badge ton="neutral" eigenesZeichen={STATUSZEICHEN.wartet}>
+                beginnt bald
+              </Badge>
+            )}
+            <p className="text-ink text-liste font-semibold">{k.label}</p>
+            <p className="text-ink text-gruss [[data-rechner]_&]:text-gruss-rechner tabular-nums">
+              {formatEuro(k.price_cents, k.currency)}
+            </p>
+            <p className="text-ink-muted text-sm">einmal zu Beginn berechnet</p>
+            <p className="text-ink text-base">{paketStand(k)}</p>
+          </section>
+        ))
       )}
       {frueher.length > 0 ? (
-        <>
-          <p className="text-ink-muted mt-4 text-sm font-medium">Frühere Pakete</p>
-          <ul className="mt-1 flex flex-col gap-1">
+        <Section titel="Frühere Pakete">
+          <ul className="flex flex-col gap-1">
             {frueher.map((k) => (
               <li key={k.starts_on} className="text-ink-muted text-base">
                 {k.label}: {paketStand(k)}
               </li>
             ))}
           </ul>
-        </>
+        </Section>
       ) : null}
-    </Section>
+    </>
   );
 }
 
@@ -119,30 +130,21 @@ function Angebote({ angebote }: { angebote: Paketangebote }) {
     <>
       <Section titel="Pakete und Preise">
         {angebote.offers.length === 0 ? (
-          <EmptyState inKarte title="Die Praxis bietet zurzeit keine Pakete an." />
+          <p className="text-ink-muted text-base">Die Praxis bietet zurzeit keine Pakete an.</p>
         ) : (
-          <ListRows>
+          <ListRows rahmen beschriftung="Pakete und Preise">
             {angebote.offers.map((a) => (
-              <li
+              <ListRow
                 key={a.code}
-                className="border-line flex flex-col gap-1 border-t py-3 first:border-t-0"
-              >
-                <p className="text-ink text-base font-medium">{a.label}</p>
-                <p className="text-ink text-base">
-                  <span className="font-medium tabular-nums">
-                    {formatEuro(a.price_cents, a.currency)}
-                  </span>{' '}
-                  für {a.package_months === 1 ? '1 Monat' : `${a.package_months} Monate`}
-                </p>
-                <p className="text-ink-muted text-sm">
-                  {steuerHinweis(angebote.vat_included, a.tax_rate_permille)}
-                </p>
-              </li>
+                titel={a.label}
+                meta={`${a.package_months === 1 ? '1 Monat' : `${a.package_months} Monate`} · ${steuerHinweis(angebote.vat_included, a.tax_rate_permille)}`}
+                betrag={formatEuro(a.price_cents, a.currency)}
+              />
             ))}
           </ListRows>
         )}
       </Section>
-      <Section titel="Bedingungen" rahmen>
+      <Section titel="Bedingungen">
         <ul className="text-ink flex list-disc flex-col gap-2 pl-5 text-base leading-relaxed">
           {PAKETBEDINGUNGEN.map((satz) => (
             <li key={satz}>{satz}</li>

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
 import type { Buchungsbestaetigung, Plattformzugang, Trainingsangebot } from './api';
@@ -102,33 +102,51 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+/** „Weiter“ im geführten Abschluss; die Tippsperre nach jedem Wechsel abgewartet. */
+async function weiter() {
+  const knopf = await screen.findByRole('button', { name: 'Weiter' });
+  await new Promise((fertig) => setTimeout(fertig, 400));
+  await userEvent.click(knopf);
+}
+
 describe('Trainingsangebot auf der Plattform (KND-003)', () => {
-  it('zeigt Paket, Zeitraum, Gesamtpreis, Belehrung und Angaben', async () => {
+  it('zeigt Paket, Zeitraum, Gesamtpreis und den Weg in den Abschluss', async () => {
     ladeTrainingsangebot.mockResolvedValue(ANGEBOT);
     const { container } = renderWithProviders(<Angebot zugang={ZUGANG} />);
     expect(await screen.findByText(ANGEBOT.label)).toBeInTheDocument();
     expect(screen.getByText('27.10.2026 bis 26.01.2027')).toBeInTheDocument();
     expect(screen.getByText(/inklusive 19 % Umsatzsteuer/)).toBeInTheDocument();
-    expect(screen.getByText('Widerrufsrecht')).toBeInTheDocument();
-    expect(screen.getByText(/Um Ihr Widerrufsrecht auszuüben/)).toHaveTextContent(
-      'Praxisweg 1, 72070 Tübingen',
-    );
-    expect(screen.getByLabelText('Belastungsgrenzen')).not.toBeChecked();
-    expect(screen.getByLabelText('Kontaktdaten')).not.toBeChecked();
-    expect(
-      screen.getByText(/In Ihrer Behandlungsakte steht nicht, ob Sie gebucht haben/),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Angebot prüfen und buchen' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Zahlungspflichtig buchen' })).toBeNull();
     await pruefeBarrierefreiheit(container);
   });
 
-  it('bucht mit den einzeln gewählten Freigaben und zeigt die Bestätigung', async () => {
+  it('führt durch Freigaben, Einwilligung, Belehrung und Übersicht zum Buchen (DR-162)', async () => {
     ladeTrainingsangebot.mockResolvedValue(ANGEBOT);
     angebotAnnehmen.mockResolvedValue(GEBUCHT);
     renderWithProviders(<Angebot zugang={ZUGANG} />);
-    await userEvent.click(await screen.findByLabelText('Belastungsgrenzen'));
-    await userEvent.click(screen.getByLabelText('Kontaktdaten'));
-    await userEvent.click(screen.getByLabelText('Ich willige ein.'));
-    await userEvent.click(screen.getByRole('button', { name: 'Zahlungspflichtig buchen' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Angebot prüfen und buchen' }));
+    const fenster = await screen.findByRole('dialog', { name: 'Was darf Ihre Trainer:in wissen?' });
+    expect(within(fenster).getByLabelText('Belastungsgrenzen')).not.toBeChecked();
+    expect(within(fenster).getByLabelText('Kontaktdaten')).not.toBeChecked();
+    await userEvent.click(within(fenster).getByLabelText('Belastungsgrenzen'));
+    await userEvent.click(within(fenster).getByLabelText('Kontaktdaten'));
+    await weiter();
+    await userEvent.click(await screen.findByLabelText('Ich willige ein.'));
+    await weiter();
+    expect(await screen.findByText('Widerrufsrecht')).toBeInTheDocument();
+    expect(screen.getByText(/Um Ihr Widerrufsrecht auszuüben/)).toHaveTextContent(
+      'Praxisweg 1, 72070 Tübingen',
+    );
+    await weiter();
+    const pruefen = await screen.findByRole('dialog', { name: 'Ist alles richtig?' });
+    expect(within(pruefen).getByText('Belastungsgrenzen, Kontaktdaten')).toBeInTheDocument();
+    expect(
+      within(pruefen).getByText(/In Ihrer Behandlungsakte steht nicht, ob Sie gebucht haben/),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      within(pruefen).getByRole('button', { name: 'Zahlungspflichtig buchen' }),
+    );
     expect(angebotAnnehmen).toHaveBeenCalledWith(ZUGANG.access_id, {
       angebotId: ANGEBOT.id,
       freigaben: [1],
@@ -153,6 +171,10 @@ describe('Trainingsangebot auf der Plattform (KND-003)', () => {
       health_consent_granted: false,
     });
     renderWithProviders(<Angebot zugang={ZUGANG} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Angebot prüfen und buchen' }));
+    await weiter();
+    await weiter();
+    await weiter();
     await userEvent.click(await screen.findByRole('button', { name: 'Zahlungspflichtig buchen' }));
     expect(angebotAnnehmen).toHaveBeenCalledWith(
       ZUGANG.access_id,
@@ -164,23 +186,28 @@ describe('Trainingsangebot auf der Plattform (KND-003)', () => {
   it('verlangt die Einwilligung, wenn Angaben zur Gesundheit freigegeben sind', async () => {
     ladeTrainingsangebot.mockResolvedValue(ANGEBOT);
     renderWithProviders(<Angebot zugang={ZUGANG} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Angebot prüfen und buchen' }));
     await userEvent.click(await screen.findByLabelText('Vorgeschichte'));
-    await userEvent.click(screen.getByRole('button', { name: 'Zahlungspflichtig buchen' }));
+    await weiter();
+    await weiter();
     expect(await screen.findByText(/gehen nur mit dieser Einwilligung/)).toBeInTheDocument();
-    expect(angebotAnnehmen).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Zahlungspflichtig buchen' })).toBeNull();
   });
 
   it('verlangt den frühen Beginn ausdrücklich (ANN-288)', async () => {
     ladeTrainingsangebot.mockResolvedValue({ ...ANGEBOT, early_start: true });
     angebotAnnehmen.mockResolvedValue({ ...GEBUCHT, early_start_requested: true });
     renderWithProviders(<Angebot zugang={ZUGANG} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Zahlungspflichtig buchen' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Angebot prüfen und buchen' }));
+    await weiter();
+    await weiter();
+    await weiter();
     expect(
       await screen.findByText(/innerhalb der Widerrufsfrist. Bitte bestätigen/),
     ).toBeInTheDocument();
-    expect(angebotAnnehmen).not.toHaveBeenCalled();
     await userEvent.click(screen.getByLabelText(/Ich verlange ausdrücklich/));
-    await userEvent.click(screen.getByRole('button', { name: 'Zahlungspflichtig buchen' }));
+    await weiter();
+    await userEvent.click(await screen.findByRole('button', { name: 'Zahlungspflichtig buchen' }));
     expect(angebotAnnehmen).toHaveBeenCalledWith(
       ZUGANG.access_id,
       expect.objectContaining({ fruehBeginnen: true }),
@@ -191,7 +218,8 @@ describe('Trainingsangebot auf der Plattform (KND-003)', () => {
     ladeTrainingsangebot.mockResolvedValue({ ...ANGEBOT, blocker: 'care_open', can_accept: false });
     renderWithProviders(<Angebot zugang={ZUGANG} />);
     expect(await screen.findByText(/sobald Ihre Behandlung abgeschlossen ist/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Zahlungspflichtig buchen' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Angebot prüfen und buchen' })).toBeNull();
+    expect(screen.getByText('Widerrufsbelehrung lesen')).toBeInTheDocument();
   });
 
   it('lässt eine rechtliche Vertretung lesen, aber nicht buchen (ANN-289)', async () => {
@@ -206,7 +234,7 @@ describe('Trainingsangebot auf der Plattform (KND-003)', () => {
       />,
     );
     expect(await screen.findByText(/schließt Erika Beispiel selbst/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Zahlungspflichtig buchen' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Angebot prüfen und buchen' })).toBeNull();
   });
 
   it('sagt, wenn kein Angebot vorliegt', async () => {
