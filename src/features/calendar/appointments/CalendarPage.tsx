@@ -1342,7 +1342,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           aria-expanded={monatOffen}
           aria-controls="kalender-monat"
           onClick={() => setMonatOffen((offen) => !offen)}
-          className="text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 shrink-0 items-center gap-1 px-1 text-sm font-semibold sm:px-2"
+          className="text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 px-1 text-sm font-semibold sm:px-2"
         >
           <span className="sm:hidden">{monatKurz(p.datum, heute)}</span>
           <span className="hidden sm:inline">{monatLang(p.datum)}</span>
@@ -1749,13 +1749,16 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         />
       ) : null}
 
-      <CheckupKalenderhinweis
-        spalten={checkupSpalten}
-        heute={heute}
-        jetztMinute={jetztMinute}
-        zone={zone ?? null}
-        rueckweg={kalenderStand}
-      />
+      {/* Die Flotte liest nur, wer sie lesen darf (`app.can_read_fleet`): sonst 403 für `trainer`. */}
+      {isTherapyStaff(user.roles) ? (
+        <CheckupKalenderhinweis
+          spalten={checkupSpalten}
+          heute={heute}
+          jetztMinute={jetztMinute}
+          zone={zone ?? null}
+          rueckweg={kalenderStand}
+        />
+      ) : null}
 
       {/* Der Filter aus der Akte steht sichtbar über dem Gitter und lässt sich
           mit einem Tap aufheben: Ein Kalender, der ohne erkennbaren Grund fast

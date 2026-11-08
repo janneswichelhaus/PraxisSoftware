@@ -183,7 +183,7 @@ function Beschreibung({ text }: { text: string }) {
           aria-expanded={offen}
           aria-controls={id}
           onClick={() => setOffen((bisher) => !bisher)}
-          className="text-accent -my-3 min-h-11 shrink-0 text-sm font-semibold underline underline-offset-2"
+          className="text-accent -my-3 min-h-11 min-w-11 shrink-0 text-sm font-semibold underline underline-offset-2"
         >
           {offen ? 'Weniger' : 'Mehr'}
         </button>

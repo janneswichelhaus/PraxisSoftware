@@ -71,14 +71,14 @@ export function Objektkopf({
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-5 sm:py-4">
         <div className="min-w-0">
           {rueckweg ? (
-            // Die Titelzeile beginnt am Telefon 10 px vom Rand (Pfeil), alles
+            // Die Titelzeile beginnt am Telefon 10 px vom Rand (Pfeil in 44 px), alles
             // darunter bleibt auf den 16 der Karte (Variante 4b).
-            <div className="-ml-1.5 flex items-center gap-1 sm:ml-0 sm:block">
+            <div className="-ml-2 flex items-center gap-1 sm:ml-0 sm:block">
               <Link
                 to={rueckweg.to}
                 aria-label={rueckweg.beschriftung}
                 title={rueckweg.beschriftung}
-                className="text-accent hover:bg-surface-sunken rounded-button inline-flex size-10 shrink-0 items-center justify-center transition-colors sm:hidden"
+                className="text-accent hover:bg-surface-sunken rounded-button inline-flex size-11 shrink-0 items-center justify-center transition-colors sm:hidden"
               >
                 <svg
                   aria-hidden="true"

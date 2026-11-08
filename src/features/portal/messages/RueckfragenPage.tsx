@@ -197,7 +197,15 @@ function Vorgang({
     <div className="max-w-spalte">
       <Rueckweg standard={zurueck} beschriftung="Zu den Rückfragen" />
       <PageHeader
-        title={pfad ? <Link to={pfad}>{name}</Link> : name}
+        title={
+          pfad ? (
+            <Link to={pfad} className="inline-flex min-h-11 items-center">
+              {name}
+            </Link>
+          ) : (
+            name
+          )
+        }
         kicker={data.relationship_kind === 'training' ? 'Rückfrage · Training' : 'Rückfrage'}
         description={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">

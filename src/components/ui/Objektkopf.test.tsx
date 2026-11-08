@@ -68,7 +68,7 @@ describe('Objektkopf (Design-Fundament, aus dem Rahmen der Akte)', () => {
     const pfeil = screen.getByRole('link', { name: 'Zurück zu den Patient:innen' });
     expect(pfeil).toHaveAttribute('href', '/patienten');
     expect(pfeil).toHaveAttribute('title', 'Zurück zu den Patient:innen');
-    expect(klassenVon(pfeil)).toEqual(expect.arrayContaining(['size-10', 'sm:hidden']));
+    expect(klassenVon(pfeil)).toEqual(expect.arrayContaining(['size-11', 'sm:hidden']));
 
     expect(klassenVon(screen.getByText('geb. 12.03.1961 · 65 Jahre · Tübingen'))).toEqual(
       expect.arrayContaining(['text-ink-muted', 'text-sm']),

@@ -39,6 +39,7 @@ import {
 import { BEREICHE, ROUTEN } from './bildstrecke/routen.mjs';
 import { lesewaechterAnbringen } from './bildstrecke/lesewaechter.mjs';
 import { netzBeobachten } from './bildstrecke/netzruhe.mjs';
+import { axeVerstoesse, kleineZiele } from './bildstrecke/barrierefreiheit.mjs';
 import { kontaktbogenHtml, kurzname, vergleichHtml } from './bildstrecke/kontaktbogen.mjs';
 
 const BASIS = (process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173').replace(/\/$/, '');
@@ -67,7 +68,7 @@ if (option('hilfe') || option('help')) {
   console.log(
     'Aufruf: pnpm bildstrecke [--ziel=ordner] [--vergleich=vorher-ordner] [--nur=bereich|route-teil,…]\n' +
       '                         [--konten=owner,…] [--breiten=375,1280] [--parallel=4] [--neu-laden]\n' +
-      '                         [--nur-bogen] [--streng]',
+      '                         [--nur-bogen] [--streng] [--ohne-barrierefreiheit]',
   );
   process.exit(0);
 }
@@ -83,6 +84,7 @@ const NUR_KONTEN = liste(option('konten'));
 const NUR_BREITEN = liste(option('breiten')).map(Number);
 const PARALLEL = Math.max(1, Math.min(12, Number(option('parallel') ?? 4) || 4));
 const NEU_LADEN = Boolean(option('neu-laden'));
+const OHNE_BARRIEREFREIHEIT = Boolean(option('ohne-barrierefreiheit'));
 
 for (const konto of NUR_KONTEN) {
   if (konto !== 'ohne' && !KONTEN.has(konto)) {
@@ -392,6 +394,12 @@ async function aufnehmen(sitzung, auftrag) {
     }
     await seite.screenshot({ path: path.join(ZIEL, datei), fullPage: true });
     if (hoehe > fenster.height) await seite.setViewportSize(fenster);
+    if (!OHNE_BARRIEREFREIHEIT) {
+      for (const text of await axeVerstoesse(seite)) befunde.push({ art: 'axe', text });
+      if (breite === 375) {
+        for (const text of await seite.evaluate(kleineZiele)) befunde.push({ art: 'ziel', text });
+      }
+    }
   } catch (fehler) {
     befunde.push({ art: 'aufnahme', text: String(fehler).split('\n')[0] });
   }

@@ -751,7 +751,7 @@ export function CalendarGrid({
           {/* Kopfzeile. */}
           <div
             ref={eckeRef}
-            className="bg-surface border-line sticky top-0 left-0 z-30 flex h-11 items-center justify-center border-b"
+            className="bg-surface border-line sticky top-0 left-0 z-30 flex h-12 items-center justify-center border-b"
           >
             {ecke}
           </div>
@@ -799,7 +799,7 @@ export function CalendarGrid({
                 aria-current={!s.ziel && s.aktuellesDatum ? 'date' : undefined}
                 className={[
                   s.hervorgehoben ? 'bg-accent-soft' : 'bg-surface',
-                  'border-line sticky top-0 z-20 flex h-11 flex-col justify-center',
+                  'border-line sticky top-0 z-20 flex h-12 flex-col justify-center',
                   'border-b border-l',
                   // Traegt der Kopf einen Wechsel, polstert der Link selbst -
                   // sonst waere nur der Text anklickbar und nicht die Spalte.
