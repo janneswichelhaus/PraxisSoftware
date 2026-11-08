@@ -1,6 +1,7 @@
 import { einwilligungAngeboten } from '@/lib/einwilligung';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Disclosure } from '@/components/ui/Card';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -94,7 +95,7 @@ function standText(e: Einwilligung): string {
   const praxis = e.source === 'practice' ? ' (in der Praxis vermerkt)' : '';
   switch (e.state) {
     case 'granted':
-      return `✓ Erteilt${am}${praxis}`;
+      return `Erteilt${am}${praxis}`;
     case 'withdrawn':
       return `Widerrufen${am}${praxis}`;
     case 'refused':
@@ -102,6 +103,15 @@ function standText(e: Einwilligung): string {
     default:
       return 'Noch nicht entschieden';
   }
+}
+
+/**
+ * Der Zweck in einem Satz, der Rest auf Abruf (Briefing 7, Bildschirm 3; ANN-859). Der Wortlaut
+ * bleibt ganz (`EINWILLIGUNGSFASSUNG`): Geteilt wird nur nach dem ersten Satz.
+ */
+function zweckteile(text: string): [string, string] {
+  const ende = text.indexOf('. ');
+  return ende < 0 ? [text, ''] : [text.slice(0, ende + 1), text.slice(ende + 2)];
 }
 
 function Zweck({
@@ -114,6 +124,7 @@ function Zweck({
   const queryClient = useQueryClient();
   const text = EINWILLIGUNGSTEXTE[e.purpose];
   const erteilt = e.state === 'granted';
+  const [zweck, mehr] = zweckteile(text.text);
   const schreiben = useMutation({
     mutationFn: () =>
       einwilligungSchreiben({
@@ -129,8 +140,21 @@ function Zweck({
   return (
     <li className="border-line border-t py-4 first:border-t-0">
       <Zwischentitel ebene={2}>{text.titel}</Zwischentitel>
-      <p className="text-ink max-w-prose text-base leading-relaxed">{text.text}</p>
-      <p className="text-ink mt-3 text-base font-semibold">{standText(e)}</p>
+      <p className="text-ink max-w-prose text-base leading-relaxed">{zweck}</p>
+      {mehr ? (
+        <div className="mt-2">
+          <Disclosure summary="Mehr dazu">
+            <p className="text-ink max-w-prose text-base leading-relaxed">{mehr}</p>
+          </Disclosure>
+        </div>
+      ) : null}
+      {/* Zeichen und Wort, nie nur Farbe. */}
+      <p
+        className={`mt-3 text-base font-semibold ${erteilt ? 'text-positiv' : e.state === 'open' ? 'text-ink' : 'text-ink-muted'}`}
+      >
+        {erteilt ? <span aria-hidden="true">✓ </span> : null}
+        {standText(e)}
+      </p>
       <div className="mt-3">
         {erteilt ? (
           <Rueckfrage
