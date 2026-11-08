@@ -6,8 +6,8 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Plattform Schritt 6 Unterlagen und Verträge** auf `ccr-c614e9be-3jxfvj`, ohne Leinwand (§15.2),
-ANN-854 bis ANN-857; Merge bei Jannes.
+**App ohne Browserleiste** auf `ccr-c614e9be-3jxfvj`: Manifest und Symbol vor der Tür
+(ANN-101), danach neu installieren.
 
 ## Danach
 
