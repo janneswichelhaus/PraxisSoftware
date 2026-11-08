@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Badge, STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
+import { Badge, type Ton } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
@@ -11,11 +11,13 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Personenbild } from '@/components/ui/Personenbild';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
+import { Wahlflaechen } from '@/components/ui/Wahlflaechen';
 import {
   nachrichtenSchluessel,
   plaeneSchluessel,
@@ -26,26 +28,33 @@ import {
   nachrichtStellen,
   type Nachricht,
   type NachrichtEintrag,
+  type Nachrichten as Nachrichtenstand,
   type Plattformzugang,
 } from './api';
-import { OHNE_EINWILLIGUNG, THEMA_NAME, THEMEN, type Thema } from './nachrichtentexte';
+import {
+  FRIST_VORBEI,
+  OHNE_EINWILLIGUNG,
+  THEMA_NAME,
+  THEMEN,
+  zaehlerAb,
+  zusage,
+  type Thema,
+} from './nachrichtentexte';
 import { AnhaengeAbschnitt } from './Anhaenge';
 import { Notfallkarte } from './Notfallkarte';
 import { zeitmarke, type Ansicht } from './anhangtexte';
 import { useEinmaligeRueckmeldung } from './einmaligeRueckmeldung';
+import { useRechner } from './geruestbreite';
+import { Themenzeichen } from './Themenzeichen';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
-import { datum, tagKurz, uhrzeit } from './zeit';
+import { datum, kalendertag, tagKurz, uhrzeit } from './zeit';
 
 /** Höchstlänge eines Eintrags - zugleich die Grenze des Servers. */
 export const NACHRICHT_MAX = 2000;
 
 /**
- * Reiter „Nachrichten" (KOM-001, DSN-001 4.1): „Wie frage ich die Praxis?"
- *
- * Kein offener Chat, sondern ein Vorgang mit Thema, Bezug und Zustand
- * (IDEA-KOM-001). Über jedem Eingabefeld stehen Zusage und Notfallhinweis,
- * dauerhaft und für alle gleich (IDEA-KOM-002) - nie abhängig vom Inhalt
- * (ADR-006 Punkt 4). Was die Person sieht, liefert der Server über den Zugang.
+ * Reiter „Nachrichten“: strukturierte Fragen an die Praxis, kein Chat. Der Notfallhinweis steht
+ * nur über einem Eingabefeld, hier die Antwortfrist als ruhige Zeile (Design-Review Lauf 1).
  */
 export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
   const [suche] = useSearchParams();
@@ -73,9 +82,7 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
       </>
     );
   }
-  const { messages, can_write, response_workdays } = daten.data;
-  const laufend = messages.filter((m) => m.status !== 'closed');
-  const erledigt = messages.filter((m) => m.status === 'closed');
+  const { can_write, response_workdays } = daten.data;
 
   return (
     <>
@@ -83,53 +90,72 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
       {gesendet === '1' ? (
         <Rueckmeldung className="mb-4">Ihre Nachricht ist bei der Praxis angekommen.</Rueckmeldung>
       ) : null}
-      <Notfallkarte werktage={response_workdays} />
-      {!can_write ? (
-        <p className="text-ink mt-4 max-w-prose text-base leading-relaxed">
-          Sie können Ihre Nachrichten hier noch lesen. Neue Fragen stellen Sie bitte direkt bei der
-          Praxis.
-        </p>
+      <p className="text-ink-muted max-w-prose text-base leading-relaxed">
+        {can_write
+          ? zusage(response_workdays)
+          : 'Sie können Ihre Nachrichten hier noch lesen. Neue Fragen stellen Sie bitte direkt bei der Praxis.'}
+      </p>
+      <Nachrichtenliste daten={daten.data} mit={mit} />
+      {/* Die eine Aufgabe der Seite unter der Liste, am Telefon in voller Breite. */}
+      {can_write ? (
+        <div className="mt-6">
+          <ButtonLink to={mit('/nachrichten/neu')} groesse="normal" className="w-full sm:w-auto">
+            Nachricht schreiben
+          </ButtonLink>
+        </div>
       ) : null}
+    </>
+  );
+}
 
+/** Laufende Gespräche, Erledigtes auf Abruf; am Rechner auch neben dem offenen Gespräch. */
+function Nachrichtenliste({
+  daten,
+  mit,
+  offenId,
+}: {
+  daten: Nachrichtenstand;
+  mit: (pfad: string) => string;
+  offenId?: string | undefined;
+}) {
+  const heute = kalendertag(new Date());
+  const laufend = daten.messages.filter((m) => m.status !== 'closed');
+  const erledigt = daten.messages.filter((m) => m.status === 'closed');
+  const zeile = (m: Nachricht, gedaempft = false) => (
+    <Nachrichtzeile
+      key={m.id}
+      nachricht={m}
+      heute={heute}
+      to={mit(`/nachrichten/${m.id}`)}
+      aktiv={m.id === offenId}
+      gedaempft={gedaempft}
+      schmal={offenId !== undefined}
+    />
+  );
+  return (
+    <>
       <div className="mt-8">
         <Listenabschnitt
           titel="Ihre Nachrichten"
           leer={{
             titel: 'Zurzeit ist keine Frage offen.',
-            ...(can_write
-              ? { beschreibung: 'Über „Neue Nachricht“ schreiben Sie der Praxis.' }
+            ...(daten.can_write
+              ? { beschreibung: 'Über „Nachricht schreiben“ fragen Sie die Praxis.' }
               : {}),
           }}
         >
-          {laufend.map((m) => (
-            <Nachrichtzeile key={m.id} nachricht={m} to={mit(`/nachrichten/${m.id}`)} />
-          ))}
+          {laufend.map((m) => zeile(m))}
         </Listenabschnitt>
       </div>
-      {/* Die eine Aufgabe der Seite als Hauptknopf unter der Liste, am Telefon
-          in voller Breite (DESIGN.md, Seitentyp „Plattform“) - nicht klein
-          oben rechts im Kopf. */}
-      {can_write ? (
-        <div className="mt-6">
-          <ButtonLink to={mit('/nachrichten/neu')} groesse="normal" className="w-full sm:w-auto">
-            Neue Nachricht
-          </ButtonLink>
-        </div>
-      ) : null}
-      {/* Erledigtes auf Abruf: Es wird mit jeder Frage länger (DESIGN.md, Regel 6). */}
       {erledigt.length > 0 ? (
         <div className="mt-8">
-          <Disclosure summary="Erledigt" anzahl={erledigt.length} kopf="betont">
-            <ListRows>
-              {erledigt.map((m) => (
-                <Nachrichtzeile
-                  key={m.id}
-                  nachricht={m}
-                  to={mit(`/nachrichten/${m.id}`)}
-                  gedaempft
-                />
-              ))}
-            </ListRows>
+          <Disclosure
+            summary="Erledigt"
+            anzahl={erledigt.length}
+            kopf="betont"
+            offen={erledigt.some((m) => m.id === offenId)}
+          >
+            <ListRows>{erledigt.map((m) => zeile(m, true))}</ListRows>
           </Disclosure>
         </div>
       ) : null}
@@ -137,33 +163,93 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
   );
 }
 
-// Jeder Zustand mit Zeichen und Wort (Regel 5; Sichtung 13.10.2026, A6):
-// „neutral“ und „akzent“ tragen kein eigenes, deshalb `zeichen` (ANN-485).
-// „erledigt“ nennt das Zeichen seines Tons noch einmal - für die Zeile im
-// Kopf einer Nachricht, die ohne `Badge` auskommt (L9). „wartet auf Antwort“
-// statt „bei der Praxis“ (DR-138): Das sagt, was die Person wissen will.
-const ZUSTAND: Record<Nachricht['status'], { wort: string; ton: Ton; zeichen: string }> = {
-  open: { wort: 'wartet auf Antwort', ton: 'neutral', zeichen: STATUSZEICHEN.wartet },
-  answered: { wort: 'beantwortet', ton: 'akzent', zeichen: STATUSZEICHEN.antwort },
-  closed: { wort: 'erledigt', ton: 'positiv', zeichen: '✓' },
-};
+const WARTET = (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2.5}
+    strokeLinecap="round"
+    className="inline size-[1em] align-[-0.125em]"
+  >
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </svg>
+);
+
+const ANTWORT = (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="inline size-[1em] align-[-0.125em]"
+  >
+    <path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z" />
+  </svg>
+);
+
+interface Zustand {
+  wort: string;
+  ton: Ton;
+  zeichen?: ReactNode;
+}
+
+// Zeichen und Wort, nie Farbe allein: Uhr für „wartet“, Sprechblase für eine Antwort. Ist die
+// Frist verstrichen, sagt es ein eigener Zustand statt einer Zeile, die man überliest.
+function zustandVon(nachricht: Nachricht, heute: string): Zustand {
+  if (nachricht.status === 'closed') return { wort: 'Erledigt', ton: 'positiv' };
+  if (nachricht.status === 'answered')
+    return { wort: 'Beantwortet', ton: 'akzent', zeichen: ANTWORT };
+  if (nachricht.due_on && nachricht.due_on < heute) return { wort: FRIST_VORBEI, ton: 'warnung' };
+  return { wort: 'Wartet auf Antwort', ton: 'neutral', zeichen: WARTET };
+}
+
+function fristText(nachricht: Nachricht, heute: string): string | null {
+  if (nachricht.status !== 'open' || !nachricht.due_on) return null;
+  return nachricht.due_on < heute
+    ? `Zugesagt bis ${datum(nachricht.due_on)}`
+    : `Antwort bis ${datum(nachricht.due_on)}`;
+}
 
 function Nachrichtzeile({
   nachricht,
+  heute,
   to,
-  gedaempft = false,
+  aktiv,
+  gedaempft,
+  schmal,
 }: {
   nachricht: Nachricht;
+  heute: string;
   to: string;
-  gedaempft?: boolean;
+  aktiv: boolean;
+  gedaempft: boolean;
+  schmal: boolean;
 }) {
   const erste = nachricht.entries[0];
-  const zustand = ZUSTAND[nachricht.status];
-  // Die Frist steht in der Nebenzeile, die Marke bleibt ein Wort (375 px).
-  const frist =
-    nachricht.status === 'open' && nachricht.due_on
-      ? `Antwort bis ${datum(nachricht.due_on)}. `
-      : '';
+  const zustand = zustandVon(nachricht, heute);
+  const frist = fristText(nachricht, heute);
+  const zeichen = (
+    <Badge ton={zustand.ton} eigenesZeichen={zustand.zeichen}>
+      {zustand.wort}
+    </Badge>
+  );
+  // Neben dem Gespräch fehlt die Breite für drei Spalten: Datum, Thema und Zustand untereinander.
+  if (schmal) {
+    return (
+      <ListRow
+        bezeichnung={tagKurz(nachricht.last_entry_at)}
+        titel={THEMA_NAME[nachricht.topic]}
+        meta={<span className="mt-1 block">{zeichen}</span>}
+        to={to}
+        aktiv={aktiv}
+        gedaempft={gedaempft}
+      />
+    );
+  }
   return (
     <ListRow
       zeit={tagKurz(nachricht.last_entry_at)}
@@ -171,13 +257,10 @@ function Nachrichtzeile({
         THEMA_NAME[nachricht.topic] +
         (nachricht.reference_label ? ` · ${nachricht.reference_label}` : '')
       }
-      meta={`${frist}${erste ? kuerzen(erste.body, 80) : ''}`}
-      status={
-        <Badge ton={zustand.ton} eigenesZeichen={zustand.zeichen}>
-          {zustand.wort}
-        </Badge>
-      }
+      meta={`${frist ? `${frist}. ` : ''}${erste ? kuerzen(erste.body, 80) : ''}`}
+      status={zeichen}
       to={to}
+      aktiv={aktiv}
       gedaempft={gedaempft}
     />
   );
@@ -187,10 +270,22 @@ function kuerzen(text: string, laenge: number): string {
   return text.length > laenge ? `${text.slice(0, laenge - 1)}…` : text;
 }
 
+/** Der Zähler erst nahe der Grenze; vorher sagt er nichts. */
+function zaehler(text: string): string | undefined {
+  const laenge = text.trim().length;
+  return laenge >= zaehlerAb(NACHRICHT_MAX) ? `${laenge} von ${NACHRICHT_MAX} Zeichen` : undefined;
+}
+
+function pruefe(text: string, leer: string): string | null {
+  if (text.trim() === '') return leer;
+  if (text.trim().length > NACHRICHT_MAX)
+    return `Ihre Nachricht darf höchstens ${NACHRICHT_MAX} Zeichen lang sein.`;
+  return null;
+}
+
 /**
- * „Neue Nachricht" in zwei Schritten (DSN-001 4.1): **Worum geht es?** und
- * **Text**. Bei „Übung" optional der Bezug auf einen zugewiesenen Plan und
- * eine Übung daraus (IDEA-KOM-001). Ein Hauptknopf, Abbrechen immer sichtbar.
+ * „Nachricht schreiben“ auf einer Seite: Thema als große Wahl, die Notfallkarte genau einmal über
+ * dem Textfeld, ein Hauptknopf. Vier Themen und ein Feld brauchen keinen geführten Ablauf (ANN-851).
  */
 export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
   const navigate = useNavigate();
@@ -230,16 +325,25 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
     },
   });
 
+  const kopf = (
+    <>
+      <Rueckweg standard={zurueck} beschriftung="Zu den Nachrichten" />
+      <PageHeader title="Nachricht schreiben" />
+    </>
+  );
   if (daten.data === undefined) {
     return (
-      <Abfragezustand
-        abfrage={daten}
-        laden="Wird geladen …"
-        fehler="Das Formular konnte nicht geladen werden."
-        inKarte
-      >
-        {() => null}
-      </Abfragezustand>
+      <>
+        {kopf}
+        <Abfragezustand
+          abfrage={daten}
+          laden="Wird geladen …"
+          fehler="Das Formular konnte nicht geladen werden."
+          inKarte
+        >
+          {() => null}
+        </Abfragezustand>
+      </>
     );
   }
   const { health_topics, response_workdays, can_write } = daten.data;
@@ -251,58 +355,40 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
 
   function absenden(e: React.FormEvent) {
     e.preventDefault();
-    if (!gewaehlt) {
-      setPruefung('Bitte wählen Sie, worum es geht.');
-      return;
-    }
-    if (text.trim() === '') {
-      setPruefung('Bitte schreiben Sie Ihre Frage.');
-      return;
-    }
-    if (text.trim().length > NACHRICHT_MAX) {
-      setPruefung(`Ihre Nachricht darf höchstens ${NACHRICHT_MAX} Zeichen lang sein.`);
-      return;
-    }
-    setPruefung(null);
-    senden.mutate();
+    const fehlt = gewaehlt
+      ? pruefe(text, 'Bitte schreiben Sie Ihre Frage.')
+      : 'Bitte wählen Sie, worum es geht.';
+    setPruefung(fehlt);
+    if (!fehlt) senden.mutate();
   }
 
   const fehler = pruefung ?? (senden.isError ? senden.error.message : null);
 
   return (
     <>
-      <Rueckweg standard={zurueck} beschriftung="Zu den Nachrichten" />
-      <PageHeader title="Neue Nachricht" />
+      {kopf}
       {!can_write ? (
         <Statusmeldung ton="warnung">
           Neue Fragen stellen Sie bitte direkt bei der Praxis.
         </Statusmeldung>
       ) : (
         <form onSubmit={absenden} noValidate className="flex flex-col gap-8">
-          <fieldset>
-            <legend className="text-ink mb-2 text-base font-semibold">1. Worum geht es?</legend>
-            <div className="flex flex-col gap-2">
-              {themen.map((t) => (
-                <label
-                  key={t}
-                  className="border-line has-[:checked]:border-accent has-[:checked]:bg-accent-soft rounded-button flex min-h-12 cursor-pointer items-center gap-3 border px-4 py-2"
-                >
-                  <input
-                    type="radio"
-                    name="thema"
-                    value={t}
-                    checked={gewaehlt === t}
-                    onChange={() => setThema(t)}
-                    className="size-5 shrink-0"
-                  />
-                  <span className="text-ink text-base">{THEMA_NAME[t]}</span>
-                </label>
-              ))}
-            </div>
+          <div>
+            <Wahlflaechen
+              titel="Worum geht es?"
+              form="zeilen"
+              wahlen={themen.map((t) => ({
+                schluessel: t,
+                text: THEMA_NAME[t],
+                zeichen: <Themenzeichen thema={t} />,
+              }))}
+              gewaehlt={gewaehlt ? [gewaehlt] : []}
+              onUmschalten={(t) => setThema(t as Thema)}
+            />
             {!health_topics ? (
               <p className="text-ink-muted mt-2 text-sm">{OHNE_EINWILLIGUNG}</p>
             ) : null}
-          </fieldset>
+          </div>
 
           {gewaehlt === 'exercise' && plaeneMitUebung.length > 0 ? (
             <div className="flex flex-col gap-4">
@@ -339,11 +425,10 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
           ) : null}
 
           <div className="flex flex-col gap-3">
-            <p className="text-ink text-base font-semibold">2. Ihre Frage</p>
             <Notfallkarte werktage={response_workdays} />
             <TextArea
-              label="Text"
-              hint={`${text.trim().length} von ${NACHRICHT_MAX} Zeichen`}
+              label="Ihre Frage"
+              hint={zaehler(text)}
               rows={5}
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -353,7 +438,6 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
           {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
 
           <Formularfuss>
-            {/* DR-140: ein Wort für dieselbe Handlung, wie beim Ergänzen. */}
             <Button type="submit" disabled={senden.isPending}>
               {senden.isPending ? 'Wird gesendet …' : 'Senden'}
             </Button>
@@ -368,36 +452,20 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
 }
 
 /**
- * Ein Vorgang mit seinen Einträgen. Nachtragen, solange er nicht erledigt
- * ist; „Erledigt" schließt ihn. Die Antwort steht als „Praxis", ohne Namen
- * (ADR-023 Punkt 22).
+ * Ein Gespräch: Kopf mit Thema und Praxis, der Verlauf links (Praxis) und rechts (eigene
+ * Einträge). Am Rechner steht die Liste daneben, damit man zwischen Gesprächen wechselt, ohne
+ * zurückzugehen.
  */
 export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
   const { nachrichtId } = useParams();
   const [suche] = useSearchParams();
   const bereich = bereichParameter(suche);
-  const zurueck = `${PLATTFORM_PFAD}/nachrichten${bereich ? `?${bereich}` : ''}`;
-  const queryClient = useQueryClient();
-  const [text, setText] = useState('');
-  const [pruefung, setPruefung] = useState<string | null>(null);
-  const [ansicht, setAnsicht] = useState<Ansicht | null>(null);
+  const mit = (pfad: string) => `${PLATTFORM_PFAD}${pfad}${bereich ? `?${bereich}` : ''}`;
+  const zurueck = mit('/nachrichten');
+  const rechner = useRechner();
   const daten = useQuery({
     queryKey: nachrichtenSchluessel(zugang.access_id),
     queryFn: () => ladeNachrichten(zugang.access_id),
-  });
-  const neuLaden = () =>
-    queryClient.invalidateQueries({ queryKey: nachrichtenSchluessel(zugang.access_id) });
-
-  const nachtragen = useMutation({
-    mutationFn: () => nachrichtNachtragen(zugang.access_id, nachrichtId!, text.trim()),
-    onSuccess: async () => {
-      setText('');
-      await neuLaden();
-    },
-  });
-  const erledigen = useMutation({
-    mutationFn: () => nachrichtErledigen(zugang.access_id, nachrichtId!),
-    onSuccess: neuLaden,
   });
 
   const zurueckLink = <Rueckweg standard={zurueck} beschriftung="Zu den Nachrichten" />;
@@ -418,28 +486,75 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
     );
   }
   const nachricht = daten.data.messages.find((m) => m.id === nachrichtId);
-  if (!nachricht) {
+  const gespraech = nachricht ? (
+    <Gespraech key={nachricht.id} zugang={zugang} nachricht={nachricht} daten={daten.data} />
+  ) : (
+    <EmptyState markenform title="Diese Nachricht gibt es hier nicht." />
+  );
+  if (!rechner) {
     return (
       <>
         {zurueckLink}
-        <EmptyState markenform title="Diese Nachricht gibt es hier nicht." />
+        {gespraech}
       </>
     );
   }
-  const offen = nachricht.status !== 'closed' && daten.data.can_write;
+  return (
+    // Im Baum zuerst das Gespräch mit seiner h1, die Liste steht nur sichtbar links.
+    <div className="grid grid-cols-[minmax(0,22rem)_minmax(0,1fr)] gap-12">
+      <div className="max-w-spalte col-start-2 row-start-1 min-w-0">{gespraech}</div>
+      <nav aria-label="Ihre Nachrichten" className="col-start-1 row-start-1 -mt-8">
+        <Nachrichtenliste daten={daten.data} mit={mit} offenId={nachrichtId} />
+        {daten.data.can_write ? (
+          <div className="mt-6">
+            <ButtonLink to={mit('/nachrichten/neu')} variant="secondary">
+              Nachricht schreiben
+            </ButtonLink>
+          </div>
+        ) : null}
+      </nav>
+    </div>
+  );
+}
+
+function Gespraech({
+  zugang,
+  nachricht,
+  daten,
+}: {
+  zugang: Plattformzugang;
+  nachricht: Nachricht;
+  daten: Nachrichtenstand;
+}) {
+  const queryClient = useQueryClient();
+  const [text, setText] = useState('');
+  const [pruefung, setPruefung] = useState<string | null>(null);
+  const [ansicht, setAnsicht] = useState<Ansicht | null>(null);
+  const neuLaden = () =>
+    queryClient.invalidateQueries({ queryKey: nachrichtenSchluessel(zugang.access_id) });
+  const nachtragen = useMutation({
+    mutationFn: () => nachrichtNachtragen(zugang.access_id, nachricht.id, text.trim()),
+    onSuccess: async () => {
+      setText('');
+      await neuLaden();
+    },
+  });
+  const erledigen = useMutation({
+    mutationFn: () => nachrichtErledigen(zugang.access_id, nachricht.id),
+    onSuccess: neuLaden,
+  });
+
+  const offen = nachricht.status !== 'closed' && daten.can_write;
+  const heute = kalendertag(new Date());
+  const zustand = zustandVon(nachricht, heute);
+  const frist = fristText(nachricht, heute);
+  const praxis = zugang.organization_name || 'Ihre Praxis';
 
   function absenden(e: React.FormEvent) {
     e.preventDefault();
-    if (text.trim() === '') {
-      setPruefung('Bitte schreiben Sie Ihre Nachricht.');
-      return;
-    }
-    if (text.trim().length > NACHRICHT_MAX) {
-      setPruefung(`Ihre Nachricht darf höchstens ${NACHRICHT_MAX} Zeichen lang sein.`);
-      return;
-    }
-    setPruefung(null);
-    nachtragen.mutate();
+    const fehlt = pruefe(text, 'Bitte schreiben Sie Ihre Nachricht.');
+    setPruefung(fehlt);
+    if (!fehlt) nachtragen.mutate();
   }
   const fehler =
     pruefung ??
@@ -448,11 +563,9 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
       : erledigen.isError
         ? erledigen.error.message
         : null);
-  const zustand = ZUSTAND[nachricht.status];
 
   return (
     <>
-      {zurueckLink}
       <PageHeader
         title={THEMA_NAME[nachricht.topic]}
         description={
@@ -460,61 +573,46 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
             {nachricht.reference_label ? (
               <span className="text-ink block">Zu: {nachricht.reference_label}</span>
             ) : null}
-            {/* Der Zustand als Zeile mit Zeichen und Wort, nicht als
-                Abzeichen: Mit der Frist bräche die Pille bei 18 px auf zwei
-                Zeilen (Sichtung 13.10.2026, L9). */}
+            {/* Eine Zeile statt Abzeichen: Mit der Frist bräche die Pille bei 18 px um. */}
             <span className="text-ink mt-1 block">
-              <span aria-hidden="true">{zustand.zeichen} </span>
+              {zustand.zeichen ? (
+                <span aria-hidden="true">{zustand.zeichen} </span>
+              ) : zustand.ton === 'warnung' ? (
+                <span aria-hidden="true">! </span>
+              ) : zustand.ton === 'positiv' ? (
+                <span aria-hidden="true">✓ </span>
+              ) : null}
               <span className="font-semibold">{zustand.wort}</span>
-              {nachricht.status === 'open' && nachricht.due_on
-                ? ` · Antwort bis ${datum(nachricht.due_on)}`
-                : ''}
+              {frist ? ` · ${frist}` : ''}
             </span>
           </>
         }
       />
 
+      <div className="mb-6 flex items-center gap-3">
+        <Personenbild name={praxis} farbe="tanne" groesse="karte" />
+        <p className="min-w-0">
+          <span className="text-ink-muted block">Ihre Frage an</span>{' '}
+          <span className="text-ink block font-semibold">{praxis}</span>
+        </p>
+      </div>
+
       <ol aria-label="Verlauf" className="flex flex-col gap-3">
         {nachricht.entries.map((e) => (
-          <li
+          <Eintrag
             key={e.id}
-            className={`rounded-card border p-4 ${
-              e.side === 'practice' ? 'border-accent bg-accent-soft' : 'border-line bg-surface'
-            }`}
-          >
-            <p className="text-ink-muted text-sm">
-              <span className="text-ink font-semibold">{verfasser(e, zugang)}</span> ·{' '}
-              {datum(e.created_at)}, {uhrzeit(e.created_at)}
-            </p>
-            <p className="text-ink mt-1 text-base leading-relaxed whitespace-pre-line">{e.body}</p>
-            {e.attachment_mark_seconds != null ? (
-              e.attachment_id &&
-              (nachricht.attachments ?? []).some((a) => a.id === e.attachment_id) ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="mt-2"
-                  onClick={() =>
-                    setAnsicht({ anhangId: e.attachment_id!, ab: e.attachment_mark_seconds! })
-                  }
-                >
-                  Im Video bei {zeitmarke(e.attachment_mark_seconds)} ansehen
-                </Button>
-              ) : (
-                <p className="text-ink-muted mt-2 text-sm">
-                  Bezieht sich auf Ihr Video bei {zeitmarke(e.attachment_mark_seconds)}. Das Video
-                  ist inzwischen gelöscht.
-                </p>
-              )
-            ) : null}
-          </li>
+            eintrag={e}
+            zugang={zugang}
+            nachricht={nachricht}
+            onVideo={(a) => setAnsicht(a)}
+          />
         ))}
       </ol>
 
       <AnhaengeAbschnitt
         zugang={zugang}
         nachricht={nachricht}
-        daten={daten.data}
+        daten={daten}
         offen={offen}
         ansicht={ansicht}
         setAnsicht={setAnsicht}
@@ -525,16 +623,16 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
           {nachricht.closed_by_side === 'practice'
             ? 'Die Praxis hat diese Nachricht als erledigt markiert.'
             : 'Diese Nachricht ist erledigt.'}{' '}
-          Eine neue Frage stellen Sie über „Neue Nachricht“.
+          Eine neue Frage stellen Sie über „Nachricht schreiben“.
         </p>
       ) : null}
 
       {offen ? (
         <form onSubmit={absenden} noValidate className="mt-8 flex flex-col gap-4">
-          <Notfallkarte werktage={daten.data.response_workdays} />
+          <Notfallkarte werktage={daten.response_workdays} />
           <TextArea
             label="Noch etwas ergänzen"
-            hint={`${text.trim().length} von ${NACHRICHT_MAX} Zeichen`}
+            hint={zaehler(text)}
             rows={4}
             value={text}
             onChange={(ev) => setText(ev.target.value)}
@@ -544,9 +642,10 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
             <Button type="submit" disabled={nachtragen.isPending}>
               {nachtragen.isPending ? 'Wird gesendet …' : 'Senden'}
             </Button>
+            {/* Leise: Die Person schließt selbst, aber es ist nicht die Hauptsache der Seite. */}
             <Button
               type="button"
-              variant="secondary"
+              variant="quiet"
               disabled={erledigen.isPending}
               onClick={() => erledigen.mutate()}
             >
@@ -559,10 +658,55 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
   );
 }
 
+function Eintrag({
+  eintrag: e,
+  zugang,
+  nachricht,
+  onVideo,
+}: {
+  eintrag: NachrichtEintrag;
+  zugang: Plattformzugang;
+  nachricht: Nachricht;
+  onVideo: (ansicht: Ansicht) => void;
+}) {
+  const praxis = e.side === 'practice';
+  return (
+    <li
+      className={`rounded-card max-w-[85%] border p-4 max-[23rem]:max-w-full ${
+        praxis ? 'border-accent bg-accent-soft self-start' : 'border-line bg-surface self-end'
+      }`}
+    >
+      <p className="text-ink-muted text-sm">
+        <span className="text-ink font-semibold">{verfasser(e, zugang)}</span> ·{' '}
+        {datum(e.created_at)}, {uhrzeit(e.created_at)}
+      </p>
+      <p className="text-ink mt-1 text-base leading-relaxed whitespace-pre-line">{e.body}</p>
+      {e.attachment_mark_seconds != null ? (
+        e.attachment_id && (nachricht.attachments ?? []).some((a) => a.id === e.attachment_id) ? (
+          <Button
+            type="button"
+            variant="secondary"
+            className="mt-2"
+            onClick={() => onVideo({ anhangId: e.attachment_id!, ab: e.attachment_mark_seconds! })}
+          >
+            Im Video bei {zeitmarke(e.attachment_mark_seconds)} ansehen
+          </Button>
+        ) : (
+          <p className="text-ink-muted mt-2 text-sm">
+            Bezieht sich auf Ihr Video bei {zeitmarke(e.attachment_mark_seconds)}. Das Video ist
+            inzwischen gelöscht.
+          </p>
+        )
+      ) : null}
+    </li>
+  );
+}
+
+// Die Praxis antwortet ohne Namen der Person, die schreibt (ADR-023): „Ihre Praxis“ statt „Praxis“.
 function verfasser(eintrag: NachrichtEintrag, zugang: Plattformzugang): string {
   switch (eintrag.author) {
     case 'practice':
-      return 'Praxis';
+      return 'Ihre Praxis';
     case 'you':
       return 'Sie';
     case 'person':

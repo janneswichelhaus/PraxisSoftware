@@ -1,18 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import type * as PlattformApi from './api';
 import type { EigenePlaene, Nachricht, Nachrichten as Daten, Plattformzugang } from './api';
 import { renderWithProviders } from '@/test-utils';
+import { RECHNER_ABFRAGE } from './geruestbreite';
 
 /**
- * Reiter „Nachrichten" (KOM-001, DSN-001 4.1, IDEA-KOM-001, -002).
- *
- *   * Zusage und Notfallhinweis stehen an jedem Eingabefeld, für alle gleich.
- *   * Neue Nachricht in zwei Schritten; ohne Thema und Text kein Senden.
- *   * Im Training ohne Einwilligung nur Termin, Rechnung und Sonstiges.
- *   * In der Lesefrist nur lesen.
+ * Reiter „Nachrichten“: Notfallhinweis genau einmal über jedem Eingabefeld, auf der Liste nur die
+ * Frist; Schreiben auf einer Seite; im Training ohne Einwilligung zwei Themen; Lesefrist nur lesen.
  */
 
 const ladeNachrichten = vi.fn<(id: string) => Promise<Daten>>();
@@ -124,7 +121,10 @@ function daten(teil: Partial<Daten> = {}): Daten {
   };
 }
 
+// Die Frist von OFFEN (13.10.) liegt noch vor uns; nur `Date`, damit userEvent weiterläuft.
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-10-10T09:00:00'));
   vi.clearAllMocks();
   ladeNachrichten.mockResolvedValue(daten());
   ladePlaene.mockResolvedValue({
@@ -175,6 +175,10 @@ beforeEach(() => {
   nachrichtErledigen.mockResolvedValue(undefined);
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 function hinweisPruefen(container: HTMLElement) {
   const hinweis = within(container).getByRole('note', {
     name: 'Hinweis zu Antwortzeit und Notfällen',
@@ -195,24 +199,35 @@ function hinweisPruefen(container: HTMLElement) {
 }
 
 describe('Nachrichten (KOM-001)', () => {
-  it('zeigt Zusage und Notfallhinweis, laufende und erledigte Nachrichten', async () => {
+  it('zeigt die Frist ohne Notfallkarte, laufende und erledigte Nachrichten', async () => {
     renderWithProviders(<Nachrichten zugang={ZUGANG} />, '/p/nachrichten');
     expect(await screen.findByRole('heading', { name: 'Nachrichten' })).toBeInTheDocument();
-    // Der Titel steht schon beim Laden; Hinweis und Knopf kommen mit den Daten.
-    expect(await screen.findByRole('link', { name: 'Neue Nachricht' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Nachricht schreiben' })).toHaveAttribute(
       'href',
       '/p/nachrichten/neu',
     );
-    hinweisPruefen(document.body);
-    expect(screen.getByText('wartet auf Antwort')).toBeInTheDocument();
+    // Die Notfallkarte steht nur über einem Eingabefeld; hier die Frist als Zeile.
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Antwort in der Regel innerhalb von zwei Werktagen.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Wartet auf Antwort')).toBeInTheDocument();
     expect(screen.getByText(/^Antwort bis 13\.10\.2026\./)).toBeInTheDocument();
     expect(screen.getByText('Übung · Kniebeuge am Geländer')).toBeInTheDocument();
-    expect(screen.getByText('beantwortet')).toBeInTheDocument();
-    // Jeder Zustand mit Zeichen und Wort (Regel 5, ANN-485).
-    expect(screen.getByText('beantwortet')).toHaveTextContent('↩ beantwortet');
-    expect(screen.getByText('wartet auf Antwort')).toHaveTextContent('… wartet auf Antwort');
-    // Erledigtes steht auf Abruf, mit der Zahl im Kopf (DESIGN.md, Regel 6).
-    expect(screen.getByText('Erledigt').closest('summary')).toHaveTextContent('Erledigt (1)');
+    // Jeder Zustand mit Zeichen und Wort: das Zeichen als Bild vor dem Wort.
+    for (const wort of ['Wartet auf Antwort', 'Beantwortet']) {
+      expect(screen.getByText(wort).querySelector('svg')).not.toBeNull();
+    }
+    const kopf = screen.getAllByText('Erledigt').find((e) => e.closest('summary'));
+    expect(kopf!.closest('summary')).toHaveTextContent('Erledigt (1)');
+  });
+
+  it('eine verstrichene Frist ist ein eigener Zustand', async () => {
+    vi.setSystemTime(new Date('2026-10-14T09:00:00'));
+    renderWithProviders(<Nachrichten zugang={ZUGANG} />, '/p/nachrichten');
+    expect(await screen.findByText('Antwort verspätet')).toHaveTextContent('! Antwort verspätet');
+    expect(screen.getByText(/^Zugesagt bis 13\.10\.2026\./)).toBeInTheDocument();
+    expect(screen.queryByText('Wartet auf Antwort')).not.toBeInTheDocument();
   });
 
   it('die Frist kommt aus den Praxisstammdaten (ANN-309)', async () => {
@@ -227,7 +242,7 @@ describe('Nachrichten (KOM-001)', () => {
     ladeNachrichten.mockResolvedValue(daten({ can_write: false }));
     renderWithProviders(<Nachrichten zugang={ZUGANG} />, '/p/nachrichten');
     expect(await screen.findByText(/hier noch lesen/)).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Neue Nachricht' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Nachricht schreiben' })).not.toBeInTheDocument();
   });
 });
 
@@ -235,18 +250,28 @@ describe('Neue Nachricht (KOM-001)', () => {
   it('verlangt Thema und Text; der Hinweis steht über dem Feld', async () => {
     const nutzer = userEvent.setup();
     renderWithProviders(<NeueNachricht zugang={ZUGANG} />, '/p/nachrichten/neu');
-    await screen.findByRole('heading', { name: 'Neue Nachricht' });
+    await screen.findByRole('heading', { name: 'Nachricht schreiben' });
+    await screen.findByRole('note');
     hinweisPruefen(document.body);
+    expect(screen.getAllByRole('note')).toHaveLength(1);
     for (const name of ['Übung', 'Beschwerden', 'Termin oder Rechnung', 'Sonstiges']) {
-      expect(screen.getByRole('radio', { name })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name, pressed: false })).toBeInTheDocument();
     }
     await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Bitte wählen Sie, worum es geht.');
-    await nutzer.click(screen.getByRole('radio', { name: 'Sonstiges' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Sonstiges' }));
     await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Bitte schreiben Sie Ihre Frage.');
     expect(nachrichtStellen).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Abbrechen' })).toBeInTheDocument();
+  });
+
+  it('zeigt den Zähler erst nahe der Grenze', async () => {
+    renderWithProviders(<NeueNachricht zugang={ZUGANG} />, '/p/nachrichten/neu');
+    const feld = await screen.findByLabelText('Ihre Frage');
+    expect(feld).not.toHaveAttribute('aria-describedby');
+    fireEvent.change(feld, { target: { value: 'x'.repeat(1800) } });
+    expect(screen.getByText('1800 von 2000 Zeichen')).toBeInTheDocument();
   });
 
   it('sendet Thema, Text und den Bezug auf eine Übung', async () => {
@@ -258,7 +283,7 @@ describe('Neue Nachricht (KOM-001)', () => {
       </Routes>,
       '/p/nachrichten/neu',
     );
-    await nutzer.click(await screen.findByRole('radio', { name: 'Übung' }));
+    await nutzer.click(await screen.findByRole('button', { name: 'Übung' }));
     await nutzer.selectOptions(
       screen.getByLabelText('Zu welchem Plan? (freiwillig)'),
       'Heimprogramm Knie',
@@ -267,7 +292,7 @@ describe('Neue Nachricht (KOM-001)', () => {
       screen.getByLabelText('Zu welcher Übung? (freiwillig)'),
       'Kniebeuge am Geländer',
     );
-    await nutzer.type(screen.getByLabelText('Text'), 'Wie tief soll ich gehen?');
+    await nutzer.type(screen.getByLabelText('Ihre Frage'), 'Wie tief soll ich gehen?');
     await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     await waitFor(() =>
       expect(nachrichtStellen).toHaveBeenCalledWith({
@@ -284,9 +309,9 @@ describe('Neue Nachricht (KOM-001)', () => {
   it('ohne Bezug bei anderen Themen', async () => {
     const nutzer = userEvent.setup();
     renderWithProviders(<NeueNachricht zugang={ZUGANG} />, '/p/nachrichten/neu');
-    await nutzer.click(await screen.findByRole('radio', { name: 'Termin oder Rechnung' }));
+    await nutzer.click(await screen.findByRole('button', { name: 'Termin oder Rechnung' }));
     expect(screen.queryByLabelText('Zu welchem Plan? (freiwillig)')).not.toBeInTheDocument();
-    await nutzer.type(screen.getByLabelText('Text'), 'Rechnung doppelt?');
+    await nutzer.type(screen.getByLabelText('Ihre Frage'), 'Rechnung doppelt?');
     await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     await waitFor(() =>
       expect(nachrichtStellen).toHaveBeenCalledWith(
@@ -301,10 +326,10 @@ describe('Neue Nachricht (KOM-001)', () => {
       <NeueNachricht zugang={{ ...ZUGANG, relationship_kind: 'training' }} />,
       '/p/nachrichten/neu',
     );
-    expect(await screen.findByRole('radio', { name: 'Sonstiges' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Termin oder Rechnung' })).toBeInTheDocument();
-    expect(screen.queryByRole('radio', { name: 'Übung' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('radio', { name: 'Beschwerden' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Sonstiges' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Termin oder Rechnung' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Übung' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Beschwerden' })).not.toBeInTheDocument();
     expect(screen.getByText(/Angaben zu Ihrer Gesundheit/)).toBeInTheDocument();
   });
 
@@ -312,8 +337,8 @@ describe('Neue Nachricht (KOM-001)', () => {
     const nutzer = userEvent.setup();
     nachrichtStellen.mockRejectedValue(new Error('Ihr Zugang erlaubt das gerade nicht.'));
     renderWithProviders(<NeueNachricht zugang={ZUGANG} />, '/p/nachrichten/neu');
-    await nutzer.click(await screen.findByRole('radio', { name: 'Sonstiges' }));
-    await nutzer.type(screen.getByLabelText('Text'), 'Frage');
+    await nutzer.click(await screen.findByRole('button', { name: 'Sonstiges' }));
+    await nutzer.type(screen.getByLabelText('Ihre Frage'), 'Frage');
     await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Ihr Zugang erlaubt das gerade nicht.',
@@ -331,12 +356,18 @@ describe('Eine Nachricht (KOM-001)', () => {
     );
   }
 
-  it('zeigt den Verlauf mit Verfasser; die Praxis ohne Namen', async () => {
+  it('zeigt den Verlauf mit Verfasser; die Praxis ohne Namen der Person', async () => {
     zeige(BEANTWORTET.id);
     const verlauf = await screen.findByRole('list', { name: 'Verlauf' });
     const eintraege = within(verlauf).getAllByRole('listitem');
     expect(eintraege[0]).toHaveTextContent('Sie');
-    expect(eintraege[1]).toHaveTextContent('Praxis');
+    expect(eintraege[0]!.className).toContain('self-end');
+    expect(eintraege[1]).toHaveTextContent('Ihre Praxis');
+    expect(eintraege[1]!.className).toContain('self-start');
+    // Der Kopf nennt die Praxis; ohne Bild ihre Initialen.
+    expect(screen.getByText('Ihre Frage an').parentElement).toHaveTextContent(
+      'Ihre Frage an Test Praxis Tuebingen',
+    );
     expect(eintraege[1]).toHaveTextContent('Nur so tief, wie es ohne Schmerz geht.');
     expect(eintraege[2]).toHaveTextContent('Paula Mustermann für Sie');
     expect(screen.getByText('Zu: Kniebeuge am Geländer')).toBeInTheDocument();
@@ -348,8 +379,9 @@ describe('Eine Nachricht (KOM-001)', () => {
     await screen.findByLabelText('Noch etwas ergänzen');
     hinweisPruefen(document.body);
     // Zustand und Frist als eine Zeile unter dem Titel, nicht als Abzeichen (L9).
-    const zustand = screen.getByText('wartet auf Antwort').parentElement!;
-    expect(zustand).toHaveTextContent('… wartet auf Antwort · Antwort bis 13.10.2026');
+    expect(screen.getAllByRole('note')).toHaveLength(1);
+    const zustand = screen.getByText('Wartet auf Antwort').parentElement!;
+    expect(zustand).toHaveTextContent('Wartet auf Antwort · Antwort bis 13.10.2026');
     expect(zustand.className).not.toContain('rounded-pill');
     await nutzer.type(screen.getByLabelText('Noch etwas ergänzen'), 'Oder Montag?');
     await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
@@ -378,6 +410,36 @@ describe('Eine Nachricht (KOM-001)', () => {
     });
     const verlauf = await screen.findByRole('list', { name: 'Verlauf' });
     expect(within(verlauf).getAllByRole('listitem')[2]).toHaveTextContent('Paula Mustermann');
+  });
+});
+
+describe('Gespräch am Rechner (ANN-852)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', (abfrage: string) => ({
+      matches: abfrage === RECHNER_ABFRAGE,
+      media: abfrage,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('zeigt die Liste neben dem Gespräch, das offene markiert', async () => {
+    renderWithProviders(
+      <Routes>
+        <Route path="/p/nachrichten/:nachrichtId" element={<NachrichtDetail zugang={ZUGANG} />} />
+      </Routes>,
+      `/p/nachrichten/${OFFEN.id}`,
+    );
+    const liste = await screen.findByRole('navigation', { name: 'Ihre Nachrichten' });
+    const offen = within(liste)
+      .getAllByRole('link')
+      .find((l) => l.getAttribute('aria-current') === 'page');
+    expect(offen).toHaveAttribute('href', `/p/nachrichten/${OFFEN.id}`);
+    expect(screen.getByRole('list', { name: 'Verlauf' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Zu den Nachrichten' })).not.toBeInTheDocument();
   });
 });
 

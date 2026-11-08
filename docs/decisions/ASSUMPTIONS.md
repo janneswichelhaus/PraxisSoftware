@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-07.
+Zuletzt aktualisiert: 2026-11-08.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1517,4 +1517,8 @@ Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
 | ANN-832 | Angebotskennzahlen: Pakete und Abos mindestens, ohne Anschluss höchstens; Folgepakete in Offene Punkte | Praxisprozess · entschieden (Jannes) | `ANGEBOTSKENNZAHLEN` in `src/features/billing/statistics/kennzahlen.ts` |
 | ANN-834 | Pakete ohne Anschluss als Gruppe in Offene Punkte, „Noch in Behandlung“ an der Zeile, Sprung zu Gruppe und Paket | Praxisprozess · entschieden (Jannes) | `public.list_ending_training_packages` |
 | ANN-848 | Sitzungsvorbereitung: seit der letzten Behandlung, zu tun nur Fristen | Praxisprozess · offen | `public.get_session_preparation` |
-| ANN-849 | Ziele ab 44 px außer Kacheln im Zeitraster (Höhe = Dauer) und den Wochenpfeilen (32 px, damit die Tage 44 haben) | Technik · offen | `kleineZiele` in `scripts/bildstrecke/barrierefreiheit.mjs` |
+| ANN-849 | Ziele ab 44 px außer Kacheln im Zeitraster (Höhe = Dauer) und den Wochenpfeilen (32 px, damit die Tage 44 haben) | Technik · entschieden (Jannes) | `kleineZiele` in `scripts/bildstrecke/barrierefreiheit.mjs` |
+| ANN-850 | Verstrichene Frist: Zustand „Antwort verspätet“ mit „Zugesagt bis …“; Wortlaut klärt die Praxis | Praxisprozess · offen | `FRIST_VORBEI` in `src/features/portal/platform/nachrichtentexte.ts` |
+| ANN-851 | „Nachricht schreiben“ auf einer Seite: Themen als Zeilen mit Zeichen, Notfallkarte einmal über dem Feld | Technik · offen | `NeueNachricht` in `src/features/portal/platform/Nachrichten.tsx` |
+| ANN-852 | Ein Gespräch am Rechner mit der Liste links (schmale Zeilen), die Liste allein bleibt einspaltig | Technik · offen | `gespraech` in `src/features/portal/platform/PlattformApp.tsx` |
+| ANN-853 | Reiter „Nachrichten“: Punkt ohne Zahl, solange eine Nachricht „beantwortet“ ist, gesprochen „neue Antwort“; nie aus Gelesenem | Technik · offen | `antwort` in `src/features/portal/platform/Navigation.tsx` |

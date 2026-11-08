@@ -35,12 +35,15 @@ async function axeVerstoesse(page: Page): Promise<string[]> {
 
 test.describe('Nachrichten auf der Plattform und Rückfragen in der Praxis', () => {
   for (const breite of [375, 1280]) {
-    test(`Reiter Nachrichten mit Hinweis bei ${breite} px`, async ({ page }) => {
+    test(`Reiter Nachrichten mit Frist, ohne Notfallkarte bei ${breite} px`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?seite=liste`);
       await expect(page.getByRole('heading', { level: 1, name: 'Nachrichten' })).toBeVisible();
-      const hinweis = page.getByRole('note', { name: 'Hinweis zu Antwortzeit und Notfällen' });
-      await expect(hinweis).toContainText('116117');
+      await expect(
+        page.getByText('Antwort in der Regel innerhalb von zwei Werktagen.'),
+      ).toBeVisible();
+      await expect(page.getByRole('note')).toHaveCount(0);
+      await expect(page.getByRole('link', { name: 'Nachricht schreiben' })).toBeVisible();
       await expect(page.getByRole('link', { name: 'Nachrichten' }).last()).toHaveAttribute(
         'aria-current',
         'page',
@@ -54,10 +57,11 @@ test.describe('Nachrichten auf der Plattform und Rückfragen in der Praxis', () 
     }) => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?seite=neu`);
-      const thema = page.getByText('Beschwerden', { exact: true });
-      expect((await thema.locator('xpath=..').boundingBox())!.height).toBeGreaterThanOrEqual(48);
+      const thema = page.getByRole('button', { name: 'Beschwerden' });
+      expect((await thema.boundingBox())!.height).toBeGreaterThanOrEqual(48);
       const hinweis = page.getByRole('note', { name: 'Hinweis zu Antwortzeit und Notfällen' });
-      const feld = page.getByLabel('Text');
+      await expect(hinweis).toHaveCount(1);
+      const feld = page.getByLabel('Ihre Frage');
       expect((await hinweis.boundingBox())!.y).toBeLessThan((await feld.boundingBox())!.y);
       expect(
         (await page.getByRole('button', { name: 'Senden', exact: true }).boundingBox())!.height,
@@ -69,8 +73,13 @@ test.describe('Nachrichten auf der Plattform und Rückfragen in der Praxis', () 
     test(`Verlauf mit langer Frage und Antwort bei ${breite} px`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?seite=verlauf`);
-      await expect(page.getByRole('list', { name: 'Verlauf' })).toContainText('Praxis');
+      await expect(page.getByRole('list', { name: 'Verlauf' })).toContainText('Ihre Praxis');
       await expect(page.getByLabel('Noch etwas ergänzen')).toBeVisible();
+      await expect(page.getByRole('note')).toHaveCount(1);
+      // Am Rechner steht die Liste neben dem Gespräch, am Telefon der Rückweg.
+      await expect(page.getByRole('navigation', { name: 'Ihre Nachrichten' })).toHaveCount(
+        breite === 1280 ? 1 : 0,
+      );
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);
     });

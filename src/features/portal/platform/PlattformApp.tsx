@@ -148,10 +148,16 @@ function Geruest({
   // Übersicht, Übungen (ANN-724) und Termine (ANN-775) nutzen am Rechner die ganze Breite in zwei
   // Spalten; ohne lesbaren Zugang steht dort die Tür in der Spalte.
   const { pathname } = useLocation();
+  // Ein Gespräch am Rechner mit der Liste daneben (ANN-852).
+  const gespraech =
+    matchPath(`${PLATTFORM_PFAD}/nachrichten/:nachrichtId`, pathname) !== null &&
+    pathname !== `${PLATTFORM_PFAD}/nachrichten/neu`;
   const breit =
-    [PLATTFORM_PFAD, `${PLATTFORM_PFAD}/uebungen`, `${PLATTFORM_PFAD}/termine`].includes(
+    ([PLATTFORM_PFAD, `${PLATTFORM_PFAD}/uebungen`, `${PLATTFORM_PFAD}/termine`].includes(
       pathname,
-    ) && lesbar.length > 0;
+    ) ||
+      gespraech) &&
+    lesbar.length > 0;
   // Die Durchführung steht im Vollbild (Handoff 2026-10-24, Abschnitt 4):
   // ohne Kopf, Verbindungszeile und Reiterleiste des Gerüsts - ihr eigener
   // Kopf mit „Später weiter“ ist der Weg hinaus, ihr Fuß trägt den Hauptknopf

@@ -413,7 +413,14 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
       const navigation = page.getByRole('navigation', { name: 'Plattform' });
       await expect(navigation).toBeVisible();
       const ziele = navigation.getByRole('link');
-      await expect(ziele).toHaveText(['Übersicht', 'Termine', 'Übungen', 'Nachrichten', 'Ich']);
+      // Die Prüfseite hat eine Antwort der Praxis: das Wort zum Punkt am Reiter (ANN-853).
+      await expect(ziele).toHaveText([
+        'Übersicht',
+        'Termine',
+        'Übungen',
+        'Nachrichten, neue Antwort',
+        'Ich',
+      ]);
       for (const ziel of await ziele.all()) {
         expect((await ziel.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(55.5);
       }
@@ -456,7 +463,12 @@ test.describe('Gerüst: Reiterleiste in drei Stufen und Rechneransicht', () => {
     await expect(leiste(page)).toHaveCount(0);
     const navigation = page.locator('header').getByRole('navigation', { name: 'Plattform' });
     const ziele = navigation.getByRole('link');
-    await expect(ziele).toHaveText(['Übersicht', 'Termine', 'Übungen', 'Nachrichten']);
+    await expect(ziele).toHaveText([
+      'Übersicht',
+      'Termine',
+      'Übungen',
+      'Nachrichten, neue Antwort',
+    ]);
     await expect(navigation.getByRole('link', { name: 'Übersicht' })).toHaveAttribute(
       'aria-current',
       'page',

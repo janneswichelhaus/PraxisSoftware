@@ -24,7 +24,7 @@ M5, M7 und M9 sind zurückgebaut, das Barometer nur namentlich (Option A, §20.2
 M2 Check-Up, M3 Teamchat (ohne Ausbau), M4 Barometer, M6 Ernährung und M8 Üben ohne Netz.
 
 ## Design-Review der Plattform, Lauf 1
-Schritte 0 bis 4 sind gebaut (DRP-EPIC-001 bis -016), 2 bis 4 gesichtet. Je Schritt ein Handoff (sein Merge gibt frei),
+Schritte 0 bis 5 sind gebaut (DRP-EPIC-001 bis -017), 2 bis 4 gesichtet. Je Schritt ein Handoff (sein Merge gibt frei),
 je Teilschritt eine PR, geprüft mit `pnpm bildstrecke --nur=plattform,anmeldung`,
 `plattform-barrierefreiheit.spec.ts` und der Ratsche in `src/designsystem.test.ts`. Befunde DR-101
 bis DR-162 und Ideen N3 bis N9: `git show 9452575:docs/design/review-2026-10/lauf-1-bericht.md`;
@@ -33,7 +33,7 @@ Reihenfolge und Abgleich mit Lauf 2 (Praxis-App): `lauf-1-umsetzung.md`, Briefin
 
 | Schritt | Inhalt | Vorgabe | Stand |
 | --- | --- | --- | --- |
-| 5 Nachrichten | DR-137 bis DR-139; Wortlaut des Notfallhinweises bleibt | Briefing `05-nachrichten.md` | Leinwand bei Jannes |
+| 5 Nachrichten | DR-137 bis DR-139; Wortlaut des Notfallhinweises bleibt | Briefing `05-nachrichten.md` | gebaut ohne Leinwand (§15.2), ANN-850 bis ANN-853; Sichtung |
 | 6 Unterlagen und Verträge | DR-147 bis DR-149, DR-162; Vertragsabschluss als geführter Ablauf, Widerrufsbelehrung unverändert | Briefing `06-unterlagen-vertraege.md` | Leinwand bei Jannes |
 | 7 Ich und Datenschutz | DR-151, DR-152; Einwilligungen ohne Drängen | Briefing `07-ich-datenschutz.md` | Leinwand bei Jannes |
 

@@ -1,11 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useLocation } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
-import type { Plattformzugang } from './api';
+import type * as PlattformApi from './api';
+import type { Nachrichten, Plattformzugang } from './api';
 import { reiterstufe } from './geruestbreite';
-import { Kopf, Reiterleiste } from './Navigation';
+
+const ladeNachrichten = vi.fn<(id: string) => Promise<Pick<Nachrichten, 'messages'>>>();
+vi.mock('./api', async (importOriginal) => ({
+  ...(await importOriginal<typeof PlattformApi>()),
+  ladeNachrichten: (id: string) => ladeNachrichten(id),
+}));
+
+const { Kopf, Reiterleiste } = await import('./Navigation');
+
+beforeEach(() => {
+  ladeNachrichten.mockReset();
+  ladeNachrichten.mockResolvedValue({ messages: [] });
+});
 
 /**
  * Kopf und Reiterleiste der Plattform (Handoff 2026-10-22, Abschnitt 3;
@@ -256,5 +269,42 @@ describe('Kopf der Plattform (Handoff Abschnitt 3)', () => {
     // Ohne Namen (N1) das Zeichen, keine Initialen (DR-119); es ist nur Schmuck.
     expect(ich.querySelector('svg')?.closest('[aria-hidden="true"]')).not.toBeNull();
     expect(ich).toHaveTextContent(/^Ich$/);
+  });
+});
+
+describe('Zeichen am Reiter „Nachrichten“ (ANN-853)', () => {
+  function antwort(status: 'open' | 'answered'): Pick<Nachrichten, 'messages'> {
+    return {
+      messages: [
+        {
+          id: 'dddddddd-dddd-4ddd-8ddd-000000000001',
+          topic: 'other',
+          reference_label: null,
+          status,
+          due_on: null,
+          created_at: '2026-10-09T08:00:00Z',
+          last_entry_at: '2026-10-09T08:00:00Z',
+          closed_at: null,
+          closed_by_side: null,
+          entries: [],
+        },
+      ],
+    };
+  }
+
+  it('trägt bei einer Antwort der Praxis einen Punkt und das Wort für Vorlesesoftware', async () => {
+    ladeNachrichten.mockResolvedValue(antwort('answered'));
+    renderWithProviders(<Reiterleiste bereiche={[BEHANDLUNG]} />, '/p');
+    expect(
+      await screen.findByRole('link', { name: 'Nachrichten, neue Antwort' }),
+    ).toBeInTheDocument();
+    expect(ladeNachrichten).toHaveBeenCalledWith(BEHANDLUNG.access_id);
+  });
+
+  it('bleibt ohne Antwort ruhig, ohne Zahl', async () => {
+    ladeNachrichten.mockResolvedValue(antwort('open'));
+    renderWithProviders(<Reiterleiste bereiche={[BEHANDLUNG]} />, '/p');
+    await waitFor(() => expect(ladeNachrichten).toHaveBeenCalled());
+    expect(screen.getByRole('link', { name: 'Nachrichten' })).toBeInTheDocument();
   });
 });
