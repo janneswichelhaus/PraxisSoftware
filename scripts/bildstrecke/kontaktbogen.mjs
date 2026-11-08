@@ -119,8 +119,8 @@ function bildFigur(bild, quelle, breite) {
     : `<div class="rahmen">kein Bild</div>`;
   const angefragt = new URL(bild.pfad ?? '/', 'http://bildstrecke.invalid').pathname;
   const unterschrift = `${breite} px${bild.hoehe ? ` · ${bild.hoehe} px hoch` : ''}${
-    bild.ziel && bild.ziel !== angefragt ? ` · landet auf ${maskieren(bild.ziel)}` : ''
-  }`;
+    typeof bild.woerter === 'number' ? ` · ${bild.woerter} Wörter` : ''
+  }${bild.ziel && bild.ziel !== angefragt ? ` · landet auf ${maskieren(bild.ziel)}` : ''}`;
   return `<figure class="b${breite}${bild.datei ? '' : ' leer'}">${inhalt}<figcaption>${unterschrift}</figcaption>${befundListe(
     bild.befunde,
   )}${befundListe(bild.hinweise, 'hinweis')}</figure>`;
@@ -183,6 +183,7 @@ export function kontaktbogenHtml(ergebnis) {
   const z = ergebnis.zusammenfassung ?? {};
   const meta = [
     `${ergebnis.bilder.length} Bilder`,
+    `${woerterSumme(ergebnis.bilder)} Wörter`,
     `${z.mitBefund ?? befundZahl(ergebnis.bilder)} mit Befund`,
     ergebnis.commit ? `Stand ${maskieren(ergebnis.commit)}` : '',
     ergebnis.erstellt ? maskieren(new Date(ergebnis.erstellt).toLocaleString('de-DE')) : '',
@@ -190,6 +191,11 @@ export function kontaktbogenHtml(ergebnis) {
     .filter(Boolean)
     .join(' · ');
   return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Bildstrecke</title><style>${STIL}</style></head><body><header class="kopf"><h1>Bildstrecke</h1><span class="meta">${meta}</span><label class="filter"><input type="checkbox" id="nur-befunde"> nur Seiten mit Befund</label><nav class="bereiche">${navigation}</nav></header><main>${abschnitte}</main><script>${FILTER_SKRIPT}</script></body></html>`;
+}
+
+/** Sichtbare Wörter der Bilder zusammen (Leitfaden L7); ältere Läufe ohne Zählung zählen 0. */
+export function woerterSumme(bilder) {
+  return bilder.reduce((summe, bild) => summe + (bild?.woerter ?? 0), 0);
 }
 
 function befundVergleich(vorher, nachher) {
@@ -266,14 +272,20 @@ export function vergleichHtml(vorher, nachher, vorherOrdner) {
           )}</span></div><div class="bilder">${paare}</div></section>`;
         })
         .join('');
-      return `<h2 id="${kurzname(g.bereich)}">${maskieren(g.bereich)}</h2>${zeilen}`;
+      const paarweise = g.zeilen.flatMap((z) => z.bilder).filter((b) => neu.has(schluessel(b)));
+      const woerter = `${woerterSumme(paarweise.map((b) => alt.get(schluessel(b))))} → ${woerterSumme(paarweise)} Wörter`;
+      return `<h2 id="${kurzname(g.bereich)}">${maskieren(g.bereich)} <small>${woerter}</small></h2>${zeilen}`;
     })
     .join('');
   const navigation = gruppen
     .map((g) => `<a href="#${kurzname(g.bereich)}">${maskieren(g.bereich)}</a>`)
     .join('');
+  // Nur Paare zählen: Ein Teillauf oder eine neue Seite verzerrt sonst die Summe.
+  const gepaart = nachher.bilder.filter((b) => alt.has(schluessel(b)));
   const meta = `vorher ${maskieren(vorher.commit ?? '?')} · nachher ${maskieren(
     nachher.commit ?? '?',
-  )} · ${neueBefunde} neue Befunde · ${behobeneBefunde} behoben`;
+  )} · ${neueBefunde} neue Befunde · ${behobeneBefunde} behoben · Wörter ${woerterSumme(
+    gepaart.map((b) => alt.get(schluessel(b))),
+  )} → ${woerterSumme(gepaart)}`;
   return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Bildstrecke – vorher und nachher</title><style>${STIL}</style></head><body><header class="kopf"><h1>Vorher und nachher</h1><span class="meta">${meta}</span><label class="filter"><input type="checkbox" id="nur-befunde"> nur Seiten mit Befund</label><nav class="bereiche">${navigation}</nav></header><main>${abschnitte}</main><script>${FILTER_SKRIPT}</script></body></html>`;
 }

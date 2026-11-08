@@ -305,6 +305,25 @@ describe('Kontaktbogen', () => {
     expect(html).toContain('class="behoben"');
   });
 
+  it('zählt sichtbare Wörter je Bild und im Vergleich nur über Paare (Leitfaden L7)', () => {
+    const vorher = {
+      bilder: [
+        bild({ woerter: 120 }),
+        bild({ muster: '/', pfad: '/', bereich: 'Übersicht und Rahmen', woerter: 50 }),
+      ],
+    };
+    const nachher = {
+      breiten: [375],
+      bilder: [bild({ woerter: 80 })],
+      auswahl: { nur: ['abrechnung'], konten: [], breiten: [] },
+    };
+    expect(kontaktbogenHtml(nachher)).toContain('900 px hoch · 80 Wörter');
+    expect(kontaktbogenHtml(nachher)).toContain('80 Wörter ·');
+    expect(vergleichHtml(vorher, nachher, 'v')).toContain('Wörter 120 → 80');
+    expect(vergleichHtml(vorher, nachher, 'v')).toContain('<small>120 → 80 Wörter</small>');
+    expect(kontaktbogenHtml({ bilder: [bild({})] })).not.toContain('px hoch · ');
+  });
+
   it('ein Teillauf vergleicht nur, was er aufgenommen hat', () => {
     const anderes = bild({ muster: '/', pfad: '/', bereich: 'Übersicht und Rahmen', etikett: 'X' });
     const vorher = { bilder: [bild({}), { ...anderes, befunde: [{ art: 'leer', text: '0' }] }] };
