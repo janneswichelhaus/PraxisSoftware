@@ -17,7 +17,7 @@ const heute = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).fo
 
 type Zustand = 'laden' | 'fehler';
 
-/** Fenster ohne eigene Adresse: Seite, Auslöser und der Name des Fensters (synthetische Daten). */
+/** Fenster ohne eigene Adresse: Seite, Auslöser, Name des Fensters; nur Daten aus `seed.sql`. */
 const FENSTER: { pfad: string; ausloeser: string | RegExp; fenster: string | RegExp }[] = [
   {
     pfad: `/termine/${IDS.terminMax}`,
@@ -27,16 +27,6 @@ const FENSTER: { pfad: string; ausloeser: string | RegExp; fenster: string | Reg
   { pfad: `/betrieb/flotte/rad/${IDS.rad}`, ausloeser: 'Freigeben', fenster: /freigeben\?$/ },
   { pfad: `/patienten/${IDS.erika}/ernaehrung`, ausloeser: /Einträge/, fenster: /\d{2}\.\d{2}\./ },
   { pfad: '/uebungen/vorlagen', ausloeser: /Übungen ·/, fenster: /./ },
-  {
-    pfad: `/betrieb/flotte/nachrichten/${IDS.threadPanne}`,
-    ausloeser: 'Karte von Anna Beispiel',
-    fenster: 'Anna Beispiel',
-  },
-  {
-    pfad: `/betrieb/flotte/nachrichten/${IDS.threadPanne}`,
-    ausloeser: 'Handlungen zur Nachricht von Anna Beispiel',
-    fenster: 'Nachricht von Anna Beispiel',
-  },
 ];
 
 // Je Route ein Konto, das sie sieht - Zustände hängen am Baustein, nicht an der Rolle.

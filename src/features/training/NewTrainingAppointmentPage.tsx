@@ -160,7 +160,14 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
                   ))}
                 </Select>
               )}
-              {kunde ? (
+              {kunde && vereinbarungen.isError ? (
+                // Sonst sähe eine gescheiterte Abfrage aus wie „keine Vereinbarung“.
+                <ErrorState
+                  title="Die Vereinbarungen konnten nicht geladen werden."
+                  description={VERBINDUNG_PRUEFEN}
+                  onErneut={() => vereinbarungen.refetch()}
+                />
+              ) : kunde ? (
                 <Select
                   label="Vereinbarung"
                   feldId="trainingstermin-vereinbarung"
