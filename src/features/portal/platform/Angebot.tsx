@@ -474,7 +474,7 @@ function Angabe({
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-x-3">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3">
       <div className="min-w-0">
         <dt className="text-ink-muted">{titel}</dt>
         <dd className="text-ink">{children}</dd>
