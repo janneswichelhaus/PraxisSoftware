@@ -18,6 +18,7 @@ const NEU_AUFSETZEN = path.resolve(HERE, '..', 'testumgebung', 'neu-aufsetzen.ps
 const ENTWICKLUNGSKENNWORT = 'LokalerTestzugang!2026';
 const KENNWORT = 'Synthetisch-Testumgebung-7';
 const ANNA = '55555555-5555-4555-8555-000000000002';
+const PASSKEY = 'cafecafe-cafe-4afe-8afe-0000000000aa';
 
 /**
  * Ruft das Skript genau so auf wie der Workflow `test-umgebung.yml`: psql,
@@ -277,5 +278,94 @@ describe('Test-Umgebung neu aufsetzen (OPS-002a)', () => {
 
     const patient = await asUser<{ n: number }>(SEED.users.patientMax, anzahl);
     expect(patient.rows[0]!.n).toBe(0);
+  });
+
+  // Jannes 2026-11-08: Neu aufsetzen soll die Anmeldung nicht kosten (Jannes 2026-11-08).
+  it('lässt Passkeys und App-PIN der Konten stehen, auch über zwei Läufe', async () => {
+    const erika = '11111111-1111-4111-8111-000000000009';
+    await asPostgres(
+      `insert into auth.webauthn_credentials (id, user_id, credential_id, public_key, friendly_name)
+       values ($2, $1, '\\x0102'::bytea, '\\x0304'::bytea, 'Telefon')`,
+      [erika, PASSKEY],
+    );
+    // Ohne seine Freigabe öffnete der Passkey keine Sitzung mehr.
+    await asPostgres(
+      'insert into public.passkey_approvals (credential_id, user_id) values ($1, $2)',
+      [PASSKEY, erika],
+    );
+    await asPostgres(
+      `insert into public.account_pins (user_id, pin_hash, set_at)
+       values ($1, extensions.crypt('482916', extensions.gen_salt('bf')), now())`,
+      [erika],
+    );
+
+    const erster = neuAufsetzen(KENNWORT);
+    expect(erster.status, erster.stderr).toBe(0);
+    const zweiter = neuAufsetzen(KENNWORT);
+    expect(zweiter.status, zweiter.stderr).toBe(0);
+
+    const { rows: passkeys } = await asPostgres<{ friendly_name: string }>(
+      'select friendly_name from auth.webauthn_credentials where user_id = $1',
+      [erika],
+    );
+    expect(passkeys).toEqual([{ friendly_name: 'Telefon' }]);
+    const { rows: freigaben } = await asPostgres<{ credential_id: string }>(
+      'select credential_id from public.passkey_approvals where user_id = $1',
+      [erika],
+    );
+    expect(freigaben).toEqual([{ credential_id: PASSKEY }]);
+    const { rows: pins } = await asPostgres<{ passt: boolean }>(
+      `select pin_hash = extensions.crypt('482916', pin_hash) as passt
+         from public.account_pins where user_id = $1`,
+      [erika],
+    );
+    expect(pins).toEqual([{ passt: true }]);
+  });
+
+  it('verwirft die Anmeldung eines Kontos, das der Seed nicht mehr kennt', async () => {
+    const fremd = '11111111-1111-4111-8111-0000000000ff';
+    await asPostgres(
+      `insert into auth.users (instance_id, id, aud, role, email, raw_app_meta_data, raw_user_meta_data,
+         created_at, updated_at, confirmation_token, recovery_token, email_change_token_new,
+         email_change, email_change_token_current, phone_change, phone_change_token,
+         reauthentication_token)
+       values ('00000000-0000-0000-0000-000000000000', $1, 'authenticated', 'authenticated',
+         'alt.konto@patient.invalid', '{}', '{}', now(), now(), '', '', '', '', '', '', '', '')`,
+      [fremd],
+    );
+    await asPostgres(
+      `insert into auth.webauthn_credentials (user_id, credential_id, public_key)
+       values ($1, '\\x0506'::bytea, '\\x0708'::bytea)`,
+      [fremd],
+    );
+
+    const lauf = neuAufsetzen(KENNWORT);
+    expect(lauf.status, lauf.stderr).toBe(0);
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from auth.webauthn_credentials where user_id = $1',
+      [fremd],
+    );
+    expect(rows[0]?.n).toBe(0);
+  });
+
+  it('hängt nichts an ein Konto, dessen Adresse sich geändert hat', async () => {
+    const erika = '11111111-1111-4111-8111-000000000009';
+    await asPostgres(
+      `insert into public.account_pins (user_id, pin_hash, set_at)
+       values ($1, extensions.crypt('482916', extensions.gen_salt('bf')), now())`,
+      [erika],
+    );
+    // Dieselbe Kennung, eine andere Adresse: Der Seed legt das Konto unter der alten Adresse neu an.
+    await asPostgres(`update auth.users set email = 'erika.neu@patient.invalid' where id = $1`, [
+      erika,
+    ]);
+
+    const lauf = neuAufsetzen(KENNWORT);
+    expect(lauf.status, lauf.stderr).toBe(0);
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.account_pins where user_id = $1',
+      [erika],
+    );
+    expect(rows[0]?.n).toBe(0);
   });
 });

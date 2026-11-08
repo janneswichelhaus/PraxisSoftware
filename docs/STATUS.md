@@ -11,8 +11,8 @@ Merge bei Jannes.
 
 ## Danach
 
-Bis M2 im November (Jannes 2026-11-01): Leinwände der Plattform fließen nach (Feindesign);
-DATEV erst nach B4; zuletzt der Wartungsmodus (ohne Gates zu berühren). **G14
+Bis M2 (Jannes 2026-11-01): weniger Text überall (Jannes 8.11.), Leinwände fließen nach;
+DATEV erst nach B4; zuletzt der Wartungsmodus. **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
 zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
 
