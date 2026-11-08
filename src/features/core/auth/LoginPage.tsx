@@ -100,18 +100,8 @@ function KennwortTestzugang() {
 }
 
 /**
- * Anmeldung per Passkey (SEC-EPIC-002, ADR-025 Fassung 2, Punkte 9 und 10).
- *
- * Es gibt kein Kennwort und kein „Kennwort vergessen": Wer seinen Passkey
- * verloren hat, bekommt von der Praxis eine neue Einladung (Punkt 12). Ein
- * neues Gerät nutzt den Passkey des Telefons - der Browser bietet dafür im
- * Passkey-Fenster einen QR-Code an.
- *
- * Das Passkey-Fenster öffnet sich beim Aufruf von selbst (Jannes,
- * 2026-10-11); der Knopf bleibt für den zweiten Versuch und für Browser, die
- * eine Zeremonie ohne Fingertipp nicht beginnen. Ein Fehlschlag dieses
- * ungefragten Starts steht nicht als Fehler da - die Person hat nichts
- * ausgelöst, und der Knopf sagt, wie es weitergeht.
+ * Das Passkey-Fenster öffnet sich von selbst (Jannes 2026-10-11); der Knopf bleibt für den zweiten
+ * Versuch. Ein Fehlschlag des ungefragten Starts steht nicht als Fehler da: Niemand hat ihn ausgelöst.
  */
 export function LoginPage({
   testzugang = kennwortTestzugang(),
@@ -143,16 +133,9 @@ export function LoginPage({
   usePasskeyVonSelbst(() => mitPasskey(true), passkeyGeht);
 
   return (
-    // Die Anmeldemaske ist die Haustür — hier steht die Marke selbst, nicht
-    // ihr Name als Text (`Vollseite`, MARKE-001). Linksbündig wie jede Tür
-    // (Handoff 2026-10-22, Abschnitt 5.2; DR-107): Wer den Passkey verloren
-    // hat, liest den Weg in Tinte; die Hilfe am Rechner steht auf Abruf; wer
-    // die Seite nutzen darf, sagt das Kleingedruckte am Fuß.
-    <Vollseite
-      titel="Anmelden"
-      einleitung="Mit Ihrem Gesicht, Ihrem Finger oder der Displaysperre."
-      kleingedrucktes="Nur für Mitarbeitende und Patient:innen der Praxis, jede Person mit eigenem Zugang."
-    >
+    // Die Anmeldemaske ist die Haustür: die Marke, der Titel, der Knopf. Jeder erklärende Satz
+    // fiel weg (Jannes 2026-11-08); das Passkey-Fenster des Geräts sagt den Rest.
+    <Vollseite titel="Anmelden">
       <div className="flex flex-col gap-4">
         {/* Kein Grund, kein Name (BEF-047): Was eine Sperre oder ein
             anderes Gerät ausgelöst hat, steht nicht auf einer Seite, die
@@ -174,24 +157,13 @@ export function LoginPage({
         ) : (
           <Statusmeldung ton="warnung">{PASSKEY_SAETZE.nichtUnterstuetzt}</Statusmeldung>
         )}
-
-        {/* Allgemeiner als der Entwurf („… gibt Ihnen eine neue Einladung“):
-            Hier meldet sich auch das Team an. */}
-        <p className="text-ink text-base">
-          <strong className="font-semibold">Passkey verloren?</strong> Wenden Sie sich an die
-          Praxis.
-        </p>
       </div>
 
-      <div className="mt-6">
-        <Disclosure summary="Am Rechner anmelden">
-          <p className="text-ink text-base">
-            Klicken Sie am Rechner auf „Mit Passkey anmelden“ und wählen Sie Ihr Telefon. Der
-            Rechner zeigt einen Code; scannen Sie ihn mit der Kamera dieses Telefons.
-          </p>
-        </Disclosure>
-        {testzugang ? <KennwortTestzugang /> : null}
-      </div>
+      {testzugang ? (
+        <div className="mt-6">
+          <KennwortTestzugang />
+        </div>
+      ) : null}
     </Vollseite>
   );
 }

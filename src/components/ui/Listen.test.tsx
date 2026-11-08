@@ -319,3 +319,16 @@ describe('ListRow als Fokusbeginn eines Fensters (BEF-175)', () => {
     expect(screen.getByRole('link', { name: 'Ohne Fokus' })).not.toHaveAttribute('data-autofocus');
   });
 });
+
+describe('ListRow mit Pfeil', () => {
+  it('stellt den Pfeil ins Feld des Titels, nicht als drittes Feld der Zeile', () => {
+    renderWithProviders(
+      <ListRows>
+        <ListRow to="/p/rechnungen" bild={<span>R</span>} titel="Rechnungen" pfeil />
+      </ListRows>,
+    );
+    const ziel = screen.getByRole('link', { name: /Rechnungen/ });
+    expect(ziel.children).toHaveLength(2);
+    expect(ziel.querySelector('[data-pfeil]')).not.toBeNull();
+  });
+});

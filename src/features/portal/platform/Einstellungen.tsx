@@ -1,17 +1,24 @@
-import { useEffect, useId } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { Disclosure } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
+import { Wahlreihe } from '@/components/ui/Wahlreihe';
 import {
   PasskeyAbschnitt,
   PinAbschnitt,
 } from '@/features/core/auth/einrichtung/AnmeldungVerwalten';
 import { Benachrichtigungen } from './Benachrichtigungen';
-import { BEREICHSNAME, einstiegSchluessel, ladeEinstieg, type Plattformzugang } from './api';
+import {
+  BEREICHSNAME,
+  einstiegSchluessel,
+  ladeEinstieg,
+  type Einstiegsstand,
+  type Plattformzugang,
+} from './api';
 import { BENACHRICHTIGUNGEN_ANKER, PLATTFORM_PFAD } from './pfade';
 import {
   SCHRIFTGROESSEN,
@@ -49,38 +56,33 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
       <PageHeader title="Einstellungen" />
       <Section titel="Schriftgröße" rahmen>
         <Schriftwahl groesse={groesse} onWahl={setzen} />
-        <p className="text-ink-muted mt-2 max-w-prose text-sm">Gilt nur auf diesem Gerät.</p>
+        <p className="text-ink-muted mt-3 max-w-prose text-sm">Gilt nur auf diesem Gerät.</p>
       </Section>
       <Benachrichtigungen
         zugaenge={zugaenge}
         aufgeklappt={zuDenBenachrichtigungen ? gewaehlt?.access_id : undefined}
       />
-      <Section titel="Was die Praxis für Sie eingestellt hat" rahmen>
-        <DetailList>
-          <DetailRow label="Anrede">Die Praxis spricht Sie mit „Sie“ an.</DetailRow>
-          {zugaenge.map((z) => (
-            <EinstiegStand key={z.access_id} zugang={z} mehrere={zugaenge.length > 1} />
-          ))}
-        </DetailList>
+      {/* Anmeldung ohne Kennwort (ADR-025 Fassung 2, Punkte 10 bis 12) - selten gebraucht,
+          deshalb auf Abruf (ANN-468); das Technikwort steht hinter der Beschreibung. */}
+      <Section titel="Anmeldung" rahmen>
+        <p className="text-ink max-w-prose text-base">
+          Sie melden sich mit Gesicht, Finger oder Ihrer PIN an und brauchen kein Kennwort.
+        </p>
+        <div className="mt-3">
+          <Disclosure summary="Geräte (Passkeys) und PIN verwalten">
+            <PasskeyAbschnitt />
+            <PinAbschnitt />
+          </Disclosure>
+        </div>
       </Section>
-      {/* Anmeldung ohne Kennwort (ADR-025 Fassung 2, Punkte 10 bis 12) - selten
-          gebraucht, deshalb auf Abruf (ANN-468). Die Einrichtungspflicht sorgt
-          dafür, dass beides im Betrieb schon da ist. */}
-      <div className="mt-8">
-        <Disclosure inKarte kopf="betont" summary="Passkey und PIN">
-          <PasskeyAbschnitt />
-          <PinAbschnitt />
-        </Disclosure>
-      </div>
+      <VonDerPraxis zugaenge={zugaenge} />
     </>
   );
 }
 
 /**
- * Drei Größen als Auswahlknöpfe ohne eigenen Rahmen: Sie stehen schon in der
- * Karte des Abschnitts (DESIGN.md, Regel 2 - kein Kasten im Kasten). Kein
- * `Segment`: Drei Knöpfe nebeneinander passen bei „Sehr groß" und 200 %
- * Vergrößerung nicht in 188 px; untereinander bricht nichts.
+ * Die Größe gilt sofort für die ganze Plattform; die Vorschau zeigt sie an einem Satz, wie er auf
+ * der Übersicht stünde. Bei „Sehr groß“ und 200 % steht jede Wahl in einer eigenen Zeile.
  */
 function Schriftwahl({
   groesse,
@@ -89,37 +91,65 @@ function Schriftwahl({
   groesse: Schriftgroesse;
   onWahl: (groesse: Schriftgroesse) => void;
 }) {
-  const name = useId();
   return (
-    <fieldset>
-      <legend className="sr-only">Schriftgröße</legend>
-      <div className="flex flex-col">
-        {SCHRIFTGROESSEN.map((s) => (
-          <label key={s} className="flex min-h-12 cursor-pointer items-center gap-3">
-            <input
-              type="radio"
-              name={name}
-              value={s}
-              checked={groesse === s}
-              onChange={() => onWahl(s)}
-              className="border-line-strong text-accent focus-visible:outline-accent size-5 shrink-0"
-            />
-            <span className="text-ink text-base">{SCHRIFTGROESSE_NAME[s]}</span>
-          </label>
-        ))}
+    <>
+      <div
+        aria-hidden="true"
+        className="bg-surface-sunken rounded-button mb-4 flex items-center gap-4 px-4 py-3"
+      >
+        <span className="text-ink shrink-0 text-3xl leading-none font-semibold whitespace-nowrap">
+          Aa
+        </span>
+        <span className="text-ink text-base">Ihr nächster Besuch: Dienstag um 9:30 Uhr.</span>
       </div>
-    </fieldset>
+      <Wahlreihe
+        legende="Schriftgröße"
+        legendeSichtbar={false}
+        gleichgewichtet
+        wahlen={SCHRIFTGROESSEN.map((s) => ({ wert: s, text: SCHRIFTGROESSE_NAME[s] }))}
+        gewaehlt={groesse}
+        onWaehlen={onWahl}
+      />
+    </>
+  );
+}
+
+/**
+ * Die sichtbare Coach-Kontrolle, heute der Einstieg je Zugang. Ohne Eintrag kein Abschnitt; die
+ * Anrede „Sie“ gilt für alle und steht deshalb nicht mehr da (ANN-860).
+ */
+function VonDerPraxis({ zugaenge }: { zugaenge: Plattformzugang[] }) {
+  const staende = useQueries({
+    queries: zugaenge.map((z) => ({
+      queryKey: einstiegSchluessel(z.access_id),
+      queryFn: () => ladeEinstieg(z.access_id),
+      retry: false,
+    })),
+  });
+  const zeilen = zugaenge.flatMap((z, i) => {
+    const data = staende[i]?.data;
+    return data && (data.skipped_at || data.finished_at)
+      ? [<EinstiegStand key={z.access_id} zugang={z} stand={data} mehrere={zugaenge.length > 1} />]
+      : [];
+  });
+  if (zeilen.length === 0) return null;
+  return (
+    <Section titel="Was die Praxis für Sie eingestellt hat" rahmen>
+      <DetailList>{zeilen}</DetailList>
+    </Section>
   );
 }
 
 /** Der Einstieg je Zugang: beendet oder von der Praxis übersprungen. */
-function EinstiegStand({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolean }) {
-  const { data } = useQuery({
-    queryKey: einstiegSchluessel(zugang.access_id),
-    queryFn: () => ladeEinstieg(zugang.access_id),
-    retry: false,
-  });
-  if (!data || (!data.skipped_at && !data.finished_at)) return null;
+function EinstiegStand({
+  zugang,
+  stand: data,
+  mehrere,
+}: {
+  zugang: Plattformzugang;
+  stand: Einstiegsstand;
+  mehrere: boolean;
+}) {
   const bereich = mehrere
     ? ` – ${zugang.access_kind === 'self' ? BEREICHSNAME[zugang.relationship_kind] : `für ${zugang.represented_name ?? 'eine andere Person'}`}`
     : '';

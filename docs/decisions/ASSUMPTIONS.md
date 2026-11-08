@@ -1526,3 +1526,6 @@ Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
 | ANN-855 | Rechnung: Betrag oben, Zahlungsangaben zum Kopieren, am Rechner neben der Liste | Technik · offen | `rechnungsblatt` in `src/features/portal/platform/PlattformApp.tsx` |
 | ANN-856 | Abo: Preis oben, Kündigen am Ende als Knopf (§ 312k) | Praxisprozess · offen | `NACH_DEM_ENDE` in `src/features/portal/platform/Abo.tsx` |
 | ANN-857 | Abschluss geführt, Übersicht mit Preis über dem Knopf (§ 312j) | Praxisprozess · offen | `Abschluss` in `src/features/portal/platform/Angebot.tsx` |
+| ANN-858 | „Ich“: Gruppen nach Zweck, der Bereich als Wahl im Kopf | Technik · offen | `Ich` in `src/features/portal/platform/Ich.tsx` |
+| ANN-859 | Einwilligung: erster Satz sichtbar, Rest wörtlich unter „Mehr dazu“ | Technik · offen | `zweckteile` in `src/features/portal/platform/Einwilligungen.tsx` |
+| ANN-860 | Einstellungen: Schrift mit Vorschau, ohne Anrede | Technik · offen | `VonDerPraxis` in `src/features/portal/platform/Einstellungen.tsx` |

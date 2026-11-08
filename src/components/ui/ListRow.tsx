@@ -83,6 +83,7 @@ export function ListRow({
   aktiv,
   uebergang = true,
   fokusbeginn = false,
+  pfeil = false,
 }: {
   /**
    * Uhrzeit oder zwei Zeilen (Datum über Uhrzeit). Ohne Angabe entfällt die
@@ -124,6 +125,11 @@ export function ListRow({
    * Ziel der Zeile, ohne Ziel an der Zeile selbst.
    */
   fokusbeginn?: boolean;
+  /**
+   * Ein Pfeil am Ende einer Zeile mit Ziel (Briefing 7). Er teilt sich das Feld mit dem Titel, sonst
+   * stellte ihn die Plattform am Telefon als drittes Feld darunter; unter 23rem entfällt er.
+   */
+  pfeil?: boolean;
 }) {
   // `listenzeile`: Haken für die Plattform, die die Zeile bei sehr wenig
   // Breite untereinander stellt (POR-020, `src/index.css`).
@@ -164,6 +170,26 @@ export function ListRow({
       <span className="shrink-0">{status}</span>
     ) : null;
 
+  const text = (
+    <>
+      {bezeichnung === undefined ? null : (
+        <span className="text-ink-muted block">{bezeichnung}</span>
+      )}
+      <span
+        className={`block ${dicht ? 'text-liste truncate' : 'text-base'} ${
+          gedaempft ? 'text-ink-muted font-medium' : 'text-ink font-semibold'
+        }`}
+      >
+        {titel}
+      </span>
+      {meta ? (
+        <span className={`text-ink-muted block text-sm ${dicht ? 'truncate' : ''}`.trim()}>
+          {meta}
+        </span>
+      ) : null}
+    </>
+  );
+
   const inhalt = (
     <>
       {bild === undefined ? null : <span className="flex shrink-0 items-center">{bild}</span>}
@@ -176,23 +202,14 @@ export function ListRow({
           {zeit}
         </span>
       )}
-      <span className="min-w-0">
-        {bezeichnung === undefined ? null : (
-          <span className="text-ink-muted block">{bezeichnung}</span>
-        )}
-        <span
-          className={`block ${dicht ? 'text-liste truncate' : 'text-base'} ${
-            gedaempft ? 'text-ink-muted font-medium' : 'text-ink font-semibold'
-          }`}
-        >
-          {titel}
+      {pfeil ? (
+        <span className="flex min-w-0 items-center gap-3">
+          <span className="min-w-0 grow">{text}</span>
+          <Zeilenpfeil />
         </span>
-        {meta ? (
-          <span className={`text-ink-muted block text-sm ${dicht ? 'truncate' : ''}`.trim()}>
-            {meta}
-          </span>
-        ) : null}
-      </span>
+      ) : (
+        <span className="min-w-0">{text}</span>
+      )}
       {hinten}
     </>
   );
@@ -303,5 +320,24 @@ function Zeilenlink({
     >
       {children}
     </Link>
+  );
+}
+
+function Zeilenpfeil() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      data-pfeil=""
+      className="text-ink-muted size-6 shrink-0 max-[23rem]:hidden"
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
   );
 }

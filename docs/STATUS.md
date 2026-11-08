@@ -6,18 +6,19 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**App ohne Browserleiste** auf `ccr-c614e9be-3jxfvj`: Manifest und Symbol vor der Tür
-(ANN-101), danach neu installieren.
+**Plattform Schritt 7 Ich und Datenschutz** (#361), ohne Leinwand, ANN-858 bis ANN-860;
+Merge bei Jannes.
 
 ## Danach
 
-Bis M2 im November (Jannes 2026-11-01): Schritt 7 der Plattform nach den Briefings, Leinwände fließen nach (Feindesign);
-DATEV erst nach B4; zuletzt der Wartungsmodus (ohne Gates zu berühren). **G14
+Bis M2 (Jannes 2026-11-01): weniger Text überall (Jannes 8.11.), Leinwände fließen nach;
+DATEV erst nach B4; zuletzt der Wartungsmodus. **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
 zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
 
 ## Bei Jannes
 
+- Test-App neu installieren (#360).
 - Den alten Branch `ccr-544f8ce7-u1sqpf` löschen (seit 3c ist alles übertragen).
 - Test-Umgebung neu aufsetzen (Workflow „Test-Umgebung“, #339 ist gemergt); bis dahin scheitert
   Erikas Übersicht an Terminen ohne gültige UUID (`development/BEFUNDE.md`).
@@ -41,4 +42,4 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-08.11.2026, Branch `ccr-c614e9be-3jxfvj` ab `main` (Plattform Schritt 6), keine Migration.
+08.11.2026, Plattform Schritt 7 ab `main`, keine Migration.

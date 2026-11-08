@@ -193,7 +193,7 @@ geprüften Commit ein (nie ein `service_role`- oder `sb_secret_`-Schlüssel im B
 `supabase db push`, Upload per `rsync`, danach Selbstprüfung); fehlt ein Pflicht-Secret, wird
 übersprungen, nicht rot.
 
-**Neu aufsetzen** (verwirft alles dort): Actions → „Test-Umgebung“ → „Run workflow“ mit Haken bei
+**Neu aufsetzen** (verwirft alles außer Passkeys und PIN): Actions → „Test-Umgebung“ → „Run workflow“ mit Haken bei
 „neu aufsetzen“, spätestens nach einer Woche (die Praxiswoche reicht von vorgestern bis in vier
 Tagen, ANN-100); dazu zwölf Testpatient:innen, lokal bleiben es drei Personen für die Tests.
 

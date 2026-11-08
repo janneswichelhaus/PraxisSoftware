@@ -217,7 +217,11 @@ describe('PlattformApp', () => {
   it('meldet unter "Ich" ab, auf Wunsch ueberall', async () => {
     const nutzer = userEvent.setup();
     zeige([TRAINING], '/p/ich');
-    expect(screen.getByRole('heading', { name: 'Ihr Training' })).toBeInTheDocument();
+    // Briefing 7: Gruppen nach Zweck statt einer Liste je Bereich.
+    for (const gruppe of ['Unterlagen', 'Meine Angaben', 'Verträge', 'Datenschutz', 'Konto']) {
+      expect(screen.getByRole('heading', { name: gruppe })).toBeInTheDocument();
+    }
+    expect(screen.queryByRole('heading', { name: 'Ihr Training' })).toBeNull();
     // Die Adresse steht unter „Konto“, nicht im Kopf (BEF-193).
     const konto = screen.getByRole('heading', { name: 'Konto' }).closest('section')!;
     expect(within(konto).getByText('tina.plattform@patient.invalid')).toBeInTheDocument();
@@ -336,9 +340,9 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     expect(
       await screen.findByRole('heading', { name: 'Wer für Sie Zugang hat' }),
     ).toBeInTheDocument();
-    // Der eigene Bereich heißt unter „Ich“ wie im Schalter (ANN-822).
-    expect(screen.getByRole('heading', { name: 'Ihre Behandlung' })).toBeInTheDocument();
     expect(screen.getByText('Rechtliche Vertretung (Betreuung)')).toBeInTheDocument();
+    // Der Zustand als Zeichen und Wort (Briefing 7, Bildschirm 5).
+    expect(screen.getAllByText('aktiv')).toHaveLength(2);
     expect(screen.getByText('Beenden kann diese Vertretung nur die Praxis.')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Begleitung beenden' }));
@@ -356,6 +360,28 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     zeige([BEHANDLUNG], '/p/ich');
     await waitFor(() => expect(ladeMeineVertretungen).toHaveBeenCalled());
     expect(screen.queryByRole('heading', { name: /Wer für Sie Zugang hat/ })).toBeNull();
+  });
+
+  it('zeigt unter Ich Initialen und Namen, sonst die Adresse, und die Praxis (DR-119)', () => {
+    const { unmount } = zeige([{ ...BEHANDLUNG, own_name: 'Erika Beispiel' }], '/p/ich');
+    expect(screen.getByText('Erika Beispiel')).toBeInTheDocument();
+    expect(screen.getAllByText('EB').length).toBeGreaterThan(0);
+    expect(screen.getByText('Test Praxis Tuebingen')).toBeInTheDocument();
+    unmount();
+    zeige([BEHANDLUNG], '/p/ich');
+    expect(screen.getAllByText('tina.plattform@patient.invalid').length).toBe(2);
+  });
+
+  it('zeigt unter Ich nur den gewählten Bereich und bleibt beim Wechsel auf Ich (ANN-858)', async () => {
+    const nutzer = userEvent.setup();
+    zeige([BEHANDLUNG, TRAINING], '/p/ich');
+    // Dokumente gibt es nur in der Behandlung: einmal, nicht je Bereich.
+    expect(screen.getAllByRole('link', { name: 'Einwilligungen' })).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Dokumente' })).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('link', { name: 'Ihr Training' }));
+    expect(await screen.findByRole('link', { name: 'Pakete und Preise' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Dokumente' })).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'Ich' })).toBeInTheDocument();
   });
 
   // POR-016, POR-018 (ANN-261): Einwilligungen und Export unter „Ich".

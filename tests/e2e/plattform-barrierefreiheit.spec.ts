@@ -257,7 +257,9 @@ test.describe('Plattform für 78-Jährige (POR-020, DSN-001 Abschnitt 7)', () =>
     await page.setViewportSize({ width: 375, height: 900 });
     await oeffne(page, 'einstellungen', 'Einstellungen');
     const vorher = await page.evaluate(() => getComputedStyle(document.body).fontSize);
-    await page.getByRole('radio', { name: 'Sehr groß' }).check();
+    // Die Wahlreihe (ANN-860): Getippt wird die Fläche, das Radio darin ist verborgen.
+    await page.getByText('Sehr groß', { exact: true }).click();
+    await expect(page.getByRole('radio', { name: 'Sehr groß' })).toBeChecked();
     await expect
       .poll(() => page.evaluate(() => document.documentElement.dataset.schrift))
       .toBe('sehr-gross');

@@ -73,6 +73,8 @@ describe('Einwilligungen (POR-016)', () => {
     expect(screen.getByText(/Erteilt am .* \(in der Praxis vermerkt\)/)).toBeInTheDocument();
     // ANN-316: Die Einwilligung zu Fotos wird nicht mehr angeboten.
     expect(screen.queryByText('Fotos während der Behandlung')).toBeNull();
+    // Briefing 7: der Zweck in einem Satz, der Rest unverändert auf Abruf.
+    expect(screen.getAllByText('Mehr dazu').length).toBeGreaterThan(0);
     expect(screen.getByText(/Ihre Behandlung hängt nicht davon ab/)).toBeInTheDocument();
 
     const knoepfe = screen.getAllByRole('button', { name: 'Einwilligen' });
