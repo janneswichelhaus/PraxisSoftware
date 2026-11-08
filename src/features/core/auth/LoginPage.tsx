@@ -183,15 +183,13 @@ export function LoginPage({
         </p>
       </div>
 
-      <div className="mt-6">
-        <Disclosure summary="Am Rechner anmelden">
-          <p className="text-ink text-base">
-            Klicken Sie am Rechner auf „Mit Passkey anmelden“ und wählen Sie Ihr Telefon. Der
-            Rechner zeigt einen Code; scannen Sie ihn mit der Kamera dieses Telefons.
-          </p>
-        </Disclosure>
-        {testzugang ? <KennwortTestzugang /> : null}
-      </div>
+      {/* Am Rechner führt das Passkey-Fenster des Browsers selbst zum Telefon (QR-Code); eine
+          eigene Anleitung dazu sagte nichts Neues (Jannes 2026-11-08). */}
+      {testzugang ? (
+        <div className="mt-6">
+          <KennwortTestzugang />
+        </div>
+      ) : null}
     </Vollseite>
   );
 }

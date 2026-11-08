@@ -71,9 +71,8 @@ describe('LoginPage: Anmeldung per Passkey (ADR-025 Fassung 2)', () => {
     expect(screen.queryByLabelText('E-Mail-Adresse')).toBeNull();
     expect(screen.queryByText(/Kennwort vergessen/)).toBeNull();
     expect(screen.getByText(/Wenden Sie sich an die Praxis/)).toBeInTheDocument();
-    // Die Hilfe am Rechner auf Abruf, nicht als dritter grauer Satz (L8).
-    expect(screen.getByText('Am Rechner anmelden').closest('summary')).not.toBeNull();
-    expect(screen.getByText(/wählen Sie Ihr Telefon/)).not.toBeVisible();
+    // Keine eigene Anleitung für den Rechner: Das Passkey-Fenster des Browsers führt dorthin.
+    expect(screen.queryByText('Am Rechner anmelden')).toBeNull();
   });
 
   it('meldet mit dem Passkey an', async () => {
@@ -166,7 +165,7 @@ describe('LoginPage: Testzugang mit Kennwort, nur außerhalb der Produktion (Pun
     await user.click(kopf);
     expect(screen.getByLabelText('E-Mail-Adresse')).toBeVisible();
     // Linksbündig wie jede Tür (Handoff 2026-10-22, DR-107): kein Kopf mittig.
-    for (const titel of ['Testkonten', 'Am Rechner anmelden']) {
+    for (const titel of ['Testkonten']) {
       expect(screen.getByText(titel).className.split(' ')).not.toContain('justify-center');
     }
   });
