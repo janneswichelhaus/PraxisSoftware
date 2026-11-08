@@ -149,6 +149,7 @@ const MIT_SCHALTER = new Set([
   PLATTFORM_PFAD,
   `${PLATTFORM_PFAD}/termine`,
   `${PLATTFORM_PFAD}/rechnungen`,
+  `${PLATTFORM_PFAD}/ich`,
 ]);
 
 /**
@@ -220,7 +221,10 @@ export function Kopf({ bereiche, rechner }: { bereiche: Plattformzugang[]; rechn
                 className="min-w-0 flex-1 max-[23rem]:basis-full [[data-schrift=sehr-gross]_&]:min-w-min"
               >
                 <Link
-                  to={wahlAdresse(z)}
+                  // Unter „Ich“ bleibt die Wahl auf „Ich“; sonst wie bisher.
+                  to={
+                    ich ? `${PLATTFORM_PFAD}/ich?${wahlAdresse(z).split('?')[1]}` : wahlAdresse(z)
+                  }
                   replace
                   aria-current={gewaehlt?.access_id === z.access_id ? 'page' : undefined}
                   className="text-ink-muted aria-[current=page]:bg-surface aria-[current=page]:text-ink rounded-button flex min-h-11 items-center justify-center px-3 text-center text-base font-medium [[data-schrift=sehr-gross]_&]:wrap-break-word"
