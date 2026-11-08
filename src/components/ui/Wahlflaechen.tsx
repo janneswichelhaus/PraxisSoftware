@@ -7,6 +7,8 @@ import { useDoppeltipp } from './doppeltipp';
 export interface Wahl {
   schluessel: string;
   text: string;
+  /** Ein Bild vor dem Wort, etwa das Thema einer Nachricht; nur Schmuck, das Wort trägt. */
+  zeichen?: ReactNode;
 }
 
 /**
@@ -71,11 +73,16 @@ export function Wahlflaechen({
                   : 'border-line-strong bg-surface text-ink active:bg-surface-sunken border px-4 py-2 font-semibold max-[23rem]:px-3'
               }`}
             >
-              {/* Unter 23rem und bei „Sehr groß“ passt nicht jedes Wort neben den Kreis: Es trennt dann
-                  an der Silbe („Medika-mente?“), statt ohne Strich mitten im Wort zu brechen. */}
-              <span className="min-w-0 [hyphenate-limit-chars:8_3_3] max-[23rem]:hyphens-auto [[data-schrift=sehr-gross]_&]:hyphens-auto">
-                {mitUmbruch(w.text)}
-              </span>
+              {w.zeichen ? (
+                <span className="flex min-w-0 items-center gap-3 max-[23rem]:gap-2">
+                  <span aria-hidden="true" className="inline-flex size-6 shrink-0">
+                    {w.zeichen}
+                  </span>
+                  <Wahlwort text={w.text} />
+                </span>
+              ) : (
+                <Wahlwort text={w.text} />
+              )}
               {an ? (
                 <span
                   aria-hidden="true"
@@ -96,6 +103,16 @@ export function Wahlflaechen({
         })}
       </div>
     </div>
+  );
+}
+
+// Unter 23rem und bei „Sehr groß“ passt nicht jedes Wort neben den Kreis: Es trennt dann
+// an der Silbe („Medika-mente?“), statt ohne Strich mitten im Wort zu brechen.
+function Wahlwort({ text }: { text: string }) {
+  return (
+    <span className="min-w-0 [hyphenate-limit-chars:8_3_3] max-[23rem]:hyphens-auto [[data-schrift=sehr-gross]_&]:hyphens-auto">
+      {mitUmbruch(text)}
+    </span>
   );
 }
 

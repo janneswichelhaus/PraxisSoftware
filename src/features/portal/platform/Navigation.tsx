@@ -8,11 +8,12 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from 'react-router-dom';
 import { Menueknopf } from '@/components/ui/Menueknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { initialen } from '@/components/ui/personenfarben';
-import type { Plattformzugang } from './api';
+import { ladeNachrichten, nachrichtenSchluessel, type Plattformzugang } from './api';
 import { geruestSpalte, reiterstufe } from './geruestbreite';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { useWahl, wahlAdresse, wahlName } from './wahl';
@@ -41,13 +42,23 @@ interface Ziel {
   wort: string;
   zeichen: ReactNode;
   aktuell: boolean;
+  /** Ein ruhiger Punkt am Reiter, das Wort nur für Vorlesesoftware („neue Antwort“). */
+  hinweis?: string | undefined;
 }
 
 function useZiele(bereiche: Plattformzugang[]): Ziel[] {
   const { pathname, search } = useLocation();
   // DSN-001 Abschnitt 5: im Training heißt der Reiter „Training", weil dort
   // Einheiten und Plan zusammenkommen.
-  const training = useWahl(bereiche)?.relationship_kind === 'training';
+  const gewaehlt = useWahl(bereiche);
+  const training = gewaehlt?.relationship_kind === 'training';
+  // Abgeleitet aus dem Zustand „beantwortet“, nicht aus Gelesenem: keine Lesebestätigung (ANN-853).
+  const nachrichten = useQuery({
+    queryKey: nachrichtenSchluessel(gewaehlt?.access_id ?? ''),
+    queryFn: () => ladeNachrichten(gewaehlt!.access_id),
+    enabled: gewaehlt !== undefined && gewaehlt !== null,
+  });
+  const antwort = (nachrichten.data?.messages ?? []).some((m) => m.status === 'answered');
   const bereich = bereichParameter(new URLSearchParams(search));
   const anhang = bereich ? `?${bereich}` : '';
   return [
@@ -79,6 +90,7 @@ function useZiele(bereiche: Plattformzugang[]): Ziel[] {
       wort: 'Nachrichten',
       zeichen: <path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z" />,
       aktuell: pathname.startsWith(`${PLATTFORM_PFAD}/nachrichten`),
+      hinweis: antwort ? 'neue Antwort' : undefined,
     },
   ];
 }
@@ -99,6 +111,22 @@ function Zeichen({ className, children }: { className: string; children: ReactNo
       {children}
     </svg>
   );
+}
+
+/** Der Punkt am Reiter: 8 px in der Hauptfarbe; das Wort steht daneben nur für Vorlesesoftware. */
+function Hinweispunkt({ amZeichen = false }: { amZeichen?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`bg-accent rounded-pill inline-block size-[8px] shrink-0 ${
+        amZeichen ? 'absolute -top-[2px] -right-[4px]' : ''
+      }`.trim()}
+    />
+  );
+}
+
+function Hinweiswort({ hinweis }: { hinweis: string | undefined }) {
+  return hinweis ? <span className="sr-only">, {hinweis}</span> : null;
 }
 
 const PERSON = (
@@ -221,9 +249,11 @@ function Rechnernavigation({ ziele }: { ziele: Ziel[] }) {
             <Link
               to={z.to}
               aria-current={z.aktuell ? 'page' : undefined}
-              className={`text-ink hover:text-accent aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent rounded-button inline-flex min-h-12 items-center px-4 font-medium whitespace-nowrap aria-[current=page]:font-bold ${DRUCK}`}
+              className={`text-ink hover:text-accent aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent rounded-button inline-flex min-h-12 items-center gap-2 px-4 font-medium whitespace-nowrap aria-[current=page]:font-bold ${DRUCK}`}
             >
               {z.wort}
+              {z.hinweis ? <Hinweispunkt /> : null}
+              <Hinweiswort hinweis={z.hinweis} />
             </Link>
           </li>
         ))}
@@ -301,6 +331,7 @@ function Menue({ ziele, ich }: { ziele: Ziel[]; ich: boolean }) {
                 aktuell={z.aktuell}
                 zeichen={z.zeichen}
                 wort={z.wort}
+                hinweis={z.hinweis}
                 onWahl={schliessen}
               />
             </li>
@@ -331,12 +362,14 @@ function Menuezeile({
   aktuell,
   zeichen,
   wort,
+  hinweis,
   onWahl,
 }: {
   to: string;
   aktuell: boolean;
   zeichen: ReactNode;
   wort: string;
+  hinweis?: string | undefined;
   onWahl: () => void;
 }) {
   return (
@@ -346,8 +379,12 @@ function Menuezeile({
       onClick={onWahl}
       className={`text-ink aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 items-center gap-[10px] border-l-3 border-transparent px-[10px] font-medium whitespace-nowrap aria-[current=page]:font-bold ${DRUCK}`}
     >
-      <Zeichen className="size-[24px] shrink-0">{zeichen}</Zeichen>
+      <span className="relative inline-flex shrink-0">
+        <Zeichen className="size-[24px]">{zeichen}</Zeichen>
+        {hinweis ? <Hinweispunkt amZeichen /> : null}
+      </span>
       {wort}
+      <Hinweiswort hinweis={hinweis} />
     </Link>
   );
 }
@@ -434,10 +471,14 @@ export function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
               aria-current={z.aktuell ? 'page' : undefined}
               className={stufe === 1 ? REITER_EINE_REIHE : REITER_ZWEI_REIHEN}
             >
-              <Zeichen className={stufe === 1 ? 'size-[24px]' : 'size-[28px] shrink-0'}>
-                {z.zeichen}
-              </Zeichen>
+              <span className="relative inline-flex shrink-0">
+                <Zeichen className={stufe === 1 ? 'size-[24px]' : 'size-[28px]'}>
+                  {z.zeichen}
+                </Zeichen>
+                {z.hinweis ? <Hinweispunkt amZeichen /> : null}
+              </span>
               {z.wort}
+              <Hinweiswort hinweis={z.hinweis} />
             </Link>
           </li>
         ))}

@@ -47,6 +47,20 @@ export const NOTFALL =
 export const NOTRUFNUMMERN = ['112', '116117'] as const;
 export type Notrufnummer = (typeof NOTRUFNUMMERN)[number];
 
+/**
+ * Ab hier zeigt das Textfeld den Zähler: vorher sagt „0 von 2000
+ * Zeichen“ nichts. Ein Zehntel vor der Grenze reicht für einen Satz.
+ */
+export function zaehlerAb(grenze: number): number {
+  return Math.floor(grenze * 0.9);
+}
+
+/**
+ * Die Frist ist verstrichen und die Praxis noch am Zug: ein eigener
+ * Zustand, keine Mahnung. Wortlaut vorläufig, bis die Praxis ihn klärt (ANN-850).
+ */
+export const FRIST_VORBEI = 'Antwort verspätet';
+
 /** Im Training ohne Einwilligung (ANN-311): warum zwei Themen fehlen. */
 export const OHNE_EINWILLIGUNG =
   'Fragen zu Übungen und Beschwerden sind Angaben zu Ihrer Gesundheit. Sie können sie hier stellen, sobald Sie unter „Ich → Einwilligungen“ eingewilligt haben. Termin, Rechnung und Sonstiges gehen immer.';
