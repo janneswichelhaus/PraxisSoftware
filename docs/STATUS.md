@@ -6,13 +6,12 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Plattform Schritt 5 Nachrichten** auf `ccr-bc675a95-19heh3`: nach dem Briefing ohne Leinwand
-(§15.2), Notfallkarte nur über dem Feld, Zustände mit Zeichen, Liste neben dem Gespräch am Rechner,
-Punkt am Reiter (ANN-850 bis ANN-853); Merge bei Jannes.
+**Plattform Schritt 6 Unterlagen und Verträge** auf `ccr-c614e9be-3jxfvj`, ohne Leinwand (§15.2),
+ANN-854 bis ANN-857; Merge bei Jannes.
 
 ## Danach
 
-Bis M2 im November (Jannes 2026-11-01): Schritte 6 und 7 der Plattform nach den Briefings, Leinwände fließen nach (Feindesign);
+Bis M2 im November (Jannes 2026-11-01): Schritt 7 der Plattform nach den Briefings, Leinwände fließen nach (Feindesign);
 DATEV erst nach B4; zuletzt der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
 zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
@@ -42,4 +41,4 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-08.11.2026, Branch `ccr-bc675a95-19heh3` ab `main` (Plattform Schritt 5). Lokal: `git pull`, keine Migration.
+08.11.2026, Branch `ccr-c614e9be-3jxfvj` ab `main` (Plattform Schritt 6), keine Migration.

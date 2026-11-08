@@ -79,10 +79,11 @@ describe('Trainingspaket auf der Plattform (ANG-008)', () => {
     const { container } = renderWithProviders(<Paket zugang={ZUGANG} />);
 
     expect(await screen.findByText('Läuft seit 01.10.2026 bis 31.12.2026.')).toBeInTheDocument();
-    expect(screen.getByText(/390,00 €, einmal zu Beginn berechnet/)).toBeInTheDocument();
+    expect(screen.getByText('einmal zu Beginn berechnet')).toBeInTheDocument();
+    expect(screen.getAllByText('390,00 €')).toHaveLength(2);
     expect(screen.getByText('720,00 €')).toBeInTheDocument();
-    expect(screen.getByText(/für 6 Monate/)).toBeInTheDocument();
-    expect(screen.getAllByText('inklusive 19 % Umsatzsteuer')).toHaveLength(2);
+    expect(screen.getByText('6 Monate · inklusive 19 % Umsatzsteuer')).toBeInTheDocument();
+    expect(screen.getAllByText(/inklusive 19 % Umsatzsteuer/)).toHaveLength(2);
     // Die Bedingungen: nicht pausierbar, Rückfall in die Behandlung (ANN-277, ANN-280).
     expect(screen.getByText(/nicht pausieren und nicht vorzeitig kündigen/)).toBeInTheDocument();
     expect(screen.getByText(/läuft das Paket weiter/)).toBeInTheDocument();
@@ -114,7 +115,7 @@ describe('Trainingspaket auf der Plattform (ANG-008)', () => {
     ladeAngebote.mockResolvedValue({ ...ANGEBOTE, vat_included: false });
     renderWithProviders(<Paket zugang={ZUGANG} />);
     expect(
-      await screen.findAllByText('Ohne Ausweis der Umsatzsteuer (Kleinunternehmerregelung).'),
+      await screen.findAllByText(/Ohne Ausweis der Umsatzsteuer \(Kleinunternehmerregelung\)\./),
     ).toHaveLength(2);
   });
 });

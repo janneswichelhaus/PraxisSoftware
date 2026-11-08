@@ -74,7 +74,7 @@ describe('Dokumente (POR-014)', () => {
     renderWithProviders(<Dokumente zugang={ZUGANG} />, '/p/dokumente');
     expect(await screen.findByText('Arztbrief Orthopaedie.pdf')).toBeInTheDocument();
     expect(
-      screen.getByText(/Arztbrief · 200 KB · freigegeben am 06\.10\.2026/),
+      screen.getByText(/Arztbrief · freigegeben am 06\.10\.2026 · 200 KB/),
     ).toBeInTheDocument();
     // Ein PDF hat nur „Herunterladen", ein Bild zusätzlich „Ansehen".
     expect(screen.getAllByRole('button', { name: /Herunterladen/ })).toHaveLength(2);

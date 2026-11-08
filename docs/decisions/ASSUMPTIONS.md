@@ -1522,3 +1522,7 @@ Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
 | ANN-851 | „Nachricht schreiben“ auf einer Seite: Themen als Zeilen mit Zeichen, Notfallkarte einmal über dem Feld | Technik · offen | `NeueNachricht` in `src/features/portal/platform/Nachrichten.tsx` |
 | ANN-852 | Ein Gespräch am Rechner mit der Liste links (schmale Zeilen), die Liste allein bleibt einspaltig | Technik · offen | `gespraech` in `src/features/portal/platform/PlattformApp.tsx` |
 | ANN-853 | Reiter „Nachrichten“: Punkt ohne Zahl, solange eine Nachricht „beantwortet“ ist, gesprochen „neue Antwort“; nie aus Gelesenem | Technik · offen | `antwort` in `src/features/portal/platform/Navigation.tsx` |
+| ANN-854 | „offen“ ohne Warnton, „überfällig“ mit „!“ | Technik · offen | `zahlungsstand` in `src/features/portal/platform/zahlungsstand.ts` |
+| ANN-855 | Rechnung: Betrag oben, Zahlungsangaben zum Kopieren, am Rechner neben der Liste | Technik · offen | `rechnungsblatt` in `src/features/portal/platform/PlattformApp.tsx` |
+| ANN-856 | Abo: Preis oben, Kündigen am Ende als Knopf (§ 312k) | Praxisprozess · offen | `NACH_DEM_ENDE` in `src/features/portal/platform/Abo.tsx` |
+| ANN-857 | Abschluss geführt, Übersicht mit Preis über dem Knopf (§ 312j) | Praxisprozess · offen | `Abschluss` in `src/features/portal/platform/Angebot.tsx` |

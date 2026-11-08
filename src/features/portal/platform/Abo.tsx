@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -79,12 +81,35 @@ function Stand({ zugang, abo }: { zugang: Plattformzugang; abo: Nachsorgeabo }) 
     );
   }
 
+  const beginntNoch = abo.state === 'running' && abo.starts_on > kalendertag(new Date());
+  const zustand =
+    abo.state === 'running'
+      ? beginntNoch
+        ? { wort: 'beginnt bald', ton: 'neutral' as const, zeichen: STATUSZEICHEN.wartet }
+        : null
+      : abo.state === 'ending'
+        ? { wort: 'gekündigt', ton: 'neutral' as const, zeichen: STATUSZEICHEN.wartet }
+        : { wort: 'beendet', ton: 'neutral' as const, zeichen: STATUSZEICHEN.fehlt };
+
   return (
     <>
-      <Section titel="Ihr Abo" rahmen>
+      {/* Stand und nächste Zahlung oben, wie eine Mitgliedschaft (ANN-856). */}
+      <section aria-label="Ihr Abo" className="flex flex-col items-start gap-2">
+        {/* Der Regelfall „läuft“ trägt kein Abzeichen (DESIGN.md Regel 5). */}
+        {zustand ? (
+          <Badge ton={zustand.ton} eigenesZeichen={zustand.zeichen}>
+            {zustand.wort}
+          </Badge>
+        ) : null}
+        {abo.state === 'running' && abo.next_month_price_cents !== null ? (
+          <p className="text-ink text-gruss [[data-rechner]_&]:text-gruss-rechner tabular-nums">
+            {formatEuro(abo.next_month_price_cents)}
+            <span className="text-ink-muted text-base font-normal tracking-normal"> im Monat</span>
+          </p>
+        ) : null}
         <p className="text-ink text-base">
           {abo.state === 'running'
-            ? abo.starts_on > kalendertag(new Date())
+            ? beginntNoch
               ? `Beginnt am ${datum(abo.starts_on)}.`
               : `Läuft seit ${datum(abo.starts_on)}.`
             : abo.state === 'ending'
@@ -92,7 +117,7 @@ function Stand({ zugang, abo }: { zugang: Plattformzugang; abo: Nachsorgeabo }) 
               : `Beendet am ${datum(abo.ends_on ?? '')}.`}
         </p>
         {abo.state === 'running' && abo.next_month_start ? (
-          <p className="text-ink-muted mt-1 text-base">
+          <p className="text-ink-muted text-base">
             Nächste Monatsrechnung ab {datum(abo.next_month_start)}
             {abo.next_month_price_cents !== null
               ? `: ${formatEuro(abo.next_month_price_cents)}`
@@ -101,19 +126,16 @@ function Stand({ zugang, abo }: { zugang: Plattformzugang; abo: Nachsorgeabo }) 
           </p>
         ) : null}
         {abo.state === 'ending' && abo.cancelled_at ? (
-          <p className="text-ink-muted mt-1 text-base">
+          <p className="text-ink-muted text-base">
             Kündigung eingegangen am {datum(abo.cancelled_at)} um {uhrzeit(abo.cancelled_at)} Uhr
             {abo.cancelled_via === 'practice' ? ', eingetragen von der Praxis' : ''}.
           </p>
         ) : null}
-        {abo.state !== 'running' ? (
-          <p className="text-ink-muted mt-1 text-base">
-            Danach können Sie hier noch 30 Tage lesen.
-          </p>
-        ) : null}
-      </Section>
+      </section>
+
       {abo.state === 'running' ? (
-        <Section titel="Kündigen" rahmen>
+        // Kündigen leise am Ende, aber ohne Umweg und ohne Rückhaltedialog (ANN-272, ANN-856).
+        <Section titel="Kündigen">
           <p className="text-ink text-base leading-relaxed">
             Monatlich kündbar, zum Ende des laufenden Abo-Monats.
           </p>
@@ -131,9 +153,19 @@ function Stand({ zugang, abo }: { zugang: Plattformzugang; abo: Nachsorgeabo }) 
           )}
         </Section>
       ) : null}
+
+      <div className="mt-8">
+        <Disclosure summary="Was passiert nach dem Ende?">
+          <p className="text-ink text-base leading-relaxed">{NACH_DEM_ENDE}</p>
+        </Disclosure>
+      </div>
     </>
   );
 }
+
+/** Was nach dem Ende eines Abos bleibt (Oura-Muster „Was passiert mit meinen Daten?“, ANN-856). */
+const NACH_DEM_ENDE =
+  'Nach dem Ende kommt keine Monatsrechnung mehr. Übungen, Termine und Nachrichten können Sie noch 30 Tage lesen. Ihre Behandlungsunterlagen bewahrt die Praxis auf, wie es das Gesetz verlangt.';
 
 /** Die Seite zur Bestätigung (§ 312k Abs. 2 BGB als Muster). */
 function Bestaetigen({

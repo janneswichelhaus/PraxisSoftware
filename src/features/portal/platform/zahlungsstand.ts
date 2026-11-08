@@ -1,4 +1,4 @@
-import type { Ton } from '@/components/ui/Badge';
+import { STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/datum';
 import type { Rechnungsblatt, Rechnungsposition, Rechnungszeile } from './api';
 
@@ -9,20 +9,32 @@ import type { Rechnungsblatt, Rechnungsposition, Rechnungszeile } from './api';
 
 /**
  * Der Zahlungsstand in der Sprache der Person, mit Ton und Zeichen - in der
- * Liste der Rechnungen und unter „Neu für Sie“ dasselbe Wort (ANN-701).
+ * Liste der Rechnungen und unter „Neu für Sie“ dasselbe Wort (ANN-701). Vor der
+ * Fälligkeit ohne Warnton: Erst „überfällig“ trägt Warnzeichen und Wort (ANN-854).
  */
 export function zahlungsstand(z: {
   payment_state: Rechnungszeile['payment_state'];
   overdue: boolean;
   cancelled: boolean;
-}): { wort: string; ton: Ton } {
-  if (z.cancelled) return { wort: 'storniert', ton: 'neutral' };
+}): { wort: string; ton: Ton; zeichen?: string } {
+  if (z.cancelled) return { wort: 'storniert', ton: 'neutral', zeichen: STATUSZEICHEN.abgelehnt };
   if (z.payment_state === 'paid' || z.payment_state === 'overpaid') {
     return { wort: 'bezahlt', ton: 'positiv' };
   }
-  if (z.overdue) return { wort: 'überfällig', ton: 'kritisch' };
-  if (z.payment_state === 'partially_paid') return { wort: 'teilweise bezahlt', ton: 'warnung' };
-  return { wort: 'offen', ton: 'warnung' };
+  if (z.overdue) return { wort: 'überfällig', ton: 'warnung' };
+  if (z.payment_state === 'partially_paid') return { wort: 'teilweise bezahlt', ton: 'neutral' };
+  return { wort: 'offen', ton: 'neutral' };
+}
+
+/**
+ * Überfällig auf dem Blatt: Die Liste bekommt es vom Server; ohne sie zählt der
+ * Kalendertag gegen die Fälligkeit (wie `platform_invoices`, nur Anzeige).
+ */
+export function ueberfaellig(
+  r: { due_on: string; outstanding_cents: number; cancelled: boolean },
+  heute: string,
+): boolean {
+  return !r.cancelled && r.outstanding_cents > 0 && r.due_on < heute;
 }
 
 /** „Patient:in selbst" ist für die Person keine Auskunft - nur ein anderer Adressat. */

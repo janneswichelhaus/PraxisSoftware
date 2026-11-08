@@ -47,8 +47,18 @@ test.describe('Übergang ins Training', () => {
       await expect(
         page.getByRole('heading', { name: 'Training nach Ihrer Behandlung' }),
       ).toBeVisible();
-      await page.getByRole('button', { name: 'Zahlungspflichtig buchen' }).click();
+      // Der Abschluss als geführter Ablauf: Freigaben mit Einwilligung, Belehrung, Übersicht.
+      await mindestens44(page, 'Angebot prüfen und buchen');
+      await page.getByRole('button', { name: 'Angebot prüfen und buchen' }).click();
+      const weiter = page.getByRole('dialog').getByRole('button', { name: 'Weiter' });
+      await weiter.click();
+      await expect(page.getByRole('dialog', { name: 'Widerrufsbelehrung' })).toBeVisible();
+      await weiter.click();
       await expect(page.getByText(/innerhalb der Widerrufsfrist. Bitte bestätigen/)).toBeVisible();
+      expect(await ueberlaeuft(page)).toBe(false);
+      await page.getByLabel(/Ich verlange ausdrücklich/).check({ force: true });
+      await weiter.click();
+      await expect(page.getByRole('dialog', { name: 'Ist alles richtig?' })).toBeVisible();
       await mindestens44(page, 'Zahlungspflichtig buchen');
       expect(await ueberlaeuft(page)).toBe(false);
 
