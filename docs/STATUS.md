@@ -6,8 +6,8 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Plattform Schritt 7 Ich und Datenschutz** auf `ccr-4dbdd28e-el9us5`, ohne Leinwand (§15.2),
-ANN-858 bis ANN-860; Merge bei Jannes.
+**Plattform Schritt 7 Ich und Datenschutz** (#361), ohne Leinwand, ANN-858 bis ANN-860;
+Merge bei Jannes.
 
 ## Danach
 
@@ -18,6 +18,7 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Bei Jannes
 
+- Test-App neu installieren (#360).
 - Den alten Branch `ccr-544f8ce7-u1sqpf` löschen (seit 3c ist alles übertragen).
 - Test-Umgebung neu aufsetzen (Workflow „Test-Umgebung“, #339 ist gemergt); bis dahin scheitert
   Erikas Übersicht an Terminen ohne gültige UUID (`development/BEFUNDE.md`).

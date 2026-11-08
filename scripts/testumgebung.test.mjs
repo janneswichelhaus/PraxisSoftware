@@ -158,6 +158,10 @@ describe('htaccess', () => {
     expect(datei).toContain('AuthType Basic');
     expect(datei).toContain('AuthUserFile "/var/www/virtual/prtest/praxis-test/tuer.htpasswd"');
     expect(datei).toContain('Require valid-user');
+    // Manifest und App-Symbol bleiben ohne Tür, sonst baut Chrome keine installierte App.
+    expect(datei).toContain(
+      '<FilesMatch "^(manifest\\.webmanifest|own-motion-app-1024\\.png)$">\n  Require all granted\n</FilesMatch>',
+    );
   });
 });
 
@@ -210,7 +214,7 @@ describe('robotsTxt', () => {
 });
 
 /** Ein Ersatz für fetch: Antworten je Pfad und je Anmeldung. */
-function server({ kopfzeilen, tuer = null, umleitung = true }) {
+function server({ kopfzeilen, tuer = null, umleitung = true, manifestHinterTuer = false }) {
   const aufrufe = [];
   const abrufen = async (url, optionen = {}) => {
     const adresse = new URL(url);
@@ -222,7 +226,8 @@ function server({ kopfzeilen, tuer = null, umleitung = true }) {
         : new Response('', { status: 200 });
     }
     aufrufe.push({ pfad, anmeldung });
-    if (tuer && anmeldung !== tuer) return new Response('', { status: 401 });
+    const offen = pfad === '/manifest.webmanifest' && !manifestHinterTuer;
+    if (tuer && anmeldung !== tuer && !offen) return new Response('', { status: 401 });
     if (pfad !== '/' && !umleitung) return new Response('nicht da', { status: 404 });
     return new Response('<html><body><div id="root"></div></body></html>', {
       status: 200,
@@ -263,7 +268,25 @@ describe('pruefeAuslieferung', () => {
       abrufen,
     });
     expect(fehler).toEqual([]);
-    expect(aufrufe.at(-1)).toEqual({ pfad: '/', anmeldung: null });
+    expect(aufrufe.slice(-2)).toEqual([
+      { pfad: '/', anmeldung: null },
+      { pfad: '/manifest.webmanifest', anmeldung: null },
+    ]);
+  });
+
+  it('mit zweiter Tür: meldet ein Manifest hinter der Tür', async () => {
+    const erwartet = `Basic ${Buffer.from('praxis:tuer-kennwort').toString('base64')}`;
+    const { abrufen } = server({
+      kopfzeilen: GUTE_KOPFZEILEN,
+      tuer: erwartet,
+      manifestHinterTuer: true,
+    });
+    const fehler = await pruefeAuslieferung({
+      adresse: 'https://prtest.uber.space',
+      tuerKennwort: 'tuer-kennwort',
+      abrufen,
+    });
+    expect(fehler).toEqual(['Manifest: ohne Kennwort Status 401 statt 200.']);
   });
 
   it('mit zweiter Tür: meldet eine offene Tür', async () => {
