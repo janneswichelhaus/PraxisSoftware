@@ -8,7 +8,6 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
   vertragSchluessel,
@@ -51,7 +50,6 @@ export function Vertrag({ zugang }: { zugang: Plattformzugang }) {
         <div>
           <ErrorState
             title="Ihr Vertrag konnte nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
             onErneut={() => vertrag.refetch()}
           />
         </div>

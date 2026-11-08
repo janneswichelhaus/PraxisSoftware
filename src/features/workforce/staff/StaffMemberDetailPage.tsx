@@ -434,7 +434,6 @@ export function StaffMemberDetailPage({ user }: { user: CurrentUser }) {
           {isError ? (
             <ErrorState
               title="Die Mitarbeiterdaten konnten nicht geladen werden."
-              description={VERBINDUNG_PRUEFEN}
               onErneut={() => void refetch()}
             />
           ) : null}

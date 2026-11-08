@@ -815,7 +815,6 @@ test('sucht den Folgetermin nach einem Funkloch mit „Erneut versuchen" noch ei
   const fehler = page.getByText('Die freien Zeiten konnten nicht gesucht werden.');
   await expect(fehler).toBeVisible();
   const meldung = page.getByRole('alert').filter({ has: fehler });
-  await expect(meldung).toContainText('Bitte die Verbindung prüfen und erneut versuchen.');
   const erneut = meldung.getByRole('button', { name: 'Erneut versuchen' });
   expect((await erneut.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   const wegeVorher = await page.evaluate(

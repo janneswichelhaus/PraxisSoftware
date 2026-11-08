@@ -12,7 +12,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import {
   angabeGueltig,
   erfassungsgroesse,
@@ -78,7 +77,6 @@ export function Checkin({ zugang }: { zugang: Plattformzugang }) {
       ) : isError ? (
         <ErrorState
           title="Ihr Check-in konnte nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => void refetch()}
         />
       ) : (

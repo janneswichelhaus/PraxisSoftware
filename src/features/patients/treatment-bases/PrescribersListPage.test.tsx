@@ -133,7 +133,7 @@ describe('PrescribersListPage', () => {
     renderWithProviders(<PrescribersListPage />);
 
     const kasten = await screen.findByRole('alert');
-    expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(kasten).not.toHaveTextContent('Verbindung prüfen');
     expect(kasten).not.toHaveTextContent(/angemeldet/);
     await user.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
 

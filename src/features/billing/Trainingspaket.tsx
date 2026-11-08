@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Formularfuss } from '@/components/ui/Formularfuss';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
@@ -59,7 +58,6 @@ export function Trainingspaket({ verhaeltnisId }: { verhaeltnisId: string }) {
     return (
       <ErrorState
         title="Die Trainingspakete konnten nicht geladen werden."
-        description={VERBINDUNG_PRUEFEN}
         onErneut={() => sicht.refetch()}
       />
     );

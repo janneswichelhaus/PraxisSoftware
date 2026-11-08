@@ -7,7 +7,6 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { TextArea } from '@/components/ui/TextArea';
 import { Textlink } from '@/components/ui/Textlink';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Arbeitszeile } from '@/components/ui/Arbeitszeile';
 import { abfragen } from './eingang';
@@ -41,7 +40,6 @@ export function PlatformRequests({ timeZone }: { timeZone: string }) {
       <Section titel="Terminwünsche">
         <ErrorState
           title="Die Terminwünsche konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
       </Section>

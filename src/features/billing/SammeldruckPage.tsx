@@ -1,7 +1,6 @@
 import { useQueries } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { fetchRechnung, type Rechnungsansicht } from './api';
 import { Druckfuss, Rechnungsblatt } from './InvoicePrintPage';
@@ -81,7 +80,6 @@ export function SammeldruckPage() {
       ) : fehler ? (
         <ErrorState
           title="Die Rechnungen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => void Promise.all(blaetter.map((b) => b.refetch()))}
         />
       ) : (

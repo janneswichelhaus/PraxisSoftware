@@ -338,7 +338,7 @@ describe('Termine übertragen', () => {
 
     const kasten = await screen.findByRole('alert');
     expect(kasten).toHaveTextContent('Termine oder Grundlagen konnten nicht geladen werden.');
-    expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(kasten).not.toHaveTextContent('Verbindung prüfen');
     expect(kasten).not.toHaveTextContent(/interne Ursache|angemeldet|Akte/);
 
     await user.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));

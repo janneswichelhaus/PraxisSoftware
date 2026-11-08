@@ -11,7 +11,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Wochenleiste, type Wochentag } from '@/components/ui/Wochenleiste';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { tagesreihe } from '@/lib/gewohnheiten';
 import {
   gewohnheitenSchluessel,
@@ -61,7 +60,6 @@ export function Gewohnheiten({ zugang }: { zugang: Plattformzugang }) {
         <div className="mt-6">
           <ErrorState
             title="Ihre Gewohnheiten konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
             onErneut={() => refetch()}
           />
         </div>

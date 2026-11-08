@@ -4,7 +4,6 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -211,7 +210,6 @@ function Grundlagenwahl({
       {isError ? (
         <ErrorState
           title="Die Behandlungsgrundlagen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={erneutLaden}
         />
       ) : isPending || !zahlenGeladen || eindeutig ? (

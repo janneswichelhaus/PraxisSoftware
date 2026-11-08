@@ -6,7 +6,6 @@ import { ErrorState } from '@/components/ui/Feedback';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { abfragen } from './eingang';
 import { intakeItemLabels, intakeItemTarget, openItemsText } from '@/features/patients';
@@ -32,7 +31,6 @@ export function OpenIntakes() {
       <Section titel="Erstaufnahme offen">
         <ErrorState
           title="Die offenen Erstaufnahmen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
       </Section>

@@ -3,7 +3,6 @@ import { ErrorState } from '@/components/ui/Feedback';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { stillToCall } from './call-list-api';
 import { abfragen } from './eingang';
 import { tagePlus } from '@/lib/datum';
@@ -23,7 +22,6 @@ export function CallsSummary({ today }: { today: string }) {
       <Section titel="Anrufe für morgen">
         <ErrorState
           title="Die Anrufliste konnte nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
       </Section>

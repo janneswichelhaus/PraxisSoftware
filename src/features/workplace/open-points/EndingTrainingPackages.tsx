@@ -5,7 +5,6 @@ import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { StatusMark } from '@/components/ui/StatusMark';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { TRAININGSPAKET_ANKER, monateText } from '@/features/billing';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -28,7 +27,6 @@ export function EndingTrainingPackages() {
         <Section titel={TITEL}>
           <ErrorState
             title="Die endenden Trainingspakete konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
             onErneut={() => refetch()}
           />
         </Section>

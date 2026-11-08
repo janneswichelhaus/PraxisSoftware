@@ -618,7 +618,6 @@ function Preisliste({
     return (
       <ErrorState
         title="Die Positionen konnten nicht geladen werden."
-        description={VERBINDUNG_PRUEFEN}
         onErneut={() => positionen.refetch()}
       />
     );

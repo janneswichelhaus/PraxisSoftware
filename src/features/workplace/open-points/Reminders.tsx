@@ -6,7 +6,6 @@ import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { StatusMark } from '@/components/ui/StatusMark';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { bauartLabels } from '@/features/patients';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -31,7 +30,6 @@ export function EndingPrescriptions({ timeZone }: { timeZone: string }) {
       <Section titel="Verordnung endet">
         <ErrorState
           title="Die endenden Verordnungen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
       </Section>
@@ -98,7 +96,6 @@ export function OffeneVerordnungen() {
       <Section titel="Verordnung offen">
         <ErrorState
           title="Die offenen Verordnungen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
       </Section>
@@ -149,7 +146,6 @@ export function AktenOhneBehandlung({ timeZone }: { timeZone: string }) {
       <Section titel="Akte ohne Behandlung">
         <ErrorState
           title="Die Akten ohne Behandlung konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
       </Section>

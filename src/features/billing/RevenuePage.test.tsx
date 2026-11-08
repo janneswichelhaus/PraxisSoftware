@@ -175,9 +175,7 @@ describe('RevenuePage', () => {
 
       renderWithProviders(<RevenuePage />, '/abrechnung/auswertung');
 
-      expect(
-        await screen.findByText('Bitte die Verbindung prüfen und erneut versuchen.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
       expect(screen.queryByText(/angemeldet/)).toBeNull();
 
       await nutzer.click(screen.getByRole('button', { name: 'Erneut versuchen' }));

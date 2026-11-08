@@ -703,7 +703,7 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
     // eine Satz zur Verbindung und „Erneut versuchen" in einer Meldung.
     const meldung = await screen.findByRole('alert');
     expect(meldung).toHaveTextContent('Die freien Zeiten konnten nicht gesucht werden.');
-    expect(meldung).toHaveTextContent(VERBINDUNG_PRUEFEN);
+    expect(meldung).not.toHaveTextContent(VERBINDUNG_PRUEFEN);
     const aufrufe = findFreeSlots.mock.calls.length;
     await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
     // Danach stehen die Vorschläge da - ohne die Seite neu zu laden.

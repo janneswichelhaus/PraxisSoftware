@@ -14,7 +14,6 @@ import { StatusMark } from '@/components/ui/StatusMark';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { TextArea } from '@/components/ui/TextArea';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { fetchPatient, fullName, Patientensuche } from '@/features/patients';
 import { fetchStaffMembers } from '@/features/workforce';
 import { formatDate } from '@/lib/datum';
@@ -374,7 +373,6 @@ export function Tasks({
       <Section titel="Aufgaben">
         <ErrorState
           title="Die Aufgaben konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => offen.refetch()}
         />
       </Section>

@@ -8,7 +8,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
   aboSchluessel,
@@ -46,11 +45,7 @@ export function Abo({ zugang }: { zugang: Plattformzugang }) {
       {abo.isPending ? <LoadingState label="Ihr Abo wird geladen …" inKarte /> : null}
       {abo.isError ? (
         <div>
-          <ErrorState
-            title="Ihr Abo konnte nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
-            onErneut={() => abo.refetch()}
-          />
+          <ErrorState title="Ihr Abo konnte nicht geladen werden." onErneut={() => abo.refetch()} />
         </div>
       ) : null}
       {abo.data === null ? (

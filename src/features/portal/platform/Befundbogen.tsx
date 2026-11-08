@@ -15,7 +15,6 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import {
   aendern,
   imAendern,
@@ -98,7 +97,6 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
       ) : stand.data === undefined ? (
         <ErrorState
           title="Ihr Fragebogen konnte nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => stand.refetch()}
         />
       ) : !behandlung ? (

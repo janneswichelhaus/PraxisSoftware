@@ -3,7 +3,6 @@ import { Button } from './Button';
 import { EmptyState, ErrorState, LoadingState } from './Feedback';
 import { ListRow } from './ListRow';
 import { NachladeHinweis } from './Rueckmeldung';
-import { VERBINDUNG_PRUEFEN } from './abfrageTexte';
 
 /** Was der Baustein von einer Abfrage (`useQuery`) braucht. */
 export interface Abfrage<T> {
@@ -74,7 +73,6 @@ export function Abfragezustand<T>({
               {titel ?? fehler}
             </span>
           }
-          meta={final ? undefined : VERBINDUNG_PRUEFEN}
           aktion={
             final ? undefined : (
               <Button variant="secondary" groesse="kompakt" onClick={() => void abfrage.refetch()}>
@@ -116,9 +114,7 @@ export function Abfragezustand<T>({
       return rahmen(<LoadingState label={laden} inKarte={inKarte} kacheln={kacheln} />);
     }
     if (isError) {
-      return alsFehler(
-        <ErrorState title={fehler} description={VERBINDUNG_PRUEFEN} onErneut={abfrage.refetch} />,
-      );
+      return alsFehler(<ErrorState title={fehler} onErneut={abfrage.refetch} />);
     }
     return null;
   }

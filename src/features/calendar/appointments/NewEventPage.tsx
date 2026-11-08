@@ -7,7 +7,6 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Formularfuss } from '@/components/ui/Formularfuss';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Field } from '@/components/ui/Field';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
@@ -298,7 +297,6 @@ export function NewEventPage({ user, serie = false }: { user: CurrentUser; serie
               standorte.isError ? (
                 <ErrorState
                   title="Die Standorte konnten nicht geladen werden."
-                  description={VERBINDUNG_PRUEFEN}
                   onErneut={() => standorte.refetch()}
                 />
               ) : null
@@ -312,7 +310,6 @@ export function NewEventPage({ user, serie = false }: { user: CurrentUser; serie
                   <div className="mt-3">
                     <ErrorState
                       title="Die Personen konnten nicht geladen werden."
-                      description={VERBINDUNG_PRUEFEN}
                       onErneut={() => personen.refetch()}
                     />
                   </div>

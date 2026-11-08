@@ -19,7 +19,6 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { GESPERRT, KAESTCHEN_GESPERRT } from '@/components/ui/Tagebuchbausteine';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { leseZahl } from '@/features/nutrition/eingabe';
 import { geltenderPlan, planTag, type Plan as Ernaehrungsplan } from '@/features/nutrition/plaene';
 import { Rechenweg } from '@/features/nutrition/Rechenweg';
@@ -67,7 +66,6 @@ export function Ernaehrung({ zugang }: { zugang: Plattformzugang }) {
           <div className="mt-8">
             <ErrorState
               title="Ihre Ernährung konnte nicht geladen werden."
-              description={VERBINDUNG_PRUEFEN}
               onErneut={() => abfrage.refetch()}
             />
           </div>

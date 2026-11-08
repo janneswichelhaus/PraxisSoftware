@@ -7,7 +7,6 @@ import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Tile, TileGrid } from '@/components/ui/Tile';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
   bereichLabels,
@@ -111,7 +110,6 @@ export function RevenuePage() {
           <div className="mt-4">
             <ErrorState
               title="Die Auswertung konnte nicht geladen werden."
-              description={VERBINDUNG_PRUEFEN}
               onErneut={() => jahre.refetch()}
             />
           </div>

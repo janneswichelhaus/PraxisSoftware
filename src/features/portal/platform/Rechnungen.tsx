@@ -12,7 +12,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import {
@@ -162,7 +161,6 @@ export function Rechnung({ zugang }: { zugang: Plattformzugang }) {
       ) : rechnung.data === undefined ? (
         <ErrorState
           title="Die Rechnung konnte nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => rechnung.refetch()}
         />
       ) : rechnung.data === null ? (

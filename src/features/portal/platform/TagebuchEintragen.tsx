@@ -18,7 +18,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { GESPERRT, KAESTCHEN_GESPERRT } from '@/components/ui/Tagebuchbausteine';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import {
   LebensmittelSuche,
   Quellenangabe,
@@ -124,7 +123,6 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
           gescheitert ? (
             <ErrorState
               title="Ihr Tagebuch konnte nicht geladen werden."
-              description={VERBINDUNG_PRUEFEN}
               onErneut={() => Promise.all([tagebuch.refetch(), ernaehrung.refetch()])}
             />
           ) : (

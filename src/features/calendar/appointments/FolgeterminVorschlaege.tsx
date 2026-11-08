@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
@@ -598,7 +597,6 @@ export function FolgeterminVorschlaege({
       <>
         <ErrorState
           title="Die freien Zeiten konnten nicht gesucht werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() =>
             Promise.all(
               [kommende, frei, amTag]

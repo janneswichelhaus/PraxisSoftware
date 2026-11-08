@@ -165,9 +165,7 @@ describe('PaymentsPage', () => {
 
       renderWithProviders(<PaymentsPage user={testUser(['office'])} />, '/abrechnung/zahlungen');
 
-      expect(
-        await screen.findByText('Bitte die Verbindung prüfen und erneut versuchen.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
       expect(screen.queryByText(/angemeldet/)).toBeNull();
 
       fetchZahlungen.mockResolvedValue([zahlung()]);

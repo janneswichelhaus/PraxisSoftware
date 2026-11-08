@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
@@ -41,7 +40,6 @@ export function Nachsorgeabo({ patientId }: { patientId: string }) {
     return (
       <ErrorState
         title="Das Nachsorge-Abo konnte nicht geladen werden."
-        description={VERBINDUNG_PRUEFEN}
         onErneut={() => sicht.refetch()}
       />
     );

@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -450,7 +449,6 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
         {patient.isError && !patient.data ? (
           <ErrorState
             title="Die Patientendaten konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
             onErneut={() => void patient.refetch()}
           />
         ) : !patient.data ? (
@@ -463,7 +461,6 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
           // eine fehlende von einer nicht ladbaren Grundlage nicht.
           <ErrorState
             title="Die Zahlen der Grundlage konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
             onErneut={() => void kontingent.refetch()}
           />
         )}

@@ -329,7 +329,7 @@ describe('EditPatientPage', () => {
 
     const meldung = await screen.findByRole('alert');
     // Der Satz des Systems (ANN-406), nicht eine Abwandlung je Seite.
-    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(meldung).not.toHaveTextContent('Verbindung prüfen');
     await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
 
     expect(await formularAbwarten()).toBeInTheDocument();

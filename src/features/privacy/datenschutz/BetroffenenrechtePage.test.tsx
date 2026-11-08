@@ -249,7 +249,7 @@ describe('BetroffenenrechtePage', () => {
 
     const meldung = await screen.findByRole('alert');
     expect(meldung).toHaveTextContent('Die Akte konnte nicht geladen werden.');
-    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen');
+    expect(meldung).not.toHaveTextContent('Verbindung prüfen');
     await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
 
     expect(await screen.findByRole('button', { name: 'Auskunft erstellen' })).toBeInTheDocument();

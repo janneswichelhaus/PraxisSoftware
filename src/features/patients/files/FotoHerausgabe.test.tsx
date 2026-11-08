@@ -111,7 +111,6 @@ describe('FotoHerausgabe', { timeout: 20_000 }, () => {
     renderWithProviders(<FotoHerausgabe patientId={PATIENT} />);
 
     expect(await screen.findByText('Die Fotos konnten nicht geladen werden.')).toBeVisible();
-    expect(screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(
       await screen.findByRole('button', { name: /Kopie für die Person herunterladen/ }),

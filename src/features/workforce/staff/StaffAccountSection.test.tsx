@@ -472,9 +472,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     await user.click(await screen.findByRole('checkbox', { name: 'Teamleitung' }));
     await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
 
-    expect(
-      await screen.findByText(/Der angezeigte Stand konnte nicht aktualisiert werden/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Stand nicht aktuell/)).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Teamleitung' })).toBeChecked();
     expect(
       screen.queryByText('Der Zugangsstand konnte nicht geladen werden.'),

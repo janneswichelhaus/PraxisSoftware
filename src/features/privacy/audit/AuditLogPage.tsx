@@ -8,7 +8,6 @@ import { Disclosure } from '@/components/ui/Card';
 import { Datenliste, type Datenspalte } from '@/components/ui/Datenliste';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Filterleiste } from '@/components/ui/Filterleiste';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -360,7 +359,6 @@ export function AuditLogPage() {
       {isError && !data ? (
         <ErrorState
           title="Die Auditeinträge konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => void refetch()}
         />
       ) : null}

@@ -18,7 +18,6 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Textlink } from '@/components/ui/Textlink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { leseRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
@@ -163,7 +162,6 @@ export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
       ) : rechnung.isError ? (
         <ErrorState
           title="Die Rechnung konnte nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => rechnung.refetch()}
         />
       ) : null}
@@ -647,7 +645,6 @@ function Zahlungen({
         {zahlungen.isError ? (
           <ErrorState
             title="Die Zahlungen konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
             onErneut={() => zahlungen.refetch()}
           />
         ) : null}
@@ -945,7 +942,6 @@ function Zahlungserinnerungen({
       {erinnerungen.isError ? (
         <ErrorState
           title="Die Zahlungserinnerungen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => erinnerungen.refetch()}
         />
       ) : null}
@@ -1245,7 +1241,6 @@ function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; pat
       <div className="mt-4">
         <ErrorState
           title="Die hinterlegten Empfänger konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => empfaenger.refetch()}
         />
       </div>

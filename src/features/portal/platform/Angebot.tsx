@@ -12,7 +12,6 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { schrittText } from '@/components/ui/abfolge';
 import { formatEuro } from '@/lib/geld';
 import {
@@ -71,7 +70,6 @@ export function Angebot({ zugang }: { zugang: Plattformzugang }) {
             <div>
               <ErrorState
                 title="Das Angebot konnte nicht geladen werden."
-                description={VERBINDUNG_PRUEFEN}
                 onErneut={() => angebot.refetch()}
               />
             </div>

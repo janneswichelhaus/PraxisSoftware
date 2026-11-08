@@ -41,13 +41,13 @@ describe('Abfragezustand (Design-Fundament, ANN-406)', () => {
     expect(container.querySelectorAll('[data-ladekacheln] > div')).toHaveLength(2);
   });
 
-  it('nennt ohne Stand den Fehler mit dem einen Satz und „Erneut versuchen“', async () => {
+  it('nennt ohne Stand den Fehler und „Erneut versuchen“, ohne Ratsatz (L7)', async () => {
     const user = userEvent.setup();
     const zustand = abfrage<string[]>({ isError: true });
     renderWithProviders(<Liste zustand={zustand} />);
     const meldung = screen.getByRole('alert');
     expect(meldung).toHaveTextContent('Die Patientenliste konnte nicht geladen werden.');
-    expect(meldung).toHaveTextContent(VERBINDUNG_PRUEFEN);
+    expect(meldung).not.toHaveTextContent(VERBINDUNG_PRUEFEN);
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(zustand.refetch).toHaveBeenCalledTimes(1);
   });
@@ -139,7 +139,7 @@ describe('Abfragezustand mit eigener Hülle', () => {
     const zustand = abfrage<string>({ isError: true, error: new Error('Failed to fetch') });
     renderWithProviders(<Vollbild zustand={zustand} />);
     const rahmen = screen.getByTestId('rahmen');
-    expect(screen.getByRole('alert')).toHaveTextContent(VERBINDUNG_PRUEFEN);
+    expect(screen.getByRole('alert')).not.toHaveTextContent(VERBINDUNG_PRUEFEN);
     expect(rahmen).toContainElement(screen.getByRole('link', { name: 'Zur Übersicht' }));
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(zustand.refetch).toHaveBeenCalledTimes(1);
@@ -152,7 +152,7 @@ describe('Abfragezustand mit eigener Hülle', () => {
     expect(screen.queryByRole('link', { name: 'Zur Übersicht' })).toBeNull();
   });
 
-  it('zeigt Laden und Fehler als Zeile einer Liste, mit Satz und „Erneut versuchen“', async () => {
+  it('zeigt Laden und Fehler als Zeile einer Liste, mit „Erneut versuchen“ ohne Ratsatz (L7)', async () => {
     const zeile = (zustand: Abfrage<string>) => (
       <ListRows beschriftung="Änderung">
         <Abfragezustand
@@ -170,7 +170,7 @@ describe('Abfragezustand mit eigener Hülle', () => {
 
     const refetch = vi.fn();
     rerender(zeile(abfrage({ isError: true, refetch })));
-    expect(screen.getByRole('alert').closest('li')).toHaveTextContent(VERBINDUNG_PRUEFEN);
+    expect(screen.getByRole('alert').closest('li')).not.toHaveTextContent(VERBINDUNG_PRUEFEN);
     await userEvent.setup().click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(refetch).toHaveBeenCalledOnce();
   });

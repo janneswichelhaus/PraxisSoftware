@@ -5,7 +5,6 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
   angeboteSchluessel,
@@ -49,7 +48,6 @@ export function Paket({ zugang }: { zugang: Plattformzugang }) {
         <div>
           <ErrorState
             title="Ihr Paket und die Preise konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
             onErneut={() => {
               void pakete.refetch();
               void angebote.refetch();

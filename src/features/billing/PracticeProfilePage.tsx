@@ -9,7 +9,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Formularfuss } from '@/components/ui/Formularfuss';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { alsFormularfehler, type Formularfehler } from '@/lib/formularfehler';
 import { canManageBillingProfile, type CurrentUser } from '@/features/core';
@@ -174,7 +173,6 @@ export function PracticeProfilePage({ user }: { user: CurrentUser }) {
       {stammdaten.isError ? (
         <ErrorState
           title="Die Praxisstammdaten konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => stammdaten.refetch()}
         />
       ) : null}

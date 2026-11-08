@@ -417,9 +417,7 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       await user.type(screen.getByLabelText('Montag, Block 1 von'), '07:30');
       await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
 
-      expect(
-        await screen.findByText(/Der angezeigte Stand konnte nicht aktualisiert werden/),
-      ).toBeInTheDocument();
+      expect(await screen.findByText(/Stand nicht aktuell/)).toBeInTheDocument();
       expect(screen.getByText('Wochenplan gespeichert: Montag.')).toBeInTheDocument();
       // Es gilt, was der Server bestätigt hat.
       expect(

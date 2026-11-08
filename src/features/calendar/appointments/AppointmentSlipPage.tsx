@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -92,7 +91,6 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
         {patient.isError ? (
           <ErrorState
             title="Die Patientendaten konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
             onErneut={() => void patient.refetch()}
           />
         ) : (
@@ -110,7 +108,6 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
         {kopf}
         <ErrorState
           title="Die Termine konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => void termine.refetch()}
         />
       </>

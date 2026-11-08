@@ -358,7 +358,7 @@ describe('Tagebuch auf der Plattform (Handoff 2026-10-29, 5.7)', () => {
     renderWithProviders(<Tagebuch zugang={ZUGANG} />, ADRESSE);
     const fehler = await screen.findByRole('alert');
     expect(fehler).toHaveTextContent('Ihr Tagebuch konnte nicht geladen werden.');
-    expect(fehler).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(fehler).not.toHaveTextContent('Verbindung prüfen');
     expect(within(fehler).getByRole('button', { name: 'Erneut versuchen' })).toBeVisible();
   });
 

@@ -4,7 +4,6 @@ import { ErrorState } from '@/components/ui/Feedback';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { abfragen } from './eingang';
 import { formatDay } from './format';
@@ -26,7 +25,6 @@ export function PrescriptionsToCapture({ timeZone }: { timeZone: string }) {
       <Section titel="Verordnungen zu erfassen">
         <ErrorState
           title="Die Verordnungen zum Erfassen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
       </Section>

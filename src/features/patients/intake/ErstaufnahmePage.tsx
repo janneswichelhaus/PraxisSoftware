@@ -5,7 +5,6 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState } from '@/components/ui/Feedback';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -152,7 +151,6 @@ function Schritte({
           <div className="mb-8">
             <ErrorState
               title="Der Stand der Erstaufnahme konnte nicht geladen werden."
-              description={VERBINDUNG_PRUEFEN}
               onErneut={() => {
                 if (checkliste.isError) void checkliste.refetch();
                 if (erhebungen.isError) void erhebungen.refetch();

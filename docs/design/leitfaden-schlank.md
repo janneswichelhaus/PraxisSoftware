@@ -61,6 +61,21 @@ Jede neue oder umgebaute Seite wählt einen Seitentyp aus [DESIGN.md](DESIGN.md)
 dessen Bausteinen; fehlt einer, entsteht er in `src/components/ui`, nicht in der Seite. Die Ratsche
 in `src/designsystem.test.ts` hält den erreichten Stand je Verzeichnis (ANN-400).
 
+## L7 · Titel, Beschriftung, Knopf
+
+Beispiel: die Anmeldeseite („weniger Text überall“, Jannes 2026-11-08): Es blieben Marke, Titel
+und Knopf. Umgesetzt: SLK-010 bis SLK-016.
+
+- Titel, Beschriftung, Daten und Knopf sagen, was eine Ansicht ist und was geht. Ein Satz, der das
+  erklärt oder wiederholt, entfällt: Einleitung, Beschreibung, Hinweis am Feld, Anleitung auf
+  Abruf, Kleingedrucktes ohne Rechtsgrund; was Gerät oder Browser erklären, auch.
+- Was bleibt, ist kurz: Leerzustand ohne Anleitung, Fehler mit Knopf statt Rat, Rückfrage nur mit
+  der Folge, die man nicht sieht.
+- Es bleiben (MUSS vor Leitfaden): Rechtssätze und Pflichtangaben, Einwilligungen wörtlich,
+  Warnung vor Datenverlust, Notfall und Red Flags, Datenfluss und Rechengrundlage
+  (`ARBEITSBEREICHE.md` Regel 4), auf der Plattform ein Satz Orientierung. Druckblätter sind
+  Dokumente. Die Ratsche `saetze` hält den Stand je Verzeichnis.
+
 ## Vorgehen
 
 1. Je Beispiel eine Regel hier.

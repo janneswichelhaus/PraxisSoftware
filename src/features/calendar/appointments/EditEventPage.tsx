@@ -9,7 +9,6 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { roleLabels } from '@/components/ui/roleLabels';
@@ -220,7 +219,6 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
         <Rueckweg standard="/kalender" />
         <ErrorState
           title="Die Fehlzeit konnte nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => termin.refetch()}
         />
       </>
@@ -387,7 +385,6 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
               standorte.isError ? (
                 <ErrorState
                   title="Die Standorte konnten nicht geladen werden."
-                  description={VERBINDUNG_PRUEFEN}
                   onErneut={() => standorte.refetch()}
                 />
               ) : null
@@ -404,7 +401,6 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                   ) : beteiligte.isError ? (
                     <ErrorState
                       title="Die Beteiligten konnten nicht geladen werden."
-                      description={VERBINDUNG_PRUEFEN}
                       onErneut={() => beteiligte.refetch()}
                     />
                   ) : (

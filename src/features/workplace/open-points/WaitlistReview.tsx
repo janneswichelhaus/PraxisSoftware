@@ -5,7 +5,6 @@ import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { type WaitlistEntry, confirmWaitlistEntry } from '@/features/calendar';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { WAITLIST_REVIEW_KEY, abfragen } from './eingang';
@@ -26,7 +25,6 @@ export function WaitlistReview({ timeZone }: { timeZone: string }) {
       <Section titel="Warteliste prüfen">
         <ErrorState
           title="Die Warteliste konnte nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
       </Section>

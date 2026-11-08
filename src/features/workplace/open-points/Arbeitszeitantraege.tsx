@@ -3,7 +3,6 @@ import { ErrorState } from '@/components/ui/Feedback';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { changeTitle, minutesChange } from '@/features/workforce';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { abfragen } from './eingang';
@@ -21,7 +20,6 @@ export function Arbeitszeitantraege({ rueckweg = '/offen' }: { rueckweg?: string
       <Section titel="Arbeitszeitänderungen">
         <ErrorState
           title="Die Arbeitszeitänderungen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
       </Section>

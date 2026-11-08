@@ -406,7 +406,7 @@ describe('AuditLogPage', () => {
     renderWithProviders(<AuditLogPage />);
 
     const meldung = await screen.findByRole('alert');
-    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(meldung).not.toHaveTextContent('Verbindung prüfen');
     expect(meldung).not.toHaveTextContent(/freigegeben|Praxisleitung/);
 
     await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));

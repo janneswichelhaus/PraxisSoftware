@@ -509,7 +509,7 @@ describe('AufbewahrungPage', () => {
 
     const meldung = await screen.findByText('Die Löschsperren konnten nicht geladen werden.');
     const kasten = meldung.closest('[role="alert"]') as HTMLElement;
-    expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen');
+    expect(kasten).not.toHaveTextContent('Verbindung prüfen');
     await userEvent.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
 
     expect(await screen.findByText('Keine laufende Löschsperre')).toBeInTheDocument();

@@ -3,7 +3,6 @@ import { ErrorState } from '@/components/ui/Feedback';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { decidePath, payPath, reimbursementTitle } from '@/features/workforce';
 import { formatEuro } from '@/lib/geld';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -23,7 +22,6 @@ export function Erstattungen({ rueckweg = '/offen' }: { rueckweg?: string }) {
       <Section titel="Erstattungen">
         <ErrorState
           title="Die Erstattungen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
       </Section>

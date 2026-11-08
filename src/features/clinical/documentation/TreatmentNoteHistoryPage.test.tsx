@@ -161,10 +161,7 @@ describe('TreatmentNoteHistoryPage', () => {
     expect(
       await screen.findByText('Der Änderungsverlauf konnte nicht geladen werden.'),
     ).toBeInTheDocument();
-    // Was zu tun ist, und ein Weg dorthin (WRT-01).
-    expect(
-      screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.'),
-    ).toBeInTheDocument();
+    // Der Knopf ist der nächste Schritt, ohne Ratsatz daneben (L7).
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 

@@ -30,7 +30,6 @@ import {
 import { Textlink } from '@/components/ui/Textlink';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { leseZahl } from '@/features/nutrition/eingabe';
 import { feldtext, QUELLENNAME, type Lebensmittel } from '@/features/nutrition/lebensmittel';
 import {
@@ -98,7 +97,6 @@ export function Tagebuch({ zugang }: { zugang: Plattformzugang }) {
           <div className="mt-8">
             <ErrorState
               title="Ihr Tagebuch konnte nicht geladen werden."
-              description={VERBINDUNG_PRUEFEN}
               onErneut={() => abfrage.refetch()}
             />
           </div>

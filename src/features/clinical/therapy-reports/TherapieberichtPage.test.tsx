@@ -420,9 +420,7 @@ describe('Therapiebericht: Zustände', () => {
     zeigeFormular();
 
     expect(await screen.findByText('Der Bericht konnte nicht geladen werden.')).toBeInTheDocument();
-    expect(
-      screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.'),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     expect(screen.queryByText(/angemeldet/)).toBeNull();
     // Beschriftet wie der Reiter, mit dem Kopf der Seite (Sichtung A7, A8).
     expect(

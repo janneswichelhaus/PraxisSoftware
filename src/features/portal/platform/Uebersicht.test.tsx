@@ -960,9 +960,7 @@ describe('Zustände', () => {
     await screen.findByRole('link', { name: /^Rechnung RG-2026-0001/ });
     ladeRechnungen.mockRejectedValue(new Error('Netz weg'));
     act(() => focusManager.setFocused(true));
-    expect(
-      await screen.findByText(/Der angezeigte Stand konnte nicht aktualisiert werden/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Stand nicht aktuell/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^Rechnung RG-2026-0001/ })).toBeInTheDocument();
     expect(
       screen.queryByText('Die Übersicht lässt sich gerade nicht laden.'),
@@ -975,9 +973,7 @@ describe('Zustände', () => {
     const hero = await screen.findByRole('region', { name: 'Besuch bei Max Mustermann' });
     ladeTermine.mockRejectedValue(new Error('Netz weg'));
     act(() => focusManager.setFocused(true));
-    const hinweis = await screen.findByText(
-      /Der angezeigte Stand konnte nicht aktualisiert werden/,
-    );
+    const hinweis = await screen.findByText(/Stand nicht aktuell/);
     expect(hinweis.compareDocumentPosition(hero) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 

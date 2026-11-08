@@ -296,7 +296,7 @@ describe('PatientsListPage (B1, B10)', () => {
     // Kein technisches Detail nach aussen (PROJECT_PRINCIPLES.md 13).
     expect(meldung.textContent).not.toMatch(/rls/i);
     expect(meldung.textContent).not.toMatch(/angemeldet/);
-    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(meldung).not.toHaveTextContent('Verbindung prüfen');
   });
 
   it('laedt die Liste nach einem Fehler auf Wunsch erneut (UIK-16)', async () => {

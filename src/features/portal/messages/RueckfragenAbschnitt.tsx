@@ -4,7 +4,6 @@ import { ErrorState } from '@/components/ui/Feedback';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { fetchRueckfragen, rueckfragenKey, type Verhaeltnisart } from './api';
 import { RueckfragenListe } from './RueckfragenListe';
 
@@ -63,7 +62,6 @@ export function OffeneRueckfragen({ bereiche }: { bereiche: Verhaeltnisart[] }) 
       <Section titel="Rückfragen von der Plattform">
         <ErrorState
           title="Die Rückfragen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
       </Section>

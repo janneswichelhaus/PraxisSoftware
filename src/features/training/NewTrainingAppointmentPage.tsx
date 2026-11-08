@@ -6,7 +6,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { leseRueckweg } from '@/lib/rueckweg';
@@ -135,7 +134,6 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
               {kundinnen.isError ? (
                 <ErrorState
                   title={`Die ${BEGRIFFE.trainingskundInnen} konnten nicht geladen werden.`}
-                  description={VERBINDUNG_PRUEFEN}
                   onErneut={() => kundinnen.refetch()}
                 />
               ) : (
@@ -164,7 +162,6 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
                 // Sonst sähe eine gescheiterte Abfrage aus wie „keine Vereinbarung“.
                 <ErrorState
                   title="Die Vereinbarungen konnten nicht geladen werden."
-                  description={VERBINDUNG_PRUEFEN}
                   onErneut={() => vereinbarungen.refetch()}
                 />
               ) : kunde ? (
