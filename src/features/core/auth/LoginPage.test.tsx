@@ -70,9 +70,10 @@ describe('LoginPage: Anmeldung per Passkey (ADR-025 Fassung 2)', () => {
     expect(screen.queryByLabelText('Kennwort')).toBeNull();
     expect(screen.queryByLabelText('E-Mail-Adresse')).toBeNull();
     expect(screen.queryByText(/Kennwort vergessen/)).toBeNull();
-    expect(screen.getByText(/Wenden Sie sich an die Praxis/)).toBeInTheDocument();
-    // Keine eigene Anleitung für den Rechner: Das Passkey-Fenster des Browsers führt dorthin.
+    // Jannes 2026-11-08: kein erklärender Satz, keine Anleitung für den Rechner, kein „Passkey verloren?“.
     expect(screen.queryByText('Am Rechner anmelden')).toBeNull();
+    expect(screen.queryByText(/Passkey verloren/)).toBeNull();
+    expect(screen.queryByText(/Displaysperre/)).toBeNull();
   });
 
   it('meldet mit dem Passkey an', async () => {
