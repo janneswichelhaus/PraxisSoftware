@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
 import type { Einstiegsstand, Plattformzugang } from './api';
@@ -67,7 +67,10 @@ describe('Einstellungen (POR-020)', () => {
       await screen.findByText(/Die Praxis hat den Einstieg am .* übersprungen/),
     ).toBeInTheDocument();
     expect(screen.getByText(/Ihre Einwilligungen hat sie dabei nicht berührt/)).toBeInTheDocument();
-    expect(screen.getByText(/mit „Sie“ an/)).toBeInTheDocument();
+    // Die Anrede gilt für alle und steht nicht mehr da.
+    expect(screen.queryByText(/mit „Sie“ an/)).toBeNull();
+    // Das Technikwort hinter der Beschreibung.
+    expect(screen.getByText(/mit Gesicht, Finger oder Ihrer PIN an/)).toBeInTheDocument();
     await pruefeBarrierefreiheit(container);
   });
 
@@ -114,6 +117,15 @@ describe('Einstellungen (POR-020)', () => {
     const wahl = await screen.findByText('Benachrichtigungen wählen');
     expect(wahl.closest('details')).not.toHaveAttribute('open');
     expect(gerollt).not.toHaveBeenCalled();
+  });
+
+  it('zeigt die Schrift an einem Beispielsatz und ohne Einstieg keinen Abschnitt der Praxis', async () => {
+    ladeEinstieg.mockResolvedValue(null);
+    renderWithProviders(<Einstellungen zugaenge={[ZUGANG]} />);
+    expect(screen.getByText('Aa')).toBeInTheDocument();
+    expect(screen.getByText(/Ihr nächster Besuch/)).toBeInTheDocument();
+    await waitFor(() => expect(ladeEinstieg).toHaveBeenCalled());
+    expect(screen.queryByRole('heading', { name: /Was die Praxis/ })).toBeNull();
   });
 
   it('ohne Speicher des Browsers gilt „Normal", und die Seite bleibt benutzbar', () => {
