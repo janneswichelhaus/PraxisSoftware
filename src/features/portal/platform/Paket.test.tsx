@@ -80,7 +80,6 @@ describe('Trainingspaket auf der Plattform (ANG-008)', () => {
 
     expect(await screen.findByText('Läuft seit 01.10.2026 bis 31.12.2026.')).toBeInTheDocument();
     expect(screen.getByText('einmal zu Beginn berechnet')).toBeInTheDocument();
-    expect(screen.getByText('läuft')).toBeInTheDocument();
     expect(screen.getAllByText('390,00 €')).toHaveLength(2);
     expect(screen.getByText('720,00 €')).toBeInTheDocument();
     expect(screen.getByText('6 Monate · inklusive 19 % Umsatzsteuer')).toBeInTheDocument();
@@ -97,8 +96,9 @@ describe('Trainingspaket auf der Plattform (ANG-008)', () => {
     ladeMeinePakete.mockResolvedValue([]);
     ladeAngebote.mockResolvedValue(ANGEBOTE);
     renderWithProviders(<Paket zugang={ZUGANG} />);
-    // Ein ruhiger Satz statt einer Karte.
-    expect(await screen.findByText('Sie haben zurzeit kein Paket.')).toBeInTheDocument();
+    const leer = await screen.findByText('Sie haben zurzeit kein Paket.');
+    // Der Leerzustand des Systems, mittig in der Karte wie die übrigen (L5).
+    expect(leer.parentElement).toHaveClass('text-center');
     expect(screen.getByText('390,00 €')).toBeInTheDocument();
   });
 

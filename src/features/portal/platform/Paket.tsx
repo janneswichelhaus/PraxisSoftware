@@ -73,10 +73,11 @@ export function Paket({ zugang }: { zugang: Plattformzugang }) {
 function MeinePakete({ pakete }: { pakete: MeinPaket[] }) {
   const aktuell = pakete.filter((k) => k.state !== 'ended');
   const frueher = pakete.filter((k) => k.state === 'ended');
+  // Ohne jedes Paket der Leerzustand des Systems in der Karte, wie „Pakete und Preise“ (DESIGN.md 9.17).
   if (aktuell.length === 0 && frueher.length === 0) {
     return (
       <Section titel="Ihr Paket">
-        <p className="text-ink-muted text-base">Sie haben zurzeit kein Paket.</p>
+        <EmptyState inKarte title="Sie haben zurzeit kein Paket." />
       </Section>
     );
   }
@@ -94,13 +95,11 @@ function MeinePakete({ pakete }: { pakete: MeinPaket[] }) {
             aria-label="Ihr Paket"
             className="mb-10 flex flex-col items-start gap-2 last:mb-0"
           >
-            {k.state === 'running' ? (
-              <Badge ton="positiv">läuft</Badge>
-            ) : (
+            {k.state === 'planned' ? (
               <Badge ton="neutral" eigenesZeichen={STATUSZEICHEN.wartet}>
                 beginnt bald
               </Badge>
-            )}
+            ) : null}
             <p className="text-ink text-liste font-semibold">{k.label}</p>
             <p className="text-ink text-gruss [[data-rechner]_&]:text-gruss-rechner tabular-nums">
               {formatEuro(k.price_cents, k.currency)}
@@ -130,7 +129,7 @@ function Angebote({ angebote }: { angebote: Paketangebote }) {
     <>
       <Section titel="Pakete und Preise">
         {angebote.offers.length === 0 ? (
-          <p className="text-ink-muted text-base">Die Praxis bietet zurzeit keine Pakete an.</p>
+          <EmptyState inKarte title="Die Praxis bietet zurzeit keine Pakete an." />
         ) : (
           <ListRows rahmen beschriftung="Pakete und Preise">
             {angebote.offers.map((a) => (

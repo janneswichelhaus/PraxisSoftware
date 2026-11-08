@@ -131,8 +131,7 @@ describe('Trainingsangebot auf der Plattform (KND-003)', () => {
     expect(within(fenster).getByLabelText('Kontaktdaten')).not.toBeChecked();
     await userEvent.click(within(fenster).getByLabelText('Belastungsgrenzen'));
     await userEvent.click(within(fenster).getByLabelText('Kontaktdaten'));
-    await weiter();
-    await userEvent.click(await screen.findByLabelText('Ich willige ein.'));
+    await userEvent.click(within(fenster).getByLabelText('Ich willige ein.'));
     await weiter();
     expect(await screen.findByText('Widerrufsrecht')).toBeInTheDocument();
     expect(screen.getByText(/Um Ihr Widerrufsrecht auszuüben/)).toHaveTextContent(
@@ -174,7 +173,6 @@ describe('Trainingsangebot auf der Plattform (KND-003)', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Angebot prüfen und buchen' }));
     await weiter();
     await weiter();
-    await weiter();
     await userEvent.click(await screen.findByRole('button', { name: 'Zahlungspflichtig buchen' }));
     expect(angebotAnnehmen).toHaveBeenCalledWith(
       ZUGANG.access_id,
@@ -189,7 +187,6 @@ describe('Trainingsangebot auf der Plattform (KND-003)', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Angebot prüfen und buchen' }));
     await userEvent.click(await screen.findByLabelText('Vorgeschichte'));
     await weiter();
-    await weiter();
     expect(await screen.findByText(/gehen nur mit dieser Einwilligung/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Zahlungspflichtig buchen' })).toBeNull();
   });
@@ -199,7 +196,6 @@ describe('Trainingsangebot auf der Plattform (KND-003)', () => {
     angebotAnnehmen.mockResolvedValue({ ...GEBUCHT, early_start_requested: true });
     renderWithProviders(<Angebot zugang={ZUGANG} />);
     await userEvent.click(await screen.findByRole('button', { name: 'Angebot prüfen und buchen' }));
-    await weiter();
     await weiter();
     await weiter();
     expect(

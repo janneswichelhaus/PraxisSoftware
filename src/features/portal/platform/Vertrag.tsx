@@ -83,9 +83,7 @@ function Inhalt({ vertrag: v }: { vertrag: Trainingsvertrag }) {
           <Badge ton="neutral" eigenesZeichen={STATUSZEICHEN.abgelehnt}>
             widerrufen
           </Badge>
-        ) : (
-          <Badge ton="positiv">gebucht</Badge>
-        )}
+        ) : null}
         <p className="text-ink text-liste font-semibold">{v.label}</p>
         <p className="text-ink text-gruss [[data-rechner]_&]:text-gruss-rechner tabular-nums">
           {formatEuro(v.price_cents, v.currency)}

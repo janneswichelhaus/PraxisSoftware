@@ -47,7 +47,7 @@ test.describe('Übergang ins Training', () => {
       await expect(
         page.getByRole('heading', { name: 'Training nach Ihrer Behandlung' }),
       ).toBeVisible();
-      // Der Abschluss als geführter Ablauf: Freigaben, Einwilligung, Belehrung, Übersicht.
+      // Der Abschluss als geführter Ablauf: Freigaben mit Einwilligung, Belehrung, Übersicht.
       await mindestens44(page, 'Angebot prüfen und buchen');
       await page.getByRole('button', { name: 'Angebot prüfen und buchen' }).click();
       const weiter = page.getByRole('dialog').getByRole('button', { name: 'Weiter' });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
@@ -91,7 +91,7 @@ export function Angebot({ zugang }: { zugang: Plattformzugang }) {
   );
 }
 
-type Abschlussseite = 'freigaben' | 'einwilligung' | 'widerruf' | 'pruefen';
+type Abschlussseite = 'freigaben' | 'widerruf' | 'pruefen';
 
 /**
  * Die Seite des Angebots: Paket und Preis, was enthalten ist, und der Weg in
@@ -139,24 +139,21 @@ function Formular({
         <Paketkopf angebot={angebot} />
       </Section>
 
-      <Section titel="Im Preis enthalten">
-        <ul className="text-ink flex list-disc flex-col gap-2 pl-5 text-base leading-relaxed">
-          {PAKETINHALT.map((satz) => (
-            <li key={satz}>{satz}</li>
-          ))}
-        </ul>
-      </Section>
+      <div className="mt-6">
+        <Disclosure summary="Bedingungen">
+          <ul className="text-ink flex list-disc flex-col gap-2 pl-5 text-base leading-relaxed">
+            {PAKETINHALT.map((satz) => (
+              <li key={satz}>{satz}</li>
+            ))}
+          </ul>
+        </Disclosure>
+      </div>
 
       {annehmbar ? (
         <div className="mt-10 [[data-rechner]_&]:mt-12">
           <Button className="w-full sm:w-auto" onClick={() => setOffen(true)}>
             Angebot prüfen und buchen
           </Button>
-          <p className="text-ink-muted mt-3 text-base">
-            {angebot.handover_items.length > 0 || angebot.contact
-              ? 'In vier Schritten: was ins Training darf, Ihre Einwilligung, die Widerrufsbelehrung und eine Übersicht vor dem Buchen.'
-              : 'In drei Schritten: Ihre Einwilligung, die Widerrufsbelehrung und eine Übersicht vor dem Buchen.'}
-          </p>
         </div>
       ) : (
         <div className="mt-8">
@@ -255,15 +252,17 @@ function Abschluss({
 }) {
   const queryClient = useQueryClient();
   const mitFreigaben = angebot.handover_items.length > 0 || angebot.contact !== null;
-  const folge: Abschlussseite[] = [
-    ...(mitFreigaben ? (['freigaben'] as const) : []),
-    'einwilligung',
-    'widerruf',
-    'pruefen',
-  ];
+  // Freigaben und Einwilligung auf einer Seite: Die Meldung zur fehlenden Einwilligung zeigt
+  // auf Häkchen, die man sieht.
+  const folge: Abschlussseite[] = ['freigaben', 'widerruf', 'pruefen'];
   const [index, setIndex] = useState(0);
   const [geprueft, setGeprueft] = useState(false);
   const seite = folge[index]!;
+  // Die Meldung unter dem Kästchen nicht hinter dem festen Fuß lassen.
+  const meldung = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (geprueft) meldung.current?.scrollIntoView?.({ block: 'center' });
+  }, [geprueft]);
   const buchen = useMutation({
     mutationFn: () =>
       angebotAnnehmen(zugang.access_id, {
@@ -295,8 +294,13 @@ function Abschluss({
     ...(wahl.kontakt ? ['Kontaktdaten'] : []),
   ];
 
+  function aendern(ziel: number) {
+    buchen.reset();
+    setIndex(ziel);
+  }
+
   function weiterGehen() {
-    if ((seite === 'einwilligung' && einwilligungFehlt) || (seite === 'widerruf' && fruehFehlt)) {
+    if ((seite === 'freigaben' && einwilligungFehlt) || (seite === 'widerruf' && fruehFehlt)) {
       setGeprueft(true);
       return;
     }
@@ -306,12 +310,12 @@ function Abschluss({
 
   const titel =
     seite === 'freigaben'
-      ? 'Was darf Ihre Trainer:in wissen?'
-      : seite === 'einwilligung'
-        ? text.titel
-        : seite === 'widerruf'
-          ? 'Widerrufsbelehrung'
-          : 'Ist alles richtig?';
+      ? mitFreigaben
+        ? 'Was darf Ihre Trainer:in wissen?'
+        : text.titel
+      : seite === 'widerruf'
+        ? 'Widerrufsbelehrung'
+        : 'Ist alles richtig?';
 
   return (
     <GefuehrterAblauf
@@ -362,44 +366,48 @@ function Abschluss({
     >
       {seite === 'freigaben' ? (
         <>
-          <p className="text-ink text-base leading-relaxed">
-            Kreuzen Sie an, was Ihre Trainer:in wissen darf. Nur das wird ins Training kopiert;
-            alles andere bleibt in Ihrer Behandlungsakte.
+          {mitFreigaben ? (
+            <>
+              <p className="text-ink text-base leading-relaxed">
+                Kreuzen Sie an, was Ihre Trainer:in wissen darf. Nur das wird ins Training kopiert;
+                alles andere bleibt in Ihrer Behandlungsakte.
+              </p>
+              <div className="mt-4 flex flex-col gap-3">
+                {angebot.handover_items.map((angabe, i) => (
+                  <Checkbox
+                    key={angabe.title}
+                    label={<span className="font-medium">{angabe.title}</span>}
+                    hint={angabe.body}
+                    checked={wahl.freigaben.includes(i + 1)}
+                    onChange={(event) =>
+                      setWahl({
+                        ...wahl,
+                        freigaben: event.target.checked
+                          ? [...wahl.freigaben, i + 1].sort((x, y) => x - y)
+                          : wahl.freigaben.filter((n) => n !== i + 1),
+                      })
+                    }
+                  />
+                ))}
+                {angebot.contact ? (
+                  <Checkbox
+                    label={<span className="font-medium">Kontaktdaten</span>}
+                    hint={kontaktZeile(angebot.contact)}
+                    checked={wahl.kontakt}
+                    onChange={(event) => setWahl({ ...wahl, kontakt: event.target.checked })}
+                  />
+                ) : null}
+              </div>
+              <h3 className="text-ink text-abschnitt mt-8 font-bold">{text.titel}</h3>
+            </>
+          ) : null}
+          <p className={`text-ink text-base leading-relaxed ${mitFreigaben ? 'mt-2' : ''}`}>
+            {text.text}
           </p>
-          <div className="mt-4 flex flex-col gap-3">
-            {angebot.handover_items.map((angabe, i) => (
-              <Checkbox
-                key={angabe.title}
-                label={<span className="font-medium">{angabe.title}</span>}
-                hint={angabe.body}
-                checked={wahl.freigaben.includes(i + 1)}
-                onChange={(event) =>
-                  setWahl({
-                    ...wahl,
-                    freigaben: event.target.checked
-                      ? [...wahl.freigaben, i + 1].sort((x, y) => x - y)
-                      : wahl.freigaben.filter((n) => n !== i + 1),
-                  })
-                }
-              />
-            ))}
-            {angebot.contact ? (
-              <Checkbox
-                label={<span className="font-medium">Kontaktdaten</span>}
-                hint={kontaktZeile(angebot.contact)}
-                checked={wahl.kontakt}
-                onChange={(event) => setWahl({ ...wahl, kontakt: event.target.checked })}
-              />
-            ) : null}
-          </div>
-        </>
-      ) : seite === 'einwilligung' ? (
-        <>
-          <p className="text-ink text-base leading-relaxed">{text.text}</p>
           <p className="text-ink-muted mt-2 text-base leading-relaxed">
             {FREIWILLIG} {OHNE_NACHTEIL.training}
           </p>
-          <div className="mt-4">
+          <div className="mt-4" ref={meldung}>
             <Checkbox
               label="Ich willige ein."
               checked={wahl.einwilligung}
@@ -416,7 +424,7 @@ function Abschluss({
         <>
           <Belehrung angebot={angebot} />
           {angebot.early_start ? (
-            <div className="mt-6">
+            <div className="mt-6" ref={meldung}>
               <Checkbox
                 label={FRUEHER_BEGINN}
                 checked={wahl.frueh}
@@ -433,33 +441,48 @@ function Abschluss({
       ) : (
         <>
           <Paketkopf angebot={angebot} />
+          <dl className="border-line mt-4 flex flex-col gap-3 border-y py-4 text-base">
+            <Angabe titel="Ins Training übernommen" onAendern={() => aendern(0)}>
+              {uebernommen.length > 0 ? uebernommen.join(', ') : 'nichts aus Ihrer Behandlung'}
+            </Angabe>
+            <Angabe titel="Einwilligung zu Gesundheitsangaben" onAendern={() => aendern(0)}>
+              {wahl.einwilligung ? 'erteilt' : 'nicht erteilt'}
+            </Angabe>
+            <Angabe titel="Widerruf" onAendern={() => aendern(1)}>
+              {angebot.withdrawal_days} Tage ab dem Buchen
+              {wahl.frueh ? '; Beginn vor Ende der Frist verlangt' : ''}
+            </Angabe>
+          </dl>
           <ul className="text-ink mt-4 flex list-disc flex-col gap-2 pl-5 text-base leading-relaxed">
             {PAKETINHALT.map((satz) => (
               <li key={satz}>{satz}</li>
             ))}
           </ul>
-          <dl className="border-line mt-4 flex flex-col gap-3 border-t pt-4 text-base">
-            <div>
-              <dt className="text-ink-muted">Ins Training übernommen</dt>
-              <dd className="text-ink">
-                {uebernommen.length > 0 ? uebernommen.join(', ') : 'nichts aus Ihrer Behandlung'}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-ink-muted">Einwilligung zu Gesundheitsangaben</dt>
-              <dd className="text-ink">{wahl.einwilligung ? 'erteilt' : 'nicht erteilt'}</dd>
-            </div>
-            <div>
-              <dt className="text-ink-muted">Widerruf</dt>
-              <dd className="text-ink">
-                {angebot.withdrawal_days} Tage ab dem Buchen
-                {wahl.frueh ? '; Beginn vor Ende der Frist verlangt' : ''}
-              </dd>
-            </div>
-          </dl>
         </>
       )}
     </GefuehrterAblauf>
+  );
+}
+
+function Angabe({
+  titel,
+  onAendern,
+  children,
+}: {
+  titel: string;
+  onAendern: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-x-3">
+      <div className="min-w-0">
+        <dt className="text-ink-muted">{titel}</dt>
+        <dd className="text-ink">{children}</dd>
+      </div>
+      <Button variant="quiet" groesse="kompakt" className="-mr-3" onClick={onAendern}>
+        Ändern<span className="sr-only">: {titel}</span>
+      </Button>
+    </div>
   );
 }
 

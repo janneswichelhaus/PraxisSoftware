@@ -1,10 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Button } from './Button';
 
 /**
  * Eine Angabe zum Abschreiben mit „Kopieren“ daneben, etwa IBAN und Verwendungszweck einer
- * Rechnung. Die Rückmeldung steht im Knopf und wird angesagt; ohne Zwischenablage (alte Browser,
- * kein HTTPS) sagt sie, dass man abschreiben muss. Der Wert bleibt immer lesbar daneben.
+ * Rechnung. „✓ Kopiert“ bleibt stehen: Wer aus der Bank-App zurückkommt, sieht, was noch fehlt.
+ * Ohne Zwischenablage (alte Browser, kein HTTPS) heißt es abschreiben.
  */
 export function Kopierzeile({
   etikett,
@@ -18,12 +18,6 @@ export function Kopierzeile({
   anzeige?: ReactNode;
 }) {
   const [stand, setStand] = useState<'ja' | 'nein' | null>(null);
-  useEffect(() => {
-    if (stand !== 'ja') return;
-    const uhr = window.setTimeout(() => setStand(null), 4000);
-    return () => window.clearTimeout(uhr);
-  }, [stand]);
-
   async function kopieren() {
     try {
       await navigator.clipboard.writeText(wert);

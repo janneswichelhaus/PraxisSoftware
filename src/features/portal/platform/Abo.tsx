@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -85,7 +86,7 @@ function Stand({ zugang, abo }: { zugang: Plattformzugang; abo: Nachsorgeabo }) 
     abo.state === 'running'
       ? beginntNoch
         ? { wort: 'beginnt bald', ton: 'neutral' as const, zeichen: STATUSZEICHEN.wartet }
-        : { wort: 'läuft', ton: 'positiv' as const, zeichen: undefined }
+        : null
       : abo.state === 'ending'
         ? { wort: 'gekündigt', ton: 'neutral' as const, zeichen: STATUSZEICHEN.wartet }
         : { wort: 'beendet', ton: 'neutral' as const, zeichen: STATUSZEICHEN.fehlt };
@@ -94,9 +95,12 @@ function Stand({ zugang, abo }: { zugang: Plattformzugang; abo: Nachsorgeabo }) 
     <>
       {/* Stand und nächste Zahlung oben, wie eine Mitgliedschaft (ANN-856). */}
       <section aria-label="Ihr Abo" className="flex flex-col items-start gap-2">
-        <Badge ton={zustand.ton} eigenesZeichen={zustand.zeichen}>
-          {zustand.wort}
-        </Badge>
+        {/* Der Regelfall „läuft“ trägt kein Abzeichen (DESIGN.md Regel 5). */}
+        {zustand ? (
+          <Badge ton={zustand.ton} eigenesZeichen={zustand.zeichen}>
+            {zustand.wort}
+          </Badge>
+        ) : null}
         {abo.state === 'running' && abo.next_month_price_cents !== null ? (
           <p className="text-ink text-gruss [[data-rechner]_&]:text-gruss-rechner tabular-nums">
             {formatEuro(abo.next_month_price_cents)}
@@ -129,10 +133,6 @@ function Stand({ zugang, abo }: { zugang: Plattformzugang; abo: Nachsorgeabo }) 
         ) : null}
       </section>
 
-      <Section titel="Was nach dem Ende bleibt">
-        <p className="text-ink text-base leading-relaxed">{NACH_DEM_ENDE}</p>
-      </Section>
-
       {abo.state === 'running' ? (
         // Kündigen leise am Ende, aber ohne Umweg und ohne Rückhaltedialog (ANN-272, ANN-856).
         <Section titel="Kündigen">
@@ -153,6 +153,12 @@ function Stand({ zugang, abo }: { zugang: Plattformzugang; abo: Nachsorgeabo }) 
           )}
         </Section>
       ) : null}
+
+      <div className="mt-8">
+        <Disclosure summary="Was passiert nach dem Ende?">
+          <p className="text-ink text-base leading-relaxed">{NACH_DEM_ENDE}</p>
+        </Disclosure>
+      </div>
     </>
   );
 }
