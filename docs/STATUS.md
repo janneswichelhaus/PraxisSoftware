@@ -6,12 +6,12 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Plattform Schritt 6 Unterlagen und Verträge** auf `ccr-c614e9be-3jxfvj`, ohne Leinwand (§15.2),
-ANN-854 bis ANN-857; Merge bei Jannes.
+**Plattform Schritt 7 Ich und Datenschutz** auf `ccr-4dbdd28e-el9us5`, ohne Leinwand (§15.2),
+ANN-858 bis ANN-860; Merge bei Jannes.
 
 ## Danach
 
-Bis M2 im November (Jannes 2026-11-01): Schritt 7 der Plattform nach den Briefings, Leinwände fließen nach (Feindesign);
+Bis M2 im November (Jannes 2026-11-01): Leinwände der Plattform fließen nach (Feindesign);
 DATEV erst nach B4; zuletzt der Wartungsmodus (ohne Gates zu berühren). **G14
 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
 zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
@@ -41,4 +41,4 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-08.11.2026, Branch `ccr-c614e9be-3jxfvj` ab `main` (Plattform Schritt 6), keine Migration.
+08.11.2026, Plattform Schritt 7 ab `main`, keine Migration.
