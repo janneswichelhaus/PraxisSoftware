@@ -6,8 +6,8 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Installierte App ohne Browserleiste** auf `ccr-c614e9be-3jxfvj`: Manifest und Symbol vor der
-zweiten Tür (ANN-101); danach App neu installieren. Schritt 6 gemergt (#359).
+**App ohne Browserleiste** auf `ccr-c614e9be-3jxfvj`: Manifest und Symbol vor der Tür
+(ANN-101), danach neu installieren.
 
 ## Danach
 
