@@ -161,6 +161,8 @@ export const auditOperationLabels: Record<string, string> = {
   'deletion_runs.read': 'Löschläufe gelesen',
   // UEB-EPIC-002: Übungspläne einer Akte oder Trainingskund:in (ANN-298).
   'exercise_plans.read': 'Übungspläne gelesen',
+  // Antwort vom AI Gateway umformen lassen (ANN-861); keine neue Aktion (ADR-010).
+  'platform_message.answer_worded': 'Antwort auf eine Rückfrage umgeformt',
   // KOM-002: Abweisung der Liste der Rückfragen (keine neue Aktion, ADR-010).
   'platform_messages.read': 'Rückfragen gelesen',
   // UX-009a: Absender der Praxis für Blätter an Patient:innen (ANN-323).

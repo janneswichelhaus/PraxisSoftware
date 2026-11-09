@@ -85,6 +85,17 @@ export interface Ordnungsantwort {
 }
 
 /**
+ * Die Antwort aufs Umformen: je Satz der Eingabe genau ein Satz, in derselben Reihenfolge.
+ * `unveraendert` heißt, dort steht die Eingabe im Wortlaut (`waechter.ts`).
+ */
+export interface Umformungsantwort {
+  readonly ok: true;
+  readonly art: 'umformen';
+  readonly saetze: readonly { readonly text: string; readonly unveraendert: boolean }[];
+  readonly quelle: Quelle;
+}
+
+/**
  * Die Antwort auf die Frage vor „Sprechen“ (`GET`): Wird der Zweck hier
  * bedient? Nur ja oder nein - kein Anbieter, keine Quelle.
  */
@@ -139,6 +150,15 @@ export interface Sprachadapter {
   ): Promise<Adapterergebnis<{ readonly zuordnung: readonly string[] }>>;
 }
 
+/** An den Adapter zum Umformen: die Sätze, was mit ihnen geschehen soll, und die Regeln. */
+export interface Umformanfrage {
+  /** In der Reihenfolge des Textes, zerlegt vom Gateway (`waechter.ts`). */
+  readonly saetze: readonly string[];
+  readonly aufgabe: 'ausformulieren';
+  readonly sprache: Sprache;
+  readonly regeln: string;
+}
+
 /**
  * Ein Anbieter für die Hilfen ohne Ton. Was er liefert, ist eine Behauptung, bis der Gateway
  * sie an der Eingabe geprüft hat: Er nennt Stellen, den Wortlaut setzt der Gateway.
@@ -150,6 +170,11 @@ export interface Assistenzadapter {
     anfrage: Zuordnungsanfrage,
     signal: AbortSignal,
   ): Promise<Adapterergebnis<{ readonly zuordnung: readonly string[] }>>;
+  /** Je Satz genau ein Satz, in derselben Reihenfolge. */
+  formuliere(
+    anfrage: Umformanfrage,
+    signal: AbortSignal,
+  ): Promise<Adapterergebnis<{ readonly saetze: readonly string[] }>>;
 }
 
 /**
@@ -160,7 +185,8 @@ export interface Assistenzadapter {
  */
 export interface Protokolleintrag {
   /** Der geprüfte Zweck - nie der Wert aus der Anfrage, der beliebig sein kann. */
-  readonly zweck: 'dokumentation.diktat' | 'dokumentation.ordnen' | 'unbekannt';
+  readonly zweck:
+    'dokumentation.diktat' | 'dokumentation.ordnen' | 'nachricht.entwurf' | 'unbekannt';
   /** Anbieterkennung oder die Stelle davor: `sitzung`, `berechtigung`, `gate`. */
   readonly anbieter: string;
   /** `gate_rejected`: Die Nachbildung ist in der Produktion ausgeschlossen. */

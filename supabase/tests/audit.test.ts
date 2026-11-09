@@ -225,6 +225,8 @@ describe('Audit-Lesepfad', () => {
       order by p.proname
     `);
     expect(rows.map((r) => r.proname)).toEqual([
+      // Antwort umformen (ANN-861) - nur das AI Gateway fragt, nie die Oberfläche.
+      'check_answer_wording_access',
       'check_appointment_slots',
       // KI-001: Diktat am Termin - nur das AI Gateway fragt, nie die Oberfläche.
       'check_dictation_access',

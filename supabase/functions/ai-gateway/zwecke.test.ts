@@ -5,6 +5,8 @@ import {
   DIKTAT_REGELN,
   HOECHST_BYTES,
   HOECHST_DAUER_S,
+  ENTWURF_REGELN,
+  NACHRICHT_HOECHST_ZEICHEN,
   ORDNEN_HOECHST_ZEICHEN,
   ORDNEN_REGELN,
   ZWECKE,
@@ -16,7 +18,11 @@ import {
 
 describe('Zweckliste', () => {
   it('kennt genau diese Zwecke', () => {
-    expect(Object.keys(ZWECKE)).toEqual(['dokumentation.diktat', 'dokumentation.ordnen']);
+    expect(Object.keys(ZWECKE)).toEqual([
+      'dokumentation.diktat',
+      'dokumentation.ordnen',
+      'nachricht.entwurf',
+    ]);
     for (const kennung of Object.keys(ZWECKE)) expect(zweckAus(kennung)?.kennung).toBe(kennung);
   });
 
@@ -126,6 +132,41 @@ describe('Zweckliste', () => {
     ])('nennt in den Regeln: %s', (_punkt, muster) => {
       expect(ORDNEN_REGELN).toMatch(muster);
       expect(zweck.regeln).toBe(ORDNEN_REGELN);
+    });
+  });
+
+  describe('Antwort ausformulieren', () => {
+    const zweck = ZWECKE['nachricht.entwurf'];
+
+    it('nimmt Text bis zur Länge einer Antwort und prüft an der Rückfrage', () => {
+      expect(zweck.art).toBe('umformen');
+      expect(zweck.gegenstand).toBe('rueckfrage');
+      expect(zweck.aufgabe).toBe('ausformulieren');
+      expect(zweck.eingabe).toEqual({ hoechstZeichen: NACHRICHT_HOECHST_ZEICHEN, sprache: 'de' });
+      expect(NACHRICHT_HOECHST_ZEICHEN).toBe(2000);
+    });
+
+    it.each([
+      ['nur ausformulieren, nichts beantworten', /Nur ausformulieren, nichts beantworten/],
+      ['die Frage liegt nicht vor', /Die Frage der Person liegt nicht vor/],
+      ['ein Satz je Abschnitt', /je Abschnitt[^\n]*genau ein Satz/],
+      [
+        'kein weiterer Satz, kein Nebensatz mit Neuem',
+        /kein weiterer Satz, kein Nebensatz mit Neuem/,
+      ],
+      ['keine Anrede, kein Gruß', /keine Anrede, kein Gruß/],
+      ['kein Rat, keine Empfehlung, keine Diagnose', /kein Rat, keine Empfehlung, keine Diagnose/],
+      ['keine Bewertung, keine Prognose', /keine Bewertung, keine Prognose/],
+      ['nichts auslassen', /Nichts auslassen/],
+      ['Zahlen als Ziffern', /Zahlen als Ziffern/],
+      [
+        'Körperseiten, Verneinungen, Unsicherheiten',
+        /Körperseiten, Verneinungen[^\n]*Unsicherheiten/,
+      ],
+      ['im Zweifel der Wortlaut', /bleibt im Wortlaut des Abschnitts/],
+    ])('nennt in den Regeln: %s', (_punkt, muster) => {
+      expect(ENTWURF_REGELN).toMatch(muster);
+      expect(zweck.regeln).toBe(ENTWURF_REGELN);
     });
   });
 });

@@ -11,12 +11,19 @@ import {
 } from '@/lib/ki/gateway';
 import { einheiten as einheitenImBrowser } from '@/lib/ki/einheiten';
 import { ORDNEN_HOECHSTZEICHEN, ZWECK_ORDNEN } from '@/lib/ki/ordnen';
+import {
+  UMFORMEN_HOECHSTZEICHEN,
+  ZWECK_ENTWURF,
+  stuecke as stueckeImBrowser,
+} from '@/lib/ki/umformen';
 import { einheiten, saetze } from './inhaltstreue.ts';
 import { FEHLERKLASSEN } from './typen.ts';
+import { stuecke } from './waechter.ts';
 import {
   DIKTAT_ABSCHNITTE,
   HOECHST_BYTES,
   HOECHST_DAUER_S,
+  NACHRICHT_HOECHST_ZEICHEN,
   ORDNEN_HOECHST_ZEICHEN,
   ZWECKE,
 } from './zwecke.ts';
@@ -60,11 +67,24 @@ describe('Vertrag zwischen Browser und AI Gateway', () => {
   });
 
   it('nennt nur Zwecke, die der Gateway kennt', () => {
-    for (const zweck of [ZWECK_DIKTAT, ZWECK_ORDNEN]) expect(Object.keys(ZWECKE)).toContain(zweck);
+    for (const zweck of [ZWECK_DIKTAT, ZWECK_ORDNEN, ZWECK_ENTWURF]) {
+      expect(Object.keys(ZWECKE)).toContain(zweck);
+    }
   });
 
-  it('hält beim Ordnen dieselbe Grenze', () => {
+  it('hält beim Ordnen und Umformen dieselben Grenzen', () => {
     expect(ORDNEN_HOECHSTZEICHEN).toBe(ORDNEN_HOECHST_ZEICHEN);
+    expect(UMFORMEN_HOECHSTZEICHEN).toBe(NACHRICHT_HOECHST_ZEICHEN);
+  });
+
+  it.each([
+    'knie li. kühlen, 10 Min.\n\nübungen 2x tägl. weiter. alles ok',
+    'Am 12. kommen, z. B. um 9. Passt das?  Sonst Dr. Probst fragen!',
+    'Tape lat. anlegen (max. 3 Std.) und ggf. bds. kühlen… fertig',
+    'Zeile eins\r\n   \r\nZeile drei. Noch ein Satz.',
+    '',
+  ])('teilt eine Antwort auf beiden Seiten gleich in Sätze (ANN-861): %j', (text) => {
+    expect(stueckeImBrowser(text)).toEqual(stuecke(text));
   });
 
   it.each([

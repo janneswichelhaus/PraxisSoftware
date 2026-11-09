@@ -14,6 +14,8 @@ const DATEIEN = [
   'src/features/clinical/documentation/Spracheingabe.tsx',
   'src/features/clinical/documentation/ordnen.ts',
   'src/features/clinical/documentation/GeordneterVorschlag.tsx',
+  'src/features/portal/messages/umformen.ts',
+  'src/features/portal/messages/Umformvorschlag.tsx',
   ...readdirSync(join(STAMM, 'src/lib/ki'))
     .filter((name) => /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name))
     .map((name) => `src/lib/ki/${name}`),
@@ -54,6 +56,7 @@ const ERLAUBT = new Set([
   '@/lib/aufnahme',
   './diktat',
   './ordnen',
+  './umformen',
 ]);
 
 function erlaubterImport(modul: string): boolean {

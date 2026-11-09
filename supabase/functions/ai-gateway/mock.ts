@@ -7,6 +7,7 @@ import type {
   Adapterergebnis,
   Assistenzadapter,
   Sprachadapter,
+  Umformanfrage,
   Zuordnungsanfrage,
 } from './typen.ts';
 
@@ -93,6 +94,28 @@ export function erstelleNachbildung(): Sprachadapter {
   };
 }
 
+/** Abkürzungen, die die Nachbildung ausschreibt - ohne Zahl, Einheit oder Seite zu ändern. */
+const AUSGESCHRIEBEN: readonly (readonly [RegExp, string])[] = [
+  [/(?<![\p{L}\p{N}])(?:tägl|tgl)\.(?![\p{L}\p{N}])/giu, 'täglich'],
+  [/(?<![\p{L}\p{N}])evtl\.(?![\p{L}\p{N}])/giu, 'eventuell'],
+  [/(?<![\p{L}\p{N}])ggf\.(?![\p{L}\p{N}])/giu, 'gegebenenfalls'],
+  [/(?<![\p{L}\p{N}])li\.(?![\p{L}\p{N}])/giu, 'links'],
+  [/(?<![\p{L}\p{N}])re\.(?![\p{L}\p{N}])/giu, 'rechts'],
+  [/(?<![\p{L}\p{N}])bds\.(?![\p{L}\p{N}])/giu, 'beidseits'],
+  [/(?<![\p{L}\p{N}])Min\.(?![\p{L}\p{N}])/gu, 'Minuten'],
+  [/(?<![\p{L}\p{N}])Std\.(?![\p{L}\p{N}])/gu, 'Stunden'],
+  [/(?<![\p{L}\p{N}])Wdh\.(?![\p{L}\p{N}])/gu, 'Wiederholungen'],
+  [/(?<=\d)\s*[x×](?![\p{L}\p{N}])/giu, '-mal'],
+];
+
+/** Ein Stichpunkt als Satz: Abkürzungen ausgeschrieben, groß begonnen, mit Punkt beendet. */
+export function ausformuliert(stichpunkt: string): string {
+  let satz = stichpunkt.trim();
+  for (const [muster, wort] of AUSGESCHRIEBEN) satz = satz.replace(muster, wort);
+  satz = satz.charAt(0).toUpperCase() + satz.slice(1);
+  return /[.!?…]$/u.test(satz) ? satz : `${satz}.`;
+}
+
 /** Die Hilfen ohne Ton als Nachbildung: feste Regeln statt eines Sprachmodells. */
 export function erstelleAssistenznachbildung(): Assistenzadapter {
   return {
@@ -105,6 +128,11 @@ export function erstelleAssistenznachbildung(): Assistenzadapter {
         ok: true,
         value: { zuordnung: ordneZu(anfrage.saetze, anfrage.abschnitte) },
       });
+    },
+    formuliere(
+      anfrage: Umformanfrage,
+    ): Promise<Adapterergebnis<{ readonly saetze: readonly string[] }>> {
+      return Promise.resolve({ ok: true, value: { saetze: anfrage.saetze.map(ausformuliert) } });
     },
   };
 }

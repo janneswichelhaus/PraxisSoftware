@@ -3,8 +3,19 @@ import type { Assistenzfrage, Assistenzpruefung, Berechtigungsbefund } from './b
 import { erstelleHandler } from './handler.ts';
 import { erstelleAssistenznachbildung, erstelleNachbildung } from './mock.ts';
 import type { Sitzungsergebnis } from './sitzung.ts';
-import type { Assistenzadapter, Protokolleintrag, Zuordnungsanfrage } from './typen.ts';
-import { DIKTAT_ABSCHNITTE, ORDNEN_HOECHST_ZEICHEN, ORDNEN_REGELN } from './zwecke.ts';
+import type {
+  Assistenzadapter,
+  Protokolleintrag,
+  Umformanfrage,
+  Zuordnungsanfrage,
+} from './typen.ts';
+import {
+  DIKTAT_ABSCHNITTE,
+  ENTWURF_REGELN,
+  NACHRICHT_HOECHST_ZEICHEN,
+  ORDNEN_HOECHST_ZEICHEN,
+  ORDNEN_REGELN,
+} from './zwecke.ts';
 
 // Der Ablauf der Hilfen ohne Ton: Sitzung, Zweck, Anbieter, Eingabe, Berechtigung, Adapter,
 // Antwort. An den Adapter geht keine Kennung, in den Protokolleintrag kein Inhalt.
@@ -29,15 +40,20 @@ function anfrage(zweck: string, koerper: unknown, typ = 'application/json'): Req
 function spion(ersatz: Partial<Assistenzadapter> = {}) {
   const echt = erstelleAssistenznachbildung();
   const zuordnungen: Zuordnungsanfrage[] = [];
+  const umformungen: Umformanfrage[] = [];
   const adapter: Assistenzadapter = {
     ...echt,
     ordneZu: (auftrag, signal) => {
       zuordnungen.push(auftrag);
       return echt.ordneZu(auftrag, signal);
     },
+    formuliere: (auftrag, signal) => {
+      umformungen.push(auftrag);
+      return echt.formuliere(auftrag, signal);
+    },
     ...ersatz,
   };
-  return { adapter, zuordnungen };
+  return { adapter, zuordnungen, umformungen };
 }
 
 function gateway({
@@ -352,5 +368,154 @@ describe('ai-gateway: Hilfen ohne Ton und ihr Anbieter', () => {
     });
     await handler(anfrage(ZWECK, { termin: TERMIN, text: NOTIZEN }));
     expect(fragen).toEqual([{ art: 'termin', id: TERMIN }]);
+  });
+});
+
+describe('ai-gateway: Antwort ausformulieren', () => {
+  const ZWECK = 'nachricht.entwurf';
+  const RUECKFRAGE = 'd1d1d1d1-d1d1-4d1d-8d1d-000000000001';
+  const STICHPUNKTE = 'knie li. kühlen, 10 Min.\n\nübungen 2x tägl. weiter';
+
+  it('macht aus jedem Stichpunkt einen Satz und sagt, was im Wortlaut blieb', async () => {
+    const { handler, pruefeAssistenz, protokoll } = gateway();
+    const antwort = await handler(anfrage(ZWECK, { rueckfrage: RUECKFRAGE, text: STICHPUNKTE }));
+
+    expect(antwort.status).toBe(200);
+    expect(antwort.headers.get('Cache-Control')).toBe('no-store');
+    expect(await gelesen(antwort)).toEqual({
+      ok: true,
+      art: 'umformen',
+      saetze: [
+        { text: 'Knie links kühlen, 10 Minuten.', unveraendert: false },
+        { text: 'Übungen 2-mal täglich weiter.', unveraendert: false },
+      ],
+      quelle: 'nachbildung',
+    });
+    expect(pruefeAssistenz).toHaveBeenCalledExactlyOnceWith(TOKEN, {
+      art: 'rueckfrage',
+      id: RUECKFRAGE,
+    });
+    expect(protokoll).toEqual([]);
+  });
+
+  it('gibt dem Adapter nur die Sätze, die Aufgabe und die Regeln - keine Kennung', async () => {
+    const { adapter, umformungen } = spion();
+    const { handler } = gateway({ assistenz: adapter });
+    await handler(anfrage(ZWECK, { rueckfrage: RUECKFRAGE, text: STICHPUNKTE }));
+
+    expect(umformungen).toEqual([
+      {
+        saetze: ['knie li. kühlen, 10 Min.', 'übungen 2x tägl. weiter'],
+        aufgabe: 'ausformulieren',
+        sprache: 'de',
+        regeln: ENTWURF_REGELN,
+      },
+    ]);
+    expect(JSON.stringify(umformungen)).not.toContain(RUECKFRAGE);
+  });
+
+  it.each([
+    ['eine andere Seite', ['Knie rechts kühlen, 10 Minuten.', 'Übungen 2-mal täglich weiter.']],
+    ['eine andere Zahl', ['Knie links kühlen, 20 Minuten.', 'Übungen 2-mal täglich weiter.']],
+    [
+      'ein Rat dazu',
+      ['Knie links kühlen, 10 Minuten. Bitte hochlagern.', 'Übungen 2-mal täglich weiter.'],
+    ],
+    ['ein leerer Satz', ['', 'Übungen 2-mal täglich weiter.']],
+  ])('lässt die Quelle stehen, wo der Adapter abweicht: %s', async (_fall, saetze) => {
+    const { adapter } = spion({
+      formuliere: () => Promise.resolve({ ok: true, value: { saetze } }),
+    });
+    const { handler } = gateway({ assistenz: adapter });
+    const antwort = await handler(anfrage(ZWECK, { rueckfrage: RUECKFRAGE, text: STICHPUNKTE }));
+
+    expect((await gelesen(antwort)).saetze).toEqual([
+      { text: 'knie li. kühlen, 10 Min.', unveraendert: true },
+      { text: 'Übungen 2-mal täglich weiter.', unveraendert: false },
+    ]);
+  });
+
+  it.each([
+    ['ein Satz zu wenig', ['Knie links kühlen, 10 Minuten.']],
+    [
+      'ein Satz zu viel',
+      ['Knie links kühlen, 10 Minuten.', 'Übungen 2-mal täglich weiter.', 'Gute Besserung.'],
+    ],
+    ['kein Text', [1, 2]],
+  ])('zeigt nichts, wenn die Antwort die Form nicht hat: %s', async (_fall, saetze) => {
+    const { adapter } = spion({
+      formuliere: () =>
+        Promise.resolve({ ok: true, value: { saetze: saetze as unknown as string[] } }),
+    });
+    const { handler, protokoll } = gateway({ assistenz: adapter });
+    const antwort = await handler(anfrage(ZWECK, { rueckfrage: RUECKFRAGE, text: STICHPUNKTE }));
+
+    expect(antwort.status).toBe(502);
+    expect(JSON.stringify(await gelesen(antwort))).not.toContain('Besserung');
+    expect(protokoll).toEqual([
+      { zweck: ZWECK, anbieter: 'mock', code: 'unavailable', dauerMs: 7 },
+    ]);
+  });
+
+  it.each([
+    ['ohne Rückfrage', { text: STICHPUNKTE }, 400, 'invalid_request'],
+    [
+      'mit dem Feld eines anderen Zwecks',
+      { termin: RUECKFRAGE, text: STICHPUNKTE },
+      400,
+      'invalid_request',
+    ],
+    [
+      'ein Name als Rückfrage',
+      { rueckfrage: 'Erika Beispiel', text: STICHPUNKTE },
+      400,
+      'invalid_request',
+    ],
+    [
+      'mit der Frage der Person dazu',
+      { rueckfrage: RUECKFRAGE, text: STICHPUNKTE, frage: 'Darf ich joggen?' },
+      400,
+      'invalid_request',
+    ],
+    ['leerer Text', { rueckfrage: RUECKFRAGE, text: ' \n ' }, 400, 'invalid_request'],
+    [
+      'zu langer Text',
+      { rueckfrage: RUECKFRAGE, text: 'a'.repeat(NACHRICHT_HOECHST_ZEICHEN + 1) },
+      413,
+      'too_large',
+    ],
+  ])('weist ab: %s', async (_fall, koerper, status, code) => {
+    const { adapter, umformungen } = spion();
+    const { handler, pruefeAssistenz } = gateway({ assistenz: adapter });
+    const antwort = await handler(anfrage(ZWECK, koerper));
+
+    expect(antwort.status).toBe(status);
+    expect((await gelesen(antwort)).error?.code).toBe(code);
+    expect(pruefeAssistenz).not.toHaveBeenCalled();
+    expect(umformungen).toEqual([]);
+  });
+
+  it.each([
+    ['verweigert', 403, 'forbidden'],
+    ['abgelehnt', 401, 'session_invalid'],
+    ['nicht_pruefbar', 502, 'unavailable'],
+  ] as const)('geht mit Befund %s nicht an den Adapter', async (befund, status, code) => {
+    const { adapter, umformungen } = spion();
+    const { handler } = gateway({ assistenz: adapter, berechtigung: befund });
+    const antwort = await handler(anfrage(ZWECK, { rueckfrage: RUECKFRAGE, text: STICHPUNKTE }));
+
+    expect(antwort.status).toBe(status);
+    expect((await gelesen(antwort)).error?.code).toBe(code);
+    expect(umformungen).toEqual([]);
+  });
+
+  it('meldet einen Adapter, der nicht antwortet, als timeout - ohne Inhalt im Eintrag', async () => {
+    const { adapter } = spion({ formuliere: () => new Promise(() => undefined) });
+    const { handler, protokoll } = gateway({ assistenz: adapter, fristMs: 5 });
+    const antwort = await handler(anfrage(ZWECK, { rueckfrage: RUECKFRAGE, text: STICHPUNKTE }));
+
+    expect(antwort.status).toBe(504);
+    expect(protokoll).toEqual([{ zweck: ZWECK, anbieter: 'mock', code: 'timeout', dauerMs: 7 }]);
+    expect(JSON.stringify(protokoll)).not.toContain('kühlen');
   });
 });

@@ -7,7 +7,11 @@ import { describe, expect, it } from 'vitest';
 // Prüffunktionen, mit dem Token der Person; geprüft am Quelltext wie beim Kartendienst.
 
 /** Die Prüffunktionen der Datenbank, die der Gateway fragen darf - jede antwortet nur Ja oder Nein. */
-const PRUEFFUNKTIONEN = ['check_dictation_access', 'check_note_arrangement_access'];
+const PRUEFFUNKTIONEN = [
+  'check_dictation_access',
+  'check_note_arrangement_access',
+  'check_answer_wording_access',
+];
 
 const VERZEICHNIS = join(import.meta.dirname, '.');
 
