@@ -204,6 +204,6 @@ describe('AufDemGeraet', () => {
     await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: gestern.');
     renderWithProviders(<AufDemGeraet besitzer={ANNA} ohneVerbindung />);
     expect(await screen.findByText(/Erika Beispiel/)).toBeInTheDocument();
-    expect(screen.getByText('Kein Tagesplan von heute.')).toBeInTheDocument();
+    expect(screen.getByText('Kein Tagesplan von heute auf diesem Gerät.')).toBeInTheDocument();
   });
 });

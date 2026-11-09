@@ -103,7 +103,7 @@ export function FuerDichPage({ user }: { user: CurrentUser }) {
         fehler="„Für dich“ nicht geladen."
         leer={{
           wenn: (daten) => daten.length === 0 && gemerkt.isSuccess && faellig.length === 0,
-          titel: 'Nichts für dich',
+          titel: 'Keine Erwähnungen, Antworten oder Erinnerungen',
         }}
       >
         {(daten) =>

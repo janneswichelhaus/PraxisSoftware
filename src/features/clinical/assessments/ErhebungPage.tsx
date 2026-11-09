@@ -617,7 +617,9 @@ function Formular({
           <Fehlerzusammenfassung fehler={zusammenfassung} />
           {schutz}
 
-          <Kleingedrucktes id={folgeId}>Abgeschlossen nur noch korrigierbar.</Kleingedrucktes>
+          <Kleingedrucktes id={folgeId}>
+            Nach dem Abschließen nur noch als Korrektur.
+          </Kleingedrucktes>
 
           {/* Verwerfen löscht den Entwurf auf dem Server - leise am Ende und
               erst nach einer Rückfrage (BEF-01), wie beim Bericht. */}
@@ -652,7 +654,8 @@ function Formular({
         oben={
           <div className="px-4 pt-2 sm:px-6 lg:px-8">
             <p className="text-ink-muted text-sm tabular-nums">
-              {beantwortet} von {definition.items.length} Fragen beantwortet
+              {beantwortet} von {definition.items.length} Fragen beantwortet · jede darf offen
+              bleiben
             </p>
             <ProgressBar wert={beantwortet} von={definition.items.length} />
             {sicherungsstand}

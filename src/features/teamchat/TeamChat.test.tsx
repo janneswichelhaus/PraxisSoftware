@@ -1198,11 +1198,11 @@ describe('Für dich (ANN-614, ANN-646)', () => {
 });
 
 describe('Für dich ohne Netz (DESIGN.md Regel 8)', () => {
-  it('sagt, wenn die Erinnerungen nicht laden - nie „Nichts für dich“', async () => {
+  it('sagt, wenn die Erinnerungen nicht laden - nie „Keine Erwähnungen …“', async () => {
     api.fetchGemerkt.mockRejectedValue(new Error('aus'));
     zeige('/fuer-dich');
     expect(await screen.findByText('Erinnerungen nicht geladen.')).toBeInTheDocument();
-    expect(screen.queryByText('Nichts für dich')).toBeNull();
+    expect(screen.queryByText('Keine Erwähnungen, Antworten oder Erinnerungen')).toBeNull();
   });
 });
 

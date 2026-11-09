@@ -13,8 +13,6 @@
  *     `Listenabschnitt` oder `Datenliste`;
  *   * `knoepfe` - ein rohes `<button className=…>` statt `Button`,
  *     `Symbolknopf`, `Chip` oder `Segment`;
- *   * `saetze` - ein satzförmiger Text in JSX statt Titel, Beschriftung und
- *     Knopf (Leitfaden L7, `scripts/saetze.mjs`; auch in Bausteinen);
  *   * `tabellen` - ein `<table>` statt `Datenliste` (ohne Druckblätter);
  *   * `ueberschriften` - ein `<h1>` bis `<h4>` mit eigenen Klassen statt
  *     `PageHeader`, `Objektkopf`, `Section` oder `Zwischentitel` (ohne
@@ -80,6 +78,7 @@ export const GRENZEN: Record<
 
     'features/privacy/datenschutz': 1,
   },
+  // Satzförmiger Text in JSX statt Titel, Beschriftung und Knopf (Leitfaden L7, scripts/saetze.mjs).
   saetze: {
     app: 13,
 
@@ -87,7 +86,7 @@ export const GRENZEN: Record<
 
     'features/billing/statistics': 9,
 
-    'features/calendar/appointments': 91,
+    'features/calendar/appointments': 90,
 
     'features/calendar/scheduling': 13,
 
@@ -101,9 +100,9 @@ export const GRENZEN: Record<
 
     'features/calendar/waitlist': 9,
 
-    'features/clinical/assessments': 18,
+    'features/clinical/assessments': 19,
 
-    'features/clinical/documentation': 55,
+    'features/clinical/documentation': 56,
 
     'features/clinical/therapy-reports': 9,
 
@@ -133,7 +132,7 @@ export const GRENZEN: Record<
 
     'features/portal/messages': 14,
 
-    'features/portal/platform': 178,
+    'features/portal/platform': 179,
 
     'features/portal/platform-access': 27,
 

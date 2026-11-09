@@ -387,7 +387,6 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
               <Formularfuss
                 zusatz={
                   <>
-                    <p>Alles oder nichts – entweder wandern alle gewählten Termine, oder keiner.</p>
                     {sperrgrund ? (
                       <p id={sperrgrundId} className="text-ink mt-1">
                         {sperrgrund}

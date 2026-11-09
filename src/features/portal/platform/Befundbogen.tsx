@@ -443,9 +443,15 @@ function Ablauf({
         )
       }
       vorDemTitel={
-        ersterBlick ? (
+        ersterBlick || seite === 0 ? (
           <div className="flex flex-col gap-4 pb-2">
-            <Statusmeldung>Bisherige Antworten gespeichert.</Statusmeldung>
+            {ersterBlick ? <Statusmeldung>Bisherige Antworten gespeichert.</Statusmeldung> : null}
+            {/* Der eine Satz Orientierung der Plattform (L7): was mit offenen Fragen und den Antworten geschieht. */}
+            {seite === 0 ? (
+              <p className="text-ink-muted">
+                Jede Frage darf offen bleiben; gespeichert wird beim Weitergehen.
+              </p>
+            ) : null}
           </div>
         ) : undefined
       }

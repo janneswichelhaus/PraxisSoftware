@@ -183,7 +183,7 @@ export function AufDemGeraet({
 
       <Section titel="Tagesplan von heute">
         {tagesplan === null || tagesplan.termine.length === 0 ? (
-          <EmptyState inKarte title="Kein Tagesplan von heute." />
+          <EmptyState inKarte title="Kein Tagesplan von heute auf diesem Gerät." />
         ) : (
           <ListRows>
             {tagesplan.termine.map((t) => (

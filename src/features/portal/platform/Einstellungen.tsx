@@ -65,10 +65,13 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
       {/* Anmeldung ohne Kennwort (ADR-025 Fassung 2, Punkte 10 bis 12) - selten gebraucht,
           deshalb auf Abruf (ANN-468); das Technikwort steht hinter der Beschreibung. */}
       <Section titel="Anmeldung" rahmen>
-        <Disclosure summary="Geräte (Passkeys) und PIN verwalten">
-          <PasskeyAbschnitt />
-          <PinAbschnitt />
-        </Disclosure>
+        <p className="text-ink max-w-prose text-base">Mit Gesicht, Finger oder Ihrer PIN</p>
+        <div className="mt-3">
+          <Disclosure summary="Geräte (Passkeys) und PIN verwalten">
+            <PasskeyAbschnitt />
+            <PinAbschnitt />
+          </Disclosure>
+        </div>
       </Section>
       <VonDerPraxis zugaenge={zugaenge} />
     </>

@@ -69,8 +69,8 @@ export function ActiveAddresses({ territories }: { territories: readonly Territo
               {ohnePunkt > 0 ? (
                 <Statusmeldung className="mt-2">
                   {ohnePunkt === 1
-                    ? 'Eine Anschrift steht nicht auf der Karte: Sie ist nicht genau verortet.'
-                    : `${ohnePunkt} Anschriften stehen nicht auf der Karte: Sie sind nicht genau verortet.`}
+                    ? 'Eine Anschrift nicht genau verortet, nicht auf der Karte'
+                    : `${ohnePunkt} Anschriften nicht genau verortet, nicht auf der Karte`}
                 </Statusmeldung>
               ) : null}
               <div className="mt-4">

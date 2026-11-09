@@ -117,7 +117,7 @@ describe('TerritoriesPage (PRX-002)', () => {
         '720761 Anschrift!ohne Gebiet',
       ]);
       expect(
-        screen.getByText('Eine Anschrift steht nicht auf der Karte: Sie ist nicht genau verortet.'),
+        screen.getByText('Eine Anschrift nicht genau verortet, nicht auf der Karte'),
       ).toBeInTheDocument();
       // Am Telefon bleibt die Karte zu und lädt nichts.
       expect(screen.getByRole('heading', { name: 'Karte' })).toBeInTheDocument();

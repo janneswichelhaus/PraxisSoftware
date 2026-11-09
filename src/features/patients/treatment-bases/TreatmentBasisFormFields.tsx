@@ -281,7 +281,7 @@ export function TreatmentBasisFormFields({
             und nimmt dafür keine neue Eingabe mehr entgegen. Auskunft, keine
             Eingabe: deshalb ein Unterabschnitt mit Rahmen (VER-19). */}
         {bestandstexte.length > 0 ? (
-          <Section titel="Aus dem Bestand" ebene={3} rahmen>
+          <Section titel="Aus dem Bestand, unverändert" ebene={3} rahmen>
             <DetailList>
               {bestandstexte.map((eintrag) => (
                 <DetailRow key={eintrag.feld} label={eintrag.feld}>
