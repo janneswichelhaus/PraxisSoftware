@@ -372,11 +372,7 @@ function SearchForm({
           />
         ) : null}
         {result.data && slots.length === 0 ? (
-          <EmptyState
-            inKarte
-            title="Kein freier Platz"
-            description="Zeitraum verlängern, eine andere Therapeut:in wählen oder die Wunschzeiten weglassen."
-          />
+          <EmptyState inKarte title="Kein freier Platz" />
         ) : null}
         {slots.length > 0 ? (
           <ListRows>

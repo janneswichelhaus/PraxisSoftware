@@ -536,8 +536,8 @@ export function FolgeterminVorschlaege({
           >
             <p className="text-ink text-sm">
               {vorname
-                ? `${vorname} sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht ${vorname} dort.`
-                : 'Die Person sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht sie dort.'}
+                ? `${vorname} sieht den Termin auf der Plattform und dort auch die Absage.`
+                : 'Die Person sieht den Termin auf der Plattform und dort auch die Absage.'}
             </p>
             {absagen.isError ? (
               <Statusmeldung ton="fehler" className="mt-2">

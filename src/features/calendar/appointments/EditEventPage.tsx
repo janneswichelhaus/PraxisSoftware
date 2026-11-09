@@ -11,7 +11,6 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { roleLabels } from '@/components/ui/roleLabels';
 import {
   EINGABETEXTE,
   useTextverlustschutz,
@@ -39,7 +38,6 @@ import {
   type EreignisFormValues,
 } from './api';
 import { formatDate } from '@/lib/datum';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { fetchLocations } from '@/features/workforce';
 import { appointmentStatusLabels, kalenderZumTermin, zurueckZumTermin } from '@/lib/termin';
 
@@ -198,12 +196,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
   }
 
   if (!canManageAppointments(user.roles)) {
-    return (
-      <ErrorState
-        title="Nicht freigegeben"
-        description={`Fehlzeiten bearbeiten dürfen alle vier Praxisrollen: ${roleLabels.owner}, ${roleLabels.therapist}, ${roleLabels.team_lead} und ${roleLabels.office}.`}
-      />
-    );
+    return <ErrorState title="Nicht freigegeben" />;
   }
 
   if (termin.isPending || standorte.isPending) {
@@ -251,7 +244,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
         </Link>
         <ErrorState
           title="Keine Fehlzeit"
-          description="Dieser Weg gilt für Fehlzeiten des Praxisbetriebs. Ein Behandlungstermin wird über „Bearbeiten“ geändert."
+          description="Ein Behandlungstermin wird über „Bearbeiten“ geändert."
         />
       </>
     );
@@ -268,7 +261,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
         </Link>
         <ErrorState
           title="Abgesagte Fehlzeiten werden nicht bearbeitet"
-          description="Die Fehlzeit bleibt zur Nachvollziehbarkeit erhalten. Für einen neuen Zeitraum bitte eine neue Fehlzeit eintragen."
+          description="Für einen neuen Zeitraum eine neue Fehlzeit eintragen."
         />
       </>
     );
@@ -346,8 +339,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                   <span>
                     <span className="text-ink block font-medium">Nur diese Fehlzeit</span>
                     <span className="text-ink-muted block text-sm">
-                      Am {formatDate(werte.date)}. Die übrigen Vorkommen der Serie bleiben, wie sie
-                      sind.
+                      Am {formatDate(werte.date)}
                     </span>
                   </span>
                 </label>
@@ -362,8 +354,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                   <span>
                     <span className="text-ink block font-medium">Die ganze Serie</span>
                     <span className="text-ink-muted block text-sm">
-                      {kommende.length} kommende von {serienVorkommen.length} Vorkommen. Die Tage
-                      bleiben – geändert werden Bezeichnung, Uhrzeit, Dauer, Art und Ort.
+                      {kommende.length} kommende von {serienVorkommen.length} Vorkommen
                     </span>
                   </span>
                 </label>
@@ -420,10 +411,6 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                     </ListRows>
                   )}
                 </div>
-                {/* Ein Satz statt dreier: Der Weg steht an jedem Namen (UX-005g). */}
-                <Kleingedrucktes className="mt-2">
-                  Teilnahme am jeweiligen Termin ändern.
-                </Kleingedrucktes>
               </div>
             }
           />

@@ -534,7 +534,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
           </Tile>
           <Tile label="Noch planbar">
             {zahlen.remaining === 0
-              ? 'Nichts mehr – jeder mögliche Termin ist genutzt oder verplant'
+              ? 'Nichts mehr'
               : `${zahlen.remaining} ${zahlen.remaining === 1 ? 'Behandlung' : 'Behandlungen'}`}
           </Tile>
           {zahlen.frequency_note ? (
@@ -705,8 +705,8 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
             {geplant !== null && geplant > zahlen.remaining ? (
               <Statusmeldung ton="warnung">
                 Geplant {geplant === 1 ? 'ist' : 'sind'} {termineWort(geplant)}, noch planbar{' '}
-                {zahlen.remaining === 1 ? 'ist' : 'sind'} {zahlen.remaining}. Das ist zulässig – die
-                Grundlage deckt dann nicht alle Termine ab.
+                {zahlen.remaining === 1 ? 'ist' : 'sind'} {zahlen.remaining} – die Grundlage deckt
+                nicht alle ab.
               </Statusmeldung>
             ) : null}
           </Feldgruppe>
@@ -746,19 +746,12 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
           <Section titel={`Vorgeschlagene Termine (${liste.length})`}>
             {pruefung.isError ? (
               <div className="mb-4">
-                <ErrorState
-                  title="Die Termine konnten nicht geprüft werden."
-                  description="Bitte die Verbindung prüfen und die Liste mit „Erneut prüfen“ noch einmal prüfen lassen."
-                />
+                <ErrorState title="Die Termine konnten nicht geprüft werden." />
               </div>
             ) : null}
 
             {liste.length === 0 ? (
-              <EmptyState
-                inKarte
-                title="Es ist kein Termin mehr übrig."
-                description="Bitte oben einen neuen Vorschlag erzeugen."
-              />
+              <EmptyState inKarte title="Kein Termin übrig." />
             ) : (
               <ListRows>
                 {liste.map((termin, index) => {
@@ -808,13 +801,12 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 ) : hindernisse > 0 ? (
                   <Statusmeldung ton="fehler">
                     {hindernisse} von {liste.length} Terminen {hindernisse === 1 ? 'ist' : 'sind'}{' '}
-                    so nicht planbar. Weil die Serie alles oder nichts ist, muss jeder davon erst
-                    geändert oder entfernt werden.
+                    so nicht planbar; die Serie ist alles oder nichts.
                   </Statusmeldung>
                 ) : randzeiten > 0 ? (
                   <Statusmeldung ton="warnung">
                     {termineWort(randzeiten)} {randzeiten === 1 ? 'liegt' : 'liegen'} außerhalb der
-                    hinterlegten Arbeitszeit. Das Anlegen fragt dann noch einmal nach.
+                    hinterlegten Arbeitszeit.
                   </Statusmeldung>
                 ) : (
                   <Statusmeldung ton="erfolg">

@@ -636,9 +636,7 @@ describe('NewAppointmentPage', () => {
     await formularAbwarten();
 
     await user.selectOptions(screen.getByLabelText('Terminart *'), 'video');
-    expect(
-      await screen.findByText(/noch kein Videolink erzeugt/, { selector: 'p' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Noch ohne Videolink.', { selector: 'p' })).toBeInTheDocument();
     expect(screen.queryByLabelText('Standort *')).not.toBeInTheDocument();
   });
 
@@ -668,9 +666,7 @@ describe('NewAppointmentPage', () => {
 
   it('zeigt eine Ueberschneidung verstaendlich an, ohne fremde Daten zu nennen', async () => {
     createAppointment.mockRejectedValue(
-      new Error(
-        'In diesem Zeitraum hat die behandelnde Person bereits einen Termin. Bitte eine andere Zeit wählen.',
-      ),
+      new Error('In diesem Zeitraum hat die behandelnde Person bereits einen Termin.'),
     );
     const user = userEvent.setup();
     rendern();
@@ -707,11 +703,7 @@ describe('NewAppointmentPage', () => {
     });
 
     it('meldet einen Beginn ausserhalb des Rasters verstaendlich', async () => {
-      createAppointment.mockRejectedValue(
-        new Error(
-          'Der Beginn passt nicht zum Praxisraster. Bitte eine Uhrzeit im Raster der Praxis wählen.',
-        ),
-      );
+      createAppointment.mockRejectedValue(new Error('Der Beginn passt nicht zum Praxisraster.'));
       const user = userEvent.setup();
       rendern();
       await formularAbwarten();
@@ -1019,9 +1011,7 @@ describe('NewAppointmentPage', () => {
       await formularAbwarten();
 
       expect(
-        await screen.findByText(
-          'Der Termin wird dieser Behandlungsgrundlage zugeordnet: Folgeverordnung vom 18.06.2026.',
-        ),
+        await screen.findByText('Grundlage: Folgeverordnung vom 18.06.2026'),
       ).toBeInTheDocument();
     });
 
@@ -1029,7 +1019,7 @@ describe('NewAppointmentPage', () => {
       rendern();
       await formularAbwarten();
       expect(fetchPatientTreatmentBases).not.toHaveBeenCalled();
-      expect(screen.queryByText(/Behandlungsgrundlage zugeordnet/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/^Grundlage:/)).not.toBeInTheDocument();
     });
   });
 

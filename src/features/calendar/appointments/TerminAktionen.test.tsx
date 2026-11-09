@@ -139,6 +139,11 @@ function zeile(beschriftung: string): string {
   return klon.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 }
 
+/** Wartet, bis ein abgesagter Behandlungstermin dasteht: an seiner Zeile „Absagegrund“. */
+function absageGeladen(): Promise<HTMLElement> {
+  return screen.findByText('Absagegrund', { selector: 'dt' });
+}
+
 describe('TerminAktionenDialog', () => {
   beforeEach(() => {
     fetchAppointment.mockReset();
@@ -252,15 +257,17 @@ describe('TerminAktionenDialog', () => {
 
     await screen.findByText('Berta Bestand');
     expect(zeile('Ort')).toMatch(/^Videotermin/);
-    expect(screen.getByText(/noch kein Videolink erzeugt/)).toBeInTheDocument();
+    expect(screen.getByText('Noch ohne Videolink.')).toBeInTheDocument();
   });
 
   it('kennzeichnet einen abgesagten Termin', async () => {
     fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
     rendern();
 
-    expect(await screen.findByText(/Eine Absage wird nicht zurückgenommen/)).toBeInTheDocument();
+    expect(await absageGeladen()).toBeInTheDocument();
     expect(zeile('Status')).toBe('Abgesagt');
+    // L7: Das Abzeichen sagt den Zustand; kein Satz darunter.
+    expect(screen.queryByText(/Eine Absage wird nicht zurückgenommen/)).toBeNull();
   });
 
   it('zeigt den Absagegrund als Wort, nicht als Schluessel (CAL-008b)', async () => {
@@ -271,7 +278,7 @@ describe('TerminAktionenDialog', () => {
     });
     rendern();
 
-    await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
+    await absageGeladen();
     expect(zeile('Absagegrund')).toBe('Praxis hat abgesagt');
   });
 
@@ -283,7 +290,7 @@ describe('TerminAktionenDialog', () => {
     });
     rendern();
 
-    await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
+    await absageGeladen();
     expect(zeile('Absagegrund')).toBe('Nicht erfasst');
   });
 
@@ -336,7 +343,7 @@ describe('TerminAktionenDialog', () => {
     it('bietet bei einem abgesagten Termin keine Aktionen mehr an', async () => {
       fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
       rendern();
-      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
+      await absageGeladen();
 
       expect(screen.queryByRole('link', { name: 'Bearbeiten' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
@@ -493,8 +500,8 @@ describe('TerminAktionenDialog', () => {
     });
 
     // Der Satz „Das ist ein organisatorischer Vermerk …" ist gestrichen
-    // (Design-Handoff 2026-10-01, Abschnitt 1, Entscheidung Jannes); die
-    // Rückfrage nennt weiter, was geschieht und wie es zurückgeht.
+    // (Design-Handoff 2026-10-01, Abschnitt 1, Entscheidung Jannes); seit L7
+    // nennt die Rückfrage nur noch, was geschieht - den Weg zurück trägt der Termin.
     it('sagt im Vermerk, was geschieht - ohne den gestrichenen Erklärsatz', async () => {
       const user = userEvent.setup();
       rendern();
@@ -504,7 +511,8 @@ describe('TerminAktionenDialog', () => {
 
       const kasten = screen.getByRole('group', { name: 'Nicht angetroffen' });
       expect(kasten).toHaveTextContent('wird als „nicht angetroffen“ geführt');
-      expect(kasten).toHaveTextContent('Termin wieder öffnen');
+      expect(kasten).toHaveTextContent('Der Zeitraum bleibt belegt.');
+      expect(kasten).not.toHaveTextContent('Termin wieder öffnen');
       expect(within(kasten).queryByText(/organisatorischer Vermerk/)).toBeNull();
     });
 
@@ -904,7 +912,7 @@ describe('TerminAktionenDialog', () => {
       });
       rendern();
 
-      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
+      await absageGeladen();
       expect(zeile('Status')).toBe('Abgesagt');
       expect(zeile('Absagegrund')).toBe('Patient:in hat abgesagt');
       expect(zeile('Ausfallhonorar vorgemerkt')).toMatch(/weniger als 24 Stunden/);
@@ -928,7 +936,7 @@ describe('TerminAktionenDialog', () => {
       const user = userEvent.setup();
       rendern(['office']);
 
-      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
+      await absageGeladen();
       expect(zeile('Absagegrund')).toBe('Patient:in hat verlegt');
       await user.click(screen.getByRole('button', { name: 'Auf die Gebühr verzichten' }));
       expect(screen.getByText(/lässt sich nicht zurücknehmen/)).toBeInTheDocument();
@@ -948,7 +956,7 @@ describe('TerminAktionenDialog', () => {
       });
       rendern(['office']);
 
-      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
+      await absageGeladen();
       expect(zeile('Ausfallhonorar')).toMatch(
         /weniger als 24 Stunden vorher · verzichtet am Donnerstag, 13\. Mai 2027/,
       );
@@ -965,7 +973,7 @@ describe('TerminAktionenDialog', () => {
       });
       rendern(['therapist']);
 
-      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
+      await absageGeladen();
       expect(screen.queryByRole('button', { name: 'Auf die Gebühr verzichten' })).toBeNull();
     });
 
@@ -978,7 +986,7 @@ describe('TerminAktionenDialog', () => {
       });
       rendern();
 
-      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
+      await absageGeladen();
       expect(screen.queryByText('Ausfallhonorar vorgemerkt')).not.toBeInTheDocument();
     });
 
@@ -1542,7 +1550,7 @@ describe('TerminAktionenDialog', () => {
     it('bietet den Folgetermin am abgesagten Termin nicht an', async () => {
       fetchAppointment.mockResolvedValue({ ...hausbesuch, status: 'cancelled' });
       rendern();
-      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
+      await absageGeladen();
       expect(screen.queryByRole('link', { name: 'Folgetermin anlegen' })).toBeNull();
     });
 
@@ -1761,7 +1769,8 @@ describe('TerminAktionenDialog', () => {
         await screen.findByText('Der Termin konnte nicht geladen werden.'),
       ).toBeInTheDocument();
       expect(screen.getByRole('heading', { level: 2, name: 'Termin' })).toBeInTheDocument();
-      expect(screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeVisible();
+      // L7: Neben „Erneut versuchen“ steht kein Ratsatz.
+      expect(screen.queryByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeNull();
 
       await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
       expect(await screen.findByText('Berta Bestand')).toBeInTheDocument();

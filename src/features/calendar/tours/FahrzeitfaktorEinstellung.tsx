@@ -63,7 +63,7 @@ export function FahrzeitfaktorEinstellung() {
   return (
     <Section
       titel="Fahrzeitfaktor"
-      hinweis={`Der Kartendienst rechnet mit dem Lastenrad mit rund ${DIENST_KMH} km/h. Jede Fahrzeit in Tour, Übersicht, Kalender und Terminsuche wird mit diesem Faktor malgenommen – 1,5 entspricht rund 15 km/h. Gilt für die ganze Praxis.`}
+      hinweis={`Der Kartendienst rechnet mit dem Lastenrad mit rund ${DIENST_KMH} km/h; jede Fahrzeit in Tour, Übersicht, Kalender und Terminsuche wird mit dem Faktor malgenommen. Gilt für die ganze Praxis.`}
     >
       <div className="max-w-xs">
         <Select
@@ -92,7 +92,7 @@ export function FahrzeitfaktorEinstellung() {
       {faktor.isError && !geladen ? (
         <div className="mt-3">
           <Listenfehler
-            text="Der Fahrzeitfaktor konnte nicht geladen werden. Bis dahin lässt er sich nicht ändern."
+            text="Der Fahrzeitfaktor konnte nicht geladen werden."
             onErneut={() => void faktor.refetch()}
           />
         </div>
@@ -100,7 +100,7 @@ export function FahrzeitfaktorEinstellung() {
 
       {mutation.isError ? (
         <Statusmeldung ton="fehler" className="mt-3">
-          {mutation.error.message} Bitte die Verbindung prüfen und erneut speichern.
+          {mutation.error.message}
         </Statusmeldung>
       ) : null}
       {gespeichert && !mutation.isPending && !mutation.isError ? (

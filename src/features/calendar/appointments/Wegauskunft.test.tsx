@@ -92,9 +92,8 @@ describe('Wegauskunft', () => {
       screen.getByText('Rückfahrt: zu knapp um 3 Min., Ankunft frühestens 16:05 Uhr'),
     ).toBeInTheDocument();
     expect(screen.getByText(/zum Startort bis Arbeitsende 16:00 Uhr/)).toBeInTheDocument();
-    expect(
-      screen.getByText('Nur Auskunft – der Termin lässt sich trotzdem anlegen.'),
-    ).toBeInTheDocument();
+    // L7: Der Knopf zum Anlegen bleibt offen; ein Satz dazu entfällt.
+    expect(screen.queryByText(/Nur Auskunft/)).toBeNull();
   });
 
   it.each([
@@ -219,10 +218,8 @@ describe('Wegauskunft', () => {
       const rueckfahrt = screen.getByText('Rückfahrt: passt · 20 Min. Luft');
       expect(anfahrt.compareDocumentPosition(knopf)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
       expect(knopf.compareDocumentPosition(rueckfahrt)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-      // Nur Auskunft bleibt: Der Termin lässt sich zur alten Zeit anlegen.
-      expect(
-        screen.getByText('Nur Auskunft – der Termin lässt sich trotzdem anlegen.'),
-      ).toBeInTheDocument();
+      // Nur Auskunft, ohne Satz dazu (L7): Der Termin lässt sich zur alten Zeit anlegen.
+      expect(screen.queryByText(/Nur Auskunft/)).toBeNull();
 
       await user.click(knopf);
       expect(onBeginn).toHaveBeenCalledWith('16:25');
@@ -299,9 +296,7 @@ describe('Wegauskunft', () => {
       expect(keineZeit).toHaveTextContent(/^!/);
       expect(keineZeit).not.toHaveAttribute('role');
       expect(screen.getAllByRole('status')).toHaveLength(1);
-      expect(
-        screen.getByText('Nur Auskunft – der Termin lässt sich trotzdem anlegen.'),
-      ).toBeInTheDocument();
+      expect(screen.queryByText(/Nur Auskunft/)).toBeNull();
     });
 
     it('bietet genau so viel an, wie die Gegenseite trägt (Luft 0 hält)', () => {

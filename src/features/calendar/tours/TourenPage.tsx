@@ -10,7 +10,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Select } from '@/components/ui/Select';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import type { CurrentUser } from '@/features/core';
 import { fetchStandorte, garagenpunkt, startpunkt } from './startort';
@@ -48,9 +47,6 @@ const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
  * erste bzw. letzte Besuch (`Ortswahl`). `null` ist die Voreinstellung: die
  * Garage, falls gesetzt, sonst die Praxis.
  */
-
-/** Der nächste Schritt nach einem Ladefehler (WRT-01) - ohne Ratefrage. */
-const NACH_LADEFEHLER = VERBINDUNG_PRUEFEN;
 
 function alsOrtswahl(wert: string): Ortswahl {
   return wert === 'garage' || wert === 'besuch' ? wert : 'standort';
@@ -246,7 +242,6 @@ export function TourenPage({ user }: { user: CurrentUser }) {
       ) : personen.isError ? (
         <ErrorState
           title="Die behandelnden Personen konnten nicht geladen werden."
-          description={NACH_LADEFEHLER}
           onErneut={() => personen.refetch()}
         />
       ) : personen.data.length === 0 ? (
@@ -254,16 +249,9 @@ export function TourenPage({ user }: { user: CurrentUser }) {
       ) : person === '' ? null : laedt ? (
         <LoadingState label="Tagesroute wird geladen …" />
       ) : fehler ? (
-        <ErrorState
-          title="Die Tagesroute konnte nicht geladen werden."
-          description={NACH_LADEFEHLER}
-          onErneut={erneut}
-        />
+        <ErrorState title="Die Tagesroute konnte nicht geladen werden." onErneut={erneut} />
       ) : stopps.length === 0 ? (
-        <EmptyState
-          title="An diesem Tag gibt es keine Besuche mit Ort"
-          description="Videotermine und Fehlzeiten haben keinen Weg und stehen deshalb nicht in der Tour."
-        />
+        <EmptyState title="An diesem Tag gibt es keine Besuche mit Ort" />
       ) : (
         // Runde 3: Am Handy die Liste zuerst, die Karte zugeklappt darunter
         // (ANN-254); am Tablet die Karte zugeklappt darüber; ab 1024 px zwei

@@ -381,12 +381,12 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       expect(await screen.findByText('10:00–16:00')).toBeInTheDocument();
     });
 
-    it('sagt ohne behandelnde Person, woran es liegt (ORG-30)', async () => {
+    it('sagt ohne behandelnde Person, wohin der Weg führt (ORG-30, L7: ohne Erklärsatz)', async () => {
       fetchAssignableTherapists.mockResolvedValue([]);
       rendern(['owner']);
 
       expect(await screen.findByText('Noch keine behandelnde Person')).toBeInTheDocument();
-      expect(screen.getByText(/Rolle Therapeut:in oder Teamleitung/)).toBeInTheDocument();
+      expect(screen.queryByText(/Rolle Therapeut:in oder Teamleitung/)).toBeNull();
       expect(screen.getByRole('link', { name: 'Zu den Mitarbeitenden' })).toHaveAttribute(
         'href',
         '/praxis/team',

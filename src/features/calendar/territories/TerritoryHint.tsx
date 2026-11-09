@@ -48,7 +48,7 @@ export function TerritoryHint({
   if (valid.length === 1) {
     return (
       <Statusmeldung ton="warnung" className="mt-3">
-        Außerhalb des Gebietstags. {rule} Der Termin lässt sich trotzdem anlegen.
+        Außerhalb des Gebietstags. {rule}
       </Statusmeldung>
     );
   }

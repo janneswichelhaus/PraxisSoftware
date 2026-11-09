@@ -153,10 +153,7 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
           {/* Eine Bestätigung im Erfolgston, und mit dem Fokus: Der Knopf,
               der ihn hatte, ist mit der Frage verschwunden (UIK-21, ZST-16). */}
           {vermerken.isSuccess ? (
-            <Rueckmeldung className="mt-6">
-              Die aufgeführten Termine sind als „Terminzettel ausgehändigt“ vermerkt. Am Termin
-              lässt sich der Vermerk zurücknehmen.
-            </Rueckmeldung>
+            <Rueckmeldung className="mt-6">Als „Terminzettel ausgehändigt“ vermerkt.</Rueckmeldung>
           ) : null}
 
           {/* Die Frage nach dem Druckdialog - der zweite Schritt (ANN-039
@@ -169,9 +166,7 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
               role="status"
               className="border-line-strong bg-surface-sunken mt-6 flex flex-col gap-3 border-l-4 py-3 pr-4 pl-4"
             >
-              <p className="text-ink text-liste">
-                Wurde der Zettel ausgehändigt? Nur dann gelten die Termine als mitgeteilt.
-              </p>
+              <p className="text-ink text-liste">Wurde der Zettel ausgehändigt?</p>
               <div className="flex flex-col gap-3 *:w-full sm:flex-row sm:flex-wrap sm:items-center sm:*:w-auto">
                 <Button
                   type="button"

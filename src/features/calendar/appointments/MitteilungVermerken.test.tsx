@@ -65,7 +65,7 @@ describe('MitteilungVermerken', () => {
     );
   });
 
-  it('bietet die vier Wege an und sagt, wofuer die Auswahl da ist', () => {
+  it('bietet die vier Wege an und nennt nur die Folge einer Aenderung (L7)', () => {
     renderWithProviders(<MitteilungVermerken appointment={termin()} />);
 
     expect(screen.getByLabelText('Persönlich gesagt')).not.toBeChecked();
@@ -74,13 +74,9 @@ describe('MitteilungVermerken', () => {
     expect(screen.getByLabelText('Per E-Mail mitgeteilt')).not.toBeChecked();
     // Terminzettel und E-Mail vermerken sich erst mit der Bestätigung dort
     // (ANN-039, ANN-041 Fassung 2) - der Hinweis behauptet keinen
-    // Selbstvermerk mehr (TER-13). Seit UX-005g ein Satz, der auch das
-    // Verfallen nennt.
-    expect(
-      screen.getByText(
-        'Für Gespräch und Anruf – Terminzettel und E-Mail werden dort vermerkt, wo sie bestätigt werden; ändert sich der Termin, verfällt der Vermerk.',
-      ),
-    ).toBeInTheDocument();
+    // Selbstvermerk (TER-13). Seit L7 steht nur noch das Verfallen da.
+    expect(screen.getByText('Ändert sich der Termin, verfällt der Vermerk.')).toBeInTheDocument();
+    expect(screen.queryByText(/Für Gespräch und Anruf/)).not.toBeInTheDocument();
     expect(screen.queryByText(/vermerken sich selbst/)).not.toBeInTheDocument();
   });
 

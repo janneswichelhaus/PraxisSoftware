@@ -36,12 +36,11 @@ export interface Fehlertext {
 export const FEHLERTEXTE: Readonly<Record<LocationErrorCode, Fehlertext>> = {
   timeout: {
     titel: 'Zeitüberschreitung',
-    erklaerung: 'Der Kartendienst hat nicht rechtzeitig geantwortet. Ein neuer Versuch hilft oft.',
+    erklaerung: 'Der Kartendienst hat nicht rechtzeitig geantwortet.',
   },
   unavailable: {
     titel: 'Kartendienst nicht erreichbar',
-    erklaerung:
-      'Die Route konnte nicht berechnet werden. Die Stopps stehen trotzdem auf der Karte und in der Liste.',
+    erklaerung: 'Die Route konnte nicht berechnet werden.',
   },
   // ANN-094: Ohne ausdrückliche Datenfreigabe der Umgebung (LOCATION_DATA_GATE)
   // gilt ein echter Anbieter als nicht eingerichtet - der Schalter aus

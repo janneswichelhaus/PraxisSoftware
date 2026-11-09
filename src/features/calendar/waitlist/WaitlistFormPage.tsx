@@ -382,7 +382,7 @@ export function NewWaitlistEntryPage() {
     return (
       <>
         <Rueckweg standard={LIST} beschriftung="Zurück zur Warteliste" />
-        <PageHeader title="Auf die Warteliste setzen" description="Zuerst die Patient:in wählen." />
+        <PageHeader title="Auf die Warteliste setzen" />
         <div className="max-w-formular">
           <Patientensuche
             label="Patient:in suchen"
@@ -462,7 +462,7 @@ export function EditWaitlistEntryPage() {
         {() => (
           <ErrorState
             title="Diesen Eintrag gibt es nicht mehr."
-            description="Er wurde geschlossen oder gelöscht. Die Warteliste zeigt den aktuellen Stand."
+            description="Er wurde geschlossen oder gelöscht."
           />
         )}
       </Abfragezustand>

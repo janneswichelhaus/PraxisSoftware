@@ -180,7 +180,7 @@ export function WaitlistPage({ user }: { user: CurrentUser }) {
 
       {neuerTermin ? (
         <Rueckmeldung className="mb-4">
-          Termin angelegt – der Eintrag ist eingeplant und steht unter „Geschlossen“.{' '}
+          Termin angelegt – der Eintrag ist eingeplant.{' '}
           <Textlink to={kalenderZumTermin(neuerTermin)}>Termin öffnen</Textlink>
         </Rueckmeldung>
       ) : null}
@@ -202,10 +202,6 @@ export function WaitlistPage({ user }: { user: CurrentUser }) {
         leer={{
           wenn: (eintraege) => eintraege.length === 0,
           titel: filter === 'open' ? 'Niemand wartet' : 'Noch nichts geschlossen',
-          beschreibung:
-            filter === 'open'
-              ? 'Eintragen lässt sich hier oder aus der Akte.'
-              : 'Eingeplante und zurückgezogene Einträge erscheinen hier.',
         }}
       >
         {(eintraege) => (

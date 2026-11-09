@@ -78,8 +78,7 @@ export function NichtAngetroffenAktion({
       <p>
         Der Termin am {formatLocalDate(appointment.starts_at, zone)} um{' '}
         {formatLocalTime(appointment.starts_at, zone)} Uhr für {patientName(appointment)} wird als
-        „nicht angetroffen“ geführt. Der Zeitraum bleibt belegt. Ein Irrtum lässt sich über „Termin
-        wieder öffnen“ zurücknehmen.
+        „nicht angetroffen“ geführt. Der Zeitraum bleibt belegt.
       </p>
       {/* „Das ist ein organisatorischer Vermerk …" ist gestrichen
           (Design-Handoff 2026-10-01, Abschnitt 1). */}

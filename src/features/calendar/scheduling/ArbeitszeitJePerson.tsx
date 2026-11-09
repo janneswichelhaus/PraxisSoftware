@@ -81,9 +81,6 @@ const SCHUTZTEXTE: Verlustschutztexte = {
   bezeichnung: 'Ungespeicherte Arbeitszeiten',
 };
 
-/** Was nach einem gescheiterten Speichern zu tun ist (WRT-01). */
-const ERNEUT_SPEICHERN = 'Bitte die Verbindung prüfen und erneut speichern.';
-
 /** Kalendertag ein Jahr später, über UTC gerechnet – keine Ortszeit im Spiel. */
 function einJahrSpaeter(tag: string): string {
   const d = new Date(`${tag}T00:00:00Z`);
@@ -744,11 +741,7 @@ function Abweichungen({
     // Ohne Zeitzone der Praxis gibt es kein „heute" und damit kein Fenster.
     // Bis UXR-011 stand hier dann „keine Abweichung hinterlegt" (ORG-14).
     if (!heute) {
-      return (
-        <Statusmeldung ton="warnung">
-          Die Zeitzone der Praxis fehlt. Ohne sie lassen sich die Abweichungen nicht anzeigen.
-        </Statusmeldung>
-      );
+      return <Statusmeldung ton="warnung">Die Zeitzone der Praxis fehlt.</Statusmeldung>;
     }
     if (ausnahmen.isPending) return <LoadingState label="Abweichungen werden geladen …" />;
     if (ausnahmen.isError && !ausnahmen.data) {
@@ -929,8 +922,7 @@ function Abweichungen({
 
             {form.datum !== '' && leer && !bestehend ? (
               <p className="text-ink-muted text-sm">
-                Für den {datumText} ist keine Abweichung hinterlegt. Bitte das Häkchen setzen oder
-                Zeitblöcke eintragen.
+                Für den {datumText} ist keine Abweichung hinterlegt.
               </p>
             ) : null}
 
@@ -1016,7 +1008,7 @@ function EntfernenFenster({
       <p className="text-ink mt-2 text-sm">Danach gilt für diesen Tag wieder der Wochenplan.</p>
       {gescheitert ? (
         <Statusmeldung ton="fehler" className="mt-2">
-          {fehler ?? 'Das hat nicht geklappt.'} {ERNEUT_SPEICHERN}
+          {fehler ?? 'Das hat nicht geklappt.'}
         </Statusmeldung>
       ) : null}
       <div className="mt-4 flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">
@@ -1144,7 +1136,6 @@ export function ArbeitszeitJePerson({
       {therapeuten.data && therapeuten.data.length === 0 ? (
         <EmptyState
           title="Noch keine behandelnde Person"
-          description="Arbeitszeiten gibt es für Personen mit Zugang und der Rolle Therapeut:in oder Teamleitung."
           aktion={
             darfPflegen ? (
               <ButtonLink to="/praxis/team" variant="secondary">

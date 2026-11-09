@@ -31,15 +31,11 @@ function KurzblickInhalt({ appointmentId }: { appointmentId: string }) {
   if (isPending) return <LoadingState label="Kurzblick wird geladen …" />;
   if (isError) {
     return (
-      <ErrorState
-        title="Der Kurzblick konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => refetch()}
-      />
+      <ErrorState title="Der Kurzblick konnte nicht geladen werden." onErneut={() => refetch()} />
     );
   }
   if (!data) {
-    return <p className="text-ink-muted text-liste">Für diesen Termin gibt es keinen Kurzblick.</p>;
+    return <p className="text-ink-muted text-liste">Kein Kurzblick zu diesem Termin.</p>;
   }
   return <KurzblickAnzeige blick={data} />;
 }

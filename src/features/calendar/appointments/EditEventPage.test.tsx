@@ -158,8 +158,9 @@ describe('EditEventPage', () => {
     expect(screen.getByText('Tim Teamleitung')).toBeInTheDocument();
     // Keine Ankreuzfelder: Wer teilnimmt, ist eine Teilnahme und kein Ereignis.
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-    // Ein Satz, der auf den Weg am Namen zeigt (UX-005g).
-    expect(screen.getByText('Teilnahme am jeweiligen Termin ändern.')).toBeInTheDocument();
+    // L7: Der Weg steht am Namen selbst, ohne Satz dazu.
+    expect(screen.getByRole('link', { name: 'Anna Beispiel' })).toBeInTheDocument();
+    expect(screen.queryByText('Teilnahme am jeweiligen Termin ändern.')).toBeNull();
   });
 
   it('schreibt die Aenderung auf dem Stand der GRUPPE', async () => {

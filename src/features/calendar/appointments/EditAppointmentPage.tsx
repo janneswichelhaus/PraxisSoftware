@@ -122,7 +122,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
         {kopf}
         <ErrorState
           title="Abgesagte Termine werden nicht bearbeitet"
-          description="Der Termin bleibt zur Nachvollziehbarkeit erhalten. Für einen neuen Zeitraum bitte einen neuen Termin anlegen."
+          description="Für einen neuen Zeitraum einen neuen Termin anlegen."
         />
       </>
     );
@@ -137,11 +137,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
 
       <PageHeader
         title={istEreignis ? 'Teilnahme ändern' : 'Termin bearbeiten'}
-        description={
-          istEreignis
-            ? 'Hier wird nur die beteiligte Person getauscht.'
-            : `Für ${patientName(daten)}`
-        }
+        description={istEreignis ? undefined : `Für ${patientName(daten)}`}
       />
 
       {termin.isError ? (
@@ -192,7 +188,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
         bestehenderTag={gespeichert.date}
         nurPerson={istEreignis}
         arten={istEreignis ? EREIGNIS_ARTEN : undefined}
-        dauerFest={istEreignis ? `Dauer: ${fensterMinuten} Minuten, wie eingetragen.` : undefined}
+        dauerFest={istEreignis ? `Dauer: ${fensterMinuten} Minuten` : undefined}
         texte={{
           absenden: 'Änderungen speichern',
           laeuft: 'Wird gespeichert …',

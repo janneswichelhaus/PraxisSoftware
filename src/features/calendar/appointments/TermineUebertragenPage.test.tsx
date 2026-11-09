@@ -327,7 +327,8 @@ describe('Termine übertragen', () => {
     // im Hinweis (VER-17, WRT-03).
     expect(screen.getByRole('heading', { level: 2, name: 'Ziel' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Diese Termine' })).toBeInTheDocument();
-    expect(screen.getByText('Nur Grundlagen dieser Patient:in.')).toBeInTheDocument();
+    // L7: Kein Hinweis am Feld, der nur die Auswahl beschreibt.
+    expect(screen.queryByText('Nur Grundlagen dieser Patient:in.')).toBeNull();
     expect(screen.queryByText(/Server/)).not.toBeInTheDocument();
   });
 

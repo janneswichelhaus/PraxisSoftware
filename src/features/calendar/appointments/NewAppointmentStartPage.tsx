@@ -125,7 +125,6 @@ export function NewAppointmentStartPage() {
           unter der Liste (Design-Review A, Befund 6; UX-012). */}
       <PageHeader
         title="Termin anlegen"
-        description="Zuerst die Patient:in wählen."
         actions={
           <ButtonLink to={anlegen} variant="secondary">
             Patient:in anlegen

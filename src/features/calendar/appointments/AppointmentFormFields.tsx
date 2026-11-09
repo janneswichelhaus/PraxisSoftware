@@ -6,7 +6,6 @@ import { Select } from '@/components/ui/Select';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { BEGRIFFE, BEREICHE } from '@/lib/begriffe';
 import { type AppointmentFormField } from './api';
 import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import { DAUER_AUSWAHL_ID, TERMINFELD_IDS } from './terminformular';
@@ -188,7 +187,7 @@ export function AppointmentFormFields({
       hausbesuch
     ) : art === 'video' ? (
       // Ein Satz, kein Kasten (Leitfaden L2).
-      <p className="text-ink-muted text-sm">Für Videotermine wird noch kein Videolink erzeugt.</p>
+      <p className="text-ink-muted text-sm">Noch ohne Videolink.</p>
     ) : null;
 
   return (
@@ -266,8 +265,7 @@ export function AppointmentFormFields({
                     {werte.end_time ? `${werte.end_time} Uhr` : '—'}
                   </p>
                   <Kleingedrucktes className="mt-1">
-                    {laengeHinweis ??
-                      `Dauer: ${fensterMinuten} Minuten, Dokumentation eingeschlossen.`}
+                    {laengeHinweis ?? `Dauer: ${fensterMinuten} Minuten`}
                   </Kleingedrucktes>
                   {/* Ein Fehler hier hat kein Feld, an dem er stehen könnte: als
                       Meldung mit Rolle, in der Größe der Feldfehler (UIK-02). */}
@@ -393,11 +391,7 @@ function Dauerwahl({
           step={rasterMinuten ?? 1}
           value={text}
           error={eingabeFehler ?? fehler}
-          hint={
-            istRegellaenge(minuten)
-              ? undefined
-              : 'Weicht von 45 und 60 Minuten ab. Der Termin wird im Kalender und in den Terminlisten gekennzeichnet.'
-          }
+          hint={istRegellaenge(minuten) ? undefined : 'Weicht von 45 und 60 Minuten ab.'}
           onChange={(e) => {
             // Wer hier 60 tippt, bleibt im Feld - sonst verschwände es unter
             // den Fingern, sobald die Eingabe eine Regellänge ergibt.
@@ -526,22 +520,11 @@ export function ArbeitszeitRueckfrage({
         : 'Außerhalb der Arbeitszeit';
   return (
     <Dialogfenster titel={titel} onSchliessen={onAbbrechen}>
-      {vergangenheit ? (
-        <p className="text-ink text-sm">
-          Der Tag liegt in der Vergangenheit. Der Termin wird nachgetragen.
-        </p>
-      ) : null}
+      {vergangenheit ? <p className="text-ink text-sm">Der Termin wird nachgetragen.</p> : null}
       {arbeitszeit ? (
-        <>
-          <p className={`text-ink text-sm ${vergangenheit ? 'mt-2' : ''}`}>
-            Dieser Zeitraum liegt außerhalb der hinterlegten Arbeitszeit {person}.
-          </p>
-          <Kleingedrucktes className="mt-2">
-            Ist für die Person an diesem Tag keine Arbeitszeit hinterlegt, gilt der Termin ebenfalls
-            als außerhalb. {BEGRIFFE.arbeitszeiten} pflegen Sie unter {BEREICHE.betrieb.label} →
-            Team → Arbeitszeit.
-          </Kleingedrucktes>
-        </>
+        <p className={`text-ink text-sm ${vergangenheit ? 'mt-2' : ''}`}>
+          Dieser Zeitraum liegt außerhalb der hinterlegten Arbeitszeit {person}.
+        </p>
       ) : null}
       <p className="text-ink-muted mt-2 text-xs">Der Termin wurde noch nicht gespeichert.</p>
       <div className="mt-4 flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">

@@ -970,7 +970,7 @@ test('fragt vor dem Absagen, wenn die Person den Folgetermin auf der Plattform s
   await page.getByRole('button', { name: /^Rückgängig/ }).click();
   const frage = page.getByRole('group', { name: 'Folgetermin absagen' });
   await expect(frage).toContainText(
-    'Erika sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht Erika dort.',
+    'Erika sieht den Termin auf der Plattform und dort auch die Absage.',
   );
   const absagen = frage.getByRole('button', { name: 'Termin absagen' });
   const behalten = frage.getByRole('button', { name: 'Behalten' });

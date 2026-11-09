@@ -112,12 +112,13 @@ describe('SlotSearchPage (PRX-003)', () => {
     });
   });
 
-  it('sagt, wenn nichts frei ist, und was man ändern kann', async () => {
+  it('sagt, wenn nichts frei ist, ohne Rat daneben (L7)', async () => {
     findFreeSlots.mockResolvedValue([]);
     renderWithProviders(
       <SlotSearchPage user={testUser(['office'])} />,
       `/patienten/${PATIENT}/plaetze`,
     );
     expect(await screen.findByText('Kein freier Platz')).toBeInTheDocument();
+    expect(screen.queryByText(/Zeitraum verlängern/)).toBeNull();
   });
 });

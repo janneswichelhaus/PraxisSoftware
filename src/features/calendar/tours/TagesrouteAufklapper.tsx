@@ -74,12 +74,10 @@ function Inhalt({
 
   if (route.isPending) return <LoadingState label="Tagesroute wird geladen …" />;
   if (route.isError) {
-    // Mit dem nächsten Schritt und einem Weg hinaus, der die Seite stehen
-    // lässt (WRT-01, ZST-04, ANN-021).
+    // Mit einem Weg hinaus, der die Seite stehen lässt (WRT-01, ZST-04, ANN-021).
     return (
       <ErrorState
         title="Die Tagesroute konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
         onErneut={() => route.refetch()}
       />
     );

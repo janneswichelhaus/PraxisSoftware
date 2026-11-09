@@ -65,7 +65,7 @@ export function WaitlistMatches({ slot, back }: { slot: FreeSlot; back: string }
       titel={`Passt von der Warteliste (${data.length})`}
       // Die Folge des Übernehmens - der Eintrag schließt mit dem Termin -
       // ist eine Aussage über den Datenfluss und bleibt (PRX-004).
-      hinweis="Anrufen, dann übernehmen – der Eintrag wird mit dem Termin geschlossen."
+      hinweis="Der Eintrag wird mit dem Termin geschlossen."
     >
       <ListRows>
         {data.map((match) => {

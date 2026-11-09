@@ -220,7 +220,6 @@ function Umplanung({
                 <EmptyState
                   inKarte
                   title="Hier ist nichts umzuplanen."
-                  description="An diesem Tag steht für diese Person kein bestätigter Termin."
                   aktion={
                     <ButtonLink to={zumKalender} variant="secondary">
                       Zum Kalender
@@ -627,10 +626,7 @@ export function TagUmplanenPage({ user }: { user: CurrentUser }) {
     return (
       <>
         <PageHeader title="Tag umplanen" />
-        <ErrorState
-          title="Person und Tag fehlen"
-          description="Diese Seite wird aus dem Kalender geöffnet, wenn dort eine behandelnde Person und ein Tag gewählt sind."
-        />
+        <ErrorState title="Person und Tag fehlen" />
         {/* Der Weg dorthin als Schaltfläche, mit dem mitgereisten Rückweg
             (NAV-02) - bisher ein 14-px-Textlink, der ihn überging. */}
         <div className="mt-4">

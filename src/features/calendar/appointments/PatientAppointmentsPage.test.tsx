@@ -118,9 +118,7 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
     renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
 
     expect(await screen.findByText('Kein weiterer Termin vereinbart.')).toBeInTheDocument();
-    expect(
-      screen.getByText('Für diese Person gibt es noch keinen vergangenen Termin.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Kein vergangener Termin.')).toBeInTheDocument();
   });
 
   // Der Mitteilungsvermerk (CAL-012) wird hinter der Anmeldung geprueft, und
@@ -388,9 +386,8 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
     renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
 
     const knoepfe = await screen.findAllByRole('button', { name: 'Erneut versuchen' });
-    expect(
-      screen.getAllByText('Bitte die Verbindung prüfen und erneut versuchen.').length,
-    ).toBeGreaterThan(0);
+    // L7: Neben „Erneut versuchen“ steht kein Ratsatz.
+    expect(screen.queryByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeNull();
 
     antwortet([termin({ id: 'wieder' })], []);
     await user.click(knoepfe[0]!);

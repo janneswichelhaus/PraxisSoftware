@@ -25,9 +25,12 @@ describe('TerritoryHint (PRX-002)', () => {
     renderWithProviders(
       <TerritoryHint postalCode="72070" slots={[{ datum: '2026-10-06', beginn: '09:00' }]} />,
     );
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Außerhalb des Gebietstags. Die Postleitzahl 72070 gehört zum Gebiet Nord (Mo vormittags). Der Termin lässt sich trotzdem anlegen.',
+    const hinweis = await screen.findByRole('status');
+    expect(hinweis).toHaveTextContent(
+      'Außerhalb des Gebietstags. Die Postleitzahl 72070 gehört zum Gebiet Nord (Mo vormittags).',
     );
+    // L7: Der Knopf zum Anlegen bleibt offen; ein Satz dazu entfällt.
+    expect(hinweis).not.toHaveTextContent(/trotzdem anlegen/);
   });
 
   it('zählt in der Serie, welche Termine außerhalb liegen', async () => {

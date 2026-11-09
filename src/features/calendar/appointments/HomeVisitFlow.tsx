@@ -342,8 +342,7 @@ function NiemandOeffnetFenster({
             />
           </ListRows>
           <p className="text-ink text-sm">
-            Danach gilt der Termin als „nicht angetroffen“ und löst ein Ausfallhonorar aus. Ein
-            Irrtum lässt sich über „Termin wieder öffnen“ zurücknehmen.
+            Danach gilt der Termin als „nicht angetroffen“ und löst ein Ausfallhonorar aus.
           </p>
         </div>
       )}

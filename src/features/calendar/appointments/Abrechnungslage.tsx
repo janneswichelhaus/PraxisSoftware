@@ -109,9 +109,6 @@ export function TreatmentBasisTile({
       {ungedeckt ? (
         <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-normal">
           <Deckungszeichen gedeckt={appointment.treatment_basis_covered} />
-          <span className="text-ink-muted text-sm">
-            Die Behandlungsgrundlage deckt diesen Termin nicht.
-          </span>
         </span>
       ) : null}
     </Tile>

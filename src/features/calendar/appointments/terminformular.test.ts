@@ -81,10 +81,8 @@ describe('terminFehlerliste (UIK-02)', () => {
 describe('speicherfehlerText (ZST-12)', () => {
   const titel = 'Der Termin konnte nicht angelegt werden.';
 
-  it('wiederholt den Titel nicht, sondern sagt, was zu tun ist', () => {
-    expect(speicherfehlerText(titel, titel)).toBe(
-      'Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut speichern.',
-    );
+  it('wiederholt den Titel nicht, sondern sagt, dass die Eingaben bleiben (L7: ohne Ratsatz)', () => {
+    expect(speicherfehlerText(titel, titel)).toBe('Die Eingaben stehen noch im Formular.');
   });
 
   it('laesst einen genannten Grund stehen', () => {

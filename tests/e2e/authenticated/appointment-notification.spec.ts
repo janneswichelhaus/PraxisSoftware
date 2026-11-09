@@ -151,7 +151,7 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
     await expect(page.getByText(/Wurde der Zettel ausgehändigt\?/)).toBeVisible();
 
     await page.getByRole('button', { name: 'Ja, als mitgeteilt vermerken' }).click();
-    await expect(page.getByText(/als „Terminzettel ausgehändigt“ vermerkt/)).toBeVisible();
+    await expect(page.getByText('Als „Terminzettel ausgehändigt“ vermerkt.')).toBeVisible();
 
     await page.goto(`/patienten/${PATIENTEN.max}`);
     for (const id of [ersterTermin, zweiterTermin]) {
@@ -183,11 +183,8 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
 
     await mitteilungOeffnen(page);
     await expect(page.getByRole('button', { name: 'Vermerk speichern' })).toBeVisible();
-    // Der Hinweis der Auswahl, seit UXR-005 neu formuliert und seit UX-005g
-    // ein einziger Satz.
-    await expect(
-      page.getByText(/Für Gespräch und Anruf – Terminzettel und E-Mail werden dort vermerkt/),
-    ).toBeVisible();
+    // Der Hinweis der Auswahl, seit L7 nur noch die Folge einer Änderung.
+    await expect(page.getByText('Ändert sich der Termin, verfällt der Vermerk.')).toBeVisible();
   });
 });
 
@@ -217,7 +214,7 @@ test.describe('CAL-013: Termine per E-Mail', () => {
     await page.getByRole('button', { name: 'E-Mail öffnen' }).click();
     await expect(page.getByText(/Wurde sie gesendet\?/)).toBeVisible();
     await page.getByRole('button', { name: 'Ja, als mitgeteilt vermerken' }).click();
-    await expect(page.getByText(/als „Per E-Mail mitgeteilt“ vermerkt/)).toBeVisible();
+    await expect(page.getByText('Als „Per E-Mail mitgeteilt“ vermerkt.')).toBeVisible();
 
     await page.goto(`/patienten/${PATIENTEN.max}`);
     for (const id of [ersterTermin, zweiterTermin]) {

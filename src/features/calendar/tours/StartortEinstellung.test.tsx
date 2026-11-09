@@ -231,7 +231,8 @@ describe('StartortEinstellung', { timeout: 20_000 }, () => {
     const fehler = (await screen.findByText('Die Standorte konnten nicht geladen werden.')).closest(
       '[role="alert"]',
     )!;
-    expect(fehler).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    // L7: Neben „Erneut versuchen“ steht kein Ratsatz.
+    expect(fehler).not.toHaveTextContent('Verbindung prüfen');
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(await screen.findByLabelText('Straße')).toBeInTheDocument();
   });

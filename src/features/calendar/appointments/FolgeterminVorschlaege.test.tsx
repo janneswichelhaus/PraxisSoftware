@@ -503,7 +503,7 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
       const frage = await rueckfrage(user);
 
       expect(frage).toHaveTextContent(
-        'Berta sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht Berta dort.',
+        'Berta sieht den Termin auf der Plattform und dort auch die Absage.',
       );
       expect(undoAppointmentCreation).toHaveBeenCalledTimes(1);
       expect(cancelAppointment).not.toHaveBeenCalled();
@@ -580,7 +580,7 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
       await user.click(erste!);
       await user.click(await screen.findByRole('button', { name: /^Rückgängig/ }));
       expect(await screen.findByRole('group', { name: 'Folgetermin absagen' })).toHaveTextContent(
-        'Die Person sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht sie dort.',
+        'Die Person sieht den Termin auf der Plattform und dort auch die Absage.',
       );
     });
   });

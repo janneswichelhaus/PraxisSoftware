@@ -133,7 +133,7 @@ describe('TermineMailen', () => {
     );
     // Im Erfolgston und mit dem Fokus: Der Knopf, der ihn hatte, ist mit der
     // Frage verschwunden (UIK-21, ZST-16).
-    const bestaetigung = await screen.findByText(/sind als „Per E-Mail mitgeteilt“ vermerkt/);
+    const bestaetigung = await screen.findByText('Als „Per E-Mail mitgeteilt“ vermerkt.');
     // Seit dem Design-Handoff vom 2026-10-01 auf der Akzentfläche (Rueckmeldung).
     expect(bestaetigung).toHaveClass('bg-accent-soft', 'text-accent');
     expect(bestaetigung).toHaveAttribute('role', 'status');
