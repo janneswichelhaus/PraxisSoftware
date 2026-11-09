@@ -66,14 +66,14 @@ in `src/designsystem.test.ts` hält den erreichten Stand je Verzeichnis (ANN-400
 Beispiel: die Anmeldeseite („weniger Text überall“, Jannes 2026-11-08): Marke, Titel, Knopf.
 Umgesetzt: SLK-010 bis SLK-019.
 
-- Titel, Beschriftung, Daten und Knopf sagen, was eine Ansicht ist und was geht. Ein Satz, der das
-  erklärt oder wiederholt, entfällt: Einleitung, Beschreibung, Hinweis am Feld, Anleitung auf
-  Abruf, Kleingedrucktes ohne Rechtsgrund, was Gerät oder Browser selbst erklären.
+- Titel, Beschriftung, Daten und Knopf sagen, was eine Ansicht ist und was geht. Es entfallen
+  Einleitung, Beschreibung, Hinweis am Feld, Anleitung auf Abruf, Kleingedrucktes ohne Rechtsgrund
+  und was Gerät oder Browser selbst erklären.
 - Was bleibt, ist kurz: Leerzustand ohne Anleitung, Fehler mit Knopf statt Rat, Rückfrage mit der
   Folge, die man nicht sieht.
 - Es bleiben (MUSS vor Leitfaden): Rechtssätze, Einwilligungen wörtlich, Warnung vor Datenverlust,
   Notfall, Red Flags, Datenfluss und Rechengrundlage (`ARBEITSBEREICHE.md` Regel 4), auf der
-  Plattform ein Satz Orientierung. Druckblätter sind Dokumente. Die Ratsche `saetze` hält den Stand.
+  Plattform ein Satz Orientierung. Druckblätter sind Dokumente.
 
 ## Vorgehen
 

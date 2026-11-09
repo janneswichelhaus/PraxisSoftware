@@ -1527,12 +1527,12 @@
         },
         {
           "id": "slk-epic-002",
-          "name": "SLK-EPIC-002 Weniger Text überall (Leitfaden L7)",
+          "name": "SLK-EPIC-002 Weniger Text überall (L7)",
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-11-09",
           "nachweis": "SLK-010 bis -019",
-          "vermerk": "Sätze in JSX 1.774 → 934, Ratsche saetze"
+          "vermerk": "Sätze 1.774 → 934, Ratsche"
         },
         {
           "id": "des-epic-001",

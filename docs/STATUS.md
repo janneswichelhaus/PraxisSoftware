@@ -6,8 +6,7 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Weniger Text überall** (Leitfaden L7, SLK-010 bis SLK-019) auf `ccr-7a6275b7-x02kti`;
-Merge bei Jannes.
+**Weniger Text überall** (#362, Leitfaden L7); Merge bei Jannes.
 
 ## Danach
 

@@ -108,6 +108,11 @@ abfragen; die Grenze 44 px bleibt.
 01:00 bis 02:00 und 04:00 bis 06:00 UTC eine Gebühr oder Erinnerung. **Erwartet.** Die Helfer
 wählen eine eindeutige Ortszeit, Grenzen bleiben.
 
+### Training — Paketende am Monatsende
+2026-11-09 · `training-contracts.test.ts` · `pnpm test:db` · offen\
+**Beobachtung.** Beginn 29.11.: Test erwartet Ende 27.02., Funktion liefert 28.02. (§ 188 Abs. 3 BGB).
+**Erwartet.** Test nach § 188 BGB.
+
 ### Termin — Ein Browsertest misst „Abhaken“, während das Fenster noch aufgeht
 2026-10-29 · `tests/e2e/termin.spec.ts` (Hausbesuch) · Browsertests zu 3c, auch auf `main` · offen
 (Vorschlag)\
