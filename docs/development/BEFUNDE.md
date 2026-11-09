@@ -146,18 +146,6 @@ in der Vollseite mal 86 px höher. Ein Vergleich vorher/nachher zeigt so Untersc
 **Erwartet.** Den Merker der Hinweise vorab setzen wie beim Startbild, vor der Aufnahme auf
 `document.fonts.ready` und das Ende der Animationen warten.
 
-### Test-Umgebung — Die Termine der Praxiswoche vom 6.10. haben keine gültige UUID
-2026-10-28 · Test-Umgebung, Übersicht der Plattform · Bild von Jannes, nachgestellt · offen (bei
-Jannes) · `praxiswoche.sql`\
-**Beobachtung.** Erikas Übersicht meldet „Die Übersicht lässt sich gerade nicht laden.“: Die alte
-Praxiswoche gab Terminen md5-Kennungen ohne Versions- und Variantenbits (`d644f009-734a-46c3-07d2-…`),
-`z.string().uuid()` verwirft die ganze Terminliste, ohne Fehler im Netz oder in der Konsole. Der
-Generator ist seit `b7a1c64b` (12.10.) richtig, die Test-Umgebung danach nicht neu aufgesetzt worden.
-Nachgestellt mit dem Seed vom 6.10. und allen Migrationen; mit gültigen Kennungen lädt die Übersicht.
-**Erwartet.** Test-Umgebung neu aufsetzen (Workflow „Test-Umgebung“, „neu aufsetzen“). Der Versuch
-vom 31.10. (Lauf #239) brach am Seed ab, weil eine Behandlungsnotiz aus der Bedienung ihren Termin
-festhielt; `neu-aufsetzen.psql` leert seither vorher alle Praxisdaten, danach erneut starten.
-
 ### Termine — Zeichen und Zeilen der Bausteine gibt es schon an anderer Stelle
 2026-10-28 · Plattform, Termine · Design-Review zu 3a · offen (Vorschlag, nach 3d) ·
 `Terminsymbole.tsx`, `Terminliste.tsx`, `Fragezeile`\

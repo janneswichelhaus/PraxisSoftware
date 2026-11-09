@@ -6,25 +6,26 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Weniger Text überall** (#362, Leitfaden L7); Merge bei Jannes.
+**Wartungsmodus** (#363): Fehler und Anpassungen einzeln je Session, Regel in `CLAUDE.md`,
+Ablauf in `DEVELOPMENT.md`; Merge bei Jannes.
 
 ## Danach
 
-Bis M2 (Jannes 2026-11-01): Leinwände fließen nach; DATEV erst nach B4; zuletzt der Wartungsmodus.
-**G14 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter,
-DSFA, zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
+Bis M2 (Jannes 2026-11-01, voller Umfang): KI-EPIC-002 (Frage 1 in #363), MAP-007 nach E-24,
+Leinwände, sobald sie da sind; DATEV erst nach B4. **G14 parallel**: nach dem VVT die
+Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA, zuletzt die Nachweistabelle;
+die Datenschutzinformationen nennen die Steuerberatung.
 
 ## Bei Jannes
 
 - Test-App neu installieren (#360).
 - Den alten Branch `ccr-544f8ce7-u1sqpf` löschen (seit 3c ist alles übertragen).
-- Test-Umgebung neu aufsetzen (Workflow „Test-Umgebung“, #339 ist gemergt); bis dahin scheitert
-  Erikas Übersicht an Terminen ohne gültige UUID (`development/BEFUNDE.md`).
+- Bildsichtung von #352 bis #362 (`/sichtung`), für M2.
+- E-24 vor MAP-007: ein Aufruf mit dem PTV-Schlüssel, ob die Radprofile Manöver liefern.
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; E13); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
   ANN-479 ansehen (Besuch).
-- Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
 - Widersprüche zwischen ADR-Wortlaut und Code oder Prinzipien (`development/BEFUNDE.md`, „Doku“).
 - Preise: Entwurf 2027 steht (`product/preisblatt-entwurf.md`), echte Preise kurz vor dem Start;
@@ -40,4 +41,4 @@ DSFA, zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steue
 
 ## Letzte Session
 
-09.11.2026, weniger Text ab `main`, keine Migration.
+09.11.2026, Wartungsmodus ab `main`, keine Migration.
