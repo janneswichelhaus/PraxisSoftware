@@ -30,9 +30,7 @@ function KurzblickInhalt({ appointmentId }: { appointmentId: string }) {
 
   if (isPending) return <LoadingState label="Kurzblick wird geladen …" />;
   if (isError) {
-    return (
-      <ErrorState title="Der Kurzblick konnte nicht geladen werden." onErneut={() => refetch()} />
-    );
+    return <ErrorState title="Kurzblick nicht geladen." onErneut={() => refetch()} />;
   }
   if (!data) {
     return <p className="text-ink-muted text-liste">Kein Kurzblick zu diesem Termin.</p>;
@@ -98,7 +96,7 @@ function LetzterEintrag({ blick }: { blick: KurzblickDaten }) {
       ) : null}
     </>
   ) : (
-    <span className="text-ink-muted">Noch kein Eintrag vor diesem Termin.</span>
+    <span className="text-ink-muted">Kein früherer Eintrag.</span>
   );
 }
 
@@ -215,7 +213,7 @@ export function LetzterEintragVorDerTuer({ appointmentId }: { appointmentId: str
     <Abfragezustand
       abfrage={abfrage}
       laden="Letzter Eintrag wird geladen …"
-      fehler="Der letzte Eintrag konnte nicht geladen werden."
+      fehler="Letzter Eintrag nicht geladen."
     >
       {(blick) => (blick ? <LetzterEintrag blick={blick} /> : null)}
     </Abfragezustand>

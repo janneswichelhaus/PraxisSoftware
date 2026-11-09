@@ -346,7 +346,7 @@ function Kartenflaeche({
     <div className="rounded-card border-line overflow-hidden border">
       {ladefehler ? (
         <Statusmeldung ton="warnung" className="border-line bg-warnung-soft border-b px-4 py-2">
-          Kartenmaterial konnte nicht geladen werden.
+          Kartenmaterial nicht geladen.
         </Statusmeldung>
       ) : null}
       <div

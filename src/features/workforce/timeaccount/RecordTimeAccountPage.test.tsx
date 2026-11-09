@@ -279,9 +279,7 @@ describe('RecordTimeAccountPage', () => {
       }),
     );
     const zeiten = await screen.findByRole('dialog', { name: 'Wie lange?' });
-    expect(
-      await within(zeiten).findByText('Der Tag konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await within(zeiten).findByText('Tag nicht geladen.')).toBeInTheDocument();
     expect(within(zeiten).getByRole('button', { name: 'Weiter' })).toBeDisabled();
     await nutzer.click(within(zeiten).getByRole('button', { name: 'Erneut versuchen' }));
     expect(await within(zeiten).findByLabelText('Beginn')).toHaveValue('18:00');

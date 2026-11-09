@@ -137,7 +137,7 @@ export function StaffMasterDataFields({
                 text={
                   fehltInListe && bisherigerStandort
                     ? 'Die Standorte konnten nicht geladen werden – der bisherige Hauptstandort bleibt erhalten.'
-                    : 'Die Standorte konnten nicht geladen werden.'
+                    : 'Standorte nicht geladen.'
                 }
                 onErneut={() => onStandorteErneut?.()}
               />

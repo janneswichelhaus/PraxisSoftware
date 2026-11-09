@@ -63,7 +63,7 @@ export function NeuPage() {
       <Abfragezustand
         abfrage={personen}
         laden="Das Team wird geladen …"
-        fehler="Das Team konnte nicht geladen werden."
+        fehler="Team nicht geladen."
       >
         {(daten) =>
           art === 'direkt' ? (

@@ -33,7 +33,7 @@ export function BikeNewPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Radflotte wird geladen …"
-        fehler="Die Radflotte konnte nicht geladen werden."
+        fehler="Radflotte nicht geladen."
         inKarte
       >
         {(flotte) =>

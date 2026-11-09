@@ -48,7 +48,7 @@ export async function fetchEigenesAbo(): Promise<EigenesAbo | null> {
     error: unknown;
   };
   const zeilen = aboSchema.safeParse(data);
-  if (error || !zeilen.success) throw new Error('Das Kalender-Abo konnte nicht geladen werden.');
+  if (error || !zeilen.success) throw new Error('Kalender-Abo nicht geladen.');
   const erste = zeilen.data[0];
   return erste ? { seit: erste.created_at } : null;
 }

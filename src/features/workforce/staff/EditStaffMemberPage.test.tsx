@@ -111,9 +111,7 @@ describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
     fetchStaffMember.mockRejectedValueOnce(new Error('kaputt'));
     renderWithProviders(<EditStaffMemberPage user={testUser(['owner'])} />);
 
-    expect(
-      await screen.findByText('Die Mitarbeiterdaten konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Mitarbeiterdaten nicht geladen.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(await screen.findByLabelText('Vorname *')).toHaveValue('Anna');
   });
@@ -174,9 +172,7 @@ describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
     });
     renderWithProviders(<EditStaffMemberPage user={testUser(['owner'])} />);
 
-    expect(
-      await screen.findByText('Die Standorte konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Standorte nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 });

@@ -398,9 +398,7 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       fetchWorkingHours.mockRejectedValueOnce(new Error('kaputt'));
       rendern();
 
-      expect(
-        await screen.findByText('Die Arbeitszeiten konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Arbeitszeiten nicht geladen.')).toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
 
       expect(await screen.findByText('08:00–12:00, 13:00–18:00')).toBeInTheDocument();
@@ -423,9 +421,7 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       expect(
         within(tageszeile('Montag')).getByText('07:30–12:00, 13:00–18:00'),
       ).toBeInTheDocument();
-      expect(
-        screen.queryByText('Die Arbeitszeiten konnten nicht geladen werden.'),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Arbeitszeiten nicht geladen.')).not.toBeInTheDocument();
     });
   });
 
@@ -891,9 +887,7 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       rendern();
       await wochenplanAbwarten();
 
-      expect(
-        await screen.findByText('Die Abweichungen konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Abweichungen nicht geladen.')).toBeInTheDocument();
       expect(screen.queryByText(/keine Abweichung hinterlegt/)).not.toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));

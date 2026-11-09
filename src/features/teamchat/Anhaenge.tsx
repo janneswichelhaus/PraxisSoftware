@@ -457,7 +457,7 @@ export function DateienDesGespraechs({ kanalId, zeitzone }: { kanalId: string; z
     <Abfragezustand
       abfrage={dateien}
       laden="Dateien werden geladen …"
-      fehler="Die Dateien konnten nicht geladen werden."
+      fehler="Dateien nicht geladen."
     >
       {(daten) => {
         const gezeigt = alle ? daten : daten.slice(0, DATEIEN_ZUERST);

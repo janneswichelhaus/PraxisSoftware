@@ -98,7 +98,7 @@ export function EntwuerfePage() {
       <Abfragezustand
         abfrage={geplant}
         laden="Geplantes wird geladen …"
-        fehler="Geplante Nachrichten konnten nicht geladen werden."
+        fehler="Geplante Nachrichten nicht geladen."
       >
         {(daten) => (
           <Listenabschnitt titel="Geplant" anzahl={daten.length} leer={{ titel: 'Nichts geplant' }}>

@@ -547,7 +547,7 @@ describe('TagUmplanenPage', () => {
     rendern();
 
     const kasten = await screen.findByRole('alert');
-    expect(kasten).toHaveTextContent('Der Tag konnte nicht geladen werden.');
+    expect(kasten).toHaveTextContent('Tag nicht geladen.');
     expect(kasten).not.toHaveTextContent('Verbindung prüfen');
 
     await userEvent.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));

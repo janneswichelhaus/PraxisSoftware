@@ -228,9 +228,7 @@ describe('StartortEinstellung', { timeout: 20_000 }, () => {
 
     fetchStandorte.mockRejectedValueOnce(new Error('Funkloch'));
     renderWithProviders(<StartortEinstellung />);
-    const fehler = (await screen.findByText('Die Standorte konnten nicht geladen werden.')).closest(
-      '[role="alert"]',
-    )!;
+    const fehler = (await screen.findByText('Standorte nicht geladen.')).closest('[role="alert"]')!;
     // L7: Neben „Erneut versuchen“ steht kein Ratsatz.
     expect(fehler).not.toHaveTextContent('Verbindung prüfen');
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));

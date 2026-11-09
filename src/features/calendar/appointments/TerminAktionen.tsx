@@ -1279,10 +1279,7 @@ export function TerminAktionenDialog({
     <Dialogfenster titel={titel} onSchliessen={onSchliessen}>
       {isPending ? <LoadingState label="Termin wird geladen …" /> : null}
       {isError && !data ? (
-        <ErrorState
-          title="Der Termin konnte nicht geladen werden."
-          onErneut={() => void refetch()}
-        />
+        <ErrorState title="Termin nicht geladen." onErneut={() => void refetch()} />
       ) : null}
       {data === null ? (
         <ErrorState

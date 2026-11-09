@@ -75,7 +75,7 @@ export async function fetchPatient(patientId: string): Promise<Patient | null> {
     .eq('id', patientId)
     .maybeSingle();
 
-  if (error) throw new Error('Die Patientendaten konnten nicht geladen werden.');
+  if (error) throw new Error('Patientendaten nicht geladen.');
   if (!data) return null;
   return patientSchema.parse(data);
 }

@@ -198,7 +198,7 @@ export function Verlaufsansicht({
           <Abfragezustand
             abfrage={verlauf}
             laden="Nachrichten werden geladen …"
-            fehler="Die Nachrichten konnten nicht geladen werden."
+            fehler="Nachrichten nicht geladen."
           >
             {() => (
               <>

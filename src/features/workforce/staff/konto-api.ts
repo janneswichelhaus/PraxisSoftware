@@ -63,7 +63,7 @@ export async function fetchStaffAccount(staffMemberId: string): Promise<StaffAcc
     .eq('staff_member_id', staffMemberId)
     .maybeSingle();
 
-  if (error) throw new Error('Der Zugangsstand konnte nicht geladen werden.');
+  if (error) throw new Error('Zugangsstand nicht geladen.');
   if (!data) return null;
   return accountSchema.parse(data);
 }

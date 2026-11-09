@@ -133,14 +133,9 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
         <Abfragezustand
           abfrage={patient}
           laden="Patientendaten werden geladen …"
-          fehler="Die Patientendaten konnten nicht geladen werden."
+          fehler="Patientendaten nicht geladen."
         >
-          {() => (
-            <ErrorState
-              title="Nicht gefunden"
-              description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-            />
-          )}
+          {() => <ErrorState title="Nicht gefunden" />}
         </Abfragezustand>
       </>
     );

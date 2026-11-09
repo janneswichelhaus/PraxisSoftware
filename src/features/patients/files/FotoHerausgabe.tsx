@@ -87,8 +87,7 @@ function Zeile({ foto }: { foto: HerausgabeFoto }) {
       ) : null}
       {erledigt ? (
         <Statusmeldung className="mt-2">
-          Kopie zum Speichern übergeben und protokolliert. Bitte prüfen, ob die Datei angekommen
-          ist.
+          Kopie zum Speichern übergeben und protokolliert.
         </Statusmeldung>
       ) : null}
       {fehler ? (

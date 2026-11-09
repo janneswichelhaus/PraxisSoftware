@@ -269,9 +269,7 @@ describe('AppointmentSlipPage', () => {
     const user = userEvent.setup();
     rendern();
 
-    expect(
-      await screen.findByText('Die Termine konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Termine nicht geladen.')).toBeInTheDocument();
     // Kein „Nicht gefunden" - im Funkloch wirkte die Akte sonst gelöscht.
     expect(screen.queryByText('Nicht gefunden')).not.toBeInTheDocument();
     expect(screen.queryByText('Max Mustermann')).not.toBeInTheDocument();
@@ -288,9 +286,7 @@ describe('AppointmentSlipPage', () => {
     rendern();
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
-    expect(
-      screen.getByText('Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben.'),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/gibt es nicht oder/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Datensatz/)).not.toBeInTheDocument();
   });
 

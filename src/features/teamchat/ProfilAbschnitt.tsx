@@ -140,7 +140,7 @@ export function ProfilAbschnitt({ name }: { name: string }) {
       <Abfragezustand
         abfrage={avatare}
         laden="Bild und Farbe werden geladen …"
-        fehler="Bild und Farbe konnten nicht geladen werden."
+        fehler="Bild und Farbe nicht geladen."
       >
         {(daten) => {
           const meins = eigenerAvatar(daten);

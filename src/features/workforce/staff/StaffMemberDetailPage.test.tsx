@@ -376,9 +376,7 @@ describe('StaffMemberDetailPage', () => {
     fetchStaffMember.mockRejectedValueOnce(new Error('kaputt'));
     renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
 
-    expect(
-      await screen.findByText('Die Mitarbeiterdaten konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Mitarbeiterdaten nicht geladen.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(await screen.findByRole('heading', { name: 'Anna Beispiel' })).toBeInTheDocument();
   });

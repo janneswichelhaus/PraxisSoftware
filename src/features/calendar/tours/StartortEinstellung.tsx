@@ -35,10 +35,7 @@ export function StartortEinstellung() {
       {standorte.isPending ? (
         <LoadingState label="Standorte werden geladen …" />
       ) : standorte.isError ? (
-        <ErrorState
-          title="Die Standorte konnten nicht geladen werden."
-          onErneut={() => standorte.refetch()}
-        />
+        <ErrorState title="Standorte nicht geladen." onErneut={() => standorte.refetch()} />
       ) : standort ? (
         <OrtFormular key={standort.id} standort={standort} art="startort" />
       ) : (
@@ -66,10 +63,7 @@ export function GarageEinstellung() {
       {standorte.isPending ? (
         <LoadingState label="Standorte werden geladen …" />
       ) : standorte.isError ? (
-        <ErrorState
-          title="Die Standorte konnten nicht geladen werden."
-          onErneut={() => standorte.refetch()}
-        />
+        <ErrorState title="Standorte nicht geladen." onErneut={() => standorte.refetch()} />
       ) : standort ? (
         <OrtFormular key={`${standort.id}-garage`} standort={standort} art="garage" />
       ) : (

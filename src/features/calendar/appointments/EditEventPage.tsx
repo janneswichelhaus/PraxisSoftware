@@ -210,10 +210,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
     return (
       <>
         <Rueckweg standard="/kalender" />
-        <ErrorState
-          title="Die Fehlzeit konnte nicht geladen werden."
-          onErneut={() => termin.refetch()}
-        />
+        <ErrorState title="Fehlzeit nicht geladen." onErneut={() => termin.refetch()} />
       </>
     );
   }
@@ -374,10 +371,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
             datumFest={umfang === 'serie' ? 'Die Tage der Serie bleiben, wie sie sind.' : undefined}
             standorteFehler={
               standorte.isError ? (
-                <ErrorState
-                  title="Die Standorte konnten nicht geladen werden."
-                  onErneut={() => standorte.refetch()}
-                />
+                <ErrorState title="Standorte nicht geladen." onErneut={() => standorte.refetch()} />
               ) : null
             }
             beteiligte={
@@ -391,7 +385,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                     <LoadingState label="Beteiligte werden geladen …" inKarte />
                   ) : beteiligte.isError ? (
                     <ErrorState
-                      title="Die Beteiligten konnten nicht geladen werden."
+                      title="Beteiligte nicht geladen."
                       onErneut={() => beteiligte.refetch()}
                     />
                   ) : (

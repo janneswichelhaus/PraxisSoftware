@@ -390,7 +390,7 @@ describe('AuditLogPage', () => {
     renderWithProviders(<AuditLogPage />);
 
     const meldung = await screen.findByRole('alert');
-    expect(meldung).toHaveTextContent('Die Auditeinträge konnten nicht geladen werden.');
+    expect(meldung).toHaveTextContent('Auditeinträge nicht geladen.');
     expect(meldung.textContent).not.toMatch(/denied/i);
   });
 
@@ -419,9 +419,7 @@ describe('AuditLogPage', () => {
 
     renderWithProviders(<AuditLogPage />);
 
-    expect(
-      await screen.findByText('Die Liste der Personen konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Liste der Personen nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 });

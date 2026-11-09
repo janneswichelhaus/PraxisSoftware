@@ -197,7 +197,7 @@ export function WaitlistPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Warteliste wird geladen …"
-        fehler="Die Warteliste konnte nicht geladen werden."
+        fehler="Warteliste nicht geladen."
         inKarte
         leer={{
           wenn: (eintraege) => eintraege.length === 0,

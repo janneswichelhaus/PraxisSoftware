@@ -213,9 +213,9 @@ export async function fetchAppointment(appointmentId: string): Promise<Appointme
     .eq('id', appointmentId)
     .maybeSingle();
 
-  if (error) throw new Error('Der Termin konnte nicht geladen werden.');
+  if (error) throw new Error('Termin nicht geladen.');
   if (!data) return null;
-  return antwort(appointmentSchema, data, 'Der Termin konnte nicht geladen werden.');
+  return antwort(appointmentSchema, data, 'Termin nicht geladen.');
 }
 
 /** Ortsangabe eines Termins in einer Zeile - passend zur Terminart. */
@@ -415,7 +415,7 @@ export async function fetchPatientAppointments(
     p_treatment_basis_id: query.verordnung ?? null,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Termine konnten nicht geladen werden.');
+  if (error) throw new Error('Termine nicht geladen.');
   return z.array(patientAppointmentSchema).parse(data ?? []);
 }
 
@@ -702,7 +702,7 @@ export async function fetchEventParticipants(eventGroupId: string): Promise<Even
     p_event_group_id: eventGroupId,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Beteiligten konnten nicht geladen werden.');
+  if (error) throw new Error('Beteiligte nicht geladen.');
   return z.array(eventParticipantSchema).parse(data ?? []);
 }
 
@@ -1034,7 +1034,7 @@ export async function fetchAppointments(query: CalendarQuery): Promise<CalendarE
     p_status: query.status,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Termine konnten nicht geladen werden.');
+  if (error) throw new Error('Termine nicht geladen.');
   return z.array(calendarEntrySchema).parse(data ?? []);
 }
 

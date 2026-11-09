@@ -40,7 +40,7 @@ export function einwilligungenSchluessel(zugangId: string) {
  * Stand geht sie nichts an (Punkt 13).
  */
 export async function ladeEinwilligungen(zugangId: string): Promise<Einwilligung[]> {
-  const satz = 'Ihre Einwilligungen konnten nicht geladen werden.';
+  const satz = 'Einwilligungen nicht geladen.';
   const ergebnis = (await getSupabase().rpc('platform_consents', {
     p_access_id: zugangId,
   })) as { data: unknown; error: unknown };

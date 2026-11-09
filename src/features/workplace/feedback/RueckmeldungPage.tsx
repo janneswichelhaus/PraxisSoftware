@@ -45,7 +45,7 @@ export function RueckmeldungPage({ user }: { user: CurrentUser }) {
     <Abfragezustand
       abfrage={status}
       laden="Wird geladen …"
-      fehler="Die Seite konnte nicht geladen werden."
+      fehler="Seite nicht geladen."
       rahmen={(zustand) => (
         <>
           <PageHeader title="Rückmeldung an die Praxisleitung" />
@@ -201,7 +201,7 @@ function OhneNamen() {
     <Abfragezustand
       abfrage={summe}
       laden="Rückmeldungen ohne Namen werden geladen …"
-      fehler="Die Rückmeldungen ohne Namen konnten nicht geladen werden."
+      fehler="Rückmeldungen ohne Namen nicht geladen."
     >
       {(daten) => <Summe daten={daten} />}
     </Abfragezustand>

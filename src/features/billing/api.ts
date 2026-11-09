@@ -723,7 +723,7 @@ export async function fetchRechnung(invoiceId: string): Promise<Rechnungsansicht
   // sich kein Rechnungsbild bauen. Das ist keine Störung, sondern eine
   // fehlende Angabe — und die Seite sagt, welche.
   if (error?.message?.includes('practice billing profile missing')) throw new KeineStammdaten();
-  if (error) throw new Error('Die Rechnung konnte nicht geladen werden.');
+  if (error) throw new Error('Rechnung nicht geladen.');
   return rechnungsansichtSchema.parse(data);
 }
 
@@ -968,7 +968,7 @@ export async function fetchErinnerung(reminderId: string): Promise<Erinnerungsdo
     p_reminder_id: reminderId,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Zahlungserinnerung konnte nicht geladen werden.');
+  if (error) throw new Error('Zahlungserinnerung nicht geladen.');
   return erinnerungsdokumentSchema.parse(data);
 }
 

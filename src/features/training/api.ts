@@ -457,7 +457,7 @@ export type TrainingClientAppointment = z.infer<typeof kundenterminSchema>;
 export async function listTrainingClientAppointments(
   relationshipId: string,
 ): Promise<TrainingClientAppointment[]> {
-  const satz = 'Die Termine konnten nicht geladen werden.';
+  const satz = 'Termine nicht geladen.';
   const { data, error } = (await getSupabase().rpc('list_training_client_appointments', {
     p_relationship_id: relationshipId,
   })) as { data: unknown; error: unknown };

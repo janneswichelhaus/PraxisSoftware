@@ -92,7 +92,7 @@ export function FahrzeitfaktorEinstellung() {
       {faktor.isError && !geladen ? (
         <div className="mt-3">
           <Listenfehler
-            text="Der Fahrzeitfaktor konnte nicht geladen werden."
+            text="Fahrzeitfaktor nicht geladen."
             onErneut={() => void faktor.refetch()}
           />
         </div>

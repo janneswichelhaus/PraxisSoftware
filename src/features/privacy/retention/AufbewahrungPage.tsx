@@ -116,7 +116,7 @@ function Aufbewahrungsplan() {
       <Abfragezustand
         abfrage={abfrage}
         laden="Aufbewahrungsplan wird geladen …"
-        fehler="Der Aufbewahrungsplan konnte nicht geladen werden."
+        fehler="Aufbewahrungsplan nicht geladen."
         inKarte
       >
         {(daten) => (
@@ -181,7 +181,7 @@ function Klassendetail({ schluessel }: { schluessel: string }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Aufbewahrungsplan wird geladen …"
-        fehler="Der Aufbewahrungsplan konnte nicht geladen werden."
+        fehler="Aufbewahrungsplan nicht geladen."
         inKarte
       >
         {() =>
@@ -261,7 +261,7 @@ function Loeschsperren() {
       <Abfragezustand
         abfrage={abfrage}
         laden="Löschsperren werden geladen …"
-        fehler="Die Löschsperren konnten nicht geladen werden."
+        fehler="Löschsperren nicht geladen."
         inKarte
         // Ein Leerzustand in der Karte, ohne Erklärsatz - was eine Sperre
         // bewirkt, steht unter „Grundlagen“.
@@ -347,7 +347,7 @@ function Loeschjournal() {
       <Abfragezustand
         abfrage={abfrage}
         laden="Löschjournal wird geladen …"
-        fehler="Das Löschjournal konnte nicht geladen werden."
+        fehler="Löschjournal nicht geladen."
         inKarte
         leer={{ wenn: (daten) => daten.length === 0, titel: 'Es wurde noch nichts gelöscht' }}
       >
@@ -407,7 +407,7 @@ function Loeschauftraege({
   if (isError) {
     return (
       <ErrorState
-        title="Die offenen Löschaufträge konnten nicht geladen werden."
+        title="Offene Löschaufträge nicht geladen."
         onErneut={() =>
           void queryClient.invalidateQueries({ queryKey: ['storage-deletion-orders'] })
         }

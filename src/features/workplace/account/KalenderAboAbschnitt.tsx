@@ -130,7 +130,7 @@ function Abo() {
     <Abfragezustand
       abfrage={abo}
       laden="Das Kalender-Abo wird geladen …"
-      fehler="Das Kalender-Abo konnte nicht geladen werden."
+      fehler="Kalender-Abo nicht geladen."
     >
       {(stand) => (
         <div className="flex flex-col gap-4">

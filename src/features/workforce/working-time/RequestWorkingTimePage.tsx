@@ -107,7 +107,7 @@ export function RequestWorkingTimePage({ user }: { user: CurrentUser }) {
     <Abfragezustand
       abfrage={query}
       laden="Arbeitszeit wird geladen …"
-      fehler="Die Arbeitszeit konnte nicht geladen werden."
+      fehler="Arbeitszeit nicht geladen."
       rahmen={(zustand) => (
         <>
           <PageHeader title="Arbeitszeit ändern" />

@@ -147,10 +147,7 @@ export function AppointmentFormFields({
         ))}
       </Select>
       {personenListe?.fehlgeschlagen ? (
-        <Listenfehler
-          text="Die Personen konnten nicht geladen werden."
-          onErneut={personenListe.erneut}
-        />
+        <Listenfehler text="Personen nicht geladen." onErneut={personenListe.erneut} />
       ) : null}
     </div>
   );
@@ -177,10 +174,7 @@ export function AppointmentFormFields({
           ))}
         </Select>
         {standortListe?.fehlgeschlagen ? (
-          <Listenfehler
-            text="Die Standorte konnten nicht geladen werden."
-            onErneut={standortListe.erneut}
-          />
+          <Listenfehler text="Standorte nicht geladen." onErneut={standortListe.erneut} />
         ) : null}
       </div>
     ) : art === 'home_visit' ? (

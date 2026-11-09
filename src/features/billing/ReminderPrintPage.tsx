@@ -53,7 +53,7 @@ export function ReminderPrintPage() {
 
       {erinnerung.isError ? (
         <ErrorState
-          title="Die Zahlungserinnerung konnte nicht geladen werden."
+          title="Zahlungserinnerung nicht geladen."
           description="Bitte die Verbindung prüfen und erneut versuchen."
           onErneut={() => erinnerung.refetch()}
         />

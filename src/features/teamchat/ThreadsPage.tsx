@@ -51,7 +51,7 @@ export function ThreadsPage() {
       <Abfragezustand
         abfrage={threads}
         laden="Threads werden geladen …"
-        fehler="Die Threads konnten nicht geladen werden."
+        fehler="Threads nicht geladen."
         leer={{
           wenn: (daten) => daten.length === 0,
           titel: 'Noch kein Thread',

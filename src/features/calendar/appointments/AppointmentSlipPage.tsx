@@ -90,14 +90,11 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
         {kopf}
         {patient.isError ? (
           <ErrorState
-            title="Die Patientendaten konnten nicht geladen werden."
+            title="Patientendaten nicht geladen."
             onErneut={() => void patient.refetch()}
           />
         ) : (
-          <ErrorState
-            title="Nicht gefunden"
-            description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-          />
+          <ErrorState title="Nicht gefunden" />
         )}
       </>
     );
@@ -106,10 +103,7 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
     return (
       <>
         {kopf}
-        <ErrorState
-          title="Die Termine konnten nicht geladen werden."
-          onErneut={() => void termine.refetch()}
-        />
+        <ErrorState title="Termine nicht geladen." onErneut={() => void termine.refetch()} />
       </>
     );
   }

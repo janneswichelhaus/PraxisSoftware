@@ -2208,9 +2208,7 @@ describe('CalendarPage', () => {
       fetchAssignableTherapists.mockRejectedValue(new Error('Netz'));
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
 
-      const titel = await screen.findByText(
-        'Die behandelnden Personen konnten nicht geladen werden.',
-      );
+      const titel = await screen.findByText('Behandelnde Personen nicht geladen.');
       // L7: Neben „Erneut versuchen“ steht kein Ratsatz.
       expect(titel.closest('[role="alert"]')).not.toHaveTextContent('Verbindung prüfen');
       expect(screen.queryByText(/keine behandelnde Person hinterlegt/i)).toBeNull();
@@ -2226,7 +2224,7 @@ describe('CalendarPage', () => {
       fetchAssignableTherapists.mockRejectedValue(new Error('Netz'));
       rendern('/kalender?ansicht=woche&datum=2027-05-12');
 
-      await screen.findByText('Die behandelnden Personen konnten nicht geladen werden.');
+      await screen.findByText('Behandelnde Personen nicht geladen.');
       expect(screen.queryByRole('region', { name: /Wochenansicht/ })).toBeNull();
       expect(screen.queryByText(/Keine Termine/)).toBeNull();
       // Ansicht und Filter bleiben erreichbar.
@@ -2237,7 +2235,7 @@ describe('CalendarPage', () => {
       fetchAppointments.mockRejectedValue(new Error('Netz'));
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
 
-      const titel = await screen.findByText('Die Termine konnten nicht geladen werden.');
+      const titel = await screen.findByText('Termine nicht geladen.');
       const kasten = titel.closest<HTMLElement>('[role="alert"]')!;
       expect(kasten).not.toHaveTextContent('Verbindung prüfen');
       expect(within(kasten).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();

@@ -223,7 +223,7 @@ describe('StaffListPage', () => {
     fetchStaffMembers.mockRejectedValueOnce(new Error('kaputt'));
     renderWithProviders(<StaffListPage user={testUser(['office'])} />);
     const meldung = await screen.findByRole('alert');
-    expect(meldung).toHaveTextContent('Die Mitarbeiterliste konnte nicht geladen werden.');
+    expect(meldung).toHaveTextContent('Mitarbeiterliste nicht geladen.');
     // Keine Ratefrage mehr, sondern der naechste Schritt (WRT-01).
     expect(meldung).not.toHaveTextContent(/angemeldet/);
 

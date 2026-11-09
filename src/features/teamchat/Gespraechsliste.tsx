@@ -193,7 +193,7 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
       <Abfragezustand
         abfrage={kanaele}
         laden="Gespräche werden geladen …"
-        fehler="Die Gespräche konnten nicht geladen werden."
+        fehler="Gespräche nicht geladen."
       >
         {(daten) => {
           const { favoriten, kanaele: offene, direkt, archiviert } = ordneKanaele(daten);

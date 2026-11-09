@@ -180,7 +180,7 @@ export function urlaubSchluessel(von: string, bis: string) {
   return [...URLAUB_SCHLUESSEL, 'list', von, bis] as const;
 }
 
-const LADEN = 'Der Urlaub konnte nicht geladen werden.';
+const LADEN = 'Urlaub nicht geladen.';
 
 /** Eigene Anträge, zu Entscheidendes, wer fehlt und - für owner - die Konten. */
 export async function fetchUrlaub(von: string, bis: string): Promise<Urlaubsstand> {

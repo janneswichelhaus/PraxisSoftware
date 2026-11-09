@@ -374,9 +374,7 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
     fetchPatientAppointments.mockRejectedValue(new Error('interne Ursache'));
     renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
 
-    expect(
-      (await screen.findAllByText('Die Termine konnten nicht geladen werden.')).length,
-    ).toBeGreaterThan(0);
+    expect((await screen.findAllByText('Termine nicht geladen.')).length).toBeGreaterThan(0);
     expect(screen.queryByText(/interne Ursache/)).not.toBeInTheDocument();
   });
 

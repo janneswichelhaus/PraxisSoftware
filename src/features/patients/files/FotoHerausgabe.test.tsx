@@ -80,9 +80,7 @@ describe('FotoHerausgabe', { timeout: 20_000 }, () => {
     expect(gibPatientenfotoHeraus).toHaveBeenCalledWith('f1');
     // Gemeldet wird, was die Seite weiß - nicht, dass gesichert ist (DAT-19).
     expect(
-      await screen.findByText(
-        'Kopie zum Speichern übergeben und protokolliert. Bitte prüfen, ob die Datei angekommen ist.',
-      ),
+      await screen.findByText('Kopie zum Speichern übergeben und protokolliert.'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Gesichert/)).toBeNull();
   });

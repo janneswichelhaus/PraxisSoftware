@@ -407,9 +407,7 @@ describe('NewEventPage', () => {
     await formularAbwarten();
 
     const gruppe = screen.getByRole('group', { name: 'Beteiligte Personen *' });
-    expect(within(gruppe).getByRole('alert')).toHaveTextContent(
-      'Die Personen konnten nicht geladen werden.',
-    );
+    expect(within(gruppe).getByRole('alert')).toHaveTextContent('Personen nicht geladen.');
     expect(within(gruppe).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     // Ohne die Pflichtliste lässt sich nicht eintragen.
     expect(screen.getByRole('button', { name: 'Fehlzeit eintragen' })).toBeDisabled();

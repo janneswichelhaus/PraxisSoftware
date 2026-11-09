@@ -208,11 +208,7 @@ function Umplanung({
           (DESIGN.md Regel 8): Scheitert nur das Nachladen, bleibt der
           geladene Stand stehen - samt Anrufliste (ZST-03). */}
       <div className="max-w-spalte">
-        <Abfragezustand
-          abfrage={tag}
-          laden="Der Tag wird geladen …"
-          fehler="Der Tag konnte nicht geladen werden."
-        >
+        <Abfragezustand abfrage={tag} laden="Der Tag wird geladen …" fehler="Tag nicht geladen.">
           {(termine) => {
             const betroffen = termine.filter(istBetroffen);
             if (abgesagt === null && betroffen.length === 0) {

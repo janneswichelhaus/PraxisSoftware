@@ -172,13 +172,9 @@ describe('TerritoriesPage (PRX-002)', () => {
       ).toBeInTheDocument();
       unmount();
 
-      fetchActiveAddressPoints.mockRejectedValue(
-        new Error('Die Anschriften konnten nicht geladen werden.'),
-      );
+      fetchActiveAddressPoints.mockRejectedValue(new Error('Anschriften nicht geladen.'));
       renderWithProviders(<TerritoriesPage user={testUser(['office'])} />);
-      expect(
-        await screen.findByText('Die Anschriften konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Anschriften nicht geladen.')).toBeInTheDocument();
     });
   });
 });

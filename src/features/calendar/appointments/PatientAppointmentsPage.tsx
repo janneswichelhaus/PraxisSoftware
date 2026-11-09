@@ -310,10 +310,7 @@ function Terminliste({
           gleich noch einmal zu versuchen (WRT-01, UIK-16). Ein gescheitertes
           Weiterblättern meldet sich unten am Knopf. */}
       {seiten.isError && !seiten.data ? (
-        <ErrorState
-          title="Die Termine konnten nicht geladen werden."
-          onErneut={() => void seiten.refetch()}
-        />
+        <ErrorState title="Termine nicht geladen." onErneut={() => void seiten.refetch()} />
       ) : null}
 
       {/* Ein gescheitertes Nachladen nimmt die Liste nicht mit (ZST-03). */}

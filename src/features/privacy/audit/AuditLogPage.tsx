@@ -323,7 +323,7 @@ export function AuditLogPage() {
               es als vollständige Auswahl auszugeben (ORG-14). */}
           {members.isError ? (
             <Listenfehler
-              text="Die Liste der Personen konnte nicht geladen werden."
+              text="Liste der Personen nicht geladen."
               onErneut={() => void members.refetch()}
             />
           ) : null}
@@ -354,10 +354,7 @@ export function AuditLogPage() {
           die Ansicht sei „ausschließlich für die Praxisleitung freigegeben"
           (ORG-15, WRT-01, ZST-12). */}
       {isError && !data ? (
-        <ErrorState
-          title="Die Auditeinträge konnten nicht geladen werden."
-          onErneut={() => void refetch()}
-        />
+        <ErrorState title="Auditeinträge nicht geladen." onErneut={() => void refetch()} />
       ) : null}
       {isError && data ? (
         <NachladeHinweis className="mb-4" laeuft={isFetching} onErneut={() => void refetch()} />

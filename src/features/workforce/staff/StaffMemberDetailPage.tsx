@@ -430,10 +430,7 @@ export function StaffMemberDetailPage({ user }: { user: CurrentUser }) {
           <PageHeader title="Mitarbeiter:in" />
           {isPending ? <LoadingState label="Mitarbeiterdaten werden geladen …" inKarte /> : null}
           {isError ? (
-            <ErrorState
-              title="Die Mitarbeiterdaten konnten nicht geladen werden."
-              onErneut={() => void refetch()}
-            />
+            <ErrorState title="Mitarbeiterdaten nicht geladen." onErneut={() => void refetch()} />
           ) : null}
           {data === null ? <ErrorState title="Nicht gefunden" /> : null}
         </>

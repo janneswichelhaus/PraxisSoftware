@@ -74,7 +74,7 @@ function Inhalt({ rechnung }: { rechnung: UseQueryResult<Rechnungsansicht> }) {
   if (rechnung.isError || !rechnung.data) {
     return (
       <ErrorState
-        title="Das Stornodokument konnte nicht geladen werden."
+        title="Stornodokument nicht geladen."
         description="Bitte die Verbindung prüfen und erneut versuchen."
         onErneut={() => rechnung.refetch()}
       />

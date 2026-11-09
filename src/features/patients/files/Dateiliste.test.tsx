@@ -252,7 +252,7 @@ describe('Dateiliste', () => {
 
   it('meldet einen Ladefehler mit einem Weg hinaus (DAT-13, WRT-01)', async () => {
     const user = userEvent.setup();
-    fetchPatientFiles.mockRejectedValueOnce(new Error('Die Dateien konnten nicht geladen werden.'));
+    fetchPatientFiles.mockRejectedValueOnce(new Error('Dateien nicht geladen.'));
 
     renderWithProviders(
       <Dateiliste

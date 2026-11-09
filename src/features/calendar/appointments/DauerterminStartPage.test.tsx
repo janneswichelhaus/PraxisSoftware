@@ -332,7 +332,7 @@ describe('DauerterminStartPage', () => {
     rendern(MIT_PERSON);
 
     const kasten = await screen.findByRole('alert');
-    expect(kasten).toHaveTextContent('Die Behandlungsgrundlagen konnten nicht geladen werden.');
+    expect(kasten).toHaveTextContent('Behandlungsgrundlagen nicht geladen.');
     expect(kasten).not.toHaveTextContent('Verbindung prüfen');
     expect(screen.queryByText('intern')).not.toBeInTheDocument();
 

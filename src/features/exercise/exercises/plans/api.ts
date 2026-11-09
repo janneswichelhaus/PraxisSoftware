@@ -194,7 +194,7 @@ export async function fetchPlanliste(
 }
 
 export async function fetchPlan(planId: string): Promise<Plan | null> {
-  const satz = 'Der Plan konnte nicht geladen werden.';
+  const satz = 'Plan nicht geladen.';
   const { data, error } = (await getSupabase().rpc('get_exercise_plan', {
     p_plan_id: planId,
   })) as { data: unknown; error: unknown };

@@ -448,19 +448,16 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
         {kopf}
         {patient.isError && !patient.data ? (
           <ErrorState
-            title="Die Patientendaten konnten nicht geladen werden."
+            title="Patientendaten nicht geladen."
             onErneut={() => void patient.refetch()}
           />
         ) : !patient.data ? (
-          <ErrorState
-            title="Nicht gefunden"
-            description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-          />
+          <ErrorState title="Nicht gefunden" />
         ) : (
           // Ohne Zahlen gibt es keine Serie. Die Schnittstelle unterscheidet
           // eine fehlende von einer nicht ladbaren Grundlage nicht.
           <ErrorState
-            title="Die Zahlen der Grundlage konnten nicht geladen werden."
+            title="Zahlen der Grundlage nicht geladen."
             onErneut={() => void kontingent.refetch()}
           />
         )}
@@ -578,7 +575,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
               </Select>
               {therapeuten.isError ? (
                 <Listenfehler
-                  text="Die Personen konnten nicht geladen werden."
+                  text="Personen nicht geladen."
                   onErneut={() => void therapeuten.refetch()}
                 />
               ) : null}
@@ -619,7 +616,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 </Select>
                 {standorte.isError ? (
                   <Listenfehler
-                    text="Die Standorte konnten nicht geladen werden."
+                    text="Standorte nicht geladen."
                     onErneut={() => void standorte.refetch()}
                   />
                 ) : null}

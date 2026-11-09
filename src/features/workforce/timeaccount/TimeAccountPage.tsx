@@ -81,7 +81,7 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={query}
         laden="Zeitkonto wird geladen …"
-        fehler="Das Zeitkonto konnte nicht geladen werden."
+        fehler="Zeitkonto nicht geladen."
         inKarte
       >
         {(state) => (

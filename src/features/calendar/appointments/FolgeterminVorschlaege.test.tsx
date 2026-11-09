@@ -352,7 +352,7 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
   });
 
   it('nennt keine Dauer, wenn die Termine des Tages nicht zu laden sind', async () => {
-    fetchAppointments.mockRejectedValue(new Error('Die Termine konnten nicht geladen werden.'));
+    fetchAppointments.mockRejectedValue(new Error('Termine nicht geladen.'));
     rendern();
     const [erste] = await zeilen(3);
     expect(erste).toHaveTextContent('Wege passen');

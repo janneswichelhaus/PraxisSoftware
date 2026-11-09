@@ -159,7 +159,7 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={liste}
         laden="Mitarbeiterliste wird geladen …"
-        fehler="Die Mitarbeiterliste konnte nicht geladen werden."
+        fehler="Mitarbeiterliste nicht geladen."
         inKarte
         leer={{
           wenn: (daten) => daten.length === 0,

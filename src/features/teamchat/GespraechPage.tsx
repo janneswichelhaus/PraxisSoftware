@@ -41,11 +41,7 @@ export function GespraechPage() {
     <Abfragezustand
       abfrage={kanaele}
       laden={start ? 'Gespräche werden geladen …' : 'Gespräch wird geladen …'}
-      fehler={
-        start
-          ? 'Die Gespräche konnten nicht geladen werden.'
-          : 'Das Gespräch konnte nicht geladen werden.'
-      }
+      fehler={start ? 'Gespräche nicht geladen.' : 'Gespräch nicht geladen.'}
       rahmen={(zustand) => <Rand>{zustand}</Rand>}
     >
       {(daten) => {

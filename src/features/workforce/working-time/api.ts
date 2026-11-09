@@ -192,7 +192,7 @@ async function call(
 
 export const WORKING_TIME_KEY = ['working-time'] as const;
 
-const LOAD = 'Die Arbeitszeit konnte nicht geladen werden.';
+const LOAD = 'Arbeitszeit nicht geladen.';
 
 /** Der eigene Plan, eigene Anträge und - für owner - die offenen der anderen. */
 export async function fetchWorkingTime(): Promise<WorkingTime> {

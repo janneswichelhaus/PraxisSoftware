@@ -67,7 +67,7 @@ export function RejectTimeAccountEntryPage() {
     <Abfragezustand
       abfrage={query}
       laden="Eintrag wird geladen …"
-      fehler="Der Eintrag konnte nicht geladen werden."
+      fehler="Eintrag nicht geladen."
       rahmen={(zustand) => (
         <>
           <PageHeader title="Eintrag zurückweisen" />

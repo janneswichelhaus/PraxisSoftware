@@ -87,7 +87,7 @@ function Rufnummern({ appointment }: { appointment: NiemandOeffnetTermin }) {
     <Abfragezustand
       abfrage={abfrage}
       laden="Rufnummer wird geladen …"
-      fehler="Die Rufnummer konnte nicht geladen werden."
+      fehler="Rufnummer nicht geladen."
       ausweg={stammdaten}
       leer={{
         wenn: (plan) => nummernAus(plan).length === 0,

@@ -206,10 +206,7 @@ function Grundlagenwahl({
       }
     >
       {isError ? (
-        <ErrorState
-          title="Die Behandlungsgrundlagen konnten nicht geladen werden."
-          onErneut={erneutLaden}
-        />
+        <ErrorState title="Behandlungsgrundlagen nicht geladen." onErneut={erneutLaden} />
       ) : isPending || !zahlenGeladen || eindeutig ? (
         <LoadingState label="Behandlungsgrundlagen werden geladen …" />
       ) : eintraege.length === 0 ? (

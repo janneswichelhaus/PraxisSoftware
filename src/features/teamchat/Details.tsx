@@ -127,7 +127,7 @@ export function Details({
         <Abfragezustand
           abfrage={angeheftet}
           laden="Angeheftetes wird geladen …"
-          fehler="Angeheftetes konnte nicht geladen werden."
+          fehler="Angeheftetes nicht geladen."
         >
           {(daten) => (
             <Listenabschnitt
@@ -164,7 +164,7 @@ export function Details({
         <Abfragezustand
           abfrage={mitglieder}
           laden="Mitglieder werden geladen …"
-          fehler="Die Mitglieder konnten nicht geladen werden."
+          fehler="Mitglieder nicht geladen."
         >
           {(daten) => (
             <Listenabschnitt
@@ -293,7 +293,7 @@ function Hinzufuegen({ kanalId, vorhanden }: { kanalId: string; vorhanden: reado
       <Abfragezustand
         abfrage={personen}
         laden="Das Team wird geladen …"
-        fehler="Das Team konnte nicht geladen werden."
+        fehler="Team nicht geladen."
       >
         {() => (
           <>

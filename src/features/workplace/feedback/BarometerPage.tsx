@@ -32,7 +32,7 @@ export function BarometerPage({ user }: { user: CurrentUser }) {
     <Abfragezustand
       abfrage={status}
       laden="Barometer wird geladen …"
-      fehler="Das Barometer konnte nicht geladen werden."
+      fehler="Barometer nicht geladen."
       rahmen={(zustand) => (
         <>
           <PageHeader title="Barometer" />

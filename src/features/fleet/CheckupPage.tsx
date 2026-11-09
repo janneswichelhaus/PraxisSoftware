@@ -54,7 +54,7 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
         <Abfragezustand
           abfrage={rad}
           laden="Rad wird geladen …"
-          fehler="Das Rad konnte nicht geladen werden."
+          fehler="Rad nicht geladen."
           inKarte
         >
           {(detail) => (
@@ -66,7 +66,7 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
         <Abfragezustand
           abfrage={flotte}
           laden="Radflotte wird geladen …"
-          fehler="Die Radflotte konnte nicht geladen werden."
+          fehler="Radflotte nicht geladen."
           inKarte
         >
           {(daten) => (

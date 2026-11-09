@@ -592,7 +592,7 @@ describe('EditAppointmentPage', () => {
     const user = userEvent.setup();
     rendern();
 
-    expect(await screen.findByText('Der Termin konnte nicht geladen werden.')).toBeInTheDocument();
+    expect(await screen.findByText('Termin nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText('Nicht gefunden')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
@@ -666,9 +666,7 @@ describe('EditAppointmentPage', () => {
     rendern();
     await formularAbwarten();
 
-    expect(
-      await screen.findByText('Die Personen konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Personen nicht geladen.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
     expect(
       await screen.findAllByText('Bitte zuerst die Liste der Personen erneut laden.'),

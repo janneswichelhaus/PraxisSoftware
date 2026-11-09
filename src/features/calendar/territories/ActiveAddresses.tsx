@@ -37,7 +37,7 @@ export function ActiveAddresses({ territories }: { territories: readonly Territo
       <Abfragezustand
         abfrage={abfrage}
         laden="Anschriften werden geladen …"
-        fehler="Die Anschriften konnten nicht geladen werden."
+        fehler="Anschriften nicht geladen."
         inKarte
         leer={{
           wenn: (punkte) => punkte.length === 0,

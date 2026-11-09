@@ -210,10 +210,7 @@ export function EditStaffMemberPage({ user }: { user: CurrentUser }) {
           <PageHeader title={TITEL} />
           {isPending ? <LoadingState label="Mitarbeiterdaten werden geladen …" /> : null}
           {isError ? (
-            <ErrorState
-              title="Die Mitarbeiterdaten konnten nicht geladen werden."
-              onErneut={() => void refetch()}
-            />
+            <ErrorState title="Mitarbeiterdaten nicht geladen." onErneut={() => void refetch()} />
           ) : null}
           {data === null ? <ErrorState title="Nicht gefunden" /> : null}
         </>

@@ -210,7 +210,7 @@ function FristEinstellung({ organizationId }: { organizationId: string }) {
       {frist.isError && !geladen ? (
         <div className="mt-3">
           <Listenfehler
-            text="Die Dokumentationsfrist konnte nicht geladen werden."
+            text="Dokumentationsfrist nicht geladen."
             onErneut={() => void frist.refetch()}
           />
         </div>

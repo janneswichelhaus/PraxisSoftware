@@ -43,7 +43,7 @@ export async function fetchDayRoute(datum: string, staffMemberId: string): Promi
     p_date: datum,
     p_staff_member_id: staffMemberId,
   })) as { data: unknown; error: unknown };
-  if (error) throw new Error('Die Tagesroute konnte nicht geladen werden.');
+  if (error) throw new Error('Tagesroute nicht geladen.');
   return z.array(tagesstoppSchema).parse(data ?? []);
 }
 

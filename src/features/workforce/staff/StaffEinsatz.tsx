@@ -160,7 +160,7 @@ export function StaffEinsatz({ staff }: { staff: StaffMember }) {
           </Select>
           {modell.isError ? (
             <Listenfehler
-              text="Das Vergütungsmodell konnte nicht geladen werden."
+              text="Vergütungsmodell nicht geladen."
               onErneut={() => void modell.refetch()}
             />
           ) : null}

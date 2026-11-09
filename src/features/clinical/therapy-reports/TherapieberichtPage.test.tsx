@@ -554,7 +554,7 @@ describe('Therapiebericht als Blatt', () => {
     fetchBericht.mockRejectedValue(new Error('kaputt'));
     zeigeDruck();
 
-    expect(await screen.findByText('Der Bericht konnte nicht geladen werden.')).toBeInTheDocument();
+    expect(await screen.findByText('Bericht nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText(/angemeldet/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     // Beschriftet wie der Reiter, mit dem Kopf der Seite (Sichtung A7, A8).

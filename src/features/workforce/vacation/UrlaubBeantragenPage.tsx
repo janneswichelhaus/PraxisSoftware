@@ -106,7 +106,7 @@ export function UrlaubBeantragenPage({ user }: { user: CurrentUser }) {
     <Abfragezustand
       abfrage={abfrage}
       laden="Urlaub wird geladen …"
-      fehler="Der Urlaub konnte nicht geladen werden."
+      fehler="Urlaub nicht geladen."
       rahmen={(zustand) => (
         <>
           <PageHeader title="Urlaub beantragen" />

@@ -78,7 +78,7 @@ export function AnspruchPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Urlaubsanspruch wird geladen …"
-        fehler="Der Urlaubsanspruch konnte nicht geladen werden."
+        fehler="Urlaubsanspruch nicht geladen."
         rahmen={(zustand) => (
           <>
             <PageHeader title="Urlaubsanspruch" />

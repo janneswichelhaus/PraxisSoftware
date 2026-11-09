@@ -608,7 +608,7 @@ export function StaffAccountSection({
     return (
       <Section titel="Zugang">
         <ErrorState
-          title="Der Zugangsstand konnte nicht geladen werden."
+          title="Zugangsstand nicht geladen."
           onErneut={() => {
             void konto.refetch();
             void einladungen.refetch();

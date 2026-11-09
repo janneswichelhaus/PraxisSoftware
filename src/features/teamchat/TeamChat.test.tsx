@@ -1201,9 +1201,7 @@ describe('Für dich ohne Netz (DESIGN.md Regel 8)', () => {
   it('sagt, wenn die Erinnerungen nicht laden - nie „Nichts für dich“', async () => {
     api.fetchGemerkt.mockRejectedValue(new Error('aus'));
     zeige('/fuer-dich');
-    expect(
-      await screen.findByText('Die Erinnerungen konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Erinnerungen nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText('Nichts für dich')).toBeNull();
   });
 });

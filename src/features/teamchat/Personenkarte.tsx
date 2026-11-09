@@ -58,7 +58,7 @@ export function Personenkarte({
         <Abfragezustand
           abfrage={karte}
           laden="Die Karte wird geladen …"
-          fehler="Die Personenkarte konnte nicht geladen werden."
+          fehler="Personenkarte nicht geladen."
         >
           {(daten) => (
             <p className="text-ink text-liste">

@@ -55,7 +55,7 @@ export function DepotsPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Depots werden geladen …"
-        fehler="Die Depots konnten nicht geladen werden."
+        fehler="Depots nicht geladen."
         inKarte
       >
         {(flotte) =>

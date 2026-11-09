@@ -345,9 +345,7 @@ describe('AufbewahrungPage', () => {
     fetchDeletionRuns.mockRejectedValue(new Error('abgelehnt'));
     renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
-    expect(
-      await screen.findByText('Das Löschjournal konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Löschjournal nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText('Es wurde noch nichts gelöscht')).toBeNull();
   });
 
@@ -505,7 +503,7 @@ describe('AufbewahrungPage', () => {
     fetchLegalHolds.mockRejectedValueOnce(new Error('kaputt')).mockResolvedValue([]);
     renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
-    const meldung = await screen.findByText('Die Löschsperren konnten nicht geladen werden.');
+    const meldung = await screen.findByText('Löschsperren nicht geladen.');
     const kasten = meldung.closest('[role="alert"]') as HTMLElement;
     expect(kasten).not.toHaveTextContent('Verbindung prüfen');
     await userEvent.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));

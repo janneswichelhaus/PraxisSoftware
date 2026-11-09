@@ -243,9 +243,7 @@ describe('StaffAccountSection', () => {
     fetchStaffInvitations.mockRejectedValueOnce(new Error('kaputt'));
     renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
-    expect(
-      await screen.findByText('Der Zugangsstand konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Zugangsstand nicht geladen.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(await screen.findByRole('button', { name: 'Zugang einladen' })).toBeInTheDocument();
   });
@@ -474,9 +472,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
 
     expect(await screen.findByText(/Stand nicht aktuell/)).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Teamleitung' })).toBeChecked();
-    expect(
-      screen.queryByText('Der Zugangsstand konnte nicht geladen werden.'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Zugangsstand nicht geladen.')).not.toBeInTheDocument();
   });
 });
 

@@ -94,7 +94,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
         <Abfragezustand
           abfrage={termin}
           laden="Termin wird geladen …"
-          fehler="Der Termin konnte nicht geladen werden."
+          fehler="Termin nicht geladen."
         >
           {() => (
             <ErrorState

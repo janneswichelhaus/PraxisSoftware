@@ -429,10 +429,7 @@ function Wochenplan({
   // Nachladen, bleibt der zuletzt geladene Stand samt Eingabe stehen.
   if (zeiten.isError && !zeiten.data) {
     return (
-      <ErrorState
-        title="Die Arbeitszeiten konnten nicht geladen werden."
-        onErneut={() => void zeiten.refetch()}
-      />
+      <ErrorState title="Arbeitszeiten nicht geladen." onErneut={() => void zeiten.refetch()} />
     );
   }
 
@@ -746,10 +743,7 @@ function Abweichungen({
     if (ausnahmen.isPending) return <LoadingState label="Abweichungen werden geladen …" />;
     if (ausnahmen.isError && !ausnahmen.data) {
       return (
-        <ErrorState
-          title="Die Abweichungen konnten nicht geladen werden."
-          onErneut={() => void ausnahmen.refetch()}
-        />
+        <ErrorState title="Abweichungen nicht geladen." onErneut={() => void ausnahmen.refetch()} />
       );
     }
 
@@ -1127,7 +1121,7 @@ export function ArbeitszeitJePerson({
       {therapeuten.isPending ? <LoadingState label="Personen werden geladen …" /> : null}
       {therapeuten.isError && !therapeuten.data ? (
         <ErrorState
-          title="Die behandelnden Personen konnten nicht geladen werden."
+          title="Behandelnde Personen nicht geladen."
           onErneut={() => void therapeuten.refetch()}
         />
       ) : null}

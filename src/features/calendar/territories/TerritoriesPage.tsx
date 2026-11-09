@@ -241,7 +241,7 @@ export function TerritoriesPage({ user }: { user: CurrentUser }) {
         <Abfragezustand
           abfrage={abfrage}
           laden="Gebiete werden geladen …"
-          fehler="Die Gebiete konnten nicht geladen werden."
+          fehler="Gebiete nicht geladen."
           inKarte
           // Während ein neues Gebiet entsteht, steht kein Leerzustand darunter.
           leer={{

@@ -114,7 +114,7 @@ describe('TagesrouteAufklapper', () => {
     zeige();
     aufklappen();
 
-    const fehler = (await screen.findByText('Die Tagesroute konnte nicht geladen werden.')).closest(
+    const fehler = (await screen.findByText('Tagesroute nicht geladen.')).closest(
       '[role="alert"]',
     )!;
     // L7: Neben „Erneut versuchen“ steht kein Ratsatz.

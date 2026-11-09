@@ -253,12 +253,7 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
   }
 
   if (!patientId) {
-    return (
-      <ErrorState
-        title="Nicht gefunden"
-        description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-      />
-    );
+    return <ErrorState title="Nicht gefunden" />;
   }
 
   /**
@@ -307,7 +302,7 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Wird geladen …"
-        fehler="Termine oder Grundlagen konnten nicht geladen werden."
+        fehler="Termine oder Grundlagen nicht geladen."
       >
         {() => (
           <form onSubmit={absenden} noValidate className="max-w-formular">

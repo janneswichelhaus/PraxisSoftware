@@ -332,7 +332,7 @@ describe('TourenPage nach dem UX-Review (UXR-003)', () => {
     fetchDayRoute.mockRejectedValueOnce(new Error('Funkloch'));
     renderWithProviders(<TourenPage user={jannes} />, '/touren?tag=2026-09-10');
 
-    const fehler = (await screen.findByText('Die Tagesroute konnte nicht geladen werden.')).closest(
+    const fehler = (await screen.findByText('Tagesroute nicht geladen.')).closest(
       '[role="alert"]',
     )!;
     // L7: Neben „Erneut versuchen“ steht kein Ratsatz.
@@ -360,9 +360,9 @@ describe('TourenPage nach dem UX-Review (UXR-003)', () => {
     fetchAssignableTherapists.mockRejectedValueOnce(new Error('Funkloch'));
     renderWithProviders(<TourenPage user={jannes} />, '/touren?tag=2026-09-10');
 
-    const fehler = (
-      await screen.findByText('Die behandelnden Personen konnten nicht geladen werden.')
-    ).closest('[role="alert"]')!;
+    const fehler = (await screen.findByText('Behandelnde Personen nicht geladen.')).closest(
+      '[role="alert"]',
+    )!;
     expect(fehler).not.toHaveTextContent('Verbindung prüfen');
 
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));

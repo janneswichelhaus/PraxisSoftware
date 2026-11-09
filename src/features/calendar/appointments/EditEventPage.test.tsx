@@ -301,7 +301,7 @@ describe('EditEventPage', () => {
     rendern();
 
     const kasten = await screen.findByRole('alert');
-    expect(kasten).toHaveTextContent('Die Fehlzeit konnte nicht geladen werden.');
+    expect(kasten).toHaveTextContent('Fehlzeit nicht geladen.');
     expect(kasten).not.toHaveTextContent(/Nicht gefunden|nicht freigegeben/);
     expect(within(kasten).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toBeInTheDocument();
@@ -386,9 +386,7 @@ describe('EditEventPage', () => {
     rendern();
 
     await screen.findByLabelText('Bezeichnung *');
-    expect(
-      await screen.findByText('Die Beteiligten konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Beteiligte nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Änderungen speichern' })).toBeDisabled();
   });
 });

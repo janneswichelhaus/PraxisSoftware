@@ -45,7 +45,7 @@ export async function fetchStandorte(): Promise<Standort[]> {
         'garage_lat, garage_lon, garage_geocode_precision',
     )
     .order('name', { ascending: true });
-  if (error) throw new Error('Die Standorte konnten nicht geladen werden.');
+  if (error) throw new Error('Standorte nicht geladen.');
   return z.array(standortSchema).parse(data ?? []);
 }
 

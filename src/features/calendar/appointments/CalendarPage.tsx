@@ -1544,10 +1544,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             {/* Scheitert die Liste, sagt das der Kasten - eine Auswahl nur
                 mit „Alle" sähe aus wie eine Praxis ohne Standorte (KAL-07). */}
             {standorte.isError ? (
-              <ErrorState
-                title="Die Standorte konnten nicht geladen werden."
-                onErneut={() => standorte.refetch()}
-              />
+              <ErrorState title="Standorte nicht geladen." onErneut={() => standorte.refetch()} />
             ) : (
               <Select
                 label="Standort"
@@ -1791,17 +1788,14 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       {therapeuten.isError ? (
         <div className="mt-3">
           <ErrorState
-            title="Die behandelnden Personen konnten nicht geladen werden."
+            title="Behandelnde Personen nicht geladen."
             onErneut={() => therapeuten.refetch()}
           />
         </div>
       ) : null}
       {termine.isError ? (
         <div className="mt-3">
-          <ErrorState
-            title="Die Termine konnten nicht geladen werden."
-            onErneut={() => termine.refetch()}
-          />
+          <ErrorState title="Termine nicht geladen." onErneut={() => termine.refetch()} />
         </div>
       ) : null}
 

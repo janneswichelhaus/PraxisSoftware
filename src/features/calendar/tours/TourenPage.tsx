@@ -241,7 +241,7 @@ export function TourenPage({ user }: { user: CurrentUser }) {
         <LoadingState label="Personen werden geladen …" />
       ) : personen.isError ? (
         <ErrorState
-          title="Die behandelnden Personen konnten nicht geladen werden."
+          title="Behandelnde Personen nicht geladen."
           onErneut={() => personen.refetch()}
         />
       ) : personen.data.length === 0 ? (
@@ -249,7 +249,7 @@ export function TourenPage({ user }: { user: CurrentUser }) {
       ) : person === '' ? null : laedt ? (
         <LoadingState label="Tagesroute wird geladen …" />
       ) : fehler ? (
-        <ErrorState title="Die Tagesroute konnte nicht geladen werden." onErneut={erneut} />
+        <ErrorState title="Tagesroute nicht geladen." onErneut={erneut} />
       ) : stopps.length === 0 ? (
         <EmptyState title="An diesem Tag gibt es keine Besuche mit Ort" />
       ) : (

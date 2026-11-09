@@ -847,9 +847,7 @@ describe('NewAppointmentPage', () => {
     rendern();
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
-    expect(
-      screen.getByText('Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben.'),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/gibt es nicht oder/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Termin anlegen' })).not.toBeInTheDocument();
     // Der Weg zurück bleibt auch hier (ZST-08).
     expect(screen.getByRole('link', { name: '← Zurück zur Akte' })).toBeInTheDocument();
@@ -861,9 +859,7 @@ describe('NewAppointmentPage', () => {
     const user = userEvent.setup();
     rendern();
 
-    expect(
-      await screen.findByText('Die Patientendaten konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Patientendaten nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText('Nicht gefunden')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '← Zurück zur Akte' })).toBeInTheDocument();
 
@@ -878,9 +874,7 @@ describe('NewAppointmentPage', () => {
       rendern();
       await formularAbwarten();
 
-      expect(
-        await screen.findByText('Die Personen konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Personen nicht geladen.')).toBeInTheDocument();
 
       // Solange die Pflichtliste fehlt, wird nichts gesendet.
       await zeitenSetzen(user);
@@ -889,9 +883,7 @@ describe('NewAppointmentPage', () => {
 
       await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
       await waitFor(() =>
-        expect(
-          screen.queryByText('Die Personen konnten nicht geladen werden.'),
-        ).not.toBeInTheDocument(),
+        expect(screen.queryByText('Personen nicht geladen.')).not.toBeInTheDocument(),
       );
       expect(
         Array.from(screen.getByLabelText('Behandelnde Person *').querySelectorAll('option')).map(

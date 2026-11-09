@@ -280,10 +280,7 @@ export function NewEventPage({ user, serie = false }: { user: CurrentUser; serie
             }
             standorteFehler={
               standorte.isError ? (
-                <ErrorState
-                  title="Die Standorte konnten nicht geladen werden."
-                  onErneut={() => standorte.refetch()}
-                />
+                <ErrorState title="Standorte nicht geladen." onErneut={() => standorte.refetch()} />
               ) : null
             }
             beteiligte={
@@ -294,7 +291,7 @@ export function NewEventPage({ user, serie = false }: { user: CurrentUser; serie
                 {personen.isError ? (
                   <div className="mt-3">
                     <ErrorState
-                      title="Die Personen konnten nicht geladen werden."
+                      title="Personen nicht geladen."
                       onErneut={() => personen.refetch()}
                     />
                   </div>

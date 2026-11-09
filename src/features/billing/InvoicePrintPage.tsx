@@ -101,7 +101,7 @@ function Inhalt({ rechnung }: { rechnung: UseQueryResult<Rechnungsansicht> }) {
   if (rechnung.isError || !rechnung.data) {
     return (
       <ErrorState
-        title="Die Rechnung konnte nicht geladen werden."
+        title="Rechnung nicht geladen."
         description="Bitte die Verbindung prüfen und erneut versuchen."
         onErneut={() => rechnung.refetch()}
       />

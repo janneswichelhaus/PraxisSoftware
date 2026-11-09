@@ -1765,9 +1765,7 @@ describe('TerminAktionenDialog', () => {
       const user = userEvent.setup();
       rendern();
 
-      expect(
-        await screen.findByText('Der Termin konnte nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Termin nicht geladen.')).toBeInTheDocument();
       expect(screen.getByRole('heading', { level: 2, name: 'Termin' })).toBeInTheDocument();
       // L7: Neben „Erneut versuchen“ steht kein Ratsatz.
       expect(screen.queryByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeNull();
