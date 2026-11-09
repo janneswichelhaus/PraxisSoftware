@@ -52,7 +52,7 @@ export function RueckfragenListe({
     <Abfragezustand
       abfrage={abfrage}
       laden="Rückfragen werden geladen …"
-      fehler="Die Rückfragen konnten nicht geladen werden."
+      fehler="Rückfragen nicht geladen."
       inKarte={leerInKarte}
       {...(leerInKarte
         ? { leer: { wenn: (d: Rueckfragezeile[]) => d.length === 0, titel: leer } }

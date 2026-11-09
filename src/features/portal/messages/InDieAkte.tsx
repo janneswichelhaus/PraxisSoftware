@@ -56,9 +56,8 @@ export function InDieAkte({ vorgang, zeitzone }: { vorgang: Rueckfrage; zeitzone
         onBestaetigen={() => zuordnen.mutateAsync()}
       >
         <p>
-          Die Nachricht und alle Antworten stehen dann unverändert in der Doku der Akte, mit Datum
-          und wer sie geschrieben hat. Das lässt sich nicht rückgängig machen; die Nachricht wird
-          dann aufbewahrt wie die Akte.
+          Die Nachricht und alle Antworten stehen dann unverändert in der Doku der Akte und werden
+          aufbewahrt wie die Akte; das lässt sich nicht rückgängig machen.
         </p>
       </Nachfrage>
     </div>

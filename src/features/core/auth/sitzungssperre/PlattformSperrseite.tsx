@@ -44,7 +44,7 @@ function dauer(minuten: number): string {
   return minuten === 60 ? 'eine Stunde' : `${minuten} Minuten`;
 }
 
-const KLEINGEDRUCKTES = `Die Plattform sperrt sich nach ${SPERRFRISTEN.inaktivMinuten} Minuten ohne Bedienung und spätestens ${dauer(SPERRFRISTEN.hoechstMinuten)} nach der Anmeldung. Das schützt Ihre Daten, wenn das Telefon liegen bleibt.`;
+const KLEINGEDRUCKTES = `Die Plattform sperrt sich nach ${SPERRFRISTEN.inaktivMinuten} Minuten ohne Bedienung und spätestens ${dauer(SPERRFRISTEN.hoechstMinuten)} nach der Anmeldung.`;
 
 export function PlattformSperrseite({
   haelt,
@@ -152,8 +152,8 @@ export function PlattformSperrseite({
         titel="Bitte neu anmelden"
         einleitung={
           haelt
-            ? 'Die PIN wurde zu oft falsch eingegeben. Melden Sie sich mit Ihrem Passkey neu an. Die Eingabe, die sich nicht sichern ließ, ist nicht erhalten.'
-            : 'Die PIN wurde zu oft falsch eingegeben. Melden Sie sich mit Ihrem Passkey neu an.'
+            ? 'Zu viele falsche PINs. Die Eingabe, die sich nicht sichern ließ, ist nicht erhalten.'
+            : 'Zu viele falsche PINs.'
         }
         kleingedrucktes={KLEINGEDRUCKTES}
       >
@@ -187,7 +187,7 @@ export function PlattformSperrseite({
         <form onSubmit={(event) => void mitPin(event)} noValidate className="flex flex-col gap-6">
           <Field
             label="PIN"
-            hint="Die PIN von Own Motion, nicht die Ihres Telefons."
+            hint="Nicht die PIN Ihres Telefons"
             type="password"
             geheimnis="PIN"
             name="pin"
@@ -216,9 +216,7 @@ export function PlattformSperrseite({
       einleitung={
         haelt
           ? 'Eine Eingabe ließ sich nicht sichern. Sie steht nach dem Entsperren wieder da – bitte dann speichern. Wer sich mit einem anderen Zugang anmeldet, verwirft sie.'
-          : pinDa === false
-            ? 'Offene Texte sind als Entwurf gesichert. Entsperren Sie mit Gesicht oder Finger.'
-            : 'Offene Texte sind als Entwurf gesichert. Entsperren Sie mit Gesicht, Finger oder Ihrer PIN.'
+          : 'Offene Texte sind als Entwurf gesichert.'
       }
       kleingedrucktes={KLEINGEDRUCKTES}
     >
@@ -229,11 +227,7 @@ export function PlattformSperrseite({
             {passkeyLaeuft ? 'Wird geprüft …' : 'Mit Passkey entsperren'}
           </Button>
         ) : (
-          <Statusmeldung ton="warnung">
-            {pinDa
-              ? 'Dieser Browser kann keine Passkeys. Entsperren geht hier mit der PIN.'
-              : 'Dieser Browser kann keine Passkeys.'}
-          </Statusmeldung>
+          <Statusmeldung ton="warnung">Dieser Browser kann keine Passkeys.</Statusmeldung>
         )}
         {pinDa ? (
           <Button

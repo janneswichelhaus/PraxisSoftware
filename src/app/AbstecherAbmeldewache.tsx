@@ -26,10 +26,7 @@ export function AbstecherAbmeldewache({ userId }: { userId: string }) {
   if (!offen) return null;
   return (
     <Dialogfenster titel="Angefangenes Formular" onSchliessen={() => setOffen(false)}>
-      <p className="text-ink text-sm">
-        Ein Formular wartet noch auf Ihre Rückkehr – Sie haben es für einen Abstecher verlassen.
-        Beim Abmelden geht es verloren.
-      </p>
+      <p className="text-ink text-sm">Beim Abmelden geht es verloren.</p>
       <div className="mt-4 flex flex-wrap gap-3">
         <Button type="button" data-autofocus onClick={() => setOffen(false)}>
           Zurück

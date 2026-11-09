@@ -61,7 +61,7 @@ test('nennt eine festgehaltene Eingabe', async ({ page }) => {
   await mitPin(page, true);
   await page.setViewportSize({ width: 375, height: 760 });
   await page.goto(`${PRUEFSEITE}?grund=hoechstdauer&halten=1`);
-  await expect(page.getByText(/Nach 60 Minuten ist eine erneute Freigabe nötig/)).toBeVisible();
+  await expect(page.getByText('Nach 60 Minuten', { exact: true })).toBeVisible();
   await expect(page.getByText(/ließ sich nicht sichern/)).toBeVisible();
 });
 

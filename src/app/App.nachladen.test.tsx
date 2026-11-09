@@ -108,7 +108,7 @@ describe('Nachladefehler mit geladenem Profil', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.type(screen.getByLabelText('Notiz'), 'Befund halb getippt');
-    expect(screen.queryByText(/ließ sich gerade nicht aktualisieren/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/nicht aktualisiert/)).not.toBeInTheDocument();
 
     act(() =>
       setzeZustand({
@@ -120,7 +120,7 @@ describe('Nachladefehler mit geladenem Profil', () => {
 
     expect(screen.getByLabelText('Notiz')).toHaveValue('Befund halb getippt');
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Ihr Profil ließ sich gerade nicht aktualisieren. Eingaben bleiben erhalten.',
+      'Profil nicht aktualisiert. Eingaben bleiben erhalten.',
     );
     expect(screen.queryByText('Anwendung nicht geladen')).not.toBeInTheDocument();
 
@@ -174,9 +174,7 @@ describe('Plattform: gescheitertes Nachladen des Zugangs', () => {
     act(() => onlineManager.setOnline(false));
     act(() => onlineManager.setOnline(true));
 
-    expect(
-      await screen.findByText(/Ihr Zugang ließ sich gerade nicht aktualisieren/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Zugang nicht aktualisiert/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: grussNachTageszeit() })).toBeInTheDocument();
     expect(screen.queryByText('Zugang nicht geladen')).not.toBeInTheDocument();
   });

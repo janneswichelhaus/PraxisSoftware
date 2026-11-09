@@ -260,9 +260,7 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
   it('ein Ladefehler ist nie „nichts offen" - die Gruppe sagt es', async () => {
     fetchOpenIntakes.mockRejectedValue(new Error('Netz'));
     renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
-    expect(
-      await screen.findByText('Die offenen Erstaufnahmen konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Offene Erstaufnahmen nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     expect(screen.queryByText('Nichts offen')).toBeNull();
   });
@@ -280,9 +278,7 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
     const gruppe = (await screen.findByRole('heading', { name: 'Arbeitszeitänderungen' })).closest(
       'section',
     )!;
-    expect(
-      within(gruppe).getByText('Die Arbeitszeitänderungen konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(within(gruppe).getByText('Arbeitszeitänderungen nicht geladen.')).toBeInTheDocument();
     expect(within(gruppe).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 
@@ -292,9 +288,7 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
     const gruppe = (await screen.findByRole('heading', { name: 'Urlaubsanträge' })).closest(
       'section',
     )!;
-    expect(
-      within(gruppe).getByText('Die Urlaubsanträge konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(within(gruppe).getByText('Urlaubsanträge nicht geladen.')).toBeInTheDocument();
     expect(within(gruppe).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 
@@ -383,9 +377,7 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
     const gruppe = (await screen.findByRole('heading', { name: 'Erstattungen' })).closest(
       'section',
     )!;
-    expect(
-      within(gruppe).getByText('Die Erstattungen konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(within(gruppe).getByText('Erstattungen nicht geladen.')).toBeInTheDocument();
     expect(within(gruppe).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     expect(screen.queryByText('Nichts offen')).toBeNull();
   });
@@ -452,9 +444,7 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
   it('sagt es, wenn die Trainingspakete nicht laden, statt still zu fehlen (ANN-834)', async () => {
     fetchEndingTrainingPackages.mockRejectedValue(new Error('Netz'));
     renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
-    expect(
-      await screen.findByText('Die endenden Trainingspakete konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Endende Trainingspakete nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText('Nichts offen')).toBeNull();
   });
 

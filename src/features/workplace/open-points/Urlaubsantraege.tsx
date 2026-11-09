@@ -27,10 +27,7 @@ export function Urlaubsantraege({
   if (isError && !data) {
     return (
       <Section titel="Urlaubsanträge">
-        <ErrorState
-          title="Die Urlaubsanträge konnten nicht geladen werden."
-          onErneut={() => refetch()}
-        />
+        <ErrorState title="Urlaubsanträge nicht geladen." onErneut={() => refetch()} />
       </Section>
     );
   }

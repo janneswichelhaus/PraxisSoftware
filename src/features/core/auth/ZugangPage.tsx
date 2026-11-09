@@ -115,7 +115,7 @@ export function ZugangPage() {
         <div ref={auskunft} tabIndex={-1}>
           <ErrorState
             title="Der Anmeldedienst ist gerade nicht erreichbar."
-            description="Ihr Link ist deswegen nicht verbraucht. Bitte prüfen Sie die Verbindung und versuchen Sie es erneut."
+            description="Ihr Link ist deswegen nicht verbraucht."
           />
           <Button className="mt-4" onClick={erneutVersuchen}>
             Erneut versuchen
@@ -130,7 +130,7 @@ export function ZugangPage() {
               bisherige Sitzung noch, führt der Weg zurück in sie (AUTH-04). */}
           <ErrorState
             title="Dieser Link lässt sich nicht mehr verwenden."
-            description="Links aus der Mail gelten einmalig und nur für kurze Zeit. Die Praxisinhaber:in kann eine neue Anmeldemail schicken."
+            description="Die Praxisinhaber:in kann eine neue Anmeldemail schicken."
           />
           <ButtonLink to="/" variant="secondary" className="mt-4">
             {session ? 'Zurück zur Anwendung' : 'Zur Anmeldung'}
@@ -143,8 +143,8 @@ export function ZugangPage() {
       {fremdeSitzungBeimOeffnen.current && zustand !== 'fremde-sitzung' && session ? (
         <Kleingedrucktes className="mt-6">
           {konto
-            ? `Hinweis: Auf diesem Gerät ist weiterhin ${konto} angemeldet.`
-            : 'Hinweis: Auf diesem Gerät ist weiterhin das bisherige Konto angemeldet.'}
+            ? `Auf diesem Gerät ist weiterhin ${konto} angemeldet.`
+            : 'Auf diesem Gerät ist weiterhin das bisherige Konto angemeldet.'}
         </Kleingedrucktes>
       ) : null}
     </Vollseite>

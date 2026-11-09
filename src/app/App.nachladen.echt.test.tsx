@@ -105,9 +105,7 @@ describe('BEF-046 mit echter Profilabfrage', () => {
     profil = 'fehler';
     await user.click(screen.getByRole('button', { name: 'Nachladen' }));
 
-    expect(
-      await screen.findByText(/Ihr Profil ließ sich gerade nicht aktualisieren/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Profil nicht aktualisiert/)).toBeInTheDocument();
     expect(screen.getByLabelText('Notiz')).toHaveValue('Befund halb getippt');
 
     profil = 'gesperrt';

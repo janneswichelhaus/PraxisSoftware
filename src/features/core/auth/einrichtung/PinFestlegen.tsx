@@ -136,11 +136,7 @@ export function PinFestlegen({
       ) : null}
       <Field
         label={einrichtung ? 'PIN' : 'Neue PIN'}
-        hint={
-          einrichtung
-            ? 'Nicht die PIN Ihrer Bankkarte.'
-            : `${PIN_LAENGE} Ziffern, keine gleichen Ziffern und keine Reihe. Nicht die PIN des Telefons.`
-        }
+        hint={`${PIN_LAENGE} Ziffern, keine gleichen und keine Reihe`}
         type="password"
         geheimnis="PIN"
         name="pin-neu"

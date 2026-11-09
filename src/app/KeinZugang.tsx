@@ -27,7 +27,7 @@ export function KeinZugang({ user }: { user: CurrentUser }) {
   if (!isStaff(user.roles) || !PRAXISPFADE.test(pathname)) return <Navigate to="/" replace />;
   return (
     <>
-      <PageHeader title="Kein Zugang" description="Diese Seite gibt es für Ihren Zugang nicht." />
+      <PageHeader title="Kein Zugang" />
       <ButtonLink to="/" variant="secondary">
         Zur Übersicht
       </ButtonLink>

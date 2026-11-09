@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { formatDate } from '@/lib/datum';
@@ -16,15 +15,7 @@ export function AftercareCancellations() {
   const { data } = useQuery(abfragen.kuendigungen());
   if (!data || data.length === 0) return null;
   return (
-    <Listenabschnitt
-      titel="Nachsorge-Abo gekündigt"
-      anzahl={data.length}
-      mehr={
-        <Kleingedrucktes>
-          Über die Plattform gekündigt. Die Liste zeigt die letzten 14 Tage.
-        </Kleingedrucktes>
-      }
-    >
+    <Listenabschnitt titel="Nachsorge-Abo gekündigt" anzahl={data.length}>
       {data.map((k) => (
         <Zeile key={k.subscription_id} kuendigung={k} />
       ))}

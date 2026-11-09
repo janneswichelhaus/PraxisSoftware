@@ -120,26 +120,19 @@ export function PasskeyAbschnitt({
   const freigegeben = liste.filter((p) => p.freigegeben).length;
 
   return (
-    <Section
-      titel="Passkeys"
-      rahmen={rahmen}
-      // Eine Zeile am Telefon (Design-Review T7, DESIGN.md Regel 6).
-      hinweis="Anmelden mit Gesicht, Finger oder Gerätesperre."
-    >
+    <Section titel="Passkeys" rahmen={rahmen}>
       {passkeys.isPending ? <LoadingState label="Passkeys werden geladen …" /> : null}
       {passkeys.isError ? (
         <ErrorState title={satzVon(passkeys.error)} onErneut={() => void passkeys.refetch()} />
       ) : null}
 
       {passkeys.isSuccess && freigegeben === 0 ? (
-        <Statusmeldung ton="warnung">
-          Für dieses Konto ist noch kein Passkey eingerichtet.
-        </Statusmeldung>
+        <Statusmeldung ton="warnung">Noch kein Passkey eingerichtet.</Statusmeldung>
       ) : null}
       {passkeys.isSuccess && freigegeben === 1 ? (
         <Statusmeldung ton="warnung">
-          Nur ein Passkey: Richten Sie einen zweiten ein, etwa auf dem Rechner. Geht der einzige
-          verloren, braucht es eine neue Einladung der Praxis.
+          Nur ein Passkey: Richten Sie einen zweiten ein. Geht er verloren, braucht es eine neue
+          Einladung.
         </Statusmeldung>
       ) : null}
 
@@ -180,10 +173,7 @@ export function PasskeyAbschnitt({
                   onBestaetigen={() => entfernen.mutateAsync(passkey.id)}
                   onAbbrechen={() => entfernen.reset()}
                 >
-                  <p>
-                    Mit diesem Passkey kann sich danach niemand mehr anmelden. Das ist der Weg für
-                    ein verlorenes oder weitergegebenes Gerät.
-                  </p>
+                  <p>Mit diesem Passkey kann sich danach niemand mehr anmelden.</p>
                 </Rueckfrage>
               ) : null}
             </li>
@@ -240,11 +230,7 @@ export function PinAbschnitt({ rahmen = false }: { rahmen?: boolean } = {}) {
   const [gesetzt, setGesetzt] = useState(false);
 
   return (
-    <Section
-      titel="PIN"
-      rahmen={rahmen}
-      hinweis="Der Rückweg, wenn der Passkey einmal nicht klappt."
-    >
+    <Section titel="PIN" rahmen={rahmen}>
       {pin.isPending ? <LoadingState label="Stand wird geladen …" /> : null}
       {pin.isError ? (
         <ErrorState title={pin.error.message} onErneut={() => void pin.refetch()} />

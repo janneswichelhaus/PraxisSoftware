@@ -150,7 +150,7 @@ function TaskForm({
       <Field
         feldId={titleId}
         label="Was ist zu tun? *"
-        hint="Nur Organisatorisches – Befunde und Verläufe gehören in die Dokumentation."
+        hint="Nur Organisatorisches, keine Befunde oder Verläufe"
         value={werte.title}
         maxLength={200}
         error={titelFehler}
@@ -220,7 +220,7 @@ function TaskForm({
             fehler={loeschen.isError ? loeschen.error.message : undefined}
             onBestaetigen={() => loeschen.mutateAsync()}
           >
-            Die Aufgabe wird entfernt. Für eine erledigte ist „Erledigt“ der richtige Weg.
+            Lässt sich nicht rückgängig machen.
           </Rueckfrage>
         ) : null}
       </div>
@@ -371,10 +371,7 @@ export function Tasks({
   if (offen.isError && !offen.data) {
     return (
       <Section titel="Aufgaben">
-        <ErrorState
-          title="Die Aufgaben konnten nicht geladen werden."
-          onErneut={() => offen.refetch()}
-        />
+        <ErrorState title="Aufgaben nicht geladen." onErneut={() => offen.refetch()} />
       </Section>
     );
   }

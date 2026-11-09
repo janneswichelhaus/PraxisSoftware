@@ -20,10 +20,7 @@ export function CallsSummary({ today }: { today: string }) {
   if (isError && !data) {
     return (
       <Section titel="Anrufe für morgen">
-        <ErrorState
-          title="Die Anrufliste konnte nicht geladen werden."
-          onErneut={() => refetch()}
-        />
+        <ErrorState title="Anrufliste nicht geladen." onErneut={() => refetch()} />
       </Section>
     );
   }
@@ -34,7 +31,7 @@ export function CallsSummary({ today }: { today: string }) {
     <Listenabschnitt titel="Anrufe für morgen" anzahl={offen}>
       <ListRow
         titel="Anrufliste für morgen"
-        meta={`${offen} von ${data?.length ?? 0} Terminen noch nicht mitgeteilt.`}
+        meta={`${offen} von ${data?.length ?? 0} noch nicht mitgeteilt`}
         to={`/offen/anrufe?datum=${morgen}`}
       />
     </Listenabschnitt>

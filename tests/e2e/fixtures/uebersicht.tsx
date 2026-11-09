@@ -447,7 +447,7 @@ const router = createMemoryRouter(
           value={
             ansicht === 'nachladefehler'
               ? {
-                  satz: 'Ihr Profil ließ sich gerade nicht aktualisieren.',
+                  satz: 'Profil nicht aktualisiert.',
                   erneut: () => new Promise((fertig) => setTimeout(fertig, 800)),
                 }
               : null

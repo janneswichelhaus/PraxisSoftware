@@ -20,10 +20,7 @@ export function Erstattungen({ rueckweg = '/offen' }: { rueckweg?: string }) {
   if (isError && !data) {
     return (
       <Section titel="Erstattungen">
-        <ErrorState
-          title="Die Erstattungen konnten nicht geladen werden."
-          onErneut={() => refetch()}
-        />
+        <ErrorState title="Erstattungen nicht geladen." onErneut={() => refetch()} />
       </Section>
     );
   }

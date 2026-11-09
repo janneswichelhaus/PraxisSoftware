@@ -180,7 +180,7 @@ describe('Sitzungssperre: erst prüfen, dann zeigen (Punkt 5)', () => {
     zeichne();
     await warte();
     expect(screen.getByRole('heading', { name: 'Gesperrt' })).toBeInTheDocument();
-    expect(screen.getByText(/Nach 60 Minuten ist eine erneute Freigabe nötig/)).toBeInTheDocument();
+    expect(screen.getByText('Nach 60 Minuten')).toBeInTheDocument();
     // Kein Kennwortfeld, auch nicht als Rückweg (ADR-025 Punkte 7 und 15).
     expect(screen.queryByLabelText('Kennwort')).toBeNull();
     expect(screen.queryByText('Akte von Max Mustermann')).toBeNull();
@@ -695,7 +695,7 @@ describe('Sperrseite der Plattform (Handoff 2026-10-22, Abschnitt 5.2; ANN-687)'
     fireEvent.click(screen.getByRole('button', { name: 'Mit PIN entsperren' }));
     const feld = screen.getByLabelText('PIN', { exact: true });
     expect(feld).toHaveFocus();
-    expect(screen.getByText('Die PIN von Own Motion, nicht die Ihres Telefons.')).toBeVisible();
+    expect(screen.getByText('Nicht die PIN Ihres Telefons')).toBeVisible();
     gibMitPinFrei.mockResolvedValueOnce({ art: 'falsch', versucheUebrig: 1 });
     fireEvent.change(feld, { target: { value: '111222' } });
     fireEvent.click(screen.getByRole('button', { name: 'Entsperren' }));

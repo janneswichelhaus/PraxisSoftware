@@ -23,8 +23,8 @@ export function TrainingWithdrawals() {
       anzahl={data.length}
       mehr={
         <Kleingedrucktes>
-          Über die Plattform widerrufen. Bitte Paket und Zahlung abwickeln. Ein Widerruf bleibt
-          hier, bis sein Paket entfernt ist, mindestens 14 Tage.
+          Bitte Paket und Zahlung abwickeln. Ein Widerruf bleibt hier, bis sein Paket entfernt ist,
+          mindestens 14 Tage.
         </Kleingedrucktes>
       }
     >

@@ -18,10 +18,7 @@ export function Arbeitszeitantraege({ rueckweg = '/offen' }: { rueckweg?: string
   if (isError && !data) {
     return (
       <Section titel="Arbeitszeitänderungen">
-        <ErrorState
-          title="Die Arbeitszeitänderungen konnten nicht geladen werden."
-          onErneut={() => refetch()}
-        />
+        <ErrorState title="Arbeitszeitänderungen nicht geladen." onErneut={() => refetch()} />
       </Section>
     );
   }

@@ -41,8 +41,11 @@ describe('AnmeldungEinrichten', () => {
       await screen.findByRole('heading', { name: 'Mit Gesicht oder Finger anmelden' }),
     ).toBeVisible();
     expect(screen.getByText('Schritt 1 von 2')).toBeInTheDocument();
-    expect(screen.getByText(/Own Motion bekommt sie nie/)).toBeInTheDocument();
-    expect(screen.getByText('Was passiert dabei genau?')).toBeInTheDocument();
+    // Der Datenfluss in einem Satz statt hinter „Was passiert dabei genau?“ (L7).
+    expect(
+      screen.getByText(/Own Motion speichert nur den öffentlichen Schlüssel und von der PIN/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Was passiert dabei genau?')).toBeNull();
     // DR-103: keine Abschnitte „1. PASSKEY“, kein Kennwort, kein Konto.
     expect(document.body.textContent).not.toMatch(/1\. Passkey|Konto|Sitzung/i);
     expect(document.title).toBe('Anmelden – Own Motion');
@@ -60,7 +63,7 @@ describe('AnmeldungEinrichten', () => {
       />,
     );
     await nutzer.click(await screen.findByRole('button', { name: 'Jetzt einrichten' }));
-    expect(await screen.findByText(/Ihr Telefon fragt dann erneut/)).toBeVisible();
+    expect(await screen.findByText('Nicht bestätigt.')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     expect(document.title).toBe('Einladung – Own Motion');
   });
@@ -100,7 +103,7 @@ describe('AnmeldungEinrichten', () => {
     );
     expect(await screen.findByRole('heading', { name: 'Eine PIN festlegen' })).toBeVisible();
     expect(screen.getByText('Schritt 3 von 3')).toBeInTheDocument();
-    expect(screen.getByText('Nicht die PIN Ihrer Bankkarte.')).toBeInTheDocument();
+    expect(screen.getByText('6 Ziffern, keine gleichen und keine Reihe')).toBeInTheDocument();
     expect(screen.getByLabelText('PIN noch einmal')).toBeInTheDocument();
     // Der Knopf im Fuß sendet das Formular der PIN.
     expect(screen.getByRole('button', { name: 'PIN speichern' })).toHaveAttribute(

@@ -29,10 +29,7 @@ export function OpenIntakes() {
   if (isError && !data) {
     return (
       <Section titel="Erstaufnahme offen">
-        <ErrorState
-          title="Die offenen Erstaufnahmen konnten nicht geladen werden."
-          onErneut={() => refetch()}
-        />
+        <ErrorState title="Offene Erstaufnahmen nicht geladen." onErneut={() => refetch()} />
       </Section>
     );
   }

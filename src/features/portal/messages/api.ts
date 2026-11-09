@@ -159,9 +159,8 @@ function schreibfehler(meldung: string | undefined): string {
   if (m.includes('text is required')) return 'Bitte eine Antwort schreiben.';
   if (m.includes('text too long')) return 'Die Antwort darf höchstens 2000 Zeichen lang sein.';
   if (m.includes('is closed')) return 'Diese Rückfrage ist schon erledigt.';
-  if (m.includes('not allowed'))
-    return 'Auf diese Rückfrage antworten Therapeut:innen. Bitte gib sie weiter.';
-  return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
+  if (m.includes('not allowed')) return 'Auf diese Rückfrage antworten Therapeut:innen.';
+  return 'Nicht gespeichert.';
 }
 
 /**
@@ -297,7 +296,7 @@ export async function assignRueckfrage(id: string): Promise<void> {
     if ((error.message ?? '').includes('not allowed')) {
       throw new Error('In die Akte übernehmen Therapeut:innen, Teamleitung und Inhaber:in.');
     }
-    throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+    throw new Error('Nicht gespeichert.');
   }
 }
 

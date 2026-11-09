@@ -25,10 +25,7 @@ export function EndingTrainingPackages() {
     return (
       <Sprungziel>
         <Section titel={TITEL}>
-          <ErrorState
-            title="Die endenden Trainingspakete konnten nicht geladen werden."
-            onErneut={() => refetch()}
-          />
+          <ErrorState title="Endende Trainingspakete nicht geladen." onErneut={() => refetch()} />
         </Section>
       </Sprungziel>
     );

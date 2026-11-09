@@ -38,10 +38,7 @@ export function PlatformRequests({ timeZone }: { timeZone: string }) {
   if (isError && !data) {
     return (
       <Section titel="Terminwünsche">
-        <ErrorState
-          title="Die Terminwünsche konnten nicht geladen werden."
-          onErneut={() => refetch()}
-        />
+        <ErrorState title="Terminwünsche nicht geladen." onErneut={() => refetch()} />
       </Section>
     );
   }
@@ -143,7 +140,7 @@ function Zeile({ wunsch: w, timeZone }: { wunsch: PlatformRequest; timeZone: str
               {terminAbgesagt ? ' · schon abgesagt' : ''}
             </p>
           ) : w.kind !== 'new' ? (
-            <p className="text-ink-muted text-sm">Der Termin dazu besteht nicht mehr.</p>
+            <p className="text-ink-muted text-sm">Termin besteht nicht mehr.</p>
           ) : null}
           {text || w.note ? (
             <div className="text-ink text-sm">
@@ -201,10 +198,7 @@ function Zeile({ wunsch: w, timeZone }: { wunsch: PlatformRequest; timeZone: str
               fehler={beantworten.error?.message}
               onBestaetigen={() => beantworten.mutateAsync('declined')}
             >
-              <p>
-                Die Person sieht „nicht möglich“ und Ihre Antwort. Bitte sagen Sie, wie es
-                weitergeht.
-              </p>
+              <p>Die Person sieht „nicht möglich“ und Ihre Antwort.</p>
               {antwortfeld}
             </Rueckfrage>
           </div>

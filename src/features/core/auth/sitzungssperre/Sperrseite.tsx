@@ -125,25 +125,21 @@ export function Sperrseite({
     }
   }
 
+  // Der Anlass als Metazeile, kein Satz (L7).
   const anlass =
     grund === 'hoechstdauer'
-      ? `Nach ${SPERRFRISTEN.hoechstMinuten} Minuten ist eine erneute Freigabe nötig.`
+      ? `Nach ${SPERRFRISTEN.hoechstMinuten} Minuten`
       : grund === 'inaktiv'
-        ? `Nach ${SPERRFRISTEN.inaktivMinuten} Minuten ohne Bedienung hat sich die Anwendung gesperrt.`
-        : 'Die Anwendung hat sich gesperrt.';
+        ? `Nach ${SPERRFRISTEN.inaktivMinuten} Minuten ohne Bedienung`
+        : undefined;
 
   if (verbraucht) {
     return (
-      <Vollseite
-        titel="Gesperrt"
-        kleingedrucktes="Die Sperre schützt die Daten, wenn das Gerät in falsche Hände gerät."
-      >
+      <Vollseite titel="Gesperrt">
         <ErrorState
           title="Zu viele falsche PINs. Die Sitzung ist beendet."
           description={
-            haelt
-              ? 'Bitte mit dem Passkey neu anmelden. Die Eingabe, die sich nicht sichern ließ, ist nicht erhalten.'
-              : 'Bitte mit dem Passkey neu anmelden.'
+            haelt ? 'Die Eingabe, die sich nicht sichern ließ, ist nicht erhalten.' : undefined
           }
         />
         <Button className="mt-4 w-full" onClick={onAbmelden}>
@@ -156,11 +152,11 @@ export function Sperrseite({
   return (
     <Vollseite
       titel="Gesperrt"
-      einleitung={`${anlass} Mit Passkey oder PIN geht es an derselben Stelle weiter.`}
+      einleitung={anlass}
       kleingedrucktes={
         haelt
           ? 'Eine Eingabe ließ sich nicht sichern. Sie steht nach dem Entsperren wieder da – bitte dann speichern. Wer sich mit einem anderen Konto anmeldet, verwirft sie.'
-          : 'Offene Texte wurden vor der Sperre als Entwurf gesichert. Die Sperre schützt die Daten, wenn das Gerät liegen bleibt.'
+          : 'Offene Texte sind als Entwurf gesichert.'
       }
     >
       {fehler ? (
@@ -174,7 +170,7 @@ export function Sperrseite({
           <form onSubmit={(event) => void mitPin(event)} noValidate className="flex flex-col gap-4">
             <Field
               label="PIN"
-              hint="Die PIN der Anwendung, nicht die des Telefons."
+              hint="Nicht die PIN des Telefons"
               type="password"
               geheimnis="PIN"
               name="pin"
@@ -202,11 +198,7 @@ export function Sperrseite({
             {passkeyLaeuft ? 'Wird geprüft …' : 'Mit Passkey entsperren'}
           </Button>
         ) : (
-          <Statusmeldung ton="warnung">
-            {pinDa
-              ? 'Dieser Browser unterstützt keine Passkeys. Entsperren geht hier mit der PIN.'
-              : 'Dieser Browser unterstützt keine Passkeys.'}
-          </Statusmeldung>
+          <Statusmeldung ton="warnung">Dieser Browser unterstützt keine Passkeys.</Statusmeldung>
         )}
       </div>
 

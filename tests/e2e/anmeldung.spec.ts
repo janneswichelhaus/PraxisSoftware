@@ -24,7 +24,9 @@ for (const breite of [375, 1280]) {
     await expect(
       page.getByRole('heading', { name: 'Mit Gesicht oder Finger anmelden' }),
     ).toBeVisible();
-    await expect(page.getByText(/Own Motion bekommt sie nie/)).toBeVisible();
+    await expect(
+      page.getByText(/Own Motion speichert nur den öffentlichen Schlüssel/),
+    ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Jetzt einrichten' })).toBeVisible();
     await expect(page.getByLabel('PIN', { exact: true })).toHaveCount(0);
     await ohneQuerrollen(page);

@@ -203,9 +203,7 @@ describe('ZugangPage — UXR-002', () => {
     );
     // Im Präsens: Die bisherige Sitzung besteht weiter.
     expect(
-      screen.getByText(
-        'Hinweis: Auf diesem Gerät ist weiterhin olivia.office@praxis.invalid angemeldet.',
-      ),
+      screen.getByText('Auf diesem Gerät ist weiterhin olivia.office@praxis.invalid angemeldet.'),
     ).toBeInTheDocument();
   });
 

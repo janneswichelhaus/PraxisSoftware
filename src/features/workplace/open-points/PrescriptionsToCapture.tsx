@@ -23,10 +23,7 @@ export function PrescriptionsToCapture({ timeZone }: { timeZone: string }) {
   if (isError && !data) {
     return (
       <Section titel="Verordnungen zu erfassen">
-        <ErrorState
-          title="Die Verordnungen zum Erfassen konnten nicht geladen werden."
-          onErneut={() => refetch()}
-        />
+        <ErrorState title="Verordnungen zum Erfassen nicht geladen." onErneut={() => refetch()} />
       </Section>
     );
   }

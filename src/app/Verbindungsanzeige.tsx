@@ -54,7 +54,7 @@ export function Verbindungsanzeige({ imChat = false }: { imChat?: boolean }) {
                 „Text im Feld stehen lassen“ stimmte dort nicht. */}
             {imChat
               ? 'Nachrichten warten und gehen beim nächsten Empfang hinaus, solange die App läuft.'
-              : 'Änderungen lassen sich gerade nicht speichern. Bitte den Text im Feld stehen lassen, bis die Verbindung zurück ist.'}
+              : 'Speichern geht gerade nicht. Bitte den Text im Feld stehen lassen.'}
           </span>
         </div>
       )}

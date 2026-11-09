@@ -23,10 +23,7 @@ export function WaitlistReview({ timeZone }: { timeZone: string }) {
   if (isError && !data) {
     return (
       <Section titel="Warteliste prüfen">
-        <ErrorState
-          title="Die Warteliste konnte nicht geladen werden."
-          onErneut={() => refetch()}
-        />
+        <ErrorState title="Warteliste nicht geladen." onErneut={() => refetch()} />
       </Section>
     );
   }

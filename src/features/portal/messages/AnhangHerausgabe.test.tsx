@@ -80,9 +80,7 @@ describe('AnhangHerausgabe', { timeout: 20_000 }, () => {
     );
     expect(gibHeraus).toHaveBeenCalledWith(FOTO.id);
     expect(
-      await screen.findByText(
-        'Kopie zum Speichern übergeben und protokolliert. Bitte prüfen, ob die Datei angekommen ist.',
-      ),
+      await screen.findByText('Kopie zum Speichern übergeben und protokolliert.'),
     ).toBeInTheDocument();
   });
 

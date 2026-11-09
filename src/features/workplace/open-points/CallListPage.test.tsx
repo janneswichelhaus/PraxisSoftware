@@ -135,7 +135,7 @@ describe('Anrufliste (PRX-014)', () => {
       <CallListPage user={testUser(['office'])} />,
       '/offen/anrufe?datum=2031-03-11',
     );
-    await screen.findByText('An diesem Tag stehen keine Behandlungstermine.');
+    await screen.findByText('Keine Behandlungstermine.');
     await user.click(screen.getByRole('button', { name: 'Folgetag' }));
     await waitFor(() => expect(fetchCallList).toHaveBeenCalledWith('2031-03-12'));
     // Beschriftet statt nackter Pfeile (R2-O5).
@@ -154,7 +154,7 @@ describe('CallsSummary', () => {
         eintrag({ appointment_id: 'a2', notified_channels: ['phone'] }),
       ]);
     renderWithProviders(<CallsSummary today="2031-03-10" />);
-    expect(await screen.findByText('1 von 2 Terminen noch nicht mitgeteilt.')).toBeInTheDocument();
+    expect(await screen.findByText('1 von 2 noch nicht mitgeteilt')).toBeInTheDocument();
     expect(fetchCallList).toHaveBeenCalledWith('2031-03-11');
     expect(screen.getByRole('link', { name: /^Anrufliste für morgen/ })).toHaveAttribute(
       'href',

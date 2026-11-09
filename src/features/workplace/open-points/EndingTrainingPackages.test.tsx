@@ -97,9 +97,7 @@ describe('Trainingspakete ohne Anschluss in Offene Punkte (ANN-834)', () => {
   it('sagt es, wenn die Liste nicht lädt, mit erneutem Versuch', async () => {
     fetchEndingTrainingPackages.mockRejectedValue(new Error('Netz'));
     renderWithProviders(<EndingTrainingPackages />);
-    expect(
-      await screen.findByText('Die endenden Trainingspakete konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Endende Trainingspakete nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Trainingspaket endet' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
