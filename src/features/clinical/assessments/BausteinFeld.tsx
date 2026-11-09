@@ -136,13 +136,7 @@ export function BausteinFeld({
         />
       ) : null}
 
-      {region === undefined ? (
-        <p className="text-ink-muted text-sm">Region wählen, um die Tests aufzuklappen.</p>
-      ) : wartetAufSeite ? (
-        <p className="text-ink-muted text-sm">
-          Seite wählen – sie gilt für alle Tests und Techniken der Region.
-        </p>
-      ) : (
+      {region === undefined || wartetAufSeite ? null : (
         // Blöcke durch Linien getrennt, nicht als Kasten im Kasten
         // (Leitfaden L2, BEF-057 Option 2).
         <div className="border-line flex flex-col border-y">
@@ -167,18 +161,9 @@ export function BausteinFeld({
             <p className="border-line-strong text-ink border-l-2 py-0.5 pl-3 text-sm wrap-anywhere whitespace-pre-wrap">
               {text}
             </p>
-            {streifen ? null : (
-              <p className="text-ink-muted text-sm">
-                Gespeichert und abgeschlossen wird erst, wenn der Vorschlag im Text steht oder
-                verworfen ist. Nur wer die Seite verlässt und dort „Speichern und weitergehen“
-                wählt, bekommt ihn an den Entwurf angehängt, damit nichts verloren geht.
-              </p>
-            )}
             {meldung ? <Statusmeldung ton="fehler">{meldung}</Statusmeldung> : null}
             {messwertFalsch ? (
-              <Statusmeldung ton="warnung">
-                Ein Messwert ist keine Zahl. Bitte korrigieren, dann übernehmen.
-              </Statusmeldung>
+              <Statusmeldung ton="warnung">Ein Messwert ist keine Zahl.</Statusmeldung>
             ) : null}
             <div className="flex flex-wrap gap-3">
               <Button
@@ -202,8 +187,7 @@ export function BausteinFeld({
                 bestaetigen="Ja, alle Angaben verwerfen"
                 onBestaetigen={leeren}
               >
-                Alle gewählten Ergebnisse, Messwerte, Notizen und die Seitenwahl werden verworfen.
-                Im Text steht davon nichts.
+                Die gewählten Angaben gehen verloren.
               </Rueckfrage>
             </div>
           </div>
@@ -375,12 +359,6 @@ function Block({
         {offen ? <Badge ton="warnung">Vorlage unvollständig</Badge> : null}
       </summary>
       <div className="flex flex-col gap-4 pb-3">
-        {offen ? (
-          <p className="text-ink-muted text-sm">
-            In der Vorlage fehlen hier Einträge. Sie werden nicht ergänzt, bis die Praxis sie
-            nachliefert.
-          </p>
-        ) : null}
         {block.items.map((item) => {
           const seiten = seitenDes(region, item, wahl);
           return item.subitems ? (
@@ -814,7 +792,7 @@ function Messwert({
       maxLength={10}
       enterKeyHint="done"
       onKeyDown={ohneAbsenden}
-      error={ungueltig ? 'Bitte eine Zahl eingeben, etwa 1,5.' : undefined}
+      error={ungueltig ? 'Eine Zahl, etwa 1,5.' : undefined}
       onChange={(event) => onChange(event.target.value)}
       className="max-w-40"
     />

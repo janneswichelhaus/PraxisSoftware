@@ -71,7 +71,8 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
       'Fuß',
       'Kiefer',
     ]);
-    expect(screen.getByText('Region wählen, um die Tests aufzuklappen.')).toBeInTheDocument();
+    for (const region of regionen) expect(region).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByText('Untersuchung Hüfte')).toBeNull();
   });
 
   it('fragt an einer Extremität zuerst einmal die Seite, ohne Vorauswahl (ANN-129)', async () => {
@@ -84,7 +85,6 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     for (const knopf of within(wahl).getAllByRole('button')) {
       expect(knopf).toHaveAttribute('aria-pressed', 'false');
     }
-    expect(screen.getByText(/Seite wählen – sie gilt für alle Tests/)).toBeInTheDocument();
     expect(screen.queryByText('Untersuchung Hüfte')).toBeNull();
 
     await user.click(within(wahl).getByRole('button', { name: 'rechts' }));
@@ -113,7 +113,11 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     expect(uebernehmen).toHaveBeenCalledWith(erwartet);
     // Übernommen heißt erledigt: Auswahl und Seite beginnen von vorn.
     expect(vorschlagsbereich()).toBeNull();
-    expect(screen.getByText(/Seite wählen – sie gilt für alle Tests/)).toBeInTheDocument();
+    const seite = screen.getByRole('group', { name: 'Seite Knie' });
+    for (const knopf of within(seite).getAllByRole('button')) {
+      expect(knopf).toHaveAttribute('aria-pressed', 'false');
+    }
+    expect(screen.queryByText('Weiterführende Untersuchung')).toBeNull();
   });
 
   it('bietet einem Test o.B., positiv und nicht getestet', async () => {
@@ -237,7 +241,6 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
   it('kennzeichnet einen Block, an dem die Vorlage abbricht (ANN-118)', async () => {
     await oeffnen('Schulter', 'Untersuchung ACG', 'rechts');
     expect(screen.getByText('Vorlage unvollständig')).toBeInTheDocument();
-    expect(screen.getByText(/In der Vorlage fehlen hier Einträge/)).toBeInTheDocument();
   });
 
   it('nimmt einen Messwert nur als Zahl in den Text', async () => {
@@ -247,7 +250,7 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     const feld = within(k2w).getByLabelText('Messwert (cm)');
 
     await user.type(feld, 'acht');
-    expect(within(k2w).getByText('Bitte eine Zahl eingeben, etwa 1,5.')).toBeInTheDocument();
+    expect(within(k2w).getByText('Eine Zahl, etwa 1,5.')).toBeInTheDocument();
     expect(vorschlag()).toBe('Basisuntersuchung Fuß rechts\n✅ Knee to Wall Test li.: o.B.');
     // Übernommen würde der Text ohne den Wert — deshalb erst nach der Korrektur.
     expect(screen.getByRole('button', { name: 'In den Text übernehmen' })).toBeDisabled();
@@ -310,7 +313,7 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     // Ein Tipp allein verwirft nichts mehr.
     expect(vorschlag()).toBe('Basisuntersuchung Knie rechts\n✅ Kniebeuge: o.B.');
     const frage = screen.getByRole('group', { name: 'Alle Angaben aus den Bausteinen verwerfen' });
-    expect(frage).toHaveTextContent(/Messwerte, Notizen und die Seitenwahl werden verworfen/);
+    expect(frage).toHaveTextContent('Die gewählten Angaben gehen verloren.');
     await user.click(within(frage).getByRole('button', { name: 'Abbrechen' }));
     expect(vorschlag()).toBe('Basisuntersuchung Knie rechts\n✅ Kniebeuge: o.B.');
 
@@ -374,14 +377,15 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     expect(notiz).toHaveValue('Ferse bleibt am Boden');
   });
 
-  it('nennt den Knopf der Rückfrage beim Namen und gliedert unter den Seitentitel (BEF-17, BEF-18)', async () => {
+  it('gliedert unter den Seitentitel, ohne Erklärsatz zum Speichern (BEF-17, BEF-18, L7)', async () => {
     const { user } = await oeffnen('Knie', 'Basisuntersuchung Knie', 'rechts');
     await user.click(within(test_('Kniebeuge')).getByRole('button', { name: 'o.B.' }));
 
     expect(
       screen.getByRole('heading', { level: 2, name: 'Vorschlag für den Eintrag' }),
     ).toBeVisible();
-    expect(vorschlagsbereich()).toHaveTextContent(/dort „Speichern und weitergehen“ wählt/);
+    // Was beim Verlassen geschieht, sagt die Rückfrage des Schutzes, wenn es so weit ist.
+    expect(vorschlagsbereich()).not.toHaveTextContent(/Speichern und weitergehen/);
   });
 
   it('zeigt an jedem Aufklapper ein Zeichen (RSP-07)', () => {

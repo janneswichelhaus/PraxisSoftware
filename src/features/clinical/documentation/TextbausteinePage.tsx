@@ -142,7 +142,6 @@ function BausteinFormular({
       <Feldgruppe>
         <Field
           label="Titel *"
-          hint="Erscheint als Beschriftung des Knopfes über dem Freitext."
           maxLength={MAX_TITEL}
           value={titel}
           error={fehler['title']}
@@ -154,7 +153,7 @@ function BausteinFormular({
 
         <TextArea
           label="Text *"
-          hint="Wird unverändert eingefügt. Keine Platzhalter, keine Angaben aus einer Akte."
+          hint="Keine Platzhalter, keine Angaben aus einer Akte."
           rows={5}
           maxLength={MAX_BAUSTEIN}
           value={text}
@@ -230,11 +229,6 @@ function BausteinDetail({
       </Textlink>
       <PageHeader
         title={baustein.title}
-        description={
-          baustein.shared
-            ? 'Baustein der Praxis, nicht in der Leiste.'
-            : 'Sieht außer Ihnen niemand.'
-        }
         actions={
           baustein.editable && !baustein.shared && !bearbeiten ? (
             <Button type="button" variant="secondary" onClick={() => setBearbeiten(true)}>
@@ -284,8 +278,7 @@ function BausteinDetail({
                   laeuft={loeschen.isPending}
                   onBestaetigen={() => loeschen.mutateAsync()}
                 >
-                  Der Baustein wird gelöscht. Bereits geschriebene Dokumentation bleibt davon
-                  unberührt – ein Baustein ist eine Vorlage, kein Bestandteil der Akte.
+                  Der Baustein wird gelöscht, geschriebene Dokumentation bleibt unberührt.
                 </Rueckfrage>
               </div>
             ) : null}
@@ -343,10 +336,7 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
 
   if (!darf) {
     return (
-      <ErrorState
-        title="Nicht freigegeben"
-        description="Textbausteine gehören zur Behandlungsdokumentation und stehen Therapeut:innen und der Teamleitung offen."
-      />
+      <ErrorState title="Nicht freigegeben" description="Nur Therapeut:innen und Teamleitung." />
     );
   }
 
@@ -393,7 +383,6 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
 
       <PageHeader
         title="Textbausteine"
-        description="Formulierungen für die Dokumentation."
         actions={
           anlegen ? null : (
             <Button
@@ -437,7 +426,7 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
         <Abfragezustand
           abfrage={abfrage}
           laden="Bausteine werden geladen …"
-          fehler="Die Textbausteine konnten nicht geladen werden."
+          fehler="Textbausteine nicht geladen."
         >
           {(daten) => {
             const eigene = daten.filter((baustein) => !baustein.shared);

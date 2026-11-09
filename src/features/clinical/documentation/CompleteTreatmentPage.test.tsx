@@ -845,7 +845,7 @@ describe('CompleteTreatmentPage', () => {
         last_note_appointment_start: null,
       });
       await user.click(screen.getByRole('button', { name: 'Wie zuletzt' }));
-      expect(await screen.findByText('Noch kein Eintrag vor diesem Termin.')).toBeInTheDocument();
+      expect(await screen.findByText('Kein früherer Eintrag.')).toBeInTheDocument();
       expect(feld).toHaveValue('');
     });
 
@@ -1038,9 +1038,7 @@ describe('CompleteTreatmentPage', () => {
       await user.click(screen.getByRole('radio', { name: '7' }));
       await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
       expect(
-        await screen.findByText(
-          'Die Skalen stehen noch nicht im Eintrag. Erst übernehmen oder verwerfen.',
-        ),
+        await screen.findByText('Die Skalen stehen noch nicht im Eintrag.'),
       ).toBeInTheDocument();
       expect(completeTreatment).not.toHaveBeenCalled();
       expect(erhebungSpeichern).not.toHaveBeenCalled();
@@ -1241,7 +1239,7 @@ describe('CompleteTreatmentPage', () => {
       await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        /Vorschlag aus den Bausteinen steht noch nicht im Text/,
+        'Der Vorschlag steht noch nicht im Text.',
       );
       expect(completeTreatment).not.toHaveBeenCalled();
     });
@@ -1998,9 +1996,7 @@ describe('CompleteTreatmentPage', () => {
       aufnahme.entfernen();
       rendern();
       expect(await screen.findByRole('button', { name: 'Sprechen' })).toBeDisabled();
-      expect(
-        screen.getByText('Auf diesem Gerät nicht verfügbar – bitte tippen.'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Auf diesem Gerät nicht verfügbar.')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Festschreiben' })).toHaveClass('bg-accent');
     });
 

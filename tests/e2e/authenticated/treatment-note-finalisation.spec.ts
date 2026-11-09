@@ -122,9 +122,7 @@ test.describe('DOK-002: Finalisieren', () => {
     const version1 = page.getByLabel('Version 1');
     await expect(version1).toBeVisible();
     await expect(version1.getByText(ENTWURF)).toBeVisible();
-    await expect(
-      version1.getByText('Bei der Finalisierung festgeschriebener Stand.'),
-    ).toBeVisible();
+    await expect(version1.getByText('Bei der Finalisierung festgeschrieben.')).toBeVisible();
   });
 });
 

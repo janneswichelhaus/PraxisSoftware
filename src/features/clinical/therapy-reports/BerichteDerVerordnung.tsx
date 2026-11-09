@@ -226,7 +226,7 @@ function Korrigieren({
       onSubmit={(e) => {
         e.preventDefault();
         if (grund.trim().length < GRUND_MIN) {
-          setFehler('Bitte den Grund der Korrektur angeben.');
+          setFehler('Bitte einen Grund angeben.');
           return;
         }
         korrigieren.mutate();
@@ -234,7 +234,7 @@ function Korrigieren({
     >
       <TextArea
         label="Grund der Korrektur"
-        hint="Der Bericht vom bisherigen Tag bleibt unverändert. Die Korrektur verweist auf ihn und nennt diesen Grund."
+        hint="Steht im neuen Bericht."
         rows={2}
         maxLength={GRUND_MAX}
         required

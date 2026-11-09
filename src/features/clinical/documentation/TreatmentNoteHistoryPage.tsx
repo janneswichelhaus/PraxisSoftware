@@ -68,12 +68,8 @@ function Verlauf({
         <Abfragezustand
           abfrage={versionen}
           laden="Verlauf wird geladen …"
-          fehler="Der Änderungsverlauf konnte nicht geladen werden."
-          leer={{
-            wenn: (daten) => daten.length === 0,
-            titel: 'Noch ein Entwurf',
-            beschreibung: 'Festgeschriebene Versionen entstehen erst mit der Finalisierung.',
-          }}
+          fehler="Änderungsverlauf nicht geladen."
+          leer={{ wenn: (daten) => daten.length === 0, titel: 'Noch ein Entwurf' }}
         >
           {(daten) => (
             // Die Versionen untereinander, getrennt durch Linien - ohne Karte je
@@ -106,7 +102,7 @@ function Verlauf({
                     </p>
                   ) : (
                     <p className="text-ink-muted mt-2 text-sm">
-                      Bei der Finalisierung festgeschriebener Stand.
+                      Bei der Finalisierung festgeschrieben.
                     </p>
                   )}
 
@@ -137,7 +133,7 @@ export function TreatmentNoteHistoryPage({ user }: { user: CurrentUser }) {
       darf={canReadTreatmentNote(user.roles)}
       // Seit E15 liest auch das Praxismanagement den Verlauf; gesperrt ist er
       // nur für Konten außerhalb der Praxisrollen (WRT-12).
-      verweigert="Den Änderungsverlauf sehen nur die Praxisrollen."
+      verweigert="Nur Praxisrollen."
       eigenerKopf
     >
       {({ appointment, dokumentation, eingehend, zumTermin }) => {
@@ -150,10 +146,7 @@ export function TreatmentNoteHistoryPage({ user }: { user: CurrentUser }) {
               titel={patientName(appointment)}
               beschreibung={kopfzeileFuer('Änderungsverlauf', appointment)}
             >
-              <ErrorState
-                title="Nicht gefunden"
-                description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
-              />
+              <ErrorState title="Nicht gefunden" />
             </ZustandMitRueckweg>
           );
         }

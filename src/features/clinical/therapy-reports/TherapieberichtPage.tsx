@@ -14,6 +14,7 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
+import { STAND_VERALTET } from '@/components/ui/abfrageTexte';
 import { bereicheText } from '@/features/clinical/assessments/koerperschema';
 import { useTextverlustschutz, type Verlustschutztexte } from '@/app/Textverlustschutz';
 import type { CurrentUser } from '@/features/core';
@@ -172,19 +173,16 @@ export function TherapieberichtPage({ user }: { user: CurrentUser }) {
           <Abfragezustand
             abfrage={bericht}
             laden="Bericht wird geladen …"
-            fehler="Der Bericht konnte nicht geladen werden."
+            fehler="Bericht nicht geladen."
           >
             {(daten) =>
               daten === null ? (
-                <ErrorState
-                  title="Bericht nicht gefunden"
-                  description="Vielleicht wurde der Entwurf inzwischen verworfen."
-                />
+                <ErrorState title="Bericht nicht gefunden" />
               ) : (
                 <Abfragezustand
                   abfrage={quellen}
-                  laden="Einträge der Akte werden geladen …"
-                  fehler="Die Einträge der Akte konnten nicht geladen werden."
+                  laden="Einträge werden geladen …"
+                  fehler="Einträge der Akte nicht geladen."
                 >
                   {() => null}
                 </Abfragezustand>
@@ -412,9 +410,7 @@ function Berichtsformular({
 
         {nichtAktualisiert ? (
           <div className="mb-6 flex flex-wrap items-center gap-x-3">
-            <Statusmeldung ton="warnung">
-              Der Stand konnte nicht aktualisiert werden. Ihre Eingaben stehen weiter im Formular.
-            </Statusmeldung>
+            <Statusmeldung ton="warnung">{STAND_VERALTET}</Statusmeldung>
             <Button type="button" variant="quiet" groesse="kompakt" onClick={() => void onErneut()}>
               Erneut versuchen
             </Button>
@@ -451,12 +447,9 @@ function Berichtsformular({
                 (ABN-016, BEF-104). */}
             <p className="text-ink text-sm tabular-nums" aria-live="polite">
               {eingabe.eintraege.length} von {EINTRAEGE_MAX} Einträgen gewählt
-              {eingabe.eintraege.length >= EINTRAEGE_MAX
-                ? ' – mehr passen nicht in einen Bericht.'
-                : ''}
             </p>
             {eintraege.length === 0 ? (
-              <Statusmeldung>Die Akte hat noch keinen finalisierten Eintrag.</Statusmeldung>
+              <Statusmeldung>Noch kein finalisierter Eintrag.</Statusmeldung>
             ) : null}
             {dieserVerordnung.length > 0 ? (
               <Eintragsliste
@@ -484,7 +477,7 @@ function Berichtsformular({
             {zuViele ? (
               <div id={zuVieleId}>
                 <Statusmeldung ton="fehler">
-                  Höchstens {EINTRAEGE_MAX} Einträge – ein Bericht ist keine Kopie der Akte.
+                  Höchstens {EINTRAEGE_MAX} Einträge – bitte abwählen.
                 </Statusmeldung>
               </div>
             ) : null}
@@ -520,7 +513,7 @@ function Berichtsformular({
 
           <TextArea
             label="Bericht der Therapeut:in"
-            hint="Ihr eigener Text an die Verordner:in. Er steht mit Ihrem Namen und dem Tag im Bericht."
+            hint="An die Verordner:in, mit Ihrem Namen und dem Tag."
             rows={6}
             maxLength={TEXT_MAX}
             value={eingabe.text}
@@ -560,9 +553,8 @@ function Berichtsformular({
                 onBestaetigen={() => abschliessen.mutateAsync()}
                 onAbbrechen={() => abschliessen.reset()}
               >
-                Der Bericht wird so eingefroren, wie er jetzt im Formular steht – spätere Änderungen
-                in der Akte erreichen ihn nicht mehr. Eine Korrektur ist danach ein neuer Bericht
-                mit Verweis und Grund.
+                Danach eingefroren: Änderungen der Akte erreichen ihn nicht, eine Korrektur wird ein
+                neuer Bericht.
               </Rueckfrage>
             )}
             <Rueckfrage

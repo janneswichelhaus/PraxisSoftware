@@ -188,9 +188,7 @@ describe('Erhebung – Zustände und Schutz (UXR-009)', { timeout: 20_000 }, () 
     const user = userEvent.setup();
     seite('&entwurf=d1', [erhebung({ definition_version: '0.9.0' })]);
 
-    expect(
-      await screen.findByText('Der Entwurf gehört zu einer früheren Fassung des Bogens.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Entwurf aus einer früheren Fassung.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Anamnesebogen Version 8 (DIGOTOR)',
     );
@@ -219,8 +217,9 @@ describe('Erhebung – Zustände und Schutz (UXR-009)', { timeout: 20_000 }, () 
       ADRESSE,
     );
 
-    expect(await screen.findByText('Der Bogen konnte nicht geladen werden.')).toBeInTheDocument();
-    expect(screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeVisible();
+    expect(await screen.findByText('Bogen nicht geladen.')).toBeInTheDocument();
+    // Der Knopf ist der nächste Schritt, ohne Ratsatz daneben (L7).
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeVisible();
     expect(screen.getByRole('link', { name: '← Zurück zum Befund' })).toBeInTheDocument();
     expect(screen.queryByText(/nicht freigegeben/)).toBeNull();
 
@@ -234,9 +233,7 @@ describe('Erhebung – Zustände und Schutz (UXR-009)', { timeout: 20_000 }, () 
     seite();
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
-    expect(
-      screen.getByText('Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben.'),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).toBeNull();
     expect(screen.queryByText(/Datensatz/)).toBeNull();
   });
 

@@ -182,9 +182,7 @@ describe('Erhebung', () => {
 
       // Der Erhebungstag ist der des korrigierten Bogens, kein Feld (BEF-101 Punkt 2).
       expect(screen.queryByLabelText('Datum der Erhebung')).toBeNull();
-      expect(
-        screen.getByText(/^Datum der Erhebung: .* – wie im korrigierten Bogen\.$/),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/^Datum der Erhebung: \d{2}\.\d{2}\.\d{4}$/)).toBeInTheDocument();
 
       await user.click(screen.getByText('Abschließen'));
       expect(
@@ -225,7 +223,7 @@ describe('Erhebung', () => {
       await user.click(screen.getByText('Abschließen'));
 
       expect(await screen.findByText('Verbindung unterbrochen.')).toBeInTheDocument();
-      expect(screen.queryByText('Dieser Bogen lässt sich hier nicht mehr bearbeiten.')).toBeNull();
+      expect(screen.queryByText('Bogen nicht mehr bearbeitbar.')).toBeNull();
       expect(screen.getByText('Abschließen')).toBeInTheDocument();
     },
   );
@@ -237,9 +235,7 @@ describe('Erhebung', () => {
 
   it('bietet ein inaktives Instrument nicht an, auch nicht über die Adresse', async () => {
     seite('instrument=psfs');
-    expect(
-      await screen.findByText('Diesen Fragebogen gibt es nicht oder er ist nicht freigegeben.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Fragebogen nicht verfügbar.')).toBeInTheDocument();
   });
 
   // Die Prüfung über 46 Fragen und das Körperschema braucht länger als der Vorgabewert.

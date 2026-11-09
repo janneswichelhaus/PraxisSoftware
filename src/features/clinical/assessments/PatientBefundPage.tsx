@@ -68,13 +68,7 @@ function Frageboegen({ patient, user, scores }: BefundProps) {
   // Nur ohne Daten ersetzt der Fehler den Befund (ZST-03): Ein gescheitertes
   // Nachladen lässt den zuletzt geladenen Stand stehen.
   if (erhebungen.data === undefined) {
-    return (
-      <ErrorState
-        title="Die Fragebögen konnten nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => erhebungen.refetch()}
-      />
-    );
+    return <ErrorState title="Fragebögen nicht geladen." onErneut={() => erhebungen.refetch()} />;
   }
 
   const instrumente = erhebbareInstrumente(scores);
@@ -105,12 +99,7 @@ function Frageboegen({ patient, user, scores }: BefundProps) {
             }
           >
             {eigene.length === 0 ? (
-              <EmptyState
-                inKarte
-                title="Noch nicht erhoben."
-                // BEF-064: Wer nur liest, erfährt, wer erhebt.
-                description={darfErheben ? undefined : 'Erhoben wird von den behandelnden Rollen.'}
-              />
+              <EmptyState inKarte title="Noch nicht erhoben." />
             ) : (
               // Die Erhebungen eines Bogens in einer Karte, getrennt durch
               // Linien - keine Karte je Erhebung (DESIGN.md Regel 3, L2).
@@ -234,7 +223,7 @@ function EntwurfVerwerfen({ erhebung, patientId }: { erhebung: Erhebung; patient
       onAbbrechen={() => verwerfen.reset()}
       onBestaetigen={() => verwerfen.mutateAsync()}
     >
-      Die gespeicherten Antworten dieses Entwurfs werden gelöscht.
+      Die gespeicherten Antworten werden gelöscht.
     </Rueckfrage>
   );
 }

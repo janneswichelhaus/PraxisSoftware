@@ -159,7 +159,7 @@ function Formular({
     >
       {/* Ein Hinweis, kein Bedienelement (DOK-19): eine leise Zeile unter dem
           Kopf. Wer nur ergänzen will, findet hier den Nachtrag (ADR-016
-          Punkt 6); der alte Wortlaut bleibt abrufbar (Punkt 5). */}
+          Punkt 6); dass der alte Wortlaut bleibt, sagt das Kleingedruckte. */}
       <p className="border-line text-ink-muted shrink-0 border-b px-4 py-2 text-sm">
         Für echte Fehler. Ergänzen geht als{' '}
         <Textlink
@@ -170,13 +170,12 @@ function Formular({
         >
           Nachtrag
         </Textlink>
-        . Der bisherige Wortlaut bleibt als eigene Version erhalten und abrufbar.
+        .
       </p>
 
       {uebernommen !== undefined ? (
         <Statusmeldung className="shrink-0 px-4 py-2">
-          Ihr Text aus dem Entwurf steht im Feld. Mit Begründung festschreiben – oder abbrechen,
-          dann geht er verloren.
+          Ihr Text aus dem Entwurf steht im Feld – ohne Festschreiben geht er verloren.
         </Statusmeldung>
       ) : null}
 
@@ -198,7 +197,7 @@ function Formular({
         <div className="border-line shrink-0 border-t px-4 pt-3 pb-2">
           <TextArea
             label="Begründung der Korrektur"
-            hint={`Kurz und sachlich, höchstens ${MAX_BEGRUENDUNG.toLocaleString('de-DE')} Zeichen.`}
+            hint={`Höchstens ${MAX_BEGRUENDUNG.toLocaleString('de-DE')} Zeichen.`}
             rows={2}
             value={begruendung}
             error={grundfehler}
@@ -246,7 +245,7 @@ export function TreatmentNoteRevisionPage({ user }: { user: CurrentUser }) {
     <DocumentationShell
       appointmentId={appointmentId}
       darf={canWriteTreatmentNote(user.roles)}
-      verweigert="Behandlungsdokumentation ändern dürfen Therapeut:innen und Teamleitung."
+      verweigert="Nur Therapeut:innen und Teamleitung."
       eigenerKopf
     >
       {({ appointment, dokumentation, eingehend, zumTermin }) => {
@@ -259,10 +258,7 @@ export function TreatmentNoteRevisionPage({ user }: { user: CurrentUser }) {
               titel={patientName(appointment)}
               beschreibung={kopfzeileFuer('Korrektur', appointment)}
             >
-              <ErrorState
-                title="Nicht gefunden"
-                description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
-              />
+              <ErrorState title="Nicht gefunden" />
             </ZustandMitRueckweg>
           );
         }
@@ -279,7 +275,7 @@ export function TreatmentNoteRevisionPage({ user }: { user: CurrentUser }) {
                 appointmentId={appointment.id}
                 eintrag={eintrag}
                 eingehend={eingehend}
-                beschreibung="Ein Entwurf wird schlicht bearbeitet. Eine Korrektur mit Begründung gibt es erst nach der Finalisierung."
+                beschreibung="Korrektur erst nach der Finalisierung."
               />
             </ZustandMitRueckweg>
           );

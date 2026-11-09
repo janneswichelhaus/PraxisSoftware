@@ -125,9 +125,7 @@ describe('Messverlauf', { timeout: 20_000 }, () => {
     fetchPatientAppointments.mockRejectedValue(new Error('synthetisch'));
     abschnitt();
     expect(
-      await screen.findByText(
-        'Die Termine konnten nicht geladen werden; die Striche an der Zeitachse fehlen.',
-      ),
+      await screen.findByText('Termine nicht geladen; die Striche an der Zeitachse fehlen.'),
     ).toBeInTheDocument();
     expect(screen.getByText('Noch kein Ereignis vermerkt.')).toBeInTheDocument();
   });
@@ -136,9 +134,7 @@ describe('Messverlauf', { timeout: 20_000 }, () => {
     const user = userEvent.setup();
     fetchEreignisse.mockRejectedValueOnce(new Error('synthetisch'));
     abschnitt();
-    expect(
-      await screen.findByText('Die Ereignisse im Verlauf konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Ereignisse nicht geladen.')).toBeInTheDocument();
 
     fetchEreignisse.mockResolvedValue([ereignis()]);
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
@@ -156,7 +152,9 @@ describe('Messverlauf', { timeout: 20_000 }, () => {
 
     await user.click(await screen.findByRole('button', { name: 'Entfernen' }));
     const kasten = screen.getByRole('group', { name: 'Ereignis 1 entfernen' });
-    expect(kasten).toHaveTextContent('„Operation“ vom 05.09.2026 wird aus dem Verlauf entfernt.');
+    expect(kasten).toHaveTextContent(
+      '„Operation“ vom 05.09.2026 bleibt unter „Entfernte Ereignisse“ nachvollziehbar.',
+    );
     expect(ereignisEntfernen).not.toHaveBeenCalled();
 
     await user.click(within(kasten).getByRole('button', { name: 'Ja, Ereignis entfernen' }));

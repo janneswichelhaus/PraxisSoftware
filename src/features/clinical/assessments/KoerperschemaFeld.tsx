@@ -111,7 +111,7 @@ export function KoerperschemaFeld({
         <p className="text-ink min-w-0 flex-1 basis-48 text-sm" aria-live="polite">
           {markierungen.length > 0
             ? `Markiert: ${bereicheText(gewaehlt)}`
-            : 'Noch nichts markiert. Tippen Sie auf die Stelle der Beschwerden.'}
+            : 'Noch nichts markiert.'}
         </p>
         {markierungen.length > 0 ? (
           <Button

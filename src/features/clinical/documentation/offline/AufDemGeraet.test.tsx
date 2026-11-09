@@ -196,9 +196,7 @@ describe('AufDemGeraet', () => {
     expect(
       await screen.findByText(/2 Einträge, die diese Fassung der Anwendung nicht lesen kann/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText('Nicht alles ist übertragen. Bitte unten ansehen.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Nicht alles ist übertragen.')).toBeInTheDocument();
   });
 
   it('ohne Tagesplan bleiben Entwürfe lesbar (Kopf am Entwurf)', async () => {
@@ -206,8 +204,6 @@ describe('AufDemGeraet', () => {
     await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: gestern.');
     renderWithProviders(<AufDemGeraet besitzer={ANNA} ohneVerbindung />);
     expect(await screen.findByText(/Erika Beispiel/)).toBeInTheDocument();
-    expect(
-      screen.getByText('Auf diesem Gerät liegt kein Tagesplan von heute.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Kein Tagesplan von heute.')).toBeInTheDocument();
   });
 });

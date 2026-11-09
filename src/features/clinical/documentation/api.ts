@@ -362,9 +362,7 @@ export async function completeTreatment(
   if (error) {
     if (error.message?.includes('appointment was changed meanwhile')) {
       // Kein „neu laden" (BEF-056): Die Seite lädt den Termin selbst nach.
-      throw new Error(
-        'Der Termin wurde zwischenzeitlich geändert. Ihr Text steht weiter im Feld. Bitte erneut festschreiben – oder mit „Entwurf“ nur als Entwurf sichern.',
-      );
+      throw new Error('Der Termin wurde zwischenzeitlich geändert. Ihr Text steht weiter im Feld.');
     }
     throw schreibfehler(error, 'Die Behandlung konnte nicht abgeschlossen werden.');
   }

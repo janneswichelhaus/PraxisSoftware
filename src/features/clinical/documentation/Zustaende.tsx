@@ -44,9 +44,7 @@ export function BereitsFinalisiert({
 }) {
   const weg = eintragsweg(appointmentId, eintrag);
   const istNachtrag = eintrag.addendum_to_note_id !== null;
-  const beschreibung = istNachtrag
-    ? 'Dieser Nachtrag ist Bestandteil der Akte. Eine Änderung ist nur als Korrektur mit Begründung möglich.'
-    : 'Dieser Eintrag ist Bestandteil der Akte. Eine Ergänzung ist als Nachtrag möglich, eine Änderung nur als Korrektur mit Begründung.';
+  const beschreibung = 'Ändern nur als Korrektur mit Begründung.';
   const wege = (
     <>
       {/* Zu einem Nachtrag gibt es keinen weiteren (ADR-016 Punkt 6). */}
@@ -143,13 +141,7 @@ export function TextUebernehmen({
       aria-label="Text übernehmen"
       className={`border-line-strong bg-surface-sunken rounded-card border p-4 ${className}`}
     >
-      <p className="text-ink text-sm leading-relaxed">
-        Ihr Text lässt sich übernehmen:{' '}
-        {nachtragMoeglich
-          ? 'als Nachtrag, der den Eintrag ergänzt, oder als Korrektur mit kurzer Begründung.'
-          : 'als Korrektur des Nachtrags, mit kurzer Begründung.'}
-      </p>
-      <div className="mt-3 flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3">
         {nachtragMoeglich ? (
           <Button type="button" disabled={gesperrt} onClick={onNachtrag}>
             Als Nachtrag übernehmen

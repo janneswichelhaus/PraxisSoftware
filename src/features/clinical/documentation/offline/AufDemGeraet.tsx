@@ -152,7 +152,7 @@ export function AufDemGeraet({
         {wartend > 0
           ? `Noch nicht übertragen: ${zahlSatz(wartend)} auf diesem Gerät.${ohneVerbindung ? ' Übertragen wird, sobald Verbindung besteht und Sie entsperrt haben.' : ''}`
           : entwuerfe.length + unlesbar > 0
-            ? 'Nicht alles ist übertragen. Bitte unten ansehen.'
+            ? 'Nicht alles ist übertragen.'
             : 'Alles übertragen. Auf dem Gerät liegt kein Entwurf.'}
       </Statusmeldung>
       {/* BEF-150: Was eine spätere Fassung abgelegt hat, fällt nicht still. */}
@@ -183,7 +183,7 @@ export function AufDemGeraet({
 
       <Section titel="Tagesplan von heute">
         {tagesplan === null || tagesplan.termine.length === 0 ? (
-          <EmptyState inKarte title="Auf diesem Gerät liegt kein Tagesplan von heute." />
+          <EmptyState inKarte title="Kein Tagesplan von heute." />
         ) : (
           <ListRows>
             {tagesplan.termine.map((t) => (
@@ -204,8 +204,7 @@ export function AufDemGeraet({
             geändert hat, fehlt hier. Ohne Plan gibt es keinen Stand. */}
         {tagesplan !== null && tagesplan.termine.length > 0 ? (
           <Kleingedrucktes className="mt-2">
-            So, wie er zuletzt mit Verbindung geladen wurde. Änderungen der Praxis seitdem fehlen
-            hier.
+            Stand der letzten Verbindung, spätere Änderungen der Praxis fehlen.
           </Kleingedrucktes>
         ) : null}
       </Section>
@@ -336,7 +335,7 @@ function Entwurfskarte({
     try {
       setPraxisFassung(await serverwege.fassungLesen(e.terminId));
     } catch {
-      setFehler('Die Fassung der Praxis ließ sich nicht laden. Bitte die Verbindung prüfen.');
+      setFehler('Fassung der Praxis nicht geladen.');
     }
   }
 

@@ -305,13 +305,8 @@ describe('TreatmentNoteSection', () => {
     fetchTreatmentDocumentation.mockRejectedValue(new Error('kaputt'));
     rendern(['therapist']);
 
-    expect(
-      await screen.findByText('Die Behandlungsdokumentation konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
-    // Was zu tun ist, und ein Weg dorthin (WRT-01).
-    expect(
-      screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Dokumentation nicht geladen.')).toBeInTheDocument();
+    // Der Knopf ist der nächste Schritt, ohne Ratsatz daneben (L7).
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 
@@ -401,15 +396,14 @@ describe('TreatmentNoteSection: Gewichtung der Knöpfe (DOK-14)', () => {
     expect(await screen.findByRole('link', { name: 'Doku schreiben' })).toHaveClass('bg-accent');
   });
 
-  it('bietet am offenen Hausbesuch kein „Finalisieren“ an, sondern verweist auf den Abschluss (BEF-055)', async () => {
+  it('bietet am offenen Hausbesuch kein „Finalisieren“ an (BEF-055)', async () => {
     fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
     rendern(['therapist'], { appointment_type: 'home_visit', location_id: null });
 
     expect(await screen.findByTestId('eintragstext')).toHaveTextContent(INHALT);
     expect(screen.queryByRole('button', { name: 'Finalisieren' })).toBeNull();
-    expect(
-      screen.getByText(/Festgeschrieben wird über „Doku“ – oder oben über „Niemand öffnet\?“/),
-    ).toBeInTheDocument();
+    // Der Weg steht oben am Termin („Doku“, „Niemand öffnet?“), ohne Anleitung hier (L7).
+    expect(screen.queryByText(/Festgeschrieben wird über/)).toBeNull();
   });
 
   it('bietet „Finalisieren“ am abgeschlossenen Hausbesuch wie sonst an', async () => {
@@ -530,9 +524,7 @@ describe('TreatmentNoteSection: Finalisierung (DOK-002)', () => {
     await user.click(await screen.findByRole('button', { name: 'Finalisieren' }));
     await user.click(screen.getByRole('button', { name: 'Ja, jetzt finalisieren' }));
 
-    const bestaetigung = await screen.findByText(
-      'Finalisiert – der Eintrag ist jetzt Bestandteil der Akte.',
-    );
+    const bestaetigung = await screen.findByText('Finalisiert.');
     await waitFor(() => expect(bestaetigung.closest('[tabindex="-1"]')).toHaveFocus());
   });
 

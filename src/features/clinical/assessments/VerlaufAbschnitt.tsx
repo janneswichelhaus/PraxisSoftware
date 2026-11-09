@@ -94,33 +94,28 @@ export function VerlaufAbschnitt({
       {ereignisse.isPending ? (
         <LoadingState label="Ereignisse werden geladen …" />
       ) : ereignisse.data === undefined ? (
-        <ErrorState
-          title="Die Ereignisse im Verlauf konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => ereignisse.refetch()}
-        />
+        <ErrorState title="Ereignisse nicht geladen." onErneut={() => ereignisse.refetch()} />
       ) : (
         <>
           {ereignisse.isError ? (
             <Statusmeldung ton="warnung" className="mb-4">
-              Die Ereignisse konnten nicht aktualisiert werden; gezeigt wird der zuletzt geladene
-              Stand.
+              Ereignisse nicht aktuell.
             </Statusmeldung>
           ) : null}
           {termine.isError ? (
             <Statusmeldung ton="warnung" className="mb-4">
-              Die Termine konnten nicht geladen werden; die Striche an der Zeitachse fehlen.
+              Termine nicht geladen; die Striche an der Zeitachse fehlen.
             </Statusmeldung>
           ) : null}
           {ausgelassen > 0 ? (
             <p className="text-ink-muted mb-4 text-sm">
               {ausgelassen === 1
-                ? 'Eine Erhebung ist in einer Fassung des Bogens, deren Werte mit der heutigen nicht vergleichbar sind; sie steht oben, aber nicht im Bild.'
-                : `${ausgelassen} Erhebungen sind in einer Fassung des Bogens, deren Werte mit der heutigen nicht vergleichbar sind; sie stehen oben, aber nicht im Bild.`}
+                ? 'Eine Erhebung in einer mit der aktuellen nicht vergleichbaren Fassung steht oben, nicht im Bild.'
+                : `${ausgelassen} Erhebungen in einer mit der aktuellen nicht vergleichbaren Fassung stehen oben, nicht im Bild.`}
             </p>
           ) : null}
           {reihen.length === 0 ? (
-            <EmptyState inKarte title="Noch kein abgeschlossener Bogen mit Skalenwerten." />
+            <EmptyState inKarte title="Noch keine Skalenwerte." />
           ) : (
             // Zwei Bilder nebeneinander, sobald der Bereich 672 px breit ist
             // (BEF-20): Einspaltig blieb am Bildschirm rechts die halbe Breite
@@ -200,12 +195,11 @@ function EntfernteEreignisListe({
     queryKey: entfernteEreignisseQueryKey(patientId),
     queryFn: () => fetchEntfernteEreignisse(patientId),
   });
-  if (entfernte.isPending) return <LoadingState label="Entfernte Ereignisse werden geladen …" />;
+  if (entfernte.isPending) return <LoadingState label="Wird geladen …" />;
   if (entfernte.data === undefined) {
     return (
       <ErrorState
-        title="Die entfernten Ereignisse konnten nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
+        title="Entfernte Ereignisse nicht geladen."
         onErneut={() => entfernte.refetch()}
       />
     );
@@ -322,7 +316,6 @@ function EreignisSetzen({ patientId, zeitzone }: { patientId: string; zeitzone: 
       </div>
       <Field
         label="Notiz (optional)"
-        hint="Kurz, etwa „Knie-TEP rechts“ oder „zwei Wochen Grippe“."
         maxLength={NOTIZ_MAX}
         value={notiz}
         onChange={(e) => setNotiz(e.target.value)}

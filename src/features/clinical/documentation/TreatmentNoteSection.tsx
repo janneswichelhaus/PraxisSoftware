@@ -178,13 +178,6 @@ function Eintrag({
             gegen den Doppelklick (ZST-16). Steht oben am Termin schon der
             Hauptknopf, ist dieser hier sekundär: ein Hauptknopf je Ansicht
             (DOK-14). */}
-        {darfSchreiben && !final && ueberAbschluss ? (
-          <p className="text-ink-muted basis-full text-[13px] leading-relaxed">
-            Festgeschrieben wird über „Doku“ – oder oben über „Niemand öffnet?“ und „Ohne
-            Behandlung“.
-          </p>
-        ) : null}
-
         {darfSchreiben && !final && !ueberAbschluss ? (
           <Rueckfrage
             ausloeser="Finalisieren"
@@ -197,9 +190,9 @@ function Eintrag({
             onBestaetigen={() => finalisieren.mutateAsync()}
             onAbbrechen={() => finalisieren.reset()}
           >
-            Nach der Finalisierung ist der Eintrag Bestandteil der Patientenakte. Der jetzige
-            Wortlaut wird als Version 1 festgeschrieben; jede spätere Änderung braucht eine
-            Begründung und bleibt nachvollziehbar.
+            {istNachtrag
+              ? 'Danach Teil der Akte, ändern nur mit Begründung.'
+              : 'Danach Teil der Akte: ergänzen als Nachtrag, ändern nur mit Begründung.'}
             {/* Die zweite Folge, die bisher niemand ansagte (BEF-055, Teil 1):
                 Am offenen Termin setzt die Finalisierung den Termin mit auf
                 „dokumentiert“ (ADR-018 Fassung 3). Danach ist „nicht
@@ -258,11 +251,7 @@ function Eintrag({
 
       {bestaetigt ? (
         <div ref={meldung} tabIndex={-1} className="mt-3">
-          <Statusmeldung ton="erfolg">
-            {istNachtrag
-              ? 'Finalisiert – der Nachtrag ist jetzt Bestandteil der Akte.'
-              : 'Finalisiert – der Eintrag ist jetzt Bestandteil der Akte.'}
-          </Statusmeldung>
+          <Statusmeldung ton="erfolg">Finalisiert.</Statusmeldung>
         </div>
       ) : null}
     </div>
@@ -369,11 +358,7 @@ export function TreatmentNoteSection({
 
       {isError ? (
         <div className="mt-2">
-          <ErrorState
-            title="Die Behandlungsdokumentation konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => refetch()}
-          />
+          <ErrorState title="Dokumentation nicht geladen." onErneut={() => refetch()} />
         </div>
       ) : null}
 

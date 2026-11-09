@@ -36,15 +36,14 @@ export const DIKTAT_TITEL = 'Vorschlag aus der Aufnahme';
 
 /** Die Sätze, wenn keine Aufnahme zustande kam - klar, und Tippen geht immer. */
 export const AUFNAHMEFEHLER: Readonly<Record<Aufnahmefehler, string>> = {
-  verweigert: 'Kein Zugriff auf das Mikrofon. Bitte im Browser erlauben – oder tippen.',
-  kein_mikrofon: 'Kein Mikrofon gefunden oder es ist belegt. Bitte tippen.',
-  leer: 'Nichts aufgenommen. Bitte noch einmal sprechen.',
-  fehler: 'Die Aufnahme ist abgebrochen. Bitte noch einmal sprechen.',
+  verweigert: 'Kein Zugriff auf das Mikrofon.',
+  kein_mikrofon: 'Kein Mikrofon gefunden oder belegt.',
+  leer: 'Nichts aufgenommen.',
+  fehler: 'Die Aufnahme ist abgebrochen.',
 };
 
 /** Ein Vorschlag ohne Text - die Aufnahme enthielt nichts Verständliches. */
-export const NICHTS_VERSTANDEN =
-  'In der Aufnahme war nichts zu verstehen. Bitte noch einmal sprechen.';
+export const NICHTS_VERSTANDEN = 'In der Aufnahme war nichts zu verstehen.';
 
 /**
  * Die Sitzungssperre kam während der Aufnahme: angehalten, aber nicht
@@ -53,10 +52,8 @@ export const NICHTS_VERSTANDEN =
 export const BEI_SPERRE_ANGEHALTEN = 'Bei der Sperre angehalten und nicht gesendet.';
 
 /** Was steht, wenn Festschreiben oder Entwurf wartet (wie beim Befund aus Bausteinen). */
-export const DIKTAT_OFFEN =
-  'Der Vorschlag aus der Aufnahme steht noch nicht im Text. Bitte übernehmen oder verwerfen, dann speichern oder festschreiben.';
-export const AUFNAHME_OFFEN =
-  'Die Aufnahme ist noch nicht aufbereitet. Bitte erneut senden oder verwerfen, dann speichern oder festschreiben.';
+export const DIKTAT_OFFEN = 'Der Vorschlag steht noch nicht im Text.';
+export const AUFNAHME_OFFEN = 'Die Aufnahme ist noch nicht aufbereitet.';
 
 /** Nach „Abbrechen“ während der Aufbereitung: Die Aufnahme ist noch da. */
 export const AUFBEREITUNG_ANGEHALTEN = 'Aufbereitung angehalten.';

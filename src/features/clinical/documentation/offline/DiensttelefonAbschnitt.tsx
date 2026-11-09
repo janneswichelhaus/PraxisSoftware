@@ -40,7 +40,7 @@ export function DiensttelefonAbschnitt({
       else await ausschalten(besitzer);
       setBestaetigt(GERAETEVORGABE.map(() => false));
     } catch {
-      setFehler('Das Gerät hat die Einstellung nicht gespeichert. Bitte erneut versuchen.');
+      setFehler('Das Gerät hat die Einstellung nicht gespeichert.');
     } finally {
       setLaeuft(false);
     }

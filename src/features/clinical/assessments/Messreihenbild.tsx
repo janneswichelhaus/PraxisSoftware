@@ -130,8 +130,7 @@ function Ereigniszeile({
             onAbbrechen={() => setFehler(undefined)}
             onBestaetigen={entfernen}
           >
-            „{art}“ vom {tag} wird aus dem Verlauf entfernt. Es bleibt unter „Entfernte Ereignisse“
-            nachvollziehbar.
+            „{art}“ vom {tag} bleibt unter „Entfernte Ereignisse“ nachvollziehbar.
           </Rueckfrage>
         </div>
       ) : null}

@@ -37,7 +37,7 @@ export function AufDemGeraetPage({ user }: { user: CurrentUser }) {
   );
   return (
     <>
-      <PageHeader title="Auf dem Gerät" description="Tagesplan und Entwürfe auf diesem Telefon." />
+      <PageHeader title="Auf dem Gerät" />
       <div className="max-w-spalte">
         <AufDemGeraet
           besitzer={user.profile.id}

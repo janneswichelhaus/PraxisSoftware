@@ -34,9 +34,7 @@ export function SkalenStreifen({
     try {
       onUebernehmen(await skalen.uebernehmen());
     } catch (error) {
-      setFehler(
-        error instanceof Error ? error.message : 'Die Skalen konnten nicht gespeichert werden.',
-      );
+      setFehler(error instanceof Error ? error.message : 'Skalen nicht gespeichert.');
     } finally {
       setLaeuft(false);
     }
@@ -70,9 +68,7 @@ export function SkalenStreifen({
             {meldung ? <Statusmeldung ton="fehler">{meldung}</Statusmeldung> : null}
             {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
             {verbunden ? null : (
-              <Statusmeldung ton="warnung">
-                Ohne Verbindung lassen sich die Skalen nicht speichern.
-              </Statusmeldung>
+              <Statusmeldung ton="warnung">Ohne Verbindung nicht speicherbar.</Statusmeldung>
             )}
             <div className="flex flex-wrap gap-3">
               <Button
