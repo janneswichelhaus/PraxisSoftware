@@ -68,9 +68,7 @@ export function Gewohnheiten({
       {daten.habits_writable && laufend.length < daten.habits_max ? (
         <Eintragen art={art} verhaeltnisId={verhaeltnisId} />
       ) : daten.habits_writable ? (
-        <p className="text-ink-muted text-sm">
-          Es laufen {daten.habits_max} Gewohnheiten – mehr werden es nicht, damit sie klein bleiben.
-        </p>
+        <p className="text-ink-muted text-sm">Höchstens {daten.habits_max} Gewohnheiten.</p>
       ) : null}
       {beendet.length > 0 ? (
         <Disclosure summary="Beendet" anzahl={beendet.length}>
@@ -84,14 +82,6 @@ export function Gewohnheiten({
           </ul>
         </Disclosure>
       ) : null}
-      {/* Wie Gewohnheiten gemeint sind, auf Abruf - Hilfe ist kein
-          Kleingedrucktes (Regel 6; Nachprüfung A10). */}
-      <Disclosure summary="So geht’s">
-        <p className="text-ink-muted max-w-prose text-sm">
-          Wenige, sehr kleine Gewohnheiten, an eine bestehende Handlung gekoppelt. Die Person
-          vermerkt die Tage selbst; es gibt keine Serie und keine Erinnerung.
-        </p>
-      </Disclosure>
     </section>
   );
 }
@@ -161,7 +151,7 @@ function Eintrag({
         ))}
       </ol>
       <p className="text-ink-muted text-xs">
-        Ein Punkt je Tag, heute rechts · gefüllt: vermerkt · leer: nicht vermerkt
+        Heute rechts · gefüllt: vermerkt
         {gewohnheit.marks_by_representative.length > 0 ? ' · teils von der Vertretung' : ''}
       </p>
       {beendbar ? (
@@ -184,7 +174,7 @@ function Eintrag({
               await queryClient.invalidateQueries({ queryKey: checkinsKey(art, verhaeltnisId) });
             }}
           >
-            Die Person sieht die Gewohnheit nicht mehr. Die vermerkten Tage bleiben hier stehen.
+            Die Person sieht die Gewohnheit nicht mehr.
           </Rueckfrage>
         </div>
       ) : null}
@@ -243,8 +233,7 @@ function Eintragen({ art, verhaeltnisId }: { art: Verhaeltnisart; verhaeltnisId:
       className="max-w-formular flex flex-col gap-3"
     >
       <Field
-        label="Wann – nach welcher Handlung?"
-        hint="Eine bestehende Handlung als Auslöser, etwa „Nach dem Zähneputzen“."
+        label="Wann – nach welcher Handlung"
         maxLength={GEWOHNHEIT_TEXT_MAX}
         value={ausloeser}
         required
@@ -256,7 +245,6 @@ function Eintragen({ art, verhaeltnisId }: { art: Verhaeltnisart; verhaeltnisId:
       />
       <Field
         label="Was – sehr klein und konkret"
-        hint="Etwa „zwei Minuten Mobilität“ oder „eine Treppe statt Aufzug“."
         maxLength={GEWOHNHEIT_TEXT_MAX}
         value={was}
         required

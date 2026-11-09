@@ -400,7 +400,7 @@ function vorgaenge(user: CurrentUser): Funktion[] {
     id: 'seite-mein-konto',
     art: 'Seite',
     bezeichnung: 'Mein Konto',
-    hinweis: 'Kennwort, zweiter Faktor, Sitzungen',
+    hinweis: 'Passkey, PIN, Sitzungen',
     ziel: '/mein-konto',
     stichworte: ['kennwort', 'passwort', 'sitzung', 'profil', 'zwei-faktor'],
   });

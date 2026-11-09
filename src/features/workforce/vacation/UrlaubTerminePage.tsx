@@ -66,7 +66,7 @@ export function UrlaubTerminePage({ user }: { user: CurrentUser }) {
         <Abfragezustand
           abfrage={tage}
           laden="Termine werden gezählt …"
-          fehler="Die Termine konnten nicht geladen werden."
+          fehler="Termine nicht geladen."
           inKarte
           leer={{
             wenn: (liste) => liste.length === 0,

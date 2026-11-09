@@ -62,10 +62,7 @@ export function Endseite({
         </>
       ) : (
         <>
-          <p>
-            Ihre Einheit ist noch nicht bei der Praxis. Sie wird übertragen, sobald Verbindung
-            besteht.
-          </p>
+          <p>Ihre Einheit wird übertragen, sobald Verbindung besteht.</p>
           <p className="text-ink-muted">Bis dahin liegt sie nur auf diesem Telefon.</p>
         </>
       )}

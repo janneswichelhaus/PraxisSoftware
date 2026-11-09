@@ -82,11 +82,7 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
   if (termine.data === undefined) {
     return (
       <Rahmen liste={liste}>
-        <ErrorState
-          title="Ihr Termin lässt sich gerade nicht laden."
-          description="Versuchen Sie es gleich noch einmal."
-          onErneut={() => termine.refetch()}
-        />
+        <ErrorState title="Termin nicht geladen." onErneut={() => termine.refetch()} />
         {praxis}
       </Rahmen>
     );
@@ -94,10 +90,7 @@ export function Terminseite({ zugang }: { zugang: Plattformzugang }) {
   if (!termin) {
     return (
       <Rahmen liste={liste}>
-        <ErrorState
-          title="Dieser Termin wurde nicht gefunden."
-          description="Vielleicht hat die Praxis ihn geändert. Bitte sehen Sie in Ihre Terminliste."
-        />
+        <ErrorState title="Termin nicht gefunden." />
       </Rahmen>
     );
   }
@@ -174,8 +167,8 @@ function Rahmen({ liste, children }: { liste: string; children: ReactNode }) {
 
 /**
  * Kommend und änderbar: „Termin ändern“ und „Termin absagen“ gleich gewichtet, unter 24 Stunden mit
- * der Warnung zum Ausfallhonorar statt des Satzes (`late_notice`, ADR-018 Punkt 8) und darunter dem
- * Satz zum Verlegen (ANN-805). Ohne Netz gesperrt mit dem Satz der Liste (ANN-773).
+ * der Warnung zum Ausfallhonorar (`late_notice`, ADR-018 Punkt 8) und darunter dem Satz zum
+ * Verlegen (ANN-805). Ohne Netz gesperrt mit dem Satz der Liste (ANN-773).
  */
 function AendernOderAbsagen({
   termin,
@@ -196,14 +189,7 @@ function AendernOderAbsagen({
   const breite = rechner ? 'self-start' : 'w-full';
   return (
     <div>
-      <Section
-        titel="Passt der Termin nicht?"
-        hinweis={
-          termin.late_notice
-            ? undefined
-            : 'Ändern und Absagen sind Wünsche an die Praxis. Sie meldet sich bei Ihnen.'
-        }
-      >
+      <Section titel="Passt der Termin nicht?">
         <div className="flex flex-col gap-3">
           {termin.late_notice ? (
             <Statusmeldung ton="warnung" className="font-semibold">

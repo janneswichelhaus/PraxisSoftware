@@ -727,10 +727,8 @@ for (const breite of [375, 1280]) {
   }) => {
     await oeffne(page, '07:30', breite, '?ansicht=nachladefehler');
 
-    const zeile = page.getByRole('status').filter({ hasText: 'nicht aktualisieren' });
-    await expect(zeile).toHaveText(
-      /Ihr Profil ließ sich gerade nicht aktualisieren\. Eingaben bleiben erhalten\./,
-    );
+    const zeile = page.getByRole('status').filter({ hasText: 'nicht aktualisiert' });
+    await expect(zeile).toHaveText(/Profil nicht aktualisiert\. Eingaben bleiben erhalten\./);
     // Die Anwendung bleibt: Kopfzeile und Tag stehen weiter da.
     await expect(page.getByRole('button', { name: 'Abmelden' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

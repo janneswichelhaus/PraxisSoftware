@@ -381,12 +381,12 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       expect(await screen.findByText('10:00–16:00')).toBeInTheDocument();
     });
 
-    it('sagt ohne behandelnde Person, woran es liegt (ORG-30)', async () => {
+    it('sagt ohne behandelnde Person, wohin der Weg führt (ORG-30, L7: ohne Erklärsatz)', async () => {
       fetchAssignableTherapists.mockResolvedValue([]);
       rendern(['owner']);
 
       expect(await screen.findByText('Noch keine behandelnde Person')).toBeInTheDocument();
-      expect(screen.getByText(/Rolle Therapeut:in oder Teamleitung/)).toBeInTheDocument();
+      expect(screen.queryByText(/Rolle Therapeut:in oder Teamleitung/)).toBeNull();
       expect(screen.getByRole('link', { name: 'Zu den Mitarbeitenden' })).toHaveAttribute(
         'href',
         '/praxis/team',
@@ -398,9 +398,7 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       fetchWorkingHours.mockRejectedValueOnce(new Error('kaputt'));
       rendern();
 
-      expect(
-        await screen.findByText('Die Arbeitszeiten konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Arbeitszeiten nicht geladen.')).toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
 
       expect(await screen.findByText('08:00–12:00, 13:00–18:00')).toBeInTheDocument();
@@ -417,17 +415,13 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       await user.type(screen.getByLabelText('Montag, Block 1 von'), '07:30');
       await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
 
-      expect(
-        await screen.findByText(/Der angezeigte Stand konnte nicht aktualisiert werden/),
-      ).toBeInTheDocument();
+      expect(await screen.findByText(/Stand nicht aktuell/)).toBeInTheDocument();
       expect(screen.getByText('Wochenplan gespeichert: Montag.')).toBeInTheDocument();
       // Es gilt, was der Server bestätigt hat.
       expect(
         within(tageszeile('Montag')).getByText('07:30–12:00, 13:00–18:00'),
       ).toBeInTheDocument();
-      expect(
-        screen.queryByText('Die Arbeitszeiten konnten nicht geladen werden.'),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Arbeitszeiten nicht geladen.')).not.toBeInTheDocument();
     });
   });
 
@@ -893,9 +887,7 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       rendern();
       await wochenplanAbwarten();
 
-      expect(
-        await screen.findByText('Die Abweichungen konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Abweichungen nicht geladen.')).toBeInTheDocument();
       expect(screen.queryByText(/keine Abweichung hinterlegt/)).not.toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));

@@ -1198,13 +1198,11 @@ describe('Für dich (ANN-614, ANN-646)', () => {
 });
 
 describe('Für dich ohne Netz (DESIGN.md Regel 8)', () => {
-  it('sagt, wenn die Erinnerungen nicht laden - nie „Nichts für dich“', async () => {
+  it('sagt, wenn die Erinnerungen nicht laden - nie „Keine Erwähnungen …“', async () => {
     api.fetchGemerkt.mockRejectedValue(new Error('aus'));
     zeige('/fuer-dich');
-    expect(
-      await screen.findByText('Die Erinnerungen konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
-    expect(screen.queryByText('Nichts für dich')).toBeNull();
+    expect(await screen.findByText('Erinnerungen nicht geladen.')).toBeInTheDocument();
+    expect(screen.queryByText('Keine Erwähnungen, Antworten oder Erinnerungen')).toBeNull();
   });
 });
 
@@ -1766,9 +1764,7 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
         expect.any(AbortSignal),
       ),
     );
-    expect(
-      screen.getByText('Höchstens 5 Anhänge je Nachricht – bitte entfernen, was zu viel ist.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Höchstens 5 Anhänge je Nachricht.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Senden' })).toBeDisabled();
   });
 

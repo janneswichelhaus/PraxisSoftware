@@ -4,7 +4,6 @@ import { ErrorState } from '@/components/ui/Feedback';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { fetchRueckfragen, rueckfragenKey, type Verhaeltnisart } from './api';
 import { RueckfragenListe } from './RueckfragenListe';
 
@@ -22,16 +21,13 @@ export function RueckfragenAbschnitt({
   verhaeltnisId: string;
 }) {
   return (
-    <Section
-      titel="Rückfragen"
-      hinweis="Fragen über die Plattform. Öffnen zeigt den Verlauf und die Antwort."
-    >
+    <Section titel="Rückfragen">
       <RueckfragenListe
         art={art}
         verhaeltnisId={verhaeltnisId}
         mitErledigten
         mitName={false}
-        leer="Noch keine Rückfrage über die Plattform."
+        leer="Noch keine Rückfrage."
       />
     </Section>
   );
@@ -61,11 +57,7 @@ export function OffeneRueckfragen({ bereiche }: { bereiche: Verhaeltnisart[] }) 
   if (isError && !data) {
     return (
       <Section titel="Rückfragen von der Plattform">
-        <ErrorState
-          title="Die Rückfragen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => refetch()}
-        />
+        <ErrorState title="Rückfragen nicht geladen." onErneut={() => refetch()} />
       </Section>
     );
   }
@@ -87,7 +79,7 @@ export function OffeneRueckfragen({ bereiche }: { bereiche: Verhaeltnisart[] }) 
         <ListRow
           key={art}
           titel={BEREICH[art].wort}
-          meta={`${offen} offen${ueberfaellig > 0 ? `, davon ${ueberfaellig} überfällig` : ''}.`}
+          meta={`${offen} offen${ueberfaellig > 0 ? `, davon ${ueberfaellig} überfällig` : ''}`}
           status={ueberfaellig > 0 ? <Badge ton="warnung">überfällig</Badge> : undefined}
           to={BEREICH[art].ziel}
         />

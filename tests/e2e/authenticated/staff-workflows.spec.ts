@@ -78,12 +78,9 @@ async function anlegenUeberOberflaeche(
   return page.url().split('/').pop()!;
 }
 
-/**
- * Der Beschäftigungsstand steht seit UX-005i nur noch im Seitenkopf: „Aktiv" ist
- * der Regelfall ohne Zeile, inaktiv sagt die Zeile unter dem Namen.
- */
+/** Der Beschäftigungsstand im Seitenkopf: aktiv ohne Abzeichen, inaktiv mit „Inaktiv“ am Namen. */
 function inaktivHinweis(page: Page): Locator {
-  return page.getByText('Inaktiv – wird nicht mehr für neue Termine angeboten.');
+  return page.getByText('Inaktiv', { exact: true });
 }
 
 /**

@@ -51,7 +51,7 @@ test.describe('Trainingsabrechnung', () => {
       // Empfängerin - die Zeile „Leistung für“ entfällt (UX-005i).
       await expect(page.getByText('Tina Trainingskundin').first()).toBeVisible();
       await expect(page.getByText('Leistung für: Tina Trainingskundin')).toHaveCount(0);
-      await expect(page.getByText(/geht an die Kund:in selbst/)).toBeVisible();
+      await expect(page.getByText('Anschrift aus dem Training.')).toBeVisible();
       await expect(page.getByLabel(/Rechnung geht an/)).toHaveCount(0);
       expect(await ueberlaeuft(page)).toBe(false);
 

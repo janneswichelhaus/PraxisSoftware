@@ -141,7 +141,7 @@ export function LebensmittelSuche({
           <Abfragezustand
             abfrage={abfrage}
             laden="Es wird gesucht …"
-            fehler="Die Suche hat nicht geklappt."
+            fehler="Suche fehlgeschlagen."
             inKarte
             leer={{
               wenn: (treffer) => treffer.length === 0,

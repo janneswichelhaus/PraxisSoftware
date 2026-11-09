@@ -246,7 +246,6 @@ describe('EinladungPage', () => {
       'Gesicht oder Finger bestätigen',
       'Eine PIN festlegen',
     ]);
-    expect(screen.getByText('Ein Kennwort brauchen Sie nicht.')).toBeVisible();
     expect(document.body.textContent).not.toMatch(/Konto|Sitzung/);
     expect(document.title).toBe('Einladung – Own Motion');
   });

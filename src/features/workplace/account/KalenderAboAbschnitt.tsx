@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Button } from '@/components/ui/Button';
-import { Disclosure } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -31,14 +30,14 @@ const ABO = ['kalender-abo', 'eigenes'] as const;
 export function KalenderAboAbschnitt() {
   const dienst = useAboDienst();
   return (
-    <Section titel="Kalender-Abo" hinweis="Eigene Termine im Kalender des Telefons.">
+    <Section titel="Kalender-Abo">
       <Abfragezustand
         abfrage={dienst}
         laden="Das Kalender-Abo wird gefragt …"
         fehler="Das Kalender-Abo konnte nicht gefragt werden."
         leer={{
           wenn: (eingerichtet) => !eingerichtet,
-          titel: 'Das Kalender-Abo ist hier noch nicht eingerichtet.',
+          titel: 'Hier noch nicht eingerichtet.',
         }}
       >
         {() => <Abo />}
@@ -107,9 +106,7 @@ function Abo() {
       setPasskey({
         laeuft: false,
         fehler:
-          grund instanceof PasskeyFehler
-            ? grund.message
-            : `Die Bestätigung hat nicht geklappt. ${VERBINDUNG_PRUEFEN}`,
+          grund instanceof PasskeyFehler ? grund.message : 'Die Bestätigung hat nicht geklappt.',
       });
       throw grund;
     }
@@ -124,8 +121,8 @@ function Abo() {
       ? erstellen.error.message
       : erstellen.isError
         ? verloren === 'ersetzt'
-          ? 'Der neue Link kam nicht an, der bisherige gilt schon nicht mehr. Bitte noch einmal erstellen.'
-          : `Der Link konnte nicht erstellt werden. ${VERBINDUNG_PRUEFEN}`
+          ? 'Der neue Link kam nicht an, der bisherige gilt schon nicht mehr.'
+          : 'Der Link konnte nicht erstellt werden.'
         : undefined);
   const ersetzenMitPasskey = erneutAnmelden && erstellen.variables === true;
 
@@ -133,16 +130,14 @@ function Abo() {
     <Abfragezustand
       abfrage={abo}
       laden="Das Kalender-Abo wird geladen …"
-      fehler="Das Kalender-Abo konnte nicht geladen werden."
+      fehler="Kalender-Abo nicht geladen."
     >
       {(stand) => (
         <div className="flex flex-col gap-4">
           {neu ? <NeuerLink link={neu.link} ersetzt={neu.ersetzt} /> : null}
           {stand && !neu ? <Aktiv abo={stand} /> : null}
           {stand && !neu && verloren === 'erstellt' ? (
-            <Statusmeldung ton="fehler">
-              Der Link kam nicht an. Bitte einen neuen erstellen.
-            </Statusmeldung>
+            <Statusmeldung ton="fehler">Der Link kam nicht an.</Statusmeldung>
           ) : null}
           {stand === null && !neu && erneutAnmelden ? (
             <div className="flex flex-col items-start gap-3">
@@ -206,29 +201,19 @@ function Abo() {
                 bestaetigen="Abo beenden"
                 bestaetigenLaeuft="Wird beendet …"
                 unterDerReihe
-                fehler={
-                  beenden.isError
-                    ? `Das Abo konnte nicht beendet werden. ${VERBINDUNG_PRUEFEN}`
-                    : undefined
-                }
+                fehler={beenden.isError ? 'Das Abo konnte nicht beendet werden.' : undefined}
                 onBestaetigen={() => beenden.mutateAsync()}
                 onAbbrechen={() => beenden.reset()}
               >
-                Der Link gilt danach nicht mehr; das Abo im Kalender des Telefons bleibt leer stehen
-                und lässt sich dort löschen.
+                Der Link gilt danach nicht mehr; das Abo im Kalender des Telefons bleibt leer
+                stehen.
               </Rueckfrage>
             </div>
           ) : null}
-          <Disclosure summary="So geht’s">
-            <p className="text-ink-muted max-w-prose text-sm">
-              Nach dem Erstellen: iPhone und Mac: „Im Kalender öffnen“ und das Abo bestätigen.
-              Android: den Link kopieren und am Computer in Google Kalender bei „Weitere Kalender“,
-              „Per URL“ einfügen; das Telefon zeigt die Termine danach von selbst. Outlook:
-              „Kalender hinzufügen“, „Aus dem Internet abonnieren“. Absagen und Änderungen kommen
-              dort erst beim nächsten Abruf an, bei Google oft erst nach Stunden; maßgeblich bleibt
-              der Kalender hier.
-            </p>
-          </Disclosure>
+          <Kleingedrucktes>
+            Absagen und Änderungen erreichen den Kalender des Telefons erst beim nächsten Abruf, bei
+            Google oft erst nach Stunden; maßgeblich bleibt der Kalender hier.
+          </Kleingedrucktes>
         </div>
       )}
     </Abfragezustand>
@@ -261,9 +246,7 @@ function NeuerLink({ link, ersetzt }: { link: string; ersetzt: boolean }) {
         Der Link steht nur jetzt hier. Wer ihn kennt, sieht Ihre Termine, ohne Namen und Anschrift.
       </Statusmeldung>
       {ersetzt ? (
-        <Statusmeldung>
-          Das alte Abo im Kalender des Telefons bleibt leer stehen; bitte dort löschen.
-        </Statusmeldung>
+        <Statusmeldung>Das alte Abo im Kalender des Telefons bleibt leer stehen.</Statusmeldung>
       ) : null}
       <Field
         label="Abo-Link"
@@ -284,7 +267,7 @@ function NeuerLink({ link, ersetzt }: { link: string; ersetzt: boolean }) {
       {kopiert === 'ja' ? <Statusmeldung ton="erfolg">Kopiert.</Statusmeldung> : null}
       {kopiert === 'nein' ? (
         <Statusmeldung ton="fehler">
-          Der Link ließ sich nicht kopieren. Bitte im Feld markieren und kopieren.
+          Der Link ließ sich nicht kopieren, bitte im Feld markieren.
         </Statusmeldung>
       ) : null}
     </div>

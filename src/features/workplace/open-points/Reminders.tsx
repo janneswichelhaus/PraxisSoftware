@@ -6,7 +6,6 @@ import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { StatusMark } from '@/components/ui/StatusMark';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { bauartLabels } from '@/features/patients';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -29,11 +28,7 @@ export function EndingPrescriptions({ timeZone }: { timeZone: string }) {
   if (isError && !data) {
     return (
       <Section titel="Verordnung endet">
-        <ErrorState
-          title="Die endenden Verordnungen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => refetch()}
-        />
+        <ErrorState title="Endende Verordnungen nicht geladen." onErneut={() => refetch()} />
       </Section>
     );
   }
@@ -96,11 +91,7 @@ export function OffeneVerordnungen() {
   if (isError && !data) {
     return (
       <Section titel="Verordnung offen">
-        <ErrorState
-          title="Die offenen Verordnungen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => refetch()}
-        />
+        <ErrorState title="Offene Verordnungen nicht geladen." onErneut={() => refetch()} />
       </Section>
     );
   }
@@ -147,11 +138,7 @@ export function AktenOhneBehandlung({ timeZone }: { timeZone: string }) {
   if (isError && !data) {
     return (
       <Section titel="Akte ohne Behandlung">
-        <ErrorState
-          title="Die Akten ohne Behandlung konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => refetch()}
-        />
+        <ErrorState title="Akten ohne Behandlung nicht geladen." onErneut={() => refetch()} />
       </Section>
     );
   }
@@ -163,10 +150,7 @@ export function AktenOhneBehandlung({ timeZone }: { timeZone: string }) {
       anzahl={data.length}
       mehr={
         // Ein Rechtssatz zur Frist (DESIGN.md Regel 6) - deshalb Kleingedrucktes.
-        <Kleingedrucktes>
-          Ohne Behandlung läuft keine Aufbewahrungsfrist. Ist nichts mehr geplant, gehört der
-          Abschluss in die Stammdaten.
-        </Kleingedrucktes>
+        <Kleingedrucktes>Ohne Behandlung läuft keine Aufbewahrungsfrist.</Kleingedrucktes>
       }
     >
       {data.map((eintrag) => (

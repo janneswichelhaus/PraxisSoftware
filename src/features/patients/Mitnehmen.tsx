@@ -65,7 +65,7 @@ export function Mitnehmen({ patient, darfAendern }: { patient: Patient; darfAend
       >
         <TextArea
           label="Material zum Mitnehmen"
-          hint="Ein Eintrag je Zeile, etwa „Theraband“ oder „Übungsplan ausgedruckt“."
+          hint="Ein Eintrag je Zeile."
           rows={4}
           value={entwurf}
           error={fehler}
@@ -87,10 +87,7 @@ export function Mitnehmen({ patient, darfAendern }: { patient: Patient; darfAend
           </Button>
         </div>
         {mutation.isError ? (
-          <Statusmeldung ton="fehler">
-            Die Liste zum Mitnehmen konnte nicht gespeichert werden. Bitte die Verbindung prüfen und
-            erneut versuchen.
-          </Statusmeldung>
+          <Statusmeldung ton="fehler">Liste nicht gespeichert.</Statusmeldung>
         ) : null}
       </form>
     );

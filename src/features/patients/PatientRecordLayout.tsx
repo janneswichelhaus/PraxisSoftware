@@ -386,18 +386,9 @@ export function PatientRecordLayout({ user }: { user: CurrentUser }) {
         <LoadingState label="Patientendaten werden geladen …" inKarte kacheln={4} />
       ) : null}
       {isError ? (
-        <ErrorState
-          title="Die Patientendaten konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und später erneut versuchen."
-          onErneut={() => void refetch()}
-        />
+        <ErrorState title="Patientendaten nicht geladen." onErneut={() => void refetch()} />
       ) : null}
-      {data === null ? (
-        <ErrorState
-          title="Nicht gefunden"
-          description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-        />
-      ) : null}
+      {data === null ? <ErrorState title="Nicht gefunden" /> : null}
 
       {data ? <Akte patient={data} user={user} anhang={anhang} /> : null}
     </>

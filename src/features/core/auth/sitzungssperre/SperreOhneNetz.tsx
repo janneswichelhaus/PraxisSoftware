@@ -57,7 +57,7 @@ export function SperreOhneNetz({
     <Vollseite
       titel="Gesperrt – ohne Verbindung"
       einleitung={einleitung}
-      kleingedrucktes="Übertragen wird erst, wenn Verbindung besteht und Sie die Anwendung wie gewohnt entsperrt haben. Bis dahin bleibt alles auf dem Gerät."
+      kleingedrucktes="Übertragen wird erst nach dem gewohnten Entsperren mit Verbindung; bis dahin bleibt alles auf dem Gerät."
     >
       {fehler ? (
         <div ref={fehlerkasten} tabIndex={-1} className="mb-4">

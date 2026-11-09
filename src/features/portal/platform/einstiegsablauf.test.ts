@@ -9,7 +9,6 @@ import {
   mitteilungenAn,
   mitteilungenOffen,
   mitteilungsarten,
-  nochFragen,
   offeneEinwilligungen,
   willkommenssatz,
   willkommenstitel,
@@ -109,10 +108,10 @@ describe('Sätze auf „Willkommen“', () => {
 
   it('sagt wofür - Behandlung, Training oder für wen eine Vertretung liest', () => {
     expect(willkommenssatz(SELBST, 'Test Praxis Tuebingen')).toBe(
-      'Schön, dass Sie da sind. Hier finden Sie alles zu Ihrer Behandlung bei Test Praxis Tuebingen.',
+      'Hier finden Sie alles zu Ihrer Behandlung bei Test Praxis Tuebingen.',
     );
     expect(willkommenssatz({ ...SELBST, relationship_kind: 'training' }, '')).toBe(
-      'Schön, dass Sie da sind. Hier finden Sie alles zu Ihrem Training bei Ihrer Praxis.',
+      'Hier finden Sie alles zu Ihrem Training bei Ihrer Praxis.',
     );
     expect(
       willkommenssatz(
@@ -123,8 +122,7 @@ describe('Sätze auf „Willkommen“', () => {
   });
 
   it('zählt die Fragen in Worten', () => {
-    expect(nochFragen(1)).toBe('Noch eine kurze Frage, dann sind Sie fertig.');
-    expect(nochFragen(2)).toBe('Noch zwei kurze Fragen, dann sind Sie fertig.');
+    expect(zahlwort(2)).toBe('zwei');
     expect(zahlwort(5)).toBe('fünf');
     expect(zahlwort(12)).toBe('12');
   });

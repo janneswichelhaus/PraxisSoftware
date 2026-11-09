@@ -102,7 +102,7 @@ test.describe('Terminhonorar', () => {
 
       await page.goto(`${PRUEFSEITE}?seite=storniert`);
       await expect(page.getByText(/Stornodokument RG-2026-0010 vom 02.09.2026/)).toBeVisible();
-      await expect(page.getByText(/Von ihren Leistungen ist keine mehr abzurechnen/)).toBeVisible();
+      await expect(page.getByText('Keine Leistung mehr abzurechnen.')).toBeVisible();
       await expect(page.getByRole('button', { name: 'Korrekturrechnung erstellen' })).toHaveCount(
         0,
       );

@@ -8,7 +8,6 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { roleLabel } from '@/components/ui/roleLabels';
@@ -82,8 +81,8 @@ export function AuskunftErgebnis({
         {leer > 0 ? (
           <p className="text-ink-muted mt-4 text-sm">
             {leer === 1
-              ? '1 weiterer Abschnitt ist in der Datei enthalten und leer.'
-              : `${leer} weitere Abschnitte sind in der Datei enthalten und leer.`}
+              ? 'Dazu 1 leerer Abschnitt in der Datei.'
+              : `Dazu ${leer} leere Abschnitte in der Datei.`}
           </p>
         ) : null}
       </Card>
@@ -152,10 +151,7 @@ function AuskunftAbschnitt({ patient }: { patient: Patient }) {
 
       {mutation.isError ? (
         <div className="mt-4">
-          <ErrorState
-            title="Die Auskunft konnte nicht erstellt werden."
-            description={VERBINDUNG_PRUEFEN}
-          />
+          <ErrorState title="Auskunft nicht erstellt." />
         </div>
       ) : null}
 
@@ -229,7 +225,7 @@ function AntwortEntwurf({ text }: { text: string }) {
       ) : null}
       {kopiert === 'nein' ? (
         <Statusmeldung ton="fehler" className="mt-2">
-          Der Text ließ sich nicht kopieren. Bitte den Entwurf markieren und von Hand kopieren.
+          Kopieren geht hier nicht.
         </Statusmeldung>
       ) : null}
     </div>
@@ -247,7 +243,7 @@ function LoeschverlangenAbschnitt({ patient }: { patient: Patient }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Aufbewahrungsstand wird geladen …"
-        fehler="Der Aufbewahrungsstand konnte nicht geladen werden."
+        fehler="Aufbewahrungsstand nicht geladen."
       >
         {(data) => (
           <>
@@ -306,15 +302,12 @@ export function BetroffenenrechtePage() {
       <Abfragezustand
         abfrage={akte}
         laden="Akte wird geladen …"
-        fehler="Die Akte konnte nicht geladen werden."
+        fehler="Akte nicht geladen."
         inKarte
       >
         {(data) =>
           data === null ? (
-            <ErrorState
-              title="Nicht gefunden"
-              description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-            />
+            <ErrorState title="Nicht gefunden" />
           ) : (
             <>
               <AuskunftAbschnitt patient={data} />

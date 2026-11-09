@@ -1,7 +1,6 @@
 import { useQueries } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { fetchRechnung, type Rechnungsansicht } from './api';
 import { Druckfuss, Rechnungsblatt } from './InvoicePrintPage';
@@ -71,17 +70,12 @@ export function SammeldruckPage() {
         <Rueckweg standard="/abrechnung" beschriftung="Zurück zu den Rechnungen" />
       </div>
       {ids.length === 0 ? (
-        <EmptyState
-          inKarte
-          title="Keine Rechnung zum Drucken."
-          description="Der Druck startet nach einem Abrechnungslauf."
-        />
+        <EmptyState inKarte title="Keine Rechnung zum Drucken." />
       ) : laedt ? (
         <LoadingState label="Rechnungen werden geladen …" />
       ) : fehler ? (
         <ErrorState
-          title="Die Rechnungen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
+          title="Rechnungen nicht geladen."
           onErneut={() => void Promise.all(blaetter.map((b) => b.refetch()))}
         />
       ) : (

@@ -95,18 +95,12 @@ export function DocumentationShell({
 
       {darf && (terminAbfrage.isError || doku.isError) ? (
         <ErrorState
-          title="Die Behandlungsdokumentation konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          title="Dokumentation nicht geladen."
           onErneut={() => Promise.all([terminAbfrage.refetch(), doku.refetch()])}
         />
       ) : null}
 
-      {darf && terminAbfrage.data === null ? (
-        <ErrorState
-          title="Nicht gefunden"
-          description="Dieser Termin existiert nicht oder ist für Ihren Zugang nicht freigegeben."
-        />
-      ) : null}
+      {darf && terminAbfrage.data === null ? <ErrorState title="Nicht gefunden" /> : null}
 
       {darf && terminAbfrage.data && doku.data
         ? children({

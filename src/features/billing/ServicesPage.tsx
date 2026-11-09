@@ -88,10 +88,7 @@ export function ServicesPage() {
 
   return (
     <>
-      <PageHeader
-        title="Leistungen"
-        description="Aus durchgeführten Terminen, Ausfallhonoraren und Abo-Monaten."
-      />
+      <PageHeader title="Leistungen" />
 
       <Section
         titel={
@@ -103,13 +100,9 @@ export function ServicesPage() {
         <Abfragezustand
           abfrage={offene}
           laden="Termine werden geladen …"
-          fehler="Die offenen Termine konnten nicht geladen werden."
+          fehler="Offene Termine nicht geladen."
           inKarte
-          leer={{
-            wenn: (termine) => termine.length === 0,
-            titel: 'Nichts offen',
-            beschreibung: 'Zu jedem abrechenbaren Termin sind Leistungen erfasst.',
-          }}
+          leer={{ wenn: (termine) => termine.length === 0, titel: 'Nichts offen' }}
         >
           {(termine) => (
             <Eintraege beschriftung="Termine ohne erfasste Leistung">
@@ -126,10 +119,8 @@ export function ServicesPage() {
           <Disclosure summary="Was steht hier?">
             <p className="text-ink-muted text-sm leading-relaxed">
               Dokumentierte Behandlungstermine, Termine mit Ausfallhonorar und durchgeführte
-              Trainingstermine. Andere stehen hier nicht: Eine Behandlung ohne finalisierte
-              Dokumentation wird nicht abgerechnet, und einen Weg daran vorbei gibt es nicht.
-              Trainingstermine im Zeitraum eines Trainingspakets sind mit dem Paket bezahlt und
-              stehen hier ebenfalls nicht.
+              Trainingstermine außerhalb eines Trainingspakets. Eine Behandlung ohne finalisierte
+              Dokumentation wird nicht abgerechnet.
             </p>
           </Disclosure>
         </div>
@@ -143,7 +134,7 @@ export function ServicesPage() {
         <Abfragezustand
           abfrage={leistungen}
           laden="Leistungen werden geladen …"
-          fehler="Die Leistungen konnten nicht geladen werden."
+          fehler="Leistungen nicht geladen."
           inKarte
           leer={{
             wenn: () => gruppen.length === 0,
@@ -152,11 +143,7 @@ export function ServicesPage() {
         >
           {() =>
             offen.length === 0 ? (
-              <EmptyState
-                inKarte
-                title="Alles abgerechnet"
-                description="Jede erfasste Leistung steht auf einer ausgestellten Rechnung."
-              />
+              <EmptyState inKarte title="Alles abgerechnet" />
             ) : (
               <Leistungsliste gruppen={offen} zuruecknehmen />
             )
@@ -170,7 +157,7 @@ export function ServicesPage() {
             })`}
           >
             <p className="text-ink-muted mb-2 text-sm">
-              Bereits abgerechnet. Eine Korrektur läuft über Storno und Neuausstellung.
+              Korrektur nur über Storno und Neuausstellung.
             </p>
             <Leistungsliste gruppen={abgerechnet} />
           </Disclosure>
@@ -250,7 +237,7 @@ function Leistungsliste({
                     // ANG-006: Die Leistung gehört zum Paket; eine Fehlanlage
                     // entfernt das Paket mit ihr, am Trainingsverhältnis.
                     <p className="text-ink-muted text-sm">
-                      Trainingspaket – eine Fehlanlage wird am Trainingsverhältnis entfernt.
+                      Fehlanlage am Trainingsverhältnis entfernen
                     </p>
                   ) : (
                     // ANG-002: Ein Abo-Monat hat keinen Termin; zurückgenommen
@@ -311,7 +298,7 @@ function Zuruecknehmen({
       laeuft={entfernen.isPending}
       fehler={
         entfernen.isError
-          ? `${entfernen.error.message} Stehen die Leistungen schon auf einem Rechnungsentwurf, bitte erst den Entwurf verwerfen; sonst die Verbindung prüfen und erneut versuchen.`
+          ? `${entfernen.error.message} Stehen die Leistungen auf einem Rechnungsentwurf, erst den Entwurf verwerfen.`
           : undefined
       }
       onBestaetigen={() => entfernen.mutateAsync()}
@@ -321,8 +308,7 @@ function Zuruecknehmen({
       <p>
         {bereich === 'training'
           ? 'Alle Leistungen dieses Termins werden entfernt.'
-          : 'Alle Leistungen dieses Termins werden entfernt, und die genutzte Menge der Behandlungsgrundlage geht um denselben Betrag zurück.'}{' '}
-        Der Termin steht danach wieder unter „Zu erfassen“.
+          : 'Alle Leistungen dieses Termins werden entfernt, und die genutzte Menge der Behandlungsgrundlage geht um denselben Betrag zurück.'}
       </p>
     </Rueckfrage>
   );
@@ -450,9 +436,8 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
     return (
       <div>
         <Statusmeldung ton="warnung">
-          Für den {formatDate(termin.performed_on)} ist keine Preisliste in Kraft. Ohne sie steht
-          kein Preis fest. Preislisten legt die Praxisinhaber:in an und setzt sie in Kraft – mit
-          diesem oder einem früheren Beginn.
+          Für den {formatDate(termin.performed_on)} ist keine Preisliste in Kraft. Preislisten legt
+          die Praxisinhaber:in an.
         </Statusmeldung>
         <Textlink to="/abrechnung/katalog" alleinstehend className="text-sm">
           Zum Leistungskatalog
@@ -474,7 +459,7 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
   if (vorschlag.data.length === 0) {
     return (
       <EmptyState
-        title="Die geltende Preisliste bietet für diesen Termin keine Position."
+        title="Preisliste ohne passende Position."
         aktion={
           <Button type="button" variant="secondary" groesse="kompakt" onClick={onFertig}>
             Schließen
@@ -571,9 +556,8 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
       {erfassen.error instanceof KontingentAusgeschoepft ? (
         <div>
           <Statusmeldung ton="fehler">
-            Die Leistungsmenge der Behandlungsgrundlage ist ausgeschöpft. Die Grenze schützt die
-            Abrechnung: Therapeut:in oder Praxisinhaber:in erhöht die Menge an der Grundlage, danach
-            lässt sich erneut erfassen.
+            Die Leistungsmenge der Behandlungsgrundlage ist ausgeschöpft. Therapeut:in oder
+            Praxisinhaber:in erhöht die Menge an der Grundlage.
           </Statusmeldung>
           {termin.patient_id ? (
             <Textlink
@@ -588,16 +572,13 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
       ) : null}
       {erfassen.error instanceof KeinTerminhonorar ? (
         <Statusmeldung ton="fehler">
-          Für diesen Tag gilt kein Terminhonorar: Die Preisliste nennt keins, und mit der Person ist
-          keins vereinbart. Die Praxisinhaber:in legt es in der Preisliste oder in der Akte fest.
+          Für diesen Tag gilt kein Terminhonorar. Festlegen kann es die Praxisinhaber:in.
         </Statusmeldung>
       ) : null}
       {erfassen.isError &&
       !(erfassen.error instanceof KontingentAusgeschoepft) &&
       !(erfassen.error instanceof KeinTerminhonorar) ? (
-        <Statusmeldung ton="fehler">
-          {erfassen.error.message} {VERBINDUNG_PRUEFEN}
-        </Statusmeldung>
+        <Statusmeldung ton="fehler">{erfassen.error.message}</Statusmeldung>
       ) : null}
     </div>
   );

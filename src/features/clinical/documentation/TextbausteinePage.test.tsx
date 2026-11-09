@@ -154,7 +154,7 @@ describe('TextbausteinePage', () => {
     renderWithProviders(<TextbausteinePage user={OWNER} />, '/praxis/textbausteine?baustein=b1');
 
     await screen.findByRole('heading', { level: 1, name: PRAXIS.title });
-    expect(screen.getByText('Baustein der Praxis, nicht in der Leiste.')).toBeInTheDocument();
+    expect(screen.getByText('Praxis')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Bearbeiten' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Löschen' }));
@@ -275,7 +275,7 @@ describe('TextbausteinePage', () => {
     );
 
     await user.click(await screen.findByRole('button', { name: 'Löschen' }));
-    expect(await screen.findByText(/bleibt davon unberührt/)).toBeInTheDocument();
+    expect(await screen.findByText(/Dokumentation bleibt unberührt/)).toBeInTheDocument();
   });
 
   it('ist fuer office nicht freigegeben und fragt nichts ab', async () => {
@@ -308,16 +308,16 @@ describe('TextbausteinePage', () => {
     const kasten = await screen.findByRole('group', {
       name: 'Baustein „Manuelle Therapie“ löschen',
     });
-    expect(kasten).toHaveTextContent('Der Baustein wird gelöscht.');
+    expect(kasten).toHaveTextContent(
+      'Der Baustein wird gelöscht, geschriebene Dokumentation bleibt unberührt.',
+    );
   });
 
   it('bietet bei einem Ladefehler einen neuen Versuch an (WRT-01)', async () => {
     fetchTextSnippets.mockRejectedValue(new Error('kaputt'));
     renderWithProviders(<TextbausteinePage user={testUser(['therapist'])} />);
 
-    expect(
-      await screen.findByText('Die Textbausteine konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Textbausteine nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 

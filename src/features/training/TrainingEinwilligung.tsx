@@ -43,7 +43,7 @@ export function TrainingEinwilligung({
       <Abfragezustand
         abfrage={vermerke}
         laden="Einwilligung wird geladen …"
-        fehler="Die Einwilligung konnte nicht geladen werden."
+        fehler="Einwilligung nicht geladen."
       >
         {(daten) => (
           <Inhalt

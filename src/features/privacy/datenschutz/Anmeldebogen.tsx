@@ -60,7 +60,7 @@ export function AnmeldebogenFoto({
       knopf={knopf}
       dateiLabel={`${BEGRIFFE.anmeldebogen} als Datei`}
       kameraTitel={`Foto des ${BEGRIFFE.anmeldebogen}s`}
-      kameraHinweis="Das unterschriebene Blatt flach hinlegen und ganz ins Bild nehmen. Das Foto bleibt in der Anwendung und landet nicht in der Mediathek des Geräts."
+      kameraHinweis="Das Foto bleibt in der Anwendung und landet nicht in der Mediathek des Geräts."
       vorschauAlt={`Foto des ${BEGRIFFE.anmeldebogen}s, noch nicht gespeichert`}
       erfolg={`Der ${BEGRIFFE.anmeldebogen} liegt in der Akte.`}
       // Ein Foto erledigt den Anmeldebogen der Erstaufnahme - der Hinweis im
@@ -102,8 +102,7 @@ export function Datenschutz({ patient, user }: { patient: Patient; user: Current
   } else if (vermerke.isError) {
     inhalt = (
       <ErrorState
-        title="Die Datenschutzvermerke konnten nicht geladen werden."
-        description="Bitte die Verbindung prüfen und später erneut versuchen."
+        title="Datenschutzvermerke nicht geladen."
         onErneut={() => void vermerke.refetch()}
       />
     );
@@ -359,9 +358,6 @@ function Verlauf({ vermerke }: { vermerke: Datenschutzvermerk[] }) {
         <Aufklappzeichen />
         Verlauf ({vermerke.length})
       </summary>
-      <p className="text-ink-muted text-sm">
-        Vermerke werden nie geändert oder gelöscht; ein Widerruf steht neben der Einwilligung.
-      </p>
       <ul className="mt-2 flex flex-col gap-2 pb-2 text-sm">
         {neuesteZuerst.map((v) => (
           <li key={v.id} className="flex flex-wrap gap-x-3">

@@ -135,10 +135,7 @@ export function NewTrainingClientPage() {
       {/* Der Satz zu den Sternchen erklärte das Formular (UX-005g); „ohne
           Patientenakte" bleibt - er sagt, was hier nicht entsteht (ADR-021
           Punkt 2). */}
-      <PageHeader
-        title={`${BEGRIFFE.trainingskundIn} anlegen`}
-        description="Für das Personal Training – ohne Patientenakte."
-      />
+      <PageHeader title={`${BEGRIFFE.trainingskundIn} anlegen`} description="Ohne Patientenakte" />
 
       <form onSubmit={(event) => void absenden(event)} noValidate className="max-w-formular">
         <Fehlerzusammenfassung
@@ -155,9 +152,7 @@ export function NewTrainingClientPage() {
           <div role="alert" className="mt-8">
             <Section titel="Vielleicht schon bekannt">
               <div className="border-warnung bg-warnung-soft border-l-4 px-4 py-3">
-                <p className="text-ink text-sm">
-                  Gleicher Nachname und gleiches Geburtsdatum oder gleicher Vorname.
-                </p>
+                <p className="text-ink text-sm">Gleicher Nachname mit Geburtsdatum oder Vorname</p>
                 {aktenTreffer.length > 0 ? (
                   <p className="text-ink mt-2 text-sm">
                     In der Behandlung bekannt. Ist es dieselbe Person, bekommt sie ihr Training ohne
@@ -201,11 +196,6 @@ export function NewTrainingClientPage() {
                   ))}
                 </ListRows>
               ) : null}
-
-              <p className="text-ink mt-3 text-sm">
-                Eine andere Person mit ähnlichen Angaben? Dann „{TRAINING_ANLEGEN}“ noch einmal
-                tippen.
-              </p>
             </Section>
           </div>
         ) : null}
@@ -228,15 +218,15 @@ export function NewTrainingClientPage() {
         <Hinweisfenster
           titel={
             anbinden.isError
-              ? 'Das Training konnte nicht begonnen werden.'
-              : `Die ${BEGRIFFE.trainingskundIn} konnte nicht angelegt werden.`
+              ? 'Training nicht begonnen.'
+              : `${BEGRIFFE.trainingskundIn} nicht angelegt.`
           }
           onSchliessen={() => {
             anlegen.reset();
             anbinden.reset();
           }}
         >
-          Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut versuchen.
+          Die Eingaben stehen noch im Formular.
         </Hinweisfenster>
       ) : null}
 

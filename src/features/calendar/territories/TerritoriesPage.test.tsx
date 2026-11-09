@@ -117,7 +117,7 @@ describe('TerritoriesPage (PRX-002)', () => {
         '720761 Anschrift!ohne Gebiet',
       ]);
       expect(
-        screen.getByText('Eine Anschrift steht nicht auf der Karte: Sie ist nicht genau verortet.'),
+        screen.getByText('Eine Anschrift nicht genau verortet, nicht auf der Karte'),
       ).toBeInTheDocument();
       // Am Telefon bleibt die Karte zu und lädt nichts.
       expect(screen.getByRole('heading', { name: 'Karte' })).toBeInTheDocument();
@@ -172,13 +172,9 @@ describe('TerritoriesPage (PRX-002)', () => {
       ).toBeInTheDocument();
       unmount();
 
-      fetchActiveAddressPoints.mockRejectedValue(
-        new Error('Die Anschriften konnten nicht geladen werden.'),
-      );
+      fetchActiveAddressPoints.mockRejectedValue(new Error('Anschriften nicht geladen.'));
       renderWithProviders(<TerritoriesPage user={testUser(['office'])} />);
-      expect(
-        await screen.findByText('Die Anschriften konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Anschriften nicht geladen.')).toBeInTheDocument();
     });
   });
 });

@@ -48,8 +48,7 @@ const ZUGANG: Plattformzugang = {
   practice_phone: null,
 };
 const ENTWURF = 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001';
-const SPEICHERFEHLER =
-  'Ihre Angaben konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.';
+const SPEICHERFEHLER = 'Ihre Angaben konnten nicht gespeichert werden.';
 const THEMEN = bogenthemen(fuerDiePlattform()[0]!);
 
 function entwurf(answers: Antworten): Bogenstand {
@@ -130,9 +129,6 @@ describe('Fragebogen vor dem ersten Termin', { timeout: 20_000 }, () => {
       zeige();
       const erstes = await screen.findByRole('dialog', { name: 'Zu Ihrer Person' });
       expect(within(erstes).getByText('Fragebogen vor dem ersten Termin')).toBeInTheDocument();
-      expect(
-        within(erstes).getByText('Ihre Antworten werden beim Weitergehen gespeichert.'),
-      ).toBeInTheDocument();
       // Name und Fassung der Vorlage nur im Kleingedruckten.
       expect(
         within(erstes).getByText('Vorlage der Fragen: DIGOTOR GbR, Version 8, 07/2026.'),
@@ -302,11 +298,9 @@ describe('Fragebogen vor dem ersten Termin', { timeout: 20_000 }, () => {
     zeige();
     const fenster = await screen.findByRole('dialog', { name: 'Ihre Schmerzen heute' });
     expect(within(fenster).getByText('Thema 3 von 14')).toBeInTheDocument();
-    expect(
-      within(fenster).getByText('Ihre bisherigen Antworten sind gespeichert.'),
-    ).toBeInTheDocument();
+    expect(within(fenster).getByText('Bisherige Antworten gespeichert.')).toBeInTheDocument();
     await nutzer.click(knopf('Weiter'));
-    expect(screen.queryByText('Ihre bisherigen Antworten sind gespeichert.')).toBeNull();
+    expect(screen.queryByText('Bisherige Antworten gespeichert.')).toBeNull();
     // Der Weg zurück steht offen, bis zum ersten Thema.
     await nutzer.click(knopf('← Zurück'));
     await nutzer.click(knopf('← Zurück'));
@@ -546,7 +540,6 @@ describe('Fragebogen vor dem ersten Termin', { timeout: 20_000 }, () => {
   it('zeigt im Training keinen Bogen', async () => {
     zeige({ ...ZUGANG, relationship_kind: 'training' }, '/p/befundbogen?bereich=training');
     expect(await screen.findByText('Zurzeit kein Fragebogen')).toBeInTheDocument();
-    expect(screen.getByText('Hier gibt es zurzeit nichts auszufüllen.')).toBeInTheDocument();
   });
 
   it('zeigt der rechtlichen Vertretung das Band unter dem Stand', async () => {
@@ -581,9 +574,7 @@ describe('Fragebogen vor dem ersten Termin', { timeout: 20_000 }, () => {
     await screen.findByRole('dialog', { name: 'Ist alles richtig?' });
     const senden = knopf('Bogen senden');
     expect(senden).toHaveAttribute('aria-disabled', 'true');
-    expect(senden).toHaveAccessibleDescription(
-      'Senden geht wieder mit Verbindung. Ihre Antworten bleiben stehen.',
-    );
+    expect(senden).toHaveAccessibleDescription('Senden geht wieder mit Verbindung.');
     await nutzer.click(senden);
     expect(befundbogenAbsenden).not.toHaveBeenCalled();
     expect(befundbogenSpeichern).not.toHaveBeenCalled();
@@ -629,9 +620,7 @@ describe('Fragebogen vor dem ersten Termin', { timeout: 20_000 }, () => {
       ).toBeInTheDocument();
       expect(screen.getByText('Gesendet wurde er nicht')).toBeInTheDocument();
       expect(
-        screen.getByText(
-          'Nach dem Ende der Behandlung geht das nicht mehr. Sie können die Antworten verwerfen.',
-        ),
+        screen.getByText('Nach dem Ende der Behandlung geht das nicht mehr.'),
       ).toBeInTheDocument();
       expect(screen.queryByText('Kein Fragebogen mehr')).toBeNull();
       expect(screen.queryByText(BOGEN_TITEL)).toBeNull();

@@ -55,20 +55,15 @@ export function ZugangEinrichtenPage({
   );
 
   return (
-    // Ein Satz unter dem Titel statt eines Absatzes (Regel 6, Welle B): wo
-    // das Konto steht und was der Knopf bewirkt. Der Hinweis auf ein eigenes
-    // Kennwort ist entfallen - in Produktion verlangt die Einrichtungspflicht
-    // danach Passkey und PIN (ADR-025 Fassung 2), ein Kennwort gibt es nicht.
     <Vollseite
       titel="Zugang einrichten"
-      einleitung="Ihr Konto ist noch keiner Praxis zugeordnet. Mit der Einladung erhalten Sie die vorgesehenen Rollen; danach richten Sie Passkey und PIN ein."
       kleingedrucktes="Jede Person benötigt ein eigenes Konto; geteilte Konten sind nicht zulässig. Der Beitritt wird protokolliert."
     >
       {ohneEinladung ? (
         <div ref={fehlerkasten} tabIndex={-1} className="outline-none">
           <ErrorState
             title="Für diesen Zugang liegt keine offene Einladung vor."
-            description="Bitte wenden Sie sich an die Praxisinhaber:in. Dieses Konto hat keinen Zugriff auf Daten der Praxis."
+            description="Bitte an die Praxisinhaber:in wenden."
           />
           <Button
             variant="secondary"
@@ -84,8 +79,7 @@ export function ZugangEinrichtenPage({
           {mutation.isError ? (
             <div ref={fehlerkasten} tabIndex={-1} className="mb-4 outline-none">
               <Statusmeldung ton="fehler">
-                Der Zugang konnte nicht eingerichtet werden. Bitte die Verbindung prüfen und erneut
-                versuchen.
+                Der Zugang konnte nicht eingerichtet werden.
               </Statusmeldung>
             </div>
           ) : null}

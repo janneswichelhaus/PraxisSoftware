@@ -122,16 +122,15 @@ describe('TreatmentNoteHistoryPage', () => {
     rendern();
 
     expect(await screen.findByText(/Zahlendreher bei der Stufenzahl\./)).toBeInTheDocument();
-    expect(screen.getByText('Bei der Finalisierung festgeschriebener Stand.')).toBeInTheDocument();
+    expect(screen.getByText('Bei der Finalisierung festgeschrieben.')).toBeInTheDocument();
   });
 
-  it('erklaert einen Entwurf ohne festgeschriebene Versionen', async () => {
+  it('zeigt einen Entwurf ohne festgeschriebene Versionen als Leerzustand', async () => {
     fetchTreatmentNoteVersions.mockResolvedValue([]);
     rendern();
 
-    expect(
-      await screen.findByText(/Festgeschriebene Versionen entstehen erst/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Noch ein Entwurf')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Version 1')).toBeNull();
   });
 
   it('laesst owner den Verlauf lesen, ohne selbst zu dokumentieren (4.1)', async () => {
@@ -158,13 +157,8 @@ describe('TreatmentNoteHistoryPage', () => {
     fetchTreatmentNoteVersions.mockRejectedValue(new Error('kaputt'));
     rendern();
 
-    expect(
-      await screen.findByText('Der Änderungsverlauf konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
-    // Was zu tun ist, und ein Weg dorthin (WRT-01).
-    expect(
-      screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Änderungsverlauf nicht geladen.')).toBeInTheDocument();
+    // Der Knopf ist der nächste Schritt, ohne Ratsatz daneben (L7).
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 
@@ -202,8 +196,6 @@ describe('TreatmentNoteHistoryPage', () => {
   it('sagt der gesperrten Rolle sachlich richtig, wer den Verlauf sieht (WRT-12)', async () => {
     rendern(['patient']);
 
-    expect(
-      await screen.findByText('Den Änderungsverlauf sehen nur die Praxisrollen.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Nur Praxisrollen.')).toBeInTheDocument();
   });
 });

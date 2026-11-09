@@ -33,7 +33,7 @@ export function BikeNewPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Radflotte wird geladen …"
-        fehler="Die Radflotte konnte nicht geladen werden."
+        fehler="Radflotte nicht geladen."
         inKarte
       >
         {(flotte) =>
@@ -51,7 +51,6 @@ export function BikeNewPage({ user }: { user: CurrentUser }) {
             <EmptyState
               inKarte
               title="Erst ein Depot anlegen"
-              description="Jedes Rad gehört zu einem Depot."
               aktion={
                 <ButtonLink to="/betrieb/flotte/depots" variant="secondary">
                   Depots verwalten

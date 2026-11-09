@@ -102,7 +102,7 @@ export function TrainingTermine({
     <Abfragezustand
       abfrage={termine}
       laden="Termine werden geladen …"
-      fehler="Die Termine konnten nicht geladen werden."
+      fehler="Termine nicht geladen."
       inKarte
       kacheln={2}
     >
@@ -241,11 +241,11 @@ export function TrainingVereinbarungen({
       <Abfragezustand
         abfrage={liste}
         laden="Vereinbarungen werden geladen …"
-        fehler="Die Vereinbarungen konnten nicht geladen werden."
+        fehler="Vereinbarungen nicht geladen."
         inKarte
         leer={{
           wenn: (daten) => daten.length === 0,
-          titel: 'Keine Vereinbarung – Termine sind Einzelstunden.',
+          titel: 'Keine Vereinbarung.',
         }}
       >
         {(daten) => (
@@ -313,8 +313,8 @@ function Vereinbarung({
           >
             <p>
               {offen
-                ? 'An eine abgeschlossene Vereinbarung lassen sich keine neuen Termine hängen. Die geplanten bleiben, wie sie sind.'
-                : 'Die Vereinbarung läuft wieder; neue Termine lassen sich daran planen.'}
+                ? 'Danach lassen sich keine neuen Termine anhängen.'
+                : 'Vereinbarung wieder öffnen?'}
             </p>
           </Rueckfrage>
         ) : null}
@@ -367,14 +367,14 @@ function NeueVereinbarung({ kundin, onFertig }: { kundin: TrainingClient; onFert
         <Field
           label="Beginn"
           type="date"
-          hint="Leer heißt heute."
+          hint="Leer heißt heute"
           value={beginn}
           onChange={(e) => setBeginn(e.target.value)}
         />
         <Field
           label="Vereinbarte Einheiten"
           inputMode="numeric"
-          hint="Leer heißt ohne feste Anzahl."
+          hint="Leer heißt ohne feste Anzahl"
           value={anzahl}
           error={fehler}
           onChange={(e) => {

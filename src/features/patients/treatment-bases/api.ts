@@ -299,7 +299,7 @@ export async function fetchPatientTreatmentBases(patientId: string): Promise<Tre
     p_patient_id: patientId,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Behandlungsgrundlagen konnten nicht geladen werden.');
+  if (error) throw new Error('Behandlungsgrundlagen nicht geladen.');
   return z.array(treatmentBasisSchema).parse(data ?? []);
 }
 
@@ -310,7 +310,7 @@ export async function fetchPatientTreatmentBasesClinical(
     p_patient_id: patientId,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Behandlungsgrundlagen konnten nicht geladen werden.');
+  if (error) throw new Error('Behandlungsgrundlagen nicht geladen.');
   return z.array(clinicalTreatmentBasisSchema).parse(data ?? []);
 }
 

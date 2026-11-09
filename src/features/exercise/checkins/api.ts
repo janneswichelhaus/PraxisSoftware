@@ -125,13 +125,12 @@ export async function fetchCheckins(
 
 function schreibfehler(meldung: string | undefined): string {
   const m = meldung ?? '';
-  if (m.includes('has ended'))
-    return 'Das Verhältnis ist beendet. Ein neuer Check-in lässt sich nicht mehr einstellen.';
+  if (m.includes('has ended')) return 'Das Verhältnis ist beendet.';
   if (m.includes('interval')) return 'Bitte einen Takt von 1 bis 28 Tagen wählen.';
   if (m.includes('questions')) return 'Bitte eine bis fünf Fragen wählen.';
   if (m.includes('not allowed'))
     return 'Den Check-in stellen die Rollen ein, die Übungspläne schreiben.';
-  return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
+  return 'Nicht gespeichert.';
 }
 
 export async function saveCheckinTakt(
@@ -178,11 +177,10 @@ function ereignisfehler(meldung: string | undefined): string {
   const m = meldung ?? '';
   if (m.includes('consent'))
     return 'Ohne Einwilligung zu Gesundheitsangaben lässt sich kein Ereignis vermerken.';
-  if (m.includes('has ended'))
-    return 'Das Verhältnis ist beendet. Es lässt sich nichts mehr vermerken.';
+  if (m.includes('has ended')) return 'Das Verhältnis ist beendet.';
   if (m.includes('not found')) return 'Das Ereignis wurde nicht gefunden.';
   if (m.includes('not allowed')) return 'Ereignisse vermerken Inhaber:in und Trainingsbetreuung.';
-  return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
+  return 'Nicht gespeichert.';
 }
 
 /** OUT-001: ein Ereignis im Verlauf des Trainings vermerken (ANN-364). */
@@ -212,17 +210,16 @@ export async function trainingsereignisEntfernen(ereignisId: string): Promise<vo
 function gewohnheitsfehler(meldung: string | undefined): string {
   const m = meldung ?? '';
   if (m.includes('too many'))
-    return 'Es laufen schon so viele Gewohnheiten, wie möglich sind. Bitte erst eine beenden – wenige, sehr kleine wirken besser.';
+    return 'Es laufen schon so viele Gewohnheiten wie möglich. Bitte erst eine beenden.';
   if (m.includes('consent'))
     return 'Ohne Einwilligung zu Gesundheitsangaben lässt sich keine Gewohnheit eintragen.';
-  if (m.includes('has ended'))
-    return 'Das Verhältnis ist beendet. Eine neue Gewohnheit lässt sich nicht mehr eintragen.';
+  if (m.includes('has ended')) return 'Das Verhältnis ist beendet.';
   if (m.includes('check constraint') || m.includes('violates'))
     return 'Bitte Was und Auslöser angeben, je höchstens 120 Zeichen.';
   if (m.includes('not found')) return 'Die Gewohnheit wurde nicht gefunden.';
   if (m.includes('not allowed'))
     return 'Gewohnheiten tragen die Rollen ein, die Übungspläne schreiben.';
-  return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
+  return 'Nicht gespeichert.';
 }
 
 /** ALT-003: eine Gewohnheit eintragen – Was, Auslöser, Wo (ANN-370). */

@@ -58,7 +58,7 @@ export function AlsAufgabe({
     <Dialogfenster titel="Als Aufgabe übernehmen" onSchliessen={onSchliessen}>
       {anlegen.isSuccess ? (
         <div className="flex flex-col gap-4">
-          <Statusmeldung ton="erfolg">Die Aufgabe steht in den Offenen Punkten.</Statusmeldung>
+          <Statusmeldung ton="erfolg">Aufgabe angelegt.</Statusmeldung>
           <Formularfuss>
             <Button onClick={onSchliessen}>Fertig</Button>
             <Textlink to="/offen" alleinstehend>

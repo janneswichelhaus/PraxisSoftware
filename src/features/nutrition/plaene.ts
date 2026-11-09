@@ -227,7 +227,7 @@ export function planfehler(meldung: string | undefined): string {
   if (m.includes('consent')) return 'Ohne Einwilligung wird nichts zugewiesen.';
   if (m.includes('has ended')) return 'Die Beratung ist beendet.';
   if (m.includes('not allowed')) return 'Dafür fehlt gerade das Recht. Bitte die Seite neu laden.';
-  return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
+  return 'Nicht gespeichert.';
 }
 
 /** Eine Position aus dem Plan als Zeile mit „+“: die Menge, wie die Beratung sie vorschlägt. */

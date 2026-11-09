@@ -34,8 +34,8 @@ export function PlanvorlagenPage() {
       />
       <Abfragezustand
         abfrage={abfrage}
-        laden="Die Vorlagen werden geladen …"
-        fehler="Die Vorlagen konnten nicht geladen werden."
+        laden="Vorlagen werden geladen …"
+        fehler="Vorlagen nicht geladen."
         inKarte
       >
         {(liste) => (
@@ -97,8 +97,8 @@ export function PlanvorlageNeu() {
       <PageHeader title="Vorlage anlegen" />
       <Abfragezustand
         abfrage={rezepte}
-        laden="Die Rezepte werden geladen …"
-        fehler="Die Rezepte konnten nicht geladen werden."
+        laden="Rezepte werden geladen …"
+        fehler="Rezepte nicht geladen."
         inKarte
       >
         {(liste) => (
@@ -132,19 +132,19 @@ export function PlanvorlageBearbeiten() {
       <PageHeader title="Vorlage ändern" />
       <Abfragezustand
         abfrage={vorlagen}
-        laden="Die Vorlage wird geladen …"
-        fehler="Die Vorlage konnte nicht geladen werden."
+        laden="Vorlage wird geladen …"
+        fehler="Vorlage nicht geladen."
         inKarte
         leer={{
           wenn: (liste) => !liste.some((p) => p.id === planId),
-          titel: 'Diese Vorlage gibt es nicht mehr.',
+          titel: 'Vorlage nicht gefunden.',
         }}
       >
         {(liste) => (
           <Abfragezustand
             abfrage={rezepte}
-            laden="Die Rezepte werden geladen …"
-            fehler="Die Rezepte konnten nicht geladen werden."
+            laden="Rezepte werden geladen …"
+            fehler="Rezepte nicht geladen."
             inKarte
           >
             {(zurWahl) => (
@@ -197,7 +197,7 @@ function Bearbeiten({
           fehler={ablegen.error?.message}
           onBestaetigen={() => ablegen.mutateAsync()}
         >
-          <p>Sie verschwindet aus der Auswahl; zugewiesene Pläne bleiben.</p>
+          <p>Verschwindet aus der Auswahl.</p>
         </Rueckfrage>
       }
     />

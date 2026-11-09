@@ -81,7 +81,7 @@ test.describe('Freigabe ohne Netz per Passkey (TRK-009)', () => {
         page.getByText('Ohne Verbindung. Hier ist nur, was auf diesem Gerät liegt.'),
       ).toBeVisible();
       await expect(page.getByTestId('wartehinweis')).toHaveText(
-        'Eine Einheit liegt noch auf diesem Gerät und ist noch nicht übertragen.',
+        'Eine Einheit noch nicht übertragen',
       );
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);

@@ -55,7 +55,7 @@ test.describe('Offene Punkte', () => {
       has: page.getByRole('heading', { name: 'Aufgaben (3)' }),
     });
     await expect(aufgaben.getByText('Überfällig')).toBeVisible();
-    await expect(page.getByText('2 von 3 Terminen noch nicht mitgeteilt.')).toBeVisible();
+    await expect(page.getByText('2 von 3 noch nicht mitgeteilt')).toBeVisible();
     await expect(page.getByText('Nichts offen')).toHaveCount(0);
   });
 

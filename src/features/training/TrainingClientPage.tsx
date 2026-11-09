@@ -125,7 +125,7 @@ export function TrainingClientPage({ user }: { user: CurrentUser }) {
           <Abfragezustand
             abfrage={abfrage}
             laden={`${BEGRIFFE.trainingskundIn} wird geladen …`}
-            fehler={`Die ${BEGRIFFE.trainingskundIn} konnte nicht geladen werden.`}
+            fehler={`${BEGRIFFE.trainingskundIn} nicht geladen.`}
             inKarte
             leer={{
               wenn: (wert) => wert === null,
@@ -425,9 +425,7 @@ function Kontakt({ kundin, aktion }: { kundin: TrainingClient; aktion: ReactNode
                   was nicht eindeutig zu trennen war, steht zur Prüfung da
                   (BEF-111). Ohne Hausnummer gibt es keine Rechnung. */}
               {anschriftZurPruefung(kundin) ? (
-                <span className="text-warnung block text-sm">
-                  Bitte prüfen: Die Hausnummer steht noch in der Straße.
-                </span>
+                <span className="text-warnung block text-sm">Hausnummer noch in der Straße</span>
               ) : null}
             </DetailRow>
           ) : null}
@@ -515,7 +513,7 @@ function Bearbeiten({
           {/* ANG-006: der Grund, wenn ein Paket vor dem neuen Vertragsbeginn liegt. */}
           {mutation.error.message.includes('Trainingspaket')
             ? mutation.error.message
-            : 'Die Angaben konnten nicht gespeichert werden. Bitte die Verbindung prüfen und erneut versuchen.'}
+            : 'Angaben nicht gespeichert.'}
         </Statusmeldung>
       ) : null}
       <Formularfuss>
@@ -569,16 +567,11 @@ function VertragBeenden({ kundin, zeitzone }: { kundin: TrainingClient; zeitzone
         ausloeser="Vertrag wieder aufnehmen"
         bestaetigen="Vertrag wieder aufnehmen"
         bestaetigenLaeuft="Wird wieder aufgenommen …"
-        fehler={
-          mutation.isError ? 'Der Vertrag konnte nicht wieder aufgenommen werden.' : undefined
-        }
+        fehler={mutation.isError ? 'Vertrag nicht wieder aufgenommen.' : undefined}
         laeuft={mutation.isPending}
         onBestaetigen={() => mutation.mutateAsync()}
       >
-        <p>
-          Der Vertrag läuft wieder. Die Aufbewahrungsfrist beginnt erst mit einem neuen
-          Vertragsende.
-        </p>
+        <p>Die Aufbewahrungsfrist beginnt erst mit einem neuen Vertragsende.</p>
       </Rueckfrage>
     );
   }
@@ -597,8 +590,7 @@ function VertragBeenden({ kundin, zeitzone }: { kundin: TrainingClient; zeitzone
       <p>
         Ab diesem Tag läuft die Aufbewahrung von drei Jahren; danach werden Kontakt, Vereinbarungen
         und Termine gelöscht. Rechnungen und die abgerechneten Termine bleiben, bis ihre steuerliche
-        Frist von acht Jahren abgelaufen ist (ANN-183). Trainiert die Person wieder, lässt sich der
-        Vertrag wieder aufnehmen.
+        Frist von acht Jahren abgelaufen ist (ANN-183).
       </p>
       <div className="mt-3 max-w-60">
         <Field

@@ -113,9 +113,7 @@ describe('StaffEinsatz (AKTE-009, STA-005)', () => {
   it('sagt, wenn das Vergütungsmodell nicht geladen ist, und bietet einen neuen Versuch an', async () => {
     fetchVerguetungsmodell.mockRejectedValueOnce(new Error('netz'));
     renderWithProviders(<StaffEinsatz staff={NINA} />);
-    expect(
-      await screen.findByText('Das Vergütungsmodell konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Vergütungsmodell nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 });

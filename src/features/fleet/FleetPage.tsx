@@ -176,7 +176,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Radflotte wird geladen …"
-        fehler="Die Radflotte konnte nicht geladen werden."
+        fehler="Radflotte nicht geladen."
         inKarte
       >
         {(flotte) => (
@@ -339,7 +339,6 @@ function Flotte({
         <EmptyState
           inKarte
           title="Noch kein Rad angelegt"
-          description={flotte.can_manage ? undefined : 'Räder legt die Praxisinhaber:in an.'}
           aktion={
             flotte.can_manage ? (
               <ButtonLink to="/betrieb/flotte/rad/neu" variant="secondary">
@@ -349,7 +348,7 @@ function Flotte({
           }
         />
       ) : sichtbar.length === 0 ? (
-        <EmptyState inKarte title="Keine Treffer" description="Suche oder Filter anpassen." />
+        <EmptyState inKarte title="Keine Treffer" />
       ) : (
         <>
           {meine.length > 0 ? (

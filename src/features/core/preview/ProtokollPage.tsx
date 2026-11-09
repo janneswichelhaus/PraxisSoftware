@@ -28,17 +28,10 @@ export function ProtokollPage() {
 
   return (
     <>
-      <PageHeader
-        title="Vorschau-Protokoll"
-        description="Simulierte Vorgänge dieser Sitzung. Nicht das Protokoll der Praxis."
-      />
+      <PageHeader title="Vorschau-Protokoll" />
 
       {protokoll.length === 0 ? (
-        <EmptyState
-          inKarte
-          title="Noch nichts simuliert"
-          description="Sobald Sie in einem Vorschaubereich eine Aktion auslösen, steht sie hier."
-        />
+        <EmptyState inKarte title="Noch nichts simuliert" />
       ) : (
         <ListRows>
           {protokoll.map((eintrag) => (
@@ -86,8 +79,7 @@ export function ProtokollPage() {
             onBestaetigen={zuruecksetzen}
           >
             <p>
-              Alle simulierten Vorgänge dieser Sitzung werden verworfen, und die Vorschaubereiche
-              zeigen wieder die synthetischen Ausgangsdaten. Echte Daten sind davon nicht betroffen.
+              Alle simulierten Vorgänge werden verworfen. Echte Daten sind davon nicht betroffen.
             </p>
           </Rueckfrage>
         </div>

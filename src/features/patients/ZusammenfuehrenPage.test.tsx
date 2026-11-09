@@ -128,9 +128,7 @@ describe('ZusammenfuehrenPage (PRX-018)', () => {
     await userEvent.click(knopf);
 
     expect(mergePatients).toHaveBeenCalledWith(DUBLETTE_ID, PATIENT_ID);
-    expect(
-      await screen.findByText('Die Dublette ist in dieser Akte aufgegangen.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Zusammengeführt.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Zur Akte' })).toHaveAttribute(
       'href',
       `/patienten/${PATIENT_ID}`,
@@ -172,8 +170,8 @@ describe('ZusammenfuehrenPage (PRX-018)', () => {
     await userEvent.click(await screen.findByLabelText('Beide Akten betreffen dieselbe Person.'));
     await userEvent.click(screen.getByRole('button', { name: 'Zusammenführen' }));
 
-    expect(await screen.findByText(/konnten nicht zusammengeführt werden/)).toBeInTheDocument();
-    expect(screen.queryByText(/aufgegangen/)).not.toBeInTheDocument();
+    expect(await screen.findByText(/Nicht zusammengeführt/)).toBeInTheDocument();
+    expect(screen.queryByText('Zusammengeführt.')).not.toBeInTheDocument();
   });
 
   it('ist barrierefrei', async () => {

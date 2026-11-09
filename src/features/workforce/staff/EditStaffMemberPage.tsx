@@ -122,10 +122,7 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
 
   return (
     <>
-      <PageHeader
-        title={TITEL}
-        description={`${fullName(staff)} · Mit * markierte Felder sind erforderlich.`}
-      />
+      <PageHeader title={TITEL} description={fullName(staff)} />
 
       <form onSubmit={absenden} noValidate className="max-w-formular">
         <Fehlerzusammenfassung
@@ -176,7 +173,7 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
             setFokusAufSpeichern(true);
           }}
         >
-          Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut speichern.
+          Die Eingaben stehen noch im Formular.
         </Hinweisfenster>
       ) : null}
 
@@ -213,18 +210,9 @@ export function EditStaffMemberPage({ user }: { user: CurrentUser }) {
           <PageHeader title={TITEL} />
           {isPending ? <LoadingState label="Mitarbeiterdaten werden geladen …" /> : null}
           {isError ? (
-            <ErrorState
-              title="Die Mitarbeiterdaten konnten nicht geladen werden."
-              description="Bitte die Verbindung prüfen und später erneut versuchen."
-              onErneut={() => void refetch()}
-            />
+            <ErrorState title="Mitarbeiterdaten nicht geladen." onErneut={() => void refetch()} />
           ) : null}
-          {data === null ? (
-            <ErrorState
-              title="Nicht gefunden"
-              description="Diese Person gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-            />
-          ) : null}
+          {data === null ? <ErrorState title="Nicht gefunden" /> : null}
         </>
       )}
     </>

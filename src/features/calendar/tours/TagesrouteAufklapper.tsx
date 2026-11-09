@@ -74,15 +74,8 @@ function Inhalt({
 
   if (route.isPending) return <LoadingState label="Tagesroute wird geladen …" />;
   if (route.isError) {
-    // Mit dem nächsten Schritt und einem Weg hinaus, der die Seite stehen
-    // lässt (WRT-01, ZST-04, ANN-021).
-    return (
-      <ErrorState
-        title="Die Tagesroute konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => route.refetch()}
-      />
-    );
+    // Mit einem Weg hinaus, der die Seite stehen lässt (WRT-01, ZST-04, ANN-021).
+    return <ErrorState title="Tagesroute nicht geladen." onErneut={() => route.refetch()} />;
   }
   if (stopps.length === 0) {
     return <p className="text-ink-muted text-sm">Heute gibt es keinen Besuch mit Ort.</p>;

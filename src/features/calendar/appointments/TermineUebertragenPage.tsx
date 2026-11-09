@@ -253,12 +253,7 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
   }
 
   if (!patientId) {
-    return (
-      <ErrorState
-        title="Nicht gefunden"
-        description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-      />
-    );
+    return <ErrorState title="Nicht gefunden" />;
   }
 
   /**
@@ -307,7 +302,7 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Wird geladen …"
-        fehler="Termine oder Grundlagen konnten nicht geladen werden."
+        fehler="Termine oder Grundlagen nicht geladen."
       >
         {() => (
           <form onSubmit={absenden} noValidate className="max-w-formular">
@@ -318,7 +313,6 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
                 label="Auf welche Behandlungsgrundlage? *"
                 value={ziel}
                 onChange={(e) => setZiel(e.target.value)}
-                hint="Nur Grundlagen dieser Patient:in."
               >
                 <option value="">Bitte wählen …</option>
                 {eintraege.map((eintrag) => (
@@ -333,20 +327,9 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
               </Select>
             </Section>
 
-            <Section
-              titel="Diese Termine"
-              hinweis={
-                angebot.length > 0
-                  ? 'Vorgeschlagen sind die ungedeckten künftigen Termine.'
-                  : undefined
-              }
-            >
+            <Section titel="Diese Termine">
               {angebot.length === 0 ? (
-                <EmptyState
-                  inKarte
-                  title="Kein ungedeckter Termin"
-                  description="Jeder künftige Termin dieser Person ist von seiner Behandlungsgrundlage gedeckt."
-                />
+                <EmptyState inKarte title="Kein ungedeckter Termin" />
               ) : (
                 <Inhaltsflaeche>
                   <ul>
@@ -364,17 +347,15 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
 
               {termine.data?.length === HOECHSTZAHL ? (
                 <Statusmeldung className="mt-3">
-                  Geprüft wurden die nächsten {HOECHSTZAHL} Termine. Sind es mehr, bleibt der Rest
-                  stehen und lässt sich danach in einem zweiten Vorgang übertragen.
+                  Geprüft wurden die nächsten {HOECHSTZAHL} Termine; der Rest lässt sich danach
+                  übertragen.
                 </Statusmeldung>
               ) : null}
 
               {vergangenesAngebot.length > 0 ? (
                 <Disclosure summary="Vergangene Termine" anzahl={vergangenesAngebot.length}>
-                  {/* Was mitzieht, ist eine Folge des Vorgangs - auf Abruf,
-                      bei den Terminen, die sie betrifft. */}
+                  {/* Was mitzieht, ist eine Folge des Vorgangs - bei den Terminen, die sie betrifft. */}
                   <p className="text-ink-muted mb-2 text-sm">
-                    Durchgeführte Termine einer anderen Grundlage, zur Korrektur der Zuordnung.
                     Erfasste, noch nicht abgerechnete Leistungen ziehen mit; die Zielgrundlage
                     braucht dafür dasselbe Heilmittel.
                   </p>
@@ -394,8 +375,7 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
 
             {uebertragen.isError ? (
               <Statusmeldung ton="fehler" className="mt-4">
-                {uebertragen.error.message} Ein abgesagter oder bereits abgerechneter Termin wird
-                nicht übertragen – dann bleibt alles, wie es war, auch an den Leistungen.
+                {uebertragen.error.message} Es wurde nichts übertragen.
               </Statusmeldung>
             ) : null}
 
@@ -407,7 +387,6 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
               <Formularfuss
                 zusatz={
                   <>
-                    <p>Alles oder nichts – entweder wandern alle gewählten Termine, oder keiner.</p>
                     {sperrgrund ? (
                       <p id={sperrgrundId} className="text-ink mt-1">
                         {sperrgrund}

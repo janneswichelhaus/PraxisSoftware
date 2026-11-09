@@ -100,7 +100,7 @@ test.describe('Alltag als Kontext (ALT-EPIC-001)', () => {
         'aria-pressed',
         'true',
       );
-      await expect(page.getByText('Pausiert. Setzen Sie fort, wenn es wieder geht.')).toBeVisible();
+      await expect(page.getByText('Pausiert', { exact: true })).toBeVisible();
       await expect(page.locator('main')).not.toContainText(/in Folge|Tage am Stück|%|geschafft/);
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);

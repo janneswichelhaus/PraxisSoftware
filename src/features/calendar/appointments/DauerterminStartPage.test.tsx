@@ -332,8 +332,8 @@ describe('DauerterminStartPage', () => {
     rendern(MIT_PERSON);
 
     const kasten = await screen.findByRole('alert');
-    expect(kasten).toHaveTextContent('Die Behandlungsgrundlagen konnten nicht geladen werden.');
-    expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(kasten).toHaveTextContent('Behandlungsgrundlagen nicht geladen.');
+    expect(kasten).not.toHaveTextContent('Verbindung prüfen');
     expect(screen.queryByText('intern')).not.toBeInTheDocument();
 
     // Ein Weg heraus (UIK-16, WRT-01): erneut laden, ohne die Seite neu zu laden.

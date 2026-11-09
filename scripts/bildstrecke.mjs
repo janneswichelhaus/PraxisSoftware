@@ -334,6 +334,8 @@ function messen() {
     ueberbreit: doc.scrollWidth - doc.clientWidth,
     hoehe: doc.scrollHeight,
     textlaenge: text.length,
+    // Nur sichtbarer Text des Inhalts: Zugeklapptes zählt nicht (Leitfaden L7).
+    woerter: text === '' ? 0 : text.split(' ').length,
     medien: haupt.querySelectorAll('img, svg, canvas, video').length,
     fehler: [...document.querySelectorAll('[role="alert"]')]
       .filter((el) => sichtbar(el) && el.classList.contains('bg-danger-soft'))
@@ -450,6 +452,7 @@ async function aufnehmen(sitzung, auftrag) {
     ziel,
     titel: messung?.titel ?? '',
     hoehe: messung?.hoehe ?? null,
+    woerter: messung?.woerter ?? null,
     befunde,
     hinweise,
     dauerMs: Date.now() - start,
@@ -499,6 +502,7 @@ async function arbeiter() {
             ziel: null,
             titel: '',
             hoehe: null,
+            woerter: null,
             befunde: [{ art: 'aufnahme', text: grund }],
             hinweise: [],
             dauerMs: 0,
@@ -546,6 +550,7 @@ const ergebnis = {
     bilder: ergebnisse.length,
     mitBefund: mitBefund.length,
     befundeNachArt: nachArt,
+    woerter: ergebnisse.reduce((summe, bild) => summe + (bild.woerter ?? 0), 0),
   },
   bilder: ergebnisse,
 };
@@ -553,7 +558,7 @@ await schreiben(path.join(ZIEL, 'ergebnis.json'), `${JSON.stringify(ergebnis, nu
 await boegenSchreiben(ergebnis);
 
 console.log(
-  `\n${ergebnisse.length} Bilder in ${ergebnis.dauerSekunden} s, ${mitBefund.length} mit Befund` +
+  `\n${ergebnisse.length} Bilder in ${ergebnis.dauerSekunden} s, ${ergebnis.zusammenfassung.woerter} Wörter, ${mitBefund.length} mit Befund` +
     (mitBefund.length > 0
       ? ` (${Object.entries(nachArt)
           .map(([art, zahl]) => `${art} ${zahl}`)

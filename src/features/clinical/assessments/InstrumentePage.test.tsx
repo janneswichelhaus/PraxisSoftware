@@ -132,7 +132,7 @@ describe('Instrumente', () => {
   it('sagt es, wenn kein Instrument vorliegt', () => {
     zeigen([]);
     // Ein Leerzustand der Seite, keine Meldung neben einer Aktion (BEF-18).
-    expect(screen.getByText('Noch liegt kein Instrument vor.')).toBeInTheDocument();
+    expect(screen.getByText('Keine Instrumente.')).toBeInTheDocument();
     expect(screen.queryByRole('status')).toBeNull();
   });
 

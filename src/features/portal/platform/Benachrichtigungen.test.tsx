@@ -64,9 +64,7 @@ describe('Benachrichtigungen (KOM-011)', () => {
     expect(screen.getByText(/auch ohne Benachrichtigung in Ihrer Übersicht/)).toBeInTheDocument();
     // Ohne eingetragenes Gerät kein Push zur Wahl; jsdom kann kein Push.
     expect(screen.queryByRole('checkbox', { name: 'Auf diesem Gerät' })).toBeNull();
-    expect(
-      screen.getByText(/Auf diesem Gerät sind Mitteilungen nicht möglich/),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Auf diesem Gerät nicht möglich.')).toBeInTheDocument();
     await pruefeBarrierefreiheit(container);
   });
 

@@ -82,7 +82,7 @@ export function DecideWorkingTimePage({ user }: { user: CurrentUser }) {
     <Abfragezustand
       abfrage={query}
       laden="Antrag wird geladen …"
-      fehler="Der Antrag konnte nicht geladen werden."
+      fehler="Antrag nicht geladen."
       rahmen={(zustand) => (
         <>
           <PageHeader title="Arbeitszeitänderung" />

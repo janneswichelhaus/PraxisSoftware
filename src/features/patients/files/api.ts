@@ -82,12 +82,8 @@ export async function fetchPatientFiles(
     p_treatment_basis_id: grundlageId ?? null,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Dateien konnten nicht geladen werden.');
-  return antwort(
-    z.array(patientFileSchema),
-    data ?? [],
-    'Die Dateien konnten nicht geladen werden.',
-  );
+  if (error) throw new Error('Dateien nicht geladen.');
+  return antwort(z.array(patientFileSchema), data ?? [], 'Dateien nicht geladen.');
 }
 
 // -----------------------------------------------------------------------------
@@ -413,12 +409,8 @@ export async function fetchLoeschauftraege(): Promise<Loeschauftrag[]> {
     error: unknown;
   };
 
-  if (error) throw new Error('Die offenen Löschaufträge konnten nicht geladen werden.');
-  return antwort(
-    z.array(loeschauftragSchema),
-    data ?? [],
-    'Die offenen Löschaufträge konnten nicht geladen werden.',
-  );
+  if (error) throw new Error('Offene Löschaufträge nicht geladen.');
+  return antwort(z.array(loeschauftragSchema), data ?? [], 'Offene Löschaufträge nicht geladen.');
 }
 
 const auftragsschluesselSchema = z.object({

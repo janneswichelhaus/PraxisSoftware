@@ -53,7 +53,7 @@ export async function fetchStaffMembers(): Promise<StaffMember[]> {
     .select(SELECT)
     .order('family_name', { ascending: true });
 
-  if (error) throw new Error('Die Mitarbeiterliste konnte nicht geladen werden.');
+  if (error) throw new Error('Mitarbeiterliste nicht geladen.');
   return z.array(staffMemberSchema).parse(data ?? []);
 }
 
@@ -64,7 +64,7 @@ export async function fetchStaffMember(staffMemberId: string): Promise<StaffMemb
     .eq('id', staffMemberId)
     .maybeSingle();
 
-  if (error) throw new Error('Die Mitarbeiterdaten konnten nicht geladen werden.');
+  if (error) throw new Error('Mitarbeiterdaten nicht geladen.');
   if (!data) return null;
   return staffMemberSchema.parse(data);
 }
@@ -314,12 +314,12 @@ export async function fetchVerguetungsmodell(
     .select('model')
     .eq('staff_member_id', staffMemberId)
     .maybeSingle();
-  if (error) throw new Error('Das Vergütungsmodell konnte nicht geladen werden.');
+  if (error) throw new Error('Vergütungsmodell nicht geladen.');
   const modell = z
     .object({ model: z.enum(['fixed_salary', 'revenue_share']) })
     .nullable()
     .safeParse(data);
-  if (!modell.success) throw new Error('Das Vergütungsmodell konnte nicht geladen werden.');
+  if (!modell.success) throw new Error('Vergütungsmodell nicht geladen.');
   return modell.data?.model ?? null;
 }
 
@@ -372,7 +372,7 @@ export async function fetchAssignableTherapists(): Promise<AssignableTherapist[]
     data: unknown;
     error: unknown;
   };
-  if (error) throw new Error('Die behandelnden Personen konnten nicht geladen werden.');
+  if (error) throw new Error('Behandelnde Personen nicht geladen.');
   return z.array(therapistSchema).parse(data ?? []);
 }
 
@@ -398,6 +398,6 @@ export async function fetchLocations(): Promise<Location[]> {
     .select('id, name')
     .order('name', { ascending: true });
 
-  if (error) throw new Error('Die Standorte konnten nicht geladen werden.');
+  if (error) throw new Error('Standorte nicht geladen.');
   return z.array(locationSchema).parse(data ?? []);
 }

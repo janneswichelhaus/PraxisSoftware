@@ -304,8 +304,7 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
       ) : null}
       {nachBogen === '1' ? (
         <Rueckmeldung>
-          Danke. Ihr Fragebogen ist bei der Praxis. Ihre Therapeut:in sieht Ihre Angaben beim
-          nächsten Termin.
+          Fragebogen gesendet. Ihre Therapeut:in sieht Ihre Angaben beim nächsten Termin.
         </Rueckmeldung>
       ) : null}
       {vorgezogen ? nachladeHinweis : null}
@@ -319,8 +318,7 @@ export function Uebersicht({ zugang }: { zugang: Plattformzugang }) {
       <div className="[[data-rechner]_&]:max-w-spalte flex flex-col gap-8">
         {kopf}
         <ErrorState
-          title="Die Übersicht lässt sich gerade nicht laden."
-          description="Prüfen Sie die Verbindung oder versuchen Sie es gleich noch einmal."
+          title="Übersicht nicht geladen."
           onErneut={() => Promise.all(gescheitert.map((a) => a.refetch()))}
         />
       </div>
@@ -796,7 +794,7 @@ function Hauptsachekarte({
         return (
           <HeroKarte
             titel={fuer ? `Check-in für ${fuer}` : 'Ihr Check-in für heute'}
-            satz={`${fragenText(a.fragen)}, freiwillig, etwa 1 Minute.`}
+            satz={`${fragenText(a.fragen)}, freiwillig, etwa 1 Minute`}
             aktion={aktion}
             ganzeKarte
             markenmoment={markenmoment}
@@ -820,7 +818,7 @@ function Hauptsachekarte({
           <EmptyState
             markenform
             inKarte
-            title="Gerade ist nichts zu tun."
+            title="Gerade nichts zu tun."
             description="Zurzeit ist kein Termin vereinbart."
           />
         </div>

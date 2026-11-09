@@ -310,7 +310,7 @@ async function rufe(funktion: string, argumente: Record<string, unknown>, rest: 
 // Lesen
 // -----------------------------------------------------------------------------
 
-const LADEN = 'Die Radflotte konnte nicht geladen werden.';
+const LADEN = 'Radflotte nicht geladen.';
 
 /** `wochenbeginn`: Montag der Woche, für „frei, weil abwesend“ in der Wochenübersicht. */
 export async function fetchFleet(wochenbeginn: string | null): Promise<Fleet> {
@@ -318,14 +318,14 @@ export async function fetchFleet(wochenbeginn: string | null): Promise<Fleet> {
   return antwort(fleetSchema, data, LADEN);
 }
 
-const RAD_LADEN = 'Das Rad konnte nicht geladen werden.';
+const RAD_LADEN = 'Rad nicht geladen.';
 
 export async function fetchBike(bikeId: string): Promise<BikeDetail> {
   const data = await rufe('get_fleet_bike', { p_bike_id: bikeId }, RAD_LADEN);
   return antwort(bikeDetailSchema, data, RAD_LADEN);
 }
 
-const BLATT_LADEN = 'Die Unterlage für die Werkstatt konnte nicht geladen werden.';
+const BLATT_LADEN = 'Unterlage für die Werkstatt nicht geladen.';
 
 export async function fetchWorkshopSheet(bikeId: string): Promise<WorkshopSheet> {
   const data = await rufe('get_fleet_workshop_sheet', { p_bike_id: bikeId }, BLATT_LADEN);
@@ -336,7 +336,7 @@ const FOTOS_LADEN = 'Die Fotos konnten nicht geladen werden.';
 
 /** FLT-008 (ANN-569): Check-Ups und Pannen aller Räder ab `ab` (ohne Angabe 90 Tage). */
 export async function fetchFleetReports(ab: string | null): Promise<FleetReport[]> {
-  const rest = 'Die Meldungen konnten nicht geladen werden.';
+  const rest = 'Meldungen nicht geladen.';
   const data = await rufe('list_fleet_reports', { p_since: ab }, rest);
   return antwort(z.array(reportSchema), data, rest);
 }

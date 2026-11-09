@@ -109,7 +109,7 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
 
     await user.click(screen.getByText('Vor der Tür'));
 
-    expect(await screen.findByText('Noch kein Eintrag vor diesem Termin.')).toBeVisible();
+    expect(await screen.findByText('Kein früherer Eintrag.')).toBeVisible();
     expect(screen.getByText('Keine Behandlungsgrundlage zugeordnet.')).toBeVisible();
   });
 
@@ -120,6 +120,6 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
 
     await user.click(screen.getByText('Vor der Tür'));
 
-    expect(await screen.findByText('Der Kurzblick konnte nicht geladen werden.')).toBeVisible();
+    expect(await screen.findByText('Kurzblick nicht geladen.')).toBeVisible();
   });
 });

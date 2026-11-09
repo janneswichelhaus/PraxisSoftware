@@ -177,8 +177,7 @@ function Pflege({
               onBestaetigen={() => varianteLoeschen.mutateAsync(variante)}
               onAbbrechen={() => varianteLoeschen.reset()}
             >
-              Die Variante wird gelöscht. Was in Gebrauch war, besser archivieren – dann bleibt es
-              nachlesbar.
+              Lässt sich nicht rückgängig machen.
             </Rueckfrage>
           ) : null}
           {uebung.variants.length === 0 ? (
@@ -194,7 +193,7 @@ function Pflege({
               onBestaetigen={() => uebungLoeschen.mutateAsync()}
               onAbbrechen={() => uebungLoeschen.reset()}
             >
-              Die Übung wird gelöscht.
+              Lässt sich nicht rückgängig machen.
             </Rueckfrage>
           ) : null}
         </div>
@@ -203,10 +202,6 @@ function Pflege({
             {fehler.message}
           </Statusmeldung>
         ) : null}
-        <Kleingedrucktes className="mt-3">
-          Archiviert steht eine Übung nicht mehr in der Bibliothek, bleibt aber nachlesbar. Löschen
-          geht nur ohne Varianten.
-        </Kleingedrucktes>
       </Disclosure>
     </div>
   );
@@ -240,12 +235,7 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
   });
 
   if (!darf) {
-    return (
-      <ErrorState
-        title="Nicht freigegeben"
-        description="Die Übungsbibliothek steht den Rollen offen, die Übungen anleiten."
-      />
-    );
+    return <ErrorState title="Nicht freigegeben" />;
   }
 
   return (
@@ -254,7 +244,7 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
       <Abfragezustand
         abfrage={abfrage}
         laden="Übung wird geladen …"
-        fehler="Die Übung konnte nicht geladen werden."
+        fehler="Übung nicht geladen."
         inKarte
       >
         {(bibliothek) => {
@@ -266,11 +256,7 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
               zuPlan={canWriteExercisePlans(user.roles, 'therapy')}
             />
           ) : (
-            <EmptyState
-              inKarte
-              title="Übung nicht gefunden"
-              description="Vielleicht wurde sie gelöscht. Die Bibliothek zeigt alle Übungen der Praxis."
-            />
+            <EmptyState inKarte title="Übung nicht gefunden" />
           );
         }}
       </Abfragezustand>
@@ -425,7 +411,7 @@ function Inhalt({
                 ) : null
               }
             >
-              Aus dem Übungskatalog, noch nicht von der Praxis durchgesehen
+              Aus dem Katalog, noch nicht durchgesehen
             </Warnzeile>
           ) : undefined
         }
@@ -565,11 +551,6 @@ function Inhalt({
             <EmptyState
               inKarte
               title="Noch keine Variante"
-              description={
-                pflegen
-                  ? 'Geübt wird immer in einer Variante.'
-                  : 'Die Bibliothek pflegt die Praxisinhaber:in.'
-              }
               {...(pflegen
                 ? {
                     aktion: (

@@ -118,15 +118,14 @@ function Auswahl({
       </div>
       {beendet ? (
         <Statusmeldung ton="neutral" className="mt-3">
-          Ihre Einheit liegt auf diesem Gerät. Sie wird übertragen, sobald Verbindung besteht und
-          Sie die Anwendung entsperrt haben.
+          Übertragen wird, sobald Verbindung besteht und Sie die Anwendung entsperrt haben.
         </Statusmeldung>
       ) : null}
       {anzahl > 0 ? (
         <p className="text-ink-muted mt-3" data-testid="wartehinweis">
           {anzahl === 1
-            ? 'Eine Einheit liegt noch auf diesem Gerät und ist noch nicht übertragen.'
-            : `${anzahl} Einheiten liegen noch auf diesem Gerät und sind noch nicht übertragen.`}
+            ? 'Eine Einheit noch nicht übertragen'
+            : `${anzahl} Einheiten noch nicht übertragen`}
         </p>
       ) : null}
       {plaene.length === 0 ? (

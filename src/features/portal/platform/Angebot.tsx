@@ -12,7 +12,6 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { schrittText } from '@/components/ui/abfolge';
 import { formatEuro } from '@/lib/geld';
 import {
@@ -69,20 +68,10 @@ export function Angebot({ zugang }: { zugang: Plattformzugang }) {
           {angebot.isPending ? <LoadingState label="Das Angebot wird geladen …" inKarte /> : null}
           {angebot.isError ? (
             <div>
-              <ErrorState
-                title="Das Angebot konnte nicht geladen werden."
-                description={VERBINDUNG_PRUEFEN}
-                onErneut={() => angebot.refetch()}
-              />
+              <ErrorState title="Angebot nicht geladen." onErneut={() => angebot.refetch()} />
             </div>
           ) : null}
-          {angebot.data === null ? (
-            <EmptyState
-              markenform
-              title="Zurzeit kein Angebot"
-              description="Bietet Ihnen die Praxis nach der Behandlung ein Training an, finden Sie das Angebot hier."
-            />
-          ) : null}
+          {angebot.data === null ? <EmptyState markenform title="Zurzeit kein Angebot" /> : null}
           {angebot.data ? (
             <Formular zugang={zugang} angebot={angebot.data} onGebucht={setBestaetigung} />
           ) : null}
@@ -120,8 +109,7 @@ function Formular({
   return (
     <>
       <p className="text-ink text-base leading-relaxed">
-        Die Praxis bietet Ihnen an, nach Ihrer Behandlung mit einem Training weiterzumachen. Das
-        Angebot gilt bis {datum(angebot.valid_until)}.
+        Das Angebot gilt bis {datum(angebot.valid_until)}.
       </p>
 
       {angebot.blocker ? (
@@ -370,8 +358,8 @@ function Abschluss({
           {mitFreigaben ? (
             <>
               <p className="text-ink text-base leading-relaxed">
-                Kreuzen Sie an, was Ihre Trainer:in wissen darf. Nur das wird ins Training kopiert;
-                alles andere bleibt in Ihrer Behandlungsakte.
+                Nur was Sie ankreuzen, wird ins Training kopiert; alles andere bleibt in Ihrer
+                Behandlungsakte.
               </p>
               <div className="mt-4 flex flex-col gap-3">
                 {angebot.handover_items.map((angabe, i) => (

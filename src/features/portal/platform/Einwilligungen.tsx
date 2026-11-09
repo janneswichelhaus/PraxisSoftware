@@ -59,7 +59,7 @@ export function Einwilligungen({ zugang }: { zugang: Plattformzugang }) {
         <Abfragezustand
           abfrage={einwilligungen}
           laden="Ihre Einwilligungen werden geladen …"
-          fehler="Ihre Einwilligungen konnten nicht geladen werden."
+          fehler="Einwilligungen nicht geladen."
           inKarte
           leer={{
             wenn: (liste) => liste.length === 0,

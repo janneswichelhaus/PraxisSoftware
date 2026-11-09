@@ -18,7 +18,6 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Textlink } from '@/components/ui/Textlink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { leseRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
@@ -156,16 +155,9 @@ export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
       ) : null}
 
       {rechnung.error instanceof KeineStammdaten ? (
-        <StammdatenFehlen
-          darfPflegen={darfStammdaten}
-          folge="Ohne Absender, Steuernummer und Bankverbindung lässt sich keine Rechnung darstellen."
-        />
+        <StammdatenFehlen darfPflegen={darfStammdaten} folge="Praxisstammdaten fehlen." />
       ) : rechnung.isError ? (
-        <ErrorState
-          title="Die Rechnung konnte nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => rechnung.refetch()}
-        />
+        <ErrorState title="Rechnung nicht geladen." onErneut={() => rechnung.refetch()} />
       ) : null}
 
       {ansicht ? (
@@ -190,12 +182,8 @@ export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
  */
 function kopfzustand(ansicht: Rechnungsansicht): { etiketten: ReactNode; satz: string | null } {
   if (ansicht.status === 'draft') {
-    // Kein Abzeichen: Der Titel sagt schon „Entwurf“ (DESIGN.md, Abzeichen
-    // nur für Ausnahmen).
-    return {
-      etiketten: null,
-      satz: 'Noch ohne Nummer. Die Nummer entsteht beim Ausstellen.',
-    };
+    // Kein Abzeichen und kein Satz: Der Titel sagt schon „Entwurf“.
+    return { etiketten: null, satz: null };
   }
   if (ansicht.cancellation) {
     // Storniert ist keine Forderung mehr: kein Zahlungsstand daneben. Was das
@@ -287,10 +275,8 @@ function StammdatenFehlen({
   return (
     <div>
       <Statusmeldung ton={ton}>
-        Es sind noch keine Praxisstammdaten erfasst. {folge}{' '}
-        {darfPflegen
-          ? 'Bitte zuerst Absender, Steuernummer und Bankverbindung erfassen.'
-          : 'Die Praxisinhaber:in muss sie erst erfassen.'}
+        {folge}
+        {darfPflegen ? null : ' Erfassen kann sie die Praxisinhaber:in.'}
       </Statusmeldung>
       {darfPflegen ? (
         <Textlink to="/abrechnung/stammdaten" alleinstehend className="text-sm">
@@ -442,9 +428,7 @@ function Dokument({
           <Empfaengerwahl ansicht={ansicht} patientId={ansicht.patient_id} />
         ) : null}
         {entwurf && darfAusstellen && !ansicht.patient_id ? (
-          <p className="text-ink-muted mt-4 text-sm">
-            Eine Trainingsrechnung geht an die Kund:in selbst, mit der Anschrift aus dem Training.
-          </p>
+          <p className="text-ink-muted mt-4 text-sm">Anschrift aus dem Training.</p>
         ) : null}
       </Section>
 
@@ -645,11 +629,7 @@ function Zahlungen({
       <Inhaltsflaeche>
         {zahlungen.isPending ? <LoadingState label="Zahlungen werden geladen …" /> : null}
         {zahlungen.isError ? (
-          <ErrorState
-            title="Die Zahlungen konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
-            onErneut={() => zahlungen.refetch()}
-          />
+          <ErrorState title="Zahlungen nicht geladen." onErneut={() => zahlungen.refetch()} />
         ) : null}
 
         {zahlungen.data && zahlungen.data.length === 0 ? (
@@ -843,8 +823,8 @@ function Guthaben({
             onBestaetigen={() => verrechnen.mutateAsync()}
           >
             <p className="text-ink-muted text-sm">
-              {formatEuro(ansicht.paid_cents, waehrung)} gehen von dieser Rechnung auf die
-              Korrekturrechnung über: hier als Rückzahlung, dort als Eingang, beide als Verrechnung.
+              {formatEuro(ansicht.paid_cents, waehrung)} gehen auf die Korrekturrechnung über: hier
+              als Rückzahlung, dort als Eingang.
             </p>
           </Rueckfrage>
         ) : null}
@@ -861,7 +841,7 @@ function Guthaben({
       </div>
       {!korrektur ? (
         <p className="text-ink-muted text-sm">
-          Verrechnen lässt sich mit der Korrekturrechnung, sobald sie ausgestellt ist.
+          Verrechnen erst mit ausgestellter Korrekturrechnung
         </p>
       ) : null}
       {weg === 'rueckzahlung' ? (
@@ -944,8 +924,7 @@ function Zahlungserinnerungen({
       ) : null}
       {erinnerungen.isError ? (
         <ErrorState
-          title="Die Zahlungserinnerungen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
+          title="Zahlungserinnerungen nicht geladen."
           onErneut={() => erinnerungen.refetch()}
         />
       ) : null}
@@ -1008,12 +987,10 @@ function Zahlungserinnerungen({
               Blatt festsetzt (UX-005i). */}
           <p className="text-ink-muted mt-2 max-w-prose text-sm">
             {heuteSchon
-              ? 'Heute ist bereits eine Erinnerung ausgestellt.'
+              ? 'Heute bereits ausgestellt.'
               : ansicht.overdue
                 ? 'Neue Frist 14 Tage, ohne Gebühr.'
-                : `Die Rechnung ist noch nicht fällig${
-                    ansicht.due_on ? ` – sie läuft bis zum ${formatDate(ansicht.due_on)}` : ''
-                  }. Vorher gibt es nichts zu erinnern.`}
+                : 'Noch nicht fällig.'}
           </p>
         </div>
       ) : null}
@@ -1092,19 +1069,13 @@ function Stornokette({
           Stornodokument {storno.cancellation_number} vom {formatDate(storno.cancelled_on)}
         </p>
         <p className="text-ink-muted mt-1 text-sm">Grund: {storno.reason}</p>
-        <p className="text-ink-muted mt-2 text-sm">
-          Die Rechnung selbst bleibt unverändert und steht in keinem offenen Posten mehr
-          {ansicht.correction_invoice_id || ansicht.correction_pending
-            ? ', und ihre Leistungen sind wieder abzurechnen.'
-            : '.'}
-        </p>
+        {ansicht.correction_invoice_id || ansicht.correction_pending ? (
+          <p className="text-ink-muted mt-2 text-sm">Leistungen wieder abzurechnen.</p>
+        ) : null}
         {/* BEF-143: Fiel die einzige Leistung nach dem Storno weg, wartet
             nichts mehr auf eine Korrektur - der Server sagt es. */}
         {!ansicht.correction_invoice_id && !ansicht.correction_pending ? (
-          <p className="text-ink-muted mt-2 text-sm">
-            Von ihren Leistungen ist keine mehr abzurechnen – eine Korrekturrechnung braucht es
-            nicht.
-          </p>
+          <p className="text-ink-muted mt-2 text-sm">Keine Leistung mehr abzurechnen.</p>
         ) : null}
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -1180,15 +1151,13 @@ function Stornokette({
           }}
         >
           <p className="text-ink-muted text-sm">
-            Die Rechnung bleibt, wie sie ist; das Storno ist ein eigenes Dokument mit eigener Nummer
-            und lässt sich nicht zurücknehmen. Danach sind die Leistungen wieder abzurechnen, und
-            eine Korrekturrechnung lässt sich aus ihnen erstellen.
+            Das Storno ist ein eigenes Dokument mit eigener Nummer und lässt sich nicht
+            zurücknehmen. Die Leistungen sind danach wieder abzurechnen.
           </p>
           {eingegangen ? (
             <p className="text-ink-muted mt-2 text-sm">
-              Auf diese Rechnung sind {formatEuro(ansicht.paid_cents, ansicht.document.currency)}{' '}
-              eingegangen. Der Betrag bleibt nach dem Storno stehen und wird zurückgezahlt oder mit
-              der Korrekturrechnung verrechnet.
+              {formatEuro(ansicht.paid_cents, ansicht.document.currency)} eingegangen. Der Betrag
+              bleibt nach dem Storno stehen, bis er zurückgezahlt oder verrechnet ist.
             </p>
           ) : null}
           {/* Eine Zeile Grund, keine Seitenbreite (ABR-23). */}
@@ -1237,17 +1206,13 @@ function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; pat
   });
 
   if (empfaenger.isPending) {
-    return <LoadingState label="Hinterlegte Empfänger werden geladen …" />;
+    return <LoadingState label="Empfänger werden geladen …" />;
   }
 
   if (empfaenger.isError) {
     return (
       <div className="mt-4">
-        <ErrorState
-          title="Die hinterlegten Empfänger konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => empfaenger.refetch()}
-        />
+        <ErrorState title="Empfänger nicht geladen." onErneut={() => empfaenger.refetch()} />
       </div>
     );
   }
@@ -1262,7 +1227,7 @@ function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; pat
       // Wer gerade einen Empfänger hinterlegt, meint diese Rechnung (BEF-062).
       try {
         await waehlen.mutateAsync(id);
-        setMeldung('Empfänger hinterlegt und für diese Rechnung gewählt.');
+        setMeldung('Empfänger hinterlegt und gewählt.');
       } catch {
         // Hinterlegt ist er; dass das Setzen scheiterte, sagt die Meldung
         // der Auswahl.
@@ -1270,7 +1235,7 @@ function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; pat
     } else {
       // Der Entwurf wird aus den Stammdaten gebaut und zeigt die Änderung.
       await queryClient.invalidateQueries({ queryKey: ['rechnung', ansicht.id] });
-      setMeldung('Empfänger geändert. Das Blatt ausgestellter Rechnungen bleibt, wie es ist.');
+      setMeldung('Empfänger geändert.');
     }
   }
 
@@ -1278,7 +1243,6 @@ function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; pat
     <div className="max-w-formular mt-4">
       <Select
         label="Rechnung geht an"
-        hint="Ohne hinterlegten Empfänger geht sie an die Patient:in selbst."
         value={wert}
         disabled={waehlen.isPending || formular !== 'zu'}
         onChange={(e) => {
@@ -1439,8 +1403,7 @@ function Empfaengerformular({
           Blatt ebenso wie Rechnungsliste, offene Posten und Zahlungen (BEF-141). */}
       {bestehend ? (
         <p className="text-ink-muted text-sm">
-          Die Änderung gilt für alle Entwürfe an diesen Empfänger; ausgestellte Rechnungen behalten
-          den Empfänger, an den sie gingen – auf dem Blatt und in den Listen.
+          Gilt für alle Entwürfe; ausgestellte Rechnungen bleiben, wie sie sind.
         </p>
       ) : null}
       <Select
@@ -1504,15 +1467,12 @@ function Empfaengerformular({
       />
       <Checkbox
         label="Standard für neue Rechnungen dieser Person"
-        hint="Neue Entwürfe gehen dann an diesen Empfänger statt an die Person selbst."
         checked={eingabe.is_default}
         onChange={(e) => setEingabe((alt) => ({ ...alt, is_default: e.target.checked }))}
       />
 
       {speichern.isError ? (
-        <Statusmeldung ton="fehler">
-          {speichern.error.message} Die Eingaben stehen noch im Formular.
-        </Statusmeldung>
+        <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
       ) : null}
 
       {/* Am Telefon untereinander in voller Breite: Bei 390 px brach
@@ -1542,7 +1502,7 @@ function Kontrollwerte({ ansicht }: { ansicht: Rechnungsansicht }) {
   const positionen = dokument.items.length;
   return (
     <>
-      <p className="font-medium">Diese Rechnung jetzt ausstellen?</p>
+      <p className="font-medium">Jetzt ausstellen?</p>
       <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
         <dt className="text-ink-muted">An</dt>
         <dd>
@@ -1557,10 +1517,7 @@ function Kontrollwerte({ ansicht }: { ansicht: Rechnungsansicht }) {
         <dt className="text-ink-muted">Nummer</dt>
         <dd>aus dem Kreis {bereichLabels[dokument.service_area ?? 'therapy']}</dd>
       </dl>
-      <p className="mt-2">
-        Danach ist die Rechnung unveränderlich; eine Korrektur geht nur über Storno und neue
-        Rechnung.
-      </p>
+      <p className="mt-2">Danach unveränderlich; korrigieren nur über Storno und neue Rechnung.</p>
     </>
   );
 }
@@ -1614,7 +1571,7 @@ function Entwurfsaktionen({
             <StammdatenFehlen
               ton="fehler"
               darfPflegen={darfStammdaten}
-              folge="Ohne sie lässt sich keine Rechnung ausstellen."
+              folge="Nicht ausgestellt: Praxisstammdaten fehlen."
             />
           </div>
         ) : ausstellen.error instanceof AnschriftUnvollstaendig ? (
@@ -1634,7 +1591,7 @@ function Entwurfsaktionen({
           </Statusmeldung>
         ) : ausstellen.isError ? (
           <Statusmeldung ton="fehler" className="mt-2">
-            {ausstellen.error.message} Bitte die Verbindung prüfen und erneut versuchen.
+            {ausstellen.error.message}
           </Statusmeldung>
         ) : null}
       </div>
@@ -1675,18 +1632,11 @@ function Entwurfsaktionen({
           bestaetigen="Ja, Entwurf verwerfen"
           bestaetigenLaeuft="Wird verworfen …"
           laeuft={verwerfen.isPending}
-          fehler={
-            verwerfen.isError
-              ? `${verwerfen.error.message} Bitte die Verbindung prüfen und erneut versuchen.`
-              : undefined
-          }
+          fehler={verwerfen.isError ? verwerfen.error.message : undefined}
           onBestaetigen={() => verwerfen.mutateAsync()}
           onAbbrechen={() => verwerfen.reset()}
         >
-          <p>
-            Der Entwurf wird gelöscht; seine Leistungen stehen danach wieder unter „Abzurechnen“.
-            Eine Nummer wurde nie vergeben, es entsteht also keine Lücke.
-          </p>
+          <p>Eine Nummer wurde nie vergeben, es entsteht also keine Lücke.</p>
         </Rueckfrage>
       </div>
     </Section>

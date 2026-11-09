@@ -113,7 +113,7 @@ export function ernaehrungsfehler(meldung: string | undefined): string {
     return 'Bitte die Angaben prüfen: Größe 100 bis 250 cm, Gewicht 20 bis 350 kg, Körperfett 3 bis 70 %.';
   if (m.includes('not allowed'))
     return 'Die Ernährungsberatung führt die Praxisinhaber:in; dieses Konto darf das nicht.';
-  return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
+  return 'Nicht gespeichert.';
 }
 
 async function aufrufen(funktion: string, parameter: Record<string, unknown>): Promise<unknown> {

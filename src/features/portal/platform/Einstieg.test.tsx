@@ -212,7 +212,7 @@ beforeEach(() => {
 });
 
 describe('Einstieg: Willkommen (DRP-016)', () => {
-  it('begrüßt mit dem eigenen Namen in eigener Zeile, sagt wofür und wie viel noch kommt', async () => {
+  it('begrüßt mit dem eigenen Namen in eigener Zeile, sagt wofür; wie viel noch kommt, sagt der Balken', async () => {
     zeige(MIT_NAMEN);
     const fenster = await screen.findByRole('dialog', { name: /^Willkommen,\s+Erika Beispiel$/ });
     expect(
@@ -220,14 +220,10 @@ describe('Einstieg: Willkommen (DRP-016)', () => {
     ).toHaveClass('text-gruss');
     expect(
       within(fenster).getByText(
-        satz(
-          'Schön, dass Sie da sind. Hier finden Sie alles zu Ihrer Behandlung bei Test Praxis Tuebingen.',
-        ),
+        satz('Hier finden Sie alles zu Ihrer Behandlung bei Test Praxis Tuebingen.'),
       ),
     ).toBeInTheDocument();
-    expect(within(fenster).getByText('Noch zwei kurze Fragen, dann sind Sie fertig.')).toHaveClass(
-      'text-ink-muted',
-    );
+    expect(within(fenster).queryByText(/kurze Fragen?, dann sind Sie fertig/)).toBeNull();
     expect(within(fenster).getByText('Schritt 1 von 3')).toBeInTheDocument();
     // Oben nur „Später“, kein ✕ und auf der ersten Seite kein „Zurück“.
     expect(within(fenster).getByRole('button', { name: 'Später' })).toBeInTheDocument();
@@ -246,11 +242,7 @@ describe('Einstieg: Willkommen (DRP-016)', () => {
     zeige({ ...BEHANDLUNG, relationship_kind: 'training' });
     expect(await screen.findByRole('dialog', { name: 'Willkommen' })).toBeInTheDocument();
     expect(
-      screen.getByText(
-        satz(
-          'Schön, dass Sie da sind. Hier finden Sie alles zu Ihrem Training bei Test Praxis Tuebingen.',
-        ),
-      ),
+      screen.getByText(satz('Hier finden Sie alles zu Ihrem Training bei Test Praxis Tuebingen.')),
     ).toBeInTheDocument();
   });
 
@@ -302,11 +294,7 @@ describe('Einstieg: Willkommen (DRP-016)', () => {
       ),
     ).toBeInTheDocument();
     expect(
-      within(fenster).getByText(
-        satz(
-          'Einwilligungen gibt nur Max Mustermann selbst. Noch eine kurze Frage, dann sind Sie fertig.',
-        ),
-      ),
+      within(fenster).getByText(satz('Einwilligungen gibt nur Max Mustermann selbst.')),
     ).toBeInTheDocument();
     // Den Namen trennt der Browser nie, auch nicht ab zwölf Buchstaben (DR-114).
     for (const name of within(fenster).getAllByText('Max Mustermann', { selector: 'span' })) {
@@ -516,9 +504,6 @@ describe('Einstieg: Einwilligungen (DRP-017)', () => {
     zeige(MIT_NAMEN);
     const fenster = await screen.findByRole('dialog', { name: /^Willkommen/ });
     expect(within(fenster).getByText('Schritt 1 von 2')).toBeInTheDocument();
-    expect(
-      within(fenster).getByText('Noch eine kurze Frage, dann sind Sie fertig.'),
-    ).toBeInTheDocument();
   });
 });
 
@@ -552,13 +537,9 @@ describe('Einstieg: Mitteilungen (DRP-018)', () => {
     const schalter = within(fenster).getByRole('switch', {
       name: 'Mitteilungen auf diesem Telefon',
     });
-    expect(schalter).toHaveAccessibleDescription('Ihr Telefon fragt einmal um Erlaubnis.');
+    // Die Abfrage erklärt das Telefon selbst (L7).
+    expect(schalter).toHaveAccessibleDescription('');
     expect(schalter).toHaveAttribute('aria-checked', 'false');
-    expect(
-      within(fenster).getByText(
-        'Welche Mitteilungen und ob auch per E-Mail, stellen Sie später unter „Ich“ ein.',
-      ),
-    ).toBeInTheDocument();
     // Keine Liste je Art, keine Ruhezeit, kein „Speichern“: eine Knopfebene.
     expect(within(fenster).queryByText(/Ruhezeit/)).toBeNull();
     expect(within(fenster).queryByRole('checkbox')).toBeNull();
@@ -655,9 +636,6 @@ describe('Einstieg: Mitteilungen (DRP-018)', () => {
     );
     expect(adresse).toHaveClass('wrap-break-word', 'hyphens-manual');
     expect(adresse.querySelectorAll('wbr')).toHaveLength(2);
-    expect(
-      within(fenster).getByText('Welche Mitteilungen, stellen Sie später unter „Ich“ ein.'),
-    ).toBeInTheDocument();
     ladeBenachrichtigungen.mockResolvedValue({
       ...WAHL,
       email_kinds: ['nutrition_diary_reminder', ...ARTEN],
@@ -694,9 +672,7 @@ describe('Einstieg: Mitteilungen (DRP-018)', () => {
       ),
     ).toBeInTheDocument();
     expect(
-      within(fenster).getByText(
-        'Die Mitteilungen gelten für Ihren Zugang. Feinheiten stellen Sie später unter „Ich“ ein.',
-      ),
+      within(fenster).getByText('Die Mitteilungen gelten für Ihren Zugang.'),
     ).toBeInTheDocument();
   });
 });
@@ -724,7 +700,7 @@ describe('Einstieg: Alles bereit (DRP-019)', () => {
     );
     expect(
       within(fenster).getByText(
-        'Als Nächstes: Ihr Fragebogen vor dem ersten Termin. Er dauert etwa 10 Minuten.',
+        'Als Nächstes: Ihr Fragebogen vor dem ersten Termin, etwa 10 Minuten.',
       ),
     ).toBeInTheDocument();
     // Kein Schritt mehr und kein „Später“: Der Fuß führt hinaus.

@@ -1526,6 +1526,15 @@
           "vermerk": "K5 mit Diktat 6 statt 7 Tipps (ANN-840); axe und Ziele ab 44 px je Praxisseite (ANN-849), auch beim Laden, nach Fehlern und in sechs Fenstern ohne Adresse; BEF-224 und Terminformulare angeglichen"
         },
         {
+          "id": "slk-epic-002",
+          "name": "SLK-EPIC-002 Weniger Text überall (L7)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-11-09",
+          "nachweis": "SLK-010 bis -019",
+          "vermerk": "Sätze 1.774 → 934, Ratsche"
+        },
+        {
           "id": "des-epic-001",
           "name": "DES-EPIC-001 Design der ganzen App nach DESIGN.md: Bausteine, Ratsche, Bereiche B1 bis B8, Runde 2 nach Design- und Praxis-Review",
           "gewicht": 2,

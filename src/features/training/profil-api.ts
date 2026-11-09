@@ -9,15 +9,15 @@ import { getSupabase } from '@/lib/supabase';
  * protokolliert der Server (ADR-021 Punkt 8).
  */
 
-/** Die sieben Felder in der Reihenfolge der Seite, mit Beschriftung. */
+/** Die sieben Felder in der Reihenfolge der Seite, mit Beschriftung und, wo nötig, Hinweis. */
 export const PROFILFELDER = [
-  ['goals', 'Ziele', 'In den Worten der Person, etwa „wieder ohne Geländer Treppen steigen“.'],
-  ['equipment', 'Ausrüstung', 'Was zu Hause oder im Studio da ist.'],
-  ['time_budget', 'Zeitbudget', 'Wie viel Zeit je Woche und je Einheit realistisch ist.'],
-  ['places', 'Orte', 'Zu Hause, Studio, unterwegs.'],
-  ['limits', 'Belastungsgrenzen', 'Was nicht oder nur eingeschränkt geht.'],
-  ['history', 'Vorgeschichte', 'Verletzungen und Operationen.'],
-  ['preferences', 'Vorlieben', 'Was die Person gern macht und was erfahrungsgemäß nicht.'],
+  ['goals', 'Ziele', 'In den Worten der Person'],
+  ['equipment', 'Ausrüstung', null],
+  ['time_budget', 'Zeitbudget', 'Je Woche und je Einheit'],
+  ['places', 'Orte', null],
+  ['limits', 'Belastungsgrenzen', null],
+  ['history', 'Vorgeschichte', 'Verletzungen und Operationen'],
+  ['preferences', 'Vorlieben', null],
 ] as const;
 
 export type Profilfeld = (typeof PROFILFELDER)[number][0];

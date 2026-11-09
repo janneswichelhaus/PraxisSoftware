@@ -481,9 +481,7 @@ export function Eingabe({
         ) : null}
         {zuVieleAnhaenge || anhangHinweis ? (
           <Statusmeldung ton="warnung" className="mb-2">
-            {zuVieleAnhaenge
-              ? `Höchstens ${ANHAENGE_MAX} Anhänge je Nachricht – bitte entfernen, was zu viel ist.`
-              : anhangHinweis}
+            {zuVieleAnhaenge ? `Höchstens ${ANHAENGE_MAX} Anhänge je Nachricht.` : anhangHinweis}
           </Statusmeldung>
         ) : null}
         <EntwurfsAnhaenge anhaenge={entwurfsanhaenge} />

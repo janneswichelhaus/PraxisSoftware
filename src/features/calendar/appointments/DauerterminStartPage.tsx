@@ -4,7 +4,6 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -97,11 +96,9 @@ export function DauerterminStartPage({ user }: { user: CurrentUser }) {
       {/* Der Weg zurück, meist in den Kalenderstand (KAL-19). */}
       <Rueckweg standard="/kalender" />
 
-      {/* Nur der erste Satz; was im nächsten Schritt folgt, zeigt der nächste
-          Schritt (UX-005g). */}
+      {/* Ohne Satz im Kopf: Was als Nächstes kommt, zeigt der Schritt selbst (L7). */}
       <PageHeader
         title={`${BEGRIFFE.dauertermin} anlegen`}
-        description="Zuerst die Patient:in, dann die Behandlungsgrundlage."
         // Wie beim Termin: Die Gesuchte ist neu - anlegen und mit ihr hierher
         // zurück, gleich in den zweiten Schritt (Design-Review A, Befund 6).
         actions={
@@ -209,11 +206,7 @@ function Grundlagenwahl({
       }
     >
       {isError ? (
-        <ErrorState
-          title="Die Behandlungsgrundlagen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={erneutLaden}
-        />
+        <ErrorState title="Behandlungsgrundlagen nicht geladen." onErneut={erneutLaden} />
       ) : isPending || !zahlenGeladen || eindeutig ? (
         <LoadingState label="Behandlungsgrundlagen werden geladen …" />
       ) : eintraege.length === 0 ? (
@@ -225,8 +218,8 @@ function Grundlagenwahl({
           title="Keine Behandlungsgrundlage"
           description={
             canWriteTreatmentBases(user.roles)
-              ? 'Ein Dauertermin hängt an einer Verordnung oder Selbstzahler-Vereinbarung. Zuerst eine erfassen.'
-              : 'Ein Dauertermin hängt an einer Verordnung oder Selbstzahler-Vereinbarung. Behandlungsgrundlagen erfasst das Praxisteam.'
+              ? undefined
+              : 'Behandlungsgrundlagen erfasst das Praxisteam.'
           }
           aktion={
             canWriteTreatmentBases(user.roles) ? (
@@ -246,11 +239,7 @@ function Grundlagenwahl({
           ) : (
             // Der Leerzustand in der Karte (DESIGN.md Regel 8), mit dem, was
             // trotzdem geht: Die Serienseite zeigt, was ungedeckt bliebe.
-            <EmptyState
-              inKarte
-              title="Keine Grundlage hat noch etwas zu planen."
-              description="Eine Serie darüber hinaus ist möglich."
-            />
+            <EmptyState inKarte title="Nichts mehr zu planen." />
           )}
           {weitere.length > 0 ? (
             // Was selten gebraucht wird, steht eingeklappt (Bedienprinzipien,

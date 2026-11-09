@@ -241,14 +241,12 @@ export function TerritoriesPage({ user }: { user: CurrentUser }) {
         <Abfragezustand
           abfrage={abfrage}
           laden="Gebiete werden geladen …"
-          fehler="Die Gebiete konnten nicht geladen werden."
+          fehler="Gebiete nicht geladen."
           inKarte
           // Während ein neues Gebiet entsteht, steht kein Leerzustand darunter.
           leer={{
             wenn: (gebiete) => gebiete.length === 0 && editing !== 'new',
             titel: 'Noch keine Gebiete',
-            beschreibung:
-              'Ohne Gebiete gibt es keinen Hinweis beim Hausbesuch, und die Terminsuche ordnet nur nach Datum.',
           }}
         >
           {(gebiete) =>
@@ -305,8 +303,8 @@ export function TerritoriesPage({ user }: { user: CurrentUser }) {
         </div>
       ) : null}
 
-      {/* Rechtssätze am Seitenende: was die Regel bewirkt (ohne Gebiete sagt es der Leerzustand) und
-          was die Anschriften verlässt. */}
+      {/* Rechtssätze am Seitenende: was die Regel bewirkt (nur mit Gebieten) und was die Anschriften
+          verlässt. */}
       {abfrage.data && (abfrage.data.length > 0 || mayEdit) ? (
         <Kleingedrucktes className="mt-8">
           {[

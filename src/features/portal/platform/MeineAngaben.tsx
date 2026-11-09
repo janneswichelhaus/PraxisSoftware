@@ -8,7 +8,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { titelklassen } from '@/components/ui/titelstufe';
 import { Verlaufstabelle } from '@/components/ui/Verlaufstabelle';
 import {
@@ -339,11 +338,7 @@ function MitAngaben({
       <>
         {kopf}
         <div className="mt-6">
-          <ErrorState
-            title="Ihre Angaben konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
-            onErneut={() => refetch()}
-          />
+          <ErrorState title="Angaben nicht geladen." onErneut={() => refetch()} />
         </div>
       </>
     );
@@ -352,11 +347,7 @@ function MitAngaben({
     return (
       leer ?? (
         <div className="mt-8">
-          <EmptyState
-            markenform
-            title="Noch keine Angaben"
-            description="Ihre Antworten aus dem Check-in und nach den Übungen stehen hier, sobald Sie welche gesendet haben."
-          />
+          <EmptyState markenform title="Noch keine Angaben" />
         </div>
       )
     );

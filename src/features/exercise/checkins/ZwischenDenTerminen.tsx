@@ -68,7 +68,7 @@ export function ZwischenDenTerminen({
         <Abfragezustand
           abfrage={abfrage}
           laden="Check-ins werden geladen …"
-          fehler="Die Check-ins konnten nicht geladen werden."
+          fehler="Check-ins nicht geladen."
         >
           {(daten) =>
             daten ? (
@@ -127,7 +127,7 @@ function Takt({
             <span className="font-semibold">Check-in: {taktText(takt.interval_days)}</span>
             {' · '}
             {takt.due_on === null
-              ? 'beendet – die Person antwortet nicht mehr'
+              ? 'beendet'
               : takt.due_on <= daten.today
                 ? takt.due_on === daten.today
                   ? 'heute fällig'
@@ -182,10 +182,7 @@ function Takt({
                 });
               }}
             >
-              <p>
-                Die Person wird nicht mehr um einen Check-in gebeten. Was sie schon angegeben hat,
-                bleibt hier stehen.
-              </p>
+              <p>Die Person wird nicht mehr um einen Check-in gebeten.</p>
             </Rueckfrage>
           ) : null}
         </div>

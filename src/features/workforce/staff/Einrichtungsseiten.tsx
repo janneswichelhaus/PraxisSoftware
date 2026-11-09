@@ -204,11 +204,10 @@ export function Radliste({
       <Abfragezustand
         abfrage={flotte}
         laden="Radflotte wird geladen …"
-        fehler="Die Radflotte konnte nicht geladen werden."
+        fehler="Radflotte nicht geladen."
         leer={{
           wenn: (daten) => freieRaeder(daten).length === 0,
           titel: 'Kein Schlüssel liegt im Tresor.',
-          beschreibung: 'Alle Räder sind unterwegs oder in Reparatur.',
         }}
         inKarte
       >

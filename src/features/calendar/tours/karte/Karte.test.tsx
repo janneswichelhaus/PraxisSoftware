@@ -451,7 +451,7 @@ describe('Karte', () => {
       <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(3)} beschriftung="Karte" />,
     );
 
-    const hinweis = /Kartenmaterial konnte nicht geladen werden/;
+    const hinweis = /Kartenmaterial nicht geladen/;
     expect(screen.queryByText(hinweis)).not.toBeInTheDocument();
 
     // Genau das passierte im Browser: Der Style kam nicht an, die Marker
@@ -470,9 +470,7 @@ describe('Karte', () => {
     karten[0]?.ausloesen('error');
     karten[0]?.ausloesen('load');
 
-    expect(
-      screen.queryByText(/Kartenmaterial konnte nicht geladen werden/),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Kartenmaterial nicht geladen/)).not.toBeInTheDocument();
   });
 
   it('baut die Karte nicht neu, wenn der Aufrufer die Stoppliste neu berechnet', () => {

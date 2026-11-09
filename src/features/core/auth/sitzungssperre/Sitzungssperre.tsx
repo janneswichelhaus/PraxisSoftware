@@ -416,7 +416,6 @@ export function Sitzungssperre({
         <Vollseite titel="Keine Verbindung">
           <ErrorState
             title="Own Motion ist gerade nicht erreichbar."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
             onErneut={() => {
               phaseRef.current = 'start';
               setPhase('start');

@@ -308,7 +308,7 @@ describe('EditAppointmentPage', () => {
 
     await user.selectOptions(screen.getByLabelText('Terminart *'), 'video');
 
-    expect(await screen.findByText(/noch kein Videolink erzeugt/)).toBeInTheDocument();
+    expect(await screen.findByText('Noch ohne Videolink.')).toBeInTheDocument();
     expect(screen.queryByLabelText('Standort *')).not.toBeInTheDocument();
     expect(screen.queryByText(/Adresse des Hausbesuchs/)).not.toBeInTheDocument();
   });
@@ -518,9 +518,7 @@ describe('EditAppointmentPage', () => {
 
   it('zeigt eine Ueberschneidung verstaendlich an', async () => {
     updateAppointment.mockRejectedValue(
-      new Error(
-        'In diesem Zeitraum hat die behandelnde Person bereits einen Termin. Bitte eine andere Zeit wählen.',
-      ),
+      new Error('In diesem Zeitraum hat die behandelnde Person bereits einen Termin.'),
     );
     const user = userEvent.setup();
     rendern();
@@ -594,7 +592,7 @@ describe('EditAppointmentPage', () => {
     const user = userEvent.setup();
     rendern();
 
-    expect(await screen.findByText('Der Termin konnte nicht geladen werden.')).toBeInTheDocument();
+    expect(await screen.findByText('Termin nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText('Nicht gefunden')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
@@ -668,9 +666,7 @@ describe('EditAppointmentPage', () => {
     rendern();
     await formularAbwarten();
 
-    expect(
-      await screen.findByText('Die Personen konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Personen nicht geladen.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
     expect(
       await screen.findAllByText('Bitte zuerst die Liste der Personen erneut laden.'),
@@ -717,7 +713,8 @@ describe('EditAppointmentPage', () => {
       await formularAbwarten();
 
       expect(screen.getByRole('heading', { level: 1, name: 'Teilnahme ändern' })).toBeVisible();
-      expect(screen.getByText('Hier wird nur die beteiligte Person getauscht.')).toBeVisible();
+      // L7: Titel und Feld sagen es; kein Satz im Kopf.
+      expect(screen.queryByText('Hier wird nur die beteiligte Person getauscht.')).toBeNull();
       expect(screen.getByLabelText('Beteiligte Person *')).toHaveValue(STAFF_ANNA);
       // Zeit, Art und Ort gelten fuer alle - sie stehen als Auskunft da.
       for (const feld of ['Terminart *', 'Datum *', 'Beginn *', 'Standort *']) {

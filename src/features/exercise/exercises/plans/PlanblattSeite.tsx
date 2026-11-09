@@ -31,7 +31,7 @@ export function PlanblattSeite({ user }: { user: CurrentUser }) {
     <Abfragezustand
       abfrage={abfrage}
       laden="Plan wird geladen …"
-      fehler="Der Plan konnte nicht geladen werden."
+      fehler="Plan nicht geladen."
       inKarte
     >
       {(plan) =>

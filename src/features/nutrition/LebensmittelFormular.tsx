@@ -144,7 +144,7 @@ export function LebensmittelFormular({
         </Section>
         <Section titel="Portion">
           <Feldgruppe>
-            {feld('portion_label', { hint: 'etwa „1 Riegel“' })}
+            {feld('portion_label')}
             {feld('portion_amount', { zahl: true, hint: `in ${werte.base_unit}` })}
           </Feldgruppe>
         </Section>

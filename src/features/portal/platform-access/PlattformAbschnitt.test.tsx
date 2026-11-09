@@ -131,18 +131,17 @@ describe('Abschnitt Plattform', () => {
     const nutzer = userEvent.setup();
     zeige();
     await nutzer.click(await screen.findByRole('button', { name: 'Vor Ort einladen' }));
-    // DR-104: Die Einladung kennt kein Kennwort - der Text davor auch nicht.
-    expect(
-      screen.getByText(/richtet dort ihren Zugang mit Gesicht oder Finger ein/),
-    ).toBeInTheDocument();
+    // Die Übergabe ist die Prüfung der Identität (ADR-023 Punkt 11); ein Kennwort gibt es nicht.
+    expect(screen.getByText(/^Bitte nur der Person selbst zeigen/)).toBeInTheDocument();
+    expect(screen.queryByText(/Kennwort/)).toBeNull();
     await nutzer.click(screen.getByRole('button', { name: 'Code anzeigen' }));
 
     const code = await screen.findByRole('img', { name: 'Code zum Einlösen der Einladung' });
     expect(code).toBeInTheDocument();
     expect(
-      screen.getByText(/Dort entsteht der Zugang – mit Gesicht oder Finger, ohne Kennwort\./),
+      screen.getByText('Bitte die Person diesen Code mit dem eigenen Telefon scannen lassen.'),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/Adresse und Kennwort/)).toBeNull();
+    expect(screen.queryByText(/Kennwort/)).toBeNull();
     expect(invitePlatformAccess).toHaveBeenCalledWith('treatment', MAX, 'on_site', false);
 
     await nutzer.click(screen.getByRole('button', { name: 'Fertig' }));

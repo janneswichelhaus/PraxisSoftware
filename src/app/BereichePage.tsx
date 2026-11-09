@@ -7,19 +7,15 @@ import type { CurrentUser } from '@/features/core/session/types';
 import { arbeitsbereiche } from './navigation';
 
 /**
- * Übersicht aller Arbeitsbereiche.
- *
- * Ziel des „Mehr"-Eintrags der mobilen Tableiste: Auf schmalen Geräten passen
- * nicht alle Bereiche in die Leiste, und eine versteckte Ebene ohne eigene
- * Seite wäre schlecht auffindbar. Die Seite nennt zu jedem Bereich seine
- * Leitfrage, damit die Zuordnung ohne Ausprobieren gelingt.
+ * Alle Arbeitsbereiche als Ziel von „Mehr" in der Tableiste: Auf schmalen Geräten passen nicht alle
+ * in die Leiste. Name und Reiter tragen die Zuordnung, ohne Leitfrage darunter (L7).
  */
 export function BereichePage({ user }: { user: CurrentUser }) {
   const bereiche = arbeitsbereiche(user);
 
   return (
     <>
-      <PageHeader title="Alle Bereiche" description="Wofür welcher Bereich zuständig ist." />
+      <PageHeader title="Alle Bereiche" />
 
       <ul className="divide-line border-line divide-y border-y">
         {bereiche.map((bereich) => (
@@ -31,7 +27,6 @@ export function BereichePage({ user }: { user: CurrentUser }) {
               <span className="text-ink-muted">{bereich.icon}</span>
               <span className="min-w-0">
                 <span className="text-ink text-liste block font-medium">{bereich.label}</span>
-                <span className="text-ink-muted mt-0.5 block text-sm">{bereich.leitfrage}</span>
               </span>
             </Link>
             {/* Die Reiter des Bereichs zum direkten Sprung (ORG-001): Bis

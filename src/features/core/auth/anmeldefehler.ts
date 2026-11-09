@@ -4,7 +4,7 @@ export const ANMELDESAETZE = {
   leer: 'Bitte E-Mail-Adresse und Kennwort eingeben.',
   keineVerbindung: 'Keine Verbindung zum Anmeldedienst. Ihre Angaben wurden nicht geprüft.',
   dienstGestoert:
-    'Der Anmeldedienst ist gerade nicht erreichbar. Ihre Angaben wurden nicht geprüft. Bitte später erneut versuchen.',
+    'Der Anmeldedienst ist gerade nicht erreichbar. Ihre Angaben wurden nicht geprüft.',
   zuVieleVersuche: 'Zu viele Versuche. Bitte in einigen Minuten erneut versuchen.',
   sitzungBeendet: 'Sie wurden abgemeldet. Nicht gespeicherte Eingaben sind nicht erhalten.',
 } as const;

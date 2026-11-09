@@ -10,6 +10,7 @@ import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Textlink } from '@/components/ui/Textlink';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
@@ -150,7 +151,7 @@ function Kontingentzeilen({
           die Serienplanung vor. */}
       <DetailRow label="Noch planbar">
         {kontingent.remaining === 0
-          ? 'Nichts mehr – jeder mögliche Termin ist genutzt oder verplant'
+          ? 'Keiner mehr'
           : `${kontingent.remaining} ${kontingent.remaining === 1 ? 'Termin' : 'Termine'}`}
       </DetailRow>
       {/* B1/B7 (BEF-151, BEF-157): der Stand für die Abrechnung - mit dem
@@ -855,7 +856,6 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
 
   if (verborgen) return null;
 
-  const darfSchreiben = canWriteTreatmentBases(user.roles);
   // Über die ganze Akte, nicht je Karte: „Termine übernehmen" führt sonst auf
   // eine Seite ohne Angebot (CAL-022).
   const ungedecktInDerAkte = eintraege.reduce(
@@ -884,28 +884,16 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
             die Grundlagen samt ihren Aktionen da - ohne Zahlen und ohne einen
             Zustand, der ohne sie nur geraten wäre. */}
         {grundlagenFehler ? (
-          <ErrorState
-            title="Die Behandlungsgrundlagen konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={erneutLaden}
-          />
+          <ErrorState title="Behandlungsgrundlagen nicht geladen." onErneut={erneutLaden} />
         ) : null}
         {!grundlagenFehler && zahlenFehler && eintraege.length > 0 ? (
           <Statusmeldung ton="warnung" className="mb-3">
-            Die Terminzahlen konnten nicht geladen werden. Bitte die Verbindung prüfen und später
-            erneut versuchen.
+            Terminzahlen nicht geladen. {VERBINDUNG_PRUEFEN}
           </Statusmeldung>
         ) : null}
 
         {!isPending && !grundlagenFehler && aktuell.length === 0 ? (
-          <EmptyState
-            title="Keine laufende Behandlungsgrundlage"
-            description={
-              darfSchreiben
-                ? 'Die nächste entsteht über „Grundlage erfassen“ – als Verordnung oder als Selbstzahler.'
-                : 'Behandlungsgrundlagen erfasst das Praxisteam.'
-            }
-          />
+          <EmptyState title="Keine laufende Behandlungsgrundlage" />
         ) : null}
 
         {aktuell.length > 0 ? (

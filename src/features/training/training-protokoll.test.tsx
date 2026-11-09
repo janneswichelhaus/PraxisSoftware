@@ -237,9 +237,7 @@ describe('Trainingsprotokoll am Trainingstermin', () => {
     getTrainingAppointment.mockResolvedValue({ ...termin, status: 'documented' });
     getTrainingProtocol.mockResolvedValue(null);
     renderWithProviders(<TrainingAppointmentPage user={testUser(['trainer'], 'Tom')} />);
-    expect(
-      await screen.findByText('Zu diesem Termin gibt es kein Trainingsprotokoll.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Kein Trainingsprotokoll.')).toBeInTheDocument();
     expect(screen.queryByLabelText('Was in der Einheit gemacht wurde')).toBeNull();
   });
 
@@ -328,9 +326,9 @@ describe('Einheiten einer Kundin', () => {
     expect(screen.queryByText(/Einheiten gesamt|Fortschritt|Verschlechter/)).toBeNull();
   });
 
-  it('sagt, wo ein Protokoll entsteht, solange es keines gibt', async () => {
+  it('zeigt den Leerzustand, solange es kein Protokoll gibt', async () => {
     listTrainingProtocols.mockResolvedValue([]);
     renderWithProviders(<TrainingEinheiten kundin={kundin} />);
-    expect(await screen.findByText(/Es entsteht am Trainingstermin/)).toBeInTheDocument();
+    expect(await screen.findByText('Noch kein Trainingsprotokoll.')).toBeInTheDocument();
   });
 });

@@ -43,7 +43,7 @@ export function WerkstattblattPage({ user }: { user: CurrentUser }) {
     <Abfragezustand
       abfrage={blatt}
       laden="Unterlage wird vorbereitet …"
-      fehler="Die Unterlage für die Werkstatt konnte nicht geladen werden."
+      fehler="Unterlage für die Werkstatt nicht geladen."
       inKarte
       rahmen={(zustand) => (
         <>

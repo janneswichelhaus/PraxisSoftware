@@ -88,7 +88,7 @@ export function BikePage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={detail}
         laden="Rad wird geladen …"
-        fehler="Das Rad konnte nicht geladen werden."
+        fehler="Rad nicht geladen."
         endgueltig={{
           wenn: (fehler) => fehler instanceof Error && fehler.message.includes('gibt es nicht'),
           titel: 'Dieses Rad gibt es nicht mehr.',
@@ -107,7 +107,7 @@ export function BikePage({ user }: { user: CurrentUser }) {
           <Abfragezustand
             abfrage={flotte}
             laden="Radflotte wird geladen …"
-            fehler="Die Radflotte konnte nicht geladen werden."
+            fehler="Radflotte nicht geladen."
             inKarte
           >
             {(geladen) => <Rad detail={daten} flotte={geladen} zone={zone} zurueck={zurueck} />}
@@ -271,12 +271,11 @@ function Rad({
 
       {freigabeFrage ? (
         <Dialogfenster titel={`${bike.name} freigeben?`} onSchliessen={freigabeSchliessen}>
-          <p className="text-ink text-sm">
-            {bike.name} steht danach wieder in der Planung.
-            {offeneStellen > 0
-              ? ` ${offeneStellen === 1 ? 'Die offene Stelle gilt' : `Die ${offeneStellen} offenen Stellen gelten`} als erledigt und ${offeneStellen === 1 ? 'bleibt' : 'bleiben'} im Verlauf.`
-              : ''}
-          </p>
+          {offeneStellen > 0 ? (
+            <p className="text-ink text-sm">
+              {`${offeneStellen === 1 ? 'Die offene Stelle gilt' : `Die ${offeneStellen} offenen Stellen gelten`} als erledigt und ${offeneStellen === 1 ? 'bleibt' : 'bleiben'} im Verlauf.`}
+            </p>
+          ) : null}
           {freigeben.isError ? (
             <Statusmeldung ton="fehler" className="mt-3">
               {freigeben.error.message}

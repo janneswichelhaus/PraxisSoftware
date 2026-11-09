@@ -132,7 +132,7 @@ export function Erhebung({
       <Fehlerseite zurueck={zurueck} titel={titel}>
         <ErrorState
           title="Nicht freigegeben"
-          description="Fragebögen erheben Praxisinhaber:in, Therapeut:innen und Teamleitung."
+          description="Nur Praxisinhaber:in, Therapeut:innen und Teamleitung."
         />
       </Fehlerseite>
     );
@@ -145,8 +145,7 @@ export function Erhebung({
     return (
       <Fehlerseite zurueck={zurueck} titel={titel}>
         <ErrorState
-          title="Der Bogen konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          title="Bogen nicht geladen."
           onErneut={() => Promise.all([patient.refetch(), erhebungen.refetch()])}
         />
       </Fehlerseite>
@@ -156,10 +155,7 @@ export function Erhebung({
   if (patient.data === null) {
     return (
       <Fehlerseite zurueck={zurueck} titel={titel}>
-        <ErrorState
-          title="Nicht gefunden"
-          description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-        />
+        <ErrorState title="Nicht gefunden" />
       </Fehlerseite>
     );
   }
@@ -168,10 +164,7 @@ export function Erhebung({
   if (!definition) {
     return (
       <Fehlerseite zurueck={zurueck} titel={titel} beschreibung={name}>
-        <ErrorState
-          title="Diesen Fragebogen gibt es nicht oder er ist nicht freigegeben."
-          description="Welche Bögen sich erheben lassen, steht im Befund der Akte."
-        />
+        <ErrorState title="Fragebogen nicht verfügbar." />
       </Fehlerseite>
     );
   }
@@ -208,10 +201,7 @@ export function Erhebung({
   if ((suche.get('entwurf') && !entwurf) || (suche.get('korrigiert') && !korrigiert)) {
     return (
       <Fehlerseite zurueck={zurueck} titel={titel} beschreibung={name}>
-        <ErrorState
-          title="Dieser Bogen lässt sich hier nicht mehr bearbeiten."
-          description="Er ist inzwischen abgeschlossen, korrigiert oder verworfen. Der aktuelle Stand steht im Befund."
-        />
+        <ErrorState title="Bogen nicht mehr bearbeitbar." />
       </Fehlerseite>
     );
   }
@@ -273,10 +263,7 @@ function VeralteterEntwurf({
 
   return (
     <div className="flex flex-col gap-4">
-      <ErrorState
-        title="Der Entwurf gehört zu einer früheren Fassung des Bogens."
-        description={`Er lässt sich mit der aktuellen Fassung nicht fortsetzen. Bitte den Entwurf vom ${formatDate(entwurf.recorded_on)} verwerfen und den Bogen neu erheben.`}
-      />
+      <ErrorState title="Entwurf aus einer früheren Fassung." />
       <div>
         <Rueckfrage
           ausloeser="Entwurf verwerfen und neu erheben"
@@ -286,8 +273,7 @@ function VeralteterEntwurf({
           onAbbrechen={() => verwerfen.reset()}
           onBestaetigen={() => verwerfen.mutateAsync()}
         >
-          Die gespeicherten Antworten dieses Entwurfs werden gelöscht. Danach beginnt ein neuer
-          Bogen in der aktuellen Fassung.
+          Die gespeicherten Antworten werden gelöscht.
         </Rueckfrage>
       </div>
     </div>
@@ -515,10 +501,7 @@ function Formular({
   return (
     <>
       <Rueckweg standard={zurueck} beschriftung="Zurück zum Befund" />
-      <PageHeader
-        title={titel}
-        description={`${fullName(patient)} · Jede Frage darf offen bleiben.`}
-      />
+      <PageHeader title={titel} description={fullName(patient)} />
       {ersetzt ? (
         <div className="-mt-3 mb-6 max-w-prose text-sm">
           <p className="text-ink">Ersetzt den Bogen vom {formatDate(ersetzt.recorded_on)}.</p>
@@ -603,9 +586,7 @@ function Formular({
             // Eine Korrektur bleibt am Erhebungstag des korrigierten Bogens;
             // wann korrigiert wurde, hält der Server getrennt fest (ABN-014,
             // BEF-101 Punkt 2). Im Verlauf steht sie deshalb am selben Tag.
-            <p className="text-ink text-sm">
-              Datum der Erhebung: {formatDate(datum)} – wie im korrigierten Bogen.
-            </p>
+            <p className="text-ink text-sm">Datum der Erhebung: {formatDate(datum)}</p>
           ) : (
             <Field
               feldId={DATUM_ID}
@@ -623,7 +604,7 @@ function Formular({
             <TextArea
               feldId={BEGRUENDUNG_ID}
               label="Begründung der Korrektur"
-              hint="Der ursprüngliche Bogen bleibt unverändert in der Akte. Die Begründung lässt sich nach dem ersten Speichern nicht mehr ändern."
+              hint="Nach dem ersten Speichern nicht mehr änderbar."
               rows={2}
               maxLength={500}
               required
@@ -637,7 +618,7 @@ function Formular({
           {schutz}
 
           <Kleingedrucktes id={folgeId}>
-            Abgeschlossen lässt sich der Bogen nicht mehr ändern, nur noch korrigieren.
+            Nach dem Abschließen nur noch als Korrektur.
           </Kleingedrucktes>
 
           {/* Verwerfen löscht den Entwurf auf dem Server - leise am Ende und
@@ -673,7 +654,8 @@ function Formular({
         oben={
           <div className="px-4 pt-2 sm:px-6 lg:px-8">
             <p className="text-ink-muted text-sm tabular-nums">
-              {beantwortet} von {definition.items.length} Fragen beantwortet
+              {beantwortet} von {definition.items.length} Fragen beantwortet · jede darf offen
+              bleiben
             </p>
             <ProgressBar wert={beantwortet} von={definition.items.length} />
             {sicherungsstand}

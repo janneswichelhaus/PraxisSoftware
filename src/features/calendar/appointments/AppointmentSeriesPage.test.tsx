@@ -559,9 +559,7 @@ describe('AppointmentSeriesPage', () => {
     const user = userEvent.setup();
     rendern();
 
-    expect(
-      await screen.findByText('Die Zahlen der Grundlage konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Zahlen der Grundlage nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText('Nicht gefunden')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '← Zurück zur Akte' })).toBeInTheDocument();
 
@@ -573,9 +571,7 @@ describe('AppointmentSeriesPage', () => {
     fetchPatient.mockResolvedValue(null);
     rendern();
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
-    expect(
-      screen.getByText('Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben.'),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/gibt es nicht oder/)).not.toBeInTheDocument();
   });
 
   it('wiederholt im Fehlerfenster nicht den Titel (ZST-12)', async () => {

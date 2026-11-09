@@ -97,30 +97,6 @@ function ortsBeschriftung(art: Appointment['appointment_type']): string {
 }
 
 /**
- * Was ein Zustand ohne Rückweg bedeutet: wo korrigiert wird — im Kalender
- * gibt es dafür keinen Knopf, und das ist Absicht (ADR-018 Punkt 2).
- *
- * Der Zustand selbst steht seit UX-005a als Zeichen in der Kopfzeile; der
- * Satz wiederholt ihn nicht mehr („Dieser Termin ist abgesagt.") und sagt nur
- * noch, was daraus folgt. Am bestätigten Termin steht nichts: Das ist der
- * Regelfall, und ein Satz dazu wäre Rauschen.
- */
-function zustandsHinweis(appointment: Appointment): string | null {
-  switch (appointment.status) {
-    case 'cancelled':
-      return 'Eine Absage wird nicht zurückgenommen – für einen neuen Termin bitte neu anlegen.';
-    case 'no_show':
-      return 'Zum Ändern erst wieder öffnen.';
-    case 'completed':
-      return 'Zum Ändern erst den Haken zurücknehmen.';
-    case 'documented':
-      return 'Korrigiert wird in der Dokumentation, nicht am Termin.';
-    default:
-      return null;
-  }
-}
-
-/**
  * Die Karte eines Zustands mit Einzelheiten (UX-005a, seit dem Design-Handoff
  * vom 2026-10-01 eine Karte statt einer Kachel): die Absage mit Grund,
  * Eingang und Gebührenanlass; das Nichtantreffen mit Zeitpunkt, Protokoll und
@@ -499,7 +475,7 @@ export function AbsageAktion({
         {/* Im Panel nur das, was die Entscheidung trägt (K9, Design-Review). */}
         {kompakt
           ? 'Eine Absage lässt sich nicht zurücknehmen.'
-          : 'Der Eintrag bleibt vollständig erhalten und gibt seinen Zeitraum wieder frei. Eine Absage lässt sich nicht zurücknehmen – für einen neuen Eintrag bitte neu anlegen.'}
+          : 'Der Eintrag bleibt vollständig erhalten. Eine Absage lässt sich nicht zurücknehmen.'}
       </p>
       {/* Der Grund als eine Reihe Chips (K9, ANN-500): ein Tipp statt Liste
           öffnen und wählen. Weiterhin ohne Vorbelegung (ANN-034). */}
@@ -584,8 +560,7 @@ export function AbsageAktion({
 
       {istEreignis ? (
         <p className="text-ink-muted mt-3 text-sm">
-          Eine Fehlzeit des Praxisbetriebs löst kein Ausfallhonorar aus – es gibt keine Patient:in,
-          die absagen könnte.
+          Eine Fehlzeit des Praxisbetriebs löst kein Ausfallhonorar aus.
         </p>
       ) : (
         // Die Regel zum Ausfallhonorar ist ein Rechtssatz (DESIGN.md Regel 6).
@@ -668,8 +643,8 @@ function EreignisAbsageAktion({
         am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)} um{' '}
         {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr wird für{' '}
         {offen.length === 1 ? 'die eine noch offene Teilnahme' : `alle ${offen.length} Beteiligten`}{' '}
-        als abgesagt geführt. Die Einträge bleiben erhalten und geben ihre Zeiträume wieder frei.
-        Eine Absage lässt sich nicht zurücknehmen.
+        als abgesagt geführt. Die Einträge bleiben erhalten. Eine Absage lässt sich nicht
+        zurücknehmen.
       </p>
       <div className="mt-3 max-w-xs">
         <Select
@@ -690,8 +665,7 @@ function EreignisAbsageAktion({
         </Select>
       </div>
       <p className="text-ink-muted mt-3 text-sm">
-        Eine Fehlzeit des Praxisbetriebs löst kein Ausfallhonorar aus – es gibt keine Patient:in,
-        die absagen könnte.
+        Eine Fehlzeit des Praxisbetriebs löst kein Ausfallhonorar aus.
       </p>
     </Rueckfrage>
   );
@@ -794,8 +768,7 @@ function SerieAbsageAktion({ appointment, melden }: { appointment: Appointment; 
         </Select>
       </div>
       <p className="text-ink-muted mt-3 text-sm">
-        Eine Fehlzeit des Praxisbetriebs löst kein Ausfallhonorar aus – es gibt keine Patient:in,
-        die absagen könnte.
+        Eine Fehlzeit des Praxisbetriebs löst kein Ausfallhonorar aus.
       </p>
     </Rueckfrage>
   );
@@ -969,9 +942,6 @@ function TerminAktionen({
       {istEreignis ? (
         <div className="text-ink-muted text-sm">
           <AppointmentHeadline appointment={appointment} user={user} />
-          {zustandsHinweis(appointment) ? (
-            <p className="mt-1">{zustandsHinweis(appointment)}</p>
-          ) : null}
         </div>
       ) : (
         <TerminMetazeile
@@ -979,7 +949,6 @@ function TerminAktionen({
           user={user}
           darfVerwalten={darfVerwalten}
           zumTermin={zumTermin}
-          hinweis={zustandsHinweis(appointment)}
         />
       )}
 
@@ -1099,9 +1068,6 @@ function TerminAktionen({
                     : `${b.display_name} (${appointmentStatusLabels[b.status]})`,
                 )
                 .join(', ')}
-              <span className="text-ink-muted mt-1 block text-sm">
-                Bezeichnung, Zeit und Ort gelten für alle Beteiligten.
-              </span>
             </DetailRow>
           ) : null}
           {/* Dieses Vorkommen ist eines von mehreren (CAL-021). */}
@@ -1112,9 +1078,6 @@ function TerminAktionen({
                 {serienVorkommen.findIndex((v) => v.event_group_id === appointment.event_group_id) +
                   1}{' '}
                 von {serienVorkommen.length}
-              </span>
-              <span className="text-ink-muted mt-1 block text-sm">
-                Ändern und Absagen gelten wahlweise für dieses Vorkommen oder für die ganze Serie.
               </span>
             </DetailRow>
           ) : null}
@@ -1316,11 +1279,7 @@ export function TerminAktionenDialog({
     <Dialogfenster titel={titel} onSchliessen={onSchliessen}>
       {isPending ? <LoadingState label="Termin wird geladen …" /> : null}
       {isError && !data ? (
-        <ErrorState
-          title="Der Termin konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => void refetch()}
-        />
+        <ErrorState title="Termin nicht geladen." onErneut={() => void refetch()} />
       ) : null}
       {data === null ? (
         <ErrorState

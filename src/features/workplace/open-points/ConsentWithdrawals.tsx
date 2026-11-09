@@ -20,11 +20,7 @@ export function ConsentWithdrawals() {
     <Listenabschnitt
       titel="Widerrufen über die Plattform"
       anzahl={data.length}
-      mehr={
-        <Kleingedrucktes>
-          Ab dem Widerruf gilt die Einwilligung nicht mehr. Die Liste zeigt die letzten 14 Tage.
-        </Kleingedrucktes>
-      }
+      mehr={<Kleingedrucktes>Ab dem Widerruf gilt die Einwilligung nicht mehr.</Kleingedrucktes>}
     >
       {data.map((w) => (
         <Zeile key={w.id} widerruf={w} />

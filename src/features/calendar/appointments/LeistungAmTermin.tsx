@@ -109,7 +109,7 @@ export function LeistungAmTermin({
         <StatusMark ton="warnung">Haken fehlt</StatusMark>
       )}
       {abgehakt && !dokumentiert ? (
-        <Kleingedrucktes>Abrechenbar mit der festgeschriebenen Doku.</Kleingedrucktes>
+        <Kleingedrucktes>Abrechenbar mit festgeschriebener Doku</Kleingedrucktes>
       ) : null}
       {abgehakt && dokumentiert && mitGrundlage && stand.isSuccess && !erfasst ? (
         <StatusMark ton="warnung">Im Büro erfassen</StatusMark>

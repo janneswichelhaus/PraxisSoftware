@@ -124,7 +124,6 @@ export function VerbindungenAnzeige({
           titel={`Verbindung zu „${nachbarName(loesen.ort, uebungId)}“ lösen`}
           onSchliessen={() => setLoesen(null)}
         >
-          <p className="text-ink text-sm">Beide Varianten bleiben in der Bibliothek.</p>
           {loeseMutation.isError ? (
             <Statusmeldung ton="fehler" className="mt-3">
               {loeseMutation.error.message}
@@ -215,9 +214,7 @@ export function VerbindungFormular({
   if (gruppen.length === 0) {
     return (
       <div className="mt-3">
-        <p className="text-ink-muted text-sm">
-          Es gibt keine weitere Variante, mit der sich diese verbinden ließe.
-        </p>
+        <p className="text-ink-muted text-sm">Keine Variante zum Verbinden.</p>
         <Button type="button" variant="quiet" groesse="kompakt" onClick={onFertig}>
           Schließen
         </Button>
@@ -269,7 +266,6 @@ export function VerbindungFormular({
         </Select>
         <Select
           label="Achse *"
-          hint="Die eine Achse, in der sich beide Varianten unterscheiden."
           value={achse}
           error={fehler.achse}
           onChange={(event) => setAchse(event.target.value)}

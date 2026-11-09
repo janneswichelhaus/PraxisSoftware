@@ -54,21 +54,16 @@ export function Dokumente({ zugang }: { zugang: Plattformzugang }) {
       <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
       <PageHeader title="Dokumente" />
       {zugang.relationship_kind !== 'treatment' ? (
-        <EmptyState
-          markenform
-          title="Keine Dokumente im Training"
-          description="Dokumente gibt die Praxis nur aus einer Behandlung frei."
-        />
+        <EmptyState markenform title="Keine Dokumente im Training" />
       ) : (
         <Abfragezustand
           abfrage={dokumente}
           laden="Ihre Dokumente werden geladen …"
-          fehler="Ihre Dokumente konnten nicht geladen werden."
+          fehler="Dokumente nicht geladen."
           inKarte
           leer={{
             wenn: (liste) => liste.length === 0,
             titel: 'Noch kein Dokument',
-            beschreibung: 'Gibt Ihre Therapeut:in ein Dokument für Sie frei, finden Sie es hier.',
             markenform: true,
           }}
         >

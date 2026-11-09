@@ -116,7 +116,7 @@ describe('Berichtskorrektur mit Kette (ABN-016, BEF-104)', () => {
     zeigen([zeile({ status: 'abgeschlossen', completed_on: '2026-09-20' })]);
     await user.click(screen.getByRole('button', { name: 'Korrigieren' }));
     await user.click(screen.getByRole('button', { name: 'Korrektur anlegen' }));
-    expect(screen.getByText('Bitte den Grund der Korrektur angeben.')).toBeInTheDocument();
+    expect(screen.getByText('Bitte einen Grund angeben.')).toBeInTheDocument();
   });
 
   it('bietet office keine Korrektur an', () => {

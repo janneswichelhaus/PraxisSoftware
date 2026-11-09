@@ -44,10 +44,7 @@ export function PaymentsPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <PageHeader
-        title="Zahlungen"
-        description="Eingänge, Teilzahlungen und Rückzahlungen zu ausgestellten Rechnungen."
-      />
+      <PageHeader title="Zahlungen" />
 
       <Section
         titel="Erfasste Zahlungen"
@@ -62,13 +59,9 @@ export function PaymentsPage({ user }: { user: CurrentUser }) {
         <Abfragezustand
           abfrage={zahlungen}
           laden="Zahlungen werden geladen …"
-          fehler="Die Zahlungen konnten nicht geladen werden."
+          fehler="Zahlungen nicht geladen."
           inKarte
-          leer={{
-            wenn: (liste) => liste.length === 0,
-            titel: 'Noch keine Zahlung',
-            beschreibung: 'Zahlungen werden am offenen Posten oder an der Rechnung erfasst.',
-          }}
+          leer={{ wenn: (liste) => liste.length === 0, titel: 'Noch keine Zahlung' }}
         >
           {(liste) => (
             // Die Datenliste nach dem Vorbild der Rechnungsliste (ABR-034):

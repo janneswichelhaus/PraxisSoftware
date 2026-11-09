@@ -32,7 +32,7 @@ export function Wegauskunft({
   pruefung: Wegpruefung;
   zeitzone: string;
   /**
-   * `formular`: mit Überschrift und dem Satz, dass es nur Auskunft ist.
+   * `formular`: mit Überschrift und dem Angebot, den Beginn zu verschieben.
    * `rueckfrage`: in der Rückfrage nach dem Ziehen (UBK-013), knapper.
    * `ziehen`: während der Geste - nur die Zeilen, nichts wird vorgelesen.
    */
@@ -57,9 +57,6 @@ export function Wegauskunft({
   if (pruefung.stand === 'aus') return null;
 
   const zeilen = inhalt(pruefung, zeitzone);
-  const zuKnapp =
-    pruefung.stand === 'bereit' &&
-    [pruefung.an, pruefung.weiter].some((s) => s.stand === 'geprueft' && s.stufe === 'nicht');
   const angebot =
     variante === 'formular' && verschieben
       ? wegangebot(pruefung, verschieben.frage, verschieben.rasterMinuten)
@@ -113,11 +110,6 @@ export function Wegauskunft({
           ) : null}
         </Fragment>
       ))}
-      {zuKnapp && variante === 'formular' ? (
-        <p className="text-ink-muted text-xs">
-          Nur Auskunft – der Termin lässt sich trotzdem anlegen.
-        </p>
-      ) : null}
     </div>
   );
 }

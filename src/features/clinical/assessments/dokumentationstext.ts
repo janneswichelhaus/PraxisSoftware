@@ -370,5 +370,4 @@ export function dokumentationstext(
 }
 
 /** Warum eine Dokumentationsseite nicht speichert oder abschließt (ANN-120). */
-export const VORSCHLAG_OFFEN =
-  'Der Vorschlag aus den Bausteinen steht noch nicht im Text. Bitte übernehmen oder verwerfen, dann speichern oder abschließen.';
+export const VORSCHLAG_OFFEN = 'Der Vorschlag steht noch nicht im Text.';

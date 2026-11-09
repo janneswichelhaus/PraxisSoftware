@@ -330,7 +330,7 @@ describe('Neue Nachricht (KOM-001)', () => {
     expect(screen.getByRole('button', { name: 'Termin oder Rechnung' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Übung' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Beschwerden' })).not.toBeInTheDocument();
-    expect(screen.getByText(/Angaben zu Ihrer Gesundheit/)).toBeInTheDocument();
+    expect(screen.getByText(/gehen erst mit Ihrer Einwilligung/)).toBeInTheDocument();
   });
 
   it('zeigt die Meldung des Servers verständlich', async () => {
@@ -396,9 +396,7 @@ describe('Eine Nachricht (KOM-001)', () => {
 
   it('erledigt: kein Eingabefeld, wer erledigt hat', async () => {
     zeige(ERLEDIGT.id);
-    expect(
-      await screen.findByText(/Die Praxis hat diese Nachricht als erledigt markiert/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Von der Praxis als erledigt markiert.')).toBeInTheDocument();
     expect(screen.queryByLabelText('Noch etwas ergänzen')).not.toBeInTheDocument();
   });
 

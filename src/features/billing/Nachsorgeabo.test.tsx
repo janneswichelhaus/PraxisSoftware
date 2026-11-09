@@ -56,7 +56,7 @@ describe('Nachsorge-Abo in der Akte (ANG-001)', () => {
     renderWithProviders(<Nachsorgeabo patientId="p1" />);
     // Der Stand in einer Zeile statt eines Erklärsatzes (Regel 6).
     expect(
-      await screen.findByText('Kein Abo · möglich ab dem Abschluss der Versorgung'),
+      await screen.findByText('Kein Abo · ab Abschluss der Versorgung möglich'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Abo anlegen' })).not.toBeInTheDocument();
   });

@@ -71,7 +71,7 @@ export function VacationPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Urlaub wird geladen …"
-        fehler="Der Urlaub konnte nicht geladen werden."
+        fehler="Urlaub nicht geladen."
         inKarte
       >
         {(stand) => <Inhalt stand={stand} heute={heute} />}
@@ -278,7 +278,7 @@ function EigeneZeile({
             fehler={zurueckziehen.isError ? zurueckziehen.error.message : undefined}
             onBestaetigen={() => zurueckziehen.mutateAsync()}
           >
-            {storno ? 'Der Urlaub bleibt dann genehmigt.' : 'Der Antrag wird zurückgezogen.'}
+            {storno ? 'Der Urlaub bleibt dann genehmigt.' : 'Antrag zurückziehen?'}
           </Rueckfrage>
         ) : stornierbar ? (
           <Rueckfrage

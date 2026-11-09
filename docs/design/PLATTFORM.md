@@ -28,7 +28,7 @@ unterstrichen; geführte Abläufe für Seltenes; kein Dunkelmodus (ANN-401).
 | Keine Schatten              | Eine Tiefenstufe `shadow-plattform`, nur für Hero-, Aufgaben- und Besuchskarte (ANN-678). Listen bleiben Linie.                           |
 | Schriftrollen in px         | Skala in rem, Werte unter der Tabelle.                                                                                                    |
 | Etiketten in Versalien      | Keine Versalien. Die Bausteine heben `uppercase` unter `.plattform-schrift` auf (DR-154).                                                 |
-| Keine Erklärsätze           | Ein Satz Orientierung, wo unklar bleibt, was passiert (leer, nach dem Senden, wer meine Angaben sieht); nie eine Gebrauchsanweisung.      |
+| Keine Erklärsätze (L7)      | Höchstens ein Satz Orientierung, wo unklar bleibt, was passiert (leer, gesendet, wer meine Angaben sieht); nie eine Anleitung.            |
 | Silbentrennung im Fließtext | Ab zwölf Buchstaben; nie in Namen, Anschriften, Titeln, Knöpfen, Reitern; unter 23rem auch Plan-, Übungsnamen und Wahlflächen (ANN-707).  |
 | Ziele ≥ 44 px               | Knöpfe 48 (Hauptknopf Durchführung 56), Karten ≥ 80, Stufen 56, Zeilen, Textlinks ≥ 44; Abstand ≥ 8, nicht in der Wochenleiste (ANN-708). |
 | Rhythmus 4/8/12/16/24/32    | Dazu 40 (Telefon) und 48 (Rechner) zwischen Abschnitten; Seitenrand 20, Türseiten 24; in Zeilen und Zeichen auch 2, 6, 10, 14 (Handoffs). |

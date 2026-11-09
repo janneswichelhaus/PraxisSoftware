@@ -114,7 +114,7 @@ export function Verlaufsereignisse({
     <div className="flex flex-col gap-2">
       <Zwischentitel>Ereignisse im Verlauf</Zwischentitel>
       {markierungen.length === 0 ? (
-        <p className="text-ink-muted text-sm">Noch kein Ereignis, kein Planwechsel.</p>
+        <p className="text-ink-muted text-sm">Kein Ereignis, kein Planwechsel.</p>
       ) : (
         <ol className="flex flex-col gap-1 text-sm">
           {markierungen.map((m, i) => (
@@ -130,10 +130,10 @@ export function Verlaufsereignisse({
         </ol>
       )}
       {/* Die Legende nur, wo ein Bild steht: Ohne Angaben gibt es keine
-          Zeitachse, und der Satz erklärte nichts (Sichtung 13.10.2026, A10). */}
+          Zeitachse, und sie erklärte nichts (Sichtung 13.10.2026, A10). */}
       {daten.appointment_days.length > 0 &&
       (daten.checkins.length > 0 || daten.sessions.length > 0) ? (
-        <p className="text-ink-muted text-sm">Striche an der Zeitachse: durchgeführte Termine.</p>
+        <p className="text-ink-muted text-sm">Striche: durchgeführte Termine</p>
       ) : null}
       {art === 'treatment' ? (
         // Ein Weg statt eines Erklärsatzes (A10): In der Behandlung vermerkt
@@ -205,8 +205,7 @@ function Markierungszeile({
             onAbbrechen={() => setFehler(undefined)}
             onBestaetigen={entfernen}
           >
-            „{markierung.text}“ vom {tag} wird aus dem Verlauf genommen. Wer es vermerkt und wer es
-            entfernt hat, bleibt gespeichert.
+            Wer das Ereignis vermerkt und wer es entfernt hat, bleibt gespeichert.
           </Rueckfrage>
         </div>
       ) : null}
@@ -294,7 +293,6 @@ function EreignisVermerken({ verhaeltnisId, heute }: { verhaeltnisId: string; he
       </div>
       <Field
         label="Notiz (optional)"
-        hint="Kurz, etwa „zwei Wochen Urlaub“ oder „Erkältung“."
         maxLength={EREIGNIS_NOTIZ_MAX}
         value={notiz}
         onChange={(e) => setNotiz(e.target.value)}

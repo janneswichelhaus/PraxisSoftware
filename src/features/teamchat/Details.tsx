@@ -121,18 +121,13 @@ export function Details({
           {einstellen.isError ? (
             <Statusmeldung ton="fehler">{einstellen.error.message}</Statusmeldung>
           ) : null}
-          <Disclosure summary="So geht’s">
-            <p className="text-ink-muted max-w-prose text-sm">
-              „Erwähnungen“ und „Stumm“ zählen nur noch, wo du erwähnt bist. Andere sehen nichts
-              davon.
-            </p>
-          </Disclosure>
+          <Kleingedrucktes>Andere sehen diese Einstellung nicht.</Kleingedrucktes>
         </section>
 
         <Abfragezustand
           abfrage={angeheftet}
           laden="Angeheftetes wird geladen …"
-          fehler="Angeheftetes konnte nicht geladen werden."
+          fehler="Angeheftetes nicht geladen."
         >
           {(daten) => (
             <Listenabschnitt
@@ -169,7 +164,7 @@ export function Details({
         <Abfragezustand
           abfrage={mitglieder}
           laden="Mitglieder werden geladen …"
-          fehler="Die Mitglieder konnten nicht geladen werden."
+          fehler="Mitglieder nicht geladen."
         >
           {(daten) => (
             <Listenabschnitt
@@ -273,7 +268,7 @@ function Herausnehmen({
       fehler={nehmen.isError ? nehmen.error.message : undefined}
       onBestaetigen={() => nehmen.mutateAsync()}
     >
-      {name} liest den Kanal danach nicht mehr.
+      {name} herausnehmen?
     </Rueckfrage>
   );
 }
@@ -298,7 +293,7 @@ function Hinzufuegen({ kanalId, vorhanden }: { kanalId: string; vorhanden: reado
       <Abfragezustand
         abfrage={personen}
         laden="Das Team wird geladen …"
-        fehler="Das Team konnte nicht geladen werden."
+        fehler="Team nicht geladen."
       >
         {() => (
           <>

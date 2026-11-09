@@ -7,14 +7,12 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Formularfuss } from '@/components/ui/Formularfuss';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Field } from '@/components/ui/Field';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { roleLabels } from '@/components/ui/roleLabels';
 import { EINGABETEXTE, useTextverlustschutz } from '@/app/Textverlustschutz';
 import { canManageAppointments, type CurrentUser } from '@/features/core';
 import { EreignisArbeitszeitRueckfrage, EreignisFormFields } from './EreignisFormFields';
@@ -28,7 +26,6 @@ import {
   EREIGNIS_FEHLERFELDER,
   EREIGNIS_FELD_IDS,
   ereignisGeaendert,
-  FEHLZEIT_BEISPIELE,
   mitEingetragenerFehlzeit,
   type EreignisFehlerfeld,
 } from './calendar';
@@ -238,12 +235,7 @@ export function NewEventPage({ user, serie = false }: { user: CurrentUser; serie
   }
 
   if (!canManageAppointments(user.roles)) {
-    return (
-      <ErrorState
-        title="Nicht freigegeben"
-        description={`Fehlzeiten eintragen dürfen alle vier Praxisrollen: ${roleLabels.owner}, ${roleLabels.therapist}, ${roleLabels.team_lead} und ${roleLabels.office}.`}
-      />
-    );
+    return <ErrorState title="Nicht freigegeben" />;
   }
 
   const aktive = (personen.data ?? []).filter((p) => p.employment_status === 'active');
@@ -256,15 +248,7 @@ export function NewEventPage({ user, serie = false }: { user: CurrentUser; serie
     <>
       <Rueckweg standard="/kalender" />
 
-      {/* Beschreibungen enden mit Punkt, nur Namen und Daten nicht. */}
-      <PageHeader
-        title={serie ? 'Dauerfehlzeit eintragen' : 'Fehlzeit eintragen'}
-        description={
-          serie
-            ? `Über mehrere Wochen: ${FEHLZEIT_BEISPIELE}.`
-            : `${FEHLZEIT_BEISPIELE} oder anderes.`
-        }
-      />
+      <PageHeader title={serie ? 'Dauerfehlzeit eintragen' : 'Fehlzeit eintragen'} />
 
       {/* Beim Laden stehen Rückweg und Kopf schon da (DESIGN.md Regel 8), nur das Formular fehlt. */}
       {personen.isPending || standorte.isPending ? (
@@ -296,11 +280,7 @@ export function NewEventPage({ user, serie = false }: { user: CurrentUser; serie
             }
             standorteFehler={
               standorte.isError ? (
-                <ErrorState
-                  title="Die Standorte konnten nicht geladen werden."
-                  description={VERBINDUNG_PRUEFEN}
-                  onErneut={() => standorte.refetch()}
-                />
+                <ErrorState title="Standorte nicht geladen." onErneut={() => standorte.refetch()} />
               ) : null
             }
             beteiligte={
@@ -311,8 +291,7 @@ export function NewEventPage({ user, serie = false }: { user: CurrentUser; serie
                 {personen.isError ? (
                   <div className="mt-3">
                     <ErrorState
-                      title="Die Personen konnten nicht geladen werden."
-                      description={VERBINDUNG_PRUEFEN}
+                      title="Personen nicht geladen."
                       onErneut={() => personen.refetch()}
                     />
                   </div>

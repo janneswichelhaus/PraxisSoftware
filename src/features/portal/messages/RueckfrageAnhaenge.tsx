@@ -111,7 +111,7 @@ export function RueckfrageAnhaenge({
                         fehler={loeschen.isError ? loeschen.error.message : undefined}
                         onBestaetigen={() => loeschen.mutateAsync(a.id)}
                       >
-                        <p>Die Aufnahme wird gelöscht. Das lässt sich nicht rückgängig machen.</p>
+                        <p>Lässt sich nicht rückgängig machen.</p>
                       </Nachfrage>
                     ) : null}
                   </div>
@@ -126,9 +126,7 @@ export function RueckfrageAnhaenge({
           Aufnahmen von außen werden nicht auf Schadsoftware geprüft (ADR-017 Fassung 6).
         </Kleingedrucktes>
       ) : null}
-      <Kleingedrucktes className="mt-1">
-        Aufnahmen gehen nicht in die Akte. Was sie zeigen, gehört in Worten in die Dokumentation.
-      </Kleingedrucktes>
+      <Kleingedrucktes className="mt-1">Aufnahmen gehen nicht in die Akte.</Kleingedrucktes>
     </Section>
   );
 }
@@ -166,7 +164,7 @@ function Aufnahme({ anhang, ab }: { anhang: Rueckfrageanhang; ab: number }) {
   return (
     <div className="w-full">
       {geladen.isPending ? (
-        <Statusmeldung>Die Aufnahme wird geladen …</Statusmeldung>
+        <Statusmeldung>Aufnahme wird geladen …</Statusmeldung>
       ) : geladen.isError ? (
         <Statusmeldung ton="fehler">{geladen.error.message}</Statusmeldung>
       ) : adresse && anhang.media_kind === 'photo' ? (

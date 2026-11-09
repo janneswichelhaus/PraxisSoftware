@@ -65,7 +65,7 @@ export function FahrpufferHinweis({
             </li>
           ))}
         </ul>
-        <p className="mt-1 text-sm">Ein Hinweis, keine Sperre. {zurTour}</p>
+        <p className="mt-1 text-sm">{zurTour}</p>
       </div>
     );
   }

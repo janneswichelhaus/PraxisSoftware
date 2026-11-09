@@ -86,7 +86,7 @@ export async function fetchWorkingHours(): Promise<WorkingHour[]> {
     .order('weekday')
     .order('starts_at');
 
-  if (error) throw new Error('Die Arbeitszeiten konnten nicht geladen werden.');
+  if (error) throw new Error('Arbeitszeiten nicht geladen.');
   return z.array(workingHourSchema).parse(data ?? []);
 }
 
@@ -108,7 +108,7 @@ export async function fetchWorkingHourExceptions(
     .order('on_date')
     .order('starts_at', { nullsFirst: true });
 
-  if (error) throw new Error('Die Abweichungen konnten nicht geladen werden.');
+  if (error) throw new Error('Abweichungen nicht geladen.');
   return z.array(exceptionSchema).parse(data ?? []);
 }
 

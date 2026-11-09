@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { saetzeIn } from '../scripts/saetze.mjs';
 import { PERSONENFARBEN } from './components/ui/personenfarben';
 import { GRENZEN } from './designsystem.grenzen';
 
@@ -836,6 +837,7 @@ const ZAEHLER: Record<Muster, (text: string) => number> = {
   divideY: (text) => Array.from(text.matchAll(/(?<![\w-])divide-y\b/g)).length,
   knoepfe: (text) =>
     oeffnendeTags(text, /<button(?![\w-])/g).filter((tag) => tag.includes('className=')).length,
+  saetze: (text) => saetzeIn(text).length,
   tabellen: (text) => oeffnendeTags(text, /<table(?![\w-])/g).length,
   ueberschriften: (text) =>
     oeffnendeTags(text, /<h[1-4](?![\w-])/g).filter((tag) => tag.includes('className=')).length,
@@ -847,6 +849,7 @@ const ERSATZ: Record<Muster, string> = {
   details: 'eigenes <details> statt Disclosure',
   divideY: 'divide-y-Liste statt ListRows, Listenabschnitt oder Datenliste',
   knoepfe: 'rohes <button className> statt Button, Symbolknopf, Chip oder Segment',
+  saetze: 'Satz statt Titel, Beschriftung und Knopf (Leitfaden L7, node scripts/saetze.mjs)',
   tabellen: '<table> statt Datenliste',
   ueberschriften: 'eigene Überschrift statt PageHeader, Objektkopf, Section oder Zwischentitel',
 };
@@ -869,6 +872,7 @@ function zaehleMuster(): Record<Muster, Record<string, number>> {
     details: {},
     divideY: {},
     knoepfe: {},
+    saetze: {},
     tabellen: {},
     ueberschriften: {},
   };
@@ -876,12 +880,16 @@ function zaehleMuster(): Record<Muster, Record<string, number>> {
     if (!/\.tsx?$/.test(datei)) continue;
     const imBaustein = relative(stamm, datei).startsWith('src/components/ui/');
     const druck = DRUCKBLATT.test(basename(datei));
-    const text = ohneKommentare(readFileSync(datei, 'utf8'));
+    const roh = readFileSync(datei, 'utf8');
+    const text = ohneKommentare(roh);
     const verzeichnis = verzeichnisVon(datei);
     for (const muster of Object.keys(ZAEHLER) as Muster[]) {
-      if (muster !== 'breiten' && imBaustein) continue;
-      if ((muster === 'ueberschriften' || muster === 'tabellen') && druck) continue;
-      const anzahl = ZAEHLER[muster](text);
+      // Sätze zählen auch in Bausteinen, nur in JSX und am unveränderten Quelltext (AST statt Muster).
+      const saetze = muster === 'saetze';
+      if (!saetze && muster !== 'breiten' && imBaustein) continue;
+      if ((muster === 'ueberschriften' || muster === 'tabellen' || saetze) && druck) continue;
+      if (saetze && !datei.endsWith('.tsx')) continue;
+      const anzahl = ZAEHLER[muster](saetze ? roh : text);
       if (anzahl > 0) stand[muster][verzeichnis] = (stand[muster][verzeichnis] ?? 0) + anzahl;
     }
   }
@@ -957,6 +965,15 @@ describe('Ratsche: alte Seitenmuster nehmen nur ab (Design-Fundament, ANN-400)',
 
     expect(zaehle('tabellen', '<table className="w-full">')).toBe(1);
     expect(zaehle('tabellen', '<tableau>')).toBe(0);
+
+    const satz = (quelltext: string) => saetzeIn(quelltext).length;
+    expect(satz('<p>Hier sehen Sie alle Termine der Woche.</p>')).toBe(1);
+    expect(satz('<PageHeader description="Hier stehen alle Rechnungen des Jahres." />')).toBe(1);
+    expect(satz('<p>{offen ? `Noch ${n} Termine sind heute offen.` : null}</p>')).toBe(1);
+    expect(satz('<p>Keine Termine.</p>')).toBe(0);
+    expect(satz('<b aria-label="Hier sehen Sie alle Termine der Woche." />')).toBe(0);
+    expect(satz('<div className="flex min-h-11 items-center gap-3 px-4 py-2 text-sm" />')).toBe(0);
+    expect(satz('const t = "Ein langer Satz außerhalb von JSX zählt hier nicht.";')).toBe(0);
 
     expect(DRUCKBLATT.test('InvoicePrintPage.tsx')).toBe(true);
     expect(DRUCKBLATT.test('Planblatt.tsx')).toBe(true);

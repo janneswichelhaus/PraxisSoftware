@@ -899,9 +899,7 @@ function Werbungsseite({
   return (
     <div className="flex flex-col gap-3">
       {quittung ? <Statusmeldung>{quittung}</Statusmeldung> : null}
-      <p className="text-ink">
-        Jede Werbefläche mit einem Desinfektions- oder Reinigungstuch abwischen.
-      </p>
+      <p className="text-ink">Mit einem Desinfektions- oder Reinigungstuch.</p>
       <Button
         className="w-full"
         aria-pressed={bisher?.wert === 'wiped'}

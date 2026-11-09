@@ -164,7 +164,7 @@ describe('Termine (POR-008, Schritt 3b)', () => {
   it('sind alle kommenden abgesagt, heißen sie „Abgesagte Termine“, nicht „Weitere“', async () => {
     ladeTermine.mockResolvedValue([ABGESAGT, PRAXIS_VERGANGEN]);
     renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine');
-    expect(await screen.findByText('Zurzeit ist kein Termin vereinbart.')).toBeInTheDocument();
+    expect(await screen.findByText('Zurzeit kein Termin.')).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { level: 2, name: 'Abgesagte Termine' }),
     ).toBeInTheDocument();
@@ -201,15 +201,13 @@ describe('Termine (POR-008, Schritt 3b)', () => {
     expect(wunsch.parentElement!.className).toContain('gap-4');
   });
 
-  it('sagt ohne kommende Termine, wie es weitergeht (Leerzustand)', async () => {
+  it('sagt ohne kommende Termine nur den Titel, der Knopf zeigt den Weg (Leerzustand, L7)', async () => {
     ladeTermine.mockResolvedValue([PRAXIS_VERGANGEN]);
     renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine');
-    const leer = await screen.findByText('Zurzeit ist kein Termin vereinbart.');
+    const leer = await screen.findByText('Zurzeit kein Termin.');
     // Neben „Diese Woche“ und den Vergangenen in der Karte (DESIGN.md Regel 8).
     expect(leer.parentElement!.className).toContain('rounded-card');
-    expect(
-      screen.getByText('Vereinbart die Praxis einen Termin mit Ihnen, finden Sie ihn hier.'),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/finden Sie ihn hier/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Termin wünschen' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: /^Besuch / })).not.toBeInTheDocument();
   });
@@ -219,10 +217,8 @@ describe('Termine (POR-008, Schritt 3b)', () => {
     ladeWuensche.mockResolvedValue([WUNSCH]);
     renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine?bereich=treatment');
     expect(await screen.findByText('Ihr Wunsch ist bei der Praxis.')).toBeInTheDocument();
-    expect(
-      screen.getByText('Sie meldet sich bei Ihnen. Danach steht Ihr Termin hier.'),
-    ).toBeInTheDocument();
-    expect(screen.queryByText('Zurzeit ist kein Termin vereinbart.')).not.toBeInTheDocument();
+    expect(screen.getByText('Sie meldet sich bei Ihnen.')).toBeInTheDocument();
+    expect(screen.queryByText('Zurzeit kein Termin.')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Termin wünschen' })).not.toBeInTheDocument();
     const noch = screen.getByRole('link', { name: 'Noch einen Termin wünschen' });
     expect(noch).toHaveAttribute('href', '/p/termine/wunsch?bereich=treatment');
@@ -386,17 +382,11 @@ describe('Laden, Fehler, ohne Netz (Handoff 5.6)', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('beim Fehler bleibt „Termin wünschen“, der Satz sagt es', async () => {
+  it('beim Fehler bleibt „Termin wünschen“, ohne Ratsatz', async () => {
     ladeTermine.mockRejectedValue(new Error('Ihre Termine konnten nicht geladen werden.'));
     renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine?bereich=treatment');
-    expect(
-      await screen.findByText('Ihre Termine lassen sich gerade nicht laden.'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Versuchen Sie es gleich noch einmal. Einen Termin wünschen können Sie trotzdem.',
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Termine nicht geladen.')).toBeInTheDocument();
+    expect(screen.queryByText(/Versuchen Sie es gleich noch einmal/)).toBeNull();
     expect(screen.getByRole('button', { name: /erneut/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Termin wünschen' })).toHaveAttribute(
       'href',
@@ -503,7 +493,7 @@ describe('Lesefrist (Frage 5)', () => {
       'Neue Termine vereinbaren Sie bei Bedarf direkt mit der Praxis.',
     );
     expect(screen.queryByRole('link', { name: /Termin wünschen/ })).not.toBeInTheDocument();
-    expect(screen.queryByText('Zurzeit ist kein Termin vereinbart.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Zurzeit kein Termin.')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Diese Woche' })).not.toBeInTheDocument();
     expect(vergangen.closest('summary')).toBeNull();
     expect(screen.getByRole('list', { name: 'Vergangene Termine' })).toBeVisible();

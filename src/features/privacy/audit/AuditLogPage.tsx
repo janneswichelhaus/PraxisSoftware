@@ -8,7 +8,6 @@ import { Disclosure } from '@/components/ui/Card';
 import { Datenliste, type Datenspalte } from '@/components/ui/Datenliste';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Filterleiste } from '@/components/ui/Filterleiste';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -279,10 +278,7 @@ export function AuditLogPage() {
       {/* Der Titel ist das Wort der Ansicht (ORG-07): Seit ORG-001 steht das
           Protokoll unter Praxis neben Einstellungen und Aufbewahrung; die
           Pillen zeichnet die Hülle (`Ansichtsleiste`). */}
-      <PageHeader
-        title="Protokoll"
-        description="Protokollierte Zugriffe und sicherheitsrelevante Vorgänge dieser Praxis."
-      />
+      <PageHeader title="Protokoll" />
 
       {/* Die Filter in der Filterleiste (Welle B, ANN-405): am Telefon
           zugeklappt hinter „Filter“, ab 640 px offen nebeneinander; mit einem
@@ -327,7 +323,7 @@ export function AuditLogPage() {
               es als vollständige Auswahl auszugeben (ORG-14). */}
           {members.isError ? (
             <Listenfehler
-              text="Die Liste der Personen konnte nicht geladen werden."
+              text="Liste der Personen nicht geladen."
               onErneut={() => void members.refetch()}
             />
           ) : null}
@@ -358,22 +354,14 @@ export function AuditLogPage() {
           die Ansicht sei „ausschließlich für die Praxisleitung freigegeben"
           (ORG-15, WRT-01, ZST-12). */}
       {isError && !data ? (
-        <ErrorState
-          title="Die Auditeinträge konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => void refetch()}
-        />
+        <ErrorState title="Auditeinträge nicht geladen." onErneut={() => void refetch()} />
       ) : null}
       {isError && data ? (
         <NachladeHinweis className="mb-4" laeuft={isFetching} onErneut={() => void refetch()} />
       ) : null}
 
       {data && data.events.length === 0 ? (
-        <EmptyState
-          inKarte
-          title="Keine Einträge im gewählten Zeitraum"
-          description="Filter anpassen oder Zeitraum erweitern."
-        />
+        <EmptyState inKarte title="Keine Einträge im gewählten Zeitraum" />
       ) : null}
 
       {data && data.events.length > 0 ? (

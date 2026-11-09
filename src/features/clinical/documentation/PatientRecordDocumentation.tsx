@@ -219,8 +219,7 @@ function WeitereSeite({
       </Button>
       {fehler ? (
         <Statusmeldung ton="fehler" className="mt-2">
-          Die weiteren Termine konnten nicht geladen werden. Bitte die Verbindung prüfen und erneut
-          versuchen.
+          Ältere Termine nicht geladen.
         </Statusmeldung>
       ) : null}
     </div>
@@ -498,11 +497,7 @@ function Behandlungsdokumentation({
         {seiten.isPending ? <LoadingState label="Dokumentation wird geladen …" /> : null}
 
         {seiten.isError ? (
-          <ErrorState
-            title="Die Behandlungsdokumentation konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => seiten.refetch()}
-          />
+          <ErrorState title="Dokumentation nicht geladen." onErneut={() => seiten.refetch()} />
         ) : null}
 
         {seiten.data && termine.length === 0 ? (
@@ -648,15 +643,9 @@ export function DieserTermin({
   });
 
   if (!darfLesen) return null;
-  if (termin.isPending) return <LoadingState label="Der Termin wird geladen …" />;
+  if (termin.isPending) return <LoadingState label="Termin wird geladen …" />;
   if (termin.isError) {
-    return (
-      <ErrorState
-        title="Der Termin konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => termin.refetch()}
-      />
-    );
+    return <ErrorState title="Termin nicht geladen." onErneut={() => termin.refetch()} />;
   }
   const daten = termin.data;
   if (!daten || daten.patient_id !== patient.id) return null;
@@ -693,8 +682,7 @@ export function DieserTermin({
         {dokumentation.isPending ? <LoadingState label="Dokumentation wird geladen …" /> : null}
         {dokumentation.isError ? (
           <ErrorState
-            title="Die Dokumentation konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
+            title="Dokumentation nicht geladen."
             onErneut={() => dokumentation.refetch()}
           />
         ) : null}

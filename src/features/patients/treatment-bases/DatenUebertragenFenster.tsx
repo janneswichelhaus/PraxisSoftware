@@ -79,11 +79,7 @@ export function DatenUebertragenFenster({
       ) : null}
       {bestandId && bestand.isPending ? <LoadingState label="Grundlage wird geladen …" /> : null}
       {bestandId && bestand.isError ? (
-        <ErrorState
-          title="Die Grundlage konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => void bestand.refetch()}
-        />
+        <ErrorState title="Grundlage nicht geladen." onErneut={() => void bestand.refetch()} />
       ) : null}
       {!bestandId || bestand.data ? (
         <Formular

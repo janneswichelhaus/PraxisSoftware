@@ -131,10 +131,7 @@ function Mailentwurf({
           {/* Im Erfolgston und mit dem Fokus: Der Knopf, der ihn hatte, ist
               mit der Frage verschwunden (UIK-21, ZST-16). */}
           {vermerken.isSuccess ? (
-            <Rueckmeldung>
-              Die Termine sind als „Per E-Mail mitgeteilt“ vermerkt. Am Termin lässt sich der
-              Vermerk zurücknehmen.
-            </Rueckmeldung>
+            <Rueckmeldung>Als „Per E-Mail mitgeteilt“ vermerkt.</Rueckmeldung>
           ) : null}
 
           {/* Der zweite Schritt: Die Anwendung sieht die Übergabe, nicht den
@@ -147,8 +144,7 @@ function Mailentwurf({
               className="border-line-strong bg-surface-sunken flex flex-col gap-3 border-l-4 py-3 pr-4 pl-4"
             >
               <p className="text-ink text-liste">
-                Die E-Mail ist im Mailprogramm geöffnet. Wurde sie gesendet? Nur dann gelten die
-                Termine als mitgeteilt.
+                Die E-Mail ist im Mailprogramm geöffnet. Wurde sie gesendet?
               </p>
               <div className="flex flex-col gap-3 *:w-full sm:flex-row sm:flex-wrap sm:items-center sm:*:w-auto">
                 <Button

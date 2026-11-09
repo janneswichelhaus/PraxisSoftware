@@ -87,7 +87,7 @@ function Rufnummern({ appointment }: { appointment: NiemandOeffnetTermin }) {
     <Abfragezustand
       abfrage={abfrage}
       laden="Rufnummer wird geladen …"
-      fehler="Die Rufnummer konnte nicht geladen werden."
+      fehler="Rufnummer nicht geladen."
       ausweg={stammdaten}
       leer={{
         wenn: (plan) => nummernAus(plan).length === 0,
@@ -342,8 +342,7 @@ function NiemandOeffnetFenster({
             />
           </ListRows>
           <p className="text-ink text-sm">
-            Danach gilt der Termin als „nicht angetroffen“ und löst ein Ausfallhonorar aus. Ein
-            Irrtum lässt sich über „Termin wieder öffnen“ zurücknehmen.
+            Danach gilt der Termin als „nicht angetroffen“ und löst ein Ausfallhonorar aus.
           </p>
         </div>
       )}

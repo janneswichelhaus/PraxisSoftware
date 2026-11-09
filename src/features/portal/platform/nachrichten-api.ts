@@ -105,7 +105,7 @@ export function nachrichtenfehler(meldung: string | undefined): string {
     return 'Diese Übung ist nicht mehr in Ihrem Plan. Bitte wählen Sie neu.';
   if (m.includes('not allowed'))
     return 'Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.';
-  return 'Ihre Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.';
+  return 'Ihre Nachricht konnte nicht gesendet werden.';
 }
 
 /** Eine Frage stellen. Liefert die Kennung des Vorgangs. */
@@ -147,7 +147,7 @@ export async function nachrichtErledigen(zugangId: string, nachrichtId: string):
     p_access_id: zugangId,
     p_message_id: nachrichtId,
   })) as { error: { message?: string } | null };
-  if (error) throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
+  if (error) throw new Error('Nicht gespeichert.');
 }
 
 // -----------------------------------------------------------------------------
@@ -168,7 +168,7 @@ export function anhangfehler(meldung: string | undefined): string {
   if (m.includes('too large')) return 'Die Aufnahme ist zu groß. Bitte kürzer aufnehmen.';
   if (m.includes('is closed'))
     return 'Diese Nachricht ist erledigt. Bitte schreiben Sie eine neue.';
-  return 'Die Aufnahme konnte nicht gesendet werden. Bitte versuchen Sie es erneut.';
+  return 'Die Aufnahme konnte nicht gesendet werden.';
 }
 
 /** Was die Person liest, wenn der Server einen Anhang verwirft (Punkt 52). */
@@ -310,5 +310,5 @@ export async function anhangLoeschen(zugangId: string, anhangId: string): Promis
     p_access_id: zugangId,
     p_attachment_id: anhangId,
   })) as { error: unknown };
-  if (error) throw new Error('Die Aufnahme konnte nicht gelöscht werden. Bitte erneut versuchen.');
+  if (error) throw new Error('Die Aufnahme konnte nicht gelöscht werden.');
 }

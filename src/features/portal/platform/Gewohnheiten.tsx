@@ -11,7 +11,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Wochenleiste, type Wochentag } from '@/components/ui/Wochenleiste';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { tagesreihe } from '@/lib/gewohnheiten';
 import {
   gewohnheitenSchluessel,
@@ -59,28 +58,17 @@ export function Gewohnheiten({ zugang }: { zugang: Plattformzugang }) {
         </SkelettBereich>
       ) : isError ? (
         <div className="mt-6">
-          <ErrorState
-            title="Ihre Gewohnheiten konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
-            onErneut={() => refetch()}
-          />
+          <ErrorState title="Gewohnheiten nicht geladen." onErneut={() => refetch()} />
         </div>
       ) : !data || laufend.length === 0 ? (
         <div className="mt-8">
-          <EmptyState
-            markenform
-            title="Zurzeit keine Gewohnheit"
-            description="Vereinbaren Sie mit Ihrer Praxis eine kleine Gewohnheit, steht sie hier zum Abhaken."
-          />
+          <EmptyState markenform title="Zurzeit keine Gewohnheit" />
         </div>
       ) : (
         <>
           {data.consent_needed && !begleitung ? (
             <div className="mt-4 flex flex-col items-start gap-1">
-              <Statusmeldung>
-                Gewohnheiten gehören zu Ihren Angaben zur Gesundheit. Zum Vermerken braucht es Ihre
-                Einwilligung unter „Ich → Einwilligungen“.
-              </Statusmeldung>
+              <Statusmeldung>Zum Vermerken braucht es Ihre Einwilligung.</Statusmeldung>
               <Textlink to={mit('/einwilligungen')} alleinstehend>
                 Einwilligungen ansehen
               </Textlink>
@@ -231,7 +219,7 @@ function Eintrag({
             >
               <path d="M9 6v12M15 6v12" />
             </svg>
-            <span>Pausiert. Setzen Sie fort, wenn es wieder geht.</span>
+            <span>Pausiert</span>
           </p>
           {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
           {vermerkbar ? (

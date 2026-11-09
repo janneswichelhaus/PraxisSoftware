@@ -109,7 +109,7 @@ export async function aboKuendigen(
   zugangId: string,
   aboId: string,
 ): Promise<Kuendigungsbestaetigung> {
-  const satz = 'Die Kündigung ist nicht angekommen. Bitte versuchen Sie es noch einmal.';
+  const satz = 'Die Kündigung ist nicht angekommen.';
   const ergebnis = (await getSupabase().rpc('cancel_platform_aftercare', {
     p_access_id: zugangId,
     p_subscription_id: aboId,
@@ -218,7 +218,7 @@ export async function angebotAnnehmen(
   zugangId: string,
   buchung: Buchung,
 ): Promise<Buchungsbestaetigung> {
-  const satz = 'Die Buchung ist nicht angekommen. Bitte versuchen Sie es noch einmal.';
+  const satz = 'Die Buchung ist nicht angekommen.';
   const ergebnis = (await getSupabase().rpc('accept_platform_training_offer', {
     p_access_id: zugangId,
     p_offer_id: buchung.angebotId,
@@ -301,7 +301,7 @@ export async function vertragWiderrufen(
   zugangId: string,
   vertragId: string,
 ): Promise<Widerrufseingang> {
-  const satz = 'Der Widerruf ist nicht angekommen. Bitte versuchen Sie es noch einmal.';
+  const satz = 'Der Widerruf ist nicht angekommen.';
   const ergebnis = (await getSupabase().rpc('withdraw_platform_training_contract', {
     p_access_id: zugangId,
     p_contract_id: vertragId,

@@ -185,7 +185,7 @@ describe('Gewohnheiten auf der Plattform', () => {
       daten({ habits: [{ ...GEWOHNHEIT, place: null, paused: true }] }),
     );
     const { container } = renderWithProviders(<Gewohnheiten zugang={ZUGANG} />, '/p/gewohnheiten');
-    const zeile = await screen.findByText('Pausiert. Setzen Sie fort, wenn es wieder geht.');
+    const zeile = await screen.findByText('Pausiert');
     expect(zeile.parentElement).toHaveClass('bg-surface-sunken', 'rounded-card');
     expect(zeile.parentElement!.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(screen.getByText('mit Ihrer Praxis vereinbart')).toBeInTheDocument();
@@ -243,11 +243,7 @@ describe('Gewohnheiten auf der Plattform', () => {
       '/p/gewohnheiten',
     );
     expect(await screen.findByText('Zurzeit keine Gewohnheit')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Vereinbaren Sie mit Ihrer Praxis eine kleine Gewohnheit, steht sie hier zum Abhaken.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/steht sie hier zum Abhaken/)).toBeNull();
     expect(screen.queryByText(/Ein Tag ohne Haken/)).toBeNull();
     await pruefeBarrierefreiheit(container);
     unmount();
@@ -265,8 +261,6 @@ describe('Gewohnheiten auf der Plattform', () => {
       new Error('Ihre Gewohnheiten konnten nicht geladen werden.'),
     );
     renderWithProviders(<Gewohnheiten zugang={ZUGANG} />, '/p/gewohnheiten');
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Ihre Gewohnheiten konnten nicht geladen werden.',
-    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Gewohnheiten nicht geladen.');
   });
 });

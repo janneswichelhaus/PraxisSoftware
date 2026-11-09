@@ -96,7 +96,6 @@ describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
     fetchStaffMember.mockResolvedValue(null);
     renderWithProviders(<EditStaffMemberPage user={testUser(['owner'])} />);
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
-    expect(screen.getByText(/Diese Person gibt es nicht/)).toBeInTheDocument();
     // Auch ohne Datensatz gibt es Titel und Weg zurueck (ORG-24).
     expect(
       screen.getByRole('heading', { level: 1, name: 'Stammdaten bearbeiten' }),
@@ -112,9 +111,7 @@ describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
     fetchStaffMember.mockRejectedValueOnce(new Error('kaputt'));
     renderWithProviders(<EditStaffMemberPage user={testUser(['owner'])} />);
 
-    expect(
-      await screen.findByText('Die Mitarbeiterdaten konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Mitarbeiterdaten nicht geladen.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(await screen.findByLabelText('Vorname *')).toHaveValue('Anna');
   });
@@ -159,7 +156,7 @@ describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
     const fenster = await screen.findByRole('dialog', {
       name: 'Die Stammdaten konnten nicht gespeichert werden.',
     });
-    expect(fenster).toHaveTextContent('Bitte die Verbindung prüfen und erneut speichern.');
+    expect(fenster).toHaveTextContent('Die Eingaben stehen noch im Formular.');
     expect(screen.queryByText(/Details aus der Datenbank/)).not.toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
   });
@@ -175,9 +172,7 @@ describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
     });
     renderWithProviders(<EditStaffMemberPage user={testUser(['owner'])} />);
 
-    expect(
-      await screen.findByText('Die Standorte konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Standorte nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 });

@@ -100,7 +100,7 @@ function uebernahmeSatz(e: Uebernahme): string {
           .map((k) => k.name)
           .join(', ')}`
       : '',
-    '. Die Übungen sind KI-erstellt und gelten bis zur Durchsicht durch die Praxis als ungeprüft.',
+    '. KI-erstellt, bis zur Durchsicht ungeprüft.',
   ].join('');
 }
 
@@ -128,8 +128,7 @@ function KatalogUebernehmen({
     return (
       <Section titel="Standardbibliothek" rahmen>
         <p className="text-liste text-ink max-w-prose">
-          {katalog ? `${katalog.length} Übungen` : 'Übungen'} mit Anleitung in Schritten und
-          Standarddosierung – als Kopie in die Bibliothek der Praxis.
+          {katalog ? `${katalog.length} Übungen` : 'Übungen'} mit Anleitung und Standarddosierung
         </p>
         <div className="mt-3">
           <Button type="button" disabled={laeuft} onClick={onUebernehmen}>
@@ -169,7 +168,7 @@ function Durchsichtszeile({ bibliothek }: { bibliothek: Bibliothek }) {
   if (offen === 0) return null;
   return (
     <Statusmeldung ton="warnung" className="mb-4">
-      {offen === 1 ? '1 Übung' : `${offen} Übungen`} aus dem Katalog noch nicht durchgesehen.{' '}
+      {offen === 1 ? '1 Übung' : `${offen} Übungen`} noch nicht durchgesehen.{' '}
       <Textlink alleinstehend to="/uebungen/durchsicht">
         Durchsicht
       </Textlink>
@@ -216,9 +215,7 @@ function Liste({
       {aktiv.length === 0 ? (
         <EmptyState
           inKarte
-          title={
-            gefiltert ? 'Keine Übung passt zu Suche und Filter.' : 'Alle Übungen sind archiviert.'
-          }
+          title={gefiltert ? 'Keine Treffer.' : 'Alle Übungen sind archiviert.'}
           {...(gesetzteFilter(filter) > 0
             ? {
                 aktion: (
@@ -298,12 +295,7 @@ export function UebungenPage({ user }: { user: CurrentUser }) {
   });
 
   if (!darf) {
-    return (
-      <ErrorState
-        title="Nicht freigegeben"
-        description="Die Übungsbibliothek steht den Rollen offen, die Übungen anleiten."
-      />
-    );
+    return <ErrorState title="Nicht freigegeben" />;
   }
 
   if (anlegen) {
@@ -370,12 +362,11 @@ export function UebungenPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Übungen werden geladen …"
-        fehler="Die Übungsbibliothek konnte nicht geladen werden."
+        fehler="Übungsbibliothek nicht geladen."
         inKarte
         leer={{
           wenn: (bibliothek) => bibliothek.exercises.length === 0 && !bibliothek.can_manage,
           titel: 'Noch keine Übungen',
-          beschreibung: 'Die Übungsbibliothek pflegt die Praxisinhaber:in.',
         }}
       >
         {(bibliothek) =>

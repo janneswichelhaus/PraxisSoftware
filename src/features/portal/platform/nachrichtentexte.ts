@@ -63,7 +63,7 @@ export const FRIST_VORBEI = 'Antwort verspätet';
 
 /** Im Training ohne Einwilligung (ANN-311): warum zwei Themen fehlen. */
 export const OHNE_EINWILLIGUNG =
-  'Fragen zu Übungen und Beschwerden sind Angaben zu Ihrer Gesundheit. Sie können sie hier stellen, sobald Sie unter „Ich → Einwilligungen“ eingewilligt haben. Termin, Rechnung und Sonstiges gehen immer.';
+  'Fragen zu Übungen und Beschwerden gehen erst mit Ihrer Einwilligung unter „Ich → Einwilligungen“.';
 
 const ZAHLWOERTER = ['null', 'einem', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht'];
 

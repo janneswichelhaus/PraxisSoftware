@@ -100,17 +100,16 @@ export function TrainingClientsPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Trainingskund:innen werden geladen …"
-        fehler="Die Trainingskund:innen konnten nicht geladen werden."
+        fehler="Trainingskund:innen nicht geladen."
         inKarte
         leer={{
           wenn: (liste) => liste.length === 0,
           titel: 'Noch keine Trainingskund:innen',
-          beschreibung: 'Die erste entsteht über „Anlegen“.',
         }}
       >
         {() =>
           sichtbar.length === 0 ? (
-            <EmptyState inKarte title="Keine Treffer" description="Suche anpassen." />
+            <EmptyState inKarte title="Keine Treffer" />
           ) : (
             <ListRows>
               {sichtbar.map((eintrag) => (

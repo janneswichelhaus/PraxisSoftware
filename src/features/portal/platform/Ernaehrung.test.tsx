@@ -416,15 +416,11 @@ describe('Ernährung auf der Plattform (Handoff 2026-10-29, 5.6)', () => {
     ]);
   });
 
-  it('ohne Beratung der Leerzustand mit Markenform und Satz, beim Laden die Form der Seite', async () => {
+  it('ohne Beratung der Leerzustand mit Markenform, beim Laden die Form der Seite', async () => {
     ladeErnaehrung.mockResolvedValue(null);
     const { unmount } = renderWithProviders(<Ernaehrung zugang={ZUGANG} />, ADRESSE);
     expect(await screen.findByText('Zurzeit keine Ernährungsberatung')).toBeVisible();
-    expect(
-      screen.getByText(
-        'Vereinbaren Sie eine Ernährungsberatung mit Ihrer Praxis, finden Sie sie hier.',
-      ),
-    ).toBeVisible();
+    expect(screen.queryByText(/finden Sie sie hier/)).toBeNull();
     unmount();
 
     ladeErnaehrung.mockReturnValue(new Promise(() => undefined));

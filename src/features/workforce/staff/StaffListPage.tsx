@@ -5,7 +5,6 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Disclosure } from '@/components/ui/Card';
 import { Filterleiste } from '@/components/ui/Filterleiste';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { SearchField } from '@/components/ui/SearchField';
@@ -15,12 +14,7 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import { useSuchbegriff } from '@/lib/suchbegriff';
 import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import { fullName } from '@/features/patients';
-import {
-  canManageAppointments,
-  canManageStaffAccounts,
-  canManageStaffMasterData,
-  type CurrentUser,
-} from '@/features/core';
+import { canManageAppointments, canManageStaffMasterData, type CurrentUser } from '@/features/core';
 import { fetchStaffMembers, type StaffMember, fetchAssignableTherapists } from './api';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -165,7 +159,7 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={liste}
         laden="Mitarbeiterliste wird geladen …"
-        fehler="Die Mitarbeiterliste konnte nicht geladen werden."
+        fehler="Mitarbeiterliste nicht geladen."
         inKarte
         leer={{
           wenn: (daten) => daten.length === 0,
@@ -174,7 +168,7 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
       >
         {() =>
           sichtbar.length === 0 ? (
-            <EmptyState inKarte title="Keine Treffer" description="Suche oder Filter anpassen." />
+            <EmptyState inKarte title="Keine Treffer" />
           ) : (
             <ListRows>
               {sichtbar.map((staff) => {
@@ -216,23 +210,6 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
           )
         }
       </Abfragezustand>
-
-      {/* Die Regel erklärt nur, was diese Rolle auf der Seite sieht, und
-          sagt der Praxisinhaber:in, wo Zugänge entstehen (ORG-25). Hilfe auf
-          Abruf (Regel 6). */}
-      {fragtZuordenbarkeit ? (
-        <div className="mt-8 max-w-prose">
-          <Disclosure summary="Wer ist zuordenbar?">
-            <p className="text-ink-muted text-sm leading-relaxed">
-              Als behandelnde Person zuordenbar ist, wer aktiv beschäftigt ist und zusätzlich einen
-              eigenen Zugang mit der Rolle Therapeut:in oder Teamleitung hat.
-              {canManageStaffAccounts(user.roles)
-                ? ' Zugang und Rollen vergeben Sie bei der Person unter „Zugang“.'
-                : ''}
-            </p>
-          </Disclosure>
-        </div>
-      ) : null}
     </>
   );
 }

@@ -486,7 +486,6 @@ describe('NewTreatmentBasisPage', () => {
 
     // Eine eigene Aktion unter dem Feld statt eines Links im Hinweissatz
     // (VER-12, RSP-06).
-    expect(screen.getByText('Verordner:in nicht in der Liste?')).toBeInTheDocument();
     const ziel = new URL(
       screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }).getAttribute('href')!,
       'http://test',
@@ -692,14 +691,9 @@ describe('EditTreatmentBasisPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
 
-    // Als Fenster über dem Formular (VER-02, ANN-058), mit einem Satz, was zu
-    // tun ist - ohne Ratefrage nach der Anmeldung (WRT-01).
-    const fenster = await screen.findByRole('dialog', {
-      name: 'Die Behandlungsgrundlage konnte nicht gespeichert werden.',
-    });
-    expect(fenster).toHaveTextContent(
-      'Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut speichern.',
-    );
+    // Als Fenster über dem Formular (ANN-058), ohne Ratefrage nach der Anmeldung.
+    const fenster = await screen.findByRole('dialog', { name: 'Grundlage nicht gespeichert.' });
+    expect(fenster).toHaveTextContent('Die Eingaben bleiben erhalten.');
     expect(fenster).not.toHaveTextContent(/angemeldet/);
     expect(screen.queryByText(/constraint xyz/)).not.toBeInTheDocument();
 
@@ -842,8 +836,9 @@ describe('Grundlagenformular (UXR-007)', () => {
       await screen.findByRole('option', { name: /Probst/ });
 
       await user.click(screen.getByRole('button', { name: 'Grundlage löschen' }));
-      // „samt ihren Heilmitteln" statt des Datenmodellworts „Positionen" (VER-17).
-      expect(screen.getByText(/samt ihren Heilmitteln/)).toBeInTheDocument();
+      // „Heilmittel" statt des Datenmodellworts „Positionen".
+      expect(screen.getByText(/samt Heilmitteln/)).toBeInTheDocument();
+      expect(screen.queryByText(/Positionen/)).not.toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Ja, Grundlage löschen' }));
 
       expect(
@@ -865,14 +860,11 @@ describe('Grundlagenformular (UXR-007)', () => {
       );
     });
 
-    it('zeigt eine unbekannte Grundlage mit Rueckweg und einem Satz, was zu tun ist', async () => {
+    it('zeigt eine unbekannte Grundlage mit Rueckweg', async () => {
       fetchTreatmentBasis.mockResolvedValue(null);
       renderWithProviders(<EditTreatmentBasisPage />);
 
       expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
-      expect(
-        screen.getByText(/Diese Grundlage gibt es nicht oder sie ist für Ihren Zugang/),
-      ).toBeInTheDocument();
       expect(screen.queryByText(/Datensatz/)).not.toBeInTheDocument();
       expect(
         screen.getByRole('heading', { level: 1, name: 'Grundlage bearbeiten' }),
@@ -888,7 +880,7 @@ describe('Grundlagenformular (UXR-007)', () => {
       renderWithProviders(<EditTreatmentBasisPage />);
 
       const kasten = await screen.findByRole('alert');
-      expect(kasten).toHaveTextContent('Die Behandlungsgrundlage konnte nicht geladen werden.');
+      expect(kasten).toHaveTextContent('Behandlungsgrundlage nicht geladen.');
       expect(kasten).not.toHaveTextContent(/interne Ursache|angemeldet/);
 
       await user.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
@@ -919,9 +911,7 @@ describe('Grundlagenformular (UXR-007)', () => {
     renderWithProviders(<NewTreatmentBasisPage />);
 
     expect(
-      await screen.findByText(
-        'Für wen diese Grundlage ist, ließ sich nicht laden. Bitte aus der Akte neu öffnen.',
-      ),
+      await screen.findByText('Person nicht geladen. Bitte aus der Akte neu öffnen.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Grundlage speichern' })).toBeDisabled();
   });

@@ -146,7 +146,7 @@ describe('Plan auf der Plattform (ADR-027 Punkt 14)', () => {
     expect(screen.getByRole('button', { name: 'Vorheriger Tag' })).toBeDisabled();
     await nutzer.click(screen.getByRole('button', { name: 'Nächster Tag' }));
     expect(screen.getByText('Tag 2 von 2')).toBeVisible();
-    expect(screen.getByText('An diesem Tag steht nichts im Plan.')).toBeVisible();
+    expect(screen.getByText('Nichts an diesem Tag.')).toBeVisible();
   });
 
   it('beginnt ein neuer Plan erst später, zeigt es den, der heute gilt', async () => {

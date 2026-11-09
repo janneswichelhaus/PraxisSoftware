@@ -83,7 +83,7 @@ export async function fetchAuditEvents(filter: AuditFilter): Promise<AuditPage> 
     p_offset: filter.page * filter.pageSize,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Auditeinträge konnten nicht geladen werden.');
+  if (error) throw new Error('Auditeinträge nicht geladen.');
 
   const events = z.array(auditEventSchema).parse(data ?? []);
   return { events, totalCount: events[0]?.total_count ?? 0 };

@@ -433,7 +433,7 @@ describe('Übersicht', () => {
     expect(query).toBeDefined();
     expect(query!.bis > query!.von).toBe(true);
     expect(await screen.findByText('Max Mustermann')).toBeInTheDocument();
-    expect(screen.queryByText('Der Tagesplan des Teams konnte nicht geladen werden.')).toBeNull();
+    expect(screen.queryByText('Tagesplan des Teams nicht geladen.')).toBeNull();
   });
 
   it('sagt an der Karte, dass zur Erstaufnahme noch etwas fehlt (PRX-013)', async () => {
@@ -712,7 +712,7 @@ describe('Übersicht', () => {
         await queryClient.refetchQueries({ queryKey: ['day-plan'] });
       });
 
-      const meldung = await screen.findByText(/Angezeigt wird der Stand von/);
+      const meldung = await screen.findByText(/Stand von .* Uhr, kann veraltet sein/);
       // Auf der Warnfläche, damit sie über dem Tag nicht untergeht.
       expect(meldung.parentElement).toHaveClass('bg-warnung-soft', 'rounded-card');
       // Entscheidend: die Anschrift steht noch da - und der Weg zum Hinweis.
@@ -730,7 +730,7 @@ describe('Übersicht', () => {
       await act(async () => {
         await queryClient.refetchQueries({ queryKey: ['day-plan'] });
       });
-      const meldung = await screen.findByText(/Angezeigt wird der Stand von/);
+      const meldung = await screen.findByText(/Stand von .* Uhr, kann veraltet sein/);
       // Kein Satz, der nichts sagt, und kein Rat, die Seite neu zu laden
       // (UEB-11, ANN-021).
       expect(meldung).not.toHaveTextContent(/Geschrieben wird|neu laden/);
@@ -738,7 +738,9 @@ describe('Übersicht', () => {
       fetchDayPlan.mockResolvedValue(tagesplan());
       await user.click(screen.getByRole('button', { name: 'Jetzt aktualisieren' }));
 
-      await waitFor(() => expect(screen.queryByText(/Angezeigt wird der Stand von/)).toBeNull());
+      await waitFor(() =>
+        expect(screen.queryByText(/Stand von .* Uhr, kann veraltet sein/)).toBeNull(),
+      );
       expect(screen.getByText('Testweg 7, 72072 Tuebingen')).toBeInTheDocument();
     });
 
@@ -747,12 +749,11 @@ describe('Übersicht', () => {
       fetchDayPlan.mockRejectedValue(new Error('Funkloch'));
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      const fehler = (
-        await screen.findByText('Die Tagesliste konnte nicht geladen werden.')
-      ).closest('[role="alert"]')!;
-      // Was zu tun ist, ohne Ratefrage (WRT-01) - und ein Weg hinaus, der die
-      // Seite stehen lässt (ZST-04).
-      expect(fehler).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+      const fehler = (await screen.findByText('Tagesliste nicht geladen.')).closest(
+        '[role="alert"]',
+      )!;
+      // Kein Ratsatz neben „Erneut versuchen“ (L7); der Weg hinaus lässt die Seite stehen.
+      expect(fehler).not.toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
       expect(fehler).not.toHaveTextContent(/angemeldet/);
       // Ohne Stand kein Zeitstrahl.
       expect(screen.queryByRole('heading', { name: STRAHL })).toBeNull();
@@ -767,7 +768,7 @@ describe('Übersicht', () => {
     it('behauptet bei frischem Stand nichts ueber sein Alter', async () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
       await screen.findByText('Testweg 7, 72072 Tuebingen');
-      expect(screen.queryByText(/Angezeigt wird der Stand von/)).toBeNull();
+      expect(screen.queryByText(/Stand von .* Uhr, kann veraltet sein/)).toBeNull();
     });
 
     // BEF-052: Das Druckblatt bekommt jeden Termin des Tages, nicht nur die Karte.
@@ -1649,10 +1650,8 @@ describe('Übersicht', () => {
       const teamplan = (
         await screen.findByRole('heading', { name: 'Tagesplan des Teams' })
       ).closest('section')!;
-      const fehler = await within(teamplan).findByText(
-        'Der Tagesplan des Teams konnte nicht geladen werden.',
-      );
-      expect(fehler.closest('[role="alert"]')).toHaveTextContent(
+      const fehler = await within(teamplan).findByText('Tagesplan des Teams nicht geladen.');
+      expect(fehler.closest('[role="alert"]')).not.toHaveTextContent(
         'Bitte die Verbindung prüfen und erneut versuchen.',
       );
       // Ohne Daten keine leere Liste und kein Zähler.
@@ -1725,11 +1724,11 @@ describe('Übersicht', () => {
       expect(zeilen[2]!.querySelector('.text-positiv, .text-danger, .text-warnung')).toBeNull();
     });
 
-    it('sagt einer Patientin, wozu der Zugang dient, und fuehrt zum Konto (UEB-08)', async () => {
+    it('sagt einer Patientin, wohin Termine gehen, und fuehrt zum Konto (UEB-08)', async () => {
       renderMitVorschau(<MyDayPage user={testUser(['patient'], 'Max Mustermann')} />);
 
       await screen.findByRole('heading', { name: 'Ihr Zugang' });
-      expect(screen.getByText(/verwalten Sie derzeit Ihr Konto/)).toBeInTheDocument();
+      expect(screen.getByText(/direkt bei der Praxis/)).toBeInTheDocument();
       expect(screen.queryByText(/Patientenportal/)).toBeNull();
       expect(screen.getByRole('link', { name: 'Mein Konto' })).toHaveAttribute(
         'href',

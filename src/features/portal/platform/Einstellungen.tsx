@@ -56,7 +56,7 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
       <PageHeader title="Einstellungen" />
       <Section titel="Schriftgröße" rahmen>
         <Schriftwahl groesse={groesse} onWahl={setzen} />
-        <p className="text-ink-muted mt-3 max-w-prose text-sm">Gilt nur auf diesem Gerät.</p>
+        <p className="text-ink-muted mt-3 max-w-prose text-sm">Nur auf diesem Gerät</p>
       </Section>
       <Benachrichtigungen
         zugaenge={zugaenge}
@@ -65,9 +65,7 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
       {/* Anmeldung ohne Kennwort (ADR-025 Fassung 2, Punkte 10 bis 12) - selten gebraucht,
           deshalb auf Abruf (ANN-468); das Technikwort steht hinter der Beschreibung. */}
       <Section titel="Anmeldung" rahmen>
-        <p className="text-ink max-w-prose text-base">
-          Sie melden sich mit Gesicht, Finger oder Ihrer PIN an und brauchen kein Kennwort.
-        </p>
+        <p className="text-ink max-w-prose text-base">Mit Gesicht, Finger oder Ihrer PIN</p>
         <div className="mt-3">
           <Disclosure summary="Geräte (Passkeys) und PIN verwalten">
             <PasskeyAbschnitt />
@@ -156,8 +154,8 @@ function EinstiegStand({
   return (
     <DetailRow label={`Einstieg${bereich}`}>
       {data.skipped_at
-        ? `Die Praxis hat den Einstieg am ${datum(data.skipped_at)} für Sie übersprungen. Ihre Einwilligungen hat sie dabei nicht berührt.`
-        : `Sie haben den Einstieg am ${datum(data.finished_at!)} beendet.`}
+        ? `Von der Praxis übersprungen am ${datum(data.skipped_at)}. Ihre Einwilligungen hat sie dabei nicht berührt.`
+        : `Beendet am ${datum(data.finished_at!)}`}
     </DetailRow>
   );
 }

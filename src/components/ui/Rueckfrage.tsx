@@ -3,8 +3,8 @@ import { Button } from './Button';
 import { Statusmeldung } from './Statusmeldung';
 import { istVersprechen } from './versprechen';
 
-/** Fehlersatz, wenn ein Vorgang scheitert und die Seite keinen eigenen nennt. */
-const STANDARDFEHLER = 'Das hat nicht geklappt. Bitte die Verbindung prüfen und erneut versuchen.';
+/** Fehlersatz, wenn ein Vorgang scheitert und die Seite keinen nennt; der Knopf bleibt (L7). */
+const STANDARDFEHLER = 'Das hat nicht geklappt.';
 
 /**
  * Rückfrage an der Stelle des Klicks; was dort aus dem Blick fiele, kommt als `Dialogfenster`

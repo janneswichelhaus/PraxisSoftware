@@ -79,9 +79,8 @@ describe('Verordnungszähler und Abrechnungslage (PRX-008)', () => {
   it('nennt einen ungedeckten Termin an seiner Grundlage, mit dem Weg zum Übertragen', async () => {
     rendern(false);
     expect(await screen.findByText('Ohne Deckung')).toBeInTheDocument();
-    expect(
-      screen.getByText('Die Behandlungsgrundlage deckt diesen Termin nicht.'),
-    ).toBeInTheDocument();
+    // L7: Das Abzeichen sagt es; kein Satz darunter.
+    expect(screen.queryByText(/deckt diesen Termin nicht/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Auf andere Grundlage übertragen' })).toHaveAttribute(
       'href',
       `/patienten/66666666-6666-4666-8666-000000000001/termine-uebertragen?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}`)}`,

@@ -357,20 +357,16 @@ describe('Tagebuch auf der Plattform (Handoff 2026-10-29, 5.7)', () => {
     ladeTagebuch.mockRejectedValue(new Error('Ihr Tagebuch konnte nicht geladen werden.'));
     renderWithProviders(<Tagebuch zugang={ZUGANG} />, ADRESSE);
     const fehler = await screen.findByRole('alert');
-    expect(fehler).toHaveTextContent('Ihr Tagebuch konnte nicht geladen werden.');
-    expect(fehler).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(fehler).toHaveTextContent('Tagebuch nicht geladen.');
+    expect(fehler).not.toHaveTextContent('Verbindung prüfen');
     expect(within(fehler).getByRole('button', { name: 'Erneut versuchen' })).toBeVisible();
   });
 
-  it('ohne Beratung der Leerzustand mit Markenform und Satz', async () => {
+  it('ohne Beratung der Leerzustand mit Markenform, ohne Satz (L7)', async () => {
     ladeTagebuch.mockResolvedValue(null);
     renderWithProviders(<Tagebuch zugang={ZUGANG} />, ADRESSE);
     expect(await screen.findByText('Zurzeit keine Ernährungsberatung')).toBeVisible();
-    expect(
-      screen.getByText(
-        'Vereinbaren Sie eine Ernährungsberatung mit Ihrer Praxis, finden Sie sie hier.',
-      ),
-    ).toBeVisible();
+    expect(screen.queryByText(/finden Sie sie hier/)).toBeNull();
   });
 });
 

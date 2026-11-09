@@ -53,7 +53,7 @@ export async function fetchKurzblick(appointmentId: string): Promise<Kurzblick |
     p_appointment_id: appointmentId,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Der Kurzblick konnte nicht geladen werden.');
+  if (error) throw new Error('Kurzblick nicht geladen.');
   const zeilen = z.array(kurzblickSchema).parse(data ?? []);
   return zeilen[0] ?? null;
 }

@@ -8,7 +8,6 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { roleLabel } from '@/components/ui/roleLabels';
 import { AnhangHerausgabe } from '@/features/portal';
 import { getTrainingClient } from '@/features/training';
@@ -53,15 +52,12 @@ export function TrainingAuskunftPage() {
       <Abfragezustand
         abfrage={kundin}
         laden="Trainingsverhältnis wird geladen …"
-        fehler="Das Trainingsverhältnis konnte nicht geladen werden."
+        fehler="Trainingsverhältnis nicht geladen."
         inKarte
       >
         {(daten) =>
           daten === null ? (
-            <ErrorState
-              title="Nicht gefunden"
-              description="Dieses Trainingsverhältnis gibt es nicht oder es ist für Ihren Zugang nicht freigegeben."
-            />
+            <ErrorState title="Nicht gefunden" />
           ) : (
             <>
               <Section titel="Auskunft nach Art. 15 DSGVO">
@@ -83,10 +79,7 @@ export function TrainingAuskunftPage() {
                 </Formularfuss>
                 {auskunft.isError ? (
                   <div className="mt-4">
-                    <ErrorState
-                      title="Die Auskunft konnte nicht erstellt werden."
-                      description={VERBINDUNG_PRUEFEN}
-                    />
+                    <ErrorState title="Auskunft nicht erstellt." />
                   </div>
                 ) : null}
                 {auskunft.data ? (

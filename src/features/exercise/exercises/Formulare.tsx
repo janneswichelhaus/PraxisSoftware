@@ -101,7 +101,7 @@ function Bezeichnungen({
     <>
       <Field
         label="Bezeichnung *"
-        hint="Fachlich, für die Praxis – etwa „Kniebeuge am Geländer“."
+        hint="Fachlich, für die Praxis"
         maxLength={NAME_HOECHSTENS}
         value={name}
         error={fehler.name}
@@ -109,7 +109,7 @@ function Bezeichnungen({
       />
       <Field
         label={`Bezeichnung in ${BEGRIFFE.alltagssprache} *`}
-        hint="So lesen es Patient:innen und Kund:innen – etwa „In die Hocke gehen“."
+        hint="So lesen es Patient:innen und Kund:innen"
         maxLength={NAME_HOECHSTENS}
         value={laie}
         error={fehler.laie}
@@ -166,7 +166,7 @@ function Variantenfelder({
     <>
       <TextArea
         label="Typische Ausweichbewegungen"
-        hint="Fachlich, für die Praxis; je Fehler eine Zeile."
+        hint="Je Fehler eine Zeile"
         rows={3}
         maxLength={TEXT_HOECHSTENS}
         value={werte.ausweichbewegungen}
@@ -174,7 +174,7 @@ function Variantenfelder({
       />
       <TextArea
         label="Hinweise für die Praxis"
-        hint="Zum Nachlesen, ohne Angaben zu einzelnen Personen. Die Bibliothek gleicht sie mit keiner Angabe einer Person ab."
+        hint="Ohne Personenbezug, kein Abgleich mit Angaben einer Person"
         rows={3}
         maxLength={TEXT_HOECHSTENS}
         value={werte.hinweise}
@@ -186,7 +186,7 @@ function Variantenfelder({
     <>
       <TextArea
         label={`Anleitung in ${BEGRIFFE.alltagssprache}`}
-        hint="Je Schritt eine Zeile. Für alle gleich – keine Angaben zu einzelnen Patient:innen oder Kund:innen (ANN-292)."
+        hint="Je Schritt eine Zeile, ohne Personenbezug"
         rows={4}
         maxLength={TEXT_HOECHSTENS}
         value={werte.anleitung}
@@ -194,7 +194,7 @@ function Variantenfelder({
       />
       <Field
         label="Ausrüstung"
-        hint="Mit Komma getrennt – etwa „Stuhl, Theraband gelb“. Ohne Angabe: keine."
+        hint="Mit Komma getrennt"
         value={werte.ausruestung}
         error={fehler}
         onChange={(event) => setze('ausruestung', event.target.value)}

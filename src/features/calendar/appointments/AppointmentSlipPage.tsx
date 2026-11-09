@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -91,15 +90,11 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
         {kopf}
         {patient.isError ? (
           <ErrorState
-            title="Die Patientendaten konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
+            title="Patientendaten nicht geladen."
             onErneut={() => void patient.refetch()}
           />
         ) : (
-          <ErrorState
-            title="Nicht gefunden"
-            description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-          />
+          <ErrorState title="Nicht gefunden" />
         )}
       </>
     );
@@ -108,11 +103,7 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
     return (
       <>
         {kopf}
-        <ErrorState
-          title="Die Termine konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => void termine.refetch()}
-        />
+        <ErrorState title="Termine nicht geladen." onErneut={() => void termine.refetch()} />
       </>
     );
   }
@@ -156,10 +147,7 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
           {/* Eine Bestätigung im Erfolgston, und mit dem Fokus: Der Knopf,
               der ihn hatte, ist mit der Frage verschwunden (UIK-21, ZST-16). */}
           {vermerken.isSuccess ? (
-            <Rueckmeldung className="mt-6">
-              Die aufgeführten Termine sind als „Terminzettel ausgehändigt“ vermerkt. Am Termin
-              lässt sich der Vermerk zurücknehmen.
-            </Rueckmeldung>
+            <Rueckmeldung className="mt-6">Als „Terminzettel ausgehändigt“ vermerkt.</Rueckmeldung>
           ) : null}
 
           {/* Die Frage nach dem Druckdialog - der zweite Schritt (ANN-039
@@ -172,9 +160,7 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
               role="status"
               className="border-line-strong bg-surface-sunken mt-6 flex flex-col gap-3 border-l-4 py-3 pr-4 pl-4"
             >
-              <p className="text-ink text-liste">
-                Wurde der Zettel ausgehändigt? Nur dann gelten die Termine als mitgeteilt.
-              </p>
+              <p className="text-ink text-liste">Wurde der Zettel ausgehändigt?</p>
               <div className="flex flex-col gap-3 *:w-full sm:flex-row sm:flex-wrap sm:items-center sm:*:w-auto">
                 <Button
                   type="button"

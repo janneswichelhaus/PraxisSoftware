@@ -352,7 +352,7 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
   });
 
   it('nennt keine Dauer, wenn die Termine des Tages nicht zu laden sind', async () => {
-    fetchAppointments.mockRejectedValue(new Error('Die Termine konnten nicht geladen werden.'));
+    fetchAppointments.mockRejectedValue(new Error('Termine nicht geladen.'));
     rendern();
     const [erste] = await zeilen(3);
     expect(erste).toHaveTextContent('Wege passen');
@@ -503,7 +503,7 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
       const frage = await rueckfrage(user);
 
       expect(frage).toHaveTextContent(
-        'Berta sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht Berta dort.',
+        'Berta sieht den Termin auf der Plattform und dort auch die Absage.',
       );
       expect(undoAppointmentCreation).toHaveBeenCalledTimes(1);
       expect(cancelAppointment).not.toHaveBeenCalled();
@@ -580,7 +580,7 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
       await user.click(erste!);
       await user.click(await screen.findByRole('button', { name: /^Rückgängig/ }));
       expect(await screen.findByRole('group', { name: 'Folgetermin absagen' })).toHaveTextContent(
-        'Die Person sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht sie dort.',
+        'Die Person sieht den Termin auf der Plattform und dort auch die Absage.',
       );
     });
   });
@@ -703,7 +703,7 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
     // eine Satz zur Verbindung und „Erneut versuchen" in einer Meldung.
     const meldung = await screen.findByRole('alert');
     expect(meldung).toHaveTextContent('Die freien Zeiten konnten nicht gesucht werden.');
-    expect(meldung).toHaveTextContent(VERBINDUNG_PRUEFEN);
+    expect(meldung).not.toHaveTextContent(VERBINDUNG_PRUEFEN);
     const aufrufe = findFreeSlots.mock.calls.length;
     await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
     // Danach stehen die Vorschläge da - ohne die Seite neu zu laden.

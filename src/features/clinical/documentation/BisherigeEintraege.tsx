@@ -88,7 +88,7 @@ export function BisherigeEintraege({
           <Statusmeldung ton="fehler">{abfrage.error.message}</Statusmeldung>
         ) : null}
         {abfrage.data && eintraege.length === 0 ? (
-          <p className="text-ink-muted text-sm">Noch kein Eintrag vor diesem Termin.</p>
+          <p className="text-ink-muted text-sm">Kein früherer Eintrag.</p>
         ) : null}
         <ol className="flex flex-col">
           {eintraege.map(({ note, startsAt, zone }) => (

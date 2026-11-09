@@ -65,8 +65,8 @@ function PraxisListe() {
   return (
     <Abfragezustand
       abfrage={abfrage}
-      laden="Die Lebensmittel werden geladen …"
-      fehler="Die Lebensmittel konnten nicht geladen werden."
+      laden="Lebensmittel werden geladen …"
+      fehler="Lebensmittel nicht geladen."
       inKarte
     >
       {(liste) => (
@@ -137,12 +137,12 @@ export function PraxisLebensmittelBearbeiten() {
       <div className="max-w-formular">
         <Abfragezustand
           abfrage={abfrage}
-          laden="Das Lebensmittel wird geladen …"
-          fehler="Das Lebensmittel konnte nicht geladen werden."
+          laden="Lebensmittel wird geladen …"
+          fehler="Lebensmittel nicht geladen."
           inKarte
           leer={{
             wenn: (liste) => !liste.some((f) => f.id === foodId),
-            titel: 'Dieses Lebensmittel gibt es nicht mehr.',
+            titel: 'Lebensmittel nicht gefunden.',
           }}
         >
           {(liste) => <Bearbeiten f={liste.find((f) => f.id === foodId)!} />}
@@ -181,7 +181,7 @@ function Bearbeiten({ f }: { f: Lebensmittel }) {
           fehler={ablegen.error?.message}
           onBestaetigen={() => ablegen.mutateAsync()}
         >
-          <p>Es verschwindet aus Suche und Liste.</p>
+          <p>Verschwindet aus der Suche.</p>
         </Rueckfrage>
       }
     />

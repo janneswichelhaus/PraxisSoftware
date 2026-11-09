@@ -80,7 +80,7 @@ const STEP: Record<'dated' | 'correction', Record<Page, number>> = {
 };
 
 /** Der Tag der Zeitenseite - ohne ihn keine Schnellwahl und kein Grund. */
-const DAY_ERROR = 'Der Tag konnte nicht geladen werden.';
+const DAY_ERROR = 'Tag nicht geladen.';
 
 const RECORD_TEXTS = {
   ...EINGABETEXTE,
@@ -105,7 +105,7 @@ export function RecordTimeAccountPage({ user }: { user: CurrentUser }) {
     <Abfragezustand
       abfrage={query}
       laden="Zeitkonto wird geladen …"
-      fehler="Das Zeitkonto konnte nicht geladen werden."
+      fehler="Zeitkonto nicht geladen."
       rahmen={(zustand) => (
         <>
           <PageHeader title="Ins Zeitkonto eintragen" />

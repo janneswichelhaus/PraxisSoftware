@@ -13,7 +13,6 @@ import { formatEuro } from '@/lib/geld';
 import { canManageInvoicing, type CurrentUser } from '@/features/core';
 import {
   bereichLabels,
-  WegHinweis,
   createEntwurf,
   erstelleKorrektur,
   fetchKandidaten,
@@ -59,7 +58,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <PageHeader title="Rechnungen" description="Privatrechnungen aus erfassten Leistungen." />
+      <PageHeader title="Rechnungen" />
 
       <OffenePosten darfBuchen={darfAusstellen} zeitzone={zeitzone} onSammeln={setSammeln} />
 
@@ -80,12 +79,8 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
         <Abfragezustand
           abfrage={kandidaten}
           laden="Leistungen werden geladen …"
-          fehler="Die abzurechnenden Leistungen konnten nicht geladen werden."
-          leer={{
-            wenn: (daten) => daten.length === 0,
-            titel: 'Nichts abzurechnen',
-            beschreibung: 'Jede erfasste Leistung steht auf einer Rechnung.',
-          }}
+          fehler="Leistungen nicht geladen."
+          leer={{ wenn: (daten) => daten.length === 0, titel: 'Nichts abzurechnen' }}
           inKarte
         >
           {(daten) => (
@@ -199,7 +194,6 @@ function KandidatenZeile({
                 <Textlink to={`/abrechnung/rechnungen/${storno}`}>
                   {kandidat.cancelled_invoice_number ?? 'ohne Nummer'}
                 </Textlink>
-                {kandidat.has_draft ? '' : ' – die neue Rechnung wird ihre Korrekturrechnung.'}
               </p>
             ) : null}
 
@@ -209,23 +203,15 @@ function KandidatenZeile({
                   ? kandidat.draft_replaces_invoice_number
                     ? // Zwei Stornos in einer Klammer: Jede bekommt ihre eigene
                       // Korrektur, nacheinander (ANN-321).
-                      `Für diesen Zeitraum steht die Korrektur zu ${kandidat.draft_replaces_invoice_number} als Entwurf. Ist sie ausgestellt, lässt sich hier die Korrekturrechnung zu ${kandidat.cancelled_invoice_number ?? 'der stornierten Rechnung'} erstellen.`
-                    : 'Für diesen Zeitraum steht schon ein Entwurf ohne Bezug zur stornierten Rechnung. Bitte ihn verwerfen; danach lässt sich hier die Korrekturrechnung erstellen.'
-                  : `${
-                      kandidat.treatment_basis_id
-                        ? 'Für diese Verordnung steht bereits ein Entwurf.'
-                        : 'Für diesen Monat und Bereich steht bereits ein Entwurf.'
-                    } Diese Leistungen sind später erfasst worden; sie kommen auf eine zweite Rechnung, sobald der Entwurf ausgestellt oder verworfen ist.`}
+                      `Korrektur zu ${kandidat.draft_replaces_invoice_number} steht als Entwurf; danach folgt hier die zu ${kandidat.cancelled_invoice_number ?? 'der stornierten Rechnung'}.`
+                    : 'Ein Entwurf ohne Bezug zur stornierten Rechnung steht im Weg. Erst ihn verwerfen.'
+                  : 'Es steht bereits ein Entwurf; diese Leistungen kommen danach auf eine zweite Rechnung.'}
               </Statusmeldung>
             ) : null}
 
             {anlegen.isError ? (
               <Statusmeldung ton="fehler" className="mt-2">
-                {/* Meldungen mit eigenem Weg sagen ihn selbst; nur eine Störung
-              bekommt den Satz zur Verbindung. */}
-                {anlegen.error instanceof WegHinweis
-                  ? anlegen.error.message
-                  : `${anlegen.error.message} Bitte die Verbindung prüfen und erneut versuchen.`}
+                {anlegen.error.message}
               </Statusmeldung>
             ) : null}
           </div>

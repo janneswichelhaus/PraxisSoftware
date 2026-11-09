@@ -168,7 +168,9 @@ describe('Kameradialog', () => {
       <Kameradialog titel="Foto" onAufnahme={vi.fn()} onSchliessen={vi.fn()} />,
     );
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/sichere Verbindung/);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Die Kamera steht hier nicht zur Verfügung.',
+    );
     expect(document.body.querySelector('input[type="file"]')).toBeNull();
     expect(container.querySelector('input')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).not.toBeInTheDocument();

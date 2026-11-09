@@ -52,8 +52,8 @@ export function VorbereitenSeite() {
       <div className="max-w-spalte flex flex-col gap-8 [&>*]:mt-0">
         <Abfragezustand
           abfrage={abfrage}
-          laden="Die Sitzungsvorbereitung wird geladen …"
-          fehler="Die Sitzungsvorbereitung konnte nicht geladen werden."
+          laden="Sitzungsvorbereitung wird geladen …"
+          fehler="Sitzungsvorbereitung nicht geladen."
           inKarte
           leer={{ wenn: (v) => !v, titel: 'Nicht gefunden' }}
           rahmen={(zustand) => (
@@ -154,8 +154,8 @@ function SeitDemLetztenMal({ patientId, v }: { patientId: string; v: Vorbereitun
     <Section titel="Seit dem letzten Mal" rahmen>
       <Abfragezustand
         abfrage={abfrage}
-        laden="Die Angaben werden geladen …"
-        fehler="Die Angaben konnten nicht geladen werden."
+        laden="Angaben werden geladen …"
+        fehler="Angaben nicht geladen."
         leer={{ wenn: (d) => !d, titel: 'Nicht freigegeben' }}
       >
         {(d) => <Angaben daten={d!} v={v} />}

@@ -639,9 +639,7 @@ describe('CalendarPage', () => {
       fetchAppointments.mockResolvedValue([]);
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
 
-      expect(
-        await screen.findByText('Für diesen Tag sind keine Termine geplant.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Keine Termine an diesem Tag.')).toBeInTheDocument();
     });
 
     it('zeigt keine klinischen Angaben', async () => {
@@ -1331,17 +1329,13 @@ describe('CalendarPage', () => {
         expect(bestaetigt).toBe(true);
       });
 
-      // KAL-26: Die Bedienhilfe stand als Dauertext unter dem Raster; jetzt
-      // steht sie eingeklappt unter „Ansicht und Filter".
-      it('sagt in der Bedienhilfe, dass Ziehen nachfragt', async () => {
+      // L7: Die Rückfrage selbst sagt, dass Ziehen nachfragt; eine Bedienhilfe gibt es nicht mehr.
+      it('fuehrt unter „Ansicht und Filter“ keine Bedienhilfe', async () => {
         await tagesansicht();
-        expect(screen.queryByText(/fragt der Kalender mit alter und neuer Zeit nach/)).toBeNull();
-
         await optionenOeffnen();
-        expect(screen.getByText('So bedienen Sie den Kalender')).toBeInTheDocument();
-        expect(
-          screen.getByText(/fragt der Kalender mit alter und neuer Zeit nach/),
-        ).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Raster feiner' })).toBeInTheDocument();
+        expect(screen.queryByText('So bedienen Sie den Kalender')).toBeNull();
+        expect(screen.queryByText(/fragt der Kalender mit alter und neuer Zeit nach/)).toBeNull();
       });
     });
 
@@ -1370,12 +1364,18 @@ describe('CalendarPage', () => {
       expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
     });
 
-    it('nennt das Bearbeiten als gleichwertigen Weg', async () => {
+    it('bietet das Bearbeiten als gleichwertigen Weg an', async () => {
       // Ziehen darf niemals der einzige Weg zum Verschieben sein.
+      fetchAppointment.mockResolvedValue(
+        testAppointment({ id: '77777777-7777-4777-8777-000000000001', patient_id: PATIENT }),
+      );
+      const user = userEvent.setup();
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
-      await screen.findByRole('button', { name: /Max Mustermann/ });
-      await optionenOeffnen();
-      expect(screen.getByText(/über „Bearbeiten“ in der Detailansicht/)).toBeInTheDocument();
+      await user.click(await screen.findByRole('button', { name: /Max Mustermann/ }));
+      await user.click(screen.getByRole('button', { name: 'Aktionen …' }));
+      expect(
+        await within(await screen.findByRole('dialog')).findByRole('link', { name: 'Bearbeiten' }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -1427,10 +1427,6 @@ describe('CalendarPage', () => {
       const timAusserhalb = within(tim).getAllByTestId('ausserhalb-arbeitszeit');
       expect(timAusserhalb).toHaveLength(1);
       expect(timAusserhalb[0]).toHaveStyle({ top: '0px', height: `${13 * EINE_STUNDE}px` });
-
-      await optionenOeffnen();
-      expect(screen.getByText(/Grau schraffiert: außerhalb der Arbeitszeit/)).toBeInTheDocument();
-      expect(screen.queryByText(/Grau hinterlegt: die Arbeitszeit/)).not.toBeInTheDocument();
     });
 
     it('behauptet nichts, solange der Wochenplan nicht geladen ist', async () => {
@@ -2099,9 +2095,7 @@ describe('CalendarPage', () => {
       rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
 
       const hinweis = await screen.findByRole('status');
-      expect(hinweis).toHaveTextContent(
-        'Termine von Max Mustermann sind hervorgehoben; andere Zeiten sind als belegt markiert.',
-      );
+      expect(hinweis).toHaveTextContent('Termine von Max Mustermann hervorgehoben');
       expect(within(hinweis).getByRole('link', { name: 'Zur Akte' })).toHaveAttribute(
         'href',
         `/patienten/${PATIENT}/termine`,
@@ -2114,7 +2108,7 @@ describe('CalendarPage', () => {
 
       await user.click(await screen.findByRole('button', { name: 'Filter aufheben' }));
 
-      await waitFor(() => expect(screen.queryByText(/sind hervorgehoben/)).toBeNull());
+      await waitFor(() => expect(screen.queryByText(/hervorgehoben/)).toBeNull());
     });
 
     it('erklaert eine leere Ansicht mit dem Filter statt mit dem Tag', async () => {
@@ -2122,7 +2116,7 @@ describe('CalendarPage', () => {
       rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${ANDERE}`);
 
       expect(
-        await screen.findByText('Für diese Patient:in steht an diesem Tag kein Termin an.'),
+        await screen.findByText('Kein Termin dieser Patient:in an diesem Tag.'),
       ).toBeInTheDocument();
     });
 
@@ -2214,13 +2208,10 @@ describe('CalendarPage', () => {
       fetchAssignableTherapists.mockRejectedValue(new Error('Netz'));
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
 
-      const titel = await screen.findByText(
-        'Die behandelnden Personen konnten nicht geladen werden.',
-      );
-      expect(titel.closest('[role="alert"]')).toHaveTextContent(
-        'Bitte die Verbindung prüfen und erneut versuchen.',
-      );
-      expect(screen.queryByText(/keine behandelnde Person hinterlegt/)).toBeNull();
+      const titel = await screen.findByText('Behandelnde Personen nicht geladen.');
+      // L7: Neben „Erneut versuchen“ steht kein Ratsatz.
+      expect(titel.closest('[role="alert"]')).not.toHaveTextContent('Verbindung prüfen');
+      expect(screen.queryByText(/keine behandelnde Person hinterlegt/i)).toBeNull();
 
       fetchAssignableTherapists.mockResolvedValue([
         { staff_member_id: STAFF_ANNA, display_name: 'Anna Beispiel' },
@@ -2233,20 +2224,20 @@ describe('CalendarPage', () => {
       fetchAssignableTherapists.mockRejectedValue(new Error('Netz'));
       rendern('/kalender?ansicht=woche&datum=2027-05-12');
 
-      await screen.findByText('Die behandelnden Personen konnten nicht geladen werden.');
+      await screen.findByText('Behandelnde Personen nicht geladen.');
       expect(screen.queryByRole('region', { name: /Wochenansicht/ })).toBeNull();
-      expect(screen.queryByText(/keine Termine geplant/)).toBeNull();
+      expect(screen.queryByText(/Keine Termine/)).toBeNull();
       // Ansicht und Filter bleiben erreichbar.
       expect(screen.getByRole('button', { name: /^Ansicht und Filter/ })).toBeInTheDocument();
     });
 
-    it('nennt beim Ladefehler der Termine den naechsten Schritt (KAL-07, WRT-01)', async () => {
+    it('nennt beim Ladefehler der Termine den naechsten Schritt als Knopf (KAL-07, WRT-01, L7)', async () => {
       fetchAppointments.mockRejectedValue(new Error('Netz'));
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
 
-      const titel = await screen.findByText('Die Termine konnten nicht geladen werden.');
+      const titel = await screen.findByText('Termine nicht geladen.');
       const kasten = titel.closest<HTMLElement>('[role="alert"]')!;
-      expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+      expect(kasten).not.toHaveTextContent('Verbindung prüfen');
       expect(within(kasten).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
       expect(kasten).not.toHaveTextContent(/angemeldet|neu laden/);
     });
@@ -3025,12 +3016,11 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
       // 10:00-13:00: passt ab 10:20.
       expect(spaeter).toHaveAttribute('data-stufe', 'passt');
       expect(spaeter).toHaveTextContent('✓ passt ab 10:20');
+      // L7: Die Rechengrundlage bleibt, die Legende der Zeichen entfällt.
       expect(screen.getByTestId('lueckenfinder-hinweis')).toHaveTextContent(
-        /Freie Lücken: ✓ passt, ! knapp, × passt nicht/,
+        'Lücken mit Fahrweg davor und danach, 60 Minuten Termin.',
       );
-      expect(screen.getByTestId('lueckenfinder-hinweis')).toHaveTextContent(
-        /reicht es nur für 45, steht „nur 45 Min\.“ dabei/,
-      );
+      expect(screen.getByTestId('lueckenfinder-hinweis')).not.toHaveTextContent(/✓ passt/);
       // ADR-011: In der Adresse steht nur die Kennung.
       expect(window.location.search).not.toMatch(/Mustermann/);
     });

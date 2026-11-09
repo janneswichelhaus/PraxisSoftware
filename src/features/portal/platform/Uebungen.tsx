@@ -166,8 +166,8 @@ function Wartestand({ besitzer, zugangId }: { besitzer: string; zugangId: string
       {wartend > 0 ? (
         <Statusmeldung ton="neutral" className="mb-4">
           {wartend === 1
-            ? 'Eine Einheit liegt noch auf diesem Gerät und ist noch nicht übertragen.'
-            : `${wartend} Einheiten liegen noch auf diesem Gerät und sind noch nicht übertragen.`}
+            ? 'Eine Einheit noch nicht übertragen'
+            : `${wartend} Einheiten noch nicht übertragen`}
         </Statusmeldung>
       ) : null}
       {stand.abgewiesen.map((a) => (
@@ -888,11 +888,7 @@ function PlanVomGeraet({
   if (!ablage || ablage.plaene.length === 0) {
     return (
       <div className="[[data-rechner]_&]:max-w-spalte">
-        <ErrorState
-          title="Ihre Übungen lassen sich gerade nicht laden."
-          description="Prüfen Sie die Verbindung oder versuchen Sie es gleich noch einmal."
-          onErneut={onErneut}
-        />
+        <ErrorState title="Übungen nicht geladen." onErneut={onErneut} />
       </div>
     );
   }
@@ -1080,12 +1076,7 @@ export function PlanblattPlattform({
             className={`flex max-w-prose flex-col gap-2 ${rechner ? 'min-w-0 flex-1 basis-72' : ''}`}
           >
             <PageHeader title="Plan als PDF" stufe="seite" />
-            {plan ? (
-              <p className="text-ink">
-                Drucken Sie den Plan aus oder sichern Sie ihn als PDF. Die Datei bleibt auf Ihrem
-                Gerät.
-              </p>
-            ) : null}
+            {plan ? <p className="text-ink">Die Datei bleibt auf Ihrem Gerät.</p> : null}
           </div>
           {plan ? (
             <Button
@@ -1101,11 +1092,7 @@ export function PlanblattPlattform({
       {plaene.isPending ? (
         <LoadingState label="Ihr Plan wird geladen …" />
       ) : plaene.data === undefined ? (
-        <ErrorState
-          title="Ihr Plan konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => plaene.refetch()}
-        />
+        <ErrorState title="Plan nicht geladen." onErneut={() => plaene.refetch()} />
       ) : !plan ? (
         <EmptyState markenform title="Diesen Plan gibt es hier nicht." />
       ) : (

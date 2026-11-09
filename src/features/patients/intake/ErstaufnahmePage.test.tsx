@@ -99,9 +99,7 @@ describe('Erstaufnahme, geführt (K10)', () => {
   it('sagt, wenn der Stand nicht geladen werden konnte, statt Schritte ohne Zustand zu zeigen', async () => {
     fetchIntakeChecklist.mockRejectedValue(new Error('netz'));
     zeigen(`/patienten/${PATIENT_ID}/erstaufnahme`);
-    expect(
-      await screen.findByText('Der Stand der Erstaufnahme konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Stand der Erstaufnahme nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Erneut versuchen/ })).toBeInTheDocument();
   });
 

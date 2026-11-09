@@ -431,9 +431,7 @@ describe('ServicesPage', () => {
 
       await nutzer.click(await screen.findByRole('button', { name: 'Leistungen erfassen' }));
 
-      expect(
-        await screen.findByText('Die geltende Preisliste bietet für diesen Termin keine Position.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Preisliste ohne passende Position.')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /0 Leistungen erfassen/ })).toBeNull();
     });
 
@@ -504,9 +502,7 @@ describe('ServicesPage', () => {
     it('zeigt eine Abweisung beim Zurücknehmen im offenen Kasten, samt Weg (ABR-03, ABR-B02)', async () => {
       const nutzer = userEvent.setup();
       fetchLeistungen.mockResolvedValue([leistung()]);
-      deleteLeistungen.mockRejectedValue(
-        new Error('Die Erfassung konnte nicht zurückgenommen werden.'),
-      );
+      deleteLeistungen.mockRejectedValue(new Error('Erfassung nicht zurückgenommen.'));
 
       renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
 
@@ -514,8 +510,9 @@ describe('ServicesPage', () => {
       await nutzer.click(screen.getByRole('button', { name: 'Zurücknehmen' }));
 
       const meldung = await screen.findByRole('alert');
-      expect(meldung).toHaveTextContent(/konnte nicht zurückgenommen werden/);
+      expect(meldung).toHaveTextContent('Erfassung nicht zurückgenommen.');
       expect(meldung).toHaveTextContent(/erst den Entwurf verwerfen/);
+      expect(meldung).not.toHaveTextContent(/Verbindung/);
       expect(screen.getByRole('group', { name: 'Erfassung zurücknehmen' })).toBeInTheDocument();
     });
 
@@ -534,9 +531,7 @@ describe('ServicesPage', () => {
 
       renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
 
-      expect(
-        await screen.findByText('Die offenen Termine konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Offene Termine nicht geladen.')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
       expect(screen.queryByText(/angemeldet/)).toBeNull();
     });
@@ -617,7 +612,7 @@ describe('ServicesPage', () => {
       ]);
       renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
       expect(await screen.findByText('(TP3)')).toBeInTheDocument();
-      expect(screen.getByText(/am Trainingsverhältnis entfernt/)).toBeInTheDocument();
+      expect(screen.getByText(/am Trainingsverhältnis entfernen/)).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Erfassung zurücknehmen' })).toBeNull();
     });
   });

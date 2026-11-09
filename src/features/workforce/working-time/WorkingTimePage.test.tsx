@@ -77,9 +77,6 @@ describe('WorkingTimePage', () => {
     fetchWorkingTime.mockResolvedValue(testWorkingTime({ my_staff_member_id: null, plan: null }));
     renderWithProviders(<WorkingTimePage user={testUser(['office'])} />);
     expect(await screen.findByText('Keine eigene Arbeitszeit')).toBeInTheDocument();
-    expect(
-      screen.getByText('Zu Ihrem Konto gibt es keinen Mitarbeiterdatensatz.'),
-    ).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^Änderung/ })).toBeNull();
   });
 

@@ -69,7 +69,7 @@ export function TrainingAppointmentPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={termin}
         laden="Trainingstermin wird geladen …"
-        fehler="Der Trainingstermin konnte nicht geladen werden."
+        fehler="Trainingstermin nicht geladen."
         inKarte
         leer={{ wenn: (wert) => wert === null, titel: 'Trainingstermin nicht gefunden' }}
       >
@@ -214,7 +214,6 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
         <div className="border-line max-w-formular mt-8 border-t pt-6">
           <Absagen
             termin={termin}
-            name={name}
             liestProtokoll={liestProtokoll}
             onAbgesagt={() => gemeldet('Termin abgesagt.')}
           />
@@ -233,12 +232,10 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
  */
 function Absagen({
   termin,
-  name,
   liestProtokoll,
   onAbgesagt,
 }: {
   termin: TrainingAppointment;
-  name: string;
   liestProtokoll: boolean;
   onAbgesagt: () => void;
 }) {
@@ -288,10 +285,7 @@ function Absagen({
       onAbbrechen={() => setGrundFehler(undefined)}
       onBestaetigen={absagen}
     >
-      <p>
-        Der Trainingstermin mit {name} wird als abgesagt geführt und gibt seinen Zeitraum frei. Eine
-        Absage lässt sich nicht zurücknehmen – für einen neuen Termin bitte neu anlegen.
-      </p>
+      <p>Der Zeitraum wird frei; eine Absage lässt sich nicht zurücknehmen.</p>
       {entwurfGehtVerloren ? (
         <p className="text-warnung mt-2 font-semibold">
           Der Protokollentwurf zu dieser Einheit wird dabei verworfen.

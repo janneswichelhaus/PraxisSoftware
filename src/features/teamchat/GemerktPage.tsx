@@ -76,16 +76,10 @@ export function GemerktPage() {
       <Abfragezustand
         abfrage={gemerkt}
         laden="„Für später“ wird geladen …"
-        fehler="„Für später“ konnte nicht geladen werden."
+        fehler="„Für später“ nicht geladen."
         leer={{
           wenn: (daten) => daten.length === 0,
           titel: ansicht === 'offen' ? 'Nichts für später' : 'Nichts erledigt',
-          ...(ansicht === 'offen'
-            ? {
-                beschreibung:
-                  'An einer Nachricht über „⋯“ → „Für später merken“, auf Wunsch mit Erinnerung.',
-              }
-            : {}),
         }}
       >
         {(daten) => {

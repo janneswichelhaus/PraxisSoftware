@@ -153,8 +153,8 @@ function Aufnahme({
   if (kamera === 'ohneSchnittstelle') {
     return (
       <Statusmeldung ton="warnung">
-        Die Kamera steht hier nicht zur Verfügung – sie braucht eine sichere Verbindung (https).
-        Fotos entstehen nur über die Kamera der Anwendung, nicht aus der Mediathek.
+        Kamera nur über https verfügbar. Fotos nur über die Kamera der Anwendung, nicht aus der
+        Mediathek.
       </Statusmeldung>
     );
   }
@@ -162,8 +162,7 @@ function Aufnahme({
   if (kamera === 'keine') {
     return (
       <Statusmeldung ton="warnung">
-        Auf diesem Gerät wurde keine Kamera gefunden. Fotos entstehen nur über die Kamera der
-        Anwendung, nicht aus der Mediathek.
+        Keine Kamera gefunden. Fotos nur über die Kamera der Anwendung, nicht aus der Mediathek.
       </Statusmeldung>
     );
   }
@@ -189,7 +188,6 @@ function Aufnahme({
               label="Name"
               value={name}
               maxLength={200}
-              hint="Unter diesem Namen steht das Foto in der Liste – etwa die Region."
               disabled={speichern.isPending}
               onChange={(e) => setName(e.target.value)}
             />
@@ -219,8 +217,7 @@ function Aufnahme({
           </div>
           {speichern.isError ? (
             <Statusmeldung ton="fehler" className="mt-2">
-              {speichern.error.message} Das Foto ist noch da – „Foto speichern“ versucht es erneut,
-              solange diese Seite offen ist.
+              {speichern.error.message} Das Foto ist noch da, solange diese Seite offen ist.
             </Statusmeldung>
           ) : null}
           <Fotoverlustschutz />
@@ -427,13 +424,10 @@ function Fotozeile({
                 onAbbrechen={() => loeschen.reset()}
                 onBestaetigen={() => loeschen.mutateAsync()}
               >
-                <span className="wrap-anywhere">
-                  „{foto.display_name}“ wird sofort aus der Liste entfernt. Das lässt sich nicht
-                  rückgängig machen.
-                  {foto.document_type === 'dokumentationsfoto'
-                    ? ' Ein Dokumentationsfoto lässt sich nur am Tag der Aufnahme löschen.'
-                    : ''}
-                </span>
+                Lässt sich nicht rückgängig machen.
+                {foto.document_type === 'dokumentationsfoto'
+                  ? ' Ein Dokumentationsfoto lässt sich nur am Tag der Aufnahme löschen.'
+                  : ''}
               </Rueckfrage>
             ) : null}
           </div>
@@ -447,8 +441,8 @@ function Fotozeile({
       ) : null}
       {foto.object_missing ? (
         <Statusmeldung ton="fehler" className="mt-2">
-          Dieses Foto ist in der Ablage nicht auffindbar. Bitte der Praxisinhaber:in melden – es
-          steht unter „Aufbewahrung“.
+          Foto fehlt in der Ablage. Bitte der Praxisinhaber:in melden – es steht unter
+          „Aufbewahrung“.
         </Statusmeldung>
       ) : null}
     </li>
@@ -583,11 +577,7 @@ export function Patientenfotos({
       <div className="mt-4">
         {fotos.isPending ? <LoadingState label="Fotos werden geladen …" /> : null}
         {fotos.isError ? (
-          <ErrorState
-            title="Die Fotos konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => fotos.refetch()}
-          />
+          <ErrorState title="Fotos nicht geladen." onErneut={() => fotos.refetch()} />
         ) : null}
         {fotos.data && liste.length === 0 ? (
           <p className="text-ink text-liste">Fotos: keine.</p>
@@ -645,11 +635,7 @@ export function Patientenfotos({
                 >
                   Nebeneinander ansehen
                 </Button>
-                <span className="text-ink-muted text-sm">
-                  {gewaehlt.length === 2
-                    ? 'Zwei Fotos gewählt.'
-                    : 'Zwei Fotos „Zum Vergleich“ wählen.'}
-                </span>
+                <span className="text-ink-muted text-sm">{gewaehlt.length} von 2 gewählt</span>
               </div>
             ) : null}
             {ladeort?.art === 'vergleich' ? (

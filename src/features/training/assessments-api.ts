@@ -72,14 +72,13 @@ function schreibfehler(meldung: string | undefined): string {
   const m = meldung ?? '';
   if (m.includes('consent'))
     return 'Ohne Einwilligung zu Gesundheitsangaben lässt sich kein Assessment festhalten.';
-  if (m.includes('has ended'))
-    return 'Das Verhältnis ist beendet. Es lässt sich nichts mehr festhalten.';
+  if (m.includes('has ended')) return 'Das Verhältnis ist beendet.';
   if (m.includes('future')) return 'Ein Assessment lässt sich erst am Tag der Messung festhalten.';
   if (m.includes('not found')) return 'Das Assessment wurde nicht gefunden.';
   if (m.includes('not allowed'))
     return 'Assessments halten Inhaber:in und Trainingsbetreuung fest.';
   if (m.includes('due_after')) return 'Die Wiederholung liegt nach dem Tag der Messung.';
-  return 'Nicht gespeichert. Bitte die Eingaben und die Verbindung prüfen.';
+  return 'Nicht gespeichert.';
 }
 
 export async function assessmentFesthalten(eingabe: {

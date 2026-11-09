@@ -31,18 +31,11 @@ export function StartortEinstellung() {
   const standort = standorte.data?.[0];
 
   return (
-    <Section
-      titel="Startort der Touren"
-      hinweis="Von hier beginnt die Tagesroute, wenn nichts anderes gewählt ist. Eine Adresse der Praxis, keine Wohnadresse."
-    >
+    <Section titel="Startort der Touren" hinweis="Eine Adresse der Praxis, keine Wohnadresse.">
       {standorte.isPending ? (
         <LoadingState label="Standorte werden geladen …" />
       ) : standorte.isError ? (
-        <ErrorState
-          title="Die Standorte konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => standorte.refetch()}
-        />
+        <ErrorState title="Standorte nicht geladen." onErneut={() => standorte.refetch()} />
       ) : standort ? (
         <OrtFormular key={standort.id} standort={standort} art="startort" />
       ) : (
@@ -65,16 +58,12 @@ export function GarageEinstellung() {
   return (
     <Section
       titel="Garage (Abstellort der Räder)"
-      hinweis="Hier beginnt und endet die Tour, wenn eine Garage gesetzt ist – sonst an der Praxis. Der Startort oben bleibt der Ort der Praxistermine. Eine Adresse der Praxis, keine Wohnadresse."
+      hinweis="Hier beginnt und endet die Tour, wenn gesetzt. Eine Adresse der Praxis, keine Wohnadresse."
     >
       {standorte.isPending ? (
         <LoadingState label="Standorte werden geladen …" />
       ) : standorte.isError ? (
-        <ErrorState
-          title="Die Standorte konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => standorte.refetch()}
-        />
+        <ErrorState title="Standorte nicht geladen." onErneut={() => standorte.refetch()} />
       ) : standort ? (
         <OrtFormular key={`${standort.id}-garage`} standort={standort} art="garage" />
       ) : (
@@ -335,21 +324,13 @@ function OrtFormular({ standort, art }: { standort: Standort; art: Ortsart }) {
 
       {meldung ? <Statusmeldung ton={meldung.ton}>{meldung.text}</Statusmeldung> : null}
       {suchen.isError ? (
-        <Statusmeldung ton="fehler">
-          Die Adresse ließ sich gerade nicht verorten. Bitte die Verbindung prüfen und erneut
-          versuchen.
-        </Statusmeldung>
+        <Statusmeldung ton="fehler">Die Adresse ließ sich gerade nicht verorten.</Statusmeldung>
       ) : null}
       {speichern.isError ? (
-        <Statusmeldung ton="fehler">
-          {texte.wer} konnte nicht gespeichert werden. Bitte die Verbindung prüfen und erneut
-          speichern.
-        </Statusmeldung>
+        <Statusmeldung ton="fehler">{texte.wer} konnte nicht gespeichert werden.</Statusmeldung>
       ) : null}
       {entfernen.isError ? (
-        <Statusmeldung ton="fehler">
-          Die Garage konnte nicht entfernt werden. Bitte die Verbindung prüfen und erneut versuchen.
-        </Statusmeldung>
+        <Statusmeldung ton="fehler">Die Garage konnte nicht entfernt werden.</Statusmeldung>
       ) : null}
     </form>
   );

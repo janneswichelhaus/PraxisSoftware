@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
@@ -38,13 +37,7 @@ export function Nachsorgeabo({ patientId }: { patientId: string }) {
 
   if (sicht.isPending) return null;
   if (sicht.isError) {
-    return (
-      <ErrorState
-        title="Das Nachsorge-Abo konnte nicht geladen werden."
-        description={VERBINDUNG_PRUEFEN}
-        onErneut={() => sicht.refetch()}
-      />
-    );
+    return <ErrorState title="Nachsorge-Abo nicht geladen." onErneut={() => sicht.refetch()} />;
   }
   if (!sicht.data) return null;
 
@@ -59,7 +52,7 @@ export function Nachsorgeabo({ patientId }: { patientId: string }) {
       <p className="text-ink text-liste font-medium">Nachsorge-Abo</p>
       {sicht.data.subscriptions.length === 0 ? (
         <p className="text-ink-muted text-sm">
-          {vorDemAbschluss ? 'Kein Abo · möglich ab dem Abschluss der Versorgung' : 'Kein Abo.'}
+          {vorDemAbschluss ? 'Kein Abo · ab Abschluss der Versorgung möglich' : 'Kein Abo.'}
         </p>
       ) : (
         <Eintraege beschriftung="Abos" rahmen={false}>
@@ -177,8 +170,7 @@ function Entfernen({ id, patientId, beginn }: { id: string; patientId: string; b
       onBestaetigen={() => entfernen.mutateAsync()}
       onAbbrechen={() => entfernen.reset()}
     >
-      Das Abo ab {formatDate(beginn)} wird entfernt, als hätte es es nie gegeben. Das geht nur,
-      solange noch kein Abo-Monat erfasst ist.
+      Das Abo ab {formatDate(beginn)} wird spurlos entfernt.
     </Rueckfrage>
   );
 }

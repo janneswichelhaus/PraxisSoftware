@@ -99,7 +99,7 @@ export function Fotoreihe({
                 onBestaetigen={() => loeschen.mutateAsync(offen.id)}
                 onAbbrechen={() => loeschen.reset()}
               >
-                <p>Das Foto wird gelöscht. Das lässt sich nicht rückgängig machen.</p>
+                <p>Lässt sich nicht rückgängig machen.</p>
               </Rueckfrage>
             </div>
           ) : null}

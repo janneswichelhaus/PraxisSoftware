@@ -208,7 +208,8 @@ describe('StaffAccountSection', () => {
     ]);
     renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
-    expect(await screen.findByText(/Diese Einladung gilt nicht mehr/)).toBeInTheDocument();
+    expect(await screen.findByText(/Abgelaufen am/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Einladung zurücknehmen' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Anmeldemail senden' })).not.toBeInTheDocument();
   });
 
@@ -242,9 +243,7 @@ describe('StaffAccountSection', () => {
     fetchStaffInvitations.mockRejectedValueOnce(new Error('kaputt'));
     renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
-    expect(
-      await screen.findByText('Der Zugangsstand konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Zugangsstand nicht geladen.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(await screen.findByRole('button', { name: 'Zugang einladen' })).toBeInTheDocument();
   });
@@ -434,7 +433,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     ).toBeInTheDocument();
   });
 
-  it('sagt bei einem unbekannten Fehler, was zu tun ist (ORG-15)', async () => {
+  it('sagt bei einem unbekannten Fehler, was nicht ging, und lässt es erneut versuchen (ORG-15)', async () => {
     const user = userEvent.setup();
     setzeZugangAktiv.mockRejectedValue(new ZugangsError('unbekannt'));
     renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
@@ -443,10 +442,9 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     await user.click(screen.getByRole('button', { name: 'Sperren' }));
 
     expect(
-      await screen.findByText(
-        'Der Vorgang konnte nicht ausgeführt werden. Bitte die Verbindung prüfen und erneut versuchen.',
-      ),
+      await screen.findByText('Der Vorgang konnte nicht ausgeführt werden.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sperren' })).toBeEnabled();
   });
 
   it('schickt einen neuen Anmeldelink erst nach der Rückfrage (ADR-025 Punkt 12)', async () => {
@@ -472,13 +470,9 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     await user.click(await screen.findByRole('checkbox', { name: 'Teamleitung' }));
     await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
 
-    expect(
-      await screen.findByText(/Der angezeigte Stand konnte nicht aktualisiert werden/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Stand nicht aktuell/)).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Teamleitung' })).toBeChecked();
-    expect(
-      screen.queryByText('Der Zugangsstand konnte nicht geladen werden.'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Zugangsstand nicht geladen.')).not.toBeInTheDocument();
   });
 });
 
@@ -508,16 +502,11 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
     renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     // Zugeklappt hinter einem Aufklapper (UX-005i); der Text steht im Dokument.
-    expect(
-      await screen.findByText("Konto beim Anmeldedienst anlegen – so geht's"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/braucht sie einmalig ein\s+Konto beim Anmeldedienst/s),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Konto beim Anmeldedienst anlegen')).toBeInTheDocument();
     // ORG-10: Wo und von wem das Konto angelegt wird.
-    expect(
-      screen.getByText(/Das Konto legt an, wer den\s+Anmeldedienst betreut/s),
-    ).toHaveTextContent('Authentication → Users → Add user');
+    expect(screen.getByText(/Legt an, wer den Anmeldedienst betreut/)).toHaveTextContent(
+      'Authentication → Users → Add user',
+    );
   });
 
   it('bestätigt die zugestellte Anmeldemail', async () => {
@@ -530,9 +519,7 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
       await screen.findByText(/Die Anmeldemail wurde an nina.neu@praxis.invalid geschickt/),
     ).toBeInTheDocument();
     // Das Konto gibt es also schon - der Schritt dorthin entfällt (ORG-10).
-    expect(
-      screen.queryByText("Konto beim Anmeldedienst anlegen – so geht's"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Konto beim Anmeldedienst anlegen')).not.toBeInTheDocument();
   });
 
   it('unterscheidet den nicht erreichbaren Dienst vom fehlenden Konto (R3-008)', async () => {

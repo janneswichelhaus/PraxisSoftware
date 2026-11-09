@@ -176,7 +176,7 @@ function EntryForm({
               label="Behandlungsgrundlage"
               value={state.treatmentBasisId}
               onChange={(e) => set('treatmentBasisId', e.target.value)}
-              hint={bases.isError ? 'Die Grundlagen konnten nicht geladen werden.' : undefined}
+              hint={bases.isError ? 'Grundlagen nicht geladen.' : undefined}
             >
               <option value="">Ohne Bezug</option>
               {(bases.data ?? []).map((basis) => {
@@ -382,7 +382,7 @@ export function NewWaitlistEntryPage() {
     return (
       <>
         <Rueckweg standard={LIST} beschriftung="Zurück zur Warteliste" />
-        <PageHeader title="Auf die Warteliste setzen" description="Zuerst die Patient:in wählen." />
+        <PageHeader title="Auf die Warteliste setzen" />
         <div className="max-w-formular">
           <Patientensuche
             label="Patient:in suchen"
@@ -412,14 +412,9 @@ export function NewWaitlistEntryPage() {
       <Abfragezustand
         abfrage={patient}
         laden="Patient:in wird geladen …"
-        fehler="Die Patient:in konnte nicht geladen werden."
+        fehler="Patient:in nicht geladen."
       >
-        {() => (
-          <ErrorState
-            title="Nicht gefunden"
-            description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-          />
-        )}
+        {() => <ErrorState title="Nicht gefunden" />}
       </Abfragezustand>
     </>
   );
@@ -454,15 +449,11 @@ export function EditWaitlistEntryPage() {
     <>
       <Rueckweg standard={back} beschriftung="Zurück zur Warteliste" />
       <PageHeader title="Eintrag der Warteliste bearbeiten" />
-      <Abfragezustand
-        abfrage={list}
-        laden="Eintrag wird geladen …"
-        fehler="Der Eintrag konnte nicht geladen werden."
-      >
+      <Abfragezustand abfrage={list} laden="Eintrag wird geladen …" fehler="Eintrag nicht geladen.">
         {() => (
           <ErrorState
             title="Diesen Eintrag gibt es nicht mehr."
-            description="Er wurde geschlossen oder gelöscht. Die Warteliste zeigt den aktuellen Stand."
+            description="Er wurde geschlossen oder gelöscht."
           />
         )}
       </Abfragezustand>

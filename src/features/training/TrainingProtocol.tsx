@@ -133,7 +133,7 @@ export function TrainingProtokoll({
         <Abfragezustand
           abfrage={protokoll}
           laden="Trainingsprotokoll wird geladen …"
-          fehler="Das Trainingsprotokoll konnte nicht geladen werden."
+          fehler="Trainingsprotokoll nicht geladen."
           inKarte
         >
           {() => null}
@@ -192,7 +192,7 @@ export function TrainingProtokoll({
   return (
     <Section titel="Trainingsprotokoll" rahmen>
       {veraltet}
-      <p className="text-ink-muted text-sm">Zu diesem Termin gibt es kein Trainingsprotokoll.</p>
+      <p className="text-ink-muted text-sm">Kein Trainingsprotokoll.</p>
     </Section>
   );
 }
@@ -371,7 +371,6 @@ function Entwurf({
         {/* Was Entwurf und Abschluss bedeuten, sagen Knopf und Rückfrage (UX-005i). */}
         <TextArea
           label="Was in der Einheit gemacht wurde"
-          hint="Übungen, Umfang, Absprachen – in eigenen Worten."
           rows={8}
           maxLength={20000}
           value={text}
@@ -408,7 +407,7 @@ function Entwurf({
             if (!pruefen()) return;
             void schreiben({
               ausfuehren: speichern,
-              fehlertitel: 'Das Protokoll wurde nicht gespeichert',
+              fehlertitel: 'Protokoll nicht gespeichert',
               danach: () => setMeldung('Entwurf gespeichert.'),
             });
           }}
@@ -567,12 +566,11 @@ export function TrainingEinheiten({ kundin }: { kundin: TrainingClient }) {
       <Abfragezustand
         abfrage={einheiten}
         laden="Einheiten werden geladen …"
-        fehler="Die Einheiten konnten nicht geladen werden."
+        fehler="Einheiten nicht geladen."
         inKarte
         leer={{
           wenn: (liste) => liste.length === 0,
           titel: 'Noch kein Trainingsprotokoll.',
-          beschreibung: 'Es entsteht am Trainingstermin.',
         }}
       >
         {(liste) => (

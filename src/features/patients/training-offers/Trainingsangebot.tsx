@@ -46,13 +46,7 @@ export function Trainingsangebot({ patientId }: { patientId: string }) {
 
   if (sicht.isPending) return null;
   if (sicht.isError) {
-    return (
-      <ErrorState
-        title="Die Trainingsangebote konnten nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => sicht.refetch()}
-      />
-    );
+    return <ErrorState title="Trainingsangebote nicht geladen." onErneut={() => sicht.refetch()} />;
   }
   if (!sicht.data) return null;
 
@@ -195,8 +189,7 @@ function Anbieten({ patientId, sicht }: { patientId: string; sicht: Angebotssich
         ) : null}
         {sicht.has_own_access ? null : (
           <p className="text-ink-muted max-w-prose text-sm">
-            Angenommen wird im eigenen Konto. Die Person hat noch keinen Zugang zur Plattform –
-            bitte zuerst unter „Plattform“ einladen.
+            Noch kein Zugang zur Plattform: zum Annehmen zuerst unter „Plattform“ einladen.
           </p>
         )}
         <div>
@@ -264,7 +257,7 @@ function Anbieten({ patientId, sicht }: { patientId: string; sicht: Angebotssich
             pakete.isError
               ? pakete.error.message
               : pakete.data && pakete.data.length === 0
-                ? 'Die Preisliste nennt für diesen Tag kein Paket.'
+                ? 'Kein Paket für diesen Tag.'
                 : undefined
           }
           onChange={(event) => setPaketId(event.target.value)}

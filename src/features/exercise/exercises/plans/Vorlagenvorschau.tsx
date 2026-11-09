@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { StatusMark } from '@/components/ui/StatusMark';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -62,7 +61,7 @@ export function Vorlagenvorschau({
       <p className="text-ink-muted mb-3 text-sm">{vorlage.ziel}</p>
       {katalogFehlt ? (
         <Statusmeldung ton="warnung" className="mb-3">
-          Nicht alle Übungen konnten geladen werden.
+          Nicht alle Übungen geladen.
         </Statusmeldung>
       ) : null}
       <ListRows>
@@ -96,11 +95,6 @@ export function Vorlagenvorschau({
           ),
         )}
       </ListRows>
-      {zeilen.some((zeile) => zeile.art === 'fehlt') ? (
-        <Kleingedrucktes className="mt-2">
-          Was nicht in der Bibliothek steht, übernimmt die Praxisinhaber:in aus dem Katalog.
-        </Kleingedrucktes>
-      ) : null}
       <Auswahlfuss
         anzahl={gewaehlt.length}
         laeuft={laeuft}

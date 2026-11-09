@@ -59,7 +59,7 @@ export function TagebuchErinnerungen({ zugang }: { zugang: Plattformzugang }) {
         <Abfragezustand
           abfrage={abfrage}
           laden="Wird geladen …"
-          fehler="Ihre Erinnerungen konnten nicht geladen werden."
+          fehler="Erinnerungen nicht geladen."
           leer={{ wenn: (daten) => !daten, titel: 'Zurzeit keine Ernährungsberatung.' }}
         >
           {(daten) => <Wahl zugang={zugang} daten={daten!} />}
@@ -108,9 +108,7 @@ function Wahl({ zugang, daten }: { zugang: Plattformzugang; daten: Tagebucherinn
       }}
     >
       {daten.switched_off ? (
-        <Statusmeldung ton="warnung">
-          Ihre Praxis hat diese Erinnerung für alle abgeschaltet.
-        </Statusmeldung>
+        <Statusmeldung ton="warnung">Von der Praxis für alle abgeschaltet.</Statusmeldung>
       ) : null}
       {MAHLZEITEN.map((m) => (
         <div key={m} className="flex flex-col gap-2">

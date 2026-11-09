@@ -480,12 +480,7 @@ describe('Kein Plan, Laden, Fehler (Handoff 5.1 und 5.6)', () => {
     ladePlaene.mockRejectedValue(new Error('kaputt'));
     const user = userEvent.setup();
     zeige(<Uebungen zugang={ZUGANG} />);
-    expect(
-      await screen.findByText('Ihre Übungen lassen sich gerade nicht laden.'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('Prüfen Sie die Verbindung oder versuchen Sie es gleich noch einmal.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Übungen nicht geladen.')).toBeInTheDocument();
     ladePlaene.mockResolvedValue({ today: HEUTE, plans: [eigenerPlan()] });
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(await vorschau('Ihre Übungen')).toBeInTheDocument();
@@ -590,9 +585,7 @@ describe('Einheit auf dem Gerät (BEF-218, ANN-730)', () => {
     await waitFor(() => expect(within(karte).getByText('Heute geübt')).toBeInTheDocument());
     // Wo die Einheit liegt, sagt einmal der Hinweis über der Karte; die Karte
     // sagt nicht „Gespeichert“ (Design-Review B1, ADR-024 Punkt 8).
-    expect(
-      screen.getByText('Eine Einheit liegt noch auf diesem Gerät und ist noch nicht übertragen.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Eine Einheit noch nicht übertragen')).toBeInTheDocument();
     expect(karte).not.toHaveTextContent('Gespeichert');
     expect(karte).not.toHaveTextContent('sieht Ihre Einheit');
     expect(within(karte).getByRole('link', { name: 'Noch einmal üben' })).toBeInTheDocument();
@@ -748,11 +741,7 @@ describe('Plan als Blatt auf der Plattform (ANN-303)', () => {
     );
     // Der Titel der Seite ist sichtbar, das Blatt beginnt mit h2 (DR-158).
     expect(screen.getByRole('heading', { level: 1, name: 'Plan als PDF' })).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Drucken Sie den Plan aus oder sichern Sie ihn als PDF. Die Datei bleibt auf Ihrem Gerät.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Die Datei bleibt auf Ihrem Gerät.')).toBeInTheDocument();
     expect(within(blatt).getByRole('heading', { level: 2 })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Drucken oder als PDF sichern' }));
     expect(print).toHaveBeenCalled();

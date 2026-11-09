@@ -7,7 +7,6 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { GESPERRT } from '@/components/ui/Tagebuchbausteine';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Barcodedialog } from '@/features/nutrition/Barcodedialog';
 import { Trefferzeile } from '@/features/nutrition/LebensmittelSuche';
 import type { Lebensmittel } from '@/features/nutrition/lebensmittel';
@@ -136,7 +135,6 @@ export function BarcodeScan({
         onSchliessen={onSchliessen}
       >
         <div className="flex flex-col gap-4">
-          <p>Legen Sie es mit den Werten von der Verpackung an, oder suchen Sie es mit Namen.</p>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Button
               type="button"
@@ -160,11 +158,7 @@ export function BarcodeScan({
   }
   return (
     <Dialogfenster titel="Barcode scannen" onSchliessen={onSchliessen}>
-      <ErrorState
-        title="Das Nachschlagen hat nicht geklappt."
-        description={VERBINDUNG_PRUEFEN}
-        onErneut={() => mutate(stand.code)}
-      />
+      <ErrorState title="Nachschlagen hat nicht geklappt." onErneut={() => mutate(stand.code)} />
       <div className="mt-4">
         <Abbrechen onSchliessen={onSchliessen} />
       </div>

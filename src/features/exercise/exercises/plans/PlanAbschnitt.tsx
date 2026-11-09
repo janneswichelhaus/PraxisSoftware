@@ -64,12 +64,12 @@ export function PlanAbschnitt({
       <Section titel={titel}>
         {/* `null` heißt: die Liste ist nicht lesbar - wie ein Ladefehler. */}
         {data === null ? (
-          <Statusmeldung ton="fehler">Die Pläne konnten nicht geladen werden.</Statusmeldung>
+          <Statusmeldung ton="fehler">Pläne nicht geladen.</Statusmeldung>
         ) : (
           <Abfragezustand
             abfrage={abfrage}
             laden="Pläne werden geladen …"
-            fehler="Die Pläne konnten nicht geladen werden."
+            fehler="Pläne nicht geladen."
             inKarte
           >
             {() => null}
@@ -128,7 +128,7 @@ function planMeta(plan: PlanZeile): string {
     case 'ended':
       return `beendet · lief ab ${formatDate(plan.runs_from)}`;
     case 'superseded':
-      return `abgelöst durch eine neue Fassung · lief ab ${formatDate(plan.runs_from)}`;
+      return `abgelöst durch neue Fassung · lief ab ${formatDate(plan.runs_from)}`;
   }
 }
 

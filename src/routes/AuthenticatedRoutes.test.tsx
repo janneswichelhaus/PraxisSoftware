@@ -201,11 +201,9 @@ describe('AuthenticatedRoutes', () => {
       <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
       AUSKUNFT,
     );
-    // fetchPatient liefert in dieser Datei null; entscheidend ist, dass die
-    // Seite ueberhaupt gemountet wird und nicht umgeleitet (OPS-006). Der
-    // Satz dazu lautet seit UXR-006 „Diese Akte gibt es nicht …" - geprueft
-    // wird die Seite, nicht ihr Wortlaut.
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Diese Akte/);
+    // fetchPatient liefert in dieser Datei null; entscheidend ist, dass die Seite ueberhaupt
+    // gemountet wird und nicht umleitet - geprueft wird die Seite, nicht ihr Wortlaut.
+    expect(await screen.findByRole('alert')).toHaveTextContent('Nicht gefunden');
     expect(screen.queryByRole('heading', { name: /Guten/ })).toBeNull();
   });
 

@@ -1,5 +1,4 @@
 import { useId, type ReactNode } from 'react';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Skelett, SkelettBereich } from '@/components/ui/Skelett';
 import { Pfeilzeichen } from '@/components/ui/Tagebuchbausteine';
@@ -81,11 +80,7 @@ export function Unterseitenzustand<T>({
   if (abfrage.data === undefined) {
     return abfrage.isError ? (
       <div className="mt-8">
-        <ErrorState
-          title={fehler}
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => abfrage.refetch()}
-        />
+        <ErrorState title={fehler} onErneut={() => abfrage.refetch()} />
       </div>
     ) : (
       <SkelettBereich beschriftung={beschriftung} className="mt-8 flex flex-col gap-3">

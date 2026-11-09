@@ -45,7 +45,7 @@ function kamerafehler(ursache: unknown): { meldung: string; erneut: boolean } {
     return { meldung: 'Auf diesem Gerät wurde keine Kamera gefunden.', erneut: false };
   }
   return {
-    meldung: 'Die Kamera konnte nicht gestartet werden. Bitte erneut versuchen.',
+    meldung: 'Die Kamera konnte nicht gestartet werden.',
     erneut: true,
   };
 }
@@ -168,7 +168,7 @@ export function Videodialog({
       if (video.size === 0) {
         setZustand({
           art: 'fehler',
-          meldung: 'Das Video konnte nicht aufgenommen werden. Bitte erneut versuchen.',
+          meldung: 'Das Video konnte nicht aufgenommen werden.',
           erneut: true,
         });
         return;

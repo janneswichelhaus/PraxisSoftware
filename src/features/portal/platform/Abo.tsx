@@ -8,7 +8,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
   aboSchluessel,
@@ -46,20 +45,10 @@ export function Abo({ zugang }: { zugang: Plattformzugang }) {
       {abo.isPending ? <LoadingState label="Ihr Abo wird geladen …" inKarte /> : null}
       {abo.isError ? (
         <div>
-          <ErrorState
-            title="Ihr Abo konnte nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
-            onErneut={() => abo.refetch()}
-          />
+          <ErrorState title="Abo nicht geladen." onErneut={() => abo.refetch()} />
         </div>
       ) : null}
-      {abo.data === null ? (
-        <EmptyState
-          markenform
-          title="Zurzeit kein Nachsorge-Abo"
-          description="Vereinbaren Sie ein Nachsorge-Abo mit Ihrer Praxis, finden Sie es hier."
-        />
-      ) : null}
+      {abo.data === null ? <EmptyState markenform title="Zurzeit kein Nachsorge-Abo" /> : null}
       {abo.data ? <Stand zugang={zugang} abo={abo.data} /> : null}
     </>
   );

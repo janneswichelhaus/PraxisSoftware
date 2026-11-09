@@ -116,7 +116,7 @@ export function StaffEinsatz({ staff }: { staff: StaffMember }) {
     <form onSubmit={absenden} className="max-w-formular" noValidate>
       {/* Ein Satz, weil er die Eingabe ändert: Wer einen Zugang mit einer
           dieser Rollen hat, steht ohnehin im Kalender. */}
-      <Section titel="Kalender" hinweis="Nur nötig, solange die Person keinen eigenen Zugang hat.">
+      <Section titel="Kalender" hinweis="Nur ohne eigenen Zugang nötig.">
         <Feldgruppe>
           <div className="flex flex-col gap-1">
             <Checkbox
@@ -144,7 +144,6 @@ export function StaffEinsatz({ staff }: { staff: StaffMember }) {
         <Feldgruppe>
           <Select
             label="Vergütungsmodell"
-            hint="Das Modell wählt die Person selbst."
             value={wert}
             disabled={!modell.isSuccess || speichern.isPending}
             onChange={(e) => setAuswahl(e.target.value)}
@@ -161,7 +160,7 @@ export function StaffEinsatz({ staff }: { staff: StaffMember }) {
           </Select>
           {modell.isError ? (
             <Listenfehler
-              text="Das Vergütungsmodell konnte nicht geladen werden."
+              text="Vergütungsmodell nicht geladen."
               onErneut={() => void modell.refetch()}
             />
           ) : null}

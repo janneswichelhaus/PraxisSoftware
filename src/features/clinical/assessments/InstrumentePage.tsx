@@ -225,9 +225,9 @@ export function InstrumentePage({
 
   return (
     <>
-      <PageHeader title="Instrumente" description="Erhoben wird in der Akte unter „Befund“." />
+      <PageHeader title="Instrumente" />
       {sortiert.length === 0 ? (
-        <EmptyState inKarte title="Noch liegt kein Instrument vor." />
+        <EmptyState inKarte title="Keine Instrumente." />
       ) : (
         <ListRows>
           {sortiert.map((score) => (

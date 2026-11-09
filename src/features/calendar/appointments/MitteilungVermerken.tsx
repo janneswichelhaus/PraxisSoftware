@@ -90,11 +90,9 @@ export function MitteilungVermerken({ appointment }: { appointment: Appointment 
             : 'Mitteilung ändern'}
         </summary>
         <div className="mt-2">
-          {/* Ein Satz für beides - wofür die Auswahl ist (TER-13) und dass
-              sie mit einer Terminänderung verfällt (UX-005g). */}
+          {/* Nur die Folge, die man nicht sieht: Mit einer Terminänderung verfällt der Vermerk (L7). */}
           <p className="text-ink-muted max-w-prose text-sm">
-            Für Gespräch und Anruf – Terminzettel und E-Mail werden dort vermerkt, wo sie bestätigt
-            werden; ändert sich der Termin, verfällt der Vermerk.
+            Ändert sich der Termin, verfällt der Vermerk.
           </p>
           <div className="mt-2 flex flex-col gap-1">
             {notificationChannelOrder.map((kanal) => (

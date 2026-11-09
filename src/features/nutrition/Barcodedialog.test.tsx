@@ -60,7 +60,7 @@ describe('Barcodedialog', () => {
     const onNummer = vi.fn();
     const onSchliessen = vi.fn();
     render(<Barcodedialog onNummer={onNummer} onSchliessen={onSchliessen} leser={leserMit([])} />);
-    await screen.findByText('Den Barcode in den Rahmen halten.');
+    await screen.findByLabelText('Kamerabild');
     await waitFor(() => expect(getUserMedia).toHaveBeenCalled());
     await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
     expect(onSchliessen).toHaveBeenCalled();
@@ -99,7 +99,7 @@ describe('Barcodedialog', () => {
   it('ohne Kamera gleich zum Eintippen, ohne Anfrage an die Kamera', () => {
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
     render(<Barcodedialog onNummer={vi.fn()} onSchliessen={vi.fn()} leser={leserMit([])} />);
-    expect(screen.getByText('Die Kamera steht hier nicht zur Verfügung.')).toBeVisible();
+    expect(screen.getByText('Keine Kamera verfügbar.')).toBeVisible();
     expect(screen.getByLabelText('Nummer unter dem Barcode')).toBeVisible();
     expect(getUserMedia).not.toHaveBeenCalled();
   });

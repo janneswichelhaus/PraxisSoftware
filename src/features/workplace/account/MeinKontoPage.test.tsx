@@ -296,9 +296,7 @@ describe('MeinKontoPage', () => {
     ladeMfaFaktoren.mockResolvedValue([{ id: 'faktor-1', bestaetigt: true }]);
     renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
 
-    expect(
-      await screen.findByText('Für dieses Konto ist ein zweiter Faktor eingerichtet.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Zweiter Faktor eingerichtet.')).toBeInTheDocument();
     expect(screen.getByText(/derzeit nicht ab/)).toBeInTheDocument();
   });
 
@@ -311,9 +309,7 @@ describe('MeinKontoPage', () => {
 
   it('nennt therapist denselben Stand ohne Warnton', async () => {
     renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
-    expect(
-      await screen.findByText('Für dieses Konto ist kein zweiter Faktor eingerichtet.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Kein zweiter Faktor eingerichtet.')).toBeInTheDocument();
     expect(screen.queryByText(/Verwaltungsrechte/)).not.toBeInTheDocument();
   });
 
@@ -366,9 +362,7 @@ describe('MeinKontoPage', () => {
     // Ein Wort für eine Sache (WRT-17): Der QR-Code wird gescannt, das
     // Einmalkennwort eingetragen - abgelehnt wird das Einmalkennwort.
     expect(
-      await screen.findByText(
-        'Das Einmalkennwort wurde nicht angenommen. Bitte das aktuelle aus der App eintragen.',
-      ),
+      await screen.findByText('Das Einmalkennwort wurde nicht angenommen.'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Einmalkennwort aus der App')).toHaveAttribute(
       'aria-invalid',
@@ -381,9 +375,7 @@ describe('MeinKontoPage', () => {
     ladeMfaFaktoren.mockResolvedValue([{ id: 'factor-1', bestaetigt: true }]);
     renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
 
-    expect(
-      await screen.findByText('Für dieses Konto ist ein zweiter Faktor eingerichtet.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Zweiter Faktor eingerichtet.')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Zweiten Faktor entfernen' }));
     expect(entferneMfa).not.toHaveBeenCalled();
@@ -404,9 +396,7 @@ describe('MeinKontoPage', () => {
   it('zeigt das Kalender-Abo nur mit eigenem Mitarbeiterdatensatz (ANN-838)', async () => {
     const { unmount } = renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
     expect(await screen.findByRole('heading', { name: 'Kalender-Abo' })).toBeInTheDocument();
-    expect(
-      await screen.findByText('Das Kalender-Abo ist hier noch nicht eingerichtet.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Hier noch nicht eingerichtet.')).toBeInTheDocument();
     unmount();
     renderWithProviders(
       <MeinKontoPage user={{ ...testUser(['therapist']), staffMemberId: null }} />,
@@ -453,15 +443,11 @@ describe('MeinKontoPage — UXR-002', () => {
     expect(
       await screen.findByText('Der Stand des zweiten Faktors ließ sich nicht laden.'),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.'),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/Verbindung prüfen/)).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
 
-    expect(
-      await screen.findByText('Für dieses Konto ist kein zweiter Faktor eingerichtet.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Kein zweiter Faktor eingerichtet.')).toBeInTheDocument();
     expect(ladeMfaFaktoren).toHaveBeenCalledTimes(2);
   });
 
@@ -479,7 +465,7 @@ describe('MeinKontoPage — UXR-002', () => {
 
   it('fasst die ganze Seite in die Formularbreite (NAV-20)', async () => {
     renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
-    await screen.findByText('Für dieses Konto ist kein zweiter Faktor eingerichtet.');
+    await screen.findByText('Kein zweiter Faktor eingerichtet.');
 
     const breite = screen.getByRole('heading', { name: 'Passkeys' }).closest('.max-w-formular');
     expect(breite).not.toBeNull();
@@ -512,7 +498,7 @@ describe('MeinKontoPage — UXR-002', () => {
     const bild = await screen.findByAltText('QR-Code zum Einrichten des zweiten Faktors');
     expect(bild).toHaveClass('rounded-image', 'bg-surface');
     expect(bild).not.toHaveClass('bg-white');
-    expect(screen.getByText(/Diesen QR-Code in einer Authenticator-App scannen/)).toBeVisible();
+    expect(screen.getByText('Mit einer Authenticator-App scannen.')).toBeVisible();
   });
 });
 

@@ -5,7 +5,6 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -40,11 +39,7 @@ export function FaelligeAbomonate() {
   if (monate.isError) {
     return (
       <Section titel="Nachsorge-Abo">
-        <ErrorState
-          title="Die Abo-Monate konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => monate.refetch()}
-        />
+        <ErrorState title="Abo-Monate nicht geladen." onErneut={() => monate.refetch()} />
       </Section>
     );
   }
@@ -156,7 +151,7 @@ export function AbomonatZuruecknehmen({ leistungId }: { leistungId: string }) {
       onBestaetigen={() => entfernen.mutateAsync()}
       onAbbrechen={() => entfernen.reset()}
     >
-      <p>Der Abo-Monat steht danach wieder unter „Nachsorge-Abo“.</p>
+      <p>Erfassung zurücknehmen?</p>
     </Rueckfrage>
   );
 }

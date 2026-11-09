@@ -84,11 +84,12 @@ describe('Befund der Akte', () => {
     fetchEreignisse.mockReset().mockResolvedValue([]);
   });
 
-  it('sagt einer Leserolle, wer erhebt (BEF-064)', async () => {
+  it('zeigt einer Leserolle den Leerzustand ohne Weg zum Erheben (BEF-064, L7)', async () => {
     seite([], ['office']);
-    // Leerzustand in der Karte: der Zustand als Titel, wer erhebt darunter.
-    expect((await screen.findAllByText('Noch nicht erhoben.'))[0]).toBeInTheDocument();
-    expect(screen.getAllByText('Erhoben wird von den behandelnden Rollen.')).toHaveLength(3);
+    // Leerzustand in der Karte: nur der Zustand, ohne Erklärsatz (L7).
+    expect(await screen.findAllByText('Noch nicht erhoben.')).toHaveLength(3);
+    expect(screen.queryByRole('link', { name: 'Bogen erheben' })).toBeNull();
+    expect(screen.queryByText(/behandelnden Rollen/)).toBeNull();
   });
 
   it('bietet das Erheben an, solange nichts erhoben ist', async () => {
@@ -163,7 +164,7 @@ describe('Befund der Akte', () => {
     await user.click(await screen.findByRole('button', { name: 'Entwurf verwerfen' }));
     expect(
       screen.getByRole('group', { name: 'Entwurf vom 20.09.2026 verwerfen' }),
-    ).toHaveTextContent('Die gespeicherten Antworten dieses Entwurfs werden gelöscht.');
+    ).toHaveTextContent('Die gespeicherten Antworten werden gelöscht.');
     expect(erhebungVerwerfen).not.toHaveBeenCalled();
 
     fetchErhebungen.mockResolvedValue([]);
@@ -311,10 +312,7 @@ describe('Befund der Akte', () => {
           user={testUser(['office'])}
         />,
       );
-      expect(
-        await screen.findByText('Die Fragebögen konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
-      expect(screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeVisible();
+      expect(await screen.findByText('Fragebögen nicht geladen.')).toBeInTheDocument();
       expect(screen.getByText('Mitnehmen')).toBeInTheDocument();
 
       // Ein Weg aus dem Fehler, ohne die Seite neu zu laden (WRT-01).

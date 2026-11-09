@@ -310,11 +310,7 @@ function Terminliste({
           gleich noch einmal zu versuchen (WRT-01, UIK-16). Ein gescheitertes
           Weiterblättern meldet sich unten am Knopf. */}
       {seiten.isError && !seiten.data ? (
-        <ErrorState
-          title="Die Termine konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => void seiten.refetch()}
-        />
+        <ErrorState title="Termine nicht geladen." onErneut={() => void seiten.refetch()} />
       ) : null}
 
       {/* Ein gescheitertes Nachladen nimmt die Liste nicht mit (ZST-03). */}
@@ -361,8 +357,7 @@ function Terminliste({
           </Button>
           {seiten.isFetchNextPageError ? (
             <Statusmeldung ton="fehler" className="mt-2">
-              Die weiteren Termine konnten nicht geladen werden. Bitte die Verbindung prüfen und
-              erneut versuchen.
+              Die weiteren Termine konnten nicht geladen werden.
             </Statusmeldung>
           ) : null}
         </div>
@@ -600,15 +595,12 @@ export function Terminbereich({
           Abschnitt 7): Die Akte beantwortet zuerst, was ansteht. */}
       <div className="mt-8">
         <Disclosure inKarte kopf="label" summary={<h2>Vergangene Termine</h2>}>
-          <p className="text-ink-muted mb-3 text-sm">
-            Neueste zuerst, einschließlich abgesagter Termine.
-          </p>
           <Terminliste
             patientId={patient.id}
             kuenftig={false}
             verordnung={verordnung}
             kontingente={kontingente.data ?? []}
-            leerText="Für diese Person gibt es noch keinen vergangenen Termin."
+            leerText="Kein vergangener Termin."
             weiterText="Ältere Termine anzeigen"
             neuerTermin={neuerTermin}
           />

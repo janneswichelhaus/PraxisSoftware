@@ -44,12 +44,12 @@ describe('ZugangEinrichtenPage', () => {
     expect(screen.getByRole('main')).toBeInTheDocument();
   });
 
-  // Seit ADR-025 Fassung 2 gibt es kein Kennwort mehr: Nach dem Annehmen
-  // verlangt die Einrichtungspflicht Passkey und PIN. Die Seite sagt das
-  // vorher, in einem Satz unter dem Titel (Welle B, B7).
-  it('sagt vorher, was nach dem Annehmen einzurichten ist (AUTH-08)', () => {
+  // Seit ADR-025 Fassung 2 gibt es kein Kennwort mehr; Passkey und PIN verlangt danach die
+  // Einrichtungspflicht. Titel, Knopf und Kleingedrucktes tragen die Seite.
+  it('trägt die Seite mit Titel, Knopf und Kleingedrucktem, ohne Kennwort (AUTH-08)', () => {
     renderWithProviders(<ZugangEinrichtenPage onEingerichtet={vi.fn()} onAbmelden={vi.fn()} />);
-    expect(screen.getByText(/danach richten Sie Passkey und PIN ein/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Einladung annehmen' })).toBeInTheDocument();
+    expect(screen.getByText(/Der Beitritt wird protokolliert/)).toBeInTheDocument();
     expect(screen.queryByText(/Kennwort/)).toBeNull();
   });
 
@@ -127,7 +127,7 @@ describe('ZugangEinrichtenPage', () => {
     expect(
       await screen.findByText(/Der Zugang konnte nicht eingerichtet werden/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Bitte die Verbindung prüfen/)).toBeInTheDocument();
+    expect(screen.queryByText(/Verbindung prüfen/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Einladung annehmen' })).toBeInTheDocument();
   });
 

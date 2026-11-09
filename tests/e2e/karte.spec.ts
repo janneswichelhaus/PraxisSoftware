@@ -228,7 +228,7 @@ test.describe('Karte der Tagesroute', () => {
     // Marker standen, der Hintergrund fehlte, und die Seite schwieg dazu.
     await page.goto(`${PRUEFSEITE}?fehler=1`);
 
-    await expect(page.getByText(/Kartenmaterial konnte nicht geladen werden/)).toBeVisible();
+    await expect(page.getByText(/Kartenmaterial nicht geladen/)).toBeVisible();
     // Die Stopps bleiben sichtbar - sie kommen aus der Anwendung, nicht vom
     // Kartendienst.
     await expect(page.getByText('1', { exact: true })).toBeVisible();

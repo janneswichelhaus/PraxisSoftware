@@ -28,10 +28,6 @@ import {
 import { ProfilAbschnitt } from '@/features/teamchat';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { KalenderAboAbschnitt } from './KalenderAboAbschnitt';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-
-/** Der nächste Schritt nach einem gescheiterten Vorgang (NAV-13, WRT-01). */
-const ERNEUT = VERBINDUNG_PRUEFEN;
 
 /**
  * Zweiter Faktor (STAFF-004b).
@@ -110,7 +106,6 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
         <div className="mt-4">
           <ErrorState
             title="Der Stand des zweiten Faktors ließ sich nicht laden."
-            description={ERNEUT}
             onErneut={() => faktoren.refetch()}
           />
         </div>
@@ -118,26 +113,21 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
 
       {faktoren.data && bestaetigt.length > 0 ? (
         <div>
-          <Statusmeldung className="mt-4">
-            Für dieses Konto ist ein zweiter Faktor eingerichtet.
-          </Statusmeldung>
+          <Statusmeldung className="mt-4">Zweiter Faktor eingerichtet.</Statusmeldung>
           <div className="mt-4">
             <Rueckfrage
               ausloeser="Zweiten Faktor entfernen"
               bestaetigen="Entfernen"
               bestaetigenLaeuft="Wird entfernt …"
               fehler={
-                entfernen.isError
-                  ? `Der zweite Faktor konnte nicht entfernt werden. ${ERNEUT}`
-                  : undefined
+                entfernen.isError ? 'Der zweite Faktor konnte nicht entfernt werden.' : undefined
               }
               laeuft={entfernen.isPending}
               onBestaetigen={() => entfernen.mutateAsync(bestaetigt[0]!.id)}
               onAbbrechen={() => entfernen.reset()}
             >
               <p>
-                Der eingerichtete Faktor wird gelöscht. Die Anmeldung verlangt ihn ohnehin noch
-                nicht; sobald sie es tut, müsste er neu eingerichtet werden. Der Vorgang wird
+                Der Faktor wird gelöscht und müsste neu eingerichtet werden. Der Vorgang wird
                 protokolliert.
               </p>
             </Rueckfrage>
@@ -154,9 +144,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
               Verwaltungsrechte, aber noch kein zweiter Faktor.
             </Statusmeldung>
           ) : (
-            <Statusmeldung className="mt-4">
-              Für dieses Konto ist kein zweiter Faktor eingerichtet.
-            </Statusmeldung>
+            <Statusmeldung className="mt-4">Kein zweiter Faktor eingerichtet.</Statusmeldung>
           )}
 
           {!einrichtung ? (
@@ -173,10 +161,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
             </Button>
           ) : (
             <div className="mt-5">
-              <p className="text-ink-muted text-sm">
-                Diesen QR-Code in einer Authenticator-App scannen und anschließend das dort
-                angezeigte sechsstellige Einmalkennwort eintragen.
-              </p>
+              <p className="text-ink-muted text-sm">Mit einer Authenticator-App scannen.</p>
               {/* Der QR-Code braucht einen hellen, ruhigen Grund, damit die
                   Kamera ihn liest: die Fläche `surface`, die Weiß ist (TOK-08).
                   Ein Bild rundet mit `rounded-image` (TOK-16). */}
@@ -206,9 +191,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
                   autoComplete="one-time-code"
                   value={code}
                   error={
-                    bestaetigen.isError
-                      ? 'Das Einmalkennwort wurde nicht angenommen. Bitte das aktuelle aus der App eintragen.'
-                      : undefined
+                    bestaetigen.isError ? 'Das Einmalkennwort wurde nicht angenommen.' : undefined
                   }
                   onChange={(event) => setCode(event.target.value)}
                 />
@@ -237,7 +220,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
 
           {starten.isError ? (
             <Statusmeldung ton="fehler" className="mt-3">
-              Der zweite Faktor konnte nicht vorbereitet werden. {ERNEUT}
+              Der zweite Faktor konnte nicht vorbereitet werden.
             </Statusmeldung>
           ) : null}
         </div>
@@ -267,17 +250,15 @@ function Sitzungen({ mitAbo }: { mitAbo: boolean }) {
         ausloeser="Alle Sitzungen beenden"
         bestaetigen="Überall abmelden"
         bestaetigenLaeuft="Wird beendet …"
-        fehler={
-          mutation.isError ? `Die Sitzungen konnten nicht beendet werden. ${ERNEUT}` : undefined
-        }
+        fehler={mutation.isError ? 'Die Sitzungen konnten nicht beendet werden.' : undefined}
         laeuft={mutation.isPending}
         onBestaetigen={() => mutation.mutateAsync()}
         onAbbrechen={() => mutation.reset()}
       >
         <p>
-          Alle angemeldeten Geräte werden abgemeldet, dieses eingeschlossen. Sie melden sich danach
-          neu an.{mitAbo ? ' Ein Kalender-Abo endet mit.' : ''} Passkeys und PIN bleiben dabei
-          bestehen – einen Passkey, der nicht mehr in Ihrer Hand ist, oben entfernen.
+          Alle Geräte werden abgemeldet, auch dieses.{mitAbo ? ' Ein Kalender-Abo endet mit.' : ''}{' '}
+          Passkeys und PIN bleiben bestehen – einen Passkey, der nicht mehr in Ihrer Hand ist, oben
+          entfernen.
         </p>
         <p className="mt-3">
           Ein bereits geöffnetes Gerät kann noch bis zu einer Stunde weiterlesen, bevor es sich neu

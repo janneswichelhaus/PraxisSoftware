@@ -31,9 +31,8 @@ const schluesselSchema = z.object({
 export type Offlineschluessel = z.infer<typeof schluesselSchema>;
 
 export const OHNE_NETZ_SAETZE = {
-  keinSchluessel:
-    'Auf diesem Gerät ist kein Passkey für die Freigabe ohne Verbindung abgelegt. Bitte mit Verbindung entsperren.',
-  nichtAngenommen: 'Der Passkey wurde nicht angenommen. Bitte erneut versuchen.',
+  keinSchluessel: 'Auf diesem Gerät ist kein Passkey für die Freigabe ohne Verbindung abgelegt.',
+  nichtAngenommen: 'Der Passkey wurde nicht angenommen.',
 } as const;
 
 // -----------------------------------------------------------------------------

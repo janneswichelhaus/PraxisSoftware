@@ -159,9 +159,7 @@ describe('SteuerberatungPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Training' }));
 
     expect(
-      await screen.findByText(
-        'Für diesen Bereich fehlt die Mandantennummer. Eintragen kann sie die Praxisinhaber:in.',
-      ),
+      await screen.findByText('Mandantennummer fehlt. Eintragen kann sie die Praxisinhaber:in.'),
     ).toBeVisible();
     expect(screen.queryByRole('button', { name: /erstellen/ })).not.toBeInTheDocument();
   });
@@ -170,7 +168,7 @@ describe('SteuerberatungPage', () => {
     fetchDatevEinstellungen.mockResolvedValue(null);
     seite(['owner']);
 
-    expect(await screen.findByText('Es sind noch keine DATEV-Angaben erfasst.')).toBeVisible();
+    expect(await screen.findByText('DATEV-Angaben fehlen.')).toBeVisible();
     expect(screen.getByRole('link', { name: 'DATEV-Angaben eintragen' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Eintragen' })).toHaveAttribute(
       'href',
@@ -248,7 +246,7 @@ describe('SteuerberatungPage nach den Reviews', () => {
 
   it('sagt nach angelegtem Lauf ohne Datei, wo die Datei liegt', async () => {
     erstelleDatevLauf.mockResolvedValue('lauf-1');
-    fetchDatevLauf.mockRejectedValue(new Error('Der Export konnte nicht geladen werden.'));
+    fetchDatevLauf.mockRejectedValue(new Error('Export nicht geladen.'));
     seite();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Buchungsstapel erstellen' }));

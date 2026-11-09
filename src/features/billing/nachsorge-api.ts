@@ -73,7 +73,7 @@ export async function createNachsorge(patientId: string, beginn: string): Promis
   if (error?.message?.includes('already covers')) {
     throw new Error('Für diesen Tag besteht schon ein Abo.');
   }
-  if (error) throw new Error('Das Abo konnte nicht angelegt werden.');
+  if (error) throw new Error('Abo nicht angelegt.');
 }
 
 export async function deleteNachsorge(id: string): Promise<void> {
@@ -87,7 +87,7 @@ export async function deleteNachsorge(id: string): Promise<void> {
   if (error?.message?.includes('has recorded months')) {
     throw new Error('Aus dem Abo ist schon ein Monat erfasst; es endet nur durch Kündigung.');
   }
-  if (error) throw new Error('Das Abo konnte nicht entfernt werden.');
+  if (error) throw new Error('Abo nicht entfernt.');
 }
 
 // -----------------------------------------------------------------------------
@@ -145,7 +145,7 @@ export async function recordMonat(aboId: string, monat: string): Promise<void> {
   if (error?.message?.includes('already recorded')) {
     throw new Error('Dieser Abo-Monat ist schon erfasst.');
   }
-  if (error) throw new Error('Der Abo-Monat konnte nicht erfasst werden.');
+  if (error) throw new Error('Abo-Monat nicht erfasst.');
 }
 
 export async function deleteMonat(leistungId: string): Promise<void> {
@@ -154,11 +154,9 @@ export async function deleteMonat(leistungId: string): Promise<void> {
   })) as { error: { message?: string } | null };
 
   if (error?.message?.includes('on an invoice')) {
-    throw new Error(
-      'Der Abo-Monat steht auf einem Rechnungsentwurf. Bitte erst den Entwurf verwerfen.',
-    );
+    throw new Error('Der Abo-Monat steht auf einem Rechnungsentwurf. Erst den Entwurf verwerfen.');
   }
-  if (error) throw new Error('Die Erfassung konnte nicht zurückgenommen werden.');
+  if (error) throw new Error('Erfassung nicht zurückgenommen.');
 }
 
 // -----------------------------------------------------------------------------
@@ -174,5 +172,5 @@ export async function cancelNachsorge(id: string): Promise<void> {
   if (error?.message?.includes('already cancelled')) {
     throw new Error('Das Abo ist schon gekündigt.');
   }
-  if (error) throw new Error('Die Kündigung konnte nicht eingetragen werden.');
+  if (error) throw new Error('Kündigung nicht eingetragen.');
 }

@@ -75,7 +75,7 @@ describe('InvoiceDetailPage', () => {
     erstelleErinnerung.mockResolvedValue('e1');
   });
 
-  it('nennt den Entwurf ohne Nummer und sagt, wann sie entsteht', async () => {
+  it('nennt den Entwurf ohne Nummer und ohne Erklärsatz (L7)', async () => {
     fetchRechnung.mockResolvedValue(ansicht());
 
     renderWithProviders(
@@ -85,8 +85,9 @@ describe('InvoiceDetailPage', () => {
 
     // Erst auf einen Text warten, dann die Rolle prüfen: Eine Rollenabfrage je
     // Warteschritt ist auf dieser Seite teuer und riss unter Last die Wartezeit.
-    expect(await screen.findByText(/Die Nummer entsteht beim Ausstellen/)).toBeInTheDocument();
+    expect(await screen.findByText(/1 × Krankengymnastik \(KG\)/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Entwurf · Erika Beispiel' })).toBeInTheDocument();
+    expect(screen.queryByText(/Nummer entsteht beim Ausstellen/)).toBeNull();
   });
 
   it('zeigt Leistungen, Summe und die Behandlungsgrundlage ohne Diagnose', async () => {
@@ -307,9 +308,7 @@ describe('InvoiceDetailPage', () => {
       '/abrechnung/rechnungen/r1',
     );
 
-    expect(
-      await screen.findByText(/Eine Trainingsrechnung geht an die Kund:in selbst/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Anschrift aus dem Training.')).toBeInTheDocument();
     // Geht die Rechnung an die Kund:in selbst, steht ihr Name nicht ein
     // zweites Mal unter der Empfängerin (UX-005i).
     expect(screen.queryByText(/Leistung für:/)).toBeNull();
@@ -371,7 +370,7 @@ describe('InvoiceDetailPage', () => {
       '/abrechnung/rechnungen/r1',
     );
 
-    expect(await screen.findByText(/noch keine Praxisstammdaten erfasst/)).toBeInTheDocument();
+    expect(await screen.findByText(/Praxisstammdaten fehlen/)).toBeInTheDocument();
   });
 
   describe('Zahlungen (ABR-004)', () => {
@@ -626,7 +625,7 @@ describe('InvoiceDetailPage', () => {
       );
 
       expect(
-        await screen.findByText(/Verrechnen lässt sich mit der Korrekturrechnung, sobald/),
+        await screen.findByText('Verrechnen erst mit ausgestellter Korrekturrechnung'),
       ).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /verrechnen/ })).toBeNull();
     });
@@ -682,7 +681,7 @@ describe('InvoiceDetailPage', () => {
         await screen.findByRole('button', { name: 'Korrekturrechnung erstellen' }),
       );
       expect(erstelleKorrektur).toHaveBeenCalledWith('r1');
-      expect(screen.getByText(/und ihre Leistungen sind wieder abzurechnen/)).toBeInTheDocument();
+      expect(screen.getByText('Leistungen wieder abzurechnen.')).toBeInTheDocument();
     });
 
     it('bietet keine Korrektur an, wenn keine Leistung mehr abzurechnen ist (BEF-143)', async () => {
@@ -703,9 +702,7 @@ describe('InvoiceDetailPage', () => {
         '/abrechnung/rechnungen/r1',
       );
 
-      expect(
-        await screen.findByText(/Von ihren Leistungen ist keine mehr abzurechnen/),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Keine Leistung mehr abzurechnen.')).toBeInTheDocument();
       expect(screen.queryByText(/wieder abzurechnen/)).toBeNull();
       expect(screen.queryByRole('button', { name: 'Korrekturrechnung erstellen' })).toBeNull();
       expect(screen.getByRole('link', { name: 'Stornodokument öffnen' })).toBeInTheDocument();
@@ -773,7 +770,7 @@ describe('InvoiceDetailPage', () => {
         '/abrechnung/rechnungen/r1',
       );
 
-      expect(await screen.findByText(/noch nicht fällig/)).toBeInTheDocument();
+      expect(await screen.findByText('Noch nicht fällig.')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Zahlungserinnerung ausstellen' })).toBeDisabled();
     });
 
@@ -1078,7 +1075,7 @@ describe('InvoiceDetailPage', () => {
     it('zeigt einen Fehlschlag beim Verwerfen im offenen Kasten (ABR-03)', async () => {
       const nutzer = userEvent.setup();
       fetchRechnung.mockResolvedValue(ansicht());
-      deleteEntwurf.mockRejectedValue(new Error('Der Entwurf konnte nicht verworfen werden.'));
+      deleteEntwurf.mockRejectedValue(new Error('Entwurf nicht verworfen.'));
 
       renderWithProviders(
         <InvoiceDetailPage user={testUser(['office'])} />,
@@ -1088,9 +1085,10 @@ describe('InvoiceDetailPage', () => {
       await nutzer.click(await screen.findByRole('button', { name: 'Entwurf verwerfen' }));
       await nutzer.click(screen.getByRole('button', { name: 'Ja, Entwurf verwerfen' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Der Entwurf konnte nicht verworfen werden. Bitte die Verbindung prüfen und erneut versuchen.',
-      );
+      // Der Bestätigungsknopf steht daneben; ein Rat zur Verbindung entfällt (L7).
+      const meldung = await screen.findByRole('alert');
+      expect(meldung).toHaveTextContent('Entwurf nicht verworfen.');
+      expect(meldung).not.toHaveTextContent(/Verbindung/);
       // Der Kasten bleibt offen: Der Entwurf existiert noch.
       expect(screen.getByRole('group', { name: 'Entwurf verwerfen' })).toBeInTheDocument();
     });
@@ -1104,9 +1102,7 @@ describe('InvoiceDetailPage', () => {
         '/abrechnung/rechnungen/r1',
       );
 
-      expect(
-        await screen.findByText(/Die Praxisinhaber:in muss sie erst erfassen/),
-      ).toBeInTheDocument();
+      expect(await screen.findByText(/Erfassen kann sie die Praxisinhaber:in/)).toBeInTheDocument();
       expect(screen.queryByRole('link', { name: 'Zu den Praxisstammdaten' })).toBeNull();
     });
 
@@ -1134,9 +1130,7 @@ describe('InvoiceDetailPage', () => {
         '/abrechnung/rechnungen/r1',
       );
 
-      expect(
-        await screen.findByText('Die Zahlungserinnerungen konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Zahlungserinnerungen nicht geladen.')).toBeInTheDocument();
       expect(screen.queryByText('Noch keine Erinnerung ausgestellt.')).toBeNull();
       expect(screen.queryByRole('button', { name: 'Zahlungserinnerung ausstellen' })).toBeNull();
     });
@@ -1158,9 +1152,7 @@ describe('InvoiceDetailPage', () => {
         '/abrechnung/rechnungen/r1',
       );
 
-      expect(
-        await screen.findByText('Heute ist bereits eine Erinnerung ausgestellt.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Heute bereits ausgestellt.')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Zahlungserinnerung ausstellen' })).toBeDisabled();
     });
 
@@ -1297,9 +1289,7 @@ describe('InvoiceDetailPage', () => {
         }),
       );
       await waitFor(() => expect(setzeEmpfaenger).toHaveBeenCalledWith('r1', 'neu-e'));
-      expect(
-        await screen.findByText('Empfänger hinterlegt und für diese Rechnung gewählt.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Empfänger hinterlegt und gewählt.')).toBeInTheDocument();
     });
 
     it('korrigiert den gewählten Empfänger und behält seine Kennung (BEF-062)', async () => {
@@ -1331,9 +1321,7 @@ describe('InvoiceDetailPage', () => {
       ).toBeInTheDocument();
       await nutzer.click(screen.getByRole('button', { name: 'Empfänger bearbeiten' }));
 
-      expect(
-        screen.getByText(/ausgestellte Rechnungen behalten den Empfänger, an den sie gingen/),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/ausgestellte Rechnungen bleiben, wie sie sind/)).toBeInTheDocument();
       const plz = screen.getByLabelText('PLZ');
       expect(plz).toHaveValue('7207');
       await nutzer.clear(plz);
@@ -1348,11 +1336,7 @@ describe('InvoiceDetailPage', () => {
           is_default: true,
         }),
       );
-      expect(
-        await screen.findByText(
-          'Empfänger geändert. Das Blatt ausgestellter Rechnungen bleibt, wie es ist.',
-        ),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Empfänger geändert.')).toBeInTheDocument();
       // Eine Korrektur wählt nichts neu.
       expect(setzeEmpfaenger).not.toHaveBeenCalled();
     });

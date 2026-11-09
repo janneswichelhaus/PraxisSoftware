@@ -15,7 +15,7 @@ export async function fetchFahrzeitfaktor(): Promise<number> {
     .from('organizations')
     .select('travel_time_factor')
     .maybeSingle();
-  if (error || !data) throw new Error('Der Fahrzeitfaktor konnte nicht geladen werden.');
+  if (error || !data) throw new Error('Fahrzeitfaktor nicht geladen.');
   return faktorSchema.parse(data).travel_time_factor;
 }
 

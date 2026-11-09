@@ -65,7 +65,7 @@ export function FuerDichPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={gemerkt}
         laden="Erinnerungen werden geladen …"
-        fehler="Die Erinnerungen konnten nicht geladen werden."
+        fehler="Erinnerungen nicht geladen."
       >
         {() =>
           faellig.length > 0 ? (
@@ -100,12 +100,10 @@ export function FuerDichPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={aktivitaet}
         laden="„Für dich“ wird geladen …"
-        fehler="„Für dich“ konnte nicht geladen werden."
+        fehler="„Für dich“ nicht geladen."
         leer={{
           wenn: (daten) => daten.length === 0 && gemerkt.isSuccess && faellig.length === 0,
-          titel: 'Nichts für dich',
-          beschreibung:
-            'Hier stehen Erwähnungen, Antworten in deinen Threads und fällige Erinnerungen.',
+          titel: 'Keine Erwähnungen, Antworten oder Erinnerungen',
         }}
       >
         {(daten) =>

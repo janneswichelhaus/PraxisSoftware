@@ -52,14 +52,8 @@ export function Laengenzeichen({
 }
 
 /**
- * Eine Spanne zwischen zwei Anschlägen — Länge, nicht Uhrzeit.
- *
- * Inline-SVG wie bei den Mitteilungszeichen: ein Sonderzeichen hinge an der
- * Schriftart des Geräts.
- *
- * Auch einzeln zu haben, für die Zeichenerklärung des Kalenders (KAL-26): Dort
- * steht dasselbe Bild wie in der Kachel, sonst erklärte die Legende ein
- * anderes Zeichen als das, das man sucht.
+ * Eine Spanne zwischen zwei Anschlägen (Länge, nicht Uhrzeit) als Inline-SVG: Ein Sonderzeichen
+ * hinge an der Schriftart des Geräts. Einzeln exportiert, damit der Test das Bild der Kachel prüft.
  */
 export function SpannenBild() {
   return (

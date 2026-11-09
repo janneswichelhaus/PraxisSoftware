@@ -662,9 +662,7 @@ describe('ErrorState und EmptyState', () => {
   it('bietet mit onErneut einen Weg aus dem Fehler (ZST-04, UIK-16)', async () => {
     const user = userEvent.setup();
     const erneut = vi.fn();
-    renderWithProviders(
-      <ErrorState title="Der Termin konnte nicht geladen werden." onErneut={erneut} />,
-    );
+    renderWithProviders(<ErrorState title="Termin nicht geladen." onErneut={erneut} />);
 
     const knopf = screen.getByRole('button', { name: 'Erneut versuchen' });
     // Kompakter Sekundaerknopf wie die Kartenaktionen.

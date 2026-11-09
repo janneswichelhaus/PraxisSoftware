@@ -69,7 +69,7 @@ export function parsePostalCodes(input: string): { codes: string[]; invalid: str
   return { codes, invalid };
 }
 
-const LOAD_ERROR = 'Die Gebiete konnten nicht geladen werden.';
+const LOAD_ERROR = 'Gebiete nicht geladen.';
 
 export async function fetchTerritories(): Promise<Territory[]> {
   const { data, error } = (await getSupabase().rpc('list_territories')) as {
@@ -88,7 +88,7 @@ const activeAddressPointSchema = z.object({
 });
 export type ActiveAddressPoint = z.infer<typeof activeAddressPointSchema>;
 
-const POINTS_ERROR = 'Die Anschriften konnten nicht geladen werden.';
+const POINTS_ERROR = 'Anschriften nicht geladen.';
 
 /** Laufende Behandlungen je Postleitzahl und gerundetem Punkt, ohne Namen (ANN-835). */
 export async function fetchActiveAddressPoints(): Promise<ActiveAddressPoint[]> {

@@ -45,7 +45,6 @@ import {
   mitArten,
   mitteilungenAn,
   mitteilungsarten,
-  nochFragen,
   offeneEinwilligungen,
   vertretenePerson,
   willkommenssatz,
@@ -346,9 +345,7 @@ function Ablauf({
         </>
       }
     >
-      {seite === 'willkommen' ? (
-        <Willkommen zugang={zugang} praxis={praxis} fragen={schritte - 1} />
-      ) : null}
+      {seite === 'willkommen' ? <Willkommen zugang={zugang} praxis={praxis} /> : null}
       {seite === 'einwilligungen' ? (
         <>
           <p className="text-ink max-w-prose">
@@ -381,35 +378,24 @@ function Ablauf({
 
 /**
  * „Willkommen“ (1 von 3, für eine Begleitung 1 von 2): wofür die Plattform da
- * ist und wie viel noch kommt. Was wo liegt, sagt das Gerüst selbst - die
- * Sätze „Unten finden Sie …“ und „Dieser Zugang gilt für …“ entfallen
- * (DR-108).
+ * ist; wie viel noch kommt, sagt der Balken. Einer Begleitung dazu, wer einwilligt
+ * (ADR-023 Punkt 13).
  */
-function Willkommen({
-  zugang,
-  praxis,
-  fragen,
-}: {
-  zugang: Plattformzugang;
-  praxis: string;
-  fragen: number;
-}) {
+function Willkommen({ zugang, praxis }: { zugang: Plattformzugang; praxis: string }) {
   const namen = [praxis, zugang.represented_name];
   return (
     <>
       <p className="text-ink max-w-prose">
         <MitNamen satz={willkommenssatz(zugang, praxis)} namen={namen} />
       </p>
-      <p className="text-ink-muted max-w-prose">
-        <MitNamen
-          satz={
-            zugang.access_kind === 'companion'
-              ? `Einwilligungen gibt nur ${vertretenePerson(zugang)} selbst. ${nochFragen(fragen)}`
-              : nochFragen(fragen)
-          }
-          namen={namen}
-        />
-      </p>
+      {zugang.access_kind === 'companion' ? (
+        <p className="text-ink-muted max-w-prose">
+          <MitNamen
+            satz={`Einwilligungen gibt nur ${vertretenePerson(zugang)} selbst.`}
+            namen={namen}
+          />
+        </p>
+      ) : null}
     </>
   );
 }
@@ -667,8 +653,7 @@ function Mitteilungen({ zugang, email }: { zugang: Plattformzugang; email: strin
         </SkelettBereich>
       ) : daten === null ? (
         <Statusmeldung ton="fehler">
-          Ihre Mitteilungen lassen sich gerade nicht laden. Unter „Ich“ → „Einstellungen“ geht es
-          auch später.
+          Mitteilungen nicht geladen. Unter „Ich“ → „Einstellungen“ geht es auch später.
         </Statusmeldung>
       ) : (
         <div className="flex flex-col gap-2">
@@ -683,9 +668,7 @@ function Mitteilungen({ zugang, email }: { zugang: Plattformzugang; email: strin
               )
             }
             hinweis={
-              weg === 'push' ? (
-                `${rechner ? 'Ihr Browser' : 'Ihr Telefon'} fragt einmal um Erlaubnis.`
-              ) : email ? (
+              weg === 'push' ? undefined : email ? (
                 <>
                   An <Adresse adresse={email} />
                 </>
@@ -702,13 +685,9 @@ function Mitteilungen({ zugang, email }: { zugang: Plattformzugang; email: strin
           ) : null}
         </div>
       )}
-      <p className="text-ink-muted max-w-prose">
-        {vertretung
-          ? 'Die Mitteilungen gelten für Ihren Zugang. Feinheiten stellen Sie später unter „Ich“ ein.'
-          : weg === 'push'
-            ? 'Welche Mitteilungen und ob auch per E-Mail, stellen Sie später unter „Ich“ ein.'
-            : 'Welche Mitteilungen, stellen Sie später unter „Ich“ ein.'}
-      </p>
+      {vertretung ? (
+        <p className="text-ink-muted max-w-prose">Die Mitteilungen gelten für Ihren Zugang.</p>
+      ) : null}
     </>
   );
 }

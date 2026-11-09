@@ -416,8 +416,8 @@ export function HomeVisitAddressHint({ source }: { source: 'record' | 'contact' 
   return (
     <p className="text-ink-muted text-sm">
       {source === 'record'
-        ? 'Die Anschrift kommt aus der Akte – Straße mit Hausnummer, PLZ und Ort.'
-        : 'Die Anschrift kommt aus dem Kontakt der Trainingskund:in – Straße mit Hausnummer, PLZ und Ort.'}
+        ? 'Anschrift aus der Akte'
+        : 'Anschrift aus dem Kontakt der Trainingskund:in'}
     </p>
   );
 }

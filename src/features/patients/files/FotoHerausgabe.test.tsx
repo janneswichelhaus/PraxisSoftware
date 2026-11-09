@@ -80,9 +80,7 @@ describe('FotoHerausgabe', { timeout: 20_000 }, () => {
     expect(gibPatientenfotoHeraus).toHaveBeenCalledWith('f1');
     // Gemeldet wird, was die Seite weiß - nicht, dass gesichert ist (DAT-19).
     expect(
-      await screen.findByText(
-        'Kopie zum Speichern übergeben und protokolliert. Bitte prüfen, ob die Datei angekommen ist.',
-      ),
+      await screen.findByText('Kopie zum Speichern übergeben und protokolliert.'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Gesichert/)).toBeNull();
   });
@@ -110,8 +108,7 @@ describe('FotoHerausgabe', { timeout: 20_000 }, () => {
     fetchPatientenfotos.mockRejectedValueOnce(new Error('synthetisch'));
     renderWithProviders(<FotoHerausgabe patientId={PATIENT} />);
 
-    expect(await screen.findByText('Die Fotos konnten nicht geladen werden.')).toBeVisible();
-    expect(screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeVisible();
+    expect(await screen.findByText('Fotos nicht geladen.')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(
       await screen.findByRole('button', { name: /Kopie für die Person herunterladen/ }),

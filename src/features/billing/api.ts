@@ -154,9 +154,9 @@ export async function createKatalogVersion(
     p_copy_from: kopieVon,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Preisliste konnte nicht angelegt werden.');
+  if (error) throw new Error('Preisliste nicht angelegt.');
   const id = z.string().uuid().safeParse(data);
-  if (!id.success) throw new Error('Die Preisliste konnte nicht angelegt werden.');
+  if (!id.success) throw new Error('Preisliste nicht angelegt.');
   return id.data;
 }
 
@@ -179,7 +179,7 @@ export async function writeKatalogPositionen(
     p_items: positionen,
   });
 
-  if (error) throw new Error('Die Positionen konnten nicht gespeichert werden.');
+  if (error) throw new Error('Positionen nicht gespeichert.');
 }
 
 export async function publishKatalogVersion(versionId: string): Promise<void> {
@@ -187,7 +187,7 @@ export async function publishKatalogVersion(versionId: string): Promise<void> {
     p_version_id: versionId,
   });
 
-  if (error) throw new Error('Die Preisliste konnte nicht in Kraft gesetzt werden.');
+  if (error) throw new Error('Preisliste nicht in Kraft gesetzt.');
 }
 
 /** Tarif des Terminhonorars am Entwurf setzen (ABR-030). Nur owner, verbindlich am Server. */
@@ -197,7 +197,7 @@ export async function setTarif(versionId: string, cent: number | null): Promise<
     p_session_fee_cents: cent,
   });
 
-  if (error) throw new Error('Das Terminhonorar konnte nicht gespeichert werden.');
+  if (error) throw new Error('Terminhonorar nicht gespeichert.');
 }
 
 // -----------------------------------------------------------------------------
@@ -253,7 +253,7 @@ export async function createVereinbarung(
   ) {
     throw new VereinbarungAmSelbenTag();
   }
-  if (error) throw new Error('Die Vereinbarung konnte nicht gespeichert werden.');
+  if (error) throw new Error('Vereinbarung nicht gespeichert.');
 }
 
 export async function deleteVereinbarung(id: string): Promise<void> {
@@ -266,7 +266,7 @@ export async function deleteVereinbarung(id: string): Promise<void> {
       'Die Vereinbarung ist schon an einem Termin angewandt und bleibt als Nachweis stehen.',
     );
   }
-  if (error) throw new Error('Die Vereinbarung konnte nicht entfernt werden.');
+  if (error) throw new Error('Vereinbarung nicht entfernt.');
 }
 
 export async function deleteKatalogVersion(versionId: string): Promise<void> {
@@ -274,7 +274,7 @@ export async function deleteKatalogVersion(versionId: string): Promise<void> {
     p_version_id: versionId,
   });
 
-  if (error) throw new Error('Der Entwurf konnte nicht verworfen werden.');
+  if (error) throw new Error('Entwurf nicht verworfen.');
 }
 
 // -----------------------------------------------------------------------------
@@ -340,7 +340,7 @@ export async function savePraxisStammdaten(eingabe: PraxisStammdaten): Promise<v
     p_payment_term_days: eingabe.payment_term_days,
   });
 
-  if (error) throw new Error('Die Praxis-Stammdaten konnten nicht gespeichert werden.');
+  if (error) throw new Error('Praxisstammdaten nicht gespeichert.');
 }
 
 // -----------------------------------------------------------------------------
@@ -404,10 +404,10 @@ export async function saveEmpfaenger(eingabe: {
     p_is_default: eingabe.is_default,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Der Rechnungsempfänger konnte nicht gespeichert werden.');
+  if (error) throw new Error('Empfänger nicht gespeichert.');
   // UX-008c: Die Kennung, damit ein neu hinterlegter Empfänger gleich gewählt wird.
   const id = z.string().uuid().safeParse(data);
-  if (!id.success) throw new Error('Der Rechnungsempfänger konnte nicht gespeichert werden.');
+  if (!id.success) throw new Error('Empfänger nicht gespeichert.');
   return id.data;
 }
 
@@ -723,7 +723,7 @@ export async function fetchRechnung(invoiceId: string): Promise<Rechnungsansicht
   // sich kein Rechnungsbild bauen. Das ist keine Störung, sondern eine
   // fehlende Angabe — und die Seite sagt, welche.
   if (error?.message?.includes('practice billing profile missing')) throw new KeineStammdaten();
-  if (error) throw new Error('Die Rechnung konnte nicht geladen werden.');
+  if (error) throw new Error('Rechnung nicht geladen.');
   return rechnungsansichtSchema.parse(data);
 }
 
@@ -782,15 +782,15 @@ export async function createEntwurf(
       'Diese Leistungen stammen aus einer stornierten Rechnung. Bitte die Liste neu laden und dort die Korrekturrechnung erstellen.',
     );
   }
-  if (error) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
+  if (error) throw new Error('Entwurf nicht angelegt.');
   const id = z.string().uuid().safeParse(data);
-  if (!id.success) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
+  if (!id.success) throw new Error('Entwurf nicht angelegt.');
   return id.data;
 }
 
 export async function deleteEntwurf(invoiceId: string): Promise<void> {
   const { error } = await getSupabase().rpc('delete_invoice_draft', { p_invoice_id: invoiceId });
-  if (error) throw new Error('Der Entwurf konnte nicht verworfen werden.');
+  if (error) throw new Error('Entwurf nicht verworfen.');
 }
 
 export async function setzeEmpfaenger(
@@ -802,7 +802,7 @@ export async function setzeEmpfaenger(
     p_recipient_id: recipientId,
   });
 
-  if (error) throw new Error('Der Empfänger konnte nicht gesetzt werden.');
+  if (error) throw new Error('Empfänger nicht gesetzt.');
 }
 
 /** Die Felder der Empfängeranschrift in Worten (ABN-020, BEF-111). */
@@ -849,9 +849,9 @@ export async function stelleRechnungAus(invoiceId: string): Promise<string> {
       'Ein Termin dieser Rechnung gehört inzwischen zu einer anderen Verordnung. Bitte den Entwurf verwerfen und neu anlegen.',
     );
   }
-  if (error) throw new Error('Die Rechnung konnte nicht ausgestellt werden.');
+  if (error) throw new Error('Rechnung nicht ausgestellt.');
   const nummer = z.string().safeParse(data);
-  if (!nummer.success) throw new Error('Die Rechnung konnte nicht ausgestellt werden.');
+  if (!nummer.success) throw new Error('Rechnung nicht ausgestellt.');
   return nummer.data;
 }
 
@@ -872,9 +872,9 @@ export async function storniereRechnung(invoiceId: string, grund: string): Promi
   // Seit ABN-008 sperrt eine stehende Zahlung das Storno nicht mehr: Der
   // eingegangene Betrag bleibt an der stornierten Rechnung stehen, bis er
   // zurückgezahlt oder mit der Korrekturrechnung verrechnet ist (BEF-100).
-  if (error) throw new Error('Die Rechnung konnte nicht storniert werden.');
+  if (error) throw new Error('Rechnung nicht storniert.');
   const nummer = z.string().safeParse(data);
-  if (!nummer.success) throw new Error('Die Rechnung konnte nicht storniert werden.');
+  if (!nummer.success) throw new Error('Rechnung nicht storniert.');
   return nummer.data;
 }
 
@@ -901,7 +901,7 @@ export async function verrechneMitKorrektur(eingabe: {
   if (error?.message?.includes('replacement invoice')) {
     throw new Error('Verrechnet wird nur mit der ausgestellten Korrekturrechnung.');
   }
-  if (error) throw new Error('Die Verrechnung konnte nicht gebucht werden.');
+  if (error) throw new Error('Verrechnung nicht gebucht.');
 }
 
 /** Der Entwurf der Korrekturrechnung zu einer stornierten Rechnung (ABR-003c). */
@@ -922,9 +922,9 @@ export async function erstelleKorrektur(invoiceId: string): Promise<string> {
       'Es gibt keine offenen Leistungen mehr für diesen Zeitraum – die Korrektur hätte keine Zeile.',
     );
   }
-  if (error) throw new Error('Die Korrekturrechnung konnte nicht angelegt werden.');
+  if (error) throw new Error('Korrekturrechnung nicht angelegt.');
   const id = z.string().uuid().safeParse(data);
-  if (!id.success) throw new Error('Die Korrekturrechnung konnte nicht angelegt werden.');
+  if (!id.success) throw new Error('Korrekturrechnung nicht angelegt.');
   return id.data;
 }
 
@@ -968,7 +968,7 @@ export async function fetchErinnerung(reminderId: string): Promise<Erinnerungsdo
     p_reminder_id: reminderId,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Zahlungserinnerung konnte nicht geladen werden.');
+  if (error) throw new Error('Zahlungserinnerung nicht geladen.');
   return erinnerungsdokumentSchema.parse(data);
 }
 
@@ -985,7 +985,7 @@ export async function erstelleErinnerung(invoiceId: string): Promise<string> {
   })) as { data: unknown; error: { message?: string } | null };
 
   if (error?.message?.includes('not overdue yet')) {
-    throw new Error('Die Rechnung ist noch nicht fällig — vorher gibt es nichts zu erinnern.');
+    throw new Error('Die Rechnung ist noch nicht fällig.');
   }
   if (error?.message?.includes('nothing outstanding')) {
     throw new Error('Diese Rechnung ist ausgeglichen.');
@@ -996,9 +996,9 @@ export async function erstelleErinnerung(invoiceId: string): Promise<string> {
   if (error?.message?.includes('cancelled invoice')) {
     throw new Error('Eine stornierte Rechnung ist keine Forderung mehr.');
   }
-  if (error) throw new Error('Die Zahlungserinnerung konnte nicht ausgestellt werden.');
+  if (error) throw new Error('Zahlungserinnerung nicht ausgestellt.');
   const id = z.string().uuid().safeParse(data);
-  if (!id.success) throw new Error('Die Zahlungserinnerung konnte nicht ausgestellt werden.');
+  if (!id.success) throw new Error('Zahlungserinnerung nicht ausgestellt.');
   return id.data;
 }
 
@@ -1135,7 +1135,7 @@ export async function bucheZahlung(eingabe: {
   if (error?.message?.includes('refund cannot exceed')) throw new RueckzahlungZuHoch();
   if (error?.message?.includes('dated in the future'))
     throw new Error('Eine Zahlung lässt sich nicht für die Zukunft erfassen.');
-  if (error) throw new Error('Die Zahlung konnte nicht erfasst werden.');
+  if (error) throw new Error('Zahlung nicht erfasst.');
 }
 
 export async function storniereZahlung(paymentId: string, grund: string): Promise<void> {
@@ -1144,7 +1144,7 @@ export async function storniereZahlung(paymentId: string, grund: string): Promis
     p_reason: grund,
   });
 
-  if (error) throw new Error('Die Zahlung konnte nicht storniert werden.');
+  if (error) throw new Error('Zahlung nicht storniert.');
 }
 
 // -----------------------------------------------------------------------------
@@ -1214,7 +1214,7 @@ export async function fetchVorschlag(appointmentId: string): Promise<Vorschlag[]
   // gibt es keine in Kraft gesetzte Preisliste. Das ist kein Defekt, sondern
   // eine fehlende Angabe — und die Seite sagt, welche.
   if (error?.message?.includes('no published service catalog')) throw new KeinKatalog();
-  if (error) throw new Error('Die Leistungen zu diesem Termin konnten nicht geladen werden.');
+  if (error) throw new Error('Leistungen zum Termin nicht geladen.');
   return z.array(vorschlagSchema).parse(data ?? []);
 }
 
@@ -1281,7 +1281,7 @@ export async function recordLeistungen(
       'Der Termin ist noch nicht abgehakt. Mit dem Haken entsteht die Leistung von selbst.',
     );
   }
-  if (error) throw new Error('Die Leistungen konnten nicht erfasst werden.');
+  if (error) throw new Error('Leistungen nicht erfasst.');
 }
 
 export async function deleteLeistungen(appointmentId: string): Promise<void> {
@@ -1289,7 +1289,7 @@ export async function deleteLeistungen(appointmentId: string): Promise<void> {
     p_appointment_id: appointmentId,
   });
 
-  if (error) throw new Error('Die Erfassung konnte nicht zurückgenommen werden.');
+  if (error) throw new Error('Erfassung nicht zurückgenommen.');
 }
 
 /**

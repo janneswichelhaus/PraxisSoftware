@@ -181,7 +181,7 @@ describe('NewAppointmentStartPage', () => {
       `/termine/neu?datum=2027-05-12&art=home_visit&person=${STAFF_ANNA}`,
     );
 
-    expect(screen.getByText('Zuerst die Patient:in wählen.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Termin anlegen' })).toBeInTheDocument();
     // Was fehlt, steht nicht da - kein „noch offen" (UX-005g).
     expect(await screen.findByText('12.05.2027 · Anna Beispiel')).toBeVisible();
     expect(screen.queryByText(/noch offen/)).toBeNull();
@@ -216,7 +216,8 @@ describe('NewAppointmentStartPage', () => {
     renderWithProviders(<NewAppointmentStartPage />, '/termine/neu');
 
     // Nichts übernommen - dann steht auch nichts da, und nichts wird versprochen.
-    expect(screen.getByText('Zuerst die Patient:in wählen.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Termin anlegen' })).toBeInTheDocument();
+    expect(screen.queryByText('Zuerst die Patient:in wählen.')).toBeNull();
     expect(screen.queryByText(/\d{2}\.\d{2}\.\d{4}/)).toBeNull();
     expect(fetchAssignableTherapists).not.toHaveBeenCalled();
 

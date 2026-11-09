@@ -35,7 +35,7 @@ export function Kopierzeile({
           {anzeige ?? wert}
         </p>
         {stand === 'nein' ? (
-          <p className="text-ink-muted text-sm">Kopieren geht hier nicht. Bitte abschreiben.</p>
+          <p className="text-ink-muted text-sm">Kopieren geht hier nicht.</p>
         ) : null}
       </div>
       <Button

@@ -138,7 +138,7 @@ export async function ladeRechnung(
   zugangId: string,
   rechnungId: string,
 ): Promise<Rechnungsblatt | null> {
-  const satz = 'Die Rechnung konnte nicht geladen werden.';
+  const satz = 'Rechnung nicht geladen.';
   const ergebnis = (await getSupabase().rpc('platform_invoice', {
     p_access_id: zugangId,
     p_invoice_id: rechnungId,

@@ -96,7 +96,6 @@ import {
   type TerminVorbelegung,
   TERMIN_PARAM,
 } from '@/lib/termin';
-import { SpannenBild } from '@/components/ui/Laengenzeichen';
 import type { Zeitband } from '@/lib/zeitband';
 
 /** Bevorzugt das Terminfenster, sonst die kürzere Dauer (ANN-317, BEF-136). */
@@ -182,7 +181,7 @@ function rasterBeschriftung(fein: number | null, halbeStunde: boolean): string {
  */
 function leerTitel(p: KalenderParameter): string {
   const zeitraum = p.ansicht === 'tag' ? 'an diesem Tag' : 'in dieser Woche';
-  if (p.patient) return `Für diese Patient:in steht ${zeitraum} kein Termin an.`;
+  if (p.patient) return `Kein Termin dieser Patient:in ${zeitraum}.`;
   switch (p.status) {
     case 'confirmed':
       return `Keine bestätigten Termine ${zeitraum}.`;
@@ -193,10 +192,8 @@ function leerTitel(p: KalenderParameter): string {
     case 'cancelled':
       return `Keine abgesagten Termine ${zeitraum}.`;
     default:
-      if (p.standort) return `Am gewählten Standort sind ${zeitraum} keine Termine geplant.`;
-      return p.ansicht === 'tag'
-        ? 'Für diesen Tag sind keine Termine geplant.'
-        : 'Für diese Woche sind keine Termine geplant.';
+      if (p.standort) return `Keine Termine am gewählten Standort ${zeitraum}.`;
+      return `Keine Termine ${zeitraum}.`;
   }
 }
 
@@ -633,7 +630,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     return (
       <ErrorState
         title="Kalender nicht verfügbar"
-        description="Für diese Praxis ist keine Zeitzone hinterlegt. Ohne sie lassen sich Termine nicht verlässlich einordnen."
+        description="Für diese Praxis ist keine Zeitzone hinterlegt."
       />
     );
   }
@@ -815,20 +812,19 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     eintraege,
     belegtDaten,
   ]);
+  // Die Zeichen der Lücken sagen Stufe und Wort selbst; hier steht nur die Rechengrundlage (L7).
   const lueckenHinweis =
-    p.ansicht !== 'tag'
-      ? 'Freie Lücken mit Fahrweg zeigt die Tagesansicht.'
-      : bereich.von < heute
-        ? null
-        : luecken.stand === 'nicht_verortet'
-          ? 'Die Adresse ist nicht verortet – Lücken nicht geprüft.'
-          : luecken.stand === 'laedt'
-            ? 'Freie Lücken werden geprüft …'
-            : luecken.stand === 'bereit'
-              ? `Freie Lücken: ✓ passt, ! knapp, × passt nicht – mit Fahrweg vom Termin davor und zum Termin danach, ${TERMINFENSTER_MINUTEN} Minuten Termin; reicht es nur für ${KURZE_TERMINDAUER_MINUTEN}, steht „nur ${KURZE_TERMINDAUER_MINUTEN} Min.“ dabei. Nur Auskunft.${
-                  luecken.ungeprueft ? ' Einige Lücken ließen sich nicht prüfen.' : ''
-                }`
-              : null;
+    p.ansicht !== 'tag' || bereich.von < heute
+      ? null
+      : luecken.stand === 'nicht_verortet'
+        ? 'Die Adresse ist nicht verortet – Lücken nicht geprüft.'
+        : luecken.stand === 'laedt'
+          ? 'Freie Lücken werden geprüft …'
+          : luecken.stand === 'bereit'
+            ? `Lücken mit Fahrweg davor und danach, ${TERMINFENSTER_MINUTEN} Minuten Termin.${
+                luecken.ungeprueft ? ' Einige Lücken ließen sich nicht prüfen.' : ''
+              }`
+            : null;
   const lueckenDer = (spalte: string): GitterLuecke[] | undefined =>
     luecken.stand === 'bereit'
       ? (luecken.jeSpalte.get(spalte) ?? []).map((l) => ({
@@ -1548,11 +1544,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             {/* Scheitert die Liste, sagt das der Kasten - eine Auswahl nur
                 mit „Alle" sähe aus wie eine Praxis ohne Standorte (KAL-07). */}
             {standorte.isError ? (
-              <ErrorState
-                title="Die Standorte konnten nicht geladen werden."
-                description="Bitte die Verbindung prüfen und erneut versuchen."
-                onErneut={() => standorte.refetch()}
-              />
+              <ErrorState title="Standorte nicht geladen." onErneut={() => standorte.refetch()} />
             ) : (
               <Select
                 label="Standort"
@@ -1666,71 +1658,6 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           ) : darfTraining ? (
             <div className="flex flex-wrap gap-2">{trainingsterminAnlegen}</div>
           ) : null}
-
-          {/* Die Bedienhilfe stand als Dauertext unter 1 250 px Raster
-              (KAL-26). Hier ist sie eingeklappt dort, wo man nach Ansicht
-              und Bedienung sucht - und nur, wenn es ein Raster gibt, das sie
-              beschreibt. Mit der Erklärung der Zeichen in den Kacheln. */}
-          {rasterDa ? (
-            <Disclosure summary="So bedienen Sie den Kalender">
-              <div className="text-ink-muted flex max-w-prose flex-col gap-3 text-sm">
-                <p>
-                  Auf freier Zeit wählt ein Tipp einen Zeitpunkt, ein zweiter Tipp in derselben
-                  Spalte die Spanne bis dorthin. Ein Tipp in die Auswahl hebt sie wieder auf.
-                </p>
-                <p>
-                  Termine lassen sich mit der Maus oder dem Finger auf eine andere Zeit
-                  {p.ansicht === 'tag'
-                    ? ' oder eine andere behandelnde Person'
-                    : ' oder einen anderen Tag'}{' '}
-                  ziehen; der Beginn rastet auf dem Praxisraster ein, die Dauer bleibt gleich. Am
-                  Rand des Fensters scrollt die Seite mit, und wer den Zeiger seitlich am Raster
-                  hält, blättert in den nächsten Ausschnitt. Nach dem Loslassen fragt der Kalender
-                  mit alter und neuer Zeit nach – verschoben wird erst auf die Bestätigung, und
-                  danach lässt es sich rückgängig machen.
-                </p>
-                <p>
-                  Dasselbe geht jederzeit über „Bearbeiten“ in der Detailansicht – das Ziehen ist
-                  eine Abkürzung, kein eigener Weg.
-                </p>
-                <p>
-                  Mit zwei Fingern oder über „+“ und „−“ wird das Raster feiner oder gröber;
-                  gezeichnet wird dabei genau das Raster, auf dem ein Termin einrastet.
-                </p>
-                <ul className="flex flex-col gap-1">
-                  <li>
-                    <span aria-hidden="true" className="text-ink">
-                      ▪{' '}
-                    </span>
-                    vor der Bezeichnung: eine {BEGRIFFE.fehlzeit}, ein Eintrag ohne Patient:in
-                  </li>
-                  <li>
-                    <span aria-hidden="true" className="text-ink inline-flex align-[-0.1em]">
-                      <SpannenBild />
-                    </span>{' '}
-                    neben der Zeit: Die Dauer weicht ab, weder 45 noch 60 Minuten.
-                  </li>
-                  <li>
-                    Grau schraffiert: außerhalb der Arbeitszeit der Person – auch ein Tag ohne
-                    hinterlegte Arbeitszeit. Die weiße Fläche ist ihre Arbeitszeit.
-                  </li>
-                  <li>
-                    Gestrichelt in Grün, „Weg ≈ n min“: die Fahrt zum Besuch, vom Termin davor oder
-                    vom Startort der Praxis. Ob es reicht, sagt der Fahrpuffer.
-                  </li>
-                  <li>
-                    Gelb gestrichelt, „! Adresse veraltet“: Die Akte nennt inzwischen eine andere
-                    Anschrift. In der Akte unter Stammdaten den Termin umstellen, dann gibt es
-                    wieder eine Fahrzeit.
-                  </li>
-                </ul>
-                <p>
-                  Der Kalender zeigt ausschließlich organisatorische Angaben. Zeiten gelten in der
-                  Zeitzone der Praxis.
-                </p>
-              </div>
-            </Disclosure>
-          ) : null}
         </div>
       ) : null}
 
@@ -1784,7 +1711,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                   ? `${gefilterterName.patient_given_name} ${gefilterterName.patient_family_name}`
                   : 'einer Patient:in'}
               </strong>{' '}
-              sind hervorgehoben; andere Zeiten sind als belegt markiert.
+              hervorgehoben
             </p>
             {/* UBK-014: was die Farben der Lücken heißen - und wann es keine gibt. */}
             {lueckenHinweis ? (
@@ -1818,9 +1745,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             >
               Termin öffnen
             </button>
-          ) : (
-            'Er liegt außerhalb des gezeigten Ausschnitts.'
-          )}
+          ) : null}
         </Statusmeldung>
       ) : null}
 
@@ -1863,19 +1788,14 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       {therapeuten.isError ? (
         <div className="mt-3">
           <ErrorState
-            title="Die behandelnden Personen konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
+            title="Behandelnde Personen nicht geladen."
             onErneut={() => therapeuten.refetch()}
           />
         </div>
       ) : null}
       {termine.isError ? (
         <div className="mt-3">
-          <ErrorState
-            title="Die Termine konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => termine.refetch()}
-          />
+          <ErrorState title="Termine nicht geladen." onErneut={() => termine.refetch()} />
         </div>
       ) : null}
 
@@ -2074,7 +1994,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       {/* Nur aus geladenen Daten (KAL-07, ZST-09): Scheitert die Liste, sagt
           das der Fehlerkasten oben und nicht „keine Person hinterlegt". */}
       {therapeuten.isSuccess && alleTherapeuten.length === 0 ? (
-        <EmptyState title="Für diese Praxis ist keine behandelnde Person hinterlegt." />
+        <EmptyState title="Keine behandelnde Person hinterlegt." />
       ) : null}
     </>
   );

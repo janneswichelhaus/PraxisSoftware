@@ -278,7 +278,7 @@ describe('Schlüssel übergeben', () => {
     );
     oeffne();
     expect(await screen.findByText('Kein Rad frei')).toBeInTheDocument();
-    expect(screen.getByText('Alle Räder sind in Reparatur.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zur Radflotte' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

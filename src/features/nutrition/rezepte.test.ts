@@ -148,6 +148,6 @@ describe('Rezepte (ERN-016)', () => {
     expect(rezeptfehler('recipe changed meanwhile')).toMatch(/inzwischen geändert/);
     expect(rezeptfehler('food not found')).toMatch(/Zutat gibt es nicht mehr/);
     expect(rezeptfehler('recipe already adopted')).toMatch(/schon übernommen/);
-    expect(rezeptfehler(undefined)).toMatch(/Verbindung/);
+    expect(rezeptfehler(undefined)).toBe('Nicht gespeichert.');
   });
 });

@@ -61,9 +61,8 @@ export function RueckfragenPage({ user }: { user: CurrentUser }) {
         title="Rückfragen"
         description={
           fristBekannt
-            ? // Eine Zeile (DESIGN.md Regel 6, R2-neu2); Werktage sind Montag
-              // bis Freitag (ANN-309).
-              `Zusage: Antwort in ${frist} ${frist === 1 ? 'Werktag' : 'Werktagen'} (Mo–Fr).`
+            ? // Daten statt Satz (L7); Werktage sind Montag bis Freitag (ANN-309).
+              `Antwortfrist: ${frist} ${frist === 1 ? 'Werktag' : 'Werktage'} (Mo–Fr)`
             : undefined
         }
       />
@@ -160,8 +159,8 @@ export function RueckfragePage({ user }: { user: CurrentUser }) {
   return (
     <Abfragezustand
       abfrage={abfrage}
-      laden="Die Rückfrage wird geladen …"
-      fehler="Die Rückfrage konnte nicht geladen werden."
+      laden="Rückfrage wird geladen …"
+      fehler="Rückfrage nicht geladen."
     >
       {(data) =>
         data ? (
@@ -253,8 +252,7 @@ function Vorgang({
                       </Button>
                     ) : (
                       <p className="text-ink-muted mt-2 text-sm">
-                        Zeitmarke bei {zeitmarke(e.attachment_mark_seconds)} – das Video ist
-                        gelöscht.
+                        Zeitmarke bei {zeitmarke(e.attachment_mark_seconds)} – Video gelöscht
                       </p>
                     )
                   ) : null}
@@ -322,8 +320,8 @@ function Antworten({ vorgang }: { vorgang: Rueckfrage }) {
       <Section titel="Antworten">
         <Statusmeldung ton="neutral">
           {vorgang.relationship_kind === 'training'
-            ? 'Auf diese Rückfrage antworten Inhaber:in und Trainingsbetreuung. Bitte gib sie weiter.'
-            : 'Auf Fragen zu Übungen und Beschwerden antworten Therapeut:innen. Bitte gib die Rückfrage weiter.'}
+            ? 'Auf diese Rückfrage antworten Inhaber:in und Trainingsbetreuung.'
+            : 'Auf Fragen zu Übungen und Beschwerden antworten Therapeut:innen.'}
         </Statusmeldung>
       </Section>
     );

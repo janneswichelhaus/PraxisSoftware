@@ -38,7 +38,7 @@ export async function speichereDatevEinstellungen(werte: DatevEinstellungen): Pr
     p_chart_of_accounts: werte.chart_of_accounts,
   });
 
-  if (error) throw new Error('Die DATEV-Angaben konnten nicht gespeichert werden.');
+  if (error) throw new Error('DATEV-Angaben nicht gespeichert.');
 }
 
 const buchungSchema = z.object({
@@ -132,9 +132,9 @@ export async function erstelleDatevLauf(bereich: DatevBereich, monat: string): P
 
   if (error) {
     const treffer = FEHLER.find(([teil]) => error.message?.includes(teil));
-    throw new Error(treffer?.[1] ?? 'Der Export konnte nicht angelegt werden.');
+    throw new Error(treffer?.[1] ?? 'Export nicht angelegt.');
   }
-  return antwort(z.string(), data, 'Der Export konnte nicht angelegt werden.');
+  return antwort(z.string(), data, 'Export nicht angelegt.');
 }
 
 const laufSchema = z.object({
@@ -154,6 +154,6 @@ export async function fetchDatevLauf(id: string): Promise<DatevLauf> {
     p_export_id: id,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Der Export konnte nicht geladen werden.');
-  return antwort(laufSchema, data, 'Der Export konnte nicht geladen werden.');
+  if (error) throw new Error('Export nicht geladen.');
+  return antwort(laufSchema, data, 'Export nicht geladen.');
 }

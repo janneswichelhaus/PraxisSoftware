@@ -58,7 +58,6 @@ export function Einrichtungspflicht({
       <Vollseite titel="Anmeldung nicht geprüft">
         <ErrorState
           title="Ihre Anmeldung konnte nicht geprüft werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
           onErneut={() => void stand.refetch()}
         />
         <Button variant="secondary" className="mt-4 w-full" onClick={() => void signOut()}>

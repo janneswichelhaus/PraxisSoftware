@@ -87,8 +87,7 @@ function Zeile({ foto }: { foto: HerausgabeFoto }) {
       ) : null}
       {erledigt ? (
         <Statusmeldung className="mt-2">
-          Kopie zum Speichern übergeben und protokolliert. Bitte prüfen, ob die Datei angekommen
-          ist.
+          Kopie zum Speichern übergeben und protokolliert.
         </Statusmeldung>
       ) : null}
       {fehler ? (
@@ -115,12 +114,8 @@ export function FotoHerausgabe({ patientId }: { patientId: string }) {
       <Abfragezustand
         abfrage={fotos}
         laden="Fotos werden geladen …"
-        fehler="Die Fotos konnten nicht geladen werden."
-        leer={{
-          wenn: (liste) => liste.length === 0,
-          titel: 'Keine Fotos',
-          beschreibung: 'Für diese Person liegt kein Foto vor.',
-        }}
+        fehler="Fotos nicht geladen."
+        leer={{ wenn: (liste) => liste.length === 0, titel: 'Keine Fotos' }}
       >
         {(liste) => (
           <ul className="flex flex-col">

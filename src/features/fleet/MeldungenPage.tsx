@@ -88,7 +88,7 @@ export function MeldungenPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Meldungen werden geladen …"
-        fehler="Die Meldungen konnten nicht geladen werden."
+        fehler="Meldungen nicht geladen."
         inKarte
       >
         {(meldungen) => {
@@ -152,7 +152,7 @@ export function MeldungenPage({ user }: { user: CurrentUser }) {
               {meldungen.length === 0 ? (
                 <EmptyState inKarte title="Keine Meldungen in diesem Zeitraum" />
               ) : sichtbar.length === 0 ? (
-                <EmptyState inKarte title="Keine Treffer" description="Filter anpassen." />
+                <EmptyState inKarte title="Keine Treffer" />
               ) : (
                 <ListRows beschriftung="Meldungen">
                   {sichtbar.map((meldung) => (
@@ -265,7 +265,7 @@ export function MeldungPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Meldung wird geladen …"
-        fehler="Die Meldung konnte nicht geladen werden."
+        fehler="Meldung nicht geladen."
         inKarte
         rahmen={(zustand) => (
           <>

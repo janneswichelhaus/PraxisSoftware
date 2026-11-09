@@ -25,9 +25,8 @@ export const PIN_SAETZE = {
   format: `Die PIN hat ${PIN_LAENGE} Ziffern.`,
   trivial: 'Diese PIN ist zu leicht zu erraten. Bitte keine gleichen Ziffern und keine Reihe.',
   ungleich: 'Die beiden Eingaben stimmen nicht überein.',
-  erneutAnmelden:
-    'Zum Festlegen der PIN bitte zuerst mit dem Passkey bestätigen. Danach bleiben zehn Minuten.',
-  nichtGesetzt: 'Die PIN ließ sich nicht festlegen. Bitte erneut versuchen.',
+  erneutAnmelden: 'Zum Festlegen der PIN bitte zuerst mit dem Passkey bestätigen.',
+  nichtGesetzt: 'Die PIN ließ sich nicht festlegen.',
   anderesKonto:
     'Der Passkey gehört zu einem anderen Zugang. Die PIN wurde nicht gesetzt; angemeldet ist jetzt der andere Zugang.',
 } as const;
@@ -57,8 +56,8 @@ export async function hatPin(): Promise<boolean> {
     data: unknown;
     error: unknown;
   };
-  if (error) throw new Error('Der Stand der PIN konnte nicht geladen werden.');
-  return antwort(z.boolean(), data, 'Der Stand der PIN konnte nicht geladen werden.');
+  if (error) throw new Error('Stand der PIN nicht geladen.');
+  return antwort(z.boolean(), data, 'Stand der PIN nicht geladen.');
 }
 
 export type PinErgebnis =

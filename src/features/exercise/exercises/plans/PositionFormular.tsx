@@ -178,7 +178,7 @@ export function PositionFormular({
     }
     if (werte.doppelt && mitWdh) {
       if (bis <= von) {
-        gefunden.doppelt = 'Doppelte Progression braucht einen Bereich, etwa 8 bis 12.';
+        gefunden.doppelt = 'Doppelte Progression braucht einen Bereich.';
       } else if (!werte.last.trim()) {
         gefunden.last = 'Doppelte Progression braucht eine Last.';
       }
@@ -271,8 +271,7 @@ export function PositionFormular({
               nachbarn.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   <p className="text-sm">
-                    {richtung === 'harder' ? 'Schwerer' : 'Leichter'} laut Bibliothek – oder den
-                    Wert unten ändern:
+                    {richtung === 'harder' ? 'Schwerer' : 'Leichter'} laut Bibliothek
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {nachbarn.map((nachbar) => (
@@ -292,10 +291,7 @@ export function PositionFormular({
                   </div>
                 </div>
               ) : (
-                <p className="text-ink-muted text-sm">
-                  In der Bibliothek ist in diese Richtung keine Variante verbunden. Für Last,
-                  Wiederholungen, Sätze, Tempo und Dichte den Wert unten ändern.
-                </p>
+                <p className="text-ink-muted text-sm">Keine Variante verbunden.</p>
               )
             ) : null}
           </fieldset>
@@ -410,7 +406,6 @@ export function PositionFormular({
           <Feldgruppe>
             <Field
               label="Last"
-              hint="Frei, etwa „5 kg“ oder „Theraband rot“."
               feldId={id('last')}
               maxLength={40}
               value={werte.last}
@@ -419,7 +414,6 @@ export function PositionFormular({
             />
             <Field
               label="Tempo"
-              hint="Frei, etwa „3 s runter, 1 s hoch“."
               feldId={id('tempo')}
               maxLength={40}
               value={werte.tempo}
@@ -463,7 +457,7 @@ export function PositionFormular({
             ) : null}
             <TextArea
               label="Hinweis an die Person"
-              hint="In Alltagssprache. Keine Angaben zu Diagnose oder Befund."
+              hint="In Alltagssprache, ohne Diagnose oder Befund"
               maxLength={500}
               rows={2}
               value={werte.hinweis}

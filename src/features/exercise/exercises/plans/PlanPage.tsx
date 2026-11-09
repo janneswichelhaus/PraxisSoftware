@@ -74,7 +74,7 @@ export function PlanPage() {
     <Abfragezustand
       abfrage={abfrage}
       laden="Plan wird geladen …"
-      fehler="Der Plan konnte nicht geladen werden."
+      fehler="Plan nicht geladen."
       inKarte
     >
       {(plan) =>
@@ -183,9 +183,8 @@ function Zugewiesen({
           plan.review_due && entscheiden ? (
             <Warnzeile>
               {abgelaufen
-                ? `Die Laufzeit ist am ${formatDate(plan.runs_until)} abgelaufen.`
-                : `Die Laufzeit endet am ${formatDate(plan.runs_until)}.`}{' '}
-              Bitte entscheiden: verlängern, als neue Fassung ändern oder beenden.
+                ? `Laufzeit am ${formatDate(plan.runs_until)} abgelaufen`
+                : `Laufzeit endet am ${formatDate(plan.runs_until)}`}
             </Warnzeile>
           ) : undefined
         }
@@ -361,7 +360,7 @@ function Beenden({ plan }: { plan: Plan }) {
         fehler={beenden.error?.message}
         onBestaetigen={() => beenden.mutateAsync()}
       >
-        <p>Den Plan beenden? Er bleibt lesbar, läuft aber nicht weiter.</p>
+        <p>Den Plan beenden?</p>
       </Rueckfrage>
     </div>
   );
@@ -422,11 +421,7 @@ function Durchgefuehrt({ plan }: { plan: Plan }) {
   return (
     <Section titel="Durchgeführt">
       {plan.sessions.length === 0 ? (
-        <EmptyState
-          inKarte
-          title="Noch keine Einheit erfasst"
-          description="Was die Person auf der Plattform abhakt, steht hier."
-        />
+        <EmptyState inKarte title="Noch keine Einheit auf der Plattform erfasst" />
       ) : (
         <>
           {beendet > 0 ? <JeUebung plan={plan} beendet={beendet} /> : null}

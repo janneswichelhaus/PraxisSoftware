@@ -189,12 +189,9 @@ describe('TourenPage', () => {
     fetchDayRoute.mockResolvedValue([]);
     renderWithProviders(<TourenPage user={testUser(['therapist'])} />, '/touren?tag=2026-09-10');
     expect(await screen.findByText(/keine Besuche mit Ort/)).toBeInTheDocument();
-    // Das Wort der Praxis: Fehlzeiten, nicht „interne Termine" (TER-22).
-    expect(
-      screen.getByText(
-        'Videotermine und Fehlzeiten haben keinen Weg und stehen deshalb nicht in der Tour.',
-      ),
-    ).toBeInTheDocument();
+    // L7: Der Titel sagt es; kein Erklärsatz darunter, auch kein „interne Termine" (TER-22).
+    expect(screen.queryByText(/keinen Weg/)).toBeNull();
+    expect(screen.queryByText(/interne Termine/)).toBeNull();
   });
 
   it('bietet die Praxis als Start nicht an, solange sie keine Kartenposition hat', async () => {
@@ -335,10 +332,11 @@ describe('TourenPage nach dem UX-Review (UXR-003)', () => {
     fetchDayRoute.mockRejectedValueOnce(new Error('Funkloch'));
     renderWithProviders(<TourenPage user={jannes} />, '/touren?tag=2026-09-10');
 
-    const fehler = (await screen.findByText('Die Tagesroute konnte nicht geladen werden.')).closest(
+    const fehler = (await screen.findByText('Tagesroute nicht geladen.')).closest(
       '[role="alert"]',
     )!;
-    expect(fehler).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    // L7: Neben „Erneut versuchen“ steht kein Ratsatz.
+    expect(fehler).not.toHaveTextContent('Verbindung prüfen');
     expect(fehler).not.toHaveTextContent(/angemeldet/);
 
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
@@ -362,10 +360,10 @@ describe('TourenPage nach dem UX-Review (UXR-003)', () => {
     fetchAssignableTherapists.mockRejectedValueOnce(new Error('Funkloch'));
     renderWithProviders(<TourenPage user={jannes} />, '/touren?tag=2026-09-10');
 
-    const fehler = (
-      await screen.findByText('Die behandelnden Personen konnten nicht geladen werden.')
-    ).closest('[role="alert"]')!;
-    expect(fehler).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    const fehler = (await screen.findByText('Behandelnde Personen nicht geladen.')).closest(
+      '[role="alert"]',
+    )!;
+    expect(fehler).not.toHaveTextContent('Verbindung prüfen');
 
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(await screen.findByRole('link', { name: 'Max Mustermann' })).toBeInTheDocument();

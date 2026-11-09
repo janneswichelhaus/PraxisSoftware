@@ -117,12 +117,12 @@ describe('Mit Karte zahlen (ANN-837)', () => {
     await nutzer.click(screen.getByRole('button', { name: 'Am Terminal zahlen' }));
 
     expect(kassiereMitKarte).toHaveBeenCalledWith('r1', 14000);
-    expect(await screen.findByText('140,00 € mit Karte bezahlt und gebucht.')).toBeInTheDocument();
+    expect(await screen.findByText('140,00 € bezahlt und gebucht.')).toBeInTheDocument();
     expect(screen.getByText('Nachbildung ohne Terminal: Es floss kein Geld.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Nächste Rechnung kassieren' })).toBeNull();
     expect(screen.getByRole('link', { name: 'Fertig' })).toHaveAttribute('href', ZURUECK);
     await waitFor(() => expect(fetchRechnungenDerAkte).toHaveBeenCalledTimes(2));
-    expect(screen.getByText('140,00 € mit Karte bezahlt und gebucht.')).toBeInTheDocument();
+    expect(screen.getByText('140,00 € bezahlt und gebucht.')).toBeInTheDocument();
     expect(screen.queryByText('Keine offene Rechnung')).toBeNull();
     expect(fetchRechnungenDerAkte).toHaveBeenCalledWith(PERSON);
   });
@@ -200,7 +200,7 @@ describe('Mit Karte zahlen (ANN-837)', () => {
 
     expect(bucheKartenzahlungNach).toHaveBeenCalledWith('r1', 14000, 'mock-9');
     expect(kassiereMitKarte).toHaveBeenCalledTimes(1);
-    expect(await screen.findByText('140,00 € mit Karte bezahlt und gebucht.')).toBeInTheDocument();
+    expect(await screen.findByText('140,00 € bezahlt und gebucht.')).toBeInTheDocument();
   });
 
   it('hält Rechnung und Betrag fest, solange am Terminal kassiert wird, und bucht genau diese nach', async () => {
@@ -236,7 +236,7 @@ describe('Mit Karte zahlen (ANN-837)', () => {
     expect(screen.queryByRole('radio')).toBeNull();
     expect(bucheKartenzahlungNach).toHaveBeenCalledWith('r2', 9000, 'mock-7');
     expect(kassiereMitKarte).toHaveBeenCalledTimes(1);
-    expect(await screen.findByText('90,00 € mit Karte bezahlt und gebucht.')).toBeInTheDocument();
+    expect(await screen.findByText('90,00 € bezahlt und gebucht.')).toBeInTheDocument();
   });
 
   it('verlangt bei unklarem Ausgang ein ausdrückliches „nicht bezahlt“ und lädt die Rechnung neu', async () => {
@@ -264,7 +264,7 @@ describe('Mit Karte zahlen (ANN-837)', () => {
 
     await nutzer.click(await screen.findByRole('radio', { name: /^RG-2026-0012/ }));
     await nutzer.click(screen.getByRole('button', { name: 'Am Terminal zahlen' }));
-    expect(await screen.findByText('140,00 € mit Karte bezahlt und gebucht.')).toBeInTheDocument();
+    expect(await screen.findByText('140,00 € bezahlt und gebucht.')).toBeInTheDocument();
     expect(screen.queryByText(/Nachbildung/)).toBeNull();
     await nutzer.click(await screen.findByRole('button', { name: 'Nächste Rechnung kassieren' }));
     expect(await screen.findByText('RG-2026-0013')).toBeInTheDocument();
@@ -280,17 +280,13 @@ describe('Mit Karte zahlen (ANN-837)', () => {
     fetchRechnungenDerAkte.mockClear();
     terminal = terminalMit({ data: { verfuegbar: false, nachbildung: false } });
     const ohne = oeffnen();
-    expect(
-      await screen.findByText('Die Kartenzahlung ist hier nicht eingerichtet.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Kartenzahlung nicht eingerichtet.')).toBeInTheDocument();
     ohne.unmount();
 
     // Ein Ausfall ist kein „nicht eingerichtet“: Er sagt es und lässt erneut fragen.
     terminal = terminalMit({ isError: true, data: undefined });
     oeffnen();
-    expect(
-      await screen.findByText('Das Terminal konnte nicht gefragt werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Terminal nicht erreicht.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     await waitFor(() => expect(fetchRechnungenDerAkte).not.toHaveBeenCalled());
   });

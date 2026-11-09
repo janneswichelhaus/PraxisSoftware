@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Disclosure } from '@/components/ui/Card';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { FENSTERZIEL, PortalZielKontext } from '@/components/ui/portalZiel';
@@ -67,7 +66,6 @@ export function AnmeldungEinrichten({
         tabtitel={ausEinladung ? EINLADUNG_TITEL : ANMELDEN_TITEL}
         zeichen={TELEFON}
         titel="Hier lässt sich kein Passkey anlegen"
-        einleitung="Dafür braucht es ein aktuelles Telefon oder einen aktuellen Browser."
       >
         <p className="text-ink text-base">
           Bitten Sie die Praxis um eine neue Einladung und öffnen Sie sie auf einem aktuellen
@@ -155,9 +153,6 @@ export function AnmeldungEinrichten({
         </>
       }
     >
-      <p className="text-ink text-base">
-        Sechs Ziffern. Damit kommen Sie hinein, wenn Gesicht oder Finger einmal nicht gehen.
-      </p>
       <PinFestlegen onGesetzt={onFertig} formular={PIN_FORMULAR} />
     </GefuehrterAblauf>
   ) : (
@@ -181,20 +176,12 @@ export function AnmeldungEinrichten({
       {fehler ? (
         <div ref={fehlerkasten} tabIndex={-1} className="focus:outline-none">
           <Statusmeldung ton={fehler.abgebrochen ? 'warnung' : 'fehler'}>
-            {fehler.abgebrochen
-              ? 'Nicht bestätigt. Versuchen Sie es noch einmal – Ihr Telefon fragt dann erneut.'
-              : fehler.satz}
+            {fehler.satz}
           </Statusmeldung>
         </div>
       ) : null}
-      <p className="text-ink text-base">
-        Ihr Telefon fragt gleich nach Gesicht, Finger oder Displaysperre. So melden Sie sich künftig
-        an.
-      </p>
-      {/* Die Abfrage des Telefons, nur gezeichnet und ohne Unterschrift: Der
-          Satz darüber sagt dasselbe. Unter 23rem Breite und unter 48rem Höhe
-          entfällt sie wie ein Foto, damit die Seite nicht rollt (ANN-682,
-          Jannes 24.10.2026; gemessen rollte sie bis 47rem noch). */}
+      {/* Die Abfrage des Telefons, nur gezeichnet und ohne Unterschrift. Unter 23rem Breite und
+          unter 48rem Höhe entfällt sie wie ein Foto, damit die Seite nicht rollt (ANN-682). */}
       <div
         data-testid="gezeichnete-abfrage"
         aria-hidden="true"
@@ -236,20 +223,10 @@ export function AnmeldungEinrichten({
         >
           {SCHLOSS}
         </svg>
-        Gesicht und Fingerabdruck bleiben auf Ihrem Telefon. Own Motion bekommt sie nie.
+        Gesicht und Finger bleiben auf Ihrem Telefon, der Passkey dort oder im Schlüsselbund; Own
+        Motion speichert nur den öffentlichen Schlüssel und von der PIN eine nicht umkehrbare
+        Prüfsumme.
       </p>
-      <Disclosure summary="Was passiert dabei genau?">
-        <div className="text-ink flex flex-col gap-2 text-base">
-          <p>
-            Ihr Telefon legt einen Passkey an: einen Schlüssel, der nur zu Own Motion passt. Er
-            bleibt auf dem Telefon oder in Ihrem Schlüsselbund.
-          </p>
-          <p>
-            Der Anmeldedienst speichert nur den öffentlichen Schlüssel des Passkeys, von der PIN nur
-            eine nicht umkehrbare Prüfsumme.
-          </p>
-        </div>
-      </Disclosure>
     </GefuehrterAblauf>
   );
 

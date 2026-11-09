@@ -410,28 +410,24 @@ function GrundlagenFormular({
         <form onSubmit={absenden} noValidate className="max-w-formular lg:order-1">
           {personFehlt ? (
             <Statusmeldung ton="warnung" className="mb-6">
-              Für wen diese Grundlage ist, ließ sich nicht laden. Bitte aus der Akte neu öffnen.
+              Person nicht geladen. Bitte aus der Akte neu öffnen.
             </Statusmeldung>
           ) : null}
 
-          {/* Ein Speicherfehler als Fenster über dem Formular (VER-02, ZST-10,
-            ANN-058): Wer am Seitenende auf „Speichern" tippt, sieht einen
-            Kasten am Formularanfang nicht. Der Satz sagt, was zu tun ist -
-            ohne Einzelheiten aus der Datenbank (§13). */}
+          {/* Ein Speicherfehler als Fenster über dem Formular (ANN-058): Einen Kasten am
+            Formularanfang sähe am Seitenende niemand. Ohne Einzelheiten aus der Datenbank (§13). */}
           {speichern.isError ? (
             <Hinweisfenster
-              titel="Die Behandlungsgrundlage konnte nicht gespeichert werden."
+              titel="Grundlage nicht gespeichert."
               onSchliessen={() => speichern.reset()}
             >
-              Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut
-              speichern.
+              Die Eingaben bleiben erhalten.
             </Hinweisfenster>
           ) : null}
           {verordner.isError ? (
             <div className="mb-6">
               <ErrorState
-                title="Die Verordner:innen konnten nicht geladen werden."
-                description="Bitte die Verbindung prüfen und erneut versuchen."
+                title="Verordner:innen nicht geladen."
                 onErneut={() => void verordner.refetch()}
               />
             </div>
@@ -500,8 +496,7 @@ function GrundlagenFormular({
             laeuft={loeschen.isPending}
             onBestaetigen={() => loeschen.mutateAsync()}
           >
-            Die Grundlage wird endgültig entfernt, samt ihren Heilmitteln und ihrem Verlauf. Das
-            geht nur, solange keine Termine an ihr hängen – für eine falsch zugeordnete Grundlage.
+            Die Grundlage wird endgültig entfernt, samt Heilmitteln und Verlauf.
           </Rueckfrage>
         </div>
       ) : null}
@@ -562,7 +557,7 @@ export function EditTreatmentBasisPage() {
   }
   if (abfrage.data) return <GrundlagenFormular patientId={patientId} bestand={abfrage.data} />;
 
-  // Ohne Formular bleibt der Weg zurück - und ein Satz, was zu tun ist (VER-15).
+  // Ohne Formular bleibt der Weg zurück.
   return (
     <>
       <Rueckweg standard={grundlagenbereich(patientId)} beschriftung={RUECKWEG_TEXT} />
@@ -570,14 +565,9 @@ export function EditTreatmentBasisPage() {
       <Abfragezustand
         abfrage={abfrage}
         laden="Behandlungsgrundlage wird geladen …"
-        fehler="Die Behandlungsgrundlage konnte nicht geladen werden."
+        fehler="Behandlungsgrundlage nicht geladen."
       >
-        {() => (
-          <ErrorState
-            title="Nicht gefunden"
-            description="Diese Grundlage gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben. Bitte aus den Behandlungsgrundlagen der Akte neu öffnen."
-          />
-        )}
+        {() => <ErrorState title="Nicht gefunden" />}
       </Abfragezustand>
     </>
   );

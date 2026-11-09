@@ -56,9 +56,7 @@ export function EntwurfAbmeldewache({ besitzer }: { besitzer: string }) {
       setOffen(false);
       abmelden?.();
     } else {
-      setHinweis(
-        'Nicht alles ist angekommen. Bitte unter „Auf dem Gerät“ nachsehen oder später erneut versuchen.',
-      );
+      setHinweis('Nicht alles ist angekommen.');
     }
   }
 
@@ -68,7 +66,7 @@ export function EntwurfAbmeldewache({ besitzer }: { besitzer: string }) {
       <p className="text-ink text-sm">
         Auf diesem Gerät {zahl.current === 1 ? 'liegt' : 'liegen'} noch {zahlSatz(zahl.current)},
         die die Praxis nicht hat. Beim Abmelden bleiben sie auf dem Gerät und gehen beim nächsten
-        Anmelden hinaus – es sei denn, Sie verwerfen sie.
+        Anmelden hinaus.
         {unlesbar > 0 ? ` Darunter ${unlesbarSatz(unlesbar)}.` : null}
       </p>
       {hinweis ? (

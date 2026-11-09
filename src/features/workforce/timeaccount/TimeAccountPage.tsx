@@ -81,7 +81,7 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={query}
         laden="Zeitkonto wird geladen …"
-        fehler="Das Zeitkonto konnte nicht geladen werden."
+        fehler="Zeitkonto nicht geladen."
         inKarte
       >
         {(state) => (
@@ -142,11 +142,7 @@ function Content({
           </Listenabschnitt>
         </>
       ) : (
-        <EmptyState
-          inKarte
-          title="Kein eigenes Zeitkonto"
-          description="Zu Ihrem Konto gibt es keinen Mitarbeiterdatensatz."
-        />
+        <EmptyState inKarte title="Kein eigenes Zeitkonto" />
       )}
 
       {state.can_book_others && own ? (

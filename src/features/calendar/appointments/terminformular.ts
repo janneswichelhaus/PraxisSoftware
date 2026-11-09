@@ -120,16 +120,11 @@ export function terminFehlerliste(
 }
 
 /**
- * Der Text eines gescheiterten Speicherns im Hinweisfenster (ZST-12, WRT-01).
- *
- * Kennt die Schnittstelle den Grund - eine Überschneidung, das Raster -,
- * steht er da. Sonst liefert sie denselben Satz, der schon der Titel ist; dann
- * sagt der Text, was jetzt zu tun ist, statt den Titel zu wiederholen.
+ * Der Text eines gescheiterten Speicherns im Hinweisfenster: der Grund, wenn die Schnittstelle ihn
+ * kennt; sonst, dass nichts verloren ist, statt den Titel zu wiederholen.
  */
 export function speicherfehlerText(meldung: string, titel: string): string {
-  return meldung.trim() === titel.trim()
-    ? 'Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut speichern.'
-    : meldung;
+  return meldung.trim() === titel.trim() ? 'Die Eingaben stehen noch im Formular.' : meldung;
 }
 
 const TERMINSUCHE = /^\/patienten\/([^/?]+)\/plaetze$/;

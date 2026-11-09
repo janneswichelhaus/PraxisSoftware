@@ -69,7 +69,7 @@ import { patientName } from '@/lib/termin';
  */
 
 const KEINE_SKALEN: readonly never[] = [];
-const SKALEN_OFFEN = 'Die Skalen stehen noch nicht im Eintrag. Erst übernehmen oder verwerfen.';
+const SKALEN_OFFEN = 'Die Skalen stehen noch nicht im Eintrag.';
 
 function Abschluss({
   besitzer,
@@ -531,7 +531,7 @@ function Abschluss({
           {ohneBehandlung ? (
             <p className="bg-warnung-soft text-warnung shrink-0 px-4 py-2 text-sm">
               <span aria-hidden="true">! </span>
-              Vermerk: {VERMERK_OHNE_BEHANDLUNG} Kein Ausfallhonorar. Ein Eintrag ist nicht nötig.
+              Vermerk: {VERMERK_OHNE_BEHANDLUNG} Kein Ausfallhonorar.
             </p>
           ) : null}
 
@@ -844,7 +844,7 @@ export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
     <DocumentationShell
       appointmentId={appointmentId}
       darf={canWriteTreatmentNote(user.roles)}
-      verweigert="Behandlungsdokumentation schreiben dürfen Therapeut:innen und Teamleitung."
+      verweigert="Nur Therapeut:innen und Teamleitung."
       eigenerKopf
     >
       {({ appointment, dokumentation, eingehend, zumTermin }) => {
@@ -894,19 +894,14 @@ export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
         // Erwartbare Zustände stehen ruhig da, mit dem nächsten Schritt
         // (DOK-12) - kein roter Alarm.
         if (zustand === 'abgesagt') {
-          return (
-            <EmptyState
-              title="Termin abgesagt"
-              description="Zu einem abgesagten Termin hat keine Behandlung stattgefunden."
-            />
-          );
+          return <EmptyState title="Termin abgesagt" />;
         }
 
         if (zustand === 'nicht-angetroffen') {
           return (
             <EmptyState
               title="Nicht angetroffen"
-              description="Zu einem nicht angetroffenen Termin entsteht keine Behandlungsdokumentation. War das ein Irrtum, zuerst am Termin „Termin wieder öffnen“."
+              description="War das ein Irrtum, zuerst am Termin „Termin wieder öffnen“."
             />
           );
         }

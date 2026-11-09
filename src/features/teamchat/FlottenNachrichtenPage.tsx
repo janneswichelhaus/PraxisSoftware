@@ -35,7 +35,7 @@ export function FlottenNachrichtenPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={kanaele}
         laden="Nachrichten werden geladen …"
-        fehler="Die Nachrichten konnten nicht geladen werden."
+        fehler="Nachrichten nicht geladen."
         rahmen={(zustand) => <Rand>{zustand}</Rand>}
       >
         {() =>
@@ -50,7 +50,7 @@ export function FlottenNachrichtenPage({ user }: { user: CurrentUser }) {
             />
           ) : (
             <Rand>
-              <EmptyState title="Für die Radflotte gibt es hier noch kein Gespräch" />
+              <EmptyState title="Noch kein Gespräch zur Radflotte" />
             </Rand>
           )
         }

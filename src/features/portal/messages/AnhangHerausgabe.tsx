@@ -84,13 +84,12 @@ function Zeile({ anhang, zeitzone }: { anhang: HerausgabeAnhang; zeitzone: strin
       </div>
       {anhang.object_missing ? (
         <Statusmeldung ton="warnung" className="mt-2">
-          Die Aufnahme fehlt in der Ablage; die Kopie kann sie nicht enthalten.
+          Die Aufnahme fehlt in der Ablage.
         </Statusmeldung>
       ) : null}
       {erledigt ? (
         <Statusmeldung className="mt-2">
-          Kopie zum Speichern übergeben und protokolliert. Bitte prüfen, ob die Datei angekommen
-          ist.
+          Kopie zum Speichern übergeben und protokolliert.
         </Statusmeldung>
       ) : null}
       {fehler ? (
@@ -122,11 +121,10 @@ export function AnhangHerausgabe({
       <Abfragezustand
         abfrage={anhaenge}
         laden="Fotos und Videos werden geladen …"
-        fehler="Die Fotos und Videos konnten nicht geladen werden."
+        fehler="Fotos und Videos nicht geladen."
         leer={{
           wenn: (liste) => liste.length === 0,
           titel: 'Keine Fotos oder Videos',
-          beschreibung: 'An den Rückfragen dieser Person hängt keine Aufnahme.',
         }}
       >
         {(liste) => (

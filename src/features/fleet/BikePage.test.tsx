@@ -97,11 +97,7 @@ describe('Rad', () => {
     fetchFleet.mockResolvedValue(testFlotte({ can_release: true }));
     oeffne(RAD3, ['therapist', 'team_lead']);
     await nutzer.click(await screen.findByRole('button', { name: 'Freigeben' }));
-    expect(
-      screen.getByText(
-        /steht danach wieder in der Planung. Die 3 offenen Stellen gelten als erledigt/,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Die 3 offenen Stellen gelten als erledigt/)).toBeInTheDocument();
     expect(releaseBike).not.toHaveBeenCalled();
     await nutzer.click(screen.getByRole('button', { name: 'Ja, freigeben' }));
     expect(releaseBike).toHaveBeenCalledWith('rad-3');

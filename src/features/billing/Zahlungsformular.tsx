@@ -157,8 +157,7 @@ export function Zahlungsformular({
     if (tag === '') {
       gefunden.tag = 'Bitte ein Datum wählen.';
     } else if (tag > heute) {
-      gefunden.tag =
-        'Eine Zahlung lässt sich nicht für die Zukunft buchen. Bitte ein Datum bis heute wählen.';
+      gefunden.tag = 'Eine Zahlung lässt sich nicht für die Zukunft buchen.';
     }
 
     const erstes = (['betrag', 'tag'] as const).find((feld) => gefunden[feld]);
@@ -282,9 +281,8 @@ export function Zahlungsformular({
       {buchen.isError ? (
         <Statusmeldung ton="fehler">
           {buchen.error instanceof RueckzahlungZuHoch
-            ? 'Es lässt sich höchstens zurückzahlen, was auf dieser Rechnung eingegangen ist.'
-            : buchen.error.message}{' '}
-          Die Eingaben stehen noch im Formular.
+            ? 'Rückzahlung höher als eingegangen.'
+            : buchen.error.message}
         </Statusmeldung>
       ) : null}
     </form>

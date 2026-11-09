@@ -167,7 +167,7 @@ export function timeAccountKey(staffMemberId: string | null) {
   return [...TIME_ACCOUNT_KEY, staffMemberId ?? 'own'] as const;
 }
 
-const LOAD = 'Das Zeitkonto konnte nicht geladen werden.';
+const LOAD = 'Zeitkonto nicht geladen.';
 
 /** Das eigene Konto - oder, für owner und Büro, das einer anderen Person. */
 export async function fetchTimeAccount(staffMemberId: string | null): Promise<TimeAccount> {

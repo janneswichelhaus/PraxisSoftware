@@ -63,7 +63,7 @@ export function Aufnahmeanzeige({
               bestaetigen="Ja, verwerfen"
               onBestaetigen={onAbbrechen}
             >
-              Die Aufnahme ist nicht gespeichert und lässt sich danach nicht zurückholen.
+              Die Aufnahme geht verloren.
             </Rueckfrage>
           </div>
           <Button

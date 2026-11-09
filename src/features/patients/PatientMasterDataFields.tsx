@@ -116,8 +116,8 @@ export function PatientMasterDataFields({
   const therapeutinHinweis =
     therapeutinnenStand === 'fehler'
       ? bisherigeTherapeutin
-        ? 'Die Liste der Therapeut:innen ließ sich nicht laden – die bisherige Zuordnung bleibt erhalten.'
-        : 'Die Liste der Therapeut:innen ließ sich nicht laden. Eine Zuordnung lässt sich später nachtragen.'
+        ? 'Therapeut:innen nicht geladen; die bisherige Zuordnung bleibt erhalten.'
+        : 'Therapeut:innen nicht geladen.'
       : // Gekürzt (Sichtung 13.10.2026, A10); dass die Zuordnung kein Recht
         // ist, ändert, was man wählt - das bleibt.
         'Vorbelegung für die Terminplanung, kein Zugriffsrecht.';
@@ -230,7 +230,6 @@ export function PatientMasterDataFields({
         feldId={stammdatenFeldId('institution')}
         autoComplete="off"
         maxLength={200}
-        hint="Pflegeheim, betreutes Wohnen oder Pflegedienst."
         value={werte.institution}
         error={fehler.institution}
         onChange={(event) => onChange('institution', event.target.value)}
@@ -337,7 +336,7 @@ export function PatientMasterDataFields({
         feldId={stammdatenFeldId('special_note')}
         rows={2}
         maxLength={1000}
-        hint="Was vor dem Besuch bekannt sein muss, organisatorisch."
+        hint="Nur Organisatorisches."
         value={werte.special_note}
         error={fehler.special_note}
         onChange={(event) => onChange('special_note', event.target.value)}

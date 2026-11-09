@@ -115,9 +115,6 @@ import { fetchDayPlan, type DayPlanEntry } from '@/features/calendar/day-plan/ap
  * (ANN-021, ZST-04).
  */
 
-/** Der nächste Schritt nach einem Ladefehler (WRT-01) - ohne Ratefrage. */
-const NACH_LADEFEHLER = 'Bitte die Verbindung prüfen und erneut versuchen.';
-
 /**
  * Zweite Zeile im Tagesplan des Teams: wer, dann wo (UEB-06).
  *
@@ -248,11 +245,7 @@ function Teamplan({
         {isPending ? (
           <LoadingState label="Tagesplan des Teams wird geladen …" />
         ) : isError ? (
-          <ErrorState
-            title="Der Tagesplan des Teams konnte nicht geladen werden."
-            description={NACH_LADEFEHLER}
-            onErneut={() => refetch()}
-          />
+          <ErrorState title="Tagesplan des Teams nicht geladen." onErneut={() => refetch()} />
         ) : alleHeute.length === 0 ? (
           <EmptyState title={`${tagWort} sind keine Termine geplant`} />
         ) : (
@@ -695,13 +688,7 @@ function MeinTag({
   // Liste. Gibt es einen älteren Stand, ist er im Hausflur mehr wert als eine
   // Fehlermeldung - er wird dann als älterer Stand gekennzeichnet.
   if (isError && !termine) {
-    return (
-      <ErrorState
-        title="Die Tagesliste konnte nicht geladen werden."
-        description={NACH_LADEFEHLER}
-        onErneut={() => refetch()}
-      />
-    );
+    return <ErrorState title="Tagesliste nicht geladen." onErneut={() => refetch()} />;
   }
   if (!termine) return null;
 
@@ -920,8 +907,7 @@ function MeinTag({
       {isError ? (
         <div className="bg-warnung-soft rounded-card flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
           <Statusmeldung ton="warnung" className="max-w-prose">
-            Die Tagesliste ließ sich gerade nicht aktualisieren. Angezeigt wird der Stand von{' '}
-            {formatLocalTime(new Date(dataUpdatedAt).toISOString(), zeitzone)} Uhr – er kann
+            Stand von {formatLocalTime(new Date(dataUpdatedAt).toISOString(), zeitzone)} Uhr, kann
             veraltet sein.
           </Statusmeldung>
           <Button
@@ -1164,16 +1150,14 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   const hinweisTermine = eigeneTagesliste ? (tagesliste.data ?? null) : [];
 
   if (!praxisrolle) {
-    // UEB-08: Der Satz sagt, wozu der Zugang heute dient, und nennt den Weg
-    // für alles andere - ohne ein Portal zu versprechen, das erst mit DSN-001
-    // entworfen wird. Der Gruß bleibt beim „Sie", ohne Vornamen.
+    // Der Satz nennt den Weg für alles andere, „Mein Konto“ den Zweck des Zugangs (L7). Der Gruß
+    // bleibt beim „Sie", ohne Vornamen.
     return (
       <>
         <PageHeader title={greeting()} description={langesDatum(heute)} />
         <Section titel="Ihr Zugang">
           <p className="text-ink-muted text-liste max-w-prose">
-            Über diesen Zugang verwalten Sie derzeit Ihr Konto. Termine vereinbaren oder absagen Sie
-            bitte direkt bei der Praxis.
+            Termine vereinbaren oder absagen Sie bitte direkt bei der Praxis.
           </p>
           <ButtonLink to="/mein-konto" variant="secondary" className="mt-4">
             Mein Konto
@@ -1324,7 +1308,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
               canReadPatientDirectory(user.roles) ? (
                 <p className="border-line nicht-drucken border-t pt-3">
                   <Textlink alleinstehend to="/offen" className="text-liste gap-1 font-medium">
-                    Offene Punkte: Aufgaben, Anrufliste, Erstaufnahmen
+                    Offene Punkte
                     <Pfeil />
                   </Textlink>
                 </p>

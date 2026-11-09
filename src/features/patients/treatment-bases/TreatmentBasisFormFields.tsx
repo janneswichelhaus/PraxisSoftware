@@ -126,7 +126,6 @@ export function TreatmentBasisFormFields({
                   Hinweissatz, der nur an der Farbe zu erkennen war. Die
                   Eingaben sichert der Entwurf, bevor die Seite wechselt. */}
               <p className="text-ink-muted flex flex-wrap items-center gap-x-2 text-sm">
-                Verordner:in nicht in der Liste?
                 <Link
                   to={verordnerAnlegenZiel}
                   onClick={onVerordnerAnlegenKlick}
@@ -231,7 +230,7 @@ export function TreatmentBasisFormFields({
             name="frequency_note"
             feldId={grundlageFeldId('frequency_note')}
             autoComplete="off"
-            hint={verordnung ? 'Wie auf dem Rezept, etwa „2x pro Woche“.' : 'Etwa „1x pro Woche“.'}
+            hint="Etwa „2x pro Woche“."
             value={werte.frequency_note}
             error={fehler.frequency_note}
             onChange={(event) => onChange('frequency_note', event.target.value)}
@@ -270,11 +269,7 @@ export function TreatmentBasisFormFields({
             feldId={grundlageFeldId('note')}
             rows={3}
             // Wer die Anmerkung sieht, steht am Feld (ADR-004).
-            hint={
-              verordnung
-                ? 'Etwa „Rezept liegt im Ordner“ – sichtbar für alle Praxisrollen.'
-                : 'Sichtbar für alle Praxisrollen.'
-            }
+            hint="Sichtbar für alle Praxisrollen."
             value={werte.note}
             error={fehler.note}
             onChange={(event) => onChange('note', event.target.value)}
@@ -286,12 +281,7 @@ export function TreatmentBasisFormFields({
             und nimmt dafür keine neue Eingabe mehr entgegen. Auskunft, keine
             Eingabe: deshalb ein Unterabschnitt mit Rahmen (VER-19). */}
         {bestandstexte.length > 0 ? (
-          <Section
-            titel="Aus dem Bestand"
-            ebene={3}
-            hinweis="Aus einer früheren Fassung des Formulars; bleibt beim Speichern unverändert."
-            rahmen
-          >
+          <Section titel="Aus dem Bestand, unverändert" ebene={3} rahmen>
             <DetailList>
               {bestandstexte.map((eintrag) => (
                 <DetailRow key={eintrag.feld} label={eintrag.feld}>

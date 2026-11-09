@@ -261,7 +261,7 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
   const cameraDialog = cameraOpen ? (
     <Kameradialog
       titel="Beleg fotografieren"
-      hinweis="Den ganzen Beleg ins Bild, gerade und gut lesbar - Betrag und Händler müssen erkennbar sein."
+      hinweis="Ganzer Beleg, Betrag und Händler lesbar."
       onAufnahme={(photo) => {
         setCameraOpen(false);
         startUpload(photo);

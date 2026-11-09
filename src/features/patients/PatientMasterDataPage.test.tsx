@@ -649,7 +649,7 @@ describe('Stammdaten der Akte', () => {
       const buttons = screen.getAllByRole('button', { name: 'Versorgung abschließen' });
       await user.click(buttons[buttons.length - 1]!);
 
-      expect(await meldung(/konnte nicht gespeichert werden/)).toBeInTheDocument();
+      expect(await meldung(/Abschluss nicht gespeichert/)).toBeInTheDocument();
     });
   });
 

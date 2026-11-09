@@ -35,15 +35,15 @@ export class PasskeyFehler extends Error {
 export const PASSKEY_SAETZE = {
   nichtUnterstuetzt:
     'Dieses Gerät oder dieser Browser unterstützt keine Passkeys. Bitte ein aktuelles Telefon oder einen aktuellen Browser verwenden.',
-  abgebrochen: 'Nicht bestätigt. Bitte erneut versuchen.',
-  nichtAngenommen: 'Der Passkey wurde nicht angenommen. Ist er auf diesem Gerät eingerichtet?',
+  abgebrochen: 'Nicht bestätigt.',
+  nichtAngenommen: 'Der Passkey wurde nicht angenommen.',
   ausgeschaltet: 'Passkeys sind beim Anmeldedienst noch nicht eingeschaltet.',
   schonEingerichtet: 'Auf diesem Gerät ist schon ein Passkey für Sie eingerichtet.',
   zweiterFaktor: 'Bitte zuerst den zweiten Faktor bestätigen, dann den Passkey einrichten.',
   hoechstzahl: 'Sie haben schon so viele Passkeys eingerichtet, wie möglich sind.',
-  geraet: 'Der Passkey ließ sich auf diesem Gerät nicht verwenden. Bitte erneut versuchen.',
+  geraet: 'Der Passkey ließ sich auf diesem Gerät nicht verwenden.',
   nichtFreigegeben:
-    'Der Passkey ist angelegt, aber nicht freigegeben und öffnet deshalb nichts. Bitte noch einmal einrichten; den alten können Sie später unter Ihren Passkeys entfernen.',
+    'Der Passkey ist angelegt, aber nicht freigegeben und öffnet nichts. Bitte noch einmal einrichten.',
 } as const;
 
 /** Kann dieser Browser überhaupt Passkeys? Ohne WebAuthn bietet die Seite sie nicht an. */

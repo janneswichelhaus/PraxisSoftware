@@ -490,9 +490,7 @@ describe('Check-in als geführter Ablauf (Handoff 5.1)', () => {
     const letzte = fenster('Wie viele Minuten waren Sie heute Morgen steif?');
     const senden = within(letzte).getByRole('button', { name: 'Angaben senden' });
     expect(senden).toHaveAttribute('aria-disabled', 'true');
-    expect(senden).toHaveAccessibleDescription(
-      'Senden geht wieder mit Verbindung. Ihre Antworten bleiben stehen.',
-    );
+    expect(senden).toHaveAccessibleDescription('Senden geht wieder mit Verbindung.');
     // Gesperrt, aber erreichbar: der Satz wird mit dem Knopf vorgelesen.
     expect(senden).not.toBeDisabled();
     await nutzer.click(senden);
@@ -535,21 +533,15 @@ describe('Check-in: Zustände ohne Ablauf (Handoff 5.1)', () => {
   it('sagt, wenn er nicht geladen werden konnte', async () => {
     ladeCheckins.mockRejectedValue(new Error('Ihr Check-in konnte nicht geladen werden.'));
     renderWithProviders(<Checkin zugang={ZUGANG} />, PFAD);
-    expect(
-      await screen.findByText('Ihr Check-in konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Check-in nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 
-  it('keiner eingestellt: sagt, wo die Fragen erscheinen, ohne Weg', async () => {
+  it('keiner eingestellt: nur der Titel, ohne Weg (L7)', async () => {
     ladeCheckins.mockResolvedValue(daten({ schedule: null, due: false, can_answer: false }));
     const { container } = renderWithProviders(<Checkin zugang={ZUGANG} />, PFAD);
     expect(await screen.findByText('Zurzeit kein Check-in')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Stellt Ihre Praxis Ihnen Fragen zwischen den Terminen, finden Sie sie hier und auf der Übersicht.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/finden Sie sie hier/)).toBeNull();
     expect(screen.queryByRole('link', { name: 'Meine Angaben' })).not.toBeInTheDocument();
     await pruefeBarrierefreiheit(container);
   });
@@ -558,9 +550,7 @@ describe('Check-in: Zustände ohne Ablauf (Handoff 5.1)', () => {
     ladeCheckins.mockResolvedValue(daten({ due: false, can_answer: false, due_on: '2026-10-19' }));
     const { container } = renderWithProviders(<Checkin zugang={ZUGANG} />, PFAD);
     expect(await screen.findByText('Schon beantwortet')).toBeInTheDocument();
-    expect(
-      screen.getByText('Ihr nächster Check-in ist ab Montag, 19. Oktober dran.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Nächster Check-in ab Montag, 19. Oktober.')).toBeInTheDocument();
     // „Meine Angaben“ führt mit dem Rückweg „Check-in“ zurück hierher.
     expect(screen.getByRole('link', { name: 'Meine Angaben' })).toHaveAttribute(
       'href',
@@ -586,11 +576,7 @@ describe('Check-in: Zustände ohne Ablauf (Handoff 5.1)', () => {
       '/p/checkin?bereich=training',
     );
     expect(await screen.findByText('Ihre Praxis bittet um einen Check-in')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Der Check-in fragt nach Ihrer Gesundheit. Dafür braucht es Ihre Einwilligung.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Dafür braucht es Ihre Einwilligung.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Einwilligungen ansehen' })).toHaveAttribute(
       'href',
       '/p/einwilligungen?bereich=training',

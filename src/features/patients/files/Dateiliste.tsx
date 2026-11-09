@@ -7,6 +7,7 @@ import { Field } from '@/components/ui/Field';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { STAND_VERALTET } from '@/components/ui/abfrageTexte';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { ladeDateiHerunter, ladeDateiZumAnzeigen, setzeFreigabe, type PatientFile } from './api';
@@ -286,7 +287,7 @@ function Uploadfeld({ patientId, grundlageId, arten, zeitzone }: UploadfeldProps
             // Hinweis und Ablehnungsgrund verbindet das Feld selbst mit der
             // Eingabe (DAT-12) - ein eigenes aria-describedby von hier
             // überschriebe beides.
-            hint="PDF, JPEG oder PNG bis 10 MB. Ort, Gerät und Vorschaubild werden aus Bildern vor dem Hochladen entfernt. Eine hinzugefügte Datei lässt sich nicht mehr ändern – eine Korrektur ist eine neue Datei."
+            hint="PDF, JPEG oder PNG bis 10 MB. Ort, Gerät und Vorschaubild werden aus Bildern vor dem Hochladen entfernt. Eine hinzugefügte Datei lässt sich nicht mehr ändern."
             error={ablehnung ?? undefined}
             disabled={laeuft}
             // Der Knopf des Browsers bekommt die Gestalt eines Sekundärknopfs
@@ -331,7 +332,6 @@ function Uploadfeld({ patientId, grundlageId, arten, zeitzone }: UploadfeldProps
             label="Name in der Akte"
             value={name}
             maxLength={200}
-            hint="Unter diesem Namen steht die Datei in der Akte."
             disabled={laeuft}
             autoComplete="off"
             onChange={(e) => setEigenerName(e.target.value)}
@@ -351,7 +351,7 @@ function Uploadfeld({ patientId, grundlageId, arten, zeitzone }: UploadfeldProps
           {laeuft ? 'Wird hinzugefügt …' : 'Datei hinzufügen'}
         </Button>
         {datei && !art ? (
-          <span className="text-ink-muted text-sm">Zuerst die Art des Dokuments wählen.</span>
+          <span className="text-ink-muted text-sm">Erst die Art wählen.</span>
         ) : null}
         {datei ? (
           <Button type="button" variant="secondary" disabled={laeuft} onClick={zuruecksetzen}>
@@ -368,9 +368,7 @@ function Uploadfeld({ patientId, grundlageId, arten, zeitzone }: UploadfeldProps
       {upload.isError ? (
         <Statusmeldung ton="fehler">
           {upload.error.message}
-          {ausKamera
-            ? ' Das Foto ist noch da – „Datei hinzufügen“ versucht es erneut, solange diese Seite offen ist.'
-            : null}
+          {ausKamera ? ' Das Foto ist noch da, solange diese Seite offen ist.' : null}
         </Statusmeldung>
       ) : null}
       {erfolg ? (
@@ -382,7 +380,7 @@ function Uploadfeld({ patientId, grundlageId, arten, zeitzone }: UploadfeldProps
       {kameraOffen ? (
         <Kameradialog
           titel="Foto eines Dokuments"
-          hinweis="Das Blatt flach hinlegen und ganz ins Bild nehmen. Das Foto bleibt in der Anwendung und landet nicht in der Mediathek des Geräts."
+          hinweis="Das Foto bleibt in der Anwendung und landet nicht in der Mediathek des Geräts."
           onAufnahme={fotoAufgenommen}
           onSchliessen={() => setKameraOffen(false)}
         />
@@ -685,10 +683,7 @@ function Dateizeile({
               onAbbrechen={() => loeschen.reset()}
               onBestaetigen={() => loeschen.mutateAsync(datei.id)}
             >
-              <span className="wrap-anywhere">
-                „{datei.display_name}“ wird sofort aus der Akte entfernt. Das lässt sich nicht
-                rückgängig machen.
-              </span>
+              Lässt sich nicht rückgängig machen.
             </Rueckfrage>
           ) : null}
         </div>
@@ -698,8 +693,8 @@ function Dateizeile({
           leere Fläche und kein stiller Ausgleich (§13). */}
       {datei.object_missing ? (
         <Statusmeldung ton="fehler" className="mt-2">
-          Diese Datei ist in der Ablage nicht auffindbar. Bitte der Praxisinhaber:in melden – sie
-          steht unter „Aufbewahrung“.
+          Datei fehlt in der Ablage. Bitte der Praxisinhaber:in melden – sie steht unter
+          „Aufbewahrung“.
         </Statusmeldung>
       ) : null}
       {fehler ? (
@@ -834,16 +829,10 @@ export function Dateiliste({
   const liste = (
     <>
       {isPending ? <LoadingState label="Dateien werden geladen …" /> : null}
-      {isError ? (
-        <ErrorState
-          title="Die Dateien konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={erneutLaden}
-        />
-      ) : null}
+      {isError ? <ErrorState title="Dateien nicht geladen." onErneut={erneutLaden} /> : null}
       {veraltet ? (
         <Statusmeldung ton="warnung" className="mb-2">
-          Die Liste konnte nicht aktualisiert werden; gezeigt wird der zuletzt geladene Stand.
+          {STAND_VERALTET}
         </Statusmeldung>
       ) : null}
 

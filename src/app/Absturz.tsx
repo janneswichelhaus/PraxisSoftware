@@ -30,7 +30,7 @@ export function Absturzseite({
     <Vollseite titel="Seite konnte nicht angezeigt werden">
       <ErrorState
         title="Da ist etwas schiefgegangen."
-        description="Bitte laden Sie die Anwendung neu. Ihre gespeicherte Arbeit bleibt unverändert erhalten."
+        description="Ihre gespeicherte Arbeit bleibt unverändert erhalten."
       />
       <Button className="mt-4 w-full" onClick={neuLaden}>
         Neu laden
@@ -50,7 +50,7 @@ function KonfigurationFehlt({ meldung }: { meldung: string }) {
     <Vollseite titel="Anwendung nicht eingerichtet">
       <ErrorState
         title="Die Anwendung ist nicht vollständig eingerichtet."
-        description="Bitte wenden Sie sich an die Praxisinhaber:in."
+        description="Bitte an die Praxisinhaber:in wenden."
       />
       {import.meta.env.DEV && meldung ? (
         <p className="text-ink-muted mt-4 text-sm">{meldung}</p>

@@ -45,7 +45,7 @@ export function BreakdownPage({ user }: { user: CurrentUser }) {
           <Abfragezustand
             abfrage={flotte}
             laden="Radflotte wird geladen …"
-            fehler="Die Radflotte konnte nicht geladen werden."
+            fehler="Radflotte nicht geladen."
             inKarte
           >
             {(daten) => (
@@ -59,7 +59,7 @@ export function BreakdownPage({ user }: { user: CurrentUser }) {
           <Abfragezustand
             abfrage={flotte}
             laden="Radflotte wird geladen …"
-            fehler="Die Radflotte konnte nicht geladen werden."
+            fehler="Radflotte nicht geladen."
             inKarte
           >
             {(daten) => (
@@ -101,21 +101,11 @@ function MitRad({
   });
 
   if (!bekannt) {
-    return (
-      <ErrorState
-        title="Dieses Rad gibt es nicht mehr."
-        description="Bitte das Rad in der Radflotte neu wählen."
-      />
-    );
+    return <ErrorState title="Dieses Rad gibt es nicht mehr." />;
   }
 
   return (
-    <Abfragezustand
-      abfrage={detail}
-      laden="Rad wird geladen …"
-      fehler="Das Rad konnte nicht geladen werden."
-      inKarte
-    >
+    <Abfragezustand abfrage={detail} laden="Rad wird geladen …" fehler="Rad nicht geladen." inKarte>
       {(daten) => (
         <Pannenfenster flotte={flotte} detail={daten} zurueck={zurueck} zeitzone={zeitzone} />
       )}

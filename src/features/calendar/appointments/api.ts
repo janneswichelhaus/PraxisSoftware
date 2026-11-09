@@ -213,9 +213,9 @@ export async function fetchAppointment(appointmentId: string): Promise<Appointme
     .eq('id', appointmentId)
     .maybeSingle();
 
-  if (error) throw new Error('Der Termin konnte nicht geladen werden.');
+  if (error) throw new Error('Termin nicht geladen.');
   if (!data) return null;
-  return antwort(appointmentSchema, data, 'Der Termin konnte nicht geladen werden.');
+  return antwort(appointmentSchema, data, 'Termin nicht geladen.');
 }
 
 /** Ortsangabe eines Termins in einer Zeile - passend zur Terminart. */
@@ -415,7 +415,7 @@ export async function fetchPatientAppointments(
     p_treatment_basis_id: query.verordnung ?? null,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Termine konnten nicht geladen werden.');
+  if (error) throw new Error('Termine nicht geladen.');
   return z.array(patientAppointmentSchema).parse(data ?? []);
 }
 
@@ -570,25 +570,21 @@ export async function createAppointment(
     if (error.message?.includes('outside_working_hours')) throw new AusserhalbArbeitszeitError();
     if (error.message?.includes('waitlist entry')) {
       throw new Error(
-        'Der Eintrag der Warteliste ist nicht mehr offen – vielleicht hat ihn gerade jemand anderes eingeplant. Der Termin wurde nicht angelegt.',
+        'Der Eintrag der Warteliste ist nicht mehr offen. Der Termin wurde nicht angelegt.',
       );
     }
     if (error.message?.includes('in the past')) throw new VergangenheitError();
     // Keine Details aus der Datenbank nach außen. Die Überschneidung ist der
     // einzige Fall, den die bedienende Person unmittelbar auflösen kann.
     if (error.message?.includes('overlaps')) {
-      throw new Error(
-        'In diesem Zeitraum hat die behandelnde Person bereits einen Termin. Bitte eine andere Zeit wählen.',
-      );
+      throw new Error('In diesem Zeitraum hat die behandelnde Person bereits einen Termin.');
     }
     // Vor der Rastermeldung des Beginns: beide Texte enthalten dasselbe Ende.
     if (error.message?.includes('appointment length')) {
       throw new Error(TERMINLAENGE_MELDUNG);
     }
     if (error.message?.includes('not on the appointment grid')) {
-      throw new Error(
-        'Der Beginn passt nicht zum Praxisraster. Bitte eine Uhrzeit im Raster der Praxis wählen.',
-      );
+      throw new Error('Der Beginn passt nicht zum Praxisraster.');
     }
     throw new Error('Der Termin konnte nicht angelegt werden.');
   }
@@ -667,9 +663,7 @@ export async function createAppointmentEvent(
       );
     }
     if (error.message?.includes('not on the appointment grid')) {
-      throw new Error(
-        'Beginn und Ende müssen auf dem Praxisraster liegen. Bitte Zeiten im Raster der Praxis wählen.',
-      );
+      throw new Error('Beginn und Ende müssen auf dem Praxisraster liegen.');
     }
     if (error.message?.includes('event title is required')) {
       throw new Error('Bitte eine Bezeichnung angeben.');
@@ -708,7 +702,7 @@ export async function fetchEventParticipants(eventGroupId: string): Promise<Even
     p_event_group_id: eventGroupId,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Beteiligten konnten nicht geladen werden.');
+  if (error) throw new Error('Beteiligte nicht geladen.');
   return z.array(eventParticipantSchema).parse(data ?? []);
 }
 
@@ -755,9 +749,7 @@ export async function updateAppointmentEvent(
       throw new Error('Eine abgesagte Fehlzeit wird nicht mehr geändert.');
     }
     if (error.message?.includes('not on the appointment grid')) {
-      throw new Error(
-        'Beginn und Ende müssen auf dem Praxisraster liegen. Bitte Zeiten im Raster der Praxis wählen.',
-      );
+      throw new Error('Beginn und Ende müssen auf dem Praxisraster liegen.');
     }
     if (error.message?.includes('event title is required')) {
       throw new Error('Bitte eine Bezeichnung angeben.');
@@ -839,9 +831,7 @@ export async function createEventSeries(
       );
     }
     if (error.message?.includes('not on the appointment grid')) {
-      throw new Error(
-        'Beginn und Ende müssen auf dem Praxisraster liegen. Bitte Zeiten im Raster der Praxis wählen.',
-      );
+      throw new Error('Beginn und Ende müssen auf dem Praxisraster liegen.');
     }
     if (error.message?.includes('event title is required')) {
       throw new Error('Bitte eine Bezeichnung angeben.');
@@ -925,9 +915,7 @@ export async function updateEventSeries(
       );
     }
     if (error.message?.includes('not on the appointment grid')) {
-      throw new Error(
-        'Beginn und Ende müssen auf dem Praxisraster liegen. Bitte Zeiten im Raster der Praxis wählen.',
-      );
+      throw new Error('Beginn und Ende müssen auf dem Praxisraster liegen.');
     }
     throw new Error('Die Serie konnte nicht geändert werden.');
   }
@@ -1046,7 +1034,7 @@ export async function fetchAppointments(query: CalendarQuery): Promise<CalendarE
     p_status: query.status,
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Termine konnten nicht geladen werden.');
+  if (error) throw new Error('Termine nicht geladen.');
   return z.array(calendarEntrySchema).parse(data ?? []);
 }
 
@@ -1118,14 +1106,10 @@ export function appointmentToFormValues(
 }
 
 /**
- * Meldung zur Terminlänge (CAL-020).
- *
- * An einer Stelle, weil beide Schreibpfade sie brauchen. Sie nennt die Regel
- * und den Ausweg, ohne interne Details preiszugeben. Seit 0.11 §8.1 ist die
- * Länge frei — abgewiesen wird nur noch, was nicht ins Praxisraster passt.
+ * Meldung zur Terminlänge für beide Schreibpfade: die Regel ohne interne Details. Seit §8.1 ist
+ * die Länge frei; abgewiesen wird nur, was nicht ins Praxisraster passt.
  */
-const TERMINLAENGE_MELDUNG =
-  'Die Dauer passt nicht zum Praxisraster. Bitte eine Dauer wählen, die ein Vielfaches des Rasters ist.';
+const TERMINLAENGE_MELDUNG = 'Die Dauer passt nicht zum Praxisraster.';
 
 export function schreibfehler(error: { message?: string } | null, standard: string): Error {
   if (error?.message?.includes('outside_working_hours')) {
@@ -1138,16 +1122,12 @@ export function schreibfehler(error: { message?: string } | null, standard: stri
     return new Error(TERMINLAENGE_MELDUNG);
   }
   if (error?.message?.includes('not on the appointment grid')) {
-    return new Error(
-      'Der Beginn passt nicht zum Praxisraster. Bitte eine Uhrzeit im Raster der Praxis wählen.',
-    );
+    return new Error('Der Beginn passt nicht zum Praxisraster.');
   }
   // Zwei Fälle kann die bedienende Person selbst auflösen; alles andere bleibt
   // bewusst unspezifisch, damit keine internen Details nach außen gelangen.
   if (error?.message?.includes('overlaps')) {
-    return new Error(
-      'In diesem Zeitraum hat die behandelnde Person bereits einen Termin. Bitte eine andere Zeit wählen.',
-    );
+    return new Error('In diesem Zeitraum hat die behandelnde Person bereits einen Termin.');
   }
   // TRN-009: Wo abgeschlossen protokolliert wurde, hat die Einheit
   // stattgefunden (ein Entwurf fällt mit der Absage, Zweitreview).
@@ -1163,7 +1143,7 @@ export function schreibfehler(error: { message?: string } | null, standard: stri
   }
   if (error?.message?.includes('must be reopened first')) {
     return new Error(
-      'Der Termin ist bereits abgeschlossen oder als „nicht angetroffen" geführt. Er muss erst wieder geöffnet werden, bevor er geändert oder abgesagt werden kann.',
+      'Der Termin ist bereits abgeschlossen oder als „nicht angetroffen" geführt. Zum Ändern erst wieder öffnen.',
     );
   }
   if (error?.message?.includes('cancellation reason is required')) {
@@ -1180,9 +1160,7 @@ export function schreibfehler(error: { message?: string } | null, standard: stri
     return new Error('Bitte mindestens einen Termin wählen.');
   }
   if (error?.message?.includes('cancellation cannot be received in the future')) {
-    return new Error(
-      'Der Eingang der Absage kann nicht in der Zukunft liegen. Bitte den Zeitpunkt prüfen.',
-    );
+    return new Error('Der Eingang der Absage kann nicht in der Zukunft liegen.');
   }
   if (error?.message?.includes('cancellation receipt needs date and time')) {
     return new Error('Bitte Datum und Uhrzeit des Eingangs angeben.');

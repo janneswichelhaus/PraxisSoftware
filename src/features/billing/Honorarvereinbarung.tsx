@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
@@ -46,13 +45,7 @@ export function Honorarvereinbarung({
 
   if (stand.isPending) return null;
   if (stand.isError) {
-    return (
-      <ErrorState
-        title="Das Honorar konnte nicht geladen werden."
-        description={VERBINDUNG_PRUEFEN}
-        onErneut={() => stand.refetch()}
-      />
-    );
+    return <ErrorState title="Honorar nicht geladen." onErneut={() => stand.refetch()} />;
   }
   if (!stand.data) return null;
 
@@ -69,7 +62,7 @@ function Geltend({ stand }: { stand: Honorarstand }) {
   if (stand.current_cents === null) {
     return (
       <p className="text-ink-muted text-sm">
-        Kein Terminhonorar: Die geltende Preisliste nennt keins, und es gibt keine Vereinbarung.
+        Kein Terminhonorar: weder in der Preisliste noch vereinbart
       </p>
     );
   }
@@ -126,8 +119,7 @@ function Entfernen({ id, gueltigAb }: { id: string; gueltigAb: string }) {
       onBestaetigen={() => entfernen.mutateAsync()}
       onAbbrechen={() => entfernen.reset()}
     >
-      Die Vereinbarung ab {formatDate(gueltigAb)} wird entfernt. Das geht nur, solange sie an keinem
-      Termin angewandt wurde.
+      Vereinbarung ab {formatDate(gueltigAb)} entfernen?
     </Rueckfrage>
   );
 }
@@ -210,14 +202,13 @@ function Festlegen({ patientId, heute }: { patientId: string; heute: string | nu
         </div>
       </div>
       <p className="text-ink-muted text-sm">
-        Gilt für Termine ab diesem Tag und geht dem allgemeinen Tarif vor. Schon bestätigte Termine
-        behalten ihr Honorar.
+        Geht dem allgemeinen Tarif vor. Schon bestätigte Termine behalten ihr Honorar.
       </p>
       {speichern.isError ? (
         <Statusmeldung ton="fehler">
           {speichern.error instanceof VereinbarungAmSelbenTag
-            ? 'Ab diesem Tag gibt es schon eine Vereinbarung. Bitte einen anderen Tag wählen.'
-            : `${speichern.error.message} Bitte die Verbindung prüfen und erneut versuchen.`}
+            ? 'Ab diesem Tag gibt es schon eine Vereinbarung.'
+            : speichern.error.message}
         </Statusmeldung>
       ) : null}
       <div className="flex flex-wrap gap-3">

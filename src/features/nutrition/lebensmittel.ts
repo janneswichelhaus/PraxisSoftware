@@ -317,5 +317,5 @@ export function lebensmittelfehler(meldung: string | undefined): string {
     return 'Dieser Zugang darf das gerade nicht.';
   if (m.includes('check constraint') || m.includes('violates') || m.includes('required'))
     return 'Bitte die Angaben prüfen.';
-  return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
+  return 'Nicht gespeichert.';
 }

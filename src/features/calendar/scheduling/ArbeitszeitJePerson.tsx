@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -81,9 +80,6 @@ const SCHUTZTEXTE: Verlustschutztexte = {
   ...EINGABETEXTE,
   bezeichnung: 'Ungespeicherte Arbeitszeiten',
 };
-
-/** Was nach einem gescheiterten Speichern zu tun ist (WRT-01). */
-const ERNEUT_SPEICHERN = 'Bitte die Verbindung prüfen und erneut speichern.';
 
 /** Kalendertag ein Jahr später, über UTC gerechnet – keine Ortszeit im Spiel. */
 function einJahrSpaeter(tag: string): string {
@@ -433,11 +429,7 @@ function Wochenplan({
   // Nachladen, bleibt der zuletzt geladene Stand samt Eingabe stehen.
   if (zeiten.isError && !zeiten.data) {
     return (
-      <ErrorState
-        title="Die Arbeitszeiten konnten nicht geladen werden."
-        description={VERBINDUNG_PRUEFEN}
-        onErneut={() => void zeiten.refetch()}
-      />
+      <ErrorState title="Arbeitszeiten nicht geladen." onErneut={() => void zeiten.refetch()} />
     );
   }
 
@@ -746,20 +738,12 @@ function Abweichungen({
     // Ohne Zeitzone der Praxis gibt es kein „heute" und damit kein Fenster.
     // Bis UXR-011 stand hier dann „keine Abweichung hinterlegt" (ORG-14).
     if (!heute) {
-      return (
-        <Statusmeldung ton="warnung">
-          Die Zeitzone der Praxis fehlt. Ohne sie lassen sich die Abweichungen nicht anzeigen.
-        </Statusmeldung>
-      );
+      return <Statusmeldung ton="warnung">Die Zeitzone der Praxis fehlt.</Statusmeldung>;
     }
     if (ausnahmen.isPending) return <LoadingState label="Abweichungen werden geladen …" />;
     if (ausnahmen.isError && !ausnahmen.data) {
       return (
-        <ErrorState
-          title="Die Abweichungen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => void ausnahmen.refetch()}
-        />
+        <ErrorState title="Abweichungen nicht geladen." onErneut={() => void ausnahmen.refetch()} />
       );
     }
 
@@ -932,8 +916,7 @@ function Abweichungen({
 
             {form.datum !== '' && leer && !bestehend ? (
               <p className="text-ink-muted text-sm">
-                Für den {datumText} ist keine Abweichung hinterlegt. Bitte das Häkchen setzen oder
-                Zeitblöcke eintragen.
+                Für den {datumText} ist keine Abweichung hinterlegt.
               </p>
             ) : null}
 
@@ -1019,7 +1002,7 @@ function EntfernenFenster({
       <p className="text-ink mt-2 text-sm">Danach gilt für diesen Tag wieder der Wochenplan.</p>
       {gescheitert ? (
         <Statusmeldung ton="fehler" className="mt-2">
-          {fehler ?? 'Das hat nicht geklappt.'} {ERNEUT_SPEICHERN}
+          {fehler ?? 'Das hat nicht geklappt.'}
         </Statusmeldung>
       ) : null}
       <div className="mt-4 flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">
@@ -1138,8 +1121,7 @@ export function ArbeitszeitJePerson({
       {therapeuten.isPending ? <LoadingState label="Personen werden geladen …" /> : null}
       {therapeuten.isError && !therapeuten.data ? (
         <ErrorState
-          title="Die behandelnden Personen konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
+          title="Behandelnde Personen nicht geladen."
           onErneut={() => void therapeuten.refetch()}
         />
       ) : null}
@@ -1148,7 +1130,6 @@ export function ArbeitszeitJePerson({
       {therapeuten.data && therapeuten.data.length === 0 ? (
         <EmptyState
           title="Noch keine behandelnde Person"
-          description="Arbeitszeiten gibt es für Personen mit Zugang und der Rolle Therapeut:in oder Teamleitung."
           aktion={
             darfPflegen ? (
               <ButtonLink to="/praxis/team" variant="secondary">

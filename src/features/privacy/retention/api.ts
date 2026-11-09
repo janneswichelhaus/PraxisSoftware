@@ -64,7 +64,7 @@ export async function fetchRetentionSchedule(): Promise<Datenklasse[]> {
   ]);
 
   if (klassen.error || zuordnungen.error) {
-    throw new Error('Der Aufbewahrungsplan konnte nicht geladen werden.');
+    throw new Error('Aufbewahrungsplan nicht geladen.');
   }
 
   const zugeordnet = z.array(zuordnungSchema).parse(zuordnungen.data ?? []);
@@ -100,7 +100,7 @@ export async function fetchLegalHolds(): Promise<Loeschsperre[]> {
     error: unknown;
   };
 
-  if (error) throw new Error('Die Löschsperren konnten nicht geladen werden.');
+  if (error) throw new Error('Löschsperren nicht geladen.');
   return z.array(sperreSchema).parse(data ?? []);
 }
 
@@ -120,7 +120,7 @@ export async function fetchDeletionRuns(): Promise<Loeschlauf[]> {
     error: unknown;
   };
 
-  if (error) throw new Error('Das Löschjournal konnte nicht geladen werden.');
+  if (error) throw new Error('Löschjournal nicht geladen.');
   return z.array(laufSchema).parse(data ?? []);
 }
 

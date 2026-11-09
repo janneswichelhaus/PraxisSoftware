@@ -63,9 +63,6 @@ export function PraxisEinstellungenPage({ user }: { user: CurrentUser }) {
   );
 }
 
-/** Was nach einem gescheiterten Speichern zu tun ist (WRT-01). */
-const ERNEUT_SPEICHERN = 'Bitte die Verbindung prüfen und erneut speichern.';
-
 // -----------------------------------------------------------------------------
 // Praxisraster
 // -----------------------------------------------------------------------------
@@ -91,8 +88,6 @@ function RasterEinstellung({ aktuell }: { aktuell: number | null }) {
   });
 
   return (
-    // Kein Erklärsatz unter dem Titel (DESIGN.md Regel 6); was eine Änderung
-    // bewirkt, steht knapp als Kleingedrucktes am Feld.
     <Section titel="Praxisraster">
       <div className="max-w-formular">
         <Select
@@ -110,14 +105,11 @@ function RasterEinstellung({ aktuell }: { aktuell: number | null }) {
             </option>
           ))}
         </Select>
-        <Kleingedrucktes className="mt-2">
-          Gilt für die ganze Praxis. Bestehende Termine außerhalb des Rasters bleiben erhalten.
-        </Kleingedrucktes>
       </div>
 
       {mutation.isError ? (
         <Statusmeldung ton="fehler" className="mt-3">
-          {mutation.error.message} {ERNEUT_SPEICHERN}
+          {mutation.error.message}
         </Statusmeldung>
       ) : null}
       {gespeichert && !mutation.isPending && !mutation.isError ? (
@@ -218,7 +210,7 @@ function FristEinstellung({ organizationId }: { organizationId: string }) {
       {frist.isError && !geladen ? (
         <div className="mt-3">
           <Listenfehler
-            text="Die Dokumentationsfrist konnte nicht geladen werden. Bis dahin lässt sie sich nicht ändern."
+            text="Dokumentationsfrist nicht geladen."
             onErneut={() => void frist.refetch()}
           />
         </div>
@@ -226,7 +218,7 @@ function FristEinstellung({ organizationId }: { organizationId: string }) {
 
       {mutation.isError ? (
         <Statusmeldung ton="fehler" className="mt-3">
-          {mutation.error.message} {ERNEUT_SPEICHERN}
+          {mutation.error.message}
         </Statusmeldung>
       ) : null}
       {gespeichert && !mutation.isPending && !mutation.isError ? (

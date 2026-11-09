@@ -127,7 +127,7 @@ describe('Rückfragen (KOM-002)', () => {
       'href',
       `/rueckfragen/${ZEILE.id}`,
     );
-    expect(screen.getByText('Zusage: Antwort in 2 Werktagen (Mo–Fr).')).toBeInTheDocument();
+    expect(screen.getByText('Antwortfrist: 2 Werktage (Mo–Fr)')).toBeInTheDocument();
     expect(screen.queryByText('Antwortfrist ändern')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Antwortfrist')).not.toBeInTheDocument();
   });
@@ -237,7 +237,7 @@ describe('Rückfragen (KOM-002)', () => {
 
   it('Offene Punkte: offen und überfällig je Bereich', async () => {
     renderWithProviders(<OffeneRueckfragen bereiche={['treatment']} />, '/offen');
-    expect(await screen.findByText(/2 offen, davon 1 überfällig\./)).toBeInTheDocument();
+    expect(await screen.findByText('2 offen, davon 1 überfällig')).toBeInTheDocument();
     // Die Zeile des Bereichs ist der Weg zur Liste, überfällig mit Wort.
     expect(screen.getByRole('link', { name: /^Behandlung.*überfällig/ })).toHaveAttribute(
       'href',

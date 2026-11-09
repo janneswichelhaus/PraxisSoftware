@@ -397,14 +397,14 @@ export const GESPRAECHE_HALTEN_MS = 12 * 3_600_000;
 // Lesen
 // -----------------------------------------------------------------------------
 
-const LADEN_KANAELE = 'Die Gespräche konnten nicht geladen werden.';
+const LADEN_KANAELE = 'Gespräche nicht geladen.';
 
 export async function fetchKanaele(): Promise<Kanal[]> {
   const data = await rufe('list_team_channels', {}, LADEN_KANAELE);
   return antwort(z.array(kanalSchema), data, LADEN_KANAELE);
 }
 
-const LADEN_NACHRICHTEN = 'Die Nachrichten konnten nicht geladen werden.';
+const LADEN_NACHRICHTEN = 'Nachrichten nicht geladen.';
 
 /** Eine Stelle im Verlauf: (Zeit, Kennung) - die Zeit als Text vom Server. */
 export interface Cursor {
@@ -450,7 +450,7 @@ export async function fetchNachrichten(
   return antwort(z.array(nachrichtSchema), data, LADEN_NACHRICHTEN);
 }
 
-const LADEN_PERSONEN = 'Das Team konnte nicht geladen werden.';
+const LADEN_PERSONEN = 'Team nicht geladen.';
 
 export async function fetchPersonen(): Promise<Person[]> {
   const data = await rufe('list_team_people', {}, LADEN_PERSONEN);
@@ -558,7 +558,7 @@ const personenkarteSchema = z.object({
 });
 export type Personenkarte = z.infer<typeof personenkarteSchema>;
 
-const LADEN_KARTE = 'Die Personenkarte konnte nicht geladen werden.';
+const LADEN_KARTE = 'Personenkarte nicht geladen.';
 
 export async function fetchPersonenkarte(staffMemberId: string): Promise<Personenkarte> {
   const data = await rufe('get_team_person', { p_staff: staffMemberId }, LADEN_KARTE);
@@ -566,7 +566,7 @@ export async function fetchPersonenkarte(staffMemberId: string): Promise<Persone
   return karte!;
 }
 
-const LADEN_MITGLIEDER = 'Die Mitglieder konnten nicht geladen werden.';
+const LADEN_MITGLIEDER = 'Mitglieder nicht geladen.';
 
 export async function fetchMitglieder(kanalId: string): Promise<Mitglied[]> {
   const data = await rufe('list_team_channel_members', { p_channel: kanalId }, LADEN_MITGLIEDER);
@@ -598,7 +598,7 @@ export async function sucheNachrichten(filter: Suchfilter): Promise<Treffer[]> {
   return antwort(z.array(trefferSchema), data, SUCHEN);
 }
 
-const LADEN_AKTIVITAET = '„Für dich“ konnte nicht geladen werden.';
+const LADEN_AKTIVITAET = '„Für dich“ nicht geladen.';
 
 /** Erwähnungen und Antworten in Threads, denen man folgt (ANN-614). */
 export async function fetchAktivitaet(): Promise<Aktivitaet[]> {
@@ -606,7 +606,7 @@ export async function fetchAktivitaet(): Promise<Aktivitaet[]> {
   return antwort(z.array(aktivitaetSchema), data, LADEN_AKTIVITAET);
 }
 
-const LADEN_THREADS = 'Die Threads konnten nicht geladen werden.';
+const LADEN_THREADS = 'Threads nicht geladen.';
 
 /** Threads, denen man folgt, die mit Neuem zuerst (ANN-640). */
 export async function fetchThreads(): Promise<ThreadUeberblick[]> {
@@ -614,21 +614,21 @@ export async function fetchThreads(): Promise<ThreadUeberblick[]> {
   return antwort(z.array(threadSchema), data, LADEN_THREADS);
 }
 
-const LADEN_GEMERKT = '„Für später“ konnte nicht geladen werden.';
+const LADEN_GEMERKT = '„Für später“ nicht geladen.';
 
 export async function fetchGemerkt(erledigt = false): Promise<Gemerkt[]> {
   const data = await rufe('list_team_saved', { p_done: erledigt }, LADEN_GEMERKT);
   return antwort(z.array(gemerktSchema), data, LADEN_GEMERKT);
 }
 
-const LADEN_GEPLANT = 'Geplante Nachrichten konnten nicht geladen werden.';
+const LADEN_GEPLANT = 'Geplante Nachrichten nicht geladen.';
 
 export async function fetchGeplant(): Promise<Geplant[]> {
   const data = await rufe('list_team_scheduled', {}, LADEN_GEPLANT);
   return antwort(z.array(geplantSchema), data, LADEN_GEPLANT);
 }
 
-const LADEN_ANGEHEFTET = 'Angeheftetes konnte nicht geladen werden.';
+const LADEN_ANGEHEFTET = 'Angeheftetes nicht geladen.';
 
 export async function fetchAngeheftet(kanalId: string): Promise<Angeheftet[]> {
   const data = await rufe('list_team_pins', { p_channel: kanalId }, LADEN_ANGEHEFTET);
@@ -978,7 +978,7 @@ export function dateienKey(kanalId: string) {
 
 /** Dateien je Gespräch (ADR-017 Punkt 80): die neuesten zuerst. */
 export async function fetchDateien(kanalId: string): Promise<Datei[]> {
-  const ersatz = 'Die Dateien konnten nicht geladen werden.';
+  const ersatz = 'Dateien nicht geladen.';
   const data = await rufe(
     'list_team_channel_attachments',
     { p_channel: kanalId, p_limit: DATEIEN_HOECHSTENS },

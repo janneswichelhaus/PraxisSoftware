@@ -202,7 +202,7 @@ export function Patientenauswahl({
       <Abfragezustand
         abfrage={abfrage}
         laden="Patientenliste wird geladen …"
-        fehler="Die Patientenliste konnte nicht geladen werden."
+        fehler="Patientenliste nicht geladen."
         inKarte
         leer={{ wenn: (liste) => liste.length === 0, ...leer }}
       >

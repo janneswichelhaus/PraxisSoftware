@@ -22,7 +22,6 @@ describe('KeinZugang (ORG-001)', () => {
   it('sagt auf einer Seite der Praxis ohne Zugang, woran es liegt, statt still umzuleiten', () => {
     rendern('/praxis/sicherheit/audit');
     expect(screen.getByRole('heading', { level: 1, name: 'Kein Zugang' })).toBeInTheDocument();
-    expect(screen.getByText('Diese Seite gibt es für Ihren Zugang nicht.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Zur Übersicht' })).toHaveAttribute('href', '/');
   });
 

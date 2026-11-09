@@ -52,12 +52,12 @@ export function DatevAngabenPage({ user }: { user: CurrentUser }) {
   return (
     <>
       <Rueckweg standard={ZURUECK} beschriftung="Zurück zur Steuerberatung" />
-      <PageHeader title="DATEV-Angaben" description="Wie Ihre Steuerberatung sie nennt." />
+      <PageHeader title="DATEV-Angaben" />
       {canManageBillingProfile(user.roles) ? (
         <Abfragezustand
           abfrage={einstellungen}
-          laden="Die DATEV-Angaben werden geladen …"
-          fehler="Die DATEV-Angaben konnten nicht geladen werden."
+          laden="DATEV-Angaben werden geladen …"
+          fehler="DATEV-Angaben nicht geladen."
         >
           {(werte) => <Formular vorhanden={werte} />}
         </Abfragezustand>
@@ -163,7 +163,7 @@ function Formular({ vorhanden }: { vorhanden: DatevEinstellungen | null }) {
 
       {speichern.isError ? (
         <Statusmeldung ton="fehler" className="mt-3">
-          {speichern.error.message} Die Eingaben stehen noch im Formular.
+          {speichern.error.message}
         </Statusmeldung>
       ) : null}
 

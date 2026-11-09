@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
@@ -537,8 +536,8 @@ export function FolgeterminVorschlaege({
           >
             <p className="text-ink text-sm">
               {vorname
-                ? `${vorname} sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht ${vorname} dort.`
-                : 'Die Person sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht sie dort.'}
+                ? `${vorname} sieht den Termin auf der Plattform und dort auch die Absage.`
+                : 'Die Person sieht den Termin auf der Plattform und dort auch die Absage.'}
             </p>
             {absagen.isError ? (
               <Statusmeldung ton="fehler" className="mt-2">
@@ -598,7 +597,6 @@ export function FolgeterminVorschlaege({
       <>
         <ErrorState
           title="Die freien Zeiten konnten nicht gesucht werden."
-          description={VERBINDUNG_PRUEFEN}
           onErneut={() =>
             Promise.all(
               [kommende, frei, amTag]

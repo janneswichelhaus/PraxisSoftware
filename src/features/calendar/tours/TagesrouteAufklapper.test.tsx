@@ -114,10 +114,11 @@ describe('TagesrouteAufklapper', () => {
     zeige();
     aufklappen();
 
-    const fehler = (await screen.findByText('Die Tagesroute konnte nicht geladen werden.')).closest(
+    const fehler = (await screen.findByText('Tagesroute nicht geladen.')).closest(
       '[role="alert"]',
     )!;
-    expect(fehler).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    // L7: Neben „Erneut versuchen“ steht kein Ratsatz.
+    expect(fehler).not.toHaveTextContent('Verbindung prüfen');
 
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(await screen.findByText('Kartenattrappe')).toBeInTheDocument();

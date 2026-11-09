@@ -127,7 +127,7 @@ describe('Honorarvereinbarung (ABR-030)', () => {
     renderWithProviders(<Honorarvereinbarung patientId="p1" darfFestlegen heute="2026-10-05" />);
 
     await nutzer.click(await screen.findByRole('button', { name: 'Entfernen' }));
-    expect(screen.getByText(/an keinem Termin angewandt/)).toBeInTheDocument();
+    expect(screen.getByText('Vereinbarung ab 01.05.2026 entfernen?')).toBeInTheDocument();
     await nutzer.click(screen.getByRole('button', { name: 'Ja, entfernen' }));
 
     expect(deleteVereinbarung).toHaveBeenCalledWith('v1');

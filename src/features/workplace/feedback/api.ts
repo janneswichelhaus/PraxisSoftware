@@ -99,7 +99,7 @@ export async function fetchFeedbackStatus(): Promise<FeedbackStatus> {
   return antwort(statusSchema, data, LOAD_STATUS);
 }
 
-const LOAD_NAMED = 'Die Rückmeldungen konnten nicht geladen werden.';
+const LOAD_NAMED = 'Rückmeldungen nicht geladen.';
 
 /** owner: namentliche Rückmeldungen einzeln, die neueste zuerst. */
 export async function fetchNamedFeedback(): Promise<NamedFeedback[]> {

@@ -379,10 +379,9 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
     );
 
+    // Der Knopf ist der nächste Schritt, ohne Ratsatz daneben (L7).
     expect(await screen.findByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
-    expect(
-      screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.'),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/Bitte die Verbindung prüfen/)).toBeNull();
   });
 
   it('bietet office in der Akte keine Schreibhandlungen an', async () => {
@@ -439,9 +438,7 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       <PatientRecordDocumentation patient={patient} user={testUser(['owner'])} />,
     );
 
-    expect(
-      await screen.findByText('Die Behandlungsdokumentation konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Dokumentation nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText('boom')).not.toBeInTheDocument();
   });
 

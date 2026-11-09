@@ -442,7 +442,7 @@ export function TreatmentNotePage({ user }: { user: CurrentUser }) {
     <DocumentationShell
       appointmentId={appointmentId}
       darf={canWriteTreatmentNote(user.roles)}
-      verweigert="Behandlungsdokumentation schreiben dürfen Therapeut:innen und Teamleitung."
+      verweigert="Nur Therapeut:innen und Teamleitung."
       eigenerKopf
     >
       {({ appointment, dokumentation, eingehend, zumTermin }) => {
@@ -511,30 +511,20 @@ function Zustand({
   eingehend: string;
 }) {
   if (zustand === 'nicht-gefunden') {
-    return (
-      <ErrorState
-        title="Nicht gefunden"
-        description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
-      />
-    );
+    return <ErrorState title="Nicht gefunden" />;
   }
 
   // Erwartbare Zustände stehen ruhig da, mit dem nächsten Schritt
   // (DOK-12) - kein roter Alarm.
   if (zustand === 'abgesagt') {
-    return (
-      <EmptyState
-        title="Termin abgesagt"
-        description="Zu einem abgesagten Termin entsteht keine Behandlungsdokumentation."
-      />
-    );
+    return <EmptyState title="Termin abgesagt" />;
   }
 
   if (zustand === 'nicht-angetroffen') {
     return (
       <EmptyState
         title="Nicht angetroffen"
-        description="Zu einem nicht angetroffenen Termin entsteht keine Behandlungsdokumentation. War das ein Irrtum, zuerst am Termin „Termin wieder öffnen“."
+        description="War das ein Irrtum, zuerst am Termin „Termin wieder öffnen“."
       />
     );
   }

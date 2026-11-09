@@ -164,7 +164,7 @@ describe('Sitzung vorbereiten (ERN-023)', () => {
     expect(
       (await screen.findAllByText(/Plan begonnen · Zwei Tage zum Ausprobieren/))[0],
     ).toBeVisible();
-    expect(screen.getByText('Striche an der Zeitachse: Beratungen.')).toBeVisible();
+    expect(screen.getByText('Striche: Beratungen')).toBeVisible();
     // Check-ins seit der letzten Beratung: einer; Termine danach: einer.
     expect(
       await screen.findByText('1 Check-in, 0 Einheiten und 1 Termin seit der letzten Beratung'),

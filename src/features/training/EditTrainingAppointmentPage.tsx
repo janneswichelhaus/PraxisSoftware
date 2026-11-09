@@ -41,12 +41,7 @@ export function EditTrainingAppointmentPage({ user }: { user: CurrentUser }) {
   const listen = useAppointmentFormLists('training', canWriteTrainingClients(user.roles));
 
   if (!canWriteTrainingClients(user.roles)) {
-    return (
-      <ErrorState
-        title="Nicht freigegeben"
-        description="Trainingstermine verschieben owner, Trainingsbetreuung und Büro."
-      />
-    );
+    return <ErrorState title="Nicht freigegeben" />;
   }
   const t = termin.data;
   if (!t || t.status !== 'confirmed') {
@@ -57,7 +52,7 @@ export function EditTrainingAppointmentPage({ user }: { user: CurrentUser }) {
         <Abfragezustand
           abfrage={termin}
           laden="Formular wird vorbereitet …"
-          fehler="Der Trainingstermin konnte nicht geladen werden."
+          fehler="Trainingstermin nicht geladen."
           inKarte
         >
           {(geladen) => (
@@ -100,7 +95,7 @@ export function EditTrainingAppointmentPage({ user }: { user: CurrentUser }) {
           absenden: 'Speichern',
           trotzdem: 'Änderung trotzdem speichern',
           laeuft: 'Wird gespeichert …',
-          fehlerTitel: 'Der Termin konnte nicht geändert werden.',
+          fehlerTitel: 'Termin nicht geändert.',
           ungespeichert: 'Ungespeicherter Trainingstermin',
         }}
         abbrechenZiel={zurueck}

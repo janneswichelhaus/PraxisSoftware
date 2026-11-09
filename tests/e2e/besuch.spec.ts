@@ -815,7 +815,6 @@ test('sucht den Folgetermin nach einem Funkloch mit „Erneut versuchen" noch ei
   const fehler = page.getByText('Die freien Zeiten konnten nicht gesucht werden.');
   await expect(fehler).toBeVisible();
   const meldung = page.getByRole('alert').filter({ has: fehler });
-  await expect(meldung).toContainText('Bitte die Verbindung prüfen und erneut versuchen.');
   const erneut = meldung.getByRole('button', { name: 'Erneut versuchen' });
   expect((await erneut.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   const wegeVorher = await page.evaluate(
@@ -971,7 +970,7 @@ test('fragt vor dem Absagen, wenn die Person den Folgetermin auf der Plattform s
   await page.getByRole('button', { name: /^Rückgängig/ }).click();
   const frage = page.getByRole('group', { name: 'Folgetermin absagen' });
   await expect(frage).toContainText(
-    'Erika sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht Erika dort.',
+    'Erika sieht den Termin auf der Plattform und dort auch die Absage.',
   );
   const absagen = frage.getByRole('button', { name: 'Termin absagen' });
   const behalten = frage.getByRole('button', { name: 'Behalten' });

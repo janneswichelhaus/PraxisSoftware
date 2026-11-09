@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -449,21 +448,16 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
         {kopf}
         {patient.isError && !patient.data ? (
           <ErrorState
-            title="Die Patientendaten konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
+            title="Patientendaten nicht geladen."
             onErneut={() => void patient.refetch()}
           />
         ) : !patient.data ? (
-          <ErrorState
-            title="Nicht gefunden"
-            description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-          />
+          <ErrorState title="Nicht gefunden" />
         ) : (
           // Ohne Zahlen gibt es keine Serie. Die Schnittstelle unterscheidet
           // eine fehlende von einer nicht ladbaren Grundlage nicht.
           <ErrorState
-            title="Die Zahlen der Grundlage konnten nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
+            title="Zahlen der Grundlage nicht geladen."
             onErneut={() => void kontingent.refetch()}
           />
         )}
@@ -537,7 +531,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
           </Tile>
           <Tile label="Noch planbar">
             {zahlen.remaining === 0
-              ? 'Nichts mehr – jeder mögliche Termin ist genutzt oder verplant'
+              ? 'Nichts mehr'
               : `${zahlen.remaining} ${zahlen.remaining === 1 ? 'Behandlung' : 'Behandlungen'}`}
           </Tile>
           {zahlen.frequency_note ? (
@@ -581,7 +575,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
               </Select>
               {therapeuten.isError ? (
                 <Listenfehler
-                  text="Die Personen konnten nicht geladen werden."
+                  text="Personen nicht geladen."
                   onErneut={() => void therapeuten.refetch()}
                 />
               ) : null}
@@ -622,7 +616,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 </Select>
                 {standorte.isError ? (
                   <Listenfehler
-                    text="Die Standorte konnten nicht geladen werden."
+                    text="Standorte nicht geladen."
                     onErneut={() => void standorte.refetch()}
                   />
                 ) : null}
@@ -708,8 +702,8 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
             {geplant !== null && geplant > zahlen.remaining ? (
               <Statusmeldung ton="warnung">
                 Geplant {geplant === 1 ? 'ist' : 'sind'} {termineWort(geplant)}, noch planbar{' '}
-                {zahlen.remaining === 1 ? 'ist' : 'sind'} {zahlen.remaining}. Das ist zulässig – die
-                Grundlage deckt dann nicht alle Termine ab.
+                {zahlen.remaining === 1 ? 'ist' : 'sind'} {zahlen.remaining} – die Grundlage deckt
+                nicht alle ab.
               </Statusmeldung>
             ) : null}
           </Feldgruppe>
@@ -749,19 +743,12 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
           <Section titel={`Vorgeschlagene Termine (${liste.length})`}>
             {pruefung.isError ? (
               <div className="mb-4">
-                <ErrorState
-                  title="Die Termine konnten nicht geprüft werden."
-                  description="Bitte die Verbindung prüfen und die Liste mit „Erneut prüfen“ noch einmal prüfen lassen."
-                />
+                <ErrorState title="Die Termine konnten nicht geprüft werden." />
               </div>
             ) : null}
 
             {liste.length === 0 ? (
-              <EmptyState
-                inKarte
-                title="Es ist kein Termin mehr übrig."
-                description="Bitte oben einen neuen Vorschlag erzeugen."
-              />
+              <EmptyState inKarte title="Kein Termin übrig." />
             ) : (
               <ListRows>
                 {liste.map((termin, index) => {
@@ -811,13 +798,12 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 ) : hindernisse > 0 ? (
                   <Statusmeldung ton="fehler">
                     {hindernisse} von {liste.length} Terminen {hindernisse === 1 ? 'ist' : 'sind'}{' '}
-                    so nicht planbar. Weil die Serie alles oder nichts ist, muss jeder davon erst
-                    geändert oder entfernt werden.
+                    so nicht planbar; die Serie ist alles oder nichts.
                   </Statusmeldung>
                 ) : randzeiten > 0 ? (
                   <Statusmeldung ton="warnung">
                     {termineWort(randzeiten)} {randzeiten === 1 ? 'liegt' : 'liegen'} außerhalb der
-                    hinterlegten Arbeitszeit. Das Anlegen fragt dann noch einmal nach.
+                    hinterlegten Arbeitszeit.
                   </Statusmeldung>
                 ) : (
                   <Statusmeldung ton="erfolg">

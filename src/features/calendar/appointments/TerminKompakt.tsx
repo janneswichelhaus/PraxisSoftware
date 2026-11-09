@@ -77,14 +77,11 @@ export function TerminMetazeile({
   user,
   darfVerwalten,
   zumTermin,
-  hinweis,
 }: {
   appointment: Appointment;
   user: CurrentUser;
   darfVerwalten: boolean;
   zumTermin: string;
-  /** Was aus einem Zustand ohne Rückweg folgt, eine Zeile. */
-  hinweis?: string | null;
 }) {
   const zone = appointment.organization_time_zone;
   const { data: lage } = useAbrechnungslage(appointment.id);
@@ -171,10 +168,7 @@ export function TerminMetazeile({
           Abschlussgespräch (4.10, ANN-286). Eine Auskunft, kein Vorgang. */}
       {lage?.closing_talk_due && appointment.patient_id ? (
         <div className="mt-2 flex flex-col gap-1">
-          <p className="text-ink">
-            Einer der letzten Termine: Zeit für das Abschlussgespräch – wie geht es nach der
-            Behandlung weiter?
-          </p>
+          <p className="text-ink">Einer der letzten Termine: Zeit für das Abschlussgespräch.</p>
           <Textlink
             alleinstehend
             to={mitRueckweg(`/patienten/${appointment.patient_id}`, zumTermin)}
@@ -183,7 +177,6 @@ export function TerminMetazeile({
           </Textlink>
         </div>
       ) : null}
-      {hinweis ? <p className="mt-1">{hinweis}</p> : null}
     </div>
   );
 }
@@ -252,9 +245,7 @@ export function TerminZeilen({
         ) : art === 'video' ? (
           <span>
             Videotermin
-            <span className="text-ink-muted block text-sm">
-              Für Videotermine wird noch kein Videolink erzeugt.
-            </span>
+            <span className="text-ink-muted block text-sm">Noch ohne Videolink.</span>
           </span>
         ) : (
           <>

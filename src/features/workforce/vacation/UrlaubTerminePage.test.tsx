@@ -138,11 +138,9 @@ describe('UrlaubTerminePage', () => {
   });
 
   it('bietet im Funkloch einen neuen Versuch an', async () => {
-    fetchAppointments.mockRejectedValue(new Error('Die Termine konnten nicht geladen werden.'));
+    fetchAppointments.mockRejectedValue(new Error('Termine nicht geladen.'));
     rendern(terminePfad(STAFF.anna, '2026-11-02', '2026-11-13', '/offen'));
-    expect(
-      await screen.findByText('Die Termine konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Termine nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 });

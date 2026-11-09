@@ -86,7 +86,7 @@ export type WaitlistEntry = z.infer<typeof entrySchema>;
 
 export type ListFilter = 'open' | 'closed';
 
-const LOAD_ERROR = 'Die Warteliste konnte nicht geladen werden.';
+const LOAD_ERROR = 'Warteliste nicht geladen.';
 
 export async function fetchWaitlist(
   filter: ListFilter = 'open',

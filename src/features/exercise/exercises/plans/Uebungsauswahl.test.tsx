@@ -155,7 +155,7 @@ describe('Uebungsauswahl', () => {
     expect(screen.queryByRole('button', { name: /Übung anlegen/ })).toBeNull();
     unmount();
     zeigen({ ...BIBLIOTHEK, can_manage: true });
-    expect(screen.getByRole('button', { name: 'Nicht dabei? Übung anlegen' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Übung anlegen' })).toBeInTheDocument();
   });
 
   describe('eine Liste mit dem Katalog (Befund B9, O-002)', () => {
@@ -191,7 +191,7 @@ describe('Uebungsauswahl', () => {
 
     it('sagt es, wenn der Katalog fehlt, und zeigt die Bibliothek', () => {
       zeigen(BIBLIOTHEK, new Set(), undefined, [], true);
-      expect(screen.getByText('Nicht alle Übungen konnten geladen werden.')).toBeInTheDocument();
+      expect(screen.getByText('Nicht alle Übungen geladen.')).toBeInTheDocument();
       expect(screen.getAllByRole('checkbox')).toHaveLength(3);
     });
 

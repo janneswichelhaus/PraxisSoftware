@@ -61,13 +61,23 @@ Jede neue oder umgebaute Seite wählt einen Seitentyp aus [DESIGN.md](DESIGN.md)
 dessen Bausteinen; fehlt einer, entsteht er in `src/components/ui`, nicht in der Seite. Die Ratsche
 in `src/designsystem.test.ts` hält den erreichten Stand je Verzeichnis (ANN-400).
 
+## L7 · Titel, Beschriftung, Knopf
+
+Beispiel: die Anmeldeseite („weniger Text überall“, Jannes 2026-11-08): Marke, Titel, Knopf.
+Umgesetzt: SLK-010 bis SLK-019.
+
+- Titel, Beschriftung, Daten und Knopf sagen, was eine Ansicht ist und was geht. Es entfallen
+  Einleitung, Beschreibung, Hinweis am Feld, Anleitung auf Abruf, Kleingedrucktes ohne Rechtsgrund
+  und was Gerät oder Browser selbst erklären.
+- Was bleibt, ist kurz: Leerzustand ohne Anleitung, Fehler mit Knopf statt Rat, Rückfrage mit der
+  Folge, die man nicht sieht.
+- Es bleiben (MUSS vor Leitfaden): Rechtssätze, Einwilligungen wörtlich, Warnung vor Datenverlust,
+  Notfall, Red Flags, Datenfluss und Rechengrundlage (`ARBEITSBEREICHE.md` Regel 4), auf der
+  Plattform ein Satz Orientierung. Druckblätter sind Dokumente.
+
 ## Vorgehen
 
 1. Je Beispiel eine Regel hier.
 2. Erst den gemeinsamen Baustein ändern (`src/components/ui`), dann Bereich für Bereich die Seiten.
 3. Je Bereich eine Story `SLK-NNN`, ein Commit; mit Migration Pfad A, sonst Pfad S.
 4. Unklare Löschkandidaten mit Ort, Grund und Abhängigem an Jannes; gelöscht wird auf sein Wort.
-
-Die Löschkandidaten vom 2026-10-10 fallen alle weg (Jannes, BEF-140): der Aufklapper
-„Organisatorisches und Kommunikation“, „Telefon (geschäftlich)“ außer an einer Akte mit Nummer
-(ANN-340; `phone_work` bleibt), „Andere Ziel-App prüfen“ nach der Gerätesichtung (2026-11-05).

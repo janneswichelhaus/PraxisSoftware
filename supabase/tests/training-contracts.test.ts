@@ -144,7 +144,13 @@ describe('Trainingsvertrag im eigenen Konto (KND-003)', () => {
         id,
         price_cents: 39000,
         starts_on: beginn,
-        ends_on: await tag(`(date '${beginn}' + interval '3 months')::date - 1`),
+        // Paragraf 188 Abs. 3 BGB wie die Funktion (ANN-277): Fehlt der Tag im letzten Monat, endet
+        // das Paket am Monatsletzten. Sonst kippte der Test an jedem 29. bis 31. als Beginn.
+        ends_on: await tag(
+          `case when extract(day from date '${beginn}' + interval '3 months') < extract(day from date '${beginn}')
+             then (date '${beginn}' + interval '3 months')::date
+             else (date '${beginn}' + interval '3 months')::date - 1 end`,
+        ),
         handover_items: UEBERGABE,
         early_start: false,
         blocker: null,

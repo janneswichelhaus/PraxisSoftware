@@ -182,16 +182,15 @@ describe('StaffListPage', () => {
     expect(screen.getByLabelText('Beschäftigung')).toHaveClass('h-12', 'w-full');
   });
 
-  it('sagt nur der Praxisinhaber:in, wo Zugaenge entstehen (ORG-25)', async () => {
+  it('erklärt die Zuordenbarkeit an der Person, nicht in der Liste (ORG-25)', async () => {
     const { unmount } = renderWithProviders(<StaffListPage user={testUser(['owner'])} />);
-    expect(
-      await screen.findByText(/Zugang und Rollen vergeben Sie bei der Person unter „Zugang“/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Nicht für Termine zuordenbar')).toBeInTheDocument();
+    expect(screen.queryByText(/Zugang und Rollen vergeben Sie/)).toBeNull();
     unmount();
 
     renderWithProviders(<StaffListPage user={testUser(['office'])} />);
-    expect(await screen.findByText(/Als behandelnde Person zuordenbar ist/)).toBeInTheDocument();
-    expect(screen.queryByText(/Zugang und Rollen vergeben Sie/)).toBeNull();
+    expect(await screen.findByText('Nicht für Termine zuordenbar')).toBeInTheDocument();
+    expect(screen.queryByText(/Als behandelnde Person zuordenbar ist/)).toBeNull();
     expect(document.body.textContent).not.toMatch(/therapeutischer Rolle/);
   });
 
@@ -224,7 +223,7 @@ describe('StaffListPage', () => {
     fetchStaffMembers.mockRejectedValueOnce(new Error('kaputt'));
     renderWithProviders(<StaffListPage user={testUser(['office'])} />);
     const meldung = await screen.findByRole('alert');
-    expect(meldung).toHaveTextContent('Die Mitarbeiterliste konnte nicht geladen werden.');
+    expect(meldung).toHaveTextContent('Mitarbeiterliste nicht geladen.');
     // Keine Ratefrage mehr, sondern der naechste Schritt (WRT-01).
     expect(meldung).not.toHaveTextContent(/angemeldet/);
 

@@ -117,9 +117,7 @@ describe('PrescribersListPage', () => {
     fetchPrescribers.mockRejectedValue(new Error('egal'));
     renderWithProviders(<PrescribersListPage />);
 
-    expect(
-      await screen.findByText('Die Verordner:innen konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Verordner:innen nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText(/egal/)).not.toBeInTheDocument();
   });
 
@@ -133,7 +131,7 @@ describe('PrescribersListPage', () => {
     renderWithProviders(<PrescribersListPage />);
 
     const kasten = await screen.findByRole('alert');
-    expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(kasten).not.toHaveTextContent('Verbindung prüfen');
     expect(kasten).not.toHaveTextContent(/angemeldet/);
     await user.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
 

@@ -298,10 +298,9 @@ describe('NewEventPage', () => {
 
     expect(await screen.findByText('Nicht freigegeben')).toBeInTheDocument();
     expect(screen.queryByLabelText('Bezeichnung *')).not.toBeInTheDocument();
-    // Die Rollen mit ihren Namen, nicht „die Rollen der Terminverwaltung" (WRT-12).
-    expect(
-      screen.getByText(/Praxisinhaber, Therapeut:in, Teamleitung und Praxismanagement/),
-    ).toBeInTheDocument();
+    // L7: Nur der Titel; erst recht keine Sammelwörter wie „die Rollen der Terminverwaltung" (WRT-12).
+    expect(screen.queryByText(/Rollen der Terminverwaltung/)).toBeNull();
+    expect(screen.queryByText(/Praxisrollen/)).toBeNull();
   });
 
   // ---------------------------------------------------------------------------
@@ -408,17 +407,18 @@ describe('NewEventPage', () => {
     await formularAbwarten();
 
     const gruppe = screen.getByRole('group', { name: 'Beteiligte Personen *' });
-    expect(within(gruppe).getByRole('alert')).toHaveTextContent(
-      'Die Personen konnten nicht geladen werden.',
-    );
+    expect(within(gruppe).getByRole('alert')).toHaveTextContent('Personen nicht geladen.');
     expect(within(gruppe).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     // Ohne die Pflichtliste lässt sich nicht eintragen.
     expect(screen.getByRole('button', { name: 'Fehlzeit eintragen' })).toBeDisabled();
   });
 
-  it('nennt die Beispiele wie Anlegen-Leiste und Dauerfehlzeit (KAL-27)', async () => {
+  it('traegt im Kopf nur den Titel, die Beispiele stehen an der Anlegen-Leiste (KAL-27, L7)', async () => {
     rendern();
     await formularAbwarten();
-    expect(screen.getByText(/^Meeting, Puffer, Pause oder anderes\./)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Fehlzeit eintragen' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Meeting, Puffer, Pause/)).toBeNull();
   });
 });

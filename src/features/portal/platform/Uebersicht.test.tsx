@@ -354,7 +354,7 @@ describe('Hauptsache (ANN-698)', () => {
   it('sagt ohne Aufgabe und ohne Termin, dass gerade nichts zu tun ist', async () => {
     ladeBefundbogen.mockResolvedValue(BOGEN_FERTIG);
     zeige();
-    const leer = await screen.findByText('Gerade ist nichts zu tun.');
+    const leer = await screen.findByText('Gerade nichts zu tun.');
     expect(screen.getByText('Zurzeit ist kein Termin vereinbart.')).toBeInTheDocument();
     expect(screen.queryByRole('region')).not.toBeInTheDocument();
     // An der Stelle der Hero-Karte, mit Karten darunter: in der Karte (DESIGN.md Regel 8).
@@ -366,9 +366,7 @@ describe('Hauptsache (ANN-698)', () => {
     ladeCheckins.mockResolvedValue(checkin());
     const erstes = zeige();
     const hero = await screen.findByRole('region', { name: 'Ihr Check-in für heute' });
-    expect(
-      within(hero).getByText('3 kurze Fragen, freiwillig, etwa 1 Minute.'),
-    ).toBeInTheDocument();
+    expect(within(hero).getByText('3 kurze Fragen, freiwillig, etwa 1 Minute')).toBeInTheDocument();
     expect(within(hero).getByRole('link', { name: 'Check-in beantworten' })).toHaveAttribute(
       'href',
       '/p/checkin?bereich=treatment',
@@ -669,10 +667,8 @@ describe('Training, Begleitung, Lesefrist', () => {
         <Uebersicht zugang={BEGLEITUNG} />
       </>,
     );
-    expect(await screen.findByText('Gerade ist nichts zu tun.')).toBeInTheDocument();
-    expect(
-      screen.queryByText('Die Übersicht lässt sich gerade nicht laden.'),
-    ).not.toBeInTheDocument();
+    expect(await screen.findByText('Gerade nichts zu tun.')).toBeInTheDocument();
+    expect(screen.queryByText('Übersicht nicht geladen.')).not.toBeInTheDocument();
   });
 
   it('zeigt ohne Netz den Stand, sobald die Termine da sind (ANN-699)', async () => {
@@ -946,12 +942,10 @@ describe('Zustände', () => {
     vi.setSystemTime(new Date(2026, 9, 22, 13, 0));
     ladeNachrichten.mockRejectedValue(new Error('Netz weg'));
     zeige();
-    expect(
-      await screen.findByText('Die Übersicht lässt sich gerade nicht laden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Übersicht nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Guten Tag' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
-    expect(screen.queryByText(/Gerade ist nichts zu tun/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Gerade nichts zu tun/)).not.toBeInTheDocument();
   });
 
   it('behält den Stand, wenn ein Nachladen scheitert, und sagt, dass er veraltet ist', async () => {
@@ -960,13 +954,9 @@ describe('Zustände', () => {
     await screen.findByRole('link', { name: /^Rechnung RG-2026-0001/ });
     ladeRechnungen.mockRejectedValue(new Error('Netz weg'));
     act(() => focusManager.setFocused(true));
-    expect(
-      await screen.findByText(/Der angezeigte Stand konnte nicht aktualisiert werden/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Stand nicht aktuell/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^Rechnung RG-2026-0001/ })).toBeInTheDocument();
-    expect(
-      screen.queryByText('Die Übersicht lässt sich gerade nicht laden.'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Übersicht nicht geladen.')).not.toBeInTheDocument();
   });
 
   it('stellt den Hinweis „veraltet“ auch über die vorgezogene Hauptsache einer Vertretung (ANN-820)', async () => {
@@ -975,9 +965,7 @@ describe('Zustände', () => {
     const hero = await screen.findByRole('region', { name: 'Besuch bei Max Mustermann' });
     ladeTermine.mockRejectedValue(new Error('Netz weg'));
     act(() => focusManager.setFocused(true));
-    const hinweis = await screen.findByText(
-      /Der angezeigte Stand konnte nicht aktualisiert werden/,
-    );
+    const hinweis = await screen.findByText(/Stand nicht aktuell/);
     expect(hinweis.compareDocumentPosition(hero) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -1000,7 +988,11 @@ describe('Zustände', () => {
 
   it('bestätigt den abgeschickten Befundbogen', async () => {
     zeige(ZUGANG, '/p?bereich=treatment&bogen=1');
-    expect(await screen.findByText(/Ihr Fragebogen ist bei der Praxis/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'Fragebogen gesendet. Ihre Therapeut:in sieht Ihre Angaben beim nächsten Termin.',
+      ),
+    ).toBeInTheDocument();
   });
 });
 

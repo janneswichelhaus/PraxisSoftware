@@ -275,11 +275,11 @@ export function CallListPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Anrufliste wird geladen …"
-        fehler="Die Anrufliste konnte nicht geladen werden."
+        fehler="Anrufliste nicht geladen."
         inKarte
         leer={{
           wenn: (eintraege) => eintraege.length === 0,
-          titel: 'An diesem Tag stehen keine Behandlungstermine.',
+          titel: 'Keine Behandlungstermine.',
         }}
       >
         {(eintraege) => {
@@ -290,7 +290,7 @@ export function CallListPage({ user }: { user: CurrentUser }) {
               <Listenabschnitt
                 titel="Anzurufen"
                 anzahl={anzurufen.length}
-                leer={{ titel: 'Alle Termine dieses Tages sind mitgeteilt.' }}
+                leer={{ titel: 'Alle mitgeteilt.' }}
               >
                 {anzurufen.map((entry) => (
                   <AnrufZeile

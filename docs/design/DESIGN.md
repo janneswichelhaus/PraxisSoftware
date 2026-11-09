@@ -13,7 +13,7 @@ vorgeführt in [`ui-bausteine.html`](../../tests/e2e/fixtures/ui-bausteine.html)
 2. **Sonnenlicht.** Weiß, Tinte, hoher Kontrast; kein Dunkelmodus (ANN-401). Farbe nur für Marke
    und Bedeutung (L5).
 3. **Ziele ≥ 44 px**, auch mit Handschuhen. Zeile 56, Knopf 48 (kompakt 44), Feld 48.
-4. **Weniger zeigen** (L1, L2): eine Karte je Aufgabe, Seltenes eingeklappt, keine Erklärsätze.
+4. **Weniger zeigen** (L1, L2, L7): eine Karte je Aufgabe, Seltenes eingeklappt, keine Erklärsätze.
 5. **Arbeit an jeder Zeile** (L3), Status als Zeichen und Wort.
 
 ## Tokens (kurz)
@@ -72,7 +72,7 @@ Ratsche zählt dort weder Überschriften noch Tabellen.
 | Vergleichen, Beträge in Spalten       | `Datenliste`                                           |
 | 2–4 herausgehobene Angaben            | `TileGrid` + `Tile`                                    |
 | Beschriftete Angaben                  | `DetailList` / `DetailRow`                             |
-| Seltenes, Archiv, Hilfe auf Abruf     | `Disclosure`                                           |
+| Seltenes, Archiv                      | `Disclosure`                                           |
 | Suche und Filter über einer Liste     | `Filterleiste`: `SearchField`, `Select`, `Filterchips` |
 | 2–4 Ansichten, genau eine gilt        | `Segment`                                              |
 | Sprungziel, Filterwert                | `Chip` / `Filterchips`                                 |
@@ -98,9 +98,9 @@ Ratsche zählt dort weder Überschriften noch Tabellen.
 4. **Ein Hauptknopf je Ansicht.** Reihenfolge primär → sekundär → leise; Größe nach Ort: Seite 48,
    Kopf, Karte, Zeile 44. Nur `Button`, `ButtonLink`, `Symbolknopf`, `Chip`, `Segment`.
 5. **Status = Zeichen + Wort** (`Badge`, `StatusMark`); der Regelfall trägt kein Abzeichen.
-6. **Keine Erklärsätze.** Beschreibung im Kopf höchstens eine Zeile; Hilfe auf Abruf
-   (`Disclosure` „So geht’s“); Hinweis am Feld nur, wenn er die Eingabe ändert; Rechtssätze
-   (Protokollierung, Navigation, MDR) als `Kleingedrucktes`.
+6. **Keine Erklärsätze** (L7): Titel, Beschriftung und Knopf tragen die Seite; im Kopf Daten statt
+   Satz; Hinweis am Feld nur, wenn er die Eingabe ändert; Rechtssätze (Protokollierung, Navigation,
+   MDR) als `Kleingedrucktes`.
 7. **Breiten und Abstände nur aus Tokens und Rhythmus**; neue Seiten ohne `mt-5`, `mt-10`,
    `max-w-xl/2xl/3xl`.
 8. **Zustände über `Abfragezustand`**; Leerzustand in der Karte, wenn daneben Karten stehen.
@@ -117,7 +117,7 @@ Ratsche zählt dort weder Überschriften noch Tabellen.
 - zwölf Abschnitte auf einer Objektseite → `Objektkopf` + `Reiterleiste`.
 - Suche und drei Filter offen über der Liste → `Filterleiste`.
 - `isPending ? … : isError ? …` von Hand → `Abfragezustand`.
-- `max-w-xl/2xl/3xl` → `max-w-formular` / `max-w-spalte`; erklärender Satz → weglassen.
+- `max-w-xl/2xl/3xl` → `max-w-formular` / `max-w-spalte`; Erklärsatz, „So geht’s“ → weglassen.
 
 ## Entscheidungen zu den Lücken des Maßstabs
 
@@ -155,7 +155,7 @@ diesem Dokument bauen. Darunter: Grenze auf den neuen Stand senken. Nie heben.
 3. Haupthandlung mit dem Daumen erreichbar; genau ein Hauptknopf.
 4. Listen über `ListRow`, Tabellen über `Datenliste`, Aufklapper über `Disclosure`.
 5. Kein Kasten im Kasten; höchstens vier Kacheln.
-6. Kein Erklärsatz; Beschreibung eine Zeile.
+6. Kein Erklärsatz (L7), Ratsche `saetze` grün.
 7. Laden, Fehler, Leer, Veraltet über `Abfragezustand`.
 8. Status als Zeichen und Wort; Regelfall ohne Abzeichen.
 9. Breiten und Abstände aus Tokens und Rhythmus.

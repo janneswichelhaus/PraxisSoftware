@@ -100,9 +100,8 @@ test('bietet bei zu knapper Anfahrt „Auf 16:25 verschieben“ in voller Breite
   const rueckfahrt = (await auskunft.getByText(/Rückfahrt: passt/).boundingBox())!;
   expect(box.y).toBeGreaterThanOrEqual(anfahrt.y + anfahrt.height);
   expect(box.y + box.height).toBeLessThanOrEqual(rueckfahrt.y);
-  await expect(
-    auskunft.getByText('Nur Auskunft – der Termin lässt sich trotzdem anlegen.'),
-  ).toBeVisible();
+  // L7: Der Knopf zum Anlegen bleibt offen; ein Satz dazu entfällt.
+  await expect(auskunft.getByText(/Nur Auskunft/)).toHaveCount(0);
   await ohneUeberlauf(page);
 
   await knopf.click();

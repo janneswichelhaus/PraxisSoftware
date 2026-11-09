@@ -133,14 +133,9 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
         <Abfragezustand
           abfrage={patient}
           laden="Patientendaten werden geladen …"
-          fehler="Die Patientendaten konnten nicht geladen werden."
+          fehler="Patientendaten nicht geladen."
         >
-          {() => (
-            <ErrorState
-              title="Nicht gefunden"
-              description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-            />
-          )}
+          {() => <ErrorState title="Nicht gefunden" />}
         </Abfragezustand>
       </>
     );
@@ -206,14 +201,12 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
           <>
             {wartelisteId ? (
               <p className="text-ink mb-3 max-w-prose text-sm">
-                Aus der Warteliste: Mit dem Termin wird der Eintrag als eingeplant geschlossen.
+                Aus der Warteliste: Der Eintrag wird mit dem Termin geschlossen.
               </p>
             ) : null}
             {verordnungId ? (
               <p className="text-ink mb-6 max-w-prose text-sm">
-                {grundlageText
-                  ? `Der Termin wird dieser Behandlungsgrundlage zugeordnet: ${grundlageText}.`
-                  : 'Der Termin wird der Behandlungsgrundlage zugeordnet, aus der er geplant wird.'}
+                Grundlage: {grundlageText ?? 'wie gewählt'}
               </p>
             ) : null}
           </>

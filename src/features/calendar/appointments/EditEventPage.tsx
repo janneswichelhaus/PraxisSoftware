@@ -9,10 +9,8 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { roleLabels } from '@/components/ui/roleLabels';
 import {
   EINGABETEXTE,
   useTextverlustschutz,
@@ -40,7 +38,6 @@ import {
   type EreignisFormValues,
 } from './api';
 import { formatDate } from '@/lib/datum';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { fetchLocations } from '@/features/workforce';
 import { appointmentStatusLabels, kalenderZumTermin, zurueckZumTermin } from '@/lib/termin';
 
@@ -199,12 +196,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
   }
 
   if (!canManageAppointments(user.roles)) {
-    return (
-      <ErrorState
-        title="Nicht freigegeben"
-        description={`Fehlzeiten bearbeiten dürfen alle vier Praxisrollen: ${roleLabels.owner}, ${roleLabels.therapist}, ${roleLabels.team_lead} und ${roleLabels.office}.`}
-      />
-    );
+    return <ErrorState title="Nicht freigegeben" />;
   }
 
   if (termin.isPending || standorte.isPending) {
@@ -218,11 +210,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
     return (
       <>
         <Rueckweg standard="/kalender" />
-        <ErrorState
-          title="Die Fehlzeit konnte nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => termin.refetch()}
-        />
+        <ErrorState title="Fehlzeit nicht geladen." onErneut={() => termin.refetch()} />
       </>
     );
   }
@@ -253,7 +241,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
         </Link>
         <ErrorState
           title="Keine Fehlzeit"
-          description="Dieser Weg gilt für Fehlzeiten des Praxisbetriebs. Ein Behandlungstermin wird über „Bearbeiten“ geändert."
+          description="Ein Behandlungstermin wird über „Bearbeiten“ geändert."
         />
       </>
     );
@@ -270,7 +258,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
         </Link>
         <ErrorState
           title="Abgesagte Fehlzeiten werden nicht bearbeitet"
-          description="Die Fehlzeit bleibt zur Nachvollziehbarkeit erhalten. Für einen neuen Zeitraum bitte eine neue Fehlzeit eintragen."
+          description="Für einen neuen Zeitraum eine neue Fehlzeit eintragen."
         />
       </>
     );
@@ -348,8 +336,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                   <span>
                     <span className="text-ink block font-medium">Nur diese Fehlzeit</span>
                     <span className="text-ink-muted block text-sm">
-                      Am {formatDate(werte.date)}. Die übrigen Vorkommen der Serie bleiben, wie sie
-                      sind.
+                      Am {formatDate(werte.date)}
                     </span>
                   </span>
                 </label>
@@ -364,8 +351,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                   <span>
                     <span className="text-ink block font-medium">Die ganze Serie</span>
                     <span className="text-ink-muted block text-sm">
-                      {kommende.length} kommende von {serienVorkommen.length} Vorkommen. Die Tage
-                      bleiben – geändert werden Bezeichnung, Uhrzeit, Dauer, Art und Ort.
+                      {kommende.length} kommende von {serienVorkommen.length} Vorkommen
                     </span>
                   </span>
                 </label>
@@ -385,11 +371,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
             datumFest={umfang === 'serie' ? 'Die Tage der Serie bleiben, wie sie sind.' : undefined}
             standorteFehler={
               standorte.isError ? (
-                <ErrorState
-                  title="Die Standorte konnten nicht geladen werden."
-                  description={VERBINDUNG_PRUEFEN}
-                  onErneut={() => standorte.refetch()}
-                />
+                <ErrorState title="Standorte nicht geladen." onErneut={() => standorte.refetch()} />
               ) : null
             }
             beteiligte={
@@ -403,8 +385,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                     <LoadingState label="Beteiligte werden geladen …" inKarte />
                   ) : beteiligte.isError ? (
                     <ErrorState
-                      title="Die Beteiligten konnten nicht geladen werden."
-                      description={VERBINDUNG_PRUEFEN}
+                      title="Beteiligte nicht geladen."
                       onErneut={() => beteiligte.refetch()}
                     />
                   ) : (
@@ -424,10 +405,6 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                     </ListRows>
                   )}
                 </div>
-                {/* Ein Satz statt dreier: Der Weg steht an jedem Namen (UX-005g). */}
-                <Kleingedrucktes className="mt-2">
-                  Teilnahme am jeweiligen Termin ändern.
-                </Kleingedrucktes>
               </div>
             }
           />

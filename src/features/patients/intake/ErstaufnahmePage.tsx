@@ -5,7 +5,6 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState } from '@/components/ui/Feedback';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -69,7 +68,7 @@ export function ErstaufnahmePage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={patient}
         laden="Erstaufnahme wird geladen …"
-        fehler="Die Erstaufnahme konnte nicht geladen werden."
+        fehler="Erstaufnahme nicht geladen."
       >
         {(daten) =>
           daten ? (
@@ -77,10 +76,7 @@ export function ErstaufnahmePage({ user }: { user: CurrentUser }) {
           ) : (
             <>
               <PageHeader title="Erstaufnahme" />
-              <ErrorState
-                title="Nicht gefunden"
-                description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-              />
+              <ErrorState title="Nicht gefunden" />
             </>
           )
         }
@@ -151,8 +147,7 @@ function Schritte({
         {(checkliste.isError && !checklisteDa) || (erhebungen.isError && !erhebungenDa) ? (
           <div className="mb-8">
             <ErrorState
-              title="Der Stand der Erstaufnahme konnte nicht geladen werden."
-              description={VERBINDUNG_PRUEFEN}
+              title="Stand der Erstaufnahme nicht geladen."
               onErneut={() => {
                 if (checkliste.isError) void checkliste.refetch();
                 if (erhebungen.isError) void erhebungen.refetch();

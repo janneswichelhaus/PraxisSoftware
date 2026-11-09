@@ -56,7 +56,7 @@ export async function recordCallOutcome(
     p_appointment_id: appointmentId,
     p_outcome: outcome,
   })) as { error: unknown };
-  if (error) throw new Error('Der Anruf konnte nicht vermerkt werden. Bitte erneut versuchen.');
+  if (error) throw new Error('Der Anruf konnte nicht vermerkt werden.');
 }
 
 /** Wer muss noch angerufen werden? Wer schon mitgeteilt ist, nicht. */

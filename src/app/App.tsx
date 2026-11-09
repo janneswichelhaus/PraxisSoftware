@@ -109,7 +109,7 @@ function AngemeldeterInhalt() {
         <AblageRaeumen />
         <ErrorState
           title="Dieser Zugang ist gesperrt."
-          description="Bitte wenden Sie sich an die Praxisinhaber:in. Ihre bisherige Arbeit bleibt unverändert erhalten."
+          description="Bitte an die Praxisinhaber:in wenden. Ihre Arbeit bleibt erhalten."
         />
         <Button variant="secondary" className="mt-4 w-full" onClick={() => void abmelden()}>
           Abmelden
@@ -133,10 +133,7 @@ function AngemeldeterInhalt() {
   if (!user) {
     return (
       <Vollseite titel="Anwendung nicht geladen">
-        <ErrorState
-          title="Die Anwendung konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen. Sie bleiben angemeldet."
-        />
+        <ErrorState title="Die Anwendung konnte nicht geladen werden." />
         {/* Ohne Daten bleibt ein neuer Versuch im Zustand „Fehler" - nur
             `isFetching` sagt, dass gerade geladen wird (Zweitreview S3). */}
         <Button className="mt-4 w-full" disabled={isFetching} onClick={() => void refetch()}>
@@ -171,8 +168,8 @@ function AblageRaeumen() {
 }
 
 /** Die Zeile über der Anwendung nach einem gescheiterten Nachladen (BEF-046). */
-const PROFIL_NICHT_AKTUALISIERT = 'Ihr Profil ließ sich gerade nicht aktualisieren.';
-const ZUGANG_NICHT_AKTUALISIERT = 'Ihr Zugang ließ sich gerade nicht aktualisieren.';
+const PROFIL_NICHT_AKTUALISIERT = 'Profil nicht aktualisiert.';
+const ZUGANG_NICHT_AKTUALISIERT = 'Zugang nicht aktualisiert.';
 
 /**
  * Ein Konto ohne Praxisprofil: Plattformkonto oder Konto mit offener
@@ -215,11 +212,7 @@ function OhneProfil({
   if (data === undefined) {
     return (
       <Vollseite titel="Zugang nicht geladen">
-        <ErrorState
-          title="Ihr Zugang konnte nicht geladen werden."
-          description="Bitte prüfen Sie die Verbindung."
-          onErneut={refetch}
-        />
+        <ErrorState title="Ihr Zugang konnte nicht geladen werden." onErneut={refetch} />
         <Button variant="secondary" className="mt-4 w-full" onClick={onAbmelden}>
           Abmelden
         </Button>

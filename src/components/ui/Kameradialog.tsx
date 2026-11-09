@@ -78,8 +78,7 @@ export function Kameradialog({
     if (!kameraVerfuegbar()) {
       setZustand({
         art: 'fehler',
-        meldung:
-          'Die Kamera steht hier nicht zur Verfügung. Sie braucht eine sichere Verbindung (https) und einen Browser, der sie freigibt.',
+        meldung: 'Die Kamera steht hier nicht zur Verfügung.',
         erneut: false,
       });
       return;
@@ -160,7 +159,7 @@ export function Kameradialog({
         if (!bild) {
           setZustand({
             art: 'fehler',
-            meldung: 'Das Foto konnte nicht erzeugt werden. Bitte erneut versuchen.',
+            meldung: 'Das Foto konnte nicht erzeugt werden.',
             erneut: true,
           });
           return;

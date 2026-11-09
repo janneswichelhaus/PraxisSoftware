@@ -95,8 +95,9 @@ describe('Warteliste: Formular (PRX-001)', () => {
 
   it('fragt ohne Person zuerst nach der Patient:in', async () => {
     renderWithProviders(<NewWaitlistEntryPage />, '/warteliste/neu');
-    expect(await screen.findByText('Zuerst die Patient:in wählen.')).toBeInTheDocument();
-    expect(screen.getByLabelText('Patient:in suchen')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Patient:in suchen')).toBeInTheDocument();
+    // L7: Die Suche sagt den ersten Schritt; kein Satz im Kopf.
+    expect(screen.queryByText('Zuerst die Patient:in wählen.')).toBeNull();
   });
 
   it('legt einen Eintrag mit Wunschzeit und Grund an', async () => {

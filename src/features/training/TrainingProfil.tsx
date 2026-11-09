@@ -67,7 +67,7 @@ export function TrainingProfil({
       <Abfragezustand
         abfrage={sicht}
         laden="Voraussetzungen werden geladen …"
-        fehler="Die Voraussetzungen konnten nicht geladen werden."
+        fehler="Voraussetzungen nicht geladen."
       >
         {(daten) =>
           !daten ? null : bearbeiten ? (

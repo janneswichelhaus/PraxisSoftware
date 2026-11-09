@@ -29,7 +29,7 @@ export function NamentlicheRueckmeldungen({
     <Abfragezustand
       abfrage={liste}
       laden="Rückmeldungen werden geladen …"
-      fehler="Die Rückmeldungen konnten nicht geladen werden."
+      fehler="Rückmeldungen nicht geladen."
     >
       {(alle) => {
         const eintraege = art ? alle.filter((eintrag) => eintrag.kind === art) : alle;

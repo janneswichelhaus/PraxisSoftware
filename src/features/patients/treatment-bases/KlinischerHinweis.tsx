@@ -82,7 +82,7 @@ export function KlinischerHinweis({
     >
       <TextArea
         label="Behandlungsrelevanter Hinweis"
-        hint="Aus der Verordnung, etwa eine Belastungsgrenze. Klinisch: Lesen können alle, die die Dokumentation lesen. Leer lassen entfernt den Hinweis."
+        hint="Klinisch: Lesen können alle, die die Dokumentation lesen. Leer lassen entfernt den Hinweis."
         value={text}
         error={fehler}
         rows={3}

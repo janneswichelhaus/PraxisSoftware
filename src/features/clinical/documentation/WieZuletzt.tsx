@@ -50,7 +50,7 @@ export function WieZuletzt({
         return;
       }
       if (!text || !blick.last_note_appointment_start) {
-        setHinweis('Noch kein Eintrag vor diesem Termin.');
+        setHinweis('Kein früherer Eintrag.');
         return;
       }
       if (blick.last_note_visit_without_treatment) {
@@ -68,7 +68,7 @@ export function WieZuletzt({
         text,
       );
     } catch {
-      setHinweis('Der letzte Eintrag konnte nicht geladen werden.');
+      setHinweis('Letzter Eintrag nicht geladen.');
     } finally {
       setLaedt(false);
     }

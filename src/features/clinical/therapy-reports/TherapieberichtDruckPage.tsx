@@ -75,7 +75,7 @@ export function TherapieberichtDruckPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={bericht}
         laden="Bericht wird geladen …"
-        fehler="Der Bericht konnte nicht geladen werden."
+        fehler="Bericht nicht geladen."
       >
         {() => (
           <ErrorState

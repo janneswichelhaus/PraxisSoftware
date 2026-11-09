@@ -347,8 +347,8 @@ describe('Datenschutz der Akte', () => {
     );
 
     const meldung = await screen.findByRole('alert');
-    expect(meldung).toHaveTextContent('Die Datenschutzvermerke konnten nicht geladen werden.');
-    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen');
+    expect(meldung).toHaveTextContent('Datenschutzvermerke nicht geladen.');
+    expect(meldung).not.toHaveTextContent('Verbindung prüfen');
     await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
 
     expect(await screen.findAllByText('Nicht erteilt')).toHaveLength(2);

@@ -6,7 +6,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate, todayInTimeZone } from '@/lib/datum';
 import { leseRueckweg } from '@/lib/rueckweg';
@@ -80,12 +79,7 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
   });
 
   if (!canWriteTrainingClients(user.roles)) {
-    return (
-      <ErrorState
-        title="Nicht freigegeben"
-        description="Trainingstermine planen owner, Trainingsbetreuung und Büro."
-      />
-    );
+    return <ErrorState title="Nicht freigegeben" />;
   }
 
   const laufende = (kundinnen.data ?? []).filter((k) => k.status === 'active');
@@ -109,7 +103,7 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
           absenden: 'Trainingstermin anlegen',
           trotzdem: 'Trainingstermin trotzdem anlegen',
           laeuft: 'Wird angelegt …',
-          fehlerTitel: 'Der Trainingstermin konnte nicht angelegt werden.',
+          fehlerTitel: 'Trainingstermin nicht angelegt.',
           ungespeichert: 'Ungespeicherter Trainingstermin',
         }}
         abbrechenZiel={zurueck}
@@ -134,8 +128,7 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
             <Feldgruppe>
               {kundinnen.isError ? (
                 <ErrorState
-                  title={`Die ${BEGRIFFE.trainingskundInnen} konnten nicht geladen werden.`}
-                  description={VERBINDUNG_PRUEFEN}
+                  title={`${BEGRIFFE.trainingskundInnen} nicht geladen.`}
                   onErneut={() => kundinnen.refetch()}
                 />
               ) : (
@@ -163,8 +156,7 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
               {kunde && vereinbarungen.isError ? (
                 // Sonst sähe eine gescheiterte Abfrage aus wie „keine Vereinbarung“.
                 <ErrorState
-                  title="Die Vereinbarungen konnten nicht geladen werden."
-                  description={VERBINDUNG_PRUEFEN}
+                  title="Vereinbarungen nicht geladen."
                   onErneut={() => vereinbarungen.refetch()}
                 />
               ) : kunde ? (

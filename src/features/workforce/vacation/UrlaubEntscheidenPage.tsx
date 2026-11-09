@@ -90,7 +90,7 @@ export function UrlaubEntscheidenPage({ user }: { user: CurrentUser }) {
     <Abfragezustand
       abfrage={abfrage}
       laden="Antrag wird geladen …"
-      fehler="Der Antrag konnte nicht geladen werden."
+      fehler="Antrag nicht geladen."
       rahmen={(zustand) => (
         <>
           <PageHeader title="Urlaubsantrag" />
@@ -302,7 +302,7 @@ function Ablauf({
         <div className="flex flex-col gap-2">
           {abweichend.length > 0 ? (
             <Statusmeldung ton="fehler">
-              {`Abweichende Arbeitszeiten oder Freizeitausgleich am ${abweichend.map(tagKurz).join(', ')} – erst in der Planung ändern oder im Zeitkonto zurückweisen, dann genehmigen.`}
+              {`Abweichende Arbeitszeiten oder Freizeitausgleich am ${abweichend.map(tagKurz).join(', ')} – erst in der Planung ändern oder im Zeitkonto zurückweisen.`}
             </Statusmeldung>
           ) : null}
           {entscheiden.isError ? (

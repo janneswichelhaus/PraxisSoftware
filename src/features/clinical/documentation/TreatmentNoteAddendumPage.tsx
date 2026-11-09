@@ -288,7 +288,7 @@ export function TreatmentNoteAddendumPage({ user }: { user: CurrentUser }) {
     <DocumentationShell
       appointmentId={appointmentId}
       darf={canWriteTreatmentNote(user.roles)}
-      verweigert="Behandlungsdokumentation schreiben dürfen Therapeut:innen und Teamleitung."
+      verweigert="Nur Therapeut:innen und Teamleitung."
       eigenerKopf
     >
       {({ appointment, dokumentation, eingehend, zumTermin }) => {
@@ -301,10 +301,7 @@ export function TreatmentNoteAddendumPage({ user }: { user: CurrentUser }) {
               titel={patientName(appointment)}
               beschreibung={kopfzeileFuer('Nachtrag', appointment)}
             >
-              <ErrorState
-                title="Nicht gefunden"
-                description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
-              />
+              <ErrorState title="Nicht gefunden" />
             </ZustandMitRueckweg>
           );
         }
@@ -319,7 +316,6 @@ export function TreatmentNoteAddendumPage({ user }: { user: CurrentUser }) {
             >
               <EmptyState
                 title="Kein Nachtrag zum Nachtrag"
-                description="Ein Nachtrag ergänzt immer den ursprünglichen Eintrag. Bitte diesen ergänzen."
                 aktion={
                   <ButtonLink
                     to={mitRueckweg(
@@ -347,7 +343,7 @@ export function TreatmentNoteAddendumPage({ user }: { user: CurrentUser }) {
                 appointmentId={appointment.id}
                 eintrag={eintrag}
                 eingehend={eingehend}
-                beschreibung="Solange der Eintrag ein Entwurf ist, wird er schlicht bearbeitet. Einen Nachtrag gibt es erst nach der Finalisierung."
+                beschreibung="Nachtrag erst nach der Finalisierung."
               />
             </ZustandMitRueckweg>
           );

@@ -161,18 +161,14 @@ export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
   if (plaene.data === undefined) {
     return (
       <Ausweg titel={seitentitel} pfad={zurueck}>
-        <ErrorState
-          title="Ihre Übungen lassen sich gerade nicht laden."
-          description="Prüfen Sie die Verbindung oder versuchen Sie es gleich noch einmal."
-          onErneut={() => plaene.refetch()}
-        />
+        <ErrorState title="Übungen nicht geladen." onErneut={() => plaene.refetch()} />
       </Ausweg>
     );
   }
   if (!plan || !plan.can_exercise || plan.items.length === 0) {
     return (
       <Ausweg titel={seitentitel} pfad={zurueck}>
-        <EmptyState markenform title="Mit diesem Plan können Sie hier gerade nicht üben." />
+        <EmptyState markenform title="Mit diesem Plan gerade nicht möglich." />
       </Ausweg>
     );
   }
@@ -391,7 +387,7 @@ function Einheit({
     } catch {
       // Nicht einmal auf dem Gerät: zurücknehmen, was nicht gespeichert ist (ADR-001).
       setHaken((alt) => umschalten(alt, schluessel(position.id, durchgang), !erledigt));
-      setFehler('Nicht gespeichert. Bitte erneut tippen.');
+      setFehler('Nicht gespeichert.');
       setPause(null);
       return;
     } finally {
@@ -699,7 +695,7 @@ function useEinheitBeenden({
           },
         ));
       } catch {
-        throw new Error('Nicht gespeichert. Bitte erneut versuchen.');
+        throw new Error('Nicht gespeichert.');
       }
       merken(ende);
       if (!anstossen) return { ziel: 'gespeichert=geraet', tag: kopf.tag };
@@ -766,11 +762,7 @@ function Abschluss({
         />
       </div>
       <div className="flex flex-col gap-6">
-        {abgehakt > 0 ? null : (
-          <Statusmeldung>
-            Sie haben noch keinen Durchgang abgehakt. Ohne Haken gibt es nichts zu speichern.
-          </Statusmeldung>
-        )}
+        {abgehakt > 0 ? null : <Statusmeldung>Noch kein Durchgang abgehakt.</Statusmeldung>}
         <form
           id={formId}
           noValidate

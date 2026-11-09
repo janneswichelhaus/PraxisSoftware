@@ -30,7 +30,6 @@ import {
 import { Textlink } from '@/components/ui/Textlink';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { leseZahl } from '@/features/nutrition/eingabe';
 import { feldtext, QUELLENNAME, type Lebensmittel } from '@/features/nutrition/lebensmittel';
 import {
@@ -96,22 +95,14 @@ export function Tagebuch({ zugang }: { zugang: Plattformzugang }) {
       {data === undefined ? (
         abfrage.isError ? (
           <div className="mt-8">
-            <ErrorState
-              title="Ihr Tagebuch konnte nicht geladen werden."
-              description={VERBINDUNG_PRUEFEN}
-              onErneut={() => abfrage.refetch()}
-            />
+            <ErrorState title="Tagebuch nicht geladen." onErneut={() => abfrage.refetch()} />
           </div>
         ) : (
           <Ladezustand />
         )
       ) : data === null ? (
         <div className="mt-8">
-          <EmptyState
-            markenform
-            title="Zurzeit keine Ernährungsberatung"
-            description="Vereinbaren Sie eine Ernährungsberatung mit Ihrer Praxis, finden Sie sie hier."
-          />
+          <EmptyState markenform title="Zurzeit keine Ernährungsberatung" />
         </div>
       ) : (
         <Inhalt
@@ -808,7 +799,7 @@ function EintragFenster({
       fehler={loeschen.error?.message}
       onBestaetigen={() => loeschen.mutateAsync()}
     >
-      <p>„{eintrag.name}“ wird aus dem Tagebuch gelöscht.</p>
+      <p>„{eintrag.name}“ löschen?</p>
     </Rueckfrage>
   ) : (
     <Button type="button" variant="quiet" className={GESPERRT} {...sperre}>

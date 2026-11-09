@@ -398,9 +398,7 @@ describe('Therapiebericht: Nachladen', () => {
     fetchBericht.mockRejectedValue(new Error('Funkloch'));
     act(() => focusManager.setFocused(true));
 
-    expect(
-      await screen.findByText(/Der Stand konnte nicht aktualisiert werden\./),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Stand nicht aktuell\./)).toBeInTheDocument();
     expect(feld).toHaveValue('Mein Bericht');
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
@@ -419,10 +417,8 @@ describe('Therapiebericht: Zustände', () => {
     const user = userEvent.setup();
     zeigeFormular();
 
-    expect(await screen.findByText('Der Bericht konnte nicht geladen werden.')).toBeInTheDocument();
-    expect(
-      screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Bericht nicht geladen.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     expect(screen.queryByText(/angemeldet/)).toBeNull();
     // Beschriftet wie der Reiter, mit dem Kopf der Seite (Sichtung A7, A8).
     expect(
@@ -476,9 +472,7 @@ describe('Therapiebericht: Auswahl der Einträge', () => {
 
     const abschliessen = await screen.findByRole('button', { name: 'Bericht abschließen' });
     expect(abschliessen).toBeDisabled();
-    expect(abschliessen).toHaveAccessibleDescription(
-      'Höchstens 50 Einträge – ein Bericht ist keine Kopie der Akte.',
-    );
+    expect(abschliessen).toHaveAccessibleDescription('Höchstens 50 Einträge – bitte abwählen.');
     expect(screen.getByRole('button', { name: 'Entwurf speichern' })).toBeDisabled();
   });
 
@@ -560,7 +554,7 @@ describe('Therapiebericht als Blatt', () => {
     fetchBericht.mockRejectedValue(new Error('kaputt'));
     zeigeDruck();
 
-    expect(await screen.findByText('Der Bericht konnte nicht geladen werden.')).toBeInTheDocument();
+    expect(await screen.findByText('Bericht nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText(/angemeldet/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     // Beschriftet wie der Reiter, mit dem Kopf der Seite (Sichtung A7, A8).

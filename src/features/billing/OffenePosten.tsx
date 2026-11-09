@@ -124,12 +124,8 @@ export function OffenePosten({
       <Abfragezustand
         abfrage={posten}
         laden="Offene Posten werden geladen …"
-        fehler="Die offenen Posten konnten nicht geladen werden."
-        leer={{
-          wenn: (daten) => daten.length === 0,
-          titel: 'Nichts offen',
-          beschreibung: 'Jede ausgestellte Rechnung ist bezahlt.',
-        }}
+        fehler="Offene Posten nicht geladen."
+        leer={{ wenn: (daten) => daten.length === 0, titel: 'Nichts offen' }}
         inKarte
       >
         {(daten) =>
@@ -309,7 +305,7 @@ function Sammelbuchung({
     onFertig(
       fehlgeschlagen.length === 0
         ? `${erfolg} ${formatEuro(summe, posten[0]?.currency)} am ${formatDate(tag)}.`
-        : `${erfolg} Nicht gebucht: ${fehlgeschlagen.join(', ')}. Bitte an der Zeile einzeln buchen.`.trim(),
+        : `${erfolg} Nicht gebucht: ${fehlgeschlagen.join(', ')}.`.trim(),
       fehlgeschlagen.length === 0 ? 'erfolg' : 'fehler',
     );
   }

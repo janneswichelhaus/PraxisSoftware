@@ -96,7 +96,7 @@ export function Sprechleiste({
             bestaetigen="Ja, verwerfen"
             onBestaetigen={diktat.verwerfen}
           >
-            Die Aufnahme ist nicht gespeichert und lässt sich danach nicht zurückholen.
+            Die Aufnahme geht verloren.
           </Rueckfrage>
           <Button type="button" groesse="normal" disabled={!verbunden} onClick={diktat.erneut}>
             Erneut senden
@@ -113,7 +113,7 @@ export function Sprechleiste({
 
   const nutzbar = diktat.verfuegbar && verbunden;
   const grund = !diktat.verfuegbar
-    ? 'Auf diesem Gerät nicht verfügbar – bitte tippen.'
+    ? 'Auf diesem Gerät nicht verfügbar.'
     : !verbunden
       ? 'Ohne Netz nicht verfügbar.'
       : undefined;
@@ -248,7 +248,7 @@ export function VorschlagAusAufnahme({
               bestaetigen="Ja, verwerfen"
               onBestaetigen={diktat.verwerfen}
             >
-              Der Vorschlag ist nicht gespeichert; die Aufnahme lässt sich nicht zurückholen.
+              Vorschlag und Aufnahme gehen verloren.
             </Rueckfrage>
           </div>
           <Kleingedrucktes>

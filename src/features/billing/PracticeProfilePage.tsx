@@ -9,7 +9,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Formularfuss } from '@/components/ui/Formularfuss';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { alsFormularfehler, type Formularfehler } from '@/lib/formularfehler';
 import { canManageBillingProfile, type CurrentUser } from '@/features/core';
@@ -165,18 +164,11 @@ export function PracticeProfilePage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <PageHeader
-        title="Praxisstammdaten"
-        description="Der Absender jeder Rechnung: Anschrift, Bankverbindung, Steuernummer."
-      />
+      <PageHeader title="Praxisstammdaten" />
 
       {stammdaten.isPending ? <LoadingState label="Stammdaten werden geladen …" /> : null}
       {stammdaten.isError ? (
-        <ErrorState
-          title="Die Praxisstammdaten konnten nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => stammdaten.refetch()}
-        />
+        <ErrorState title="Praxisstammdaten nicht geladen." onErneut={() => stammdaten.refetch()} />
       ) : null}
 
       {stammdaten.isSuccess && !darfPflegen ? <Auskunft stammdaten={stammdaten.data} /> : null}
@@ -197,8 +189,7 @@ function Auskunft({ stammdaten }: { stammdaten: PraxisStammdaten | null }) {
   if (stammdaten === null) {
     return (
       <Statusmeldung ton="warnung">
-        Es sind noch keine Praxisstammdaten erfasst. Ohne sie lässt sich keine Rechnung ausstellen;
-        erfassen kann sie die Praxisinhaber:in.
+        Noch keine Praxisstammdaten. Erfassen kann sie die Praxisinhaber:in.
       </Statusmeldung>
     );
   }
@@ -374,7 +365,7 @@ function Formular({
           <Field
             label="Steuernummer"
             feldId={feldId('tax_number')}
-            hint="Steuernummer oder USt-IdNr. – eine von beiden muss stehen."
+            hint="oder USt-IdNr., eine von beiden"
             error={fehler.tax_number}
             value={text('tax_number')}
             onChange={(e) => setzen('tax_number', e.target.value || null)}
@@ -385,7 +376,7 @@ function Formular({
             label="Umsatzsteuerlicher Status *"
             feldId={feldId('steuerstatus')}
             error={fehler.steuerstatus}
-            hint="Bitte selbst setzen – die Anwendung rät ihn nicht. Bei Regelbesteuerung weist die Rechnung Umsatzsteuer aus, als Kleinunternehmer:in nicht."
+            hint="Bei Regelbesteuerung weist die Rechnung Umsatzsteuer aus, als Kleinunternehmer:in nicht."
             value={steuerstatus}
             onChange={(e) => {
               setSteuerstatus(e.target.value);
@@ -437,7 +428,7 @@ function Formular({
         <Feldgruppe>
           <Field
             label="Kürzel der Rechnungsnummer (Behandlung)"
-            hint="Die Nummer entsteht daraus als Kürzel-Jahr-laufende Zahl, etwa RG-2026-0001."
+            hint="ergibt etwa RG-2026-0001"
             value={eingabe.invoice_number_prefix}
             onChange={(e) => setzen('invoice_number_prefix', e.target.value.toUpperCase())}
           />
@@ -445,7 +436,7 @@ function Formular({
             label="Kürzel der Rechnungsnummer (Training)"
             feldId={feldId('training_invoice_number_prefix')}
             error={fehler.training_invoice_number_prefix}
-            hint="Jeder Bereich führt einen eigenen, lückenlosen Kreis; die beiden Kürzel müssen sich unterscheiden."
+            hint="anders als bei Behandlung"
             value={eingabe.training_invoice_number_prefix}
             onChange={(e) => setzen('training_invoice_number_prefix', e.target.value.toUpperCase())}
           />
@@ -462,14 +453,12 @@ function Formular({
 
       {speichern.isError ? (
         <Statusmeldung ton="fehler" className="mt-3">
-          {speichern.error.message} Die Eingaben stehen noch im Formular. Bitte die Verbindung
-          prüfen und erneut speichern.
+          {speichern.error.message}
         </Statusmeldung>
       ) : null}
       {speichern.isSuccess ? (
         <Statusmeldung ton="erfolg" className="mt-3">
-          Gespeichert. Ausgestellte Rechnungen bleiben davon unberührt – sie tragen die Angaben, die
-          beim Ausstellen galten.
+          Gespeichert. Ausgestellte Rechnungen bleiben unberührt.
         </Statusmeldung>
       ) : null}
 

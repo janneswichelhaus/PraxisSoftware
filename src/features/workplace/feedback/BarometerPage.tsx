@@ -32,7 +32,7 @@ export function BarometerPage({ user }: { user: CurrentUser }) {
     <Abfragezustand
       abfrage={status}
       laden="Barometer wird geladen …"
-      fehler="Das Barometer konnte nicht geladen werden."
+      fehler="Barometer nicht geladen."
       rahmen={(zustand) => (
         <>
           <PageHeader title="Barometer" />
@@ -90,7 +90,6 @@ function Abgeben({ stand }: { stand: FeedbackStatus }) {
         <EmptyState
           inKarte
           title={`Für ${name} schon abgegeben`}
-          description="Das nächste Barometer gibt es im nächsten Monat."
           aktion={
             <ButtonLink to={rueckweg} variant="secondary">
               Zurück
@@ -111,7 +110,7 @@ function Antworten() {
   return (
     <>
       <Rueckweg standard={EINGANG} />
-      <PageHeader title="Barometer" description="Mit Namen, die neueste zuerst" />
+      <PageHeader title="Barometer" />
       <NamentlicheRueckmeldungen art="barometer" titel="Antworten" />
     </>
   );

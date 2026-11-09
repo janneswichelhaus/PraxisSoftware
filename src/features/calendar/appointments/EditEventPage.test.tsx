@@ -158,8 +158,9 @@ describe('EditEventPage', () => {
     expect(screen.getByText('Tim Teamleitung')).toBeInTheDocument();
     // Keine Ankreuzfelder: Wer teilnimmt, ist eine Teilnahme und kein Ereignis.
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-    // Ein Satz, der auf den Weg am Namen zeigt (UX-005g).
-    expect(screen.getByText('Teilnahme am jeweiligen Termin ändern.')).toBeInTheDocument();
+    // L7: Der Weg steht am Namen selbst, ohne Satz dazu.
+    expect(screen.getByRole('link', { name: 'Anna Beispiel' })).toBeInTheDocument();
+    expect(screen.queryByText('Teilnahme am jeweiligen Termin ändern.')).toBeNull();
   });
 
   it('schreibt die Aenderung auf dem Stand der GRUPPE', async () => {
@@ -300,7 +301,7 @@ describe('EditEventPage', () => {
     rendern();
 
     const kasten = await screen.findByRole('alert');
-    expect(kasten).toHaveTextContent('Die Fehlzeit konnte nicht geladen werden.');
+    expect(kasten).toHaveTextContent('Fehlzeit nicht geladen.');
     expect(kasten).not.toHaveTextContent(/Nicht gefunden|nicht freigegeben/);
     expect(within(kasten).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toBeInTheDocument();
@@ -385,9 +386,7 @@ describe('EditEventPage', () => {
     rendern();
 
     await screen.findByLabelText('Bezeichnung *');
-    expect(
-      await screen.findByText('Die Beteiligten konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Beteiligte nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Änderungen speichern' })).toBeDisabled();
   });
 });

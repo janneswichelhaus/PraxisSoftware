@@ -228,7 +228,7 @@ export function Uebungsauswahl({
       />
       {katalogFehlt ? (
         <Statusmeldung ton="warnung" className="mb-3">
-          Nicht alle Übungen konnten geladen werden.
+          Nicht alle Übungen geladen.
         </Statusmeldung>
       ) : null}
       {zeilen.length === 0 ? (
@@ -279,7 +279,7 @@ export function Uebungsauswahl({
       {bibliothek.can_manage && zeilen.length > 0 ? (
         <div className="mt-2">
           <Button type="button" variant="quiet" groesse="kompakt" onClick={() => setAnlegen(true)}>
-            Nicht dabei? Übung anlegen
+            Übung anlegen
           </Button>
         </div>
       ) : null}
