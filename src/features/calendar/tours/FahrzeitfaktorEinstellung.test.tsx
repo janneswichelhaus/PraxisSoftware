@@ -44,9 +44,7 @@ describe('FahrzeitfaktorEinstellung', () => {
     fetchFahrzeitfaktor.mockRejectedValue(new Error('weg'));
     renderWithProviders(<FahrzeitfaktorEinstellung />);
 
-    expect(
-      await screen.findByText(/Fahrzeitfaktor konnte nicht geladen werden/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Fahrzeitfaktor nicht geladen/)).toBeInTheDocument();
     expect(screen.getByLabelText('Faktor')).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Faktor speichern' })).toBeDisabled();
     expect(saveFahrzeitfaktor).not.toHaveBeenCalled();

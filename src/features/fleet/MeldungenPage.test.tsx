@@ -142,8 +142,6 @@ describe('Meldungen der Flotte', () => {
   it('nennt die abgewiesene Berechtigung', async () => {
     fetchFleetReports.mockRejectedValue(new Error('Dafür fehlt die Berechtigung.'));
     oeffneListe();
-    expect(
-      await screen.findByText(/Die Meldungen konnten nicht geladen werden/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Meldungen nicht geladen/)).toBeInTheDocument();
   });
 });

@@ -154,9 +154,7 @@ describe('PraxisEinstellungenPage (ORG-002)', () => {
       fetchDocumentationDeadline.mockRejectedValue(new Error('kaputt'));
       rendern();
 
-      expect(
-        await screen.findByText(/Die Dokumentationsfrist konnte nicht geladen werden/),
-      ).toBeInTheDocument();
+      expect(await screen.findByText(/Dokumentationsfrist nicht geladen/)).toBeInTheDocument();
       const auswahl = screen.getByLabelText('Frist');
       expect(auswahl).toBeDisabled();
       expect(auswahl).toHaveTextContent('Nicht geladen');
