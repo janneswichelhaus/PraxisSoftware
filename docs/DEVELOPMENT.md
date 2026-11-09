@@ -1,6 +1,6 @@
 # Entwicklungsumgebung
 
-Stand 2026-10-27 · Werkzeug, Befehle, Umgebungen; verbindlich sind `PROJECT_PRINCIPLES.md` und
+Stand 2026-11-09 · Werkzeug, Befehle, Umgebungen; verbindlich sind `PROJECT_PRINCIPLES.md` und
 `docs/adr/`.
 
 > **Nur synthetische Daten**, in jeder Entwicklungs-, Test- und Demoumgebung und in Design-Entwürfen
@@ -182,6 +182,14 @@ kopieren); Zeilenenden sind überall LF (`.gitattributes`).
 - **Aufgaben:** je Session `/weiter <Aufgabe>` in verschiedenen Modulen, sonst nehmen beide
   dieselbe; die zweite PR vor dem Merge auf `main` nachziehen, danach `git worktree remove`.
 
+## Wartungsmodus
+
+Für Fehler und Anpassungen (Regel: `CLAUDE.md`, „Arbeitsweise“). Jannes hält fest, was passiert,
+mit Seite, Rolle, Ist und Soll: als GitHub-Issue, als Zeile in `development/BEFUNDE.md` oder als
+Satz in der Session, nie mit echten Patientendaten. Claude schreibt zuerst einen Test, der ohne die
+Änderung rot ist, dann die Änderung, prüft gezielt und öffnet eine PR. Einmal im Monat eine kleine
+Session für Abhängigkeiten und Sicherheitsupdates, auch für die feste Supabase-CLI-Version (oben).
+
 ## Test-Umgebung (OPS-002a)
 
 Die Anwendung am eigenen Handy, von überall: `https://prtest.uber.space`, dahinter das
@@ -196,11 +204,6 @@ geprüften Commit ein (nie ein `service_role`- oder `sb_secret_`-Schlüssel im B
 **Neu aufsetzen** (verwirft alles außer Passkeys und PIN): Actions → „Test-Umgebung“ → „Run workflow“ mit Haken bei
 „neu aufsetzen“, spätestens nach einer Woche (die Praxiswoche reicht von vorgestern bis in vier
 Tagen, ANN-100); dazu zwölf Testpatient:innen, lokal bleiben es drei Personen für die Tests.
-
-**Basis übernehmen** (einmalig, Haken bei „basis_uebernehmen“, nach grüner CI auf `main`): Bis dahin
-überspringt der Workflow die Migrationen mit Warnung und bricht ab, wenn schon eine neue wartet; der
-Handstart stellt nur die Historie um, in einer Transaktion und nur bei genau den 341 alten
-Versionen (`supabase/testumgebung/basis-uebernehmen.sql`).
 
 **Zugang:** die Konten aus „Testkonten“, **nie** mit dem Entwicklungskennwort, dazu die zweite Tür
 (Secrets: [`betrieb/test-umgebung.md`](betrieb/test-umgebung.md), Schritt 4); das Kennwort ist nur
@@ -395,6 +398,3 @@ Diese Einstellungen lassen sich nicht aus dem Code setzen:
 - Gemergte Branches automatisch löschen („Automatically delete head branches“). „Allow auto-merge“
   gibt es auf diesem GitHub-Plan nicht; Jannes mergt nach grüner CI.
 - Dependabot oder eine vergleichbare Aktualisierung der Abhängigkeiten.
-- **Die Supabase-CLI-Version in `.github/workflows/ci.yml` von Hand erhöhen**
-  (<https://www.npmjs.com/package/supabase>): `latest` fragt bei jedem Lauf ohne Token die
-  GitHub-API und lief am 2026-09-05 ins Rate Limit; fest ist das Gate reproduzierbar (ADR-013).

@@ -82,6 +82,10 @@ Docker); vor E2E `reset` ohne `--reich` (`docs/DEVELOPMENT.md`). **`pnpm test:db
 - **`/bereich` ist der Standard** für Bereichsüberholungen, `/feature-loop` für Einzelaufträge an
   Datenmodell oder Rechten. Vorher `git fetch origin --prune` und offene PRs prüfen: nichts doppelt
   bauen. Vorschaubereiche: `docs/development/ARBEITSBEREICHE.md`.
+- **Wartungsmodus** (Jannes 2026-11-01) für Fehler und Anpassungen: eine Ursache je Session, ohne
+  `/bereich` und `/feature-loop` (Ablauf: `docs/DEVELOPMENT.md`). Statt der vier Dinge unten genügt
+  die PR-Beschreibung, eine Annahme nur bei echter Entscheidung; Bildstrecke nur der berührten
+  Seiten. K1, Zweitreview, Gates und `pnpm test:db` bleiben, wie sie sind.
 - **Oberfläche nur nach `docs/design/DESIGN.md`;** ein Auftrag zu einem Bereich gleicht **alle**
   seine Seiten an.
 - **Startinhalte** (Bibliotheken, Vorlagen, Textbausteine, Preisblatt-Entwürfe) gehören als
