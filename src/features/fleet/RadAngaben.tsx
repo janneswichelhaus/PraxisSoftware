@@ -106,7 +106,7 @@ export function RadAngaben({
             }}
           >
             <div className="flex flex-col gap-3">
-              <p>{rad.name} steht dann nicht mehr in der Planung, bis jemand es freigibt.</p>
+              <p>{rad.name} steht bis zur Freigabe nicht in der Planung.</p>
               <Field
                 label="Grund"
                 placeholder="z. B. Jahresinspektion"

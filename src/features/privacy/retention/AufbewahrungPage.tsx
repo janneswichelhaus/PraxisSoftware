@@ -73,9 +73,6 @@ import type { CurrentUser } from '@/features/core';
  * „Grundlagen“.
  */
 
-/** Der nächste Schritt nach einem Ladefehler (WRT-01). */
-const ERNEUT_LADEN = 'Bitte die Verbindung prüfen und später erneut versuchen.';
-
 /** Die Adresse der Seite; eine Datenklasse öffnet sich mit `?klasse=…`. */
 const SEITE = '/praxis/sicherheit/aufbewahrung';
 const KLASSE_PARAM = 'klasse';
@@ -236,10 +233,7 @@ function Klassendetail({ schluessel }: { schluessel: string }) {
               </div>
             </div>
           ) : (
-            <ErrorState
-              title="Diese Datenklasse gibt es im Aufbewahrungsplan nicht."
-              description="Bitte im Aufbewahrungsplan neu wählen."
-            />
+            <ErrorState title="Diese Datenklasse gibt es nicht." />
           )
         }
       </Abfragezustand>
@@ -414,7 +408,6 @@ function Loeschauftraege({
     return (
       <ErrorState
         title="Die offenen Löschaufträge konnten nicht geladen werden."
-        description={ERNEUT_LADEN}
         onErneut={() =>
           void queryClient.invalidateQueries({ queryKey: ['storage-deletion-orders'] })
         }
@@ -423,12 +416,7 @@ function Loeschauftraege({
   }
 
   if (auftraege.length === 0) {
-    return (
-      <EmptyState
-        title="Nichts offen"
-        description="Zu jeder gelöschten Datei ist auch die abgelegte Fassung entfernt und quittiert."
-      />
-    );
+    return <EmptyState title="Nichts offen" />;
   }
 
   const ergebnis = ausfuehren.data;
@@ -535,7 +523,6 @@ function Dateiabgleich({ user }: { user: CurrentUser }) {
     return (
       <ErrorState
         title="Der Abgleich konnte nicht gerechnet werden."
-        description={ERNEUT_LADEN}
         onErneut={() =>
           void queryClient.invalidateQueries({ queryKey: ['patient-file-reconciliation'] })
         }
@@ -545,15 +532,9 @@ function Dateiabgleich({ user }: { user: CurrentUser }) {
 
   if (fehlende.length === 0 && verwaiste === 0) {
     return offen.auftraege.length > 0 ? (
-      <EmptyState
-        title="Deckungsgleich, sobald die offenen Löschaufträge oben ausgeführt sind"
-        description="Die vorgemerkten Objekte liegen bis dahin noch in der Ablage."
-      />
+      <EmptyState title="Deckungsgleich, sobald die offenen Löschaufträge oben ausgeführt sind" />
     ) : (
-      <EmptyState
-        title="Beide Speicher sind deckungsgleich"
-        description="Zu jeder Datei in einer Akte liegt genau ein Objekt in der Ablage – und umgekehrt."
-      />
+      <EmptyState title="Beide Speicher sind deckungsgleich" />
     );
   }
 
@@ -601,8 +582,7 @@ function Dateiabgleich({ user }: { user: CurrentUser }) {
           <Statusmeldung ton="warnung">
             {verwaiste === 1
               ? 'Ein Objekt in der Ablage gehört zu keiner Datei mehr.'
-              : `${verwaiste} Objekte in der Ablage gehören zu keiner Datei mehr.`}{' '}
-            Sie sind Abfall und werden über einen gewöhnlichen Löschauftrag entfernt.
+              : `${verwaiste} Objekte in der Ablage gehören zu keiner Datei mehr.`}
           </Statusmeldung>
           <div className="mt-3">
             <Button type="button" disabled={vormerken.isPending} onClick={() => vormerken.mutate()}>
@@ -611,8 +591,7 @@ function Dateiabgleich({ user }: { user: CurrentUser }) {
           </div>
           {vormerken.isSuccess ? (
             <Statusmeldung ton="erfolg" className="mt-2">
-              {vormerken.data} Löschauftr{vormerken.data === 1 ? 'ag' : 'äge'} angelegt – oben unter
-              „Offene Löschaufträge“ ausführen.
+              {vormerken.data} Löschauftr{vormerken.data === 1 ? 'ag' : 'äge'} angelegt.
             </Statusmeldung>
           ) : null}
           {vormerken.isError ? (

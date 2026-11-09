@@ -55,8 +55,6 @@ export function ThreadsPage() {
         leer={{
           wenn: (daten) => daten.length === 0,
           titel: 'Noch kein Thread',
-          beschreibung:
-            'Hier stehen Threads, die du begonnen, beantwortet oder in denen du erwähnt bist.',
         }}
       >
         {(daten) => (

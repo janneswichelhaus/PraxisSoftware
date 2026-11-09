@@ -143,7 +143,6 @@ export function SuchePage() {
             leer={{
               wenn: (daten) => daten.length === 0,
               titel: 'Nichts gefunden',
-              beschreibung: 'Gesucht wird in allen Gesprächen, die du lesen kannst.',
             }}
           >
             {(daten) => (

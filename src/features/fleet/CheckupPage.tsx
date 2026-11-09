@@ -105,7 +105,7 @@ function Auswahl({
         flotte={flotte}
         wert={wahl}
         onWahl={setWahl}
-        hinweis="Die Nummer eines Rads steht am Sattelrohr, direkt unter dem Sattel."
+        hinweis="Nummer am Sattelrohr, direkt unter dem Sattel."
       />
       <Formularfuss>
         <Button onClick={() => onWeiter(wahl)} disabled={!wahl}>

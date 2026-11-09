@@ -140,11 +140,7 @@ function JePerson({ user, state }: { user: CurrentUser; state: WorkingTime }) {
                 <WeekRows week={plan.current} />
               </Listenabschnitt>
             ) : (
-              <EmptyState
-                inKarte
-                title="Noch kein Wochenplan"
-                description="Den Wochenplan legt die Praxisleitung an."
-              />
+              <EmptyState inKarte title="Noch kein Wochenplan" />
             )
           }
           eigenesDanach={
@@ -210,11 +206,7 @@ function Content({ state }: { state: WorkingTime }) {
       {plan === null ? (
         // Ein Konto ohne Mitarbeiterdatensatz: kein Plan, keine Anträge - die
         // Seite sagt es, statt leer zu bleiben (Design-Review Überholung 8).
-        <EmptyState
-          inKarte
-          title="Keine eigene Arbeitszeit"
-          description="Zu Ihrem Konto gibt es keinen Mitarbeiterdatensatz."
-        />
+        <EmptyState inKarte title="Keine eigene Arbeitszeit" />
       ) : plan.has_plan ? (
         <>
           <Listenabschnitt titel="Mein Wochenplan">
@@ -227,11 +219,7 @@ function Content({ state }: { state: WorkingTime }) {
           ) : null}
         </>
       ) : (
-        <EmptyState
-          inKarte
-          title="Noch kein Wochenplan"
-          description="Den Wochenplan legt die Praxisleitung an."
-        />
+        <EmptyState inKarte title="Noch kein Wochenplan" />
       )}
 
       <OwnRequests own={own} hasPlan={plan?.has_plan ?? false} />

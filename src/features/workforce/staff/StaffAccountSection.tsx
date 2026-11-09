@@ -7,7 +7,6 @@ import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { RoleBadge } from '@/components/ui/RoleBadge';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
@@ -37,9 +36,6 @@ import type { StaffMember } from './api';
 import { fullName } from '@/features/patients';
 import { ROLLENHINWEISE, WAEHLBARE_ROLLEN } from './rollenhinweise';
 import { problemTexte } from './zugangstexte';
-
-/** Was nach einem gescheiterten Vorgang zu tun ist (WRT-01). */
-const ERNEUT = VERBINDUNG_PRUEFEN;
 
 function formatiereDatum(wert: string): string {
   const datum = new Date(wert);
@@ -73,8 +69,7 @@ export function Zustellmeldung({ zustellung, email }: { zustellung: Zustellung; 
   }
   return (
     <Statusmeldung ton="fehler" className="mt-3">
-      Der Anmeldedienst war nicht erreichbar. Die Einladung bleibt offen – bitte später erneut
-      senden.
+      Der Anmeldedienst war nicht erreichbar. Die Einladung bleibt offen.
     </Statusmeldung>
   );
 }
@@ -264,19 +259,12 @@ function OffeneEinladung({
         </DetailRow>
       </DetailList>
 
-      {abgelaufen ? (
-        <Statusmeldung ton="warnung" className="mt-3">
-          Diese Einladung gilt nicht mehr. Bitte zurücknehmen und neu einladen.
-        </Statusmeldung>
-      ) : null}
-
       {!abgelaufen && letzteZustellung ? (
         <Zustellmeldung zustellung={letzteZustellung} email={einladung.email} />
       ) : null}
       {erneutSenden.isError ? (
         <Statusmeldung ton="fehler" className="mt-3">
-          Der Anmeldedienst war nicht erreichbar. Die Einladung bleibt offen – bitte später erneut
-          senden.
+          Der Anmeldedienst war nicht erreichbar. Die Einladung bleibt offen.
         </Statusmeldung>
       ) : null}
 
@@ -284,14 +272,10 @@ function OffeneEinladung({
           es das Konto schon gibt - die Mail ging hinaus -, entfällt er
           (ORG-10). Zugeklappt, weil er das System erklärt (UX-005i). */}
       {!abgelaufen && letzteZustellung !== 'gesendet' ? (
-        <Disclosure summary="Konto beim Anmeldedienst anlegen – so geht's">
+        <Disclosure summary="Konto beim Anmeldedienst anlegen">
           <p className="text-ink-muted max-w-prose text-sm leading-relaxed">
-            Die Berechtigung steht. Damit sich die Person anmelden kann, braucht sie einmalig ein
-            Konto beim Anmeldedienst – die Praxisplattform legt keines an, weil die
-            Selbstregistrierung bewusst abgeschaltet ist. Das Konto legt an, wer den Anmeldedienst
-            betreut: in dessen Verwaltung unter „Authentication → Users → Add user“, mit genau
-            dieser Adresse. Danach „Anmeldemail senden“ – die Person meldet sich an und nimmt die
-            Einladung an; die Rollen oben werden dabei gesetzt.
+            Legt an, wer den Anmeldedienst betreut: unter „Authentication → Users → Add user“, mit
+            genau dieser Adresse.
           </p>
         </Disclosure>
       ) : null}
@@ -313,17 +297,15 @@ function OffeneEinladung({
           bestaetigen="Zurücknehmen"
           bestaetigenLaeuft="Wird zurückgenommen …"
           fehler={
-            widerrufen.isError
-              ? `Die Einladung konnte nicht zurückgenommen werden. ${ERNEUT}`
-              : undefined
+            widerrufen.isError ? 'Die Einladung konnte nicht zurückgenommen werden.' : undefined
           }
           laeuft={widerrufen.isPending}
           onBestaetigen={() => widerrufen.mutateAsync()}
           onAbbrechen={() => widerrufen.reset()}
         >
           <p>
-            Die Einladung verliert ihre Gültigkeit. Ein Konto, das sich danach mit dieser Adresse
-            anmeldet, erhält keinen Zugang zur Praxis. Der Vorgang bleibt als Nachweis erhalten.
+            Wer sich danach mit dieser Adresse anmeldet, erhält keinen Zugang zur Praxis. Der
+            Vorgang bleibt als Nachweis erhalten.
           </p>
         </Rueckfrage>
       </div>
@@ -332,10 +314,9 @@ function OffeneEinladung({
 }
 
 const sperrTexte: Record<SperrProblem, string> = {
-  last_owner_required:
-    'Die letzte aktive Praxisinhaber:in behält ihre Rolle und ihren Zugang. Sonst könnte niemand mehr Zugänge, Rollen und das Protokoll verwalten.',
+  last_owner_required: 'Die letzte aktive Praxisinhaber:in behält ihre Rolle und ihren Zugang.',
   cannot_lock_own_account: 'Der eigene Zugang lässt sich nicht sperren.',
-  unbekannt: `Der Vorgang konnte nicht ausgeführt werden. ${ERNEUT}`,
+  unbekannt: 'Der Vorgang konnte nicht ausgeführt werden.',
 };
 
 function sperrText(fehler: unknown): string | undefined {
@@ -560,20 +541,15 @@ function BestehenderZugang({
           ausloeser="Neuen Anmeldelink senden"
           bestaetigen="Link senden"
           bestaetigenLaeuft="Wird gesendet …"
-          fehler={
-            anmeldelink.isError
-              ? `Der Anmeldelink konnte nicht gesendet werden. ${ERNEUT}`
-              : undefined
-          }
+          fehler={anmeldelink.isError ? 'Der Anmeldelink konnte nicht gesendet werden.' : undefined}
           laeuft={anmeldelink.isPending}
           onBestaetigen={() => anmeldelink.mutateAsync()}
           onAbbrechen={() => anmeldelink.reset()}
         >
           <p>
-            Für einen verlorenen Passkey oder ein neues Telefon: Der Anmeldedienst schickt einen
-            einmaligen Anmeldelink an die hinterlegte Adresse. Damit richtet die Person einen neuen
-            Passkey ein. Bisherige Passkeys bleiben gültig – einen verlorenen entfernt die Person
-            danach in „Mein Konto“.
+            Der Anmeldedienst schickt einen einmaligen Anmeldelink an die hinterlegte Adresse.
+            Bisherige Passkeys bleiben gültig – einen verlorenen entfernt die Person danach in „Mein
+            Konto“.
           </p>
         </Rueckfrage>
       </div>
@@ -633,7 +609,6 @@ export function StaffAccountSection({
       <Section titel="Zugang">
         <ErrorState
           title="Der Zugangsstand konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
           onErneut={() => {
             void konto.refetch();
             void einladungen.refetch();
@@ -682,10 +657,7 @@ export function StaffAccountSection({
           }}
         />
       ) : staff.employment_status === 'inactive' ? (
-        <Statusmeldung>
-          Für eine inaktive Person wird kein Zugang eingeladen. Dafür müsste sie zuerst wieder als
-          aktiv geführt werden.
-        </Statusmeldung>
+        <Statusmeldung>Für eine inaktive Person wird kein Zugang eingeladen.</Statusmeldung>
       ) : (
         <Einladungsformular
           staff={staff}

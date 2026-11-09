@@ -278,10 +278,7 @@ export function AuditLogPage() {
       {/* Der Titel ist das Wort der Ansicht (ORG-07): Seit ORG-001 steht das
           Protokoll unter Praxis neben Einstellungen und Aufbewahrung; die
           Pillen zeichnet die Hülle (`Ansichtsleiste`). */}
-      <PageHeader
-        title="Protokoll"
-        description="Protokollierte Zugriffe und sicherheitsrelevante Vorgänge dieser Praxis."
-      />
+      <PageHeader title="Protokoll" />
 
       {/* Die Filter in der Filterleiste (Welle B, ANN-405): am Telefon
           zugeklappt hinter „Filter“, ab 640 px offen nebeneinander; mit einem
@@ -367,11 +364,7 @@ export function AuditLogPage() {
       ) : null}
 
       {data && data.events.length === 0 ? (
-        <EmptyState
-          inKarte
-          title="Keine Einträge im gewählten Zeitraum"
-          description="Filter anpassen oder Zeitraum erweitern."
-        />
+        <EmptyState inKarte title="Keine Einträge im gewählten Zeitraum" />
       ) : null}
 
       {data && data.events.length > 0 ? (

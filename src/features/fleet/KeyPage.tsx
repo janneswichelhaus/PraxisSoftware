@@ -91,7 +91,6 @@ export function KeyPage({ user }: { user: CurrentUser }) {
             <EmptyState
               inKarte
               title={flotte.bikes.length === 0 ? 'Noch kein Rad angelegt' : 'Kein Rad frei'}
-              description={flotte.bikes.length === 0 ? undefined : 'Alle Räder sind in Reparatur.'}
               aktion={
                 <ButtonLink to={ZUR_FLOTTE} variant="secondary">
                   Zur Radflotte
@@ -228,10 +227,7 @@ function Schluesselfenster({
     return (
       <GefuehrterAblauf {...kopf} titel="An wen?">
         {personen.length === 0 ? (
-          <EmptyState
-            title="Niemand sonst im Mitarbeiterstamm."
-            description="Der Schlüssel liegt schon bei der einzigen Person."
-          />
+          <EmptyState title="Niemand sonst im Mitarbeiterstamm." />
         ) : (
           <ListRows rahmen={false} beschriftung="Personen">
             {personen.map((eintrag) => (

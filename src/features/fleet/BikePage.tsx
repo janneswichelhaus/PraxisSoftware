@@ -271,12 +271,11 @@ function Rad({
 
       {freigabeFrage ? (
         <Dialogfenster titel={`${bike.name} freigeben?`} onSchliessen={freigabeSchliessen}>
-          <p className="text-ink text-sm">
-            {bike.name} steht danach wieder in der Planung.
-            {offeneStellen > 0
-              ? ` ${offeneStellen === 1 ? 'Die offene Stelle gilt' : `Die ${offeneStellen} offenen Stellen gelten`} als erledigt und ${offeneStellen === 1 ? 'bleibt' : 'bleiben'} im Verlauf.`
-              : ''}
-          </p>
+          {offeneStellen > 0 ? (
+            <p className="text-ink text-sm">
+              {`${offeneStellen === 1 ? 'Die offene Stelle gilt' : `Die ${offeneStellen} offenen Stellen gelten`} als erledigt und ${offeneStellen === 1 ? 'bleibt' : 'bleiben'} im Verlauf.`}
+            </p>
+          ) : null}
           {freigeben.isError ? (
             <Statusmeldung ton="fehler" className="mt-3">
               {freigeben.error.message}

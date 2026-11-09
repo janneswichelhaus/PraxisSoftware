@@ -121,12 +121,7 @@ export function Details({
           {einstellen.isError ? (
             <Statusmeldung ton="fehler">{einstellen.error.message}</Statusmeldung>
           ) : null}
-          <Disclosure summary="So geht’s">
-            <p className="text-ink-muted max-w-prose text-sm">
-              „Erwähnungen“ und „Stumm“ zählen nur noch, wo du erwähnt bist. Andere sehen nichts
-              davon.
-            </p>
-          </Disclosure>
+          <Kleingedrucktes>Andere sehen diese Einstellung nicht.</Kleingedrucktes>
         </section>
 
         <Abfragezustand
@@ -273,7 +268,7 @@ function Herausnehmen({
       fehler={nehmen.isError ? nehmen.error.message : undefined}
       onBestaetigen={() => nehmen.mutateAsync()}
     >
-      {name} liest den Kanal danach nicht mehr.
+      {name} herausnehmen?
     </Rueckfrage>
   );
 }

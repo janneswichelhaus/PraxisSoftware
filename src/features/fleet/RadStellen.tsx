@@ -114,9 +114,8 @@ export function RadStellen({
               >
                 <p>
                   {offen.length === 1
-                    ? 'Die offene Stelle gilt'
-                    : `Alle ${offen.length} offenen Stellen gelten`}{' '}
-                  dann als erledigt und bleiben im Verlauf.
+                    ? 'Die offene Stelle gilt dann als erledigt und bleibt im Verlauf.'
+                    : `Alle ${offen.length} offenen Stellen gelten dann als erledigt und bleiben im Verlauf.`}
                 </p>
               </Rueckfrage>
             </div>

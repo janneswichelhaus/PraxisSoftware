@@ -343,12 +343,10 @@ describe('StaffMemberDetailPage', () => {
 
     const meldung = await screen.findByText('Als inaktiv geführt.');
     expect(meldung.closest('[tabindex="-1"]')).toHaveFocus();
-    expect(
-      screen.getByText('Inaktiv – wird nicht mehr für neue Termine angeboten.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Inaktiv', { exact: true })).toBeInTheDocument();
   });
 
-  it('sagt beim gescheiterten Wechsel, was zu tun ist (ORG-15)', async () => {
+  it('sagt beim gescheiterten Wechsel, was nicht ging, und lässt es erneut versuchen (ORG-15)', async () => {
     const user = userEvent.setup();
     setStaffEmploymentStatus.mockRejectedValue(new Error('Netz weg'));
     renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />, EINSATZ);
@@ -357,17 +355,15 @@ describe('StaffMemberDetailPage', () => {
     await user.click(screen.getByRole('button', { name: 'Als inaktiv führen' }));
 
     expect(
-      await screen.findByText(
-        'Der Beschäftigungsstatus konnte nicht geändert werden. Bitte die Verbindung prüfen und erneut versuchen.',
-      ),
+      await screen.findByText('Der Beschäftigungsstatus konnte nicht geändert werden.'),
     ).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Als inaktiv führen' }).at(-1)).toBeEnabled();
   });
 
   it('zeigt eine verstaendliche Meldung, wenn der Datensatz nicht sichtbar ist', async () => {
     fetchStaffMember.mockResolvedValue(null);
     renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
-    expect(screen.getByText(/Diese Person gibt es nicht/)).toBeInTheDocument();
     // Auch ohne Datensatz traegt die Seite einen Titel und einen Weg zurueck.
     expect(screen.getByRole('heading', { level: 1, name: 'Mitarbeiter:in' })).toBeInTheDocument();
     expect(

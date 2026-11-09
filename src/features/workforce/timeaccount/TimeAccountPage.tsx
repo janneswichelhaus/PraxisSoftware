@@ -142,11 +142,7 @@ function Content({
           </Listenabschnitt>
         </>
       ) : (
-        <EmptyState
-          inKarte
-          title="Kein eigenes Zeitkonto"
-          description="Zu Ihrem Konto gibt es keinen Mitarbeiterdatensatz."
-        />
+        <EmptyState inKarte title="Kein eigenes Zeitkonto" />
       )}
 
       {state.can_book_others && own ? (

@@ -80,12 +80,6 @@ export function GemerktPage() {
         leer={{
           wenn: (daten) => daten.length === 0,
           titel: ansicht === 'offen' ? 'Nichts für später' : 'Nichts erledigt',
-          ...(ansicht === 'offen'
-            ? {
-                beschreibung:
-                  'An einer Nachricht über „⋯“ → „Für später merken“, auf Wunsch mit Erinnerung.',
-              }
-            : {}),
         }}
       >
         {(daten) => {

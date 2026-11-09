@@ -104,8 +104,6 @@ export function FuerDichPage({ user }: { user: CurrentUser }) {
         leer={{
           wenn: (daten) => daten.length === 0 && gemerkt.isSuccess && faellig.length === 0,
           titel: 'Nichts für dich',
-          beschreibung:
-            'Hier stehen Erwähnungen, Antworten in deinen Threads und fällige Erinnerungen.',
         }}
       >
         {(daten) =>

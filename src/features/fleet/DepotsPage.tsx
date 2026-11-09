@@ -90,7 +90,7 @@ function Depots({ flotte, onMeldung }: { flotte: Fleet; onMeldung: (text: string
       <Listenabschnitt
         titel="Depots"
         anzahl={flotte.depots.length}
-        leer={{ titel: 'Noch kein Depot', beschreibung: 'Jedes Rad gehört zu einem Depot.' }}
+        leer={{ titel: 'Noch kein Depot' }}
       >
         {flotte.depots.map((depot) => {
           const anzahl = raeder(depot);
@@ -235,7 +235,7 @@ function Depotformular({
             onBestaetigen={() => entfernen.mutateAsync()}
             onAbbrechen={() => entfernen.reset()}
           >
-            <p>{depot.name} wird aus der Radflotte entfernt.</p>
+            <p>{depot.name} entfernen?</p>
           </Rueckfrage>
         ) : null}
       </div>

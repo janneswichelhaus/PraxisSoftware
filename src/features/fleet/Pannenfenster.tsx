@@ -310,9 +310,7 @@ export function Pannenfenster({
             <Statusmeldung ton="fehler">{melden.error.message}</Statusmeldung>
           ) : null}
           {schritt === 'weiterfahrtMoeglich' ? (
-            <p className="text-ink-muted text-sm">
-              Diese Meldung sperrt das Rad nicht. Es bleibt in der Planung verfügbar.
-            </p>
+            <p className="text-ink-muted text-sm">Diese Meldung sperrt das Rad nicht.</p>
           ) : null}
           {knoepfe.map((knopf, index) => (
             <Button
@@ -482,12 +480,11 @@ function Schrittinhalt({
       return (
         <div className="flex flex-col gap-3">
           <p {...(anfang ? ANFANG : {})} className="text-ink text-liste focus:outline-none">
-            {rolle} kurz über den Schaden informieren, damit die Reparatur koordiniert werden kann.
+            {rolle} kurz über den Schaden informieren.
           </p>
           <Anrufe nummern={zustaendig} fehlt={`Rufnummer der ${rolle} noch nicht hinterlegt.`} />
           <p className="text-ink text-liste">
-            Bis auf Weiteres bitte <strong>{ersatzrad}</strong> nutzen – so lange, bis das defekte
-            Rad wieder freigegeben ist.
+            Bis zur Freigabe <strong>{ersatzrad}</strong> nutzen.
           </p>
           {/* Wie mit dem Zugangscode umgegangen wird, als Kleingedrucktes
               (DESIGN.md Regel 6), nicht als Anweisung im Kasten. */}
@@ -567,8 +564,8 @@ function Schrittinhalt({
       return (
         <div className="flex flex-col gap-3">
           <p className="text-ink text-liste">
-            Kontakt zu {vorlage.werkstatt.name} aufnehmen: Bescheid geben, dass Sie aus der Praxis
-            kommen und in etwa 15 Minuten mit einem Schaden vorbeikommen.
+            {vorlage.werkstatt.name} Bescheid geben, dass Sie aus der Praxis in etwa 15 Minuten mit
+            einem Schaden vorbeikommen.
           </p>
           <Anrufe
             nummern={werkstatt}
@@ -591,8 +588,7 @@ function Schrittinhalt({
           <p className="text-ink text-liste">{rolle} Bescheid geben.</p>
           <Anrufe nummern={zustaendig} fehlt={`Rufnummer der ${rolle} noch nicht hinterlegt.`} />
           <p className="text-ink text-liste">
-            Am nächsten Werktag <strong>{ersatzrad}</strong> nutzen, so lange, bis das andere Rad
-            wieder freigegeben ist.
+            Ab dem nächsten Werktag bis zur Freigabe <strong>{ersatzrad}</strong> nutzen.
           </p>
         </div>
       );

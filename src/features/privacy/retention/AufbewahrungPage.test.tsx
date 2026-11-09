@@ -198,9 +198,7 @@ describe('AufbewahrungPage', () => {
 
   it('meldet eine unbekannte Datenklasse mit Rückweg', async () => {
     renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />, klassenPfad('gibtsnicht'));
-    expect(
-      await screen.findByText('Diese Datenklasse gibt es im Aufbewahrungsplan nicht.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Diese Datenklasse gibt es nicht.')).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: '← Zurück zum Aufbewahrungsplan' }),
     ).toBeInTheDocument();

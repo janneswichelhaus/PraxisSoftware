@@ -96,7 +96,6 @@ describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
     fetchStaffMember.mockResolvedValue(null);
     renderWithProviders(<EditStaffMemberPage user={testUser(['owner'])} />);
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
-    expect(screen.getByText(/Diese Person gibt es nicht/)).toBeInTheDocument();
     // Auch ohne Datensatz gibt es Titel und Weg zurueck (ORG-24).
     expect(
       screen.getByRole('heading', { level: 1, name: 'Stammdaten bearbeiten' }),
@@ -159,7 +158,7 @@ describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
     const fenster = await screen.findByRole('dialog', {
       name: 'Die Stammdaten konnten nicht gespeichert werden.',
     });
-    expect(fenster).toHaveTextContent('Bitte die Verbindung prüfen und erneut speichern.');
+    expect(fenster).toHaveTextContent('Die Eingaben stehen noch im Formular.');
     expect(screen.queryByText(/Details aus der Datenbank/)).not.toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
   });

@@ -260,7 +260,7 @@ export function ProfilAbschnitt({ name }: { name: string }) {
                   onBestaetigen={() => entfernen.mutateAsync()}
                   onAbbrechen={() => entfernen.reset()}
                 >
-                  Im Teamchat stehen danach wieder die Initialen.
+                  Foto entfernen?
                 </Rueckfrage>
               ) : null}
             </div>

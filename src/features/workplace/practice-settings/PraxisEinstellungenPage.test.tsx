@@ -130,7 +130,7 @@ describe('PraxisEinstellungenPage (ORG-002)', () => {
       expect(await screen.findByRole('status')).toHaveTextContent('Die Frist ist gespeichert.');
     });
 
-    it('meldet einen Fehler beim Speichern ohne interne Details, mit dem naechsten Schritt', async () => {
+    it('meldet einen Fehler beim Speichern ohne interne Details, der Knopf bleibt bedienbar', async () => {
       const user = userEvent.setup();
       saveDocumentationDeadline.mockRejectedValue(
         new Error('Die Dokumentationsfrist konnte nicht gespeichert werden.'),
@@ -143,7 +143,8 @@ describe('PraxisEinstellungenPage (ORG-002)', () => {
       const meldung = await screen.findByText(
         /Die Dokumentationsfrist konnte nicht gespeichert werden\./,
       );
-      expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und erneut speichern.');
+      expect(meldung).not.toHaveTextContent('Verbindung prüfen');
+      expect(screen.getByRole('button', { name: 'Frist speichern' })).toBeEnabled();
     });
 
     it('sperrt Auswahl und Speichern, solange die Frist nicht geladen ist (ORG-14)', async () => {

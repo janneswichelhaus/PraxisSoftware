@@ -208,7 +208,6 @@ export function Radliste({
         leer={{
           wenn: (daten) => freieRaeder(daten).length === 0,
           titel: 'Kein Schlüssel liegt im Tresor.',
-          beschreibung: 'Alle Räder sind unterwegs oder in Reparatur.',
         }}
         inKarte
       >

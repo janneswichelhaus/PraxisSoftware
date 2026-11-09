@@ -66,17 +66,12 @@ export function GespraechPage() {
         }
         return start ? (
           <Rand>
-            <EmptyState
-              title="Noch kein Gespräch"
-              description="Unter „Neu“ schreibst du jemandem direkt oder legst einen Kanal an."
-              aktion={<ButtonLink to={NEU}>Neu</ButtonLink>}
-            />
+            <EmptyState title="Noch kein Gespräch" aktion={<ButtonLink to={NEU}>Neu</ButtonLink>} />
           </Rand>
         ) : (
           <Rand>
             <EmptyState
               title="Dieses Gespräch gibt es nicht"
-              description="Vielleicht ist es gelöscht, oder du gehörst nicht dazu."
               aktion={
                 <ButtonLink to={TEAMCHAT} variant="secondary">
                   Zu den Gesprächen

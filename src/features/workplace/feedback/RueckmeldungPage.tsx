@@ -57,7 +57,7 @@ export function RueckmeldungPage({ user }: { user: CurrentUser }) {
         stand.can_read ? (
           <>
             <Rueckweg standard={EINGANG} />
-            <PageHeader title="Rückmeldungen" description="An die Praxisleitung" />
+            <PageHeader title="Rückmeldungen" />
             <div className="flex flex-col gap-8 [&>*]:mt-0">
               <NamentlicheRueckmeldungen art="message" titel="Mit Namen" />
               <OhneNamen />

@@ -278,7 +278,7 @@ function EigeneZeile({
             fehler={zurueckziehen.isError ? zurueckziehen.error.message : undefined}
             onBestaetigen={() => zurueckziehen.mutateAsync()}
           >
-            {storno ? 'Der Urlaub bleibt dann genehmigt.' : 'Der Antrag wird zurückgezogen.'}
+            {storno ? 'Der Urlaub bleibt dann genehmigt.' : 'Antrag zurückziehen?'}
           </Rueckfrage>
         ) : stornierbar ? (
           <Rueckfrage

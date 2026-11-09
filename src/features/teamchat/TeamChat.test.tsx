@@ -1766,9 +1766,7 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
         expect.any(AbortSignal),
       ),
     );
-    expect(
-      screen.getByText('Höchstens 5 Anhänge je Nachricht – bitte entfernen, was zu viel ist.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Höchstens 5 Anhänge je Nachricht.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Senden' })).toBeDisabled();
   });
 

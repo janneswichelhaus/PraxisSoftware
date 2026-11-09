@@ -50,7 +50,7 @@ export function FlottenNachrichtenPage({ user }: { user: CurrentUser }) {
             />
           ) : (
             <Rand>
-              <EmptyState title="Für die Radflotte gibt es hier noch kein Gespräch" />
+              <EmptyState title="Noch kein Gespräch zur Radflotte" />
             </Rand>
           )
         }

@@ -62,7 +62,7 @@ export function EntwuerfePage() {
         anzahl={entwuerfe.length}
         leer={{
           titel: 'Kein Entwurf',
-          beschreibung: 'Was du anfängst und nicht sendest, steht hier, solange die App läuft.',
+          beschreibung: 'Entwürfe stehen hier, solange die App läuft.',
         }}
       >
         {entwuerfe.map((e) => {
@@ -101,14 +101,7 @@ export function EntwuerfePage() {
         fehler="Geplante Nachrichten konnten nicht geladen werden."
       >
         {(daten) => (
-          <Listenabschnitt
-            titel="Geplant"
-            anzahl={daten.length}
-            leer={{
-              titel: 'Nichts geplant',
-              beschreibung: 'An der Eingabe über die Uhr: später senden.',
-            }}
-          >
+          <Listenabschnitt titel="Geplant" anzahl={daten.length} leer={{ titel: 'Nichts geplant' }}>
             {daten.map((g) => {
               const k = kanal(g.channel_id);
               return (

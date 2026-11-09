@@ -157,11 +157,7 @@ function Content({ state, own, timeZone }: { state: Overview; own: boolean; time
           ))}
         </Listenabschnitt>
       ) : (
-        <EmptyState
-          inKarte
-          title="Keine eigenen Erstattungen"
-          description="Zu Ihrem Konto gibt es keinen Mitarbeiterdatensatz."
-        />
+        <EmptyState inKarte title="Keine eigenen Erstattungen" />
       )}
 
       {state.person && (own || account) ? (

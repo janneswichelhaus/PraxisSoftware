@@ -84,7 +84,6 @@ export function DecideReimbursementPage({ user }: { user: CurrentUser }) {
             <EmptyState
               inKarte
               title="Keine offene Erstattung"
-              description="Sie ist schon entschieden oder zurückgezogen."
               aktion={<ButtonLink to={returnTo}>Zurück</ButtonLink>}
             />
           </>

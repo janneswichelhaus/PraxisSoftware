@@ -14,7 +14,6 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate, formatLocalDate, formatLocalTimeRange, todayInTimeZone } from '@/lib/datum';
 import { leseRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
@@ -183,7 +182,7 @@ function StatusAktion({ staff, timeZone }: { staff: StaffMember; timeZone: strin
         bestaetigenLaeuft="Wird geändert …"
         fehler={
           mutation.isError && !termineOffen
-            ? `Der Beschäftigungsstatus konnte nicht geändert werden. ${VERBINDUNG_PRUEFEN}`
+            ? 'Der Beschäftigungsstatus konnte nicht geändert werden.'
             : undefined
         }
         laeuft={mutation.isPending}
@@ -303,7 +302,6 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
             </ButtonLink>
           ) : null
         }
-        fuss={aktiv ? null : 'Inaktiv – wird nicht mehr für neue Termine angeboten.'}
         reiter={
           bereiche.length > 1 ? (
             <Suchreiterleiste
@@ -437,12 +435,7 @@ export function StaffMemberDetailPage({ user }: { user: CurrentUser }) {
               onErneut={() => void refetch()}
             />
           ) : null}
-          {data === null ? (
-            <ErrorState
-              title="Nicht gefunden"
-              description="Diese Person gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-            />
-          ) : null}
+          {data === null ? <ErrorState title="Nicht gefunden" /> : null}
         </>
       )}
     </>

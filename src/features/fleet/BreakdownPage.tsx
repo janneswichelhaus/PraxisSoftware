@@ -101,12 +101,7 @@ function MitRad({
   });
 
   if (!bekannt) {
-    return (
-      <ErrorState
-        title="Dieses Rad gibt es nicht mehr."
-        description="Bitte das Rad in der Radflotte neu wählen."
-      />
-    );
+    return <ErrorState title="Dieses Rad gibt es nicht mehr." />;
   }
 
   return (

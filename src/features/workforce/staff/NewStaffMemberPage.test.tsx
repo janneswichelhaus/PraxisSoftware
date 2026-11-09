@@ -503,7 +503,7 @@ describe('NewStaffMemberPage: Neue:n Mitarbeiter:in einrichten (G5)', { timeout:
       name: 'Die Mitarbeiter:in konnte nicht angelegt werden.',
     });
     expect(meldung).toHaveTextContent('Es ist nichts gespeichert, die Angaben stehen noch da.');
-    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(meldung).not.toHaveTextContent('Verbindung prüfen');
     expect(screen.queryByText(/irgendetwas aus der Datenbank/)).not.toBeInTheDocument();
     expect(takeKey).not.toHaveBeenCalled();
 

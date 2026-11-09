@@ -92,11 +92,7 @@ export function AnspruchPage({ user }: { user: CurrentUser }) {
             return (
               <>
                 <PageHeader title="Urlaubsanspruch" />
-                <EmptyState
-                  inKarte
-                  title="Nicht verfügbar"
-                  description="Den Urlaubsanspruch trägt die Praxisinhaber:in ein."
-                />
+                <EmptyState inKarte title="Nicht verfügbar" />
               </>
             );
           }

@@ -51,7 +51,6 @@ export function BikeNewPage({ user }: { user: CurrentUser }) {
             <EmptyState
               inKarte
               title="Erst ein Depot anlegen"
-              description="Jedes Rad gehört zu einem Depot."
               aktion={
                 <ButtonLink to="/betrieb/flotte/depots" variant="secondary">
                   Depots verwalten

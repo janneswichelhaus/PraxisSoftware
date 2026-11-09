@@ -176,11 +176,7 @@ describe('Panne melden', () => {
 
     const auffaellig = within(await fenster('Rad ist weiter fahrbar. Was genau ist auffällig?'));
     expect(auffaellig.getByLabelText('Was ist auffällig?')).toHaveValue('Bremse vorne: schleift');
-    expect(
-      auffaellig.getByText(
-        'Diese Meldung sperrt das Rad nicht. Es bleibt in der Planung verfügbar.',
-      ),
-    ).toBeInTheDocument();
+    expect(auffaellig.getByText('Diese Meldung sperrt das Rad nicht.')).toBeInTheDocument();
     // Der Abschluss: Der Fuß steht mit Linie unter dem Inhalt, und der Fokus
     // beginnt beim Inhalt - ein zweites Enter meldet nicht ungelesen.
     const melden = auffaellig.getByRole('button', { name: 'Melden' });

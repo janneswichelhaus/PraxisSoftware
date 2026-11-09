@@ -233,7 +233,7 @@ describe('UrlaubEntscheidenPage', () => {
     const seite = await screen.findByRole('dialog', { name: 'Urlaub genehmigen?' });
     expect(
       within(seite).getByText(
-        'Abweichende Arbeitszeiten oder Freizeitausgleich am 3. Nov. – erst in der Planung ändern oder im Zeitkonto zurückweisen, dann genehmigen.',
+        'Abweichende Arbeitszeiten oder Freizeitausgleich am 3. Nov. – erst in der Planung ändern oder im Zeitkonto zurückweisen.',
       ),
     ).toBeInTheDocument();
     expect(within(seite).getByRole('button', { name: 'Genehmigen' })).toBeDisabled();

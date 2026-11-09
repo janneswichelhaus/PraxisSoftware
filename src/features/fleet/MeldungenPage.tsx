@@ -152,7 +152,7 @@ export function MeldungenPage({ user }: { user: CurrentUser }) {
               {meldungen.length === 0 ? (
                 <EmptyState inKarte title="Keine Meldungen in diesem Zeitraum" />
               ) : sichtbar.length === 0 ? (
-                <EmptyState inKarte title="Keine Treffer" description="Filter anpassen." />
+                <EmptyState inKarte title="Keine Treffer" />
               ) : (
                 <ListRows beschriftung="Meldungen">
                   {sichtbar.map((meldung) => (

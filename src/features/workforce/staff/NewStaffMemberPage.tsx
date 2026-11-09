@@ -466,8 +466,7 @@ export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
             setFokusAufEinrichten(true);
           }}
         >
-          Es ist nichts gespeichert, die Angaben stehen noch da. Bitte die Verbindung prüfen und
-          erneut versuchen.
+          Es ist nichts gespeichert, die Angaben stehen noch da.
         </Hinweisfenster>
       ) : null}
     </>

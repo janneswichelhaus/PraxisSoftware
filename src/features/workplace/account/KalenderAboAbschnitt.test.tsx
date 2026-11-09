@@ -43,7 +43,6 @@ const { AboErneutAnmelden } = await import('./kalenderabo-api');
 
 const ADRESSE = 'Zz09_-'.padEnd(43, 'q');
 const HTTPS = `https://instanz.test/functions/v1/calendar-feed/${ADRESSE}.ics`;
-const VERBINDUNG = /Bitte die Verbindung prüfen und erneut versuchen\./;
 
 describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
   beforeEach(() => {
@@ -70,7 +69,7 @@ describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
     const schreiben = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
     renderWithProviders(<KalenderAboAbschnitt />);
 
-    expect(screen.getByText('Eigene Termine im Kalender des Telefons.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Kalender-Abo' })).toBeInTheDocument();
     await nutzer.click(await screen.findByRole('button', { name: 'Abo-Link erstellen' }));
 
     expect(await screen.findByLabelText('Abo-Link')).toHaveValue(HTTPS);
@@ -136,9 +135,7 @@ describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
     renderWithProviders(<KalenderAboAbschnitt />);
 
     await nutzer.click(await screen.findByRole('button', { name: 'Abo-Link erstellen' }));
-    expect(
-      await screen.findByText('Der Link kam nicht an. Bitte einen neuen erstellen.'),
-    ).toBeVisible();
+    expect(await screen.findByText('Der Link kam nicht an.')).toBeVisible();
     expect(screen.getByText('Link erstellt am 02.11.2026.')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Neuen Link erstellen' })).toBeEnabled();
   });
@@ -149,9 +146,7 @@ describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
     erzeugeAbo.mockRejectedValue(new Error('x'));
     renderWithProviders(<KalenderAboAbschnitt />);
     await nutzer.click(await screen.findByRole('button', { name: 'Abo-Link erstellen' }));
-    expect(await screen.findByText(/Der Link konnte nicht erstellt werden\./)).toHaveTextContent(
-      VERBINDUNG,
-    );
+    expect(await screen.findByText('Der Link konnte nicht erstellt werden.')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Abo-Link erstellen' })).toBeEnabled();
   });
 
@@ -163,7 +158,7 @@ describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
 
     await nutzer.click(await screen.findByRole('button', { name: 'Abo beenden' }));
     const frage = screen.getByRole('group', { name: 'Abo beenden' });
-    expect(within(frage).getByText(/bleibt leer stehen und lässt sich dort löschen/)).toBeVisible();
+    expect(within(frage).getByText(/Der Link gilt danach nicht mehr/)).toBeVisible();
     await nutzer.click(within(frage).getByRole('button', { name: 'Abo beenden' }));
     await waitFor(() => expect(beendeAbo).toHaveBeenCalledTimes(1));
     expect(await screen.findByRole('button', { name: 'Abo-Link erstellen' })).toBeInTheDocument();
@@ -178,9 +173,7 @@ describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
     await nutzer.click(await screen.findByRole('button', { name: 'Abo beenden' }));
     const frage = screen.getByRole('group', { name: 'Abo beenden' });
     await nutzer.click(within(frage).getByRole('button', { name: 'Abo beenden' }));
-    expect(
-      await within(frage).findByText(/Das Abo konnte nicht beendet werden\./),
-    ).toHaveTextContent(VERBINDUNG);
+    expect(await within(frage).findByText('Das Abo konnte nicht beendet werden.')).toBeVisible();
     await nutzer.click(within(frage).getByRole('button', { name: 'Abbrechen' }));
     await nutzer.click(screen.getByRole('button', { name: 'Abo beenden' }));
     expect(screen.queryByText(/Das Abo konnte nicht beendet werden\./)).toBeNull();
@@ -244,9 +237,7 @@ describe('Kalender-Abo in „Mein Konto“ (ANN-838)', () => {
   it('sagt, wenn das Abo hier nicht eingerichtet ist oder nicht gefragt werden konnte', async () => {
     fetchAboDienst.mockResolvedValue(false);
     const { unmount } = renderWithProviders(<KalenderAboAbschnitt />);
-    expect(
-      await screen.findByText('Das Kalender-Abo ist hier noch nicht eingerichtet.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Hier noch nicht eingerichtet.')).toBeInTheDocument();
     expect(fetchEigenesAbo).not.toHaveBeenCalled();
     unmount();
 
