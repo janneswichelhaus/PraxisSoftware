@@ -9,9 +9,9 @@ import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { renderWithProviders, testUser } from '@/test-utils';
 import {
   NICHTS_UMZUFORMEN,
-  UMFORMEN_NACHBILDUNG,
   VORSCHLAG_OFFEN,
   VORSCHLAG_UEBERNOMMEN,
+  umformenNachbildung,
 } from './umformen';
 
 // Antworten umformen (ANN-861, ANN-862): ein Vorschlag Satz für Satz mit seiner Quelle unter dem
@@ -134,7 +134,7 @@ describe('Antwort ausformulieren an der Rückfrage', () => {
     expect(wortlaut).toHaveTextContent('alles ok');
     expect(wortlaut).toHaveTextContent('unverändert');
     expect(wortlaut).not.toHaveTextContent('Aus:');
-    expect(screen.getByText(UMFORMEN_NACHBILDUNG)).toBeInTheDocument();
+    expect(screen.getByText(umformenNachbildung('nachricht.entwurf'))).toBeInTheDocument();
     // Das Feld bleibt, wie es ist; ein Hauptknopf je Ansicht.
     expect(feld).toHaveValue(STICHPUNKTE);
     expect(screen.getByRole('button', { name: 'Übernehmen' })).toHaveClass('bg-accent');
@@ -253,5 +253,72 @@ describe('Antwort ausformulieren an der Rückfrage', () => {
     await nutzer.click(await screen.findByRole('button', { name: 'Ausformulieren' }));
     await screen.findByRole('list', { name: 'Vorschlag Satz für Satz' });
     await pruefeBarrierefreiheit(container);
+  });
+});
+
+describe('Antwort in Alltagssprache an der Rückfrage', () => {
+  const ANTWORT = 'Das Ödem geht zurück. Bitte weiter kühlen.';
+  const ERKLAERT: KiUmformen.Umformvorschlag = {
+    saetze: [
+      {
+        quelle: 'Das Ödem geht zurück.',
+        text: 'Das Ödem (Schwellung) geht zurück.',
+        unveraendert: false,
+      },
+      { quelle: 'Bitte weiter kühlen.', text: 'Bitte weiter kühlen.', unveraendert: true },
+    ],
+    text: 'Das Ödem (Schwellung) geht zurück. Bitte weiter kühlen.',
+    quelle: 'nachbildung',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchRueckfrage.mockResolvedValue(VORGANG);
+    answerRueckfrage.mockResolvedValue(undefined);
+    umformenVerfuegbar.mockResolvedValue(true);
+    textUmformen.mockResolvedValue({ ok: true, vorschlag: ERKLAERT });
+  });
+
+  it('steht neben „Ausformulieren“ und fragt mit dem eigenen Zweck', async () => {
+    const nutzer = userEvent.setup();
+    rendern();
+    await tippen(nutzer, ANTWORT);
+    const knopf = await screen.findByRole('button', { name: 'In Alltagssprache' });
+    expect(knopf.parentElement).toContainElement(
+      screen.getByRole('button', { name: 'Ausformulieren' }),
+    );
+    await nutzer.click(knopf);
+
+    await screen.findByRole('list', { name: 'Vorschlag Satz für Satz' });
+    expect(textUmformen).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        zweck: 'nachricht.alltagssprache',
+        rueckfrageId: ID,
+        text: ANTWORT,
+      }),
+    );
+    expect(screen.getByText(umformenNachbildung('nachricht.alltagssprache'))).toBeInTheDocument();
+    expect(screen.getByText('Aus: „Das Ödem geht zurück.“')).toBeInTheDocument();
+  });
+
+  it('sendet nach der Übernahme den erklärten Text', async () => {
+    const nutzer = userEvent.setup();
+    rendern();
+    await tippen(nutzer, ANTWORT);
+    await nutzer.click(await screen.findByRole('button', { name: 'In Alltagssprache' }));
+    await nutzer.click(await screen.findByRole('button', { name: 'Übernehmen' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Antwort senden' }));
+    await waitFor(() => expect(answerRueckfrage).toHaveBeenCalledWith(ID, ERKLAERT.text, null));
+  });
+
+  it('sperrt beide Knöpfe, solange eine Anfrage läuft', async () => {
+    const nutzer = userEvent.setup();
+    textUmformen.mockReturnValue(new Promise(() => undefined));
+    rendern();
+    await tippen(nutzer, ANTWORT);
+    await nutzer.click(await screen.findByRole('button', { name: 'In Alltagssprache' }));
+
+    expect(await screen.findByRole('button', { name: 'Wird umgeformt …' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Ausformulieren' })).toBeDisabled();
   });
 });

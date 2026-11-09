@@ -5,7 +5,11 @@
 import type { Sprache } from './typen.ts';
 
 /** Die Kennung eines Zwecks. */
-export type Zweckkennung = 'dokumentation.diktat' | 'dokumentation.ordnen' | 'nachricht.entwurf';
+export type Zweckkennung =
+  | 'dokumentation.diktat'
+  | 'dokumentation.ordnen'
+  | 'nachricht.entwurf'
+  | 'nachricht.alltagssprache';
 
 /**
  * Audioformate, die ein Browser mit `MediaRecorder` liefert oder die ein
@@ -77,7 +81,7 @@ export const NACHRICHT_HOECHST_ZEICHEN = 2000;
 
 /** Was für jedes Umformen gilt: ein Satz je Quelle, nichts dazu, nichts weg. */
 const UMFORMEN_GRUNDREGELN = [
-  'Antwort: je Abschnitt, in derselben Reihenfolge, genau ein Satz - kein weiterer Satz, kein Nebensatz mit Neuem, keine Anrede, kein Gruß, keine Erklärung.',
+  'Antwort: je Abschnitt, in derselben Reihenfolge, genau ein Satz - kein weiterer Satz, kein Nebensatz mit Neuem, keine Anrede, kein Gruß.',
   'Nichts ergänzen: kein Rat, keine Empfehlung, keine Diagnose, keine Bewertung, keine Prognose und nichts, was im Abschnitt nicht steht.',
   'Nichts auslassen: Jeder Abschnitt kommt vor, mit allem, was er sagt.',
   'Erhalten bleiben Zahlen als Ziffern, Einheiten, Körperseiten, Verneinungen und geäußerte Unsicherheiten.',
@@ -88,6 +92,13 @@ const UMFORMEN_GRUNDREGELN = [
 export const ENTWURF_REGELN = [
   'Aufgabe: aus jedem Stichpunkt einer Praxis einen ganzen Satz für eine Nachricht an eine Patient:in oder Kund:in machen. Nur ausformulieren, nichts beantworten: Die Frage der Person liegt nicht vor.',
   ...UMFORMEN_GRUNDREGELN,
+].join('\n');
+
+/** Die Arbeitsanweisung für Alltagssprache: dieselbe Aussage in verständlichen Wörtern. */
+export const ALLTAG_REGELN = [
+  'Aufgabe: jeden Satz einer Nachricht der Praxis in Alltagssprache fassen: Fachwörter durch verständliche Wörter ersetzen oder in Klammern kurz erklären. Die Aussage bleibt dieselbe.',
+  ...UMFORMEN_GRUNDREGELN,
+  'Ein Satz ohne Fachwort bleibt im Wortlaut.',
 ].join('\n');
 
 /**
@@ -123,16 +134,20 @@ export interface Ordnungszweck {
   readonly regeln: string;
 }
 
-/** Umformen: Text der Praxis hinein, je Satz ein Satz heraus. */
-export interface Umformzweck {
-  readonly kennung: 'nachricht.entwurf';
+interface Umformgrund<Kennung extends string, Aufgabe extends string> {
+  readonly kennung: Kennung;
   readonly art: 'umformen';
   readonly gegenstand: 'rueckfrage';
-  readonly aufgabe: 'ausformulieren';
+  readonly aufgabe: Aufgabe;
   readonly eingabe: { readonly hoechstZeichen: number; readonly sprache: Sprache };
   readonly adapter: readonly string[];
   readonly regeln: string;
 }
+
+/** Umformen: Text der Praxis hinein, je Satz ein Satz heraus. */
+export type Umformzweck =
+  | Umformgrund<'nachricht.entwurf', 'ausformulieren'>
+  | Umformgrund<'nachricht.alltagssprache', 'alltagssprache'>;
 
 /** Was zu einem Zweck festgelegt ist. */
 export type Zweck = Diktatzweck | Ordnungszweck | Umformzweck;
@@ -171,6 +186,15 @@ export const ZWECKE = {
     eingabe: { hoechstZeichen: NACHRICHT_HOECHST_ZEICHEN, sprache: 'de' },
     adapter: NUR_NACHBILDUNG,
     regeln: ENTWURF_REGELN,
+  },
+  'nachricht.alltagssprache': {
+    kennung: 'nachricht.alltagssprache',
+    art: 'umformen',
+    gegenstand: 'rueckfrage',
+    aufgabe: 'alltagssprache',
+    eingabe: { hoechstZeichen: NACHRICHT_HOECHST_ZEICHEN, sprache: 'de' },
+    adapter: NUR_NACHBILDUNG,
+    regeln: ALLTAG_REGELN,
   },
 } as const satisfies { readonly [K in Zweckkennung]: Extract<Zweck, { kennung: K }> };
 

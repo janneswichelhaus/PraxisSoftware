@@ -10,6 +10,7 @@ import type {
   Zuordnungsanfrage,
 } from './typen.ts';
 import {
+  ALLTAG_REGELN,
   DIKTAT_ABSCHNITTE,
   ENTWURF_REGELN,
   NACHRICHT_HOECHST_ZEICHEN,
@@ -517,5 +518,73 @@ describe('ai-gateway: Antwort ausformulieren', () => {
     expect(antwort.status).toBe(504);
     expect(protokoll).toEqual([{ zweck: ZWECK, anbieter: 'mock', code: 'timeout', dauerMs: 7 }]);
     expect(JSON.stringify(protokoll)).not.toContain('kühlen');
+  });
+});
+
+describe('ai-gateway: Antwort in Alltagssprache', () => {
+  const ZWECK = 'nachricht.alltagssprache';
+  const RUECKFRAGE = 'd1d1d1d1-d1d1-4d1d-8d1d-000000000001';
+  const ANTWORT = 'Das Ödem lateral am Knöchel li. geht zurück. Bitte weiter kühlen.';
+
+  it('erklärt Satz für Satz und lässt im Wortlaut, was kein Fachwort hat', async () => {
+    const { adapter, umformungen } = spion();
+    const { handler, pruefeAssistenz } = gateway({ assistenz: adapter });
+    const antwort = await handler(anfrage(ZWECK, { rueckfrage: RUECKFRAGE, text: ANTWORT }));
+
+    expect(await gelesen(antwort)).toEqual({
+      ok: true,
+      art: 'umformen',
+      saetze: [
+        {
+          text: 'Das Ödem (Schwellung) lateral (außen) am Knöchel links geht zurück.',
+          unveraendert: false,
+        },
+        { text: 'Bitte weiter kühlen.', unveraendert: true },
+      ],
+      quelle: 'nachbildung',
+    });
+    // Dieselbe Berechtigung wie beim Ausformulieren: das Antwortrecht am Vorgang.
+    expect(pruefeAssistenz).toHaveBeenCalledExactlyOnceWith(TOKEN, {
+      art: 'rueckfrage',
+      id: RUECKFRAGE,
+    });
+    expect(umformungen).toEqual([
+      {
+        saetze: ['Das Ödem lateral am Knöchel li. geht zurück.', 'Bitte weiter kühlen.'],
+        aufgabe: 'alltagssprache',
+        sprache: 'de',
+        regeln: ALLTAG_REGELN,
+      },
+    ]);
+  });
+
+  it('lässt die Quelle stehen, wenn die Erklärung Seite, Zahl oder Verneinung ändert', async () => {
+    const { adapter } = spion({
+      formuliere: () =>
+        Promise.resolve({
+          ok: true,
+          value: {
+            saetze: [
+              'Die Schwellung außen am rechten Knöchel geht zurück.',
+              'Bitte nicht weiter kühlen.',
+            ],
+          },
+        }),
+    });
+    const { handler } = gateway({ assistenz: adapter });
+    const antwort = await handler(anfrage(ZWECK, { rueckfrage: RUECKFRAGE, text: ANTWORT }));
+
+    expect((await gelesen(antwort)).saetze).toEqual([
+      { text: 'Das Ödem lateral am Knöchel li. geht zurück.', unveraendert: true },
+      { text: 'Bitte weiter kühlen.', unveraendert: true },
+    ]);
+  });
+
+  it('geht ohne Antwortrecht nicht an den Adapter', async () => {
+    const { adapter, umformungen } = spion();
+    const { handler } = gateway({ assistenz: adapter, berechtigung: 'verweigert' });
+    const antwort = await handler(anfrage(ZWECK, { rueckfrage: RUECKFRAGE, text: ANTWORT }));
+    expect(antwort.status).toBe(403);
+    expect(umformungen).toEqual([]);
   });
 });

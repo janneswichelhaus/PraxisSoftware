@@ -5,12 +5,7 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import {
-  UMFORMEN_NACHBILDUNG,
-  UMFORMEN_RECHTSSATZ,
-  umformenKnopf,
-  type Umformen,
-} from './umformen';
+import { UMFORMEN_RECHTSSATZ, umformenKnopf, umformenNachbildung, type Umformen } from './umformen';
 
 /** Die Hilfen unter dem Antwortfeld; ohne Text sagt die Seite, was fehlt. */
 export function Umformknoepfe({
@@ -69,8 +64,8 @@ export function Umformvorschlag({
   return (
     <div ref={abschnitt} tabIndex={-1} className="flex flex-col gap-3 focus:outline-none">
       <Zwischentitel>Vorschlag – bitte prüfen</Zwischentitel>
-      {umformen.vorschlag.quelle === 'nachbildung' ? (
-        <Statusmeldung ton="warnung">{UMFORMEN_NACHBILDUNG}</Statusmeldung>
+      {umformen.vorschlag.quelle === 'nachbildung' && umformen.vorschlagZweck ? (
+        <Statusmeldung ton="warnung">{umformenNachbildung(umformen.vorschlagZweck)}</Statusmeldung>
       ) : null}
       <ListRows beschriftung="Vorschlag Satz für Satz">
         {umformen.vorschlag.saetze.map((satz, stelle) => (

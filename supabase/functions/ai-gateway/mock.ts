@@ -94,26 +94,76 @@ export function erstelleNachbildung(): Sprachadapter {
   };
 }
 
-/** Abkürzungen, die die Nachbildung ausschreibt - ohne Zahl, Einheit oder Seite zu ändern. */
+// Abkürzungen, die die Nachbildung ausschreibt - ohne Zahl, Einheit oder Seite zu ändern. Eine
+// Seite vor einem Hauptwort („re. Knie“) bleibt stehen: Beugen kann die Nachbildung nicht.
 const AUSGESCHRIEBEN: readonly (readonly [RegExp, string])[] = [
   [/(?<![\p{L}\p{N}])(?:tägl|tgl)\.(?![\p{L}\p{N}])/giu, 'täglich'],
   [/(?<![\p{L}\p{N}])evtl\.(?![\p{L}\p{N}])/giu, 'eventuell'],
   [/(?<![\p{L}\p{N}])ggf\.(?![\p{L}\p{N}])/giu, 'gegebenenfalls'],
-  [/(?<![\p{L}\p{N}])li\.(?![\p{L}\p{N}])/giu, 'links'],
-  [/(?<![\p{L}\p{N}])re\.(?![\p{L}\p{N}])/giu, 'rechts'],
-  [/(?<![\p{L}\p{N}])bds\.(?![\p{L}\p{N}])/giu, 'beidseits'],
+  [/(?<![\p{L}\p{N}])[Ll]i\.(?![\p{L}\p{N}]|\s+\p{Lu})/gu, 'links'],
+  [/(?<![\p{L}\p{N}])[Rr]e\.(?![\p{L}\p{N}]|\s+\p{Lu})/gu, 'rechts'],
+  [/(?<![\p{L}\p{N}])[Bb]ds\.(?![\p{L}\p{N}]|\s+\p{Lu})/gu, 'beidseits'],
   [/(?<![\p{L}\p{N}])Min\.(?![\p{L}\p{N}])/gu, 'Minuten'],
   [/(?<![\p{L}\p{N}])Std\.(?![\p{L}\p{N}])/gu, 'Stunden'],
   [/(?<![\p{L}\p{N}])Wdh\.(?![\p{L}\p{N}])/gu, 'Wiederholungen'],
   [/(?<=\d)\s*[x×](?![\p{L}\p{N}])/giu, '-mal'],
 ];
 
+/** Abkürzungen ausgeschrieben; war ihr Punkt zugleich das Satzende, bleibt eines stehen. */
+function ausgeschrieben(text: string): string {
+  let satz = text.trim();
+  const beendet = /[.!?…]$/u.test(satz);
+  for (const [muster, wort] of AUSGESCHRIEBEN) satz = satz.replace(muster, wort);
+  return beendet && !/[.!?…]$/u.test(satz) ? `${satz}.` : satz;
+}
+
 /** Ein Stichpunkt als Satz: Abkürzungen ausgeschrieben, groß begonnen, mit Punkt beendet. */
 export function ausformuliert(stichpunkt: string): string {
-  let satz = stichpunkt.trim();
-  for (const [muster, wort] of AUSGESCHRIEBEN) satz = satz.replace(muster, wort);
-  satz = satz.charAt(0).toUpperCase() + satz.slice(1);
-  return /[.!?…]$/u.test(satz) ? satz : `${satz}.`;
+  const satz = ausgeschrieben(stichpunkt);
+  const gross = satz.charAt(0).toUpperCase() + satz.slice(1);
+  return /[.!?…]$/u.test(gross) ? gross : `${gross}.`;
+}
+
+/** Fachwörter, die die Nachbildung in Klammern erklärt - eine feste Liste, kein Wörterbuch. */
+const ERKLAERT = new Map<string, string>([
+  ['flexion', 'Beugung'],
+  ['extension', 'Streckung'],
+  ['rotation', 'Drehung'],
+  ['abduktion', 'Abspreizen'],
+  ['adduktion', 'Heranführen'],
+  ['quadrizeps', 'vorderer Oberschenkelmuskel'],
+  ['ödem', 'Schwellung'],
+  ['hämatom', 'Bluterguss'],
+  ['lateral', 'außen'],
+  ['medial', 'innen'],
+  ['dorsal', 'hinten'],
+  ['ventral', 'vorn'],
+  ['proximal', 'zum Rumpf hin'],
+  ['distal', 'vom Rumpf weg'],
+  ['lws', 'Lendenwirbelsäule'],
+  ['hws', 'Halswirbelsäule'],
+  ['bws', 'Brustwirbelsäule'],
+  ['isg', 'Kreuz-Darmbein-Gelenk'],
+  ['patella', 'Kniescheibe'],
+  ['skapula', 'Schulterblatt'],
+  ['thorax', 'Brustkorb'],
+  ['analgetikum', 'Schmerzmittel'],
+  ['kontraktur', 'dauerhafte Bewegungseinschränkung'],
+  ['palpation', 'Abtasten'],
+  ['tonus', 'Muskelspannung'],
+  ['parästhesien', 'Kribbeln'],
+]);
+
+/** Ein Satz mit ausgeschriebenen Abkürzungen und erklärten Fachwörtern; alles andere bleibt. */
+export function alltagssprachlich(satz: string): string {
+  const teile = ausgeschrieben(satz).split(/([\p{L}\p{N}]+)/u);
+  return teile
+    .map((teil, stelle) => {
+      const erklaerung = ERKLAERT.get(teil.toLowerCase());
+      if (erklaerung === undefined || (teile[stelle + 1] ?? '').startsWith(' (')) return teil;
+      return `${teil} (${erklaerung})`;
+    })
+    .join('');
 }
 
 /** Die Hilfen ohne Ton als Nachbildung: feste Regeln statt eines Sprachmodells. */
@@ -132,7 +182,8 @@ export function erstelleAssistenznachbildung(): Assistenzadapter {
     formuliere(
       anfrage: Umformanfrage,
     ): Promise<Adapterergebnis<{ readonly saetze: readonly string[] }>> {
-      return Promise.resolve({ ok: true, value: { saetze: anfrage.saetze.map(ausformuliert) } });
+      const umformen = anfrage.aufgabe === 'alltagssprache' ? alltagssprachlich : ausformuliert;
+      return Promise.resolve({ ok: true, value: { saetze: anfrage.saetze.map(umformen) } });
     },
   };
 }

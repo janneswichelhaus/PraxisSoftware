@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
+  ZWECK_ALLTAGSSPRACHE,
   ZWECK_ENTWURF,
   textUmformen,
   umformenVerfuegbar,
@@ -11,7 +12,15 @@ import {
 // Antworten umformen an der Rückfrage. ANN-862: Der Vorschlag lebt nur im Zustand der Seite und
 // gilt nur für den Text, aus dem er entstand; gesendet wird nie ein Vorschlag, nur das Feld.
 
-export const UMFORMEN_NACHBILDUNG = 'Nachbildung: nur Abkürzungen ausgeschrieben.';
+/** Was die Nachbildung je Zweck wirklich tut - sie ist kein Sprachmodell. */
+export function umformenNachbildung(zweck: Umformzweck): string {
+  switch (zweck) {
+    case ZWECK_ENTWURF:
+      return 'Nachbildung: nur Abkürzungen ausgeschrieben.';
+    case ZWECK_ALLTAGSSPRACHE:
+      return 'Nachbildung: Fachwörter aus einer festen Liste erklärt.';
+  }
+}
 
 /** Was mit dem Text geschieht und was nicht (Datenfluss, bleibt nach L7). */
 export const UMFORMEN_RECHTSSATZ =
@@ -29,16 +38,19 @@ export function umformenKnopf(zweck: Umformzweck): string {
   switch (zweck) {
     case ZWECK_ENTWURF:
       return 'Ausformulieren';
+    case ZWECK_ALLTAGSSPRACHE:
+      return 'In Alltagssprache';
   }
 }
 
-const ZWECKE: readonly Umformzweck[] = [ZWECK_ENTWURF];
+const ZWECKE: readonly Umformzweck[] = [ZWECK_ENTWURF, ZWECK_ALLTAGSSPRACHE];
 
 type Stand =
   | { readonly art: 'bereit' }
   | { readonly art: 'laeuft'; readonly zweck: Umformzweck }
   | {
       readonly art: 'vorschlag';
+      readonly zweck: Umformzweck;
       readonly vorschlag: Umformvorschlag;
       /** Der Feldinhalt, aus dem der Vorschlag entstand. */
       readonly grundlage: string;
@@ -60,20 +72,31 @@ export function useUmformen({ rueckfrageId, text }: { rueckfrageId: string; text
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
-  const verfuegbar = new Map<Umformzweck, boolean>([[ZWECK_ENTWURF, entwurf.data === true]]);
+  const alltagssprache = useQuery({
+    queryKey: ['ki', 'verfuegbar', ZWECK_ALLTAGSSPRACHE],
+    queryFn: ({ signal }) => umformenVerfuegbar(ZWECK_ALLTAGSSPRACHE, signal),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const verfuegbar = new Map<Umformzweck, boolean>([
+    [ZWECK_ENTWURF, entwurf.data === true],
+    [ZWECK_ALLTAGSSPRACHE, alltagssprache.data === true],
+  ]);
 
   // Wer die Seite verlässt, bricht eine laufende Anfrage ab.
   useEffect(() => () => anfrage.current?.abort(), []);
 
   // Ein Vorschlag gilt nur für den Text, aus dem er entstand: Wird weitergetippt, ist er fort.
-  const vorschlag =
-    stand.art === 'vorschlag' && stand.grundlage === text ? stand.vorschlag : undefined;
+  const offen = stand.art === 'vorschlag' && stand.grundlage === text ? stand : undefined;
+  const vorschlag = offen?.vorschlag;
 
   return {
     /** Die Zwecke, die der Gateway hier bedient - in der Reihenfolge der Knöpfe. */
     angeboten: ZWECKE.filter((zweck) => verfuegbar.get(zweck) === true),
     laeuft: stand.art === 'laeuft' ? stand.zweck : undefined,
     vorschlag,
+    /** Wozu der offene Vorschlag entstand. */
+    vorschlagZweck: offen?.zweck,
     meldung: stand.art === 'bereit' ? meldung : undefined,
 
     starten: async (zweck: Umformzweck) => {
@@ -105,7 +128,7 @@ export function useUmformen({ rueckfrageId, text }: { rueckfrageId: string; text
         setMeldung({ ton: 'neutral', text: NICHTS_UMZUFORMEN });
         return;
       }
-      setStand({ art: 'vorschlag', vorschlag: ergebnis.vorschlag, grundlage });
+      setStand({ art: 'vorschlag', zweck, vorschlag: ergebnis.vorschlag, grundlage });
     },
     verwerfen: () => {
       anfrage.current?.abort();

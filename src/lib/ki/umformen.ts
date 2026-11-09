@@ -13,7 +13,10 @@ import {
 /** Stichpunkte der Praxis werden ganze Sätze. */
 export const ZWECK_ENTWURF = 'nachricht.entwurf';
 
-export type Umformzweck = typeof ZWECK_ENTWURF;
+/** Dieselbe Aussage in verständlichen Wörtern, für die Person, die sie liest. */
+export const ZWECK_ALLTAGSSPRACHE = 'nachricht.alltagssprache';
+
+export type Umformzweck = typeof ZWECK_ENTWURF | typeof ZWECK_ALLTAGSSPRACHE;
 
 /** So lang wie eine Antwort höchstens; der Gateway hält dieselbe Grenze. */
 export const UMFORMEN_HOECHSTZEICHEN = 2000;

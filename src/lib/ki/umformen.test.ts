@@ -6,8 +6,14 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 const { ASSISTENZ_FEHLERTEXTE } = await import('./gateway');
-const { UMFORMEN_HOECHSTZEICHEN, ZWECK_ENTWURF, stuecke, textUmformen, umformenVerfuegbar } =
-  await import('./umformen');
+const {
+  UMFORMEN_HOECHSTZEICHEN,
+  ZWECK_ALLTAGSSPRACHE,
+  ZWECK_ENTWURF,
+  stuecke,
+  textUmformen,
+  umformenVerfuegbar,
+} = await import('./umformen');
 
 // Umformen im Browser (ANN-861): der Zweck in der Adresse, genau Rückfrage und Text hinaus, je
 // Satz der Eingabe ein Satz mit seiner Quelle - und kein Vorschlag, der diese Form nicht hat.
@@ -129,7 +135,17 @@ describe('textUmformen', () => {
   it('fragt die Verfügbarkeit je Zweck', async () => {
     invoke.mockResolvedValue({ data: { ok: true, verfuegbar: true }, error: null });
     expect(await umformenVerfuegbar(ZWECK_ENTWURF)).toBe(true);
-    expect(invoke.mock.calls[0]![0]).toBe('ai-gateway?zweck=nachricht.entwurf');
+    expect(await umformenVerfuegbar(ZWECK_ALLTAGSSPRACHE)).toBe(true);
+    expect(invoke.mock.calls.map((aufruf) => aufruf[0] as string)).toEqual([
+      'ai-gateway?zweck=nachricht.entwurf',
+      'ai-gateway?zweck=nachricht.alltagssprache',
+    ]);
+  });
+
+  it('schickt Alltagssprache unter ihrem eigenen Zweck', async () => {
+    invoke.mockResolvedValue({ data: ERFOLG, error: null });
+    await textUmformen({ zweck: ZWECK_ALLTAGSSPRACHE, rueckfrageId: RUECKFRAGE, text: TEXT });
+    expect(invoke.mock.calls[0]![0]).toBe('ai-gateway?zweck=nachricht.alltagssprache');
   });
 });
 

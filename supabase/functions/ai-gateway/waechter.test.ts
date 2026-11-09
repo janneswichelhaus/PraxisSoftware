@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ausformuliert } from './mock.ts';
+import { alltagssprachlich, ausformuliert } from './mock.ts';
 import {
   gleicherGehalt,
   masseinheiten,
@@ -241,6 +241,16 @@ describe('Nachbildung: Ausformulieren', () => {
     expect(ausformuliert(stichpunkt)).toBe(satz);
   });
 
+  it('schreibt eine Seite vor einem Hauptwort nicht aus - dort bleibt die Quelle stehen', () => {
+    // „am rechts Knie“ wäre falsch; mit dem Punkt der Abkürzung besteht der Satz die Wächter nicht.
+    const quelle = 'kühlen am re. Knie';
+    expect(ausformuliert(quelle)).toBe('Kühlen am re. Knie.');
+    expect(pruefeUmformung([quelle], [ausformuliert(quelle)])).toEqual([
+      { text: quelle, unveraendert: true },
+    ]);
+    expect(alltagssprachlich('Ödem am li. Knöchel.')).toBe('Ödem (Schwellung) am li. Knöchel.');
+  });
+
   it('besteht mit jedem Stichpunkt die Wächter', () => {
     const quellen = [
       'knie treppe ok',
@@ -252,5 +262,43 @@ describe('Nachbildung: Ausformulieren', () => {
     ];
     const ergebnis = pruefeUmformung(quellen, quellen.map(ausformuliert));
     expect(ergebnis?.map((satz) => satz.unveraendert)).toEqual(quellen.map(() => false));
+  });
+});
+
+describe('Nachbildung: Alltagssprache', () => {
+  it.each([
+    ['Die Flexion ist besser.', 'Die Flexion (Beugung) ist besser.'],
+    [
+      'Ödem lateral am Knöchel li., LWS frei.',
+      'Ödem (Schwellung) lateral (außen) am Knöchel links, LWS (Lendenwirbelsäule) frei.',
+    ],
+    [
+      'Kein Hämatom, Quadrizeps 3x 10 Wdh.',
+      'Kein Hämatom (Bluterguss), Quadrizeps (vorderer Oberschenkelmuskel) 3-mal 10 Wiederholungen.',
+    ],
+    // Schon erklärt oder nicht in der Liste: bleibt, wie es ist.
+    ['Flexion (Beugung) bis 110 Grad.', 'Flexion (Beugung) bis 110 Grad.'],
+    ['Bitte weiter üben.', 'Bitte weiter üben.'],
+    // Kein Wortteil: „medialisiert“ ist nicht „medial“.
+    ['Patella medialisiert?', 'Patella (Kniescheibe) medialisiert?'],
+  ])('erklärt „%s“', (satz, erwartet) => {
+    expect(alltagssprachlich(satz)).toBe(erwartet);
+  });
+
+  it('besteht mit jedem Satz die Wächter und ändert nichts zweimal', () => {
+    const quellen = [
+      'Ödem lateral am Knöchel li., LWS frei.',
+      'Kein Hämatom, Quadrizeps 3x 10 Wdh.',
+      'Vielleicht Kontraktur?',
+      'Bitte weiter üben.',
+    ];
+    const einmal = quellen.map(alltagssprachlich);
+    expect(pruefeUmformung(quellen, einmal)?.map((satz) => satz.unveraendert)).toEqual([
+      false,
+      false,
+      false,
+      true,
+    ]);
+    expect(einmal.map(alltagssprachlich)).toEqual(einmal);
   });
 });

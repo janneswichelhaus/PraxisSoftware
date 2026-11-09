@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ALLTAG_REGELN,
   AUDIOFORMATE,
   DIKTAT_ABSCHNITTE,
   DIKTAT_REGELN,
@@ -22,6 +23,7 @@ describe('Zweckliste', () => {
       'dokumentation.diktat',
       'dokumentation.ordnen',
       'nachricht.entwurf',
+      'nachricht.alltagssprache',
     ]);
     for (const kennung of Object.keys(ZWECKE)) expect(zweckAus(kennung)?.kennung).toBe(kennung);
   });
@@ -167,6 +169,35 @@ describe('Zweckliste', () => {
     ])('nennt in den Regeln: %s', (_punkt, muster) => {
       expect(ENTWURF_REGELN).toMatch(muster);
       expect(zweck.regeln).toBe(ENTWURF_REGELN);
+    });
+  });
+
+  describe('Antwort in Alltagssprache', () => {
+    const zweck = ZWECKE['nachricht.alltagssprache'];
+
+    it('gilt für denselben Gegenstand und dieselbe Länge wie das Ausformulieren', () => {
+      expect(zweck.art).toBe('umformen');
+      expect(zweck.gegenstand).toBe('rueckfrage');
+      expect(zweck.aufgabe).toBe('alltagssprache');
+      expect(zweck.eingabe).toEqual(ZWECKE['nachricht.entwurf'].eingabe);
+    });
+
+    it.each([
+      ['dieselbe Aussage', /Die Aussage bleibt dieselbe/],
+      [
+        'Fachwörter ersetzen oder kurz erklären',
+        /Fachwörter[^\n]*ersetzen oder in Klammern kurz erklären/,
+      ],
+      ['ein Satz je Abschnitt', /je Abschnitt[^\n]*genau ein Satz/],
+      ['kein Rat, keine Empfehlung, keine Diagnose', /kein Rat, keine Empfehlung, keine Diagnose/],
+      [
+        'Zahlen, Seiten, Verneinungen bleiben',
+        /Zahlen als Ziffern[^\n]*Körperseiten, Verneinungen/,
+      ],
+      ['ohne Fachwort im Wortlaut', /Ein Satz ohne Fachwort bleibt im Wortlaut/],
+    ])('nennt in den Regeln: %s', (_punkt, muster) => {
+      expect(ALLTAG_REGELN).toMatch(muster);
+      expect(zweck.regeln).toBe(ALLTAG_REGELN);
     });
   });
 });

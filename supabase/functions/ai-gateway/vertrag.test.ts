@@ -13,6 +13,7 @@ import { einheiten as einheitenImBrowser } from '@/lib/ki/einheiten';
 import { ORDNEN_HOECHSTZEICHEN, ZWECK_ORDNEN } from '@/lib/ki/ordnen';
 import {
   UMFORMEN_HOECHSTZEICHEN,
+  ZWECK_ALLTAGSSPRACHE,
   ZWECK_ENTWURF,
   stuecke as stueckeImBrowser,
 } from '@/lib/ki/umformen';
@@ -67,7 +68,7 @@ describe('Vertrag zwischen Browser und AI Gateway', () => {
   });
 
   it('nennt nur Zwecke, die der Gateway kennt', () => {
-    for (const zweck of [ZWECK_DIKTAT, ZWECK_ORDNEN, ZWECK_ENTWURF]) {
+    for (const zweck of [ZWECK_DIKTAT, ZWECK_ORDNEN, ZWECK_ENTWURF, ZWECK_ALLTAGSSPRACHE]) {
       expect(Object.keys(ZWECKE)).toContain(zweck);
     }
   });

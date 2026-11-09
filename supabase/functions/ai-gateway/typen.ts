@@ -154,7 +154,7 @@ export interface Sprachadapter {
 export interface Umformanfrage {
   /** In der Reihenfolge des Textes, zerlegt vom Gateway (`waechter.ts`). */
   readonly saetze: readonly string[];
-  readonly aufgabe: 'ausformulieren';
+  readonly aufgabe: 'ausformulieren' | 'alltagssprache';
   readonly sprache: Sprache;
   readonly regeln: string;
 }
@@ -186,7 +186,11 @@ export interface Assistenzadapter {
 export interface Protokolleintrag {
   /** Der geprüfte Zweck - nie der Wert aus der Anfrage, der beliebig sein kann. */
   readonly zweck:
-    'dokumentation.diktat' | 'dokumentation.ordnen' | 'nachricht.entwurf' | 'unbekannt';
+    | 'dokumentation.diktat'
+    | 'dokumentation.ordnen'
+    | 'nachricht.entwurf'
+    | 'nachricht.alltagssprache'
+    | 'unbekannt';
   /** Anbieterkennung oder die Stelle davor: `sitzung`, `berechtigung`, `gate`. */
   readonly anbieter: string;
   /** `gate_rejected`: Die Nachbildung ist in der Produktion ausgeschlossen. */
