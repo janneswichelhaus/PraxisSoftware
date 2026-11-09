@@ -24,16 +24,9 @@ M5, M7 und M9 sind zurückgebaut, das Barometer nur namentlich (Option A, §20.2
 M2 Check-Up, M3 Teamchat (ohne Ausbau), M4 Barometer, M6 Ernährung und M8 Üben ohne Netz.
 
 ## Design-Review der Plattform, Lauf 1
-Schritte 0 bis 6 sind gemergt (bis #359), 2 bis 4 gesichtet. Je Schritt ein Handoff (sein Merge gibt frei),
-je Teilschritt eine PR, geprüft mit `pnpm bildstrecke --nur=plattform,anmeldung`,
-`plattform-barrierefreiheit.spec.ts` und der Ratsche in `src/designsystem.test.ts`. Befunde DR-101
-bis DR-162 und Ideen N3 bis N9: `git show 9452575:docs/design/review-2026-10/lauf-1-bericht.md`;
-Reihenfolge und Abgleich mit Lauf 2 (Praxis-App): `lauf-1-umsetzung.md`, Briefings in
-`lauf-1-briefings/`, im selben Ordner.
-
-| Schritt | Inhalt | Vorgabe | Stand |
-| --- | --- | --- | --- |
-| 7 Ich und Datenschutz | DR-151, DR-152; Einwilligungen ohne Drängen | Briefing `07-ich-datenschutz.md` | gebaut ohne Leinwand, ANN-858 bis ANN-860; Sichtung |
+Schritte 0 bis 7 sind gemergt (bis #361), 2 bis 4 gesichtet; die Leinwände fließen nach. Befunde
+DR-101 bis DR-162, Ideen N3 bis N9, Umsetzung und Briefings:
+`git show 9452575:docs/design/review-2026-10/` (`lauf-1-bericht.md`, `lauf-1-umsetzung.md`).
 
 ## Ziel und Umfang
 **Die Praxis eröffnet im Juli 2027**, der einzige Termin (2026-09-05), ohne Vorgängersystem und
@@ -142,7 +135,6 @@ Zuschnitt, keine Spec.
 | 9 | **KI-EPIC-002** | Sprache umformen, ohne Inhalt hinzuzufügen: Freitext strukturieren, Patientensprache, Antwortentwürfe, Zusammenfassung ohne Bewertung, **Felder der Verordnung aus dem Foto vorschlagen**, jeweils mit Quellenbindung und menschlicher Freigabe | `IDEA-KI-002`, `-003`, `-004` |
 | 9 | **MAP-007** | Führung auf dem Gerät, ohne dass die Praxis die Position erfährt (ADR-019 Abschnitt F, §20.1: Position nur auf dem Gerät, Start nur auf Aktion, Übermittlung nur zur Neuberechnung, keine Auswertung). Zuerst **E-24** (liefern die Radprofile Manöver? ein Aufruf; ohne Ja entfällt das Epic), B2 in erweiterter Fassung und das Aufrufkontingent; Stories MAP-007a bis -f, keine rein visuelle Führung (ADR-019 Punkt 31), synthetische Adressen | `IDEA-PRX-044`; Vorgabe `git show 9452575:docs/development/MAP-LOOPS.md` |
 | 9 | **PRX-EPIC-004** | Rest: Übertragung an DATEV hinter Adapter, nach Anbieterprüfung und B4 | `IDEA-PRX-026`, `-021`, `-024`, `-033`, `-022` |
-| 9 | **UI-003** | Feinschliff und Barrierefreiheit über alle Seiten (G17): Feindesign, PWA-Manifest, was die Bereichsüberholungen übrig lassen; K5 mit Diktat in ≤ 6 Tipps, die ausdrückliche Übernahme (§6.3) bleibt (erreicht, ANN-840) | — |
 
 ## Blöcke 10 bis 14: vom Freeze bis zur Eröffnung
 **Etappe G, Betriebsreife** (G18 ist das Gate M3; G20 und G22 nach ADR-025 sind gebaut):
@@ -351,6 +343,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | KI-EPIC-001 Gateway und Sprachdokumentation | gesichtet | 2026-11-01 | #243, Branch claude/kind-mayer-smn76m | 2026-11-05 | Inhaltstreue durch Bauart, „Mit Diktat“ am Eintrag, E13 überbrückt (ANN-824 bis ANN-827); Anbieter (C6) in Block 11 |
 | B | PRX-EPIC-004 Komfort und Export | in_arbeit | — | #344 bis #347; #349 auf Branch claude/weiter-77kj64 (PRX-048, PRX-049) | — | DATEV-Export (ANN-828 bis ANN-830), Kennzahlen (ANN-831, ANN-832, ANN-834), Farbe (ANN-833), Planungskarte (ANN-835), Kartenzahlung (ANN-836, ANN-837), Kalender-Abo (ANN-838, ANN-839); offen: Übertragung an DATEV nach B4 |
 | B | UI-003 Politur und Barrierefreiheit (G17) | fertig | 2026-11-08 | #355 bis #357 | — | K5 mit Diktat 6 statt 7 Tipps (ANN-840); axe und Ziele ab 44 px je Praxisseite (ANN-849), auch beim Laden, nach Fehlern und in sechs Fenstern ohne Adresse; BEF-224 und Terminformulare angeglichen |
+| B | SLK-EPIC-002 Weniger Text überall (Leitfaden L7) | fertig | 2026-11-09 | SLK-010 bis -019 | — | Sätze in JSX 1.774 → 932, Ratsche saetze |
 | B | DES-EPIC-001 Design der ganzen App nach DESIGN.md: Bausteine, Ratsche, Bereiche B1 bis B8, Runde 2 nach Design- und Praxis-Review | gesichtet | 2026-10-13 | PR #239, docs/design/DESIGN.md, src/designsystem.test.ts, Bildstrecke vorher/nachher | 2026-11-05 | Auftrag Jannes (12.10.2026); Sichtung per Bildstrecke im PR |
 | B | Restbefunde der Praxis-Prüfung: Vor der Tür (K3), Wie zuletzt (K6), Absage in vier Tipps (K9), Übung aus der Bibliothek in den Plan | gesichtet | 2026-10-14 | Branch ccr-d79ef3d1-5rclb1, tests/e2e/besuch.spec.ts, tests/e2e/authenticated/kernablaeufe.spec.ts | 2026-11-05 | Bereichsüberholung 2 der Roadmap; Sichtung per Bildstrecke im PR |
 | B | Erstaufnahme geführt: eine Seite vom Terminpanel bis zur Doku (K10), Neuaufnahme am Telefon in drei Tipps (K11) | gesichtet | 2026-10-15 | Branch ccr-248b0353-fbdcs9, tests/e2e/authenticated/kernablaeufe.spec.ts (K10 10 Tipps, K11 3 Tipps) | 2026-11-05 | Bereichsüberholung 3 der Roadmap; ANN-542, ANN-543; Sichtung per Bildstrecke im PR |

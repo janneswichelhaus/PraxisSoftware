@@ -1,4 +1,4 @@
-# Status · Stand 2026-11-08
+# Status · Stand 2026-11-09
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -6,15 +6,14 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Plattform Schritt 7 Ich und Datenschutz** (#361), ohne Leinwand, ANN-858 bis ANN-860;
+**Weniger Text überall** (Leitfaden L7, SLK-010 bis SLK-019) auf `ccr-7a6275b7-x02kti`;
 Merge bei Jannes.
 
 ## Danach
 
-Bis M2 (Jannes 2026-11-01): weniger Text überall (Jannes 8.11.), Leinwände fließen nach;
-DATEV erst nach B4; zuletzt der Wartungsmodus. **G14
-parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA,
-zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
+Bis M2 (Jannes 2026-11-01): Leinwände fließen nach; DATEV erst nach B4; zuletzt der Wartungsmodus.
+**G14 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter,
+DSFA, zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberatung.
 
 ## Bei Jannes
 
@@ -42,4 +41,4 @@ zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die Steuerberat
 
 ## Letzte Session
 
-08.11.2026, Plattform Schritt 7 ab `main`, keine Migration.
+09.11.2026, weniger Text ab `main`, keine Migration.

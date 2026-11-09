@@ -133,7 +133,7 @@ erreicht, Fehler- oder Ladezustand, leere Seite, axe, bei 375 px Ziele unter 44 
 `--ohne-barrierefreiheit`; in der CI je Praxisseite `authenticated/barrierefreiheit.spec.ts`). Schreibende Anfragen hält ein Lesewächter an und
 meldet sie; die Bildstrecke verändert keine Daten. Teilmengen: `--nur=abrechnung,/training`,
 `--konten=therapist`, `--breiten=375`; `--vergleich=<vorher>` schreibt `vergleich.html`
-(`--nur-bogen` erzeugt nur die Bögen neu). Eine neue Route ohne Eintrag in `routen.mjs` macht
+(`--nur-bogen` erzeugt nur die Bögen neu); je Bild zählt sie die sichtbaren Wörter (L7). Eine neue Route ohne Eintrag in `routen.mjs` macht
 `pnpm test` rot (`scripts/bildstrecke/bildstrecke.test.mjs`). Während eines Laufs nichts im Projekt
 ändern: Eine geänderte Markdown- oder JSON-Datei lädt über Tailwind alle offenen Seiten neu.
 

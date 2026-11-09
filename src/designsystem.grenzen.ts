@@ -13,6 +13,8 @@
  *     `Listenabschnitt` oder `Datenliste`;
  *   * `knoepfe` - ein rohes `<button className=…>` statt `Button`,
  *     `Symbolknopf`, `Chip` oder `Segment`;
+ *   * `saetze` - ein satzförmiger Text in JSX statt Titel, Beschriftung und
+ *     Knopf (Leitfaden L7, `scripts/saetze.mjs`; auch in Bausteinen);
  *   * `tabellen` - ein `<table>` statt `Datenliste` (ohne Druckblätter);
  *   * `ueberschriften` - ein `<h1>` bis `<h4>` mit eigenen Klassen statt
  *     `PageHeader`, `Objektkopf`, `Section` oder `Zwischentitel` (ohne
@@ -33,7 +35,7 @@
  * Zeilen, und die Zusammenführung der Zweige bleibt ohne Konflikt.
  */
 export const GRENZEN: Record<
-  'breiten' | 'details' | 'divideY' | 'knoepfe' | 'tabellen' | 'ueberschriften',
+  'breiten' | 'details' | 'divideY' | 'knoepfe' | 'saetze' | 'tabellen' | 'ueberschriften',
   Readonly<Record<string, number>>
 > = {
   breiten: {
@@ -77,6 +79,91 @@ export const GRENZEN: Record<
     'features/patients/treatment-bases': 4,
 
     'features/privacy/datenschutz': 1,
+  },
+  saetze: {
+    app: 13,
+
+    'features/billing': 46,
+
+    'features/billing/statistics': 9,
+
+    'features/calendar/appointments': 91,
+
+    'features/calendar/scheduling': 13,
+
+    'features/calendar/slot-search': 4,
+
+    'features/calendar/territories': 9,
+
+    'features/calendar/today': 5,
+
+    'features/calendar/tours': 22,
+
+    'features/calendar/waitlist': 9,
+
+    'features/clinical/assessments': 18,
+
+    'features/clinical/documentation': 55,
+
+    'features/clinical/therapy-reports': 9,
+
+    'features/core/auth': 30,
+
+    'features/core/preview': 3,
+
+    'features/exercise/checkins': 6,
+
+    'features/exercise/exercises': 18,
+
+    'features/fleet': 42,
+
+    'features/nutrition': 20,
+
+    'features/patients': 18,
+
+    'features/patients/files': 22,
+
+    'features/patients/intake': 1,
+
+    'features/patients/timeline': 2,
+
+    'features/patients/training-offers': 6,
+
+    'features/patients/treatment-bases': 10,
+
+    'features/portal/messages': 14,
+
+    'features/portal/platform': 178,
+
+    'features/portal/platform-access': 27,
+
+    'features/privacy/audit': 2,
+
+    'features/privacy/datenschutz': 15,
+
+    'features/privacy/retention': 23,
+
+    'features/teamchat': 44,
+
+    'features/training': 18,
+
+    'features/workforce/reimbursements': 12,
+
+    'features/workforce/staff': 39,
+
+    'features/workforce/timeaccount': 10,
+
+    'features/workforce/vacation': 13,
+
+    'features/workforce/working-time': 9,
+
+    'features/workplace/account': 25,
+
+    'features/workplace/feedback': 9,
+
+    'features/workplace/open-points': 12,
+
+    'features/workplace/practice-settings': 1,
   },
   tabellen: {
     'features/billing/statistics': 1,
