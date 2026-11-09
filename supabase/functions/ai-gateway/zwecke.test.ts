@@ -5,28 +5,37 @@ import {
   DIKTAT_REGELN,
   HOECHST_BYTES,
   HOECHST_DAUER_S,
+  ORDNEN_HOECHST_ZEICHEN,
+  ORDNEN_REGELN,
   ZWECKE,
   zweckAus,
 } from './zwecke.ts';
 
-/**
- * Die Zweckliste (ADR-005, PROJECT_PRINCIPLES.md 6.1): genau ein Zweck, mit
- * Eingabe, Adaptern, Ausgabe und den Regeln aus 6.3 für jeden künftigen
- * Adapter.
- */
+// Die Zweckliste (ADR-005, PROJECT_PRINCIPLES.md 6.1): Ein neuer Zweck ist eine Entscheidung
+// und steht deshalb hier als Liste; je Zweck Eingabe, Adapter, Ausgabe und Regeln.
 
 describe('Zweckliste', () => {
-  it('kennt genau einen Zweck: das Diktat zur Behandlungsdokumentation', () => {
-    expect(Object.keys(ZWECKE)).toEqual(['dokumentation.diktat']);
-    expect(zweckAus('dokumentation.diktat')?.kennung).toBe('dokumentation.diktat');
+  it('kennt genau diese Zwecke', () => {
+    expect(Object.keys(ZWECKE)).toEqual(['dokumentation.diktat', 'dokumentation.ordnen']);
+    for (const kennung of Object.keys(ZWECKE)) expect(zweckAus(kennung)?.kennung).toBe(kennung);
   });
 
-  it.each([['Dokumentation.Diktat'], [''], [' dokumentation.diktat'], [null], [42], [{}]])(
-    'kennt %j nicht',
-    (wert) => {
-      expect(zweckAus(wert)).toBeNull();
-    },
-  );
+  it.each([
+    ['Dokumentation.Diktat'],
+    [''],
+    [' dokumentation.diktat'],
+    ['toString'],
+    ['__proto__'],
+    [null],
+    [42],
+    [{}],
+  ])('kennt %j nicht', (wert) => {
+    expect(zweckAus(wert)).toBeNull();
+  });
+
+  it('lässt für jeden Zweck bis zur Anbieterentscheidung nur die Nachbildung zu', () => {
+    for (const zweck of Object.values(ZWECKE)) expect(zweck.adapter).toEqual(['mock']);
+  });
 
   it('erlaubt Ton in fünf Formaten, höchstens 5 MiB und fünf Minuten, auf Deutsch', () => {
     const { eingabe } = ZWECKE['dokumentation.diktat'];
@@ -91,5 +100,32 @@ describe('Zweckliste', () => {
 
   it('nennt alle vier Abschnitte in den Regeln', () => {
     for (const titel of DIKTAT_ABSCHNITTE) expect(DIKTAT_REGELN).toContain(titel);
+  });
+
+  describe('Ordnen getippter Notizen', () => {
+    const zweck = ZWECKE['dokumentation.ordnen'];
+
+    it('nimmt Text bis zur Länge eines Eintrags und prüft am Termin', () => {
+      expect(zweck.art).toBe('ordnen');
+      expect(zweck.gegenstand).toBe('termin');
+      expect(zweck.eingabe).toEqual({ hoechstZeichen: ORDNEN_HOECHST_ZEICHEN, sprache: 'de' });
+      expect(ORDNEN_HOECHST_ZEICHEN).toBe(20_000);
+    });
+
+    it('ordnet in dieselben vier Abschnitte wie das Diktat', () => {
+      expect(zweck.ausgabe.abschnitte).toBe(DIKTAT_ABSCHNITTE);
+    });
+
+    it.each([
+      ['nur einordnen', /Nur einordnen, nicht interpretieren/],
+      ['nur Titel als Antwort', /genau ein Titel[^\n]*kein Text/],
+      ['nichts ergänzen', /Nichts ergänzen[^\n]*keine Diagnose, keine Bewertung, keine Empfehlung/],
+      ['nichts auslassen', /Nichts auslassen[^\n]*nicht verdichten/],
+      ['nicht umformulieren', /Nicht umformulieren[^\n]*Wortlaut/],
+      ['Aussage gegen Beobachtung', /Aussage der Patient:in[^\n]*Beobachtung/],
+    ])('nennt in den Regeln: %s', (_punkt, muster) => {
+      expect(ORDNEN_REGELN).toMatch(muster);
+      expect(zweck.regeln).toBe(ORDNEN_REGELN);
+    });
   });
 });

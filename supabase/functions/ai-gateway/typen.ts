@@ -74,6 +74,17 @@ export type Antwort =
   | { readonly ok: false; readonly error: Gatewayfehler };
 
 /**
+ * Die Antwort auf „Ordnen“: die Sätze des getippten Textes im Wortlaut, je Abschnitt der
+ * Vorlage. Der Text selbst geht nicht zurück - die Seite hat ihn.
+ */
+export interface Ordnungsantwort {
+  readonly ok: true;
+  readonly art: 'ordnen';
+  readonly abschnitte: readonly Abschnitt[];
+  readonly quelle: Quelle;
+}
+
+/**
  * Die Antwort auf die Frage vor „Sprechen“ (`GET`): Wird der Zweck hier
  * bedient? Nur ja oder nein - kein Anbieter, keine Quelle.
  */
@@ -129,6 +140,19 @@ export interface Sprachadapter {
 }
 
 /**
+ * Ein Anbieter für die Hilfen ohne Ton. Was er liefert, ist eine Behauptung, bis der Gateway
+ * sie an der Eingabe geprüft hat: Er nennt Stellen, den Wortlaut setzt der Gateway.
+ */
+export interface Assistenzadapter {
+  readonly id: string;
+  readonly quelle: Quelle;
+  ordneZu(
+    anfrage: Zuordnungsanfrage,
+    signal: AbortSignal,
+  ): Promise<Adapterergebnis<{ readonly zuordnung: readonly string[] }>>;
+}
+
+/**
  * Was der Handler zu einem Fehler meldet (ADR-011) - einen Ausgang ins
  * Betriebslog gibt es dafür noch nicht (`index.ts`): Zweck, Anbieterkennung,
  * Fehlerklasse und Dauer. Kein Feld für Inhalt, Kennung oder Größe der
@@ -136,7 +160,7 @@ export interface Sprachadapter {
  */
 export interface Protokolleintrag {
   /** Der geprüfte Zweck - nie der Wert aus der Anfrage, der beliebig sein kann. */
-  readonly zweck: 'dokumentation.diktat' | 'unbekannt';
+  readonly zweck: 'dokumentation.diktat' | 'dokumentation.ordnen' | 'unbekannt';
   /** Anbieterkennung oder die Stelle davor: `sitzung`, `berechtigung`, `gate`. */
   readonly anbieter: string;
   /** `gate_rejected`: Die Nachbildung ist in der Produktion ausgeschlossen. */

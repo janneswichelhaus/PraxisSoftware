@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-08.
+Zuletzt aktualisiert: 2026-11-09.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -914,6 +914,10 @@ Datenschutz · offen · 2026-11-03 · — · Prüfpaket · Wiedervorlage: Datens
 Datenschutz · offen · 2026-11-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
 **Annahme.** Je Eintrag Tag, Art, Stand, Bezug; kein Wortlaut von Doku, Bogen, Nachricht, keine Diagnose, kein Betrag. Je Gruppe die Rolle ihrer Sicht. **Grundlage.** ADR-004 Punkte 3, 6; ADR-010 Punkt 16. **Anker.** `public.get_patient_timeline`. **Rücknahme.** Funktion entfernen · Aufwand `klein`.
 
+### ANN-862 — Hilfen ohne Ton: nichts gespeichert, kein Merkmal, kein Name an den Anbieter
+Datenschutz · offen · 2026-11-09 · — · Prüfpaket · Wiedervorlage: Anbieterprüfung (C6); B1\
+**Annahme.** Vorschläge leben nur in der Seite. An den Adapter gehen Text oder Bild und Regeln, nie Kennung, Name oder die Frage der Person; ein Bild nur als offener Verordnungsscan mit bestätigter Prüfsumme. Übernommenes ist Text der Person, ein Merkmal trägt nur das Diktat (ANN-825). **Grundlage.** §6.1; ADR-005 Punkt 7; ADR-017 Punkt 39; ANN-520. **Anker.** `assistenzAnfragen` in `src/lib/ki/gateway.ts`. **Rücknahme.** Klasse oder Merkmal je Zieltabelle · Aufwand `groß`.
+
 ## Fachregeln
 ### ANN-840 — Diktat am leeren Feld: übernehmen und festschreiben in einem Tipp
 Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: Sichtung K5\
@@ -1058,6 +1062,10 @@ Praxisprozess · offen · 2026-11-06 · — · — · Wiedervorlage: —\
 ### ANN-846 — Verlauf der Beratung: Mittel über Tage mit Eintrag
 Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
 **Regel.** Mittel je Tag über die Tage mit Eintrag, Wasser über die Tage mit Wasser; ein leerer Tag zählt nicht als 0. Wochen ab Montag, höchstens zwölf, neben den Zielwerten von heute. Sitzung = abgehakter Beratungstermin; der Zeitraum beginnt am Tag nach der letzten vor heute, sonst mit der Beratung. **Grundlage.** ADR-027 Punkte 11, 13. **Anker.** `app.nutrition_course_span`.
+
+### ANN-861 — Hilfen ohne Ton: Der Anbieter nennt Stellen, den Wortlaut setzt der Gateway
+Technik · offen · 2026-11-09 · — · — · Wiedervorlage: Anbieterprüfung (C6)\
+**Regel.** Ordnen: je Satz ein Titel. Auszug: bis zwei Sätze je Eintrag der letzten sechs Termine. Foto: Fundstellen im erkannten Text. Umformen: ein Satz je Quelle; Zahl, Einheit, Seite, Verneinung, Unsicherheit bleiben, sonst die Quelle. **Grundlage.** ADR-006 Punkt 5; ANN-824. **Anker.** `gleicheSaetze` in `src/lib/ki/einheiten.ts`.
 
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |

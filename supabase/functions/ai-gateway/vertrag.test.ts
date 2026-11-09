@@ -3,14 +3,23 @@ import {
   DIKTAT_ABSCHNITTE as ABSCHNITTE_IM_BROWSER,
   DIKTAT_HOECHSTBYTES,
   DIKTAT_HOECHSTDAUER_S,
+  ASSISTENZ_FEHLERTEXTE,
   GATEWAY_FEHLERKLASSEN,
   KI_FEHLERTEXTE,
   ZWECK_DIKTAT,
   saetze as saetzeImBrowser,
 } from '@/lib/ki/gateway';
-import { saetze } from './inhaltstreue.ts';
+import { einheiten as einheitenImBrowser } from '@/lib/ki/einheiten';
+import { ORDNEN_HOECHSTZEICHEN, ZWECK_ORDNEN } from '@/lib/ki/ordnen';
+import { einheiten, saetze } from './inhaltstreue.ts';
 import { FEHLERKLASSEN } from './typen.ts';
-import { DIKTAT_ABSCHNITTE, HOECHST_BYTES, HOECHST_DAUER_S, ZWECKE } from './zwecke.ts';
+import {
+  DIKTAT_ABSCHNITTE,
+  HOECHST_BYTES,
+  HOECHST_DAUER_S,
+  ORDNEN_HOECHST_ZEICHEN,
+  ZWECKE,
+} from './zwecke.ts';
 
 /**
  * Browser und Gateway sprechen denselben Vertrag (wie `typen.test.ts` beim
@@ -28,6 +37,7 @@ describe('Vertrag zwischen Browser und AI Gateway', () => {
   it('hat für jede Fehlerklasse einen Satz für die Oberfläche', () => {
     for (const klasse of [...FEHLERKLASSEN, 'function_unavailable'] as const) {
       expect(KI_FEHLERTEXTE[klasse], klasse).toMatch(/\S/);
+      expect(ASSISTENZ_FEHLERTEXTE[klasse], klasse).toMatch(/\S/);
     }
   });
 
@@ -49,7 +59,22 @@ describe('Vertrag zwischen Browser und AI Gateway', () => {
     expect(saetzeImBrowser(text)).toEqual(saetze(text));
   });
 
-  it('nennt einen Zweck, den der Gateway kennt', () => {
-    expect(Object.keys(ZWECKE)).toContain(ZWECK_DIKTAT);
+  it('nennt nur Zwecke, die der Gateway kennt', () => {
+    for (const zweck of [ZWECK_DIKTAT, ZWECK_ORDNEN]) expect(Object.keys(ZWECKE)).toContain(zweck);
+  });
+
+  it('hält beim Ordnen dieselbe Grenze', () => {
+    expect(ORDNEN_HOECHSTZEICHEN).toBe(ORDNEN_HOECHST_ZEICHEN);
+  });
+
+  it.each([
+    'Patient sagt, es zieht links. Beugung 100 Grad.\nWeiter mit Dehnung.',
+    'Befund\nBeugung 110,5 Grad. Kein Erguss.\n\nPLAN:\nTreppe üben\n\nfrei danach, z. B. Brücke.',
+    'Angaben der Patient:in\r\nSeit der 2. Behandlung besser.\r\n\r\nBefund unauffällig.',
+    'Plan\nPlan\n  \nBehandlung :\nNur Text',
+    '',
+  ])('zerlegt getippten Text auf beiden Seiten gleich (ANN-861): %j', (text) => {
+    expect(einheitenImBrowser(text, DIKTAT_ABSCHNITTE)).toEqual(einheiten(text, DIKTAT_ABSCHNITTE));
+    expect(einheitenImBrowser(text, [])).toEqual(einheiten(text, []));
   });
 });

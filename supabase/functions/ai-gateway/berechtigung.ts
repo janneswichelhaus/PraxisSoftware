@@ -1,23 +1,13 @@
-/**
- * Darf diese Person zu diesem Termin diktieren? (KI-001, ADR-004, ADR-005)
- *
- * Der Gateway entscheidet das nicht selbst: Er fragt die Datenbank über
- * PostgREST, **mit dem Token der Person** und dem öffentlichen Schlüssel -
- * `public.check_dictation_access` prüft Rolle, Organisation, Sitzungssperre,
- * Leistungsbereich und Zustand des Termins. Kein Admin-Schlüssel, kein
- * Datenbankclient, keine Tabelle: Die Function erfährt nur Ja oder Nein.
- *
- * Fail closed: Durchgelassen wird nur ein ausdrückliches `true`. Alles andere
- * ist eine Abweisung oder „nicht prüfbar" - beides lässt nichts durch, die
- * Unterscheidung dient nur der richtigen Meldung.
- */
+// Darf diese Person das an diesem Gegenstand? (ADR-004, ADR-005) Der Gateway entscheidet es nie
+// selbst: Er fragt die Datenbank über PostgREST mit dem Token der Person und erfährt nur Ja oder
+// Nein. Fail closed: Durch kommt nur ein ausdrückliches `true`.
 
 /** Auch die Berechtigungsprüfung wartet nicht endlos. */
 const TIMEOUT_MS = 5_000;
 
 /**
  * `abgelehnt`: Das Token gilt bei der Datenbank nicht (mehr).
- * `verweigert`: Die Datenbank hat das Diktat zu diesem Termin abgelehnt.
+ * `verweigert`: Die Datenbank hat es an diesem Gegenstand abgelehnt.
  * `nicht_pruefbar`: Die Prüfung selbst lief nicht - Einrichtung, Ausfall.
  */
 export type Berechtigungsbefund = 'erlaubt' | 'verweigert' | 'abgelehnt' | 'nicht_pruefbar';
@@ -25,6 +15,17 @@ export type Berechtigungsbefund = 'erlaubt' | 'verweigert' | 'abgelehnt' | 'nich
 export type Berechtigungspruefung = (
   authorization: string,
   terminId: string,
+) => Promise<Berechtigungsbefund>;
+
+/** Woran eine Hilfe ohne Ton geprüft wird; je Art genau eine Funktion der Datenbank. */
+export interface Assistenzfrage {
+  readonly art: 'termin';
+  readonly id: string;
+}
+
+export type Assistenzpruefung = (
+  authorization: string,
+  frage: Assistenzfrage,
 ) => Promise<Berechtigungsbefund>;
 
 interface Optionen {
@@ -35,21 +36,31 @@ interface Optionen {
   readonly timeoutMs?: number;
 }
 
-export function erstelleBerechtigungspruefung({
+/** Die Prüffunktionen der Datenbank, ausgeschrieben: Ein anderer Pfad fällt `abschottung.test.ts` auf. */
+const PFADE = {
+  diktat: '/rest/v1/rpc/check_dictation_access',
+  termin: '/rest/v1/rpc/check_note_arrangement_access',
+} as const;
+
+function erstelleFrage({
   supabaseUrl,
   anonKey,
   abrufen = fetch,
   timeoutMs = TIMEOUT_MS,
-}: Optionen): Berechtigungspruefung {
+}: Optionen) {
   const adresse = supabaseUrl.trim().replace(/\/+$/, '');
   const schluessel = anonKey.trim();
 
-  return async (authorization, terminId) => {
+  return async (
+    authorization: string,
+    pfad: (typeof PFADE)[keyof typeof PFADE],
+    argumente: Readonly<Record<string, string>>,
+  ): Promise<Berechtigungsbefund> => {
     if (adresse === '' || schluessel === '') return 'nicht_pruefbar';
 
     let antwort: Response;
     try {
-      antwort = await abrufen(`${adresse}/rest/v1/rpc/check_dictation_access`, {
+      antwort = await abrufen(`${adresse}${pfad}`, {
         method: 'POST',
         // Das Token der Person wird weitergereicht, nicht ausgewertet: Die
         // Datenbank prüft es und liest daraus Konto und Rolle.
@@ -58,7 +69,7 @@ export function erstelleBerechtigungspruefung({
           Authorization: authorization,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ p_appointment_id: terminId }),
+        body: JSON.stringify(argumente),
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch {
@@ -80,5 +91,23 @@ export function erstelleBerechtigungspruefung({
     if (wert === true) return 'erlaubt';
     if (wert === false) return 'verweigert';
     return 'nicht_pruefbar';
+  };
+}
+
+/** Das Diktat am Termin. */
+export function erstelleBerechtigungspruefung(optionen: Optionen): Berechtigungspruefung {
+  const frage = erstelleFrage(optionen);
+  return (authorization, terminId) =>
+    frage(authorization, PFADE.diktat, { p_appointment_id: terminId });
+}
+
+/** Die Hilfen ohne Ton, je nach Gegenstand des Zwecks. */
+export function erstelleAssistenzpruefung(optionen: Optionen): Assistenzpruefung {
+  const frage = erstelleFrage(optionen);
+  return (authorization, { art, id }) => {
+    switch (art) {
+      case 'termin':
+        return frage(authorization, PFADE.termin, { p_appointment_id: id });
+    }
   };
 }

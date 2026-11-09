@@ -13,12 +13,12 @@
  */
 
 import { richteEin } from './auswahl.ts';
-import { erstelleBerechtigungspruefung } from './berechtigung.ts';
+import { erstelleAssistenzpruefung, erstelleBerechtigungspruefung } from './berechtigung.ts';
 import { erstelleHandler } from './handler.ts';
 import { erstelleSitzungspruefung } from './sitzung.ts';
 import type { Protokolleintrag } from './typen.ts';
 
-const { adapter, gateAbgewiesen } = richteEin({
+const { adapter, assistenz, gateAbgewiesen } = richteEin({
   AI_PROVIDER: Deno.env.get('AI_PROVIDER'),
   // Fehlt es, gilt die Produktion - und dort antwortet die Nachbildung nicht.
   APP_ENVIRONMENT: Deno.env.get('APP_ENVIRONMENT'),
@@ -44,9 +44,11 @@ function protokolliere(_eintrag: Protokolleintrag): void {}
 Deno.serve(
   erstelleHandler({
     adapter,
+    assistenz,
     gateAbgewiesen,
     pruefeSitzung: erstelleSitzungspruefung(eigeneInstanz),
     pruefeBerechtigung: erstelleBerechtigungspruefung(eigeneInstanz),
+    pruefeAssistenz: erstelleAssistenzpruefung(eigeneInstanz),
     protokolliere,
   }),
 );

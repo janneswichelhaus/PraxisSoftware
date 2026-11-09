@@ -22,7 +22,9 @@ export function Einfuegemeldung({
 
   return (
     <div className="nicht-drucken mt-2 flex flex-wrap items-center gap-x-3">
-      <Statusmeldung ton="erfolg">„{einfuegung.titel}“ am Ende eingefügt.</Statusmeldung>
+      <Statusmeldung ton="erfolg">
+        {einfuegung.meldung ?? `„${einfuegung.titel}“ am Ende eingefügt.`}
+      </Statusmeldung>
       <Button
         type="button"
         variant="quiet"

@@ -33,6 +33,8 @@ import { Danach } from './Danach';
 import { WieZuletzt } from './WieZuletzt';
 import { useTextUebernahme } from './uebernahme';
 import { DIKTAT_TITEL, useDiktat } from './diktat';
+import { GeordneterVorschlag, OrdnenKnopf, Ordnungsentscheidung } from './GeordneterVorschlag';
+import { GEORDNET_MELDUNG, useOrdnen } from './ordnen';
 import { Sprechleiste, VorschlagAusAufnahme } from './Spracheingabe';
 import { bausteinEinfuegen } from './textbausteine';
 import { useIstVerbunden } from '@/app/verbindung';
@@ -154,11 +156,17 @@ function Abschluss({
   const textGeaendert = wieGespeichert(wert) !== wieGespeichert(gespeichert);
   const geaendert = textGeaendert || befund.ungesichert;
   const [vorschlagOffen, setVorschlagOffen] = useState(false);
-  const { letzte, einfuegen, rueckgaengig, vergessen } = useEinfuegen(feldId, setEntwurf);
+  const { letzte, einfuegen, ersetzen, rueckgaengig, vergessen } = useEinfuegen(feldId, setEntwurf);
   // Spracheingabe (BEF-153, 6.3): nicht am Vermerk „ohne Behandlung“ - dort
   // wird nichts behandelt, also auch nichts diktiert.
   const diktat = useDiktat({ terminId: appointment.id, aktiv: !ohneBehandlung });
   const verbunden = useIstVerbunden();
+  // Ordnen gibt es, wo eine Behandlung dokumentiert wird - dieselbe Grenze prüft die Datenbank.
+  const ordnen = useOrdnen({
+    terminId: appointment.id,
+    aktiv: !ohneBehandlung && appointment.kind === 'therapy',
+    text: wert,
+  });
   const diktiertRef = useRef(diktat.diktiert);
   diktiertRef.current = diktat.diktiert;
 
@@ -404,7 +412,11 @@ function Abschluss({
     !skalen.text &&
     !befund.ungesichert;
   // Ein offener Vorschlag trägt mit „Übernehmen“ den Hauptknopf (DESIGN.md Regel 4).
-  const festschreibenHaupt = !sprechenHaupt && diktat.ruhig && !bausteine.text && !skalen.text;
+  const festschreibenHaupt =
+    !sprechenHaupt && diktat.ruhig && !bausteine.text && !skalen.text && !ordnen.vorschlag;
+  // „Ordnen“ steht da, sobald Text im Feld steht, und nie neben einem offenen Vorschlag.
+  const ordnenZeigen =
+    ordnen.angeboten && verbunden && wert.trim() !== '' && !ordnen.vorschlag && !wechsel;
 
   return (
     // Eine Fläche statt Karten (Design-Handoff 2026-10-01, Abschnitt 6a): Die
@@ -600,6 +612,8 @@ function Abschluss({
             folgeId={folgeId}
           />
 
+          <GeordneterVorschlag ordnen={ordnen} />
+
           <label htmlFor={feldId} className="sr-only">
             Eintrag zur Behandlung
           </label>
@@ -648,8 +662,21 @@ function Abschluss({
             einbettung="flaeche"
             oben={
               <>
-                {ohneBehandlung ? null : (
-                  <Sprechleiste diktat={diktat} haupt={sprechenHaupt} verbunden={verbunden} />
+                {ohneBehandlung ? null : ordnen.vorschlag ? (
+                  <Ordnungsentscheidung
+                    ordnen={ordnen}
+                    gesperrt={laeuft}
+                    onUebernehmen={(text) => ersetzen(GEORDNET_MELDUNG, wert, text)}
+                  />
+                ) : (
+                  <Sprechleiste
+                    diktat={diktat}
+                    haupt={sprechenHaupt}
+                    verbunden={verbunden}
+                    daneben={
+                      ordnenZeigen ? <OrdnenKnopf ordnen={ordnen} gesperrt={laeuft} /> : undefined
+                    }
+                  />
                 )}
                 {sicherungsstand}
                 {schutz}

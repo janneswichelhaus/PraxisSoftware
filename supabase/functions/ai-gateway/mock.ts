@@ -3,7 +3,12 @@
 // `quelle: 'nachbildung'` zu erkennen; die Zuordnung folgt festen Signalwörtern.
 
 import { DIKTAT_ABSCHNITTE } from './zwecke.ts';
-import type { Adapterergebnis, Sprachadapter, Zuordnungsanfrage } from './typen.ts';
+import type {
+  Adapterergebnis,
+  Assistenzadapter,
+  Sprachadapter,
+  Zuordnungsanfrage,
+} from './typen.ts';
 
 /**
  * Das feste, synthetische Diktat der Nachbildung - mit allem, was die Inhaltstreue nach §6.3
@@ -77,6 +82,22 @@ export function erstelleNachbildung(): Sprachadapter {
     transkribiere(): Promise<Adapterergebnis<{ readonly transkript: string }>> {
       return Promise.resolve({ ok: true, value: { transkript: NACHGEBILDETES_DIKTAT } });
     },
+    ordneZu(
+      anfrage: Zuordnungsanfrage,
+    ): Promise<Adapterergebnis<{ readonly zuordnung: readonly string[] }>> {
+      return Promise.resolve({
+        ok: true,
+        value: { zuordnung: ordneZu(anfrage.saetze, anfrage.abschnitte) },
+      });
+    },
+  };
+}
+
+/** Die Hilfen ohne Ton als Nachbildung: feste Regeln statt eines Sprachmodells. */
+export function erstelleAssistenznachbildung(): Assistenzadapter {
+  return {
+    id: 'mock',
+    quelle: 'nachbildung',
     ordneZu(
       anfrage: Zuordnungsanfrage,
     ): Promise<Adapterergebnis<{ readonly zuordnung: readonly string[] }>> {

@@ -42,3 +42,71 @@ export function setzeZusammen(
     .filter((titel) => texte.has(titel))
     .map((titel) => ({ titel, text: texte.get(titel)!.join(' ') }));
 }
+
+/** Ein Satz getippten Textes: Wortlaut, Zeile und der Titel der Vorlage, unter dem er schon steht. */
+export interface Einheit {
+  readonly text: string;
+  readonly zeile: number;
+  readonly titel: string | null;
+}
+
+function titelDerZeile(zeile: string, vorlage: readonly string[]): string | null {
+  const ohne = zeile.replace(/:$/, '').trim().toLowerCase();
+  return vorlage.find((titel) => titel.toLowerCase() === ohne) ?? null;
+}
+
+/**
+ * Getippter Text zeilenweise in Sätzen. Eine Zeile, die nur ein Titel der Vorlage ist, ist
+ * Gliederung und kein Satz: Was bis zur nächsten Leerzeile darunter steht, ist schon geordnet.
+ */
+export function einheiten(text: string, vorlage: readonly string[]): Einheit[] {
+  const liste: Einheit[] = [];
+  let titel: string | null = null;
+  for (const [zeile, roh] of text.split(/\r?\n/).entries()) {
+    const inhalt = roh.trim();
+    if (inhalt === '') {
+      titel = null;
+      continue;
+    }
+    const gliederung = titelDerZeile(inhalt, vorlage);
+    if (gliederung !== null) {
+      titel = gliederung;
+      continue;
+    }
+    for (const satz of saetze(inhalt)) liste.push({ text: satz, zeile, titel });
+  }
+  return liste;
+}
+
+/** Sätze derselben Zeile mit Leerzeichen, verschiedener Zeilen mit Zeilenwechsel. */
+export function verbinde(liste: readonly Einheit[]): string {
+  let text = '';
+  for (const [stelle, einheit] of liste.entries()) {
+    if (stelle > 0) text += liste[stelle - 1]!.zeile === einheit.zeile ? ' ' : '\n';
+    text += einheit.text;
+  }
+  return text;
+}
+
+/**
+ * ANN-861: je Abschnitt die Sätze im Wortlaut und in der Reihenfolge des Textes. Zugeordnet
+ * werden nur Sätze ohne Titel; `null`, wenn die Zuordnung nicht genau zu ihnen passt.
+ */
+export function ordne(
+  liste: readonly Einheit[],
+  zuordnung: unknown,
+  vorlage: readonly string[],
+): Abschnitt[] | null {
+  const frei = liste.filter((einheit) => einheit.titel === null).length;
+  if (!Array.isArray(zuordnung) || zuordnung.length !== frei) return null;
+  const jeTitel = new Map<string, Einheit[]>();
+  let stelle = 0;
+  for (const einheit of liste) {
+    const titel: unknown = einheit.titel ?? (zuordnung as unknown[])[stelle++];
+    if (typeof titel !== 'string' || !vorlage.includes(titel)) return null;
+    jeTitel.set(titel, [...(jeTitel.get(titel) ?? []), einheit]);
+  }
+  return vorlage
+    .filter((titel) => jeTitel.has(titel))
+    .map((titel) => ({ titel, text: verbinde(jeTitel.get(titel)!) }));
+}

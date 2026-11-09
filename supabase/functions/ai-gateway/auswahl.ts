@@ -15,8 +15,8 @@
  * verankert an `src/lib/ki/gateway.ts`.
  */
 
-import { erstelleNachbildung } from './mock.ts';
-import type { Sprachadapter } from './typen.ts';
+import { erstelleAssistenznachbildung, erstelleNachbildung } from './mock.ts';
+import type { Assistenzadapter, Sprachadapter } from './typen.ts';
 
 /** Nur die Felder, die diese Function tatsächlich liest. */
 export interface Umgebung {
@@ -42,6 +42,8 @@ export function umgebungsart(wert: string | undefined): Umgebungsart {
 export interface Einrichtung {
   /** `null`: nicht eingerichtet oder in der Produktion abgewiesen. */
   readonly adapter: Sprachadapter | null;
+  /** Der Anbieter der Hilfen ohne Ton, nach derselben Regel. */
+  readonly assistenz: Assistenzadapter | null;
   /**
    * Wurde die Nachbildung in der Produktion abgewiesen? Dann meldet der
    * Handler es als Protokolleintrag (noch ohne Ausgang, `index.ts`).
@@ -52,10 +54,12 @@ export interface Einrichtung {
 export function richteEin(umgebung: Umgebung): Einrichtung {
   const anbieter = (umgebung.AI_PROVIDER ?? '').trim().toLowerCase();
   const produktion = umgebungsart(umgebung.APP_ENVIRONMENT) === 'production';
-  if (anbieter === 'mock') {
-    return produktion
-      ? { adapter: null, gateAbgewiesen: true }
-      : { adapter: erstelleNachbildung(), gateAbgewiesen: false };
+  if (anbieter === 'mock' && !produktion) {
+    return {
+      adapter: erstelleNachbildung(),
+      assistenz: erstelleAssistenznachbildung(),
+      gateAbgewiesen: false,
+    };
   }
-  return { adapter: null, gateAbgewiesen: false };
+  return { adapter: null, assistenz: null, gateAbgewiesen: anbieter === 'mock' };
 }

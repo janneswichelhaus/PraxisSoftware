@@ -228,6 +228,8 @@ describe('Audit-Lesepfad', () => {
       'check_appointment_slots',
       // KI-001: Diktat am Termin - nur das AI Gateway fragt, nie die Oberfläche.
       'check_dictation_access',
+      // Notizen ordnen (ANN-861) - wie das Diktat fragt nur das AI Gateway.
+      'check_note_arrangement_access',
       'check_travel_buffers',
       // UBK-012: „Passt es?“ - wie check_travel_buffers (ANN-238).
       'check_travel_fit',
