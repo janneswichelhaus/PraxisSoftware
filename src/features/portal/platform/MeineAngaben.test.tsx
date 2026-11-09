@@ -181,11 +181,7 @@ describe('Meine Angaben: Übersicht', () => {
       '/p/angaben',
     );
     expect(await screen.findByText('Noch keine Angaben')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Ihre Antworten aus dem Check-in und nach den Übungen stehen hier, sobald Sie welche gesendet haben.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/sobald Sie welche gesendet haben/)).toBeNull();
     expect(screen.queryByText(/Werte schwanken/)).toBeNull();
     expect(screen.queryByRole('link', { name: 'Alle Antworten als Tabelle' })).toBeNull();
     await pruefeBarrierefreiheit(container);
@@ -212,9 +208,7 @@ describe('Meine Angaben: Übersicht', () => {
 
     ladeCheckins.mockRejectedValue(new Error('Ihr Check-in konnte nicht geladen werden.'));
     renderWithProviders(<MeineAngaben zugang={ZUGANG} />, '/p/angaben');
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Ihre Angaben konnten nicht geladen werden.',
-    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Angaben nicht geladen.');
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 });

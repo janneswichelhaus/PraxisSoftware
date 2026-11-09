@@ -3,7 +3,6 @@ import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Formularfuss } from '@/components/ui/Formularfuss';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
@@ -137,10 +136,6 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
           Drucken
         </Button>
       </div>
-      {/* DR-153: das Technikwort nur in Klammern, hinter dem, was es bedeutet. */}
-      <Kleingedrucktes className="mt-3 print:hidden">
-        Andere Programme können die Datei lesen (Format JSON).
-      </Kleingedrucktes>
 
       <p className="text-ink mt-6 text-base">
         Stand {datum(daten.exported_at)} · {daten.organization}
@@ -305,9 +300,6 @@ function EigeneBenachrichtigungen({ zugang }: { zugang: Plattformzugang }) {
               Drucken
             </Button>
           </div>
-          <Kleingedrucktes className="mt-3 print:hidden">
-            Andere Programme können die Datei lesen (Format JSON).
-          </Kleingedrucktes>
           <p className="text-ink mt-6 text-base">
             Stand {datum(ergebnis.daten.exported_at)} · {ergebnis.daten.organization}
           </p>

@@ -282,10 +282,7 @@ function Konto({ email, onAbmelden }: { email: string | undefined; onAbmelden: (
             })
           }
         >
-          <p>
-            Sie werden auf allen Geräten abgemeldet, auch auf diesem. Das ist richtig, wenn Sie ein
-            Telefon verloren haben.
-          </p>
+          <p>Sie werden auf allen Geräten abgemeldet, auch auf diesem.</p>
         </Rueckfrage>
       </div>
     </Section>

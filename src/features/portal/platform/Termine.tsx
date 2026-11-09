@@ -143,17 +143,9 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
           )}
         </>
       ) : termine.data === undefined || teile === undefined ? (
-        // Ohne Termine bleibt der Wunsch möglich - der Satz sagt es.
+        // Ohne Termine bleibt der Wunsch möglich - der Knopf darunter sagt es.
         <div className={`flex flex-col ${rechner ? 'max-w-spalte gap-12' : 'gap-10'}`}>
-          <ErrorState
-            title="Ihre Termine lassen sich gerade nicht laden."
-            description={
-              wuenschen && verbunden
-                ? 'Versuchen Sie es gleich noch einmal. Einen Termin wünschen können Sie trotzdem.'
-                : 'Versuchen Sie es gleich noch einmal.'
-            }
-            onErneut={() => termine.refetch()}
-          />
+          <ErrorState title="Termine nicht geladen." onErneut={() => termine.refetch()} />
           {wuenschen ? (
             <Wunschknopf
               pfad={mit(`${PLATTFORM_PFAD}/termine/wunsch`)}
@@ -308,16 +300,10 @@ function Liste({
       inKarte
       zeichen={<Terminsymbol zeichen="uhr" />}
       title="Ihr Wunsch ist bei der Praxis."
-      description="Sie meldet sich bei Ihnen. Danach steht Ihr Termin hier."
+      description="Sie meldet sich bei Ihnen."
     />
   ) : lesefrist ? null : (
-    <EmptyState
-      markenform
-      inKarte
-      title="Zurzeit ist kein Termin vereinbart."
-      description="Vereinbart die Praxis einen Termin mit Ihnen, finden Sie ihn hier."
-      aktion={knopf}
-    />
+    <EmptyState markenform inKarte title="Zurzeit kein Termin." aktion={knopf} />
   );
   // Sind alle kommenden abgesagt, gibt es keinen „weiteren“.
   const weitereTitel = naechster

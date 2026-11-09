@@ -14,7 +14,7 @@ export const SCHALTER_SCHLUESSEL = ['notification-kind-switches'] as const;
 const schalterSchema = z.array(z.object({ kind: z.string(), disabled_at: z.string() }));
 
 export async function ladeAbgeschalteteArten(): Promise<Benachrichtigungsart[]> {
-  const satz = 'Die Benachrichtigungen konnten nicht geladen werden.';
+  const satz = 'Benachrichtigungen nicht geladen.';
   const ergebnis = (await getSupabase().rpc('notification_kind_switches')) as {
     data: unknown;
     error: unknown;

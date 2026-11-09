@@ -48,10 +48,7 @@ export function Vertrag({ zugang }: { zugang: Plattformzugang }) {
       {vertrag.isPending ? <LoadingState label="Ihr Vertrag wird geladen …" inKarte /> : null}
       {vertrag.isError ? (
         <div>
-          <ErrorState
-            title="Ihr Vertrag konnte nicht geladen werden."
-            onErneut={() => vertrag.refetch()}
-          />
+          <ErrorState title="Vertrag nicht geladen." onErneut={() => vertrag.refetch()} />
         </div>
       ) : null}
       {vertrag.data === null ? (

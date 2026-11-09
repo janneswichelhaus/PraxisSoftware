@@ -39,10 +39,7 @@ function useErnaehrung(zugang: Plattformzugang) {
   });
 }
 
-const OHNE_BERATUNG = {
-  titel: 'Zurzeit keine Ernährungsberatung',
-  beschreibung: 'Vereinbaren Sie eine Ernährungsberatung mit Ihrer Praxis, finden Sie sie hier.',
-} as const;
+const OHNE_BERATUNG = { titel: 'Zurzeit keine Ernährungsberatung' } as const;
 
 export function Rezepte({ zugang }: { zugang: Plattformzugang }) {
   const { search } = useLocation();
@@ -55,7 +52,7 @@ export function Rezepte({ zugang }: { zugang: Plattformzugang }) {
       <Unterseitenzustand
         abfrage={abfrage}
         beschriftung="Ihre Rezepte werden geladen"
-        fehler="Ihre Rezepte konnten nicht geladen werden."
+        fehler="Rezepte nicht geladen."
         leer={{ wenn: (daten) => !daten, ...OHNE_BERATUNG }}
       >
         {(daten) => (
@@ -127,7 +124,7 @@ export function EigenesRezeptNeu({ zugang }: { zugang: Plattformzugang }) {
       <Unterseitenzustand
         abfrage={abfrage}
         beschriftung="Das Rezept wird vorbereitet"
-        fehler="Ihre Ernährung konnte nicht geladen werden."
+        fehler="Ernährung nicht geladen."
         leer={{ wenn: (daten) => !daten, ...OHNE_BERATUNG }}
       >
         {(daten) => (
@@ -160,7 +157,7 @@ export function EigenesRezeptAendern({ zugang }: { zugang: Plattformzugang }) {
       <Unterseitenzustand
         abfrage={abfrage}
         beschriftung="Das Rezept wird geladen"
-        fehler="Das Rezept konnte nicht geladen werden."
+        fehler="Rezept nicht geladen."
         leer={{
           wenn: (daten) => !daten?.profile.own_recipes.some((r) => r.id === recipeId),
           titel: 'Dieses Rezept gibt es nicht mehr.',

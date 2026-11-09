@@ -42,12 +42,12 @@ export function Paket({ zugang }: { zugang: Plattformzugang }) {
       <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Ich" />
       <PageHeader title="Trainingspaket" />
       {pakete.isPending || angebote.isPending ? (
-        <LoadingState label="Ihr Paket und die Preise werden geladen …" inKarte />
+        <LoadingState label="Pakete werden geladen …" inKarte />
       ) : null}
       {pakete.isError || angebote.isError ? (
         <div>
           <ErrorState
-            title="Ihr Paket und die Preise konnten nicht geladen werden."
+            title="Pakete nicht geladen."
             onErneut={() => {
               void pakete.refetch();
               void angebote.refetch();
@@ -57,13 +57,7 @@ export function Paket({ zugang }: { zugang: Plattformzugang }) {
       ) : null}
       {pakete.data ? <MeinePakete pakete={pakete.data} /> : null}
       {angebote.data ? <Angebote angebote={angebote.data} /> : null}
-      {angebote.data === null ? (
-        <EmptyState
-          markenform
-          title="Keine Trainingspakete"
-          description="Trainingspakete gibt es nur im Training."
-        />
-      ) : null}
+      {angebote.data === null ? <EmptyState markenform title="Keine Trainingspakete" /> : null}
     </>
   );
 }
@@ -75,7 +69,7 @@ function MeinePakete({ pakete }: { pakete: MeinPaket[] }) {
   if (aktuell.length === 0 && frueher.length === 0) {
     return (
       <Section titel="Ihr Paket">
-        <EmptyState inKarte title="Sie haben zurzeit kein Paket." />
+        <EmptyState inKarte title="Zurzeit kein Paket." />
       </Section>
     );
   }
@@ -84,7 +78,7 @@ function MeinePakete({ pakete }: { pakete: MeinPaket[] }) {
       {/* Das eigene Paket oben wie eine Mitgliedschaft: Zustand, Preis, Zeitraum. */}
       {aktuell.length === 0 ? (
         <Section titel="Ihr Paket">
-          <p className="text-ink-muted text-base">Sie haben zurzeit kein Paket.</p>
+          <p className="text-ink-muted text-base">Zurzeit kein Paket.</p>
         </Section>
       ) : (
         aktuell.map((k) => (
@@ -127,7 +121,7 @@ function Angebote({ angebote }: { angebote: Paketangebote }) {
     <>
       <Section titel="Pakete und Preise">
         {angebote.offers.length === 0 ? (
-          <EmptyState inKarte title="Die Praxis bietet zurzeit keine Pakete an." />
+          <EmptyState inKarte title="Zurzeit keine Pakete." />
         ) : (
           <ListRows rahmen beschriftung="Pakete und Preise">
             {angebote.offers.map((a) => (

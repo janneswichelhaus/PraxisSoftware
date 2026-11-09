@@ -96,13 +96,11 @@ describe('Dokumente (POR-014)', () => {
     expect(ladeDokumentZumAnzeigen).toHaveBeenCalledWith(ZUGANG.access_id, BILD.id);
   });
 
-  it('sagt ohne Freigabe, wer entscheidet, und im Training, dass es keine gibt', async () => {
+  it('sagt ohne Freigabe und im Training nur, dass es keine gibt (L7)', async () => {
     ladeDokumente.mockResolvedValue([]);
     renderWithProviders(<Dokumente zugang={ZUGANG} />, '/p/dokumente');
     expect(await screen.findByText('Noch kein Dokument')).toBeInTheDocument();
-    expect(
-      screen.getByText('Gibt Ihre Therapeut:in ein Dokument für Sie frei, finden Sie es hier.'),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/finden Sie es hier/)).toBeNull();
     renderWithProviders(
       <Dokumente zugang={{ ...ZUGANG, relationship_kind: 'training' }} />,
       '/p/dokumente?bereich=training',

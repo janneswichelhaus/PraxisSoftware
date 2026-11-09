@@ -125,9 +125,6 @@ describe('Seite des Termins (Schritt 3c)', () => {
       'Anna Beispielkommt zu Ihnen',
     );
     const abschnitt = abschnittNamens('Passt der Termin nicht?');
-    expect(abschnitt).toHaveTextContent(
-      'Ändern und Absagen sind Wünsche an die Praxis. Sie meldet sich bei Ihnen.',
-    );
     expect(within(abschnitt).getByRole('link', { name: 'Termin ändern' })).toHaveAttribute(
       'href',
       `/p/termine/${TERMIN.id}?bereich=treatment&art=change`,
@@ -426,9 +423,7 @@ describe('Seite des Termins (Schritt 3c)', () => {
 
     ladeTermine.mockRejectedValue(new Error('kaputt'));
     const zweite = renderWithProviders(<Terminseite zugang={ZUGANG} />, `/p/termine/${TERMIN.id}`);
-    expect(
-      await screen.findByText('Ihr Termin lässt sich gerade nicht laden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Termin nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /erneut/i })).toBeInTheDocument();
     // Auch ohne Termin bleibt der Weg zur Praxis, etwa für eine kurzfristige Absage (ANN-780).
     expect(
@@ -437,7 +432,7 @@ describe('Seite des Termins (Schritt 3c)', () => {
     zweite.unmount();
 
     zeige(TERMIN, { pfad: '/p/termine/aaaaaaaa-aaaa-4aaa-8aaa-0000000000ff' });
-    expect(await screen.findByText('Dieser Termin wurde nicht gefunden.')).toBeInTheDocument();
+    expect(await screen.findByText('Termin nicht gefunden.')).toBeInTheDocument();
   });
 
   it('am Rechner stehen Ändern und Absagen nebeneinander, so breit wie ihr Text', async () => {

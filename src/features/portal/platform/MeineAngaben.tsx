@@ -338,10 +338,7 @@ function MitAngaben({
       <>
         {kopf}
         <div className="mt-6">
-          <ErrorState
-            title="Ihre Angaben konnten nicht geladen werden."
-            onErneut={() => refetch()}
-          />
+          <ErrorState title="Angaben nicht geladen." onErneut={() => refetch()} />
         </div>
       </>
     );
@@ -350,11 +347,7 @@ function MitAngaben({
     return (
       leer ?? (
         <div className="mt-8">
-          <EmptyState
-            markenform
-            title="Noch keine Angaben"
-            description="Ihre Antworten aus dem Check-in und nach den Übungen stehen hier, sobald Sie welche gesendet haben."
-          />
+          <EmptyState markenform title="Noch keine Angaben" />
         </div>
       )
     );

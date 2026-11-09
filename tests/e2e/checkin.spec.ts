@@ -353,9 +353,7 @@ test.describe('Check-in ohne Netz und ohne Ablauf (Handoff 5.1)', () => {
     await expect(letzte.getByRole('button', { name: '3' })).toHaveAttribute('aria-pressed', 'true');
     const senden = letzte.getByRole('button', { name: 'Angaben senden' });
     await expect(senden).toHaveAttribute('aria-disabled', 'true');
-    await expect(senden).toHaveAccessibleDescription(
-      'Senden geht wieder mit Verbindung. Ihre Antworten bleiben stehen.',
-    );
+    await expect(senden).toHaveAccessibleDescription('Senden geht wieder mit Verbindung.');
     await expect(senden).toHaveCSS('border-top-style', 'dashed');
     await expect(senden).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     // Erreichbar, damit der Satz mit dem Knopf vorgelesen wird.
@@ -407,19 +405,19 @@ test.describe('Check-in ohne Netz und ohne Ablauf (Handoff 5.1)', () => {
     {
       seite: 'checkin-leer',
       titel: 'Zurzeit kein Check-in',
-      satz: 'Stellt Ihre Praxis Ihnen Fragen zwischen den Terminen, finden Sie sie hier und auf der Übersicht.',
+      satz: null,
       weg: null,
     },
     {
       seite: 'checkin-einwilligung',
       titel: 'Ihre Praxis bittet um einen Check-in',
-      satz: 'Der Check-in fragt nach Ihrer Gesundheit. Dafür braucht es Ihre Einwilligung.',
+      satz: 'Dafür braucht es Ihre Einwilligung.',
       weg: ['Einwilligungen ansehen', '/p/einwilligungen?bereich=training'],
     },
     {
       seite: 'checkin-beantwortet',
       titel: 'Schon beantwortet',
-      satz: /^Ihr nächster Check-in ist ab \p{L}+, \d{1,2}\.\s\p{L}+ dran\.$/u,
+      satz: /^Nächster Check-in ab \p{L}+, \d{1,2}\.\s\p{L}+\.$/u,
       weg: ['Meine Angaben', MEINE_ANGABEN],
     },
     {
@@ -437,13 +435,13 @@ test.describe('Check-in ohne Netz und ohne Ablauf (Handoff 5.1)', () => {
   ] as const;
 
   for (const { seite, titel, satz, weg } of ZUSTAENDE) {
-    test(`${seite}: Titel, Satz und Weg unter „Check-in“`, async ({ page }) => {
+    test(`${seite}: Titel, Satz (wo einer steht) und Weg unter „Check-in“`, async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 812 });
       await page.goto(`${PRUEFSEITE}?seite=${seite}`);
       await expect(page.getByRole('heading', { level: 1, name: 'Check-in' })).toBeVisible();
       await expect(page.getByRole('link', { name: '← Übersicht' })).toBeVisible();
       await expect(page.getByText(titel, { exact: true })).toBeVisible();
-      await expect(page.getByText(satz)).toBeVisible();
+      if (satz) await expect(page.getByText(satz)).toBeVisible();
       if (weg) {
         await expect(page.getByRole('link', { name: weg[0] })).toHaveAttribute('href', weg[1]);
       } else {
@@ -463,7 +461,7 @@ test.describe('Check-in ohne Netz und ohne Ablauf (Handoff 5.1)', () => {
     await expect(page.locator('[aria-busy="true"]')).toContainText('Ihr Check-in wird geladen');
     await expect(page.locator('main').getByRole('button')).toHaveCount(0);
     await page.goto(`${PRUEFSEITE}?seite=checkin-fehler`);
-    await expect(page.getByText('Ihr Check-in konnte nicht geladen werden.')).toBeVisible();
+    await expect(page.getByText('Check-in nicht geladen.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Erneut versuchen' })).toBeVisible();
   });
 });

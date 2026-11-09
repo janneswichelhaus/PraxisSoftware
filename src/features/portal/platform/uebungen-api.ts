@@ -166,5 +166,5 @@ export async function uebungstageSetzen(
     p_plan_id: planId,
     p_weekdays: wochentage,
   });
-  if (error) throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
+  if (error) throw new Error('Nicht gespeichert.');
 }

@@ -74,7 +74,7 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
         <Abfragezustand
           abfrage={daten}
           laden="Ihre Nachrichten werden geladen …"
-          fehler="Ihre Nachrichten konnten nicht geladen werden."
+          fehler="Nachrichten nicht geladen."
           inKarte
         >
           {() => null}
@@ -135,15 +135,7 @@ function Nachrichtenliste({
   return (
     <>
       <div className="mt-8">
-        <Listenabschnitt
-          titel="Ihre Nachrichten"
-          leer={{
-            titel: 'Zurzeit ist keine Frage offen.',
-            ...(daten.can_write
-              ? { beschreibung: 'Über „Nachricht schreiben“ fragen Sie die Praxis.' }
-              : {}),
-          }}
-        >
+        <Listenabschnitt titel="Ihre Nachrichten" leer={{ titel: 'Zurzeit keine Frage offen.' }}>
           {laufend.map((m) => zeile(m))}
         </Listenabschnitt>
       </div>
@@ -338,7 +330,7 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
         <Abfragezustand
           abfrage={daten}
           laden="Wird geladen …"
-          fehler="Das Formular konnte nicht geladen werden."
+          fehler="Formular nicht geladen."
           inKarte
         >
           {() => null}
@@ -477,7 +469,7 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
         <Abfragezustand
           abfrage={daten}
           laden="Ihre Nachricht wird geladen …"
-          fehler="Ihre Nachricht konnte nicht geladen werden."
+          fehler="Nachricht nicht geladen."
           inKarte
         >
           {() => null}
@@ -621,9 +613,8 @@ function Gespraech({
       {nachricht.status === 'closed' ? (
         <p className="text-ink mt-6 max-w-prose text-base leading-relaxed">
           {nachricht.closed_by_side === 'practice'
-            ? 'Die Praxis hat diese Nachricht als erledigt markiert.'
-            : 'Diese Nachricht ist erledigt.'}{' '}
-          Eine neue Frage stellen Sie über „Nachricht schreiben“.
+            ? 'Von der Praxis als erledigt markiert.'
+            : 'Diese Nachricht ist erledigt.'}
         </p>
       ) : null}
 

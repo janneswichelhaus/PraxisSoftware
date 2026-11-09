@@ -137,6 +137,5 @@ export async function einstiegBeenden(zugangId: string): Promise<void> {
   const ergebnis = (await getSupabase().rpc('finish_platform_onboarding', {
     p_access_id: zugangId,
   })) as { data: unknown; error: unknown };
-  if (ergebnis.error)
-    throw new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.');
+  if (ergebnis.error) throw new Error('Das hat nicht geklappt.');
 }

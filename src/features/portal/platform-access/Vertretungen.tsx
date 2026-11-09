@@ -80,15 +80,11 @@ export function Vertretungen({
       {isPending ? (
         <LoadingState label="Vertretungen werden geladen …" />
       ) : isError ? (
-        <ErrorState
-          title="Die Vertretungen konnten nicht geladen werden."
-          description="Bitte später erneut versuchen."
-          onErneut={refetch}
-        />
+        <ErrorState title="Vertretungen nicht geladen." onErneut={refetch} />
       ) : (
         <>
           {laufend.length === 0 && !formularOffen ? (
-            <p className="text-ink-muted text-sm">Niemand handelt für diese Person.</p>
+            <p className="text-ink-muted text-sm">Keine Vertretung.</p>
           ) : null}
           <ul className="flex flex-col">
             {laufend.map((v) => (
@@ -253,10 +249,7 @@ function VertretungsEintrag({
                 onEinladungVorOrt(e, v.representative_name);
               }}
             >
-              <p>
-                Ein Code erscheint auf diesem Gerät. Bitte nur {v.representative_name} selbst
-                scannen lassen.
-              </p>
+              <p>Bitte nur {v.representative_name} selbst scannen lassen.</p>
             </Rueckfrage>
           ) : null}
           {(aktiv || gesperrt) && !abgelaufen ? (
@@ -269,7 +262,7 @@ function VertretungsEintrag({
             >
               <p>
                 {aktiv
-                  ? `${v.representative_name} sieht ab sofort nichts mehr. Das lässt sich zurücknehmen.`
+                  ? `${v.representative_name} sieht ab sofort nichts mehr.`
                   : `${v.representative_name} kann wieder für die Person handeln.`}
               </p>
             </Rueckfrage>
@@ -296,10 +289,7 @@ function VertretungsEintrag({
             fehler={entziehen.error?.message}
             onBestaetigen={() => entziehen.mutateAsync()}
           >
-            <p>
-              Die Vertretung endet endgültig, etwa wenn eine Vollmacht widerrufen, eine Betreuung
-              aufgehoben oder die Person verstorben ist. Der Zugang der Person selbst bleibt.
-            </p>
+            <p>Die Vertretung endet endgültig. Der Zugang der Person selbst bleibt.</p>
           </Rueckfrage>
         </div>
       ) : null}
@@ -424,7 +414,7 @@ function VertretungEinrichten({
 
       <Field
         label="Name der vertretenden Person"
-        hint="Vor- und Nachname, wie im Ausweis."
+        hint="Vor- und Nachname wie im Ausweis"
         autoComplete="off"
         value={name}
         onChange={(e) => setName(e.target.value)}

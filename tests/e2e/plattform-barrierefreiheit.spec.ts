@@ -263,7 +263,7 @@ test.describe('Plattform für 78-Jährige (POR-020, DSN-001 Abschnitt 7)', () =>
     await expect
       .poll(() => page.evaluate(() => document.documentElement.dataset.schrift))
       .toBe('sehr-gross');
-    const text = page.getByText('Gilt nur auf diesem Gerät.', { exact: false });
+    const text = page.getByText('Nur auf diesem Gerät', { exact: true });
     const groesse = await text.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
     expect(groesse).toBeGreaterThan(parseFloat(vorher) * 1.2);
     expect(await ueberlaeuft(page)).toBe(false);
@@ -799,7 +799,7 @@ test.describe('Ernährung und Tagebuch', () => {
   }) => {
     await page.setViewportSize({ width: 375, height: 900 });
     await oeffne(page, 'tagebuch-eintragen-aus', 'Mittagessen eintragen');
-    await expect(page.getByText('Hier lässt sich gerade nichts eintragen.')).toBeVisible();
+    await expect(page.getByText('Eintragen gerade nicht möglich.')).toBeVisible();
     await expect(page.getByText('Ihr Tagebuch ist ausgeschaltet.')).toBeVisible();
     await page.getByRole('link', { name: 'Zum Tagebuch' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Tagebuch' })).toBeVisible();
@@ -1075,7 +1075,7 @@ test.describe('Fragebogen vor dem ersten Termin in jedem Thema', () => {
     const abschluss = page.getByRole('dialog', { name: 'Ist alles richtig?' });
     await tippe(abschluss.getByRole('button', { name: 'Bogen senden' }));
     await expect(abschluss.getByRole('alert')).toHaveText(
-      /Ihre Angaben konnten nicht gespeichert werden\. Bitte versuchen Sie es erneut\./,
+      /Ihre Angaben konnten nicht gespeichert werden\./,
     );
     await expect(abschluss.getByRole('button', { name: 'Erneut senden' })).toBeVisible();
     await pruefe(page, 'Senden gescheitert');
@@ -1093,9 +1093,7 @@ test.describe('Fragebogen vor dem ersten Termin in jedem Thema', () => {
     await context.setOffline(true);
     const senden = abschluss.getByRole('button', { name: 'Bogen senden' });
     await expect(senden).toHaveAttribute('aria-disabled', 'true');
-    await expect(senden).toHaveAccessibleDescription(
-      'Senden geht wieder mit Verbindung. Ihre Antworten bleiben stehen.',
-    );
+    await expect(senden).toHaveAccessibleDescription('Senden geht wieder mit Verbindung.');
     await expect(senden).toHaveCSS('border-style', 'dashed');
     await expect(abschluss.getByText(/^Keine Verbindung\./)).toBeVisible();
     expect(await axeVerstoesse(page), 'axe').toEqual([]);

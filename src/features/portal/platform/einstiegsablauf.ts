@@ -137,9 +137,9 @@ export function bereitSatz(
   }
   switch (aufgabe?.art) {
     case 'fragebogen':
-      return 'Als Nächstes: Ihr Fragebogen vor dem ersten Termin. Er dauert etwa 10 Minuten.';
+      return 'Als Nächstes: Ihr Fragebogen vor dem ersten Termin, etwa 10 Minuten.';
     case 'checkin':
-      return 'Als Nächstes: Ihr Check-in für heute. Er dauert etwa eine Minute.';
+      return 'Als Nächstes: Ihr Check-in für heute, etwa eine Minute.';
     case 'uebungen':
       return `Als Nächstes: Ihre Übungen für heute, ${
         aufgabe.uebungen === 1 ? 'eine Übung' : `${zahlwort(aufgabe.uebungen)} Übungen`
@@ -179,14 +179,7 @@ export function willkommenssatz(
     return `Hier sehen Sie, was ${praxis || 'die Praxis'} für ${vertretenePerson(zugang)} bereithält.`;
   }
   const wofuer = zugang.relationship_kind === 'training' ? 'Ihrem Training' : 'Ihrer Behandlung';
-  return `Schön, dass Sie da sind. Hier finden Sie alles zu ${wofuer} bei ${praxis || 'Ihrer Praxis'}.`;
-}
-
-/** Wie viele Fragen noch kommen - „Alles bereit“ ist keine. */
-export function nochFragen(fragen: number): string {
-  return fragen === 1
-    ? 'Noch eine kurze Frage, dann sind Sie fertig.'
-    : `Noch ${zahlwort(fragen)} kurze Fragen, dann sind Sie fertig.`;
+  return `Hier finden Sie alles zu ${wofuer} bei ${praxis || 'Ihrer Praxis'}.`;
 }
 
 /** Der Name der vertretenen Person; ohne ihn (nicht lesbar) neutral. */

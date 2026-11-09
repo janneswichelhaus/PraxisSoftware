@@ -52,7 +52,7 @@ export function Rechnungen({ zugang }: { zugang: Plattformzugang }) {
       <Abfragezustand
         abfrage={rechnungen}
         laden="Ihre Rechnungen werden geladen …"
-        fehler="Ihre Rechnungen konnten nicht geladen werden."
+        fehler="Rechnungen nicht geladen."
         inKarte
         leer={{
           wenn: (liste) => liste.length === 0,
@@ -62,10 +62,7 @@ export function Rechnungen({ zugang }: { zugang: Plattformzugang }) {
                 beschreibung:
                   'Rechnungen sehen Sie hier nur, wenn die Person Ihnen das erlaubt hat.',
               }
-            : {
-                titel: 'Noch keine Rechnung',
-                beschreibung: 'Stellt Ihnen die Praxis eine Rechnung, finden Sie sie hier.',
-              }),
+            : { titel: 'Noch keine Rechnung' }),
           markenform: true,
         }}
       >
@@ -159,16 +156,9 @@ export function Rechnung({ zugang }: { zugang: Plattformzugang }) {
       {rechnung.isPending ? (
         <LoadingState label="Die Rechnung wird geladen …" />
       ) : rechnung.data === undefined ? (
-        <ErrorState
-          title="Die Rechnung konnte nicht geladen werden."
-          onErneut={() => rechnung.refetch()}
-        />
+        <ErrorState title="Rechnung nicht geladen." onErneut={() => rechnung.refetch()} />
       ) : rechnung.data === null ? (
-        <EmptyState
-          markenform
-          title="Diese Rechnung gibt es hier nicht."
-          description="Ihre Rechnungen finden Sie in der Liste."
-        />
+        <EmptyState markenform title="Diese Rechnung gibt es hier nicht." />
       ) : (
         <Blatt rechnung={rechnung.data} ueberfaelligLaut={zeile?.overdue} />
       )}

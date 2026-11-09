@@ -60,12 +60,8 @@ export function Plan({ zugang }: { zugang: Plattformzugang }) {
       <Unterseitenzustand
         abfrage={abfrage}
         beschriftung="Ihr Plan wird geladen"
-        fehler="Ihr Plan konnte nicht geladen werden."
-        leer={{
-          wenn: () => !plan,
-          titel: 'Zurzeit kein Plan',
-          beschreibung: 'Ihre Praxis kann Ihnen in der Ernährungsberatung einen Plan zuweisen.',
-        }}
+        fehler="Plan nicht geladen."
+        leer={{ wenn: () => !plan, titel: 'Zurzeit kein Plan' }}
       >
         {(geladen) => (
           <Inhalt
@@ -109,7 +105,7 @@ function Inhalt({
           <Tagwahl tag={tag} anzahl={plan.day_count} heute={heuteTag} onTag={setTag} />
         ) : null}
         {mahlzeiten.length === 0 ? (
-          <EmptyState title="An diesem Tag steht nichts im Plan." />
+          <EmptyState title="Nichts an diesem Tag." />
         ) : (
           mahlzeiten.map((m) => (
             <Abschnitt key={m.meal} titel={MAHLZEIT_NAMEN[m.meal]}>

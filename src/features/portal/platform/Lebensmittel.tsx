@@ -60,13 +60,11 @@ export function Lebensmittel({ zugang }: { zugang: Plattformzugang }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Wird geladen …"
-        fehler="Ihre Ernährung konnte nicht geladen werden."
+        fehler="Ernährung nicht geladen."
         inKarte
         leer={{
           wenn: (daten) => !daten,
           titel: 'Zurzeit keine Ernährungsberatung',
-          beschreibung:
-            'Vereinbaren Sie eine Ernährungsberatung mit Ihrer Praxis, finden Sie sie hier.',
           markenform: true,
         }}
       >
@@ -178,7 +176,7 @@ export function EigenesLebensmittelAendern({ zugang }: { zugang: Plattformzugang
       <Abfragezustand
         abfrage={abfrage}
         laden="Wird geladen …"
-        fehler="Das Lebensmittel konnte nicht geladen werden."
+        fehler="Lebensmittel nicht geladen."
         inKarte
         leer={{
           wenn: (daten) => !daten?.profile.own_foods.some((f) => f.id === foodId),

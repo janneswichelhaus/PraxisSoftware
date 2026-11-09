@@ -537,7 +537,7 @@ test.describe('Liste der Termine (Schritt 3b)', () => {
     expect(await axeVerstoesse(page), 'axe').toEqual([]);
 
     await oeffne(page, 'termine-leer', 1280);
-    await expect(page.getByText('Zurzeit ist kein Termin vereinbart.')).toBeVisible();
+    await expect(page.getByText('Zurzeit kein Termin.')).toBeVisible();
     const spalte = await page.locator('main .max-w-spalte').first().boundingBox();
     const knopfLeer = await page.getByRole('link', { name: 'Termin wünschen' }).boundingBox();
     expect(spalte?.width ?? 0).toBeLessThanOrEqual(768.5);
@@ -584,7 +584,6 @@ test.describe('Seite des Termins (Schritt 3c)', () => {
     await oeffneTermin(page, 'termin', 375);
     const zurueck = page.locator('main').getByRole('link', { name: 'Termine' });
     expect((await zurueck.boundingBox())?.height).toBeGreaterThanOrEqual(44);
-    await expect(page.getByText('Ändern und Absagen sind Wünsche an die Praxis.')).toBeVisible();
     await page.getByRole('link', { name: 'Termin ändern' }).click();
     await expect(page.getByRole('dialog', { name: 'Wann passt es Ihnen?' })).toBeVisible();
   });
@@ -662,7 +661,7 @@ test.describe('Seite des Termins (Schritt 3c)', () => {
     expect(await axeVerstoesse(page), 'axe').toEqual([]);
 
     await page.goto(`${PRUEFSEITE}?seite=termin-fehler`);
-    await expect(page.getByText('Ihr Termin lässt sich gerade nicht laden.')).toBeVisible();
+    await expect(page.getByText('Termin nicht geladen.')).toBeVisible();
     await expect(page.getByRole('button', { name: /erneut/i })).toBeVisible();
     await expect(page.locator('main').getByRole('link', { name: 'Termine' })).toBeVisible();
     await expect(

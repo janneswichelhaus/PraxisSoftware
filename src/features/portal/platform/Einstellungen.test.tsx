@@ -63,14 +63,12 @@ afterEach(() => {
 describe('Einstellungen (POR-020)', () => {
   it('zeigt, dass die Praxis den Einstieg übersprungen hat - ohne Namen', async () => {
     const { container } = renderWithProviders(<Einstellungen zugaenge={[ZUGANG]} />);
-    expect(
-      await screen.findByText(/Die Praxis hat den Einstieg am .* übersprungen/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Von der Praxis übersprungen am /)).toBeInTheDocument();
     expect(screen.getByText(/Ihre Einwilligungen hat sie dabei nicht berührt/)).toBeInTheDocument();
     // Die Anrede gilt für alle und steht nicht mehr da.
     expect(screen.queryByText(/mit „Sie“ an/)).toBeNull();
     // Das Technikwort hinter der Beschreibung.
-    expect(screen.getByText(/mit Gesicht, Finger oder Ihrer PIN an/)).toBeInTheDocument();
+    expect(screen.getByText('Geräte (Passkeys) und PIN verwalten')).toBeInTheDocument();
     await pruefeBarrierefreiheit(container);
   });
 

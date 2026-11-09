@@ -55,7 +55,7 @@ type Zustand =
 const FELD_EMAIL = 'einladung-email';
 
 const DIENST_FEHLT =
-  'Der Zugang lässt sich gerade nicht einrichten. Ihre Einladung ist deswegen nicht verbraucht – bitte in ein paar Minuten erneut versuchen.';
+  'Der Zugang lässt sich gerade nicht einrichten. Ihre Einladung ist deswegen nicht verbraucht.';
 
 /** Die drei Schritte; die Einladung ist der erste, die Einrichtung die beiden anderen. */
 const SCHRITTE = ['Ihre E-Mail-Adresse', 'Gesicht oder Finger bestätigen', 'Eine PIN festlegen'];
@@ -238,7 +238,7 @@ export function EinladungPage() {
         titelRef={titel}
         zeichen={BRIEF}
         titel="Diese Einladung lässt sich nicht verwenden"
-        einleitung="Einladungen gelten 14 Tage und nur einmal. Die Praxis stellt Ihnen gern eine neue aus."
+        einleitung="Die Praxis stellt Ihnen gern eine neue aus."
       >
         <ButtonLink to="/">Zur Anmeldung</ButtonLink>
       </Vollseite>
@@ -252,7 +252,7 @@ export function EinladungPage() {
         titelRef={titel}
         zeichen={BRIEF}
         titel="Die Anmeldung gelang nicht"
-        einleitung="Ihr Zugang ist eingerichtet, die Einladung damit verbraucht. Bitte lassen Sie sich von der Praxis eine neue geben – damit melden Sie sich an und richten Ihren Passkey ein."
+        einleitung="Ihr Zugang ist eingerichtet, die Einladung damit verbraucht. Bitte lassen Sie sich von der Praxis eine neue geben."
       >
         <ButtonLink to="/">Zur Anmeldung</ButtonLink>
       </Vollseite>
@@ -266,7 +266,6 @@ export function EinladungPage() {
         titelRef={titel}
         zeichen={SCHLUESSEL}
         titel="Für diese Adresse gibt es schon einen Zugang"
-        einleitung="Melden Sie sich mit dem Passkey dieses Zugangs an – dann gilt die Einladung dafür."
       >
         {meldekastenElement}
         <p className="text-ink-muted mb-6 text-base wrap-anywhere">{email.trim().toLowerCase()}</p>
@@ -326,8 +325,7 @@ export function EinladungPage() {
       tabtitel={EINLADUNG_TITEL}
       titelRef={titel}
       titel="Own Motion lädt Sie ein"
-      einleitung="Für Ihre Termine, Übungen und Nachrichten an die Praxis."
-      kleingedrucktes="Die Einladung gilt 14 Tage und nur einmal. Der Zugang gehört nur Ihnen; Angehörige bekommen auf Wunsch einen eigenen von der Praxis."
+      kleingedrucktes="Der Zugang gehört nur Ihnen; Angehörige bekommen auf Wunsch einen eigenen von der Praxis."
     >
       {meldekastenElement}
       {/* Bei offener Tastatur treten die Schritte zurück; Titel, Feld und
@@ -348,7 +346,6 @@ export function EinladungPage() {
               </li>
             ))}
           </ol>
-          <p className="text-ink-muted mt-4 text-base">Ein Kennwort brauchen Sie nicht.</p>
         </Section>
       </div>
       <form onSubmit={(event) => void absenden(event)} noValidate className="flex flex-col gap-4">

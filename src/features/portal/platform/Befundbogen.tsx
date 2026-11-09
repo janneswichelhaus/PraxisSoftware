@@ -95,21 +95,14 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
       {stand.isPending ? (
         <Ladezustand />
       ) : stand.data === undefined ? (
-        <ErrorState
-          title="Ihr Fragebogen konnte nicht geladen werden."
-          onErneut={() => stand.refetch()}
-        />
+        <ErrorState title="Fragebogen nicht geladen." onErneut={() => stand.refetch()} />
       ) : !behandlung ? (
-        <EmptyState
-          markenform
-          title="Zurzeit kein Fragebogen"
-          description="Hier gibt es zurzeit nichts auszufüllen."
-        />
+        <EmptyState markenform title="Zurzeit kein Fragebogen" />
       ) : verwerfbar && entwurf ? (
         <EmptyState
           markenform
           title="Gesendet wurde er nicht"
-          description="Nach dem Ende der Behandlung geht das nicht mehr. Sie können die Antworten verwerfen."
+          description="Nach dem Ende der Behandlung geht das nicht mehr."
           aktion={<EntwurfVerwerfen zugang={zugang} entwurf={entwurf} />}
         />
       ) : lesefrist ? (
@@ -190,8 +183,7 @@ function inhalt(wert: unknown): string {
   );
 }
 
-const SPEICHERFEHLER =
-  'Ihre Angaben konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.';
+const SPEICHERFEHLER = 'Ihre Angaben konnten nicht gespeichert werden.';
 
 /**
  * Speichern beim Weitergehen: Jeder Wechsel sichert im Hintergrund alle Antworten, wenn sich seit
@@ -451,23 +443,9 @@ function Ablauf({
         )
       }
       vorDemTitel={
-        ersterBlick || seite === 0 ? (
+        ersterBlick ? (
           <div className="flex flex-col gap-4 pb-2">
-            {ersterBlick ? (
-              <Statusmeldung>Ihre bisherigen Antworten sind gespeichert.</Statusmeldung>
-            ) : null}
-            {seite === 0 ? (
-              <>
-                <p className="text-ink-muted">
-                  Bitte beantworten Sie die Fragen so, wie es Ihnen heute geht. Jede Frage darf
-                  offen bleiben. Ihre Therapeut:in geht den Bogen mit Ihnen beim ersten Termin
-                  durch.
-                </p>
-                <p className="text-ink-muted">
-                  Ihre Antworten werden beim Weitergehen gespeichert.
-                </p>
-              </>
-            ) : null}
+            <Statusmeldung>Bisherige Antworten gespeichert.</Statusmeldung>
           </div>
         ) : undefined
       }
@@ -481,7 +459,7 @@ function Ablauf({
             ) : null}
             {verbunden ? null : (
               <p id={ohneNetzId} className="text-ink-muted">
-                Senden geht wieder mit Verbindung. Ihre Antworten bleiben stehen.
+                Senden geht wieder mit Verbindung.
               </p>
             )}
             {/* Der Notfallsatz nur hier vor dem Senden, nicht bei den Warnzeichen (ANN-794). */}
@@ -588,8 +566,7 @@ function Abschluss({
   return (
     <div className="flex flex-col gap-6">
       <p className="text-ink-muted -mt-2">
-        Jede Frage darf offen bleiben. Offene Fragen bespricht Ihre Therapeut:in beim ersten Termin
-        mit Ihnen.
+        Offene Fragen bespricht Ihre Therapeut:in beim ersten Termin mit Ihnen.
       </p>
       {offen.length > 0 ? (
         <div className={ZEILEN}>

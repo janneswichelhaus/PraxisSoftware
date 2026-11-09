@@ -231,11 +231,7 @@ test.describe('Übungen auf der Plattform', () => {
       await page.goto(`${PRUEFSEITE}?seite=blatt`);
       const titel = page.getByRole('heading', { level: 1, name: 'Plan als PDF' });
       await expect(titel).toBeVisible();
-      await expect(
-        page.getByText(
-          'Drucken Sie den Plan aus oder sichern Sie ihn als PDF. Die Datei bleibt auf Ihrem Gerät.',
-        ),
-      ).toBeVisible();
+      await expect(page.getByText('Die Datei bleibt auf Ihrem Gerät.')).toBeVisible();
       const blatt = page.getByRole('article', { name: 'Planblatt' });
       await expect(blatt.getByText(/^Stand \d/)).toBeVisible();
       await expect(blatt.getByText(/^Ihre Übungstage: /)).toBeVisible();
@@ -489,7 +485,7 @@ const LAGEN: { lage: string; merkmal: RegExp; haupt: number }[] = [
   { lage: 'mehrere', merkmal: /Schulter mobil am Morgen/, haupt: 1 },
   { lage: 'ohne-plan', merkmal: /Noch kein Plan/, haupt: 0 },
   { lage: 'geraet', merkmal: /Die Praxis antwortet gerade nicht/, haupt: 1 },
-  { lage: 'fehler', merkmal: /Ihre Übungen lassen sich gerade nicht laden/, haupt: 0 },
+  { lage: 'fehler', merkmal: /Übungen nicht geladen/, haupt: 0 },
   { lage: 'laden', merkmal: /Übungen werden geladen/, haupt: 0 },
   // BEF-218: die Einheit auf dem Gerät - beendet und nur dort gehakt.
   { lage: 'geraet-geuebt', merkmal: /Heute geübt/, haupt: 0 },

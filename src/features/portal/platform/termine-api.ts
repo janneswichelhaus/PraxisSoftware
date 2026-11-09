@@ -119,7 +119,7 @@ export function wunschfehler(meldung: string | undefined): string {
   if (m.includes('note too long')) return 'Ihre Nachricht darf höchstens 500 Zeichen lang sein.';
   if (m.includes('not allowed'))
     return 'Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.';
-  return 'Ihr Wunsch konnte nicht gesendet werden. Bitte versuchen Sie es erneut.';
+  return 'Ihr Wunsch konnte nicht gesendet werden.';
 }
 
 /** Einen offenen Wunsch zurückziehen. */

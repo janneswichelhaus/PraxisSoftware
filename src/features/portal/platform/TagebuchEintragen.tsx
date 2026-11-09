@@ -122,7 +122,7 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
         {!geladen ? (
           gescheitert ? (
             <ErrorState
-              title="Ihr Tagebuch konnte nicht geladen werden."
+              title="Tagebuch nicht geladen."
               onErneut={() => Promise.all([tagebuch.refetch(), ernaehrung.refetch()])}
             />
           ) : (
@@ -131,7 +131,7 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
         ) : !tagebuch.data || !tagebuch.data.can_write || !ernaehrung.data ? (
           <EmptyState
             markenform
-            title="Hier lässt sich gerade nichts eintragen."
+            title="Eintragen gerade nicht möglich."
             description={ohneEintragen(tagebuch.data, ernaehrung.data)}
             aktion={
               tagebuch.data ? (
@@ -312,10 +312,7 @@ function Suche({
               ))}
             </Listenabschnitt>
           ) : null}
-          <Listenabschnitt
-            titel="Zuletzt"
-            leer={{ titel: 'Lebensmittel suchen, etwa „Haferflocken“.' }}
-          >
+          <Listenabschnitt titel="Zuletzt" leer={{ titel: 'Noch nichts.' }}>
             {tagebuch.recent.map((s) => (
               <Schnellzeile
                 key={`${s.food.kind}-${s.food.id}`}

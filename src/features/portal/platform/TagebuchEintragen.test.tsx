@@ -272,7 +272,7 @@ describe('Eintragen ins Tagebuch (Handoff 2026-10-29, 5.7)', () => {
       <TagebuchEintragen zugang={ZUGANG} />,
       ADRESSE,
     );
-    expect(await screen.findByText('Hier lässt sich gerade nichts eintragen.')).toBeVisible();
+    expect(await screen.findByText('Eintragen gerade nicht möglich.')).toBeVisible();
     expect(screen.getByText('Ihr Tagebuch ist ausgeschaltet.')).toBeVisible();
     // Zurück zum selben Tag, mit dessen Herkunft.
     expect(screen.getByRole('link', { name: 'Zum Tagebuch' })).toHaveAttribute('href', TAGEBUCH);

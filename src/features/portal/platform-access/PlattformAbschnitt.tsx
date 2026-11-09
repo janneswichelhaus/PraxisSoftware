@@ -65,11 +65,7 @@ export function PlattformAbschnitt({
       {isPending ? (
         <LoadingState label="Zugang wird geladen …" />
       ) : isError ? (
-        <ErrorState
-          title="Der Zugang konnte nicht geladen werden."
-          description="Bitte später erneut versuchen."
-          onErneut={refetch}
-        />
+        <ErrorState title="Zugang nicht geladen." onErneut={refetch} />
       ) : einladung ? (
         <EinladungVorOrt
           einladung={einladung.einladung}
@@ -213,9 +209,7 @@ function Zustand({
               onBestaetigen={vorOrt}
             >
               <p>
-                Ein Code erscheint auf diesem Gerät. Die Person scannt ihn mit dem eigenen Telefon
-                und richtet dort ihren Zugang mit Gesicht oder Finger ein. Die Übergabe ist die
-                Prüfung, dass sie es selbst ist – bitte nur an die Person selbst zeigen.
+                Bitte nur der Person selbst zeigen: Die Übergabe ist die Prüfung, dass sie es ist.
               </p>
             </Rueckfrage>
           ) : null}
@@ -234,10 +228,7 @@ function Zustand({
               fehler={einladen.error?.message}
               onBestaetigen={vorOrt}
             >
-              <p>
-                Die Person hat ihr Kennwort vergessen? Mit diesem Code setzt sie auf dem eigenen
-                Telefon ein neues. Ihr Zugang bleibt derselbe.
-              </p>
+              <p>Der Zugang der Person bleibt derselbe.</p>
             </Rueckfrage>
           ) : null}
           {zugang?.id && (aktiv || eingeladen) ? (
@@ -300,7 +291,7 @@ function SperrenFrage({
     >
       <p>
         {sperre
-          ? 'Die Person sieht ab sofort nichts mehr auf der Plattform. Das lässt sich zurücknehmen.'
+          ? 'Die Person sieht ab sofort nichts mehr auf der Plattform.'
           : 'Die Person kann die Plattform wieder nutzen.'}
       </p>
     </Rueckfrage>
@@ -334,10 +325,7 @@ function EntziehenFrage({
       fehler={entziehen.error?.message}
       onBestaetigen={() => entziehen.mutateAsync()}
     >
-      <p>
-        Der Zugang endet endgültig. Ein neuer braucht eine neue Einladung. An der Akte und am
-        Verhältnis ändert sich nichts.
-      </p>
+      <p>Der Zugang endet endgültig. An der Akte und am Verhältnis ändert sich nichts.</p>
     </Rueckfrage>
   );
 }
@@ -439,10 +427,7 @@ export function EinladungVorOrt({
   return (
     <div className="flex flex-col items-start gap-4">
       <p className="text-ink max-w-prose text-sm">
-        {einladung.purpose === 'reset'
-          ? `Bitte ${wer} diesen Code mit dem eigenen Telefon scannen lassen. Dort entsteht ein neues Kennwort.`
-          : // DR-104: Ein Kennwort gibt es nicht (ADR-025); die Einladung sagt dasselbe.
-            `Bitte ${wer} diesen Code mit dem eigenen Telefon scannen lassen. Dort entsteht der Zugang – mit Gesicht oder Finger, ohne Kennwort.`}
+        Bitte {wer} diesen Code mit dem eigenen Telefon scannen lassen.
         {fuer ? ' Es ist ein eigenes Konto, nie das der Person.' : ''}
       </p>
       <QrCode inhalt={adresse} bezeichnung="Code zum Einlösen der Einladung" />
@@ -521,10 +506,7 @@ function EinstiegUeberspringen({ zugangId }: { zugangId: string }) {
       fehler={ueberspringen.error?.message}
       onBestaetigen={() => ueberspringen.mutateAsync()}
     >
-      <p>
-        Die Person sieht beim Anmelden gleich ihre Übersicht. Einwilligungen bleiben offen: Über sie
-        entscheidet sie selbst, unter „Ich“.
-      </p>
+      <p>Einwilligungen bleiben offen: Über sie entscheidet die Person selbst, unter „Ich“.</p>
     </Rueckfrage>
   );
 }

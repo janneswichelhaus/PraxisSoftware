@@ -345,7 +345,7 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
     zeige(<Durchfuehrung zugang={{ ...ZUGANG, relationship_kind: 'training' }} />);
     await user.click(await screen.findByRole('button', { name: 'Nächste Übung' }));
     await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
-    expect(screen.getByText(/noch keinen Durchgang abgehakt/)).toBeInTheDocument();
+    expect(screen.getByText('Noch kein Durchgang abgehakt.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Zurück zu den Übungen' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Einheit beenden' })).not.toBeInTheDocument();
   });
@@ -356,9 +356,7 @@ describe('Durchführungsansicht (UEB-010, TRK-008)', () => {
       plans: [{ ...ZWEI, can_exercise: false }],
     });
     zeige(<Durchfuehrung zugang={ZUGANG} />);
-    expect(
-      await screen.findByText('Mit diesem Plan können Sie hier gerade nicht üben.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Mit diesem Plan gerade nicht möglich.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Übungen' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Durchgang/ })).not.toBeInTheDocument();
   });
@@ -381,9 +379,7 @@ describe('Ohne Verbindung (TRK-008, ADR-024 Punkte 5 und 8)', () => {
   it('ohne abgelegten Plan: sagt, dass nichts geladen ist', async () => {
     ladePlaene.mockRejectedValue(new Error('Ihre Übungen konnten nicht geladen werden.'));
     zeige(<Durchfuehrung zugang={ZUGANG} />);
-    expect(
-      await screen.findByText('Ihre Übungen lassen sich gerade nicht laden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Übungen nicht geladen.')).toBeInTheDocument();
     // Ein Seitentitel wie am Reiter, der Weg zurück als Hauptknopf.
     expect(screen.getByRole('heading', { level: 1, name: 'Übungen' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Zu den Übungen' })).toBeInTheDocument();
@@ -423,7 +419,7 @@ describe('Durchführung nach dem Zweitreview', () => {
     zeige(<Durchfuehrung zugang={ZUGANG} />);
     await user.click(await screen.findByRole('button', { name: 'Nächste Übung' }));
     await user.click(screen.getByRole('button', { name: 'Zum Abschluss' }));
-    expect(screen.getByText(/noch keinen Durchgang abgehakt/)).toBeInTheDocument();
+    expect(screen.getByText('Noch kein Durchgang abgehakt.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Einheit beenden' })).not.toBeInTheDocument();
   });
 

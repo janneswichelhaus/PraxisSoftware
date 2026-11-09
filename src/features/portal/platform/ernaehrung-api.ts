@@ -99,7 +99,7 @@ function ernaehrungsfehler(meldung: string | undefined): Error {
     return new Error('Der Text der Einwilligung hat sich geändert. Bitte die Seite neu laden.');
   if (m.includes('consent') || m.includes('not allowed'))
     return new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');
-  return new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+  return new Error('Nicht gespeichert.');
 }
 
 /** Ein Fehler des Servers als Satz für die Person. */
@@ -311,7 +311,7 @@ export function tagebuchfehler(meldung: string | undefined): Error {
   if (m.includes('profile not found')) return new Error('Ihre Praxis hat die Beratung beendet.');
   if (m.includes('consent') || m.includes('not allowed'))
     return new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');
-  return new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+  return new Error('Nicht gespeichert.');
 }
 
 function tagebuchergebnis(antwort: { error: { message?: string } | null }): void {

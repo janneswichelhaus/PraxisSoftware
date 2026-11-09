@@ -43,7 +43,7 @@ function bogenfehler(meldung: string | undefined): string {
   if (m.includes('not allowed'))
     return 'Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.';
   if (m.includes('is completed')) return 'Dieser Bogen ist schon abgeschickt.';
-  return 'Ihre Angaben konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.';
+  return 'Ihre Angaben konnten nicht gespeichert werden.';
 }
 
 /** Entwurf anlegen oder überschreiben; der Server prüft jede Antwort gegen die Definition. */
@@ -156,7 +156,7 @@ export async function checkinAbsenden(
     throw new Error('Ihre Praxis hat den Check-in gerade beendet.');
   if (m.includes('consent') || m.includes('not allowed'))
     throw new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');
-  throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+  throw new Error('Nicht gespeichert.');
 }
 
 // -----------------------------------------------------------------------------
@@ -210,7 +210,7 @@ function gewohnheitsfehler(meldung: string | undefined): Error {
   if (m.includes('not found')) return new Error('Ihre Praxis hat die Gewohnheit beendet.');
   if (m.includes('consent') || m.includes('not allowed'))
     return new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');
-  return new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+  return new Error('Nicht gespeichert.');
 }
 
 /** Einen Tag vermerken oder den Vermerk zurücknehmen (ANN-370). */

@@ -272,9 +272,7 @@ test.describe('Einstieg als geführter Ablauf (DRP-EPIC-005)', () => {
     const bereit = fenster(page, 'Alles bereit');
     await pruefeSeite(page, bereit, 'Alles bereit');
     await expect(
-      bereit.getByText(
-        'Als Nächstes: Ihr Fragebogen vor dem ersten Termin. Er dauert etwa 10 Minuten.',
-      ),
+      bereit.getByText('Als Nächstes: Ihr Fragebogen vor dem ersten Termin, etwa 10 Minuten.'),
     ).toBeVisible();
     await expect(bereit.getByRole('button', { name: 'Später' })).toHaveCount(0);
     await tippeGezaehlt(bereit.getByRole('button', { name: 'Zur Übersicht' }));

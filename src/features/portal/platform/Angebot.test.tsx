@@ -237,6 +237,6 @@ describe('Trainingsangebot auf der Plattform (KND-003)', () => {
     ladeTrainingsangebot.mockResolvedValue(null);
     renderWithProviders(<Angebot zugang={ZUGANG} />);
     expect(await screen.findByText('Zurzeit kein Angebot')).toBeInTheDocument();
-    expect(screen.getByText(/ein Training an, finden Sie das Angebot hier\.$/)).toBeInTheDocument();
+    expect(screen.queryByText(/finden Sie das Angebot hier/)).toBeNull();
   });
 });

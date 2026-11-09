@@ -701,7 +701,7 @@ function OhneLesbarenZugang({ zugaenge }: { zugaenge: Plattformzugang[] }) {
       <PageHeader title={gesperrt ? 'Ihr Zugang ist gesperrt' : 'Ihr Zugang ist beendet'} />
       <p className="text-ink max-w-prose text-base leading-relaxed">
         {gesperrt
-          ? 'Hier ist gerade nichts zu sehen. Bitte wenden Sie sich an die Praxis.'
+          ? 'Bitte wenden Sie sich an die Praxis.'
           : 'Die Zeit, in der Sie hier noch lesen konnten, ist abgelaufen. Unter „Ich" können Sie Einwilligungen widerrufen und sich abmelden.'}
       </p>
       <div className="max-w-formular mt-6 flex flex-col gap-3">

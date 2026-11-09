@@ -31,7 +31,7 @@ export function BenachrichtigungsSchalter() {
   return (
     <Section
       titel="Benachrichtigungen an Patient:innen und Kund:innen"
-      hinweis="Jede Person wählt selbst, ob und wie sie benachrichtigt wird. Hier schalten Sie eine Art für alle ab. Einschalten für eine Person kann die Praxis nicht."
+      hinweis="Abschalten gilt für alle. Einschalten für eine Person kann die Praxis nicht."
     >
       {abgeschaltet.isPending ? (
         <LoadingState label="Wird geladen …" />

@@ -74,7 +74,7 @@ export function einwilligungsfehler(meldung: string | undefined): string {
     return 'Der Text hat sich geändert. Bitte laden Sie die Seite neu und lesen Sie ihn noch einmal.';
   if (m.includes('not allowed'))
     return 'Das ist mit diesem Zugang nicht möglich. Bitte wenden Sie sich an die Praxis.';
-  return 'Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.';
+  return 'Das hat nicht geklappt.';
 }
 
 // -----------------------------------------------------------------------------
@@ -115,8 +115,7 @@ export type Datenexport = z.infer<typeof exportSchema>;
 export async function ladeDatenexport(
   zugangId: string,
 ): Promise<{ daten: Datenexport; roh: unknown }> {
-  const satz =
-    'Ihre Daten konnten nicht zusammengestellt werden. Bitte versuchen Sie es noch einmal.';
+  const satz = 'Ihre Daten konnten nicht zusammengestellt werden.';
   const ergebnis = (await getSupabase().rpc('platform_export', {
     p_access_id: zugangId,
   })) as { data: unknown; error: unknown };
@@ -156,8 +155,7 @@ export type Benachrichtigungsexport = z.infer<typeof benachrichtigungsexportSche
 export async function ladeBenachrichtigungsexport(
   zugangId: string,
 ): Promise<{ daten: Benachrichtigungsexport; roh: unknown }> {
-  const satz =
-    'Ihre Daten konnten nicht zusammengestellt werden. Bitte versuchen Sie es noch einmal.';
+  const satz = 'Ihre Daten konnten nicht zusammengestellt werden.';
   const ergebnis = (await getSupabase().rpc('platform_export_notifications', {
     p_access_id: zugangId,
   })) as { data: unknown; error: unknown };
@@ -217,7 +215,7 @@ export async function speichereBenachrichtigungen(
     p_quiet_from: wahl.quiet_from,
     p_quiet_until: wahl.quiet_until,
   })) as { error: unknown };
-  if (error) throw new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.');
+  if (error) throw new Error('Das hat nicht geklappt.');
 }
 
 /** Dieses Gerät für Push an den eigenen Zugängen registrieren. */
@@ -241,5 +239,5 @@ export async function entferneGeraet(endpunkt: string): Promise<void> {
   const { error } = (await getSupabase().rpc('remove_platform_push_subscription', {
     p_endpoint: endpunkt,
   })) as { error: unknown };
-  if (error) throw new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.');
+  if (error) throw new Error('Das hat nicht geklappt.');
 }

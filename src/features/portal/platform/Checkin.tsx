@@ -75,10 +75,7 @@ export function Checkin({ zugang }: { zugang: Plattformzugang }) {
       {laedt ? (
         <Ladezustand />
       ) : isError ? (
-        <ErrorState
-          title="Ihr Check-in konnte nicht geladen werden."
-          onErneut={() => void refetch()}
-        />
+        <ErrorState title="Check-in nicht geladen." onErneut={() => void refetch()} />
       ) : (
         <Zustand
           zugang={zugang}
@@ -341,7 +338,7 @@ function Ablauf({
             <div role="status">
               {verbunden ? null : (
                 <p id={ohneNetzId} className="text-ink-muted mb-3">
-                  Senden geht wieder mit Verbindung. Ihre Antworten bleiben stehen.
+                  Senden geht wieder mit Verbindung.
                 </p>
               )}
             </div>
@@ -379,10 +376,7 @@ function Ablauf({
         <>
           {seite.kennung === 'belastung' ? (
             // 6 unter dem Titel des Fensters wie der Satz der Anker (Handoff 5.1).
-            <p className="text-ink-muted -mt-2.5">
-              Grob genügt. Es geht nicht um mehr oder weniger, sondern darum, Ihre anderen Angaben
-              richtig zu lesen.
-            </p>
+            <p className="text-ink-muted -mt-2.5">Grob genügt.</p>
           ) : null}
           <div className="flex flex-col gap-8 [.plattform-schrift[data-rechner]_&]:gap-12">
             {sichtbar(seite, werte).map((g) => feld(g, false))}
@@ -461,20 +455,14 @@ function Zustand({
     );
   }
   if (!daten?.schedule || seiten === 0) {
-    return (
-      <EmptyState
-        markenform
-        title="Zurzeit kein Check-in"
-        description="Stellt Ihre Praxis Ihnen Fragen zwischen den Terminen, finden Sie sie hier und auf der Übersicht."
-      />
-    );
+    return <EmptyState markenform title="Zurzeit kein Check-in" />;
   }
   if (daten.due && daten.consent_needed) {
     return (
       <EmptyState
         markenform
         title="Ihre Praxis bittet um einen Check-in"
-        description="Der Check-in fragt nach Ihrer Gesundheit. Dafür braucht es Ihre Einwilligung."
+        description="Dafür braucht es Ihre Einwilligung."
         aktion={
           <ButtonLink to={mit(`${PLATTFORM_PFAD}/einwilligungen`)} variant="secondary">
             Einwilligungen ansehen
@@ -488,7 +476,7 @@ function Zustand({
       <EmptyState
         markenform
         title={daten.history.length > 0 ? 'Schon beantwortet' : 'Noch nicht dran'}
-        description={`Ihr nächster Check-in ist ab ${tagFest(daten.due_on)} dran.`}
+        description={`Nächster Check-in ab ${tagFest(daten.due_on)}.`}
         aktion={meineAngaben}
       />
     );

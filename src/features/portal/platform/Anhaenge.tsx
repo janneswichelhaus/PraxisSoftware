@@ -179,7 +179,7 @@ export function AnhaengeAbschnitt({
                   fehler={loeschen.isError ? loeschen.error.message : undefined}
                   onBestaetigen={() => loeschen.mutateAsync(a.id)}
                 >
-                  <p>Die Aufnahme wird gelöscht. Das lässt sich nicht rückgängig machen.</p>
+                  <p>Das lässt sich nicht rückgängig machen.</p>
                 </Rueckfrage>
               </div>
               {ansicht?.anhangId === a.id ? (

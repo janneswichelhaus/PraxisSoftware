@@ -47,9 +47,7 @@ describe('Endseite', () => {
       screen.getByRole('heading', { level: 1, name: 'Auf diesem Gerät gespeichert' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        'Ihre Einheit ist noch nicht bei der Praxis. Sie wird übertragen, sobald Verbindung besteht.',
-      ),
+      screen.getByText('Ihre Einheit wird übertragen, sobald Verbindung besteht.'),
     ).toBeInTheDocument();
     expect(screen.getByText('Bis dahin liegt sie nur auf diesem Telefon.')).toBeInTheDocument();
     expect(screen.queryByText(/bei der Praxis\.$/)).toBeNull();

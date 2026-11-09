@@ -64,21 +64,14 @@ export function Ernaehrung({ zugang }: { zugang: Plattformzugang }) {
       {data === undefined ? (
         abfrage.isError ? (
           <div className="mt-8">
-            <ErrorState
-              title="Ihre Ernährung konnte nicht geladen werden."
-              onErneut={() => abfrage.refetch()}
-            />
+            <ErrorState title="Ernährung nicht geladen." onErneut={() => abfrage.refetch()} />
           </div>
         ) : (
           <Ladezustand />
         )
       ) : data === null ? (
         <div className="mt-8">
-          <EmptyState
-            markenform
-            title="Zurzeit keine Ernährungsberatung"
-            description="Vereinbaren Sie eine Ernährungsberatung mit Ihrer Praxis, finden Sie sie hier."
-          />
+          <EmptyState markenform title="Zurzeit keine Ernährungsberatung" />
         </div>
       ) : (
         <Inhalt
@@ -492,7 +485,7 @@ function Zielgewicht({ zugang, daten }: { zugang: Plattformzugang; daten: Eigene
       >
         <Field
           label="Ihr Zielgewicht (kg)"
-          hint={`Mindestens ${kg(unten)}; leer heißt keines.`}
+          hint={`Mindestens ${kg(unten)}; leer heißt keines`}
           inputMode="decimal"
           autoComplete="off"
           value={wert}

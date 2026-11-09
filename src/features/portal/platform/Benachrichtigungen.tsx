@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -73,7 +72,7 @@ export function Benachrichtigungen({
     <Section
       id={BENACHRICHTIGUNGEN_ANKER}
       titel="Benachrichtigungen"
-      hinweis="Von Anfang an aus. Alles, was zu tun ist, sehen Sie auch ohne Benachrichtigung in Ihrer Übersicht."
+      hinweis="Alles, was zu tun ist, sehen Sie auch ohne Benachrichtigung in Ihrer Übersicht."
     >
       <div className="flex flex-col gap-3">
         <div className="border-line bg-surface rounded-card border px-4 py-3">
@@ -141,9 +140,7 @@ function GeraetAbschnitt({
       <Zwischentitel>Mitteilungen auf diesem Gerät</Zwischentitel>
       {endpunkt !== null ? (
         <>
-          <p className="text-ink mt-1 text-base">
-            Dieses Gerät ist eingetragen. Welche Mitteilungen es bekommt, wählen Sie unten.
-          </p>
+          <p className="text-ink mt-1 text-base">Dieses Gerät ist eingetragen.</p>
           <Button
             variant="secondary"
             className="mt-3"
@@ -155,10 +152,6 @@ function GeraetAbschnitt({
         </>
       ) : stand.moeglich ? (
         <>
-          <p className="text-ink mt-1 text-base">
-            Ihr Telefon kann Sie zusätzlich zur E-Mail benachrichtigen. Der Browser fragt Sie
-            einmal, ob Sie das erlauben.
-          </p>
           <Button
             variant="secondary"
             className="mt-3"
@@ -171,8 +164,8 @@ function GeraetAbschnitt({
       ) : (
         <p className="text-ink-muted mt-1 text-base">
           {stand.grund === 'abgelehnt'
-            ? 'Sie haben Mitteilungen für diese Seite im Browser abgelehnt. Ändern können Sie das in den Einstellungen Ihres Browsers.'
-            : 'Auf diesem Gerät sind Mitteilungen nicht möglich. Benachrichtigungen per E-Mail gehen trotzdem.'}
+            ? 'Im Browser abgelehnt. Ändern geht in den Einstellungen des Browsers.'
+            : 'Auf diesem Gerät nicht möglich.'}
         </p>
       )}
       {erlauben.error ? (
@@ -204,7 +197,7 @@ function WahlFuerZugang({
   });
   if (isPending) return <LoadingState label="Benachrichtigungen werden geladen …" />;
   if (isError || !data) {
-    return <ErrorState title="Ihre Benachrichtigungen konnten nicht geladen werden." />;
+    return <ErrorState title="Benachrichtigungen nicht geladen." />;
   }
   return <Wahlformular zugang={zugang} gespeichert={data} />;
 }
@@ -254,9 +247,7 @@ function Wahlformular({
               <fieldset disabled={aus}>
                 <legend className="text-ink text-base font-medium">{eintrag.name}</legend>
                 <p className="text-ink-muted text-sm">
-                  {aus
-                    ? 'Die Praxis hat diese Benachrichtigung für alle abgeschaltet.'
-                    : eintrag.hinweis}
+                  {aus ? 'Von der Praxis für alle abgeschaltet.' : eintrag.hinweis}
                 </p>
                 {aus ? null : (
                   <div className="mt-1 flex flex-wrap gap-x-6">
@@ -282,8 +273,7 @@ function Wahlformular({
       <fieldset className="flex flex-col gap-2">
         <legend className="text-ink text-base font-medium">Ruhezeit</legend>
         <p className="text-ink-muted text-sm">
-          In dieser Zeit kommt nichts. Was hineinfiele, kommt danach oder entfällt, wenn es dann
-          keinen Sinn mehr hat. Gleiche Uhrzeiten heißen: keine Ruhezeit.
+          Was hineinfällt, kommt danach oder entfällt. Gleiche Uhrzeiten: keine Ruhezeit.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Select label="Ab" value={von} onChange={(e) => setVon(Number(e.target.value))}>
@@ -302,10 +292,6 @@ function Wahlformular({
           </Select>
         </div>
       </fieldset>
-      <Kleingedrucktes>
-        Höchstens eine Benachrichtigung je Art und Tag, höchstens zehn in der Woche. Bleibt eine
-        Reaktion aus, kommt keine Erinnerung daran.
-      </Kleingedrucktes>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={speichern.isPending}>
           Speichern
