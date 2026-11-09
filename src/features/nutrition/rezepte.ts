@@ -260,7 +260,7 @@ export function rezeptfehler(meldung: string | undefined): string {
   if (m.includes('too many')) return 'Es sind schon 200 eigene Rezepte gespeichert.';
   if (m.includes('consent') || m.includes('not allowed'))
     return 'Dafür fehlt gerade das Recht. Bitte die Seite neu laden.';
-  return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
+  return 'Nicht gespeichert.';
 }
 
 /**

@@ -37,9 +37,7 @@ export function AlsVorlageSpeichern({ plan }: { plan: Plan }) {
   return (
     <>
       {gespeichert ? (
-        <Rueckmeldung className="mb-3">
-          Als Vorlage „{gespeichert}“ gespeichert. Sie steht jetzt unter „Aus Vorlage“.
-        </Rueckmeldung>
+        <Rueckmeldung className="mb-3">Als Vorlage „{gespeichert}“ gespeichert.</Rueckmeldung>
       ) : null}
       <Button type="button" variant="quiet" groesse="kompakt" onClick={() => setOffen(true)}>
         Als Vorlage speichern
@@ -105,7 +103,7 @@ function Speichern({
           maxLength={80}
           value={name}
           error={fehler}
-          hint="Nach Region und Ziel, etwa „Knie, Kräftigung“ – ohne Namen von Personen."
+          hint="Nach Region und Ziel, ohne Namen von Personen"
           onChange={(event) => setName(event.target.value)}
         />
         <Field

@@ -461,8 +461,8 @@ export function ProfilAendernSeite({ art, user }: { art: Verhaeltnisart; user: C
       <div className="max-w-formular">
         <Abfragezustand
           abfrage={abfrage}
-          laden="Das Profil wird geladen …"
-          fehler="Das Profil konnte nicht geladen werden."
+          laden="Profil wird geladen …"
+          fehler="Profil nicht geladen."
           inKarte
           leer={keineBeratung(art, verhaeltnisId)}
         >
@@ -647,8 +647,8 @@ export function ZielwerteSeite({ art }: { art: Verhaeltnisart }) {
       <div className="max-w-formular">
         <Abfragezustand
           abfrage={abfrage}
-          laden="Das Profil wird geladen …"
-          fehler="Das Profil konnte nicht geladen werden."
+          laden="Profil wird geladen …"
+          fehler="Profil nicht geladen."
           inKarte
           leer={keineBeratung(art, verhaeltnisId)}
         >

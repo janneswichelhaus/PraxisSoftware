@@ -114,7 +114,7 @@ export function PlanFormular({
     try {
       oeffnen(rezeptAlsLebensmittel(await mitgeliefert.uebernehmen(start)));
     } catch (e) {
-      setUebernahmeFehler(e instanceof Error ? e.message : 'Das Rezept wurde nicht übernommen.');
+      setUebernahmeFehler(e instanceof Error ? e.message : 'Rezept nicht übernommen.');
     } finally {
       setUebernimmt(null);
     }
@@ -168,7 +168,7 @@ export function PlanFormular({
                 <Listenabschnitt
                   titel="Rezepte der Praxis"
                   anzahl={rezepte.length}
-                  leer={{ titel: 'Noch keine Rezepte der Praxis.' }}
+                  leer={{ titel: 'Noch keine Rezepte.' }}
                 >
                   {rezepte.map((r, i) => (
                     <ListRow

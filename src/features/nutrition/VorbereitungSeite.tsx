@@ -59,8 +59,8 @@ export function VorbereitungSeite({ art }: { art: Verhaeltnisart }) {
       <Rueckweg standard={zurueck} className="mb-3" />
       <Abfragezustand
         abfrage={abfrage}
-        laden="Die Ernährungsberatung wird geladen …"
-        fehler="Die Ernährungsberatung konnte nicht geladen werden."
+        laden="Ernährungsberatung wird geladen …"
+        fehler="Ernährungsberatung nicht geladen."
         inKarte
         leer={{ wenn: (sicht) => !sicht?.profile, titel: 'Keine Ernährungsberatung' }}
       >
@@ -90,8 +90,8 @@ function Verlaufsansicht({
   return (
     <Abfragezustand
       abfrage={verlauf}
-      laden="Der Verlauf wird geladen …"
-      fehler="Der Verlauf konnte nicht geladen werden."
+      laden="Verlauf wird geladen …"
+      fehler="Verlauf nicht geladen."
       inKarte
       leer={{ wenn: (v) => !v, titel: 'Nicht freigegeben' }}
     >
@@ -217,7 +217,7 @@ function Gewicht({ v }: { v: Ernaehrungsverlauf }) {
             />
           </div>
           {v.sessions.length > 0 ? (
-            <p className="text-ink-muted text-sm">Striche an der Zeitachse: Beratungen.</p>
+            <p className="text-ink-muted text-sm">Striche: Beratungen</p>
           ) : null}
         </div>
       ) : (
@@ -247,8 +247,8 @@ function CheckinsUndTraining({
     <Section titel="Check-ins und Training" rahmen>
       <Abfragezustand
         abfrage={abfrage}
-        laden="Die Check-ins werden geladen …"
-        fehler="Die Check-ins konnten nicht geladen werden."
+        laden="Check-ins werden geladen …"
+        fehler="Check-ins nicht geladen."
         leer={{ wenn: (d) => !d, titel: 'Nicht freigegeben' }}
       >
         {(d) => <Angaben daten={d!} v={v} />}
@@ -298,7 +298,7 @@ function Angaben({ daten, v }: { daten: CheckinDaten; v: Ernaehrungsverlauf }) {
         </div>
       ) : null}
       {termine.length > 0 && (checkins.length > 0 || einheiten.length > 0) ? (
-        <p className="text-ink-muted text-sm">Striche an der Zeitachse: durchgeführte Termine.</p>
+        <p className="text-ink-muted text-sm">Striche: durchgeführte Termine</p>
       ) : null}
     </div>
   );

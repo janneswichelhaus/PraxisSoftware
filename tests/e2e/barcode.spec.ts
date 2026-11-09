@@ -97,7 +97,7 @@ test('„Abbrechen“ beendet die Kamera; bei 375 px rollt nichts quer', async (
   await page.goto(PRUEFSEITE);
   await page.getByRole('button', { name: 'Barcode scannen' }).click();
   const dialog = page.getByRole('dialog', { name: 'Barcode scannen' });
-  await expect(dialog.getByText('Den Barcode in den Rahmen halten.')).toBeVisible();
+  await expect(dialog.getByLabel('Kamerabild')).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

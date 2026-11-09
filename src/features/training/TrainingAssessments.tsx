@@ -66,7 +66,7 @@ export function TrainingAssessments({ verhaeltnisId }: { verhaeltnisId: string }
         <Abfragezustand
           abfrage={sicht}
           laden="Assessments werden geladen …"
-          fehler="Die Assessments konnten nicht geladen werden."
+          fehler="Assessments nicht geladen."
         >
           {(daten) => (daten ? <Inhalt verhaeltnisId={verhaeltnisId} sicht={daten} /> : null)}
         </Abfragezustand>
@@ -287,8 +287,7 @@ function Entfernen({
         onAbbrechen={() => setFehler(undefined)}
         onBestaetigen={entfernen}
       >
-        „{assessment.title}“ vom {tag} wird aus dem Verlauf genommen. Wer es festgehalten und wer es
-        entfernt hat, bleibt gespeichert.
+        Wer das Assessment festgehalten und wer es entfernt hat, bleibt gespeichert.
       </Rueckfrage>
     </div>
   );
@@ -414,7 +413,7 @@ function Festhalten({
       <div className="grid gap-3 sm:grid-cols-2">
         <Field
           label="Test"
-          hint="Etwa „Sprungtests Knie“ – mit demselben Namen steht die Wiederholung daneben."
+          hint="Für Wiederholungen derselbe Name"
           value={titel}
           maxLength={ASSESSMENT_TITEL_MAX}
           required
@@ -431,7 +430,6 @@ function Festhalten({
       </div>
       <TextArea
         label="Messbedingungen (optional)"
-        hint="Gerät, Aufwärmen, Position, Uhrzeit – damit die Wiederholung vergleichbar ist."
         value={bedingungen}
         maxLength={BEDINGUNGEN_MAX}
         rows={2}

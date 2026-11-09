@@ -147,9 +147,7 @@ describe('TrainingClientsPage', () => {
   it('meldet einen Ladefehler mit einem Weg hinaus', async () => {
     listTrainingClients.mockRejectedValue(new Error('kaputt'));
     renderWithProviders(<TrainingClientsPage user={testUser(['trainer'])} />);
-    expect(
-      await screen.findByText('Die Trainingskund:innen konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Trainingskund:innen nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 });

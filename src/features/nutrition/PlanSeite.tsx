@@ -145,8 +145,8 @@ export function PlanSeite({ art }: { art: Verhaeltnisart }) {
       />
       <Abfragezustand
         abfrage={sicht}
-        laden="Die Beratung wird geladen …"
-        fehler="Die Beratung konnte nicht geladen werden."
+        laden="Beratung wird geladen …"
+        fehler="Beratung nicht geladen."
         inKarte
         leer={{
           wenn: (s) => !s?.profile || s.profile.ended_on !== null,
@@ -156,8 +156,8 @@ export function PlanSeite({ art }: { art: Verhaeltnisart }) {
         {(s) => (
           <Abfragezustand
             abfrage={rezepte}
-            laden="Die Rezepte werden geladen …"
-            fehler="Die Rezepte konnten nicht geladen werden."
+            laden="Rezepte werden geladen …"
+            fehler="Rezepte nicht geladen."
             inKarte
           >
             {(zurWahl) => (
@@ -257,8 +257,8 @@ function Zuweisen({
     return (
       <Abfragezustand
         abfrage={vorlagen}
-        laden="Die Vorlagen werden geladen …"
-        fehler="Die Vorlagen konnten nicht geladen werden."
+        laden="Vorlagen werden geladen …"
+        fehler="Vorlagen nicht geladen."
         inKarte
       >
         {(liste) => (
@@ -364,7 +364,7 @@ function Aendern({
           fehler={beenden.error?.message}
           onBestaetigen={() => beenden.mutateAsync()}
         >
-          <p>Ab heute steht kein Vorschlag mehr im Tagebuch. Der Plan bleibt in der Beratung.</p>
+          <p>Ab heute steht kein Vorschlag mehr im Tagebuch.</p>
         </Rueckfrage>
       }
     />

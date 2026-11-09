@@ -331,7 +331,7 @@ export function Planeditor({
       ) : null}
       {bibliothek.isError ? (
         <Statusmeldung ton="fehler" className="mt-4">
-          Die Übungen konnten nicht geladen werden.
+          Übungen nicht geladen.
         </Statusmeldung>
       ) : null}
 
@@ -384,7 +384,7 @@ export function Planeditor({
           fehler={verwerfen.error?.message}
           onBestaetigen={() => verwerfen.mutateAsync()}
         >
-          <p>Den Entwurf mit allen Übungen verwerfen? Das lässt sich nicht zurücknehmen.</p>
+          <p>Der Entwurf geht mit allen Übungen verloren.</p>
         </Rueckfrage>
       </div>
 
@@ -686,15 +686,13 @@ function Zuweisen({
           min={plan.today}
           max={spaetestens}
           className="max-w-48"
-          hint={`Höchstens 26 Wochen, also bis ${formatDate(spaetestens)}.`}
+          hint={`Höchstens 26 Wochen, bis ${formatDate(spaetestens)}`}
           value={bis}
           error={fehler}
           onChange={(event) => setBis(event.target.value)}
         />
         <p className="text-ink mt-4 text-sm">
-          Den Plan mit {plan.items.length === 1 ? 'einer Übung' : `${plan.items.length} Übungen`}{' '}
-          bis {formatDate(bis)} zuweisen? Danach lässt er sich nicht mehr ändern, nur als neue
-          Fassung.
+          Danach lässt er sich nicht mehr ändern, nur als neue Fassung.
         </p>
         {zuweisen.isError ? (
           <Statusmeldung ton="fehler" className="mt-4">

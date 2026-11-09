@@ -48,17 +48,14 @@ export function DurchsichtPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={abfrage}
         laden="Übungen werden geladen …"
-        fehler="Die Übungen konnten nicht geladen werden."
+        fehler="Übungen nicht geladen."
         inKarte
       >
         {(bibliothek) =>
           darf && bibliothek.can_manage ? (
             <Durchsicht bibliothek={bibliothek} />
           ) : (
-            <ErrorState
-              title="Nicht freigegeben"
-              description="Die Übungen sieht die Praxisinhaber:in durch."
-            />
+            <ErrorState title="Nicht freigegeben" />
           )
         }
       </Abfragezustand>

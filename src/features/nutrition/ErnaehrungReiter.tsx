@@ -4,7 +4,6 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Disclosure } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { EmptyState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
@@ -78,8 +77,8 @@ export function ErnaehrungReiter({
   return (
     <Abfragezustand
       abfrage={abfrage}
-      laden="Die Ernährungsberatung wird geladen …"
-      fehler="Die Ernährungsberatung konnte nicht geladen werden."
+      laden="Ernährungsberatung wird geladen …"
+      fehler="Ernährungsberatung nicht geladen."
       inKarte
       leer={{ wenn: (sicht) => sicht === null, titel: 'Nicht freigegeben' }}
     >
@@ -196,14 +195,7 @@ function Profilansicht({
             </ButtonLink>
           }
         >
-          {/* Kein Erklärsatz im Kasten (DESIGN.md Regel 6): Wie die Sitzung
-              erfasst und abgerechnet wird, steht auf Abruf. */}
-          <Disclosure summary="So geht’s">
-            <p className="text-ink-muted text-sm">
-              Mit dem Haken am Termin ist die Sitzung erfasst; abgerechnet wird mit der Rechnung{' '}
-              {art === 'treatment' ? 'der Behandlung' : 'des Trainings'}.
-            </p>
-          </Disclosure>
+          {null}
         </Section>
       ) : null}
 
@@ -380,7 +372,7 @@ function Gewicht({
               value={tag}
               hint={
                 vorhanden
-                  ? `Steht schon: ${kg(vorhanden.weight_kg)}${gewichtVon(vorhanden)}. Eintragen ersetzt es.`
+                  ? `Steht schon: ${kg(vorhanden.weight_kg)}${gewichtVon(vorhanden)}`
                   : undefined
               }
               onChange={(event) => setTag(event.target.value)}

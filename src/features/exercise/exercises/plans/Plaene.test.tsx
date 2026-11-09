@@ -908,7 +908,7 @@ describe('Planeditor: Entwurf als Arbeitsseite (UEB-004, Welle B)', () => {
     saveVariante.mockResolvedValue('neu-v');
     planseite();
     await user.click(await screen.findByRole('button', { name: 'Übungen hinzufügen' }));
-    await user.click(screen.getByRole('button', { name: 'Nicht dabei? Übung anlegen' }));
+    await user.click(screen.getByRole('button', { name: 'Übung anlegen' }));
     const fenster = screen.getByRole('dialog', { name: 'Übung anlegen' });
     await user.type(within(fenster).getByLabelText('Bezeichnung *'), 'Seitstütz');
     await user.type(
@@ -1167,11 +1167,6 @@ describe('Aus Vorlage mit Vorschau (Welle B, Befund B9, ANN-537)', () => {
       'font-semibold',
     );
     expect(within(fehlt).getByText(KN03.name).parentElement).not.toHaveClass('text-ink-muted');
-    expect(
-      within(vorschau).getByText(
-        'Was nicht in der Bibliothek steht, übernimmt die Praxisinhaber:in aus dem Katalog.',
-      ),
-    ).toBeInTheDocument();
     await user.click(within(vorschau).getByRole('button', { name: '2 hinzufügen' }));
     await waitFor(() => expect(savePosition).toHaveBeenCalledTimes(2));
     expect(addCatalogExercises).not.toHaveBeenCalled();
@@ -1582,14 +1577,14 @@ describe('Progression von Hand (UEB-006)', () => {
     );
   });
 
-  it('nennt ohne Verbindung den Weg über den Wert', async () => {
+  it('sagt, wenn in der gewählten Richtung keine Variante verbunden ist', async () => {
     fetchPlan.mockResolvedValue(fassung());
     const user = userEvent.setup();
     planseite();
     await user.click(await screen.findByRole('button', { name: /1\. Kniebeuge am Geländer/ }));
     await user.click(screen.getByRole('button', { name: 'Schwerer' }));
     await user.selectOptions(screen.getByLabelText('Achse'), 'last');
-    expect(screen.getByText(/keine Variante verbunden/)).toBeInTheDocument();
+    expect(screen.getByText('Keine Variante verbunden.')).toBeInTheDocument();
   });
 });
 
@@ -1603,13 +1598,11 @@ describe('Laufzeit und Wiedervorlage (UEB-007)', () => {
       review_due: true,
     });
 
-  it('fordert im Kopf zur Entscheidung auf und verlängert um sechs Wochen ab dem bisherigen Ende', async () => {
+  it('warnt im Kopf vor dem Ende der Laufzeit und verlängert um sechs Wochen ab dem bisherigen Ende', async () => {
     fetchPlan.mockResolvedValue(auslaufend());
     const user = userEvent.setup();
     planseite();
-    expect(await screen.findByText(/Die Laufzeit endet am/)).toHaveTextContent(
-      'Bitte entscheiden: verlängern, als neue Fassung ändern oder beenden.',
-    );
+    expect(await screen.findByText('Laufzeit endet am 10.10.2026')).toBeInTheDocument();
     // Die Warnzeile sagt es; ein Abzeichen „läuft aus“ daneben wäre doppelt.
     expect(screen.queryByText('läuft aus')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Verlängern bis')).toHaveValue('2026-11-21');
@@ -1630,7 +1623,7 @@ describe('Laufzeit und Wiedervorlage (UEB-007)', () => {
     fetchPlan.mockResolvedValue({ ...auslaufend(), can_write: false });
     planseite();
     expect(await screen.findByText('Läuft bis')).toBeInTheDocument();
-    expect(screen.queryByText(/Bitte entscheiden/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Laufzeit endet am/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Verlängern' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Plan beenden' })).not.toBeInTheDocument();
   });
@@ -1684,9 +1677,7 @@ describe('Laufzeit und Wiedervorlage (UEB-007)', () => {
     renderWithProviders(
       <PlanWiedervorlage bereiche={['training']} rueckweg="/training" nurWennVorhanden />,
     );
-    expect(
-      await screen.findByText('Die auslaufenden Pläne konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Auslaufende Pläne nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).not.toBeInTheDocument();
   });
 });

@@ -222,11 +222,13 @@ describe('Zwischen den Terminen (TRK-002)', () => {
     expect(saveCheckinTakt).not.toHaveBeenCalled();
   });
 
-  it('beendet nach Rückfrage; die Angaben bleiben', async () => {
+  it('beendet nach Rückfrage', async () => {
     const nutzer = userEvent.setup();
     renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);
     await nutzer.click(await screen.findByRole('button', { name: 'Check-in beenden' }));
-    expect(screen.getByText(/Was sie schon angegeben hat, bleibt/)).toBeInTheDocument();
+    expect(
+      screen.getByText('Die Person wird nicht mehr um einen Check-in gebeten.'),
+    ).toBeInTheDocument();
     const knoepfe = screen.getAllByRole('button', { name: 'Check-in beenden' });
     await nutzer.click(knoepfe[knoepfe.length - 1]!);
     await waitFor(() => expect(endCheckinTakt).toHaveBeenCalledWith('treatment', AKTE));
@@ -254,9 +256,9 @@ describe('Zwischen den Terminen (TRK-002)', () => {
       daten({ relationship_open: false, schedule: { ...daten().schedule!, due_on: null } }),
     );
     renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);
-    expect(
-      await screen.findByText(/beendet – die Person antwortet nicht mehr/),
-    ).toBeInTheDocument();
+    expect((await screen.findByText('Check-in: alle 7 Tage')).parentElement).toHaveTextContent(
+      'Check-in: alle 7 Tage · beendet',
+    );
     expect(screen.queryByRole('button', { name: 'Check-in ändern' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Check-in beenden' })).toBeInTheDocument();
   });
@@ -326,9 +328,7 @@ describe('Verlaufsbild mit Ereignissen (OUT-001)', () => {
       '102.10.2026Plan zugewiesen · Kraft Grundlagen',
       '205.10.2026Erkrankung · zwei Wochen Grippe',
     ]);
-    expect(
-      screen.getByText('Striche an der Zeitachse: durchgeführte Termine.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Striche: durchgeführte Termine')).toBeInTheDocument();
     // In der Behandlung wird im Befund vermerkt, nicht hier - ein Weg dorthin
     // statt eines Erklärsatzes (Sichtung 13.10.2026, A10).
     expect(screen.queryByRole('form', { name: 'Ereignis vermerken' })).not.toBeInTheDocument();
@@ -410,7 +410,9 @@ describe('Verlaufsbild mit Ereignissen (OUT-001)', () => {
     expect(knoepfe).toHaveLength(1);
     await nutzer.click(knoepfe[0]!);
     const kasten = screen.getByRole('group', { name: 'Ereignis 2 entfernen' });
-    expect(kasten).toHaveTextContent('„Erkrankung“ vom 05.10.2026 wird aus dem Verlauf genommen.');
+    expect(kasten).toHaveTextContent(
+      'Wer das Ereignis vermerkt und wer es entfernt hat, bleibt gespeichert.',
+    );
     expect(trainingsereignisEntfernen).not.toHaveBeenCalled();
     await nutzer.click(screen.getByRole('button', { name: 'Ja, Ereignis entfernen' }));
     await waitFor(() => expect(trainingsereignisEntfernen).toHaveBeenCalledWith(EREIGNIS.id));
@@ -503,7 +505,7 @@ describe('Gewohnheiten (ALT-003, ANN-370)', () => {
     const { unmount } = renderWithProviders(
       <ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />,
     );
-    expect(await screen.findByText(/Es laufen 3 Gewohnheiten/)).toBeInTheDocument();
+    expect(await screen.findByText('Höchstens 3 Gewohnheiten.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Gewohnheit eintragen' })).not.toBeInTheDocument();
     unmount();
     fetchCheckins.mockResolvedValue(
@@ -515,13 +517,13 @@ describe('Gewohnheiten (ALT-003, ANN-370)', () => {
     expect(screen.queryByRole('button', { name: 'Beenden' })).not.toBeInTheDocument();
   });
 
-  it('beendet erst nach Rückfrage; die Tage bleiben', async () => {
+  it('beendet erst nach Rückfrage', async () => {
     fetchCheckins.mockResolvedValue(daten({ habits: [GEWOHNHEIT] }));
     gewohnheitBeenden.mockResolvedValue(undefined);
     const nutzer = userEvent.setup();
     renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);
     await nutzer.click(await screen.findByRole('button', { name: 'Beenden' }));
-    expect(screen.getByText(/Die vermerkten Tage bleiben hier stehen/)).toBeInTheDocument();
+    expect(screen.getByText('Die Person sieht die Gewohnheit nicht mehr.')).toBeInTheDocument();
     expect(gewohnheitBeenden).not.toHaveBeenCalled();
     await nutzer.click(screen.getByRole('button', { name: 'Gewohnheit beenden' }));
     await waitFor(() => expect(gewohnheitBeenden).toHaveBeenCalledWith(GEWOHNHEIT.id));

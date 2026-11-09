@@ -61,8 +61,8 @@ export function BeratungsterminSeite({ art, user }: { art: Verhaeltnisart; user:
       <div className="max-w-formular">
         <Abfragezustand
           abfrage={abfrage}
-          laden="Die Ernährungsberatung wird geladen …"
-          fehler="Die Ernährungsberatung konnte nicht geladen werden."
+          laden="Ernährungsberatung wird geladen …"
+          fehler="Ernährungsberatung nicht geladen."
           inKarte
           leer={{
             wenn: (sicht) =>
@@ -88,7 +88,7 @@ export function BeratungsterminSeite({ art, user }: { art: Verhaeltnisart; user:
                 absenden: 'Beratungstermin anlegen',
                 trotzdem: 'Beratungstermin trotzdem anlegen',
                 laeuft: 'Wird angelegt …',
-                fehlerTitel: 'Der Beratungstermin konnte nicht angelegt werden.',
+                fehlerTitel: 'Beratungstermin nicht angelegt.',
                 ungespeichert: 'Ungespeicherter Beratungstermin',
               }}
               hausbesuch={

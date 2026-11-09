@@ -146,7 +146,6 @@ export function Barcodedialog({
   return (
     <Dialogfenster titel="Barcode scannen" onSchliessen={schliessen}>
       <div className={kamera ? 'flex flex-col gap-3' : 'hidden'}>
-        <p className="text-ink-muted">Den Barcode in den Rahmen halten.</p>
         <div className="bg-ink rounded-image relative overflow-hidden">
           <video
             ref={video}
@@ -229,20 +228,18 @@ function Eintippen({
         event.preventDefault();
         const code = getippteGtin(wert);
         if (!/^(\d{8}|\d{12,14})$/.test(code)) {
-          setFehler('Bitte die 8 oder 13 Ziffern unter dem Barcode eintippen.');
+          setFehler('Bitte 8 oder 13 Ziffern eintippen.');
           return;
         }
         if (!gtinGueltig(code)) {
-          setFehler('Die Nummer stimmt nicht. Bitte noch einmal vergleichen.');
+          setFehler('Die Nummer stimmt nicht.');
           return;
         }
         setFehler(undefined);
         onNummer(code);
       }}
     >
-      {ohneKamera ? (
-        <p className="text-ink-muted">Die Kamera steht hier nicht zur Verfügung.</p>
-      ) : null}
+      {ohneKamera ? <p className="text-ink-muted">Keine Kamera verfügbar.</p> : null}
       <Field
         label="Nummer unter dem Barcode"
         inputMode="numeric"

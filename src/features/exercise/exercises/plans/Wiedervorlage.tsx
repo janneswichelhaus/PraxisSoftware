@@ -46,14 +46,12 @@ export function PlanWiedervorlage({
         {isError && nurWennVorhanden ? (
           // Als Gast eine Zeile, kein zweiter „Erneut versuchen“: Den Weg
           // hinaus bietet die Seite, auf der die Liste steht.
-          <Statusmeldung ton="fehler">
-            Die auslaufenden Pläne konnten nicht geladen werden.
-          </Statusmeldung>
+          <Statusmeldung ton="fehler">Auslaufende Pläne nicht geladen.</Statusmeldung>
         ) : (
           <Abfragezustand
             abfrage={abfrage}
             laden="Pläne werden geladen …"
-            fehler="Die auslaufenden Pläne konnten nicht geladen werden."
+            fehler="Auslaufende Pläne nicht geladen."
             inKarte
           >
             {() => null}

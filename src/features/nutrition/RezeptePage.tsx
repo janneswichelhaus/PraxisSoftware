@@ -45,8 +45,8 @@ export function RezeptePage() {
       />
       <Abfragezustand
         abfrage={abfrage}
-        laden="Die Rezepte werden geladen …"
-        fehler="Die Rezepte konnten nicht geladen werden."
+        laden="Rezepte werden geladen …"
+        fehler="Rezepte nicht geladen."
         inKarte
       >
         {(liste) => (
@@ -127,12 +127,12 @@ export function PraxisRezeptBearbeiten() {
       <PageHeader title="Rezept ändern" />
       <Abfragezustand
         abfrage={abfrage}
-        laden="Das Rezept wird geladen …"
-        fehler="Das Rezept konnte nicht geladen werden."
+        laden="Rezept wird geladen …"
+        fehler="Rezept nicht geladen."
         inKarte
         leer={{
           wenn: (liste) => !liste.some((r) => r.id === recipeId),
-          titel: 'Dieses Rezept gibt es nicht mehr.',
+          titel: 'Rezept nicht gefunden.',
         }}
       >
         {(liste) => <Bearbeiten r={liste.find((r) => r.id === recipeId)!} />}
@@ -172,7 +172,7 @@ function Bearbeiten({ r }: { r: Rezept }) {
           fehler={ablegen.error?.message}
           onBestaetigen={() => ablegen.mutateAsync()}
         >
-          <p>Es verschwindet aus Liste und Auswahl; bestehende Pläne behalten es.</p>
+          <p>Verschwindet aus der Auswahl.</p>
         </Rueckfrage>
       }
     />
@@ -216,7 +216,7 @@ export function MitgeliefertesRezept() {
       {start ? (
         <Uebernehmen start={start} />
       ) : (
-        <EmptyState inKarte title="Dieses Rezept wird nicht mehr mitgeliefert." />
+        <EmptyState inKarte title="Nicht mehr mitgeliefert." />
       )}
     </>
   );
@@ -233,15 +233,15 @@ function Uebernehmen({ start }: { start: Startrezept }) {
   return (
     <Abfragezustand
       abfrage={aufgeloest}
-      laden="Die Zutaten werden gesucht …"
-      fehler="Die Zutaten konnten nicht gesucht werden."
+      laden="Zutaten werden gesucht …"
+      fehler="Zutatensuche fehlgeschlagen."
       inKarte
     >
       {({ werte, fehlt }) => (
         <>
           {fehlt.length > 0 ? (
             <Statusmeldung ton="warnung" className="max-w-formular mb-6">
-              Nicht im Katalog gefunden: {fehlt.join(', ')}. Bitte selbst hinzufügen oder weglassen.
+              Nicht im Katalog gefunden: {fehlt.join(', ')}.
             </Statusmeldung>
           ) : null}
           <RezeptFormular

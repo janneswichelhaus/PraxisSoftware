@@ -100,7 +100,7 @@ export function TrainingClientFields({
             : feld('contract_started_on', 'Vertragsbeginn', {
                 type: 'date',
                 min: '2000-01-01',
-                hint: 'Ohne Angabe beginnt der Vertrag heute.',
+                hint: 'Leer heißt heute',
               })}
         </Feldgruppe>
       </Section>

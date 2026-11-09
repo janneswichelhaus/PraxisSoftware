@@ -107,7 +107,7 @@ test.describe('Übungspläne', () => {
     test(`zugewiesener Plan, läuft aus, in Alltagssprache bei ${breite} px`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?seite=zugewiesen`);
-      await expect(page.getByText(/Bitte entscheiden/)).toBeVisible();
+      await expect(page.getByText(/Laufzeit endet am/)).toBeVisible();
       for (const name of ['Verlängern', 'Plan beenden', 'In Alltagssprache']) {
         expect(
           await hoehe(page.getByRole('button', { name, exact: true }).first()),

@@ -57,12 +57,7 @@ export function VorlagenPage({ user }: { user: CurrentUser }) {
   const melden = (text: string) => setMeldung((b) => ({ text, nr: (b?.nr ?? 0) + 1 }));
 
   if (!darf) {
-    return (
-      <ErrorState
-        title="Nicht freigegeben"
-        description="Die Vorlagen stehen den Rollen offen, die Übungen anleiten."
-      />
-    );
+    return <ErrorState title="Nicht freigegeben" />;
   }
 
   return (
@@ -77,7 +72,7 @@ export function VorlagenPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={vorlagen}
         laden="Vorlagen werden geladen …"
-        fehler="Die Vorlagen der Praxis konnten nicht geladen werden."
+        fehler="Vorlagen nicht geladen."
         inKarte
       >
         {(daten) => {
@@ -87,10 +82,7 @@ export function VorlagenPage({ user }: { user: CurrentUser }) {
               <Listenabschnitt
                 titel="Vorlagen der Praxis"
                 {...(daten.templates.length > 0 ? { anzahl: daten.templates.length } : {})}
-                leer={{
-                  titel: 'Noch keine eigene Vorlage',
-                  beschreibung: 'Am Plan: „Als Vorlage speichern“.',
-                }}
+                leer={{ titel: 'Noch keine eigene Vorlage' }}
               >
                 {daten.templates.map((vorlage) => (
                   <ListRow
@@ -237,7 +229,7 @@ function Vorlagenfenster({
             onBestaetigen={() => loeschen.mutateAsync()}
             onAbbrechen={() => loeschen.reset()}
           >
-            Die Vorlage wird gelöscht. Pläne, die aus ihr entstanden sind, bleiben.
+            Lässt sich nicht rückgängig machen.
           </Rueckfrage>
         </div>
       ) : null}

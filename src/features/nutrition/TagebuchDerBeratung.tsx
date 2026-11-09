@@ -36,8 +36,8 @@ export function TagebuchDerBeratung({ profilId }: { profilId: string }) {
   return (
     <Abfragezustand
       abfrage={abfrage}
-      laden="Das Tagebuch wird geladen …"
-      fehler="Das Tagebuch konnte nicht geladen werden."
+      laden="Tagebuch wird geladen …"
+      fehler="Tagebuch nicht geladen."
       inKarte
       leer={{ wenn: (daten) => !daten, titel: 'Nicht freigegeben' }}
     >

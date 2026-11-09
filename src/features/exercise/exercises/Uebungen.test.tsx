@@ -254,9 +254,7 @@ describe('UebungenPage (UEB-001, Welle B: Liste)', () => {
       /2 Übungen übernommen, 1 schon vorhanden und unverändert/,
     );
     expect(meldung).toHaveTextContent('ausgelassen: Mini-Kniebeuge mit Halt');
-    expect(meldung).toHaveTextContent(
-      'Die Übungen sind KI-erstellt und gelten bis zur Durchsicht durch die Praxis als ungeprüft.',
-    );
+    expect(meldung).toHaveTextContent('KI-erstellt, bis zur Durchsicht ungeprüft.');
     // Der ganze Katalog geht an den Server - der prüft und überspringt.
     expect(importiereKatalog).toHaveBeenCalledWith(KATALOG);
   });
@@ -349,9 +347,7 @@ describe('UebungenPage (UEB-001, Welle B: Liste)', () => {
   it('zeigt einen Fehler mit Weg zum erneuten Laden', async () => {
     fetchBibliothek.mockRejectedValue(new Error('x'));
     renderWithProviders(<UebungenPage user={testUser(['trainer'])} />);
-    expect(
-      await screen.findByText('Die Übungsbibliothek konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Übungsbibliothek nicht geladen.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 });
@@ -379,9 +375,7 @@ describe('UebungAnsicht (UEB-001, Welle B: Objektseite)', () => {
     expect(screen.getByText(KN01.fehler[0]!)).toBeInTheDocument();
     expect(screen.getByText('Stuhl, Gewichtsmanschette (nach Bedarf)')).toBeInTheDocument();
     // ANN-386: ungeprüft - ohne Pflegerecht ohne Knopf.
-    expect(
-      screen.getByText('Aus dem Übungskatalog, noch nicht von der Praxis durchgesehen'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Aus dem Katalog, noch nicht durchgesehen')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Als durchgesehen markieren' }),
     ).not.toBeInTheDocument();
@@ -410,7 +404,7 @@ describe('UebungAnsicht (UEB-001, Welle B: Objektseite)', () => {
     expect(within(anleitung).getByText('Nicht unter Schmerz über 5.')).toBeInTheDocument();
     // Eigene Übung: keine Standarddosierung, kein Prüfhinweis.
     expect(screen.queryByRole('heading', { name: 'Standarddosierung' })).not.toBeInTheDocument();
-    expect(screen.queryByText(/noch nicht von der Praxis durchgesehen/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/noch nicht durchgesehen/)).not.toBeInTheDocument();
   });
 
   it('bietet ohne Pflegerecht keine Änderung an (ANN-293)', async () => {
@@ -665,7 +659,7 @@ describe('Katalog und Suche (UEB-003, Welle B: Filterchips)', () => {
     ).toBeInTheDocument();
 
     await user.click(within(hilfsmittel).getByRole('button', { name: 'Ohne Hilfsmittel' }));
-    expect(screen.getByText('Keine Übung passt zu Suche und Filter.')).toBeInTheDocument();
+    expect(screen.getByText('Keine Treffer.')).toBeInTheDocument();
 
     await user.click(screen.getAllByRole('button', { name: 'Filter zurücksetzen' })[0]!);
     expect(
