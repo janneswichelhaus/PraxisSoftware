@@ -175,12 +175,8 @@ describe('NewPrescriberPage', () => {
     await user.type(screen.getByLabelText('Nachname *'), 'Probst');
     await user.click(screen.getByRole('button', { name: 'Verordner:in anlegen' }));
 
-    const fenster = await screen.findByRole('dialog', {
-      name: 'Die Verordner:in konnte nicht gespeichert werden.',
-    });
-    expect(fenster).toHaveTextContent(
-      'Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut speichern.',
-    );
+    const fenster = await screen.findByRole('dialog', { name: 'Verordner:in nicht gespeichert.' });
+    expect(fenster).toHaveTextContent('Die Eingaben bleiben erhalten.');
     expect(fenster).not.toHaveTextContent(/angemeldet/);
 
     await user.click(within(fenster).getByRole('button', { name: 'Zurück zum Formular' }));
@@ -399,16 +395,12 @@ describe('EditPrescriberPage', () => {
     expect(await screen.findByRole('group', { name: SCHUTZ })).toBeInTheDocument();
   });
 
-  // VER-15, WRT-02: Ohne Formular bleibt der Weg zurück und ein Satz, was zu
-  // tun ist - und der Gegenstand heißt beim Namen statt „Datensatz".
+  // Ohne Formular bleibt der Weg zurück; der Gegenstand heißt beim Namen statt „Datensatz".
   it('zeigt einen unzugaenglichen Datensatz nicht als Formular, aber mit Rueckweg', async () => {
     fetchPrescriber.mockResolvedValue(null);
     renderWithProviders(<EditPrescriberPage />);
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Diese Verordner:in gibt es nicht oder sie ist für Ihren Zugang/),
-    ).toBeInTheDocument();
     expect(screen.queryByText(/Datensatz/)).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Nachname *')).not.toBeInTheDocument();
     expect(
@@ -426,7 +418,7 @@ describe('EditPrescriberPage', () => {
     renderWithProviders(<EditPrescriberPage />);
 
     const kasten = await screen.findByRole('alert');
-    expect(kasten).toHaveTextContent('Die Verordner:in konnte nicht geladen werden.');
+    expect(kasten).toHaveTextContent('Verordner:in nicht geladen.');
     expect(kasten).not.toHaveTextContent('Verbindung prüfen');
     expect(kasten).not.toHaveTextContent(/interne Ursache|angemeldet/);
 

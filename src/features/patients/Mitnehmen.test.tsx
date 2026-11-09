@@ -81,8 +81,6 @@ describe('Mitnehmen in der Akte (PRX-007)', () => {
     await user.type(screen.getByLabelText('Material zum Mitnehmen'), 'Theraband');
     await user.click(screen.getByRole('button', { name: 'Liste speichern' }));
 
-    expect(
-      await screen.findByText(/Die Liste zum Mitnehmen konnte nicht gespeichert werden/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Liste nicht gespeichert.')).toBeInTheDocument();
   });
 });

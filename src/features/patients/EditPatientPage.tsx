@@ -171,13 +171,13 @@ function EditPatientForm({ patient }: { patient: Patient }) {
           als Fenster über dem Inhalt (ANN-058, PAT-03, ZST-10). */}
       {mutation.isError ? (
         <Hinweisfenster
-          titel="Die Stammdaten konnten nicht gespeichert werden."
+          titel="Stammdaten nicht gespeichert."
           onSchliessen={() => {
             mutation.reset();
             setFokusAufSpeichern(true);
           }}
         >
-          Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut speichern.
+          Die Eingaben bleiben erhalten.
         </Hinweisfenster>
       ) : null}
       {/* UX-005e: Kein Protokollhinweis unter dem Formular - protokolliert
@@ -213,14 +213,9 @@ export function EditPatientPage() {
           <Abfragezustand
             abfrage={abfrage}
             laden="Patientendaten werden geladen …"
-            fehler="Die Patientendaten konnten nicht geladen werden."
+            fehler="Patientendaten nicht geladen."
           >
-            {() => (
-              <ErrorState
-                title="Nicht gefunden"
-                description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-              />
-            )}
+            {() => <ErrorState title="Nicht gefunden" />}
           </Abfragezustand>
         </>
       )}

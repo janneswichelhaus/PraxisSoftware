@@ -76,7 +76,7 @@ describe('PrescriptionPhoto mit Kamera', () => {
     });
     // Mit Uhrzeit: zwei Fotos eines Tages heißen nicht gleich (BEF-059).
     expect(auftrag.displayName).toMatch(/^Verordnung, Foto vom \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
-    expect(await screen.findByText(/wartet aufs Erfassen/)).toBeInTheDocument();
+    expect(await screen.findByText(/Das Foto liegt beim Büro unter/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Offene Punkte' })).toHaveAttribute('href', '/offen');
   });
 

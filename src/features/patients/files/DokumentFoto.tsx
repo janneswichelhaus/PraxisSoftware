@@ -40,8 +40,6 @@ export interface DokumentFotoProps {
   speichernLaeuft?: string;
   /** Was neben der Vorschau steht, solange das Foto nicht gespeichert ist. */
   wartetText?: string;
-  /** Text über dem Auslöser. */
-  einleitung?: ReactNode;
   /** Was nach dem Speichern dasteht. */
   erfolg: ReactNode;
   onErfolg?: () => void;
@@ -62,7 +60,6 @@ export function DokumentFoto({
   speichernKnopf = 'Speichern',
   speichernLaeuft = 'Wird gespeichert …',
   wartetText = 'Noch nicht gespeichert.',
-  einleitung,
   erfolg,
   onErfolg,
   sofort = false,
@@ -194,7 +191,7 @@ export function DokumentFoto({
           {upload.error.message}{' '}
           {sofort
             ? 'Bitte noch einmal fotografieren.'
-            : `Das Foto ist noch da – „${speichernKnopf}“ versucht es erneut.`}
+            : 'Das Foto ist noch da, solange diese Seite offen ist.'}
         </Statusmeldung>
       ) : null}
       {erledigt ? <Statusmeldung ton="erfolg">{erfolg}</Statusmeldung> : null}
@@ -227,8 +224,6 @@ export function DokumentFoto({
 
   return (
     <div className="flex flex-col gap-3">
-      {einleitung ? <p className="text-ink-muted max-w-prose text-sm">{einleitung}</p> : null}
-
       {foto && !sofort ? (
         <div className="flex flex-wrap items-center gap-3">
           {vorschau ? (

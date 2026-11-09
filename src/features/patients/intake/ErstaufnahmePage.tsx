@@ -68,7 +68,7 @@ export function ErstaufnahmePage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={patient}
         laden="Erstaufnahme wird geladen …"
-        fehler="Die Erstaufnahme konnte nicht geladen werden."
+        fehler="Erstaufnahme nicht geladen."
       >
         {(daten) =>
           daten ? (
@@ -76,10 +76,7 @@ export function ErstaufnahmePage({ user }: { user: CurrentUser }) {
           ) : (
             <>
               <PageHeader title="Erstaufnahme" />
-              <ErrorState
-                title="Nicht gefunden"
-                description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-              />
+              <ErrorState title="Nicht gefunden" />
             </>
           )
         }
@@ -150,7 +147,7 @@ function Schritte({
         {(checkliste.isError && !checklisteDa) || (erhebungen.isError && !erhebungenDa) ? (
           <div className="mb-8">
             <ErrorState
-              title="Der Stand der Erstaufnahme konnte nicht geladen werden."
+              title="Stand der Erstaufnahme nicht geladen."
               onErneut={() => {
                 if (checkliste.isError) void checkliste.refetch();
                 if (erhebungen.isError) void erhebungen.refetch();

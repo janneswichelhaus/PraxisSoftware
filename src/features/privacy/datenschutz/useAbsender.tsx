@@ -27,8 +27,7 @@ export function useAbsender(ersatzname: string | null) {
   const hinweis = abfrage.isError ? (
     <div className="nicht-drucken mb-4 flex flex-wrap items-center gap-3">
       <Statusmeldung ton="warnung" className="max-w-prose">
-        Anschrift und Telefon der Praxis ließen sich nicht laden. Bitte vor dem Drucken erneut
-        versuchen.
+        Anschrift und Telefon der Praxis nicht geladen; vor dem Drucken erneut versuchen.
       </Statusmeldung>
       <Button
         type="button"

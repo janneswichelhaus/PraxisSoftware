@@ -33,33 +33,27 @@ import {
  */
 
 /**
- * Was die Person liest, wenn die Verortung scheitert (PAT-15).
- *
- * Eigene Sätze statt der Titel aus der Routenberechnung: „Kartendienst weist
- * den Serverschlüssel ab" oder „Routenfunktion antwortet nicht" standen hier
- * vor dem Satz - Einrichtungsbegriffe ohne Handlung, dazu aus einer anderen
- * Funktion. Jeder Satz sagt, was los ist und was jetzt geht; keiner nennt eine
- * Adresse oder einen Schlüssel (ADR-011). Der Satz bleibt bei dem, der es war
- * (BEF-027): Scheitert die eigene Funktion, heißt es nicht, der Kartendienst
- * sei es gewesen.
+ * Was die Person liest, wenn die Verortung scheitert: was los ist, ohne Adresse oder Schlüssel
+ * (ADR-011); den neuen Versuch trägt der Knopf. Scheitert die eigene Funktion, heißt es nicht, der
+ * Kartendienst sei es gewesen.
  */
 function verortungsfehler(code: LocationErrorCode): string {
   switch (code) {
     case 'not_found':
-      return 'Zu dieser Adresse hat der Kartendienst keinen Treffer gefunden. Bitte die Schreibweise prüfen.';
+      return 'Der Kartendienst findet keinen Treffer. Bitte die Schreibweise prüfen.';
     case 'timeout':
     case 'unavailable':
     case 'rate_limited':
-      return 'Der Kartendienst ist gerade nicht erreichbar. Bitte später erneut verorten.';
+      return 'Der Kartendienst ist gerade nicht erreichbar.';
     case 'not_configured':
-      return 'Für die Praxis ist kein Kartendienst eingerichtet. Die Adresse bleibt vorerst ohne Kartenposition.';
+      return 'Für die Praxis ist kein Kartendienst eingerichtet.';
     case 'unauthorized':
-      return 'Der Kartendienst nimmt die Anfrage der Praxis nicht an – das ist ein Einrichtungsschritt. Die Adresse bleibt vorerst ohne Kartenposition.';
+      return 'Der Kartendienst nimmt die Anfrage der Praxis nicht an – das ist ein Einrichtungsschritt.';
     case 'session_invalid':
-      return 'Die Anmeldung gilt nicht mehr. Bitte neu anmelden und dann erneut verorten.';
+      return 'Die Anmeldung gilt nicht mehr. Bitte neu anmelden.';
     case 'function_unavailable':
     case 'invalid_request':
-      return 'Die Verortung ist gerade nicht möglich. Bitte später erneut verorten.';
+      return 'Die Verortung ist gerade nicht möglich.';
   }
 }
 
@@ -109,11 +103,7 @@ function UmstellenNachVerorten({ patientId }: { patientId: string }) {
   });
 
   if (umstellen.isSuccess) {
-    return (
-      <Statusmeldung ton="erfolg">
-        Umgestellt: Die künftigen Hausbesuche haben jetzt Anschrift und Kartenposition aus der Akte.
-      </Statusmeldung>
-    );
+    return <Statusmeldung ton="erfolg">Umgestellt.</Statusmeldung>;
   }
   const besuche = veraltet.data ?? [];
   if (besuche.length === 0) return null;
@@ -124,8 +114,7 @@ function UmstellenNachVerorten({ patientId }: { patientId: string }) {
         {besuche.length === 1
           ? 'Ein künftiger Hausbesuch nennt noch die alte Anschrift.'
           : `${besuche.length} künftige Hausbesuche nennen noch die alte Anschrift.`}{' '}
-        Für {besuche.length === 1 ? 'ihn' : 'sie'} gilt die neue Kartenposition erst nach dem
-        Umstellen – bis dahin gibt es dort keine Fahrzeit.
+        Bis zum Umstellen ohne Fahrzeit.
       </p>
       <Button
         type="button"
@@ -234,11 +223,11 @@ export function AdresseVerorten({
   }
 
   // Sagt, was fehlt, statt eines Gedankenstrichs mit Klammer (PAT-15).
-  if (!anschrift) return <span>Für die Kartenposition fehlen Straße, PLZ oder Ort.</span>;
+  if (!anschrift) return <span>Straße, PLZ oder Ort fehlen.</span>;
 
   return (
     <div className="space-y-2">
-      <p>Noch nicht verortet – ohne Kartenposition fehlt der Hausbesuch auf der Tourenkarte.</p>
+      <p>Noch nicht verortet – fehlt auf der Tourenkarte.</p>
       {treffer ? (
         // Der Treffer ist eine Auskunft und steht deshalb auf der Fläche des
         // Systems, nicht in einem eigenen Kasten (PAT-14, Leitfaden L2): eine

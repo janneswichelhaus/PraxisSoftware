@@ -50,8 +50,8 @@ export function AufEinenBlick({
     <div className="mb-6 flex flex-col gap-4">
       <Abfragezustand
         abfrage={abfrage}
-        laden="Offene Aufgaben werden geladen …"
-        fehler="Die offenen Aufgaben konnten nicht geladen werden."
+        laden="Aufgaben werden geladen …"
+        fehler="Offene Aufgaben nicht geladen."
       >
         {(v) => {
           const liste = v ? aufgaben(v, patientId, thema) : [];

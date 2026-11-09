@@ -787,33 +787,25 @@ describe('Verordnungsbereich der Akte', () => {
     fetchPatientTreatmentBasesClinical.mockRejectedValue(new Error('interne Ursache'));
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['team_lead'])} />);
 
-    expect(
-      await screen.findByText('Die Behandlungsgrundlagen konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Behandlungsgrundlagen nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText(/interne Ursache/)).not.toBeInTheDocument();
     // Keine Ratefrage nach der Anmeldung (WRT-01).
     expect(screen.queryByText(/angemeldet/)).not.toBeInTheDocument();
   });
 
-  it('sagt bei leerer Akte, wo die erste Verordnung entsteht', async () => {
+  // L7: Den Weg trägt der Knopf „Grundlage erfassen“ im Kopf der Akte, kein Satz darunter.
+  it('zeigt bei leerer Akte nur den Leerzustand', async () => {
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
     expect(await screen.findByText('Keine laufende Behandlungsgrundlage')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Die nächste entsteht über „Grundlage erfassen“ – als Verordnung oder als Selbstzahler.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/Die nächste entsteht/)).not.toBeInTheDocument();
   });
 
-  // WRT-12: Rollen mit den Namen, die die Anwendung sonst zeigt - keine
-  // „therapeutischen Rollen", die es nirgends gibt.
-  it('zeigt dem Buero den Weg zur naechsten Grundlage (PRX-010)', async () => {
+  it('zeigt dem Buero denselben Leerzustand ohne Rollensatz (PRX-010)', async () => {
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
-    expect(
-      await screen.findByText(/Die nächste entsteht über „Grundlage erfassen“/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Keine laufende Behandlungsgrundlage')).toBeInTheDocument();
+    expect(screen.queryByText(/erfasst das Praxisteam/)).not.toBeInTheDocument();
   });
 });
 
@@ -873,13 +865,9 @@ describe('Grundlagenbereich der Akte (UXR-007)', () => {
       fetchPatientTreatmentBasisSlots.mockRejectedValue(new Error('interne Ursache'));
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
-      expect(
-        await screen.findByText(/Die Terminzahlen konnten nicht geladen werden\./),
-      ).toBeInTheDocument();
+      expect(await screen.findByText(/Terminzahlen nicht geladen\./)).toBeInTheDocument();
       expect(screen.getByText('Folgeverordnung vom 18.06.2026')).toBeInTheDocument();
-      expect(
-        screen.queryByText('Die Behandlungsgrundlagen konnten nicht geladen werden.'),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Behandlungsgrundlagen nicht geladen.')).not.toBeInTheDocument();
       // Ohne Zahlen ist „Offen" nur geraten - das Abzeichen fehlt deshalb.
       expect(screen.queryByText('Offen')).not.toBeInTheDocument();
       // Die Aktionen bleiben (grundlagen.ts): Nichts verschwindet, weil eine
@@ -902,7 +890,7 @@ describe('Grundlagenbereich der Akte (UXR-007)', () => {
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
       const kasten = await screen.findByRole('alert');
-      expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+      expect(kasten).not.toHaveTextContent('Verbindung prüfen');
       await user.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
 
       expect(await screen.findByText('Folgeverordnung vom 18.06.2026')).toBeInTheDocument();

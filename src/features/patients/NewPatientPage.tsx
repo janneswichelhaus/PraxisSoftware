@@ -224,10 +224,6 @@ export function NewPatientPage() {
             <p id="dubletten-titel" className="text-ink text-liste font-semibold">
               Vielleicht schon in der Kartei
             </p>
-            <p className="text-ink-muted mt-1 text-sm">
-              Gleicher Nachname und gleiches Geburtsdatum oder gleicher Vorname. Ist es dieselbe
-              Person, bitte die vorhandene Akte öffnen statt eine zweite anzulegen.
-            </p>
             <ul className="mt-1 flex flex-col">
               {dubletten.map((treffer) => (
                 <li key={treffer.id}>
@@ -241,9 +237,7 @@ export function NewPatientPage() {
                 </li>
               ))}
             </ul>
-            <p className="text-ink mt-1 text-sm">
-              Eine andere Person mit ähnlichen Angaben? Dann „{ANLEGEN}“ noch einmal tippen.
-            </p>
+            <p className="text-ink mt-1 text-sm">Andere Person? Dann „{ANLEGEN}“ erneut tippen.</p>
           </div>
         ) : null}
 
@@ -274,13 +268,13 @@ export function NewPatientPage() {
           PAT-03, ZST-10). */}
       {mutation.isError ? (
         <Hinweisfenster
-          titel="Die Patient:in konnte nicht angelegt werden."
+          titel="Patient:in nicht angelegt."
           onSchliessen={() => {
             mutation.reset();
             setFokusAufAbsenden(true);
           }}
         >
-          Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut versuchen.
+          Die Eingaben bleiben erhalten.
         </Hinweisfenster>
       ) : null}
       {/* UX-005e: Kein Dauersatz unter dem Formular, der das System erklärt -

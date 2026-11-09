@@ -65,8 +65,8 @@ export function HausbesucheMitAlterAdresse({
           : `${besuche.length} künftige Hausbesuche nennen noch die alte Adresse.`}
       </p>
       <p className="text-ink-muted mt-1 text-sm">
-        Vergangene Besuche behalten ihre damalige Anschrift. Was hier übernommen wird, steht im
-        Protokoll wie eine Terminänderung; ein Mitteilungsvermerk verfällt dabei.
+        Was hier übernommen wird, steht im Protokoll wie eine Terminänderung; ein Mitteilungsvermerk
+        verfällt dabei.
       </p>
       <ul className="mt-3">
         {besuche.map((besuch) => (
@@ -89,10 +89,7 @@ export function HausbesucheMitAlterAdresse({
             fehler={uebernehmen.isError ? uebernehmen.error.message : undefined}
             onBestaetigen={() => uebernehmen.mutateAsync(alle)}
           >
-            <p>
-              Alle {besuche.length} künftigen Hausbesuche bekommen die aktuelle Anschrift aus den
-              Stammdaten.
-            </p>
+            <p>Alle {besuche.length} künftigen Hausbesuche aktualisieren?</p>
           </Rueckfrage>
         </div>
       ) : uebernehmen.isError ? (

@@ -208,10 +208,10 @@ function VerordnerFormular({ bestand, zurueck }: { bestand: Prescriber | null; z
             Fehler - sie steht am Nachnamen und in der Zusammenfassung. */}
         {mutation.isError && !doppelt ? (
           <Hinweisfenster
-            titel="Die Verordner:in konnte nicht gespeichert werden."
+            titel="Verordner:in nicht gespeichert."
             onSchliessen={() => mutation.reset()}
           >
-            Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut speichern.
+            Die Eingaben bleiben erhalten.
           </Hinweisfenster>
         ) : null}
 
@@ -274,7 +274,7 @@ export function EditPrescriberPage() {
 
   if (abfrage.data) return <VerordnerFormular bestand={abfrage.data} zurueck={zurueck} />;
 
-  // Ohne Formular bleibt der Weg zurück - und ein Satz, was zu tun ist (VER-15).
+  // Ohne Formular bleibt der Weg zurück.
   return (
     <>
       <Rueckwegzeile zurueck={zurueck} />
@@ -282,14 +282,9 @@ export function EditPrescriberPage() {
       <Abfragezustand
         abfrage={abfrage}
         laden="Verordner:in wird geladen …"
-        fehler="Die Verordner:in konnte nicht geladen werden."
+        fehler="Verordner:in nicht geladen."
       >
-        {() => (
-          <ErrorState
-            title="Nicht gefunden"
-            description="Diese Verordner:in gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben. Bitte in der Liste der Verordner:innen neu wählen."
-          />
-        )}
+        {() => <ErrorState title="Nicht gefunden" />}
       </Abfragezustand>
     </>
   );

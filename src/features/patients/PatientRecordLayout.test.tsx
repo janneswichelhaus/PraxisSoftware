@@ -438,8 +438,8 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       akteRendern(['office'], STAMMDATEN);
 
       const meldung = await screen.findByRole('alert');
-      expect(meldung).toHaveTextContent('Die Patientendaten konnten nicht geladen werden.');
-      expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen');
+      expect(meldung).toHaveTextContent('Patientendaten nicht geladen.');
+      expect(meldung).not.toHaveTextContent('Verbindung prüfen');
       expect(meldung.textContent).not.toMatch(/angemeldet|offline/);
       expect(screen.getByRole('heading', { level: 1, name: 'Patientenakte' })).toBeInTheDocument();
 
@@ -452,12 +452,9 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       fetchPatient.mockResolvedValue(null);
       akteRendern(['office'], STAMMDATEN);
 
-      expect(
-        await screen.findByText(
-          'Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben.',
-        ),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
       expect(screen.getByRole('heading', { level: 1, name: 'Patientenakte' })).toBeInTheDocument();
+      expect(screen.queryByText(/Datensatz/)).toBeNull();
     });
   });
 

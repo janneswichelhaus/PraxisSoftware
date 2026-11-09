@@ -1435,14 +1435,14 @@ describe('TerminAktionenDialog', () => {
     rendern(['therapist']);
     await screen.findByText('Berta Bestand');
     expect(screen.getByRole('heading', { name: 'Verordnung' })).toBeInTheDocument();
-    expect(screen.getByText(/das Büro erfasst die Grundlage daraus/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Verordnung als Datei')).toBeInTheDocument();
   });
 
   it('bietet das Foto nicht am abgesagten Termin an', async () => {
     fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
     rendern(['therapist']);
     await screen.findByText('Berta Bestand');
-    expect(screen.queryByText(/das Büro erfasst die Grundlage daraus/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Verordnung als Datei')).not.toBeInTheDocument();
   });
 
   it('meldet einen nicht freigegebenen Termin ohne Details', async () => {

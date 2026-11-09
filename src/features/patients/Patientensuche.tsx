@@ -83,7 +83,7 @@ export function Patientensuche({
     // Akte deshalb ein zweites Mal an. Die Unterscheidung ist ein Satz und
     // verhindert genau das.
     if (isError) {
-      return 'Die Suche ist fehlgeschlagen. Das heißt nicht, dass es keinen Treffer gibt – bitte erneut versuchen.';
+      return 'Suche fehlgeschlagen – das heißt nicht „Kein Treffer“. Bitte erneut versuchen.';
     }
     if (treffer.length === 0) return 'Kein Treffer.';
     return undefined;

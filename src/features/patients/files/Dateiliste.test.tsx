@@ -233,7 +233,7 @@ describe('Dateiliste', () => {
       />,
     );
 
-    expect(await screen.findByText(/in der Ablage nicht auffindbar/)).toBeInTheDocument();
+    expect(await screen.findByText(/Datei fehlt in der Ablage/)).toBeInTheDocument();
     expect(screen.getByText(/steht unter „Aufbewahrung“/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Öffnen/ })).not.toBeInTheDocument();
   });
@@ -263,8 +263,8 @@ describe('Dateiliste', () => {
       />,
     );
 
-    expect(await screen.findByText('Die Dateien konnten nicht geladen werden.')).toBeVisible();
-    expect(screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeVisible();
+    expect(await screen.findByText('Dateien nicht geladen.')).toBeVisible();
+    expect(screen.queryByText(/Verbindung prüfen/)).toBeNull();
     expect(screen.queryByText(/angemeldet/)).toBeNull();
 
     fetchPatientFiles.mockResolvedValue([datei()]);
@@ -396,7 +396,7 @@ describe('Dateiliste', () => {
     expect(screen.getByRole('option', { name: 'Bitte wählen …' })).toBeDisabled();
     await userEvent.upload(screen.getByLabelText('Datei'), pdf());
     expect(screen.getByRole('button', { name: 'Datei hinzufügen' })).toBeDisabled();
-    expect(screen.getByText('Zuerst die Art des Dokuments wählen.')).toBeInTheDocument();
+    expect(screen.getByText('Erst die Art wählen.')).toBeInTheDocument();
 
     await userEvent.selectOptions(auswahl, 'arztbrief');
     // Der Name folgt der Art, bis jemand ihn selbst ändert.
@@ -561,8 +561,7 @@ describe('Dateiliste', () => {
 
       // Was für die Person zählt, ohne Innenleben der Ablage (DAT-23).
       const frage = screen.getByRole('group', { name: '„Befund Schulter.pdf“ löschen' });
-      expect(frage).toHaveTextContent(/sofort aus der Akte entfernt/);
-      expect(frage).toHaveTextContent(/lässt sich nicht rückgängig machen/);
+      expect(frage).toHaveTextContent('Lässt sich nicht rückgängig machen.');
       expect(frage.textContent).not.toMatch(/Löschauftrag|Aufbewahrung und Löschung/);
       expect(loescheDatei).not.toHaveBeenCalled();
 

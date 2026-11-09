@@ -134,17 +134,12 @@ function VersorgungAbschliessen({
         ausloeser="Abschluss zurücknehmen"
         bestaetigen="Abschluss zurücknehmen"
         bestaetigenLaeuft="Wird zurückgenommen …"
-        fehler={
-          mutation.isError
-            ? 'Der Abschluss der Versorgung konnte nicht zurückgenommen werden.'
-            : undefined
-        }
+        fehler={mutation.isError ? 'Abschluss nicht zurückgenommen.' : undefined}
         laeuft={mutation.isPending}
         onBestaetigen={() => mutation.mutateAsync()}
       >
         <p>
-          Die Versorgung gilt wieder als nicht abgeschlossen. Die Aufbewahrungsfrist beginnt erst
-          mit einem neuen Abschluss – sie läuft nicht weiter.
+          Die Aufbewahrungsfrist beginnt erst mit einem neuen Abschluss – sie läuft nicht weiter.
         </p>
       </Rueckfrage>
     );
@@ -159,19 +154,14 @@ function VersorgungAbschliessen({
       bestaetigen="Versorgung abschließen"
       // Dasselbe Verb wie auf dem Knopf (WRT-10).
       bestaetigenLaeuft="Wird abgeschlossen …"
-      fehler={
-        mutation.isError
-          ? 'Der Abschluss der Versorgung konnte nicht gespeichert werden. Prüfen Sie das Datum.'
-          : undefined
-      }
+      fehler={mutation.isError ? 'Abschluss nicht gespeichert.' : undefined}
       laeuft={mutation.isPending}
       onBestaetigen={() => mutation.mutateAsync()}
       onAbbrechen={() => setTag(heute)}
     >
       <p>
-        Die Behandlung dieser Person ist beendet. Ab diesem Tag läuft die gesetzliche Aufbewahrung
-        von zehn Jahren; danach wird die Akte gelöscht. Kommt die Person zurück, lässt sich der
-        Abschluss zurücknehmen.
+        Ab diesem Tag läuft die gesetzliche Aufbewahrung von zehn Jahren; danach wird die Akte
+        gelöscht. Kommt die Person zurück, lässt sich der Abschluss zurücknehmen.
       </p>
       <div className="mt-3 max-w-60">
         {/* Der Tag liegt zwischen Beginn der Versorgung und heute - dieselben

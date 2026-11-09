@@ -88,7 +88,7 @@ function Vorschau({
       <Abfragezustand
         abfrage={abfrage}
         laden="Vorschau wird geladen …"
-        fehler="Die Vorschau konnte nicht geladen werden."
+        fehler="Vorschau nicht geladen."
       >
         {(data) => {
           const wandert = wandertMit(data.counts);
@@ -107,7 +107,7 @@ function Vorschau({
                   {wandert.length > 0 ? wandert.join(', ') : 'Nichts außer den Stammdaten.'}
                 </DetailRow>
                 {data.conflicts.length > 0 ? (
-                  <DetailRow label="In beiden Akten verschieden – es bleibt der Wert von hier">
+                  <DetailRow label="Verschieden – es bleibt der Wert von hier">
                     {data.conflicts.map(feldLabel).join(', ')}
                   </DetailRow>
                 ) : null}
@@ -140,12 +140,12 @@ function Vorschau({
                   />
                   {mutation.isError ? (
                     <Statusmeldung ton="fehler" className="mt-3">
-                      Die Akten konnten nicht zusammengeführt werden. Es hat sich nichts geändert.
+                      Nicht zusammengeführt. Es hat sich nichts geändert.
                     </Statusmeldung>
                   ) : null}
                   {/* ANN-150: nicht rückgängig - das steht vor dem Knopf, nicht
                       danach, als Satz über den Knöpfen. */}
-                  <Formularfuss zusatz="Nicht rückgängig zu machen. Ausgestellte Rechnungen und abgeschlossene Dokumentation bleiben, wie sie sind; nur ihr Bezug wechselt. Die leere Akte wird gelöscht.">
+                  <Formularfuss zusatz="Nicht rückgängig zu machen. Ausgestellte Rechnungen und abgeschlossene Dokumentation bleiben unverändert; die leere Akte wird gelöscht.">
                     <Button
                       disabled={!geprueft || mutation.isPending}
                       onClick={() => mutation.mutate()}
@@ -231,27 +231,18 @@ export function ZusammenfuehrenPage() {
           data
             ? // Kurz genug, dass „bleibt" auch am Telefon nicht hinter „Mehr"
               // verschwindet - es ist die eine Aussage dieser Seite.
-              `Diese Akte bleibt: ${fullName(data)}.`
+              `Bleibt: ${fullName(data)}`
             : undefined
         }
       />
 
-      <Abfragezustand
-        abfrage={abfrage}
-        laden="Akte wird geladen …"
-        fehler="Die Akte konnte nicht geladen werden."
-      >
+      <Abfragezustand abfrage={abfrage} laden="Akte wird geladen …" fehler="Akte nicht geladen.">
         {(patient) =>
           patient === null ? (
-            <ErrorState
-              title="Nicht gefunden"
-              description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-            />
+            <ErrorState title="Nicht gefunden" />
           ) : fertig ? (
             <div className="flex flex-col items-start gap-4">
-              <Rueckmeldung className="w-full">
-                Die Dublette ist in dieser Akte aufgegangen.
-              </Rueckmeldung>
+              <Rueckmeldung className="w-full">Zusammengeführt.</Rueckmeldung>
               <ButtonLink to={`/patienten/${patient.id}`}>Zur Akte</ButtonLink>
             </div>
           ) : dublette === null ? (

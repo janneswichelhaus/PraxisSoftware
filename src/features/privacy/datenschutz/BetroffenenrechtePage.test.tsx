@@ -144,9 +144,7 @@ describe('BetroffenenrechtePage', () => {
     renderWithProviders(<BetroffenenrechtePage />, PFAD);
 
     await userEvent.click(await screen.findByRole('button', { name: 'Auskunft erstellen' }));
-    expect(
-      await screen.findByText('1 weiterer Abschnitt ist in der Datei enthalten und leer.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Dazu 1 leerer Abschnitt in der Datei.')).toBeInTheDocument();
   });
 
   // PAT-23: Nach dem Erstellen ist „Kopie herunterladen" der einzige
@@ -230,9 +228,6 @@ describe('BetroffenenrechtePage', () => {
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
     expect(
-      screen.getByText('Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben.'),
-    ).toBeInTheDocument();
-    expect(
       screen.getByRole('heading', { level: 1, name: 'Auskunft und Löschverlangen' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Zurück zu den Stammdaten/ })).toHaveAttribute(
@@ -248,7 +243,7 @@ describe('BetroffenenrechtePage', () => {
     renderWithProviders(<BetroffenenrechtePage />, PFAD);
 
     const meldung = await screen.findByRole('alert');
-    expect(meldung).toHaveTextContent('Die Akte konnte nicht geladen werden.');
+    expect(meldung).toHaveTextContent('Akte nicht geladen.');
     expect(meldung).not.toHaveTextContent('Verbindung prüfen');
     await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
 
@@ -262,15 +257,12 @@ describe('BetroffenenrechtePage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Auskunft erstellen' }));
 
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'Die Auskunft konnte nicht erstellt werden.',
-      );
+      expect(screen.getByRole('alert')).toHaveTextContent('Auskunft nicht erstellt.');
     });
-    // Ein Schritt statt der Ratefrage nach der Anmeldung (WRT-01).
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'Bitte die Verbindung prüfen und erneut versuchen.',
-    );
+    // Keine Ratefrage nach der Anmeldung; den neuen Versuch trägt der Knopf darüber (L7).
+    expect(screen.getByRole('alert')).not.toHaveTextContent('Verbindung prüfen');
     expect(screen.getByRole('alert').textContent).not.toMatch(/angemeldet/);
+    expect(screen.getByRole('button', { name: 'Auskunft erstellen' })).toBeEnabled();
   });
 
   it('ist ohne Verstoesse gegen die Barrierefreiheit bedienbar', async () => {

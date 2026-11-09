@@ -60,7 +60,7 @@ export function DokuDateien({
       hinzufuegbar={artenImBereich('doku')}
       rahmen={!ohneAbschnitt}
       hinzufuegenEingeklappt="Dokument hinzufügen"
-      leerHinweis="Noch kein Befund, Arztbrief oder klinisches Bild."
+      leerHinweis="Dateien: keine."
       leerKompakt
     />
   );

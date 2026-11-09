@@ -32,10 +32,7 @@ export function PatientsListPage() {
       <Patientenauswahl
         begriffMerken
         ziel={(id) => mitRueckweg(`/patienten/${id}`, rueckweg)}
-        leer={{
-          titel: 'Noch keine Patient:innen',
-          beschreibung: `Die erste Akte entsteht über „${ANLEGEN}“.`,
-        }}
+        leer={{ titel: 'Noch keine Patient:innen' }}
       />
     </>
   );

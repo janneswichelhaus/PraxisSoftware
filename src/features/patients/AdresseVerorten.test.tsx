@@ -171,29 +171,18 @@ describe('AdresseVerorten', () => {
   it('bietet bei unvollstaendiger Adresse nichts an und sagt, was fehlt (PAT-15)', () => {
     renderWithProviders(<AdresseVerorten patient={{ ...OHNE, city: null }} />);
     expect(screen.queryByRole('button')).toBeNull();
-    expect(
-      screen.getByText('Für die Kartenposition fehlen Straße, PLZ oder Ort.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Straße, PLZ oder Ort fehlen.')).toBeInTheDocument();
   });
 
-  // PAT-15: Eigene Sätze mit Handlung statt der Titel aus der Routenberechnung.
+  // Eigene Sätze statt der Titel aus der Routenberechnung; den neuen Versuch trägt der Knopf (L7).
   it.each([
-    ['unavailable', 'Der Kartendienst ist gerade nicht erreichbar. Bitte später erneut verorten.'],
-    ['timeout', 'Der Kartendienst ist gerade nicht erreichbar. Bitte später erneut verorten.'],
-    [
-      'not_configured',
-      'Für die Praxis ist kein Kartendienst eingerichtet. Die Adresse bleibt vorerst ohne Kartenposition.',
-    ],
-    [
-      'session_invalid',
-      'Die Anmeldung gilt nicht mehr. Bitte neu anmelden und dann erneut verorten.',
-    ],
+    ['unavailable', 'Der Kartendienst ist gerade nicht erreichbar.'],
+    ['timeout', 'Der Kartendienst ist gerade nicht erreichbar.'],
+    ['not_configured', 'Für die Praxis ist kein Kartendienst eingerichtet.'],
+    ['session_invalid', 'Die Anmeldung gilt nicht mehr. Bitte neu anmelden.'],
     // Die eigene Funktion war es - der Satz schiebt es nicht dem Kartendienst zu.
-    [
-      'function_unavailable',
-      'Die Verortung ist gerade nicht möglich. Bitte später erneut verorten.',
-    ],
-  ])('meldet „%s" mit einem Satz, der sagt, was jetzt geht', async (code, satz) => {
+    ['function_unavailable', 'Die Verortung ist gerade nicht möglich.'],
+  ])('meldet „%s" mit einem Satz, der sagt, was los ist', async (code, satz) => {
     geocodiere.mockResolvedValue({ ok: false, error: { code, message: 'x' } });
     renderWithProviders(<AdresseVerorten patient={OHNE} />);
     await userEvent.click(screen.getByRole('button', { name: 'Adresse verorten' }));

@@ -19,9 +19,8 @@ export function PrescriptionPhoto({
   /** Etwa: die Erstaufnahme nachladen, die das Foto erledigt (K10). */
   onErfolg?: () => void;
   /**
-   * In der geführten Erstaufnahme (K10): ohne Einleitungssatz, und „Foto
-   * verwenden“ im Kameradialog gibt das Foto schon ans Büro - wie beim
-   * Anmeldebogen, ein Tipp weniger.
+   * In der geführten Erstaufnahme (K10): „Foto verwenden“ im Kameradialog gibt das Foto schon ans
+   * Büro - wie beim Anmeldebogen, ein Tipp weniger.
    */
   gefuehrt?: boolean;
 }) {
@@ -33,22 +32,16 @@ export function PrescriptionPhoto({
       knopf="Verordnung fotografieren"
       dateiLabel="Verordnung als Datei"
       kameraTitel="Foto der Verordnung"
-      kameraHinweis="Das Rezept flach hinlegen und ganz ins Bild nehmen. Das Foto bleibt in der Anwendung und landet nicht in der Mediathek des Geräts."
+      kameraHinweis="Das Foto bleibt in der Anwendung und landet nicht in der Mediathek des Geräts."
       vorschauAlt="Foto der Verordnung, noch nicht übergeben"
       wartetText="Noch nicht übergeben."
       speichernKnopf="Ans Büro geben"
       speichernLaeuft="Wird übergeben …"
-      {...(gefuehrt
-        ? { sofort: true }
-        : {
-            einleitung:
-              'Neues Rezept dabei? Ein Foto genügt – das Büro erfasst die Grundlage daraus.',
-          })}
+      {...(gefuehrt ? { sofort: true } : {})}
       {...(onErfolg ? { onErfolg } : {})}
       erfolg={
         <>
-          Das Foto liegt beim Büro unter <Textlink to="/offen">Offene Punkte</Textlink> und wartet
-          aufs Erfassen.
+          Das Foto liegt beim Büro unter <Textlink to="/offen">Offene Punkte</Textlink>.
         </>
       }
     />

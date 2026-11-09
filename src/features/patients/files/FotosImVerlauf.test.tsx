@@ -192,9 +192,7 @@ describe('Patientenfotos', () => {
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
     const { container } = seite();
 
-    expect(
-      await screen.findByText(/Die Kamera steht hier nicht zur Verfügung/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Kamera nur über https verfügbar/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Foto aufnehmen' })).not.toBeInTheDocument();
     expect(container.querySelector('input[type="file"]')).toBeNull();
   });
@@ -294,7 +292,7 @@ describe('Patientenfotos', () => {
     fetchPatientenfotos.mockResolvedValue([foto({ object_missing: true })]);
     seite();
 
-    expect(await screen.findByText(/in der Ablage nicht auffindbar/)).toBeInTheDocument();
+    expect(await screen.findByText(/Foto fehlt in der Ablage/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Ansehen/ })).not.toBeInTheDocument();
   });
 
@@ -341,7 +339,7 @@ describe('Patientenfotos', () => {
     await user.click(await screen.findByRole('button', { name: 'Löschen' }));
     const frage = screen.getByRole('group', { name: '„Knie rechts“ löschen' });
     // Was für die Person zählt, ohne Innenleben der Ablage (DAT-23).
-    expect(frage).toHaveTextContent('lässt sich nicht rückgängig machen');
+    expect(frage).toHaveTextContent('Lässt sich nicht rückgängig machen.');
     expect(frage.textContent).not.toMatch(/Löschauftrag/);
     expect(loescheDatei).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Endgültig löschen' }));
@@ -368,8 +366,8 @@ describe('Patientenfotos', () => {
       fetchPatientenfotos.mockRejectedValueOnce(new Error('synthetisch'));
       seite();
 
-      expect(await screen.findByText('Die Fotos konnten nicht geladen werden.')).toBeVisible();
-      expect(screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeVisible();
+      expect(await screen.findByText('Fotos nicht geladen.')).toBeVisible();
+      expect(screen.queryByText(/Verbindung prüfen/)).toBeNull();
       fetchPatientenfotos.mockResolvedValue([foto()]);
       await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
       expect(await screen.findByText('Knie rechts')).toBeInTheDocument();
@@ -422,9 +420,7 @@ describe('Patientenfotos', () => {
       });
       seite();
 
-      expect(
-        await screen.findByText(/Auf diesem Gerät wurde keine Kamera gefunden/),
-      ).toBeInTheDocument();
+      expect(await screen.findByText(/Keine Kamera gefunden/)).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Foto aufnehmen' })).toBeNull();
     });
   });

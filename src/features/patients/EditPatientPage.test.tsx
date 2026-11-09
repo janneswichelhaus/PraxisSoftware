@@ -234,12 +234,8 @@ describe('EditPatientPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
 
-    const fenster = await screen.findByRole('dialog', {
-      name: 'Die Stammdaten konnten nicht gespeichert werden.',
-    });
-    expect(within(fenster).getByRole('alert')).toHaveTextContent(
-      'Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut speichern.',
-    );
+    const fenster = await screen.findByRole('dialog', { name: 'Stammdaten nicht gespeichert.' });
+    expect(within(fenster).getByRole('alert')).toHaveTextContent('Die Eingaben bleiben erhalten.');
     expect(fenster.textContent).not.toMatch(/permission|angemeldet/i);
     expect(navigate).not.toHaveBeenCalled();
 
@@ -308,9 +304,6 @@ describe('EditPatientPage', () => {
     renderWithProviders(<EditPatientPage />);
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
-    expect(
-      screen.getByText('Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben.'),
-    ).toBeInTheDocument();
     expect(screen.queryByLabelText('Vorname *')).not.toBeInTheDocument();
     // Auch im Fehlerfall gibt es Überschrift und Rückweg (PAT-22).
     expect(

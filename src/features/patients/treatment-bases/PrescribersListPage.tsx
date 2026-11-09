@@ -111,13 +111,9 @@ export function PrescribersListPage() {
       <Abfragezustand
         abfrage={abfrage}
         laden="Verordner:innen werden geladen …"
-        fehler="Die Verordner:innen konnten nicht geladen werden."
+        fehler="Verordner:innen nicht geladen."
         inKarte
-        leer={{
-          wenn: (liste) => liste.length === 0,
-          titel: 'Noch keine Verordner:innen',
-          beschreibung: 'Die erste Verordner:in entsteht beim Erfassen einer Verordnung oder hier.',
-        }}
+        leer={{ wenn: (liste) => liste.length === 0, titel: 'Noch keine Verordner:innen' }}
       >
         {() =>
           sichtbar.length === 0 ? (

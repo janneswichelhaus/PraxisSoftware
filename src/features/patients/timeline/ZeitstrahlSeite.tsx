@@ -70,8 +70,8 @@ export function ZeitstrahlSeite() {
         />
         <Abfragezustand
           abfrage={{ ...abfrage, data: abfrage.data ? erstes : undefined }}
-          laden="Der Zeitstrahl wird geladen …"
-          fehler="Der Zeitstrahl konnte nicht geladen werden."
+          laden="Zeitstrahl wird geladen …"
+          fehler="Zeitstrahl nicht geladen."
           inKarte
           leer={{ wenn: (f) => !f, titel: 'Nicht gefunden' }}
         >

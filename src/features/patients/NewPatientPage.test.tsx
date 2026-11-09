@@ -321,12 +321,10 @@ describe('NewPatientPage', () => {
     await ausfuellen(user);
     await user.click(screen.getByRole('button', { name: 'Patient:in anlegen' }));
 
-    const fenster = await screen.findByRole('dialog', {
-      name: 'Die Patient:in konnte nicht angelegt werden.',
-    });
+    const fenster = await screen.findByRole('dialog', { name: 'Patient:in nicht angelegt.' });
     const meldung = within(fenster).getByRole('alert');
-    expect(meldung).toHaveTextContent('Die Eingaben stehen noch im Formular.');
-    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen');
+    expect(meldung).toHaveTextContent('Die Eingaben bleiben erhalten.');
+    expect(meldung).not.toHaveTextContent('Verbindung prüfen');
     expect(fenster.textContent).not.toMatch(/not allowed|angemeldet/i);
 
     await user.click(within(fenster).getByRole('button', { name: 'Zurück zum Formular' }));
@@ -352,9 +350,7 @@ describe('NewPatientPage', () => {
     fetchAssignableTherapists.mockRejectedValue(new Error('offline'));
     renderWithProviders(<NewPatientPage />);
 
-    expect(
-      await screen.findByText(/Die Liste der Therapeut:innen ließ sich nicht laden/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Therapeut:innen nicht geladen.')).toBeInTheDocument();
     expect(screen.getByLabelText('Feste Therapeut:in')).toBeEnabled();
   });
 

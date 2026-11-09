@@ -110,7 +110,7 @@ describe('FotoHerausgabe', { timeout: 20_000 }, () => {
     fetchPatientenfotos.mockRejectedValueOnce(new Error('synthetisch'));
     renderWithProviders(<FotoHerausgabe patientId={PATIENT} />);
 
-    expect(await screen.findByText('Die Fotos konnten nicht geladen werden.')).toBeVisible();
+    expect(await screen.findByText('Fotos nicht geladen.')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(
       await screen.findByRole('button', { name: /Kopie für die Person herunterladen/ }),

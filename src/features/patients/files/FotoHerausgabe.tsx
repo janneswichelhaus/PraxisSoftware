@@ -115,12 +115,8 @@ export function FotoHerausgabe({ patientId }: { patientId: string }) {
       <Abfragezustand
         abfrage={fotos}
         laden="Fotos werden geladen …"
-        fehler="Die Fotos konnten nicht geladen werden."
-        leer={{
-          wenn: (liste) => liste.length === 0,
-          titel: 'Keine Fotos',
-          beschreibung: 'Für diese Person liegt kein Foto vor.',
-        }}
+        fehler="Fotos nicht geladen."
+        leer={{ wenn: (liste) => liste.length === 0, titel: 'Keine Fotos' }}
       >
         {(liste) => (
           <ul className="flex flex-col">

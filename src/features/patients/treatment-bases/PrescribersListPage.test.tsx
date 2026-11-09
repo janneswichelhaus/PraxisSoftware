@@ -117,9 +117,7 @@ describe('PrescribersListPage', () => {
     fetchPrescribers.mockRejectedValue(new Error('egal'));
     renderWithProviders(<PrescribersListPage />);
 
-    expect(
-      await screen.findByText('Die Verordner:innen konnten nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Verordner:innen nicht geladen.')).toBeInTheDocument();
     expect(screen.queryByText(/egal/)).not.toBeInTheDocument();
   });
 
