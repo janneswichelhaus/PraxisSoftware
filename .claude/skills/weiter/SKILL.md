@@ -15,6 +15,7 @@ genannte, `/weiter <A>, <B>` beide nacheinander.
 2. **Ausführen:**
    - **Bereich** (Überholung, mehrere Abläufe oder Seiten eines Arbeitsbereichs): nach `/bereich`.
    - **Einzelauftrag** (Epic, Befundbündel, Datenmodell oder Rechte): nach `/feature-loop`.
+   - **Wartung** (ein Fehler, ein Befund, eine Anpassung): nach dem Wartungsmodus in `CLAUDE.md`.
    - **Dokumentation** (ADR, Providerprüfung, Antworten einarbeiten): Docs-Session nach der Vorgabe
      der Zeile, kein Produktivcode; Prüfung mit `pnpm format:check && pnpm docs:check`.
    - **Planung** (früher „Wochenupdate“; nach einer Überholung oder einem Block, sonst auf Zuruf),
@@ -23,5 +24,5 @@ genannte, `/weiter <A>, <B>` beide nacheinander.
      die erste Aufgabe zur Kette, wie stehen Prüfungen und Risiken, ist M2 in Sicht (R1). Antwort in
      höchstens zwölf Zeilen: was als Nächstes ansteht · offene Sichtungen · Jannes entscheidet oder
      liefert · M1 bis M6 je erreicht oder offen, mit dem fehlenden Kriterium in einem Wort.
-3. **Abschluss** je Aufgabe nach dem jeweiligen Skill (eine PR, STATUS in drei Zeilen). Nennt der
-   Aufruf mehrere Aufgaben, folgt die nächste ohne Zwischenstopp.
+3. **Abschluss** je Aufgabe nach dem jeweiligen Skill (eine PR, STATUS in drei Zeilen; in der
+   Wartung nur die PR). Nennt der Aufruf mehrere Aufgaben, folgt die nächste ohne Zwischenstopp.
