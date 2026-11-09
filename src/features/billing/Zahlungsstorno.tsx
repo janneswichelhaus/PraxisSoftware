@@ -58,7 +58,7 @@ export function Zahlungsstorno({
       fehler={fehler ?? (stornieren.isError ? stornieren.error.message : undefined)}
       onBestaetigen={() => {
         if (grund.trim().length < 3) {
-          setFehler('Bitte einen Grund angeben – das Storno bleibt dauerhaft sichtbar.');
+          setFehler('Bitte einen Grund angeben.');
           // Abgewiesen, nicht ausgeführt: Der Kasten muss offen bleiben,
           // damit der Hinweis am Feld steht, in dem er gilt.
           return Promise.reject(new Error('Grund fehlt'));
@@ -73,8 +73,7 @@ export function Zahlungsstorno({
       }}
     >
       <p className="text-ink-muted text-sm">
-        Die Buchung bleibt sichtbar stehen und fällt aus der Summe. Geändert oder gelöscht wird eine
-        Zahlung nie.
+        Die Buchung bleibt sichtbar stehen und fällt aus der Summe.
       </p>
       {/* Eine Zeile Grund, keine Seitenbreite (ABR-23). */}
       <div className="max-w-formular mt-2">

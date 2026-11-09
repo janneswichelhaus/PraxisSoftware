@@ -242,7 +242,7 @@ describe('InvoicesPage', () => {
     // Die Herkunft steht an der Zeile, mit dem Weg zur stornierten Rechnung.
     const link = await screen.findByRole('link', { name: 'RG-2026-0007' });
     expect(link).toHaveAttribute('href', '/abrechnung/rechnungen/alt-1');
-    expect(screen.getByText(/wird ihre Korrekturrechnung/)).toBeInTheDocument();
+    expect(screen.getByText(/Aus der stornierten Rechnung/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Entwurf anlegen' })).not.toBeInTheDocument();
 
     await nutzer.click(screen.getByRole('button', { name: 'Korrekturrechnung erstellen' }));
@@ -291,7 +291,7 @@ describe('InvoicesPage', () => {
 
     expect(
       await screen.findByText(
-        'Für diesen Zeitraum steht die Korrektur zu RG-2026-0008 als Entwurf. Ist sie ausgestellt, lässt sich hier die Korrekturrechnung zu RG-2026-0007 erstellen.',
+        'Korrektur zu RG-2026-0008 steht als Entwurf; danach folgt hier die zu RG-2026-0007.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/ohne Bezug/)).not.toBeInTheDocument();
@@ -646,9 +646,7 @@ describe('InvoicesPage', () => {
 
       renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
 
-      expect(
-        await screen.findByText('Die abzurechnenden Leistungen konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Leistungen nicht geladen.')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
       expect(screen.queryByText(/angemeldet/)).toBeNull();
     });

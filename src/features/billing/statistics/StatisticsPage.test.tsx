@@ -171,7 +171,7 @@ describe('StatisticsPage (STA-003)', () => {
     );
     renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
     expect(
-      await screen.findByText('Die Zahlen zu Training und Abo konnten nicht geladen werden.'),
+      await screen.findByText('Zahlen zu Training und Abo nicht geladen.'),
     ).toBeInTheDocument();
     expect(karte('Umsatz')).toBeInTheDocument();
   });
@@ -247,9 +247,7 @@ describe('StatisticsPage (STA-003)', () => {
   it('sagt es, wenn die Zahlen nicht kommen', async () => {
     fetchKennzahlen.mockRejectedValue(new Error('Die Statistik konnte nicht geladen werden.'));
     renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
-    expect(
-      await screen.findByText('Die Statistik konnte nicht geladen werden.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Statistik nicht geladen.')).toBeInTheDocument();
   });
 
   it('zeigt den Verlauf als Grafiken mit Legende und Tabelle', async () => {

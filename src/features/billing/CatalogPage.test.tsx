@@ -319,14 +319,15 @@ describe('CatalogPage', () => {
     expect(createKatalogVersion).toHaveBeenCalledWith('Preisliste 2027', expect.any(String), 'v1');
   });
 
-  it('sagt, dass ohne Preisliste keine Leistung erfasst werden kann', async () => {
+  it('zeigt ohne Preisliste den Leerzustand und den Knopf zur neuen Liste, ohne Erklärsatz', async () => {
     fetchKatalogVersionen.mockResolvedValue([]);
 
     renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
     const leer = await screen.findByText('Noch keine Preisliste');
     expect(leer).toBeInTheDocument();
-    expect(screen.getByText(/lässt sich keine Leistung erfassen/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Neue Preisliste' })).toBeInTheDocument();
+    expect(screen.queryByText(/lässt sich keine Leistung erfassen/)).toBeNull();
   });
 
   it('trennt Entwurf und geltende Liste sichtbar', async () => {
@@ -408,36 +409,31 @@ describe('CatalogPage', () => {
     it('zeigt ein abgewiesenes Inkraftsetzen im offenen Kasten (ABR-03)', async () => {
       const nutzer = userEvent.setup();
       fetchKatalogVersionen.mockResolvedValue([entwurf()]);
-      publishKatalogVersion.mockRejectedValue(
-        new Error('Die Preisliste konnte nicht in Kraft gesetzt werden.'),
-      );
+      publishKatalogVersion.mockRejectedValue(new Error('Preisliste nicht in Kraft gesetzt.'));
 
       renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
       await nutzer.click(await screen.findByRole('button', { name: 'In Kraft setzen' }));
       await nutzer.click(screen.getByRole('button', { name: 'In Kraft setzen' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        /konnte nicht in Kraft gesetzt werden\. Bitte die Verbindung prüfen/,
-      );
+      // Der Bestätigungsknopf steht daneben; ein Rat zur Verbindung entfällt (L7).
+      const meldung = await screen.findByRole('alert');
+      expect(meldung).toHaveTextContent('Preisliste nicht in Kraft gesetzt.');
+      expect(meldung).not.toHaveTextContent(/Verbindung/);
       expect(screen.getByRole('group', { name: 'In Kraft setzen' })).toBeInTheDocument();
     });
 
     it('zeigt ein abgewiesenes Verwerfen im offenen Kasten und fragt mit „Ja, …" (ABR-03, WRT-21)', async () => {
       const nutzer = userEvent.setup();
       fetchKatalogVersionen.mockResolvedValue([entwurf()]);
-      deleteKatalogVersion.mockRejectedValue(
-        new Error('Der Entwurf konnte nicht verworfen werden.'),
-      );
+      deleteKatalogVersion.mockRejectedValue(new Error('Entwurf nicht verworfen.'));
 
       renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
       await nutzer.click(await screen.findByRole('button', { name: 'Entwurf verwerfen' }));
       await nutzer.click(screen.getByRole('button', { name: 'Ja, Entwurf verwerfen' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        /Der Entwurf konnte nicht verworfen werden\./,
-      );
+      expect(await screen.findByRole('alert')).toHaveTextContent('Entwurf nicht verworfen.');
       expect(deleteKatalogVersion).toHaveBeenCalledWith('v2');
       expect(screen.getByRole('group', { name: 'Entwurf verwerfen' })).toBeInTheDocument();
     });
@@ -498,7 +494,7 @@ describe('CatalogPage', () => {
       await nutzer.click(screen.getByRole('button', { name: /Preisliste 2026/ }));
 
       const frage = screen.getByRole('group', { name: 'Ungespeicherte Preisliste' });
-      expect(frage).toHaveTextContent(/Änderungen an „Entwurf 2027“ sind noch nicht gespeichert/);
+      expect(frage).toHaveTextContent(/Änderungen an „Entwurf 2027“ verloren/);
       // Im Fenster steht der Fokus auf dem Bleiben: Enter verwirft nichts (ANN-566).
       expect(within(frage).getByRole('button', { name: 'Hier bleiben' })).toHaveFocus();
 
@@ -580,8 +576,8 @@ describe('CatalogPage', () => {
       renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
       await nutzer.click(await screen.findByRole('button', { name: 'In Kraft setzen' }));
-      expect(screen.getByText(/Mit dem Inkraftsetzen wird „Entwurf 2027“/).textContent).toMatch(
-        /sie gilt für Leistungen ab 01\.01\.2027/,
+      expect(screen.getByText(/„Entwurf 2027“ wird/).textContent).toMatch(
+        /unveränderlich und gilt für Leistungen ab 01\.01\.2027/,
       );
     });
 
@@ -687,9 +683,7 @@ describe('CatalogPage', () => {
 
       renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
-      expect(
-        await screen.findByText('Die Preislisten konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Preislisten nicht geladen.')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
       expect(screen.queryByText(/angemeldet/)).toBeNull();
       await waitFor(() => expect(fetchKatalogVersionen).toHaveBeenCalledTimes(1));

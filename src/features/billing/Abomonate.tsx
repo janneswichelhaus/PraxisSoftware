@@ -39,10 +39,7 @@ export function FaelligeAbomonate() {
   if (monate.isError) {
     return (
       <Section titel="Nachsorge-Abo">
-        <ErrorState
-          title="Die Abo-Monate konnten nicht geladen werden."
-          onErneut={() => monate.refetch()}
-        />
+        <ErrorState title="Abo-Monate nicht geladen." onErneut={() => monate.refetch()} />
       </Section>
     );
   }
@@ -154,7 +151,7 @@ export function AbomonatZuruecknehmen({ leistungId }: { leistungId: string }) {
       onBestaetigen={() => entfernen.mutateAsync()}
       onAbbrechen={() => entfernen.reset()}
     >
-      <p>Der Abo-Monat steht danach wieder unter „Nachsorge-Abo“.</p>
+      <p>Erfassung zurücknehmen?</p>
     </Rueckfrage>
   );
 }

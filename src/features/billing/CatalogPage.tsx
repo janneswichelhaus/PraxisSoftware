@@ -11,7 +11,6 @@ import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Chip } from '@/components/ui/Chip';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
@@ -211,8 +210,7 @@ function pruefe(zeile: PositionsEingabe): Zeilenfehler[] {
   if (zeile.service_area === 'training' && zeile.tax_treatment === 'exempt_healthcare')
     fehler.push({
       feld: 'tax_treatment',
-      meldung:
-        'Training ist keine Heilbehandlung und damit nicht umsatzsteuerfrei. Bitte ein anderes Steuerkennzeichen wählen.',
+      meldung: 'Training ist keine Heilbehandlung und damit nicht umsatzsteuerfrei.',
     });
   return fehler;
 }
@@ -283,7 +281,6 @@ export function CatalogPage({ user }: { user: CurrentUser }) {
     <>
       <PageHeader
         title="Leistungskatalog"
-        description="Preislisten mit Einzelpreis und Steuerkennzeichen je Position."
         // Kompakt im Kopf (DESIGN.md „Liste“) und sekundär: Der Hauptknopf
         // gehört der Aktion, die der Entwurf darunter gerade erwartet (ABR-24).
         actions={
@@ -311,13 +308,12 @@ export function CatalogPage({ user }: { user: CurrentUser }) {
       <Abfragezustand
         abfrage={versionen}
         laden="Preislisten werden geladen …"
-        fehler="Die Preislisten konnten nicht geladen werden."
+        fehler="Preislisten nicht geladen."
         leer={{
           wenn: (liste) => liste.length === 0,
           titel: 'Noch keine Preisliste',
-          beschreibung: darfPflegen
-            ? 'Ohne eine in Kraft gesetzte Preisliste lässt sich keine Leistung erfassen.'
-            : 'Ohne eine in Kraft gesetzte Preisliste lässt sich keine Leistung erfassen. Preislisten legt die Praxisinhaber:in an.',
+          // Wer keine anlegen darf, erfährt, wer es tut.
+          ...(darfPflegen ? {} : { beschreibung: 'Preislisten legt die Praxisinhaber:in an.' }),
         }}
       >
         {(liste) => (
@@ -404,8 +400,7 @@ function Wechselrueckfrage({
     <Dialogfenster titel="Noch nicht gespeichert" onSchliessen={onBleiben}>
       <div role="group" aria-label="Ungespeicherte Preisliste">
         <p className="text-ink text-sm">
-          Die Änderungen an „{bisher}“ sind noch nicht gespeichert. Beim Wechsel zu „{ziel}“ gehen
-          sie verloren.
+          Beim Wechsel zu „{ziel}“ gehen die Änderungen an „{bisher}“ verloren.
         </p>
         <div className="mt-3 flex flex-wrap gap-3">
           <Button type="button" variant="secondary" groesse="kompakt" onClick={onVerwerfen}>
@@ -460,27 +455,23 @@ function NeuePreisliste({
             label="Bezeichnung"
             value={label}
             onChange={(event) => setLabel(event.target.value)}
-            hint="Zum Wiederfinden, etwa „Preisliste 2027“."
           />
           <Field
             label="Gültig ab"
             type="date"
             value={gueltigAb}
             onChange={(event) => setGueltigAb(event.target.value)}
-            hint="Maßgeblich ist der Leistungstag, nicht der Tag der Erfassung."
+            hint="bezogen auf den Leistungstag"
           />
           {vorlage ? (
             <Checkbox
               label={`Positionen aus „${vorlage.label}“ übernehmen`}
-              hint="Eine Preisrunde ändert meist zwei Zeilen und lässt zwanzig stehen."
               checked={kopieren}
               onChange={(event) => setKopieren(event.target.checked)}
             />
           ) : null}
           {anlegen.isError ? (
-            <Statusmeldung ton="fehler">
-              {anlegen.error.message} {VERBINDUNG_PRUEFEN}
-            </Statusmeldung>
+            <Statusmeldung ton="fehler">{anlegen.error.message}</Statusmeldung>
           ) : null}
         </Feldgruppe>
         <Formularfuss>
@@ -600,9 +591,7 @@ function Preisliste({
     speichern: async () => {
       if (fehlerliste(zeilenRef.current ?? []).length > 0) {
         setPruefungBis((zeilenRef.current ?? []).length);
-        throw new Error(
-          'Die Positionen sind noch nicht vollständig. Bitte „Hier bleiben“ wählen und die markierten Angaben ergänzen.',
-        );
+        throw new Error('Die Positionen sind unvollständig.');
       }
       const gesendet = zeilenRef.current ?? [];
       await speichern.mutateAsync();
@@ -615,12 +604,7 @@ function Preisliste({
 
   if (positionen.isPending) return <LoadingState label="Positionen werden geladen …" />;
   if (positionen.isError) {
-    return (
-      <ErrorState
-        title="Die Positionen konnten nicht geladen werden."
-        onErneut={() => positionen.refetch()}
-      />
-    );
+    return <ErrorState title="Positionen nicht geladen." onErneut={() => positionen.refetch()} />;
   }
 
   const ohnePosition = positionen.data.length === 0;
@@ -684,12 +668,9 @@ function Preisliste({
       hinweis={
         version.published_at
           ? kuenftig
-            ? `In Kraft gesetzt und damit unveränderlich; sie gilt für Leistungen ab ${formatDate(version.valid_from)}.`
-            : 'In Kraft und damit unveränderlich. Eine Preisänderung ist eine neue Preisliste.'
-          : // Wer nichts ändern kann, liest keinen Satz übers Ändern (ABR-17).
-            darfPflegen
-            ? 'Entwurf. Änderbar, solange die Liste nicht in Kraft ist.'
-            : undefined
+            ? `In Kraft gesetzt und damit unveränderlich; gilt für Leistungen ab ${formatDate(version.valid_from)}`
+            : 'In Kraft und damit unveränderlich'
+          : undefined
       }
     >
       <Tarif version={version} bearbeitbar={bearbeitbar} />
@@ -809,20 +790,14 @@ function Preisliste({
           </div>
 
           {speichern.isError ? (
-            <Statusmeldung ton="fehler">
-              {speichern.error.message} Die Eingaben stehen noch im Formular. Bitte die Verbindung
-              prüfen und erneut speichern.
-            </Statusmeldung>
+            <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
           ) : null}
           {gespeichert && !ungespeichert && !speichern.isError ? (
             <Statusmeldung ton="erfolg">Entwurf gespeichert.</Statusmeldung>
           ) : null}
 
           {ungespeichert ? (
-            <Statusmeldung ton="warnung">
-              Es gibt ungespeicherte Änderungen. Bitte zuerst den Entwurf speichern – in Kraft
-              gesetzt wird der gespeicherte Stand.
-            </Statusmeldung>
+            <Statusmeldung ton="warnung">Es gibt ungespeicherte Änderungen.</Statusmeldung>
           ) : null}
 
           {schutz.schutz}
@@ -845,18 +820,15 @@ function Preisliste({
                   bestaetigen="In Kraft setzen"
                   bestaetigenLaeuft="Wird in Kraft gesetzt …"
                   laeuft={inKraft.isPending}
-                  fehler={
-                    inKraft.isError ? `${inKraft.error.message} ${VERBINDUNG_PRUEFEN}` : undefined
-                  }
+                  fehler={inKraft.isError ? inKraft.error.message : undefined}
                   // Mit Versprechen: Der Kasten bleibt offen, bis der Server
                   // geantwortet hat, und zeigt einen Fehlschlag (ABR-03).
                   onBestaetigen={() => inKraft.mutateAsync()}
                   onAbbrechen={() => inKraft.reset()}
                 >
                   <p>
-                    Mit dem Inkraftsetzen wird „{version.label}“ <strong>unveränderlich</strong>;
-                    sie gilt für Leistungen ab {formatDate(version.valid_from)}. Eine spätere
-                    Preisänderung ist eine neue Preisliste.
+                    „{version.label}“ wird <strong>unveränderlich</strong> und gilt für Leistungen
+                    ab {formatDate(version.valid_from)}.
                   </p>
                 </Rueckfrage>
               )}
@@ -864,8 +836,7 @@ function Preisliste({
 
             {ohnePosition ? (
               <Statusmeldung ton="warnung">
-                Eine Preisliste ohne Position lässt sich nicht in Kraft setzen – sie wäre ab ihrem
-                Beginn die geltende und ließe keine Leistung mehr erfassen.
+                Eine Preisliste ohne Position lässt sich nicht in Kraft setzen.
               </Statusmeldung>
             ) : null}
 
@@ -877,13 +848,11 @@ function Preisliste({
                 bestaetigen="Ja, Entwurf verwerfen"
                 bestaetigenLaeuft="Wird verworfen …"
                 laeuft={verwerfen.isPending}
-                fehler={
-                  verwerfen.isError ? `${verwerfen.error.message} ${VERBINDUNG_PRUEFEN}` : undefined
-                }
+                fehler={verwerfen.isError ? verwerfen.error.message : undefined}
                 onBestaetigen={() => verwerfen.mutateAsync()}
                 onAbbrechen={() => verwerfen.reset()}
               >
-                <p>Der Entwurf „{version.label}“ wird samt seinen Positionen gelöscht.</p>
+                <p>„{version.label}“ wird samt Positionen gelöscht.</p>
               </Rueckfrage>
             </div>
           </div>
@@ -953,10 +922,7 @@ function Tarif({ version, bearbeitbar }: { version: KatalogVersion; bearbeitbar:
 
   if (!bearbeitbar) {
     return version.session_fee_cents === null ? (
-      <p className="text-ink-muted mb-3 text-sm">
-        Kein Terminhonorar. Ohne Vereinbarung lassen sich an Terminen in dieser Zeit keine
-        Heilmittel bestätigen.
-      </p>
+      <p className="text-ink-muted mb-3 text-sm">Kein Terminhonorar.</p>
     ) : (
       <p className="text-ink text-liste mb-3">
         Terminhonorar je Behandlungstermin{' '}
@@ -985,7 +951,7 @@ function Tarif({ version, bearbeitbar }: { version: KatalogVersion; bearbeitbar:
             label="Terminhonorar je Behandlungstermin"
             inputMode="decimal"
             value={wert}
-            hint="in Euro, einmal je Termin, einschließlich Dokumentation und Hausbesuch"
+            hint="in Euro, mit Dokumentation und Hausbesuch"
             error={fehler}
             onChange={(event) => setEingabe(event.target.value)}
           />
@@ -1001,9 +967,7 @@ function Tarif({ version, bearbeitbar }: { version: KatalogVersion; bearbeitbar:
         </div>
       </div>
       {speichern.isError ? (
-        <Statusmeldung ton="fehler">
-          {speichern.error.message} {VERBINDUNG_PRUEFEN}
-        </Statusmeldung>
+        <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
       ) : null}
     </form>
   );
@@ -1089,7 +1053,6 @@ function Positionsformular({
                   });
                   onVerlassen('service_area');
                 }}
-                hint="Die Rechnung trägt genau einen."
               >
                 <option value="therapy">{bereichLabels.therapy}</option>
                 <option value="training">{bereichLabels.training}</option>
@@ -1167,7 +1130,6 @@ function Positionsformular({
                   onChange({ ...zeile, remedy: event.target.value });
                   onVerlassen('remedy');
                 }}
-                hint="Belegt die Leistungserfassung vor."
               >
                 <option value="">Kein Heilmittel</option>
                 {HEILMITTEL.map((heilmittel) => (

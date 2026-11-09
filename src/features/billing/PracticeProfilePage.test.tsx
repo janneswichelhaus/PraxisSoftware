@@ -64,7 +64,7 @@ describe('PracticeProfilePage', () => {
     expect(screen.queryByRole('button', { name: 'Speichern' })).not.toBeInTheDocument();
   });
 
-  it('sagt dem Office, dass ohne Stammdaten keine Rechnung entsteht', async () => {
+  it('sagt dem Office, dass noch keine Stammdaten erfasst sind', async () => {
     fetchPraxisStammdaten.mockResolvedValue(null);
 
     renderWithProviders(
@@ -72,7 +72,7 @@ describe('PracticeProfilePage', () => {
       '/abrechnung/stammdaten',
     );
 
-    expect(await screen.findByText(/noch keine Praxisstammdaten erfasst/)).toBeInTheDocument();
+    expect(await screen.findByText(/Noch keine Praxisstammdaten/)).toBeInTheDocument();
   });
 
   it('belegt den Umsatzsteuerstatus nicht vor, wenn es noch keine Angabe gibt', async () => {
@@ -188,7 +188,7 @@ describe('PracticeProfilePage', () => {
       ...stammdaten({ small_business: true }),
       legal_name: 'Praxis Neu',
     });
-    const meldung = await screen.findByText(/Ausgestellte Rechnungen bleiben davon unberührt/);
+    const meldung = await screen.findByText(/Ausgestellte Rechnungen bleiben unberührt/);
     // UIK-21: Erfolg mit Ton und Zeichen.
     expect(meldung).toHaveTextContent('✓');
     expect(meldung).toHaveClass('text-positiv');
@@ -335,7 +335,7 @@ describe('PracticeProfilePage', () => {
       );
 
       expect(
-        await screen.findByText(/erfassen kann sie die Praxisinhaber:in\./),
+        await screen.findByText(/Erfassen kann sie die Praxisinhaber:in\./),
       ).toBeInTheDocument();
     });
 
@@ -347,9 +347,7 @@ describe('PracticeProfilePage', () => {
         '/abrechnung/stammdaten',
       );
 
-      expect(
-        await screen.findByText('Die Praxisstammdaten konnten nicht geladen werden.'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Praxisstammdaten nicht geladen.')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
       expect(screen.queryByText(/angemeldet/)).toBeNull();
     });

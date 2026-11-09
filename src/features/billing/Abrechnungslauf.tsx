@@ -166,7 +166,7 @@ export function Abrechnungslauf({
           text:
             grund instanceof WegHinweis
               ? grund.message
-              : 'Der Entwurf konnte nicht angelegt werden. Bitte die Verbindung prüfen.',
+              : 'Entwurf nicht angelegt. Bitte die Verbindung prüfen.',
         });
       }
       setPhase({ art: 'anlegen', fertig: index + 1, gesamt: neu.length });
@@ -198,10 +198,7 @@ export function Abrechnungslauf({
         else
           fehler.push({
             name: rechnung.patient_name,
-            text:
-              grund instanceof Error
-                ? grund.message
-                : 'Die Rechnung konnte nicht ausgestellt werden.',
+            text: grund instanceof Error ? grund.message : 'Rechnung nicht ausgestellt.',
             weg: wegZu(rechnung, grund),
           });
       }
@@ -219,7 +216,7 @@ export function Abrechnungslauf({
             <Abfragezustand
               abfrage={entwuerfe}
               laden="Entwürfe werden geladen …"
-              fehler="Die Entwürfe konnten nicht geladen werden."
+              fehler="Entwürfe nicht geladen."
             >
               {(stehend) => (
                 <Bereit
@@ -243,7 +240,7 @@ export function Abrechnungslauf({
             <Abfragezustand
               abfrage={entwuerfe}
               laden="Entwürfe werden geladen …"
-              fehler="Die Entwürfe konnten nicht geladen werden."
+              fehler="Entwürfe nicht geladen."
             >
               {(liste) => (
                 <Pruefliste
@@ -289,8 +286,8 @@ function Bereit({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <p className="text-ink-muted text-sm">
             {ohneLeistung === 1
-              ? 'Ein Termin ist noch ohne Leistung.'
-              : `${ohneLeistung} Termine sind noch ohne Leistung.`}
+              ? 'Ein Termin ohne Leistung'
+              : `${ohneLeistung} Termine ohne Leistung`}
           </p>
           <ButtonLink to="/abrechnung/leistungen" variant="quiet" groesse="kompakt">
             Erfassen
@@ -358,9 +355,7 @@ function Pruefliste({
             onBestaetigen={() => onAusstellen(liste)}
           >
             <p className="font-medium">
-              {liste.length === 1
-                ? 'Diese Rechnung jetzt ausstellen?'
-                : `Diese ${liste.length} Rechnungen jetzt ausstellen?`}
+              {liste.length === 1 ? 'Jetzt ausstellen?' : `${liste.length} Rechnungen ausstellen?`}
             </p>
             <DetailList schmal>
               <DetailRow label="Summe">{formatEuro(gesamt)}</DetailRow>
@@ -374,8 +369,7 @@ function Pruefliste({
               </DetailRow>
             </DetailList>
             <p className="mt-2">
-              Danach ist jede Rechnung unveränderlich; eine Korrektur geht nur über Storno und neue
-              Rechnung. Ohne Ausstellen bleiben die Entwürfe stehen.
+              Danach unveränderlich; korrigieren nur über Storno und neue Rechnung.
             </p>
           </Rueckfrage>
         </div>
@@ -430,10 +424,7 @@ function Ergebnis({
       ) : null}
       {ohneStammdaten ? (
         <div className="flex flex-col gap-2">
-          <Statusmeldung ton="fehler">
-            Es sind keine Praxisstammdaten erfasst; ohne sie lässt sich keine Rechnung ausstellen.
-            Die Entwürfe bleiben stehen.
-          </Statusmeldung>
+          <Statusmeldung ton="fehler">Nicht ausgestellt: Praxisstammdaten fehlen.</Statusmeldung>
           <div>
             <ButtonLink to="/abrechnung/stammdaten" variant="secondary">
               Zu den Praxisstammdaten

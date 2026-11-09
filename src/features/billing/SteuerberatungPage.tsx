@@ -118,7 +118,7 @@ export function SteuerberatungPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <PageHeader title="Steuerberatung" description="Buchungsstapel im DATEV-Format." />
+      <PageHeader title="Steuerberatung" />
 
       <Section titel="Bereich und Monat">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
@@ -139,9 +139,7 @@ export function SteuerberatungPage({ user }: { user: CurrentUser }) {
           </div>
         </div>
         {offeneMonate.isError ? (
-          <Statusmeldung className="mt-4">
-            Ob frühere Monate noch Offenes haben, ließ sich gerade nicht prüfen.
-          </Statusmeldung>
+          <Statusmeldung className="mt-4">Offene Vormonate nicht geladen.</Statusmeldung>
         ) : null}
         {auchOffen.length > 0 ? (
           <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -157,8 +155,8 @@ export function SteuerberatungPage({ user }: { user: CurrentUser }) {
 
       <Abfragezustand
         abfrage={einstellungen}
-        laden="Die DATEV-Angaben werden geladen …"
-        fehler="Die DATEV-Angaben konnten nicht geladen werden."
+        laden="DATEV-Angaben werden geladen …"
+        fehler="DATEV-Angaben nicht geladen."
       >
         {(werte) => (
           <>
@@ -248,9 +246,7 @@ function Monat({
         {einstellungen !== null && mandant != null ? null : (
           <div className="mb-4 flex flex-col gap-3">
             <Statusmeldung ton="warnung">
-              {einstellungen === null
-                ? 'Es sind noch keine DATEV-Angaben erfasst.'
-                : 'Für diesen Bereich fehlt die Mandantennummer.'}
+              {einstellungen === null ? 'DATEV-Angaben fehlen.' : 'Mandantennummer fehlt.'}
               {darfPflegen ? '' : ' Eintragen kann sie die Praxisinhaber:in.'}
             </Statusmeldung>
             {darfPflegen ? (
@@ -264,8 +260,8 @@ function Monat({
         )}
         <Abfragezustand
           abfrage={offen}
-          laden="Die Buchungen werden geladen …"
-          fehler="Die Buchungen konnten nicht geladen werden."
+          laden="Buchungen werden geladen …"
+          fehler="Buchungen nicht geladen."
           inKarte
           leer={{ wenn: (zeilen) => zeilen.length === 0, titel: 'Nichts offen in diesem Monat' }}
         >
@@ -332,8 +328,8 @@ function Laeufe({
   return (
     <Abfragezustand
       abfrage={laeufe}
-      laden="Die Exporte werden geladen …"
-      fehler="Die Exporte konnten nicht geladen werden."
+      laden="Exporte werden geladen …"
+      fehler="Exporte nicht geladen."
       inKarte
       rahmen={(zustand) => <Section titel={titel}>{zustand}</Section>}
     >
@@ -429,7 +425,7 @@ function Angaben({
                   </ButtonLink>
                 ),
               }
-            : { description: 'Eintragen kann sie die Praxisinhaber:in.' })}
+            : {})}
         />
       </Section>
     );
@@ -461,9 +457,7 @@ function Angaben({
         <DetailRow label="Kontenrahmen">{rahmen}</DetailRow>
       </DetailList>
       <Disclosure summary="Konten">
-        <p className="text-ink-muted mb-2 text-sm">
-          Standard des Kontenrahmens, bis Ihre Steuerberatung andere nennt.
-        </p>
+        <p className="text-ink-muted mb-2 text-sm">Standard des Kontenrahmens</p>
         <DetailList>
           {KONTENNAMEN.map(([schluessel, name]) => (
             <DetailRow key={schluessel} label={name}>

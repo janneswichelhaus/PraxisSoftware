@@ -52,7 +52,7 @@ export function RechnungenDerAkte({
       <Abfragezustand
         abfrage={abfrage}
         laden="Rechnungen werden geladen …"
-        fehler="Die Rechnungen konnten nicht geladen werden."
+        fehler="Rechnungen nicht geladen."
         inKarte
         leer={{ wenn: (liste) => liste.length === 0, titel: 'Noch keine Rechnung' }}
       >

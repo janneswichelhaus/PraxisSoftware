@@ -160,11 +160,11 @@ describe('RevenuePage', () => {
   });
 
   describe('UXR-010', () => {
-    it('heißt wie der Menüpunkt und nennt darunter, was ausgewertet wird (ABR-26)', async () => {
+    it('heißt wie der Menüpunkt, ohne Erklärsatz darunter (ABR-26, L7)', async () => {
       renderWithProviders(<RevenuePage />, '/abrechnung/auswertung');
 
       expect(await screen.findByRole('heading', { name: 'Auswertung' })).toBeInTheDocument();
-      expect(screen.getByText('Einnahmen je Leistungsart und Steuersatz.')).toBeInTheDocument();
+      expect(screen.queryByText('Einnahmen je Leistungsart und Steuersatz.')).toBeNull();
       // WRT-07: der Gedankenstrich der Schreibregel.
       expect(screen.getByText(/Steuerberatung – diese Auswertung/)).toBeInTheDocument();
     });

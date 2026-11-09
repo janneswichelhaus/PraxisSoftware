@@ -85,7 +85,7 @@ export function KartenzahlungPage() {
       {bezahlt ? (
         <div className="flex flex-col gap-3">
           <Rueckmeldung>
-            {formatEuro(bezahlt.cent, bezahlt.waehrung)} mit Karte bezahlt und gebucht.
+            {formatEuro(bezahlt.cent, bezahlt.waehrung)} bezahlt und gebucht.
           </Rueckmeldung>
           {bezahlt.nachbildung ? <Nachbildung vergangen /> : null}
           <Formularfuss>
@@ -100,19 +100,16 @@ export function KartenzahlungPage() {
       ) : (
         <Abfragezustand
           abfrage={terminal}
-          laden="Das Terminal wird gefragt …"
-          fehler="Das Terminal konnte nicht gefragt werden."
+          laden="Terminal wird gefragt …"
+          fehler="Terminal nicht erreicht."
           inKarte
-          leer={{
-            wenn: (t) => !t.verfuegbar,
-            titel: 'Die Kartenzahlung ist hier nicht eingerichtet.',
-          }}
+          leer={{ wenn: (t) => !t.verfuegbar, titel: 'Kartenzahlung nicht eingerichtet.' }}
         >
           {(t) => (
             <Abfragezustand
               abfrage={rechnungen}
-              laden="Die Rechnungen werden geladen …"
-              fehler="Die Rechnungen konnten nicht geladen werden."
+              laden="Rechnungen werden geladen …"
+              fehler="Rechnungen nicht geladen."
               inKarte
               leer={{
                 wenn: (liste) => offeneRechnungen(liste).length === 0,
@@ -293,9 +290,6 @@ function Kassieren({
           {ausgang.satz}
           {ausgang.transaktion ? ` Kennung am Terminal: ${ausgang.transaktion}.` : ''}
         </Statusmeldung>
-      ) : null}
-      {kassieren.isPending ? (
-        <Statusmeldung>Karte ans Terminal halten lassen …</Statusmeldung>
       ) : null}
 
       <Formularfuss>

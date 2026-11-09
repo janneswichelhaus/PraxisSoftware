@@ -81,7 +81,7 @@ export type Paketposition = z.infer<typeof angebotSchema>;
 
 /** Die Pakete der Preisliste, die am Tag gilt (ADR-009 Punkt 5). */
 export async function fetchPaketpositionen(tag: string): Promise<Paketposition[]> {
-  const satz = 'Die Pakete der Preisliste konnten nicht geladen werden.';
+  const satz = 'Pakete der Preisliste nicht geladen.';
   const { data, error } = (await getSupabase().rpc('list_training_package_items', {
     p_on: tag,
   })) as { data: unknown; error: unknown };
@@ -105,7 +105,7 @@ export async function createPaket(
   );
   if (grund) throw new Error(grund[1]);
   if (error?.message?.includes('already covers')) {
-    throw new Error('In diesem Zeitraum läuft schon ein Paket. Pakete überschneiden sich nicht.');
+    throw new Error('In diesem Zeitraum läuft schon ein Paket.');
   }
   // ANN-279: Im Zeitraum ist schon eine Trainingsstunde erfasst.
   if (error?.message?.includes('already carry billable services')) {
@@ -114,11 +114,9 @@ export async function createPaket(
     );
   }
   if (error?.message?.includes('not in the price list')) {
-    throw new Error(
-      'Am gewählten Beginn gilt eine andere Preisliste. Bitte das Paket aus dieser Liste wählen.',
-    );
+    throw new Error('Am gewählten Beginn gilt eine andere Preisliste.');
   }
-  if (error) throw new Error('Das Paket konnte nicht angelegt werden.');
+  if (error) throw new Error('Paket nicht angelegt.');
 }
 
 export async function deletePaket(id: string): Promise<void> {
@@ -131,5 +129,5 @@ export async function deletePaket(id: string): Promise<void> {
       'Das Paket steht auf einer Rechnung oder einem Entwurf. Erst den Entwurf verwerfen oder die Rechnung stornieren.',
     );
   }
-  if (error) throw new Error('Das Paket konnte nicht entfernt werden.');
+  if (error) throw new Error('Paket nicht entfernt.');
 }

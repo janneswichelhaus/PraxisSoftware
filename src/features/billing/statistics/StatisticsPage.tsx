@@ -92,7 +92,6 @@ function Praxisstatistik() {
     <>
       <PageHeader
         title="Statistiken"
-        description="Zahlen mit Ziel und nächstem Schritt."
         actions={
           k && ziele.data ? (
             <Button
@@ -111,8 +110,8 @@ function Praxisstatistik() {
           zurück zum laufenden - die Auswahl steht dann nicht da. */}
       <Abfragezustand
         abfrage={kennzahlen}
-        laden="Die Statistik wird geladen …"
-        fehler="Die Statistik konnte nicht geladen werden."
+        laden="Statistik wird geladen …"
+        fehler="Statistik nicht geladen."
         inKarte
       >
         {(daten) => (
@@ -133,11 +132,7 @@ function Praxisstatistik() {
 
             {ziele.isError ? (
               <div className="mb-6">
-                <ErrorState
-                  title="Die Zielwerte konnten nicht geladen werden."
-                  description="Die Zahlen stehen trotzdem da; der Vergleich mit dem Ziel fehlt."
-                  onErneut={() => ziele.refetch()}
-                />
+                <ErrorState title="Zielwerte nicht geladen." onErneut={() => ziele.refetch()} />
               </div>
             ) : null}
 
@@ -147,7 +142,7 @@ function Praxisstatistik() {
               <Abfragezustand
                 abfrage={angebote}
                 laden="Wird geladen …"
-                fehler="Die Zahlen zu Training und Abo konnten nicht geladen werden."
+                fehler="Zahlen zu Training und Abo nicht geladen."
               >
                 {(a) => (
                   <Kennzahlzeilen
@@ -169,8 +164,7 @@ function Praxisstatistik() {
                 <p className="text-ink-muted text-sm">
                   Umsatz und Zahlungseingang sind zwei Grundlagen und werden nie verrechnet. Die
                   übrigen Zahlen gelten zum Stand {tagText(daten.today)}. Kein steuerlicher
-                  Abschluss – die Aufteilung nach Steuerkennzeichen steht unter Abrechnung →
-                  Auswertung.
+                  Abschluss.
                 </p>
               </Disclosure>
             </div>
@@ -525,7 +519,7 @@ function Zielzeile({
       <form onSubmit={absenden} className="flex flex-col gap-2" noValidate>
         <Field
           label={`Ziel ${kennzahl.titel} (${richtung}${kennzahl.einheit === 'cent' ? ', Euro' : kennzahl.einheit === 'prozent' ? ', Prozent' : ''})`}
-          hint="Leer lassen, um das Ziel zu entfernen."
+          hint="leer: kein Ziel"
           inputMode={kennzahl.einheit === 'cent' ? 'decimal' : 'numeric'}
           value={eingabe}
           onChange={(e) => setEingabe(e.target.value)}
@@ -582,7 +576,7 @@ function Verlauf({ monat, heute }: { monat: string | null; heute: string }) {
           <Abfragezustand
             abfrage={monate}
             laden="Wird geladen …"
-            fehler="Umsatz der letzten 12 Monate: konnte nicht geladen werden."
+            fehler="Umsatzverlauf nicht geladen."
           >
             {(daten) => (
               <Saeulendiagramm
@@ -603,11 +597,8 @@ function Verlauf({ monat, heute }: { monat: string | null; heute: string }) {
             <Abfragezustand
               abfrage={jePerson}
               laden="Wird geladen …"
-              fehler="Umsatz nach Therapeut:in: konnte nicht geladen werden."
-              leer={{
-                wenn: (daten) => daten.length === 0,
-                titel: 'In diesen Monaten ist nichts abgerechnet.',
-              }}
+              fehler="Umsatz je Person nicht geladen."
+              leer={{ wenn: (daten) => daten.length === 0, titel: 'Nichts abgerechnet.' }}
             >
               {(daten) => (
                 <Saeulendiagramm
@@ -647,11 +638,8 @@ function Verlauf({ monat, heute }: { monat: string | null; heute: string }) {
           <Abfragezustand
             abfrage={leistungen}
             laden="Wird geladen …"
-            fehler="Umsatzstärkste Leistungen: konnte nicht geladen werden."
-            leer={{
-              wenn: (daten) => daten.length === 0,
-              titel: 'In diesem Monat ist nichts abgerechnet.',
-            }}
+            fehler="Umsatzstärkste Leistungen nicht geladen."
+            leer={{ wenn: (daten) => daten.length === 0, titel: 'Nichts abgerechnet.' }}
           >
             {(daten) => (
               <Balkenliste
@@ -718,20 +706,14 @@ function MeinUmsatz({ zeitzone }: { zeitzone: string }) {
 
   return (
     <>
-      <PageHeader
-        title="Statistiken"
-        description="Dein Umsatz der letzten 12 Monate nach Rechnungsstellung."
-      />
+      <PageHeader title="Statistiken" description="Letzte 12 Monate, nach Rechnungsstellung" />
       <Section titel="Verlauf">
         <Grafikflaeche titel="Mein Umsatz" unterzeile={`Laufender Monat: ${formatEuro(summe)}`}>
           <Abfragezustand
             abfrage={jePerson}
             laden="Wird geladen …"
-            fehler="Mein Umsatz: konnte nicht geladen werden."
-            leer={{
-              wenn: (zeilen) => zeilen.length === 0,
-              titel: 'In diesen Monaten ist nichts abgerechnet.',
-            }}
+            fehler="Mein Umsatz nicht geladen."
+            leer={{ wenn: (zeilen) => zeilen.length === 0, titel: 'Nichts abgerechnet.' }}
           >
             {(zeilen) => {
               const daten = personenReihen(zeilen, monate);

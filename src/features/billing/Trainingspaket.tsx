@@ -55,12 +55,7 @@ export function Trainingspaket({ verhaeltnisId }: { verhaeltnisId: string }) {
 
   if (sicht.isPending) return null;
   if (sicht.isError) {
-    return (
-      <ErrorState
-        title="Die Trainingspakete konnten nicht geladen werden."
-        onErneut={() => sicht.refetch()}
-      />
-    );
+    return <ErrorState title="Trainingspakete nicht geladen." onErneut={() => sicht.refetch()} />;
   }
   if (!sicht.data) return null;
 
@@ -144,8 +139,7 @@ function Entfernen({ paket, verhaeltnisId }: { paket: Paket; verhaeltnisId: stri
       onBestaetigen={() => entfernen.mutateAsync()}
       onAbbrechen={() => entfernen.reset()}
     >
-      Das Paket ab {formatDate(paket.starts_on)} und seine Leistung werden entfernt, als hätte es
-      sie nie gegeben. Das geht nur, solange das Paket auf keiner Rechnung steht.
+      Das Paket ab {formatDate(paket.starts_on)} und seine Leistung werden spurlos entfernt.
     </Rueckfrage>
   );
 }
@@ -198,7 +192,7 @@ function Anlegen({ verhaeltnisId, sicht }: { verhaeltnisId: string; sicht: Paket
     return (
       <div className="mt-3 flex flex-col gap-3">
         {gespeichert ? (
-          <Statusmeldung ton="erfolg">Paket angelegt, die Leistung ist erfasst.</Statusmeldung>
+          <Statusmeldung ton="erfolg">Paket angelegt, Leistung erfasst.</Statusmeldung>
         ) : null}
         <div>
           <Button

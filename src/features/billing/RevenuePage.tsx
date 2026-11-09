@@ -65,12 +65,7 @@ export function RevenuePage() {
 
   return (
     <>
-      <PageHeader
-        // Der Titel heißt wie der Menüpunkt; was ausgewertet wird, sagt die
-        // Zeile darunter (ABR-26).
-        title="Auswertung"
-        description="Einnahmen je Leistungsart und Steuersatz."
-      />
+      <PageHeader title="Auswertung" />
 
       {/* Die beiden Angaben, ohne die keine Zahl zu lesen ist - nebeneinander
           ab 640 px (DESIGN.md Regel 10). */}
@@ -108,35 +103,26 @@ export function RevenuePage() {
 
         {jahre.isError ? (
           <div className="mt-4">
-            <ErrorState
-              title="Die Auswertung konnte nicht geladen werden."
-              onErneut={() => jahre.refetch()}
-            />
+            <ErrorState title="Auswertung nicht geladen." onErneut={() => jahre.refetch()} />
           </div>
         ) : null}
       </Section>
 
       {grundlage === '' ? (
         <Section titel="Ergebnis">
-          <EmptyState
-            inKarte
-            title="Noch keine Grundlage gewählt"
-            description="Wählen Sie oben Zufluss oder Rechnungsstellung."
-          />
+          <EmptyState inKarte title="Noch keine Grundlage gewählt" />
         </Section>
       ) : (
         <Section titel={`Ergebnis · ${grundlageLabels[grundlage]} · ${gewaehltesJahr ?? ''}`}>
           <Abfragezustand
             abfrage={einnahmen}
-            laden="Die Auswertung wird geladen …"
-            fehler="Die Auswertung konnte nicht geladen werden."
+            laden="Auswertung wird geladen …"
+            fehler="Auswertung nicht geladen."
             inKarte
             kacheln={2}
             leer={{
               wenn: (zeilen) => nachBereichen(zeilen).length === 0,
               titel: 'Keine Zahlen in diesem Jahr',
-              beschreibung:
-                'Für den gewählten Zeitraum liegt auf dieser Grundlage kein Dokument und keine Zahlung vor.',
             }}
           >
             {(zeilen) => <Ergebnis bereiche={nachBereichen(zeilen)} grundlage={grundlage} />}

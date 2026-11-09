@@ -120,7 +120,7 @@ export async function setzeZiel(ziel: Zielkennung, wert: number | null): Promise
     p_kpi: ziel,
     p_value: wert,
   })) as { error: unknown };
-  if (error) throw new Error('Der Zielwert konnte nicht gespeichert werden.');
+  if (error) throw new Error('Zielwert nicht gespeichert.');
 }
 
 // -----------------------------------------------------------------------------

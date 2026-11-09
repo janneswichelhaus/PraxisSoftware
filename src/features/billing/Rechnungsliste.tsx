@@ -132,16 +132,10 @@ export function Rechnungsliste() {
       <Abfragezustand
         abfrage={rechnungen}
         laden="Rechnungen werden geladen …"
-        fehler="Die Rechnungen konnten nicht geladen werden."
+        fehler="Rechnungen nicht geladen."
         leer={{
           wenn: (daten) => daten.pages.every((seite) => seite.length === 0),
-          ...(eingeschraenkt
-            ? {
-                titel: 'Keine passende Rechnung',
-                beschreibung:
-                  'Suche oder Filter ändern - gesucht wird in Nummer, Name und Empfänger:in.',
-              }
-            : { titel: 'Noch keine Rechnung' }),
+          titel: eingeschraenkt ? 'Keine passende Rechnung' : 'Noch keine Rechnung',
         }}
       >
         {() => (
