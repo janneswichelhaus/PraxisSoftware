@@ -35,6 +35,8 @@ import { RueckfragenListe, Zustand } from './RueckfragenListe';
 import { RueckfrageAnhaenge, type Ansicht } from './RueckfrageAnhaenge';
 import { zeitmarke } from './zeitmarke';
 import { InDieAkte } from './InDieAkte';
+import { Umformknoepfe, Umformvorschlag } from './Umformvorschlag';
+import { VORSCHLAG_OFFEN, VORSCHLAG_UEBERNOMMEN, useUmformen } from './umformen';
 
 /** Höchstlänge einer Antwort - zugleich die Grenze des Servers. */
 const ANTWORT_MAX = 2000;
@@ -290,6 +292,9 @@ function Antworten({ vorgang }: { vorgang: Rueckfrage }) {
   const queryClient = useQueryClient();
   const [text, setText] = useState('');
   const [pruefung, setPruefung] = useState<string | null>(null);
+  const umformen = useUmformen({ rueckfrageId: vorgang.id, text });
+  // Nach der Übernahme eines Vorschlags: der Text davor, solange nicht weitergetippt wurde.
+  const [uebernahme, setUebernahme] = useState<{ vorher: string; nachher: string } | null>(null);
   // ADR-017 Punkt 68 (ANN-338): optional eine Stelle in einem Video.
   const videos = (vorgang.attachments ?? []).filter((a) => a.media_kind === 'video');
   const [videoId, setVideoId] = useState('');
@@ -329,6 +334,11 @@ function Antworten({ vorgang }: { vorgang: Rueckfrage }) {
 
   function absenden(e: FormEvent) {
     e.preventDefault();
+    // Gesendet wird, was im Feld steht - nie ein Vorschlag, über den noch nicht entschieden ist.
+    if (umformen.vorschlag) {
+      setPruefung(VORSCHLAG_OFFEN);
+      return;
+    }
     if (text.trim() === '') {
       setPruefung('Bitte eine Antwort schreiben.');
       return;
@@ -366,6 +376,35 @@ function Antworten({ vorgang }: { vorgang: Rueckfrage }) {
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
+          <Umformknoepfe
+            umformen={umformen}
+            leer={text.trim() === ''}
+            onLeer={() => setPruefung('Bitte eine Antwort schreiben.')}
+          />
+          <Umformvorschlag
+            umformen={umformen}
+            onUebernehmen={(neu) => {
+              setUebernahme({ vorher: text, nachher: neu });
+              setText(neu);
+              setPruefung(null);
+            }}
+          />
+          {uebernahme && uebernahme.nachher === text ? (
+            <div className="flex flex-wrap items-center gap-x-3">
+              <Statusmeldung ton="erfolg">{VORSCHLAG_UEBERNOMMEN}</Statusmeldung>
+              <Button
+                type="button"
+                variant="quiet"
+                groesse="kompakt"
+                onClick={() => {
+                  setText(uebernahme.vorher);
+                  setUebernahme(null);
+                }}
+              >
+                Rückgängig
+              </Button>
+            </div>
+          ) : null}
           {videos.length > 0 ? (
             <div className="flex flex-col gap-3 sm:flex-row">
               <Select
@@ -395,7 +434,12 @@ function Antworten({ vorgang }: { vorgang: Rueckfrage }) {
         </div>
         {/* Hauptknopf zuerst, am Telefon untereinander in voller Breite. */}
         <Formularfuss>
-          <Button type="submit" disabled={antworten.isPending}>
+          {/* Ein Hauptknopf je Ansicht: Mit offenem Vorschlag ist es „Übernehmen“. */}
+          <Button
+            type="submit"
+            variant={umformen.vorschlag ? 'secondary' : 'primary'}
+            disabled={antworten.isPending}
+          >
             {antworten.isPending ? 'Wird gesendet …' : 'Antwort senden'}
           </Button>
           <Button

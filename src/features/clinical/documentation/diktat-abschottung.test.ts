@@ -2,18 +2,9 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/**
- * ANN-520 im Browser: Aufnahme, Transkript und Vorschlag legen nichts ab.
- *
- * Die Aufnahme liegt nur im Arbeitsspeicher der Seite, der Vorschlag nur in
- * ihrem Zustand; erst „Übernehmen“ macht Text daraus, und den speichert die
- * Schreibseite wie getippten. Geprüft über den Quelltext wie die Abschottung
- * des Gateways (`supabase/functions/ai-gateway/abschottung.test.ts`): keine
- * Speicher-Schnittstelle des Browsers, keine Blob-Adresse, kein Service
- * Worker, keine Konsole, kein Datenbank- oder Ablagezugriff - und nur
- * Importe aus einer festen Liste, damit auch kein Umweg über ein anderes
- * Modul (Geräteablage, Offline-Entwürfe, Entwurfs-API) unbemerkt bleibt.
- */
+// ANN-520 und ANN-862 im Browser: Aufnahme, Transkript und jeder Vorschlag leben nur im Zustand
+// der Seite. Geprüft am Quelltext: keine Speicher-Schnittstelle, keine Blob-Adresse, keine
+// Konsole, kein Datenbankzugriff - und nur Importe aus einer festen Liste, damit kein Umweg bleibt.
 
 const STAMM = process.cwd();
 
@@ -21,6 +12,15 @@ const DATEIEN = [
   'src/features/clinical/documentation/diktat.ts',
   'src/lib/aufnahme.ts',
   'src/features/clinical/documentation/Spracheingabe.tsx',
+  'src/features/clinical/documentation/ordnen.ts',
+  'src/features/clinical/documentation/GeordneterVorschlag.tsx',
+  'src/features/clinical/documentation/auszuege.ts',
+  'src/features/clinical/documentation/Auszugsliste.tsx',
+  'src/features/patients/treatment-bases/felderVorschlag.ts',
+  'src/features/patients/treatment-bases/Feldvorschlaege.tsx',
+  'src/features/patients/treatment-bases/rezeptfelder.ts',
+  'src/features/portal/messages/umformen.ts',
+  'src/features/portal/messages/Umformvorschlag.tsx',
   ...readdirSync(join(STAMM, 'src/lib/ki'))
     .filter((name) => /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name))
     .map((name) => `src/lib/ki/${name}`),
@@ -60,10 +60,20 @@ const ERLAUBT = new Set([
   '@/lib/sperrsicherung',
   '@/lib/aufnahme',
   './diktat',
+  './ordnen',
+  './umformen',
+  './auszuege',
+  './felderVorschlag',
+  './rezeptfelder',
+  // Eine feste Liste ohne Importe (der Heilmittelkatalog).
+  './heilmittel',
 ]);
 
 function erlaubterImport(modul: string): boolean {
-  return ERLAUBT.has(modul) || modul.startsWith('@/components/ui/');
+  // Jede Datei unter `src/lib/ki` steht selbst in `DATEIEN`: Ein Import dorthin ist kein Umweg.
+  return (
+    ERLAUBT.has(modul) || modul.startsWith('@/components/ui/') || modul.startsWith('@/lib/ki/')
+  );
 }
 
 function ohneKommentare(inhalt: string): string {
@@ -120,6 +130,9 @@ describe('ANN-520: Diktat und Aufnahme legen nichts ab', () => {
     const mehrzeilig = "import {\n  dauerfachAendern,\n} from '@/lib/geraeteablage';";
     expect(importe(mehrzeilig)).toEqual(['@/lib/geraeteablage']);
     expect(erlaubterImport('@/lib/geraeteablage')).toBe(false);
+    expect(erlaubterImport('@/lib/ki/ordnen')).toBe(true);
+    expect(erlaubterImport('@/lib/kiste')).toBe(false);
+    expect(erlaubterImport('./gateway')).toBe(false);
     expect(erlaubterImport('./api')).toBe(false);
     expect(erlaubterImport('@/features/clinical/documentation/offline/entwuerfe')).toBe(false);
     expect(erlaubterImport('./offline/entwuerfe')).toBe(false);

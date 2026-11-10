@@ -161,6 +161,10 @@ export const auditOperationLabels: Record<string, string> = {
   'deletion_runs.read': 'Löschläufe gelesen',
   // UEB-EPIC-002: Übungspläne einer Akte oder Trainingskund:in (ANN-298).
   'exercise_plans.read': 'Übungspläne gelesen',
+  // Felder vom Foto über das AI Gateway (ANN-861); keine neue Aktion (ADR-010).
+  'patient_file.fields_proposed': 'Felder einer Verordnung aus dem Foto vorgeschlagen',
+  // Antwort vom AI Gateway umformen lassen (ANN-861); keine neue Aktion (ADR-010).
+  'platform_message.answer_worded': 'Antwort auf eine Rückfrage umgeformt',
   // KOM-002: Abweisung der Liste der Rückfragen (keine neue Aktion, ADR-010).
   'platform_messages.read': 'Rückfragen gelesen',
   // UX-009a: Absender der Praxis für Blätter an Patient:innen (ANN-323).
@@ -220,8 +224,12 @@ export const auditOperationLabels: Record<string, string> = {
   'treatment_basis.viewed': 'Behandlungsgrundlage gelesen',
   'treatment_draft_findings.viewed': 'Gesicherte Befundangaben geladen',
   'treatment_evidence.read': 'Behandlungsnachweis gelesen',
+  // Notizen vom AI Gateway ordnen lassen (ANN-861); keine neue Aktion (ADR-010).
+  'treatment_note.arranged': 'Notizen zur Behandlungsdokumentation geordnet',
   // KI-001: Diktat zur Behandlungsdokumentation (keine neue Aktion, ADR-010).
   'treatment_note.dictated': 'Diktat zur Behandlungsdokumentation aufbereitet',
+  // Verlauf in Auszügen über das AI Gateway (ANN-861); keine neue Aktion (ADR-010).
+  'treatment_note.excerpted': 'Auszüge aus der Behandlungsdokumentation gezeigt',
   'treatment_note.history_viewed': 'Änderungsverlauf gelesen',
   'treatment_note.viewed': 'Behandlungsdokumentation gelesen',
   'waitlist.read': 'Warteliste gelesen',

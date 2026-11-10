@@ -43,10 +43,13 @@ export function Sprechleiste({
   diktat,
   haupt,
   verbunden,
+  daneben,
 }: {
   diktat: Diktat;
   haupt: boolean;
   verbunden: boolean;
+  /** Eine zweite Eingabehilfe neben „Sprechen“; sie steht auch ohne Mikrofon da. */
+  daneben?: ReactNode;
 }) {
   const { aufnahme, stand } = diktat;
 
@@ -109,7 +112,13 @@ export function Sprechleiste({
   // Ein offener Vorschlag steht über dem Feld; hier wartet nichts.
   if (stand.art === 'vorschlag') return null;
   // Nicht eingerichtet oder das Mikrofon für die Seite gesperrt: kein Weg.
-  if (!diktat.angeboten) return null;
+  if (!diktat.angeboten) {
+    return daneben ? (
+      <Zeile>
+        <div className="flex w-full sm:ml-auto sm:w-auto">{daneben}</div>
+      </Zeile>
+    ) : null;
+  }
 
   const nutzbar = diktat.verfuegbar && verbunden;
   const grund = !diktat.verfuegbar
@@ -120,18 +129,21 @@ export function Sprechleiste({
 
   return (
     <Zeile>
-      <Button
-        type="button"
-        variant={haupt && nutzbar ? 'primary' : 'secondary'}
-        groesse="normal"
-        className="w-full sm:ml-auto sm:w-auto"
-        disabled={!nutzbar}
-        aria-describedby={grund || diktat.meldung ? 'spracheingabe-hinweis' : undefined}
-        onClick={diktat.sprechen}
-      >
-        <MikrofonSymbol />
-        Sprechen
-      </Button>
+      <div className="flex w-full gap-2 sm:ml-auto sm:w-auto">
+        <Button
+          type="button"
+          variant={haupt && nutzbar ? 'primary' : 'secondary'}
+          groesse="normal"
+          className="flex-1 sm:flex-none"
+          disabled={!nutzbar}
+          aria-describedby={grund || diktat.meldung ? 'spracheingabe-hinweis' : undefined}
+          onClick={diktat.sprechen}
+        >
+          <MikrofonSymbol />
+          Sprechen
+        </Button>
+        {daneben}
+      </div>
       {grund || diktat.meldung ? (
         <div id="spracheingabe-hinweis" className="basis-full sm:order-first sm:basis-auto">
           {diktat.meldung ? (

@@ -1,82 +1,30 @@
-/**
- * Der Gateway selbst, ohne Laufzeit (KI-EPIC-001, ADR-005, BEF-153).
- *
- * Hier steht der ganze Ablauf - Vorabanfrage, Methode, Sitzung, Zweck,
- * Anbieter, Formular, Eingaben, Berechtigung, Adapter, Antwort,
- * Protokolleintrag -, und nichts davon kennt Deno, ein Secret oder einen
- * Anbieter. Alles, was von außen kommt, ist
- * eine Abhängigkeit im Aufruf; deshalb ist diese Datei vollständig mit
- * Unit-Tests prüfbar (wie `location-provider/handler.ts`).
- *
- * Die Kontrollen aus PROJECT_PRINCIPLES.md 6.1 an einer Stelle:
- *   * Benutzerberechtigung: Sitzung beim Anmeldedienst, dann die Datenbank
- *     mit dem Token der Person (`check_dictation_access`);
- *   * Verarbeitungszweck: nur ein Zweck aus `zwecke.ts`, genannt in der
- *     Adresse (`?zweck=`) - so stehen Zweck und Anbieter fest, bevor ein
- *     Byte der Aufnahme gelesen wird;
- *   * notwendige Daten, Datenminimierung: an den Adapter gehen Audio,
- *     Format, Sprache und die Regeln des Zwecks - Termin, Person und Konto
- *     bleiben hier (die Typen haben dafür kein Feld);
- *   * erlaubtes Modell: nur ein Adapter aus der Liste des Zwecks;
- *   * Logging: Fehler meldet der Handler als `Protokolleintrag` - nur Zweck,
- *     Anbieterkennung, Klasse und Dauer. Einen Ausgang ins Betriebslog gibt
- *     es dafür noch nicht (`index.ts`, ADR-011 Punkt 6);
- *   * Fehlerbehandlung: feste Klassen mit festen HTTP-Status.
- *
- * **Zwei Anfragen.** `GET` fragt nur, ob der Zweck hier bedient wird
- * (`{ ok, verfuegbar }`) - die Schreibseite bietet „Sprechen“ erst nach einem
- * Ja an, wie die Karte erst nach ihrer Freigabe Kacheln lädt (ADR-019 Punkt
- * 35). `POST` ist das Diktat.
- *
- * **Diese Function speichert nichts.** Die Aufnahme liegt nur für die
- * Dauer der Anfrage im Arbeitsspeicher; Transkript und Vorschlag gehen als
- * Antwort zurück und werden hier nicht abgelegt - keine Tabelle, keine
- * Ablage, kein Log mit Inhalt, kein Zwischenspeicher (`no-store`).
- */
+// Der Gateway selbst, ohne Laufzeit (ADR-005, PROJECT_PRINCIPLES.md 6.1): Sitzung, Zweck und
+// Anbieter stehen fest, bevor die Eingabe gelesen wird, die Berechtigung vor jedem Adapteraufruf.
+// `GET` fragt, ob der Zweck bedient wird; `POST` ist das Diktat oder eine Hilfe. Gespeichert: nichts.
 
-import type { Berechtigungspruefung } from './berechtigung.ts';
+import { assistiere } from './assistenz.ts';
+import type { Assistenzpruefung, Berechtigungspruefung } from './berechtigung.ts';
+import {
+  CORS,
+  FORMULAR_ZUSCHLAG_BYTES,
+  UUID,
+  antwort,
+  fehler,
+  grundformat,
+  istDatei,
+  liesFormular,
+  mitFrist,
+  type Datei,
+} from './http.ts';
 import { saetze, setzeZusammen } from './inhaltstreue.ts';
 import type { Sitzungspruefung } from './sitzung.ts';
-import type {
-  Adapterergebnis,
-  Antwort,
-  Fehlerklasse,
-  Protokolleintrag,
-  Sprachadapter,
-  Statusantwort,
-} from './typen.ts';
-import { zweckAus, type Zweck } from './zwecke.ts';
+import type { Assistenzadapter, Protokolleintrag, Sprachadapter } from './typen.ts';
+import { zweckAus, type Diktatzweck, type Zweck } from './zwecke.ts';
 
-/**
- * Die Kopfzeilen für den Aufruf aus dem Browser - wie beim Kartendienst: `*`
- * ist kein Zugeständnis, der Endpunkt gibt ohne gültige Sitzung nichts heraus
- * und nimmt keine Cookies entgegen. `x-client-info` schickt supabase-js mit.
- */
-const CORS: Readonly<Record<string, string>> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
-};
-
-/** Welcher HTTP-Status zu welcher Fehlerklasse gehört. */
-export const STATUS: Readonly<Record<Fehlerklasse, number>> = {
-  session_invalid: 401,
-  invalid_request: 400,
-  forbidden: 403,
-  not_configured: 503,
-  too_large: 413,
-  unavailable: 502,
-  timeout: 504,
-};
+export { STATUS } from './http.ts';
 
 /** Genau diese drei Felder trägt ein Diktat, jedes genau einmal; der Zweck steht in der Adresse. */
 const FELDER = ['termin', 'audio', 'dauer_s'] as const;
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Platz für Feldnamen, Grenzen und Kopfzeilen des Formulars neben der Aufnahme. */
-const FORMULAR_ZUSCHLAG_BYTES = 64 * 1024;
 
 /** Wie lange ein Adapter höchstens braucht, bevor die Anfrage `timeout` meldet. */
 export const FRISTEN = { transkriptionMs: 120_000, strukturierungMs: 60_000 } as const;
@@ -87,10 +35,14 @@ const HOECHST_ZEICHEN = 50_000;
 interface HandlerOptionen {
   /** `null`, wenn kein Anbieter eingerichtet ist - dann `not_configured`. */
   readonly adapter: Sprachadapter | null;
+  /** Der Anbieter der Hilfen ohne Ton; ohne ihn bedient der Gateway nur das Diktat. */
+  readonly assistenz?: Assistenzadapter | null;
   /** Wurde die Nachbildung in der Produktion abgewiesen? Dann meldet der Handler es. */
   readonly gateAbgewiesen?: boolean;
   readonly pruefeSitzung: Sitzungspruefung;
   readonly pruefeBerechtigung: Berechtigungspruefung;
+  /** Ohne sie gilt jede Hilfe ohne Ton als nicht prüfbar - und geht nicht durch. */
+  readonly pruefeAssistenz?: Assistenzpruefung;
   readonly protokolliere: (eintrag: Protokolleintrag) => void;
   /** Für Tests; sonst die Uhr der Laufzeit. */
   readonly jetzt?: () => number;
@@ -100,9 +52,11 @@ interface HandlerOptionen {
 
 export function erstelleHandler({
   adapter,
+  assistenz = null,
   gateAbgewiesen = false,
   pruefeSitzung,
   pruefeBerechtigung,
+  pruefeAssistenz = () => Promise.resolve('nicht_pruefbar'),
   protokolliere,
   jetzt = () => Date.now(),
   fristen = FRISTEN,
@@ -136,13 +90,15 @@ export function erstelleHandler({
     // wird: Wo nichts eingerichtet ist, geht keine Aufnahme durch den Speicher.
     const zweck = zweckDerAdresse(anfrage.url);
     if (zweck === null) return fehler('invalid_request', 'unbekannter Zweck');
-    const bedient = adapter !== null && zweck.adapter.includes(adapter.id);
+    // Das Diktat bedient der Sprachadapter, jede Hilfe ohne Ton der Assistenzadapter.
+    const zustaendig = zweck.art === 'diktat' ? adapter : assistenz;
+    const bedient = zustaendig !== null && zweck.adapter.includes(zustaendig.id);
 
     // Die Frage der Schreibseite vor „Sprechen“: nur ja oder nein, ohne
     // Anbieter, ohne Log - eine Frage ist kein Anbieteraufruf.
     if (nurStatus) return antwort({ ok: true, verfuegbar: bedient }, 200);
 
-    if (adapter === null) {
+    if (zustaendig === null) {
       // Die Nachbildung in der Produktion: abgewiesen, und der Handler
       // meldet es als Protokolleintrag.
       if (gateAbgewiesen) {
@@ -159,12 +115,27 @@ export function erstelleHandler({
       // Ein Adapter, den der Zweck nicht nennt, bedient ihn nicht (6.1).
       protokolliere({
         zweck: zweck.kennung,
-        anbieter: adapter.id,
+        anbieter: zustaendig.id,
         code: 'not_configured',
         dauerMs: 0,
       });
       return fehler('not_configured', 'Anbieter für diesen Zweck nicht freigegeben');
     }
+
+    if (zweck.art !== 'diktat') {
+      if (assistenz === null) return fehler('not_configured', 'kein Anbieter eingerichtet');
+      return assistiere({
+        anfrage,
+        authorization: authorization ?? '',
+        zweck,
+        adapter: assistenz,
+        pruefe: pruefeAssistenz,
+        protokolliere,
+        jetzt,
+        fristMs: fristen.strukturierungMs,
+      });
+    }
+    if (adapter === null) return fehler('not_configured', 'kein Anbieter eingerichtet');
 
     // Erst jetzt lesen, was kommt - höchstens so viel, wie eine erlaubte
     // Aufnahme samt Formular braucht. Mehr bleibt ungelesen.
@@ -259,23 +230,6 @@ function zweckDerAdresse(adresse: string): Zweck | null {
   return werte.length === 1 ? zweckAus(werte[0]) : null;
 }
 
-/** Was eine Datei im Formular mindestens kann - unabhängig von der Laufzeit. */
-interface Datei {
-  readonly size: number;
-  readonly type: string;
-  arrayBuffer(): Promise<ArrayBuffer>;
-}
-
-function istDatei(wert: unknown): wert is Datei {
-  if (typeof wert !== 'object' || wert === null) return false;
-  const datei = wert as Partial<Datei>;
-  return (
-    typeof datei.arrayBuffer === 'function' &&
-    typeof datei.size === 'number' &&
-    typeof datei.type === 'string'
-  );
-}
-
 interface Eingabe {
   readonly terminId: string;
   readonly datei: Datei;
@@ -296,7 +250,7 @@ type Eingabepruefung =
  * Die Anfrage - oder warum sie nicht taugt. Geprüft wird vollständig und vor
  * dem ersten Kontakt zur Datenbank und zum Adapter.
  */
-function pruefeEingabe(formular: FormData, zweck: Zweck): Eingabepruefung {
+function pruefeEingabe(formular: FormData, zweck: Diktatzweck): Eingabepruefung {
   const ungueltig = (meldung: string): Eingabepruefung => ({
     ok: false,
     code: 'invalid_request',
@@ -318,7 +272,7 @@ function pruefeEingabe(formular: FormData, zweck: Zweck): Eingabepruefung {
 
   const datei = formular.get('audio');
   if (!istDatei(datei)) return ungueltig('Aufnahme fehlt');
-  const mime = (datei.type.split(';')[0] ?? '').trim().toLowerCase();
+  const mime = grundformat(datei.type);
   if (!zweck.eingabe.formate.includes(mime)) return ungueltig('Format nicht erlaubt');
   if (datei.size === 0) return ungueltig('Aufnahme leer');
   if (datei.size > zweck.eingabe.hoechstBytes) {
@@ -337,94 +291,4 @@ function pruefeEingabe(formular: FormData, zweck: Zweck): Eingabepruefung {
   }
 
   return { ok: true, eingabe: { terminId: termin, datei, mime, dauerS } };
-}
-
-/**
- * Das Formular der Anfrage - `zu_gross`, sobald mehr als `grenze` Bytes
- * kommen, `null`, wenn es keines ist. Gelesen wird stückweise und nicht über
- * die Grenze hinaus: Eine zu große Anfrage landet nie ganz im Speicher.
- */
-async function liesFormular(
-  anfrage: Request,
-  grenze: number,
-): Promise<FormData | 'zu_gross' | null> {
-  const typ = anfrage.headers.get('Content-Type') ?? '';
-  if (!/^multipart\/form-data\s*;/i.test(typ)) return null;
-  const angegeben = Number(anfrage.headers.get('Content-Length') ?? Number.NaN);
-  if (Number.isFinite(angegeben) && angegeben > grenze) return 'zu_gross';
-  if (anfrage.body === null) return null;
-
-  const leser = anfrage.body.getReader();
-  const teile: Uint8Array[] = [];
-  let summe = 0;
-  try {
-    for (;;) {
-      const { done, value } = await leser.read();
-      if (done) break;
-      summe += value.byteLength;
-      if (summe > grenze) {
-        await leser.cancel().catch(() => undefined);
-        return 'zu_gross';
-      }
-      teile.push(value);
-    }
-  } catch {
-    return null;
-  }
-
-  const koerper = new Uint8Array(summe);
-  let stelle = 0;
-  for (const teil of teile) {
-    koerper.set(teil, stelle);
-    stelle += teil.byteLength;
-  }
-  try {
-    return await new Response(koerper, { headers: { 'Content-Type': typ } }).formData();
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Ein Adapteraufruf mit Frist. Läuft sie ab, wird der Aufruf abgebrochen und
- * die Anfrage meldet `timeout`; wirft der Adapter, gilt er als `unavailable`.
- */
-async function mitFrist<T>(
-  aufruf: (signal: AbortSignal) => Promise<Adapterergebnis<T>>,
-  ms: number,
-): Promise<Adapterergebnis<T>> {
-  const steuerung = new AbortController();
-  let uhr: ReturnType<typeof setTimeout> | undefined;
-  const frist = new Promise<Adapterergebnis<T>>((fertig) => {
-    uhr = setTimeout(() => {
-      steuerung.abort();
-      fertig({ ok: false, error: { code: 'timeout', message: 'Frist abgelaufen' } });
-    }, ms);
-  });
-  const ergebnis = aufruf(steuerung.signal).catch((): Adapterergebnis<T> => ({
-    ok: false,
-    error: { code: 'unavailable', message: 'Adapter fehlgeschlagen' },
-  }));
-  try {
-    return await Promise.race([ergebnis, frist]);
-  } finally {
-    clearTimeout(uhr);
-  }
-}
-
-function fehler(code: Fehlerklasse, meldung: string, status = STATUS[code]): Response {
-  return antwort({ ok: false, error: { code, message: `ai-gateway: ${meldung}` } }, status);
-}
-
-function antwort(koerper: Antwort | Statusantwort, status: number): Response {
-  return new Response(JSON.stringify(koerper), {
-    status,
-    headers: {
-      ...CORS,
-      'Content-Type': 'application/json',
-      // Transkript und Vorschlag sind ein Ergebnis des Augenblicks und werden
-      // nirgends abgelegt - auch nicht in einem Zwischenspeicher.
-      'Cache-Control': 'no-store',
-    },
-  });
 }

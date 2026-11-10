@@ -25,9 +25,13 @@ export const ZWECK_DIKTAT = 'dokumentation.diktat';
 
 /**
  * Die Function samt Zweck: Der Zweck steht in der Adresse, damit der Gateway
- * Zweck und Anbieter prüft, bevor er ein Byte der Aufnahme liest.
+ * Zweck und Anbieter prüft, bevor er ein Byte der Eingabe liest.
  */
-const ADRESSE_DIKTAT = `${FUNKTION}?zweck=${encodeURIComponent(ZWECK_DIKTAT)}`;
+function adresseFuer(zweck: string): string {
+  return `${FUNKTION}?zweck=${encodeURIComponent(zweck)}`;
+}
+
+const ADRESSE_DIKTAT = adresseFuer(ZWECK_DIKTAT);
 
 /**
  * ANN-522: Die Abschnitte der Dokumentationsvorlage, in die ein Diktat
@@ -199,14 +203,12 @@ function endung(mime: string): string {
 }
 
 /**
- * Bietet der Gateway das Diktat hier an? Die Schreibseite fragt, bevor sie
- * „Sprechen“ zeigt - wie die Karte, bevor sie Kacheln lädt (ADR-019 Punkt
- * 35). `true` nur bei ausdrücklichem Ja; ein Fehler, eine fehlende Function
- * oder eine Antwort in fremder Form heißen nein. Wirft nicht.
+ * Bedient der Gateway diesen Zweck hier? Gefragt wird, bevor die Seite den Weg zeigt (wie die
+ * Karte vor ihren Kacheln, ADR-019 Punkt 35). `true` nur bei ausdrücklichem Ja. Wirft nicht.
  */
-export async function diktatVerfuegbar(signal?: AbortSignal): Promise<boolean> {
+async function verfuegbar(zweck: string, signal?: AbortSignal): Promise<boolean> {
   try {
-    const { data, error } = (await getSupabase().functions.invoke<unknown>(ADRESSE_DIKTAT, {
+    const { data, error } = (await getSupabase().functions.invoke<unknown>(adresseFuer(zweck), {
       method: 'GET',
       ...(signal ? { signal } : {}),
     })) as { data: unknown; error: unknown };
@@ -216,6 +218,11 @@ export async function diktatVerfuegbar(signal?: AbortSignal): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** Bietet der Gateway das Diktat hier an? */
+export function diktatVerfuegbar(signal?: AbortSignal): Promise<boolean> {
+  return verfuegbar(ZWECK_DIKTAT, signal);
 }
 
 /**
@@ -244,6 +251,19 @@ export async function diktatAufbereiten({
   );
   formular.append('audio', audio, `aufnahme.${endung(audio.type)}`);
 
+  const antwort = await rufe(ADRESSE_DIKTAT, formular, signal);
+  return typeof antwort === 'string' ? gescheitert(antwort) : deute(antwort.wert, antwort.status);
+}
+
+/**
+ * Der eine Aufruf der Function für jeden Zweck: der Körper der Antwort mit ihrem Status, oder
+ * die Klasse, wenn die Function nicht zu Wort kam. Wirft nicht.
+ */
+async function rufe(
+  adresse: string,
+  koerper: FormData | Record<string, unknown>,
+  signal: AbortSignal | undefined,
+): Promise<{ wert: unknown; status: number } | 'timeout' | 'function_unavailable'> {
   // Eine eigene Frist statt der der Bibliothek: Nur so lässt sich eine
   // abgelaufene Frist von einem Netzfehler unterscheiden.
   const steuerung = new AbortController();
@@ -257,23 +277,20 @@ export async function diktatAufbereiten({
 
   try {
     // Ausdrücklich umtypisiert: `error` ist in der Bibliothek `any`.
-    const { data, error, response } = (await getSupabase().functions.invoke<unknown>(
-      ADRESSE_DIKTAT,
-      {
-        body: formular,
-        signal: steuerung.signal,
-      },
-    )) as { data: unknown; error: unknown; response?: Response };
+    const { data, error, response } = (await getSupabase().functions.invoke<unknown>(adresse, {
+      body: koerper,
+      signal: steuerung.signal,
+    })) as { data: unknown; error: unknown; response?: Response };
 
     if (error !== null) {
-      if (abgelaufen) return gescheitert('timeout');
+      if (abgelaufen) return 'timeout';
       // Die Meldung der Bibliothek wird nicht gelesen: Sie trägt die Adresse.
-      if (response === undefined) return gescheitert('function_unavailable');
-      return deute(await gelesen(response), response.status);
+      if (response === undefined) return 'function_unavailable';
+      return { wert: await gelesen(response), status: response.status };
     }
-    return deute(data, 200);
+    return { wert: data, status: 200 };
   } catch {
-    return gescheitert(abgelaufen ? 'timeout' : 'function_unavailable');
+    return abgelaufen ? 'timeout' : 'function_unavailable';
   } finally {
     clearTimeout(uhr);
     signal?.removeEventListener('abort', weiterreichen);
@@ -326,4 +343,47 @@ export const UNVERSTAENDLICH = '[unverständlich]';
 /** Wie viele Stellen im Text als unverständlich gekennzeichnet sind. */
 export function unverstaendlicheStellen(text: string): number {
   return text.split(UNVERSTAENDLICH).length - 1;
+}
+
+/** Die Sätze der Oberfläche für die Hilfen ohne Ton - ohne technische Einzelheiten (13). */
+export const ASSISTENZ_FEHLERTEXTE: Readonly<Record<Kifehler, string>> = {
+  session_invalid: 'Die Anmeldung gilt nicht mehr. Bitte neu anmelden.',
+  invalid_request: 'Das ließ sich nicht verarbeiten.',
+  forbidden: 'Dafür fehlt hier die Berechtigung.',
+  not_configured: 'Der Vorschlag ist hier nicht eingerichtet.',
+  too_large: 'Der Text ist dafür zu lang.',
+  unavailable: 'Der Vorschlag ist gerade nicht möglich.',
+  timeout: 'Der Vorschlag hat zu lange gedauert.',
+  function_unavailable: 'Der Vorschlag ist gerade nicht möglich.',
+  nicht_satzgetreu: 'Der Vorschlag passte nicht zum Text und wird nicht gezeigt.',
+};
+
+/** Der Körper einer erfolgreichen Antwort - oder die Fehlerklasse. */
+export type Assistenzantwort =
+  { readonly ok: true; readonly wert: unknown } | { readonly ok: false; readonly fehler: Kifehler };
+
+/** Bedient der Gateway diese Hilfe hier? */
+export function assistenzVerfuegbar(zweck: string, signal?: AbortSignal): Promise<boolean> {
+  return verfuegbar(zweck, signal);
+}
+
+/**
+ * ANN-862: Hinaus gehen der Gegenstand (Berechtigung, bleibt im Gateway) und der Text; die
+ * Antwort lebt nur im Zustand der Seite, bis sie übernommen oder verworfen ist. Wirft nicht.
+ */
+export async function assistenzAnfragen(
+  zweck: string,
+  koerper: FormData | Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<Assistenzantwort> {
+  const antwort = await rufe(adresseFuer(zweck), koerper, signal);
+  if (typeof antwort === 'string') return { ok: false, fehler: antwort };
+  const abgelehnt = fehlerSchema.safeParse(antwort.wert);
+  if (abgelehnt.success) return { ok: false, fehler: abgelehnt.data.error.code };
+  if (antwort.status !== 200) {
+    const fehler =
+      antwort.status === 401 || antwort.status === 403 ? 'session_invalid' : 'function_unavailable';
+    return { ok: false, fehler };
+  }
+  return { ok: true, wert: antwort.wert };
 }

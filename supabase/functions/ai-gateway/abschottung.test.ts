@@ -2,18 +2,18 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/**
- * Was der Gateway nicht darf (KI-EPIC-001, ADR-005, ADR-011).
- *
- * Er speichert nichts - keine Tabelle, keine Ablage, kein Dateisystem, kein
- * Zwischenspeicher, keine Konsole -, hat keinen Datenbankclient und keinen
- * Admin-Schlüssel und spricht die eigene Datenbank genau an einer Stelle an:
- * `check_dictation_access`, mit dem Token der Person. Eine feste fremde
- * Adresse gibt es nicht; ein echter Anbieter kommt erst nach seiner
- * Freischaltung (ADR-005 Punkt 8). Geprüft über den Quelltext wie beim
- * Kartendienst: Ein Zugriff in einer Ecke, die kein Test durchläuft, bliebe
- * sonst unbemerkt.
- */
+// Was der Gateway nicht darf (ADR-005, ADR-011): nichts speichern, kein Datenbankclient, kein
+// Admin-Schlüssel, keine feste fremde Adresse. Die Datenbank fragt er nur über die genannten
+// Prüffunktionen, mit dem Token der Person; geprüft am Quelltext wie beim Kartendienst.
+
+/** Die Prüffunktionen der Datenbank, die der Gateway fragen darf - jede antwortet nur Ja oder Nein. */
+const PRUEFFUNKTIONEN = [
+  'check_dictation_access',
+  'check_note_arrangement_access',
+  'check_answer_wording_access',
+  'check_history_excerpt_access',
+  'check_prescription_scan_access',
+];
 
 const VERZEICHNIS = join(import.meta.dirname, '.');
 
@@ -23,7 +23,8 @@ const VERBOTEN: { muster: RegExp; grund: string }[] = [
   { muster: /\bfrom\s*\(\s*'/, grund: 'Tabellenzugriff' },
   { muster: /\/storage\/v1\//, grund: 'Ablage' },
   {
-    muster: /\/rest\/v1\/(?!rpc\/check_dictation_access\b)/,
+    // eslint-disable-next-line security/detect-non-literal-regexp -- feste Liste dieser Datei, keine Eingabe.
+    muster: new RegExp(`/rest/v1/(?!rpc/(?:${PRUEFFUNKTIONEN.join('|')})\\b)`),
     grund: 'andere Datenbankpfade',
   },
   { muster: /service_role|SERVICE_ROLE|ADMIN_KEY/, grund: 'Admin-Schlüssel' },
@@ -74,11 +75,22 @@ describe('Abschottung des AI Gateways', () => {
     expect(mitPfad.map((pfad) => pfad.split('/').pop())).toEqual(['berechtigung.ts']);
   });
 
+  it('nennt jede Prüffunktion der Liste und keine weitere', () => {
+    const genannt = [
+      ...lies(join(VERZEICHNIS, 'berechtigung.ts')).matchAll(/\/rest\/v1\/rpc\/(\w+)/g),
+    ].map((treffer) => treffer[1]!);
+    expect(genannt.sort()).toEqual([...PRUEFFUNKTIONEN].sort());
+  });
+
   it('würde einen fremden Datenbankpfad und eine Ablage tatsächlich finden', () => {
     const pfade = VERBOTEN.find((v) => v.grund === 'andere Datenbankpfade')!.muster;
     expect(pfade.test("'/rest/v1/treatment_notes'")).toBe(true);
     expect(pfade.test("'/rest/v1/rpc/create_treatment_note'")).toBe(true);
     expect(pfade.test('`${adresse}/rest/v1/rpc/check_dictation_access`')).toBe(false);
+    expect(pfade.test("'/rest/v1/rpc/check_note_arrangement_access'")).toBe(false);
+    // Ein ähnlicher Name ist keine Prüffunktion der Liste.
+    expect(pfade.test("'/rest/v1/rpc/check_note_arrangement_access_all'")).toBe(true);
+    expect(pfade.test('`${adresse}/rest/v1/rpc/${name}`')).toBe(true);
     expect(ohneKommentare('// localStorage')).not.toMatch(/localStorage/);
   });
 });

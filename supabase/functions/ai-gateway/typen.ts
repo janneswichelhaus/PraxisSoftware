@@ -74,6 +74,54 @@ export type Antwort =
   | { readonly ok: false; readonly error: Gatewayfehler };
 
 /**
+ * Die Antwort auf „Ordnen“: die Sätze des getippten Textes im Wortlaut, je Abschnitt der
+ * Vorlage. Der Text selbst geht nicht zurück - die Seite hat ihn.
+ */
+export interface Ordnungsantwort {
+  readonly ok: true;
+  readonly art: 'ordnen';
+  readonly abschnitte: readonly Abschnitt[];
+  readonly quelle: Quelle;
+}
+
+/**
+ * Die Antwort aufs Umformen: je Satz der Eingabe genau ein Satz, in derselben Reihenfolge.
+ * `unveraendert` heißt, dort steht die Eingabe im Wortlaut (`waechter.ts`).
+ */
+export interface Umformungsantwort {
+  readonly ok: true;
+  readonly art: 'umformen';
+  readonly saetze: readonly { readonly text: string; readonly unveraendert: boolean }[];
+  readonly quelle: Quelle;
+}
+
+/**
+ * Die Antwort auf den Auszug: je Eintrag die gewählten Sätze im Wortlaut, in der Reihenfolge
+ * der Eingabe. Ein Eintrag ohne gewählten Satz fehlt.
+ */
+export interface Auszugsantwort {
+  readonly ok: true;
+  readonly art: 'auszug';
+  readonly auszuege: readonly { readonly id: string; readonly saetze: readonly string[] }[];
+  readonly quelle: Quelle;
+}
+
+/**
+ * Die Antwort auf „Felder vorschlagen“: je Fundstelle das Feld, der ausgeschnittene Wortlaut und
+ * die erkannte Zeile, aus der er stammt. Das Foto selbst geht nicht zurück.
+ */
+export interface Felderantwort {
+  readonly ok: true;
+  readonly art: 'felder';
+  readonly fundstellen: readonly {
+    readonly feld: string;
+    readonly wert: string;
+    readonly zeile: string;
+  }[];
+  readonly quelle: Quelle;
+}
+
+/**
  * Die Antwort auf die Frage vor „Sprechen“ (`GET`): Wird der Zweck hier
  * bedient? Nur ja oder nein - kein Anbieter, keine Quelle.
  */
@@ -128,6 +176,90 @@ export interface Sprachadapter {
   ): Promise<Adapterergebnis<{ readonly zuordnung: readonly string[] }>>;
 }
 
+/** An den Adapter zum Umformen: die Sätze, was mit ihnen geschehen soll, und die Regeln. */
+export interface Umformanfrage {
+  /** In der Reihenfolge des Textes, zerlegt vom Gateway (`waechter.ts`). */
+  readonly saetze: readonly string[];
+  readonly aufgabe: 'ausformulieren' | 'alltagssprache';
+  readonly sprache: Sprache;
+  readonly regeln: string;
+}
+
+/**
+ * An den Adapter zur Auswahl: je Eintrag seine Sätze - keine Kennung, kein Datum, keine
+ * Verfasser:in.
+ */
+export interface Auswahlanfrage {
+  /** Die Einträge in der Reihenfolge der Anfrage, jeder als Liste seiner Sätze. */
+  readonly eintraege: readonly (readonly string[])[];
+  readonly hoechstJeEintrag: number;
+  readonly sprache: Sprache;
+  readonly regeln: string;
+}
+
+/** An den Adapter zum Erkennen: die Bytes des Fotos, ihr Format, Sprache und Regeln - keine Kennung. */
+export interface Erkennungsanfrage {
+  readonly bild: Uint8Array;
+  readonly mime: string;
+  readonly sprache: Sprache;
+  readonly regeln: string;
+}
+
+/** An den Adapter zum Finden: die erkannten Zeilen und die gesuchten Felder. */
+export interface Fundstellenanfrage {
+  readonly zeilen: readonly string[];
+  readonly felder: readonly string[];
+  readonly sprache: Sprache;
+  readonly regeln: string;
+}
+
+/** Eine Stelle im erkannten Text: Zeile (ab 0), Zeichen von einschließlich bis ausschließlich. */
+export interface Fundstelle {
+  readonly feld: string;
+  readonly zeile: number;
+  readonly von: number;
+  readonly bis: number;
+}
+
+/** Eine Stelle der Eingabe: der wievielte Eintrag, der wievielte Satz darin (ab 0). */
+export interface Satzstelle {
+  readonly eintrag: number;
+  readonly satz: number;
+}
+
+/**
+ * Ein Anbieter für die Hilfen ohne Ton. Was er liefert, ist eine Behauptung, bis der Gateway
+ * sie an der Eingabe geprüft hat: Er nennt Stellen, den Wortlaut setzt der Gateway.
+ */
+export interface Assistenzadapter {
+  readonly id: string;
+  readonly quelle: Quelle;
+  ordneZu(
+    anfrage: Zuordnungsanfrage,
+    signal: AbortSignal,
+  ): Promise<Adapterergebnis<{ readonly zuordnung: readonly string[] }>>;
+  /** Je Satz genau ein Satz, in derselben Reihenfolge. */
+  formuliere(
+    anfrage: Umformanfrage,
+    signal: AbortSignal,
+  ): Promise<Adapterergebnis<{ readonly saetze: readonly string[] }>>;
+  /** Nur Stellen der Eingabe - kein Text. */
+  waehleAus(
+    anfrage: Auswahlanfrage,
+    signal: AbortSignal,
+  ): Promise<Adapterergebnis<{ readonly auswahl: readonly Satzstelle[] }>>;
+  /** Der Text des Fotos zeilenweise; an ihm hängt jeder vorgeschlagene Wert. */
+  erkenne(
+    anfrage: Erkennungsanfrage,
+    signal: AbortSignal,
+  ): Promise<Adapterergebnis<{ readonly zeilen: readonly string[] }>>;
+  /** Nur Stellen im erkannten Text - kein Wert. */
+  findeFelder(
+    anfrage: Fundstellenanfrage,
+    signal: AbortSignal,
+  ): Promise<Adapterergebnis<{ readonly fundstellen: readonly Fundstelle[] }>>;
+}
+
 /**
  * Was der Handler zu einem Fehler meldet (ADR-011) - einen Ausgang ins
  * Betriebslog gibt es dafür noch nicht (`index.ts`): Zweck, Anbieterkennung,
@@ -136,7 +268,14 @@ export interface Sprachadapter {
  */
 export interface Protokolleintrag {
   /** Der geprüfte Zweck - nie der Wert aus der Anfrage, der beliebig sein kann. */
-  readonly zweck: 'dokumentation.diktat' | 'unbekannt';
+  readonly zweck:
+    | 'dokumentation.diktat'
+    | 'dokumentation.ordnen'
+    | 'nachricht.entwurf'
+    | 'nachricht.alltagssprache'
+    | 'verlauf.auszug'
+    | 'verordnung.felder'
+    | 'unbekannt';
   /** Anbieterkennung oder die Stelle davor: `sitzung`, `berechtigung`, `gate`. */
   readonly anbieter: string;
   /** `gate_rejected`: Die Nachbildung ist in der Produktion ausgeschlossen. */

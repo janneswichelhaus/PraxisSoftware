@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { erstelleBerechtigungspruefung } from './berechtigung.ts';
+import { erstelleAssistenzpruefung, erstelleBerechtigungspruefung } from './berechtigung.ts';
 
 /**
  * Die Frage an die Datenbank (KI-001): mit dem Token der Person und dem
@@ -91,5 +91,64 @@ describe('Berechtigung des Diktats', () => {
       timeoutMs: 10,
     });
     expect(await pruefe(TOKEN, TERMIN)).toBe('nicht_pruefbar');
+  });
+});
+
+describe('Berechtigung der Hilfen ohne Ton', () => {
+  function assistenz(antwort: () => Promise<Response>) {
+    const abrufen = vi.fn<typeof fetch>(() => antwort());
+    return {
+      abrufen,
+      pruefe: erstelleAssistenzpruefung({
+        supabaseUrl: 'https://instanz.invalid/',
+        anonKey: 'oeffentlich',
+        abrufen,
+      }),
+    };
+  }
+
+  it.each([
+    [{ art: 'termin', id: TERMIN }, 'check_note_arrangement_access', { p_appointment_id: TERMIN }],
+    [{ art: 'rueckfrage', id: TERMIN }, 'check_answer_wording_access', { p_message_id: TERMIN }],
+    [{ art: 'akte', id: TERMIN }, 'check_history_excerpt_access', { p_patient_id: TERMIN }],
+    [
+      { art: 'scan', id: TERMIN, pruefsumme: 'ab'.repeat(32) },
+      'check_prescription_scan_access',
+      { p_file_id: TERMIN, p_checksum: 'ab'.repeat(32) },
+    ],
+  ] as const)(
+    'fragt für %j die eine Funktion der Datenbank',
+    async (frage, funktion, argumente) => {
+      const { abrufen, pruefe } = assistenz(json(200, true));
+      expect(await pruefe(TOKEN, frage)).toBe('erlaubt');
+
+      const [adresse, optionen] = abrufen.mock.calls[0]!;
+      expect(adresse).toBe(`https://instanz.invalid/rest/v1/rpc/${funktion}`);
+      expect(optionen?.headers).toEqual({
+        apikey: 'oeffentlich',
+        Authorization: TOKEN,
+        'Content-Type': 'application/json',
+      });
+      expect(JSON.parse(optionen?.body as string)).toEqual(argumente);
+    },
+  );
+
+  it.each([
+    ['false', json(200, false), 'verweigert'],
+    ['403', json(403, { code: '42501' }), 'verweigert'],
+    ['401', json(401, {}), 'abgelehnt'],
+    ['404 (Migration fehlt)', json(404, {}), 'nicht_pruefbar'],
+    ['true als Text', json(200, 'true'), 'nicht_pruefbar'],
+    ['Netzfehler', () => Promise.reject(new TypeError('fetch failed')), 'nicht_pruefbar'],
+  ] as const)('lässt bei %s nicht durch', async (_fall, antwort, erwartet) => {
+    const { pruefe } = assistenz(antwort);
+    expect(await pruefe(TOKEN, { art: 'termin', id: TERMIN })).toBe(erwartet);
+  });
+
+  it('fragt ohne Einrichtung gar nicht erst', async () => {
+    const abrufen = vi.fn<typeof fetch>();
+    const pruefe = erstelleAssistenzpruefung({ supabaseUrl: '', anonKey: 'oeffentlich', abrufen });
+    expect(await pruefe(TOKEN, { art: 'termin', id: TERMIN })).toBe('nicht_pruefbar');
+    expect(abrufen).not.toHaveBeenCalled();
   });
 });

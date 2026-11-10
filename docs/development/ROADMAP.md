@@ -132,7 +132,6 @@ Zuschnitt, keine Spec.
 | Block | Loop | Ergebnis und Zuschnitt | Vorgabe |
 | --- | --- | --- | --- |
 | 2 | **FRB-EPIC-005** | Ein Bild ruft den Test in Erinnerung: optionales Bild je Test in der Definition, beim Abhaken gezeigt, ohne Bewertung (ADR-006); startet, sobald Bilder vorliegen (eigene Zeichnung, Lizenz nach B8 oder Foto nach §20) | `IDEA-OUT-009` |
-| 9 | **KI-EPIC-002** | Sprache umformen, ohne Inhalt hinzuzufügen: Freitext strukturieren, Patientensprache, Antwortentwürfe, Zusammenfassung ohne Bewertung, **Felder der Verordnung aus dem Foto vorschlagen**, jeweils mit Quellenbindung und menschlicher Freigabe | `IDEA-KI-002`, `-003`, `-004` |
 | 9 | **MAP-007** | Führung auf dem Gerät, ohne dass die Praxis die Position erfährt (ADR-019 Abschnitt F, §20.1: Position nur auf dem Gerät, Start nur auf Aktion, Übermittlung nur zur Neuberechnung, keine Auswertung). Zuerst **E-24** (liefern die Radprofile Manöver? ein Aufruf; ohne Ja entfällt das Epic), B2 in erweiterter Fassung und das Aufrufkontingent; Stories MAP-007a bis -f, keine rein visuelle Führung (ADR-019 Punkt 31), synthetische Adressen | `IDEA-PRX-044`; Vorgabe `git show 9452575:docs/development/MAP-LOOPS.md` |
 | 9 | **PRX-EPIC-004** | Rest: Übertragung an DATEV hinter Adapter, nach Anbieterprüfung und B4 | `IDEA-PRX-026`, `-021`, `-024`, `-033`, `-022` |
 
@@ -341,6 +340,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | B | BEF-181 Ladestrom aus den Kilometern der geplanten Touren: Edge Function rechnet beim Beantragen die Routen je Tag, nur die Monatssumme am Antrag, Büro ohne Kilometer und Betrag | gesichtet | 2026-10-17 | Branch ccr-0d8db4ad-3ufjj1 | 2026-11-05 | ADR-019 Fassung 6; ANN-615 bis ANN-617; ohne Gate (Punkt 9) bleibt der Wert je Stunde |
 | B | Wochenplan in einem Zug: geänderte Tage unter ihrer Zeile öffnen, mit einem Knopf speichern, alle oder keiner | gesichtet | 2026-10-17 | Branch ccr-0d8db4ad-3ufjj1 | 2026-11-05 | Praxis-Review der Überholung Organisation (PR #267, Frage 2) |
 | B | KI-EPIC-001 Gateway und Sprachdokumentation | gesichtet | 2026-11-01 | #243, Branch claude/kind-mayer-smn76m | 2026-11-05 | Inhaltstreue durch Bauart, „Mit Diktat“ am Eintrag, E13 überbrückt (ANN-824 bis ANN-827); Anbieter (C6) in Block 11 |
+| B | KI-EPIC-002 Assistenz | fertig | 2026-11-10 | KI-002 bis -006, Zweitreview | — | — |
 | B | PRX-EPIC-004 Komfort und Export | in_arbeit | — | #344 bis #347; #349 auf Branch claude/weiter-77kj64 (PRX-048, PRX-049) | — | DATEV-Export (ANN-828 bis ANN-830), Kennzahlen (ANN-831, ANN-832, ANN-834), Farbe (ANN-833), Planungskarte (ANN-835), Kartenzahlung (ANN-836, ANN-837), Kalender-Abo (ANN-838, ANN-839); offen: Übertragung an DATEV nach B4 |
 | B | UI-003 Politur und Barrierefreiheit (G17) | fertig | 2026-11-08 | #355 bis #357 | — | K5 mit Diktat 6 statt 7 Tipps (ANN-840); axe und Ziele ab 44 px je Praxisseite (ANN-849), auch beim Laden, nach Fehlern und in sechs Fenstern ohne Adresse; BEF-224 und Terminformulare angeglichen |
 | B | SLK-EPIC-002 Weniger Text überall (L7) | fertig | 2026-11-09 | SLK-010 bis -019 | — | Sätze 1.774 → 934, Ratsche |

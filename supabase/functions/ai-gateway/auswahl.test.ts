@@ -12,12 +12,14 @@ describe('Anbieterwahl des Gateways', () => {
   it.each(['development', 'test', ' Development '])(
     'gibt die Nachbildung in der Umgebung %j frei',
     (umgebung) => {
-      const { adapter, gateAbgewiesen } = richteEin({
+      const { adapter, assistenz, gateAbgewiesen } = richteEin({
         AI_PROVIDER: 'mock',
         APP_ENVIRONMENT: umgebung,
       });
       expect(adapter?.id).toBe('mock');
       expect(adapter?.quelle).toBe('nachbildung');
+      expect(assistenz?.id).toBe('mock');
+      expect(assistenz?.quelle).toBe('nachbildung');
       expect(gateAbgewiesen).toBe(false);
     },
   );
@@ -27,6 +29,7 @@ describe('Anbieterwahl des Gateways', () => {
     (umgebung) => {
       expect(richteEin({ AI_PROVIDER: 'mock', APP_ENVIRONMENT: umgebung })).toEqual({
         adapter: null,
+        assistenz: null,
         gateAbgewiesen: true,
       });
     },
@@ -44,6 +47,7 @@ describe('Anbieterwahl des Gateways', () => {
   ])('heißt mit AI_PROVIDER %j „nicht eingerichtet" und nie Nachbildung', (anbieter) => {
     expect(richteEin({ AI_PROVIDER: anbieter, APP_ENVIRONMENT: 'development' })).toEqual({
       adapter: null,
+      assistenz: null,
       gateAbgewiesen: false,
     });
   });

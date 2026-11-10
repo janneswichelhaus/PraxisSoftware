@@ -114,10 +114,10 @@ PostgreSQL 16 auf **54339** (`.tmp/stack-pgdata`), GoTrue, PostgREST und Edge Fu
 - **Kein Mailversand** (GoTrue meldet Erfolg, die Mail verfällt), kein Realtime, kein Studio, kein
   `pg_cron`; PostgreSQL 16 statt 17. Edge Functions ohne `supabase/functions/.env.local` nur mit
   Kartendienst und AI Gateway als Nachbildung.
-- **AI Gateway:** Bis zur Anbieterentscheidung (C6, E13) antwortet nur die Nachbildung mit einem
-  festen synthetischen Diktat (`AI_PROVIDER=mock`, `APP_ENVIRONMENT=development`, auch in
-  `supabase/functions/.env.local`); fehlt eines, gilt die Produktion, und „Sprechen“ fehlt. Das
-  Mikrofon braucht `localhost` oder HTTPS.
+- **AI Gateway:** Bis zur Anbieterentscheidung (C6) antwortet nur die Nachbildung
+  (`AI_PROVIDER=mock`, `APP_ENVIRONMENT=development`, auch in `supabase/functions/.env.local`);
+  fehlt eines, gilt die Produktion: ohne KI-Knöpfe. Das Mikrofon braucht
+  `localhost` oder HTTPS.
 - Vor E2E-Läufen `reset` ohne `--reich`: Die Tests zählen auf den schlanken Seed. Die Werte stehen
   in `.env.development.local`, nicht in `.env.local`: Die liest auch Vitest, und mit echten Werten
   scheitern `App.nachladen.test.tsx` und `ArbeitszeitJePerson.test.tsx`.

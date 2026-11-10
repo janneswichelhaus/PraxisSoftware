@@ -12,12 +12,15 @@ import type * as LeistungenApi from '@/features/calendar/appointments/leistungen
 import type * as GrundlagenApi from '@/features/patients/treatment-bases/api';
 import type * as RouterModul from 'react-router-dom';
 import type * as KiGateway from '@/lib/ki/gateway';
+import type * as KiOrdnen from '@/lib/ki/ordnen';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import type * as KurzblickApi from '@/features/calendar/appointments/kurzblick-api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { KI_FEHLERTEXTE } from '@/lib/ki/gateway';
+import { VORSCHLAG_OFFEN } from '@/features/clinical/assessments/dokumentationstext';
 import { SperrsicherungKontext, type Sicherung } from '@/lib/sperrsicherung';
 import { AUFNAHMEFEHLER, BEI_SPERRE_ANGEHALTEN, DIKTAT_OFFEN } from './diktat';
+import { GEORDNET_MELDUNG, ORDNEN_NACHBILDUNG, SCHON_GEORDNET } from './ordnen';
 import { installiereAufnahme } from '@/lib/testaufnahme';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
@@ -166,6 +169,15 @@ vi.mock('@/lib/ki/gateway', async (importOriginal) => ({
   diktatVerfuegbar: () => diktatVerfuegbar(),
 }));
 
+// Ordnen: auch hier antwortet der Gateway nicht über das Netz.
+const textOrdnen = vi.fn();
+const ordnenVerfuegbar = vi.fn<() => Promise<boolean>>();
+vi.mock('@/lib/ki/ordnen', async (importOriginal) => ({
+  ...(await importOriginal<typeof KiOrdnen>()),
+  textOrdnen: (...args: unknown[]) => textOrdnen(...args) as Promise<KiOrdnen.Ordnungsergebnis>,
+  ordnenVerfuegbar: () => ordnenVerfuegbar(),
+}));
+
 const { CompleteTreatmentPage } = await import('./CompleteTreatmentPage');
 
 // B4 (BEF-154): Festschreiben hakt nicht ab - die Meldung sagt nur, was geschah.
@@ -199,6 +211,10 @@ describe('CompleteTreatmentPage', () => {
     // Der Gateway bietet das Diktat an (die Fälle ohne stehen bei der Spracheingabe).
     diktatVerfuegbar.mockReset();
     diktatVerfuegbar.mockResolvedValue(true);
+    // „Ordnen“ bietet der Gateway nur in den Fällen dazu an.
+    ordnenVerfuegbar.mockReset();
+    ordnenVerfuegbar.mockResolvedValue(false);
+    textOrdnen.mockReset();
     fetchAppointment.mockReset();
     fetchTreatmentDocumentation.mockReset();
     completeTreatment.mockReset();
@@ -2022,6 +2038,216 @@ describe('CompleteTreatmentPage', () => {
       await user.click(within(frage).getByRole('button', { name: 'Weiterschreiben' }));
       expect(screen.getByLabelText('Text des Vorschlags')).toHaveValue(VORSCHLAGSTEXT);
       expect(navigate).not.toHaveBeenCalled();
+    });
+  });
+
+  // Ordnen (ANN-861): auf Tipp ein Vorschlag aus denselben Sätzen über dem Feld; erst
+  // „Übernehmen“ setzt ihn ins Feld, „Rückgängig“ holt den eigenen Text zurück.
+  describe('Ordnen', () => {
+    const NOTIZEN = 'Patient sagt, es zieht links. Beugung 100 Grad.';
+    const GEORDNET =
+      'Angaben der Patient:in\nPatient sagt, es zieht links.\n\nBefund\nBeugung 100 Grad.';
+
+    beforeEach(() => {
+      ordnenVerfuegbar.mockResolvedValue(true);
+      textOrdnen.mockResolvedValue({
+        ok: true,
+        vorschlag: {
+          text: GEORDNET,
+          abschnitte: [
+            { titel: 'Angaben der Patient:in', text: 'Patient sagt, es zieht links.' },
+            { titel: 'Befund', text: 'Beugung 100 Grad.' },
+          ],
+          quelle: 'nachbildung',
+        },
+      });
+    });
+
+    async function tippen(user: ReturnType<typeof userEvent.setup>, text = NOTIZEN) {
+      const feld = await screen.findByLabelText('Eintrag zur Behandlung');
+      await user.type(feld, text);
+      return feld;
+    }
+
+    it('steht neben „Sprechen“, sobald Text im Feld steht', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByRole('button', { name: 'Sprechen' });
+      expect(screen.queryByRole('button', { name: 'Ordnen' })).toBeNull();
+
+      await tippen(user);
+      const ordnen = await screen.findByRole('button', { name: 'Ordnen' });
+      expect(ordnen).toHaveClass('h-12');
+      expect(ordnen).not.toHaveClass('bg-accent');
+      expect(ordnen.parentElement).toContainElement(
+        screen.getByRole('button', { name: 'Sprechen' }),
+      );
+    });
+
+    it('zeigt den Vorschlag über dem Feld und fasst das Feld nicht an', async () => {
+      const user = userEvent.setup();
+      rendern();
+      const feld = await tippen(user);
+      await user.click(await screen.findByRole('button', { name: 'Ordnen' }));
+
+      expect(
+        await screen.findByRole('heading', { level: 2, name: 'Geordnet – bitte prüfen' }),
+      ).toBeVisible();
+      expect(textOrdnen).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ terminId: TERMIN_ID, text: NOTIZEN }),
+      );
+      expect(screen.getByText(ORDNEN_NACHBILDUNG)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 3, name: 'Befund' })).toBeVisible();
+      expect(screen.getByText('Beugung 100 Grad.')).toBeInTheDocument();
+      expect(feld).toHaveValue(NOTIZEN);
+      // Ein Hauptknopf je Ansicht: jetzt „Übernehmen“.
+      expect(screen.getByRole('button', { name: 'Übernehmen' })).toHaveClass('bg-accent');
+      expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
+      expect(screen.queryByRole('button', { name: 'Ordnen' })).toBeNull();
+    });
+
+    it('setzt den Vorschlag erst mit „Übernehmen“ ins Feld; „Rückgängig“ holt den Text zurück', async () => {
+      const user = userEvent.setup();
+      rendern();
+      const feld = await tippen(user);
+      await user.click(await screen.findByRole('button', { name: 'Ordnen' }));
+      await user.click(await screen.findByRole('button', { name: 'Übernehmen' }));
+
+      expect(feld).toHaveValue(GEORDNET);
+      expect(screen.queryByRole('heading', { name: 'Geordnet – bitte prüfen' })).toBeNull();
+      expect(screen.getByText(GEORDNET_MELDUNG)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Festschreiben' })).toHaveClass('bg-accent');
+
+      await user.click(screen.getByRole('button', { name: 'Rückgängig' }));
+      expect(feld).toHaveValue(NOTIZEN);
+    });
+
+    it('schreibt mit „Festschreiben“ den übernommenen Text ohne das Merkmal „mit Diktat“', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await tippen(user);
+      await user.click(await screen.findByRole('button', { name: 'Ordnen' }));
+      await user.click(await screen.findByRole('button', { name: 'Übernehmen' }));
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+
+      await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
+      const [terminId, text, , , ohneBehandlung, diktiert] = completeTreatment.mock
+        .calls[0] as unknown[];
+      expect([terminId, text, ohneBehandlung, diktiert]).toEqual([
+        TERMIN_ID,
+        GEORDNET,
+        false,
+        false,
+      ]);
+    });
+
+    it('hält „Festschreiben“ an, solange der geordnete Vorschlag offen ist', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await tippen(user);
+      await user.click(await screen.findByRole('button', { name: 'Ordnen' }));
+      await screen.findByRole('heading', { name: 'Geordnet – bitte prüfen' });
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+
+      expect(await screen.findByText(VORSCHLAG_OFFEN)).toBeInTheDocument();
+      expect(completeTreatment).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'Übernehmen' }));
+      expect(screen.queryByText(VORSCHLAG_OFFEN)).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
+    });
+
+    it('verwirft ohne Rückfrage - der eigene Text steht noch im Feld', async () => {
+      const user = userEvent.setup();
+      rendern();
+      const feld = await tippen(user);
+      await user.click(await screen.findByRole('button', { name: 'Ordnen' }));
+      await user.click(await screen.findByRole('button', { name: 'Verwerfen' }));
+
+      expect(screen.queryByRole('heading', { name: 'Geordnet – bitte prüfen' })).toBeNull();
+      expect(feld).toHaveValue(NOTIZEN);
+      expect(screen.getByRole('button', { name: 'Ordnen' })).toBeInTheDocument();
+    });
+
+    it('lässt den Vorschlag fallen, sobald weitergetippt wird', async () => {
+      const user = userEvent.setup();
+      rendern();
+      const feld = await tippen(user);
+      await user.click(await screen.findByRole('button', { name: 'Ordnen' }));
+      await screen.findByRole('heading', { name: 'Geordnet – bitte prüfen' });
+
+      await user.type(feld, ' Kein Erguss.');
+      expect(screen.queryByRole('heading', { name: 'Geordnet – bitte prüfen' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Übernehmen' })).toBeNull();
+      expect(feld).toHaveValue(`${NOTIZEN} Kein Erguss.`);
+    });
+
+    it('sagt, wenn der Text schon geordnet ist', async () => {
+      const user = userEvent.setup();
+      textOrdnen.mockResolvedValue({
+        ok: true,
+        vorschlag: { text: NOTIZEN, abschnitte: [], quelle: 'anbieter' },
+      });
+      rendern();
+      await tippen(user);
+      await user.click(await screen.findByRole('button', { name: 'Ordnen' }));
+
+      expect(await screen.findByText(SCHON_GEORDNET)).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Geordnet – bitte prüfen' })).toBeNull();
+    });
+
+    it('zeigt die Meldung des Gateways und lässt das Feld, wie es ist', async () => {
+      const user = userEvent.setup();
+      textOrdnen.mockResolvedValue({
+        ok: false,
+        fehler: 'nicht_satzgetreu',
+        meldung: 'Der Vorschlag passte nicht zum Text und wird nicht gezeigt.',
+      });
+      rendern();
+      const feld = await tippen(user);
+      await user.click(await screen.findByRole('button', { name: 'Ordnen' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Der Vorschlag passte nicht zum Text und wird nicht gezeigt.',
+      );
+      expect(feld).toHaveValue(NOTIZEN);
+      expect(screen.getByRole('button', { name: 'Ordnen' })).toBeEnabled();
+    });
+
+    it('bleibt weg, wo der Gateway es nicht anbietet - auch ohne „Sprechen“ steht es sonst da', async () => {
+      const user = userEvent.setup();
+      ordnenVerfuegbar.mockResolvedValue(false);
+      const { unmount } = rendern();
+      await tippen(user);
+      await screen.findByRole('button', { name: 'Sprechen' });
+      expect(screen.queryByRole('button', { name: 'Ordnen' })).toBeNull();
+      unmount();
+
+      ordnenVerfuegbar.mockResolvedValue(true);
+      diktatVerfuegbar.mockResolvedValue(false);
+      rendern();
+      await tippen(user);
+      expect(await screen.findByRole('button', { name: 'Ordnen' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Sprechen' })).toBeNull();
+    });
+
+    it('fragt den Gateway am Vermerk „ohne Behandlung“ gar nicht', async () => {
+      const user = userEvent.setup();
+      rendern(['therapist'], '?ohne-behandlung=1');
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), NOTIZEN);
+
+      expect(screen.queryByRole('button', { name: 'Ordnen' })).toBeNull();
+      expect(ordnenVerfuegbar).not.toHaveBeenCalled();
+    });
+
+    it('besteht mit offenem Vorschlag die Barrierefreiheitsprüfung', async () => {
+      const user = userEvent.setup();
+      const { container } = rendern();
+      await tippen(user);
+      await user.click(await screen.findByRole('button', { name: 'Ordnen' }));
+      await screen.findByRole('heading', { name: 'Geordnet – bitte prüfen' });
+      await pruefeBarrierefreiheit(container);
     });
   });
 });

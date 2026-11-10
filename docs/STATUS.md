@@ -1,4 +1,4 @@
-# Status · Stand 2026-11-09
+# Status · Stand 2026-11-10
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -11,10 +11,10 @@ Ablauf in `DEVELOPMENT.md`; Merge bei Jannes.
 
 ## Danach
 
-Bis M2 (Jannes 2026-11-01, voller Umfang): KI-EPIC-002 (Frage 1 in #363), MAP-007 nach E-24,
-Leinwände, sobald sie da sind; DATEV erst nach B4. **G14 parallel**: nach dem VVT die
-Schwellwertprüfung, TOM mit Datenpannen, Auftragsverarbeiter, DSFA, zuletzt die Nachweistabelle;
-die Datenschutzinformationen nennen die Steuerberatung.
+Bis M2 (Jannes 2026-11-01, voller Umfang): MAP-007 nach E-24, Leinwände, sobald sie da sind;
+DATEV erst nach B4. **G14 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen,
+Auftragsverarbeiter, DSFA, zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die
+Steuerberatung.
 
 ## Bei Jannes
 
@@ -41,4 +41,4 @@ die Datenschutzinformationen nennen die Steuerberatung.
 
 ## Letzte Session
 
-09.11.2026, Wartungsmodus ab `main`, keine Migration.
+10.11.2026, KI-EPIC-002.

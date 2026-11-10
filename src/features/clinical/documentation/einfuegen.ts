@@ -29,6 +29,8 @@ export interface Einfuegung {
   vorher: string;
   /** Der Feldinhalt direkt nach dem Einfügen. */
   nachher: string;
+  /** Die Meldung, wenn der Text nicht angehängt, sondern ersetzt wurde. */
+  meldung?: string;
 }
 
 export interface Einfuegen {
@@ -36,6 +38,8 @@ export interface Einfuegen {
   letzte: Einfuegung | null;
   /** Hängt `text` an `vorher` an, setzt das Feld und merkt sich beides. */
   einfuegen: (titel: string, vorher: string, text: string) => void;
+  /** Setzt `nachher` an die Stelle von `vorher`; „Rückgängig“ holt `vorher` zurück. */
+  ersetzen: (meldung: string, vorher: string, nachher: string) => void;
   /** Stellt den Stand vor der letzten Einfügung wieder her. */
   rueckgaengig: () => void;
   /** Vergisst die Einfügung - beim Weitertippen. */
@@ -55,7 +59,8 @@ export function useEinfuegen(feldId: string, setzen: (wert: string) => void): Ei
     // Nach dem Zeichnen, damit die neue Höhe schon gilt. Kein `focus()`:
     // am Telefon öffnete das die Tastatur über der halben Seite.
     const feld = document.getElementById(feldId);
-    if (feld) feld.scrollTop = feld.scrollHeight;
+    // Ein ersetzter Text beginnt oben, ein angehängter Baustein steht unten.
+    if (feld) feld.scrollTop = letzte.meldung === undefined ? feld.scrollHeight : 0;
   }, [letzte, feldId]);
 
   return {
@@ -64,6 +69,10 @@ export function useEinfuegen(feldId: string, setzen: (wert: string) => void): Ei
       const nachher = bausteinEinfuegen(vorher, text);
       setzen(nachher);
       setLetzte({ titel, vorher, nachher });
+    },
+    ersetzen(meldung, vorher, nachher) {
+      setzen(nachher);
+      setLetzte({ titel: meldung, vorher, nachher, meldung });
     },
     rueckgaengig() {
       if (!letzte) return;

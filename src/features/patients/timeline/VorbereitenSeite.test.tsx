@@ -20,6 +20,13 @@ vi.mock('@/features/exercise', async (importOriginal) => ({
 vi.mock('@/features/calendar', () => ({
   LetzterEintragVorDerTuer: () => <p>Synthetisch: Treppe geübt.</p>,
 }));
+vi.mock('@/features/clinical', () => ({
+  VerlaufInAuszuegen: ({ patientId, hier }: { patientId: string; hier: string }) => (
+    <p>
+      Auszüge für {patientId} von {hier}
+    </p>
+  ),
+}));
 vi.mock('../record/api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchPatient: () =>
@@ -88,9 +95,14 @@ function checkins() {
   };
 }
 
-function zeige() {
+function zeige(auszuege = false) {
   const router = createMemoryRouter(
-    [{ path: '/patienten/:patientId/vorbereiten', element: <VorbereitenSeite /> }],
+    [
+      {
+        path: '/patienten/:patientId/vorbereiten',
+        element: <VorbereitenSeite auszuege={auszuege} />,
+      },
+    ],
     { initialEntries: [`/patienten/${PATIENT}/vorbereiten`] },
   );
   render(
@@ -134,6 +146,19 @@ describe('Sitzung vorbereiten (ORG-003)', () => {
     expect(await screen.findByText('Nichts offen')).toBeVisible();
     expect(await screen.findByText('Nicht freigegeben')).toBeVisible();
     expect(screen.queryByRole('heading', { name: 'Ziele' })).toBeNull();
+  });
+
+  it('bietet die Auszüge nur der Rolle an, die dokumentiert', async () => {
+    zeige(true);
+    expect(
+      await screen.findByText(`Auszüge für ${PATIENT} von /patienten/${PATIENT}/vorbereiten`),
+    ).toBeVisible();
+  });
+
+  it('zeigt ohne diese Rolle keinen Abschnitt für Auszüge', async () => {
+    zeige();
+    expect(await screen.findByRole('heading', { name: 'Zu tun (1)' })).toBeVisible();
+    expect(screen.queryByText(/Auszüge für/)).toBeNull();
   });
 
   it('ohne Recht: nicht gefunden', async () => {

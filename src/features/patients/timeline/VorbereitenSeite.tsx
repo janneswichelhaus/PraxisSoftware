@@ -18,6 +18,7 @@ import {
   type CheckinDaten,
 } from '@/features/exercise';
 import { LetzterEintragVorDerTuer } from '@/features/calendar';
+import { VerlaufInAuszuegen } from '@/features/clinical';
 import { themaName } from '@/features/portal';
 import { dayKey, formatDate, formatLocalTime } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -32,7 +33,7 @@ import { aufgaben } from './eintraege';
  * angegeben wurde, die zuletzt festgehaltenen Ziele. Auswählen und anordnen, nicht deuten
  * (ADR-006 Punkte 3, 11; ANN-848).
  */
-export function VorbereitenSeite() {
+export function VorbereitenSeite({ auszuege = false }: { auszuege?: boolean }) {
   const { patientId = '' } = useParams();
   const person = useQuery({
     queryKey: ['patient', patientId],
@@ -68,6 +69,7 @@ export function VorbereitenSeite() {
               v={v!}
               patientId={patientId}
               name={person.data ? fullName(person.data) : null}
+              auszuege={auszuege}
             />
           )}
         </Abfragezustand>
@@ -103,10 +105,13 @@ function Inhalt({
   v,
   patientId,
   name,
+  auszuege,
 }: {
   v: Vorbereitung;
   patientId: string;
   name: string | null;
+  /** Nur für Rollen, die dokumentieren; verbindlich prüft die Datenbank am Gateway. */
+  auszuege: boolean;
 }) {
   const hier = `/patienten/${patientId}/vorbereiten`;
   return (
@@ -120,6 +125,7 @@ function Inhalt({
           <LetzterEintragVorDerTuer appointmentId={v.next_appointment.id} />
         </Section>
       ) : null}
+      {auszuege ? <VerlaufInAuszuegen key={patientId} patientId={patientId} hier={hier} /> : null}
       <SeitDemLetztenMal patientId={patientId} v={v} />
       {v.goals !== null ? (
         <Listenabschnitt titel="Ziele" leer={{ titel: 'Kein Therapieziel festgehalten' }}>
