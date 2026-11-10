@@ -5,12 +5,16 @@ import { erstelleAssistenznachbildung, erstelleNachbildung } from './mock.ts';
 import type { Sitzungsergebnis } from './sitzung.ts';
 import type {
   Assistenzadapter,
+  Auswahlanfrage,
   Protokolleintrag,
   Umformanfrage,
   Zuordnungsanfrage,
 } from './typen.ts';
 import {
   ALLTAG_REGELN,
+  AUSZUG_HOECHST_EINTRAEGE,
+  AUSZUG_HOECHST_ZEICHEN,
+  AUSZUG_REGELN,
   DIKTAT_ABSCHNITTE,
   ENTWURF_REGELN,
   NACHRICHT_HOECHST_ZEICHEN,
@@ -42,6 +46,7 @@ function spion(ersatz: Partial<Assistenzadapter> = {}) {
   const echt = erstelleAssistenznachbildung();
   const zuordnungen: Zuordnungsanfrage[] = [];
   const umformungen: Umformanfrage[] = [];
+  const auswahlen: Auswahlanfrage[] = [];
   const adapter: Assistenzadapter = {
     ...echt,
     ordneZu: (auftrag, signal) => {
@@ -52,9 +57,13 @@ function spion(ersatz: Partial<Assistenzadapter> = {}) {
       umformungen.push(auftrag);
       return echt.formuliere(auftrag, signal);
     },
+    waehleAus: (auftrag, signal) => {
+      auswahlen.push(auftrag);
+      return echt.waehleAus(auftrag, signal);
+    },
     ...ersatz,
   };
-  return { adapter, zuordnungen, umformungen };
+  return { adapter, zuordnungen, umformungen, auswahlen };
 }
 
 function gateway({
@@ -586,5 +595,174 @@ describe('ai-gateway: Antwort in Alltagssprache', () => {
     const antwort = await handler(anfrage(ZWECK, { rueckfrage: RUECKFRAGE, text: ANTWORT }));
     expect(antwort.status).toBe(403);
     expect(umformungen).toEqual([]);
+  });
+});
+
+describe('ai-gateway: Verlauf in Auszügen', () => {
+  const ZWECK = 'verlauf.auszug';
+  const AKTE = '66666666-6666-4666-8666-000000000002';
+  const EINS = '88888888-8888-4888-8888-000000000001';
+  const ZWEI = '88888888-8888-4888-8888-000000000002';
+  const EINTRAEGE = [
+    {
+      id: EINS,
+      text: 'Angaben der Patient:in\nPatientin berichtet Schmerz 3 von 10.\n\nBefund\nBeugung 110 Grad.\n\nPlan\nWeiter üben.',
+    },
+    { id: ZWEI, text: 'Keine Schwellung.' },
+  ];
+
+  it('setzt aus den genannten Stellen die Sätze im Wortlaut zusammen', async () => {
+    const { handler, pruefeAssistenz, protokoll } = gateway();
+    const antwort = await handler(anfrage(ZWECK, { akte: AKTE, eintraege: EINTRAEGE }));
+
+    expect(antwort.status).toBe(200);
+    expect(antwort.headers.get('Cache-Control')).toBe('no-store');
+    expect(await gelesen(antwort)).toEqual({
+      ok: true,
+      art: 'auszug',
+      auszuege: [
+        { id: EINS, saetze: ['Patientin berichtet Schmerz 3 von 10.', 'Weiter üben.'] },
+        { id: ZWEI, saetze: ['Keine Schwellung.'] },
+      ],
+      quelle: 'nachbildung',
+    });
+    expect(pruefeAssistenz).toHaveBeenCalledExactlyOnceWith(TOKEN, { art: 'akte', id: AKTE });
+    expect(protokoll).toEqual([]);
+  });
+
+  it('gibt dem Adapter nur die Sätze je Eintrag - keine Kennung, kein Titel der Vorlage', async () => {
+    const { adapter, auswahlen } = spion();
+    const { handler } = gateway({ assistenz: adapter });
+    await handler(anfrage(ZWECK, { akte: AKTE, eintraege: EINTRAEGE }));
+
+    expect(auswahlen).toEqual([
+      {
+        eintraege: [
+          ['Patientin berichtet Schmerz 3 von 10.', 'Beugung 110 Grad.', 'Weiter üben.'],
+          ['Keine Schwellung.'],
+        ],
+        hoechstJeEintrag: 2,
+        sprache: 'de',
+        regeln: AUSZUG_REGELN,
+      },
+    ]);
+    const gesendet = JSON.stringify(auswahlen);
+    for (const kennung of [AKTE, EINS, ZWEI]) expect(gesendet).not.toContain(kennung);
+  });
+
+  it.each([
+    ['ein eigener Satz statt einer Stelle', ['Insgesamt rückläufige Beschwerden.']],
+    ['eine Stelle, die es nicht gibt', [{ eintrag: 1, satz: 4 }]],
+    [
+      'drei Sätze aus einem Eintrag',
+      [
+        { eintrag: 0, satz: 0 },
+        { eintrag: 0, satz: 1 },
+        { eintrag: 0, satz: 2 },
+      ],
+    ],
+  ])('zeigt nichts, wenn der Adapter anderes liefert: %s', async (_fall, auswahl) => {
+    const { adapter } = spion({
+      waehleAus: () => Promise.resolve({ ok: true, value: { auswahl: auswahl as never } }),
+    });
+    const { handler, protokoll } = gateway({ assistenz: adapter });
+    const antwort = await handler(anfrage(ZWECK, { akte: AKTE, eintraege: EINTRAEGE }));
+
+    expect(antwort.status).toBe(502);
+    expect(JSON.stringify(await gelesen(antwort))).not.toContain('rückläufig');
+    expect(protokoll).toEqual([
+      { zweck: ZWECK, anbieter: 'mock', code: 'unavailable', dauerMs: 7 },
+    ]);
+  });
+
+  it.each([
+    ['ohne Akte', { eintraege: EINTRAEGE }, 400, 'invalid_request'],
+    ['ein Name als Akte', { akte: 'Erika Beispiel', eintraege: EINTRAEGE }, 400, 'invalid_request'],
+    ['ohne Einträge', { akte: AKTE, eintraege: [] }, 400, 'invalid_request'],
+    ['Einträge als Text', { akte: AKTE, eintraege: 'Keine Schwellung.' }, 400, 'invalid_request'],
+    [
+      'ein Eintrag ohne Kennung',
+      { akte: AKTE, eintraege: [{ text: 'x' }] },
+      400,
+      'invalid_request',
+    ],
+    [
+      'ein Eintrag mit Datum und Namen',
+      {
+        akte: AKTE,
+        eintraege: [{ id: EINS, text: 'x', datum: '2026-11-02', autor: 'Anna Beispiel' }],
+      },
+      400,
+      'invalid_request',
+    ],
+    [
+      'ein leerer Eintrag',
+      { akte: AKTE, eintraege: [{ id: EINS, text: ' ' }] },
+      400,
+      'invalid_request',
+    ],
+    [
+      'derselbe Eintrag zweimal',
+      { akte: AKTE, eintraege: [EINTRAEGE[1], EINTRAEGE[1]] },
+      400,
+      'invalid_request',
+    ],
+    [
+      'zu viele Einträge',
+      {
+        akte: AKTE,
+        eintraege: Array.from({ length: AUSZUG_HOECHST_EINTRAEGE + 1 }, (_wert, nummer) => ({
+          id: `88888888-8888-4888-8888-0000000000${String(nummer + 10)}`,
+          text: 'Keine Schwellung.',
+        })),
+      },
+      413,
+      'too_large',
+    ],
+    [
+      'zu viel Text',
+      {
+        akte: AKTE,
+        eintraege: [
+          { id: EINS, text: 'a'.repeat(AUSZUG_HOECHST_ZEICHEN / 2) },
+          { id: ZWEI, text: 'b'.repeat(AUSZUG_HOECHST_ZEICHEN / 2 + 1) },
+        ],
+      },
+      413,
+      'too_large',
+    ],
+  ])('weist ab: %s', async (_fall, koerper, status, code) => {
+    const { adapter, auswahlen } = spion();
+    const { handler, pruefeAssistenz } = gateway({ assistenz: adapter });
+    const antwort = await handler(anfrage(ZWECK, koerper));
+
+    expect(antwort.status).toBe(status);
+    expect((await gelesen(antwort)).error?.code).toBe(code);
+    expect(pruefeAssistenz).not.toHaveBeenCalled();
+    expect(auswahlen).toEqual([]);
+  });
+
+  it.each([
+    ['verweigert', 403, 'forbidden'],
+    ['abgelehnt', 401, 'session_invalid'],
+    ['nicht_pruefbar', 502, 'unavailable'],
+  ] as const)('geht mit Befund %s nicht an den Adapter', async (befund, status, code) => {
+    const { adapter, auswahlen } = spion();
+    const { handler } = gateway({ assistenz: adapter, berechtigung: befund });
+    const antwort = await handler(anfrage(ZWECK, { akte: AKTE, eintraege: EINTRAEGE }));
+
+    expect(antwort.status).toBe(status);
+    expect((await gelesen(antwort)).error?.code).toBe(code);
+    expect(auswahlen).toEqual([]);
+  });
+
+  it('meldet einen Adapter, der nicht antwortet, als timeout - ohne Inhalt im Eintrag', async () => {
+    const { adapter } = spion({ waehleAus: () => new Promise(() => undefined) });
+    const { handler, protokoll } = gateway({ assistenz: adapter, fristMs: 5 });
+    const antwort = await handler(anfrage(ZWECK, { akte: AKTE, eintraege: EINTRAEGE }));
+
+    expect(antwort.status).toBe(504);
+    expect(protokoll).toEqual([{ zweck: ZWECK, anbieter: 'mock', code: 'timeout', dauerMs: 7 }]);
+    expect(JSON.stringify(protokoll)).not.toContain('Schwellung');
   });
 });

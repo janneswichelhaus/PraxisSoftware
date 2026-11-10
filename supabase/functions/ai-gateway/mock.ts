@@ -6,6 +6,8 @@ import { DIKTAT_ABSCHNITTE } from './zwecke.ts';
 import type {
   Adapterergebnis,
   Assistenzadapter,
+  Auswahlanfrage,
+  Satzstelle,
   Sprachadapter,
   Umformanfrage,
   Zuordnungsanfrage,
@@ -166,6 +168,15 @@ export function alltagssprachlich(satz: string): string {
     .join('');
 }
 
+/** Die Auswahl der Nachbildung: je Eintrag der erste und der letzte Satz - kein Urteil. */
+export function ersterUndLetzter(eintraege: readonly (readonly string[])[]): Satzstelle[] {
+  return eintraege.flatMap((saetze, eintrag) => {
+    if (saetze.length === 0) return [];
+    const stellen = [...new Set([0, saetze.length - 1])];
+    return stellen.map((satz) => ({ eintrag, satz }));
+  });
+}
+
 /** Die Hilfen ohne Ton als Nachbildung: feste Regeln statt eines Sprachmodells. */
 export function erstelleAssistenznachbildung(): Assistenzadapter {
   return {
@@ -184,6 +195,11 @@ export function erstelleAssistenznachbildung(): Assistenzadapter {
     ): Promise<Adapterergebnis<{ readonly saetze: readonly string[] }>> {
       const umformen = anfrage.aufgabe === 'alltagssprache' ? alltagssprachlich : ausformuliert;
       return Promise.resolve({ ok: true, value: { saetze: anfrage.saetze.map(umformen) } });
+    },
+    waehleAus(
+      anfrage: Auswahlanfrage,
+    ): Promise<Adapterergebnis<{ readonly auswahl: readonly Satzstelle[] }>> {
+      return Promise.resolve({ ok: true, value: { auswahl: ersterUndLetzter(anfrage.eintraege) } });
     },
   };
 }

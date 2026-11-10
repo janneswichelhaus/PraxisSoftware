@@ -328,7 +328,10 @@ export function AuthenticatedRoutes({
                   <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
                   {/* Der Zeitstrahl neben dem Rahmen; jede Gruppe prüft der Server (ANN-847). */}
                   <Route path="/patienten/:patientId/zeitstrahl" element={<ZeitstrahlSeite />} />
-                  <Route path="/patienten/:patientId/vorbereiten" element={<VorbereitenSeite />} />
+                  <Route
+                    path="/patienten/:patientId/vorbereiten"
+                    element={<VorbereitenSeite auszuege={showDocumentation} />}
+                  />
                   {/* Die Formulare der Ernährungsberatung neben dem Rahmen. */}
                   {showNutrition ? (
                     <>

@@ -19,7 +19,7 @@ export type Berechtigungspruefung = (
 
 /** Woran eine Hilfe ohne Ton geprüft wird; je Art genau eine Funktion der Datenbank. */
 export interface Assistenzfrage {
-  readonly art: 'termin' | 'rueckfrage';
+  readonly art: 'termin' | 'rueckfrage' | 'akte';
   readonly id: string;
 }
 
@@ -41,6 +41,7 @@ const PFADE = {
   diktat: '/rest/v1/rpc/check_dictation_access',
   termin: '/rest/v1/rpc/check_note_arrangement_access',
   rueckfrage: '/rest/v1/rpc/check_answer_wording_access',
+  akte: '/rest/v1/rpc/check_history_excerpt_access',
 } as const;
 
 function erstelleFrage({
@@ -111,6 +112,8 @@ export function erstelleAssistenzpruefung(optionen: Optionen): Assistenzpruefung
         return frage(authorization, PFADE.termin, { p_appointment_id: id });
       case 'rueckfrage':
         return frage(authorization, PFADE.rueckfrage, { p_message_id: id });
+      case 'akte':
+        return frage(authorization, PFADE.akte, { p_patient_id: id });
     }
   };
 }

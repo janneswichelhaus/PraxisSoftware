@@ -9,6 +9,14 @@ import {
   ZWECK_DIKTAT,
   saetze as saetzeImBrowser,
 } from '@/lib/ki/gateway';
+import {
+  AUSZUG_HOECHST_EINTRAEGE as EINTRAEGE_IM_BROWSER,
+  AUSZUG_HOECHST_JE_EINTRAG as JE_EINTRAG_IM_BROWSER,
+  AUSZUG_HOECHSTZEICHEN,
+  ZWECK_AUSZUG,
+  auszugGetreu,
+  auszugssaetze as auszugssaetzeImBrowser,
+} from '@/lib/ki/auszug';
 import { einheiten as einheitenImBrowser } from '@/lib/ki/einheiten';
 import { ORDNEN_HOECHSTZEICHEN, ZWECK_ORDNEN } from '@/lib/ki/ordnen';
 import {
@@ -17,10 +25,15 @@ import {
   ZWECK_ENTWURF,
   stuecke as stueckeImBrowser,
 } from '@/lib/ki/umformen';
+import { auszugssaetze, setzeAuszug } from './auszug.ts';
 import { einheiten, saetze } from './inhaltstreue.ts';
+import { ersterUndLetzter } from './mock.ts';
 import { FEHLERKLASSEN } from './typen.ts';
 import { stuecke } from './waechter.ts';
 import {
+  AUSZUG_HOECHST_EINTRAEGE,
+  AUSZUG_HOECHST_JE_EINTRAG,
+  AUSZUG_HOECHST_ZEICHEN,
   DIKTAT_ABSCHNITTE,
   HOECHST_BYTES,
   HOECHST_DAUER_S,
@@ -68,9 +81,40 @@ describe('Vertrag zwischen Browser und AI Gateway', () => {
   });
 
   it('nennt nur Zwecke, die der Gateway kennt', () => {
-    for (const zweck of [ZWECK_DIKTAT, ZWECK_ORDNEN, ZWECK_ENTWURF, ZWECK_ALLTAGSSPRACHE]) {
-      expect(Object.keys(ZWECKE)).toContain(zweck);
-    }
+    const genannt = [ZWECK_DIKTAT, ZWECK_ORDNEN, ZWECK_ENTWURF, ZWECK_ALLTAGSSPRACHE, ZWECK_AUSZUG];
+    for (const zweck of genannt) expect(Object.keys(ZWECKE)).toContain(zweck);
+  });
+
+  it('hält beim Auszug dieselben Grenzen', () => {
+    expect(EINTRAEGE_IM_BROWSER).toBe(AUSZUG_HOECHST_EINTRAEGE);
+    expect(JE_EINTRAG_IM_BROWSER).toBe(AUSZUG_HOECHST_JE_EINTRAG);
+    expect(AUSZUG_HOECHSTZEICHEN).toBe(AUSZUG_HOECHST_ZEICHEN);
+  });
+
+  it.each([
+    'Angaben der Patient:in\nPatientin berichtet Schmerz 3 von 10.\n\nBefund\nBeugung 110 Grad. Kein Erguss.\n\nPlan\nWeiter üben.',
+    'Weiter üben.\nBeugung 110 Grad.\nWeiter üben.',
+    'Z. B. Brücke, ca. 3 Min.! Treppe?',
+    'Befund:\r\nKein Erguss seit der 2. Woche, aber li. deutliche Schwellung. Geht 30 Min. am Stück.\r\n\r\nPLAN\r\nmax. 2x tägl.',
+  ])('nimmt im Browser an, was der Gateway aus Stellen setzt (ANN-861): %j', (text) => {
+    const eintraege = [
+      { id: '88888888-8888-4888-8888-000000000001', text },
+      { id: '88888888-8888-4888-8888-000000000002', text: 'Keine Schwellung.' },
+    ];
+    expect(auszugssaetzeImBrowser(text, DIKTAT_ABSCHNITTE)).toEqual(
+      auszugssaetze(text, DIKTAT_ABSCHNITTE),
+    );
+    const quellen = eintraege.map((eintrag) => ({
+      id: eintrag.id,
+      saetze: auszugssaetze(eintrag.text, DIKTAT_ABSCHNITTE),
+    }));
+    const gesetzt = setzeAuszug(
+      quellen,
+      ersterUndLetzter(quellen.map((quelle) => quelle.saetze)),
+      AUSZUG_HOECHST_JE_EINTRAG,
+    );
+    expect(gesetzt).not.toBeNull();
+    expect(auszugGetreu(eintraege, gesetzt!)).toBe(true);
   });
 
   it('hält beim Ordnen und Umformen dieselben Grenzen', () => {

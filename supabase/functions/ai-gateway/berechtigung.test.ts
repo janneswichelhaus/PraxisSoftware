@@ -110,6 +110,7 @@ describe('Berechtigung der Hilfen ohne Ton', () => {
   it.each([
     [{ art: 'termin', id: TERMIN }, 'check_note_arrangement_access', { p_appointment_id: TERMIN }],
     [{ art: 'rueckfrage', id: TERMIN }, 'check_answer_wording_access', { p_message_id: TERMIN }],
+    [{ art: 'akte', id: TERMIN }, 'check_history_excerpt_access', { p_patient_id: TERMIN }],
   ] as const)(
     'fragt für %j die eine Funktion der Datenbank',
     async (frage, funktion, argumente) => {

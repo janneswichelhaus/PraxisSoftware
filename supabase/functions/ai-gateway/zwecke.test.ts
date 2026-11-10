@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   ALLTAG_REGELN,
   AUDIOFORMATE,
+  AUSZUG_HOECHST_EINTRAEGE,
+  AUSZUG_HOECHST_JE_EINTRAG,
+  AUSZUG_HOECHST_ZEICHEN,
+  AUSZUG_REGELN,
   DIKTAT_ABSCHNITTE,
   DIKTAT_REGELN,
   HOECHST_BYTES,
@@ -24,6 +28,7 @@ describe('Zweckliste', () => {
       'dokumentation.ordnen',
       'nachricht.entwurf',
       'nachricht.alltagssprache',
+      'verlauf.auszug',
     ]);
     for (const kennung of Object.keys(ZWECKE)) expect(zweckAus(kennung)?.kennung).toBe(kennung);
   });
@@ -198,6 +203,39 @@ describe('Zweckliste', () => {
     ])('nennt in den Regeln: %s', (_punkt, muster) => {
       expect(ALLTAG_REGELN).toMatch(muster);
       expect(zweck.regeln).toBe(ALLTAG_REGELN);
+    });
+  });
+
+  describe('Verlauf in Auszügen', () => {
+    const zweck = ZWECKE['verlauf.auszug'];
+
+    it('nimmt wenige Einträge und prüft an der Akte', () => {
+      expect(zweck.art).toBe('auszug');
+      expect(zweck.gegenstand).toBe('akte');
+      expect(zweck.eingabe).toEqual({
+        hoechstEintraege: AUSZUG_HOECHST_EINTRAEGE,
+        hoechstZeichen: AUSZUG_HOECHST_ZEICHEN,
+        sprache: 'de',
+      });
+      expect([AUSZUG_HOECHST_EINTRAEGE, AUSZUG_HOECHST_ZEICHEN]).toEqual([12, 60_000]);
+      expect(zweck.ausgabe).toEqual({ hoechstJeEintrag: 2, titel: DIKTAT_ABSCHNITTE });
+      expect(AUSZUG_HOECHST_JE_EINTRAG).toBe(2);
+    });
+
+    it.each([
+      ['auswählen, höchstens zwei Sätze', /je Eintrag höchstens zwei Sätze auswählen/],
+      ['nur Stellen, kein Text', /nur Stellen[^\n]*Kein Text/],
+      ['keine Reihenfolge nach Wichtigkeit', /keine Reihenfolge nach Wichtigkeit/],
+      ['keine Zusammenfassung in eigenen Worten', /keine Zusammenfassung in eigenen Worten/],
+      ['kein Verlaufsurteil', /kein Verlaufsurteil wie „besser“ oder „schlechter“/],
+      [
+        'keine Bewertung, Diagnose, Empfehlung',
+        /keine Bewertung[^\n]*keine Diagnose, keine Empfehlung/,
+      ],
+      ['der Auszug ist unvollständig', /Der Auszug ist unvollständig/],
+    ])('nennt in den Regeln: %s', (_punkt, muster) => {
+      expect(AUSZUG_REGELN).toMatch(muster);
+      expect(zweck.regeln).toBe(AUSZUG_REGELN);
     });
   });
 });

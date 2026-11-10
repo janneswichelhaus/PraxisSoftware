@@ -12,6 +12,7 @@ export {
   saveDocumentationDeadline,
 } from './documentation/api';
 export { DiensttelefonAbschnitt } from './documentation/offline/DiensttelefonAbschnitt';
+export { VerlaufInAuszuegen } from './documentation/VerlaufInAuszuegen';
 export { ABLAGE_FUER_PRAXISKONTEN } from './documentation/offline/servicePhone';
 export {
   BerichteDerVerordnung,

@@ -9,7 +9,8 @@ export type Zweckkennung =
   | 'dokumentation.diktat'
   | 'dokumentation.ordnen'
   | 'nachricht.entwurf'
-  | 'nachricht.alltagssprache';
+  | 'nachricht.alltagssprache'
+  | 'verlauf.auszug';
 
 /**
  * Audioformate, die ein Browser mit `MediaRecorder` liefert oder die ein
@@ -101,6 +102,20 @@ export const ALLTAG_REGELN = [
   'Ein Satz ohne Fachwort bleibt im Wortlaut.',
 ].join('\n');
 
+/** Der Auszug nimmt höchstens so viele Einträge, je zwei Sätze daraus (ANN-861). */
+export const AUSZUG_HOECHST_EINTRAEGE = 12;
+export const AUSZUG_HOECHST_JE_EINTRAG = 2;
+/** Alle Einträge zusammen - genug für sechs Termine, weit unter einer ganzen Akte. */
+export const AUSZUG_HOECHST_ZEICHEN = 60_000;
+
+/** Die Arbeitsanweisung für den Auszug: auswählen, nie formulieren. */
+export const AUSZUG_REGELN = [
+  'Aufgabe: aus den Einträgen einer Behandlungsdokumentation je Eintrag höchstens zwei Sätze auswählen, die für sich lesbar sind.',
+  'Antwort: nur Stellen - der wievielte Eintrag, der wievielte Satz. Kein Text, keine Erklärung, keine Reihenfolge nach Wichtigkeit. Den Wortlaut setzt der Gateway.',
+  'Nichts ergänzen und nichts folgern: keine Zusammenfassung in eigenen Worten, keine Bewertung, kein Verlaufsurteil wie „besser“ oder „schlechter“, keine Diagnose, keine Empfehlung.',
+  'Kein Satz steht für mehr als sich selbst: Der Auszug ist unvollständig und sagt das auch.',
+].join('\n');
+
 /**
  * Die Adapter, die einen Zweck bedienen dürfen (das „erlaubte Modell" aus 6.1): bis zur
  * Freischaltung eines Anbieters (ADR-005 Punkt 8) nur die Nachbildung.
@@ -149,8 +164,23 @@ export type Umformzweck =
   | Umformgrund<'nachricht.entwurf', 'ausformulieren'>
   | Umformgrund<'nachricht.alltagssprache', 'alltagssprache'>;
 
+/** Auszug: Einträge hinein, daraus gewählte Sätze im Wortlaut heraus. */
+export interface Auszugszweck {
+  readonly kennung: 'verlauf.auszug';
+  readonly art: 'auszug';
+  readonly gegenstand: 'akte';
+  readonly eingabe: {
+    readonly hoechstEintraege: number;
+    readonly hoechstZeichen: number;
+    readonly sprache: Sprache;
+  };
+  readonly adapter: readonly string[];
+  readonly ausgabe: { readonly hoechstJeEintrag: number; readonly titel: readonly string[] };
+  readonly regeln: string;
+}
+
 /** Was zu einem Zweck festgelegt ist. */
-export type Zweck = Diktatzweck | Ordnungszweck | Umformzweck;
+export type Zweck = Diktatzweck | Ordnungszweck | Umformzweck | Auszugszweck;
 
 /** Ein Zweck ohne Ton; ihn bedient der Assistenzadapter. */
 export type Assistenzzweck = Exclude<Zweck, Diktatzweck>;
@@ -195,6 +225,20 @@ export const ZWECKE = {
     eingabe: { hoechstZeichen: NACHRICHT_HOECHST_ZEICHEN, sprache: 'de' },
     adapter: NUR_NACHBILDUNG,
     regeln: ALLTAG_REGELN,
+  },
+  'verlauf.auszug': {
+    kennung: 'verlauf.auszug',
+    art: 'auszug',
+    gegenstand: 'akte',
+    eingabe: {
+      hoechstEintraege: AUSZUG_HOECHST_EINTRAEGE,
+      hoechstZeichen: AUSZUG_HOECHST_ZEICHEN,
+      sprache: 'de',
+    },
+    adapter: NUR_NACHBILDUNG,
+    // Die Titel der Vorlage sind Gliederung eines Eintrags und nie ein Satz des Auszugs.
+    ausgabe: { hoechstJeEintrag: AUSZUG_HOECHST_JE_EINTRAG, titel: DIKTAT_ABSCHNITTE },
+    regeln: AUSZUG_REGELN,
   },
 } as const satisfies { readonly [K in Zweckkennung]: Extract<Zweck, { kennung: K }> };
 

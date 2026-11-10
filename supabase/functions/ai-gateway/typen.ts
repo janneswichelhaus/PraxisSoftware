@@ -96,6 +96,17 @@ export interface Umformungsantwort {
 }
 
 /**
+ * Die Antwort auf den Auszug: je Eintrag die gewählten Sätze im Wortlaut, in der Reihenfolge
+ * der Eingabe. Ein Eintrag ohne gewählten Satz fehlt.
+ */
+export interface Auszugsantwort {
+  readonly ok: true;
+  readonly art: 'auszug';
+  readonly auszuege: readonly { readonly id: string; readonly saetze: readonly string[] }[];
+  readonly quelle: Quelle;
+}
+
+/**
  * Die Antwort auf die Frage vor „Sprechen“ (`GET`): Wird der Zweck hier
  * bedient? Nur ja oder nein - kein Anbieter, keine Quelle.
  */
@@ -159,6 +170,21 @@ export interface Umformanfrage {
   readonly regeln: string;
 }
 
+/** An den Adapter zur Auswahl: je Eintrag seine Sätze - keine Kennung, kein Datum, kein Name. */
+export interface Auswahlanfrage {
+  /** Die Einträge in der Reihenfolge der Anfrage, jeder als Liste seiner Sätze. */
+  readonly eintraege: readonly (readonly string[])[];
+  readonly hoechstJeEintrag: number;
+  readonly sprache: Sprache;
+  readonly regeln: string;
+}
+
+/** Eine Stelle der Eingabe: der wievielte Eintrag, der wievielte Satz darin (ab 0). */
+export interface Satzstelle {
+  readonly eintrag: number;
+  readonly satz: number;
+}
+
 /**
  * Ein Anbieter für die Hilfen ohne Ton. Was er liefert, ist eine Behauptung, bis der Gateway
  * sie an der Eingabe geprüft hat: Er nennt Stellen, den Wortlaut setzt der Gateway.
@@ -175,6 +201,11 @@ export interface Assistenzadapter {
     anfrage: Umformanfrage,
     signal: AbortSignal,
   ): Promise<Adapterergebnis<{ readonly saetze: readonly string[] }>>;
+  /** Nur Stellen der Eingabe - kein Text. */
+  waehleAus(
+    anfrage: Auswahlanfrage,
+    signal: AbortSignal,
+  ): Promise<Adapterergebnis<{ readonly auswahl: readonly Satzstelle[] }>>;
 }
 
 /**
@@ -190,6 +221,7 @@ export interface Protokolleintrag {
     | 'dokumentation.ordnen'
     | 'nachricht.entwurf'
     | 'nachricht.alltagssprache'
+    | 'verlauf.auszug'
     | 'unbekannt';
   /** Anbieterkennung oder die Stelle davor: `sitzung`, `berechtigung`, `gate`. */
   readonly anbieter: string;

@@ -226,6 +226,8 @@ export const auditOperationLabels: Record<string, string> = {
   'treatment_note.arranged': 'Notizen zur Behandlungsdokumentation geordnet',
   // KI-001: Diktat zur Behandlungsdokumentation (keine neue Aktion, ADR-010).
   'treatment_note.dictated': 'Diktat zur Behandlungsdokumentation aufbereitet',
+  // Verlauf in Auszügen über das AI Gateway (ANN-861); keine neue Aktion (ADR-010).
+  'treatment_note.excerpted': 'Auszüge aus der Behandlungsdokumentation gezeigt',
   'treatment_note.history_viewed': 'Änderungsverlauf gelesen',
   'treatment_note.viewed': 'Behandlungsdokumentation gelesen',
   'waitlist.read': 'Warteliste gelesen',

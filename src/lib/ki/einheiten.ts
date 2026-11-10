@@ -10,7 +10,8 @@ export interface Einheit {
   readonly titel: string | null;
 }
 
-function titelDerZeile(zeile: string, vorlage: readonly string[]): string | null {
+/** Der Titel der Vorlage, der allein in dieser Zeile steht - mit oder ohne Doppelpunkt. */
+export function titelDerZeile(zeile: string, vorlage: readonly string[]): string | null {
   const ohne = zeile.replace(/:$/, '').trim().toLowerCase();
   return vorlage.find((titel) => titel.toLowerCase() === ohne) ?? null;
 }
