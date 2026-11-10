@@ -166,7 +166,7 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-PRX-030 | Navigationslink zu Google Maps, je Weg und für den Tag | überführt → UX-002 / ADR-019 / ANN-018 |
 | IDEA-PRX-031 | Gebietstage für die Terminvergabe | überführt → PRX-EPIC-001 (gebaut 2026-09-28) |
 | IDEA-PRX-032 | Fahrzeit je Weg aus dem Kartendienst | überführt → MAP-003 / MAP-004 / MAP-006 |
-| IDEA-PRX-044 | Führung auf dem Rad innerhalb der Software | überführt → ADR-019 Fassung 3, Abschnitt F / §20.1 / MAP-007 |
+| IDEA-PRX-044 | Führung auf dem Rad innerhalb der Software | zurückgestellt (ADR-019 Fassung 8) |
 | IDEA-PRX-033 | Planungskarte der aktiven Adressen | überführt → PRX-045 (ANN-835) |
 | IDEA-PRX-034 | Entwurf „Own Motion · Praxis": der Tagesplan als Startseite | notiert |
 | IDEA-PRX-035 | „Mitnehmen": Materialliste aus den letzten Befunden | überführt → PRX-EPIC-002 (gebaut 2026-09-28) |

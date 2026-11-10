@@ -8,23 +8,9 @@ import {
 } from '@/lib/location/navigation';
 
 /**
- * Navigations-Handoff (UX-002, ADR-019 Punkt 20 bis 23).
- *
- * Bewusst eine Schaltfläche und **kein Link mit `href`**: Die URL entsteht
- * erst im Klickhandler. Ein `href` stünde ab dem Rendern im Seitenquelltext,
- * ließe sich kopieren und würde vom Vorausladen des Browsers unter Umständen
- * ohne Zutun der Person angefasst. „Nur auf Aktion, nie automatisch" ist die
- * Bedingung, unter der ADR-019 den Handoff überhaupt erlaubt, und eine
- * Prüfregel im Review - keine Gestaltungsfrage.
- *
- * Übergeben wird nur das Ziel und der Fahrradmodus (ANN-018). Der
- * Zugangshinweis bleibt in der Anwendung.
- *
- * **Ziel-App ist hier Google Maps**, obwohl `buildNavigationUrl` seit MAP-005
- * alle drei aus ADR-019 Punkt 22 kennt. Eine Auswahl gehört erst in die
- * Tagesliste, wenn die Gerätebewertung (MAP-005c) gezeigt hat, welche App auf
- * den Geräten der Praxis zuverlässig im Fahrradmodus öffnet - bis dahin wäre
- * sie eine vorgebaute Präferenz (ADR-019, „Bewusst nicht Bestandteil").
+ * Übergabe an Google Maps (ADR-019 Punkt 20 bis 22): eine Schaltfläche, kein Link mit `href`, damit
+ * die URL erst beim Tippen entsteht und nichts vorab im Seitenquelltext steht. Hinaus gehen nur Ziel
+ * und Fahrradmodus (ANN-018), der Zugangshinweis bleibt in der Anwendung.
  */
 
 const knopf = kartenAktionKlassen();

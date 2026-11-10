@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { NavigationApp, NavigationTarget } from './contract';
+import type { NavigationTarget } from './contract';
 import {
   MAX_ZWISCHENZIELE,
   MAX_ZWISCHENZIELE_DOKUMENTIERT,
@@ -18,8 +20,6 @@ import {
  * keine Gestaltungsfrage, sondern die Verankerung von ANN-018 - und gehört in
  * Tests, die auch das Fehlen von etwas prüfen.
  */
-
-const ZIEL_APPS: NavigationApp[] = ['google_maps', 'apple_maps', 'system'];
 
 function adresse(strasse = 'Beispielstrasse', hausnummer = '12'): NavigationTarget {
   return {
@@ -42,6 +42,31 @@ const koordinate: NavigationTarget = {
 function parameter(url: string): URLSearchParams {
   return new URL(url).searchParams;
 }
+
+describe('Ziel-App (ADR-019 Punkt 22)', () => {
+  // Übergeben wird allein an Google Maps; eine zweite Ziel-App braucht eine neue Fassung des ADR.
+  const ANDERE_ZIEL_APP = /maps\.apple\.com|["'`]geo:[-\d$]/;
+
+  function quelldateien(verzeichnis: string): string[] {
+    return readdirSync(verzeichnis, { withFileTypes: true }).flatMap((eintrag) => {
+      const pfad = join(verzeichnis, eintrag.name);
+      if (eintrag.isDirectory()) return quelldateien(pfad);
+      if (!/\.(ts|tsx)$/.test(eintrag.name) || /\.test\.tsx?$/.test(eintrag.name)) return [];
+      return [pfad];
+    });
+  }
+
+  it('baut unter src/ keinen Verweis auf Apple Maps oder die Systemnavigation', () => {
+    const funde = quelldateien(join(process.cwd(), 'src')).flatMap((pfad) =>
+      readFileSync(pfad, 'utf8')
+        .split('\n')
+        .flatMap((zeile, i) =>
+          ANDERE_ZIEL_APP.test(zeile) ? [`${relative(process.cwd(), pfad)}:${i + 1}`] : [],
+        ),
+    );
+    expect(funde).toEqual([]);
+  });
+});
 
 describe('navigationOeffnen', () => {
   /** Was der Klick an das Gerät gibt - ohne dass jsdom irgendwohin navigiert. */
@@ -73,7 +98,7 @@ describe('navigationOeffnen', () => {
     // Ein neuer Tab bliebe leer stehen, wenn kein Programm das Schema
     // uebernimmt - genau das war am Laptop zu sehen.
     const gesammelt = verweise();
-    navigationOeffnen(buildNavigationUrl(koordinate, 'system'));
+    navigationOeffnen('geo:48.5216,9.0576');
 
     expect(gesammelt).toEqual([
       { href: 'geo:48.5216,9.0576', target: '', rel: 'noopener noreferrer' },
@@ -82,7 +107,7 @@ describe('navigationOeffnen', () => {
 
   it('laesst keinen Verweis im Dokument zurueck', () => {
     verweise();
-    navigationOeffnen(buildNavigationUrl(koordinate, 'apple_maps'));
+    navigationOeffnen(buildNavigationUrl(koordinate, 'google_maps'));
 
     expect(document.querySelector('a')).toBeNull();
   });
@@ -100,10 +125,8 @@ describe('Wegpunktlimit', () => {
     );
   });
 
-  it('gibt der Systemnavigation keinen Umweg - sie kennt nur ein Ziel', () => {
-    expect(stoppsJeAbschnitt('system')).toBe(1);
+  it('traegt je Abschnitt die Zwischenziele und das Ziel', () => {
     expect(stoppsJeAbschnitt('google_maps')).toBe(MAX_ZWISCHENZIELE + 1);
-    expect(stoppsJeAbschnitt('apple_maps')).toBe(MAX_ZWISCHENZIELE + 1);
   });
 });
 
@@ -128,52 +151,6 @@ describe('buildNavigationUrl - Google Maps', () => {
   it('traegt ausser Ziel und Fahrmodus nichts', () => {
     const schluessel = [...parameter(buildNavigationUrl(adresse(), 'google_maps')).keys()].sort();
     expect(schluessel).toEqual(['api', 'destination', 'travelmode']);
-  });
-});
-
-describe('buildNavigationUrl - Apple Maps', () => {
-  it('uebergibt das Ziel an /directions im Fahrradmodus', () => {
-    const url = buildNavigationUrl(adresse(), 'apple_maps');
-    expect(url.startsWith('https://maps.apple.com/directions?')).toBe(true);
-    expect(parameter(url).get('destination')).toBe('Beispielstrasse 12, 72070 Tuebingen, DE');
-    expect(parameter(url).get('mode')).toBe('cycling');
-  });
-
-  it('uebergibt eine Koordinate als lat,lon', () => {
-    expect(parameter(buildNavigationUrl(koordinate, 'apple_maps')).get('destination')).toBe(
-      '48.5216,9.0576',
-    );
-  });
-
-  it('setzt keinen Startpunkt und traegt ausser Ziel und Fahrmodus nichts', () => {
-    const schluessel = [...parameter(buildNavigationUrl(adresse(), 'apple_maps')).keys()].sort();
-    expect(schluessel).toEqual(['destination', 'mode']);
-  });
-
-  it('nutzt nicht die aeltere Form ohne Fahrradmodus', () => {
-    const url = buildNavigationUrl(adresse(), 'apple_maps');
-    expect(url).not.toContain('daddr=');
-    expect(url).not.toContain('dirflg=');
-  });
-});
-
-describe('buildNavigationUrl - Systemnavigation', () => {
-  it('uebergibt eine Koordinate als geo:lat,lon', () => {
-    expect(buildNavigationUrl(koordinate, 'system')).toBe('geo:48.5216,9.0576');
-  });
-
-  it('uebergibt eine Adresse kodiert als Suchbegriff', () => {
-    const url = buildNavigationUrl(adresse(), 'system');
-    expect(url.startsWith('geo:0,0?')).toBe(true);
-    expect(parameter(url).get('q')).toBe('Beispielstrasse 12, 72070 Tuebingen, DE');
-    // Kodiert, nicht roh: Ein Komma oder Leerzeichen im URI zerlegt ihn sonst.
-    expect(url).not.toContain(' ');
-  });
-
-  it('traegt kein Verkehrsmittel - der URI kennt keins', () => {
-    const url = buildNavigationUrl(adresse(), 'system');
-    expect(url).not.toContain('mode');
-    expect(url).not.toContain('bicycling');
   });
 });
 
@@ -209,19 +186,19 @@ describe('Feldliste: was die URL nicht enthaelt', () => {
     diagnosis: 'Schulter',
   };
 
-  it.each(ZIEL_APPS)('haelt bei %s nur Ziel und Fahrmodus', (app) => {
+  it('haelt nur Ziel und Fahrmodus', () => {
     const ziel = navigationsZiel(termin);
     expect(ziel).not.toBeNull();
-    const url = buildNavigationUrl(ziel!, app);
+    const url = buildNavigationUrl(ziel!, 'google_maps');
     for (const feld of VERBOTEN) {
       expect(url).not.toContain(feld);
       expect(url).not.toContain(encodeURIComponent(feld));
     }
   });
 
-  it.each(ZIEL_APPS)('haelt auch den Tageslink bei %s frei davon', (app) => {
+  it('haelt auch den Tageslink frei davon', () => {
     const ziele = [navigationsZiel(termin)!, koordinate, adresse('Zweite')];
-    for (const url of buildNavigationDayUrls(ziele, app)) {
+    for (const url of buildNavigationDayUrls(ziele, 'google_maps')) {
       for (const feld of VERBOTEN) {
         expect(url).not.toContain(feld);
         expect(url).not.toContain(encodeURIComponent(feld));
@@ -234,8 +211,8 @@ describe('buildNavigationDayUrls', () => {
   const ziele = (anzahl: number): NavigationTarget[] =>
     Array.from({ length: anzahl }, (_, index) => adresse(`Strasse ${index + 1}`, '1'));
 
-  it.each(ZIEL_APPS)('liefert fuer einen leeren Tag keinen Link (%s)', (app) => {
-    expect(buildNavigationDayUrls([], app)).toEqual([]);
+  it('liefert fuer einen leeren Tag keinen Link', () => {
+    expect(buildNavigationDayUrls([], 'google_maps')).toEqual([]);
   });
 
   it('setzt die Stopps in Terminreihenfolge: letzter als Ziel, Rest als Wegpunkte', () => {
@@ -246,37 +223,15 @@ describe('buildNavigationDayUrls', () => {
     );
   });
 
-  it('wiederholt den Parameter bei Apple Maps, statt zu trennen', () => {
-    const [url] = buildNavigationDayUrls(ziele(3), 'apple_maps');
-    expect(parameter(url!).getAll('waypoint')).toEqual([
-      'Strasse 1 1, 72070 Tuebingen, DE',
-      'Strasse 2 1, 72070 Tuebingen, DE',
-    ]);
-    expect(parameter(url!).get('destination')).toBe('Strasse 3 1, 72070 Tuebingen, DE');
-  });
-
-  it('gibt der Systemnavigation je Stopp einen eigenen Link', () => {
-    const urls = buildNavigationDayUrls(ziele(3), 'system');
-    expect(urls).toHaveLength(3);
-    expect(urls.every((url) => url.startsWith('geo:'))).toBe(true);
-  });
-
   it('kommt bei einem einzelnen Stopp ohne Wegpunkte aus', () => {
     const [url] = buildNavigationDayUrls(ziele(1), 'google_maps');
     expect(parameter(url!).has('waypoints')).toBe(false);
   });
 
-  it.each(['google_maps', 'apple_maps'] as const)(
-    'bleibt bei %s innerhalb des Wegpunktlimits',
-    (app) => {
-      const [url] = buildNavigationDayUrls(ziele(stoppsJeAbschnitt(app)), app);
-      const uebergeben =
-        app === 'google_maps'
-          ? parameter(url!).get('waypoints')!.split('|')
-          : parameter(url!).getAll('waypoint');
-      expect(uebergeben).toHaveLength(MAX_ZWISCHENZIELE);
-    },
-  );
+  it('bleibt innerhalb des Wegpunktlimits', () => {
+    const [url] = buildNavigationDayUrls(ziele(stoppsJeAbschnitt('google_maps')), 'google_maps');
+    expect(parameter(url!).get('waypoints')!.split('|')).toHaveLength(MAX_ZWISCHENZIELE);
+  });
 
   it('teilt einen laengeren Tag in Abschnitte statt ihn abzuschneiden', () => {
     const urls = buildNavigationDayUrls(ziele(stoppsJeAbschnitt('google_maps') + 2), 'google_maps');
@@ -287,14 +242,11 @@ describe('buildNavigationDayUrls', () => {
     expect(parameter(urls[1]!).get('waypoints')).toBe('Strasse 5 1, 72070 Tuebingen, DE');
   });
 
-  it.each(ZIEL_APPS)('verliert bei %s keinen Stopp beim Teilen', (app) => {
-    const urls = buildNavigationDayUrls(ziele(23), app);
+  it('verliert keinen Stopp beim Teilen', () => {
+    const urls = buildNavigationDayUrls(ziele(23), 'google_maps');
     const uebergeben = urls.flatMap((url) => {
-      if (app === 'system') return [parameter(url).get('q')!];
       const p = parameter(url);
-      const zwischen =
-        app === 'google_maps' ? (p.get('waypoints')?.split('|') ?? []) : p.getAll('waypoint');
-      return [...zwischen, p.get('destination')!];
+      return [...(p.get('waypoints')?.split('|') ?? []), p.get('destination')!];
     });
     expect(uebergeben).toHaveLength(23);
     expect(new Set(uebergeben).size).toBe(23);
