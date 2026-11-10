@@ -40,6 +40,7 @@ export const GRUNDLAGE_BESCHRIFTUNG: Record<GrundlageFehlerfeld, string> = {
   items: 'Heilmittel',
   appointment_count: 'Anzahl möglicher Termine',
   frequency_note: 'Frequenz',
+  icd10: 'Diagnose (ICD-10)',
   diagnosis: 'Diagnose oder Leitsymptomatik',
   note: 'Anmerkungen',
 };

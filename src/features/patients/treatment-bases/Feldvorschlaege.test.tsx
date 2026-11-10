@@ -233,6 +233,38 @@ describe('Felder vom Foto vorschlagen', () => {
     expect(fenster.queryByText(VORSCHLAG_NICHT_UEBERNOMMEN)).toBeNull();
   });
 
+  it('nimmt die Eingaben samt Code ins ausführliche Formular mit', async () => {
+    const { entwurfAnsehen } = await import('./api');
+    const { nutzer, fenster } = await oeffnen();
+    await vorschlagen(nutzer, fenster);
+    await nutzer.click(await fenster.findByRole('button', { name: 'Übernehmen' }));
+    await fenster.findByText('7 Felder übernommen.');
+
+    const link = fenster.getByRole('link', { name: 'Im ausführlichen Formular erfassen' });
+    const ziel = new URL(link.getAttribute('href')!, 'https://beispiel.invalid');
+    expect(ziel.pathname).toBe(`/patienten/${PATIENT}/verordnungen/neu`);
+    expect(ziel.searchParams.get('scan')).toBe(FOTO);
+    const vorgang = ziel.searchParams.get('vorgang')!;
+    await nutzer.click(link);
+
+    expect(entwurfAnsehen(vorgang, testUser(['office']).profile.id)).toEqual({
+      werte: {
+        prescriber_id: 'p1',
+        treatment_basis_kind: 'follow_up',
+        issued_on: '2026-11-02',
+        appointment_count: '6',
+        frequency_note: '',
+        note: '',
+        diagnosis: 'Gonarthrose rechts',
+      },
+      positionen: [
+        { id: null, remedy: 'Krankengymnastik', bestand: null, menge: 6 },
+        { id: null, remedy: 'Hausbesuch', bestand: null, menge: 6 },
+      ],
+      icd: 'M17.1',
+    });
+  });
+
   it('lässt stehen, was schon eingetragen ist', async () => {
     const { nutzer, fenster } = await oeffnen();
     await nutzer.type(fenster.getByLabelText('Diagnose (ICD-10)'), 'M54.5');

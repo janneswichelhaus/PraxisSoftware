@@ -39,8 +39,11 @@ import {
   entwurfEntfernen,
   fetchPrescribers,
   fetchTreatmentBasis,
+  ICD10_MUSTER,
+  icd10Normalisiert,
   itemsToFormValues,
   leereGrundlage,
+  setTreatmentBasisIcd10,
   treatmentBasisFormSchema,
   treatmentBasisToFormValues,
   updateTreatmentBasis,
@@ -171,6 +174,8 @@ function GrundlagenFormular({
   const [positionen, setPositionen] = useState<Heilmittelposition[]>(
     () => entwurf?.positionen ?? ausgang.positionen,
   );
+  const icdAusgang = bestand?.diagnosis_icd10 ?? '';
+  const [icd, setIcd] = useState(() => entwurf?.icd ?? icdAusgang);
   const [fehler, setFehler] = useState<Partial<Record<GrundlageFehlerfeld, string>>>({});
 
   /**
@@ -184,7 +189,8 @@ function GrundlagenFormular({
    */
   const ungespeichert =
     FELDER.some((feld) => werte[feld] !== ausgang.werte[feld]) ||
-    !gleicheAuswahl(positionen, ausgang.positionen);
+    !gleicheAuswahl(positionen, ausgang.positionen) ||
+    icd !== icdAusgang;
   const { freigeben, schutz } = useTextverlustschutz({ ungespeichert, texte: VERLUSTTEXTE });
 
   const verordner = useQuery({
@@ -223,11 +229,15 @@ function GrundlagenFormular({
 
   const speichern = useMutation({
     mutationFn: async (values: z.output<typeof treatmentBasisFormSchema>) => {
+      const code = istVerordnung(values.treatment_basis_kind) ? icd10Normalisiert(icd) : '';
       if (bestand) {
         await updateTreatmentBasis(bestand.id, values, positionen);
+        if (code !== icdAusgang && istVerordnung(values.treatment_basis_kind))
+          await setTreatmentBasisIcd10(bestand.id, code);
         return { id: bestand.id, scanFehler: null };
       }
       const id = await createTreatmentBasis(patientId, values, positionen);
+      if (code !== '') await setTreatmentBasisIcd10(id, code);
       // Die Grundlage steht; scheitert nur das Zuordnen, bleibt das Foto in
       // den offenen Punkten - und die Seite sagt es, statt still weiterzugehen.
       if (!scanId) return { id, scanFehler: null };
@@ -292,9 +302,11 @@ function GrundlagenFormular({
     });
     if (fehler[feld]) setFehler((bisher) => ({ ...bisher, [feld]: undefined }));
     if (feld === 'treatment_basis_kind' && !istVerordnung(wert as Bauart)) {
+      setIcd('');
       setFehler((bisher) => {
         const naechste = { ...bisher };
         for (const leer of NUR_VERORDNUNG) delete naechste[leer];
+        delete naechste.icd10;
         return naechste;
       });
     }
@@ -335,7 +347,7 @@ function GrundlagenFormular({
    */
   function verordnerAnlegen() {
     if (!userId) return;
-    entwurfAblegen(naechsterVorgang, userId, { werte, positionen });
+    entwurfAblegen(naechsterVorgang, userId, { werte, positionen, icd });
     freigeben();
   }
 
@@ -369,6 +381,14 @@ function GrundlagenFormular({
     // Server ab - hier steht es, damit der Hinweis an der Gruppe erscheint.
     if (positionen.length === 0) {
       gefunden.items = 'Bitte mindestens ein Heilmittel auswählen.';
+    }
+    const code = icd10Normalisiert(icd);
+    if (
+      istVerordnung(werte.treatment_basis_kind as Bauart) &&
+      code !== '' &&
+      !ICD10_MUSTER.test(code)
+    ) {
+      gefunden.icd10 = 'Bitte einen ICD-10-Code wie G20.00 oder M54.5 eingeben.';
     }
 
     setFehler(gefunden);
@@ -453,6 +473,17 @@ function GrundlagenFormular({
             verordnerinnen={verordner.data ?? []}
             verordnerAnlegenZiel={verordnerAnlegenZiel}
             onVerordnerAnlegenKlick={verordnerAnlegen}
+            icd={icd}
+            icdFehler={fehler.icd10}
+            onIcdChange={(wert) => {
+              setIcd(wert);
+              if (!fehler.icd10) return;
+              setFehler((bisher) => {
+                const naechste = { ...bisher };
+                delete naechste.icd10;
+                return naechste;
+              });
+            }}
           />
 
           {/* Rückfrage und Hinweise des Schutzes, dort, wo gearbeitet wird. */}

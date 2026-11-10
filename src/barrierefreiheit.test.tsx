@@ -303,6 +303,9 @@ describe('Barrierefreiheit der Kernformulare', () => {
             positionsFehler="Bitte mindestens ein Heilmittel auswählen."
             onHeilmittelWechsel={() => {}}
             bestandstexte={[{ feld: 'Therapieziel', text: 'Synthetisch: Ziel.' }]}
+            icd="M54.5"
+            icdFehler={undefined}
+            onIcdChange={() => {}}
             verordnerinnen={[]}
             verordnerAnlegenZiel="/verordner/neu"
             onVerordnerAnlegenKlick={() => {}}

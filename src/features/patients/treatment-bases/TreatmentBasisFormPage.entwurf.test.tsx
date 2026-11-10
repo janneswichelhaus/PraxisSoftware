@@ -193,6 +193,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
       screen.getByLabelText('Diagnose oder Leitsymptomatik'),
       'Synthetisch: Testdiagnose.',
     );
+    await user.type(screen.getByLabelText('Diagnose (ICD-10)'), 'M17.1');
 
     // Echter Linkklick: navigiert tatsaechlich auf /verordner/neu und
     // haengt das Verordnungsformular dabei aus. Der Schutz vor
@@ -229,6 +230,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     expect(screen.getByLabelText('Diagnose oder Leitsymptomatik')).toHaveValue(
       'Synthetisch: Testdiagnose.',
     );
+    expect(screen.getByLabelText('Diagnose (ICD-10)')).toHaveValue('M17.1');
     expect(screen.getByLabelText('Verordner:in *')).toHaveValue(NEUER_VERORDNER);
 
     // Die Verordnung selbst wurde durch all das nicht geschrieben - erst das

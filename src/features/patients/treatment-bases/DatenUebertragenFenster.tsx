@@ -9,13 +9,17 @@ import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { ordneScanZu } from '@/features/patients/files/api';
+import { neueVorgangskennung } from '@/lib/abstecher';
 import type { CurrentUser } from '@/features/core';
 import {
   createTreatmentBasis,
+  entwurfAblegen,
   fetchPrescribers,
   fetchTreatmentBasis,
   ICD10_MUSTER,
   icd10Normalisiert,
+  itemsToFormValues,
+  leereGrundlage,
   prescriberLabel,
   setTreatmentBasisIcd10,
   treatmentBasisFormSchema,
@@ -287,9 +291,53 @@ function Formular({
     setZeilen((bisher) => bisher.map((z, i) => (i === index ? { ...z, ...teil } : z)));
   }
 
+  // Der Weg ins ausführliche Formular nimmt die Eingaben mit, über denselben Entwurf wie der
+  // Abstecher zur Verordner-Anlage: Was hier steht, auch der ICD-10-Code, geht nicht verloren.
+  const [vorgang] = useState(() => neueVorgangskennung());
   const formularweg = bestand
-    ? `/patienten/${patientId}/verordnungen/${bestand.id}/bearbeiten`
-    : `/patienten/${patientId}/verordnungen/neu${fileId ? `?scan=${fileId}` : ''}`;
+    ? `/patienten/${patientId}/verordnungen/${bestand.id}/bearbeiten?vorgang=${vorgang}`
+    : `/patienten/${patientId}/verordnungen/neu?${fileId ? `scan=${fileId}&` : ''}vorgang=${vorgang}`;
+
+  function eingabenMitnehmen() {
+    const bekannt = bestand ? itemsToFormValues(bestand) : [];
+    const mitBestand = (id: string | null) => bekannt.find((p) => p.id === id)?.bestand ?? null;
+    const positionen: Heilmittelposition[] = zeilen
+      .filter((z) => z.remedy !== '')
+      .map((z) => {
+        const menge = Number(z.anzahl);
+        const mitMenge = Number.isInteger(menge) && menge >= 1 && menge <= 500;
+        return {
+          id: z.id,
+          remedy: z.remedy,
+          bestand: mitBestand(z.id),
+          ...(mitMenge ? { menge } : {}),
+        };
+      });
+    if (hausbesuch) {
+      const id = hausbesuchBestand?.id ?? null;
+      const menge = Number(terminzahl);
+      positionen.push({
+        id,
+        remedy: HAUSBESUCH,
+        bestand: mitBestand(id),
+        ...(Number.isInteger(menge) && menge >= 1 ? { menge } : {}),
+      });
+    }
+    entwurfAblegen(vorgang, user.profile.id, {
+      werte: {
+        ...leereGrundlage,
+        prescriber_id: prescriberId,
+        treatment_basis_kind: kind,
+        issued_on: issuedOn,
+        appointment_count: terminzahl,
+        frequency_note: bestand?.frequency_note ?? '',
+        note: bestand?.note ?? '',
+        diagnosis: diagnose,
+      },
+      positionen,
+      icd,
+    });
+  }
 
   return (
     <form
@@ -341,7 +389,9 @@ function Formular({
             hint={
               <>
                 Nicht dabei?{' '}
-                <Textlink to={formularweg}>Im ausführlichen Formular erfassen</Textlink>
+                <Textlink to={formularweg} onClick={eingabenMitnehmen}>
+                  Im ausführlichen Formular erfassen
+                </Textlink>
               </>
             }
             onChange={(e) => setPrescriberId(e.target.value)}
@@ -445,7 +495,10 @@ function Formular({
           {bestand ? (
             <p className="text-ink-muted text-sm">
               Frequenz und Anmerkungen stehen im{' '}
-              <Textlink to={formularweg}>ausführlichen Formular</Textlink>.
+              <Textlink to={formularweg} onClick={eingabenMitnehmen}>
+                ausführlichen Formular
+              </Textlink>
+              .
             </p>
           ) : null}
         </div>
