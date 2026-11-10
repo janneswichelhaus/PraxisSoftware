@@ -245,7 +245,7 @@ async function auszug(auftrag: Assistenzauftrag, zweck: Auszugszweck): Promise<R
     saetze: auszugssaetze(text, zweck.ausgabe.titel),
   }));
   const beginn = jetzt();
-  // An den Adapter: nur die Sätze je Eintrag - keine Kennung, kein Datum, kein Name.
+  // An den Adapter: nur die Sätze je Eintrag - keine Kennung, kein Datum, keine Verfasser:in.
   const wahl = await mitFrist(
     (signal) =>
       adapter.waehleAus(
@@ -304,7 +304,8 @@ async function felder(auftrag: Assistenzauftrag, zweck: Felderzweck): Promise<Re
 
   const beginn = jetzt();
   const { sprache } = zweck.eingabe;
-  // An den Adapter: nur die Bytes, ihr Format und die Regeln - keine Kennung, kein Name.
+  // An den Adapter: nur die Bytes, ihr Format und die Regeln - keine Kennung. Was auf dem Foto
+  // steht, geht mit, auch Name und Geburtsdatum der Person (ANN-862).
   const erkennung = await mitFrist(
     (signal) => adapter.erkenne({ bild: bytes, mime, sprache, regeln: zweck.regeln }, signal),
     fristMs,

@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
@@ -14,20 +16,23 @@ import type { Feldvorschlag } from './rezeptfelder';
 export function Feldvorschlaege({
   felder,
   vorschlaege,
+  meldung,
   onUebernehmen,
 }: {
   felder: FelderVorschlag;
   /** Die Werte im Formularsinn; fehlt, solange kein Vorschlag offen ist. */
   vorschlaege: readonly Feldvorschlag[] | undefined;
+  /** Warum gerade nicht gespeichert wird: Der Vorschlag ist noch offen. */
+  meldung?: string | undefined;
   onUebernehmen: () => void;
 }) {
   const abschnitt = useRef<HTMLDivElement>(null);
   const da = vorschlaege !== undefined;
 
-  // Der Vorschlag erscheint unter dem Foto; der Fokus folgt ihm für Vorlesesoftware.
+  // Der Vorschlag erscheint unter dem Foto; der Fokus folgt ihm, auch nach einem Hinweis.
   useEffect(() => {
     if (da) abschnitt.current?.focus();
-  }, [da]);
+  }, [da, meldung]);
 
   if (!felder.angeboten) return null;
   if (!vorschlaege) {
@@ -53,6 +58,7 @@ export function Feldvorschlaege({
     <div ref={abschnitt} tabIndex={-1} className="mt-4 focus:outline-none">
       <Section titel="Vom Foto – bitte prüfen" ebene={3}>
         <div className="flex flex-col gap-3">
+          {meldung ? <Statusmeldung ton="fehler">{meldung}</Statusmeldung> : null}
           {felder.nachbildung ? (
             <Statusmeldung ton="warnung">{FELDER_NACHBILDUNG}</Statusmeldung>
           ) : null}
@@ -62,29 +68,27 @@ export function Feldvorschlaege({
                 key={`${vorschlag.feld}-${String(nummer)}`}
                 bezeichnung={vorschlag.beschriftung}
                 titel={<span className="wrap-anywhere">{vorschlag.anzeige}</span>}
-                meta={
-                  <span className="wrap-anywhere">
-                    Aus: „{vorschlag.quelle}“{vorschlag.grund ? ` · ${vorschlag.grund}` : ''}
-                  </span>
+                meta={<span className="wrap-anywhere">Aus: „{vorschlag.quelle}“</span>}
+                status={
+                  vorschlag.grund ? <Badge ton="warnung">{vorschlag.grund}</Badge> : undefined
                 }
-                gedaempft={vorschlag.wert === null}
               />
             ))}
           </ListRows>
           <Kleingedrucktes>{FELDER_RECHTSSATZ}</Kleingedrucktes>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="quiet" onClick={felder.verwerfen}>
-              Verwerfen
-            </Button>
+          {/* Solange der Vorschlag offen ist, ist Übernehmen der Hauptknopf, zuerst (DESIGN.md Regel 4). */}
+          <Formularfuss dicht>
             <Button
               type="button"
-              variant="secondary"
               disabled={vorschlaege.every((vorschlag) => vorschlag.wert === null)}
               onClick={onUebernehmen}
             >
               Übernehmen
             </Button>
-          </div>
+            <Button type="button" variant="quiet" onClick={felder.verwerfen}>
+              Verwerfen
+            </Button>
+          </Formularfuss>
         </div>
       </Section>
     </div>

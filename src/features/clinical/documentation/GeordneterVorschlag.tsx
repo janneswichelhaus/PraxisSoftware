@@ -23,14 +23,21 @@ export function OrdnenKnopf({ ordnen, gesperrt }: { ordnen: Ordnen; gesperrt: bo
 }
 
 /** Der geordnete Text über dem Feld, zum Lesen; entschieden wird in der Leiste am Daumen. */
-export function GeordneterVorschlag({ ordnen }: { ordnen: Ordnen }) {
+export function GeordneterVorschlag({
+  ordnen,
+  meldung,
+}: {
+  ordnen: Ordnen;
+  /** Warum gerade nicht festgeschrieben wird: Der Vorschlag ist noch offen. */
+  meldung?: string | undefined;
+}) {
   const abschnitt = useRef<HTMLDivElement>(null);
   const da = ordnen.vorschlag !== undefined;
 
-  // Der Vorschlag erscheint über dem Feld; der Fokus folgt ihm für Vorlesesoftware.
+  // Der Vorschlag erscheint über dem Feld; der Fokus folgt ihm, auch nach einem Hinweis.
   useEffect(() => {
     if (da) abschnitt.current?.focus();
-  }, [da]);
+  }, [da, meldung]);
 
   if (!ordnen.vorschlag) {
     return ordnen.meldung ? (
@@ -48,6 +55,7 @@ export function GeordneterVorschlag({ ordnen }: { ordnen: Ordnen }) {
     >
       <Section titel="Geordnet – bitte prüfen">
         <div className="flex flex-col gap-3">
+          {meldung ? <Statusmeldung ton="fehler">{meldung}</Statusmeldung> : null}
           {ordnen.vorschlag.quelle === 'nachbildung' ? (
             <Statusmeldung ton="warnung">{ORDNEN_NACHBILDUNG}</Statusmeldung>
           ) : null}

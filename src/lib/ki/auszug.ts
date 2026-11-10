@@ -124,7 +124,7 @@ export function auszugVerfuegbar(signal?: AbortSignal): Promise<boolean> {
 
 /**
  * Hinaus gehen die Akte (Berechtigung, bleibt im Gateway) und je Eintrag Kennung und Wortlaut -
- * kein Datum, kein Name. Wirft nicht.
+ * kein Datum, keine Verfasser:in. Wirft nicht.
  */
 export async function auszuegeAnfragen({
   akteId,

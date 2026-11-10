@@ -17,6 +17,7 @@ import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import type * as KurzblickApi from '@/features/calendar/appointments/kurzblick-api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { KI_FEHLERTEXTE } from '@/lib/ki/gateway';
+import { VORSCHLAG_OFFEN } from '@/features/clinical/assessments/dokumentationstext';
 import { SperrsicherungKontext, type Sicherung } from '@/lib/sperrsicherung';
 import { AUFNAHMEFEHLER, BEI_SPERRE_ANGEHALTEN, DIKTAT_OFFEN } from './diktat';
 import { GEORDNET_MELDUNG, ORDNEN_NACHBILDUNG, SCHON_GEORDNET } from './ordnen';
@@ -2138,6 +2139,23 @@ describe('CompleteTreatmentPage', () => {
         false,
         false,
       ]);
+    });
+
+    it('hält „Festschreiben“ an, solange der geordnete Vorschlag offen ist', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await tippen(user);
+      await user.click(await screen.findByRole('button', { name: 'Ordnen' }));
+      await screen.findByRole('heading', { name: 'Geordnet – bitte prüfen' });
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+
+      expect(await screen.findByText(VORSCHLAG_OFFEN)).toBeInTheDocument();
+      expect(completeTreatment).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'Übernehmen' }));
+      expect(screen.queryByText(VORSCHLAG_OFFEN)).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
     });
 
     it('verwirft ohne Rückfrage - der eigene Text steht noch im Feld', async () => {

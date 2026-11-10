@@ -6,7 +6,12 @@ import type * as DateienApi from '@/features/patients/files/api';
 import type * as KiVerordnung from '@/lib/ki/verordnung';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { renderWithProviders, testUser } from '@/test-utils';
-import { FELDER_NACHBILDUNG, FELDER_RECHTSSATZ, NICHTS_GEFUNDEN } from './felderVorschlag';
+import {
+  FELDER_NACHBILDUNG,
+  FELDER_RECHTSSATZ,
+  NICHTS_GEFUNDEN,
+  VORSCHLAG_NICHT_UEBERNOMMEN,
+} from './felderVorschlag';
 
 // Felder vom Foto im Fenster „Daten übertragen“ (ANN-861, ANN-862): erst das Foto, dann der
 // Vorschlag mit seiner Zeile vom Foto; eingetragen nur in leere Felder, gespeichert nur mit
@@ -214,6 +219,18 @@ describe('Felder vom Foto vorschlagen', () => {
       expect.objectContaining({ remedy: 'Hausbesuch', menge: 6 }),
     ]);
     expect(setTreatmentBasisIcd10).toHaveBeenCalledWith(NEU, 'M17.1');
+  });
+
+  it('hält „Speichern“ an, solange der Vorschlag offen ist', async () => {
+    const { nutzer, fenster } = await oeffnen();
+    await vorschlagen(nutzer, fenster);
+    await fenster.findByRole('list', { name: 'Vorgeschlagene Felder' });
+    await nutzer.click(fenster.getByRole('button', { name: 'Speichern' }));
+
+    expect(await fenster.findByText(VORSCHLAG_NICHT_UEBERNOMMEN)).toBeInTheDocument();
+    expect(createTreatmentBasis).not.toHaveBeenCalled();
+    await nutzer.click(fenster.getByRole('button', { name: 'Verwerfen' }));
+    expect(fenster.queryByText(VORSCHLAG_NICHT_UEBERNOMMEN)).toBeNull();
   });
 
   it('lässt stehen, was schon eingetragen ist', async () => {

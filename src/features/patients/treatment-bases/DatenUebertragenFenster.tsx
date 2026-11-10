@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -25,7 +25,7 @@ import {
   type TreatmentBasisDetail,
 } from './api';
 import { Feldvorschlaege } from './Feldvorschlaege';
-import { useFelderVorschlag } from './felderVorschlag';
+import { VORSCHLAG_NICHT_UEBERNOMMEN, useFelderVorschlag } from './felderVorschlag';
 import { HAUSBESUCH, HEILMITTEL } from './heilmittel';
 import { feldvorschlaege, uebernimm } from './rezeptfelder';
 import { ScanBesideForm } from './ScanBesideForm';
@@ -152,6 +152,12 @@ function Formular({
   const [hinweis, setHinweis] = useState<string | null>(null);
   const [scan, setScan] = useState<Blob | null>(null);
   const felder = useFelderVorschlag({ dateiId: fileId ?? '', bild: fileId ? scan : null });
+  // Wie an der Rückfrage: Gespeichert wird erst, wenn über den Vorschlag entschieden ist.
+  const [vorschlagGemeldet, setVorschlagGemeldet] = useState(false);
+  const vorschlagOffen = felder.fundstellen !== undefined;
+  useEffect(() => {
+    if (!vorschlagOffen) setVorschlagGemeldet(false);
+  }, [vorschlagOffen]);
   const verordnende = verordner.data;
   const vorschlaege = useMemo(
     () =>
@@ -290,6 +296,10 @@ function Formular({
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
+        if (vorschlagOffen) {
+          setVorschlagGemeldet(true);
+          return;
+        }
         speichern.mutate();
       }}
     >
@@ -300,6 +310,7 @@ function Formular({
             <Feldvorschlaege
               felder={felder}
               vorschlaege={vorschlaege}
+              meldung={vorschlagGemeldet ? VORSCHLAG_NICHT_UEBERNOMMEN : undefined}
               onUebernehmen={vorschlagUebernehmen}
             />
           </div>
@@ -455,7 +466,11 @@ function Formular({
         <Button type="button" variant="quiet" onClick={onSchliessen}>
           Abbrechen
         </Button>
-        <Button type="submit" disabled={speichern.isPending}>
+        <Button
+          type="submit"
+          variant={vorschlagOffen ? 'secondary' : 'primary'}
+          disabled={speichern.isPending}
+        >
           {speichern.isPending ? 'Wird gespeichert …' : 'Speichern'}
         </Button>
       </div>

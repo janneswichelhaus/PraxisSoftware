@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -77,11 +78,18 @@ export function Umformvorschlag({
                 <span className="wrap-anywhere">Aus: „{satz.quelle}“</span>
               )
             }
-            status={satz.unveraendert ? <Badge>unverändert</Badge> : undefined}
+            // Ehrlich für beide Fälle: nichts umzuformen, oder die Prüfung ließ die Quelle stehen.
+            status={
+              satz.unveraendert ? (
+                <Badge eigenesZeichen={STATUSZEICHEN.fehlt}>nicht umgeformt</Badge>
+              ) : undefined
+            }
           />
         ))}
       </ListRows>
-      <div className="flex flex-wrap gap-3">
+      <Kleingedrucktes>{UMFORMEN_RECHTSSATZ}</Kleingedrucktes>
+      {/* Wie ein Formularende: Hauptknopf zuerst, am Telefon in voller Breite (DESIGN.md 9.5). */}
+      <Formularfuss dicht>
         <Button
           type="button"
           onClick={() => {
@@ -94,8 +102,7 @@ export function Umformvorschlag({
         <Button type="button" variant="quiet" onClick={umformen.verwerfen}>
           Verwerfen
         </Button>
-      </div>
-      <Kleingedrucktes>{UMFORMEN_RECHTSSATZ}</Kleingedrucktes>
+      </Formularfuss>
     </div>
   );
 }

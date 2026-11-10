@@ -93,7 +93,8 @@ export function felderVerfuegbar(signal?: AbortSignal): Promise<boolean> {
 
 /**
  * Hinaus gehen die Kennung des Scans (Berechtigung und Prüfsumme, bleibt im Gateway) und seine
- * Bytes, wie die Seite sie geladen hat - kein Name, keine Akte. Wirft nicht.
+ * Bytes, wie die Seite sie geladen hat - keine Akte; was auf dem Foto steht, geht mit.
+ * Wirft nicht.
  */
 export async function felderVorschlagen({
   dateiId,

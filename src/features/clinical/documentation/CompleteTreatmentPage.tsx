@@ -148,6 +148,8 @@ function Abschluss({
   // Zu, bis jemand ihn öffnet: Das Feld beginnt in der oberen Hälfte (ANN-823).
   const [skalenOffen, setSkalenOffen] = useState(false);
   const [skalenMeldung, setSkalenMeldung] = useState(false);
+  // Wie Bausteine und Skalen hält ein offener geordneter Vorschlag das Festschreiben an.
+  const [ordnenGemeldet, setOrdnenGemeldet] = useState(false);
   // Angaben in den Bausteinen, die noch nicht gesichert sind, sind
   // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b). Gesichert werden
   // sie getrennt vom Entwurf, nie in seinen Text (ABN-015, ANN-120).
@@ -169,6 +171,10 @@ function Abschluss({
   });
   const diktiertRef = useRef(diktat.diktiert);
   diktiertRef.current = diktat.diktiert;
+  const ordnenOffen = ordnen.vorschlag !== undefined;
+  useEffect(() => {
+    if (!ordnenOffen) setOrdnenGemeldet(false);
+  }, [ordnenOffen]);
 
   // Der Text, wie er in diesem Augenblick im Feld steht - nicht der von
   // vorhin. Ein Schreibvorgang dauert (FIX-014).
@@ -334,6 +340,10 @@ function Abschluss({
     if (skalen.text) {
       setSkalenMeldung(true);
       setSkalenOffen(true);
+      return false;
+    }
+    if (ordnen.vorschlag) {
+      setOrdnenGemeldet(true);
       return false;
     }
     // Am Vermerk darf das Feld leer bleiben; dann steht der Vermerk im
@@ -612,7 +622,10 @@ function Abschluss({
             folgeId={folgeId}
           />
 
-          <GeordneterVorschlag ordnen={ordnen} />
+          <GeordneterVorschlag
+            ordnen={ordnen}
+            meldung={ordnenGemeldet && ordnen.vorschlag ? VORSCHLAG_OFFEN : undefined}
+          />
 
           <label htmlFor={feldId} className="sr-only">
             Eintrag zur Behandlung

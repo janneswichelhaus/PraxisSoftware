@@ -185,7 +185,10 @@ export interface Umformanfrage {
   readonly regeln: string;
 }
 
-/** An den Adapter zur Auswahl: je Eintrag seine Sätze - keine Kennung, kein Datum, kein Name. */
+/**
+ * An den Adapter zur Auswahl: je Eintrag seine Sätze - keine Kennung, kein Datum, keine
+ * Verfasser:in.
+ */
 export interface Auswahlanfrage {
   /** Die Einträge in der Reihenfolge der Anfrage, jeder als Liste seiner Sätze. */
   readonly eintraege: readonly (readonly string[])[];

@@ -16,7 +16,10 @@ export const FELDER_NACHBILDUNG = 'Nachbildung: fester Beispieltext, das Foto wi
 
 /** Was mit dem Foto geschieht und was nicht (Datenfluss, bleibt nach L7). */
 export const FELDER_RECHTSSATZ =
-  'Werte im Wortlaut vom Foto, nur in leere Felder. Das Foto wird dafür verarbeitet und nicht gespeichert.';
+  'Werte im Wortlaut vom Foto, nur in leere Felder. Für den Vorschlag wird das Foto nur gelesen; es bleibt keine Kopie.';
+
+/** Wer speichern will, entscheidet zuerst über den offenen Vorschlag. */
+export const VORSCHLAG_NICHT_UEBERNOMMEN = 'Der Vorschlag steht noch nicht in den Feldern.';
 
 export const NICHTS_GEFUNDEN = 'Auf dem Foto nichts gefunden.';
 

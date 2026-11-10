@@ -1,6 +1,6 @@
-// Der Gateway selbst, ohne Laufzeit (ADR-005, PROJECT_PRINCIPLES.md 6.1): Sitzung, Zweck aus der
-// Adresse, Anbieter und Berechtigung stehen fest, bevor die Eingabe gelesen wird. `GET` fragt, ob
-// der Zweck bedient wird; `POST` ist das Diktat oder eine Hilfe ohne Ton. Gespeichert wird nichts.
+// Der Gateway selbst, ohne Laufzeit (ADR-005, PROJECT_PRINCIPLES.md 6.1): Sitzung, Zweck und
+// Anbieter stehen fest, bevor die Eingabe gelesen wird, die Berechtigung vor jedem Adapteraufruf.
+// `GET` fragt, ob der Zweck bedient wird; `POST` ist das Diktat oder eine Hilfe. Gespeichert: nichts.
 
 import { assistiere } from './assistenz.ts';
 import type { Assistenzpruefung, Berechtigungspruefung } from './berechtigung.ts';

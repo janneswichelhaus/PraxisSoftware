@@ -132,7 +132,7 @@ describe('Antwort ausformulieren an der Rückfrage', () => {
     expect(umgeformt).toHaveTextContent('Knie links kühlen, 10 Minuten.');
     expect(umgeformt).toHaveTextContent('Aus: „knie li. kühlen, 10 Min.“');
     expect(wortlaut).toHaveTextContent('alles ok');
-    expect(wortlaut).toHaveTextContent('unverändert');
+    expect(wortlaut).toHaveTextContent('nicht umgeformt');
     expect(wortlaut).not.toHaveTextContent('Aus:');
     expect(screen.getByText(umformenNachbildung('nachricht.entwurf'))).toBeInTheDocument();
     // Das Feld bleibt, wie es ist; ein Hauptknopf je Ansicht.
