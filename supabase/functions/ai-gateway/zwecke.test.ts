@@ -6,6 +6,10 @@ import {
   AUSZUG_HOECHST_JE_EINTRAG,
   AUSZUG_HOECHST_ZEICHEN,
   AUSZUG_REGELN,
+  FELDER_REGELN,
+  SCAN_FORMATE,
+  SCAN_HOECHST_BYTES,
+  VERORDNUNG_FELDER,
   DIKTAT_ABSCHNITTE,
   DIKTAT_REGELN,
   HOECHST_BYTES,
@@ -29,6 +33,7 @@ describe('Zweckliste', () => {
       'nachricht.entwurf',
       'nachricht.alltagssprache',
       'verlauf.auszug',
+      'verordnung.felder',
     ]);
     for (const kennung of Object.keys(ZWECKE)) expect(zweckAus(kennung)?.kennung).toBe(kennung);
   });
@@ -236,6 +241,47 @@ describe('Zweckliste', () => {
     ])('nennt in den Regeln: %s', (_punkt, muster) => {
       expect(AUSZUG_REGELN).toMatch(muster);
       expect(zweck.regeln).toBe(AUSZUG_REGELN);
+    });
+  });
+
+  describe('Felder vom Foto', () => {
+    const zweck = ZWECKE['verordnung.felder'];
+
+    it('nimmt nur, was die Ablage nimmt, und prüft am Scan', () => {
+      expect(zweck.art).toBe('felder');
+      expect(zweck.gegenstand).toBe('scan');
+      // ADR-017 Punkt 18: PDF, JPEG, PNG, höchstens 10 MB - nie SVG, HTML oder Office.
+      expect([...SCAN_FORMATE].sort()).toEqual(['application/pdf', 'image/jpeg', 'image/png']);
+      expect(SCAN_HOECHST_BYTES).toBe(10_485_760);
+      expect(zweck.eingabe).toEqual({
+        formate: SCAN_FORMATE,
+        hoechstBytes: SCAN_HOECHST_BYTES,
+        sprache: 'de',
+      });
+    });
+
+    it('fragt nur nach den Feldern des Formulars, ohne Name und Geburtsdatum der Person', () => {
+      expect(VERORDNUNG_FELDER).toEqual({
+        ausgestellt_am: 1,
+        art: 1,
+        verordnende: 1,
+        icd10: 1,
+        diagnose: 1,
+        heilmittel: 4,
+        hausbesuch: 1,
+      });
+      expect(zweck.ausgabe.felder).toBe(VERORDNUNG_FELDER);
+    });
+
+    it.each([
+      ['abschreiben, wie es dasteht', /zeilenweise so abschreiben, wie er dasteht/],
+      ['nichts ergänzen oder korrigieren', /Nichts ergänzen, nichts korrigieren/],
+      ['nur Stellen, kein Text', /nur die Stelle im erkannten Text[^\n]*Kein Text/],
+      ['nichts raten', /Nichts raten oder ableiten/],
+      ['keine Diagnose oder Kodierung ergänzen', /keine Diagnose, keine Kodierung, keine Menge/],
+    ])('nennt in den Regeln: %s', (_punkt, muster) => {
+      expect(FELDER_REGELN).toMatch(muster);
+      expect(zweck.regeln).toBe(FELDER_REGELN);
     });
   });
 });

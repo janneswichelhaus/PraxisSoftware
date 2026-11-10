@@ -20,6 +20,12 @@ import {
 import { einheiten as einheitenImBrowser } from '@/lib/ki/einheiten';
 import { ORDNEN_HOECHSTZEICHEN, ZWECK_ORDNEN } from '@/lib/ki/ordnen';
 import {
+  SCAN_FORMATE as FORMATE_IM_BROWSER,
+  SCAN_HOECHSTBYTES,
+  VERORDNUNG_FELDER as FELDER_IM_BROWSER,
+  ZWECK_VERORDNUNG,
+} from '@/lib/ki/verordnung';
+import {
   UMFORMEN_HOECHSTZEICHEN,
   ZWECK_ALLTAGSSPRACHE,
   ZWECK_ENTWURF,
@@ -39,6 +45,9 @@ import {
   HOECHST_DAUER_S,
   NACHRICHT_HOECHST_ZEICHEN,
   ORDNEN_HOECHST_ZEICHEN,
+  SCAN_FORMATE,
+  SCAN_HOECHST_BYTES,
+  VERORDNUNG_FELDER,
   ZWECKE,
 } from './zwecke.ts';
 
@@ -81,8 +90,21 @@ describe('Vertrag zwischen Browser und AI Gateway', () => {
   });
 
   it('nennt nur Zwecke, die der Gateway kennt', () => {
-    const genannt = [ZWECK_DIKTAT, ZWECK_ORDNEN, ZWECK_ENTWURF, ZWECK_ALLTAGSSPRACHE, ZWECK_AUSZUG];
+    const genannt = [
+      ZWECK_DIKTAT,
+      ZWECK_ORDNEN,
+      ZWECK_ENTWURF,
+      ZWECK_ALLTAGSSPRACHE,
+      ZWECK_AUSZUG,
+      ZWECK_VERORDNUNG,
+    ];
     for (const zweck of genannt) expect(Object.keys(ZWECKE)).toContain(zweck);
+  });
+
+  it('nimmt beim Foto dieselben Formate, dieselbe Grenze und dieselben Felder', () => {
+    expect([...FORMATE_IM_BROWSER]).toEqual([...SCAN_FORMATE]);
+    expect(SCAN_HOECHSTBYTES).toBe(SCAN_HOECHST_BYTES);
+    expect(FELDER_IM_BROWSER).toEqual(VERORDNUNG_FELDER);
   });
 
   it('hält beim Auszug dieselben Grenzen', () => {

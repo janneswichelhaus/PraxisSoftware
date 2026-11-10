@@ -111,6 +111,11 @@ describe('Berechtigung der Hilfen ohne Ton', () => {
     [{ art: 'termin', id: TERMIN }, 'check_note_arrangement_access', { p_appointment_id: TERMIN }],
     [{ art: 'rueckfrage', id: TERMIN }, 'check_answer_wording_access', { p_message_id: TERMIN }],
     [{ art: 'akte', id: TERMIN }, 'check_history_excerpt_access', { p_patient_id: TERMIN }],
+    [
+      { art: 'scan', id: TERMIN, pruefsumme: 'ab'.repeat(32) },
+      'check_prescription_scan_access',
+      { p_file_id: TERMIN, p_checksum: 'ab'.repeat(32) },
+    ],
   ] as const)(
     'fragt für %j die eine Funktion der Datenbank',
     async (frage, funktion, argumente) => {

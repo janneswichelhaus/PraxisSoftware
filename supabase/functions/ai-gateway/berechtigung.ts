@@ -17,11 +17,13 @@ export type Berechtigungspruefung = (
   terminId: string,
 ) => Promise<Berechtigungsbefund>;
 
-/** Woran eine Hilfe ohne Ton geprüft wird; je Art genau eine Funktion der Datenbank. */
-export interface Assistenzfrage {
-  readonly art: 'termin' | 'rueckfrage' | 'akte';
-  readonly id: string;
-}
+/**
+ * Woran eine Hilfe ohne Ton geprüft wird; je Art genau eine Funktion der Datenbank. Ein Scan
+ * zählt nur mit der Prüfsumme der Bytes, die der Gateway empfangen hat.
+ */
+export type Assistenzfrage =
+  | { readonly art: 'termin' | 'rueckfrage' | 'akte'; readonly id: string }
+  | { readonly art: 'scan'; readonly id: string; readonly pruefsumme: string };
 
 export type Assistenzpruefung = (
   authorization: string,
@@ -42,6 +44,7 @@ const PFADE = {
   termin: '/rest/v1/rpc/check_note_arrangement_access',
   rueckfrage: '/rest/v1/rpc/check_answer_wording_access',
   akte: '/rest/v1/rpc/check_history_excerpt_access',
+  scan: '/rest/v1/rpc/check_prescription_scan_access',
 } as const;
 
 function erstelleFrage({
@@ -106,14 +109,19 @@ export function erstelleBerechtigungspruefung(optionen: Optionen): Berechtigungs
 /** Die Hilfen ohne Ton, je nach Gegenstand des Zwecks. */
 export function erstelleAssistenzpruefung(optionen: Optionen): Assistenzpruefung {
   const frage = erstelleFrage(optionen);
-  return (authorization, { art, id }) => {
-    switch (art) {
+  return (authorization, gegenstand) => {
+    switch (gegenstand.art) {
       case 'termin':
-        return frage(authorization, PFADE.termin, { p_appointment_id: id });
+        return frage(authorization, PFADE.termin, { p_appointment_id: gegenstand.id });
       case 'rueckfrage':
-        return frage(authorization, PFADE.rueckfrage, { p_message_id: id });
+        return frage(authorization, PFADE.rueckfrage, { p_message_id: gegenstand.id });
       case 'akte':
-        return frage(authorization, PFADE.akte, { p_patient_id: id });
+        return frage(authorization, PFADE.akte, { p_patient_id: gegenstand.id });
+      case 'scan':
+        return frage(authorization, PFADE.scan, {
+          p_file_id: gegenstand.id,
+          p_checksum: gegenstand.pruefsumme,
+        });
     }
   };
 }

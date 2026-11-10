@@ -107,6 +107,21 @@ export interface Auszugsantwort {
 }
 
 /**
+ * Die Antwort auf „Felder vorschlagen“: je Fundstelle das Feld, der ausgeschnittene Wortlaut und
+ * die erkannte Zeile, aus der er stammt. Das Foto selbst geht nicht zurück.
+ */
+export interface Felderantwort {
+  readonly ok: true;
+  readonly art: 'felder';
+  readonly fundstellen: readonly {
+    readonly feld: string;
+    readonly wert: string;
+    readonly zeile: string;
+  }[];
+  readonly quelle: Quelle;
+}
+
+/**
  * Die Antwort auf die Frage vor „Sprechen“ (`GET`): Wird der Zweck hier
  * bedient? Nur ja oder nein - kein Anbieter, keine Quelle.
  */
@@ -179,6 +194,30 @@ export interface Auswahlanfrage {
   readonly regeln: string;
 }
 
+/** An den Adapter zum Erkennen: die Bytes des Fotos, ihr Format, Sprache und Regeln - keine Kennung. */
+export interface Erkennungsanfrage {
+  readonly bild: Uint8Array;
+  readonly mime: string;
+  readonly sprache: Sprache;
+  readonly regeln: string;
+}
+
+/** An den Adapter zum Finden: die erkannten Zeilen und die gesuchten Felder. */
+export interface Fundstellenanfrage {
+  readonly zeilen: readonly string[];
+  readonly felder: readonly string[];
+  readonly sprache: Sprache;
+  readonly regeln: string;
+}
+
+/** Eine Stelle im erkannten Text: Zeile (ab 0), Zeichen von einschließlich bis ausschließlich. */
+export interface Fundstelle {
+  readonly feld: string;
+  readonly zeile: number;
+  readonly von: number;
+  readonly bis: number;
+}
+
 /** Eine Stelle der Eingabe: der wievielte Eintrag, der wievielte Satz darin (ab 0). */
 export interface Satzstelle {
   readonly eintrag: number;
@@ -206,6 +245,16 @@ export interface Assistenzadapter {
     anfrage: Auswahlanfrage,
     signal: AbortSignal,
   ): Promise<Adapterergebnis<{ readonly auswahl: readonly Satzstelle[] }>>;
+  /** Der Text des Fotos zeilenweise; an ihm hängt jeder vorgeschlagene Wert. */
+  erkenne(
+    anfrage: Erkennungsanfrage,
+    signal: AbortSignal,
+  ): Promise<Adapterergebnis<{ readonly zeilen: readonly string[] }>>;
+  /** Nur Stellen im erkannten Text - kein Wert. */
+  findeFelder(
+    anfrage: Fundstellenanfrage,
+    signal: AbortSignal,
+  ): Promise<Adapterergebnis<{ readonly fundstellen: readonly Fundstelle[] }>>;
 }
 
 /**
@@ -222,6 +271,7 @@ export interface Protokolleintrag {
     | 'nachricht.entwurf'
     | 'nachricht.alltagssprache'
     | 'verlauf.auszug'
+    | 'verordnung.felder'
     | 'unbekannt';
   /** Anbieterkennung oder die Stelle davor: `sitzung`, `berechtigung`, `gate`. */
   readonly anbieter: string;

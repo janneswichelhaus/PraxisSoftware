@@ -14,7 +14,14 @@ import { PdfRahmen } from '@/components/ui/Dateiansicht';
  * Objekt-URL gezeigt, ohne Downloadnamen (Punkt 54); es bleibt stehen, solange
  * die Seite offen ist. Ein PDF steht im Rahmen (Punkt 58, BEF-133).
  */
-export function ScanBesideForm({ fileId }: { fileId: string }) {
+export function ScanBesideForm({
+  fileId,
+  onGeladen,
+}: {
+  fileId: string;
+  /** Das Foto, wie die Seite es geladen hat - für „Felder vorschlagen“ dieselben Bytes. */
+  onGeladen?: (bild: Blob) => void;
+}) {
   const [ansicht, setAnsicht] = useState<Blob | null>(null);
   const [bild, setBild] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
@@ -33,8 +40,10 @@ export function ScanBesideForm({ fileId }: { fileId: string }) {
     setLaeuft(true);
     try {
       const geladen = await ladeDateiZumAnzeigen(fileId);
-      if (istAnzeigbar(geladen.mimeType)) setAnsicht(geladen.bild);
-      else await ladeDateiHerunter(fileId);
+      if (istAnzeigbar(geladen.mimeType)) {
+        setAnsicht(geladen.bild);
+        onGeladen?.(geladen.bild);
+      } else await ladeDateiHerunter(fileId);
     } catch (ursache) {
       setFehler((ursache as Error).message);
     } finally {

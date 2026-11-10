@@ -2,18 +2,37 @@
 // enthält. Der Adapter nennt Stellen, den Wortlaut setzt der Gateway; gespeichert wird nichts.
 
 import type { Assistenzfrage, Assistenzpruefung } from './berechtigung.ts';
-import { UUID, antwort, fehler, liesJson, mitFrist } from './http.ts';
+import {
+  FORMULAR_ZUSCHLAG_BYTES,
+  UUID,
+  antwort,
+  fehler,
+  grundformat,
+  istDatei,
+  liesFormular,
+  liesJson,
+  mitFrist,
+  pruefsumme,
+} from './http.ts';
+import { erkannteZeilen, setzeFelder } from './felder.ts';
 import { einheiten, ordne } from './inhaltstreue.ts';
 import { auszugssaetze, setzeAuszug, type Quelleintrag } from './auszug.ts';
 import type {
   Assistenzadapter,
   Auszugsantwort,
+  Felderantwort,
   Ordnungsantwort,
   Protokolleintrag,
   Umformungsantwort,
 } from './typen.ts';
 import { pruefeUmformung, stuecke } from './waechter.ts';
-import type { Assistenzzweck, Auszugszweck, Ordnungszweck, Umformzweck } from './zwecke.ts';
+import type {
+  Assistenzzweck,
+  Auszugszweck,
+  Felderzweck,
+  Ordnungszweck,
+  Umformzweck,
+} from './zwecke.ts';
 
 /** Platz für Feldnamen und Zeichenmaskierung neben dem Text. */
 const JSON_ZUSCHLAG_BYTES = 16 * 1024;
@@ -38,6 +57,8 @@ export function assistiere(auftrag: Assistenzauftrag): Promise<Response> {
       return umformen(auftrag, zweck);
     case 'auszug':
       return auszug(auftrag, zweck);
+    case 'felder':
+      return felder(auftrag, zweck);
   }
 }
 
@@ -243,5 +264,83 @@ async function auszug(auftrag: Assistenzauftrag, zweck: Auszugszweck): Promise<R
   if (auszuege === null) return gescheitert(auftrag, beginn, 'unavailable', 'Auswahl unbrauchbar');
 
   const ergebnis: Auszugsantwort = { ok: true, art: 'auszug', auszuege, quelle: adapter.quelle };
+  return antwort(ergebnis, 200);
+}
+
+/** Ein Foto trägt genau die Datei und das Bild, jedes genau einmal. */
+const SCANFELDER = ['datei', 'bild'] as const;
+
+async function felder(auftrag: Assistenzauftrag, zweck: Felderzweck): Promise<Response> {
+  const { adapter, jetzt, fristMs } = auftrag;
+  const formular = await liesFormular(
+    auftrag.anfrage,
+    zweck.eingabe.hoechstBytes + FORMULAR_ZUSCHLAG_BYTES,
+  );
+  if (formular === 'zu_gross') return fehler('too_large', 'Anfrage zu groß');
+  if (formular === null) return fehler('invalid_request', 'kein lesbares Formular');
+  let anzahl = 0;
+  formular.forEach(() => {
+    anzahl += 1;
+  });
+  if (anzahl !== SCANFELDER.length || SCANFELDER.some((feld) => formular.getAll(feld).length !== 1))
+    return fehler('invalid_request', 'Formular unvollständig');
+  const datei = formular.get('datei');
+  if (typeof datei !== 'string' || !UUID.test(datei))
+    return fehler('invalid_request', 'Datei fehlt');
+  const bild = formular.get('bild');
+  if (!istDatei(bild)) return fehler('invalid_request', 'Bild fehlt');
+  const mime = grundformat(bild.type);
+  if (!zweck.eingabe.formate.includes(mime))
+    return fehler('invalid_request', 'Format nicht erlaubt');
+  if (bild.size === 0) return fehler('invalid_request', 'Bild leer');
+  if (bild.size > zweck.eingabe.hoechstBytes) return fehler('too_large', 'Bild zu groß');
+
+  // Die Datenbank bestätigt Art, Zustand und Prüfsumme genau dieser Bytes: Ein anderes Bild,
+  // etwa ein Foto der Person, geht nicht hinaus (ADR-017 Punkt 39).
+  const bytes = new Uint8Array(await bild.arrayBuffer());
+  const frage = { art: zweck.gegenstand, id: datei, pruefsumme: await pruefsumme(bytes) };
+  const abweisung = await abgewiesen(auftrag, frage);
+  if (abweisung) return abweisung;
+
+  const beginn = jetzt();
+  const { sprache } = zweck.eingabe;
+  // An den Adapter: nur die Bytes, ihr Format und die Regeln - keine Kennung, kein Name.
+  const erkennung = await mitFrist(
+    (signal) => adapter.erkenne({ bild: bytes, mime, sprache, regeln: zweck.regeln }, signal),
+    fristMs,
+  );
+  if (!erkennung.ok)
+    return gescheitert(auftrag, beginn, erkennung.error.code, 'Erkennung fehlgeschlagen');
+  const zeilen = erkannteZeilen(
+    erkennung.value.zeilen,
+    zweck.ausgabe.hoechstZeilen,
+    zweck.ausgabe.hoechstZeichenJeZeile,
+  );
+  if (zeilen === null) return gescheitert(auftrag, beginn, 'unavailable', 'Erkennung unbrauchbar');
+  // Nichts erkannt ist kein Fehler, aber auch nichts vorzuschlagen.
+  if (zeilen.length === 0) {
+    const leer: Felderantwort = {
+      ok: true,
+      art: 'felder',
+      fundstellen: [],
+      quelle: adapter.quelle,
+    };
+    return antwort(leer, 200);
+  }
+
+  const suche = await mitFrist(
+    (signal) =>
+      adapter.findeFelder(
+        { zeilen, felder: Object.keys(zweck.ausgabe.felder), sprache, regeln: zweck.regeln },
+        signal,
+      ),
+    fristMs,
+  );
+  if (!suche.ok) return gescheitert(auftrag, beginn, suche.error.code, 'Suche fehlgeschlagen');
+  const fundstellen = setzeFelder(zeilen, suche.value.fundstellen, zweck.ausgabe.felder);
+  if (fundstellen === null)
+    return gescheitert(auftrag, beginn, 'unavailable', 'Fundstellen unbrauchbar');
+
+  const ergebnis: Felderantwort = { ok: true, art: 'felder', fundstellen, quelle: adapter.quelle };
   return antwort(ergebnis, 200);
 }

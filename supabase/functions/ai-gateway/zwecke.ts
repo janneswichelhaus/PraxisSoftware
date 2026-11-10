@@ -10,7 +10,8 @@ export type Zweckkennung =
   | 'dokumentation.ordnen'
   | 'nachricht.entwurf'
   | 'nachricht.alltagssprache'
-  | 'verlauf.auszug';
+  | 'verlauf.auszug'
+  | 'verordnung.felder';
 
 /**
  * Audioformate, die ein Browser mit `MediaRecorder` liefert oder die ein
@@ -116,6 +117,34 @@ export const AUSZUG_REGELN = [
   'Kein Satz steht für mehr als sich selbst: Der Auszug ist unvollständig und sagt das auch.',
 ].join('\n');
 
+/** Das Foto einer Verordnung: Allowlist und Grenze der Ablage (ADR-017 Punkt 18). */
+export const SCAN_FORMATE = ['image/jpeg', 'image/png', 'application/pdf'] as const;
+export const SCAN_HOECHST_BYTES = 10 * 1024 * 1024;
+
+/** Die Felder eines Vorschlags und wie oft je Feld; Heilmittel stehen in eigenen Zeilen. */
+export const VERORDNUNG_FELDER = {
+  ausgestellt_am: 1,
+  art: 1,
+  verordnende: 1,
+  icd10: 1,
+  diagnose: 1,
+  heilmittel: 4,
+  hausbesuch: 1,
+} as const;
+
+export type Verordnungsfeld = keyof typeof VERORDNUNG_FELDER;
+
+/** Eine Verordnung ist eine Seite: Mehr oder längere Zeilen liefert kein brauchbarer Adapter. */
+export const SCAN_HOECHST_ZEILEN = 80;
+export const SCAN_HOECHST_ZEICHEN_JE_ZEILE = 200;
+
+/** Die Arbeitsanweisung fürs Foto: abschreiben, dann Stellen nennen - nie deuten. */
+export const FELDER_REGELN = [
+  'Erkennen: den Text des Fotos einer Heilmittelverordnung zeilenweise so abschreiben, wie er dasteht. Nichts ergänzen, nichts korrigieren; Unleserliches als [unleserlich].',
+  'Fundstellen: je Feld nur die Stelle im erkannten Text - Zeile, erstes und letztes Zeichen. Kein Text; den Wortlaut schneidet der Gateway aus.',
+  'Nichts raten oder ableiten: Was nicht lesbar dasteht, bekommt keine Stelle; keine Diagnose, keine Kodierung, keine Menge ergänzen.',
+].join('\n');
+
 /**
  * Die Adapter, die einen Zweck bedienen dürfen (das „erlaubte Modell" aus 6.1): bis zur
  * Freischaltung eines Anbieters (ADR-005 Punkt 8) nur die Nachbildung.
@@ -179,8 +208,27 @@ export interface Auszugszweck {
   readonly regeln: string;
 }
 
+/** Felder vom Foto: ein Scan hinein, Fundstellen im erkannten Text heraus. */
+export interface Felderzweck {
+  readonly kennung: 'verordnung.felder';
+  readonly art: 'felder';
+  readonly gegenstand: 'scan';
+  readonly eingabe: {
+    readonly formate: readonly string[];
+    readonly hoechstBytes: number;
+    readonly sprache: Sprache;
+  };
+  readonly adapter: readonly string[];
+  readonly ausgabe: {
+    readonly felder: Readonly<Record<Verordnungsfeld, number>>;
+    readonly hoechstZeilen: number;
+    readonly hoechstZeichenJeZeile: number;
+  };
+  readonly regeln: string;
+}
+
 /** Was zu einem Zweck festgelegt ist. */
-export type Zweck = Diktatzweck | Ordnungszweck | Umformzweck | Auszugszweck;
+export type Zweck = Diktatzweck | Ordnungszweck | Umformzweck | Auszugszweck | Felderzweck;
 
 /** Ein Zweck ohne Ton; ihn bedient der Assistenzadapter. */
 export type Assistenzzweck = Exclude<Zweck, Diktatzweck>;
@@ -239,6 +287,19 @@ export const ZWECKE = {
     // Die Titel der Vorlage sind Gliederung eines Eintrags und nie ein Satz des Auszugs.
     ausgabe: { hoechstJeEintrag: AUSZUG_HOECHST_JE_EINTRAG, titel: DIKTAT_ABSCHNITTE },
     regeln: AUSZUG_REGELN,
+  },
+  'verordnung.felder': {
+    kennung: 'verordnung.felder',
+    art: 'felder',
+    gegenstand: 'scan',
+    eingabe: { formate: SCAN_FORMATE, hoechstBytes: SCAN_HOECHST_BYTES, sprache: 'de' },
+    adapter: NUR_NACHBILDUNG,
+    ausgabe: {
+      felder: VERORDNUNG_FELDER,
+      hoechstZeilen: SCAN_HOECHST_ZEILEN,
+      hoechstZeichenJeZeile: SCAN_HOECHST_ZEICHEN_JE_ZEILE,
+    },
+    regeln: FELDER_REGELN,
   },
 } as const satisfies { readonly [K in Zweckkennung]: Extract<Zweck, { kennung: K }> };
 

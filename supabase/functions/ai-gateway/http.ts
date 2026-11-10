@@ -140,3 +140,34 @@ export async function mitFrist<T>(
 }
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Platz für Feldnamen, Grenzen und Kopfzeilen eines Formulars neben der Datei. */
+export const FORMULAR_ZUSCHLAG_BYTES = 64 * 1024;
+
+/** Was eine Datei im Formular mindestens kann - unabhängig von der Laufzeit. */
+export interface Datei {
+  readonly size: number;
+  readonly type: string;
+  arrayBuffer(): Promise<ArrayBuffer>;
+}
+
+export function istDatei(wert: unknown): wert is Datei {
+  if (typeof wert !== 'object' || wert === null) return false;
+  const datei = wert as Partial<Datei>;
+  return (
+    typeof datei.arrayBuffer === 'function' &&
+    typeof datei.size === 'number' &&
+    typeof datei.type === 'string'
+  );
+}
+
+/** Das Format ohne Parameter, klein geschrieben (`audio/webm;codecs=opus` ist `audio/webm`). */
+export function grundformat(typ: string): string {
+  return (typ.split(';')[0] ?? '').trim().toLowerCase();
+}
+
+/** SHA-256 als Kleinbuchstaben-Hex, wie `patient_files.checksum_sha256` es führt. */
+export async function pruefsumme(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  return Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}

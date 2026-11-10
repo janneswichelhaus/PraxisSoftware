@@ -16,6 +16,9 @@ const DATEIEN = [
   'src/features/clinical/documentation/GeordneterVorschlag.tsx',
   'src/features/clinical/documentation/auszuege.ts',
   'src/features/clinical/documentation/Auszugsliste.tsx',
+  'src/features/patients/treatment-bases/felderVorschlag.ts',
+  'src/features/patients/treatment-bases/Feldvorschlaege.tsx',
+  'src/features/patients/treatment-bases/rezeptfelder.ts',
   'src/features/portal/messages/umformen.ts',
   'src/features/portal/messages/Umformvorschlag.tsx',
   ...readdirSync(join(STAMM, 'src/lib/ki'))
@@ -60,6 +63,10 @@ const ERLAUBT = new Set([
   './ordnen',
   './umformen',
   './auszuege',
+  './felderVorschlag',
+  './rezeptfelder',
+  // Eine feste Liste ohne Importe (der Heilmittelkatalog).
+  './heilmittel',
 ]);
 
 function erlaubterImport(modul: string): boolean {

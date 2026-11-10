@@ -4,7 +4,18 @@
 
 import { assistiere } from './assistenz.ts';
 import type { Assistenzpruefung, Berechtigungspruefung } from './berechtigung.ts';
-import { CORS, UUID, antwort, fehler, liesFormular, mitFrist } from './http.ts';
+import {
+  CORS,
+  FORMULAR_ZUSCHLAG_BYTES,
+  UUID,
+  antwort,
+  fehler,
+  grundformat,
+  istDatei,
+  liesFormular,
+  mitFrist,
+  type Datei,
+} from './http.ts';
 import { saetze, setzeZusammen } from './inhaltstreue.ts';
 import type { Sitzungspruefung } from './sitzung.ts';
 import type { Assistenzadapter, Protokolleintrag, Sprachadapter } from './typen.ts';
@@ -14,9 +25,6 @@ export { STATUS } from './http.ts';
 
 /** Genau diese drei Felder trägt ein Diktat, jedes genau einmal; der Zweck steht in der Adresse. */
 const FELDER = ['termin', 'audio', 'dauer_s'] as const;
-
-/** Platz für Feldnamen, Grenzen und Kopfzeilen des Formulars neben der Aufnahme. */
-const FORMULAR_ZUSCHLAG_BYTES = 64 * 1024;
 
 /** Wie lange ein Adapter höchstens braucht, bevor die Anfrage `timeout` meldet. */
 export const FRISTEN = { transkriptionMs: 120_000, strukturierungMs: 60_000 } as const;
@@ -222,23 +230,6 @@ function zweckDerAdresse(adresse: string): Zweck | null {
   return werte.length === 1 ? zweckAus(werte[0]) : null;
 }
 
-/** Was eine Datei im Formular mindestens kann - unabhängig von der Laufzeit. */
-interface Datei {
-  readonly size: number;
-  readonly type: string;
-  arrayBuffer(): Promise<ArrayBuffer>;
-}
-
-function istDatei(wert: unknown): wert is Datei {
-  if (typeof wert !== 'object' || wert === null) return false;
-  const datei = wert as Partial<Datei>;
-  return (
-    typeof datei.arrayBuffer === 'function' &&
-    typeof datei.size === 'number' &&
-    typeof datei.type === 'string'
-  );
-}
-
 interface Eingabe {
   readonly terminId: string;
   readonly datei: Datei;
@@ -281,7 +272,7 @@ function pruefeEingabe(formular: FormData, zweck: Diktatzweck): Eingabepruefung 
 
   const datei = formular.get('audio');
   if (!istDatei(datei)) return ungueltig('Aufnahme fehlt');
-  const mime = (datei.type.split(';')[0] ?? '').trim().toLowerCase();
+  const mime = grundformat(datei.type);
   if (!zweck.eingabe.formate.includes(mime)) return ungueltig('Format nicht erlaubt');
   if (datei.size === 0) return ungueltig('Aufnahme leer');
   if (datei.size > zweck.eingabe.hoechstBytes) {

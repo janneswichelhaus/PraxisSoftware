@@ -7,6 +7,8 @@ import type {
   Adapterergebnis,
   Assistenzadapter,
   Auswahlanfrage,
+  Fundstelle,
+  Fundstellenanfrage,
   Satzstelle,
   Sprachadapter,
   Umformanfrage,
@@ -177,6 +179,61 @@ export function ersterUndLetzter(eintraege: readonly (readonly string[])[]): Sat
   });
 }
 
+/**
+ * Die feste, synthetische Verordnung der Nachbildung. Sie liest das Foto nicht; das Testbild der
+ * Ablaufbilder zeigt dieselben Zeilen. Rein erfunden, kein realer Fall.
+ */
+export const NACHGEBILDETE_VERORDNUNG = [
+  'Heilmittelverordnung (synthetisch)',
+  'Ausgestellt am 02.11.2026',
+  'Folgeverordnung',
+  'Dr. med. Petra Probst',
+  'ICD-10: M17.1',
+  'Gonarthrose rechts, Belastungsschmerz',
+  'Krankengymnastik 6 x',
+  'Manuelle Therapie 6 x',
+  'Hausbesuch: ja',
+] as const;
+
+/** Feste Muster je Feld; die erste Gruppe ist der Wert, ohne Gruppe der ganze Treffer. */
+const FELDMUSTER: readonly { readonly feld: string; readonly muster: RegExp }[] = [
+  { feld: 'ausgestellt_am', muster: /(?:ausgestellt|datum)\D*?(\d{1,2}\.\d{1,2}\.\d{2,4})/i },
+  { feld: 'art', muster: /\b(?:erst|folge)verordnung\b/i },
+  { feld: 'verordnende', muster: /^(?:Dr\.|Prof\.)\s.+$/ },
+  { feld: 'icd10', muster: /ICD-?10\s*:?\s*([A-Z]\d{2}\.?[0-9A-Z]{0,4})/ },
+  { feld: 'heilmittel', muster: /^(?:Krankengymnastik|Manuelle Therapie|KG|MT)\b.*\d+\s*x\b.*$/i },
+  { feld: 'hausbesuch', muster: /^Hausbesuch\b.*$/i },
+];
+
+/**
+ * Die Fundstellen der Nachbildung: je Zeile das erste passende Muster; die Diagnose ist die
+ * Zeile nach dem ICD-Code, wenn kein Muster sie nimmt. Nur Felder, nach denen gefragt ist.
+ */
+export function findeFelder(zeilen: readonly string[], felder: readonly string[]): Fundstelle[] {
+  const stellen: Fundstelle[] = [];
+  let icdZeile = -1;
+  for (const [zeile, text] of zeilen.entries()) {
+    const passend = FELDMUSTER.map(({ feld, muster }) => ({
+      feld,
+      treffer: muster.exec(text),
+    })).find(({ treffer }) => treffer !== null);
+    if (passend?.treffer) {
+      const wert = passend.treffer[1] ?? passend.treffer[0];
+      const von = text.indexOf(wert, passend.treffer.index);
+      stellen.push({ feld: passend.feld, zeile, von, bis: von + wert.length });
+      if (passend.feld === 'icd10') icdZeile = zeile;
+    } else if (zeile === icdZeile + 1 && icdZeile >= 0) {
+      stellen.push({ feld: 'diagnose', zeile, von: 0, bis: text.length });
+    }
+  }
+  const zahl = new Map<string, number>();
+  return stellen.filter((stelle) => {
+    if (!felder.includes(stelle.feld)) return false;
+    zahl.set(stelle.feld, (zahl.get(stelle.feld) ?? 0) + 1);
+    return stelle.feld === 'heilmittel' ? zahl.get(stelle.feld)! <= 4 : zahl.get(stelle.feld) === 1;
+  });
+}
+
 /** Die Hilfen ohne Ton als Nachbildung: feste Regeln statt eines Sprachmodells. */
 export function erstelleAssistenznachbildung(): Assistenzadapter {
   return {
@@ -200,6 +257,17 @@ export function erstelleAssistenznachbildung(): Assistenzadapter {
       anfrage: Auswahlanfrage,
     ): Promise<Adapterergebnis<{ readonly auswahl: readonly Satzstelle[] }>> {
       return Promise.resolve({ ok: true, value: { auswahl: ersterUndLetzter(anfrage.eintraege) } });
+    },
+    erkenne(): Promise<Adapterergebnis<{ readonly zeilen: readonly string[] }>> {
+      return Promise.resolve({ ok: true, value: { zeilen: NACHGEBILDETE_VERORDNUNG } });
+    },
+    findeFelder(
+      anfrage: Fundstellenanfrage,
+    ): Promise<Adapterergebnis<{ readonly fundstellen: readonly Fundstelle[] }>> {
+      return Promise.resolve({
+        ok: true,
+        value: { fundstellen: findeFelder(anfrage.zeilen, anfrage.felder) },
+      });
     },
   };
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -20,10 +20,14 @@ import {
   setTreatmentBasisIcd10,
   treatmentBasisFormSchema,
   updateTreatmentBasis,
+  prescriberName,
   type Heilmittelposition,
   type TreatmentBasisDetail,
 } from './api';
+import { Feldvorschlaege } from './Feldvorschlaege';
+import { useFelderVorschlag } from './felderVorschlag';
 import { HAUSBESUCH, HEILMITTEL } from './heilmittel';
+import { feldvorschlaege, uebernimm } from './rezeptfelder';
 import { ScanBesideForm } from './ScanBesideForm';
 import { todayInTimeZone } from '@/lib/datum';
 
@@ -146,6 +150,39 @@ function Formular({
   const [termine, setTermine] = useState(bestand ? String(bestand.appointment_count) : '');
   const [fehler, setFehler] = useState<Record<string, string>>({});
   const [hinweis, setHinweis] = useState<string | null>(null);
+  const [scan, setScan] = useState<Blob | null>(null);
+  const felder = useFelderVorschlag({ dateiId: fileId ?? '', bild: fileId ? scan : null });
+  const verordnende = verordner.data;
+  const vorschlaege = useMemo(
+    () =>
+      felder.fundstellen
+        ? feldvorschlaege(felder.fundstellen, {
+            verordnende: (verordnende ?? []).map((v) => ({ id: v.id, name: prescriberName(v) })),
+            icd: (roh) => {
+              const code = icd10Normalisiert(roh);
+              return ICD10_MUSTER.test(code) ? code : null;
+            },
+            heute,
+          })
+        : undefined,
+    [felder.fundstellen, verordnende, heute],
+  );
+
+  function vorschlagUebernehmen() {
+    if (!vorschlaege) return;
+    const ergebnis = uebernimm(
+      { issuedOn, kind, prescriberId, icd, diagnose, zeilen, hausbesuch },
+      vorschlaege,
+    );
+    setIssuedOn(ergebnis.stand.issuedOn);
+    setKind(ergebnis.stand.kind);
+    setPrescriberId(ergebnis.stand.prescriberId);
+    setIcd(ergebnis.stand.icd);
+    setDiagnose(ergebnis.stand.diagnose);
+    setZeilen(ergebnis.stand.zeilen.map((zeile) => ({ ...zeile })));
+    setHausbesuch(ergebnis.stand.hausbesuch);
+    felder.erledigt(uebernahmeMeldung(ergebnis.uebernommen, ergebnis.belassen));
+  }
 
   // ANN-228: Ohne eigene Angabe ist die Zahl der Termine die größte Anzahl
   // einer Position - auf einer Verordnung über 10 × KG sind es 10 Termine.
@@ -259,7 +296,12 @@ function Formular({
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {fileId ? (
           <div className="min-w-0">
-            <ScanBesideForm fileId={fileId} />
+            <ScanBesideForm fileId={fileId} onGeladen={setScan} />
+            <Feldvorschlaege
+              felder={felder}
+              vorschlaege={vorschlaege}
+              onUebernehmen={vorschlagUebernehmen}
+            />
           </div>
         ) : null}
         <div className={`flex min-w-0 flex-col gap-4 ${fileId ? '' : 'md:col-span-2'}`}>
@@ -419,4 +461,16 @@ function Formular({
       </div>
     </form>
   );
+}
+
+/** Was „In die Felder übernehmen“ getan hat - ohne Zahl, wo es nichts zu zählen gibt. */
+function uebernahmeMeldung(uebernommen: number, belassen: number): string {
+  const teile = [
+    uebernommen === 1 ? '1 Feld übernommen.' : `${String(uebernommen)} Felder übernommen.`,
+  ];
+  if (belassen > 0)
+    teile.push(
+      belassen === 1 ? '1 ausgefülltes blieb.' : `${String(belassen)} ausgefüllte blieben.`,
+    );
+  return teile.join(' ');
 }

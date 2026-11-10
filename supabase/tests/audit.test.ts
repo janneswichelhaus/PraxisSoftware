@@ -234,6 +234,8 @@ describe('Audit-Lesepfad', () => {
       'check_history_excerpt_access',
       // Notizen ordnen (ANN-861) - wie das Diktat fragt nur das AI Gateway.
       'check_note_arrangement_access',
+      // Felder vom Foto (ANN-861) - auch hier fragt nur das AI Gateway.
+      'check_prescription_scan_access',
       'check_travel_buffers',
       // UBK-012: „Passt es?“ - wie check_travel_buffers (ANN-238).
       'check_travel_fit',

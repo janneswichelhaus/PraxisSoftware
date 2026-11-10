@@ -12,6 +12,7 @@ const PRUEFFUNKTIONEN = [
   'check_note_arrangement_access',
   'check_answer_wording_access',
   'check_history_excerpt_access',
+  'check_prescription_scan_access',
 ];
 
 const VERZEICHNIS = join(import.meta.dirname, '.');
