@@ -110,8 +110,8 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-ORG-005 | Sitzungsvorbereitung für die Praxis | überführt → ORG-EPIC-001 |
 | IDEA-ORG-006 | Planlaufzeit und Wiedervorlage | bestätigt |
 | IDEA-KI-001 | Der Rahmen zuerst, dann Features | überführt → ADR-005 / KI-EPIC-001 |
-| IDEA-KI-002 | Zulässige Anwendungsfälle | bestätigt |
-| IDEA-KI-003 | Quellenbindung als Bauprinzip | bestätigt |
+| IDEA-KI-002 | Zulässige Anwendungsfälle | überführt → KI-EPIC-002 |
+| IDEA-KI-003 | Quellenbindung als Bauprinzip | überführt → KI-EPIC-002 |
 | IDEA-KI-004 | Ausdrücklich ausgeschlossen | bestätigt · Abgrenzung |
 | IDEA-KI-005 | Nutzung sichtbar machen | überführt → KI-EPIC-001 (ANN-825) / C6 (Protokoll) |
 | IDEA-KI-006 | Was in der Referenzsoftware „KI-Analyse" heißt | bestätigt · Einordnung |

@@ -116,7 +116,7 @@ PostgreSQL 16 auf **54339** (`.tmp/stack-pgdata`), GoTrue, PostgREST und Edge Fu
   Kartendienst und AI Gateway als Nachbildung.
 - **AI Gateway:** Bis zur Anbieterentscheidung (C6) antwortet nur die Nachbildung
   (`AI_PROVIDER=mock`, `APP_ENVIRONMENT=development`, auch in `supabase/functions/.env.local`);
-  fehlt eines, gilt die Produktion, und „Sprechen“ und „Ordnen“ fehlen. Das Mikrofon braucht
+  fehlt eines, gilt die Produktion: ohne KI-Knöpfe. Das Mikrofon braucht
   `localhost` oder HTTPS.
 - Vor E2E-Läufen `reset` ohne `--reich`: Die Tests zählen auf den schlanken Seed. Die Werte stehen
   in `.env.development.local`, nicht in `.env.local`: Die liest auch Vitest, und mit echten Werten
