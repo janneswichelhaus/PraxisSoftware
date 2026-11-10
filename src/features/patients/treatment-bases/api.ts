@@ -672,7 +672,7 @@ export type TreatmentBasisFeld = keyof TreatmentBasisFormInput;
  * eines". Damit die Fehlerzusammenfassung darauf springen kann, bekommt sie
  * eine eigene Kennung neben den Kopffeldern (UX-012).
  */
-export type GrundlageFehlerfeld = TreatmentBasisFeld | 'items';
+export type GrundlageFehlerfeld = TreatmentBasisFeld | 'items' | 'icd10';
 
 export const leereGrundlage: Record<TreatmentBasisFeld, string> = {
   prescriber_id: '',
@@ -732,6 +732,8 @@ export function bestandstexte(grundlage: TreatmentBasisDetail): { feld: string; 
 export interface TreatmentBasisDraft {
   werte: Record<TreatmentBasisFeld, string>;
   positionen: Heilmittelposition[];
+  /** Der ICD-10-Code, wie er im Feld stand; gespeichert wird er eigens (`setTreatmentBasisIcd10`). */
+  icd?: string;
   /** Von der Verordner-Anlage nachgetragen, siehe `entwurfVerordnerNachtragen`. */
   neuerVerordnerId?: string;
 }

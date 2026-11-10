@@ -58,6 +58,9 @@ export function TreatmentBasisFormFields({
   verordnerAnlegenZiel,
   onVerordnerAnlegenKlick,
   bestandstexte,
+  icd,
+  icdFehler,
+  onIcdChange,
 }: {
   werte: Record<TreatmentBasisFeld, string>;
   fehler: Partial<Record<TreatmentBasisFeld, string>>;
@@ -72,6 +75,10 @@ export function TreatmentBasisFormFields({
   onVerordnerAnlegenKlick: () => void;
   /** Texte aus der Zeit vor VER-EPIC-002 — nur Anzeige, nie überschrieben. */
   bestandstexte: { feld: string; text: string }[];
+  /** Der ICD-10-Code; gespeichert wird er eigens, wie im Fenster „Daten übertragen“. */
+  icd: string;
+  icdFehler: string | undefined;
+  onIcdChange: (wert: string) => void;
 }) {
   const bauart = werte.treatment_basis_kind as Bauart | '';
   // Solange keine Art gewählt ist (BEF-060 Teil 1), stehen die Felder der
@@ -246,6 +253,16 @@ export function TreatmentBasisFormFields({
       {verordnung ? (
         <Section titel="Klinische Angaben">
           <Feldgruppe>
+            <Field
+              label="Diagnose (ICD-10)"
+              name="diagnosis_icd10"
+              feldId={grundlageFeldId('icd10')}
+              autoComplete="off"
+              maxLength={12}
+              value={icd}
+              error={icdFehler}
+              onChange={(event) => onIcdChange(event.target.value)}
+            />
             <TextArea
               label="Diagnose oder Leitsymptomatik"
               name="diagnosis"

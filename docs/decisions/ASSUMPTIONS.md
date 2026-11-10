@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-09.
+Zuletzt aktualisiert: 2026-11-10.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -915,8 +915,8 @@ Datenschutz · offen · 2026-11-07 · — · Prüfpaket · Wiedervorlage: Datens
 **Annahme.** Je Eintrag Tag, Art, Stand, Bezug; kein Wortlaut von Doku, Bogen, Nachricht, keine Diagnose, kein Betrag. Je Gruppe die Rolle ihrer Sicht. **Grundlage.** ADR-004 Punkte 3, 6; ADR-010 Punkt 16. **Anker.** `public.get_patient_timeline`. **Rücknahme.** Funktion entfernen · Aufwand `klein`.
 
 ### ANN-862 — Hilfen ohne Ton: nichts gespeichert, keine Kennung hinaus
-Datenschutz · offen · 2026-11-09 · — · Prüfpaket · Wiedervorlage: Anbieterprüfung (C6); B1\
-**Annahme.** An den Adapter gehen Text oder Bild und Regeln, nie Kennung, Datum, Verfasser:in oder Frage der Person; Namen im Inhalt gehen mit. Bilder nur als offener Verordnungsscan mit Prüfsumme der Ablage. Übernommenes ist Text der Person, ein Merkmal hat nur das Diktat (ANN-825). **Grundlage.** §6.1; ADR-005 Punkt 7; ADR-017 Punkt 39; ANN-520. **Anker.** `assistenzAnfragen` in `src/lib/ki/gateway.ts`. **Rücknahme.** Klasse oder Merkmal je Zieltabelle · Aufwand `groß`.
+Datenschutz · entschieden (Jannes) · 2026-11-10 · Jannes · Prüfpaket · Wiedervorlage: Anbieterprüfung (C6); B1\
+**Annahme.** Zum Adapter: Text oder Bild und Regeln, nie Kennung, Datum, Verfasser:in, Frage der Person; Namen im Inhalt gehen mit. Bilder nur als offener Verordnungsscan mit Prüfsumme der Ablage. Übernommenes ist Text der Person, ein Merkmal nur am Diktat (ANN-825). **Grundlage.** §6.1; ADR-005 Punkt 7; ADR-017 Punkt 39; ANN-520. **Anker.** `assistenzAnfragen` in `src/lib/ki/gateway.ts`. **Rücknahme.** Klasse oder Merkmal je Zieltabelle · Aufwand `groß`.
 
 ## Fachregeln
 ### ANN-840 — Diktat am leeren Feld: übernehmen und festschreiben in einem Tipp

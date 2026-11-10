@@ -22,6 +22,7 @@ const fetchTreatmentBasisVersions = vi.fn();
 const navigate = vi.fn();
 const fetchPatient = vi.fn();
 const ordneScanZu = vi.fn();
+const setTreatmentBasisIcd10 = vi.fn();
 const ladeDateiZumAnzeigen = vi.fn();
 
 // PRX-011: Zuordnen und Anzeigen des Verordnungsfotos.
@@ -60,6 +61,8 @@ vi.mock('./api', async (importOriginal) => {
     deleteTreatmentBasis: (id: string) => deleteTreatmentBasis(id) as Promise<void>,
     fetchTreatmentBasisVersions: (id: string) =>
       fetchTreatmentBasisVersions(id) as Promise<TreatmentBasesApi.Grundlagenfassung[]>,
+    setTreatmentBasisIcd10: (id: string, code: string) =>
+      setTreatmentBasisIcd10(id, code) as Promise<void>,
   };
 });
 
@@ -1064,5 +1067,123 @@ describe('Verordnung ohne Papier (PRX-011)', () => {
     await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
     await waitFor(() => expect(createTreatmentBasis).toHaveBeenCalledTimes(1));
     expect(ordneScanZu).not.toHaveBeenCalled();
+  });
+});
+
+// Der ICD-10-Code im ausführlichen Formular: Er kommt mit dem Entwurf aus dem Fenster „Daten
+// übertragen“ und wird wie dort eigens gesetzt, nur an einer Verordnung.
+describe('ICD-10 im ausführlichen Formular', () => {
+  const SCAN = 'aaaaaaaa-aaaa-4aaa-8aaa-000000000002';
+
+  beforeEach(async () => {
+    const { alleAbstecherVerwerfen } = await import('@/lib/abstecher');
+    alleAbstecherVerwerfen();
+    fetchPrescribers.mockReset();
+    fetchPrescribers.mockResolvedValue([verordner]);
+    createTreatmentBasis.mockReset();
+    createTreatmentBasis.mockResolvedValue('neue-id');
+    updateTreatmentBasis.mockReset();
+    updateTreatmentBasis.mockResolvedValue(undefined);
+    fetchTreatmentBasis.mockReset();
+    fetchTreatmentBasis.mockResolvedValue({ ...bestand, diagnosis_icd10: 'M54.5' });
+    setTreatmentBasisIcd10.mockReset();
+    setTreatmentBasisIcd10.mockResolvedValue(undefined);
+    ordneScanZu.mockReset();
+    ordneScanZu.mockResolvedValue(undefined);
+    navigate.mockReset();
+    fetchPatient.mockReset();
+    fetchPatient.mockResolvedValue(
+      testPatient({ id: PATIENT_ID, given_name: 'Max', family_name: 'Mustermann' }),
+    );
+  });
+
+  it('übernimmt die Eingaben aus dem Fenster samt Code und setzt ihn nach dem Anlegen', async () => {
+    const { entwurfAblegen, leereGrundlage } = await import('./api');
+    entwurfAblegen('aus-dem-fenster', BENUTZER_ID, {
+      werte: {
+        ...leereGrundlage,
+        prescriber_id: PROBST,
+        treatment_basis_kind: 'follow_up',
+        issued_on: '2026-09-01',
+        appointment_count: '6',
+        diagnosis: 'Synthetisch: Gonarthrose rechts',
+      },
+      positionen: [{ id: null, remedy: 'Krankengymnastik', bestand: null, menge: 6 }],
+      icd: 'm17.1',
+    });
+    const user = userEvent.setup();
+    renderWithProviders(
+      <NewTreatmentBasisPage />,
+      `/patienten/${PATIENT_ID}/verordnungen/neu?scan=${SCAN}&vorgang=aus-dem-fenster`,
+    );
+    await screen.findByRole('option', { name: /Probst/ });
+
+    expect(screen.getByLabelText('Diagnose (ICD-10)')).toHaveValue('m17.1');
+    expect(screen.getByLabelText('Ausstellungsdatum *')).toHaveValue('2026-09-01');
+    expect(screen.getByLabelText('Diagnose oder Leitsymptomatik')).toHaveValue(
+      'Synthetisch: Gonarthrose rechts',
+    );
+    await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
+
+    await waitFor(() => expect(ordneScanZu).toHaveBeenCalledWith(SCAN, 'neue-id'));
+    expect(createTreatmentBasis).toHaveBeenCalledWith(
+      PATIENT_ID,
+      expect.objectContaining({ prescriber_id: PROBST, issued_on: '2026-09-01' }),
+      [{ id: null, remedy: 'Krankengymnastik', bestand: null, menge: 6 }],
+    );
+    expect(setTreatmentBasisIcd10).toHaveBeenCalledWith('neue-id', 'M17.1');
+  });
+
+  it('weist einen Code im falschen Format ab und speichert nichts', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<NewTreatmentBasisPage />);
+    await screen.findByRole('option', { name: /Probst/ });
+    await formularAusfuellen(user);
+    await user.type(screen.getByLabelText('Diagnose (ICD-10)'), 'Knie');
+    await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
+
+    expect(
+      await screen.findAllByText('Bitte einen ICD-10-Code wie G20.00 oder M54.5 eingeben.'),
+    ).not.toHaveLength(0);
+    expect(createTreatmentBasis).not.toHaveBeenCalled();
+    expect(setTreatmentBasisIcd10).not.toHaveBeenCalled();
+  });
+
+  it('legt ohne Code nichts dazu und leert ihn sichtbar beim Wechsel auf Selbstzahler', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<NewTreatmentBasisPage />);
+    await screen.findByRole('option', { name: /Probst/ });
+    await user.type(screen.getByLabelText('Diagnose (ICD-10)'), 'M17.1');
+    await user.selectOptions(screen.getByLabelText('Art *'), 'self_pay');
+    expect(screen.queryByLabelText('Diagnose (ICD-10)')).toBeNull();
+    await user.selectOptions(screen.getByLabelText('Art *'), 'first');
+    expect(screen.getByLabelText('Diagnose (ICD-10)')).toHaveValue('');
+
+    await user.selectOptions(screen.getByLabelText('Verordner:in *'), PROBST);
+    await user.type(screen.getByLabelText('Ausstellungsdatum *'), '2026-03-01');
+    await user.click(screen.getByRole('checkbox', { name: 'Krankengymnastik (KG)' }));
+    await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '10');
+    await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
+    await waitFor(() => expect(createTreatmentBasis).toHaveBeenCalledTimes(1));
+    expect(setTreatmentBasisIcd10).not.toHaveBeenCalled();
+  });
+
+  it('zeigt beim Bearbeiten den Code und setzt ihn nur, wenn er sich ändert', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<EditTreatmentBasisPage />);
+    await screen.findByRole('option', { name: /Probst/ });
+    const feld = screen.getByLabelText('Diagnose (ICD-10)');
+    expect(feld).toHaveValue('M54.5');
+
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+    await waitFor(() => expect(updateTreatmentBasis).toHaveBeenCalledTimes(1));
+    expect(setTreatmentBasisIcd10).not.toHaveBeenCalled();
+
+    await user.clear(feld);
+    await user.type(feld, 'm54.4');
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+    await waitFor(() =>
+      expect(setTreatmentBasisIcd10).toHaveBeenCalledWith(PRESCRIPTION_ID, 'M54.4'),
+    );
   });
 });
