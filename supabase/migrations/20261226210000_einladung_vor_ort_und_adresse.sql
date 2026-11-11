@@ -164,6 +164,7 @@ create or replace function public.platform_invitation_lookup(p_code_hash text) R
     -- Eine neue Adresse braucht eine neue Einladung (ADR-023 Punkt 11).
     and (i.channel <> 'email' or i.email is not distinct from (
       select r.email from app.platform_relationship(a.relationship_kind, a.relationship_id) r))
+    and not (i.purpose = 'reset' and i.channel = 'email')
 $$;
 
 create or replace function public.redeem_platform_invitation(p_code_hash text, p_user_id uuid) RETURNS uuid
@@ -187,6 +188,7 @@ begin
     and i.expires_at > now()
     and (i.channel <> 'email' or i.email is not distinct from (
       select r.email from app.platform_relationship(a.relationship_kind, a.relationship_id) r))
+    and not (i.purpose = 'reset' and i.channel = 'email')
   for update of i, a;
 
   if v_inv.id is null

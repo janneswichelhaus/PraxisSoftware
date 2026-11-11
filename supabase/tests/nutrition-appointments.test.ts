@@ -645,6 +645,8 @@ describe('ERN-011: Ernährungsberatung als Terminanlass', () => {
 describe('ADR-027 Punkt 3: Die Begleitung erfährt nichts von der Beratung', () => {
   const BEGLEITUNG = 'cafecafe-cafe-4afe-8afe-0000000000e1';
   const KONTO_BEGLEITUNG = '99999999-9999-4999-8999-0000000000e1';
+  const VERTRETUNG = 'cafecafe-cafe-4afe-8afe-0000000000e2';
+  const KONTO_VERTRETUNG = '99999999-9999-4999-8999-0000000000e2';
   const ERIKA_SELBST = SEED.platformAccesses.erikaBehandlung;
   const TERMINE = 'select * from public.platform_appointments($1::uuid)';
   const RECHNUNGEN = 'select * from public.platform_invoices($1::uuid)';
@@ -673,7 +675,23 @@ describe('ADR-027 Punkt 3: Die Begleitung erfährt nichts von der Beratung', () 
                true)`,
       [BEGLEITUNG, organizationId, patients.erika, KONTO_BEGLEITUNG, users.office],
     );
-    for (const zugang of [BEGLEITUNG, ERIKA_SELBST]) {
+    // Eine rechtliche Vertretung handelt wie die Person (ADR-027 Punkt 3) und wird erinnert.
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email)
+       values ($1, 'authenticated', 'authenticated', 'bernd.betreuer@patient.invalid')`,
+      [KONTO_VERTRETUNG],
+    );
+    await asPostgres(
+      `insert into public.platform_accesses
+         (id, organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
+          status, activated_at, access_kind, legal_basis, representative_name, proof_documents,
+          health_scope, finance_scope, proof_recorded_by, proof_recorded_at, created_by)
+       values ($1, $2, 'treatment', $3, $3, $4, 'active', now(), 'legal_representative',
+               'guardianship', 'Bernd Betreuer', array['identity_document', 'guardianship_certificate'],
+               true, false, $5, now(), $5)`,
+      [VERTRETUNG, organizationId, patients.erika, KONTO_VERTRETUNG, users.office],
+    );
+    for (const zugang of [BEGLEITUNG, ERIKA_SELBST, VERTRETUNG]) {
       await asPostgres(
         `insert into public.platform_notification_settings
            (access_id, organization_id, email_kinds, chosen_by)
@@ -705,10 +723,10 @@ describe('ADR-027 Punkt 3: Die Begleitung erfährt nichts von der Beratung', () 
       [organizationId, patients.erika, id],
     );
     const { rows } = await asPostgres<{ access_id: string }>(
-      'select distinct access_id from public.notification_deliveries where subject_id = $1',
+      'select distinct access_id from public.notification_deliveries where subject_id = $1 order by 1',
       [id],
     );
-    expect(rows).toEqual([{ access_id: ERIKA_SELBST }]);
+    expect(rows).toEqual([ERIKA_SELBST, VERTRETUNG].sort().map((access_id) => ({ access_id })));
   });
 
   it('eine Rechnung mit der Beratung sieht die Begleitung auch mit Rechnungsbereich nicht', async () => {
@@ -729,5 +747,55 @@ describe('ADR-027 Punkt 3: Die Begleitung erfährt nichts von der Beratung', () 
       (await asUser<{ blatt: unknown }>(konto, RECHNUNG, [zugang, rechnung])).rows[0]!.blatt;
     expect(await blatt(users.plattformErika, ERIKA_SELBST)).not.toBeNull();
     expect(await blatt(KONTO_BEGLEITUNG, BEGLEITUNG)).toBeNull();
+  });
+
+  async function beratungsrechnung(beginn: string, stunde: number): Promise<string> {
+    const termin = await beratungstermin(PROFIL_ERIKA, { beginn });
+    const monat = await inDenLaufendenMonat(termin, stunde);
+    await abhaken(termin);
+    const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+      patients.erika,
+      monat,
+      'therapy',
+    ]);
+    await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
+    return rows[0]!.id;
+  }
+
+  it('nennt der Begleitung in der Kette keine Nummer einer verborgenen Rechnung', async () => {
+    const verborgen = await beratungsrechnung('10:00', 9);
+    const sichtbar = await beratungsrechnung('12:00', 11);
+    // Im Aufbau gesetzt, weil Snapshot und Kette sonst unveränderlich sind: die zweite Rechnung
+    // ohne Beratung, erst als Korrektur der ersten, dann von ihr korrigiert.
+    const kette = async (sql: string) => {
+      await asPostgres('alter table public.invoices disable trigger user');
+      try {
+        await asPostgres(sql, [sichtbar, verborgen]);
+      } finally {
+        await asPostgres('alter table public.invoices enable trigger user');
+      }
+    };
+    const blatt = async (konto: string, zugang: string) =>
+      (await asUser<{ blatt: Record<string, unknown> | null }>(konto, RECHNUNG, [zugang, sichtbar]))
+        .rows[0]!.blatt!;
+
+    await kette(`update public.invoices
+        set snapshot = jsonb_set(snapshot, '{items}', (
+              select jsonb_agg(jsonb_set(e, '{item_kind}', '"treatment"'))
+                from jsonb_array_elements(snapshot -> 'items') e)),
+            replaces_invoice_id = $2::uuid
+      where id = $1::uuid`);
+    expect(
+      (await blatt(users.plattformErika, ERIKA_SELBST)).replaces_invoice_number,
+    ).not.toBeNull();
+    expect((await blatt(KONTO_BEGLEITUNG, BEGLEITUNG)).replaces_invoice_number).toBeNull();
+
+    await kette(`update public.invoices
+        set replaces_invoice_id = case when id = $1::uuid then null else $1::uuid end
+      where id in ($1::uuid, $2::uuid)`);
+    expect(
+      (await blatt(users.plattformErika, ERIKA_SELBST)).correction_invoice_number,
+    ).not.toBeNull();
+    expect((await blatt(KONTO_BEGLEITUNG, BEGLEITUNG)).correction_invoice_number).toBeNull();
   });
 });

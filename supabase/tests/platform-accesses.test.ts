@@ -950,11 +950,25 @@ describe('Plattformzugang: Befunde aus dem Zweitreview', () => {
     await expect(
       asUser(users.office, EINLADEN, ['treatment', patients.erika, 'email', true]),
     ).rejects.toThrow(/reset only on site/);
+    // Ein schon verschickter Code zum neuen Kennwort gilt ebenso nicht.
+    await asPostgres(
+      `insert into public.platform_access_invitations
+         (organization_id, platform_access_id, purpose, channel, code_hash, email,
+          address_confirmed_by, address_confirmed_at, expires_at, created_by)
+       values ($1, $2, 'reset', 'email', $3, 'erika.beispiel@patient.invalid', $4, now(),
+               now() + interval '14 days', $4)`,
+      [organizationId, platformAccesses.erikaBehandlung, h('alter-mail-reset'), users.office],
+    );
+    expect((await asServiceRole(NACHSCHLAGEN, [h('alter-mail-reset')])).rows).toEqual([]);
+    await expect(
+      asServiceRole(EINLOESEN, [h('alter-mail-reset'), users.plattformErika]),
+    ).rejects.toThrow(/invitation not valid/);
     expect((await einladen(users.office, 'treatment', patients.erika)).purpose).toBe('reset');
   });
 
   it('laesst eine Mail-Einladung verfallen, wenn sich die Adresse aendert (ADR-023 Punkt 11)', async () => {
     const einladung = await einladen(users.office, 'treatment', patients.max, 'email', true);
+    expect((await asServiceRole(NACHSCHLAGEN, [h(einladung.code)])).rows).toHaveLength(1);
     await asPostgres(
       `update public.patient_contact_details set email = 'max.neu@patient.invalid' where patient_id = $1`,
       [patients.max],

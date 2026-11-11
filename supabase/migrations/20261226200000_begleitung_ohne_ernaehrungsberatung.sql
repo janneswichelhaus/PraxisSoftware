@@ -169,10 +169,16 @@ begin
   select c.cancellation_number, c.reason, c.cancelled_on into v_storno
   from public.invoice_cancellations c where c.invoice_id = p_invoice_id;
   select i.invoice_number into v_ersetzt
-  from public.invoices i where i.id = v_invoice.replaces_invoice_id;
+  from public.invoices i where i.id = v_invoice.replaces_invoice_id
+    and (v_ernaehrung or not exists (
+      select 1 from jsonb_array_elements(coalesce(i.snapshot -> 'items', '[]'::jsonb)) z
+      where z ->> 'item_kind' = 'nutrition_counselling'));
   select i.invoice_number into v_korrektur
   from public.invoices i
   where i.replaces_invoice_id = p_invoice_id and i.status = 'issued'
+    and (v_ernaehrung or not exists (
+      select 1 from jsonb_array_elements(coalesce(i.snapshot -> 'items', '[]'::jsonb)) z
+      where z ->> 'item_kind' = 'nutrition_counselling'))
   order by i.created_at limit 1;
 
   -- Der Snapshot, wie die Praxis ihn druckt (ADR-009 Punkt 10) - die Person
