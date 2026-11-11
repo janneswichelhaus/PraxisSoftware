@@ -908,6 +908,43 @@ describe('Plattformzugang: Befunde aus dem Zweitreview', () => {
     expect(tina.purpose).toBe('reset');
   });
 
+  it('laesst einen offenen Code zum neuen Kennwort verfallen, sobald das Konto einen weiteren Zugang bekommt (§4.8)', async () => {
+    // Erikas Konto behaelt nur das Training: Dort darf die Trainingsbetreuung
+    // ein neues Kennwort ausstellen. Bindet Erika danach die Behandlung an
+    // dasselbe Konto, darf der zurueckbehaltene Code nicht mehr hinein.
+    await asUserCommitted(users.office, ENTZIEHEN, [platformAccesses.erikaBehandlung]);
+    await asPostgres(
+      `insert into public.training_contact_details (training_relationship_id, organization_id, date_of_birth)
+       values ($1, $2, '1963-09-17')
+       on conflict (training_relationship_id) do update set date_of_birth = excluded.date_of_birth`,
+      [trainingRelationships.erika, organizationId],
+    );
+    await asPostgres(
+      `update public.training_contact_details set date_of_birth = '1990-01-01'
+        where training_relationship_id = $1`,
+      [trainingRelationships.tina],
+    );
+    const zurueckbehalten = await einladen(users.trainer, 'training', trainingRelationships.erika);
+    expect(zurueckbehalten.purpose).toBe('reset');
+    const tina = await einladen(users.trainer, 'training', trainingRelationships.tina);
+
+    const behandlung = await einladen(users.office, 'treatment', patients.erika);
+    expect(behandlung.purpose).toBe('activate');
+    await asServiceRole(EINLOESEN, [h(behandlung.code), users.plattformErika]);
+
+    expect((await asServiceRole(NACHSCHLAGEN, [h(zurueckbehalten.code)])).rows).toEqual([]);
+    await expect(
+      asServiceRole(EINLOESEN, [h(zurueckbehalten.code), users.plattformErika]),
+    ).rejects.toThrow(/invitation not valid/);
+    const { rows: stand } = await asPostgres<{ status: string }>(
+      'select status from public.platform_access_invitations where id = $1',
+      [zurueckbehalten.invitation_id],
+    );
+    expect(stand).toEqual([{ status: 'revoked' }]);
+    // Ein anderes Konto behaelt seinen Code.
+    expect((await asServiceRole(NACHSCHLAGEN, [h(tina.code)])).rows).toHaveLength(1);
+  });
+
   it('beendet beim neuen Kennwort die Einladung, bevor sich etwas am Konto aendert', async () => {
     const einladung = await einladen(users.office, 'treatment', patients.erika);
     await asServiceRole(EINLOESEN, [h(einladung.code), users.plattformErika]);
