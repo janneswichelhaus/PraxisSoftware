@@ -266,6 +266,37 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
     );
   });
 
+  it('verwirft nur die Antworten der Person; die Notiz der Praxis bleibt als Entwurf der Praxis (§13, ANN-808)', async () => {
+    const id = await speichern(users.plattformErika, ERIKA);
+    const notiz = { anmerkungen_therapeut: { text: 'Notiz der Praxis' } };
+    await asUserCommitted(users.therapist, PRAXIS_SPEICHERN, [
+      patients.erika,
+      id,
+      JSON.stringify({ ...ANTWORTEN, ...notiz }),
+    ]);
+    const weg = await asUserCommitted<{ ok: boolean }>(users.plattformErika, VERWERFEN, [
+      ERIKA,
+      id,
+    ]);
+    expect(weg.rows[0]!.ok).toBe(true);
+    expect((await asUser<Zeile>(users.plattformErika, STAND, [ERIKA])).rows).toEqual([]);
+    const { rows } = await asPostgres<{
+      answers: Record<string, unknown>;
+      source: string;
+      source_access_id: string | null;
+      status: string;
+    }>(
+      'select answers, source, source_access_id, status from public.patient_questionnaire_responses where id = $1',
+      [id],
+    );
+    expect(rows).toEqual([
+      { answers: notiz, source: 'practice', source_access_id: null, status: 'entwurf' },
+    ]);
+    // Ein neuer Entwurf der Person beginnt daneben, ohne die Notiz.
+    const neu = await speichern(users.plattformErika, ERIKA);
+    expect(neu).not.toBe(id);
+  });
+
   it('fremde Person, Praxiskonto, andere Organisation, abgelaufene Lesefrist, entzogen: weder lesen noch speichern', async () => {
     // Ein abgeschlossener Bogen einer anderen Person derselben Praxis: Er hält Erika nicht auf
     // und erscheint nicht in ihrem Stand (Eingrenzung auf die eigene Person, Zweitreview).
