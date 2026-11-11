@@ -778,6 +778,15 @@ describe('ADR-027 Punkt 3: Die Begleitung erfährt nichts von der Beratung', () 
     const blatt = async (konto: string, zugang: string) =>
       (await asUser<{ blatt: Record<string, unknown> | null }>(konto, RECHNUNG, [zugang, sichtbar]))
         .rows[0]!.blatt!;
+    // Die rechtliche Vertretung mit Vermögenssorge handelt wie die Person (ADR-027 Punkt 3).
+    await asPostgres('alter table public.platform_accesses disable trigger user');
+    try {
+      await asPostgres('update public.platform_accesses set finance_scope = true where id = $1', [
+        VERTRETUNG,
+      ]);
+    } finally {
+      await asPostgres('alter table public.platform_accesses enable trigger user');
+    }
 
     await kette(`update public.invoices
         set snapshot = jsonb_set(snapshot, '{items}', (
@@ -789,6 +798,7 @@ describe('ADR-027 Punkt 3: Die Begleitung erfährt nichts von der Beratung', () 
       (await blatt(users.plattformErika, ERIKA_SELBST)).replaces_invoice_number,
     ).not.toBeNull();
     expect((await blatt(KONTO_BEGLEITUNG, BEGLEITUNG)).replaces_invoice_number).toBeNull();
+    expect((await blatt(KONTO_VERTRETUNG, VERTRETUNG)).replaces_invoice_number).not.toBeNull();
 
     await kette(`update public.invoices
         set replaces_invoice_id = case when id = $1::uuid then null else $1::uuid end
@@ -797,5 +807,6 @@ describe('ADR-027 Punkt 3: Die Begleitung erfährt nichts von der Beratung', () 
       (await blatt(users.plattformErika, ERIKA_SELBST)).correction_invoice_number,
     ).not.toBeNull();
     expect((await blatt(KONTO_BEGLEITUNG, BEGLEITUNG)).correction_invoice_number).toBeNull();
+    expect((await blatt(KONTO_VERTRETUNG, VERTRETUNG)).correction_invoice_number).not.toBeNull();
   });
 });
