@@ -1,5 +1,5 @@
 # Offene Entscheidungen
-Zuletzt aktualisiert: 2026-10-27 · Struktur 5.0
+Zuletzt aktualisiert: 2026-11-10 · Struktur 5.0
 
 Was offen ist, warum, und was daran hängt. **Ohne Rang** (§21): Entschiedenes steht mit Fundstelle
 in ADR, Prinzipien oder Annahmenregister. Ein offener Punkt blockiert kein Bauen (§15.2); was eine
@@ -102,7 +102,7 @@ Planungsrelevant, weil ohne sie ein Paket der Roadmap nicht fertig wird; beantwo
 | Begründung als Pflichtfeld; Frist bei Hausbesuchen am Freitag; Azubi-Rolle | ADR-016 | ANN-008; STAFF-EPIC-002 |
 | Offline: Felder, Unsynchronisiert-Dauer, Konfliktauflösung, Geräteanforderungen, Audit offline | ADR-001 | ANN-021; ADR-024 |
 | Kartendienst: Anbieter, Datenweg, Vertragsgrundlage, Endgerät | ADR-002, §9, §20 | ADR-019 (G12); B7 |
-| Liefern `OSM_BICYCLE` und `OSM_CARGO_BICYCLE` Manöver? (E-24) | ADR-019 | ein Aufruf vor MAP-007 (Roadmap) |
+| Liefern `OSM_BICYCLE` und `OSM_CARGO_BICYCLE` Manöver? (E-24) | ADR-019 | ruht mit MAP-007 (ADR-019 Punkt 32) |
 
 ## Entschieden oder erledigt
 | Punkt | Entscheidung | Fundstelle |

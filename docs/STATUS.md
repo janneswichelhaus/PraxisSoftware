@@ -11,17 +11,16 @@ Ablauf in `DEVELOPMENT.md`; Merge bei Jannes.
 
 ## Danach
 
-Bis M2 (Jannes 2026-11-01, voller Umfang): MAP-007 nach E-24, Leinwände, sobald sie da sind;
-DATEV erst nach B4. **G14 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit Datenpannen,
-Auftragsverarbeiter, DSFA, zuletzt die Nachweistabelle; die Datenschutzinformationen nennen die
-Steuerberatung.
+Bis M2 (Jannes 2026-11-01, voller Umfang; MAP-007 zurückgestellt 2026-11-10): Leinwände, sobald
+sie da sind; DATEV erst nach B4. **G14 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit
+Datenpannen, Auftragsverarbeiter, DSFA, zuletzt die Nachweistabelle; die Datenschutzinformationen
+nennen die Steuerberatung.
 
 ## Bei Jannes
 
 - Test-App neu installieren (#360).
 - Den alten Branch `ccr-544f8ce7-u1sqpf` löschen (seit 3c ist alles übertragen).
 - Bildsichtung von #352 bis #362 (`/sichtung`), für M2.
-- E-24 vor MAP-007: ein Aufruf mit dem PTV-Schlüssel, ob die Radprofile Manöver liefern.
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; E13); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
@@ -41,4 +40,4 @@ Steuerberatung.
 
 ## Letzte Session
 
-10.11.2026, KI-EPIC-002.
+10.11.2026, KI-EPIC-002; Übergabe nur an Google Maps.

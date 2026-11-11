@@ -1,6 +1,6 @@
 # ADR-019: Kartendienst — In-App-Karte, Fahrradrouting, Fahrzeiten und Navigations-Handoff
 ## Status
-Angenommen (Jannes, 2026-09-13), Fassung 7 (2026-10-26); gibt keinen Anbieter produktiv frei.
+Angenommen (Jannes, 2026-09-13), Fassung 8 (2026-11-10); gibt keinen Anbieter produktiv frei.
 
 ## Kontext
 §9 verlangt Routen und Fahrzeiten über einen professionellen Kartendienst, §3.5 dessen Prüfung vor
@@ -78,9 +78,8 @@ Schätzungen *(Fassung 5)*.
     Adresse ohne Namen (ANN-018), nie Name, Uhrzeit oder Kennung. Ein Tageslink bleibt im
     dokumentierten Limit der Ziel-App (Google Maps URLs: neun Zwischenziele, drei in mobilen
     Browsern).
-22. **Ziel-Apps:** Google Maps (`travelmode=bicycling`), Apple Maps (`mode=cycling`),
-    Systemnavigation (`geo:`-URI, ohne Verkehrsmittel); MAP-005 bewertet, was auf den genutzten
-    Geräten verlässlich im Fahrradmodus öffnet; keine vorgebaute Nutzerpräferenz.
+22. **Ziel-App ist allein Google Maps** (`travelmode=bicycling`) *(Fassung 8)*; Apple Maps und die
+    Systemnavigation (`geo:`) entfallen, eine Auswahl gibt es nicht.
 23. **Der Handoff ist nicht automatisch rechtlich risikofrei** (Link statt Einbettung, EuGH C-40/17
     *Fashion ID*); ob er Art. 9 DSGVO oder § 203 StGB berührt, klärt B2. Bis dahin gelten kumulativ:
     a) **Endgeräteregel** (BETRIEB-001, G14/G16, TOM): auf dienstlich genutzten Geräten kein
@@ -116,8 +115,9 @@ Schätzungen *(Fassung 5)*.
     des Epics, eine rein visuelle Führung wird nicht ausgeliefert (Endgeräte-Richtlinie BETRIEB-001,
     neben Punkt 23).
 32. **Erst MAP-006, dann die Führung** als eigenes Epic, gebaut und abgenommen mit synthetischen
-    Adressen, das Gate vor dem Scharfschalten (§15.2, *Fassung 4*). Der Handoff bleibt bis dahin der
-    Weg, danach der Rückfallweg, wenn die Führung nicht verfügbar ist; sie ersetzt ihn nicht.
+    Adressen, das Gate vor dem Scharfschalten (§15.2, *Fassung 4*). Das Epic ist zurückgestellt, bis
+    Jannes es wieder in eine Etappe legt *(Fassung 8)*. Der Handoff bleibt bis dahin der Weg, danach
+    der Rückfallweg, wenn die Führung nicht verfügbar ist; sie ersetzt ihn nicht.
     Ansagetexte, Kartenverhalten während der Fahrt, Funklöcher (ADR-001) und die Schwelle der
     Neuberechnung regelt das Epic.
 33. **Die Führung ist ein eigener Datenweg in der DSFA** (Punkt 26); B2 umfasst die wiederholte
@@ -158,8 +158,8 @@ Schätzungen *(Fassung 5)*.
 ## Offene Folgefragen
 - offen: B2 (OPEN_DECISIONS) für Punkt 23 und 33: Einwilligung oder Art. 9 Abs. 2 lit. h DSGVO mit
   § 22 BDSG, § 203 Abs. 3 StGB bei einer Adresse ohne Namen, Beschäftigtendatenschutz (§20.1).
-- offen: E-24 (OPEN_DECISIONS); bei Nein braucht Abschnitt F einen zweiten, nach §3.5 geprüften
-  Datenlieferanten.
+- ruht mit der Führung (Punkt 32): E-24 (OPEN_DECISIONS); bei Nein bräuchte Abschnitt F einen
+  zweiten, nach §3.5 geprüften Datenlieferanten.
 - offen bei PTV (Teil 4 des Prüfdokuments): Schlüsselbindung, Matrixgröße, Rate-Limits.
 - Wie wird die Endgeräteregel geprüft, ohne das Telefon zu kontrollieren (§20)? Vorschlag für
   BETRIEB-001: schriftliche Bestätigung.
@@ -172,4 +172,5 @@ Schätzungen *(Fassung 5)*.
 - Fassung 5 (2026-10-02, Jannes): Abschnitt G (Kachel-Gate, ein Schalter, Treffer, Schätzungen).
 - Fassung 6 (2026-10-17, Jannes, Variante A): Kilometer am eigenen Antrag auf Ladestrom (zu 16, 17).
 - Fassung 7 (2026-10-26, Jannes): Ladestrom wie Einkauf mit Beleg, Ausnahme der Fassung 6 entfällt.
+- Fassung 8 (2026-11-10, Jannes): Übergabe nur an Google Maps (Punkt 22), Führung zurückgestellt (32).
 - Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.

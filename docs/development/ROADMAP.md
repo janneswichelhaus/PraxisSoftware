@@ -34,7 +34,8 @@ Bestandsdaten; **zur Eröffnung läuft das Endprodukt** (2026-09-22, §14), anfa
 Jannes, bald mit einer Bürokraft; neue Teammitglieder bindet der Owner selbst ein (§4). V1 umfasst:
 
 1. **Kernprozess:** Akte, Verordnung, Termine, Doku, Leistungen, Rechnung, Zahlung, Löschung, Audit.
-2. **Tagesroute** mit Karte, Fahrzeiten, Handoff und Führung am Handy, Hinweis auf die Liege (§9).
+2. **Tagesroute** mit Karte, Fahrzeiten, Übergabe an Google Maps, Hinweis auf die Liege (§9); die
+   Führung am Handy ist zurückgestellt (Jannes 2026-11-10, Zuschnitt MAP-007 in 7.25).
 3. **Befund** mit Anamnese, Scores, Bausteinen, Therapiebericht, Erstaufnahme und Fotos (§5).
 4. **Praxisverwaltung:** Warteliste, Anruflisten, Aufgaben, Kennzahlen, Steuerexport, Kartenzahlung.
 5. **Trainingsbereich** in der Sicht der Betreuung.
@@ -77,7 +78,7 @@ dahin synthetisch), die Tübinger Standortvorlage (Depot, Werkstatt). Danach in 
 
 | # | Block | Code | Docs und Jannes |
 | --- | --- | --- | --- |
-| 9 | **Assistenz und Komfort** | KI-EPIC-001 → KI-EPIC-002 → MAP-007 → PRX-EPIC-004 → UI-003 | Sichtung |
+| 9 | **Assistenz und Komfort** | KI-EPIC-001 → KI-EPIC-002 → PRX-EPIC-004 → UI-003 | Sichtung |
 | 10 | **Feature-Freeze** | nur Befunde | Betriebsdokumentation · Probewoche 1 · Kollegin-Test · **M2** |
 | 11 | **Prüfungen**, ab Anfang 2027 **parallel** | Befunde aus den Prüfungen | DSFA-Paket (G14) und Anfragen bis Ende 2026 vorbereiten, dann Antworten einarbeiten · OPS-001-Unterlagen · B1, B2, B4, B8 · Anbieterverträge |
 | 12 | **Betriebsreife** | OPS-002 → OPS-003 → OPS-004 Rest → OPS-007-Probe | BETRIEB-001 · Rückfallplan · Kurzanleitung · Cloudprojekt (G3) · Restore-Test 1 und 2 · Notfallzugang |
@@ -132,7 +133,6 @@ Zuschnitt, keine Spec.
 | Block | Loop | Ergebnis und Zuschnitt | Vorgabe |
 | --- | --- | --- | --- |
 | 2 | **FRB-EPIC-005** | Ein Bild ruft den Test in Erinnerung: optionales Bild je Test in der Definition, beim Abhaken gezeigt, ohne Bewertung (ADR-006); startet, sobald Bilder vorliegen (eigene Zeichnung, Lizenz nach B8 oder Foto nach §20) | `IDEA-OUT-009` |
-| 9 | **MAP-007** | Führung auf dem Gerät, ohne dass die Praxis die Position erfährt (ADR-019 Abschnitt F, §20.1: Position nur auf dem Gerät, Start nur auf Aktion, Übermittlung nur zur Neuberechnung, keine Auswertung). Zuerst **E-24** (liefern die Radprofile Manöver? ein Aufruf; ohne Ja entfällt das Epic), B2 in erweiterter Fassung und das Aufrufkontingent; Stories MAP-007a bis -f, keine rein visuelle Führung (ADR-019 Punkt 31), synthetische Adressen | `IDEA-PRX-044`; Vorgabe `git show 9452575:docs/development/MAP-LOOPS.md` |
 | 9 | **PRX-EPIC-004** | Rest: Übertragung an DATEV hinter Adapter, nach Anbieterprüfung und B4 | `IDEA-PRX-026`, `-021`, `-024`, `-033`, `-022` |
 
 ## Blöcke 10 bis 14: vom Freeze bis zur Eröffnung
@@ -431,9 +431,10 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 ## Änderungsvermerk
 | Version | Datum | Änderung |
 | --- | --- | --- |
-| 7.25 | 2026-10-31 | Kreis `billing <-> patients` bleibt bewusst (Antwort zu #337). |
+| 7.26 | 2026-11-10 | MAP-007 zurückgestellt, Übergabe nur an Google Maps (Jannes). |
 
-Vermerk 7.24: `git show c8dd2aa:docs/development/ROADMAP.md`; 7.23: `git show
+Vermerk 7.25: `git show 9277107:docs/development/ROADMAP.md`; 7.24: `git show
+c8dd2aa:docs/development/ROADMAP.md`; 7.23: `git show
 6e6e37e:docs/development/ROADMAP.md`; bis 7.22 mit Zuschnitten:
 `git show 9452575:docs/development/ROADMAP.md`; vor 7.0: `git show
 eb43569:docs/development/ROADMAP-CHRONIK.md`.

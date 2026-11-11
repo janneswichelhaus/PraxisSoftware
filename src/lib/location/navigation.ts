@@ -1,9 +1,8 @@
 import type { NavigationApp, NavigationTarget, PostalAddress } from './contract';
 
 /**
- * Übergabe an eine externe Navigations-App (ADR-019 Punkt 20 bis 23, ANN-018): nur Ziel und
- * Fahrradmodus, erst im Klickhandler, nie gespeichert, kein eingebetteter Rahmen. Die Oberfläche
- * übergibt an Google Maps; die Gerätesichtung vom 2026-11-05 ergab keinen Befund.
+ * Übergabe allein an Google Maps (ADR-019 Punkt 20 bis 23, ANN-018): nur Ziel und Fahrradmodus,
+ * erst im Klickhandler, nie gespeichert, kein eingebetteter Rahmen.
  */
 
 /**
@@ -24,21 +23,8 @@ export const MAX_ZWISCHENZIELE_MOBIL = 3;
  */
 export const MAX_ZWISCHENZIELE = MAX_ZWISCHENZIELE_MOBIL;
 
-/**
- * Zwischenziele, die eine URL je Ziel-App trägt.
- *
- * Apple Maps kennt sie als wiederholbaren Parameter `waypoint` (Primärquelle,
- * siehe `apple()`), nennt aber **keine** Höchstzahl. Eine undokumentierte
- * Grenze ist kein Freibrief: Hier gilt dieselbe Zahl wie bei Google Maps, bis
- * die Gerätebewertung eine belegte nennt.
- *
- * Die Systemnavigation (`geo:`) kennt genau ein Ziel und keinen Umweg - dort
- * ist der „Abschnitt" schlicht der einzelne Stopp.
- */
 const ZWISCHENZIELE_JE_APP: Record<NavigationApp, number> = {
   google_maps: MAX_ZWISCHENZIELE,
-  apple_maps: MAX_ZWISCHENZIELE,
-  system: 0,
 };
 
 /** Stopps je Abschnitt: die Zwischenziele der Ziel-App plus deren Ziel. */
@@ -135,55 +121,7 @@ function google(ziel: NavigationTarget, zwischenziele: readonly NavigationTarget
   return `https://www.google.com/maps/dir/?${parameter.toString()}`;
 }
 
-/**
- * Dasselbe für Apple Maps - „unified Maps URLs", belegt aus der
- * Anbieterdokumentation (`developer.apple.com`, „Adopting unified Maps URLs",
- * abgerufen am 2026-09-22): Pfad `/directions`, Ziel in `destination`
- * („Specify an address, coordinate, or a place name"), Zwischenziele als
- * **wiederholter** Parameter `waypoint`, Verkehrsmittel in `mode` mit
- * `driving`, `walking`, `transit` oder `cycling`.
- *
- * Kein `source`: derselbe Grund wie bei `origin` oben.
- *
- * Die ältere Form (`maps.apple.com/?daddr=…&dirflg=…`) bleibt ungenutzt - ihre
- * Verkehrsmittel sind `d`, `w` und `r`, ein Fahrrad ist nicht dabei. Dafür
- * setzen die unified URLs iOS 18.4 oder neuer voraus; ob die Geräte der Praxis
- * das erfüllen, beantwortet die Gerätebewertung.
- */
-function apple(ziel: NavigationTarget, zwischenziele: readonly NavigationTarget[]): string {
-  const parameter = new URLSearchParams({ destination: zielText(ziel) });
-  for (const zwischenziel of zwischenziele) {
-    parameter.append('waypoint', zielText(zwischenziel));
-  }
-  parameter.set('mode', 'cycling');
-  return `https://maps.apple.com/directions?${parameter.toString()}`;
-}
-
-/**
- * Die Systemnavigation über einen `geo:`-URI (ADR-019 Punkt 22).
- *
- * Belegt aus `developer.android.com/guide/components/intents-common`
- * (abgerufen am 2026-09-22): `geo:latitude,longitude` für einen Punkt,
- * `geo:0,0?q=my+street+address` für eine Adresse, und „all strings passed in
- * the geo URI must be encoded".
- *
- * **Ohne Verkehrsmittel** - der URI kennt keins. Welche App das Gerät öffnet
- * und ob sie dann aufs Rad umstellt, entscheidet das Gerät; genau das prüft
- * die Gerätebewertung.
- */
-function geo(ziel: NavigationTarget): string {
-  if (ziel.kind === 'coordinate') return `geo:${ziel.position.lat},${ziel.position.lon}`;
-  return `geo:0,0?${new URLSearchParams({ q: adressZeile(ziel.address) }).toString()}`;
-}
-
-/**
- * Ein Abschnitt als URL: der letzte Stopp ist das Ziel, alles davor sind
- * Zwischenziele.
- *
- * Die Systemnavigation bekommt nur das Ziel - sie kennt keine Zwischenziele,
- * und `buildNavigationDayUrls` schneidet die Abschnitte deshalb so, dass dort
- * nie eines anfällt.
- */
+/** Ein Abschnitt als URL: der letzte Stopp ist das Ziel, alles davor sind Zwischenziele. */
 function abschnittUrl(abschnitt: readonly NavigationTarget[], app: NavigationApp): string {
   const ziel = abschnitt[abschnitt.length - 1]!;
   const zwischenziele = abschnitt.slice(0, -1);
@@ -191,10 +129,6 @@ function abschnittUrl(abschnitt: readonly NavigationTarget[], app: NavigationApp
   switch (app) {
     case 'google_maps':
       return google(ziel, zwischenziele);
-    case 'apple_maps':
-      return apple(ziel, zwischenziele);
-    case 'system':
-      return geo(ziel);
   }
 }
 

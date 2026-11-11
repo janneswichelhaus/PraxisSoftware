@@ -60,7 +60,7 @@ in der Änderungshistorie des ADR.
 | [ADR-016](ADR-016-clinical-documentation-record.md) | Klinische Dokumentation: Entwurf, Finalisierung, Änderbarkeit | Angenommen, Fassung 4 (2026-10-14) |
 | [ADR-017](ADR-017-file-storage.md) | Dateiablage: Ort, Zugriff, kurzlebige Verweise, Aufbewahrung, Virenprüfung | Angenommen bis Fassung 12 (2026-10-20), Fassung 9 vorgeschlagen |
 | [ADR-018](ADR-018-appointment-states.md) | Zustandsautomat des Termins | Angenommen, Fassung 5 (2026-10-14) |
-| [ADR-019](ADR-019-map-service.md) | Kartendienst: In-App-Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff | Angenommen, Fassung 7 (2026-10-26) |
+| [ADR-019](ADR-019-map-service.md) | Kartendienst: In-App-Karte, Fahrradrouting, Fahrzeiten, Navigations-Handoff | Angenommen, Fassung 8 (2026-11-10) |
 | [ADR-020](ADR-020-treatment-basis.md) | Behandlungsgrundlage: Verordnung und Selbstzahler unter einer Klammer | Angenommen, Fassung 2 (2026-10-14) |
 | [ADR-021](ADR-021-service-areas-and-legal-relationships.md) | Leistungsbereiche und Rechtsverhältnisse: Behandlung und Training getrennt | Angenommen, Fassung 4 (2026-10-18) |
 | [ADR-022](ADR-022-appointment-context-and-training-basis.md) | Terminkontext und Trainingsgrundlage: ein Kalender, ein Kontext je Termin | Angenommen (2026-09-20) |

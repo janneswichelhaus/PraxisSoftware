@@ -268,8 +268,8 @@ export type NavigationTarget =
   | { readonly kind: 'coordinate'; readonly position: Coordinate }
   | { readonly kind: 'address'; readonly address: PostalAddress };
 
-/** Welche Navigation geöffnet wird. Die Auswahl der Ziel-App prüft MAP-005. */
-export type NavigationApp = 'google_maps' | 'apple_maps' | 'system';
+/** Die einzige Ziel-App der Übergabe (ADR-019 Punkt 22); eine zweite braucht eine neue Fassung. */
+export type NavigationApp = 'google_maps';
 
 /**
  * Baut die URL, die das Gerät der Person öffnet. Sie wird **erst beim Tippen**
