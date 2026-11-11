@@ -84,6 +84,9 @@ function einladefehler(meldung: string | undefined): string {
   if (m.includes('person has a practice account')) {
     return 'Diese Person hat ein Konto der Praxis. Einen Plattformzugang gibt es dafür nicht; Übungen gibt es als PDF.';
   }
+  if (m.includes('reset only on site')) {
+    return 'Die Person nutzt ihren Zugang schon. Ein neues Kennwort gibt es nur vor Ort.';
+  }
   if (m.includes('reset needs every area')) {
     return 'Ein neues Kennwort gilt für alle Bereiche dieser Person. Ausstellen kann es nur, wer alle ihre Zugänge verwaltet – etwa die Praxisinhaber:in oder das Büro.';
   }
